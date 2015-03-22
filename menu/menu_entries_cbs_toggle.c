@@ -410,7 +410,6 @@ static int action_toggle_shader_num_passes(unsigned type, const char *label,
 static int action_toggle_video_resolution(unsigned type, const char *label,
       unsigned action, bool wraparound)
 {
-   driver_t *driver = driver_get_ptr();
    global_t *global = global_get_ptr();
     
    (void)global;
