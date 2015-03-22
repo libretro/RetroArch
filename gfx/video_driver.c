@@ -240,7 +240,7 @@ uintptr_t video_driver_get_current_framebuffer(void)
 retro_proc_address_t video_driver_get_proc_address(const char *sym)
 {
    driver_t *driver = driver_get_ptr();
-   if (driver->video_poke && driver->video_poke->get_proc_address)
+   if (driver && driver->video_poke && driver->video_poke->get_proc_address)
       return driver->video_poke->get_proc_address(driver->video_data, sym);
    return NULL;
 }
@@ -422,10 +422,10 @@ void init_video(void)
    init_video_filter(global->system.pix_fmt);
    rarch_main_command(RARCH_CMD_SHADER_DIR_INIT);
 
-   geom = (const struct retro_game_geometry*)&global->system.av_info.geometry;
-   max_dim = max(geom->max_width, geom->max_height);
-   scale = next_pow2(max_dim) / RARCH_SCALE_BASE;
-   scale = max(scale, 1);
+   geom      = (const struct retro_game_geometry*)&global->system.av_info.geometry;
+   max_dim   = max(geom->max_width, geom->max_height);
+   scale     = next_pow2(max_dim) / RARCH_SCALE_BASE;
+   scale     = max(scale, 1);
 
    if (global->filter.filter)
       scale = global->filter.scale;
@@ -574,8 +574,10 @@ void init_video(void)
 bool video_driver_has_windowed(void)
 {
    driver_t *driver     = driver_get_ptr();
+
    if (!driver->video)
       return false;
+
    /* If video driver/context does not support windowed
     * mode, don't perform command. */
    if (!driver->video->has_windowed(driver->video_data))
