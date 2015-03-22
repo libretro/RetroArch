@@ -251,8 +251,7 @@ static int action_iterate_help(const char *label, unsigned action)
    if (!menu)
       return 0;
 
-   if (driver->video_data && driver->menu_ctx && driver->menu_ctx->render)
-      driver->menu_ctx->render();
+   menu_driver_render();
 
    for (i = 0; i < ARRAY_SIZE(binds); i++)
    {
@@ -312,8 +311,7 @@ static int action_iterate_info(const char *label, unsigned action)
 
    list = (file_list_t*)menu->menu_list->selection_buf;
 
-   if (driver->video_data && driver->menu_ctx && driver->menu_ctx->render)
-      driver->menu_ctx->render();
+   menu_driver_render();
 
    current_setting = (rarch_setting_t*)setting_find_setting(
          menu->list_settings,
@@ -509,8 +507,7 @@ static int action_iterate_menu_viewport(const char *label, unsigned action)
 
    menu_list_get_last_stack(menu->menu_list, NULL, &label, &type);
 
-   if (driver->video_data && driver->menu_ctx && driver->menu_ctx->render)
-      driver->menu_ctx->render();
+   menu_driver_render();
 
    if (settings->video.scale_integer)
    {
@@ -796,8 +793,7 @@ static int action_iterate_main(const char *label, unsigned action)
 
    ret = mouse_post_iterate(cbs, path_offset, label_offset, type_offset, action);
 
-   if (driver->video_data && driver->menu_ctx && driver->menu_ctx->render)
-      driver->menu_ctx->render();
+   menu_driver_render();
 
    /* Have to defer it so we let settings refresh. */
    if (menu->push_start_screen)
