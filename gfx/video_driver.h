@@ -305,6 +305,8 @@ bool video_driver_set_shader(enum rarch_shader_type type,
 
 bool video_driver_focus(void);
 
+bool video_driver_overlay_interface(const video_overlay_interface_t **iface);
+
 #ifdef __cplusplus
 }
 #endif

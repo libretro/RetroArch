@@ -800,14 +800,12 @@ input_overlay_t *input_overlay_new(const char *path, bool enable,
    if (!ol->conf)
       goto error;
 
-   if (!driver->video->overlay_interface)
+   if (!video_driver_overlay_interface(&ol->iface))
    {
       RARCH_ERR("Overlay interface is not present in video driver.\n");
       goto error;
    }
 
-   if (driver->video && driver->video->overlay_interface)
-      driver->video->overlay_interface(driver->video_data, &ol->iface);
    ol->iface_data = driver->video_data;
 
    if (!ol->iface)

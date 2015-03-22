@@ -784,3 +784,18 @@ bool video_driver_focus(void)
       return false;
    return driver->video->focus(driver->video_data);
 }
+
+bool video_driver_overlay_interface(const video_overlay_interface_t **iface)
+{
+   driver_t *driver     = driver_get_ptr();
+
+   if (!driver)
+      return false;
+   if (!driver->video)
+      return false;
+
+   if (driver->video && driver->video->overlay_interface)
+      driver->video->overlay_interface(driver->video_data, iface);
+
+   return true;
+}
