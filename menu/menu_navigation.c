@@ -140,7 +140,6 @@ void menu_navigation_set_last(menu_navigation_t *nav)
  **/
 void menu_navigation_descend_alphabet(menu_navigation_t *nav, size_t *ptr_out)
 {
-   driver_t *driver = driver_get_ptr();
    size_t i   = 0, ptr = *ptr_out;
    if (!nav)
       return;
@@ -172,7 +171,6 @@ void menu_navigation_descend_alphabet(menu_navigation_t *nav, size_t *ptr_out)
  **/
 void menu_navigation_ascend_alphabet(menu_navigation_t *nav, size_t *ptr_out)
 {
-   driver_t *driver = driver_get_ptr();
    size_t i = 0, ptr = *ptr_out;
    if (!nav)
       return;
