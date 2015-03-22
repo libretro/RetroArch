@@ -60,7 +60,7 @@ static int zlib_compare_crc32(const char *name, const char *valid_exts,
 
 database_info_rdl_handle_t *database_info_write_rdl_init(const char *dir)
 {
-   const char *exts = "";
+   const char *exts                = "";
    database_info_rdl_handle_t *dbl = (database_info_rdl_handle_t*)calloc(1, sizeof(*dbl));
    global_t *global = global_get_ptr();
 
@@ -127,12 +127,10 @@ int database_info_write_rdl_iterate(database_info_rdl_handle_t *dbl)
       char msg[PATH_MAX_LENGTH];
       ssize_t ret;
       uint32_t crc, target_crc = 0;
-      uint8_t *ret_buf = NULL;
-      int read_from = 0;
+      uint8_t *ret_buf         = NULL;
+      int read_from            = read_file(name, (void**)&ret_buf, &ret);
 
       (void)target_crc;
-
-      read_from = read_file(name, (void**)&ret_buf, &ret);
 
       if (read_from != 1)
          return 0;
@@ -160,7 +158,7 @@ int database_info_write_rdl_iterate(database_info_rdl_handle_t *dbl)
 static char *bin_to_hex_alloc(const uint8_t *data, size_t len)
 {
    size_t i;
-   char *ret= (char*)malloc(len * 2 + 1);
+   char *ret = (char*)malloc(len * 2 + 1);
 
    if (len && !ret)
       return NULL;
@@ -176,8 +174,8 @@ database_info_list_t *database_info_list_new(const char *rdb_path, const char *q
    libretrodb_cursor_t cur;
    struct rmsgpack_dom_value item;
    size_t j;
-   unsigned k = 0;
-   database_info_t *database_info = NULL;
+   unsigned k                               = 0;
+   database_info_t *database_info           = NULL;
    database_info_list_t *database_info_list = NULL;
 
    if ((libretrodb_open(rdb_path, &db)) != 0)
