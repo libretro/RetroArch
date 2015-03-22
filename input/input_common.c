@@ -133,15 +133,9 @@ bool input_translate_coord_viewport(int mouse_x, int mouse_y,
 {
    int scaled_screen_x, scaled_screen_y, scaled_x, scaled_y;
    struct video_viewport vp = {0};
-   bool have_viewport_info = false;
-   driver_t *driver = driver_get_ptr();
-   
-   have_viewport_info = driver->video && driver->video->viewport_info;
 
-   if (!have_viewport_info)
+   if (!video_driver_viewport_info(&vp))
       return false;
-
-   driver->video->viewport_info(driver->video_data, &vp);
 
    scaled_screen_x = (2 * mouse_x * 0x7fff) / (int)vp.full_width - 0x7fff;
    scaled_screen_y = (2 * mouse_y * 0x7fff) / (int)vp.full_height - 0x7fff;

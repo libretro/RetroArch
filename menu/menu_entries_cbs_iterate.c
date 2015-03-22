@@ -461,10 +461,7 @@ static int action_iterate_menu_viewport(const char *label, unsigned action)
          if (!settings->video.scale_integer)
          {
             video_viewport_t vp;
-
-            if (driver->video_data && driver->video &&
-                  driver->video->viewport_info)
-               driver->video->viewport_info(driver->video_data, &vp);
+            video_driver_viewport_info(&vp);
 
             if (type == MENU_SETTINGS_CUSTOM_VIEWPORT)
             {

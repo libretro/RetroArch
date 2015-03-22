@@ -183,8 +183,7 @@ static bool take_screenshot_viewport(void)
    settings_t *settings = config_get_ptr();
    global_t *global     = global_get_ptr();
 
-   if (driver->video && driver->video->viewport_info)
-      driver->video->viewport_info(driver->video_data, &vp);
+   video_driver_viewport_info(&vp);
 
    if (!vp.width || !vp.height)
       return false;

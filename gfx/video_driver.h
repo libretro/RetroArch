@@ -296,6 +296,8 @@ void video_driver_set_texture_enable(bool enable, bool full_screen);
 void video_driver_set_texture_frame(const void *frame, bool rgb32,
       unsigned width, unsigned height, float alpha);
 
+bool video_driver_viewport_info(struct video_viewport *vp);
+
 #ifdef __cplusplus
 }
 #endif

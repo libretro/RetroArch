@@ -881,9 +881,7 @@ static int action_ok_custom_viewport(const char *path,
          MENU_SETTINGS_CUSTOM_VIEWPORT,
          idx);
 
-   if (driver->video_data && driver->video &&
-         driver->video->viewport_info)
-      driver->video->viewport_info(driver->video_data, custom);
+   video_driver_viewport_info(custom);
 
    aspectratio_lut[ASPECT_RATIO_CUSTOM].value =
       (float)custom->width / custom->height;

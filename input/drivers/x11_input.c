@@ -295,12 +295,13 @@ static void x_input_poll_mouse(x11_input_t *x11)
    /* Somewhat hacky, but seem to do the job. */
    if (x11->grab_mouse && driver->video->focus(driver->video_data))
    {
+      int mid_w, mid_h;
       struct video_viewport vp = {0};
 
-      if (driver->video && driver->video->viewport_info)
-         driver->video->viewport_info(driver->video_data, &vp);
-      int mid_w = vp.full_width >> 1;
-      int mid_h = vp.full_height >> 1;
+      video_driver_viewport_info(&vp);
+
+      mid_w = vp.full_width >> 1;
+      mid_h = vp.full_height >> 1;
 
       if (x11->mouse_x != mid_w || x11->mouse_y != mid_h)
       {

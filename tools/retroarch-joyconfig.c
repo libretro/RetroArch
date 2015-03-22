@@ -511,3 +511,8 @@ void rarch_main_msg_queue_push(const char *msg, unsigned prio, unsigned duration
       bool flush)
 {
 }
+
+bool video_driver_viewport_info(struct video_viewport *vp)
+{
+   return false;
+}

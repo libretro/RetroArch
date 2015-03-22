@@ -107,8 +107,7 @@ void recording_dump_frame(const void *data, unsigned width,
    {
       struct video_viewport vp = {0};
 
-      if (driver->video && driver->video->viewport_info)
-         driver->video->viewport_info(driver->video_data, &vp);
+      video_driver_viewport_info(&vp);
 
       if (!vp.width || !vp.height)
       {
@@ -230,8 +229,7 @@ bool recording_init(void)
    {
       struct video_viewport vp = {0};
 
-      if (driver->video && driver->video->viewport_info)
-         driver->video->viewport_info(driver->video_data, &vp);
+      video_driver_viewport_info(&vp);
 
       if (!vp.width || !vp.height)
       {
