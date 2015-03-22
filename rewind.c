@@ -505,7 +505,6 @@ recheckcapacity:;
    state->nextblock = swap;
 
    state->entries++;
-   return;
 }
 
 void state_manager_capacity(state_manager_t *state,
