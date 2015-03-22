@@ -59,7 +59,7 @@ static bool rpng_image_load_argb_shift(const char *path,
    {
       uint32_t i;
       uint32_t num_pixels = out_img->width * out_img->height;
-      uint32_t *pixels = (uint32_t*)out_img->pixels;
+      uint32_t *pixels    = (uint32_t*)out_img->pixels;
 
       for (i = 0; i < num_pixels; i++)
       {
@@ -100,13 +100,13 @@ static bool rpng_image_load_argb_shift(const char *path,
 static bool rpng_gx_convert_texture32(struct texture_image *image)
 {
    unsigned tmp_pitch, width2, i;
-   const uint16_t *src;
-   uint16_t *dst;
+   const uint16_t *src = NULL;
+   uint16_t *dst       = NULL;
    /* Memory allocation in libogc is extremely primitive so try 
     * to avoid gaps in memory when converting by copying over to 
     * a temporary buffer first, then converting over into 
     * main buffer again. */
-   void *tmp = malloc(image->width * image->height * sizeof(uint32_t));
+   void *tmp           = malloc(image->width * image->height * sizeof(uint32_t));
 
    if (!tmp)
    {
@@ -117,13 +117,11 @@ static bool rpng_gx_convert_texture32(struct texture_image *image)
    memcpy(tmp, image->pixels, image->width * image->height * sizeof(uint32_t));
    tmp_pitch = (image->width * sizeof(uint32_t)) >> 1;
 
-   image->width &= ~3;
-   image->height &= ~3;
-
-   width2 = image->width << 1;
-
-   src = (uint16_t *) tmp;
-   dst = (uint16_t *) image->pixels;
+   image->width       &= ~3;
+   image->height      &= ~3;
+   width2              = image->width << 1;
+   src                 = (uint16_t*)tmp;
+   dst                 = (uint16_t*)image->pixels;
 
    for (i = 0; i < image->height; i += 4, dst += 4 * width2)
    {
@@ -158,11 +156,8 @@ void texture_image_free(struct texture_image *img)
 bool texture_image_load(struct texture_image *out_img, const char *path)
 {
    D3DXIMAGE_INFO m_imageInfo;
-   d3d_video_t *d3d = NULL;
-   driver_t *driver = driver_get_ptr();
-   
-   d3d = (d3d_video_t*)driver->video_data;
-
+   driver_t *driver     = driver_get_ptr();
+   d3d_video_t *d3d     = (d3d_video_t*)driver->video_data;
    out_img->vertex_buf  = NULL;
 
    out_img->pixels = d3d_texture_new(d3d->dev, path,
@@ -184,8 +179,8 @@ bool texture_image_load(struct texture_image *out_img, const char *path)
       return false;
    }
 
-   out_img->width = m_imageInfo.Width;
-   out_img->height = m_imageInfo.Height;
+   out_img->width       = m_imageInfo.Width;
+   out_img->height      = m_imageInfo.Height;
 
    return true;
 }
