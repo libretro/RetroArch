@@ -809,7 +809,25 @@ void * video_driver_read_frame_raw(unsigned *width,
       return NULL;
    if (!driver->video)
       return NULL;
+   if (!driver->video->read_frame_raw)
+      return NULL;
 
    return driver->video->read_frame_raw(driver->video_data, width,
          height, pitch);
+}
+
+void video_driver_set_filtering(unsigned index, bool smooth)
+{
+   driver_t *driver     = driver_get_ptr();
+
+   if (!driver)
+      return NULL;
+   if (!driver->video)
+      return NULL;
+   if (!driver->video_poke)
+      return NULL;
+   if (!driver->video_poke->set_filtering)
+      return NULL;
+   driver->video_poke->set_filtering(driver->video_data,
+         index, smooth);
 }

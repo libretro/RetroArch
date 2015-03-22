@@ -3037,10 +3037,7 @@ static void general_write_handler(void *data)
    }
    else if (!strcmp(setting->name, "video_smooth"))
    {
-      if (driver->video_data && driver->video_poke
-            && driver->video_poke->set_filtering)
-         driver->video_poke->set_filtering(driver->video_data,
-               1, settings->video.smooth);
+      video_driver_set_filtering(1, settings->video.smooth);
    }
    else if (!strcmp(setting->name, "pal60_enable"))
    {
