@@ -30,7 +30,38 @@
 #include "config.h"
 #endif
 
-static driver_t g_driver;
+static driver_t *g_driver;
+
+void driver_free(void)
+{
+   driver_t *driver   = driver_get_ptr();
+
+   if (!driver)
+      return;
+
+   free(driver);
+}
+
+static driver_t *driver_alloc(void)
+{
+   driver_t *driver = (driver_t*)calloc(1, sizeof(driver_t));
+
+   if (!driver)
+      return NULL;
+
+   return driver;
+}
+
+void driver_clear_state(void)
+{
+   driver_free();
+   g_driver  = driver_alloc();
+}
+
+driver_t *driver_get_ptr(void)
+{
+   return g_driver;
+}
 
 /**
  * find_driver_nonempty:
@@ -441,7 +472,3 @@ void uninit_drivers(int flags)
       driver->audio_data = NULL;
 }
 
-driver_t *driver_get_ptr(void)
-{
-   return &g_driver;
-}

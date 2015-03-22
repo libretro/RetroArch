@@ -1009,6 +1009,7 @@ runloop_t *rarch_main_get_ptr(void)
    return g_runloop;
 }
 
+
 void rarch_main_state_deinit(void)
 {
    runloop_t *runloop = rarch_main_get_ptr();
@@ -1074,6 +1075,8 @@ static runloop_t *rarch_main_state_init(void)
 
 void rarch_main_clear_state(void)
 {
+   driver_clear_state();
+
    rarch_main_state_deinit();
    g_runloop = rarch_main_state_init();
 

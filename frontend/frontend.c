@@ -121,6 +121,8 @@ void main_exit(args_type() args)
 
    if (driver->frontend_ctx && driver->frontend_ctx->shutdown)
       driver->frontend_ctx->shutdown(false);
+
+   driver_free();
 }
 
 static void check_defaults_dirs(void)

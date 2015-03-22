@@ -394,6 +394,10 @@ bool driver_update_system_av_info(const struct retro_system_av_info *info);
 int find_driver_index(const char * label, const char *drv);
 
 driver_t *driver_get_ptr(void);
+
+void driver_free(void);
+
+void driver_clear_state(void);
   
 #ifdef __cplusplus
 }
