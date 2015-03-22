@@ -1691,7 +1691,7 @@ static void main_init_state_config(void)
       settings->input.libretro_device[i] = RETRO_DEVICE_JOYPAD;
 }
 
-void rarch_main_state_alloc(void)
+void rarch_main_alloc(void)
 {
    settings_t *settings = config_get_ptr();
 
@@ -1709,14 +1709,14 @@ void rarch_main_state_alloc(void)
 }
 
 /**
- * rarch_main_state_new:
+ * rarch_main_new:
  *
  * Will teardown drivers and clears all 
  * internal state of RetroArch.
  * If @inited is true, will initialize all
  * drivers again after teardown.
  **/
-void rarch_main_state_new(void)
+void rarch_main_new(void)
 {
    main_clear_state_drivers();
    init_state();
@@ -1725,7 +1725,7 @@ void rarch_main_state_new(void)
    rarch_main_command(RARCH_CMD_MSG_QUEUE_INIT);
 }
 
-void rarch_main_state_free(void)
+void rarch_main_free(void)
 {
    rarch_main_command(RARCH_CMD_MSG_QUEUE_DEINIT);
    rarch_main_command(RARCH_CMD_LOG_FILE_DEINIT);

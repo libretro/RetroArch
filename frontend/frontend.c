@@ -117,7 +117,7 @@ void main_exit(args_type() args)
       driver->frontend_ctx->exitspawn(settings->libretro,
             sizeof(settings->libretro));
 
-   rarch_main_state_free();
+   rarch_main_free();
 
    if (driver->frontend_ctx && driver->frontend_ctx->shutdown)
       driver->frontend_ctx->shutdown(false);
@@ -286,7 +286,7 @@ returntype main_entry(signature())
    settings_t *settings = NULL;
    driver_t *driver     = NULL;
    
-   rarch_main_state_alloc();
+   rarch_main_alloc();
 
    driver = driver_get_ptr();
 
@@ -299,7 +299,7 @@ returntype main_entry(signature())
    if (driver->frontend_ctx && driver->frontend_ctx->init)
       driver->frontend_ctx->init(args);
 
-   rarch_main_state_new();
+   rarch_main_new();
 
    if (driver->frontend_ctx)
    {
