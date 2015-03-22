@@ -245,3 +245,13 @@ void menu_driver_context_reset(void)
    if (driver->menu_ctx && driver->menu_ctx->context_reset)
       driver->menu_ctx->context_reset();
 }
+
+void menu_driver_frame(void)
+{
+   driver_t *driver     = driver_get_ptr();
+   if (!driver)
+      return;
+
+   if (driver->menu_ctx && driver->menu_ctx->frame)
+      driver->menu_ctx->frame();
+}

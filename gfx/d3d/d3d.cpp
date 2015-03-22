@@ -1735,9 +1735,8 @@ static bool d3d_frame(void *data, const void *frame,
 #endif
 
 #ifdef HAVE_MENU
-   if (runloop->is_menu 
-         && driver->menu_ctx && driver->menu_ctx->frame)
-      driver->menu_ctx->frame();
+   if (runloop->is_menu)
+      menu_driver_frame();
 
 #ifdef _XBOX
    /* TODO - should be refactored. */

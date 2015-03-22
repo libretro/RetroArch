@@ -300,6 +300,8 @@ void menu_driver_navigation_set_last(void);
 
 void menu_driver_set_texture(void);
 
+void menu_driver_frame(void);
+
 void menu_driver_context_reset(void);
 
 #ifdef __cplusplus

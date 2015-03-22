@@ -1603,15 +1603,11 @@ static bool gl_frame(void *data, const void *frame,
    gl_set_prev_texture(gl, &gl->tex_info);
 
 #if defined(HAVE_MENU)
-   {
-      driver_t *driver = driver_get_ptr();
-      if (runloop->is_menu
-            && driver->menu_ctx && driver->menu_ctx->frame)
-         driver->menu_ctx->frame();
+   if (runloop->is_menu)
+      menu_driver_frame();
 
-      if (gl->menu_texture_enable)
-         gl_draw_texture(gl);
-   }
+   if (gl->menu_texture_enable)
+      gl_draw_texture(gl);
 #endif
 
    if (msg && gl->font_driver && gl->font_handle)
