@@ -276,8 +276,7 @@ static int cb_image_menu_wallpaper_upload(void *data, size_t len)
          nbio->image.processing_final_state == IMAGE_PROCESS_ERROR_END)
       return -1;
 
-   if (driver->menu_ctx && driver->menu_ctx->load_background)
-      driver->menu_ctx->load_background(&nbio->image.ti);
+   menu_driver_load_background(&nbio->image.ti);
 
    texture_image_free(&nbio->image.ti);
 

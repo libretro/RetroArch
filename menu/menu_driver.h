@@ -317,6 +317,8 @@ void menu_driver_render_messagebox(const char *msg);
 void menu_driver_populate_entries(const char *path, const char *label,
          unsigned k);
 
+bool menu_driver_load_background(void *data);
+
 #ifdef __cplusplus
 }
 #endif

@@ -324,3 +324,15 @@ void menu_driver_populate_entries(const char *path, const char *label,
    if (driver->menu_ctx && driver->menu_ctx->populate_entries)
       driver->menu_ctx->populate_entries(path, label, k);
 }
+
+bool menu_driver_load_background(void *data)
+{
+   driver_t *driver     = driver_get_ptr();
+   if (!driver)
+      return false;
+
+   if (driver->menu_ctx && driver->menu_ctx->load_background)
+      return driver->menu_ctx->load_background(data);
+
+   return false;
+}
