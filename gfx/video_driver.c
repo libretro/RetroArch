@@ -799,3 +799,17 @@ bool video_driver_overlay_interface(const video_overlay_interface_t **iface)
 
    return true;
 }
+
+void * video_driver_read_frame_raw(unsigned *width,
+   unsigned *height, size_t *pitch)
+{
+   driver_t *driver     = driver_get_ptr();
+
+   if (!driver)
+      return NULL;
+   if (!driver->video)
+      return NULL;
+
+   return driver->video->read_frame_raw(driver->video_data, width,
+         height, pitch);
+}

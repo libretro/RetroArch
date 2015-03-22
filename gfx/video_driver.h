@@ -307,6 +307,9 @@ bool video_driver_focus(void);
 
 bool video_driver_overlay_interface(const video_overlay_interface_t **iface);
 
+void * video_driver_read_frame_raw(unsigned *width,
+   unsigned *height, size_t *pitch);
+
 #ifdef __cplusplus
 }
 #endif

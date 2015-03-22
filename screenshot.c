@@ -289,9 +289,10 @@ bool take_screenshot(void)
       unsigned old_height  = global->frame_cache.height;
       size_t old_pitch     = global->frame_cache.pitch;
 
-      void* frame_data = driver->video->read_frame_raw
-         (driver->video_data, &global->frame_cache.width,
-          &global->frame_cache.height, &global->frame_cache.pitch);
+      void* frame_data = video_driver_read_frame_raw(
+            &global->frame_cache.width,
+            &global->frame_cache.height,
+            &global->frame_cache.pitch);
 
       if (frame_data)
       {
