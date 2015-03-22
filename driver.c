@@ -394,9 +394,7 @@ void init_drivers(int flags)
    if (flags & DRIVER_MENU)
    {
       init_menu();
-
-      if (driver->menu_ctx && driver->menu_ctx->context_reset)
-         driver->menu_ctx->context_reset();
+      menu_driver_context_reset();
    }
 #endif
 
