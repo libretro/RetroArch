@@ -65,7 +65,7 @@
  */
 bool write_file(const char *path, const void *data, ssize_t size)
 {
-   bool ret = false;
+   bool ret   = false;
    FILE *file = fopen(path, "wb");
    if (!file)
       return false;

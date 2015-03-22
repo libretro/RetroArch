@@ -118,7 +118,7 @@ static void video_frame(const void *data, unsigned width,
       unsigned height, size_t pitch)
 {
    unsigned output_width  = 0, output_height = 0, output_pitch = 0;
-   const char *msg = NULL;
+   const char *msg      = NULL;
    runloop_t *runloop   = rarch_main_get_ptr();
    driver_t  *driver    = driver_get_ptr();
    global_t  *global    = global_get_ptr();
@@ -347,7 +347,7 @@ static void audio_sample_rewind(int16_t left, int16_t right)
 static size_t audio_sample_batch_rewind(const int16_t *data, size_t frames)
 {
    size_t i;
-   size_t samples = frames << 1;
+   size_t samples   = frames << 1;
    global_t *global = global_get_ptr();
 
    for (i = 0; i < samples; i++)
@@ -404,7 +404,7 @@ static bool input_apply_turbo(unsigned port, unsigned id, bool res)
 static int16_t input_state(unsigned port, unsigned device,
       unsigned idx, unsigned id)
 {
-   int16_t res = 0;
+   int16_t res                    = 0;
    settings_t *settings           = config_get_ptr();
    driver_t *driver               = driver_get_ptr();
    global_t *global               = global_get_ptr();
@@ -510,8 +510,8 @@ static INLINE void input_poll_overlay(input_overlay_t *overlay_device, float opa
 {
    input_overlay_state_t old_key_state;
    unsigned i, j, device;
-   uint16_t key_mod = 0;
-   bool polled = false;
+   uint16_t key_mod               = 0;
+   bool polled                    = false;
    driver_t *driver               = driver_get_ptr();
    settings_t *settings           = config_get_ptr();
 

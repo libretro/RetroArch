@@ -183,12 +183,12 @@ bool load_state(const char *path)
 {
    unsigned i;
    ssize_t size;
-   unsigned num_blocks = 0;
-   void *buf = NULL;
+   unsigned num_blocks       = 0;
+   void *buf                 = NULL;
    struct sram_block *blocks = NULL;
-   settings_t *settings = config_get_ptr();
-   global_t *global     = global_get_ptr();
-   bool ret = read_file(path, &buf, &size);
+   settings_t *settings      = config_get_ptr();
+   global_t *global          = global_get_ptr();
+   bool ret                  = read_file(path, &buf, &size);
 
    RARCH_LOG("Loading state: \"%s\".\n", path);
 
@@ -263,7 +263,7 @@ bool load_state(const char *path)
 void load_ram_file(const char *path, int type)
 {
    ssize_t rc;
-   bool ret = false;
+   bool ret    = false;
    void *buf   = NULL;
    size_t size = pretro_get_memory_size(type);
    void *data  = pretro_get_memory_data(type);
@@ -352,7 +352,7 @@ static bool load_content_need_fullpath(
    char new_path[PATH_MAX_LENGTH], new_basedir[PATH_MAX_LENGTH];
    ssize_t len;
    union string_list_elem_attr attributes;
-   bool ret = false;
+   bool ret             = false;
    settings_t *settings = config_get_ptr();
    global_t   *global   = global_get_ptr();
 
@@ -437,9 +437,8 @@ static bool load_content(const struct retro_subsystem_info *special,
 
    for (i = 0; i < content->size; i++)
    {
-      const char *path = content->elems[i].data;
-      int         attr = content->elems[i].attr.i;
-
+      const char *path     = content->elems[i].data;
+      int         attr     = content->elems[i].attr.i;
       bool need_fullpath   = attr & 2;
       bool require_content = attr & 4;
 
@@ -504,13 +503,13 @@ bool init_content_file(void)
 {
    unsigned i;
    union string_list_elem_attr attr;
-   bool ret = false;
-   struct string_list *content = NULL;
+   bool ret                                   = false;
+   struct string_list *content                = NULL;
    const struct retro_subsystem_info *special = NULL;
-   settings_t *settings = config_get_ptr();
-   global_t   *global   = global_get_ptr();
+   settings_t *settings                       = config_get_ptr();
+   global_t   *global                         = global_get_ptr();
 
-   global->temporary_content = string_list_new();
+   global->temporary_content                  = string_list_new();
 
    if (!global->temporary_content)
       goto error;
@@ -582,7 +581,7 @@ bool init_content_file(void)
    /* Try to extract all content we're going to load if appropriate. */
    for (i = 0; i < content->size; i++)
    {
-      const char *ext = NULL;
+      const char *ext       = NULL;
       const char *valid_ext = NULL;
 
       /* Block extract check. */
