@@ -1250,7 +1250,7 @@ static int deferred_push_options(void *data, void *userdata,
       menu_list_push(list, "Core Cheat Options", "core_cheat_options",
             MENU_SETTING_ACTION, 0);
       if (!global->libretro_dummy && global->system.disk_control.get_num_images)
-         menu_list_push(list, "Core Disk Options", "core_disk_options",
+         menu_list_push(list, "Core Disk Options", "disk_options",
                MENU_SETTING_ACTION, 0);
    }
    menu_list_push(list, "Video Options", "video_options",
