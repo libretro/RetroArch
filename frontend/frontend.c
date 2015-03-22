@@ -87,9 +87,9 @@ void main_exit_save_config(void)
  **/
 void main_exit(args_type() args)
 {
-   driver_t *driver     = driver_get_ptr();
-   settings_t *settings = config_get_ptr();
-   global_t   *global   = global_get_ptr();
+   driver_t *driver        = driver_get_ptr();
+   settings_t *settings    = config_get_ptr();
+   global_t   *global      = global_get_ptr();
 
    global->system.shutdown = false;
 
