@@ -2109,10 +2109,7 @@ void rarch_main_set_state(unsigned cmd)
          /* Restore libretro keyboard callback. */
          global->system.key_event = global->frontend_key_event;
 #endif
-         if (driver->video_data && driver->video_poke &&
-               driver->video_poke->set_texture_enable)
-            driver->video_poke->set_texture_enable(driver->video_data,
-                  false, false);
+         video_driver_set_texture_enable(false, false);
          break;
       case RARCH_ACTION_STATE_QUIT:
          global->system.shutdown = true;

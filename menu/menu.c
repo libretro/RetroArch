@@ -48,10 +48,7 @@ static void draw_frame(void)
    global_t *global     = global_get_ptr();
    settings_t *settings = config_get_ptr();
 
-   if (driver->video_data && driver->video_poke &&
-         driver->video_poke->set_texture_enable)
-      driver->video_poke->set_texture_enable(driver->video_data,
-            true, false);
+   video_driver_set_texture_enable(true, false);
 
    if (!settings->menu.pause_libretro)
    {

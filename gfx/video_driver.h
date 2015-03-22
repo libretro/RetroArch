@@ -291,6 +291,8 @@ void video_driver_show_mouse(bool state);
 void video_driver_set_osd_msg(const char *msg,
       const struct font_params *params, void *font);
 
+void video_driver_set_texture_enable(bool enable, bool full_screen);
+
 #ifdef __cplusplus
 }
 #endif

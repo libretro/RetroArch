@@ -684,3 +684,19 @@ void video_driver_set_osd_msg(const char *msg,
    driver->video_poke->set_osd_msg(driver->video_data,
          msg, params, font);
 }
+
+void video_driver_set_texture_enable(bool enable, bool fullscreen)
+{
+#ifdef HAVE_MENU
+   driver_t *driver     = driver_get_ptr();
+
+   if (!driver->video_data)
+      return;
+   if (!driver->video_poke)
+      return;
+   if (!driver->video_poke->set_texture_enable)
+      return;
+   driver->video_poke->set_texture_enable(driver->video_data,
+         enable, fullscreen);
+#endif
+}
