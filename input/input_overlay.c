@@ -279,8 +279,14 @@ static bool input_overlay_load_desc(input_overlay_t *ol,
       }
    }
 
-   width_mod = by_pixel ? (1.0f / width) : 1.0f;
-   height_mod = by_pixel ? (1.0f / height) : 1.0f;
+   width_mod  = 1.0f;
+   height_mod = 1.0f;
+   
+   if (by_pixel)
+   {
+      width_mod  /= width;
+      height_mod /= height;
+   }
 
    desc->x = (float)strtod(x, NULL) * width_mod;
    desc->y = (float)strtod(y, NULL) * height_mod;
@@ -318,10 +324,10 @@ static bool input_overlay_load_desc(input_overlay_t *ol,
    desc->range_x = (float)strtod(list->elems[4].data, NULL) * width_mod;
    desc->range_y = (float)strtod(list->elems[5].data, NULL) * height_mod;
 
-   desc->mod_x = desc->x - desc->range_x;
-   desc->mod_w = 2.0f * desc->range_x;
-   desc->mod_y = desc->y - desc->range_y;
-   desc->mod_h = 2.0f * desc->range_y;
+   desc->mod_x   = desc->x - desc->range_x;
+   desc->mod_w   = 2.0f * desc->range_x;
+   desc->mod_y   = desc->y - desc->range_y;
+   desc->mod_h   = 2.0f * desc->range_y;
 
    snprintf(conf_key, sizeof(conf_key),
          "overlay%u_desc%u_alpha_mod", ol_idx, desc_idx);
