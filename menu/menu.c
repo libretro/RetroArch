@@ -144,9 +144,6 @@ bool menu_load_content(void)
    driver_t *driver     = driver_get_ptr();
    global_t *global     = global_get_ptr();
 
-   if (*global->fullpath || (driver->menu && driver->menu->load_no_content))
-      push_to_history_playlist();
-
    /* redraw menu frame */
    if (driver->menu)
       driver->menu->msg_force = true;
@@ -175,6 +172,10 @@ bool menu_load_content(void)
    menu_shader_manager_init(driver->menu);
 
    rarch_main_command(RARCH_CMD_HISTORY_INIT);
+
+   if (*global->fullpath || (driver->menu && driver->menu->load_no_content))
+      push_to_history_playlist();
+
    rarch_main_command(RARCH_CMD_VIDEO_SET_ASPECT_RATIO);
    rarch_main_command(RARCH_CMD_RESUME);
 
