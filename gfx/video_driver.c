@@ -753,3 +753,18 @@ bool video_driver_viewport_info(struct video_viewport *vp)
 
    return true;
 }
+
+bool video_driver_read_viewport(uint8_t *buffer)
+{
+   driver_t *driver     = driver_get_ptr();
+
+   if (!driver)
+      return false;
+   if (!driver->video)
+      return false;
+   if (!driver->video->read_viewport)
+      return false;
+
+   return driver->video->read_viewport(driver->video_data,
+         buffer);
+}

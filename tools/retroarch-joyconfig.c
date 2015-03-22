@@ -516,3 +516,8 @@ bool video_driver_viewport_info(struct video_viewport *vp)
 {
    return false;
 }
+
+bool video_driver_read_viewport(uint8_t *buffer)
+{
+   return false;
+}

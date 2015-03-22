@@ -298,6 +298,8 @@ void video_driver_set_texture_frame(const void *frame, bool rgb32,
 
 bool video_driver_viewport_info(struct video_viewport *vp);
 
+bool video_driver_read_viewport(uint8_t *buffer);
+
 #ifdef __cplusplus
 }
 #endif

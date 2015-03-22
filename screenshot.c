@@ -29,6 +29,7 @@
 #include "runloop.h"
 #include "retroarch_logger.h"
 #include "screenshot.h"
+#include "gfx/video_driver.h"
 #include "gfx/video_viewport.h"
 
 #ifdef HAVE_CONFIG_H
@@ -179,7 +180,6 @@ static bool take_screenshot_viewport(void)
    uint8_t *buffer = NULL;
    bool retval = false;
    struct video_viewport vp = {0};
-   driver_t *driver     = driver_get_ptr();
    settings_t *settings = config_get_ptr();
    global_t *global     = global_get_ptr();
 
@@ -191,9 +191,8 @@ static bool take_screenshot_viewport(void)
    if (!(buffer = (uint8_t*)malloc(vp.width * vp.height * 3)))
       return false;
 
-   if (driver->video && driver->video->read_viewport)
-      if (!driver->video->read_viewport(driver->video_data, buffer))
-         goto done;
+   if (!video_driver_read_viewport(buffer))
+      goto done;
 
    screenshot_dir = settings->screenshot_directory;
 
