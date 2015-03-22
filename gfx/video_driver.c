@@ -543,8 +543,7 @@ void init_video(void)
       driver->video->viewport_info(driver->video_data, custom_vp);
    }
 
-   if (driver->video->set_rotation)
-      driver->video->set_rotation(driver->video_data,
+   video_driver_set_rotation(
             (settings->video.rotation + global->system.rotation) % 4);
 
    if (driver->video->suppress_screensaver)
@@ -594,4 +593,18 @@ void video_driver_set_nonblock_state(bool toggle)
 
    if (driver->video->set_nonblock_state)
       driver->video->set_nonblock_state(driver->video_data, toggle);
+}
+
+bool video_driver_set_rotation(unsigned rotation)
+{
+   driver_t *driver     = driver_get_ptr();
+
+   if (!driver->video)
+      return false;
+   if (!driver->video->set_rotation)
+      return false;
+
+   driver->video->set_rotation(driver->video_data, rotation);
+
+   return true;
 }

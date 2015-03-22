@@ -700,12 +700,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
 
          global->system.rotation = rotation;
 
-         if (driver->video && driver->video->set_rotation)
-         {
-            if (driver->video_data)
-               driver->video->set_rotation(driver->video_data, rotation);
-         }
-         else
+         if (!video_driver_set_rotation(rotation))
             return false;
          break;
       }

@@ -3051,8 +3051,7 @@ static void general_write_handler(void *data)
    }
    else if (!strcmp(setting->name, "video_rotation"))
    {
-      if (driver->video && driver->video->set_rotation)
-         driver->video->set_rotation(driver->video_data,
+      video_driver_set_rotation(
                (*setting->value.unsigned_integer +
                 global->system.rotation) % 4);
    }

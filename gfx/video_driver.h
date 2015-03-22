@@ -276,6 +276,8 @@ bool video_driver_has_windowed(void);
 
 void video_driver_set_nonblock_state(bool toggle);
 
+bool video_driver_set_rotation(unsigned rotation);
+
 #ifdef __cplusplus
 }
 #endif
