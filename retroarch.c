@@ -2830,11 +2830,7 @@ bool rarch_main_command(unsigned cmd)
 #endif
          break;
       case RARCH_CMD_FULLSCREEN_TOGGLE:
-         if (!driver->video)
-            return false;
-         /* If video driver/context does not support windowed
-          * mode, don't perform command. */
-         if (!driver->video->has_windowed(driver->video_data))
+         if (!video_driver_has_windowed())
             return false;
 
          /* If we go fullscreen we drop all drivers and 

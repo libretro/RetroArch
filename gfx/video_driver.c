@@ -570,3 +570,15 @@ void init_video(void)
                &dummy_pixels, false, 1, 1, 1.0f);
 #endif
 }
+
+bool video_driver_has_windowed(void)
+{
+   driver_t *driver     = driver_get_ptr();
+   if (!driver->video)
+      return false;
+   /* If video driver/context does not support windowed
+    * mode, don't perform command. */
+   if (!driver->video->has_windowed(driver->video_data))
+      return false;
+   return true;
+}

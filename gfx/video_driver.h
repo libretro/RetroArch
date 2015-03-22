@@ -272,6 +272,8 @@ void uninit_video_input(void);
 
 void init_video(void);
 
+bool video_driver_has_windowed(void);
+
 #ifdef __cplusplus
 }
 #endif
