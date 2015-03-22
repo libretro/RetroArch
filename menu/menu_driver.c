@@ -164,8 +164,6 @@ void init_menu(void)
       RARCH_ERR("Cannot initialize menu lists.\n");
       rarch_fail(1, "init_menu()");
    }
-
-   menu_driver_context_reset();
 }
 
 menu_handle_t *menu_driver_get_ptr(void)

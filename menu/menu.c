@@ -76,14 +76,17 @@ static void draw_frame(void)
  **/
 static void menu_update_libretro_info(struct retro_system_info *info)
 {
+   driver_t *driver = driver_get_ptr();
 #ifndef HAVE_DYNAMIC
    retro_get_system_info(info);
 #endif
 
    rarch_main_command(RARCH_CMD_CORE_INFO_INIT);
-   rarch_main_command(RARCH_CMD_LOAD_CORE_PERSIST);
 
-   menu_driver_context_reset();
+   if (driver->menu_ctx && driver->menu_ctx->context_reset)
+      driver->menu_ctx->context_reset();
+
+   rarch_main_command(RARCH_CMD_LOAD_CORE_PERSIST);
 }
 
 static void menu_environment_get(int *argc, char *argv[],

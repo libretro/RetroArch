@@ -392,7 +392,12 @@ void init_drivers(int flags)
 
 #ifdef HAVE_MENU
    if (flags & DRIVER_MENU)
+   {
       init_menu();
+
+      if (driver->menu_ctx && driver->menu_ctx->context_reset)
+         driver->menu_ctx->context_reset();
+   }
 #endif
 
    if (flags & (DRIVER_VIDEO | DRIVER_AUDIO))
