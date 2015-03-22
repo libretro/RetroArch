@@ -584,3 +584,14 @@ bool video_driver_has_windowed(void)
       return false;
    return true;
 }
+
+void video_driver_set_nonblock_state(bool toggle)
+{
+   driver_t *driver     = driver_get_ptr();
+
+   if (!driver->video)
+      return;
+
+   if (driver->video->set_nonblock_state)
+      driver->video->set_nonblock_state(driver->video_data, toggle);
+}

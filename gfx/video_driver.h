@@ -274,6 +274,8 @@ void init_video(void);
 
 bool video_driver_has_windowed(void);
 
+void video_driver_set_nonblock_state(bool toggle);
+
 #ifdef __cplusplus
 }
 #endif

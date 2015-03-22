@@ -2617,8 +2617,7 @@ bool rarch_main_command(unsigned cmd)
       case RARCH_CMD_VIDEO_SET_NONBLOCKING_STATE:
          boolean = true; /* fall-through */
       case RARCH_CMD_VIDEO_SET_BLOCKING_STATE:
-         if (driver->video && driver->video->set_nonblock_state)
-            driver->video->set_nonblock_state(driver->video_data, boolean);
+         video_driver_set_nonblock_state(boolean);
          break;
       case RARCH_CMD_VIDEO_SET_ASPECT_RATIO:
          if (driver->video_data && driver->video_poke
