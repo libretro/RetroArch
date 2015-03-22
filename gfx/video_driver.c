@@ -772,3 +772,15 @@ bool video_driver_read_viewport(uint8_t *buffer)
          buffer);
 }
 
+bool video_driver_focus(void)
+{
+   driver_t *driver     = driver_get_ptr();
+
+   if (!driver)
+      return false;
+   if (!driver->video)
+      return false;
+   if (!driver->video->focus)
+      return false;
+   return driver->video->focus(driver->video_data);
+}

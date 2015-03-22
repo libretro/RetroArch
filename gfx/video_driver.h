@@ -303,6 +303,8 @@ bool video_driver_read_viewport(uint8_t *buffer);
 bool video_driver_set_shader(enum rarch_shader_type type,
       const char *path);
 
+bool video_driver_focus(void);
+
 #ifdef __cplusplus
 }
 #endif

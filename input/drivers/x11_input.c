@@ -271,10 +271,9 @@ static void x_input_free(void *data)
 
 static void x_input_poll_mouse(x11_input_t *x11)
 {
-   Window root_win, child_win;
-   int root_x, root_y, win_x, win_y;
    unsigned mask;
-   driver_t *driver = driver_get_ptr();
+   int root_x, root_y, win_x, win_y;
+   Window root_win, child_win;
 
    x11->mouse_last_x = x11->mouse_x;
    x11->mouse_last_y = x11->mouse_y;
@@ -293,7 +292,7 @@ static void x_input_poll_mouse(x11_input_t *x11)
    x11->mouse_r  = mask & Button3Mask; 
 
    /* Somewhat hacky, but seem to do the job. */
-   if (x11->grab_mouse && driver->video->focus(driver->video_data))
+   if (x11->grab_mouse && video_driver_focus())
    {
       int mid_w, mid_h;
       struct video_viewport vp = {0};
@@ -335,9 +334,8 @@ void x_input_poll_wheel(void *data, XButtonEvent *event, bool latch)
 static void x_input_poll(void *data)
 {
    x11_input_t *x11 = (x11_input_t*)data;
-   driver_t *driver = driver_get_ptr();
 
-   if (driver->video->focus(driver->video_data))
+   if (video_driver_focus())
       XQueryKeymap(x11->display, x11->state);
    else
       memset(x11->state, 0, sizeof(x11->state));
