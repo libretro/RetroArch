@@ -68,16 +68,6 @@ static void draw_frame(void)
    rarch_render_cached_frame();
 }
 
-void menu_context_reset(void)
-{
-   driver_t *driver     = driver_get_ptr();
-   if (!driver)
-      return;
-
-   if (driver->menu_ctx && driver->menu_ctx->context_reset)
-      driver->menu_ctx->context_reset();
-}
-
 /**
  * menu_update_libretro_info:
  * @info                     : Pointer to system info
@@ -93,7 +83,7 @@ static void menu_update_libretro_info(struct retro_system_info *info)
    rarch_main_command(RARCH_CMD_CORE_INFO_INIT);
    rarch_main_command(RARCH_CMD_LOAD_CORE_PERSIST);
 
-   menu_context_reset();
+   menu_driver_context_reset();
 }
 
 static void menu_environment_get(int *argc, char *argv[],
@@ -442,8 +432,7 @@ int menu_iterate(retro_input_t input,
    if (runloop->is_menu && !runloop->is_idle)
       draw_frame();
 
-   if (driver->menu_ctx && driver->menu_ctx->set_texture)
-      driver->menu_ctx->set_texture();
+   menu_driver_set_texture();
 
    if (ret)
       return -1;

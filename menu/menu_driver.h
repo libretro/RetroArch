@@ -288,6 +288,20 @@ void init_menu(void);
 
 menu_handle_t *menu_driver_get_ptr(void);
 
+void menu_driver_navigation_increment(void);
+
+void menu_driver_navigation_decrement(void);
+
+void menu_driver_navigation_clear(bool pending_push);
+
+void menu_driver_navigation_set(bool scroll);
+
+void menu_driver_navigation_set_last(void);
+
+void menu_driver_set_texture(void);
+
+void menu_driver_context_reset(void);
+
 #ifdef __cplusplus
 }
 #endif

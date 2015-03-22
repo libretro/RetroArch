@@ -165,7 +165,7 @@ void init_menu(void)
       rarch_fail(1, "init_menu()");
    }
 
-   menu_context_reset();
+   menu_driver_context_reset();
 }
 
 menu_handle_t *menu_driver_get_ptr(void)
@@ -174,4 +174,74 @@ menu_handle_t *menu_driver_get_ptr(void)
    if (!driver->menu)
       return NULL;
    return driver->menu;
+}
+
+void menu_driver_navigation_increment(void)
+{
+   driver_t *driver = driver_get_ptr();
+   if (!driver)
+      return;
+
+   if (driver->menu_ctx && driver->menu_ctx->navigation_increment)
+      driver->menu_ctx->navigation_increment();
+}
+
+void menu_driver_navigation_decrement(void)
+{
+   driver_t *driver = driver_get_ptr();
+   if (!driver)
+      return;
+
+   if (driver->menu_ctx && driver->menu_ctx->navigation_decrement)
+      driver->menu_ctx->navigation_decrement();
+}
+
+void menu_driver_navigation_clear(bool pending_push)
+{
+   driver_t *driver = driver_get_ptr();
+   if (!driver)
+      return;
+
+   if (driver->menu_ctx && driver->menu_ctx->navigation_clear)
+      driver->menu_ctx->navigation_clear(pending_push);
+}
+
+void menu_driver_navigation_set(bool scroll)
+{
+   driver_t *driver = driver_get_ptr();
+   if (!driver)
+      return;
+
+   if (driver->menu_ctx && driver->menu_ctx->navigation_set)
+      driver->menu_ctx->navigation_set(scroll);
+}
+
+void menu_driver_navigation_set_last(void)
+{
+   driver_t *driver = driver_get_ptr();
+   if (!driver)
+      return;
+
+   if (driver->menu_ctx && driver->menu_ctx->navigation_set_last)
+      driver->menu_ctx->navigation_set_last();
+}
+
+void menu_driver_set_texture(void)
+{
+   driver_t *driver = driver_get_ptr();
+   if (!driver)
+      return;
+
+   if (driver->menu_ctx && driver->menu_ctx->set_texture)
+      driver->menu_ctx->set_texture();
+}
+
+void menu_driver_context_reset(void)
+{
+   driver_t *driver     = driver_get_ptr();
+   if (!driver)
+      return;
+
+   if (driver->menu_ctx && driver->menu_ctx->context_reset)
+      driver->menu_ctx->context_reset();
 }

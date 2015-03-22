@@ -30,14 +30,12 @@
  **/
 void menu_navigation_clear(menu_navigation_t *nav, bool pending_push)
 {
-   driver_t *driver = driver_get_ptr();
    if (!nav)
       return;
 
    nav->selection_ptr = 0;
 
-   if (driver->menu_ctx && driver->menu_ctx->navigation_clear)
-      driver->menu_ctx->navigation_clear(pending_push);
+   menu_driver_navigation_clear(pending_push);
 }
 
 /**
@@ -65,8 +63,7 @@ void menu_navigation_decrement(menu_navigation_t *nav, unsigned scroll_speed)
          menu_navigation_set(nav, 0, true);
    }
 
-   if (driver->menu_ctx && driver->menu_ctx->navigation_decrement)
-      driver->menu_ctx->navigation_decrement();
+   menu_driver_navigation_decrement();
 }
 
 /**
@@ -94,8 +91,7 @@ void menu_navigation_increment(menu_navigation_t *nav, unsigned scroll_speed)
                menu_list_get_size(driver->menu->menu_list) - 1, true);
    }
 
-   if (driver->menu_ctx && driver->menu_ctx->navigation_increment)
-      driver->menu_ctx->navigation_increment();
+   menu_driver_navigation_increment();
 }
 
 /**
@@ -108,14 +104,12 @@ void menu_navigation_increment(menu_navigation_t *nav, unsigned scroll_speed)
 void menu_navigation_set(menu_navigation_t *nav,
       size_t idx, bool scroll)
 {
-   driver_t *driver = driver_get_ptr();
    if (!nav)
       return;
 
    nav->selection_ptr = idx; 
 
-   if (driver->menu_ctx && driver->menu_ctx->navigation_set)
-      driver->menu_ctx->navigation_set(scroll);
+   menu_driver_navigation_set(scroll);
 }
 
 /**
@@ -125,15 +119,13 @@ void menu_navigation_set(menu_navigation_t *nav,
  **/
 void menu_navigation_set_last(menu_navigation_t *nav)
 {
-   driver_t *driver    = driver_get_ptr();
    menu_handle_t *menu = menu_driver_get_ptr();
    if (!menu || !nav)
       return;
 
    nav->selection_ptr = menu_list_get_size(menu->menu_list) - 1;
 
-   if (driver->menu_ctx && driver->menu_ctx->navigation_set_last)
-      driver->menu_ctx->navigation_set_last();
+   menu_driver_navigation_set_last();
 }
 
 /**
