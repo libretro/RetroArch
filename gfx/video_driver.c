@@ -846,3 +846,37 @@ void video_driver_apply_state_changes(void)
       return;
    driver->video_poke->apply_state_changes(driver->video_data);
 }
+
+void video_driver_get_video_output_next(void)
+{
+   driver_t *driver     = driver_get_ptr();
+
+   if (!driver)
+      return;
+   if (!driver->video)
+      return;
+   if (!driver->video_data)
+      return;
+   if (!driver->video_poke)
+      return;
+   if (!driver->video_poke->get_video_output_next)
+      return;
+   driver->video_poke->get_video_output_next(driver->video_data);
+}
+
+void video_driver_get_video_output_prev(void)
+{
+   driver_t *driver     = driver_get_ptr();
+
+   if (!driver)
+      return;
+   if (!driver->video)
+      return;
+   if (!driver->video_data)
+      return;
+   if (!driver->video_poke)
+      return;
+   if (!driver->video_poke->get_video_output_prev)
+      return;
+   driver->video_poke->get_video_output_prev(driver->video_data);
+}

@@ -314,6 +314,10 @@ void video_driver_set_filtering(unsigned index, bool smooth);
 
 void video_driver_apply_state_changes(void);
 
+void video_driver_get_video_output_next(void);
+
+void video_driver_get_video_output_prev(void);
+
 #ifdef __cplusplus
 }
 #endif

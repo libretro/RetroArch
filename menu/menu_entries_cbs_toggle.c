@@ -442,18 +442,10 @@ static int action_toggle_video_resolution(unsigned type, const char *label,
    switch (action)
    {
       case MENU_ACTION_LEFT:
-         if (driver->video_data && driver->video_poke &&
-               driver->video_poke->get_video_output_prev)
-         {
-            driver->video_poke->get_video_output_prev(driver->video_data);
-         }
+         video_driver_get_video_output_prev();
          break;
       case MENU_ACTION_RIGHT:
-         if (driver->video_data && driver->video_poke &&
-               driver->video_poke->get_video_output_next)
-         {
-            driver->video_poke->get_video_output_next(driver->video_data);
-         }
+         video_driver_get_video_output_next();
          break;
    }
 #endif
