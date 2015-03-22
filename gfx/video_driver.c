@@ -821,13 +821,28 @@ void video_driver_set_filtering(unsigned index, bool smooth)
    driver_t *driver     = driver_get_ptr();
 
    if (!driver)
-      return NULL;
+      return;
    if (!driver->video)
-      return NULL;
+      return;
    if (!driver->video_poke)
-      return NULL;
+      return;
    if (!driver->video_poke->set_filtering)
-      return NULL;
+      return;
    driver->video_poke->set_filtering(driver->video_data,
          index, smooth);
+}
+
+void video_driver_apply_state_changes(void)
+{
+   driver_t *driver     = driver_get_ptr();
+
+   if (!driver)
+      return;
+   if (!driver->video)
+      return;
+   if (!driver->video_poke)
+      return;
+   if (!driver->video_poke->apply_state_changes)
+      return;
+   driver->video_poke->apply_state_changes(driver->video_data);
 }

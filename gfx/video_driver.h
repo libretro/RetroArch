@@ -312,6 +312,8 @@ void * video_driver_read_frame_raw(unsigned *width,
 
 void video_driver_set_filtering(unsigned index, bool smooth);
 
+void video_driver_apply_state_changes(void);
+
 #ifdef __cplusplus
 }
 #endif

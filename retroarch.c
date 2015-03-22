@@ -2606,9 +2606,7 @@ bool rarch_main_command(unsigned cmd)
             return false;
          break;
       case RARCH_CMD_VIDEO_APPLY_STATE_CHANGES:
-         if (driver->video_data && driver->video_poke
-               && driver->video_poke->apply_state_changes)
-            driver->video_poke->apply_state_changes(driver->video_data);
+         video_driver_apply_state_changes();
          break;
       case RARCH_CMD_VIDEO_SET_NONBLOCKING_STATE:
          boolean = true; /* fall-through */
