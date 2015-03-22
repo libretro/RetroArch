@@ -255,3 +255,23 @@ void menu_driver_frame(void)
    if (driver->menu_ctx && driver->menu_ctx->frame)
       driver->menu_ctx->frame();
 }
+
+void menu_driver_entry_iterate(unsigned action)
+{
+   driver_t *driver     = driver_get_ptr();
+   if (!driver)
+      return;
+
+   if (driver->menu_ctx && driver->menu_ctx->entry_iterate)
+      driver->menu_ctx->entry_iterate(action);
+}
+
+void menu_driver_free(menu_handle_t *menu)
+{
+   driver_t *driver     = driver_get_ptr();
+   if (!driver)
+      return;
+
+   if (driver->menu_ctx && driver->menu_ctx->free)
+      driver->menu_ctx->free(menu);
+}

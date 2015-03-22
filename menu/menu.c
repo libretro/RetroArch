@@ -155,8 +155,7 @@ bool menu_load_content(void)
    if (driver->menu)
       driver->menu->msg_force = true;
 
-   if (driver->menu_ctx && driver->menu_ctx->entry_iterate) 
-      driver->menu_ctx->entry_iterate(MENU_ACTION_NOOP);
+   menu_driver_entry_iterate(MENU_ACTION_NOOP);
 
    draw_frame();
 
@@ -294,8 +293,7 @@ void menu_free(void *data)
    menu->shader = NULL;
 #endif
 
-   if (driver->menu_ctx && driver->menu_ctx->free)
-      driver->menu_ctx->free(menu);
+   menu_driver_free(menu);
 
 #ifdef HAVE_LIBRETRODB
    menu_database_free(menu);
@@ -426,8 +424,7 @@ int menu_iterate(retro_input_t input,
       last_clock_update = menu->cur_time;
    }
 
-   if (driver->menu_ctx && driver->menu_ctx->entry_iterate)
-      ret = driver->menu_ctx->entry_iterate(action);
+   menu_driver_entry_iterate(action);
 
    if (runloop->is_menu && !runloop->is_idle)
       draw_frame();
