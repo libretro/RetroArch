@@ -288,7 +288,7 @@ void driver_set_nonblock_state(bool enable)
 
       if (!settings->video.vsync || global->system.force_nonblock)
          video_nonblock = true;
-      driver->video->set_nonblock_state(driver->video_data, video_nonblock);
+      video_driver_set_nonblock_state(video_nonblock);
    }
 
    if (driver->audio_active && driver->audio_data)
