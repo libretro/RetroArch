@@ -130,10 +130,7 @@ void menu_shader_manager_set_preset(struct video_shader *shader,
 
    settings->video.shader_enable = false;
 
-   if (!driver->video->set_shader)
-      return;
-   if (!driver->video->set_shader(driver->video_data,
-            (enum rarch_shader_type)type, preset_path))
+   if (!video_driver_set_shader((enum rarch_shader_type)type, preset_path))
       return;
 
    /* Makes sure that we use Menu Preset shader on driver reinit.

@@ -300,6 +300,9 @@ bool video_driver_viewport_info(struct video_viewport *vp);
 
 bool video_driver_read_viewport(uint8_t *buffer);
 
+bool video_driver_set_shader(enum rarch_shader_type type,
+      const char *path);
+
 #ifdef __cplusplus
 }
 #endif
