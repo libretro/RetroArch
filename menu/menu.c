@@ -28,6 +28,8 @@
 bool menu_display_update_pending(void)
 {
    runloop_t *runloop = rarch_main_get_ptr();
+   if (!runloop)
+      return false;
    if (runloop->frames.video.current.menu.animation.is_active ||
          runloop->frames.video.current.menu.label.is_updated ||
          runloop->frames.video.current.menu.framebuf.dirty)
@@ -105,7 +107,7 @@ static void menu_environment_get(int *argc, char *argv[],
    if (!wrap_args)
       return;
 
-   wrap_args->no_content    = driver->menu->load_no_content;
+   wrap_args->no_content       = driver->menu->load_no_content;
    if (!global->has_set_verbosity)
       wrap_args->verbose       =  global->verbosity;
 
@@ -204,11 +206,11 @@ bool menu_load_content(void)
  **/
 void *menu_init(const void *data)
 {
-   menu_handle_t *menu = NULL;
+   menu_handle_t *menu         = NULL;
    menu_ctx_driver_t *menu_ctx = (menu_ctx_driver_t*)data;
-   runloop_t *runloop   = rarch_main_get_ptr();
-   global_t  *global    = global_get_ptr();
-   settings_t *settings = config_get_ptr();
+   runloop_t *runloop          = rarch_main_get_ptr();
+   global_t  *global           = global_get_ptr();
+   settings_t *settings        = config_get_ptr();
 
    if (!menu_ctx)
       return NULL;
@@ -233,7 +235,7 @@ void *menu_init(const void *data)
    if (!menu->shader)
       goto error;
 #endif
-   menu->push_start_screen = settings->menu_show_start_screen;
+   menu->push_start_screen          = settings->menu_show_start_screen;
    settings->menu_show_start_screen = false;
 
    menu_shader_manager_init(menu);
@@ -290,8 +292,8 @@ void menu_free_list(void *data)
 void menu_free(void *data)
 {
    menu_handle_t *menu = (menu_handle_t*)data;
-   driver_t *driver = driver_get_ptr();
-   global_t *global = global_get_ptr();
+   driver_t *driver    = driver_get_ptr();
+   global_t *global    = global_get_ptr();
 
    if (!menu)
       return;
@@ -340,17 +342,12 @@ void menu_free(void *data)
 
 void menu_apply_deferred_settings(void)
 {
-   rarch_setting_t *setting = NULL;
-   menu_handle_t   *menu = menu_driver_get_ptr();
+   menu_handle_t   *menu    = menu_driver_get_ptr();
+   rarch_setting_t *setting = menu ? menu->list_settings : NULL;
     
-   if (!menu)
+   if (!menu || !setting)
       return;
     
-   setting = (rarch_setting_t*)menu->list_settings;
-    
-   if (!setting)
-      return;
-
    for (; setting->type != ST_NONE; setting++)
    {
       if (setting->type >= ST_GROUP)
@@ -417,15 +414,16 @@ int menu_iterate(retro_input_t input,
       retro_input_t old_input, retro_input_t trigger_input)
 {
    static retro_time_t last_clock_update = 0;
-   int32_t ret     = 0;
+   int32_t ret          = 0;
    unsigned action      = menu_input_frame(input, trigger_input);
    runloop_t *runloop   = rarch_main_get_ptr();
    menu_handle_t *menu  = menu_driver_get_ptr();
    driver_t *driver     = driver_get_ptr();
    settings_t *settings = config_get_ptr();
 
-   menu->cur_time = rarch_get_time_usec();
-   menu->dt = menu->cur_time - menu->old_time;
+   menu->cur_time       = rarch_get_time_usec();
+   menu->dt             = menu->cur_time - menu->old_time;
+
    if (menu->dt >= IDEAL_DT * 4)
       menu->dt = IDEAL_DT * 4;
    if (menu->dt <= IDEAL_DT / 4)
