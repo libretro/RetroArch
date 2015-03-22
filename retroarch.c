@@ -2944,9 +2944,7 @@ bool rarch_main_command(unsigned cmd)
                   grab_mouse_state ? "yes" : "no");
             driver->input->grab_mouse(driver->input_data, grab_mouse_state);
 
-            if (driver->video_poke && driver->video_poke->show_mouse)
-               driver->video_poke->show_mouse(
-                     driver->video_data, !grab_mouse_state);
+            video_driver_show_mouse(!grab_mouse_state);
          }
          break;
       case RARCH_CMD_PERFCNT_REPORT_FRONTEND_LOG:

@@ -655,3 +655,32 @@ void video_driver_set_aspect_ratio(unsigned aspectratio_index)
    driver->video_poke->set_aspect_ratio(driver->video_data,
          aspectratio_index);
 }
+
+void video_driver_show_mouse(bool state)
+{
+   driver_t *driver     = driver_get_ptr();
+
+   if (!driver->video_data)
+      return;
+   if (!driver->video_poke)
+      return;
+   if (!driver->video_poke->show_mouse)
+      return;
+   driver->video_poke->show_mouse(
+         driver->video_data, state);
+}
+
+void video_driver_set_osd_msg(const char *msg,
+      const struct font_params *params, void *font)
+{
+   driver_t *driver     = driver_get_ptr();
+
+   if (!driver->video_data)
+      return;
+   if (!driver->video_poke)
+      return;
+   if (!driver->video_poke->set_osd_msg)
+      return;
+   driver->video_poke->set_osd_msg(driver->video_data,
+         msg, params, font);
+}

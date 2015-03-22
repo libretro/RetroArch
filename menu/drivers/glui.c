@@ -71,7 +71,6 @@ static int glui_entry_iterate(unsigned action)
 static void glui_blit_line(gl_t *gl, float x, float y, const char *message, uint32_t color)
 {
    struct font_params params = {0};
-   driver_t *driver = driver_get_ptr();
 
    gl_set_viewport(gl, gl->win_width, gl->win_height, false, false);
 
@@ -81,15 +80,7 @@ static void glui_blit_line(gl_t *gl, float x, float y, const char *message, uint
    params.color       = color;
    params.full_screen = true;
 
-   if (!driver->video_data)
-      return;
-   if (!driver->video_poke)
-      return;
-   if (!driver->video_poke->set_osd_msg)
-      return;
-
-   driver->video_poke->set_osd_msg(driver->video_data,
-         message, &params, NULL);
+   video_driver_set_osd_msg(message, &params, NULL);
 }
 
 static void glui_render_background(settings_t *settings,

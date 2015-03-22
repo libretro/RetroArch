@@ -94,7 +94,6 @@ static void rmenu_render_messagebox(const char *message)
    size_t i, j;
    struct string_list *list = NULL;
    menu_handle_t *menu   = menu_driver_get_ptr();
-   driver_t      *driver = driver_get_ptr();
 
    if (!menu)
       return;
@@ -131,10 +130,7 @@ static void rmenu_render_messagebox(const char *message)
       font_parms.scale = FONT_SIZE_NORMAL;
       font_parms.color = WHITE;
 
-      if (driver->video_data && driver->video_poke
-            && driver->video_poke->set_osd_msg)
-         driver->video_poke->set_osd_msg(driver->video_data,
-               msg, &font_parms, NULL);
+      video_driver_set_osd_msg(msg, &font_parms, NULL);
    }
 
    render_normal = false;
@@ -155,7 +151,6 @@ static void rmenu_render(void)
    unsigned menu_type       = 0;
    menu_handle_t *menu      = menu_driver_get_ptr();
    global_t    *global      = global_get_ptr();
-   driver_t    *driver      = driver_get_ptr();
    runloop_t *runloop       = rarch_main_get_ptr();
 
    if (!menu)
@@ -206,10 +201,7 @@ static void rmenu_render(void)
    font_parms.scale = FONT_SIZE_NORMAL;
    font_parms.color = WHITE;
 
-   if (driver->video_data && driver->video_poke
-         && driver->video_poke->set_osd_msg)
-      driver->video_poke->set_osd_msg(driver->video_data,
-            title_buf, &font_parms, NULL);
+   video_driver_set_osd_msg(title_buf, &font_parms, NULL);
 
    core_name = global->menu.info.library_name;
    if (!core_name)
@@ -231,10 +223,7 @@ static void rmenu_render(void)
    snprintf(title_msg, sizeof(title_msg), "%s - %s %s",
          PACKAGE_VERSION, core_name, core_version);
 
-   if (driver->video_data && driver->video_poke
-         && driver->video_poke->set_osd_msg)
-      driver->video_poke->set_osd_msg(driver->video_data,
-            title_msg, &font_parms, NULL);
+   video_driver_set_osd_msg(title_msg, &font_parms, NULL);
 
    j = 0;
 
@@ -281,17 +270,11 @@ static void rmenu_render(void)
       font_parms.scale = FONT_SIZE_NORMAL;
       font_parms.color = WHITE;
 
-      if (driver->video_data && driver->video_poke
-            && driver->video_poke->set_osd_msg)
-         driver->video_poke->set_osd_msg(driver->video_data,
-               message, &font_parms, NULL);
+      video_driver_set_osd_msg(message, &font_parms, NULL);
 
       font_parms.x = POSITION_EDGE_CENTER + POSITION_OFFSET;
 
-      if (driver->video_data && driver->video_poke
-            && driver->video_poke->set_osd_msg)
-         driver->video_poke->set_osd_msg(driver->video_data,
-               type_str_buf, &font_parms, NULL);
+      video_driver_set_osd_msg(type_str_buf, &font_parms, NULL);
    }
 }
 

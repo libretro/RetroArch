@@ -406,9 +406,7 @@ static void xui_render_message(const char *msg)
       font_parms.y = msg_height + (msg_offset * j);
       font_parms.scale = 21;
 
-      if (driver->video_poke && driver->video_poke->set_osd_msg)
-         driver->video_poke->set_osd_msg(driver->video_data,
-               msg, &font_parms, NULL);
+      video_driver_set_osd_msg(msg, &font_parms, NULL);
    }
 
 end:
