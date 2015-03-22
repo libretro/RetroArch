@@ -367,7 +367,6 @@ static int action_iterate_menu_viewport(const char *label, unsigned action)
    global_t      *global  = global_get_ptr();
    video_viewport_t *custom = &global->console.screen.viewports.custom_vp;
    menu_handle_t *menu    = menu_driver_get_ptr();
-   driver_t *driver       = driver_get_ptr();
    settings_t *settings   = config_get_ptr();
 
    if (!menu)
