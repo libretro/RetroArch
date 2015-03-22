@@ -251,7 +251,7 @@ static void print_help(void)
 
 static void set_basename(const char *path)
 {
-   char *dst = NULL;
+   char *dst          = NULL;
    global_t *global   = global_get_ptr();
 
    strlcpy(global->fullpath, path, sizeof(global->fullpath));
@@ -901,8 +901,8 @@ static void init_remapping(void)
 static void init_cheats(void)
 {
    bool allow_cheats = true;
-   driver_t *driver = driver_get_ptr();
-   global_t *global = global_get_ptr();
+   driver_t *driver  = driver_get_ptr();
+   global_t *global  = global_get_ptr();
 
    (void)driver;
 
@@ -919,7 +919,7 @@ static void init_cheats(void)
 
 static void init_rewind(void)
 {
-   void *state = NULL;
+   void *state          = NULL;
    driver_t *driver     = driver_get_ptr();
    settings_t *settings = config_get_ptr();
    global_t *global     = global_get_ptr();
@@ -1138,9 +1138,9 @@ static void set_savestate_auto_index(void)
    char state_dir[PATH_MAX_LENGTH], state_base[PATH_MAX_LENGTH];
    size_t i;
    struct string_list *dir_list = NULL;
-   unsigned max_idx = 0;
-   settings_t *settings = config_get_ptr();
-   global_t   *global   = global_get_ptr();
+   unsigned max_idx             = 0;
+   settings_t *settings         = config_get_ptr();
+   global_t   *global           = global_get_ptr();
 
    if (!settings->savestate_auto_index)
       return;
@@ -1164,7 +1164,7 @@ static void set_savestate_auto_index(void)
    {
       unsigned idx;
       char elem_base[PATH_MAX_LENGTH];
-      const char *end = NULL;
+      const char *end      = NULL;
       const char *dir_elem = dir_list->elems[i].data;
 
       fill_pathname_base(elem_base, dir_elem, sizeof(elem_base));
@@ -1443,10 +1443,11 @@ void rarch_disk_control_append_image(const char *path)
 {
    char msg[PATH_MAX_LENGTH];
    unsigned new_idx;
+   struct retro_game_info info = {0};
    global_t *global = global_get_ptr();
    const struct retro_disk_control_callback *control = 
       (const struct retro_disk_control_callback*)&global->system.disk_control;
-   struct retro_game_info info = {0};
+
    rarch_disk_control_set_eject(true, false);
 
    control->add_image_index();
@@ -1636,12 +1637,16 @@ static void check_disk_prev(
    rarch_disk_control_set_index(current);
 }
 
-static void init_state(void)
+static bool init_state(void)
 {
-   driver_t *driver = driver_get_ptr();
+   driver_t *driver     = driver_get_ptr();
+   if (!driver)
+      return false;
 
    driver->video_active = true;
    driver->audio_active = true;
+
+   return true;
 }
 
 /**
@@ -1744,9 +1749,9 @@ void rarch_main_free(void)
 
 static void init_system_info(void)
 {
-   global_t *global = global_get_ptr();
+   global_t *global               = global_get_ptr();
    struct retro_system_info *info = (struct retro_system_info*)
-      &global->system.info;
+      global ? &global->system.info : NULL;
 
    pretro_get_system_info(info);
 
@@ -2134,10 +2139,10 @@ void rarch_main_set_state(unsigned cmd)
  **/
 static bool save_core_config(void)
 {
-   bool ret = false;
    char config_dir[PATH_MAX_LENGTH], config_name[PATH_MAX_LENGTH],
         config_path[PATH_MAX_LENGTH], msg[PATH_MAX_LENGTH];
-   bool found_path = false;
+   bool ret             = false;
+   bool found_path      = false;
    settings_t *settings = config_get_ptr();
    global_t   *global   = global_get_ptr();
 
@@ -2252,12 +2257,12 @@ static bool rarch_update_system_info(struct retro_system_info *_info,
 static void set_volume(float gain)
 {
    char msg[PATH_MAX_LENGTH];
-   settings_t *settings = config_get_ptr();
-   global_t   *global   = global_get_ptr();
+   settings_t *settings    = config_get_ptr();
+   global_t   *global      = global_get_ptr();
 
    settings->audio.volume += gain;
-   settings->audio.volume = max(settings->audio.volume, -80.0f);
-   settings->audio.volume = min(settings->audio.volume, 12.0f);
+   settings->audio.volume  = max(settings->audio.volume, -80.0f);
+   settings->audio.volume  = min(settings->audio.volume, 12.0f);
 
    snprintf(msg, sizeof(msg), "Volume: %.1f dB", settings->audio.volume);
    rarch_main_msg_queue_push(msg, 1, 180, true);
