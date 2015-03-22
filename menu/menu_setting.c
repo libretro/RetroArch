@@ -134,6 +134,8 @@ static int menu_action_handle_setting(rarch_setting_t *setting,
 rarch_setting_t *menu_setting_find(const char *label)
 {
    driver_t *driver = driver_get_ptr();
+   if (!driver)
+      return NULL;
    return (rarch_setting_t*)setting_find_setting(
          driver->menu->list_settings, label);
 }
@@ -141,9 +143,14 @@ rarch_setting_t *menu_setting_find(const char *label)
 int menu_setting_set(unsigned type, const char *label,
       unsigned action, bool wraparound)
 {
-   int ret = 0;
-   driver_t *driver = driver_get_ptr();
-   rarch_setting_t *setting = menu_setting_find(
+   int ret                  = 0;
+   rarch_setting_t *setting = NULL;
+   driver_t *driver         = driver_get_ptr();
+
+   if (!driver)
+      return 0;
+   
+   setting = menu_setting_find(
          driver->menu->menu_list->selection_buf->list
          [driver->menu->navigation.selection_ptr].label);
 
