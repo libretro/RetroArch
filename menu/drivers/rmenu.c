@@ -281,27 +281,18 @@ static void rmenu_render(void)
 static void rmenu_set_texture(void)
 {
    menu_handle_t *menu   = menu_driver_get_ptr();
-   driver_t      *driver = driver_get_ptr();
 
    if (!menu)
       return;
    if (menu_texture_inited)
-      return;
-   if (!driver->video_data)
-      return;
-   if (!driver->video_poke)
-      return;
-   if (!driver->video_poke->set_texture_enable)
       return;
    if (!menu_texture)
       return;
    if (!menu_texture->pixels)
       return;
 
-   driver->video_poke->set_texture_frame(
-         driver->video_data,
-         menu_texture->pixels,
-         true, menu->frame_buf.width, menu->frame_buf.height, 1.0f);
+   video_driver_set_texture_frame(menu_texture.pixels, true,
+         menu->frame_buf.width, menu->frame_buf.height, 1.0f);
    menu_texture_inited = true;
 }
 

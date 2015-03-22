@@ -351,9 +351,7 @@ static void* rmenu_xui_init(void)
       goto error;
    }
 
-   if (driver->video_data && driver->video_poke
-         && driver->video_poke->set_texture_enable)
-      driver->video_poke->set_texture_frame(driver->video_data, NULL,
+   video_driver_set_texture_frame(NULL,
             true, 0, 0, 1.0f);
 
    xui_msg_queue = msg_queue_new(16);

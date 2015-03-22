@@ -293,6 +293,9 @@ void video_driver_set_osd_msg(const char *msg,
 
 void video_driver_set_texture_enable(bool enable, bool full_screen);
 
+void video_driver_set_texture_frame(const void *frame, bool rgb32,
+      unsigned width, unsigned height, float alpha);
+
 #ifdef __cplusplus
 }
 #endif

@@ -700,3 +700,20 @@ void video_driver_set_texture_enable(bool enable, bool fullscreen)
          enable, fullscreen);
 #endif
 }
+
+void video_driver_set_texture_frame(const void *frame, bool rgb32,
+      unsigned width, unsigned height, float alpha)
+{
+#ifdef HAVE_MENU
+   driver_t *driver     = driver_get_ptr();
+
+   if (!driver->video_data)
+      return;
+   if (!driver->video_poke)
+      return;
+   if (!driver->video_poke->set_texture_frame)
+      return;
+   driver->video_poke->set_texture_frame(
+         driver->video_data, frame, rgb32, width, height, alpha);
+#endif
+}

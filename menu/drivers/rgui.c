@@ -591,24 +591,17 @@ static void rgui_set_texture(void)
 {
    menu_handle_t *menu = menu_driver_get_ptr();
    runloop_t *runloop  = rarch_main_get_ptr();
-   driver_t *driver    = driver_get_ptr();
 
    if (!menu)
-      return;
-
-   if (!driver->video_data)
-      return;
-   if (!driver->video_poke)
-      return;
-   if (!driver->video_poke->set_texture_frame)
       return;
    if (!runloop->frames.video.current.menu.framebuf.dirty)
       return;
 
    runloop->frames.video.current.menu.framebuf.dirty = false;
 
-   driver->video_poke->set_texture_frame(driver->video_data,
-         menu->frame_buf.data, false, menu->frame_buf.width, menu->frame_buf.height, 1.0f);
+   video_driver_set_texture_frame(
+         menu->frame_buf.data, false,
+         menu->frame_buf.width, menu->frame_buf.height, 1.0f);
 }
 
 static void rgui_navigation_clear(bool pending_push)
