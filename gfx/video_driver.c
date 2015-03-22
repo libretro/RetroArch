@@ -564,9 +564,7 @@ void init_video(void)
    global->frame_cache.data = &dummy_pixels;
 
 #if defined(PSP)
-   if (driver->video_poke && driver->video_poke->set_texture_frame)
-      driver->video_poke->set_texture_frame(driver->video_data,
-               &dummy_pixels, false, 1, 1, 1.0f);
+   video_driver_set_texture_frame(&dummy_pixels, false, 1, 1, 1.0f);
 #endif
 }
 
