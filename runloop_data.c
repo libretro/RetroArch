@@ -228,7 +228,7 @@ static int rarch_main_data_http_iterate_poll(http_handle_t *http)
 {
    char elem0[PATH_MAX_LENGTH];
    struct string_list *str_list = NULL;
-   const char *url = msg_queue_pull(http->msg_queue);
+   const char *url              = msg_queue_pull(http->msg_queue);
 
    if (!url)
       return -1;
@@ -237,7 +237,7 @@ static int rarch_main_data_http_iterate_poll(http_handle_t *http)
    if (http->handle)
       return -1; 
 
-   str_list         = string_split(url, "|"); 
+   str_list                     = string_split(url, "|");
 
    if (!str_list)
       return -1;
@@ -267,7 +267,7 @@ static int rarch_main_data_http_iterate_poll(http_handle_t *http)
 static int cb_image_menu_wallpaper_upload(void *data, size_t len)
 {
    nbio_handle_t *nbio = (nbio_handle_t*)data; 
-   driver_t *driver = driver_get_ptr();
+   driver_t *driver    = driver_get_ptr();
 
    if (!nbio || !data)
       return -1;
@@ -320,14 +320,14 @@ static int cb_image_menu_wallpaper(void *data, size_t len)
 
 static int cb_nbio_image_menu_wallpaper(void *data, size_t len)
 {
-   void *ptr = NULL;
+   void *ptr           = NULL;
    nbio_handle_t *nbio = (nbio_handle_t*)data; 
 
    if (!nbio || !data)
       return -1;
    
    nbio->image.handle = (struct rpng_t*)calloc(1, sizeof(struct rpng_t));
-   nbio->image.cb = &cb_image_menu_wallpaper;
+   nbio->image.cb     = &cb_image_menu_wallpaper;
 
    if (!nbio->image.handle)
    {
@@ -489,23 +489,23 @@ static int cb_nbio_default(void *data, size_t len)
 
    (void)len;
 
-   nbio->is_blocking = false;
-   nbio->is_finished = true;
+   nbio->is_blocking   = false;
+   nbio->is_finished   = true;
 
    return 0;
 }
 
 static int rarch_main_data_nbio_iterate_poll(nbio_handle_t *nbio)
 {
-   struct nbio_t* handle;
    char elem0[PATH_MAX_LENGTH], elem1[PATH_MAX_LENGTH];
+   struct nbio_t* handle        = NULL;
    struct string_list *str_list = NULL;
-   const char *path = NULL;
+   const char *path             = NULL;
 
    if (!nbio)
       return -1;
    
-   path = msg_queue_pull(nbio->msg_queue);
+   path                         = msg_queue_pull(nbio->msg_queue);
 
    if (!path)
       return -1;
@@ -514,7 +514,7 @@ static int rarch_main_data_nbio_iterate_poll(nbio_handle_t *nbio)
    if (nbio->handle)
       return -1; 
 
-   str_list         = string_split(path, "|"); 
+   str_list                     = string_split(path, "|"); 
 
    if (!str_list)
       goto error;
@@ -845,7 +845,7 @@ static void data_thread_loop(void *data)
 
 static void rarch_main_data_thread_init(void)
 {
-   data_runloop_t *data_runloop = (data_runloop_t*)rarch_main_data_get_ptr();
+   data_runloop_t *data_runloop  = (data_runloop_t*)rarch_main_data_get_ptr();
 
    if ((data_runloop->thread = sthread_create(data_thread_loop, data_runloop)))
    {
@@ -855,9 +855,9 @@ static void rarch_main_data_thread_init(void)
       data_runloop->cond         = scond_new();
    }
    else
-      data_runloop->thread = NULL;
+      data_runloop->thread       = NULL;
 
-   data_runloop->thread_inited = (data_runloop->thread != NULL);
+   data_runloop->thread_inited   = (data_runloop->thread != NULL);
 
    if (!data_runloop->thread_inited)
       return;
