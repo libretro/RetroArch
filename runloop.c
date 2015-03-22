@@ -920,7 +920,7 @@ static int rarch_main_iterate_quit(void)
    if (global->core_shutdown_initiated
          && settings->load_dummy_on_core_shutdown)
    {
-      rarch_main_data_deinit();
+      rarch_main_data_free();
       if (!rarch_main_command(RARCH_CMD_PREPARE_DUMMY))
          return -1;
 
@@ -1010,7 +1010,7 @@ runloop_t *rarch_main_get_ptr(void)
 }
 
 
-void rarch_main_state_deinit(void)
+void rarch_main_state_free(void)
 {
    runloop_t *runloop = rarch_main_get_ptr();
 
@@ -1020,7 +1020,7 @@ void rarch_main_state_deinit(void)
    free(runloop);
 }
 
-void rarch_main_global_deinit(void)
+void rarch_main_global_free(void)
 {
    global_t *global = NULL;
    
@@ -1053,7 +1053,7 @@ FILE *rarch_main_log_file(void)
    return global->log_file;
 }
 
-static global_t *rarch_main_global_init(void)
+static global_t *rarch_main_global_new(void)
 {
    global_t *global = (global_t*)calloc(1, sizeof(global_t));
 
@@ -1077,11 +1077,11 @@ void rarch_main_clear_state(void)
 {
    driver_clear_state();
 
-   rarch_main_state_deinit();
+   rarch_main_state_free();
    g_runloop = rarch_main_state_init();
 
-   rarch_main_global_deinit();
-   g_extern  = rarch_main_global_init();
+   rarch_main_global_free();
+   g_extern  = rarch_main_global_new();
 }
 
 bool rarch_main_is_idle(void)

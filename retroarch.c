@@ -1731,8 +1731,8 @@ void rarch_main_free(void)
    rarch_main_command(RARCH_CMD_LOG_FILE_DEINIT);
    rarch_main_command(RARCH_CMD_DRIVERS_DEINIT);
 
-   rarch_main_state_deinit();
-   rarch_main_global_deinit();
+   rarch_main_state_free();
+   rarch_main_global_free();
    config_free();
 }
 

@@ -482,11 +482,11 @@ void rarch_main_data_clear_state(void);
 
 void rarch_main_data_iterate(void);
 
-void rarch_main_state_deinit(void);
+void rarch_main_state_free(void);
 
-void rarch_main_global_deinit(void);
+void rarch_main_global_free(void);
 
-void rarch_main_data_deinit(void);
+void rarch_main_data_free(void);
 
 void rarch_main_data_init_queues(void);
 

@@ -42,7 +42,7 @@ void driver_free(void)
    free(driver);
 }
 
-static driver_t *driver_alloc(void)
+static driver_t *driver_new(void)
 {
    driver_t *driver = (driver_t*)calloc(1, sizeof(driver_t));
 
@@ -55,7 +55,7 @@ static driver_t *driver_alloc(void)
 void driver_clear_state(void)
 {
    driver_free();
-   g_driver  = driver_alloc();
+   g_driver  = driver_new();
 }
 
 driver_t *driver_get_ptr(void)
