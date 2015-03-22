@@ -210,7 +210,7 @@ static void check_rewind(bool pressed)
 
    if (pressed)
    {
-      const void *buf = NULL;
+      const void *buf    = NULL;
       runloop_t *runloop = rarch_main_get_ptr();
 
       if (state_manager_pop(global->rewind.state, &buf))
@@ -231,7 +231,7 @@ static void check_rewind(bool pressed)
    }
    else
    {
-      static unsigned cnt = 0;
+      static unsigned cnt      = 0;
       settings_t *settings     = config_get_ptr();
 
       cnt = (cnt + 1) % (settings->rewind_granularity ?
@@ -266,7 +266,7 @@ static void check_slowmotion(bool slowmotion_pressed)
    settings_t *settings     = config_get_ptr();
    global_t *global         = global_get_ptr();
 
-   runloop->is_slowmotion = slowmotion_pressed;
+   runloop->is_slowmotion   = slowmotion_pressed;
 
    if (!runloop->is_slowmotion)
       return;
@@ -281,9 +281,9 @@ static void check_slowmotion(bool slowmotion_pressed)
 static bool check_movie_init(void)
 {
    char path[PATH_MAX_LENGTH], msg[PATH_MAX_LENGTH];
-   bool ret = true;
-   settings_t *settings     = config_get_ptr();
-   global_t *global         = global_get_ptr();
+   bool ret                     = true;
+   settings_t *settings         = config_get_ptr();
+   global_t *global             = global_get_ptr();
    
    if (global->bsv.movie)
       return false;
@@ -360,7 +360,7 @@ static bool check_movie_playback(void)
 
    rarch_main_command(RARCH_CMD_BSV_MOVIE_DEINIT);
 
-   global->bsv.movie_end = false;
+   global->bsv.movie_end      = false;
    global->bsv.movie_playback = false;
 
    return true;
@@ -393,7 +393,7 @@ static void check_shader_dir(bool pressed_next, bool pressed_prev)
    char msg[PATH_MAX_LENGTH];
    const char *shader = NULL, *ext = NULL;
    enum rarch_shader_type type = RARCH_SHADER_NONE;
-   global_t *global = global_get_ptr();
+   global_t *global            = global_get_ptr();
 
    if (!global->shader_dir.list)
       return;
@@ -443,12 +443,12 @@ static void check_shader_dir(bool pressed_next, bool pressed_prev)
  **/
 static void check_cheats(retro_input_t trigger_input)
 {
-   global_t *global = global_get_ptr();
-   bool cheat_index_plus_pressed = BIT64_GET(trigger_input,
+   global_t *global               = global_get_ptr();
+   bool cheat_index_plus_pressed  = BIT64_GET(trigger_input,
          RARCH_CHEAT_INDEX_PLUS);
    bool cheat_index_minus_pressed = BIT64_GET(trigger_input,
          RARCH_CHEAT_INDEX_MINUS);
-   bool cheat_toggle_pressed = BIT64_GET(trigger_input,
+   bool cheat_toggle_pressed      = BIT64_GET(trigger_input,
          RARCH_CHEAT_TOGGLE);
 
    if (cheat_index_plus_pressed)
@@ -544,7 +544,7 @@ static int do_pause_state_checks(
       retro_input_t input, retro_input_t old_input,
       retro_input_t trigger_input)
 {
-   runloop_t *runloop             = rarch_main_get_ptr();
+   runloop_t *runloop        = rarch_main_get_ptr();
    bool fullscreen_toggle_pressed = BIT64_GET(trigger_input, 
          RARCH_FULLSCREEN_TOGGLE_KEY);
    bool pause_pressed        = BIT64_GET(trigger_input, RARCH_PAUSE_TOGGLE);
@@ -738,7 +738,8 @@ static void rarch_update_frame_time(void)
  **/
 static void rarch_limit_frame_time(void)
 {
-   retro_time_t target = 0, to_sleep_ms = 0;
+   retro_time_t target      = 0;
+   retro_time_t to_sleep_ms = 0;
    runloop_t *runloop       = rarch_main_get_ptr();
    settings_t *settings     = config_get_ptr();
    global_t  *global        = global_get_ptr();
@@ -775,8 +776,8 @@ static void rarch_limit_frame_time(void)
 static bool check_block_hotkey(bool enable_hotkey)
 {
    bool use_hotkey_enable;
-   settings_t *settings = config_get_ptr();
-   driver_t *driver     = driver_get_ptr();
+   settings_t *settings             = config_get_ptr();
+   driver_t *driver                 = driver_get_ptr();
    const struct retro_keybind *bind = 
       &settings->input.binds[0][RARCH_ENABLE_HOTKEY];
    const struct retro_keybind *autoconf_bind = 
@@ -784,17 +785,19 @@ static bool check_block_hotkey(bool enable_hotkey)
 
    /* Don't block the check to RARCH_ENABLE_HOTKEY
     * unless we're really supposed to. */
-   driver->block_hotkey = driver->block_input;
+   driver->block_hotkey             = driver->block_input;
 
-   // If we haven't bound anything to this, always allow hotkeys.
-   use_hotkey_enable = bind->key != RETROK_UNKNOWN ||
+   /* If we haven't bound anything to this, 
+    * always allow hotkeys. */
+   use_hotkey_enable                = 
+      bind->key != RETROK_UNKNOWN ||
       bind->joykey != NO_BTN ||
       bind->joyaxis != AXIS_NONE ||
       autoconf_bind->key != RETROK_UNKNOWN ||
       autoconf_bind->joykey != NO_BTN ||
       autoconf_bind->joyaxis != AXIS_NONE;
 
-   driver->block_hotkey = driver->block_input ||
+   driver->block_hotkey             = driver->block_input ||
       (use_hotkey_enable && !enable_hotkey);
 
    /* If we hold ENABLE_HOTKEY button, block all libretro input to allow 
@@ -936,7 +939,7 @@ static int rarch_main_iterate_quit(void)
 static void rarch_main_iterate_linefeed_overlay(void)
 {
    static char prev_overlay_restore = false;
-   driver_t *driver = driver_get_ptr();
+   driver_t *driver                 = driver_get_ptr();
 
    if (driver->osk_enable && !driver->keyboard_linefeed_enable)
    {
@@ -1008,7 +1011,6 @@ runloop_t *rarch_main_get_ptr(void)
 {
    return g_runloop;
 }
-
 
 void rarch_main_state_free(void)
 {
@@ -1087,6 +1089,8 @@ void rarch_main_clear_state(void)
 bool rarch_main_is_idle(void)
 {
    runloop_t *runloop = rarch_main_get_ptr();
+   if (!runloop)
+      return false;
    return runloop->is_idle;
 }
 
@@ -1102,7 +1106,7 @@ int rarch_main_iterate(void)
 {
    unsigned i;
    retro_input_t trigger_input;
-   runloop_t *runloop = rarch_main_get_ptr();
+   runloop_t *runloop              = rarch_main_get_ptr();
    int ret                         = 0;
    static retro_input_t last_input = 0;
    retro_input_t old_input         = last_input;
