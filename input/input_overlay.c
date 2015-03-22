@@ -169,11 +169,7 @@ static bool input_overlay_load_desc_image(input_overlay_t *ol,
       bool normalized, float alpha_mod, float range_mod)
 {
    bool ret = true;
-   char overlay_desc_key[64], overlay_desc_image_key[64],
-        image_path[PATH_MAX_LENGTH];
-
-   snprintf(overlay_desc_key, sizeof(overlay_desc_key),
-         "overlay%u_desc%u", ol_idx, desc_idx);
+   char overlay_desc_image_key[64], image_path[PATH_MAX_LENGTH];
 
    snprintf(overlay_desc_image_key, sizeof(overlay_desc_image_key),
          "overlay%u_desc%u_overlay", ol_idx, desc_idx);
