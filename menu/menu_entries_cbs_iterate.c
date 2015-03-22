@@ -123,12 +123,7 @@ static int load_or_open_zip_iterate(unsigned action)
          " - OK to open as Folder\n"
          " - Cancel/Back to Load \n");
 
-   if (driver->video_data && driver->menu_ctx
-         && driver->menu_ctx->render_messagebox)
-   {
-      if (*msg && msg[0] != '\0')
-         driver->menu_ctx->render_messagebox(msg);
-   }
+   menu_driver_render_messagebox(msg);
 
    switch (action)
    {
@@ -288,8 +283,7 @@ static int action_iterate_help(const char *label, unsigned action)
          "Press Accept/OK to continue.",
       desc[0], desc[1], desc[2], desc[3], desc[4], desc[5], desc[6], desc[7]);
 
-   if (driver->video_data && driver->menu_ctx && driver->menu_ctx->render_messagebox)
-      driver->menu_ctx->render_messagebox(msg);
+   menu_driver_render_messagebox(msg);
 
    if (action == MENU_ACTION_OK)
       menu_list_pop(menu->menu_list->menu_stack, NULL);
@@ -339,12 +333,7 @@ static int action_iterate_info(const char *label, unsigned action)
 
    setting_get_description(needle, msg, sizeof(msg));
 
-   if (driver->video_data && driver->menu_ctx &&
-         driver->menu_ctx->render_messagebox)
-   {
-      if (*msg && msg[0] != '\0')
-         driver->menu_ctx->render_messagebox(msg);
-   }
+   menu_driver_render_messagebox(msg);
 
    if (action == MENU_ACTION_OK)
       menu_list_pop(menu->menu_list->menu_stack, &menu->navigation.selection_ptr);
@@ -536,9 +525,7 @@ static int action_iterate_menu_viewport(const char *label, unsigned action)
             base_msg, custom->x, custom->y, custom->width, custom->height);
    }
 
-   if (driver->video_data && driver->menu_ctx &&
-         driver->menu_ctx->render_messagebox)
-      driver->menu_ctx->render_messagebox(msg);
+   menu_driver_render_messagebox(msg);
 
    if (!custom->width)
       custom->width = stride_x;
@@ -581,9 +568,7 @@ static int action_iterate_message(const char *label, unsigned action)
    if (!menu)
       return -1;
 
-   if (driver->video_data && driver->menu_ctx
-         && driver->menu_ctx->render_messagebox)
-      driver->menu_ctx->render_messagebox(menu->message_contents);
+   menu_driver_render_messagebox(menu->message_contents);
 
    if (action == MENU_ACTION_OK)
       menu_list_pop_stack(menu->menu_list);

@@ -312,6 +312,8 @@ void menu_driver_render(void);
 
 void menu_driver_toggle(bool latch);
 
+void menu_driver_render_messagebox(const char *msg);
+
 #ifdef __cplusplus
 }
 #endif

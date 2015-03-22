@@ -395,9 +395,7 @@ int menu_input_bind_iterate(void)
          input_config_bind_map[
          menu->binds.begin - MENU_SETTINGS_BIND_BEGIN].desc);
 
-   if (driver->video_data && driver->menu_ctx 
-         && driver->menu_ctx->render_messagebox)
-      driver->menu_ctx->render_messagebox( msg);
+   menu_driver_render_messagebox(msg);
 
    driver->block_input = true;
    menu_input_poll_bind_state(&binds);
@@ -443,9 +441,7 @@ int menu_input_bind_iterate_keyboard(void)
          menu->binds.begin - MENU_SETTINGS_BIND_BEGIN].desc,
          timeout);
 
-   if (driver->video_data && driver->menu_ctx 
-         && driver->menu_ctx->render_messagebox)
-      driver->menu_ctx->render_messagebox(msg);
+   menu_driver_render_messagebox(msg);
 
    if (timeout <= 0)
    {

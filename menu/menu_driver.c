@@ -274,6 +274,24 @@ void menu_driver_free(menu_handle_t *menu)
       driver->menu_ctx->free(menu);
 }
 
+void menu_driver_render_messagebox(const char *msg)
+{
+   driver_t *driver     = driver_get_ptr();
+   if (!driver)
+      return;
+   if (!driver->video_data)
+      return;
+   if (!driver->menu_ctx)
+      return;
+   if (!driver->menu_ctx->render_messagebox)
+      return;
+   if (!msg)
+      return;
+
+   if (msg[0] != '\0')
+      driver->menu_ctx->render_messagebox(msg);
+}
+
 void menu_driver_render(void)
 {
    driver_t *driver     = driver_get_ptr();
