@@ -382,9 +382,9 @@ static void xmb_draw_icon_predone(gl_t *gl, xmb_handle_t *xmb,
 static void xmb_draw_text(gl_t *gl, xmb_handle_t *xmb, const char *str, float x,
       float y, float scale_factor, float alpha, bool align_right)
 {
-   uint8_t a8 = 0;
+   uint8_t a8                = 0;
    struct font_params params = {0};
-   driver_t *driver = driver_get_ptr();
+   driver_t *driver          = driver_get_ptr();
 
    if (alpha > xmb->alpha)
       alpha = xmb->alpha;
@@ -743,7 +743,7 @@ static void xmb_push_animations(xmb_node_t *node, float ia, float ix)
 static void xmb_list_switch_old(xmb_handle_t *xmb, file_list_t *list, int dir, size_t current)
 {
    unsigned i;
-   size_t end = 0;
+   size_t end          = 0;
    menu_handle_t *menu = menu_driver_get_ptr();
 
    if (!menu)
@@ -767,7 +767,7 @@ static void xmb_list_switch_old(xmb_handle_t *xmb, file_list_t *list, int dir, s
 static void xmb_list_switch_new(xmb_handle_t *xmb, file_list_t *list, int dir, size_t current)
 {
    unsigned i;
-   size_t end = 0;
+   size_t end          = 0;
    menu_handle_t *menu = menu_driver_get_ptr();
 
    if (!menu)
@@ -844,9 +844,9 @@ static void xmb_list_switch(xmb_handle_t *xmb)
    for (j = 0; j < menu->categories.size; j++)
    {
       core_info_t *info           = NULL;
-      float ia         = xmb->categories.passive.alpha;
-      float iz         = xmb->categories.passive.zoom;
-      xmb_node_t *node = &xmb->settings_node;
+      float ia                    = xmb->categories.passive.alpha;
+      float iz                    = xmb->categories.passive.zoom;
+      xmb_node_t *node            = &xmb->settings_node;
       
       if (j > 0)
          node = xmb_get_userdata_from_core(xmb, info, j - 1);
@@ -880,7 +880,7 @@ static void xmb_list_switch(xmb_handle_t *xmb)
 static void xmb_list_open(xmb_handle_t *xmb)
 {
    unsigned j;
-   int dir = 0;
+   int dir             = 0;
    menu_handle_t *menu = menu_driver_get_ptr();
 
    if (!menu)
@@ -895,9 +895,9 @@ static void xmb_list_open(xmb_handle_t *xmb)
 
    for (j = 0; j < menu->categories.size; j++)
    {
-      core_info_t *info           = NULL;
-      float ia = 0;
-      xmb_node_t *node = &xmb->settings_node;
+      core_info_t *info = NULL;
+      float ia          = 0;
+      xmb_node_t *node  = &xmb->settings_node;
       
       if (j > 0)
          node = xmb_get_userdata_from_core(xmb, info, j - 1);
@@ -1022,9 +1022,9 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
       file_list_t *list, file_list_t *stack,
       size_t current, size_t cat_selection_ptr)
 {
-   core_info_t *info           = NULL;
-   math_matrix_4x4 mymat, mrot, mscal;
    unsigned i;
+   math_matrix_4x4 mymat, mrot, mscal;
+   core_info_t *info     = NULL;
    const char *label     = NULL;
    xmb_node_t *core_node = NULL;
    size_t end            = 0;
@@ -1051,9 +1051,9 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
       char type_str[PATH_MAX_LENGTH], path_buf[PATH_MAX_LENGTH];
       char name[PATH_MAX_LENGTH], value[PATH_MAX_LENGTH];
       const char *path = NULL, *entry_label = NULL;
-      unsigned type = 0, w = 0;
-      menu_file_list_cbs_t *cbs = NULL;
-      GLuint icon = 0;
+      unsigned type = 0, w                  = 0;
+      menu_file_list_cbs_t *cbs             = NULL;
+      GLuint icon                           = 0;
       xmb_node_t *node = (xmb_node_t*)file_list_get_userdata_at_offset(list, i);
       runloop_t *runloop = rarch_main_get_ptr();
 
@@ -1571,14 +1571,14 @@ static void xmb_context_reset(void)
          fontpath[PATH_MAX_LENGTH], core_id[PATH_MAX_LENGTH], texturepath[PATH_MAX_LENGTH],
          content_texturepath[PATH_MAX_LENGTH];
 
-   struct texture_image ti = {0};
+   struct texture_image ti     = {0};
    core_info_list_t* info_list = NULL;
-   gl_t *gl = NULL;
-   xmb_handle_t *xmb = NULL;
-   xmb_node_t *node = NULL;
-   menu_handle_t *menu  = menu_driver_get_ptr();
-   settings_t *settings = config_get_ptr();
-   global_t   *global   = global_get_ptr();
+   gl_t *gl                    = NULL;
+   xmb_handle_t *xmb           = NULL;
+   xmb_node_t *node            = NULL;
+   menu_handle_t *menu         = menu_driver_get_ptr();
+   settings_t *settings        = config_get_ptr();
+   global_t   *global          = global_get_ptr();
 
    if (!menu)
       return;
@@ -1868,7 +1868,7 @@ static void xmb_list_delete(file_list_t *list,
 static void xmb_list_cache(bool horizontal, unsigned action)
 {
    size_t stack_size;
-   xmb_handle_t *xmb = NULL;
+   xmb_handle_t *xmb   = NULL;
    menu_handle_t *menu = menu_driver_get_ptr();
 
    if (!menu)
@@ -1921,7 +1921,7 @@ static void xmb_list_cache(bool horizontal, unsigned action)
 static void xmb_context_destroy(void)
 {
    unsigned i;
-   xmb_handle_t *xmb = NULL;
+   xmb_handle_t *xmb   = NULL;
    menu_handle_t *menu = menu_driver_get_ptr();
 
    if (!menu)
