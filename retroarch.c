@@ -75,12 +75,10 @@
  **/
 void rarch_render_cached_frame(void)
 {
-   void *recording    = NULL;
    driver_t *driver   = driver_get_ptr();
    global_t *global   = global_get_ptr();
    runloop_t *runloop = rarch_main_get_ptr();
-
-   recording = driver->recording_data;
+   void *recording    = driver ? driver->recording_data : NULL;
 
    if (runloop->is_idle)
       return;
@@ -496,7 +494,7 @@ static void parse_input(int argc, char *argv[])
    for (;;)
    {
       int port;
-      val = 0;
+      val   = 0;
       int c = getopt_long(argc, argv, optstring, opts, NULL);
 
       if (c == -1)
@@ -515,8 +513,10 @@ static void parse_input(int argc, char *argv[])
          case 'd':
          {
             unsigned id = 0;
-            port = 0;
             struct string_list *list = string_split(optarg, ":");
+
+            port = 0;
+
             if (list && list->size == 2)
             {
                port = strtol(list->elems[0].data, NULL, 0);
@@ -1296,9 +1296,9 @@ static void fill_pathnames(void)
 
 static void load_auto_state(void)
 {
+   bool ret;
    char msg[PATH_MAX_LENGTH];
    char savestate_name_auto[PATH_MAX_LENGTH];
-   bool ret;
    settings_t *settings = config_get_ptr();
    global_t   *global   = global_get_ptr();
 
@@ -2281,8 +2281,8 @@ static void set_volume(float gain)
  **/
 bool rarch_main_command(unsigned cmd)
 {
-   unsigned i   = 0;
-   bool boolean = false;
+   unsigned i           = 0;
+   bool boolean         = false;
    runloop_t *runloop   = rarch_main_get_ptr();
    driver_t  *driver    = driver_get_ptr();
    global_t  *global    = global_get_ptr();
@@ -3051,9 +3051,9 @@ int rarch_defer_core(core_info_list_t *core_info, const char *dir,
 {
    char new_core_path[PATH_MAX_LENGTH];
    const core_info_t *info = NULL;
-   size_t supported = 0;
-   settings_t *settings = config_get_ptr();
-   global_t   *global   = global_get_ptr();
+   size_t supported        = 0;
+   settings_t *settings    = config_get_ptr();
+   global_t   *global      = global_get_ptr();
 
    fill_pathname_join(deferred_path, dir, path, sizeof_deferred_path);
 
