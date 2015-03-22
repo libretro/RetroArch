@@ -168,8 +168,8 @@ static bool input_overlay_load_desc_image(input_overlay_t *ol,
       unsigned width, unsigned height,
       bool normalized, float alpha_mod, float range_mod)
 {
-   bool ret = true;
    char overlay_desc_image_key[64], image_path[PATH_MAX_LENGTH];
+   bool ret = true;
 
    snprintf(overlay_desc_image_key, sizeof(overlay_desc_image_key),
          "overlay%u_desc%u_overlay", ol_idx, desc_idx);
@@ -478,8 +478,8 @@ static bool input_overlay_load_overlay_image_done(struct overlay *overlay)
 
 bool input_overlay_load_overlays_iterate(input_overlay_t *ol)
 {
-   size_t i = 0;
-   bool not_done = true;
+   size_t i                = 0;
+   bool not_done           = true;
    struct overlay *overlay = NULL;
    
    if (!ol)
@@ -586,7 +586,7 @@ bool input_overlay_load_overlays(input_overlay_t *ol)
       char conf_key[64];
       char overlay_full_screen_key[64];
       struct overlay *overlay = NULL;
-      bool to_cont = ol->pos < ol->size;
+      bool to_cont            = ol->pos < ol->size;
       
       if (!to_cont)
       {
@@ -788,14 +788,14 @@ input_overlay_t *input_overlay_new(const char *path, bool enable,
    if (!ol)
       goto error;
 
-   ol->overlay_path = strdup(path);
+   ol->overlay_path    = strdup(path);
    if (!ol->overlay_path)
    {
       free(ol);
       return NULL;
    }
 
-   ol->conf = config_file_new(ol->overlay_path);
+   ol->conf            = config_file_new(ol->overlay_path);
 
    if (!ol->conf)
       goto error;
@@ -925,9 +925,8 @@ void input_overlay_poll(input_overlay_t *ol, input_overlay_state_t *out,
          continue;
 
       desc->updated = true;
-
-      x_dist    = x - desc->x;
-      y_dist    = y - desc->y;
+      x_dist        = x - desc->x;
+      y_dist        = y - desc->y;
 
       if (desc->type == OVERLAY_TYPE_BUTTONS)
       {
