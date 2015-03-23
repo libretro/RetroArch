@@ -2930,13 +2930,13 @@ bool rarch_main_command(unsigned cmd)
          {
             static bool grab_mouse_state  = false;
 
-            if (!driver->input || !driver->input->grab_mouse)
+            grab_mouse_state = !grab_mouse_state;
+
+            if (!driver->input || !input_driver_grab_mouse(grab_mouse_state))
                return false;
 
-            grab_mouse_state = !grab_mouse_state;
             RARCH_LOG("Grab mouse state: %s.\n",
                   grab_mouse_state ? "yes" : "no");
-            driver->input->grab_mouse(driver->input_data, grab_mouse_state);
 
             video_driver_show_mouse(!grab_mouse_state);
          }

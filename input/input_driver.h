@@ -148,6 +148,8 @@ uint64_t input_driver_get_capabilities(void);
 
 const rarch_joypad_driver_t * input_driver_get_joypad_driver(void);
 
+bool input_driver_grab_mouse(bool state);
+
 #ifdef __cplusplus
 }
 #endif

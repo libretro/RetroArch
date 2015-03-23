@@ -258,3 +258,17 @@ uint64_t input_driver_get_capabilities(void)
       return driver->input->get_capabilities(driver->input_data);
    return 0; 
 }
+
+bool input_driver_grab_mouse(bool state)
+{
+   driver_t *driver               = driver_get_ptr();
+
+   if (!driver)
+      return false;
+   if (!driver->input)
+      return false;
+   if (!driver->input->grab_mouse)
+      return false;
+   driver->input->grab_mouse(driver->input_data, state);
+   return true;
+}
