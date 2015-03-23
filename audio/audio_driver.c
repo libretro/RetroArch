@@ -497,3 +497,11 @@ void audio_driver_readjust_input_rate(void)
          global->audio_data.src_ratio, global->audio_data.orig_src_ratio);
 #endif
 }
+
+bool audio_driver_alive(void)
+{
+   driver_t *driver     = driver_get_ptr();
+   if (driver && driver->audio && driver->audio->alive)
+      return driver->audio->alive(driver->audio_data);
+   return false;
+}

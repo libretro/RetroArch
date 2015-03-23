@@ -2468,13 +2468,13 @@ bool rarch_main_command(unsigned cmd)
       case RARCH_CMD_AUDIO_STOP:
          if (!driver->audio_data)
             return false;
-         if (!driver->audio->alive(driver->audio_data))
+         if (!audio_driver_alive())
             return false;
 
          driver->audio->stop(driver->audio_data);
          break;
       case RARCH_CMD_AUDIO_START:
-         if (!driver->audio_data || driver->audio->alive(driver->audio_data))
+         if (!driver->audio_data || audio_driver_alive())
             return false;
 
          if (!settings->audio.mute_enable
