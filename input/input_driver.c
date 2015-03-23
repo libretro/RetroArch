@@ -240,3 +240,12 @@ bool input_driver_key_pressed(int key)
       return driver->input->key_pressed(driver->input_data, key);
    return false;
 }
+
+const rarch_joypad_driver_t * input_driver_get_joypad_driver(void)
+{
+   driver_t *driver               = driver_get_ptr();
+
+   if (driver && driver->input && driver->input->get_joypad_driver)
+      return driver->input->get_joypad_driver(driver->input_data);
+   return NULL;
+}

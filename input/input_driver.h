@@ -144,6 +144,8 @@ void input_driver_poll(void);
 
 bool input_driver_key_pressed(int key);
 
+const rarch_joypad_driver_t * input_driver_get_joypad_driver(void);
+
 #ifdef __cplusplus
 }
 #endif

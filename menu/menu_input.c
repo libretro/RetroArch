@@ -197,9 +197,8 @@ void menu_input_key_event(bool down, unsigned keycode,
 void menu_input_poll_bind_state(struct menu_bind_state *state)
 {
    unsigned i, b, a, h;
-   const rarch_joypad_driver_t *joypad = NULL;
-   driver_t *driver     = driver_get_ptr();
-   settings_t *settings = config_get_ptr();
+   const rarch_joypad_driver_t *joypad = input_driver_get_joypad_driver();
+   settings_t *settings                = config_get_ptr();
 
    if (!state)
       return;
@@ -207,9 +206,6 @@ void menu_input_poll_bind_state(struct menu_bind_state *state)
    memset(state->state, 0, sizeof(state->state));
    state->skip = input_driver_state(NULL, 0,
          RETRO_DEVICE_KEYBOARD, 0, RETROK_RETURN);
-
-   if (driver->input && driver->input_data && driver->input->get_joypad_driver)
-      joypad = driver->input->get_joypad_driver(driver->input_data);
 
    if (!joypad)
    {
@@ -245,15 +241,11 @@ void menu_input_poll_bind_state(struct menu_bind_state *state)
 void menu_input_poll_bind_get_rested_axes(struct menu_bind_state *state)
 {
    unsigned i, a;
-   const rarch_joypad_driver_t *joypad = NULL;
-   driver_t *driver     = driver_get_ptr();
-   settings_t *settings = config_get_ptr();
+   const rarch_joypad_driver_t *joypad = input_driver_get_joypad_driver();
+   settings_t *settings                = config_get_ptr();
 
    if (!state)
       return;
-
-   if (driver->input && driver->input_data && driver->input->get_joypad_driver)
-      joypad = driver->input->get_joypad_driver(driver->input_data);
 
    if (!joypad)
    {
