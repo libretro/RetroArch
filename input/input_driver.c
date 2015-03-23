@@ -249,3 +249,12 @@ const rarch_joypad_driver_t * input_driver_get_joypad_driver(void)
       return driver->input->get_joypad_driver(driver->input_data);
    return NULL;
 }
+
+uint64_t input_driver_get_capabilities(void)
+{
+   driver_t *driver               = driver_get_ptr();
+
+   if (driver && driver->input && driver->input->get_capabilities)
+      return driver->input->get_capabilities(driver->input_data);
+   return 0; 
+}

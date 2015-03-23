@@ -1023,7 +1023,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          RARCH_LOG("Environ GET_INPUT_DEVICE_CAPABILITIES.\n");
          if (driver->input &&
                driver->input->get_capabilities && driver->input_data)
-            *mask = driver->input->get_capabilities(driver->input_data);
+            *mask = input_driver_get_capabilities();
          else
             return false;
          break;
