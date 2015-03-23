@@ -16,6 +16,7 @@
 
 #include <net/net_compat.h>
 #include <stdint.h>
+#include <sys/types.h>
 #include <stdlib.h>
 #include <string.h>
 
