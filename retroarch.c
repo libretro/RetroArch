@@ -2380,15 +2380,14 @@ bool rarch_main_command(unsigned cmd)
          break;
       case RARCH_CMD_PREPARE_DUMMY:
          {
-            menu_handle_t *menu = menu_driver_get_ptr();
-            *global->fullpath = '\0';
-
-            (void)menu;
-
 #ifdef HAVE_MENU
+            menu_handle_t *menu = menu_driver_get_ptr();
             if (menu)
                menu->load_no_content = false;
 #endif
+            rarch_main_data_free();
+
+            *global->fullpath = '\0';
 
             rarch_main_set_state(RARCH_ACTION_STATE_LOAD_CONTENT);
             global->system.shutdown = false;
