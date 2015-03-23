@@ -51,11 +51,11 @@ static void audio_thread_loop(void *data)
       return;
 
    RARCH_LOG("[Audio Thread]: Initializing audio driver.\n");
-   thr->driver_data = thr->driver->init(thr->device, thr->out_rate, thr->latency);
+   thr->driver_data   = thr->driver->init(thr->device, thr->out_rate, thr->latency);
    slock_lock(thr->lock);
-   thr->inited = thr->driver_data ? 1 : -1;
+   thr->inited        = thr->driver_data ? 1 : -1;
    if (thr->inited > 0 && thr->driver->use_float)
-      thr->use_float = thr->driver->use_float(thr->driver_data);
+      thr->use_float  = thr->driver->use_float(thr->driver_data);
    scond_signal(thr->cond);
    slock_unlock(thr->lock);
 
@@ -133,7 +133,7 @@ static void audio_thread_free(void *data)
    {
       slock_lock(thr->lock);
       thr->stopped = false;
-      thr->alive = false;
+      thr->alive   = false;
       scond_signal(thr->cond);
       slock_unlock(thr->lock);
 
@@ -149,7 +149,7 @@ static void audio_thread_free(void *data)
 
 static bool audio_thread_alive(void *data)
 {
-   bool alive = false;
+   bool alive          = false;
    audio_thread_t *thr = (audio_thread_t*)data;
 
    if (!thr)
@@ -165,7 +165,7 @@ static bool audio_thread_alive(void *data)
 static bool audio_thread_stop(void *data)
 {
    audio_thread_t *thr = (audio_thread_t*)data;
-   global_t *global = global_get_ptr();
+   global_t *global    = global_get_ptr();
 
    if (!thr)
       return false;
@@ -180,7 +180,7 @@ static bool audio_thread_stop(void *data)
 static bool audio_thread_start(void *data)
 {
    audio_thread_t *thr = (audio_thread_t*)data;
-   global_t *global = global_get_ptr();
+   global_t *global    = global_get_ptr();
 
    if (!thr)
       return false;
@@ -252,32 +252,33 @@ static const audio_driver_t audio_thread = {
  *
  * Starts a audio driver in a new thread.
  * Access to audio driver will be mediated through this driver.
- * This driver interfaces with audio callback and is only used in that case.
+ * This driver interfaces with audio callback and is 
+ * only used in that case.
  *
  * Returns: true (1) if successful, otherwise false (0).
  **/
-bool rarch_threaded_audio_init(const audio_driver_t **out_driver, void **out_data,
-      const char *device, unsigned audio_out_rate, unsigned latency,
-      const audio_driver_t *drv)
+bool rarch_threaded_audio_init(const audio_driver_t **out_driver,
+      void **out_data, const char *device, unsigned audio_out_rate,
+      unsigned latency, const audio_driver_t *drv)
 {
    audio_thread_t *thr = (audio_thread_t*)calloc(1, sizeof(*thr));
    if (!thr)
       return false;
 
-   thr->driver = (const audio_driver_t*)drv;
-   thr->device = device;
-   thr->out_rate = audio_out_rate;
-   thr->latency = latency;
+   thr->driver         = (const audio_driver_t*)drv;
+   thr->device         = device;
+   thr->out_rate       = audio_out_rate;
+   thr->latency        = latency;
 
-   if (!(thr->cond = scond_new()))
+   if (!(thr->cond     = scond_new()))
       goto error;
-   if (!(thr->lock = slock_new()))
+   if (!(thr->lock     = slock_new()))
       goto error;
 
    thr->alive = true;
    thr->stopped = true;
 
-   if (!(thr->thread = sthread_create(audio_thread_loop, thr)))
+   if (!(thr->thread   = sthread_create(audio_thread_loop, thr)))
       goto error;
 
    /* Wait until thread has initialized (or failed) the driver. */
@@ -289,13 +290,13 @@ bool rarch_threaded_audio_init(const audio_driver_t **out_driver, void **out_dat
    if (thr->inited < 0) /* Thread failed. */
       goto error;
 
-   *out_driver = &audio_thread;
-   *out_data   = thr;
+   *out_driver         = &audio_thread;
+   *out_data           = thr;
    return true;
 
 error:
-   *out_driver = NULL;
-   *out_data = NULL;
+   *out_driver         = NULL;
+   *out_data           = NULL;
    audio_thread_free(thr);
    return false;
 }

@@ -553,38 +553,38 @@ static bool thread_init(thread_video_t *thr, const video_info_t *info,
 {
    size_t max_size;
 
-   thr->lock = slock_new();
-   thr->alpha_lock = slock_new();
-   thr->frame.lock = slock_new();
-   thr->cond_cmd = scond_new();
-   thr->cond_thread = scond_new();
-   thr->input = input;
-   thr->input_data = input_data;
-   thr->info = *info;
-   thr->alive = true;
-   thr->focus = true;
-   thr->has_windowed = true;
+   thr->lock                 = slock_new();
+   thr->alpha_lock           = slock_new();
+   thr->frame.lock           = slock_new();
+   thr->cond_cmd             = scond_new();
+   thr->cond_thread          = scond_new();
+   thr->input                = input;
+   thr->input_data           = input_data;
+   thr->info                 = *info;
+   thr->alive                = true;
+   thr->focus                = true;
+   thr->has_windowed         = true;
    thr->suppress_screensaver = true;
 
-   max_size = info->input_scale * RARCH_SCALE_BASE;
-   max_size *= max_size;
-   max_size *= info->rgb32 ? sizeof(uint32_t) : sizeof(uint16_t);
-   thr->frame.buffer = (uint8_t*)malloc(max_size);
+   max_size                  = info->input_scale * RARCH_SCALE_BASE;
+   max_size                 *= max_size;
+   max_size                 *= info->rgb32 ? sizeof(uint32_t) : sizeof(uint16_t);
+   thr->frame.buffer        = (uint8_t*)malloc(max_size);
+
    if (!thr->frame.buffer)
       return false;
 
    memset(thr->frame.buffer, 0x80, max_size);
 
-   thr->last_time = rarch_get_time_usec();
-
-   thr->thread = sthread_create(thread_loop, thr);
+   thr->last_time       = rarch_get_time_usec();
+   thr->thread          = sthread_create(thread_loop, thr);
    if (!thr->thread)
       return false;
 
    thread_send_cmd(thr, CMD_INIT);
    thread_wait_reply(thr, CMD_INIT);
 
-   thr->send_cmd_func = thread_send_cmd;
+   thr->send_cmd_func   = thread_send_cmd;
    thr->wait_reply_func = thread_wait_reply;
 
    return thr->cmd_data.b;
@@ -696,6 +696,9 @@ static bool thread_overlay_load(void *data,
 {
    thread_video_t *thr = (thread_video_t*)data;
 
+   if (!thr)
+      return false;
+
    thr->cmd_data.image.data = images;
    thr->cmd_data.image.num = num_images;
    thread_send_cmd(thr, CMD_OVERLAY_LOAD);
@@ -754,7 +757,7 @@ static void thread_overlay_set_alpha(void *data, unsigned idx, float mod)
       return;
    slock_lock(thr->alpha_lock);
    thr->alpha_mod[idx] = mod;
-   thr->alpha_update = true;
+   thr->alpha_update   = true;
    slock_unlock(thr->alpha_lock);
 }
 
@@ -798,7 +801,7 @@ static void thread_set_filtering(void *data, unsigned idx, bool smooth)
 
    if (!thr)
       return;
-   thr->cmd_data.filtering.index = idx;
+   thr->cmd_data.filtering.index  = idx;
    thr->cmd_data.filtering.smooth = smooth;
    thread_send_cmd(thr, CMD_POKE_SET_FILTERING);
    thread_wait_reply(thr, CMD_POKE_SET_FILTERING);
@@ -856,12 +859,12 @@ static void thread_set_texture_frame(void *data, const void *frame,
    thread_video_t *thr = (thread_video_t*)data;
 
    slock_lock(thr->frame.lock);
-   required = width * height * 
+   required            = width * height * 
       (rgb32 ? sizeof(uint32_t) : sizeof(uint16_t));
 
    if (required > thr->texture.frame_cap)
    {
-      thr->texture.frame = realloc(thr->texture.frame, required);
+      thr->texture.frame     = realloc(thr->texture.frame, required);
       thr->texture.frame_cap = required;
    }
 
@@ -869,10 +872,10 @@ static void thread_set_texture_frame(void *data, const void *frame,
    {
       memcpy(thr->texture.frame, frame, required);
       thr->texture.frame_updated = true;
-      thr->texture.rgb32  = rgb32;
-      thr->texture.width  = width;
-      thr->texture.height = height;
-      thr->texture.alpha  = alpha;
+      thr->texture.rgb32         = rgb32;
+      thr->texture.width         = width;
+      thr->texture.height        = height;
+      thr->texture.alpha         = alpha;
    }
    slock_unlock(thr->frame.lock);
 }
