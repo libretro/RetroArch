@@ -244,6 +244,9 @@ bool net_http_connection_done(struct http_connection_t *conn)
 
 void net_http_connection_free(struct http_connection_t *conn)
 {
+   if (!conn)
+      return;
+
    if (conn->urlcopy)
       free(conn->urlcopy);
 }
@@ -311,6 +314,8 @@ error:
 
 int net_http_fd(struct http_t *state)
 {
+   if (!state)
+      return 0;
    return state->fd;
 }
 
@@ -318,7 +323,7 @@ bool net_http_update(struct http_t *state, size_t* progress, size_t* total)
 {
    ssize_t newlen = 0;
 
-   if (state->error)
+   if (!state || state->error)
       goto fail;
 
    if (state->part < P_BODY)
@@ -511,11 +516,16 @@ fail:
 
 int net_http_status(struct http_t *state)
 {
-   return state->status;
+   if (state)
+      return state->status;
+   return -1;
 }
 
 uint8_t* net_http_data(struct http_t *state, size_t* len, bool accept_error)
 {
+   if (!state)
+      return NULL;
+
    if (!accept_error && 
          (state->error || state->status<200 || state->status>299))
    {
@@ -532,6 +542,9 @@ uint8_t* net_http_data(struct http_t *state, size_t* len, bool accept_error)
 
 void net_http_delete(struct http_t *state)
 {
+   if (!state)
+      return;
+
    if (state->fd != -1)
       socket_close(state->fd);
    if (state->data)
