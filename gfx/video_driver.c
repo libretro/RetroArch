@@ -560,10 +560,10 @@ void init_video(void)
 
    runloop->measure_data.frame_time_samples_count = 0;
 
-   global->frame_cache.width = 4;
+   global->frame_cache.width  = 4;
    global->frame_cache.height = 4;
-   global->frame_cache.pitch = 8;
-   global->frame_cache.data = &dummy_pixels;
+   global->frame_cache.pitch  = 8;
+   global->frame_cache.data   = &dummy_pixels;
 
 #if defined(PSP)
    video_driver_set_texture_frame(&dummy_pixels, false, 1, 1, 1.0f);
@@ -590,12 +590,8 @@ void video_driver_set_nonblock_state(bool toggle)
 {
    driver_t *driver     = driver_get_ptr();
 
-   if (!driver)
-      return;
-   if (!driver->video)
-      return;
-
-   if (driver->video->set_nonblock_state)
+   if (driver && driver->video && 
+         driver->video->set_nonblock_state)
       driver->video->set_nonblock_state(driver->video_data, toggle);
 }
 
@@ -603,16 +599,12 @@ bool video_driver_set_rotation(unsigned rotation)
 {
    driver_t *driver     = driver_get_ptr();
 
-   if (!driver)
-      return false;
-   if (!driver->video)
-      return false;
-   if (!driver->video->set_rotation)
-      return false;
-
-   driver->video->set_rotation(driver->video_data, rotation);
-
-   return true;
+   if (driver && driver->video && driver->video->set_rotation)
+   {
+      driver->video->set_rotation(driver->video_data, rotation);
+      return true;
+   }
+   return false;
 }
 
 void video_driver_set_video_mode(unsigned width,
@@ -672,16 +664,12 @@ void video_driver_show_mouse(bool state)
 {
    driver_t *driver     = driver_get_ptr();
 
-   if (!driver)
-      return;
-   if (!driver->video_data)
-      return;
-   if (!driver->video_poke)
-      return;
-   if (!driver->video_poke->show_mouse)
-      return;
-   driver->video_poke->show_mouse(
-         driver->video_data, state);
+   if (driver 
+         && driver->video_data
+         && driver->video_poke
+         && driver->video_poke->show_mouse)
+      driver->video_poke->show_mouse(
+            driver->video_data, state);
 }
 
 void video_driver_set_osd_msg(const char *msg,
@@ -689,16 +677,11 @@ void video_driver_set_osd_msg(const char *msg,
 {
    driver_t *driver     = driver_get_ptr();
 
-   if (!driver)
-      return;
-   if (!driver->video_data)
-      return;
-   if (!driver->video_poke)
-      return;
-   if (!driver->video_poke->set_osd_msg)
-      return;
-   driver->video_poke->set_osd_msg(driver->video_data,
-         msg, params, font);
+   if (driver && driver->video_data
+         && driver->video_poke && 
+         driver->video_poke->set_osd_msg)
+      driver->video_poke->set_osd_msg(driver->video_data,
+            msg, params, font);
 }
 
 void video_driver_set_texture_enable(bool enable, bool fullscreen)
@@ -725,16 +708,10 @@ void video_driver_set_texture_frame(const void *frame, bool rgb32,
 #ifdef HAVE_MENU
    driver_t *driver     = driver_get_ptr();
 
-   if (!driver)
-      return;
-   if (!driver->video_data)
-      return;
-   if (!driver->video_poke)
-      return;
-   if (!driver->video_poke->set_texture_frame)
-      return;
-   driver->video_poke->set_texture_frame(
-         driver->video_data, frame, rgb32, width, height, alpha);
+   if (driver && driver->video_data && driver->video_poke &&
+         driver->video_poke->set_texture_frame)
+      driver->video_poke->set_texture_frame(
+            driver->video_data, frame, rgb32, width, height, alpha);
 #endif
 }
 
@@ -742,46 +719,32 @@ bool video_driver_viewport_info(struct video_viewport *vp)
 {
    driver_t *driver     = driver_get_ptr();
 
-   if (!driver)
-      return false;
-   if (!driver->video_data)
-      return false;
-   if (!driver->video)
-      return false;
-   if (!driver->video->viewport_info)
-      return false;
-
-   driver->video->viewport_info(driver->video_data, vp);
-
-   return true;
+   if (driver && driver->video_data && 
+         driver->video && driver->video->viewport_info)
+   {
+      driver->video->viewport_info(driver->video_data, vp);
+      return true;
+   }
+   return false;
 }
 
 bool video_driver_read_viewport(uint8_t *buffer)
 {
    driver_t *driver     = driver_get_ptr();
 
-   if (!driver)
-      return false;
-   if (!driver->video)
-      return false;
-   if (!driver->video->read_viewport)
-      return false;
-
-   return driver->video->read_viewport(driver->video_data,
-         buffer);
+   if (driver && driver->video && driver->video->read_viewport)
+      return driver->video->read_viewport(driver->video_data,
+            buffer);
+   return false;
 }
 
 bool video_driver_focus(void)
 {
    driver_t *driver     = driver_get_ptr();
 
-   if (!driver)
-      return false;
-   if (!driver->video)
-      return false;
-   if (!driver->video->focus)
-      return false;
-   return driver->video->focus(driver->video_data);
+   if (driver && driver->video && driver->video->focus)
+      return driver->video->focus(driver->video_data);
+   return false;
 }
 
 #ifdef HAVE_OVERLAY
@@ -789,15 +752,12 @@ bool video_driver_overlay_interface(const video_overlay_interface_t **iface)
 {
    driver_t *driver     = driver_get_ptr();
 
-   if (!driver)
-      return false;
-   if (!driver->video)
-      return false;
-
-   if (driver->video && driver->video->overlay_interface)
+   if (driver && driver->video && driver->video->overlay_interface)
+   {
       driver->video->overlay_interface(driver->video_data, iface);
-
-   return true;
+      return true;
+   }
+   return false;
 }
 #endif
 
@@ -806,78 +766,50 @@ void * video_driver_read_frame_raw(unsigned *width,
 {
    driver_t *driver     = driver_get_ptr();
 
-   if (!driver)
-      return NULL;
-   if (!driver->video)
-      return NULL;
-   if (!driver->video->read_frame_raw)
-      return NULL;
-
-   return driver->video->read_frame_raw(driver->video_data, width,
-         height, pitch);
+   if (driver && driver->video && driver->video->read_frame_raw)
+      return driver->video->read_frame_raw(driver->video_data, width,
+            height, pitch);
+   return NULL;
 }
 
 void video_driver_set_filtering(unsigned index, bool smooth)
 {
    driver_t *driver     = driver_get_ptr();
 
-   if (!driver)
-      return;
-   if (!driver->video)
-      return;
-   if (!driver->video_poke)
-      return;
-   if (!driver->video_poke->set_filtering)
-      return;
-   driver->video_poke->set_filtering(driver->video_data,
-         index, smooth);
+   if (driver && driver->video && driver->video_poke
+         && driver->video_poke->set_filtering)
+      driver->video_poke->set_filtering(driver->video_data,
+            index, smooth);
 }
 
 void video_driver_apply_state_changes(void)
 {
    driver_t *driver     = driver_get_ptr();
 
-   if (!driver)
-      return;
-   if (!driver->video)
-      return;
-   if (!driver->video_poke)
-      return;
-   if (!driver->video_poke->apply_state_changes)
-      return;
-   driver->video_poke->apply_state_changes(driver->video_data);
+   if (driver && driver->video && driver->video_poke 
+         && driver->video_poke->apply_state_changes)
+      driver->video_poke->apply_state_changes(driver->video_data);
 }
 
 void video_driver_get_video_output_next(void)
 {
    driver_t *driver     = driver_get_ptr();
 
-   if (!driver)
-      return;
-   if (!driver->video)
-      return;
-   if (!driver->video_data)
-      return;
-   if (!driver->video_poke)
-      return;
-   if (!driver->video_poke->get_video_output_next)
-      return;
-   driver->video_poke->get_video_output_next(driver->video_data);
+   if (driver && driver->video 
+         && driver->video_data
+         && driver->video_poke 
+         && driver->video_poke->get_video_output_next)
+      driver->video_poke->get_video_output_next(driver->video_data);
 }
 
 void video_driver_get_video_output_prev(void)
 {
    driver_t *driver     = driver_get_ptr();
 
-   if (!driver)
-      return;
-   if (!driver->video)
-      return;
-   if (!driver->video_data)
-      return;
-   if (!driver->video_poke)
-      return;
-   if (!driver->video_poke->get_video_output_prev)
-      return;
-   driver->video_poke->get_video_output_prev(driver->video_data);
+   if (driver 
+         && driver->video 
+         && driver->video_data
+         && driver->video_poke 
+         && driver->video_poke->get_video_output_prev)
+      driver->video_poke->get_video_output_prev(driver->video_data);
 }
