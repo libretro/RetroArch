@@ -272,3 +272,14 @@ bool input_driver_grab_mouse(bool state)
    driver->input->grab_mouse(driver->input_data, state);
    return true;
 }
+
+void *input_driver_init(void)
+{
+   driver_t *driver               = driver_get_ptr();
+
+   if (!driver)
+      return NULL;
+   if (!driver->input)
+      return NULL;
+   return driver->input->init();
+}

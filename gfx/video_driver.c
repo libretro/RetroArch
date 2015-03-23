@@ -372,7 +372,7 @@ static void init_video_input(const input_driver_t *tmp)
       rarch_fail(1, "init_video_input()");
    }
 
-   driver->input_data = driver->input->init();
+   driver->input_data = input_driver_init();
 
    if (driver->input_data)
       return;
