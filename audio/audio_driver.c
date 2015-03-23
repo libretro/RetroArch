@@ -458,6 +458,14 @@ bool audio_driver_mute_toggle(void)
    return true;
 }
 
+static int audio_driver_write_avail(void)
+{
+   driver_t *driver     = driver_get_ptr();
+   if (driver && driver->audio && driver->audio->write_avail)
+      return driver->audio->write_avail(driver->audio_data);
+   return 0;
+}
+
 /*
  * audio_driver_readjust_input_rate:
  *
@@ -465,28 +473,21 @@ bool audio_driver_mute_toggle(void)
  */
 void audio_driver_readjust_input_rate(void)
 {
-   double direction, adjust;
-   int half_size, delta_mid;
-   unsigned write_idx;
-   int avail = 0;
    runloop_t *runloop   = rarch_main_get_ptr();
-   driver_t *driver     = driver_get_ptr();
    global_t *global     = global_get_ptr();
    settings_t *settings = config_get_ptr();
-   
-   avail = driver->audio->write_avail(driver->audio_data);
+   unsigned write_idx   = runloop->measure_data.buffer_free_samples_count++ &
+      (AUDIO_BUFFER_FREE_SAMPLES_COUNT - 1);
+   int      half_size   = global->audio_data.driver_buffer_size / 2;
+   int      avail       = audio_driver_write_avail();
+   int      delta_mid   = avail - half_size;
+   double   direction   = (double)delta_mid / half_size;
+   double   adjust      = 1.0 + settings->audio.rate_control_delta * direction;
 
 #if 0
    RARCH_LOG_OUTPUT("Audio buffer is %u%% full\n",
          (unsigned)(100 - (avail * 100) / global->audio_data.driver_buffer_size));
 #endif
-
-   write_idx   = runloop->measure_data.buffer_free_samples_count++ &
-      (AUDIO_BUFFER_FREE_SAMPLES_COUNT - 1);
-   half_size   = global->audio_data.driver_buffer_size / 2;
-   delta_mid   = avail - half_size;
-   direction   = (double)delta_mid / half_size;
-   adjust      = 1.0 + settings->audio.rate_control_delta * direction;
 
    runloop->measure_data.buffer_free_samples[write_idx] = avail;
    global->audio_data.src_ratio = global->audio_data.orig_src_ratio * adjust;
