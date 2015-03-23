@@ -785,6 +785,7 @@ bool video_driver_focus(void)
    return driver->video->focus(driver->video_data);
 }
 
+#ifdef HAVE_OVERLAY
 bool video_driver_overlay_interface(const video_overlay_interface_t **iface)
 {
    driver_t *driver     = driver_get_ptr();
@@ -799,6 +800,7 @@ bool video_driver_overlay_interface(const video_overlay_interface_t **iface)
 
    return true;
 }
+#endif
 
 void * video_driver_read_frame_raw(unsigned *width,
    unsigned *height, size_t *pitch)
