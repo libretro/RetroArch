@@ -64,5 +64,6 @@ BEGIN
          MENUITEM "10x",         ID_M_WINDOW_SCALE_10X
       END
       MENUITEM "Toggle Exclusive Full Screen", ID_M_FULL_SCREEN
+      MENUITEM "Shader Parameters",            ID_M_SHADER_PARAMETERS
    END
 END

@@ -129,6 +129,7 @@ VIDEO CONTEXT
 
 #if defined(_WIN32) && !defined(_XBOX)
 #include "../gfx/drivers_context/wgl_ctx.c"
+#include "../gfx/drivers_context/wgl_shader_dlg.c"
 #endif
 
 #endif
