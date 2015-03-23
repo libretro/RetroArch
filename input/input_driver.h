@@ -142,6 +142,8 @@ int16_t input_driver_state(const struct retro_keybind **retro_keybinds,
 
 void input_driver_poll(void);
 
+bool input_driver_key_pressed(int key);
+
 #ifdef __cplusplus
 }
 #endif

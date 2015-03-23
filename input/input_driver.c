@@ -231,3 +231,12 @@ void input_driver_poll(void)
    if (driver->input && driver->input_data && driver->input->poll)
       driver->input->poll(driver->input_data);
 }
+
+bool input_driver_key_pressed(int key)
+{
+   driver_t *driver               = driver_get_ptr();
+
+   if (driver && driver->input && driver->input->key_pressed)
+      return driver->input->key_pressed(driver->input_data, key);
+   return false;
+}
