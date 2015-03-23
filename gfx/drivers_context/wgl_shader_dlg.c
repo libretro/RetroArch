@@ -161,7 +161,7 @@ void shader_dlg_params_reload(void)
    pos_y = g_shader_dlg.parameters_start_y;
    pos_x = SHADER_DLG_CTRL_X;
 
-   for (i = 0; i < shader->num_parameters; i++)
+   for (i = 0; i < (int)shader->num_parameters; i++)
    {
       if ((shader->parameters[i].minimum == 0.0)
             && (shader->parameters[i].maximum == (shader->parameters[i].minimum + shader->parameters[i].step)))
