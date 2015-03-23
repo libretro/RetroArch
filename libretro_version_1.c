@@ -263,8 +263,7 @@ bool retro_flush_audio(const int16_t *data, size_t samples)
       output_size = sizeof(int16_t);
    }
 
-   if (driver->audio->write(driver->audio_data, output_data,
-            output_frames * output_size * 2) < 0)
+   if (audio_driver_write(output_data, output_frames * output_size * 2) < 0)
    {
       RARCH_ERR(RETRO_LOG_AUDIO_WRITE_FAILED);
 

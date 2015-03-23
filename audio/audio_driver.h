@@ -142,6 +142,8 @@ void uninit_audio(void);
 
 void init_audio(void);
 
+ssize_t audio_driver_write(const void *buf, size_t size);
+
 #ifdef __cplusplus
 }
 #endif

@@ -528,3 +528,11 @@ void audio_driver_set_nonblock_state(bool toggle)
    if (driver && driver->audio && driver->audio->set_nonblock_state)
       driver->audio->set_nonblock_state(driver->audio_data, toggle);
 }
+
+ssize_t audio_driver_write(const void *buf, size_t size)
+{
+   driver_t *driver     = driver_get_ptr();
+   if (driver && driver->audio && driver->audio->write)
+      return driver->audio->write(driver->audio_data, buf, size);
+   return 0;
+}
