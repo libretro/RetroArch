@@ -219,7 +219,9 @@ int16_t input_driver_state(const struct retro_keybind **retro_keybinds,
       unsigned port, unsigned device, unsigned index, unsigned id)
 {
    driver_t *driver = driver_get_ptr();
-   if (driver->input && driver->input_data && driver->input->set_rumble)
+   if (driver->input
+         && driver->input_data
+         && driver->input->set_rumble)
       return driver->input->input_state(driver->input_data, retro_keybinds,
             port, device, index, id);
    return 0;
@@ -228,7 +230,9 @@ int16_t input_driver_state(const struct retro_keybind **retro_keybinds,
 void input_driver_poll(void)
 {
    driver_t *driver = driver_get_ptr();
-   if (driver->input && driver->input_data && driver->input->poll)
+   if (driver->input
+         && driver->input_data
+         && driver->input->poll)
       driver->input->poll(driver->input_data);
 }
 
@@ -236,7 +240,9 @@ bool input_driver_key_pressed(int key)
 {
    driver_t *driver               = driver_get_ptr();
 
-   if (driver && driver->input && driver->input->key_pressed)
+   if (driver
+         && driver->input
+         && driver->input->key_pressed)
       return driver->input->key_pressed(driver->input_data, key);
    return false;
 }
@@ -245,7 +251,9 @@ const rarch_joypad_driver_t * input_driver_get_joypad_driver(void)
 {
    driver_t *driver               = driver_get_ptr();
 
-   if (driver && driver->input && driver->input->get_joypad_driver)
+   if (driver
+         && driver->input
+         && driver->input->get_joypad_driver)
       return driver->input->get_joypad_driver(driver->input_data);
    return NULL;
 }
@@ -263,7 +271,9 @@ bool input_driver_grab_mouse(bool state)
 {
    driver_t *driver               = driver_get_ptr();
 
-   if (driver && driver->input && driver->input->grab_mouse)
+   if (driver
+         && driver->input
+         && driver->input->grab_mouse)
    {
       driver->input->grab_mouse(driver->input_data, state);
       return true;
@@ -284,6 +294,8 @@ void input_driver_free(void)
 {
    driver_t *driver               = driver_get_ptr();
 
-   if (driver && driver->input && driver->input->free)
+   if (driver
+         && driver->input
+         && driver->input->free)
       driver->input->free(driver->input_data);
 }

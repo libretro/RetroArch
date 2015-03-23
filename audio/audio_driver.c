@@ -461,7 +461,9 @@ bool audio_driver_mute_toggle(void)
 static int audio_driver_write_avail(void)
 {
    driver_t *driver     = driver_get_ptr();
-   if (driver && driver->audio && driver->audio->write_avail)
+   if (driver
+         && driver->audio
+         && driver->audio->write_avail)
       return driver->audio->write_avail(driver->audio_data);
    return 0;
 }
@@ -501,7 +503,9 @@ void audio_driver_readjust_input_rate(void)
 bool audio_driver_alive(void)
 {
    driver_t *driver     = driver_get_ptr();
-   if (driver && driver->audio && driver->audio->alive)
+   if (driver
+         && driver->audio
+         && driver->audio->alive)
       return driver->audio->alive(driver->audio_data);
    return false;
 }
@@ -509,7 +513,9 @@ bool audio_driver_alive(void)
 bool audio_driver_start(void)
 {
    driver_t *driver     = driver_get_ptr();
-   if (driver && driver->audio && driver->audio->start)
+   if (driver
+         && driver->audio
+         && driver->audio->start)
       return driver->audio->start(driver->audio_data);
    return false;
 }
@@ -517,7 +523,9 @@ bool audio_driver_start(void)
 bool audio_driver_stop(void)
 {
    driver_t *driver     = driver_get_ptr();
-   if (driver && driver->audio && driver->audio->stop)
+   if (driver
+         && driver->audio
+         && driver->audio->stop)
       return driver->audio->stop(driver->audio_data);
    return false;
 }
@@ -525,14 +533,18 @@ bool audio_driver_stop(void)
 void audio_driver_set_nonblock_state(bool toggle)
 {
    driver_t *driver     = driver_get_ptr();
-   if (driver && driver->audio && driver->audio->set_nonblock_state)
+   if (driver
+         && driver->audio
+         && driver->audio->set_nonblock_state)
       driver->audio->set_nonblock_state(driver->audio_data, toggle);
 }
 
 ssize_t audio_driver_write(const void *buf, size_t size)
 {
    driver_t *driver     = driver_get_ptr();
-   if (driver && driver->audio && driver->audio->write)
+   if (driver
+         && driver->audio
+         && driver->audio->write)
       return driver->audio->write(driver->audio_data, buf, size);
    return 0;
 }
