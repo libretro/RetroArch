@@ -214,3 +214,13 @@ retro_input_t input_driver_keys_pressed(void)
    }
    return ret;
 }
+
+int16_t input_driver_state(const struct retro_keybind **retro_keybinds,
+      unsigned port, unsigned device, unsigned index, unsigned id)
+{
+   driver_t *driver = driver_get_ptr();
+   if (driver->input && driver->input_data && driver->input->set_rumble)
+      return driver->input->input_state(driver->input_data, retro_keybinds,
+            port, device, index, id);
+   return 0;
+}

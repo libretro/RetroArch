@@ -446,8 +446,7 @@ static int16_t input_state(unsigned port, unsigned device,
    if (!driver->block_libretro_input)
    {
       if (((id < RARCH_FIRST_META_KEY) || (device == RETRO_DEVICE_KEYBOARD)))
-         res = driver->input->input_state(driver->input_data, libretro_input_binds, port,
-               device, idx, id);
+         res = input_driver_state(libretro_input_binds, port, device, idx, id);
 
 #ifdef HAVE_OVERLAY
       if (port == 0)
@@ -525,14 +524,13 @@ static INLINE void input_poll_overlay(input_overlay_t *overlay_device, float opa
       RARCH_DEVICE_POINTER_SCREEN : RETRO_DEVICE_POINTER;
 
    for (i = 0;
-         driver->input->input_state(driver->input_data, NULL, 0, device, i,
-            RETRO_DEVICE_ID_POINTER_PRESSED);
+         input_driver_state(NULL, 0, device, i, RETRO_DEVICE_ID_POINTER_PRESSED);
          i++)
    {
       input_overlay_state_t polled_data;
-      int16_t x = driver->input->input_state(driver->input_data, NULL, 0,
+      int16_t x = input_driver_state(NULL, 0,
             device, i, RETRO_DEVICE_ID_POINTER_X);
-      int16_t y = driver->input->input_state(driver->input_data, NULL, 0,
+      int16_t y = input_driver_state(NULL, 0,
             device, i, RETRO_DEVICE_ID_POINTER_Y);
 
       input_overlay_poll(overlay_device, &polled_data, x, y);

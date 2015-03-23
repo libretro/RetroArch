@@ -609,36 +609,36 @@ static int mouse_iterate(unsigned *action)
       return 0;
    }
 
-   menu->mouse.left = driver->input->input_state(driver->input_data,
-         binds, 0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_LEFT);
-   menu->mouse.right = driver->input->input_state(driver->input_data,
-         binds, 0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_RIGHT);
-   menu->mouse.wheelup = driver->input->input_state(driver->input_data,
-         binds, 0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_WHEELUP);
-   menu->mouse.wheeldown = driver->input->input_state(driver->input_data,
-         binds, 0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_WHEELDOWN);
-   menu->mouse.hwheelup = driver->input->input_state(driver->input_data,
-         binds, 0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP);
-   menu->mouse.hwheeldown = driver->input->input_state(driver->input_data,
-         binds, 0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN);
-   menu->mouse.dx = driver->input->input_state(driver->input_data,
-         binds, 0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_X);
-   menu->mouse.dy = driver->input->input_state(driver->input_data,
-         binds, 0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_Y);
+   menu->mouse.left       = input_driver_state(binds, 0, RETRO_DEVICE_MOUSE,
+         0, RETRO_DEVICE_ID_MOUSE_LEFT);
+   menu->mouse.right      = input_driver_state(binds, 0, RETRO_DEVICE_MOUSE,
+         0, RETRO_DEVICE_ID_MOUSE_RIGHT);
+   menu->mouse.wheelup    = input_driver_state(binds, 0, RETRO_DEVICE_MOUSE,
+         0, RETRO_DEVICE_ID_MOUSE_WHEELUP);
+   menu->mouse.wheeldown  = input_driver_state(binds, 0, RETRO_DEVICE_MOUSE,
+         0, RETRO_DEVICE_ID_MOUSE_WHEELDOWN);
+   menu->mouse.hwheelup   = input_driver_state(binds, 0, RETRO_DEVICE_MOUSE,
+         0, RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP);
+   menu->mouse.hwheeldown = input_driver_state(binds, 0, RETRO_DEVICE_MOUSE,
+         0, RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN);
+   menu->mouse.dx         = input_driver_state(binds, 0, RETRO_DEVICE_MOUSE,
+         0, RETRO_DEVICE_ID_MOUSE_X);
+   menu->mouse.dy         = input_driver_state(binds, 0, RETRO_DEVICE_MOUSE,
+         0, RETRO_DEVICE_ID_MOUSE_Y);
 
-   menu->mouse.x += menu->mouse.dx;
-   menu->mouse.y += menu->mouse.dy;
+   menu->mouse.x         += menu->mouse.dx;
+   menu->mouse.y         += menu->mouse.dy;
 
    if (menu->mouse.x < 5)
-      menu->mouse.x = 5;
+      menu->mouse.x       = 5;
    if (menu->mouse.y < 5)
-      menu->mouse.y = 5;
+      menu->mouse.y       = 5;
    if (menu->mouse.x > (int)menu->frame_buf.width - 5)
-      menu->mouse.x = menu->frame_buf.width - 5;
+      menu->mouse.x       = menu->frame_buf.width - 5;
    if (menu->mouse.y > (int)menu->frame_buf.height - 5)
-      menu->mouse.y = menu->frame_buf.height - 5;
+      menu->mouse.y       = menu->frame_buf.height - 5;
 
-   menu->mouse.scrollup = (menu->mouse.y == 5);
+   menu->mouse.scrollup   = (menu->mouse.y == 5);
    menu->mouse.scrolldown = (menu->mouse.y == (int)menu->frame_buf.height - 5);
 
    if (menu->mouse.dx != 0 || menu->mouse.dy !=0 || menu->mouse.left

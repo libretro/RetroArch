@@ -124,8 +124,7 @@ static PyObject *py_read_input(PyObject *self, PyObject *args)
       return NULL;
 
    if (!driver->block_libretro_input)
-      res = driver->input->input_state(driver->input_data,
-            py_binds, user - 1, RETRO_DEVICE_JOYPAD, 0, key);
+      res = input_driver_state(py_binds, user - 1, RETRO_DEVICE_JOYPAD, 0, key);
    return PyBool_FromLong(res);
 }
 
@@ -165,8 +164,7 @@ static PyObject *py_read_analog(PyObject *self, PyObject *args)
    if (user > MAX_USERS || user < 1 || index > 1 || id > 1)
       return NULL;
 
-   res = driver->input->input_state(driver->input_data,
-         py_binds, user - 1, RETRO_DEVICE_ANALOG, index, id);
+   res = input_driver_state(py_binds, user - 1, RETRO_DEVICE_ANALOG, index, id);
    return PyFloat_FromDouble((double)res / 0x7fff);
 }
 

@@ -864,11 +864,8 @@ static INLINE retro_input_t input_keys_pressed(void)
    if (!driver->block_libretro_input)
    {
       for (i = 0; i < settings->input.max_users; i++)
-      {
-         global->turbo_frame_enable[i] = 
-            driver->input->input_state(driver->input_data, binds, i,
-                  RETRO_DEVICE_JOYPAD, 0, RARCH_TURBO_ENABLE);
-      }
+         global->turbo_frame_enable[i] = input_driver_state(binds, 
+               i, RETRO_DEVICE_JOYPAD, 0, RARCH_TURBO_ENABLE);
    }
 
    ret = input_driver_keys_pressed();

@@ -205,7 +205,7 @@ void menu_input_poll_bind_state(struct menu_bind_state *state)
       return;
 
    memset(state->state, 0, sizeof(state->state));
-   state->skip = driver->input->input_state(driver->input_data, NULL, 0,
+   state->skip = input_driver_state(NULL, 0,
          RETRO_DEVICE_KEYBOARD, 0, RETROK_RETURN);
 
    if (driver->input && driver->input_data && driver->input->get_joypad_driver)
