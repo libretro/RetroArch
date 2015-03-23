@@ -2405,7 +2405,7 @@ bool rarch_main_command(unsigned cmd)
          driver->video_cache_context = false;
 
          /* Poll input to avoid possibly stale data to corrupt things. */
-         driver->input->poll(driver->input_data);
+         input_driver_poll();
 
 #ifdef HAVE_MENU
          runloop->frames.video.current.menu.framebuf.dirty = true;

@@ -224,3 +224,10 @@ int16_t input_driver_state(const struct retro_keybind **retro_keybinds,
             port, device, index, id);
    return 0;
 }
+
+void input_driver_poll(void)
+{
+   driver_t *driver = driver_get_ptr();
+   if (driver->input && driver->input_data && driver->input->poll)
+      driver->input->poll(driver->input_data);
+}

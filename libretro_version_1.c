@@ -643,7 +643,7 @@ static void input_poll(void)
    driver_t *driver               = driver_get_ptr();
    settings_t *settings           = config_get_ptr();
 
-   driver->input->poll(driver->input_data);
+   input_driver_poll();
 
 #ifdef HAVE_OVERLAY
    if (driver->overlay)
