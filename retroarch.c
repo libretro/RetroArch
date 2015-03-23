@@ -2385,7 +2385,7 @@ bool rarch_main_command(unsigned cmd)
             if (menu)
                menu->load_no_content = false;
 #endif
-            rarch_main_data_free();
+            rarch_main_data_deinit();
 
             *global->fullpath = '\0';
 
@@ -2590,6 +2590,9 @@ bool rarch_main_command(unsigned cmd)
          if (global->core_info)
             core_info_list_free(global->core_info);
          global->core_info = NULL;
+         break;
+      case RARCH_CMD_DATA_RUNLOOP_FREE:
+         rarch_main_data_free();
          break;
       case RARCH_CMD_CORE_INFO_INIT:
          rarch_main_command(RARCH_CMD_CORE_INFO_DEINIT);

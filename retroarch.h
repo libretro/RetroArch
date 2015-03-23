@@ -193,6 +193,7 @@ enum basic_event
    RARCH_CMD_REMAPPING_DEINIT,
    RARCH_CMD_VOLUME_UP,
    RARCH_CMD_VOLUME_DOWN,
+   RARCH_CMD_DATA_RUNLOOP_FREE,
 };
 
 enum action_state

@@ -778,7 +778,7 @@ static void data_runloop_thread_deinit(data_runloop_t *runloop)
 }
 #endif
 
-void rarch_main_data_free(void)
+void rarch_main_data_deinit(void)
 {
    data_runloop_t *data_runloop = (data_runloop_t*)rarch_main_data_get_ptr();
 
@@ -794,8 +794,15 @@ void rarch_main_data_free(void)
 #endif
 
    data_runloop->inited = false;
+}
 
-   free(data_runloop);
+void rarch_main_data_free(void)
+{
+   data_runloop_t *data_runloop = (data_runloop_t*)rarch_main_data_get_ptr();
+
+   if (data_runloop)
+      free(data_runloop);
+   data_runloop = NULL;
 }
 
 static void data_runloop_iterate(bool is_thread, data_runloop_t *runloop)
@@ -915,6 +922,7 @@ static data_runloop_t *rarch_main_data_new(void)
 
 void rarch_main_data_clear_state(void)
 {
+   rarch_main_data_deinit();
    rarch_main_data_free();
    g_data_runloop = rarch_main_data_new();
 }
