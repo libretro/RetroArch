@@ -389,10 +389,9 @@ void uninit_video_input(void)
 
    if (
          !driver->input_data_own &&
-         (driver->input_data != driver->video_data) &&
-         driver->input &&
-         driver->input->free)
-      driver->input->free(driver->input_data);
+         (driver->input_data != driver->video_data)
+      )
+      input_driver_free();
 
    if (
          !driver->video_data_own &&

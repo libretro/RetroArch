@@ -263,23 +263,27 @@ bool input_driver_grab_mouse(bool state)
 {
    driver_t *driver               = driver_get_ptr();
 
-   if (!driver)
-      return false;
-   if (!driver->input)
-      return false;
-   if (!driver->input->grab_mouse)
-      return false;
-   driver->input->grab_mouse(driver->input_data, state);
-   return true;
+   if (driver && driver->input && driver->input->grab_mouse)
+   {
+      driver->input->grab_mouse(driver->input_data, state);
+      return true;
+   }
+   return false;
 }
 
 void *input_driver_init(void)
 {
    driver_t *driver               = driver_get_ptr();
 
-   if (!driver)
-      return NULL;
-   if (!driver->input)
-      return NULL;
-   return driver->input->init();
+   if (driver && driver->input && driver->input->init)
+      return driver->input->init();
+   return NULL;
+}
+
+void input_driver_free(void)
+{
+   driver_t *driver               = driver_get_ptr();
+
+   if (driver && driver->input && driver->input->free)
+      driver->input->free(driver->input_data);
 }

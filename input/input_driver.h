@@ -152,6 +152,8 @@ bool input_driver_grab_mouse(bool state);
 
 void *input_driver_init(void);
 
+void input_driver_free(void);
+
 #ifdef __cplusplus
 }
 #endif
