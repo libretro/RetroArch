@@ -27,6 +27,10 @@
 #if !defined(_XBOX) && defined(_WIN32)
 #include "../../retroarch.h"
 
+#ifdef HAVE_OPENGL
+#include "wgl_shader_dlg.h"
+#endif
+
 static bool win32_browser(HWND owner, char *filename, const char *extensions,
 	const char *title, const char *initial_dir)
 {
@@ -130,6 +134,11 @@ LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
       case ID_M_FULL_SCREEN:
          cmd = RARCH_CMD_FULLSCREEN_TOGGLE;
          break;
+#ifdef HAVE_OPENGL
+      case ID_M_SHADER_PARAMETERS:
+         shader_dlg_show(owner);
+         break;
+#endif
       case ID_M_MOUSE_GRAB:
          cmd = RARCH_CMD_GRAB_MOUSE_TOGGLE;
          break;

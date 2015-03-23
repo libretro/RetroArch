@@ -27,6 +27,7 @@
 #include "../gl_common.h"
 #include "../video_monitor.h"
 #include "win32_common.h"
+#include "wgl_shader_dlg.h"
 #include <windows.h>
 #include <commdlg.h>
 #include <string.h>
@@ -316,7 +317,7 @@ static void gfx_ctx_wgl_check_window(void *data, bool *quit,
    (void)data;
    (void)frame_count;
 
-   while (PeekMessage(&msg, g_hwnd, 0, 0, PM_REMOVE))
+   while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
    {
       TranslateMessage(&msg);
       DispatchMessage(&msg);
@@ -417,6 +418,9 @@ static bool gfx_ctx_wgl_init(void *data)
 
    if (!RegisterClassEx(&wndclass))
       return false;
+
+   if (!wgl_shader_dlg_init())
+      RARCH_ERR("[WGL]: wgl_shader_dlg_init() failed.\n");
 
    return true;
 }

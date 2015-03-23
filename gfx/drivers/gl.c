@@ -54,6 +54,7 @@
 
 #if defined(_WIN32) && !defined(_XBOX)
 #include "../drivers_context/win32_dwm_common.h"
+#include "../drivers_context/wgl_shader_dlg.h"
 #endif
 
 #include "../video_shader_driver.h"
@@ -2647,6 +2648,9 @@ static bool gl_set_shader(void *data,
    gl_set_shader_viewport(gl, 0);
    gl_set_shader_viewport(gl, 1);
    context_bind_hw_render(gl, true);
+#if defined(_WIN32) && !defined(_XBOX)
+   shader_dlg_params_reload();
+#endif
    return true;
 #else
    return false;
