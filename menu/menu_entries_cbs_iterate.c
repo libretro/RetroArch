@@ -33,8 +33,8 @@ static int archive_open(void)
    const char *menu_path  = NULL;
    const char *menu_label = NULL;
    const char* path       = NULL;
-   unsigned int type = 0;
-   menu_handle_t *menu = menu_driver_get_ptr();
+   unsigned int type      = 0;
+   menu_handle_t *menu    = menu_driver_get_ptr();
 
    if (!menu)
       return -1;
@@ -293,10 +293,10 @@ static int action_iterate_info(const char *label, unsigned action)
 {
    char msg[PATH_MAX_LENGTH];
    char needle[PATH_MAX_LENGTH];
-   unsigned info_type = 0;
+   unsigned info_type               = 0;
    rarch_setting_t *current_setting = NULL;
-   file_list_t *list = NULL;
-   menu_handle_t *menu    = menu_driver_get_ptr();
+   file_list_t *list                = NULL;
+   menu_handle_t *menu              = menu_driver_get_ptr();
    if (!menu)
       return 0;
 
@@ -362,12 +362,12 @@ static int action_iterate_menu_viewport(const char *label, unsigned action)
    int stride_x = 1, stride_y = 1;
    char msg[PATH_MAX_LENGTH];
    struct retro_game_geometry *geom = NULL;
-   const char *base_msg = NULL;
-   unsigned type = 0;
-   global_t      *global  = global_get_ptr();
-   video_viewport_t *custom = &global->console.screen.viewports.custom_vp;
-   menu_handle_t *menu    = menu_driver_get_ptr();
-   settings_t *settings   = config_get_ptr();
+   const char *base_msg             = NULL;
+   unsigned type                    = 0;
+   global_t      *global            = global_get_ptr();
+   video_viewport_t *custom         = &global->console.screen.viewports.custom_vp;
+   menu_handle_t *menu              = menu_driver_get_ptr();
+   settings_t *settings             = config_get_ptr();
 
    if (!menu)
       return -1;
@@ -387,7 +387,7 @@ static int action_iterate_menu_viewport(const char *label, unsigned action)
       case MENU_ACTION_UP:
          if (type == MENU_SETTINGS_CUSTOM_VIEWPORT)
          {
-            custom->y -= stride_y;
+            custom->y      -= stride_y;
             custom->height += stride_y;
          }
          else if (custom->height >= (unsigned)stride_y)
@@ -412,7 +412,7 @@ static int action_iterate_menu_viewport(const char *label, unsigned action)
       case MENU_ACTION_LEFT:
          if (type == MENU_SETTINGS_CUSTOM_VIEWPORT)
          {
-            custom->x -= stride_x;
+            custom->x     -= stride_x;
             custom->width += stride_x;
          }
          else if (custom->width >= (unsigned)stride_x)
@@ -464,15 +464,15 @@ static int action_iterate_menu_viewport(const char *label, unsigned action)
 
             if (type == MENU_SETTINGS_CUSTOM_VIEWPORT)
             {
-               custom->width += custom->x;
+               custom->width  += custom->x;
                custom->height += custom->y;
-               custom->x = 0;
-               custom->y = 0;
+               custom->x       = 0;
+               custom->y       = 0;
             }
             else
             {
-               custom->width = vp.full_width - custom->x;
-               custom->height = vp.full_height - custom->y;
+               custom->width   = vp.full_width - custom->x;
+               custom->height  = vp.full_height - custom->y;
             }
 
             rarch_main_command(RARCH_CMD_VIDEO_APPLY_STATE_CHANGES);
@@ -493,14 +493,14 @@ static int action_iterate_menu_viewport(const char *label, unsigned action)
 
    if (settings->video.scale_integer)
    {
-      custom->x = 0;
-      custom->y = 0;
+      custom->x     = 0;
+      custom->y     = 0;
       custom->width = ((custom->width + geom->base_width - 1) /
             geom->base_width) * geom->base_width;
       custom->height = ((custom->height + geom->base_height - 1) /
             geom->base_height) * geom->base_height;
-
-      base_msg = "Set scale";
+      base_msg       = "Set scale";
+       
       snprintf(msg, sizeof(msg), "%s (%4ux%4u, %u x %u scale)",
             base_msg,
             custom->width, custom->height,
@@ -570,10 +570,9 @@ static int action_iterate_message(const char *label, unsigned action)
 static int mouse_iterate(unsigned *action)
 {
    const struct retro_keybind *binds[MAX_USERS];
-   menu_handle_t *menu    = menu_driver_get_ptr();
-   runloop_t *runloop     = rarch_main_get_ptr();
-   driver_t *driver       = driver_get_ptr();
-   settings_t *settings   = config_get_ptr();
+   menu_handle_t *menu       = menu_driver_get_ptr();
+   runloop_t *runloop        = rarch_main_get_ptr();
+   settings_t *settings      = config_get_ptr();
 
    if (!menu)
       return -1;
@@ -652,13 +651,13 @@ static int mouse_iterate(unsigned *action)
 
 static int action_iterate_main(const char *label, unsigned action)
 {
-   int ret = 0;
-   unsigned type_offset = 0;
-   const char *label_offset = NULL;
-   const char *path_offset = NULL;
+   int ret                   = 0;
+   unsigned type_offset      = 0;
+   const char *label_offset  = NULL;
+   const char *path_offset   = NULL;
    menu_file_list_cbs_t *cbs = NULL;
-   menu_handle_t *menu    = menu_driver_get_ptr();
-   global_t *global       = global_get_ptr();
+   menu_handle_t *menu       = menu_driver_get_ptr();
+   global_t *global          = global_get_ptr();
    if (!menu)
       return 0;
 
