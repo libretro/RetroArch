@@ -292,8 +292,7 @@ void driver_set_nonblock_state(bool enable)
    }
 
    if (driver->audio_active && driver->audio_data)
-      driver->audio->set_nonblock_state(driver->audio_data,
-            settings->audio.sync ? enable : true);
+      audio_driver_set_nonblock_state(settings->audio.sync ? enable : true);
 
    global->audio_data.chunk_size = enable ?
       global->audio_data.nonblock_chunk_size : 

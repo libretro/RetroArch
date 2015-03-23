@@ -2471,14 +2471,14 @@ bool rarch_main_command(unsigned cmd)
          if (!audio_driver_alive())
             return false;
 
-         driver->audio->stop(driver->audio_data);
+         if (!audio_driver_stop())
+            return false;
          break;
       case RARCH_CMD_AUDIO_START:
          if (!driver->audio_data || audio_driver_alive())
             return false;
 
-         if (!settings->audio.mute_enable
-               && !driver->audio->start(driver->audio_data))
+         if (!settings->audio.mute_enable && !audio_driver_start())
          {
             RARCH_ERR("Failed to start audio driver. Will continue without audio.\n");
             driver->audio_active = false;
@@ -2619,8 +2619,7 @@ bool rarch_main_command(unsigned cmd)
       case RARCH_CMD_AUDIO_SET_NONBLOCKING_STATE:
          boolean = true; /* fall-through */
       case RARCH_CMD_AUDIO_SET_BLOCKING_STATE:
-         if (driver->audio && driver->audio->set_nonblock_state)
-            driver->audio->set_nonblock_state(driver->audio_data, boolean);
+         audio_driver_set_nonblock_state(boolean);
          break;
       case RARCH_CMD_OVERLAY_SET_SCALE_FACTOR:
 #ifdef HAVE_OVERLAY

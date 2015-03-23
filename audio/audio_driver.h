@@ -121,6 +121,12 @@ void audio_driver_readjust_input_rate(void);
 
 bool audio_driver_alive(void);
 
+bool audio_driver_start(void);
+
+bool audio_driver_stop(void);
+
+void audio_driver_set_nonblock_state(bool toggle);
+
 /**
  * config_get_audio_driver_options:
  *

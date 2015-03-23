@@ -505,3 +505,26 @@ bool audio_driver_alive(void)
       return driver->audio->alive(driver->audio_data);
    return false;
 }
+
+bool audio_driver_start(void)
+{
+   driver_t *driver     = driver_get_ptr();
+   if (driver && driver->audio && driver->audio->start)
+      return driver->audio->start(driver->audio_data);
+   return false;
+}
+
+bool audio_driver_stop(void)
+{
+   driver_t *driver     = driver_get_ptr();
+   if (driver && driver->audio && driver->audio->stop)
+      return driver->audio->stop(driver->audio_data);
+   return false;
+}
+
+void audio_driver_set_nonblock_state(bool toggle)
+{
+   driver_t *driver     = driver_get_ptr();
+   if (driver && driver->audio && driver->audio->set_nonblock_state)
+      driver->audio->set_nonblock_state(driver->audio_data, toggle);
+}
