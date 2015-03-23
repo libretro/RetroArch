@@ -291,7 +291,7 @@ static void rmenu_set_texture(void)
    if (!menu_texture->pixels)
       return;
 
-   video_driver_set_texture_frame(menu_texture.pixels, true,
+   video_driver_set_texture_frame(menu_texture->pixels, true,
          menu->frame_buf.width, menu->frame_buf.height, 1.0f);
    menu_texture_inited = true;
 }
