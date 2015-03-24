@@ -572,8 +572,6 @@ bool video_driver_has_windowed(void)
 
    if (!driver || !driver->video)
       return false;
-   /* If video driver/context does not support windowed
-    * mode, don't perform command. */
    return driver->video->has_windowed(driver->video_data);
 }
 
@@ -581,9 +579,7 @@ void video_driver_set_nonblock_state(bool toggle)
 {
    driver_t *driver     = driver_get_ptr();
 
-   if (driver
-         && driver->video
-         && driver->video->set_nonblock_state)
+   if (driver && driver->video)
       driver->video->set_nonblock_state(driver->video_data, toggle);
 }
 

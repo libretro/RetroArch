@@ -529,9 +529,7 @@ bool audio_driver_stop(void)
 void audio_driver_set_nonblock_state(bool toggle)
 {
    driver_t *driver     = driver_get_ptr();
-   if (driver
-         && driver->audio
-         && driver->audio->set_nonblock_state)
+   if (driver && driver->audio)
       driver->audio->set_nonblock_state(driver->audio_data, toggle);
 }
 
