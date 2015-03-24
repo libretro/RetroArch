@@ -119,7 +119,6 @@ static void video_frame(const void *data, unsigned width,
 {
    unsigned output_width  = 0, output_height = 0, output_pitch = 0;
    const char *msg      = NULL;
-   runloop_t *runloop   = rarch_main_get_ptr();
    driver_t  *driver    = driver_get_ptr();
    global_t  *global    = global_get_ptr();
    settings_t *settings = config_get_ptr();
@@ -160,13 +159,8 @@ static void video_frame(const void *data, unsigned width,
       pitch  = output_pitch;
    }
 
-   if (driver->video->frame(driver->video_data, data, width, height, pitch, msg))
-   {
-      runloop->frames.video.count++;
-      return;
-   }
-
-   driver->video_active = false;
+   if (!video_driver_frame(data, width, height, pitch, msg))
+      driver->video_active = false;
 }
 
 /**

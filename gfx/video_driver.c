@@ -798,3 +798,19 @@ void video_driver_get_video_output_prev(void)
          && driver->video_poke->get_video_output_prev)
       driver->video_poke->get_video_output_prev(driver->video_data);
 }
+
+bool video_driver_frame(const void *frame, unsigned width,
+         unsigned height, unsigned pitch, const char *msg)
+{
+   bool ret;
+   driver_t *driver     = driver_get_ptr();
+   runloop_t *runloop   = rarch_main_get_ptr();
+   if (driver && driver->video
+         && driver->video->frame(driver->video_data,
+            frame, width, height, pitch, msg))
+   {
+      runloop->frames.video.count++;
+      return true;
+   }
+   return false;
+}
