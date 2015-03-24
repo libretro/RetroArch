@@ -587,9 +587,7 @@ bool video_driver_set_rotation(unsigned rotation)
 {
    driver_t *driver     = driver_get_ptr();
 
-   if (driver
-         && driver->video
-         && driver->video->set_rotation)
+   if (driver && driver->video)
    {
       driver->video->set_rotation(driver->video_data, rotation);
       return true;

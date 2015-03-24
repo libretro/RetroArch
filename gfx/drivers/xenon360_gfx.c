@@ -288,12 +288,6 @@ static bool xenon360_gfx_set_shader(void *data,
    return false; 
 }
 
-static void xenon360_gfx_set_rotation(void *data, unsigned rotation)
-{
-   (void)data;
-   (void)rotation;
-}
-
 static void xenon360_gfx_viewport_info(void *data, struct video_viewport *vp)
 {
    (void)data;
