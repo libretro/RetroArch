@@ -249,21 +249,17 @@ bool video_driver_is_alive(void)
 {
    driver_t *driver = driver_get_ptr();
    /* Possible race issue, return true */
-   if (!driver->video || !driver->video_data)
-      return true;
-   if (!driver->video->alive(driver->video_data))
-      return false;
-   return true;
+   if (driver->video && driver->video_data)
+      return driver->video->alive(driver->video_data);
+   return false;
 }
 
 bool video_driver_has_focus(void)
 {
    driver_t *driver = driver_get_ptr();
-   if (!driver->video || !driver->video_data)
-      return false;
-   if (!driver->video->focus(driver->video_data))
-      return false;
-   return true;
+   if (driver->video && driver->video_data)
+      return driver->video->focus(driver->video_data);
+   return false;
 }
 
 bool video_driver_set_shader(enum rarch_shader_type type,
@@ -574,16 +570,11 @@ bool video_driver_has_windowed(void)
 {
    driver_t *driver     = driver_get_ptr();
 
-   if (!driver)
+   if (!driver || !driver->video)
       return false;
-   if (!driver->video)
-      return false;
-
    /* If video driver/context does not support windowed
     * mode, don't perform command. */
-   if (!driver->video->has_windowed(driver->video_data))
-      return false;
-   return true;
+   return driver->video->has_windowed(driver->video_data);
 }
 
 void video_driver_set_nonblock_state(bool toggle)
@@ -736,9 +727,7 @@ bool video_driver_focus(void)
 {
    driver_t *driver     = driver_get_ptr();
 
-   if (driver 
-         && driver->video
-         && driver->video->focus)
+   if (driver && driver->video)
       return driver->video->focus(driver->video_data);
    return false;
 }
