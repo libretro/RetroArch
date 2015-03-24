@@ -455,8 +455,9 @@ static void sdl_set_aspect_ratio(void *data, unsigned aspectratio_index)
    switch (aspectratio_index)
    {
       case ASPECT_RATIO_SQUARE:
-         video_viewport_set_square_pixel(global->system.av_info.geometry.base_width,
-                                       global->system.av_info.geometry.base_height);
+         video_viewport_set_square_pixel(
+               global->system.av_info.geometry.base_width,
+               global->system.av_info.geometry.base_height);
          break;
 
       case ASPECT_RATIO_CORE:

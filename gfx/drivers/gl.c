@@ -1483,9 +1483,6 @@ static bool gl_frame(void *data, const void *frame,
    RARCH_PERFORMANCE_INIT(frame_run);
    RARCH_PERFORMANCE_START(frame_run);
 
-   if (!gl)
-      return true;
-
    context_bind_hw_render(gl, false);
 
 #ifndef HAVE_OPENGLES
