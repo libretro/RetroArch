@@ -170,7 +170,7 @@ static INLINE void setup_rewind_audio(void)
 static void check_rewind(bool pressed)
 {
    static bool first = true;
-   global_t *global = global_get_ptr();
+   global_t *global  = global_get_ptr();
 
    if (global->rewind.frame_is_reverse)
    {
