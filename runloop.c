@@ -81,24 +81,6 @@ static bool check_pause(bool pause_pressed, bool frameadvance_pressed)
 }
 
 /**
- * check_is_oneshot:
- * @oneshot_pressed      : is this a oneshot frame?
- * @rewind_pressed       : was rewind key pressed?
- *
- * Checks if the current frame is one-shot frame type.
- *
- * Rewind buttons works like FRAMEREWIND when paused.
- * We will one-shot in that case.
- *
- * Returns: true if libretro frame is one-shot, otherwise false..
- *
- **/
-static INLINE bool check_is_oneshot(bool oneshot_pressed, bool rewind_pressed)
-{
-   return (oneshot_pressed | rewind_pressed);
-}
-
-/**
  * check_fast_forward_button:
  * @fastforward_pressed  : is fastforward key pressed?
  * @hold_pressed         : is fastforward key pressed and held?
@@ -432,33 +414,6 @@ static void check_shader_dir(bool pressed_next, bool pressed_prev)
       RARCH_WARN("Failed to apply shader.\n");
 }
 
-/**
- * check_cheats:
- * @trigger_input        : difference' input sample - difference
- *
- * Checks if any one of the cheat keys has been pressed for this frame: 
- * a) Next cheat index.
- * b) Previous cheat index.
- * c) Toggle on/off of current cheat index.
- **/
-static void check_cheats(retro_input_t trigger_input)
-{
-   global_t *global               = global_get_ptr();
-   bool cheat_index_plus_pressed  = BIT64_GET(trigger_input,
-         RARCH_CHEAT_INDEX_PLUS);
-   bool cheat_index_minus_pressed = BIT64_GET(trigger_input,
-         RARCH_CHEAT_INDEX_MINUS);
-   bool cheat_toggle_pressed      = BIT64_GET(trigger_input,
-         RARCH_CHEAT_TOGGLE);
-
-   if (cheat_index_plus_pressed)
-      cheat_manager_index_next(global->cheat);
-   else if (cheat_index_minus_pressed)
-      cheat_manager_index_prev(global->cheat);
-   else if (cheat_toggle_pressed)
-      cheat_manager_toggle(global->cheat);
-}
-
 #ifdef HAVE_MENU
 static void do_state_check_menu_toggle(void)
 {
@@ -478,10 +433,6 @@ static void do_state_check_menu_toggle(void)
 
 /**
  * do_pre_state_checks:
- * @input                : input sample for this frame
- * @old_input            : input sample of the previous frame
- * @trigger_input        : difference' input sample - difference
- *                         between 'input' and 'old_input'
  *
  * Checks for state changes in this frame.
  *
@@ -490,18 +441,12 @@ static void do_state_check_menu_toggle(void)
  *
  * Returns: 0.
  **/
-static int do_pre_state_checks(
-      retro_input_t input, retro_input_t old_input,
-      retro_input_t trigger_input)
+static int do_pre_state_checks(bool overlay_next_pressed,
+      bool fullscreen_toggle, bool grab_mouse_pressed,
+      bool menu_pressed)
 {
    runloop_t *runloop        = rarch_main_get_ptr();
    global_t *global          = global_get_ptr();
-   bool fullscreen_toggle    = BIT64_GET(trigger_input, RARCH_FULLSCREEN_TOGGLE_KEY);
-   bool overlay_next_pressed = BIT64_GET(trigger_input, RARCH_OVERLAY_NEXT);
-   bool grab_mouse_pressed   = BIT64_GET(trigger_input, RARCH_GRAB_MOUSE_TOGGLE);
-#ifdef HAVE_MENU
-   bool menu_pressed         = BIT64_GET(trigger_input, RARCH_MENU_TOGGLE);
-#endif
 
    if (overlay_next_pressed)
       rarch_main_command(RARCH_CMD_OVERLAY_NEXT);
@@ -525,12 +470,9 @@ static int do_pre_state_checks(
 
 #ifdef HAVE_NETPLAY
 static int do_netplay_state_checks(
-      retro_input_t input, retro_input_t old_input,
-      retro_input_t trigger_input)
+      bool netplay_flip_pressed,
+      bool fullscreen_toggle)
 {
-   bool netplay_flip_pressed = BIT64_GET(trigger_input, RARCH_NETPLAY_FLIP);
-   bool fullscreen_toggle    = BIT64_GET(trigger_input, RARCH_FULLSCREEN_TOGGLE_KEY);
-
    if (netplay_flip_pressed)
       rarch_main_command(RARCH_CMD_NETPLAY_FLIP_PLAYERS);
 
@@ -541,20 +483,14 @@ static int do_netplay_state_checks(
 #endif
 
 static int do_pause_state_checks(
-      retro_input_t input, retro_input_t old_input,
-      retro_input_t trigger_input)
+      bool pause_pressed,
+      bool frameadvance_pressed,
+      bool fullscreen_toggle_pressed,
+      bool rewind_pressed)
 {
    runloop_t *runloop        = rarch_main_get_ptr();
-   bool fullscreen_toggle_pressed = BIT64_GET(trigger_input, 
-         RARCH_FULLSCREEN_TOGGLE_KEY);
-   bool pause_pressed        = BIT64_GET(trigger_input, RARCH_PAUSE_TOGGLE);
-   bool frameadvance_pressed = BIT64_GET(trigger_input, RARCH_FRAMEADVANCE);
-   bool oneshot_pressed      = BIT64_GET(trigger_input, RARCH_FRAMEADVANCE);
-   bool rewind_pressed       = BIT64_GET(trigger_input, RARCH_REWIND);
 
-   check_pause(pause_pressed, frameadvance_pressed);
-
-   if (!runloop->is_paused)
+   if (!runloop || !runloop->is_paused)
       return 0;
 
    if (fullscreen_toggle_pressed)
@@ -563,7 +499,7 @@ static int do_pause_state_checks(
       rarch_render_cached_frame();
    }
 
-   if (!check_is_oneshot(oneshot_pressed, rewind_pressed))
+   if (!(frameadvance_pressed | rewind_pressed))
       return 1;
 
    return 0;
@@ -584,29 +520,39 @@ static int do_state_checks(
       retro_input_t input, retro_input_t old_input,
       retro_input_t trigger_input)
 {
-   driver_t  *driver        = driver_get_ptr();
-   runloop_t *runloop       = rarch_main_get_ptr();
-   global_t  *global        = global_get_ptr();
-   bool screenshot_pressed  = BIT64_GET(trigger_input, RARCH_SCREENSHOT);
-   bool mute_pressed        = BIT64_GET(trigger_input, RARCH_MUTE);
-   bool volume_up_pressed   = BIT64_GET(input, RARCH_VOLUME_UP);
-   bool volume_down_pressed = BIT64_GET(input, RARCH_VOLUME_DOWN);
-   bool reset_pressed       = BIT64_GET(trigger_input, RARCH_RESET);
-   bool disk_prev_pressed   = BIT64_GET(trigger_input, RARCH_DISK_PREV);
-   bool disk_next_pressed   = BIT64_GET(trigger_input, RARCH_DISK_NEXT);
-   bool disk_eject_pressed  = BIT64_GET(trigger_input, RARCH_DISK_EJECT_TOGGLE);
-   bool movie_record        = BIT64_GET(trigger_input, RARCH_MOVIE_RECORD_TOGGLE);
-   bool save_state_pressed  = BIT64_GET(trigger_input, RARCH_SAVE_STATE_KEY);
-   bool load_state_pressed  = BIT64_GET(trigger_input, RARCH_LOAD_STATE_KEY);
-   bool rewind_pressed      = BIT64_GET(input, RARCH_REWIND);
-   bool slowmotion_pressed  = BIT64_GET(input, RARCH_SLOWMOTION);
-   bool shader_next_pressed = BIT64_GET(trigger_input, RARCH_SHADER_NEXT);
-   bool shader_prev_pressed = BIT64_GET(trigger_input, RARCH_SHADER_PREV);
-   bool fastforward_pressed = BIT64_GET(trigger_input, RARCH_FAST_FORWARD_KEY);
-   bool hold_pressed        = BIT64_GET(input, RARCH_FAST_FORWARD_HOLD_KEY);
-   bool old_hold_pressed    = BIT64_GET(old_input, RARCH_FAST_FORWARD_HOLD_KEY);
-   bool state_slot_increase = BIT64_GET(trigger_input, RARCH_STATE_SLOT_PLUS);
-   bool state_slot_decrease = BIT64_GET(trigger_input, RARCH_STATE_SLOT_MINUS);
+   driver_t  *driver         = driver_get_ptr();
+   runloop_t *runloop        = rarch_main_get_ptr();
+   global_t  *global         = global_get_ptr();
+   bool screenshot_pressed   = BIT64_GET(trigger_input, RARCH_SCREENSHOT);
+   bool mute_pressed         = BIT64_GET(trigger_input, RARCH_MUTE);
+   bool volume_up_pressed    = BIT64_GET(input, RARCH_VOLUME_UP);
+   bool volume_down_pressed  = BIT64_GET(input, RARCH_VOLUME_DOWN);
+   bool reset_pressed        = BIT64_GET(trigger_input, RARCH_RESET);
+   bool disk_prev_pressed    = BIT64_GET(trigger_input, RARCH_DISK_PREV);
+   bool disk_next_pressed    = BIT64_GET(trigger_input, RARCH_DISK_NEXT);
+   bool disk_eject_pressed   = BIT64_GET(trigger_input, RARCH_DISK_EJECT_TOGGLE);
+   bool movie_record         = BIT64_GET(trigger_input, RARCH_MOVIE_RECORD_TOGGLE);
+   bool save_state_pressed   = BIT64_GET(trigger_input, RARCH_SAVE_STATE_KEY);
+   bool load_state_pressed   = BIT64_GET(trigger_input, RARCH_LOAD_STATE_KEY);
+   bool slowmotion_pressed   = BIT64_GET(input, RARCH_SLOWMOTION);
+   bool shader_next_pressed  = BIT64_GET(trigger_input, RARCH_SHADER_NEXT);
+   bool shader_prev_pressed  = BIT64_GET(trigger_input, RARCH_SHADER_PREV);
+   bool fastforward_pressed  = BIT64_GET(trigger_input, RARCH_FAST_FORWARD_KEY);
+   bool hold_pressed         = BIT64_GET(input, RARCH_FAST_FORWARD_HOLD_KEY);
+   bool old_hold_pressed     = BIT64_GET(old_input, RARCH_FAST_FORWARD_HOLD_KEY);
+   bool state_slot_increase  = BIT64_GET(trigger_input, RARCH_STATE_SLOT_PLUS);
+   bool state_slot_decrease  = BIT64_GET(trigger_input, RARCH_STATE_SLOT_MINUS);
+   bool pause_pressed        = BIT64_GET(trigger_input, RARCH_PAUSE_TOGGLE);
+   bool frameadvance_pressed = BIT64_GET(trigger_input, RARCH_FRAMEADVANCE);
+   bool rewind_pressed       = BIT64_GET(trigger_input, RARCH_REWIND);
+   bool netplay_flip_pressed = BIT64_GET(trigger_input, RARCH_NETPLAY_FLIP);
+   bool fullscreen_toggle    = BIT64_GET(trigger_input, RARCH_FULLSCREEN_TOGGLE_KEY);
+   bool cheat_index_plus_pressed  = BIT64_GET(trigger_input,
+         RARCH_CHEAT_INDEX_PLUS);
+   bool cheat_index_minus_pressed = BIT64_GET(trigger_input,
+         RARCH_CHEAT_INDEX_MINUS);
+   bool cheat_toggle_pressed      = BIT64_GET(trigger_input,
+         RARCH_CHEAT_TOGGLE);
 
    (void)driver;
 
@@ -626,12 +572,16 @@ static int do_state_checks(
 
 #ifdef HAVE_NETPLAY
    if (driver->netplay_data)
-      return do_netplay_state_checks(input,
-            old_input, trigger_input);
+      return do_netplay_state_checks(netplay_flip_pressed, fullscreen_toggle);
 #endif
 
-   if (do_pause_state_checks(input, old_input,
-            trigger_input))
+   check_pause(pause_pressed, frameadvance_pressed);
+
+   if (do_pause_state_checks(
+            pause_pressed,
+            frameadvance_pressed,
+            fullscreen_toggle,
+            rewind_pressed))
       return 1;
 
    check_fast_forward_button(fastforward_pressed, hold_pressed, old_hold_pressed);
@@ -661,14 +611,20 @@ static int do_state_checks(
       rarch_main_command(RARCH_CMD_RESET);
 
    if (global->cheat)
-      check_cheats(trigger_input);
+   {
+      if (cheat_index_plus_pressed)
+         cheat_manager_index_next(global->cheat);
+      else if (cheat_index_minus_pressed)
+         cheat_manager_index_prev(global->cheat);
+      else if (cheat_toggle_pressed)
+         cheat_manager_toggle(global->cheat);
+   }
 
    return 0;
 }
 
 /**
  * time_to_exit:
- * @input                : input sample for this frame
  *
  * rarch_main_iterate() checks this to see if it's time to
  * exit out of the main loop.
@@ -682,12 +638,11 @@ static int do_state_checks(
  *
  * Returns: 1 if any of the above conditions are true, otherwise 0.
  **/
-static INLINE int time_to_exit(retro_input_t input)
+static INLINE int time_to_exit(bool quit_key_pressed)
 {
    runloop_t *runloop            = rarch_main_get_ptr();
    global_t  *global             = global_get_ptr();
    bool shutdown_pressed         = global->system.shutdown;
-   bool quit_key_pressed         = BIT64_GET(input, RARCH_QUIT_KEY);
    bool video_alive              = video_driver_is_alive();
    bool movie_end                = (global->bsv.movie_end && global->bsv.eof_exit);
    bool frame_count_end          = (runloop->frames.video.max && 
@@ -1101,6 +1056,8 @@ int rarch_main_iterate(void)
 {
    unsigned i;
    retro_input_t trigger_input;
+   bool fullscreen_toggle, overlay_next_pressed, grab_mouse_pressed, menu_pressed,
+        quit_key_pressed;
    runloop_t *runloop              = rarch_main_get_ptr();
    int ret                         = 0;
    static retro_input_t last_input = 0;
@@ -1116,13 +1073,22 @@ int rarch_main_iterate(void)
 
    trigger_input = input & ~old_input;
 
-   if (time_to_exit(input))
+   fullscreen_toggle               = BIT64_GET(trigger_input, RARCH_FULLSCREEN_TOGGLE_KEY);
+   overlay_next_pressed            = BIT64_GET(trigger_input, RARCH_OVERLAY_NEXT);
+   grab_mouse_pressed              = BIT64_GET(trigger_input, RARCH_GRAB_MOUSE_TOGGLE);
+#ifdef HAVE_MENU
+   menu_pressed                    = BIT64_GET(trigger_input, RARCH_MENU_TOGGLE);
+#endif
+   quit_key_pressed                = BIT64_GET(input, RARCH_QUIT_KEY);
+
+   if (time_to_exit(quit_key_pressed))
       return rarch_main_iterate_quit();
 
    if (global->system.frame_time.callback)
       rarch_update_frame_time();
 
-   do_pre_state_checks(input, old_input, trigger_input);
+   do_pre_state_checks(overlay_next_pressed, fullscreen_toggle,
+         grab_mouse_pressed, menu_pressed);
 
 #ifdef HAVE_OVERLAY
    rarch_main_iterate_linefeed_overlay();
