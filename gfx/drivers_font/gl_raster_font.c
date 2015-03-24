@@ -152,6 +152,13 @@ static int get_message_width(gl_raster_t *font, const char *msg)
    return delta_x;
 }
 
+static void draw_vertices(gl_t *gl, const struct gl_coords *coords)
+{
+   gl->shader->set_coords(coords);
+   gl->shader->set_mvp(gl, &gl->mvp_no_rot);
+   glDrawArrays(GL_TRIANGLES, 0, coords->vertices);
+}
+
 static void render_message(gl_raster_t *font, const char *msg, GLfloat scale,
       const GLfloat color[4], GLfloat pos_x, GLfloat pos_y, bool align_right)
 {
@@ -162,8 +169,7 @@ static void render_message(gl_raster_t *font, const char *msg, GLfloat scale,
    GLfloat font_vertex[2 * 6 * MAX_MSG_LEN_CHUNK]; 
    GLfloat font_color[4 * 6 * MAX_MSG_LEN_CHUNK];
    gl_t *gl = font->gl;
-
-   glBindTexture(GL_TEXTURE_2D, font->tex);
+   struct gl_coords coords;
 
    msg_len_full   = strlen(msg);
    msg_len        = min(msg_len_full, MAX_MSG_LEN_CHUNK);
@@ -183,10 +189,6 @@ static void render_message(gl_raster_t *font, const char *msg, GLfloat scale,
 
    while (msg_len_full)
    {
-      /* Rebind shaders so attrib cache gets reset. */
-      if (gl->shader && gl->shader->use)
-         gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
-
       for (i = 0; i < msg_len; i++)
       {
          int off_x, off_y, tex_x, tex_y, width, height;
@@ -217,25 +219,42 @@ static void render_message(gl_raster_t *font, const char *msg, GLfloat scale,
          delta_y -= glyph->advance_y;
       }
 
-      gl->coords.tex_coord = font_tex_coords;
-      gl->coords.vertex    = font_vertex;
-      gl->coords.color     = font_color;
-      gl->coords.vertices  = 6 * msg_len;
-      gl->shader->set_coords(&gl->coords);
-      gl->shader->set_mvp(gl, &gl->mvp_no_rot);
-      glDrawArrays(GL_TRIANGLES, 0, 6 * msg_len);
+      coords.tex_coord = font_tex_coords;
+      coords.vertex    = font_vertex;
+      coords.color     = font_color;
+      coords.vertices  = 6 * msg_len;
+      coords.lut_tex_coord = gl->coords.lut_tex_coord;
+
+      draw_vertices(gl, &coords);
 
       msg_len_full -= msg_len;
       msg += msg_len;
       msg_len = min(msg_len_full, MAX_MSG_LEN_CHUNK);
    }
+}
 
-   /* Post - Go back to old rendering path. */
-   gl->coords.vertex    = gl->vertex_ptr;
-   gl->coords.tex_coord = gl->tex_info.coord;
-   gl->coords.color     = gl->white_color_ptr;
-   gl->coords.vertices  = 4;
+static void setup_viewport(gl_raster_t *font, bool full_screen)
+{
+   gl_t *gl = font->gl;
+
+   gl_set_viewport(gl, gl->win_width, gl->win_height, full_screen, false);
+
+   glEnable(GL_BLEND);
+   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+   glBlendEquation(GL_FUNC_ADD);
+
+   glBindTexture(GL_TEXTURE_2D, font->tex);
+
+   if (gl->shader && gl->shader->use)
+      gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
+}
+
+static void restore_viewport(gl_t *gl)
+{
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
+
+   glDisable(GL_BLEND);
+   gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
 }
 
 static void gl_raster_font_render_msg(void *data, const char *msg,
@@ -293,11 +312,7 @@ static void gl_raster_font_render_msg(void *data, const char *msg,
       drop_mod = 0.3f;
    }
 
-   gl_set_viewport(gl, gl->win_width, gl->win_height,
-         full_screen, false);
-   glEnable(GL_BLEND);
-   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-   glBlendEquation(GL_FUNC_ADD);
+   setup_viewport(font, full_screen);
 
    if (drop_x || drop_y)
    {
@@ -310,10 +325,10 @@ static void gl_raster_font_render_msg(void *data, const char *msg,
             x + scale * drop_x / gl->vp.width, y + 
             scale * drop_y / gl->vp.height, align_right);
    }
+
    render_message(font, msg, scale, color, x, y, align_right);
 
-   glDisable(GL_BLEND);
-   gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
+   restore_viewport(gl);
 }
 
 static const struct font_glyph *gl_raster_font_get_glyph(
@@ -331,5 +346,5 @@ gl_font_renderer_t gl_raster_font = {
    gl_raster_font_free_font,
    gl_raster_font_render_msg,
    "GL raster",
-   gl_raster_font_get_glyph,
+   gl_raster_font_get_glyph
 };
