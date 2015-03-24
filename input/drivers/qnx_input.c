@@ -833,6 +833,23 @@ static const rarch_joypad_driver_t *qnx_input_get_joypad_driver(void *data)
    return qnx->joypad;
 }
 
+static void qnx_input_grab_mouse(void *data, bool state)
+{
+   (void)data;
+   (void)state;
+}
+
+static bool qnx_input_set_rumble(void *data, unsigned port,
+      enum retro_rumble_effect effect, uint16_t strength)
+{
+   (void)data;
+   (void)port;
+   (void)effect;
+   (void)strength;
+
+   return false;
+}
+
 input_driver_t input_qnx = {
    qnx_input_init,
    qnx_input_poll,
@@ -843,7 +860,7 @@ input_driver_t input_qnx = {
    NULL,
    qnx_input_get_capabilities,
    "qnx_input",
-   NULL,
-   NULL,
+   qnx_input_grab_mouse,
+   qnx_input_set_rumble,
    qnx_input_get_joypad_driver,
 };

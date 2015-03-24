@@ -117,6 +117,23 @@ static const rarch_joypad_driver_t *psp_input_get_joypad_driver(void *data)
    return NULL;
 }
 
+static void psp_input_grab_mouse(void *data, bool state)
+{
+   (void)data;
+   (void)state;
+}
+
+static bool psp_input_set_rumble(void *data, unsigned port,
+      enum retro_rumble_effect effect, uint16_t strength)
+{
+   (void)data;
+   (void)port;
+   (void)effect;
+   (void)strength;
+
+   return false;
+}
+
 input_driver_t input_psp = {
    psp_input_initialize,
    psp_input_poll,
@@ -128,7 +145,7 @@ input_driver_t input_psp = {
    psp_input_get_capabilities,
    "psp",
 
-   NULL,
-   NULL,
+   psp_input_grab_mouse,
+   psp_input_set_mouse,
    psp_input_get_joypad_driver,
 };

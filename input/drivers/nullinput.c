@@ -69,6 +69,23 @@ static bool nullinput_set_sensor_state(void *data,
    return false;
 }
 
+static void nullinput_grab_mouse(void *data, bool state)
+{
+   (void)data;
+   (void)state;
+}
+
+static bool nullinput_set_rumble(void *data, unsigned port,
+      enum retro_rumble_effect effect, uint16_t strength)
+{
+   (void)data;
+   (void)port;
+   (void)effect;
+   (void)strength;
+
+   return false;
+}
+
 input_driver_t input_null = {
    nullinput_input_init,
    nullinput_input_poll,
@@ -79,4 +96,6 @@ input_driver_t input_null = {
    NULL,
    nullinput_get_capabilities,
    "null",
+   nullinput_grab_mouse,
+   nullinput_set_rumble,
 };

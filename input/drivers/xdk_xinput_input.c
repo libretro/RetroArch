@@ -145,6 +145,12 @@ static const rarch_joypad_driver_t *xdk_input_get_joypad_driver(void *data)
    return xdk->joypad;
 }
 
+static void xdk_input_grab_mouse(void *data, bool state)
+{
+   (void)data;
+   (void)state;
+}
+
 input_driver_t input_xinput = {
    xdk_input_init,
    xdk_input_poll,
@@ -155,8 +161,7 @@ input_driver_t input_xinput = {
    NULL,
    xdk_input_get_capabilities,
    "xinput",
-
-   NULL,
+   xdk_input_grab_mouse,
    xdk_input_set_rumble,
    xdk_input_get_joypad_driver,
 };

@@ -241,6 +241,12 @@ static const rarch_joypad_driver_t *ps3_input_get_joypad_driver(void *data)
    return NULL;
 }
 
+static void ps3_input_grab_mouse(void *data, bool state)
+{
+   (void)data;
+   (void)state;
+}
+
 input_driver_t input_ps3 = {
    ps3_input_init,
    ps3_input_poll,
@@ -252,7 +258,7 @@ input_driver_t input_ps3 = {
    ps3_input_get_capabilities,
    "ps3",
 
-   NULL,
+   ps3_input_grab_mouse,
    ps3_input_set_rumble,
    ps3_input_get_joypad_driver,
 };

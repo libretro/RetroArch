@@ -265,6 +265,12 @@ static uint64_t linuxraw_get_capabilities(void *data)
    return caps;
 }
 
+static void linuxraw_grab_mouse(void *data, bool state)
+{
+   (void)data;
+   (void)state;
+}
+
 input_driver_t input_linuxraw = {
    linuxraw_input_init,
    linuxraw_input_poll,
@@ -275,7 +281,7 @@ input_driver_t input_linuxraw = {
    NULL,
    linuxraw_get_capabilities,
    "linuxraw",
-   NULL,
+   linuxraw_grab_mouse,
    linuxraw_set_rumble,
    linuxraw_get_joypad_driver,
 };

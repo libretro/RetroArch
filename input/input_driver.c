@@ -181,7 +181,7 @@ bool input_driver_set_rumble_state(unsigned port,
       enum retro_rumble_effect effect, uint16_t strength)
 {
    driver_t *driver = driver_get_ptr();
-   if (driver->input && driver->input_data && driver->input->set_rumble)
+   if (driver->input && driver->input_data)
       return driver->input->set_rumble(driver->input_data,
             port, effect, strength);
    return false;
@@ -219,9 +219,7 @@ int16_t input_driver_state(const struct retro_keybind **retro_keybinds,
       unsigned port, unsigned device, unsigned index, unsigned id)
 {
    driver_t *driver = driver_get_ptr();
-   if (driver->input
-         && driver->input_data
-         && driver->input->input_state)
+   if (driver->input && driver->input_data)
       return driver->input->input_state(driver->input_data, retro_keybinds,
             port, device, index, id);
    return 0;
@@ -230,9 +228,7 @@ int16_t input_driver_state(const struct retro_keybind **retro_keybinds,
 void input_driver_poll(void)
 {
    driver_t *driver = driver_get_ptr();
-   if (driver->input
-         && driver->input_data
-         && driver->input->poll)
+   if (driver->input && driver->input_data)
       driver->input->poll(driver->input_data);
 }
 
@@ -240,9 +236,7 @@ bool input_driver_key_pressed(int key)
 {
    driver_t *driver               = driver_get_ptr();
 
-   if (driver
-         && driver->input
-         && driver->input->key_pressed)
+   if (driver && driver->input)
       return driver->input->key_pressed(driver->input_data, key);
    return false;
 }
@@ -262,7 +256,7 @@ uint64_t input_driver_get_capabilities(void)
 {
    driver_t *driver               = driver_get_ptr();
 
-   if (driver && driver->input && driver->input->get_capabilities)
+   if (driver && driver->input)
       return driver->input->get_capabilities(driver->input_data);
    return 0; 
 }
@@ -271,9 +265,7 @@ bool input_driver_grab_mouse(bool state)
 {
    driver_t *driver               = driver_get_ptr();
 
-   if (driver
-         && driver->input
-         && driver->input->grab_mouse)
+   if (driver && driver->input)
    {
       driver->input->grab_mouse(driver->input_data, state);
       return true;

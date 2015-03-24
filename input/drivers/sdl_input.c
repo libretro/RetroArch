@@ -263,9 +263,9 @@ static void sdl_input_free(void *data)
    free(data);
 }
 
-#ifdef HAVE_SDL2
 static void sdl_grab_mouse(void *data, bool state)
 {
+#ifdef HAVE_SDL2
    struct temp{
       SDL_Window *w;
    };
@@ -278,8 +278,8 @@ static void sdl_grab_mouse(void *data, bool state)
    /* First member of sdl2_video_t is the window */
    SDL_SetWindowGrab(((struct temp*)driver->video_data)->w,
          state ? SDL_TRUE : SDL_FALSE);
-}
 #endif
+}
 
 static bool sdl_set_rumble(void *data, unsigned port,
       enum retro_rumble_effect effect, uint16_t strength)
@@ -391,11 +391,10 @@ input_driver_t input_sdl = {
    sdl_get_capabilities,
 #ifdef HAVE_SDL2
    "sdl2",
-   sdl_grab_mouse,
 #else
    "sdl",
-   NULL,
 #endif
+   sdl_grab_mouse,
    sdl_set_rumble,
    sdl_get_joypad_driver,
 };

@@ -188,6 +188,17 @@ static void rwebinput_grab_mouse(void *data, bool state)
    (void)state;
 }
 
+static bool rwebinput_set_rumble(void *data, unsigned port,
+      enum retro_rumble_effect effect, uint16_t strength)
+{
+   (void)data;
+   (void)port;
+   (void)effect;
+   (void)strength;
+
+   return false;
+}
+
 static uint64_t rwebinput_get_capabilities(void *data)
 {
    uint64_t caps = 0;
@@ -211,4 +222,5 @@ input_driver_t input_rwebinput = {
    rwebinput_get_capabilities,
    "rwebinput",
    rwebinput_grab_mouse,
+   rwebinput_set_rumble,
 };

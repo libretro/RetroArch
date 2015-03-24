@@ -866,6 +866,23 @@ static const rarch_joypad_driver_t *android_input_get_joypad_driver(void *data)
    return android->joypad;
 }
 
+static void android_input_grab_mouse(void *data, bool state)
+{
+   (void)data;
+   (void)state;
+}
+
+static bool android_input_set_rumble(void *data, unsigned port,
+      enum retro_rumble_effect effect, uint16_t strength)
+{
+   (void)data;
+   (void)port;
+   (void)effect;
+   (void)strength;
+
+   return false;
+}
+
 input_driver_t input_android = {
    android_input_init,
    android_input_poll,
@@ -877,7 +894,7 @@ input_driver_t input_android = {
    android_input_get_capabilities,
    "android_input",
 
-   NULL,
-   NULL,
+   android_input_grab_mouse,
+   android_input_set_rumble,
    android_input_get_joypad_driver,
 };

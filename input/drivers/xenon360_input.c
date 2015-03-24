@@ -102,6 +102,23 @@ static uint64_t xenon360_get_capabilities(void *data)
    return caps;
 }
 
+static void xenon360_input_grab_mouse(void *data, bool state)
+{
+   (void)data;
+   (void)state;
+}
+
+static bool xenon360_input_set_rumble(void *data, unsigned port,
+      enum retro_rumble_effect effect, uint16_t strength)
+{
+   (void)data;
+   (void)port;
+   (void)effect;
+   (void)strength;
+
+   return false;
+}
+
 input_driver_t input_xenon360 = {
    xenon360_input_init,
    xenon360_input_poll,
@@ -113,4 +130,6 @@ input_driver_t input_xenon360 = {
    NULL,
    xenon360_input_get_capabilities,
    "xenon360",
+   xenon360_input_grab_mouse,
+   xenon360_input_set_rumble,
 };
