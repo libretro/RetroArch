@@ -14,7 +14,7 @@
  */
 
 #include <retro_miscellaneous.h>
-#include "runloop.h"
+#include "runloop_data.h"
 #include "general.h"
 #include "input/input_overlay.h"
 

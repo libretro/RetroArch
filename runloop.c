@@ -24,6 +24,7 @@
 #include "intl/intl.h"
 #include "retroarch.h"
 #include "runloop.h"
+#include "runloop_data.h"
 
 #ifdef HAVE_MENU
 #include "menu/menu.h"

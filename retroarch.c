@@ -30,6 +30,7 @@
 #include "general.h"
 #include "retroarch.h"
 #include "runloop.h"
+#include "runloop_data.h"
 #include <compat/strl.h>
 #include "screenshot.h"
 #include "performance.h"

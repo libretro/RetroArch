@@ -1,5 +1,4 @@
 /*  RetroArch - A frontend for libretro.
- *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2015 - Daniel De Matteis
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
@@ -17,9 +16,6 @@
 #ifndef __RETROARCH_RUNLOOP_H
 #define __RETROARCH_RUNLOOP_H
 
-#include <file/nbio.h>
-#include <formats/image.h>
-#include <formats/rpng.h>
 #include <queues/message_queue.h>
 #include <setjmp.h>
 #include "libretro.h"
@@ -42,17 +38,6 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-enum runloop_data_type
-{
-   DATA_TYPE_NONE = 0,
-   DATA_TYPE_FILE,
-   DATA_TYPE_IMAGE,
-   DATA_TYPE_HTTP,
-#ifdef HAVE_OVERLAY
-   DATA_TYPE_OVERLAY,
-#endif
-};
 
 /* All libretro runloop-related globals go here. */
 
@@ -466,10 +451,6 @@ void rarch_main_msg_queue_free(void);
 
 void rarch_main_msg_queue_init(void);
 
-void rarch_main_data_msg_queue_push(unsigned type,
-      const char *msg, const char *msg2,
-      unsigned prio, unsigned duration, bool flush);
-
 void rarch_main_clear_state(void);
 
 bool rarch_main_verbosity(void);
@@ -478,19 +459,9 @@ FILE *rarch_main_log_file(void);
 
 bool rarch_main_is_idle(void);
 
-void rarch_main_data_clear_state(void);
-
-void rarch_main_data_iterate(void);
-
 void rarch_main_state_free(void);
 
 void rarch_main_global_free(void);
-
-void rarch_main_data_deinit(void);
-
-void rarch_main_data_free(void);
-
-void rarch_main_data_init_queues(void);
 
 #ifdef __cplusplus
 }

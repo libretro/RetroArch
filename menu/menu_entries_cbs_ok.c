@@ -22,7 +22,7 @@
 #include "menu_navigation.h"
 
 #include "../retroarch.h"
-#include "../runloop.h"
+#include "../runloop_data.h"
 
 #include "../input/input_remapping.h"
 
