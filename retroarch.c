@@ -2397,6 +2397,9 @@ bool rarch_main_command(unsigned cmd)
          break;
       case RARCH_CMD_UNLOAD_CORE:
          rarch_main_command(RARCH_CMD_PREPARE_DUMMY);
+#ifdef HAVE_DYNAMIC
+         libretro_free_system_info(&global->menu.info);
+#endif
          break;
       case RARCH_CMD_QUIT:
          rarch_main_set_state(RARCH_ACTION_STATE_QUIT);
