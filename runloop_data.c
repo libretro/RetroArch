@@ -43,9 +43,7 @@ typedef struct http_handle
 
 typedef struct nbio_image_handle
 {
-#ifndef IS_SALAMANDER
    struct texture_image ti;
-#endif
    bool is_blocking;
    bool is_blocking_on_processing;
    bool is_finished;
