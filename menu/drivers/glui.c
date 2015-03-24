@@ -72,7 +72,7 @@ static void glui_blit_line(gl_t *gl, float x, float y, const char *message, uint
 {
    struct font_params params = {0};
 
-   gl_set_viewport(gl, gl->win_width, gl->win_height, false, false);
+   /* gl_set_viewport(gl, gl->win_width, gl->win_height, false, false); */
 
    params.x           = x / gl->win_width;
    params.y           = 1.0f - y / gl->win_height;
@@ -356,6 +356,9 @@ static void glui_frame(void)
 
    glui_render_background(settings, gl, glui, false);
 
+   if (gl->font_driver->begin_block)
+      gl->font_driver->begin_block(gl->font_handle);
+
    menu_list_get_last_stack(menu->menu_list, &dir, &label, &menu_type);
 
    get_title(label, dir, menu_type, title, sizeof(title));
@@ -384,17 +387,16 @@ static void glui_frame(void)
 
       glui_blit_line(gl,
             glui->margin * 2,
-            glui->margin + glui->term_height * glui->line_height 
+            glui->margin + glui->term_height * glui->line_height
             + glui->line_height * 2, title_msg, FONT_COLOR_ARGB_TO_RGBA(settings->menu.title_color));
    }
-
 
    if (settings->menu.timedate_enable)
    {
       disp_timedate_set_label(timedate, sizeof(timedate), 0);
       glui_blit_line(gl,
             glui->margin * 14,
-            glui->margin + glui->term_height * glui->line_height 
+            glui->margin + glui->term_height * glui->line_height
             + glui->line_height * 2, timedate, hover_color);
    }
 
@@ -436,7 +438,7 @@ static void glui_frame(void)
 
       glui_blit_line(gl, x, y, message, selected ? hover_color : normal_color);
 
-      glui_blit_line(gl, gl->win_width - glui->glyph_width * w - glui->margin , 
+      glui_blit_line(gl, gl->win_width - glui->glyph_width * w - glui->margin ,
          y, type_str_buf, selected ? hover_color : normal_color);
    }
 
@@ -457,6 +459,9 @@ static void glui_frame(void)
       glui_render_messagebox(glui->box_message);
       glui->box_message[0] = '\0';
    }
+
+   if (gl->font_driver->end_block)
+      gl->font_driver->end_block(gl->font_handle);
 
    if (settings->menu.mouse.enable)
       glui_draw_cursor(gl, menu->mouse.x, menu->mouse.y);

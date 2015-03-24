@@ -30,6 +30,14 @@
 
 #define MAX_MSG_LEN_CHUNK 64
 
+typedef struct gl_raster_block {
+   bool active;
+   bool reuse;
+   bool fullscreen;
+   unsigned allocated;
+   struct gl_coords coords;
+} gl_raster_block_t;
+
 typedef struct
 {
    gl_t *gl;
@@ -38,6 +46,8 @@ typedef struct
 
    const font_renderer_driver_t *font_driver;
    void *font_data;
+
+   gl_raster_block_t block;
 } gl_raster_t;
 
 static void *gl_raster_font_init_font(void *gl_data,
@@ -156,7 +166,79 @@ static void draw_vertices(gl_t *gl, const struct gl_coords *coords)
 {
    gl->shader->set_coords(coords);
    gl->shader->set_mvp(gl, &gl->mvp_no_rot);
+
    glDrawArrays(GL_TRIANGLES, 0, coords->vertices);
+}
+
+static bool realloc_checked(void **ptr, size_t size)
+{
+   void *nptr;
+
+   if (size == 0)
+   {
+      if (*ptr)
+         free(*ptr);
+      *ptr = NULL;
+      return true;
+   }
+
+   if (*ptr == NULL)
+      nptr = malloc(size);
+   else
+      nptr = realloc(*ptr, size);
+
+   if (nptr)
+      *ptr = nptr;
+
+   return nptr != NULL;
+}
+
+static bool resize_block(gl_raster_t *font, unsigned new_size)
+{
+   gl_raster_block_t *block = &font->block;
+   bool success = false;
+
+   if (!font->block.allocated || new_size > font->block.allocated - 1)
+   {
+      unsigned actual_new_size = next_pow2(new_size);
+
+      bool vsucceeded = realloc_checked((void**)&block->coords.vertex, sizeof(GLfloat) * 2 * actual_new_size);
+      bool csuccceeded = realloc_checked((void**)&block->coords.color, sizeof(GLfloat) * 4 * actual_new_size);
+      bool tsuccceeded = realloc_checked((void**)&block->coords.tex_coord, sizeof(GLfloat) * 2 * actual_new_size);
+      bool lsuccceeded = realloc_checked((void**)&block->coords.lut_tex_coord, sizeof(GLfloat) * 2 * actual_new_size);
+
+      if (vsucceeded && csuccceeded && tsuccceeded && lsuccceeded)
+      {
+         font->block.allocated  = actual_new_size;
+         block->coords.vertices = new_size;
+         success = true;
+      }
+   }
+   else
+   {
+      block->coords.vertices = new_size;
+      success = true;
+   }
+
+   return success;
+}
+
+static bool append_vertices(gl_raster_t *font, const struct gl_coords *coords)
+{
+   gl_raster_block_t *block = &font->block;
+   unsigned old_size = block->coords.vertices;
+   if (resize_block(font, block->coords.vertices + coords->vertices))
+   {
+      const size_t base_size = coords->vertices * sizeof(GLfloat);
+      memcpy((void*)(block->coords.vertex+old_size*2),        coords->vertex,        base_size * 2);
+      memcpy((void*)(block->coords.color+old_size*4),         coords->color,         base_size * 4);
+      memcpy((void*)(block->coords.tex_coord+old_size*2),     coords->tex_coord,     base_size * 2);
+      memcpy((void*)(block->coords.lut_tex_coord+old_size*2), coords->lut_tex_coord, base_size * 2);
+   }
+   else
+      RARCH_WARN("Allocation failed.");
+
+   return true;
 }
 
 static void render_message(gl_raster_t *font, const char *msg, GLfloat scale,
@@ -225,7 +307,10 @@ static void render_message(gl_raster_t *font, const char *msg, GLfloat scale,
       coords.vertices  = 6 * msg_len;
       coords.lut_tex_coord = gl->coords.lut_tex_coord;
 
-      draw_vertices(gl, &coords);
+      if (font->block.active)
+         append_vertices(font, &coords);
+      else
+         draw_vertices(gl, &coords);
 
       msg_len_full -= msg_len;
       msg += msg_len;
@@ -312,7 +397,10 @@ static void gl_raster_font_render_msg(void *data, const char *msg,
       drop_mod = 0.3f;
    }
 
-   setup_viewport(font, full_screen);
+   if (font->block.active)
+      font->block.fullscreen = true;
+   else
+      setup_viewport(font, full_screen);
 
    if (drop_x || drop_y)
    {
@@ -328,7 +416,8 @@ static void gl_raster_font_render_msg(void *data, const char *msg,
 
    render_message(font, msg, scale, color, x, y, align_right);
 
-   restore_viewport(gl);
+   if (!font->block.active)
+      restore_viewport(gl);
 }
 
 static const struct font_glyph *gl_raster_font_get_glyph(
@@ -341,10 +430,61 @@ static const struct font_glyph *gl_raster_font_get_glyph(
    return font->font_driver->get_glyph((void*)font->font_driver, code);
 }
 
+static void gl_end_block(void *data)
+{
+   gl_raster_t *font = (gl_raster_t*)data;
+   gl_raster_block_t *block = &font->block;
+   gl_t *gl = font->gl;
+
+   if (block->coords.vertices)
+   {
+      setup_viewport(font, block->fullscreen);
+
+      draw_vertices(gl, &block->coords);
+
+      restore_viewport(gl);
+   }
+
+   if (block->reuse && block->coords.vertices)
+      block->coords.vertices = 0;
+   else
+   {
+      block->active = false;
+      block->allocated = 0;
+      resize_block(font, 0);
+      memset(&block->coords, 0, sizeof(block->coords));
+   }
+}
+
+static void gl_begin_block(void *data)
+{
+   gl_raster_t *font = (gl_raster_t*)data;
+   gl_raster_block_t *block = &font->block;
+   unsigned i = 0;
+
+   if (block->active)
+   {
+      block->reuse = true;
+      gl_end_block(data);
+   }
+
+   block->reuse = false;
+   block->active = true;
+   block->coords.vertices = 0;
+
+   if (!block->allocated)
+   {
+      block->coords.color = block->coords.tex_coord = NULL;
+      block->coords.vertex = block->coords.lut_tex_coord = NULL;
+   }
+}
+
 gl_font_renderer_t gl_raster_font = {
    gl_raster_font_init_font,
    gl_raster_font_free_font,
    gl_raster_font_render_msg,
    "GL raster",
-   gl_raster_font_get_glyph
+   gl_raster_font_get_glyph,
+   gl_begin_block,
+   gl_end_block
 };
