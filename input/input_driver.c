@@ -277,7 +277,7 @@ void *input_driver_init(void)
 {
    driver_t *driver               = driver_get_ptr();
 
-   if (driver && driver->input && driver->input->init)
+   if (driver && driver->input)
       return driver->input->init();
    return NULL;
 }
@@ -286,8 +286,6 @@ void input_driver_free(void)
 {
    driver_t *driver               = driver_get_ptr();
 
-   if (driver
-         && driver->input
-         && driver->input->free)
+   if (driver && driver->input)
       driver->input->free(driver->input_data);
 }
