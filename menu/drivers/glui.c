@@ -326,6 +326,7 @@ static void glui_frame(void)
    settings_t *settings = config_get_ptr();
    const uint32_t normal_color = FONT_COLOR_ARGB_TO_RGBA(settings->menu.entry_normal_color);
    const uint32_t hover_color = FONT_COLOR_ARGB_TO_RGBA(settings->menu.entry_hover_color);
+   const uint32_t title_color = FONT_COLOR_ARGB_TO_RGBA(settings->menu.title_color);
    runloop_t *runloop = rarch_main_get_ptr();
    global_t  *global  = global_get_ptr();
 
@@ -356,9 +357,6 @@ static void glui_frame(void)
 
    glui_render_background(settings, gl, glui, false);
 
-   if (gl->font_driver->begin_block)
-      gl->font_driver->begin_block(gl->font_handle);
-
    menu_list_get_last_stack(menu->menu_list, &dir, &label, &menu_type);
 
    get_title(label, dir, menu_type, title, sizeof(title));
@@ -366,7 +364,7 @@ static void glui_frame(void)
    menu_animation_ticker_line(title_buf, glui->term_width - 3,
          runloop->frames.video.count / glui->margin, title, true);
    glui_blit_line(gl, glui->margin * 2, glui->margin + glui->line_height,
-         title_buf, FONT_COLOR_ARGB_TO_RGBA(settings->menu.title_color));
+         title_buf, title_color);
 
    core_name = global->menu.info.library_name;
    if (!core_name)
@@ -388,7 +386,7 @@ static void glui_frame(void)
       glui_blit_line(gl,
             glui->margin * 2,
             glui->margin + glui->term_height * glui->line_height
-            + glui->line_height * 2, title_msg, FONT_COLOR_ARGB_TO_RGBA(settings->menu.title_color));
+            + glui->line_height * 2, title_msg, title_color);
    }
 
    if (settings->menu.timedate_enable)
@@ -460,11 +458,11 @@ static void glui_frame(void)
       glui->box_message[0] = '\0';
    }
 
-   if (gl->font_driver->end_block)
-      gl->font_driver->end_block(gl->font_handle);
-
    if (settings->menu.mouse.enable)
       glui_draw_cursor(gl, menu->mouse.x, menu->mouse.y);
+
+   if (gl->font_driver->flush_block)
+      gl->font_driver->flush_block(gl->font_handle);
 
    gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
 }
@@ -495,6 +493,9 @@ static void *glui_init(void)
    glui     = (glui_handle_t*)menu->userdata;
    glui->textures.bg.id = 0;
 
+   if (gl->font_driver->begin_block)
+      gl->font_driver->begin_block(gl->font_handle);
+
    return menu;
 error:
    if (menu)
@@ -504,7 +505,12 @@ error:
 
 static void glui_free(void *data)
 {
+   gl_t *gl = (gl_t*)video_driver_get_ptr(NULL);
+
    menu_handle_t *menu = (menu_handle_t*)data;
+
+   if (gl->font_driver->end_block)
+      gl->font_driver->end_block(gl->font_handle);
 
    if (menu->alloc_font)
       free((uint8_t*)menu->font);

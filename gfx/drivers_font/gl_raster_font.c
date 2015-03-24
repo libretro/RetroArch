@@ -32,7 +32,6 @@
 
 typedef struct gl_raster_block {
    bool active;
-   bool reuse;
    bool fullscreen;
    unsigned allocated;
    struct gl_coords coords;
@@ -430,30 +429,43 @@ static const struct font_glyph *gl_raster_font_get_glyph(
    return font->font_driver->get_glyph((void*)font->font_driver, code);
 }
 
+static void gl_flush_block(void *data)
+{
+   gl_raster_t *font = (gl_raster_t*)data;
+   gl_raster_block_t *block = &font->block;
+
+   if (block->coords.vertices)
+   {
+      setup_viewport(font, block->fullscreen);
+
+      draw_vertices(font->gl, &block->coords);
+
+      restore_viewport(font->gl);
+   }
+
+   block->coords.vertices = 0;
+}
+
 static void gl_end_block(void *data)
 {
    gl_raster_t *font = (gl_raster_t*)data;
    gl_raster_block_t *block = &font->block;
    gl_t *gl = font->gl;
 
-   if (block->coords.vertices)
+   gl_flush_block(data);
+
+   block->active = false;
+
+   if (block->allocated)
    {
-      setup_viewport(font, block->fullscreen);
-
-      draw_vertices(gl, &block->coords);
-
-      restore_viewport(gl);
+      free((void*)block->coords.color);
+      free((void*)block->coords.lut_tex_coord);
+      free((void*)block->coords.tex_coord);
+      free((void*)block->coords.vertex);
    }
 
-   if (block->reuse && block->coords.vertices)
-      block->coords.vertices = 0;
-   else
-   {
-      block->active = false;
-      block->allocated = 0;
-      resize_block(font, 0);
-      memset(&block->coords, 0, sizeof(block->coords));
-   }
+   block->coords.vertices = 0;
+   block->allocated = 0;
 }
 
 static void gl_begin_block(void *data)
@@ -463,12 +475,8 @@ static void gl_begin_block(void *data)
    unsigned i = 0;
 
    if (block->active)
-   {
-      block->reuse = true;
-      gl_end_block(data);
-   }
+      gl_flush_block(data);
 
-   block->reuse = false;
    block->active = true;
    block->coords.vertices = 0;
 
@@ -486,5 +494,6 @@ gl_font_renderer_t gl_raster_font = {
    "GL raster",
    gl_raster_font_get_glyph,
    gl_begin_block,
+   gl_flush_block,
    gl_end_block
 };

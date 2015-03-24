@@ -32,6 +32,7 @@ typedef struct gl_font_renderer
 
    const struct font_glyph *(*get_glyph)(void *data, uint32_t code);
    void (*begin_block)(void *data);
+   void (*flush_block)(void *data);
    void (*end_block)(void *data);
 } gl_font_renderer_t;
 
