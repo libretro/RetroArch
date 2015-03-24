@@ -637,7 +637,7 @@ static void android_input_poll(void *data)
    driver_t *driver = driver_get_ptr();
 
    while ((ident = 
-            ALooper_pollAll((driver->input->key_pressed(driver->input_data, RARCH_PAUSE_TOGGLE))
+            ALooper_pollAll((input_driver_key_pressed(RARCH_PAUSE_TOGGLE))
                ? -1 : 0,
                NULL, NULL, NULL)) >= 0)
    {
