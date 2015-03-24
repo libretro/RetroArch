@@ -67,6 +67,12 @@ static bool null_audio_use_float(void *data)
    return true;
 }
 
+static size_t null_audio_write_avail(void *data)
+{
+   (void)data;
+   return 0;
+}
+
 audio_driver_t audio_null = {
    null_audio_init,
    null_audio_write,
@@ -77,6 +83,6 @@ audio_driver_t audio_null = {
    null_audio_free,
    null_audio_use_float,
    "null",
-   NULL,
+   null_audio_write_avail,
    NULL
 };

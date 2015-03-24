@@ -229,6 +229,12 @@ static bool ps3_audio_use_float(void *data)
    return true;
 }
 
+static size_t ps3_audio_write_avail(void *data)
+{
+   (void)data;
+   return 0;
+}
+
 audio_driver_t audio_ps3 = {
    ps3_audio_init,
    ps3_audio_write,
@@ -239,6 +245,6 @@ audio_driver_t audio_ps3 = {
    ps3_audio_free,
    ps3_audio_use_float,
    "ps3",
-   NULL,
+   ps3_audio_write_avail,
    NULL
 };

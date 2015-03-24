@@ -124,6 +124,12 @@ static bool ra_use_float(void *data)
    return false;
 }
 
+static size_t ra_write_avail(void *data)
+{
+   (void)data;
+   return 0;
+}
+
 audio_driver_t audio_roar = {
    ra_init,
    ra_write,
@@ -134,6 +140,6 @@ audio_driver_t audio_roar = {
    ra_free,
    ra_use_float,
    "roar",
-   NULL,
+   ra_write_avail,
    NULL
 };

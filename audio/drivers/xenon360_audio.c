@@ -128,6 +128,12 @@ static bool xenon360_use_float(void *data)
    return false;
 }
 
+static size_t xenon360_write_avail(void *data)
+{
+   (void)data;
+   return 0;
+}
+
 audio_driver_t audio_xenon360 = {
    xenon360_audio_init,
    xenon360_audio_write,
@@ -138,6 +144,6 @@ audio_driver_t audio_xenon360 = {
    xenon360_audio_free,
    xenon360_use_float,
    "xenon360",
-   NULL,
+   xenon360_write_avail,
    NULL
 };

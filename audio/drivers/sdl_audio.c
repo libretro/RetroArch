@@ -225,10 +225,16 @@ static void sdl_audio_free(void *data)
    free(sdl);
 }
 
-static bool sdl_use_float(void *data)
+static bool sdl_audio_use_float(void *data)
 {
    (void)data;
    return false;
+}
+
+static size_t sdl_audio_write_avail(void *data)
+{
+   (void)data;
+   return 0;
 }
 
 audio_driver_t audio_sdl = {
@@ -239,12 +245,12 @@ audio_driver_t audio_sdl = {
    sdl_audio_alive,
    sdl_audio_set_nonblock_state,
    sdl_audio_free,
-   sdl_use_float,
+   sdl_audio_use_float,
 #ifdef HAVE_SDL2
    "sdl2",
 #else
    "sdl",
 #endif
-   NULL,
+   sdl_audio_write_avail,
    NULL
 };
