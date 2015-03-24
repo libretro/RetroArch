@@ -36,10 +36,8 @@ void driver_free(void)
 {
    driver_t *driver   = driver_get_ptr();
 
-   if (!driver)
-      return;
-
-   free(driver);
+   if (driver)
+      free(driver);
 }
 
 static driver_t *driver_new(void)
