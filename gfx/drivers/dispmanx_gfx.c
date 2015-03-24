@@ -14,29 +14,19 @@
  */
 
 #include "../../driver.h"
-#include <stdlib.h>
-#include <string.h>
 #include "../../general.h"
 #include "../../retroarch.h"
-#include <gfx/scaler/scaler.h>
 #include "../video_viewport.h"
 #include "../video_monitor.h"
 #include "../video_context_driver.h"
 #include "../font_renderer_driver.h"
 
 #include <sys/ioctl.h>
-#include <sys/stat.h>
-#include <sys/types.h>
+#include <sys/mman.h>
 #include <fcntl.h>
-#include <unistd.h>
-#include <ctype.h>
-#include <assert.h>
 #include <linux/fb.h>
 
-#include <sys/mman.h>
-
 #include <bcm_host.h>
-
 #include <rthreads/rthreads.h>
 
 #ifdef HAVE_CONFIG_H
