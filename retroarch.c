@@ -1841,12 +1841,13 @@ static void init_system_av_info(void)
    runloop->frames.limit.last_time = rarch_get_time_usec();
 }
 
-static void deinit_core(void)
+static void deinit_core(bool reinit)
 {
    pretro_unload_game();
    pretro_deinit();
 
-   rarch_main_command(RARCH_CMD_DRIVERS_DEINIT);
+   if (reinit)
+      rarch_main_command(RARCH_CMD_DRIVERS_DEINIT);
 
    uninit_libretro_sym();
 }
@@ -2394,6 +2395,9 @@ bool rarch_main_command(unsigned cmd)
             global->system.shutdown = false;
          }
          break;
+      case RARCH_CMD_UNLOAD_CORE:
+         rarch_main_command(RARCH_CMD_PREPARE_DUMMY);
+         break;
       case RARCH_CMD_QUIT:
          rarch_main_set_state(RARCH_ACTION_STATE_QUIT);
          break;
@@ -2602,7 +2606,7 @@ bool rarch_main_command(unsigned cmd)
             global->core_info = core_info_list_new(settings->libretro_directory);
          break;
       case RARCH_CMD_CORE_DEINIT:
-         deinit_core();
+         deinit_core(true);
          break;
       case RARCH_CMD_CORE_INIT:
          if (!init_core())

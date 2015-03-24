@@ -944,6 +944,12 @@ static int action_ok_disk_cycle_tray_status(const char *path,
    return generic_action_ok_command(RARCH_CMD_DISK_EJECT_TOGGLE);
 }
 
+static int action_ok_unload_core(const char *path,
+      const char *label, unsigned type, size_t idx)
+{
+   return generic_action_ok_command(RARCH_CMD_UNLOAD_CORE);
+}
+
 static int action_ok_quit(const char *path,
       const char *label, unsigned type, size_t idx)
 {
@@ -1197,6 +1203,8 @@ void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
       cbs->action_ok = action_ok_file_load_or_resume;
    else if (!strcmp(label, "quit_retroarch"))
       cbs->action_ok = action_ok_quit;
+   else if (!strcmp(label, "unload_core"))
+      cbs->action_ok = action_ok_unload_core;
    else if (!strcmp(label, "save_new_config"))
       cbs->action_ok = action_ok_save_new_config;
    else if (!strcmp(label, "help"))

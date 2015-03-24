@@ -3373,6 +3373,12 @@ static bool setting_append_list_main_menu_options(
    (*list)[list_info->index - 1].change_handler = load_content_change_handler;
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_BROWSER_ACTION);
 
+   CONFIG_ACTION(
+         "unload_core",
+         "Unload Core",
+         group_info.name,
+         subgroup_info.name);
+   settings_list_current_add_cmd(list, list_info, RARCH_CMD_UNLOAD_CORE);
 
    CONFIG_ACTION(
          "core_information",
@@ -3481,6 +3487,7 @@ static bool setting_append_list_main_menu_options(
          "Help",
          group_info.name,
          subgroup_info.name);
+
 
 #if !defined(IOS)
    /* Apple rejects iOS apps that lets you forcibly quit an application. */
