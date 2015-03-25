@@ -238,13 +238,8 @@ static int sunxi_layer_reserve(sunxi_disp_t *ctx)
 
 static int sunxi_layer_set_output_window(sunxi_disp_t *ctx, int x, int y, int w, int h)
 {
-   __disp_rect_t buf_rect = {
-      ctx->layer_buf_x, ctx->layer_buf_y,
-      ctx->layer_buf_w, ctx->layer_buf_h
-   };
    __disp_rect_t win_rect = { x, y, w, h };
    uint32_t tmp[4];
-   int err;
 
    if (ctx->layer_id < 0 || w <= 0 || h <= 0)
       return -1;
@@ -273,7 +268,6 @@ static int sunxi_layer_show(sunxi_disp_t *ctx)
 
 static int sunxi_layer_release(sunxi_disp_t *ctx)
 {
-   int result;
    uint32_t tmp[4];
 
    if (ctx->layer_id < 0)
@@ -355,8 +349,6 @@ static int sunxi_layer_set_rgb_input_buffer(sunxi_disp_t *ctx,
 static sunxi_disp_t *sunxi_disp_init(const char *device)
 {
    int tmp, version;
-   int gfx_layer_size;
-   int ovl_layer_size;
    struct fb_var_screeninfo fb_var;
    struct fb_fix_screeninfo fb_fix;
 
@@ -482,7 +474,6 @@ static int sunxi_disp_close(sunxi_disp_t *ctx)
    }
    return 0;
 }
-
 /* END of lowlevel SunxiG2D functions block */
 
 void pixman_composite_src_0565_8888_asm_neon(int width,
@@ -533,7 +524,6 @@ struct sunxi_video
    unsigned int src_pixels_per_line;	
    unsigned int dst_pitch;
    unsigned int dst_pixels_per_line;
-   unsigned int visible_width;	
    unsigned int bytes_per_pixel;	
 
    struct sunxi_page *pages;	
@@ -599,7 +589,6 @@ static void sunxi_restore_console(struct sunxi_video *_dispvars)
 
 static void vsync_thread_func(void *data)
 {
-   struct sunxi_page *page;
    struct sunxi_video *_dispvars = data;
 
    while (_dispvars->keep_vsync)
@@ -626,7 +615,6 @@ static void vsync_thread_func(void *data)
 static void *sunxi_gfx_init(const video_info_t *video,
       const input_driver_t **input, void **input_data)
 {
-   int i;
    struct sunxi_video *_dispvars = (struct sunxi_video*)
    calloc(1, sizeof(struct sunxi_video));
 
@@ -684,7 +672,6 @@ static void *sunxi_gfx_init(const video_info_t *video,
 
 static void sunxi_gfx_free(void *data)
 {
-   int i;
    struct sunxi_video *_dispvars = data;
 
    /* Stop the vsync thread and wait for it to join. */
@@ -741,7 +728,7 @@ static void sunxi_setup_scale (void *data, unsigned width, unsigned height, unsi
    struct sunxi_video *_dispvars = data;
    int i;
    float aspect;
-   unsigned int yoffset, inc_yoffset, xpos, visible_width;
+   unsigned int xpos, visible_width;
    settings_t *settings = config_get_ptr();
 
    _dispvars->src_width  = width;
@@ -799,7 +786,6 @@ static bool sunxi_gfx_frame(void *data, const void *frame, unsigned width,
                              unsigned height, unsigned pitch, const char *msg)
 {
    struct sunxi_video *_dispvars = data;
-   struct sunxi_page *page = NULL;
 
    if (_dispvars->src_width != width || _dispvars->src_height != height)
    {
