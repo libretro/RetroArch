@@ -1515,6 +1515,9 @@ static void xmb_free(void *data)
    xmb = (xmb_handle_t*)menu->userdata;
 
    gl_coord_array_release(&xmb->raster_block.carr);
+
+   if (gl->font_driver->bind_block)
+      gl->font_driver->bind_block(gl->font_handle, NULL);
 }
 
 static bool xmb_font_init_first(const gl_font_renderer_t **font_driver,
@@ -1782,6 +1785,9 @@ static void xmb_context_reset(void)
       else if (xmb->depth <= 1)
          node->alpha = xmb->categories.passive.alpha;
    }
+
+   if (gl->font_driver->bind_block)
+      gl->font_driver->bind_block(gl->font_handle, &xmb->raster_block);
 }
 
 static void xmb_navigation_clear(bool pending_push)

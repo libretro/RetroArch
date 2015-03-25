@@ -366,7 +366,7 @@ static void gl_flush_block(void *data)
       restore_viewport(font->gl);
    }
 
-   block->carr.coords.vertices = 0;
+   /* block->carr.coords.vertices = 0; */
 }
 
 static void gl_bind_block(void *data, gl_font_raster_block_t *block)
