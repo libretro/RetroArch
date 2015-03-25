@@ -25,6 +25,7 @@
 
 #include <file/file_path.h>
 #include "../../gfx/gl_common.h"
+#include "../../gfx/font_gl_driver.h"
 #include "../../gfx/video_texture.h"
 #include <compat/posix_string.h>
 
@@ -46,6 +47,8 @@ typedef struct glui_handle
          char path[PATH_MAX_LENGTH];
       } bg;
    } textures;
+
+   gl_font_raster_block_t raster_block;
 } glui_handle_t;
 
 static int glui_entry_iterate(unsigned action)
@@ -461,8 +464,8 @@ static void glui_frame(void)
    if (settings->menu.mouse.enable)
       glui_draw_cursor(gl, menu->mouse.x, menu->mouse.y);
 
-   if (gl->font_driver->flush_block)
-      gl->font_driver->flush_block(gl->font_handle);
+   if (gl->font_driver->flush)
+      gl->font_driver->flush(gl->font_handle);
 
    gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
 }
@@ -493,8 +496,8 @@ static void *glui_init(void)
    glui     = (glui_handle_t*)menu->userdata;
    glui->textures.bg.id = 0;
 
-   if (gl->font_driver->begin_block)
-      gl->font_driver->begin_block(gl->font_handle);
+   if (gl->font_driver->bind_block)
+      gl->font_driver->bind_block(gl->font_handle, &glui->raster_block);
 
    return menu;
 error:
@@ -508,9 +511,9 @@ static void glui_free(void *data)
    gl_t *gl = (gl_t*)video_driver_get_ptr(NULL);
 
    menu_handle_t *menu = (menu_handle_t*)data;
+   glui_handle_t *glui = (glui_handle_t*)menu->userdata;
 
-   if (gl->font_driver->end_block)
-      gl->font_driver->end_block(gl->font_handle);
+   gl_coord_array_release(&glui->raster_block.carr);
 
    if (menu->alloc_font)
       free((uint8_t*)menu->font);

@@ -186,6 +186,9 @@ bool gl_coord_array_add(gl_coord_array_t *ca, const gl_coords_t *coords, unsigne
 
 void gl_coord_array_release(gl_coord_array_t *ca)
 {
+   if (!ca->allocated)
+      return;
+
    free(ca->coords.vertex);
    free(ca->coords.color);
    free(ca->coords.tex_coord);

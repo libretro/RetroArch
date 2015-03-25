@@ -21,7 +21,7 @@
 #include "font_renderer_driver.h"
 #include <gfx/math/matrix_4x4.h>
 #include <gfx/scaler/scaler.h>
-#include "font_gl_driver.h"
+//#include "font_gl_driver.h"
 #include <formats/image.h>
 #include "video_shader_driver.h"
 #include <retro_inline.h>
@@ -255,6 +255,8 @@ typedef struct gl_coord_array
    unsigned allocated;
 } gl_coord_array_t;
 
+struct gl_font_renderer;
+
 typedef struct gl
 {
    const gfx_ctx_driver_t *ctx_driver;
@@ -333,7 +335,7 @@ typedef struct gl
 #endif
 
    /* Fonts */
-   const gl_font_renderer_t *font_driver;
+   const struct gl_font_renderer *font_driver;
    void *font_handle;
 
    bool egl_images;

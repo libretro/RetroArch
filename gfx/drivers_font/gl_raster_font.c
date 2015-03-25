@@ -15,6 +15,7 @@
  */
 
 #include "../gl_common.h"
+#include "../font_gl_driver.h"
 #include "../video_shader_driver.h"
 
 #define emit(c, vx, vy) do { \
@@ -30,11 +31,6 @@
 
 #define MAX_MSG_LEN_CHUNK 64
 
-typedef struct gl_raster_block {
-   bool fullscreen;
-   gl_coord_array_t carr;
-} gl_raster_block_t;
-
 typedef struct
 {
    gl_t *gl;
@@ -44,7 +40,7 @@ typedef struct
    const font_renderer_driver_t *font_driver;
    void *font_data;
 
-   gl_raster_block_t *block;
+   gl_font_raster_block_t *block;
 } gl_raster_t;
 
 static void *gl_raster_font_init_font(void *gl_data,
@@ -359,7 +355,7 @@ static const struct font_glyph *gl_raster_font_get_glyph(
 static void gl_flush_block(void *data)
 {
    gl_raster_t       *font  = (gl_raster_t*)data;
-   gl_raster_block_t *block = font->block;
+   gl_font_raster_block_t *block = font->block;
 
    if (block->carr.coords.vertices)
    {
@@ -373,27 +369,12 @@ static void gl_flush_block(void *data)
    block->carr.coords.vertices = 0;
 }
 
-static void gl_end_block(void *data)
-{
-   gl_raster_t *font = (gl_raster_t*)data;
-   gl_t *gl = font->gl;
-
-   gl_flush_block(data);
-
-   gl_coord_array_release(&font->block->carr);
-   free(font->block);
-   font->block = NULL;
-}
-
-static void gl_begin_block(void *data)
+static void gl_bind_block(void *data, gl_font_raster_block_t *block)
 {
    gl_raster_t *font = (gl_raster_t*)data;
    unsigned i = 0;
 
-   if (font->block)
-      return;
-
-   font->block = calloc(1, sizeof(gl_raster_block_t));
+   font->block = block;
 }
 
 gl_font_renderer_t gl_raster_font = {
@@ -402,7 +383,6 @@ gl_font_renderer_t gl_raster_font = {
    gl_raster_font_render_msg,
    "GL raster",
    gl_raster_font_get_glyph,
-   gl_begin_block,
-   gl_flush_block,
-   gl_end_block
+   gl_bind_block,
+   gl_flush_block
 };

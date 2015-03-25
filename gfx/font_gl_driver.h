@@ -18,9 +18,16 @@
 #define __FONT_GL_DRIVER_H__
 
 #include "../driver.h"
+#include "gl_common.h"
 #include <boolean.h>
 
 struct font_glyph;
+
+/* XXX: please include gl_common.h before this file */
+typedef struct gl_raster_block {
+   bool fullscreen;
+   gl_coord_array_t carr;
+} gl_font_raster_block_t;
 
 typedef struct gl_font_renderer
 {
@@ -31,9 +38,8 @@ typedef struct gl_font_renderer
    const char *ident;
 
    const struct font_glyph *(*get_glyph)(void *data, uint32_t code);
-   void (*begin_block)(void *data);
-   void (*flush_block)(void *data);
-   void (*end_block)(void *data);
+   void (*bind_block)(void *data, gl_font_raster_block_t *block);
+   void (*flush)(void *data);
 } gl_font_renderer_t;
 
 extern gl_font_renderer_t gl_raster_font;
