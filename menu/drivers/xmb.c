@@ -211,6 +211,8 @@ typedef struct xmb_handle
 
    xmb_node_t settings_node;
    bool prevent_populate;
+
+   gl_font_raster_block_t raster_block;
 } xmb_handle_t;
 
 static const GLfloat rmb_vertex[] = {
@@ -397,7 +399,7 @@ static void xmb_draw_text(gl_t *gl, xmb_handle_t *xmb, const char *str, float x,
          || y < -xmb->icon.size || y > gl->win_height + xmb->icon.size)
       return;
 
-   gl_set_viewport(gl, gl->win_width, gl->win_height, false, false);
+   /* gl_set_viewport(gl, gl->win_width, gl->win_height, false, false); */
 
    params.x           = x / gl->win_width;
    params.y           = 1.0f - y / gl->win_height;
@@ -1165,6 +1167,7 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
 
       xmb_draw_icon_end(gl, xmb);
    }
+
 }
 
 static void xmb_draw_cursor(gl_t *gl, xmb_handle_t *xmb, float x, float y)
@@ -1377,6 +1380,9 @@ static void xmb_frame(void)
       xmb_frame_messagebox(msg);
    }
 
+   if (gl->font_driver->flush)
+      gl->font_driver->flush(gl->font_handle);
+
    if (settings->menu.mouse.enable)
       xmb_draw_cursor(gl, xmb, menu->mouse.x, menu->mouse.y);
 
@@ -1482,6 +1488,9 @@ static void *xmb_init(void)
    if (global->core_info)
       menu->categories.size   = global->core_info->count + 1;
 
+   if (gl->font_driver->bind_block)
+      gl->font_driver->bind_block(gl->font_handle, &xmb->raster_block);
+
    return menu;
 
 error:
@@ -1497,9 +1506,18 @@ error:
 static void xmb_free(void *data)
 {
    menu_handle_t *menu = (menu_handle_t*)data;
+   xmb_handle_t *xmb = NULL;
+   gl_t *gl = (gl_t*)video_driver_get_ptr(NULL);
 
    if (menu && menu->userdata)
       free(menu->userdata);
+
+   xmb = (xmb_handle_t*)menu->userdata;
+
+   gl_coord_array_release(&xmb->raster_block.carr);
+
+   if (gl->font_driver->bind_block)
+      gl->font_driver->bind_block(gl->font_handle, NULL);
 }
 
 static bool xmb_font_init_first(const gl_font_renderer_t **font_driver,
@@ -1767,6 +1785,9 @@ static void xmb_context_reset(void)
       else if (xmb->depth <= 1)
          node->alpha = xmb->categories.passive.alpha;
    }
+
+   if (gl->font_driver->bind_block)
+      gl->font_driver->bind_block(gl->font_handle, &xmb->raster_block);
 }
 
 static void xmb_navigation_clear(bool pending_push)

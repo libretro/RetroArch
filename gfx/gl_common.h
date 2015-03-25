@@ -21,7 +21,7 @@
 #include "font_renderer_driver.h"
 #include <gfx/math/matrix_4x4.h>
 #include <gfx/scaler/scaler.h>
-#include "font_gl_driver.h"
+//#include "font_gl_driver.h"
 #include <formats/image.h>
 #include "video_shader_driver.h"
 #include <retro_inline.h>
@@ -231,14 +231,31 @@ struct gl_tex_info
    GLfloat coord[8];
 };
 
-struct gl_coords
+typedef struct gl_coords
 {
    const GLfloat *vertex;
    const GLfloat *color;
    const GLfloat *tex_coord;
    const GLfloat *lut_tex_coord;
    unsigned vertices;
-};
+} gl_coords_t;
+
+typedef struct gl_mut_coords
+{
+   GLfloat *vertex;
+   GLfloat *color;
+   GLfloat *tex_coord;
+   GLfloat *lut_tex_coord;
+   unsigned vertices;
+} gl_mut_coords_t;
+
+typedef struct gl_coord_array
+{
+   gl_mut_coords_t coords;
+   unsigned allocated;
+} gl_coord_array_t;
+
+struct gl_font_renderer;
 
 typedef struct gl
 {
@@ -318,7 +335,7 @@ typedef struct gl
 #endif
 
    /* Fonts */
-   const gl_font_renderer_t *font_driver;
+   const struct gl_font_renderer *font_driver;
    void *font_handle;
 
    bool egl_images;
@@ -421,5 +438,8 @@ static INLINE unsigned gl_wrap_type_to_enum(enum gfx_wrap_type type)
 
    return 0;
 }
+
+bool gl_coord_array_add(gl_coord_array_t *ca, const gl_coords_t *coords, unsigned count);
+void gl_coord_array_release(gl_coord_array_t *ca);
 
 #endif
