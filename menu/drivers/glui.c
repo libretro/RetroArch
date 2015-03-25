@@ -274,7 +274,6 @@ static void glui_render(void)
    glui_handle_t *glui = NULL;
    gl_t *gl = NULL;
    menu_handle_t *menu  = menu_driver_get_ptr();
-   runloop_t *runloop   = rarch_main_get_ptr();
    settings_t *settings = config_get_ptr();
 
    if (!menu)
@@ -590,7 +589,6 @@ static void glui_context_reset(void)
    glui_handle_t *glui = NULL;
    menu_handle_t *menu  = menu_driver_get_ptr();
    settings_t *settings = config_get_ptr();
-   gl_t *gl = (gl_t*)video_driver_get_ptr(NULL);
     
    if (!menu)
       return;

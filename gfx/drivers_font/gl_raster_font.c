@@ -372,7 +372,6 @@ static void gl_flush_block(void *data)
 static void gl_bind_block(void *data, gl_font_raster_block_t *block)
 {
    gl_raster_t *font = (gl_raster_t*)data;
-   unsigned i = 0;
 
    font->block = block;
 }
