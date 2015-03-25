@@ -231,14 +231,29 @@ struct gl_tex_info
    GLfloat coord[8];
 };
 
-struct gl_coords
+typedef struct gl_coords
 {
    const GLfloat *vertex;
    const GLfloat *color;
    const GLfloat *tex_coord;
    const GLfloat *lut_tex_coord;
    unsigned vertices;
-};
+} gl_coords_t;
+
+typedef struct gl_mut_coords
+{
+   GLfloat *vertex;
+   GLfloat *color;
+   GLfloat *tex_coord;
+   GLfloat *lut_tex_coord;
+   unsigned vertices;
+} gl_mut_coords_t;
+
+typedef struct gl_coord_array
+{
+   gl_mut_coords_t coords;
+   unsigned allocated;
+} gl_coord_array_t;
 
 typedef struct gl
 {
@@ -421,5 +436,8 @@ static INLINE unsigned gl_wrap_type_to_enum(enum gfx_wrap_type type)
 
    return 0;
 }
+
+bool gl_coord_array_add(gl_coord_array_t *ca, const gl_coords_t *coords, unsigned count);
+void gl_coord_array_release(gl_coord_array_t *ca);
 
 #endif
