@@ -28,19 +28,25 @@ static INLINE void get_title(const char *label, const char *dir,
    struct string_list *list_label = string_split(label, "|");
    struct string_list *list_path  = string_split(dir, "|");
 
-   if (list_label && list_label->size > 0)
+   if (list_label)
    {
-      strlcpy(elem0, list_label->elems[0].data, sizeof(elem0));
-      if (list_label->size > 1)
-         strlcpy(elem1, list_label->elems[1].data, sizeof(elem1));
+      if (list_label->size > 0)
+      {
+         strlcpy(elem0, list_label->elems[0].data, sizeof(elem0));
+         if (list_label->size > 1)
+            strlcpy(elem1, list_label->elems[1].data, sizeof(elem1));
+      }
       string_list_free(list_label);
    }
 
-   if (list_path && list_path->size > 0)
+   if (list_path)
    {
-      strlcpy(elem0_path, list_path->elems[0].data, sizeof(elem0_path));
-      if (list_path->size > 1)
-         strlcpy(elem1_path, list_path->elems[1].data, sizeof(elem1_path));
+      if (list_path->size > 0)
+      {
+         strlcpy(elem0_path, list_path->elems[0].data, sizeof(elem0_path));
+         if (list_path->size > 1)
+            strlcpy(elem1_path, list_path->elems[1].data, sizeof(elem1_path));
+      }
       string_list_free(list_path);
    }
 
