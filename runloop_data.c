@@ -142,6 +142,14 @@ static int rarch_main_data_http_iterate_transfer(http_handle_t *http)
 //		RARCH_LOG("%.9llu / %.9llu        \r", (unsigned long long)pos, (unsigned long long)tot);
 //#endif
       RARCH_LOG("Download progress: %.d%% \r", percent);
+            char msg[PATH_MAX_LENGTH];
+
+      if(percent > 0)
+      {
+         snprintf(msg, sizeof(msg), "Download progress: %d%%", percent);
+         rarch_main_msg_queue_push(msg, 1, 10, true);
+      }
+
       return -1;
    }
 
