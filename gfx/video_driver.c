@@ -802,7 +802,6 @@ void video_driver_get_video_output_prev(void)
 bool video_driver_frame(const void *frame, unsigned width,
          unsigned height, unsigned pitch, const char *msg)
 {
-   bool ret;
    driver_t *driver     = driver_get_ptr();
    runloop_t *runloop   = rarch_main_get_ptr();
    if (driver && driver->video
