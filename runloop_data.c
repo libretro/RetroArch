@@ -129,14 +129,19 @@ int cb_core_updater_list(void *data_, size_t len);
 static int rarch_main_data_http_iterate_transfer(http_handle_t *http)
 {
    size_t pos = 0, tot = 0;
-
+   int percent = 0;
    if (!net_http_update(http->handle, &pos, &tot))
    {
-#ifdef _WIN32
-		RARCH_LOG("%.9I64u / %.9I64u       \r", (unsigned long long)pos, (unsigned long long)tot);
-#else
-		RARCH_LOG("%.9llu / %.9llu        \r", (unsigned long long)pos, (unsigned long long)tot);
-#endif
+      if(tot != 0)
+         percent=(unsigned long long)pos*100/(unsigned long long)tot;
+      else
+         percent=0;   
+//#ifdef _WIN32
+//		RARCH_LOG("%.9I64u / %.9I64u       \r", (unsigned long long)pos, (unsigned long long)tot);
+//#else
+//		RARCH_LOG("%.9llu / %.9llu        \r", (unsigned long long)pos, (unsigned long long)tot);
+//#endif
+      RARCH_LOG("Download progress: %.d%% \r", percent);
       return -1;
    }
 
