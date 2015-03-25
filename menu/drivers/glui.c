@@ -359,6 +359,9 @@ static void glui_frame(void)
 
    glui_render_background(settings, gl, glui, false);
 
+   if (gl->font_driver->bind_block)
+      gl->font_driver->bind_block(gl->font_handle, &glui->raster_block);
+
    if (!menu_display_update_pending())
       goto draw_text;
 
@@ -480,7 +483,10 @@ static void glui_frame(void)
 
 draw_text:
    if (gl->font_driver->flush)
+   {
       gl->font_driver->flush(gl->font_handle);
+      gl->font_driver->bind_block(gl->font_handle, NULL);
+   }
 
    gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
 }
@@ -510,9 +516,6 @@ static void *glui_init(void)
 
    glui     = (glui_handle_t*)menu->userdata;
    glui->textures.bg.id = 0;
-
-   if (gl->font_driver->bind_block)
-      gl->font_driver->bind_block(gl->font_handle, &glui->raster_block);
 
    return menu;
 error:
@@ -621,9 +624,6 @@ static void glui_context_reset(void)
 
       texture_image_free(&ti);
    }
-
-   if (gl->font_driver->bind_block)
-      gl->font_driver->bind_block(gl->font_handle, &glui->raster_block);
 }
 
 static void glui_navigation_clear(bool pending_push)
