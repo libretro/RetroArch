@@ -31,10 +31,8 @@
 #define MAX_MSG_LEN_CHUNK 64
 
 typedef struct gl_raster_block {
-   bool active;
    bool fullscreen;
-   unsigned allocated;
-   struct gl_coords coords;
+   gl_coord_array_t carr;
 } gl_raster_block_t;
 
 typedef struct
@@ -46,7 +44,7 @@ typedef struct
    const font_renderer_driver_t *font_driver;
    void *font_data;
 
-   gl_raster_block_t block;
+   gl_raster_block_t *block;
 } gl_raster_t;
 
 static void *gl_raster_font_init_font(void *gl_data,
@@ -161,83 +159,12 @@ static int get_message_width(gl_raster_t *font, const char *msg)
    return delta_x;
 }
 
-static void draw_vertices(gl_t *gl, const struct gl_coords *coords)
+static void draw_vertices(gl_t *gl, const gl_coords_t *coords)
 {
    gl->shader->set_coords(coords);
    gl->shader->set_mvp(gl, &gl->mvp_no_rot);
 
    glDrawArrays(GL_TRIANGLES, 0, coords->vertices);
-}
-
-static bool realloc_checked(void **ptr, size_t size)
-{
-   void *nptr;
-
-   if (size == 0)
-   {
-      if (*ptr)
-         free(*ptr);
-      *ptr = NULL;
-      return true;
-   }
-
-   if (*ptr == NULL)
-      nptr = malloc(size);
-   else
-      nptr = realloc(*ptr, size);
-
-   if (nptr)
-      *ptr = nptr;
-
-   return nptr != NULL;
-}
-
-static bool resize_block(gl_raster_t *font, unsigned new_size)
-{
-   gl_raster_block_t *block = &font->block;
-   bool success = false;
-
-   if (!font->block.allocated || new_size > font->block.allocated - 1)
-   {
-      unsigned actual_new_size = next_pow2(new_size);
-
-      bool vsucceeded = realloc_checked((void**)&block->coords.vertex, sizeof(GLfloat) * 2 * actual_new_size);
-      bool csuccceeded = realloc_checked((void**)&block->coords.color, sizeof(GLfloat) * 4 * actual_new_size);
-      bool tsuccceeded = realloc_checked((void**)&block->coords.tex_coord, sizeof(GLfloat) * 2 * actual_new_size);
-      bool lsuccceeded = realloc_checked((void**)&block->coords.lut_tex_coord, sizeof(GLfloat) * 2 * actual_new_size);
-
-      if (vsucceeded && csuccceeded && tsuccceeded && lsuccceeded)
-      {
-         font->block.allocated  = actual_new_size;
-         block->coords.vertices = new_size;
-         success = true;
-      }
-   }
-   else
-   {
-      block->coords.vertices = new_size;
-      success = true;
-   }
-
-   return success;
-}
-
-static bool append_vertices(gl_raster_t *font, const struct gl_coords *coords)
-{
-   gl_raster_block_t *block = &font->block;
-   unsigned old_size = block->coords.vertices;
-   if (resize_block(font, block->coords.vertices + coords->vertices))
-   {
-      const size_t base_size = coords->vertices * sizeof(GLfloat);
-      memcpy((void*)(block->coords.vertex+old_size*2),        coords->vertex,        base_size * 2);
-      memcpy((void*)(block->coords.color+old_size*4),         coords->color,         base_size * 4);
-      memcpy((void*)(block->coords.tex_coord+old_size*2),     coords->tex_coord,     base_size * 2);
-      memcpy((void*)(block->coords.lut_tex_coord+old_size*2), coords->lut_tex_coord, base_size * 2);
-   }
-   else
-      RARCH_WARN("Allocation failed.");
-
-   return true;
 }
 
 static void render_message(gl_raster_t *font, const char *msg, GLfloat scale,
@@ -273,7 +200,7 @@ static void render_message(gl_raster_t *font, const char *msg, GLfloat scale,
       for (i = 0; i < msg_len; i++)
       {
          int off_x, off_y, tex_x, tex_y, width, height;
-         const struct font_glyph *glyph = 
+         const struct font_glyph *glyph =
             font->font_driver->get_glyph(font->font_data, (uint8_t)msg[i]);
          if (!glyph)
             glyph = font->font_driver->get_glyph(font->font_data, '?'); /* Do something smarter here ... */
@@ -306,8 +233,8 @@ static void render_message(gl_raster_t *font, const char *msg, GLfloat scale,
       coords.vertices  = 6 * msg_len;
       coords.lut_tex_coord = gl->coords.lut_tex_coord;
 
-      if (font->block.active)
-         append_vertices(font, &coords);
+      if (font->block)
+         gl_coord_array_add(&font->block->carr, &coords, coords.vertices);
       else
          draw_vertices(gl, &coords);
 
@@ -396,8 +323,8 @@ static void gl_raster_font_render_msg(void *data, const char *msg,
       drop_mod = 0.3f;
    }
 
-   if (font->block.active)
-      font->block.fullscreen = true;
+   if (font->block)
+      font->block->fullscreen = true;
    else
       setup_viewport(font, full_screen);
 
@@ -415,7 +342,7 @@ static void gl_raster_font_render_msg(void *data, const char *msg,
 
    render_message(font, msg, scale, color, x, y, align_right);
 
-   if (!font->block.active)
+   if (!font->block)
       restore_viewport(gl);
 }
 
@@ -431,60 +358,42 @@ static const struct font_glyph *gl_raster_font_get_glyph(
 
 static void gl_flush_block(void *data)
 {
-   gl_raster_t *font = (gl_raster_t*)data;
-   gl_raster_block_t *block = &font->block;
+   gl_raster_t       *font  = (gl_raster_t*)data;
+   gl_raster_block_t *block = font->block;
 
-   if (block->coords.vertices)
+   if (block->carr.coords.vertices)
    {
       setup_viewport(font, block->fullscreen);
 
-      draw_vertices(font->gl, &block->coords);
+      draw_vertices(font->gl, (gl_coords_t*)&block->carr.coords);
 
       restore_viewport(font->gl);
    }
 
-   block->coords.vertices = 0;
+   block->carr.coords.vertices = 0;
 }
 
 static void gl_end_block(void *data)
 {
    gl_raster_t *font = (gl_raster_t*)data;
-   gl_raster_block_t *block = &font->block;
    gl_t *gl = font->gl;
 
    gl_flush_block(data);
 
-   block->active = false;
-
-   if (block->allocated)
-   {
-      free((void*)block->coords.color);
-      free((void*)block->coords.lut_tex_coord);
-      free((void*)block->coords.tex_coord);
-      free((void*)block->coords.vertex);
-   }
-
-   block->coords.vertices = 0;
-   block->allocated = 0;
+   gl_coord_array_release(&font->block->carr);
+   free(font->block);
+   font->block = NULL;
 }
 
 static void gl_begin_block(void *data)
 {
    gl_raster_t *font = (gl_raster_t*)data;
-   gl_raster_block_t *block = &font->block;
    unsigned i = 0;
 
-   if (block->active)
-      gl_flush_block(data);
+   if (font->block)
+      return;
 
-   block->active = true;
-   block->coords.vertices = 0;
-
-   if (!block->allocated)
-   {
-      block->coords.color = block->coords.tex_coord = NULL;
-      block->coords.vertex = block->coords.lut_tex_coord = NULL;
-   }
+   font->block = calloc(1, sizeof(gl_raster_block_t));
 }
 
 gl_font_renderer_t gl_raster_font = {

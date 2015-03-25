@@ -1509,8 +1509,8 @@ static void xmb_free(void *data)
    if (menu && menu->userdata)
       free(menu->userdata);
 
-   if (gl->font_driver->begin_block)
-      gl->font_driver->begin_block(gl->font_handle);
+   if (gl->font_driver->end_block)
+      gl->font_driver->end_block(gl->font_handle);
 }
 
 static bool xmb_font_init_first(const gl_font_renderer_t **font_driver,
