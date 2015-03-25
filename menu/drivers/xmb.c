@@ -1266,6 +1266,9 @@ static void xmb_frame(void)
    if (!gl)
       return;
 
+   if (gl->font_driver->bind_block)
+      gl->font_driver->bind_block(gl->font_handle, &xmb->raster_block);
+
    xmb_frame_background(settings, gl, xmb, false);
 
    xmb_draw_text(gl, xmb,
@@ -1381,7 +1384,10 @@ static void xmb_frame(void)
    }
 
    if (gl->font_driver->flush)
+   {
       gl->font_driver->flush(gl->font_handle);
+      gl->font_driver->bind_block(gl->font_handle, NULL);
+   }
 
    if (settings->menu.mouse.enable)
       xmb_draw_cursor(gl, xmb, menu->mouse.x, menu->mouse.y);
@@ -1487,9 +1493,6 @@ static void *xmb_init(void)
 
    if (global->core_info)
       menu->categories.size   = global->core_info->count + 1;
-
-   if (gl->font_driver->bind_block)
-      gl->font_driver->bind_block(gl->font_handle, &xmb->raster_block);
 
    return menu;
 
@@ -1785,9 +1788,6 @@ static void xmb_context_reset(void)
       else if (xmb->depth <= 1)
          node->alpha = xmb->categories.passive.alpha;
    }
-
-   if (gl->font_driver->bind_block)
-      gl->font_driver->bind_block(gl->font_handle, &xmb->raster_block);
 }
 
 static void xmb_navigation_clear(bool pending_push)

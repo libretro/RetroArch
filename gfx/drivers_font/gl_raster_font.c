@@ -354,7 +354,7 @@ static const struct font_glyph *gl_raster_font_get_glyph(
 
 static void gl_flush_block(void *data)
 {
-   gl_raster_t       *font  = (gl_raster_t*)data;
+   gl_raster_t       *font       = (gl_raster_t*)data;
    gl_font_raster_block_t *block = font->block;
 
    if (block->carr.coords.vertices)
