@@ -229,6 +229,7 @@ typedef struct rarch_cmd_state
    bool quit_key_pressed;
    bool screenshot_pressed;
    bool mute_pressed;
+   bool osk_pressed;
    bool volume_up_pressed;
    bool volume_down_pressed;
    bool reset_pressed;
