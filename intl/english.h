@@ -64,6 +64,7 @@
 #define RETRO_LBL_CHEAT_TOGGLE "Cheat Toggle"
 #define RETRO_LBL_SCREENSHOT "Screenshot"
 #define RETRO_LBL_MUTE "Mute Audio"
+#define RETRO_LBL_OSK "Enable On-Screen Keyboard"
 #define RETRO_LBL_NETPLAY_FLIP "Netplay Flip Users"
 #define RETRO_LBL_SLOWMOTION "Slowmotion"
 #define RETRO_LBL_ENABLE_HOTKEY "Enable Hotkey"

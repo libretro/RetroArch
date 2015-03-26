@@ -25,6 +25,7 @@
 #include "retroarch.h"
 #include "runloop.h"
 #include "runloop_data.h"
+#include "input/keyboard_line.h"
 
 #ifdef HAVE_MENU
 #include "menu/menu.h"
@@ -528,6 +529,14 @@ static int do_state_checks(rarch_cmd_state_t *cmd)
    if (cmd->mute_pressed)
       rarch_main_command(RARCH_CMD_AUDIO_MUTE_TOGGLE);
 
+   if (cmd->osk_pressed)
+   {
+        driver_t *driver     = driver_get_ptr();
+        settings_t *settings = config_get_ptr();
+
+        driver->keyboard_linefeed_enable = !driver->keyboard_linefeed_enable;
+   }
+      
    if (cmd->volume_up_pressed)
       rarch_main_command(RARCH_CMD_VOLUME_UP);
    else if (cmd->volume_down_pressed)
@@ -1023,6 +1032,7 @@ static void rarch_main_cmd_get_state(rarch_cmd_state_t *cmd,
    cmd->quit_key_pressed            = BIT64_GET(input, RARCH_QUIT_KEY);
    cmd->screenshot_pressed          = BIT64_GET(trigger_input, RARCH_SCREENSHOT);
    cmd->mute_pressed                = BIT64_GET(trigger_input, RARCH_MUTE);
+   cmd->osk_pressed                = BIT64_GET(trigger_input, RARCH_OSK);
    cmd->volume_up_pressed           = BIT64_GET(input, RARCH_VOLUME_UP);
    cmd->volume_down_pressed         = BIT64_GET(input, RARCH_VOLUME_DOWN);
    cmd->reset_pressed               = BIT64_GET(trigger_input, RARCH_RESET);

@@ -2820,6 +2820,9 @@ int setting_get_description(const char *label, char *msg,
    else if (!strcmp(label, "audio_mute"))
       snprintf(msg, sizeof_msg,
             " -- Mute/unmute audio.");
+   else if (!strcmp(label, "osk_enable"))
+      snprintf(msg, sizeof_msg,
+            " -- Enable/disable on-screen keyboard.");            
    else if (!strcmp(label, "screenshot"))
       snprintf(msg, sizeof_msg,
             " -- Take screenshot.");
