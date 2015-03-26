@@ -1652,12 +1652,7 @@ static int deferred_push_content_actions(void *data, void *userdata,
       menu_list_push(list, "Save State", "savestate", MENU_SETTING_ACTION_SAVESTATE, 0);
       menu_list_push(list, "Load State", "loadstate", MENU_SETTING_ACTION_LOADSTATE, 0);
       menu_list_push(list, "Core Information", "core_information", MENU_SETTING_ACTION_CORE_INFORMATION, 0);
-      menu_list_push(list, "Core Options", "core_options", MENU_SETTING_ACTION_CORE_OPTIONS, 0);
-      if (global->has_set_input_descriptors)
-         menu_list_push(list, "Core Input Remapping Options", "core_input_remapping_options", MENU_SETTING_ACTION_CORE_INPUT_REMAPPING_OPTIONS, 0);
-      menu_list_push(list, "Core Cheat Options", "core_cheat_options", MENU_SETTING_ACTION_CORE_CHEAT_OPTIONS, 0);
-      if ( !global->libretro_dummy && global->system.disk_control.get_num_images)
-         menu_list_push(list, "Core Disk Options", "disk_options", MENU_SETTING_ACTION_CORE_DISK_OPTIONS, 0);
+      menu_list_push(list, "Options", "options", MENU_SETTING_ACTION_CORE_OPTIONS, 0);
       menu_list_push(list, "Take Screenshot", "take_screenshot", MENU_SETTING_ACTION_SCREENSHOT, 0);
       menu_list_push(list, "Reset", "restart_content", MENU_SETTING_ACTION_RESET, 0);
    }
