@@ -49,6 +49,7 @@ typedef struct glui_handle
    } textures;
 
    gl_font_raster_block_t raster_block;
+   bool use_blocks;
 } glui_handle_t;
 
 static int glui_entry_iterate(unsigned action)
@@ -354,15 +355,17 @@ static void glui_frame(void)
          && !menu->msg_force)
       return;
 
-   glViewport(0, 0, gl->win_width, gl->win_height);
+   gl_set_viewport(gl, gl->win_width, gl->win_height, true, false);
 
    glui_render_background(settings, gl, glui, false);
 
-   if (gl->font_driver->bind_block)
+   if (glui->use_blocks)
+   {
       gl->font_driver->bind_block(gl->font_handle, &glui->raster_block);
 
-   if (!menu_display_update_pending())
-      goto draw_text;
+      if (!menu_display_update_pending())
+         goto draw_text;
+   }
 
    glui->raster_block.carr.coords.vertices = 0;
 
@@ -481,7 +484,7 @@ static void glui_frame(void)
       glui_draw_cursor(gl, menu->mouse.x, menu->mouse.y);
 
 draw_text:
-   if (gl->font_driver->flush)
+   if (glui->use_blocks)
    {
       gl->font_driver->flush(gl->font_handle);
       gl->font_driver->bind_block(gl->font_handle, NULL);
@@ -516,6 +519,9 @@ static void *glui_init(void)
    glui     = (glui_handle_t*)menu->userdata;
    glui->textures.bg.id = 0;
 
+   if (gl->font_driver->bind_block && gl->font_driver->flush)
+      glui->use_blocks = true;
+
    return menu;
 error:
    if (menu)
@@ -532,7 +538,7 @@ static void glui_free(void *data)
 
    gl_coord_array_release(&glui->raster_block.carr);
 
-   if (gl->font_driver->bind_block)
+   if (glui->use_blocks)
       gl->font_driver->bind_block(gl->font_handle, NULL);
 
    if (menu->alloc_font)

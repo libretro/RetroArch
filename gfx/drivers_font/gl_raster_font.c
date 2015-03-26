@@ -18,6 +18,8 @@
 #include "../font_gl_driver.h"
 #include "../video_shader_driver.h"
 
+/* TODO: Move viewport side effects to the caller: it's a source of bugs. */
+
 #define emit(c, vx, vy) do { \
    font_vertex[     2 * (6 * i + c) + 0] = (x + (delta_x + off_x + vx * width) * scale) * inv_win_width; \
    font_vertex[     2 * (6 * i + c) + 1] = (y + (delta_y - off_y - vy * height) * scale) * inv_win_height; \
