@@ -462,6 +462,8 @@ static void glui_frame(void)
                      y, type_str_buf, selected ? hover_color : normal_color);
    }
 
+draw_text:
+
    if (menu->keyboard.display)
    {
       char msg[PATH_MAX_LENGTH];
@@ -483,7 +485,6 @@ static void glui_frame(void)
    if (settings->menu.mouse.enable)
       glui_draw_cursor(gl, menu->mouse.x, menu->mouse.y);
 
-draw_text:
    if (glui->use_blocks)
    {
       gl->font_driver->flush(gl->font_handle);
