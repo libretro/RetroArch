@@ -123,26 +123,29 @@ static bool input_autoconfigure_joypad_from_conf(
    return ret;
 }
 
-static void input_autoconfigure_joypad_from_conf_dir(
+static bool input_autoconfigure_joypad_from_conf_dir(
       autoconfig_params_t *params)
 {
    size_t i;
+   bool ret = false;
    settings_t *settings = config_get_ptr();
    struct string_list *list = settings ? dir_list_new(
          settings->input.autoconfig_dir, "cfg", false) : NULL;
 
    if (!list)
-      return;
+      return false;
 
    for (i = 0; i < list->size; i++)
    {
       config_file_t *conf = config_file_new(list->elems[i].data);
 
-      if (input_autoconfigure_joypad_from_conf(conf, params))
+      if ((ret = input_autoconfigure_joypad_from_conf(conf, params)))
          break;
    }
 
    string_list_free(list);
+
+   return ret;
 }
 
 #if defined(HAVE_BUILTIN_AUTOCONFIG)
@@ -169,14 +172,13 @@ static bool input_autoconfigure_joypad_from_conf_internal(
 }
 #endif
 
-void input_config_autoconfigure_joypad(autoconfig_params_t *params)
+static bool input_config_autoconfigure_joypad_init(autoconfig_params_t *params)
 {
    size_t i;
-   bool ret = false;
    settings_t *settings = config_get_ptr();
 
    if (!settings || !settings->input.autodetect_enable)
-      return;
+      return false;
 
    for (i = 0; i < RARCH_BIND_LIST_END; i++)
    {
@@ -187,6 +189,16 @@ void input_config_autoconfigure_joypad(autoconfig_params_t *params)
    }
    settings->input.autoconfigured[params->idx] = false;
 
+   return true;
+}
+
+void input_config_autoconfigure_joypad(autoconfig_params_t *params)
+{
+   bool ret = false;
+   
+   if (!input_config_autoconfigure_joypad_init(params))
+      return;
+
    if (!params->name)
       return;
 
@@ -195,7 +207,7 @@ void input_config_autoconfigure_joypad(autoconfig_params_t *params)
 #endif
 
    if (!ret)
-      input_autoconfigure_joypad_from_conf_dir(params);
+      ret = input_autoconfigure_joypad_from_conf_dir(params);
 }
 
 const struct retro_keybind *input_get_auto_bind(unsigned port, unsigned id)
