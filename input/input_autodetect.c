@@ -162,8 +162,6 @@ void input_config_autoconfigure_joypad(autoconfig_params_t *params)
       return;
 
    /* Load from both cfg files and internal */
-
-   /* Now try files */
    list = dir_list_new(settings->input.autoconfig_dir, "cfg", false);
 
    if (!list)
