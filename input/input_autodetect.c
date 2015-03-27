@@ -101,17 +101,17 @@ found:
 void input_config_autoconfigure_joypad(autoconfig_params_t *params)
 {
    size_t i;
-   bool internal_only, block_osd_spam;
+   bool internal_only;
    struct string_list *list = NULL;
    settings_t *settings = config_get_ptr();
+   bool block_osd_spam = settings && 
+      settings->input.autoconfigured[params->idx] && params->name;
 
-   if (!settings->input.autodetect_enable)
+   if (!settings || !settings->input.autodetect_enable)
       return;
 
-   /* This will be the case if input driver is reinit.
-    * No reason to spam autoconfigure messages
-    * every time (fine in log). */
-   block_osd_spam = settings->input.autoconfigured[params->idx] && params->name;
+   /* This will be the case if input driver is reinitialized.
+    * No reason to spam autoconfigure messages every time. */
 
    for (i = 0; i < RARCH_BIND_LIST_END; i++)
    {
