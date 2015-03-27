@@ -146,7 +146,7 @@ void input_config_autoconfigure_joypad(autoconfig_params_t *params)
       return;
 
 #if defined(HAVE_BUILTIN_AUTOCONFIG)
-   /* First internal */
+   /* Load internal autoconfig files  */
    for (i = 0; input_builtin_autoconfs[i]; i++)
    {
       config_file_t *conf = config_file_new_from_string(
@@ -160,7 +160,7 @@ void input_config_autoconfigure_joypad(autoconfig_params_t *params)
    if (ret || !*settings->input.autoconfig_dir)
       return;
 
-   /* Load from both cfg files and internal */
+   /* Load cfg autoconfig files  */
    list = dir_list_new(settings->input.autoconfig_dir, "cfg", false);
 
    if (!list)
