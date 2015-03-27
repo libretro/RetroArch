@@ -86,6 +86,9 @@ static void input_autoconfigure_joypad_add(
 {
    char msg[PATH_MAX_LENGTH];
    settings_t *settings = config_get_ptr();
+
+   /* This will be the case if input driver is reinitialized.
+    * No reason to spam autoconfigure messages every time. */
    bool block_osd_spam = settings && 
       settings->input.autoconfigured[params->idx] && params->name;
 
@@ -132,9 +135,6 @@ void input_config_autoconfigure_joypad(autoconfig_params_t *params)
 
    if (!settings || !settings->input.autodetect_enable)
       return;
-
-   /* This will be the case if input driver is reinitialized.
-    * No reason to spam autoconfigure messages every time. */
 
    for (i = 0; i < RARCH_BIND_LIST_END; i++)
    {
@@ -184,7 +184,10 @@ void input_config_autoconfigure_joypad(autoconfig_params_t *params)
 const struct retro_keybind *input_get_auto_bind(unsigned port, unsigned id)
 {
    settings_t *settings = config_get_ptr();
-   unsigned joy_idx     = settings->input.joypad_map[port];
+   unsigned joy_idx     = 0;
+   
+   if (settings)
+      joy_idx = settings->input.joypad_map[port];
 
    if (joy_idx < MAX_USERS)
       return &settings->input.autoconf_binds[joy_idx][id];
