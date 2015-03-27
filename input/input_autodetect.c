@@ -98,6 +98,18 @@ found:
    return true;
 }
 
+static bool input_autoconfigure_joypad_from_conf(
+      config_file_t *conf,
+      autoconfig_params_t *params,
+      bool block_osd_spam)
+{
+   bool ret = input_try_autoconfigure_joypad_from_conf(conf,
+         params, block_osd_spam);
+
+   config_file_free(conf);
+   return ret;
+}
+
 void input_config_autoconfigure_joypad(autoconfig_params_t *params)
 {
    size_t i;
@@ -134,11 +146,9 @@ void input_config_autoconfigure_joypad(autoconfig_params_t *params)
    {
       config_file_t *conf = (config_file_t*)
          config_file_new_from_string(input_builtin_autoconfs[i]);
-      bool success = input_try_autoconfigure_joypad_from_conf(conf,
-            params, block_osd_spam);
 
-      config_file_free(conf);
-      if (success)
+      if (input_autoconfigure_joypad_from_conf(conf,
+            params, block_osd_spam))
          break;
    }
 #endif
@@ -154,15 +164,12 @@ void input_config_autoconfigure_joypad(autoconfig_params_t *params)
 
    for (i = 0; i < list->size; i++)
    {
-      bool success;
       config_file_t *conf = config_file_new(list->elems[i].data);
       if (!conf)
          continue;
 
-      success = input_try_autoconfigure_joypad_from_conf(conf,
-            params, block_osd_spam);
-      config_file_free(conf);
-      if (success)
+      if (input_autoconfigure_joypad_from_conf(conf,
+               params, block_osd_spam))
          break;
    }
 
