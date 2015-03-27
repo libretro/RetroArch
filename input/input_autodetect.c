@@ -43,7 +43,6 @@ static bool input_try_autoconfigure_joypad_from_conf(config_file_t *conf,
 {
    char ident[PATH_MAX_LENGTH], ident_idx[PATH_MAX_LENGTH];
    char input_driver[PATH_MAX_LENGTH];
-   bool cond_found_idx, cond_found_general;
    int input_vid = 0, input_pid = 0;
 
    if (!conf)
@@ -59,10 +58,6 @@ static bool input_try_autoconfigure_joypad_from_conf(config_file_t *conf,
    snprintf(ident_idx,
          sizeof(ident_idx), "%s_p%u", ident, params->idx);
 
-   cond_found_idx     = !strcmp(ident_idx, params->name);
-   cond_found_general = !strcmp(ident, params->name) 
-      && !strcmp(params->driver, input_driver);
-
    /* If Vendor ID and Product ID matches, we've found our
     * entry. */
    if (     (params->vid == input_vid)
@@ -74,7 +69,10 @@ static bool input_try_autoconfigure_joypad_from_conf(config_file_t *conf,
       return true;
 
    /* Check for name match. */
-   if (cond_found_idx || cond_found_general)
+   if (!strcmp(ident_idx, params->name))
+      return true;
+   if (!strcmp(ident, params->name) 
+      && !strcmp(params->driver, input_driver))
       return true;
 
    return false;
