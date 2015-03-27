@@ -22,7 +22,6 @@
 #include <ctype.h>
 
 #include "../general.h"
-#include "../runloop.h"
 
 static void input_autoconfigure_joypad_conf(config_file_t *conf,
       struct retro_keybind *binds)
