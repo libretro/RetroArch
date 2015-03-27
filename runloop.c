@@ -532,9 +532,9 @@ static int do_state_checks(rarch_cmd_state_t *cmd)
    if (cmd->osk_pressed)
    {
         driver_t *driver     = driver_get_ptr();
-        settings_t *settings = config_get_ptr();
 
-        driver->keyboard_linefeed_enable = !driver->keyboard_linefeed_enable;
+        if (driver)
+           driver->keyboard_linefeed_enable = !driver->keyboard_linefeed_enable;
    }
       
    if (cmd->volume_up_pressed)
