@@ -482,14 +482,14 @@ draw_text:
       glui->box_message[0] = '\0';
    }
 
-   if (settings->menu.mouse.enable)
-      glui_draw_cursor(gl, menu->mouse.x, menu->mouse.y);
-
    if (glui->use_blocks)
    {
       gl->font_driver->flush(gl->font_handle);
       gl->font_driver->bind_block(gl->font_handle, NULL);
    }
+
+   if (settings->menu.mouse.enable)
+      glui_draw_cursor(gl, menu->mouse.x, menu->mouse.y);
 
    gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
 }
