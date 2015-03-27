@@ -82,11 +82,12 @@ static bool input_try_autoconfigure_joypad_from_conf(config_file_t *conf,
 
 static void input_autoconfigure_joypad_add(
       config_file_t *conf,
-      autoconfig_params_t *params,
-      bool block_osd_spam)
+      autoconfig_params_t *params)
 {
    char msg[PATH_MAX_LENGTH];
    settings_t *settings = config_get_ptr();
+   bool block_osd_spam = settings && 
+      settings->input.autoconfigured[params->idx] && params->name;
 
    if (!settings)
       return;
@@ -104,9 +105,7 @@ static void input_autoconfigure_joypad_add(
 }
 
 static bool input_autoconfigure_joypad_from_conf(
-      config_file_t *conf,
-      autoconfig_params_t *params,
-      bool block_osd_spam)
+      config_file_t *conf, autoconfig_params_t *params)
 {
    bool ret = false;
 
@@ -117,8 +116,7 @@ static bool input_autoconfigure_joypad_from_conf(
          params);
 
    if (ret)
-      input_autoconfigure_joypad_add(conf, params,
-            block_osd_spam);
+      input_autoconfigure_joypad_add(conf, params);
 
    config_file_free(conf);
 
@@ -131,8 +129,6 @@ void input_config_autoconfigure_joypad(autoconfig_params_t *params)
    bool internal_only;
    struct string_list *list = NULL;
    settings_t *settings = config_get_ptr();
-   bool block_osd_spam = settings && 
-      settings->input.autoconfigured[params->idx] && params->name;
 
    if (!settings || !settings->input.autodetect_enable)
       return;
@@ -161,8 +157,7 @@ void input_config_autoconfigure_joypad(autoconfig_params_t *params)
    {
       config_file_t *conf = (config_file_t*)
          config_file_new_from_string(input_builtin_autoconfs[i]);
-      if (input_autoconfigure_joypad_from_conf(conf,
-            params, block_osd_spam))
+      if (input_autoconfigure_joypad_from_conf(conf, params))
          break;
    }
 #endif
@@ -179,8 +174,7 @@ void input_config_autoconfigure_joypad(autoconfig_params_t *params)
    for (i = 0; i < list->size; i++)
    {
       config_file_t *conf = config_file_new(list->elems[i].data);
-      if (input_autoconfigure_joypad_from_conf(conf,
-               params, block_osd_spam))
+      if (input_autoconfigure_joypad_from_conf(conf, params))
          break;
    }
 
