@@ -37,12 +37,22 @@ static void input_autoconfigure_joypad_conf(config_file_t *conf,
    }
 }
 
+enum
+{
+   AUTODETECT_MATCH_NONE = 0,
+   AUTODETECT_MATCH_VID,
+   AUTODETECT_MATCH_PID,
+   AUTODETECT_MATCH_IDENT,
+   AUTODETECT_MATCH_NAME,
+};
+
 static bool input_try_autoconfigure_joypad_from_conf(config_file_t *conf,
-      autoconfig_params_t *params)
+      autoconfig_params_t *params, unsigned *match)
 {
    char ident[PATH_MAX_LENGTH], ident_idx[PATH_MAX_LENGTH];
    char input_driver[PATH_MAX_LENGTH];
    int input_vid = 0, input_pid = 0;
+   bool ret = false;
 
    if (!conf)
       return false;
@@ -65,16 +75,27 @@ static bool input_try_autoconfigure_joypad_from_conf(config_file_t *conf,
          && params->pid != 0
          && input_vid   != 0
          && input_pid   != 0)
-      return true;
+   {
+      BIT32_SET(*match, AUTODETECT_MATCH_VID);
+      BIT32_SET(*match, AUTODETECT_MATCH_PID);
+      ret = true;
+   }
 
    /* Check for name match. */
    if (!strcmp(ident_idx, params->name))
-      return true;
+   {
+      BIT32_SET(*match, AUTODETECT_MATCH_NAME);
+      ret = true;
+   }
+
    if (!strcmp(ident, params->name) 
       && !strcmp(params->driver, input_driver))
-      return true;
+   {
+      BIT32_SET(*match, AUTODETECT_MATCH_IDENT);
+      ret = true;
+   }
 
-   return false;
+   return ret;
 }
 
 static void input_autoconfigure_joypad_add(
@@ -108,12 +129,13 @@ static bool input_autoconfigure_joypad_from_conf(
       config_file_t *conf, autoconfig_params_t *params)
 {
    bool ret = false;
+   uint32_t match = 0;
 
    if (!conf)
       return false;
    
    ret = input_try_autoconfigure_joypad_from_conf(conf,
-         params);
+         params, &match);
 
    if (ret)
       input_autoconfigure_joypad_add(conf, params);
