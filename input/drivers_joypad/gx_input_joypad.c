@@ -196,6 +196,7 @@ static const char *gx_joypad_name_static(unsigned pad)
 
 static void handle_hotplug(unsigned port, uint32_t ptype)
 {
+   autoconfig_params_t params = {{0}};
    settings_t *settings = config_get_ptr();
    
    pad_type[port] = ptype;
@@ -206,16 +207,18 @@ static void handle_hotplug(unsigned port, uint32_t ptype)
    strlcpy(settings->input.device_names[port],
          gx_joypad_name(port),
          sizeof(settings->input.device_names[port]));
+
    /* TODO - implement VID/PID? */
-   input_config_autoconfigure_joypad(port,
-         gx_joypad_name(port),
-         0, 0,
-         gx_joypad.ident);
+   params.idx = port;
+   strlcpy(params.name, gx_joypad_name(port), sizeof(params.name));
+   strlcpy(params.driver, gx_joypad.ident, sizeof(params.driver));
+   input_config_autoconfigure_joypad(&params);
 }
 
 static bool gx_joypad_init(void)
 {
    int autoconf_pad;
+   autoconfig_params_t params = {{0}};
    settings_t *settings = config_get_ptr();
 
    SYS_SetResetCallback(reset_cb);
@@ -241,11 +244,12 @@ static bool gx_joypad_init(void)
       strlcpy(settings->input.device_names[autoconf_pad],
             gx_joypad_name_static(autoconf_pad),
             sizeof(settings->input.device_names[autoconf_pad]));
+
       /* TODO - implement VID/PID? */
-      input_config_autoconfigure_joypad(autoconf_pad,
-            gx_joypad_name_static(autoconf_pad),
-            0, 0,
-            gx_joypad.ident);
+      params.idx = autoconf_pad;
+      strlcpy(params.name, gx_joypad_name_static(autoconf_pad), sizeof(params.name));
+      strlcpy(params.driver, gx_joypad.ident, sizeof(params.driver));
+      input_config_autoconfigure_joypad(&params);
    }
 
    return true;

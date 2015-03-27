@@ -160,6 +160,7 @@ static void add_device(void* context, IOReturn result,
    char device_name[PATH_MAX_LENGTH];
    CFStringRef device_name_ref;
    CFNumberRef vendorID, productID;
+   autoconfig_params_t params = {{0}};
    settings_t *settings = config_get_ptr();
    struct pad_connection* connection = (struct pad_connection*)
       calloc(1, sizeof(*connection));
@@ -203,8 +204,13 @@ static void add_device(void* context, IOReturn result,
    strlcpy(settings->input.device_names[connection->slot],
          device_name, sizeof(settings->input.device_names));
 
-   input_config_autoconfigure_joypad(connection->slot,
-         device_name, connection->v_id, connection->p_id, apple_hid_joypad.ident);
+   params.idx = connection->slot;
+   strlcpy(params.name, device_name, sizeof(params.name));
+   params.vid = connection->v_id;
+   params.pid = connection->p_id;
+   strlcpy(params.driver, apple_hid_joypad.ident, sizeof(params.driver));
+
+   input_config_autoconfigure_joypad(&params);
    RARCH_LOG("Port %d: %s.\n", connection->slot, device_name);
 }
 

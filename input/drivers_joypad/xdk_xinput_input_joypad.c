@@ -65,15 +65,16 @@ static bool xdk_joypad_init(void)
 
    for (autoconf_pad = 0; autoconf_pad < MAX_USERS; autoconf_pad++)
    {
+      autoconfig_params_t params = {{0}};
       strlcpy(settings->input.device_names[autoconf_pad],
             "XInput Controller",
             sizeof(settings->input.device_names[autoconf_pad]));
       
       /* TODO - implement VID/PID? */
-      input_config_autoconfigure_joypad(autoconf_pad,
-            xdk_joypad_name(autoconf_pad), 
-            0, 0,
-            xdk_joypad.ident);
+      params.idx = autoconf_pad;
+      strlcpy(params.name, xdk_joypad_name(autoconf_pad), sizeof(params.name));
+      strlcpy(params.driver, xdk_joypad.ident, sizeof(params.driver));
+      input_config_autoconfigure_joypad(&params);
    }
 
    return true;

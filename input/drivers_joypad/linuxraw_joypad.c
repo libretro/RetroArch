@@ -137,6 +137,7 @@ static void handle_plugged_pad(void)
       for (i = 0; i < rc; i += event->len + sizeof(struct inotify_event))
       {
          unsigned idx;
+         autoconfig_params_t params = {{0}};
 
          event = (struct inotify_event*)&event_buf[i];
 
@@ -151,6 +152,7 @@ static void handle_plugged_pad(void)
          {
             if (linuxraw_pads[idx].fd >= 0)
             {
+
 #ifndef IS_JOYCONFIG
                if (g_hotplug)
                {
@@ -168,7 +170,8 @@ static void handle_plugged_pad(void)
                *linuxraw_pads[idx].ident = '\0';
 
                /* TODO - implement VID/PID? */
-               input_config_autoconfigure_joypad(idx, NULL, 0, 0, NULL);
+               params.idx = idx;
+               input_config_autoconfigure_joypad(&params);
             }
          }
          /* Sometimes, device will be created before acess to it is established. */
@@ -181,8 +184,13 @@ static void handle_plugged_pad(void)
             ret = linuxraw_joypad_init_pad(path, &linuxraw_pads[idx]);
 
             if (*linuxraw_pads[idx].ident && ret)
+            {
+               params.idx = idx;
+               strlcpy(params.name,   linuxraw_pads[idx].ident, sizeof(params.name));
+               strlcpy(params.driver, linuxraw_joypad.ident, sizeof(params.driver));
                /* TODO - implement VID/PID? */
-               input_config_autoconfigure_joypad(idx, linuxraw_pads[idx].ident, 0, 0, "linuxraw");
+               input_config_autoconfigure_joypad(&params);
+            }
          }
       }
    }
@@ -227,24 +235,30 @@ static bool linuxraw_joypad_init(void)
    for (i = 0; i < MAX_USERS; i++)
    {
       char path[PATH_MAX_LENGTH];
+      autoconfig_params_t params  = {{0}};
       struct linuxraw_joypad *pad = (struct linuxraw_joypad*)&linuxraw_pads[i];
 
       if (!pad)
          continue;
+
+      params.idx = i;
 
       pad->fd    = -1;
       pad->ident = settings->input.device_names[i];
       
       snprintf(path, sizeof(path), "/dev/input/js%u", i);
 
-      /* TODO - implement VID/PID? */
       if (linuxraw_joypad_init_pad(path, pad))
       {
-         input_config_autoconfigure_joypad(i, pad->ident, 0, 0, "linuxraw");
+         strlcpy(params.name,   pad->ident, sizeof(params.name)); 
+         strlcpy(params.driver, "linuxraw", sizeof(params.driver));
+
+         /* TODO - implement VID/PID? */
+         input_config_autoconfigure_joypad(&params);
          poll_pad(pad);
       }
       else
-         input_config_autoconfigure_joypad(i, NULL, 0, 0, NULL);
+         input_config_autoconfigure_joypad(&params);
    }
 
    g_notify = inotify_init();

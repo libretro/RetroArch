@@ -93,6 +93,7 @@ static void pad_connect(unsigned id)
    int32_t product = 0;
    int32_t vendor = 0;
    settings_t *settings = config_get_ptr();
+   autoconfig_params_t params = {{0}};
 
 #ifdef HAVE_SDL2
    SDL_JoystickGUID guid;
@@ -137,8 +138,13 @@ static void pad_connect(unsigned id)
    product = guid_ptr[1];
 #endif
 #endif
-   input_config_autoconfigure_joypad(id, pad_name(id),
-         vendor, product, sdl_joypad.ident);
+   params.idx = id;
+   strlcpy(params.name, pad_name(id), sizeof(params.name));
+   params.vid = vendor;
+   params.pid = product;
+   strlcpy(params.driver, sdl_joypad.ident, sizeof(params.driver));
+
+   input_config_autoconfigure_joypad(&params);
 
    RARCH_LOG("[SDL]: Joypad #%u (%04x:%04x) connected: %s.\n", id, vendor,
              product, pad_name(id));

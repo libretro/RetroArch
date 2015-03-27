@@ -25,6 +25,7 @@
 #include <boolean.h>
 #include "../input/input_common.h"
 #include "../input/input_joypad.h"
+#include "../input/input_autodetect.h"
 #include "../general.h"
 #include "../runloop.h"
 #include <assert.h>
@@ -447,15 +448,9 @@ static void parse_input(int argc, char *argv[])
 
 }
 
-void input_config_autoconfigure_joypad(unsigned index,
-      const char *name, int32_t vid, int32_t pid,
-      const char *driver)
+void input_config_autoconfigure_joypad(autoconfig_params_t *params)
 {
-   (void)index;
-   (void)name;
-   (void)vid;
-   (void)pid;
-   (void)driver;
+   (void)params;
 }
 
 // Need SDL_main on OSX.

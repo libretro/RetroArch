@@ -442,6 +442,7 @@ static void handle_hotplug(android_input_t *android,
    char device_name[256], name_buf[256];
    name_buf[0] = device_name[0] = 0;
    int vendorId = 0, productId = 0;
+   autoconfig_params_t params = {{0}};
    settings_t *settings = config_get_ptr();
 
    if (!settings->input.autodetect_enable)
@@ -600,10 +601,13 @@ static void handle_hotplug(android_input_t *android,
       strlcpy(settings->input.device_names[*port],
             name_buf, sizeof(settings->input.device_names[*port]));
 
-      input_config_autoconfigure_joypad(*port, name_buf,
-            vendorId, productId,
-            android_joypad.ident);
       RARCH_LOG("Port %d: %s.\n", *port, name_buf);
+      params.idx = *port;
+      strlcpy(params.name, name_buf, sizeof(params.name));
+      params.vid = vendorId;
+      params.pid = productId;
+      strlcpy(params.driver, android_joypad.ident, sizeof(params.driver));
+      input_config_autoconfigure_joypad(&params);
    }
 
    *port = android->pads_connected;

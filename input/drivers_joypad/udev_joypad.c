@@ -316,6 +316,7 @@ static int find_vacant_pad(void)
 static void free_pad(unsigned pad, bool hotplug)
 {
    settings_t *settings = config_get_ptr();
+   autoconfig_params_t params = {{0}};
 
    if (udev_pads[pad].fd >= 0)
       close(udev_pads[pad].fd);
@@ -331,9 +332,10 @@ static void free_pad(unsigned pad, bool hotplug)
    /* Avoid autoconfig spam if we're reiniting driver. */
    /* TODO - implement VID/PID? */
    if (hotplug)
-      input_config_autoconfigure_joypad(pad, NULL, 
-           0, 0,
-           NULL);
+   {
+      params.idx = pad;
+      input_config_autoconfigure_joypad(&params);
+   }
 }
 
 static bool add_pad(struct udev_device *dev, unsigned p, int fd, const char *path)
@@ -348,6 +350,7 @@ static bool add_pad(struct udev_device *dev, unsigned p, int fd, const char *pat
    unsigned long ffbit[NBITS(FF_MAX)]   = {0};
    unsigned buttons = 0, axes = 0;
    settings_t *settings = config_get_ptr();
+   autoconfig_params_t params = {{0}};
 
    if (ioctl(fd, EVIOCGNAME(sizeof(settings->input.device_names[0])), pad->ident) < 0)
    {
@@ -414,7 +417,14 @@ static bool add_pad(struct udev_device *dev, unsigned p, int fd, const char *pat
    pad->path = strdup(path);
 
    if (*pad->ident)
-      input_config_autoconfigure_joypad(p, pad->ident, pad->vid, pad->pid, "udev");
+   {
+      params.idx = p;
+      strlcpy(params.name, pad->ident, sizeof(params.name));
+      params.vid = pad->vid;
+      params.pid = pad->pid;
+      strlcpy(params.driver, udev_joypad.ident, sizeof(params.driver));
+      input_config_autoconfigure_joypad(&params);
+   }
 
    /* Check for rumble features. */
    if (ioctl(fd, EVIOCGBIT(EV_FF, sizeof(ffbit)), ffbit) >= 0)

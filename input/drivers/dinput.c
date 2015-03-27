@@ -865,13 +865,17 @@ static BOOL CALLBACK enum_joypad_cb(const DIDEVICEINSTANCE *inst, void *p)
    if (!is_xinput_pad)
 #endif
    {
+      autoconfig_params_t params = {{0}};
+
       strlcpy(settings->input.device_names[g_joypad_cnt],
             dinput_joypad_name(g_joypad_cnt),
             sizeof(settings->input.device_names[g_joypad_cnt]));
+
       /* TODO - implement VID/PID? */
-      input_config_autoconfigure_joypad(g_joypad_cnt,
-            dinput_joypad_name(g_joypad_cnt), 0, 0,
-            dinput_joypad.ident);
+      params.idx = g_joypad_cnt;
+      strlcpy(params.name, dinput_joypad_name(g_joypad_cnt), sizeof(params.name));
+      strlcpy(params.driver, dinput_joypad.ident, sizeof(params.driver));
+      input_config_autoconfigure_joypad(&params);
    }
 
 enum_iteration_done:
