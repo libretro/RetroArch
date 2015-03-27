@@ -123,11 +123,56 @@ static bool input_autoconfigure_joypad_from_conf(
    return ret;
 }
 
+static void input_autoconfigure_joypad_from_conf_dir(
+      autoconfig_params_t *params)
+{
+   size_t i;
+   settings_t *settings = config_get_ptr();
+   struct string_list *list = settings ? dir_list_new(
+         settings->input.autoconfig_dir, "cfg", false) : NULL;
+
+   if (!list)
+      return;
+
+   for (i = 0; i < list->size; i++)
+   {
+      config_file_t *conf = config_file_new(list->elems[i].data);
+
+      if (input_autoconfigure_joypad_from_conf(conf, params))
+         break;
+   }
+
+   string_list_free(list);
+}
+
+#if defined(HAVE_BUILTIN_AUTOCONFIG)
+static bool input_autoconfigure_joypad_from_conf_internal(
+      autoconfig_params_t *params)
+{
+   size_t i;
+   settings_t *settings = config_get_ptr();
+   bool ret = false;
+
+   /* Load internal autoconfig files  */
+   for (i = 0; input_builtin_autoconfs[i]; i++)
+   {
+      config_file_t *conf = config_file_new_from_string(
+            input_builtin_autoconfs[i]);
+
+      if ((ret = input_autoconfigure_joypad_from_conf(conf, params)))
+         break;
+   }
+
+   if (ret || !*settings->input.autoconfig_dir)
+      return true;
+   return false;
+}
+#endif
+
 void input_config_autoconfigure_joypad(autoconfig_params_t *params)
 {
    size_t i;
    bool ret = false;
-   struct string_list *list = NULL;
    settings_t *settings = config_get_ptr();
 
    if (!settings || !settings->input.autodetect_enable)
@@ -146,35 +191,11 @@ void input_config_autoconfigure_joypad(autoconfig_params_t *params)
       return;
 
 #if defined(HAVE_BUILTIN_AUTOCONFIG)
-   /* Load internal autoconfig files  */
-   for (i = 0; input_builtin_autoconfs[i]; i++)
-   {
-      config_file_t *conf = config_file_new_from_string(
-            input_builtin_autoconfs[i]);
-
-      if ((ret = input_autoconfigure_joypad_from_conf(conf, params)))
-         break;
-   }
+   ret = input_autoconfigure_joypad_from_conf_internal(params);
 #endif
 
-   if (ret || !*settings->input.autoconfig_dir)
-      return;
-
-   /* Load cfg autoconfig files  */
-   list = dir_list_new(settings->input.autoconfig_dir, "cfg", false);
-
-   if (!list)
-      return;
-
-   for (i = 0; i < list->size; i++)
-   {
-      config_file_t *conf = config_file_new(list->elems[i].data);
-
-      if ((ret = input_autoconfigure_joypad_from_conf(conf, params)))
-         break;
-   }
-
-   string_list_free(list);
+   if (!ret)
+      input_autoconfigure_joypad_from_conf_dir(params);
 }
 
 const struct retro_keybind *input_get_auto_bind(unsigned port, unsigned id)
