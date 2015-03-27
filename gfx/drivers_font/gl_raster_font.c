@@ -322,7 +322,7 @@ static void gl_raster_font_render_msg(void *data, const char *msg,
    }
 
    if (font->block)
-      font->block->fullscreen = true;
+      font->block->fullscreen = full_screen;
    else
       setup_viewport(font, full_screen);
 
