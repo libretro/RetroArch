@@ -127,7 +127,7 @@ static bool input_autoconfigure_joypad_from_conf(
 void input_config_autoconfigure_joypad(autoconfig_params_t *params)
 {
    size_t i;
-   bool internal_only;
+   bool ret = false;
    struct string_list *list = NULL;
    settings_t *settings = config_get_ptr();
 
@@ -146,22 +146,22 @@ void input_config_autoconfigure_joypad(autoconfig_params_t *params)
    if (!params->name)
       return;
 
-   /* if false, load from both cfg files and internal */
-   internal_only = !*settings->input.autoconfig_dir;
-
 #if defined(HAVE_BUILTIN_AUTOCONFIG)
    /* First internal */
    for (i = 0; input_builtin_autoconfs[i]; i++)
    {
-      config_file_t *conf = (config_file_t*)
-         config_file_new_from_string(input_builtin_autoconfs[i]);
-      if (input_autoconfigure_joypad_from_conf(conf, params))
+      config_file_t *conf = config_file_new_from_string(
+            input_builtin_autoconfs[i]);
+
+      if ((ret = input_autoconfigure_joypad_from_conf(conf, params)))
          break;
    }
 #endif
 
-   if (internal_only)
+   if (ret || !*settings->input.autoconfig_dir)
       return;
+
+   /* Load from both cfg files and internal */
 
    /* Now try files */
    list = dir_list_new(settings->input.autoconfig_dir, "cfg", false);
@@ -172,7 +172,8 @@ void input_config_autoconfigure_joypad(autoconfig_params_t *params)
    for (i = 0; i < list->size; i++)
    {
       config_file_t *conf = config_file_new(list->elems[i].data);
-      if (input_autoconfigure_joypad_from_conf(conf, params))
+
+      if ((ret = input_autoconfigure_joypad_from_conf(conf, params)))
          break;
    }
 
