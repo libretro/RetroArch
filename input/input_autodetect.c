@@ -39,14 +39,12 @@ static void input_autoconfigure_joypad_conf(config_file_t *conf,
 }
 
 static bool input_try_autoconfigure_joypad_from_conf(config_file_t *conf,
-      autoconfig_params_t *params, bool block_osd_spam)
+      autoconfig_params_t *params)
 {
    char ident[PATH_MAX_LENGTH], ident_idx[PATH_MAX_LENGTH];
-   char input_driver[PATH_MAX_LENGTH], msg[PATH_MAX_LENGTH];
+   char input_driver[PATH_MAX_LENGTH];
+   bool cond_found_idx, cond_found_general;
    int input_vid = 0, input_pid = 0;
-   bool cond_found_idx, cond_found_general,
-        cond_found_vid = false, cond_found_pid = false;
-   settings_t *settings = config_get_ptr();
 
    if (!conf)
       return false;
@@ -55,38 +53,47 @@ static bool input_try_autoconfigure_joypad_from_conf(config_file_t *conf,
 
    config_get_array(conf, "input_device", ident, sizeof(ident));
    config_get_array(conf, "input_driver", input_driver, sizeof(input_driver));
-   config_get_int(conf, "input_vendor_id", &input_vid);
-   config_get_int(conf, "input_product_id", &input_pid);
+   config_get_int  (conf, "input_vendor_id", &input_vid);
+   config_get_int  (conf, "input_product_id", &input_pid);
 
-   snprintf(ident_idx, sizeof(ident_idx), "%s_p%u", ident, params->idx);
-
-#if 0
-   RARCH_LOG("ident_idx: %s\n", ident_idx);
-#endif
+   snprintf(ident_idx,
+         sizeof(ident_idx), "%s_p%u", ident, params->idx);
 
    cond_found_idx     = !strcmp(ident_idx, params->name);
-   cond_found_general = !strcmp(ident, params->name) && !strcmp(params->driver, input_driver);
-   if ((params->vid != 0) && (input_vid != 0))
-      cond_found_vid     = (params->vid == input_vid);
-   if ((params->pid != 0) && (input_pid != 0))
-      cond_found_pid     = (params->pid == input_pid);
+   cond_found_general = !strcmp(ident, params->name) 
+      && !strcmp(params->driver, input_driver);
 
    /* If Vendor ID and Product ID matches, we've found our
     * entry. */
-   if (cond_found_vid && cond_found_pid)
-      goto found;
+   if (     (params->vid == input_vid)
+         && (params->pid == input_pid)
+         && params->vid != 0
+         && params->pid != 0
+         && input_vid   != 0
+         && input_pid   != 0)
+      return true;
 
    /* Check for name match. */
-   if (cond_found_idx)
-      goto found;
-   else if (cond_found_general)
-      goto found;
+   if (cond_found_idx || cond_found_general)
+      return true;
 
    return false;
+}
 
-found:
+static void input_autoconfigure_joypad_add(
+      config_file_t *conf,
+      autoconfig_params_t *params,
+      bool block_osd_spam)
+{
+   char msg[PATH_MAX_LENGTH];
+   settings_t *settings = config_get_ptr();
+
+   if (!settings)
+      return;
+
    settings->input.autoconfigured[params->idx] = true;
-   input_autoconfigure_joypad_conf(conf, settings->input.autoconf_binds[params->idx]);
+   input_autoconfigure_joypad_conf(conf,
+         settings->input.autoconf_binds[params->idx]);
 
    snprintf(msg, sizeof(msg), "Joypad port #%u (%s) configured.",
          params->idx, params->name);
@@ -94,8 +101,6 @@ found:
    if (!block_osd_spam)
       rarch_main_msg_queue_push(msg, 0, 60, false);
    RARCH_LOG("%s\n", msg);
-
-   return true;
 }
 
 static bool input_autoconfigure_joypad_from_conf(
@@ -103,10 +108,20 @@ static bool input_autoconfigure_joypad_from_conf(
       autoconfig_params_t *params,
       bool block_osd_spam)
 {
-   bool ret = input_try_autoconfigure_joypad_from_conf(conf,
-         params, block_osd_spam);
+   bool ret = false;
+
+   if (!conf)
+      return false;
+   
+   ret = input_try_autoconfigure_joypad_from_conf(conf,
+         params);
+
+   if (ret)
+      input_autoconfigure_joypad_add(conf, params,
+            block_osd_spam);
 
    config_file_free(conf);
+
    return ret;
 }
 
@@ -146,7 +161,6 @@ void input_config_autoconfigure_joypad(autoconfig_params_t *params)
    {
       config_file_t *conf = (config_file_t*)
          config_file_new_from_string(input_builtin_autoconfs[i]);
-
       if (input_autoconfigure_joypad_from_conf(conf,
             params, block_osd_spam))
          break;
@@ -165,9 +179,6 @@ void input_config_autoconfigure_joypad(autoconfig_params_t *params)
    for (i = 0; i < list->size; i++)
    {
       config_file_t *conf = config_file_new(list->elems[i].data);
-      if (!conf)
-         continue;
-
       if (input_autoconfigure_joypad_from_conf(conf,
                params, block_osd_spam))
          break;
