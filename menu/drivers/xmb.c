@@ -1267,7 +1267,9 @@ static void xmb_frame(void)
       return;
 
    if (gl->font_driver->bind_block)
-      gl->font_driver->bind_block(gl->font_handle, &xmb->raster_block);
+      gl->font_driver->bind_block(xmb->font.buf, &xmb->raster_block);
+
+   xmb->raster_block.carr.coords.vertices = 0;
 
    xmb_frame_background(settings, gl, xmb, false);
 
@@ -1385,8 +1387,8 @@ static void xmb_frame(void)
 
    if (gl->font_driver->flush)
    {
-      gl->font_driver->flush(gl->font_handle);
-      gl->font_driver->bind_block(gl->font_handle, NULL);
+      gl->font_driver->flush(xmb->font.buf);
+      gl->font_driver->bind_block(xmb->font.buf, NULL);
    }
 
    if (settings->menu.mouse.enable)
