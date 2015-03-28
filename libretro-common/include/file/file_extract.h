@@ -106,6 +106,10 @@ int zlib_inflate_data_to_file(zlib_file_handle_t *handle,
       int ret, const char *path, const char *valid_exts,
       const uint8_t *cdata, uint32_t csize, uint32_t size, uint32_t checksum);
 
+bool zlib_perform_mode(const char *name, const char *valid_exts,
+      const uint8_t *cdata, unsigned cmode, uint32_t csize, uint32_t size,
+      uint32_t crc32, void *userdata);
+
 struct string_list *compressed_file_list_new(const char *filename,
       const char* ext);
 

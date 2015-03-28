@@ -1,5 +1,4 @@
-#include "../../../../file_extract.h"
-#include "../../../../file_ops.h"
+#include <file/file_extract.h>
 #include <file/file_path.h>
 
 #include <stdio.h>
@@ -47,35 +46,15 @@ static int zlib_cb(const char *name, const char *valid_exts,
 
    RARCH_LOG("Extracting %s -> %s ...\n", name, path);
 
-   switch (cmode)
+   if (!zlib_perform_mode(path, valid_exts,
+            cdata, cmode, csize, size, crc32, userdata))
    {
-      case 0: /* Uncompressed */
-         if (!write_file(path, cdata, size))
-         {
-            RARCH_ERR("Failed to write file: %s.\n", path);
-            return 0;
-         }
-         break;
-
-      case 8: /* Deflate */
-         {
-            int ret = 0;
-            zlib_file_handle_t handle = {0};
-            if (!zlib_inflate_data_to_file_init(&handle, cdata, csize, size))
-               goto error;
-
-            do{
-               ret = zlib_inflate_data_to_file_iterate(handle.stream);
-            }while(ret == 0);
-
-            if (!zlib_inflate_data_to_file(&handle, ret, path, valid_exts,
-                     cdata, csize, size, crc32))
-               goto error;
-         }
-         break;
-
-      default:
+      if (cmode == 0)
+      {
+         RARCH_ERR("Failed to write file: %s.\n", path);
          return 0;
+      }
+      goto error;
    }
 
    return 1;

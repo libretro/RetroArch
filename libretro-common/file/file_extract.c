@@ -727,3 +727,37 @@ struct string_list *zlib_get_file_list(const char *path, const char *valid_exts)
 
    return list;
 }
+
+bool zlib_perform_mode(const char *path, const char *valid_exts,
+      const uint8_t *cdata, unsigned cmode, uint32_t csize, uint32_t size,
+      uint32_t crc32, void *userdata)
+{
+   switch (cmode)
+   {
+      case 0: /* Uncompressed */
+         if (!zlib_write_file(path, cdata, size))
+            return false;
+         break;
+
+      case 8: /* Deflate */
+         {
+            int ret = 0;
+            zlib_file_handle_t handle = {0};
+            if (!zlib_inflate_data_to_file_init(&handle, cdata, csize, size))
+               return false;
+
+            do{
+               ret = zlib_inflate_data_to_file_iterate(handle.stream);
+            }while(ret == 0);
+
+            if (!zlib_inflate_data_to_file(&handle, ret, path, valid_exts,
+                     cdata, csize, size, crc32))
+               return false;
+         }
+         break;
+      default:
+         return false;
+   }
+
+   return true;
+}
