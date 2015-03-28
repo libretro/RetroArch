@@ -14,7 +14,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../file_extract.h"
+#include <file/file_extract.h>
 
 #import "../common/RetroArch_Apple.h"
 #import "views.h"
