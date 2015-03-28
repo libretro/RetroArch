@@ -20,9 +20,6 @@
 #include <stdint.h>
 #include <boolean.h>
 
-#include <formats/rpng.h>
-#include <formats/tga.h>
-
 enum image_process_code
 {
    IMAGE_PROCESS_ERROR     = -2,

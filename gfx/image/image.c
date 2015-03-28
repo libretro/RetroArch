@@ -19,6 +19,8 @@
 #endif
 
 #include <formats/image.h>
+#include <formats/rpng.h>
+#include <formats/tga.h>
 #ifdef _XBOX1
 #include "../d3d/d3d_wrapper.h"
 #endif
