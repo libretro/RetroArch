@@ -154,12 +154,16 @@ static int pointer_post_iterate(menu_file_list_cbs_t *cbs, const char *path,
       const char *label, unsigned type, unsigned action)
 {
    menu_handle_t *menu    = menu_driver_get_ptr();
+   settings_t *settings      = config_get_ptr();
 #if defined(HAVE_XMB) || defined(HAVE_GLUI)
    driver_t *driver     = driver_get_ptr();
 #endif
 
    if (!menu)
       return -1;
+
+   if (!settings->menu.mouse.enable)
+      return 0;
 
 #if defined(HAVE_XMB)
    if (driver->menu_ctx == &menu_ctx_xmb)
@@ -649,6 +653,9 @@ static int pointer_iterate(unsigned *action)
 
    if (!menu)
       return -1;
+
+   if (!settings->menu.mouse.enable)
+      return 0;
 
 #if defined(HAVE_XMB)
    if (driver->menu_ctx == &menu_ctx_xmb)
