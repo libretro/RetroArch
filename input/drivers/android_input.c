@@ -728,6 +728,8 @@ static int16_t android_input_state(void *data,
                return (idx < android->pointer_count) &&
                   (android->pointer[idx].x != -0x8000) &&
                   (android->pointer[idx].y != -0x8000);
+            case RARCH_DEVICE_ID_POINTER_BACK:
+               return BIT_GET(android->pad_state[0], AKEYCODE_BACK);
          }
          break;
       case RARCH_DEVICE_POINTER_SCREEN:
@@ -741,6 +743,8 @@ static int16_t android_input_state(void *data,
                return (idx < android->pointer_count) &&
                   (android->pointer[idx].full_x != -0x8000) &&
                   (android->pointer[idx].full_y != -0x8000);
+            case RARCH_DEVICE_ID_POINTER_BACK:
+               return BIT_GET(android->pad_state[0], AKEYCODE_BACK);
          }
          break;
    }
