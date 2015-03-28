@@ -173,6 +173,15 @@ typedef struct
 
    struct
    {
+      bool    pressed;
+      bool    oldpressed;
+      bool    back;
+      bool    oldback;
+      bool    cancel;
+   } pointer;
+
+   struct
+   {
       const char **buffer;
       const char *label;
       const char *label_setting;

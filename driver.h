@@ -64,6 +64,8 @@ extern "C" {
  * It is only used internally for overlays. */
 #define RARCH_DEVICE_POINTER_SCREEN (RETRO_DEVICE_POINTER | 0x10000)
 
+#define RARCH_DEVICE_ID_POINTER_BACK (RETRO_DEVICE_ID_POINTER_PRESSED | 0x10000)
+
 /* libretro has 16 buttons from 0-15 (libretro.h)
  * Analog binds use RETRO_DEVICE_ANALOG, but we follow the same scheme
  * internally in RetroArch for simplicity, so they are mapped into [16, 23].

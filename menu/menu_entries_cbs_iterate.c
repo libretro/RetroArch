@@ -150,6 +150,74 @@ static INLINE struct video_shader *shader_manager_get_current_shader(const char 
    return NULL;
 }
 
+static int pointer_post_iterate(menu_file_list_cbs_t *cbs, const char *path,
+      const char *label, unsigned type, unsigned action)
+{
+   menu_handle_t *menu    = menu_driver_get_ptr();
+#if defined(HAVE_XMB) || defined(HAVE_GLUI)
+   driver_t *driver     = driver_get_ptr();
+#endif
+
+   if (!menu)
+      return -1;
+
+#if defined(HAVE_XMB)
+   if (driver->menu_ctx == &menu_ctx_xmb)
+      return 0;
+#endif
+#if defined(HAVE_GLUI)
+   if (driver->menu_ctx == &menu_ctx_glui)
+      return 0;
+#endif
+
+   if (menu->pointer.pressed)
+   {
+      if (menu->pointer.oldpressed)
+      {
+         if (menu->mouse.ptr <= menu_list_get_size(menu->menu_list)-1)
+            menu_navigation_set(&menu->navigation, menu->mouse.ptr, false);
+      }
+      else
+         menu->pointer.oldpressed = true;
+   }
+   else
+   {
+      if (menu->pointer.oldpressed)
+      {
+         menu->pointer.oldpressed = false;
+         driver_t *driver = driver_get_ptr();
+         rarch_setting_t *setting =
+            (rarch_setting_t*)setting_find_setting
+            (driver->menu->list_settings,
+             driver->menu->menu_list->selection_buf->list[menu->navigation.selection_ptr].label);
+
+         if (menu->mouse.ptr == menu->navigation.selection_ptr && !menu->pointer.cancel
+            && cbs && cbs->action_toggle && setting &&
+            (setting->type == ST_BOOL || setting->type == ST_UINT || setting->type == ST_FLOAT
+             || setting->type == ST_STRING))
+            return cbs->action_toggle(type, label, MENU_ACTION_RIGHT, true);
+         if (menu->mouse.ptr == menu->navigation.selection_ptr && !menu->pointer.cancel
+            && cbs && cbs->action_ok)
+            return cbs->action_ok(path, label, type,
+                  menu->navigation.selection_ptr);
+         else if (menu->mouse.ptr <= menu_list_get_size(menu->menu_list) - 1)
+            menu_navigation_set(&menu->navigation, menu->mouse.ptr, false);
+      }
+   }
+
+   if (menu->pointer.back)
+   {
+      if (!menu->pointer.oldback)
+      {
+         menu->pointer.oldback = true;
+         menu_list_pop_stack(menu->menu_list);
+      }
+   }
+   menu->pointer.oldback = menu->pointer.back;
+
+   return 0;
+}
+
 static int mouse_post_iterate(menu_file_list_cbs_t *cbs, const char *path,
       const char *label, unsigned type, unsigned action)
 {
@@ -567,6 +635,71 @@ static int action_iterate_message(const char *label, unsigned action)
    return 0;
 }
 
+static int pointer_iterate(unsigned *action)
+{
+   const struct retro_keybind *binds[MAX_USERS];
+   menu_handle_t *menu       = menu_driver_get_ptr();
+   runloop_t *runloop        = rarch_main_get_ptr();
+   settings_t *settings      = config_get_ptr();
+#if defined(HAVE_XMB) || defined(HAVE_GLUI)
+   driver_t *driver     = driver_get_ptr();
+#endif
+
+   int pointer_x, pointer_y, screen_x, screen_y;
+
+   if (!menu)
+      return -1;
+
+#if defined(HAVE_XMB)
+   if (driver->menu_ctx == &menu_ctx_xmb)
+      return 0;
+#endif
+#if defined(HAVE_GLUI)
+   if (driver->menu_ctx == &menu_ctx_glui)
+      return 0;
+#endif
+
+   settings->menu.mouse.enable = true;
+
+   menu->pointer.pressed  = input_driver_state(binds, 0, RETRO_DEVICE_POINTER,
+         0, RETRO_DEVICE_ID_POINTER_PRESSED);
+   menu->pointer.back  = input_driver_state(binds, 0, RETRO_DEVICE_POINTER,
+         0, RARCH_DEVICE_ID_POINTER_BACK);
+
+   pointer_x = input_driver_state(binds, 0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_X);
+   pointer_y = input_driver_state(binds, 0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_Y);
+
+   screen_x  = ((pointer_x + 0x7fff) * (int)menu->frame_buf.width) / 0xFFFF;
+   screen_y  = ((pointer_y + 0x7fff) * (int)menu->frame_buf.height) / 0xFFFF;
+
+   if (menu->pointer.pressed)
+   {
+      menu->mouse.x       = screen_x;
+      menu->mouse.y       = screen_y;
+      if (menu->mouse.x < 5)
+         menu->mouse.x       = 5;
+      if (menu->mouse.y < 5)
+         menu->mouse.y       = 5;
+      if (menu->mouse.x > (int)menu->frame_buf.width - 5)
+         menu->mouse.x       = menu->frame_buf.width - 5;
+      if (menu->mouse.y > (int)menu->frame_buf.height - 5)
+         menu->mouse.y       = menu->frame_buf.height - 5;
+
+      menu->mouse.scrollup   = (menu->mouse.y == 5);
+      menu->mouse.scrolldown = (menu->mouse.y == (int)menu->frame_buf.height - 5);
+
+      menu->pointer.cancel = false;
+   }
+   else
+      menu->pointer.cancel = screen_x < 5 || screen_x > (int)menu->frame_buf.width  - 5
+                          || screen_x < 5 || screen_x > (int)menu->frame_buf.height - 5;
+
+   if (menu->pointer.pressed || menu->pointer.back || menu->mouse.x != screen_x || menu->mouse.y != screen_y)
+      runloop->frames.video.current.menu.animation.is_active = true;
+
+   return 0;
+}
+
 static int mouse_iterate(unsigned *action)
 {
    const struct retro_keybind *binds[MAX_USERS];
@@ -669,6 +802,7 @@ static int action_iterate_main(const char *label, unsigned action)
          menu->navigation.selection_ptr, &path_offset, &label_offset, &type_offset);
 
    mouse_iterate(&action);
+   pointer_iterate(&action);
 
    if (!strcmp(label, "help"))
       return action_iterate_help(label, action);
@@ -765,7 +899,8 @@ static int action_iterate_main(const char *label, unsigned action)
    if (ret)
       return ret;
 
-   ret = mouse_post_iterate(cbs, path_offset, label_offset, type_offset, action);
+   ret  = mouse_post_iterate(cbs, path_offset, label_offset, type_offset, action);
+   ret |= pointer_post_iterate(cbs, path_offset, label_offset, type_offset, action);
 
    menu_driver_render();
 
