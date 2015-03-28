@@ -1525,11 +1525,13 @@ static void xmb_free(void *data)
    font_driver = (const struct gl_font_renderer*)gl->font_driver;
 
    if (menu && menu->userdata)
+   {
+      xmb = (xmb_handle_t*)menu->userdata;
+      gl_coord_array_release(&xmb->raster_block.carr);
+
       free(menu->userdata);
-
-   xmb = (xmb_handle_t*)menu->userdata;
-
-   gl_coord_array_release(&xmb->raster_block.carr);
+      menu->userdata = NULL;
+   }
 
    if (font_driver->bind_block)
       font_driver->bind_block(gl->font_handle, NULL);
