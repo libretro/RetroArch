@@ -21,6 +21,13 @@
 #include <stddef.h>
 #include <stdint.h>
 
+typedef struct zlib_handle
+{
+   void     *stream;
+   uint8_t *data;
+   uint32_t real_checksum;
+} zlib_file_handle_t;
+
 /* Returns true when parsing should continue. False to stop. */
 typedef int (*zlib_file_cb)(const char *name, const char *valid_exts,
       const uint8_t *cdata, unsigned cmode, uint32_t csize, uint32_t size,

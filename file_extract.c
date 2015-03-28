@@ -223,12 +223,63 @@ static uint32_t read_le(const uint8_t *data, unsigned size)
    return val;
 }
 
-typedef struct zlib_handle
+static void *z_stream_new(void)
 {
-   z_stream stream;
-   uint8_t *data;
-   uint32_t real_checksum;
-} zlib_file_handle_t;
+   z_stream *ret = calloc(1, sizeof(z_stream));
+
+   if (inflateInit2(ret, -MAX_WBITS) != Z_OK)
+      return NULL;
+   return ret;
+}
+
+static void z_stream_free(void *data)
+{
+   z_stream *ret = (z_stream*)data;
+   if (!ret)
+      return;
+
+   inflateEnd(ret);
+   if (ret)
+      free(ret);
+}
+
+bool zlib_inflate_data_to_file_init(
+      zlib_file_handle_t *handle,
+      const uint8_t *cdata,  uint32_t csize, uint32_t size)
+{
+   z_stream *stream = NULL;
+
+   if (!handle)
+      return false;
+
+   if (!(handle->stream = (z_stream*)z_stream_new()))
+      goto error;
+
+   handle->data = (uint8_t*)malloc(size);
+
+   if (!handle->data)
+      goto error;
+
+   stream            = (z_stream*)handle->stream;
+
+   if (!stream)
+      goto error;
+
+   stream->next_in   = (uint8_t*)cdata;
+   stream->avail_in  = csize;
+   stream->next_out  = handle->data;
+   stream->avail_out = size;
+
+   return true;
+
+error:
+   if (handle->stream)
+      z_stream_free(handle->stream);
+   if (handle->data)
+      free(handle->data);
+
+   return false;
+}
 
 /**
  * zlib_inflate_data_to_file:
@@ -247,27 +298,22 @@ typedef struct zlib_handle
 int zlib_inflate_data_to_file(const char *path, const char *valid_exts,
       const uint8_t *cdata, uint32_t csize, uint32_t size, uint32_t checksum)
 {
-   int ret = true;
-   zlib_file_handle_t handle = {{0}};
-   handle.data = (uint8_t*)malloc(size);
-
-   if (!handle.data)
-      return false;
-
-   if (inflateInit2(&handle.stream, -MAX_WBITS) != Z_OK)
+   z_stream *stream = NULL;
+   int ret          = true;
+   zlib_file_handle_t handle = {0};
+   
+   if (!zlib_inflate_data_to_file_init(&handle, cdata, csize, size))
       GOTO_END_ERROR();
 
-   handle.stream.next_in   = (uint8_t*)cdata;
-   handle.stream.avail_in  = csize;
-   handle.stream.next_out  = handle.data;
-   handle.stream.avail_out = size;
+   stream = (z_stream*)handle.stream;
+   
+   if (inflate(stream, Z_FINISH) != Z_STREAM_END)
+      ret = false;
 
-   if (inflate(&handle.stream, Z_FINISH) != Z_STREAM_END)
-   {
-      inflateEnd(&handle.stream);
-      GOTO_END_ERROR();
-   }
-   inflateEnd(&handle.stream);
+   z_stream_free(stream);
+
+   if (ret == false)
+      goto end;
 
    handle.real_checksum = crc32_calculate(handle.data, size);
    if (handle.real_checksum != checksum)
@@ -278,7 +324,8 @@ int zlib_inflate_data_to_file(const char *path, const char *valid_exts,
       GOTO_END_ERROR();
 
 end:
-   free(handle.data);
+   if (handle.data)
+      free(handle.data);
    return ret;
 }
 
