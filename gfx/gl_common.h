@@ -335,7 +335,7 @@ typedef struct gl
 #endif
 
    /* Fonts */
-   const struct gl_font_renderer *font_driver;
+   const void *font_driver;
    void *font_handle;
 
    bool egl_images;

@@ -26,7 +26,7 @@ static const gl_font_renderer_t *gl_font_backends[] = {
    NULL,
 };
 
-bool gl_font_init_first(const gl_font_renderer_t **font_driver, void **font_handle,
+bool gl_font_init_first(const void **font_driver, void **font_handle,
       void *video_data, const char *font_path, float font_size)
 {
    unsigned i;

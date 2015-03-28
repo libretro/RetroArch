@@ -329,6 +329,7 @@ static void glui_frame(void)
    glui_handle_t *glui = NULL;
    const char *core_name = NULL;
    const char *core_version = NULL;
+   const struct gl_font_renderer *font_driver = NULL;
    menu_handle_t *menu  = menu_driver_get_ptr();
    settings_t *settings = config_get_ptr();
    const uint32_t normal_color = FONT_COLOR_ARGB_TO_RGBA(settings->menu.entry_normal_color);
@@ -344,6 +345,8 @@ static void glui_frame(void)
 
    if (!gl)
       return;
+
+   font_driver = (const struct gl_font_renderer*)gl->font_driver;
 
    glui = (glui_handle_t*)menu->userdata;
 
@@ -361,7 +364,7 @@ static void glui_frame(void)
 
    if (glui->use_blocks)
    {
-      gl->font_driver->bind_block(gl->font_handle, &glui->raster_block);
+      font_driver->bind_block(gl->font_handle, &glui->raster_block);
 
       if (!menu_display_update_pending())
          goto draw_text;
@@ -484,8 +487,8 @@ draw_text:
 
    if (glui->use_blocks)
    {
-      gl->font_driver->flush(gl->font_handle);
-      gl->font_driver->bind_block(gl->font_handle, NULL);
+      font_driver->flush(gl->font_handle);
+      font_driver->bind_block(gl->font_handle, NULL);
    }
 
    if (settings->menu.mouse.enable)
@@ -498,6 +501,7 @@ static void *glui_init(void)
 {
    glui_handle_t *glui = NULL;
    const video_driver_t *video_driver = NULL;
+   const struct gl_font_renderer *font_driver = NULL;
    menu_handle_t *menu = NULL;
    gl_t *gl = (gl_t*)video_driver_get_ptr(&video_driver);
 
@@ -507,7 +511,8 @@ static void *glui_init(void)
       return NULL;
    }
 
-   menu = (menu_handle_t*)calloc(1, sizeof(*menu));
+   font_driver = (const struct gl_font_renderer*)gl->font_driver;
+   menu        = (menu_handle_t*)calloc(1, sizeof(*menu));
 
    if (!menu)
       goto error;
@@ -520,7 +525,7 @@ static void *glui_init(void)
    glui     = (glui_handle_t*)menu->userdata;
    glui->textures.bg.id = 0;
 
-   if (gl->font_driver->bind_block && gl->font_driver->flush)
+   if (font_driver->bind_block && font_driver->flush)
       glui->use_blocks = true;
 
    return menu;
@@ -533,14 +538,17 @@ error:
 static void glui_free(void *data)
 {
    gl_t *gl = (gl_t*)video_driver_get_ptr(NULL);
+   const struct gl_font_renderer *font_driver = NULL;
 
    menu_handle_t *menu = (menu_handle_t*)data;
    glui_handle_t *glui = (glui_handle_t*)menu->userdata;
 
    gl_coord_array_release(&glui->raster_block.carr);
 
+   font_driver = (const struct gl_font_renderer*)gl->font_driver;
+
    if (glui->use_blocks)
-      gl->font_driver->bind_block(gl->font_handle, NULL);
+      font_driver->bind_block(gl->font_handle, NULL);
 
    if (menu->alloc_font)
       free((uint8_t*)menu->font);

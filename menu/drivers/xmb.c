@@ -1250,6 +1250,7 @@ static void xmb_frame(void)
    const char *core_version = NULL;
    xmb_handle_t *xmb = NULL;
    gl_t *gl = NULL;
+   const struct gl_font_renderer *font_driver = NULL;
    menu_handle_t *menu  = menu_driver_get_ptr();
    settings_t *settings = config_get_ptr();
    global_t *global     = global_get_ptr();
@@ -1267,8 +1268,10 @@ static void xmb_frame(void)
    if (!gl)
       return;
 
-   if (gl->font_driver->bind_block)
-      gl->font_driver->bind_block(xmb->font.buf, &xmb->raster_block);
+   font_driver = (const struct gl_font_renderer*)gl->font_driver;
+
+   if (font_driver->bind_block)
+      font_driver->bind_block(xmb->font.buf, &xmb->raster_block);
 
    xmb->raster_block.carr.coords.vertices = 0;
 
@@ -1386,10 +1389,10 @@ static void xmb_frame(void)
       xmb_frame_messagebox(msg);
    }
 
-   if (gl->font_driver->flush)
+   if (font_driver->flush)
    {
-      gl->font_driver->flush(xmb->font.buf);
-      gl->font_driver->bind_block(xmb->font.buf, NULL);
+      font_driver->flush(xmb->font.buf);
+      font_driver->bind_block(xmb->font.buf, NULL);
    }
 
    if (settings->menu.mouse.enable)
@@ -1513,7 +1516,13 @@ static void xmb_free(void *data)
 {
    menu_handle_t *menu = (menu_handle_t*)data;
    xmb_handle_t *xmb = NULL;
+   const struct gl_font_renderer *font_driver = NULL;
    gl_t *gl = (gl_t*)video_driver_get_ptr(NULL);
+
+   if (!gl)
+      return;
+   
+   font_driver = (const struct gl_font_renderer*)gl->font_driver;
 
    if (menu && menu->userdata)
       free(menu->userdata);
@@ -1522,11 +1531,11 @@ static void xmb_free(void *data)
 
    gl_coord_array_release(&xmb->raster_block.carr);
 
-   if (gl->font_driver->bind_block)
-      gl->font_driver->bind_block(gl->font_handle, NULL);
+   if (font_driver->bind_block)
+      font_driver->bind_block(gl->font_handle, NULL);
 }
 
-static bool xmb_font_init_first(const gl_font_renderer_t **font_driver,
+static bool xmb_font_init_first(const void **font_driver,
       void **font_handle, void *video_data, const char *font_path,
       float xmb_font_size)
 {
