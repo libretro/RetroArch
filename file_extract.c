@@ -281,6 +281,25 @@ error:
    return false;
 }
 
+int zlib_inflate_data_to_file_iterate(void *data)
+{
+   int zstatus;
+   z_stream *stream = (z_stream*)data;
+
+   if (!stream)
+      return -1;
+
+   zstatus = inflate(stream, Z_NO_FLUSH);
+
+   if (zstatus == Z_STREAM_END)
+      return 1;
+
+   if (zstatus != Z_OK && zstatus != Z_BUF_ERROR)
+      return -1;
+
+   return 0;
+}
+
 /**
  * zlib_inflate_data_to_file:
  * @path                        : filename path of archive.
@@ -298,8 +317,7 @@ error:
 int zlib_inflate_data_to_file(const char *path, const char *valid_exts,
       const uint8_t *cdata, uint32_t csize, uint32_t size, uint32_t checksum)
 {
-   z_stream *stream = NULL;
-   int ret          = true;
+   int ret          = 1;
    zlib_file_handle_t handle = {0};
 
    (void)valid_exts;
@@ -307,14 +325,16 @@ int zlib_inflate_data_to_file(const char *path, const char *valid_exts,
    if (!zlib_inflate_data_to_file_init(&handle, cdata, csize, size))
       GOTO_END_ERROR();
 
-   stream = (z_stream*)handle.stream;
-   
-   if (inflate(stream, Z_FINISH) != Z_STREAM_END)
-      ret = false;
+   do{
+      ret = zlib_inflate_data_to_file_iterate(handle.stream);
+   }while(ret == 0);
 
-   z_stream_free(stream);
+   if (ret == -1)
+      ret = 0;
 
-   if (ret == false)
+   z_stream_free(handle.stream);
+
+   if (ret == 0)
       goto end;
 
    handle.real_checksum = crc32_calculate(handle.data, size);
