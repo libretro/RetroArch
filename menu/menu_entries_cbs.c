@@ -22,7 +22,6 @@
 #include "menu_navigation.h"
 
 #include <file/file_extract.h>
-#include "../file_ops.h"
 #include "../config.def.h"
 #include "../retroarch.h"
 #include "../runloop.h"
@@ -75,27 +74,15 @@ static int zlib_extract_core_callback(const char *name, const char *valid_exts,
 
    RARCH_LOG("path is: %s, CRC32: 0x%x\n", path, crc32);
 
-   switch (cmode)
+   if (!zlib_perform_mode(path, valid_exts,
+            cdata, cmode, csize, size, crc32, userdata))
    {
-      case 0: /* Uncompressed */
-         write_file(path, cdata, size);
-         break;
-      case 8: /* Deflate */
-         {
-            int ret = 0;
-            zlib_file_handle_t handle = {0};
-            if (!zlib_inflate_data_to_file_init(&handle, cdata, csize, size))
-               goto error;
-
-            do{
-               ret = zlib_inflate_data_to_file_iterate(handle.stream);
-            }while(ret == 0);
-
-            if (!zlib_inflate_data_to_file(&handle, ret, path, valid_exts,
-                     cdata, csize, size, crc32))
-               goto error;
-         }
-         break;
+      if (cmode == 0)
+      {
+         RARCH_ERR("Failed to write file: %s.\n", path);
+         return 0;
+      }
+      goto error;
    }
 
    return 1;
