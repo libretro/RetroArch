@@ -15,17 +15,14 @@
  */
 
 #include "file_extract.h"
-#include "file_ops.h"
 #include <file/file_path.h>
 #include <compat/strl.h>
 #include <retro_miscellaneous.h>
+#include <string/string_list.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
 #include <zlib.h>
-
-#include "hash.h"
 
 /* File backends. Can be fleshed out later, but keep it simple for now.
  * The file is mapped to memory directly (via mmap() or just 
@@ -61,6 +58,18 @@ typedef struct
    void *data;
    size_t size;
 } zlib_file_data_t;
+
+bool zlib_write_file(const char *path, const void *data, ssize_t size)
+{
+   bool ret   = false;
+   FILE *file = fopen(path, "wb");
+   if (!file)
+      return false;
+
+   ret = fwrite(data, 1, size, file) == size;
+   fclose(file);
+   return ret;
+}
 
 static void zlib_file_free(void *handle)
 {
@@ -300,6 +309,18 @@ int zlib_inflate_data_to_file_iterate(void *data)
    return 0;
 }
 
+uint32_t zlib_crc32_calculate(const uint8_t *data, size_t length)
+{
+   return crc32(0, data, length);
+}
+
+uint32_t zlib_crc32_adjust(uint32_t crc, uint8_t data)
+{
+   /* zlib and nall have different assumptions on "sign" for this 
+    * function. */
+   return ~crc32(~crc, &data, 1);
+}
+
 /**
  * zlib_inflate_data_to_file:
  * @path                        : filename path of archive.
@@ -327,12 +348,12 @@ int zlib_inflate_data_to_file(zlib_file_handle_t *handle,
       goto end;
    }
 
-   handle->real_checksum = crc32_calculate(handle->data, size);
+   handle->real_checksum = zlib_crc32_calculate(handle->data, size);
    if (handle->real_checksum != checksum)
       RARCH_WARN("File CRC differs from ZIP CRC. File: 0x%x, ZIP: 0x%x.\n",
             (unsigned)handle->real_checksum, (unsigned)checksum);
 
-   if (!write_file(path, handle->data, size))
+   if (!zlib_write_file(path, handle->data, size))
       GOTO_END_ERROR();
 
 end:
@@ -484,7 +505,7 @@ static int zip_extract_cb(const char *name, const char *valid_exts,
       switch (cmode)
       {
          case ZLIB_MODE_UNCOMPRESSED:
-            data->found_content = write_file(new_path, cdata, size);
+            data->found_content = zlib_write_file(new_path, cdata, size);
             return false;
          case ZLIB_MODE_DEFLATE:
             {

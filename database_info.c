@@ -142,7 +142,7 @@ int database_info_write_rdl_iterate(database_info_rdl_handle_t *dbl)
 
       rarch_main_msg_queue_push(msg, 1, 180, true);
 
-      crc = crc32_calculate(ret_buf, ret);
+      crc = zlib_crc32_calculate(ret_buf, ret);
 
       RARCH_LOG("CRC32: 0x%x .\n", (unsigned)crc);
 

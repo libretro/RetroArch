@@ -60,25 +60,6 @@
  **/
 void sha256_hash(char *out, const uint8_t *in, size_t size);
 
-#ifdef HAVE_ZLIB
-#include <zlib.h>
-
-static INLINE uint32_t crc32_calculate(const uint8_t *data, size_t length)
-{
-   return crc32(0, data, length);
-}
-
-static INLINE uint32_t crc32_adjust(uint32_t crc, uint8_t data)
-{
-   /* zlib and nall have different
-    * assumptions on "sign" for this function. */
-   return ~crc32(~crc, &data, 1);
-}
-#else
-uint32_t crc32_calculate(const uint8_t *data, size_t length);
-uint32_t crc32_adjust(uint32_t crc, uint8_t data);
-#endif
-
 typedef struct SHA1Context
 {
    unsigned Message_Digest[5]; /* Message Digest (output)          */
