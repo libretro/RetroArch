@@ -588,13 +588,17 @@ int rpng_load_image_argb_process_inflate_init(struct rpng_t *rpng,
    if (!to_continue)
       goto end;
 
-   zstatus = inflate(&rpng->process.stream, Z_NO_FLUSH);
+   zstatus = zlib_inflate_data_to_file_iterate(&rpng->process.stream);
 
-   if (zstatus == Z_STREAM_END)
-      goto end;
-
-   if (zstatus != Z_OK && zstatus != Z_BUF_ERROR)
-      goto error;
+   switch (zstatus)
+   {
+      case 1:
+         goto end;
+      case -1:
+         goto error;
+      default:
+         break;
+   }
 
    return 0;
 
