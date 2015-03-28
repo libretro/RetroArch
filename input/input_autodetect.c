@@ -108,7 +108,7 @@ static void input_autoconfigure_joypad_add(
    /* This will be the case if input driver is reinitialized.
     * No reason to spam autoconfigure messages every time. */
    bool block_osd_spam = settings && 
-      settings->input.autoconfigured[params->idx] && params->name;
+      settings->input.autoconfigured[params->idx] && *params->name;
 
    if (!settings)
       return;
@@ -221,7 +221,7 @@ void input_config_autoconfigure_joypad(autoconfig_params_t *params)
    if (!input_config_autoconfigure_joypad_init(params))
       return;
 
-   if (!params->name)
+   if (!*params->name)
       return;
 
 #if defined(HAVE_BUILTIN_AUTOCONFIG)
