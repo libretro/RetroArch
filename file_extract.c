@@ -314,40 +314,30 @@ int zlib_inflate_data_to_file_iterate(void *data)
  *
  * Returns: true (1) on success, otherwise false (0).
  **/
-int zlib_inflate_data_to_file(const char *path, const char *valid_exts,
+int zlib_inflate_data_to_file(zlib_file_handle_t *handle,
+      int ret, const char *path, const char *valid_exts,
       const uint8_t *cdata, uint32_t csize, uint32_t size, uint32_t checksum)
 {
-   int ret          = 1;
-   zlib_file_handle_t handle = {0};
+   if (handle)
+      z_stream_free(handle->stream);
 
-   (void)valid_exts;
-   
-   if (!zlib_inflate_data_to_file_init(&handle, cdata, csize, size))
-      GOTO_END_ERROR();
-
-   do{
-      ret = zlib_inflate_data_to_file_iterate(handle.stream);
-   }while(ret == 0);
-
-   if (ret == -1)
+   if (!handle || ret == -1)
+   {
       ret = 0;
-
-   z_stream_free(handle.stream);
-
-   if (ret == 0)
       goto end;
+   }
 
-   handle.real_checksum = crc32_calculate(handle.data, size);
-   if (handle.real_checksum != checksum)
+   handle->real_checksum = crc32_calculate(handle->data, size);
+   if (handle->real_checksum != checksum)
       RARCH_WARN("File CRC differs from ZIP CRC. File: 0x%x, ZIP: 0x%x.\n",
-            (unsigned)handle.real_checksum, (unsigned)checksum);
+            (unsigned)handle->real_checksum, (unsigned)checksum);
 
-   if (!write_file(path, handle.data, size))
+   if (!write_file(path, handle->data, size))
       GOTO_END_ERROR();
 
 end:
-   if (handle.data)
-      free(handle.data);
+   if (handle->data)
+      free(handle->data);
    return ret;
 }
 
@@ -497,14 +487,25 @@ static int zip_extract_cb(const char *name, const char *valid_exts,
             data->found_content = write_file(new_path, cdata, size);
             return false;
          case ZLIB_MODE_DEFLATE:
-            if (zlib_inflate_data_to_file(new_path, valid_exts,
-                     cdata, csize, size, checksum))
             {
-               strlcpy(data->zip_path, new_path, data->zip_path_size);
-               data->found_content = true;
+               int ret = 0;
+               zlib_file_handle_t handle = {0};
+               if (!zlib_inflate_data_to_file_init(&handle, cdata, csize, size))
+                  return 0;
+
+               do{
+                  ret = zlib_inflate_data_to_file_iterate(handle.stream);
+               }while(ret == 0);
+
+               if (zlib_inflate_data_to_file(&handle, ret, new_path, valid_exts,
+                        cdata, csize, size, checksum))
+               {
+                  strlcpy(data->zip_path, new_path, data->zip_path_size);
+                  data->found_content = true;
+                  return 0;
+               }
                return 0;
             }
-            return 0;
 
          default:
             return 0;

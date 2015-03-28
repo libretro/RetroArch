@@ -74,6 +74,12 @@ bool zlib_extract_first_content_file(char *zip_path, size_t zip_path_size,
  **/
 struct string_list *zlib_get_file_list(const char *path, const char *valid_exts);
 
+bool zlib_inflate_data_to_file_init(
+      zlib_file_handle_t *handle,
+      const uint8_t *cdata,  uint32_t csize, uint32_t size);
+
+int zlib_inflate_data_to_file_iterate(void *data);
+
 /**
  * zlib_inflate_data_to_file:
  * @path                        : filename path of archive.
@@ -86,8 +92,9 @@ struct string_list *zlib_get_file_list(const char *path, const char *valid_exts)
  *
  * Returns: true (1) on success, otherwise false (0).
  **/
-int zlib_inflate_data_to_file(const char *path, const char *valid_exts,
-      const uint8_t *data, uint32_t csize, uint32_t size, uint32_t crc32);
+int zlib_inflate_data_to_file(zlib_file_handle_t *handle,
+      int ret, const char *path, const char *valid_exts,
+      const uint8_t *cdata, uint32_t csize, uint32_t size, uint32_t checksum);
 
 struct string_list *compressed_file_list_new(const char *filename,
       const char* ext);

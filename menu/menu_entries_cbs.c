@@ -81,11 +81,28 @@ static int zlib_extract_core_callback(const char *name, const char *valid_exts,
          write_file(path, cdata, size);
          break;
       case 8: /* Deflate */
-         zlib_inflate_data_to_file(path, valid_exts, cdata, csize, size, crc32);
+         {
+            int ret = 0;
+            zlib_file_handle_t handle = {0};
+            if (!zlib_inflate_data_to_file_init(&handle, cdata, csize, size))
+               goto error;
+
+            do{
+               ret = zlib_inflate_data_to_file_iterate(handle.stream);
+            }while(ret == 0);
+
+            if (!zlib_inflate_data_to_file(&handle, ret, path, valid_exts,
+                     cdata, csize, size, crc32))
+               goto error;
+         }
          break;
    }
 
    return 1;
+
+error:
+   RARCH_ERR("Failed to deflate to: %s.\n", path);
+   return 0;
 }
 
 int cb_core_updater_download(void *data_, size_t len)
