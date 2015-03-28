@@ -88,7 +88,9 @@ int menu_entries_push_list(menu_handle_t *menu,
    rarch_setting_t *setting = NULL;
    settings_t *settings     = config_get_ptr();
    
-   settings_list_free(menu->list_settings);
+   if (menu && menu->list_settings)
+      settings_list_free(menu->list_settings);
+
    menu->list_settings = (rarch_setting_t *)setting_new(setting_flags);
 
    if (!(setting = (rarch_setting_t*)menu_setting_find(label)))
