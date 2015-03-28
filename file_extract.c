@@ -570,21 +570,3 @@ struct string_list *zlib_get_file_list(const char *path, const char *valid_exts)
 
    return list;
 }
-
-struct string_list *compressed_file_list_new(const char *path,
-      const char* ext)
-{
-#ifdef HAVE_COMPRESSION
-   const char* file_ext = path_get_extension(path);
-#ifdef HAVE_7ZIP
-   if (strcasecmp(file_ext,"7z") == 0)
-      return compressed_7zip_file_list_new(path,ext);
-#endif
-#ifdef HAVE_ZLIB
-   if (strcasecmp(file_ext,"zip") == 0)
-      return zlib_get_file_list(path, ext);
-#endif
-
-#endif
-   return NULL;
-}

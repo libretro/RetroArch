@@ -21,14 +21,6 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#ifdef HAVE_7ZIP
-#include "decompress/7zip_support.h"
-#endif
-
-#ifdef HAVE_ZLIB
-#include "decompress/zip_support.h"
-#endif
-
 /* Returns true when parsing should continue. False to stop. */
 typedef int (*zlib_file_cb)(const char *name, const char *valid_exts,
       const uint8_t *cdata, unsigned cmode, uint32_t csize, uint32_t size,
