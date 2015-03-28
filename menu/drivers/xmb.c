@@ -26,6 +26,7 @@
 #include <file/file_path.h>
 #include "../../gfx/video_thread_wrapper.h"
 #include "../../gfx/gl_common.h"
+#include "../../gfx/font_gl_driver.h"
 #include "../../gfx/video_texture.h"
 #include <compat/posix_string.h>
 #include <string/stdstring.h>
@@ -1541,7 +1542,7 @@ static bool xmb_font_init_first(const gl_font_renderer_t **font_driver,
       if (!thr)
          return false;
 
-      thr->cmd_data.font_init.method = gl_font_init_first;
+      thr->cmd_data.font_init.method      = gl_font_init_first;
       thr->cmd_data.font_init.font_driver = font_driver;
       thr->cmd_data.font_init.font_handle = font_handle;
       thr->cmd_data.font_init.video_data = video_data;
