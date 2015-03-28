@@ -22,7 +22,6 @@
 #include "../../content.h"
 #include "../../general.h"
 #include <file/dir_list.h>
-#include "../../file_ops.h"
 #include <file/file_path.h>
 #include <retro_miscellaneous.h>
 
@@ -44,23 +43,28 @@ static int zlib_extract_callback(const char *name, const char *valid_exts,
       return false;
    }
 
-   // Ignore directories
+   /* Ignore directories */
    if (name[strlen(name) - 1] == '/')
       return 1;
 
    fill_pathname_join(path, (const char*)userdata, name, sizeof(path));
 
-   switch (cmode)
+   if (!zlib_perform_mode(path, valid_exts,
+      cdata, cmode, csize, size, crc32, userdata))
    {
-      case 0: // Uncompressed
-         write_file(path, cdata, size);
-         break;
-      case 8: // Deflate
-         zlib_inflate_data_to_file(path, valid_exts, cdata, csize, size, crc32);
-         break;
+       if (cmode == 0)
+       {
+           RARCH_ERR("Failed to write file: %s.\n", path);
+           return 0;
+       }
+       goto error;
    }
 
    return 1;
+    
+error:
+   RARCH_ERR("Failed to deflate to: %s.\n", path);
+   return 0;
 }
 
 static void unzip_file(const char* path, const char* output_directory)
