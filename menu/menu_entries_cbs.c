@@ -21,7 +21,7 @@
 #include "menu_entries.h"
 #include "menu_navigation.h"
 
-#include "../file_extract.h"
+#include <file/file_extract.h>
 #include "../file_ops.h"
 #include "../config.def.h"
 #include "../retroarch.h"

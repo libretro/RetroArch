@@ -27,7 +27,7 @@
 #include "patch.h"
 #include "compat/strl.h"
 #include "hash.h"
-#include "file_extract.h"
+#include <file/file_extract.h>
 
 #ifdef _WIN32
 #ifdef _XBOX

@@ -26,7 +26,7 @@
 #include <retro_miscellaneous.h>
 
 #ifdef HAVE_COMPRESSION
-#include "file_extract.h"
+#include <file/file_extract.h>
 #endif
 
 #ifdef HAVE_7ZIP

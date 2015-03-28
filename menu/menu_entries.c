@@ -19,7 +19,7 @@
 #include "menu_navigation.h"
 #include <file/file_list.h>
 #include <file/file_path.h>
-#include "../file_extract.h"
+#include <file/file_extract.h>
 #include "../file_ops.h"
 #include <file/dir_list.h>
 

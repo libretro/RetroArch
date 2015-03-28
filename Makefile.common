@@ -597,7 +597,7 @@ ifeq ($(HAVE_ZLIB), 1)
 			 libretro-common/formats/png/rpng_fbio.o \
 			 libretro-common/formats/png/rpng_decode.o \
 			 libretro-common/formats/png/rpng_encode.o \
-			 file_extract.o
+			 libretro-common/file/file_extract.o
    OBJ += $(ZLIB_OBJS)
    DEFINES += -DHAVE_ZLIB
    HAVE_COMPRESSION = 1 

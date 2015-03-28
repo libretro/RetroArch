@@ -25,7 +25,7 @@
 #include "patch.h"
 #include "hash.h"
 #include "file_ops.h"
-#include "file_extract.h"
+#include <file/file_extract.h>
 #include "general.h"
 #include "retroarch_logger.h"
 
