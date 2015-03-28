@@ -24,7 +24,6 @@
 #include "libretro_version_1.h"
 #include "dynamic.h"
 #include "content.h"
-#include "file_ops.h"
 #include <file/file_path.h>
 #include <file/dir_list.h>
 #include "general.h"
