@@ -31,14 +31,39 @@
 #include "../../menu/drivers/ios.h"
 
 id<RetroArch_Platform> apple_platform;
-
-CADisplayLink *displayLink;
+static CFRunLoopObserverRef iterate_observer;
 
 /* forward decls */
 
 void apple_rarch_exited(void);
 
 void main_exit_save_config(void);
+
+static void rarch_draw(CFRunLoopObserverRef observer, CFRunLoopActivity activity, void *info)
+{
+    runloop_t *runloop = rarch_main_get_ptr();
+    int ret = 0;
+    bool iterate = iterate_observer && !runloop->is_paused;
+    
+    if (!iterate)
+        return;
+    
+    ret = rarch_main_iterate();
+    
+    if (ret == -1)
+    {
+        main_exit_save_config();
+        main_exit(NULL);
+        return;
+    }
+    
+    if (runloop->is_idle)
+        return;
+    
+    if (g_view)
+        [g_view display];
+    CFRunLoopWakeUp(CFRunLoopGetMain());
+}
 
 void apple_rarch_exited(void)
 {
@@ -289,55 +314,24 @@ void notify_content_loaded(void)
    [self apple_start_iteration];
 }
 
-static void rarch_main_event_pump(void)
-{
-    SInt32 result;
-    const CFTimeInterval seconds = 0.002;
-    
-    do {
-        result = CFRunLoopRunInMode(kCFRunLoopDefaultMode, seconds, TRUE);
-    }while(result == kCFRunLoopRunHandledSource);
-}
-
-- (void) rarch_draw:(id)sender
-{
-   runloop_t *runloop = rarch_main_get_ptr();
-   int ret = 0;
-
-   if (displayLink == nil)
-      goto exit;
-
-   rarch_main_event_pump();
-
-   ret = rarch_main_iterate();
-
-   if (ret == -1)
-      goto exit;
-
-   if (runloop->is_idle)
-      return;
-
-   if (g_view)
-      [g_view display];
-
-   return;
-
-exit:
-   main_exit_save_config();
-   main_exit(NULL);
-}
-
 - (void) apple_start_iteration
 {
-    displayLink = [CADisplayLink displayLinkWithTarget:self
-                        selector:@selector(rarch_draw:)];
-    [displayLink addToRunLoop:[NSRunLoop currentRunLoop] forMode:NSDefaultRunLoopMode];
+    if (iterate_observer)
+        return;
+    
+    iterate_observer = CFRunLoopObserverCreate(0, kCFRunLoopBeforeWaiting,
+                                               true, 0, rarch_draw, 0);
+    CFRunLoopAddObserver(CFRunLoopGetMain(), iterate_observer, kCFRunLoopCommonModes);
 }
 
 - (void) apple_stop_iteration
 {
-    [displayLink removeFromRunLoop:[NSRunLoop currentRunLoop] forMode:NSDefaultRunLoopMode];
-    displayLink = nil;
+    if (!iterate_observer)
+        return;
+    
+    CFRunLoopObserverInvalidate(iterate_observer);
+    CFRelease(iterate_observer);
+    iterate_observer = NULL;
 }
 
 - (void)applicationDidEnterBackground:(UIApplication *)application
