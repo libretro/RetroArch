@@ -268,8 +268,8 @@ static bool rpng_save_image(const char *path,
       unsigned avg_score   = filter_avg(avg_filtered, rgba_line, prev_encoded, width, bpp);
       unsigned paeth_score = filter_paeth(paeth_filtered, rgba_line, prev_encoded, width, bpp);
 
-      uint8_t filter = 0;
-      unsigned min_sad = none_score;
+      uint8_t filter       = 0;
+      unsigned min_sad     = none_score;
       const uint8_t *chosen_filtered = rgba_line;
 
       if (sub_score < min_sad)

@@ -32,7 +32,7 @@
 
 /* File backends. Can be fleshed out later, but keep it simple for now.
  * The file is mapped to memory directly (via mmap() or just 
- * plain read_file()).
+ * plain zlib_read_file()).
  */
 
 struct zlib_file_backend
@@ -51,6 +51,73 @@ struct zlib_file_backend
 #define END_OF_CENTRAL_DIR_SIGNATURE 0x06054b50
 #endif
 
+static bool zlib_write_file(const char *path, const void *data, ssize_t size)
+{
+   bool ret   = false;
+   FILE *file = fopen(path, "wb");
+   if (!file)
+      return false;
+
+   ret = fwrite(data, 1, size, file) == size;
+   fclose(file);
+   return ret;
+}
+
+static int zlib_read_file(const char *path, void **buf, ssize_t *len)
+{
+   long ret                 = 0;
+   ssize_t content_buf_size = 0;
+   void *content_buf        = NULL;
+   FILE *file               = fopen(path, "rb");
+
+   if (!file)
+      goto error;
+
+   if (fseek(file, 0, SEEK_END) != 0)
+      goto error;
+
+   content_buf_size = ftell(file);
+   if (content_buf_size < 0)
+      goto error;
+
+   rewind(file);
+
+   content_buf = malloc(content_buf_size + 1);
+
+   if (!content_buf)
+      goto error;
+
+   if ((ret = fread(content_buf, 1, content_buf_size, file)) < content_buf_size)
+      printf("Didn't read whole file.\n");
+
+   if (!content_buf)
+      goto error;
+
+   *buf    = content_buf;
+
+   /* Allow for easy reading of strings to be safe.
+    * Will only work with sane character formatting (Unix). */
+   ((char*)content_buf)[content_buf_size] = '\0';
+
+   if (fclose(file) != 0)
+      printf("Failed to close file stream.\n");
+
+   if (len)
+      *len = ret;
+
+   return 1;
+
+error:
+   if (file)
+      fclose(file);
+   if (content_buf)
+      free(content_buf);
+   if (len)
+      *len = -1;
+   *buf = NULL;
+   return 0;
+}
+
 #ifdef HAVE_MMAP
 #include <sys/mman.h>
 #include <sys/stat.h>
@@ -64,18 +131,6 @@ typedef struct
    void *data;
    size_t size;
 } zlib_file_data_t;
-
-bool zlib_write_file(const char *path, const void *data, ssize_t size)
-{
-   bool ret   = false;
-   FILE *file = fopen(path, "wb");
-   if (!file)
-      return false;
-
-   ret = fwrite(data, 1, size, file) == size;
-   fclose(file);
-   return ret;
-}
 
 static void zlib_file_free(void *handle)
 {
@@ -119,8 +174,7 @@ static void *zlib_file_open(const char *path)
 
    if (data->fd < 0)
    {
-      RARCH_ERR("Failed to open archive: %s (%s).\n",
-            path, strerror(errno));
+      /* Failed to open archive. */
       goto error;
    }
 
@@ -135,7 +189,8 @@ static void *zlib_file_open(const char *path)
    if (data->data == MAP_FAILED)
    {
       data->data = NULL;
-      RARCH_ERR("Failed to mmap() file: %s (%s).\n", path, strerror(errno));
+
+      /* Failed to mmap() file */
       goto error;
    }
 
@@ -186,12 +241,11 @@ static void *zlib_file_open(const char *path)
    if (!data)
       return NULL;
 
-   read_from_file = read_file(path, &data->data, &ret);
+   read_from_file = zlib_read_file(path, &data->data, &ret);
 
    if (!read_from_file || ret < 0)
    {
-      RARCH_ERR("Failed to open archive: %s.\n",
-            path);
+      /* Failed to open archive. */
       goto error;
    }
 
@@ -217,11 +271,8 @@ static const struct zlib_file_backend *zlib_get_default_file_backend(void)
 }
 
 
-/* Modified from nall::unzip (higan). */
-
 #undef GOTO_END_ERROR
 #define GOTO_END_ERROR() do { \
-   RARCH_ERR("ZIP extraction failed at line: %d.\n", __LINE__); \
    ret = false; \
    goto end; \
 } while(0)
@@ -355,9 +406,15 @@ int zlib_inflate_data_to_file(zlib_file_handle_t *handle,
    }
 
    handle->real_checksum = zlib_crc32_calculate(handle->data, size);
+
+#if 0
    if (handle->real_checksum != checksum)
-      RARCH_WARN("File CRC differs from ZIP CRC. File: 0x%x, ZIP: 0x%x.\n",
+   {
+      /* File CRC difers from ZIP CRC. */
+      printf("File CRC differs from ZIP CRC. File: 0x%x, ZIP: 0x%x.\n",
             (unsigned)handle->real_checksum, (unsigned)checksum);
+   }
+#endif
 
    if (!zlib_write_file(path, handle->data, size))
       GOTO_END_ERROR();
@@ -563,7 +620,8 @@ bool zlib_extract_first_content_file(char *zip_path, size_t zip_path_size,
 
    if (!valid_exts)
    {
-      RARCH_ERR("Libretro implementation does not have any valid extensions. Cannot unzip without knowing this.\n");
+      /* Libretro implementation does not have any valid extensions.
+       * Cannot unzip without knowing this. */
       return false;
    }
 
@@ -578,13 +636,14 @@ bool zlib_extract_first_content_file(char *zip_path, size_t zip_path_size,
 
    if (!zlib_parse_file(zip_path, valid_exts, zip_extract_cb, &userdata))
    {
-      RARCH_ERR("Parsing ZIP failed.\n");
+      /* Parsing ZIP failed. */
       GOTO_END_ERROR();
    }
 
    if (!userdata.found_content)
    {
-      RARCH_ERR("Didn't find any content that matched valid extensions for libretro implementation.\n");
+      /* Didn't find any content that matched valid extensions
+       * for libretro implementation. */
       GOTO_END_ERROR();
    }
 
@@ -660,7 +719,7 @@ struct string_list *zlib_get_file_list(const char *path, const char *valid_exts)
    if (!zlib_parse_file(path, valid_exts,
             zlib_get_file_list_cb, list))
    {
-      RARCH_ERR("Parsing ZIP failed.\n");
+      /* Parsing ZIP failed. */
       string_list_free(list);
       return NULL;
    }

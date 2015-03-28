@@ -21,6 +21,7 @@
  */
 
 #include <formats/rpng.h>
+#include <file/file_extract.h>
 
 #include <stdio.h>
 #include <stdlib.h>
