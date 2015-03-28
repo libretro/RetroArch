@@ -659,8 +659,6 @@ static int pointer_iterate(unsigned *action)
       return 0;
 #endif
 
-   settings->menu.mouse.enable = true;
-
    menu->pointer.pressed  = input_driver_state(binds, 0, RETRO_DEVICE_POINTER,
          0, RETRO_DEVICE_ID_POINTER_PRESSED);
    menu->pointer.back  = input_driver_state(binds, 0, RETRO_DEVICE_POINTER,
