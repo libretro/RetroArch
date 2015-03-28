@@ -299,6 +299,11 @@ struct string_list *dir_list_new(const char *dir,
    }
 
 #endif
+#ifdef _WIN32
+error:
+   if (hFind != INVALID_HANDLE_VALUE)
+      FindClose(hFind);
+#endif
    string_list_free(dir_list);
    string_list_free(ext_list);
    

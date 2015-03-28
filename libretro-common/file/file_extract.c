@@ -292,7 +292,7 @@ static uint32_t read_le(const uint8_t *data, unsigned size)
 
 static void *z_stream_new(void)
 {
-   z_stream *ret = calloc(1, sizeof(z_stream));
+   z_stream *ret = (z_stream*)calloc(1, sizeof(z_stream));
 
    if (inflateInit2(ret, -MAX_WBITS) != Z_OK)
       return NULL;
