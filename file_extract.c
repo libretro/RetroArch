@@ -223,6 +223,13 @@ static uint32_t read_le(const uint8_t *data, unsigned size)
    return val;
 }
 
+typedef struct zlib_handle
+{
+   z_stream stream;
+   uint8_t *data;
+   uint32_t real_checksum;
+} zlib_file_handle_t;
+
 /**
  * zlib_inflate_data_to_file:
  * @path                        : filename path of archive.
@@ -241,38 +248,37 @@ int zlib_inflate_data_to_file(const char *path, const char *valid_exts,
       const uint8_t *cdata, uint32_t csize, uint32_t size, uint32_t checksum)
 {
    int ret = true;
-   uint32_t real_checksum = 0;
-   z_stream stream = {0};
-   uint8_t *out_data = (uint8_t*)malloc(size);
+   zlib_file_handle_t handle = {{0}};
+   handle.data = (uint8_t*)malloc(size);
 
-   if (!out_data)
+   if (!handle.data)
       return false;
 
-   if (inflateInit2(&stream, -MAX_WBITS) != Z_OK)
+   if (inflateInit2(&handle.stream, -MAX_WBITS) != Z_OK)
       GOTO_END_ERROR();
 
-   stream.next_in   = (uint8_t*)cdata;
-   stream.avail_in  = csize;
-   stream.next_out  = out_data;
-   stream.avail_out = size;
+   handle.stream.next_in   = (uint8_t*)cdata;
+   handle.stream.avail_in  = csize;
+   handle.stream.next_out  = handle.data;
+   handle.stream.avail_out = size;
 
-   if (inflate(&stream, Z_FINISH) != Z_STREAM_END)
+   if (inflate(&handle.stream, Z_FINISH) != Z_STREAM_END)
    {
-      inflateEnd(&stream);
+      inflateEnd(&handle.stream);
       GOTO_END_ERROR();
    }
-   inflateEnd(&stream);
+   inflateEnd(&handle.stream);
 
-   real_checksum = crc32_calculate(out_data, size);
-   if (real_checksum != checksum)
+   handle.real_checksum = crc32_calculate(handle.data, size);
+   if (handle.real_checksum != checksum)
       RARCH_WARN("File CRC differs from ZIP CRC. File: 0x%x, ZIP: 0x%x.\n",
-            (unsigned)real_checksum, (unsigned)checksum);
+            (unsigned)handle.real_checksum, (unsigned)checksum);
 
-   if (!write_file(path, out_data, size))
+   if (!write_file(path, handle.data, size))
       GOTO_END_ERROR();
 
 end:
-   free(out_data);
+   free(handle.data);
    return ret;
 }
 
