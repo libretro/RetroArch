@@ -20,7 +20,6 @@
 #include <file/file_list.h>
 #include <file/file_path.h>
 #include <file/file_extract.h>
-#include "../file_ops.h"
 #include <file/dir_list.h>
 
 int menu_entries_setting_set_flags(rarch_setting_t *setting)
