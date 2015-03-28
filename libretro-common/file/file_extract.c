@@ -63,60 +63,6 @@ static bool zlib_write_file(const char *path, const void *data, ssize_t size)
    return ret;
 }
 
-static int zlib_read_file(const char *path, void **buf, ssize_t *len)
-{
-   long ret                 = 0;
-   ssize_t content_buf_size = 0;
-   void *content_buf        = NULL;
-   FILE *file               = fopen(path, "rb");
-
-   if (!file)
-      goto error;
-
-   if (fseek(file, 0, SEEK_END) != 0)
-      goto error;
-
-   content_buf_size = ftell(file);
-   if (content_buf_size < 0)
-      goto error;
-
-   rewind(file);
-
-   content_buf = malloc(content_buf_size + 1);
-
-   if (!content_buf)
-      goto error;
-
-   if ((ret = fread(content_buf, 1, content_buf_size, file)) < content_buf_size)
-      printf("Didn't read whole file.\n");
-
-   if (!content_buf)
-      goto error;
-
-   *buf    = content_buf;
-
-   /* Allow for easy reading of strings to be safe.
-    * Will only work with sane character formatting (Unix). */
-   ((char*)content_buf)[content_buf_size] = '\0';
-
-   if (fclose(file) != 0)
-      printf("Failed to close file stream.\n");
-
-   if (len)
-      *len = ret;
-
-   return 1;
-
-error:
-   if (file)
-      fclose(file);
-   if (content_buf)
-      free(content_buf);
-   if (len)
-      *len = -1;
-   *buf = NULL;
-   return 0;
-}
 
 #ifdef HAVE_MMAP
 #include <sys/mman.h>
@@ -206,6 +152,61 @@ typedef struct
    void *data;
    size_t size;
 } zlib_file_data_t;
+
+static int zlib_read_file(const char *path, void **buf, ssize_t *len)
+{
+   long ret                 = 0;
+   ssize_t content_buf_size = 0;
+   void *content_buf        = NULL;
+   FILE *file               = fopen(path, "rb");
+
+   if (!file)
+      goto error;
+
+   if (fseek(file, 0, SEEK_END) != 0)
+      goto error;
+
+   content_buf_size = ftell(file);
+   if (content_buf_size < 0)
+      goto error;
+
+   rewind(file);
+
+   content_buf = malloc(content_buf_size + 1);
+
+   if (!content_buf)
+      goto error;
+
+   if ((ret = fread(content_buf, 1, content_buf_size, file)) < content_buf_size)
+      printf("Didn't read whole file.\n");
+
+   if (!content_buf)
+      goto error;
+
+   *buf    = content_buf;
+
+   /* Allow for easy reading of strings to be safe.
+    * Will only work with sane character formatting (Unix). */
+   ((char*)content_buf)[content_buf_size] = '\0';
+
+   if (fclose(file) != 0)
+      printf("Failed to close file stream.\n");
+
+   if (len)
+      *len = ret;
+
+   return 1;
+
+error:
+   if (file)
+      fclose(file);
+   if (content_buf)
+      free(content_buf);
+   if (len)
+      *len = -1;
+   *buf = NULL;
+   return 0;
+}
 
 static void zlib_file_free(void *handle)
 {
