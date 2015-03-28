@@ -28,10 +28,7 @@
 
 #include <boolean.h>
 #include <zlib.h>
-
-#ifdef HAVE_CONFIG_H
-#include "../../config.h"
-#endif
+#include <file/file_extract.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -88,6 +85,7 @@ struct rpng_process_t
       unsigned pos;
    } pass;
    z_stream stream;
+   zlib_file_handle_t handle;
 };
 
 struct rpng_t
