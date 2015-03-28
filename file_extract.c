@@ -301,6 +301,8 @@ int zlib_inflate_data_to_file(const char *path, const char *valid_exts,
    z_stream *stream = NULL;
    int ret          = true;
    zlib_file_handle_t handle = {0};
+
+   (void)valid_exts;
    
    if (!zlib_inflate_data_to_file_init(&handle, cdata, csize, size))
       GOTO_END_ERROR();
