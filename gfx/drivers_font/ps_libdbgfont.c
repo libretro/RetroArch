@@ -62,11 +62,12 @@ static void libdbg_font_deinit_font(void *data)
 }
 
 static void libdbg_font_render_msg(void *data, const char *msg,
-      const struct font_params *params)
+      const void *params)
 {
    float x, y, scale;
    unsigned color;
    settings_t *settings = config_get_ptr();
+   const struct font_params *params = (const struct font_params*)userdata;
 
    (void)data;
 

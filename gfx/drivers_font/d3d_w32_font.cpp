@@ -56,9 +56,10 @@ static void d3dfonts_w32_deinit_font(void *data)
 }
 
 static void d3dfonts_w32_render_msg(void *data, const char *msg,
-      const struct font_params *params)
+      const void *userdata)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
+   const struct font_params *params = (const struct font_params*)userdata;
 
    if (!d3d)
       return;

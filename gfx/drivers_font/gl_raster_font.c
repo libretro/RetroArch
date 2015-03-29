@@ -267,7 +267,7 @@ static void restore_viewport(gl_t *gl)
 }
 
 static void gl_raster_font_render_msg(void *data, const char *msg,
-      const struct font_params *params)
+      const void *userdata)
 {
    GLfloat x, y, scale, drop_mod;
    GLfloat color[4], color_dark[4];
@@ -277,8 +277,9 @@ static void gl_raster_font_render_msg(void *data, const char *msg,
    gl_t *gl = NULL;
    gl_raster_t *font = (gl_raster_t*)data;
    settings_t *settings = config_get_ptr();
+   const struct font_params *params = (const struct font_params*)userdata;
 
-   if (!font)
+   if (!font || !params)
       return;
 
    gl = font->gl;
@@ -354,7 +355,7 @@ static const struct font_glyph *gl_raster_font_get_glyph(
    return font->font_driver->get_glyph((void*)font->font_driver, code);
 }
 
-static void gl_flush_block(void *data)
+static void gl_raster_font_flush_block(void *data)
 {
    gl_raster_t       *font       = (gl_raster_t*)data;
    gl_font_raster_block_t *block = font->block;
@@ -367,15 +368,15 @@ static void gl_flush_block(void *data)
 
       restore_viewport(font->gl);
    }
-
-   /* block->carr.coords.vertices = 0; */
 }
 
-static void gl_bind_block(void *data, gl_font_raster_block_t *block)
+static void gl_raster_font_bind_block(void *data, void *userdata)
 {
    gl_raster_t *font = (gl_raster_t*)data;
+   gl_font_raster_block_t *block = (gl_font_raster_block_t*)userdata;
 
-   font->block = block;
+   if (font && block)
+      font->block = block;
 }
 
 gl_font_renderer_t gl_raster_font = {
@@ -384,6 +385,6 @@ gl_font_renderer_t gl_raster_font = {
    gl_raster_font_render_msg,
    "GL raster",
    gl_raster_font_get_glyph,
-   gl_bind_block,
-   gl_flush_block
+   gl_raster_font_bind_block,
+   gl_raster_font_flush_block
 };

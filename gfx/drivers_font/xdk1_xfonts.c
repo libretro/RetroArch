@@ -43,12 +43,13 @@ static void xfonts_deinit_font(void *data)
 }
 
 static void xfonts_render_msg(void *data, const char *msg,
-      const struct font_params *params)
+      const void *userdata)
 {
    wchar_t str[PATH_MAX_LENGTH];
    float x, y;
    d3d_video_t *d3d = (d3d_video_t*)data;
    settings_t *settings = config_get_ptr();
+   const struct font_params *params = (const struct font_params*)userdata;
 
    if (params)
    {

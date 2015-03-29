@@ -451,12 +451,13 @@ static void xdk360_draw_text(xdk360_video_font_t *font, void *video_data,
 }
 
 static void xdk360_render_msg(void *data, const char *str_msg,
-      const struct font_params *params)
+      const void *userdata)
 {
    float x, y;
    wchar_t msg[PATH_MAX_LENGTH];
    d3d_video_t         *d3d  = (d3d_video_t*)data;
    xdk360_video_font_t *font = &m_Font;
+   const struct font_params *params = (const struct font_params*)userdata;
 
    if (params)
    {
