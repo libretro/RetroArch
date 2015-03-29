@@ -27,7 +27,7 @@ extern "C" {
 
 typedef struct d3d_font_renderer
 {
-   bool (*init)(void *data, const char *font_path, unsigned font_size);
+   void *(*init)(void *data, const char *font_path, unsigned font_size);
    void (*free)(void *data);
    void (*render_msg)(void *data, const char *msg,
          const void *params);

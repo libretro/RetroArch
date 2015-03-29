@@ -25,33 +25,31 @@ typedef struct
    D3DSurface *pFrontBuffer;
 } xfonts_t;
 
-static xfonts_t *xfonts;
-
-static bool xfonts_init_font(void *video_data,
+static void *xfonts_init_font(void *video_data,
       const char *font_path, unsigned font_size)
 {
+   xfonts_t *xfonts = (xfonts_t*)calloc(1, sizeof(*xfont));
+
+   if (!xfonts)
+      return NULL;
+
    (void)font_path;
    (void)font_size;
 
-   xfont = (xfonts_t*)calloc(1, sizeof(*xfont));
+   xfonts->d3d = video_data;
 
-   if (!xfont)
-      return false;
+   XFONT_OpenDefaultFont(&xfonts->debug_font);
+   xfonts->debug_font->SetBkMode(XFONT_TRANSPARENT);
+   xfonts->debug_font->SetBkColor(D3DCOLOR_ARGB(100,0,0,0));
+   xfonts->debug_font->SetTextHeight(14);
+   xfonts->debug_font->SetTextAntialiasLevel(xfonts->debug_font->GetTextAntialiasLevel());
 
-   xfont->d3d = video_data;
-
-   XFONT_OpenDefaultFont(&xfont->debug_font);
-   xfont->debug_font->SetBkMode(XFONT_TRANSPARENT);
-   xfont->debug_font->SetBkColor(D3DCOLOR_ARGB(100,0,0,0));
-   xfont->debug_font->SetTextHeight(14);
-   xfont->debug_font->SetTextAntialiasLevel(xfont->debug_font->GetTextAntialiasLevel());
-
-   return true;
+   return xfonts;
 }
 
 static void xfonts_free_font(void *data)
 {
-   (void)data;
+   xfonts_t *xfonts = (xfonts_t*)data;
 
    if (xfont)
       free(xfont);
@@ -65,8 +63,7 @@ static void xfonts_render_msg(void *data, const char *msg,
    float x, y;
    settings_t *settings = config_get_ptr();
    const struct font_params *params = (const struct font_params*)userdata;
-
-   (void)data;
+   xfonts_t *xfonts = (xfonts_t*)data;
 
    if (params)
    {
@@ -79,11 +76,11 @@ static void xfonts_render_msg(void *data, const char *msg,
       y = settings->video.msg_pos_y;
    }
 
-   xfont->d3d->dev->GetBackBuffer(-1, D3DBACKBUFFER_TYPE_MONO, &xfont->pFrontBuffer);
+   xfonts->d3d->dev->GetBackBuffer(-1, D3DBACKBUFFER_TYPE_MONO, &xfonts->pFrontBuffer);
 
    mbstowcs(str, msg, sizeof(str) / sizeof(wchar_t));
-   xfont->debug_font->TextOut(xfont->pFrontBuffer, str, (unsigned)-1, x, y);
-   xfont->pFrontBuffer->Release();
+   xfonts->debug_font->TextOut(xfonts->pFrontBuffer, str, (unsigned)-1, x, y);
+   xfonts->pFrontBuffer->Release();
 }
 
 d3d_font_renderer_t d3d_xdk1_font = {

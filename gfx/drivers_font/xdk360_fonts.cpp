@@ -53,7 +53,6 @@ typedef struct
    const GLYPH_ATTR* m_Glyphs;          /* Array of glyphs. */
 } xdk360_video_font_t;
 
-static xdk360_video_font_t *m_Font;
 static PackedResource m_xprResource;
 
 #define CALCFONTFILEHEADERSIZE(x) ( sizeof(unsigned long) + (sizeof(float)* 4) + sizeof(unsigned short) + (sizeof(wchar_t)*(x)) )
@@ -176,25 +175,21 @@ static HRESULT xdk360_video_font_create_shaders(xdk360_video_font_t * font)
    return hr;
 }
 
-static bool xdk360_init_font(void *video_data,
+static void *xdk360_init_font(void *video_data,
       const char *font_path, unsigned font_size)
 {
    unsigned long dwFileVersion;
    const void *pFontData       = NULL;
    D3DTexture *pFontTexture    = NULL;
    const unsigned char * pData = NULL;
-   xdk360_video_font_t *font   = NULL;
+   xdk360_video_font_t *font = (xdk360_video_font_t*)calloc(1, sizeof(*font));
 
-   m_Font = (xdk360_video_font_t*)calloc(1, sizeof(*m_Font));
-
-   if (!m_Font)
-      return false;
-
-   m_Font->d3d = (d3d_video_t*)video_data;
+   if (!font)
+      return NULL;
 
    (void)font_size;
 
-   font = (xdk360_video_font_t*)m_Font;
+   font->d3d = (d3d_video_t*)video_data;
 
    font->m_pFontTexture = NULL;
    font->m_dwNumGlyphs = 0L;
@@ -245,15 +240,20 @@ static bool xdk360_init_font(void *video_data,
    }
 
    RARCH_LOG("Successfully initialized D3D9 HLSL fonts.\n");
-   return true;
+   return font;
 error:
    RARCH_ERR("Could not initialize D3D9 HLSL fonts.\n");
-   return false;
+   if (font)
+      free(font);
+   return NULL;
 }
 
 static void xdk360_free_font(void *data)
 {
-   xdk360_video_font_t *font = (xdk360_video_font_t*)m_Font;
+   xdk360_video_font_t *font = (xdk360_video_font_t*)data;
+
+   if (!font)
+      return;
 
    /* Destroy the font */
    font->m_pFontTexture = NULL;
@@ -276,9 +276,9 @@ static void xdk360_free_font(void *data)
    if (m_xprResource.Initialized())
       m_xprResource.Destroy();
 
-   if (m_Font)
-      free(m_Font);
-   m_Font = NULL;
+   if (font)
+      free(font);
+   font = NULL;
 }
 
 static void xdk360_render_msg_post(xdk360_video_font_t * font)
@@ -463,7 +463,7 @@ static void xdk360_render_msg(void *data, const char *str_msg,
 {
    float x, y;
    wchar_t msg[PATH_MAX_LENGTH];
-   xdk360_video_font_t *font = (xdk360_video_font_t*)m_Font;
+   xdk360_video_font_t *font = (xdk360_video_font_t*)data;
    const struct font_params *params = (const struct font_params*)userdata;
 
    if (params)

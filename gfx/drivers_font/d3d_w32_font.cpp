@@ -25,12 +25,11 @@ typedef struct
    uint32_t color;
 } d3dfonts_t;
 
-static d3dfonts_t *d3dfonts;
-
-static bool d3dfonts_w32_init_font(void *video_data,
+static void *d3dfonts_w32_init_font(void *video_data,
       const char *font_path, unsigned font_size)
 {
    uint32_t r, g, b;
+   d3dfonts_t *d3dfonts = NULL;
    settings_t *settings = config_get_ptr();
    D3DXFONT_DESC desc = {
       static_cast<int>(font_size), 0, 400, 0,
@@ -44,7 +43,7 @@ static bool d3dfonts_w32_init_font(void *video_data,
    d3dfonts = (d3dfonts_t*)calloc(1, sizeof(*d3dfonts));
 
    if (!d3dfonts)
-      return false;
+      return NULL;
 
    (void)font_path;
 
@@ -55,12 +54,21 @@ static bool d3dfonts_w32_init_font(void *video_data,
    d3dfonts->d3d = (d3d_video_t*)video_data;
    d3dfonts->color = D3DCOLOR_XRGB(r, g, b);
 
-   return SUCCEEDED(D3DXCreateFontIndirect(d3dfonts->d3d->dev, &desc, &d3dfonts->font));
+   if (!FAILED(D3DXCreateFontIndirect(d3dfonts->d3d->dev, &desc, &d3dfonts->font)))
+   {
+      free(d3dfonts);
+      return NULL;
+   }
+
+   return d3dfonts;
 }
 
 static void d3dfonts_w32_free_font(void *data)
 {
-   (void)data;
+   d3dfonts_t *d3dfonts = (d3dfonts_t*)data;
+
+   if (!d3dfonts)
+      return;
 
    if (d3dfonts->font)
       d3dfonts->font->Release();
@@ -74,8 +82,9 @@ static void d3dfonts_w32_render_msg(void *data, const char *msg,
       const void *userdata)
 {
    const struct font_params *params = (const struct font_params*)userdata;
+   d3dfonts_t *d3dfonts = (d3dfonts_t*)data;
 
-   if (!d3dfonts->d3d)
+   if (!d3dfonts || !d3dfonts->d3d)
       return;
    if (!msg)
       return;

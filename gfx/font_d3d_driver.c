@@ -35,10 +35,13 @@ bool d3d_font_init_first(
 
    for (i = 0; i < ARRAY_SIZE(d3d_font_backends); i++)
    {
-      if (!d3d_font_backends[i]->init(video_data, font_path, font_size))
-         return false;
+      void *data = d3d_font_backends[i]->init(video_data, font_path, font_size);
+
+      if (!data)
+         continue;
 
       *font_driver = d3d_font_backends[i];
+      *font_handle = data;
 
       return true;
    }
