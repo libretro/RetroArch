@@ -62,7 +62,7 @@ typedef struct font_renderer_driver
    const struct font_atlas *(*get_atlas)(void *data);
 
    /* Returns NULL if no glyph for this code is found. */
-   const struct font_glyph *(*get_glyph)(void *data, uint32_t code);
+   const void *(*get_glyph)(void *data, uint32_t code);
 
    void (*free)(void *data);
 
