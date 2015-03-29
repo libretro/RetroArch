@@ -308,10 +308,10 @@ static bool d3d_initialize(d3d_video_t *d3d, const video_info_t *info)
    strlcpy(settings->video.font_path, "game:\\media\\Arial_12.xpr",
          sizeof(settings->video.font_path));
 #endif
-   d3d->font_ctx = d3d_font_init_first(d3d, settings->video.font_path, 0);
-   if (!d3d->font_ctx)
+   if (!d3d_font_init_first(&d3d->font_ctx, NULL,
+         d3d, settings->video.font_path, 0))
    {
-      RARCH_ERR("Failed to initialize font.\n");
+      RARCH_ERR("[D3D]: Failed to initialize font renderer.\n");
       return false;
    }
 

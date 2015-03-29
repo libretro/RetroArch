@@ -42,8 +42,9 @@ extern d3d_font_renderer_t d3d_xbox360_font;
 extern d3d_font_renderer_t d3d_xdk1_font;
 extern d3d_font_renderer_t d3d_win32_font;
 
-const d3d_font_renderer_t *d3d_font_init_first(void *data,
-      const char *font_path, unsigned font_size);
+bool d3d_font_init_first(
+      const void **font_driver, void **font_handle,
+      void *video_data, const char *font_path, unsigned font_size);
 
 #ifdef __cplusplus
 }

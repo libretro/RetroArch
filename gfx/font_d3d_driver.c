@@ -27,16 +27,21 @@ static const d3d_font_renderer_t *d3d_font_backends[] = {
 #endif
 };
 
-const d3d_font_renderer_t *d3d_font_init_first(void *data,
-      const char *font_path, unsigned font_size)
+bool d3d_font_init_first(
+      const void **font_driver, void **font_handle,
+      void *video_data, const char *font_path, unsigned font_size)
 {
    unsigned i;
 
    for (i = 0; i < ARRAY_SIZE(d3d_font_backends); i++)
    {
-      if (d3d_font_backends[i]->init(data, font_path, font_size))
-         return d3d_font_backends[i];
+      if (!d3d_font_backends[i]->init(video_data, font_path, font_size))
+         return false;
+
+      *font_driver = d3d_font_backends[i];
+
+      return true;
    }
 
-   return NULL;
+   return false;
 }
