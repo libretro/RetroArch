@@ -54,13 +54,13 @@ static void *d3dfonts_w32_init_font(void *video_data,
    d3dfonts->d3d = (d3d_video_t*)video_data;
    d3dfonts->color = D3DCOLOR_XRGB(r, g, b);
 
-   if (!FAILED(D3DXCreateFontIndirect(d3dfonts->d3d->dev, &desc, &d3dfonts->font)))
+   if (SUCCEEDED(D3DXCreateFontIndirect(d3dfonts->d3d->dev, &desc, &d3dfonts->font)))
    {
-      free(d3dfonts);
-      return NULL;
+      return d3dfonts;
    }
 
-   return d3dfonts;
+   free(d3dfonts);
+   return NULL;
 }
 
 static void d3dfonts_w32_free_font(void *data)

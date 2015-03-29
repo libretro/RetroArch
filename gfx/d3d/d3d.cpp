@@ -176,7 +176,7 @@ static void d3d_deinitialize(d3d_video_t *d3d)
    font_ctx = (const d3d_font_renderer_t*)d3d->font_driver;
 
    if (font_ctx->free)
-      font_ctx->free(d3d);
+      font_ctx->free(d3d->font_handle);
    font_ctx = NULL;
    d3d_deinit_chain(d3d);
 #ifdef HAVE_SHADERS
@@ -514,7 +514,7 @@ static void d3d_set_osd_msg(void *data, const char *msg,
 #endif
 
    if (font_ctx->render_msg)
-      font_ctx->render_msg(d3d, msg, params);
+      font_ctx->render_msg(d3d->font_handle, msg, params);
 }
 
 /* Delay constructor due to lack of exceptions. */
@@ -1721,7 +1721,7 @@ static bool d3d_frame(void *data, const void *frame,
       font_parms.y = msg_height;
       font_parms.scale = 21;
 #endif
-      font_ctx->render_msg(d3d, msg, &font_parms);
+      font_ctx->render_msg(d3d->font_handle, msg, &font_parms);
    }
 
 #ifdef HAVE_MENU
