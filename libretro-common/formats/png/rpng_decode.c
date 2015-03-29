@@ -643,13 +643,13 @@ bool rpng_load_image_argb_process_init(struct rpng_t *rpng,
    rpng->process.inflate_buf_size = 0;
    rpng->process.inflate_buf      = NULL;
 
-   if (inflateInit(&rpng->process.stream) != Z_OK)
-      return false;
-
    png_pass_geom(&rpng->ihdr, rpng->ihdr.width,
          rpng->ihdr.height, NULL, NULL, &rpng->process.inflate_buf_size);
    if (rpng->ihdr.interlace == 1) /* To be sure. */
       rpng->process.inflate_buf_size *= 2;
+
+   if (inflateInit(&rpng->process.stream) != Z_OK)
+      return false;
 
    rpng->process.inflate_buf = (uint8_t*)malloc(rpng->process.inflate_buf_size);
    if (!rpng->process.inflate_buf)

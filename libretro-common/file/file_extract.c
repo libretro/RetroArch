@@ -292,20 +292,25 @@ static uint32_t read_le(const uint8_t *data, unsigned size)
 
 void *zlib_stream_new(void)
 {
-   z_stream *ret = (z_stream*)calloc(1, sizeof(z_stream));
+   return (z_stream*)calloc(1, sizeof(z_stream));
+}
 
-   if (inflateInit2(ret, -MAX_WBITS) != Z_OK)
-      return NULL;
-   return ret;
+bool zlib_inflate_init(void *data)
+{
+   z_stream *stream = (z_stream*)data;
+
+   if (!stream)
+      return false;
+   if (inflateInit2(stream, -MAX_WBITS) != Z_OK)
+      return false;
+   return true;
 }
 
 void zlib_stream_free(void *data)
 {
    z_stream *ret = (z_stream*)data;
-   if (!ret)
-      return;
-
-   inflateEnd(ret);
+   if (ret)
+      inflateEnd(ret);
 }
 
 bool zlib_inflate_data_to_file_init(
@@ -318,6 +323,9 @@ bool zlib_inflate_data_to_file_init(
       return false;
 
    if (!(handle->stream = (z_stream*)zlib_stream_new()))
+      goto error;
+   
+   if (!(zlib_inflate_init(handle->stream)))
       goto error;
 
    handle->data = (uint8_t*)malloc(size);

@@ -117,5 +117,7 @@ void *zlib_stream_new(void);
 
 void zlib_stream_free(void *data);
 
+bool zlib_inflate_init(void *data);
+
 #endif
 
