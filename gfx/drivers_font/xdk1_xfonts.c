@@ -26,7 +26,7 @@ typedef struct
 } xfonts_t;
 
 static void *xfonts_init_font(void *video_data,
-      const char *font_path, unsigned font_size)
+      const char *font_path, float font_size)
 {
    xfonts_t *xfonts = (xfonts_t*)calloc(1, sizeof(*xfont));
 

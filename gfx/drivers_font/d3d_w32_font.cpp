@@ -26,13 +26,13 @@ typedef struct
 } d3dfonts_t;
 
 static void *d3dfonts_w32_init_font(void *video_data,
-      const char *font_path, unsigned font_size)
+      const char *font_path, float font_size)
 {
    uint32_t r, g, b;
    d3dfonts_t *d3dfonts = NULL;
    settings_t *settings = config_get_ptr();
    D3DXFONT_DESC desc = {
-      static_cast<int>(font_size), 0, 400, 0,
+      (int)(font_size), 0, 400, 0,
       false, DEFAULT_CHARSET,
       OUT_TT_PRECIS,
       CLIP_DEFAULT_PRECIS,

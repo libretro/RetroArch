@@ -176,7 +176,7 @@ static HRESULT xdk360_video_font_create_shaders(xdk360_video_font_t * font)
 }
 
 static void *xdk360_init_font(void *video_data,
-      const char *font_path, unsigned font_size)
+      const char *font_path, float font_size)
 {
    unsigned long dwFileVersion;
    const void *pFontData       = NULL;
