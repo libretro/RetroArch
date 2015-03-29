@@ -21,12 +21,10 @@
  */
 
 #include <formats/rpng.h>
-
-#include <zlib.h>
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <zlib.h>
 
 #include "rpng_common.h"
 

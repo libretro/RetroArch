@@ -27,7 +27,6 @@
 #include <stddef.h>
 
 #include <boolean.h>
-#include <zlib.h>
 #include <file/file_extract.h>
 
 #ifdef __cplusplus
@@ -84,7 +83,7 @@ struct rpng_process_t
       size_t   size;
       unsigned pos;
    } pass;
-   z_stream stream;
+   void *stream;
    zlib_file_handle_t handle;
 };
 
