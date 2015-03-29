@@ -35,11 +35,11 @@ typedef struct coretext_renderer
 {
   struct font_atlas atlas;
   struct font_glyph glyphs[CT_ATLAS_SIZE];
-} font_renderer_t;
+} ct_font_renderer_t;
 
 static const struct font_atlas *font_renderer_ct_get_atlas(void *data)
 {
-  font_renderer_t *handle = (font_renderer_t*)data;
+  ct_font_renderer_t *handle = (ct_font_renderer_t*)data;
   if (!handle)
      return NULL;
   return &handle->atlas;
@@ -47,7 +47,7 @@ static const struct font_atlas *font_renderer_ct_get_atlas(void *data)
 
 static const void *font_renderer_ct_get_glyph(void *data, uint32_t code)
 {
-   font_renderer_t *handle   = (font_renderer_t*)data;
+   ct_font_renderer_t *handle   = (ct_font_renderer_t*)data;
 
    if (!handle)
       return NULL;
@@ -58,7 +58,7 @@ static const void *font_renderer_ct_get_glyph(void *data, uint32_t code)
 
 static void font_renderer_ct_free(void *data)
 {
-  font_renderer_t *handle = (font_renderer_t*)data;
+  ct_font_renderer_t *handle = (ct_font_renderer_t*)data;
 
   if (!handle)
     return;
@@ -67,7 +67,7 @@ static void font_renderer_ct_free(void *data)
   free(handle);
 }
 
-static bool font_renderer_create_atlas(CTFontRef face, font_renderer_t *handle)
+static bool font_renderer_create_atlas(CTFontRef face, ct_font_renderer_t *handle)
 {
    int max_width, max_height;
    unsigned i;
@@ -225,7 +225,7 @@ static void *font_renderer_ct_init(const char *font_path, float font_size)
    char err = 0;
    CFStringRef cf_font_path = NULL;
    CTFontRef face = NULL;
-   font_renderer_t *handle = (font_renderer_t*)
+   ct_font_renderer_t *handle = (ct_font_renderer_t*)
       calloc(1, sizeof(*handle));
 
    if (!handle)
