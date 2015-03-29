@@ -349,10 +349,12 @@ bool zlib_inflate_data_to_file_init(
    if (!stream)
       goto error;
 
-   stream->next_in   = (uint8_t*)cdata;
-   stream->avail_in  = csize;
-   stream->next_out  = handle->data;
-   stream->avail_out = size;
+   zlib_set_stream(stream,
+         csize,
+         size,
+         (const uint8_t*)cdata,
+         handle->data 
+         );
 
    return true;
 
@@ -777,4 +779,23 @@ bool zlib_perform_mode(const char *path, const char *valid_exts,
    }
 
    return true;
+}
+
+void zlib_set_stream(void *data,
+      uint32_t       avail_in,
+      uint32_t       avail_out,
+      const uint8_t *next_in,
+      uint8_t       *next_out
+      )
+{
+   z_stream *stream = (z_stream*)data;
+
+   if (!stream)
+      return;
+
+   stream->avail_in  = avail_in;
+   stream->avail_out = avail_out;
+
+   stream->next_in   = (uint8_t*)next_in;
+   stream->next_out  = next_out;
 }

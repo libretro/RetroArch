@@ -310,10 +310,12 @@ static bool rpng_save_image(const char *path,
    if (!deflate_buf)
       GOTO_END_ERROR();
 
-   stream.next_in   = encode_buf;
-   stream.avail_in  = encode_buf_size;
-   stream.next_out  = deflate_buf + 8;
-   stream.avail_out = encode_buf_size * 2;
+   zlib_set_stream(
+         &stream,
+         encode_buf_size,
+         encode_buf_size * 2,
+         encode_buf,
+         deflate_buf + 8);
 
    deflateInit(&stream, 9);
    if (deflate(&stream, Z_FINISH) != Z_STREAM_END)

@@ -655,10 +655,12 @@ bool rpng_load_image_argb_process_init(struct rpng_t *rpng,
    if (!rpng->process.inflate_buf)
       return false;
 
-   rpng->process.stream.next_in   = rpng->idat_buf.data;
-   rpng->process.stream.avail_in  = rpng->idat_buf.size;
-   rpng->process.stream.avail_out = rpng->process.inflate_buf_size;
-   rpng->process.stream.next_out  = rpng->process.inflate_buf;
+   zlib_set_stream(
+         &rpng->process.stream,
+         rpng->idat_buf.size,
+         rpng->process.inflate_buf_size,
+         rpng->idat_buf.data,
+         rpng->process.inflate_buf);
 
    rpng->process.initialized = true;
 
