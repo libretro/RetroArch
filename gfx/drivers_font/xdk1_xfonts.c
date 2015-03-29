@@ -75,4 +75,7 @@ d3d_font_renderer_t d3d_xdk1_font = {
    xfonts_free_font,
    xfonts_render_msg,
    "XDK1 Xfonts",
+   NULL,
+   NULL,
+   NULL,
 };

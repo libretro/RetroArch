@@ -32,6 +32,10 @@ typedef struct d3d_font_renderer
    void (*render_msg)(void *data, const char *msg,
          const void *params);
    const char *ident;
+
+   const void *(*get_glyph)(void *data, uint32_t code);
+   void (*bind_block)(void *data, void *block);
+   void (*flush)(void *data);
 } d3d_font_renderer_t;
 
 extern d3d_font_renderer_t d3d_xbox360_font;

@@ -90,4 +90,7 @@ d3d_font_renderer_t d3d_win32_font = {
    d3dfonts_w32_free_font,
    d3dfonts_w32_render_msg,
    "d3d-fonts-w32",
+   NULL,
+   NULL,
+   NULL,
 };
