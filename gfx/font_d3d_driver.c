@@ -29,7 +29,7 @@ static const d3d_font_renderer_t *d3d_font_backends[] = {
 
 bool d3d_font_init_first(
       const void **font_driver, void **font_handle,
-      void *video_data, const char *font_path, unsigned font_size)
+      void *video_data, const char *font_path, float font_size)
 {
    unsigned i;
 
