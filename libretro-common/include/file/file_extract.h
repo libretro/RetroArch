@@ -113,5 +113,9 @@ bool zlib_perform_mode(const char *name, const char *valid_exts,
 struct string_list *compressed_file_list_new(const char *filename,
       const char* ext);
 
+void *zlib_stream_new(void);
+
+void zlib_stream_free(void *data);
+
 #endif
 

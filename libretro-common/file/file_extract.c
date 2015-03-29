@@ -290,7 +290,7 @@ static uint32_t read_le(const uint8_t *data, unsigned size)
    return val;
 }
 
-static void *z_stream_new(void)
+void *zlib_stream_new(void)
 {
    z_stream *ret = (z_stream*)calloc(1, sizeof(z_stream));
 
@@ -299,15 +299,13 @@ static void *z_stream_new(void)
    return ret;
 }
 
-static void z_stream_free(void *data)
+void zlib_stream_free(void *data)
 {
    z_stream *ret = (z_stream*)data;
    if (!ret)
       return;
 
    inflateEnd(ret);
-   if (ret)
-      free(ret);
 }
 
 bool zlib_inflate_data_to_file_init(
@@ -319,7 +317,7 @@ bool zlib_inflate_data_to_file_init(
    if (!handle)
       return false;
 
-   if (!(handle->stream = (z_stream*)z_stream_new()))
+   if (!(handle->stream = (z_stream*)zlib_stream_new()))
       goto error;
 
    handle->data = (uint8_t*)malloc(size);
@@ -341,7 +339,7 @@ bool zlib_inflate_data_to_file_init(
 
 error:
    if (handle->stream)
-      z_stream_free(handle->stream);
+      zlib_stream_free(handle->stream);
    if (handle->data)
       free(handle->data);
 
@@ -398,7 +396,7 @@ int zlib_inflate_data_to_file(zlib_file_handle_t *handle,
       const uint8_t *cdata, uint32_t csize, uint32_t size, uint32_t checksum)
 {
    if (handle)
-      z_stream_free(handle->stream);
+      zlib_stream_free(handle->stream);
 
    if (!handle || ret == -1)
    {
