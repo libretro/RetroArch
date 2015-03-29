@@ -268,8 +268,10 @@ static void poll_iteration(void)
    {
       global_t *global = global_get_ptr();
       NSString *__core = [filenames objectAtIndex:0];
-      const char *core_name = global->menu.info.library_name;
-      strlcpy(global->fullpath, __core.UTF8String, sizeof(global->fullpath));
+      const char *core_name = global ? global->menu.info.library_name : NULL;
+		
+		if (global)
+         strlcpy(global->fullpath, __core.UTF8String, sizeof(global->fullpath));
 
       if (core_name)
          rarch_main_command(RARCH_CMD_LOAD_CONTENT);
@@ -298,8 +300,10 @@ static void poll_iteration(void)
          global_t *global = global_get_ptr();
          NSURL *url = (NSURL*)panel.URL;
          NSString *__core = url.path;
-         const char *core_name = global->menu.info.library_name;
-         strlcpy(global->fullpath, __core.UTF8String, sizeof(global->fullpath));
+         const char *core_name = global ? global->menu.info.library_name : NULL;
+			
+			if (global)
+            strlcpy(global->fullpath, __core.UTF8String, sizeof(global->fullpath));
 
          if (core_name)
             rarch_main_command(RARCH_CMD_LOAD_CONTENT);
@@ -328,7 +332,7 @@ static void poll_iteration(void)
    [[NSApplication sharedApplication] endSheet:self.coreSelectSheet returnCode:0];
    [self.coreSelectSheet orderOut:self];
 
-   if (global->system.shutdown)
+   if (global && global->system.shutdown)
       return;
 
    /* TODO - rewrite this. */
@@ -339,7 +343,7 @@ static void poll_iteration(void)
    self.core = objc_getAssociatedObject(cb.objectValueOfSelectedItem, associated_core_key);
 #endif
 
-   if (!global->main_is_init)
+   if (global && !global->main_is_init)
    {
       /* TODO/FIXME: Set core/content here. */
       rarch_main_command(RARCH_CMD_LOAD_CORE);
