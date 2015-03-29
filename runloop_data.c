@@ -180,7 +180,7 @@ static int rarch_main_data_http_conn_iterate_transfer_parse(http_handle_t *http)
 
 static int rarch_main_data_http_iterate_transfer_parse(http_handle_t *http)
 {
-   size_t len;
+   size_t len = 0;
    char *data = (char*)net_http_data(http->handle, &len, false);
 
    if (data && http->cb)
