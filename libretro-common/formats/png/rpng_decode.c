@@ -603,7 +603,7 @@ int rpng_load_image_argb_process_inflate_init(struct rpng_t *rpng,
    return 0;
 
 end:
-   inflateEnd(&rpng->process.stream);
+   zlib_stream_free(&rpng->process.stream);
 
    *width  = rpng->ihdr.width;
    *height = rpng->ihdr.height;
@@ -630,7 +630,7 @@ end:
    return 1;
 
 error:
-   inflateEnd(&rpng->process.stream);
+   zlib_stream_free(&rpng->process.stream);
 
 false_end:
    rpng->process.inflate_initialized = false;
