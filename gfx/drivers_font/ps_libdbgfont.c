@@ -98,7 +98,7 @@ static void libdbg_font_render_msg(void *data, const char *msg,
 #endif
 }
 
-gl_font_renderer_t libdbg_font = {
+font_renderer_t libdbg_font = {
    libdbg_font_init_font,
    libdbg_font_free_font,
    libdbg_font_render_msg,

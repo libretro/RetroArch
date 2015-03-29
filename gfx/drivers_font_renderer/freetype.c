@@ -35,11 +35,11 @@ typedef struct freetype_renderer
 
    struct font_atlas atlas;
    struct font_glyph glyphs[FT_ATLAS_SIZE];
-} font_renderer_t;
+} ft_font_renderer_t;
 
 static const struct font_atlas *font_renderer_ft_get_atlas(void *data)
 {
-   font_renderer_t *handle = (font_renderer_t*)data;
+   ft_font_renderer_t *handle = (ft_font_renderer_t*)data;
    if (!handle)
       return NULL;
    return &handle->atlas;
@@ -48,7 +48,7 @@ static const struct font_atlas *font_renderer_ft_get_atlas(void *data)
 static const void *font_renderer_ft_get_glyph(
       void *data, uint32_t code)
 {
-   font_renderer_t *handle = (font_renderer_t*)data;
+   ft_font_renderer_t *handle = (ft_font_renderer_t*)data;
    if (!handle)
       return NULL;
    return code < FT_ATLAS_SIZE ? &handle->glyphs[code] : NULL;
@@ -56,7 +56,7 @@ static const void *font_renderer_ft_get_glyph(
 
 static void font_renderer_ft_free(void *data)
 {
-   font_renderer_t *handle = (font_renderer_t*)data;
+   ft_font_renderer_t *handle = (ft_font_renderer_t*)data;
    if (!handle)
       return;
 
@@ -69,7 +69,7 @@ static void font_renderer_ft_free(void *data)
    free(handle);
 }
 
-static bool font_renderer_create_atlas(font_renderer_t *handle)
+static bool font_renderer_create_atlas(ft_font_renderer_t *handle)
 {
    unsigned i;
    bool ret = true;
@@ -162,7 +162,7 @@ static void *font_renderer_ft_init(const char *font_path, float font_size)
 {
    FT_Error err;
 
-   font_renderer_t *handle = (font_renderer_t*)
+   ft_font_renderer_t *handle = (ft_font_renderer_t*)
       calloc(1, sizeof(*handle));
 
    if (!handle)

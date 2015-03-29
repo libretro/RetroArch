@@ -20,27 +20,11 @@
 #include <stdint.h>
 #include <boolean.h>
 #include "../driver.h"
+#include "font_renderer_driver.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-typedef struct d3d_font_renderer
-{
-   void *(*init)(void *data, const char *font_path, float font_size);
-   void (*free)(void *data);
-   void (*render_msg)(void *data, const char *msg,
-         const void *params);
-   const char *ident;
-
-   const void *(*get_glyph)(void *data, uint32_t code);
-   void (*bind_block)(void *data, void *block);
-   void (*flush)(void *data);
-} d3d_font_renderer_t;
-
-extern d3d_font_renderer_t d3d_xbox360_font;
-extern d3d_font_renderer_t d3d_xdk1_font;
-extern d3d_font_renderer_t d3d_win32_font;
 
 bool d3d_font_init_first(
       const void **font_driver, void **font_handle,

@@ -329,7 +329,7 @@ static void glui_frame(void)
    glui_handle_t *glui = NULL;
    const char *core_name = NULL;
    const char *core_version = NULL;
-   const struct gl_font_renderer *font_driver = NULL;
+   const struct font_renderer *font_driver = NULL;
    menu_handle_t *menu  = menu_driver_get_ptr();
    settings_t *settings = config_get_ptr();
    const uint32_t normal_color = FONT_COLOR_ARGB_TO_RGBA(settings->menu.entry_normal_color);
@@ -346,7 +346,7 @@ static void glui_frame(void)
    if (!gl)
       return;
 
-   font_driver = (const struct gl_font_renderer*)gl->font_driver;
+   font_driver = (const struct font_renderer*)gl->font_driver;
 
    glui = (glui_handle_t*)menu->userdata;
 
@@ -501,7 +501,7 @@ static void *glui_init(void)
 {
    glui_handle_t *glui = NULL;
    const video_driver_t *video_driver = NULL;
-   const struct gl_font_renderer *font_driver = NULL;
+   const struct font_renderer *font_driver = NULL;
    menu_handle_t *menu = NULL;
    gl_t *gl = (gl_t*)video_driver_get_ptr(&video_driver);
 
@@ -511,7 +511,7 @@ static void *glui_init(void)
       return NULL;
    }
 
-   font_driver = (const struct gl_font_renderer*)gl->font_driver;
+   font_driver = (const struct font_renderer*)gl->font_driver;
    menu        = (menu_handle_t*)calloc(1, sizeof(*menu));
 
    if (!menu)
@@ -538,7 +538,7 @@ error:
 static void glui_free(void *data)
 {
    gl_t *gl = (gl_t*)video_driver_get_ptr(NULL);
-   const struct gl_font_renderer *font_driver = NULL;
+   const struct font_renderer *font_driver = NULL;
 
    menu_handle_t *menu = (menu_handle_t*)data;
    glui_handle_t *glui = (glui_handle_t*)menu->userdata;
@@ -548,7 +548,7 @@ static void glui_free(void *data)
 
    gl_coord_array_free(&glui->raster_block.carr);
 
-   font_driver = (const struct gl_font_renderer*)gl->font_driver;
+   font_driver = (const struct font_renderer*)gl->font_driver;
 
    if (glui->use_blocks)
       font_driver->bind_block(gl->font_handle, NULL);

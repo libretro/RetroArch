@@ -379,7 +379,7 @@ static void gl_raster_font_bind_block(void *data, void *userdata)
       font->block = block;
 }
 
-gl_font_renderer_t gl_raster_font = {
+font_renderer_t gl_raster_font = {
    gl_raster_font_init_font,
    gl_raster_font_free_font,
    gl_raster_font_render_msg,

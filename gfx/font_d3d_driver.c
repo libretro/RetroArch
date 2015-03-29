@@ -17,7 +17,7 @@
 #include "font_d3d_driver.h"
 #include "../general.h"
 
-static const d3d_font_renderer_t *d3d_font_backends[] = {
+static const font_renderer_t *d3d_font_backends[] = {
 #if defined(_XBOX1)
    &d3d_xdk1_font,
 #elif defined(_XBOX360)

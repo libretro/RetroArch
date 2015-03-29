@@ -108,7 +108,7 @@ static void d3dfonts_w32_render_msg(void *data, const char *msg,
    d3dfonts->d3d->dev->EndScene();
 }
 
-d3d_font_renderer_t d3d_win32_font = {
+font_renderer_t d3d_win32_font = {
    d3dfonts_w32_init_font,
    d3dfonts_w32_free_font,
    d3dfonts_w32_render_msg,

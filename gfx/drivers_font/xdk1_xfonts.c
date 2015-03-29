@@ -83,7 +83,7 @@ static void xfonts_render_msg(void *data, const char *msg,
    xfonts->pFrontBuffer->Release();
 }
 
-d3d_font_renderer_t d3d_xdk1_font = {
+font_renderer_t d3d_xdk1_font = {
    xfonts_init_font,
    xfonts_free_font,
    xfonts_render_msg,

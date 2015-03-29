@@ -17,7 +17,7 @@
 #include "font_gl_driver.h"
 #include "../general.h"
 
-static const gl_font_renderer_t *gl_font_backends[] = {
+static const font_renderer_t *gl_font_backends[] = {
 #if defined(HAVE_LIBDBGFONT)
    &libdbg_font,
 #else

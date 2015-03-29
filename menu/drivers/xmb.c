@@ -1250,7 +1250,7 @@ static void xmb_frame(void)
    const char *core_version = NULL;
    xmb_handle_t *xmb = NULL;
    gl_t *gl = NULL;
-   const struct gl_font_renderer *font_driver = NULL;
+   const struct font_renderer *font_driver = NULL;
    menu_handle_t *menu  = menu_driver_get_ptr();
    settings_t *settings = config_get_ptr();
    global_t *global     = global_get_ptr();
@@ -1268,7 +1268,7 @@ static void xmb_frame(void)
    if (!gl)
       return;
 
-   font_driver = (const struct gl_font_renderer*)gl->font_driver;
+   font_driver = (const struct font_renderer*)gl->font_driver;
 
    if (font_driver->bind_block)
       font_driver->bind_block(xmb->font.buf, &xmb->raster_block);
@@ -1516,13 +1516,13 @@ static void xmb_free(void *data)
 {
    menu_handle_t *menu = (menu_handle_t*)data;
    xmb_handle_t *xmb = NULL;
-   const struct gl_font_renderer *font_driver = NULL;
+   const struct font_renderer *font_driver = NULL;
    gl_t *gl = (gl_t*)video_driver_get_ptr(NULL);
 
    if (!gl)
       return;
    
-   font_driver = (const struct gl_font_renderer*)gl->font_driver;
+   font_driver = (const struct font_renderer*)gl->font_driver;
 
    if (menu && menu->userdata)
    {

@@ -18,25 +18,9 @@
 #define __FONT_GL_DRIVER_H__
 
 #include "../driver.h"
+#include "font_renderer_driver.h"
 #include "gl_common.h"
 #include <boolean.h>
-
-struct font_glyph;
-
-typedef struct gl_font_renderer
-{
-   void *(*init)(void *data, const char *font_path, float font_size);
-   void (*free)(void *data);
-   void (*render_msg)(void *data, const char *msg, const void *userdata);
-   const char *ident;
-
-   const void *(*get_glyph)(void *data, uint32_t code);
-   void (*bind_block)(void *data, void *block);
-   void (*flush)(void *data);
-} gl_font_renderer_t;
-
-extern gl_font_renderer_t gl_raster_font;
-extern gl_font_renderer_t libdbg_font;
 
 bool gl_font_init_first(const void **font_driver,
       void **font_handle, void *gl_data,

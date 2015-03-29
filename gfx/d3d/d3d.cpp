@@ -169,11 +169,11 @@ static void d3d_deinit_chain(d3d_video_t *d3d)
 
 static void d3d_deinitialize(d3d_video_t *d3d)
 {
-   const d3d_font_renderer_t *font_ctx = NULL;
+   const font_renderer_t *font_ctx = NULL;
    if (!d3d)
       return;
 
-   font_ctx = (const d3d_font_renderer_t*)d3d->font_driver;
+   font_ctx = (const font_renderer_t*)d3d->font_driver;
 
    if (font_ctx->free)
       font_ctx->free(d3d->font_handle);
@@ -506,7 +506,7 @@ static void d3d_set_osd_msg(void *data, const char *msg,
       const struct font_params *params, void *font)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
-   d3d_font_renderer_t *font_ctx = d3d ? (d3d_font_renderer_t*)d3d->font_driver : NULL;
+   font_renderer_t *font_ctx = d3d ? (font_renderer_t*)d3d->font_driver : NULL;
 
 #ifndef _XBOX
    if (params)
@@ -1638,7 +1638,7 @@ static bool d3d_frame(void *data, const void *frame,
    driver_t *driver      = driver_get_ptr();
    settings_t *settings  = config_get_ptr();
    global_t *global      = global_get_ptr();
-   const d3d_font_renderer_t *font_ctx = d3d ? (const d3d_font_renderer_t*)d3d->font_driver : NULL;
+   const font_renderer_t *font_ctx = d3d ? (const font_renderer_t*)d3d->font_driver : NULL;
 
    (void)i;
 
