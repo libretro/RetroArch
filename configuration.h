@@ -115,6 +115,11 @@ typedef struct settings
 
       struct
       {
+         bool enable;
+      } pointer;
+
+      struct
+      {
          struct
          {
             bool horizontal_enable;

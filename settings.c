@@ -5261,6 +5261,18 @@ static bool setting_append_list_menu_options(
          general_write_handler,
          general_read_handler);
 
+   CONFIG_BOOL(
+         settings->menu.pointer.enable,
+         "menu_pointer_enable",
+         "Touch Enable",
+         false,
+         "OFF",
+         "ON",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+
    END_SUB_GROUP(list, list_info);
 
    START_SUB_GROUP(list, list_info, "Navigation", group_info.name, subgroup_info);
