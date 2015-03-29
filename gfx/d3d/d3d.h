@@ -143,7 +143,6 @@ typedef struct d3d_video
 #endif
       RECT font_rect;
       RECT font_rect_shifted;
-      uint32_t font_color;
 
 #ifdef HAVE_OVERLAY
       bool overlays_enabled;
