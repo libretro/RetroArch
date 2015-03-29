@@ -162,7 +162,7 @@ static int pointer_post_iterate(menu_file_list_cbs_t *cbs, const char *path,
    if (!menu)
       return -1;
 
-   if (!settings->menu.mouse.enable)
+   if (!settings->menu.pointer.enable)
       return 0;
 
 #if defined(HAVE_XMB)
@@ -654,7 +654,7 @@ static int pointer_iterate(unsigned *action)
    if (!menu)
       return -1;
 
-   if (!settings->menu.mouse.enable)
+   if (!settings->menu.pointer.enable)
       return 0;
 
 #if defined(HAVE_XMB)
