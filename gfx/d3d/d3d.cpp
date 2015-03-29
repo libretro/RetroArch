@@ -172,8 +172,8 @@ static void d3d_deinitialize(d3d_video_t *d3d)
    if (!d3d)
       return;
 
-   if (d3d->font_ctx && d3d->font_ctx->deinit)
-      d3d->font_ctx->deinit(d3d);
+   if (d3d->font_ctx && d3d->font_ctx->free)
+      d3d->font_ctx->free(d3d);
    d3d->font_ctx = NULL;
    d3d_deinit_chain(d3d);
 #ifdef HAVE_SHADERS
