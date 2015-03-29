@@ -18,14 +18,19 @@
 #include "../font_d3d_driver.h"
 #include "../../general.h"
 
-static LPD3DXFONT d3d_font;
-static uint32_t d3d_font_color;
+typedef struct
+{
+   d3d_video_t *d3d;
+   LPD3DXFONT font;
+   uint32_t color;
+} d3dfonts_t;
 
-static bool d3dfonts_w32_init_font(void *data,
+static d3dfonts_t *d3dfonts;
+
+static bool d3dfonts_w32_init_font(void *video_data,
       const char *font_path, unsigned font_size)
 {
    uint32_t r, g, b;
-   d3d_video_t *d3d = (d3d_video_t*)data;
    settings_t *settings = config_get_ptr();
    D3DXFONT_DESC desc = {
       static_cast<int>(font_size), 0, 400, 0,
@@ -33,8 +38,13 @@ static bool d3dfonts_w32_init_font(void *data,
       OUT_TT_PRECIS,
       CLIP_DEFAULT_PRECIS,
       DEFAULT_PITCH,
-      "Verdana" // Hardcode ftl :(
+      "Verdana" /* Hardcode FTL */
    };
+
+   d3dfonts = (d3dfonts_t*)calloc(1, sizeof(*d3dfonts));
+
+   if (!d3dfonts)
+      return false;
 
    (void)font_path;
 
@@ -42,48 +52,51 @@ static bool d3dfonts_w32_init_font(void *data,
    g = static_cast<uint32_t>(settings->video.msg_color_g * 255) & 0xff;
    b = static_cast<uint32_t>(settings->video.msg_color_b * 255) & 0xff;
 
-   d3d_font_color = D3DCOLOR_XRGB(r, g, b);
+   d3dfonts->d3d = (d3d_video_t*)video_data;
+   d3dfonts->color = D3DCOLOR_XRGB(r, g, b);
 
-   return SUCCEEDED(D3DXCreateFontIndirect(d3d->dev, &desc, &d3d_font));
+   return SUCCEEDED(D3DXCreateFontIndirect(d3dfonts->d3d->dev, &desc, &d3dfonts->d3d_font));
 }
 
 static void d3dfonts_w32_free_font(void *data)
 {
    (void)data;
 
-   if (d3d_font)
-      d3d_font->Release();
-   d3d_font = NULL;
+   if (d3dfonts->font)
+      d3dfonts->font->Release();
+   d3dfonts->font = NULL;
+   if (d3dfonts)
+      free(d3dfonts);
+   d3dfonts = NULL;
 }
 
 static void d3dfonts_w32_render_msg(void *data, const char *msg,
       const void *userdata)
 {
-   d3d_video_t *d3d = (d3d_video_t*)data;
    const struct font_params *params = (const struct font_params*)userdata;
 
-   if (!d3d)
+   if (!d3dfonts->d3d)
       return;
    if (!msg)
       return;
-   if (!(SUCCEEDED(d3d->dev->BeginScene())))
+   if (!(SUCCEEDED(d3dfonts->d3d->dev->BeginScene())))
       return;
 
-   d3d_font->DrawTextA(NULL,
+   d3dfonts->font->DrawTextA(NULL,
          msg,
          -1,
-         &d3d->font_rect_shifted,
+         &d3dfonts->d3d->font_rect_shifted,
          DT_LEFT,
-         ((d3d_font_color >> 2) & 0x3f3f3f) | 0xff000000);
+         ((d3dfonts->color >> 2) & 0x3f3f3f) | 0xff000000);
 
-   d3d_font->DrawTextA(NULL,
+   d3dfonts->font->DrawTextA(NULL,
          msg,
          -1,
-         &d3d->font_rect,
+         &d3dfonts->d3d->font_rect,
          DT_LEFT,
-         d3d_font_color | 0xff000000);
+         d3dfonts->color | 0xff000000);
 
-   d3d->dev->EndScene();
+   d3dfonts->d3d->dev->EndScene();
 }
 
 d3d_font_renderer_t d3d_win32_font = {

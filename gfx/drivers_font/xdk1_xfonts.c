@@ -18,21 +18,33 @@
 #include "../font_d3d_driver.h"
 #include "../../general.h"
 
-static XFONT *debug_font;
-static D3DSurface *pFrontBuffer;
+typedef struct
+{
+   d3d_video_t *d3d;
+   XFONT *debug_font;
+   D3DSurface *pFrontBuffer;
+} xfonts_t;
 
-static bool xfonts_init_font(void *data,
+static xfonts_t *xfonts;
+
+static bool xfonts_init_font(void *video_data,
       const char *font_path, unsigned font_size)
 {
    (void)font_path;
    (void)font_size;
-   (void)data;
 
-   XFONT_OpenDefaultFont(&debug_font);
-   debug_font->SetBkMode(XFONT_TRANSPARENT);
-   debug_font->SetBkColor(D3DCOLOR_ARGB(100,0,0,0));
-   debug_font->SetTextHeight(14);
-   debug_font->SetTextAntialiasLevel(debug_font->GetTextAntialiasLevel());
+   xfont = (xfonts_t*)calloc(1, sizeof(*xfont));
+
+   if (!xfont)
+      return false;
+
+   xfont->d3d = video_data;
+
+   XFONT_OpenDefaultFont(&xfont->debug_font);
+   xfont->debug_font->SetBkMode(XFONT_TRANSPARENT);
+   xfont->debug_font->SetBkColor(D3DCOLOR_ARGB(100,0,0,0));
+   xfont->debug_font->SetTextHeight(14);
+   xfont->debug_font->SetTextAntialiasLevel(xfont->debug_font->GetTextAntialiasLevel());
 
    return true;
 }
@@ -40,6 +52,10 @@ static bool xfonts_init_font(void *data,
 static void xfonts_free_font(void *data)
 {
    (void)data;
+
+   if (xfont)
+      free(xfont);
+   xfont = NULL;
 }
 
 static void xfonts_render_msg(void *data, const char *msg,
@@ -47,9 +63,10 @@ static void xfonts_render_msg(void *data, const char *msg,
 {
    wchar_t str[PATH_MAX_LENGTH];
    float x, y;
-   d3d_video_t *d3d = (d3d_video_t*)data;
    settings_t *settings = config_get_ptr();
    const struct font_params *params = (const struct font_params*)userdata;
+
+   (void)data;
 
    if (params)
    {
@@ -62,12 +79,11 @@ static void xfonts_render_msg(void *data, const char *msg,
       y = settings->video.msg_pos_y;
    }
 
-   d3d->dev->GetBackBuffer(-1, D3DBACKBUFFER_TYPE_MONO, &pFrontBuffer);
+   xfont->d3d->dev->GetBackBuffer(-1, D3DBACKBUFFER_TYPE_MONO, &xfont->pFrontBuffer);
 
    mbstowcs(str, msg, sizeof(str) / sizeof(wchar_t));
-   debug_font->TextOut(pFrontBuffer, str, (unsigned)-1, x, y);
-
-   pFrontBuffer->Release();
+   xfont->debug_font->TextOut(xfont->pFrontBuffer, str, (unsigned)-1, x, y);
+   xfont->pFrontBuffer->Release();
 }
 
 d3d_font_renderer_t d3d_xdk1_font = {
