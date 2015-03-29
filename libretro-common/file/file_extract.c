@@ -306,6 +306,14 @@ bool zlib_inflate_init2(void *data)
    return true;
 }
 
+void zlib_deflate_init(void *data, int level)
+{
+   z_stream *stream = (z_stream*)data;
+
+   if (stream)
+      deflateInit(stream, level);
+}
+
 bool zlib_inflate_init(void *data)
 {
    z_stream *stream = (z_stream*)data;
@@ -322,6 +330,13 @@ void zlib_stream_free(void *data)
    z_stream *ret = (z_stream*)data;
    if (ret)
       inflateEnd(ret);
+}
+
+void zlib_stream_deflate_free(void *data)
+{
+   z_stream *ret = (z_stream*)data;
+   if (ret)
+      deflateEnd(ret);
 }
 
 bool zlib_inflate_data_to_file_init(
@@ -365,6 +380,22 @@ error:
       free(handle->data);
 
    return false;
+}
+
+int zlib_deflate_data_to_file(void *data)
+{
+   int zstatus;
+   z_stream *stream = (z_stream*)data;
+
+   if (!stream)
+      return -1;
+
+   zstatus = deflate(stream, Z_FINISH);
+
+   if (zstatus == Z_STREAM_END)
+      return 1;
+
+   return 0;
 }
 
 int zlib_inflate_data_to_file_iterate(void *data)

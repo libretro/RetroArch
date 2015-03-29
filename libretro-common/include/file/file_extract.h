@@ -117,6 +117,12 @@ void *zlib_stream_new(void);
 
 void zlib_stream_free(void *data);
 
+void zlib_deflate_init(void *data, int level);
+
+int zlib_deflate_data_to_file(void *data);
+
+void zlib_stream_deflate_free(void *data);
+
 bool zlib_inflate_init(void *data);
 
 bool zlib_inflate_init2(void *data);

@@ -315,13 +315,15 @@ static bool rpng_save_image(const char *path,
          encode_buf,
          deflate_buf + 8);
 
-   deflateInit(&stream, 9);
-   if (deflate(&stream, Z_FINISH) != Z_STREAM_END)
+   zlib_deflate_init(&stream, 9);
+
+   if (zlib_deflate_data_to_file(&stream) != 1)
    {
-      deflateEnd(&stream);
+      zlib_stream_deflate_free(&stream);
       GOTO_END_ERROR();
    }
-   deflateEnd(&stream);
+
+   zlib_stream_deflate_free(&stream);
 
    memcpy(deflate_buf + 4, "IDAT", 4);
    dword_write_be(deflate_buf + 0, zlib_stream_get_total_out(&stream));
