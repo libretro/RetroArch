@@ -351,7 +351,7 @@ static int png_reverse_filter_init(const struct png_ihdr *ihdr,
       png_pass_geom(&pngp->ihdr, pngp->pass.width,
             pngp->pass.height, NULL, NULL, &pngp->pass.size);
 
-      if (pngp->pass.size > pngp->stream.total_out)
+      if (pngp->pass.size > zlib_stream_get_total_out(&pngp->stream))
       {
          free(pngp->data);
          return -1;
@@ -367,7 +367,7 @@ static int png_reverse_filter_init(const struct png_ihdr *ihdr,
 
    png_pass_geom(ihdr, ihdr->width, ihdr->height, &pngp->bpp, &pngp->pitch, &pass_size);
 
-   if (pngp->stream.total_out < pass_size)
+   if (zlib_stream_get_total_out(&pngp->stream) < pass_size)
       return -1;
 
    pngp->restore_buf_size      = 0;
@@ -523,7 +523,8 @@ static int png_reverse_filter_adam7_iterate(uint32_t **data_,
 
    pngp->inflate_buf            += pngp->pass.size;
    pngp->adam7_restore_buf_size += pngp->pass.size;
-   pngp->stream.total_out       -= pngp->pass.size;
+
+   zlib_stream_decrement_total_out(&pngp->stream, pngp->pass.size);
 
    png_reverse_filter_adam7_deinterlace_pass(data,
          ihdr, pngp->data, pngp->pass.width, pngp->pass.height, &passes[pngp->pass.pos]);
@@ -582,8 +583,8 @@ int rpng_load_image_argb_process_inflate_init(struct rpng_t *rpng,
       uint32_t **data, unsigned *width, unsigned *height)
 {
    int zstatus;
-   bool to_continue = (rpng->process.stream.avail_in > 0
-         && rpng->process.stream.avail_out > 0);
+   bool to_continue = (zlib_stream_get_avail_in(&rpng->process.stream) > 0
+         && zlib_stream_get_avail_out(&rpng->process.stream) > 0);
 
    if (!to_continue)
       goto end;

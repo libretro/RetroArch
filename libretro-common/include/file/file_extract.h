@@ -128,5 +128,14 @@ void zlib_set_stream(void *data,
       uint8_t       *next_out
       );
 
+uint32_t zlib_stream_get_avail_in(void *data);
+
+uint32_t zlib_stream_get_avail_out(void *data);
+
+uint64_t zlib_stream_get_total_out(void *data);
+
+void zlib_stream_decrement_total_out(void *data,
+      unsigned subtraction);
+
 #endif
 

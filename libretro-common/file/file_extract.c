@@ -799,3 +799,41 @@ void zlib_set_stream(void *data,
    stream->next_in   = (uint8_t*)next_in;
    stream->next_out  = next_out;
 }
+
+uint32_t zlib_stream_get_avail_in(void *data)
+{
+   z_stream *stream = (z_stream*)data;
+
+   if (!stream)
+      return 0;
+
+   return stream->avail_in;
+}
+
+uint32_t zlib_stream_get_avail_out(void *data)
+{
+   z_stream *stream = (z_stream*)data;
+
+   if (!stream)
+      return 0;
+
+   return stream->avail_out;
+}
+
+uint64_t zlib_stream_get_total_out(void *data)
+{
+   z_stream *stream = (z_stream*)data;
+
+   if (!stream)
+      return 0;
+
+   return stream->total_out;
+}
+
+void zlib_stream_decrement_total_out(void *data, unsigned subtraction)
+{
+   z_stream *stream = (z_stream*)data;
+
+   if (stream)
+      stream->total_out  -= subtraction;
+}
