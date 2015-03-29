@@ -2073,11 +2073,14 @@ void rarch_main_set_state(unsigned cmd)
             /* Override keyboard callback to redirect to menu instead.
              * We'll use this later for something ...
              * FIXME: This should probably be moved to menu_common somehow. */
-            global->frontend_key_event = global->system.key_event;
-            global->system.key_event   = menu_input_key_event;
+            if (global)
+            {
+               global->frontend_key_event = global->system.key_event;
+               global->system.key_event   = menu_input_key_event;
+               global->system.frame_time_last = 0;
+            }
 
             menu->need_refresh = true;
-            global->system.frame_time_last = 0;
             runloop->is_menu = true;
          }
 #endif
@@ -2108,7 +2111,8 @@ void rarch_main_set_state(unsigned cmd)
          driver->flushing_input = true;
 
          /* Restore libretro keyboard callback. */
-         global->system.key_event = global->frontend_key_event;
+         if (global)
+            global->system.key_event = global->frontend_key_event;
 #endif
          video_driver_set_texture_enable(false, false);
          break;
@@ -2118,7 +2122,8 @@ void rarch_main_set_state(unsigned cmd)
          rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING_FINISHED);
          break;
       case RARCH_ACTION_STATE_FORCE_QUIT:
-         global->lifecycle_state = 0;
+         if (global)
+            global->lifecycle_state = 0;
          rarch_main_set_state(RARCH_ACTION_STATE_QUIT);
          break;
       case RARCH_ACTION_STATE_NONE:
