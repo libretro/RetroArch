@@ -24,6 +24,7 @@
 #include "../menu.h"
 #include <compat/posix_string.h>
 #include <file/file_path.h>
+#include <retro_inline.h>
 
 #include "../../gfx/drivers_font_renderer/bitmap.h"
 
@@ -44,7 +45,7 @@
 #define TITLE_COLOR(settings) (argb32_to_rgba4444(settings->menu.title_color))
 #endif
 
-static inline uint16_t argb32_to_rgba4444(uint32_t col)
+static INLINE uint16_t argb32_to_rgba4444(uint32_t col)
 {
    unsigned a = ((col >> 24) & 0xff) >> 4;
    unsigned r = ((col >> 16) & 0xff) >> 4;

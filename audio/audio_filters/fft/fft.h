@@ -16,6 +16,8 @@
 #ifndef RARCH_FFT_H__
 #define RARCH_FFT_H__
 
+#include <retro_inline.h>
+
 typedef struct fft fft_t;
 
 // C99 <complex.h> would be nice.
@@ -25,7 +27,7 @@ typedef struct
    float imag;
 } fft_complex_t;
 
-static inline fft_complex_t fft_complex_mul(fft_complex_t a,
+static INLINE fft_complex_t fft_complex_mul(fft_complex_t a,
       fft_complex_t b)
 {
    fft_complex_t out = {
@@ -37,7 +39,7 @@ static inline fft_complex_t fft_complex_mul(fft_complex_t a,
 
 }
 
-static inline fft_complex_t fft_complex_add(fft_complex_t a,
+static INLINE fft_complex_t fft_complex_add(fft_complex_t a,
       fft_complex_t b)
 {
    fft_complex_t out = {
@@ -49,7 +51,7 @@ static inline fft_complex_t fft_complex_add(fft_complex_t a,
 
 }
 
-static inline fft_complex_t fft_complex_sub(fft_complex_t a,
+static INLINE fft_complex_t fft_complex_sub(fft_complex_t a,
       fft_complex_t b)
 {
    fft_complex_t out = {
@@ -61,7 +63,7 @@ static inline fft_complex_t fft_complex_sub(fft_complex_t a,
 
 }
 
-static inline fft_complex_t fft_complex_conj(fft_complex_t a)
+static INLINE fft_complex_t fft_complex_conj(fft_complex_t a)
 {
    fft_complex_t out = {
       a.real, -a.imag,

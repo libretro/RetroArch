@@ -69,6 +69,8 @@
 #include <time.h>
 #include <errno.h> 
 
+#include <retro_inline.h>
+
 /* 
  ****************************************************************************   
  Naming convention. Functions for use in API are called rsd_*(),         *
@@ -155,19 +157,19 @@ static void rsnd_thread(void *thread_data);
 
 
 /* Determine whether we're running big- or little endian */
-static inline int rsnd_is_little_endian(void)
+static INLINE int rsnd_is_little_endian(void)
 {
    uint16_t i = 1;
    return *((uint8_t*)&i);
 }
 
 /* Simple functions for swapping bytes */
-static inline void rsnd_swap_endian_16 ( uint16_t * x )
+static INLINE void rsnd_swap_endian_16 ( uint16_t * x )
 {
    *x = (*x>>8) | (*x<<8);
 }
 
-static inline void rsnd_swap_endian_32 ( uint32_t * x )
+static INLINE void rsnd_swap_endian_32 ( uint32_t * x )
 {
    *x =  (*x >> 24 ) |
       ((*x<<8) & 0x00FF0000) |
@@ -175,7 +177,7 @@ static inline void rsnd_swap_endian_32 ( uint32_t * x )
       (*x << 24);
 }
 
-static inline int rsnd_format_to_samplesize ( uint16_t fmt )
+static INLINE int rsnd_format_to_samplesize ( uint16_t fmt )
 {
    switch(fmt)
    {

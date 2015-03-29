@@ -1,3 +1,18 @@
+/*  RetroArch - A frontend for libretro.
+ *  Copyright (C) 2015      - Ali Bouhlel
+ * 
+ *  RetroArch is free software: you can redistribute it and/or modify it under the terms
+ *  of the GNU General Public License as published by the Free Software Found-
+ *  ation, either version 3 of the License, or (at your option) any later version.
+ *
+ *  RetroArch is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+ *  without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+ *  PURPOSE.  See the GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License along with RetroArch.
+ *  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #ifdef _MSC_VER
 #pragma comment( lib, "comctl32" )
 #endif
@@ -21,7 +36,7 @@
 #include <commdlg.h>
 #include <commctrl.h>
 #include <string.h>
-
+#include <retro_inline.h>
 
 #define IDI_ICON 1
 
@@ -82,7 +97,7 @@ typedef struct
 
 static shader_dlg_t g_shader_dlg = {0};
 
-static inline void shader_dlg_refresh_trackbar_label(int index)
+static INLINE void shader_dlg_refresh_trackbar_label(int index)
 {
    char val_buffer[32];
    struct video_shader* shader = video_shader_driver_get_current_shader();
