@@ -99,7 +99,7 @@ void d3d_make_d3dpp(void *data, const video_info_t *info, D3DPRESENT_PARAMETERS 
 
 typedef struct d3d_video
 {
-      const d3d_font_renderer_t *font_ctx;
+      const void *font_driver;
       const gfx_ctx_driver_t *ctx_driver;
 #if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
 #ifdef _XBOX

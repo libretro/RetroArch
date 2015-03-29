@@ -169,12 +169,15 @@ static void d3d_deinit_chain(d3d_video_t *d3d)
 
 static void d3d_deinitialize(d3d_video_t *d3d)
 {
+   const d3d_font_renderer_t *font_ctx = NULL;
    if (!d3d)
       return;
 
-   if (d3d->font_ctx && d3d->font_ctx->free)
-      d3d->font_ctx->free(d3d);
-   d3d->font_ctx = NULL;
+   font_ctx = (const d3d_font_renderer_t*)d3d->font_driver;
+
+   if (font_ctx->free)
+      font_ctx->free(d3d);
+   font_ctx = NULL;
    d3d_deinit_chain(d3d);
 #ifdef HAVE_SHADERS
    d3d_deinit_shader(d3d);
@@ -308,7 +311,7 @@ static bool d3d_initialize(d3d_video_t *d3d, const video_info_t *info)
    strlcpy(settings->video.font_path, "game:\\media\\Arial_12.xpr",
          sizeof(settings->video.font_path));
 #endif
-   if (!d3d_font_init_first(&d3d->font_ctx, NULL,
+   if (!d3d_font_init_first(&d3d->font_driver, NULL,
          d3d, settings->video.font_path, 0))
    {
       RARCH_ERR("[D3D]: Failed to initialize font renderer.\n");
@@ -503,14 +506,15 @@ static void d3d_set_osd_msg(void *data, const char *msg,
       const struct font_params *params, void *font)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
+   d3d_font_renderer_t *font_ctx = d3d ? (d3d_font_renderer_t*)d3d->font_driver : NULL;
 
 #ifndef _XBOX
    if (params)
       d3d_set_font_rect(d3d, params);
 #endif
 
-   if (d3d && d3d->font_ctx && d3d->font_ctx->render_msg)
-      d3d->font_ctx->render_msg(d3d, msg, params);
+   if (font_ctx->render_msg)
+      font_ctx->render_msg(d3d, msg, params);
 }
 
 /* Delay constructor due to lack of exceptions. */
@@ -1634,6 +1638,7 @@ static bool d3d_frame(void *data, const void *frame,
    driver_t *driver      = driver_get_ptr();
    settings_t *settings  = config_get_ptr();
    global_t *global      = global_get_ptr();
+   const d3d_font_renderer_t *font_ctx = d3d ? (const d3d_font_renderer_t*)d3d->font_driver : NULL;
 
    (void)i;
 
@@ -1701,7 +1706,7 @@ static bool d3d_frame(void *data, const void *frame,
    }
 #endif
 
-   if (d3d->font_ctx && d3d->font_ctx->render_msg && msg)
+   if (font_ctx->render_msg && msg)
    {
       struct font_params font_parms = {0};
 #ifdef _XBOX
@@ -1716,7 +1721,7 @@ static bool d3d_frame(void *data, const void *frame,
       font_parms.y = msg_height;
       font_parms.scale = 21;
 #endif
-      d3d->font_ctx->render_msg(d3d, msg, &font_parms);
+      font_ctx->render_msg(d3d, msg, &font_parms);
    }
 
 #ifdef HAVE_MENU
