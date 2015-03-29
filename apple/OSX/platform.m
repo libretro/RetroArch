@@ -253,7 +253,7 @@ static void poll_iteration(void)
    NSApplicationTerminateReply reply = NSTerminateNow;
    global_t *global = global_get_ptr();
 
-   if (global->main_is_init)
+   if (global && global->main_is_init)
       reply = NSTerminateCancel;
 
    rarch_main_command(RARCH_CMD_QUIT);
