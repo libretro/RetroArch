@@ -46,7 +46,7 @@ static bool d3dfonts_w32_init_font(void *data,
    return SUCCEEDED(D3DXCreateFontIndirect(d3d->dev, &desc, &d3d_font));
 }
 
-static void d3dfonts_w32_deinit_font(void *data)
+static void d3dfonts_w32_free_font(void *data)
 {
    (void)data;
 
@@ -87,7 +87,7 @@ static void d3dfonts_w32_render_msg(void *data, const char *msg,
 
 d3d_font_renderer_t d3d_win32_font = {
    d3dfonts_w32_init_font,
-   d3dfonts_w32_deinit_font,
+   d3dfonts_w32_free_font,
    d3dfonts_w32_render_msg,
    "d3d-fonts-w32",
 };

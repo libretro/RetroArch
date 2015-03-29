@@ -37,7 +37,7 @@ static bool xfonts_init_font(void *data,
    return true;
 }
 
-static void xfonts_deinit_font(void *data)
+static void xfonts_free_font(void *data)
 {
    (void)data;
 }
@@ -72,7 +72,7 @@ static void xfonts_render_msg(void *data, const char *msg,
 
 d3d_font_renderer_t d3d_xdk1_font = {
    xfonts_init_font,
-   xfonts_deinit_font,
+   xfonts_free_font,
    xfonts_render_msg,
    "XDK1 Xfonts",
 };

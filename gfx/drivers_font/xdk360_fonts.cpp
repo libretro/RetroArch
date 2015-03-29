@@ -244,7 +244,7 @@ error:
    return false;
 }
 
-static void xdk360_deinit_font(void *data)
+static void xdk360_free_font(void *data)
 {
    xdk360_video_font_t *font = &m_Font;
 
@@ -482,7 +482,7 @@ static void xdk360_render_msg(void *data, const char *str_msg,
 
 d3d_font_renderer_t d3d_xbox360_font = {
    xdk360_init_font,
-   xdk360_deinit_font,
+   xdk360_free_font,
    xdk360_render_msg,
    "Xbox 360 fonts",
 };

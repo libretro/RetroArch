@@ -55,7 +55,7 @@ static void *libdbg_font_init_font(void *gl_data, const char *font_path, float f
    return (void*)-1;
 }
 
-static void libdbg_font_deinit_font(void *data)
+static void libdbg_font_free_font(void *data)
 {
    (void)data;
    DbgFontExit();
@@ -100,7 +100,7 @@ static void libdbg_font_render_msg(void *data, const char *msg,
 
 gl_font_renderer_t libdbg_font = {
    libdbg_font_init_font,
-   libdbg_font_deinit_font,
+   libdbg_font_free_font,
    libdbg_font_render_msg,
    "GL raster",
 };
