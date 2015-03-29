@@ -279,7 +279,7 @@ static void gl_raster_font_render_msg(void *data, const char *msg,
    settings_t *settings = config_get_ptr();
    const struct font_params *params = (const struct font_params*)userdata;
 
-   if (!font || !params)
+   if (!font)
       return;
 
    gl = font->gl;
