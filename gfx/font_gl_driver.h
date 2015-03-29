@@ -23,12 +23,6 @@
 
 struct font_glyph;
 
-/* XXX: please include gl_common.h before this file */
-typedef struct gl_raster_block {
-   bool fullscreen;
-   gl_coord_array_t carr;
-} gl_font_raster_block_t;
-
 typedef struct gl_font_renderer
 {
    void *(*init)(void *data, const char *font_path, float font_size);
