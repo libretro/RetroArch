@@ -139,6 +139,9 @@ static INLINE void rarch_fail(int error_code, const char *error)
 {
    global_t *global = global_get_ptr();
 
+   if (!global)
+      return;
+
    /* We cannot longjmp unless we're in rarch_main_init().
     * If not, something went very wrong, and we should 
     * just exit right away. */
