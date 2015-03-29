@@ -183,15 +183,18 @@ static bool xdk360_init_font(void *video_data,
    const void *pFontData       = NULL;
    D3DTexture *pFontTexture    = NULL;
    const unsigned char * pData = NULL;
+   xdk360_video_font_t *font   = NULL;
 
    m_Font = (xdk360_video_font_t*)calloc(1, sizeof(*m_Font));
 
    if (!m_Font)
       return false;
 
-   m_Font->d3d = video_data;
+   m_Font->d3d = (d3d_video_t*)video_data;
 
    (void)font_size;
+
+   font = (xdk360_video_font_t*)m_Font;
 
    font->m_pFontTexture = NULL;
    font->m_dwNumGlyphs = 0L;
