@@ -324,8 +324,8 @@ static bool rpng_save_image(const char *path,
    deflateEnd(&stream);
 
    memcpy(deflate_buf + 4, "IDAT", 4);
-   dword_write_be(deflate_buf + 0, stream.total_out);
-   if (!png_write_idat(file, deflate_buf, stream.total_out + 8))
+   dword_write_be(deflate_buf + 0, zlib_stream_get_total_out(&stream));
+   if (!png_write_idat(file, deflate_buf, zlib_stream_get_total_out(&stream) + 8))
       GOTO_END_ERROR();
 
    if (!png_write_iend(file))
