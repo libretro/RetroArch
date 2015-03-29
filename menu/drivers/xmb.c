@@ -1527,7 +1527,11 @@ static void xmb_free(void *data)
    if (menu && menu->userdata)
    {
       xmb = (xmb_handle_t*)menu->userdata;
-      gl_coord_array_release(&xmb->raster_block.carr);
+
+      if (!xmb)
+         return;
+
+      gl_coord_array_free(&xmb->raster_block.carr);
 
       free(menu->userdata);
       menu->userdata = NULL;

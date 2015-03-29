@@ -543,7 +543,10 @@ static void glui_free(void *data)
    menu_handle_t *menu = (menu_handle_t*)data;
    glui_handle_t *glui = (glui_handle_t*)menu->userdata;
 
-   gl_coord_array_release(&glui->raster_block.carr);
+   if (!glui)
+      return;
+
+   gl_coord_array_free(&glui->raster_block.carr);
 
    font_driver = (const struct gl_font_renderer*)gl->font_driver;
 

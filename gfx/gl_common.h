@@ -21,7 +21,6 @@
 #include "font_renderer_driver.h"
 #include <gfx/math/matrix_4x4.h>
 #include <gfx/scaler/scaler.h>
-//#include "font_gl_driver.h"
 #include <formats/image.h>
 #include "video_shader_driver.h"
 #include <retro_inline.h>
@@ -440,6 +439,6 @@ static INLINE unsigned gl_wrap_type_to_enum(enum gfx_wrap_type type)
 }
 
 bool gl_coord_array_add(gl_coord_array_t *ca, const gl_coords_t *coords, unsigned count);
-void gl_coord_array_release(gl_coord_array_t *ca);
+void gl_coord_array_free(gl_coord_array_t *ca);
 
 #endif

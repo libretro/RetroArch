@@ -184,7 +184,7 @@ bool gl_coord_array_add(gl_coord_array_t *ca, const gl_coords_t *coords, unsigne
    return success;
 }
 
-void gl_coord_array_release(gl_coord_array_t *ca)
+void gl_coord_array_free(gl_coord_array_t *ca)
 {
    if (!ca->allocated)
       return;
