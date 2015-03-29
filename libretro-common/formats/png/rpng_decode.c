@@ -648,7 +648,7 @@ bool rpng_load_image_argb_process_init(struct rpng_t *rpng,
    if (rpng->ihdr.interlace == 1) /* To be sure. */
       rpng->process.inflate_buf_size *= 2;
 
-   if (inflateInit(&rpng->process.stream) != Z_OK)
+   if (!zlib_inflate_init(&rpng->process.stream))
       return false;
 
    rpng->process.inflate_buf = (uint8_t*)malloc(rpng->process.inflate_buf_size);

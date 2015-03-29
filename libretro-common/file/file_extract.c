@@ -295,13 +295,24 @@ void *zlib_stream_new(void)
    return (z_stream*)calloc(1, sizeof(z_stream));
 }
 
-bool zlib_inflate_init(void *data)
+bool zlib_inflate_init2(void *data)
 {
    z_stream *stream = (z_stream*)data;
 
    if (!stream)
       return false;
    if (inflateInit2(stream, -MAX_WBITS) != Z_OK)
+      return false;
+   return true;
+}
+
+bool zlib_inflate_init(void *data)
+{
+   z_stream *stream = (z_stream*)data;
+
+   if (!stream)
+      return false;
+   if (inflateInit(stream) != Z_OK)
       return false;
    return true;
 }
@@ -325,7 +336,7 @@ bool zlib_inflate_data_to_file_init(
    if (!(handle->stream = (z_stream*)zlib_stream_new()))
       goto error;
    
-   if (!(zlib_inflate_init(handle->stream)))
+   if (!(zlib_inflate_init2(handle->stream)))
       goto error;
 
    handle->data = (uint8_t*)malloc(size);
