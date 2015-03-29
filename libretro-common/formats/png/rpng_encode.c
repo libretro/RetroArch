@@ -24,7 +24,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <zlib.h>
 
 #include "rpng_common.h"
 
@@ -47,8 +46,9 @@ static void dword_write_be(uint8_t *buf, uint32_t val)
 
 static bool png_write_crc(FILE *file, const uint8_t *data, size_t size)
 {
-   uint32_t crc = crc32(0, data, size);
    uint8_t crc_raw[4] = {0};
+   uint32_t crc = zlib_crc32_calculate(data, size);
+
    dword_write_be(crc_raw, crc);
    return fwrite(crc_raw, 1, sizeof(crc_raw), file) == sizeof(crc_raw);
 }
@@ -211,8 +211,7 @@ static bool rpng_save_image(const char *path,
    uint8_t *paeth_filtered = NULL;
    uint8_t *prev_encoded   = NULL;
    uint8_t *encode_target  = NULL;
-
-   z_stream stream = {0};
+   void *stream            = NULL;
 
    FILE *file = fopen(path, "wb");
    if (!file)
@@ -308,26 +307,31 @@ static bool rpng_save_image(const char *path,
    if (!deflate_buf)
       GOTO_END_ERROR();
 
+   stream = zlib_stream_new();
+
+   if (!stream)
+      GOTO_END_ERROR();
+
    zlib_set_stream(
-         &stream,
+         stream,
          encode_buf_size,
          encode_buf_size * 2,
          encode_buf,
          deflate_buf + 8);
 
-   zlib_deflate_init(&stream, 9);
+   zlib_deflate_init(stream, 9);
 
-   if (zlib_deflate_data_to_file(&stream) != 1)
+   if (zlib_deflate_data_to_file(stream) != 1)
    {
-      zlib_stream_deflate_free(&stream);
+      zlib_stream_deflate_free(stream);
       GOTO_END_ERROR();
    }
 
-   zlib_stream_deflate_free(&stream);
+   zlib_stream_deflate_free(stream);
 
    memcpy(deflate_buf + 4, "IDAT", 4);
-   dword_write_be(deflate_buf + 0, zlib_stream_get_total_out(&stream));
-   if (!png_write_idat(file, deflate_buf, zlib_stream_get_total_out(&stream) + 8))
+   dword_write_be(deflate_buf + 0, zlib_stream_get_total_out(stream));
+   if (!png_write_idat(file, deflate_buf, zlib_stream_get_total_out(stream) + 8))
       GOTO_END_ERROR();
 
    if (!png_write_iend(file))
@@ -344,6 +348,8 @@ end:
    free(sub_filtered);
    free(avg_filtered);
    free(paeth_filtered);
+
+   zlib_stream_free(stream);
    return ret;
 }
 
