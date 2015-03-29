@@ -26,6 +26,7 @@
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
+#include <retro_inline.h>
 
 static bool allocate_filters(struct scaler_ctx *ctx)
 {
@@ -109,7 +110,7 @@ static bool gen_filter_bilinear(struct scaler_ctx *ctx)
    return true;
 }
 
-static inline double filter_sinc(double phase)
+static INLINE double filter_sinc(double phase)
 {
    if (fabs(phase) < 0.0001)
       return 1.0;

@@ -25,6 +25,7 @@
 
 #include <boolean.h>
 #include <stdint.h>
+#include <retro_inline.h>
 
 #if defined(__cplusplus) && !defined(_MSC_VER)
 extern "C" {
@@ -191,7 +192,7 @@ void scond_signal(scond_t *cond);
  *
  * Sleeps for a specified amount of milliseconds (@msec).
  **/
-static inline void retro_sleep(unsigned msec)
+static INLINE void retro_sleep(unsigned msec)
 {
 #if defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)
    sys_timer_usleep(1000 * msec);

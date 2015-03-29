@@ -25,6 +25,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <retro_inline.h>
 
 #ifdef SCALER_NO_SIMD
 #undef __SSE2__
@@ -384,7 +385,7 @@ void conv_rgba4444_rgb565(void *output_, const void *input_,
 
 #if defined(__SSE2__)
 /* :( TODO: Make this saner. */
-static inline void store_bgr24_sse2(void *output, __m128i a,
+static INLINE void store_bgr24_sse2(void *output, __m128i a,
       __m128i b, __m128i c, __m128i d)
 {
    const __m128i mask_0 = _mm_set_epi32(0, 0, 0, 0x00ffffff);

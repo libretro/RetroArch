@@ -21,6 +21,7 @@
  */
 
 #include <gfx/scaler/scaler_int.h>
+#include <retro_inline.h>
 
 #ifdef SCALER_NO_SIMD
 #undef __SSE2__
@@ -198,7 +199,7 @@ void scaler_argb8888_horiz(const struct scaler_ctx *ctx, const void *input_, int
    }
 }
 #else
-static inline uint64_t build_argb64(uint16_t a, uint16_t r, uint16_t g, uint16_t b)
+static INLINE uint64_t build_argb64(uint16_t a, uint16_t r, uint16_t g, uint16_t b)
 {
    return ((uint64_t)a << 48) | ((uint64_t)r << 32) | ((uint64_t)g << 16) | ((uint64_t)b << 0);
 }

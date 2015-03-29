@@ -28,6 +28,7 @@
 #include <pspthreadman.h>
 #include <pspthreadman_kernel.h>
 #include <stdio.h>
+#include <retro_inline.h>
 
 #define STACKSIZE (64 * 1024)
 
@@ -57,7 +58,7 @@ static int psp_thread_wrap(SceSize args, void *argp)
    return (int)sthread_args->start_routine(sthread_args->arg);
 }
 
-static inline int pthread_create(pthread_t *thread,
+static INLINE int pthread_create(pthread_t *thread,
       const pthread_attr_t *attr, void *(*start_routine)(void*), void *arg)
 {
    sprintf(name_buffer, "0x%08X", (uint32_t) thread);
@@ -72,7 +73,7 @@ static inline int pthread_create(pthread_t *thread,
    return sceKernelStartThread(*thread, sizeof(sthread_args), &sthread_args);
 }
 
-static inline int pthread_mutex_init(pthread_mutex_t *mutex,
+static INLINE int pthread_mutex_init(pthread_mutex_t *mutex,
       const pthread_mutexattr_t *attr)
 {
    sprintf(name_buffer, "0x%08X", (uint32_t) mutex);
@@ -80,25 +81,25 @@ static inline int pthread_mutex_init(pthread_mutex_t *mutex,
    return *mutex = sceKernelCreateSema(name_buffer, 0, 1, 1, NULL);
 }
 
-static inline int pthread_mutex_destroy(pthread_mutex_t *mutex)
+static INLINE int pthread_mutex_destroy(pthread_mutex_t *mutex)
 {
    return sceKernelDeleteSema(*mutex);
 }
 
-static inline int pthread_mutex_lock(pthread_mutex_t *mutex)
+static INLINE int pthread_mutex_lock(pthread_mutex_t *mutex)
 {
    //FIXME: stub
    return 1;
 }
 
-static inline int pthread_mutex_unlock(pthread_mutex_t *mutex)
+static INLINE int pthread_mutex_unlock(pthread_mutex_t *mutex)
 {
    //FIXME: stub
    return 1;
 }
 
 
-static inline int pthread_join(pthread_t thread, void **retval)
+static INLINE int pthread_join(pthread_t thread, void **retval)
 {
    SceUInt timeout = (SceUInt)-1;
    sceKernelWaitThreadEnd(thread, &timeout);
@@ -107,58 +108,58 @@ static inline int pthread_join(pthread_t thread, void **retval)
    return exit_status;
 }
 
-static inline int pthread_mutex_trylock(pthread_mutex_t *mutex)
+static INLINE int pthread_mutex_trylock(pthread_mutex_t *mutex)
 {
    //FIXME: stub
    return 1;
 }
 
-static inline int pthread_cond_wait(pthread_cond_t *cond,
+static INLINE int pthread_cond_wait(pthread_cond_t *cond,
       pthread_mutex_t *mutex)
 {
    sceKernelDelayThread(10000);
    return 1;
 }
 
-static inline int pthread_cond_timedwait(pthread_cond_t *cond,
+static INLINE int pthread_cond_timedwait(pthread_cond_t *cond,
       pthread_mutex_t *mutex, const struct timespec *abstime)
 {
    //FIXME: stub
    return 1;
 }
 
-static inline int pthread_cond_init(pthread_cond_t *cond,
+static INLINE int pthread_cond_init(pthread_cond_t *cond,
       const pthread_condattr_t *attr)
 {
    //FIXME: stub
    return 1;
 }
 
-static inline int pthread_cond_signal(pthread_cond_t *cond)
+static INLINE int pthread_cond_signal(pthread_cond_t *cond)
 {
    //FIXME: stub
    return 1;
 }
 
-static inline int pthread_cond_broadcast(pthread_cond_t *cond)
+static INLINE int pthread_cond_broadcast(pthread_cond_t *cond)
 {
    //FIXME: stub
    return 1;
 }
 
-static inline int pthread_cond_destroy(pthread_cond_t *cond)
+static INLINE int pthread_cond_destroy(pthread_cond_t *cond)
 {
    //FIXME: stub
    return 1;
 }
 
 
-static inline int pthread_detach(pthread_t thread)
+static INLINE int pthread_detach(pthread_t thread)
 {
    return 1;
 }
 
-static inline void pthread_exit(void *retval)
+static INLINE void pthread_exit(void *retval)
 {
    (void)retval;
 }
