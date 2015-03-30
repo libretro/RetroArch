@@ -14,7 +14,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <objc/runtime.h>
 #include "../common/RetroArch_Apple.h"
 #include "../../input/input_common.h"
 #include "../../input/input_keymaps.h"
@@ -22,6 +21,8 @@
 #include <file/file_path.h>
 #include <retro_miscellaneous.h>
 #include "menu.h"
+
+#include <objc/runtime.h>
 
 #include "../../menu/menu.h"
 #include "../../menu/menu_entries.h"
