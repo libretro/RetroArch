@@ -120,7 +120,8 @@ static void shader_dlg_params_refresh(void)
    {
       if (g_shader_dlg.controls[i].type == SHADER_PARAM_CTRL_NONE)
          break;
-      else if (g_shader_dlg.controls[i].type == SHADER_PARAM_CTRL_CHECKBOX)
+
+      if (g_shader_dlg.controls[i].type == SHADER_PARAM_CTRL_CHECKBOX)
       {
          bool checked = (shader->parameters[i].current == shader->parameters[i].maximum);
          SendMessage(g_shader_dlg.controls[i].checkbox.hwnd, BM_SETCHECK, checked, 0);
@@ -132,9 +133,9 @@ static void shader_dlg_params_refresh(void)
 
          SendMessage(g_shader_dlg.controls[i].trackbar.hwnd, TBM_SETRANGEMIN, (WPARAM)TRUE, (LPARAM)0);
          SendMessage(g_shader_dlg.controls[i].trackbar.hwnd, TBM_SETRANGEMAX, (WPARAM)TRUE,
-                     (LPARAM)((shader->parameters[i].maximum - shader->parameters[i].minimum) / shader->parameters[i].step));
+               (LPARAM)((shader->parameters[i].maximum - shader->parameters[i].minimum) / shader->parameters[i].step));
          SendMessage(g_shader_dlg.controls[i].trackbar.hwnd, TBM_SETPOS, (WPARAM)TRUE,
-                     (LPARAM)((shader->parameters[i].current - shader->parameters[i].minimum) / shader->parameters[i].step));
+               (LPARAM)((shader->parameters[i].current - shader->parameters[i].minimum) / shader->parameters[i].step));
 
       }
    }
@@ -199,7 +200,7 @@ void shader_dlg_params_reload(void)
       else
       {
          if ((pos_y + SHADER_DLG_LABEL_HEIGHT + SHADER_DLG_TRACKBAR_HEIGHT +
-               SHADER_DLG_CTRL_MARGIN + 20) > SHADER_DLG_MAX_HEIGHT)
+                  SHADER_DLG_CTRL_MARGIN + 20) > SHADER_DLG_MAX_HEIGHT)
          {
             pos_y = g_shader_dlg.parameters_start_y;
             pos_x += SHADER_DLG_WIDTH;
@@ -221,7 +222,7 @@ void shader_dlg_params_reload(void)
          SendMessage(g_shader_dlg.controls[i].trackbar.label_val, WM_SETFONT, (WPARAM)hFont, MAKELPARAM(TRUE, 0));
 
          SendMessage(g_shader_dlg.controls[i].trackbar.hwnd, TBM_SETBUDDY, (WPARAM)TRUE,
-                     (LPARAM)g_shader_dlg.controls[i].trackbar.label_val);
+               (LPARAM)g_shader_dlg.controls[i].trackbar.label_val);
 
          pos_y += SHADER_DLG_TRACKBAR_HEIGHT + SHADER_DLG_CTRL_MARGIN;
 
@@ -233,18 +234,18 @@ void shader_dlg_params_reload(void)
       DestroyWindow(g_shader_dlg.separator);
 
    g_shader_dlg.separator = CreateWindowEx(0, "STATIC", "", SS_ETCHEDHORZ | WS_VISIBLE | WS_CHILD, SHADER_DLG_CTRL_X,
-                                           g_shader_dlg.parameters_start_y - SHADER_DLG_CTRL_MARGIN - SHADER_DLG_SEPARATOR_HEIGHT / 2,
-                                           (pos_x - SHADER_DLG_CTRL_X) + SHADER_DLG_CTRL_WIDTH, SHADER_DLG_SEPARATOR_HEIGHT / 2, g_shader_dlg.hwnd, NULL, NULL,
-                                           NULL);
+         g_shader_dlg.parameters_start_y - SHADER_DLG_CTRL_MARGIN - SHADER_DLG_SEPARATOR_HEIGHT / 2,
+         (pos_x - SHADER_DLG_CTRL_X) + SHADER_DLG_CTRL_WIDTH, SHADER_DLG_SEPARATOR_HEIGHT / 2, g_shader_dlg.hwnd, NULL, NULL,
+         NULL);
 
    shader_dlg_params_refresh();
 
    RECT parent_rect;
    GetWindowRect(g_shader_dlg.hwnd, &parent_rect);
    SetWindowPos(g_shader_dlg.hwnd, NULL, 0, 0,
-                (pos_x - SHADER_DLG_CTRL_X) + SHADER_DLG_WIDTH,
-                (pos_x == SHADER_DLG_CTRL_X) ? pos_y + 30 : SHADER_DLG_MAX_HEIGHT,
-                SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
+         (pos_x - SHADER_DLG_CTRL_X) + SHADER_DLG_WIDTH,
+         (pos_x == SHADER_DLG_CTRL_X) ? pos_y + 30 : SHADER_DLG_MAX_HEIGHT,
+         SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
 
 }
 
@@ -252,16 +253,17 @@ static void shader_dlg_update_on_top_state(void)
 {
    bool on_top = SendMessage(g_shader_dlg.on_top_checkbox, BM_GETCHECK, 0, 0) == BST_CHECKED;
    SetWindowPos(g_shader_dlg.hwnd, on_top ? HWND_TOPMOST : HWND_NOTOPMOST , 0, 0, 0, 0,
-                SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+         SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
 }
 
 void shader_dlg_show(HWND parent_hwnd)
 {
    const video_driver_t* vid_drv;
+
    video_driver_get_ptr(&vid_drv);
+
    if(vid_drv != &video_gl)
       return;
-
 
    if (!IsWindowVisible(g_shader_dlg.hwnd))
    {
@@ -270,7 +272,7 @@ void shader_dlg_show(HWND parent_hwnd)
          RECT parent_rect;
          GetWindowRect(parent_hwnd, &parent_rect);
          SetWindowPos(g_shader_dlg.hwnd, HWND_TOP, parent_rect.right, parent_rect.top,
-                      0, 0, SWP_NOSIZE | SWP_SHOWWINDOW);
+               0, 0, SWP_NOSIZE | SWP_SHOWWINDOW);
       }
       else
          ShowWindow(g_shader_dlg.hwnd, SW_SHOW);
@@ -282,8 +284,8 @@ void shader_dlg_show(HWND parent_hwnd)
    }
 
    SetFocus(g_shader_dlg.hwnd);
-
 }
+
 static LRESULT CALLBACK ShaderDlgWndProc(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam)
 {
@@ -292,62 +294,59 @@ static LRESULT CALLBACK ShaderDlgWndProc(HWND hwnd, UINT message,
 
    switch (message)
    {
-   case WM_CREATE:
-      break;
-
-   case WM_CLOSE:
-   case WM_DESTROY:
-   case WM_QUIT:
-      ShowWindow(g_shader_dlg.hwnd, 0);
-      return 0;
-
-   case WM_COMMAND:
-      i = LOWORD(wparam);
-
-      if (i == SHADER_DLG_CHECKBOX_ONTOP_ID)
-      {
-         shader_dlg_update_on_top_state();
-         break;
-      }
-
-      if (i >= GFX_MAX_PARAMETERS)
+      case WM_CREATE:
          break;
 
-      if (g_shader_dlg.controls[i].type != SHADER_PARAM_CTRL_CHECKBOX)
+      case WM_CLOSE:
+      case WM_DESTROY:
+      case WM_QUIT:
+         ShowWindow(g_shader_dlg.hwnd, 0);
+         return 0;
+
+      case WM_COMMAND:
+         i = LOWORD(wparam);
+
+         if (i == SHADER_DLG_CHECKBOX_ONTOP_ID)
+         {
+            shader_dlg_update_on_top_state();
+            break;
+         }
+
+         if (i >= GFX_MAX_PARAMETERS)
+            break;
+
+         if (g_shader_dlg.controls[i].type != SHADER_PARAM_CTRL_CHECKBOX)
+            break;
+
+         if (SendMessage(g_shader_dlg.controls[i].checkbox.hwnd, BM_GETCHECK, 0, 0) == BST_CHECKED)
+            shader->parameters[i].current = shader->parameters[i].maximum;
+         else
+            shader->parameters[i].current = shader->parameters[i].minimum;
+
          break;
 
-      if (SendMessage(g_shader_dlg.controls[i].checkbox.hwnd, BM_GETCHECK, 0, 0) == BST_CHECKED)
-         shader->parameters[i].current = shader->parameters[i].maximum;
-      else
-         shader->parameters[i].current = shader->parameters[i].minimum;
+      case WM_HSCROLL:
+         i = GetWindowLong((HWND)lparam, GWL_ID);
 
-      break;
+         if (i >= GFX_MAX_PARAMETERS)
+            break;
 
-   case WM_HSCROLL:
-      i = GetWindowLong((HWND)lparam, GWL_ID);
+         if (g_shader_dlg.controls[i].type != SHADER_PARAM_CTRL_TRACKBAR)
+            break;
 
-      if (i >= GFX_MAX_PARAMETERS)
+         pos = (int)SendMessage(g_shader_dlg.controls[i].trackbar.hwnd, TBM_GETPOS, 0, 0);
+         shader->parameters[i].current = shader->parameters[i].minimum + pos * shader->parameters[i].step;
+
+         shader_dlg_refresh_trackbar_label(i);
          break;
-
-      if (g_shader_dlg.controls[i].type != SHADER_PARAM_CTRL_TRACKBAR)
-         break;
-
-      pos = (int)SendMessage(g_shader_dlg.controls[i].trackbar.hwnd, TBM_GETPOS, 0, 0);
-      shader->parameters[i].current = shader->parameters[i].minimum + pos * shader->parameters[i].step;
-
-      shader_dlg_refresh_trackbar_label(i);
-      break;
 
    }
 
    return DefWindowProc(hwnd, message, wparam, lparam);
 }
 
-
-
 bool wgl_shader_dlg_init(void)
 {
-
    static bool inited = false;
 
    const video_driver_t* vid_drv;
@@ -390,12 +389,12 @@ bool wgl_shader_dlg_init(void)
    HFONT hFont = (HFONT)GetStockObject(DEFAULT_GUI_FONT);
 
    g_shader_dlg.hwnd = CreateWindowEx(0, "Shader Dialog", "Shader Parameters", WS_POPUPWINDOW | WS_CAPTION, 100, 100,
-                                      SHADER_DLG_WIDTH, SHADER_DLG_MIN_HEIGHT, NULL, NULL, NULL, NULL);
+         SHADER_DLG_WIDTH, SHADER_DLG_MIN_HEIGHT, NULL, NULL, NULL, NULL);
 
    pos_y = SHADER_DLG_CTRL_MARGIN;
    g_shader_dlg.on_top_checkbox = CreateWindowEx(0, "BUTTON", "Always on Top", BS_AUTOCHECKBOX | WS_VISIBLE | WS_CHILD,
-                                  SHADER_DLG_CTRL_X, pos_y, SHADER_DLG_CTRL_WIDTH, SHADER_DLG_CHECKBOX_HEIGHT, g_shader_dlg.hwnd,
-                                  (HMENU)SHADER_DLG_CHECKBOX_ONTOP_ID, NULL, NULL);
+         SHADER_DLG_CTRL_X, pos_y, SHADER_DLG_CTRL_WIDTH, SHADER_DLG_CHECKBOX_HEIGHT, g_shader_dlg.hwnd,
+         (HMENU)SHADER_DLG_CHECKBOX_ONTOP_ID, NULL, NULL);
    pos_y +=  SHADER_DLG_CHECKBOX_HEIGHT + SHADER_DLG_CTRL_MARGIN;
 
    SendMessage(g_shader_dlg.on_top_checkbox, WM_SETFONT, (WPARAM)hFont, MAKELPARAM(TRUE, 0));
