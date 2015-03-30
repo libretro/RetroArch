@@ -38,7 +38,6 @@
 
 #include <glsym/glsym.h>
 
-#define context_bind_hw_render(gl, enable)               if (gl->shared_context_use && gl->ctx_driver->bind_hw_render) gl->ctx_driver->bind_hw_render(gl, enable)
 
 #if (!defined(HAVE_OPENGLES) || defined(HAVE_OPENGLES3))
 #define HAVE_GL_ASYNC_READBACK
@@ -383,6 +382,15 @@ typedef struct gl
    bool core_context;
    GLuint vao;
 } gl_t;
+
+static INLINE void context_bind_hw_render(gl_t *gl, bool enable)
+{
+   if (!gl)
+      return;
+
+   if (gl->shared_context_use && gl->ctx_driver->bind_hw_render)
+      gl->ctx_driver->bind_hw_render(gl, enable);
+}
 
 static INLINE bool gl_check_error(void)
 {
