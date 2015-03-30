@@ -40,12 +40,12 @@
 #define RARCH_LOG_VERBOSE (true)
 #endif
 
-#if defined(RARCH_CONSOLE) && defined(HAVE_LOGGER) && defined(RARCH_INTERNAL)
+#if defined(_XBOX1)
+#include "logger/xdk1_logger_override.h"
+#elif defined(RARCH_CONSOLE) && defined(HAVE_LOGGER) && defined(RARCH_INTERNAL)
 #include <logger_override.h>
 #elif defined(IOS) && defined(RARCH_INTERNAL)
 #include "logger/ios_logger_override.h"
-#elif defined(_XBOX1) && defined(RARCH_INTERNAL)
-#include "logger/xdk1_logger_override.h"
 #elif defined(ANDROID) && defined(HAVE_LOGGER) && defined(RARCH_INTERNAL)
 #include "logger/android_logger_override.h"
 #else
