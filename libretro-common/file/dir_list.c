@@ -205,6 +205,7 @@ struct string_list *dir_list_new(const char *dir,
       const char *ext, bool include_dirs)
 {
    char path_buf[PATH_MAX_LENGTH];
+   int i;
    struct string_list *ext_list, *list, *dir_list;
 #ifdef _WIN32
    WIN32_FIND_DATA ffd;
@@ -236,7 +237,7 @@ struct string_list *dir_list_new(const char *dir,
 
    // Process the directory list from the end to the start to have an override
    // of file from the first directory by the file from the last directory.
-   for (int i = dir_list->size -1; i >= 0; i--)
+   for (i = dir_list->size -1; i >= 0; i--)
    {
       const char * dir_name = dir_list->elems[i].data;
       do
