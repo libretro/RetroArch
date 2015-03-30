@@ -1157,6 +1157,7 @@ static bool config_load_file(const char *path, bool set_defaults)
 #endif
    CONFIG_GET_BOOL_BASE(conf, settings, menu.pause_libretro, "menu_pause_libretro");
    CONFIG_GET_BOOL_BASE(conf, settings, menu.mouse.enable,   "menu_mouse_enable");
+   CONFIG_GET_BOOL_BASE(conf, settings, menu.pointer.enable, "menu_pointer_enable");
    CONFIG_GET_BOOL_BASE(conf, settings, menu.timedate_enable,   "menu_timedate_enable");
    CONFIG_GET_BOOL_BASE(conf, settings, menu.core_enable,   "menu_core_enable");
    CONFIG_GET_BOOL_BASE(conf, settings, menu.navigation.wraparound.horizontal_enable, "menu_navigation_wraparound_horizontal_enable");
@@ -1941,6 +1942,7 @@ bool config_save_file(const char *path)
    config_set_string(conf,"menu_driver", settings->menu.driver);
    config_set_bool(conf,"menu_pause_libretro", settings->menu.pause_libretro);
    config_set_bool(conf,"menu_mouse_enable", settings->menu.mouse.enable);
+   config_set_bool(conf,"menu_pointer_enable", settings->menu.pointer.enable);
    config_set_bool(conf,"menu_timedate_enable", settings->menu.timedate_enable);
    config_set_bool(conf,"menu_core_enable", settings->menu.core_enable);
    config_set_path(conf, "menu_wallpaper", settings->menu.wallpaper);
