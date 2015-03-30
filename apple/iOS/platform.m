@@ -111,22 +111,22 @@ const void* apple_get_frontend_settings(void)
    return settings;
 }
 
-extern CGFloat apple_gfx_ctx_get_native_scale(void);
+extern float apple_gfx_ctx_get_native_scale(void);
 
 /* Input helpers: This is kept here because it needs ObjC */
 static void handle_touch_event(NSArray* touches)
 {
    NSUInteger i;
-   driver_t *driver = driver_get_ptr();
+   driver_t *driver          = driver_get_ptr();
    apple_input_data_t *apple = (apple_input_data_t*)driver->input_data;
-   CGFloat scale = apple_gfx_ctx_get_native_scale();
+   float scale               = apple_gfx_ctx_get_native_scale();
 
    if (!apple)
       return;
 
    apple->touch_count = 0;
    
-   for(i = 0; i < touches.count && (apple->touch_count < MAX_TOUCHES); i ++)
+   for (i = 0; i < touches.count && (apple->touch_count < MAX_TOUCHES); i++)
    {
       UITouch* touch = [touches objectAtIndex:i];
       
