@@ -652,6 +652,10 @@ typedef GLboolean (APIENTRYP RGLSYMGLISIMAGEHANDLERESIDENTARBPROC) (GLuint64 han
 typedef void (APIENTRYP RGLSYMGLVERTEXATTRIBL1UI64ARBPROC) (GLuint index, GLuint64EXT x);
 typedef void (APIENTRYP RGLSYMGLVERTEXATTRIBL1UI64VARBPROC) (GLuint index, const GLuint64EXT *v);
 typedef void (APIENTRYP RGLSYMGLGETVERTEXATTRIBLUI64VARBPROC) (GLuint index, GLenum pname, GLuint64EXT *params);
+#ifdef __APPLE__
+	struct _cl_context;
+	struct _cl_event;
+#endif
 typedef GLsync (APIENTRYP RGLSYMGLCREATESYNCFROMCLEVENTARBPROC) (struct _cl_context *context, struct _cl_event *event, GLbitfield flags);
 typedef void (APIENTRYP RGLSYMGLCLAMPCOLORARBPROC) (GLenum target, GLenum clamp);
 typedef void (APIENTRYP RGLSYMGLDISPATCHCOMPUTEGROUPSIZEARBPROC) (GLuint num_groups_x, GLuint num_groups_y, GLuint num_groups_z, GLuint group_size_x, GLuint group_size_y, GLuint group_size_z);

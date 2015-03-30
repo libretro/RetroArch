@@ -351,12 +351,13 @@ bool screenshot_dump(const char *folder, const void *frame,
    uint8_t *out_buffer = NULL;
    bool ret            = false;
    global_t *global    = global_get_ptr();
-   driver_t *driver     = driver_get_ptr();
+   driver_t *driver    = driver_get_ptr();
 
    (void)file;
    (void)out_buffer;
    (void)scaler;
    (void)global;
+   (void)driver;
 
    fill_dated_filename(shotname, IMG_EXT, sizeof(shotname));
    fill_pathname_join(filename, folder, shotname, sizeof(filename));

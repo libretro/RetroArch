@@ -218,6 +218,7 @@ struct string_list *dir_list_new(const char *dir,
    ext_list = NULL;
    dir_list = NULL;
    (void)path_buf;
+   (void)i;
 
    if (!(list = string_list_new()))
       return NULL;
