@@ -43,6 +43,6 @@ typedef unsigned NSUInteger;
 #import <GLKit/GLKit.h>
 #import <Foundation/Foundation.h>
 
-#include <objc/runtime.h>
+#include <objc/objc-runtime.h>
 #endif
 #endif

@@ -22,7 +22,7 @@
 #include "../../menu/menu.h"
 #include "../../retroarch.h"
 
-#include <objc/runtime.h>
+#include <objc/objc-runtime.h>
 
 static void* const associated_core_key = (void*)&associated_core_key;
 id<RetroArch_Platform> apple_platform;
