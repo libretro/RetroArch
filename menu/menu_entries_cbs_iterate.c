@@ -711,6 +711,7 @@ static int mouse_iterate(unsigned *action)
    menu_handle_t *menu       = menu_driver_get_ptr();
    runloop_t *runloop        = rarch_main_get_ptr();
    settings_t *settings      = config_get_ptr();
+   video_viewport_t vp;
 
    if (!menu)
       return -1;
@@ -727,10 +728,15 @@ static int mouse_iterate(unsigned *action)
       menu->mouse.dy         = 0;
       menu->mouse.x          = 0;
       menu->mouse.y          = 0;
+      menu->mouse.screen_x   = 0;
+      menu->mouse.screen_y   = 0;
       menu->mouse.scrollup   = 0;
       menu->mouse.scrolldown = 0;
       return 0;
    }
+
+   if (!video_driver_viewport_info(&vp))
+      return -1;
 
    if (menu->mouse.hwheeldown)
    {
@@ -763,8 +769,11 @@ static int mouse_iterate(unsigned *action)
    menu->mouse.dy         = input_driver_state(binds, 0, RETRO_DEVICE_MOUSE,
          0, RETRO_DEVICE_ID_MOUSE_Y);
 
-   menu->mouse.x         += menu->mouse.dx;
-   menu->mouse.y         += menu->mouse.dy;
+   menu->mouse.screen_x += menu->mouse.dx;
+   menu->mouse.screen_y += menu->mouse.dy;
+
+   menu->mouse.x         = ((int)menu->mouse.screen_x * (int)menu->frame_buf.width) / (int)vp.width;
+   menu->mouse.y         = ((int)menu->mouse.screen_y * (int)menu->frame_buf.height) / (int)vp.height;
 
    if (menu->mouse.x < 5)
       menu->mouse.x       = 5;

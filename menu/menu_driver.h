@@ -158,6 +158,8 @@ typedef struct
       int16_t dy;
       int16_t x;
       int16_t y;
+      int16_t screen_x;
+      int16_t screen_y;
       bool    left;
       bool    right;
       bool    oldleft;
