@@ -36,6 +36,11 @@
 #include "config.h"
 #endif
 
+#ifdef _XBOX1
+#include <xtl.h>
+#include <xgraphics.h>
+#endif
+
 #ifdef HAVE_ZLIB_DEFLATE
 
 #include <formats/rpng.h>
@@ -346,6 +351,7 @@ bool screenshot_dump(const char *folder, const void *frame,
    uint8_t *out_buffer = NULL;
    bool ret            = false;
    global_t *global    = global_get_ptr();
+   driver_t *driver     = driver_get_ptr();
 
    (void)file;
    (void)out_buffer;
@@ -355,7 +361,24 @@ bool screenshot_dump(const char *folder, const void *frame,
    fill_dated_filename(shotname, IMG_EXT, sizeof(shotname));
    fill_pathname_join(filename, folder, shotname, sizeof(filename));
 
-#ifdef HAVE_ZLIB_DEFLATE
+#ifdef _XBOX1
+   d3d_video_t *d3d = (d3d_video_t*)driver->video_data;
+   settings_t *settings = config_get_ptr();
+
+   D3DSurface *surf = NULL;
+   d3d->dev->GetBackBuffer(-1, D3DBACKBUFFER_TYPE_MONO, &surf);
+   ret = XGWriteSurfaceToFile(surf, filename);
+   surf->Release();
+
+   if(ret == S_OK)
+   {
+      RARCH_LOG("Screenshot saved: %s.\n", filename);
+      rarch_main_msg_queue_push("Screenshot saved.", 1, 30, false);
+      return true;
+   }
+
+   ret = false;
+#elif defined(HAVE_ZLIB_DEFLATE)
    out_buffer = (uint8_t*)malloc(width * height * 3);
    if (!out_buffer)
       return false;
