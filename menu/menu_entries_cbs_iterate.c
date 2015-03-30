@@ -169,26 +169,22 @@ static int pointer_post_iterate(menu_file_list_cbs_t *cbs, const char *path,
    if (driver->menu_ctx == &menu_ctx_xmb)
       return 0;
 #endif
-#if defined(HAVE_GLUI)
-   if (driver->menu_ctx == &menu_ctx_glui)
-      return 0;
-#endif
 
-   if (menu->pointer.pressed)
+   if (menu->pointer.pressed[0])
    {
-      if (menu->pointer.oldpressed)
+      if (menu->pointer.oldpressed[0])
       {
          if (menu->mouse.ptr <= menu_list_get_size(menu->menu_list)-1)
             menu_navigation_set(&menu->navigation, menu->mouse.ptr, false);
       }
       else
-         menu->pointer.oldpressed = true;
+         menu->pointer.oldpressed[0] = true;
    }
    else
    {
-      if (menu->pointer.oldpressed)
+      if (menu->pointer.oldpressed[0])
       {
-         menu->pointer.oldpressed = false;
+         menu->pointer.oldpressed[0] = false;
          driver_t *driver = driver_get_ptr();
          rarch_setting_t *setting =
             (rarch_setting_t*)setting_find_setting
@@ -641,43 +637,70 @@ static int action_iterate_message(const char *label, unsigned action)
 
 static int pointer_iterate(unsigned *action)
 {
-   const struct retro_keybind *binds[MAX_USERS];
+   int pointer_device, pointer_x, pointer_y, screen_x, screen_y;
+   const struct retro_keybind *binds[MAX_USERS];      
    menu_handle_t *menu       = menu_driver_get_ptr();
    runloop_t *runloop        = rarch_main_get_ptr();
    settings_t *settings      = config_get_ptr();
-#if defined(HAVE_XMB) || defined(HAVE_GLUI)
    driver_t *driver     = driver_get_ptr();
-#endif
-
-   int pointer_x, pointer_y, screen_x, screen_y;
 
    if (!menu)
       return -1;
 
    if (!settings->menu.pointer.enable)
+   {
+      memset(&menu->pointer, 0, sizeof(menu->pointer));
       return 0;
+   }
 
 #if defined(HAVE_XMB)
    if (driver->menu_ctx == &menu_ctx_xmb)
       return 0;
 #endif
-#if defined(HAVE_GLUI)
-   if (driver->menu_ctx == &menu_ctx_glui)
-      return 0;
-#endif
 
-   menu->pointer.pressed  = input_driver_state(binds, 0, RETRO_DEVICE_POINTER,
+   pointer_device = driver->menu_ctx->set_texture?
+        RETRO_DEVICE_POINTER : RARCH_DEVICE_POINTER_SCREEN;
+
+   menu->pointer.pressed[0]  = input_driver_state(binds, 0, pointer_device,
          0, RETRO_DEVICE_ID_POINTER_PRESSED);
-   menu->pointer.back  = input_driver_state(binds, 0, RETRO_DEVICE_POINTER,
+   menu->pointer.pressed[1]  = input_driver_state(binds, 0, pointer_device,
+         1, RETRO_DEVICE_ID_POINTER_PRESSED);
+   menu->pointer.back  = input_driver_state(binds, 0, pointer_device,
          0, RARCH_DEVICE_ID_POINTER_BACK);
 
-   pointer_x = input_driver_state(binds, 0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_X);
-   pointer_y = input_driver_state(binds, 0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_Y);
+   pointer_x = input_driver_state(binds, 0, pointer_device, 0, RETRO_DEVICE_ID_POINTER_X);
+   pointer_y = input_driver_state(binds, 0, pointer_device, 0, RETRO_DEVICE_ID_POINTER_Y);
+
+   /* by multiple presses, the main press will be the one closest to the previous coordinates */
+   if(menu->pointer.pressed[1])
+   {
+      int pointer_x2, pointer_y2, dist1, dist2;
+
+      pointer_x2 = input_driver_state(binds, 0, pointer_device, 1, RETRO_DEVICE_ID_POINTER_X);
+      pointer_y2 = input_driver_state(binds, 0, pointer_device, 1, RETRO_DEVICE_ID_POINTER_Y);
+
+      dist1 = (pointer_x  - menu->pointer.old_x) * (pointer_x  - menu->pointer.old_x) +
+              (pointer_y  - menu->pointer.old_y) * (pointer_y  - menu->pointer.old_y);
+      dist2 = (pointer_x2 - menu->pointer.old_x) * (pointer_x2 - menu->pointer.old_x) +
+              (pointer_y2 - menu->pointer.old_y) * (pointer_y2 - menu->pointer.old_y);
+
+      if (dist2 < dist1)
+      {
+         int temp;
+         pointer_x = pointer_x2;
+         pointer_y = pointer_y2;
+         temp = menu->pointer.pressed[0];
+         menu->pointer.pressed[0] = menu->pointer.pressed[1];
+         menu->pointer.pressed[1] = temp;
+      }
+   }   
+   menu->pointer.old_x = pointer_x;
+   menu->pointer.old_y = pointer_y;
 
    screen_x  = ((pointer_x + 0x7fff) * (int)menu->frame_buf.width) / 0xFFFF;
    screen_y  = ((pointer_y + 0x7fff) * (int)menu->frame_buf.height) / 0xFFFF;
 
-   if (menu->pointer.pressed)
+   if (menu->pointer.pressed[0])
    {
       menu->mouse.x       = screen_x;
       menu->mouse.y       = screen_y;
@@ -694,12 +717,18 @@ static int pointer_iterate(unsigned *action)
       menu->mouse.scrolldown = (menu->mouse.y == (int)menu->frame_buf.height - 5);
 
       menu->pointer.cancel = false;
+
+      if(menu->pointer.oldpressed[1] && !menu->pointer.pressed[1])
+         menu->pointer.back = true;
    }
    else
       menu->pointer.cancel = screen_x < 5 || screen_x > (int)menu->frame_buf.width  - 5
                           || screen_x < 5 || screen_x > (int)menu->frame_buf.height - 5;
 
-   if (menu->pointer.pressed || menu->pointer.back || menu->mouse.x != screen_x || menu->mouse.y != screen_y)
+   menu->pointer.oldpressed[1] = menu->pointer.pressed[1];
+
+
+   if (menu->pointer.pressed[0] || menu->pointer.back || menu->mouse.x != screen_x || menu->mouse.y != screen_y)
       runloop->frames.video.current.menu.animation.is_active = true;
 
    return 0;

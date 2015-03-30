@@ -175,8 +175,10 @@ typedef struct
 
    struct
    {
-      bool    pressed;
-      bool    oldpressed;
+      int16_t old_x;
+      int16_t old_y;
+      bool    pressed[2];
+      bool    oldpressed[2];
       bool    back;
       bool    oldback;
       bool    cancel;
