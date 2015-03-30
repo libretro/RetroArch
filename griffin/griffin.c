@@ -665,9 +665,8 @@ SCREENSHOTS
 ============================================================ */
 #if defined(_XBOX1)
 #include "../xdk/screenshot_xdk1.c"
-#else
-#include "../screenshot.c"
 #endif
+#include "../screenshot.c"
 
 /*============================================================
 PLAYLISTS
