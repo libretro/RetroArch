@@ -35,11 +35,10 @@ struct texture_image
 #ifdef _XBOX1
    unsigned x;
    unsigned y;
-   LPDIRECT3DTEXTURE pixels;
+   LPDIRECT3DTEXTURE texture_buf;
    LPDIRECT3DVERTEXBUFFER vertex_buf;
-#else
-   uint32_t *pixels;
 #endif
+   uint32_t *pixels;
 };
 
 bool texture_image_load(struct texture_image *img, const char *path);
