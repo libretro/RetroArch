@@ -1141,7 +1141,7 @@ static bool texture_image_render(d3d_video_t *d3d,
    d3d->dev->SetTextureStageState(0, D3DTSS_ALPHAARG2, D3DTA_TEXTURE);
 
    /* Draw the quad. */
-   d3d_set_texture(d3dr, 0, out_img->pixels);
+   d3d_set_texture(d3dr, 0, out_img->texture_buf);
    d3d_set_stream_source(d3dr, 0,
          out_img->vertex_buf, 0, sizeof(Vertex));
    d3d_set_vertex_shader(d3dr, D3DFVF_CUSTOMVERTEX, NULL);

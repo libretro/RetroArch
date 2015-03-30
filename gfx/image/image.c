@@ -146,11 +146,10 @@ void texture_image_free(struct texture_image *img)
 
 #ifdef _XBOX1
    d3d_vertex_buffer_free(img->vertex_buf);
-   d3d_texture_free(img->pixels);
-#else
+   d3d_texture_free(img->texture_buf);
+#endif
    if (img->pixels)
       free(img->pixels);
-#endif
    memset(img, 0, sizeof(*img));
 }
 
@@ -162,12 +161,12 @@ bool texture_image_load(struct texture_image *out_img, const char *path)
    d3d_video_t *d3d     = (d3d_video_t*)driver->video_data;
    out_img->vertex_buf  = NULL;
 
-   out_img->pixels = d3d_texture_new(d3d->dev, path,
+   out_img->texture_buf = d3d_texture_new(d3d->dev, path,
          D3DX_DEFAULT, D3DX_DEFAULT, D3DX_DEFAULT, 0,
          D3DFMT_A8R8G8B8, D3DPOOL_MANAGED, D3DX_DEFAULT,
          D3DX_DEFAULT, 0, &m_imageInfo, NULL);
 
-   if (!out_img->pixels)
+   if (!out_img->texture_buf)
       return false;
 
    /* create a vertex buffer for the quad that will display the texture */
@@ -177,7 +176,7 @@ bool texture_image_load(struct texture_image *out_img, const char *path)
 
    if (!out_img->vertex_buf)
    {
-      d3d_texture_free(out_img->pixels);
+      d3d_texture_free(out_img->texture_buf);
       return false;
    }
 
