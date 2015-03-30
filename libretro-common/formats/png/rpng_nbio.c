@@ -20,15 +20,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include <formats/rpng.h>
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-#ifdef GEKKO
-#include <malloc.h>
-#endif
 
 #include "rpng_common.h"
 #include "rpng_decode.h"

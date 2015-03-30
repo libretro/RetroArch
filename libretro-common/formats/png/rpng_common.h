@@ -24,6 +24,7 @@
 #define _RPNG_COMMON_H
 
 #include <retro_inline.h>
+#include <formats/rpng.h>
 #include <stdint.h>
 
 #undef GOTO_END_ERROR

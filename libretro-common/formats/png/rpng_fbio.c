@@ -20,8 +20,6 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include <formats/rpng.h>
-
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
