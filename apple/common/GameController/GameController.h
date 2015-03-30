@@ -6,7 +6,7 @@
 //
 
 #import <Foundation/Foundation.h>
-#import <Availability.h>
+#include <AvailabilityMacros.h>
 
 #ifdef __cplusplus
 #define GAMECONTROLLER_EXTERN		extern "C" __attribute__((visibility ("default")))

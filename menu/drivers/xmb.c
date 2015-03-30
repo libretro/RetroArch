@@ -1257,6 +1257,8 @@ static void xmb_frame(void)
 
    if (!menu)
       return;
+    
+   (void)font_driver;
 
    xmb = (xmb_handle_t*)menu->userdata;
 

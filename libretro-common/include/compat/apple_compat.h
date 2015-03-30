@@ -20,9 +20,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#ifdef IOS
-#import <Availability.h>
+#ifdef __APPLE__
+#include <AvailabilityMacros.h>
+#endif
 
+#ifdef IOS
 #ifndef __IPHONE_5_0
 #warning "This project uses features only available in iOS SDK 5.0 and later."
 #endif

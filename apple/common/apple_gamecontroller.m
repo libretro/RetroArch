@@ -13,7 +13,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <Availability.h>
+#include <AvailabilityMacros.h>
 #include "RetroArch_Apple.h"
 #import "GameController/GameController.h"
 #include "apple_gamecontroller.h"
