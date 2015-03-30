@@ -181,25 +181,6 @@
 #endif
 #endif
 
-/* Fall back to FF-style if needed and possible. */
-#define gl_ff_vertex(coords) \
-      glClientActiveTexture(GL_TEXTURE1); \
-      glTexCoordPointer(2, GL_FLOAT, 0, coords->lut_tex_coord); \
-      glEnableClientState(GL_TEXTURE_COORD_ARRAY); \
-      glClientActiveTexture(GL_TEXTURE0); \
-      glVertexPointer(2, GL_FLOAT, 0, coords->vertex); \
-      glEnableClientState(GL_VERTEX_ARRAY); \
-      glColorPointer(4, GL_FLOAT, 0, coords->color); \
-      glEnableClientState(GL_COLOR_ARRAY); \
-      glTexCoordPointer(2, GL_FLOAT, 0, coords->tex_coord); \
-      glEnableClientState(GL_TEXTURE_COORD_ARRAY)
-
-/* Fall back to FF-style if needed and possible. */
-#define gl_ff_matrix(mat) \
-      glMatrixMode(GL_PROJECTION); \
-      glLoadMatrixf(mat->data); \
-      glMatrixMode(GL_MODELVIEW); \
-      glLoadIdentity()
 
 struct gl_fbo_rect
 {
@@ -454,5 +435,8 @@ static INLINE unsigned gl_wrap_type_to_enum(enum gfx_wrap_type type)
 
 bool gl_coord_array_add(gl_coord_array_t *ca, const gl_coords_t *coords, unsigned count);
 void gl_coord_array_free(gl_coord_array_t *ca);
+
+void gl_ff_vertex(const void *data);
+void gl_ff_matrix(const void *data);
 
 #endif

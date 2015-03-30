@@ -1143,9 +1143,7 @@ static bool gl_glsl_set_mvp(void *data, const math_matrix_4x4 *mat)
 
    if (!glsl || !glsl->glsl_shader->modern)
    {
-#ifndef NO_GL_FF_MATRIX
       gl_ff_matrix(mat);
-#endif
       return false;
    }
 
@@ -1171,9 +1169,7 @@ static bool gl_glsl_set_coords(const void *data)
 
    if (!glsl || !glsl->glsl_shader->modern || !coords)
    {
-#ifndef NO_GL_FF_VERTEX
       gl_ff_vertex(coords);
-#endif
       return false;
    }
 
@@ -1184,9 +1180,7 @@ static bool gl_glsl_set_coords(const void *data)
 
    if (!buffer)
    {
-#ifndef NO_GL_FF_VERTEX
       gl_ff_vertex(coords);
-#endif
       return false;
    }
 

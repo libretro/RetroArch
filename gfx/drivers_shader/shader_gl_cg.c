@@ -182,9 +182,7 @@ static bool gl_cg_set_mvp(void *data, const math_matrix_4x4 *mat)
       return true;
    }
 
-#ifndef NO_GL_FF_MATRIX
    gl_ff_matrix(mat);
-#endif
    return false;
 }
 
@@ -213,9 +211,7 @@ static bool gl_cg_set_coords(const void *data)
 
    return true;
 fallback:
-#ifndef NO_GL_FF_VERTEX
    gl_ff_vertex(coords);
-#endif
    return false;
 }
 
