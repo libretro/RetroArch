@@ -26,9 +26,11 @@
 #endif
 #include "../../file_ops.h"
 
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stddef.h>
+#include <boolean.h>
 #include "../../general.h"
 
 #if defined(__CELLOS_LV2__) || defined(__PSLIGHT__)
