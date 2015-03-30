@@ -28,32 +28,33 @@ typedef struct
 static void *xfonts_init_font(void *video_data,
       const char *font_path, float font_size)
 {
-   xfonts_t *xfonts = (xfonts_t*)calloc(1, sizeof(*xfont));
+   xfonts_t *xfont = (xfonts_t*)calloc(1, sizeof(*xfont));
 
-   if (!xfonts)
+   if (!xfont)
       return NULL;
 
    (void)font_path;
    (void)font_size;
 
-   xfonts->d3d = video_data;
+   xfont->d3d = (d3d_video_t*)video_data;
 
-   XFONT_OpenDefaultFont(&xfonts->debug_font);
-   xfonts->debug_font->SetBkMode(XFONT_TRANSPARENT);
-   xfonts->debug_font->SetBkColor(D3DCOLOR_ARGB(100,0,0,0));
-   xfonts->debug_font->SetTextHeight(14);
-   xfonts->debug_font->SetTextAntialiasLevel(xfonts->debug_font->GetTextAntialiasLevel());
+   XFONT_OpenDefaultFont(&xfont->debug_font);
+   xfont->debug_font->SetBkMode(XFONT_TRANSPARENT);
+   xfont->debug_font->SetBkColor(D3DCOLOR_ARGB(100,0,0,0));
+   xfont->debug_font->SetTextHeight(14);
+   xfont->debug_font->SetTextAntialiasLevel(xfont->debug_font->GetTextAntialiasLevel());
 
-   return xfonts;
+   return xfont;
 }
 
 static void xfonts_free_font(void *data)
 {
-   xfonts_t *xfonts = (xfonts_t*)data;
+   xfonts_t *font = (xfonts_t*)data;
 
-   if (xfont)
-      free(xfont);
-   xfont = NULL;
+   if (font)
+      free(font);
+   
+   font = NULL;
 }
 
 static void xfonts_render_msg(void *data, const char *msg,

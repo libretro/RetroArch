@@ -123,7 +123,9 @@ static void d3d_deinit_shader(void *data)
 static bool d3d_init_shader(void *data)
 {
    const char *shader_path = NULL;
+#if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
    const shader_backend_t *backend = NULL;
+#endif
    d3d_video_t *d3d = (d3d_video_t*)data;
    settings_t *settings = config_get_ptr();
 
