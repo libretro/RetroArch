@@ -39,10 +39,10 @@ typedef unsigned NSUInteger;
 #endif
 
 #ifdef __OBJC__
-    #import <UIKit/UIKit.h>
-    #import <GLKit/GLKit.h>
-    #import <Foundation/Foundation.h>
+#import <UIKit/UIKit.h>
+#import <GLKit/GLKit.h>
+#import <Foundation/Foundation.h>
 
-    #import <objc/runtime.h>
+#include <objc/runtime.h>
 #endif
 #endif
