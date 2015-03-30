@@ -1268,10 +1268,12 @@ static void xmb_frame(void)
    if (!gl)
       return;
 
+#if 0
    font_driver = (const struct font_renderer*)gl->font_driver;
 
    if (font_driver->bind_block)
       font_driver->bind_block(xmb->font.buf, &xmb->raster_block);
+#endif
 
    xmb->raster_block.carr.coords.vertices = 0;
 
@@ -1389,11 +1391,13 @@ static void xmb_frame(void)
       xmb_frame_messagebox(msg);
    }
 
+#if 0
    if (font_driver->flush)
    {
       font_driver->flush(xmb->font.buf);
       font_driver->bind_block(xmb->font.buf, NULL);
    }
+#endif
 
    if (settings->menu.mouse.enable)
       xmb_draw_cursor(gl, xmb, menu->mouse.x, menu->mouse.y);
