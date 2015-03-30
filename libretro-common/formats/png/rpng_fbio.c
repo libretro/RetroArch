@@ -28,10 +28,6 @@
 #include <string.h>
 #include <boolean.h>
 
-#ifdef GEKKO
-#include <malloc.h>
-#endif
-
 #include "rpng_common.h"
 #include "rpng_decode.h"
 
