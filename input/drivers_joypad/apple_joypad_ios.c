@@ -19,10 +19,6 @@
 #include "../input_common.h"
 #include "../../general.h"
 #include "../../apple/common/apple_gamecontroller.h"
-
-#include "../../apple/iOS/bluetooth/btdynamic.c"
-#include "../../apple/iOS/bluetooth/btpad.c"
-#include "../../apple/iOS/bluetooth/btpad_queue.c"
 #include "../connect/joypad_connection.h"
 
 joypad_connection_t *slots;
