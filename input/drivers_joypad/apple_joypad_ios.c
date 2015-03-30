@@ -18,7 +18,9 @@
 #include "../input_autodetect.h"
 #include "../input_common.h"
 #include "../../general.h"
+#ifdef HAVE_MFI
 #include "../../apple/common/apple_gamecontroller.h"
+#endif
 #include "../connect/joypad_connection.h"
 
 joypad_connection_t *slots;
@@ -94,7 +96,9 @@ static int16_t apple_joypad_axis(unsigned port, uint32_t joyaxis)
 
 static void apple_joypad_poll(void)
 {
+#ifdef HAVE_MFI
     apple_gamecontroller_poll_all();
+#endif
 }
 
 static bool apple_joypad_rumble(unsigned pad,

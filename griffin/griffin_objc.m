@@ -4,10 +4,6 @@
 #define __IPHONE_OS_VERSION_MAX_ALLOWED 00000
 #endif
 
-#if __IPHONE_7_0 && __IPHONE_OS_VERSION_MAX_ALLOWED >= 70000
-#define HAVE_MFI
-#endif
-
 #include "../apple/common/CFExtensions.m"
 #include "../apple/common/utility.m"
 

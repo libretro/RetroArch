@@ -19,7 +19,9 @@
 #include "../common/RetroArch_Apple.h"
 #include "../../input/drivers/apple_input.h"
 #include "../../settings.h"
+#ifdef HAVE_MFI
 #include "../common/apple_gamecontroller.h"
+#endif
 #include "menu.h"
 #include "../../menu/menu.h"
 
@@ -307,7 +309,9 @@ void notify_content_loaded(void)
      ih->notify_content_loaded = notify_content_loaded;
    }
    
+#ifdef HAVE_MFI
    apple_gamecontroller_init();
+#endif
     
    [self showPauseMenu:self];
 
