@@ -5265,7 +5265,7 @@ static bool setting_append_list_menu_options(
          settings->menu.pointer.enable,
          "menu_pointer_enable",
          "Touch Enable",
-         false,
+         pointer_enable,
          "OFF",
          "ON",
          group_info.name,

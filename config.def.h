@@ -314,6 +314,12 @@ enum
 #define DEFAULT_ASPECT_RATIO -1.0f
 #endif
 
+#ifdef RARCH_MOBILE
+static const bool pointer_enable = true;
+#else
+static const bool pointer_enable = false;
+#endif
+
 static const bool def_history_list_enable = true;
 
 static const unsigned int def_user_language = 0;
