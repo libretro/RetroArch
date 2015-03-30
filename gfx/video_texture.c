@@ -27,7 +27,7 @@ static void video_texture_png_load_gl(struct texture_image *ti,
       unsigned *id)
 {
    /* Generate the OpenGL texture object */
-   glGenTextures(1, id);
+   glGenTextures(1, (GLuint*)id);
    gl_load_texture_data((GLuint)*id, 
          RARCH_WRAP_EDGE, filter_type,
          4 /* TODO/FIXME - dehardcode */,

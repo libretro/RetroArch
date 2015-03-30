@@ -124,7 +124,7 @@ static void remove_device(void* context, IOReturn result, void* sender)
    apple_input_data_t *apple = (apple_input_data_t*)driver->input_data;
    struct pad_connection* connection = (struct pad_connection*)context;
 
-   if (connection && connection->slot < MAX_USERS)
+   if (connection && (connection->slot < MAX_USERS))
    {
       char msg[PATH_MAX_LENGTH];
 

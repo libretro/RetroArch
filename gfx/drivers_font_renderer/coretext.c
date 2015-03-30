@@ -75,7 +75,7 @@ static bool font_renderer_create_atlas(CTFontRef face, ct_font_renderer_t *handl
    CGGlyph glyphs[CT_ATLAS_SIZE];
    CGRect bounds[CT_ATLAS_SIZE];
    CGSize advances[CT_ATLAS_SIZE];
-   CGFloat ascent, descent;
+   float ascent, descent;
    CGContextRef offscreen;
    CFStringRef keys[] = { kCTFontAttributeName };
    CFDictionaryRef attr;

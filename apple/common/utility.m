@@ -60,10 +60,11 @@ void apple_display_alert(const char *message, const char *title)
 
 - (BOOL)isPartialStringValid:(NSString*)partialString newEditingString:(NSString**)newString errorDescription:(NSString**)error
 {
+   unsigned i;
    bool hasDot = false;
 
    if (partialString.length)
-      for (NSUInteger i = 0; i < partialString.length; i ++)
+      for (i = 0; i < partialString.length; i ++)
       {
          unichar ch = [partialString characterAtIndex:i];
 

@@ -14,7 +14,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#import <objc/runtime.h>
 #import "../common/RetroArch_Apple.h"
 #include <retro_miscellaneous.h>
 #include "../../settings.h"
@@ -210,12 +209,12 @@ NSWindowDelegate>
 }
 
 #pragma mark Section Table
-- (NSInteger)numberOfRowsInTableView:(NSTableView*)view
+- (int32_t)numberOfRowsInTableView:(NSTableView*)view
 {
    return self.settings.count;
 }
 
-- (id)tableView:(NSTableView *)tableView objectValueForTableColumn:(NSTableColumn *)tableColumn row:(NSInteger)row
+- (id)tableView:(NSTableView *)tableView objectValueForTableColumn:(NSTableColumn *)tableColumn row:(int32_t)row
 {
 #if defined(MAC_OS_X_VERSION_10_6)
    return objc_getAssociatedObject([self.settings objectAtIndex:row], associated_name_tag);
@@ -232,12 +231,12 @@ NSWindowDelegate>
 }
 
 #pragma mark Setting Outline
-- (NSInteger)outlineView:(NSOutlineView *)outlineView numberOfChildrenOfItem:(id)item
+- (int32_t)outlineView:(NSOutlineView *)outlineView numberOfChildrenOfItem:(id)item
 {
    return (item == nil) ? [self.currentGroup count] : [item count];
 }
 
-- (id)outlineView:(NSOutlineView *)outlineView child:(NSInteger)idx ofItem:(id)item
+- (id)outlineView:(NSOutlineView *)outlineView child:(int32_t)idx ofItem:(id)item
 {
    return (item == nil) ? [self.currentGroup objectAtIndex:idx] : [item objectAtIndex:idx];
 }

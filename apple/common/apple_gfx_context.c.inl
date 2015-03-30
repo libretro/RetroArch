@@ -228,9 +228,9 @@ static bool apple_gfx_ctx_set_video_mode(void *data, unsigned width, unsigned he
    return true;
 }
 
-CGFloat apple_gfx_ctx_get_native_scale(void)
+float apple_gfx_ctx_get_native_scale(void)
 {
-    static CGFloat ret = 0.0f;
+    static float ret = 0.0f;
     SEL selector = NSSelectorFromString(BOXSTRING("nativeScale"));
     RAScreen *screen = (RAScreen*)get_chosen_screen();
     
@@ -261,7 +261,7 @@ static void apple_gfx_ctx_get_video_size(void *data, unsigned* width, unsigned* 
    RAScreen *screen = (RAScreen*)get_chosen_screen();
    CGRect size = screen.bounds;
    gl_t *gl = (gl_t*)data;
-   CGFloat screenscale = apple_gfx_ctx_get_native_scale();
+   float screenscale = apple_gfx_ctx_get_native_scale();
 	
    if (gl)
    {

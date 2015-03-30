@@ -16,8 +16,6 @@
 
 #include <string.h>
 
-#include <objc/runtime.h>
-
 #import "../common/RetroArch_Apple.h"
 #include "../../input/drivers/apple_input.h"
 #include "../../frontend/frontend.h"
@@ -52,7 +50,7 @@ void apple_rarch_exited(void)
    if (!apple)
       return;
 
-   switch ((NSInteger)event_type)
+   switch ((int32_t)event_type)
    {
       case NSKeyDown:
       case NSKeyUp:
@@ -63,7 +61,7 @@ void apple_rarch_exited(void)
          
          if (ch && ch.length != 0)
          {
-            NSUInteger i;
+            uint32_t i;
             character = [ch characterAtIndex:0];
 
             if (event.modifierFlags & NSAlphaShiftKeyMask)
@@ -79,7 +77,7 @@ void apple_rarch_exited(void)
             if (event.modifierFlags & NSNumericPadKeyMask)
                mod |=  RETROKMOD_NUMLOCK;
             
-            for (i = 1; i < ch.length; i ++)
+            for (i = 1; i < ch.length; i++)
                apple_input_keyboard_event(event_type == NSKeyDown,
                      0, [ch characterAtIndex:i], mod, RETRO_DEVICE_KEYBOARD);
          }
@@ -432,7 +430,7 @@ static void poll_iteration(void)
    rarch_main_command(cmd);
 }
 
-- (void)alertDidEnd:(NSAlert *)alert returnCode:(NSInteger)returnCode contextInfo:(void *)contextInfo
+- (void)alertDidEnd:(NSAlert *)alert returnCode:(int32_t)returnCode contextInfo:(void *)contextInfo
 {
    [[NSApplication sharedApplication] stopModal];
 }

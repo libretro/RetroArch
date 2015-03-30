@@ -14,7 +14,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#import <Availability.h>
+#import <AvailabilityMacros.h>
 #import "RetroArch_Apple.h"
 #include "../../general.h"
 #include "../../runloop.h"
