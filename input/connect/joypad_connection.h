@@ -36,6 +36,7 @@ typedef struct pad_connection_interface
 
 extern pad_connection_interface_t pad_connection_wii;
 extern pad_connection_interface_t pad_connection_ps3;
+extern pad_connection_interface_t pad_connection_ps4;
 
 typedef struct joypad_connection
 {

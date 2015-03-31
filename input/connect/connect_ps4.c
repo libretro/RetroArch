@@ -68,12 +68,16 @@ static void* hidpad_ps4_init(void *data, uint32_t slot, send_control_t ptr)
    device->slot = slot;
    device->send_control = ptr;
    
+#if 0
    /* TODO - unsure of this */
    /* This is needed to get full input packet over bluetooth. */
    device->send_control(device->connection, magic_data, 0x2);
+#endif
 
    /* Without this, the digital buttons won't be reported. */
    hidpad_ps4_send_control(device);
+    
+   (void)magic_data;
 
    return device;
 }
@@ -86,10 +90,9 @@ static void hidpad_ps4_deinit(void *data)
       free(device);
 }
 
-#if 0
-static uint32_t hidpad_ps4_get_buttons(void *data)
+static uint64_t hidpad_ps4_get_buttons(void *data)
 {
-   uint32_t result = 0;
+   uint64_t result = 0;
    struct hidpad_ps4_data *device = (struct hidpad_ps4_data*)data;
 
    struct Report
@@ -140,11 +143,10 @@ static int16_t hidpad_ps4_get_axis(void *data, unsigned axis)
 
    return 0;
 }
-#endif
 
 static void hidpad_ps4_packet_handler(void *data, uint8_t *packet, uint16_t size)
 {
-   int i;
+   uint32_t i;
    struct hidpad_ps4_data *device = (struct hidpad_ps4_data*)data;
     
    if (!device)
@@ -159,8 +161,19 @@ static void hidpad_ps4_packet_handler(void *data, uint8_t *packet, uint16_t size
       device->have_led = true;
    }
 #endif
-
-   memcpy(device->data, packet, size);
+    struct Report
+    {
+        uint8_t leftX;
+        uint8_t leftY;
+        uint8_t rightX;
+        uint8_t rightY;
+        uint8_t buttons[3];
+        uint8_t leftTrigger;
+        uint8_t rightTrigger;
+    };
+    
+    struct Report *rpt = (struct Report*)&packet[4];
+    (void)rpt;
 }
 
 static void hidpad_ps4_set_rumble(void *data,
@@ -183,5 +196,7 @@ pad_connection_interface_t pad_connection_ps4 = {
    hidpad_ps4_init,
    hidpad_ps4_deinit,
    hidpad_ps4_packet_handler,
-   hidpad_ps4_set_rumble
+   hidpad_ps4_set_rumble,
+   hidpad_ps4_get_buttons,
+   hidpad_ps4_get_axis,
 };
