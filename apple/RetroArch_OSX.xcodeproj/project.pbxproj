@@ -19,7 +19,6 @@
 		841CBB8E1A8A34920066E9F1 /* assets in CopyFiles */ = {isa = PBXBuildFile; fileRef = 841CBB731A8A308C0066E9F1 /* assets */; };
 		84DD5E9F1A88E45B007336C1 /* CoreVideo.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 84DD5E9E1A88E45B007336C1 /* CoreVideo.framework */; };
 		84DD5EA31A89E2AA007336C1 /* AppKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 29B97324FDCFA39411CA2CEA /* AppKit.framework */; };
-		84DD5EA51A89E2F6007336C1 /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 84DD5EA41A89E2F6007336C1 /* AVFoundation.framework */; };
 		84DD5EA71A89E406007336C1 /* CoreLocation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 84DD5EA61A89E406007336C1 /* CoreLocation.framework */; };
 		84DD5EA91A89E4BE007336C1 /* CoreAudio.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 84DD5EA81A89E4BE007336C1 /* CoreAudio.framework */; };
 		84DD5EAB1A89E534007336C1 /* CoreMedia.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 84DD5EAA1A89E534007336C1 /* CoreMedia.framework */; };
@@ -73,7 +72,6 @@
 		841CBB7D1A8A314F0066E9F1 /* cursors */ = {isa = PBXFileReference; lastKnownFileType = folder; name = cursors; path = ../media/libretrodb/cursors; sourceTree = "<group>"; };
 		841CBB7F1A8A31650066E9F1 /* rdb */ = {isa = PBXFileReference; lastKnownFileType = folder; name = rdb; path = ../media/libretrodb/rdb; sourceTree = "<group>"; };
 		84DD5E9E1A88E45B007336C1 /* CoreVideo.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreVideo.framework; path = /System/Library/Frameworks/CoreVideo.framework; sourceTree = "<absolute>"; };
-		84DD5EA41A89E2F6007336C1 /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = /System/Library/Frameworks/AVFoundation.framework; sourceTree = "<absolute>"; };
 		84DD5EA61A89E406007336C1 /* CoreLocation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreLocation.framework; path = /System/Library/Frameworks/CoreLocation.framework; sourceTree = "<absolute>"; };
 		84DD5EA81A89E4BE007336C1 /* CoreAudio.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreAudio.framework; path = /System/Library/Frameworks/CoreAudio.framework; sourceTree = "<absolute>"; };
 		84DD5EAA1A89E534007336C1 /* CoreMedia.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreMedia.framework; path = /System/Library/Frameworks/CoreMedia.framework; sourceTree = "<absolute>"; };
@@ -95,7 +93,6 @@
 				84DD5EB31A89E6C0007336C1 /* AudioUnit.framework in Frameworks */,
 				84DD5EB61A89E76C007336C1 /* Cg.framework in Frameworks */,
 				84DD5EAD1A89E5B4007336C1 /* OpenGL.framework in Frameworks */,
-				84DD5EA51A89E2F6007336C1 /* AVFoundation.framework in Frameworks */,
 				84DD5EA71A89E406007336C1 /* CoreLocation.framework in Frameworks */,
 				84DD5EA31A89E2AA007336C1 /* AppKit.framework in Frameworks */,
 				84DD5E9F1A88E45B007336C1 /* CoreVideo.framework in Frameworks */,
@@ -124,7 +121,6 @@
 				84DD5EAA1A89E534007336C1 /* CoreMedia.framework */,
 				84DD5EA81A89E4BE007336C1 /* CoreAudio.framework */,
 				84DD5EA61A89E406007336C1 /* CoreLocation.framework */,
-				84DD5EA41A89E2F6007336C1 /* AVFoundation.framework */,
 				84DD5E9E1A88E45B007336C1 /* CoreVideo.framework */,
 				29B97324FDCFA39411CA2CEA /* AppKit.framework */,
 			);

@@ -22,7 +22,12 @@
 
 /* Define compatibility symbols and categories. */
 
-#if defined(MAC_OS_X_VERSION_10_7) || defined(__IPHONE_4_0)
+//#if defined(MAC_OS_X_VERSION_10_7) || defined(__IPHONE_4_0)
+#if defined(__IPHONE_4_0) && defined(IOS)
+#define HAVE_AVFOUNDATION
+#endif
+
+#ifdef HAVE_AVFOUNDATION
 #include <AVFoundation/AVCaptureSession.h>
 #include <AVFoundation/AVCaptureDevice.h>
 #include <AVFoundation/AVCaptureOutput.h>
@@ -178,7 +183,7 @@ static void apple_gfx_ctx_update(void);
 
 #endif
 
-#if defined(MAC_OS_X_VERSION_10_7) || defined(__IPHONE_4_0)
+#ifdef HAVE_AVFOUNDATION
 #include "contentview_camera_ios.m.inl"
 #endif
 
@@ -188,7 +193,7 @@ static void apple_gfx_ctx_update(void);
 
 @end
 
-#if defined(MAC_OS_X_VERSION_10_7) || defined(__IPHONE_4_0)
+#ifdef HAVE_AVFOUNDATION
 #include "apple_camera_ios.c.inl"
 #endif
 
