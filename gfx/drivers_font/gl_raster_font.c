@@ -166,7 +166,7 @@ static void draw_vertices(gl_t *gl, const gl_coords_t *coords)
 }
 
 static void render_message(gl_raster_t *font, const char *msg, GLfloat scale,
-      const GLfloat color[4], GLfloat pos_x, GLfloat pos_y, bool align_right)
+      const GLfloat color[4], GLfloat pos_x, GLfloat pos_y, unsigned text_align)
 {
    int x, y, delta_x, delta_y;
    float inv_tex_size_x, inv_tex_size_y, inv_win_width, inv_win_height;
@@ -185,8 +185,15 @@ static void render_message(gl_raster_t *font, const char *msg, GLfloat scale,
    delta_x        = 0;
    delta_y        = 0;
 
-   if (align_right)
-      x -= get_message_width(font, msg);
+   switch (text_align)
+   {
+      case TEXT_ALIGN_RIGHT:
+         x -= get_message_width(font, msg);
+         break;
+      case TEXT_ALIGN_CENTER:
+         x -= get_message_width(font, msg) / 2.0;
+         break;
+   }
 
    inv_tex_size_x = 1.0f / font->tex_width;
    inv_tex_size_y = 1.0f / font->tex_height;
@@ -273,7 +280,7 @@ static void gl_raster_font_render_msg(void *data, const char *msg,
    GLfloat color[4], color_dark[4];
    int drop_x, drop_y;
    bool full_screen;
-   bool align_right;
+   enum text_alignment text_align;
    gl_t *gl = NULL;
    gl_raster_t *font = (gl_raster_t*)data;
    settings_t *settings = config_get_ptr();
@@ -290,7 +297,7 @@ static void gl_raster_font_render_msg(void *data, const char *msg,
       y           = params->y;
       scale       = params->scale;
       full_screen = params->full_screen;
-      align_right = params->align_right;
+      text_align  = params->text_align;
       drop_x      = params->drop_x;
       drop_y      = params->drop_y;
       drop_mod    = params->drop_mod;
@@ -310,7 +317,7 @@ static void gl_raster_font_render_msg(void *data, const char *msg,
       y           = settings->video.msg_pos_y;
       scale       = 1.0f;
       full_screen = false;
-      align_right = false;
+      text_align  = TEXT_ALIGN_LEFT;
 
       color[0]    = settings->video.msg_color_r;
       color[1]    = settings->video.msg_color_g;
@@ -336,10 +343,10 @@ static void gl_raster_font_render_msg(void *data, const char *msg,
 
       render_message(font, msg, scale, color_dark,
             x + scale * drop_x / gl->vp.width, y + 
-            scale * drop_y / gl->vp.height, align_right);
+            scale * drop_y / gl->vp.height, text_align);
    }
 
-   render_message(font, msg, scale, color, x, y, align_right);
+   render_message(font, msg, scale, color, x, y, text_align);
 
    if (!font->block)
       restore_viewport(gl);

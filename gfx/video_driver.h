@@ -57,6 +57,13 @@ typedef struct video_info
    bool rgb32;
 } video_info_t;
 
+  enum text_alignment
+  {
+     TEXT_ALIGN_LEFT = 0,
+     TEXT_ALIGN_RIGHT,
+     TEXT_ALIGN_CENTER
+  };
+
 struct font_params
 {
    float x;
@@ -70,7 +77,7 @@ struct font_params
    /* ABGR. Use the macros. */
    uint32_t color;
    bool full_screen;
-   bool align_right;
+   enum text_alignment text_align;
 };
 
 enum texture_filter_type
