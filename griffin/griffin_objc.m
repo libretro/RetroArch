@@ -1,4 +1,8 @@
+#ifdef IOS
+#include <Availability.h>
+#else
 #include <AvailabilityMacros.h>
+#endif
 
 #ifndef __IPHONE_OS_VERSION_MAX_ALLOWED
 #define __IPHONE_OS_VERSION_MAX_ALLOWED 00000
