@@ -31,6 +31,7 @@ struct pad_connection
 {
    uint32_t slot;
    IOHIDDeviceRef device_handle;
+   char device_name[PATH_MAX_LENGTH];
    uint8_t data[2048];
 };
 
@@ -189,7 +190,7 @@ static void remove_device(void* context, IOReturn result, void* sender)
       char msg[PATH_MAX_LENGTH];
 
       snprintf(msg, sizeof(msg), "Joypad #%u (%s) disconnected.",
-            connection->slot, "N/A");
+            connection->slot, connection->device_name);
       rarch_main_msg_queue_push(msg, 0, 60, false);
       RARCH_LOG("[apple_input]: %s\n", msg);
 
@@ -243,7 +244,6 @@ static void add_device(void* context, IOReturn result,
       void* sender, IOHIDDeviceRef device)
 {
    uint16_t dev_vid, dev_pid;
-   char device_name[PATH_MAX_LENGTH];
    CFStringRef device_name_ref;
    autoconfig_params_t params = {{0}};
    settings_t *settings = config_get_ptr();
@@ -265,14 +265,15 @@ static void add_device(void* context, IOReturn result,
 
 #ifndef IOS
    device_name_ref = IOHIDDeviceGetProperty(device, CFSTR(kIOHIDProductKey));
-   CFStringGetCString(device_name_ref, device_name,
-         sizeof(device_name), kCFStringEncodingUTF8);
+   CFStringGetCString(device_name_ref, connection->device_name,
+         sizeof(connection->device_name), kCFStringEncodingUTF8);
 #endif
 
    dev_vid = apple_hid_get_vendor_id  (device);
    dev_pid = apple_hid_get_product_id (device);
 
-   connection->slot = pad_connection_pad_init(hid_apple->slots, device_name,
+   connection->slot = pad_connection_pad_init(hid_apple->slots,
+        connection->device_name,
          connection, &hid_pad_connection_send_control);
 
    if (pad_connection_has_interface(hid_apple->slots, connection->slot))
@@ -283,20 +284,20 @@ static void add_device(void* context, IOReturn result,
       IOHIDDeviceRegisterInputValueCallback(device,
             hid_device_input_callback, connection);
 
-   if (device_name[0] == '\0')
+   if (connection->device_name[0] == '\0')
       return;
 
    strlcpy(settings->input.device_names[connection->slot],
-         device_name, sizeof(settings->input.device_names));
+         connection->device_name, sizeof(settings->input.device_names));
 
    params.idx = connection->slot;
    params.vid = dev_vid;
    params.pid = dev_pid;
-   strlcpy(params.name, device_name, sizeof(params.name));
+   strlcpy(params.name, connection->device_name, sizeof(params.name));
    strlcpy(params.driver, apple_hid_joypad.ident, sizeof(params.driver));
 
    input_config_autoconfigure_joypad(&params);
-   RARCH_LOG("Port %d: %s.\n", connection->slot, device_name);
+   RARCH_LOG("Port %d: %s.\n", connection->slot, connection->device_name);
 }
 
 static void append_matching_dictionary(CFMutableArrayRef array,
