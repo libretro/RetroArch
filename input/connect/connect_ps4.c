@@ -136,15 +136,15 @@ static void hidpad_ps4_packet_handler(void *data, uint8_t *packet, uint16_t size
     buttons2 = rpt_ptr[3];
     buttons3 = rpt_ptr[4];
     
-    //RARCH_LOG("L2 button: %d\n", rpt_ptr[5]);
-    //RARCH_LOG("R2 button: %d\n", rpt_ptr[6]);
-    //RARCH_LOG("Test: %d\n", rpt_ptr[4] & 0x01);
-    //RARCH_LOG("Left  stick X: %d\n", rpt_ptr[-2]);
-    //RARCH_LOG("Left  stick Y: %d\n", rpt_ptr[-1]);
-    //RARCH_LOG("Right stick X: %d\n", rpt_ptr[0]);
-    //RARCH_LOG("Right stick Y: %d\n", rpt_ptr[1]);
+    //RARCH_LOG("Left  stick X: %d\n",   rpt_ptr[-2]);
+    //RARCH_LOG("Left  stick Y: %d\n",   rpt_ptr[-1]);
+    //RARCH_LOG("Right stick X: %d\n",   rpt_ptr[0]);
+    //RARCH_LOG("Right stick Y: %d\n",   rpt_ptr[1]);
     //RARCH_LOG("Digital buttons: %d\n", rpt_ptr[2]);
-    //RARCH_LOG("Start/share: %d\n", rpt_ptr[3]);
+    //RARCH_LOG("Start/share: %d\n",     rpt_ptr[3]);
+    //RARCH_LOG("Test: %d\n",            rpt_ptr[4] & 0x01);
+    //RARCH_LOG("L2 button: %d\n",       rpt_ptr[5]);
+    //RARCH_LOG("R2 button: %d\n",       rpt_ptr[6]);
     device->buttonstate |= ((buttons2 == 128)? (1ULL << RETRO_DEVICE_ID_JOYPAD_R3)     : 0);
     device->buttonstate |= ((buttons2 == 64) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_L3)     : 0);
     device->buttonstate |= ((buttons2 == 32) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_START)  : 0);
