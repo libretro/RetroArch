@@ -215,13 +215,13 @@ static void hid_device_report(void* context, IOReturn result, void *sender,
 static int32_t apple_hid_get_int_property(IOHIDDeviceRef device, CFStringRef key)
 {
     int32_t value;
-    CFTypeRef ref = IOHIDDeviceGetProperty(device, key);
+    CFNumberRef ref = IOHIDDeviceGetProperty(device, key);
     
     if (ref)
     {
         if (CFGetTypeID(ref) == CFNumberGetTypeID())
         {
-            CFNumberGetValue((CFNumberRef)ref, kCFNumberSInt32Type, &value);
+            CFNumberGetValue((CFNumberRef)ref, kCFNumberIntType, &value);
             return value;
         }
     }
@@ -236,7 +236,7 @@ static uint16_t apple_hid_get_vendor_id(IOHIDDeviceRef device)
 
 static uint16_t apple_hid_get_product_id(IOHIDDeviceRef device)
 {
-   return apple_hid_get_int_property(device, CFSTR(kIOHIDProductKey));
+   return apple_hid_get_int_property(device, CFSTR(kIOHIDProductIDKey));
 }
 
 static void add_device(void* context, IOReturn result,
