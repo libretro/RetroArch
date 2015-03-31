@@ -466,10 +466,7 @@
 		503700AB1ACA18E400A51A37 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = (
-					armv7s,
-					armv7,
-				);
+				ARCHS = armv7;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_LAUNCHIMAGE_NAME = LaunchImage;
 				CLANG_CXX_LIBRARY = "libstdc++";
@@ -521,7 +518,7 @@
 					"-D_LZMA_UINT32_IS_ULONG",
 				);
 				PRODUCT_NAME = "RetroArch copy";
-				VALID_ARCHS = "armv7 armv7s";
+				VALID_ARCHS = armv7;
 				WRAPPER_EXTENSION = app;
 			};
 			name = Debug;
@@ -529,10 +526,7 @@
 		503700AC1ACA18E400A51A37 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = (
-					armv7s,
-					armv7,
-				);
+				ARCHS = armv7;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_LAUNCHIMAGE_NAME = LaunchImage;
 				CLANG_CXX_LIBRARY = "libstdc++";
@@ -621,7 +615,7 @@
 					"-D_LZMA_UINT32_IS_ULONG",
 				);
 				PRODUCT_NAME = "RetroArch copy";
-				VALID_ARCHS = "armv7 armv7s";
+				VALID_ARCHS = armv7;
 				WRAPPER_EXTENSION = app;
 			};
 			name = Release;
@@ -684,7 +678,7 @@
 				"OTHER_LDFLAGS[arch=*]" = "";
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
-				VALID_ARCHS = "armv7 armv7s";
+				VALID_ARCHS = armv7;
 			};
 			name = Debug;
 		};
@@ -742,17 +736,14 @@
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				VALIDATE_PRODUCT = YES;
-				VALID_ARCHS = "armv7 armv7s";
+				VALID_ARCHS = armv7;
 			};
 			name = Release;
 		};
 		96AFAE5516C1D4EA009DE44C /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = (
-					armv7s,
-					armv7,
-				);
+				ARCHS = armv7;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_LAUNCHIMAGE_NAME = LaunchImage;
 				CLANG_CXX_LIBRARY = "libstdc++";
@@ -805,7 +796,7 @@
 					"-DHAVE_MFI",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				VALID_ARCHS = "armv7 armv7s";
+				VALID_ARCHS = armv7;
 				WRAPPER_EXTENSION = app;
 			};
 			name = Debug;
@@ -813,10 +804,7 @@
 		96AFAE5616C1D4EA009DE44C /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = (
-					armv7s,
-					armv7,
-				);
+				ARCHS = armv7;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_LAUNCHIMAGE_NAME = LaunchImage;
 				CLANG_CXX_LIBRARY = "libstdc++";
@@ -907,7 +895,7 @@
 					"-DHAVE_MFI",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				VALID_ARCHS = "armv7 armv7s";
+				VALID_ARCHS = armv7;
 				WRAPPER_EXTENSION = app;
 			};
 			name = Release;
