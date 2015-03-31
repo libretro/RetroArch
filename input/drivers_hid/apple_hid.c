@@ -350,4 +350,7 @@ static void apple_hid_free(void)
     CFRelease(hid_apple->hid_ptr);
     
     hid_apple->hid_ptr = NULL;
+    
+    free(hid_apple);
+    hid_apple = NULL;
 }
