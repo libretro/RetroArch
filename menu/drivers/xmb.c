@@ -383,7 +383,7 @@ static void xmb_draw_icon_predone(gl_t *gl, xmb_handle_t *xmb,
 }
 
 static void xmb_draw_text(gl_t *gl, xmb_handle_t *xmb, const char *str, float x,
-      float y, float scale_factor, float alpha, bool align_right)
+      float y, float scale_factor, float alpha, enum text_alignment text_align)
 {
    uint8_t a8                = 0;
    struct font_params params = {0};
@@ -408,7 +408,7 @@ static void xmb_draw_text(gl_t *gl, xmb_handle_t *xmb, const char *str, float x,
    params.scale       = scale_factor;
    params.color       = FONT_COLOR_RGBA(255, 255, 255, a8);
    params.full_screen = true;
-   params.align_right = align_right;
+   params.text_align  = text_align;
 
    video_driver_set_osd_msg(str, &params, xmb->font.buf);
 }
