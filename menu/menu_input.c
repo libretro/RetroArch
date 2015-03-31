@@ -464,8 +464,199 @@ int menu_input_bind_iterate_keyboard(void)
    return 0;
 }
 
+static int menu_input_mouse(unsigned *action)
+{
+   const struct retro_keybind *binds[MAX_USERS];
+   menu_handle_t *menu       = menu_driver_get_ptr();
+   runloop_t *runloop        = rarch_main_get_ptr();
+   settings_t *settings      = config_get_ptr();
+   video_viewport_t vp;
+
+   if (!menu)
+      return -1;
+
+   if (!settings->menu.mouse.enable)
+   {
+      menu->mouse.left       = 0;
+      menu->mouse.right      = 0;
+      menu->mouse.wheelup    = 0;
+      menu->mouse.wheeldown  = 0;
+      menu->mouse.hwheelup   = 0;
+      menu->mouse.hwheeldown = 0;
+      menu->mouse.dx         = 0;
+      menu->mouse.dy         = 0;
+      menu->mouse.x          = 0;
+      menu->mouse.y          = 0;
+      menu->mouse.screen_x   = 0;
+      menu->mouse.screen_y   = 0;
+      menu->mouse.scrollup   = 0;
+      menu->mouse.scrolldown = 0;
+      return 0;
+   }
+
+   if (!video_driver_viewport_info(&vp))
+      return -1;
+
+   if (menu->mouse.hwheeldown)
+   {
+      *action = MENU_ACTION_LEFT;
+      menu->mouse.hwheeldown = false;
+      return 0;
+   }
+
+   if (menu->mouse.hwheelup)
+   {
+      *action = MENU_ACTION_RIGHT;
+      menu->mouse.hwheelup = false;
+      return 0;
+   }
+
+   menu->mouse.left       = input_driver_state(binds, 0, RETRO_DEVICE_MOUSE,
+         0, RETRO_DEVICE_ID_MOUSE_LEFT);
+   menu->mouse.right      = input_driver_state(binds, 0, RETRO_DEVICE_MOUSE,
+         0, RETRO_DEVICE_ID_MOUSE_RIGHT);
+   menu->mouse.wheelup    = input_driver_state(binds, 0, RETRO_DEVICE_MOUSE,
+         0, RETRO_DEVICE_ID_MOUSE_WHEELUP);
+   menu->mouse.wheeldown  = input_driver_state(binds, 0, RETRO_DEVICE_MOUSE,
+         0, RETRO_DEVICE_ID_MOUSE_WHEELDOWN);
+   menu->mouse.hwheelup   = input_driver_state(binds, 0, RETRO_DEVICE_MOUSE,
+         0, RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP);
+   menu->mouse.hwheeldown = input_driver_state(binds, 0, RETRO_DEVICE_MOUSE,
+         0, RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN);
+   menu->mouse.dx         = input_driver_state(binds, 0, RETRO_DEVICE_MOUSE,
+         0, RETRO_DEVICE_ID_MOUSE_X);
+   menu->mouse.dy         = input_driver_state(binds, 0, RETRO_DEVICE_MOUSE,
+         0, RETRO_DEVICE_ID_MOUSE_Y);
+
+   menu->mouse.screen_x += menu->mouse.dx;
+   menu->mouse.screen_y += menu->mouse.dy;
+
+   menu->mouse.x         = ((int)menu->mouse.screen_x * (int)menu->frame_buf.width) / (int)vp.width;
+   menu->mouse.y         = ((int)menu->mouse.screen_y * (int)menu->frame_buf.height) / (int)vp.height;
+
+   if (menu->mouse.x < 5)
+      menu->mouse.x       = 5;
+   if (menu->mouse.y < 5)
+      menu->mouse.y       = 5;
+   if (menu->mouse.x > (int)menu->frame_buf.width - 5)
+      menu->mouse.x       = menu->frame_buf.width - 5;
+   if (menu->mouse.y > (int)menu->frame_buf.height - 5)
+      menu->mouse.y       = menu->frame_buf.height - 5;
+
+   menu->mouse.scrollup   = (menu->mouse.y == 5);
+   menu->mouse.scrolldown = (menu->mouse.y == (int)menu->frame_buf.height - 5);
+
+   if (menu->mouse.dx != 0 || menu->mouse.dy !=0 || menu->mouse.left
+      || menu->mouse.wheelup || menu->mouse.wheeldown
+      || menu->mouse.hwheelup || menu->mouse.hwheeldown
+      || menu->mouse.scrollup || menu->mouse.scrolldown)
+      runloop->frames.video.current.menu.animation.is_active = true;
+
+   return 0;
+}
+
+static int menu_input_pointer(unsigned *action)
+{
+   int pointer_device, pointer_x, pointer_y, screen_x, screen_y;
+   const struct retro_keybind *binds[MAX_USERS];      
+   menu_handle_t *menu       = menu_driver_get_ptr();
+   runloop_t *runloop        = rarch_main_get_ptr();
+   settings_t *settings      = config_get_ptr();
+   driver_t *driver     = driver_get_ptr();
+
+   if (!menu)
+      return -1;
+
+   if (!settings->menu.pointer.enable)
+   {
+      memset(&menu->pointer, 0, sizeof(menu->pointer));
+      return 0;
+   }
+
+#if defined(HAVE_XMB)
+   if (driver->menu_ctx == &menu_ctx_xmb)
+      return 0;
+#endif
+
+   pointer_device = driver->menu_ctx->set_texture?
+        RETRO_DEVICE_POINTER : RARCH_DEVICE_POINTER_SCREEN;
+
+   menu->pointer.pressed[0]  = input_driver_state(binds, 0, pointer_device,
+         0, RETRO_DEVICE_ID_POINTER_PRESSED);
+   menu->pointer.pressed[1]  = input_driver_state(binds, 0, pointer_device,
+         1, RETRO_DEVICE_ID_POINTER_PRESSED);
+   menu->pointer.back  = input_driver_state(binds, 0, pointer_device,
+         0, RARCH_DEVICE_ID_POINTER_BACK);
+
+   pointer_x = input_driver_state(binds, 0, pointer_device, 0, RETRO_DEVICE_ID_POINTER_X);
+   pointer_y = input_driver_state(binds, 0, pointer_device, 0, RETRO_DEVICE_ID_POINTER_Y);
+
+   /* by multiple presses, the main press will be the one closest to the previous coordinates */
+   if(menu->pointer.pressed[1])
+   {
+      int pointer_x2, pointer_y2, dist1, dist2;
+
+      pointer_x2 = input_driver_state(binds, 0, pointer_device, 1, RETRO_DEVICE_ID_POINTER_X);
+      pointer_y2 = input_driver_state(binds, 0, pointer_device, 1, RETRO_DEVICE_ID_POINTER_Y);
+
+      dist1 = (pointer_x  - menu->pointer.old_x) * (pointer_x  - menu->pointer.old_x) +
+              (pointer_y  - menu->pointer.old_y) * (pointer_y  - menu->pointer.old_y);
+      dist2 = (pointer_x2 - menu->pointer.old_x) * (pointer_x2 - menu->pointer.old_x) +
+              (pointer_y2 - menu->pointer.old_y) * (pointer_y2 - menu->pointer.old_y);
+
+      if (dist2 < dist1)
+      {
+         int temp;
+         pointer_x = pointer_x2;
+         pointer_y = pointer_y2;
+         temp = menu->pointer.pressed[0];
+         menu->pointer.pressed[0] = menu->pointer.pressed[1];
+         menu->pointer.pressed[1] = temp;
+      }
+   }   
+   menu->pointer.old_x = pointer_x;
+   menu->pointer.old_y = pointer_y;
+
+   screen_x  = ((pointer_x + 0x7fff) * (int)menu->frame_buf.width) / 0xFFFF;
+   screen_y  = ((pointer_y + 0x7fff) * (int)menu->frame_buf.height) / 0xFFFF;
+
+   if (menu->pointer.pressed[0])
+   {
+      menu->mouse.x       = screen_x;
+      menu->mouse.y       = screen_y;
+      if (menu->mouse.x < 5)
+         menu->mouse.x       = 5;
+      if (menu->mouse.y < 5)
+         menu->mouse.y       = 5;
+      if (menu->mouse.x > (int)menu->frame_buf.width - 5)
+         menu->mouse.x       = menu->frame_buf.width - 5;
+      if (menu->mouse.y > (int)menu->frame_buf.height - 5)
+         menu->mouse.y       = menu->frame_buf.height - 5;
+
+      menu->mouse.scrollup   = (menu->mouse.y == 5);
+      menu->mouse.scrolldown = (menu->mouse.y == (int)menu->frame_buf.height - 5);
+
+      menu->pointer.cancel = false;
+
+      if(menu->pointer.oldpressed[1] && !menu->pointer.pressed[1])
+         menu->pointer.back = true;
+   }
+   else
+      menu->pointer.cancel = screen_x < 5 || screen_x > (int)menu->frame_buf.width  - 5
+                          || screen_x < 5 || screen_x > (int)menu->frame_buf.height - 5;
+
+   menu->pointer.oldpressed[1] = menu->pointer.pressed[1];
+
+
+   if (menu->pointer.pressed[0] || menu->pointer.back || menu->mouse.x != screen_x || menu->mouse.y != screen_y)
+      runloop->frames.video.current.menu.animation.is_active = true;
+
+   return 0;
+}
+
 unsigned menu_input_frame(retro_input_t input, retro_input_t trigger_input)
 {
+   unsigned ret = 0;
    static bool initial_held = true;
    static bool first_held = false;
    static const retro_input_t input_repeat =
@@ -517,30 +708,36 @@ unsigned menu_input_frame(retro_input_t input, retro_input_t trigger_input)
    if (driver->block_input)
       trigger_input = 0;
    if (trigger_input & (1ULL << RETRO_DEVICE_ID_JOYPAD_UP))
-      return MENU_ACTION_UP;
-   if (trigger_input & (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN))
-      return MENU_ACTION_DOWN;
-   if (trigger_input & (1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT))
-      return MENU_ACTION_LEFT;
-   if (trigger_input & (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT))
-      return MENU_ACTION_RIGHT;
-   if (trigger_input & (1ULL << RETRO_DEVICE_ID_JOYPAD_L))
-      return MENU_ACTION_SCROLL_UP;
-   if (trigger_input & (1ULL << RETRO_DEVICE_ID_JOYPAD_R))
-      return MENU_ACTION_SCROLL_DOWN;
-   if (trigger_input & (1ULL << RETRO_DEVICE_ID_JOYPAD_B))
-      return MENU_ACTION_CANCEL;
-   if (trigger_input & (1ULL << RETRO_DEVICE_ID_JOYPAD_A))
-      return MENU_ACTION_OK;
-   if (trigger_input & (1ULL << RETRO_DEVICE_ID_JOYPAD_X))
-      return MENU_ACTION_SEARCH;
-   if (trigger_input & (1ULL << RETRO_DEVICE_ID_JOYPAD_Y))
-      return MENU_ACTION_TEST;
-   if (trigger_input & (1ULL << RETRO_DEVICE_ID_JOYPAD_START))
-      return MENU_ACTION_START;
-   if (trigger_input & (1ULL << RETRO_DEVICE_ID_JOYPAD_SELECT))
-      return MENU_ACTION_SELECT;
-   if (trigger_input & (1ULL << RARCH_MENU_TOGGLE))
-      return MENU_ACTION_TOGGLE;
-   return MENU_ACTION_NOOP;
+      ret = MENU_ACTION_UP;
+   else if (trigger_input & (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN))
+      ret = MENU_ACTION_DOWN;
+   else if (trigger_input & (1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT))
+      ret = MENU_ACTION_LEFT;
+   else if (trigger_input & (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT))
+      ret = MENU_ACTION_RIGHT;
+   else if (trigger_input & (1ULL << RETRO_DEVICE_ID_JOYPAD_L))
+      ret = MENU_ACTION_SCROLL_UP;
+   else if (trigger_input & (1ULL << RETRO_DEVICE_ID_JOYPAD_R))
+      ret = MENU_ACTION_SCROLL_DOWN;
+   else if (trigger_input & (1ULL << RETRO_DEVICE_ID_JOYPAD_B))
+      ret = MENU_ACTION_CANCEL;
+   else if (trigger_input & (1ULL << RETRO_DEVICE_ID_JOYPAD_A))
+      ret = MENU_ACTION_OK;
+   else if (trigger_input & (1ULL << RETRO_DEVICE_ID_JOYPAD_X))
+      ret = MENU_ACTION_SEARCH;
+   else if (trigger_input & (1ULL << RETRO_DEVICE_ID_JOYPAD_Y))
+      ret = MENU_ACTION_TEST;
+   else if (trigger_input & (1ULL << RETRO_DEVICE_ID_JOYPAD_START))
+      ret = MENU_ACTION_START;
+   else if (trigger_input & (1ULL << RETRO_DEVICE_ID_JOYPAD_SELECT))
+      ret = MENU_ACTION_SELECT;
+   else if (trigger_input & (1ULL << RARCH_MENU_TOGGLE))
+      ret = MENU_ACTION_TOGGLE;
+   else
+      ret = MENU_ACTION_NOOP;
+
+   menu_input_mouse(&ret);
+   menu_input_pointer(&ret);
+
+   return ret;
 }
