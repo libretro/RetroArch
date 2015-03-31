@@ -242,6 +242,7 @@ static uint16_t apple_hid_get_product_id(IOHIDDeviceRef device)
 static void add_device(void* context, IOReturn result,
       void* sender, IOHIDDeviceRef device)
 {
+   IOReturn ret;
    uint16_t dev_vid, dev_pid;
    CFStringRef device_name_ref;
    autoconfig_params_t params = {{0}};
@@ -255,7 +256,10 @@ static void add_device(void* context, IOReturn result,
    connection->device_handle = device;
    connection->slot          = MAX_USERS;
 
-   IOHIDDeviceOpen(device, kIOHIDOptionsTypeNone);
+   ret = IOHIDDeviceOpen(device, kIOHIDOptionsTypeNone);
+    
+   if (ret != kIOReturnSuccess)
+       goto error;
 
    /* Move the device's run loop to this thread. */
    IOHIDDeviceScheduleWithRunLoop(device, CFRunLoopGetCurrent(),
@@ -297,6 +301,9 @@ static void add_device(void* context, IOReturn result,
 
    input_config_autoconfigure_joypad(&params);
    RARCH_LOG("Port %d: %s.\n", connection->slot, connection->device_name);
+    
+error:
+   return;
 }
 
 static void append_matching_dictionary(CFMutableArrayRef array,
