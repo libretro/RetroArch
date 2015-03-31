@@ -28,6 +28,8 @@ struct pad_connection
    uint8_t data[2048];
 };
 
+static joypad_connection_t *slots;
+
 static void hid_pad_connection_send_control(void *data, uint8_t* data_buf, size_t size)
 {
    struct pad_connection* connection = (struct pad_connection*)data;

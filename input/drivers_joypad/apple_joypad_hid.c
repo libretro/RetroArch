@@ -20,7 +20,6 @@
 #include "../../general.h"
 #include "../../runloop.h"
 
-static joypad_connection_t *slots;
 
 static bool apple_joypad_init(void)
 {
