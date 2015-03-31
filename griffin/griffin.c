@@ -342,6 +342,7 @@ INPUT
 #include "../input/connect/connect_wii.c"
 
 #ifdef HAVE_HID
+#include "../input/drivers_hid/apple_hid.c"
 #include "../input/drivers_joypad/apple_joypad_hid.c"
 #endif
 
