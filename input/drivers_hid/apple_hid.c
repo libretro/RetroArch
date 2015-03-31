@@ -36,7 +36,7 @@ struct pad_connection
 
 static bool apple_hid_joypad_button(unsigned port, uint16_t joykey)
 {
-    driver_t *driver = driver_get_ptr();
+    driver_t          *driver = driver_get_ptr();
     apple_input_data_t *apple = (apple_input_data_t*)driver->input_data;
     uint64_t buttons          = pad_connection_get_buttons(&hid_apple->slots[port], port);
     
@@ -67,7 +67,7 @@ static bool apple_hid_joypad_rumble(unsigned pad,
 
 static int16_t apple_hid_joypad_axis(unsigned port, uint32_t joyaxis)
 {
-    driver_t *driver = driver_get_ptr();
+    driver_t          *driver = driver_get_ptr();
     apple_input_data_t *apple = (apple_input_data_t*)driver->input_data;
     int16_t val = 0;
     
@@ -96,7 +96,7 @@ static int16_t apple_hid_joypad_axis(unsigned port, uint32_t joyaxis)
 
 static void hid_pad_connection_send_control(void *data, uint8_t* data_buf, size_t size)
 {
-   struct pad_connection* connection = (struct pad_connection*)data;
+   struct pad_connection *connection = (struct pad_connection*)data;
 
    if (connection)
       IOHIDDeviceSetReport(connection->device_handle,
@@ -109,9 +109,9 @@ static void hid_pad_connection_send_control(void *data, uint8_t* data_buf, size_
 static void hid_device_input_callback(void* context, IOReturn result,
       void* sender, IOHIDValueRef value)
 {
-   driver_t *driver = driver_get_ptr();
-   apple_input_data_t *apple         = (apple_input_data_t*)driver->input_data;
-   struct pad_connection* connection = (struct pad_connection*)context;
+   driver_t                  *driver = driver_get_ptr();
+   apple_input_data_t         *apple = (apple_input_data_t*)driver->input_data;
+   struct pad_connection *connection = (struct pad_connection*)context;
    IOHIDElementRef element           = IOHIDValueGetElement(value);
    uint32_t type                     = IOHIDElementGetType(element);
    uint32_t page                     = IOHIDElementGetUsagePage(element);
@@ -180,9 +180,9 @@ static void hid_device_input_callback(void* context, IOReturn result,
 
 static void remove_device(void* context, IOReturn result, void* sender)
 {
-   driver_t *driver = driver_get_ptr();
-   apple_input_data_t *apple = (apple_input_data_t*)driver->input_data;
-   struct pad_connection* connection = (struct pad_connection*)context;
+   driver_t                  *driver = driver_get_ptr();
+   apple_input_data_t         *apple = (apple_input_data_t*)driver->input_data;
+   struct pad_connection *connection = (struct pad_connection*)context;
 
    if (connection && (connection->slot < MAX_USERS))
    {
@@ -207,10 +207,8 @@ static void hid_device_report(void* context, IOReturn result, void *sender,
 {
    struct pad_connection* connection = (struct pad_connection*)context;
 
-   if (!connection)
-      return;
-
-   pad_connection_packet(&hid_apple->slots[connection->slot], connection->slot,
+   if (connection)
+      pad_connection_packet(&hid_apple->slots[connection->slot], connection->slot,
          connection->data, reportLength + 1);
 }
 
