@@ -308,6 +308,10 @@ static bool apple_hid_init(void)
         kCFAllocatorDefault, kIOHIDOptionsTypeNone)))
         goto error;
     
+    IOHIDManagerSetDeviceMatching(hid_apple->hid_ptr, NULL);
+    IOHIDManagerScheduleWithRunLoop(hid_apple->hid_ptr, CFRunLoopGetCurrent(),
+                                    kCFRunLoopDefaultMode);
+    
     matcher = CFArrayCreateMutable(kCFAllocatorDefault, 0,
                                    &kCFTypeArrayCallBacks);
     
@@ -321,10 +325,6 @@ static bool apple_hid_init(void)
     
     IOHIDManagerRegisterDeviceMatchingCallback(hid_apple->hid_ptr,
                                                add_device, 0);
-    IOHIDManagerScheduleWithRunLoop(hid_apple->hid_ptr, CFRunLoopGetCurrent(),
-                                    kCFRunLoopDefaultMode);
-    
-    IOHIDManagerOpen(hid_apple->hid_ptr, kIOHIDOptionsTypeNone);
     
     hid_apple->slots = (joypad_connection_t*)pad_connection_init(MAX_USERS);
     
