@@ -318,6 +318,42 @@ static void append_matching_dictionary(CFMutableArrayRef array,
    CFRelease(matcher);
 }
 
+static int apple_hid_manager_init(apple_hid_t *hid)
+{
+    if (!hid)
+        return -1;
+    if (hid->hid_ptr) /* already initialized. */
+        return 0;
+    
+    hid->hid_ptr = IOHIDManagerCreate(kCFAllocatorDefault, kIOHIDOptionsTypeNone);
+    
+    if (hid->hid_ptr)
+    {
+        IOHIDManagerSetDeviceMatching(hid->hid_ptr, NULL);
+        IOHIDManagerScheduleWithRunLoop(hid->hid_ptr, CFRunLoopGetCurrent(),
+                                        kCFRunLoopDefaultMode);
+        return 0;
+    }
+    
+    return -1;
+}
+
+
+static int apple_hid_manager_exit(apple_hid_t *hid)
+{
+    if (!hid)
+        return -1;
+    
+    if (hid->hid_ptr)
+    {
+        IOHIDManagerClose(hid->hid_ptr, kIOHIDOptionsTypeNone);
+        CFRelease(hid->hid_ptr);
+        hid->hid_ptr = NULL;
+    }
+    
+    return 0;
+}
+
 static bool apple_hid_init(void)
 {
     CFMutableArrayRef matcher;
@@ -325,15 +361,9 @@ static bool apple_hid_init(void)
     hid_apple = (apple_hid_t*)calloc(1, sizeof(*hid_apple));
     
     if (!hid_apple)
-        return false;
-    
-    if (!(hid_apple->hid_ptr = IOHIDManagerCreate(
-        kCFAllocatorDefault, kIOHIDOptionsTypeNone)))
         goto error;
-    
-    IOHIDManagerSetDeviceMatching(hid_apple->hid_ptr, NULL);
-    IOHIDManagerScheduleWithRunLoop(hid_apple->hid_ptr, CFRunLoopGetCurrent(),
-                                    kCFRunLoopDefaultMode);
+    if (apple_hid_manager_init(hid_apple) == -1)
+        goto error;
     
     matcher = CFArrayCreateMutable(kCFAllocatorDefault, 0,
                                    &kCFTypeArrayCallBacks);
@@ -366,14 +396,12 @@ static void apple_hid_free(void)
     
    pad_connection_destroy(hid_apple->slots);
     
-    IOHIDManagerClose(hid_apple->hid_ptr, kIOHIDOptionsTypeNone);
-    IOHIDManagerUnscheduleFromRunLoop(hid_apple->hid_ptr,
+   IOHIDManagerUnscheduleFromRunLoop(hid_apple->hid_ptr,
                                       CFRunLoopGetCurrent(), kCFRunLoopCommonModes);
     
-    CFRelease(hid_apple->hid_ptr);
+   apple_hid_manager_exit(hid_apple);
     
-    hid_apple->hid_ptr = NULL;
-    
-    free(hid_apple);
-    hid_apple = NULL;
+   if (hid_apple)
+      free(hid_apple);
+   hid_apple = NULL;
 }
