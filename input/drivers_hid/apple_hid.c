@@ -192,7 +192,6 @@ static void remove_device(void* context, IOReturn result, void* sender)
       snprintf(msg, sizeof(msg), "Joypad #%u (%s) disconnected.",
             connection->slot, connection->device_name);
       rarch_main_msg_queue_push(msg, 0, 60, false);
-      RARCH_LOG("[apple_input]: %s\n", msg);
 
       apple->buttons[connection->slot] = 0;
       memset(apple->axes[connection->slot], 0, sizeof(apple->axes));
