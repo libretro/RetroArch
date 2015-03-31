@@ -29,8 +29,6 @@ static apple_hid_t *hid_apple;
 
 struct pad_connection
 {
-   int v_id;
-   int p_id;
    uint32_t slot;
    IOHIDDeviceRef device_handle;
    uint8_t data[2048];
@@ -216,16 +214,46 @@ static void hid_device_report(void* context, IOReturn result, void *sender,
          connection->data, reportLength + 1);
 }
 
+static int32_t apple_hid_get_int_property(IOHIDDeviceRef device, CFStringRef key)
+{
+    int32_t value;
+    CFTypeRef ref = IOHIDDeviceGetProperty(device, key);
+    
+    if (ref)
+    {
+        if (CFGetTypeID(ref) == CFNumberGetTypeID())
+        {
+            CFNumberGetValue((CFNumberRef)ref, kCFNumberSInt32Type, &value);
+            return value;
+        }
+    }
+    
+    return 0;
+}
+
+static uint16_t apple_hid_get_vendor_id(IOHIDDeviceRef device)
+{
+   return apple_hid_get_int_property(device, CFSTR(kIOHIDVendorIDKey));
+}
+
+static uint16_t apple_hid_get_product_id(IOHIDDeviceRef device)
+{
+   return apple_hid_get_int_property(device, CFSTR(kIOHIDProductKey));
+}
+
 static void add_device(void* context, IOReturn result,
       void* sender, IOHIDDeviceRef device)
 {
+   uint16_t dev_vid, dev_pid;
    char device_name[PATH_MAX_LENGTH];
    CFStringRef device_name_ref;
-   CFNumberRef vendorID, productID;
    autoconfig_params_t params = {{0}};
    settings_t *settings = config_get_ptr();
    struct pad_connection* connection = (struct pad_connection*)
       calloc(1, sizeof(*connection));
+    
+   if (!connection)
+       return;
 
    connection->device_handle = device;
    connection->slot          = MAX_USERS;
@@ -243,11 +271,8 @@ static void add_device(void* context, IOReturn result,
          sizeof(device_name), kCFStringEncodingUTF8);
 #endif
 
-   vendorID = (CFNumberRef)IOHIDDeviceGetProperty(device, CFSTR(kIOHIDVendorIDKey));
-   CFNumberGetValue(vendorID, kCFNumberIntType, &connection->v_id);
-
-   productID = (CFNumberRef)IOHIDDeviceGetProperty(device, CFSTR(kIOHIDProductIDKey));
-   CFNumberGetValue(productID, kCFNumberIntType, &connection->p_id);
+   dev_vid = apple_hid_get_vendor_id  (device);
+   dev_pid = apple_hid_get_product_id (device);
 
    connection->slot = pad_connection_pad_init(hid_apple->slots, device_name,
          connection, &hid_pad_connection_send_control);
@@ -267,9 +292,9 @@ static void add_device(void* context, IOReturn result,
          device_name, sizeof(settings->input.device_names));
 
    params.idx = connection->slot;
+   params.vid = dev_vid;
+   params.pid = dev_pid;
    strlcpy(params.name, device_name, sizeof(params.name));
-   params.vid = connection->v_id;
-   params.pid = connection->p_id;
    strlcpy(params.driver, apple_hid_joypad.ident, sizeof(params.driver));
 
    input_config_autoconfigure_joypad(&params);
