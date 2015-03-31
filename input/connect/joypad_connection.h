@@ -37,7 +37,7 @@ typedef struct pad_connection_interface
 extern pad_connection_interface_t pad_connection_wii;
 extern pad_connection_interface_t pad_connection_ps3;
 
-typedef struct
+typedef struct joypad_connection
 {
     bool connected;
     struct pad_connection_interface *iface;
