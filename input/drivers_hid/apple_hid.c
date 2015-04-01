@@ -239,12 +239,19 @@ static uint16_t apple_hid_get_product_id(IOHIDDeviceRef device)
    return apple_hid_get_int_property(device, CFSTR(kIOHIDProductIDKey));
 }
 
+static void apple_hid_get_product_string(IOHIDDeviceRef device, char *buf, size_t len)
+{
+    CFStringRef ref = IOHIDDeviceGetProperty(device, CFSTR(kIOHIDProductKey));
+    
+    if (ref)
+       CFStringGetCString(ref, buf, len, kCFStringEncodingUTF8);
+}
+
 static void add_device(void* context, IOReturn result,
       void* sender, IOHIDDeviceRef device)
 {
    IOReturn ret;
    uint16_t dev_vid, dev_pid;
-   CFStringRef device_name_ref;
    autoconfig_params_t params = {{0}};
    settings_t *settings = config_get_ptr();
    struct pad_connection* connection = (struct pad_connection*)
@@ -267,9 +274,8 @@ static void add_device(void* context, IOReturn result,
    IOHIDDeviceRegisterRemovalCallback(device, remove_device, connection);
 
 #ifndef IOS
-   device_name_ref = IOHIDDeviceGetProperty(device, CFSTR(kIOHIDProductKey));
-   CFStringGetCString(device_name_ref, connection->device_name,
-         sizeof(connection->device_name), kCFStringEncodingUTF8);
+    apple_hid_get_product_string(device, connection->device_name,
+                                 sizeof(connection->device_name));
 #endif
 
    dev_vid = apple_hid_get_vendor_id  (device);
