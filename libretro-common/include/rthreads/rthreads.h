@@ -179,6 +179,8 @@ void scond_signal(scond_t *cond);
 #elif defined(PSP)
 #include <pspthreadman.h>
 #include <psputils.h>
+#elif defined(_3DS)
+#include <3ds.h>
 #elif defined(_WIN32) && !defined(_XBOX)
 #include <windows.h> #elif defined(_XBOX)
 #include <xtl.h>
@@ -198,6 +200,8 @@ static INLINE void retro_sleep(unsigned msec)
    sys_timer_usleep(1000 * msec);
 #elif defined(PSP)
    sceKernelDelayThread(1000 * msec);
+#elif defined(_3DS)
+   svcSleepThread(1000000 * (s64)msec);
 #elif defined(_WIN32)
    Sleep(msec);
 #elif defined(XENON)

@@ -43,6 +43,9 @@ static const frontend_ctx_driver_t *frontend_ctx_drivers[] = {
 #if defined(PSP)
    &frontend_ctx_psp,
 #endif
+#if defined(_3DS)
+   &frontend_ctx_ctr,
+#endif
    &frontend_ctx_null,
    NULL
 };

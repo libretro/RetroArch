@@ -235,10 +235,11 @@ VIDEO DRIVER
 #include "../gfx/drivers/gx_gfx.c"
 #elif defined(PSP)
 #include "../gfx/drivers/psp1_gfx.c"
+#elif defined(_3DS)
+#include "../gfx/drivers/ctr_gfx.c"
 #elif defined(XENON)
 #include "../gfx/drivers/xenon360_gfx.c"
 #endif
-
 #include "../gfx/drivers/nullgfx.c"
 
 /*============================================================
@@ -309,6 +310,10 @@ INPUT
 #include "../input/drivers/psp_input.c"
 #include "../input/drivers_joypad/psp_input_joypad.c"
 #include "../input/autoconf/builtin_psp.c"
+#elif defined(_3DS)
+#include "../input/drivers/ctr_input.c"
+#include "../input/drivers_joypad/ctr_input_joypad.c"
+#include "../input/autoconf/builtin_ctr.c"
 #elif defined(GEKKO)
 #ifdef HAVE_LIBSICKSAXIS
 #include "../input/drivers_joypad/gx_input_sicksaxis.c"
@@ -365,7 +370,7 @@ INPUT
 #include "../input/drivers_joypad/winxinput_joypad.c"
 #endif
 
-#if defined(__linux__) && !defined(ANDROID) 
+#if defined(__linux__) && !defined(ANDROID)
 #include "../input/drivers/linuxraw_input.c"
 #include "../input/drivers_joypad/linuxraw_joypad.c"
 #endif
@@ -469,6 +474,8 @@ AUDIO
 #include "../audio/drivers/rwebaudio.c"
 #elif defined(PSP)
 #include "../audio/drivers/psp1_audio.c"
+#elif defined(_3DS)
+#include "../audio/drivers/ctr_audio.c"
 #endif
 
 #ifdef HAVE_XAUDIO
@@ -610,6 +617,8 @@ FRONTEND
 #include "../frontend/drivers/platform_xdk.c"
 #elif defined(PSP)
 #include "../frontend/drivers/platform_psp.c"
+#elif defined(_3DS)
+#include "../frontend/drivers/platform_ctr.c"
 #elif defined(__QNX__)
 #include "../frontend/drivers/platform_qnx.c"
 #elif defined(OSX) || defined(IOS)

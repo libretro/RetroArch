@@ -113,6 +113,8 @@ const char *config_get_default_audio(void)
          return "gx";
       case AUDIO_PSP1:
          return "psp1";
+      case AUDIO_CTR:
+         return "ctr";
       case AUDIO_RWEBAUDIO:
          return "rwebaudio";
       default:
@@ -170,6 +172,8 @@ const char *config_get_default_video(void)
          return "psp1";
       case VIDEO_VITA:
          return "vita";
+      case VIDEO_CTR:
+         return "ctr";
       case VIDEO_XVIDEO:
          return "xvideo";
       case VIDEO_SDL:
@@ -212,6 +216,8 @@ const char *config_get_default_input(void)
          return "ps3";
       case INPUT_PSP:
          return "psp";
+      case INPUT_CTR:
+         return "ctr";
       case INPUT_SDL:
          return "sdl";
       case INPUT_SDL2:
@@ -266,6 +272,8 @@ const char *config_get_default_joypad(void)
          return "xdk";
       case JOYPAD_PSP:
          return "psp";
+      case JOYPAD_CTR:
+         return "ctr";
       case JOYPAD_DINPUT:
          return "dinput";
       case JOYPAD_UDEV:

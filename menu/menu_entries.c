@@ -300,6 +300,9 @@ static void menu_entries_parse_drive_list(file_list_t *list)
          "ef0:/", "", MENU_FILE_DIRECTORY, 0);
    menu_list_push(list,
          "host0:/", "", MENU_FILE_DIRECTORY, 0);
+#elif defined(_3DS)
+   menu_list_push(list,
+         "sdmc:/", "", MENU_FILE_DIRECTORY, 0);
 #elif defined(IOS)
    menu_list_push(list,
          "/var/mobile/Documents/", "", MENU_FILE_DIRECTORY, 0);

@@ -84,6 +84,7 @@ extern input_driver_t input_x;
 extern input_driver_t input_wayland;
 extern input_driver_t input_ps3;
 extern input_driver_t input_psp;
+extern input_driver_t input_ctr;
 extern input_driver_t input_xenon360;
 extern input_driver_t input_gx;
 extern input_driver_t input_xinput;

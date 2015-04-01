@@ -40,6 +40,9 @@ static const video_driver_t *video_drivers[] = {
 #ifdef PSP
    &video_psp1,
 #endif
+#ifdef _3DS
+   &video_ctr,
+#endif
 #ifdef HAVE_SDL
    &video_sdl,
 #endif

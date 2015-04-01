@@ -31,6 +31,8 @@
 #include <unistd.h>
 #elif defined(PSP)
 #include <pspthreadman.h>
+#elif defined(_3DS)
+#include <3ds.h>
 #else
 #include <time.h>
 #endif
@@ -87,6 +89,8 @@ static INLINE void rarch_sleep(unsigned msec)
    sys_timer_usleep(1000 * msec);
 #elif defined(PSP)
    sceKernelDelayThread(1000 * msec);
+#elif defined(_3DS)
+   svcSleepThread(1000000 * (s64)msec);
 #elif defined(_WIN32)
    Sleep(msec);
 #elif defined(XENON)

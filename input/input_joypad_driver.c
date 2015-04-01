@@ -38,6 +38,9 @@ static rarch_joypad_driver_t *joypad_drivers[] = {
 #ifdef PSP
    &psp_joypad,
 #endif
+#ifdef _3DS
+   &ctr_joypad,
+#endif
 #ifdef HAVE_DINPUT
    &dinput_joypad,
 #endif
