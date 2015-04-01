@@ -35,6 +35,20 @@ struct pad_connection
    uint8_t data[2048];
 };
 
+static bool apple_hid_joypad_query_pad(unsigned pad)
+{
+   return pad < MAX_USERS;
+}
+
+static const char *apple_hid_joypad_name(unsigned pad)
+{
+   /* TODO/FIXME - implement properly */
+   if (pad >= MAX_USERS)
+      return NULL;
+
+   return NULL;
+}
+
 static bool apple_hid_joypad_button(unsigned port, uint16_t joykey)
 {
     driver_t          *driver = driver_get_ptr();
@@ -431,4 +445,8 @@ static void apple_hid_free(void)
    if (hid_apple)
       free(hid_apple);
    hid_apple = NULL;
+}
+
+static void apple_hid_poll(void)
+{
 }

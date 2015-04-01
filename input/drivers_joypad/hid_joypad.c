@@ -14,11 +14,10 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #include "../input_autodetect.h"
 #include "../input_common.h"
 
-static bool apple_joypad_init(void)
+static bool hid_joypad_init(void)
 {
    if (!apple_hid_init())
        return false;
@@ -26,59 +25,56 @@ static bool apple_joypad_init(void)
    return true;
 }
 
-static bool apple_joypad_query_pad(unsigned pad)
+static bool hid_joypad_query_pad(unsigned pad)
 {
-   return pad < MAX_USERS;
+   return apple_hid_joypad_query_pad(pad);
 }
 
-static void apple_joypad_destroy(void)
+static void hid_joypad_destroy(void)
 {
    apple_hid_free();
 }
 
-static bool apple_joypad_button(unsigned port, uint16_t joykey)
+static bool hid_joypad_button(unsigned port, uint16_t joykey)
 {
    return apple_hid_joypad_button(port, joykey);
 }
 
-static uint64_t apple_joypad_get_buttons(unsigned port)
+static uint64_t hid_joypad_get_buttons(unsigned port)
 {
    return apple_hid_joypad_get_buttons(port);
 }
 
-static int16_t apple_joypad_axis(unsigned port, uint32_t joyaxis)
+static int16_t hid_joypad_axis(unsigned port, uint32_t joyaxis)
 {
    return apple_hid_joypad_axis(port, joyaxis);
 }
 
-static void apple_joypad_poll(void)
+static void hid_joypad_poll(void)
 {
+   apple_hid_poll();
 }
 
-static bool apple_joypad_rumble(unsigned pad,
+static bool hid_joypad_rumble(unsigned pad,
       enum retro_rumble_effect effect, uint16_t strength)
 {
    return apple_hid_joypad_rumble(pad, effect, strength);
 }
 
-static const char *apple_joypad_name(unsigned pad)
+static const char *hid_joypad_name(unsigned pad)
 {
-   /* TODO/FIXME - implement properly */
-   if (pad >= MAX_USERS)
-      return NULL;
-
-   return NULL;
+   return apple_hid_joypad_name(pad);
 }
 
-rarch_joypad_driver_t apple_hid_joypad = {
-   apple_joypad_init,
-   apple_joypad_query_pad,
-   apple_joypad_destroy,
-   apple_joypad_button,
-   apple_joypad_get_buttons,
-   apple_joypad_axis,
-   apple_joypad_poll,
-   apple_joypad_rumble,
-   apple_joypad_name,
-   "apple_hid"
+rarch_joypad_driver_t hid_joypad = {
+   hid_joypad_init,
+   hid_joypad_query_pad,
+   hid_joypad_destroy,
+   hid_joypad_button,
+   hid_joypad_get_buttons,
+   hid_joypad_axis,
+   hid_joypad_poll,
+   hid_joypad_rumble,
+   hid_joypad_name,
+   "hid"
 };

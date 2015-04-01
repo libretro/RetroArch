@@ -56,10 +56,10 @@ static rarch_joypad_driver_t *joypad_drivers[] = {
 #if defined(HAVE_SDL) || defined(HAVE_SDL2)
    &sdl_joypad,
 #endif
-#ifdef __MACH__
 #ifdef HAVE_HID
-   &apple_hid_joypad,
+   &hid_joypad,
 #endif
+#ifdef __MACH__
 #ifdef IOS
    &apple_ios_joypad,
 #endif

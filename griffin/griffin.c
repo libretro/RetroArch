@@ -343,7 +343,10 @@ INPUT
 
 #ifdef HAVE_HID
 #include "../input/drivers_hid/apple_hid.c"
-#include "../input/drivers_joypad/apple_joypad_hid.c"
+#endif
+
+#ifdef HAVE_HID
+#include "../input/drivers_joypad/hid_joypad.c"
 #endif
 
 #ifdef IOS
