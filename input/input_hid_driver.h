@@ -30,7 +30,7 @@ typedef struct hid_driver hid_driver_t;
 
 struct hid_driver
 {
-   void *(*init)(void);
+   bool (*init)(void *);
    bool (*query_pad)(void *, unsigned);
    void (*free)(void *);
    bool (*button)(void *, unsigned, uint16_t);
@@ -71,19 +71,6 @@ const char *hid_driver_find_ident(int index);
  * Returns: string listing of all HID driver names, separated by '|'.
  **/
 const char* config_get_hid_driver_options(void);
-
-/**
- * input_hid_init_driver:
- * @ident                           : identifier of driver to initialize.
- *
- * Initialize a HID driver of name @ident.
- *
- * If ident points to NULL or a zero-length string, 
- * equivalent to calling input_hid_init_first().
- *
- * Returns: HID driver if found, otherwise NULL.
- **/
-const hid_driver_t *input_hid_init_driver(const char *ident);
 
 /**
  * input_hid_init_first:

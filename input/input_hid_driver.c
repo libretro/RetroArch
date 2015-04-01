@@ -104,39 +104,6 @@ const char* config_get_hid_driver_options(void)
 }
 
 /**
- * input_hid_init_driver:
- * @ident                           : identifier of driver to initialize.
- *
- * Initialize a HID driver of name @ident.
- *
- * If ident points to NULL or a zero-length string, 
- * equivalent to calling input_hid_init_first().
- *
- * Returns: HID driver if found, otherwise NULL.
- **/
-const hid_driver_t *input_hid_init_driver(const char *ident)
-{
-   unsigned i;
-   driver_t *driver   = driver_get_ptr();
-
-   if (!ident || !*ident)
-      return input_hid_init_first(driver->hid_data);
-
-   for (i = 0; hid_drivers[i]; i++)
-   {
-      if (strcmp(ident, hid_drivers[i]->ident) == 0
-            && hid_drivers[i]->init())
-      {
-         RARCH_LOG("Found HID driver: \"%s\".\n",
-               hid_drivers[i]->ident);
-         return hid_drivers[i];
-      }
-   }
-
-   return input_hid_init_first(driver->hid_data);
-}
-
-/**
  * input_hid_init_first:
  *
  * Finds first suitable HID driver and initializes.
@@ -149,9 +116,9 @@ const hid_driver_t *input_hid_init_first(void *data)
 
    for (i = 0; hid_drivers[i]; i++)
    {
-      data = hid_drivers[i]->init();
+      bool ret = hid_drivers[i]->init(data);
 
-      if (data)
+      if (ret)
       {
          RARCH_LOG("Found HID driver: \"%s\".\n",
                hid_drivers[i]->ident);
