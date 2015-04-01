@@ -456,7 +456,7 @@ static const bool default_overlay_enable = false;
 static bool default_block_config_read = true;
 
 static bool collapse_subgroups_enable = true;
-static bool show_advanced_settings    = false;
+static bool show_advanced_settings    = true;
 static const uint32_t menu_entry_normal_color = 0xffffffff;
 static const uint32_t menu_entry_hover_color  = 0xff64ff64;
 static const uint32_t menu_title_color        = 0xff64ff64;
