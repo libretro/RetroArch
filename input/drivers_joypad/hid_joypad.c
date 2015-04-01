@@ -17,9 +17,12 @@
 #include "../input_autodetect.h"
 #include "../input_common.h"
 
+static void *generic_hid;
+
 static bool hid_joypad_init(void)
 {
-   if (!apple_hid_init())
+   generic_hid = apple_hid_init();
+   if (!generic_hid)
        return false;
 
    return true;
@@ -27,43 +30,44 @@ static bool hid_joypad_init(void)
 
 static bool hid_joypad_query_pad(unsigned pad)
 {
-   return apple_hid_joypad_query_pad(pad);
+   return apple_hid_joypad_query_pad(generic_hid, pad);
 }
 
 static void hid_joypad_destroy(void)
 {
-   apple_hid_free();
+   apple_hid_free(generic_hid);
+   generic_hid = NULL;
 }
 
 static bool hid_joypad_button(unsigned port, uint16_t joykey)
 {
-   return apple_hid_joypad_button(port, joykey);
+   return apple_hid_joypad_button(generic_hid, port, joykey);
 }
 
 static uint64_t hid_joypad_get_buttons(unsigned port)
 {
-   return apple_hid_joypad_get_buttons(port);
+   return apple_hid_joypad_get_buttons(generic_hid, port);
 }
 
 static int16_t hid_joypad_axis(unsigned port, uint32_t joyaxis)
 {
-   return apple_hid_joypad_axis(port, joyaxis);
+   return apple_hid_joypad_axis(generic_hid, port, joyaxis);
 }
 
 static void hid_joypad_poll(void)
 {
-   apple_hid_poll();
+   apple_hid_poll(generic_hid);
 }
 
 static bool hid_joypad_rumble(unsigned pad,
       enum retro_rumble_effect effect, uint16_t strength)
 {
-   return apple_hid_joypad_rumble(pad, effect, strength);
+   return apple_hid_joypad_rumble(generic_hid, pad, effect, strength);
 }
 
 static const char *hid_joypad_name(unsigned pad)
 {
-   return apple_hid_joypad_name(pad);
+   return apple_hid_joypad_name(generic_hid, pad);
 }
 
 rarch_joypad_driver_t hid_joypad = {
