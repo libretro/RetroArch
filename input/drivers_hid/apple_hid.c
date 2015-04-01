@@ -60,7 +60,7 @@ static bool apple_hid_joypad_button(void *data, unsigned port, uint16_t joykey)
 {
     driver_t          *driver = driver_get_ptr();
     apple_input_data_t *apple = (apple_input_data_t*)driver->input_data;
-    uint64_t buttons          = apple_hid_joypad_get_buttons(data, port) : 0;
+    uint64_t buttons          = apple_hid_joypad_get_buttons(data, port);
     
     if (!apple || joykey == NO_BTN)
         return false;
