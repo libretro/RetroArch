@@ -28,6 +28,8 @@ static INLINE void get_title(const char *label, const char *dir,
    struct string_list *list_label = string_split(label, "|");
    struct string_list *list_path  = string_split(dir, "|");
 
+   *elem0 = *elem1 = *elem0_path = *elem1_path = 0;
+
    if (list_label)
    {
       if (list_label->size > 0)

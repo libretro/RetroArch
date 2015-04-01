@@ -367,14 +367,15 @@ int menu_entries_parse_list(
             settings->menu.navigation.browser.filter.supported_extensions_enable 
             ? exts : NULL, true);
 
+   if (push_dir)
+      menu_list_push(list, "<Use this directory>", "",
+            MENU_FILE_USE_DIRECTORY, 0);
+
    if (!str_list)
       return -1;
 
    dir_list_sort(str_list, true);
 
-   if (push_dir)
-      menu_list_push(list, "<Use this directory>", "",
-            MENU_FILE_USE_DIRECTORY, 0);
 
    list_size = str_list->size;
    for (i = 0; i < str_list->size; i++)
