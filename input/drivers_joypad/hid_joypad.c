@@ -23,8 +23,7 @@ static const hid_driver_t *generic_hid;
 
 static bool hid_joypad_init(void)
 {
-   driver_t *driver   = driver_get_ptr();
-   generic_hid = input_hid_init_first(driver->hid_data);
+   generic_hid = input_hid_init_first();
    if (!generic_hid)
        return false;
 

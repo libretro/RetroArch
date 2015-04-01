@@ -110,15 +110,16 @@ const char* config_get_hid_driver_options(void)
  *
  * Returns: HID driver if found, otherwise NULL.
  **/
-const hid_driver_t *input_hid_init_first(void *data)
+const hid_driver_t *input_hid_init_first(void)
 {
    unsigned i;
 
    for (i = 0; hid_drivers[i]; i++)
    {
-      bool ret = hid_drivers[i]->init(data);
+      driver_t *driver = driver_get_ptr();
+      driver->hid_data = hid_drivers[i]->init();
 
-      if (ret)
+      if (driver->hid_data)
       {
          RARCH_LOG("Found HID driver: \"%s\".\n",
                hid_drivers[i]->ident);

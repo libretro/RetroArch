@@ -30,7 +30,7 @@ typedef struct hid_driver hid_driver_t;
 
 struct hid_driver
 {
-   bool (*init)(void *);
+   void *(*init)(void);
    bool (*query_pad)(void *, unsigned);
    void (*free)(void *);
    bool (*button)(void *, unsigned, uint16_t);
@@ -79,7 +79,7 @@ const char* config_get_hid_driver_options(void);
  *
  * Returns: HID driver if found, otherwise NULL.
  **/
-const hid_driver_t *input_hid_init_first(void *data);
+const hid_driver_t *input_hid_init_first(void);
 
 #ifdef __cplusplus
 }

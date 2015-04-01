@@ -424,11 +424,9 @@ static int apple_hid_manager_set_device_matching(apple_hid_t *hid)
     return 0;
 }
 
-static bool apple_hid_init(void *data)
+static void *apple_hid_init(void)
 {
-    apple_hid_t *hid_apple = (apple_hid_t*)data;
-    
-    hid_apple = (apple_hid_t*)calloc(1, sizeof(*hid_apple));
+    apple_hid_t *hid_apple = (apple_hid_t*)calloc(1, sizeof(*hid_apple));
     
     if (!hid_apple)
         goto error;
@@ -439,12 +437,12 @@ static bool apple_hid_init(void *data)
     
     hid_apple->slots = (joypad_connection_t*)pad_connection_init(MAX_USERS);
     
-    return true;
+    return hid_apple;
     
 error:
     if (hid_apple)
         free(hid_apple);
-    return false;
+    return hid_apple;
 }
 
 static void apple_hid_free(void *data)
