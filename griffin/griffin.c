@@ -343,15 +343,18 @@ INPUT
 
 #include "../input/drivers_joypad/hid_joypad.c"
 
+#include "../input/drivers_hid/null_hid.c"
+
+#ifdef HAVE_HID
+#include "../input/drivers_hid/apple_hid.c"
+#endif
+
 #if defined(__APPLE__)
 #include "../input/connect/joypad_connection.c"
 #include "../input/connect/connect_ps3.c"
 #include "../input/connect/connect_ps4.c"
 #include "../input/connect/connect_wii.c"
 
-#ifdef HAVE_HID
-#include "../input/drivers_hid/apple_hid.c"
-#endif
 
 #ifdef IOS
 #include "../apple/iOS/bluetooth/btdynamic.c"

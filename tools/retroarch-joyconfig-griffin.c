@@ -48,6 +48,7 @@
 #include "../libretro-common/compat/compat.c"
 
 #include "../input/drivers/nullinput.c"
+#include "../input/drivers_hid/null_hid.c"
 #include "../input/drivers_joypad/hid_joypad.c"
 #include "../input/drivers_joypad/nullinput_joypad.c"
 
