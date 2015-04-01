@@ -48,12 +48,19 @@ static const char *apple_hid_joypad_name(void *data, unsigned pad)
    return NULL;
 }
 
+static uint64_t apple_hid_joypad_get_buttons(void *data, unsigned port)
+{
+   apple_hid_t        *hid   = (apple_hid_t*)data;
+   if (hid)
+      return pad_connection_get_buttons(&hid->slots[port], port);
+   return 0;
+}
+
 static bool apple_hid_joypad_button(void *data, unsigned port, uint16_t joykey)
 {
     driver_t          *driver = driver_get_ptr();
-    apple_hid_t        *hid   = (apple_hid_t*)data;
     apple_input_data_t *apple = (apple_input_data_t*)driver->input_data;
-    uint64_t buttons          = hid ? pad_connection_get_buttons(&hid->slots[port], port) : 0;
+    uint64_t buttons          = apple_hid_joypad_get_buttons(data, port) : 0;
     
     if (!apple || joykey == NO_BTN)
         return false;
@@ -67,12 +74,6 @@ static bool apple_hid_joypad_button(void *data, unsigned port, uint16_t joykey)
         return ((apple->buttons[port] & (1 << joykey)) != 0) ||
         ((buttons & (1 << joykey)) != 0);
     return false;
-}
-
-static uint64_t apple_hid_joypad_get_buttons(void *data, unsigned port)
-{
-   apple_hid_t        *hid   = (apple_hid_t*)data;
-   return pad_connection_get_buttons(&hid->slots[port], port);
 }
 
 static bool apple_hid_joypad_rumble(void *data, unsigned pad,
