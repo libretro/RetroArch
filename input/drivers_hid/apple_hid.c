@@ -342,7 +342,7 @@ static void apple_hid_device_add(void* context, IOReturn result,
          connection->device_name, sizeof(settings->input.device_names));
     
     apple_hid_device_add_autodetect(connection->slot,
-        connection->device_name, hid_joypad.ident, dev_vid, dev_pid);
+        connection->device_name, apple_hid.ident, dev_vid, dev_pid);
     
 error:
    return;
