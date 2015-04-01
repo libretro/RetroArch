@@ -43,6 +43,7 @@ enum
    AUTODETECT_MATCH_VID,
    AUTODETECT_MATCH_PID,
    AUTODETECT_MATCH_IDENT,
+   AUTODETECT_MATCH_DRIVER,
    AUTODETECT_MATCH_NAME,
 };
 
@@ -88,11 +89,13 @@ static bool input_try_autoconfigure_joypad_from_conf(config_file_t *conf,
       ret = true;
    }
 
-   if (!strcmp(ident, params->name) 
-      && !strcmp(params->driver, input_driver))
+
+   if (!strcmp(ident, params->name))
    {
       BIT32_SET(*match, AUTODETECT_MATCH_IDENT);
       ret = true;
+      if (!strcmp(params->driver, input_driver))
+          BIT32_SET(*match, AUTODETECT_MATCH_DRIVER);
    }
 
    return ret;
