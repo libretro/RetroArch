@@ -34,9 +34,7 @@ struct pad_connection
    uint8_t data[2048];
 };
 
-static apple_hid_t *hid;
-
-static bool apple_hid_joypad_query_pad(void *data, unsigned pad)
+static bool apple_hid_joypad_query(void *data, unsigned pad)
 {
    return pad < MAX_USERS;
 }
@@ -55,7 +53,7 @@ static bool apple_hid_joypad_button(void *data, unsigned port, uint16_t joykey)
     driver_t          *driver = driver_get_ptr();
     apple_hid_t        *hid   = (apple_hid_t*)data;
     apple_input_data_t *apple = (apple_input_data_t*)driver->input_data;
-    uint64_t buttons          = pad_connection_get_buttons(&hid->slots[port], port);
+    uint64_t buttons          = hid ? pad_connection_get_buttons(&hid->slots[port], port) : 0;
     
     if (!apple || joykey == NO_BTN)
         return false;
@@ -81,6 +79,8 @@ static bool apple_hid_joypad_rumble(void *data, unsigned pad,
                                 enum retro_rumble_effect effect, uint16_t strength)
 {
    apple_hid_t        *hid   = (apple_hid_t*)data;
+   if (!hid)
+       return false;
    return pad_connection_rumble(&hid->slots[pad], pad, effect, strength);
 }
 
@@ -128,6 +128,8 @@ static void apple_hid_device_report(void* context, IOReturn result, void *sender
                                     CFIndex reportLength)
 {
     struct pad_connection* connection = (struct pad_connection*)context;
+    driver_t *driver = driver_get_ptr();
+    apple_hid_t *hid = driver ? (apple_hid_t*)driver->hid_data : NULL;
     
     if (connection)
         pad_connection_packet(&hid->slots[connection->slot], connection->slot,
@@ -214,6 +216,7 @@ static void apple_hid_device_remove(void* context, IOReturn result, void* sender
    driver_t                  *driver = driver_get_ptr();
    apple_input_data_t         *apple = (apple_input_data_t*)driver->input_data;
    struct pad_connection *connection = (struct pad_connection*)context;
+   apple_hid_t                  *hid = driver ? (apple_hid_t*)driver->hid_data : NULL;
 
    if (connection && (connection->slot < MAX_USERS))
    {
@@ -290,10 +293,12 @@ static void apple_hid_device_add(void* context, IOReturn result,
    uint16_t dev_vid, dev_pid;
 
    settings_t *settings = config_get_ptr();
+   driver_t   *driver   = driver_get_ptr();
+   apple_hid_t     *hid = driver ? (apple_hid_t*)driver->hid_data : NULL;
    struct pad_connection* connection = (struct pad_connection*)
       calloc(1, sizeof(*connection));
     
-   if (!connection)
+   if (!connection || !hid)
        return;
 
    connection->device_handle = device;
@@ -431,8 +436,6 @@ static void *apple_hid_init(void)
     
     hid_apple->slots = (joypad_connection_t*)pad_connection_init(MAX_USERS);
     
-    hid = hid_apple;
-    
     return hid_apple;
     
 error:
@@ -462,12 +465,12 @@ static void apple_hid_poll(void *data)
 
 hid_driver_t apple_hid = {
    apple_hid_init,
-   apple_hid_query_pad,
-   apple_hid_joypad_destroy,
+   apple_hid_joypad_query,
+   apple_hid_free,
    apple_hid_joypad_button,
    apple_hid_joypad_get_buttons,
    apple_hid_joypad_axis,
-   apple_hid_joypad_poll,
+   apple_hid_poll,
    apple_hid_joypad_rumble,
    apple_hid_joypad_name,
    "apple",

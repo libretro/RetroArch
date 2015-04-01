@@ -19,12 +19,12 @@
 #include "../input_hid_driver.h"
 #include "../../driver.h"
 
-static hid_driver_t *generic_hid;
+static const hid_driver_t *generic_hid;
 
 static bool hid_joypad_init(void)
 {
    driver_t *driver   = driver_get_ptr();
-   generic_hid = (hid_driver_t*)input_hid_init_first(driver->hid_data);
+   generic_hid = input_hid_init_first(driver->hid_data);
    if (!generic_hid)
        return false;
 
