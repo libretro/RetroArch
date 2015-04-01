@@ -95,7 +95,7 @@ static int16_t apple_hid_joypad_axis(unsigned port, uint32_t joyaxis)
     return val;
 }
 
-static void hid_pad_connection_send_control(void *data, uint8_t* data_buf, size_t size)
+static void apple_hid_device_send_control(void *data, uint8_t* data_buf, size_t size)
 {
    struct pad_connection *connection = (struct pad_connection*)data;
 
@@ -104,10 +104,21 @@ static void hid_pad_connection_send_control(void *data, uint8_t* data_buf, size_
             kIOHIDReportTypeOutput, 0x01, data_buf + 1, size - 1);
 }
 
+static void apple_hid_device_report(void* context, IOReturn result, void *sender,
+                                    IOHIDReportType type, uint32_t reportID, uint8_t *report,
+                                    CFIndex reportLength)
+{
+    struct pad_connection* connection = (struct pad_connection*)context;
+    
+    if (connection)
+        pad_connection_packet(&hid_apple->slots[connection->slot], connection->slot,
+                              connection->data, reportLength + 1);
+}
+
 /* NOTE: I pieced this together through trial and error,
  * any corrections are welcome. */
 
-static void hid_device_input_callback(void* context, IOReturn result,
+static void apple_hid_device_input_callback(void* context, IOReturn result,
       void* sender, IOHIDValueRef value)
 {
    driver_t                  *driver = driver_get_ptr();
@@ -179,7 +190,7 @@ static void hid_device_input_callback(void* context, IOReturn result,
    }
 }
 
-static void remove_device(void* context, IOReturn result, void* sender)
+static void apple_hid_device_remove(void* context, IOReturn result, void* sender)
 {
    driver_t                  *driver = driver_get_ptr();
    apple_input_data_t         *apple = (apple_input_data_t*)driver->input_data;
@@ -201,18 +212,7 @@ static void remove_device(void* context, IOReturn result, void* sender)
    }
 }
 
-static void hid_device_report(void* context, IOReturn result, void *sender,
-      IOHIDReportType type, uint32_t reportID, uint8_t *report,
-      CFIndex reportLength)
-{
-   struct pad_connection* connection = (struct pad_connection*)context;
-
-   if (connection)
-      pad_connection_packet(&hid_apple->slots[connection->slot], connection->slot,
-         connection->data, reportLength + 1);
-}
-
-static int32_t apple_hid_get_int_property(IOHIDDeviceRef device, CFStringRef key)
+static int32_t apple_hid_device_get_int_property(IOHIDDeviceRef device, CFStringRef key)
 {
     int32_t value;
     CFNumberRef ref = IOHIDDeviceGetProperty(device, key);
@@ -229,17 +229,17 @@ static int32_t apple_hid_get_int_property(IOHIDDeviceRef device, CFStringRef key
     return 0;
 }
 
-static uint16_t apple_hid_get_vendor_id(IOHIDDeviceRef device)
+static uint16_t apple_hid_device_get_vendor_id(IOHIDDeviceRef device)
 {
-   return apple_hid_get_int_property(device, CFSTR(kIOHIDVendorIDKey));
+   return apple_hid_device_get_int_property(device, CFSTR(kIOHIDVendorIDKey));
 }
 
-static uint16_t apple_hid_get_product_id(IOHIDDeviceRef device)
+static uint16_t apple_hid_device_get_product_id(IOHIDDeviceRef device)
 {
-   return apple_hid_get_int_property(device, CFSTR(kIOHIDProductIDKey));
+   return apple_hid_device_get_int_property(device, CFSTR(kIOHIDProductIDKey));
 }
 
-static void apple_hid_get_product_string(IOHIDDeviceRef device, char *buf, size_t len)
+static void apple_hid_device_get_product_string(IOHIDDeviceRef device, char *buf, size_t len)
 {
     CFStringRef ref = IOHIDDeviceGetProperty(device, CFSTR(kIOHIDProductKey));
     
@@ -247,12 +247,29 @@ static void apple_hid_get_product_string(IOHIDDeviceRef device, char *buf, size_
        CFStringGetCString(ref, buf, len, kCFStringEncodingUTF8);
 }
 
-static void add_device(void* context, IOReturn result,
+static void apple_hid_device_add_autodetect(unsigned idx,
+   const char *device_name, const char *driver_name,
+   uint16_t dev_vid, uint16_t dev_pid)
+{
+   autoconfig_params_t params = {{0}};
+    
+   params.idx = idx;
+   params.vid = dev_vid;
+   params.pid = dev_pid;
+    
+   strlcpy(params.name, device_name, sizeof(params.name));
+   strlcpy(params.driver, driver_name, sizeof(params.driver));
+    
+   input_config_autoconfigure_joypad(&params);
+   RARCH_LOG("Port %d: %s.\n", idx, device_name);
+}
+
+static void apple_hid_device_add(void* context, IOReturn result,
       void* sender, IOHIDDeviceRef device)
 {
    IOReturn ret;
    uint16_t dev_vid, dev_pid;
-   autoconfig_params_t params = {{0}};
+
    settings_t *settings = config_get_ptr();
    struct pad_connection* connection = (struct pad_connection*)
       calloc(1, sizeof(*connection));
@@ -271,48 +288,42 @@ static void add_device(void* context, IOReturn result,
    /* Move the device's run loop to this thread. */
    IOHIDDeviceScheduleWithRunLoop(device, CFRunLoopGetCurrent(),
          kCFRunLoopCommonModes);
-   IOHIDDeviceRegisterRemovalCallback(device, remove_device, connection);
+   IOHIDDeviceRegisterRemovalCallback(device, apple_hid_device_remove, connection);
 
 #ifndef IOS
-    apple_hid_get_product_string(device, connection->device_name,
+    apple_hid_device_get_product_string(device, connection->device_name,
                                  sizeof(connection->device_name));
 #endif
 
-   dev_vid = apple_hid_get_vendor_id  (device);
-   dev_pid = apple_hid_get_product_id (device);
+   dev_vid = apple_hid_device_get_vendor_id  (device);
+   dev_pid = apple_hid_device_get_product_id (device);
 
    connection->slot = pad_connection_pad_init(hid_apple->slots,
         connection->device_name,
-         connection, &hid_pad_connection_send_control);
+         connection, &apple_hid_device_send_control);
 
    if (pad_connection_has_interface(hid_apple->slots, connection->slot))
       IOHIDDeviceRegisterInputReportCallback(device,
             connection->data + 1, sizeof(connection->data) - 1,
-            hid_device_report, connection);
+            apple_hid_device_report, connection);
    else
       IOHIDDeviceRegisterInputValueCallback(device,
-            hid_device_input_callback, connection);
+            apple_hid_device_input_callback, connection);
 
    if (connection->device_name[0] == '\0')
       return;
 
    strlcpy(settings->input.device_names[connection->slot],
          connection->device_name, sizeof(settings->input.device_names));
-
-   params.idx = connection->slot;
-   params.vid = dev_vid;
-   params.pid = dev_pid;
-   strlcpy(params.name, connection->device_name, sizeof(params.name));
-   strlcpy(params.driver, apple_hid_joypad.ident, sizeof(params.driver));
-
-   input_config_autoconfigure_joypad(&params);
-   RARCH_LOG("Port %d: %s.\n", connection->slot, connection->device_name);
+    
+    apple_hid_device_add_autodetect(connection->slot,
+        connection->device_name, apple_hid_joypad.ident, dev_vid, dev_pid);
     
 error:
    return;
 }
 
-static void append_matching_dictionary(CFMutableArrayRef array,
+static void apple_hid_append_matching_dictionary(CFMutableArrayRef array,
       uint32_t page, uint32_t use)
 {
    CFNumberRef usen, pagen;
@@ -352,7 +363,7 @@ static int apple_hid_manager_init(apple_hid_t *hid)
 }
 
 
-static int apple_hid_manager_exit(apple_hid_t *hid)
+static int apple_hid_manager_free(apple_hid_t *hid)
 {
     if (!hid)
         return -1;
@@ -381,16 +392,16 @@ static bool apple_hid_init(void)
     matcher = CFArrayCreateMutable(kCFAllocatorDefault, 0,
                                    &kCFTypeArrayCallBacks);
     
-    append_matching_dictionary(matcher, kHIDPage_GenericDesktop,
+    apple_hid_append_matching_dictionary(matcher, kHIDPage_GenericDesktop,
                                kHIDUsage_GD_Joystick);
-    append_matching_dictionary(matcher, kHIDPage_GenericDesktop,
+    apple_hid_append_matching_dictionary(matcher, kHIDPage_GenericDesktop,
                                kHIDUsage_GD_GamePad);
     
     IOHIDManagerSetDeviceMatchingMultiple(hid_apple->hid_ptr, matcher);
     CFRelease(matcher);
     
     IOHIDManagerRegisterDeviceMatchingCallback(hid_apple->hid_ptr,
-                                               add_device, 0);
+       apple_hid_device_add, 0);
     
     hid_apple->slots = (joypad_connection_t*)pad_connection_init(MAX_USERS);
     
@@ -412,7 +423,7 @@ static void apple_hid_free(void)
    IOHIDManagerUnscheduleFromRunLoop(hid_apple->hid_ptr,
                                       CFRunLoopGetCurrent(), kCFRunLoopCommonModes);
     
-   apple_hid_manager_exit(hid_apple);
+   apple_hid_manager_free(hid_apple);
     
    if (hid_apple)
       free(hid_apple);
