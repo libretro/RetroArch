@@ -5,10 +5,17 @@ OBJS += gfx/drivers/ctr_blit.o griffin/griffin.o
 DEBUG = 0
 
 
-CTRULIB = /home/lethalis/3ds/ctrulib/libctru
-AEMSTRO = /home/lethalis/3ds/aemstro
+ifeq ($(strip $(DEVKITARM)),)
+$(error "Please set DEVKITARM in your environment. export DEVKITARM=<path to>devkitARM")
+endif
 
-export PATH	:=	$(DEVKITARM)/bin:$(PATH)
+ifeq ($(strip $(CTRULIB)),)
+$(error "Please set CTRULIB in your environment. export CTRULIB=<path to>ctrulib")
+endif
+
+ifeq ($(strip $(AEMSTRO)),)
+$(error "Please set AEMSTRO in your environment. export AEMSTRO=<path to>aemstro")
+endif
 
 INCDIRS := -I$(CTRULIB)/include
 LIBDIRS := -L. -L$(CTRULIB)/lib
