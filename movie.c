@@ -46,10 +46,11 @@ static bool init_playback(bsv_movie_t *handle, const char *path)
 {
    uint32_t state_size;
    uint32_t header[4] = {0};
-   global_t *global = global_get_ptr();
+   global_t *global   = global_get_ptr();
 
-   handle->playback = true;
-   handle->file = fopen(path, "rb");
+   handle->playback   = true;
+   handle->file       = fopen(path, "rb");
+
    if (!handle->file)
    {
       RARCH_ERR("Couldn't open BSV file \"%s\" for playback.\n", path);
@@ -78,7 +79,7 @@ static bool init_playback(bsv_movie_t *handle, const char *path)
 
    if (state_size)
    {
-      handle->state = (uint8_t*)malloc(state_size);
+      handle->state      = (uint8_t*)malloc(state_size);
       handle->state_size = state_size;
       if (!handle->state)
          return false;
@@ -104,29 +105,26 @@ static bool init_record(bsv_movie_t *handle, const char *path)
 {
    uint32_t state_size;
    uint32_t header[4] = {0};
-   global_t *global = global_get_ptr();
+   global_t *global   = global_get_ptr();
 
-   handle->file = fopen(path, "wb");
+   handle->file       = fopen(path, "wb");
    if (!handle->file)
    {
       RARCH_ERR("Couldn't open BSV \"%s\" for recording.\n", path);
       return false;
    }
 
-
    /* This value is supposed to show up as
     * BSV1 in a HEX editor, big-endian. */
-   header[MAGIC_INDEX] = swap_if_little32(BSV_MAGIC);
-
-   header[CRC_INDEX] = swap_if_big32(global->content_crc);
-
-   state_size = pretro_serialize_size();
-
+   header[MAGIC_INDEX]      = swap_if_little32(BSV_MAGIC);
+   header[CRC_INDEX]        = swap_if_big32(global->content_crc);
+   state_size               = pretro_serialize_size();
    header[STATE_SIZE_INDEX] = swap_if_big32(state_size);
+
    fwrite(header, 4, sizeof(uint32_t), handle->file);
 
-   handle->min_file_pos = sizeof(header) + state_size;
-   handle->state_size = state_size;
+   handle->min_file_pos     = sizeof(header) + state_size;
+   handle->state_size       = state_size;
 
    if (state_size)
    {
@@ -187,8 +185,8 @@ bsv_movie_t *bsv_movie_init(const char *path, enum rarch_movie_type type)
    if (!(handle->frame_pos = (size_t*)calloc((1 << 20), sizeof(size_t))))
       goto error; 
 
-   handle->frame_pos[0] = handle->min_file_pos;
-   handle->frame_mask = (1 << 20) - 1;
+   handle->frame_pos[0]    = handle->min_file_pos;
+   handle->frame_mask      = (1 << 20) - 1;
 
    return handle;
 
@@ -209,10 +207,10 @@ void bsv_movie_set_frame_end(bsv_movie_t *handle)
    if (!handle)
       return;
 
-   handle->frame_ptr = (handle->frame_ptr + 1) & handle->frame_mask;
+   handle->frame_ptr    = (handle->frame_ptr + 1) & handle->frame_mask;
 
    handle->first_rewind = !handle->did_rewind;
-   handle->did_rewind = false;
+   handle->did_rewind   = false;
 }
 
 void bsv_movie_frame_rewind(bsv_movie_t *handle)
