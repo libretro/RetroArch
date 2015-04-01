@@ -341,6 +341,8 @@ INPUT
 #include "../input/drivers/rwebinput_input.c"
 #endif
 
+#include "../input/drivers_joypad/hid_joypad.c"
+
 #if defined(__APPLE__)
 #include "../input/connect/joypad_connection.c"
 #include "../input/connect/connect_ps3.c"
@@ -350,8 +352,6 @@ INPUT
 #ifdef HAVE_HID
 #include "../input/drivers_hid/apple_hid.c"
 #endif
-
-#include "../input/drivers_joypad/hid_joypad.c"
 
 #ifdef IOS
 #include "../apple/iOS/bluetooth/btdynamic.c"
