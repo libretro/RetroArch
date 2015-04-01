@@ -25,6 +25,7 @@
 #include "../config.def.h"
 #include "../retroarch.h"
 #include "../runloop.h"
+#include "../file_ops.h"
 
 void menu_entries_common_load_content(bool persist)
 {

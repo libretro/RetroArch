@@ -109,6 +109,7 @@ OBJ += frontend/frontend.o \
 		audio/audio_driver.o \
 		audio/audio_monitor.o \
 		input/input_driver.o \
+		input/input_hid_driver.o \
 		gfx/video_driver.o \
 		gfx/video_monitor.o \
 		gfx/video_pixel_converter.o \
@@ -164,6 +165,7 @@ OBJ += frontend/frontend.o \
 		audio/drivers/nullaudio.o \
 		input/drivers/nullinput.o \
 		input/drivers_joypad/nullinput_joypad.o \
+		input/drivers_joypad/hid_joypad.o \
 		playlist.o \
 		movie.o \
 		record/record_driver.o \

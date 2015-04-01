@@ -290,6 +290,7 @@ INPUT
 #include "../input/input_autodetect.c"
 #include "../input/input_joypad_driver.c"
 #include "../input/input_joypad.c"
+#include "../input/input_hid_driver.c"
 #include "../input/input_common.c"
 #include "../input/input_keymaps.c"
 #include "../input/input_remapping.c"
@@ -345,9 +346,7 @@ INPUT
 #include "../input/drivers_hid/apple_hid.c"
 #endif
 
-#ifdef HAVE_HID
 #include "../input/drivers_joypad/hid_joypad.c"
-#endif
 
 #ifdef IOS
 #include "../apple/iOS/bluetooth/btdynamic.c"

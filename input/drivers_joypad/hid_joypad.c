@@ -16,12 +16,15 @@
 
 #include "../input_autodetect.h"
 #include "../input_common.h"
+#include "../input_hid_driver.h"
+#include "../../driver.h"
 
-static void *generic_hid;
+static hid_driver_t *generic_hid;
 
 static bool hid_joypad_init(void)
 {
-   generic_hid = apple_hid_init();
+   driver_t *driver   = driver_get_ptr();
+   generic_hid = (hid_driver_t*)input_hid_init_first(driver->hid_data);
    if (!generic_hid)
        return false;
 
@@ -30,50 +33,58 @@ static bool hid_joypad_init(void)
 
 static bool hid_joypad_query_pad(unsigned pad)
 {
-   return apple_hid_joypad_query_pad(generic_hid, pad);
+   driver_t *driver   = driver_get_ptr();
+   return generic_hid->query_pad(driver->hid_data, pad);
 }
 
-static void hid_joypad_destroy(void)
+static void hid_joypad_free(void)
 {
-   apple_hid_free(generic_hid);
+   driver_t *driver   = driver_get_ptr();
+   generic_hid->free(driver->hid_data);
    generic_hid = NULL;
 }
 
 static bool hid_joypad_button(unsigned port, uint16_t joykey)
 {
-   return apple_hid_joypad_button(generic_hid, port, joykey);
+   driver_t *driver   = driver_get_ptr();
+   return generic_hid->button(driver->hid_data, port, joykey);
 }
 
 static uint64_t hid_joypad_get_buttons(unsigned port)
 {
-   return apple_hid_joypad_get_buttons(generic_hid, port);
+   driver_t *driver   = driver_get_ptr();
+   return generic_hid->get_buttons(driver->hid_data, port);
 }
 
 static int16_t hid_joypad_axis(unsigned port, uint32_t joyaxis)
 {
-   return apple_hid_joypad_axis(generic_hid, port, joyaxis);
+   driver_t *driver   = driver_get_ptr();
+   return generic_hid->axis(driver->hid_data, port, joyaxis);
 }
 
 static void hid_joypad_poll(void)
 {
-   apple_hid_poll(generic_hid);
+   driver_t *driver   = driver_get_ptr();
+   generic_hid->poll(driver->hid_data);
 }
 
 static bool hid_joypad_rumble(unsigned pad,
       enum retro_rumble_effect effect, uint16_t strength)
 {
-   return apple_hid_joypad_rumble(generic_hid, pad, effect, strength);
+   driver_t *driver   = driver_get_ptr();
+   return generic_hid->set_rumble(driver->hid_data, pad, effect, strength);
 }
 
 static const char *hid_joypad_name(unsigned pad)
 {
-   return apple_hid_joypad_name(generic_hid, pad);
+   driver_t *driver   = driver_get_ptr();
+   return generic_hid->name(driver->hid_data, pad);
 }
 
 rarch_joypad_driver_t hid_joypad = {
    hid_joypad_init,
    hid_joypad_query_pad,
-   hid_joypad_destroy,
+   hid_joypad_free,
    hid_joypad_button,
    hid_joypad_get_buttons,
    hid_joypad_axis,

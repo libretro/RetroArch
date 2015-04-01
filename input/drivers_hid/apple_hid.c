@@ -18,6 +18,7 @@
 #include <IOKit/hid/IOHIDKeys.h>
 #include "../connect/joypad_connection.h"
 #include "../drivers/apple_input.h"
+#include "../input_hid_driver.h"
 
 typedef struct apple_hid
 {
@@ -458,3 +459,16 @@ static void apple_hid_poll(void *data)
 {
    (void)data;
 }
+
+hid_driver_t apple_hid = {
+   apple_hid_init,
+   apple_hid_query_pad,
+   apple_hid_joypad_destroy,
+   apple_hid_joypad_button,
+   apple_hid_joypad_get_buttons,
+   apple_hid_joypad_axis,
+   apple_hid_joypad_poll,
+   apple_hid_joypad_rumble,
+   apple_hid_joypad_name,
+   "apple",
+};
