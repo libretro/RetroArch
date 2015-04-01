@@ -92,12 +92,10 @@ error:
    return 0;
 }
 
-int cb_core_updater_download(void *data_, size_t len)
+int cb_core_updater_download(void *data, size_t len)
 {
-   FILE *f;
    const char* file_ext = NULL;
    char output_path[PATH_MAX_LENGTH], msg[PATH_MAX_LENGTH];
-   char *data = (char*)data_;
    settings_t *settings = config_get_ptr();
 
    if (!data)
@@ -105,15 +103,10 @@ int cb_core_updater_download(void *data_, size_t len)
 
    fill_pathname_join(output_path, settings->libretro_directory,
          core_updater_path, sizeof(output_path));
-   
-   f = fopen(output_path, "wb");
 
-   if (!f)
+   if (!write_file(output_path, data, len))
       return -1;
-
-   fwrite(data, 1, len, f);
-   fclose(f);
-
+   
    snprintf(msg, sizeof(msg), "Download complete: %s.",
          core_updater_path);
 
