@@ -21,10 +21,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <net/net_compat.h>
-#include <queues/message_queue.h>
 #include "netplay.h"
 #include "general.h"
-#include "runloop.h"
 #include "autosave.h"
 #include "dynamic.h"
 
@@ -46,9 +44,6 @@ struct delta_frame
 #define NETPLAY_CMD_ACK 0
 #define NETPLAY_CMD_NAK 1
 #define NETPLAY_CMD_FLIP_PLAYERS 2
-
-#define PREV_PTR(x) ((x) == 0 ? netplay->buffer_size - 1 : (x) - 1)
-#define NEXT_PTR(x) ((x + 1) % netplay->buffer_size)
 
 struct netplay
 {
@@ -114,6 +109,18 @@ struct netplay
    bool flip;
    uint32_t flip_frame;
 };
+
+static INLINE size_t get_prev_ptr(netplay_t *netplay, size_t ptr)
+{
+   if (ptr == 0)
+      return netplay->buffer_size - 1;
+   return ptr - 1;
+}
+
+static INLINE size_t get_next_ptr(netplay_t *netplay, size_t ptr)
+{
+   return (ptr + 1) & netplay->buffer_size;
+}
 
 /**
  * warn_hangup:
@@ -196,16 +203,16 @@ static bool get_self_input_state(netplay_t *netplay)
       retro_input_state_t cb = netplay->cbs.state_cb;
       for (i = 0; i < RARCH_FIRST_META_KEY; i++)
       {
-         int16_t tmp = cb(settings->input.netplay_client_swap_input ?
+         int16_t tmp  = cb(settings->input.netplay_client_swap_input ?
                0 : !netplay->port,
                RETRO_DEVICE_JOYPAD, 0, i);
-         state |= tmp ? 1 << i : 0;
+         state       |= tmp ? 1 << i : 0;
       }
    }
 
    memmove(netplay->packet_buffer, netplay->packet_buffer + 2,
          sizeof (netplay->packet_buffer) - 2 * sizeof(uint32_t));
-   netplay->packet_buffer[(UDP_FRAME_PACKETS - 1) * 2] = htonl(netplay->frame_count); 
+   netplay->packet_buffer[(UDP_FRAME_PACKETS - 1) * 2]     = htonl(netplay->frame_count); 
    netplay->packet_buffer[(UDP_FRAME_PACKETS - 1) * 2 + 1] = htonl(state);
 
    if (!send_chunk(netplay))
@@ -215,8 +222,8 @@ static bool get_self_input_state(netplay_t *netplay)
       return false;
    }
 
-   ptr->self_state = state;
-   netplay->self_ptr = NEXT_PTR(netplay->self_ptr);
+   ptr->self_state   = state;
+   netplay->self_ptr = get_next_ptr(netplay, netplay->self_ptr);
    return true;
 }
 
@@ -249,7 +256,7 @@ static bool netplay_get_cmd(netplay_t *netplay)
    if (!socket_receive_all_blocking(netplay->fd, &cmd, sizeof(cmd)))
       return false;
 
-   cmd = ntohl(cmd);
+   cmd      = ntohl(cmd);
 
    cmd_size = cmd & 0xffff;
    cmd      = cmd >> 16;
@@ -298,8 +305,8 @@ static bool netplay_get_cmd(netplay_t *netplay)
 
 static int poll_input(netplay_t *netplay, bool block)
 {
-   int max_fd        = (netplay->fd > netplay->udp_fd ? netplay->fd : netplay->udp_fd) + 1;
    struct timeval tv = {0};
+   int max_fd        = (netplay->fd > netplay->udp_fd ? netplay->fd : netplay->udp_fd) + 1;
    tv.tv_sec         = 0;
    tv.tv_usec        = block ? (RETRY_MS * 1000) : 0;
 
@@ -375,9 +382,9 @@ static void parse_packet(netplay_t *netplay, uint32_t *buffer, unsigned size)
       if (frame != netplay->read_frame_count)
          continue;
 
-      netplay->buffer[netplay->read_ptr].is_simulated = false;
+      netplay->buffer[netplay->read_ptr].is_simulated     = false;
       netplay->buffer[netplay->read_ptr].real_input_state = state;
-      netplay->read_ptr = NEXT_PTR(netplay->read_ptr);
+      netplay->read_ptr = get_next_ptr(netplay, netplay->read_ptr);
       netplay->read_frame_count++;
       netplay->timeout_cnt = 0;
    }
@@ -386,13 +393,13 @@ static void parse_packet(netplay_t *netplay, uint32_t *buffer, unsigned size)
 /* TODO: Somewhat better prediction. :P */
 static void simulate_input(netplay_t *netplay)
 {
-   size_t ptr  = PREV_PTR(netplay->self_ptr);
-   size_t prev = PREV_PTR(netplay->read_ptr);
+   size_t ptr  = get_prev_ptr(netplay, netplay->self_ptr);
+   size_t prev = get_prev_ptr(netplay, netplay->read_ptr);
 
    netplay->buffer[ptr].simulated_input_state = 
       netplay->buffer[prev].real_input_state;
-   netplay->buffer[ptr].is_simulated = true;
-   netplay->buffer[ptr].used_real = false;
+   netplay->buffer[ptr].is_simulated          = true;
+   netplay->buffer[ptr].used_real             = false;
 }
 
 /**
@@ -424,7 +431,7 @@ static bool netplay_poll(netplay_t *netplay)
       netplay->buffer[0].used_real        = true;
       netplay->buffer[0].is_simulated     = false;
       netplay->buffer[0].real_input_state = 0;
-      netplay->read_ptr                   = NEXT_PTR(netplay->read_ptr);
+      netplay->read_ptr                   = get_next_ptr(netplay, netplay->read_ptr);
       netplay->read_frame_count++;
       return true;
    }
@@ -442,6 +449,7 @@ static bool netplay_poll(netplay_t *netplay)
    if (res == 1)
    {
       uint32_t first_read = netplay->read_frame_count;
+
       do 
       {
          uint32_t buffer[UDP_FRAME_PACKETS * 2];
@@ -452,8 +460,7 @@ static bool netplay_poll(netplay_t *netplay)
             return false;
          }
          parse_packet(netplay, buffer, UDP_FRAME_PACKETS);
-
-      } while ((netplay->read_frame_count <= netplay->frame_count) && 
+      }while ((netplay->read_frame_count <= netplay->frame_count) && 
             poll_input(netplay, (netplay->other_ptr == netplay->self_ptr) && 
                (first_read == netplay->read_frame_count)) == 1);
    }
@@ -470,15 +477,19 @@ static bool netplay_poll(netplay_t *netplay)
    if (netplay->read_ptr != netplay->self_ptr)
       simulate_input(netplay);
    else
-      netplay->buffer[PREV_PTR(netplay->self_ptr)].used_real = true;
+   {
+      size_t prev_ptr = get_prev_ptr(netplay, netplay->self_ptr);
+      netplay->buffer[prev_ptr].used_real = true;
+   }
 
    return true;
 }
 
 void input_poll_net(void)
 {
-   driver_t *driver = driver_get_ptr();
-   netplay_t *netplay = (netplay_t*)driver->netplay_data;
+   driver_t *driver   = driver_get_ptr();
+   netplay_t *netplay = driver ? (netplay_t*)driver->netplay_data : NULL;
+
    if (!netplay_should_skip(netplay) && netplay_can_poll(netplay))
       netplay_poll(netplay);
 }
@@ -486,24 +497,26 @@ void input_poll_net(void)
 void video_frame_net(const void *data, unsigned width,
       unsigned height, size_t pitch)
 {
-   driver_t *driver = driver_get_ptr();
-   netplay_t *netplay = (netplay_t*)driver->netplay_data;
+   driver_t *driver   = driver_get_ptr();
+   netplay_t *netplay = driver ? (netplay_t*)driver->netplay_data : NULL;
+
    if (!netplay_should_skip(netplay))
       netplay->cbs.frame_cb(data, width, height, pitch);
 }
 
 void audio_sample_net(int16_t left, int16_t right)
 {
-   driver_t *driver = driver_get_ptr();
-   netplay_t *netplay = (netplay_t*)driver->netplay_data;
+   driver_t *driver   = driver_get_ptr();
+   netplay_t *netplay = driver ? (netplay_t*)driver->netplay_data : NULL;
    if (!netplay_should_skip(netplay))
       netplay->cbs.sample_cb(left, right);
 }
 
 size_t audio_sample_batch_net(const int16_t *data, size_t frames)
 {
-   driver_t *driver = driver_get_ptr();
-   netplay_t *netplay = (netplay_t*)driver->netplay_data;
+   driver_t *driver   = driver_get_ptr();
+   netplay_t *netplay = driver ? (netplay_t*)driver->netplay_data : NULL;
+
    if (!netplay_should_skip(netplay))
       return netplay->cbs.sample_batch_cb(data, frames);
    return frames;
@@ -541,7 +554,7 @@ static int16_t netplay_input_state(netplay_t *netplay, bool port, unsigned devic
       unsigned idx, unsigned id)
 {
    size_t ptr = netplay->is_replay ? 
-      netplay->tmp_ptr : PREV_PTR(netplay->self_ptr);
+      netplay->tmp_ptr : get_prev_ptr(netplay, netplay->self_ptr);
    uint16_t curr_input_state = netplay->buffer[ptr].self_state;
 
    if (netplay->port == (netplay_flip_port(netplay, port) ? 1 : 0))
@@ -558,8 +571,9 @@ static int16_t netplay_input_state(netplay_t *netplay, bool port, unsigned devic
 int16_t input_state_net(unsigned port, unsigned device,
       unsigned idx, unsigned id)
 {
-   driver_t *driver = driver_get_ptr();
-   netplay_t *netplay = (netplay_t*)driver->netplay_data;
+   driver_t *driver   = driver_get_ptr();
+   netplay_t *netplay = driver ? (netplay_t*)driver->netplay_data : NULL;
+
    if (netplay_is_alive(netplay))
       return netplay_input_state(netplay, port, device, idx, id);
    return netplay->cbs.state_cb(port, device, idx, id);
@@ -576,8 +590,8 @@ static void log_connection(const struct sockaddr_storage *their_addr,
       const struct sockaddr_in *v4;
       const struct sockaddr_in6 *v6;
    } u;
-   const char *str = NULL;
-   char buf_v4[INET_ADDRSTRLEN] = {0};
+   const char *str               = NULL;
+   char buf_v4[INET_ADDRSTRLEN]  = {0};
    char buf_v6[INET6_ADDRSTRLEN] = {0};
 
    u.storage = their_addr;
@@ -625,7 +639,7 @@ static int init_tcp_connection(const struct addrinfo *res,
       struct sockaddr *other_addr, socklen_t addr_size)
 {
    bool ret = true;
-   int fd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
+   int fd   = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
 
    if (fd < 0)
    {
@@ -816,11 +830,10 @@ static uint32_t implementation_magic_value(void)
 {
    size_t i, len;
    uint32_t res     = 0;
-   const char *lib  = NULL;
    const char *ver  = PACKAGE_VERSION;
    unsigned api     = pretro_api_version();
    global_t *global = global_get_ptr();
-   lib              = global->system.info.library_name;
+   const char *lib  = global ? global->system.info.library_name : NULL;
 
    res |= api;
 
@@ -993,14 +1006,14 @@ static uint32_t *bsv_header_generate(size_t *size, uint32_t magic)
 {
    uint32_t *header, bsv_header[4] = {0};
    size_t serialize_size = pretro_serialize_size();
-   size_t header_size = sizeof(bsv_header) + serialize_size;
-   global_t *global = global_get_ptr();
+   size_t header_size    = sizeof(bsv_header) + serialize_size;
+   global_t *global      = global_get_ptr();
 
    *size = header_size;
 
    header = (uint32_t*)malloc(header_size);
    if (!header)
-      return NULL;
+      goto error;
 
    bsv_header[MAGIC_INDEX]      = swap_if_little32(BSV_MAGIC);
    bsv_header[SERIALIZER_INDEX] = swap_if_big32(magic);
@@ -1008,19 +1021,21 @@ static uint32_t *bsv_header_generate(size_t *size, uint32_t magic)
    bsv_header[STATE_SIZE_INDEX] = swap_if_big32(serialize_size);
 
    if (serialize_size && !pretro_serialize(header + 4, serialize_size))
-   {
-      free(header);
-      return NULL;
-   }
+      goto error;
 
    memcpy(header, bsv_header, sizeof(bsv_header));
    return header;
+
+error:
+   if (header)
+      free(header);
+   return NULL;
 }
 
 static bool bsv_parse_header(const uint32_t *header, uint32_t magic)
 {
    uint32_t in_crc, in_magic, in_state_size;
-   uint32_t in_bsv = swap_if_little32(header[MAGIC_INDEX]);
+   uint32_t in_bsv  = swap_if_little32(header[MAGIC_INDEX]);
    global_t *global = global_get_ptr();
 
    if (in_bsv != BSV_MAGIC)
@@ -1080,7 +1095,6 @@ static bool get_info_spectate(netplay_t *netplay)
    rarch_main_msg_queue_push(msg, 1, 180, false);
    RARCH_LOG("%s\n", msg);
 
-
    if (!socket_receive_all_blocking(netplay->fd, header, sizeof(header)))
    {
       RARCH_ERR("Cannot get header from host.\n");
@@ -1096,15 +1110,14 @@ static bool get_info_spectate(netplay_t *netplay)
 
    buf = malloc(save_state_size);
    if (!buf)
-      return false;
+      goto error;
 
    size = save_state_size;
 
    if (!socket_receive_all_blocking(netplay->fd, buf, size))
    {
       RARCH_ERR("Failed to receive save state from host.\n");
-      free(buf);
-      return false;
+      goto error;
    }
 
    if (save_state_size)
@@ -1112,6 +1125,11 @@ static bool get_info_spectate(netplay_t *netplay)
 
    free(buf);
    return ret;
+
+error:
+   if (buf)
+      free(buf);
+   return false;
 }
 
 static bool init_buffers(netplay_t *netplay)
@@ -1158,16 +1176,10 @@ static bool init_buffers(netplay_t *netplay)
  **/
 netplay_t *netplay_new(const char *server, uint16_t port,
       unsigned frames, const struct retro_callbacks *cb,
-      bool spectate,
-      const char *nick)
+      bool spectate, const char *nick)
 {
    unsigned i;
-   netplay_t *netplay = NULL;
-
-   if (frames > UDP_FRAME_PACKETS)
-      frames = UDP_FRAME_PACKETS;
-
-   netplay = (netplay_t*)calloc(1, sizeof(*netplay));
+   netplay_t *netplay = (netplay_t*)calloc(1, sizeof(*netplay));
    if (!netplay)
       return NULL;
 
@@ -1178,6 +1190,9 @@ netplay_t *netplay_new(const char *server, uint16_t port,
    netplay->spectate        = spectate;
    netplay->spectate_client = server != NULL;
    strlcpy(netplay->nick, nick, sizeof(netplay->nick));
+
+   if (frames > UDP_FRAME_PACKETS)
+      frames = UDP_FRAME_PACKETS;
 
    if (!init_socket(netplay, server, port))
    {
@@ -1225,7 +1240,8 @@ error:
    if (netplay->udp_fd >= 0)
       socket_close(netplay->udp_fd);
 
-   free(netplay);
+   if (netplay)
+      free(netplay);
    return NULL;
 }
 
@@ -1354,9 +1370,9 @@ static void netplay_set_spectate_input(netplay_t *netplay, int16_t input)
 {
    if (netplay->spectate_input_ptr >= netplay->spectate_input_size)
    {
-      netplay->spectate_input_size++;
+      netplay->spectate_input_size ++;
       netplay->spectate_input_size *= 2;
-      netplay->spectate_input = (uint16_t*)realloc(netplay->spectate_input,
+      netplay->spectate_input       = (uint16_t*)realloc(netplay->spectate_input,
             netplay->spectate_input_size * sizeof(uint16_t));
    }
 
@@ -1366,9 +1382,9 @@ static void netplay_set_spectate_input(netplay_t *netplay, int16_t input)
 int16_t input_state_spectate(unsigned port, unsigned device,
       unsigned idx, unsigned id)
 {
-   driver_t *driver = driver_get_ptr();
-   netplay_t *netplay = (netplay_t*)driver->netplay_data;
-   int16_t res        = netplay->cbs.state_cb(port, device, idx, id);
+   driver_t *driver   = driver_get_ptr();
+   netplay_t *netplay = driver ? (netplay_t*)driver->netplay_data : NULL;
+   int16_t res        = netplay ? netplay->cbs.state_cb(port, device, idx, id) : 0;
 
    netplay_set_spectate_input(netplay, res);
    return res;
@@ -1392,9 +1408,10 @@ static int16_t netplay_get_spectate_input(netplay_t *netplay, bool port,
 int16_t input_state_spectate_client(unsigned port, unsigned device,
       unsigned idx, unsigned id)
 {
-   driver_t *driver = driver_get_ptr();
-   return netplay_get_spectate_input((netplay_t*)driver->netplay_data, port,
-         device, idx, id);
+   driver_t *driver   = driver_get_ptr();
+   netplay_t *netplay = driver ? (netplay_t*)driver->netplay_data : NULL;
+
+   return netplay_get_spectate_input(netplay, port, device, idx, id);
 }
 
 /**
@@ -1407,11 +1424,12 @@ static void netplay_pre_frame_spectate(netplay_t *netplay)
 {
    unsigned i;
    uint32_t *header;
-   int new_fd, idx, bufsize;
+   int new_fd, bufsize;
    size_t header_size;
    struct sockaddr_storage their_addr;
    socklen_t addr_size;
    fd_set fds;
+   int idx = -1;
    struct timeval tmp_tv = {0};
 
    if (netplay->spectate_client)
@@ -1434,7 +1452,6 @@ static void netplay_pre_frame_spectate(netplay_t *netplay)
       return;
    }
 
-   idx = -1;
    for (i = 0; i < MAX_SPECTATORS; i++)
    {
       if (netplay->spectate_fds[i] == -1)
@@ -1444,7 +1461,7 @@ static void netplay_pre_frame_spectate(netplay_t *netplay)
       }
    }
 
-   /* No vacant client streams :( */
+   /* No vacant client streams. */
    if (idx == -1)
    {
       socket_close(new_fd);
@@ -1534,17 +1551,17 @@ static void netplay_post_frame_net(netplay_t *netplay)
       if ((ptr->simulated_input_state != ptr->real_input_state)
             && !ptr->used_real)
          break;
-      netplay->other_ptr = NEXT_PTR(netplay->other_ptr);
+      netplay->other_ptr = get_next_ptr(netplay, netplay->other_ptr);
       netplay->other_frame_count++;
    }
 
    if (netplay->other_frame_count < netplay->read_frame_count)
    {
-      bool first = true;
+      bool first               = true;
 
       /* Replay frames. */
-      netplay->is_replay = true;
-      netplay->tmp_ptr = netplay->other_ptr;
+      netplay->is_replay       = true;
+      netplay->tmp_ptr         = netplay->other_ptr;
       netplay->tmp_frame_count = netplay->other_frame_count;
 
       pretro_unserialize(netplay->buffer[netplay->other_ptr].state,
@@ -1561,14 +1578,14 @@ static void netplay_post_frame_net(netplay_t *netplay)
 #if defined(HAVE_THREADS) && !defined(RARCH_CONSOLE)
          unlock_autosave();
 #endif
-         netplay->tmp_ptr = NEXT_PTR(netplay->tmp_ptr);
+         netplay->tmp_ptr = get_next_ptr(netplay, netplay->tmp_ptr);
          netplay->tmp_frame_count++;
-         first = false;
+         first            = false;
       }
 
-      netplay->other_ptr = netplay->read_ptr;
+      netplay->other_ptr         = netplay->read_ptr;
       netplay->other_frame_count = netplay->read_frame_count;
-      netplay->is_replay = false;
+      netplay->is_replay         = false;
    }
 }
 
@@ -1653,15 +1670,15 @@ static struct hostent *gethostbyname(const char *name)
    static struct hostent he;
    static struct in_addr addr;
    static char *addr_ptr;
-   XNDNS *dns = NULL;
+   XNDNS *dns     = NULL;
 
    he.h_addr_list = &addr_ptr;
-   addr_ptr = (char*)&addr;
+   addr_ptr       = (char*)&addr;
 
    if (!name)
       return NULL;
 
-   event = WSACreateEvent();
+   event          = WSACreateEvent();
    XNetDnsLookup(name, event, &dns);
    if (!dns)
       goto error;
