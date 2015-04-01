@@ -195,6 +195,8 @@ retro_perf_tick_t rarch_get_perf_counter(void)
    time_ticks = __mftb();
 #elif defined(PSP)
    sceRtcGetCurrentTick(&time_ticks);
+#elif defined(_3DS)
+   time_ticks = osGetTime();
 #elif defined(__mips__)
    struct timeval tv;
    gettimeofday(&tv,NULL);
@@ -254,6 +256,8 @@ retro_time_t rarch_get_time_usec(void)
    struct timeval tv;
    gettimeofday(&tv,NULL);
    return (1000000 * tv.tv_sec + tv.tv_usec);
+#elif defined(_3DS)
+   return osGetTime();
 #else
 #error "Your platform does not have a timer function implemented in rarch_get_time_usec(). Cannot continue."
 #endif
@@ -356,6 +360,8 @@ unsigned rarch_get_cpu_cores(void)
 #elif defined(GEKKO)
    return 1;
 #elif defined(PSP)
+   return 1;
+#elif defined(_3DS)
    return 1;
 #elif defined(_SC_NPROCESSORS_ONLN)
    /* Linux, most UNIX-likes. */

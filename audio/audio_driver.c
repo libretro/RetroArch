@@ -79,6 +79,9 @@ static const audio_driver_t *audio_drivers[] = {
 #ifdef PSP
    &audio_psp1,
 #endif   
+#ifdef _3DS
+   &audio_ctr,
+#endif
    &audio_null,
    NULL,
 };

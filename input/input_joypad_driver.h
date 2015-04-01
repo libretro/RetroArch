@@ -52,6 +52,7 @@ extern rarch_joypad_driver_t winxinput_joypad;
 extern rarch_joypad_driver_t sdl_joypad;
 extern rarch_joypad_driver_t ps3_joypad;
 extern rarch_joypad_driver_t psp_joypad;
+extern rarch_joypad_driver_t ctr_joypad;
 extern rarch_joypad_driver_t xdk_joypad;
 extern rarch_joypad_driver_t gx_joypad;
 extern rarch_joypad_driver_t apple_hid_joypad;

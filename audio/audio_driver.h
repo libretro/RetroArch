@@ -89,6 +89,7 @@ extern audio_driver_t audio_xenon360;
 extern audio_driver_t audio_ps3;
 extern audio_driver_t audio_gx;
 extern audio_driver_t audio_psp1;
+extern audio_driver_t audio_ctr;
 extern audio_driver_t audio_rwebaudio;
 extern audio_driver_t audio_null;
 
