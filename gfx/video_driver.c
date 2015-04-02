@@ -243,7 +243,7 @@ uintptr_t video_driver_get_current_framebuffer(void)
 retro_proc_address_t video_driver_get_proc_address(const char *sym)
 {
    driver_t *driver = driver_get_ptr();
-   if (driver && driver && driver->video_poke && driver->video_poke->get_proc_address)
+   if (driver && driver->video_data && driver->video_poke && driver->video_poke->get_proc_address)
       return driver->video_poke->get_proc_address(driver->video_data, sym);
    return NULL;
 }
