@@ -15,9 +15,7 @@
  */
 
 #include "../input_autodetect.h"
-#include "../input_common.h"
 #include "../../general.h"
-#include "../../runloop.h"
 #include <unistd.h>
 #include <stdint.h>
 #include <string.h>
@@ -46,7 +44,7 @@ static int g_notify;
 static int g_epoll;
 static bool g_hotplug;
 
-static void poll_pad(struct linuxraw_joypad *pad)
+static void linuxraw_poll_pad(struct linuxraw_joypad *pad)
 {
    struct js_event event;
    
@@ -122,7 +120,7 @@ static bool linuxraw_joypad_init_pad(const char *path, struct linuxraw_joypad *p
 static void handle_plugged_pad(void)
 {
    int i, rc;
-   size_t event_size = sizeof(struct inotify_event) + NAME_MAX + 1;
+   size_t event_size  = sizeof(struct inotify_event) + NAME_MAX + 1;
    uint8_t *event_buf = (uint8_t*)calloc(1, event_size);
 
    if (!event_buf)
@@ -211,7 +209,7 @@ retry:
    for (i = 0; i < ret; i++)
    {
       if (events[i].data.ptr)
-         poll_pad((struct linuxraw_joypad*)events[i].data.ptr);
+         linuxraw_poll_pad((struct linuxraw_joypad*)events[i].data.ptr);
       else
          handle_plugged_pad();
    }
@@ -228,7 +226,7 @@ static bool linuxraw_joypad_init(void)
    unsigned i;
    settings_t *settings = config_get_ptr();
 
-   g_epoll = epoll_create(MAX_USERS + 1);
+   g_epoll              = epoll_create(MAX_USERS + 1);
    if (g_epoll < 0)
       return false;
 
@@ -255,7 +253,7 @@ static bool linuxraw_joypad_init(void)
 
          /* TODO - implement VID/PID? */
          input_config_autoconfigure_joypad(&params);
-         poll_pad(pad);
+         linuxraw_poll_pad(pad);
       }
       else
          input_config_autoconfigure_joypad(&params);

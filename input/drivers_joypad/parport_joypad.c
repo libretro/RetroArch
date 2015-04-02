@@ -14,7 +14,6 @@
  */
 
 #include "../input_autodetect.h"
-#include "../input_common.h"
 #include "../../general.h"
 #include <unistd.h>
 #include <stdint.h>
@@ -109,11 +108,11 @@ static void parport_poll_pad(struct parport_joypad *pad)
 static bool parport_joypad_init_pad(const char *path, struct parport_joypad *pad)
 {
    int i;
-   int datadir = 1; /* read */
    char data;
    struct ppdev_frob_struct frob;
-   bool set_control = false;
-   int mode = IEEE1284_MODE_BYTE;
+   int datadir          = 1; /* read */
+   bool set_control     = false;
+   int mode             = IEEE1284_MODE_BYTE;
    settings_t *settings = config_get_ptr();
 
    if (pad->fd >= 0)
@@ -122,9 +121,9 @@ static bool parport_joypad_init_pad(const char *path, struct parport_joypad *pad
    if (access(path, R_OK | W_OK) < 0)
       return false;
 
-   pad->fd = open(path, O_RDWR | O_NONBLOCK);
-
+   pad->fd     = open(path, O_RDWR | O_NONBLOCK);
    *pad->ident = '\0';
+
    if (pad->fd >= 0)
    {
       RARCH_LOG("[Joypad]: Found parallel port: %s\n", path);
@@ -208,8 +207,8 @@ static void parport_joypad_poll(void)
 
 static void destroy_pad(struct parport_joypad *pad)
 {
-   char data;
-   data = pad->saved_data;
+   char data = pad->saved_data;
+
    if (ioctl(pad->fd, PPWDATA, &data) < 0)
       RARCH_ERR("[Joypad]: Failed to restore original data register on %s\n", pad->ident);
 
@@ -231,7 +230,7 @@ static bool parport_joypad_init(void)
    bool found_disabled_button;
    char buf[PARPORT_NUM_BUTTONS * 3 + 1];
    char pin[3 + 1];
-   settings_t *settings = config_get_ptr();
+   settings_t *settings       = config_get_ptr();
    autoconfig_params_t params = {{0}};
 
    memset(buf, 0, PARPORT_NUM_BUTTONS * 3 + 1);

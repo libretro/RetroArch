@@ -25,7 +25,7 @@ static const char *android_joypad_name(unsigned pad)
 static bool android_joypad_init(void)
 {
    unsigned autoconf_pad;
-   settings_t *settings = config_get_ptr();
+   settings_t *settings       = config_get_ptr();
    autoconfig_params_t params = {{0}};
 
    for (autoconf_pad = 0; autoconf_pad < MAX_USERS; autoconf_pad++)

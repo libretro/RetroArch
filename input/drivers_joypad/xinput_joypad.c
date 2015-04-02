@@ -13,13 +13,14 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-// Support 360 controllers on Windows.
-// Said controllers do show under DInput but they have limitations in this mode;
-// The triggers are combined rather than seperate and it is not possible to use
-// the guide button.
-
-// Some wrappers for other controllers also simulate xinput (as it is easier to implement)
-// so this may be useful for those also.
+/* Support 360 controllers on Windows.
+ * Said controllers do show under DInput but they have limitations in this mode;
+ * The triggers are combined rather than seperate and it is not possible to use
+ * the guide button.
+ *
+ * Some wrappers for other controllers also simulate xinput (as it is easier to implement)
+ * so this may be useful for those also.
+ **/
 #include "../input_autodetect.h"
 #include "../input_common.h"
 
@@ -274,6 +275,7 @@ static bool winxinput_joypad_query_pad(unsigned pad)
 static void winxinput_joypad_destroy(void)
 {
    unsigned i;
+
    for (i = 0; i < 4; ++i)
       memset(&g_winxinput_states[i], 0, sizeof(winxinput_joypad_state));
 

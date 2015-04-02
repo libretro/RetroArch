@@ -35,7 +35,7 @@ static INLINE int16_t convert_u8_to_s16(uint8_t val)
 static const char *ps3_joypad_name(unsigned pad)
 {
    settings_t *settings = config_get_ptr();
-   return settings->input.device_names[pad];
+   return settings ? settings->input.device_names[pad] : NULL;
 }
 
 static bool ps3_joypad_init(void)
@@ -77,8 +77,10 @@ static uint64_t ps3_joypad_get_buttons(unsigned port_num)
 
 static int16_t ps3_joypad_axis(unsigned port_num, uint32_t joyaxis)
 {
-   int val = 0, axis = -1;
-   bool is_neg = false, is_pos = false;
+   int val     = 0;
+   int axis    = -1;
+   bool is_neg = false;
+   bool is_pos = false;
 
    if (joyaxis == AXIS_NONE || port_num >= MAX_PADS)
       return 0;

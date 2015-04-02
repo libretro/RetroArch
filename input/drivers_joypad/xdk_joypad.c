@@ -36,7 +36,7 @@ static const char* const XBOX_CONTROLLER_NAMES[4] =
 static const char *xdk_joypad_name(unsigned pad)
 {
    settings_t *settings = config_get_ptr();
-   return settings->input.device_names[pad];
+   return settings ? settings->input.device_names[pad] : NULL;
 }
 
 static bool xdk_joypad_init(void)
@@ -95,8 +95,11 @@ static uint64_t xdk_joypad_get_buttons(unsigned port_num)
 
 static int16_t xdk_joypad_axis(unsigned port_num, uint32_t joyaxis)
 {
-   int val = 0, axis = -1;
-   bool is_neg = false, is_pos = false;
+   int val     = 0;
+   int axis    = -1;
+   bool is_neg = false;
+   bool is_pos = false;
+
    if (joyaxis == AXIS_NONE || port_num >= MAX_PADS)
       return 0;
 
@@ -139,12 +142,14 @@ static int16_t xdk_joypad_axis(unsigned port_num, uint32_t joyaxis)
 static void xdk_joypad_poll(void)
 {
    unsigned port;
-   uint64_t *state_p1 = NULL;
-   uint64_t *lifecycle_state = NULL;
-   global_t *global = global_get_ptr();
-#if defined(_XBOX1)
+#ifdef _XBOX1
    unsigned int dwInsertions, dwRemovals;
+#endif
+   uint64_t *state_p1        = NULL;
+   uint64_t *lifecycle_state = NULL;
+   global_t *global          = global_get_ptr();
 
+#if defined(_XBOX1)
    XGetDeviceChanges(XDEVICE_TYPE_GAMEPAD,
          reinterpret_cast<PDWORD>(&dwInsertions),
          reinterpret_cast<PDWORD>(&dwRemovals));

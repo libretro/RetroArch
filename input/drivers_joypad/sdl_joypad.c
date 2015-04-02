@@ -15,7 +15,6 @@
  */
 
 #include "../input_autodetect.h"
-#include "../input_common.h"
 #include "SDL.h"
 #include "../../general.h"
 
@@ -25,7 +24,7 @@ typedef struct _sdl_joypad
 #ifdef HAVE_SDL2
    SDL_GameController *controller;
    SDL_Haptic *haptic;
-   int rumble_effect; // -1 = not initialized, -2 = error/unsupported
+   int rumble_effect; /* -1 = not initialized, -2 = error/unsupported */
 #endif
    unsigned num_axes;
    unsigned num_buttons;
@@ -46,7 +45,7 @@ static sdl_joypad_t sdl_pads[MAX_USERS];
 static bool g_has_haptic;
 #endif
 
-static const char* pad_name(unsigned id)
+static const char* sdl_pad_name(unsigned id)
 {
 #ifdef HAVE_SDL2
    if (sdl_pads[id].controller)
@@ -57,7 +56,7 @@ static const char* pad_name(unsigned id)
 #endif
 }
 
-static uint8_t pad_get_button(sdl_joypad_t *pad, unsigned button)
+static uint8_t sdl_pad_get_button(sdl_joypad_t *pad, unsigned button)
 {
 #ifdef HAVE_SDL2
    /* TODO: see if a LUT like winxinput_joypad.c's button_index_to_bitmap_code is needed. */
@@ -67,16 +66,16 @@ static uint8_t pad_get_button(sdl_joypad_t *pad, unsigned button)
    return SDL_JoystickGetButton(pad->joypad, button);
 }
 
-static uint8_t pad_get_hat(sdl_joypad_t *pad, unsigned hat)
+static uint8_t sdl_pad_get_hat(sdl_joypad_t *pad, unsigned hat)
 {
 #ifdef HAVE_SDL2
    if (pad->controller)
-      return pad_get_button(pad, hat);
+      return sdl_pad_get_button(pad, hat);
 #endif
    return SDL_JoystickGetHat(pad->joypad, hat);
 }
 
-static int16_t pad_get_axis(sdl_joypad_t *pad, unsigned axis)
+static int16_t sdl_pad_get_axis(sdl_joypad_t *pad, unsigned axis)
 {
 #ifdef HAVE_SDL2
    /* TODO: see if a rarch <-> sdl translation is needed. */
@@ -86,13 +85,13 @@ static int16_t pad_get_axis(sdl_joypad_t *pad, unsigned axis)
    return SDL_JoystickGetAxis(pad->joypad, axis);
 }
 
-static void pad_connect(unsigned id)
+static void sdl_pad_connect(unsigned id)
 {
-   sdl_joypad_t *pad = (sdl_joypad_t*)&sdl_pads[id];
-   bool success = false;
-   int32_t product = 0;
-   int32_t vendor = 0;
-   settings_t *settings = config_get_ptr();
+   sdl_joypad_t *pad          = (sdl_joypad_t*)&sdl_pads[id];
+   bool success               = false;
+   int32_t product            = 0;
+   int32_t vendor             = 0;
+   settings_t *settings       = config_get_ptr();
    autoconfig_params_t params = {{0}};
 
 #ifdef HAVE_SDL2
@@ -125,21 +124,21 @@ static void pad_connect(unsigned id)
       return;
    }
 
-   strlcpy(settings->input.device_names[id], pad_name(id), sizeof(settings->input.device_names[id]));
+   strlcpy(settings->input.device_names[id], sdl_pad_name(id), sizeof(settings->input.device_names[id]));
 
 #ifdef HAVE_SDL2
-   guid = SDL_JoystickGetGUID(pad->joypad);
-   guid_ptr = (uint16_t*)guid.data;
+   guid       = SDL_JoystickGetGUID(pad->joypad);
+   guid_ptr   = (uint16_t*)guid.data;
 #ifdef __linux
-   vendor = guid_ptr[2];
-   product = guid_ptr[4];
+   vendor     = guid_ptr[2];
+   product    = guid_ptr[4];
 #elif _WIN32
-   vendor = guid_ptr[0];
-   product = guid_ptr[1];
+   vendor     = guid_ptr[0];
+   product    = guid_ptr[1];
 #endif
 #endif
    params.idx = id;
-   strlcpy(params.name, pad_name(id), sizeof(params.name));
+   strlcpy(params.name, sdl_pad_name(id), sizeof(params.name));
    params.vid = vendor;
    params.pid = product;
    strlcpy(params.driver, sdl_joypad.ident, sizeof(params.driver));
@@ -147,7 +146,7 @@ static void pad_connect(unsigned id)
    input_config_autoconfigure_joypad(&params);
 
    RARCH_LOG("[SDL]: Joypad #%u (%04x:%04x) connected: %s.\n", id, vendor,
-             product, pad_name(id));
+             product, sdl_pad_name(id));
 
 #ifdef HAVE_SDL2
 
@@ -193,7 +192,7 @@ static void pad_connect(unsigned id)
 #endif
 }
 
-static void pad_disconnect(unsigned id)
+static void sdl_pad_disconnect(unsigned id)
 {
    settings_t *settings = config_get_ptr();
 #ifdef HAVE_SDL2
@@ -222,7 +221,7 @@ static void sdl_joypad_destroy(void)
 {
    unsigned i;
    for (i = 0; i < MAX_USERS; i++)
-      pad_disconnect(i);
+      sdl_pad_disconnect(i);
 
    SDL_QuitSubSystem(g_subsystem);
    memset(sdl_pads, 0, sizeof(sdl_pads));
@@ -230,7 +229,7 @@ static void sdl_joypad_destroy(void)
 
 static bool sdl_joypad_init(void)
 {
-   unsigned i;
+   unsigned i, num_sticks;
 
    if (SDL_WasInit(0) == 0)
    {
@@ -251,12 +250,12 @@ static bool sdl_joypad_init(void)
 
    memset(sdl_pads, 0, sizeof(sdl_pads));
 
-   unsigned num_sticks = SDL_NumJoysticks();
+   num_sticks = SDL_NumJoysticks();
    if (num_sticks > MAX_USERS)
       num_sticks = MAX_USERS;
 
    for (i = 0; i < num_sticks; i++)
-      pad_connect(i);
+      sdl_pad_connect(i);
 
 #ifndef HAVE_SDL2
    /* quit if no joypad is detected. */
@@ -280,21 +279,24 @@ error:
 
 static bool sdl_joypad_button(unsigned port, uint16_t joykey)
 {
+   sdl_joypad_t *pad = NULL;
    if (joykey == NO_BTN)
       return false;
 
-   sdl_joypad_t *pad = (sdl_joypad_t*)&sdl_pads[port];
+   pad = (sdl_joypad_t*)&sdl_pads[port];
    if (!pad->joypad)
       return false;
 
-   // Check hat.
+   /* Check hat. */
    if (GET_HAT_DIR(joykey))
    {
+      uint8_t  dir;
       uint16_t hat = GET_HAT(joykey);
       if (hat >= pad->num_hats)
          return false;
 
-      Uint8 dir = pad_get_hat(pad, hat);
+      dir = sdl_pad_get_hat(pad, hat);
+
       switch (GET_HAT_DIR(joykey))
       {
          case HAT_UP_MASK:
@@ -311,8 +313,8 @@ static bool sdl_joypad_button(unsigned port, uint16_t joykey)
       return false;
    }
 
-   // Check the button
-   if (joykey < pad->num_buttons && pad_get_button(pad, joykey))
+   /* Check the button */
+   if (joykey < pad->num_buttons && sdl_pad_get_button(pad, joykey))
       return true;
 
    return false;
@@ -330,16 +332,16 @@ static int16_t sdl_joypad_axis(unsigned port, uint32_t joyaxis)
    int16_t val = 0;
    if (AXIS_NEG_GET(joyaxis) < pad->num_axes)
    {
-      val = pad_get_axis(pad, AXIS_NEG_GET(joyaxis));
+      val = sdl_pad_get_axis(pad, AXIS_NEG_GET(joyaxis));
 
       if (val > 0)
          val = 0;
-      else if (val < -0x7fff) // -0x8000 can cause trouble if we later abs() it.
+      else if (val < -0x7fff) /* -0x8000 can cause trouble if we later abs() it. */
          val = -0x7fff;
    }
    else if (AXIS_POS_GET(joyaxis) < pad->num_axes)
    {
-      val = pad_get_axis(pad, AXIS_POS_GET(joyaxis));
+      val = sdl_pad_get_axis(pad, AXIS_POS_GET(joyaxis));
 
       if (val < 0)
          val = 0;
@@ -354,15 +356,18 @@ static void sdl_joypad_poll(void)
    SDL_Event event;
 
    SDL_PumpEvents();
-   while (SDL_PeepEvents(&event, 1, SDL_GETEVENT, SDL_JOYDEVICEADDED, SDL_JOYDEVICEREMOVED) > 0)
+
+   while (SDL_PeepEvents(&event, 1,
+            SDL_GETEVENT, SDL_JOYDEVICEADDED, SDL_JOYDEVICEREMOVED) > 0)
    {
-      if (event.type == SDL_JOYDEVICEADDED)
+      switch (event.type)
       {
-         pad_connect(event.jdevice.which);
-      }
-      else if (event.type == SDL_JOYDEVICEREMOVED)
-      {
-         pad_disconnect(event.jdevice.which);
+         case SDL_JOYDEVICEADDED:
+            sdl_pad_connect(event.jdevice.which);
+            break;
+         case SDL_JOYDEVICEREMOVED:
+            sdl_pad_disconnect(event.jdevice.which);
+            break;
       }
    }
 #else
@@ -381,15 +386,20 @@ static bool sdl_joypad_set_rumble(unsigned pad, enum retro_rumble_effect effect,
    if (!joypad->joypad || !joypad->haptic)
       return false;
 
-   efx.type = SDL_HAPTIC_LEFTRIGHT;
-   efx.leftright.type  = SDL_HAPTIC_LEFTRIGHT;
+   efx.type             = SDL_HAPTIC_LEFTRIGHT;
+   efx.leftright.type   = SDL_HAPTIC_LEFTRIGHT;
    efx.leftright.length = 5000;
 
    switch (effect)
    {
-      case RETRO_RUMBLE_STRONG: efx.leftright.large_magnitude = strength; break;
-      case RETRO_RUMBLE_WEAK: efx.leftright.small_magnitude = strength; break;
-      default: return false;
+      case RETRO_RUMBLE_STRONG:
+         efx.leftright.large_magnitude = strength;
+         break;
+      case RETRO_RUMBLE_WEAK:
+         efx.leftright.small_magnitude = strength;
+         break;
+      default:
+         return false;
    }
 
    if (joypad->rumble_effect == -1)
@@ -430,7 +440,7 @@ static const char *sdl_joypad_name(unsigned pad)
    if (pad >= MAX_USERS)
       return NULL;
 
-   return pad_name(pad);
+   return sdl_pad_name(pad);
 }
 
 rarch_joypad_driver_t sdl_joypad = {

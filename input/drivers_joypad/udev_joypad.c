@@ -14,9 +14,7 @@
  */
 
 #include "../input_autodetect.h"
-#include "../input_common.h"
 #include "../../general.h"
-#include "../../runloop.h"
 #include <unistd.h>
 #include <stdint.h>
 #include <string.h>
