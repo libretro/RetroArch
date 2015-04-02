@@ -257,7 +257,7 @@ retro_time_t rarch_get_time_usec(void)
    gettimeofday(&tv,NULL);
    return (1000000 * tv.tv_sec + tv.tv_usec);
 #elif defined(_3DS)
-   return osGetTime();
+   return osGetTime() * 1000;
 #else
 #error "Your platform does not have a timer function implemented in rarch_get_time_usec(). Cannot continue."
 #endif
