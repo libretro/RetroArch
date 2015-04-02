@@ -205,7 +205,7 @@ static void parport_joypad_poll(void)
    }
 }
 
-static void destroy_pad(struct parport_joypad *pad)
+static void parport_free_pad(struct parport_joypad *pad)
 {
    char data = pad->saved_data;
 
@@ -295,7 +295,7 @@ static bool parport_joypad_init(void)
          else
          {
             RARCH_WARN("[Joypad]: All pins low on %s, assuming nothing connected\n", path);
-            destroy_pad(pad);
+            parport_free_pad(pad);
          }
       }
       input_config_autoconfigure_joypad(&params);
@@ -313,9 +313,7 @@ static void parport_joypad_destroy(void)
    {
       pad = (struct parport_joypad*)&parport_pads[i];
       if (pad->fd >= 0)
-      {
-         destroy_pad(pad);
-      }
+         parport_free_pad(pad);
    }
    memset(parport_pads, 0, sizeof(parport_pads));
    for (i = 0; i < MAX_USERS; i++)

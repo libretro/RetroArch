@@ -261,7 +261,7 @@ static void wiimote_pressed_buttons(struct wiimote_t* wm, uint8_t* msg)
    wm->btns     = now;
 }
 
-static int classic_ctrl_handshake(struct wiimote_t* wm,
+static int wiimote_classic_ctrl_handshake(struct wiimote_t* wm,
       struct classic_ctrl_t* cc, uint8_t* data, uint16_t len)
 {
    memset(cc, 0, sizeof(*cc));
@@ -269,14 +269,14 @@ static int classic_ctrl_handshake(struct wiimote_t* wm,
    return 1;
 }
 
-static float normalize_and_interpolate(float min, float max, float t)
+static float wiimote_normalize_and_interpolate(float min, float max, float t)
 {
    if (min == max)
       return 0.0f;
    return (t - min) / (max - min);
 }
 
-static void process_axis(struct axis_t* axis, uint8_t raw)
+static void wiimote_process_axis(struct axis_t* axis, uint8_t raw)
 {
    if (!axis->has_center)
    {
@@ -293,10 +293,10 @@ static void process_axis(struct axis_t* axis, uint8_t raw)
    axis->raw_value = raw;
 
    if (raw < axis->center)
-      axis->value  = -normalize_and_interpolate(
+      axis->value  = -wiimote_normalize_and_interpolate(
             axis->center, axis->min, raw);
    else if (raw > axis->center)
-      axis->value  = normalize_and_interpolate(
+      axis->value  = wiimote_normalize_and_interpolate(
             axis->center, axis->max, raw);
    else
       axis->value  = 0;
@@ -309,11 +309,11 @@ static void classic_ctrl_event(struct classic_ctrl_t* cc, uint8_t* msg)
 
    cc->btns = ~swap_if_little16(*(int16_t*)(msg + 4)) & CLASSIC_CTRL_BUTTON_ALL;
 
-   process_axis(&cc->ljs.x, (msg[0] & 0x3F));
-   process_axis(&cc->ljs.y, (msg[1] & 0x3F));
-   process_axis(&cc->rjs.x, ((msg[0] & 0xC0) >> 3) |
+   wiimote_process_axis(&cc->ljs.x, (msg[0] & 0x3F));
+   wiimote_process_axis(&cc->ljs.y, (msg[1] & 0x3F));
+   wiimote_process_axis(&cc->rjs.x, ((msg[0] & 0xC0) >> 3) |
          ((msg[1] & 0xC0) >> 5) | ((msg[2] & 0x80) >> 7));
-   process_axis(&cc->rjs.y, (msg[2] & 0x1F));
+   wiimote_process_axis(&cc->rjs.y, (msg[2] & 0x1F));
 }
 
 /*
@@ -578,7 +578,7 @@ static int wiimote_handshake(struct wiimote_t* wm,
             if(event !=  WM_RPT_READ)
                return 0;
 
-            classic_ctrl_handshake(wm, &wm->exp.cc.classic, data,len);
+            wiimote_classic_ctrl_handshake(wm, &wm->exp.cc.classic, data,len);
             wm->handshake_state = 3;
             continue;
          case 6:
