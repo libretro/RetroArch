@@ -382,7 +382,7 @@ static void gl_raster_font_bind_block(void *data, void *userdata)
    gl_raster_t *font = (gl_raster_t*)data;
    gl_font_raster_block_t *block = (gl_font_raster_block_t*)userdata;
 
-   if (font && block)
+   if (font)
       font->block = block;
 }
 

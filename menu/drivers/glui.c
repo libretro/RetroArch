@@ -467,6 +467,12 @@ static void glui_frame(void)
 
 draw_text:
 
+   if (glui->use_blocks)
+   {
+      font_driver->flush(gl->font_handle);
+      font_driver->bind_block(gl->font_handle, NULL);
+   }
+
    if (menu->keyboard.display)
    {
       char msg[PATH_MAX_LENGTH];
@@ -483,12 +489,6 @@ draw_text:
       glui_render_background(settings, gl, glui, true);
       glui_render_messagebox(glui->box_message);
       glui->box_message[0] = '\0';
-   }
-
-   if (glui->use_blocks)
-   {
-      font_driver->flush(gl->font_handle);
-      font_driver->bind_block(gl->font_handle, NULL);
    }
 
    if (settings->menu.mouse.enable)
