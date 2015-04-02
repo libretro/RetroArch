@@ -239,6 +239,8 @@ static void libusb_hid_free(void *data)
 {
    libusb_hid_t *hid = (libusb_hid_t*)data;
 
+   pad_connection_destroy(hid->slots);
+
    while(adapters.next)
       remove_adapter(hid, adapters.next->device);
 
@@ -296,6 +298,8 @@ static void *libusb_hid_init(void)
       fprintf(stderr, "Error creating a hotplug callback.\n");
       goto error;
    }
+
+   hid->slots = (joypad_connection_t*)pad_connection_init(MAX_USERS);
 
    return hid;
 
