@@ -24,7 +24,7 @@
 
 typedef struct GLYPH_ATTR
 {
-   uint16_t tu1, tv1, tu2, tv2;   /* Texture coordinates for the image. */
+   uint16_t tu1, tv1, tu2, tv2;           /* Texture coordinates for the image. */
    int16_t wOffset;                       /* Pixel offset for glyph start. */
    int16_t wWidth;                        /* Pixel width of the glyph. */
    int16_t wAdvance;                      /* Pixels to advance after the glyph. */
@@ -182,23 +182,23 @@ static void *xdk360_init_font(void *video_data,
       const char *font_path, float font_size)
 {
    uint32_t dwFileVersion;
-   const void *pFontData       = NULL;
-   D3DTexture *pFontTexture    = NULL;
-   const uint8_t * pData       = NULL;
-   xdk360_video_font_t *font = (xdk360_video_font_t*)calloc(1, sizeof(*font));
+   const void *pFontData      = NULL;
+   D3DTexture *pFontTexture   = NULL;
+   const uint8_t * pData      = NULL;
+   xdk360_video_font_t *font  = (xdk360_video_font_t*)calloc(1, sizeof(*font));
 
    if (!font)
       return NULL;
 
    (void)font_size;
 
-   font->d3d = (d3d_video_t*)video_data;
+   font->d3d                  = (d3d_video_t*)video_data;
 
-   font->m_pFontTexture = NULL;
-   font->m_dwNumGlyphs = 0L;
-   font->m_Glyphs = NULL;
-   font->m_cMaxGlyph = 0;
-   font->m_TranslatorTable = NULL;
+   font->m_pFontTexture       = NULL;
+   font->m_dwNumGlyphs        = 0L;
+   font->m_Glyphs             = NULL;
+   font->m_cMaxGlyph          = 0;
+   font->m_TranslatorTable    = NULL;
 
    /* Create the font. */
    if (FAILED( m_xprResource.Create(font_path)))
@@ -285,7 +285,7 @@ static void xdk360_free_font(void *data)
 
 static void xdk360_render_msg_post(xdk360_video_font_t * font)
 {
-   // Cache the global pointer into a register
+   /* Cache the global pointer into a register */
    LPDIRECT3DDEVICE d3dr = font->d3d->dev;
 
    d3d_set_texture(d3dr, 0, NULL);
@@ -336,15 +336,15 @@ static void xdk360_draw_text(xdk360_video_font_t *font,
    LPDIRECT3DDEVICE d3dr = font->d3d->dev;
 
    /* Set the color as a vertex shader constant. */
-   vColor[0] = ( ( 0xffffffff & 0x00ff0000 ) >> 16L ) / 255.0f;
-   vColor[1] = ( ( 0xffffffff & 0x0000ff00 ) >> 8L )  / 255.0f;
-   vColor[2] = ( ( 0xffffffff & 0x000000ff ) >> 0L )  / 255.0f;
-   vColor[3] = ( ( 0xffffffff & 0xff000000 ) >> 24L ) / 255.0f;
+   vColor[0] = ((0xffffffff & 0x00ff0000) >> 16L) / 255.0f;
+   vColor[1] = ((0xffffffff & 0x0000ff00) >> 8L)  / 255.0f;
+   vColor[2] = ((0xffffffff & 0x000000ff) >> 0L)  / 255.0f;
+   vColor[3] = ((0xffffffff & 0xff000000) >> 24L) / 255.0f;
 
    /* Perform the actual storing of the color constant here to prevent
     * a load-hit-store by inserting work between the store and the use of
     * the vColor array. */
-   d3dr->SetVertexShaderConstantF( 1, vColor, 1 );
+   d3dr->SetVertexShaderConstantF(1, vColor, 1);
 
    m_fCursorX = floorf(x);
    m_fCursorY = floorf(y);
@@ -465,7 +465,7 @@ static void xdk360_render_msg(void *data, const char *str_msg,
 {
    float x, y;
    wchar_t msg[PATH_MAX_LENGTH];
-   xdk360_video_font_t *font = (xdk360_video_font_t*)data;
+   xdk360_video_font_t *font        = (xdk360_video_font_t*)data;
    const struct font_params *params = (const struct font_params*)userdata;
 
    if (params)

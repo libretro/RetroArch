@@ -282,7 +282,7 @@ FONTS
 #endif
 
 #if defined(_XBOX360)
-#include "../gfx/drivers_font/xdk360_fonts.cpp"
+#include "../gfx/drivers_font/xdk360_fonts.c"
 #endif
 
 /*============================================================
