@@ -1159,8 +1159,6 @@ void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
 {
    rarch_setting_t *setting = menu_setting_find(label);
    menu_handle_t *menu    = menu_driver_get_ptr();
-   if (!menu)
-      return;
 
    if (!cbs)
       return;
