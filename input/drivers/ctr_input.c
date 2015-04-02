@@ -30,6 +30,8 @@ static void *ctr_input_init(void)
 static void ctr_input_poll(void *data)
 {   
    (void)data;
+   global_t   *global   = global_get_ptr();
+   uint64_t *lifecycle_state = (uint64_t*)&global->lifecycle_state;
 
    hidScanInput();
    kDown = hidKeysHeld();
@@ -47,6 +49,17 @@ static void ctr_input_poll(void *data)
    pad_state |= (kDown & KEY_A) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_A) : 0;
    pad_state |= (kDown & KEY_R) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_R) : 0;
    pad_state |= (kDown & KEY_L) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_L) : 0;
+
+
+   *lifecycle_state &= ~((1ULL << RARCH_MENU_TOGGLE));
+
+   if (
+         (pad_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_L))
+         && (pad_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_R))
+         && (pad_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_SELECT))
+         && (pad_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_START))
+      )
+         *lifecycle_state |= (1ULL << RARCH_MENU_TOGGLE);
 }
 
 static int16_t ctr_input_state(void *data,
@@ -78,8 +91,10 @@ static int16_t ctr_input_state(void *data,
 static bool ctr_input_key_pressed(void *data, int key)
 {
    (void)data;
+   global_t   *global   = global_get_ptr();
 
-   return (pad_state & (1ULL << key));
+   return (global->lifecycle_state & (1ULL << key))||
+         (pad_state & (1ULL << key));
 }
 
 static void ctr_input_free_input(void *data)
