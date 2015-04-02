@@ -162,7 +162,11 @@ typedef struct wiimote_t
 #define WIIMOTE_ENABLE_STATE(wm, s)    (wm->state |= (s))
 #define WIIMOTE_DISABLE_STATE(wm, s)   (wm->state &= ~(s))
 #define WIIMOTE_TOGGLE_STATE(wm, s)    ((wm->state & (s)) ? WIIMOTE_DISABLE_STATE(wm, s) : WIIMOTE_ENABLE_STATE(wm, s))
-#define WIIMOTE_IS_CONNECTED(wm)       (WIIMOTE_IS_SET(wm, WIIMOTE_STATE_CONNECTED))
+
+static bool wiimote_is_connected(struct wiimote_t *wm)
+{
+   return WIIMOTE_IS_SET(wm, WIIMOTE_STATE_CONNECTED);
+}
 
 /*
  *	Send a packet to the wiimote.
@@ -172,10 +176,7 @@ typedef struct wiimote_t
 static int wiimote_send(struct wiimote_t* wm,
       uint8_t report_type, uint8_t* msg, int len)
 {
-   int x = 2;
    uint8_t buf[32];
-
-   (void)x;
 
    buf[0] = WM_SET_REPORT | WM_BT_OUTPUT;
    buf[1] = report_type;
@@ -183,8 +184,9 @@ static int wiimote_send(struct wiimote_t* wm,
    memcpy(buf+2, msg, len);
 
 #ifdef WIIMOTE_DBG
+   int x;
    printf("[DEBUG] (id %i) SEND: (%x) %.2x ", wm->unid, buf[0], buf[1]);
-   for (; x < len+2; ++x)
+   for (x = 2; x < len+2; ++x)
       printf("%.2x ", buf[x]);
    printf("\n");
 #endif
@@ -202,7 +204,7 @@ static void wiimote_status(struct wiimote_t* wm)
 {
    uint8_t buf = 0;
 
-   if (!wm || !WIIMOTE_IS_CONNECTED(wm))
+   if (!wm || !wiimote_is_connected(wm))
       return;
 
 #ifdef WIIMOTE_DBG
@@ -216,7 +218,7 @@ static void wiimote_data_report(struct wiimote_t* wm, uint8_t type)
 {
    uint8_t buf[2] = {0x0,0x0};
 
-   if (!wm  || !WIIMOTE_IS_CONNECTED(wm))
+   if (!wm  || !wiimote_is_connected(wm))
       return;
 
    buf[1] = type;
@@ -239,28 +241,24 @@ static void wiimote_set_leds(struct wiimote_t* wm, int leds)
 {
    uint8_t buf;
 
-   if (!wm || !WIIMOTE_IS_CONNECTED(wm))
+   if (!wm || !wiimote_is_connected(wm))
       return;
 
    /* Remove the lower 4 bits because they control rumble. */
    wm->leds = (leds & 0xF0);
-
-   buf = wm->leds;
+   buf      = wm->leds;
 
    wiimote_send(wm, WM_CMD_LED, &buf, 1);
 }
 
-/*
- * Find what buttons are pressed.
- */
-
+/* Find what buttons are pressed. */
 static void wiimote_pressed_buttons(struct wiimote_t* wm, uint8_t* msg)
 {
    /* Convert to big endian. */
-   int16_t now = swap_if_little16(*(int16_t*)msg) & WIIMOTE_BUTTON_ALL;
+   int16_t *val = (int16_t*)msg;
+   int16_t now  = swap_if_little16(*val) & WIIMOTE_BUTTON_ALL;
 
-   /* buttons pressed now. */
-   wm->btns = now;
+   wm->btns     = now;
 }
 
 static int classic_ctrl_handshake(struct wiimote_t* wm,
@@ -283,30 +281,34 @@ static void process_axis(struct axis_t* axis, uint8_t raw)
    if (!axis->has_center)
    {
       axis->has_center = true;
-      axis->min = raw - 2;
-      axis->center = raw;
-      axis->max = raw + 2;
+      axis->min        = raw - 2;
+      axis->center     = raw;
+      axis->max        = raw + 2;
    }
 
    if (raw < axis->min)
-      axis->min = raw;
+      axis->min    = raw;
    if (raw > axis->max)
-      axis->max = raw;
+      axis->max    = raw;
    axis->raw_value = raw;
 
    if (raw < axis->center)
-      axis->value = -normalize_and_interpolate(
+      axis->value  = -normalize_and_interpolate(
             axis->center, axis->min, raw);
    else if (raw > axis->center)
-      axis->value =  normalize_and_interpolate(
+      axis->value  = normalize_and_interpolate(
             axis->center, axis->max, raw);
    else
-      axis->value = 0;
+      axis->value  = 0;
 }
 
 static void classic_ctrl_event(struct classic_ctrl_t* cc, uint8_t* msg)
 {
+   if (!cc)
+      return;
+
    cc->btns = ~swap_if_little16(*(int16_t*)(msg + 4)) & CLASSIC_CTRL_BUTTON_ALL;
+
    process_axis(&cc->ljs.x, (msg[0] & 0x3F));
    process_axis(&cc->ljs.y, (msg[1] & 0x3F));
    process_axis(&cc->rjs.x, ((msg[0] & 0xC0) >> 3) |
@@ -335,17 +337,16 @@ static void wiimote_handle_expansion(struct wiimote_t* wm, uint8_t* msg)
 static int wiimote_write_data(struct wiimote_t* wm,
       uint32_t addr, uint8_t* data, uint8_t len)
 {
-   int i = 0;
    uint8_t buf[21] = {0};		/* the payload is always 23 */
+   int32_t *buf32  = (int32_t*)buf;
 
-   (void)i;
-
-   if (!wm || !WIIMOTE_IS_CONNECTED(wm))
+   if (!wm || !wiimote_is_connected(wm))
       return 0;
    if (!data || !len)
       return 0;
 
 #ifdef WIIMOTE_DBG
+   int i           = 0;
    printf("Writing %i bytes to memory location 0x%x...\n", len, addr);
    printf("Write data is: ");
    for (; i < len; ++i)
@@ -354,7 +355,7 @@ static int wiimote_write_data(struct wiimote_t* wm,
 #endif
 
    /* the offset is in big endian */
-   *(int*)(buf) = swap_if_little32(addr);
+   *buf32 = swap_if_little32(addr);
 
    /* length */
    *(uint8_t*)(buf + 4) = len;
@@ -381,16 +382,17 @@ static int wiimote_read_data(struct wiimote_t* wm, uint32_t addr,
       uint16_t len)
 {
    uint8_t buf[6];
+   int32_t *buf32 = (int32_t*)buf;
+   int16_t *buf16 = (int16_t*)(buf + 4);
 
    /* No puden ser mas de 16 lo leido o vendra en trozos! */
 
-   if (!wm || !WIIMOTE_IS_CONNECTED(wm) || !len)
+   if (!wm || !wiimote_is_connected(wm) || !len)
       return 0;
 
-   /* the offset is in big endian */
-   *(int*)(buf)         = swap_if_little32(addr);
-   /* the length is in big endian */
-   *(int16_t*)(buf + 4) = swap_if_little16(len);
+   /* the offsets are in big endian */
+   *buf32         = swap_if_little32(addr);
+   *buf16         = swap_if_little16(len);
 
 #ifdef WIIMOTE_DBG
    printf("Request read at address: 0x%x  length: %i", addr, len);
@@ -455,6 +457,8 @@ static int wiimote_handshake(struct wiimote_t* wm,
 
                if (attachment && !WIIMOTE_IS_SET(wm, WIIMOTE_STATE_EXP))
                {
+                  uint8_t buf;
+
                   /* Expansion port */
 
                   WIIMOTE_ENABLE_STATE(wm, WIIMOTE_STATE_EXP);
@@ -471,8 +475,6 @@ static int wiimote_handshake(struct wiimote_t* wm,
                      WIIMOTE_ENABLE_STATE(wm, WIIMOTE_STATE_HANDSHAKE);
                   }
 
-                  uint8_t buf;
-
                   /*Old way. initialize the extension was by writing the 
                    * single encryption byte 0x00 to 0x(4)A40040. */
 #if 0
@@ -484,13 +486,13 @@ static int wiimote_handshake(struct wiimote_t* wm,
                    * 0x00 to 0x(4)A400FB. (support clones) */
                   buf = 0x55;
                   wiimote_write_data(wm, 0x04A400F0, &buf, 1);
-                  usleep(100000);
+                  rarch_sleep(100);
                   buf = 0x00;
                   wiimote_write_data(wm, 0x04A400FB, &buf, 1);
 
                   /* check extension type! */
-                  usleep(100000);
-                  wiimote_read_data(wm, WM_EXP_MEM_CALIBR+220, 4);
+                  rarch_sleep(100);
+                  wiimote_read_data(wm, WM_EXP_MEM_CALIBR + 220, 4);
 #if 0
                   wiimote_read_data(wm, WM_EXP_MEM_CALIBR, EXP_HANDSHAKE_LEN);
 #endif
@@ -543,10 +545,12 @@ static int wiimote_handshake(struct wiimote_t* wm,
          case 4:
             {
                int id;
-               if(event !=  WM_RPT_READ)
+               int32_t *ptr = (int32_t*)data;
+
+               if (event != WM_RPT_READ)
                   return 0;
 
-               id = swap_if_little32(*(int*)(data));
+               id = swap_if_little32(*data);
 
 #ifdef WIIMOTE_DBG
                printf("Expansion id=0x%04x\n",id);
@@ -563,7 +567,7 @@ static int wiimote_handshake(struct wiimote_t* wm,
                }
                else
                {
-                  usleep(100000);
+                  rarch_sleep(100);
                   /* pedimos datos de calibracion del JOY! */
                   wiimote_read_data(wm, WM_EXP_MEM_CALIBR, 16);
                   wm->handshake_state = 5;
@@ -581,14 +585,22 @@ static int wiimote_handshake(struct wiimote_t* wm,
             WIIMOTE_DISABLE_STATE(wm, WIIMOTE_STATE_HANDSHAKE);
             WIIMOTE_ENABLE_STATE(wm, WIIMOTE_STATE_HANDSHAKE_COMPLETE);
             wm->handshake_state = 1;
-            if(wm->unid==0)
-               wiimote_set_leds(wm, WIIMOTE_LED_1);
-            else if(wm->unid==1)
-               wiimote_set_leds(wm, WIIMOTE_LED_2);
-            else if(wm->unid==2)
-               wiimote_set_leds(wm, WIIMOTE_LED_3);
-            else if(wm->unid==3)
-               wiimote_set_leds(wm, WIIMOTE_LED_4);
+
+            switch (wm->unid)
+            {
+               case 0:
+                  wiimote_set_leds(wm, WIIMOTE_LED_1);
+                  break;
+               case 1:
+                  wiimote_set_leds(wm, WIIMOTE_LED_2);
+                  break;
+               case 2:
+                  wiimote_set_leds(wm, WIIMOTE_LED_3);
+                  break;
+               case 3:
+                  wiimote_set_leds(wm, WIIMOTE_LED_4);
+                  break;
+            }
             return 1;
          default:
             break;
