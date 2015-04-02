@@ -185,6 +185,27 @@ rarch_setting_t setting_uint_setting(const char* name,
       change_handler_t read_handler);
 
 /**
+ * setting_hex_setting:
+ * @name               : name of setting.
+ * @short_description  : Short description of setting.
+ * @target             : Target of unsigned integer setting.
+ * @default_value      : Default value (in unsigned integer format).
+ * @group              : Group that the setting belongs to.
+ * @subgroup           : Subgroup that the setting belongs to.
+ * @change_handler     : Function callback for change handler function pointer.
+ * @read_handler       : Function callback for read handler function pointer.
+ *
+ * Initializes a setting of type ST_HEX.
+ *
+ * Returns: setting of type ST_HEX.
+ **/
+rarch_setting_t setting_hex_setting(const char* name,
+      const char* short_description, unsigned int* target,
+      unsigned int default_value, const char *group,
+      const char *subgroup, change_handler_t change_handler,
+      change_handler_t read_handler);
+
+/**
  * setting_float_setting:
  * @name               : name of setting.
  * @short_description  : Short description of setting.
