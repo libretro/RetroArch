@@ -108,8 +108,9 @@ bool btstack_try_load(void)
    return true;
 }
 
-void btstack_thread_stop(void)
+void btstack_thread_stop(void *data)
 {
+   (void)data;
    bt_send_cmd_ptr(btstack_set_power_mode_ptr, HCI_POWER_OFF);
 }
 
