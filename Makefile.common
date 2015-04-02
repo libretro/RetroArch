@@ -1,4 +1,5 @@
 HAVE_LIBRETRODB = 1
+#HAVE_LIBUSB     = 1
 
 ifeq ($(HAVE_LIBRETRODB), 1)
 	DEFINES += -DHAVE_LIBRETRODB
@@ -393,6 +394,7 @@ ifeq ($(HAVE_UDEV), 1)
 endif
 
 ifeq ($(HAVE_LIBUSB), 1)
+	DEFINES += -DHAVE_LIBUSB
 	OBJ += input/drivers_hid/libusb_hid.o
 	LIBS += -lusb-1.0
 	JOYCONFIG_LIBS += -lusb-1.0

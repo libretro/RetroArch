@@ -29,6 +29,9 @@ struct libusb_adapter
    struct libusb_device *device;
    libusb_device_handle *handle;
 
+   uint8_t manufacturer_name[255];
+   uint8_t name[255];
+
    sthread_t *thread;
    struct libusb_adapter *next;
 };
@@ -60,7 +63,6 @@ static int add_adapter(struct libusb_device *dev)
       fprintf(stderr, "Allocation of adapter failed.\n");
       return -1;
    }
-
    rc = libusb_get_device_descriptor(dev, &desc);
 
    if (rc != LIBUSB_SUCCESS)
@@ -78,6 +80,23 @@ static int add_adapter(struct libusb_device *dev)
       fprintf(stderr, "Error opening device 0x%p (VID/PID: %04x:%04x).\n",
             adapter->device, desc.idVendor, desc.idProduct);
       goto error;
+   }
+
+   if (desc.iManufacturer)
+   {
+      libusb_get_string_descriptor_ascii(adapter->handle,
+            desc.iManufacturer, adapter->manufacturer_name,
+            sizeof(adapter->manufacturer_name));
+      fprintf(stderr, "Adapter Manufacturer name: %s\n",
+            adapter->manufacturer_name);
+   }
+
+   if (desc.iProduct)
+   {
+      libusb_get_string_descriptor_ascii(adapter->handle,
+            desc.iProduct, adapter->name,
+            sizeof(adapter->name));
+      fprintf(stderr, "Adapter name: %s\n", adapter->name);
    }
 
    if (libusb_kernel_driver_active(adapter->handle, 0) == 1
