@@ -75,6 +75,15 @@ static INLINE uint32_t swap_if_big32(uint32_t val)
       ((val << 8) & 0xFF0000) | (val << 24);
 }
 
+static INLINE uint32_t swap_little32(uint32_t val)
+{
+   return 
+         (val >> 24) 
+      | ((val >> 8) & 0xFF00)
+      | ((val << 8) & 0xFF0000)
+      |  (val << 24);
+}
+
 /**
  * swap_if_little32:
  * @val        : unsigned 32-bit value
@@ -87,9 +96,13 @@ static INLINE uint32_t swap_if_big32(uint32_t val)
 static INLINE uint32_t swap_if_little32(uint32_t val)
 {
    if (is_little_endian())
-      return (val >> 24) | ((val >> 8) & 0xFF00) |
-         ((val << 8) & 0xFF0000) | (val << 24);
+      return swap_little32(val);
    return val;
+}
+
+static INLINE uint16_t swap_big16(uint16_t val)
+{
+   return (val >> 8) | (val << 8);
 }
 
 /**
@@ -105,6 +118,11 @@ static INLINE uint16_t swap_if_big16(uint16_t val)
 {
    if (is_little_endian())
       return val;
+   return swap_big16(val);
+}
+
+static INLINE uint16_t swap_little16(uint16_t val)
+{
    return (val >> 8) | (val << 8);
 }
 
@@ -120,7 +138,7 @@ static INLINE uint16_t swap_if_big16(uint16_t val)
 static INLINE uint16_t swap_if_little16(uint16_t val)
 {
    if (is_little_endian())
-      return (val >> 8) | (val << 8);
+      return swap_little16(val);
    return val;
 }
 

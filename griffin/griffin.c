@@ -341,31 +341,11 @@ INPUT
 #include "../input/drivers/rwebinput_input.c"
 #endif
 
-#include "../input/drivers_joypad/hid_joypad.c"
-
-#include "../input/drivers_hid/null_hid.c"
-#ifdef HAVE_LIBUSB
-#include "../input/drivers_hid/libusb_hid.c"
-#endif
-
-#ifdef HAVE_HID
-#include "../input/drivers_hid/apple_hid.c"
-#endif
-
-#if defined(__APPLE__)
-#include "../input/connect/joypad_connection.c"
-#include "../input/connect/connect_ps3.c"
-#include "../input/connect/connect_ps4.c"
-#include "../input/connect/connect_wii.c"
-
-
 #ifdef IOS
 #include "../apple/iOS/bluetooth/btdynamic.c"
 #include "../apple/iOS/bluetooth/btpad.c"
 #include "../apple/iOS/bluetooth/btpad_queue.c"
 #include "../input/drivers_joypad/apple_joypad_ios.c"
-#endif
-
 #endif
 
 #ifdef HAVE_DINPUT
@@ -392,6 +372,26 @@ INPUT
 
 #include "../input/drivers/nullinput.c"
 #include "../input/drivers_joypad/nullinput_joypad.c"
+
+/*============================================================
+INPUT (HID)
+============================================================ */
+#include "../input/drivers_joypad/hid_joypad.c"
+
+#include "../input/drivers_hid/null_hid.c"
+
+#if defined(HAVE_LIBUSB)
+#include "../input/drivers_hid/libusb_hid.c"
+#elif defined(__APPLE__)
+#include "../input/drivers_hid/apple_hid.c"
+#endif
+
+#ifdef HAVE_HID
+#include "../input/connect/joypad_connection.c"
+#include "../input/connect/connect_ps3.c"
+#include "../input/connect/connect_ps4.c"
+#include "../input/connect/connect_wii.c"
+#endif
 
 /*============================================================
  KEYBOARD EVENT

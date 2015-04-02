@@ -15,12 +15,14 @@
 
 #include <libusb-1.0/libusb.h>
 #include <rthreads/rthreads.h>
+#include "../connect/joypad_connection.h"
 #include "../../driver.h"
 #include "../input_hid_driver.h"
 
 typedef struct libusb_hid
 {
    libusb_hotplug_callback_handle hp;
+   joypad_connection_t *slots;
 } libusb_hid_t;
 
 struct libusb_adapter

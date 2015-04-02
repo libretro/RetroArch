@@ -53,6 +53,11 @@
 #ifdef HAVE_LIBUSB
 #include "../input/drivers_hid/libusb_hid.c"
 #include "../libretro-common/rthreads/rthreads.c"
+
+#include "../input/connect/connect_ps3.c"
+#include "../input/connect/connect_ps4.c"
+#include "../input/connect/connect_wii.c"
+#include "../input/connect/joypad_connection.c"
 #endif
 
 #include "../input/drivers_joypad/hid_joypad.c"

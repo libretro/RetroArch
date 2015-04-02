@@ -14,9 +14,10 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <string.h>
 #include "joypad_connection.h"
 
-static int find_vacant_pad(joypad_connection_t *joyconn)
+static int pad_connection_find_vacant_pad(joypad_connection_t *joyconn)
 {
    unsigned i;
 
@@ -59,7 +60,7 @@ void *pad_connection_init(unsigned pads)
 int32_t pad_connection_pad_init(joypad_connection_t *joyconn,
    const char* name, void *data, send_control_t ptr)
 {
-   int pad = find_vacant_pad(joyconn);
+   int pad = pad_connection_find_vacant_pad(joyconn);
 
    if (pad != -1)
    {
@@ -101,7 +102,7 @@ int32_t pad_connection_pad_init(joypad_connection_t *joyconn,
 
 int32_t apple_joypad_connect_gcapi(joypad_connection_t *joyconn)
 {
-   int pad = find_vacant_pad(joyconn);
+   int pad = pad_connection_find_vacant_pad(joyconn);
 
    if (pad >= 0 && pad < MAX_USERS)
    {

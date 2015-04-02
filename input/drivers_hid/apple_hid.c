@@ -22,8 +22,8 @@
 
 typedef struct apple_hid
 {
-    IOHIDManagerRef ptr;
-    joypad_connection_t *slots;
+   IOHIDManagerRef ptr;
+   joypad_connection_t *slots;
 } apple_hid_t;
 
 struct apple_hid_adapter
