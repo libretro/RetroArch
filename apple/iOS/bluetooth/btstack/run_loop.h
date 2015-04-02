@@ -35,7 +35,8 @@
  *  Created by Matthias Ringwald on 6/6/09.
  */
 
-#pragma once
+#ifndef _BTSTACK_RUNLOOP_H
+#define _BTSTACK_RUNLOOP_H
 
 #include "linked_list.h"
 #define HAVE_TIME
@@ -137,3 +138,4 @@ void     embedded_trigger(void);
 }
 #endif
 
+#endif

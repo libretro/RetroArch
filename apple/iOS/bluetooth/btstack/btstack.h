@@ -29,15 +29,6 @@
  *
  */
 
-/*
- *  btstack.h
- *
- *  Created by Matthias Ringwald on 7/1/09.
- *
- *  BTstack client API
- *  
- */
-
 #ifndef _BTSTACK_HEADER_H
 #define _BTSTACK_HEADER_H
 
@@ -89,6 +80,7 @@ btstack_packet_handler_t bt_register_packet_handler(
 void bt_send_acl(uint8_t * data, uint16_t len);
 
 void bt_send_l2cap(uint16_t local_cid, uint8_t *data, uint16_t len);
+
 void bt_send_rfcomm(uint16_t rfcom_cid, uint8_t *data, uint16_t len);
 
 #if defined __cplusplus

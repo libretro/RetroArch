@@ -29,12 +29,6 @@
  *
  */
 
-/*
- *  linked_list.h
- *
- *  Created by Matthias Ringwald on 7/13/09.
- */
-
 #ifndef _BTSTACK_LINKED_LIST_H
 #define _BTSTACK_LINKED_LIST_H
 

@@ -29,14 +29,6 @@
  *
  */
 
-/*
- *  utils.h
- *
- *  General utility functions
- *
- *  Created by Matthias Ringwald on 7/23/09.
- */
-
 #ifndef _BT_UTILS_H
 #define _BT_UTILS_H
 
@@ -50,17 +42,16 @@ extern "C" {
 typedef uint16_t hci_con_handle_t;
 
 /* Length of a Bluetooth device address. */
-#define BD_ADDR_LEN 6
-
-typedef uint8_t bd_addr_t[BD_ADDR_LEN];
+#define BD_ADDR_LEN        6
 
 /* The link key type. */
-#define LINK_KEY_LEN 16
-
-typedef uint8_t link_key_t[LINK_KEY_LEN]; 
+#define LINK_KEY_LEN       16
 
 /* The device name type. */
-#define DEVICE_NAME_LEN 248
+#define DEVICE_NAME_LEN    248
+
+typedef uint8_t bd_addr_t[BD_ADDR_LEN];
+typedef uint8_t link_key_t[LINK_KEY_LEN]; 
 typedef uint8_t device_name_t[DEVICE_NAME_LEN+1]; 
 	
 /* helper for BT little endian format. */
@@ -92,6 +83,9 @@ typedef uint8_t device_name_t[DEVICE_NAME_LEN+1];
 #define READ_L2CAP_LENGTH(buffer)     ( READ_BT_16(buffer, 4))
 #define READ_L2CAP_CHANNEL_ID(buffer) ( READ_BT_16(buffer, 6))
 
+#define BD_ADDR_CMP(a,b) memcmp(a,b, BD_ADDR_LEN)
+#define BD_ADDR_COPY(dest,src) memcpy(dest,src,BD_ADDR_LEN)
+
 void bt_store_16(uint8_t *buffer, uint16_t pos, uint16_t value);
 
 void bt_store_32(uint8_t *buffer, uint16_t pos, uint32_t value);
@@ -116,9 +110,6 @@ int sscan_bd_addr(uint8_t * addr_string, bd_addr_t addr);
 uint8_t crc8_check(uint8_t *data, uint16_t len, uint8_t check_sum);
 
 uint8_t crc8_calc(uint8_t *data, uint16_t len);
-
-#define BD_ADDR_CMP(a,b) memcmp(a,b, BD_ADDR_LEN)
-#define BD_ADDR_COPY(dest,src) memcpy(dest,src,BD_ADDR_LEN)
 
 #if defined __cplusplus
 }

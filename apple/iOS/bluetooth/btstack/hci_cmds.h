@@ -29,13 +29,8 @@
  *
  */
 
-/*
- *  hci_cmds.h
- *
- *  Created by Matthias Ringwald on 7/23/09.
- */
-
-#pragma once
+#ifndef _BTSTACK_HCI_CMDS_H
+#define _BTSTACK_HCI_CMDS_H
 
 #include <stdint.h>
 
@@ -46,221 +41,214 @@ extern "C" {
 /**
  * packet types - used in BTstack and over the H4 UART interface
  */
-#define HCI_COMMAND_DATA_PACKET	0x01
-#define HCI_ACL_DATA_PACKET	    0x02
-#define HCI_SCO_DATA_PACKET	    0x03
-#define HCI_EVENT_PACKET	    0x04
+#define HCI_COMMAND_DATA_PACKET                             0x01
+#define HCI_ACL_DATA_PACKET                                 0x02
+#define HCI_SCO_DATA_PACKET                                 0x03
+#define HCI_EVENT_PACKET                                    0x04
 
-// extension for client/server communication
-#define DAEMON_EVENT_PACKET     0x05
+/* extension for client/server communication */
+#define DAEMON_EVENT_PACKET                                 0x05
     
-// L2CAP data
-#define L2CAP_DATA_PACKET       0x06
+/* L2CAP data */
+#define L2CAP_DATA_PACKET                                   0x06
 
-// RFCOMM data
-#define RFCOMM_DATA_PACKET      0x07
+/* RFCOMM data */
+#define RFCOMM_DATA_PACKET                                  0x07
 
-// Attribute protocol data
-#define ATT_DATA_PACKET         0x08
+/* Attribute protocol data */
+#define ATT_DATA_PACKET                                     0x08
 
-// Security Manager protocol data
-#define SM_DATA_PACKET          0x09
+/* Security Manager protocol data */
+#define SM_DATA_PACKET                                      0x09
     
-// debug log messages
-#define LOG_MESSAGE_PACKET      0xfc
+/* debug log messages */
+#define LOG_MESSAGE_PACKET                                  0xFC
 
+/* Fixed PSM numbers */
+#define PSM_SDP                                             0x01
+#define PSM_RFCOMM                                          0x03
+#define PSM_HID_CONTROL                                     0x11
+#define PSM_HID_INTERRUPT                                   0x13
+
+/* Events from host controller to host */
+#define HCI_EVENT_INQUIRY_COMPLETE                          0x01
+#define HCI_EVENT_INQUIRY_RESULT                            0x02
+#define HCI_EVENT_CONNECTION_COMPLETE                       0x03
+#define HCI_EVENT_CONNECTION_REQUEST                        0x04
+#define HCI_EVENT_DISCONNECTION_COMPLETE                    0x05
+#define HCI_EVENT_AUTHENTICATION_COMPLETE_EVENT             0x06
+#define HCI_EVENT_REMOTE_NAME_REQUEST_COMPLETE              0x07
+#define HCI_EVENT_ENCRYPTION_CHANGE                         0x08
+#define HCI_EVENT_CHANGE_CONNECTION_LINK_KEY_COMPLETE       0x09
+#define HCI_EVENT_MASTER_LINK_KEY_COMPLETE                  0x0A
+#define HCI_EVENT_READ_REMOTE_SUPPORTED_FEATURES_COMPLETE   0x0B
+#define HCI_EVENT_READ_REMOTE_VERSION_INFORMATION_COMPLETE  0x0C
+#define HCI_EVENT_QOS_SETUP_COMPLETE                        0x0D
+#define HCI_EVENT_COMMAND_COMPLETE                          0x0E
+#define HCI_EVENT_COMMAND_STATUS                            0x0F
+#define HCI_EVENT_HARDWARE_ERROR                            0x10
+#define HCI_EVENT_FLUSH_OCCURED                             0x11
+#define HCI_EVENT_ROLE_CHANGE                               0x12
+#define HCI_EVENT_NUMBER_OF_COMPLETED_PACKETS               0x13
+#define HCI_EVENT_MODE_CHANGE_EVENT                         0x14
+#define HCI_EVENT_RETURN_LINK_KEYS                          0x15
+#define HCI_EVENT_PIN_CODE_REQUEST                          0x16
+#define HCI_EVENT_LINK_KEY_REQUEST                          0x17
+#define HCI_EVENT_LINK_KEY_NOTIFICATION                     0x18
+#define HCI_EVENT_DATA_BUFFER_OVERFLOW                      0x1A
+#define HCI_EVENT_MAX_SLOTS_CHANGED                         0x1B
+#define HCI_EVENT_READ_CLOCK_OFFSET_COMPLETE                0x1C
+#define HCI_EVENT_PACKET_TYPE_CHANGED                       0x1D
+#define HCI_EVENT_INQUIRY_RESULT_WITH_RSSI                  0x22
+#define HCI_EVENT_EXTENDED_INQUIRY_RESPONSE                 0x2F
+#define HCI_EVENT_LE_META                                   0x3E
+#define HCI_EVENT_VENDOR_SPECIFIC                           0xFF
+
+#define HCI_SUBEVENT_LE_CONNECTION_COMPLETE                 0x01
+#define HCI_SUBEVENT_LE_ADVERTISING_REPORT                  0x02
+#define HCI_SUBEVENT_LE_CONNECTION_UPDATE_COMPLETE          0x03
+#define HCI_SUBEVENT_LE_READ_REMOTE_USED_FEATURES_COMPLETE  0x04
+#define HCI_SUBEVENT_LE_LONG_TERM_KEY_REQUEST               0x05
     
-// Fixed PSM numbers
-#define PSM_SDP    0x01
-#define PSM_RFCOMM 0x03
-#define PSM_HID_CONTROL 0x11
-#define PSM_HID_INTERRUPT 0x13
+/* last used HCI_EVENT in 2.1 is 0x3d */
 
-// Events from host controller to host
-#define HCI_EVENT_INQUIRY_COMPLETE				           0x01
-#define HCI_EVENT_INQUIRY_RESULT				           0x02
-#define HCI_EVENT_CONNECTION_COMPLETE			           0x03
-#define HCI_EVENT_CONNECTION_REQUEST			           0x04
-#define HCI_EVENT_DISCONNECTION_COMPLETE		      	   0x05
-#define HCI_EVENT_AUTHENTICATION_COMPLETE_EVENT            0x06
-#define HCI_EVENT_REMOTE_NAME_REQUEST_COMPLETE	           0x07
-#define HCI_EVENT_ENCRYPTION_CHANGE                        0x08
-#define HCI_EVENT_CHANGE_CONNECTION_LINK_KEY_COMPLETE      0x09
-#define HCI_EVENT_MASTER_LINK_KEY_COMPLETE                 0x0A
-#define HCI_EVENT_READ_REMOTE_SUPPORTED_FEATURES_COMPLETE  0x0B
-#define HCI_EVENT_READ_REMOTE_VERSION_INFORMATION_COMPLETE 0x0C
-#define HCI_EVENT_QOS_SETUP_COMPLETE			           0x0D
-#define HCI_EVENT_COMMAND_COMPLETE				           0x0E
-#define HCI_EVENT_COMMAND_STATUS				           0x0F
-#define HCI_EVENT_HARDWARE_ERROR                           0x10
-#define HCI_EVENT_FLUSH_OCCURED                            0x11
-#define HCI_EVENT_ROLE_CHANGE				               0x12
-#define HCI_EVENT_NUMBER_OF_COMPLETED_PACKETS	      	   0x13
-#define HCI_EVENT_MODE_CHANGE_EVENT                        0x14
-#define HCI_EVENT_RETURN_LINK_KEYS                         0x15
-#define HCI_EVENT_PIN_CODE_REQUEST                         0x16
-#define HCI_EVENT_LINK_KEY_REQUEST                         0x17
-#define HCI_EVENT_LINK_KEY_NOTIFICATION                    0x18
-#define HCI_EVENT_DATA_BUFFER_OVERFLOW                     0x1A
-#define HCI_EVENT_MAX_SLOTS_CHANGED			               0x1B
-#define HCI_EVENT_READ_CLOCK_OFFSET_COMPLETE               0x1C
-#define HCI_EVENT_PACKET_TYPE_CHANGED                      0x1D
-#define HCI_EVENT_INQUIRY_RESULT_WITH_RSSI		      	   0x22
-#define HCI_EVENT_EXTENDED_INQUIRY_RESPONSE                0x2F
-#define HCI_EVENT_LE_META                                  0x3E
-#define HCI_EVENT_VENDOR_SPECIFIC				           0xFF
+/* events 0x50-0x5f are used internally */
 
-#define HCI_SUBEVENT_LE_CONNECTION_COMPLETE                0x01
-#define HCI_SUBEVENT_LE_ADVERTISING_REPORT                 0x02
-#define HCI_SUBEVENT_LE_CONNECTION_UPDATE_COMPLETE         0x03
-#define HCI_SUBEVENT_LE_READ_REMOTE_USED_FEATURES_COMPLETE 0x04
-#define HCI_SUBEVENT_LE_LONG_TERM_KEY_REQUEST              0x05
-    
-// last used HCI_EVENT in 2.1 is 0x3d
+/* BTSTACK DAEMON EVENTS */
 
-// events 0x50-0x5f are used internally
+/* events from BTstack for application/client lib */
+#define BTSTACK_EVENT_STATE                                 0x60
 
-// BTSTACK DAEMON EVENTS
+/* data: event(8), len(8), nr hci connections */
+#define BTSTACK_EVENT_NR_CONNECTIONS_CHANGED                0x61
 
-// events from BTstack for application/client lib
-#define BTSTACK_EVENT_STATE                                0x60
+/* data: none */
+#define BTSTACK_EVENT_POWERON_FAILED                        0x62
 
-// data: event(8), len(8), nr hci connections
-#define BTSTACK_EVENT_NR_CONNECTIONS_CHANGED               0x61
+/* data: major (8), minor (8), revision(16) */
+#define BTSTACK_EVENT_VERSION                               0x63
 
-// data: none
-#define BTSTACK_EVENT_POWERON_FAILED                       0x62
+/* data: system bluetooth on/off (bool) */
+#define BTSTACK_EVENT_SYSTEM_BLUETOOTH_ENABLED              0x64
 
-// data: majot (8), minor (8), revision(16)
-#define BTSTACK_EVENT_VERSION	        				   0x63
+/* data: event (8), len(8), status (8) == 0, address (48), name (1984 bits = 248 bytes) */
+#define BTSTACK_EVENT_REMOTE_NAME_CACHED                    0x65
 
-// data: system bluetooth on/off (bool)
-#define BTSTACK_EVENT_SYSTEM_BLUETOOTH_ENABLED			   0x64
+/* data: discoverable enabled (bool) */
+#define BTSTACK_EVENT_DISCOVERABLE_ENABLED                  0x66
 
-// data: event (8), len(8), status (8) == 0, address (48), name (1984 bits = 248 bytes)
-#define BTSTACK_EVENT_REMOTE_NAME_CACHED	     		   0x65
-
-// data: discoverable enabled (bool)
-#define BTSTACK_EVENT_DISCOVERABLE_ENABLED			       0x66
-
-// L2CAP EVENTS
+/* L2CAP EVENTS */
 	
-// data: event (8), len(8), status (8), address(48), handle (16), psm (16), local_cid(16), remote_cid (16), local_mtu(16), remote_mtu(16) 
-#define L2CAP_EVENT_CHANNEL_OPENED                         0x70
+/* data: event (8), len(8), status (8), address(48), handle (16), psm (16), local_cid(16), remote_cid (16), local_mtu(16), remote_mtu(16)  */
+#define L2CAP_EVENT_CHANNEL_OPENED                          0x70
 
-// data: event (8), len(8), channel (16)
-#define L2CAP_EVENT_CHANNEL_CLOSED                         0x71
+/* data: event (8), len(8), channel (16) */
+#define L2CAP_EVENT_CHANNEL_CLOSED                          0x71
 
-// data: event (8), len(8), address(48), handle (16), psm (16), local_cid(16), remote_cid (16) 
-#define L2CAP_EVENT_INCOMING_CONNECTION					   0x72
+/* data: event (8), len(8), address(48), handle (16), psm (16), local_cid(16), remote_cid (16)  */
+#define L2CAP_EVENT_INCOMING_CONNECTION                     0x72
 
-// data: event(8), len(8), handle(16)
-#define L2CAP_EVENT_TIMEOUT_CHECK                          0x73
+/* data: event(8), len(8), handle(16) */
+#define L2CAP_EVENT_TIMEOUT_CHECK                           0x73
 
-// data: event(8), len(8), local_cid(16), credits(8)
-#define L2CAP_EVENT_CREDITS								   0x74
+/* data: event(8), len(8), local_cid(16), credits(8) */
+#define L2CAP_EVENT_CREDITS                                 0x74
 
-// data: event(8), len(8), status (8), psm (16)
-#define L2CAP_EVENT_SERVICE_REGISTERED                     0x75
+/* data: event(8), len(8), status (8), psm (16) */
+#define L2CAP_EVENT_SERVICE_REGISTERED                      0x75
 
-
-// RFCOMM EVENTS
+/* RFCOMM EVENTS */
 	
 // data: event(8), len(8), status (8), address (48), handle (16), server channel(8), rfcomm_cid(16), max frame size(16)
-#define RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE                 0x80
+#define RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE                  0x80
 	
 // data: event(8), len(8), rfcomm_cid(16)
-#define RFCOMM_EVENT_CHANNEL_CLOSED                        0x81
+#define RFCOMM_EVENT_CHANNEL_CLOSED                         0x81
 	
 // data: event (8), len(8), address(48), channel (8), rfcomm_cid (16)
-#define RFCOMM_EVENT_INCOMING_CONNECTION                   0x82
+#define RFCOMM_EVENT_INCOMING_CONNECTION                    0x82
 	
 // data: event (8), len(8), rfcommid (16), ...
-#define RFCOMM_EVENT_REMOTE_LINE_STATUS                    0x83
+#define RFCOMM_EVENT_REMOTE_LINE_STATUS                     0x83
 	
-// data: event(8), len(8), rfcomm_cid(16), credits(8)
-#define RFCOMM_EVENT_CREDITS			                   0x84
+/* data: event(8), len(8), rfcomm_cid(16), credits(8) */
+#define RFCOMM_EVENT_CREDITS                                0x84
 	
-// data: event(8), len(8), status (8), rfcomm server channel id (8) 
-#define RFCOMM_EVENT_SERVICE_REGISTERED                    0x85
+/* data: event(8), len(8), status (8), rfcomm server channel id (8)  */
+#define RFCOMM_EVENT_SERVICE_REGISTERED                     0x85
     
-// data: event(8), len(8), status (8), rfcomm server channel id (8) 
-#define RFCOMM_EVENT_PERSISTENT_CHANNEL                    0x86
+/* data: event(8), len(8), status (8), rfcomm server channel id (8)  */
+#define RFCOMM_EVENT_PERSISTENT_CHANNEL                     0x86
     
-    
-// data: event(8), len(8), status(8), service_record_handle(32)
-#define SDP_SERVICE_REGISTERED                             0x90
-
+/* data: event(8), len(8), status(8), service_record_handle(32) */
+#define SDP_SERVICE_REGISTERED                              0x90
 	
-// last error code in 2.1 is 0x38 - we start with 0x50 for BTstack errors
+/* last error code in 2.1 is 0x38 - we start with 0x50 for BTstack errors */
 
-#define BTSTACK_CONNECTION_TO_BTDAEMON_FAILED              0x50
-#define BTSTACK_ACTIVATION_FAILED_SYSTEM_BLUETOOTH		   0x51
-#define BTSTACK_ACTIVATION_POWERON_FAILED       		   0x52
-#define BTSTACK_ACTIVATION_FAILED_UNKNOWN       		   0x53
-#define BTSTACK_NOT_ACTIVATED							   0x54
-#define BTSTACK_BUSY									   0x55
-#define BTSTACK_MEMORY_ALLOC_FAILED                        0x56
-#define BTSTACK_ACL_BUFFERS_FULL                           0x57
+#define BTSTACK_CONNECTION_TO_BTDAEMON_FAILED               0x50
+#define BTSTACK_ACTIVATION_FAILED_SYSTEM_BLUETOOTH          0x51
+#define BTSTACK_ACTIVATION_POWERON_FAILED                   0x52
+#define BTSTACK_ACTIVATION_FAILED_UNKNOWN                   0x53
+#define BTSTACK_NOT_ACTIVATED                               0x54
+#define BTSTACK_BUSY                                        0x55
+#define BTSTACK_MEMORY_ALLOC_FAILED                         0x56
+#define BTSTACK_ACL_BUFFERS_FULL                            0x57
 
-// l2cap errors - enumeration by the command that created them
-#define L2CAP_COMMAND_REJECT_REASON_COMMAND_NOT_UNDERSTOOD 0x60
-#define L2CAP_COMMAND_REJECT_REASON_SIGNALING_MTU_EXCEEDED 0x61
-#define L2CAP_COMMAND_REJECT_REASON_INVALID_CID_IN_REQUEST 0x62
+/* L2CAP errors - enumeration by the command that created them */
+#define L2CAP_COMMAND_REJECT_REASON_COMMAND_NOT_UNDERSTOOD  0x60
+#define L2CAP_COMMAND_REJECT_REASON_SIGNALING_MTU_EXCEEDED  0x61
+#define L2CAP_COMMAND_REJECT_REASON_INVALID_CID_IN_REQUEST  0x62
 
-#define L2CAP_CONNECTION_RESPONSE_RESULT_SUCCESSFUL        0x63
-#define L2CAP_CONNECTION_RESPONSE_RESULT_PENDING           0x64
-#define L2CAP_CONNECTION_RESPONSE_RESULT_REFUSED_PSM       0x65
-#define L2CAP_CONNECTION_RESPONSE_RESULT_REFUSED_SECURITY  0x66
-#define L2CAP_CONNECTION_RESPONSE_RESULT_REFUSED_RESOURCES 0x65
+#define L2CAP_CONNECTION_RESPONSE_RESULT_SUCCESSFUL         0x63
+#define L2CAP_CONNECTION_RESPONSE_RESULT_PENDING            0x64
+#define L2CAP_CONNECTION_RESPONSE_RESULT_REFUSED_PSM        0x65
+#define L2CAP_CONNECTION_RESPONSE_RESULT_REFUSED_SECURITY   0x66
+#define L2CAP_CONNECTION_RESPONSE_RESULT_REFUSED_RESOURCES  0x65
 
-#define L2CAP_CONFIG_RESPONSE_RESULT_SUCCESSFUL            0x66
-#define L2CAP_CONFIG_RESPONSE_RESULT_UNACCEPTABLE_PARAMS   0x67
-#define L2CAP_CONFIG_RESPONSE_RESULT_REJECTED              0x68
-#define L2CAP_CONFIG_RESPONSE_RESULT_UNKNOWN_OPTIONS       0x69
-#define L2CAP_SERVICE_ALREADY_REGISTERED                   0x6a
+#define L2CAP_CONFIG_RESPONSE_RESULT_SUCCESSFUL             0x66
+#define L2CAP_CONFIG_RESPONSE_RESULT_UNACCEPTABLE_PARAMS    0x67
+#define L2CAP_CONFIG_RESPONSE_RESULT_REJECTED               0x68
+#define L2CAP_CONFIG_RESPONSE_RESULT_UNKNOWN_OPTIONS        0x69
+#define L2CAP_SERVICE_ALREADY_REGISTERED                    0x6a
     
-#define RFCOMM_MULTIPLEXER_STOPPED                         0x70
-#define RFCOMM_CHANNEL_ALREADY_REGISTERED                  0x71
-#define RFCOMM_NO_OUTGOING_CREDITS                         0x72
+#define RFCOMM_MULTIPLEXER_STOPPED                          0x70
+#define RFCOMM_CHANNEL_ALREADY_REGISTERED                   0x71
+#define RFCOMM_NO_OUTGOING_CREDITS                          0x72
 
-#define SDP_HANDLE_ALREADY_REGISTERED                      0x80
+#define SDP_HANDLE_ALREADY_REGISTERED                       0x80
  
-/**
- * Default INQ Mode
- */
-#define HCI_INQUIRY_LAP 0x9E8B33L  // 0x9E8B33: General/Unlimited Inquiry Access Code (GIAC)
-/**
- *  Hardware state of Bluetooth controller 
- */
-typedef enum {
-    HCI_POWER_OFF = 0,
-    HCI_POWER_ON,
-	HCI_POWER_SLEEP
+/* Default INQ Mode 
+ * 0x9E8B33: General/Unlimited Inquiry Access Code (GIAC)
+ **/
+#define HCI_INQUIRY_LAP                                     0x9E8B33L  
+
+/* Hardware state of Bluetooth controller  */
+typedef enum
+{
+   HCI_POWER_OFF = 0,
+   HCI_POWER_ON,
+   HCI_POWER_SLEEP
 } HCI_POWER_MODE;
 
-/**
- * State of BTstack 
- */
-typedef enum {
-    HCI_STATE_OFF = 0,
-    HCI_STATE_INITIALIZING,
-    HCI_STATE_WORKING,
-    HCI_STATE_HALTING,
-	HCI_STATE_SLEEPING,
-	HCI_STATE_FALLING_ASLEEP
+/* State of BTstack */
+typedef enum
+{
+   HCI_STATE_OFF = 0,
+   HCI_STATE_INITIALIZING,
+   HCI_STATE_WORKING,
+   HCI_STATE_HALTING,
+   HCI_STATE_SLEEPING,
+   HCI_STATE_FALLING_ASLEEP
 } HCI_STATE;
 
-/** 
- * compact HCI Command packet description
- */
- typedef struct {
-    uint16_t    opcode;
-    const char *format;
+/* compact HCI Command packet description */
+typedef struct
+{
+   uint16_t    opcode;
+   const char *format;
 } hci_cmd_t;
 
-
-// HCI Commands - see hci_cmds.c for info on parameters
+/* HCI Commands - see hci_cmds.c for info on parameters */
 extern const hci_cmd_t btstack_get_state;
 extern const hci_cmd_t btstack_set_power_mode;
 extern const hci_cmd_t btstack_set_acl_capture_mode;
@@ -268,7 +256,7 @@ extern const hci_cmd_t btstack_get_version;
 extern const hci_cmd_t btstack_get_system_bluetooth_enabled;
 extern const hci_cmd_t btstack_set_system_bluetooth_enabled;
 extern const hci_cmd_t btstack_set_discoverable;
-extern const hci_cmd_t btstack_set_bluetooth_enabled;    // only used by btstack config
+extern const hci_cmd_t btstack_set_bluetooth_enabled;    /* only used by btstack config */
 	
 extern const hci_cmd_t hci_accept_connection_request;
 extern const hci_cmd_t hci_authentication_requested;
@@ -356,25 +344,27 @@ extern const hci_cmd_t l2cap_unregister_service;
 extern const hci_cmd_t sdp_register_service_record;
 extern const hci_cmd_t sdp_unregister_service_record;
 
-// accept connection @param bd_addr(48), rfcomm_cid (16)
+/* accept connection @param bd_addr(48), rfcomm_cid (16) */
 extern const hci_cmd_t rfcomm_accept_connection;
-// create rfcomm channel: @param bd_addr(48), channel (8)
+/* create rfcomm channel: @param bd_addr(48), channel (8) */
 extern const hci_cmd_t rfcomm_create_channel;
-// create rfcomm channel: @param bd_addr(48), channel (8), mtu (16), credits (8)
+/* create rfcomm channel: @param bd_addr(48), channel (8), mtu (16), credits (8) */
 extern const hci_cmd_t rfcomm_create_channel_with_initial_credits;
-// decline rfcomm disconnect,@param bd_addr(48), rfcomm cid (16), reason(8)
+/* decline rfcomm disconnect,@param bd_addr(48), rfcomm cid (16), reason(8) */
 extern const hci_cmd_t rfcomm_decline_connection;
-// disconnect rfcomm disconnect, @param rfcomm_cid(8), reason(8)
+/* disconnect rfcomm disconnect, @param rfcomm_cid(8), reason(8) */
 extern const hci_cmd_t rfcomm_disconnect;
-// register rfcomm service: @param channel(8), mtu (16)
+/* register rfcomm service: @param channel(8), mtu (16) */
 extern const hci_cmd_t rfcomm_register_service;
-// register rfcomm service: @param channel(8), mtu (16), initial credits (8)
+/* register rfcomm service: @param channel(8), mtu (16), initial credits (8) */
 extern const hci_cmd_t rfcomm_register_service_with_initial_credits;
-// unregister rfcomm service, @param service_channel(16)
+/* unregister rfcomm service, @param service_channel(16) */
 extern const hci_cmd_t rfcomm_unregister_service;
-// request persisten rfcomm channel for service name: serive name (char*) 
+/* request persisten rfcomm channel for service name: serive name (char*)  */
 extern const hci_cmd_t rfcomm_persistent_channel_for_service;
     
 #if defined __cplusplus
 }
+#endif
+
 #endif
