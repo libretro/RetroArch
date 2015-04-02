@@ -70,6 +70,8 @@ static CFRunLoopSourceRef btstack_quit_source;
 
 bool btstack_try_load(void)
 {
+   unsigned i;
+    
    assert(sizeof(void**) == sizeof(void(*)()));
 
    if (btstack_tested)
@@ -78,7 +80,7 @@ bool btstack_try_load(void)
    btstack_tested = true;
    btstack_loaded = false;
 
-   void* btstack = dlopen("/usr/lib/libBTstack.dylib", RTLD_LAZY);
+   void  *btstack = dlopen("/usr/lib/libBTstack.dylib", RTLD_LAZY);
 
    if (!btstack)
    {
@@ -86,7 +88,7 @@ bool btstack_try_load(void)
       return false;
    }
 
-   for (int i = 0; grabbers[i].name; i ++)
+   for (i = 0; grabbers[i].name; i ++)
    {
       *grabbers[i].target = dlsym(btstack, grabbers[i].name);
 
@@ -116,11 +118,11 @@ void btstack_thread_stop(void *data)
 
 static void btstack_thread_func(void* data)
 {
-   RARCH_LOG("BTstack: Thread started");
+   RARCH_LOG("[BTstack]: Thread started");
 
    if (bt_open_ptr())
    {
-      RARCH_LOG("BTstack: bt_open() failed\n");
+      RARCH_LOG("[BTstack]: bt_open() failed\n");
       return;
    }
 
@@ -128,13 +130,13 @@ static void btstack_thread_func(void* data)
    btstack_quit_source = CFRunLoopSourceCreate(0, 0, &ctx);
    CFRunLoopAddSource(CFRunLoopGetCurrent(), btstack_quit_source, kCFRunLoopCommonModes);
 
-   RARCH_LOG("BTstack: Turning on\n");
+   RARCH_LOG("[BTstack]: Turning on...\n");
    bt_send_cmd_ptr(btstack_set_power_mode_ptr, HCI_POWER_ON);
 
-   RARCH_LOG("BTstack: Running\n");
+   RARCH_LOG("BTstack: Thread running...\n");
    CFRunLoopRun();
 
-   RARCH_LOG("BTstack: Done\n");
+   RARCH_LOG("[BTstack]: Thread done.\n");
 
    CFRunLoopSourceInvalidate(btstack_quit_source);
    CFRelease(btstack_quit_source);
