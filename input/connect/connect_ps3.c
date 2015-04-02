@@ -47,11 +47,11 @@ static void hidpad_ps3_send_control(struct hidpad_ps3_data* device)
       0x00, 0x00, 0x00, 0x00, 0x00,
       0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
    };
-   
+
    report_buffer[11] = 1 << ((device->slot % 4) + 1);
    report_buffer[4] = device->motors[1] >> 8;
    report_buffer[6] = device->motors[0] >> 8;
-    
+
    device->send_control(device->connection, report_buffer, sizeof(report_buffer));
 }
 
@@ -63,7 +63,7 @@ static void* hidpad_ps3_init(void *data, uint32_t slot, send_control_t ptr)
 #endif
    struct pad_connection* connection = (struct pad_connection*)data;
    struct hidpad_ps3_data* device = (struct hidpad_ps3_data*)
-    calloc(1, sizeof(struct hidpad_ps3_data));
+      calloc(1, sizeof(struct hidpad_ps3_data));
 
    if (!device)
       return NULL;
@@ -77,7 +77,7 @@ static void* hidpad_ps3_init(void *data, uint32_t slot, send_control_t ptr)
    device->connection = connection;  
    device->slot = slot;
    device->send_control = ptr;
-   
+
 #ifdef IOS
    device->send_control(device->connection, magic_data, 6);
 #endif
@@ -91,7 +91,7 @@ static void* hidpad_ps3_init(void *data, uint32_t slot, send_control_t ptr)
 static void hidpad_ps3_deinit(void *data)
 {
    struct hidpad_ps3_data *device = (struct hidpad_ps3_data*)data;
-    
+
    if (device)
       free(device);
 }
@@ -142,10 +142,10 @@ static void hidpad_ps3_packet_handler(void *data, uint8_t *packet, uint16_t size
       16 //< PS Button
    };
    struct hidpad_ps3_data *device = (struct hidpad_ps3_data*)data;
-    
+
    if (!device)
       return;
-    
+
    if (!device->have_led)
    {
       hidpad_ps3_send_control(device);
@@ -157,15 +157,15 @@ static void hidpad_ps3_packet_handler(void *data, uint8_t *packet, uint16_t size
    device->buttons = 0;
 
    pressed_keys = device->data[3] | (device->data[4] << 8) |
-    ((device->data[5] & 1) << 16);
+      ((device->data[5] & 1) << 16);
 
    for (i = 0; i < 17; i ++)
       device->buttons |= (pressed_keys & (1 << i)) ?
-       (1 << button_mapping[i]) : 0;
+         (1 << button_mapping[i]) : 0;
 }
 
 static void hidpad_ps3_set_rumble(void *data,
-   enum retro_rumble_effect effect, uint16_t strength)
+      enum retro_rumble_effect effect, uint16_t strength)
 {
    struct hidpad_ps3_data *device = (struct hidpad_ps3_data*)data;
    unsigned idx = (effect == RETRO_RUMBLE_STRONG) ? 0 : 1;

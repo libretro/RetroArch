@@ -169,35 +169,33 @@ typedef struct wiimote_t
 #define WIIMOTE_TOGGLE_STATE(wm, s)    ((wm->state & (s)) ? WIIMOTE_DISABLE_STATE(wm, s) : WIIMOTE_ENABLE_STATE(wm, s))
 #define WIIMOTE_IS_CONNECTED(wm)       (WIIMOTE_IS_SET(wm, WIIMOTE_STATE_CONNECTED))
 
-#ifndef NO_BAKED_IN_WIIMOTE
 /*
  *	Send a packet to the wiimote.
  *
  *	This function should replace any write()s directly to the wiimote device.
  */
-
 static int wiimote_send(struct wiimote_t* wm,
       uint8_t report_type, uint8_t* msg, int len)
 {
-    int x = 2;
-    uint8_t buf[32];
-    
-    (void)x;
-    
-    buf[0] = WM_SET_REPORT | WM_BT_OUTPUT;
-    buf[1] = report_type;
-    
-    memcpy(buf+2, msg, len);
-    
+   int x = 2;
+   uint8_t buf[32];
+
+   (void)x;
+
+   buf[0] = WM_SET_REPORT | WM_BT_OUTPUT;
+   buf[1] = report_type;
+
+   memcpy(buf+2, msg, len);
+
 #ifdef WIIMOTE_DBG
-    printf("[DEBUG] (id %i) SEND: (%x) %.2x ", wm->unid, buf[0], buf[1]);
-    for (; x < len+2; ++x)
-        printf("%.2x ", buf[x]);
-    printf("\n");
+   printf("[DEBUG] (id %i) SEND: (%x) %.2x ", wm->unid, buf[0], buf[1]);
+   for (; x < len+2; ++x)
+      printf("%.2x ", buf[x]);
+   printf("\n");
 #endif
-    
-    wm->send_control(wm->connection, buf, len + 2);
-    return 1;
+
+   wm->send_control(wm->connection, buf, len + 2);
+   return 1;
 }
 
 /* 
@@ -273,9 +271,9 @@ static void wiimote_pressed_buttons(struct wiimote_t* wm, uint8_t* msg)
 static int classic_ctrl_handshake(struct wiimote_t* wm,
       struct classic_ctrl_t* cc, uint8_t* data, unsigned short len)
 {
-    memset(cc, 0, sizeof(*cc));
-    wm->exp.type = EXP_CLASSIC;
-    return 1;
+   memset(cc, 0, sizeof(*cc));
+   wm->exp.type = EXP_CLASSIC;
+   return 1;
 }
 
 static float normalize_and_interpolate(float min, float max, float t)
@@ -287,38 +285,38 @@ static float normalize_and_interpolate(float min, float max, float t)
 
 static void process_axis(struct axis_t* axis, uint8_t raw)
 {
-    if (!axis->has_center)
-    {
-        axis->has_center = true;
-        axis->min = raw - 2;
-        axis->center = raw;
-        axis->max = raw + 2;
-    }
-    
-    if (raw < axis->min)
-        axis->min = raw;
-    if (raw > axis->max)
-        axis->max = raw;
-    axis->raw_value = raw;
-    
-    if (raw < axis->center)
-        axis->value = -normalize_and_interpolate(
-                                                 axis->center, axis->min, raw);
-    else if (raw > axis->center)
-        axis->value =  normalize_and_interpolate(
-                                                 axis->center, axis->max, raw);
-    else
-        axis->value = 0;
+   if (!axis->has_center)
+   {
+      axis->has_center = true;
+      axis->min = raw - 2;
+      axis->center = raw;
+      axis->max = raw + 2;
+   }
+
+   if (raw < axis->min)
+      axis->min = raw;
+   if (raw > axis->max)
+      axis->max = raw;
+   axis->raw_value = raw;
+
+   if (raw < axis->center)
+      axis->value = -normalize_and_interpolate(
+            axis->center, axis->min, raw);
+   else if (raw > axis->center)
+      axis->value =  normalize_and_interpolate(
+            axis->center, axis->max, raw);
+   else
+      axis->value = 0;
 }
 
 static void classic_ctrl_event(struct classic_ctrl_t* cc, uint8_t* msg)
 {
-    cc->btns = ~BIG_ENDIAN_SHORT(*(short*)(msg + 4)) & CLASSIC_CTRL_BUTTON_ALL;
-    process_axis(&cc->ljs.x, (msg[0] & 0x3F));
-    process_axis(&cc->ljs.y, (msg[1] & 0x3F));
-    process_axis(&cc->rjs.x, ((msg[0] & 0xC0) >> 3) |
-                 ((msg[1] & 0xC0) >> 5) | ((msg[2] & 0x80) >> 7));
-    process_axis(&cc->rjs.y, (msg[2] & 0x1F));
+   cc->btns = ~BIG_ENDIAN_SHORT(*(short*)(msg + 4)) & CLASSIC_CTRL_BUTTON_ALL;
+   process_axis(&cc->ljs.x, (msg[0] & 0x3F));
+   process_axis(&cc->ljs.y, (msg[1] & 0x3F));
+   process_axis(&cc->rjs.x, ((msg[0] & 0xC0) >> 3) |
+         ((msg[1] & 0xC0) >> 5) | ((msg[2] & 0x80) >> 7));
+   process_axis(&cc->rjs.y, (msg[2] & 0x1F));
 }
 
 /*
@@ -341,37 +339,37 @@ static void wiimote_handle_expansion(struct wiimote_t* wm, uint8_t* msg)
  *	Write data to the wiimote.
  */
 static int wiimote_write_data(struct wiimote_t* wm,
-                              unsigned int addr, uint8_t* data, uint8_t len)
+      unsigned int addr, uint8_t* data, uint8_t len)
 {
-    int i = 0;
-    uint8_t buf[21] = {0};		/* the payload is always 23 */
-    
-    (void)i;
-    
-    if (!wm || !WIIMOTE_IS_CONNECTED(wm))
-        return 0;
-    if (!data || !len)
-        return 0;
-    
+   int i = 0;
+   uint8_t buf[21] = {0};		/* the payload is always 23 */
+
+   (void)i;
+
+   if (!wm || !WIIMOTE_IS_CONNECTED(wm))
+      return 0;
+   if (!data || !len)
+      return 0;
+
 #ifdef WIIMOTE_DBG
-    printf("Writing %i bytes to memory location 0x%x...\n", len, addr);
-    printf("Write data is: ");
-    for (; i < len; ++i)
-        printf("%x ", data[i]);
-    printf("\n");
+   printf("Writing %i bytes to memory location 0x%x...\n", len, addr);
+   printf("Write data is: ");
+   for (; i < len; ++i)
+      printf("%x ", data[i]);
+   printf("\n");
 #endif
-    
-    /* the offset is in big endian */
-    *(int*)(buf) = BIG_ENDIAN_LONG(addr);
-    
-    /* length */
-    *(uint8_t*)(buf + 4) = len;
-    
-    /* data */
-    memcpy(buf + 5, data, len);
-    
-    wiimote_send(wm, WM_CMD_WRITE_DATA, buf, 21);
-    return 1;
+
+   /* the offset is in big endian */
+   *(int*)(buf) = BIG_ENDIAN_LONG(addr);
+
+   /* length */
+   *(uint8_t*)(buf + 4) = len;
+
+   /* data */
+   memcpy(buf + 5, data, len);
+
+   wiimote_send(wm, WM_CMD_WRITE_DATA, buf, 21);
+   return 1;
 }
 
 /*
@@ -386,27 +384,27 @@ static int wiimote_write_data(struct wiimote_t* wm,
  */
 
 static int wiimote_read_data(struct wiimote_t* wm, unsigned int addr,
-                             unsigned short len)
+      unsigned short len)
 {
-    uint8_t buf[6];
-    
-    /* No puden ser mas de 16 lo leido o vendra en trozos! */
-    
-    if (!wm || !WIIMOTE_IS_CONNECTED(wm) || !len)
-        return 0;
-    
-    /* the offset is in big endian */
-    *(int*)(buf)       = BIG_ENDIAN_LONG(addr);
-    
-    /* the length is in big endian */
-    *(short*)(buf + 4) = BIG_ENDIAN_SHORT(len);
-    
+   uint8_t buf[6];
+
+   /* No puden ser mas de 16 lo leido o vendra en trozos! */
+
+   if (!wm || !WIIMOTE_IS_CONNECTED(wm) || !len)
+      return 0;
+
+   /* the offset is in big endian */
+   *(int*)(buf)       = BIG_ENDIAN_LONG(addr);
+
+   /* the length is in big endian */
+   *(short*)(buf + 4) = BIG_ENDIAN_SHORT(len);
+
 #ifdef WIIMOTE_DBG
-    printf("Request read at address: 0x%x  length: %i", addr, len);
+   printf("Request read at address: 0x%x  length: %i", addr, len);
 #endif
-    wiimote_send(wm, WM_CMD_READ_DATA, buf, 6);
-    
-    return 1;
+   wiimote_send(wm, WM_CMD_READ_DATA, buf, 6);
+
+   return 1;
 }
 
 /*
@@ -605,11 +603,6 @@ static int wiimote_handshake(struct wiimote_t* wm,  uint8_t event, uint8_t* data
       }
    } while(1);
 }
-
-
-
-
-#endif
 
 static void* hidpad_wii_init(void *data, uint32_t slot,
       send_control_t ptr)
