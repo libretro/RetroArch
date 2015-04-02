@@ -47,11 +47,11 @@ static void *d3dfonts_w32_init_font(void *video_data,
 
    (void)font_path;
 
-   r = static_cast<uint32_t>(settings->video.msg_color_r * 255) & 0xff;
-   g = static_cast<uint32_t>(settings->video.msg_color_g * 255) & 0xff;
-   b = static_cast<uint32_t>(settings->video.msg_color_b * 255) & 0xff;
+   r               = (settings->video.msg_color_r * 255) & 0xff;
+   g               = (settings->video.msg_color_g * 255) & 0xff;
+   b               = (settings->video.msg_color_b * 255) & 0xff;
 
-   d3dfonts->d3d = (d3d_video_t*)video_data;
+   d3dfonts->d3d   = (d3d_video_t*)video_data;
    d3dfonts->color = D3DCOLOR_XRGB(r, g, b);
 
    if (SUCCEEDED(D3DXCreateFontIndirect(d3dfonts->d3d->dev, &desc, &d3dfonts->font)))
@@ -80,7 +80,7 @@ static void d3dfonts_w32_render_msg(void *data, const char *msg,
       const void *userdata)
 {
    const struct font_params *params = (const struct font_params*)userdata;
-   d3dfonts_t *d3dfonts = (d3dfonts_t*)data;
+   d3dfonts_t *d3dfonts             = (d3dfonts_t*)data;
 
    if (!d3dfonts || !d3dfonts->d3d)
       return;

@@ -386,8 +386,7 @@ static void d3d_calculate_rect(d3d_video_t *d3d,
       }
       else
       {
-         float device_aspect = static_cast<float>(width) / 
-            static_cast<float>(height);
+         float device_aspect = ((float)width) / ((float)height);
 
          if (fabsf(device_aspect - desired_aspect) < 0.0001f)
             d3d_set_viewport(d3d, 0, 0, width, height);
