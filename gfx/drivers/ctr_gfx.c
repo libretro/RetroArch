@@ -120,7 +120,7 @@ void GPU_SetDummyTexEnv(u8 num)
 }
 
 // topscreen
-void renderFrame()
+void renderFrame(ctr_video_t* ctr)
 {
    GPU_SetViewport((u32*)osConvertVirtToPhys((u32)gpuDOut),
                    (u32*)osConvertVirtToPhys((u32)gpuOut), 0, 0, fbheight * 2, fbwidth);
@@ -159,7 +159,7 @@ void renderFrame()
    //texturing stuff
    GPU_SetTexture(GPU_TEXUNIT0, (u32*)osConvertVirtToPhys((u32)texData), gpu_tex_w, gpu_tex_h,
                   GPU_TEXTURE_MAG_FILTER(GPU_LINEAR) | GPU_TEXTURE_MIN_FILTER(GPU_LINEAR),
-                  GPU_RGBA4);
+                  ctr->menu_texture_enable?GPU_RGBA4:GPU_RGB565);
 
    u32 bufferoffset = 0x00000000;
    u64 bufferpermutations = 0x210;
@@ -257,6 +257,9 @@ static bool ctr_frame(void* data, const void* frame,
    settings_t* settings = config_get_ptr();
 
 //   int i;
+   static uint64_t currentTick,lastTick;
+   static float fps=0.0;
+   static int total_frames = 0;
    static int frames = 0;
 
    if (!width || !height)
@@ -278,7 +281,18 @@ static bool ctr_frame(void* data, const void* frame,
       return true;
    }
 
-   printf("frames: %i\r", frames++);fflush(stdout);
+   frames++;
+   currentTick = osGetTime();
+   uint32_t diff = currentTick - lastTick;
+   if(diff > 1000)
+   {
+      fps = (float)frames * (1000.0 / diff);
+      lastTick = currentTick;
+      frames = 0;
+   }
+
+   printf("fps: %8.4f frames: %i\r", fps, total_frames++, currentTick);fflush(stdout);
+
 //   gfxFlushBuffers();
 //   gspWaitForEvent(GSPEVENT_VBlank0, true);
 
@@ -291,12 +305,30 @@ static bool ctr_frame(void* data, const void* frame,
 
 
 
+   if(!ctr->menu_texture_enable && frame)
+   {
+      int i;
+      uint8_t* dst = (uint8_t*)texData2;
+      const uint8_t* src = frame;
+      if (width > tex_w)
+         width = tex_w;
+      if (height > tex_h)
+         height = tex_h;
+      for (i = 0; i < height; i++)
+      {
+         memcpy(dst, src, width*2);
+         dst += tex_w*2;
+         src += pitch;
+      }
+
+   }
+
    GSPGPU_FlushDataCache(NULL, (u8*)texData2, texture_bin_size);
    GX_SetDisplayTransfer(NULL, (u32*)texData2, tex_size, (u32*)texData, gpu_tex_size,
                          0x3302); // rgb32=0x0 rgb32=0x0 ??=0x0 linear2swizzeled=0x2
    gspWaitForPPF();
 
-   renderFrame();
+   renderFrame(ctr);
    GPUCMD_Finalize();
 
 //   for (i = 0; i < 16; i++)
@@ -319,7 +351,7 @@ static bool ctr_frame(void* data, const void* frame,
    gspWaitForPSC0();
    gfxSwapBuffersGpu();
 
-   gspWaitForEvent(GSPEVENT_VBlank0, true);
+//   gspWaitForEvent(GSPEVENT_VBlank0, true);
 
 
    //      gfxFlushBuffers();
