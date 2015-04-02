@@ -1366,6 +1366,12 @@ static void xmb_frame(void)
       }
    }
 
+   if (font_driver->flush)
+   {
+      font_driver->flush(xmb->font.buf);
+      font_driver->bind_block(xmb->font.buf, NULL);
+   }
+
    if (menu->keyboard.display)
    {
       const char *str = *menu->keyboard.buffer;
@@ -1389,12 +1395,6 @@ static void xmb_frame(void)
    {
       xmb_frame_background(settings, gl, xmb, true);
       xmb_frame_messagebox(msg);
-   }
-
-   if (font_driver->flush)
-   {
-      font_driver->flush(xmb->font.buf);
-      font_driver->bind_block(xmb->font.buf, NULL);
    }
 
    if (settings->menu.mouse.enable)
