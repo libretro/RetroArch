@@ -490,6 +490,7 @@
 				ONLY_ACTIVE_ARCH = NO;
 				OTHER_CFLAGS = (
 					"-DHAVE_NETPLAY",
+					"-DHAVE_HID",
 					"-DHAVE_NETWORKING",
 					"-DHAVE_CAMERA",
 					"-DHAVE_GRIFFIN",
@@ -552,6 +553,7 @@
 					"-DNS_BLOCK_ASSERTIONS=1",
 					"-DNDEBUG",
 					"-DHAVE_NETPLAY",
+					"-DHAVE_HID",
 					"-DHAVE_NETWORKING",
 					"-DHAVE_CAMERA",
 					"-DHAVE_GRIFFIN",
@@ -587,6 +589,7 @@
 					"-DNS_BLOCK_ASSERTIONS=1",
 					"-DNDEBUG",
 					"-DHAVE_NETPLAY",
+					"-DHAVE_HID",
 					"-DHAVE_NETWORKING",
 					"-DHAVE_CAMERA",
 					"-DHAVE_GRIFFIN",
@@ -653,6 +656,7 @@
 				ONLY_ACTIVE_ARCH = NO;
 				OTHER_CFLAGS = (
 					"-DHAVE_NETPLAY",
+					"-DHAVE_HID",
 					"-DHAVE_NETWORKING",
 					"-DHAVE_CAMERA",
 					"-DHAVE_GRIFFIN",
@@ -710,6 +714,7 @@
 					"-DNS_BLOCK_ASSERTIONS=1",
 					"-DNDEBUG",
 					"-DHAVE_NETPLAY",
+					"-DHAVE_HID",
 					"-DHAVE_NETWORKING",
 					"-DHAVE_CAMERA",
 					"-DHAVE_GRIFFIN",
@@ -769,6 +774,7 @@
 				ONLY_ACTIVE_ARCH = NO;
 				OTHER_CFLAGS = (
 					"-DHAVE_NETPLAY",
+					"-DHAVE_HID",
 					"-DHAVE_NETWORKING",
 					"-DHAVE_CAMERA",
 					"-DHAVE_GRIFFIN",
@@ -832,6 +838,7 @@
 					"-DNS_BLOCK_ASSERTIONS=1",
 					"-DNDEBUG",
 					"-DHAVE_NETPLAY",
+					"-DHAVE_HID",
 					"-DHAVE_NETWORKING",
 					"-DHAVE_CAMERA",
 					"-DHAVE_GRIFFIN",
@@ -868,6 +875,7 @@
 					"-DNS_BLOCK_ASSERTIONS=1",
 					"-DNDEBUG",
 					"-DHAVE_NETPLAY",
+					"-DHAVE_HID",
 					"-DHAVE_NETWORKING",
 					"-DHAVE_CAMERA",
 					"-DHAVE_GRIFFIN",

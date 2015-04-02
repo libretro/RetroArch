@@ -23,7 +23,7 @@
 #include "../general.h"
 
 static hid_driver_t *hid_drivers[] = {
-#ifdef __APPLE__
+#if defined(__APPLE__) && !defined(IOS)
    &apple_hid,
 #endif
 #ifdef HAVE_LIBUSB
