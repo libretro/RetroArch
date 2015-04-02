@@ -536,7 +536,7 @@ static void xmb_frame_messagebox(const char *message)
       const char *msg = list->elems[i].data;
 
       if (msg)
-         xmb_draw_text(gl, xmb, msg, x, y + i * xmb->font.size, 1, 1, 0);
+         xmb_draw_text(gl, xmb, msg, x, y + i * xmb->font.size, 1, 1, TEXT_ALIGN_LEFT);
    }
 
 end:
@@ -1113,7 +1113,7 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
       xmb_draw_text(gl, xmb, name,
             node->x + xmb->margins.screen.left + xmb->icon.spacing.horizontal + xmb->margins.label.left, 
             xmb->margins.screen.top + node->y + xmb->margins.label.top, 
-            1, node->label_alpha, 0);
+            1, node->label_alpha, TEXT_ALIGN_LEFT);
 
       menu_animation_ticker_line(value, 35, runloop->frames.video.count / 20, type_str,
             (i == current));
@@ -1137,7 +1137,7 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
                xmb->margins.screen.top + node->y + xmb->margins.label.top, 
                1, 
                node->label_alpha,
-               0);
+               TEXT_ALIGN_LEFT);
 
 
       xmb_draw_icon_begin(gl, xmb);
@@ -1282,7 +1282,7 @@ static void xmb_frame(void)
    xmb_frame_background(settings, gl, xmb, false);
 
    xmb_draw_text(gl, xmb,
-         xmb->title_name, xmb->margins.title.left, xmb->margins.title.top, 1, 1, 0);
+         xmb->title_name, xmb->margins.title.left, xmb->margins.title.top, 1, 1, TEXT_ALIGN_LEFT);
 
    if (settings->menu.timedate_enable)
    {
@@ -1290,7 +1290,7 @@ static void xmb_frame(void)
 
       xmb_draw_text(gl, xmb,
             timedate, gl->win_width - xmb->margins.title.left - xmb->icon.size / 4, 
-            xmb->margins.title.top, 1, 1, 1);
+            xmb->margins.title.top, 1, 1, TEXT_ALIGN_RIGHT);
    }
 
    if (settings->menu.core_enable)
@@ -1312,7 +1312,7 @@ static void xmb_frame(void)
       snprintf(title_msg, sizeof(title_msg), "%s - %s %s", PACKAGE_VERSION,
             core_name, core_version);
       xmb_draw_text(gl, xmb, title_msg, xmb->margins.title.left, 
-            gl->win_height - xmb->margins.title.bottom, 1, 1, 0);
+            gl->win_height - xmb->margins.title.bottom, 1, 1, TEXT_ALIGN_LEFT);
    }
 
    depth = file_list_get_size(menu->menu_list->menu_stack);
