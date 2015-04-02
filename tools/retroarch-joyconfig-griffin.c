@@ -26,7 +26,7 @@
 #endif
 
 #if defined(HAVE_WINXINPUT)
-#include "../input/drivers_joypad/winxinput_joypad.c"
+#include "../input/drivers_joypad/xinput_joypad.c"
 #endif
 
 #if defined(HAVE_UDEV)
@@ -61,7 +61,7 @@
 #endif
 
 #include "../input/drivers_joypad/hid_joypad.c"
-#include "../input/drivers_joypad/nullinput_joypad.c"
+#include "../input/drivers_joypad/null_joypad.c"
 
 #include "../input/input_hid_driver.c"
 #include "../input/input_joypad_driver.c"
