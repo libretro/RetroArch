@@ -58,64 +58,65 @@ static uint64_t apple_hid_joypad_get_buttons(void *data, unsigned port)
 
 static bool apple_hid_joypad_button(void *data, unsigned port, uint16_t joykey)
 {
-    driver_t          *driver = driver_get_ptr();
-    apple_input_data_t *apple = (apple_input_data_t*)driver->input_data;
-    uint64_t buttons          = apple_hid_joypad_get_buttons(data, port);
-    
-    if (!apple || joykey == NO_BTN)
-        return false;
-    
-    /* Check hat. */
-    if (GET_HAT_DIR(joykey))
-        return false;
-    
-    /* Check the button. */
-    if ((port < MAX_USERS) && (joykey < 32))
-        return ((apple->buttons[port] & (1 << joykey)) != 0) ||
-        ((buttons & (1 << joykey)) != 0);
-    return false;
+   driver_t          *driver = driver_get_ptr();
+   apple_input_data_t *apple = (apple_input_data_t*)driver->input_data;
+   uint64_t buttons          = apple_hid_joypad_get_buttons(data, port);
+
+   if (!apple || joykey == NO_BTN)
+      return false;
+
+   /* Check hat. */
+   if (GET_HAT_DIR(joykey))
+      return false;
+
+   /* Check the button. */
+   if ((port < MAX_USERS) && (joykey < 32))
+      return ((apple->buttons[port] & (1 << joykey)) != 0) ||
+         ((buttons & (1 << joykey)) != 0);
+   return false;
 }
 
 static bool apple_hid_joypad_rumble(void *data, unsigned pad,
-                                enum retro_rumble_effect effect, uint16_t strength)
+      enum retro_rumble_effect effect, uint16_t strength)
 {
    apple_hid_t        *hid   = (apple_hid_t*)data;
    if (!hid)
-       return false;
+      return false;
    return pad_connection_rumble(&hid->slots[pad], pad, effect, strength);
 }
 
 static int16_t apple_hid_joypad_axis(void *data, unsigned port, uint32_t joyaxis)
 {
-    driver_t          *driver = driver_get_ptr();
-    apple_hid_t        *hid   = (apple_hid_t*)data;
-    apple_input_data_t *apple = (apple_input_data_t*)driver->input_data;
-    int16_t val = 0;
-    
-    if (!apple || joyaxis == AXIS_NONE)
-        return 0;
-    
-    if (AXIS_NEG_GET(joyaxis) < 4)
-    {
-        val = apple->axes[port][AXIS_NEG_GET(joyaxis)];
-        val += pad_connection_get_axis(&hid->slots[port], port, AXIS_NEG_GET(joyaxis));
-        
-        if (val >= 0)
-            val = 0;
-    }
-    else if(AXIS_POS_GET(joyaxis) < 4)
-    {
-        val = apple->axes[port][AXIS_POS_GET(joyaxis)];
-        val += pad_connection_get_axis(&hid->slots[port], port, AXIS_POS_GET(joyaxis));
-        
-        if (val <= 0)
-            val = 0;
-    }
-    
-    return val;
+   driver_t          *driver = driver_get_ptr();
+   apple_hid_t        *hid   = (apple_hid_t*)data;
+   apple_input_data_t *apple = (apple_input_data_t*)driver->input_data;
+   int16_t val = 0;
+
+   if (!apple || joyaxis == AXIS_NONE)
+      return 0;
+
+   if (AXIS_NEG_GET(joyaxis) < 4)
+   {
+      val = apple->axes[port][AXIS_NEG_GET(joyaxis)];
+      val += pad_connection_get_axis(&hid->slots[port], port, AXIS_NEG_GET(joyaxis));
+
+      if (val >= 0)
+         val = 0;
+   }
+   else if(AXIS_POS_GET(joyaxis) < 4)
+   {
+      val = apple->axes[port][AXIS_POS_GET(joyaxis)];
+      val += pad_connection_get_axis(&hid->slots[port], port, AXIS_POS_GET(joyaxis));
+
+      if (val <= 0)
+         val = 0;
+   }
+
+   return val;
 }
 
-static void apple_hid_device_send_control(void *data, uint8_t* data_buf, size_t size)
+static void apple_hid_device_send_control(void *data,
+      uint8_t* data_buf, size_t size)
 {
    struct apple_hid_adapter *adapter = (struct apple_hid_adapter*)data;
 
@@ -124,17 +125,18 @@ static void apple_hid_device_send_control(void *data, uint8_t* data_buf, size_t 
             kIOHIDReportTypeOutput, 0x01, data_buf + 1, size - 1);
 }
 
-static void apple_hid_device_report(void *data, IOReturn result, void *sender,
-                                    IOHIDReportType type, uint32_t reportID, uint8_t *report,
-                                    CFIndex reportLength)
+static void apple_hid_device_report(void *data,
+      IOReturn result, void *sender,
+      IOHIDReportType type, uint32_t reportID, uint8_t *report,
+      CFIndex reportLength)
 {
-    struct apple_hid_adapter *adapter = (struct apple_hid_adapter*)data;
-    driver_t *driver = driver_get_ptr();
-    apple_hid_t *hid = driver ? (apple_hid_t*)driver->hid_data : NULL;
-    
-    if (adapter)
-        pad_connection_packet(&hid->slots[adapter->slot], adapter->slot,
-                              adapter->data, reportLength + 1);
+   struct apple_hid_adapter *adapter = (struct apple_hid_adapter*)data;
+   driver_t *driver = driver_get_ptr();
+   apple_hid_t *hid = driver ? (apple_hid_t*)driver->hid_data : NULL;
+
+   if (adapter)
+      pad_connection_packet(&hid->slots[adapter->slot], adapter->slot,
+            adapter->data, reportLength + 1);
 }
 
 /* NOTE: I pieced this together through trial and error,
@@ -237,19 +239,19 @@ static void apple_hid_device_remove(void *data, IOReturn result, void* sender)
 
 static int32_t apple_hid_device_get_int_property(IOHIDDeviceRef device, CFStringRef key)
 {
-    int32_t value;
-    CFNumberRef ref = IOHIDDeviceGetProperty(device, key);
-    
-    if (ref)
-    {
-        if (CFGetTypeID(ref) == CFNumberGetTypeID())
-        {
-            CFNumberGetValue((CFNumberRef)ref, kCFNumberIntType, &value);
-            return value;
-        }
-    }
-    
-    return 0;
+   int32_t value;
+   CFNumberRef ref = IOHIDDeviceGetProperty(device, key);
+
+   if (ref)
+   {
+      if (CFGetTypeID(ref) == CFNumberGetTypeID())
+      {
+         CFNumberGetValue((CFNumberRef)ref, kCFNumberIntType, &value);
+         return value;
+      }
+   }
+
+   return 0;
 }
 
 static uint16_t apple_hid_device_get_vendor_id(IOHIDDeviceRef device)
@@ -264,25 +266,25 @@ static uint16_t apple_hid_device_get_product_id(IOHIDDeviceRef device)
 
 static void apple_hid_device_get_product_string(IOHIDDeviceRef device, char *buf, size_t len)
 {
-    CFStringRef ref = IOHIDDeviceGetProperty(device, CFSTR(kIOHIDProductKey));
-    
-    if (ref)
-       CFStringGetCString(ref, buf, len, kCFStringEncodingUTF8);
+   CFStringRef ref = IOHIDDeviceGetProperty(device, CFSTR(kIOHIDProductKey));
+
+   if (ref)
+      CFStringGetCString(ref, buf, len, kCFStringEncodingUTF8);
 }
 
 static void apple_hid_device_add_autodetect(unsigned idx,
-   const char *device_name, const char *driver_name,
-   uint16_t dev_vid, uint16_t dev_pid)
+      const char *device_name, const char *driver_name,
+      uint16_t dev_vid, uint16_t dev_pid)
 {
    autoconfig_params_t params = {{0}};
-    
+
    params.idx = idx;
    params.vid = dev_vid;
    params.pid = dev_pid;
-    
+
    strlcpy(params.name, device_name, sizeof(params.name));
    strlcpy(params.driver, driver_name, sizeof(params.driver));
-    
+
    input_config_autoconfigure_joypad(&params);
    RARCH_LOG("Port %d: %s.\n", idx, device_name);
 }
@@ -298,17 +300,17 @@ static void apple_hid_device_add(void *data, IOReturn result,
    apple_hid_t     *hid = driver ? (apple_hid_t*)driver->hid_data : NULL;
    struct apple_hid_adapter *adapter = (struct apple_hid_adapter*)
       calloc(1, sizeof(*adapter));
-    
+
    if (!adapter || !hid)
-       return;
+      return;
 
    adapter->handle        = device;
    adapter->slot          = MAX_USERS;
 
    ret = IOHIDDeviceOpen(device, kIOHIDOptionsTypeNone);
-    
+
    if (ret != kIOReturnSuccess)
-       goto error;
+      goto error;
 
    /* Move the device's run loop to this thread. */
    IOHIDDeviceScheduleWithRunLoop(device, CFRunLoopGetCurrent(),
@@ -316,15 +318,15 @@ static void apple_hid_device_add(void *data, IOReturn result,
    IOHIDDeviceRegisterRemovalCallback(device, apple_hid_device_remove, adapter);
 
 #ifndef IOS
-    apple_hid_device_get_product_string(device, adapter->name,
-                                 sizeof(adapter->name));
+   apple_hid_device_get_product_string(device, adapter->name,
+         sizeof(adapter->name));
 #endif
 
    dev_vid = apple_hid_device_get_vendor_id  (device);
    dev_pid = apple_hid_device_get_product_id (device);
 
    adapter->slot = pad_connection_pad_init(hid->slots,
-        adapter->name, adapter, &apple_hid_device_send_control);
+         adapter->name, adapter, &apple_hid_device_send_control);
 
    if (pad_connection_has_interface(hid->slots, adapter->slot))
       IOHIDDeviceRegisterInputReportCallback(device,
@@ -339,10 +341,10 @@ static void apple_hid_device_add(void *data, IOReturn result,
 
    strlcpy(settings->input.device_names[adapter->slot],
          adapter->name, sizeof(settings->input.device_names));
-    
-    apple_hid_device_add_autodetect(adapter->slot,
-        adapter->name, apple_hid.ident, dev_vid, dev_pid);
-    
+
+   apple_hid_device_add_autodetect(adapter->slot,
+         adapter->name, apple_hid.ident, dev_vid, dev_pid);
+
 error:
    return;
 }
@@ -368,92 +370,92 @@ static void apple_hid_append_matching_dictionary(CFMutableArrayRef array,
 
 static int apple_hid_manager_init(apple_hid_t *hid)
 {
-    if (!hid)
-        return -1;
-    if (hid->hid_ptr) /* already initialized. */
-        return 0;
-    
-    hid->hid_ptr = IOHIDManagerCreate(kCFAllocatorDefault, kIOHIDOptionsTypeNone);
-    
-    if (hid->hid_ptr)
-    {
-        IOHIDManagerSetDeviceMatching(hid->hid_ptr, NULL);
-        IOHIDManagerScheduleWithRunLoop(hid->hid_ptr, CFRunLoopGetCurrent(),
-                                        kCFRunLoopDefaultMode);
-        return 0;
-    }
-    
-    return -1;
+   if (!hid)
+      return -1;
+   if (hid->hid_ptr) /* already initialized. */
+      return 0;
+
+   hid->hid_ptr = IOHIDManagerCreate(kCFAllocatorDefault, kIOHIDOptionsTypeNone);
+
+   if (hid->hid_ptr)
+   {
+      IOHIDManagerSetDeviceMatching(hid->hid_ptr, NULL);
+      IOHIDManagerScheduleWithRunLoop(hid->hid_ptr, CFRunLoopGetCurrent(),
+            kCFRunLoopDefaultMode);
+      return 0;
+   }
+
+   return -1;
 }
 
 
 static int apple_hid_manager_free(apple_hid_t *hid)
 {
-    if (!hid || !hid->hid_ptr)
-        return -1;
-    
-    IOHIDManagerUnscheduleFromRunLoop(hid->hid_ptr,
-                                      CFRunLoopGetCurrent(), kCFRunLoopCommonModes);
-    IOHIDManagerClose(hid->hid_ptr, kIOHIDOptionsTypeNone);
-    CFRelease(hid->hid_ptr);
-    hid->hid_ptr = NULL;
-    
-    return 0;
+   if (!hid || !hid->hid_ptr)
+      return -1;
+
+   IOHIDManagerUnscheduleFromRunLoop(hid->hid_ptr,
+         CFRunLoopGetCurrent(), kCFRunLoopCommonModes);
+   IOHIDManagerClose(hid->hid_ptr, kIOHIDOptionsTypeNone);
+   CFRelease(hid->hid_ptr);
+   hid->hid_ptr = NULL;
+
+   return 0;
 }
 
 static int apple_hid_manager_set_device_matching(apple_hid_t *hid)
 {
-    CFMutableArrayRef matcher = CFArrayCreateMutable(kCFAllocatorDefault, 0,
-                                   &kCFTypeArrayCallBacks);
-    
-    if (!matcher)
-        return -1;
-    
-    apple_hid_append_matching_dictionary(matcher, kHIDPage_GenericDesktop,
-                                         kHIDUsage_GD_Joystick);
-    apple_hid_append_matching_dictionary(matcher, kHIDPage_GenericDesktop,
-                                         kHIDUsage_GD_GamePad);
-    
-    IOHIDManagerSetDeviceMatchingMultiple(hid->hid_ptr, matcher);
-    IOHIDManagerRegisterDeviceMatchingCallback(hid->hid_ptr,
-                                               apple_hid_device_add, 0);
-    
-    CFRelease(matcher);
-    
-    return 0;
+   CFMutableArrayRef matcher = CFArrayCreateMutable(kCFAllocatorDefault, 0,
+         &kCFTypeArrayCallBacks);
+
+   if (!matcher)
+      return -1;
+
+   apple_hid_append_matching_dictionary(matcher, kHIDPage_GenericDesktop,
+         kHIDUsage_GD_Joystick);
+   apple_hid_append_matching_dictionary(matcher, kHIDPage_GenericDesktop,
+         kHIDUsage_GD_GamePad);
+
+   IOHIDManagerSetDeviceMatchingMultiple(hid->hid_ptr, matcher);
+   IOHIDManagerRegisterDeviceMatchingCallback(hid->hid_ptr,
+         apple_hid_device_add, 0);
+
+   CFRelease(matcher);
+
+   return 0;
 }
 
 static void *apple_hid_init(void)
 {
-    apple_hid_t *hid_apple = (apple_hid_t*)calloc(1, sizeof(*hid_apple));
-    
-    if (!hid_apple)
-        goto error;
-    if (apple_hid_manager_init(hid_apple) == -1)
-        goto error;
-    if (apple_hid_manager_set_device_matching(hid_apple) == -1)
-        goto error;
-    
-    hid_apple->slots = (joypad_connection_t*)pad_connection_init(MAX_USERS);
-    
-    return hid_apple;
-    
+   apple_hid_t *hid_apple = (apple_hid_t*)calloc(1, sizeof(*hid_apple));
+
+   if (!hid_apple)
+      goto error;
+   if (apple_hid_manager_init(hid_apple) == -1)
+      goto error;
+   if (apple_hid_manager_set_device_matching(hid_apple) == -1)
+      goto error;
+
+   hid_apple->slots = (joypad_connection_t*)pad_connection_init(MAX_USERS);
+
+   return hid_apple;
+
 error:
-    if (hid_apple)
-        free(hid_apple);
-    return NULL;
+   if (hid_apple)
+      free(hid_apple);
+   return NULL;
 }
 
 static void apple_hid_free(void *data)
 {
    apple_hid_t *hid_apple = (apple_hid_t*)data;
-    
+
    if (!hid_apple || !hid_apple->hid_ptr)
-        return;
-    
+      return;
+
    pad_connection_destroy(hid_apple->slots);
    apple_hid_manager_free(hid_apple);
-    
+
    if (hid_apple)
       free(hid_apple);
 }
