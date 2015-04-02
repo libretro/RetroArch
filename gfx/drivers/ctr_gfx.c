@@ -278,25 +278,11 @@ static bool ctr_frame(void* data, const void* frame,
       return true;
    }
 
-   hidScanInput();
-   u32 kDown = hidKeysDown();
-   if (kDown & KEY_START)
-   {
-      rarch_main_command(RARCH_CMD_QUIT);
-      return true;
-   }
-
-
    printf("frames: %i\r", frames++);fflush(stdout);
 //   gfxFlushBuffers();
 //   gspWaitForEvent(GSPEVENT_VBlank0, true);
 
    u32 backgroundColor = 0x00000000;
-
-//   hidScanInput();
-//   u32 kDown = hidKeysDown();
-
-//   if (kDown & KEY_START) rarch_main_command(RARCH_CMD_QUIT); // break in order to return to hbmenu
 
    GPUCMD_SetBufferOffset(0);
    GPU_SetFloatUniform(GPU_VERTEX_SHADER,
