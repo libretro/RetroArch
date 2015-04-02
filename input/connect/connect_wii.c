@@ -19,11 +19,7 @@
 #include <stdlib.h>
 #include <boolean.h>
 #include <retro_miscellaneous.h>
-
 #include "joypad_connection.h"
-
-typedef unsigned char byte;
-typedef char sbyte;
 
 /* Convert to big endian */
 #define BIG_ENDIAN_LONG(i)                   (htonl(i))
@@ -110,10 +106,10 @@ typedef struct axis_t
 {
    bool has_center;
 
-   byte min;
-   byte center;
-   byte max;
-   byte raw_value;
+   uint8_t min;
+   uint8_t center;
+   uint8_t max;
+   uint8_t raw_value;
    float value;
 } axis_t;
 
@@ -155,11 +151,11 @@ typedef struct wiimote_t
    /* Various state flags. */
    int state;
    /* Currently lit LEDs. */
-   byte leds;
+   uint8_t leds;
    /* Battery level. */
    float battery_level;
    /* The state of the connection handshake. */
-   byte handshake_state;
+   uint8_t handshake_state;
    /* Wiimote expansion device. */
    struct expansion_t exp;
    /* What buttons have just been pressed. */
@@ -181,10 +177,10 @@ typedef struct wiimote_t
  */
 
 static int wiimote_send(struct wiimote_t* wm,
-      byte report_type, byte* msg, int len)
+      uint8_t report_type, uint8_t* msg, int len)
 {
     int x = 2;
-    byte buf[32];
+    uint8_t buf[32];
     
     (void)x;
     
@@ -211,7 +207,7 @@ static int wiimote_send(struct wiimote_t* wm,
  */
 static void wiimote_status(struct wiimote_t* wm)
 {
-   byte buf = 0;
+   uint8_t buf = 0;
 
    if (!wm || !WIIMOTE_IS_CONNECTED(wm))
       return;
@@ -223,9 +219,9 @@ static void wiimote_status(struct wiimote_t* wm)
    wiimote_send(wm, WM_CMD_CTRL_STATUS, &buf, 1);
 }
 
-static void wiimote_data_report(struct wiimote_t* wm, byte type)
+static void wiimote_data_report(struct wiimote_t* wm, uint8_t type)
 {
-   byte buf[2] = {0x0,0x0};
+   uint8_t buf[2] = {0x0,0x0};
 
    if (!wm  || !WIIMOTE_IS_CONNECTED(wm))
       return;
@@ -248,7 +244,7 @@ static void wiimote_data_report(struct wiimote_t* wm, byte type)
 
 static void wiimote_set_leds(struct wiimote_t* wm, int leds)
 {
-   byte buf;
+   uint8_t buf;
 
    if (!wm || !WIIMOTE_IS_CONNECTED(wm))
       return;
@@ -265,7 +261,7 @@ static void wiimote_set_leds(struct wiimote_t* wm, int leds)
  * Find what buttons are pressed.
  */
 
-static void wiimote_pressed_buttons(struct wiimote_t* wm, byte* msg)
+static void wiimote_pressed_buttons(struct wiimote_t* wm, uint8_t* msg)
 {
    /* Convert to big endian. */
    short now = BIG_ENDIAN_SHORT(*(short*)msg) & WIIMOTE_BUTTON_ALL;
@@ -275,7 +271,7 @@ static void wiimote_pressed_buttons(struct wiimote_t* wm, byte* msg)
 }
 
 static int classic_ctrl_handshake(struct wiimote_t* wm,
-      struct classic_ctrl_t* cc, byte* data, unsigned short len)
+      struct classic_ctrl_t* cc, uint8_t* data, unsigned short len)
 {
     memset(cc, 0, sizeof(*cc));
     wm->exp.type = EXP_CLASSIC;
@@ -289,7 +285,7 @@ static float normalize_and_interpolate(float min, float max, float t)
    return (t - min) / (max - min);
 }
 
-static void process_axis(struct axis_t* axis, byte raw)
+static void process_axis(struct axis_t* axis, uint8_t raw)
 {
     if (!axis->has_center)
     {
@@ -315,7 +311,7 @@ static void process_axis(struct axis_t* axis, byte raw)
         axis->value = 0;
 }
 
-static void classic_ctrl_event(struct classic_ctrl_t* cc, byte* msg)
+static void classic_ctrl_event(struct classic_ctrl_t* cc, uint8_t* msg)
 {
     cc->btns = ~BIG_ENDIAN_SHORT(*(short*)(msg + 4)) & CLASSIC_CTRL_BUTTON_ALL;
     process_axis(&cc->ljs.x, (msg[0] & 0x3F));
@@ -329,7 +325,7 @@ static void classic_ctrl_event(struct classic_ctrl_t* cc, byte* msg)
  * Handle data from the expansion.
  */
 
-static void wiimote_handle_expansion(struct wiimote_t* wm, byte* msg)
+static void wiimote_handle_expansion(struct wiimote_t* wm, uint8_t* msg)
 {
    switch (wm->exp.type)
    {
@@ -345,10 +341,10 @@ static void wiimote_handle_expansion(struct wiimote_t* wm, byte* msg)
  *	Write data to the wiimote.
  */
 static int wiimote_write_data(struct wiimote_t* wm,
-                              unsigned int addr, byte* data, byte len)
+                              unsigned int addr, uint8_t* data, uint8_t len)
 {
     int i = 0;
-    byte buf[21] = {0};		/* the payload is always 23 */
+    uint8_t buf[21] = {0};		/* the payload is always 23 */
     
     (void)i;
     
@@ -369,7 +365,7 @@ static int wiimote_write_data(struct wiimote_t* wm,
     *(int*)(buf) = BIG_ENDIAN_LONG(addr);
     
     /* length */
-    *(byte*)(buf + 4) = len;
+    *(uint8_t*)(buf + 4) = len;
     
     /* data */
     memcpy(buf + 5, data, len);
@@ -392,7 +388,7 @@ static int wiimote_write_data(struct wiimote_t* wm,
 static int wiimote_read_data(struct wiimote_t* wm, unsigned int addr,
                              unsigned short len)
 {
-    byte buf[6];
+    uint8_t buf[6];
     
     /* No puden ser mas de 16 lo leido o vendra en trozos! */
     
@@ -423,7 +419,7 @@ static int wiimote_read_data(struct wiimote_t* wm, unsigned int addr,
  *	with this data.
  */
 
-static int wiimote_handshake(struct wiimote_t* wm,  byte event, byte* data,
+static int wiimote_handshake(struct wiimote_t* wm,  uint8_t event, uint8_t* data,
       unsigned short len)
 {
 
@@ -485,7 +481,7 @@ static int wiimote_handshake(struct wiimote_t* wm,  byte event, byte* data,
                      WIIMOTE_ENABLE_STATE(wm, WIIMOTE_STATE_HANDSHAKE);
                   }
 
-                  byte buf;
+                  uint8_t buf;
 
                   /*Old way. initialize the extension was by writing the 
                    * single encryption byte 0x00 to 0x(4)A40040. */
@@ -684,7 +680,7 @@ static void hidpad_wii_packet_handler(void *data,
       uint8_t *packet, uint16_t size)
 {
    struct wiimote_t* device = (struct wiimote_t*)data;
-   byte* msg = packet + 2;
+   uint8_t* msg = packet + 2;
 
    if (!device)
       return;
