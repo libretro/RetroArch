@@ -641,10 +641,16 @@ static int deferred_push_cursor_manager_list_deferred(void *data, void *userdata
       return -1;
 
    if (!config_get_string(conf, "query", &query))
+   {
+      config_file_free(conf);
       return -1;
+   }
 
    if (!config_get_string(conf, "rdb", &rdb))
+   {
+      config_file_free(conf);
       return -1;
+   }
 
    fill_pathname_join(rdb_path, settings->content_database,
          rdb, sizeof(rdb_path));
@@ -655,6 +661,7 @@ static int deferred_push_cursor_manager_list_deferred(void *data, void *userdata
 
    menu_list_populate_generic(list, path, label, type);
 
+   config_file_free(conf);
    return 0;
 }
 
