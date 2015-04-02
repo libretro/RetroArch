@@ -550,7 +550,7 @@ static int wiimote_handshake(struct wiimote_t* wm,
                if (event != WM_RPT_READ)
                   return 0;
 
-               id = swap_if_little32(*data);
+               id = swap_if_little32(*ptr);
 
 #ifdef WIIMOTE_DBG
                printf("Expansion id=0x%04x\n",id);
