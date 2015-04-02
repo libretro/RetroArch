@@ -1744,7 +1744,7 @@ rarch_setting_t setting_uint_setting(const char* name,
 }
 
 /**
- * setting_uint_setting:
+ * setting_hex_setting:
  * @name               : name of setting.
  * @short_description  : Short description of setting.
  * @target             : Target of unsigned integer setting.
