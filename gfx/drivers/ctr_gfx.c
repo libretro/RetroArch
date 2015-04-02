@@ -291,7 +291,8 @@ static bool ctr_frame(void* data, const void* frame,
       frames = 0;
    }
 
-   printf("fps: %8.4f frames: %i\r", fps, total_frames++, currentTick);fflush(stdout);
+   printf("fps: %8.4f frames: %i current tick: %llu\r", fps, total_frames++, currentTick);
+   fflush(stdout);
 
 //   gfxFlushBuffers();
 //   gspWaitForEvent(GSPEVENT_VBlank0, true);
