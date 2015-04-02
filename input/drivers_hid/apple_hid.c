@@ -22,7 +22,7 @@
 
 typedef struct apple_hid
 {
-    IOHIDManagerRef hid_ptr;
+    IOHIDManagerRef ptr;
     joypad_connection_t *slots;
 } apple_hid_t;
 
@@ -372,15 +372,15 @@ static int apple_hid_manager_init(apple_hid_t *hid)
 {
    if (!hid)
       return -1;
-   if (hid->hid_ptr) /* already initialized. */
+   if (hid->ptr) /* already initialized. */
       return 0;
 
-   hid->hid_ptr = IOHIDManagerCreate(kCFAllocatorDefault, kIOHIDOptionsTypeNone);
+   hid->ptr = IOHIDManagerCreate(kCFAllocatorDefault, kIOHIDOptionsTypeNone);
 
-   if (hid->hid_ptr)
+   if (hid->ptr)
    {
-      IOHIDManagerSetDeviceMatching(hid->hid_ptr, NULL);
-      IOHIDManagerScheduleWithRunLoop(hid->hid_ptr, CFRunLoopGetCurrent(),
+      IOHIDManagerSetDeviceMatching(hid->ptr, NULL);
+      IOHIDManagerScheduleWithRunLoop(hid->ptr, CFRunLoopGetCurrent(),
             kCFRunLoopDefaultMode);
       return 0;
    }
@@ -391,14 +391,14 @@ static int apple_hid_manager_init(apple_hid_t *hid)
 
 static int apple_hid_manager_free(apple_hid_t *hid)
 {
-   if (!hid || !hid->hid_ptr)
+   if (!hid || !hid->ptr)
       return -1;
 
-   IOHIDManagerUnscheduleFromRunLoop(hid->hid_ptr,
+   IOHIDManagerUnscheduleFromRunLoop(hid->ptr,
          CFRunLoopGetCurrent(), kCFRunLoopCommonModes);
-   IOHIDManagerClose(hid->hid_ptr, kIOHIDOptionsTypeNone);
-   CFRelease(hid->hid_ptr);
-   hid->hid_ptr = NULL;
+   IOHIDManagerClose(hid->ptr, kIOHIDOptionsTypeNone);
+   CFRelease(hid->ptr);
+   hid->ptr = NULL;
 
    return 0;
 }
@@ -416,8 +416,8 @@ static int apple_hid_manager_set_device_matching(apple_hid_t *hid)
    apple_hid_append_matching_dictionary(matcher, kHIDPage_GenericDesktop,
          kHIDUsage_GD_GamePad);
 
-   IOHIDManagerSetDeviceMatchingMultiple(hid->hid_ptr, matcher);
-   IOHIDManagerRegisterDeviceMatchingCallback(hid->hid_ptr,
+   IOHIDManagerSetDeviceMatchingMultiple(hid->ptr, matcher);
+   IOHIDManagerRegisterDeviceMatchingCallback(hid->ptr,
          apple_hid_device_add, 0);
 
    CFRelease(matcher);
@@ -450,7 +450,7 @@ static void apple_hid_free(void *data)
 {
    apple_hid_t *hid_apple = (apple_hid_t*)data;
 
-   if (!hid_apple || !hid_apple->hid_ptr)
+   if (!hid_apple || !hid_apple->ptr)
       return;
 
    pad_connection_destroy(hid_apple->slots);
