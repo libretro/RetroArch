@@ -28,7 +28,7 @@ struct btpad_queue_command
       {
          uint8_t on;
       }  btstack_set_power_mode;
-   
+
       struct
       {
          uint16_t handle;

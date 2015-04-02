@@ -23,6 +23,7 @@
 #include "btdynamic.h"
 
 #define GRAB(A) {#A, (void**)&A##_ptr}
+
 static struct
 {
    const char* name;
@@ -107,7 +108,7 @@ bool btstack_try_load(void)
    return true;
 }
 
-void btstack_thread_stop()
+void btstack_thread_stop(void)
 {
    bt_send_cmd_ptr(btstack_set_power_mode_ptr, HCI_POWER_OFF);
 }
@@ -131,7 +132,7 @@ static void btstack_thread_func(void* data)
 
    RARCH_LOG("BTstack: Running\n");
    CFRunLoopRun();
-   
+
    RARCH_LOG("BTstack: Done\n");
 
    CFRunLoopSourceInvalidate(btstack_quit_source);

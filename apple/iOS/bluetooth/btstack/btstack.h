@@ -72,7 +72,7 @@ int bt_close(void);
 int bt_send_cmd(const hci_cmd_t *cmd, ...);
 
 /* Register packet handler -- channel only valid 
- * for L2CAP and RFCOMM packets.
+ for L2CAP and RFCOMM packets.
  */
 btstack_packet_handler_t bt_register_packet_handler(
       btstack_packet_handler_t handler);

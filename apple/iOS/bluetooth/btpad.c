@@ -57,7 +57,7 @@ static bool inquiry_running;
 static struct pad_connection g_connections[MAX_USERS];
 
 static void btpad_connection_send_control(void *data,
-        uint8_t* data_buf, size_t size)
+      uint8_t* data_buf, size_t size)
 {
    struct pad_connection *connection = (struct pad_connection*)data;
 
