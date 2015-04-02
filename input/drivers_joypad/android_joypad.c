@@ -19,7 +19,7 @@
 static const char *android_joypad_name(unsigned pad)
 {
    settings_t *settings = config_get_ptr();
-   return settings->input.device_names[pad];
+   return settings ? settings->input.device_names[pad] : NULL;
 }
 
 static bool android_joypad_init(void)
@@ -60,8 +60,8 @@ static bool android_joypad_init(void)
 
 static bool android_joypad_button(unsigned port, uint16_t joykey)
 {
-   uint8_t *buf = NULL;
-   driver_t *driver = driver_get_ptr();
+   uint8_t *buf             = NULL;
+   driver_t *driver         = driver_get_ptr();
    android_input_t *android = (android_input_t*)driver->input_data;
 
    if (!android || port >= MAX_PADS)
@@ -95,11 +95,11 @@ static bool android_joypad_button(unsigned port, uint16_t joykey)
 
 static int16_t android_joypad_axis(unsigned port, uint32_t joyaxis)
 {
-   int val = 0;
-   int axis    = -1;
-   bool is_neg = false;
-   bool is_pos = false;
-   driver_t *driver = driver_get_ptr();
+   int val                  = 0;
+   int axis                 = -1;
+   bool is_neg              = false;
+   bool is_pos              = false;
+   driver_t *driver         = driver_get_ptr();
    android_input_t *android = (android_input_t*)driver->input_data;
 
    if (!android || joyaxis == AXIS_NONE || port >= MAX_PADS)
@@ -132,7 +132,7 @@ static void android_joypad_poll(void)
 
 static bool android_joypad_query_pad(unsigned pad)
 {
-   driver_t *driver = driver_get_ptr();
+   driver_t *driver         = driver_get_ptr();
    android_input_t *android = (android_input_t*)driver->input_data;
    return (pad < MAX_USERS && pad < android->pads_connected);
 }

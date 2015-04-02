@@ -62,8 +62,11 @@ static uint64_t psp_joypad_get_buttons(unsigned port_num)
 
 static int16_t psp_joypad_axis(unsigned port_num, uint32_t joyaxis)
 {
-   int val = 0, axis = -1;
-   bool is_neg = false, is_pos = false;
+   int    val  = 0;
+   int    axis = -1;
+   bool is_neg = false;
+   bool is_pos = false;
+
    if (joyaxis == AXIS_NONE || port_num >= MAX_PADS)
       return 0;
 
@@ -106,7 +109,7 @@ static void psp_joypad_poll(void)
 {
    int32_t ret;
    SceCtrlData state_tmp;
-   global_t *global = global_get_ptr();
+   global_t *global          = global_get_ptr();
    uint64_t *lifecycle_state = (uint64_t*)&global->lifecycle_state;
 
 #ifdef PSP

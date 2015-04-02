@@ -20,7 +20,7 @@
 static const char *qnx_joypad_name(unsigned pad)
 {
    settings_t *settings = config_get_ptr();
-   return settings->input.device_names[pad];
+   return settings ? settings->input.device_names[pad] : NULL;
 }
 
 static bool qnx_joypad_init(void)
@@ -68,17 +68,15 @@ static uint64_t qnx_joypad_get_buttons(unsigned port_num)
 
 static int16_t qnx_joypad_axis(unsigned port_num, uint32_t joyaxis)
 {
+   int val             = 0;
+   int axis            = -1;
+   bool is_neg         = false;
+   bool is_pos         = false;
    driver_t    *driver = driver_get_ptr();
    qnx_input_t *qnx    = (qnx_input_t*)driver->input_data;
 
    if (!qnx || joyaxis == AXIS_NONE || port_num >= MAX_PADS)
       return 0;
-
-   int val = 0;
-
-   int axis    = -1;
-   bool is_neg = false;
-   bool is_pos = false;
 
    if (AXIS_NEG_GET(joyaxis) < 4)
    {

@@ -197,7 +197,7 @@ static const char *gx_joypad_name_static(unsigned pad)
 static void handle_hotplug(unsigned port, uint32_t ptype)
 {
    autoconfig_params_t params = {{0}};
-   settings_t *settings = config_get_ptr();
+   settings_t *settings       = config_get_ptr();
    
    pad_type[port] = ptype;
 
@@ -219,7 +219,7 @@ static bool gx_joypad_init(void)
 {
    int autoconf_pad;
    autoconfig_params_t params = {{0}};
-   settings_t *settings = config_get_ptr();
+   settings_t *settings       = config_get_ptr();
 
    SYS_SetResetCallback(reset_cb);
 #ifdef HW_RVL
@@ -269,8 +269,11 @@ static uint64_t gx_joypad_get_buttons(unsigned port)
 
 static int16_t gx_joypad_axis(unsigned port, uint32_t joyaxis)
 {
-   int val = 0, axis = -1;
-   bool is_neg = false, is_pos = false;
+   int val     = 0;
+   int axis    = -1;
+   bool is_neg = false;
+   bool is_pos = false;
+
    if (joyaxis == AXIS_NONE || port >= MAX_PADS)
       return 0;
 
