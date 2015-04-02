@@ -145,9 +145,7 @@ void btpad_packet_handler(uint8_t packet_type,
             if (connection && connection->state == BTPAD_CONNECTED
                   && (connection->channels[0] == channel || 
                      connection->channels[1] == channel))
-            {
                pad_connection_packet(&slots[connection->slot], connection->slot, packet, size);
-            }
          }
          break;
       case HCI_EVENT_PACKET:
