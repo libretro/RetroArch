@@ -442,7 +442,7 @@ static void *apple_hid_init(void)
 error:
     if (hid_apple)
         free(hid_apple);
-    return hid_apple;
+    return NULL;
 }
 
 static void apple_hid_free(void *data)

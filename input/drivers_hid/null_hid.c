@@ -75,17 +75,7 @@ static int16_t null_hid_joypad_axis(void *data, unsigned port, uint32_t joyaxis)
 
 static void *null_hid_init(void)
 {
-   null_hid_t *hid_null = (null_hid_t*)calloc(1, sizeof(*hid_null));
-
-   if (!hid_null)
-      goto error;
-
-   return hid_null;
-
-error:
-   if (hid_null)
-      free(hid_null);
-   return hid_null;
+   return (null_hid_t*)calloc(1, sizeof(null_hid_t));
 }
 
 static void null_hid_free(void *data)
