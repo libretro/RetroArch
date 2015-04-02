@@ -279,7 +279,7 @@ static bool ctr_frame(void* data, const void* frame,
    }
 
    hidScanInput();
-   u32 kDown = hidKeysDown();
+   u32 kDown = hidKeysHeld();
    if (kDown & KEY_START)
    {
       rarch_main_command(RARCH_CMD_QUIT);
