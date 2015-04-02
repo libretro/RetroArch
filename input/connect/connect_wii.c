@@ -121,7 +121,7 @@ typedef struct joystick_t
 
 typedef struct classic_ctrl_t
 {
-   short btns;
+   int16_t btns;
    struct joystick_t ljs;
    struct joystick_t rjs;
 } classic_ctrl_t;
@@ -159,7 +159,7 @@ typedef struct wiimote_t
    /* Wiimote expansion device. */
    struct expansion_t exp;
    /* What buttons have just been pressed. */
-   unsigned short btns;
+   uint16_t btns;
 } wiimote;
 
 /* Macro to manage states */
@@ -262,14 +262,14 @@ static void wiimote_set_leds(struct wiimote_t* wm, int leds)
 static void wiimote_pressed_buttons(struct wiimote_t* wm, uint8_t* msg)
 {
    /* Convert to big endian. */
-   short now = BIG_ENDIAN_SHORT(*(short*)msg) & WIIMOTE_BUTTON_ALL;
+   int16_t now = BIG_ENDIAN_SHORT(*(int16_t*)msg) & WIIMOTE_BUTTON_ALL;
 
    /* buttons pressed now. */
    wm->btns = now;
 }
 
 static int classic_ctrl_handshake(struct wiimote_t* wm,
-      struct classic_ctrl_t* cc, uint8_t* data, unsigned short len)
+      struct classic_ctrl_t* cc, uint8_t* data, uint16_t len)
 {
    memset(cc, 0, sizeof(*cc));
    wm->exp.type = EXP_CLASSIC;
@@ -311,7 +311,7 @@ static void process_axis(struct axis_t* axis, uint8_t raw)
 
 static void classic_ctrl_event(struct classic_ctrl_t* cc, uint8_t* msg)
 {
-   cc->btns = ~BIG_ENDIAN_SHORT(*(short*)(msg + 4)) & CLASSIC_CTRL_BUTTON_ALL;
+   cc->btns = ~BIG_ENDIAN_SHORT(*(int16_t*)(msg + 4)) & CLASSIC_CTRL_BUTTON_ALL;
    process_axis(&cc->ljs.x, (msg[0] & 0x3F));
    process_axis(&cc->ljs.y, (msg[1] & 0x3F));
    process_axis(&cc->rjs.x, ((msg[0] & 0xC0) >> 3) |
@@ -322,7 +322,6 @@ static void classic_ctrl_event(struct classic_ctrl_t* cc, uint8_t* msg)
 /*
  * Handle data from the expansion.
  */
-
 static void wiimote_handle_expansion(struct wiimote_t* wm, uint8_t* msg)
 {
    switch (wm->exp.type)
@@ -339,7 +338,7 @@ static void wiimote_handle_expansion(struct wiimote_t* wm, uint8_t* msg)
  *	Write data to the wiimote.
  */
 static int wiimote_write_data(struct wiimote_t* wm,
-      unsigned int addr, uint8_t* data, uint8_t len)
+      uint32_t addr, uint8_t* data, uint8_t len)
 {
    int i = 0;
    uint8_t buf[21] = {0};		/* the payload is always 23 */
@@ -383,8 +382,8 @@ static int wiimote_write_data(struct wiimote_t* wm,
  *	finishes.
  */
 
-static int wiimote_read_data(struct wiimote_t* wm, unsigned int addr,
-      unsigned short len)
+static int wiimote_read_data(struct wiimote_t* wm, uint32_t addr,
+      uint16_t len)
 {
    uint8_t buf[6];
 
@@ -397,7 +396,7 @@ static int wiimote_read_data(struct wiimote_t* wm, unsigned int addr,
    *(int*)(buf)       = BIG_ENDIAN_LONG(addr);
 
    /* the length is in big endian */
-   *(short*)(buf + 4) = BIG_ENDIAN_SHORT(len);
+   *(int16_t*)(buf + 4) = BIG_ENDIAN_SHORT(len);
 
 #ifdef WIIMOTE_DBG
    printf("Request read at address: 0x%x  length: %i", addr, len);
@@ -417,10 +416,9 @@ static int wiimote_read_data(struct wiimote_t* wm, unsigned int addr,
  *	with this data.
  */
 
-static int wiimote_handshake(struct wiimote_t* wm,  uint8_t event, uint8_t* data,
-      unsigned short len)
+static int wiimote_handshake(struct wiimote_t* wm,
+      uint8_t event, uint8_t* data, uint16_t len)
 {
-
    if (!wm)
       return 0;
 
@@ -601,7 +599,15 @@ static int wiimote_handshake(struct wiimote_t* wm,  uint8_t event, uint8_t* data
          default:
             break;
       }
-   } while(1);
+   }while(1);
+}
+
+static void hidpad_wii_deinit(void *data)
+{
+   struct wiimote_t* device = (struct wiimote_t*)data;
+
+   if (device)
+      free(device);
 }
 
 static void* hidpad_wii_init(void *data, uint32_t slot,
@@ -612,31 +618,24 @@ static void* hidpad_wii_init(void *data, uint32_t slot,
       calloc(1, sizeof(struct wiimote_t));
 
    if (!device)
-      return NULL;
+      goto error;
 
    if (!connection)
-   {
-      free(device);
-      return NULL;
-   }
+      goto error;
 
-   device->connection = connection;
-   device->unid = slot;
-   device->state = WIIMOTE_STATE_CONNECTED;
-   device->exp.type = EXP_NONE;
+   device->connection   = connection;
+   device->unid         = slot;
+   device->state        = WIIMOTE_STATE_CONNECTED;
+   device->exp.type     = EXP_NONE;
    device->send_control = ptr;
 
    wiimote_handshake(device, -1, NULL, -1);
 
    return device;
-}
 
-static void hidpad_wii_deinit(void *data)
-{
-   struct wiimote_t* device = (struct wiimote_t*)data;
-
-   if (device)
-      free(device);
+error:
+   hidpad_wii_deinit(device);
+   return NULL;
 }
 
 static int16_t hidpad_wii_get_axis(void *data, unsigned axis)
@@ -673,7 +672,7 @@ static void hidpad_wii_packet_handler(void *data,
       uint8_t *packet, uint16_t size)
 {
    struct wiimote_t* device = (struct wiimote_t*)data;
-   uint8_t* msg = packet + 2;
+   uint8_t             *msg = packet + 2;
 
    if (!device)
       return;
