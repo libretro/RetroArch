@@ -172,6 +172,7 @@ OBJ += frontend/frontend.o \
 		record/record_driver.o \
 		performance.o
 
+
 OBJ += gfx/image/image.o
 
 # LibretroDB
@@ -389,6 +390,12 @@ ifeq ($(HAVE_UDEV), 1)
    LIBS += $(UDEV_LIBS)
    JOYCONFIG_LIBS += $(UDEV_LIBS)
    OBJ += input/drivers/udev_input.o input/drivers_joypad/udev_joypad.o
+endif
+
+ifeq ($(HAVE_LIBUSB), 1)
+	OBJ += input/drivers_hid/libusb_hid.o
+	LIBS += -lusb-1.0
+	JOYCONFIG_LIBS += -lusb-1.0
 endif
 
 ifeq ($(HAVE_PARPORT), 1)
@@ -688,6 +695,7 @@ endif
 ifeq ($(HAVE_COMPRESSION), 1)
    DEFINES += -DHAVE_COMPRESSION
 endif 
+
 
 # Joyconfig binary
 

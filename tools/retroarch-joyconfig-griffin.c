@@ -49,6 +49,12 @@
 
 #include "../input/drivers/nullinput.c"
 #include "../input/drivers_hid/null_hid.c"
+
+#ifdef HAVE_LIBUSB
+#include "../input/drivers_hid/libusb_hid.c"
+#include "../libretro-common/rthreads/rthreads.c"
+#endif
+
 #include "../input/drivers_joypad/hid_joypad.c"
 #include "../input/drivers_joypad/nullinput_joypad.c"
 

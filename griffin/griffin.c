@@ -344,6 +344,9 @@ INPUT
 #include "../input/drivers_joypad/hid_joypad.c"
 
 #include "../input/drivers_hid/null_hid.c"
+#ifdef HAVE_LIBUSB
+#include "../input/drivers_hid/libusb_hid.c"
+#endif
 
 #ifdef HAVE_HID
 #include "../input/drivers_hid/apple_hid.c"

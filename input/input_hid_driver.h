@@ -44,6 +44,7 @@ struct hid_driver
 };
 
 extern hid_driver_t apple_hid;
+extern hid_driver_t libusb_hid;
 extern hid_driver_t null_hid;
 
 /**

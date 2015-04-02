@@ -26,6 +26,9 @@ static hid_driver_t *hid_drivers[] = {
 #ifdef __APPLE__
    &apple_hid,
 #endif
+#ifdef HAVE_LIBUSB
+   &libusb_hid,
+#endif
    &null_hid,
    NULL,
 };
