@@ -632,8 +632,9 @@ static void gx_joypad_destroy(void)
 #endif
 
 #ifdef HW_RVL
-      WPAD_Flush(i);
-      WPADDisconnect(i);
+   // Commenting this out fixes the Wii remote not reconnecting after core load, exit, etc.
+   //   WPAD_Flush(i);
+   //   WPADDisconnect(i);
 #endif
    }
 }
