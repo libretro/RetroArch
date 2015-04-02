@@ -31,26 +31,27 @@
 #define MAX_TOUCH 4
 #endif
 
-typedef struct {
+typedef struct
+{
 #ifdef HAVE_BB10
-    screen_device_t handle;
+   screen_device_t handle;
 #endif
-    int type;
-    int analogCount;
-    int buttonCount;
-    char id[64];
-    char vid[64];
-    char pid[64];
+   int type;
+   int analogCount;
+   int buttonCount;
+   char id[64];
+   char vid[64];
+   char pid[64];
 
-    int device;
-    int port;
-    int index;
+   int device;
+   int port;
+   int index;
 
-    // Current state.
-    int buttons;
-    int analog0[3];
-    int analog1[3];
-} input_device_t;
+   /* Current state. */
+   int buttons;
+   int analog0[3];
+   int analog1[3];
+} qnx_input_device_t;
 
 struct input_pointer
 {
@@ -72,30 +73,49 @@ typedef struct qnx_input
     * active index in pointer array.
     * Saves us from searching through pointer array when polling state.
     */
-   input_device_t *port_device[MAX_PADS];
-   input_device_t devices[MAX_PADS];
+   qnx_input_device_t *port_device[MAX_PADS];
+   qnx_input_device_t devices[MAX_PADS];
    const rarch_joypad_driver_t *joypad;
    int16_t analog_state[MAX_PADS][2][2];
    uint64_t pad_state[MAX_PADS];
 } qnx_input_t;
 
-static void qnx_input_autodetect_gamepad(void *data,
-      input_device_t* controller, int port);
+static void qnx_init_controller(qnx_input_t *qnx, qnx_input_device_t* controller)
+{
+   if (!qnx)
+      return;
 
-static void handle_device(void *data,
-      input_device_t* controller);
+   /* Initialize controller values. */
+#ifdef HAVE_BB10
+   controller->handle      = 0;
+#endif
+   controller->type        = 0;
+   controller->analogCount = 0;
+   controller->buttonCount = 0;
+   controller->buttons     = 0;
+   controller->analog0[0]  = 0;
+   controller->analog0[1]  = 0;
+   controller->analog0[2]  = 0;
+   controller->analog1[0]  = 0;
+   controller->analog1[1]  = 0;
+   controller->analog1[2]  = 0;
+   controller->port        = -1;
+   controller->device      = -1;
+   controller->index       = -1;
+
+   memset(controller->id, 0, sizeof(controller->id));
+}
 
 #ifdef HAVE_BB10
-static void process_gamepad_event(void *data,
+static void process_gamepad_event(qnx_input_t *qnx,
       screen_event_t screen_event, int type)
 {
    int i;
    screen_device_t device;
-   input_device_t* controller = NULL;
-   qnx_input_t *qnx = (qnx_input_t*)data;
+   qnx_input_device_t* controller = NULL;
    settings_t *settings = config_get_ptr();
    global_t   *global   = global_get_ptr();
-   uint64_t *state_cur = NULL;
+   uint64_t *state_cur  = NULL;
 
    (void)type;
 
@@ -106,7 +126,7 @@ static void process_gamepad_event(void *data,
    {
       if (device == qnx->devices[i].handle)
       {
-         controller = (input_device_t*)&qnx->devices[i];
+         controller = (qnx_input_device_t*)&qnx->devices[i];
          break;
       }
    }
@@ -118,7 +138,7 @@ static void process_gamepad_event(void *data,
    screen_get_event_property_iv(screen_event,
          SCREEN_PROPERTY_BUTTONS, &controller->buttons);
 
-   state_cur = (uint64_t*)&qnx->pad_state[controller->port];
+   state_cur  = (uint64_t*)&qnx->pad_state[controller->port];
    *state_cur = 0;
 
    for (i = 0; i < 20; i++)
@@ -140,142 +160,10 @@ static void process_gamepad_event(void *data,
       global->lifecycle_state ^= (1ULL << RARCH_MENU_TOGGLE);
 }
 
-static void handle_device(void *data, input_device_t* controller)
-{
-   int device;
-   qnx_input_t *qnx = (qnx_input_t*)data;
-
-   (void)device;
-
-   if (!qnx)
-      return;
-
-   /* Query libscreen for information about this device. */
-   screen_get_device_property_iv(controller->handle,
-         SCREEN_PROPERTY_TYPE, &controller->type);
-   screen_get_device_property_cv(controller->handle,
-         SCREEN_PROPERTY_ID_STRING, sizeof(controller->id), controller->id);
-   screen_get_device_property_cv(controller->handle,
-         SCREEN_PROPERTY_VENDOR, sizeof(controller->id), controller->vid);
-   screen_get_device_property_cv(controller->handle,
-         SCREEN_PROPERTY_PRODUCT, sizeof(controller->id), controller->pid);
-
-   if (controller->type == SCREEN_EVENT_GAMEPAD || 
-         controller->type == SCREEN_EVENT_JOYSTICK)
-   {
-      screen_get_device_property_iv(controller->handle,
-            SCREEN_PROPERTY_BUTTON_COUNT, &controller->buttonCount);
-
-      /* Check for the existence of analog sticks. */
-      if (!screen_get_device_property_iv(controller->handle,
-               SCREEN_PROPERTY_ANALOG0, controller->analog0))
-         ++controller->analogCount;
-
-      if (!screen_get_device_property_iv(controller->handle,
-               SCREEN_PROPERTY_ANALOG1, controller->analog1))
-         ++controller->analogCount;
-   }
-
-   /* Screen service will map supported controllers, 
-    * we still might need to adjust. */
-   qnx_input_autodetect_gamepad(qnx, controller, controller->port);
-
-   if (controller->type == SCREEN_EVENT_GAMEPAD)
-      RARCH_LOG("Gamepad Device Connected:\n");
-   else if (controller->type == SCREEN_EVENT_JOYSTICK)
-      RARCH_LOG("Joystick Device Connected:\n");
-   else if (controller->type == SCREEN_EVENT_KEYBOARD)
-      RARCH_LOG("Keyboard Device Connected:\n");
-
-   RARCH_LOG("\tID: %s\n", controller->id);
-   RARCH_LOG("\tVendor  ID: %s\n", controller->vid);
-   RARCH_LOG("\tProduct ID: %s\n", controller->pid);
-   RARCH_LOG("\tButton Count: %d\n", controller->buttonCount);
-   RARCH_LOG("\tAnalog Count: %d\n", controller->analogCount);
-}
-
-extern screen_context_t screen_ctx;
-
-static void discoverControllers(void *data)
-{
-   /* Get an array of all available devices. */
-   int deviceCount;
-   unsigned i;
-   screen_event_t *event;
-   qnx_input_t *qnx = (qnx_input_t*)data;
-
-   (void)event;
-
-   screen_get_context_property_iv(screen_ctx,
-         SCREEN_PROPERTY_DEVICE_COUNT, &deviceCount);
-   screen_device_t* devices_found = (screen_device_t*)
-      calloc(deviceCount, sizeof(screen_device_t));
-   screen_get_context_property_pv(screen_ctx,
-         SCREEN_PROPERTY_DEVICES, (void**)devices_found);
-
-   /* Scan the list for gamepad and joystick devices. */
-   for(i = 0; i < qnx->pads_connected; ++i)
-      initController(qnx, &qnx->devices[i]);
-
-   qnx->pads_connected = 0;
-
-   for (i = 0; i < deviceCount; i++)
-   {
-      int type;
-      screen_get_device_property_iv(
-            devices_found[i], SCREEN_PROPERTY_TYPE, &type);
-
-      if (
-            type == SCREEN_EVENT_GAMEPAD  || 
-            type == SCREEN_EVENT_JOYSTICK ||
-            type == SCREEN_EVENT_KEYBOARD)
-      {
-         qnx->devices[qnx->pads_connected].handle = devices_found[i];
-         qnx->devices[qnx->pads_connected].index = qnx->pads_connected;
-         handle_device(qnx, &qnx->devices[qnx->pads_connected]);
-
-         if (qnx->pads_connected == MAX_PADS)
-            break;
-      }
-   }
-
-   free(devices_found);
-}
-#endif
-
-static void initController(void *data, input_device_t* controller)
-{
-   qnx_input_t *qnx = (qnx_input_t*)data;
-
-   if (qnx)
-   {
-      /* Initialize controller values. */
-#ifdef HAVE_BB10
-      controller->handle      = 0;
-#endif
-      controller->type        = 0;
-      controller->analogCount = 0;
-      controller->buttonCount = 0;
-      controller->buttons     = 0;
-      controller->analog0[0]  = 0;
-      controller->analog0[1]  = 0;
-      controller->analog0[2]  = 0;
-      controller->analog1[0]  = 0;
-      controller->analog1[1]  = 0;
-      controller->analog1[2]  = 0;
-      controller->port        = -1;
-      controller->device      = -1;
-      controller->index       = -1;
-
-      memset(controller->id, 0, sizeof(controller->id));
-   }
-}
-
-static void qnx_input_autodetect_gamepad(void *data,
-      input_device_t* controller, int port)
+static void qnx_input_autodetect_gamepad(qnx_input_t *qnx,
+      qnx_input_device_t* controller, int port)
 {
    char name_buf[256];
-   qnx_input_t *qnx = (qnx_input_t*)data;
    settings_t *settings = config_get_ptr();
 
    if (!qnx)
@@ -325,23 +213,116 @@ static void qnx_input_autodetect_gamepad(void *data,
    }
 }
 
-static void process_keyboard_event(void *data,
+static void qnx_handle_device(qnx_input_t *qnx,
+      qnx_input_device_t* controller)
+{
+   if (!qnx)
+      return;
+
+   /* Query libscreen for information about this device. */
+   screen_get_device_property_iv(controller->handle,
+         SCREEN_PROPERTY_TYPE, &controller->type);
+   screen_get_device_property_cv(controller->handle,
+         SCREEN_PROPERTY_ID_STRING, sizeof(controller->id), controller->id);
+   screen_get_device_property_cv(controller->handle,
+         SCREEN_PROPERTY_VENDOR, sizeof(controller->id), controller->vid);
+   screen_get_device_property_cv(controller->handle,
+         SCREEN_PROPERTY_PRODUCT, sizeof(controller->id), controller->pid);
+
+   if (controller->type == SCREEN_EVENT_GAMEPAD || 
+         controller->type == SCREEN_EVENT_JOYSTICK)
+   {
+      screen_get_device_property_iv(controller->handle,
+            SCREEN_PROPERTY_BUTTON_COUNT, &controller->buttonCount);
+
+      /* Check for the existence of analog sticks. */
+      if (!screen_get_device_property_iv(controller->handle,
+               SCREEN_PROPERTY_ANALOG0, controller->analog0))
+         ++controller->analogCount;
+
+      if (!screen_get_device_property_iv(controller->handle,
+               SCREEN_PROPERTY_ANALOG1, controller->analog1))
+         ++controller->analogCount;
+   }
+
+   /* Screen service will map supported controllers, 
+    * we still might need to adjust. */
+   qnx_input_autodetect_gamepad(qnx, controller, controller->port);
+
+   if (controller->type == SCREEN_EVENT_GAMEPAD)
+      RARCH_LOG("Gamepad Device Connected:\n");
+   else if (controller->type == SCREEN_EVENT_JOYSTICK)
+      RARCH_LOG("Joystick Device Connected:\n");
+   else if (controller->type == SCREEN_EVENT_KEYBOARD)
+      RARCH_LOG("Keyboard Device Connected:\n");
+
+   RARCH_LOG("\tID: %s\n", controller->id);
+   RARCH_LOG("\tVendor  ID: %s\n", controller->vid);
+   RARCH_LOG("\tProduct ID: %s\n", controller->pid);
+   RARCH_LOG("\tButton Count: %d\n", controller->buttonCount);
+   RARCH_LOG("\tAnalog Count: %d\n", controller->analogCount);
+}
+
+extern screen_context_t screen_ctx;
+
+/* Find currently connected gamepads. */
+static void qnx_discover_controllers(qnx_input_t *qnx)
+{
+   /* Get an array of all available devices. */
+   int deviceCount;
+   unsigned i;
+
+   screen_get_context_property_iv(screen_ctx,
+         SCREEN_PROPERTY_DEVICE_COUNT, &deviceCount);
+   screen_device_t* devices_found = (screen_device_t*)
+      calloc(deviceCount, sizeof(screen_device_t));
+   screen_get_context_property_pv(screen_ctx,
+         SCREEN_PROPERTY_DEVICES, (void**)devices_found);
+
+   /* Scan the list for gamepad and joystick devices. */
+   for(i = 0; i < qnx->pads_connected; ++i)
+      qnx_init_controller(qnx, &qnx->devices[i]);
+
+   qnx->pads_connected = 0;
+
+   for (i = 0; i < deviceCount; i++)
+   {
+      int type;
+      screen_get_device_property_iv(
+            devices_found[i], SCREEN_PROPERTY_TYPE, &type);
+
+      if (
+            type == SCREEN_EVENT_GAMEPAD  || 
+            type == SCREEN_EVENT_JOYSTICK ||
+            type == SCREEN_EVENT_KEYBOARD)
+      {
+         qnx->devices[qnx->pads_connected].handle = devices_found[i];
+         qnx->devices[qnx->pads_connected].index = qnx->pads_connected;
+         qnx_handle_device(qnx, &qnx->devices[qnx->pads_connected]);
+
+         if (qnx->pads_connected == MAX_PADS)
+            break;
+      }
+   }
+
+   free(devices_found);
+}
+#endif
+
+static void qnx_process_keyboard_event(
+      qnx_input_t *qnx,
       screen_event_t event, int type)
 {
-   input_device_t* controller = NULL;
-   int i, b, sym, modifiers, flags, scan, cap;
-   qnx_input_t *qnx = (qnx_input_t*)data;
+   qnx_input_device_t* controller = NULL;
    settings_t *settings = config_get_ptr();
    global_t   *global   = global_get_ptr();
-
-   (void)type;
-
-   i = 0;
-   sym = 0;
-   modifiers = 0;
-   flags = 0;
-   scan = 0;
-   cap = 0;
+   int i = 0;
+   int sym = 0;
+   int modifiers = 0;
+   int flags = 0;
+   int scan = 0;
+   int cap = 0;
+   uint64_t *state_cur = NULL;
 
    /* Get Keyboard state. */
    screen_get_event_property_iv(event,
@@ -366,7 +347,7 @@ static void process_keyboard_event(void *data,
    {
       if (device == qnx->devices[i].handle)
       {
-         controller = (input_device_t*)&qnx->devices[i];
+         controller = (qnx_input_device_t*)&qnx->devices[i];
          break;
       }
    }
@@ -374,13 +355,13 @@ static void process_keyboard_event(void *data,
    if (!controller)
       return;
 #else
-   controller = (input_device_t*)&qnx->devices[0];
+   controller = (qnx_input_device_t*)&qnx->devices[0];
 #endif
 
    if(controller->port == -1)
       return;
 
-   uint64_t *state_cur = &qnx->pad_state[controller->port];
+   state_cur = &qnx->pad_state[controller->port];
    *state_cur = 0;
 
    for (b = 0; b < RARCH_FIRST_CUSTOM_BIND; ++b)
@@ -409,11 +390,11 @@ static void process_keyboard_event(void *data,
    }
 }
 
-static void process_touch_event(void *data, screen_event_t event, int type)
+static void qnx_process_touch_event(
+      qnx_input_t *qnx, screen_event_t event, int type)
 {
    int contact_id, pos[2];
    unsigned i, j;
-   qnx_input_t *qnx = (qnx_input_t*)data;
 
    screen_get_event_property_iv(event,
          SCREEN_PROPERTY_TOUCH_ID, (int*)&contact_id);
@@ -430,8 +411,8 @@ static void process_touch_event(void *data, screen_event_t event, int type)
             {
                qnx->pointer[i].contact_id = contact_id;
                input_translate_coord_viewport(pos[0], pos[1],
-                  &qnx->pointer[i].x, &qnx->pointer[i].y,
-                  &qnx->pointer[i].full_x, &qnx->pointer[i].full_y);
+                     &qnx->pointer[i].x, &qnx->pointer[i].y,
+                     &qnx->pointer[i].full_x, &qnx->pointer[i].full_y);
 
                /* Add this pointer to the map to signal it's valid. */
                qnx->pointer[i].map = qnx->pointer_count;
@@ -463,9 +444,9 @@ static void process_touch_event(void *data, screen_event_t event, int type)
                qnx->touch_map[qnx->pointer[i].map] = -1;
                for(j = qnx->pointer[i].map; j < qnx->pointer_count; ++j)
                {
-                 qnx->touch_map[j] = qnx->touch_map[j+1];
-                 qnx->pointer[qnx->touch_map[j+1]].map = j;
-                 qnx->touch_map[j+1] = -1;
+                  qnx->touch_map[j] = qnx->touch_map[j+1];
+                  qnx->pointer[qnx->touch_map[j+1]].map = j;
+                  qnx->touch_map[j+1] = -1;
                }
                qnx->pointer_count--;
                break;
@@ -519,12 +500,11 @@ static void process_touch_event(void *data, screen_event_t event, int type)
    }
 }
 
-static void handle_screen_event(void *data, bps_event_t *event)
+static void qnx_handle_screen_event(qnx_input_t *qnx, bps_event_t *event)
 {
    int type;
-   qnx_input_t *qnx = (qnx_input_t*)data;
-
    screen_event_t screen_event = screen_event_get_event(event);
+
    screen_get_event_property_iv(screen_event, SCREEN_PROPERTY_TYPE, &type);
 
    switch(type)
@@ -532,15 +512,15 @@ static void handle_screen_event(void *data, bps_event_t *event)
       case SCREEN_EVENT_MTOUCH_TOUCH:
       case SCREEN_EVENT_MTOUCH_RELEASE:
       case SCREEN_EVENT_MTOUCH_MOVE:
-         process_touch_event(data, screen_event, type);
+         qnx_process_touch_event(qnx, screen_event, type);
          break;
       case SCREEN_EVENT_KEYBOARD:
-         process_keyboard_event(data, screen_event, type);
+         qnx_process_keyboard_event(qnx, screen_event, type);
          break;
 #ifdef HAVE_BB10
       case SCREEN_EVENT_GAMEPAD:
       case SCREEN_EVENT_JOYSTICK:
-         process_gamepad_event(data, screen_event, type);
+         process_gamepad_event(qnx, screen_event, type);
          break;
       case SCREEN_EVENT_DEVICE:
          {
@@ -557,10 +537,11 @@ static void handle_screen_event(void *data, bps_event_t *event)
                screen_get_device_property_iv(device,
                      SCREEN_PROPERTY_TYPE, &type);
 
-            if (attached && (
-                     type == SCREEN_EVENT_GAMEPAD ||
-                     type == SCREEN_EVENT_JOYSTICK ||
-                     type == SCREEN_EVENT_KEYBOARD)
+            if (attached && 
+                  (
+                   type == SCREEN_EVENT_GAMEPAD ||
+                   type == SCREEN_EVENT_JOYSTICK ||
+                   type == SCREEN_EVENT_KEYBOARD)
                )
             {
                for (i = 0; i < MAX_PADS; ++i)
@@ -568,7 +549,7 @@ static void handle_screen_event(void *data, bps_event_t *event)
                   if (!qnx->devices[i].handle)
                   {
                      qnx->devices[i].handle = device;
-                     handle_device(data, &qnx->devices[i]);
+                     qnx_handle_device(qnx, &qnx->devices[i]);
                      break;
                   }
                }
@@ -581,7 +562,7 @@ static void handle_screen_event(void *data, bps_event_t *event)
                   {
                      RARCH_LOG("Device %s: Disconnected.\n",
                            qnx->devices[i].id);
-                     initController(data, &qnx->devices[i]);
+                     qnx_init_controller(qnx, &qnx->devices[i]);
                      break;
                   }
                }
@@ -594,14 +575,14 @@ static void handle_screen_event(void *data, bps_event_t *event)
    }
 }
 
-static void handle_navigator_event(void *data, bps_event_t *event)
+static void qnx_handle_navigator_event(
+      qnx_input_t *qnx, bps_event_t *event)
 {
    int rc;
    navigator_window_state_t state;
    bps_event_t *event_pause = NULL;
    global_t *global = global_get_ptr();
 
-   (void)data;
    (void)rc;
 
    switch (bps_event_get_code(event))
@@ -651,7 +632,8 @@ static void *qnx_input_init(void)
 {
    int i;
    settings_t *settings = config_get_ptr();
-   qnx_input_t *qnx = (qnx_input_t*)calloc(1, sizeof(*qnx));
+   qnx_input_t *qnx     = (qnx_input_t*)calloc(1, sizeof(*qnx));
+
    if (!qnx)
       return NULL;
 
@@ -661,17 +643,17 @@ static void *qnx_input_init(void)
       qnx->touch_map[i] = -1;
    }
 
-   qnx->joypad = input_joypad_init_driver(settings->input.joypad_driver);
+   qnx->joypad = input_joypad_init_driver(
+         settings->input.joypad_driver);
 
    for (i = 0; i < MAX_PADS; ++i)
    {
-      initController(qnx, &qnx->devices[i]);
+      qnx_init_controller(qnx, &qnx->devices[i]);
       qnx->port_device[i] = 0;
    }
 
 #ifdef HAVE_BB10
-   /* Find currently connected gamepads. */
-   discoverControllers(qnx);
+   qnx_discover_controllers(qnx);
 #else
    /* Initialize Playbook keyboard. */
    strlcpy(qnx->devices[0].id, "0A5C-8502",
@@ -685,10 +667,9 @@ static void *qnx_input_init(void)
 
 static void qnx_input_poll(void *data)
 {
-   int rc, domain;
    global_t *global = global_get_ptr();
+   qnx_input_t *qnx = (qnx_input_t*)data;
 
-   (void)data;
    global->lifecycle_state &= ~(1ULL << RARCH_MENU_TOGGLE);
 
    /* Request and process all available BPS events. */
@@ -696,19 +677,20 @@ static void qnx_input_poll(void *data)
    while(true)
    {
       bps_event_t *event = NULL;
-      rc = bps_get_event(&event, 0);
+      int rc = bps_get_event(&event, 0);
+
       if(rc == BPS_SUCCESS)
       {
-         if (event)
-         {
-            domain = bps_event_get_domain(event);
-            if (domain == navigator_get_domain())
-               handle_navigator_event(data, event);
-            else if (domain == screen_get_domain())
-               handle_screen_event(data, event);
-         }
-         else
+         int domain;
+
+         if (!event)
             break;
+
+         domain = bps_event_get_domain(event);
+         if (domain == navigator_get_domain())
+            qnx_handle_navigator_event(qnx, event);
+         else if (domain == screen_get_domain())
+            qnx_handle_screen_event(qnx, event);
       }
    }
 }
