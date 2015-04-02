@@ -144,7 +144,7 @@ typedef struct wiimote_t
    send_control_t send_control;
 
    /* Various state flags. */
-   int state;
+   uint32_t state;
    /* Currently lit LEDs. */
    uint8_t leds;
    /* Battery level. */
