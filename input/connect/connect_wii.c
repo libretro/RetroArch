@@ -19,6 +19,7 @@
 #include <stdlib.h>
 #include <boolean.h>
 #include <retro_miscellaneous.h>
+#include "joypad_connection.h"
 
 #define absf(x)                              ((x >= 0) ? (x) : (x * -1.0f))
 #define diff_f(x, y)                         ((x >= y) ? (absf(x - y)) : (absf(y - x)))
