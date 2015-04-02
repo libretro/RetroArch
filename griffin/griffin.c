@@ -371,7 +371,7 @@ INPUT
 #endif
 
 #include "../input/drivers/nullinput.c"
-#include "../input/drivers_joypad/nullinput_joypad.c"
+#include "../input/drivers_joypad/null_joypad.c"
 
 /*============================================================
 INPUT (HID)

@@ -166,7 +166,7 @@ OBJ += frontend/frontend.o \
 		audio/drivers/nullaudio.o \
 		input/drivers/nullinput.o \
 		input/drivers_hid/null_hid.o \
-		input/drivers_joypad/nullinput_joypad.o \
+		input/drivers_joypad/null_joypad.o \
 		input/drivers_joypad/hid_joypad.o \
 		playlist.o \
 		movie.o \
@@ -370,7 +370,7 @@ endif
 
 ifeq ($(HAVE_WINXINPUT), 1)
    DEFINES += -DHAVE_WINXINPUT -DHAVE_BUILTIN_AUTOCONFIG
-   OBJ += input/drivers_joypad/winxinput_joypad.o \
+   OBJ += input/drivers_joypad/xinput_joypad.o \
           input/autoconf/builtin_win.o
 endif
 
