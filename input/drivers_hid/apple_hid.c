@@ -26,11 +26,11 @@ typedef struct apple_hid
     joypad_connection_t *slots;
 } apple_hid_t;
 
-struct pad_connection
+struct apple_hid_adapter
 {
    uint32_t slot;
-   IOHIDDeviceRef device_handle;
-   char device_name[PATH_MAX_LENGTH];
+   IOHIDDeviceRef handle;
+   char name[PATH_MAX_LENGTH];
    uint8_t data[2048];
 };
 
@@ -117,35 +117,35 @@ static int16_t apple_hid_joypad_axis(void *data, unsigned port, uint32_t joyaxis
 
 static void apple_hid_device_send_control(void *data, uint8_t* data_buf, size_t size)
 {
-   struct pad_connection *connection = (struct pad_connection*)data;
+   struct apple_hid_adapter *adapter = (struct apple_hid_adapter*)data;
 
-   if (connection)
-      IOHIDDeviceSetReport(connection->device_handle,
+   if (adapter)
+      IOHIDDeviceSetReport(adapter->handle,
             kIOHIDReportTypeOutput, 0x01, data_buf + 1, size - 1);
 }
 
-static void apple_hid_device_report(void* context, IOReturn result, void *sender,
+static void apple_hid_device_report(void *data, IOReturn result, void *sender,
                                     IOHIDReportType type, uint32_t reportID, uint8_t *report,
                                     CFIndex reportLength)
 {
-    struct pad_connection* connection = (struct pad_connection*)context;
+    struct apple_hid_adapter *adapter = (struct apple_hid_adapter*)data;
     driver_t *driver = driver_get_ptr();
     apple_hid_t *hid = driver ? (apple_hid_t*)driver->hid_data : NULL;
     
-    if (connection)
-        pad_connection_packet(&hid->slots[connection->slot], connection->slot,
-                              connection->data, reportLength + 1);
+    if (adapter)
+        pad_connection_packet(&hid->slots[adapter->slot], adapter->slot,
+                              adapter->data, reportLength + 1);
 }
 
 /* NOTE: I pieced this together through trial and error,
  * any corrections are welcome. */
 
-static void apple_hid_device_input_callback(void* context, IOReturn result,
+static void apple_hid_device_input_callback(void *data, IOReturn result,
       void* sender, IOHIDValueRef value)
 {
    driver_t                  *driver = driver_get_ptr();
    apple_input_data_t         *apple = (apple_input_data_t*)driver->input_data;
-   struct pad_connection *connection = (struct pad_connection*)context;
+   struct apple_hid_adapter *adapter = (struct apple_hid_adapter*)data;
    IOHIDElementRef element           = IOHIDValueGetElement(value);
    uint32_t type                     = IOHIDElementGetType(element);
    uint32_t page                     = IOHIDElementGetUsagePage(element);
@@ -184,7 +184,7 @@ static void apple_hid_device_input_callback(void* context, IOReturn result,
                            if (use != axis_use_ids[i])
                               continue;
 
-                           apple->axes[connection->slot][i] =
+                           apple->axes[adapter->slot][i] =
                               ((val * 2.0f) - 1.0f) * 32767.0f;
                         }
                      }
@@ -202,9 +202,9 @@ static void apple_hid_device_input_callback(void* context, IOReturn result,
                   unsigned id = use - 1;
 
                   if (state)
-                     BIT64_SET(apple->buttons[connection->slot], id);
+                     BIT64_SET(apple->buttons[adapter->slot], id);
                   else
-                     BIT64_CLEAR(apple->buttons[connection->slot], id);
+                     BIT64_CLEAR(apple->buttons[adapter->slot], id);
                }
                break;
          }
@@ -212,26 +212,26 @@ static void apple_hid_device_input_callback(void* context, IOReturn result,
    }
 }
 
-static void apple_hid_device_remove(void* context, IOReturn result, void* sender)
+static void apple_hid_device_remove(void *data, IOReturn result, void* sender)
 {
    driver_t                  *driver = driver_get_ptr();
    apple_input_data_t         *apple = (apple_input_data_t*)driver->input_data;
-   struct pad_connection *connection = (struct pad_connection*)context;
+   struct apple_hid_adapter *adapter = (struct apple_hid_adapter*)data;
    apple_hid_t                  *hid = driver ? (apple_hid_t*)driver->hid_data : NULL;
 
-   if (connection && (connection->slot < MAX_USERS))
+   if (adapter && (adapter->slot < MAX_USERS))
    {
       char msg[PATH_MAX_LENGTH];
 
       snprintf(msg, sizeof(msg), "Joypad #%u (%s) disconnected.",
-            connection->slot, connection->device_name);
+            adapter->slot, adapter->name);
       rarch_main_msg_queue_push(msg, 0, 60, false);
 
-      apple->buttons[connection->slot] = 0;
-      memset(apple->axes[connection->slot], 0, sizeof(apple->axes));
+      apple->buttons[adapter->slot] = 0;
+      memset(apple->axes[adapter->slot], 0, sizeof(apple->axes));
 
-      pad_connection_pad_deinit(&hid->slots[connection->slot], connection->slot);
-      free(connection);
+      pad_connection_pad_deinit(&hid->slots[adapter->slot], adapter->slot);
+      free(adapter);
    }
 }
 
@@ -287,7 +287,7 @@ static void apple_hid_device_add_autodetect(unsigned idx,
    RARCH_LOG("Port %d: %s.\n", idx, device_name);
 }
 
-static void apple_hid_device_add(void* context, IOReturn result,
+static void apple_hid_device_add(void *data, IOReturn result,
       void* sender, IOHIDDeviceRef device)
 {
    IOReturn ret;
@@ -296,14 +296,14 @@ static void apple_hid_device_add(void* context, IOReturn result,
    settings_t *settings = config_get_ptr();
    driver_t   *driver   = driver_get_ptr();
    apple_hid_t     *hid = driver ? (apple_hid_t*)driver->hid_data : NULL;
-   struct pad_connection* connection = (struct pad_connection*)
-      calloc(1, sizeof(*connection));
+   struct apple_hid_adapter *adapter = (struct apple_hid_adapter*)
+      calloc(1, sizeof(*adapter));
     
-   if (!connection || !hid)
+   if (!adapter || !hid)
        return;
 
-   connection->device_handle = device;
-   connection->slot          = MAX_USERS;
+   adapter->handle        = device;
+   adapter->slot          = MAX_USERS;
 
    ret = IOHIDDeviceOpen(device, kIOHIDOptionsTypeNone);
     
@@ -313,36 +313,35 @@ static void apple_hid_device_add(void* context, IOReturn result,
    /* Move the device's run loop to this thread. */
    IOHIDDeviceScheduleWithRunLoop(device, CFRunLoopGetCurrent(),
          kCFRunLoopCommonModes);
-   IOHIDDeviceRegisterRemovalCallback(device, apple_hid_device_remove, connection);
+   IOHIDDeviceRegisterRemovalCallback(device, apple_hid_device_remove, adapter);
 
 #ifndef IOS
-    apple_hid_device_get_product_string(device, connection->device_name,
-                                 sizeof(connection->device_name));
+    apple_hid_device_get_product_string(device, adapter->name,
+                                 sizeof(adapter->name));
 #endif
 
    dev_vid = apple_hid_device_get_vendor_id  (device);
    dev_pid = apple_hid_device_get_product_id (device);
 
-   connection->slot = pad_connection_pad_init(hid->slots,
-        connection->device_name,
-         connection, &apple_hid_device_send_control);
+   adapter->slot = pad_connection_pad_init(hid->slots,
+        adapter->name, adapter, &apple_hid_device_send_control);
 
-   if (pad_connection_has_interface(hid->slots, connection->slot))
+   if (pad_connection_has_interface(hid->slots, adapter->slot))
       IOHIDDeviceRegisterInputReportCallback(device,
-            connection->data + 1, sizeof(connection->data) - 1,
-            apple_hid_device_report, connection);
+            adapter->data + 1, sizeof(adapter->data) - 1,
+            apple_hid_device_report, adapter);
    else
       IOHIDDeviceRegisterInputValueCallback(device,
-            apple_hid_device_input_callback, connection);
+            apple_hid_device_input_callback, adapter);
 
-   if (connection->device_name[0] == '\0')
+   if (adapter->name[0] == '\0')
       return;
 
-   strlcpy(settings->input.device_names[connection->slot],
-         connection->device_name, sizeof(settings->input.device_names));
+   strlcpy(settings->input.device_names[adapter->slot],
+         adapter->name, sizeof(settings->input.device_names));
     
-    apple_hid_device_add_autodetect(connection->slot,
-        connection->device_name, apple_hid.ident, dev_vid, dev_pid);
+    apple_hid_device_add_autodetect(adapter->slot,
+        adapter->name, apple_hid.ident, dev_vid, dev_pid);
     
 error:
    return;
