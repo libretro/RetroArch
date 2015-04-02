@@ -276,8 +276,7 @@ static void xdk360_free_font(void *data)
    if (m_xprResource.Initialized())
       m_xprResource.Destroy();
 
-   if (font)
-      free(font);
+   free(font);
    font = NULL;
 }
 
