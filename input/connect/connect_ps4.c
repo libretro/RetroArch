@@ -137,13 +137,13 @@ static bool hidpad_ps4_check_dpad(struct ps4 *rpt, unsigned id)
     switch (id)
     {
         case RETRO_DEVICE_ID_JOYPAD_UP:
-            return (rpt->btn.dpad == DPAD_LEFT_UP) || (rpt->btn.dpad == DPAD_UP) || (rpt->btn.dpad == DPAD_UP_RIGHT);
+            return (rpt->btn.dpad == DPAD_LEFT_UP)    || (rpt->btn.dpad == DPAD_UP)    || (rpt->btn.dpad == DPAD_UP_RIGHT);
         case RETRO_DEVICE_ID_JOYPAD_RIGHT:
-            return (rpt->btn.dpad == DPAD_UP_RIGHT) || (rpt->btn.dpad == DPAD_RIGHT) || (rpt->btn.dpad == DPAD_RIGHT_DOWN);
+            return (rpt->btn.dpad == DPAD_UP_RIGHT)   || (rpt->btn.dpad == DPAD_RIGHT) || (rpt->btn.dpad == DPAD_RIGHT_DOWN);
         case RETRO_DEVICE_ID_JOYPAD_DOWN:
-            return (rpt->btn.dpad == DPAD_RIGHT_DOWN) | (rpt->btn.dpad == DPAD_DOWN) || (rpt->btn.dpad == DPAD_DOWN_LEFT);
+            return (rpt->btn.dpad == DPAD_RIGHT_DOWN) || (rpt->btn.dpad == DPAD_DOWN)  || (rpt->btn.dpad == DPAD_DOWN_LEFT);
         case RETRO_DEVICE_ID_JOYPAD_LEFT:
-            return (rpt->btn.dpad == DPAD_DOWN_LEFT) || (rpt->btn.dpad == DPAD_LEFT) || (rpt->btn.dpad == DPAD_LEFT_UP);
+            return (rpt->btn.dpad == DPAD_DOWN_LEFT)  || (rpt->btn.dpad == DPAD_LEFT)  || (rpt->btn.dpad == DPAD_LEFT_UP);
     }
     
     return false;
