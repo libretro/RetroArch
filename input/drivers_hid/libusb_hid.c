@@ -127,9 +127,7 @@ static int add_adapter(void *data, struct libusb_device *dev)
 
 error:
    if (adapter->thread)
-   {
       sthread_join(adapter->thread);
-   }
    if (adapter)
       free(adapter);
    return -1;

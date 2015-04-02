@@ -19,11 +19,6 @@
 #include <stdlib.h>
 #include <boolean.h>
 #include <retro_miscellaneous.h>
-#include "joypad_connection.h"
-
-/* Convert to big endian */
-#define BIG_ENDIAN_LONG(i)                   (htonl(i))
-#define BIG_ENDIAN_SHORT(i)                  (htons(i))
 
 #define absf(x)                              ((x >= 0) ? (x) : (x * -1.0f))
 #define diff_f(x, y)                         ((x >= y) ? (absf(x - y)) : (absf(y - x)))
@@ -126,15 +121,14 @@ typedef struct classic_ctrl_t
    struct joystick_t rjs;
 } classic_ctrl_t;
 
-/*
- * Generic expansion device plugged into wiimote.
- */
+/* Generic expansion device plugged into wiimote. */
 typedef struct expansion_t
 {
    /* Type of expansion attached. */
    int type;
 
-   union {
+   union
+   {
       struct classic_ctrl_t classic;
    } cc;
 } expansion_t;
@@ -262,7 +256,7 @@ static void wiimote_set_leds(struct wiimote_t* wm, int leds)
 static void wiimote_pressed_buttons(struct wiimote_t* wm, uint8_t* msg)
 {
    /* Convert to big endian. */
-   int16_t now = BIG_ENDIAN_SHORT(*(int16_t*)msg) & WIIMOTE_BUTTON_ALL;
+   int16_t now = swap_if_little16(*(int16_t*)msg) & WIIMOTE_BUTTON_ALL;
 
    /* buttons pressed now. */
    wm->btns = now;
@@ -311,7 +305,7 @@ static void process_axis(struct axis_t* axis, uint8_t raw)
 
 static void classic_ctrl_event(struct classic_ctrl_t* cc, uint8_t* msg)
 {
-   cc->btns = ~BIG_ENDIAN_SHORT(*(int16_t*)(msg + 4)) & CLASSIC_CTRL_BUTTON_ALL;
+   cc->btns = ~swap_if_little16(*(int16_t*)(msg + 4)) & CLASSIC_CTRL_BUTTON_ALL;
    process_axis(&cc->ljs.x, (msg[0] & 0x3F));
    process_axis(&cc->ljs.y, (msg[1] & 0x3F));
    process_axis(&cc->rjs.x, ((msg[0] & 0xC0) >> 3) |
@@ -359,7 +353,7 @@ static int wiimote_write_data(struct wiimote_t* wm,
 #endif
 
    /* the offset is in big endian */
-   *(int*)(buf) = BIG_ENDIAN_LONG(addr);
+   *(int*)(buf) = swap_if_little32(addr);
 
    /* length */
    *(uint8_t*)(buf + 4) = len;
@@ -393,10 +387,9 @@ static int wiimote_read_data(struct wiimote_t* wm, uint32_t addr,
       return 0;
 
    /* the offset is in big endian */
-   *(int*)(buf)       = BIG_ENDIAN_LONG(addr);
-
+   *(int*)(buf)         = swap_if_little32(addr);
    /* the length is in big endian */
-   *(int16_t*)(buf + 4) = BIG_ENDIAN_SHORT(len);
+   *(int16_t*)(buf + 4) = swap_if_little16(len);
 
 #ifdef WIIMOTE_DBG
    printf("Request read at address: 0x%x  length: %i", addr, len);
@@ -552,7 +545,7 @@ static int wiimote_handshake(struct wiimote_t* wm,
                if(event !=  WM_RPT_READ)
                   return 0;
 
-               id = BIG_ENDIAN_LONG(*(int*)(data));
+               id = swap_if_little32(*(int*)(data));
 
 #ifdef WIIMOTE_DBG
                printf("Expansion id=0x%04x\n",id);
