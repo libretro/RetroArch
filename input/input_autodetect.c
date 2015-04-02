@@ -23,6 +23,16 @@
 
 #include "../general.h"
 
+enum
+{
+   AUTODETECT_MATCH_NONE = 0,
+   AUTODETECT_MATCH_VID,
+   AUTODETECT_MATCH_PID,
+   AUTODETECT_MATCH_IDENT,
+   AUTODETECT_MATCH_DRIVER,
+   AUTODETECT_MATCH_NAME,
+};
+
 static void input_autoconfigure_joypad_conf(config_file_t *conf,
       struct retro_keybind *binds)
 {
@@ -36,16 +46,6 @@ static void input_autoconfigure_joypad_conf(config_file_t *conf,
             input_config_bind_map[i].base, &binds[i]);
    }
 }
-
-enum
-{
-   AUTODETECT_MATCH_NONE = 0,
-   AUTODETECT_MATCH_VID,
-   AUTODETECT_MATCH_PID,
-   AUTODETECT_MATCH_IDENT,
-   AUTODETECT_MATCH_DRIVER,
-   AUTODETECT_MATCH_NAME,
-};
 
 static bool input_try_autoconfigure_joypad_from_conf(config_file_t *conf,
       autoconfig_params_t *params, unsigned *match)
