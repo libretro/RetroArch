@@ -24,14 +24,15 @@
 
 typedef struct GLYPH_ATTR
 {
-   unsigned short tu1, tv1, tu2, tv2;   /* Texture coordinates for the image. */
-   short wOffset;                       /* Pixel offset for glyph start. */
-   short wWidth;                        /* Pixel width of the glyph. */
-   short wAdvance;                      /* Pixels to advance after the glyph. */
-   unsigned short wMask;
+   uint16_t tu1, tv1, tu2, tv2;   /* Texture coordinates for the image. */
+   int16_t wOffset;                       /* Pixel offset for glyph start. */
+   int16_t wWidth;                        /* Pixel width of the glyph. */
+   int16_t wAdvance;                      /* Pixels to advance after the glyph. */
+   uint16_t wMask;
 } GLYPH_ATTR;
 
-typedef struct {
+typedef struct
+{
    D3DVertexDeclaration *m_pFontVertexDecl;
    D3DVertexShader *m_pFontVertexShader;
    D3DPixelShader *m_pFontPixelShader;
@@ -41,9 +42,9 @@ typedef struct
 {
    Font_Locals_t s_FontLocals;
    d3d_video_t *d3d;
-   unsigned long m_dwSavedState;
-   unsigned long m_cMaxGlyph;           /* Number of entries in the translator table. */
-   unsigned long m_dwNumGlyphs;         /* Number of valid glyphs. */
+   uint32_t m_dwSavedState;
+   uint32_t m_cMaxGlyph;                /* Number of entries in the translator table. */
+   uint32_t m_dwNumGlyphs;              /* Number of valid glyphs. */
    float m_fFontHeight;                 /* Height of the font strike in pixels. */
    float m_fFontTopPadding;             /* Padding above the strike zone. */
    float m_fFontBottomPadding;          /* Padding below the strike zone. */
@@ -53,23 +54,24 @@ typedef struct
    const GLYPH_ATTR* m_Glyphs;          /* Array of glyphs. */
 } xdk360_video_font_t;
 
-static PackedResource m_xprResource;
 
-#define CALCFONTFILEHEADERSIZE(x) ( sizeof(unsigned long) + (sizeof(float)* 4) + sizeof(unsigned short) + (sizeof(wchar_t)*(x)) )
+#define CALCFONTFILEHEADERSIZE(x) ( sizeof(uint32_t) + (sizeof(float)* 4) + sizeof(uint16_t) + (sizeof(wchar_t)*(x)) )
 #define FONTFILEVERSION 5
 
-typedef struct {
-   unsigned long m_dwFileVersion;       /* Version of the font file (Must match FONTFILEVERSION). */
+typedef struct
+{
+   uint32_t m_dwFileVersion;            /* Version of the font file (Must match FONTFILEVERSION). */
    float m_fFontHeight;                 /* Height of the font strike in pixels. */
    float m_fFontTopPadding;             /* Padding above the strike zone. */
    float m_fFontBottomPadding;          /* Padding below the strike zone. */
    float m_fFontYAdvance;               /* Number of pixels to move the cursor for a line feed. */
-   unsigned short m_cMaxGlyph;          /* Number of font characters (Should be an odd number to maintain DWORD Alignment). */
+   uint16_t m_cMaxGlyph;                /* Number of font characters (Should be an odd number to maintain DWORD Alignment). */
    wchar_t m_TranslatorTable[1];        /* ASCII to Glyph lookup table, NOTE: It's m_cMaxGlyph+1 in size. */
 } FontFileHeaderImage_t;
 
-typedef struct {
-   unsigned long m_dwNumGlyphs;         /* Size of font strike array (First entry is the unknown glyph). */
+typedef struct
+{
+   uint32_t m_dwNumGlyphs;              /* Size of font strike array (First entry is the unknown glyph). */
    GLYPH_ATTR m_Glyphs[1];              /* Array of font strike uv's etc... NOTE: It's m_dwNumGlyphs in size. */
 } FontFileStrikesImage_t; 
 
@@ -104,6 +106,7 @@ static const char g_strFontShader[] =
 "return FontTexel;\n"
 "}\n";
 
+static PackedResource m_xprResource;
 
 static HRESULT xdk360_video_font_create_shaders(xdk360_video_font_t * font)
 {
@@ -140,7 +143,7 @@ static HRESULT xdk360_video_font_create_shaders(xdk360_video_font_t * font)
 
          if (hr >= 0)
          {
-            hr = d3dr->CreateVertexShader( ( unsigned long * )pShaderCode->GetBufferPointer(),
+            hr = d3dr->CreateVertexShader((uint32_t*)pShaderCode->GetBufferPointer(),
                   &font->s_FontLocals.m_pFontVertexShader );
             pShaderCode->Release();
 
@@ -178,10 +181,10 @@ static HRESULT xdk360_video_font_create_shaders(xdk360_video_font_t * font)
 static void *xdk360_init_font(void *video_data,
       const char *font_path, float font_size)
 {
-   unsigned long dwFileVersion;
+   uint32_t dwFileVersion;
    const void *pFontData       = NULL;
    D3DTexture *pFontTexture    = NULL;
-   const unsigned char * pData = NULL;
+   const uint8_t * pData       = NULL;
    xdk360_video_font_t *font = (xdk360_video_font_t*)calloc(1, sizeof(*font));
 
    if (!font)
@@ -208,7 +211,7 @@ static void *xdk360_init_font(void *video_data,
    font->m_pFontTexture       = pFontTexture;
 
    /* Check version of file (to make sure it matches up with the FontMaker tool). */
-   pData                      = (const unsigned char*)pFontData;
+   pData                      = (const uint8_t*)pFontData;
    dwFileVersion              = ((const FontFileHeaderImage_t *)pData)->m_dwFileVersion;
 
    if (dwFileVersion != FONTFILEVERSION)
@@ -327,7 +330,7 @@ static void xdk360_render_msg_pre(xdk360_video_font_t * font)
 static void xdk360_draw_text(xdk360_video_font_t *font,
       float x, float y, const wchar_t * strText)
 {
-   unsigned long dwNumChars;
+   uint32_t dwNumChars;
    volatile float *pVertex;
    float vColor[4], m_fCursorX, m_fCursorY;
    LPDIRECT3DDEVICE d3dr = font->d3d->dev;
@@ -365,7 +368,7 @@ static void xdk360_draw_text(xdk360_video_font_t *font,
    while (*strText)
    {
       float fOffset, fAdvance, fWidth, fHeight;
-      unsigned long tu1, tu2, tv1, tv2;
+      uint32_t tu1, tu2, tv1, tv2;
       const GLYPH_ATTR *pGlyph;
       wchar_t letter = *strText++; /* Get the current letter in the string */
 
@@ -426,10 +429,10 @@ static void xdk360_draw_text(xdk360_video_font_t *font,
       pVertex[12] = m_fCursorX;
       pVertex[13] = m_fCursorY + fHeight;
 #ifndef LSB_FIRST
-      ((volatile unsigned long *)pVertex)[2]  = (tu1 << 16) | tv1;         // Merged using big endian rules
-      ((volatile unsigned long *)pVertex)[6]  = (tu2 << 16) | tv1;         // Merged using big endian rules
-      ((volatile unsigned long *)pVertex)[10] = (tu2 << 16) | tv2;        // Merged using big endian rules
-      ((volatile unsigned long *)pVertex)[14] = (tu1 << 16) | tv2;        // Merged using big endian rules
+      ((volatile uint32_t *)pVertex)[2]  = (tu1 << 16) | tv1;         // Merged using big endian rules
+      ((volatile uint32_t *)pVertex)[6]  = (tu2 << 16) | tv1;         // Merged using big endian rules
+      ((volatile uint32_t*)pVertex)[10] = (tu2 << 16) | tv2;        // Merged using big endian rules
+      ((volatile uint32_t*)pVertex)[14] = (tu1 << 16) | tv2;        // Merged using big endian rules
 #endif
       pVertex[15] = 0;
       pVertex += 16;
