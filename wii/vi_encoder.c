@@ -43,8 +43,6 @@
 #include "../gfx/drivers/ppc_asm.h"
 #include <retro_inline.h>
 
-#include "vi_encoder.h"
-
 /****************************************************************************
  *  I2C driver by Hector Martin (marcan)
  *
