@@ -51,7 +51,7 @@ static void adapter_thread(void *data)
    }
 }
 
-static int add_adapter(struct libusb_device *dev)
+static int add_adapter(void *data, struct libusb_device *dev)
 {
    int rc;
    struct libusb_device_descriptor desc;
@@ -133,7 +133,7 @@ error:
    return -1;
 }
 
-static int remove_adapter(struct libusb_device *dev)
+static int remove_adapter(void *data, struct libusb_device *dev)
 {
    struct libusb_adapter *adapter = (struct libusb_adapter*)&adapters;
 
@@ -165,14 +165,15 @@ static int remove_adapter(struct libusb_device *dev)
 static int libusb_hid_hotplug_callback(struct libusb_context *ctx,
       struct libusb_device *dev, libusb_hotplug_event event, void *user_data)
 {
+   libusb_hid_t *hid = (libusb_hid_t*)user_data;
 
    switch (event)
    {
       case LIBUSB_HOTPLUG_EVENT_DEVICE_ARRIVED:
-         add_adapter(dev);
+         add_adapter(hid, dev);
          break;
       case LIBUSB_HOTPLUG_EVENT_DEVICE_LEFT:
-         remove_adapter(dev);
+         remove_adapter(hid, dev);
          break;
       default:
          fprintf(stderr, "Unhandled event: %d\n", event);
@@ -239,7 +240,7 @@ static void libusb_hid_free(void *data)
    libusb_hid_t *hid = (libusb_hid_t*)data;
 
    while(adapters.next)
-      remove_adapter(adapters.next->device);
+      remove_adapter(hid, adapters.next->device);
 
    libusb_hotplug_deregister_callback(NULL, hid->hp);
 
@@ -274,7 +275,7 @@ static void *libusb_hid_init(void)
       libusb_get_device_descriptor(devices[i], &desc);
 
       if (desc.idVendor > 0 && desc.idProduct > 0)
-         add_adapter(devices[i]);
+         add_adapter(hid, devices[i]);
    }
 
    if (count > 0)
@@ -287,7 +288,7 @@ static void *libusb_hid_init(void)
          LIBUSB_HOTPLUG_MATCH_ANY,
          LIBUSB_HOTPLUG_MATCH_ANY,
          libusb_hid_hotplug_callback,
-         NULL,
+         hid,
          &hid->hp);
 
    if (ret != LIBUSB_SUCCESS)
