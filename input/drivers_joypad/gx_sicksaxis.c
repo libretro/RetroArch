@@ -1,4 +1,4 @@
-#include "gx_input_sicksaxis.h"
+#include "gx_sicksaxis.h"
 #include <gccore.h>
 #include <stdio.h>
 #include <string.h>

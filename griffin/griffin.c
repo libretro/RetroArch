@@ -304,26 +304,26 @@ INPUT
 
 #if defined(__CELLOS_LV2__)
 #include "../input/drivers/ps3_input.c"
-#include "../input/drivers_joypad/ps3_input_joypad.c"
+#include "../input/drivers_joypad/ps3_joypad.c"
 #include "../input/autoconf/builtin_ps3.c"
 #elif defined(SN_TARGET_PSP2) || defined(PSP)
 #include "../input/drivers/psp_input.c"
-#include "../input/drivers_joypad/psp_input_joypad.c"
+#include "../input/drivers_joypad/psp_joypad.c"
 #include "../input/autoconf/builtin_psp.c"
 #elif defined(_3DS)
 #include "../input/drivers/ctr_input.c"
-#include "../input/drivers_joypad/ctr_input_joypad.c"
+#include "../input/drivers_joypad/ctr_joypad.c"
 #include "../input/autoconf/builtin_ctr.c"
 #elif defined(GEKKO)
 #ifdef HAVE_LIBSICKSAXIS
-#include "../input/drivers_joypad/gx_input_sicksaxis.c"
+#include "../input/drivers_joypad/gx_sicksaxis.c"
 #endif
 #include "../input/drivers/gx_input.c"
-#include "../input/drivers_joypad/gx_input_joypad.c"
+#include "../input/drivers_joypad/gx_joypad.c"
 #include "../input/autoconf/builtin_gx.c"
 #elif defined(_XBOX)
 #include "../input/drivers/xdk_xinput_input.c"
-#include "../input/drivers_joypad/xdk_xinput_input_joypad.c"
+#include "../input/drivers_joypad/xdk_joypad.c"
 #include "../input/autoconf/builtin_xdk.c"
 #elif defined(_WIN32)
 #include "../input/autoconf/builtin_win.c"
@@ -331,12 +331,12 @@ INPUT
 #include "../input/drivers/xenon360_input.c"
 #elif defined(ANDROID)
 #include "../input/drivers/android_input.c"
-#include "../input/drivers_joypad/android_input_joypad.c"
+#include "../input/drivers_joypad/android_joypad.c"
 #elif defined(__APPLE__)
 #include "../input/drivers/apple_input.c"
 #elif defined(__QNX__)
 #include "../input/drivers/qnx_input.c"
-#include "../input/drivers_joypad/qnx_input_joypad.c"
+#include "../input/drivers_joypad/qnx_joypad.c"
 #elif defined(EMSCRIPTEN)
 #include "../input/drivers/rwebinput_input.c"
 #endif
@@ -345,7 +345,7 @@ INPUT
 #include "../apple/iOS/bluetooth/btdynamic.c"
 #include "../apple/iOS/bluetooth/btpad.c"
 #include "../apple/iOS/bluetooth/btpad_queue.c"
-#include "../input/drivers_joypad/apple_joypad_ios.c"
+#include "../input/drivers_joypad/ios_joypad.c"
 #endif
 
 #ifdef HAVE_DINPUT
@@ -353,7 +353,7 @@ INPUT
 #endif
 
 #ifdef HAVE_WINXINPUT
-#include "../input/drivers_joypad/winxinput_joypad.c"
+#include "../input/drivers_joypad/xinput_joypad.c"
 #endif
 
 #if defined(__linux__) && !defined(ANDROID)
