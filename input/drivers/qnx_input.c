@@ -80,6 +80,8 @@ typedef struct qnx_input
    uint64_t pad_state[MAX_PADS];
 } qnx_input_t;
 
+extern screen_context_t screen_ctx;
+
 static void qnx_init_controller(qnx_input_t *qnx, qnx_input_device_t* controller)
 {
    if (!qnx)
@@ -107,7 +109,8 @@ static void qnx_init_controller(qnx_input_t *qnx, qnx_input_device_t* controller
 }
 
 #ifdef HAVE_BB10
-static void process_gamepad_event(qnx_input_t *qnx,
+static void qnx_process_gamepad_event(
+      qnx_input_t *qnx,
       screen_event_t screen_event, int type)
 {
    int i;
@@ -263,7 +266,6 @@ static void qnx_handle_device(qnx_input_t *qnx,
    RARCH_LOG("\tAnalog Count: %d\n", controller->analogCount);
 }
 
-extern screen_context_t screen_ctx;
 
 /* Find currently connected gamepads. */
 static void qnx_discover_controllers(qnx_input_t *qnx)
@@ -520,7 +522,7 @@ static void qnx_handle_screen_event(qnx_input_t *qnx, bps_event_t *event)
 #ifdef HAVE_BB10
       case SCREEN_EVENT_GAMEPAD:
       case SCREEN_EVENT_JOYSTICK:
-         process_gamepad_event(qnx, screen_event, type);
+         qnx_process_gamepad_event(qnx, screen_event, type);
          break;
       case SCREEN_EVENT_DEVICE:
          {
