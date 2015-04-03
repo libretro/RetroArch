@@ -58,11 +58,9 @@ static uint64_t apple_hid_joypad_get_buttons(void *data, unsigned port)
 
 static bool apple_hid_joypad_button(void *data, unsigned port, uint16_t joykey)
 {
-   driver_t          *driver = driver_get_ptr();
-   apple_input_data_t *apple = (apple_input_data_t*)driver->input_data;
    uint64_t buttons          = apple_hid_joypad_get_buttons(data, port);
 
-   if (!apple || joykey == NO_BTN)
+   if (joykey == NO_BTN)
       return false;
 
    /* Check hat. */
@@ -71,8 +69,7 @@ static bool apple_hid_joypad_button(void *data, unsigned port, uint16_t joykey)
 
    /* Check the button. */
    if ((port < MAX_USERS) && (joykey < 32))
-      return ((apple->buttons[port] & (1 << joykey)) != 0) ||
-         ((buttons & (1 << joykey)) != 0);
+      return ((buttons & (1 << joykey)) != 0);
    return false;
 }
 
@@ -87,26 +84,22 @@ static bool apple_hid_joypad_rumble(void *data, unsigned pad,
 
 static int16_t apple_hid_joypad_axis(void *data, unsigned port, uint32_t joyaxis)
 {
-   driver_t          *driver = driver_get_ptr();
-   apple_hid_t        *hid   = (apple_hid_t*)data;
-   apple_input_data_t *apple = (apple_input_data_t*)driver->input_data;
-   int16_t val = 0;
+   apple_hid_t          *hid = (apple_hid_t*)data;
+   int16_t               val = 0;
 
-   if (!apple || joyaxis == AXIS_NONE)
+   if (joyaxis == AXIS_NONE)
       return 0;
 
    if (AXIS_NEG_GET(joyaxis) < 4)
    {
-      val = apple->axes[port][AXIS_NEG_GET(joyaxis)];
-      val += pad_connection_get_axis(&hid->slots[port], port, AXIS_NEG_GET(joyaxis));
+      val = pad_connection_get_axis(&hid->slots[port], port, AXIS_NEG_GET(joyaxis));
 
       if (val >= 0)
          val = 0;
    }
    else if(AXIS_POS_GET(joyaxis) < 4)
    {
-      val = apple->axes[port][AXIS_POS_GET(joyaxis)];
-      val += pad_connection_get_axis(&hid->slots[port], port, AXIS_POS_GET(joyaxis));
+      val = pad_connection_get_axis(&hid->slots[port], port, AXIS_POS_GET(joyaxis));
 
       if (val <= 0)
          val = 0;
