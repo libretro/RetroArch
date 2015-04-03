@@ -337,7 +337,7 @@ error:
    return NULL;
 }
 
-static void check_window(sdl_video_t *vid)
+static void sdl_gfx_check_window(sdl_video_t *vid)
 {
    SDL_Event event;
 
@@ -353,7 +353,7 @@ static void check_window(sdl_video_t *vid)
 }
 
 static bool sdl_gfx_frame(void *data, const void *frame, unsigned width,
-                          unsigned height, unsigned pitch, const char *msg)
+      unsigned height, unsigned pitch, const char *msg)
 {
    char buf[128];
    sdl_video_t *vid = (sdl_video_t*)data;
@@ -397,7 +397,7 @@ static void sdl_gfx_set_nonblock_state(void *data, bool state)
 static bool sdl_gfx_alive(void *data)
 {
    sdl_video_t *vid = (sdl_video_t*)data;
-   check_window(vid);
+   sdl_gfx_check_window(vid);
    return !vid->quitting;
 }
 
@@ -481,12 +481,12 @@ static void sdl_apply_state_changes(void *data)
 }
 
 static void sdl_set_texture_frame(void *data, const void *frame, bool rgb32,
-                               unsigned width, unsigned height, float alpha)
+      unsigned width, unsigned height, float alpha)
 {
-   (void) alpha;
+   enum scaler_pix_fmt format = rgb32 ? SCALER_FMT_ARGB8888 : SCALER_FMT_RGBA4444;
    sdl_video_t *vid = (sdl_video_t*)data;
 
-   enum scaler_pix_fmt format = rgb32 ? SCALER_FMT_ARGB8888 : SCALER_FMT_RGBA4444;
+   (void)alpha;
 
    sdl_update_scaler(vid->menu.frame, &vid->menu.scaler, format, width, height,
                      width * (rgb32 ? sizeof(uint32_t) : sizeof(uint16_t)));
@@ -497,22 +497,26 @@ static void sdl_set_texture_frame(void *data, const void *frame, bool rgb32,
 
 static void sdl_set_texture_enable(void *data, bool state, bool full_screen)
 {
-   (void) full_screen;
-
    sdl_video_t *vid = (sdl_video_t*)data;
+
+   (void)full_screen;
+
    vid->menu.active = state;
 }
 
 static void sdl_show_mouse(void *data, bool state)
 {
    (void)data;
+
    SDL_ShowCursor(state);
 }
 
 static void sdl_grab_mouse_toggle(void *data)
 {
-   (void)data;
    const SDL_GrabMode mode = SDL_WM_GrabInput(SDL_GRAB_QUERY);
+
+   (void)data;
+
    SDL_WM_GrabInput(mode == SDL_GRAB_ON ? SDL_GRAB_OFF : SDL_GRAB_ON);
 }
 
@@ -541,6 +545,7 @@ static const video_poke_interface_t sdl_poke_interface = {
 static void sdl_get_poke_interface(void *data, const video_poke_interface_t **iface)
 {
    (void)data;
+
    *iface = &sdl_poke_interface;
 }
 

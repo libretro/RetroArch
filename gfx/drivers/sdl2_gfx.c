@@ -640,8 +640,6 @@ void sdl2_poke_set_filtering(void *data, unsigned index, bool smooth)
    sdl2_video_t *vid = (sdl2_video_t*)data;
    vid->video.smooth = smooth;
 
-//   sdl_refresh_renderer(vid);
-
    sdl_tex_zero(&vid->frame);
 }
 
