@@ -18,7 +18,7 @@
 #define __IOS_RARCH_BTDYNAMIC_H__
 
 #include <boolean.h>
-#include "btstack/btstack.h"
+#include "btstack.h"
 
 bool btstack_try_load(void);
 void btstack_set_poweron(bool on);

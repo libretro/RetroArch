@@ -17,7 +17,7 @@
 #ifndef __IOS_RARCH_BTPAD_H__
 #define __IOS_RARCH_BTPAD_H__
 
-#include "btstack/btstack.h"
+#include "btstack.h"
 
 void btpad_set_inquiry_state(bool on);
 
