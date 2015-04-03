@@ -71,9 +71,7 @@ static CFRunLoopSourceRef btstack_quit_source;
 bool btstack_try_load(void)
 {
    unsigned i;
-   void *handle = NULL;
-    
-   assert(sizeof(void**) == sizeof(void(*)()));
+   void *handle   = NULL;
 
    if (btstack_tested)
       return btstack_loaded;
@@ -84,10 +82,7 @@ bool btstack_try_load(void)
    handle = dylib_load("/usr/lib/libBTstack.dylib");
 
    if (!handle)
-   {
-      RARCH_ERR("[BTstack]: Not loaded\n");
       return false;
-   }
 
    for (i = 0; grabbers[i].name; i ++)
    {
@@ -95,8 +90,6 @@ bool btstack_try_load(void)
 
       if (!*grabbers[i].target)
       {
-         RARCH_ERR("[BTstack]: Symbol %s not found, not loaded.\n", grabbers[i].name);
-
          dylib_close(handle);
          return false;
       }
@@ -105,7 +98,6 @@ bool btstack_try_load(void)
    run_loop_init_ptr(RUN_LOOP_COCOA);
    bt_register_packet_handler_ptr(btpad_packet_handler);
 
-   RARCH_LOG("[BTstack]: Loaded.\n");
    btstack_loaded = true;
 
    return true;
@@ -122,10 +114,7 @@ static void btstack_thread_func(void* data)
    RARCH_LOG("[BTstack]: Thread started");
 
    if (bt_open_ptr())
-   {
-      RARCH_LOG("[BTstack]: bt_open() failed\n");
       return;
-   }
 
    CFRunLoopSourceContext ctx = { 0, 0, 0, 0, 0, 0, 0, 0, 0, btstack_thread_stop };
    btstack_quit_source = CFRunLoopSourceCreate(0, 0, &ctx);
