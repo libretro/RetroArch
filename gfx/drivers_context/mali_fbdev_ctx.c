@@ -38,7 +38,8 @@ static bool g_resize;
 static unsigned g_width, g_height;
 
 static volatile sig_atomic_t g_quit;
-static void sighandler(int sig)
+
+static void gfx_ctx_mali_fbdev_sighandler(int sig)
 {
    (void)sig;
    g_quit = 1;
@@ -54,6 +55,7 @@ static void gfx_ctx_mali_fbdev_set_swap_interval(
 
 static void gfx_ctx_mali_fbdev_destroy(void *data)
 {
+   int fd;
    (void)data;
 
    if (g_egl_dpy != EGL_NO_DISPLAY)
@@ -80,7 +82,7 @@ static void gfx_ctx_mali_fbdev_destroy(void *data)
    g_resize       = false;
 
    /* Clear framebuffer and set cursor on again */
-   int fd = open("/dev/tty", O_RDWR);
+   fd = open("/dev/tty", O_RDWR);
    ioctl(fd,VT_ACTIVATE,5);
    ioctl(fd,VT_ACTIVATE,1);
    close (fd);
@@ -120,7 +122,7 @@ static bool gfx_ctx_mali_fbdev_init(void *data)
    };
    struct sigaction sa = {{0}};
 
-   sa.sa_handler = sighandler;
+   sa.sa_handler = gfx_ctx_mali_fbdev_sighandler;
    sa.sa_flags   = SA_RESTART;
    sigemptyset(&sa.sa_mask);
    sigaction(SIGINT, &sa, NULL);
@@ -227,13 +229,13 @@ static bool gfx_ctx_mali_fbdev_set_video_mode(void *data,
    }
    close (fb);
    
-   width = vinfo.xres;
-   height = vinfo.yres;
+   width                = vinfo.xres;
+   height               = vinfo.yres;
 
-   g_width = width;
-   g_height = height;
+   g_width              = width;
+   g_height             = height;
 
-   native_window.width = vinfo.xres;
+   native_window.width  = vinfo.xres;
    native_window.height = vinfo.yres;
 
    if ((g_egl_surf = eglCreateWindowSurface(g_egl_dpy, g_egl_config, &native_window, 0)) == EGL_NO_SURFACE)
