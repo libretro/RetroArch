@@ -15,7 +15,7 @@
  */
 #include <stdio.h>
 #include <assert.h>
-#include <dlfcn.h>
+#include "../../../dynamic.h"
 #include <CoreFoundation/CFRunLoop.h>
 #include <rthreads/rthreads.h>
 
@@ -81,7 +81,7 @@ bool btstack_try_load(void)
    btstack_tested = true;
    btstack_loaded = false;
 
-   handle = dlopen("/usr/lib/libBTstack.dylib", RTLD_LAZY);
+   handle = dylib_load("/usr/lib/libBTstack.dylib");
 
    if (!handle)
    {
@@ -91,13 +91,13 @@ bool btstack_try_load(void)
 
    for (i = 0; grabbers[i].name; i ++)
    {
-      *grabbers[i].target = dlsym(handle, grabbers[i].name);
+      *grabbers[i].target = dylib_proc(handle, grabbers[i].name);
 
       if (!*grabbers[i].target)
       {
          RARCH_ERR("[BTstack]: Symbol %s not found, not loaded.\n", grabbers[i].name);
 
-         dlclose(handle);
+         dylib_close(handle);
          return false;
       }
    }
