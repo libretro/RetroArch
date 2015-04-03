@@ -386,7 +386,7 @@ void linked_list_add(linked_list_t * list, linked_item_t *item);
 
 void linked_list_add_tail(linked_list_t * list, linked_item_t *item);
 
-int  linked_list_remove(linked_list_t * list, linked_item_t *item)
+int  linked_list_remove(linked_list_t * list, linked_item_t *item);
 
 linked_item_t * linked_list_get_last_item(linked_list_t * list);
 
@@ -467,22 +467,22 @@ uint32_t embedded_get_ticks(void);
 #endif
 
 /* utils.h */
+    
+/* Length of a Bluetooth device address. */
+#define BD_ADDR_LEN        6
+    
+/* The link key type. */
+#define LINK_KEY_LEN       16
+    
+/* The device name type. */
+#define DEVICE_NAME_LEN    248
 
 /* Connection handle type. */
 typedef uint16_t hci_con_handle_t;
 
 typedef uint8_t bd_addr_t[BD_ADDR_LEN];
 typedef uint8_t link_key_t[LINK_KEY_LEN]; 
-typedef uint8_t device_name_t[DEVICE_NAME_LEN+1]; 
-
-/* Length of a Bluetooth device address. */
-#define BD_ADDR_LEN        6
-
-/* The link key type. */
-#define LINK_KEY_LEN       16
-
-/* The device name type. */
-#define DEVICE_NAME_LEN    248
+typedef uint8_t device_name_t[DEVICE_NAME_LEN+1];
 	
 /* helper for BT little endian format. */
 #define READ_BT_16( buffer, pos) ( ((uint16_t) buffer[pos]) | (((uint16_t)buffer[pos+1]) << 8))

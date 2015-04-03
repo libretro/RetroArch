@@ -18,7 +18,6 @@
 #define __IOS_RARCH_BTDYNAMIC_H__
 
 #include <boolean.h>
-#include "btstack/utils.h"
 #include "btstack/btstack.h"
 
 bool btstack_try_load(void);
