@@ -14,8 +14,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-// I take back everything I ever said about bad bluetooth stacks, this shit is hard.
-
 #include <sys/types.h>
 #include <sys/sysctl.h>
 #include <stdio.h>
