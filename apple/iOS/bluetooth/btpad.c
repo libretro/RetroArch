@@ -101,7 +101,10 @@ static uint32_t insert_position;
 static uint32_t read_position;
 static uint32_t can_run;
 
-#define INCPOS(POS) { POS##_position = (POS##_position + 1) % 64; }
+static void btpad_increment_position(uint32_t *ptr)
+{
+   *ptr = (*ptr + 1) % 64;
+}
 
 static void btpad_queue_process_cmd(struct btpad_queue_command *cmd)
 {
@@ -147,7 +150,7 @@ static void btpad_queue_process(void)
    {
       struct btpad_queue_command* cmd = &commands[read_position];
       btpad_queue_process_cmd(cmd);
-      INCPOS(read);
+      btpad_increment_position(&read_position);
    }
 }
 
@@ -175,7 +178,7 @@ static void btpad_queue_btstack_set_power_mode(uint8_t on)
    cmd->command                   = btstack_set_power_mode_ptr;
    cmd->btstack_set_power_mode.on = on;
 
-   INCPOS(insert);
+   btpad_increment_position(&insert_position);
    btpad_queue_process();
 }
 
@@ -188,7 +191,7 @@ static void btpad_queue_hci_read_bd_addr(void)
 
    cmd->command = hci_read_bd_addr_ptr;
 
-   INCPOS(insert);
+   btpad_increment_position(&insert_position);
    btpad_queue_process();
 }
 
@@ -203,7 +206,7 @@ static void btpad_queue_hci_disconnect(uint16_t handle, uint8_t reason)
    cmd->hci_disconnect.handle = handle;
    cmd->hci_disconnect.reason = reason;
 
-   INCPOS(insert);
+   btpad_increment_position(&insert_position);
    btpad_queue_process();
 }
 
@@ -220,7 +223,7 @@ static void btpad_queue_hci_inquiry(uint32_t lap,
    cmd->hci_inquiry.length        = length;
    cmd->hci_inquiry.num_responses = num_responses;
 
-   INCPOS(insert);
+   btpad_increment_position(&insert_position);
    btpad_queue_process();
 }
 
@@ -240,7 +243,7 @@ static void btpad_queue_hci_remote_name_request(bd_addr_t bd_addr,
    cmd->hci_remote_name_request.reserved = reserved;
    cmd->hci_remote_name_request.clock_offset = clock_offset;
 
-   INCPOS(insert);
+   btpad_increment_position(&insert_position);
    btpad_queue_process();
 }
 
@@ -256,7 +259,7 @@ static void btpad_queue_hci_pin_code_request_reply(
    memcpy(cmd->hci_pin_code_request_reply.bd_addr, bd_addr, sizeof(bd_addr_t));
    memcpy(cmd->hci_pin_code_request_reply.pin, pin, sizeof(bd_addr_t));
 
-   INCPOS(insert);
+   btpad_increment_position(&insert_position);
    btpad_queue_process();
 }
 
