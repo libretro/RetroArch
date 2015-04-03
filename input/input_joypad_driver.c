@@ -27,7 +27,7 @@ static rarch_joypad_driver_t *joypad_drivers[] = {
    &ps3_joypad,
 #endif
 #ifdef HAVE_WINXINPUT
-   &winxinput_joypad,
+   &xinput_joypad,
 #endif
 #ifdef GEKKO
    &gx_joypad,

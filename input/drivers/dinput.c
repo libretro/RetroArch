@@ -686,7 +686,7 @@ input_driver_t input_dinput = {
 };
 
 /* Keep track of which pad indexes are 360 controllers.
- * Not static, will be read in winxinput_joypad.c
+ * Not static, will be read in xinput_joypad.c
  * -1 = not xbox pad, otherwise 0..3
  */
 

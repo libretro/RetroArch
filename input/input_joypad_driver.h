@@ -48,7 +48,7 @@ extern rarch_joypad_driver_t dinput_joypad;
 extern rarch_joypad_driver_t linuxraw_joypad;
 extern rarch_joypad_driver_t parport_joypad;
 extern rarch_joypad_driver_t udev_joypad;
-extern rarch_joypad_driver_t winxinput_joypad;
+extern rarch_joypad_driver_t xinput_joypad;
 extern rarch_joypad_driver_t sdl_joypad;
 extern rarch_joypad_driver_t ps3_joypad;
 extern rarch_joypad_driver_t psp_joypad;

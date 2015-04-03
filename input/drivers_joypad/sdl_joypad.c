@@ -59,7 +59,7 @@ static const char* sdl_pad_name(unsigned id)
 static uint8_t sdl_pad_get_button(sdl_joypad_t *pad, unsigned button)
 {
 #ifdef HAVE_SDL2
-   /* TODO: see if a LUT like winxinput_joypad.c's button_index_to_bitmap_code is needed. */
+   /* TODO: see if a LUT like xinput_joypad.c's button_index_to_bitmap_code is needed. */
    if (pad->controller)
       return SDL_GameControllerGetButton(pad->controller, (SDL_GameControllerButton)button);
 #endif
