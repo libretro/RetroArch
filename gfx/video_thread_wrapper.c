@@ -817,7 +817,7 @@ static void thread_get_video_output_size(void *data,
    thread_send_cmd(thr, CMD_POKE_GET_VIDEO_OUTPUT_SIZE);
    thread_wait_reply(thr, CMD_POKE_GET_VIDEO_OUTPUT_SIZE);
    *width  = thr->cmd_data.output.width;
-   *height = thr->cmd_data.output.width;
+   *height = thr->cmd_data.output.height;
 }
 
 static void thread_get_video_output_prev(void *data)
