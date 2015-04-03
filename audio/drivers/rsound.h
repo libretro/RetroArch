@@ -20,7 +20,9 @@
 extern "C" {
 #endif
 
-//#define STANDALONE
+#if 0
+#define STANDALONE
+#endif
 
 #include <sys/types.h>
 #include <unistd.h>
@@ -33,7 +35,7 @@ extern "C" {
 #include <queues/fifo_buffer.h>
 
 #ifdef _WIN32
-#define RSD_DEFAULT_HOST "127.0.0.1" // Stupid Windows.
+#define RSD_DEFAULT_HOST "127.0.0.1" /* Stupid Windows. */
 #else
 #define RSD_DEFAULT_HOST "localhost"
 #endif
