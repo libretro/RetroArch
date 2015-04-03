@@ -26,8 +26,7 @@
 #include "../../menu/menu.h"
 
 #import "views.h"
-#include "bluetooth/btdynamic.h"
-#include "bluetooth/btstack.h"
+#include "../../input/drivers_hid/btstack.h"
 
 #include "../../menu/drivers/ios.h"
 

@@ -39,6 +39,57 @@
 #if defined __cplusplus
 extern "C" {
 #endif
+    
+/* Length of a Bluetooth device address. */
+#define BD_ADDR_LEN        6
+/* The link key type. */
+#define LINK_KEY_LEN       16
+/* The device name type. */
+#define DEVICE_NAME_LEN    248
+    
+/* Type definitions. */
+typedef uint16_t hci_con_handle_t;
+typedef uint8_t bd_addr_t[BD_ADDR_LEN];
+typedef uint8_t link_key_t[LINK_KEY_LEN];
+typedef uint8_t device_name_t[DEVICE_NAME_LEN+1];
+    
+/* Packet handler. */
+typedef void (*btstack_packet_handler_t) (uint8_t packet_type,
+    uint16_t channel, uint8_t *packet, uint16_t size);
+
+/* Hardware state of Bluetooth controller  */
+typedef enum
+{
+        HCI_POWER_OFF = 0,
+        HCI_POWER_ON,
+        HCI_POWER_SLEEP
+} HCI_POWER_MODE;
+    
+    /* State of BTstack */
+    typedef enum
+    {
+        HCI_STATE_OFF = 0,
+        HCI_STATE_INITIALIZING,
+        HCI_STATE_WORKING,
+        HCI_STATE_HALTING,
+        HCI_STATE_SLEEPING,
+        HCI_STATE_FALLING_ASLEEP
+    } HCI_STATE;
+    
+    typedef enum
+    {
+        RUN_LOOP_POSIX = 1,
+        RUN_LOOP_COCOA,
+        RUN_LOOP_EMBEDDED
+    } RUN_LOOP_TYPE;
+    
+    /* compact HCI Command packet description */
+    typedef struct
+    {
+        uint16_t    opcode;
+        const char *format;
+    } hci_cmd_t;
+
 
 /* btdynamic.h */
 
@@ -264,33 +315,7 @@ BTDIMPORT const hci_cmd_t* l2cap_decline_connection_ptr;
 /* Default INQ Mode 
  * 0x9E8B33: General/Unlimited Inquiry Access Code (GIAC)
  **/
-#define HCI_INQUIRY_LAP                                     0x9E8B33L  
-
-/* Hardware state of Bluetooth controller  */
-typedef enum
-{
-   HCI_POWER_OFF = 0,
-   HCI_POWER_ON,
-   HCI_POWER_SLEEP
-} HCI_POWER_MODE;
-
-/* State of BTstack */
-typedef enum
-{
-   HCI_STATE_OFF = 0,
-   HCI_STATE_INITIALIZING,
-   HCI_STATE_WORKING,
-   HCI_STATE_HALTING,
-   HCI_STATE_SLEEPING,
-   HCI_STATE_FALLING_ASLEEP
-} HCI_STATE;
-
-/* compact HCI Command packet description */
-typedef struct
-{
-   uint16_t    opcode;
-   const char *format;
-} hci_cmd_t;
+#define HCI_INQUIRY_LAP                                     0x9E8B33L
 
 /* HCI Commands - see hci_cmds.c for info on parameters */
 extern const hci_cmd_t btstack_get_state;
@@ -434,13 +459,6 @@ linked_item_t * linked_list_get_last_item(linked_list_t * list);
 void test_linked_list(void);
 
 /* run_loop.h */
-	
-typedef enum
-{
-   RUN_LOOP_POSIX = 1,
-   RUN_LOOP_COCOA,
-   RUN_LOOP_EMBEDDED
-} RUN_LOOP_TYPE;
 
 typedef struct data_source
 {
@@ -508,22 +526,9 @@ uint32_t embedded_get_ticks(void);
 #endif
 
 /* utils.h */
-    
-/* Length of a Bluetooth device address. */
-#define BD_ADDR_LEN        6
-    
-/* The link key type. */
-#define LINK_KEY_LEN       16
-    
-/* The device name type. */
-#define DEVICE_NAME_LEN    248
 
 /* Connection handle type. */
-typedef uint16_t hci_con_handle_t;
 
-typedef uint8_t bd_addr_t[BD_ADDR_LEN];
-typedef uint8_t link_key_t[LINK_KEY_LEN]; 
-typedef uint8_t device_name_t[DEVICE_NAME_LEN+1];
 	
 /* helper for BT little endian format. */
 #define READ_BT_16( buffer, pos) ( ((uint16_t) buffer[pos]) | (((uint16_t)buffer[pos+1]) << 8))
@@ -590,9 +595,6 @@ uint8_t crc8_calc(uint8_t *data, uint16_t len);
 /* UNIX domain socket for BTstack. */
 #define BTSTACK_UNIX            "/tmp/BTstack"
 
-/* Packet handler. */
-typedef void (*btstack_packet_handler_t) (uint8_t packet_type,
-      uint16_t channel, uint8_t *packet, uint16_t size);
 
 /* Optional
  *
