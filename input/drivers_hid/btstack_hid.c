@@ -28,6 +28,72 @@
 #include "../../dynamic.h"
 #include "../connect/joypad_connection.h"
 
+enum btpad_state
+{
+   BTPAD_EMPTY = 0,
+   BTPAD_CONNECTING,
+   BTPAD_CONNECTED
+};
+
+struct btpad_queue_command
+{
+   const hci_cmd_t* command;
+
+   union
+   {
+      struct
+      {
+         uint8_t on;
+      }  btstack_set_power_mode;
+
+      struct
+      {
+         uint16_t handle;
+         uint8_t reason;
+      }  hci_disconnect;
+
+      struct
+      {
+         uint32_t lap;
+         uint8_t length;
+         uint8_t num_responses;
+      }  hci_inquiry;
+
+      struct
+      {
+         bd_addr_t bd_addr;
+         uint8_t page_scan_repetition_mode;
+         uint8_t reserved;
+         uint16_t clock_offset;
+      }  hci_remote_name_request;
+
+      /* For wiimote only.
+       * TODO - should we repurpose this so
+       * that it's for more than just Wiimote?
+       * */
+      struct
+      {
+         bd_addr_t bd_addr;
+         bd_addr_t pin;
+      }  hci_pin_code_request_reply;
+   };
+};
+
+struct pad_connection
+{
+   uint32_t slot;
+
+   enum btpad_state state;
+
+   bool has_address;
+   bd_addr_t address;
+
+   uint16_t handle;
+
+   /* 0: Control, 1: Interrupt */
+   uint16_t channels[2];
+};
+
 #define GRAB(A) {#A, (void**)&A##_ptr}
 
 static struct
@@ -166,72 +232,7 @@ void btstack_set_poweron(bool on)
 
 extern joypad_connection_t *slots;
 
-/* Private interface. */
-enum btpad_state
-{
-   BTPAD_EMPTY,
-   BTPAD_CONNECTING,
-   BTPAD_CONNECTED
-};
 
-struct btpad_queue_command
-{
-   const hci_cmd_t* command;
-
-   union
-   {
-      struct
-      {
-         uint8_t on;
-      }  btstack_set_power_mode;
-
-      struct
-      {
-         uint16_t handle;
-         uint8_t reason;
-      }  hci_disconnect;
-
-      struct
-      {
-         uint32_t lap;
-         uint8_t length;
-         uint8_t num_responses;
-      }  hci_inquiry;
-
-      struct
-      {
-         bd_addr_t bd_addr;
-         uint8_t page_scan_repetition_mode;
-         uint8_t reserved;
-         uint16_t clock_offset;
-      }  hci_remote_name_request;
-
-      /* For wiimote only.
-       * TODO - should we repurpose this so
-       * that it's for more than just Wiimote?
-       * */
-      struct
-      {
-         bd_addr_t bd_addr;
-         bd_addr_t pin;
-      }  hci_pin_code_request_reply;
-   };
-};
-
-struct pad_connection
-{
-   uint32_t slot;
-
-   enum btpad_state state;
-
-   bool has_address;
-   bd_addr_t address;
-
-   uint16_t handle;
-
-   /* 0: Control, 1: Interrupt */
-   uint16_t channels[2];
-};
 
 static bool inquiry_off;
 static bool inquiry_running;

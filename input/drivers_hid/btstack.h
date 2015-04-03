@@ -60,36 +60,65 @@ typedef void (*btstack_packet_handler_t) (uint8_t packet_type,
 /* Hardware state of Bluetooth controller  */
 typedef enum
 {
-        HCI_POWER_OFF = 0,
-        HCI_POWER_ON,
-        HCI_POWER_SLEEP
+   HCI_POWER_OFF = 0,
+   HCI_POWER_ON,
+   HCI_POWER_SLEEP
 } HCI_POWER_MODE;
     
-    /* State of BTstack */
-    typedef enum
-    {
-        HCI_STATE_OFF = 0,
-        HCI_STATE_INITIALIZING,
-        HCI_STATE_WORKING,
-        HCI_STATE_HALTING,
-        HCI_STATE_SLEEPING,
-        HCI_STATE_FALLING_ASLEEP
-    } HCI_STATE;
+/* State of BTstack */
+typedef enum
+{
+   HCI_STATE_OFF = 0,
+   HCI_STATE_INITIALIZING,
+   HCI_STATE_WORKING,
+   HCI_STATE_HALTING,
+   HCI_STATE_SLEEPING,
+   HCI_STATE_FALLING_ASLEEP
+} HCI_STATE;
     
-    typedef enum
-    {
-        RUN_LOOP_POSIX = 1,
-        RUN_LOOP_COCOA,
-        RUN_LOOP_EMBEDDED
-    } RUN_LOOP_TYPE;
+typedef enum
+{
+   RUN_LOOP_POSIX = 1,
+   RUN_LOOP_COCOA,
+   RUN_LOOP_EMBEDDED
+} RUN_LOOP_TYPE;
     
-    /* compact HCI Command packet description */
-    typedef struct
-    {
-        uint16_t    opcode;
-        const char *format;
-    } hci_cmd_t;
+/* compact HCI Command packet description */
+typedef struct
+{
+   uint16_t    opcode;
+   const char *format;
+} hci_cmd_t;
 
+typedef struct linked_item
+{
+   struct linked_item *next; /* <-- next element in list, or NULL */
+   void *user_data;          /* <-- pointer to struct base */
+} linked_item_t;
+    
+typedef linked_item_t *linked_list_t;
+
+typedef struct data_source
+{
+   linked_item_t item;
+
+   /* File descriptor to watch or 0. */
+   int  fd;
+
+   int  (*process)(struct data_source *ds);
+} data_source_t;
+
+typedef struct timer
+{
+   linked_item_t item; 
+   /* Next timeout. */
+   struct timeval timeout;
+#ifdef HAVE_TICK
+   /* Timeout in system ticks. */
+   uint32_t timeout;
+#endif
+   void  (*process)(struct timer *ts);
+} timer_source_t;
 
 /* btdynamic.h */
 
@@ -434,13 +463,6 @@ extern const hci_cmd_t rfcomm_persistent_channel_for_service;
 
 /* linked_list.h */
 
-typedef struct linked_item
-{
-   struct linked_item *next; /* <-- next element in list, or NULL */
-   void *user_data;          /* <-- pointer to struct base */
-} linked_item_t;
-    
-typedef linked_item_t *linked_list_t;
 
 void linked_item_set_user(linked_item_t *item, void *user_data);
 
@@ -460,27 +482,6 @@ void test_linked_list(void);
 
 /* run_loop.h */
 
-typedef struct data_source
-{
-   linked_item_t item;
-
-   /* File descriptor to watch or 0. */
-   int  fd;
-
-   int  (*process)(struct data_source *ds);
-} data_source_t;
-
-typedef struct timer
-{
-   linked_item_t item; 
-   /* Next timeout. */
-   struct timeval timeout;
-#ifdef HAVE_TICK
-   /* Timeout in system ticks. */
-   uint32_t timeout;
-#endif
-   void  (*process)(struct timer *ts);
-} timer_source_t;
 
 
 /* Set timer based on current time in milliseconds. */
