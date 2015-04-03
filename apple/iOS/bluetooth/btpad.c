@@ -146,7 +146,7 @@ static void btpad_queue_process_cmd(struct btpad_queue_command *cmd)
 
 static void btpad_queue_process(void)
 {
-   for (; can_run && (insert_position != read_position); can_run --)
+   for (; can_run && (insert_position != read_position); can_run--)
    {
       struct btpad_queue_command* cmd = &commands[read_position];
       btpad_queue_process_cmd(cmd);
@@ -281,7 +281,7 @@ void btpad_set_inquiry_state(bool on)
 }
 
 /* Internal interface. */
-static struct pad_connection* btpad_find_empty_connection(void)
+static struct pad_connection *btpad_find_empty_connection(void)
 {
    unsigned i;
    for (i = 0; i < MAX_USERS; i++)
@@ -293,10 +293,11 @@ static struct pad_connection* btpad_find_empty_connection(void)
    return 0;
 }
 
-static struct pad_connection* btpad_find_connection_for(
+static struct pad_connection *btpad_find_connection_for(
       uint16_t handle, bd_addr_t address)
 {
    unsigned i;
+
    for (i = 0; i < MAX_USERS; i++)
    {
       if (!g_connections[i].handle && !g_connections[i].has_address)
@@ -329,9 +330,11 @@ static void btpad_close_connection(struct pad_connection* connection)
 
 static void btpad_close_all_connections(void)
 {
-   int i;
+   unsigned i;
+
    for (i = 0; i < MAX_USERS; i ++)
       btpad_close_connection(&g_connections[i]);
+
    /* TODO/FIXME - create platform-agnostic solution for this
     * and figure out why/if this is needed. */
    CFRunLoopStop(CFRunLoopGetCurrent());
@@ -340,7 +343,7 @@ static void btpad_close_all_connections(void)
 void btpad_packet_handler(uint8_t packet_type,
       uint16_t channel, uint8_t *packet, uint16_t size)
 {
-   int i;
+   unsigned i;
    bd_addr_t event_addr;
 
    switch (packet_type)
@@ -348,8 +351,7 @@ void btpad_packet_handler(uint8_t packet_type,
       case L2CAP_DATA_PACKET:
          for (i = 0; i < MAX_USERS; i ++)
          {
-            struct pad_connection* connection = 
-               (struct pad_connection*)&g_connections[i];
+            struct pad_connection *connection = &g_connections[i];
 
             if (connection && connection->state == BTPAD_CONNECTED
                   && (connection->channels[0] == channel || 
@@ -361,29 +363,27 @@ void btpad_packet_handler(uint8_t packet_type,
          switch (packet[0])
          {
             case BTSTACK_EVENT_STATE:
-               {
-                  RARCH_LOG("[BTstack]: HCI State %d.\n", packet[2]);
+               RARCH_LOG("[BTstack]: HCI State %d.\n", packet[2]);
 
-                  switch (packet[2])
-                  {                  
-                     case HCI_STATE_WORKING:
-                        btpad_queue_reset();
+               switch (packet[2])
+               {                  
+                  case HCI_STATE_WORKING:
+                     btpad_queue_reset();
 
-                        btpad_queue_hci_read_bd_addr();
-                        /* TODO: Where did I get 672 for MTU? */
-                        bt_send_cmd_ptr(l2cap_register_service_ptr,
-                              PSM_HID_CONTROL, 672);  
-                        bt_send_cmd_ptr(l2cap_register_service_ptr,
-                              PSM_HID_INTERRUPT, 672);
-                        btpad_queue_hci_inquiry(HCI_INQUIRY_LAP, 3, 1);
+                     btpad_queue_hci_read_bd_addr();
+                     /* TODO: Where did I get 672 for MTU? */
+                     bt_send_cmd_ptr(l2cap_register_service_ptr,
+                           PSM_HID_CONTROL, 672);  
+                     bt_send_cmd_ptr(l2cap_register_service_ptr,
+                           PSM_HID_INTERRUPT, 672);
+                     btpad_queue_hci_inquiry(HCI_INQUIRY_LAP, 3, 1);
 
-                        btpad_queue_run(1);
-                        break;
+                     btpad_queue_run(1);
+                     break;
 
-                     case HCI_STATE_HALTING:
-                        btpad_close_all_connections();
-                        break;                  
-                  }
+                  case HCI_STATE_HALTING:
+                     btpad_close_all_connections();
+                     break;                  
                }
                break;
 
@@ -392,68 +392,62 @@ void btpad_packet_handler(uint8_t packet_type,
                break;
 
             case HCI_EVENT_COMMAND_COMPLETE:
-               {
-                  btpad_queue_run(packet[2]);
+               btpad_queue_run(packet[2]);
 
-                  if (COMMAND_COMPLETE_EVENT(packet, (*hci_read_bd_addr_ptr)))
-                  {
-                     bt_flip_addr_ptr(event_addr, &packet[6]);
-                     if (!packet[5])
-                        RARCH_LOG("[BTpad]: Local address is %s.\n",
-                              bd_addr_to_str_ptr(event_addr));
-                     else
-                        RARCH_LOG("[BTpad]: Failed to get local address (Status: %02X).\n",
-                              packet[5]);
-                  }
+               if (COMMAND_COMPLETE_EVENT(packet, (*hci_read_bd_addr_ptr)))
+               {
+                  bt_flip_addr_ptr(event_addr, &packet[6]);
+                  if (!packet[5])
+                     RARCH_LOG("[BTpad]: Local address is %s.\n",
+                           bd_addr_to_str_ptr(event_addr));
+                  else
+                     RARCH_LOG("[BTpad]: Failed to get local address (Status: %02X).\n",
+                           packet[5]);
                }
                break;
 
             case HCI_EVENT_INQUIRY_RESULT:
+               if (packet[2])
                {
-                  if (packet[2])
-                  {
-                     bt_flip_addr_ptr(event_addr, &packet[3]);
+                  bt_flip_addr_ptr(event_addr, &packet[3]);
 
-                     struct pad_connection* connection = 
-                        (struct pad_connection*)btpad_find_empty_connection();
+                  struct pad_connection* connection = btpad_find_empty_connection();
 
-                     if (!connection)
-                        return;
+                  if (!connection)
+                     return;
 
-                     RARCH_LOG("[BTpad]: Inquiry found device\n");
-                     memset(connection, 0, sizeof(struct pad_connection));
+                  RARCH_LOG("[BTpad]: Inquiry found device\n");
+                  memset(connection, 0, sizeof(struct pad_connection));
 
-                     memcpy(connection->address, event_addr, sizeof(bd_addr_t));
-                     connection->has_address = true;
-                     connection->state = BTPAD_CONNECTING;
+                  memcpy(connection->address, event_addr, sizeof(bd_addr_t));
+                  connection->has_address = true;
+                  connection->state = BTPAD_CONNECTING;
 
-                     bt_send_cmd_ptr(l2cap_create_channel_ptr, connection->address, PSM_HID_CONTROL);
-                     bt_send_cmd_ptr(l2cap_create_channel_ptr, connection->address, PSM_HID_INTERRUPT);
-                  }
+                  bt_send_cmd_ptr(l2cap_create_channel_ptr, connection->address, PSM_HID_CONTROL);
+                  bt_send_cmd_ptr(l2cap_create_channel_ptr, connection->address, PSM_HID_INTERRUPT);
                }
                break;
 
             case HCI_EVENT_INQUIRY_COMPLETE:
-               {
-                  /* This must be turned off during gameplay 
-                   * as it causes a ton of lag. */
-                  inquiry_running = !inquiry_off;
+               /* This must be turned off during gameplay 
+                * as it causes a ton of lag. */
+               inquiry_running = !inquiry_off;
 
-                  if (inquiry_running)
-                     btpad_queue_hci_inquiry(HCI_INQUIRY_LAP, 3, 1);
-               }
+               if (inquiry_running)
+                  btpad_queue_hci_inquiry(HCI_INQUIRY_LAP, 3, 1);
                break;
 
             case L2CAP_EVENT_CHANNEL_OPENED:
                {
-                  bt_flip_addr_ptr(event_addr, &packet[3]);
-                  const uint16_t handle = READ_BT_16(packet, 9);
-                  const uint16_t psm = READ_BT_16(packet, 11);
-                  const uint16_t channel_id = READ_BT_16(packet, 13);
+                  uint16_t handle, psm, channel_id;
+                  struct pad_connection *connection = NULL;
 
-                  struct pad_connection* connection = 
-                     (struct pad_connection*)btpad_find_connection_for(
-                           handle, event_addr);
+                  bt_flip_addr_ptr(event_addr, &packet[3]);
+
+                  handle             = READ_BT_16(packet, 9);
+                  psm                = READ_BT_16(packet, 11);
+                  channel_id         = READ_BT_16(packet, 13);
+                  connection         = btpad_find_connection_for(handle, event_addr);
 
                   if (!packet[2])
                   {
@@ -473,12 +467,10 @@ void btpad_packet_handler(uint8_t packet_type,
                      else
                         RARCH_LOG("[BTpad]: Got unknown L2CAP PSM, ignoring (PSM: %02X).\n", psm);
 
-                     if (connection->channels[0]
-                           && connection->channels[1])
+                     if (connection->channels[0] && connection->channels[1])
                      {
                         RARCH_LOG("[BTpad]: Got both L2CAP channels, requesting name.\n");
-                        btpad_queue_hci_remote_name_request(
-                              connection->address, 0, 0, 0);
+                        btpad_queue_hci_remote_name_request(connection->address, 0, 0, 0);
                      }
                   }
                   else
@@ -488,14 +480,16 @@ void btpad_packet_handler(uint8_t packet_type,
 
             case L2CAP_EVENT_INCOMING_CONNECTION:
                {
-                  bt_flip_addr_ptr(event_addr, &packet[2]);
-                  const uint16_t handle     = READ_BT_16(packet, 8);
-                  const uint32_t psm        = READ_BT_16(packet, 10);
-                  const uint32_t channel_id = READ_BT_16(packet, 12);
+                  uint16_t handle, psm, channel_id;
+                  struct pad_connection* connection = NULL;
 
-                  struct pad_connection* connection = 
-                     (struct pad_connection*)btpad_find_connection_for(
-                           handle, event_addr);
+                  bt_flip_addr_ptr(event_addr, &packet[2]);
+
+                  handle     = READ_BT_16(packet, 8);
+                  psm        = READ_BT_16(packet, 10);
+                  channel_id = READ_BT_16(packet, 12);
+
+                  connection = btpad_find_connection_for(handle, event_addr);
 
                   if (!connection)
                   {
@@ -523,11 +517,11 @@ void btpad_packet_handler(uint8_t packet_type,
 
             case HCI_EVENT_REMOTE_NAME_REQUEST_COMPLETE:
                {
+                  struct pad_connection *connection = NULL;
+
                   bt_flip_addr_ptr(event_addr, &packet[3]);
 
-                  struct pad_connection* connection = 
-                     (struct pad_connection*)btpad_find_connection_for(
-                           0, event_addr);
+                  connection = btpad_find_connection_for(0, event_addr);
 
                   if (!connection)
                   {
@@ -556,9 +550,7 @@ void btpad_packet_handler(uint8_t packet_type,
 
                   if (!packet[2])
                   {
-                     struct pad_connection* connection = 
-                        (struct pad_connection*)btpad_find_connection_for(
-                              handle, 0);
+                     struct pad_connection* connection = btpad_find_connection_for(handle, 0);
 
                      if (connection)
                      {
