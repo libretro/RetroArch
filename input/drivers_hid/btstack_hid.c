@@ -143,6 +143,16 @@ static sthread_t *btstack_thread;
 static CFRunLoopSourceRef btstack_quit_source;
 #endif
 
+static void *btstack_get_handle(void)
+{
+   void *handle = dylib_load("/usr/lib/libBTstack.dylib");
+
+   if (handle)
+      return handle;
+
+   return NULL;
+}
+
 bool btstack_try_load(void)
 {
    unsigned i;
@@ -154,7 +164,7 @@ bool btstack_try_load(void)
    btstack_tested = true;
    btstack_loaded = false;
 
-   handle = dylib_load("/usr/lib/libBTstack.dylib");
+   handle         = btstack_get_handle();
 
    if (!handle)
       return false;
