@@ -16,8 +16,10 @@
 #include <stdio.h>
 #include <assert.h>
 #include "../../../dynamic.h"
-#include <CoreFoundation/CFRunLoop.h>
 #include <rthreads/rthreads.h>
+#ifdef __APPLE__
+#include <CoreFoundation/CFRunLoop.h>
+#endif
 
 #define BUILDING_BTDYNAMIC
 #include "btdynamic.h"
@@ -66,7 +68,10 @@ static bool btstack_tested;
 static bool btstack_loaded;
 
 static sthread_t *btstack_thread;
+
+#ifdef __APPLE__
 static CFRunLoopSourceRef btstack_quit_source;
+#endif
 
 bool btstack_try_load(void)
 {
@@ -116,20 +121,26 @@ static void btstack_thread_func(void* data)
    if (bt_open_ptr())
       return;
 
+#ifdef __APPLE__
    CFRunLoopSourceContext ctx = { 0, 0, 0, 0, 0, 0, 0, 0, 0, btstack_thread_stop };
    btstack_quit_source = CFRunLoopSourceCreate(0, 0, &ctx);
    CFRunLoopAddSource(CFRunLoopGetCurrent(), btstack_quit_source, kCFRunLoopCommonModes);
+#endif
 
    RARCH_LOG("[BTstack]: Turning on...\n");
    bt_send_cmd_ptr(btstack_set_power_mode_ptr, HCI_POWER_ON);
 
    RARCH_LOG("BTstack: Thread running...\n");
+#ifdef __APPLE__
    CFRunLoopRun();
+#endif
 
    RARCH_LOG("[BTstack]: Thread done.\n");
 
+#ifdef __APPLE__
    CFRunLoopSourceInvalidate(btstack_quit_source);
    CFRelease(btstack_quit_source);
+#endif
 }
 
 void btstack_set_poweron(bool on)
@@ -141,7 +152,9 @@ void btstack_set_poweron(bool on)
       btstack_thread = sthread_create(btstack_thread_func, NULL);
    else if (!on && btstack_thread && btstack_quit_source)
    {
+#ifdef __APPLE__
       CFRunLoopSourceSignal(btstack_quit_source);
+#endif
       sthread_join(btstack_thread);
       btstack_thread = NULL;
    }
