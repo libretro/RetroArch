@@ -380,7 +380,7 @@ static void btpad_queue_hci_remote_name_request(
    memcpy(cmd->hci_remote_name_request.bd_addr, bd_addr, sizeof(bd_addr_t));
    cmd->hci_remote_name_request.page_scan_repetition_mode = 
       page_scan_repetition_mode;
-   cmd->hci_remote_name_request.reserved = reserved;
+   cmd->hci_remote_name_request.reserved     = reserved;
    cmd->hci_remote_name_request.clock_offset = clock_offset;
 
    btpad_increment_position(&insert_position);
@@ -496,9 +496,11 @@ void btpad_packet_handler(uint8_t packet_type,
          {
             struct pad_connection *connection = &g_connections[i];
 
-            if (connection && connection->state == BTPAD_CONNECTED
-                  && (connection->channels[0] == channel || 
-                     connection->channels[1] == channel))
+            if (!connection || connection->state != BTPAD_CONNECTED)
+               continue;
+
+            if (     connection->channels[0] == channel 
+                  || connection->channels[1] == channel)
                pad_connection_packet(&slots[connection->slot], connection->slot, packet, size);
          }
          break;
@@ -512,9 +514,10 @@ void btpad_packet_handler(uint8_t packet_type,
                {                  
                   case HCI_STATE_WORKING:
                      btpad_queue_reset();
-
                      btpad_queue_hci_read_bd_addr(cmd);
+
                      /* TODO: Where did I get 672 for MTU? */
+
                      bt_send_cmd_ptr(l2cap_register_service_ptr,
                            PSM_HID_CONTROL, 672);  
                      bt_send_cmd_ptr(l2cap_register_service_ptr,
@@ -552,9 +555,11 @@ void btpad_packet_handler(uint8_t packet_type,
             case HCI_EVENT_INQUIRY_RESULT:
                if (packet[2])
                {
+                  struct pad_connection* connection = NULL;
+
                   bt_flip_addr_ptr(event_addr, &packet[3]);
 
-                  struct pad_connection* connection = btpad_find_empty_connection();
+                  connection = btpad_find_empty_connection();
 
                   if (!connection)
                      return;
@@ -564,7 +569,7 @@ void btpad_packet_handler(uint8_t packet_type,
 
                   memcpy(connection->address, event_addr, sizeof(bd_addr_t));
                   connection->has_address = true;
-                  connection->state = BTPAD_CONNECTING;
+                  connection->state       = BTPAD_CONNECTING;
 
                   bt_send_cmd_ptr(l2cap_create_channel_ptr, connection->address, PSM_HID_CONTROL);
                   bt_send_cmd_ptr(l2cap_create_channel_ptr, connection->address, PSM_HID_INTERRUPT);
@@ -601,7 +606,7 @@ void btpad_packet_handler(uint8_t packet_type,
                      }
 
                      RARCH_LOG("[BTpad]: L2CAP channel opened: (PSM: %02X)\n", psm);
-                     connection->handle = handle;
+                     connection->handle         = handle;
 
                      if (psm == PSM_HID_CONTROL)
                         connection->channels[0] = channel_id;
