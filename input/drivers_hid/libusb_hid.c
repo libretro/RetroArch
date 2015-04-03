@@ -132,15 +132,16 @@ static int add_adapter(void *data, struct libusb_device *dev)
    int rc;
    struct libusb_device_descriptor desc;
    struct libusb_adapter *old_head = NULL;
-   struct libusb_adapter *adapter  = (struct libusb_adapter*)calloc(1, sizeof(struct libusb_adapter));
    struct libusb_hid          *hid = (struct libusb_hid*)data;
    const char *device_name         = NULL;
+   struct libusb_adapter *adapter  = (struct libusb_adapter*)calloc(1, sizeof(struct libusb_adapter));
 
-   if (!adapter)
+   if (!adapter || !hid)
    {
       fprintf(stderr, "Allocation of adapter failed.\n");
       return -1;
    }
+
    rc = libusb_get_device_descriptor(dev, &desc);
 
    if (rc != LIBUSB_SUCCESS)
@@ -150,6 +151,7 @@ static int add_adapter(void *data, struct libusb_device *dev)
    }
 
    adapter->device = dev;
+   adapter->slot   = MAX_USERS;
 
    rc = libusb_open (adapter->device, &adapter->handle);
 
@@ -184,7 +186,7 @@ static int add_adapter(void *data, struct libusb_device *dev)
       goto error;
    }
    
-   device_name = (const char*)adapter->name;
+   device_name   = (const char*)adapter->name;
 
    adapter->slot = pad_connection_pad_init(hid->slots,
          device_name, adapter, &libusb_hid_device_send_control);
@@ -193,7 +195,6 @@ static int add_adapter(void *data, struct libusb_device *dev)
 
    if (!pad_connection_has_interface(hid->slots, adapter->slot))
       goto error;
-
 
    if (adapter->name[0] == '\0')
       goto error;
