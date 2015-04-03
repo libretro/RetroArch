@@ -290,8 +290,8 @@ static int sunxi_layer_set_rgb_input_buffer(sunxi_disp_t *ctx,
    int           stride)
 {
    __disp_fb_t fb;
-   __disp_rect_t rect = { 0, 0, width, height };
    uint32_t tmp[4];
+   __disp_rect_t rect = { 0, 0, width, height };
 
    memset(&fb, 0, sizeof(fb));
 
@@ -306,42 +306,42 @@ static int sunxi_layer_set_rgb_input_buffer(sunxi_disp_t *ctx,
          return -1;
    }
 
-   fb.addr[0] = ctx->framebuffer_paddr + offset_in_framebuffer;
-   fb.size.height = height;
+   fb.addr[0]        = ctx->framebuffer_paddr + offset_in_framebuffer;
+   fb.size.height    = height;
 
    if (bpp == 32)
    {
-      fb.format = DISP_FORMAT_ARGB8888;
-      fb.seq = DISP_SEQ_ARGB;
-      fb.mode = DISP_MOD_INTERLEAVED;
-      fb.size.width = stride;
+      fb.format      = DISP_FORMAT_ARGB8888;
+      fb.seq         = DISP_SEQ_ARGB;
+      fb.mode        = DISP_MOD_INTERLEAVED;
+      fb.size.width  = stride;
    }
    else if (bpp == 16)
    {
-      fb.format = DISP_FORMAT_RGB565;
-      fb.seq = DISP_SEQ_P10;
-      fb.mode = DISP_MOD_INTERLEAVED;
-      fb.size.width = stride * 2;
+      fb.format      = DISP_FORMAT_RGB565;
+      fb.seq         = DISP_SEQ_P10;
+      fb.mode        = DISP_MOD_INTERLEAVED;
+      fb.size.width  = stride * 2;
    }
    else
       return -1;
 
-   tmp[0] = ctx->fb_id;
-   tmp[1] = ctx->layer_id;
-   tmp[2] = (uintptr_t)&fb;
+   tmp[0]            = ctx->fb_id;
+   tmp[1]            = ctx->layer_id;
+   tmp[2]            = (uintptr_t)&fb;
 
    if (ioctl(ctx->fd_disp, DISP_CMD_LAYER_SET_FB, &tmp) < 0)
       return -1;
 
-   ctx->layer_buf_x = rect.x;
-   ctx->layer_buf_y = rect.y;
-   ctx->layer_buf_w = rect.width;
-   ctx->layer_buf_h = rect.height;
+   ctx->layer_buf_x  = rect.x;
+   ctx->layer_buf_y  = rect.y;
+   ctx->layer_buf_w  = rect.width;
+   ctx->layer_buf_h  = rect.height;
    ctx->layer_format = fb.format;
 
-   tmp[0] = ctx->fb_id;
-   tmp[1] = ctx->layer_id;
-   tmp[2] = (uintptr_t)&rect;
+   tmp[0]            = ctx->fb_id;
+   tmp[1]            = ctx->layer_id;
+   tmp[2]            = (uintptr_t)&rect;
 
    return ioctl(ctx->fd_disp, DISP_CMD_LAYER_SET_SRC_WINDOW, &tmp);
 }
@@ -351,8 +351,7 @@ static sunxi_disp_t *sunxi_disp_init(const char *device)
    int tmp, version;
    struct fb_var_screeninfo fb_var;
    struct fb_fix_screeninfo fb_fix;
-
-   sunxi_disp_t *ctx = calloc(sizeof(sunxi_disp_t), 1);
+   sunxi_disp_t *ctx = (sunxi_disp_t*)calloc(1, sizeof(sunxi_disp_t));
 
    if (!ctx)
       return NULL;
@@ -366,27 +365,21 @@ static sunxi_disp_t *sunxi_disp_init(const char *device)
    else if (strcmp(device, "/dev/fb1") == 0)
       ctx->fb_id = 1;
    else
-   {
-      free(ctx);
-      return NULL;
-   }
+      goto error;
 
    ctx->fd_disp = open("/dev/disp", O_RDWR);
 
    /* maybe it's even not a sunxi hardware */
    if (ctx->fd_disp < 0)
-   {
-      free(ctx);
-      return NULL;
-   }
+      goto error;
 
    /* version check */
-   tmp = SUNXI_DISP_VERSION;
+   tmp     = SUNXI_DISP_VERSION;
    version = ioctl(ctx->fd_disp, DISP_CMD_VERSION, &tmp);
-   if (version < 0) {
+   if (version < 0)
+   {
        close(ctx->fd_disp);
-       free(ctx);
-       return NULL;
+       goto error;
    }
 
    ctx->fd_fb = open(device, O_RDWR);
@@ -394,8 +387,7 @@ static sunxi_disp_t *sunxi_disp_init(const char *device)
    if (ctx->fd_fb < 0)
    {
       close(ctx->fd_disp);
-      free(ctx);
-      return NULL;
+      goto error;
    }
 
    if (ioctl(ctx->fd_fb, FBIOGET_VSCREENINFO, &fb_var) < 0 ||
@@ -403,8 +395,7 @@ static sunxi_disp_t *sunxi_disp_init(const char *device)
    {
       close(ctx->fd_fb);
       close(ctx->fd_disp);
-      free(ctx);
-      return NULL;
+      goto error;
    }
 
    ctx->xres               = fb_var.xres;
@@ -420,8 +411,7 @@ static sunxi_disp_t *sunxi_disp_init(const char *device)
    {
       close(ctx->fd_fb);
       close(ctx->fd_disp);
-      free(ctx);
-      return NULL;
+      goto error;
    }
 
    /* mmap framebuffer memory */
@@ -433,8 +423,7 @@ static sunxi_disp_t *sunxi_disp_init(const char *device)
    {
       close(ctx->fd_fb);
       close(ctx->fd_disp);
-      free(ctx);
-      return NULL;
+      goto error;
    }
 
    /* Get the id of the screen layer */
@@ -444,19 +433,22 @@ static sunxi_disp_t *sunxi_disp_init(const char *device)
    {
       close(ctx->fd_fb);
       close(ctx->fd_disp);
-      free(ctx);
-      return NULL;
+      goto error;
    }
 
    if (sunxi_layer_reserve(ctx) < 0)
    {
       close(ctx->fd_fb);
       close(ctx->fd_disp);
-      free(ctx);
-      return NULL;
+      goto error;
    }
 
    return ctx;
+
+error:
+   if (ctx)
+      free(ctx);
+   return NULL;
 }
 
 static int sunxi_disp_close(sunxi_disp_t *ctx)
@@ -587,9 +579,9 @@ static void sunxi_restore_console(struct sunxi_video *_dispvars)
    free(_dispvars->screen_bck);
 }
 
-static void vsync_thread_func(void *data)
+static void sunxi_vsync_thread_func(void *data)
 {
-   struct sunxi_video *_dispvars = data;
+   struct sunxi_video *_dispvars = (struct sunxi_video*)data;
 
    while (_dispvars->keep_vsync)
    {
@@ -616,63 +608,61 @@ static void *sunxi_gfx_init(const video_info_t *video,
       const input_driver_t **input, void **input_data)
 {
    struct sunxi_video *_dispvars = (struct sunxi_video*)
-   calloc(1, sizeof(struct sunxi_video));
+      calloc(1, sizeof(struct sunxi_video));
 
    if (!_dispvars)
       return NULL;
 
    _dispvars->src_bytes_per_pixel = video->rgb32 ? 4 : 2;
-
-   _dispvars->sunxi_disp = sunxi_disp_init("/dev/fb0");
+   _dispvars->sunxi_disp          = sunxi_disp_init("/dev/fb0");
 
    /* Blank text console and disable cursor blinking. */
    sunxi_blank_console(_dispvars);
-   
-   _dispvars->pages = calloc(NUMPAGES, sizeof (struct sunxi_page));
-   
+
+   _dispvars->pages = (struct sunxi_page*)calloc(NUMPAGES, sizeof (struct sunxi_page));
+
    if (!_dispvars->pages)
    {
       free(_dispvars);
       return NULL;
    }
-   
-   _dispvars->dst_pitch = _dispvars->sunxi_disp->xres * _dispvars->sunxi_disp->bits_per_pixel / 8;
+
+   _dispvars->dst_pitch           = _dispvars->sunxi_disp->xres * _dispvars->sunxi_disp->bits_per_pixel / 8;
    /* Considering 4 bytes per pixel since we will be in 32bpp on the CB/CB2/CT for hw scalers to work. */
    _dispvars->dst_pixels_per_line = _dispvars->dst_pitch / 4;
-   _dispvars->pageflip_pending = false;
-   _dispvars->nextPage = &_dispvars->pages[0];
-   _dispvars->keep_vsync = true;
-   _dispvars->menu_active = false;
-
-   _dispvars->bytes_per_pixel = video->rgb32 ? 4 : 2;
+   _dispvars->pageflip_pending    = false;
+   _dispvars->nextPage            = &_dispvars->pages[0];
+   _dispvars->keep_vsync          = true;
+   _dispvars->menu_active         = false;
+   _dispvars->bytes_per_pixel     = video->rgb32 ? 4 : 2;
 
    switch (_dispvars->bytes_per_pixel)
    {
-       case 2:
-	  pixman_blit = pixman_composite_src_0565_8888_asm_neon;
-	  break;
-       case 4:
-	  pixman_blit = pixman_composite_src_8888_8888_asm_neon;
-	  break;
-       default:
-	  return NULL;
+      case 2:
+         pixman_blit = pixman_composite_src_0565_8888_asm_neon;
+         break;
+      case 4:
+         pixman_blit = pixman_composite_src_8888_8888_asm_neon;
+         break;
+      default:
+         return NULL;
    }
 
    _dispvars->pending_mutex    = slock_new();
    _dispvars->vsync_condition  = scond_new();
-   
+
    if (input && input_data)
-	   *input = NULL;
-   
+      *input = NULL;
+
    /* Launching vsync thread */
-   _dispvars->vsync_thread = sthread_create(vsync_thread_func, _dispvars);
+   _dispvars->vsync_thread     = sthread_create(sunxi_vsync_thread_func, _dispvars);
 
    return _dispvars;
 }
 
 static void sunxi_gfx_free(void *data)
 {
-   struct sunxi_video *_dispvars = data;
+   struct sunxi_video *_dispvars = (struct sunxi_video*)data;
 
    /* Stop the vsync thread and wait for it to join. */
    /* When menu is active, vsync thread has already been stopped. */
@@ -697,10 +687,10 @@ static void sunxi_gfx_free(void *data)
 static void sunxi_update_main(const void *frame, struct sunxi_video *_dispvars)
 {
    slock_lock(_dispvars->pending_mutex);
+
    if (_dispvars->pageflip_pending)
-   {
       scond_wait(_dispvars->vsync_condition, _dispvars->pending_mutex);
-   }
+
    slock_unlock(_dispvars->pending_mutex);
 
    /* Frame blitting */
@@ -723,13 +713,14 @@ static void sunxi_update_main(const void *frame, struct sunxi_video *_dispvars)
    slock_unlock(_dispvars->pending_mutex);
 }
 
-static void sunxi_setup_scale (void *data, unsigned width, unsigned height, unsigned pitch)
+static void sunxi_setup_scale (void *data,
+      unsigned width, unsigned height, unsigned pitch)
 {
-   struct sunxi_video *_dispvars = data;
    int i;
    float aspect;
    unsigned int xpos, visible_width;
-   settings_t *settings = config_get_ptr();
+   struct sunxi_video *_dispvars = (struct sunxi_video*)data;
+   settings_t *settings          = config_get_ptr();
 
    _dispvars->src_width  = width;
    _dispvars->src_height = height;
@@ -740,38 +731,39 @@ static void sunxi_setup_scale (void *data, unsigned width, unsigned height, unsi
 
    /* Pixels per line */
    _dispvars->src_pixels_per_line = _dispvars->src_pitch/_dispvars->bytes_per_pixel;
-   
+
    /* Incremental offset that sums up on 
     * each previous page offset.
     * Total offset of each page has to 
     * be adjusted when internal resolution changes. */
-   for (i = 0; i < NUMPAGES; i++) {
+   for (i = 0; i < NUMPAGES; i++)
+   {
       _dispvars->pages[i].offset = (_dispvars->sunxi_disp->yres + i * _dispvars->src_height) * _dispvars->sunxi_disp->xres * 4;
       _dispvars->pages[i].address = ((uint32_t*) _dispvars->sunxi_disp->framebuffer_addr + (_dispvars->sunxi_disp->yres + i * _dispvars->src_height) * _dispvars->dst_pitch/4);
    }
- 
+
    switch (settings->video.aspect_ratio_idx)
    {
       case ASPECT_RATIO_4_3:
-	 aspect = (float)4 / (float)3;
-	 break;
+         aspect = (float)4 / (float)3;
+         break;
       case ASPECT_RATIO_16_9:
-	 aspect = (float)16 / (float)9;
-	 break;
+         aspect = (float)16 / (float)9;
+         break;
       case ASPECT_RATIO_16_10: 
-	 aspect = (float)16 / (float)10;
-	 break;
+         aspect = (float)16 / (float)10;
+         break;
       case ASPECT_RATIO_16_15: 
-	 aspect = (float)16 / (float)15;
-	 break;
+         aspect = (float)16 / (float)15;
+         break;
       case ASPECT_RATIO_CORE: 
-	 aspect = (float)_dispvars->src_width / (float)_dispvars->src_height;
-	 break;
+         aspect = (float)_dispvars->src_width / (float)_dispvars->src_height;
+         break;
       default: 
-	 aspect = (float)_dispvars->src_width / (float)_dispvars->src_height;
-	 break;
+         aspect = (float)_dispvars->src_width / (float)_dispvars->src_height;
+         break;
    }        
-  
+
    visible_width = _dispvars->sunxi_disp->yres * aspect;
    xpos = (_dispvars->sunxi_disp->xres - visible_width) / 2; 
 
@@ -783,9 +775,9 @@ static void sunxi_setup_scale (void *data, unsigned width, unsigned height, unsi
 }
 
 static bool sunxi_gfx_frame(void *data, const void *frame, unsigned width,
-                             unsigned height, unsigned pitch, const char *msg)
+      unsigned height, unsigned pitch, const char *msg)
 {
-   struct sunxi_video *_dispvars = data;
+   struct sunxi_video *_dispvars = (struct sunxi_video*)data;
 
    if (_dispvars->src_width != width || _dispvars->src_height != height)
    {
@@ -794,12 +786,13 @@ static bool sunxi_gfx_frame(void *data, const void *frame, unsigned width,
          return true;
 
       RARCH_LOG("video_sunxi: internal resolution changed by core: %ux%u -> %ux%u\n",
-         _dispvars->src_width, _dispvars->src_height, width, height);
+            _dispvars->src_width, _dispvars->src_height, width, height);
 
       sunxi_setup_scale(_dispvars, width, height, pitch);
    }
-   
-   if (_dispvars->menu_active) {
+
+   if (_dispvars->menu_active)
+   {
       char buf[128];
       video_monitor_get_fps(buf, sizeof(buf), NULL, 0);
       ioctl(_dispvars->sunxi_disp->fd_fb, FBIO_WAITFORVSYNC, 0);
@@ -854,7 +847,7 @@ static bool sunxi_gfx_suppress_screensaver(void *data, bool enable)
 
 static void sunxi_gfx_viewport_info(void *data, struct video_viewport *vp)
 {
-   struct sunxi_video *_dispvars = data;
+   struct sunxi_video *_dispvars = (struct sunxi_video*)data;
 
    if (!vp || !_dispvars)
       return;
@@ -877,8 +870,8 @@ static bool sunxi_gfx_set_shader(void *data,
 
 static void sunxi_set_texture_enable(void *data, bool state, bool full_screen)
 {
-   struct sunxi_video *_dispvars = data;
-	
+   struct sunxi_video *_dispvars = (struct sunxi_video*)data;
+
    /* If it wasn't active and starts being active... */
    if (!_dispvars->menu_active && state)
    { 
@@ -886,49 +879,54 @@ static void sunxi_set_texture_enable(void *data, bool state, bool full_screen)
       _dispvars->keep_vsync = false;
       sthread_join(_dispvars->vsync_thread);
    }
-   
+
    /* If it was active but now it isn't active anymore... */
-   if (_dispvars->menu_active && !state) {
+   if (_dispvars->menu_active && !state)
+   {
       _dispvars->keep_vsync = true;
-      _dispvars->vsync_thread = sthread_create(vsync_thread_func, _dispvars);
+      _dispvars->vsync_thread = sthread_create(sunxi_vsync_thread_func, _dispvars);
    }
    _dispvars->menu_active = state;
 }
 
 static void sunxi_set_texture_frame(void *data, const void *frame, bool rgb32,
-unsigned width, unsigned height, float alpha)
+      unsigned width, unsigned height, float alpha)
 {
-   struct sunxi_video *_dispvars = data;
-   
-   /* We have to go on a pixel format conversion adventure for now, until we can
-    * convince RGUI to output in an 8888 format. */
-   unsigned int i, j;
-   unsigned int src_pitch = width * 2; 
-   unsigned int dst_pitch = _dispvars->sunxi_disp->xres * 4;
-   unsigned int dst_width = _dispvars->sunxi_disp->xres;
    uint32_t line[dst_width]; 
    uint16_t src_pix;
    uint32_t dst_pix;
    uint32_t R, G, B;
-   /* Remember, memcpy() works with 8bits pointers for increments. */
-   char *dst_base_addr = (char*)(_dispvars->pages[0].address);
-   char *src_base_addr = (char*)frame;  
+   unsigned int i, j;
+   struct sunxi_video *_dispvars = (struct sunxi_video*)data;
+   
+   /* We have to go on a pixel format conversion adventure for now, until we can
+    * convince RGUI to output in an 8888 format. */
+   unsigned int src_pitch        = width * 2; 
+   unsigned int dst_pitch        = _dispvars->sunxi_disp->xres * 4;
+   unsigned int dst_width        = _dispvars->sunxi_disp->xres;
 
-   for (i = 0; i < height; i++) {
-      for (j = 0; j < src_pitch / 2; j++){
+   /* Remember, memcpy() works with 8bits pointers for increments. */
+   char *dst_base_addr           = (char*)(_dispvars->pages[0].address);
+   char *src_base_addr           = (char*)frame;  
+
+   for (i = 0; i < height; i++)
+   {
+      for (j = 0; j < src_pitch / 2; j++)
+      {
          src_pix = *((uint16_t*)frame + (src_pitch / 2 * i) + j); 
          /* The hex AND is for keeping only the part we need for each component. */
          R = (src_pix << 8) & 0x00FF0000;
-	 G = (src_pix << 4) & 0x0000FF00;
-	 B = (src_pix << 0) & 0x000000FF;
-	 line[j] = (0 | R | G | B); 
+         G = (src_pix << 4) & 0x0000FF00;
+         B = (src_pix << 0) & 0x000000FF;
+         line[j] = (0 | R | G | B); 
       }
       memcpy(dst_base_addr + (dst_pitch * i), (char*)line, dst_pitch);
    }
 
    /* Issue pageflip. Will flip on next vsync. */
-   sunxi_layer_set_rgb_input_buffer(_dispvars->sunxi_disp, _dispvars->sunxi_disp->bits_per_pixel, 
-      _dispvars->pages[0].offset, width, height, _dispvars->sunxi_disp->xres);
+   sunxi_layer_set_rgb_input_buffer(_dispvars->sunxi_disp,
+         _dispvars->sunxi_disp->bits_per_pixel, 
+         _dispvars->pages[0].offset, width, height, _dispvars->sunxi_disp->xres);
 }
 
 static const video_poke_interface_t sunxi_poke_interface = {
