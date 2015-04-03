@@ -178,7 +178,7 @@ static INLINE unsigned align_common(unsigned i, unsigned j)
 }
 
 /* Find the index of a compatible DRM device. */
-static int get_device_index(void)
+static int exynos_get_device_index(void)
 {
   char buf[32];
   int fd;
@@ -210,9 +210,9 @@ static int get_device_index(void)
 }
 
 /* Restore the original CRTC. */
-static void restore_crtc(struct exynos_drm *d, int fd)
+static void exynos_restore_crtc(struct exynos_drm *d, int fd)
 {
-  if (d->orig_crtc == NULL)
+  if (!d->orig_crtc)
      return;
 
   drmModeSetCrtc(fd, d->orig_crtc->crtc_id,
@@ -225,7 +225,7 @@ static void restore_crtc(struct exynos_drm *d, int fd)
   d->orig_crtc = NULL;
 }
 
-static void clean_up_drm(struct exynos_drm *d, int fd)
+static void exynos_clean_up_drm(struct exynos_drm *d, int fd)
 {
   if (d->encoder)
      drmModeFreeEncoder(d->encoder);
@@ -244,13 +244,13 @@ static void clean_up_drm(struct exynos_drm *d, int fd)
  * Decreases the pending pageflip count and 
  * updates the current page.
  */
-static void page_flip_handler(int fd, unsigned frame, unsigned sec,
+static void exynos_page_flip_handler(int fd, unsigned frame, unsigned sec,
       unsigned usec, void *data)
 {
   struct exynos_page *page = data;
 
 #if (EXYNOS_GFX_DEBUG_LOG == 1)
-  RARCH_LOG("video_exynos: in page_flip_handler, page = %p\n", page);
+  RARCH_LOG("[video_exynos]: in exynos_page_flip_handler, page = %p\n", page);
 #endif
 
   if (page->base->cur_page != NULL)
@@ -260,7 +260,7 @@ static void page_flip_handler(int fd, unsigned frame, unsigned sec,
   page->base->cur_page = page;
 }
 
-static void wait_flip(struct exynos_fliphandler *fh)
+static void exynos_wait_flip(struct exynos_fliphandler *fh)
 {
    const int timeout = -1;
 
@@ -276,7 +276,8 @@ static void wait_flip(struct exynos_fliphandler *fh)
       drmHandleEvent(fh->fds.fd, &fh->evctx);
 }
 
-static struct exynos_page *get_free_page(struct exynos_page *p, unsigned cnt)
+static struct exynos_page *exynos_get_free_page(
+      struct exynos_page *p, unsigned cnt)
 {
    unsigned i;
 
@@ -290,7 +291,7 @@ static struct exynos_page *get_free_page(struct exynos_page *p, unsigned cnt)
 }
 
 /* Count the number of used pages. */
-static unsigned pages_used(struct exynos_page *p, unsigned cnt)
+static unsigned exynos_pages_used(struct exynos_page *p, unsigned cnt)
 {
    unsigned i;
    unsigned count = 0;
@@ -304,7 +305,7 @@ static unsigned pages_used(struct exynos_page *p, unsigned cnt)
    return count;
 }
 
-static void clean_up_pages(struct exynos_page *p, unsigned cnt)
+static void exynos_clean_up_pages(struct exynos_page *p, unsigned cnt)
 {
    unsigned i;
 
@@ -321,7 +322,7 @@ static void clean_up_pages(struct exynos_page *p, unsigned cnt)
 }
 
 #if (EXYNOS_GFX_DEBUG_LOG == 1)
-static const char *buffer_name(enum exynos_buffer_type type)
+static const char *exynos_buffer_name(enum exynos_buffer_type type)
 {
    switch (type)
    {
@@ -339,22 +340,22 @@ static const char *buffer_name(enum exynos_buffer_type type)
 
 /* Create a GEM buffer with userspace mapping.
  * Buffer is cleared after creation. */
-static struct exynos_bo *create_mapped_buffer(
+static struct exynos_bo *exynos_create_mapped_buffer(
       struct exynos_device *dev, unsigned size)
 {
    struct exynos_bo *buf;
    const unsigned flags = 0;
 
    buf = exynos_bo_create(dev, size, flags);
-   if (buf == NULL)
+   if (!buf)
    {
-      RARCH_ERR("video_exynos: failed to create temp buffer object\n");
+      RARCH_ERR("[video_exynos]: failed to create temp buffer object\n");
       return NULL;
    }
 
-   if (exynos_bo_map(buf) == NULL)
+   if (!exynos_bo_map(buf))
    {
-      RARCH_ERR("video_exynos: failed to map temp buffer object\n");
+      RARCH_ERR("[video_exynos]: failed to map temp buffer object\n");
       exynos_bo_destroy(buf);
       return NULL;
    }
@@ -364,8 +365,8 @@ static struct exynos_bo *create_mapped_buffer(
    return buf;
 }
 
-static int realloc_buffer(struct exynos_data *pdata,
-                          enum exynos_buffer_type type, unsigned size)
+static int exynos_realloc_buffer(struct exynos_data *pdata,
+      enum exynos_buffer_type type, unsigned size)
 {
    struct exynos_bo *buf = pdata->buf[type];
    unsigned i;
@@ -373,16 +374,16 @@ static int realloc_buffer(struct exynos_data *pdata,
    if (size > buf->size)
    {
 #if (EXYNOS_GFX_DEBUG_LOG == 1)
-      RARCH_LOG("video_exynos: reallocating %s buffer (%u -> %u bytes)\n",
-            buffer_name(type), buf->size, size);
+      RARCH_LOG("[video_exynos]: reallocating %s buffer (%u -> %u bytes)\n",
+            exynos_buffer_name(type), buf->size, size);
 #endif
 
       exynos_bo_destroy(buf);
-      buf = create_mapped_buffer(pdata->device, size);
+      buf = exynos_create_mapped_buffer(pdata->device, size);
 
-      if (buf == NULL)
+      if (!buf)
       {
-         RARCH_ERR("video_exynos: reallocation failed\n");
+         RARCH_ERR("[video_exynos]: reallocation failed\n");
          return -1;
       }
 
@@ -400,30 +401,28 @@ static int realloc_buffer(struct exynos_data *pdata,
 }
 
 /* Clear a buffer associated to a G2D image by doing a (fast) solid fill. */
-static int clear_buffer(struct g2d_context *g2d, struct g2d_image *img)
+static int exynos_clear_buffer(struct g2d_context *g2d, struct g2d_image *img)
 {
-   int ret;
-
-   ret = g2d_solid_fill(g2d, img, 0, 0, img->width, img->height);
+   int ret = g2d_solid_fill(g2d, img, 0, 0, img->width, img->height);
 
    if (ret == 0)
       ret = g2d_exec(g2d);
 
    if (ret != 0)
-      RARCH_ERR("video_exynos: failed to clear buffer using G2D\n");
+      RARCH_ERR("[video_exynos]: failed to clear buffer using G2D\n");
 
    return ret;
 }
 
 /* Put a font glyph at a position in the buffer that is backing the G2D font image object. */
-static void put_glyph_rgba4444(struct exynos_data *pdata, const uint8_t *__restrict__ src,
-                               uint16_t color, unsigned g_width, unsigned g_height,
-                               unsigned g_pitch, unsigned dst_x, unsigned dst_y)
+static void exynos_put_glyph_rgba4444(struct exynos_data *pdata,
+      const uint8_t *__restrict__ src,
+      uint16_t color, unsigned g_width, unsigned g_height,
+      unsigned g_pitch, unsigned dst_x, unsigned dst_y)
 {
+   unsigned x, y;
    const enum exynos_image_type buf_type = defaults[EXYNOS_IMAGE_FONT].buf_type;
    const unsigned buf_width = pdata->src[EXYNOS_IMAGE_FONT]->width;
-
-   unsigned x, y;
    uint16_t *__restrict__ dst = (uint16_t*)pdata->buf[buf_type]->vaddr +
       dst_y * buf_width + dst_x;
 
@@ -438,7 +437,7 @@ static void put_glyph_rgba4444(struct exynos_data *pdata, const uint8_t *__restr
 }
 
 #if (EXYNOS_GFX_DEBUG_PERF == 1)
-void perf_init(struct exynos_perf *p)
+static void exynos_perf_init(struct exynos_perf *p)
 {
    p->memcpy_calls = 0;
    p->g2d_calls = 0;
@@ -449,23 +448,23 @@ void perf_init(struct exynos_perf *p)
    memset(&p->tspec, 0, sizeof(struct timespec));
 }
 
-void perf_finish(struct exynos_perf *p)
+static void exynos_perf_finish(struct exynos_perf *p)
 {
-   RARCH_LOG("video_exynos: debug: total memcpy calls: %u\n", p->memcpy_calls);
-   RARCH_LOG("video_exynos: debug: total g2d calls: %u\n", p->g2d_calls);
+   RARCH_LOG("[video_exynos]: debug: total memcpy calls: %u\n", p->memcpy_calls);
+   RARCH_LOG("[video_exynos]: debug: total g2d calls: %u\n", p->g2d_calls);
 
-   RARCH_LOG("video_exynos: debug: total memcpy time: %f seconds\n",
+   RARCH_LOG("[video_exynos]: debug: total memcpy time: %f seconds\n",
          (double)p->memcpy_time / 1000000.0);
-   RARCH_LOG("video_exynos: debug: total g2d time: %f seconds\n",
+   RARCH_LOG("[video_exynos]: debug: total g2d time: %f seconds\n",
          (double)p->g2d_time / 1000000.0);
 
-   RARCH_LOG("video_exynos: debug: average time per memcpy call: %f microseconds\n",
+   RARCH_LOG("[video_exynos]: debug: average time per memcpy call: %f microseconds\n",
          (double)p->memcpy_time / (double)p->memcpy_calls);
-   RARCH_LOG("video_exynos: debug: average time per g2d call: %f microseconds\n",
+   RARCH_LOG("[video_exynos]: debug: average time per g2d call: %f microseconds\n",
          (double)p->g2d_time / (double)p->g2d_calls);
 }
 
-void perf_memcpy(struct exynos_perf *p, bool start)
+static void exynos_perf_memcpy(struct exynos_perf *p, bool start)
 {
    if (start)
       clock_gettime(CLOCK_MONOTONIC, &p->tspec);
@@ -480,7 +479,7 @@ void perf_memcpy(struct exynos_perf *p, bool start)
    }
 }
 
-void perf_g2d(struct exynos_perf *p, bool start)
+static void exynos_perf_g2d(struct exynos_perf *p, bool start)
 {
    if (start)
       clock_gettime(CLOCK_MONOTONIC, &p->tspec);
@@ -496,57 +495,51 @@ void perf_g2d(struct exynos_perf *p, bool start)
 }
 #endif
 
-
 static int exynos_g2d_init(struct exynos_data *pdata)
 {
-   struct g2d_image *dst;
-   struct g2d_context *g2d;
    unsigned i;
-
-   g2d = g2d_init(pdata->fd);
-   if (g2d == NULL)
+   struct g2d_image *dst = NULL;
+   struct g2d_context *g2d = g2d_init(pdata->fd);
+   if (!g2d)
       return -1;
 
    dst = calloc(1, sizeof(struct g2d_image));
-   if (dst == NULL)
+   if (!dst)
       goto fail;
 
-   dst->buf_type = G2D_IMGBUF_GEM;
+   dst->buf_type   = G2D_IMGBUF_GEM;
    dst->color_mode = (pdata->bpp == 2) ? G2D_COLOR_FMT_RGB565 | G2D_ORDER_AXRGB :
       G2D_COLOR_FMT_ARGB8888 | G2D_ORDER_AXRGB;
-   dst->width = pdata->width;
-   dst->height = pdata->height;
-   dst->stride = pdata->pitch;
-   dst->color = 0xff000000; /* Clear color for solid fill operation. */
+   dst->width      = pdata->width;
+   dst->height     = pdata->height;
+   dst->stride     = pdata->pitch;
+   dst->color      = 0xff000000; /* Clear color for solid fill operation. */
 
    for (i = 0; i < EXYNOS_IMAGE_COUNT; ++i)
    {
       const enum exynos_buffer_type buf_type = defaults[i].buf_type;
       const unsigned buf_size = defaults[i].width * defaults[i].height * defaults[i].bpp;
-
-      struct g2d_image *src;
-
-      src = calloc(1, sizeof(struct g2d_image));
-      if (src == NULL)
+      struct g2d_image *src   = (struct g2d_image*)calloc(1, sizeof(struct g2d_image));
+      if (!src)
          break;
 
-      src->width = defaults[i].width;
-      src->height = defaults[i].height;
-      src->stride = defaults[i].width * defaults[i].bpp;
+      src->width       = defaults[i].width;
+      src->height      = defaults[i].height;
+      src->stride      = defaults[i].width * defaults[i].bpp;
 
-      src->color_mode = defaults[i].g2d_color_mode;
+      src->color_mode  = defaults[i].g2d_color_mode;
 
       /* Associate GEM buffer storage with G2D image. */
-      src->buf_type = G2D_IMGBUF_GEM;
-      src->bo[0] = pdata->buf[buf_type]->handle;
+      src->buf_type    = G2D_IMGBUF_GEM;
+      src->bo[0]       = pdata->buf[buf_type]->handle;
 
       src->repeat_mode = G2D_REPEAT_MODE_PAD; /* Pad creates no border artifacts. */
 
       /* Make sure that the storage buffer is large enough. If the code is working *
        * properly, then this is just a NOP. Still put it here as an insurance.     */
-      realloc_buffer(pdata, buf_type, buf_size);
+      exynos_realloc_buffer(pdata, buf_type, buf_size);
 
-      pdata->src[i] = src;
+      pdata->src[i]    = src;
    }
 
    if (i != EXYNOS_IMAGE_COUNT)
@@ -591,43 +584,45 @@ static void exynos_g2d_free(struct exynos_data *pdata)
 static int exynos_open(struct exynos_data *pdata)
 {
   char buf[32];
-  int devidx;
   unsigned i;
   int fd = -1;
   struct exynos_drm *drm                 = NULL;
   struct exynos_fliphandler *fliphandler = NULL;
   settings_t *settings                   = config_get_ptr();
+  int devidx                             = exynos_get_device_index();
 
-  pdata->fd = -1;
+  if (pdata)
+     pdata->fd                              = -1;
 
-  devidx = get_device_index();
   if (devidx != -1)
     snprintf(buf, sizeof(buf), "/dev/dri/card%d", devidx);
   else
   {
-    RARCH_ERR("video_exynos: no compatible drm device found\n");
+    RARCH_ERR("[video_exynos]: no compatible DRM device found\n");
     return -1;
   }
 
   fd = open(buf, O_RDWR);
+
   if (fd < 0)
   {
-    RARCH_ERR("video_exynos: can't open drm device\n");
+    RARCH_ERR("[video_exynos]: can't open DRM device\n");
     return -1;
   }
 
-  drm = calloc(1, sizeof(struct exynos_drm));
-  if (drm == NULL)
+  drm = (struct exynos_drm*)calloc(1, sizeof(struct exynos_drm));
+
+  if (!drm)
   {
-    RARCH_ERR("video_exynos: failed to allocate drm\n");
+    RARCH_ERR("[video_exynos]: failed to allocate DRM.\n");
     close(fd);
     return -1;
   }
 
   drm->resources = drmModeGetResources(fd);
-  if (drm->resources == NULL)
+  if (!drm->resources)
   {
-    RARCH_ERR("video_exynos: failed to get drm resources\n");
+    RARCH_ERR("[video_exynos]: failed to get DRM resources\n");
     goto fail;
   }
 
@@ -638,7 +633,7 @@ static int exynos_open(struct exynos_data *pdata)
       continue;
 
     drm->connector = drmModeGetConnector(fd, drm->resources->connectors[i]);
-    if (drm->connector == NULL)
+    if (!drm->connecto)
       continue;
  
     if (drm->connector->connection == DRM_MODE_CONNECTED &&
@@ -651,7 +646,7 @@ static int exynos_open(struct exynos_data *pdata)
 
   if (i == drm->resources->count_connectors)
   {
-    RARCH_ERR("video_exynos: no currently active connector found\n");
+    RARCH_ERR("[video_exynos]: no currently active connector found.\n");
     goto fail;
   }
 
@@ -659,7 +654,7 @@ static int exynos_open(struct exynos_data *pdata)
   {
     drm->encoder = drmModeGetEncoder(fd, drm->resources->encoders[i]);
  
-    if (drm->encoder == NULL)
+    if (!drm->encoder)
        continue;
  
     if (drm->encoder->encoder_id == drm->connector->encoder_id)
@@ -669,19 +664,19 @@ static int exynos_open(struct exynos_data *pdata)
     drm->encoder = NULL;
   }
 
-  fliphandler = calloc(1, sizeof(struct exynos_fliphandler));
+  fliphandler = (struct exynos_fliphandler*)calloc(1, sizeof(struct exynos_fliphandler));
 
-  if (fliphandler == NULL)
+  if (!fliphandler)
   {
-    RARCH_ERR("video_exynos: failed to allocate fliphandler\n");
+    RARCH_ERR("[video_exynos]: failed to allocate fliphandler\n");
     goto fail;
   }
 
   /* Setup the flip handler. */
-  fliphandler->fds.fd = fd;
-  fliphandler->fds.events = POLLIN;
-  fliphandler->evctx.version = DRM_EVENT_CONTEXT_VERSION;
-  fliphandler->evctx.page_flip_handler = page_flip_handler;
+  fliphandler->fds.fd                  = fd;
+  fliphandler->fds.events              = POLLIN;
+  fliphandler->evctx.version           = DRM_EVENT_CONTEXT_VERSION;
+  fliphandler->evctx.page_flip_handler = exynos_page_flip_handler;
 
   strncpy(pdata->drmname, buf, sizeof(buf));
   pdata->fd = fd;
@@ -689,14 +684,14 @@ static int exynos_open(struct exynos_data *pdata)
   pdata->drm = drm;
   pdata->fliphandler = fliphandler;
 
-  RARCH_LOG("video_exynos: using DRM device \"%s\" with connector id %u\n",
+  RARCH_LOG("[video_exynos]: using DRM device \"%s\" with connector id %u.\n",
             pdata->drmname, pdata->drm->connector->connector_id);
 
   return 0;
 
 fail:
   free(fliphandler);
-  clean_up_drm(drm, fd);
+  exynos_clean_up_drm(drm, fd);
 
   return -1;
 }
@@ -709,7 +704,7 @@ static void exynos_close(struct exynos_data *pdata)
 
    memset(pdata->drmname, 0, sizeof(char) * 32);
 
-   clean_up_drm(pdata->drm, pdata->fd);
+   exynos_clean_up_drm(pdata->drm, pdata->fd);
    pdata->fd = -1;
    pdata->drm = NULL;
 }
@@ -734,9 +729,9 @@ static int exynos_init(struct exynos_data *pdata, unsigned bpp)
          }
       }
 
-      if (drm->mode == NULL)
+      if (!drm->mode)
       {
-         RARCH_ERR("video_exynos: requested resolution (%ux%u) not available\n",
+         RARCH_ERR("[video_exynos]: requested resolution (%ux%u) not available\n",
                settings->video.fullscreen_x, settings->video.fullscreen_y);
          goto fail;
       }
@@ -750,37 +745,38 @@ static int exynos_init(struct exynos_data *pdata, unsigned bpp)
 
    if (drm->mode->hdisplay == 0 || drm->mode->vdisplay == 0)
    {
-      RARCH_ERR("video_exynos: failed to select sane resolution\n");
+      RARCH_ERR("[video_exynos]: failed to select sane resolution\n");
       goto fail;
    }
 
-   drm->crtc_id = drm->encoder->crtc_id;
+   drm->crtc_id      = drm->encoder->crtc_id;
    drm->connector_id = drm->connector->connector_id;
-   drm->orig_crtc = drmModeGetCrtc(fd, drm->crtc_id);
-   if (!drm->orig_crtc)
-      RARCH_WARN("video_exynos: cannot find original crtc\n");
+   drm->orig_crtc    = drmModeGetCrtc(fd, drm->crtc_id);
 
-   pdata->width = drm->mode->hdisplay;
-   pdata->height = drm->mode->vdisplay;
+   if (!drm->orig_crtc)
+      RARCH_WARN("[video_exynos]: cannot find original crtc\n");
+
+   pdata->width      = drm->mode->hdisplay;
+   pdata->height     = drm->mode->vdisplay;
 
    pdata->aspect = (float)drm->mode->hdisplay / (float)drm->mode->vdisplay;
 
    /* Always use triple buffering to reduce chance of tearing. */
-   pdata->num_pages = 3;
+   pdata->num_pages  = 3;
 
-   pdata->bpp = bpp;
-   pdata->pitch = bpp * pdata->width;
-   pdata->size = pdata->pitch * pdata->height;
+   pdata->bpp        = bpp;
+   pdata->pitch      = bpp * pdata->width;
+   pdata->size       = pdata->pitch * pdata->height;
 
-   RARCH_LOG("video_exynos: selected %ux%u resolution with %u bpp\n",
+   RARCH_LOG("[video_exynos]: selected %ux%u resolution with %u bpp\n",
          pdata->width, pdata->height, pdata->bpp);
 
    return 0;
 
 fail:
-   restore_crtc(drm, fd);
+   exynos_restore_crtc(drm, fd);
 
-   drm->mode = NULL;
+   drm->mode         = NULL;
 
    return -1;
 }
@@ -790,42 +786,40 @@ static void exynos_deinit(struct exynos_data *pdata)
 {
   struct exynos_drm *drm = pdata->drm;
 
-  restore_crtc(drm, pdata->fd);
+  exynos_restore_crtc(drm, pdata->fd);
 
-  drm = NULL;
+  drm              = NULL;
 
-  pdata->width = 0;
-  pdata->height = 0;
-
+  pdata->width     = 0;
+  pdata->height    = 0;
   pdata->num_pages = 0;
-
-  pdata->bpp = 0;
-  pdata->pitch = 0;
-  pdata->size = 0;
+  pdata->bpp       = 0;
+  pdata->pitch     = 0;
+  pdata->size      = 0;
 }
 
 static int exynos_alloc(struct exynos_data *pdata)
 {
-  struct exynos_device *device;
   struct exynos_bo *bo;
   struct exynos_page *pages;
   unsigned i;
   uint32_t pixel_format;
-  uint32_t handles[4] = {0}, pitches[4] = {0}, offsets[4] = {0};
-
   const unsigned flags = 0;
+  uint32_t handles[4] = {0}, pitches[4] = {0}, offsets[4] = {0};
+  struct exynos_device *device = exynos_device_create(pdata->fd);
 
-  device = exynos_device_create(pdata->fd);
-  if (device == NULL)
+  if (!device)
   {
-    RARCH_ERR("video_exynos: failed to create device from fd\n");
+    RARCH_ERR("[video_exynos]: failed to create device from fd\n");
     return -1;
   }
 
-  pages = calloc(pdata->num_pages, sizeof(struct exynos_page));
-  if (pages == NULL)
+  pages = (struct exynos_page*)calloc(pdata->num_pages,
+        sizeof(struct exynos_page));
+
+  if (!pages)
   {
-    RARCH_ERR("video_exynos: failed to allocate pages\n");
+    RARCH_ERR("[video_exynos]: failed to allocate pages\n");
     goto fail_alloc;
   }
 
@@ -833,8 +827,8 @@ static int exynos_alloc(struct exynos_data *pdata)
   {
     const unsigned buffer_size = defaults[i].width * defaults[i].height * defaults[i].bpp;
 
-    bo = create_mapped_buffer(device, buffer_size);
-    if (bo == NULL)
+    bo = exynos_create_mapped_buffer(device, buffer_size);
+    if (!bo)
        break;
 
     pdata->buf[i] = bo;
@@ -854,24 +848,24 @@ static int exynos_alloc(struct exynos_data *pdata)
   for (i = 0; i < pdata->num_pages; ++i)
   {
     bo = exynos_bo_create(device, pdata->size, flags);
-    if (bo == NULL)
+    if (!bo)
     {
-      RARCH_ERR("video_exynos: failed to create buffer object\n");
+      RARCH_ERR("[video_exynos]: failed to create buffer object\n");
       goto fail;
     }
 
     /* Don't map the BO, since we don't access it through userspace. */
 
-    pages[i].bo = bo;
-    pages[i].base = pdata;
+    pages[i].bo    = bo;
+    pages[i].base  = pdata;
 
-    pages[i].used = false;
+    pages[i].used  = false;
     pages[i].clear = true;
   }
 
   pixel_format = (pdata->bpp == 2) ? DRM_FORMAT_RGB565 : DRM_FORMAT_XRGB8888;
-  pitches[0] = pdata->pitch;
-  offsets[0] = 0;
+  pitches[0]   = pdata->pitch;
+  offsets[0]   = 0;
 
   for (i = 0; i < pdata->num_pages; ++i)
   {
@@ -881,26 +875,27 @@ static int exynos_alloc(struct exynos_data *pdata)
                       pixel_format, handles, pitches, offsets,
                       &pages[i].buf_id, flags))
     {
-      RARCH_ERR("video_exynos: failed to add bo %u to fb\n", i);
+      RARCH_ERR("[video_exynos]: failed to add bo %u to fb\n", i);
       goto fail;
     }
   }
 
   /* Setup CRTC: display the last allocated page. */
-  if (drmModeSetCrtc(pdata->fd, pdata->drm->crtc_id, pages[pdata->num_pages - 1].buf_id,
-                     0, 0, &pdata->drm->connector_id, 1, pdata->drm->mode))
+  if (drmModeSetCrtc(pdata->fd, pdata->drm->crtc_id,
+           pages[pdata->num_pages - 1].buf_id,
+           0, 0, &pdata->drm->connector_id, 1, pdata->drm->mode))
   {
-     RARCH_ERR("video_exynos: initial crtc setup failed\n");
+     RARCH_ERR("[video_exynos]: initial CRTC setup failed.\n");
      goto fail;
   }
 
-  pdata->pages = pages;
+  pdata->pages  = pages;
   pdata->device = device;
 
   return 0;
 
 fail:
-  clean_up_pages(pages, pdata->num_pages);
+  exynos_clean_up_pages(pages, pdata->num_pages);
 
 fail_alloc:
   exynos_device_destroy(device);
@@ -916,9 +911,9 @@ static void exynos_free(struct exynos_data *pdata)
    /* Disable the CRTC. */
    if (drmModeSetCrtc(pdata->fd, pdata->drm->crtc_id, 0,
                       0, 0, NULL, 0, NULL))
-      RARCH_WARN("video_exynos: failed to disable the crtc\n");
+      RARCH_WARN("[video_exynos]: failed to disable the CRTC.\n");
 
-   clean_up_pages(pdata->pages, pdata->num_pages);
+   exynos_clean_up_pages(pdata->pages, pdata->num_pages);
 
    free(pdata->pages);
    pdata->pages = NULL;
@@ -939,12 +934,12 @@ static void exynos_alloc_status(struct exynos_data *pdata)
   unsigned i;
   struct exynos_page *pages = pdata->pages;
 
-  RARCH_LOG("video_exynos: allocated %u pages with %u bytes each (pitch = %u bytes)\n",
+  RARCH_LOG("[video_exynos]: Allocated %u pages with %u bytes each (pitch = %u bytes)\n",
             pdata->num_pages, pdata->size, pdata->pitch);
 
   for (i = 0; i < pdata->num_pages; ++i)
   {
-    RARCH_LOG("video_exynos: page %u: BO at %p, buffer id = %u\n",
+    RARCH_LOG("[video_exynos]: page %u: BO at %p, buffer id = %u\n",
               i, pages[i].bo, pages[i].buf_id);
   }
 }
@@ -958,19 +953,19 @@ static struct exynos_page *exynos_free_page(struct exynos_data *pdata)
    struct g2d_image *dst = pdata->dst;
 
    /* Wait until a free page is available. */
-   while (page == NULL)
+   while (!page)
    {
-      page = get_free_page(pdata->pages, pdata->num_pages);
+      page = exynos_get_free_page(pdata->pages, pdata->num_pages);
 
-      if (page == NULL)
-         wait_flip(pdata->fliphandler);
+      if (!page)
+         exynos_wait_flip(pdata->fliphandler);
    }
 
    dst->bo[0] = page->bo->handle;
 
    if (page->clear)
    {
-      if (clear_buffer(pdata->g2d, dst) == 0)
+      if (exynos_clear_buffer(pdata->g2d, dst) == 0)
          page->clear = false;
    }
 
@@ -986,9 +981,8 @@ static void exynos_setup_scale(struct exynos_data *pdata, unsigned width,
   struct g2d_image *src = pdata->src[EXYNOS_IMAGE_FRAME];
   const float aspect = (float)width / (float)height;
 
-  src->width = width;
-  src->height = height;
-
+  src->width      = width;
+  src->height     = height;
   src->color_mode = (src_bpp == 2) ?
                     G2D_COLOR_FMT_RGB565 | G2D_ORDER_AXRGB:
                     G2D_COLOR_FMT_XRGB8888 | G2D_ORDER_AXRGB;
@@ -1043,11 +1037,11 @@ static int exynos_blit_frame(struct exynos_data *pdata, const void *frame,
    const unsigned size   = src_pitch * pdata->blit_params[5];
    struct g2d_image *src = pdata->src[EXYNOS_IMAGE_FRAME];
 
-   if (realloc_buffer(pdata, buf_type, size) != 0)
+   if (exynos_realloc_buffer(pdata, buf_type, size) != 0)
       return -1;
 
 #if (EXYNOS_GFX_DEBUG_PERF == 1)
-   perf_memcpy(&pdata->perf, true);
+   exynos_perf_memcpy(&pdata->perf, true);
 #endif
 
    /* HACK: Without IOMMU the G2D only works properly between GEM buffers. */
@@ -1055,11 +1049,11 @@ static int exynos_blit_frame(struct exynos_data *pdata, const void *frame,
    src->stride = src_pitch;
 
 #if (EXYNOS_GFX_DEBUG_PERF == 1)
-   perf_memcpy(&pdata->perf, false);
+   exynos_perf_memcpy(&pdata->perf, false);
 #endif
 
 #if (EXYNOS_GFX_DEBUG_PERF == 1)
-   perf_g2d(&pdata->perf, true);
+   exynos_perf_g2d(&pdata->perf, true);
 #endif
 
    if (g2d_copy_with_scale(pdata->g2d, src, pdata->dst, 0, 0,
@@ -1068,12 +1062,12 @@ static int exynos_blit_frame(struct exynos_data *pdata, const void *frame,
             pdata->blit_params[2], pdata->blit_params[3], 0) ||
          g2d_exec(pdata->g2d))
    {
-      RARCH_ERR("video_exynos: failed to blit frame\n");
+      RARCH_ERR("[video_exynos]: failed to blit frame.\n");
       return -1;
    }
 
 #if (EXYNOS_GFX_DEBUG_PERF == 1)
-   perf_g2d(&pdata->perf, false);
+   exynos_perf_g2d(&pdata->perf, false);
 #endif
 
    return 0;
@@ -1085,7 +1079,7 @@ static int exynos_blend_menu(struct exynos_data *pdata,
    struct g2d_image *src = pdata->src[EXYNOS_IMAGE_MENU];
 
 #if (EXYNOS_GFX_DEBUG_PERF == 1)
-   perf_g2d(&pdata->perf, true);
+   exynos_perf_g2d(&pdata->perf, true);
 #endif
 
    if (g2d_scale_and_blend(pdata->g2d, src, pdata->dst, 0, 0,
@@ -1094,12 +1088,12 @@ static int exynos_blend_menu(struct exynos_data *pdata,
             pdata->blit_params[3], G2D_OP_INTERPOLATE) ||
          g2d_exec(pdata->g2d))
    {
-      RARCH_ERR("video_exynos: failed to blend menu\n");
+      RARCH_ERR("[video_exynos]: failed to blend menu.\n");
       return -1;
    }
 
 #if (EXYNOS_GFX_DEBUG_PERF == 1)
-   perf_g2d(&pdata->perf, false);
+   exynos_perf_g2d(&pdata->perf, false);
 #endif
 
    return 0;
@@ -1110,7 +1104,7 @@ static int exynos_blend_font(struct exynos_data *pdata)
    struct g2d_image *src = pdata->src[EXYNOS_IMAGE_FONT];
 
 #if (EXYNOS_GFX_DEBUG_PERF == 1)
-   perf_g2d(&pdata->perf, true);
+   exynos_perf_g2d(&pdata->perf, true);
 #endif
 
    if (g2d_scale_and_blend(pdata->g2d, src, pdata->dst, 0, 0, src->width,
@@ -1118,12 +1112,12 @@ static int exynos_blend_font(struct exynos_data *pdata)
             G2D_OP_INTERPOLATE) ||
          g2d_exec(pdata->g2d))
    {
-      RARCH_ERR("video_exynos: failed to blend font\n");
+      RARCH_ERR("[video_exynos]: failed to blend font\n");
       return -1;
    }
 
 #if (EXYNOS_GFX_DEBUG_PERF == 1)
-   perf_g2d(&pdata->perf, false);
+   exynos_perf_g2d(&pdata->perf, false);
 #endif
 
    return 0;
@@ -1133,13 +1127,13 @@ static int exynos_flip(struct exynos_data *pdata, struct exynos_page *page)
 {
    /* We don't queue multiple page flips. */
    if (pdata->pageflip_pending > 0)
-      wait_flip(pdata->fliphandler);
+      exynos_wait_flip(pdata->fliphandler);
 
    /* Issue a page flip at the next vblank interval. */
    if (drmModePageFlip(pdata->fd, pdata->drm->crtc_id, page->buf_id,
             DRM_MODE_PAGE_FLIP_EVENT, page) != 0)
    {
-      RARCH_ERR("video_exynos: failed to issue page flip\n");
+      RARCH_ERR("[video_exynos]: failed to issue page flip\n");
       return -1;
    }
    else
@@ -1148,8 +1142,8 @@ static int exynos_flip(struct exynos_data *pdata, struct exynos_page *page)
    }
 
    /* On startup no frame is displayed. We therefore wait for the initial flip to finish. */
-   if (pdata->cur_page == NULL)
-      wait_flip(pdata->fliphandler);
+   if (!pdata->cur_page)
+      exynos_wait_flip(pdata->fliphandler);
 
    return 0;
 }
@@ -1202,15 +1196,16 @@ static int exynos_init_font(struct exynos_video *vid)
   }
   else
   {
-    RARCH_ERR("video_exynos: creating font renderer failed\n");
+    RARCH_ERR("[video_exynos]: creating font renderer failed\n");
     return -1;
   }
 
   /* The font buffer color type is ARGB4444. */
-  if (realloc_buffer(pdata, defaults[EXYNOS_IMAGE_FONT].buf_type,
-                     buf_width * buf_height * buf_bpp) != 0) {
-    vid->font_driver->free(vid->font);
-    return -1;
+  if (exynos_realloc_buffer(pdata, defaults[EXYNOS_IMAGE_FONT].buf_type,
+                     buf_width * buf_height * buf_bpp) != 0)
+  {
+     vid->font_driver->free(vid->font);
+     return -1;
   }
 
   src->width = buf_width;
@@ -1218,7 +1213,7 @@ static int exynos_init_font(struct exynos_video *vid)
   src->stride = buf_width * buf_bpp;
 
 #if (EXYNOS_GFX_DEBUG_LOG == 1)
-  RARCH_LOG("video_exynos: using font rendering image with size %ux%u\n",
+  RARCH_LOG("[video_exynos]: using font rendering image with size %ux%u\n",
             buf_width, buf_height);
 #endif
 
@@ -1226,7 +1221,7 @@ static int exynos_init_font(struct exynos_video *vid)
 }
 
 static int exynos_render_msg(struct exynos_video *vid,
-                             const char *msg)
+      const char *msg)
 {
   const struct font_atlas *atlas;
   struct exynos_data *pdata = vid->data;
@@ -1235,10 +1230,10 @@ static int exynos_render_msg(struct exynos_video *vid,
   int msg_base_x            = settings->video.msg_pos_x * dst->width;
   int msg_base_y            = (1.0f - settings->video.msg_pos_y) * dst->height;
 
-  if (vid->font == NULL || vid->font_driver == NULL)
+  if (!vid->font || !vid->font_driver)
     return -1;
 
-  if (clear_buffer(pdata->g2d, dst) != 0)
+  if (exynos_clear_buffer(pdata->g2d, dst) != 0)
     return -1;
 
   atlas = vid->font_driver->get_atlas(vid->font);
@@ -1249,7 +1244,7 @@ static int exynos_render_msg(struct exynos_video *vid,
      int glyph_width, glyph_height;
      const uint8_t *src = NULL;
      const struct font_glyph *glyph = vid->font_driver->get_glyph(vid->font, (uint8_t)*msg);
-     if (glyph == NULL)
+     if (!glyph)
         continue;
 
      base_x = msg_base_x + glyph->draw_offset_x;
@@ -1285,7 +1280,7 @@ static int exynos_render_msg(struct exynos_video *vid,
      if (glyph_height > max_height)
         glyph_height = max_height;
 
-     put_glyph_rgba4444(pdata, src, vid->font_color,
+     exynos_put_glyph_rgba4444(pdata, src, vid->font_color,
            glyph_width, glyph_height,
            atlas->width, base_x, base_y);
 
@@ -1315,25 +1310,25 @@ static void *exynos_gfx_init(const video_info_t *video,
 
   if (exynos_open(vid->data) != 0)
   {
-    RARCH_ERR("video_exynos: opening device failed\n");
+    RARCH_ERR("[video_exynos]: opening device failed\n");
     goto fail;
   }
 
   if (exynos_init(vid->data, fb_bpp) != 0)
   {
-    RARCH_ERR("video_exynos: initialization failed\n");
+    RARCH_ERR("[video_exynos]: initialization failed\n");
     goto fail_init;
   }
 
   if (exynos_alloc(vid->data) != 0)
   {
-    RARCH_ERR("video_exynos: allocation failed\n");
+    RARCH_ERR("[video_exynos]: allocation failed\n");
     goto fail_alloc;
   }
 
   if (exynos_g2d_init(vid->data) != 0)
   {
-    RARCH_ERR("video_exynos: G2D initialization failed\n");
+    RARCH_ERR("[video_exynos]: G2D initialization failed\n");
     goto fail_g2d;
   }
 
@@ -1342,7 +1337,7 @@ static void *exynos_gfx_init(const video_info_t *video,
 #endif
 
 #if (EXYNOS_GFX_DEBUG_PERF == 1)
-  perf_init(&vid->data->perf);
+  exynos_perf_init(&vid->data->perf);
 #endif
 
   if (input && input_data)
@@ -1350,7 +1345,7 @@ static void *exynos_gfx_init(const video_info_t *video,
 
   if (exynos_init_font(vid) != 0)
   {
-    RARCH_ERR("video_exynos: font initialization failed\n");
+    RARCH_ERR("[video_exynos]: font initialization failed\n");
     goto fail_font;
   }
 
@@ -1389,15 +1384,15 @@ static void exynos_gfx_free(void *data)
   exynos_g2d_free(pdata);
 
   /* Flush pages: One page remains, the one being displayed at this moment. */
-  while (pages_used(pdata->pages, pdata->num_pages) > 1)
-    wait_flip(pdata->fliphandler);
+  while (exynos_pages_used(pdata->pages, pdata->num_pages) > 1)
+    exynos_wait_flip(pdata->fliphandler);
 
   exynos_free(pdata);
   exynos_deinit(pdata);
   exynos_close(pdata);
 
 #if (EXYNOS_GFX_DEBUG_PERF == 1)
-  perf_finish(&pdata->perf);
+  exynos_perf_finish(&pdata->perf);
 #endif
 
   free(pdata);
@@ -1416,7 +1411,7 @@ static bool exynos_gfx_frame(void *data, const void *frame, unsigned width,
   settings_t *settings      = config_get_ptr();
 
    /* Check if neither menu nor core framebuffer is to be displayed. */
-   if (!vid->menu_active && frame == NULL)
+   if (!vid->menu_active && !frame)
       return true;
 
    if (frame != NULL)
@@ -1427,7 +1422,7 @@ static bool exynos_gfx_frame(void *data, const void *frame, unsigned width,
          if (width == 0 || height == 0)
             return true;
 
-         RARCH_LOG("video_exynos: resolution changed by core: %ux%u -> %ux%u\n",
+         RARCH_LOG("[video_exynos]: resolution changed by core: %ux%u -> %ux%u\n",
                vid->width, vid->height, width, height);
          exynos_setup_scale(vid->data, width, height, vid->bytes_per_pixel);
 
@@ -1454,7 +1449,7 @@ static bool exynos_gfx_frame(void *data, const void *frame, unsigned width,
    if (vid->width == 0 || vid->height == 0)
       exynos_set_fake_blit(vid->data);
 
-   if (page == NULL)
+   if (!page)
       page = exynos_free_page(vid->data);
 
    if (vid->menu_active)
@@ -1582,7 +1577,7 @@ static void exynos_set_texture_frame(void *data, const void *frame, bool rgb32,
    struct g2d_image *src = pdata->src[EXYNOS_IMAGE_MENU];
    const unsigned size = width * height * (rgb32 ? 4 : 2);
 
-   if (realloc_buffer(pdata, buf_type, size) != 0)
+   if (exynos_realloc_buffer(pdata, buf_type, size) != 0)
       return;
 
    src->width = width;
@@ -1594,13 +1589,13 @@ static void exynos_set_texture_frame(void *data, const void *frame, bool rgb32,
    src->component_alpha = (unsigned char)(255.0f * alpha);
 
 #if (EXYNOS_GFX_DEBUG_PERF == 1)
-   perf_memcpy(&pdata->perf, true);
+   exynos_perf_memcpy(&pdata->perf, true);
 #endif
 
    memcpy_neon(pdata->buf[buf_type]->vaddr, frame, size);
 
 #if (EXYNOS_GFX_DEBUG_PERF == 1)
-   perf_memcpy(&pdata->perf, false);
+   exynos_perf_memcpy(&pdata->perf, false);
 #endif
 }
 

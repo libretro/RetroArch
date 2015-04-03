@@ -160,7 +160,7 @@ static void dispmanx_restore_console(void *data)
    system("setterm -cursor on");
 }
 
-static void vsync_callback(DISPMANX_UPDATE_HANDLE_T u, void *data)
+static void dispmanx_vsync_callback(DISPMANX_UPDATE_HANDLE_T u, void *data)
 {
    struct dispmanx_video *_dispvars = data;
 
@@ -326,7 +326,7 @@ static void dispmanx_update_main(void *data, const void *frame)
    vc_dispmanx_element_change_source(_dispvars->update, _dispvars->element,
          _dispvars->nextPage->resource);
 
-   vc_dispmanx_update_submit(_dispvars->update, vsync_callback, (void*)_dispvars);
+   vc_dispmanx_update_submit(_dispvars->update, dispmanx_vsync_callback, (void*)_dispvars);
 
    slock_lock(_dispvars->pending_mutex);
    _dispvars->pageflip_pending = true;	
