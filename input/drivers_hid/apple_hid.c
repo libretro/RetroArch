@@ -298,7 +298,6 @@ static void apple_hid_device_add(void *data, IOReturn result,
       return;
 
    adapter->handle        = device;
-   adapter->slot          = MAX_USERS;
 
    ret = IOHIDDeviceOpen(device, kIOHIDOptionsTypeNone);
 
