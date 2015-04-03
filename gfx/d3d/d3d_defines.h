@@ -17,8 +17,8 @@
 #ifndef D3DVIDEO_DEFINES_H
 #define D3DVIDEO_DEFINES_H
 
-#if defined(HAVE_WIN32_D3D9) || defined(_XBOX360)
-//Direct3D 9
+#if defined(HAVE_D3D9)
+/* Direct3D 9 */
 #include <d3d9.h>
 #include <d3dx9.h>
 #include <d3dx9core.h>
@@ -46,7 +46,7 @@
 #elif defined(_XBOX1)
 #include <xtl.h>
 
-//Direct3D 8
+/* Direct3D 8 */
 #define LPDIRECT3D                     LPDIRECT3D8
 #define LPDIRECT3DDEVICE               LPDIRECT3DDEVICE8
 #define LPDIRECT3DTEXTURE              LPDIRECT3DTEXTURE8

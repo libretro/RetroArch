@@ -100,7 +100,7 @@ VIDEO CONTEXT
 
 #if defined(__CELLOS_LV2__)
 #include "../gfx/drivers_context/ps3_ctx.c"
-#elif defined(_XBOX) || defined(HAVE_WIN32_D3D9)
+#elif defined(HAVE_D3D)
 #include "../gfx/drivers_context/d3d_ctx.c"
 #elif defined(ANDROID)
 #include "../gfx/drivers_context/androidegl_ctx.c"
@@ -223,7 +223,7 @@ VIDEO DRIVER
 #include "../gfx/drivers/xvideo.c"
 #endif
 
-#if defined(_XBOX) || defined(HAVE_WIN32_D3D9)
+#if defined(HAVE_D3D)
 #include "../gfx/d3d/d3d_wrapper.c"
 #include "../gfx/d3d/d3d.cpp"
 #ifndef _XBOX
@@ -248,6 +248,7 @@ FONTS
 
 #include "../gfx/font_renderer_driver.c"
 #include "../gfx/drivers_font_renderer/bitmapfont.c"
+#include "../gfx/font_driver.c"
 
 #if defined(HAVE_FREETYPE)
 #include "../gfx/drivers_font_renderer/freetype.c"
@@ -257,15 +258,7 @@ FONTS
 #include "../gfx/drivers_font_renderer/coretext.c"
 #endif
 
-#ifdef HAVE_OPENGL
-#include "../gfx/font_gl_driver.c"
-#endif
-
-#if defined(_XBOX) || defined(HAVE_WIN32_D3D9)
-#include "../gfx/font_d3d_driver.c"
-#endif
-
-#if defined(HAVE_WIN32_D3D9)
+#if defined(HAVE_D3D9)
 #include "../gfx/drivers_font/d3d_w32_font.c"
 #endif
 

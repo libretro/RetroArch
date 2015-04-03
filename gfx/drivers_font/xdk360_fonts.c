@@ -15,7 +15,7 @@
  */
 
 #include <xtl.h>
-#include "../font_d3d_driver.h"
+#include "../font_driver.h"
 #include "../d3d/d3d.h"
 #include "../../general.h"
 #include "../../xdk/xdk_resources.h"

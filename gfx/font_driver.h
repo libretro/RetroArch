@@ -14,16 +14,32 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __FONT_GL_DRIVER_H__
-#define __FONT_GL_DRIVER_H__
+#ifndef __FONT_DRIVER_H__
+#define __FONT_DRIVER_H__
 
-#include "../driver.h"
-#include "font_renderer_driver.h"
-#include "gl_common.h"
+#include <stdint.h>
 #include <boolean.h>
+#include "../driver.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#ifdef HAVE_D3D
+bool d3d_font_init_first(
+      const void **font_driver, void **font_handle,
+      void *video_data, const char *font_path, float font_size);
+#endif
+
+#ifdef HAVE_OPENGL
 bool gl_font_init_first(const void **font_driver,
       void **font_handle, void *gl_data,
       const char *font_path, float font_size);
+#endif
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
+

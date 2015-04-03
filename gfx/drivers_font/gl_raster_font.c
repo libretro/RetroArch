@@ -15,7 +15,7 @@
  */
 
 #include "../gl_common.h"
-#include "../font_gl_driver.h"
+#include "../font_driver.h"
 #include "../video_shader_driver.h"
 
 /* TODO: Move viewport side effects to the caller: it's a source of bugs. */

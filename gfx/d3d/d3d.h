@@ -49,7 +49,7 @@
 #include "../video_shader_driver.h"
 #endif
 
-#include "../font_d3d_driver.h"
+#include "../font_driver.h"
 #include "../video_context_driver.h"
 
 #ifdef HAVE_CG

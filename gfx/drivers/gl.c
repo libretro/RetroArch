@@ -39,7 +39,7 @@
 #endif
 
 #include "../gl_common.h"
-#include "../font_gl_driver.h"
+#include "../font_driver.h"
 #include "../video_viewport.h"
 #include "../video_pixel_converter.h"
 #include "../video_context_driver.h"
