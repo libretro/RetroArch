@@ -412,7 +412,7 @@ static void gl_compute_fbo_geometry(gl_t *gl, unsigned width, unsigned height,
       }
 
       if (size_modified)
-         RARCH_WARN("FBO textures exceeded maximum size of GPU (%ux%u). Resizing to fit.\n", max_size, max_size);
+         RARCH_WARN("FBO textures exceeded maximum size of GPU (%dx%d). Resizing to fit.\n", max_size, max_size);
 
       last_width      = fbo_rect->img_width;
       last_height     = fbo_rect->img_height;
@@ -670,7 +670,7 @@ static bool gl_init_hw_render(gl_t *gl, unsigned width, unsigned height)
    RARCH_LOG("[GL]: Initializing HW render (%u x %u).\n", width, height);
    glGetIntegerv(GL_MAX_TEXTURE_SIZE, &max_fbo_size);
    glGetIntegerv(RARCH_GL_MAX_RENDERBUFFER_SIZE, &max_renderbuffer_size);
-   RARCH_LOG("[GL]: Max texture size: %d px, renderbuffer size: %u px.\n",
+   RARCH_LOG("[GL]: Max texture size: %d px, renderbuffer size: %d px.\n",
          max_fbo_size, max_renderbuffer_size);
 
    if (!gl_check_fbo_proc(gl))

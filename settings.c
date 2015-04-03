@@ -2901,7 +2901,7 @@ static void get_string_representation_bind_device(void * data, char *type_str,
          strlcpy(type_str, device_name, type_str_size);
       else
          snprintf(type_str, type_str_size,
-               "N/A (port #%d)", map);
+               "N/A (port #%u)", map);
    }
    else
       strlcpy(type_str, "Disabled", type_str_size);
@@ -4866,7 +4866,7 @@ static bool setting_append_list_input_options(
       static char label_bind_defaults[MAX_USERS][64];
 
       snprintf(key[user], sizeof(key[user]),
-               "input_player%d_joypad_index", user + 1);
+               "input_player%u_joypad_index", user + 1);
       snprintf(key_type[user], sizeof(key_type[user]),
                "input_libretro_device_p%u", user + 1);
       snprintf(key_analog[user], sizeof(key_analog[user]),
@@ -4877,15 +4877,15 @@ static bool setting_append_list_input_options(
                "input_player%u_bind_defaults", user + 1);
 
       snprintf(label[user], sizeof(label[user]),
-               "User %d Device Index", user + 1);
+               "User %u Device Index", user + 1);
       snprintf(label_type[user], sizeof(label_type[user]),
-               "User %d Device Type", user + 1);
+               "User %u Device Type", user + 1);
       snprintf(label_analog[user], sizeof(label_analog[user]),
-               "User %d Analog To Digital Type", user + 1);
+               "User %u Analog To Digital Type", user + 1);
       snprintf(label_bind_all[user], sizeof(label_bind_all[user]),
-               "User %d Bind All", user + 1);
+               "User %u Bind All", user + 1);
       snprintf(label_bind_defaults[user], sizeof(label_bind_defaults[user]),
-               "User %d Bind Default All", user + 1);
+               "User %u Bind Default All", user + 1);
 
       CONFIG_UINT(
             settings->input.libretro_device[user],
@@ -5028,7 +5028,7 @@ static bool setting_append_list_input_options(
       const struct retro_keybind* const defaults =
          (user == 0) ? retro_keybinds_1 : retro_keybinds_rest;
 
-      snprintf(buffer[user], sizeof(buffer[user]), "User %d", user + 1);
+      snprintf(buffer[user], sizeof(buffer[user]), "User %u", user + 1);
 
       START_SUB_GROUP(
             list,

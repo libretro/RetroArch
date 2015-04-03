@@ -474,7 +474,7 @@ static int rarch_main_data_image_iterate_process_transfer_parse(nbio_handle_t *n
    if (nbio->image.handle && nbio->image.cb)
       nbio->image.cb(nbio, len);
 
-   RARCH_LOG("Image transfer processing took %d frames.\n", (unsigned)nbio->image.processing_frame_count);
+   RARCH_LOG("Image transfer processing took %u frames.\n", (unsigned)nbio->image.processing_frame_count);
 
    return 0;
 }
@@ -485,7 +485,7 @@ static int rarch_main_data_image_iterate_transfer_parse(nbio_handle_t *nbio)
    if (nbio->image.handle && nbio->image.cb)
       nbio->image.cb(nbio, len);
 
-   RARCH_LOG("Image transfer took %d frames.\n", (unsigned)nbio->image.frame_count);
+   RARCH_LOG("Image transfer took %u frames.\n", (unsigned)nbio->image.frame_count);
 
    return 0;
 }
@@ -621,7 +621,7 @@ static int rarch_main_data_nbio_iterate_parse(nbio_handle_t *nbio)
    if (nbio->cb)
       nbio->cb(nbio, len);
 
-   RARCH_LOG("File transfer took %d frames.\n", (unsigned)nbio->frame_count);
+   RARCH_LOG("File transfer took %u frames.\n", (unsigned)nbio->frame_count);
 
    return 0;
 }

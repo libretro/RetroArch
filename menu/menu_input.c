@@ -161,7 +161,7 @@ void menu_input_st_cheat_callback(void *userdata, const char *str)
    if (cheat && str && *str)
    {
       unsigned cheat_index = menu->keyboard.type - MENU_SETTINGS_CHEAT_BEGIN;
-      RARCH_LOG("cheat_index is: %d\n", cheat_index);
+      RARCH_LOG("cheat_index is: %u\n", cheat_index);
 
       cheat->cheats[cheat_index].code  = strdup(str);
       cheat->cheats[cheat_index].state = true;
