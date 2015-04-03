@@ -188,7 +188,7 @@ static int add_adapter(void *data, struct libusb_device *dev)
    device_name   = (const char*)adapter->name;
 
    adapter->slot = pad_connection_pad_init(hid->slots,
-         device_name, adapter, &libusb_hid_device_send_control);
+         device_name, desc.idVendor, desc.idProduct, adapter, &libusb_hid_device_send_control);
 
    libusb_get_description(adapter->device, &adapter->interface_number);
 

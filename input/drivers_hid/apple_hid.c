@@ -318,7 +318,7 @@ static void apple_hid_device_add(void *data, IOReturn result,
    dev_pid = apple_hid_device_get_product_id (device);
 
    adapter->slot = pad_connection_pad_init(hid->slots,
-         adapter->name, adapter, &apple_hid_device_send_control);
+         adapter->name, dev_vid, dev_pid, adapter, &apple_hid_device_send_control);
 
    if (pad_connection_has_interface(hid->slots, adapter->slot))
       IOHIDDeviceRegisterInputReportCallback(device,

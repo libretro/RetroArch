@@ -58,7 +58,8 @@ void *pad_connection_init(unsigned pads)
 }
 
 int32_t pad_connection_pad_init(joypad_connection_t *joyconn,
-   const char* name, void *data, send_control_t ptr)
+   const char* name, uint16_t vid, uint16_t pid, 
+   void *data, send_control_t ptr)
 {
    int pad = pad_connection_find_vacant_pad(joyconn);
 
@@ -69,15 +70,17 @@ int32_t pad_connection_pad_init(joypad_connection_t *joyconn,
       static const struct
       {
          const char* name;
+         uint16_t vid;
+         uint16_t pid;
          pad_connection_interface_t *iface;
       } pad_map[] = 
       {
-         { "Nintendo RVL-CNT-01",         &pad_connection_wii },
+         { "Nintendo RVL-CNT-01",         1406,  816,    &pad_connection_wii },
 #if 0
-         { "Nintendo RVL-CNT-01-UC",      &pad_connection_wii_u },
+         { "Nintendo RVL-CNT-01-UC",      0,       0,    &pad_connection_wii_u },
 #endif
-         { "Wireless Controller",         &pad_connection_ps4 },
-         { "PLAYSTATION(R)3 Controller",  &pad_connection_ps3 },
+         { "Wireless Controller",         1356, 1476,    &pad_connection_ps4 },
+         { "PLAYSTATION(R)3 Controller",  1356,  616,    &pad_connection_ps3 },
          { 0, 0}
       };
 
@@ -85,7 +88,8 @@ int32_t pad_connection_pad_init(joypad_connection_t *joyconn,
       {
          for (i = 0; name && pad_map[i].name; i++)
          {
-            if (!strstr(name, pad_map[i].name))
+            if (     (!strstr(name, pad_map[i].name))
+                  || (pad_map[i].vid == vid && pad_map[i].pid == pid))
                continue;
 
             s->iface      = pad_map[i].iface;

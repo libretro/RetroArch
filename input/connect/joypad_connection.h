@@ -48,7 +48,8 @@ typedef struct joypad_connection
 } joypad_connection_t;
 
 int32_t pad_connection_pad_init(joypad_connection_t *joyconn,
-   const char* name, void *data, send_control_t ptr);
+   const char* name, uint16_t vid, uint16_t pid,
+   void *data, send_control_t ptr);
 
 int32_t apple_joypad_connect_gcapi(joypad_connection_t *joyconn);
 
