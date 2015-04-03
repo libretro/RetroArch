@@ -335,8 +335,6 @@ INPUT
 #endif
 
 #ifdef IOS
-#include "../apple/iOS/bluetooth/btdynamic.c"
-#include "../apple/iOS/bluetooth/btpad.c"
 #include "../input/drivers_joypad/ios_joypad.c"
 #endif
 
@@ -374,6 +372,8 @@ INPUT (HID)
 
 #if defined(HAVE_LIBUSB)
 #include "../input/drivers_hid/libusb_hid.c"
+#elif defined(__APPLE__) && defined(IOS)
+#include "../input/drivers_hid/bstack_hid.c"
 #elif defined(__APPLE__) && !defined(IOS)
 #include "../input/drivers_hid/apple_hid.c"
 #endif

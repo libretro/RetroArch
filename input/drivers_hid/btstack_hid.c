@@ -21,10 +21,148 @@
 #ifdef __APPLE__
 #include <CoreFoundation/CFRunLoop.h>
 #endif
+#include <rthreads/rthreads.h>
 
-#include "btdynamic.h"
+#define BUILDING_BTDYNAMIC
 #include "btstack.h"
-#include "../input/connect/joypad_connection.h"
+#include "../../dynamic.h"
+#include "../connect/joypad_connection.h"
+
+#define GRAB(A) {#A, (void**)&A##_ptr}
+
+static struct
+{
+   const char* name;
+   void** target;
+}  grabbers[] =
+{
+   GRAB(bt_open),
+   GRAB(bt_close),
+   GRAB(bt_flip_addr),
+   GRAB(bd_addr_to_str),
+   GRAB(bt_register_packet_handler),
+   GRAB(bt_send_cmd),
+   GRAB(bt_send_l2cap),
+   GRAB(run_loop_init),
+   GRAB(run_loop_execute),
+
+   GRAB(btstack_set_power_mode),
+   GRAB(hci_delete_stored_link_key),
+   GRAB(hci_disconnect),
+   GRAB(hci_read_bd_addr),
+   GRAB(hci_inquiry),
+   GRAB(hci_inquiry_cancel),
+   GRAB(hci_pin_code_request_reply),
+   GRAB(hci_pin_code_request_negative_reply),
+   GRAB(hci_remote_name_request),
+   GRAB(hci_remote_name_request_cancel),
+   GRAB(hci_write_authentication_enable),
+   GRAB(hci_write_inquiry_mode),
+   GRAB(l2cap_create_channel),
+   GRAB(l2cap_register_service),
+   GRAB(l2cap_accept_connection),
+   GRAB(l2cap_decline_connection),
+   {0, 0}
+};
+
+extern void btpad_packet_handler(uint8_t packet_type,
+      uint16_t channel, uint8_t *packet, uint16_t size);
+
+static bool btstack_tested;
+static bool btstack_loaded;
+
+static sthread_t *btstack_thread;
+
+#ifdef __APPLE__
+static CFRunLoopSourceRef btstack_quit_source;
+#endif
+
+bool btstack_try_load(void)
+{
+   unsigned i;
+   void *handle   = NULL;
+
+   if (btstack_tested)
+      return btstack_loaded;
+
+   btstack_tested = true;
+   btstack_loaded = false;
+
+   handle = dylib_load("/usr/lib/libBTstack.dylib");
+
+   if (!handle)
+      return false;
+
+   for (i = 0; grabbers[i].name; i ++)
+   {
+      *grabbers[i].target = dylib_proc(handle, grabbers[i].name);
+
+      if (!*grabbers[i].target)
+      {
+         dylib_close(handle);
+         return false;
+      }
+   }
+
+   run_loop_init_ptr(RUN_LOOP_COCOA);
+   bt_register_packet_handler_ptr(btpad_packet_handler);
+
+   btstack_loaded = true;
+
+   return true;
+}
+
+static void btstack_thread_stop(void *data)
+{
+   (void)data;
+   bt_send_cmd_ptr(btstack_set_power_mode_ptr, HCI_POWER_OFF);
+}
+
+static void btstack_thread_func(void* data)
+{
+   RARCH_LOG("[BTstack]: Thread started");
+
+   if (bt_open_ptr())
+      return;
+
+#ifdef __APPLE__
+   CFRunLoopSourceContext ctx = { 0, 0, 0, 0, 0, 0, 0, 0, 0, btstack_thread_stop };
+   btstack_quit_source = CFRunLoopSourceCreate(0, 0, &ctx);
+   CFRunLoopAddSource(CFRunLoopGetCurrent(), btstack_quit_source, kCFRunLoopCommonModes);
+#endif
+
+   RARCH_LOG("[BTstack]: Turning on...\n");
+   bt_send_cmd_ptr(btstack_set_power_mode_ptr, HCI_POWER_ON);
+
+   RARCH_LOG("BTstack: Thread running...\n");
+#ifdef __APPLE__
+   CFRunLoopRun();
+#endif
+
+   RARCH_LOG("[BTstack]: Thread done.\n");
+
+#ifdef __APPLE__
+   CFRunLoopSourceInvalidate(btstack_quit_source);
+   CFRelease(btstack_quit_source);
+#endif
+}
+
+void btstack_set_poweron(bool on)
+{
+   if (!btstack_try_load())
+      return;
+
+   if (on && !btstack_thread)
+      btstack_thread = sthread_create(btstack_thread_func, NULL);
+   else if (!on && btstack_thread && btstack_quit_source)
+   {
+#ifdef __APPLE__
+      CFRunLoopSourceSignal(btstack_quit_source);
+#endif
+      sthread_join(btstack_thread);
+      btstack_thread = NULL;
+   }
+}
 
 extern joypad_connection_t *slots;
 
