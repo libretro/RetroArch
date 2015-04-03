@@ -32,6 +32,7 @@ struct libusb_adapter
    volatile bool quitting;
    struct libusb_device *device;
    libusb_device_handle *handle;
+   int interface_number;
 
    uint8_t manufacturer_name[255];
    uint8_t name[255];
@@ -60,6 +61,17 @@ static void adapter_thread(void *data)
 static void libusb_hid_device_send_control(void *data,
       uint8_t* data_buf, size_t size)
 {
+   struct libusb_adapter *adapter = (struct libusb_adapter*)data;
+   int report_number = data_buf[0];
+
+   if(!adapter)
+      libusb_control_transfer(adapter->handle,
+            LIBUSB_REQUEST_TYPE_CLASS|LIBUSB_RECIPIENT_INTERFACE|LIBUSB_ENDPOINT_OUT,
+            0x09/*HID Set_Report*/,
+            (2/*HID output*/ << 8) | report_number,
+            adapter->interface_number,
+            data_buf, size,
+            1000/*timeout millis*/);
 }
 
 static void libusb_hid_device_add_autodetect(unsigned idx,
@@ -76,6 +88,43 @@ static void libusb_hid_device_add_autodetect(unsigned idx,
    strlcpy(params.driver, driver_name, sizeof(params.driver));
 
    input_config_autoconfigure_joypad(&params);
+}
+
+static void libusb_get_description(struct libusb_device *device,
+      int *interface_number)
+{
+   unsigned i, j, k;
+   struct libusb_config_descriptor *config;
+
+   libusb_get_config_descriptor(device, 0, &config);
+
+   fprintf(stderr, "Interfaces: %d.\n", (int)config->bNumInterfaces);
+
+   for(i=0; i < (int)config->bNumInterfaces; i++)
+   {
+      const struct libusb_interface *inter = &config->interface[i];
+
+      fprintf(stderr, "Number of alternate settings: %d.\n", inter->num_altsetting);
+
+      for(j = 0; j < inter->num_altsetting; j++)
+      {
+         const struct libusb_interface_descriptor *interdesc = &inter->altsetting[j];
+
+         *interface_number = (int)interdesc->bInterfaceNumber;
+
+         fprintf(stderr, "Interface Number: %d.\n",    (int)interdesc->bInterfaceNumber);
+         fprintf(stderr, "Number of endpoints: %d.\n", (int)interdesc->bNumEndpoints);
+
+         for(k = 0; k < (int)interdesc->bNumEndpoints; k++)
+         {
+            const struct libusb_endpoint_descriptor *epdesc = &interdesc->endpoint[k];
+            fprintf(stderr, "Descriptor Type: %d.\n", (int)epdesc->bDescriptorType);
+            fprintf(stderr, "EP Address: %d.\n",      (int)epdesc->bEndpointAddress);
+         }
+      }
+   }
+
+   libusb_free_config_descriptor(config);
 }
 
 static int add_adapter(void *data, struct libusb_device *dev)
@@ -134,14 +183,17 @@ static int add_adapter(void *data, struct libusb_device *dev)
       fprintf(stderr, "Error detaching handle 0x%p from kernel.\n", adapter->handle);
       goto error;
    }
-
+   
    device_name = (const char*)adapter->name;
 
    adapter->slot = pad_connection_pad_init(hid->slots,
          device_name, adapter, &libusb_hid_device_send_control);
 
+   libusb_get_description(adapter->device, &adapter->interface_number);
+
    if (!pad_connection_has_interface(hid->slots, adapter->slot))
       goto error;
+
 
    if (adapter->name[0] == '\0')
       goto error;

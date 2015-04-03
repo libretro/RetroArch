@@ -23,7 +23,7 @@ static int pad_connection_find_vacant_pad(joypad_connection_t *joyconn)
 
    for (i = 0; i < MAX_USERS; i++)
    {
-      joypad_connection_t *conn = (joypad_connection_t*)&joyconn[i];
+      joypad_connection_t *conn = joyconn ? (joypad_connection_t*)&joyconn[i] : NULL;
 
       if (conn && !conn->connected)
          return i;
@@ -163,7 +163,7 @@ int16_t pad_connection_get_axis(joypad_connection_t *s,
 
 bool pad_connection_has_interface(joypad_connection_t *s, unsigned pad)
 {
-   if (s->connected && s->iface)
+   if (s && s->connected && s->iface)
       return true;
    return false;
 }
