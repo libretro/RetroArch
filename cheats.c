@@ -35,6 +35,9 @@ void cheat_manager_apply_cheats(cheat_manager_t *handle)
 {
    unsigned i, idx = 0;
 
+   if (!handle)
+      return;
+
    pretro_cheat_reset();
 
    for (i = 0; i < handle->size; i++)
@@ -185,6 +188,9 @@ bool cheat_manager_realloc(cheat_manager_t *handle, unsigned new_size)
 {
    unsigned i;
 
+   if (!handle)
+      return false;
+
    if (!handle->cheats)
       handle->cheats = (struct item_cheat*)
          calloc(new_size, sizeof(struct item_cheat));
@@ -235,6 +241,9 @@ void cheat_manager_free(cheat_manager_t *handle)
 void cheat_manager_update(cheat_manager_t *handle, unsigned handle_idx)
 {
    char msg[256];
+
+   if (!handle)
+      return;
 
    snprintf(msg, sizeof(msg), "Cheat: #%u [%s]: %s",
          handle_idx, handle->cheats[handle_idx].state ? "ON" : "OFF",
