@@ -27,21 +27,26 @@ char *string_replace_substring(const char *in, const char *pattern, const char *
    char *needle = NULL;
    char *newstr = NULL;
    char *head   = NULL;
+   size_t pattern_len = 0;
+   size_t replacement_len = 0;
 
    /* if either pattern or replacement is NULL,
     * duplicate in and let caller handle it. */
    if (!pattern || !replacement)
       return strdup(in);
 
+   pattern_len = strlen(pattern);
+   replacement_len = strlen(replacement);
+
    newstr = strdup(in);
    head   = newstr;
 
-   while ((needle = strstr (head, pattern)))
+   while ((needle = strstr(head, pattern)))
    {
       char* oldstr = newstr;
-      newstr = (char*)malloc(
-            strlen(oldstr) - strlen(pattern) + strlen(replacement) + 1);
+      size_t oldstr_len = strlen(oldstr);
 
+      newstr = (char*)malloc(oldstr_len - pattern_len + replacement_len + 1);
       if (!newstr)
       {
          /* Failed to allocate memory,
@@ -51,14 +56,14 @@ char *string_replace_substring(const char *in, const char *pattern, const char *
       }
 
       memcpy(newstr, oldstr, needle - oldstr);
-      memcpy(newstr + (needle - oldstr), replacement, strlen(replacement));
-      memcpy(newstr + (needle - oldstr) + strlen(replacement),
-            needle + strlen(pattern),
-            strlen(oldstr) - strlen(pattern) - (needle - oldstr));
-      newstr[strlen(oldstr) - strlen(pattern) + strlen(replacement)] = '\0';
+      memcpy(newstr + (needle - oldstr), replacement, replacement_len);
+      memcpy(newstr + (needle - oldstr) + replacement_len,
+            needle + pattern_len,
+            oldstr_len - pattern_len - (needle - oldstr));
+      newstr[oldstr_len - pattern_len + replacement_len] = '\0';
 
       /* Move back head right after the last replacement. */
-      head = newstr + (needle - oldstr) + strlen(replacement);
+      head = newstr + (needle - oldstr) + replacement_len;
       free(oldstr);
    }
 
