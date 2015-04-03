@@ -105,47 +105,50 @@ static uint32_t can_run;
 
 #define INCPOS(POS) { POS##_position = (POS##_position + 1) % 64; }
 
+static void btpad_queue_process_cmd(struct btpad_queue_command *cmd)
+{
+    if (!cmd)
+        return;
+    
+    if (cmd->command == btstack_set_power_mode_ptr)
+        bt_send_cmd_ptr(
+                        cmd->command,
+                        cmd->btstack_set_power_mode.on);
+    else if (cmd->command == hci_read_bd_addr_ptr)
+        bt_send_cmd_ptr(cmd->command);
+    else if (cmd->command == hci_disconnect_ptr)
+        bt_send_cmd_ptr(
+                        cmd->command,
+                        cmd->hci_disconnect.handle,
+                        cmd->hci_disconnect.reason);
+    else if (cmd->command == hci_inquiry_ptr)
+        bt_send_cmd_ptr(
+                        cmd->command,
+                        cmd->hci_inquiry.lap,
+                        cmd->hci_inquiry.length,
+                        cmd->hci_inquiry.num_responses);
+    else if (cmd->command == hci_remote_name_request_ptr)
+        bt_send_cmd_ptr(
+                        cmd->command,
+                        cmd->hci_remote_name_request.bd_addr,
+                        cmd->hci_remote_name_request.page_scan_repetition_mode,
+                        cmd->hci_remote_name_request.reserved,
+                        cmd->hci_remote_name_request.clock_offset);
+    
+    else if (cmd->command == hci_pin_code_request_reply_ptr)
+        bt_send_cmd_ptr(
+                        cmd->command,
+                        cmd->hci_pin_code_request_reply.bd_addr,
+                        6,
+                        cmd->hci_pin_code_request_reply.pin);
+}
+
 static void btpad_queue_process(void)
 {
    for (; can_run && (insert_position != read_position); can_run --)
    {
       struct btpad_queue_command* cmd = &commands[read_position];
-
-      if (!cmd)
-         return;
-
-      if (cmd->command == btstack_set_power_mode_ptr)
-         bt_send_cmd_ptr(
-               cmd->command,
-               cmd->btstack_set_power_mode.on);
-      else if (cmd->command == hci_read_bd_addr_ptr)
-         bt_send_cmd_ptr(cmd->command);
-      else if (cmd->command == hci_disconnect_ptr)
-         bt_send_cmd_ptr(
-               cmd->command,
-               cmd->hci_disconnect.handle,
-               cmd->hci_disconnect.reason);
-      else if (cmd->command == hci_inquiry_ptr)
-         bt_send_cmd_ptr(
-               cmd->command,
-               cmd->hci_inquiry.lap,
-               cmd->hci_inquiry.length,
-               cmd->hci_inquiry.num_responses);
-      else if (cmd->command == hci_remote_name_request_ptr)
-         bt_send_cmd_ptr(
-               cmd->command,
-               cmd->hci_remote_name_request.bd_addr,
-               cmd->hci_remote_name_request.page_scan_repetition_mode,
-               cmd->hci_remote_name_request.reserved,
-               cmd->hci_remote_name_request.clock_offset);
-
-      else if (cmd->command == hci_pin_code_request_reply_ptr)
-         bt_send_cmd_ptr(
-               cmd->command,
-               cmd->hci_pin_code_request_reply.bd_addr,
-               6,
-               cmd->hci_pin_code_request_reply.pin);
-
+      btpad_queue_process_cmd(cmd);
       INCPOS(read);
    }
 }
@@ -279,10 +282,12 @@ void btpad_set_inquiry_state(bool on)
 /* Internal interface. */
 static struct pad_connection* btpad_find_empty_connection(void)
 {
-   int i;
-   for (i = 0; i < MAX_USERS; i ++)
+   unsigned i;
+   for (i = 0; i < MAX_USERS; i++)
+   {
       if (g_connections[i].state == BTPAD_EMPTY)
          return &g_connections[i];
+   }
 
    return 0;
 }
@@ -290,8 +295,8 @@ static struct pad_connection* btpad_find_empty_connection(void)
 static struct pad_connection* btpad_find_connection_for(
       uint16_t handle, bd_addr_t address)
 {
-   int i;
-   for (i = 0; i < MAX_USERS; i ++)
+   unsigned i;
+   for (i = 0; i < MAX_USERS; i++)
    {
       if (!g_connections[i].handle && !g_connections[i].has_address)
          continue;
@@ -483,8 +488,8 @@ void btpad_packet_handler(uint8_t packet_type,
             case L2CAP_EVENT_INCOMING_CONNECTION:
                {
                   bt_flip_addr_ptr(event_addr, &packet[2]);
-                  const uint16_t handle = READ_BT_16(packet, 8);
-                  const uint32_t psm = READ_BT_16(packet, 10);
+                  const uint16_t handle     = READ_BT_16(packet, 8);
+                  const uint32_t psm        = READ_BT_16(packet, 10);
                   const uint32_t channel_id = READ_BT_16(packet, 12);
 
                   struct pad_connection* connection = 
@@ -531,7 +536,7 @@ void btpad_packet_handler(uint8_t packet_type,
 
                   RARCH_LOG("[BTpad]: Got %.200s.\n", (char*)&packet[9]);
 
-                  connection->slot = pad_connection_pad_init(&slots[connection->slot],
+                  connection->slot  = pad_connection_pad_init(&slots[connection->slot],
                         (char*)packet + 9, connection, &btpad_connection_send_control);
                   connection->state = BTPAD_CONNECTED;
                }
