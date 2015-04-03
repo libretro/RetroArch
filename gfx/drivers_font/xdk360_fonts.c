@@ -143,7 +143,7 @@ static HRESULT xdk360_video_font_create_shaders(xdk360_video_font_t * font)
 
          if (hr >= 0)
          {
-            hr = d3dr->CreateVertexShader((uint32_t*)pShaderCode->GetBufferPointer(),
+            hr = d3dr->CreateVertexShader((const DWORD*)pShaderCode->GetBufferPointer(),
                   &font->s_FontLocals.m_pFontVertexShader );
             pShaderCode->Release();
 
@@ -302,7 +302,7 @@ static void xdk360_render_msg_pre(xdk360_video_font_t * font)
    LPDIRECT3DDEVICE d3dr = font->d3d->dev;
 
    /* Save state. */
-   d3dr->GetRenderState( D3DRS_VIEWPORTENABLE, &font->m_dwSavedState );
+   d3dr->GetRenderState( D3DRS_VIEWPORTENABLE, (DWORD*)&font->m_dwSavedState );
 
    /* Set the texture scaling factor as a vertex shader constant. */
    D3DTexture_GetLevelDesc(font->m_pFontTexture, 0, &TextureDesc); // Get the description

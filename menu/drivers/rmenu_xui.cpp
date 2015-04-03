@@ -695,9 +695,9 @@ static void rmenu_xui_list_delete(file_list_t *list, size_t idx,
 
    (void)idx;
 
-   if( list_size > x )
+   if( list_size > x)
       list_size = x;
-   if( list_size > 0 )
+   if( list_size > 0)
       XuiListDeleteItems(m_menulist, 0, list_size);
 }
 
