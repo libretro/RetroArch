@@ -108,40 +108,40 @@ static void btpad_increment_position(uint32_t *ptr)
 
 static void btpad_queue_process_cmd(struct btpad_queue_command *cmd)
 {
-    if (!cmd)
-        return;
-    
-    if (cmd->command == btstack_set_power_mode_ptr)
-        bt_send_cmd_ptr(
-                        cmd->command,
-                        cmd->btstack_set_power_mode.on);
-    else if (cmd->command == hci_read_bd_addr_ptr)
-        bt_send_cmd_ptr(cmd->command);
-    else if (cmd->command == hci_disconnect_ptr)
-        bt_send_cmd_ptr(
-                        cmd->command,
-                        cmd->hci_disconnect.handle,
-                        cmd->hci_disconnect.reason);
-    else if (cmd->command == hci_inquiry_ptr)
-        bt_send_cmd_ptr(
-                        cmd->command,
-                        cmd->hci_inquiry.lap,
-                        cmd->hci_inquiry.length,
-                        cmd->hci_inquiry.num_responses);
-    else if (cmd->command == hci_remote_name_request_ptr)
-        bt_send_cmd_ptr(
-                        cmd->command,
-                        cmd->hci_remote_name_request.bd_addr,
-                        cmd->hci_remote_name_request.page_scan_repetition_mode,
-                        cmd->hci_remote_name_request.reserved,
-                        cmd->hci_remote_name_request.clock_offset);
-    
-    else if (cmd->command == hci_pin_code_request_reply_ptr)
-        bt_send_cmd_ptr(
-                        cmd->command,
-                        cmd->hci_pin_code_request_reply.bd_addr,
-                        6,
-                        cmd->hci_pin_code_request_reply.pin);
+   if (!cmd)
+      return;
+
+   if (cmd->command == btstack_set_power_mode_ptr)
+      bt_send_cmd_ptr(
+            cmd->command,
+            cmd->btstack_set_power_mode.on);
+   else if (cmd->command == hci_read_bd_addr_ptr)
+      bt_send_cmd_ptr(cmd->command);
+   else if (cmd->command == hci_disconnect_ptr)
+      bt_send_cmd_ptr(
+            cmd->command,
+            cmd->hci_disconnect.handle,
+            cmd->hci_disconnect.reason);
+   else if (cmd->command == hci_inquiry_ptr)
+      bt_send_cmd_ptr(
+            cmd->command,
+            cmd->hci_inquiry.lap,
+            cmd->hci_inquiry.length,
+            cmd->hci_inquiry.num_responses);
+   else if (cmd->command == hci_remote_name_request_ptr)
+      bt_send_cmd_ptr(
+            cmd->command,
+            cmd->hci_remote_name_request.bd_addr,
+            cmd->hci_remote_name_request.page_scan_repetition_mode,
+            cmd->hci_remote_name_request.reserved,
+            cmd->hci_remote_name_request.clock_offset);
+
+   else if (cmd->command == hci_pin_code_request_reply_ptr)
+      bt_send_cmd_ptr(
+            cmd->command,
+            cmd->hci_pin_code_request_reply.bd_addr,
+            6,
+            cmd->hci_pin_code_request_reply.pin);
 }
 
 static void btpad_queue_process(void)
@@ -169,7 +169,7 @@ static void btpad_queue_run(uint32_t count)
 }
 
 static void btpad_queue_btstack_set_power_mode(
-    struct btpad_queue_command *cmd, uint8_t on)
+      struct btpad_queue_command *cmd, uint8_t on)
 {
    if (!cmd)
       return;
@@ -182,7 +182,7 @@ static void btpad_queue_btstack_set_power_mode(
 }
 
 static void btpad_queue_hci_read_bd_addr(
-   struct btpad_queue_command *cmd)
+      struct btpad_queue_command *cmd)
 {
    if (!cmd)
       return;
@@ -194,8 +194,8 @@ static void btpad_queue_hci_read_bd_addr(
 }
 
 static void btpad_queue_hci_disconnect(
-    struct btpad_queue_command *cmd,
-    uint16_t handle, uint8_t reason)
+      struct btpad_queue_command *cmd,
+      uint16_t handle, uint8_t reason)
 {
    if (!cmd)
       return;
@@ -209,8 +209,8 @@ static void btpad_queue_hci_disconnect(
 }
 
 static void btpad_queue_hci_inquiry(
-    struct btpad_queue_command *cmd,
-    uint32_t lap,
+      struct btpad_queue_command *cmd,
+      uint32_t lap,
       uint8_t length, uint8_t num_responses)
 {
    if (!cmd)
@@ -226,8 +226,8 @@ static void btpad_queue_hci_inquiry(
 }
 
 static void btpad_queue_hci_remote_name_request(
-    struct btpad_queue_command *cmd,
-    bd_addr_t bd_addr,
+      struct btpad_queue_command *cmd,
+      bd_addr_t bd_addr,
       uint8_t page_scan_repetition_mode,
       uint8_t reserved, uint16_t clock_offset)
 {
@@ -246,7 +246,7 @@ static void btpad_queue_hci_remote_name_request(
 }
 
 static void btpad_queue_hci_pin_code_request_reply(
-        struct btpad_queue_command *cmd,
+      struct btpad_queue_command *cmd,
       bd_addr_t bd_addr, bd_addr_t pin)
 {
    if (!cmd)
@@ -282,7 +282,7 @@ void btpad_set_inquiry_state(bool on)
 static struct pad_connection *btpad_find_empty_connection(void)
 {
    unsigned i;
-    
+
    for (i = 0; i < MAX_USERS; i++)
    {
       if (g_connections[i].state == BTPAD_EMPTY)
