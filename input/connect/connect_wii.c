@@ -21,9 +21,6 @@
 #include <retro_miscellaneous.h>
 #include "joypad_connection.h"
 
-#define absf(x)                              ((x >= 0) ? (x) : (x * -1.0f))
-#define diff_f(x, y)                         ((x >= y) ? (absf(x - y)) : (absf(y - x)))
-
 /* wiimote state flags*/
 #define WIIMOTE_STATE_DEV_FOUND              0x0001
 #define WIIMOTE_STATE_HANDSHAKE              0x0002   /* Actual connection exists but no handshake yet */
