@@ -62,7 +62,7 @@ static void libdbg_font_free_font(void *data)
 }
 
 static void libdbg_font_render_msg(void *data, const char *msg,
-      const void *params)
+      const void *userdata)
 {
    float x, y, scale;
    unsigned color;

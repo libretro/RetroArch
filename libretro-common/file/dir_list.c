@@ -205,7 +205,7 @@ struct string_list *dir_list_new(const char *dir,
       const char *ext, bool include_dirs)
 {
    char path_buf[PATH_MAX_LENGTH];
-   int i;
+   int i = 0;
    struct string_list *ext_list, *list, *dir_list;
 #ifdef _WIN32
    WIN32_FIND_DATA ffd;

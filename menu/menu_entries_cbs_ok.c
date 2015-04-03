@@ -1107,6 +1107,8 @@ static int action_ok_video_resolution(const char *path,
    global_t *global = global_get_ptr();
     
    (void)global;
+   (void)width;
+   (void)height;
 
 #ifdef __CELLOS_LV2__
    if (global->console.screen.resolutions.list[
