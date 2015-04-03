@@ -20,7 +20,7 @@
 
 /* TODO: Move viewport side effects to the caller: it's a source of bugs. */
 
-#define emit(c, vx, vy) do { \
+#define gl_raster_font_emit(c, vx, vy) do { \
    font_vertex[     2 * (6 * i + c) + 0] = (x + (delta_x + off_x + vx * width) * scale) * inv_win_width; \
    font_vertex[     2 * (6 * i + c) + 1] = (y + (delta_y - off_y - vy * height) * scale) * inv_win_height; \
    font_tex_coords[ 2 * (6 * i + c) + 0] = (tex_x + vx * width) * inv_tex_size_x; \
@@ -157,7 +157,7 @@ static int get_message_width(gl_raster_t *font, const char *msg)
    return delta_x;
 }
 
-static void draw_vertices(gl_t *gl, const gl_coords_t *coords)
+static void gl_raster_font_draw_vertices(gl_t *gl, const gl_coords_t *coords)
 {
    gl->shader->set_coords(coords);
    gl->shader->set_mvp(gl, &gl->mvp_no_rot);
@@ -165,7 +165,7 @@ static void draw_vertices(gl_t *gl, const gl_coords_t *coords)
    glDrawArrays(GL_TRIANGLES, 0, coords->vertices);
 }
 
-static void render_message(gl_raster_t *font, const char *msg, GLfloat scale,
+static void gl_raster_font_render_message(gl_raster_t *font, const char *msg, GLfloat scale,
       const GLfloat color[4], GLfloat pos_x, GLfloat pos_y, unsigned text_align)
 {
    int x, y, delta_x, delta_y;
@@ -219,14 +219,13 @@ static void render_message(gl_raster_t *font, const char *msg, GLfloat scale,
          width  = glyph->width;
          height = glyph->height;
 
-         emit(0, 0, 1); /* Bottom-left */
-         emit(1, 1, 1); /* Bottom-right */
-         emit(2, 0, 0); /* Top-left */
+         gl_raster_font_emit(0, 0, 1); /* Bottom-left */
+         gl_raster_font_emit(1, 1, 1); /* Bottom-right */
+         gl_raster_font_emit(2, 0, 0); /* Top-left */
 
-         emit(3, 1, 0); /* Top-right */
-         emit(4, 0, 0); /* Top-left */
-         emit(5, 1, 1); /* Bottom-right */
-#undef emit
+         gl_raster_font_emit(3, 1, 0); /* Top-right */
+         gl_raster_font_emit(4, 0, 0); /* Top-left */
+         gl_raster_font_emit(5, 1, 1); /* Bottom-right */
 
          delta_x += glyph->advance_x;
          delta_y -= glyph->advance_y;
@@ -241,7 +240,7 @@ static void render_message(gl_raster_t *font, const char *msg, GLfloat scale,
       if (font->block)
          gl_coord_array_add(&font->block->carr, &coords, coords.vertices);
       else
-         draw_vertices(gl, &coords);
+         gl_raster_font_draw_vertices(gl, &coords);
 
       msg_len_full -= msg_len;
       msg += msg_len;
@@ -249,7 +248,7 @@ static void render_message(gl_raster_t *font, const char *msg, GLfloat scale,
    }
 }
 
-static void setup_viewport(gl_raster_t *font, bool full_screen)
+static void gl_raster_font_setup_viewport(gl_raster_t *font, bool full_screen)
 {
    gl_t *gl = font->gl;
 
@@ -265,7 +264,7 @@ static void setup_viewport(gl_raster_t *font, bool full_screen)
       gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
 }
 
-static void restore_viewport(gl_t *gl)
+static void gl_raster_font_restore_viewport(gl_t *gl)
 {
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
 
@@ -332,7 +331,7 @@ static void gl_raster_font_render_msg(void *data, const char *msg,
    if (font->block)
       font->block->fullscreen = full_screen;
    else
-      setup_viewport(font, full_screen);
+      gl_raster_font_setup_viewport(font, full_screen);
 
    if (drop_x || drop_y)
    {
@@ -341,15 +340,15 @@ static void gl_raster_font_render_msg(void *data, const char *msg,
       color_dark[2] = color[2] * drop_mod;
       color_dark[3] = color[3];
 
-      render_message(font, msg, scale, color_dark,
+      gl_raster_font_render_message(font, msg, scale, color_dark,
             x + scale * drop_x / gl->vp.width, y + 
             scale * drop_y / gl->vp.height, text_align);
    }
 
-   render_message(font, msg, scale, color, x, y, text_align);
+   gl_raster_font_render_message(font, msg, scale, color, x, y, text_align);
 
    if (!font->block)
-      restore_viewport(gl);
+      gl_raster_font_restore_viewport(gl);
 }
 
 static const void *gl_raster_font_get_glyph(
@@ -369,11 +368,9 @@ static void gl_raster_font_flush_block(void *data)
 
    if (block->carr.coords.vertices)
    {
-      setup_viewport(font, block->fullscreen);
-
-      draw_vertices(font->gl, (gl_coords_t*)&block->carr.coords);
-
-      restore_viewport(font->gl);
+      gl_raster_font_setup_viewport(font, block->fullscreen);
+      gl_raster_font_draw_vertices(font->gl, (gl_coords_t*)&block->carr.coords);
+      gl_raster_font_restore_viewport(font->gl);
    }
 }
 
