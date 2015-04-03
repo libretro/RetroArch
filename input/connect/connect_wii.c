@@ -647,9 +647,13 @@ error:
 static int16_t hidpad_wii_get_axis(void *data, unsigned axis)
 {
    struct wiimote_t* device = (struct wiimote_t*)data;
+    
+   if (!device)
+      return 0;
 
-   if (device && device->exp.type == EXP_CLASSIC)
+   switch (device->exp.type)
    {
+   case EXP_CLASSIC:
       switch (axis)
       {
          case 0:
@@ -661,6 +665,9 @@ static int16_t hidpad_wii_get_axis(void *data, unsigned axis)
          case 3:
             return device->exp.cc.classic.rjs.y.value * 0x7FFF;
       }
+       break;
+   default:
+       break;
    }
 
    return 0;
