@@ -151,7 +151,6 @@ static int add_adapter(void *data, struct libusb_device *dev)
    }
 
    adapter->device = dev;
-   adapter->slot   = MAX_USERS;
 
    rc = libusb_open (adapter->device, &adapter->handle);
 
@@ -194,7 +193,10 @@ static int add_adapter(void *data, struct libusb_device *dev)
    libusb_get_description(adapter->device, &adapter->interface_number);
 
    if (!pad_connection_has_interface(hid->slots, adapter->slot))
+   {
+      fprintf(stderr, "Interface not found (%s).\n", adapter->name);
       goto error;
+   }
 
    if (adapter->name[0] == '\0')
       goto error;
