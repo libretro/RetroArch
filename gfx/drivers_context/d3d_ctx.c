@@ -68,52 +68,52 @@ static void d3d_resize(void *data, unsigned new_width, unsigned new_height)
 
 #ifdef HAVE_WINDOW
 LRESULT CALLBACK WindowProc(HWND hWnd, UINT message,
-        WPARAM wParam, LPARAM lParam)
+      WPARAM wParam, LPARAM lParam)
 {
    driver_t *driver     = driver_get_ptr();
    settings_t *settings = config_get_ptr();
 
-    switch (message)
-    {
-		case WM_CREATE:
-			{
-				LPCREATESTRUCT p_cs;
-				p_cs = (LPCREATESTRUCT)lParam;
-				curD3D = (d3d_video_t*)p_cs->lpCreateParams;
-			}
-            break;
-        case WM_CHAR:
-        case WM_KEYDOWN:
-        case WM_KEYUP:
-        case WM_SYSKEYUP:
-        case WM_SYSKEYDOWN:
-            return win32_handle_keyboard_event(hWnd, message, wParam, lParam);
+   switch (message)
+   {
+      case WM_CREATE:
+         {
+            LPCREATESTRUCT p_cs;
+            p_cs = (LPCREATESTRUCT)lParam;
+            curD3D = (d3d_video_t*)p_cs->lpCreateParams;
+         }
+         break;
+      case WM_CHAR:
+      case WM_KEYDOWN:
+      case WM_KEYUP:
+      case WM_SYSKEYUP:
+      case WM_SYSKEYDOWN:
+         return win32_handle_keyboard_event(hWnd, message, wParam, lParam);
 
-        case WM_DESTROY:
-            d3d_quit = true;
-            return 0;
-        case WM_SIZE:
-			{
-				unsigned new_width  = LOWORD(lParam);
-				unsigned new_height = HIWORD(lParam);
+      case WM_DESTROY:
+         d3d_quit = true;
+         return 0;
+      case WM_SIZE:
+         {
+            unsigned new_width  = LOWORD(lParam);
+            unsigned new_height = HIWORD(lParam);
 
-				if (new_width && new_height)
-					d3d_resize(driver->video_data, new_width, new_height);
-			}
-			return 0;
-		case WM_COMMAND:
+            if (new_width && new_height)
+               d3d_resize(driver->video_data, new_width, new_height);
+         }
+         return 0;
+      case WM_COMMAND:
          if (settings->ui.menubar_enable)
-			{
-				d3d_video_t *d3d = (d3d_video_t*)driver->video_data;
-				HWND        d3dr = d3d->hWnd;
-				LRESULT      ret = win32_menu_loop(d3dr, wParam);
-			}
-			break;
-    }
+         {
+            d3d_video_t *d3d = (d3d_video_t*)driver->video_data;
+            HWND        d3dr = d3d->hWnd;
+            LRESULT      ret = win32_menu_loop(d3dr, wParam);
+         }
+         break;
+   }
 
-    if (dinput_handle_message(dinput, message, wParam, lParam))
-        return 0;
-    return DefWindowProc(hWnd, message, wParam, lParam);
+   if (dinput_handle_message(dinput, message, wParam, lParam))
+      return 0;
+   return DefWindowProc(hWnd, message, wParam, lParam);
 }
 #endif
 
@@ -282,7 +282,7 @@ void d3d_make_d3dpp(void *data, const video_info_t *info, D3DPRESENT_PARAMETERS 
 }
 
 static void gfx_ctx_d3d_check_window(void *data, bool *quit,
-   bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
+      bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
 
@@ -421,10 +421,10 @@ static void gfx_ctx_d3d_get_video_size(void *data,
 #elif defined(_XBOX1)
    DWORD video_mode = XGetVideoFlags();
 
-    *width  = 640;
-    *height = 480;
+   *width  = 640;
+   *height = 480;
 
-    widescreen_mode = false;
+   widescreen_mode = false;
 
    /* Only valid in PAL mode, not valid for HDTV modes! */
 
