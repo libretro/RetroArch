@@ -344,7 +344,6 @@ INPUT
 #ifdef IOS
 #include "../apple/iOS/bluetooth/btdynamic.c"
 #include "../apple/iOS/bluetooth/btpad.c"
-#include "../apple/iOS/bluetooth/btpad_queue.c"
 #include "../input/drivers_joypad/ios_joypad.c"
 #endif
 
