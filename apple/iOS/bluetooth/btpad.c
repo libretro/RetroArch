@@ -109,8 +109,7 @@ static void btpad_queue_process(void)
 {
    for (; can_run && (insert_position != read_position); can_run --)
    {
-      struct btpad_queue_command* cmd = (struct btpad_queue_command*)
-         &commands[read_position];
+      struct btpad_queue_command* cmd = &commands[read_position];
 
       if (!cmd)
          return;
@@ -167,8 +166,7 @@ static void btpad_queue_run(uint32_t count)
 
 static void btpad_queue_btstack_set_power_mode(uint8_t on)
 {
-   struct btpad_queue_command* cmd = (struct btpad_queue_command*)
-      &commands[insert_position];
+   struct btpad_queue_command* cmd = &commands[insert_position];
 
    if (!cmd)
       return;
@@ -182,8 +180,7 @@ static void btpad_queue_btstack_set_power_mode(uint8_t on)
 
 static void btpad_queue_hci_read_bd_addr(void)
 {
-   struct btpad_queue_command* cmd = (struct btpad_queue_command*)
-      &commands[insert_position];
+   struct btpad_queue_command* cmd = &commands[insert_position];
 
    if (!cmd)
       return;
@@ -196,8 +193,7 @@ static void btpad_queue_hci_read_bd_addr(void)
 
 static void btpad_queue_hci_disconnect(uint16_t handle, uint8_t reason)
 {
-   struct btpad_queue_command* cmd = (struct btpad_queue_command*)
-      &commands[insert_position];
+   struct btpad_queue_command* cmd = &commands[insert_position];
 
    if (!cmd)
       return;
@@ -213,8 +209,7 @@ static void btpad_queue_hci_disconnect(uint16_t handle, uint8_t reason)
 static void btpad_queue_hci_inquiry(uint32_t lap,
       uint8_t length, uint8_t num_responses)
 {
-   struct btpad_queue_command* cmd = (struct btpad_queue_command*)
-      &commands[insert_position];
+   struct btpad_queue_command* cmd = &commands[insert_position];
 
    if (!cmd)
       return;
@@ -232,8 +227,7 @@ static void btpad_queue_hci_remote_name_request(bd_addr_t bd_addr,
       uint8_t page_scan_repetition_mode,
       uint8_t reserved, uint16_t clock_offset)
 {
-   struct btpad_queue_command* cmd = (struct btpad_queue_command*)
-      &commands[insert_position];
+   struct btpad_queue_command* cmd = &commands[insert_position];
 
    if (!cmd)
       return;
@@ -252,8 +246,7 @@ static void btpad_queue_hci_remote_name_request(bd_addr_t bd_addr,
 static void btpad_queue_hci_pin_code_request_reply(
       bd_addr_t bd_addr, bd_addr_t pin)
 {
-   struct btpad_queue_command* cmd = (struct btpad_queue_command*)
-      &commands[insert_position];
+   struct btpad_queue_command* cmd = &commands[insert_position];
 
    if (!cmd)
       return;
