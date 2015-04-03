@@ -141,14 +141,14 @@ static void gl_overlay_tex_geom(void *data,
    coords[7] = yamt
 
 #if defined(HAVE_EGL) && defined(HAVE_OPENGLES2)
-static bool check_eglimage_proc(void)
+static bool gl_check_eglimage_proc(void)
 {
    return glEGLImageTargetTexture2DOES != NULL;
 }
 #endif
 
 #ifdef HAVE_GL_SYNC
-static bool check_sync_proc(gl_t *gl)
+static bool gl_check_sync_proc(gl_t *gl)
 {
    if (!gl_query_extension(gl, "ARB_sync"))
       return false;
@@ -158,7 +158,7 @@ static bool check_sync_proc(gl_t *gl)
 #endif
 
 #ifndef HAVE_OPENGLES
-static bool init_vao(gl_t *gl)
+static bool gl_init_vao(gl_t *gl)
 {
    if (!gl->core_context && !gl_query_extension(gl, "ARB_vertex_array_object"))
       return false;
@@ -183,9 +183,9 @@ static bool init_vao(gl_t *gl)
 #define glFramebufferRenderbuffer glFramebufferRenderbufferOES
 #define glRenderbufferStorage glRenderbufferStorageOES
 #define glDeleteRenderbuffers glDeleteRenderbuffersOES
-#define check_fbo_proc(gl) (true)
+#define gl_check_fbo_proc(gl) (true)
 #elif !defined(HAVE_OPENGLES2)
-static bool check_fbo_proc(gl_t *gl)
+static bool gl_check_fbo_proc(gl_t *gl)
 {
    if (!gl->core_context && !gl_query_extension(gl, "ARB_framebuffer_object"))
       return false;
@@ -197,7 +197,7 @@ static bool check_fbo_proc(gl_t *gl)
       glDeleteRenderbuffers;
 }
 #else
-#define check_fbo_proc(gl) (true)
+#define gl_check_fbo_proc(gl) (true)
 #endif
 #endif
 
@@ -421,7 +421,6 @@ static void gl_compute_fbo_geometry(gl_t *gl, unsigned width, unsigned height,
    }
 }
 
-
 static void gl_create_fbo_textures(gl_t *gl)
 {
    int i;
@@ -587,7 +586,7 @@ static void gl_init_fbo(gl_t *gl, unsigned width, unsigned height)
    if (gl->shader->num_shaders() == 1 && !scale.valid)
       return;
 
-   if (!check_fbo_proc(gl))
+   if (!gl_check_fbo_proc(gl))
    {
       RARCH_ERR("Failed to locate FBO functions. Won't be able to use render-to-texture.\n");
       return;
@@ -674,7 +673,7 @@ static bool gl_init_hw_render(gl_t *gl, unsigned width, unsigned height)
    RARCH_LOG("[GL]: Max texture size: %d px, renderbuffer size: %u px.\n",
          max_fbo_size, max_renderbuffer_size);
 
-   if (!check_fbo_proc(gl))
+   if (!gl_check_fbo_proc(gl))
       return false;
 
    glBindTexture(GL_TEXTURE_2D, 0);
@@ -1196,7 +1195,7 @@ static void gl_init_textures(gl_t *gl, const video_info_t *video)
    unsigned i;
 #if defined(HAVE_EGL) && defined(HAVE_OPENGLES2)
    // Use regular textures if we use HW render.
-   gl->egl_images = !gl->hw_render_use && check_eglimage_proc() &&
+   gl->egl_images = !gl->hw_render_use && gl_check_eglimage_proc() &&
       gl->ctx_driver->init_egl_image_buffer
       && gl->ctx_driver->init_egl_image_buffer(gl, video);
 #else
@@ -1837,7 +1836,7 @@ static bool resolve_extensions(gl_t *gl)
    if (gl->core_context)
    {
       RARCH_LOG("[GL]: Using Core GL context.\n");
-      if (!init_vao(gl))
+      if (!gl_init_vao(gl))
       {
          RARCH_ERR("[GL]: Failed to initialize VAOs.\n");
          return false;
@@ -1861,7 +1860,7 @@ static bool resolve_extensions(gl_t *gl)
 #endif
 
 #ifdef HAVE_GL_SYNC
-   gl->have_sync = check_sync_proc(gl);
+   gl->have_sync = gl_check_sync_proc(gl);
    if (gl->have_sync && settings->video.hard_sync)
       RARCH_LOG("[GL]: Using ARB_sync to reduce latency.\n");
 #endif
