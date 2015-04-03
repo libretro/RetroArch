@@ -168,10 +168,9 @@ static void btpad_queue_run(uint32_t count)
    btpad_queue_process();
 }
 
-static void btpad_queue_btstack_set_power_mode(uint8_t on)
+static void btpad_queue_btstack_set_power_mode(
+    struct btpad_queue_command *cmd, uint8_t on)
 {
-   struct btpad_queue_command* cmd = &commands[insert_position];
-
    if (!cmd)
       return;
 
@@ -182,10 +181,9 @@ static void btpad_queue_btstack_set_power_mode(uint8_t on)
    btpad_queue_process();
 }
 
-static void btpad_queue_hci_read_bd_addr(void)
+static void btpad_queue_hci_read_bd_addr(
+   struct btpad_queue_command *cmd)
 {
-   struct btpad_queue_command* cmd = &commands[insert_position];
-
    if (!cmd)
       return;
 
@@ -195,10 +193,10 @@ static void btpad_queue_hci_read_bd_addr(void)
    btpad_queue_process();
 }
 
-static void btpad_queue_hci_disconnect(uint16_t handle, uint8_t reason)
+static void btpad_queue_hci_disconnect(
+    struct btpad_queue_command *cmd,
+    uint16_t handle, uint8_t reason)
 {
-   struct btpad_queue_command* cmd = &commands[insert_position];
-
    if (!cmd)
       return;
 
@@ -210,11 +208,11 @@ static void btpad_queue_hci_disconnect(uint16_t handle, uint8_t reason)
    btpad_queue_process();
 }
 
-static void btpad_queue_hci_inquiry(uint32_t lap,
+static void btpad_queue_hci_inquiry(
+    struct btpad_queue_command *cmd,
+    uint32_t lap,
       uint8_t length, uint8_t num_responses)
 {
-   struct btpad_queue_command* cmd = &commands[insert_position];
-
    if (!cmd)
       return;
 
@@ -227,12 +225,12 @@ static void btpad_queue_hci_inquiry(uint32_t lap,
    btpad_queue_process();
 }
 
-static void btpad_queue_hci_remote_name_request(bd_addr_t bd_addr,
+static void btpad_queue_hci_remote_name_request(
+    struct btpad_queue_command *cmd,
+    bd_addr_t bd_addr,
       uint8_t page_scan_repetition_mode,
       uint8_t reserved, uint16_t clock_offset)
 {
-   struct btpad_queue_command* cmd = &commands[insert_position];
-
    if (!cmd)
       return;
 
@@ -248,10 +246,9 @@ static void btpad_queue_hci_remote_name_request(bd_addr_t bd_addr,
 }
 
 static void btpad_queue_hci_pin_code_request_reply(
+        struct btpad_queue_command *cmd,
       bd_addr_t bd_addr, bd_addr_t pin)
 {
-   struct btpad_queue_command* cmd = &commands[insert_position];
-
    if (!cmd)
       return;
 
@@ -277,13 +274,15 @@ void btpad_set_inquiry_state(bool on)
    inquiry_off = !on;
 
    if (!inquiry_off && !inquiry_running)
-      btpad_queue_hci_inquiry(HCI_INQUIRY_LAP, 3, 1);      
+      btpad_queue_hci_inquiry(&commands[insert_position],
+            HCI_INQUIRY_LAP, 3, 1);
 }
 
 /* Internal interface. */
 static struct pad_connection *btpad_find_empty_connection(void)
 {
    unsigned i;
+    
    for (i = 0; i < MAX_USERS; i++)
    {
       if (g_connections[i].state == BTPAD_EMPTY)
@@ -323,7 +322,8 @@ static void btpad_close_connection(struct pad_connection* connection)
       return;
 
    if (connection->handle)
-      btpad_queue_hci_disconnect(connection->handle, 0x15);
+      btpad_queue_hci_disconnect(&commands[insert_position],
+            connection->handle, 0x15);
 
    memset(connection, 0, sizeof(struct pad_connection));
 }
@@ -345,6 +345,7 @@ void btpad_packet_handler(uint8_t packet_type,
 {
    unsigned i;
    bd_addr_t event_addr;
+   struct btpad_queue_command* cmd = &commands[insert_position];
 
    switch (packet_type)
    {
@@ -370,13 +371,13 @@ void btpad_packet_handler(uint8_t packet_type,
                   case HCI_STATE_WORKING:
                      btpad_queue_reset();
 
-                     btpad_queue_hci_read_bd_addr();
+                     btpad_queue_hci_read_bd_addr(cmd);
                      /* TODO: Where did I get 672 for MTU? */
                      bt_send_cmd_ptr(l2cap_register_service_ptr,
                            PSM_HID_CONTROL, 672);  
                      bt_send_cmd_ptr(l2cap_register_service_ptr,
                            PSM_HID_INTERRUPT, 672);
-                     btpad_queue_hci_inquiry(HCI_INQUIRY_LAP, 3, 1);
+                     btpad_queue_hci_inquiry(cmd, HCI_INQUIRY_LAP, 3, 1);
 
                      btpad_queue_run(1);
                      break;
@@ -434,7 +435,7 @@ void btpad_packet_handler(uint8_t packet_type,
                inquiry_running = !inquiry_off;
 
                if (inquiry_running)
-                  btpad_queue_hci_inquiry(HCI_INQUIRY_LAP, 3, 1);
+                  btpad_queue_hci_inquiry(cmd, HCI_INQUIRY_LAP, 3, 1);
                break;
 
             case L2CAP_EVENT_CHANNEL_OPENED:
@@ -470,7 +471,7 @@ void btpad_packet_handler(uint8_t packet_type,
                      if (connection->channels[0] && connection->channels[1])
                      {
                         RARCH_LOG("[BTpad]: Got both L2CAP channels, requesting name.\n");
-                        btpad_queue_hci_remote_name_request(connection->address, 0, 0, 0);
+                        btpad_queue_hci_remote_name_request(cmd, connection->address, 0, 0, 0);
                      }
                   }
                   else
@@ -541,7 +542,7 @@ void btpad_packet_handler(uint8_t packet_type,
                RARCH_LOG("[BTpad]: Sending Wiimote PIN.\n");
 
                bt_flip_addr_ptr(event_addr, &packet[2]);
-               btpad_queue_hci_pin_code_request_reply(event_addr, &packet[2]);
+               btpad_queue_hci_pin_code_request_reply(cmd, event_addr, &packet[2]);
                break;
 
             case HCI_EVENT_DISCONNECTION_COMPLETE:
