@@ -64,7 +64,7 @@ static void libusb_hid_device_send_control(void *data,
    struct libusb_adapter *adapter = (struct libusb_adapter*)data;
    int report_number = data_buf[0];
 
-   if(!adapter)
+   if (adapter)
       libusb_control_transfer(adapter->handle,
             LIBUSB_REQUEST_TYPE_CLASS|LIBUSB_RECIPIENT_INTERFACE|LIBUSB_ENDPOINT_OUT,
             0x09/*HID Set_Report*/,
