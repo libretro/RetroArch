@@ -15,8 +15,10 @@
 
 #include <libusb-1.0/libusb.h>
 #include <rthreads/rthreads.h>
+#include <compat/strl.h>
 #include "../connect/joypad_connection.h"
 #include "../../driver.h"
+#include "../input_autodetect.h"
 #include "../input_hid_driver.h"
 
 typedef struct libusb_hid
@@ -33,6 +35,8 @@ struct libusb_adapter
 
    uint8_t manufacturer_name[255];
    uint8_t name[255];
+
+   uint32_t slot;
 
    sthread_t *thread;
    struct libusb_adapter *next;
@@ -53,12 +57,35 @@ static void adapter_thread(void *data)
    }
 }
 
+static void libusb_hid_device_send_control(void *data,
+      uint8_t* data_buf, size_t size)
+{
+}
+
+static void libusb_hid_device_add_autodetect(unsigned idx,
+      const char *device_name, const char *driver_name,
+      uint16_t dev_vid, uint16_t dev_pid)
+{
+   autoconfig_params_t params = {{0}};
+
+   params.idx = idx;
+   params.vid = dev_vid;
+   params.pid = dev_pid;
+
+   strlcpy(params.name, device_name, sizeof(params.name));
+   strlcpy(params.driver, driver_name, sizeof(params.driver));
+
+   input_config_autoconfigure_joypad(&params);
+}
+
 static int add_adapter(void *data, struct libusb_device *dev)
 {
    int rc;
    struct libusb_device_descriptor desc;
    struct libusb_adapter *old_head = NULL;
    struct libusb_adapter *adapter  = (struct libusb_adapter*)calloc(1, sizeof(struct libusb_adapter));
+   struct libusb_hid          *hid = (struct libusb_hid*)data;
+   const char *device_name         = NULL;
 
    if (!adapter)
    {
@@ -108,8 +135,22 @@ static int add_adapter(void *data, struct libusb_device *dev)
       goto error;
    }
 
+   device_name = (const char*)adapter->name;
+
+   adapter->slot = pad_connection_pad_init(hid->slots,
+         device_name, adapter, &libusb_hid_device_send_control);
+
+   if (!pad_connection_has_interface(hid->slots, adapter->slot))
+      goto error;
+
+   if (adapter->name[0] == '\0')
+      goto error;
+
    fprintf(stderr, "Device 0x%p attached (VID/PID: %04x:%04x).\n",
          adapter->device, desc.idVendor, desc.idProduct);
+
+   libusb_hid_device_add_autodetect(adapter->slot,
+         device_name, libusb_hid.ident, desc.idVendor, desc.idProduct);
 
    adapter->thread = sthread_create(adapter_thread, adapter);
 
@@ -136,6 +177,7 @@ error:
 static int remove_adapter(void *data, struct libusb_device *dev)
 {
    struct libusb_adapter *adapter = (struct libusb_adapter*)&adapters;
+   struct libusb_hid          *hid = (struct libusb_hid*)data;
 
    while (adapter->next != NULL)
    {
@@ -147,11 +189,14 @@ static int remove_adapter(void *data, struct libusb_device *dev)
          adapter->next->quitting = true;
          sthread_join(adapter->next->thread);
 
+         pad_connection_pad_deinit(&hid->slots[adapter->slot], adapter->slot);
+
          libusb_close(adapter->next->handle);
 
          new_next = adapter->next->next;
          free(adapter->next);
          adapter->next = new_next;
+
 
          return 0;
       }
@@ -200,39 +245,62 @@ static const char *libusb_hid_joypad_name(void *data, unsigned pad)
 
 static uint64_t libusb_hid_joypad_get_buttons(void *data, unsigned port)
 {
-   (void)data;
-   (void)port;
-
+   libusb_hid_t        *hid   = (libusb_hid_t*)data;
+   if (hid)
+      return pad_connection_get_buttons(&hid->slots[port], port);
    return 0;
 }
 
 static bool libusb_hid_joypad_button(void *data, unsigned port, uint16_t joykey)
 {
-   (void)data;
-   (void)port;
-   (void)joykey;
+   uint64_t buttons          = libusb_hid_joypad_get_buttons(data, port);
 
+   if (joykey == NO_BTN)
+      return false;
+
+   /* Check hat. */
+   if (GET_HAT_DIR(joykey))
+      return false;
+
+   /* Check the button. */
+   if ((port < MAX_USERS) && (joykey < 32))
+      return ((buttons & (1 << joykey)) != 0);
    return false;
 }
 
 static bool libusb_hid_joypad_rumble(void *data, unsigned pad,
       enum retro_rumble_effect effect, uint16_t strength)
 {
-   (void)data;
-   (void)pad;
-   (void)effect;
-   (void)strength;
-
-   return false;
+   libusb_hid_t        *hid   = (libusb_hid_t*)data;
+   if (!hid)
+      return false;
+   return pad_connection_rumble(&hid->slots[pad], pad, effect, strength);
 }
 
 static int16_t libusb_hid_joypad_axis(void *data, unsigned port, uint32_t joyaxis)
 {
-   (void)data;
-   (void)port;
-   (void)joyaxis;
+   libusb_hid_t         *hid = (libusb_hid_t*)data;
+   int16_t               val = 0;
 
-   return 0;
+   if (joyaxis == AXIS_NONE)
+      return 0;
+
+   if (AXIS_NEG_GET(joyaxis) < 4)
+   {
+      val = pad_connection_get_axis(&hid->slots[port], port, AXIS_NEG_GET(joyaxis));
+
+      if (val >= 0)
+         val = 0;
+   }
+   else if(AXIS_POS_GET(joyaxis) < 4)
+   {
+      val = pad_connection_get_axis(&hid->slots[port], port, AXIS_POS_GET(joyaxis));
+
+      if (val <= 0)
+         val = 0;
+   }
+
+   return val;
 }
 
 static void libusb_hid_free(void *data)
