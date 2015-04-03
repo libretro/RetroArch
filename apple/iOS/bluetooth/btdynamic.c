@@ -71,6 +71,7 @@ static CFRunLoopSourceRef btstack_quit_source;
 bool btstack_try_load(void)
 {
    unsigned i;
+   void *handle = NULL;
     
    assert(sizeof(void**) == sizeof(void(*)()));
 
@@ -80,9 +81,9 @@ bool btstack_try_load(void)
    btstack_tested = true;
    btstack_loaded = false;
 
-   void  *btstack = dlopen("/usr/lib/libBTstack.dylib", RTLD_LAZY);
+   handle = dlopen("/usr/lib/libBTstack.dylib", RTLD_LAZY);
 
-   if (!btstack)
+   if (!handle)
    {
       RARCH_ERR("[BTstack]: Not loaded\n");
       return false;
@@ -90,13 +91,13 @@ bool btstack_try_load(void)
 
    for (i = 0; grabbers[i].name; i ++)
    {
-      *grabbers[i].target = dlsym(btstack, grabbers[i].name);
+      *grabbers[i].target = dlsym(handle, grabbers[i].name);
 
       if (!*grabbers[i].target)
       {
          RARCH_ERR("[BTstack]: Symbol %s not found, not loaded.\n", grabbers[i].name);
 
-         dlclose(btstack);
+         dlclose(handle);
          return false;
       }
    }
