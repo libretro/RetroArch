@@ -18,6 +18,9 @@
 #include <sys/sysctl.h>
 #include <stdio.h>
 #include <string.h>
+#ifdef __APPLE__
+#include <CoreFoundation/CFRunLoop.h>
+#endif
 
 #include "btdynamic.h"
 #include "btstack.h"
@@ -335,9 +338,9 @@ static void btpad_close_all_connections(void)
    for (i = 0; i < MAX_USERS; i ++)
       btpad_close_connection(&g_connections[i]);
 
-   /* TODO/FIXME - create platform-agnostic solution for this
-    * and figure out why/if this is needed. */
+#ifdef __APPLE__
    CFRunLoopStop(CFRunLoopGetCurrent());
+#endif
 }
 
 void btpad_packet_handler(uint8_t packet_type,
