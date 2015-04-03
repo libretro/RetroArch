@@ -60,8 +60,6 @@
 /* controller status stuff */
 #define WM_MAX_BATTERY_CODE                  0xC8
 
-#define EXP_ID_CODE_CLASSIC_CONTROLLER       0x9A1EFDFD
-
 /* offsets in wiimote memory */
 #define WM_MEM_OFFSET_CALIBRATION            0x16
 #define WM_EXP_MEM_BASE                      0x04A40000
@@ -551,11 +549,6 @@ static int wiimote_handshake(struct wiimote_t* wm,
                   return 0;
 
                id = swap_if_little32(*ptr);
-
-#ifdef WIIMOTE_DBG
-               printf("Expansion id=0x%04x\n",id);
-#endif
-               /* EXP_ID_CODE_CLASSIC_CONTROLLER */
 
                switch (id)
                {
