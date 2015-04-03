@@ -20,7 +20,7 @@
 #include <string.h>
 
 #include "btdynamic.h"
-#include "btpad.h"
+#include "btstack.h"
 #include "../input/connect/joypad_connection.h"
 
 extern joypad_connection_t *slots;

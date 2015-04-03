@@ -584,6 +584,10 @@ void bt_send_l2cap(uint16_t local_cid, uint8_t *data, uint16_t len);
 
 void bt_send_rfcomm(uint16_t rfcom_cid, uint8_t *data, uint16_t len);
 
+/* custom functions */
+
+void btpad_set_inquiry_state(bool on);
+
 #if defined __cplusplus
 }
 #endif
