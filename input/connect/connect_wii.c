@@ -95,6 +95,9 @@
 #define EXP_NONE                             0
 #define EXP_CLASSIC                          2
 
+#define IDENT_NUNCHUK                        0xA4200000
+#define IDENT_CC                             0xA4200101
+
 typedef struct axis_t
 {
    bool has_center;
@@ -309,7 +312,7 @@ static void classic_ctrl_event(struct classic_ctrl_t* cc, uint8_t* msg)
    wiimote_process_axis(&cc->ljs.x, (msg[0] & 0x3F));
    wiimote_process_axis(&cc->ljs.y, (msg[1] & 0x3F));
    wiimote_process_axis(&cc->rjs.x, ((msg[0] & 0xC0) >> 3) |
-         ((msg[1] & 0xC0) >> 5) | ((msg[2] & 0x80) >> 7));
+         ((msg[1] & 0xC0) >> 5) |   ((msg[2] & 0x80) >> 7));
    wiimote_process_axis(&cc->rjs.y, (msg[2] & 0x1F));
 }
 
@@ -554,20 +557,20 @@ static int wiimote_handshake(struct wiimote_t* wm,
 #endif
                /* EXP_ID_CODE_CLASSIC_CONTROLLER */
 
-               if(id != 0xa4200101)
+               switch (id)
                {
-                  wm->handshake_state = 2;
+                  case IDENT_CC:
+                     rarch_sleep(100);
+                     /* pedimos datos de calibracion del JOY! */
+                     wiimote_read_data(wm, WM_EXP_MEM_CALIBR, 16);
+                     wm->handshake_state = 5;
+                     break;
+                  default:
+                     wm->handshake_state = 2;
 #if 0
-                  WIIMOTE_DISABLE_STATE(wm, WIIMOTE_STATE_EXP);
+                     WIIMOTE_DISABLE_STATE(wm, WIIMOTE_STATE_EXP);
 #endif
-                  continue;
-               }
-               else
-               {
-                  rarch_sleep(100);
-                  /* pedimos datos de calibracion del JOY! */
-                  wiimote_read_data(wm, WM_EXP_MEM_CALIBR, 16);
-                  wm->handshake_state = 5;
+                     continue;
                }
             }
             return 0;
