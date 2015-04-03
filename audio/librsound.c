@@ -69,6 +69,7 @@
 #include <time.h>
 #include <errno.h> 
 
+#include <compat/strl.h>
 #include <retro_inline.h>
 
 /* 

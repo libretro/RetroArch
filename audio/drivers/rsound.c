@@ -55,6 +55,7 @@ static void err_cb(void *userdata)
 
 static void *rs_init(const char *device, unsigned rate, unsigned latency)
 {
+   int channels, format;
    rsd_t *rsd = (rsd_t*)calloc(1, sizeof(rsd_t));
    if (!rsd)
       return NULL;
@@ -72,8 +73,8 @@ static void *rs_init(const char *device, unsigned rate, unsigned latency)
 
    rsd->buffer = fifo_new(1024 * 4);
 
-   int channels = 2;
-   int format = RSD_S16_NE;
+   channels = 2;
+   format   = RSD_S16_NE;
 
    rsd_set_param(rd, RSD_CHANNELS, &channels);
    rsd_set_param(rd, RSD_SAMPLERATE, &rate);
@@ -106,9 +107,13 @@ static ssize_t rs_write(void *data, const void *buf, size_t size)
 
    if (rsd->nonblock)
    {
+      size_t avail, write_amt;
+
       rsd_callback_lock(rsd->rd);
-      size_t avail = fifo_write_avail(rsd->buffer);
-      size_t write_amt = avail > size ? size : avail;
+
+      avail = fifo_write_avail(rsd->buffer);
+      write_amt = avail > size ? size : avail;
+
       fifo_write(rsd->buffer, buf, write_amt);
       rsd_callback_unlock(rsd->rd);
       return write_amt;
@@ -118,8 +123,10 @@ static ssize_t rs_write(void *data, const void *buf, size_t size)
       size_t written = 0;
       while (written < size && !rsd->has_error)
       {
+         size_t avail;
          rsd_callback_lock(rsd->rd);
-         size_t avail = fifo_write_avail(rsd->buffer);
+
+         avail = fifo_write_avail(rsd->buffer);
 
          if (avail == 0)
          {
