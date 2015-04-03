@@ -29,6 +29,10 @@
 #include "rpng_common.h"
 #include "rpng_decode.h"
 
+#ifdef GEKKO
+#include <malloc.h>
+#endif
+
 enum png_chunk_type png_chunk_type(const struct png_chunk *chunk)
 {
    unsigned i;
