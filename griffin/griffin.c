@@ -486,7 +486,6 @@ AUDIO
 
 #ifdef HAVE_XAUDIO
 #include "../audio/drivers/xaudio.c"
-#include "../audio/drivers/xaudio-c.cpp"
 #endif
 
 #ifdef HAVE_DSOUND
