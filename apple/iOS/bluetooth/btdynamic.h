@@ -22,7 +22,6 @@
 
 bool btstack_try_load(void);
 void btstack_set_poweron(bool on);
-bool btstack_is_running(void);
 
 #ifndef BUILDING_BTDYNAMIC
 #define BTDIMPORT extern

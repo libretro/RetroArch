@@ -157,8 +157,3 @@ void btstack_set_poweron(bool on)
       btstack_thread = NULL;
    }
 }
-
-bool btstack_is_running(void)
-{
-   return btstack_thread;
-}
