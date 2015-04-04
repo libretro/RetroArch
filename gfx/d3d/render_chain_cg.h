@@ -362,11 +362,10 @@ bool renderchain_init_shader_fvf(void *data, void *pass_data)
          pass->attrib_map.push_back(0);
       else
       {
-         D3DVERTEXELEMENT elem;
+         D3DVERTEXELEMENT elem = DECL_FVF_TEXCOORD(index, 3, tex_index);
 
          pass->attrib_map.push_back(index);
 
-         elem        = DECL_FVF_TEXCOORD(index, 3, tex_index);
          decl[i]     = elem;
 
          /* Find next vacant stream. */
