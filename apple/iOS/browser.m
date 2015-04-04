@@ -25,6 +25,14 @@
 #include <file/file_path.h>
 #include <retro_miscellaneous.h>
 
+enum file_action
+{
+    FA_DELETE = 10000,
+    FA_CREATE,
+    FA_MOVE,
+    FA_UNZIP
+};
+
 static const void* const associated_module_key = &associated_module_key;
 
 static int zlib_extract_callback(const char *name, const char *valid_exts,
@@ -79,7 +87,6 @@ static void unzip_file(const char* path, const char* output_directory)
       apple_display_alert("Could not process zip file.", "Action Failed");
 }
 
-enum file_action { FA_DELETE = 10000, FA_CREATE, FA_MOVE, FA_UNZIP };
 static void file_action(enum file_action action, NSString* source, NSString* target)
 {
    NSError* error = nil;
