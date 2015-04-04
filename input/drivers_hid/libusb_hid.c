@@ -36,6 +36,7 @@ struct libusb_adapter
 
    uint8_t manufacturer_name[255];
    uint8_t name[255];
+   uint8_t data[2048];
 
    uint32_t slot;
 
@@ -51,10 +52,15 @@ static void adapter_thread(void *data)
 
    while (!adapter->quitting)
    {
+      driver_t *driver               = driver_get_ptr();
+      libusb_hid_t *hid              = (libusb_hid_t*)driver->hid_data;
 #if 0
       static unsigned count;
-      fprintf(stderr, "Gets here, count: %d\n", count++);
+      fprintf(stderr, "[%s] Gets here, count: %d\n", adapter->name, count++);
 #endif
+      if (adapter && hid)
+         pad_connection_packet(&hid->slots[adapter->slot], adapter->slot,
+               adapter->data, sizeof(adapter->data) - 1);
    }
 }
 
