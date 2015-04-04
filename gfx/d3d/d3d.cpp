@@ -29,8 +29,8 @@
 #include "../../runloop.h"
 
 #ifndef _XBOX
-#include "../drivers_context/win32_common.h"
-#include "../drivers_context/win32_dwm_common.h"
+#include "../drivers_wm/win32_common.h"
+#include "../drivers_wm/win32_dwm_common.h"
 
 #define HAVE_MONITOR
 #define HAVE_WINDOW
