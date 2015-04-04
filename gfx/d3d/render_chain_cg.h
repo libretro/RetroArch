@@ -29,6 +29,7 @@ static const char *stock_program =
 
 static INLINE bool validate_param_name(const char *name)
 {
+   unsigned i;
    static const char *illegal[] = {
       "PREV.",
       "PREV1.",
@@ -45,7 +46,7 @@ static INLINE bool validate_param_name(const char *name)
    if (!name)
       return false;
 
-   for (unsigned i = 0; i < sizeof(illegal) / sizeof(illegal[0]); i++)
+   for (i = 0; i < sizeof(illegal) / sizeof(illegal[0]); i++)
       if (strstr(name, illegal[i]) == name)
          return false;
 
@@ -90,13 +91,14 @@ static INLINE CGparameter find_param_from_semantic(CGprogram prog,
 bool renderchain_compile_shaders(void *data, CGprogram &fPrg,
       CGprogram &vPrg, const std::string &shader)
 {
-   renderchain_t *chain = (renderchain_t*)data;
-   CGprofile vertex_profile = cgD3D9GetLatestVertexProfile();
+   renderchain_t *chain       = (renderchain_t*)data;
+   CGprofile vertex_profile   = cgD3D9GetLatestVertexProfile();
    CGprofile fragment_profile = cgD3D9GetLatestPixelProfile();
+   const char **fragment_opts = cgD3D9GetOptimalOptions(fragment_profile);
+   const char **vertex_opts   = cgD3D9GetOptimalOptions(vertex_profile);
+
    RARCH_LOG("[D3D Cg]: Vertex profile: %s\n", cgGetProfileString(vertex_profile));
    RARCH_LOG("[D3D Cg]: Fragment profile: %s\n", cgGetProfileString(fragment_profile));
-   const char **fragment_opts = cgD3D9GetOptimalOptions(fragment_profile);
-   const char **vertex_opts = cgD3D9GetOptimalOptions(vertex_profile);
 
    if (shader.length() > 0)
    {
@@ -192,14 +194,15 @@ void renderchain_set_shader_params(void *data, Pass *pass,
             unsigned tex_w, unsigned tex_h,
             unsigned viewport_w, unsigned viewport_h)
 {
-   renderchain_t *chain = (renderchain_t*)data;
+   float frame_cnt;
    D3DXVECTOR2 video_size, texture_size, output_size;
-   video_size.x = video_w;
-   video_size.y = video_h;
-   texture_size.x = tex_w;
-   texture_size.y = tex_h;
-   output_size.x = viewport_w;
-   output_size.y = viewport_h;
+   renderchain_t *chain = (renderchain_t*)data;
+   video_size.x         = video_w;
+   video_size.y         = video_h;
+   texture_size.x       = tex_w;
+   texture_size.y       = tex_h;
+   output_size.x        = viewport_w;
+   output_size.y        = viewport_h;
 
    set_cg_param(pass->vPrg, "IN.video_size", video_size);
    set_cg_param(pass->fPrg, "IN.video_size", video_size);
@@ -208,9 +211,9 @@ void renderchain_set_shader_params(void *data, Pass *pass,
    set_cg_param(pass->vPrg, "IN.output_size", output_size);
    set_cg_param(pass->fPrg, "IN.output_size", output_size);
 
-   float frame_cnt = chain->frame_count;
+   frame_cnt            = chain->frame_count;
    if (pass->info.pass->frame_count_mod)
-      frame_cnt = chain->frame_count % pass->info.pass->frame_count_mod;
+      frame_cnt         = chain->frame_count % pass->info.pass->frame_count_mod;
    set_cg_param(pass->fPrg, "IN.frame_count", frame_cnt);
    set_cg_param(pass->vPrg, "IN.frame_count", frame_cnt);
 }
@@ -218,7 +221,8 @@ void renderchain_set_shader_params(void *data, Pass *pass,
 
 void renderchain_bind_tracker(void *data, Pass *pass, unsigned pass_index)
 {
-   renderchain_t *chain = (renderchain_t*)data;
+   unsigned i;
+   renderchain_t *chain  = (renderchain_t*)data;
    if (!chain->tracker)
       return;
 
@@ -226,7 +230,7 @@ void renderchain_bind_tracker(void *data, Pass *pass, unsigned pass_index)
       chain->uniform_cnt = state_tracker_get_uniform(chain->tracker,
             chain->uniform_info, MAX_VARIABLES, chain->frame_count);
 
-   for (unsigned i = 0; i < chain->uniform_cnt; i++)
+   for (i = 0; i < chain->uniform_cnt; i++)
    {
       set_cg_param(pass->fPrg, chain->uniform_info[i].id,
             chain->uniform_info[i].value);
@@ -248,37 +252,41 @@ void renderchain_bind_tracker(void *data, Pass *pass, unsigned pass_index)
 
 bool renderchain_init_shader_fvf(void *data, Pass *pass)
 {
-   renderchain_t *chain = (renderchain_t*)data;
-   static const D3DVERTEXELEMENT decl_end = D3DDECL_END();
+   unsigned index, i, count;
+   unsigned tex_index                          = 0;
+   bool texcoord0_taken                        = false;
+   bool texcoord1_taken                        = false;
+   bool stream_taken[4]                        = {false};
+   renderchain_t *chain                        = (renderchain_t*)data;
+   static const D3DVERTEXELEMENT decl_end      = D3DDECL_END();
    static const D3DVERTEXELEMENT position_decl = DECL_FVF_POSITION(0);
-   static const D3DVERTEXELEMENT tex_coord0 = DECL_FVF_TEXCOORD(1, 3, 0);
-   static const D3DVERTEXELEMENT tex_coord1 = DECL_FVF_TEXCOORD(2, 5, 1);
-   static const D3DVERTEXELEMENT color = DECL_FVF_COLOR(3, 7, 0);
+   static const D3DVERTEXELEMENT tex_coord0    = DECL_FVF_TEXCOORD(1, 3, 0);
+   static const D3DVERTEXELEMENT tex_coord1    = DECL_FVF_TEXCOORD(2, 5, 1);
+   static const D3DVERTEXELEMENT color         = DECL_FVF_COLOR(3, 7, 0);
+   D3DVERTEXELEMENT decl[MAXD3DDECLLENGTH]     = {{0}};
 
-   D3DVERTEXELEMENT decl[MAXD3DDECLLENGTH] = {{0}};
    if (cgD3D9GetVertexDeclaration(pass->vPrg, decl) == CG_FALSE)
       return false;
 
-   unsigned count;
    for (count = 0; count < MAXD3DDECLLENGTH; count++)
    {
       if (memcmp(&decl_end, &decl[count], sizeof(decl_end)) == 0)
          break;
    }
 
-   // This is completely insane.
-   // We do not have a good and easy way of setting up our
-   // attribute streams, so we have to do it ourselves, yay!
-   // Stream 0 => POSITION
-   // Stream 1 => TEXCOORD0
-   // Stream 2 => TEXCOORD1
-   // Stream 3 => COLOR // Not really used for anything.
-   // Stream {4..N} => Texture coord streams for varying resources which have no semantics.
+   /* This is completely insane.
+    * We do not have a good and easy way of setting up our
+    * attribute streams, so we have to do it ourselves, yay!
+    *
+    * Stream 0      => POSITION
+    * Stream 1      => TEXCOORD0
+    * Stream 2      => TEXCOORD1
+    * Stream 3      => COLOR     (Not really used for anything.)
+    * Stream {4..N} => Texture coord streams for varying resources 
+    *                  which have no semantics.
+    */
 
    std::vector<bool> indices(count);
-   bool texcoord0_taken = false;
-   bool texcoord1_taken = false;
-   bool stream_taken[4] = {false};
 
    CGparameter param = find_param_from_semantic(pass->vPrg, "POSITION");
    if (!param)
@@ -287,9 +295,9 @@ bool renderchain_init_shader_fvf(void *data, Pass *pass)
    {
       stream_taken[0] = true;
       RARCH_LOG("[FVF]: POSITION semantic found.\n");
-      unsigned index = cgGetParameterResourceIndex(param);
-      decl[index] = position_decl;
-      indices[index] = true;
+      index           = cgGetParameterResourceIndex(param);
+      decl[index]     = position_decl;
+      indices[index]  = true;
    }
 
    param = find_param_from_semantic(pass->vPrg, "TEXCOORD");
@@ -300,9 +308,9 @@ bool renderchain_init_shader_fvf(void *data, Pass *pass)
       stream_taken[1] = true;
       texcoord0_taken = true;
       RARCH_LOG("[FVF]: TEXCOORD0 semantic found.\n");
-      unsigned index = cgGetParameterResourceIndex(param);
-      decl[index] = tex_coord0;
-      indices[index] = true;
+      index           = cgGetParameterResourceIndex(param);
+      decl[index]     = tex_coord0;
+      indices[index]  = true;
    }
 
    param = find_param_from_semantic(pass->vPrg, "TEXCOORD1");
@@ -311,9 +319,9 @@ bool renderchain_init_shader_fvf(void *data, Pass *pass)
       stream_taken[2] = true;
       texcoord1_taken = true;
       RARCH_LOG("[FVF]: TEXCOORD1 semantic found.\n");
-      unsigned index = cgGetParameterResourceIndex(param);
-      decl[index] = tex_coord1;
-      indices[index] = true;
+      index           = cgGetParameterResourceIndex(param);
+      decl[index]     = tex_coord1;
+      indices[index]  = true;
    }
 
    param = find_param_from_semantic(pass->vPrg, "COLOR");
@@ -323,17 +331,15 @@ bool renderchain_init_shader_fvf(void *data, Pass *pass)
    {
       stream_taken[3] = true;
       RARCH_LOG("[FVF]: COLOR0 semantic found.\n");
-      unsigned index = cgGetParameterResourceIndex(param);
-      decl[index] = color;
-      indices[index] = true;
+      index           = cgGetParameterResourceIndex(param);
+      decl[index]     = color;
+      indices[index]  = true;
    }
 
-   // Stream {0, 1, 2, 3} might be already taken. Find first vacant stream.
-   unsigned index;
+   /* Stream {0, 1, 2, 3} might be already taken. Find first vacant stream. */
    for (index = 0; index < 4 && stream_taken[index]; index++);
 
-   // Find first vacant texcoord declaration.
-   unsigned tex_index = 0;
+   /* Find first vacant texcoord declaration. */
    if (texcoord0_taken && texcoord1_taken)
       tex_index = 2;
    else if (texcoord1_taken && !texcoord0_taken)
@@ -341,7 +347,7 @@ bool renderchain_init_shader_fvf(void *data, Pass *pass)
    else if (texcoord0_taken && !texcoord1_taken)
       tex_index = 1;
 
-   for (unsigned i = 0; i < count; i++)
+   for (i = 0; i < count; i++)
    {
       if (indices[i])
          pass->attrib_map.push_back(0);
@@ -349,13 +355,13 @@ bool renderchain_init_shader_fvf(void *data, Pass *pass)
       {
          pass->attrib_map.push_back(index);
          D3DVERTEXELEMENT elem = DECL_FVF_TEXCOORD(index, 3, tex_index);
-         decl[i] = elem;
+         decl[i]               = elem;
 
-         // Find next vacant stream.
+         /* Find next vacant stream. */
          index++;
          while (index < 4 && stream_taken[index]) index++;
 
-         // Find next vacant texcoord declaration.
+         /* Find next vacant texcoord declaration. */
          tex_index++;
          if (tex_index == 1 && texcoord1_taken)
             tex_index++;
@@ -370,12 +376,13 @@ bool renderchain_init_shader_fvf(void *data, Pass *pass)
 
 void renderchain_bind_orig(void *data, Pass *pass)
 {
-   renderchain_t *chain = (renderchain_t*)data;
+   unsigned index;
    D3DXVECTOR2 video_size, texture_size;
-   video_size.x   = chain->passes[0].last_width;
-   video_size.y   = chain->passes[0].last_height;
-   texture_size.x = chain->passes[0].info.tex_w;
-   texture_size.y = chain->passes[0].info.tex_h;
+   renderchain_t *chain = (renderchain_t*)data;
+   video_size.x         = chain->passes[0].last_width;
+   video_size.y         = chain->passes[0].last_height;
+   texture_size.x       = chain->passes[0].info.tex_w;
+   texture_size.y       = chain->passes[0].info.tex_h;
 
    set_cg_param(pass->vPrg, "ORIG.video_size", video_size);
    set_cg_param(pass->fPrg, "ORIG.video_size", video_size);
@@ -385,7 +392,7 @@ void renderchain_bind_orig(void *data, Pass *pass)
    CGparameter param = cgGetNamedParameter(pass->fPrg, "ORIG.texture");
    if (param)
    {
-      unsigned index = cgGetParameterResourceIndex(param);
+      index = cgGetParameterResourceIndex(param);
       chain->dev->SetTexture(index, chain->passes[0].tex);
       chain->dev->SetSamplerState(index, D3DSAMP_MAGFILTER,
             translate_filter(chain->passes[0].info.pass->filter));
@@ -399,7 +406,7 @@ void renderchain_bind_orig(void *data, Pass *pass)
    param = cgGetNamedParameter(pass->vPrg, "ORIG.tex_coord");
    if (param)
    {
-      unsigned index = pass->attrib_map[cgGetParameterResourceIndex(param)];
+      index = pass->attrib_map[cgGetParameterResourceIndex(param)];
       chain->dev->SetStreamSource(index, chain->passes[0].vertex_buf, 0, sizeof(Vertex));
       chain->bound_vert.push_back(index);
    }
@@ -407,6 +414,9 @@ void renderchain_bind_orig(void *data, Pass *pass)
 
 void renderchain_bind_prev(void *data, Pass *pass)
 {
+   unsigned i, index;
+   char attr_texture[64], attr_input_size[64], attr_tex_size[64], attr_coord[64];
+   D3DXVECTOR2 texture_size;
    renderchain_t *chain = (renderchain_t*)data;
    static const char *prev_names[] = {
       "PREV",
@@ -418,13 +428,10 @@ void renderchain_bind_prev(void *data, Pass *pass)
       "PREV6",
    };
 
-   char attr_texture[64], attr_input_size[64], attr_tex_size[64], attr_coord[64];
-   D3DXVECTOR2 texture_size;
-
    texture_size.x = chain->passes[0].info.tex_w;
    texture_size.y = chain->passes[0].info.tex_h;
 
-   for (unsigned i = 0; i < TEXTURES - 1; i++)
+   for (i = 0; i < TEXTURES - 1; i++)
    {
       snprintf(attr_texture,    sizeof(attr_texture),    "%s.texture",      prev_names[i]);
       snprintf(attr_input_size, sizeof(attr_input_size), "%s.video_size",   prev_names[i]);
@@ -443,7 +450,7 @@ void renderchain_bind_prev(void *data, Pass *pass)
       CGparameter param = cgGetNamedParameter(pass->fPrg, attr_texture);
       if (param)
       {
-         unsigned index = cgGetParameterResourceIndex(param);
+         index = cgGetParameterResourceIndex(param);
 
          LPDIRECT3DTEXTURE tex = (LPDIRECT3DTEXTURE)
             chain->prev.tex[(chain->prev.ptr - (i + 1)) & TEXTURESMASK];
@@ -462,7 +469,7 @@ void renderchain_bind_prev(void *data, Pass *pass)
       param = cgGetNamedParameter(pass->vPrg, attr_coord);
       if (param)
       {
-         unsigned index = pass->attrib_map[cgGetParameterResourceIndex(param)];
+         index = pass->attrib_map[cgGetParameterResourceIndex(param)];
          LPDIRECT3DVERTEXBUFFER vert_buf = (LPDIRECT3DVERTEXBUFFER)
             chain->prev.vertex_buf[(chain->prev.ptr - (i + 1)) & TEXTURESMASK];
          chain->bound_vert.push_back(index);
@@ -474,8 +481,10 @@ void renderchain_bind_prev(void *data, Pass *pass)
 
 void renderchain_bind_luts(void *data, Pass *pass)
 {
+   unsigned i, index;
    renderchain_t *chain = (renderchain_t*)data;
-   for (unsigned i = 0; i < chain->luts.size(); i++)
+
+   for (i = 0; i < chain->luts.size(); i++)
    {
       CGparameter fparam = cgGetNamedParameter(
             pass->fPrg, chain->luts[i].id.c_str());
@@ -483,7 +492,7 @@ void renderchain_bind_luts(void *data, Pass *pass)
 
       if (fparam)
       {
-         unsigned index = cgGetParameterResourceIndex(fparam);
+         index       = cgGetParameterResourceIndex(fparam);
          bound_index = index;
          chain->dev->SetTexture(index, chain->luts[i].tex);
          chain->dev->SetSamplerState(index, D3DSAMP_MAGFILTER,
@@ -502,7 +511,7 @@ void renderchain_bind_luts(void *data, Pass *pass)
 
       if (vparam)
       {
-         unsigned index = cgGetParameterResourceIndex(vparam);
+         index      = cgGetParameterResourceIndex(vparam);
          if (index != (unsigned)bound_index)
          {
             chain->dev->SetTexture(index, chain->luts[i].tex);
@@ -522,6 +531,7 @@ void renderchain_bind_luts(void *data, Pass *pass)
 
 void renderchain_bind_pass(void *data, Pass *pass, unsigned pass_index)
 {
+   unsigned i, index;
    renderchain_t *chain = (renderchain_t*)data;
 
    if (pass_index < 3)
@@ -530,7 +540,7 @@ void renderchain_bind_pass(void *data, Pass *pass, unsigned pass_index)
       return;
    }
 
-   for (unsigned i = 1; i < pass_index - 1; i++)
+   for (i = 1; i < pass_index - 1; i++)
    {
       char pass_base[64];
       snprintf(pass_base, sizeof(pass_base), "PASS%u.", i);
@@ -558,7 +568,7 @@ void renderchain_bind_pass(void *data, Pass *pass, unsigned pass_index)
       CGparameter param = cgGetNamedParameter(pass->fPrg, attr_texture.c_str());
       if (param)
       {
-         unsigned index = cgGetParameterResourceIndex(param);
+         index = cgGetParameterResourceIndex(param);
          chain->bound_tex.push_back(index);
 
          chain->dev->SetTexture(index, chain->passes[i].tex);
@@ -575,7 +585,7 @@ void renderchain_bind_pass(void *data, Pass *pass, unsigned pass_index)
       param = cgGetNamedParameter(pass->vPrg, attr_tex_coord.c_str());
       if (param)
       {
-         unsigned index = pass->attrib_map[cgGetParameterResourceIndex(param)];
+         index = pass->attrib_map[cgGetParameterResourceIndex(param)];
          chain->dev->SetStreamSource(index, chain->passes[i].vertex_buf,
                0, sizeof(Vertex));
          chain->bound_vert.push_back(index);

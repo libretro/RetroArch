@@ -446,55 +446,55 @@ void renderchain_set_vertices(void *data, Pass *pass,
       Vertex vert[4];
       float _u, _v;
       unsigned i;
-      void *verts = NULL;
+      void *verts       = NULL;
 
-      pass->last_width = width;
+      pass->last_width  = width;
       pass->last_height = height;
 
-      _u = float(width)  / info->tex_w;
-      _v = float(height) / info->tex_h;
+      _u                = float(width)  / info->tex_w;
+      _v                = float(height) / info->tex_h;
 
       for (i = 0; i < 4; i++)
       {
-         vert[i].z = 0.5f;
-         vert[i].r = vert[i].g = vert[i].b = vert[i].a = 1.0f;
+         vert[i].z      = 0.5f;
+         vert[i].r      = vert[i].g = vert[i].b = vert[i].a = 1.0f;
       }
 
-      vert[0].x = 0.0f;
-      vert[1].x = out_width;
-      vert[2].x = 0.0f;
-      vert[3].x = out_width;
-      vert[0].y = out_height;
-      vert[1].y = out_height;
-      vert[2].y = 0.0f;
-      vert[3].y = 0.0f;
+      vert[0].x         = 0.0f;
+      vert[1].x         = out_width;
+      vert[2].x         = 0.0f;
+      vert[3].x         = out_width;
+      vert[0].y         = out_height;
+      vert[1].y         = out_height;
+      vert[2].y         = 0.0f;
+      vert[3].y         = 0.0f;
 
-      vert[0].u = 0.0f;
-      vert[1].u = _u;
-      vert[2].u = 0.0f;
-      vert[3].u = _u;
-      vert[0].v = 0.0f;
-      vert[1].v = 0.0f;
-      vert[2].v = _v;
-      vert[3].v = _v;
+      vert[0].u         = 0.0f;
+      vert[1].u         = _u;
+      vert[2].u         = 0.0f;
+      vert[3].u         = _u;
+      vert[0].v         = 0.0f;
+      vert[1].v         = 0.0f;
+      vert[2].v         = _v;
+      vert[3].v         = _v;
 
-      vert[0].lut_u = 0.0f;
-      vert[1].lut_u = 1.0f;
-      vert[2].lut_u = 0.0f;
-      vert[3].lut_u = 1.0f;
-      vert[0].lut_v = 0.0f;
-      vert[1].lut_v = 0.0f;
-      vert[2].lut_v = 1.0f;
-      vert[3].lut_v = 1.0f;
+      vert[0].lut_u     = 0.0f;
+      vert[1].lut_u     = 1.0f;
+      vert[2].lut_u     = 0.0f;
+      vert[3].lut_u     = 1.0f;
+      vert[0].lut_v     = 0.0f;
+      vert[1].lut_v     = 0.0f;
+      vert[2].lut_v     = 1.0f;
+      vert[3].lut_v     = 1.0f;
 
       /* Align texels and vertices. */
       for (i = 0; i < 4; i++)
       {
-         vert[i].x -= 0.5f;
-         vert[i].y += 0.5f;
+         vert[i].x     -= 0.5f;
+         vert[i].y     += 0.5f;
       }
 
-      verts = d3d_vertex_buffer_lock(pass->vertex_buf);
+      verts             = d3d_vertex_buffer_lock(pass->vertex_buf);
       memcpy(verts, vert, sizeof(vert));
       d3d_vertex_buffer_unlock(pass->vertex_buf);
    }
@@ -588,8 +588,8 @@ void renderchain_blit_to_texture(void *data, const void *frame,
 {
    D3DLOCKED_RECT d3dlr;
    renderchain_t *chain = (renderchain_t*)data;
-   Pass *first = (Pass*)&chain->passes[0];
-   driver_t *driver = driver_get_ptr();
+   Pass *first          = (Pass*)&chain->passes[0];
+   driver_t *driver     = driver_get_ptr();
 
    if (first->last_width != width || first->last_height != height)
    {
@@ -604,7 +604,7 @@ void renderchain_blit_to_texture(void *data, const void *frame,
 void renderchain_render_pass(void *data, Pass *pass, unsigned pass_index)
 {
    unsigned i;
-   renderchain_t *chain = (renderchain_t*)data;
+   renderchain_t *chain  = (renderchain_t*)data;
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)chain->dev;
 
    renderchain_set_shaders(chain, pass->fPrg, pass->vPrg);
@@ -685,7 +685,7 @@ void renderchain_log_info(void *data, const LinkInfo *info)
 void renderchain_unbind_all(void *data)
 {
    unsigned i;
-   renderchain_t *chain = (renderchain_t*)data;
+   renderchain_t *chain  = (renderchain_t*)data;
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)chain->dev;
 
    /* Have to be a bit anal about it.

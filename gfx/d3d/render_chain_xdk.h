@@ -52,8 +52,8 @@ static void renderchain_free(void *data)
 
 bool renderchain_init_shader_fvf(void *data, void *pass_)
 {
-   d3d_video_t *chain = (d3d_video_t*)data;
-   d3d_video_t *pass = (d3d_video_t*)data;
+   d3d_video_t *chain    = (d3d_video_t*)data;
+   d3d_video_t *pass     = (d3d_video_t*)data;
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)chain->dev;
 
 #if defined(_XBOX360)
@@ -74,10 +74,10 @@ bool renderchain_init_shader_fvf(void *data, void *pass_)
 static bool renderchain_create_first_pass(void *data,
       const video_info_t *info)
 {
-   d3d_video_t *chain = (d3d_video_t*)data;
+   d3d_video_t *chain    = (d3d_video_t*)data;
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)chain->dev;
 
-   chain->vertex_buf = d3d_vertex_buffer_new(d3dr, 4 * sizeof(Vertex), 
+   chain->vertex_buf     = d3d_vertex_buffer_new(d3dr, 4 * sizeof(Vertex), 
          D3DUSAGE_WRITEONLY, D3DFVF_CUSTOMVERTEX, D3DPOOL_MANAGED, 
          NULL);
 
@@ -128,11 +128,14 @@ static bool renderchain_init(void *data, const video_info_t *info)
 
 static void renderchain_set_vertices(void *data, unsigned pass, unsigned width, unsigned height)
 {
-   d3d_video_t *d3d = (d3d_video_t*)data;
+   d3d_video_t *d3d   = (d3d_video_t*)data;
    runloop_t *runloop = rarch_main_get_ptr();
 
    if (d3d->last_width != width || d3d->last_height != height)
    {
+      unsigned i;
+      void *verts = NULL;
+
       d3d->last_width = width;
       d3d->last_height = height;
 
@@ -186,13 +189,13 @@ static void renderchain_set_vertices(void *data, unsigned pass, unsigned width, 
 #endif
 
       /* Align texels and vertices. */
-      for (unsigned i = 0; i < 4; i++)
+      for (i = 0; i < 4; i++)
       {
          vert[i].x -= 0.5f / ((float)d3d->tex_w);
          vert[i].y += 0.5f / ((float)d3d->tex_h);
       }
 
-      void *verts = d3d_vertex_buffer_lock(d3d->vertex_buf);
+      verts = d3d_vertex_buffer_lock(d3d->vertex_buf);
       memcpy(verts, vert, sizeof(vert));
       d3d_vertex_buffer_unlock(d3d->vertex_buf);
    }
@@ -234,7 +237,8 @@ static void renderchain_blit_to_texture(void *data, const void *frame,
 static void renderchain_render_pass(void *data, const void *frame,
       unsigned width, unsigned height, unsigned pitch, unsigned rotation)
 {
-   d3d_video_t *d3d = (d3d_video_t*)data;
+   unsigned i;
+   d3d_video_t      *d3d = (d3d_video_t*)data;
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
    runloop_t *runloop    = rarch_main_get_ptr();
    settings_t *settings  = config_get_ptr();
@@ -260,7 +264,7 @@ static void renderchain_render_pass(void *data, const void *frame,
 #elif defined(_XBOX360)
    D3DDevice_SetVertexDeclaration(d3dr, d3d->vertex_decl);
 #endif
-   for (unsigned i = 0; i < 4; i++)
+   for (i = 0; i < 4; i++)
       d3d_set_stream_source(d3dr, i, d3d->vertex_buf, 0, sizeof(Vertex));
 
    d3d_draw_primitive(d3dr, D3DPT_TRIANGLESTRIP, 0, 2);
