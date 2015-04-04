@@ -50,7 +50,6 @@ void *pad_connection_init(unsigned pads)
 
       conn->connected = false;
       conn->iface     = NULL;
-      conn->is_gcapi  = false;
       conn->data      = NULL;
    }
 
@@ -121,7 +120,6 @@ void pad_connection_pad_deinit(joypad_connection_t *s, uint32_t pad)
 
    s->iface     = NULL;
    s->connected = false;
-   s->is_gcapi  = false;
 }
 
 void pad_connection_packet(joypad_connection_t *s, uint32_t pad,

@@ -130,10 +130,7 @@ static int32_t apple_joypad_connect_gcapi(joypad_connection_t *joyconn)
       joypad_connection_t *s = (joypad_connection_t*)&joyconn[pad];
 
       if (s)
-      {
          s->connected = true;
-         s->is_gcapi  = true;
-      }
    }
 
    return pad;

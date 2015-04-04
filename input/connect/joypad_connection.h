@@ -43,8 +43,6 @@ typedef struct joypad_connection
     bool connected;
     struct pad_connection_interface *iface;
     void* data;
-    
-    bool is_gcapi;
 } joypad_connection_t;
 
 int32_t pad_connection_pad_init(joypad_connection_t *joyconn,
