@@ -21,6 +21,10 @@
 #include <stdint.h>
 #include <boolean.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* All coordinates and offsets are top-left oriented.
  *
  * This is a texture-atlas approach which allows text to 
@@ -98,5 +102,8 @@ extern font_renderer_driver_t bitmap_font_renderer;
 bool font_renderer_create_default(const font_renderer_driver_t **driver,
       void **handle, const char *font_path, unsigned font_size);
 
+#ifdef __cplusplus
+}
 #endif
 
+#endif
