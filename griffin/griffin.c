@@ -334,10 +334,6 @@ INPUT
 #include "../input/drivers/rwebinput_input.c"
 #endif
 
-#ifdef IOS
-#include "../input/drivers_joypad/ios_joypad.c"
-#endif
-
 #ifdef HAVE_DINPUT
 #include "../input/drivers/dinput.c"
 #endif

@@ -56,7 +56,6 @@ extern rarch_joypad_driver_t ctr_joypad;
 extern rarch_joypad_driver_t xdk_joypad;
 extern rarch_joypad_driver_t gx_joypad;
 extern rarch_joypad_driver_t hid_joypad;
-extern rarch_joypad_driver_t apple_ios_joypad;
 extern rarch_joypad_driver_t android_joypad;
 extern rarch_joypad_driver_t qnx_joypad;
 extern rarch_joypad_driver_t null_joypad;

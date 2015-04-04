@@ -290,8 +290,6 @@ const char *config_get_default_joypad(void)
 #endif
       case JOYPAD_HID:
          return "hid";
-      case JOYPAD_APPLE_IOS:
-         return "apple_ios";
       case JOYPAD_QNX:
          return "qnx";
       default:
