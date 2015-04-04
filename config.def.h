@@ -272,7 +272,7 @@ enum
 #elif defined(HAVE_SDL) || defined(HAVE_SDL2)
 #define JOYPAD_DEFAULT_DRIVER JOYPAD_SDL
 #elif defined(__MACH__) && defined(IOS)
-#define JOYPAD_DEFAULT_DRIVER JOYPAD_APPLE_IOS
+#define JOYPAD_DEFAULT_DRIVER JOYPAD_HID
 #elif defined(HAVE_HID)
 #define JOYPAD_DEFAULT_DRIVER JOYPAD_HID
 #elif defined(__QNX__)
