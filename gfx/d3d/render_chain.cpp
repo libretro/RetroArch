@@ -375,12 +375,13 @@ bool renderchain_render(void *chain_data, const void *data,
    return true;
 }
 
-bool renderchain_create_first_pass(void *data, const LinkInfo *info,
+bool renderchain_create_first_pass(void *data, const void *info_data,
       PixelFormat fmt)
 {
    unsigned i;
    Pass pass;
    D3DXMATRIX ident;
+   const LinkInfo *info  = (const LinkInfo*)info_data;
    renderchain_t *chain  = (renderchain_t*)data;
    LPDIRECT3DDEVICE d3dr = NULL;
 
@@ -531,11 +532,12 @@ void renderchain_set_viewport(void *data, D3DVIEWPORT *vp)
    d3d_set_viewport(d3dr, vp);
 }
 
-void renderchain_set_mvp(void *data, CGprogram &vPrg,
+void renderchain_set_mvp(void *data, void *vertex_program,
       unsigned vp_width, unsigned vp_height,
       unsigned rotation)
 {
    D3DXMATRIX proj, ortho, rot, tmp;
+   CGprogram     vPrg   = (CGprogram)vertex_program;
    renderchain_t *chain = (renderchain_t*)data;
 
    if (!chain)

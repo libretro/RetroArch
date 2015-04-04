@@ -139,7 +139,7 @@ D3DTEXTUREFILTERTYPE renderchain_translate_filter(unsigned type);
 D3DTEXTUREFILTERTYPE renderchain_translate_filter(bool smooth);
 
 bool renderchain_create_first_pass(void *data,
-      const LinkInfo *info, PixelFormat fmt);
+      const void *info_data, PixelFormat fmt);
 
 void renderchain_set_vertices(
 	  void *data, void *pass_data,
@@ -150,7 +150,7 @@ void renderchain_set_vertices(
 
 void renderchain_set_viewport(void *data, D3DVIEWPORT *vp);
 
-void renderchain_set_mvp(void *data, CGprogram &vPrg,
+void renderchain_set_mvp(void *data, void *vertex_program,
       unsigned vp_width, unsigned vp_height,
       unsigned rotation);
 
