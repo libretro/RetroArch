@@ -21,9 +21,18 @@
 static INLINE D3DTEXTUREFILTERTYPE translate_filter(unsigned type)
 {
    settings_t *settings = config_get_ptr();
-   if (type == RARCH_FILTER_UNSPEC)
-      return settings->video.smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT;
-   return type == RARCH_FILTER_LINEAR ? D3DTEXF_LINEAR : D3DTEXF_POINT;
+
+   switch (type)
+   {
+		case RARCH_FILTER_UNSPEC:
+            return settings->video.smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT;
+		case RARCH_FILTER_LINEAR:
+			return D3DTEXF_LINEAR;
+		case RARCH_FILTER_NEAREST:
+			return D3DTEXF_POINT;
+   }
+   
+   return D3DTEXF_POINT;
 }
 
 static INLINE D3DTEXTUREFILTERTYPE translate_filter(bool smooth)
@@ -52,11 +61,12 @@ void renderchain_free(void *data)
 
 bool renderchain_init(void *data, const video_info_t *video_info,
       LPDIRECT3DDEVICE dev_,
-      CGcontext cgCtx_,
+      void *shader_context,
       const D3DVIEWPORT *final_viewport_,
       const LinkInfo *info, PixelFormat fmt)
 {
    renderchain_t *chain = (renderchain_t*)data;
+   CGcontext cgCtx_ = (CGcontext)shader_context;
 
    if (!chain)
       return false;
@@ -159,15 +169,16 @@ bool renderchain_set_pass_size(void *data, unsigned pass_index,
    return true;
 }
 
-bool renderchain_add_pass(void *data, const LinkInfo *info)
+bool renderchain_add_pass(void *data, const void *info_data)
 {
    Pass pass;
-   renderchain_t *chain = (renderchain_t*)data;
+   const LinkInfo *info  = (const LinkInfo*)info_data;
+   renderchain_t *chain  = (renderchain_t*)data;
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)chain->dev;
 
-   pass.info = *info;
-   pass.last_width = 0;
-   pass.last_height = 0;
+   pass.info             = *info;
+   pass.last_width       = 0;
+   pass.last_height      = 0;
 
    renderchain_compile_shaders(chain, pass.fPrg, 
          pass.vPrg, info->pass->source.path);
@@ -287,7 +298,7 @@ bool renderchain_render(void *chain_data, const void *data,
    current_width = width;
    current_height = height;
    renderchain_convert_geometry(chain, &chain->passes[0].info,
-         out_width, out_height,
+         &out_width, &out_height,
          current_width, current_height, chain->final_viewport);
 
 #ifdef _XBOX1
@@ -310,7 +321,7 @@ bool renderchain_render(void *chain_data, const void *data,
       d3dr->SetRenderTarget(0, target);
 
       renderchain_convert_geometry(chain, &from_pass->info,
-            out_width, out_height,
+            &out_width, &out_height,
             current_width, current_height, chain->final_viewport);
 
       /* Clear out whole FBO. */
@@ -342,7 +353,7 @@ bool renderchain_render(void *chain_data, const void *data,
    Pass *last_pass = (Pass*)&chain->passes.back();
 
    renderchain_convert_geometry(chain, &last_pass->info,
-         out_width, out_height,
+         &out_width, &out_height,
          current_width, current_height, chain->final_viewport);
    renderchain_set_viewport(chain, chain->final_viewport);
    renderchain_set_vertices(chain, last_pass,
@@ -432,12 +443,14 @@ bool renderchain_create_first_pass(void *data, const LinkInfo *info,
    return true;
 }
 
-void renderchain_set_vertices(void *data, Pass *pass,
+void renderchain_set_vertices(
+	  void *data, void *pass_data,
       unsigned width, unsigned height,
       unsigned out_width, unsigned out_height,
       unsigned vp_width, unsigned vp_height,
       unsigned rotation)
 {
+   Pass          *pass  = (Pass*)pass_data;
    renderchain_t *chain = (renderchain_t*)data;
    const LinkInfo *info = (const LinkInfo*)&pass->info;
 
@@ -541,11 +554,13 @@ void renderchain_set_mvp(void *data, CGprogram &vPrg,
    renderchain_set_shader_mvp(chain, vPrg, tmp);
 }
 
-void renderchain_convert_geometry(void *data, const LinkInfo *info,
-      unsigned &out_width, unsigned &out_height,
+void renderchain_convert_geometry(
+	  void *data, const void *info_data,
+      unsigned *out_width, unsigned *out_height,
       unsigned width, unsigned height,
       D3DVIEWPORT *final_viewport)
 {
+   const LinkInfo *info = (const LinkInfo*)info_data;
    renderchain_t *chain = (renderchain_t*)data;
 
    if (!chain || !info)
@@ -554,30 +569,30 @@ void renderchain_convert_geometry(void *data, const LinkInfo *info,
    switch (info->pass->fbo.type_x)
    {
       case RARCH_SCALE_VIEWPORT:
-         out_width = info->pass->fbo.scale_x * final_viewport->Width;
+         *out_width = info->pass->fbo.scale_x * final_viewport->Width;
          break;
 
       case RARCH_SCALE_ABSOLUTE:
-         out_width = info->pass->fbo.abs_x;
+         *out_width = info->pass->fbo.abs_x;
          break;
 
       case RARCH_SCALE_INPUT:
-         out_width = info->pass->fbo.scale_x * width;
+         *out_width = info->pass->fbo.scale_x * width;
          break;
    }
 
    switch (info->pass->fbo.type_y)
    {
       case RARCH_SCALE_VIEWPORT:
-         out_height = info->pass->fbo.scale_y * final_viewport->Height;
+         *out_height = info->pass->fbo.scale_y * final_viewport->Height;
          break;
 
       case RARCH_SCALE_ABSOLUTE:
-         out_height = info->pass->fbo.abs_y;
+         *out_height = info->pass->fbo.abs_y;
          break;
 
       case RARCH_SCALE_INPUT:
-         out_height = info->pass->fbo.scale_y * height;
+         *out_height = info->pass->fbo.scale_y * height;
          break;
    }
 }
@@ -601,9 +616,10 @@ void renderchain_blit_to_texture(void *data, const void *frame,
       &d3dlr, frame, width, height, pitch);
 }
 
-void renderchain_render_pass(void *data, Pass *pass, unsigned pass_index)
+void renderchain_render_pass(void *data, void *pass_data, unsigned pass_index)
 {
    unsigned i;
+   Pass           *pass  = (Pass*)pass_data;
    renderchain_t *chain  = (renderchain_t*)data;
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)chain->dev;
 

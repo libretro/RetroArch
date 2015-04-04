@@ -106,7 +106,7 @@ void renderchain_free(void *data);
 
 bool renderchain_init(void *data, const video_info_t *video_info,
       LPDIRECT3DDEVICE dev_,
-      CGcontext cgCtx_,
+      void *shader_data,
       const D3DVIEWPORT *final_viewport_,
       const LinkInfo *info,
       PixelFormat fmt);
@@ -119,7 +119,7 @@ void renderchain_set_final_viewport(void *data,
 bool renderchain_set_pass_size(void *data, unsigned pass_index,
       unsigned width, unsigned height);
 
-bool renderchain_add_pass(void *data, const LinkInfo *info);
+bool renderchain_add_pass(void *data, const void *info_data);
 
 bool renderchain_add_lut(void *data, const std::string &id,
       const std::string &path,
@@ -141,7 +141,8 @@ D3DTEXTUREFILTERTYPE renderchain_translate_filter(bool smooth);
 bool renderchain_create_first_pass(void *data,
       const LinkInfo *info, PixelFormat fmt);
 
-void renderchain_set_vertices(void *data, Pass *pass,
+void renderchain_set_vertices(
+	  void *data, void *pass_data,
       unsigned width, unsigned height,
       unsigned out_width, unsigned out_height,
       unsigned vp_width, unsigned vp_height,
@@ -153,8 +154,8 @@ void renderchain_set_mvp(void *data, CGprogram &vPrg,
       unsigned vp_width, unsigned vp_height,
       unsigned rotation);
 
-void renderchain_convert_geometry(void *data, const LinkInfo *info,
-      unsigned &out_width, unsigned &out_height,
+void renderchain_convert_geometry(void *data, const void *info_data,
+      unsigned *out_width, unsigned *out_height,
       unsigned width, unsigned height,
       D3DVIEWPORT *final_viewport);
 
@@ -162,7 +163,7 @@ void renderchain_blit_to_texture(void *data, const void *frame,
       unsigned width, unsigned height,
       unsigned pitch);
 
-void renderchain_render_pass(void *data, Pass *pass, unsigned pass_index);
+void renderchain_render_pass(void *data, void *pass_data, unsigned pass_index);
 
 void renderchain_log_info(void *data, const LinkInfo *info);
 

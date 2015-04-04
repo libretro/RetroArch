@@ -914,7 +914,7 @@ static void d3d_recompute_pass_sizes(d3d_video_t *d3d)
    for (i = 1; i < d3d->shader.passes; i++)
    {
       renderchain_convert_geometry(d3d->chain, &link_info,
-            out_width, out_height,
+            &out_width, &out_height,
             current_width, current_height, &d3d->final_viewport);
 
       link_info.tex_w = next_pow2(out_width);
@@ -1035,7 +1035,7 @@ static bool d3d_init_chain(d3d_video_t *d3d, const video_info_t *video_info)
    for (i = 1; i < d3d->shader.passes; i++)
    {
       renderchain_convert_geometry(d3d->chain, &link_info,
-            out_width, out_height,
+            &out_width, &out_height,
             current_width, current_height, &d3d->final_viewport);
 
       link_info.pass = &d3d->shader.pass[i];
