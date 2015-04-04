@@ -70,10 +70,10 @@ static void core_info_list_resolve_all_firmware(
 
    for (i = 0; i < core_info_list->count; i++)
    {
-      unsigned count = 0;
+      unsigned count    = 0;
       core_info_t *info = (core_info_t*)&core_info_list->list[i];
 
-      if (!info->data)
+      if (!info || !info->data)
          continue;
 
       if (!config_get_uint(info->data, "firmware_count", &count))
