@@ -20,7 +20,7 @@
 void apple_display_alert(const char *message, const char *title)
 {
 #ifdef IOS
-   UIAlertView* alert = [[UIAlertView alloc] initWithTitle:title ? BOXSTRING(title) : BOXSTRING("RetroArch")
+   UIAlertView* alert = [[UIAlertView alloc] initWithTitle:BOXSTRING(title)
                                              message:BOXSTRING(message)
                                              delegate:nil
                                              cancelButtonTitle:BOXSTRING("OK")
