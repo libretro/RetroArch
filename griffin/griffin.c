@@ -101,7 +101,7 @@ VIDEO CONTEXT
 #if defined(__CELLOS_LV2__)
 #include "../gfx/drivers_context/ps3_ctx.c"
 #elif defined(HAVE_D3D)
-#include "../gfx/drivers_context/d3d_ctx.c"
+#include "../gfx/drivers_context/d3d_ctx.cpp"
 #elif defined(ANDROID)
 #include "../gfx/drivers_context/androidegl_ctx.c"
 #elif defined(__QNX__)
