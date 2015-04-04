@@ -224,7 +224,7 @@ VIDEO DRIVER
 #endif
 
 #if defined(HAVE_D3D)
-#include "../gfx/d3d/d3d_wrapper.c"
+#include "../gfx/d3d/d3d_wrapper.cpp"
 #include "../gfx/d3d/d3d.cpp"
 #ifndef _XBOX
 #include "../gfx/d3d/render_chain.cpp"
@@ -259,7 +259,7 @@ FONTS
 #endif
 
 #if defined(HAVE_D3D9)
-#include "../gfx/drivers_font/d3d_w32_font.c"
+#include "../gfx/drivers_font/d3d_w32_font.cpp"
 #endif
 
 #if defined(HAVE_LIBDBGFONT)
@@ -473,7 +473,7 @@ AUDIO
 #endif
 
 #ifdef HAVE_XAUDIO
-#include "../audio/drivers/xaudio.c"
+#include "../audio/drivers/xaudio.cpp"
 #endif
 
 #ifdef HAVE_DSOUND
