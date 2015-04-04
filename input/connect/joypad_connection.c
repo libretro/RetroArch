@@ -88,15 +88,16 @@ int32_t pad_connection_pad_init(joypad_connection_t *joyconn,
       {
          for (i = 0; name && pad_map[i].name; i++)
          {
-            if (     (!strstr(name, pad_map[i].name))
-                  || (pad_map[i].vid == vid && pad_map[i].pid == pid))
-               continue;
+            char *name_match = strstr(name, pad_map[i].name);
 
-            s->iface      = pad_map[i].iface;
-            s->data       = s->iface->init(data, pad, ptr);
-            s->connected  = true;
-             
-            return pad;
+            if (name_match || (pad_map[i].vid == vid && pad_map[i].pid == pid))
+            {
+               s->iface      = pad_map[i].iface;
+               s->data       = s->iface->init(data, pad, ptr);
+               s->connected  = true;
+
+               return pad;
+            }
          }
       }
    }
