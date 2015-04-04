@@ -420,7 +420,7 @@ static void config_set_defaults(void)
             def_input, sizeof(settings->input.driver));
    if (def_joypad)
       strlcpy(settings->input.joypad_driver,
-            def_input, sizeof(settings->input.joypad_driver));
+            def_joypad, sizeof(settings->input.joypad_driver));
 #ifdef HAVE_MENU
    if (def_menu)
       strlcpy(settings->menu.driver,
