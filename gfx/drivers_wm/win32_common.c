@@ -28,7 +28,7 @@
 #include "../../retroarch.h"
 
 #ifdef HAVE_OPENGL
-#include "wgl_shader_dlg.h"
+#include "win32_shader_dlg.h"
 #endif
 
 static bool win32_browser(HWND owner, char *filename, const char *extensions,
