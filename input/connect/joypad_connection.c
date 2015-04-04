@@ -21,9 +21,12 @@ int pad_connection_find_vacant_pad(joypad_connection_t *joyconn)
 {
    unsigned i;
 
+   if (!joyconn)
+      return -1;
+
    for (i = 0; i < MAX_USERS; i++)
    {
-      joypad_connection_t *conn = joyconn ? (joypad_connection_t*)&joyconn[i] : NULL;
+      joypad_connection_t *conn = &joyconn[i];
 
       if (conn && !conn->connected)
          return i;
@@ -66,6 +69,7 @@ int32_t pad_connection_pad_init(joypad_connection_t *joyconn,
    {
       unsigned i;
       joypad_connection_t* s = (joypad_connection_t*)&joyconn[pad];
+
       static const struct
       {
          const char* name;
@@ -104,51 +108,51 @@ int32_t pad_connection_pad_init(joypad_connection_t *joyconn,
    return pad;
 }
 
-void pad_connection_pad_deinit(joypad_connection_t *s, uint32_t pad)
+void pad_connection_pad_deinit(joypad_connection_t *joyconn, uint32_t pad)
 {
-   if (!s || !s->connected)
+   if (!joyconn || !joyconn->connected)
        return;
     
-   if (s->iface)
+   if (joyconn->iface)
    {
-      s->iface->set_rumble(s->data, RETRO_RUMBLE_STRONG, 0);
-      s->iface->set_rumble(s->data, RETRO_RUMBLE_WEAK, 0);
+      joyconn->iface->set_rumble(joyconn->data, RETRO_RUMBLE_STRONG, 0);
+      joyconn->iface->set_rumble(joyconn->data, RETRO_RUMBLE_WEAK, 0);
 
-      if (s->iface->deinit)
-         s->iface->deinit(s->data);
+      if (joyconn->iface->deinit)
+         joyconn->iface->deinit(joyconn->data);
    }
 
-   s->iface     = NULL;
-   s->connected = false;
+   joyconn->iface     = NULL;
+   joyconn->connected = false;
 }
 
-void pad_connection_packet(joypad_connection_t *s, uint32_t pad,
+void pad_connection_packet(joypad_connection_t *joyconn, uint32_t pad,
       uint8_t* data, uint32_t length)
 {
-   if (!s->connected)
+   if (!joyconn->connected)
        return;
-   if (s->iface && s->data && s->iface->packet_handler)
-      s->iface->packet_handler(s->data, data, length);
+   if (joyconn->iface && joyconn->data && joyconn->iface->packet_handler)
+      joyconn->iface->packet_handler(joyconn->data, data, length);
 }
 
-uint64_t pad_connection_get_buttons(joypad_connection_t *s, unsigned pad)
+uint64_t pad_connection_get_buttons(joypad_connection_t *joyconn, unsigned pad)
 {
-   if (!s->iface)
+   if (!joyconn->iface)
       return 0;
-   return s->iface->get_buttons(s->data);
+   return joyconn->iface->get_buttons(joyconn->data);
 }
 
-int16_t pad_connection_get_axis(joypad_connection_t *s,
+int16_t pad_connection_get_axis(joypad_connection_t *joyconn,
    unsigned idx, unsigned i)
 {
-   if (!s->iface)
+   if (!joyconn->iface)
       return 0;
-   return s->iface->get_axis(s->data, i);
+   return joyconn->iface->get_axis(joyconn->data, i);
 }
 
-bool pad_connection_has_interface(joypad_connection_t *s, unsigned pad)
+bool pad_connection_has_interface(joypad_connection_t *joyconn, unsigned pad)
 {
-   if (s && s->connected && s->iface)
+   if (joyconn && joyconn->connected && joyconn->iface)
       return true;
    return false;
 }
@@ -158,22 +162,19 @@ void pad_connection_destroy(joypad_connection_t *joyconn)
    unsigned i;
 
    for (i = 0; i < MAX_USERS; i ++)
-   {
-      joypad_connection_t *s = (joypad_connection_t*)&joyconn[i];
-      pad_connection_pad_deinit(s, i);
-   }
+      pad_connection_pad_deinit(&joyconn[i], i);
 }
 
-bool pad_connection_rumble(joypad_connection_t *s,
+bool pad_connection_rumble(joypad_connection_t *joyconn,
    unsigned pad, enum retro_rumble_effect effect, uint16_t strength)
 {
-   if (!s->connected)
+   if (!joyconn->connected)
       return false;
-   if (!s->iface)
+   if (!joyconn->iface)
       return false;
-   if (!s->iface->set_rumble)
+   if (!joyconn->iface->set_rumble)
       return false;
 
-   s->iface->set_rumble(s->data, effect, strength);
+   joyconn->iface->set_rumble(joyconn->data, effect, strength);
    return true;
 }
