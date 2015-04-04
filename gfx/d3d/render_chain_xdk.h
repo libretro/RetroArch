@@ -1,9 +1,24 @@
-/* forward decls */
-static void renderchain_set_mvp(void *data, unsigned vp_width, unsigned vp_height, unsigned rotation);
-static void renderchain_blit_to_texture(void *data, const void *frame,
-   unsigned width, unsigned height, unsigned pitch);
-static void renderchain_set_mvp(void *data, unsigned vp_width, unsigned vp_height, unsigned rotation);
-static void renderchain_set_vertices(void *data, unsigned pass, unsigned width, unsigned height);
+static void renderchain_set_mvp(void *data, unsigned vp_width,
+      unsigned vp_height, unsigned rotation)
+{
+   d3d_video_t *d3d = (d3d_video_t*)data;
+   LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
+
+#if defined(_XBOX360) && defined(HAVE_HLSL)
+   hlsl_set_proj_matrix(XMMatrixRotationZ(rotation * (M_PI / 2.0)));
+   if (d3d->shader && d3d->shader->set_mvp)
+      d3d->shader->set_mvp(d3d, NULL);
+#elif defined(_XBOX1)
+   D3DXMATRIX p_out, p_rotate, mat;
+   D3DXMatrixOrthoOffCenterLH(&mat, 0, vp_width,  vp_height, 0, 0.0f, 1.0f);
+   D3DXMatrixIdentity(&p_out);
+   D3DXMatrixRotationZ(&p_rotate, rotation * (M_PI / 2.0));
+
+   d3d_set_transform(d3dr, D3DTS_WORLD, &p_rotate);
+   d3d_set_transform(d3dr, D3DTS_VIEW, &p_out);
+   d3d_set_transform(d3dr, D3DTS_PROJECTION, &p_out);
+#endif
+}
 
 static void renderchain_clear(void *data)
 {
@@ -111,42 +126,6 @@ static bool renderchain_init(void *data, const video_info_t *info)
    return true;
 }
 
-static void renderchain_render_pass(void *data, const void *frame, unsigned width, unsigned height, unsigned pitch, unsigned rotation)
-{
-   d3d_video_t *d3d = (d3d_video_t*)data;
-   LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
-   runloop_t *runloop    = rarch_main_get_ptr();
-   settings_t *settings  = config_get_ptr();
-   global_t *global      = global_get_ptr();
-
-#if defined(_XBOX1)
-   d3dr->SetFlickerFilter(global->console.screen.flicker_filter_index);
-   d3dr->SetSoftDisplayFilter(global->console.softfilter_enable);
-#endif
-
-   renderchain_blit_to_texture(d3d, frame, width, height, pitch);
-   renderchain_set_vertices(d3d, 1, width, height);
-
-   d3d_set_texture(d3dr, 0, d3d->tex);
-   d3d_set_viewport(d3d->dev, &d3d->final_viewport);
-   d3d_set_sampler_minfilter(d3dr, 0, settings->video.smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT);
-   d3d_set_sampler_magfilter(d3dr, 0, settings->video.smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT);
-
-#if defined(_XBOX1)
-   d3d_set_vertex_shader(d3dr, D3DFVF_XYZ | D3DFVF_TEX1, NULL);
-#elif defined(_XBOX360)
-   D3DDevice_SetVertexDeclaration(d3dr, d3d->vertex_decl);
-#endif
-   for (unsigned i = 0; i < 4; i++)
-      d3d_set_stream_source(d3dr, i, d3d->vertex_buf, 0, sizeof(Vertex));
-
-   d3d_draw_primitive(d3dr, D3DPT_TRIANGLESTRIP, 0, 2);
-
-   runloop->frames.video.count++;
-
-   renderchain_set_mvp(d3d, d3d->screen_width, d3d->screen_height, d3d->dev_rotation);
-}
-
 static void renderchain_set_vertices(void *data, unsigned pass, unsigned width, unsigned height)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
@@ -226,31 +205,12 @@ static void renderchain_set_vertices(void *data, unsigned pass, unsigned width, 
       if (d3d->shader->use)
          d3d->shader->use(d3d, pass);
       if (d3d->shader->set_params)
-         d3d->shader->set_params(d3d, width, height, d3d->tex_w, d3d->tex_h, d3d->screen_width,
+         d3d->shader->set_params(d3d, width, height, d3d->tex_w,
+               d3d->tex_h, d3d->screen_width,
                d3d->screen_height, runloop->frames.video.count,
                NULL, NULL, NULL, 0);
    }
 #endif
-#endif
-}
-
-static void renderchain_set_mvp(void *data, unsigned vp_width, unsigned vp_height, unsigned rotation)
-{
-   d3d_video_t *d3d = (d3d_video_t*)data;
-   LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
-#if defined(_XBOX360) && defined(HAVE_HLSL)
-   hlsl_set_proj_matrix(XMMatrixRotationZ(rotation * (M_PI / 2.0)));
-   if (d3d->shader && d3d->shader->set_mvp)
-      d3d->shader->set_mvp(d3d, NULL);
-#elif defined(_XBOX1)
-   D3DXMATRIX p_out, p_rotate, mat;
-   D3DXMatrixOrthoOffCenterLH(&mat, 0, vp_width,  vp_height, 0, 0.0f, 1.0f);
-   D3DXMatrixIdentity(&p_out);
-   D3DXMatrixRotationZ(&p_rotate, rotation * (M_PI / 2.0));
-
-   d3d_set_transform(d3dr, D3DTS_WORLD, &p_rotate);
-   d3d_set_transform(d3dr, D3DTS_VIEW, &p_out);
-   d3d_set_transform(d3dr, D3DTS_PROJECTION, &p_out);
 #endif
 }
 
@@ -270,3 +230,45 @@ static void renderchain_blit_to_texture(void *data, const void *frame,
    d3d_texture_blit(driver->video_data, NULL, d3d->tex,
          &d3dlr, frame, width, height, pitch);
 }
+
+static void renderchain_render_pass(void *data, const void *frame,
+      unsigned width, unsigned height, unsigned pitch, unsigned rotation)
+{
+   d3d_video_t *d3d = (d3d_video_t*)data;
+   LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
+   runloop_t *runloop    = rarch_main_get_ptr();
+   settings_t *settings  = config_get_ptr();
+   global_t *global      = global_get_ptr();
+
+#if defined(_XBOX1)
+   d3dr->SetFlickerFilter(global->console.screen.flicker_filter_index);
+   d3dr->SetSoftDisplayFilter(global->console.softfilter_enable);
+#endif
+
+   renderchain_blit_to_texture(d3d, frame, width, height, pitch);
+   renderchain_set_vertices(d3d, 1, width, height);
+
+   d3d_set_texture(d3dr, 0, d3d->tex);
+   d3d_set_viewport(d3d->dev, &d3d->final_viewport);
+   d3d_set_sampler_minfilter(d3dr, 0, settings->video.smooth ?
+         D3DTEXF_LINEAR : D3DTEXF_POINT);
+   d3d_set_sampler_magfilter(d3dr, 0, settings->video.smooth ?
+         D3DTEXF_LINEAR : D3DTEXF_POINT);
+
+#if defined(_XBOX1)
+   d3d_set_vertex_shader(d3dr, D3DFVF_XYZ | D3DFVF_TEX1, NULL);
+#elif defined(_XBOX360)
+   D3DDevice_SetVertexDeclaration(d3dr, d3d->vertex_decl);
+#endif
+   for (unsigned i = 0; i < 4; i++)
+      d3d_set_stream_source(d3dr, i, d3d->vertex_buf, 0, sizeof(Vertex));
+
+   d3d_draw_primitive(d3dr, D3DPT_TRIANGLESTRIP, 0, 2);
+
+   runloop->frames.video.count++;
+
+   renderchain_set_mvp(d3d, d3d->screen_width, d3d->screen_height, d3d->dev_rotation);
+}
+
+
+
