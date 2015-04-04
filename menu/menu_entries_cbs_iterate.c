@@ -162,7 +162,7 @@ static int pointer_post_iterate(menu_file_list_cbs_t *cbs, const char *path,
    if (!menu)
       return -1;
 
-   if (!settings->menu.pointer.enable)
+   if (!settings->menu.pointer.enable || settings->input.overlay_enable)
       return 0;
 
 #if defined(HAVE_XMB)
@@ -227,7 +227,7 @@ static int mouse_post_iterate(menu_file_list_cbs_t *cbs, const char *path,
    if (!menu)
       return -1;
 
-   if (!settings->menu.mouse.enable)
+   if (!settings->menu.mouse.enable || settings->input.overlay_enable)
    {
       menu->mouse.wheeldown = false;
       menu->mouse.wheelup   = false;

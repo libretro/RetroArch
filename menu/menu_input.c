@@ -475,7 +475,7 @@ static int menu_input_mouse(unsigned *action)
    if (!menu)
       return -1;
 
-   if (!settings->menu.mouse.enable)
+   if (!settings->menu.mouse.enable || settings->input.overlay_enable)
    {
       menu->mouse.left       = 0;
       menu->mouse.right      = 0;
