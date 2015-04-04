@@ -50,6 +50,7 @@
 #endif
 
 #include "../font_driver.h"
+#include "../font_renderer_driver.h"
 #include "../video_context_driver.h"
 
 #ifdef HAVE_CG

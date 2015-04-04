@@ -103,6 +103,7 @@ static HMONITOR monitor_all[MAX_MONITORS];
 static unsigned monitor_count;
 #endif
 
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
 static void d3d_deinit_shader(void *data)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
@@ -153,10 +154,11 @@ static bool d3d_init_shader(void *data)
    if (FAILED(ret))
       return false;
    return true;
-#elif defined(_XBOX1)
-	return false;
+#else
+   return false;
 #endif
 }
+#endif
 
 static void d3d_deinit_chain(d3d_video_t *d3d)
 {
@@ -1013,7 +1015,12 @@ static bool d3d_init_chain(d3d_video_t *d3d, const video_info_t *video_info)
       return false;
 
    if (!renderchain_init(d3d->chain, &d3d->video_info, d3dr,
-            d3d->cgCtx, &d3d->final_viewport, &link_info,
+#ifdef HAVE_CG
+            d3d->cgCtx,
+#else
+	    NULL,
+#endif
+	    &d3d->final_viewport, &link_info,
             d3d->video_info.rgb32 ? ARGB : RGB565))
    {
       RARCH_ERR("[D3D9]: Failed to init render chain.\n");
