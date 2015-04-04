@@ -26,7 +26,7 @@
 #include "../../menu/menu.h"
 
 #import "views.h"
-#include "../../input/drivers_hid/btstack.h"
+#include "../../input/drivers_hid/btstack_hid.h"
 
 #include "../../menu/drivers/ios.h"
 
