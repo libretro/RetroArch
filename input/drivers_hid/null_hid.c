@@ -14,7 +14,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../drivers/apple_input.h"
 #include "../input_hid_driver.h"
 
 typedef struct null_hid

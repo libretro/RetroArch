@@ -14,6 +14,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "../input_hid_driver.h"
 #include <sys/types.h>
 #include <sys/sysctl.h>
 #include <stdio.h>
@@ -21,12 +22,20 @@
 #ifdef __APPLE__
 #include <CoreFoundation/CFRunLoop.h>
 #endif
+#ifdef HAVE_MFI
+#include "../../apple/common/apple_gamecontroller.h"
+#endif
 #include <rthreads/rthreads.h>
 
 #define BUILDING_BTDYNAMIC
 #include "btstack.h"
 #include "../../dynamic.h"
 #include "../connect/joypad_connection.h"
+
+typedef struct btstack_hid
+{
+   joypad_connection_t *slots;
+} btstack_hid_t;
 
 enum btpad_state
 {
@@ -79,7 +88,7 @@ struct btpad_queue_command
    };
 };
 
-struct pad_connection
+struct btstack_hid_adapter
 {
    uint32_t slot;
 
@@ -240,13 +249,9 @@ void btstack_set_poweron(bool on)
    }
 }
 
-extern joypad_connection_t *slots;
-
-
-
 static bool inquiry_off;
 static bool inquiry_running;
-static struct pad_connection g_connections[MAX_USERS];
+static struct btstack_hid_adapter g_connections[MAX_USERS];
 
 struct btpad_queue_command commands[64];
 static uint32_t insert_position;
@@ -415,7 +420,7 @@ static void btpad_queue_hci_pin_code_request_reply(
 static void btpad_connection_send_control(void *data,
       uint8_t* data_buf, size_t size)
 {
-   struct pad_connection *connection = (struct pad_connection*)data;
+   struct btstack_hid_adapter *connection = (struct btstack_hid_adapter*)data;
 
    if (connection)
       bt_send_l2cap_ptr(connection->channels[0], data_buf, size);
@@ -431,7 +436,7 @@ void btpad_set_inquiry_state(bool on)
 }
 
 /* Internal interface. */
-static struct pad_connection *btpad_find_empty_connection(void)
+static struct btstack_hid_adapter *btpad_find_empty_connection(void)
 {
    unsigned i;
 
@@ -444,7 +449,7 @@ static struct pad_connection *btpad_find_empty_connection(void)
    return 0;
 }
 
-static struct pad_connection *btpad_find_connection_for(
+static struct btstack_hid_adapter *btpad_find_connection_for(
       uint16_t handle, bd_addr_t address)
 {
    unsigned i;
@@ -468,7 +473,7 @@ static struct pad_connection *btpad_find_connection_for(
    return 0;
 }
 
-static void btpad_close_connection(struct pad_connection* connection)
+static void btpad_close_connection(struct btstack_hid_adapter* connection)
 {
    if (!connection)
       return;
@@ -477,7 +482,7 @@ static void btpad_close_connection(struct pad_connection* connection)
       btpad_queue_hci_disconnect(&commands[insert_position],
             connection->handle, 0x15);
 
-   memset(connection, 0, sizeof(struct pad_connection));
+   memset(connection, 0, sizeof(struct btstack_hid_adapter));
 }
 
 static void btpad_close_all_connections(void)
@@ -504,7 +509,7 @@ void btpad_packet_handler(uint8_t packet_type,
       case L2CAP_DATA_PACKET:
          for (i = 0; i < MAX_USERS; i ++)
          {
-            struct pad_connection *connection = &g_connections[i];
+            struct btstack_hid_adapter *connection = &g_connections[i];
 
             if (!connection || connection->state != BTPAD_CONNECTED)
                continue;
@@ -565,7 +570,7 @@ void btpad_packet_handler(uint8_t packet_type,
             case HCI_EVENT_INQUIRY_RESULT:
                if (packet[2])
                {
-                  struct pad_connection* connection = NULL;
+                  struct btstack_hid_adapter* connection = NULL;
 
                   bt_flip_addr_ptr(event_addr, &packet[3]);
 
@@ -575,7 +580,7 @@ void btpad_packet_handler(uint8_t packet_type,
                      return;
 
                   RARCH_LOG("[BTpad]: Inquiry found device\n");
-                  memset(connection, 0, sizeof(struct pad_connection));
+                  memset(connection, 0, sizeof(struct btstack_hid_adapter));
 
                   memcpy(connection->address, event_addr, sizeof(bd_addr_t));
                   connection->has_address = true;
@@ -598,7 +603,7 @@ void btpad_packet_handler(uint8_t packet_type,
             case L2CAP_EVENT_CHANNEL_OPENED:
                {
                   uint16_t handle, psm, channel_id;
-                  struct pad_connection *connection = NULL;
+                  struct btstack_hid_adapter *connection = NULL;
 
                   bt_flip_addr_ptr(event_addr, &packet[3]);
 
@@ -639,7 +644,7 @@ void btpad_packet_handler(uint8_t packet_type,
             case L2CAP_EVENT_INCOMING_CONNECTION:
                {
                   uint16_t handle, psm, channel_id;
-                  struct pad_connection* connection = NULL;
+                  struct btstack_hid_adapter* connection = NULL;
 
                   bt_flip_addr_ptr(event_addr, &packet[2]);
 
@@ -658,7 +663,7 @@ void btpad_packet_handler(uint8_t packet_type,
                      RARCH_LOG("[BTpad]: Got new incoming connection\n");
 
                      memset(connection, 0,
-                           sizeof(struct pad_connection));
+                           sizeof(struct btstack_hid_adapter));
 
                      memcpy(connection->address, event_addr,
                            sizeof(bd_addr_t));
@@ -675,7 +680,7 @@ void btpad_packet_handler(uint8_t packet_type,
 
             case HCI_EVENT_REMOTE_NAME_REQUEST_COMPLETE:
                {
-                  struct pad_connection *connection = NULL;
+                  struct btstack_hid_adapter *connection = NULL;
 
                   bt_flip_addr_ptr(event_addr, &packet[3]);
 
@@ -708,7 +713,7 @@ void btpad_packet_handler(uint8_t packet_type,
 
                   if (!packet[2])
                   {
-                     struct pad_connection* connection = btpad_find_connection_for(handle, 0);
+                     struct btstack_hid_adapter* connection = btpad_find_connection_for(handle, 0);
 
                      if (connection)
                      {
@@ -732,3 +737,129 @@ void btpad_packet_handler(uint8_t packet_type,
          break;
    }
 }
+
+
+static bool btstack_hid_joypad_query(void *data, unsigned pad)
+{
+   return pad < MAX_USERS;
+}
+
+static const char *btstack_hid_joypad_name(void *data, unsigned pad)
+{
+   /* TODO/FIXME - implement properly */
+   if (pad >= MAX_USERS)
+      return NULL;
+
+   return NULL;
+}
+
+static uint64_t btstack_hid_joypad_get_buttons(void *data, unsigned port)
+{
+   btstack_hid_t        *hid   = (btstack_hid_t*)data;
+   if (hid)
+      return pad_connection_get_buttons(&hid->slots[port], port);
+   return 0;
+}
+
+static bool btstack_hid_joypad_button(void *data, unsigned port, uint16_t joykey)
+{
+   uint64_t buttons          = btstack_hid_joypad_get_buttons(data, port);
+
+   if (joykey == NO_BTN)
+      return false;
+
+   /* Check hat. */
+   if (GET_HAT_DIR(joykey))
+      return false;
+
+   /* Check the button. */
+   if ((port < MAX_USERS) && (joykey < 32))
+      return ((buttons & (1 << joykey)) != 0);
+   return false;
+}
+
+static bool btstack_hid_joypad_rumble(void *data, unsigned pad,
+      enum retro_rumble_effect effect, uint16_t strength)
+{
+   btstack_hid_t        *hid   = (btstack_hid_t*)data;
+   if (!hid)
+      return false;
+   return pad_connection_rumble(&hid->slots[pad], pad, effect, strength);
+}
+
+static int16_t btstack_hid_joypad_axis(void *data, unsigned port, uint32_t joyaxis)
+{
+   btstack_hid_t         *hid = (btstack_hid_t*)data;
+   int16_t               val  = 0;
+
+   if (joyaxis == AXIS_NONE)
+      return 0;
+
+   if (AXIS_NEG_GET(joyaxis) < 4)
+   {
+      val = pad_connection_get_axis(&hid->slots[port], port, AXIS_NEG_GET(joyaxis));
+
+      if (val >= 0)
+         val = 0;
+   }
+   else if(AXIS_POS_GET(joyaxis) < 4)
+   {
+      val = pad_connection_get_axis(&hid->slots[port], port, AXIS_POS_GET(joyaxis));
+
+      if (val <= 0)
+         val = 0;
+   }
+
+   return val;
+}
+
+static void btstack_hid_free(void *data)
+{
+   btstack_hid_t *hid = (btstack_hid_t*)data;
+
+   if (!hid)
+      return;
+
+   pad_connection_destroy(hid->slots);
+
+   if (hid)
+      free(hid);
+}
+
+static void *btstack_hid_init(void)
+{
+   btstack_hid_t *hid = (btstack_hid_t*)calloc(1, sizeof(btstack_hid_t));
+
+   if (!hid)
+      goto error;
+
+   hid->slots = (joypad_connection_t*)pad_connection_init(MAX_USERS);
+
+   return hid;
+
+error:
+   btstack_hid_free(hid);
+   return NULL;
+}
+
+
+static void btstack_hid_poll(void *data)
+{
+   (void)data;
+#ifdef HAVE_MFI
+    apple_gamecontroller_poll_all();
+#endif
+}
+
+hid_driver_t btstack_hid = {
+   btstack_hid_init,
+   btstack_hid_joypad_query,
+   btstack_hid_free,
+   btstack_hid_joypad_button,
+   btstack_hid_joypad_get_buttons,
+   btstack_hid_joypad_axis,
+   btstack_hid_poll,
+   btstack_hid_joypad_rumble,
+   btstack_hid_joypad_name,
+   "btstack",
+};

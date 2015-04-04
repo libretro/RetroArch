@@ -23,6 +23,9 @@
 #include "../general.h"
 
 static hid_driver_t *hid_drivers[] = {
+#if defined(__APPLE__) && defined(IOS)
+   &btstack_hid,
+#endif
 #if defined(__APPLE__) && !defined(IOS)
    &apple_hid,
 #endif
