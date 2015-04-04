@@ -1112,53 +1112,44 @@ static void config_file_dump_all(config_file_t *conf)
  */
 static bool config_append_specific(config_file_t *conf)
 {
-   if (conf == NULL)
-   {
-      RARCH_ERR("Could not obtain configuration file pointer.\n");
-      return false;
-   }
+   char config_directory[PATH_MAX_LENGTH], // path to the directory containing retroarch.cfg (prefix)
+        core_name_buffer[PATH_MAX_LENGTH], // temporary variable
+        core_path[PATH_MAX_LENGTH],        // final path for core-specific configuration (prefix+suffix)
+        game_path[PATH_MAX_LENGTH];        // final path for game-specific configuration (prefix+suffix)
+   const char *core_name, *game_name;      // suffix
 
    global_t *global = global_get_ptr();
-
-   // Can this even happen?
-   if (global == NULL)
+   if (global == NULL || conf == NULL)
    {
-      RARCH_ERR("Could not obtain global pointer.\n");
+      RARCH_ERR("Could not obtain global or configuration file pointer.\n");
       return false;
    }
 
-   // Retrieve configuration directory
-   char config_directory[PATH_MAX_LENGTH];
+   // Configuration directory
    fill_pathname_basedir(config_directory, global->config_path, PATH_MAX_LENGTH);
 
-   // Find out what core we are using
-   char core_name_buffer[PATH_MAX_LENGTH];
+   // Core name
    if (!global->has_set_libretro && !config_get_path(conf, "libretro_path", core_name_buffer, PATH_MAX_LENGTH))
    {
       RARCH_ERR("libretro_path is not set. Can't tell what core is running.");
       return false;
    }
-   const char *core_name = path_basename(core_name_buffer);
+   core_name = path_basename(core_name_buffer);
 
-   // Determine ROM basename without extension
-   const char *game_name = path_basename(global->basename);
+   // ROM basename
+   game_name = path_basename(global->basename);
 
-   //    config directory   + core name    + "/" (1)
-   //  + core/game name     + ".cfg" (4)   + 1 for last byte.
-   char core_path[sizeof(config_directory) + 2 * sizeof(core_name) + 6];
-   char game_path[sizeof(core_path) - sizeof(core_name) + sizeof(game_name)];
+   // Concatenate strings into full paths
+   snprintf(core_path, PATH_MAX_LENGTH, "%s%s/%s.cfg", config_directory, core_name, core_name);
+   snprintf(game_path, PATH_MAX_LENGTH, "%s%s/%s.cfg", config_directory, core_name, game_name);
 
-   // Concatenate directories with basenames to obtain full paths
-   sprintf(core_path, "%s%s/%s.cfg", config_directory, core_name, core_name);
-   sprintf(game_path, "%s%s/%s.cfg", config_directory, core_name, game_name);
-
-   // Append game-specific configuration
+   // Append game-specific
    if (!config_append_file(conf, game_path))
       RARCH_LOG("No game-specific configuration found at %s.\n", game_path);
    else
       RARCH_LOG("Game-specific configuration found at %s. Appending.\n", game_path);
 
-   // Append core-specific configuration
+   // Append core-specific
    if (!config_append_file(conf, core_path))
       RARCH_LOG("No core-specific configuration found at %s.\n", core_path);
    else
