@@ -180,14 +180,14 @@ void renderchain_destroy_shader(void *data, int i);
 
 void renderchain_set_shader_mvp(void *data, CGprogram &vPrg, D3DXMATRIX &tmp);
 
-void renderchain_set_shader_params(void *data, Pass *pass,
+void renderchain_set_shader_params(void *data, void *pass_data,
             unsigned video_w, unsigned video_h,
             unsigned tex_w, unsigned tex_h,
             unsigned viewport_w, unsigned viewport_h);
 
 void renderchain_bind_tracker(void *data, Pass *pass, unsigned pass_index);
 
-bool renderchain_init_shader_fvf(void *data, Pass *pass);
+bool renderchain_init_shader_fvf(void *data, void *pass_data);
 
 void renderchain_bind_orig(void *data, Pass *pass);
 

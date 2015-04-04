@@ -189,13 +189,14 @@ void renderchain_set_shader_mvp(void *data, CGprogram &vPrg, D3DXMATRIX &tmp)
       cgD3D9SetUniform(cgp, &val); \
 } while(0)
 
-void renderchain_set_shader_params(void *data, Pass *pass,
+void renderchain_set_shader_params(void *data, void *pass_data,
             unsigned video_w, unsigned video_h,
             unsigned tex_w, unsigned tex_h,
             unsigned viewport_w, unsigned viewport_h)
 {
    float frame_cnt;
    D3DXVECTOR2 video_size, texture_size, output_size;
+   Pass           *pass = (Pass*)pass_data;
    renderchain_t *chain = (renderchain_t*)data;
    video_size.x         = video_w;
    video_size.y         = video_h;
@@ -250,13 +251,14 @@ void renderchain_bind_tracker(void *data, Pass *pass, unsigned pass_index)
       D3DDECLUSAGE_COLOR, (BYTE)(index) } \
 
 
-bool renderchain_init_shader_fvf(void *data, Pass *pass)
+bool renderchain_init_shader_fvf(void *data, void *pass_data)
 {
    unsigned index, i, count;
    unsigned tex_index                          = 0;
    bool texcoord0_taken                        = false;
    bool texcoord1_taken                        = false;
    bool stream_taken[4]                        = {false};
+   Pass          *pass                         = (Pass*)pass_data;
    renderchain_t *chain                        = (renderchain_t*)data;
    static const D3DVERTEXELEMENT decl_end      = D3DDECL_END();
    static const D3DVERTEXELEMENT position_decl = DECL_FVF_POSITION(0);
