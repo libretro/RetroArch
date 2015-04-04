@@ -16,7 +16,7 @@
 
 #include "../../general.h"
 #include "../keyboard_line.h"
-#include "../../gfx/drivers_context/win32_common.h"
+#include "../../gfx/drivers_wm/win32_common.h"
 #include "../input_common.h"
 #include "../input_keymaps.h"
 

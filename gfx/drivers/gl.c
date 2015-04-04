@@ -54,8 +54,8 @@
 #endif
 
 #if defined(_WIN32) && !defined(_XBOX)
-#include "../drivers_context/win32_dwm_common.h"
-#include "../drivers_context/win32_shader_dlg.h"
+#include "../drivers_wm/win32_dwm_common.h"
+#include "../drivers_wm/win32_shader_dlg.h"
 #endif
 
 #include "../video_shader_driver.h"
