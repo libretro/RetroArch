@@ -85,7 +85,7 @@ bool renderchain_init(void *data, const video_info_t *video_info,
    if (!renderchain_create_first_pass(chain, info, fmt))
       return false;
    renderchain_log_info(chain, info);
-   if (!renderchain_compile_shaders(chain, chain->fStock, chain->vStock, ""))
+   if (!renderchain_compile_shaders(chain, &chain->fStock, &chain->vStock, ""))
       return false;
 
    return true;
@@ -181,8 +181,8 @@ bool renderchain_add_pass(void *data, const void *info_data)
    pass.last_width       = 0;
    pass.last_height      = 0;
 
-   renderchain_compile_shaders(chain, pass.fPrg, 
-         pass.vPrg, info->pass->source.path);
+   renderchain_compile_shaders(chain, &pass.fPrg, 
+        &pass.vPrg, info->pass->source.path);
 
    if (!renderchain_init_shader_fvf(chain, &pass))
       return false;
@@ -369,7 +369,7 @@ bool renderchain_render(void *chain_data, const void *data,
    back_buffer->Release();
 
    renderchain_end_render(chain);
-   renderchain_set_shaders(chain, chain->fStock, chain->vStock);
+   renderchain_set_shaders(chain, &chain->fStock, &chain->vStock);
    renderchain_set_mvp(chain, chain->vStock, chain->final_viewport->Width,
          chain->final_viewport->Height, 0);
 
@@ -435,8 +435,8 @@ bool renderchain_create_first_pass(void *data, const void *info_data,
       d3d_set_texture(d3dr, 0, NULL);
    }
 
-   renderchain_compile_shaders(chain, pass.fPrg,
-         pass.vPrg, info->pass->source.path);
+   renderchain_compile_shaders(chain, &pass.fPrg,
+         &pass.vPrg, info->pass->source.path);
 
    if (!renderchain_init_shader_fvf(chain, &pass))
       return false;
@@ -553,7 +553,7 @@ void renderchain_set_mvp(void *data, void *vertex_program,
    D3DXMatrixMultiply(&proj, &ortho, &rot);
    D3DXMatrixTranspose(&tmp, &proj);
 
-   renderchain_set_shader_mvp(chain, vPrg, tmp);
+   renderchain_set_shader_mvp(chain, &vPrg, tmp);
 }
 
 void renderchain_convert_geometry(
@@ -625,7 +625,7 @@ void renderchain_render_pass(void *data, void *pass_data, unsigned pass_index)
    renderchain_t *chain  = (renderchain_t*)data;
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)chain->dev;
 
-   renderchain_set_shaders(chain, pass->fPrg, pass->vPrg);
+   renderchain_set_shaders(chain, &pass->fPrg, &pass->vPrg);
 
    d3d_set_texture(d3dr, 0, pass->tex);
    d3d_set_sampler_minfilter(d3dr, 0,

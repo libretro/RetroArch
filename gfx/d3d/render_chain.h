@@ -169,16 +169,16 @@ void renderchain_log_info(void *data, const void *info_data);
 
 void renderchain_unbind_all(void *data);
 
-bool renderchain_compile_shaders(void *data, CGprogram &fPrg,
-      CGprogram &vPrg, const std::string &shader);
+bool renderchain_compile_shaders(void *data, CGprogram *fPrg,
+      CGprogram *vPrg, const std::string &shader);
 
-void renderchain_set_shaders(void *data, CGprogram &fPrg, CGprogram &vPrg);
+void renderchain_set_shaders(void *data, CGprogram *fPrg, CGprogram *vPrg);
 
 void renderchain_destroy_stock_shader(void *data);
 
 void renderchain_destroy_shader(void *data, int i);
 
-void renderchain_set_shader_mvp(void *data, CGprogram &vPrg, D3DXMATRIX &tmp);
+void renderchain_set_shader_mvp(void *data, CGprogram *vPrg, D3DXMATRIX &tmp);
 
 void renderchain_set_shader_params(void *data, void *pass_data,
             unsigned video_w, unsigned video_h,

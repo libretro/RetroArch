@@ -88,8 +88,8 @@ static INLINE CGparameter find_param_from_semantic(CGprogram prog,
             prog, CG_PROGRAM), sem);
 }
 
-bool renderchain_compile_shaders(void *data, CGprogram &fPrg,
-      CGprogram &vPrg, const std::string &shader)
+bool renderchain_compile_shaders(void *data, CGprogram *fPrg,
+      CGprogram *vPrg, const std::string &shader)
 {
    renderchain_t *chain       = (renderchain_t*)data;
    CGprofile vertex_profile   = cgD3D9GetLatestVertexProfile();
@@ -103,13 +103,13 @@ bool renderchain_compile_shaders(void *data, CGprogram &fPrg,
    if (shader.length() > 0)
    {
       RARCH_LOG("[D3D Cg]: Compiling shader: %s.\n", shader.c_str());
-      fPrg = cgCreateProgramFromFile(chain->cgCtx, CG_SOURCE,
+      *fPrg = cgCreateProgramFromFile(chain->cgCtx, CG_SOURCE,
             shader.c_str(), fragment_profile, "main_fragment", fragment_opts);
 
       if (cgGetLastListing(chain->cgCtx))
          RARCH_ERR("[D3D Cg]: Fragment error:\n%s\n", cgGetLastListing(chain->cgCtx));
 
-      vPrg = cgCreateProgramFromFile(chain->cgCtx, CG_SOURCE,
+      *vPrg = cgCreateProgramFromFile(chain->cgCtx, CG_SOURCE,
             shader.c_str(), vertex_profile, "main_vertex", vertex_opts);
 
       if (cgGetLastListing(chain->cgCtx))
@@ -119,13 +119,13 @@ bool renderchain_compile_shaders(void *data, CGprogram &fPrg,
    {
       RARCH_LOG("[D3D Cg]: Compiling stock shader.\n");
 
-      fPrg = cgCreateProgram(chain->cgCtx, CG_SOURCE, stock_program,
+      *fPrg = cgCreateProgram(chain->cgCtx, CG_SOURCE, stock_program,
             fragment_profile, "main_fragment", fragment_opts);
 
       if (cgGetLastListing(chain->cgCtx))
          RARCH_ERR("[D3D Cg]: Fragment error:\n%s\n", cgGetLastListing(chain->cgCtx));
 
-      vPrg = cgCreateProgram(chain->cgCtx, CG_SOURCE, stock_program,
+      *vPrg = cgCreateProgram(chain->cgCtx, CG_SOURCE, stock_program,
             vertex_profile, "main_vertex", vertex_opts);
 
       if (cgGetLastListing(chain->cgCtx))
@@ -135,15 +135,15 @@ bool renderchain_compile_shaders(void *data, CGprogram &fPrg,
    if (!fPrg || !vPrg)
       return false;
 
-   cgD3D9LoadProgram(fPrg, true, 0);
-   cgD3D9LoadProgram(vPrg, true, 0);
+   cgD3D9LoadProgram(*fPrg, true, 0);
+   cgD3D9LoadProgram(*vPrg, true, 0);
    return true;
 }
 
-void renderchain_set_shaders(void *data, CGprogram &fPrg, CGprogram &vPrg)
+void renderchain_set_shaders(void *data, CGprogram *fPrg, CGprogram *vPrg)
 {
-   cgD3D9BindProgram(fPrg);
-   cgD3D9BindProgram(vPrg);
+   cgD3D9BindProgram(*fPrg);
+   cgD3D9BindProgram(*vPrg);
 }
 
 void renderchain_destroy_stock_shader(void *data)
@@ -176,9 +176,9 @@ void renderchain_destroy_shader(void *data, int i)
 #endif
 }
 
-void renderchain_set_shader_mvp(void *data, CGprogram &vPrg, D3DXMATRIX &tmp)
+void renderchain_set_shader_mvp(void *data, CGprogram *vPrg, D3DXMATRIX &tmp)
 {
-   CGparameter cgpModelViewProj = cgGetNamedParameter(vPrg, "modelViewProj");
+   CGparameter cgpModelViewProj = cgGetNamedParameter(*vPrg, "modelViewProj");
    if (cgpModelViewProj)
       cgD3D9SetUniformMatrix(cgpModelViewProj, &tmp);
 }
