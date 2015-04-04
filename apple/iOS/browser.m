@@ -171,7 +171,7 @@ static void file_action(enum file_action action, NSString* source, NSString* tar
       self.extensions = extensions ? BOXSTRING(extensions) : 0;
       self.hidesHeaders = YES;
 
-      self.navigationItem.leftBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:@"Up" style:UIBarButtonItemStyleBordered target:self
+      self.navigationItem.leftBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:BOXSTRING("Up") style:UIBarButtonItemStyleBordered target:self
                                                                        action:@selector(gotoParent)];
 
       self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemCancel target:self
@@ -179,11 +179,11 @@ static void file_action(enum file_action action, NSString* source, NSString* tar
 
       // NOTE: The "App" and "Root" buttons aren't really needed for non-jailbreak devices.
       NSMutableArray* toolbarButtons = [NSMutableArray arrayWithObjects:
-         [[UIBarButtonItem alloc] initWithTitle:@"Home" style:UIBarButtonItemStyleBordered target:self
+         [[UIBarButtonItem alloc] initWithTitle:BOXSTRING("Home") style:UIBarButtonItemStyleBordered target:self
                                   action:@selector(gotoHomeDir)],
-         [[UIBarButtonItem alloc] initWithTitle:@"App" style:UIBarButtonItemStyleBordered target:self
+         [[UIBarButtonItem alloc] initWithTitle:BOXSTRING("App") style:UIBarButtonItemStyleBordered target:self
                                   action:@selector(gotoAppDir)],
-         [[UIBarButtonItem alloc] initWithTitle:@"Root" style:UIBarButtonItemStyleBordered target:self
+         [[UIBarButtonItem alloc] initWithTitle:BOXSTRING("Root") style:UIBarButtonItemStyleBordered target:self
                                   action:@selector(gotoRootDir)],
          [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemFlexibleSpace target:self
                                   action:nil],
@@ -256,10 +256,10 @@ static void file_action(enum file_action action, NSString* source, NSString* tar
       RADirectoryList __weak* weakSelf = self;
 
       if (self.allowBlank)
-         [self.sections[0] addObject:[RAMenuItemBasic itemWithDescription:@"[ Use Empty Path ]"
+         [self.sections[0] addObject:[RAMenuItemBasic itemWithDescription:BOXSTRING("[ Use Empty Path ]")
                                                                    action:^{ weakSelf.chooseAction(weakSelf, nil); }]];
       if (self.forDirectory)
-         [self.sections[0] addObject:[RAMenuItemBasic itemWithDescription:@"[ Use This Folder ]"
+         [self.sections[0] addObject:[RAMenuItemBasic itemWithDescription:BOXSTRING("[ Use This Folder ]")
                                                                    action:^{ weakSelf.chooseAction(weakSelf, [RADirectoryItem directoryItemFromPath:path]); }]];
 
       dir_list_sort(contents, true);
@@ -314,8 +314,8 @@ static void file_action(enum file_action action, NSString* source, NSString* tar
 // Called as a selector from a toolbar button
 - (void)createNewFolder
 {
-   UIAlertView* alertView = [[UIAlertView alloc] initWithTitle:@"Enter new folder name" message:@"" delegate:self
-                                                  cancelButtonTitle:@"Cancel" otherButtonTitles:@"OK", nil];
+   UIAlertView* alertView = [[UIAlertView alloc] initWithTitle:BOXSTRING("Enter new folder name") message:BOXSTRING("") delegate:self
+                                                  cancelButtonTitle:BOXSTRING("Cancel") otherButtonTitles:BOXSTRING("OK"), nil];
    alertView.alertViewStyle = UIAlertViewStylePlainTextInput;
    alertView.tag = FA_CREATE;
    [alertView show];
@@ -333,15 +333,15 @@ static void file_action(enum file_action action, NSString* source, NSString* tar
       {
          bool is_zip;
          UIActionSheet *menu;
-         NSString *button4_name = (get_ios_version_major() >= 7) ? @"AirDrop" : @"Delete";
-         NSString *button5_name = (get_ios_version_major() >= 7) ? @"Delete" : nil;
+         NSString *button4_name = (get_ios_version_major() >= 7) ? BOXSTRING("AirDrop") : BOXSTRING("Delete");
+         NSString *button5_name = (get_ios_version_major() >= 7) ? BOXSTRING("Delete") : nil;
          
          self.selectedItem = [self itemForIndexPath:idx_path];
          is_zip = !(strcmp(self.selectedItem.path.pathExtension.UTF8String, "zip"));
 
          menu = [[UIActionSheet alloc] initWithTitle:self.selectedItem.path.lastPathComponent delegate:self
-                                                      cancelButtonTitle:@"Cancel" destructiveButtonTitle:nil
-                                                      otherButtonTitles:is_zip ? @"Unzip" : @"Zip", @"Move", @"Rename", button4_name, button5_name, nil];
+                                                      cancelButtonTitle:BOXSTRING("Cancel") destructiveButtonTitle:nil
+                                                      otherButtonTitles:is_zip ? BOXSTRING("Unzip") : BOXSTRING("Zip"), BOXSTRING("Move"), BOXSTRING("Rename"), button4_name, button5_name, nil];
          [menu showFromToolbar:self.navigationController.toolbar];
          
       }
@@ -356,8 +356,8 @@ static void file_action(enum file_action action, NSString* source, NSString* tar
    
    if (!strcmp(action.UTF8String, "Unzip"))
    {
-      UIAlertView* alertView = [[UIAlertView alloc] initWithTitle:@"Enter target directory" message:@"" delegate:self
-                                                   cancelButtonTitle:@"Cancel" otherButtonTitles:@"OK", nil];
+      UIAlertView* alertView = [[UIAlertView alloc] initWithTitle:BOXSTRING("Enter target directory") message:@"" delegate:self
+                                                   cancelButtonTitle:BOXSTRING("Cancel") otherButtonTitles:BOXSTRING("OK"), nil];
       alertView.alertViewStyle = UIAlertViewStylePlainTextInput;
       alertView.tag = FA_UNZIP;
       [alertView textFieldAtIndex:0].text = [[target lastPathComponent] stringByDeletingPathExtension];
@@ -367,7 +367,7 @@ static void file_action(enum file_action action, NSString* source, NSString* tar
       [self.navigationController pushViewController:[[RAFoldersList alloc] initWithFilePath:target] animated:YES];
    else if (!strcmp(action.UTF8String, "Rename"))
    {
-      UIAlertView* alertView = [[UIAlertView alloc] initWithTitle:@"Enter new name" message:@"" delegate:self cancelButtonTitle:@"Cancel" otherButtonTitles:@"OK", nil];
+      UIAlertView* alertView = [[UIAlertView alloc] initWithTitle:BOXSTRING("Enter new name") message:@"" delegate:self cancelButtonTitle:BOXSTRING("Cancel") otherButtonTitles:BOXSTRING("OK"), nil];
       alertView.alertViewStyle = UIAlertViewStylePlainTextInput;
       alertView.tag = FA_MOVE;
       [alertView textFieldAtIndex:0].text = target.lastPathComponent;
@@ -387,7 +387,7 @@ static void file_action(enum file_action action, NSString* source, NSString* tar
 #endif
    else if (!strcmp(action.UTF8String, "Delete"))
    {
-      UIAlertView* alertView = [[UIAlertView alloc] initWithTitle:@"Really delete?" message:@"" delegate:self cancelButtonTitle:@"Cancel" otherButtonTitles:@"OK", nil];
+      UIAlertView* alertView = [[UIAlertView alloc] initWithTitle:BOXSTRING("Really delete?") message:@"" delegate:self cancelButtonTitle:BOXSTRING("Cancel") otherButtonTitles:BOXSTRING("OK"), nil];
       alertView.tag = FA_DELETE;
       [alertView show];
    }
