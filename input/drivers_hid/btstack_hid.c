@@ -28,7 +28,7 @@
 #include <rthreads/rthreads.h>
 
 #define BUILDING_BTDYNAMIC
-#include "btstack.h"
+#include "btstack_hid.h"
 #include "../../dynamic.h"
 #include "../connect/joypad_connection.h"
 
