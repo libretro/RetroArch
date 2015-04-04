@@ -288,6 +288,7 @@ void renderchain_end_render(void *data)
 bool renderchain_render(void *chain_data, const void *data,
       unsigned width, unsigned height, unsigned pitch, unsigned rotation)
 {
+   Pass *last_pass;
    LPDIRECT3DSURFACE back_buffer, target;
    unsigned i, current_width, current_height, out_width = 0, out_height = 0;
    renderchain_t *chain  = (renderchain_t*)chain_data;
@@ -351,7 +352,8 @@ bool renderchain_render(void *chain_data, const void *data,
 
    /* Final pass */
    d3dr->SetRenderTarget(0, back_buffer);
-   Pass *last_pass = (Pass*)&chain->passes.back();
+
+   last_pass = (Pass*)&chain->passes.back();
 
    renderchain_convert_geometry(chain, &last_pass->info,
          &out_width, &out_height,
@@ -458,15 +460,13 @@ void renderchain_set_vertices(
    if (pass->last_width != width || pass->last_height != height)
    {
       Vertex vert[4];
-      float _u, _v;
       unsigned i;
       void *verts       = NULL;
+      float _u          = float(width)  / info->tex_w;
+      float _v          = float(height) / info->tex_h;
 
       pass->last_width  = width;
       pass->last_height = height;
-
-      _u                = float(width)  / info->tex_w;
-      _v                = float(height) / info->tex_h;
 
       for (i = 0; i < 4; i++)
       {
@@ -523,7 +523,7 @@ void renderchain_set_vertices(
 void renderchain_set_viewport(void *data, D3DVIEWPORT *vp)
 {
    LPDIRECT3DDEVICE d3dr;
-   renderchain_t *chain = (renderchain_t*)data;
+   renderchain_t  *chain = (renderchain_t*)data;
 
    if (!chain)
       return;
