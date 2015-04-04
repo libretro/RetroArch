@@ -105,24 +105,6 @@ int32_t pad_connection_pad_init(joypad_connection_t *joyconn,
    return pad;
 }
 
-int32_t apple_joypad_connect_gcapi(joypad_connection_t *joyconn)
-{
-   int pad = pad_connection_find_vacant_pad(joyconn);
-
-   if (pad >= 0 && pad < MAX_USERS)
-   {
-      joypad_connection_t *s = (joypad_connection_t*)&joyconn[pad];
-
-      if (s)
-      {
-         s->connected = true;
-         s->is_gcapi  = true;
-      }
-   }
-
-   return pad;
-}
-
 void pad_connection_pad_deinit(joypad_connection_t *s, uint32_t pad)
 {
    if (!s || !s->connected)
