@@ -68,7 +68,8 @@ endif
 ifneq ($(findstring Linux,$(OS)),)
    LIBS += -lrt
    JOYCONFIG_LIBS += -lrt
-   OBJ += input/drivers/linuxraw_input.o input/drivers_joypad/linuxraw_joypad.o
+   OBJ += input/drivers/linuxraw_input.o \
+			 input/drivers_joypad/linuxraw_joypad.o
 endif
 
 ifeq ($(findstring Haiku,$(OS)),)
@@ -223,7 +224,8 @@ ifeq ($(HAVE_OSS_BSD), 1)
 endif
 
 ifeq ($(HAVE_ALSA), 1)
-   OBJ += audio/drivers/alsa.o audio/drivers/alsathread.o
+   OBJ += audio/drivers/alsa.o \
+			 audio/drivers/alsathread.o
    LIBS += $(ALSA_LIBS)
    DEFINES += $(ALSA_CFLAGS)
 endif
@@ -280,8 +282,8 @@ endif
 # Audio Resamplers
 
 ifeq ($(HAVE_NEON),1)
-   OBJ += audio/drivers_resampler/sinc_neon.o
-   OBJ += audio/drivers_resampler/cc_resampler_neon.o
+   OBJ += audio/drivers_resampler/sinc_neon.o \
+			 audio/drivers_resampler/cc_resampler_neon.o
    # When compiled without this, tries to attempt to compile sinc lerp,
    # which will error out
 	#
@@ -343,7 +345,10 @@ ifeq ($(HAVE_FREETYPE), 1)
 endif
 
 ifeq ($(HAVE_THREADS), 1)
-   OBJ += autosave.o libretro-common/rthreads/rthreads.o gfx/video_thread_wrapper.o audio/audio_thread_wrapper.o
+   OBJ += autosave.o \
+			 libretro-common/rthreads/rthreads.o \
+			 gfx/video_thread_wrapper.o \
+			 audio/audio_thread_wrapper.o
    DEFINES += -DHAVE_THREADS
    ifeq ($(findstring Haiku,$(OS)),)
       LIBS += -lpthread
@@ -393,7 +398,8 @@ ifeq ($(HAVE_UDEV), 1)
    DEFINES += $(UDEV_CFLAGS)
    LIBS += $(UDEV_LIBS)
    JOYCONFIG_LIBS += $(UDEV_LIBS)
-   OBJ += input/drivers/udev_input.o input/drivers_joypad/udev_joypad.o
+   OBJ += input/drivers/udev_input.o \
+			 input/drivers_joypad/udev_joypad.o
 endif
 
 ifeq ($(HAVE_LIBUSB), 1)
@@ -487,8 +493,8 @@ ifeq ($(HAVE_OPENGL), 1)
          LIBS += -framework OpenGL
       else ifneq ($(findstring Win32,$(OS)),)
          LIBS += -lopengl32 -lgdi32 -lcomdlg32 -lcomctl32
-         OBJ += gfx/drivers_context/wgl_ctx.o
-         OBJ += gfx/drivers_wm/win32_shader_dlg.o
+         OBJ += gfx/drivers_context/wgl_ctx.o \
+					 gfx/drivers_wm/win32_shader_dlg.o
       else
          LIBS += -lGL
       endif
@@ -503,7 +509,10 @@ ifeq ($(HAVE_SDL2), 1)
 endif
 
 ifeq ($(HAVE_SDL), 1)
-   OBJ += gfx/drivers/sdl_gfx.o input/drivers/sdl_input.o input/drivers_joypad/sdl_joypad.o audio/drivers/sdl_audio.o
+   OBJ += gfx/drivers/sdl_gfx.o \
+			 input/drivers/sdl_input.o \
+			 input/drivers_joypad/sdl_joypad.o \
+			 audio/drivers/sdl_audio.o
 
    ifeq ($(HAVE_OPENGL), 1)
      OBJ += gfx/drivers_context/sdl_gl_ctx.o
@@ -515,7 +524,10 @@ ifeq ($(HAVE_SDL), 1)
 endif
 
 ifeq ($(HAVE_SDL2), 1)
-   OBJ += gfx/drivers/sdl2_gfx.o input/drivers/sdl_input.o input/drivers_joypad/sdl_joypad.o audio/drivers/sdl_audio.o
+   OBJ += gfx/drivers/sdl2_gfx.o \
+			 input/drivers/sdl_input.o \
+			 input/drivers_joypad/sdl_joypad.o \
+			 audio/drivers/sdl_audio.o
 
    ifeq ($(HAVE_OPENGL), 1)
      OBJ += gfx/drivers_context/sdl_gl_ctx.o
@@ -532,7 +544,8 @@ ifeq ($(HAVE_OMAP), 1)
 endif
 
 ifeq ($(HAVE_EXYNOS), 1)
-   OBJ += gfx/drivers/exynos_gfx.o mem/neon/memcpy-neon.o
+   OBJ += gfx/drivers/exynos_gfx.o \
+			 mem/neon/memcpy-neon.o
    LIBS += $(DRM_LIBS) $(EXYNOS_LIBS)
    DEFINES += $(DRM_CFLAGS) $(EXYNOS_CFLAGS)
 endif
@@ -544,11 +557,13 @@ ifeq ($(HAVE_DISPMANX), 1)
 endif
 
 ifeq ($(HAVE_SUNXI), 1)
-   OBJ += gfx/drivers/sunxi_gfx.o gfx/pixman/pixman-arm-neon-asm.o
+   OBJ += gfx/drivers/sunxi_gfx.o \
+			 gfx/pixman/pixman-arm-neon-asm.o
 endif
 
 ifeq ($(HAVE_VG), 1)
-   OBJ += gfx/drivers/vg.o libretro-common/gfx/math/matrix_3x3.o
+   OBJ += gfx/drivers/vg.o \
+			 libretro-common/gfx/math/matrix_3x3.o
    DEFINES += $(VG_CFLAGS)
    LIBS += $(VG_LIBS)
 endif
@@ -654,7 +669,8 @@ ifeq ($(WANT_ZLIB),1)
 			 deps/zlib/unzip.o
 else
 ifeq ($(HAVE_ZLIB),1)
-ZLIB_OBJS = deps/zlib/unzip.o deps/zlib/ioapi.o
+ZLIB_OBJS = deps/zlib/unzip.o \
+				deps/zlib/ioapi.o
 OBJ += $(ZLIB_OBJS)
 HAVE_ZLIB_DEFLATE = 1
 endif
