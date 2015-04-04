@@ -131,14 +131,10 @@ void d3d_vertex_buffer_unlock(LPDIRECT3DVERTEXBUFFER vertbuf)
 
 void *d3d_vertex_buffer_lock(LPDIRECT3DVERTEXBUFFER vertbuf)
 {
-#ifdef _XBOX1
-   BYTE *buf;
-#else
    void *buf;
-#endif
 
 #if defined(_XBOX1)
-   buf = D3DVertexBuffer_Lock2(vertbuf, 0);
+   buf = (void*)D3DVertexBuffer_Lock2(vertbuf, 0);
 #elif defined(_XBOX360)
    buf = D3DVertexBuffer_Lock(vertbuf, 0, 0, 0);
 #else
@@ -264,7 +260,7 @@ void d3d_lockrectangle_clear(void *data,
    D3DTexture_LockRect(tex, level, lock_rect, rect, flags);
    memset(lock_rect->pBits, 0, chain->tex_h * lock_rect->Pitch);
 #else
-   Pass *pass = (Pass*)data;
+   Pass         *pass = (Pass*)data;
    if (SUCCEEDED(tex->LockRect(level, lock_rect, rect, flags)))
    {
       memset(lock_rect->pBits, level, pass->info.tex_h * lock_rect->Pitch);
@@ -326,8 +322,6 @@ void d3d_texture_blit(void *data, void *renderchain_data,
    unsigned y;
 	d3d_video_t *d3d = (d3d_video_t*)data;
 
-   (void)data;
-   (void)d3d;
    (void)y;
 
    if (!d3d)
