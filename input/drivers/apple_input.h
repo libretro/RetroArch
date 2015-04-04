@@ -17,15 +17,15 @@
 #ifndef __APPLE_RARCH_INPUT_H__
 #define __APPLE_RARCH_INPUT_H__
 
+#include <stdint.h>
 #include "../../general.h"
-#include "../connect/joypad_connection.h"
 
 /* Input responder */
-#define MAX_TOUCHES 16
-#define MAX_KEYS 256
+#define MAX_TOUCHES  16
+#define MAX_KEYS     256
 
 #ifndef NUM_HATS
-#define NUM_HATS 4
+#define NUM_HATS     4
 #endif
 
 typedef struct
