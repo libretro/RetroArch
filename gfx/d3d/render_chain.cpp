@@ -65,22 +65,23 @@ bool renderchain_init(void *data, const video_info_t *video_info,
       const D3DVIEWPORT *final_viewport_,
       const void *info_data, PixelFormat fmt)
 {
-   const LinkInfo *info = (const LinkInfo*)info_data;
-   renderchain_t *chain = (renderchain_t*)data;
-   CGcontext cgCtx_ = (CGcontext)shader_context;
+   const LinkInfo *info  = (const LinkInfo*)info_data;
+   renderchain_t *chain  = (renderchain_t*)data;
+   CGcontext cgCtx_      = (CGcontext)shader_context;
 
    if (!chain)
       return false;
 
-   chain->dev = dev_;
+   chain->dev            = dev_;
 #ifdef HAVE_CG
-   chain->cgCtx = cgCtx_;
+   chain->cgCtx          = cgCtx_;
 #endif
-   chain->video_info = video_info;
-   chain->tracker = NULL;
+   chain->video_info     = video_info;
+   chain->tracker        = NULL;
    chain->final_viewport =  (D3DVIEWPORT*)final_viewport_;
-   chain->frame_count = 0;
-   chain->pixel_size = fmt == RGB565 ? 2 : 4;
+   chain->frame_count    = 0;
+   chain->pixel_size     = (fmt == RGB565) ? 2 : 4;
+
    if (!renderchain_create_first_pass(chain, info, fmt))
       return false;
    renderchain_log_info(chain, info);
@@ -149,8 +150,7 @@ bool renderchain_set_pass_size(void *data, unsigned pass_index,
 
       pass->info.tex_w = width;
       pass->info.tex_h = height;
-
-      pass->tex = (LPDIRECT3DTEXTURE)d3d_texture_new(
+      pass->tex        = (LPDIRECT3DTEXTURE)d3d_texture_new(
       d3dr, NULL, width, height, 1,
          D3DUSAGE_RENDERTARGET,
          chain->passes.back().info.pass->fbo.fp_fbo ? 
@@ -218,13 +218,10 @@ bool renderchain_add_lut(void *data, const std::string &id,
       const std::string &path,
       bool smooth)
 {
-   LPDIRECT3DTEXTURE lut;
    renderchain_t *chain = (renderchain_t*)data;
    LPDIRECT3DDEVICE d3dr = chain->dev;
-
-   RARCH_LOG("[D3D]: Loading LUT texture: %s.\n", path.c_str());
-
-   lut = (LPDIRECT3DTEXTURE)d3d_texture_new(d3dr,
+   LPDIRECT3DTEXTURE lut = (LPDIRECT3DTEXTURE)
+	   d3d_texture_new(d3dr,
          path.c_str(),
          D3DX_DEFAULT_NONPOW2,
          D3DX_DEFAULT_NONPOW2,
@@ -238,6 +235,8 @@ bool renderchain_add_lut(void *data, const std::string &id,
          NULL,
          NULL
          );
+
+  RARCH_LOG("[D3D]: LUT texture loaded: %s.\n", path.c_str());
 
    lut_info info         = { lut, id, smooth };
    if (!lut)
@@ -263,7 +262,7 @@ void renderchain_add_state_tracker(void *data, void *tracker_data)
 
 void renderchain_start_render(void *data)
 {
-   renderchain_t *chain = (renderchain_t*)data;
+   renderchain_t *chain         = (renderchain_t*)data;
 
    if (!chain)
       return;
@@ -276,7 +275,7 @@ void renderchain_start_render(void *data)
 
 void renderchain_end_render(void *data)
 {
-   renderchain_t *chain = (renderchain_t*)data;
+   renderchain_t *chain                     = (renderchain_t*)data;
 
    if (!chain)
       return;
@@ -297,8 +296,8 @@ bool renderchain_render(void *chain_data, const void *data,
 
    renderchain_start_render(chain);
 
-   current_width = width;
-   current_height = height;
+   current_width         = width;
+   current_height        = height;
    renderchain_convert_geometry(chain, &chain->passes[0].info,
          &out_width, &out_height,
          current_width, current_height, chain->final_viewport);
@@ -327,14 +326,14 @@ bool renderchain_render(void *chain_data, const void *data,
             current_width, current_height, chain->final_viewport);
 
       /* Clear out whole FBO. */
-      viewport.Width = to_pass->info.tex_w;
+      viewport.Width  = to_pass->info.tex_w;
       viewport.Height = to_pass->info.tex_h;
-      viewport.MinZ = 0.0f;
-      viewport.MaxZ = 1.0f;
+      viewport.MinZ   = 0.0f;
+      viewport.MaxZ   = 1.0f;
       d3d_set_viewport(d3dr, &viewport);
       d3d_clear(d3dr, 0, 0, D3DCLEAR_TARGET, 0, 1, 0);
       
-      viewport.Width = out_width;
+      viewport.Width  = out_width;
       viewport.Height = out_height;
       renderchain_set_viewport(chain, &viewport);
 
@@ -397,18 +396,17 @@ bool renderchain_create_first_pass(void *data, const void *info_data,
    d3d_set_transform(d3dr, D3DTS_WORLD, &ident);
    d3d_set_transform(d3dr, D3DTS_VIEW, &ident);
 
-   pass.info = *info;
-   pass.last_width = 0;
+   pass.info        = *info;
+   pass.last_width  = 0;
    pass.last_height = 0;
 
-   chain->prev.ptr = 0;
+   chain->prev.ptr  = 0;
 
    for (i = 0; i < TEXTURES; i++)
    {
-      chain->prev.last_width[i] = 0;
+      chain->prev.last_width[i]  = 0;
       chain->prev.last_height[i] = 0;
-
-      chain->prev.vertex_buf[i] = d3d_vertex_buffer_new(
+      chain->prev.vertex_buf[i]  = d3d_vertex_buffer_new(
             d3dr, 4 * sizeof(Vertex),
             d3dr->GetSoftwareVertexProcessing() 
             ? D3DUSAGE_SOFTWAREPROCESSING : 0,
@@ -668,6 +666,7 @@ void renderchain_log_info(void *data, const void *info_data)
    RARCH_LOG("\tTexture height: %u\n", info->tex_h);
 
    RARCH_LOG("\tScale type (X): ");
+
    switch (info->pass->fbo.type_x)
    {
       case RARCH_SCALE_INPUT:
@@ -684,6 +683,7 @@ void renderchain_log_info(void *data, const void *info_data)
    }
 
    RARCH_LOG("\tScale type (Y): ");
+
    switch (info->pass->fbo.type_y)
    {
       case RARCH_SCALE_INPUT:
