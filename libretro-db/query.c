@@ -21,17 +21,17 @@ static char tmp_error_buff [MAX_ERROR_LEN] = {};
 
 struct buffer
 {
-	const char *data;
-	size_t len;
-	off_t offset;
+   const char *data;
+   size_t len;
+   off_t offset;
 };
 
 /* Errors */
 static void raise_too_many_arguments(const char **error)
 {
-	snprintf(tmp_error_buff, MAX_ERROR_LEN,
+   snprintf(tmp_error_buff, MAX_ERROR_LEN,
          "Too many arguments in function call.");
-	*error = tmp_error_buff;
+   *error = tmp_error_buff;
 }
 
 static void raise_expected_number(off_t where, const char **error)
@@ -345,11 +345,11 @@ static struct rmsgpack_dom_value q_glob(struct rmsgpack_dom_value input,
 static struct rmsgpack_dom_value all_map(struct rmsgpack_dom_value input,
       unsigned argc, const struct argument *argv)
 {
+   unsigned i;
    struct rmsgpack_dom_value res;
-   struct rmsgpack_dom_value *value = NULL;
    struct argument arg;
    struct rmsgpack_dom_value nil_value;
-   unsigned i;
+   struct rmsgpack_dom_value *value = NULL;
 
    nil_value.type = RDT_NULL;
    res.type       = RDT_BOOL;
@@ -477,7 +477,7 @@ static struct buffer parse_string(struct buffer buff,
 {
    const char * str_start;
    char terminator = '\0';
-   char c = '\0';
+   char c          = '\0';
 
    (void)c;
 
@@ -872,7 +872,7 @@ void *libretrodb_query_compile(libretrodb_t *db,
    buff.offset  = 0;
    *error       = NULL;
 
-   buff = chomp(buff);
+   buff         = chomp(buff);
 
    if (peek(buff, "{"))
    {

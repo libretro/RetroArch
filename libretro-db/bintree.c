@@ -13,8 +13,8 @@ void bintree_new(struct bintree *t, bintree_cmp_func cmp,
       void *ctx)
 {
    t->root = new_nil_node(NULL);
-   t->cmp = cmp;
-   t->ctx = ctx;
+   t->cmp  = cmp;
+   t->ctx  = ctx;
 }
 
 static struct bintree_node *new_nil_node(struct bintree_node *parent)
