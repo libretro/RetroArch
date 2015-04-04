@@ -40,13 +40,13 @@ void main_exit_save_config(void);
 static void rarch_draw(CFRunLoopObserverRef observer, CFRunLoopActivity activity, void *info)
 {
     runloop_t *runloop = rarch_main_get_ptr();
-    int ret = 0;
-    bool iterate = iterate_observer && !runloop->is_paused;
+    int ret            = 0;
+    bool iterate       = iterate_observer && !runloop->is_paused;
     
     if (!iterate)
         return;
     
-    ret = rarch_main_iterate();
+    ret                = rarch_main_iterate();
     
     if (ret == -1)
     {
@@ -83,15 +83,15 @@ int get_ios_version_major(void)
 const void* apple_get_frontend_settings(void)
 {
    static rarch_setting_t settings[9];
-   
+
    if (settings[0].type == ST_NONE)
    {
-       const char *GROUP_NAME = "Frontend Settings";
-       const char *SUBGROUP_NAME = "Frontend";
+      const char *GROUP_NAME    = "Frontend Settings";
+      const char *SUBGROUP_NAME = "Frontend";
       settings[0] = setting_group_setting(ST_GROUP, "Frontend Settings");
       settings[1] = setting_group_setting(ST_SUB_GROUP, "Frontend");
       settings[2] = setting_string_setting(ST_STRING, "ios_btmode", "Bluetooth Input Type", apple_frontend_settings.bluetooth_mode,
-                                                 sizeof(apple_frontend_settings.bluetooth_mode), "none", "<null>", GROUP_NAME, SUBGROUP_NAME, NULL, NULL);
+            sizeof(apple_frontend_settings.bluetooth_mode), "none", "<null>", GROUP_NAME, SUBGROUP_NAME, NULL, NULL);
 
       /* Set iOS_btmode options based on runtime environment. */
       if (btstack_try_load())
@@ -100,12 +100,12 @@ const void* apple_get_frontend_settings(void)
          settings[2].values = "icade|keyboard|small_keyboard";
 
       settings[3] = setting_string_setting(ST_STRING, "ios_orientations", "Screen Orientations", apple_frontend_settings.orientations,
-                                                 sizeof(apple_frontend_settings.orientations), "both", "<null>", GROUP_NAME, SUBGROUP_NAME, NULL, NULL);
+            sizeof(apple_frontend_settings.orientations), "both", "<null>", GROUP_NAME, SUBGROUP_NAME, NULL, NULL);
       settings[3].values = "both|landscape|portrait";
       settings[4] = setting_group_setting(ST_END_SUB_GROUP, 0);
       settings[5] = setting_group_setting(ST_END_GROUP, 0);
    }
-   
+
    return settings;
 }
 
@@ -114,7 +114,7 @@ extern float apple_gfx_ctx_get_native_scale(void);
 /* Input helpers: This is kept here because it needs ObjC */
 static void handle_touch_event(NSArray* touches)
 {
-   NSUInteger i;
+   unsigned i;
    driver_t *driver          = driver_get_ptr();
    apple_input_data_t *apple = (apple_input_data_t*)driver->input_data;
    float scale               = apple_gfx_ctx_get_native_scale();
@@ -126,7 +126,7 @@ static void handle_touch_event(NSArray* touches)
    
    for (i = 0; i < touches.count && (apple->touch_count < MAX_TOUCHES); i++)
    {
-      UITouch* touch = [touches objectAtIndex:i];
+      UITouch      *touch = [touches objectAtIndex:i];
       
       if (touch.view != [RAGameView get].view)
          continue;
@@ -178,19 +178,20 @@ enum
 
 - (id)_keyCommandForEvent:(UIEvent*)event
 {
-   NSUInteger i;
-   // This gets called twice with the same timestamp for each keypress, that's fine for polling
-   // but is bad for business with events.
+   /* This gets called twice with the same timestamp 
+    * for each keypress, that's fine for polling
+    * but is bad for business with events. */
    static double last_time_stamp;
    
    if (last_time_stamp == event.timestamp)
       return [super _keyCommandForEvent:event];
    last_time_stamp = event.timestamp;
    
-   // If the _hidEvent is null, [event _keyCode] will crash. (This happens with the on screen keyboard.)
+   /* If the _hidEvent is null, [event _keyCode] will crash. 
+    * (This happens with the on screen keyboard). */
    if (event._hidEvent)
    {
-      NSString* ch = (NSString*)event._privateInput;
+      NSString       *ch = (NSString*)event._privateInput;
       uint32_t character = 0;
       uint32_t mod       = 0;
       
@@ -203,7 +204,9 @@ enum
       
       if (ch && ch.length != 0)
       {
+         unsigned i;
          character = [ch characterAtIndex:0];
+
          apple_input_keyboard_event(event._isKeyDown,
                (uint32_t)event._keyCode, 0, mod,
                RETRO_DEVICE_KEYBOARD);
@@ -228,19 +231,24 @@ enum
 - (void)sendEvent:(UIEvent *)event
 {
    [super sendEvent:event];
-   
+
    if (event.allTouches.count)
       handle_touch_event(event.allTouches.allObjects);
 
    if (!(get_ios_version_major() >= 7) && [event respondsToSelector:@selector(_gsEvent)])
    {
       // Stolen from: http://nacho4d-nacho4d.blogspot.com/2012/01/catching-keyboard-events-in-ios.html
-      const uint8_t* eventMem = objc_unretainedPointer([event performSelector:@selector(_gsEvent)]);
-      int eventType = eventMem ? *(int*)&eventMem[8] : 0;
-      
-      if (eventType == GSEVENT_TYPE_KEYDOWN || eventType == GSEVENT_TYPE_KEYUP)
-         apple_input_keyboard_event(eventType == GSEVENT_TYPE_KEYDOWN,
-               *(uint16_t*)&eventMem[0x3C], 0, 0, RETRO_DEVICE_KEYBOARD);
+      const uint8_t *eventMem = objc_unretainedPointer([event performSelector:@selector(_gsEvent)]);
+      int           eventType = eventMem ? *(int*)&eventMem[8] : 0;
+
+      switch (eventType)
+      {
+         case GSEVENT_TYPE_KEYDOWN:
+           case GSEVENT_TYPE_KEYUP:
+            apple_input_keyboard_event(eventType == GSEVENT_TYPE_KEYDOWN,
+                  *(uint16_t*)&eventMem[0x3C], 0, 0, RETRO_DEVICE_KEYBOARD);
+            break;
+      }
    }
 }
 
@@ -278,15 +286,15 @@ void notify_content_loaded(void)
 - (void)applicationDidFinishLaunching:(UIApplication *)application
 {
    driver_t *driver = NULL;
+   apple_platform   = self;
 
-   apple_platform = self;
    [self setDelegate:self];
     
    if (rarch_main(0, NULL))
        apple_rarch_exited();
 
-   // Setup window
-   self.window = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
+   /* Setup window */
+   self.window      = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
    [self.window makeKeyAndVisible];
 
    [self pushViewController:[RAMainMenu new] animated:YES];
@@ -360,9 +368,9 @@ void notify_content_loaded(void)
 
 -(BOOL)application:(UIApplication *)application openURL:(NSURL *)url sourceApplication:(NSString *)sourceApplication annotation:(id)annotation
 {
-   NSString* filename = (NSString*)url.path.lastPathComponent;
+   NSString *filename = (NSString*)url.path.lastPathComponent;
+   NSError     *error = nil;
 
-   NSError* error = nil;
    [[NSFileManager defaultManager] moveItemAtPath:[url path] toPath:[self.documentsDirectory stringByAppendingPathComponent:filename] error:&error];
    
    if (error)
