@@ -33,8 +33,6 @@
 id<RetroArch_Platform> apple_platform;
 static CFRunLoopObserverRef iterate_observer;
 
-/* forward decls */
-
 void apple_rarch_exited(void);
 
 void main_exit_save_config(void);
@@ -95,7 +93,7 @@ const void* apple_get_frontend_settings(void)
       settings[2] = setting_string_setting(ST_STRING, "ios_btmode", "Bluetooth Input Type", apple_frontend_settings.bluetooth_mode,
                                                  sizeof(apple_frontend_settings.bluetooth_mode), "none", "<null>", GROUP_NAME, SUBGROUP_NAME, NULL, NULL);
 
-      // Set ios_btmode options based on runtime environment
+      /* Set iOS_btmode options based on runtime environment. */
       if (btstack_try_load())
          settings[2].values = "icade|keyboard|small_keyboard|btstack";
       else
@@ -373,7 +371,6 @@ void notify_content_loaded(void)
    return true;
 }
 
-// UINavigationControllerDelegate
 - (void)navigationController:(UINavigationController *)navigationController willShowViewController:(UIViewController *)viewController animated:(BOOL)animated
 {
    apple_input_reset_icade_buttons();
@@ -424,6 +421,8 @@ void notify_content_loaded(void)
 
 - (void)refreshSystemConfig
 {
+   bool small_keyboard, is_icade, is_btstack;
+    
    /* Get enabled orientations */
    apple_frontend_settings.orientation_flags = UIInterfaceOrientationMaskAll;
    
@@ -432,14 +431,14 @@ void notify_content_loaded(void)
    else if (!strcmp(apple_frontend_settings.orientations, "portrait"))
       apple_frontend_settings.orientation_flags = UIInterfaceOrientationMaskPortrait | UIInterfaceOrientationMaskPortraitUpsideDown;
 
-   // Set bluetooth mode
-    bool small_keyboard = !(strcmp(apple_frontend_settings.bluetooth_mode, "small_keyboard"));
-    bool is_icade = !(strcmp(apple_frontend_settings.bluetooth_mode, "icade"));
-    bool is_btstack = !(strcmp(apple_frontend_settings.bluetooth_mode, "btstack"));
+   /* Set bluetooth mode */
+   small_keyboard = !(strcmp(apple_frontend_settings.bluetooth_mode, "small_keyboard"));
+   is_icade       = !(strcmp(apple_frontend_settings.bluetooth_mode, "icade"));
+   is_btstack     = !(strcmp(apple_frontend_settings.bluetooth_mode, "btstack"));
        
-    apple_input_enable_small_keyboard(small_keyboard);
-    apple_input_enable_icade(is_icade);
-    btstack_set_poweron(is_btstack);
+   apple_input_enable_small_keyboard(small_keyboard);
+   apple_input_enable_icade(is_icade);
+   btstack_set_poweron(is_btstack);
 }
 
 @end
