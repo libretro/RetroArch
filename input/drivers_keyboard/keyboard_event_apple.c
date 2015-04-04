@@ -17,16 +17,18 @@
 #include <stdint.h>
 #include <unistd.h>
 
-#include "input_common.h"
-#include "input_keymaps.h"
-#include "drivers/apple_input.h"
-#include "../general.h"
-#include "../driver.h"
+#include "../input_common.h"
+#include "../input_keymaps.h"
+#include "../drivers/apple_input.h"
+#include "../../general.h"
+#include "../../driver.h"
 
-#include "drivers/apple_keycode.h"
+#include "../drivers/apple_keycode.h"
 
 #if defined(IOS)
+
 #define HIDKEY(X) X
+
 #elif defined(OSX)
 
 /* Taken from https://github.com/depp/keycode,

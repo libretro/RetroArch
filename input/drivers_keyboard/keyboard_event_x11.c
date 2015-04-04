@@ -23,10 +23,10 @@
 #endif
 
 #include <boolean.h>
-#include "../driver.h"
-#include "keyboard_line.h"
-#include "input_keymaps.h"
 #include <retro_inline.h>
+#include "../../driver.h"
+#include "../keyboard_line.h"
+#include "../input_keymaps.h"
 
 static INLINE unsigned leading_ones(uint8_t c)
 {

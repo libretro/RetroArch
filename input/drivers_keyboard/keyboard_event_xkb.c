@@ -15,9 +15,9 @@
  */
 
 #include <xkbcommon/xkbcommon.h>
-#include "input_joypad_driver.h"
-#include "input_keymaps.h"
-#include "keyboard_line.h"
+#include "../input_joypad_driver.h"
+#include "../input_keymaps.h"
+#include "../keyboard_line.h"
 
 #define MOD_MAP_SIZE 5
 

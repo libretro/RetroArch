@@ -386,19 +386,19 @@ INPUT (HID)
  ============================================================ */
 
 #if defined(_WIN32) && !defined(_XBOX)
-#include "../input/keyboard_event_win32.c"
+#include "../input/drivers_keyboard/keyboard_event_win32.c"
 #endif
 
 #ifdef HAVE_X11
-#include "../input/keyboard_event_x11.c"
+#include "../input/drivers_keyboard/keyboard_event_x11.c"
 #endif
 
 #ifdef __APPLE__
-#include "../input/keyboard_event_apple.c"
+#include "../input/drivers_keyboard/keyboard_event_apple.c"
 #endif
 
 #ifdef HAVE_XKBCOMMON
-#include "../input/keyboard_event_xkb.c"
+#include "../input/drivers_keyboard/keyboard_event_xkb.c"
 #endif
 
 /*============================================================
