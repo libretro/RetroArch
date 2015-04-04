@@ -17,7 +17,7 @@
 #include <string.h>
 #include "joypad_connection.h"
 
-static int pad_connection_find_vacant_pad(joypad_connection_t *joyconn)
+int pad_connection_find_vacant_pad(joypad_connection_t *joyconn)
 {
    unsigned i;
 
