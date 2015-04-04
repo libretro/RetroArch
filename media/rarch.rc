@@ -1,4 +1,4 @@
-#include "../win32/resource.h"
+#include "../gfx/drivers_wm/win32_resource.h"
 1                       ICON                    "retroarch-icon.ico"
 2                       24                      "rarch.manifest"
 
