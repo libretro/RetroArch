@@ -18,7 +18,7 @@
 #include "../../runloop.h"
 #include "../gl_common.h"
 #include "../video_monitor.h"
-#include "x11_common.h"
+#include "../drivers_wm/x11_common.h"
 
 #include <signal.h>
 #include <stdint.h>

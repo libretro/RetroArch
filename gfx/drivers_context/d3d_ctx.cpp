@@ -16,7 +16,7 @@
  */
 
 #include "../d3d/d3d.h"
-#include "win32_common.h"
+#include "../drivers_wm/win32_common.h"
 
 #include "../../runloop.h"
 #include "../video_monitor.h"

@@ -376,7 +376,9 @@ ifeq ($(HAVE_WINXINPUT), 1)
 endif
 
 ifeq ($(HAVE_X11), 1)
-   OBJ += input/drivers/x11_input.o gfx/drivers_context/x11_common.o input/keyboard_event_x11.o
+   OBJ += input/drivers/x11_input.o \
+			 gfx/drivers_wm/x11_common.o \
+			 input/keyboard_event_x11.o
    LIBS += $(X11_LIBS) $(XEXT_LIBS) $(XF86VM_LIBS) $(XINERAMA_LIBS)
    DEFINES += $(X11_CFLAGS) $(XEXT_CFLAGS) $(XF86VM_CFLAGS) $(XINERAMA_CFLAGS)
 endif
@@ -486,7 +488,7 @@ ifeq ($(HAVE_OPENGL), 1)
       else ifneq ($(findstring Win32,$(OS)),)
          LIBS += -lopengl32 -lgdi32 -lcomdlg32 -lcomctl32
          OBJ += gfx/drivers_context/wgl_ctx.o
-         OBJ += gfx/drivers_context/wgl_shader_dlg.o
+         OBJ += gfx/drivers_wm/win32_shader_dlg.o
       else
          LIBS += -lGL
       endif
@@ -689,8 +691,8 @@ endif
 ifneq ($(findstring Win32,$(OS)),)
    OBJ += media/rarch.o \
           input/keyboard_event_win32.o \
-			 gfx/drivers_context/win32_common.o \
-			 gfx/drivers_context/win32_dwm_common.o
+			 gfx/drivers_wm/win32_common.o \
+			 gfx/drivers_wm/win32_dwm_common.o
 endif
 
 # Record

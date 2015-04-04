@@ -87,8 +87,8 @@ CHEATS
 UI COMMON CONTEXT
 ============================================================ */
 #if defined(_WIN32) && !defined(_XBOX)
-#include "../gfx/drivers_context/win32_common.c"
-#include "../gfx/drivers_context/win32_dwm_common.c"
+#include "../gfx/drivers_wm/win32_common.c"
+#include "../gfx/drivers_wm/win32_dwm_common.c"
 #endif
 
 /*============================================================
@@ -129,13 +129,13 @@ VIDEO CONTEXT
 
 #if defined(_WIN32) && !defined(_XBOX)
 #include "../gfx/drivers_context/wgl_ctx.c"
-#include "../gfx/drivers_context/wgl_shader_dlg.c"
+#include "../gfx/drivers_wm/win32_shader_dlg.c"
 #endif
 
 #endif
 
 #ifdef HAVE_X11
-#include "../gfx/drivers_context/x11_common.c"
+#include "../gfx/drivers_wm/x11_common.c"
 #endif
 
 

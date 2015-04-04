@@ -31,7 +31,7 @@
 #include "../font_renderer_driver.h"
 
 #ifdef HAVE_X11
-#include "../drivers_context/x11_common.h"
+#include "../drivers_wm/x11_common.h"
 #endif
 
 #if defined(_WIN32) && !defined(_XBOX)
