@@ -1,23 +1,209 @@
-# SAKUJ0's repository
+# RetroArch
 
-This is a sandbox for development purposes only. Under no circumstances use this repository for any purposes other
-than to test communicated changes. Go to the [official GitHub repository](https://github.com/libretro/RetroArch)
-and find support on the [official Libretro web page](http://libretro.com).
+RetroArch is the reference frontend for the libretro API.
+Popular examples of implementations for this API includes videogame system emulators and game engines, but also
+more generalized 3D programs.
+These programs are instantiated as dynamic libraries. We refer to these as "libretro cores".
 
-## Game-specific and core-specific overrides
+## libretro
 
-Tries to append game-specific and core-specific configuration.
-These settings will always have precedence, thus this feature
-can be used to enforce overrides.
+[libretro](http://libretro.com) is an API that exposes generic audio/video/input callbacks.
+A frontend for libretro (such as RetroArch) handles video output, audio output, input and application lifecycle.
+A libretro core written in portable C or C++ can run seamlessly on many platforms with very little/no porting effort.
 
-Let $RETROARCH_CFG be the directory that contains retroarch.cfg,
-$CORE_NAME be the name of the libretro core library in use and
-$ROM_NAME the basename of the ROM (without the extension and
-directory).
+While RetroArch is the reference frontend for libretro, several other projects have used the libretro
+interface to include support for emulators and/or game engines. libretro is completely open and free for anyone to use.
 
-This function only has an effect if a game-specific or core-specific
-configuration file exists at the folling locations respectively.
+[libretro API header](https://github.com/libretro/RetroArch/blob/master/libretro.h)
 
-   - core-specific: $RETROARCH_CFG/$CORE_NAME/$CORE_NAME.cfg
-   - game-specific: $RETROARCH_CFG/$CORE_NAME/$ROM_NAME.cfg
+## Binaries
 
+Latest Windows binaries are currently hosted on the buildbot -(http://buildbot.libretro.com/).
+
+## Support
+
+To reach developers, either make an issue here on Github, make a thread on the [forum](http://www.libretro.com/forums/),
+or visit our IRC channel: #retroarch @ irc.freenode.org.
+
+## Documentation
+
+See our [wiki](https://github.com/libretro/RetroArch/wiki). On Unix, man-pages are provided.
+More developer-centric stuff is found [here](https://github.com/libretro/libretro.github.com/wiki/Documentation-devs).
+
+## Related projects
+
+   - Cg/HLSL shaders: [common-shaders](https://github.com/libretro/common-shaders)
+   - Helper scripts to build libretro implementations: [libretro-super](https://github.com/libretro/libretro-super)
+
+## Philosophy
+
+RetroArch attempts to be small and lean,
+while still having all the useful core features expected from an emulator.
+It is designed to be very portable and features a gamepad-centric UI.
+It also has a full-featured command-line interface.
+
+In some areas, RetroArch goes beyond and emphasizes on not-so-common technical features such as multi-pass shader support,
+real-time rewind (Braid-style), video recording (using FFmpeg), etc.
+
+RetroArch also emphasizes on being easy to integrate into various launcher frontends.
+
+## Platforms
+
+RetroArch has been ported to the following platforms outside PC:
+
+   - PlayStation3
+   - Xbox 360 (Libxenon/XeXDK)
+   - Xbox 1
+   - Wii, Gamecube (Libogc)
+   - Raspberry Pi
+   - Android
+   - iOS
+   - Blackberry
+
+## Dependencies (PC)
+
+On Windows, RetroArch can run with only Win32 as dependency. On Linux, you need:
+
+   - GL headers
+   - X11 headers and libs, or EGL/KMS/GBM
+
+OSX port of RetroArch requires latest versions of XCode to build.
+
+RetroArch can utilize these libraries if enabled:
+
+   - nvidia-cg-toolkit
+   - libxml2 (GLSL XML shaders)
+   - libfreetype2 (TTF font rendering on screen)
+
+RetroArch needs at least one of these audio driver libraries:
+
+   - ALSA
+   - OSS
+   - RoarAudio
+   - RSound
+   - OpenAL
+   - JACK
+   - SDL
+   - PulseAudio
+   - XAudio2 (Win32, Xbox 360)
+   - DirectSound (Win32, Xbox 1)
+   - CoreAudio (OSX, iOS)
+
+To run properly, RetroArch requires a libretro implementation present, however, as it's typically loaded
+dynamically, it's not required at build time.
+
+## Dependencies (Console ports, mobile)
+
+Console ports have their own dependencies, but generally do not require
+anything other than what the respective SDKs provide.
+
+## Configuring
+
+The default configuration is defined in config.def.h.
+It is not recommended to change this unless you know what you're doing.
+These can later be tweaked by using a config file.
+A sample configuration file is installed to /etc/retroarch.cfg. This is the system-wide config file.
+
+RetroArch will on startup create a config file in $XDG\_CONFIG\_HOME/retroarch/retroarch.cfg if doesn't exist.
+Users only need to configure a certain option if the desired value deviates from the value defined in config.def.h.
+
+To configure joypads, use the built-in menu or the <tt>retroarch-joyconfig</tt> command-line tool.
+
+## Compiling and installing
+<b>Linux</b><br/>
+- Prerequisites:
+```bash
+sudo apt-get install -y make git-core curl g++ pkg-config libglu1-mesa-dev freeglut3-dev mesa-common-dev libsdl1.2-dev libsdl-image1.2-dev libsdl-mixer1.2-dev libsdl-ttf2.0-dev
+```
+- ```bash
+./configure
+```
+- ```bash
+make
+```
+
+<b>Mac</b><br/>
+- Prerequisites: [XCode](https://www.google.com/url?sa=t&rct=j&q=&esrc=s&source=web&cd=1&cad=rja&uact=8&ved=0CB4QFjAA&url=https%3A%2F%2Fitunes.apple.com%2Fus%2Fapp%2Fxcode%2Fid497799835%3Fmt%3D12&ei=ZmfeVNPtIILVoASBnoCYBw&usg=AFQjCNGrxKmVtXUdvUU3MhqZhP4MHT6Gtg&sig2=RIXKsWQ79YTQBt_lK5fdKA&bvm=bv.85970519,d.cGU), [Cg](https://developer.nvidia.com/cg-toolkit-download).
+- You can open the project (**apple/RetroArch_OSX.xcodeproj**) in the Xcode IDE and build (**&#8984;-B**) and run (**&#8984;-R**) it there. Or you can use the command line...
+- Debug:
+```bash
+# Build
+xcodebuild -target RetroArch_OSX -configuration Debug -project apple/RetroArch_OSX.xcodeproj
+# Run
+open ./apple/build/Debug/RetroArch_OSX.app/
+```
+- Release:
+```bash
+# Build
+xcodebuild -target RetroArch_OSX -configuration Release -project apple/RetroArch_OSX.xcodeproj
+# Run
+open ./apple/build/Release/RetroArch_OSX.app/
+```
+
+<b>PC</b><br/>
+Instructions for compiling on PC can be found in the [wiki](https://github.com/Themaister/RetroArch/wiki).
+
+<b>PlayStation3</b><br/>
+
+RetroArch PS3 needs to be compiled in the following order:
+
+1) Compile RetroArch Salamander
+
+<tt>make -f Makefile.ps3.salamander</tt>
+
+2) Compile the RGL video driver
+
+<tt>make -f Makefile.ps3.rgl</tt>
+
+3) Compile RetroArch as a library
+
+<tt>make -f Makefile.ps3.retroarch</tt>
+
+4) Finally, compile RetroArch packed together with the GUI:
+
+<tt>make -f Makefile.ps3</tt>
+
+<b>PlayStation3 - Creating a PKG installable file</b><br />
+
+You can add `pkg` as a parameter in order to make a PKG file - for example:
+
+<tt>make -f Makefile.ps3 pkg</tt>
+
+This creates an NPDRM package. This can be installed on debug PS3s.
+
+To make a non-NPDRM package that can be installed on a jailbroken/CFW PS3 (such as PSGroove or PS3 CFWs and other 3.55 CFW derivatives), do:
+
+<tt>make -f Makefile.ps3 pkg-signed</tt>
+
+If you're using Kmeaw 3.55 firmware, the package needs to be signed:
+
+<tt>make -f Makefile.ps3 pkg-signed-cfw</tt>
+
+NOTE: A pre-existing libretro library needs to be present in the root directory in order to link RetroArch PS3. This file needs to be called <em><b>`libretro_ps3.a`</b></em>.
+
+<b> Xbox 360 (XeXDK)</b><br />
+
+You will need Microsoft Visual Studio 2010 installed (or higher) in order to compile RetroArch 360.
+
+The solution file can be found at the following location:
+
+<tt>msvc-360/RetroArch-360.sln</tt>
+
+NOTE: A pre-existing libretro library needs to be present in the `msvc-360/RetroArch-360/Release` directory in order to link RetroArch 360. This file needs to be
+called <em><b>`libretro_xdk360.lib`</b></em>.
+
+<b> Xbox 360 (Libxenon)</b><br />
+
+You will need to have the libxenon libraries and a working Devkit Xenon toolchain installed in order to compile RetroArch 360 Libxenon.
+
+<tt>make -f Makefile.xenon</tt>
+
+NOTE: A pre-existing libretro library needs to be present in the root directory in order to link RetroArch 360 Libxenon. This file needs to be called <em><b>`libretro_xenon360.a`</b></em>.
+
+<b> Wii</b><br >
+
+You will need to have the libogc libraries and a working Devkit PPC toolchain installed in order to compile RetroArch Wii.
+
+<tt>make -f Makefile.wii</tt>
+
+NOTE: A pre-existing libretro library needs to be present in the root directory in order to link RetroArch Wii. This file needs to be called <em><b>`libretro_wii.a`</b></em>.
