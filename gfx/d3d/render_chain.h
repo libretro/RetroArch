@@ -108,7 +108,7 @@ bool renderchain_init(void *data, const video_info_t *video_info,
       LPDIRECT3DDEVICE dev_,
       void *shader_data,
       const D3DVIEWPORT *final_viewport_,
-      const LinkInfo *info,
+      const void *info_data,
       PixelFormat fmt);
 
 void renderchain_clear(void *data);
@@ -125,7 +125,7 @@ bool renderchain_add_lut(void *data, const std::string &id,
       const std::string &path,
       bool smooth);
 
-void renderchain_add_state_tracker(void *data, state_tracker_t *tracker);
+void renderchain_add_state_tracker(void *data, void *tracker_data);
 
 void renderchain_start_render(void *data);
 
@@ -165,7 +165,7 @@ void renderchain_blit_to_texture(void *data, const void *frame,
 
 void renderchain_render_pass(void *data, void *pass_data, unsigned pass_index);
 
-void renderchain_log_info(void *data, const LinkInfo *info);
+void renderchain_log_info(void *data, const void *info_data);
 
 void renderchain_unbind_all(void *data);
 
@@ -185,17 +185,17 @@ void renderchain_set_shader_params(void *data, void *pass_data,
             unsigned tex_w, unsigned tex_h,
             unsigned viewport_w, unsigned viewport_h);
 
-void renderchain_bind_tracker(void *data, Pass *pass, unsigned pass_index);
+void renderchain_bind_tracker(void *data, void *pass_data, unsigned pass_index);
 
 bool renderchain_init_shader_fvf(void *data, void *pass_data);
 
-void renderchain_bind_orig(void *data, Pass *pass);
+void renderchain_bind_orig(void *data, void *pass_data);
 
-void renderchain_bind_prev(void *data, Pass *pass);
+void renderchain_bind_prev(void *data, void *pass_data);
 
-void renderchain_bind_luts(void *data, Pass *pass);
+void renderchain_bind_luts(void *data, void *pass_data);
 
-void renderchain_bind_pass(void *data, Pass *pass, unsigned pass_index);
+void renderchain_bind_pass(void *data, void *pass_data, unsigned pass_index);
 
 #endif
 

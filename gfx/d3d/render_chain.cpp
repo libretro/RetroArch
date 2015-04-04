@@ -63,8 +63,9 @@ bool renderchain_init(void *data, const video_info_t *video_info,
       LPDIRECT3DDEVICE dev_,
       void *shader_context,
       const D3DVIEWPORT *final_viewport_,
-      const LinkInfo *info, PixelFormat fmt)
+      const void *info_data, PixelFormat fmt)
 {
+   const LinkInfo *info = (const LinkInfo*)info_data;
    renderchain_t *chain = (renderchain_t*)data;
    CGcontext cgCtx_ = (CGcontext)shader_context;
 
@@ -251,9 +252,10 @@ bool renderchain_add_lut(void *data, const std::string &id,
    return true;
 }
 
-void renderchain_add_state_tracker(void *data, state_tracker_t *tracker)
+void renderchain_add_state_tracker(void *data, void *tracker_data)
 {
-   renderchain_t *chain = (renderchain_t*)data;
+   state_tracker_t *tracker = (state_tracker_t*)tracker_data;
+   renderchain_t     *chain = (renderchain_t*)data;
    if (chain->tracker)
       state_tracker_free(chain->tracker);
    chain->tracker = tracker;
@@ -658,8 +660,9 @@ void renderchain_render_pass(void *data, void *pass_data, unsigned pass_index)
    renderchain_unbind_all(chain);
 }
 
-void renderchain_log_info(void *data, const LinkInfo *info)
+void renderchain_log_info(void *data, const void *info_data)
 {
+   const LinkInfo *info = (const LinkInfo*)info_data;
    RARCH_LOG("[D3D]: Render pass info:\n");
    RARCH_LOG("\tTexture width: %u\n", info->tex_w);
    RARCH_LOG("\tTexture height: %u\n", info->tex_h);

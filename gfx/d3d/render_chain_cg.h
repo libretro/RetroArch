@@ -220,9 +220,10 @@ void renderchain_set_shader_params(void *data, void *pass_data,
 }
 
 
-void renderchain_bind_tracker(void *data, Pass *pass, unsigned pass_index)
+void renderchain_bind_tracker(void *data, void *pass_data, unsigned pass_index)
 {
    unsigned i;
+   Pass           *pass  = (Pass*)pass_data;
    renderchain_t *chain  = (renderchain_t*)data;
    if (!chain->tracker)
       return;
@@ -376,10 +377,11 @@ bool renderchain_init_shader_fvf(void *data, void *pass_data)
    return true;
 }
 
-void renderchain_bind_orig(void *data, Pass *pass)
+void renderchain_bind_orig(void *data, void *pass_data)
 {
    unsigned index;
    D3DXVECTOR2 video_size, texture_size;
+   Pass           *pass = (Pass*)pass_data;
    renderchain_t *chain = (renderchain_t*)data;
    video_size.x         = chain->passes[0].last_width;
    video_size.y         = chain->passes[0].last_height;
@@ -414,11 +416,12 @@ void renderchain_bind_orig(void *data, Pass *pass)
    }
 }
 
-void renderchain_bind_prev(void *data, Pass *pass)
+void renderchain_bind_prev(void *data, void *pass_data)
 {
    unsigned i, index;
    char attr_texture[64], attr_input_size[64], attr_tex_size[64], attr_coord[64];
    D3DXVECTOR2 texture_size;
+   Pass           *pass = (Pass*)pass_data;
    renderchain_t *chain = (renderchain_t*)data;
    static const char *prev_names[] = {
       "PREV",
@@ -481,9 +484,10 @@ void renderchain_bind_prev(void *data, Pass *pass)
    }
 }
 
-void renderchain_bind_luts(void *data, Pass *pass)
+void renderchain_bind_luts(void *data, void *pass_data)
 {
    unsigned i, index;
+   Pass           *pass = (Pass*)pass_data;
    renderchain_t *chain = (renderchain_t*)data;
 
    for (i = 0; i < chain->luts.size(); i++)
@@ -531,9 +535,10 @@ void renderchain_bind_luts(void *data, Pass *pass)
    }
 }
 
-void renderchain_bind_pass(void *data, Pass *pass, unsigned pass_index)
+void renderchain_bind_pass(void *data, void *pass_data, unsigned pass_index)
 {
    unsigned i, index;
+   Pass           *pass = (Pass*)pass_data;
    renderchain_t *chain = (renderchain_t*)data;
 
    if (pass_index < 3)
