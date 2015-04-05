@@ -1388,6 +1388,31 @@ void renderchain_blit_to_texture(void *data, const void *frame,
       &d3dlr, frame, width, height, pitch);
 }
 
+static void renderchain_unbind_all(void *data)
+{
+   unsigned i;
+   renderchain_t *chain  = (renderchain_t*)data;
+   LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)chain->dev;
+
+   /* Have to be a bit anal about it.
+    * Render targets hate it when they have filters apparently.
+    */
+   for (i = 0; i < chain->bound_tex.size(); i++)
+   {
+      d3d_set_sampler_minfilter(d3dr,
+            chain->bound_tex[i], D3DTEXF_POINT);
+      d3d_set_sampler_magfilter(d3dr,
+            chain->bound_tex[i], D3DTEXF_POINT);
+      d3d_set_texture(d3dr, chain->bound_tex[i], NULL);
+   }
+
+   for (i = 0; i < chain->bound_vert.size(); i++)
+      d3d_set_stream_source(d3dr, chain->bound_vert[i], 0, 0, 0);
+
+   chain->bound_tex.clear();
+   chain->bound_vert.clear();
+}
+
 void renderchain_render_pass(void *data, void *pass_data, unsigned pass_index)
 {
    unsigned i;
@@ -1473,27 +1498,3 @@ void renderchain_log_info(void *data, const void *info_data)
          info->pass->filter == RARCH_FILTER_LINEAR ? "true" : "false");
 }
 
-void renderchain_unbind_all(void *data)
-{
-   unsigned i;
-   renderchain_t *chain  = (renderchain_t*)data;
-   LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)chain->dev;
-
-   /* Have to be a bit anal about it.
-    * Render targets hate it when they have filters apparently.
-    */
-   for (i = 0; i < chain->bound_tex.size(); i++)
-   {
-      d3d_set_sampler_minfilter(d3dr,
-            chain->bound_tex[i], D3DTEXF_POINT);
-      d3d_set_sampler_magfilter(d3dr,
-            chain->bound_tex[i], D3DTEXF_POINT);
-      d3d_set_texture(d3dr, chain->bound_tex[i], NULL);
-   }
-
-   for (i = 0; i < chain->bound_vert.size(); i++)
-      d3d_set_stream_source(d3dr, chain->bound_vert[i], 0, 0, 0);
-
-   chain->bound_tex.clear();
-   chain->bound_vert.clear();
-}

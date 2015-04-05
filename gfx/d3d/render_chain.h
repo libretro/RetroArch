@@ -104,8 +104,6 @@ void renderchain_render_pass(void *data, void *pass_data, unsigned pass_index);
 
 void renderchain_log_info(void *data, const void *info_data);
 
-void renderchain_unbind_all(void *data);
-
 bool renderchain_compile_shaders(void *data, void *fragment_data,
       void *vertex_data, const std::string &shader);
 
