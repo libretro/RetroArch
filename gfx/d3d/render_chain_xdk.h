@@ -48,45 +48,6 @@ static void renderchain_clear(void *data)
    d3d_vertex_buffer_free(d3d->vertex_buf, d3d->vertex_decl);
 }
 
-void renderchain_free(void *data)
-{
-   d3d_video_t *chain = (d3d_video_t*)data;
-
-   if (!chain)
-      return;
-
-   renderchain_clear(chain);
-#ifndef DONT_HAVE_STATE_TRACKER
-#ifndef _XBOX
-   if (chain->tracker)
-      state_tracker_free(chain->tracker);
-#endif
-#endif
-}
-
-bool renderchain_init_shader_fvf(void *data, void *pass_data)
-{
-   d3d_video_t *chain    = (d3d_video_t*)data;
-   d3d_video_t *pass     = (d3d_video_t*)data;
-   LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)chain->dev;
-
-   (void)pass_data;
-
-#if defined(_XBOX360)
-   static const D3DVERTEXELEMENT VertexElements[] =
-   {
-      { 0, 0 * sizeof(float), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_POSITION, 0 },
-      { 0, 2 * sizeof(float), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 0 },
-      D3DDECL_END()
-   };
-
-   if (FAILED(d3dr->CreateVertexDeclaration(VertexElements, &pass->vertex_decl)))
-      return false;
-#endif
-
-   return true;
-}
-
 static bool renderchain_create_first_pass(void *data,
       const video_info_t *info)
 {
@@ -118,58 +79,6 @@ static bool renderchain_create_first_pass(void *data,
 
    if (!renderchain_init_shader_fvf(chain, chain))
       return false;
-
-   return true;
-}
-
-void renderchain_deinit(void *data)
-{
-}
-
-void renderchain_deinit_shader(void)
-{
-}
-
-bool renderchain_init_shader(void *data)
-{
-   const char *shader_path = NULL;
-   d3d_video_t        *d3d = (d3d_video_t*)data;
-   settings_t *settings    = config_get_ptr();
-
-   if (!d3d)
-      return false;
-
-#if defined(HAVE_HLSL)
-   RARCH_LOG("D3D]: Using HLSL shader backend.\n");
-   shader_path = settings->video.shader_path;
-   d3d->shader = &hlsl_backend;
-
-   if (!d3d->shader)
-      return false;
-
-   return d3d->shader->init(d3d, shader_path);
-#endif
-
-   return false;
-}
-
-bool renderchain_init(void *data,
-      const video_info_t *info)
-{
-   d3d_video_t *chain    = (d3d_video_t*)data;
-   LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)chain->dev;
-   global_t *global      = global_get_ptr();
-
-   chain->pixel_size     = info->rgb32 ? sizeof(uint32_t) : sizeof(uint16_t);
-
-   if (!renderchain_create_first_pass(chain, info))
-      return false;
-
-   if (global->console.screen.viewports.custom_vp.width == 0)
-      global->console.screen.viewports.custom_vp.width = chain->screen_width;
-
-   if (global->console.screen.viewports.custom_vp.height == 0)
-      global->console.screen.viewports.custom_vp.height = chain->screen_height;
 
    return true;
 }
@@ -321,10 +230,101 @@ static void renderchain_render_pass(void *data, const void *frame,
    renderchain_set_mvp(d3d, d3d->screen_width, d3d->screen_height, d3d->dev_rotation);
 }
 
+void renderchain_free(void *data)
+{
+   d3d_video_t *chain = (d3d_video_t*)data;
+
+   if (!chain)
+      return;
+
+   renderchain_clear(chain);
+#ifndef DONT_HAVE_STATE_TRACKER
+#ifndef _XBOX
+   if (chain->tracker)
+      state_tracker_free(chain->tracker);
+#endif
+#endif
+}
+
+bool renderchain_init_shader_fvf(void *data, void *pass_data)
+{
+   d3d_video_t *chain    = (d3d_video_t*)data;
+   d3d_video_t *pass     = (d3d_video_t*)data;
+   LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)chain->dev;
+
+   (void)pass_data;
+
+#if defined(_XBOX360)
+   static const D3DVERTEXELEMENT VertexElements[] =
+   {
+      { 0, 0 * sizeof(float), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_POSITION, 0 },
+      { 0, 2 * sizeof(float), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 0 },
+      D3DDECL_END()
+   };
+
+   if (FAILED(d3dr->CreateVertexDeclaration(VertexElements, &pass->vertex_decl)))
+      return false;
+#endif
+
+   return true;
+}
+
 void renderchain_set_final_viewport(void *data,
       void *renderchain_data, const void *viewport_data)
 {
    (void)data;
    (void)renderchain_data;
    (void)viewport_data;
+}
+
+void renderchain_deinit(void *data)
+{
+}
+
+void renderchain_deinit_shader(void)
+{
+}
+
+bool renderchain_init_shader(void *data)
+{
+   const char *shader_path = NULL;
+   d3d_video_t        *d3d = (d3d_video_t*)data;
+   settings_t *settings    = config_get_ptr();
+
+   if (!d3d)
+      return false;
+
+#if defined(HAVE_HLSL)
+   RARCH_LOG("D3D]: Using HLSL shader backend.\n");
+   shader_path = settings->video.shader_path;
+   d3d->shader = &hlsl_backend;
+
+   if (!d3d->shader)
+      return false;
+
+   return d3d->shader->init(d3d, shader_path);
+#endif
+
+   return false;
+}
+
+bool renderchain_init(void *data,
+      const video_info_t *info)
+{
+   d3d_video_t *chain    = (d3d_video_t*)data;
+   LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)chain->dev;
+   global_t *global      = global_get_ptr();
+
+   chain->pixel_size     = info->rgb32 ? sizeof(uint32_t) : sizeof(uint16_t);
+
+   if (!renderchain_create_first_pass(chain, info))
+      return false;
+
+   if (global->console.screen.viewports.custom_vp.width == 0)
+      global->console.screen.viewports.custom_vp.width = chain->screen_width;
+
+   if (global->console.screen.viewports.custom_vp.height == 0)
+      global->console.screen.viewports.custom_vp.height = chain->screen_height;
+
+   return true;
 }
