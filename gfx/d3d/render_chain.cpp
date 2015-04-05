@@ -755,7 +755,7 @@ void renderchain_free(void *data)
 
 void *renderchain_new(void)
 {
-   renderchain_t *renderchain = new renderchain_t();
+   renderchain_t *renderchain = (renderchain_t*)calloc(1, sizeof(*renderchain));
    if (!renderchain)
       return NULL;
 
@@ -796,10 +796,8 @@ void renderchain_deinit(void *data)
 {
    renderchain_t *renderchain = (renderchain_t*)data;
 
-   if (!renderchain)
-      return;
-
-   delete (renderchain_t *)renderchain;
+   if (renderchain)
+      free(renderchain);
 }
 
 static void renderchain_log_info(void *data, const void *info_data)

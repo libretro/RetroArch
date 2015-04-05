@@ -80,7 +80,6 @@ static void d3d_free_overlay(d3d_video_t *d3d, overlay_t *overlay);
 #ifdef _XBOX
 static void d3d_reinit_renderchain(void *data,
       const video_info_t *video);
-static void renderchain_free(void *data);
 #endif
 
 void d3d_make_d3dpp(void *data, const video_info_t *info,

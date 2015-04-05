@@ -18,6 +18,11 @@
 #include <string.h>
 #include <retro_inline.h>
 
+typdef struct xdk_renderchain
+{
+   void *empty;
+} xdk_renderchain_t;
+
 static void renderchain_set_mvp(void *data, unsigned vp_width,
       unsigned vp_height, unsigned rotation)
 {
@@ -217,6 +222,19 @@ void renderchain_free(void *data)
 
 void renderchain_deinit(void *data)
 {
+   xdk_renderchain_t *renderchain = (xdk_renderchain_t*)data;
+
+   if (renderchain)
+      free(renderchain);
+}
+
+void *renderchain_new(void)
+{
+   xdk_renderchain_t *renderchain = (xdk_renderchain_t*)calloc(1, sizeof(*renderchain));
+   if (!renderchain)
+      return NULL;
+
+   return renderchain;
 }
 
 void renderchain_deinit_shader(void)
