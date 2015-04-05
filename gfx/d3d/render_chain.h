@@ -169,10 +169,10 @@ void renderchain_log_info(void *data, const void *info_data);
 
 void renderchain_unbind_all(void *data);
 
-bool renderchain_compile_shaders(void *data, CGprogram *fPrg,
-      CGprogram *vPrg, const std::string &shader);
+bool renderchain_compile_shaders(void *data, void *fragment_data,
+      void *vertex_data, const std::string &shader);
 
-void renderchain_set_shaders(void *data, CGprogram *fPrg, CGprogram *vPrg);
+void renderchain_set_shaders(void *data, void *fragment_data, void *vertex_data);
 
 void renderchain_destroy_stock_shader(void *data);
 

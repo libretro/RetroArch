@@ -88,9 +88,11 @@ static INLINE CGparameter find_param_from_semantic(CGprogram prog,
    return find_param_from_semantic(param, sem);
 }
 
-bool renderchain_compile_shaders(void *data, CGprogram *fPrg,
-      CGprogram *vPrg, const std::string &shader)
+bool renderchain_compile_shaders(void *data, void *fragment_data,
+      void *vertex_data, const std::string &shader)
 {
+   CGprogram *fPrg            = (CGprogram*)fragment_data;
+   CGprogram *vPrg            = (CGprogram*)vertex_data;
    renderchain_t *chain       = (renderchain_t*)data;
    CGprofile vertex_profile   = cgD3D9GetLatestVertexProfile();
    CGprofile fragment_profile = cgD3D9GetLatestPixelProfile();
@@ -140,8 +142,11 @@ bool renderchain_compile_shaders(void *data, CGprogram *fPrg,
    return true;
 }
 
-void renderchain_set_shaders(void *data, CGprogram *fPrg, CGprogram *vPrg)
+void renderchain_set_shaders(void *data, void *fragment_data, void *vertex_data)
 {
+   CGprogram *fPrg = (CGprogram*)fragment_data;
+   CGprogram *vPrg = (CGprogram*)vertex_data;
+
    cgD3D9BindProgram(*fPrg);
    cgD3D9BindProgram(*vPrg);
 }
