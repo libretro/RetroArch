@@ -77,40 +77,40 @@ typedef struct ctr_video
 #define PRINTFPOS(X,Y) "\x1b["#X";"#Y"H"
 #define PRINTFPOS_STR(X,Y) "\x1b["X";"Y"H"
 
-static void ctr_set_frame_coords(ctr_vertex_t* v, int x, int y, int w, int h)
+static void ctr_set_frame_coords(ctr_vertex_t* v, int x0, int y0, int x1, int y1, int w, int h)
 {
-   v[0].x = x;
-   v[0].y = y;
+   v[0].x = x0;
+   v[0].y = y0;
    v[0].z = -1;
    v[0].u = 0;
    v[0].v = 0;
 
-   v[1].x = x + w;
-   v[1].y = y;
+   v[1].x = x1;
+   v[1].y = y0;
    v[1].z = -1;
    v[1].u = w;
    v[1].v = 0;
 
-   v[2].x = x + w;
-   v[2].y = y + h;
+   v[2].x = x1;
+   v[2].y = y1;
    v[2].z = -1;
    v[2].u = w;
    v[2].v = h;
 
-   v[3].x = x;
-   v[3].y = y;
+   v[3].x = x0;
+   v[3].y = y0;
    v[3].z = -1;
    v[3].u = 0;
    v[3].v = 0;
 
-   v[4].x = x + w;
-   v[4].y = y + h;
+   v[4].x = x1;
+   v[4].y = y1;
    v[4].z = -1;
    v[4].u = w;
    v[4].v = h;
 
-   v[5].x = x;
-   v[5].y = y + h;
+   v[5].x = x0;
+   v[5].y = y1;
    v[5].z = -1;
    v[5].u = 0;
    v[5].v = h;
@@ -144,7 +144,8 @@ static void* ctr_init(const video_info_t* video,
          linearMemAlign(ctr->texture_width * ctr->texture_height * sizeof(uint32_t), 128);
 
    ctr->frame_coords = linearAlloc(6 * sizeof(ctr_vertex_t));
-   ctr_set_frame_coords(ctr->frame_coords, 0, 0, CTR_TOP_FRAMEBUFFER_WIDTH, CTR_TOP_FRAMEBUFFER_HEIGHT);
+   ctr_set_frame_coords(ctr->frame_coords, 0, 0, CTR_TOP_FRAMEBUFFER_WIDTH, CTR_TOP_FRAMEBUFFER_HEIGHT,
+                        CTR_TOP_FRAMEBUFFER_WIDTH, CTR_TOP_FRAMEBUFFER_HEIGHT);
 
    ctr->menu.texture_width = 512;
    ctr->menu.texture_height = 512;
@@ -154,7 +155,8 @@ static void* ctr_init(const video_info_t* video,
          linearMemAlign(ctr->texture_width * ctr->texture_height * sizeof(uint16_t), 128);
 
    ctr->menu.frame_coords = linearAlloc(6 * sizeof(ctr_vertex_t));
-   ctr_set_frame_coords(ctr->menu.frame_coords, 40, 0, CTR_TOP_FRAMEBUFFER_WIDTH, CTR_TOP_FRAMEBUFFER_HEIGHT);
+   ctr_set_frame_coords(ctr->menu.frame_coords, 40, 0, CTR_TOP_FRAMEBUFFER_WIDTH - 40, CTR_TOP_FRAMEBUFFER_HEIGHT ,
+                        CTR_TOP_FRAMEBUFFER_WIDTH - 80, CTR_TOP_FRAMEBUFFER_HEIGHT);
 
 
 
@@ -315,6 +317,8 @@ static bool ctr_frame(void* data, const void* frame,
                      GPU_RGB565);
 
 
+      ctr_set_frame_coords(ctr->frame_coords, 0, 0, CTR_TOP_FRAMEBUFFER_WIDTH, CTR_TOP_FRAMEBUFFER_HEIGHT,
+                           width, height);
       GSPGPU_FlushDataCache(NULL, (u8*)ctr->frame_coords,
                             6 * sizeof(ctr_vertex_t));
       ctrGuSetAttributeBuffers(2,
