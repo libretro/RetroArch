@@ -69,7 +69,7 @@ void d3d_clear(LPDIRECT3DDEVICE dev,
 void d3d_lockrectangle_clear(void *data, 
       LPDIRECT3DTEXTURE tex,
       unsigned level, D3DLOCKED_RECT *lock_rect, RECT *rect,
-      unsigned flags);
+      unsigned rectangle_height, unsigned flags);
 
 void d3d_set_texture(LPDIRECT3DDEVICE dev, unsigned sampler,
       LPDIRECT3DTEXTURE tex);
