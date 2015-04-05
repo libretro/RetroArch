@@ -1810,7 +1810,7 @@ static bool d3d_set_shader(void *data,
    }
 
    std::string old_shader = d3d->shader_path;
-   d3d->shader_pat        = shader;
+   d3d->shader_path       = shader;
 
    if (!d3d_process_shader(d3d) || !d3d_restore(d3d))
    {
