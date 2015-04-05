@@ -120,6 +120,8 @@ static void frontend_ctr_deinit(void *data)
    global->log_file = NULL;
 #endif
 
+   wait_for_input();
+
    gfxExit();
    //   sdmcExit();
    //   fsExit();
@@ -134,13 +136,6 @@ static void frontend_ctr_shutdown(bool unused)
    (void)unused;
 }
 
-static int exit_callback(int arg1, int arg2, void *common)
-{
-   frontend_ctr_deinit(NULL);
-   frontend_ctr_shutdown(false);
-   return 0;
-}
-
 #define PRINTFPOS(X,Y) "\x1b["#X";"#Y"H"
 #define PRINTFPOS_STR(X,Y) "\x1b["X";"Y"H"
 static void frontend_ctr_init(void *data)
@@ -150,23 +145,10 @@ static void frontend_ctr_init(void *data)
    global_t *global   = global_get_ptr();
    global->verbosity = true;
 
-   gfxInitDefault();
+//   gfxInitDefault();
+   gfxInit(GSP_BGR8_OES,GSP_RGB565_OES,false);
    gfxSet3D(false);
    consoleInit(GFX_BOTTOM, NULL);
-
-//   consoleInit(GFX_BOTTOM, NULL);
-
-//   gfxInitDefault();
-//      gfxInit(GSP_RGBA8_OES,GSP_RGBA8_OES,false);
-
-//   gfxSet3D(false);
-
-//   consoleInit(GFX_BOTTOM, NULL);
-//   printf(PRINTFPOS(0,0)"3ds_test");
-//   printf(PRINTFPOS(0,1)"Press Start to exit.");
-
-//         gfxFlushBuffers();
-//         gfxSwapBuffers();
 #endif
 
 }
@@ -174,12 +156,12 @@ static void frontend_ctr_init(void *data)
 
 static int frontend_ctr_get_rating(void)
 {
-   return 4;
+   return 3;
 }
 bool select_pressed = false;
 void wait_for_input()
 {
-   printf("Press Start.\n\n\n\n");fflush(stdout);
+   printf("\n\nPress Start.\n\n");fflush(stdout);
    while(aptMainLoop())
    {
       hidScanInput();

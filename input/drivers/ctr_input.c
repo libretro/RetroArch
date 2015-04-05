@@ -17,7 +17,7 @@
 
 #include "../../general.h"
 #include "../../driver.h"
-
+#include "retroarch.h"
 
 static uint32_t kDown;
 static int16_t pad_state;
@@ -53,13 +53,16 @@ static void ctr_input_poll(void *data)
 
    *lifecycle_state &= ~((1ULL << RARCH_MENU_TOGGLE));
 
-   if (
-         (pad_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_L))
-         && (pad_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_R))
-         && (pad_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_SELECT))
-         && (pad_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_START))
-      )
-         *lifecycle_state |= (1ULL << RARCH_MENU_TOGGLE);
+   if(kDown & KEY_TOUCH)
+      *lifecycle_state |= (1ULL << RARCH_MENU_TOGGLE);
+
+   /* panic button */
+   if((kDown & KEY_START) &&
+      (kDown & KEY_SELECT) &&
+      (kDown & KEY_L) &&
+      (kDown & KEY_R))
+      rarch_main_command(RARCH_CMD_QUIT);
+
 }
 
 static int16_t ctr_input_state(void *data,

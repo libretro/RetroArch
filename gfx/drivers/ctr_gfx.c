@@ -13,14 +13,12 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/* using code the from GPU example in crtulib */
-
 #include <3ds.h>
 #include <stdio.h>
 #include <string.h>
 #include <malloc.h>
+#include "ctr_gu.h"
 #include "ctr_blit_shader_shbin.h"
-
 
 #include "../../general.h"
 #include "../../driver.h"
@@ -29,8 +27,45 @@
 
 #include "retroarch.h"
 
+#define CTR_TOP_FRAMEBUFFER_WIDTH    400
+#define CTR_TOP_FRAMEBUFFER_HEIGHT   240
+#define CTR_GPU_FRAMEBUFFER         ((void*)0x1F119400)
+#define CTR_GPU_DEPTHBUFFER         ((void*)0x1F370800)
+
+typedef struct
+{
+   s16 x, y, z;
+   s16 u, v;
+} ctr_vertex_t;
+
 typedef struct ctr_video
 {
+   struct
+   {
+      uint32_t* display_list;
+      int display_list_size;
+      void* texture_linear;
+      void* texture_swizzled;
+      int texture_width;
+      int texture_height;
+      float texture_scale[4];
+      ctr_vertex_t* frame_coords;
+   }menu;
+
+   uint32_t* display_list;
+   int display_list_size;
+   void* texture_linear;
+   void* texture_swizzled;
+   int texture_width;
+   int texture_height;
+
+   float vertex_scale[4];
+   float texture_scale[4];
+   ctr_vertex_t* frame_coords;
+
+   DVLB_s*         dvlb;
+   shaderProgram_s shader;
+
    bool rgb32;
    bool vsync;
    bool smooth;
@@ -38,206 +73,117 @@ typedef struct ctr_video
    unsigned rotation;
 } ctr_video_t;
 
-DVLB_s*         dvlb;
-shaderProgram_s shader;
-u32*            texData;
-u32*            texData2;
-
-//GPU framebuffer address
-u32*            gpuOut = (u32*)0x1F119400;
-//GPU depth buffer address
-u32*            gpuDOut = (u32*)0x1F370800;
-
-typedef struct
-{
-   struct
-   {
-      float x, y, z;
-   } position;
-   float texcoord[2];
-} vertex_s;
-
-
-u32  gpuCmdSize;
-u32* gpuCmd;
-u32* gpuCmdRight;
-
-
-u32* texture_bin;
-
-#define tex_w 512
-#define tex_h 512
-#define gpu_tex_w 512
-#define gpu_tex_h 512
-
-#define TEX_MAKE_SIZE(W,H)    (((u32)(W))|((u32)(H)<<16))
-#define tex_size              TEX_MAKE_SIZE(tex_w, tex_h)
-#define gpu_tex_size          TEX_MAKE_SIZE(gpu_tex_w, gpu_tex_h)
-
-#define texture_bin_size      (tex_w * tex_h * sizeof(*texture_bin))
-#define gpu_texture_bin_size  (gpu_tex_w * gpu_tex_h * 4)
-
-#define fbwidth  400
-#define fbheight 240
-
-#define CTR_MATRIX(X0,Y0,Z0,W0,X1,Y1,Z1,W1,X2,Y2,Z2,W2,X3,Y3,Z3,W3) {W0,Z0,Y0,X0,W1,Z1,Y1,X1,W2,Z2,Y2,X2,W3,Z3,Y3,X3}
-
-float proj_m[16] = CTR_MATRIX
-                   (
-                      0.0,           -2.0 / fbheight,  0.0,     1.0,
-                      -2.0 / fbwidth,  0.0,            0.0,     1.0,
-                      0.0,           0.0,            1.0,     0.0,
-                      1.0 / gpu_tex_w,             -1.0 / gpu_tex_h,           1.0,     1.0
-                   );
-
-
-
-
-const vertex_s  modelVboData[] =
-{
-   {{  40 + 0.0f,  0.0f, -1.0f}, {0.0f, 0.0f}},
-   {{  40 + 320,  0.0f, -1.0f}, {320, 0.0f}},
-   {{  40 + 320,  tex_h, -1.0f}, {320, tex_h}},
-
-   {{  40 + 0.0f,  0.0f, -1.0f}, {0.0f, 0.0f}},
-   {{  40 + 320,  tex_h, -1.0f}, {320, tex_h}},
-   {{  40 + 0.0f,  tex_h, -1.0f}, {0.0f, tex_h}}
-};
-
-void* vbo_buffer;
-
-//stolen from staplebutt
-void GPU_SetDummyTexEnv(u8 num)
-{
-   GPU_SetTexEnv(num,
-                 GPU_TEVSOURCES(GPU_PREVIOUS, 0, 0),
-                 GPU_TEVSOURCES(GPU_PREVIOUS, 0, 0),
-                 GPU_TEVOPERANDS(0, 0, 0),
-                 GPU_TEVOPERANDS(0, 0, 0),
-                 GPU_REPLACE,
-                 GPU_REPLACE,
-                 0xFFFFFFFF);
-}
-
-// topscreen
-void renderFrame(ctr_video_t* ctr)
-{
-   GPU_SetViewport((u32*)osConvertVirtToPhys((u32)gpuDOut),
-                   (u32*)osConvertVirtToPhys((u32)gpuOut), 0, 0, fbheight * 2, fbwidth);
-
-   GPU_DepthMap(-1.0f, 0.0f);
-   GPU_SetFaceCulling(GPU_CULL_NONE);
-   GPU_SetStencilTest(false, GPU_ALWAYS, 0x00, 0xFF, 0x00);
-   GPU_SetStencilOp(GPU_KEEP, GPU_KEEP, GPU_KEEP);
-   GPU_SetBlendingColor(0, 0, 0, 0);
-   //      GPU_SetDepthTestAndWriteMask(true, GPU_GREATER, GPU_WRITE_ALL);
-   GPU_SetDepthTestAndWriteMask(false, GPU_ALWAYS, GPU_WRITE_ALL);
-   //   GPU_SetDepthTestAndWriteMask(true, GPU_ALWAYS, GPU_WRITE_ALL);
-
-   GPUCMD_AddMaskedWrite(GPUREG_0062, 0x1, 0);
-   GPUCMD_AddWrite(GPUREG_0118, 0);
-
-   GPU_SetAlphaBlending(GPU_BLEND_ADD, GPU_BLEND_ADD, GPU_SRC_ALPHA,
-                        GPU_ONE_MINUS_SRC_ALPHA, GPU_SRC_ALPHA, GPU_ONE_MINUS_SRC_ALPHA);
-   GPU_SetAlphaTest(false, GPU_ALWAYS, 0x00);
-
-   GPU_SetTextureEnable(GPU_TEXUNIT0);
-
-   GPU_SetTexEnv(0,
-                 GPU_TEVSOURCES(GPU_TEXTURE0, GPU_PRIMARY_COLOR, GPU_PRIMARY_COLOR),
-                 GPU_TEVSOURCES(GPU_TEXTURE0, GPU_PRIMARY_COLOR, GPU_PRIMARY_COLOR),
-                 GPU_TEVOPERANDS(0, 0, 0),
-                 GPU_TEVOPERANDS(0, 0, 0),
-                 GPU_MODULATE, GPU_MODULATE,
-                 0xFFFFFFFF);
-   GPU_SetDummyTexEnv(1);
-   GPU_SetDummyTexEnv(2);
-   GPU_SetDummyTexEnv(3);
-   GPU_SetDummyTexEnv(4);
-   GPU_SetDummyTexEnv(5);
-
-   //texturing stuff
-   GPU_SetTexture(GPU_TEXUNIT0, (u32*)osConvertVirtToPhys((u32)texData), gpu_tex_w, gpu_tex_h,
-                  GPU_TEXTURE_MAG_FILTER(GPU_LINEAR) | GPU_TEXTURE_MIN_FILTER(GPU_LINEAR),
-                  ctr->menu_texture_enable?GPU_RGBA4:GPU_RGB565);
-
-   u32 bufferoffset = 0x00000000;
-   u64 bufferpermutations = 0x210;
-   u8 numattributes = 2;
-   GPU_SetAttributeBuffers(3, (u32*)osConvertVirtToPhys((u32)vbo_buffer),
-                           GPU_ATTRIBFMT(0, 3, GPU_FLOAT) | GPU_ATTRIBFMT(1, 2, GPU_FLOAT),
-                           0xFFC, 0x210, 1, &bufferoffset, &bufferpermutations, &numattributes);
-
-   GPU_DrawArray(GPU_TRIANGLES, sizeof(modelVboData) / sizeof(vertex_s));
-
-   GPU_FinishDrawing();
-}
-
-void gpu_init_calls(void)
-{
-   GPU_Init(NULL);
-   gpuCmdSize = 0x40000;
-   gpuCmd = (u32*)linearAlloc(gpuCmdSize * 4);
-   gpuCmdRight = (u32*)linearAlloc(gpuCmdSize * 4);
-   GPU_Reset(NULL, gpuCmd, gpuCmdSize);
-   dvlb = DVLB_ParseFile((u32*)ctr_blit_shader_shbin, ctr_blit_shader_shbin_size);
-   shaderProgramInit(&shader);
-   shaderProgramSetVsh(&shader, &dvlb->DVLE[0]);
-   shaderProgramUse(&shader);
-
-   // Flush the command buffer so that the shader upload gets executed
-   GPUCMD_Finalize();
-   GPUCMD_FlushAndRun(NULL);
-   gspWaitForP3D();
-
-   //create texture
-   texData = (u32*)linearMemAlign(gpu_texture_bin_size,
-                                  0x80); //textures need to be 0x80-byte aligned
-
-   texData2 = (u32*)linearMemAlign(texture_bin_size,
-                                   0x80); //textures need to be 0x80-byte aligned
-
-   memcpy(texData2, texture_bin, texture_bin_size);
-   vbo_buffer = linearAlloc(sizeof(modelVboData));
-   memcpy(vbo_buffer, (void*)modelVboData, sizeof(modelVboData));
-}
 
 #define PRINTFPOS(X,Y) "\x1b["#X";"#Y"H"
 #define PRINTFPOS_STR(X,Y) "\x1b["X";"Y"H"
+
+static void ctr_set_frame_coords(ctr_vertex_t* v, int x, int y, int w, int h)
+{
+   v[0].x = x;
+   v[0].y = y;
+   v[0].z = -1;
+   v[0].u = 0;
+   v[0].v = 0;
+
+   v[1].x = x + w;
+   v[1].y = y;
+   v[1].z = -1;
+   v[1].u = w;
+   v[1].v = 0;
+
+   v[2].x = x + w;
+   v[2].y = y + h;
+   v[2].z = -1;
+   v[2].u = w;
+   v[2].v = h;
+
+   v[3].x = x;
+   v[3].y = y;
+   v[3].z = -1;
+   v[3].u = 0;
+   v[3].v = 0;
+
+   v[4].x = x + w;
+   v[4].y = y + h;
+   v[4].z = -1;
+   v[4].u = w;
+   v[4].v = h;
+
+   v[5].x = x;
+   v[5].y = y + h;
+   v[5].z = -1;
+   v[5].u = 0;
+   v[5].v = h;
+
+
+}
 
 static void* ctr_init(const video_info_t* video,
                       const input_driver_t** input, void** input_data)
 {
    void* ctrinput = NULL;
-   global_t* global         = global_get_ptr();
-   ctr_video_t* ctr        = (ctr_video_t*)calloc(1, sizeof(ctr_video_t));
+   ctr_video_t* ctr = (ctr_video_t*)linearAlloc(sizeof(ctr_video_t));
 
    if (!ctr)
       return NULL;
 
-   printf("%s@%s:%d.\n",__FUNCTION__, __FILE__, __LINE__);fflush(stdout);
-
 //   gfxInitDefault();
 //   gfxSet3D(false);
-   texture_bin = (typeof(texture_bin))malloc(texture_bin_size);
-   int i, j;
-   for (j = 0; j < tex_h; j++)
-   {
-      for (i = 0; i < tex_w; i++)
-      {
-         if ((i & 0x8) || (j & 0x8))
-            texture_bin[i + j * tex_w] =  0x0000FFFF;
-         else
-            texture_bin[i + j * tex_w] =  0xFFFFFFFF;
 
-         if (i > 64)
-            texture_bin[i + j * tex_w] =  0xFF0000FF;
+   memset(ctr, 0, sizeof(ctr_video_t));
 
-      }
+   ctr->display_list_size = 0x40000;
+   ctr->display_list = linearAlloc(ctr->display_list_size * sizeof(uint32_t));
+   GPU_Reset(NULL, ctr->display_list, ctr->display_list_size);
 
-   }
+   ctr->texture_width = 512;
+   ctr->texture_height = 512;
+   ctr->texture_linear =
+         linearMemAlign(ctr->texture_width * ctr->texture_height * sizeof(uint32_t), 128);
+   ctr->texture_swizzled =
+         linearMemAlign(ctr->texture_width * ctr->texture_height * sizeof(uint32_t), 128);
 
-   gpu_init_calls();
+   ctr->frame_coords = linearAlloc(6 * sizeof(ctr_vertex_t));
+   ctr_set_frame_coords(ctr->frame_coords, 0, 0, CTR_TOP_FRAMEBUFFER_WIDTH, CTR_TOP_FRAMEBUFFER_HEIGHT);
+
+   ctr->menu.texture_width = 512;
+   ctr->menu.texture_height = 512;
+   ctr->menu.texture_linear =
+         linearMemAlign(ctr->texture_width * ctr->texture_height * sizeof(uint16_t), 128);
+   ctr->menu.texture_swizzled =
+         linearMemAlign(ctr->texture_width * ctr->texture_height * sizeof(uint16_t), 128);
+
+   ctr->menu.frame_coords = linearAlloc(6 * sizeof(ctr_vertex_t));
+   ctr_set_frame_coords(ctr->menu.frame_coords, 40, 0, CTR_TOP_FRAMEBUFFER_WIDTH, CTR_TOP_FRAMEBUFFER_HEIGHT);
+
+
+
+   ctr->vertex_scale[0] = 1.0;
+   ctr->vertex_scale[1] = 1.0;
+   ctr->vertex_scale[2] = -2.0 / CTR_TOP_FRAMEBUFFER_WIDTH;
+   ctr->vertex_scale[3] = -2.0 / CTR_TOP_FRAMEBUFFER_HEIGHT;
+
+   ctr->texture_scale[0] = 1.0;
+   ctr->texture_scale[1] = 1.0;
+   ctr->texture_scale[2] = -1.0 / ctr->texture_height;
+   ctr->texture_scale[3] = 1.0 / ctr->texture_width;
+
+   ctr->menu.texture_scale[0] = 1.0;
+   ctr->menu.texture_scale[1] = 1.0;
+   ctr->menu.texture_scale[2] = -1.0 / ctr->texture_height;
+   ctr->menu.texture_scale[3] = 1.0 / ctr->texture_width;
+
+
+   ctr->dvlb = DVLB_ParseFile((u32*)ctr_blit_shader_shbin, ctr_blit_shader_shbin_size);
+   shaderProgramInit(&ctr->shader);
+   shaderProgramSetVsh(&ctr->shader, &ctr->dvlb->DVLE[0]);
+   shaderProgramUse(&ctr->shader);
+
+
+   GPUCMD_Finalize();
+   GPUCMD_FlushAndRun(NULL);
+   gspWaitForEvent(GSPEVENT_P3D, false);
+
 
    if (input && input_data)
    {
@@ -246,7 +192,6 @@ static void* ctr_init(const video_info_t* video,
       *input_data = ctrinput;
    }
 
-   printf("%s@%s:%d.\n",__FUNCTION__, __FILE__, __LINE__);fflush(stdout);
    return ctr;
 }
 
@@ -256,9 +201,8 @@ static bool ctr_frame(void* data, const void* frame,
    ctr_video_t* ctr = (ctr_video_t*)data;
    settings_t* settings = config_get_ptr();
 
-//   int i;
    static uint64_t currentTick,lastTick;
-   static float fps=0.0;
+   static float fps = 0.0;
    static int total_frames = 0;
    static int frames = 0;
 
@@ -291,72 +235,157 @@ static bool ctr_frame(void* data, const void* frame,
       frames = 0;
    }
 
-   printf("fps: %8.4f frames: %i current tick: %llu\r", fps, total_frames++, currentTick);
+   printf("fps: %8.4f frames: %i\r", fps, total_frames++);
    fflush(stdout);
 
-//   gfxFlushBuffers();
-//   gspWaitForEvent(GSPEVENT_VBlank0, true);
-
-   u32 backgroundColor = 0x00000000;
-
    GPUCMD_SetBufferOffset(0);
-   GPU_SetFloatUniform(GPU_VERTEX_SHADER,
-                       shaderInstanceGetUniformLocation(shader.vertexShader, "projection"),
-                       (u32*)proj_m, 4);
+   ctrGuSetVertexShaderFloatUniform(0, ctr->vertex_scale, 1);
 
 
 
-   if(!ctr->menu_texture_enable && frame)
+   GPU_SetViewport(VIRT_TO_PHYS(CTR_GPU_DEPTHBUFFER),
+                   VIRT_TO_PHYS(CTR_GPU_FRAMEBUFFER),
+                   0, 0, CTR_TOP_FRAMEBUFFER_HEIGHT, CTR_TOP_FRAMEBUFFER_WIDTH);
+
+//      GPU_SetViewport(NULL,
+//                      VIRT_TO_PHYS(CTR_GPU_FRAMEBUFFER),
+//                      0, 0, CTR_TOP_FRAMEBUFFER_HEIGHT, CTR_TOP_FRAMEBUFFER_WIDTH);
+
+   GPU_DepthMap(-1.0f, 0.0f);
+   GPU_SetFaceCulling(GPU_CULL_NONE);
+   GPU_SetStencilTest(false, GPU_ALWAYS, 0x00, 0xFF, 0x00);
+   GPU_SetStencilOp(GPU_KEEP, GPU_KEEP, GPU_KEEP);
+   GPU_SetBlendingColor(0, 0, 0, 0);
+//      GPU_SetDepthTestAndWriteMask(true, GPU_GREATER, GPU_WRITE_ALL);
+   GPU_SetDepthTestAndWriteMask(false, GPU_ALWAYS, GPU_WRITE_ALL);
+   //   GPU_SetDepthTestAndWriteMask(true, GPU_ALWAYS, GPU_WRITE_ALL);
+
+   GPUCMD_AddMaskedWrite(GPUREG_0062, 0x1, 0);
+   GPUCMD_AddWrite(GPUREG_0118, 0);
+
+   GPU_SetAlphaBlending(GPU_BLEND_ADD, GPU_BLEND_ADD,
+                        GPU_SRC_ALPHA, GPU_ONE_MINUS_SRC_ALPHA,
+                        GPU_SRC_ALPHA, GPU_ONE_MINUS_SRC_ALPHA);
+   GPU_SetAlphaTest(false, GPU_ALWAYS, 0x00);
+
+   GPU_SetTextureEnable(GPU_TEXUNIT0);
+
+   GPU_SetTexEnv(0,
+                 GPU_TEVSOURCES(GPU_TEXTURE0, GPU_PRIMARY_COLOR, 0),
+                 GPU_TEVSOURCES(GPU_TEXTURE0, GPU_PRIMARY_COLOR, 0),
+                 GPU_TEVOPERANDS(0, 0, 0),
+                 GPU_TEVOPERANDS(0, 0, 0),
+                 GPU_MODULATE, GPU_MODULATE,
+                 0xFFFFFFFF);
+
+   GPU_SetTexEnv(1, GPU_PREVIOUS,GPU_PREVIOUS, 0, 0, 0, 0, 0);
+   GPU_SetTexEnv(2, GPU_PREVIOUS,GPU_PREVIOUS, 0, 0, 0, 0, 0);
+   GPU_SetTexEnv(3, GPU_PREVIOUS,GPU_PREVIOUS, 0, 0, 0, 0, 0);
+   GPU_SetTexEnv(4, GPU_PREVIOUS,GPU_PREVIOUS, 0, 0, 0, 0, 0);
+   GPU_SetTexEnv(5, GPU_PREVIOUS,GPU_PREVIOUS, 0, 0, 0, 0, 0);
+
+
+   if(frame)
    {
       int i;
-      uint8_t* dst = (uint8_t*)texData2;
+      uint16_t* dst = (uint16_t*)ctr->texture_linear;
       const uint8_t* src = frame;
-      if (width > tex_w)
-         width = tex_w;
-      if (height > tex_h)
-         height = tex_h;
+      if (width > ctr->texture_width)
+         width = ctr->texture_width;
+      if (height > ctr->texture_height)
+         height = ctr->texture_height;
       for (i = 0; i < height; i++)
       {
-         memcpy(dst, src, width*2);
-         dst += tex_w*2;
+         memcpy(dst, src, width * sizeof(uint16_t));
+         dst += ctr->texture_width;
          src += pitch;
       }
+      GSPGPU_FlushDataCache(NULL, ctr->texture_linear,
+                            ctr->texture_width * ctr->texture_height * sizeof(uint16_t));
+
+      ctrGuCopyImage(ctr->texture_linear, ctr->texture_width, ctr->menu.texture_height, CTRGU_RGB565, false,
+                     ctr->texture_swizzled, ctr->texture_width, CTRGU_RGB565,  true);
+
+      gspWaitForEvent(GSPEVENT_PPF, false);
+
+
+      ctrGuSetTexture(GPU_TEXUNIT0, VIRT_TO_PHYS(ctr->texture_swizzled), ctr->texture_width, ctr->texture_height,
+                     GPU_TEXTURE_MAG_FILTER(GPU_LINEAR) | GPU_TEXTURE_MIN_FILTER(GPU_LINEAR) |
+                     GPU_TEXTURE_WRAP_S(GPU_CLAMP_TO_EDGE) | GPU_TEXTURE_WRAP_T(GPU_CLAMP_TO_EDGE),
+                     GPU_RGB565);
+
+
+      GSPGPU_FlushDataCache(NULL, (u8*)ctr->frame_coords,
+                            6 * sizeof(ctr_vertex_t));
+      ctrGuSetAttributeBuffers(2,
+                               VIRT_TO_PHYS(ctr->frame_coords),
+                               CTRGU_ATTRIBFMT(GPU_SHORT, 3) << 0 |
+                               CTRGU_ATTRIBFMT(GPU_SHORT, 2) << 4,
+                               sizeof(ctr_vertex_t));
+
+      ctrGuSetVertexShaderFloatUniform(1, ctr->texture_scale, 1);
+
+      GPU_DrawArray(GPU_TRIANGLES, 6);
+
 
    }
 
-   GSPGPU_FlushDataCache(NULL, (u8*)texData2, texture_bin_size);
-   GX_SetDisplayTransfer(NULL, (u32*)texData2, tex_size, (u32*)texData, gpu_tex_size,
-                         0x3302); // rgb32=0x0 rgb32=0x0 ??=0x0 linear2swizzeled=0x2
-   gspWaitForPPF();
+   if (ctr->menu_texture_enable)
+   {
 
-   renderFrame(ctr);
+      GSPGPU_FlushDataCache(NULL, ctr->menu.texture_linear,
+                            ctr->menu.texture_width * ctr->menu.texture_height * sizeof(uint16_t));
+
+      ctrGuCopyImage(ctr->menu.texture_linear, ctr->menu.texture_width, ctr->menu.texture_height, CTRGU_RGBA4444,false,
+                     ctr->menu.texture_swizzled, ctr->menu.texture_width, CTRGU_RGBA4444,  true);
+
+      gspWaitForEvent(GSPEVENT_PPF, false);
+
+
+      ctrGuSetTexture(GPU_TEXUNIT0, VIRT_TO_PHYS(ctr->menu.texture_swizzled), ctr->menu.texture_width, ctr->menu.texture_height,
+                     GPU_TEXTURE_MAG_FILTER(GPU_LINEAR) | GPU_TEXTURE_MIN_FILTER(GPU_LINEAR) |
+                     GPU_TEXTURE_WRAP_S(GPU_CLAMP_TO_EDGE) | GPU_TEXTURE_WRAP_T(GPU_CLAMP_TO_EDGE),
+                     GPU_RGBA4);
+
+
+      GSPGPU_FlushDataCache(NULL, (u8*)ctr->menu.frame_coords,
+                            6 * sizeof(ctr_vertex_t));
+      ctrGuSetAttributeBuffers(2,
+                               VIRT_TO_PHYS(ctr->menu.frame_coords),
+                               CTRGU_ATTRIBFMT(GPU_SHORT, 3) << 0 |
+                               CTRGU_ATTRIBFMT(GPU_SHORT, 2) << 4,
+                               sizeof(ctr_vertex_t));
+
+      ctrGuSetVertexShaderFloatUniform(1, ctr->menu.texture_scale, 1);
+
+      GPU_DrawArray(GPU_TRIANGLES, 6);
+
+
+   }
+
+   GPU_FinishDrawing();
+
+
    GPUCMD_Finalize();
-
-//   for (i = 0; i < 16; i++)
-//      printf(PRINTFPOS_STR("%i", "%i")"%f", i >> 2, 10 * (i & 0x3), proj_m[i]);
-
-//   printf(PRINTFPOS(20, 10)"frames: %i", frames++);
-
-   //draw the frame
    GPUCMD_FlushAndRun(NULL);
-   gspWaitForP3D();
+   gspWaitForEvent(GSPEVENT_P3D, false);
 
-   //clear the screen
-   GX_SetDisplayTransfer(NULL, (u32*)gpuOut, 0x019001E0,
-                         (u32*)gfxGetFramebuffer(GFX_TOP, GFX_LEFT, NULL, NULL), 0x019001E0, 0x01001000);
-   gspWaitForPPF();
+   ctrGuDisplayTransfer(CTR_GPU_FRAMEBUFFER, 240,400, CTRGU_RGBA8,
+                        gfxGetFramebuffer(GFX_TOP, GFX_LEFT, NULL, NULL), 240,400,CTRGU_RGB8, CTRGU_MULTISAMPLE_NONE);
 
-   //clear the screen
-   GX_SetMemoryFill(NULL, (u32*)gpuOut, backgroundColor, (u32*)&gpuOut[0x2EE00],
-                    0x201, (u32*)gpuDOut, 0x00000000, (u32*)&gpuDOut[0x2EE00], 0x201);
-   gspWaitForPSC0();
+   gspWaitForEvent(GSPEVENT_PPF, false);
+
+   GX_SetMemoryFill(NULL, (u32*)CTR_GPU_FRAMEBUFFER, 0x00000000,
+                    (u32*)(CTR_GPU_FRAMEBUFFER + CTR_TOP_FRAMEBUFFER_WIDTH * CTR_TOP_FRAMEBUFFER_HEIGHT * sizeof(uint32_t)),
+                    0x201, (u32*)CTR_GPU_DEPTHBUFFER, 0x00000000,
+                    (u32*)(CTR_GPU_DEPTHBUFFER + CTR_TOP_FRAMEBUFFER_WIDTH * CTR_TOP_FRAMEBUFFER_HEIGHT * sizeof(uint32_t)),
+                    0x201);
+
+   gspWaitForEvent(GSPEVENT_PSC0, false);
    gfxSwapBuffersGpu();
 
-//   gspWaitForEvent(GSPEVENT_VBlank0, true);
-
-
-   //      gfxFlushBuffers();
-   //      gfxSwapBuffers();
+//   if (ctr->vsync)
+//      gspWaitForEvent(GSPEVENT_VBlank0, true);
 
    return true;
 }
@@ -401,37 +430,43 @@ static void ctr_free(void* data)
    if (!ctr)
       return;
 
-   printf("%s@%s:%d.\n",__FUNCTION__, __FILE__, __LINE__);fflush(stdout);
-   shaderProgramFree(&shader);
-   DVLB_Free(dvlb);
-   linearFree(gpuCmd);
-   linearFree(gpuCmdRight);
-   linearFree(texData);
-   linearFree(texData2);
-   linearFree(vbo_buffer);
-   free(texture_bin);
-//   gfxExit();
-
-   free(ctr);
+   shaderProgramFree(&ctr->shader);
+   DVLB_Free(ctr->dvlb);
+   linearFree(ctr->display_list);
+   linearFree(ctr->texture_linear);
+   linearFree(ctr->texture_swizzled);
+   linearFree(ctr->frame_coords);
+   linearFree(ctr->menu.texture_linear);
+   linearFree(ctr->menu.texture_swizzled);
+   linearFree(ctr->menu.frame_coords);
+   linearFree(ctr);
+   //   gfxExit();
 }
 
 static void ctr_set_texture_frame(void* data, const void* frame, bool rgb32,
                                   unsigned width, unsigned height, float alpha)
 {
-   ctr_video_t* ctr = (ctr_video_t*)data;
-
    int i;
-   uint8_t* dst = (uint8_t*)texData2;
-   const uint8_t* src = frame;
+   ctr_video_t* ctr = (ctr_video_t*)data;
+   uint16_t* dst = (uint16_t*)ctr->menu.texture_linear;
+   const uint16_t* src = frame;
+   int line_width = width;
+
+   (void)rgb32;
+   (void)alpha;
+
+   if (line_width > ctr->menu.texture_width)
+      line_width = ctr->menu.texture_width;
+
+   if (height > (unsigned)ctr->menu.texture_height)
+      height = (unsigned)ctr->menu.texture_height;
+
    for (i = 0; i < height; i++)
    {
-      memcpy(dst, src, width*2);
-      dst += tex_w*2;
-      src += width*2;
+      memcpy(dst, src, line_width * sizeof(uint16_t));
+      dst += ctr->menu.texture_width;
+      src += width;
    }
-
-
-
 }
 
 static void ctr_set_texture_enable(void* data, bool state, bool full_screen)

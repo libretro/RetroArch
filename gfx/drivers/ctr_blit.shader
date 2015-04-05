@@ -1,39 +1,33 @@
-; setup constants
-   .const c20, 0.0, 1.0, 0.0, 1.0
+	.const c20, 0.0, 1.0, 0.0, 1.0
 
-; setup outmap
+;	.in v0, vertex
+;	.in v1, texCoord
+
 	.out o0, result.position, 0xF
 	.out o1, result.color, 0xF
 	.out o2, result.texcoord0, 0x3
 
-; setup uniform map (not required)
-	.uniform c0, c3, projection
+;	.uniform c0, c0, vertexScale
+;	.uniform c1, c1, textureScale
 
-   .vsh vmain, end_vmain
+	.vsh vmain, end_vmain
 
 ;code
 	vmain:
-		mov r0, v0 (0x4)
-		mov r0, c20 (0x3)
-		dp4 o0, c0, r0 (0x0)
-		dp4 o0, c1, r0 (0x1)
-		dp4 o0, c2, r0 (0x2)
-		mov o0, c20 (0x3)
-		mov o1, c20 (0x5)
-		;mov o2, v1 (0x6)
-		mul r0, c3, v1 (0x6)
-		add o2, c20, r0 (0x7)
-		flush
+		mul r0, c0, v0 (0x0)
+		add o0, c20, r0 (0x1)
+		mov o0, c20 (0x2)
+		mov o1, c20 (0x3)
+		mul r0, c1, v1 (0x4)
+		add o2, c20, r0 (0x5)
 		nop
 		end
 	end_vmain:
 
 ;operand descriptors
-	.opdesc x___, xyzw, xyzw ; 0x0
-	.opdesc _y__, xyzw, xyzw ; 0x1
-	.opdesc __z_, xyzw, xyzw ; 0x2
-	.opdesc ___w, xyzw, xyzw ; 0x3
-	.opdesc xyz_, xyzw, xyzw ; 0x4
-	.opdesc xyzw, wwww, wwww ; 0x5
-	.opdesc xyzw, xyzw, xyzw ; 0x6
-	.opdesc xyzw, xyzz, xyzw ; 0x7
+	.opdesc xyz_, xyzw, yxzw ; 0x0
+	.opdesc xyz_, yyzw, xyzw ; 0x1
+	.opdesc ___w, xyzw, xyzw ; 0x2
+	.opdesc xyzw, wwww, wwww ; 0x3
+	.opdesc xyzw, xyzw, xyzw ; 0x4
+	.opdesc xyzw, xyzw, xyzw ; 0x5
