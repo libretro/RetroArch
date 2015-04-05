@@ -36,7 +36,6 @@ static void renderchain_free(void *data)
       return;
 
    renderchain_clear(chain);
-   //renderchain_destroy_stock_shader(chain);
 #ifndef DONT_HAVE_STATE_TRACKER
 #ifndef _XBOX
    if (chain->tracker)

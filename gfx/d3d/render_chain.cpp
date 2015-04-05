@@ -252,7 +252,7 @@ void renderchain_set_shaders(void *data, void *fragment_data, void *vertex_data)
    cgD3D9BindProgram(*vPrg);
 }
 
-void renderchain_destroy_stock_shader(void *data)
+static void renderchain_destroy_stock_shader(void *data)
 {
    renderchain_t *chain = (renderchain_t*)data;
 
@@ -282,7 +282,7 @@ void renderchain_destroy_shader(void *data, int i)
 #endif
 }
 
-void renderchain_set_shader_mvp(void *data, void *shader_data, void *matrix_data)
+static void renderchain_set_shader_mvp(void *data, void *shader_data, void *matrix_data)
 {
    CGprogram              *vPrg = (CGprogram*)shader_data;
    const D3DXMATRIX     *matrix = (const D3DXMATRIX*)matrix_data;
@@ -329,8 +329,7 @@ void renderchain_set_shader_params(void *data, void *pass_data,
    set_cg_param(pass->vPrg, "IN.frame_count", frame_cnt);
 }
 
-
-void renderchain_bind_tracker(void *data, void *pass_data, unsigned pass_index)
+static void renderchain_bind_tracker(void *data, void *pass_data, unsigned pass_index)
 {
    unsigned i;
    Pass           *pass  = (Pass*)pass_data;
@@ -496,7 +495,7 @@ bool renderchain_init_shader_fvf(void *data, void *pass_data)
    return true;
 }
 
-void renderchain_bind_orig(void *data, void *pass_data)
+static void renderchain_bind_orig(void *data, void *pass_data)
 {
    unsigned index;
    CGparameter param;
@@ -537,7 +536,7 @@ void renderchain_bind_orig(void *data, void *pass_data)
    }
 }
 
-void renderchain_bind_prev(void *data, void *pass_data)
+static void renderchain_bind_prev(void *data, void *pass_data)
 {
    unsigned i, index;
    char attr_texture[64], attr_input_size[64], attr_tex_size[64], attr_coord[64];
@@ -627,7 +626,7 @@ static void renderchain_add_lut(renderchain_t *chain,
    chain->bound_tex.push_back(index);
 }
 
-void renderchain_bind_luts(void *data, void *pass_data)
+static void renderchain_bind_luts(void *data, void *pass_data)
 {
    unsigned i, index;
    Pass           *pass = (Pass*)pass_data;
@@ -658,7 +657,7 @@ void renderchain_bind_luts(void *data, void *pass_data)
    }
 }
 
-void renderchain_bind_pass(void *data, void *pass_data, unsigned pass_index)
+static void renderchain_bind_pass(void *data, void *pass_data, unsigned pass_index)
 {
    unsigned i, index;
    Pass           *pass = (Pass*)pass_data;
@@ -784,6 +783,51 @@ void renderchain_deinit(void *data)
       return;
 
    delete (renderchain_t *)renderchain;
+}
+
+static void renderchain_log_info(void *data, const void *info_data)
+{
+   const LinkInfo *info = (const LinkInfo*)info_data;
+   RARCH_LOG("[D3D]: Render pass info:\n");
+   RARCH_LOG("\tTexture width: %u\n", info->tex_w);
+   RARCH_LOG("\tTexture height: %u\n", info->tex_h);
+
+   RARCH_LOG("\tScale type (X): ");
+
+   switch (info->pass->fbo.type_x)
+   {
+      case RARCH_SCALE_INPUT:
+         RARCH_LOG("Relative @ %fx\n", info->pass->fbo.scale_x);
+         break;
+
+      case RARCH_SCALE_VIEWPORT:
+         RARCH_LOG("Viewport @ %fx\n", info->pass->fbo.scale_x);
+         break;
+
+      case RARCH_SCALE_ABSOLUTE:
+         RARCH_LOG("Absolute @ %u px\n", info->pass->fbo.abs_x);
+         break;
+   }
+
+   RARCH_LOG("\tScale type (Y): ");
+
+   switch (info->pass->fbo.type_y)
+   {
+      case RARCH_SCALE_INPUT:
+         RARCH_LOG("Relative @ %fx\n", info->pass->fbo.scale_y);
+         break;
+
+      case RARCH_SCALE_VIEWPORT:
+         RARCH_LOG("Viewport @ %fx\n", info->pass->fbo.scale_y);
+         break;
+
+      case RARCH_SCALE_ABSOLUTE:
+         RARCH_LOG("Absolute @ %u px\n", info->pass->fbo.abs_y);
+         break;
+   }
+
+   RARCH_LOG("\tBilinear filter: %s\n",
+         info->pass->filter == RARCH_FILTER_LINEAR ? "true" : "false");
 }
 
 bool renderchain_init(void *data, const video_info_t *video_info,
@@ -1053,6 +1097,80 @@ void renderchain_end_render(void *data)
    chain->prev.ptr                          = (chain->prev.ptr + 1) & TEXTURESMASK;
 }
 
+static void renderchain_set_vertices(
+	  void *data, void *pass_data,
+      unsigned width, unsigned height,
+      unsigned out_width, unsigned out_height,
+      unsigned vp_width, unsigned vp_height,
+      unsigned rotation)
+{
+   Pass          *pass  = (Pass*)pass_data;
+   renderchain_t *chain = (renderchain_t*)data;
+   const LinkInfo *info = (const LinkInfo*)&pass->info;
+
+   if (pass->last_width != width || pass->last_height != height)
+   {
+      Vertex vert[4];
+      unsigned i;
+      void *verts       = NULL;
+      float _u          = float(width)  / info->tex_w;
+      float _v          = float(height) / info->tex_h;
+
+      pass->last_width  = width;
+      pass->last_height = height;
+
+      for (i = 0; i < 4; i++)
+      {
+         vert[i].z      = 0.5f;
+         vert[i].r      = vert[i].g = vert[i].b = vert[i].a = 1.0f;
+      }
+
+      vert[0].x         = 0.0f;
+      vert[1].x         = out_width;
+      vert[2].x         = 0.0f;
+      vert[3].x         = out_width;
+      vert[0].y         = out_height;
+      vert[1].y         = out_height;
+      vert[2].y         = 0.0f;
+      vert[3].y         = 0.0f;
+
+      vert[0].u         = 0.0f;
+      vert[1].u         = _u;
+      vert[2].u         = 0.0f;
+      vert[3].u         = _u;
+      vert[0].v         = 0.0f;
+      vert[1].v         = 0.0f;
+      vert[2].v         = _v;
+      vert[3].v         = _v;
+
+      vert[0].lut_u     = 0.0f;
+      vert[1].lut_u     = 1.0f;
+      vert[2].lut_u     = 0.0f;
+      vert[3].lut_u     = 1.0f;
+      vert[0].lut_v     = 0.0f;
+      vert[1].lut_v     = 0.0f;
+      vert[2].lut_v     = 1.0f;
+      vert[3].lut_v     = 1.0f;
+
+      /* Align texels and vertices. */
+      for (i = 0; i < 4; i++)
+      {
+         vert[i].x     -= 0.5f;
+         vert[i].y     += 0.5f;
+      }
+
+      verts             = d3d_vertex_buffer_lock(pass->vertex_buf);
+      memcpy(verts, vert, sizeof(vert));
+      d3d_vertex_buffer_unlock(pass->vertex_buf);
+   }
+
+   renderchain_set_mvp(chain, pass->vPrg, vp_width, vp_height, rotation);
+   renderchain_set_shader_params(chain, pass,
+         width, height,
+         info->tex_w, info->tex_h,
+         vp_width, vp_height);
+}
+
 bool renderchain_render(void *chain_data, const void *data,
       unsigned width, unsigned height, unsigned pitch, unsigned rotation)
 {
@@ -1215,79 +1333,6 @@ bool renderchain_create_first_pass(void *data, const void *info_data,
    return true;
 }
 
-void renderchain_set_vertices(
-	  void *data, void *pass_data,
-      unsigned width, unsigned height,
-      unsigned out_width, unsigned out_height,
-      unsigned vp_width, unsigned vp_height,
-      unsigned rotation)
-{
-   Pass          *pass  = (Pass*)pass_data;
-   renderchain_t *chain = (renderchain_t*)data;
-   const LinkInfo *info = (const LinkInfo*)&pass->info;
-
-   if (pass->last_width != width || pass->last_height != height)
-   {
-      Vertex vert[4];
-      unsigned i;
-      void *verts       = NULL;
-      float _u          = float(width)  / info->tex_w;
-      float _v          = float(height) / info->tex_h;
-
-      pass->last_width  = width;
-      pass->last_height = height;
-
-      for (i = 0; i < 4; i++)
-      {
-         vert[i].z      = 0.5f;
-         vert[i].r      = vert[i].g = vert[i].b = vert[i].a = 1.0f;
-      }
-
-      vert[0].x         = 0.0f;
-      vert[1].x         = out_width;
-      vert[2].x         = 0.0f;
-      vert[3].x         = out_width;
-      vert[0].y         = out_height;
-      vert[1].y         = out_height;
-      vert[2].y         = 0.0f;
-      vert[3].y         = 0.0f;
-
-      vert[0].u         = 0.0f;
-      vert[1].u         = _u;
-      vert[2].u         = 0.0f;
-      vert[3].u         = _u;
-      vert[0].v         = 0.0f;
-      vert[1].v         = 0.0f;
-      vert[2].v         = _v;
-      vert[3].v         = _v;
-
-      vert[0].lut_u     = 0.0f;
-      vert[1].lut_u     = 1.0f;
-      vert[2].lut_u     = 0.0f;
-      vert[3].lut_u     = 1.0f;
-      vert[0].lut_v     = 0.0f;
-      vert[1].lut_v     = 0.0f;
-      vert[2].lut_v     = 1.0f;
-      vert[3].lut_v     = 1.0f;
-
-      /* Align texels and vertices. */
-      for (i = 0; i < 4; i++)
-      {
-         vert[i].x     -= 0.5f;
-         vert[i].y     += 0.5f;
-      }
-
-      verts             = d3d_vertex_buffer_lock(pass->vertex_buf);
-      memcpy(verts, vert, sizeof(vert));
-      d3d_vertex_buffer_unlock(pass->vertex_buf);
-   }
-
-   renderchain_set_mvp(chain, pass->vPrg, vp_width, vp_height, rotation);
-   renderchain_set_shader_params(chain, pass,
-         width, height,
-         info->tex_w, info->tex_h,
-         vp_width, vp_height);
-}
 
 void renderchain_set_viewport(void *data, void *viewport_data)
 {
@@ -1453,48 +1498,4 @@ void renderchain_render_pass(void *data, void *pass_data, unsigned pass_index)
    renderchain_unbind_all(chain);
 }
 
-void renderchain_log_info(void *data, const void *info_data)
-{
-   const LinkInfo *info = (const LinkInfo*)info_data;
-   RARCH_LOG("[D3D]: Render pass info:\n");
-   RARCH_LOG("\tTexture width: %u\n", info->tex_w);
-   RARCH_LOG("\tTexture height: %u\n", info->tex_h);
-
-   RARCH_LOG("\tScale type (X): ");
-
-   switch (info->pass->fbo.type_x)
-   {
-      case RARCH_SCALE_INPUT:
-         RARCH_LOG("Relative @ %fx\n", info->pass->fbo.scale_x);
-         break;
-
-      case RARCH_SCALE_VIEWPORT:
-         RARCH_LOG("Viewport @ %fx\n", info->pass->fbo.scale_x);
-         break;
-
-      case RARCH_SCALE_ABSOLUTE:
-         RARCH_LOG("Absolute @ %u px\n", info->pass->fbo.abs_x);
-         break;
-   }
-
-   RARCH_LOG("\tScale type (Y): ");
-
-   switch (info->pass->fbo.type_y)
-   {
-      case RARCH_SCALE_INPUT:
-         RARCH_LOG("Relative @ %fx\n", info->pass->fbo.scale_y);
-         break;
-
-      case RARCH_SCALE_VIEWPORT:
-         RARCH_LOG("Viewport @ %fx\n", info->pass->fbo.scale_y);
-         break;
-
-      case RARCH_SCALE_ABSOLUTE:
-         RARCH_LOG("Absolute @ %u px\n", info->pass->fbo.abs_y);
-         break;
-   }
-
-   RARCH_LOG("\tBilinear filter: %s\n",
-         info->pass->filter == RARCH_FILTER_LINEAR ? "true" : "false");
-}
 
