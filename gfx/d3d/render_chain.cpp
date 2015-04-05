@@ -726,8 +726,8 @@ void renderchain_deinit_shader(void)
 
    cgD3D9UnloadAllPrograms();
    cgD3D9SetDevice(NULL);
-   cgDestroyContext(d3d->cgCtx);
-   d3d->cgCtx = NULL;
+   cgDestroyContext(cgCtx);
+   cgCtx = NULL;
 #endif
 }
 

@@ -66,6 +66,10 @@ void *renderchain_new(void);
 
 void renderchain_deinit(void *data);
 
+void renderchain_deinit_shader(void);
+
+bool renderchain_init_shader(void *data);
+
 bool renderchain_init(void *data, const video_info_t *video_info,
       void *dev_,
       const void *final_viewport_,
