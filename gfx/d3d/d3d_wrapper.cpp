@@ -149,20 +149,17 @@ void *d3d_vertex_buffer_lock(LPDIRECT3DVERTEXBUFFER vertbuf)
 
 void d3d_vertex_buffer_free(void *vertex_data, void *vertex_declaration)
 {
-#ifdef HAVE_D3D9
-   LPDIRECT3DVERTEXDECLARATION vertex_decl = (LPDIRECT3DVERTEXDECLARATION)vertex_declaration;
-#endif
-   LPDIRECT3DVERTEXBUFFER buf = (LPDIRECT3DVERTEXBUFFER)vertex_data;
-
-   if (buf)
+   if (vertex_data)
    {
+      LPDIRECT3DVERTEXBUFFER buf = (LPDIRECT3DVERTEXBUFFER)vertex_data;
       buf->Release();
       buf = NULL;
    }
 
 #ifdef HAVE_D3D9
-   if (vertex_decl)
+   if (vertex_declaration)
    {
+      LPDIRECT3DVERTEXDECLARATION vertex_decl = (LPDIRECT3DVERTEXDECLARATION)vertex_declaration;
       vertex_decl->Release();
       vertex_decl = NULL;
    }
