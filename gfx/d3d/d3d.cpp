@@ -110,15 +110,7 @@ static void d3d_deinit_shader(void *data)
    (void)d3d;
    (void)data;
 
-#ifdef HAVE_CG
-   if (!d3d->cgCtx)
-      return;
-
-   cgD3D9UnloadAllPrograms();
-   cgD3D9SetDevice(NULL);
-   cgDestroyContext(d3d->cgCtx);
-   d3d->cgCtx = NULL;
-#endif
+   renderchain_deinit_shader();
 }
 
 static bool d3d_init_shader(void *data)
@@ -144,16 +136,7 @@ static bool d3d_init_shader(void *data)
 
    return d3d->shader->init(d3d, shader_path);
 #elif defined(HAVE_CG)
-   d3d->cgCtx = cgCreateContext();
-   if (!d3d->cgCtx)
-      return false;
-
-   RARCH_LOG("[D3D]: Created shader context.\n");
-
-   HRESULT ret = cgD3D9SetDevice(d3d->dev);
-   if (FAILED(ret))
-      return false;
-   return true;
+   return renderchain_init_shader(d3d);
 #else
    return false;
 #endif
@@ -767,9 +750,6 @@ static void *d3d_init(const video_info_t *info,
    vid->dev                  = NULL;
    vid->dev_rotation         = 0;
    vid->needs_restore        = false;
-#ifdef HAVE_CG
-   vid->cgCtx                = NULL;
-#endif
 #ifdef HAVE_OVERLAY
    vid->overlays_enabled     = false;
 #endif
@@ -1016,11 +996,6 @@ static bool d3d_init_chain(d3d_video_t *d3d, const video_info_t *video_info)
       return false;
 
    if (!renderchain_init(d3d->chain, &d3d->video_info, d3dr,
-#ifdef HAVE_CG
-            d3d->cgCtx,
-#else
-	    NULL,
-#endif
 	    &d3d->final_viewport, &link_info,
 		d3d->video_info.rgb32 ? RETRO_PIXEL_FORMAT_XRGB8888 : RETRO_PIXEL_FORMAT_RGB565))
    {

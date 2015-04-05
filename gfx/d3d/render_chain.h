@@ -68,7 +68,6 @@ void renderchain_deinit(void *data);
 
 bool renderchain_init(void *data, const video_info_t *video_info,
       void *dev_,
-      void *shader_data,
       const void *final_viewport_,
       const void *info_data,
       unsigned fmt);

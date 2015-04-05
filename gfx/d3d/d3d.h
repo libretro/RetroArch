@@ -140,9 +140,6 @@ typedef struct d3d_video
 
       bool needs_restore;
 
-#ifdef HAVE_CG
-      CGcontext cgCtx;
-#endif
       RECT font_rect;
       RECT font_rect_shifted;
 
