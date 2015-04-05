@@ -495,12 +495,12 @@ void renderchain_bind_orig(void *data, void *pass_data)
    {
       index = cgGetParameterResourceIndex(param);
       chain->dev->SetTexture(index, chain->passes[0].tex);
-      chain->dev->SetSamplerState(index, D3DSAMP_MAGFILTER,
+      d3d_set_sampler_magfilter(chain->dev, index,
             translate_filter(chain->passes[0].info.pass->filter));
-      chain->dev->SetSamplerState(index, D3DSAMP_MINFILTER,
+      d3d_set_sampler_minfilter(chain->dev, index, 
             translate_filter(chain->passes[0].info.pass->filter));
-      chain->dev->SetSamplerState(index, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
-      chain->dev->SetSamplerState(index, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
+      d3d_set_sampler_address_u(chain->dev, index, D3DTADDRESS_BORDER);
+      d3d_set_sampler_address_v(chain->dev, index, D3DTADDRESS_BORDER);
       chain->bound_tex.push_back(index);
    }
 
@@ -565,12 +565,12 @@ void renderchain_bind_prev(void *data, void *pass_data)
          chain->dev->SetTexture(index, tex);
          chain->bound_tex.push_back(index);
 
-         chain->dev->SetSamplerState(index, D3DSAMP_MAGFILTER,
+         d3d_set_sampler_magfilter(chain->dev, index,
                translate_filter(chain->passes[0].info.pass->filter));
-         chain->dev->SetSamplerState(index, D3DSAMP_MINFILTER,
+         d3d_set_sampler_minfilter(chain->dev, index, 
                translate_filter(chain->passes[0].info.pass->filter));
-         chain->dev->SetSamplerState(index, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
-         chain->dev->SetSamplerState(index, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
+         d3d_set_sampler_address_u(chain->dev, index, D3DTADDRESS_BORDER);
+         d3d_set_sampler_address_v(chain->dev, index, D3DTADDRESS_BORDER);
       }
 
       param = cgGetNamedParameter(pass->vPrg, attr_coord);
@@ -595,14 +595,12 @@ static void renderchain_add_lut(renderchain_t *chain,
       return;
 
    chain->dev->SetTexture(index, chain->luts[i].tex);
-   chain->dev->SetSamplerState(index, D3DSAMP_MAGFILTER,
+   d3d_set_sampler_magfilter(chain->dev, index,
          translate_filter(chain->luts[i].smooth));
-   chain->dev->SetSamplerState(index, D3DSAMP_MINFILTER,
+   d3d_set_sampler_minfilter(chain->dev, index, 
          translate_filter(chain->luts[i].smooth));
-   chain->dev->SetSamplerState(index, D3DSAMP_ADDRESSU,
-         D3DTADDRESS_BORDER);
-   chain->dev->SetSamplerState(index, D3DSAMP_ADDRESSV,
-         D3DTADDRESS_BORDER);
+   d3d_set_sampler_address_u(chain->dev, index, D3DTADDRESS_BORDER);
+   d3d_set_sampler_address_v(chain->dev, index, D3DTADDRESS_BORDER);
    chain->bound_tex.push_back(index);
 }
 
@@ -677,14 +675,12 @@ void renderchain_bind_pass(void *data, void *pass_data, unsigned pass_index)
          chain->bound_tex.push_back(index);
 
          chain->dev->SetTexture(index, chain->passes[i].tex);
-         chain->dev->SetSamplerState(index, D3DSAMP_MAGFILTER,
+         d3d_set_sampler_magfilter(chain->dev, index,
                translate_filter(chain->passes[i].info.pass->filter));
-         chain->dev->SetSamplerState(index, D3DSAMP_MINFILTER,
+         d3d_set_sampler_minfilter(chain->dev, index, 
                translate_filter(chain->passes[i].info.pass->filter));
-         chain->dev->SetSamplerState(index, D3DSAMP_ADDRESSU,
-               D3DTADDRESS_BORDER);
-         chain->dev->SetSamplerState(index, D3DSAMP_ADDRESSV,
-               D3DTADDRESS_BORDER);
+         d3d_set_sampler_address_u(chain->dev, index, D3DTADDRESS_BORDER);
+         d3d_set_sampler_address_v(chain->dev, index, D3DTADDRESS_BORDER);
       }
 
       param = cgGetNamedParameter(pass->vPrg, attr_coord);
