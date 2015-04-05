@@ -1594,16 +1594,16 @@ static bool d3d_frame(void *data, const void *frame,
    }
 
 #ifdef _XBOX
-   renderchain_render(d3d, frame, width, height,
-         pitch, d3d->dev_rotation);
+   if (!renderchain_render(d3d, frame, width, height,
+         pitch, d3d->dev_rotation))
 #else
    if (!renderchain_render(d3d->chain, frame, width,
             height, pitch, d3d->dev_rotation))
+#endif
    {
       RARCH_ERR("[D3D]: Failed to render scene.\n");
       return false;
    }
-#endif
 
    if (font_ctx->render_msg && msg)
    {
@@ -1775,11 +1775,6 @@ static bool d3d_set_shader(void *data,
 
    return !restore_old;
 }
-
-#ifdef HAVE_MENU
-static void d3d_get_poke_interface(void *data,
-      const video_poke_interface_t **iface);
-#endif
 
 #ifdef HAVE_MENU
 static void d3d_set_menu_texture_frame(void *data,
