@@ -264,7 +264,7 @@ static void renderchain_set_vertices(void *data, unsigned pass,
 #endif
 }
 
-void renderchain_blit_to_texture(void *data, const void *frame,
+static void renderchain_blit_to_texture(void *data, const void *frame,
    unsigned width, unsigned height, unsigned pitch)
 {
    D3DLOCKED_RECT d3dlr;

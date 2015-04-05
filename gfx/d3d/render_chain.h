@@ -72,10 +72,6 @@ void renderchain_convert_geometry(void *data, const void *info_data,
       unsigned width, unsigned height,
       D3DVIEWPORT *final_viewport);
 
-void renderchain_blit_to_texture(void *data, const void *frame,
-      unsigned width, unsigned height,
-      unsigned pitch);
-
 void renderchain_render_pass(void *data, void *pass_data, unsigned pass_index);
 
 bool renderchain_init_shader_fvf(void *data, void *pass_data);

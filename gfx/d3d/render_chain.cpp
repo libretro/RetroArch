@@ -1261,6 +1261,26 @@ static void renderchain_set_viewport(void *data, void *viewport_data)
    d3d_set_viewport(d3dr, vp);
 }
 
+static void renderchain_blit_to_texture(void *data,
+      const void *frame,
+      unsigned width, unsigned height,
+      unsigned pitch)
+{
+   D3DLOCKED_RECT d3dlr;
+   renderchain_t *chain = (renderchain_t*)data;
+   Pass *first          = (Pass*)&chain->passes[0];
+   driver_t *driver     = driver_get_ptr();
+
+   if (first->last_width != width || first->last_height != height)
+   {
+      d3d_lockrectangle_clear(first, first->tex, 0, &d3dlr, 
+            NULL, first->info.tex_h, D3DLOCK_NOSYSLOCK);
+   }
+
+   d3d_texture_blit(driver->video_data, chain->pixel_size, first->tex,
+         &d3dlr, frame, width, height, pitch);
+}
+
 bool renderchain_render(void *chain_data, const void *data,
       unsigned width, unsigned height, unsigned pitch, unsigned rotation)
 {
@@ -1397,24 +1417,6 @@ void renderchain_convert_geometry(
    }
 }
 
-void renderchain_blit_to_texture(void *data, const void *frame,
-      unsigned width, unsigned height,
-      unsigned pitch)
-{
-   D3DLOCKED_RECT d3dlr;
-   renderchain_t *chain = (renderchain_t*)data;
-   Pass *first          = (Pass*)&chain->passes[0];
-   driver_t *driver     = driver_get_ptr();
-
-   if (first->last_width != width || first->last_height != height)
-   {
-      d3d_lockrectangle_clear(first, first->tex, 0, &d3dlr, 
-            NULL, first->info.tex_h, D3DLOCK_NOSYSLOCK);
-   }
-
-   d3d_texture_blit(driver->video_data, chain->pixel_size, first->tex,
-      &d3dlr, frame, width, height, pitch);
-}
 
 static void renderchain_unbind_all(void *data)
 {
