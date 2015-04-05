@@ -511,8 +511,7 @@ void renderchain_bind_luts(void *data, void *pass_data)
    for (i = 0; i < chain->luts.size(); i++)
    {
       CGparameter vparam;
-      CGparameter fparam = cgGetNamedParameter(
-            pass->fPrg, chain->luts[i].id.c_str());
+      CGparameter fparam = cgGetNamedParameter(pass->fPrg, chain->luts[i].id);
       int bound_index = -1;
 
       if (fparam)
@@ -531,7 +530,7 @@ void renderchain_bind_luts(void *data, void *pass_data)
          chain->bound_tex.push_back(index);
       }
 
-      vparam = cgGetNamedParameter(pass->vPrg, chain->luts[i].id.c_str());
+      vparam = cgGetNamedParameter(pass->vPrg, chain->luts[i].id);
 
       if (vparam)
       {

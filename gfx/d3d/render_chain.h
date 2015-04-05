@@ -68,7 +68,7 @@ struct Pass
 struct lut_info
 {
    LPDIRECT3DTEXTURE tex;
-   std::string id;
+   char id[64];
    bool smooth;
 };
 
