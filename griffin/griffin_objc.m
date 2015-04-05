@@ -8,10 +8,7 @@
 #define __IPHONE_OS_VERSION_MAX_ALLOWED 00000
 #endif
 
-#include "../apple/common/CFExtensions.m"
-#include "../apple/common/utility.m"
-
-#include "../apple/common/RAGameView.m"
+#include "../apple/common/apple_cocoa_common.m"
 
 #if TARGET_OS_IPHONE
 #include "../apple/iOS/platform.m"
