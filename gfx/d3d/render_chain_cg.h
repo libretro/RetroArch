@@ -58,36 +58,31 @@ static INLINE CGparameter find_param_from_semantic(
 {
    while (param)
    {
-      CGparameter ret;
-      CGtype type = cgGetParameterType(param);
-
-      switch (type)
+      if (cgGetParameterType(param) == CG_STRUCT)
       {
-         case CG_STRUCT:
-            ret = find_param_from_semantic(
-                  cgGetFirstStructParameter(param), sem);
+         CGparameter ret = find_param_from_semantic(
+               cgGetFirstStructParameter(param), sem);
 
-            if (ret)
-               return ret;
-            break;
-         default:
-            if (cgGetParameterSemantic(param) &&
-                  sem == cgGetParameterSemantic(param) &&
-                  cgGetParameterDirection(param) == CG_IN &&
-                  cgGetParameterVariability(param) == CG_VARYING &&
-                  validate_param_name(cgGetParameterName(param)))
-               return param;
-            break;
+         if (ret)
+            return ret;
       }
-
+      else
+      {
+         if (cgGetParameterSemantic(param) &&
+               !strcmp(sem, cgGetParameterSemantic(param)) &&
+               cgGetParameterDirection(param) == CG_IN &&
+               cgGetParameterVariability(param) == CG_VARYING &&
+               validate_param_name(cgGetParameterName(param)))
+            return param;
+      }
       param = cgGetNextParameter(param);
    }
 
    return NULL;
 }
 
-static INLINE CGparameter find_param_from_semantic(
-      CGprogram prog, const char *sem)
+static INLINE CGparameter find_param_from_semantic(CGprogram prog,
+      const char *sem)
 {
    CGparameter param = cgGetFirstParameter(prog, CG_PROGRAM);
    return find_param_from_semantic(param, sem);
