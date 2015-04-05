@@ -104,6 +104,10 @@ typedef struct renderchain
 
 void renderchain_free(void *data);
 
+void *renderchain_new(void);
+
+void renderchain_deinit(void *data);
+
 bool renderchain_init(void *data, const video_info_t *video_info,
       void *dev_,
       void *shader_data,
@@ -132,10 +136,6 @@ void renderchain_end_render(void *data);
 
 bool renderchain_render(void *chain_data, const void *data,
       unsigned width, unsigned height, unsigned pitch, unsigned rotation);
-
-D3DTEXTUREFILTERTYPE renderchain_translate_filter(unsigned type);
-
-D3DTEXTUREFILTERTYPE renderchain_translate_filter(bool smooth);
 
 bool renderchain_create_first_pass(void *data,
       const void *info_data, PixelFormat fmt);

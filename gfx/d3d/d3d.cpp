@@ -165,8 +165,7 @@ static void d3d_deinit_chain(d3d_video_t *d3d)
 #ifdef _XBOX
    renderchain_free(d3d);
 #else
-   if (d3d->chain)
-      delete (renderchain_t *)d3d->chain;
+   renderchain_deinit(d3d->chain);
    d3d->chain = NULL;
 #endif
 }
@@ -1010,7 +1009,8 @@ static bool d3d_init_chain(d3d_video_t *d3d, const video_info_t *video_info)
       return false;
    }
 #else
-   d3d->chain = new renderchain_t();
+   d3d->chain = renderchain_new();
+   
    if (!d3d->chain)
       return false;
 

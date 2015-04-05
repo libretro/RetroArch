@@ -59,6 +59,25 @@ void renderchain_free(void *data)
       state_tracker_free(chain->tracker);
 }
 
+void *renderchain_new(void)
+{
+   renderchain_t *renderchain = new renderchain_t();
+   if (!renderchain)
+      return NULL;
+
+   return renderchain;
+}
+
+void renderchain_deinit(void *data)
+{
+   renderchain_t *renderchain = (renderchain_t*)data;
+
+   if (!renderchain)
+      return;
+
+   delete (renderchain_t *)renderchain;
+}
+
 bool renderchain_init(void *data, const video_info_t *video_info,
       void *dev_,
       void *shader_context,
