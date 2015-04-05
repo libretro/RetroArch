@@ -822,6 +822,49 @@ void renderchain_clear(void *data)
    chain->luts.clear();
 }
 
+static void d3d_recompute_pass_sizes(d3d_video_t *d3d)
+{
+   unsigned i;
+   LinkInfo link_info                = {0};
+   link_info.pass                    = &d3d->shader.pass[0];
+   link_info.tex_w = link_info.tex_h = 
+      d3d->video_info.input_scale * RARCH_SCALE_BASE;
+
+   unsigned current_width            = link_info.tex_w;
+   unsigned current_height           = link_info.tex_h;
+   unsigned out_width                = 0;
+   unsigned out_height               = 0;
+
+   if (!renderchain_set_pass_size(d3d->chain, 0,
+            current_width, current_height))
+   {
+      RARCH_ERR("[D3D]: Failed to set pass size.\n");
+      return;
+   }
+
+   for (i = 1; i < d3d->shader.passes; i++)
+   {
+      renderchain_convert_geometry(d3d->chain, &link_info,
+            &out_width, &out_height,
+            current_width, current_height, &d3d->final_viewport);
+
+      link_info.tex_w = next_pow2(out_width);
+      link_info.tex_h = next_pow2(out_height);
+
+      if (!renderchain_set_pass_size(d3d->chain, i,
+               link_info.tex_w, link_info.tex_h))
+      {
+         RARCH_ERR("[D3D]: Failed to set pass size.\n");
+         return;
+      }
+
+      current_width = out_width;
+      current_height = out_height;
+
+      link_info.pass = &d3d->shader.pass[i];
+   }
+}
+
 void renderchain_set_final_viewport(void *data, const void *viewport_data)
 {
    renderchain_t *chain = (renderchain_t*)data;
@@ -829,6 +872,8 @@ void renderchain_set_final_viewport(void *data, const void *viewport_data)
 
    if (chain)
       chain->final_viewport = (D3DVIEWPORT*)final_viewport;
+
+   d3d_recompute_pass_sizes(d3d);
 }
 
 bool renderchain_set_pass_size(void *data, unsigned pass_index,
