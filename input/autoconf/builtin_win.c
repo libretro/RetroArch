@@ -45,10 +45,10 @@ DECL_AXIS(r_y_minus, +3)
 
 const char* const input_builtin_autoconfs[] =
 {
-   DECL_AUTOCONF_DEVICE("XInput Controller (User 1)", "winxinput", XINPUT_DEFAULT_BINDS),
-   DECL_AUTOCONF_DEVICE("XInput Controller (User 2)", "winxinput", XINPUT_DEFAULT_BINDS),
-   DECL_AUTOCONF_DEVICE("XInput Controller (User 3)", "winxinput", XINPUT_DEFAULT_BINDS),
-   DECL_AUTOCONF_DEVICE("XInput Controller (User 4)", "winxinput", XINPUT_DEFAULT_BINDS),
+   DECL_AUTOCONF_DEVICE("XInput Controller (User 1)", "xinput", XINPUT_DEFAULT_BINDS),
+   DECL_AUTOCONF_DEVICE("XInput Controller (User 2)", "xinput", XINPUT_DEFAULT_BINDS),
+   DECL_AUTOCONF_DEVICE("XInput Controller (User 3)", "xinput", XINPUT_DEFAULT_BINDS),
+   DECL_AUTOCONF_DEVICE("XInput Controller (User 4)", "xinput", XINPUT_DEFAULT_BINDS),
    NULL
 };
 

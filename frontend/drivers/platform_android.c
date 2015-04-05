@@ -394,20 +394,20 @@ void ANativeActivity_onCreate(ANativeActivity* activity,
    }
 
    memset(android_app, 0, sizeof(struct android_app));
+   
    android_app->activity = activity;
-
-   android_app->mutex = slock_new();
-   android_app->cond  = scond_new();
+   android_app->mutex    = slock_new();
+   android_app->cond     = scond_new();
 
    if (pipe(msgpipe))
    {
       RARCH_ERR("could not create pipe: %s.\n", strerror(errno));
       activity->instance = NULL;
    }
-   android_app->msgread = msgpipe[0];
+   android_app->msgread  = msgpipe[0];
    android_app->msgwrite = msgpipe[1];
 
-   android_app->thread = sthread_create(android_app_entry, android_app);
+   android_app->thread   = sthread_create(android_app_entry, android_app);
 
    /* Wait for thread to start. */
    slock_lock(android_app->mutex);

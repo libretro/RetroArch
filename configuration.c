@@ -264,8 +264,8 @@ const char *config_get_default_joypad(void)
    {
       case JOYPAD_PS3:
          return "ps3";
-      case JOYPAD_WINXINPUT:
-         return "winxinput";
+      case JOYPAD_XINPUT:
+         return "xinput";
       case JOYPAD_GX:
          return "gx";
       case JOYPAD_XDK:

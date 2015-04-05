@@ -25,7 +25,7 @@
 #include "../input/drivers/dinput.c"
 #endif
 
-#if defined(HAVE_WINXINPUT)
+#if defined(HAVE_XINPUT)
 #include "../input/drivers_joypad/xinput_joypad.c"
 #endif
 

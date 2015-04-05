@@ -98,11 +98,6 @@ void renderchain_set_shaders(void *data, void *fragment_data, void *vertex_data)
 
 void renderchain_destroy_shader(void *data, int i);
 
-void renderchain_set_shader_params(void *data, void *pass_data,
-            unsigned video_w, unsigned video_h,
-            unsigned tex_w, unsigned tex_h,
-            unsigned viewport_w, unsigned viewport_h);
-
 bool renderchain_init_shader_fvf(void *data, void *pass_data);
 
 #endif

@@ -338,7 +338,7 @@ INPUT
 #include "../input/drivers/dinput.c"
 #endif
 
-#ifdef HAVE_WINXINPUT
+#ifdef HAVE_XINPUT
 #include "../input/drivers_joypad/xinput_joypad.c"
 #endif
 

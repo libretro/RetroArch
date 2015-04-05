@@ -489,6 +489,7 @@ static int do_pause_state_checks(
       bool rewind_pressed)
 {
    runloop_t *runloop        = rarch_main_get_ptr();
+   bool check_is_oneshot     = frameadvance_pressed || rewind_pressed;
 
    if (!runloop || !runloop->is_paused)
       return 0;
@@ -499,7 +500,7 @@ static int do_pause_state_checks(
       rarch_render_cached_frame();
    }
 
-   if (!(frameadvance_pressed | rewind_pressed))
+   if (!check_is_oneshot)
       return 1;
 
    return 0;
@@ -1052,7 +1053,7 @@ static void rarch_main_cmd_get_state(rarch_cmd_state_t *cmd,
    cmd->state_slot_decrease         = BIT64_GET(trigger_input, RARCH_STATE_SLOT_MINUS);
    cmd->pause_pressed               = BIT64_GET(trigger_input, RARCH_PAUSE_TOGGLE);
    cmd->frameadvance_pressed        = BIT64_GET(trigger_input, RARCH_FRAMEADVANCE);
-   cmd->rewind_pressed              = BIT64_GET(trigger_input, RARCH_REWIND);
+   cmd->rewind_pressed              = BIT64_GET(input,         RARCH_REWIND);
    cmd->netplay_flip_pressed        = BIT64_GET(trigger_input, RARCH_NETPLAY_FLIP);
    cmd->fullscreen_toggle           = BIT64_GET(trigger_input, RARCH_FULLSCREEN_TOGGLE_KEY);
    cmd->cheat_index_plus_pressed    = BIT64_GET(trigger_input,

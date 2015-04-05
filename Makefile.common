@@ -374,8 +374,8 @@ ifeq ($(HAVE_DINPUT), 1)
    JOYCONFIG_LIBS += -ldinput8 -ldxguid -lole32
 endif
 
-ifeq ($(HAVE_WINXINPUT), 1)
-   DEFINES += -DHAVE_WINXINPUT -DHAVE_BUILTIN_AUTOCONFIG
+ifeq ($(HAVE_XINPUT), 1)
+   DEFINES += -DHAVE_XINPUT -DHAVE_BUILTIN_AUTOCONFIG
    OBJ += input/drivers_joypad/xinput_joypad.o \
           input/autoconf/builtin_win.o
 endif
