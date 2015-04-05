@@ -565,32 +565,28 @@ void renderchain_bind_pass(void *data, void *pass_data, unsigned pass_index)
 
    for (i = 1; i < pass_index - 1; i++)
    {
-      char pass_base[64];
+      char pass_base[64], attr_texture[64], attr_input_size[64], attr_tex_size[64],
+           attr_coord[64];
       CGparameter param;
       D3DXVECTOR2 video_size, texture_size;
 
-      snprintf(pass_base, sizeof(pass_base), "PASS%u.", i);
-
-      std::string attr_texture = pass_base;
-      attr_texture += "texture";
-      std::string attr_video_size = pass_base;
-      attr_video_size += "video_size";
-      std::string attr_texture_size = pass_base;
-      attr_texture_size += "texture_size";
-      std::string attr_tex_coord = pass_base;
-      attr_tex_coord += "tex_coord";
+      snprintf(pass_base,       sizeof(pass_base),       "PASS%u",          i);
+      snprintf(attr_texture,    sizeof(attr_texture),    "%s.texture",      pass_base);
+      snprintf(attr_input_size, sizeof(attr_input_size), "%s.video_size",   pass_base);
+      snprintf(attr_tex_size,   sizeof(attr_tex_size),   "%s.texture_size", pass_base);
+      snprintf(attr_coord,      sizeof(attr_coord),      "%s.tex_coord",    pass_base);
 
       video_size.x   = chain->passes[i].last_width;
       video_size.y   = chain->passes[i].last_height;
       texture_size.x = chain->passes[i].info.tex_w;
       texture_size.y = chain->passes[i].info.tex_h;
 
-      set_cg_param(pass->vPrg, attr_video_size.c_str(), video_size);
-      set_cg_param(pass->fPrg, attr_video_size.c_str(), video_size);
-      set_cg_param(pass->vPrg, attr_texture_size.c_str(), texture_size);
-      set_cg_param(pass->fPrg, attr_texture_size.c_str(), texture_size);
+      set_cg_param(pass->vPrg, attr_video_size,   video_size);
+      set_cg_param(pass->fPrg, attr_video_size,   video_size);
+      set_cg_param(pass->vPrg, attr_texture_size, texture_size);
+      set_cg_param(pass->fPrg, attr_texture_size, texture_size);
 
-      param = cgGetNamedParameter(pass->fPrg, attr_texture.c_str());
+      param = cgGetNamedParameter(pass->fPrg, attr_texture);
       if (param)
       {
          index = cgGetParameterResourceIndex(param);
@@ -607,7 +603,7 @@ void renderchain_bind_pass(void *data, void *pass_data, unsigned pass_index)
                D3DTADDRESS_BORDER);
       }
 
-      param = cgGetNamedParameter(pass->vPrg, attr_tex_coord.c_str());
+      param = cgGetNamedParameter(pass->vPrg, attr_tex_coord);
       if (param)
       {
          index = pass->attrib_map[cgGetParameterResourceIndex(param)];
