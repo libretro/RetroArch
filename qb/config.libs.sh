@@ -219,7 +219,7 @@ if [ "$OS" = 'Win32' ]; then
    check_lib DSOUND -ldsound
 
    if [ "$HAVE_DINPUT" != 'no' ]; then
-      HAVE_WINXINPUT=yes
+      HAVE_XINPUT=yes
    fi
 
    HAVE_XAUDIO=yes

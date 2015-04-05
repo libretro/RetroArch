@@ -838,7 +838,7 @@ static BOOL CALLBACK enum_joypad_cb(const DIDEVICEINSTANCE *inst, void *p)
    
    g_pads[g_joypad_cnt].joy_name = strdup(inst->tszProductName);
    
-#ifdef HAVE_WINXINPUT
+#ifdef HAVE_XINPUT
 #if 0
    is_xinput_pad = g_xinput_block_pads 
       && name_is_xinput_pad(inst->tszProductName);
@@ -861,7 +861,7 @@ static BOOL CALLBACK enum_joypad_cb(const DIDEVICEINSTANCE *inst, void *p)
    IDirectInputDevice8_EnumObjects(*pad, enum_axes_cb, 
          *pad, DIDFT_ABSAXIS);
          
-#ifdef HAVE_WINXINPUT
+#ifdef HAVE_XINPUT
    if (!is_xinput_pad)
 #endif
    {
