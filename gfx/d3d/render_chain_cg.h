@@ -509,6 +509,24 @@ void renderchain_bind_prev(void *data, void *pass_data)
    }
 }
 
+static void renderchain_add_lut(renderchain_t *chain,
+      unsigned index, unsigned i)
+{
+   if (!chain)
+      return;
+
+   chain->dev->SetTexture(index, chain->luts[i].tex);
+   chain->dev->SetSamplerState(index, D3DSAMP_MAGFILTER,
+         translate_filter(chain->luts[i].smooth));
+   chain->dev->SetSamplerState(index, D3DSAMP_MINFILTER,
+         translate_filter(chain->luts[i].smooth));
+   chain->dev->SetSamplerState(index, D3DSAMP_ADDRESSU,
+         D3DTADDRESS_BORDER);
+   chain->dev->SetSamplerState(index, D3DSAMP_ADDRESSV,
+         D3DTADDRESS_BORDER);
+   chain->bound_tex.push_back(index);
+}
+
 void renderchain_bind_luts(void *data, void *pass_data)
 {
    unsigned i, index;
@@ -525,16 +543,8 @@ void renderchain_bind_luts(void *data, void *pass_data)
       {
          index       = cgGetParameterResourceIndex(fparam);
          bound_index = index;
-         chain->dev->SetTexture(index, chain->luts[i].tex);
-         chain->dev->SetSamplerState(index, D3DSAMP_MAGFILTER,
-               translate_filter(chain->luts[i].smooth));
-         chain->dev->SetSamplerState(index, D3DSAMP_MINFILTER,
-               translate_filter(chain->luts[i].smooth));
-         chain->dev->SetSamplerState(index, D3DSAMP_ADDRESSU,
-               D3DTADDRESS_BORDER);
-         chain->dev->SetSamplerState(index, D3DSAMP_ADDRESSV,
-               D3DTADDRESS_BORDER);
-         chain->bound_tex.push_back(index);
+
+         renderchain_add_lut(chain, index, i);
       }
 
       vparam = cgGetNamedParameter(pass->vPrg, chain->luts[i].id);
@@ -543,18 +553,7 @@ void renderchain_bind_luts(void *data, void *pass_data)
       {
          index      = cgGetParameterResourceIndex(vparam);
          if (index != (unsigned)bound_index)
-         {
-            chain->dev->SetTexture(index, chain->luts[i].tex);
-            chain->dev->SetSamplerState(index, D3DSAMP_MAGFILTER,
-                  translate_filter(chain->luts[i].smooth));
-            chain->dev->SetSamplerState(index, D3DSAMP_MINFILTER,
-                  translate_filter(chain->luts[i].smooth));
-            chain->dev->SetSamplerState(index, D3DSAMP_ADDRESSU,
-                  D3DTADDRESS_BORDER);
-            chain->dev->SetSamplerState(index, D3DSAMP_ADDRESSV,
-                  D3DTADDRESS_BORDER);
-            chain->bound_tex.push_back(index);
-         }
+            renderchain_add_lut(chain, index, i);
       }
    }
 }
