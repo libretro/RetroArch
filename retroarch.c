@@ -199,7 +199,7 @@ static void print_help(void)
    puts("\t-S/--savestate: Path to use for save states. If not selected, *.state will be assumed.");
    puts("\t-c/--config: Path for config file." RARCH_DEFAULT_CONF_PATH_STR);
    puts("\t--appendconfig: Extra config files are loaded in, and take priority over config selected in -c (or default).");
-   puts("\t\tMultiple configs are delimited by ','.");
+   puts("\t\tMultiple configs are delimited by '|'.");
 #ifdef HAVE_DYNAMIC
    puts("\t-L/--libretro: Path to libretro implementation. Overrides any config setting.");
 #endif
@@ -1875,7 +1875,6 @@ static bool init_content(void)
       RARCH_LOG("Skipping SRAM load.\n");
 
    load_auto_state();
-
    rarch_main_command(RARCH_CMD_BSV_MOVIE_INIT);
    rarch_main_command(RARCH_CMD_NETPLAY_INIT);
 
@@ -1886,6 +1885,8 @@ static bool init_core(void)
 {
    driver_t *driver = driver_get_ptr();
    global_t *global = global_get_ptr();
+
+   config_append_specific();
 
    verify_api_version();
    pretro_init();

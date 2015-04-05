@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2015 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -471,7 +471,7 @@ static void config_set_defaults(void)
    settings->video.font_size = font_size;
    settings->video.msg_pos_x = message_pos_offset_x;
    settings->video.msg_pos_y = message_pos_offset_y;
-   
+
    settings->video.msg_color_r = ((message_color >> 16) & 0xff) / 255.0f;
    settings->video.msg_color_g = ((message_color >>  8) & 0xff) / 255.0f;
    settings->video.msg_color_b = ((message_color >>  0) & 0xff) / 255.0f;
@@ -616,7 +616,7 @@ static void config_set_defaults(void)
    global->console.screen.viewports.custom_vp.x = 0;
    global->console.screen.viewports.custom_vp.y = 0;
 
-   /* Make sure settings from other configs carry over into defaults 
+   /* Make sure settings from other configs carry over into defaults
     * for another config. */
    if (!global->has_set_save_path)
       *global->savefile_dir = '\0';
@@ -670,7 +670,7 @@ static void config_set_defaults(void)
    global->console.screen.resolutions.current.id = 0;
    global->console.sound.mode = SOUND_MODE_NORMAL;
 #endif
-   
+
    if (*g_defaults.extraction_dir)
       strlcpy(settings->extraction_directory,
             g_defaults.extraction_dir, sizeof(settings->extraction_directory));
@@ -773,7 +773,7 @@ static void config_set_defaults(void)
    if (*g_defaults.config_path)
       fill_pathname_expand_special(global->config_path,
             g_defaults.config_path, sizeof(global->config_path));
-   
+
    settings->config_save_on_exit = config_save_on_exit;
 
    /* Avoid reloading config on every content load */
@@ -832,7 +832,7 @@ static config_file_t *open_default_config_file(void)
 
       if (conf)
       {
-         /* Since this is a clean config file, we can 
+         /* Since this is a clean config file, we can
           * safely use config_save_on_exit. */
          fill_pathname_resolve_relative(conf_path, app_path,
                "retroarch.cfg", sizeof(conf_path));
@@ -860,7 +860,7 @@ static config_file_t *open_default_config_file(void)
    fill_pathname_join(conf_path, home,
          "Library/Application Support/RetroArch", sizeof(conf_path));
    path_mkdir(conf_path);
-      
+
    fill_pathname_join(conf_path, conf_path,
          "retroarch.cfg", sizeof(conf_path));
    conf = config_file_new(conf_path);
@@ -980,7 +980,7 @@ static config_file_t *open_default_config_file(void)
 
    strlcpy(global->config_path, conf_path,
          sizeof(global->config_path));
-   
+
    return conf;
 }
 
@@ -1089,82 +1089,6 @@ static void config_file_dump_all(config_file_t *conf)
 }
 
 /**
- * config_append_specific:
- * @conf                 : base config
- *
- * Tries to append game-specific and core-specific configuration.
- * These settings will always have precedence, thus this feature
- * can be used to enforce overrides.
- *
- * Let $RETROARCH_CFG be the directory that contains retroarch.cfg,
- * $CORE_NAME be the name of the libretro core library in use and
- * $ROM_NAME the basename of the ROM (without the extension and
- * directory).
- *
- * This function only has an effect if a game-specific or core-specific
- * configuration file exists at the folling locations respectively.
- *
- * core-specific: $RETROARCH_CFG/$CORE_NAME/$CORE_NAME.cfg
- * game-specific: $RETROARCH_CFG/$CORE_NAME/$ROM_NAME.cfg
- *
- * Returns: False if there was an error.
- *
- */
-static bool config_append_specific(config_file_t *conf)
-{
-   char config_directory[PATH_MAX_LENGTH],   /* path to the directory containing retroarch.cfg (prefix)    */
-        core_name_buffer[PATH_MAX_LENGTH],   /* temporary array                                            */
-        core_path[PATH_MAX_LENGTH],          /* final path for core-specific configuration (prefix+suffix) */
-        game_path[PATH_MAX_LENGTH];          /* final path for game-specific configuration (prefix+suffix) */
-   const char *core_name, *game_name;        /* suffix                                                     */
-
-   global_t *global = global_get_ptr();
-   if (!global || !conf)
-      RARCH_ERR("Could not obtain global pointer or configuration file pointer to retrieve path of retroarch.cfg.\n");
-
-   /*  Core name: core_name
-    *  Gets path to libretro.so or libretro.dll and strips the extension */
-   else if (!global->has_set_libretro && ( !config_get_path(conf, "libretro_path", core_name_buffer, PATH_MAX_LENGTH) || !path_remove_extension(core_name_buffer) ))
-      RARCH_ERR("libretro_path is not set. Can't tell what core is running.\n");
-   else   /* if everything is O.K. */
-   {
-      core_name = path_basename(core_name_buffer);   /* and afterwards the basedirectory. What's left is i.e. "mupen64plus_libretro" */
-
-      /* Configuration directory: config_directory.
-       * Contains retroarch.cfg */
-      fill_pathname_basedir(config_directory, global->config_path, PATH_MAX_LENGTH);
-
-      /* ROM basename: game_name
-       * no extension or leading directory i.e. "Super Mario 64 (USA)" */
-      game_name = path_basename(global->basename);
-
-      /* Concatenate strings into full paths: core_path, game_path */
-      fill_pathname_join(core_path, config_directory, core_name, PATH_MAX_LENGTH);
-      fill_pathname_join(core_path, core_path, core_name, PATH_MAX_LENGTH);
-      strlcat(core_path, ".cfg", PATH_MAX_LENGTH);
-      fill_pathname_join(game_path, config_directory, core_name, PATH_MAX_LENGTH);
-      fill_pathname_join(game_path, game_path, game_name, PATH_MAX_LENGTH);
-      strlcat(game_path, ".cfg", PATH_MAX_LENGTH);
-
-      /* Append core-specific */
-      if (config_append_file(conf, core_path))
-         RARCH_LOG("Core-specific configuration found at %s. Appending.\n", core_path);
-      else
-         RARCH_LOG("No core-specific configuration found at %s.\n", core_path);
-
-      /* Append game-specific */
-      if (config_append_file(conf, game_path))
-         RARCH_LOG("Game-specific configuration found at %s. Appending.\n", game_path);
-      else
-         RARCH_LOG("No game-specific configuration found at %s.\n", game_path);
-
-      return true;   /* only means no errors were caught */
-   }
-
-   return false;
-}
-
-/**
  * config_load:
  * @path                : path to be read from.
  * @set_defaults        : set default values first before
@@ -1199,11 +1123,9 @@ static bool config_load_file(const char *path, bool set_defaults)
    if (set_defaults)
       config_set_defaults();
 
-   config_append_specific(conf);
-
    strlcpy(tmp_append_path, global->append_config_path,
          sizeof(tmp_append_path));
-   extra_path = strtok_r(tmp_append_path, ",", &save);
+   extra_path = strtok_r(tmp_append_path, "|", &save);
 
    while (extra_path)
    {
@@ -1212,7 +1134,7 @@ static bool config_load_file(const char *path, bool set_defaults)
       ret = config_append_file(conf, extra_path);
       if (!ret)
          RARCH_ERR("Failed to append config \"%s\"\n", extra_path);
-      extra_path = strtok_r(NULL, ",", &save);
+      extra_path = strtok_r(NULL, "|", &save);
    }
 
    if (global->verbosity)
@@ -1300,7 +1222,7 @@ static bool config_load_file(const char *path, bool set_defaults)
    CONFIG_GET_BOOL_BASE(conf, settings, video.force_srgb_disable, "video_force_srgb_disable");
 
 #ifdef RARCH_CONSOLE
-   /* TODO - will be refactored later to make it more clean - it's more 
+   /* TODO - will be refactored later to make it more clean - it's more
     * important that it works for consoles right now */
 
    CONFIG_GET_BOOL_BASE(conf, global, console.screen.gamma_correction, "gamma_correction");
@@ -1707,10 +1629,122 @@ static void config_load_core_specific(void)
    }
 }
 
+/**
+ * config_append_specific:
+ *
+ * Tries to append game-specific and core-specific configuration.
+ * These settings will always have precedence, thus this feature
+ * can be used to enforce overrides.
+ *
+ * Let $RETROARCH_CFG be the directory that contains retroarch.cfg,
+ * $CORE_NAME be the name of the libretro core library in use and
+ * $ROM_NAME the basename of the ROM (without the extension and
+ * directory).
+ *
+ * This function only has an effect if a game-specific or core-specific
+ * configuration file exists at respective locations.
+ *
+ * core-specific: $RETROARCH_CFG/$CORE_NAME/$CORE_NAME.cfg
+ * game-specific: $RETROARCH_CFG/$CORE_NAME/$ROM_NAME.cfg
+ *
+ * Returns: False if there was an error.
+ *
+ */
+bool config_append_specific()
+{
+   char config_directory[PATH_MAX_LENGTH],   /* path to the directory containing retroarch.cfg (prefix)    */
+        core_path[PATH_MAX_LENGTH],          /* final path for core-specific configuration (prefix+suffix) */
+        game_path[PATH_MAX_LENGTH];          /* final path for game-specific configuration (prefix+suffix) */
+   const char *core_name, *game_name;        /* suffix                                                     */
+   global_t *global = global_get_ptr();      /* global pointer                                             */
+   settings_t *settings = config_get_ptr();  /* config pointer                                             */
+
+   RARCH_LOG("Game name: %s\n",global->basename);
+   RARCH_LOG("Core name: %s\n",global->system.info.library_name);
+
+   if (!global || !settings || !global->system.info.library_name)
+   {
+      RARCH_ERR("Could not obtain global pointer or configuration file pointer to retrieve path of retroarch.cfg.\n");
+      return false;
+   }
+
+   /* Config directory: config_directory. */
+   if (settings->menu_config_directory)   /* Try RGUI path setting first */
+      strlcpy(config_directory, settings->menu_config_directory, PATH_MAX_LENGTH);
+   else if (global->config_path)   /* If that setting is default, use the directory that retroarch.cfg is in */
+      fill_pathname_basedir(config_directory, global->config_path, PATH_MAX_LENGTH);
+   else
+   {
+      RARCH_ERR("No config directory set under Settings > Path and retroarch.cfg not found.\n");
+      return false;
+   }
+   RARCH_LOG("Config directory: %s\n", config_directory);
+
+   /*  Core name: core_name
+    *  i.e. Mupen64plus */
+   core_name = global->system.info.library_name;
+   game_name = path_basename(global->basename);
+
+   /* ROM basename: game_name
+    * no extension or leading directory i.e. "Super Mario 64 (USA)" */
+   game_name = path_basename(global->basename);
+
+   /* Concat strings into full paths: core_path, game_path */
+   fill_pathname_join(core_path, config_directory, core_name, PATH_MAX_LENGTH);
+   fill_pathname_join(core_path, core_path, core_name, PATH_MAX_LENGTH);
+   strlcat(core_path, ".cfg", PATH_MAX_LENGTH);
+
+   fill_pathname_join(game_path, config_directory, core_name, PATH_MAX_LENGTH);
+   fill_pathname_join(game_path, game_path, game_name, PATH_MAX_LENGTH);
+   strlcat(game_path, ".cfg", PATH_MAX_LENGTH);
+
+   /* Create a new config file from core_path */
+   config_file_t *new_conf = config_file_new(core_path);
+
+   bool should_append = false;
+
+   /* Append core-specific */
+   if (new_conf)
+   {
+      RARCH_LOG("Core-specific configuration found at %s. Appending.\n", core_path);
+      strlcpy(global->append_config_path, core_path, sizeof(global->append_config_path));
+      should_append = true;
+   }
+   else
+      RARCH_LOG("No core-specific configuration found at %s.\n", core_path);
+
+   new_conf = NULL;
+
+   /* Create a new config file from core_path */
+   new_conf = config_file_new(game_path);
+
+   /* Append game-specific */
+   if (new_conf)
+   {
+      if(should_append)
+      {
+          strlcat(global->append_config_path, "|", sizeof(global->append_config_path));
+          strlcat(global->append_config_path, game_path, sizeof(global->append_config_path));
+      }
+      else
+          strlcpy(global->append_config_path, game_path, sizeof(global->append_config_path));
+      RARCH_LOG("Game-specific configuration found at %s. Appending.\n", game_path);
+
+      should_append = true;
+   }
+   else
+      RARCH_LOG("No game-specific configuration found at %s.\n", game_path);
+
+   if(should_append)
+      config_load_file(global->config_path, false);
+
+   return true;   /* only means no errors were caught */
+}
+
 static void parse_config_file(void)
 {
    global_t *global = global_get_ptr();
-   bool ret = config_load_file((*global->config_path) 
+   bool ret = config_load_file((*global->config_path)
          ? global->config_path : NULL, false);
 
    if (*global->config_path)
