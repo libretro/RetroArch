@@ -25,6 +25,21 @@ struct lut_info
    bool smooth;
 };
 
+struct Pass
+{
+   LinkInfo info;
+   LPDIRECT3DTEXTURE tex;
+   LPDIRECT3DVERTEXBUFFER vertex_buf;
+#ifdef HAVE_CG
+   CGprogram vPrg, fPrg;
+#endif
+   unsigned last_width, last_height;
+#ifdef HAVE_D3D9
+   LPDIRECT3DVERTEXDECLARATION vertex_decl;
+#endif
+   std::vector<unsigned> attrib_map;
+};
+
 typedef struct renderchain
 {
    LPDIRECT3DDEVICE dev;

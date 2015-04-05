@@ -45,21 +45,6 @@ enum
    TEXTURESMASK = TEXTURES - 1
 };
 
-struct Pass
-{
-   LinkInfo info;
-   LPDIRECT3DTEXTURE tex;
-   LPDIRECT3DVERTEXBUFFER vertex_buf;
-#ifdef HAVE_CG
-   CGprogram vPrg, fPrg;
-#endif
-   unsigned last_width, last_height;
-#ifdef HAVE_D3D9
-   LPDIRECT3DVERTEXDECLARATION vertex_decl;
-#endif
-   std::vector<unsigned> attrib_map;
-};
-
 void renderchain_free(void *data);
 
 void *renderchain_new(void);
