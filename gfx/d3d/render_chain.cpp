@@ -252,7 +252,7 @@ void renderchain_set_shaders(void *data, void *fragment_data, void *vertex_data)
    cgD3D9BindProgram(*vPrg);
 }
 
-void renderchain_destroy_stock_shader(void *data)
+static void renderchain_destroy_stock_shader(void *data)
 {
    renderchain_t *chain = (renderchain_t*)data;
 
@@ -282,7 +282,7 @@ void renderchain_destroy_shader(void *data, int i)
 #endif
 }
 
-void renderchain_set_shader_mvp(void *data, void *shader_data, void *matrix_data)
+static void renderchain_set_shader_mvp(void *data, void *shader_data, void *matrix_data)
 {
    CGprogram              *vPrg = (CGprogram*)shader_data;
    const D3DXMATRIX     *matrix = (const D3DXMATRIX*)matrix_data;
@@ -329,8 +329,7 @@ void renderchain_set_shader_params(void *data, void *pass_data,
    set_cg_param(pass->vPrg, "IN.frame_count", frame_cnt);
 }
 
-
-void renderchain_bind_tracker(void *data, void *pass_data, unsigned pass_index)
+static void renderchain_bind_tracker(void *data, void *pass_data, unsigned pass_index)
 {
    unsigned i;
    Pass           *pass  = (Pass*)pass_data;
@@ -496,7 +495,7 @@ bool renderchain_init_shader_fvf(void *data, void *pass_data)
    return true;
 }
 
-void renderchain_bind_orig(void *data, void *pass_data)
+static void renderchain_bind_orig(void *data, void *pass_data)
 {
    unsigned index;
    CGparameter param;
@@ -537,7 +536,7 @@ void renderchain_bind_orig(void *data, void *pass_data)
    }
 }
 
-void renderchain_bind_prev(void *data, void *pass_data)
+static void renderchain_bind_prev(void *data, void *pass_data)
 {
    unsigned i, index;
    char attr_texture[64], attr_input_size[64], attr_tex_size[64], attr_coord[64];
@@ -627,7 +626,7 @@ static void renderchain_add_lut(renderchain_t *chain,
    chain->bound_tex.push_back(index);
 }
 
-void renderchain_bind_luts(void *data, void *pass_data)
+static void renderchain_bind_luts(void *data, void *pass_data)
 {
    unsigned i, index;
    Pass           *pass = (Pass*)pass_data;
@@ -658,7 +657,7 @@ void renderchain_bind_luts(void *data, void *pass_data)
    }
 }
 
-void renderchain_bind_pass(void *data, void *pass_data, unsigned pass_index)
+static void renderchain_bind_pass(void *data, void *pass_data, unsigned pass_index)
 {
    unsigned i, index;
    Pass           *pass = (Pass*)pass_data;
