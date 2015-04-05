@@ -870,11 +870,9 @@ static bool d3d_init_imports(d3d_video_t *d3d)
 static bool d3d_init_chain(d3d_video_t *d3d, const video_info_t *video_info)
 {
    unsigned current_width, current_height, out_width, out_height;
-   unsigned i = 0;
+   unsigned i            = 0;
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
-#ifndef _XBOX
-   LinkInfo link_info = {0};
-#endif
+   LinkInfo link_info    = {0};
 
    (void)i;
    (void)current_width;
