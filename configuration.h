@@ -413,6 +413,16 @@ void config_load(void);
 bool config_load_override(void);
 
 /**
+ * config_load_remap:
+ *
+ * Tries to append game-specific and core-specific remap files.
+ *
+ * Returns: false if there was an error.
+ *
+ */
+bool config_load_remap(void);
+
+/**
  * config_save_keybinds_file:
  * @path            : Path that shall be written to.
  *

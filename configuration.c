@@ -1742,6 +1742,21 @@ bool config_load_override(void)
    return true;   /* only means no errors were caught */
 }
 
+/**
+ * config_load_remap:
+ *
+ * Tries to append game-specific and core-specific remap files.
+ *
+ * This function only has an effect if a game-specific or core-specific
+ * configuration file exists at respective locations.
+ *
+ * core-specific: $REMAP_DIR/$CORE_NAME/$CORE_NAME.cfg
+ * game-specific: $REMAP_DIR/$CORE_NAME/$GAME_NAME.cfg
+ *
+ * Returns: false if there was an error. 
+ */
+bool config_load_remap(void);
+
 static void parse_config_file(void)
 {
    global_t *global = global_get_ptr();
