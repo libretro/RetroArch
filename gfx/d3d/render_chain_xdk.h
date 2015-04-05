@@ -120,6 +120,10 @@ static bool renderchain_create_first_pass(void *data,
    return true;
 }
 
+void renderchain_deinit(void *data)
+{
+}
+
 void renderchain_deinit_shader(void)
 {
 }
@@ -147,7 +151,8 @@ bool renderchain_init_shader(void *data)
    return false;
 }
 
-static bool renderchain_init(void *data, const video_info_t *info)
+bool renderchain_init(void *data,
+      const video_info_t *info)
 {
    d3d_video_t *chain    = (d3d_video_t*)data;
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)chain->dev;
