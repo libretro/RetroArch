@@ -400,7 +400,17 @@ const char *config_get_default_menu(void);
  */
 void config_load(void);
 
-bool config_append_specific(void);
+/**
+ * config_load_override:
+ *
+ * Tries to append game-specific and core-specific configuration.
+ * These settings will always have precedence, thus this feature
+ * can be used to enforce overrides.
+ *
+ * Returns: false if there was an error.
+ *
+ */
+bool config_load_override(void);
 
 /**
  * config_save_keybinds_file:

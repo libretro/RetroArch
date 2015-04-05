@@ -1886,7 +1886,7 @@ static bool init_core(void)
    driver_t *driver = driver_get_ptr();
    global_t *global = global_get_ptr();
 
-   config_append_specific();
+   config_load_override();
 
    verify_api_version();
    pretro_init();

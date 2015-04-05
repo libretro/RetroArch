@@ -1630,27 +1630,22 @@ static void config_load_core_specific(void)
 }
 
 /**
- * config_append_specific:
+ * config_load_override:
  *
  * Tries to append game-specific and core-specific configuration.
  * These settings will always have precedence, thus this feature
  * can be used to enforce overrides.
  *
- * Let $RETROARCH_CFG be the directory that contains retroarch.cfg,
- * $CORE_NAME be the name of the libretro core library in use and
- * $ROM_NAME the basename of the ROM (without the extension and
- * directory).
- *
  * This function only has an effect if a game-specific or core-specific
  * configuration file exists at respective locations.
  *
- * core-specific: $RETROARCH_CFG/$CORE_NAME/$CORE_NAME.cfg
- * game-specific: $RETROARCH_CFG/$CORE_NAME/$ROM_NAME.cfg
+ * core-specific: $CONFIG_DIR/$CORE_NAME/$CORE_NAME.cfg fallback: $CURRENT_CFG_LOCATION/$CORE_NAME/$CORE_NAME.cfg
+ * game-specific: $CONFIG_DIR/$CORE_NAME/$ROM_NAME.cfg fallback: $CURRENT_CFG_LOCATION/$CORE_NAME/$GAME_NAME.cfg
  *
- * Returns: False if there was an error.
+ * Returns: false if there was an error.
  *
  */
-bool config_append_specific(void)
+bool config_load_override(void)
 {
    char config_directory[PATH_MAX_LENGTH],   /* path to the directory containing retroarch.cfg (prefix)    */
         core_path[PATH_MAX_LENGTH],          /* final path for core-specific configuration (prefix+suffix) */
@@ -1662,7 +1657,11 @@ bool config_append_specific(void)
    RARCH_LOG("Game name: %s\n",global->basename);
    RARCH_LOG("Core name: %s\n",global->system.info.library_name);
 
-   if (!global || !settings || !global->system.info.library_name)
+   //early return in case a library isn't loaded
+   if(!global->system.info.library_name)
+      return true;
+   
+   if (!global || !settings )
    {
       RARCH_ERR("Could not obtain global pointer or configuration file pointer to retrieve path of retroarch.cfg.\n");
       return false;
