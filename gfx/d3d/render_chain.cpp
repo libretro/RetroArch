@@ -494,7 +494,7 @@ void renderchain_bind_orig(void *data, void *pass_data)
    if (param)
    {
       index = cgGetParameterResourceIndex(param);
-      chain->dev->SetTexture(index, chain->passes[0].tex);
+      d3d_set_texture(chain->dev, index, chain->passes[0].tex);
       d3d_set_sampler_magfilter(chain->dev, index,
             translate_filter(chain->passes[0].info.pass->filter));
       d3d_set_sampler_minfilter(chain->dev, index, 
@@ -562,7 +562,7 @@ void renderchain_bind_prev(void *data, void *pass_data)
          tex = (LPDIRECT3DTEXTURE)
             chain->prev.tex[(chain->prev.ptr - (i + 1)) & TEXTURESMASK];
 
-         chain->dev->SetTexture(index, tex);
+         d3d_set_texture(chain->dev, index, tex);
          chain->bound_tex.push_back(index);
 
          d3d_set_sampler_magfilter(chain->dev, index,
@@ -594,7 +594,7 @@ static void renderchain_add_lut(renderchain_t *chain,
    if (!chain)
       return;
 
-   chain->dev->SetTexture(index, chain->luts[i].tex);
+   d3d_set_texture(chain->dev, index, chain->luts[i].tex);
    d3d_set_sampler_magfilter(chain->dev, index,
          translate_filter(chain->luts[i].smooth));
    d3d_set_sampler_minfilter(chain->dev, index, 
@@ -674,7 +674,7 @@ void renderchain_bind_pass(void *data, void *pass_data, unsigned pass_index)
          index = cgGetParameterResourceIndex(param);
          chain->bound_tex.push_back(index);
 
-         chain->dev->SetTexture(index, chain->passes[i].tex);
+         d3d_set_texture(chain->dev, index, chain->passes[i].tex);
          d3d_set_sampler_magfilter(chain->dev, index,
                translate_filter(chain->passes[i].info.pass->filter));
          d3d_set_sampler_minfilter(chain->dev, index, 
