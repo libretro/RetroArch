@@ -1480,7 +1480,7 @@ static void d3d_free_overlay(d3d_video_t *d3d, overlay_t *overlay)
       return;
 
    d3d_texture_free(overlay->tex);
-   d3d_vertex_buffer_free(overlay->vert_buf);
+   d3d_vertex_buffer_free(overlay->vert_buf, NULL);
 }
 
 static void d3d_free_overlays(d3d_video_t *d3d)
