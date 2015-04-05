@@ -106,40 +106,12 @@ static unsigned monitor_count;
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
 static void d3d_deinit_shader(void *data)
 {
-   d3d_video_t *d3d = (d3d_video_t*)data;
-   (void)d3d;
-   (void)data;
-
    renderchain_deinit_shader();
 }
 
 static bool d3d_init_shader(void *data)
 {
-   const char *shader_path = NULL;
-#if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
-   const shader_backend_t *backend = NULL;
-#endif
-   d3d_video_t     *d3d = (d3d_video_t*)data;
-   settings_t *settings = config_get_ptr();
-
-   (void)d3d;
-	(void)data;
-
-#if defined(HAVE_HLSL)
-   RARCH_LOG("D3D]: Using HLSL shader backend.\n");
-   backend     = &hlsl_backend;
-   shader_path = settings->video.shader_path;
-   d3d->shader = backend;
-
-   if (!d3d->shader)
-      return false;
-
-   return d3d->shader->init(d3d, shader_path);
-#elif defined(HAVE_CG)
-   return renderchain_init_shader(d3d);
-#else
-   return false;
-#endif
+   return renderchain_init_shader(data);
 }
 #endif
 

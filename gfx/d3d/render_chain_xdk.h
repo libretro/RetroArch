@@ -101,6 +101,33 @@ static bool renderchain_create_first_pass(void *data,
    return true;
 }
 
+static void renderchain_deinit_shader(void)
+{
+}
+
+static bool renderchain_init_shader(void *data)
+{
+   const char *shader_path = NULL;
+   d3d_video_t        *d3d = (d3d_video_t*)data;
+   settings_t *settings    = config_get_ptr();
+
+   if (!d3d)
+      return false;
+
+#if defined(HAVE_HLSL)
+   RARCH_LOG("D3D]: Using HLSL shader backend.\n");
+   shader_path = settings->video.shader_path;
+   d3d->shader = &hlsl_backend;
+
+   if (!d3d->shader)
+      return false;
+
+   return d3d->shader->init(d3d, shader_path);
+#endif
+
+   return false;
+}
+
 static bool renderchain_init(void *data, const video_info_t *info)
 {
    d3d_video_t *chain    = (d3d_video_t*)data;
