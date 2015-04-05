@@ -1650,7 +1650,7 @@ static void config_load_core_specific(void)
  * Returns: False if there was an error.
  *
  */
-bool config_append_specific()
+bool config_append_specific(void)
 {
    char config_directory[PATH_MAX_LENGTH],   /* path to the directory containing retroarch.cfg (prefix)    */
         core_path[PATH_MAX_LENGTH],          /* final path for core-specific configuration (prefix+suffix) */

@@ -80,10 +80,6 @@ bool renderchain_create_first_pass(void *data,
 
 void renderchain_set_viewport(void *data, void *viewport_data);
 
-void renderchain_set_mvp(void *data, void *vertex_program,
-      unsigned vp_width, unsigned vp_height,
-      unsigned rotation);
-
 void renderchain_convert_geometry(void *data, const void *info_data,
       unsigned *out_width, unsigned *out_height,
       unsigned width, unsigned height,
