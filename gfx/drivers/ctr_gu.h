@@ -155,7 +155,8 @@ static inline void ctrGuSetVertexShaderFloatUniform(int id, float* data, int cou
 
 #define CTRGU_ATTRIBFMT(f, n) ((((n)-1)<<2)|((f)&3))
 
-void ctrGuSetAttributeBuffers(u32 total_attributes, void* base_address, u64 attribute_formats, u32 buffer_size)
+__attribute__((always_inline))
+static inline void ctrGuSetAttributeBuffers(u32 total_attributes, void* base_address, u64 attribute_formats, u32 buffer_size)
 {
    u32 param[0x28];
 
