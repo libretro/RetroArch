@@ -48,8 +48,8 @@ bool renderchain_init_shader(void *data);
 
 bool renderchain_init(void *data,
       const video_info_t *video_info,
-      void *dev_,
-      const void *final_viewport_,
+      void *dev_data,
+      const void *final_viewport_data,
       const void *info_data,
       unsigned fmt);
 

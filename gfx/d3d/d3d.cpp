@@ -903,7 +903,10 @@ static bool d3d_init_chain(d3d_video_t *d3d, const video_info_t *video_info)
 #endif
 
 #ifdef _XBOX
-   if (!renderchain_init(d3d, video_info))
+   if (!renderchain_init(d3d, video_info,
+            NULL, NULL, NULL, 
+            video_info->rgb32 ? 
+            RETRO_PIXEL_FORMAT_XRGB8888 : RETRO_PIXEL_FORMAT_RGB565))
    {
       RARCH_ERR("[D3D]: Failed to init render chain.\n");
       return false;

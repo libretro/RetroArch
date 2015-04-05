@@ -199,37 +199,6 @@ static void renderchain_blit_to_texture(void *data, const void *frame,
          &d3dlr, frame, width, height, pitch);
 }
 
-static void renderchain_render_pass(void *data, const void *frame,
-      unsigned width, unsigned height, unsigned pitch, unsigned rotation)
-{
-   unsigned i;
-   d3d_video_t      *d3d = (d3d_video_t*)data;
-   LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
-   runloop_t *runloop    = rarch_main_get_ptr();
-   settings_t *settings  = config_get_ptr();
-
-   renderchain_blit_to_texture(d3d, frame, width, height, pitch);
-   renderchain_set_vertices(d3d, 1, width, height);
-
-   d3d_set_texture(d3dr, 0, d3d->tex);
-   d3d_set_viewport(d3d->dev, &d3d->final_viewport);
-   d3d_set_sampler_minfilter(d3dr, 0, settings->video.smooth ?
-         D3DTEXF_LINEAR : D3DTEXF_POINT);
-   d3d_set_sampler_magfilter(d3dr, 0, settings->video.smooth ?
-         D3DTEXF_LINEAR : D3DTEXF_POINT);
-
-#if defined(_XBOX1)
-   d3d_set_vertex_shader(d3dr, D3DFVF_XYZ | D3DFVF_TEX1, NULL);
-#elif defined(_XBOX360)
-   D3DDevice_SetVertexDeclaration(d3dr, d3d->vertex_decl);
-#endif
-   for (i = 0; i < 4; i++)
-      d3d_set_stream_source(d3dr, i, d3d->vertex_buf, 0, sizeof(Vertex));
-
-   d3d_draw_primitive(d3dr, D3DPT_TRIANGLESTRIP, 0, 2);
-   renderchain_set_mvp(d3d, d3d->screen_width, d3d->screen_height, d3d->dev_rotation);
-}
-
 void renderchain_free(void *data)
 {
    d3d_video_t *chain = (d3d_video_t*)data;
@@ -244,37 +213,6 @@ void renderchain_free(void *data)
       state_tracker_free(chain->tracker);
 #endif
 #endif
-}
-
-bool renderchain_init_shader_fvf(void *data, void *pass_data)
-{
-   d3d_video_t *chain    = (d3d_video_t*)data;
-   d3d_video_t *pass     = (d3d_video_t*)data;
-   LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)chain->dev;
-
-   (void)pass_data;
-
-#if defined(_XBOX360)
-   static const D3DVERTEXELEMENT VertexElements[] =
-   {
-      { 0, 0 * sizeof(float), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_POSITION, 0 },
-      { 0, 2 * sizeof(float), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 0 },
-      D3DDECL_END()
-   };
-
-   if (FAILED(d3dr->CreateVertexDeclaration(VertexElements, &pass->vertex_decl)))
-      return false;
-#endif
-
-   return true;
-}
-
-void renderchain_set_final_viewport(void *data,
-      void *renderchain_data, const void *viewport_data)
-{
-   (void)data;
-   (void)renderchain_data;
-   (void)viewport_data;
 }
 
 void renderchain_deinit(void *data)
@@ -309,13 +247,23 @@ bool renderchain_init_shader(void *data)
 }
 
 bool renderchain_init(void *data,
-      const video_info_t *info)
+      const video_info_t *info,
+      void *dev_data,
+      const void *final_viewport_data,
+      const void *info_data,
+      unsigned fmt
+      )
 {
    d3d_video_t *chain    = (d3d_video_t*)data;
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)chain->dev;
    global_t *global      = global_get_ptr();
 
-   chain->pixel_size     = info->rgb32 ? sizeof(uint32_t) : sizeof(uint16_t);
+   (void)dev_data;
+   (void)final_viewport_data;
+   (void)info_data;
+   (void)fmt;
+
+   chain->pixel_size     = fmt ? sizeof(uint32_t) : sizeof(uint16_t);
 
    if (!renderchain_create_first_pass(chain, info))
       return false;
@@ -325,6 +273,68 @@ bool renderchain_init(void *data,
 
    if (global->console.screen.viewports.custom_vp.height == 0)
       global->console.screen.viewports.custom_vp.height = chain->screen_height;
+
+   return true;
+}
+
+void renderchain_set_final_viewport(void *data,
+      void *renderchain_data, const void *viewport_data)
+{
+   (void)data;
+   (void)renderchain_data;
+   (void)viewport_data;
+}
+
+void renderchain_render_pass(void *data, const void *frame,
+      unsigned width, unsigned height, unsigned pitch, unsigned rotation)
+{
+   unsigned i;
+   d3d_video_t      *d3d = (d3d_video_t*)data;
+   LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
+   runloop_t *runloop    = rarch_main_get_ptr();
+   settings_t *settings  = config_get_ptr();
+
+   renderchain_blit_to_texture(d3d, frame, width, height, pitch);
+   renderchain_set_vertices(d3d, 1, width, height);
+
+   d3d_set_texture(d3dr, 0, d3d->tex);
+   d3d_set_viewport(d3d->dev, &d3d->final_viewport);
+   d3d_set_sampler_minfilter(d3dr, 0, settings->video.smooth ?
+         D3DTEXF_LINEAR : D3DTEXF_POINT);
+   d3d_set_sampler_magfilter(d3dr, 0, settings->video.smooth ?
+         D3DTEXF_LINEAR : D3DTEXF_POINT);
+
+#if defined(_XBOX1)
+   d3d_set_vertex_shader(d3dr, D3DFVF_XYZ | D3DFVF_TEX1, NULL);
+#elif defined(_XBOX360)
+   D3DDevice_SetVertexDeclaration(d3dr, d3d->vertex_decl);
+#endif
+   for (i = 0; i < 4; i++)
+      d3d_set_stream_source(d3dr, i, d3d->vertex_buf, 0, sizeof(Vertex));
+
+   d3d_draw_primitive(d3dr, D3DPT_TRIANGLESTRIP, 0, 2);
+   renderchain_set_mvp(d3d, d3d->screen_width, d3d->screen_height, d3d->dev_rotation);
+}
+
+bool renderchain_init_shader_fvf(void *data, void *pass_data)
+{
+   d3d_video_t *chain    = (d3d_video_t*)data;
+   d3d_video_t *pass     = (d3d_video_t*)data;
+   LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)chain->dev;
+
+   (void)pass_data;
+
+#if defined(_XBOX360)
+   static const D3DVERTEXELEMENT VertexElements[] =
+   {
+      { 0, 0 * sizeof(float), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_POSITION, 0 },
+      { 0, 2 * sizeof(float), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 0 },
+      D3DDECL_END()
+   };
+
+   if (FAILED(d3dr->CreateVertexDeclaration(VertexElements, &pass->vertex_decl)))
+      return false;
+#endif
 
    return true;
 }
