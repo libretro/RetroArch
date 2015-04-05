@@ -1027,9 +1027,7 @@ static bool texture_image_render(d3d_video_t *d3d,
    memcpy(verts, newVerts, sizeof(newVerts));
    d3d_vertex_buffer_unlock(out_img->vertex_buf);
 
-   d3d->dev->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
-   d3d->dev->SetRenderState(D3DRS_SRCBLEND,  D3DBLEND_SRCALPHA);
-   d3d->dev->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+   d3d_enable_blend_func(d3d->dev);
 
    /* Also blend the texture with the set alpha value. */
    d3d->dev->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_MODULATE);
@@ -1071,13 +1069,11 @@ static void d3d_draw_texture(d3d_video_t *d3d)
 
    if (d3d->menu_texture_enable)
    {
-      d3d->dev->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_ONE);
-      d3d->dev->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
-      d3d->dev->SetRenderState(D3DRS_ALPHABLENDENABLE, true);
+      d3d_enable_blend_func(d3d->dev);
       texture_image_render(d3d, menu_texture,
             menu_texture->x, menu_texture->y,
          d3d->screen_width, d3d->screen_height, true);
-      d3d->dev->SetRenderState(D3DRS_ALPHABLENDENABLE, false);
+      d3d_disable_blend_func(d3d->dev);
    }
 #endif
 }
@@ -1327,10 +1323,7 @@ static void d3d_overlay_render(d3d_video_t *d3d, overlay_t *overlay)
    memcpy(verts, vert, sizeof(vert));
    d3d_vertex_buffer_unlock(overlay->vert_buf);
 
-   // enable alpha
-   d3d->dev->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
-   d3d->dev->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-   d3d->dev->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+   d3d_enable_blend_func(d3d->dev);
 
 #ifndef _XBOX1
    d3d->dev->CreateVertexDeclaration(vElems, &vertex_decl);
@@ -1364,7 +1357,7 @@ static void d3d_overlay_render(d3d_video_t *d3d, overlay_t *overlay)
    d3d_draw_primitive(d3d->dev, D3DPT_TRIANGLESTRIP, 0, 2);
 
    /* Restore previous state. */
-   d3d->dev->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
+   d3d_disable_blend_func(d3d->dev);
    d3d_set_viewport(d3d->dev, &d3d->final_viewport);
 }
 

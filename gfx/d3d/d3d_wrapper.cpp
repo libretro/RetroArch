@@ -369,3 +369,25 @@ void d3d_texture_blit(void *data, unsigned pixel_size,
    }
 #endif
 }
+
+void d3d_enable_blend_func(void *data)
+{
+   LPDIRECT3DDEVICE dev = (LPDIRECT3DDEVICE)data;
+
+   if (!dev)
+      return;
+
+   dev->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
+   dev->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+   dev->SetRenderState(D3DRS_ALPHABLENDENABLE, true);
+}
+
+void d3d_disable_blend_func(void *data)
+{
+   LPDIRECT3DDEVICE dev = (LPDIRECT3DDEVICE)data;
+
+   if (!dev)
+      return;
+
+   dev->SetRenderState(D3DRS_ALPHABLENDENABLE, false);
+}

@@ -84,4 +84,8 @@ void d3d_texture_blit(void *data, unsigned pixel_size,
 
 void d3d_set_viewport(LPDIRECT3DDEVICE dev, D3DVIEWPORT *vp);
 
+void d3d_enable_blend_func(void *data);
+
+void d3d_disable_blend_func(void *data);
+
 #endif
