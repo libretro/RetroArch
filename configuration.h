@@ -400,6 +400,8 @@ const char *config_get_default_menu(void);
  */
 void config_load(void);
 
+bool config_append_specific();
+
 /**
  * config_save_keybinds_file:
  * @path            : Path that shall be written to.
