@@ -105,16 +105,15 @@ typedef struct renderchain
 void renderchain_free(void *data);
 
 bool renderchain_init(void *data, const video_info_t *video_info,
-      LPDIRECT3DDEVICE dev_,
+      void *dev_,
       void *shader_data,
-      const D3DVIEWPORT *final_viewport_,
+      const void *final_viewport_,
       const void *info_data,
       PixelFormat fmt);
 
 void renderchain_clear(void *data);
 
-void renderchain_set_final_viewport(void *data,
-      const D3DVIEWPORT *final_viewport);
+void renderchain_set_final_viewport(void *data, const void *viewport_data);
 
 bool renderchain_set_pass_size(void *data, unsigned pass_index,
       unsigned width, unsigned height);
@@ -148,7 +147,7 @@ void renderchain_set_vertices(
       unsigned vp_width, unsigned vp_height,
       unsigned rotation);
 
-void renderchain_set_viewport(void *data, D3DVIEWPORT *vp);
+void renderchain_set_viewport(void *data, void *viewport_data);
 
 void renderchain_set_mvp(void *data, void *vertex_program,
       unsigned vp_width, unsigned vp_height,

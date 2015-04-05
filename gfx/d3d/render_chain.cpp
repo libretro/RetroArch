@@ -60,9 +60,9 @@ void renderchain_free(void *data)
 }
 
 bool renderchain_init(void *data, const video_info_t *video_info,
-      LPDIRECT3DDEVICE dev_,
+      void *dev_,
       void *shader_context,
-      const D3DVIEWPORT *final_viewport_,
+      const void *final_viewport_,
       const void *info_data, PixelFormat fmt)
 {
    const LinkInfo *info  = (const LinkInfo*)info_data;
@@ -72,7 +72,7 @@ bool renderchain_init(void *data, const video_info_t *video_info,
    if (!chain)
       return false;
 
-   chain->dev            = dev_;
+   chain->dev            = (LPDIRECT3DDEVICE)dev_;
 #ifdef HAVE_CG
    chain->cgCtx          = cgCtx_;
 #endif
@@ -128,10 +128,10 @@ void renderchain_clear(void *data)
    chain->luts.clear();
 }
 
-void renderchain_set_final_viewport(void *data,
-      const D3DVIEWPORT *final_viewport)
+void renderchain_set_final_viewport(void *data, const void *viewport_data)
 {
    renderchain_t *chain = (renderchain_t*)data;
+   const D3DVIEWPORT *final_viewport = (const D3DVIEWPORT*)viewport_data;
 
    if (chain)
       chain->final_viewport = (D3DVIEWPORT*)final_viewport;
@@ -523,9 +523,10 @@ void renderchain_set_vertices(
          vp_width, vp_height);
 }
 
-void renderchain_set_viewport(void *data, D3DVIEWPORT *vp)
+void renderchain_set_viewport(void *data, void *viewport_data)
 {
    LPDIRECT3DDEVICE d3dr;
+   D3DVIEWPORT       *vp = (D3DVIEWPORT*)viewport_data;
    renderchain_t  *chain = (renderchain_t*)data;
 
    if (!chain)
