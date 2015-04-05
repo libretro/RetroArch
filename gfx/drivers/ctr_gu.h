@@ -18,6 +18,7 @@
 
 #include <3ds.h>
 #include <stdint.h>
+#include <retro_inline.h>
 
 #define VIRT_TO_PHYS(vaddr) \
    (((u32)(vaddr)) >= 0x14000000 && ((u32)(vaddr)) < 0x1c000000)?(void*)((u32)(vaddr) + 0x0c000000):\
@@ -47,11 +48,10 @@
 typedef struct
 {
    uint32_t buffer[8];
-}gtrgu_gx_command_t;
-
+} gtrgu_gx_command_t;
 
 __attribute__((always_inline))
-static inline int ctrGuWriteDisplayTransferCommand(gtrgu_gx_command_t* command,
+static INLINE int ctrGuWriteDisplayTransferCommand(gtrgu_gx_command_t* command,
                                          void* src, int src_w, int src_h,
                                          void* dst, int dst_w, int dst_h,
                                          uint32_t flags)
@@ -69,7 +69,7 @@ static inline int ctrGuWriteDisplayTransferCommand(gtrgu_gx_command_t* command,
 }
 
 __attribute__((always_inline))
-static inline int ctrGuSubmitGxCommand(u32* gxbuf, gtrgu_gx_command_t* command)
+static INLINE int ctrGuSubmitGxCommand(u32* gxbuf, gtrgu_gx_command_t* command)
 {
    if(!gxbuf) gxbuf = gxCmdBuf;
 
@@ -77,7 +77,8 @@ static inline int ctrGuSubmitGxCommand(u32* gxbuf, gtrgu_gx_command_t* command)
 }
 
 __attribute__((always_inline))
-static inline void ctrGuSetTexture(GPU_TEXUNIT unit, u32* data, u16 width, u16 height, u32 param, GPU_TEXCOLOR colorType)
+static INLINE void ctrGuSetTexture(GPU_TEXUNIT unit, u32* data,
+      u16 width, u16 height, u32 param, GPU_TEXCOLOR colorType)
 {
    switch (unit)
    {
@@ -106,7 +107,7 @@ static inline void ctrGuSetTexture(GPU_TEXUNIT unit, u32* data, u16 width, u16 h
 
 
 __attribute__((always_inline))
-static inline Result ctrGuCopyImage
+static INLINE Result ctrGuCopyImage
       (void* src, int src_w, int src_h, int src_fmt, bool src_is_tiled,
        void* dst, int dst_w,            int dst_fmt, bool dst_is_tiled)
 {
@@ -128,7 +129,7 @@ static inline Result ctrGuCopyImage
 }
 
 __attribute__((always_inline))
-static inline Result ctrGuDisplayTransfer
+static INLINE Result ctrGuDisplayTransfer
       (void* src, int src_w, int src_h, int src_fmt,
       void* dst, int dst_w, int dst_h, int dst_fmt, int multisample_lvl)
 {
@@ -146,7 +147,7 @@ static inline Result ctrGuDisplayTransfer
 }
 
 __attribute__((always_inline))
-static inline void ctrGuSetVertexShaderFloatUniform(int id, float* data, int count)
+static INLINE void ctrGuSetVertexShaderFloatUniform(int id, float* data, int count)
 {
    GPUCMD_AddWrite(GPUREG_VSH_FLOATUNIFORM_CONFIG, 0x80000000|(u32)id);
    GPUCMD_AddWrites(GPUREG_VSH_FLOATUNIFORM_DATA, (u32*)data, (u32)count * 4);
@@ -156,7 +157,8 @@ static inline void ctrGuSetVertexShaderFloatUniform(int id, float* data, int cou
 #define CTRGU_ATTRIBFMT(f, n) ((((n)-1)<<2)|((f)&3))
 
 __attribute__((always_inline))
-static inline void ctrGuSetAttributeBuffers(u32 total_attributes, void* base_address, u64 attribute_formats, u32 buffer_size)
+static INLINE void ctrGuSetAttributeBuffers(u32 total_attributes,
+      void* base_address, u64 attribute_formats, u32 buffer_size)
 {
    u32 param[0x28];
 
@@ -173,8 +175,5 @@ static inline void ctrGuSetAttributeBuffers(u32 total_attributes, void* base_add
    GPUCMD_AddWrite(GPUREG_0242, (total_attributes-1));
    GPUCMD_AddIncrementalWrites(GPUREG_VSH_ATTRIBUTES_PERMUTATION_LOW, ((u32[]){0x76543210, 0xBA98}), 2);
 }
-
-
-
 
 #endif // CTR_GU_H
