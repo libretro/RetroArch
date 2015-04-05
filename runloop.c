@@ -1052,7 +1052,7 @@ static void rarch_main_cmd_get_state(rarch_cmd_state_t *cmd,
    cmd->state_slot_decrease         = BIT64_GET(trigger_input, RARCH_STATE_SLOT_MINUS);
    cmd->pause_pressed               = BIT64_GET(trigger_input, RARCH_PAUSE_TOGGLE);
    cmd->frameadvance_pressed        = BIT64_GET(trigger_input, RARCH_FRAMEADVANCE);
-   cmd->rewind_pressed              = BIT64_GET(trigger_input, RARCH_REWIND);
+   cmd->rewind_pressed              = BIT64_GET(input,         RARCH_REWIND);
    cmd->netplay_flip_pressed        = BIT64_GET(trigger_input, RARCH_NETPLAY_FLIP);
    cmd->fullscreen_toggle           = BIT64_GET(trigger_input, RARCH_FULLSCREEN_TOGGLE_KEY);
    cmd->cheat_index_plus_pressed    = BIT64_GET(trigger_input,
