@@ -23,7 +23,7 @@
 #include <CoreFoundation/CFRunLoop.h>
 #endif
 #ifdef HAVE_MFI
-#include "../../apple/common/apple_gamecontroller.h"
+#include "mfi_hid.h"
 #endif
 #include <rthreads/rthreads.h>
 

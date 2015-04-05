@@ -20,5 +20,5 @@
 #endif
 
 #ifdef HAVE_MFI
-#include "../apple/common/apple_gamecontroller.m"
+#include "../input/drivers_hid/mfi_hid.m"
 #endif

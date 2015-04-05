@@ -20,7 +20,7 @@
 #include "../../input/drivers/apple_input.h"
 #include "../../settings.h"
 #ifdef HAVE_MFI
-#include "../common/apple_gamecontroller.h"
+#include "../../input/drivers_hid/mfi_hid.h"
 #endif
 #include "menu.h"
 #include "../../menu/menu.h"
