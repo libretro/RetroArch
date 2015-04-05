@@ -103,7 +103,6 @@ static HMONITOR monitor_all[MAX_MONITORS];
 static unsigned monitor_count;
 #endif
 
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
 void renderchain_deinit_shader(void);
 bool renderchain_init_shader(void *data);
 
@@ -116,7 +115,6 @@ static bool d3d_init_shader(void *data)
 {
    return renderchain_init_shader(data);
 }
-#endif
 
 static void d3d_deinit_chain(d3d_video_t *d3d)
 {
@@ -140,9 +138,7 @@ static void d3d_deinitialize(d3d_video_t *d3d)
       font_ctx->free(d3d->font_handle);
    font_ctx = NULL;
    d3d_deinit_chain(d3d);
-#ifdef HAVE_SHADERS
    d3d_deinit_shader(d3d);
-#endif
 
 #ifndef _XBOX
    d3d->needs_restore = false;
@@ -254,13 +250,11 @@ static bool d3d_initialize(d3d_video_t *d3d, const video_info_t *info)
    d3d_calculate_rect(d3d, d3d->screen_width, d3d->screen_height,
          info->force_aspect, global->system.aspect_ratio);
 
-#ifdef HAVE_SHADERS
    if (!d3d_init_shader(d3d))
    {
       RARCH_ERR("Failed to initialize shader subsystem.\n");
       return false;
    }
-#endif
 
    if (!d3d_init_chain(d3d, info))
    {
