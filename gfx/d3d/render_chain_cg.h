@@ -581,10 +581,10 @@ void renderchain_bind_pass(void *data, void *pass_data, unsigned pass_index)
       texture_size.x = chain->passes[i].info.tex_w;
       texture_size.y = chain->passes[i].info.tex_h;
 
-      set_cg_param(pass->vPrg, attr_video_size,   video_size);
-      set_cg_param(pass->fPrg, attr_video_size,   video_size);
-      set_cg_param(pass->vPrg, attr_texture_size, texture_size);
-      set_cg_param(pass->fPrg, attr_texture_size, texture_size);
+      set_cg_param(pass->vPrg, attr_input_size,   video_size);
+      set_cg_param(pass->fPrg, attr_input_size,   video_size);
+      set_cg_param(pass->vPrg, attr_tex_size,     texture_size);
+      set_cg_param(pass->fPrg, attr_tex_size,     texture_size);
 
       param = cgGetNamedParameter(pass->fPrg, attr_texture);
       if (param)
@@ -603,7 +603,7 @@ void renderchain_bind_pass(void *data, void *pass_data, unsigned pass_index)
                D3DTADDRESS_BORDER);
       }
 
-      param = cgGetNamedParameter(pass->vPrg, attr_tex_coord);
+      param = cgGetNamedParameter(pass->vPrg, attr_coord);
       if (param)
       {
          index = pass->attrib_map[cgGetParameterResourceIndex(param)];
