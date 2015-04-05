@@ -21,10 +21,10 @@
 #endif
 
 #include "d3d.h"
-#include "render_chain.h"
 #include "../video_viewport.h"
 #include "../video_monitor.h"
 #include "../../runloop.h"
+#include "render_chain_driver.h"
 
 #ifndef _XBOX
 #include "../drivers_wm/win32_common.h"

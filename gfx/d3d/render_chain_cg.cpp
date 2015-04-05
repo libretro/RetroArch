@@ -14,11 +14,11 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "render_chain.h"
 #include <string.h>
 #include <retro_inline.h>
 #include <Cg/cg.h>
 #include <Cg/cgD3D9.h>
+#include "render_chain_driver.h"
 
 struct lut_info
 {

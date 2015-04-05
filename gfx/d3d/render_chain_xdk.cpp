@@ -14,9 +14,9 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "render_chain.h"
 #include <string.h>
 #include <retro_inline.h>
+#include "render_chain_driver.h"
 
 typedef struct xdk_renderchain
 {
