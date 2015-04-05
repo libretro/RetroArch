@@ -8,7 +8,7 @@ static void renderchain_set_mvp(void *data, unsigned vp_width,
    hlsl_set_proj_matrix(XMMatrixRotationZ(rotation * (M_PI / 2.0)));
    if (d3d->shader && d3d->shader->set_mvp)
       d3d->shader->set_mvp(d3d, NULL);
-#elif defined(_XBOX1)
+#elif defined(HAVE_D3D8)
    D3DXMATRIX p_out, p_rotate, mat;
    D3DXMatrixOrthoOffCenterLH(&mat, 0, vp_width,  vp_height, 0, 0.0f, 1.0f);
    D3DXMatrixIdentity(&p_out);
