@@ -71,7 +71,7 @@ typedef struct cg_renderchain
    unsigned frame_count;
    std::vector<unsigned> bound_tex;
    std::vector<unsigned> bound_vert;
-} cg_cg_renderchain_t;
+} cg_renderchain_t;
 
 static CGcontext cgCtx;
 
