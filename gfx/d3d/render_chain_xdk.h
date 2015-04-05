@@ -18,7 +18,7 @@
 #include <string.h>
 #include <retro_inline.h>
 
-typdef struct xdk_renderchain
+typedef struct xdk_renderchain
 {
    void *empty;
 } xdk_renderchain_t;
