@@ -268,9 +268,6 @@ static void renderchain_render_pass(void *data, const void *frame,
       d3d_set_stream_source(d3dr, i, d3d->vertex_buf, 0, sizeof(Vertex));
 
    d3d_draw_primitive(d3dr, D3DPT_TRIANGLESTRIP, 0, 2);
-
-   runloop->frames.video.count++;
-
    renderchain_set_mvp(d3d, d3d->screen_width, d3d->screen_height, d3d->dev_rotation);
 }
 
