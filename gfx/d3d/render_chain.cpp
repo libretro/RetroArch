@@ -773,7 +773,7 @@ void renderchain_clear(void *data)
       if (chain->prev.tex[i])
          d3d_texture_free(chain->prev.tex[i]);
       if (chain->prev.vertex_buf[i])
-         d3d_vertex_buffer_free(chain->prev.vertex_buf[i]);
+         d3d_vertex_buffer_free(chain->prev.vertex_buf[i], NULL);
    }
 
    if (chain->passes[0].vertex_decl)
@@ -783,10 +783,8 @@ void renderchain_clear(void *data)
    {
       if (chain->passes[i].tex)
          d3d_texture_free(chain->passes[i].tex);
-      if (chain->passes[i].vertex_buf)
-         d3d_vertex_buffer_free(chain->passes[i].vertex_buf);
-      if (chain->passes[i].vertex_decl)
-         chain->passes[i].vertex_decl->Release();
+      if (chain->passes[i].vertex_buf || chain->passes[i].vertex_decl)
+         d3d_vertex_buffer_free(chain->passes[i].vertex_buf, chain->passes[i].vertex_decl);
       renderchain_destroy_shader(chain, i);
    }
 

@@ -29,7 +29,7 @@ LPDIRECT3DVERTEXBUFFER d3d_vertex_buffer_new(LPDIRECT3DDEVICE dev,
 void *d3d_vertex_buffer_lock(LPDIRECT3DVERTEXBUFFER vertbuf);
 void d3d_vertex_buffer_unlock(LPDIRECT3DVERTEXBUFFER vertbuf);
 
-void d3d_vertex_buffer_free(LPDIRECT3DVERTEXBUFFER buf);
+void d3d_vertex_buffer_free(void *vertex_data, void *vertex_declaration);
 
 LPDIRECT3DTEXTURE d3d_texture_new(LPDIRECT3DDEVICE dev,
       const char *path, unsigned width, unsigned height,

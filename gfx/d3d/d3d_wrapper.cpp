@@ -147,11 +147,26 @@ void *d3d_vertex_buffer_lock(LPDIRECT3DVERTEXBUFFER vertbuf)
    return buf;
 }
 
-void d3d_vertex_buffer_free(LPDIRECT3DVERTEXBUFFER buf)
+void d3d_vertex_buffer_free(void *vertex_data, void *vertex_declaration)
 {
+#ifdef HAVE_D3D9
+   LPDIRECT3DVERTEXDECLARATION vertex_decl = (LPDIRECT3DVERTEXDECLARATION)vertex_declaration;
+#endif
+   LPDIRECT3DVERTEXBUFFER buf = (LPDIRECT3DVERTEXBUFFER)vertex_data;
+
    if (buf)
+   {
       buf->Release();
-   buf = NULL;
+      buf = NULL;
+   }
+
+#ifdef HAVE_D3D9
+   if (vertex_decl)
+   {
+      vertex_decl->Release();
+      vertex_decl = NULL;
+   }
+#endif
 }
 
 void d3d_set_stream_source(LPDIRECT3DDEVICE dev, unsigned stream_no,
