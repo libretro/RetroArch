@@ -181,11 +181,13 @@ void renderchain_destroy_shader(void *data, int i)
 #endif
 }
 
-void renderchain_set_shader_mvp(void *data, CGprogram *vPrg, D3DXMATRIX &tmp)
+void renderchain_set_shader_mvp(void *data, void *shader_data, void *matrix_data)
 {
+   CGprogram              *vPrg = (CGprogram*)shader_data;
+   const D3DXMATRIX     *matrix = (const D3DXMATRIX*)matrix_data;
    CGparameter cgpModelViewProj = cgGetNamedParameter(*vPrg, "modelViewProj");
    if (cgpModelViewProj)
-      cgD3D9SetUniformMatrix(cgpModelViewProj, &tmp);
+      cgD3D9SetUniformMatrix(cgpModelViewProj, matrix);
 }
 
 #define set_cg_param(prog, param, val) do { \

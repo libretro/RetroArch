@@ -556,7 +556,7 @@ void renderchain_set_mvp(void *data, void *vertex_program,
    D3DXMatrixMultiply(&proj, &ortho, &rot);
    D3DXMatrixTranspose(&tmp, &proj);
 
-   renderchain_set_shader_mvp(chain, &vPrg, tmp);
+   renderchain_set_shader_mvp(chain, &vPrg, &tmp);
 }
 
 void renderchain_convert_geometry(
