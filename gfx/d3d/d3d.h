@@ -130,7 +130,7 @@ typedef struct d3d_video
       unsigned dev_rotation;
       D3DVIEWPORT final_viewport;
 
-      std::string cg_shader;
+      std::string shader_path;
 
 #ifndef _XBOX
       struct video_shader shader;
