@@ -121,8 +121,8 @@ bool renderchain_set_pass_size(void *data, unsigned pass_index,
 
 bool renderchain_add_pass(void *data, const void *info_data);
 
-bool renderchain_add_lut(void *data, const std::string &id,
-      const std::string &path,
+bool renderchain_add_lut(void *data,
+      const char *id, const char *path,
       bool smooth);
 
 void renderchain_add_state_tracker(void *data, void *tracker_data);
