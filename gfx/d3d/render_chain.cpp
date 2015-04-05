@@ -17,6 +17,7 @@
 #include "render_chain.h"
 #include <string.h>
 #include <retro_inline.h>
+#include "../inc/Cg/cg.h"
 
 struct lut_info
 {

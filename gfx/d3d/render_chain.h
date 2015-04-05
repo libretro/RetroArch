@@ -20,7 +20,6 @@
 #include "d3d.h"
 #include "../video_state_tracker.h"
 #include "../video_shader_parse.h"
-#include "../inc/Cg/cg.h"
 #include "../../libretro.h"
 
 struct Vertex
