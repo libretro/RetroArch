@@ -1887,7 +1887,9 @@ static bool init_core(void)
    global_t *global = global_get_ptr();
 
    if (!config_load_override())
-      RARCH_ERR("Error loading override files");
+      RARCH_ERR("Error loading override files\n");
+   if (!config_load_remap())
+      RARCH_ERR("Error loading remap files\n");
 
    verify_api_version();
    pretro_init();
