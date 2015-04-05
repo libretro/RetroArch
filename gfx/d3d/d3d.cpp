@@ -38,6 +38,10 @@
 #include <file/file_path.h>
 #include "../../performance.h"
 
+#include "d3d_defines.h"
+
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
+
 #if defined(HAVE_CG)
 #define HAVE_SHADERS
 #endif
@@ -45,19 +49,9 @@
 #ifdef HAVE_HLSL
 #include "../drivers_shader/shader_hlsl.h"
 #endif
-
-#include "d3d_defines.h"
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
-
-#ifdef HAVE_HLSL
-#include "../drivers_shader/shader_hlsl.h"
 #endif
 
-#endif
-
-#if !defined(DONT_HAVE_STATE_TRACKER) && !defined(_XBOX)
 #include "../../dynamic.h"
-#endif
 
 /* forward declarations */
 static void d3d_calculate_rect(d3d_video_t *d3d,
@@ -86,7 +80,9 @@ void d3d_make_d3dpp(void *data, const video_info_t *info,
 	D3DPRESENT_PARAMETERS *d3dpp);
 
 #ifdef HAVE_WINDOW
+
 #define IDI_ICON 1
+
 #define MAX_MONITORS 9
 
 extern LRESULT CALLBACK WindowProc(HWND hWnd, UINT message,
