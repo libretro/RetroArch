@@ -735,7 +735,7 @@ bool renderchain_init(void *data, const video_info_t *video_info,
       void *dev_,
       void *shader_context,
       const void *final_viewport_,
-      const void *info_data, PixelFormat fmt)
+      const void *info_data, unsigned fmt)
 {
    const LinkInfo *info  = (const LinkInfo*)info_data;
    renderchain_t *chain  = (renderchain_t*)data;
@@ -752,7 +752,7 @@ bool renderchain_init(void *data, const video_info_t *video_info,
    chain->tracker        = NULL;
    chain->final_viewport = (D3DVIEWPORT*)final_viewport_;
    chain->frame_count    = 0;
-   chain->pixel_size     = (fmt == RGB565) ? 2 : 4;
+   chain->pixel_size     = (fmt == RETRO_PIXEL_FORMAT_RGB565) ? 2 : 4;
 
    if (!renderchain_create_first_pass(chain, info, fmt))
       return false;
@@ -1097,7 +1097,7 @@ bool renderchain_create_first_pass(void *data, const void *info_data,
 
       chain->prev.tex[i] = (LPDIRECT3DTEXTURE)d3d_texture_new(
       d3dr, NULL, info->tex_w, info->tex_h, 1, 0,
-      fmt == RGB565 ? D3DFMT_R5G6B5 : D3DFMT_X8R8G8B8,
+      (fmt == RETRO_PIXEL_FORMAT_RGB565) ? D3DFMT_R5G6B5 : D3DFMT_X8R8G8B8,
       D3DPOOL_MANAGED, 0, 0, 0, NULL, NULL);
 
       if (!chain->prev.tex[i])

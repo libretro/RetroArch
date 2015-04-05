@@ -21,6 +21,7 @@
 #include "../video_state_tracker.h"
 #include "../video_shader_parse.h"
 #include "../inc/Cg/cg.h"
+#include "../../libretro.h"
 
 struct Vertex
 {
@@ -34,12 +35,6 @@ struct LinkInfo
 {
    unsigned tex_w, tex_h;
    struct video_shader_pass *pass;
-};
-
-enum PixelFormat
-{
-   RGB565 = 0,
-   ARGB
 };
 
 #define MAX_VARIABLES 64
@@ -76,7 +71,7 @@ bool renderchain_init(void *data, const video_info_t *video_info,
       void *shader_data,
       const void *final_viewport_,
       const void *info_data,
-      PixelFormat fmt);
+      unsigned fmt);
 
 void renderchain_clear(void *data);
 
@@ -101,7 +96,7 @@ bool renderchain_render(void *chain_data, const void *data,
       unsigned width, unsigned height, unsigned pitch, unsigned rotation);
 
 bool renderchain_create_first_pass(void *data,
-      const void *info_data, PixelFormat fmt);
+      const void *info_data, unsigned fmt);
 
 void renderchain_set_vertices(
 	  void *data, void *pass_data,
