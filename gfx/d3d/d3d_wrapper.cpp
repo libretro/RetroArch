@@ -99,10 +99,10 @@ LPDIRECT3DVERTEXBUFFER d3d_vertex_buffer_new(LPDIRECT3DDEVICE dev,
    HRESULT hr;
    LPDIRECT3DVERTEXBUFFER buf;
 
-#if defined(_XBOX1)
+#if defined(HAVE_D3D8)
    hr = IDirect3DDevice8_CreateVertexBuffer(dev, length, usage, fvf, pool,
          &buf);
-#elif defined(_XBOX360)
+#elif defined(HAVE_D3D9)
    hr = IDirect3DDevice9_CreateVertexBuffer(dev, length, usage, fvf, pool,
          &buf, NULL);
 #else
@@ -158,7 +158,7 @@ void d3d_set_stream_source(LPDIRECT3DDEVICE dev, unsigned stream_no,
       LPDIRECT3DVERTEXBUFFER stream_vertbuf, unsigned offset_bytes,
       unsigned stride)
 {
-#if defined(_XBOX1)
+#if defined(HAVE_D3D8)
    IDirect3DDevice8_SetStreamSource(dev, stream_no, stream_vertbuf, stride);
 #elif defined(_XBOX360)
    D3DDevice_SetStreamSource_Inline(dev, stream_no, stream_vertbuf,
