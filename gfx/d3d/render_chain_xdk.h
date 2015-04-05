@@ -243,8 +243,15 @@ static void renderchain_blit_to_texture(void *data, const void *frame,
    unsigned width, unsigned height, unsigned pitch)
 {
    D3DLOCKED_RECT d3dlr;
-   d3d_video_t *d3d = (d3d_video_t*)data;
-   driver_t *driver = driver_get_ptr();
+   d3d_video_t *d3d      = (d3d_video_t*)data;
+   LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
+   driver_t *driver      = driver_get_ptr();
+   global_t *global      = global_get_ptr();
+
+#if defined(_XBOX1)
+   d3dr->SetFlickerFilter(global->console.screen.flicker_filter_index);
+   d3dr->SetSoftDisplayFilter(global->console.softfilter_enable);
+#endif
 
    if (d3d->last_width != width || d3d->last_height != height)
    {
@@ -264,12 +271,6 @@ static void renderchain_render_pass(void *data, const void *frame,
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
    runloop_t *runloop    = rarch_main_get_ptr();
    settings_t *settings  = config_get_ptr();
-   global_t *global      = global_get_ptr();
-
-#if defined(_XBOX1)
-   d3dr->SetFlickerFilter(global->console.screen.flicker_filter_index);
-   d3dr->SetSoftDisplayFilter(global->console.softfilter_enable);
-#endif
 
    renderchain_blit_to_texture(d3d, frame, width, height, pitch);
    renderchain_set_vertices(d3d, 1, width, height);

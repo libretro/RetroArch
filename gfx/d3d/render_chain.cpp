@@ -1203,7 +1203,6 @@ bool renderchain_render(void *chain_data, const void *data,
    unsigned i, current_width, current_height, out_width = 0, out_height = 0;
    renderchain_t *chain  = (renderchain_t*)chain_data;
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)chain->dev;
-   global_t *global      = global_get_ptr();
 
    renderchain_start_render(chain);
 
@@ -1213,10 +1212,6 @@ bool renderchain_render(void *chain_data, const void *data,
          &out_width, &out_height,
          current_width, current_height, chain->final_viewport);
 
-#ifdef _XBOX1
-   d3dr->SetFlickerFilter(global->console.screen.flicker_filter_index);
-   d3dr->SetSoftDisplayFilter(global->console.softfilter_enable);
-#endif
    renderchain_blit_to_texture(chain, data, width, height, pitch);
 
    /* Grab back buffer. */
