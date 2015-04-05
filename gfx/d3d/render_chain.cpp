@@ -351,7 +351,6 @@ static void renderchain_bind_tracker(void *data, void *pass_data, unsigned pass_
    { (WORD)(stream), (WORD)(offset * sizeof(float)), D3DDECLTYPE_FLOAT4, D3DDECLMETHOD_DEFAULT, \
       D3DDECLUSAGE_COLOR, (BYTE)(index) } \
 
-
 bool renderchain_init_shader_fvf(void *data, void *pass_data)
 {
    CGparameter param;

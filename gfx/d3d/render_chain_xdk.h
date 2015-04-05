@@ -64,11 +64,13 @@ void renderchain_free(void *data)
 #endif
 }
 
-bool renderchain_init_shader_fvf(void *data, void *pass_)
+bool renderchain_init_shader_fvf(void *data, void *pass_data)
 {
    d3d_video_t *chain    = (d3d_video_t*)data;
    d3d_video_t *pass     = (d3d_video_t*)data;
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)chain->dev;
+
+   (void)pass_data;
 
 #if defined(_XBOX360)
    static const D3DVERTEXELEMENT VertexElements[] =
