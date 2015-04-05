@@ -54,9 +54,7 @@ struct Pass
    CGprogram vPrg, fPrg;
 #endif
    unsigned last_width, last_height;
-#ifdef HAVE_D3D9
-   LPDIRECT3DVERTEXDECLARATION vertex_decl;
-#endif
+   void *vertex_decl;
    std::vector<unsigned> attrib_map;
 };
 
