@@ -17,7 +17,8 @@
 #include "render_chain.h"
 #include <string.h>
 #include <retro_inline.h>
-#include "../inc/Cg/cg.h"
+#include <Cg/cg.h>
+#include <Cg/cgD3D9.h>
 
 struct lut_info
 {
@@ -39,9 +40,7 @@ struct Pass
    LinkInfo info;
    LPDIRECT3DTEXTURE tex;
    LPDIRECT3DVERTEXBUFFER vertex_buf;
-#ifdef HAVE_CG
    CGprogram vPrg, fPrg;
-#endif
    unsigned last_width, last_height;
 #ifdef HAVE_D3D9
    LPDIRECT3DVERTEXDECLARATION vertex_decl;
@@ -66,9 +65,7 @@ typedef struct renderchain
       unsigned last_height[TEXTURES];
    } prev;
    std::vector<Pass> passes;
-#ifdef HAVE_CG
    CGprogram vStock, fStock;
-#endif
    std::vector<lut_info> luts;
    D3DVIEWPORT *final_viewport;
    unsigned frame_count;
@@ -101,8 +98,6 @@ static INLINE D3DTEXTUREFILTERTYPE translate_filter(bool smooth)
       return D3DTEXF_LINEAR;
    return D3DTEXF_POINT;
 }
-
-#ifdef HAVE_CG
 
 static const char *stock_program =
     "void main_vertex"
@@ -259,12 +254,10 @@ static void renderchain_destroy_stock_shader(void *data)
    if (!chain)
       return;
 
-#ifdef HAVE_CG
    if (chain->fStock)
       cgDestroyProgram(chain->fStock);
    if (chain->vStock)
       cgDestroyProgram(chain->vStock);
-#endif
 }
 
 void renderchain_destroy_shader(void *data, int i)
@@ -274,12 +267,10 @@ void renderchain_destroy_shader(void *data, int i)
    if (!chain)
       return;
 
-#ifdef HAVE_CG
    if (chain->passes[i].fPrg)
       cgDestroyProgram(chain->passes[i].fPrg);
    if (chain->passes[i].vPrg)
       cgDestroyProgram(chain->passes[i].vPrg);
-#endif
 }
 
 static void renderchain_set_shader_mvp(void *data, void *shader_data, void *matrix_data)
@@ -717,8 +708,6 @@ static void renderchain_bind_pass(void *data, void *pass_data, unsigned pass_ind
    }
 }
 
-#endif
-
 void renderchain_free(void *data)
 {
    renderchain_t *chain = (renderchain_t*)data;
@@ -743,7 +732,6 @@ void *renderchain_new(void)
 
 void renderchain_deinit_shader(void)
 {
-#ifdef HAVE_CG
    if (!cgCtx)
       return;
 
@@ -751,7 +739,6 @@ void renderchain_deinit_shader(void)
    cgD3D9SetDevice(NULL);
    cgDestroyContext(cgCtx);
    cgCtx = NULL;
-#endif
 }
 
 bool renderchain_init_shader(void *data)
@@ -761,7 +748,6 @@ bool renderchain_init_shader(void *data)
    if (!d3d)
       return false;
 
-#ifdef HAVE_CG
    cgCtx = cgCreateContext();
    if (!cgCtx)
       return false;
@@ -771,7 +757,6 @@ bool renderchain_init_shader(void *data)
    HRESULT ret = cgD3D9SetDevice(d3d->dev);
    if (FAILED(ret))
       return false;
-#endif
    return true;
 }
 

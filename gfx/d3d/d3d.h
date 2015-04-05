@@ -52,13 +52,7 @@
 #include "../font_driver.h"
 #include "../font_renderer_driver.h"
 #include "../video_context_driver.h"
-
-#ifdef HAVE_CG
-#include <Cg/cg.h>
-#include <Cg/cgD3D9.h>
-#endif
 #include "d3d_wrapper.h"
-
 
 #ifdef HAVE_OVERLAY
 typedef struct
@@ -103,11 +97,6 @@ typedef struct d3d_video
       const void *font_driver;
       void *font_handle;
       const gfx_ctx_driver_t *ctx_driver;
-#if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
-#ifdef _XBOX
-      const shader_backend_t *shader;
-#endif
-#endif
       bool should_resize;
       bool quitting;
 
@@ -127,10 +116,13 @@ typedef struct d3d_video
 
       std::string shader_path;
 
-#ifndef _XBOX
+#if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
+#ifdef _XBOX
+      const shader_backend_t *shader;
+#else
       struct video_shader shader;
 #endif
-
+#endif
       video_info_t video_info;
 
       bool needs_restore;
