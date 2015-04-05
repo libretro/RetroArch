@@ -303,7 +303,7 @@ void renderchain_set_final_viewport(void *data,
    (void)viewport_data;
 }
 
-void renderchain_render(void *data, const void *frame,
+bool renderchain_render(void *data, const void *frame,
       unsigned width, unsigned height, unsigned pitch, unsigned rotation)
 {
    unsigned i;
@@ -332,6 +332,8 @@ void renderchain_render(void *data, const void *frame,
 
    d3d_draw_primitive(d3dr, D3DPT_TRIANGLESTRIP, 0, 2);
    renderchain_set_mvp(d3d, d3d->screen_width, d3d->screen_height, d3d->dev_rotation);
+
+   return true;
 }
 
 bool renderchain_init_shader_fvf(void *data, void *pass_data)
