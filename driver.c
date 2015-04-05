@@ -339,6 +339,7 @@ bool driver_update_system_av_info(const struct retro_system_av_info *info)
 void init_drivers(int flags)
 {
    driver_t *driver = driver_get_ptr();
+   global_t *global = global_get_ptr();
 
    if (flags & DRIVER_VIDEO)
       driver->video_data_own = false;
@@ -391,7 +392,7 @@ void init_drivers(int flags)
    if (flags & DRIVER_MENU)
    {
       init_menu();
-      menu_driver_context_reset();
+      menu_update_libretro_info(&global->menu.info);
    }
 #endif
 

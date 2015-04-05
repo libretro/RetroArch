@@ -199,6 +199,8 @@ void menu_apply_deferred_settings(void);
 
 bool menu_display_update_pending(void);
 
+void menu_update_libretro_info(struct retro_system_info *info);
+
 #ifdef __cplusplus
 }
 #endif
