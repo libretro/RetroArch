@@ -508,7 +508,8 @@ void renderchain_bind_orig(void *data, void *pass_data)
    if (param)
    {
       index = pass->attrib_map[cgGetParameterResourceIndex(param)];
-      chain->dev->SetStreamSource(index, chain->passes[0].vertex_buf, 0, sizeof(Vertex));
+
+      d3d_set_stream_source(chain->dev, index, chain->passes[0].vertex_buf, 0, sizeof(Vertex));
       chain->bound_vert.push_back(index);
    }
 }
@@ -582,7 +583,7 @@ void renderchain_bind_prev(void *data, void *pass_data)
             chain->prev.vertex_buf[(chain->prev.ptr - (i + 1)) & TEXTURESMASK];
          chain->bound_vert.push_back(index);
 
-         chain->dev->SetStreamSource(index, vert_buf, 0, sizeof(Vertex));
+         d3d_set_stream_source(chain->dev, index, vert_buf, 0, sizeof(Vertex));
       }
    }
 }
@@ -690,7 +691,8 @@ void renderchain_bind_pass(void *data, void *pass_data, unsigned pass_index)
       if (param)
       {
          index = pass->attrib_map[cgGetParameterResourceIndex(param)];
-         chain->dev->SetStreamSource(index, chain->passes[i].vertex_buf,
+
+         d3d_set_stream_source(chain->dev, index, chain->passes[i].vertex_buf,
                0, sizeof(Vertex));
          chain->bound_vert.push_back(index);
       }
@@ -782,8 +784,7 @@ void renderchain_clear(void *data)
    {
       if (chain->passes[i].tex)
          d3d_texture_free(chain->passes[i].tex);
-      if (chain->passes[i].vertex_buf || chain->passes[i].vertex_decl)
-         d3d_vertex_buffer_free(chain->passes[i].vertex_buf, chain->passes[i].vertex_decl);
+      d3d_vertex_buffer_free(chain->passes[i].vertex_buf, chain->passes[i].vertex_decl);
       renderchain_destroy_shader(chain, i);
    }
 
