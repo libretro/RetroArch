@@ -1,3 +1,18 @@
+/*  RetroArch - A frontend for libretro.
+ *  Copyright (C) 2014-2015 - Ali Bouhlel
+ *
+ *  RetroArch is free software: you can redistribute it and/or modify it under the terms
+ *  of the GNU General Public License as published by the Free Software Found-
+ *  ation, either version 3 of the License, or (at your option) any later version.
+ *
+ *  RetroArch is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+ *  without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+ *  PURPOSE.  See the GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License along with RetroArch.
+ *  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #ifndef CTR_GU_H
 #define CTR_GU_H
 
@@ -140,7 +155,8 @@ static inline void ctrGuSetVertexShaderFloatUniform(int id, float* data, int cou
 
 #define CTRGU_ATTRIBFMT(f, n) ((((n)-1)<<2)|((f)&3))
 
-void ctrGuSetAttributeBuffers(u32 total_attributes, void* base_address, u64 attribute_formats, u32 buffer_size)
+__attribute__((always_inline))
+static inline void ctrGuSetAttributeBuffers(u32 total_attributes, void* base_address, u64 attribute_formats, u32 buffer_size)
 {
    u32 param[0x28];
 
