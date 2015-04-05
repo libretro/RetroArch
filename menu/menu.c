@@ -71,7 +71,7 @@ static void draw_frame(void)
  *
  * Update menu state which depends on config.
  **/
-static void menu_update_libretro_info(struct retro_system_info *info)
+void menu_update_libretro_info(struct retro_system_info *info)
 {
 #ifndef HAVE_DYNAMIC
    retro_get_system_info(info);
@@ -166,8 +166,6 @@ bool menu_load_content(void)
 
       return false;
    }
-
-   menu_update_libretro_info(&global->menu.info);
 
    menu_shader_manager_init(driver->menu);
 
