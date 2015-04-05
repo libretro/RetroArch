@@ -60,7 +60,7 @@ static void d3d_resize(void *data, unsigned new_width, unsigned new_height)
    if (new_width != d3d->video_info.width || new_height != d3d->video_info.height)
    {
       RARCH_LOG("[D3D]: Resize %ux%u.\n", new_width, new_height);
-      d3d->video_info.width = d3d->screen_width = new_width;
+      d3d->video_info.width  = d3d->screen_width = new_width;
       d3d->video_info.height = d3d->screen_height = new_height;
       d3d_restore(d3d);
    }
@@ -77,9 +77,8 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message,
    {
       case WM_CREATE:
          {
-            LPCREATESTRUCT p_cs;
-            p_cs = (LPCREATESTRUCT)lParam;
-            curD3D = (d3d_video_t*)p_cs->lpCreateParams;
+            LPCREATESTRUCT p_cs   = (LPCREATESTRUCT)lParam;
+            curD3D                = (d3d_video_t*)p_cs->lpCreateParams;
          }
          break;
       case WM_CHAR:
@@ -165,18 +164,19 @@ static void gfx_ctx_d3d_show_mouse(void *data, bool state)
 #endif
 }
 
-void d3d_make_d3dpp(void *data, const video_info_t *info, D3DPRESENT_PARAMETERS *d3dpp)
+void d3d_make_d3dpp(void *data,
+      const video_info_t *info, D3DPRESENT_PARAMETERS *d3dpp)
 {
-   d3d_video_t *d3d =(d3d_video_t*)data;
+   d3d_video_t     *d3d = (d3d_video_t*)data;
    settings_t *settings = config_get_ptr();
    global_t *global     = global_get_ptr();
 
    memset(d3dpp, 0, sizeof(*d3dpp));
 
 #ifdef _XBOX
-   d3dpp->Windowed = false;
+   d3dpp->Windowed             = false;
 #else
-   d3dpp->Windowed = settings->video.windowed_fullscreen || !info->fullscreen;
+   d3dpp->Windowed             = settings->video.windowed_fullscreen || !info->fullscreen;
 #endif
    d3dpp->PresentationInterval = D3DPRESENT_INTERVAL_IMMEDIATE;
 
@@ -210,44 +210,40 @@ void d3d_make_d3dpp(void *data, const video_info_t *info, D3DPRESENT_PARAMETERS 
 #endif
       info->rgb32 ? D3DFMT_X8R8G8B8 : D3DFMT_LIN_R5G6B5;
 #else
-   d3dpp->hDeviceWindow = d3d->hWnd;
+   d3dpp->hDeviceWindow    = d3d->hWnd;
    d3dpp->BackBufferFormat = !d3dpp->Windowed ? D3DFMT_X8R8G8B8 : D3DFMT_UNKNOWN;
 #endif
 
    if (!d3dpp->Windowed)
    {
 #ifdef _XBOX
-      unsigned width, height;
-
-      width = 0;
-      height = 0;
+      unsigned width          = 0;
+      unsigned height         = 0;
 
       if (d3d->ctx_driver && d3d->ctx_driver->get_video_size)
          d3d->ctx_driver->get_video_size(d3d, &width, &height);
 
-      d3dpp->BackBufferWidth  = d3d->screen_width = width;
-      d3dpp->BackBufferHeight = d3d->screen_height = height;
-#else
-      d3dpp->BackBufferWidth = d3d->screen_width;
-      d3dpp->BackBufferHeight = d3d->screen_height;
+      d3d->screen_width       = width;
+      d3d->screen_height      = height;
 #endif
+      d3dpp->BackBufferWidth  = d3d->screen_width;
+      d3dpp->BackBufferHeight = d3d->screen_height;
    }
 
 #ifdef _XBOX
    d3dpp->MultiSampleType         = D3DMULTISAMPLE_NONE;
    d3dpp->EnableAutoDepthStencil  = FALSE;
 #if defined(_XBOX1)
+   /* Get the "video mode" */
+   DWORD video_mode               = XGetVideoFlags();
 
-   // Get the "video mode"
-   DWORD video_mode = XGetVideoFlags();
-
-   // Check if we are able to use progressive mode
+   /* Check if we are able to use progressive mode. */
    if (video_mode & XC_VIDEO_FLAGS_HDTV_480p)
       d3dpp->Flags = D3DPRESENTFLAG_PROGRESSIVE;
    else
       d3dpp->Flags = D3DPRESENTFLAG_INTERLACED;
 
-   // Only valid in PAL mode, not valid for HDTV modes!
+   /* Only valid in PAL mode, not valid for HDTV modes. */
    if (XGetVideoStandard() == XC_VIDEO_STANDARD_PAL_I)
    {
       if (video_mode & XC_VIDEO_FLAGS_PAL_60Hz)
@@ -282,7 +278,8 @@ void d3d_make_d3dpp(void *data, const video_info_t *info, D3DPRESENT_PARAMETERS 
 }
 
 static void gfx_ctx_d3d_check_window(void *data, bool *quit,
-      bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
+      bool *resize, unsigned *width,
+      unsigned *height, unsigned frame_count)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
 
@@ -350,7 +347,7 @@ static bool gfx_ctx_d3d_bind_api(void *data,
    (void)minor;
    (void)api;
 
-#if defined(_XBOX1)
+#if defined(HAVE_D3D8)
    return api == GFX_CTX_DIRECT3D8_API;
 #else
    /* As long as we don't have a D3D11 implementation, we default to this */
@@ -375,16 +372,16 @@ static void gfx_ctx_d3d_destroy(void *data)
 static void gfx_ctx_d3d_input_driver(void *data,
       const input_driver_t **input, void **input_data)
 {
-   (void)data;
 #ifdef _XBOX
    void *xinput = input_xinput.init();
-   *input = xinput ? (const input_driver_t*)&input_xinput : NULL;
-   *input_data = xinput;
+   *input       = xinput ? (const input_driver_t*)&input_xinput : NULL;
+   *input_data  = xinput;
 #else
-   dinput = input_dinput.init();
-   *input = dinput ? &input_dinput : NULL;
-   *input_data = dinput;
+   dinput       = input_dinput.init();
+   *input       = dinput ? &input_dinput : NULL;
+   *input_data  = dinput;
 #endif
+   (void)data;
 }
 
 static void gfx_ctx_d3d_get_video_size(void *data,
