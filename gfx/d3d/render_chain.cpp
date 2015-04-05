@@ -184,8 +184,8 @@ static INLINE CGparameter find_param_from_semantic(CGprogram prog,
    return find_param_from_semantic(param, sem);
 }
 
-bool renderchain_compile_shaders(void *data, void *fragment_data,
-      void *vertex_data, const std::string &shader)
+static bool renderchain_compile_shaders(void *data,
+      void *fragment_data, void *vertex_data, const std::string &shader)
 {
    CGprogram *fPrg            = (CGprogram*)fragment_data;
    CGprogram *vPrg            = (CGprogram*)vertex_data;

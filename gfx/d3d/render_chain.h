@@ -78,9 +78,6 @@ void renderchain_blit_to_texture(void *data, const void *frame,
 
 void renderchain_render_pass(void *data, void *pass_data, unsigned pass_index);
 
-bool renderchain_compile_shaders(void *data, void *fragment_data,
-      void *vertex_data, const std::string &shader);
-
 bool renderchain_init_shader_fvf(void *data, void *pass_data);
 
 #endif
