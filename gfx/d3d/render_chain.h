@@ -178,7 +178,7 @@ void renderchain_destroy_stock_shader(void *data);
 
 void renderchain_destroy_shader(void *data, int i);
 
-void renderchain_set_shader_mvp(void *data, void *data, void *matrix_data);
+void renderchain_set_shader_mvp(void *data, void *shader_data, void *matrix_data);
 
 void renderchain_set_shader_params(void *data, void *pass_data,
             unsigned video_w, unsigned video_h,
