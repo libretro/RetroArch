@@ -108,11 +108,10 @@ static bool d3d_init_shader(void *data)
 
 static void d3d_deinit_chain(d3d_video_t *d3d)
 {
-#ifdef _XBOX
-   renderchain_free(d3d);
-#else
    renderchain_deinit(d3d->chain);
    d3d->chain = NULL;
+#ifdef _XBOX
+   renderchain_free(d3d);
 #endif
 }
 
@@ -894,29 +893,28 @@ static bool d3d_init_chain(d3d_video_t *d3d, const video_info_t *video_info)
       video_info->input_scale * RARCH_SCALE_BASE;
 #endif
 
-#ifdef _XBOX
-   if (!renderchain_init(d3d, video_info,
-            NULL, NULL, NULL, 
-            video_info->rgb32 ? 
-            RETRO_PIXEL_FORMAT_XRGB8888 : RETRO_PIXEL_FORMAT_RGB565))
-   {
-      RARCH_ERR("[D3D]: Failed to init render chain.\n");
-      return false;
-   }
-#else
    d3d->chain = renderchain_new();
    
    if (!d3d->chain)
       return false;
 
-   if (!renderchain_init(d3d->chain, &d3d->video_info, d3dr,
-	    &d3d->final_viewport, &link_info,
-		d3d->video_info.rgb32 ? RETRO_PIXEL_FORMAT_XRGB8888 : RETRO_PIXEL_FORMAT_RGB565))
+#ifdef _XBOX
+   if (!renderchain_init(d3d, video_info,
+            NULL, NULL, NULL, 
+            video_info->rgb32 ? 
+            RETRO_PIXEL_FORMAT_XRGB8888 : RETRO_PIXEL_FORMAT_RGB565))
+#else
+   if (!renderchain_init(d3d->chain, &d3d->video_info,
+            d3dr, &d3d->final_viewport, &link_info,
+            d3d->video_info.rgb32 ?
+            RETRO_PIXEL_FORMAT_XRGB8888 : RETRO_PIXEL_FORMAT_RGB565))
+#endif
    {
-      RARCH_ERR("[D3D9]: Failed to init render chain.\n");
+      RARCH_ERR("[D3D]: Failed to init render chain.\n");
       return false;
    }
 
+#ifndef _XBOX
    current_width  = link_info.tex_w;
    current_height = link_info.tex_h;
    out_width      = 0;
@@ -947,9 +945,7 @@ static bool d3d_init_chain(d3d_video_t *d3d, const video_info_t *video_info)
       RARCH_ERR("[D3D9]: Failed to init LUTs.\n");
       return false;
    }
-#endif
 
-#ifndef _XBOX
 #ifndef DONT_HAVE_STATE_TRACKER
    if (!d3d_init_imports(d3d))
    {
@@ -957,6 +953,7 @@ static bool d3d_init_chain(d3d_video_t *d3d, const video_info_t *video_info)
       return false;
    }
 #endif
+
 #endif
 
    return true;
