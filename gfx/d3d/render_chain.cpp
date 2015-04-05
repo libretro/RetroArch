@@ -297,7 +297,7 @@ static void renderchain_set_shader_mvp(void *data, void *shader_data, void *matr
       cgD3D9SetUniform(cgp, &val); \
 } while(0)
 
-void renderchain_set_shader_params(void *data, void *pass_data,
+static void renderchain_set_shader_params(void *data, void *pass_data,
             unsigned video_w, unsigned video_h,
             unsigned tex_w, unsigned tex_h,
             unsigned viewport_w, unsigned viewport_h)

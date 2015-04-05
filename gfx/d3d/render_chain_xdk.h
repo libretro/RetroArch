@@ -20,7 +20,7 @@ static void renderchain_set_mvp(void *data, unsigned vp_width,
 #endif
 }
 
-static void renderchain_clear(void *data)
+void renderchain_clear(void *data)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
 
@@ -28,7 +28,7 @@ static void renderchain_clear(void *data)
    d3d_vertex_buffer_free(d3d->vertex_buf, d3d->vertex_decl);
 }
 
-static void renderchain_free(void *data)
+void renderchain_free(void *data)
 {
    d3d_video_t *chain = (d3d_video_t*)data;
 
@@ -100,11 +100,11 @@ static bool renderchain_create_first_pass(void *data,
    return true;
 }
 
-static void renderchain_deinit_shader(void)
+void renderchain_deinit_shader(void)
 {
 }
 
-static bool renderchain_init_shader(void *data)
+bool renderchain_init_shader(void *data)
 {
    const char *shader_path = NULL;
    d3d_video_t        *d3d = (d3d_video_t*)data;
@@ -239,7 +239,7 @@ static void renderchain_set_vertices(void *data, unsigned pass,
 #endif
 }
 
-static void renderchain_blit_to_texture(void *data, const void *frame,
+void renderchain_blit_to_texture(void *data, const void *frame,
    unsigned width, unsigned height, unsigned pitch)
 {
    D3DLOCKED_RECT d3dlr;
