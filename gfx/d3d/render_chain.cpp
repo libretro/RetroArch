@@ -865,9 +865,11 @@ static void d3d_recompute_pass_sizes(d3d_video_t *d3d)
    }
 }
 
-void renderchain_set_final_viewport(void *data, const void *viewport_data)
+void renderchain_set_final_viewport(void *data,
+      void *renderchain_data, const void *viewport_data)
 {
-   renderchain_t *chain = (renderchain_t*)data;
+   d3d_video_t                  *d3d = (d3d_video_t*)data;
+   renderchain_t              *chain = (renderchain_t*)renderchain_data;
    const D3DVIEWPORT *final_viewport = (const D3DVIEWPORT*)viewport_data;
 
    if (chain)

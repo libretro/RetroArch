@@ -294,5 +294,10 @@ static void renderchain_render_pass(void *data, const void *frame,
    renderchain_set_mvp(d3d, d3d->screen_width, d3d->screen_height, d3d->dev_rotation);
 }
 
-
-
+void renderchain_set_final_viewport(void *data,
+      void *renderchain_data, const void *viewport_data)
+{
+   (void)data;
+   (void)renderchain_data;
+   (void)viewport_data;
+}

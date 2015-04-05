@@ -78,7 +78,8 @@ bool renderchain_init(void *data, const video_info_t *video_info,
 
 void renderchain_clear(void *data);
 
-void renderchain_set_final_viewport(void *data, const void *viewport_data);
+void renderchain_set_final_viewport(void *data,
+      void *renderchain_data, const void *viewport_data);
 
 bool renderchain_set_pass_size(void *data, unsigned pass_index,
       unsigned width, unsigned height);

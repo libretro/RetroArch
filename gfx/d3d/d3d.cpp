@@ -1571,9 +1571,8 @@ static bool d3d_frame(void *data, const void *frame,
             d3d->screen_height, d3d->video_info.force_aspect,
             global->system.aspect_ratio);
 
-#ifndef _XBOX
-      renderchain_set_final_viewport(d3d->chain, &d3d->final_viewport);
-#endif
+      renderchain_set_final_viewport(d3d,
+            d3d->chain, &d3d->final_viewport);
 
       d3d->should_resize = false;
    }
