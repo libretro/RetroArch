@@ -1596,7 +1596,7 @@ static bool d3d_frame(void *data, const void *frame,
    }
 
 #ifdef _XBOX
-   renderchain_render_pass(d3d, frame, width, height,
+   renderchain_render(d3d, frame, width, height,
          pitch, d3d->dev_rotation);
 #else
    if (!renderchain_render(d3d->chain, frame, width,

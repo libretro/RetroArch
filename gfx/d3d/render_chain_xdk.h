@@ -303,7 +303,7 @@ void renderchain_set_final_viewport(void *data,
    (void)viewport_data;
 }
 
-void renderchain_render_pass(void *data, const void *frame,
+void renderchain_render(void *data, const void *frame,
       unsigned width, unsigned height, unsigned pitch, unsigned rotation)
 {
    unsigned i;

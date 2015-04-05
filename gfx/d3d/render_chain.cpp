@@ -1278,6 +1278,46 @@ static void renderchain_blit_to_texture(void *data,
          &d3dlr, frame, width, height, pitch);
 }
 
+static void renderchain_render_pass(void *data, void *pass_data, unsigned pass_index)
+{
+   unsigned i;
+   Pass           *pass  = (Pass*)pass_data;
+   renderchain_t *chain  = (renderchain_t*)data;
+   LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)chain->dev;
+
+   renderchain_set_shaders(chain, &pass->fPrg, &pass->vPrg);
+
+   d3d_set_texture(d3dr, 0, pass->tex);
+   d3d_set_sampler_minfilter(d3dr, 0,
+         translate_filter(pass->info.pass->filter));
+   d3d_set_sampler_magfilter(d3dr, 0,
+         translate_filter(pass->info.pass->filter));
+
+#ifdef _XBOX1
+   d3d_set_vertex_shader(d3dr, D3DFVF_XYZ | D3DFVF_TEX1, NULL);
+#else
+   d3dr->SetVertexDeclaration(pass->vertex_decl);
+#endif
+   for (i = 0; i < 4; i++)
+      d3d_set_stream_source(d3dr, i,
+            pass->vertex_buf, 0, sizeof(Vertex));
+
+   renderchain_bind_orig(chain, pass);
+   renderchain_bind_prev(chain, pass);
+   renderchain_bind_pass(chain, pass, pass_index);
+   renderchain_bind_luts(chain, pass);
+   renderchain_bind_tracker(chain, pass, pass_index);
+
+   d3d_draw_primitive(d3dr, D3DPT_TRIANGLESTRIP, 0, 2);
+
+   /* So we don't render with linear filter into render targets,
+    * which apparently looked odd (too blurry). */
+   d3d_set_sampler_minfilter(d3dr, 0, D3DTEXF_POINT);
+   d3d_set_sampler_magfilter(d3dr, 0, D3DTEXF_POINT);
+
+   renderchain_unbind_all(chain);
+}
+
 bool renderchain_render(void *chain_data, const void *data,
       unsigned width, unsigned height, unsigned pitch, unsigned rotation)
 {
@@ -1440,42 +1480,3 @@ static void renderchain_unbind_all(void *data)
    chain->bound_vert.clear();
 }
 
-void renderchain_render_pass(void *data, void *pass_data, unsigned pass_index)
-{
-   unsigned i;
-   Pass           *pass  = (Pass*)pass_data;
-   renderchain_t *chain  = (renderchain_t*)data;
-   LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)chain->dev;
-
-   renderchain_set_shaders(chain, &pass->fPrg, &pass->vPrg);
-
-   d3d_set_texture(d3dr, 0, pass->tex);
-   d3d_set_sampler_minfilter(d3dr, 0,
-         translate_filter(pass->info.pass->filter));
-   d3d_set_sampler_magfilter(d3dr, 0,
-         translate_filter(pass->info.pass->filter));
-
-#ifdef _XBOX1
-   d3d_set_vertex_shader(d3dr, D3DFVF_XYZ | D3DFVF_TEX1, NULL);
-#else
-   d3dr->SetVertexDeclaration(pass->vertex_decl);
-#endif
-   for (i = 0; i < 4; i++)
-      d3d_set_stream_source(d3dr, i,
-            pass->vertex_buf, 0, sizeof(Vertex));
-
-   renderchain_bind_orig(chain, pass);
-   renderchain_bind_prev(chain, pass);
-   renderchain_bind_pass(chain, pass, pass_index);
-   renderchain_bind_luts(chain, pass);
-   renderchain_bind_tracker(chain, pass, pass_index);
-
-   d3d_draw_primitive(d3dr, D3DPT_TRIANGLESTRIP, 0, 2);
-
-   /* So we don't render with linear filter into render targets,
-    * which apparently looked odd (too blurry). */
-   d3d_set_sampler_minfilter(d3dr, 0, D3DTEXF_POINT);
-   d3d_set_sampler_magfilter(d3dr, 0, D3DTEXF_POINT);
-
-   renderchain_unbind_all(chain);
-}
