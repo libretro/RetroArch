@@ -1055,7 +1055,7 @@ bool renderchain_render(void *chain_data, const void *data,
 }
 
 bool renderchain_create_first_pass(void *data, const void *info_data,
-      PixelFormat fmt)
+      unsigned fmt)
 {
    unsigned i;
    Pass pass;

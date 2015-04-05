@@ -1022,7 +1022,7 @@ static bool d3d_init_chain(d3d_video_t *d3d, const video_info_t *video_info)
 	    NULL,
 #endif
 	    &d3d->final_viewport, &link_info,
-            d3d->video_info.rgb32 ? ARGB : RGB565))
+		d3d->video_info.rgb32 ? RETRO_PIXEL_FORMAT_XRGB8888 : RETRO_PIXEL_FORMAT_RGB565))
    {
       RARCH_ERR("[D3D9]: Failed to init render chain.\n");
       return false;
