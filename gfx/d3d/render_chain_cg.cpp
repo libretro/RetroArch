@@ -48,7 +48,7 @@ struct Pass
    std::vector<unsigned> attrib_map;
 };
 
-typedef struct renderchain
+typedef struct cg_renderchain
 {
    LPDIRECT3DDEVICE dev;
    unsigned pixel_size;
@@ -71,7 +71,7 @@ typedef struct renderchain
    unsigned frame_count;
    std::vector<unsigned> bound_tex;
    std::vector<unsigned> bound_vert;
-} renderchain_t;
+} cg_cg_renderchain_t;
 
 static CGcontext cgCtx;
 
@@ -189,7 +189,7 @@ static bool renderchain_compile_shaders(void *data,
 {
    CGprogram *fPrg            = (CGprogram*)fragment_data;
    CGprogram *vPrg            = (CGprogram*)vertex_data;
-   renderchain_t *chain       = (renderchain_t*)data;
+   cg_renderchain_t *chain       = (cg_renderchain_t*)data;
    CGprofile vertex_profile   = cgD3D9GetLatestVertexProfile();
    CGprofile fragment_profile = cgD3D9GetLatestPixelProfile();
    const char **fragment_opts = cgD3D9GetOptimalOptions(fragment_profile);
@@ -249,7 +249,7 @@ static void renderchain_set_shaders(void *data, void *fragment_data, void *verte
 
 static void renderchain_destroy_stock_shader(void *data)
 {
-   renderchain_t *chain = (renderchain_t*)data;
+   cg_renderchain_t *chain = (cg_renderchain_t*)data;
 
    if (!chain)
       return;
@@ -262,7 +262,7 @@ static void renderchain_destroy_stock_shader(void *data)
 
 static void renderchain_destroy_shader(void *data, int i)
 {
-   renderchain_t *chain = (renderchain_t*)data;
+   cg_renderchain_t *chain = (cg_renderchain_t*)data;
 
    if (!chain)
       return;
@@ -296,7 +296,7 @@ static void renderchain_set_shader_params(void *data, void *pass_data,
    float frame_cnt;
    D3DXVECTOR2 video_size, texture_size, output_size;
    Pass           *pass = (Pass*)pass_data;
-   renderchain_t *chain = (renderchain_t*)data;
+   cg_renderchain_t *chain = (cg_renderchain_t*)data;
    video_size.x         = video_w;
    video_size.y         = video_h;
    texture_size.x       = tex_w;
@@ -324,7 +324,7 @@ static void renderchain_bind_tracker(void *data, void *pass_data, unsigned pass_
 {
    unsigned i;
    Pass           *pass  = (Pass*)pass_data;
-   renderchain_t *chain  = (renderchain_t*)data;
+   cg_renderchain_t *chain  = (cg_renderchain_t*)data;
    if (!chain->tracker)
       return;
 
@@ -360,7 +360,7 @@ bool renderchain_init_shader_fvf(void *data, void *pass_data)
    bool texcoord1_taken                        = false;
    bool stream_taken[4]                        = {false};
    Pass          *pass                         = (Pass*)pass_data;
-   renderchain_t *chain                        = (renderchain_t*)data;
+   cg_renderchain_t *chain                        = (cg_renderchain_t*)data;
    static const D3DVERTEXELEMENT decl_end      = D3DDECL_END();
    static const D3DVERTEXELEMENT position_decl = DECL_FVF_POSITION(0);
    static const D3DVERTEXELEMENT tex_coord0    = DECL_FVF_TEXCOORD(1, 3, 0);
@@ -491,7 +491,7 @@ static void renderchain_bind_orig(void *data, void *pass_data)
    CGparameter param;
    D3DXVECTOR2 video_size, texture_size;
    Pass           *pass = (Pass*)pass_data;
-   renderchain_t *chain = (renderchain_t*)data;
+   cg_renderchain_t *chain = (cg_renderchain_t*)data;
    video_size.x         = chain->passes[0].last_width;
    video_size.y         = chain->passes[0].last_height;
    texture_size.x       = chain->passes[0].info.tex_w;
@@ -532,7 +532,7 @@ static void renderchain_bind_prev(void *data, void *pass_data)
    char attr_texture[64], attr_input_size[64], attr_tex_size[64], attr_coord[64];
    D3DXVECTOR2 texture_size;
    Pass           *pass = (Pass*)pass_data;
-   renderchain_t *chain = (renderchain_t*)data;
+   cg_renderchain_t *chain = (cg_renderchain_t*)data;
    static const char *prev_names[] = {
       "PREV",
       "PREV1",
@@ -600,7 +600,7 @@ static void renderchain_bind_prev(void *data, void *pass_data)
    }
 }
 
-static void renderchain_add_lut(renderchain_t *chain,
+static void renderchain_add_lut(cg_renderchain_t *chain,
       unsigned index, unsigned i)
 {
    if (!chain)
@@ -620,7 +620,7 @@ static void renderchain_bind_luts(void *data, void *pass_data)
 {
    unsigned i, index;
    Pass           *pass = (Pass*)pass_data;
-   renderchain_t *chain = (renderchain_t*)data;
+   cg_renderchain_t *chain = (cg_renderchain_t*)data;
 
    for (i = 0; i < chain->luts.size(); i++)
    {
@@ -651,7 +651,7 @@ static void renderchain_bind_pass(void *data, void *pass_data, unsigned pass_ind
 {
    unsigned i, index;
    Pass           *pass = (Pass*)pass_data;
-   renderchain_t *chain = (renderchain_t*)data;
+   cg_renderchain_t *chain = (cg_renderchain_t*)data;
 
    /* We only bother binding passes which are two indices behind. */
    if (pass_index < 3)
@@ -710,7 +710,7 @@ static void renderchain_bind_pass(void *data, void *pass_data, unsigned pass_ind
 static void renderchain_clear(void *data)
 {
    unsigned i;
-   renderchain_t *chain = (renderchain_t*)data;
+   cg_renderchain_t *chain = (cg_renderchain_t*)data;
 
    for (i = 0; i < TEXTURES; i++)
    {
@@ -742,7 +742,7 @@ static void renderchain_clear(void *data)
 
 void renderchain_free(void *data)
 {
-   renderchain_t *chain = (renderchain_t*)data;
+   cg_renderchain_t *chain = (cg_renderchain_t*)data;
 
    if (!chain)
       return;
@@ -755,7 +755,7 @@ void renderchain_free(void *data)
 
 void *renderchain_new(void)
 {
-   renderchain_t *renderchain = (renderchain_t*)calloc(1, sizeof(*renderchain));
+   cg_renderchain_t *renderchain = (cg_renderchain_t*)calloc(1, sizeof(*renderchain));
    if (!renderchain)
       return NULL;
 
@@ -794,7 +794,7 @@ bool renderchain_init_shader(void *data)
 
 void renderchain_deinit(void *data)
 {
-   renderchain_t *renderchain = (renderchain_t*)data;
+   cg_renderchain_t *renderchain = (cg_renderchain_t*)data;
 
    if (renderchain)
       free(renderchain);
@@ -852,7 +852,7 @@ static bool renderchain_create_first_pass(void *data, const void *info_data,
    Pass pass;
    D3DXMATRIX ident;
    const LinkInfo *info  = (const LinkInfo*)info_data;
-   renderchain_t *chain  = (renderchain_t*)data;
+   cg_renderchain_t *chain  = (cg_renderchain_t*)data;
    LPDIRECT3DDEVICE d3dr = NULL;
 
    if (!chain)
@@ -919,7 +919,7 @@ bool renderchain_init(void *data, const video_info_t *video_info,
       const void *info_data, unsigned fmt)
 {
    const LinkInfo *info  = (const LinkInfo*)info_data;
-   renderchain_t *chain  = (renderchain_t*)data;
+   cg_renderchain_t *chain  = (cg_renderchain_t*)data;
 
    if (!chain)
       return false;
@@ -943,7 +943,7 @@ bool renderchain_init(void *data, const video_info_t *video_info,
 static bool renderchain_set_pass_size(void *data, unsigned pass_index,
       unsigned width, unsigned height)
 {
-   renderchain_t *chain  = (renderchain_t*)data;
+   cg_renderchain_t *chain  = (cg_renderchain_t*)data;
    LPDIRECT3DDEVICE d3dr = chain->dev;
    Pass *pass = (Pass*)&chain->passes[pass_index];
 
@@ -1020,7 +1020,7 @@ void renderchain_set_final_viewport(void *data,
       void *renderchain_data, const void *viewport_data)
 {
    d3d_video_t                  *d3d = (d3d_video_t*)data;
-   renderchain_t              *chain = (renderchain_t*)renderchain_data;
+   cg_renderchain_t              *chain = (cg_renderchain_t*)renderchain_data;
    const D3DVIEWPORT *final_viewport = (const D3DVIEWPORT*)viewport_data;
 
    if (chain)
@@ -1033,7 +1033,7 @@ bool renderchain_add_pass(void *data, const void *info_data)
 {
    Pass pass;
    const LinkInfo *info  = (const LinkInfo*)info_data;
-   renderchain_t *chain  = (renderchain_t*)data;
+   cg_renderchain_t *chain  = (cg_renderchain_t*)data;
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)chain->dev;
 
    pass.info             = *info;
@@ -1078,7 +1078,7 @@ bool renderchain_add_lut(void *data, const char *id,
       bool smooth)
 {
    lut_info info;
-   renderchain_t *chain  = (renderchain_t*)data;
+   cg_renderchain_t *chain  = (cg_renderchain_t*)data;
    LPDIRECT3DDEVICE d3dr = chain->dev;
    LPDIRECT3DTEXTURE lut = (LPDIRECT3DTEXTURE)
       d3d_texture_new(d3dr,
@@ -1116,7 +1116,7 @@ bool renderchain_add_lut(void *data, const char *id,
 void renderchain_add_state_tracker(void *data, void *tracker_data)
 {
    state_tracker_t *tracker = (state_tracker_t*)tracker_data;
-   renderchain_t     *chain = (renderchain_t*)data;
+   cg_renderchain_t     *chain = (cg_renderchain_t*)data;
    if (chain->tracker)
       state_tracker_free(chain->tracker);
    chain->tracker = tracker;
@@ -1124,7 +1124,7 @@ void renderchain_add_state_tracker(void *data, void *tracker_data)
 
 static void renderchain_start_render(void *data)
 {
-   renderchain_t *chain         = (renderchain_t*)data;
+   cg_renderchain_t *chain         = (cg_renderchain_t*)data;
 
    if (!chain)
       return;
@@ -1137,7 +1137,7 @@ static void renderchain_start_render(void *data)
 
 static void renderchain_end_render(void *data)
 {
-   renderchain_t *chain                     = (renderchain_t*)data;
+   cg_renderchain_t *chain                     = (cg_renderchain_t*)data;
 
    if (!chain)
       return;
@@ -1153,7 +1153,7 @@ static void renderchain_set_mvp(void *data, void *vertex_program,
 {
    D3DXMATRIX proj, ortho, rot, tmp;
    CGprogram     vPrg   = (CGprogram)vertex_program;
-   renderchain_t *chain = (renderchain_t*)data;
+   cg_renderchain_t *chain = (cg_renderchain_t*)data;
 
    if (!chain)
       return;
@@ -1179,7 +1179,7 @@ static void renderchain_set_vertices(
       unsigned rotation)
 {
    Pass          *pass  = (Pass*)pass_data;
-   renderchain_t *chain = (renderchain_t*)data;
+   cg_renderchain_t *chain = (cg_renderchain_t*)data;
    const LinkInfo *info = (const LinkInfo*)&pass->info;
 
    if (pass->last_width != width || pass->last_height != height)
@@ -1249,7 +1249,7 @@ static void renderchain_set_viewport(void *data, void *viewport_data)
 {
    LPDIRECT3DDEVICE d3dr;
    D3DVIEWPORT       *vp = (D3DVIEWPORT*)viewport_data;
-   renderchain_t  *chain = (renderchain_t*)data;
+   cg_renderchain_t  *chain = (cg_renderchain_t*)data;
 
    if (!chain)
       return;
@@ -1264,7 +1264,7 @@ static void renderchain_blit_to_texture(void *data,
       unsigned pitch)
 {
    D3DLOCKED_RECT d3dlr;
-   renderchain_t *chain = (renderchain_t*)data;
+   cg_renderchain_t *chain = (cg_renderchain_t*)data;
    Pass *first          = (Pass*)&chain->passes[0];
    driver_t *driver     = driver_get_ptr();
 
@@ -1281,7 +1281,7 @@ static void renderchain_blit_to_texture(void *data,
 static void renderchain_unbind_all(void *data)
 {
    unsigned i;
-   renderchain_t *chain  = (renderchain_t*)data;
+   cg_renderchain_t *chain  = (cg_renderchain_t*)data;
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)chain->dev;
 
    /* Have to be a bit anal about it.
@@ -1307,7 +1307,7 @@ static void renderchain_render_pass(void *data, void *pass_data, unsigned pass_i
 {
    unsigned i;
    Pass           *pass  = (Pass*)pass_data;
-   renderchain_t *chain  = (renderchain_t*)data;
+   cg_renderchain_t *chain  = (cg_renderchain_t*)data;
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)chain->dev;
 
    renderchain_set_shaders(chain, &pass->fPrg, &pass->vPrg);
@@ -1349,7 +1349,7 @@ bool renderchain_render(void *chain_data, const void *data,
    Pass *last_pass;
    LPDIRECT3DSURFACE back_buffer, target;
    unsigned i, current_width, current_height, out_width = 0, out_height = 0;
-   renderchain_t *chain  = (renderchain_t*)chain_data;
+   cg_renderchain_t *chain  = (cg_renderchain_t*)chain_data;
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)chain->dev;
 
    renderchain_start_render(chain);
@@ -1443,7 +1443,7 @@ void renderchain_convert_geometry(
       D3DVIEWPORT *final_viewport)
 {
    const LinkInfo *info = (const LinkInfo*)info_data;
-   renderchain_t *chain = (renderchain_t*)data;
+   cg_renderchain_t *chain = (cg_renderchain_t*)data;
 
    if (!chain || !info)
       return;

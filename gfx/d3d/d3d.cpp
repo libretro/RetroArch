@@ -775,10 +775,8 @@ static void d3d_free(void *data)
 #endif
 }
 
-
 #ifdef _XBOX
 #include "../../xdk/xdk_resources.h"
-#include "render_chain_xdk.h"
 #endif
 
 #ifdef HAVE_MONITOR
