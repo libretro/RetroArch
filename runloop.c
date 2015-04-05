@@ -489,6 +489,7 @@ static int do_pause_state_checks(
       bool rewind_pressed)
 {
    runloop_t *runloop        = rarch_main_get_ptr();
+   bool check_is_oneshot     = frameadvance_pressed || rewind_pressed;
 
    if (!runloop || !runloop->is_paused)
       return 0;
@@ -499,7 +500,7 @@ static int do_pause_state_checks(
       rarch_render_cached_frame();
    }
 
-   if (!(frameadvance_pressed | rewind_pressed))
+   if (!check_is_oneshot)
       return 1;
 
    return 0;
