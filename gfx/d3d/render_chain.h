@@ -78,13 +78,6 @@ bool renderchain_render(void *chain_data, const void *data,
 bool renderchain_create_first_pass(void *data,
       const void *info_data, unsigned fmt);
 
-void renderchain_set_vertices(
-	  void *data, void *pass_data,
-      unsigned width, unsigned height,
-      unsigned out_width, unsigned out_height,
-      unsigned vp_width, unsigned vp_height,
-      unsigned rotation);
-
 void renderchain_set_viewport(void *data, void *viewport_data);
 
 void renderchain_set_mvp(void *data, void *vertex_program,
@@ -101,8 +94,6 @@ void renderchain_blit_to_texture(void *data, const void *frame,
       unsigned pitch);
 
 void renderchain_render_pass(void *data, void *pass_data, unsigned pass_index);
-
-void renderchain_log_info(void *data, const void *info_data);
 
 bool renderchain_compile_shaders(void *data, void *fragment_data,
       void *vertex_data, const std::string &shader);
