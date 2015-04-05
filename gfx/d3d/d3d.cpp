@@ -71,10 +71,6 @@ static void d3d_free_overlays(d3d_video_t *d3d);
 static void d3d_free_overlay(d3d_video_t *d3d, overlay_t *overlay);
 #endif
 
-#ifdef _XBOX
-static void d3d_reinit_renderchain(void *data,
-      const video_info_t *video);
-#endif
 
 void d3d_make_d3dpp(void *data, const video_info_t *info,
 	D3DPRESENT_PARAMETERS *d3dpp);
@@ -108,12 +104,10 @@ static bool d3d_init_shader(void *data)
 
 static void d3d_deinit_chain(d3d_video_t *d3d)
 {
-#ifdef _XBOX
-   renderchain_free(d3d);
-#else
    renderchain_deinit(d3d->chain);
    d3d->chain = NULL;
-#endif
+
+   renderchain_free(d3d);
 }
 
 static void d3d_deinitialize(d3d_video_t *d3d)
@@ -468,10 +462,10 @@ static bool d3d_construct(d3d_video_t *d3d,
       void **input_data)
 {
    unsigned full_x, full_y;
-   driver_t *driver         = driver_get_ptr();
-   settings_t *settings     = config_get_ptr();
+   driver_t *driver                  = driver_get_ptr();
+   settings_t *settings              = config_get_ptr();
 
-   d3d->should_resize = false;
+   d3d->should_resize                = false;
 #ifndef _XBOX
    gfx_set_dwm();
 #endif
@@ -480,33 +474,34 @@ static bool d3d_construct(d3d_video_t *d3d,
    if (d3d->menu)
       free(d3d->menu);
 
-   d3d->menu                = (overlay_t*)calloc(1, sizeof(overlay_t));
+   d3d->menu                         = (overlay_t*)
+      calloc(1, sizeof(overlay_t));
 
    if (!d3d->menu)
       return false;
 
-   d3d->menu->tex_coords.x  = 0;
-   d3d->menu->tex_coords.y  = 0;
-   d3d->menu->tex_coords.w  = 1;
-   d3d->menu->tex_coords.h  = 1;
-   d3d->menu->vert_coords.x = 0;
-   d3d->menu->vert_coords.y = 1;
-   d3d->menu->vert_coords.w = 1;
-   d3d->menu->vert_coords.h = -1;
+   d3d->menu->tex_coords.x           =  0;
+   d3d->menu->tex_coords.y           =  0;
+   d3d->menu->tex_coords.w           =  1;
+   d3d->menu->tex_coords.h           =  1;
+   d3d->menu->vert_coords.x          =  0;
+   d3d->menu->vert_coords.y          =  1;
+   d3d->menu->vert_coords.w          =  1;
+   d3d->menu->vert_coords.h          = -1;
 #endif
 
 #if defined(HAVE_WINDOW) && !defined(_XBOX)
    memset(&d3d->windowClass, 0, sizeof(d3d->windowClass));
 
-   d3d->windowClass.cbSize        = sizeof(d3d->windowClass);
-   d3d->windowClass.style         = CS_HREDRAW | CS_VREDRAW;
-   d3d->windowClass.lpfnWndProc   = WindowProc;
-   d3d->windowClass.hInstance     = NULL;
-   d3d->windowClass.hCursor       = LoadCursor(NULL, IDC_ARROW);
-   d3d->windowClass.lpszClassName = "RetroArch";
-   d3d->windowClass.hIcon         = LoadIcon(GetModuleHandle(NULL),
+   d3d->windowClass.cbSize           = sizeof(d3d->windowClass);
+   d3d->windowClass.style            = CS_HREDRAW | CS_VREDRAW;
+   d3d->windowClass.lpfnWndProc      = WindowProc;
+   d3d->windowClass.hInstance        = NULL;
+   d3d->windowClass.hCursor          = LoadCursor(NULL, IDC_ARROW);
+   d3d->windowClass.lpszClassName    = "RetroArch";
+   d3d->windowClass.hIcon            = LoadIcon(GetModuleHandle(NULL),
          MAKEINTRESOURCE(IDI_ICON));
-   d3d->windowClass.hIconSm       = (HICON)LoadImage(GetModuleHandle(NULL),
+   d3d->windowClass.hIconSm          = (HICON)LoadImage(GetModuleHandle(NULL),
          MAKEINTRESOURCE(IDI_ICON), IMAGE_ICON, 16, 16, 0);
    if (!info->fullscreen)
       d3d->windowClass.hbrBackground = (HBRUSH)COLOR_WINDOW;
@@ -572,7 +567,9 @@ static bool d3d_construct(d3d_video_t *d3d,
 #endif
    );
 
-#if defined(HAVE_WINDOW) && !defined(_XBOX)
+#ifndef _XBOX
+
+#if defined(HAVE_WINDOW)
    if (!info->fullscreen && settings->ui.menubar_enable)
    {
 	   RECT rc_temp = {0, 0, win_height, 0x7FFF};
@@ -589,7 +586,6 @@ static bool d3d_construct(d3d_video_t *d3d,
    SetFocus(d3d->hWnd);
 #endif
 
-#ifndef _XBOX
 #ifdef HAVE_SHADERS
    /* This should only be done once here
     * to avoid set_shader() to be overridden
@@ -602,6 +598,7 @@ static bool d3d_construct(d3d_video_t *d3d,
    if (!d3d_process_shader(d3d))
       return false;
 #endif
+
 #endif
 
    d3d->video_info = *info;
@@ -665,6 +662,26 @@ static const gfx_ctx_driver_t *d3d_get_context(void *data)
          settings->video.context_driver,
          api, major, minor, false);
 }
+
+#ifdef _XBOX
+static void d3d_reinit_renderchain(void *data,
+      const video_info_t *video)
+{
+   d3d_video_t *d3d        = (d3d_video_t*)data;
+
+   if (!d3d)
+      return;
+
+   d3d->pixel_size         = video->rgb32 ? sizeof(uint32_t) : sizeof(uint16_t);
+   d3d->tex_w = d3d->tex_h = RARCH_SCALE_BASE * video->input_scale; 
+   RARCH_LOG(
+         "Reinitializing renderchain - and textures (%u x %u @ %u bpp)\n",
+         d3d->tex_w, d3d->tex_h, d3d->pixel_size * CHAR_BIT);
+
+   d3d_deinit_chain(d3d);
+   d3d_init_chain(d3d, video);
+}
+#endif
 
 static void *d3d_init(const video_info_t *info,
       const input_driver_t **input, void **input_data)
@@ -894,26 +911,24 @@ static bool d3d_init_chain(d3d_video_t *d3d, const video_info_t *video_info)
       video_info->input_scale * RARCH_SCALE_BASE;
 #endif
 
-#ifdef _XBOX
-   if (!renderchain_init(d3d, video_info,
-            NULL, NULL, NULL, 
-            video_info->rgb32 ? 
-            RETRO_PIXEL_FORMAT_XRGB8888 : RETRO_PIXEL_FORMAT_RGB565))
-   {
-      RARCH_ERR("[D3D]: Failed to init render chain.\n");
-      return false;
-   }
-#else
    d3d->chain = renderchain_new();
    
    if (!d3d->chain)
       return false;
 
-   if (!renderchain_init(d3d->chain, &d3d->video_info, d3dr,
-	    &d3d->final_viewport, &link_info,
-		d3d->video_info.rgb32 ? RETRO_PIXEL_FORMAT_XRGB8888 : RETRO_PIXEL_FORMAT_RGB565))
+#ifdef _XBOX
+   if (!renderchain_init(d3d, video_info,
+            NULL, NULL, NULL, 
+            video_info->rgb32 ? 
+            RETRO_PIXEL_FORMAT_XRGB8888 : RETRO_PIXEL_FORMAT_RGB565))
+#else
+      if (!renderchain_init(d3d->chain, &d3d->video_info, d3dr,
+               &d3d->final_viewport, &link_info,
+               d3d->video_info.rgb32 ? 
+               RETRO_PIXEL_FORMAT_XRGB8888 : RETRO_PIXEL_FORMAT_RGB565))
+#endif
    {
-      RARCH_ERR("[D3D9]: Failed to init render chain.\n");
+      RARCH_ERR("[D3D]: Failed to init render chain.\n");
       return false;
    }
 
@@ -962,25 +977,6 @@ static bool d3d_init_chain(d3d_video_t *d3d, const video_info_t *video_info)
    return true;
 }
 
-#ifdef _XBOX
-static void d3d_reinit_renderchain(void *data,
-      const video_info_t *video)
-{
-   d3d_video_t *d3d        = (d3d_video_t*)data;
-
-   if (!d3d)
-      return;
-
-   d3d->pixel_size         = video->rgb32 ? sizeof(uint32_t) : sizeof(uint16_t);
-   d3d->tex_w = d3d->tex_h = RARCH_SCALE_BASE * video->input_scale; 
-   RARCH_LOG(
-         "Reinitializing renderchain - and textures (%u x %u @ %u bpp)\n",
-         d3d->tex_w, d3d->tex_h, d3d->pixel_size * CHAR_BIT);
-
-   d3d_deinit_chain(d3d);
-   d3d_init_chain(d3d, video);
-}
-#endif
 
 #ifdef _XBOX
 #ifdef HAVE_RMENU
