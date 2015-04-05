@@ -104,6 +104,9 @@ static unsigned monitor_count;
 #endif
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
+static void renderchain_deinit_shader(void);
+static bool renderchain_init_shader(void *data);
+
 static void d3d_deinit_shader(void *data)
 {
    renderchain_deinit_shader();
