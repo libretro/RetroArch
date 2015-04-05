@@ -1886,7 +1886,8 @@ static bool init_core(void)
    driver_t *driver = driver_get_ptr();
    global_t *global = global_get_ptr();
 
-   config_load_override();
+   if(!config_load_override());
+      RARCH_ERR("Error loading override files");
 
    verify_api_version();
    pretro_init();

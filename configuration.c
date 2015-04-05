@@ -1714,7 +1714,7 @@ bool config_load_override(void)
 
    new_conf = NULL;
 
-   /* Create a new config file from core_path */
+   /* Create a new config file from game_path */
    new_conf = config_file_new(game_path);
 
    /* Append game-specific */
@@ -1736,6 +1736,8 @@ bool config_load_override(void)
 
    if(should_append)
       config_load_file(global->config_path, false);
+    else
+       return false;
 
    return true;   /* only means no errors were caught */
 }
