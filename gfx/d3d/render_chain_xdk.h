@@ -250,7 +250,7 @@ static void renderchain_blit_to_texture(void *data, const void *frame,
    if (d3d->last_width != width || d3d->last_height != height)
    {
       d3d_lockrectangle_clear(d3d, d3d->tex,
-            0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK);
+            0, &d3dlr, NULL, 0 /* FIXME - stub */, D3DLOCK_NOSYSLOCK);
    }
 
    d3d_texture_blit(driver->video_data, 0, d3d->tex,
@@ -294,5 +294,10 @@ static void renderchain_render_pass(void *data, const void *frame,
    renderchain_set_mvp(d3d, d3d->screen_width, d3d->screen_height, d3d->dev_rotation);
 }
 
-
-
+void renderchain_set_final_viewport(void *data,
+      void *renderchain_data, const void *viewport_data)
+{
+   (void)data;
+   (void)renderchain_data;
+   (void)viewport_data;
+}

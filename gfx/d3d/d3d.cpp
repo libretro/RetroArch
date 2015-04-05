@@ -21,9 +21,7 @@
 #endif
 
 #include "d3d.h"
-#ifndef _XBOX
 #include "render_chain.h"
-#endif
 #include "../video_viewport.h"
 #include "../video_monitor.h"
 #include "../../runloop.h"
@@ -103,7 +101,6 @@ static HMONITOR monitor_all[MAX_MONITORS];
 static unsigned monitor_count;
 #endif
 
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
 void renderchain_deinit_shader(void);
 bool renderchain_init_shader(void *data);
 
@@ -116,7 +113,6 @@ static bool d3d_init_shader(void *data)
 {
    return renderchain_init_shader(data);
 }
-#endif
 
 static void d3d_deinit_chain(d3d_video_t *d3d)
 {
@@ -140,9 +136,7 @@ static void d3d_deinitialize(d3d_video_t *d3d)
       font_ctx->free(d3d->font_handle);
    font_ctx = NULL;
    d3d_deinit_chain(d3d);
-#ifdef HAVE_SHADERS
    d3d_deinit_shader(d3d);
-#endif
 
 #ifndef _XBOX
    d3d->needs_restore = false;
@@ -254,13 +248,11 @@ static bool d3d_initialize(d3d_video_t *d3d, const video_info_t *info)
    d3d_calculate_rect(d3d, d3d->screen_width, d3d->screen_height,
          info->force_aspect, global->system.aspect_ratio);
 
-#ifdef HAVE_SHADERS
    if (!d3d_init_shader(d3d))
    {
       RARCH_ERR("Failed to initialize shader subsystem.\n");
       return false;
    }
-#endif
 
    if (!d3d_init_chain(d3d, info))
    {
@@ -613,7 +605,7 @@ static bool d3d_construct(d3d_video_t *d3d,
    enum rarch_shader_type type = 
       video_shader_parse_type(settings->video.shader_path, RARCH_SHADER_NONE);
    if (settings->video.shader_enable && type == RARCH_SHADER_CG)
-      d3d->cg_shader = settings->video.shader_path;
+      d3d->shader_path = settings->video.shader_path;
 
    if (!d3d_process_shader(d3d))
       return false;
@@ -842,51 +834,6 @@ static RECT d3d_monitor_rect(d3d_video_t *d3d)
    GetMonitorInfo(hm_to_use, (MONITORINFO*)&current_mon);
 
    return current_mon.rcMonitor;
-}
-#endif
-
-#ifndef _XBOX
-static void d3d_recompute_pass_sizes(d3d_video_t *d3d)
-{
-   unsigned i;
-   LinkInfo link_info                = {0};
-   link_info.pass                    = &d3d->shader.pass[0];
-   link_info.tex_w = link_info.tex_h = 
-      d3d->video_info.input_scale * RARCH_SCALE_BASE;
-
-   unsigned current_width            = link_info.tex_w;
-   unsigned current_height           = link_info.tex_h;
-   unsigned out_width                = 0;
-   unsigned out_height               = 0;
-
-   if (!renderchain_set_pass_size(d3d->chain, 0,
-            current_width, current_height))
-   {
-      RARCH_ERR("[D3D]: Failed to set pass size.\n");
-      return;
-   }
-
-   for (i = 1; i < d3d->shader.passes; i++)
-   {
-      renderchain_convert_geometry(d3d->chain, &link_info,
-            &out_width, &out_height,
-            current_width, current_height, &d3d->final_viewport);
-
-      link_info.tex_w = next_pow2(out_width);
-      link_info.tex_h = next_pow2(out_height);
-
-      if (!renderchain_set_pass_size(d3d->chain, i,
-               link_info.tex_w, link_info.tex_h))
-      {
-         RARCH_ERR("[D3D]: Failed to set pass size.\n");
-         return;
-      }
-
-      current_width = out_width;
-      current_height = out_height;
-
-      link_info.pass = &d3d->shader.pass[i];
-   }
 }
 #endif
 
@@ -1146,7 +1093,7 @@ static bool d3d_init_multipass(d3d_video_t *d3d)
    unsigned i;
    bool use_extra_pass;
    video_shader_pass *pass = NULL;
-   config_file_t *conf     = config_file_new(d3d->cg_shader.c_str());
+   config_file_t *conf     = config_file_new(d3d->shader_path.c_str());
 
    if (!conf)
    {
@@ -1165,7 +1112,7 @@ static bool d3d_init_multipass(d3d_video_t *d3d)
 
    config_file_free(conf);
 
-   video_shader_resolve_relative(&d3d->shader, d3d->cg_shader.c_str());
+   video_shader_resolve_relative(&d3d->shader, d3d->shader_path.c_str());
 
    RARCH_LOG("[D3D9 Meta-Cg] Found %u shaders.\n", d3d->shader.passes);
 
@@ -1259,7 +1206,7 @@ static bool d3d_init_singlepass(d3d_video_t *d3d)
    pass->fbo.type_y                      = RARCH_SCALE_VIEWPORT;
    pass->fbo.scale_x                     = pass->fbo.scale_y;
    pass->fbo.type_x                      = pass->fbo.type_y;
-   strlcpy(pass->source.path, d3d->cg_shader.c_str(),
+   strlcpy(pass->source.path, d3d->shader_path.c_str(),
          sizeof(pass->source.path));
 #endif
 
@@ -1270,7 +1217,7 @@ static bool d3d_process_shader(d3d_video_t *d3d)
 {
 #ifdef HAVE_FBO
    if (strcmp(path_get_extension(
-               d3d->cg_shader.c_str()), "cgp") == 0)
+               d3d->shader_path.c_str()), "cgp") == 0)
       return d3d_init_multipass(d3d);
 #endif
 
@@ -1622,10 +1569,8 @@ static bool d3d_frame(void *data, const void *frame,
             d3d->screen_height, d3d->video_info.force_aspect,
             global->system.aspect_ratio);
 
-#ifndef _XBOX
-      renderchain_set_final_viewport(d3d->chain, &d3d->final_viewport);
-      d3d_recompute_pass_sizes(d3d);
-#endif
+      renderchain_set_final_viewport(d3d,
+            d3d->chain, &d3d->final_viewport);
 
       d3d->should_resize = false;
    }
@@ -1815,10 +1760,8 @@ static bool d3d_set_shader(void *data,
          break;
    }
 
-   std::string old_shader = d3d->cg_shader;
-#ifdef HAVE_CG
-   d3d->cg_shader         = shader;
-#endif
+   std::string old_shader = d3d->shader_path;
+   d3d->shader_path       = shader;
 
    if (!d3d_process_shader(d3d) || !d3d_restore(d3d))
    {
@@ -1828,9 +1771,7 @@ static bool d3d_set_shader(void *data,
 
    if (restore_old)
    {
-#ifdef HAVE_CG
-      d3d->cg_shader = old_shader;
-#endif
+      d3d->shader_path = old_shader;
       d3d_process_shader(d3d);
       d3d_restore(d3d);
    }

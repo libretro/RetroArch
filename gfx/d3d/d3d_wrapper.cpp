@@ -265,17 +265,16 @@ void d3d_clear(LPDIRECT3DDEVICE dev,
 void d3d_lockrectangle_clear(void *data, 
       LPDIRECT3DTEXTURE tex,
       unsigned level, D3DLOCKED_RECT *lock_rect, RECT *rect,
-      unsigned flags)
+      unsigned rectangle_height, unsigned flags)
 {
 #if defined(_XBOX)
-   d3d_video_t *chain = (d3d_video_t*)data;
+   d3d_video_t *d3d = (d3d_video_t*)data;
    D3DTexture_LockRect(tex, level, lock_rect, rect, flags);
-   memset(lock_rect->pBits, 0, chain->tex_h * lock_rect->Pitch);
+   memset(lock_rect->pBits, 0, d3d->tex_h * lock_rect->Pitch);
 #else
-   Pass         *pass = (Pass*)data;
    if (SUCCEEDED(tex->LockRect(level, lock_rect, rect, flags)))
    {
-      memset(lock_rect->pBits, level, pass->info.tex_h * lock_rect->Pitch);
+      memset(lock_rect->pBits, level, rectangle_height * lock_rect->Pitch);
       tex->UnlockRect(0);
    }
 #endif

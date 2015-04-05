@@ -20,16 +20,7 @@
 #include "d3d.h"
 #include "../video_state_tracker.h"
 #include "../video_shader_parse.h"
-#include "../inc/Cg/cg.h"
 #include "../../libretro.h"
-
-struct Vertex
-{
-   float x, y, z;
-   float u, v;
-   float lut_u, lut_v;
-   float r, g, b, a;
-};
 
 struct LinkInfo
 {
@@ -43,21 +34,6 @@ enum
 {
    TEXTURES = 8,
    TEXTURESMASK = TEXTURES - 1
-};
-
-struct Pass
-{
-   LinkInfo info;
-   LPDIRECT3DTEXTURE tex;
-   LPDIRECT3DVERTEXBUFFER vertex_buf;
-#ifdef HAVE_CG
-   CGprogram vPrg, fPrg;
-#endif
-   unsigned last_width, last_height;
-#ifdef HAVE_D3D9
-   LPDIRECT3DVERTEXDECLARATION vertex_decl;
-#endif
-   std::vector<unsigned> attrib_map;
 };
 
 void renderchain_free(void *data);
@@ -78,7 +54,8 @@ bool renderchain_init(void *data, const video_info_t *video_info,
 
 void renderchain_clear(void *data);
 
-void renderchain_set_final_viewport(void *data, const void *viewport_data);
+void renderchain_set_final_viewport(void *data,
+      void *renderchain_data, const void *viewport_data);
 
 bool renderchain_set_pass_size(void *data, unsigned pass_index,
       unsigned width, unsigned height);
@@ -126,8 +103,6 @@ void renderchain_blit_to_texture(void *data, const void *frame,
 void renderchain_render_pass(void *data, void *pass_data, unsigned pass_index);
 
 void renderchain_log_info(void *data, const void *info_data);
-
-void renderchain_unbind_all(void *data);
 
 bool renderchain_compile_shaders(void *data, void *fragment_data,
       void *vertex_data, const std::string &shader);
