@@ -776,7 +776,8 @@ void renderchain_clear(void *data)
          d3d_vertex_buffer_free(chain->prev.vertex_buf[i], NULL);
    }
 
-   d3d_vertex_buffer_free(NULL, chain->passes[0].vertex_decl);
+   if (chain->passes[0].vertex_decl)
+      chain->passes[0].vertex_decl->Release();
 
    for (i = 1; i < chain->passes.size(); i++)
    {
