@@ -22,14 +22,6 @@
 #include "../video_shader_parse.h"
 #include "../../libretro.h"
 
-struct Vertex
-{
-   float x, y, z;
-   float u, v;
-   float lut_u, lut_v;
-   float r, g, b, a;
-};
-
 struct LinkInfo
 {
    unsigned tex_w, tex_h;

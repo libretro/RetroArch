@@ -21,9 +21,7 @@
 #endif
 
 #include "d3d.h"
-#ifndef _XBOX
 #include "render_chain.h"
-#endif
 #include "../video_viewport.h"
 #include "../video_monitor.h"
 #include "../../runloop.h"

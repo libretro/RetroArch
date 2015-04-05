@@ -26,6 +26,14 @@ struct lut_info
    bool smooth;
 };
 
+struct Vertex
+{
+   float x, y, z;
+   float u, v;
+   float lut_u, lut_v;
+   float r, g, b, a;
+};
+
 struct Pass
 {
    LinkInfo info;
