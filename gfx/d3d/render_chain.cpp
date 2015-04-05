@@ -18,6 +18,43 @@
 #include <string.h>
 #include <retro_inline.h>
 
+struct lut_info
+{
+   LPDIRECT3DTEXTURE tex;
+   char id[64];
+   bool smooth;
+};
+
+typedef struct renderchain
+{
+   LPDIRECT3DDEVICE dev;
+#ifdef HAVE_CG
+   CGcontext cgCtx;
+#endif
+   unsigned pixel_size;
+   const video_info_t *video_info;
+   state_tracker_t *tracker;
+   struct state_tracker_uniform uniform_info[MAX_VARIABLES];
+   unsigned uniform_cnt;
+   struct
+   {
+      LPDIRECT3DTEXTURE tex[TEXTURES];
+      LPDIRECT3DVERTEXBUFFER vertex_buf[TEXTURES];
+      unsigned ptr;
+      unsigned last_width[TEXTURES];
+      unsigned last_height[TEXTURES];
+   } prev;
+   std::vector<Pass> passes;
+#ifdef HAVE_CG
+   CGprogram vStock, fStock;
+#endif
+   std::vector<lut_info> luts;
+   D3DVIEWPORT *final_viewport;
+   unsigned frame_count;
+   std::vector<unsigned> bound_tex;
+   std::vector<unsigned> bound_vert;
+} renderchain_t;
+
 static INLINE D3DTEXTUREFILTERTYPE translate_filter(unsigned type)
 {
    settings_t *settings = config_get_ptr();
