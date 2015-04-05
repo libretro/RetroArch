@@ -46,19 +46,15 @@ void renderchain_deinit_shader(void);
 
 bool renderchain_init_shader(void *data);
 
-bool renderchain_init(void *data, const video_info_t *video_info,
+bool renderchain_init(void *data,
+      const video_info_t *video_info,
       void *dev_,
       const void *final_viewport_,
       const void *info_data,
       unsigned fmt);
 
-void renderchain_clear(void *data);
-
 void renderchain_set_final_viewport(void *data,
       void *renderchain_data, const void *viewport_data);
-
-bool renderchain_set_pass_size(void *data, unsigned pass_index,
-      unsigned width, unsigned height);
 
 bool renderchain_add_pass(void *data, const void *info_data);
 
@@ -68,17 +64,8 @@ bool renderchain_add_lut(void *data,
 
 void renderchain_add_state_tracker(void *data, void *tracker_data);
 
-void renderchain_start_render(void *data);
-
-void renderchain_end_render(void *data);
-
 bool renderchain_render(void *chain_data, const void *data,
       unsigned width, unsigned height, unsigned pitch, unsigned rotation);
-
-bool renderchain_create_first_pass(void *data,
-      const void *info_data, unsigned fmt);
-
-void renderchain_set_viewport(void *data, void *viewport_data);
 
 void renderchain_convert_geometry(void *data, const void *info_data,
       unsigned *out_width, unsigned *out_height,
@@ -93,10 +80,6 @@ void renderchain_render_pass(void *data, void *pass_data, unsigned pass_index);
 
 bool renderchain_compile_shaders(void *data, void *fragment_data,
       void *vertex_data, const std::string &shader);
-
-void renderchain_set_shaders(void *data, void *fragment_data, void *vertex_data);
-
-void renderchain_destroy_shader(void *data, int i);
 
 bool renderchain_init_shader_fvf(void *data, void *pass_data);
 

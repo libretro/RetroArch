@@ -101,9 +101,6 @@ static HMONITOR monitor_all[MAX_MONITORS];
 static unsigned monitor_count;
 #endif
 
-void renderchain_deinit_shader(void);
-bool renderchain_init_shader(void *data);
-
 static void d3d_deinit_shader(void *data)
 {
    renderchain_deinit_shader();
