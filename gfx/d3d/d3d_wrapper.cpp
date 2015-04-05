@@ -307,7 +307,7 @@ void d3d_set_texture(LPDIRECT3DDEVICE dev, unsigned sampler,
             + fetchConstant);
    D3DDevice_SetTexture(dev, sampler, tex, pendingMask3);
 #else
-   dev->SetTexture(0, tex);
+   dev->SetTexture(sampler, tex);
 #endif
 }
 
