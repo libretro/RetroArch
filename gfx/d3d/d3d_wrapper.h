@@ -77,7 +77,7 @@ void d3d_set_texture(LPDIRECT3DDEVICE dev, unsigned sampler,
 HRESULT d3d_set_vertex_shader(LPDIRECT3DDEVICE dev, unsigned index,
       void *data);
 
-void d3d_texture_blit(void *data, void *renderchain_data,
+void d3d_texture_blit(void *data, unsigned pixel_size,
       LPDIRECT3DTEXTURE tex,
       D3DLOCKED_RECT *lr, const void *frame,
       unsigned width, unsigned height, unsigned pitch);

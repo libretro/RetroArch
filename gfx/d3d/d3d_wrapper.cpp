@@ -315,7 +315,7 @@ HRESULT d3d_set_vertex_shader(LPDIRECT3DDEVICE dev, unsigned index,
 }
 
 
-void d3d_texture_blit(void *data, void *renderchain_data,
+void d3d_texture_blit(void *data, unsigned pixel_size,
       LPDIRECT3DTEXTURE tex, D3DLOCKED_RECT *lr, const void *frame,
       unsigned width, unsigned height, unsigned pitch)
 {
@@ -345,18 +345,13 @@ void d3d_texture_blit(void *data, void *renderchain_data,
 #endif
    D3DTexture_UnlockRect(tex, 0);
 #else
-   renderchain_t *chain = (renderchain_t*)renderchain_data;
-
-   if (!chain)
-	   return;
-
    if (SUCCEEDED(tex->LockRect(0, lr, NULL, D3DLOCK_NOSYSLOCK)))
    {
       for (y = 0; y < height; y++)
       { 
          const uint8_t *in = (const uint8_t*)frame + y * pitch;
          uint8_t *out = (uint8_t*)lr->pBits + y * lr->Pitch;
-         memcpy(out, in, width * chain->pixel_size);
+         memcpy(out, in, width * pixel_size);
       }
       tex->UnlockRect(0);
    }

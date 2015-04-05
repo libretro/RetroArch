@@ -230,7 +230,7 @@ static void renderchain_blit_to_texture(void *data, const void *frame,
             0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK);
    }
 
-   d3d_texture_blit(driver->video_data, NULL, d3d->tex,
+   d3d_texture_blit(driver->video_data, 0, d3d->tex,
          &d3dlr, frame, width, height, pitch);
 }
 
