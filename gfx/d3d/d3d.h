@@ -152,6 +152,8 @@ typedef struct d3d_video
       unsigned last_height;
 #ifdef HAVE_D3D9
       LPDIRECT3DVERTEXDECLARATION vertex_decl;
+#else
+      void *vertex_decl;
 #endif
       // RENDERCHAIN PASS -> INFO
       unsigned tex_w;

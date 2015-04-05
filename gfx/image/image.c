@@ -147,7 +147,7 @@ void texture_image_free(struct texture_image *img)
       return;
 
 #ifdef _XBOX1
-   d3d_vertex_buffer_free(img->vertex_buf);
+   d3d_vertex_buffer_free(img->vertex_buf, NULL);
    d3d_texture_free(img->texture_buf);
 #endif
    if (img->pixels)

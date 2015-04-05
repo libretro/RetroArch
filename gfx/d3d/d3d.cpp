@@ -891,8 +891,7 @@ static bool d3d_init_chain(d3d_video_t *d3d, const video_info_t *video_info)
    /* Setup information for first pass. */
 #ifdef _XBOX
    /* TODO - properly implement this. */
-   d3d_video_t *link_info = (d3d_video_t*)d3d;
-   link_info->tex_w       = link_info->tex_h = 
+   d3d->tex_w       = d3d->tex_h = 
 	   RARCH_SCALE_BASE * video_info->input_scale;
 
    //d3d_deinit_chain(d3d);
@@ -1777,6 +1776,7 @@ static void d3d_set_menu_texture_frame(void *data,
    D3DLOCKED_RECT d3dlr;
    d3d_video_t *d3d = (d3d_video_t*)data;
 
+   (void)d3dlr;
    (void)frame;
    (void)rgb32;
    (void)width;
