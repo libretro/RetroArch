@@ -328,7 +328,8 @@ void d3d_texture_blit(void *data, unsigned pixel_size,
 	   return;
 
 #ifdef _XBOX
-   d3d_set_texture(d3d->dev, 0, NULL); // Set the texture to null so D3D don't complain about it being in use...
+   /* Set the texture to NULL so D3D doesn't complain about it being in use... */
+   d3d_set_texture(d3d->dev, 0, NULL); 
    D3DTexture_LockRect(tex, 0, lr, NULL, D3DLOCK_NOSYSLOCK);
 #if defined(_XBOX360)
    D3DSURFACE_DESC desc;

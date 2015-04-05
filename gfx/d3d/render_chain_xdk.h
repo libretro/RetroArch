@@ -1,7 +1,7 @@
 static void renderchain_set_mvp(void *data, unsigned vp_width,
       unsigned vp_height, unsigned rotation)
 {
-   d3d_video_t *d3d = (d3d_video_t*)data;
+   d3d_video_t      *d3d = (d3d_video_t*)data;
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
 
 #if defined(_XBOX360) && defined(HAVE_HLSL)
@@ -23,6 +23,7 @@ static void renderchain_set_mvp(void *data, unsigned vp_width,
 static void renderchain_clear(void *data)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
+
    d3d_texture_free(d3d->tex);
    d3d_vertex_buffer_free(d3d->vertex_buf);
 
@@ -112,7 +113,7 @@ static bool renderchain_init(void *data, const video_info_t *info)
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)chain->dev;
    global_t *global      = global_get_ptr();
 
-   chain->pixel_size   = info->rgb32 ? sizeof(uint32_t) : sizeof(uint16_t);
+   chain->pixel_size     = info->rgb32 ? sizeof(uint32_t) : sizeof(uint16_t);
 
    if (!renderchain_create_first_pass(chain, info))
       return false;
@@ -126,73 +127,74 @@ static bool renderchain_init(void *data, const video_info_t *info)
    return true;
 }
 
-static void renderchain_set_vertices(void *data, unsigned pass, unsigned width, unsigned height)
+static void renderchain_set_vertices(void *data, unsigned pass,
+      unsigned width, unsigned height)
 {
-   d3d_video_t *d3d   = (d3d_video_t*)data;
-   runloop_t *runloop = rarch_main_get_ptr();
+   d3d_video_t *d3d    = (d3d_video_t*)data;
+   runloop_t *runloop  = rarch_main_get_ptr();
 
    if (d3d->last_width != width || d3d->last_height != height)
    {
       unsigned i;
-      void *verts = NULL;
+      Vertex vert[4];
+      void *verts      = NULL;
 
-      d3d->last_width = width;
+      d3d->last_width  = width;
       d3d->last_height = height;
 
-      Vertex vert[4];
-      float tex_w = width;
-      float tex_h = height;
+      float tex_w      = width;
+      float tex_h      = height;
 #ifdef _XBOX360
-      tex_w /= ((float)d3d->tex_w);
-      tex_h /= ((float)d3d->tex_h);
+      tex_w           /= ((float)d3d->tex_w);
+      tex_h           /= ((float)d3d->tex_h);
 #endif
 
-      vert[0].x = -1.0f;
-      vert[1].x =  1.0f;
-      vert[2].x = -1.0f;
-      vert[3].x =  1.0f;
+      vert[0].x        = -1.0f;
+      vert[1].x        =  1.0f;
+      vert[2].x        = -1.0f;
+      vert[3].x        =  1.0f;
 
-      vert[0].y = -1.0f;
-      vert[1].y = -1.0f;
-      vert[2].y =  1.0f;
-      vert[3].y =  1.0f;
+      vert[0].y        = -1.0f;
+      vert[1].y        = -1.0f;
+      vert[2].y        =  1.0f;
+      vert[3].y        =  1.0f;
 #if defined(_XBOX1)
-      vert[0].z =  1.0f;
-      vert[1].z =  1.0f;
-      vert[2].z =  1.0f;
-      vert[3].z =  1.0f;
+      vert[0].z        =  1.0f;
+      vert[1].z        =  1.0f;
+      vert[2].z        =  1.0f;
+      vert[3].z        =  1.0f;
 
-      vert[0].rhw = 0.0f;
-      vert[1].rhw = tex_w;
-      vert[2].rhw = 0.0f;
-      vert[3].rhw = tex_w;
+      vert[0].rhw      = 0.0f;
+      vert[1].rhw      = tex_w;
+      vert[2].rhw      = 0.0f;
+      vert[3].rhw      = tex_w;
 
-      vert[0].u =  tex_h;
-      vert[1].u =  tex_h;
-      vert[2].u =  0.0f;
-      vert[3].u =  0.0f;
+      vert[0].u        = tex_h;
+      vert[1].u        = tex_h;
+      vert[2].u        = 0.0f;
+      vert[3].u        = 0.0f;
 
-      vert[0].v =  0.0f;
-      vert[1].v =  0.0f;
-      vert[2].v =  0.0f;
-      vert[3].v =  0.0f;
+      vert[0].v        = 0.0f;
+      vert[1].v        = 0.0f;
+      vert[2].v        = 0.0f;
+      vert[3].v        = 0.0f;
 #elif defined(_XBOX360)
-      vert[0].u =  0.0f;
-      vert[1].u =  tex_w;
-      vert[2].u =  0.0f;
-      vert[3].u =  tex_w;
+      vert[0].u        = 0.0f;
+      vert[1].u        = tex_w;
+      vert[2].u        = 0.0f;
+      vert[3].u        = tex_w;
 
-      vert[0].v =  tex_h;
-      vert[1].v =  tex_h;
-      vert[2].v =  0.0f;
-      vert[3].v =  0.0f;
+      vert[0].v        = tex_h;
+      vert[1].v        = tex_h;
+      vert[2].v        = 0.0f;
+      vert[3].v        = 0.0f;
 #endif
 
       /* Align texels and vertices. */
       for (i = 0; i < 4; i++)
       {
-         vert[i].x -= 0.5f / ((float)d3d->tex_w);
-         vert[i].y += 0.5f / ((float)d3d->tex_h);
+         vert[i].x    -= 0.5f / ((float)d3d->tex_w);
+         vert[i].y    += 0.5f / ((float)d3d->tex_h);
       }
 
       verts = d3d_vertex_buffer_lock(d3d->vertex_buf);

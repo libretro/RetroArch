@@ -615,21 +615,21 @@ void renderchain_bind_luts(void *data, void *pass_data)
    {
       CGparameter vparam;
       CGparameter fparam = cgGetNamedParameter(pass->fPrg, chain->luts[i].id);
-      int bound_index = -1;
+      int bound_index    = -1;
 
       if (fparam)
       {
-         index       = cgGetParameterResourceIndex(fparam);
-         bound_index = index;
+         index           = cgGetParameterResourceIndex(fparam);
+         bound_index     = index;
 
          renderchain_add_lut(chain, index, i);
       }
 
-      vparam = cgGetNamedParameter(pass->vPrg, chain->luts[i].id);
+      vparam             = cgGetNamedParameter(pass->vPrg, chain->luts[i].id);
 
       if (vparam)
       {
-         index      = cgGetParameterResourceIndex(vparam);
+         index           = cgGetParameterResourceIndex(vparam);
          if (index != (unsigned)bound_index)
             renderchain_add_lut(chain, index, i);
       }
@@ -750,7 +750,7 @@ bool renderchain_init(void *data, const video_info_t *video_info,
 #endif
    chain->video_info     = video_info;
    chain->tracker        = NULL;
-   chain->final_viewport =  (D3DVIEWPORT*)final_viewport_;
+   chain->final_viewport = (D3DVIEWPORT*)final_viewport_;
    chain->frame_count    = 0;
    chain->pixel_size     = (fmt == RGB565) ? 2 : 4;
 
@@ -812,7 +812,7 @@ void renderchain_set_final_viewport(void *data, const void *viewport_data)
 bool renderchain_set_pass_size(void *data, unsigned pass_index,
       unsigned width, unsigned height)
 {
-   renderchain_t *chain = (renderchain_t*)data;
+   renderchain_t *chain  = (renderchain_t*)data;
    LPDIRECT3DDEVICE d3dr = chain->dev;
    Pass *pass = (Pass*)&chain->passes[pass_index];
 
@@ -891,7 +891,7 @@ bool renderchain_add_lut(void *data, const char *id,
       bool smooth)
 {
    lut_info info;
-   renderchain_t *chain = (renderchain_t*)data;
+   renderchain_t *chain  = (renderchain_t*)data;
    LPDIRECT3DDEVICE d3dr = chain->dev;
    LPDIRECT3DTEXTURE lut = (LPDIRECT3DTEXTURE)
       d3d_texture_new(d3dr,
@@ -1006,6 +1006,7 @@ bool renderchain_render(void *chain_data, const void *data,
       viewport.Height = to_pass->info.tex_h;
       viewport.MinZ   = 0.0f;
       viewport.MaxZ   = 1.0f;
+
       d3d_set_viewport(d3dr, &viewport);
       d3d_clear(d3dr, 0, 0, D3DCLEAR_TARGET, 0, 1, 0);
       
