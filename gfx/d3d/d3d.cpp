@@ -693,16 +693,13 @@ static void *d3d_init(const video_info_t *info,
    }
 #endif
 
-   vid = new d3d_video_t();
+   vid = (d3d_video_t*)calloc(1, sizeof(*vid));
    if (!vid)
-      return NULL;
+      goto error;
 
    vid->ctx_driver = d3d_get_context(vid);
    if (!vid->ctx_driver)
-   {
-      delete vid;
-      return NULL;
-   }
+      goto error;
 
    /* Default values */
    vid->g_pD3D               = NULL;
@@ -721,8 +718,7 @@ static void *d3d_init(const video_info_t *info,
    if (!d3d_construct(vid, info, input, input_data))
    {
       RARCH_ERR("[D3D]: Failed to init D3D.\n");
-      delete vid;
-      return NULL;
+      goto error;
    }
 
 #ifdef _XBOX
@@ -731,6 +727,11 @@ static void *d3d_init(const video_info_t *info,
 #endif
 
    return vid;
+
+error:
+   if (vid)
+      free(vid);
+   return NULL;
 }
 
 static void d3d_free(void *data)
@@ -764,7 +765,7 @@ static void d3d_free(void *data)
 #endif
 
    if (d3d)
-      delete d3d;
+      free(d3d);
 
 #ifndef _XBOX
    UnregisterClass("RetroArch", GetModuleHandle(NULL));
