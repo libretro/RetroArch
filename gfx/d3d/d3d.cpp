@@ -532,7 +532,8 @@ static bool d3d_construct(d3d_video_t *d3d,
    d3d->screen_width   = info->fullscreen ? full_x : info->width;
    d3d->screen_height  = info->fullscreen ? full_y : info->height;
 
-#if defined(HAVE_WINDOW) && !defined(_XBOX)
+#ifndef _XBOX
+#ifdef HAVE_WINDOW
    char buffer[128];
    unsigned win_width  = d3d->screen_width;
    unsigned win_height = d3d->screen_height;
@@ -563,6 +564,7 @@ static bool d3d_construct(d3d_video_t *d3d,
    driver->video_display = 0;
    driver->video_window  = (uintptr_t)d3d->hWnd;
 #endif
+#endif
 
    if (d3d && d3d->ctx_driver && d3d->ctx_driver->show_mouse)
       d3d->ctx_driver->show_mouse(d3d, !info->fullscreen
@@ -571,7 +573,10 @@ static bool d3d_construct(d3d_video_t *d3d,
 #endif
    );
 
-#if defined(HAVE_WINDOW) && !defined(_XBOX)
+
+#ifndef _XBOX
+
+#ifdef HAVE_WINDOW
    if (!info->fullscreen && settings->ui.menubar_enable)
    {
 	   RECT rc_temp = {0, 0, win_height, 0x7FFF};
@@ -588,7 +593,6 @@ static bool d3d_construct(d3d_video_t *d3d,
    SetFocus(d3d->hWnd);
 #endif
 
-#ifndef _XBOX
 #ifdef HAVE_SHADERS
    /* This should only be done once here
     * to avoid set_shader() to be overridden
@@ -601,6 +605,7 @@ static bool d3d_construct(d3d_video_t *d3d,
    if (!d3d_process_shader(d3d))
       return false;
 #endif
+
 #endif
 
    d3d->video_info = *info;
@@ -744,13 +749,17 @@ static void d3d_free(void *data)
 #ifdef HAVE_OVERLAY
    d3d_free_overlays(d3d);
 #endif
-#if defined(HAVE_MENU) && !defined(_XBOX)
-   d3d_free_overlay(d3d, d3d->menu);
-#endif
+
 #ifdef _XBOX
    if (d3d->ctx_driver && d3d->ctx_driver->destroy)
       d3d->ctx_driver->destroy(d3d);
    d3d->ctx_driver = NULL;
+#else
+
+#ifdef HAVE_MENU
+   d3d_free_overlay(d3d, d3d->menu);
+#endif
+
 #endif
    if (d3d->dev)
       d3d->dev->Release();
@@ -977,9 +986,7 @@ static void d3d_reinit_renderchain(void *data,
    d3d_deinit_chain(d3d);
    d3d_init_chain(d3d, video);
 }
-#endif
 
-#ifdef _XBOX
 #ifdef HAVE_RMENU
 extern struct texture_image *menu_texture;
 #endif
@@ -1070,6 +1077,7 @@ static void d3d_draw_texture(d3d_video_t *d3d)
 #endif
 }
 #endif
+
 #endif
 
 #ifdef HAVE_FBO
@@ -1766,9 +1774,7 @@ static void d3d_set_menu_texture_frame(void *data,
       const void *frame, bool rgb32, unsigned width, unsigned height,
       float alpha)
 {
-#ifndef _XBOX
    D3DLOCKED_RECT d3dlr;
-#endif
    d3d_video_t *d3d = (d3d_video_t*)data;
 
    (void)frame;
