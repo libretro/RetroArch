@@ -140,7 +140,7 @@ typedef struct d3d_video
 #if defined(HAVE_MENU) && defined(HAVE_OVERLAY)
       overlay_t *menu;
 #endif
-      void *chain;
+      void *renderchain_data;
 
 #ifdef _XBOX
       /* TODO _ should all be refactored */

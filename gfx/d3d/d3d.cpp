@@ -108,8 +108,8 @@ static bool d3d_init_shader(void *data)
 
 static void d3d_deinit_chain(d3d_video_t *d3d)
 {
-   renderchain_deinit(d3d->chain);
-   d3d->chain = NULL;
+   renderchain_deinit(d3d->renderchain_data);
+   d3d->renderchain_data = NULL;
 #ifdef _XBOX
    renderchain_free(d3d);
 #endif
@@ -869,7 +869,7 @@ static bool d3d_init_imports(d3d_video_t *d3d)
       return false;
    }
 
-   renderchain_add_state_tracker(d3d->chain, state_tracker);
+   renderchain_add_state_tracker(d3d->renderchain_data, state_tracker);
    return true;
 }
 #endif
@@ -901,9 +901,9 @@ static bool d3d_init_chain(d3d_video_t *d3d, const video_info_t *video_info)
       video_info->input_scale * RARCH_SCALE_BASE;
 #endif
 
-   d3d->chain = renderchain_new();
+   d3d->renderchain_data = renderchain_new();
    
-   if (!d3d->chain)
+   if (!d3d->renderchain_data)
       return false;
 
 #ifdef _XBOX
@@ -912,7 +912,7 @@ static bool d3d_init_chain(d3d_video_t *d3d, const video_info_t *video_info)
             video_info->rgb32 ? 
             RETRO_PIXEL_FORMAT_XRGB8888 : RETRO_PIXEL_FORMAT_RGB565))
 #else
-   if (!renderchain_init(d3d->chain, &d3d->video_info,
+   if (!renderchain_init(d3d->renderchain_data, &d3d->video_info,
             d3dr, &d3d->final_viewport, &link_info,
             d3d->video_info.rgb32 ?
             RETRO_PIXEL_FORMAT_XRGB8888 : RETRO_PIXEL_FORMAT_RGB565))
@@ -930,7 +930,8 @@ static bool d3d_init_chain(d3d_video_t *d3d, const video_info_t *video_info)
 
    for (i = 1; i < d3d->shader.passes; i++)
    {
-      renderchain_convert_geometry(d3d->chain, &link_info,
+      renderchain_convert_geometry(d3d->renderchain_data,
+		    &link_info,
             &out_width, &out_height,
             current_width, current_height, &d3d->final_viewport);
 
@@ -941,7 +942,7 @@ static bool d3d_init_chain(d3d_video_t *d3d, const video_info_t *video_info)
       current_width = out_width;
       current_height = out_height;
 
-      if (!renderchain_add_pass(d3d->chain, &link_info))
+      if (!renderchain_add_pass(d3d->renderchain_data, &link_info))
       {
          RARCH_ERR("[D3D9]: Failed to add pass.\n");
          return false;
@@ -1225,7 +1226,8 @@ static bool d3d_init_luts(d3d_video_t *d3d)
    for (i = 0; i < d3d->shader.luts; i++)
    {
       bool ret = renderchain_add_lut(
-            d3d->chain, d3d->shader.lut[i].id, d3d->shader.lut[i].path,
+            d3d->renderchain_data,
+			d3d->shader.lut[i].id, d3d->shader.lut[i].path,
          d3d->shader.lut[i].filter == RARCH_FILTER_UNSPEC ?
             settings->video.smooth :
             (d3d->shader.lut[i].filter == RARCH_FILTER_LINEAR));
@@ -1559,7 +1561,7 @@ static bool d3d_frame(void *data, const void *frame,
             global->system.aspect_ratio);
 
       renderchain_set_final_viewport(d3d,
-            d3d->chain, &d3d->final_viewport);
+            d3d->renderchain_data, &d3d->final_viewport);
 
       d3d->should_resize = false;
    }
@@ -1590,7 +1592,7 @@ static bool d3d_frame(void *data, const void *frame,
 #ifdef _XBOX
             d3d,
 #else
-            d3d->chain,
+            d3d->renderchain_data,
 #endif
             frame, width, height,
             pitch, d3d->dev_rotation))
