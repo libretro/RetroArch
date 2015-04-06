@@ -461,7 +461,7 @@ static bool d3d_construct(d3d_video_t *d3d,
    gfx_set_dwm();
 #endif
 
-#if defined(HAVE_MENU) && defined(HAVE_OVERLAY)
+#if defined(HAVE_MENU)
    if (d3d->menu)
       free(d3d->menu);
 

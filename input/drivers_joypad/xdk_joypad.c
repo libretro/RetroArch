@@ -165,7 +165,7 @@ static void xdk_joypad_poll(void)
          pad_state[port] = 0;
 
          char msg[512];
-         snprintf(msg, sizeof(msg), "Joypad #%u (%s) disconnected.", i, udev_pads[i].ident);
+         snprintf(msg, sizeof(msg), "Joypad #%u (%s) disconnected.", port, xdk_joypad.ident);
          rarch_main_msg_queue_push(msg, 0, 60, false);
          RARCH_LOG("%s\n", msg);
       }

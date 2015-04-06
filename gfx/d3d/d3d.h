@@ -55,7 +55,6 @@
 #include "d3d_wrapper.h"
 #include "render_chain_driver.h"
 
-#ifdef HAVE_OVERLAY
 typedef struct
 {
    struct Coords
@@ -69,9 +68,10 @@ typedef struct
    bool enabled;
    float alpha_mod;
    LPDIRECT3DTEXTURE tex;
+#ifdef HAVE_D3D9
    LPDIRECT3DVERTEXBUFFER vert_buf;
-} overlay_t;
 #endif
+} overlay_t;
 
 #ifdef _XBOX
 typedef struct Vertex
@@ -138,7 +138,7 @@ typedef struct d3d_video
 
       bool menu_texture_enable;
       bool menu_texture_full_screen;
-#if defined(HAVE_MENU) && defined(HAVE_OVERLAY)
+#if defined(HAVE_MENU)
       overlay_t *menu;
 #endif
       const renderchain_driver_t *renderchain_driver;
