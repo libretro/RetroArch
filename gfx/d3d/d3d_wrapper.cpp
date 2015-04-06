@@ -266,9 +266,8 @@ void d3d_lockrectangle_clear(void *data,
       unsigned rectangle_height, unsigned flags)
 {
 #if defined(_XBOX)
-   d3d_video_t *d3d = (d3d_video_t*)data;
    D3DTexture_LockRect(tex, level, lock_rect, rect, flags);
-   memset(lock_rect->pBits, 0, d3d->tex_h * lock_rect->Pitch);
+   memset(lock_rect->pBits, 0, rectangle_height * lock_rect->Pitch);
 #else
    if (SUCCEEDED(tex->LockRect(level, lock_rect, rect, flags)))
    {

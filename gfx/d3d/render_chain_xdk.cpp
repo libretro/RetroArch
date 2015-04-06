@@ -220,7 +220,7 @@ static void renderchain_blit_to_texture(void *data, const void *frame,
    if (d3d->last_width != width || d3d->last_height != height)
    {
       d3d_lockrectangle_clear(d3d, d3d->tex,
-            0, &d3dlr, NULL, 0 /* FIXME - stub */, D3DLOCK_NOSYSLOCK);
+            0, &d3dlr, NULL, d3d->tex_h, D3DLOCK_NOSYSLOCK);
    }
 
    d3d_texture_blit(driver->video_data, 0, d3d->tex,
