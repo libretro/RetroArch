@@ -305,12 +305,15 @@ static bool xdk_renderchain_init(void *data,
    LPDIRECT3DDEVICE d3dr    = (LPDIRECT3DDEVICE)chain->dev;
    global_t *global         = global_get_ptr();
    const video_info_t *info = (const video_info_t*)_info;
+   const LinkInfo *info     = (const LinkInfo*)info_data;
+   chain->pixel_size     = fmt ? sizeof(uint32_t) : sizeof(uint16_t);
 
    (void)dev_data;
    (void)final_viewport_data;
-   (void)info_data;
    (void)fmt;
-   chain->pixel_size     = fmt ? sizeof(uint32_t) : sizeof(uint16_t);
+
+   chain->tex_w             = info->tex_w;
+   chain->tex_h             = info->tex_h;
 
    if (!renderchain_create_first_pass(chain, info))
       return false;
