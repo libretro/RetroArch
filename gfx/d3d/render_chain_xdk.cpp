@@ -239,6 +239,7 @@ void *renderchain_new(void)
 
 void renderchain_deinit_shader(void)
 {
+   /* stub */
 }
 
 bool renderchain_init_shader(void *data)
@@ -301,6 +302,8 @@ void renderchain_set_final_viewport(void *data,
    (void)data;
    (void)renderchain_data;
    (void)viewport_data;
+
+   /* stub */
 }
 
 bool renderchain_render(void *data, const void *frame,
@@ -357,6 +360,51 @@ bool renderchain_init_shader_fvf(void *data, void *pass_data)
 #endif
 
    return true;
+}
+
+void renderchain_add_lut(void *data,
+      unsigned index, unsigned i)
+{
+   xdk_renderchain_t *chain = (xdk_renderchain_t*)data;
+
+   (void)data;
+   (void)index;
+   (void)i;
+
+   /* stub */
+}
+
+bool renderchain_add_pass(void *data, const void *info_data)
+{
+   (void)data;
+   (void)info_data;
+
+   /* stub */
+}
+
+void renderchain_add_state_tracker(void *data, void *tracker_data)
+{
+   (void)data;
+   (void)tracker_data;
+
+   /* stub */
+}
+
+void renderchain_convert_geometry(
+	  void *data, const void *info_data,
+      unsigned *out_width, unsigned *out_height,
+      unsigned width, unsigned height,
+      D3DVIEWPORT *final_viewport)
+{
+   (void)data;
+   (void)info_data;
+   (void)out_width;
+   (void)out_height;
+   (void)width;
+   (void)height;
+   (void)final_viewport;
+   
+   /* stub */
 }
 
 renderchain_driver_t xdk_renderchain = {

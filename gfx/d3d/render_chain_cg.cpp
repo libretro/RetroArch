@@ -600,9 +600,10 @@ static void renderchain_bind_prev(void *data, void *pass_data)
    }
 }
 
-static void renderchain_add_lut(cg_renderchain_t *chain,
+static void renderchain_add_lut(void *data,
       unsigned index, unsigned i)
 {
+   cg_renderchain_t *chain = (cg_renderchain_t*)data;
    if (!chain)
       return;
 
