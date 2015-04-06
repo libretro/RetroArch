@@ -21,6 +21,18 @@
 typedef struct xdk_renderchain
 {
    void *empty;
+   unsigned pixel_size;
+   LPDIRECT3DTEXTURE tex;
+   LPDIRECT3DVERTEXBUFFER vertex_buf;
+   unsigned last_width;
+   unsigned last_height;
+#ifdef HAVE_D3D9
+   LPDIRECT3DVERTEXDECLARATION vertex_decl;
+#else
+   void *vertex_decl;
+#endif
+   unsigned tex_w;
+   unsigned tex_h;
 } xdk_renderchain_t;
 
 static void renderchain_set_mvp(void *data, unsigned vp_width,
