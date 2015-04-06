@@ -42,7 +42,7 @@ typedef struct renderchain_driver
    void *(*chain_new)(void);
    void (*deinit)(void *data);
    void (*deinit_shader)(void);
-   bool (init_shader)(void *data);
+   bool (*init_shader)(void *data);
    bool (*init_shader_fvf)(void *data, void *pass_data);
    bool (*init)(void *data,
          const video_info_t *video_info,
@@ -66,8 +66,8 @@ typedef struct renderchain_driver
    const char *ident;
 } renderchain_driver_t;
 
-renderchain_driver_t cg_d3d9_renderchain;
-renderchain_driver_t xdk_renderchain;
+extern renderchain_driver_t cg_d3d9_renderchain;
+extern renderchain_driver_t xdk_renderchain;
 
 void renderchain_free(void *data);
 
