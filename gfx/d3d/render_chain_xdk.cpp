@@ -261,7 +261,7 @@ bool renderchain_init_shader(void *data)
    return d3d->shader->init(d3d, shader_path);
 #endif
 
-   return false;
+   return true;
 }
 
 bool renderchain_init(void *data,
