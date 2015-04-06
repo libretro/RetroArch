@@ -358,3 +358,20 @@ bool renderchain_init_shader_fvf(void *data, void *pass_data)
 
    return true;
 }
+
+renderchain_driver_t xdk_renderchain = {
+   renderchain_free,
+   renderchain_new,
+   renderchain_deinit,
+   renderchain_deinit_shader,
+   renderchain_init_shader,
+   renderchain_init_shader_fvf,
+   renderchain_init,
+   renderchain_set_final_viewport,
+   renderchain_add_pass,
+   renderchain_add_lut,
+   renderchain_add_state_tracker,
+   renderchain_render,
+   renderchain_convert_geometry,
+   "xdk",
+};

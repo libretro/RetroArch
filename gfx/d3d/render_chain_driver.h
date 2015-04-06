@@ -36,6 +36,39 @@ enum
    TEXTURESMASK = TEXTURES - 1
 };
 
+typedef struct renderchain_driver
+{
+   void (*chain_free)(void *data);
+   void *(*chain_new)(void);
+   void (*deinit)(void *data);
+   void (*deinit_shader)(void);
+   bool (init_shader)(void *data);
+   bool (*init_shader_fvf)(void *data, void *pass_data);
+   bool (*init)(void *data,
+         const video_info_t *video_info,
+         void *dev_data,
+         const void *final_viewport_data,
+         const void *info_data,
+         unsigned fmt);
+   void (*set_final_viewport)(void *data,
+         void *renderchain_data, const void *viewport_data);
+   bool (*add_pass)(void *data, const void *info_data);
+   bool (*add_lut)(void *data,
+         const char *id, const char *path,
+         bool smooth);
+   void (*add_state_tracker)(void *data, void *tracker_data);
+   bool (*render)(void *chain_data, const void *data,
+         unsigned width, unsigned height, unsigned pitch, unsigned rotation);
+   void (*convert_geometry)(void *data, const void *info_data,
+         unsigned *out_width, unsigned *out_height,
+         unsigned width, unsigned height,
+         D3DVIEWPORT *final_viewport);
+   const char *ident;
+} renderchain_driver_t;
+
+renderchain_driver_t cg_d3d9_renderchain;
+renderchain_driver_t xdk_renderchain;
+
 void renderchain_free(void *data);
 
 void *renderchain_new(void);

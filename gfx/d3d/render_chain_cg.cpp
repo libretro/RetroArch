@@ -1432,10 +1432,6 @@ bool renderchain_render(void *chain_data, const void *data,
    return true;
 }
 
-
-
-
-
 void renderchain_convert_geometry(
 	  void *data, const void *info_data,
       unsigned *out_width, unsigned *out_height,
@@ -1478,3 +1474,20 @@ void renderchain_convert_geometry(
          break;
    }
 }
+
+renderchain_driver_t cg_d3d9_renderchain = {
+   renderchain_free,
+   renderchain_new,
+   renderchain_deinit,
+   renderchain_deinit_shader,
+   renderchain_init_shader,
+   renderchain_init_shader_fvf,
+   renderchain_init,
+   renderchain_set_final_viewport,
+   renderchain_add_pass,
+   renderchain_add_lut,
+   renderchain_add_state_tracker,
+   renderchain_render,
+   renderchain_convert_geometry,
+   "cg_d3d9",
+};
