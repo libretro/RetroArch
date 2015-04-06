@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2011-2015 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -33,6 +33,10 @@ struct libusb_adapter
    struct libusb_device *device;
    libusb_device_handle *handle;
    int interface_number;
+   int endpoint_in;
+   int endpoint_out;
+   int endpoint_in_max_size;
+   int endpoint_out_max_size;
 
    uint8_t manufacturer_name[255];
    uint8_t name[255];
@@ -54,13 +58,15 @@ static void adapter_thread(void *data)
    {
       driver_t *driver               = driver_get_ptr();
       libusb_hid_t *hid              = (libusb_hid_t*)driver->hid_data;
+      int size = 0;
+      libusb_interrupt_transfer(adapter->handle, adapter->endpoint_in, &adapter->data[0], adapter->endpoint_in_max_size, &size, 0);
 #if 0
       static unsigned count;
       fprintf(stderr, "[%s] Gets here, count: %d\n", adapter->name, count++);
 #endif
       if (adapter && hid)
          pad_connection_packet(&hid->slots[adapter->slot], adapter->slot,
-               adapter->data, sizeof(adapter->data) - 1);
+               adapter->data, size);
    }
 }
 
@@ -69,8 +75,10 @@ static void libusb_hid_device_send_control(void *data,
 {
    struct libusb_adapter *adapter = (struct libusb_adapter*)data;
    int report_number = data_buf[0];
+   int tmp;
 
    if (adapter)
+   #if 0
       libusb_control_transfer(adapter->handle,
             LIBUSB_REQUEST_TYPE_CLASS|LIBUSB_RECIPIENT_INTERFACE|LIBUSB_ENDPOINT_OUT,
             0x09/*HID Set_Report*/,
@@ -78,6 +86,9 @@ static void libusb_hid_device_send_control(void *data,
             adapter->interface_number,
             data_buf, size,
             1000/*timeout millis*/);
+   #endif
+      // TODO: push this to the adapter thread
+      libusb_interrupt_transfer(adapter->handle, adapter->endpoint_out, data_buf, size, &tmp, 0);
 }
 
 static void libusb_hid_device_add_autodetect(unsigned idx,
@@ -97,7 +108,7 @@ static void libusb_hid_device_add_autodetect(unsigned idx,
 }
 
 static void libusb_get_description(struct libusb_device *device,
-      int *interface_number)
+      struct libusb_adapter *adapter)
 {
    unsigned i, j, k;
    struct libusb_config_descriptor *config;
@@ -116,20 +127,41 @@ static void libusb_get_description(struct libusb_device *device,
       {
          const struct libusb_interface_descriptor *interdesc = &inter->altsetting[j];
 
-         *interface_number = (int)interdesc->bInterfaceNumber;
-
-         fprintf(stderr, "Interface Number: %d.\n",    (int)interdesc->bInterfaceNumber);
-         fprintf(stderr, "Number of endpoints: %d.\n", (int)interdesc->bNumEndpoints);
-
-         for(k = 0; k < (int)interdesc->bNumEndpoints; k++)
+         //if (interdesc->bInterfaceClass == LIBUSB_CLASS_HID)
          {
-            const struct libusb_endpoint_descriptor *epdesc = &interdesc->endpoint[k];
-            fprintf(stderr, "Descriptor Type: %d.\n", (int)epdesc->bDescriptorType);
-            fprintf(stderr, "EP Address: %d.\n",      (int)epdesc->bEndpointAddress);
+            adapter->interface_number = (int)interdesc->bInterfaceNumber;
+
+            fprintf(stderr, "Interface Number: %d.\n",    (int)interdesc->bInterfaceNumber);
+            fprintf(stderr, "Number of endpoints: %d.\n", (int)interdesc->bNumEndpoints);
+
+            for(k = 0; k < (int)interdesc->bNumEndpoints; k++)
+            {
+               const struct libusb_endpoint_descriptor *epdesc = &interdesc->endpoint[k];
+               bool is_int = (epdesc->bmAttributes & LIBUSB_TRANSFER_TYPE_MASK) == LIBUSB_TRANSFER_TYPE_INTERRUPT;
+               bool is_out = (epdesc->bEndpointAddress & LIBUSB_ENDPOINT_DIR_MASK) == LIBUSB_ENDPOINT_OUT;
+               bool is_in = (epdesc->bEndpointAddress & LIBUSB_ENDPOINT_DIR_MASK) == LIBUSB_ENDPOINT_IN;
+               if (is_int)
+               {
+                  if (is_in)
+                  {
+                     adapter->endpoint_in = epdesc->bEndpointAddress;
+                     adapter->endpoint_in_max_size = epdesc->wMaxPacketSize;
+                  }
+                  if (is_out)
+                  {
+                     adapter->endpoint_out = epdesc->bEndpointAddress;
+                     adapter->endpoint_out_max_size = epdesc->wMaxPacketSize;
+                  }
+               }
+               fprintf(stderr, "Descriptor Type: %d.\n", (int)epdesc->bDescriptorType);
+               fprintf(stderr, "EP Address: %d.\n",      (int)epdesc->bEndpointAddress);
+            }
          }
+         goto ret;
       }
    }
 
+   ret:
    libusb_free_config_descriptor(config);
 }
 
@@ -157,6 +189,14 @@ static int add_adapter(void *data, struct libusb_device *dev)
    }
 
    adapter->device = dev;
+
+   libusb_get_description(adapter->device, adapter);
+
+   if (adapter->endpoint_in == 0)
+   {
+      fprintf(stderr, "Could not find HID config for device.\n");
+      goto error;
+   }
 
    rc = libusb_open (adapter->device, &adapter->handle);
 
@@ -190,13 +230,11 @@ static int add_adapter(void *data, struct libusb_device *dev)
       fprintf(stderr, "Error detaching handle 0x%p from kernel.\n", adapter->handle);
       goto error;
    }
-   
+
    device_name   = (const char*)adapter->name;
 
    adapter->slot = pad_connection_pad_init(hid->slots,
          device_name, desc.idVendor, desc.idProduct, adapter, &libusb_hid_device_send_control);
-
-   libusb_get_description(adapter->device, &adapter->interface_number);
 
    if (!pad_connection_has_interface(hid->slots, adapter->slot))
    {
@@ -416,7 +454,7 @@ static void *libusb_hid_init(void)
 
    ret = libusb_hotplug_register_callback(NULL,
          LIBUSB_HOTPLUG_EVENT_DEVICE_ARRIVED |
-         LIBUSB_HOTPLUG_EVENT_DEVICE_LEFT, 0, 
+         LIBUSB_HOTPLUG_EVENT_DEVICE_LEFT, 0,
          LIBUSB_HOTPLUG_MATCH_ANY,
          LIBUSB_HOTPLUG_MATCH_ANY,
          LIBUSB_HOTPLUG_MATCH_ANY,
