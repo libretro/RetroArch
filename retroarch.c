@@ -1886,6 +1886,9 @@ static bool init_core(void)
    driver_t *driver = driver_get_ptr();
    global_t *global = global_get_ptr();
 
+   //needs testing for regressions
+   pretro_set_environment(rarch_environment_cb);
+   
    if (!config_load_override())
       RARCH_ERR("Error loading override files\n");
    if (!config_load_remap())
