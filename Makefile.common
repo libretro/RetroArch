@@ -582,7 +582,6 @@ endif
 
 ifeq ($(HAVE_D3D9), 1)
    OBJ += gfx/d3d/d3d.o \
-			 gfx/d3d/render_chain_cg.o \
 			 gfx/d3d/render_chain_null.o \
 			 gfx/d3d/render_chain_driver.o \
 			 gfx/d3d/d3d_wrapper.o \
@@ -593,6 +592,7 @@ ifeq ($(HAVE_D3D9), 1)
 
    ifeq ($(HAVE_CG), 1)
       LIBS += -lcgD3D9
+		OBJ  += gfx/d3d/render_chain_cg.o
    endif
 endif
 
