@@ -39,10 +39,25 @@ static const char *xdk_joypad_name(unsigned pad)
    return settings ? settings->input.device_names[pad] : NULL;
 }
 
+static void xdk_joypad_autodetect_add(unsigned autoconf_pad)
+{
+   autoconfig_params_t params = {{0}};
+   settings_t *settings       = config_get_ptr();
+
+   strlcpy(settings->input.device_names[autoconf_pad],
+         "XInput Controller",
+         sizeof(settings->input.device_names[autoconf_pad]));
+
+   /* TODO - implement VID/PID? */
+   params.idx = autoconf_pad;
+   strlcpy(params.name, xdk_joypad_name(autoconf_pad), sizeof(params.name));
+   strlcpy(params.driver, xdk_joypad.ident, sizeof(params.driver));
+   input_config_autoconfigure_joypad(&params);
+}
+
 static bool xdk_joypad_init(void)
 {
    unsigned autoconf_pad;
-   settings_t *settings = config_get_ptr();
 
 #ifdef _XBOX1
    XInitDevices(0, NULL);
@@ -61,21 +76,11 @@ static bool xdk_joypad_init(void)
    }
 
    while(XGetDeviceEnumerationStatus() == XDEVICE_ENUMERATION_BUSY) {}
+#else
+   for (autoconf_pad = 0; autoconf_pad < MAX_USERS; autoconf_pad++)
+      xdk_joypad_autodetect_add(autoconf_pad);
 #endif
 
-   for (autoconf_pad = 0; autoconf_pad < MAX_USERS; autoconf_pad++)
-   {
-      autoconfig_params_t params = {{0}};
-      strlcpy(settings->input.device_names[autoconf_pad],
-            "XInput Controller",
-            sizeof(settings->input.device_names[autoconf_pad]));
-      
-      /* TODO - implement VID/PID? */
-      params.idx = autoconf_pad;
-      strlcpy(params.name, xdk_joypad_name(autoconf_pad), sizeof(params.name));
-      strlcpy(params.driver, xdk_joypad.ident, sizeof(params.driver));
-      input_config_autoconfigure_joypad(&params);
-   }
 
    return true;
 }
@@ -188,6 +193,8 @@ static void xdk_joypad_poll(void)
          m_pollingParameters.bOutputInterval = 8;
          gamepads[port] = XInputOpen(XDEVICE_TYPE_GAMEPAD, port,
                XDEVICE_NO_SLOT, NULL);
+         
+         xdk_joypad_autodetect_add(port);
       }
 
       if (!gamepads[port])
