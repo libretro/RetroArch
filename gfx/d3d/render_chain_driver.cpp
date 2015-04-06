@@ -22,6 +22,7 @@ static const renderchain_driver_t *renderchain_drivers[] = {
 #ifdef _XBOX
    &xdk_renderchain,
 #endif
+   &null_renderchain,
    NULL
 };
 

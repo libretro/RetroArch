@@ -53,7 +53,7 @@ static void renderchain_clear(void *data)
    d3d_vertex_buffer_free(d3d->vertex_buf, d3d->vertex_decl);
 }
 
-bool renderchain_init_shader_fvf(void *data, void *pass_data)
+static bool xdk_renderchain_init_shader_fvf(void *data, void *pass_data)
 {
    d3d_video_t *chain    = (d3d_video_t*)data;
    d3d_video_t *pass     = (d3d_video_t*)data;
@@ -105,7 +105,7 @@ static bool renderchain_create_first_pass(void *data,
    d3dr->SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE);
    d3dr->SetRenderState(D3DRS_ZENABLE, FALSE);
 
-   if (!renderchain_init_shader_fvf(chain, chain))
+   if (!xdk_renderchain_init_shader_fvf(chain, chain))
       return false;
 
    return true;
@@ -227,7 +227,7 @@ static void renderchain_blit_to_texture(void *data, const void *frame,
          &d3dlr, frame, width, height, pitch);
 }
 
-void renderchain_free(void *data)
+static void xdk_renderchain_free(void *data)
 {
    d3d_video_t *chain = (d3d_video_t*)data;
 
@@ -243,7 +243,7 @@ void renderchain_free(void *data)
 #endif
 }
 
-void renderchain_deinit(void *data)
+void xdk_renderchain_deinit(void *data)
 {
    xdk_renderchain_t *renderchain = (xdk_renderchain_t*)data;
 
@@ -251,7 +251,7 @@ void renderchain_deinit(void *data)
       free(renderchain);
 }
 
-void *renderchain_new(void)
+void *xdk_renderchain_new(void)
 {
    xdk_renderchain_t *renderchain = (xdk_renderchain_t*)calloc(1, sizeof(*renderchain));
    if (!renderchain)
@@ -260,12 +260,12 @@ void *renderchain_new(void)
    return renderchain;
 }
 
-void renderchain_deinit_shader(void)
+void xdk_renderchain_deinit_shader(void)
 {
    /* stub */
 }
 
-bool renderchain_init_shader(void *data)
+static bool xdk_renderchain_init_shader(void *data)
 {
    const char *shader_path = NULL;
    d3d_video_t        *d3d = (d3d_video_t*)data;
@@ -288,7 +288,7 @@ bool renderchain_init_shader(void *data)
    return true;
 }
 
-bool renderchain_init(void *data,
+static bool xdk_renderchain_init(void *data,
       const video_info_t *info,
       void *dev_data,
       const void *final_viewport_data,
@@ -319,7 +319,7 @@ bool renderchain_init(void *data,
    return true;
 }
 
-void renderchain_set_final_viewport(void *data,
+static void xdk_renderchain_set_final_viewport(void *data,
       void *renderchain_data, const void *viewport_data)
 {
    (void)data;
@@ -329,7 +329,7 @@ void renderchain_set_final_viewport(void *data,
    /* stub */
 }
 
-bool renderchain_render(void *data, const void *frame,
+static bool xdk_renderchain_render(void *data, const void *frame,
       unsigned width, unsigned height, unsigned pitch, unsigned rotation)
 {
    unsigned i;
@@ -362,7 +362,7 @@ bool renderchain_render(void *data, const void *frame,
    return true;
 }
 
-bool renderchain_add_lut(void *data,
+static bool xdk_renderchain_add_lut(void *data,
       const char *id, const char *path, bool smooth)
 {
    xdk_renderchain_t *chain = (xdk_renderchain_t*)data;
@@ -376,7 +376,7 @@ bool renderchain_add_lut(void *data,
    return false;
 }
 
-bool renderchain_add_pass(void *data, const void *info_data)
+static bool xdk_renderchain_add_pass(void *data, const void *info_data)
 {
    (void)data;
    (void)info_data;
@@ -385,7 +385,7 @@ bool renderchain_add_pass(void *data, const void *info_data)
    return true;
 }
 
-void renderchain_add_state_tracker(void *data, void *tracker_data)
+static void xdk_renderchain_add_state_tracker(void *data, void *tracker_data)
 {
    (void)data;
    (void)tracker_data;
@@ -393,7 +393,7 @@ void renderchain_add_state_tracker(void *data, void *tracker_data)
    /* stub */
 }
 
-void renderchain_convert_geometry(
+static void xdk_renderchain_convert_geometry(
 	  void *data, const void *info_data,
       unsigned *out_width, unsigned *out_height,
       unsigned width, unsigned height,
@@ -411,18 +411,18 @@ void renderchain_convert_geometry(
 }
 
 renderchain_driver_t xdk_renderchain = {
-   renderchain_free,
-   renderchain_new,
-   renderchain_deinit,
-   renderchain_deinit_shader,
-   renderchain_init_shader,
-   renderchain_init_shader_fvf,
-   renderchain_init,
-   renderchain_set_final_viewport,
-   renderchain_add_pass,
-   renderchain_add_lut,
-   renderchain_add_state_tracker,
-   renderchain_render,
-   renderchain_convert_geometry,
+   xdk_renderchain_free,
+   xdk_renderchain_new,
+   xdk_renderchain_deinit,
+   xdk_renderchain_deinit_shader,
+   xdk_renderchain_init_shader,
+   xdk_renderchain_init_shader_fvf,
+   xdk_renderchain_init,
+   xdk_renderchain_set_final_viewport,
+   xdk_renderchain_add_pass,
+   xdk_renderchain_add_lut,
+   xdk_renderchain_add_state_tracker,
+   xdk_renderchain_render,
+   xdk_renderchain_convert_geometry,
    "xdk",
 };

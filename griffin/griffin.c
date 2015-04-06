@@ -229,9 +229,11 @@ VIDEO DRIVER
 #include "../gfx/d3d/render_chain_driver.cpp"
 #ifdef _XBOX
 #include "../gfx/d3d/render_chain_xdk.cpp"
-#else
+#endif
+#ifdef HAVE_CG
 #include "../gfx/d3d/render_chain_cg.cpp"
 #endif
+#include "../gfx/d3d/render_chain_null.cpp"
 #endif
 
 #if defined(GEKKO)

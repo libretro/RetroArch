@@ -23,7 +23,7 @@ typedef struct null_renderchain
    void *empty;
 } null_renderchain_t;
 
-static void renderchain_blit_to_texture(
+static void null_renderchain_blit_to_texture(
       void *data, const void *frame,
       unsigned width, unsigned height, unsigned pitch)
 {
@@ -34,11 +34,11 @@ static void renderchain_blit_to_texture(
    (void)pitch;
 }
 
-void renderchain_free(void *data)
+static void null_renderchain_free(void *data)
 {
 }
 
-void renderchain_deinit(void *data)
+static void null_renderchain_deinit(void *data)
 {
    null_renderchain_t *renderchain = (null_renderchain_t*)data;
 
@@ -46,7 +46,7 @@ void renderchain_deinit(void *data)
       free(renderchain);
 }
 
-void *renderchain_new(void)
+static void *null_renderchain_new(void)
 {
    null_renderchain_t *renderchain = (null_renderchain_t*)calloc(1, sizeof(*renderchain));
    if (!renderchain)
@@ -55,18 +55,18 @@ void *renderchain_new(void)
    return renderchain;
 }
 
-void renderchain_deinit_shader(void)
+static void null_renderchain_deinit_shader(void)
 {
 }
 
-bool renderchain_init_shader(void *data)
+static bool null_renderchain_init_shader(void *data)
 {
    (void)data;
 
    return true;
 }
 
-bool renderchain_init(void *data,
+static bool null_renderchain_init(void *data,
       const video_info_t *info,
       void *dev_data,
       const void *final_viewport_data,
@@ -84,7 +84,7 @@ bool renderchain_init(void *data,
    return true;
 }
 
-void renderchain_set_final_viewport(void *data,
+static void null_renderchain_set_final_viewport(void *data,
       void *renderchain_data, const void *viewport_data)
 {
    (void)data;
@@ -92,7 +92,7 @@ void renderchain_set_final_viewport(void *data,
    (void)viewport_data;
 }
 
-bool renderchain_render(void *data, const void *frame,
+static bool null_renderchain_render(void *data, const void *frame,
       unsigned width, unsigned height,
       unsigned pitch, unsigned rotation)
 {
@@ -106,7 +106,7 @@ bool renderchain_render(void *data, const void *frame,
    return true;
 }
 
-bool renderchain_init_shader_fvf(void *data, void *pass_data)
+static bool null_renderchain_init_shader_fvf(void *data, void *pass_data)
 {
    (void)data;
    (void)pass_data;
@@ -114,7 +114,7 @@ bool renderchain_init_shader_fvf(void *data, void *pass_data)
    return true;
 }
 
-void renderchain_add_lut(void *data,
+static void null_renderchain_add_lut(void *data,
       unsigned index, unsigned i)
 {
    (void)data;
@@ -122,7 +122,7 @@ void renderchain_add_lut(void *data,
    (void)i;
 }
 
-bool renderchain_add_pass(void *data, const void *info_data)
+static bool null_renderchain_add_pass(void *data, const void *info_data)
 {
    (void)data;
    (void)info_data;
@@ -130,13 +130,13 @@ bool renderchain_add_pass(void *data, const void *info_data)
    return true;
 }
 
-void renderchain_add_state_tracker(void *data, void *tracker_data)
+static void null_renderchain_add_state_tracker(void *data, void *tracker_data)
 {
    (void)data;
    (void)tracker_data;
 }
 
-void renderchain_convert_geometry(
+static void null_renderchain_convert_geometry(
 	  void *data, const void *info_data,
       unsigned *out_width, unsigned *out_height,
       unsigned width, unsigned height,
@@ -152,18 +152,18 @@ void renderchain_convert_geometry(
 }
 
 renderchain_driver_t null_renderchain = {
-   renderchain_free,
-   renderchain_new,
-   renderchain_deinit,
-   renderchain_deinit_shader,
-   renderchain_init_shader,
-   renderchain_init_shader_fvf,
-   renderchain_init,
-   renderchain_set_final_viewport,
-   renderchain_add_pass,
-   renderchain_add_lut,
-   renderchain_add_state_tracker,
-   renderchain_render,
-   renderchain_convert_geometry,
+   null_renderchain_free,
+   null_renderchain_new,
+   null_renderchain_deinit,
+   null_renderchain_deinit_shader,
+   null_renderchain_init_shader,
+   null_renderchain_init_shader_fvf,
+   null_renderchain_init,
+   null_renderchain_set_final_viewport,
+   null_renderchain_add_pass,
+   null_renderchain_add_lut,
+   null_renderchain_add_state_tracker,
+   null_renderchain_render,
+   null_renderchain_convert_geometry,
    "null",
 };

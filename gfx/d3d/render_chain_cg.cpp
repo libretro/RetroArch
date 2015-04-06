@@ -351,7 +351,7 @@ static void renderchain_bind_tracker(void *data, void *pass_data, unsigned pass_
    { (WORD)(stream), (WORD)(offset * sizeof(float)), D3DDECLTYPE_FLOAT4, D3DDECLMETHOD_DEFAULT, \
       D3DDECLUSAGE_COLOR, (BYTE)(index) } \
 
-bool renderchain_init_shader_fvf(void *data, void *pass_data)
+static bool cg_d3d9_renderchain_init_shader_fvf(void *data, void *pass_data)
 {
    CGparameter param;
    unsigned index, i, count;
@@ -600,7 +600,7 @@ static void renderchain_bind_prev(void *data, void *pass_data)
    }
 }
 
-static void renderchain_add_lut(void *data,
+static void cg_d3d9_renderchain_add_lut(void *data,
       unsigned index, unsigned i)
 {
    cg_renderchain_t *chain = (cg_renderchain_t*)data;
@@ -634,7 +634,7 @@ static void renderchain_bind_luts(void *data, void *pass_data)
          index           = cgGetParameterResourceIndex(fparam);
          bound_index     = index;
 
-         renderchain_add_lut(chain, index, i);
+         cg_d3d9_renderchain_add_lut(chain, index, i);
       }
 
       vparam             = cgGetNamedParameter(pass->vPrg, chain->luts[i].id);
@@ -643,7 +643,7 @@ static void renderchain_bind_luts(void *data, void *pass_data)
       {
          index           = cgGetParameterResourceIndex(vparam);
          if (index != (unsigned)bound_index)
-            renderchain_add_lut(chain, index, i);
+            cg_d3d9_renderchain_add_lut(chain, index, i);
       }
    }
 }
@@ -741,7 +741,7 @@ static void renderchain_clear(void *data)
    chain->luts.clear();
 }
 
-void renderchain_free(void *data)
+void cg_d3d9_renderchain_free(void *data)
 {
    cg_renderchain_t *chain = (cg_renderchain_t*)data;
 
@@ -754,7 +754,7 @@ void renderchain_free(void *data)
       state_tracker_free(chain->tracker);
 }
 
-void *renderchain_new(void)
+void *cg_d3d9_renderchain_new(void)
 {
    cg_renderchain_t *renderchain = (cg_renderchain_t*)calloc(1, sizeof(*renderchain));
    if (!renderchain)
@@ -763,7 +763,7 @@ void *renderchain_new(void)
    return renderchain;
 }
 
-void renderchain_deinit_shader(void)
+static void cg_d3d9_renderchain_deinit_shader(void)
 {
    if (!cgCtx)
       return;
@@ -774,7 +774,7 @@ void renderchain_deinit_shader(void)
    cgCtx = NULL;
 }
 
-bool renderchain_init_shader(void *data)
+static bool cg_d3d9_renderchain_init_shader(void *data)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
 
@@ -793,7 +793,7 @@ bool renderchain_init_shader(void *data)
    return true;
 }
 
-void renderchain_deinit(void *data)
+static void cg_d3d9_renderchain_deinit(void *data)
 {
    cg_renderchain_t *renderchain = (cg_renderchain_t*)data;
 
@@ -908,13 +908,13 @@ static bool renderchain_create_first_pass(void *data, const void *info_data,
    renderchain_compile_shaders(chain, &pass.fPrg,
          &pass.vPrg, info->pass->source.path);
 
-   if (!renderchain_init_shader_fvf(chain, &pass))
+   if (!cg_d3d9_renderchain_init_shader_fvf(chain, &pass))
       return false;
    chain->passes.push_back(pass);
    return true;
 }
 
-bool renderchain_init(void *data, const video_info_t *video_info,
+static bool cg_d3d9_renderchain_init(void *data, const video_info_t *video_info,
       void *dev_,
       const void *final_viewport_,
       const void *info_data, unsigned fmt)
@@ -974,7 +974,7 @@ static bool renderchain_set_pass_size(void *data, unsigned pass_index,
    return true;
 }
 
-void renderchain_convert_geometry(
+static void cg_d3d9_renderchain_convert_geometry(
 	  void *data, const void *info_data,
       unsigned *out_width, unsigned *out_height,
       unsigned width, unsigned height,
@@ -1041,7 +1041,7 @@ static void d3d_recompute_pass_sizes(d3d_video_t *d3d,
 
    for (i = 1; i < d3d->shader.passes; i++)
    {
-      renderchain_convert_geometry(chain,
+      cg_d3d9_renderchain_convert_geometry(chain,
 		    &link_info,
             &out_width, &out_height,
             current_width, current_height, &d3d->final_viewport);
@@ -1063,7 +1063,7 @@ static void d3d_recompute_pass_sizes(d3d_video_t *d3d,
    }
 }
 
-void renderchain_set_final_viewport(void *data,
+static void cg_d3d9_renderchain_set_final_viewport(void *data,
       void *renderchain_data, const void *viewport_data)
 {
    d3d_video_t                  *d3d = (d3d_video_t*)data;
@@ -1076,7 +1076,7 @@ void renderchain_set_final_viewport(void *data,
    d3d_recompute_pass_sizes(d3d, chain);
 }
 
-bool renderchain_add_pass(void *data, const void *info_data)
+static bool cg_d3d9_renderchain_add_pass(void *data, const void *info_data)
 {
    Pass pass;
    const LinkInfo *info     = (const LinkInfo*)info_data;
@@ -1090,7 +1090,7 @@ bool renderchain_add_pass(void *data, const void *info_data)
    renderchain_compile_shaders(chain, &pass.fPrg, 
         &pass.vPrg, info->pass->source.path);
 
-   if (!renderchain_init_shader_fvf(chain, &pass))
+   if (!cg_d3d9_renderchain_init_shader_fvf(chain, &pass))
       return false;
 
    pass.vertex_buf = (LPDIRECT3DVERTEXBUFFER)d3d_vertex_buffer_new(d3dr, 4 * sizeof(Vertex),
@@ -1120,9 +1120,8 @@ bool renderchain_add_pass(void *data, const void *info_data)
    return true;
 }
 
-bool renderchain_add_lut(void *data, const char *id,
-      const char *path,
-      bool smooth)
+static bool cg_d3d9_renderchain_add_lut(void *data,
+      const char *id, const char *path, bool smooth)
 {
    lut_info info;
    cg_renderchain_t *chain  = (cg_renderchain_t*)data;
@@ -1160,7 +1159,8 @@ bool renderchain_add_lut(void *data, const char *id,
    return true;
 }
 
-void renderchain_add_state_tracker(void *data, void *tracker_data)
+static void cg_d3d9_renderchain_add_state_tracker(
+      void *data, void *tracker_data)
 {
    state_tracker_t *tracker = (state_tracker_t*)tracker_data;
    cg_renderchain_t     *chain = (cg_renderchain_t*)data;
@@ -1390,7 +1390,7 @@ static void renderchain_render_pass(void *data, void *pass_data, unsigned pass_i
    renderchain_unbind_all(chain);
 }
 
-bool renderchain_render(void *chain_data, const void *data,
+static bool cg_d3d9_renderchain_render(void *chain_data, const void *data,
       unsigned width, unsigned height, unsigned pitch, unsigned rotation)
 {
    Pass *last_pass;
@@ -1403,7 +1403,7 @@ bool renderchain_render(void *chain_data, const void *data,
 
    current_width         = width;
    current_height        = height;
-   renderchain_convert_geometry(chain, &chain->passes[0].info,
+   cg_d3d9_renderchain_convert_geometry(chain, &chain->passes[0].info,
          &out_width, &out_height,
          current_width, current_height, chain->final_viewport);
 
@@ -1422,7 +1422,7 @@ bool renderchain_render(void *chain_data, const void *data,
       to_pass->tex->GetSurfaceLevel(0, &target);
       d3dr->SetRenderTarget(0, target);
 
-      renderchain_convert_geometry(chain, &from_pass->info,
+      cg_d3d9_renderchain_convert_geometry(chain, &from_pass->info,
             &out_width, &out_height,
             current_width, current_height, chain->final_viewport);
 
@@ -1456,7 +1456,7 @@ bool renderchain_render(void *chain_data, const void *data,
 
    last_pass = (Pass*)&chain->passes.back();
 
-   renderchain_convert_geometry(chain, &last_pass->info,
+   cg_d3d9_renderchain_convert_geometry(chain, &last_pass->info,
          &out_width, &out_height,
          current_width, current_height, chain->final_viewport);
    renderchain_set_viewport(chain, chain->final_viewport);
@@ -1480,18 +1480,18 @@ bool renderchain_render(void *chain_data, const void *data,
 }
 
 renderchain_driver_t cg_d3d9_renderchain = {
-   renderchain_free,
-   renderchain_new,
-   renderchain_deinit,
-   renderchain_deinit_shader,
-   renderchain_init_shader,
-   renderchain_init_shader_fvf,
-   renderchain_init,
-   renderchain_set_final_viewport,
-   renderchain_add_pass,
-   renderchain_add_lut,
-   renderchain_add_state_tracker,
-   renderchain_render,
-   renderchain_convert_geometry,
+   cg_d3d9_renderchain_free,
+   cg_d3d9_renderchain_new,
+   cg_d3d9_renderchain_deinit,
+   cg_d3d9_renderchain_deinit_shader,
+   cg_d3d9_renderchain_init_shader,
+   cg_d3d9_renderchain_init_shader_fvf,
+   cg_d3d9_renderchain_init,
+   cg_d3d9_renderchain_set_final_viewport,
+   cg_d3d9_renderchain_add_pass,
+   cg_d3d9_renderchain_add_lut,
+   cg_d3d9_renderchain_add_state_tracker,
+   cg_d3d9_renderchain_render,
+   cg_d3d9_renderchain_convert_geometry,
    "cg_d3d9",
 };
