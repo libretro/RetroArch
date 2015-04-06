@@ -1232,7 +1232,7 @@ static bool d3d_init_luts(d3d_video_t *d3d)
 
    for (i = 0; i < d3d->shader.luts; i++)
    {
-      bool ret = renderchain_add_lut(
+      bool ret = d3d->renderchain_driver->add_lut(
             d3d->renderchain_data,
 			d3d->shader.lut[i].id, d3d->shader.lut[i].path,
          d3d->shader.lut[i].filter == RARCH_FILTER_UNSPEC ?
@@ -1567,7 +1567,7 @@ static bool d3d_frame(void *data, const void *frame,
             d3d->screen_height, d3d->video_info.force_aspect,
             global->system.aspect_ratio);
 
-      renderchain_set_final_viewport(d3d,
+      d3d->renderchain_driver->set_final_viewport(d3d,
             d3d->renderchain_data, &d3d->final_viewport);
 
       d3d->should_resize = false;
@@ -1595,7 +1595,7 @@ static bool d3d_frame(void *data, const void *frame,
    }
 
    if (
-         !renderchain_render(
+         !d3d->renderchain_driver->render(
 #ifdef _XBOX
             d3d,
 #else
