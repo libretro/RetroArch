@@ -260,9 +260,7 @@ static void d3d_set_viewport(d3d_video_t *d3d, int x, int y,
 
    d3d->final_viewport = viewport;
 
-#ifndef _XBOX
    d3d_set_font_rect(d3d, NULL);
-#endif
 }
 bool d3d_restore(d3d_video_t *d3d)
 {
@@ -426,10 +424,8 @@ static void d3d_set_osd_msg(void *data, const char *msg,
    d3d_video_t          *d3d = (d3d_video_t*)data;
    font_renderer_t *font_ctx = d3d ? (font_renderer_t*)d3d->font_driver : NULL;
 
-#ifndef _XBOX
    if (params)
       d3d_set_font_rect(d3d, params);
-#endif
 
    if (font_ctx->render_msg)
       font_ctx->render_msg(d3d->font_handle, msg, params);
@@ -1114,7 +1110,6 @@ static bool d3d_init_multipass(d3d_video_t *d3d)
 static void d3d_set_font_rect(d3d_video_t *d3d,
       const struct font_params *params)
 {
-#ifndef _XBOX
    settings_t *settings           = config_get_ptr();
    float pos_x                    = settings->video.msg_pos_x;
    float pos_y                    = settings->video.msg_pos_y;
@@ -1143,7 +1138,6 @@ static void d3d_set_font_rect(d3d_video_t *d3d,
    d3d->font_rect_shifted.right  -= 2;
    d3d->font_rect_shifted.top    += 2;
    d3d->font_rect_shifted.bottom += 2;
-#endif
 }
 
 static bool d3d_init_singlepass(d3d_video_t *d3d)
@@ -1752,7 +1746,6 @@ static void d3d_set_menu_texture_frame(void *data,
    (void)height;
    (void)alpha;
 
-#ifndef _XBOX
    if (!d3d->menu->tex || d3d->menu->tex_w != width 
          || d3d->menu->tex_h != height)
    {
@@ -1818,7 +1811,6 @@ static void d3d_set_menu_texture_frame(void *data,
       if (d3d->menu)
          d3d->menu->tex->UnlockRect(0);
    }
-#endif
 }
 
 static void d3d_set_menu_texture_enable(void *data,
