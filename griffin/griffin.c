@@ -226,6 +226,7 @@ VIDEO DRIVER
 #if defined(HAVE_D3D)
 #include "../gfx/d3d/d3d_wrapper.cpp"
 #include "../gfx/d3d/d3d.cpp"
+#include "../gfx/d3d/render_chain_driver.cpp"
 #ifdef _XBOX
 #include "../gfx/d3d/render_chain_xdk.cpp"
 #else

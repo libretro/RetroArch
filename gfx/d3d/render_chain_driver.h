@@ -108,5 +108,8 @@ void renderchain_convert_geometry(void *data, const void *info_data,
 
 bool renderchain_init_shader_fvf(void *data, void *pass_data);
 
+bool renderchain_init_first(const renderchain_driver_t **renderchain_driver,
+	void **renderchain_handle);
+
 #endif
 

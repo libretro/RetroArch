@@ -53,6 +53,7 @@
 #include "../font_renderer_driver.h"
 #include "../video_context_driver.h"
 #include "d3d_wrapper.h"
+#include "render_chain_driver.h"
 
 #ifdef HAVE_OVERLAY
 typedef struct
