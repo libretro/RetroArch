@@ -141,7 +141,7 @@ typedef struct d3d_video
 #if defined(HAVE_MENU) && defined(HAVE_OVERLAY)
       overlay_t *menu;
 #endif
-      renderchain_driver_t *renderchain_driver;
+      const renderchain_driver_t *renderchain_driver;
       void *renderchain_data;
 
 #ifdef _XBOX

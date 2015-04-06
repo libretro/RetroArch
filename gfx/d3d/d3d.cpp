@@ -901,10 +901,14 @@ static bool d3d_init_chain(d3d_video_t *d3d, const video_info_t *video_info)
       video_info->input_scale * RARCH_SCALE_BASE;
 #endif
 
-   d3d->renderchain_data = renderchain_new();
-   
-   if (!d3d->renderchain_data)
-      return false;
+   if (!renderchain_init_first(&d3d->renderchain_driver,
+	   &d3d->renderchain_data))
+   {
+	   RARCH_ERR("Renderchain could not be initialized.\n");
+	   return false;
+   }
+
+   RARCH_LOG("Renderchain driver: %s\n", d3d->renderchain_driver->ident);
 
 #ifdef _XBOX
    if (!renderchain_init(d3d, video_info,
