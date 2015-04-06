@@ -322,7 +322,7 @@ HRESULT d3d_set_vertex_shader(LPDIRECT3DDEVICE dev, unsigned index,
 }
 
 
-void d3d_texture_blit(void *data, unsigned pixel_size,
+void d3d_texture_blit(unsigned pixel_size,
       LPDIRECT3DTEXTURE tex, D3DLOCKED_RECT *lr, const void *frame,
       unsigned width, unsigned height, unsigned pitch)
 {
