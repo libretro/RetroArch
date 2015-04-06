@@ -22,6 +22,8 @@ typedef struct xdk_renderchain
 {
    void *empty;
    unsigned pixel_size;
+   LPDIRECT3DDEVICE dev;
+   const video_info_t *video_info;
    LPDIRECT3DTEXTURE tex;
    LPDIRECT3DVERTEXBUFFER vertex_buf;
    unsigned last_width;
@@ -320,12 +322,12 @@ static bool xdk_renderchain_init(void *data,
    global_t *global             = global_get_ptr();
    const video_info_t *info     = (const video_info_t*)_info;
    const LinkInfo *link_info    = (const LinkInfo*)info_data;
-   chain->pixel_size            = fmt ? sizeof(uint32_t) : sizeof(uint16_t);
 
-   (void)dev_data;
    (void)final_viewport_data;
    (void)fmt;
 
+   chain->dev                   = (LPDIRECT3DDEVICE)dev_data;
+   chain->pixel_size            = (fmt == RETRO_PIXEL_FORMAT_RGB565) ? 2 : 4;
    chain->tex_w                 = link_info->tex_w;
    chain->tex_h                 = link_info->tex_h;
 
