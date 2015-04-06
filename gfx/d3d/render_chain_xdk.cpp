@@ -53,6 +53,29 @@ static void renderchain_clear(void *data)
    d3d_vertex_buffer_free(d3d->vertex_buf, d3d->vertex_decl);
 }
 
+bool renderchain_init_shader_fvf(void *data, void *pass_data)
+{
+   d3d_video_t *chain    = (d3d_video_t*)data;
+   d3d_video_t *pass     = (d3d_video_t*)data;
+   LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)chain->dev;
+
+   (void)pass_data;
+
+#if defined(_XBOX360)
+   static const D3DVERTEXELEMENT VertexElements[] =
+   {
+      { 0, 0 * sizeof(float), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_POSITION, 0 },
+      { 0, 2 * sizeof(float), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 0 },
+      D3DDECL_END()
+   };
+
+   if (FAILED(d3dr->CreateVertexDeclaration(VertexElements, &pass->vertex_decl)))
+      return false;
+#endif
+
+   return true;
+}
+
 static bool renderchain_create_first_pass(void *data,
       const video_info_t *info)
 {
@@ -339,39 +362,18 @@ bool renderchain_render(void *data, const void *frame,
    return true;
 }
 
-bool renderchain_init_shader_fvf(void *data, void *pass_data)
-{
-   d3d_video_t *chain    = (d3d_video_t*)data;
-   d3d_video_t *pass     = (d3d_video_t*)data;
-   LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)chain->dev;
-
-   (void)pass_data;
-
-#if defined(_XBOX360)
-   static const D3DVERTEXELEMENT VertexElements[] =
-   {
-      { 0, 0 * sizeof(float), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_POSITION, 0 },
-      { 0, 2 * sizeof(float), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 0 },
-      D3DDECL_END()
-   };
-
-   if (FAILED(d3dr->CreateVertexDeclaration(VertexElements, &pass->vertex_decl)))
-      return false;
-#endif
-
-   return true;
-}
-
-void renderchain_add_lut(void *data,
-      unsigned index, unsigned i)
+bool renderchain_add_lut(void *data,
+      const char *id, const char *path, bool smooth)
 {
    xdk_renderchain_t *chain = (xdk_renderchain_t*)data;
 
    (void)data;
-   (void)index;
-   (void)i;
+   (void)id;
+   (void)path;
+   (void)smooth;
 
    /* stub */
+   return false;
 }
 
 bool renderchain_add_pass(void *data, const void *info_data)

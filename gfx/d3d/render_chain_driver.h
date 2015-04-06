@@ -70,44 +70,6 @@ extern renderchain_driver_t cg_d3d9_renderchain;
 extern renderchain_driver_t xdk_renderchain;
 extern renderchain_driver_t null_renderchain;
 
-void renderchain_free(void *data);
-
-void *renderchain_new(void);
-
-void renderchain_deinit(void *data);
-
-void renderchain_deinit_shader(void);
-
-bool renderchain_init_shader(void *data);
-
-bool renderchain_init(void *data,
-      const video_info_t *video_info,
-      void *dev_data,
-      const void *final_viewport_data,
-      const void *info_data,
-      unsigned fmt);
-
-void renderchain_set_final_viewport(void *data,
-      void *renderchain_data, const void *viewport_data);
-
-bool renderchain_add_pass(void *data, const void *info_data);
-
-bool renderchain_add_lut(void *data,
-      const char *id, const char *path,
-      bool smooth);
-
-void renderchain_add_state_tracker(void *data, void *tracker_data);
-
-bool renderchain_render(void *chain_data, const void *data,
-      unsigned width, unsigned height, unsigned pitch, unsigned rotation);
-
-void renderchain_convert_geometry(void *data, const void *info_data,
-      unsigned *out_width, unsigned *out_height,
-      unsigned width, unsigned height,
-      D3DVIEWPORT *final_viewport);
-
-bool renderchain_init_shader_fvf(void *data, void *pass_data);
-
 bool renderchain_init_first(const renderchain_driver_t **renderchain_driver,
 	void **renderchain_handle);
 

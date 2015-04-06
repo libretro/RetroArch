@@ -974,6 +974,49 @@ static bool renderchain_set_pass_size(void *data, unsigned pass_index,
    return true;
 }
 
+void renderchain_convert_geometry(
+	  void *data, const void *info_data,
+      unsigned *out_width, unsigned *out_height,
+      unsigned width, unsigned height,
+      D3DVIEWPORT *final_viewport)
+{
+   const LinkInfo *info = (const LinkInfo*)info_data;
+   cg_renderchain_t *chain = (cg_renderchain_t*)data;
+
+   if (!chain || !info)
+      return;
+
+   switch (info->pass->fbo.type_x)
+   {
+      case RARCH_SCALE_VIEWPORT:
+         *out_width = info->pass->fbo.scale_x * final_viewport->Width;
+         break;
+
+      case RARCH_SCALE_ABSOLUTE:
+         *out_width = info->pass->fbo.abs_x;
+         break;
+
+      case RARCH_SCALE_INPUT:
+         *out_width = info->pass->fbo.scale_x * width;
+         break;
+   }
+
+   switch (info->pass->fbo.type_y)
+   {
+      case RARCH_SCALE_VIEWPORT:
+         *out_height = info->pass->fbo.scale_y * final_viewport->Height;
+         break;
+
+      case RARCH_SCALE_ABSOLUTE:
+         *out_height = info->pass->fbo.abs_y;
+         break;
+
+      case RARCH_SCALE_INPUT:
+         *out_height = info->pass->fbo.scale_y * height;
+         break;
+   }
+}
+
 static void d3d_recompute_pass_sizes(d3d_video_t *d3d,
 	void *renderchain_data)
 {
@@ -1434,49 +1477,6 @@ bool renderchain_render(void *chain_data, const void *data,
          chain->final_viewport->Height, 0);
 
    return true;
-}
-
-void renderchain_convert_geometry(
-	  void *data, const void *info_data,
-      unsigned *out_width, unsigned *out_height,
-      unsigned width, unsigned height,
-      D3DVIEWPORT *final_viewport)
-{
-   const LinkInfo *info = (const LinkInfo*)info_data;
-   cg_renderchain_t *chain = (cg_renderchain_t*)data;
-
-   if (!chain || !info)
-      return;
-
-   switch (info->pass->fbo.type_x)
-   {
-      case RARCH_SCALE_VIEWPORT:
-         *out_width = info->pass->fbo.scale_x * final_viewport->Width;
-         break;
-
-      case RARCH_SCALE_ABSOLUTE:
-         *out_width = info->pass->fbo.abs_x;
-         break;
-
-      case RARCH_SCALE_INPUT:
-         *out_width = info->pass->fbo.scale_x * width;
-         break;
-   }
-
-   switch (info->pass->fbo.type_y)
-   {
-      case RARCH_SCALE_VIEWPORT:
-         *out_height = info->pass->fbo.scale_y * final_viewport->Height;
-         break;
-
-      case RARCH_SCALE_ABSOLUTE:
-         *out_height = info->pass->fbo.abs_y;
-         break;
-
-      case RARCH_SCALE_INPUT:
-         *out_height = info->pass->fbo.scale_y * height;
-         break;
-   }
 }
 
 renderchain_driver_t cg_d3d9_renderchain = {
