@@ -1654,18 +1654,21 @@ bool config_load_override(void)
    global_t *global = global_get_ptr();      /* global pointer                                             */
    settings_t *settings = config_get_ptr();  /* config pointer                                             */
 
-   //early return in case a library isn't loaded
-   if(!global->system.info.library_name || !strcmp(global->system.info.library_name,"No Core"))
-      return true;
-
-   RARCH_LOG("Game name: %s\n",global->basename);
-   RARCH_LOG("Core name: %s\n",global->system.info.library_name);
-
    if (!global || !settings )
    {
       RARCH_ERR("Could not obtain global pointer or configuration file pointer to retrieve path of retroarch.cfg.\n");
       return false;
    }
+
+   //early return in case a library isn't loaded
+   if (!global->system.info.library_name || !strcmp(global->system.info.library_name,"No Core"))
+   {
+      RARCH_LOG("No library loaded, not using overrides.\n");
+      return true;
+   }
+
+   RARCH_LOG("Game name: %s\n",global->basename);
+   RARCH_LOG("Core name: %s\n",global->system.info.library_name);
 
    /* Config directory: config_directory. */
    if (settings->menu_config_directory)   /* Try RGUI path setting first */
@@ -1720,25 +1723,22 @@ bool config_load_override(void)
    /* Append game-specific */
    if (new_conf)
    {
-      if(should_append)
+      if (should_append)
       {
           strlcat(global->append_config_path, "|", sizeof(global->append_config_path));
           strlcat(global->append_config_path, game_path, sizeof(global->append_config_path));
       }
       else
           strlcpy(global->append_config_path, game_path, sizeof(global->append_config_path));
-      RARCH_LOG("Game-specific configuration found at %s. Appending.\n", game_path);
 
+      RARCH_LOG("Game-specific configuration found at %s. Appending.\n", game_path);
       should_append = true;
    }
    else
       RARCH_LOG("No game-specific configuration found at %s.\n", game_path);
 
-   if(should_append)
-   {
-      if(!config_load_file(global->config_path, false))
-          return false;
-   }
+   if (should_append && !config_load_file(global->config_path, false))
+      return false;
 
    return true;   /* only means no errors were caught */
 }
