@@ -114,12 +114,15 @@ static bool null_renderchain_init_shader_fvf(void *data, void *pass_data)
    return true;
 }
 
-static void null_renderchain_add_lut(void *data,
-      unsigned index, unsigned i)
+static bool null_renderchain_add_lut(void *data,
+      const char *id, const char *path, bool smooth)
 {
    (void)data;
-   (void)index;
-   (void)i;
+   (void)id;
+   (void)path;
+   (void)smooth;
+
+   return true;
 }
 
 static bool null_renderchain_add_pass(void *data, const void *info_data)
