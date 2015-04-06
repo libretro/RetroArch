@@ -430,7 +430,7 @@ static bool xdk_renderchain_reinit(void *data,
          "Reinitializing renderchain - and textures (%u x %u @ %u bpp)\n",
          d3d->tex_w, d3d->tex_h, d3d->pixel_size * CHAR_BIT);
 
-   true;
+   return true;
 }
 
 renderchain_driver_t xdk_renderchain = {

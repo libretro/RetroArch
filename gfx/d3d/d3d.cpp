@@ -658,10 +658,10 @@ static void *d3d_init(const video_info_t *info,
 
       /* Reinitialize renderchain as we 
        * might have changed pixel formats.*/
-      if (d3d->renderchain_driver->reinit(vid, info))
+      if (vid->renderchain_driver->reinit(vid, (const void*)info))
       {
-         d3d_deinit_chain(d3d);
-         d3d_init_chain(d3d, video);
+         d3d_deinit_chain(vid);
+         d3d_init_chain(vid, info);
 
          if (input && input_data)
          {
