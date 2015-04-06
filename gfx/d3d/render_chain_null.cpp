@@ -143,7 +143,7 @@ static void null_renderchain_convert_geometry(
 	  void *data, const void *info_data,
       unsigned *out_width, unsigned *out_height,
       unsigned width, unsigned height,
-      D3DVIEWPORT *final_viewport)
+      void *final_viewport_data)
 {
    (void)data;
    (void)info_data;
@@ -151,7 +151,7 @@ static void null_renderchain_convert_geometry(
    (void)out_height;
    (void)width;
    (void)height;
-   (void)final_viewport;
+   (void)final_viewport_data;
 }
 
 renderchain_driver_t null_renderchain = {

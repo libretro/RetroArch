@@ -17,7 +17,6 @@
 #ifndef __D3D_RENDER_CHAIN_H
 #define __D3D_RENDER_CHAIN_H
 
-#include "d3d.h"
 #include "../video_state_tracker.h"
 #include "../video_shader_parse.h"
 #include "../../libretro.h"
@@ -62,7 +61,7 @@ typedef struct renderchain_driver
    void (*convert_geometry)(void *data, const void *info_data,
          unsigned *out_width, unsigned *out_height,
          unsigned width, unsigned height,
-         D3DVIEWPORT *final_viewport);
+         void *final_viewport);
    const char *ident;
 } renderchain_driver_t;
 

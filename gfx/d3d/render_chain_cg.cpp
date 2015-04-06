@@ -978,10 +978,11 @@ static void cg_d3d9_renderchain_convert_geometry(
 	  void *data, const void *info_data,
       unsigned *out_width, unsigned *out_height,
       unsigned width, unsigned height,
-      D3DVIEWPORT *final_viewport)
+      void *final_viewport_data)
 {
-   const LinkInfo *info = (const LinkInfo*)info_data;
-   cg_renderchain_t *chain = (cg_renderchain_t*)data;
+   const LinkInfo *info        = (const LinkInfo*)info_data;
+   cg_renderchain_t *chain     = (cg_renderchain_t*)data;
+   D3DVIEWPORT *final_viewport = (D3DVIEWPORT*)final_viewport_data; 
 
    if (!chain || !info)
       return;
