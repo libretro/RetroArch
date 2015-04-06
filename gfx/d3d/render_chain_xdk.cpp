@@ -373,7 +373,7 @@ static bool xdk_renderchain_add_lut(void *data,
    (void)smooth;
 
    /* stub */
-   return false;
+   return true;
 }
 
 static bool xdk_renderchain_add_pass(void *data, const void *info_data)
