@@ -885,9 +885,9 @@ static bool d3d_init_chain(d3d_video_t *d3d, const video_info_t *video_info)
    }
 
 #ifdef _XBOX
-   if (!d3d->renderchain_driver->init(d3d, video_info,
+   if (!d3d->renderchain_driver->init(d3d, &d3d->video_info,
             d3dr, &d3d->final_viewport, &link_info,
-            video_info->rgb32 ? 
+            d3d->video_info.rgb32 ? 
             RETRO_PIXEL_FORMAT_XRGB8888 : RETRO_PIXEL_FORMAT_RGB565))
 #else
    if (!d3d->renderchain_driver->init(d3d->renderchain_data, &d3d->video_info,

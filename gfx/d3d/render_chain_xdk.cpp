@@ -310,7 +310,7 @@ static bool xdk_renderchain_init_shader(void *data)
 }
 
 static bool xdk_renderchain_init(void *data,
-      const void *_info,
+      const void *_video_info,
       void *dev_data,
       const void *final_viewport_data,
       const void *info_data,
@@ -320,18 +320,19 @@ static bool xdk_renderchain_init(void *data,
    d3d_video_t *chain           = (d3d_video_t*)data;
    LPDIRECT3DDEVICE d3dr        = (LPDIRECT3DDEVICE)chain->dev;
    global_t *global             = global_get_ptr();
-   const video_info_t *info     = (const video_info_t*)_info;
+   const video_info_t *video_info  = (const video_info_t*)_video_info;
    const LinkInfo *link_info    = (const LinkInfo*)info_data;
 
    (void)final_viewport_data;
    (void)fmt;
 
    chain->dev                   = (LPDIRECT3DDEVICE)dev_data;
+   //chain->video_info            = video_info;
    chain->pixel_size            = (fmt == RETRO_PIXEL_FORMAT_RGB565) ? 2 : 4;
    chain->tex_w                 = link_info->tex_w;
    chain->tex_h                 = link_info->tex_h;
 
-   if (!renderchain_create_first_pass(chain, info))
+   if (!renderchain_create_first_pass(chain, video_info))
       return false;
 
    if (global->console.screen.viewports.custom_vp.width == 0)
