@@ -31,6 +31,8 @@
 extern "C" {
 #endif
 
+bool string_is_empty(const char *data);
+
 char *string_replace_substring(const char *in, const char *pattern,
       const char *by);
 

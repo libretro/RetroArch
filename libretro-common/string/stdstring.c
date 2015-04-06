@@ -22,6 +22,19 @@
 
 #include <string/stdstring.h>
 
+bool string_is_empty(const char *data)
+{
+	char **str = NULL;
+
+	if (!data)
+		return true;
+
+	str = (char**)&data;
+	if (**str == '\0')
+		return true;
+	return false;
+}
+
 char *string_replace_substring(const char *in, const char *pattern, const char *replacement)
 {
    char *needle = NULL;
