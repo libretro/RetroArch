@@ -45,7 +45,7 @@ static void renderchain_set_mvp(void *data, unsigned vp_width,
 #endif
 }
 
-static void renderchain_clear(void *data)
+static void xdk_renderchain_clear(void *data)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
 
@@ -227,6 +227,14 @@ static void renderchain_blit_to_texture(void *data, const void *frame,
          &d3dlr, frame, width, height, pitch);
 }
 
+static void xdk_renderchain_deinit(void *data)
+{
+   xdk_renderchain_t *renderchain = (xdk_renderchain_t*)data;
+
+   if (renderchain)
+      free(renderchain);
+}
+
 static void xdk_renderchain_free(void *data)
 {
    d3d_video_t *chain = (d3d_video_t*)data;
@@ -234,7 +242,10 @@ static void xdk_renderchain_free(void *data)
    if (!chain)
       return;
 
-   renderchain_clear(chain);
+   xdk_renderchain_deinit_shader(chain);
+   xdk_renderchain_deinit(chain->renderchain_data);
+   xdk_renderchain_clear(chain);
+
 #ifndef DONT_HAVE_STATE_TRACKER
 #ifndef _XBOX
    if (chain->tracker)
@@ -243,13 +254,6 @@ static void xdk_renderchain_free(void *data)
 #endif
 }
 
-void xdk_renderchain_deinit(void *data)
-{
-   xdk_renderchain_t *renderchain = (xdk_renderchain_t*)data;
-
-   if (renderchain)
-      free(renderchain);
-}
 
 void *xdk_renderchain_new(void)
 {
@@ -413,8 +417,6 @@ static void xdk_renderchain_convert_geometry(
 renderchain_driver_t xdk_renderchain = {
    xdk_renderchain_free,
    xdk_renderchain_new,
-   xdk_renderchain_deinit,
-   xdk_renderchain_deinit_shader,
    xdk_renderchain_init_shader,
    xdk_renderchain_init_shader_fvf,
    xdk_renderchain_init,

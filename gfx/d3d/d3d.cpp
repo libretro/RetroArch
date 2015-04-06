@@ -96,11 +96,7 @@ static unsigned monitor_count;
 
 static void d3d_deinit_chain(d3d_video_t *d3d)
 {
-   d3d->renderchain_driver->deinit_shader();
-   d3d->renderchain_driver->deinit(d3d->renderchain_data);
-#ifdef _XBOX
    d3d->renderchain_driver->chain_free(d3d);
-#endif
 
    d3d->renderchain_driver = NULL;
    d3d->renderchain_data   = NULL;

@@ -247,7 +247,7 @@ static void renderchain_set_shaders(void *data, void *fragment_data, void *verte
    cgD3D9BindProgram(*vPrg);
 }
 
-static void renderchain_destroy_stock_shader(void *data)
+static void cg_d3d9_renderchain_destroy_stock_shader(void *data)
 {
    cg_renderchain_t *chain = (cg_renderchain_t*)data;
 
@@ -708,7 +708,7 @@ static void renderchain_bind_pass(void *data, void *pass_data, unsigned pass_ind
    }
 }
 
-static void renderchain_clear(void *data)
+static void cg_d3d9_renderchain_clear(void *data)
 {
    unsigned i;
    cg_renderchain_t *chain = (cg_renderchain_t*)data;
@@ -741,6 +741,25 @@ static void renderchain_clear(void *data)
    chain->luts.clear();
 }
 
+static void cg_d3d9_renderchain_deinit_shader(void)
+{
+   if (!cgCtx)
+      return;
+
+   cgD3D9UnloadAllPrograms();
+   cgD3D9SetDevice(NULL);
+   cgDestroyContext(cgCtx);
+   cgCtx = NULL;
+}
+
+static void cg_d3d9_renderchain_deinit(void *data)
+{
+   cg_renderchain_t *renderchain = (cg_renderchain_t*)data;
+
+   if (renderchain)
+      free(renderchain);
+}
+
 void cg_d3d9_renderchain_free(void *data)
 {
    cg_renderchain_t *chain = (cg_renderchain_t*)data;
@@ -748,10 +767,12 @@ void cg_d3d9_renderchain_free(void *data)
    if (!chain)
       return;
 
-   renderchain_clear(chain);
-   renderchain_destroy_stock_shader(chain);
+   cg_d3d9_renderchain_deinit_shader();
+   cg_d3d9_renderchain_clear(chain);
+   cg_d3d9_renderchain_destroy_stock_shader(chain);
    if (chain->tracker)
       state_tracker_free(chain->tracker);
+   cg_d3d9_renderchain_deinit();
 }
 
 void *cg_d3d9_renderchain_new(void)
@@ -763,16 +784,6 @@ void *cg_d3d9_renderchain_new(void)
    return renderchain;
 }
 
-static void cg_d3d9_renderchain_deinit_shader(void)
-{
-   if (!cgCtx)
-      return;
-
-   cgD3D9UnloadAllPrograms();
-   cgD3D9SetDevice(NULL);
-   cgDestroyContext(cgCtx);
-   cgCtx = NULL;
-}
 
 static bool cg_d3d9_renderchain_init_shader(void *data)
 {
@@ -793,13 +804,6 @@ static bool cg_d3d9_renderchain_init_shader(void *data)
    return true;
 }
 
-static void cg_d3d9_renderchain_deinit(void *data)
-{
-   cg_renderchain_t *renderchain = (cg_renderchain_t*)data;
-
-   if (renderchain)
-      free(renderchain);
-}
 
 static void renderchain_log_info(void *data, const void *info_data)
 {
@@ -1485,8 +1489,6 @@ static bool cg_d3d9_renderchain_render(void *chain_data, const void *data,
 renderchain_driver_t cg_d3d9_renderchain = {
    cg_d3d9_renderchain_free,
    cg_d3d9_renderchain_new,
-   cg_d3d9_renderchain_deinit,
-   cg_d3d9_renderchain_deinit_shader,
    cg_d3d9_renderchain_init_shader,
    cg_d3d9_renderchain_init_shader_fvf,
    cg_d3d9_renderchain_init,
