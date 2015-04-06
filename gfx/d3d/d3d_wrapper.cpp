@@ -328,16 +328,10 @@ void d3d_texture_blit(void *data, unsigned pixel_size,
       unsigned width, unsigned height, unsigned pitch)
 {
    unsigned y;
-	d3d_video_t *d3d = (d3d_video_t*)data;
 
    (void)y;
 
-   if (!d3d)
-	   return;
-
 #ifdef _XBOX
-   /* Set the texture to NULL so D3D doesn't complain about it being in use... */
-   d3d_set_texture(d3d->dev, 0, NULL); 
    D3DTexture_LockRect(tex, 0, lr, NULL, D3DLOCK_NOSYSLOCK);
 #if defined(_XBOX360)
    D3DSURFACE_DESC desc;
@@ -349,7 +343,7 @@ void d3d_texture_blit(void *data, unsigned pixel_size,
    {
       const uint8_t *in = (const uint8_t*)frame + y * pitch;
       uint8_t *out = (uint8_t*)lr->pBits + y * lr->Pitch;
-      memcpy(out, in, width * d3d->pixel_size);
+      memcpy(out, in, width * pixel_size);
    }
 #endif
    D3DTexture_UnlockRect(tex, 0);

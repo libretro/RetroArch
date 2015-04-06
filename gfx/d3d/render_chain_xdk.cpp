@@ -223,7 +223,9 @@ static void renderchain_blit_to_texture(void *data, const void *frame,
             0, &d3dlr, NULL, d3d->tex_h, D3DLOCK_NOSYSLOCK);
    }
 
-   d3d_texture_blit(driver->video_data, 0, d3d->tex,
+   /* Set the texture to NULL so D3D doesn't complain about it being in use... */
+   d3d_set_texture(d3dr, 0, NULL); 
+   d3d_texture_blit(driver->video_data, d3d->pixel_size, d3d->tex,
          &d3dlr, frame, width, height, pitch);
 }
 
