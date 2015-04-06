@@ -192,21 +192,20 @@ static int parse_dir_entry(const char *name, char *file_path,
 
 /**
  * dir_list_new:
- * @dir          : directories path.
+ * @dir          : directory path.
  * @ext          : allowed extensions of file directory entries to include.
  * @include_dirs : include directories as part of the finished directory listing?
  *
  * Create a directory listing.
  *
- * Returns: pointer to a file listing of type 'struct string_list *' on success,
+ * Returns: pointer to a directory listing of type 'struct string_list *' on success,
  * NULL in case of error. Has to be freed manually.
  **/
 struct string_list *dir_list_new(const char *dir,
       const char *ext, bool include_dirs)
 {
    char path_buf[PATH_MAX_LENGTH];
-   int i = 0;
-   struct string_list *ext_list, *list, *dir_list;
+   struct string_list *ext_list, *list;
 #ifdef _WIN32
    WIN32_FIND_DATA ffd;
    HANDLE hFind = INVALID_HANDLE_VALUE;
@@ -216,18 +215,13 @@ struct string_list *dir_list_new(const char *dir,
 #endif
 
    ext_list = NULL;
-   dir_list = NULL;
    (void)path_buf;
-   (void)i;
 
    if (!(list = string_list_new()))
       return NULL;
 
    if (ext)
       ext_list = string_split(ext, "|");
-
-   if (dir)
-      dir_list = string_split(dir, ";");
 
 #ifdef _WIN32
    snprintf(path_buf, sizeof(path_buf), "%s\\*", dir);
@@ -236,84 +230,72 @@ struct string_list *dir_list_new(const char *dir,
    if (hFind == INVALID_HANDLE_VALUE)
       goto error;
 
-   // Process the directory list from the end to the start to have an override
-   // of file from the first directory by the file from the last directory.
-   for (i = dir_list->size -1; i >= 0; i--)
+   do
    {
-      const char * dir_name = dir_list->elems[i].data;
-      do
-      {
-         int ret = 0;
-         char file_path[PATH_MAX_LENGTH];
-         const char *name        = ffd.cFileName;
-         const char *file_ext    = path_get_extension(name);
-         bool is_dir             = ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY;
+      int ret = 0;
+      char file_path[PATH_MAX_LENGTH];
+      const char *name        = ffd.cFileName;
+      const char *file_ext    = path_get_extension(name);
+      bool is_dir             = ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY;
 
-         fill_pathname_join(file_path, dir_name, name, sizeof(file_path));
+      fill_pathname_join(file_path, dir, name, sizeof(file_path));
 
-         ret = parse_dir_entry(name, file_path, is_dir,
-               include_dirs, list, ext_list, file_ext);
+      ret = parse_dir_entry(name, file_path, is_dir,
+            include_dirs, list, ext_list, file_ext);
 
-         if (ret == -1)
-            break; //invalid folder continue with next
+      if (ret == -1)
+         goto error;
 
-         if (ret == 1)
-            continue;
-      }while (FindNextFile(hFind, &ffd) != 0);
-
-      FindClose(hFind);
-   }
-#else
-   // Process the directory list from the end to the start to have an override
-   // of file from the first directory by the file from the last directory.
-   for (int i = dir_list->size-1; i >= 0; i--)
-   {
-      const char * dir_name = dir_list->elems[i].data;
-
-      directory = opendir(dir_name);
-
-      if (!directory)
+      if (ret == 1)
          continue;
+   }while (FindNextFile(hFind, &ffd) != 0);
 
-      while ((entry = readdir(directory)))
-      {
-         int ret = 0;
-         char file_path[PATH_MAX_LENGTH];
-         const char *name     = entry->d_name;
-         const char *file_ext = path_get_extension(name);
-         bool is_dir = false;
+   FindClose(hFind);
+   string_list_free(ext_list);
+   return list;
 
-         fill_pathname_join(file_path, dir_name, name, sizeof(file_path));
-
-         is_dir = dirent_is_directory(file_path, entry);
-
-         ret = parse_dir_entry(name, file_path, is_dir,
-               include_dirs, list, ext_list, file_ext);
-
-         if (ret == -1)
-            break; //invalid folder continue with next
-
-         if (ret == 1)
-            continue;
-      }
-
-      closedir(directory);
-   }
-
-#endif
-#ifdef _WIN32
 error:
    if (hFind != INVALID_HANDLE_VALUE)
       FindClose(hFind);
-#endif
-   string_list_free(dir_list);
-   string_list_free(ext_list);
-   
-   if (list->size == 0)
+#else
+   directory = opendir(dir);
+   if (!directory)
+      goto error;
+
+   while ((entry = readdir(directory)))
    {
-     string_list_free(list);
-     return NULL;
+      int ret = 0;
+      char file_path[PATH_MAX_LENGTH];
+      const char *name     = entry->d_name;
+      const char *file_ext = path_get_extension(name);
+      bool is_dir = false;
+
+      fill_pathname_join(file_path, dir, name, sizeof(file_path));
+
+      is_dir = dirent_is_directory(file_path, entry);
+
+      ret = parse_dir_entry(name, file_path, is_dir,
+            include_dirs, list, ext_list, file_ext);
+
+      if (ret == -1)
+         goto error;
+
+      if (ret == 1)
+         continue;
    }
-     
+
+   closedir(directory);
+
+   string_list_free(ext_list);
    return list;
+
+error:
+
+   if (directory)
+      closedir(directory);
+
+#endif
+   string_list_free(list);
+   string_list_free(ext_list);
+   return NULL;
 }
