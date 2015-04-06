@@ -235,6 +235,12 @@ static void xdk_renderchain_deinit(void *data)
       free(renderchain);
 }
 
+static void xdk_renderchain_deinit_shader(void *data)
+{
+   (void)data;
+   /* stub */
+}
+
 static void xdk_renderchain_free(void *data)
 {
    d3d_video_t *chain = (d3d_video_t*)data;
@@ -262,11 +268,6 @@ void *xdk_renderchain_new(void)
       return NULL;
 
    return renderchain;
-}
-
-void xdk_renderchain_deinit_shader(void)
-{
-   /* stub */
 }
 
 static bool xdk_renderchain_init_shader(void *data)
