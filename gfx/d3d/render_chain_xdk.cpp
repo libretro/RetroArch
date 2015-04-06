@@ -380,6 +380,7 @@ bool renderchain_add_pass(void *data, const void *info_data)
    (void)info_data;
 
    /* stub */
+   return true;
 }
 
 void renderchain_add_state_tracker(void *data, void *tracker_data)

@@ -1036,13 +1036,13 @@ void renderchain_set_final_viewport(void *data,
 bool renderchain_add_pass(void *data, const void *info_data)
 {
    Pass pass;
-   const LinkInfo *info  = (const LinkInfo*)info_data;
+   const LinkInfo *info     = (const LinkInfo*)info_data;
    cg_renderchain_t *chain  = (cg_renderchain_t*)data;
-   LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)chain->dev;
+   LPDIRECT3DDEVICE d3dr    = (LPDIRECT3DDEVICE)chain->dev;
 
-   pass.info             = *info;
-   pass.last_width       = 0;
-   pass.last_height      = 0;
+   pass.info                = *info;
+   pass.last_width          = 0;
+   pass.last_height         = 0;
 
    renderchain_compile_shaders(chain, &pass.fPrg, 
         &pass.vPrg, info->pass->source.path);
