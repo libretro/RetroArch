@@ -109,10 +109,11 @@ static bool d3d_init_shader(void *data)
 static void d3d_deinit_chain(d3d_video_t *d3d)
 {
    renderchain_deinit(d3d->renderchain_data);
-   d3d->renderchain_data = NULL;
 #ifdef _XBOX
    renderchain_free(d3d);
 #endif
+   d3d->renderchain_driver = NULL;
+   d3d->renderchain_data   = NULL;
 }
 
 static void d3d_deinitialize(d3d_video_t *d3d)
@@ -869,7 +870,7 @@ static bool d3d_init_imports(d3d_video_t *d3d)
       return false;
    }
 
-   renderchain_add_state_tracker(d3d->renderchain_data, state_tracker);
+   d3d->renderchain_driver->add_state_tracker(d3d->renderchain_data, state_tracker);
    return true;
 }
 #endif
