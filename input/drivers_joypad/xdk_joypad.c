@@ -163,6 +163,11 @@ static void xdk_joypad_poll(void)
 
          gamepads[port] = 0;
          pad_state[port] = 0;
+
+         char msg[512];
+         snprintf(msg, sizeof(msg), "Joypad #%u (%s) disconnected.", i, udev_pads[i].ident);
+         rarch_main_msg_queue_push(msg, 0, 60, false);
+         RARCH_LOG("%s\n", msg);
       }
 
       /* handle inserted devices. */
