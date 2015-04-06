@@ -1820,14 +1820,11 @@ static void d3d_set_menu_texture_enable(void *data,
 
    if (!d3d)
       return;
-
-#ifdef HAVE_MENU
    if (!d3d->menu)
       return;
 
    d3d->menu->enabled            = state;
    d3d->menu->fullscreen         = full_screen;
-#endif
 }
 #endif
 
@@ -1846,6 +1843,9 @@ static const video_poke_interface_t d3d_poke_interface = {
 #ifdef HAVE_MENU
    d3d_set_menu_texture_frame,
    d3d_set_menu_texture_enable,
+#else
+   NULL,
+   NULL,
 #endif
    d3d_set_osd_msg,
 
