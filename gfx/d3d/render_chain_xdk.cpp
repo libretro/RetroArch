@@ -289,22 +289,22 @@ static bool xdk_renderchain_init_shader(void *data)
 }
 
 static bool xdk_renderchain_init(void *data,
-      const video_info_t *info,
+      const void *_info,
       void *dev_data,
       const void *final_viewport_data,
       const void *info_data,
       unsigned fmt
       )
 {
-   d3d_video_t *chain    = (d3d_video_t*)data;
-   LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)chain->dev;
-   global_t *global      = global_get_ptr();
+   d3d_video_t *chain       = (d3d_video_t*)data;
+   LPDIRECT3DDEVICE d3dr    = (LPDIRECT3DDEVICE)chain->dev;
+   global_t *global         = global_get_ptr();
+   const video_info_t *info = (const video_info_t*)_info;
 
    (void)dev_data;
    (void)final_viewport_data;
    (void)info_data;
    (void)fmt;
-
    chain->pixel_size     = fmt ? sizeof(uint32_t) : sizeof(uint16_t);
 
    if (!renderchain_create_first_pass(chain, info))

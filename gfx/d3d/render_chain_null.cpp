@@ -67,7 +67,7 @@ static bool null_renderchain_init_shader(void *data)
 }
 
 static bool null_renderchain_init(void *data,
-      const video_info_t *info,
+      const void *info,
       void *dev_data,
       const void *final_viewport_data,
       const void *info_data,

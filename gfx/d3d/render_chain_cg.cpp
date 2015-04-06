@@ -914,13 +914,15 @@ static bool renderchain_create_first_pass(void *data, const void *info_data,
    return true;
 }
 
-static bool cg_d3d9_renderchain_init(void *data, const video_info_t *video_info,
+static bool cg_d3d9_renderchain_init(void *data,
+      const void *_video_info,
       void *dev_,
       const void *final_viewport_,
       const void *info_data, unsigned fmt)
 {
-   const LinkInfo *info  = (const LinkInfo*)info_data;
-   cg_renderchain_t *chain  = (cg_renderchain_t*)data;
+   const LinkInfo *info           = (const LinkInfo*)info_data;
+   cg_renderchain_t *chain        = (cg_renderchain_t*)data;
+   const video_info_t *video_info = (const video_info_t*)_video_info;
 
    if (!chain)
       return false;
