@@ -1,0 +1,169 @@
+/*  RetroArch - A frontend for libretro.
+ *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
+ *  Copyright (C) 2011-2015 - Daniel De Matteis
+ * 
+ *  RetroArch is free software: you can redistribute it and/or modify it under the terms
+ *  of the GNU General Public License as published by the Free Software Found-
+ *  ation, either version 3 of the License, or (at your option) any later version.
+ *
+ *  RetroArch is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+ *  without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+ *  PURPOSE.  See the GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License along with RetroArch.
+ *  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+#include <string.h>
+#include <retro_inline.h>
+#include "render_chain_driver.h"
+
+typedef struct null_renderchain
+{
+   void *empty;
+} null_renderchain_t;
+
+static void renderchain_blit_to_texture(
+      void *data, const void *frame,
+      unsigned width, unsigned height, unsigned pitch)
+{
+   (void)data;
+   (void)frame;
+   (void)width;
+   (void)height;
+   (void)pitch;
+}
+
+void renderchain_free(void *data)
+{
+}
+
+void renderchain_deinit(void *data)
+{
+   null_renderchain_t *renderchain = (null_renderchain_t*)data;
+
+   if (renderchain)
+      free(renderchain);
+}
+
+void *renderchain_new(void)
+{
+   null_renderchain_t *renderchain = (null_renderchain_t*)calloc(1, sizeof(*renderchain));
+   if (!renderchain)
+      return NULL;
+
+   return renderchain;
+}
+
+void renderchain_deinit_shader(void)
+{
+}
+
+bool renderchain_init_shader(void *data)
+{
+   (void)data;
+
+   return true;
+}
+
+bool renderchain_init(void *data,
+      const video_info_t *info,
+      void *dev_data,
+      const void *final_viewport_data,
+      const void *info_data,
+      unsigned fmt
+      )
+{
+   (void)data;
+   (void)info;
+   (void)dev_data;
+   (void)final_viewport_data;
+   (void)info_data;
+   (void)fmt;
+
+   return true;
+}
+
+void renderchain_set_final_viewport(void *data,
+      void *renderchain_data, const void *viewport_data)
+{
+   (void)data;
+   (void)renderchain_data;
+   (void)viewport_data;
+}
+
+bool renderchain_render(void *data, const void *frame,
+      unsigned width, unsigned height,
+      unsigned pitch, unsigned rotation)
+{
+   (void)data;
+   (void)frame;
+   (void)width;
+   (void)height;
+   (void)pitch;
+   (void)rotation;
+
+   return true;
+}
+
+bool renderchain_init_shader_fvf(void *data, void *pass_data)
+{
+   (void)data;
+   (void)pass_data;
+
+   return true;
+}
+
+void renderchain_add_lut(void *data,
+      unsigned index, unsigned i)
+{
+   (void)data;
+   (void)index;
+   (void)i;
+}
+
+bool renderchain_add_pass(void *data, const void *info_data)
+{
+   (void)data;
+   (void)info_data;
+
+   return true;
+}
+
+void renderchain_add_state_tracker(void *data, void *tracker_data)
+{
+   (void)data;
+   (void)tracker_data;
+}
+
+void renderchain_convert_geometry(
+	  void *data, const void *info_data,
+      unsigned *out_width, unsigned *out_height,
+      unsigned width, unsigned height,
+      D3DVIEWPORT *final_viewport)
+{
+   (void)data;
+   (void)info_data;
+   (void)out_width;
+   (void)out_height;
+   (void)width;
+   (void)height;
+   (void)final_viewport;
+}
+
+renderchain_driver_t null_renderchain = {
+   renderchain_free,
+   renderchain_new,
+   renderchain_deinit,
+   renderchain_deinit_shader,
+   renderchain_init_shader,
+   renderchain_init_shader_fvf,
+   renderchain_init,
+   renderchain_set_final_viewport,
+   renderchain_add_pass,
+   renderchain_add_lut,
+   renderchain_add_state_tracker,
+   renderchain_render,
+   renderchain_convert_geometry,
+   "null",
+};

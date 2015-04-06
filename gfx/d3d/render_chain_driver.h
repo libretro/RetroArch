@@ -68,6 +68,7 @@ typedef struct renderchain_driver
 
 extern renderchain_driver_t cg_d3d9_renderchain;
 extern renderchain_driver_t xdk_renderchain;
+extern renderchain_driver_t null_renderchain;
 
 void renderchain_free(void *data);
 
