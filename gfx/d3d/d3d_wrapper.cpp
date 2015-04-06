@@ -260,8 +260,7 @@ void d3d_clear(LPDIRECT3DDEVICE dev,
 #endif
 }
 
-void d3d_lockrectangle_clear(void *data, 
-      LPDIRECT3DTEXTURE tex,
+void d3d_lockrectangle_clear(LPDIRECT3DTEXTURE tex,
       unsigned level, D3DLOCKED_RECT *lock_rect, RECT *rect,
       unsigned rectangle_height, unsigned flags)
 {
