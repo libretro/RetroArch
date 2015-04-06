@@ -20,7 +20,7 @@
 
 static uint64_t pad_state[MAX_PADS];
 static int16_t analog_state[MAX_PADS][2][2];
-static unsigned pads_connected;
+static uint64_t pads_connected[MAX_PADS];
 #if 0
 sensor_t accelerometer_state[MAX_PADS];
 #endif
@@ -55,12 +55,7 @@ static void ps3_joypad_autodetect_add(unsigned autoconf_pad)
 
 static bool ps3_joypad_init(void)
 {
-   unsigned autoconf_pad;
-
    cellPadInit(MAX_PADS);
-
-   for (autoconf_pad = 0; autoconf_pad < MAX_USERS; autoconf_pad++)
-      ps3_joypad_autodetect_add(autoconf_pad);
 
    return true;
 }
@@ -136,6 +131,30 @@ static void ps3_joypad_poll(void)
    for (port = 0; port < MAX_PADS; port++)
    {
       CellPadData state_tmp;
+
+      if (pad_info.port_status[port] & CELL_PAD_STATUS_ASSIGN_CHANGES)
+      {
+         if ( (pad_info.port_status[port] & CELL_PAD_STATUS_CONNECTED) == 0 )
+         {
+            char msg[512];
+
+            snprintf(msg, sizeof(msg),
+                  "Joypad #%u (%s) disconnected.", port, ps3_joypad.ident);
+            rarch_main_msg_queue_push(msg, 0, 60, false);
+            RARCH_LOG("%s\n", msg);
+
+            pads_connected[port] = 0;
+         }
+         else if ((pad_info.port_status[port] & CELL_PAD_STATUS_CONNECTED) > 0 )
+         {
+            pads_connected[port] = 1;
+            ps3_joypad_autodetect_add(port);
+         }
+      }
+      
+      if (pads_connected[port] == 0)
+         continue;
+
       cellPadGetData(port, &state_tmp);
 
       if (state_tmp.len != 0)
@@ -223,7 +242,7 @@ static void ps3_joypad_poll(void)
    if ((*state_p1 & (1ULL << RETRO_DEVICE_ID_JOYPAD_L3)) && (*state_p1 & (1ULL << RETRO_DEVICE_ID_JOYPAD_R3)))
       *lifecycle_state |= (1ULL << RARCH_MENU_TOGGLE);
 
-   pads_connected = pad_info.now_connect; 
+    
 }
 
 static bool ps3_joypad_query_pad(unsigned pad)
