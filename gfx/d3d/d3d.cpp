@@ -96,22 +96,14 @@ static HMONITOR monitor_all[MAX_MONITORS];
 static unsigned monitor_count;
 #endif
 
-static void d3d_deinit_shader(void *data)
-{
-   renderchain_deinit_shader();
-}
-
-static bool d3d_init_shader(void *data)
-{
-   return renderchain_init_shader(data);
-}
-
 static void d3d_deinit_chain(d3d_video_t *d3d)
 {
-   renderchain_deinit(d3d->renderchain_data);
+   d3d->renderchain_driver->deinit_shader();
+   d3d->renderchain_driver->deinit(d3d->renderchain_data);
 #ifdef _XBOX
-   renderchain_free(d3d);
+   d3d->renderchain_driver->chain_free(d3d);
 #endif
+
    d3d->renderchain_driver = NULL;
    d3d->renderchain_data   = NULL;
 }
@@ -128,7 +120,6 @@ static void d3d_deinitialize(d3d_video_t *d3d)
       font_ctx->free(d3d->font_handle);
    font_ctx = NULL;
    d3d_deinit_chain(d3d);
-   d3d_deinit_shader(d3d);
 
 #ifndef _XBOX
    d3d->needs_restore = false;
@@ -239,12 +230,6 @@ static bool d3d_initialize(d3d_video_t *d3d, const video_info_t *info)
 
    d3d_calculate_rect(d3d, d3d->screen_width, d3d->screen_height,
          info->force_aspect, global->system.aspect_ratio);
-
-   if (!d3d_init_shader(d3d))
-   {
-      RARCH_ERR("Failed to initialize shader subsystem.\n");
-      return false;
-   }
 
    if (!d3d_init_chain(d3d, info))
    {
@@ -913,6 +898,12 @@ static bool d3d_init_chain(d3d_video_t *d3d, const video_info_t *video_info)
 	   return false;
 
    RARCH_LOG("Renderchain driver: %s\n", d3d->renderchain_driver->ident);
+
+   if (!d3d->renderchain_driver->init_shader(d3d))
+   {
+      RARCH_ERR("Failed to initialize shader subsystem.\n");
+      return false;
+   }
 
 #ifdef _XBOX
    if (!d3d->renderchain_driver->init(d3d, video_info,
