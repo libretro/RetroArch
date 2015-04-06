@@ -17,7 +17,6 @@
 #include "input_common.h"
 #include "input_keymaps.h"
 #include <string.h>
-#include <strings.h>
 #include <stdlib.h>
 #include <ctype.h>
 
