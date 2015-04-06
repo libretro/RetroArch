@@ -38,26 +38,29 @@ static const char *ps3_joypad_name(unsigned pad)
    return settings ? settings->input.device_names[pad] : NULL;
 }
 
+static void ps3_joypad_autodetect_add(unsigned autoconf_pad)
+{
+   settings_t *settings = config_get_ptr();
+   autoconfig_params_t params = {{0}};
+   strlcpy(settings->input.device_names[autoconf_pad],
+         "SixAxis Controller",
+         sizeof(settings->input.device_names[autoconf_pad]));
+
+   /* TODO - implement VID/PID? */
+   params.idx = autoconf_pad;
+   strlcpy(params.name, ps3_joypad_name(autoconf_pad), sizeof(params.name));
+   strlcpy(params.driver, ps3_joypad.ident, sizeof(params.driver));
+   input_config_autoconfigure_joypad(&params);
+}
+
 static bool ps3_joypad_init(void)
 {
    unsigned autoconf_pad;
-   settings_t *settings = config_get_ptr();
 
    cellPadInit(MAX_PADS);
 
    for (autoconf_pad = 0; autoconf_pad < MAX_USERS; autoconf_pad++)
-   {
-      autoconfig_params_t params = {{0}};
-      strlcpy(settings->input.device_names[autoconf_pad],
-            "SixAxis Controller",
-            sizeof(settings->input.device_names[autoconf_pad]));
-
-      /* TODO - implement VID/PID? */
-      params.idx = autoconf_pad;
-      strlcpy(params.name, ps3_joypad_name(autoconf_pad), sizeof(params.name));
-      strlcpy(params.driver, ps3_joypad.ident, sizeof(params.driver));
-      input_config_autoconfigure_joypad(&params);
-   }
+      ps3_joypad_autodetect_add(autoconf_pad);
 
    return true;
 }
@@ -127,6 +130,8 @@ static void ps3_joypad_poll(void)
    global_t *global          = global_get_ptr();
    runloop_t *runloop        = rarch_main_get_ptr();
    uint64_t *lifecycle_state = (uint64_t*)&global->lifecycle_state;
+
+   cellPadGetInfo2(&pad_info);
 
    for (port = 0; port < MAX_PADS; port++)
    {
@@ -218,7 +223,6 @@ static void ps3_joypad_poll(void)
    if ((*state_p1 & (1ULL << RETRO_DEVICE_ID_JOYPAD_L3)) && (*state_p1 & (1ULL << RETRO_DEVICE_ID_JOYPAD_R3)))
       *lifecycle_state |= (1ULL << RARCH_MENU_TOGGLE);
 
-   cellPadGetInfo2(&pad_info);
    pads_connected = pad_info.now_connect; 
 }
 
