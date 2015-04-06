@@ -69,11 +69,6 @@ static void d3d_free_overlays(d3d_video_t *d3d);
 static void d3d_free_overlay(d3d_video_t *d3d, overlay_t *overlay);
 #endif
 
-#ifdef _XBOX
-static void d3d_reinit_renderchain(void *data,
-      const video_info_t *video);
-#endif
-
 void d3d_make_d3dpp(void *data, const video_info_t *info,
 	D3DPRESENT_PARAMETERS *d3dpp);
 
@@ -663,17 +658,21 @@ static void *d3d_init(const video_info_t *info,
 
       /* Reinitialize renderchain as we 
        * might have changed pixel formats.*/
-      d3d_reinit_renderchain(vid, info);
-
-      if (input && input_data)
+      if (d3d->renderchain_driver->reinit(vid, info))
       {
-         *input = driver->input;
-         *input_data = driver->input_data;
-      }
+         d3d_deinit_chain(d3d);
+         d3d_init_chain(d3d, video);
 
-      driver->video_data_own = true;
-      driver->input_data_own = true;
-      return driver->video_data;
+         if (input && input_data)
+         {
+            *input = driver->input;
+            *input_data = driver->input_data;
+         }
+
+         driver->video_data_own = true;
+         driver->input_data_own = true;
+         return driver->video_data;
+      }
    }
 #endif
 
@@ -960,23 +959,6 @@ static bool d3d_init_chain(d3d_video_t *d3d, const video_info_t *video_info)
 }
 
 #ifdef _XBOX
-static void d3d_reinit_renderchain(void *data,
-      const video_info_t *video)
-{
-   d3d_video_t *d3d        = (d3d_video_t*)data;
-
-   if (!d3d)
-      return;
-
-   d3d->pixel_size         = video->rgb32 ? sizeof(uint32_t) : sizeof(uint16_t);
-   d3d->tex_w = d3d->tex_h = RARCH_SCALE_BASE * video->input_scale; 
-   RARCH_LOG(
-         "Reinitializing renderchain - and textures (%u x %u @ %u bpp)\n",
-         d3d->tex_w, d3d->tex_h, d3d->pixel_size * CHAR_BIT);
-
-   d3d_deinit_chain(d3d);
-   d3d_init_chain(d3d, video);
-}
 
 #ifdef HAVE_RMENU
 extern struct texture_image *menu_texture;

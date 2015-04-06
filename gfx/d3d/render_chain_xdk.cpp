@@ -415,11 +415,30 @@ static void xdk_renderchain_convert_geometry(
    /* stub */
 }
 
+static bool xdk_renderchain_reinit(void *data,
+      const void *video_data)
+{
+   d3d_video_t *d3d          = (d3d_video_t*)data;
+   const video_info_t *video = (const video_info_t*)video_data;
+
+   if (!d3d)
+      return false;
+
+   d3d->pixel_size         = video->rgb32 ? sizeof(uint32_t) : sizeof(uint16_t);
+   d3d->tex_w = d3d->tex_h = RARCH_SCALE_BASE * video->input_scale; 
+   RARCH_LOG(
+         "Reinitializing renderchain - and textures (%u x %u @ %u bpp)\n",
+         d3d->tex_w, d3d->tex_h, d3d->pixel_size * CHAR_BIT);
+
+   true;
+}
+
 renderchain_driver_t xdk_renderchain = {
    xdk_renderchain_free,
    xdk_renderchain_new,
    xdk_renderchain_init_shader,
    xdk_renderchain_init_shader_fvf,
+   xdk_renderchain_reinit,
    xdk_renderchain_init,
    xdk_renderchain_set_final_viewport,
    xdk_renderchain_add_pass,

@@ -1493,6 +1493,7 @@ renderchain_driver_t cg_d3d9_renderchain = {
    cg_d3d9_renderchain_new,
    cg_d3d9_renderchain_init_shader,
    cg_d3d9_renderchain_init_shader_fvf,
+   NULL,
    cg_d3d9_renderchain_init,
    cg_d3d9_renderchain_set_final_viewport,
    cg_d3d9_renderchain_add_pass,

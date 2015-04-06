@@ -144,6 +144,7 @@ renderchain_driver_t null_renderchain = {
    null_renderchain_new,
    null_renderchain_init_shader,
    null_renderchain_init_shader_fvf,
+   NULL,
    null_renderchain_init,
    null_renderchain_set_final_viewport,
    null_renderchain_add_pass,
