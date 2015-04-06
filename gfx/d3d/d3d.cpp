@@ -61,8 +61,6 @@ static bool d3d_init_luts(d3d_video_t *d3d);
 static void d3d_set_font_rect(d3d_video_t *d3d,
       const struct font_params *params);
 static bool d3d_process_shader(d3d_video_t *d3d);
-static bool d3d_init_multipass(d3d_video_t *d3d);
-static void d3d_deinit_chain(d3d_video_t *d3d);
 static bool d3d_init_chain(d3d_video_t *d3d,
       const video_info_t *video_info);
 
