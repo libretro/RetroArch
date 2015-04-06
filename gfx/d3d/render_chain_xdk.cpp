@@ -301,19 +301,19 @@ static bool xdk_renderchain_init(void *data,
       unsigned fmt
       )
 {
-   d3d_video_t *chain       = (d3d_video_t*)data;
-   LPDIRECT3DDEVICE d3dr    = (LPDIRECT3DDEVICE)chain->dev;
-   global_t *global         = global_get_ptr();
-   const video_info_t *info = (const video_info_t*)_info;
-   const LinkInfo *info     = (const LinkInfo*)info_data;
-   chain->pixel_size     = fmt ? sizeof(uint32_t) : sizeof(uint16_t);
+   d3d_video_t *chain           = (d3d_video_t*)data;
+   LPDIRECT3DDEVICE d3dr        = (LPDIRECT3DDEVICE)chain->dev;
+   global_t *global             = global_get_ptr();
+   const video_info_t *info     = (const video_info_t*)_info;
+   const LinkInfo *link_info    = (const LinkInfo*)info_data;
+   chain->pixel_size            = fmt ? sizeof(uint32_t) : sizeof(uint16_t);
 
    (void)dev_data;
    (void)final_viewport_data;
    (void)fmt;
 
-   chain->tex_w             = info->tex_w;
-   chain->tex_h             = info->tex_h;
+   chain->tex_w                 = link_info->tex_w;
+   chain->tex_h                 = link_info->tex_h;
 
    if (!renderchain_create_first_pass(chain, info))
       return false;
