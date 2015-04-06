@@ -23,17 +23,6 @@ typedef struct null_renderchain
    void *empty;
 } null_renderchain_t;
 
-static void null_renderchain_blit_to_texture(
-      void *data, const void *frame,
-      unsigned width, unsigned height, unsigned pitch)
-{
-   (void)data;
-   (void)frame;
-   (void)width;
-   (void)height;
-   (void)pitch;
-}
-
 static void null_renderchain_free(void *data)
 {
 }
