@@ -1654,18 +1654,18 @@ bool config_load_override(void)
    global_t *global = global_get_ptr();      /* global pointer                                             */
    settings_t *settings = config_get_ptr();  /* config pointer                                             */
 
+   if (!global || !settings )
+   {
+      RARCH_ERR("Could not obtain global pointer or configuration file pointer to retrieve path of retroarch.cfg.\n");
+      return false;
+   }
+
    //early return in case a library isn't loaded
    if(!global->system.info.library_name || !strcmp(global->system.info.library_name,"No Core"))
       return true;
 
    RARCH_LOG("Game name: %s\n",global->basename);
    RARCH_LOG("Core name: %s\n",global->system.info.library_name);
-
-   if (!global || !settings )
-   {
-      RARCH_ERR("Could not obtain global pointer or configuration file pointer to retrieve path of retroarch.cfg.\n");
-      return false;
-   }
 
    /* Config directory: config_directory. */
    if (settings->menu_config_directory)   /* Try RGUI path setting first */
