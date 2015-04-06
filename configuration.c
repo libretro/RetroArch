@@ -1662,7 +1662,10 @@ bool config_load_override(void)
 
    //early return in case a library isn't loaded
    if(!global->system.info.library_name || !strcmp(global->system.info.library_name,"No Core"))
+   {
+      RARCH_LOG("No library loaded, not using overrides.\n");
       return true;
+   }
 
    RARCH_LOG("Game name: %s\n",global->basename);
    RARCH_LOG("Core name: %s\n",global->system.info.library_name);
