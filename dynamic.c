@@ -455,7 +455,8 @@ void init_libretro_sym(bool dummy)
 
    load_symbols(dummy);
 
-   pretro_set_environment(rarch_environment_cb);
+   //move this to init_core, will need to be tested
+   //pretro_set_environment(rarch_environment_cb);
 }
 
 /**
