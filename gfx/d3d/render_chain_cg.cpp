@@ -768,11 +768,13 @@ void cg_d3d9_renderchain_free(void *data)
       return;
 
    cg_d3d9_renderchain_deinit_shader();
+#if 0
    cg_d3d9_renderchain_clear(chain);
    cg_d3d9_renderchain_destroy_stock_shader(chain);
    if (chain->tracker)
       state_tracker_free(chain->tracker);
-   cg_d3d9_renderchain_deinit();
+#endif
+   //cg_d3d9_renderchain_deinit();
 }
 
 void *cg_d3d9_renderchain_new(void)
