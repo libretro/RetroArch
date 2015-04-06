@@ -57,26 +57,10 @@ static void xdk_joypad_autodetect_add(unsigned autoconf_pad)
 
 static bool xdk_joypad_init(void)
 {
-   unsigned autoconf_pad;
-
 #ifdef _XBOX1
    XInitDevices(0, NULL);
-
-   dwDeviceMask = XGetDevices(XDEVICE_TYPE_GAMEPAD);
-
-   /* Check the device status. */
-   switch(XGetDeviceEnumerationStatus())
-   {
-      case XDEVICE_ENUMERATION_IDLE:
-         RARCH_LOG("Input state status: XDEVICE_ENUMERATION_IDLE\n");
-         break;
-      case XDEVICE_ENUMERATION_BUSY:
-         RARCH_LOG("Input state status: XDEVICE_ENUMERATION_BUSY\n");
-         break;
-   }
-
-   while(XGetDeviceEnumerationStatus() == XDEVICE_ENUMERATION_BUSY) {}
 #else
+   unsigned autoconf_pad;
    for (autoconf_pad = 0; autoconf_pad < MAX_USERS; autoconf_pad++)
       xdk_joypad_autodetect_add(autoconf_pad);
 #endif
