@@ -1065,7 +1065,7 @@ static void d3d_draw_texture(d3d_video_t *d3d)
    menu_texture->x = 0;
    menu_texture->y = 0;
 
-   if (d3d->menu_texture_enable)
+   if (d3d->menu->enabled)
    {
       d3d_enable_blend_func(d3d->dev);
       texture_image_render(d3d, menu_texture,
@@ -1639,7 +1639,7 @@ static bool d3d_frame(void *data, const void *frame,
 
 #ifdef _XBOX
    /* TODO - should be refactored. */
-   if (d3d && d3d->menu_texture_enable)
+   if (d3d && d3d->menu->enabled)
       d3d_draw_texture(d3d);
 #endif
 #endif
@@ -1863,10 +1863,7 @@ static void d3d_set_menu_texture_enable(void *data,
    if (!d3d)
       return;
 
-#ifdef _XBOX
-   d3d->menu_texture_enable      = state;
-   d3d->menu_texture_full_screen = full_screen;
-#else
+#ifdef HAVE_MENU
    if (!d3d->menu)
       return;
 

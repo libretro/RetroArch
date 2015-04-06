@@ -136,8 +136,6 @@ typedef struct d3d_video
       std::vector<overlay_t> overlays;
 #endif
 
-      bool menu_texture_enable;
-      bool menu_texture_full_screen;
 #if defined(HAVE_MENU)
       overlay_t *menu;
 #endif
