@@ -759,10 +759,6 @@ static void d3d_free(void *data)
 #endif
 }
 
-#ifdef _XBOX
-#include "../../xdk/xdk_resources.h"
-#endif
-
 #ifdef HAVE_MONITOR
 static BOOL CALLBACK d3d_monitor_enum_proc(HMONITOR hMonitor,
       HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData)
