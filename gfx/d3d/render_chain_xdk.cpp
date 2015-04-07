@@ -286,7 +286,7 @@ void *xdk_renderchain_new(void)
    return renderchain;
 }
 
-static bool xdk_renderchain_init_shader(void *data)
+static bool xdk_renderchain_init_shader(void *data, void *renderchain_data)
 {
    const char *shader_path = NULL;
    d3d_video_t        *d3d = (d3d_video_t*)data;

@@ -36,7 +36,7 @@ static void *null_renderchain_new(void)
    return renderchain;
 }
 
-static bool null_renderchain_init_shader(void *data)
+static bool null_renderchain_init_shader(void *data, void *renderchain_data)
 {
    (void)data;
 
