@@ -27,14 +27,15 @@
 #include <stddef.h>
 #include <string.h>
 
-#ifdef OSX
 static bool CopyModel(char** model, uint32_t *majorRev, uint32_t *minorRev)
 {
+#ifdef OSX
     int mib[2];
-    char *machineModel;
-    char *revStr;
     int count;
     unsigned long modelLen;
+    char *revStr;
+#endif
+    char *machineModel;
     bool success  = true;
     size_t length = 1024;
     
@@ -44,7 +45,21 @@ static bool CopyModel(char** model, uint32_t *majorRev, uint32_t *minorRev)
         return false;
     }
     
+#ifdef IOS
+    sysctlbyname("hw.machine", NULL, &length, NULL, 0);
+#endif
+    
     machineModel = malloc(length);
+    
+    if (!machineModel)
+    {
+        success = false;
+        goto exit;
+    }
+#ifdef IOS
+    sysctlbyname("hw.machine", machineModel, &length, NULL, 0);
+    *model = strndup(machineModel, length);
+#else
     mib[0]       = CTL_HW;
     mib[1]       = HW_MODEL;
     
@@ -90,6 +105,7 @@ static bool CopyModel(char** model, uint32_t *majorRev, uint32_t *minorRev)
         success       = true;
         goto exit;
     }
+#endif
     
 exit:
     if (machineModel)
@@ -104,14 +120,11 @@ exit:
     }
     return success;
 }
-#endif
 
 static void frontend_apple_get_name(char *name, size_t sizeof_name)
 {
-#ifdef OSX
     uint32_t major_rev, minor_rev;
     CopyModel(&name, &major_rev, &minor_rev);
-#endif
 }
 
 static void frontend_apple_get_environment_settings(int *argc, char *argv[],
