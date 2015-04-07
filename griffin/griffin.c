@@ -226,14 +226,14 @@ VIDEO DRIVER
 #if defined(HAVE_D3D)
 #include "../gfx/d3d/d3d_wrapper.cpp"
 #include "../gfx/d3d/d3d.cpp"
-#include "../gfx/d3d/render_chain_driver.cpp"
+#include "../gfx/d3d/render_chain_driver.c"
 #ifdef _XBOX
 #include "../gfx/d3d/render_chain_xdk.cpp"
 #endif
 #ifdef HAVE_CG
 #include "../gfx/d3d/render_chain_cg.cpp"
 #endif
-#include "../gfx/d3d/render_chain_null.cpp"
+#include "../gfx/d3d/render_chain_null.c"
 #endif
 
 #if defined(GEKKO)

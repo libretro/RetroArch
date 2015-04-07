@@ -22,6 +22,10 @@
 #include "../../libretro.h"
 #include "d3d_defines.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct LinkInfo
 {
    unsigned tex_w, tex_h;
@@ -71,6 +75,10 @@ extern renderchain_driver_t null_renderchain;
 
 bool renderchain_init_first(const renderchain_driver_t **renderchain_driver,
 	void **renderchain_handle);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
 
