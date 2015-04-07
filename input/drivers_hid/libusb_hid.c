@@ -466,10 +466,10 @@ static void libusb_hid_free(void *data)
 {
    libusb_hid_t *hid = (libusb_hid_t*)data;
 
-   pad_connection_destroy(hid->slots);
-
    while(adapters.next)
       remove_adapter(hid, adapters.next->device);
+
+   pad_connection_destroy(hid->slots);
 
    libusb_hotplug_deregister_callback(NULL, hid->hp);
 
