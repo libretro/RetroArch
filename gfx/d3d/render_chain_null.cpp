@@ -27,14 +27,6 @@ static void null_renderchain_free(void *data)
 {
 }
 
-static void null_renderchain_deinit(void *data)
-{
-   null_renderchain_t *renderchain = (null_renderchain_t*)data;
-
-   if (renderchain)
-      free(renderchain);
-}
-
 static void *null_renderchain_new(void)
 {
    null_renderchain_t *renderchain = (null_renderchain_t*)calloc(1, sizeof(*renderchain));
