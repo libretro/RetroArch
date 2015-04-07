@@ -412,6 +412,14 @@ void config_load(void);
  */
 bool config_load_override(void);
 
+/**
+ * config_unload_override:
+ *
+ * Unloads configuration overrides if overrides are active.
+ *
+ *
+ * Returns: false if there was an error.
+ */
 bool config_unload_override(void);
 
 /**

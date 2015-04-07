@@ -1742,7 +1742,15 @@ bool config_load_override(void)
    return false;
 }
 
-bool core_unload_override(void)
+/**
+ * config_unload_override:
+ *
+ * Unloads configuration overrides if overrides are active.
+ *
+ *
+ * Returns: false if there was an error.
+ */
+ bool core_unload_override(void)
 {
    global_t *global = global_get_ptr();
    settings_t *settings = config_get_ptr();
