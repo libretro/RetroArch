@@ -381,3 +381,18 @@ void d3d_disable_blend_func(void *data)
 
    dev->SetRenderState(D3DRS_ALPHABLENDENABLE, false);
 }
+
+void d3d_set_vertex_declaration(void *data, void *vertex_data)
+{
+   LPDIRECT3DDEVICE dev = (LPDIRECT3DDEVICE)data;
+#if defined(HAVE_D3D9)
+   LPDIRECT3DVERTEXDECLARATION decl = (LPDIRECT3DVERTEXDECLARATION)vertex_data;
+#endif
+   if (!dev)
+      return;
+#ifdef _XBOX1
+   d3d_set_vertex_shader(dev, D3DFVF_XYZ | D3DFVF_TEX1, NULL);
+#elif defined(HAVE_D3D9)
+   dev->SetVertexDeclaration(decl);
+#endif
+}

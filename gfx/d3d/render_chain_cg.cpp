@@ -42,9 +42,7 @@ struct Pass
    LPDIRECT3DVERTEXBUFFER vertex_buf;
    CGprogram vPrg, fPrg;
    unsigned last_width, last_height;
-#ifdef HAVE_D3D9
    LPDIRECT3DVERTEXDECLARATION vertex_decl;
-#endif
    std::vector<unsigned> attrib_map;
 };
 
@@ -1374,11 +1372,7 @@ static void renderchain_render_pass(void *data, void *pass_data, unsigned pass_i
    d3d_set_sampler_magfilter(d3dr, 0,
          translate_filter(pass->info.pass->filter));
 
-#ifdef _XBOX1
-   d3d_set_vertex_shader(d3dr, D3DFVF_XYZ | D3DFVF_TEX1, NULL);
-#else
-   d3dr->SetVertexDeclaration(pass->vertex_decl);
-#endif
+   d3d_set_vertex_declaration(d3dr, pass->vertex_decl);
    for (i = 0; i < 4; i++)
       d3d_set_stream_source(d3dr, i,
             pass->vertex_buf, 0, sizeof(Vertex));

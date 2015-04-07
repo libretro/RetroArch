@@ -373,11 +373,7 @@ static bool xdk_renderchain_render(void *data, const void *frame,
    d3d_set_sampler_magfilter(d3dr, 0, settings->video.smooth ?
          D3DTEXF_LINEAR : D3DTEXF_POINT);
 
-#if defined(_XBOX1)
-   d3d_set_vertex_shader(d3dr, D3DFVF_XYZ | D3DFVF_TEX1, NULL);
-#elif defined(_XBOX360)
-   D3DDevice_SetVertexDeclaration(d3dr, d3d->vertex_decl);
-#endif
+   d3d_set_vertex_declaration(d3dr, d3d->vertex_decl);
    for (i = 0; i < 4; i++)
       d3d_set_stream_source(d3dr, i, d3d->vertex_buf, 0, sizeof(Vertex));
 
