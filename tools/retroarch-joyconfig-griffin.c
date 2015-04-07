@@ -41,6 +41,7 @@
 #include "../input/drivers_joypad/sdl_joypad.c"
 #endif
 
+#include "../libretro-common/queues/fifo_buffer.c"
 #include "../libretro-common/file/config_file.c"
 #include "../libretro-common/file/file_path.c"
 #include "../file_path_special.c"
