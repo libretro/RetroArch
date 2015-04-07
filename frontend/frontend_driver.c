@@ -47,7 +47,7 @@ static const frontend_ctx_driver_t *frontend_ctx_drivers[] = {
    &frontend_ctx_ctr,
 #endif
 #if defined(_WIN32) && !defined(_XBOX)
-   &frontend_win32,
+   &frontend_ctx_win32,
 #endif
    &frontend_ctx_null,
    NULL
