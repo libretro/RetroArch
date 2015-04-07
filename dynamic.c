@@ -664,6 +664,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
 
          if (global->system.core_options)
          {
+            core_option_flush(global->system.core_options);
             core_option_free(global->system.core_options);
          }
 
