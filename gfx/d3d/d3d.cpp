@@ -1770,7 +1770,11 @@ static void d3d_set_menu_texture_frame(void *data,
 
    d3d->menu->alpha_mod = alpha;
 
+#ifdef _XBOX
+   d3d->menu->tex->LockRect(0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK);
+#else
    if (SUCCEEDED(d3d->menu->tex->LockRect(0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK)))
+#endif
    {
       unsigned h, w;
       if (rgb32)
