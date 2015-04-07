@@ -412,6 +412,8 @@ void config_load(void);
  */
 bool config_load_override(void);
 
+bool config_unload_override(void);
+
 /**
  * config_load_remap:
  *

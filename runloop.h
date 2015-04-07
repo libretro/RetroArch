@@ -143,6 +143,8 @@ typedef struct global
    bool has_set_ups_pref;
    bool has_set_bps_pref;
    bool has_set_ips_pref;
+   
+   bool overrides_active;
 
    /* Config associated with global "default" config. */
    char config_path[PATH_MAX_LENGTH];

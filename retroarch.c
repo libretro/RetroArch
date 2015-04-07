@@ -415,6 +415,8 @@ static void parse_input(int argc, char *argv[])
    *global->bps_name                     = '\0';
    *global->ips_name                     = '\0';
    *global->subsystem                    = '\0';
+   
+   global->overrides_active              = false; 
 
    if (argc < 2)
    {
@@ -1842,12 +1844,23 @@ static void init_system_av_info(void)
 
 static void deinit_core(bool reinit)
 {
+   
+   global_t *global = global_get_ptr();
+   
    pretro_unload_game();
    pretro_deinit();
 
    if (reinit)
       rarch_main_command(RARCH_CMD_DRIVERS_DEINIT);
 
+   
+   
+   if(global->overrides_active)
+   {       
+       core_unload_override();       
+       pretro_set_environment(rarch_environment_cb);
+   }
+   
    uninit_libretro_sym();
 }
 
@@ -1884,13 +1897,15 @@ static bool init_content(void)
 static bool init_core(void)
 {
    driver_t *driver = driver_get_ptr();
-   global_t *global = global_get_ptr();
-
-   //needs testing for regressions
-   pretro_set_environment(rarch_environment_cb);
+   global_t *global = global_get_ptr();   
    
-   if (!config_load_override())
-      RARCH_ERR("Error loading override files\n");
+   if (config_load_override())
+      global->overrides_active = true;
+   else
+      global->overrides_active = false; 
+
+   pretro_set_environment(rarch_environment_cb);  
+  
    if (!config_load_remap())
       RARCH_ERR("Error loading remap files\n");
 
