@@ -27,9 +27,97 @@
 #include <stddef.h>
 #include <string.h>
 
+#ifdef OSX
+static bool CopyModel(char** model, uint32_t *majorRev, uint32_t *minorRev)
+{
+    int mib[2];
+    char *machineModel;
+    char *revStr;
+    int count;
+    unsigned long modelLen;
+    bool success  = true;
+    size_t length = 1024;
+    
+    if (!model || !majorRev || !minorRev)
+    {
+        RARCH_ERR("CopyModel: Passing NULL arguments\n");
+        return false;
+    }
+    
+    machineModel = malloc(length);
+    mib[0]       = CTL_HW;
+    mib[1]       = HW_MODEL;
+    
+    if (sysctl(mib, 2, machineModel, &length, NULL, 0))
+    {
+        printf("CopyModel: sysctl (error %d)\n", errno);
+        success = false;
+        goto exit;
+    }
+    
+    modelLen = strcspn(machineModel, "0123456789");
+    if (modelLen == 0)
+    {
+        RARCH_ERR("CopyModel: Could not find machine model name\n");
+        success = false;
+        goto exit;
+    }
+    *model = strndup(machineModel, modelLen);
+    if (*model == NULL)
+    {
+        RARCH_ERR("CopyModel: Could not find machine model name\n");
+        success = false;
+        goto exit;
+    }
+    
+    *majorRev = 0;
+    *minorRev = 0;
+    revStr    = strpbrk(machineModel, "0123456789");
+    if (!revStr)
+    {
+        RARCH_ERR("CopyModel: Could not find machine version number, inferred value is 0,0\n");
+        success = true;
+        goto exit;
+    }
+    
+    count = sscanf(revStr, "%d,%d", majorRev, minorRev);
+    if (count < 2)
+    {
+        RARCH_ERR("CopyModel: Could not find machine version number\n");
+        if (count < 1)
+            *majorRev = 0;
+        *minorRev     = 0;
+        success       = true;
+        goto exit;
+    }
+    
+exit:
+    if (machineModel)
+        free(machineModel);
+    if (!success)
+    {
+        if (*model)
+            free(*model);
+        *model    = NULL;
+        *majorRev = 0;
+        *minorRev = 0;
+    }
+    return success;
+}
+#endif
+
+static void frontend_apple_get_name(char *name, size_t sizeof_name)
+{
+#ifdef OSX
+    uint32_t major_rev, minor_rev;
+    CopyModel(&name, &major_rev, &minor_rev);
+#endif
+}
+
 static void frontend_apple_get_environment_settings(int *argc, char *argv[],
       void *args, void *params_data)
 {
+   char model[PATH_MAX_LENGTH];
    char temp_dir[PATH_MAX_LENGTH];
    char bundle_path_buf[PATH_MAX_LENGTH], home_dir_buf[PATH_MAX_LENGTH];
    CFURLRef bundle_url;
@@ -40,6 +128,8 @@ static void frontend_apple_get_environment_settings(int *argc, char *argv[],
 
    if (!bundle)
       return;
+    
+   frontend_apple_get_name(model, sizeof(model));
 
    bundle_url  = CFBundleCopyBundleURL(bundle);
    bundle_path = CFURLCopyPath(bundle_url);
@@ -129,6 +219,7 @@ static int frontend_apple_get_rating(void)
     * determine rating for some */
    return -1;
 }
+
 const frontend_ctx_driver_t frontend_ctx_apple = {
    frontend_apple_get_environment_settings, /* environment_get */
    NULL,                         /* init */
@@ -138,7 +229,7 @@ const frontend_ctx_driver_t frontend_ctx_apple = {
    NULL,                         /* exec */
    NULL,                         /* set_fork */
    frontend_apple_shutdown,      /* shutdown */
-   NULL,                         /* get_name */
+   frontend_apple_get_name,      /* get_name */
    frontend_apple_get_rating,    /* get_rating */
    frontend_apple_load_content,  /* load_content */
    "apple",
