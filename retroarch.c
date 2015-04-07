@@ -1859,7 +1859,8 @@ static void deinit_core(bool reinit)
    
    if(global->overrides_active)
    {
-       config_unload_override();       
+      config_unload_override();
+      global->overrides_active = false;
    }
    pretro_set_environment(rarch_environment_cb);
    uninit_libretro_sym();
