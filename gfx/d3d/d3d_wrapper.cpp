@@ -97,7 +97,12 @@ LPDIRECT3DVERTEXBUFFER d3d_vertex_buffer_new(LPDIRECT3DDEVICE dev,
    HRESULT hr;
    LPDIRECT3DVERTEXBUFFER buf;
    if (usage == 0)
-      usage = (dev->GetSoftwareVertexProcessing()) ? D3DUSAGE_SOFTWAREPROCESSING : 0;
+   {
+#ifndef _XBOX360
+	  if (dev->GetSoftwareVertexProcessing())
+         usage = D3DUSAGE_SOFTWAREPROCESSING;
+#endif
+   }
 
 #if defined(HAVE_D3D8)
    hr = IDirect3DDevice8_CreateVertexBuffer(dev, length, usage, fvf, pool,
