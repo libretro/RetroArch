@@ -51,17 +51,24 @@ struct libusb_adapter
    struct libusb_adapter *next;
 };
 
+struct thread_payload
+{
+   struct libusb_adapter *adapter;
+   libusb_hid_t *hid;
+};
+
 static struct libusb_adapter adapters;
 
 static void adapter_thread(void *data)
 {
-   struct libusb_adapter *adapter = (struct libusb_adapter*)data;
+   struct thread_payload *payload = (struct thread_payload*)data;
+   struct libusb_adapter *adapter = payload->adapter;
+   libusb_hid_t *hid              = payload->hid;
+   free(data);
    uint8_t send_command_buf[4096];
 
    while (!adapter->quitting)
    {
-      driver_t *driver               = driver_get_ptr();
-      libusb_hid_t *hid              = (libusb_hid_t*)driver->hid_data;
       int size = 0;
       size_t send_command_size;
       int tmp;
@@ -147,13 +154,9 @@ static void libusb_get_description(struct libusb_device *device,
 
    libusb_get_config_descriptor(device, 0, &config);
 
-   fprintf(stderr, "Interfaces: %d.\n", (int)config->bNumInterfaces);
-
    for(i=0; i < (int)config->bNumInterfaces; i++)
    {
       const struct libusb_interface *inter = &config->interface[i];
-
-      fprintf(stderr, " Number of alternate settings: %d.\n", inter->num_altsetting);
 
       for(j = 0; j < inter->num_altsetting; j++)
       {
@@ -162,9 +165,6 @@ static void libusb_get_description(struct libusb_device *device,
          //if (interdesc->bInterfaceClass == LIBUSB_CLASS_HID)
          {
             adapter->interface_number = (int)interdesc->bInterfaceNumber;
-
-            fprintf(stderr, "  Interface Number: %d.\n",    (int)interdesc->bInterfaceNumber);
-            fprintf(stderr, "  Number of endpoints: %d.\n", (int)interdesc->bNumEndpoints);
 
             for(k = 0; k < (int)interdesc->bNumEndpoints; k++)
             {
@@ -185,11 +185,6 @@ static void libusb_get_description(struct libusb_device *device,
                      adapter->endpoint_out_max_size = epdesc->wMaxPacketSize;
                   }
                }
-               fprintf(stderr, "    Descriptor Type: %d.\n", (int)epdesc->bDescriptorType);
-               fprintf(stderr, "    EP Address: %d.\n",      (int)epdesc->bEndpointAddress);
-               fprintf(stderr, "    is_int: %d.\n",          (int)is_int);
-               fprintf(stderr, "    is_out: %d.\n",          (int)is_out);
-               fprintf(stderr, "    is_in: %d.\n\n",         (int)is_in);
             }
          }
          goto ret;
@@ -229,7 +224,7 @@ static int add_adapter(void *data, struct libusb_device *dev)
 
    if (adapter->endpoint_in == 0)
    {
-      fprintf(stderr, "Could not find HID config for device.\n");
+      //fprintf(stderr, "Could not find HID config for device.\n");
       goto error;
    }
 
@@ -247,8 +242,7 @@ static int add_adapter(void *data, struct libusb_device *dev)
       libusb_get_string_descriptor_ascii(adapter->handle,
             desc.iManufacturer, adapter->manufacturer_name,
             sizeof(adapter->manufacturer_name));
-      fprintf(stderr, " Adapter Manufacturer name: %s\n",
-            adapter->manufacturer_name);
+      //fprintf(stderr, " Adapter Manufacturer name: %s\n", adapter->manufacturer_name);
    }
 
    if (desc.iProduct)
@@ -256,7 +250,7 @@ static int add_adapter(void *data, struct libusb_device *dev)
       libusb_get_string_descriptor_ascii(adapter->handle,
             desc.iProduct, adapter->name,
             sizeof(adapter->name));
-      fprintf(stderr, " Adapter name: %s\n", adapter->name);
+      //fprintf(stderr, " Adapter name: %s\n", adapter->name);
    }
 
    device_name   = (const char*)adapter->name;
@@ -278,14 +272,14 @@ static int add_adapter(void *data, struct libusb_device *dev)
 
    if (!pad_connection_has_interface(hid->slots, adapter->slot))
    {
-      fprintf(stderr, " Interface not found (%s).\n", adapter->name);
+      //fprintf(stderr, " Interface not found (%s).\n", adapter->name);
       goto error;
    }
 
    if (libusb_kernel_driver_active(adapter->handle, 0) == 1
          && libusb_detach_kernel_driver(adapter->handle, 0))
    {
-      fprintf(stderr, " Error detaching handle 0x%p from kernel.\n", adapter->handle);
+      fprintf(stderr, "Error detaching handle 0x%p from kernel.\n", adapter->handle);
       goto error;
    }
 
@@ -297,13 +291,23 @@ static int add_adapter(void *data, struct libusb_device *dev)
       goto error;
    }
 
-   fprintf(stderr, " Device 0x%p attached (VID/PID: %04x:%04x).\n",
+   fprintf(stderr, "Device 0x%p attached (VID/PID: %04x:%04x).\n",
          adapter->device, desc.idVendor, desc.idProduct);
 
    libusb_hid_device_add_autodetect(adapter->slot,
          device_name, libusb_hid.ident, desc.idVendor, desc.idProduct);
 
-   adapter->thread = sthread_create(adapter_thread, adapter);
+   struct thread_payload *payload = malloc(sizeof(payload));
+
+   if (payload == NULL)
+   {
+      fprintf(stderr, "Error allocating payload\n");
+      goto error;
+   }
+
+   payload->adapter = adapter;
+   payload->hid = hid;
+   adapter->thread = sthread_create(adapter_thread, payload);
 
    if (!adapter->thread)
    {
@@ -467,7 +471,8 @@ static void libusb_hid_free(void *data)
    libusb_hid_t *hid = (libusb_hid_t*)data;
 
    while(adapters.next)
-      remove_adapter(hid, adapters.next->device);
+      if (remove_adapter(hid, adapters.next->device) == -1)
+         RARCH_ERR("could not remove device %p\n", adapters.next->device);
 
    pad_connection_destroy(hid->slots);
 
