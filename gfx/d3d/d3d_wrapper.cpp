@@ -98,7 +98,7 @@ LPDIRECT3DVERTEXBUFFER d3d_vertex_buffer_new(LPDIRECT3DDEVICE dev,
    LPDIRECT3DVERTEXBUFFER buf;
    if (usage == 0)
    {
-#ifndef _XBOX360
+#ifndef _XBOX
 	  if (dev->GetSoftwareVertexProcessing())
          usage = D3DUSAGE_SOFTWAREPROCESSING;
 #endif
