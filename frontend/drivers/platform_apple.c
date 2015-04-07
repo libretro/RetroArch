@@ -17,7 +17,7 @@
 
 #include "../../apple/common/CFExtensions.h"
 
-#include "../frontend.h"
+#include "../frontend_driver.h"
 #ifdef IOS
 #include "../../menu/drivers/ios.h"
 #endif
