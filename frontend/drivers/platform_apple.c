@@ -262,13 +262,6 @@ static int frontend_apple_get_rating(void)
    if (strstr(model, "iPhone6,1") || strstr(model, "iPhone6,2"))
       return 14;
 
-   /* iPad Air */
-   if (     strstr(model, "iPad4,1")
-         || strstr(model, "iPad4,2")
-         || strstr(model, "iPad4,3")
-      )
-      return 15;
-   
    /* iPad Mini 2/3 */
    if (     strstr(model, "iPad4,4")
          || strstr(model, "iPad4,5")
@@ -277,6 +270,13 @@ static int frontend_apple_get_rating(void)
          || strstr(model, "iPad4,8")
          || strstr(model, "iPad4,9")
          )
+      return 15;
+
+   /* iPad Air */
+   if (     strstr(model, "iPad4,1")
+         || strstr(model, "iPad4,2")
+         || strstr(model, "iPad4,3")
+      )
       return 16;
 
    /* iPhone 6, iPhone 6 Plus */
