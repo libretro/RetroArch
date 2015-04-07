@@ -272,7 +272,7 @@ static int frontend_apple_get_rating(void)
 
    /* iPad Air 2 */
    if (strstr(model, "iPad5,3") || strstr(model, "iPad5,4"))
-      return 17;
+      return 18;
 
    /* TODO/FIXME - 
       - more ratings for more systems
