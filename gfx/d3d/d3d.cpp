@@ -878,8 +878,7 @@ static bool d3d_init_chain(d3d_video_t *d3d, const video_info_t *video_info)
 
    RARCH_LOG("Renderchain driver: %s\n", d3d->renderchain_driver->ident);
 
-   if (!d3d->renderchain_driver->init_shader(d3d, d3d->renderchain_data,
-            d3d->shader))
+   if (!d3d->renderchain_driver->init_shader(d3d, d3d->renderchain_data))
    {
       RARCH_ERR("Failed to initialize shader subsystem.\n");
       return false;
@@ -1553,7 +1552,7 @@ static bool d3d_frame(void *data, const void *frame,
 #else
             d3d->renderchain_data,
 #endif
-            frame, d3d->shader, width, height,
+            frame, width, height,
             pitch, d3d->dev_rotation))
    {
       RARCH_ERR("[D3D]: Failed to render scene.\n");

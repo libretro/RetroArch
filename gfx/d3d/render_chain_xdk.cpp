@@ -37,9 +37,7 @@ typedef struct xdk_renderchain
    unsigned tex_h;
 } xdk_renderchain_t;
 
-static void renderchain_set_mvp(void *data,
-      const shader_backend_t *shader,
-      unsigned vp_width,
+static void renderchain_set_mvp(void *data, unsigned vp_width,
       unsigned vp_height, unsigned rotation)
 {
    d3d_video_t      *d3d = (d3d_video_t*)data;
@@ -47,8 +45,8 @@ static void renderchain_set_mvp(void *data,
 
 #if defined(_XBOX360) && defined(HAVE_HLSL)
    hlsl_set_proj_matrix(XMMatrixRotationZ(rotation * (M_PI / 2.0)));
-   if (shader && shader->set_mvp)
-      shader->set_mvp(d3d, NULL);
+   if (d3d->shader && d3d->shader->set_mvp)
+      d3d->shader->set_mvp(d3d, NULL);
 #elif defined(HAVE_D3D8)
    D3DXMATRIX p_out, p_rotate, mat;
    D3DXMatrixOrthoOffCenterLH(&mat, 0, vp_width,  vp_height, 0, 0.0f, 1.0f);
@@ -202,6 +200,21 @@ static void renderchain_set_vertices(void *data, unsigned pass,
       d3d_vertex_buffer_unlock(d3d->vertex_buf);
    }
 
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
+#ifdef _XBOX
+   if (d3d->shader)
+   {
+      renderchain_set_mvp(d3d, d3d->screen_width, d3d->screen_height, d3d->dev_rotation);
+      if (d3d->shader->use)
+         d3d->shader->use(d3d, pass);
+      if (d3d->shader->set_params)
+         d3d->shader->set_params(d3d, width, height, d3d->tex_w,
+               d3d->tex_h, d3d->screen_width,
+               d3d->screen_height, runloop->frames.video.count,
+               NULL, NULL, NULL, 0);
+   }
+#endif
+#endif
 }
 
 static void renderchain_blit_to_texture(void *data, const void *frame,
@@ -273,13 +286,11 @@ void *xdk_renderchain_new(void)
    return renderchain;
 }
 
-static bool xdk_renderchain_init_shader(void *data,
-      void *renderchain_data, void *shader_data)
+static bool xdk_renderchain_init_shader(void *data, void *renderchain_data)
 {
-   const char *shader_path        = NULL;
-   d3d_video_t        *d3d        = (d3d_video_t*)data;
-   settings_t *settings           = config_get_ptr();
-   const shader_backend_t *shader = (const shader_backend_t*)shader_data;
+   const char *shader_path = NULL;
+   d3d_video_t        *d3d = (d3d_video_t*)data;
+   settings_t *settings    = config_get_ptr();
 
    if (!d3d)
       return false;
@@ -287,12 +298,12 @@ static bool xdk_renderchain_init_shader(void *data,
 #if defined(HAVE_HLSL)
    RARCH_LOG("D3D]: Using HLSL shader backend.\n");
    shader_path = settings->video.shader_path;
-   shader = &hlsl_backend;
+   d3d->shader = &hlsl_backend;
 
-   if (!shader)
+   if (!d3d->shader)
       return false;
 
-   return shader->init(d3d, shader_path);
+   return d3d->shader->init(d3d, shader_path);
 #endif
 
    return true;
@@ -343,8 +354,7 @@ static void xdk_renderchain_set_final_viewport(void *data,
    /* stub */
 }
 
-static bool xdk_renderchain_render(void *data,
-      const void *frame, void *shader_data,
+static bool xdk_renderchain_render(void *data, const void *frame,
       unsigned width, unsigned height, unsigned pitch, unsigned rotation)
 {
    unsigned i;
@@ -352,27 +362,9 @@ static bool xdk_renderchain_render(void *data,
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
    runloop_t *runloop    = rarch_main_get_ptr();
    settings_t *settings  = config_get_ptr();
-   const shader_backend_t *shader = (const shader_backend_t*)shader_data;
 
    renderchain_blit_to_texture(d3d, frame, width, height, pitch);
    renderchain_set_vertices(d3d, 1, width, height);
-
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
-#ifdef _XBOX
-   if (shader)
-   {
-      renderchain_set_mvp(d3d, shader,
-            d3d->screen_width, d3d->screen_height, d3d->dev_rotation);
-      if (shader->use)
-         shader->use(d3d, pass);
-      if (shader->set_params)
-         shader->set_params(d3d, width, height, d3d->tex_w,
-               d3d->tex_h, d3d->screen_width,
-               d3d->screen_height, runloop->frames.video.count,
-               NULL, NULL, NULL, 0);
-   }
-#endif
-#endif
 
    d3d_set_texture(d3dr, 0, d3d->tex);
    d3d_set_viewport(d3d->dev, &d3d->final_viewport);
@@ -386,8 +378,7 @@ static bool xdk_renderchain_render(void *data,
       d3d_set_stream_source(d3dr, i, d3d->vertex_buf, 0, sizeof(Vertex));
 
    d3d_draw_primitive(d3dr, D3DPT_TRIANGLESTRIP, 0, 2);
-   renderchain_set_mvp(d3d, shader,
-         d3d->screen_width, d3d->screen_height, d3d->dev_rotation);
+   renderchain_set_mvp(d3d, d3d->screen_width, d3d->screen_height, d3d->dev_rotation);
 
    return true;
 }
