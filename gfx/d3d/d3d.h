@@ -142,23 +142,6 @@ typedef struct d3d_video
       const renderchain_driver_t *renderchain_driver;
       void *renderchain_data;
 
-#ifdef _XBOX
-      /* TODO _ should all be refactored */
-      // RENDERCHAIN PASS
-      unsigned pixel_size;
-      LPDIRECT3DTEXTURE tex;
-      LPDIRECT3DVERTEXBUFFER vertex_buf;
-      unsigned last_width;
-      unsigned last_height;
-#ifdef HAVE_D3D9
-      LPDIRECT3DVERTEXDECLARATION vertex_decl;
-#else
-      void *vertex_decl;
-#endif
-      // RENDERCHAIN PASS -> INFO
-      unsigned tex_w;
-      unsigned tex_h;
-#endif
       /* TODO - refactor this away properly. */
       bool resolution_hd_enable;
 } d3d_video_t;

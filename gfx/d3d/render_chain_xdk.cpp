@@ -61,10 +61,10 @@ static void renderchain_set_mvp(void *data, unsigned vp_width,
 
 static void xdk_renderchain_clear(void *data)
 {
-   d3d_video_t *d3d = (d3d_video_t*)data;
+   xdk_renderchain_t *chain = (xdk_renderchain_t*)data;
 
-   d3d_texture_free(d3d->tex);
-   d3d_vertex_buffer_free(d3d->vertex_buf, d3d->vertex_decl);
+   d3d_texture_free(chain->tex);
+   d3d_vertex_buffer_free(chain->vertex_buf, chain->vertex_decl);
 }
 
 static bool xdk_renderchain_init_shader_fvf(void *data, void *pass_data)
@@ -93,8 +93,9 @@ static bool xdk_renderchain_init_shader_fvf(void *data, void *pass_data)
 static bool renderchain_create_first_pass(void *data,
       const video_info_t *info)
 {
-   d3d_video_t *chain    = (d3d_video_t*)data;
-   LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)chain->dev;
+   d3d_video_t *d3d         = (d3d_video_t*)data;
+   LPDIRECT3DDEVICE d3dr    = (LPDIRECT3DDEVICE)d3d->dev;
+   xdk_renderchain_t *chain = (xdk_renderchain_t*)d3d->renderchain_data;
 
    chain->vertex_buf     = d3d_vertex_buffer_new(d3dr, 4 * sizeof(Vertex), 
          D3DUSAGE_WRITEONLY, D3DFVF_CUSTOMVERTEX, D3DPOOL_MANAGED, 
@@ -128,23 +129,24 @@ static bool renderchain_create_first_pass(void *data,
 static void renderchain_set_vertices(void *data, unsigned pass,
       unsigned width, unsigned height)
 {
-   d3d_video_t *d3d    = (d3d_video_t*)data;
-   runloop_t *runloop  = rarch_main_get_ptr();
+   d3d_video_t *d3d         = (d3d_video_t*)data;
+   runloop_t *runloop       = rarch_main_get_ptr();
+   xdk_renderchain_t *chain = (xdk_renderchain_t*)d3d->renderchain_data;
 
-   if (d3d->last_width != width || d3d->last_height != height)
+   if (chain->last_width != width || chain->last_height != height)
    {
       unsigned i;
       Vertex vert[4];
       void *verts      = NULL;
 
-      d3d->last_width  = width;
-      d3d->last_height = height;
+      chain->last_width  = width;
+      chain->last_height = height;
 
       float tex_w      = width;
       float tex_h      = height;
 #ifdef _XBOX360
-      tex_w           /= ((float)d3d->tex_w);
-      tex_h           /= ((float)d3d->tex_h);
+      tex_w           /= ((float)chain->tex_w);
+      tex_h           /= ((float)chain->tex_h);
 #endif
 
       vert[0].x        = -1.0f;
@@ -191,13 +193,13 @@ static void renderchain_set_vertices(void *data, unsigned pass,
       /* Align texels and vertices. */
       for (i = 0; i < 4; i++)
       {
-         vert[i].x    -= 0.5f / ((float)d3d->tex_w);
-         vert[i].y    += 0.5f / ((float)d3d->tex_h);
+         vert[i].x    -= 0.5f / ((float)chain->tex_w);
+         vert[i].y    += 0.5f / ((float)chain->tex_h);
       }
 
-      verts = d3d_vertex_buffer_lock(d3d->vertex_buf);
+      verts = d3d_vertex_buffer_lock(chain->vertex_buf);
       memcpy(verts, vert, sizeof(vert));
-      d3d_vertex_buffer_unlock(d3d->vertex_buf);
+      d3d_vertex_buffer_unlock(chain->vertex_buf);
    }
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
@@ -221,25 +223,26 @@ static void renderchain_blit_to_texture(void *data, const void *frame,
    unsigned width, unsigned height, unsigned pitch)
 {
    D3DLOCKED_RECT d3dlr;
-   d3d_video_t *d3d      = (d3d_video_t*)data;
-   LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
-   driver_t *driver      = driver_get_ptr();
-   global_t *global      = global_get_ptr();
+   d3d_video_t *d3d         = (d3d_video_t*)data;
+   LPDIRECT3DDEVICE d3dr    = (LPDIRECT3DDEVICE)d3d->dev;
+   driver_t *driver         = driver_get_ptr();
+   global_t *global         = global_get_ptr();
+   xdk_renderchain_t *chain = (xdk_renderchain_t*)d3d->renderchain_data;
 
 #if defined(_XBOX1)
    d3dr->SetFlickerFilter(global->console.screen.flicker_filter_index);
    d3dr->SetSoftDisplayFilter(global->console.softfilter_enable);
 #endif
 
-   if (d3d->last_width != width || d3d->last_height != height)
+   if (chain->last_width != width || chain->last_height != height)
    {
-      d3d_lockrectangle_clear(d3d->tex,
-            0, &d3dlr, NULL, d3d->tex_h, D3DLOCK_NOSYSLOCK);
+      d3d_lockrectangle_clear(chain->tex,
+            0, &d3dlr, NULL, chain->tex_h, D3DLOCK_NOSYSLOCK);
    }
 
    /* Set the texture to NULL so D3D doesn't complain about it being in use... */
    d3d_set_texture(d3dr, 0, NULL); 
-   d3d_texture_blit(d3d->pixel_size, d3d->tex,
+   d3d_texture_blit(chain->pixel_size, chain->tex,
          &d3dlr, frame, width, height, pitch);
 }
 
@@ -266,7 +269,7 @@ static void xdk_renderchain_free(void *data)
 
    xdk_renderchain_deinit_shader(chain);
    xdk_renderchain_deinit(chain->renderchain_data);
-   xdk_renderchain_clear(chain);
+   xdk_renderchain_clear(chain->renderchain_data);
 
 #ifndef DONT_HAVE_STATE_TRACKER
 #ifndef _XBOX
@@ -317,12 +320,12 @@ static bool xdk_renderchain_init(void *data,
       unsigned fmt
       )
 {
-   d3d_video_t *chain           = (d3d_video_t*)data;
-   LPDIRECT3DDEVICE d3dr        = (LPDIRECT3DDEVICE)chain->dev;
+   d3d_video_t *d3d             = (d3d_video_t*)data;
+   LPDIRECT3DDEVICE d3dr        = (LPDIRECT3DDEVICE)d3d->dev;
    global_t *global             = global_get_ptr();
    const video_info_t *video_info  = (const video_info_t*)_video_info;
    const LinkInfo *link_info    = (const LinkInfo*)info_data;
-
+   xdk_renderchain_t *chain     = (xdk_renderchain_t*)d3d->renderchain_data;
    (void)final_viewport_data;
    (void)fmt;
 
@@ -332,14 +335,14 @@ static bool xdk_renderchain_init(void *data,
    chain->tex_w                 = link_info->tex_w;
    chain->tex_h                 = link_info->tex_h;
 
-   if (!renderchain_create_first_pass(chain, video_info))
+   if (!renderchain_create_first_pass(d3d, video_info))
       return false;
 
    if (global->console.screen.viewports.custom_vp.width == 0)
-      global->console.screen.viewports.custom_vp.width = chain->screen_width;
+      global->console.screen.viewports.custom_vp.width = d3d->screen_width;
 
    if (global->console.screen.viewports.custom_vp.height == 0)
-      global->console.screen.viewports.custom_vp.height = chain->screen_height;
+      global->console.screen.viewports.custom_vp.height = d3d->screen_height;
 
    return true;
 }
@@ -358,24 +361,25 @@ static bool xdk_renderchain_render(void *data, const void *frame,
       unsigned width, unsigned height, unsigned pitch, unsigned rotation)
 {
    unsigned i;
-   d3d_video_t      *d3d = (d3d_video_t*)data;
-   LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
-   runloop_t *runloop    = rarch_main_get_ptr();
-   settings_t *settings  = config_get_ptr();
+   d3d_video_t      *d3d    = (d3d_video_t*)data;
+   LPDIRECT3DDEVICE d3dr    = (LPDIRECT3DDEVICE)d3d->dev;
+   runloop_t *runloop       = rarch_main_get_ptr();
+   settings_t *settings     = config_get_ptr();
+   xdk_renderchain_t *chain = (xdk_renderchain_t*)d3d->renderchain_data;
 
    renderchain_blit_to_texture(d3d, frame, width, height, pitch);
    renderchain_set_vertices(d3d, 1, width, height);
 
-   d3d_set_texture(d3dr, 0, d3d->tex);
+   d3d_set_texture(d3dr, 0, chain->tex);
    d3d_set_viewport(d3d->dev, &d3d->final_viewport);
    d3d_set_sampler_minfilter(d3dr, 0, settings->video.smooth ?
          D3DTEXF_LINEAR : D3DTEXF_POINT);
    d3d_set_sampler_magfilter(d3dr, 0, settings->video.smooth ?
          D3DTEXF_LINEAR : D3DTEXF_POINT);
 
-   d3d_set_vertex_declaration(d3dr, d3d->vertex_decl);
+   d3d_set_vertex_declaration(d3dr, chain->vertex_decl);
    for (i = 0; i < 4; i++)
-      d3d_set_stream_source(d3dr, i, d3d->vertex_buf, 0, sizeof(Vertex));
+      d3d_set_stream_source(d3dr, i, chain->vertex_buf, 0, sizeof(Vertex));
 
    d3d_draw_primitive(d3dr, D3DPT_TRIANGLESTRIP, 0, 2);
    renderchain_set_mvp(d3d, d3d->screen_width, d3d->screen_height, d3d->dev_rotation);
@@ -436,15 +440,16 @@ static bool xdk_renderchain_reinit(void *data,
 {
    d3d_video_t *d3d          = (d3d_video_t*)data;
    const video_info_t *video = (const video_info_t*)video_data;
+   xdk_renderchain_t *chain  = (xdk_renderchain_t*)d3d->renderchain_data;
 
    if (!d3d)
       return false;
 
-   d3d->pixel_size         = video->rgb32 ? sizeof(uint32_t) : sizeof(uint16_t);
-   d3d->tex_w = d3d->tex_h = RARCH_SCALE_BASE * video->input_scale; 
+   chain->pixel_size         = video->rgb32 ? sizeof(uint32_t) : sizeof(uint16_t);
+   chain->tex_w = chain->tex_h = RARCH_SCALE_BASE * video->input_scale; 
    RARCH_LOG(
          "Reinitializing renderchain - and textures (%u x %u @ %u bpp)\n",
-         d3d->tex_w, d3d->tex_h, d3d->pixel_size * CHAR_BIT);
+         chain->tex_w, chain->tex_h, chain->pixel_size * CHAR_BIT);
 
    return true;
 }
