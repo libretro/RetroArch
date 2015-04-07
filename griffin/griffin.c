@@ -606,6 +606,9 @@ FRONTEND
 
 #include "../frontend/frontend_driver.c"
 
+#if defined(_WIN32) && !defined(_XBOX)
+#include "../frontend/drivers/platform_win32.c"
+#endif
 #if defined(__CELLOS_LV2__)
 #include "../frontend/drivers/platform_ps3.c"
 #elif defined(GEKKO)
