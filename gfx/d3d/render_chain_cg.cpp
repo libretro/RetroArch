@@ -1207,11 +1207,8 @@ static void renderchain_set_mvp(void *data, void *vertex_program,
       return;
 
    D3DXMatrixOrthoOffCenterLH(&ortho, 0, vp_width, 0, vp_height, 0, 1);
-
-   if (rotation)
-      D3DXMatrixRotationZ(&rot, rotation * (M_PI / 2.0));
-   else
-      D3DXMatrixIdentity(&rot);
+   D3DXMatrixIdentity(&rot);
+   D3DXMatrixRotationZ(&rot, rotation * (M_PI / 2.0));
 
    D3DXMatrixMultiply(&proj, &ortho, &rot);
    D3DXMatrixTranspose(&tmp, &proj);
