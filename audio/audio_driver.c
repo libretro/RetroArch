@@ -412,7 +412,7 @@ void init_audio(void)
          RARCH_WARN("Audio rate control was desired, but driver does not support needed features.\n");
    }
 
-   rarch_main_command(RARCH_CMD_DSP_FILTER_DEINIT);
+   rarch_main_command(RARCH_CMD_DSP_FILTER_INIT);
 
    runloop->measure_data.buffer_free_samples_count = 0;
 
