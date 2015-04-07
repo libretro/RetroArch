@@ -1,3 +1,4 @@
+
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2015 - Daniel De Matteis
@@ -15,10 +16,15 @@
  */
 
 #include <string.h>
+#include <string>
+#include <vector>
 #include <retro_inline.h>
 #include <Cg/cg.h>
 #include <Cg/cgD3D9.h>
 #include "render_chain_driver.h"
+#include "../video_driver.h"
+#include "../../general.h"
+#include "d3d.h"
 
 struct lut_info
 {
