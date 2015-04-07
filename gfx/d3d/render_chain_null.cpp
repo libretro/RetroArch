@@ -69,12 +69,14 @@ static void null_renderchain_set_final_viewport(void *data,
    (void)viewport_data;
 }
 
-static bool null_renderchain_render(void *data, const void *frame,
+static bool null_renderchain_render(void *data,
+      const void *frame, void *shader_data,
       unsigned width, unsigned height,
       unsigned pitch, unsigned rotation)
 {
    (void)data;
    (void)frame;
+   (void)shader_data;
    (void)width;
    (void)height;
    (void)pitch;

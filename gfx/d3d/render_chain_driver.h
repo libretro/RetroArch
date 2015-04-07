@@ -40,7 +40,7 @@ typedef struct renderchain_driver
 {
    void (*chain_free)(void *data);
    void *(*chain_new)(void);
-   bool (*init_shader)(void *data, void *renderchain_data);
+   bool (*init_shader)(void *data, void *renderchain_data, void *shader_data);
    bool (*init_shader_fvf)(void *data, void *pass_data);
    bool (*reinit)(void *data, const void *info_data);
    bool (*init)(void *data,
@@ -56,7 +56,7 @@ typedef struct renderchain_driver
          const char *id, const char *path,
          bool smooth);
    void (*add_state_tracker)(void *data, void *tracker_data);
-   bool (*render)(void *chain_data, const void *data,
+   bool (*render)(void *chain_data, const void *data, void *shader_data,
          unsigned width, unsigned height, unsigned pitch, unsigned rotation);
    void (*convert_geometry)(void *data, const void *info_data,
          unsigned *out_width, unsigned *out_height,

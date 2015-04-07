@@ -1385,7 +1385,8 @@ static void renderchain_render_pass(void *data, void *pass_data, unsigned pass_i
    renderchain_unbind_all(chain);
 }
 
-static bool cg_d3d9_renderchain_render(void *chain_data, const void *data,
+static bool cg_d3d9_renderchain_render(void *chain_data,
+      const void *data, void *shader_data,
       unsigned width, unsigned height, unsigned pitch, unsigned rotation)
 {
    Pass *last_pass;
@@ -1393,6 +1394,7 @@ static bool cg_d3d9_renderchain_render(void *chain_data, const void *data,
    unsigned i, current_width, current_height, out_width = 0, out_height = 0;
    cg_renderchain_t *chain  = (cg_renderchain_t*)chain_data;
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)chain->dev;
+   const shader_backend_t *shader = (const shader_backend_t*)shader_data;
 
    renderchain_start_render(chain);
 
