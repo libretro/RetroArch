@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2013-2014 - Jason Fetters
  *  Copyright (C) 2011-2015 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -60,7 +60,7 @@ void *pad_connection_init(unsigned pads)
 }
 
 int32_t pad_connection_pad_init(joypad_connection_t *joyconn,
-   const char* name, uint16_t vid, uint16_t pid, 
+   const char* name, uint16_t vid, uint16_t pid,
    void *data, send_control_t ptr)
 {
    int pad = pad_connection_find_vacant_pad(joyconn);
@@ -76,7 +76,7 @@ int32_t pad_connection_pad_init(joypad_connection_t *joyconn,
          uint16_t vid;
          uint16_t pid;
          pad_connection_interface_t *iface;
-      } pad_map[] = 
+      } pad_map[] =
       {
          { "Nintendo RVL-CNT-01",         1406,  816,    &pad_connection_wii },
 #if 0
@@ -105,14 +105,14 @@ int32_t pad_connection_pad_init(joypad_connection_t *joyconn,
       }
    }
 
-   return pad;
+   return -1;
 }
 
 void pad_connection_pad_deinit(joypad_connection_t *joyconn, uint32_t pad)
 {
    if (!joyconn || !joyconn->connected)
        return;
-    
+
    if (joyconn->iface)
    {
       joyconn->iface->set_rumble(joyconn->data, RETRO_RUMBLE_STRONG, 0);
@@ -152,7 +152,7 @@ int16_t pad_connection_get_axis(joypad_connection_t *joyconn,
 
 bool pad_connection_has_interface(joypad_connection_t *joyconn, unsigned pad)
 {
-   if (joyconn && joyconn->connected && joyconn->iface)
+   if (joyconn && pad >= 0 && pad < MAX_USERS && joyconn[pad].connected && joyconn[pad].iface)
       return true;
    return false;
 }
