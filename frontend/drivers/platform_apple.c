@@ -225,8 +225,41 @@ static void frontend_apple_shutdown(bool unused)
 
 static int frontend_apple_get_rating(void)
 {
-   /* TODO/FIXME - look at unique identifier per device and 
-    * determine rating for some */
+   char model[PATH_MAX_LENGTH];
+    
+   frontend_apple_get_name(model, sizeof(model));
+    
+   /* iPhone 4S */
+   if (strstr(model, "iPhone4,1"))
+       return 8;
+    
+    /* iPhone 5/5C */
+    if (strstr(model, "iPhone5"))
+       return 13;
+    
+    /* iPhone 5S */
+    if (strstr(model, "iPhone6"))
+        return 14;
+    
+    /* iPhone 6, iPhone 6 Plus */
+    if (strstr(model, "iPhone7"))
+        return 16;
+    
+   /* iPad 2/iPad Mini 1 */
+   if (strstr(model, "iPad2"))
+       return 9;
+    
+   /* iPad Air/iPad Mini 2 */
+   if (strstr(model, "iPad4"))
+       return 15;
+    
+   /* iPad Air 2 */
+   if (strstr(model, "iPad5,3") || strstr(model, "iPad5,4"))
+       return 17;
+    
+   /* TODO/FIXME - 
+    - more ratings for more systems
+    - determine rating more intelligently*/
    return -1;
 }
 
