@@ -19,18 +19,33 @@
 #include <stddef.h>
 #include <string.h>
 
+#include "../general.h"
+
+static void frontend_win32_get_os(char *name, size_t sizeof_name, int *major, int *minor)
+{
+	DWORD version = GetVersion();
+
+	*major   = (DWORD)(LOBYTE(LOWORD(version)));
+	*minor   = (DWORD)(HIBYTE(LOWORD(version)));
+}
+
+static void frontend_win32_environment_get(int *argc, char *argv[],
+	void *args, void *params_data)
+{
+}
+
 const frontend_ctx_driver_t frontend_ctx_win32 = {
-   NULL,                         /* environment_get */
-   NULL,                         /* init */
-   NULL,                         /* deinit */
-   NULL,                         /* exitspawn */
-   NULL,                         /* process_args */
-   NULL,                         /* exec */
-   NULL,                         /* set_fork */
-   NULL,                         /* shutdown */
-   NULL,                         /* get_name */
-   NULL,                         /* get_os */
-   NULL,                         /* get_rating */
-   NULL,                         /* load_content */
+   frontend_win32_environment_get, /* environment_get */
+   NULL,                           /* init */
+   NULL,                           /* deinit */
+   NULL,                           /* exitspawn */
+   NULL,                           /* process_args */
+   NULL,                           /* exec */
+   NULL,                           /* set_fork */
+   NULL,                           /* shutdown */
+   NULL,                           /* get_name */
+   frontend_win32_get_os,          /* get_os */
+   NULL,                           /* get_rating */
+   NULL,                           /* load_content */
    "win32",
 };
