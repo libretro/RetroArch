@@ -4,6 +4,7 @@ HAVE_XMB=no             # Enable XMB menu
 HAVE_DYNAMIC=yes        # Disable dynamic loading of libretro library
 HAVE_SDL=auto           # SDL support
 HAVE_SDL2=auto          # SDL2 support (disables SDL 1.x)
+HAVE_LIBUSB=auto        # Libusb HID support
 HAVE_UDEV=auto          # Udev/Evdev gamepad support
 HAVE_LIBRETRO=          # libretro library used
 HAVE_MAN_DIR=           # Manpage install directory
