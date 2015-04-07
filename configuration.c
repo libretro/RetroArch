@@ -1642,7 +1642,7 @@ static void config_load_core_specific(void)
  * core-specific: $CONFIG_DIR/$CORE_NAME/$CORE_NAME.cfg fallback: $CURRENT_CFG_LOCATION/$CORE_NAME/$CORE_NAME.cfg
  * game-specific: $CONFIG_DIR/$CORE_NAME/$ROM_NAME.cfg fallback: $CURRENT_CFG_LOCATION/$CORE_NAME/$GAME_NAME.cfg
  *
- * Returns: false if there was an error.
+ * Returns: false if there was an error or no action was performed.
  *
  */
 bool config_load_override(void)
@@ -1652,8 +1652,8 @@ bool config_load_override(void)
         game_path[PATH_MAX_LENGTH];          /* final path for game-specific configuration (prefix+suffix) */
    const char *core_name, *game_name;        /* suffix                                                     */
 
-   global_t *global = global_get_ptr();      /* global pointer                                             */
-   settings_t *settings = config_get_ptr();  /* config pointer                                             */
+   global_t *global = global_get_ptr();
+   settings_t *settings = config_get_ptr();
 
    //early return in case a library isn't loaded
    if(!global->system.info.library_name || !strcmp(global->system.info.library_name,"No Core"))
@@ -1668,10 +1668,11 @@ bool config_load_override(void)
       return false;
    }
 
-   /* Config directory: config_directory. */
-   if (settings->menu_config_directory)   /* Try RGUI path setting first */
+   // Config directory: config_directory.
+   // Try config directory setting first, fallback to the location of the current configuration file
+   if (settings->menu_config_directory)
       strlcpy(config_directory, settings->menu_config_directory, PATH_MAX_LENGTH);
-   else if (global->config_path)   /* If that setting is default, use the directory that retroarch.cfg is in */
+   else if (global->config_path)
       fill_pathname_basedir(config_directory, global->config_path, PATH_MAX_LENGTH);
    else
    {
@@ -1680,14 +1681,10 @@ bool config_load_override(void)
    }
    RARCH_LOG("Config directory: %s\n", config_directory);
 
-   //  core name: core_name
    core_name = global->system.info.library_name;
    game_name = path_basename(global->basename);
 
-   // content basename: game_name
-   game_name = path_basename(global->basename);
-
-   /* Concat strings into full paths: core_path, game_path */
+   // Concatenate strings into full paths for core_path, game_path
    fill_pathname_join(core_path, config_directory, core_name, PATH_MAX_LENGTH);
    fill_pathname_join(core_path, core_path, core_name, PATH_MAX_LENGTH);
    strlcat(core_path, ".cfg", PATH_MAX_LENGTH);
@@ -1696,12 +1693,12 @@ bool config_load_override(void)
    fill_pathname_join(game_path, game_path, game_name, PATH_MAX_LENGTH);
    strlcat(game_path, ".cfg", PATH_MAX_LENGTH);
 
-   /* Create a new config file from core_path */
+   // Create a new config file from core_path
    config_file_t *new_conf = config_file_new(core_path);
 
    bool should_append = false;
 
-   /* Append core-specific */
+   // If a core override exists, add it's location to append_config_path
    if (new_conf)
    {
       RARCH_LOG("Core-specific overrides found at %s. Appending.\n", core_path);
@@ -1713,10 +1710,10 @@ bool config_load_override(void)
 
    new_conf = NULL;
 
-   /* Create a new config file from game_path */
+   // Create a new config file from game_path
    new_conf = config_file_new(game_path);
 
-   /* Append game-specific */
+   // If a game override exists, add it's location to append_config_path
    if (new_conf)
    {
       RARCH_LOG("Game-specific overrides found at %s. Appending.\n", game_path);
@@ -1733,6 +1730,7 @@ bool config_load_override(void)
    else
       RARCH_LOG("No game-specific overrides found at %s.\n", game_path);
 
+   // Re-load the configuration with any overrides that might have been found
    if(should_append)
    {
       if(config_load_file(global->config_path, false))
@@ -1776,7 +1774,7 @@ bool config_load_override(void)
  * core-specific: $REMAP_DIR/$CORE_NAME/$CORE_NAME.cfg
  * game-specific: $REMAP_DIR/$CORE_NAME/$GAME_NAME.cfg
  *
- * Returns: false if there was an error.
+ * Returns: false if there was an error or no action was performed.
  */
 bool config_load_remap(void)
 {
@@ -1789,31 +1787,26 @@ bool config_load_remap(void)
 
    //early return in case a library isn't loaded or remapping is disabled
    if(!global->system.info.library_name || !strcmp(global->system.info.library_name,"No Core"))
-      return true;
+      return false;
 
    RARCH_LOG("Game name: %s\n",global->basename);
    RARCH_LOG("Core name: %s\n",global->system.info.library_name);
 
-   /* Config directory: remap_directory. */
-   if (settings->input_remapping_directory)   /* Try config file path setting first */
+   // Remap directory: remap_directory.
+   // Try remap directory setting, no fallbacks defined
+   if (settings->input_remapping_directory)
       strlcpy(remap_directory, settings->input_remapping_directory, PATH_MAX_LENGTH);
    else
    {
       RARCH_WARN("No remap directory set.\n");
-      return true;
+      return false;
    }
    RARCH_LOG("Remap directory: %s\n", remap_directory);
 
-   /*  Core name: core_name
-    *  i.e. Mupen64plus */
    core_name = global->system.info.library_name;
    game_name = path_basename(global->basename);
 
-   /* ROM basename: game_name
-    * no extension or leading directory i.e. "Super Mario 64 (USA)" */
-   game_name = path_basename(global->basename);
-
-   /* Concat strings into full paths: core_path, game_path */
+   // Concatenate strings into full paths for core_path, game_path
    fill_pathname_join(core_path, remap_directory, core_name, PATH_MAX_LENGTH);
    fill_pathname_join(core_path, core_path, core_name, PATH_MAX_LENGTH);
    strlcat(core_path, ".rmp", PATH_MAX_LENGTH);
@@ -1822,35 +1815,35 @@ bool config_load_remap(void)
    fill_pathname_join(game_path, game_path, game_name, PATH_MAX_LENGTH);
    strlcat(game_path, ".rmp", PATH_MAX_LENGTH);
 
-   /* Create a new config file from core_path */
+// Create a new config file from core_path
    config_file_t *new_conf = config_file_new(core_path);
 
-   /* Append core-specific */
+   // If a core remap file exists, load it
    if (new_conf)
    {
       RARCH_LOG("Core-specific remap found at %s. Loading.\n", core_path);
-      if(!input_remapping_load_file(core_path))
-         return false;
+      if(input_remapping_load_file(core_path))
+         return true;
    }
    else
       RARCH_LOG("No core-specific remap found at %s.\n", core_path);
 
    new_conf = NULL;
 
-   /* Create a new config file from game_path */
+   // Create a new config file from game_path
    new_conf = config_file_new(game_path);
 
-   /* Append game-specific */
+   // If a game remap file exists, load it
    if (new_conf)
    {
       RARCH_LOG("Game-specific remap found at %s. Appending.\n", game_path);
-      if(!input_remapping_load_file(game_path))
-         return false;
+      if(input_remapping_load_file(game_path))
+         return true;
    }
    else
       RARCH_LOG("No game-specific remap found at %s.\n", game_path);
 
-   return true;   /* only means no errors were caught */
+   return false;
 }
 
 static void parse_config_file(void)
