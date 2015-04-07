@@ -24,6 +24,7 @@
 #include "libretro_version_1.h"
 #include "dynamic.h"
 #include "content.h"
+#include "configuration.h"
 #include <file/file_path.h>
 #include <file/dir_list.h>
 #include "general.h"
@@ -1857,7 +1858,7 @@ static void deinit_core(bool reinit)
    
    if(global->overrides_active)
    {       
-       core_unload_override();       
+       config_unload_override();
        pretro_set_environment(rarch_environment_cb);
    }
    
@@ -1906,8 +1907,7 @@ static bool init_core(void)
 
    pretro_set_environment(rarch_environment_cb);  
   
-   if (!config_load_remap())
-      RARCH_ERR("Error loading remap files\n");
+   config_load_remap();
 
    verify_api_version();
    pretro_init();

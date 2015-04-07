@@ -1748,12 +1748,12 @@ bool config_load_override(void)
  *
  * Returns: false if there was an error.
  */
- bool core_unload_override(void)
+ bool config_unload_override(void)
 {
    global_t *global = global_get_ptr();
    settings_t *settings = config_get_ptr();
 
-   *global->append_config_path = NULL;
+   *global->append_config_path = '\0';
    if (config_load_file(global->config_path, false))
    {
        RARCH_LOG("Configuration overrides unloaded, original configuration reset\n");
