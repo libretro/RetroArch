@@ -91,11 +91,13 @@ void d3d_texture_free(LPDIRECT3DTEXTURE tex)
 }
 
 LPDIRECT3DVERTEXBUFFER d3d_vertex_buffer_new(LPDIRECT3DDEVICE dev,
-      unsigned length, unsigned usage, unsigned fvf,
-      D3DPOOL pool, void *handle)
+      unsigned length, unsigned usage,
+      unsigned fvf, D3DPOOL pool, void *handle)
 {
    HRESULT hr;
    LPDIRECT3DVERTEXBUFFER buf;
+   if (usage == 0)
+      usage = (dev->GetSoftwareVertexProcessing()) ? D3DUSAGE_SOFTWAREPROCESSING : 0
 
 #if defined(HAVE_D3D8)
    hr = IDirect3DDevice8_CreateVertexBuffer(dev, length, usage, fvf, pool,

@@ -1233,8 +1233,7 @@ static void d3d_overlay_render(d3d_video_t *d3d, overlay_t *overlay)
    if (!overlay->vert_buf)
    {
       overlay->vert_buf = (LPDIRECT3DVERTEXBUFFER)d3d_vertex_buffer_new(
-      d3d->dev, sizeof(vert), d3d->dev->GetSoftwareVertexProcessing() ? 
-      D3DUSAGE_SOFTWAREPROCESSING : 0, 0, D3DPOOL_MANAGED, NULL);
+      d3d->dev, sizeof(vert), 0, 0, D3DPOOL_MANAGED, NULL);
 
 	  if (!overlay->vert_buf)
 		  return;

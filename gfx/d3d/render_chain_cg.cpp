@@ -881,12 +881,7 @@ static bool renderchain_create_first_pass(void *data, const void *info_data,
       chain->prev.last_width[i]  = 0;
       chain->prev.last_height[i] = 0;
       chain->prev.vertex_buf[i]  = d3d_vertex_buffer_new(
-            d3dr, 4 * sizeof(Vertex),
-            d3dr->GetSoftwareVertexProcessing() 
-            ? D3DUSAGE_SOFTWAREPROCESSING : 0,
-            0,
-            D3DPOOL_DEFAULT,
-            NULL);
+            d3dr, 4 * sizeof(Vertex), 0, 0, D3DPOOL_DEFAULT, NULL);
 
       if (!chain->prev.vertex_buf[i])
          return false;
@@ -1101,8 +1096,7 @@ static bool cg_d3d9_renderchain_add_pass(void *data, const void *info_data)
       return false;
 
    pass.vertex_buf = (LPDIRECT3DVERTEXBUFFER)d3d_vertex_buffer_new(d3dr, 4 * sizeof(Vertex),
-	   d3dr->GetSoftwareVertexProcessing() ? D3DUSAGE_SOFTWAREPROCESSING : 0,
-	   0, D3DPOOL_DEFAULT, NULL);
+	   0, 0, D3DPOOL_DEFAULT, NULL);
 
    if (!pass.vertex_buf)
       return false;
