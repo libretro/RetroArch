@@ -129,7 +129,7 @@ void pad_connection_pad_deinit(joypad_connection_t *joyconn, uint32_t pad)
 void pad_connection_packet(joypad_connection_t *joyconn, uint32_t pad,
       uint8_t* data, uint32_t length)
 {
-   if (!joyconn->connected)
+   if (!joyconn || !joyconn->connected)
        return;
    if (joyconn->iface && joyconn->data && joyconn->iface->packet_handler)
       joyconn->iface->packet_handler(joyconn->data, data, length);
