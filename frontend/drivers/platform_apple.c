@@ -130,7 +130,6 @@ static void frontend_apple_get_name(char *name, size_t sizeof_name)
 static void frontend_apple_get_environment_settings(int *argc, char *argv[],
       void *args, void *params_data)
 {
-   char model[PATH_MAX_LENGTH];
    char temp_dir[PATH_MAX_LENGTH];
    char bundle_path_buf[PATH_MAX_LENGTH], home_dir_buf[PATH_MAX_LENGTH];
    CFURLRef bundle_url;
@@ -141,8 +140,6 @@ static void frontend_apple_get_environment_settings(int *argc, char *argv[],
 
    if (!bundle)
       return;
-    
-   frontend_apple_get_name(model, sizeof(model));
 
    bundle_url  = CFBundleCopyBundleURL(bundle);
    bundle_path = CFURLCopyPath(bundle_url);
