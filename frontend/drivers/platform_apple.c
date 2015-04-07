@@ -231,40 +231,52 @@ static void frontend_apple_shutdown(bool unused)
 static int frontend_apple_get_rating(void)
 {
    char model[PATH_MAX_LENGTH];
-    
+
    frontend_apple_get_name(model, sizeof(model));
-    
+
+   /* iPhone 4 */
+#if 0
+   if (strstr(model, "iPhone3"))
+      return -1;
+#endif
+
+   /* iPad 1 */
+#if 0
+   if (strstr(model, "iPad1,1"))
+      return -1;
+#endif
+
    /* iPhone 4S */
    if (strstr(model, "iPhone4,1"))
-       return 8;
-    
-    /* iPhone 5/5C */
-    if (strstr(model, "iPhone5"))
-       return 13;
-    
-    /* iPhone 5S */
-    if (strstr(model, "iPhone6"))
-        return 14;
-    
-    /* iPhone 6, iPhone 6 Plus */
-    if (strstr(model, "iPhone7"))
-        return 16;
-    
+      return 8;
+
    /* iPad 2/iPad Mini 1 */
    if (strstr(model, "iPad2"))
-       return 9;
-    
+      return 9;
+
+   /* iPhone 5/5C */
+   if (strstr(model, "iPhone5"))
+      return 13;
+
+   /* iPhone 5S */
+   if (strstr(model, "iPhone6,1") || strstr(model, "iPhone6,2"))
+      return 14;
+
    /* iPad Air/iPad Mini 2 */
    if (strstr(model, "iPad4"))
-       return 15;
-    
+      return 15;
+
+   /* iPhone 6, iPhone 6 Plus */
+   if (strstr(model, "iPhone7"))
+      return 16;
+
    /* iPad Air 2 */
    if (strstr(model, "iPad5,3") || strstr(model, "iPad5,4"))
-       return 17;
-    
+      return 17;
+
    /* TODO/FIXME - 
-    - more ratings for more systems
-    - determine rating more intelligently*/
+      - more ratings for more systems
+      - determine rating more intelligently*/
    return -1;
 }
 
