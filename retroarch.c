@@ -1853,15 +1853,15 @@ static void deinit_core(bool reinit)
 
    if (reinit)
       rarch_main_command(RARCH_CMD_DRIVERS_DEINIT);
-
    
+  if(global->system.core_options)
+     core_option_flush(global->system.core_options);
    
    if(global->overrides_active)
-   {       
-       config_unload_override();
-       pretro_set_environment(rarch_environment_cb);
+   {
+       config_unload_override();       
    }
-   
+   pretro_set_environment(rarch_environment_cb);
    uninit_libretro_sym();
 }
 

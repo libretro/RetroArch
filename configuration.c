@@ -1753,7 +1753,7 @@ bool config_load_override(void)
    global_t *global = global_get_ptr();
    settings_t *settings = config_get_ptr();
 
-   *global->append_config_path = '\0';
+   *global->append_config_path = NULL;
    if (config_load_file(global->config_path, false))
    {
        RARCH_LOG("Configuration overrides unloaded, original configuration reset\n");
@@ -1825,8 +1825,12 @@ bool config_load_remap(void)
       if(input_remapping_load_file(game_path))
          return true;
    }
-   else
-      RARCH_LOG("No game-specific remap found at %s.\n", game_path);
+   else      
+   {
+      RARCH_LOG("No core-specific remap found at %s.\n", core_path);
+      *settings->input.remapping_path= '\0';
+      input_remapping_set_defaults();
+   }
 
    new_conf = NULL;
 
@@ -1841,7 +1845,12 @@ bool config_load_remap(void)
          return true;
    }
    else
+   {
       RARCH_LOG("No core-specific remap found at %s.\n", core_path);
+      *settings->input.remapping_path= '\0';
+      input_remapping_set_defaults();
+   }
+      
 
    new_conf = NULL;
 
