@@ -29,8 +29,8 @@
 #include <sdcard/wiisd_io.h>
 
 #define EXECUTE_ADDR ((uint8_t *) 0x91800000)
-#define BOOTER_ADDR ((uint8_t *) 0x93000000)
-#define ARGS_ADDR ((uint8_t *) 0x93200000)
+#define BOOTER_ADDR  ((uint8_t *) 0x93000000)
+#define ARGS_ADDR    ((uint8_t *) 0x93200000)
 
 extern uint8_t _binary_wii_app_booter_app_booter_bin_start[];
 extern uint8_t _binary_wii_app_booter_app_booter_bin_end[];
@@ -46,15 +46,19 @@ char gx_rom_path[PATH_MAX_LENGTH];
 static void dol_copy_argv_path(const char *dolpath, const char *argpath)
 {
    char tmp[PATH_MAX_LENGTH];
-   size_t len, t_len;
-   struct __argv *argv = (struct __argv *) ARGS_ADDR;
+   size_t t_len;
+   struct __argv *argv = (struct __argv *)ARGS_ADDR;
+   char *cmdline = NULL;
+   size_t len = 0;
+
    memset(ARGS_ADDR, 0, sizeof(struct __argv));
-   char *cmdline = (char *) ARGS_ADDR + sizeof(struct __argv);
+
+   cmdline = (char *)ARGS_ADDR + sizeof(struct __argv);
+
    argv->argvMagic = ARGV_MAGIC;
    argv->commandLine = cmdline;
-   len = 0;
 
-   // a device-less fullpath
+   /* a device-less fullpath */
    if (dolpath[0] == '/')
    {
       char *dev = strchr(__system_argv->argv[0], ':');
@@ -62,34 +66,37 @@ static void dol_copy_argv_path(const char *dolpath, const char *argpath)
       memcpy(cmdline, __system_argv->argv[0], t_len);
       len += t_len;
    }
-   // a relative path
+   /* a relative path */
    else if (strstr(dolpath, "sd:/") != dolpath && strstr(dolpath, "usb:/") != dolpath &&
        strstr(dolpath, "carda:/") != dolpath && strstr(dolpath, "cardb:/") != dolpath)
    {
       fill_pathname_parent_dir(tmp, __system_argv->argv[0], sizeof(tmp));
-      t_len = strlen(tmp);
+      t_len        = strlen(tmp);
       memcpy(cmdline, tmp, t_len);
-      len += t_len;
+      len         += t_len;
    }
 
-   t_len = strlen(dolpath);
+   t_len           = strlen(dolpath);
    memcpy(cmdline + len, dolpath, t_len);
-   len += t_len;
-   cmdline[len++] = 0;
+   len            += t_len;
+   cmdline[len++]  = 0;
 
-   // file must be split into two parts, the path and the actual filename
-   // done to be compatible with loaders
+   /* File must be split into two parts,
+    * the path and the actual filename
+    * done to be compatible with loaders. */
    if (argpath && strrchr(argpath, '/') != NULL)
    {
-      // basedir
+      char *name = NULL;
+
+      /* basedir. */
       fill_pathname_parent_dir(tmp, argpath, sizeof(tmp));
       t_len = strlen(tmp);
       memcpy(cmdline + len, tmp, t_len);
       len += t_len;
       cmdline[len++] = 0;
 
-      // filename
-      char *name = strrchr(argpath, '/') + 1;
+      /* filename */
+      name = strrchr(argpath, '/') + 1;
       t_len = strlen(name);
       memcpy(cmdline + len, name, t_len);
       len += t_len;
@@ -101,20 +108,24 @@ static void dol_copy_argv_path(const char *dolpath, const char *argpath)
    DCFlushRange(ARGS_ADDR, sizeof(struct __argv) + argv->length);
 }
 
-// WARNING: after we move any data into EXECUTE_ADDR, we can no longer use any
-// heap memory and are restricted to the stack only
+/* WARNING: after we move any data 
+ * into EXECUTE_ADDR, we can no longer use any
+ * heap memory and are restricted to the stack only. */
 void system_exec_wii(const char *_path, bool should_load_game)
 {
+   FILE *fp;
+   size_t size, booter_size;
+   void *dol;
+   char path[PATH_MAX_LENGTH];
+   char game_path[PATH_MAX_LENGTH];
 #ifndef IS_SALAMANDER
    global_t *global = global_get_ptr();
    bool original_verbose = global->verbosity;
    global->verbosity = true;
 #endif
 
-   char path[PATH_MAX_LENGTH];
-   char game_path[PATH_MAX_LENGTH];
-
-   // copy heap info into stack so it survives us moving the .dol into MEM2
+   /* copy heap info into stack so it survives 
+    * us moving the .dol into MEM2. */
    strlcpy(path, _path, sizeof(path));
    if (should_load_game)
    {
@@ -127,7 +138,7 @@ void system_exec_wii(const char *_path, bool should_load_game)
 
    RARCH_LOG("Attempt to load executable: [%s]\n", path);
 
-   FILE * fp = fopen(path, "rb");
+   fp = fopen(path, "rb");
    if (fp == NULL)
    {
       RARCH_ERR("Could not open DOL file %s.\n", path);
@@ -135,11 +146,11 @@ void system_exec_wii(const char *_path, bool should_load_game)
    }
 
    fseek(fp, 0, SEEK_END);
-   size_t size = ftell(fp);
+   size = ftell(fp);
    fseek(fp, 0, SEEK_SET);
 
-   // try to allocate a buffer for it. if we can't, fail
-   void *dol = malloc(size);
+   /* try to allocate a buffer for it. if we can't, fail. */
+   dol = malloc(size);
    if (!dol)
    {
       RARCH_ERR("Could not execute DOL file %s.\n", path);
@@ -157,13 +168,13 @@ void system_exec_wii(const char *_path, bool should_load_game)
    __io_wiisd.shutdown();
    __io_usbstorage.shutdown();
 
-   // don't use memcpy, there might be an overlap
+   /* don't use memcpy, there might be an overlap. */
    memmove(EXECUTE_ADDR, dol, size);
    DCFlushRange(EXECUTE_ADDR, size);
 
    dol_copy_argv_path(path, should_load_game ? game_path : NULL);
 
-   size_t booter_size = booter_end - booter_start;
+   booter_size = booter_end - booter_start;
    memcpy(BOOTER_ADDR, booter_start, booter_size);
    DCFlushRange(BOOTER_ADDR, booter_size);
 
