@@ -49,53 +49,58 @@ static bool CopyModel(char** model, uint32_t *majorRev, uint32_t *minorRev)
     sysctlbyname("hw.machine", NULL, &length, NULL, 0);
 #endif
     
-    machineModel = malloc(length);
+    machineModel  = malloc(length);
     
     if (!machineModel)
     {
-        success = false;
+        success   = false;
         goto exit;
     }
 #ifdef IOS
     sysctlbyname("hw.machine", machineModel, &length, NULL, 0);
-    *model = strndup(machineModel, length);
+    *model        = strndup(machineModel, length);
 #else
-    mib[0]       = CTL_HW;
-    mib[1]       = HW_MODEL;
+    mib[0]        = CTL_HW;
+    mib[1]        = HW_MODEL;
     
     if (sysctl(mib, 2, machineModel, &length, NULL, 0))
     {
         printf("CopyModel: sysctl (error %d)\n", errno);
-        success = false;
+        success  = false;
         goto exit;
     }
     
-    modelLen = strcspn(machineModel, "0123456789");
-    if (modelLen == 0)
+    modelLen      = strcspn(machineModel, "0123456789");
+    
+    if (modelLen  == 0)
     {
         RARCH_ERR("CopyModel: Could not find machine model name\n");
-        success = false;
-        goto exit;
-    }
-    *model = strndup(machineModel, modelLen);
-    if (*model == NULL)
-    {
-        RARCH_ERR("CopyModel: Could not find machine model name\n");
-        success = false;
+        success   = false;
         goto exit;
     }
     
-    *majorRev = 0;
-    *minorRev = 0;
-    revStr    = strpbrk(machineModel, "0123456789");
+    *model        = strndup(machineModel, modelLen);
+    
+    if (*model    == NULL)
+    {
+        RARCH_ERR("CopyModel: Could not find machine model name\n");
+        success   = false;
+        goto exit;
+    }
+    
+    *majorRev     = 0;
+    *minorRev     = 0;
+    revStr        = strpbrk(machineModel, "0123456789");
+    
     if (!revStr)
     {
         RARCH_ERR("CopyModel: Could not find machine version number, inferred value is 0,0\n");
-        success = true;
+        success   = true;
         goto exit;
     }
     
-    count = sscanf(revStr, "%d,%d", majorRev, minorRev);
+    count         = sscanf(revStr, "%d,%d", majorRev, minorRev);
+    
     if (count < 2)
     {
         RARCH_ERR("CopyModel: Could not find machine version number\n");
