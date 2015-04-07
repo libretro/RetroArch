@@ -74,6 +74,8 @@ extern const frontend_ctx_driver_t frontend_ctx_null;
  **/
 const frontend_ctx_driver_t *frontend_ctx_find_driver(const char *ident);
 
+const frontend_ctx_driver_t *frontend_get_ptr(void);
+
 /**
  * frontend_ctx_init_first:
  *

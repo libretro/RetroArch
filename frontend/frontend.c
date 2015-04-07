@@ -87,11 +87,12 @@ void main_exit_save_config(void)
  **/
 void main_exit(args_type() args)
 {
-   driver_t *driver        = driver_get_ptr();
-   settings_t *settings    = config_get_ptr();
-   global_t   *global      = global_get_ptr();
+   driver_t *driver                      = driver_get_ptr();
+   settings_t *settings                  = config_get_ptr();
+   global_t   *global                    = global_get_ptr();
+   const frontend_ctx_driver_t *frontend = frontend_get_ptr();
 
-   global->system.shutdown = false;
+   global->system.shutdown         = false;
 
    main_exit_save_config();
 
@@ -110,17 +111,23 @@ void main_exit(args_type() args)
    logger_shutdown();
 #endif
 
-   if (driver->frontend_ctx && driver->frontend_ctx->deinit)
-      driver->frontend_ctx->deinit(args);
+   if (frontend)
+   {
+      if (frontend->deinit)
+         frontend->deinit(args);
 
-   if (driver->frontend_ctx && driver->frontend_ctx->exitspawn)
-      driver->frontend_ctx->exitspawn(settings->libretro,
-            sizeof(settings->libretro));
+      if (frontend->exitspawn)
+         frontend->exitspawn(settings->libretro,
+               sizeof(settings->libretro));
+   }
 
    rarch_main_free();
 
-   if (driver->frontend_ctx && driver->frontend_ctx->shutdown)
-      driver->frontend_ctx->shutdown(false);
+   if (frontend)
+   {
+      if (frontend->shutdown)
+         frontend->shutdown(false);
+   }
 
    driver_free();
 }
@@ -281,10 +288,10 @@ returntype main_entry(signature())
 {
    declare_argc();
    declare_argv();
-   args_type() args     = (args_type())args_initial_ptr();
-   int ret              = 0;
-   settings_t *settings = NULL;
-   driver_t *driver     = NULL;
+   args_type() args                = (args_type())args_initial_ptr();
+   int ret                         = 0;
+   settings_t *settings            = NULL;
+   driver_t *driver                = NULL;
    
    rarch_main_alloc();
 
