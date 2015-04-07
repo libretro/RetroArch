@@ -20,6 +20,7 @@
 #include "../video_state_tracker.h"
 #include "../video_shader_parse.h"
 #include "../../libretro.h"
+#include "d3d_defines.h"
 
 struct LinkInfo
 {
