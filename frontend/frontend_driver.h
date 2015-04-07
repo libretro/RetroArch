@@ -44,6 +44,7 @@ typedef struct frontend_ctx_driver
    void (*set_fork)(bool exitspawn, bool start_game);
    void (*shutdown)(bool);
    void (*get_name)(char *, size_t);
+   void (*get_os)(char *, size_t);
    int  (*get_rating)(void);
    void (*content_loaded)(void);
 

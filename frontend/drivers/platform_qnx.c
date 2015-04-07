@@ -69,6 +69,7 @@ const frontend_ctx_driver_t frontend_ctx_qnx = {
    NULL,                         /* set_fork */
    frontend_qnx_shutdown,        /* shutdown */
    NULL,                         /* get_name */
+   NULL,                         /* get_os */
    frontend_qnx_get_rating,      /* get_rating */
    NULL,                         /* load_content */
    "qnx",

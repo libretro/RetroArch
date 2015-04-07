@@ -303,6 +303,7 @@ const frontend_ctx_driver_t frontend_ctx_apple = {
    NULL,                         /* set_fork */
    frontend_apple_shutdown,      /* shutdown */
    frontend_apple_get_name,      /* get_name */
+   NULL,                         /* get_os */
    frontend_apple_get_rating,    /* get_rating */
    frontend_apple_load_content,  /* load_content */
    "apple",
