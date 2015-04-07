@@ -69,9 +69,10 @@ static void xdk_renderchain_clear(void *data)
 
 static bool xdk_renderchain_init_shader_fvf(void *data, void *pass_data)
 {
-   d3d_video_t *chain    = (d3d_video_t*)data;
-   d3d_video_t *pass     = (d3d_video_t*)data;
-   LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)chain->dev;
+   d3d_video_t *d3d         = (d3d_video_t*)data;
+   d3d_video_t *pass        = (d3d_video_t*)data;
+   LPDIRECT3DDEVICE d3dr    = (LPDIRECT3DDEVICE)d3d->dev;
+   xdk_renderchain_t *chain = (xdk_renderchain_t*)d3d->renderchain_data;
 
    (void)pass_data;
 
@@ -83,7 +84,7 @@ static bool xdk_renderchain_init_shader_fvf(void *data, void *pass_data)
       D3DDECL_END()
    };
 
-   if (FAILED(d3dr->CreateVertexDeclaration(VertexElements, &pass->vertex_decl)))
+   if (FAILED(d3dr->CreateVertexDeclaration(VertexElements, &chain->vertex_decl)))
       return false;
 #endif
 
@@ -210,8 +211,8 @@ static void renderchain_set_vertices(void *data, unsigned pass,
       if (d3d->shader->use)
          d3d->shader->use(d3d, pass);
       if (d3d->shader->set_params)
-         d3d->shader->set_params(d3d, width, height, d3d->tex_w,
-               d3d->tex_h, d3d->screen_width,
+         d3d->shader->set_params(d3d, width, height, chain->tex_w,
+               chain->tex_h, d3d->screen_width,
                d3d->screen_height, runloop->frames.video.count,
                NULL, NULL, NULL, 0);
    }
