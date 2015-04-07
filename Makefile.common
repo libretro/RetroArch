@@ -369,7 +369,8 @@ endif
 ifeq ($(HAVE_DINPUT), 1)
    LIBS += -ldinput8 -ldxguid -lole32
    DEFINES += -DHAVE_DINPUT
-   OBJ += input/drivers/dinput.o
+   OBJ += input/drivers/dinput.o \
+			 input/drivers_joypad/dinput_joypad.o
    JOYCONFIG_LIBS += -ldinput8 -ldxguid -lole32
 endif
 
