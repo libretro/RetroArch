@@ -69,9 +69,8 @@ typedef struct cg_renderchain
    unsigned frame_count;
    std::vector<unsigned> bound_tex;
    std::vector<unsigned> bound_vert;
+   CGcontext cgCtx;
 } cg_renderchain_t;
-
-static CGcontext cgCtx;
 
 static INLINE D3DTEXTUREFILTERTYPE translate_filter(unsigned type)
 {
@@ -199,33 +198,33 @@ static bool renderchain_compile_shaders(void *data,
    if (shader.length() > 0)
    {
       RARCH_LOG("[D3D Cg]: Compiling shader: %s.\n", shader.c_str());
-      *fPrg = cgCreateProgramFromFile(cgCtx, CG_SOURCE,
+      *fPrg = cgCreateProgramFromFile(chain->cgCtx, CG_SOURCE,
             shader.c_str(), fragment_profile, "main_fragment", fragment_opts);
 
-      if (cgGetLastListing(cgCtx))
-         RARCH_ERR("[D3D Cg]: Fragment error:\n%s\n", cgGetLastListing(cgCtx));
+      if (cgGetLastListing(chain->cgCtx))
+         RARCH_ERR("[D3D Cg]: Fragment error:\n%s\n", cgGetLastListing(chain->cgCtx));
 
-      *vPrg = cgCreateProgramFromFile(cgCtx, CG_SOURCE,
+      *vPrg = cgCreateProgramFromFile(chain->cgCtx, CG_SOURCE,
             shader.c_str(), vertex_profile, "main_vertex", vertex_opts);
 
-      if (cgGetLastListing(cgCtx))
-         RARCH_ERR("[D3D Cg]: Vertex error:\n%s\n", cgGetLastListing(cgCtx));
+      if (cgGetLastListing(chain->cgCtx))
+         RARCH_ERR("[D3D Cg]: Vertex error:\n%s\n", cgGetLastListing(chain->cgCtx));
    }
    else
    {
       RARCH_LOG("[D3D Cg]: Compiling stock shader.\n");
 
-      *fPrg = cgCreateProgram(cgCtx, CG_SOURCE, stock_program,
+      *fPrg = cgCreateProgram(chain->cgCtx, CG_SOURCE, stock_program,
             fragment_profile, "main_fragment", fragment_opts);
 
-      if (cgGetLastListing(cgCtx))
-         RARCH_ERR("[D3D Cg]: Fragment error:\n%s\n", cgGetLastListing(cgCtx));
+      if (cgGetLastListing(chain->cgCtx))
+         RARCH_ERR("[D3D Cg]: Fragment error:\n%s\n", cgGetLastListing(chain->cgCtx));
 
-      *vPrg = cgCreateProgram(cgCtx, CG_SOURCE, stock_program,
+      *vPrg = cgCreateProgram(chain->cgCtx, CG_SOURCE, stock_program,
             vertex_profile, "main_vertex", vertex_opts);
 
-      if (cgGetLastListing(cgCtx))
-         RARCH_ERR("[D3D Cg]: Vertex error:\n%s\n", cgGetLastListing(cgCtx));
+      if (cgGetLastListing(chain->cgCtx))
+         RARCH_ERR("[D3D Cg]: Vertex error:\n%s\n", cgGetLastListing(chain->cgCtx));
    }
 
    if (!fPrg || !vPrg)
@@ -739,15 +738,16 @@ static void cg_d3d9_renderchain_clear(void *data)
    chain->luts.clear();
 }
 
-static void cg_d3d9_renderchain_deinit_shader(void)
+static void cg_d3d9_renderchain_deinit_shader(void *data)
 {
-   if (!cgCtx)
+   cg_renderchain_t *chain = (cg_renderchain_t*)data;
+   if (!chain->cgCtx)
       return;
 
    cgD3D9UnloadAllPrograms();
    cgD3D9SetDevice(NULL);
-   cgDestroyContext(cgCtx);
-   cgCtx = NULL;
+   cgDestroyContext(chain->cgCtx);
+   chain->cgCtx = NULL;
 }
 
 static void cg_d3d9_renderchain_deinit(void *data)
@@ -765,7 +765,7 @@ void cg_d3d9_renderchain_free(void *data)
    if (!chain)
       return;
 
-   cg_d3d9_renderchain_deinit_shader();
+   cg_d3d9_renderchain_deinit_shader(chain);
 #if 0
    cg_d3d9_renderchain_clear(chain);
    cg_d3d9_renderchain_destroy_stock_shader(chain);
@@ -784,16 +784,17 @@ void *cg_d3d9_renderchain_new(void)
    return renderchain;
 }
 
-
-static bool cg_d3d9_renderchain_init_shader(void *data)
+static bool cg_d3d9_renderchain_init_shader(void *data,
+      void *renderchain_data)
 {
-   d3d_video_t *d3d = (d3d_video_t*)data;
+   d3d_video_t *d3d              = (d3d_video_t*)data;
+   cg_renderchain_t *renderchain = (cg_renderchain_t*)renderchain_data;
 
-   if (!d3d)
+   if (!d3d || !renderchain)
       return false;
 
-   cgCtx = cgCreateContext();
-   if (!cgCtx)
+   renderchain->cgCtx = cgCreateContext();
+   if (!renderchain->cgCtx)
       return false;
 
    RARCH_LOG("[D3D]: Created shader context.\n");
