@@ -99,10 +99,6 @@ static void adapter_thread(void *data)
 
       libusb_interrupt_transfer(adapter->handle, adapter->endpoint_in, &adapter->data[1], adapter->endpoint_in_max_size, &size, 1000);
 
-#if 0
-      static unsigned count;
-      fprintf(stderr, "[%s] Gets here, count: %d\n", adapter->name, count++);
-#endif
       if (adapter && hid && hid->slots && size)
          pad_connection_packet(&hid->slots[adapter->slot], adapter->slot,
                adapter->data, size+1);
@@ -272,9 +268,11 @@ static int add_adapter(void *data, struct libusb_device *dev)
 
    if (!pad_connection_has_interface(hid->slots, adapter->slot))
    {
-      //fprintf(stderr, " Interface not found (%s).\n", adapter->name);
+      fprintf(stderr, " Interface not found (%s).\n", adapter->name);
       goto error;
    }
+
+   fprintf(stderr, "Interface found: [%s].\n", adapter->name);
 
    if (libusb_kernel_driver_active(adapter->handle, 0) == 1
          && libusb_detach_kernel_driver(adapter->handle, 0))
