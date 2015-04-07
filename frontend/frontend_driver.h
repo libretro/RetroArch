@@ -60,6 +60,7 @@ extern const frontend_ctx_driver_t frontend_ctx_apple;
 extern const frontend_ctx_driver_t frontend_ctx_android;
 extern const frontend_ctx_driver_t frontend_ctx_psp;
 extern const frontend_ctx_driver_t frontend_ctx_ctr;
+extern const frontend_ctx_driver_t frontend_ctx_win32;
 extern const frontend_ctx_driver_t frontend_ctx_null;
 
 /**
