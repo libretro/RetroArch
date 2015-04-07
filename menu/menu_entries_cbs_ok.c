@@ -248,7 +248,16 @@ static int action_ok_cheat_file(const char *path,
 static int action_ok_audio_dsp_plugin(const char *path,
       const char *label, unsigned type, size_t idx)
 {
-   return 0;
+   menu_handle_t *menu      = menu_driver_get_ptr();
+   settings_t *settings     = config_get_ptr();
+   if (!menu)
+      return -1;
+
+   return menu_list_push_stack_refresh(
+         menu->menu_list,
+         settings->audio.filter_dir,
+         "audio_dsp_plugin",
+         0, idx);
 }
 
 static int action_ok_video_filter(const char *path,
