@@ -22,6 +22,8 @@ typedef struct xdk_renderchain
 {
    void *empty;
    unsigned pixel_size;
+   LPDIRECT3DDEVICE dev;
+   const video_info_t *video_info;
    LPDIRECT3DTEXTURE tex;
    LPDIRECT3DVERTEXBUFFER vertex_buf;
    unsigned last_width;
@@ -284,7 +286,7 @@ void *xdk_renderchain_new(void)
    return renderchain;
 }
 
-static bool xdk_renderchain_init_shader(void *data)
+static bool xdk_renderchain_init_shader(void *data, void *renderchain_data)
 {
    const char *shader_path = NULL;
    d3d_video_t        *d3d = (d3d_video_t*)data;
@@ -308,7 +310,7 @@ static bool xdk_renderchain_init_shader(void *data)
 }
 
 static bool xdk_renderchain_init(void *data,
-      const void *_info,
+      const void *_video_info,
       void *dev_data,
       const void *final_viewport_data,
       const void *info_data,
@@ -318,18 +320,19 @@ static bool xdk_renderchain_init(void *data,
    d3d_video_t *chain           = (d3d_video_t*)data;
    LPDIRECT3DDEVICE d3dr        = (LPDIRECT3DDEVICE)chain->dev;
    global_t *global             = global_get_ptr();
-   const video_info_t *info     = (const video_info_t*)_info;
+   const video_info_t *video_info  = (const video_info_t*)_video_info;
    const LinkInfo *link_info    = (const LinkInfo*)info_data;
-   chain->pixel_size            = fmt ? sizeof(uint32_t) : sizeof(uint16_t);
 
-   (void)dev_data;
    (void)final_viewport_data;
    (void)fmt;
 
+   chain->dev                   = (LPDIRECT3DDEVICE)dev_data;
+   //chain->video_info            = video_info;
+   chain->pixel_size            = (fmt == RETRO_PIXEL_FORMAT_RGB565) ? 2 : 4;
    chain->tex_w                 = link_info->tex_w;
    chain->tex_h                 = link_info->tex_h;
 
-   if (!renderchain_create_first_pass(chain, info))
+   if (!renderchain_create_first_pass(chain, video_info))
       return false;
 
    if (global->console.screen.viewports.custom_vp.width == 0)
@@ -370,11 +373,7 @@ static bool xdk_renderchain_render(void *data, const void *frame,
    d3d_set_sampler_magfilter(d3dr, 0, settings->video.smooth ?
          D3DTEXF_LINEAR : D3DTEXF_POINT);
 
-#if defined(_XBOX1)
-   d3d_set_vertex_shader(d3dr, D3DFVF_XYZ | D3DFVF_TEX1, NULL);
-#elif defined(_XBOX360)
-   D3DDevice_SetVertexDeclaration(d3dr, d3d->vertex_decl);
-#endif
+   d3d_set_vertex_declaration(d3dr, d3d->vertex_decl);
    for (i = 0; i < 4; i++)
       d3d_set_stream_source(d3dr, i, d3d->vertex_buf, 0, sizeof(Vertex));
 

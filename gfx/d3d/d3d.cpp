@@ -878,16 +878,16 @@ static bool d3d_init_chain(d3d_video_t *d3d, const video_info_t *video_info)
 
    RARCH_LOG("Renderchain driver: %s\n", d3d->renderchain_driver->ident);
 
-   if (!d3d->renderchain_driver->init_shader(d3d))
+   if (!d3d->renderchain_driver->init_shader(d3d, d3d->renderchain_data))
    {
       RARCH_ERR("Failed to initialize shader subsystem.\n");
       return false;
    }
 
 #ifdef _XBOX
-   if (!d3d->renderchain_driver->init(d3d, video_info,
+   if (!d3d->renderchain_driver->init(d3d, &d3d->video_info,
             d3dr, &d3d->final_viewport, &link_info,
-            video_info->rgb32 ? 
+            d3d->video_info.rgb32 ? 
             RETRO_PIXEL_FORMAT_XRGB8888 : RETRO_PIXEL_FORMAT_RGB565))
 #else
    if (!d3d->renderchain_driver->init(d3d->renderchain_data, &d3d->video_info,
@@ -1233,8 +1233,7 @@ static void d3d_overlay_render(d3d_video_t *d3d, overlay_t *overlay)
    if (!overlay->vert_buf)
    {
       overlay->vert_buf = (LPDIRECT3DVERTEXBUFFER)d3d_vertex_buffer_new(
-      d3d->dev, sizeof(vert), d3d->dev->GetSoftwareVertexProcessing() ? 
-      D3DUSAGE_SOFTWAREPROCESSING : 0, 0, D3DPOOL_MANAGED, NULL);
+      d3d->dev, sizeof(vert), 0, 0, D3DPOOL_MANAGED, NULL);
 
 	  if (!overlay->vert_buf)
 		  return;
@@ -1770,7 +1769,11 @@ static void d3d_set_menu_texture_frame(void *data,
 
    d3d->menu->alpha_mod = alpha;
 
+#ifdef _XBOX
+   d3d->menu->tex->LockRect(0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK);
+#else
    if (SUCCEEDED(d3d->menu->tex->LockRect(0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK)))
+#endif
    {
       unsigned h, w;
       if (rgb32)

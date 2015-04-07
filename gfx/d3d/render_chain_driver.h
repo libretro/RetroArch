@@ -20,6 +20,7 @@
 #include "../video_state_tracker.h"
 #include "../video_shader_parse.h"
 #include "../../libretro.h"
+#include "d3d_defines.h"
 
 struct LinkInfo
 {
@@ -39,7 +40,7 @@ typedef struct renderchain_driver
 {
    void (*chain_free)(void *data);
    void *(*chain_new)(void);
-   bool (*init_shader)(void *data);
+   bool (*init_shader)(void *data, void *renderchain_data);
    bool (*init_shader_fvf)(void *data, void *pass_data);
    bool (*reinit)(void *data, const void *info_data);
    bool (*init)(void *data,
