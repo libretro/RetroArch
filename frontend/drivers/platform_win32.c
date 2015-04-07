@@ -12,7 +12,7 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../frontend.h"
+#include "../frontend_driver.h"
 
 #include <stdint.h>
 #include <boolean.h>
