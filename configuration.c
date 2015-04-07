@@ -1651,7 +1651,7 @@ bool config_load_override(void)
         core_path[PATH_MAX_LENGTH],          /* final path for core-specific configuration (prefix+suffix) */
         game_path[PATH_MAX_LENGTH];          /* final path for game-specific configuration (prefix+suffix) */
    const char *core_name, *game_name;        /* suffix                                                     */
-   
+
    global_t *global = global_get_ptr();      /* global pointer                                             */
    settings_t *settings = config_get_ptr();  /* config pointer                                             */
 
@@ -1719,7 +1719,7 @@ bool config_load_override(void)
    /* Append game-specific */
    if (new_conf)
    {
-      RARCH_LOG("Game-specific overrides found at %s. Appending.\n", game_path);      
+      RARCH_LOG("Game-specific overrides found at %s. Appending.\n", game_path);
       if(should_append)
       {
           strlcat(global->append_config_path, "|", sizeof(global->append_config_path));
@@ -1727,7 +1727,7 @@ bool config_load_override(void)
       }
       else
           strlcpy(global->append_config_path, game_path, sizeof(global->append_config_path));
-      
+
       should_append = true;
    }
    else
@@ -1746,13 +1746,13 @@ bool core_unload_override(void)
 {
    global_t *global = global_get_ptr();
    settings_t *settings = config_get_ptr();
-   
+
    *global->append_config_path = NULL;
-   if(config_load_file(global->config_path, false))
+   if (config_load_file(global->config_path, false))
    {
        RARCH_LOG("Configuration overrides unloaded, original configuration reset\n");
        return true;
-   }   
+   }
    else
       return false;
 }
