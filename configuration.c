@@ -2106,7 +2106,7 @@ bool config_save_file(const char *path)
    if (!conf)
       conf = config_file_new(NULL);
 
-   if (!conf)
+   if (!conf || global->overrides_active)
       return false;
 
    RARCH_LOG("Saving config at path: \"%s\"\n", path);
