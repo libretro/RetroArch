@@ -224,11 +224,10 @@ static void renderchain_blit_to_texture(void *data, const void *frame,
    unsigned width, unsigned height, unsigned pitch)
 {
    D3DLOCKED_RECT d3dlr;
-   d3d_video_t *d3d         = (d3d_video_t*)data;
-   LPDIRECT3DDEVICE d3dr    = (LPDIRECT3DDEVICE)d3d->dev;
+   xdk_renderchain_t *chain = (xdk_renderchain_t*)data;
+   LPDIRECT3DDEVICE d3dr    = (LPDIRECT3DDEVICE)chain->dev;
    driver_t *driver         = driver_get_ptr();
    global_t *global         = global_get_ptr();
-   xdk_renderchain_t *chain = (xdk_renderchain_t*)d3d->renderchain_data;
 
 #if defined(_XBOX1)
    d3dr->SetFlickerFilter(global->console.screen.flicker_filter_index);
@@ -368,11 +367,11 @@ static bool xdk_renderchain_render(void *data, const void *frame,
    settings_t *settings     = config_get_ptr();
    xdk_renderchain_t *chain = (xdk_renderchain_t*)d3d->renderchain_data;
 
-   renderchain_blit_to_texture(d3d, frame, width, height, pitch);
+   renderchain_blit_to_texture(chain, frame, width, height, pitch);
    renderchain_set_vertices(d3d, 1, width, height);
 
    d3d_set_texture(d3dr, 0, chain->tex);
-   d3d_set_viewport(d3d->dev, &d3d->final_viewport);
+   d3d_set_viewport(chain->dev, &d3d->final_viewport);
    d3d_set_sampler_minfilter(d3dr, 0, settings->video.smooth ?
          D3DTEXF_LINEAR : D3DTEXF_POINT);
    d3d_set_sampler_magfilter(d3dr, 0, settings->video.smooth ?
