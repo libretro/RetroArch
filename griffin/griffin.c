@@ -373,7 +373,9 @@ INPUT (HID)
 
 #if defined(HAVE_LIBUSB)
 #include "../input/drivers_hid/libusb_hid.c"
-#elif defined(__APPLE__) && defined(IOS)
+#endif
+
+#if defined(__APPLE__) && defined(IOS)
 #include "../input/drivers_hid/btstack_hid.c"
 #elif defined(__APPLE__) && !defined(IOS)
 #include "../input/drivers_hid/apple_hid.c"
