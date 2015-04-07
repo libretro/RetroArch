@@ -508,6 +508,53 @@ static int action_ok_remap_file_save_as(const char *path,
    return 0;
 }
 
+static int action_ok_remap_file_save_core(const char *path,
+      const char *label, unsigned type, size_t idx)
+{
+   global_t *global = global_get_ptr();
+   settings_t *settings = config_get_ptr();
+
+   const char *core_name;
+   core_name = global->system.info.library_name;
+
+   char directory[PATH_MAX_LENGTH];
+   char file[PATH_MAX_LENGTH];
+   
+   fill_pathname_join(directory,settings->input_remapping_directory,core_name,PATH_MAX_LENGTH);
+   fill_pathname_join(file,core_name,core_name,PATH_MAX_LENGTH);
+   
+   if(!path_file_exists(directory))
+       path_mkdir(directory);
+   
+   input_remapping_save_file(file);
+   return 0;
+}
+
+static int action_ok_remap_file_save_game(const char *path,
+      const char *label, unsigned type, size_t idx)
+{
+   global_t *global = global_get_ptr();
+   settings_t *settings = config_get_ptr();
+
+   const char *core_name;
+   core_name = global->system.info.library_name;
+   
+   const char *game_name;
+   game_name = path_basename(global->basename);
+
+   char directory[PATH_MAX_LENGTH];
+   char file[PATH_MAX_LENGTH];
+   
+   fill_pathname_join(directory,settings->input_remapping_directory,core_name,PATH_MAX_LENGTH);
+   fill_pathname_join(file,core_name,game_name,PATH_MAX_LENGTH);
+   
+   if(!path_file_exists(directory))
+       path_mkdir(directory);
+   
+   input_remapping_save_file(file);
+   return 0;
+}
+
 static int action_ok_path_use_directory(const char *path,
       const char *label, unsigned type, size_t idx)
 {
@@ -1265,6 +1312,10 @@ void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
       cbs->action_ok = action_ok_cheat_file_save_as;
    else if (!strcmp(label, "remap_file_save_as"))
       cbs->action_ok = action_ok_remap_file_save_as;
+   else if (!strcmp(label, "remap_file_save_core"))
+      cbs->action_ok = action_ok_remap_file_save_core;
+   else if (!strcmp(label, "remap_file_save_game"))
+      cbs->action_ok = action_ok_remap_file_save_game;  
    else if (!strcmp(label, "core_list"))
       cbs->action_ok = action_ok_core_list;
    else if (!strcmp(label, "disk_image_append"))

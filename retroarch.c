@@ -24,6 +24,7 @@
 #include "libretro_version_1.h"
 #include "dynamic.h"
 #include "content.h"
+#include "configuration.h"
 #include <file/file_path.h>
 #include <file/dir_list.h>
 #include "general.h"
@@ -415,6 +416,8 @@ static void parse_input(int argc, char *argv[])
    *global->bps_name                     = '\0';
    *global->ips_name                     = '\0';
    *global->subsystem                    = '\0';
+   
+   global->overrides_active              = false; 
 
    if (argc < 2)
    {
@@ -1842,12 +1845,21 @@ static void init_system_av_info(void)
 
 static void deinit_core(bool reinit)
 {
+   
+   global_t *global = global_get_ptr();
+   
    pretro_unload_game();
    pretro_deinit();
 
    if (reinit)
       rarch_main_command(RARCH_CMD_DRIVERS_DEINIT);
-
+    
+   if(global->overrides_active)
+   {
+      config_unload_override();
+      global->overrides_active = false;
+   }
+   pretro_set_environment(rarch_environment_cb);
    uninit_libretro_sym();
 }
 
@@ -1884,15 +1896,16 @@ static bool init_content(void)
 static bool init_core(void)
 {
    driver_t *driver = driver_get_ptr();
-   global_t *global = global_get_ptr();
-
-   //needs testing for regressions
-   pretro_set_environment(rarch_environment_cb);
+   global_t *global = global_get_ptr();   
    
-   if (!config_load_override())
-      RARCH_ERR("Error loading override files\n");
-   if (!config_load_remap())
-      RARCH_ERR("Error loading remap files\n");
+   if (config_load_override())
+      global->overrides_active = true;
+   else
+      global->overrides_active = false; 
+
+   pretro_set_environment(rarch_environment_cb);  
+  
+   config_load_remap();
 
    verify_api_version();
    pretro_init();

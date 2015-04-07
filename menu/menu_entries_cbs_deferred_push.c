@@ -1417,10 +1417,14 @@ static int deferred_push_core_input_remapping_options(void *data, void *userdata
       return -1;
 
    menu_list_clear(list);
-   menu_list_push(list, "Remap File Load", "remap_file_load",
+   menu_list_push(list, "Load Remap File", "remap_file_load",
          MENU_SETTING_ACTION, 0);
-   menu_list_push(list, "Remap File Save As",
+   menu_list_push(list, "Save Remap File As",
          "remap_file_save_as", MENU_SETTING_ACTION, 0);
+   menu_list_push(list, "Save Core Remap File",
+         "remap_file_save_core", MENU_SETTING_ACTION, 0);
+   menu_list_push(list, "Save Game Remap File",
+         "remap_file_save_game", MENU_SETTING_ACTION, 0);         
 
    for (p = 0; p < settings->input.max_users; p++)
    {

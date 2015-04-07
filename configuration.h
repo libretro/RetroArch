@@ -407,17 +407,27 @@ void config_load(void);
  * These settings will always have precedence, thus this feature
  * can be used to enforce overrides.
  *
- * Returns: false if there was an error.
+ * Returns: false if there was an error or no action was performed.
  *
  */
 bool config_load_override(void);
+
+/**
+ * config_unload_override:
+ *
+ * Unloads configuration overrides if overrides are active.
+ *
+ *
+ * Returns: false if there was an error.
+ */
+bool config_unload_override(void);
 
 /**
  * config_load_remap:
  *
  * Tries to append game-specific and core-specific remap files.
  *
- * Returns: false if there was an error.
+ * Returns: false if there was an error or no action was performed.
  *
  */
 bool config_load_remap(void);
