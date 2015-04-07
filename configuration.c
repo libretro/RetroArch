@@ -1815,8 +1815,23 @@ bool config_load_remap(void)
    fill_pathname_join(game_path, game_path, game_name, PATH_MAX_LENGTH);
    strlcat(game_path, ".rmp", PATH_MAX_LENGTH);
 
-// Create a new config file from core_path
-   config_file_t *new_conf = config_file_new(core_path);
+   // Create a new config file from game_path
+   config_file_t * new_conf = config_file_new(game_path);
+
+   // If a game remap file exists, load it
+   if (new_conf)
+   {
+      RARCH_LOG("Game-specific remap found at %s. Appending.\n", game_path);
+      if(input_remapping_load_file(game_path))
+         return true;
+   }
+   else
+      RARCH_LOG("No game-specific remap found at %s.\n", game_path);
+
+   new_conf = NULL;
+
+   // Create a new config file from core_path
+   new_conf = config_file_new(core_path);
 
    // If a core remap file exists, load it
    if (new_conf)
@@ -1829,19 +1844,6 @@ bool config_load_remap(void)
       RARCH_LOG("No core-specific remap found at %s.\n", core_path);
 
    new_conf = NULL;
-
-   // Create a new config file from game_path
-   new_conf = config_file_new(game_path);
-
-   // If a game remap file exists, load it
-   if (new_conf)
-   {
-      RARCH_LOG("Game-specific remap found at %s. Appending.\n", game_path);
-      if(input_remapping_load_file(game_path))
-         return true;
-   }
-   else
-      RARCH_LOG("No game-specific remap found at %s.\n", game_path);
 
    return false;
 }
