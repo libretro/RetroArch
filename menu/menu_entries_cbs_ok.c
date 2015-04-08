@@ -127,7 +127,7 @@ static int action_ok_shader_pass(const char *path,
 
    return menu_list_push_stack_refresh(
          menu->menu_list,
-         settings->video.shader_dir, 
+         settings->video.shader_dir,
          label,
          type,
          idx);
@@ -183,7 +183,7 @@ static int action_ok_shader_preset(const char *path,
 
    return menu_list_push_stack_refresh(
          menu->menu_list,
-         settings->video.shader_dir, 
+         settings->video.shader_dir,
          label, type, idx);
 }
 
@@ -528,18 +528,18 @@ static int action_ok_remap_file_save_core(const char *path,
 
    char directory[PATH_MAX_LENGTH];
    char file[PATH_MAX_LENGTH];
-   
+
    fill_pathname_join(directory,settings->input_remapping_directory,core_name,PATH_MAX_LENGTH);
    fill_pathname_join(file,core_name,core_name,PATH_MAX_LENGTH);
-   
+
    if(!path_file_exists(directory))
        path_mkdir(directory);
-   
+
    if(input_remapping_save_file(file))
       rarch_main_msg_queue_push("Remap file saved successfully", 1, 100, true);
    else
-      rarch_main_msg_queue_push("Error saving remap file", 1, 100, true);	   
-   
+      rarch_main_msg_queue_push("Error saving remap file", 1, 100, true);
+
    return 0;
 }
 
@@ -551,24 +551,24 @@ static int action_ok_remap_file_save_game(const char *path,
 
    const char *core_name;
    core_name = global->system.info.library_name;
-   
+
    const char *game_name;
    game_name = path_basename(global->basename);
 
    char directory[PATH_MAX_LENGTH];
    char file[PATH_MAX_LENGTH];
-   
+
    fill_pathname_join(directory,settings->input_remapping_directory,core_name,PATH_MAX_LENGTH);
    fill_pathname_join(file,core_name,game_name,PATH_MAX_LENGTH);
-   
+
    if(!path_file_exists(directory))
        path_mkdir(directory);
-   
+
    if(input_remapping_save_file(file))
       rarch_main_msg_queue_push("Remap file saved successfully", 1, 100, true);
    else
-      rarch_main_msg_queue_push("Error saving remap file", 1, 100, true);	
-  
+      rarch_main_msg_queue_push("Error saving remap file", 1, 100, true);
+
    return 0;
 }
 
@@ -1095,7 +1095,7 @@ static int action_ok_rdb_entry_submenu(const char *path,
    if (!label)
       return -1;
 
-   str_list = string_split(label, "|"); 
+   str_list = string_split(label, "|");
 
    if (!str_list)
       return -1;
@@ -1169,7 +1169,7 @@ static int action_ok_video_resolution(const char *path,
 {
    unsigned width = 0, height = 0;
    global_t *global = global_get_ptr();
-    
+
    (void)global;
    (void)width;
    (void)height;
@@ -1332,7 +1332,7 @@ void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
    else if (!strcmp(label, "remap_file_save_core"))
       cbs->action_ok = action_ok_remap_file_save_core;
    else if (!strcmp(label, "remap_file_save_game"))
-      cbs->action_ok = action_ok_remap_file_save_game;  
+      cbs->action_ok = action_ok_remap_file_save_game;
    else if (!strcmp(label, "core_list"))
       cbs->action_ok = action_ok_core_list;
    else if (!strcmp(label, "disk_image_append"))
@@ -1399,7 +1399,7 @@ void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
       case MENU_FILE_RDB:
          if (!strcmp(menu_label, "deferred_database_manager_list"))
             cbs->action_ok = action_ok_database_manager_list_deferred;
-         else if (!strcmp(menu_label, "database_manager_list") 
+         else if (!strcmp(menu_label, "database_manager_list")
                || !strcmp(menu_label, "Horizontal Menu"))
             cbs->action_ok = action_ok_database_manager_list;
          else

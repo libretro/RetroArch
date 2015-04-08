@@ -1725,7 +1725,7 @@ bool config_load_override(void)
       {
          RARCH_LOG("Can't use overrides in conjunction with per-core configs, disabling overrides\n");
 		 return false;
-	  }	 
+	  }
       RARCH_LOG("Game-specific overrides found at %s. Appending.\n", game_path);
       if (should_append)
       {
@@ -1838,9 +1838,12 @@ bool config_load_remap(void)
    {
       RARCH_LOG("Game-specific remap found at %s. Appending.\n", game_path);
       if (input_remapping_load_file(game_path))
+	  {
+		 rarch_main_msg_queue_push("Game remap file loaded", 1, 100, true);
          return true;
+	  }
    }
-   else   
+   else
    {
       RARCH_LOG("No core-specific remap found at %s.\n", core_path);
       *settings->input.remapping_path= '\0';
@@ -1857,7 +1860,10 @@ bool config_load_remap(void)
    {
       RARCH_LOG("Core-specific remap found at %s. Loading.\n", core_path);
       if (input_remapping_load_file(core_path))
+	  {
+		 rarch_main_msg_queue_push("Core remap file loaded", 1, 100, true);
          return true;
+	  }
    }
    else
    {
@@ -1865,7 +1871,6 @@ bool config_load_remap(void)
       *settings->input.remapping_path= '\0';
       input_remapping_set_defaults();
    }
-   
 
    new_conf = NULL;
 

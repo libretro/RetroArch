@@ -69,7 +69,7 @@ bool input_remapping_load_file(const char *path)
  * @path                     : Path to remapping file (relative path).
  *
  * Saves remapping values to file.
- * 
+ *
  * Returns: true (1) if successfull, otherwise false (0).
  **/
 bool input_remapping_save_file(const char *path)
@@ -111,7 +111,7 @@ bool input_remapping_save_file(const char *path)
 
    ret = config_file_write(conf, remap_file);
    config_file_free(conf);
-   
+
    return ret;
 }
 
