@@ -1701,6 +1701,11 @@ bool config_load_override(void)
    // If a core override exists, add it's location to append_config_path
    if (new_conf)
    {
+      if (settings->core_specific_config)
+      {
+         RARCH_LOG("Can't use overrides in conjunction with per-core configs, disabling overrides \n");
+		 return false;
+	  }
       RARCH_LOG("Core-specific overrides found at %s. Appending.\n", core_path);
       strlcpy(global->append_config_path, core_path, sizeof(global->append_config_path));
       should_append = true;
@@ -1716,6 +1721,11 @@ bool config_load_override(void)
    // If a game override exists, add it's location to append_config_path
    if (new_conf)
    {
+      if (settings->core_specific_config)
+      {
+         RARCH_LOG("Can't use overrides in conjunction with per-core configs, disabling overrides \n");
+		 return false;
+	  }	 
       RARCH_LOG("Game-specific overrides found at %s. Appending.\n", game_path);
       if(should_append)
       {
@@ -1827,7 +1837,7 @@ bool config_load_remap(void)
       if(input_remapping_load_file(game_path))
          return true;
    }
-   else      
+   else   
    {
       RARCH_LOG("No core-specific remap found at %s.\n", core_path);
       *settings->input.remapping_path= '\0';
@@ -1852,7 +1862,7 @@ bool config_load_remap(void)
       *settings->input.remapping_path= '\0';
       input_remapping_set_defaults();
    }
-      
+   
 
    new_conf = NULL;
 
@@ -2133,7 +2143,7 @@ bool config_save_file(const char *path)
    config_set_bool(conf,  "ui_menubar_enable", settings->ui.menubar_enable);
    config_set_path(conf,  "libretro_path", settings->libretro);
    config_set_path(conf,  "core_options_path", settings->core_options_path);
-  
+
    config_set_bool(conf,  "suspend_screensaver_enable", settings->ui.suspend_screensaver_enable);
    config_set_path(conf,  "libretro_directory", settings->libretro_directory);
    config_set_path(conf,  "libretro_info_path", settings->libretro_info_path);
