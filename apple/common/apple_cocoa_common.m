@@ -544,6 +544,7 @@ static bool apple_gfx_ctx_get_metrics(void *data, enum display_metric_types type
             *value = (displayWidth/ physicalWidth) * 25.4f;
             break;
         default:
+            *value = 0;
             return false;
     }
     
