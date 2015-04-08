@@ -196,7 +196,7 @@ retro_perf_tick_t rarch_get_perf_counter(void)
 #elif defined(PSP)
    sceRtcGetCurrentTick(&time_ticks);
 #elif defined(_3DS)
-   time_ticks = osGetTime();
+   time_ticks = svcGetSystemTick();
 #elif defined(__mips__)
    struct timeval tv;
    gettimeofday(&tv,NULL);

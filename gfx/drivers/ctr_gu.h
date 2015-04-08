@@ -13,11 +13,14 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+/* this file contains mostly modified functions from the ctrulib sdk */
+
 #ifndef CTR_GU_H
 #define CTR_GU_H
 
 #include <3ds.h>
 #include <stdint.h>
+#include <string.h>
 #include <retro_inline.h>
 
 #define VIRT_TO_PHYS(vaddr) \
@@ -174,6 +177,22 @@ static INLINE void ctrGuSetAttributeBuffers(u32 total_attributes,
    GPUCMD_AddMaskedWrite(GPUREG_VSH_INPUTBUFFER_CONFIG, 0xB, 0xA0000000|(total_attributes-1));
    GPUCMD_AddWrite(GPUREG_0242, (total_attributes-1));
    GPUCMD_AddIncrementalWrites(GPUREG_VSH_ATTRIBUTES_PERMUTATION_LOW, ((u32[]){0x76543210, 0xBA98}), 2);
+}
+
+__attribute__((always_inline))
+static INLINE void ctrGuSetAttributeBuffersAddress(u32* baseAddress)
+{
+   GPUCMD_AddWrite(GPUREG_ATTRIBBUFFERS_LOC, ((u32)baseAddress)>>3);
+}
+
+__attribute__((always_inline))
+static INLINE void ctrGuSetVshGsh(shaderProgram_s* sp, DVLB_s* dvlb, u32 vsh_output_count, u32 gsh_input_count)
+{
+   dvlb->DVLE[0].outmapData[0] = vsh_output_count;
+   dvlb->DVLE[0].outmapMask = (1 << vsh_output_count) - 1;
+   shaderProgramInit(sp);
+   shaderProgramSetVsh(sp, &dvlb->DVLE[0]);
+   shaderProgramSetGsh(sp, &dvlb->DVLE[1], gsh_input_count);
 }
 
 #endif // CTR_GU_H
