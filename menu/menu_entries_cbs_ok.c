@@ -535,7 +535,11 @@ static int action_ok_remap_file_save_core(const char *path,
    if(!path_file_exists(directory))
        path_mkdir(directory);
    
-   input_remapping_save_file(file);
+   if(input_remapping_save_file(file))
+      rarch_main_msg_queue_push("Remap file saved successfully", 1, 100, true);
+   else
+      rarch_main_msg_queue_push("Error saving remap file", 1, 100, true);	   
+   
    return 0;
 }
 
@@ -560,7 +564,11 @@ static int action_ok_remap_file_save_game(const char *path,
    if(!path_file_exists(directory))
        path_mkdir(directory);
    
-   input_remapping_save_file(file);
+   if(input_remapping_save_file(file))
+      rarch_main_msg_queue_push("Remap file saved successfully", 1, 100, true);
+   else
+      rarch_main_msg_queue_push("Error saving remap file", 1, 100, true);	
+  
    return 0;
 }
 
