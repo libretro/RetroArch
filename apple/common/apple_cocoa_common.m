@@ -512,25 +512,39 @@ static bool apple_gfx_ctx_get_metrics(void *data, enum display_metric_types type
     NSSize displayPixelSize = [[description objectForKey:NSDeviceSize] sizeValue];
     CGSize displayPhysicalSize = CGDisplayScreenSize(
         [[description objectForKey:@"NSScreenNumber"] unsignedIntValue]);
+    CGFloat displayWidth   = displayPixelSize.width;
+    CGFloat displayHeight  = displayPixelSize.height;
+    CGFloat physicalWidth  = displayPhysicalSize.width;
+    CGFloat physicalHeight = displayPhysicalSize.height;
+#elif defined(IOS)
+    CGFloat scale = [UIScreen mainScreen].scale;
+    CGRect screenRect = [[UIScreen mainScreen] bounds];
+    
+    CGFloat displayWidth   = screenRect.size.width;
+    CGFloat displayHeight  = screenRect.size.height;
+    CGFloat physicalWidth  = screenRect.size.width * scale;
+    CGFloat physicalHeight = screenRect.size.height * scale;
+#endif
+    
+    (void)displayHeight;
     
     switch (type)
     {
         case DISPLAY_METRIC_NONE:
             return false;
         case DISPLAY_METRIC_MM_WIDTH:
-            *value = displayPhysicalSize.width;
+            *value = physicalWidth;
             break;
         case DISPLAY_METRIC_MM_HEIGHT:
-            *value = displayPhysicalSize.height;
+            *value = physicalHeight;
             break;
         case DISPLAY_METRIC_DPI:
             /* 25.4 mm in an inch. */
-            *value = (displayPixelSize.width / displayPhysicalSize.width) * 25.4f;
+            *value = (displayWidth/ physicalWidth) * 25.4f;
             break;
         default:
             return false;
     }
-#endif
     
     return true;
 }
