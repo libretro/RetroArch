@@ -37,12 +37,31 @@ static void frontend_win32_init(void *data)
 {
 	char os_version[PATH_MAX_LENGTH];
 	int major, minor;
+	typedef BOOL (WINAPI *isProcessDPIAwareProc)();
+	typedef BOOL (WINAPI *setProcessDPIAwareProc)();
 
 	(void)data;
 
 	frontend_win32_get_os(os_version, sizeof(os_version), &major, &minor);
 
+	isProcessDPIAwareProc isDPIAwareProc = (isProcessDPIAwareProc)
+		GetProcAddress(GetModuleHandle(TEXT("User32.dll")), "IsProcessDPIAware");
 
+	setProcessDPIAwareProc setDPIAwareProc = (setProcessDPIAwareProc)
+		GetProcAddress(GetModuleHandle(TEXT("User32.dll")), "SetProcessDPIAware");
+
+	if (isDPIAwareProc)
+	{
+		fprintf(stderr, "Is DPI aware...\n");
+		if (!isDPIAwareProc())
+		{
+			if (setDPIAwareProc)
+			{
+				fprintf(stderr, "Set DPI aware.\n");
+				setDPIAwareProc();
+			}
+		}
+	}
 }
 
 const frontend_ctx_driver_t frontend_ctx_win32 = {
