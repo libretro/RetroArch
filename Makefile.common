@@ -10,6 +10,7 @@ endif
 
 ifeq ($(HAVE_DYLIB), 1)
    DEFINES += -DHAVE_DYLIB
+	JOYCONFIG_LIBS += $(DYLIB_LIB)
 endif
 
 ifeq ($(SCALER_NO_SIMD), 1)
@@ -730,5 +731,4 @@ endif
 
 
 # Joyconfig binary
-JOYCONFIG_LIBS += -ldl
 JOYCONFIG_OBJ  += tools/retroarch-joyconfig-griffin.o
