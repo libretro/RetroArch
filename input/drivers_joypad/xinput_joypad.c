@@ -165,15 +165,15 @@ static bool xinput_joypad_init(void)
     * wrapper DLL (such as x360ce); support these by checking
     * the working directory first.
     *
-    * No need to check for existance as we will be checking LoadLibrary's
+    * No need to check for existance as we will be checking dylib_load's
     * success anyway.
     */
 
    /* Using dylib_* complicates building joyconfig. */
-   g_xinput_dll = LoadLibrary("xinput1_4.dll"); 
+   g_xinput_dll = (HINSTANCE)dylib_load("xinput1_4.dll"); 
    if (!g_xinput_dll)
    {
-      g_xinput_dll = LoadLibrary("xinput1_3.dll");
+      g_xinput_dll = (HINSTANCE)dylib_load("xinput1_3.dll");
       version = "1.3";
    }
 
