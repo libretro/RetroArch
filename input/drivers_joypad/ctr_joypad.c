@@ -146,8 +146,8 @@ static void ctr_joypad_poll(void)
    pad_state |= (state_tmp & KEY_R) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_R) : 0;
    pad_state |= (state_tmp & KEY_L) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_L) : 0;
 
-   analog_state[0][RETRO_DEVICE_INDEX_ANALOG_LEFT] [RETRO_DEVICE_ID_ANALOG_X] = state_tmp_analog.dx;
-   analog_state[0][RETRO_DEVICE_INDEX_ANALOG_LEFT] [RETRO_DEVICE_ID_ANALOG_Y] = state_tmp_analog.dy;
+   analog_state[0][RETRO_DEVICE_INDEX_ANALOG_LEFT] [RETRO_DEVICE_ID_ANALOG_X] =  (state_tmp_analog.dx * 200);
+   analog_state[0][RETRO_DEVICE_INDEX_ANALOG_LEFT] [RETRO_DEVICE_ID_ANALOG_Y] = -(state_tmp_analog.dy * 200);
 
    for (int i = 0; i < 2; i++)
       for (int j = 0; j < 2; j++)
