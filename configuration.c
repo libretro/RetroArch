@@ -1703,7 +1703,7 @@ bool config_load_override(void)
    {
       if (settings->core_specific_config)
       {
-         RARCH_LOG("Can't use overrides in conjunction with per-core configs, disabling overrides \n");
+         RARCH_LOG("Can't use overrides in conjunction with per-core configs, disabling overrides\n");
 		 return false;
 	  }
       RARCH_LOG("Core-specific overrides found at %s. Appending.\n", core_path);
@@ -1723,7 +1723,7 @@ bool config_load_override(void)
    {
       if (settings->core_specific_config)
       {
-         RARCH_LOG("Can't use overrides in conjunction with per-core configs, disabling overrides \n");
+         RARCH_LOG("Can't use overrides in conjunction with per-core configs, disabling overrides\n");
 		 return false;
 	  }	 
       RARCH_LOG("Game-specific overrides found at %s. Appending.\n", game_path);
@@ -1744,7 +1744,10 @@ bool config_load_override(void)
    if(should_append)
    {
       if(config_load_file(global->config_path, false))
+	  {
+		  rarch_main_msg_queue_push("Configuration override loaded", 1, 100, true);
           return true;
+	  }
    }
 
    return false;
