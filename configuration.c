@@ -2131,6 +2131,9 @@ bool config_save_file(const char *path)
          settings->load_dummy_on_core_shutdown);
    config_set_bool(conf,  "fps_show", settings->fps_show);
    config_set_bool(conf,  "ui_menubar_enable", settings->ui.menubar_enable);
+   config_set_path(conf,  "libretro_path", settings->libretro);
+   config_set_path(conf,  "core_options_path", settings->core_options_path);
+  
    config_set_bool(conf,  "suspend_screensaver_enable", settings->ui.suspend_screensaver_enable);
    config_set_path(conf,  "libretro_directory", settings->libretro_directory);
    config_set_path(conf,  "libretro_info_path", settings->libretro_info_path);
