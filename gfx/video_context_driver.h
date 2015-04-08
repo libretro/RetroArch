@@ -84,6 +84,9 @@ typedef struct gfx_ctx_driver
 
    void (*get_video_output_next)(void*);
 
+   bool (*get_metrics)(void *data, enum display_metric_types type,
+         float *value);
+
    /* Translates a window size to an aspect ratio.
     * In most cases this will be just width / height, but
     * some contexts will better know which actual aspect ratio is used.

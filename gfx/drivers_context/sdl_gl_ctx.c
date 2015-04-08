@@ -436,6 +436,7 @@ const gfx_ctx_driver_t gfx_ctx_sdl_gl =
    NULL, /* get_video_output_size */
    NULL, /* get_video_output_prev */
    NULL, /* get_video_output_next */
+   NULL, /* get_metrics */
    NULL, /* translate_aspect */
    sdl_ctx_update_window_title,
    sdl_ctx_check_window,

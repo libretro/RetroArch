@@ -502,6 +502,7 @@ const gfx_ctx_driver_t gfx_ctx_d3d = {
    NULL, /* get_video_output_size */
    NULL, /* get_video_output_prev */
    NULL, /* get_video_output_next */
+   NULL, /* get_metrics */
    NULL,
    gfx_ctx_d3d_update_title,
    gfx_ctx_d3d_check_window,
