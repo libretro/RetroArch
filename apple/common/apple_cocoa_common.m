@@ -24,6 +24,7 @@
 #include "../../general.h"
 #include "../../runloop.h"
 #include "../../frontend/frontend.h"
+#include "../../gfx/video_context_driver.h"
 
 #ifndef __has_feature
 /* Compatibility with non-Clang compilers. */
@@ -273,7 +274,7 @@ void apple_bind_game_view_fbo(void)
 static RAScreen* get_chosen_screen(void)
 {
 #if defined(OSX) && !defined(MAC_OS_X_VERSION_10_6)
-	return [NSScreen mainScreen];
+	return [RAScreen mainScreen];
 #else
    settings_t *settings = config_get_ptr();
    if (settings->video.monitor_index >= RAScreen.screens.count)
@@ -500,6 +501,38 @@ static void apple_gfx_ctx_update_window_title(void *data)
 #endif
     if (settings->fps_show)
         rarch_main_msg_queue_push(buf_fps, 1, 1, false);
+}
+
+static bool apple_gfx_ctx_get_metrics(void *data, enum display_metric_types type,
+            float *value)
+{
+#ifdef OSX
+    RAScreen *screen = [RAScreen mainScreen];
+    NSDictionary *description = [screen deviceDescription];
+    NSSize displayPixelSize = [[description objectForKey:NSDeviceSize] sizeValue];
+    CGSize displayPhysicalSize = CGDisplayScreenSize(
+        [[description objectForKey:@"NSScreenNumber"] unsignedIntValue]);
+    
+    switch (type)
+    {
+        case DISPLAY_METRIC_NONE:
+            return false;
+        case DISPLAY_METRIC_MM_WIDTH:
+            *value = displayPhysicalSize.width;
+            break;
+        case DISPLAY_METRIC_MM_HEIGHT:
+            *value = displayPhysicalSize.height;
+            break;
+        case DISPLAY_METRIC_DPI:
+            /* 25.4 mm in an inch. */
+            *value = (displayPixelSize.width / displayPhysicalSize.width) * 25.4f;
+            break;
+        default:
+            return false;
+    }
+#endif
+    
+    return true;
 }
 
 static bool apple_gfx_ctx_has_focus(void *data)

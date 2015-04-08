@@ -40,6 +40,14 @@ enum gfx_ctx_api
    GFX_CTX_DIRECT3D9_API,
    GFX_CTX_OPENVG_API
 };
+    
+enum display_metric_types
+{
+   DISPLAY_METRIC_NONE = 0,
+   DISPLAY_METRIC_MM_WIDTH,
+   DISPLAY_METRIC_MM_HEIGHT,
+   DISPLAY_METRIC_DPI,
+};
 
 typedef void (*gfx_ctx_proc_t)(void);
 
