@@ -38,13 +38,17 @@ struct dinput_joypad
 static struct dinput_joypad g_pads[MAX_USERS];
 static unsigned g_joypad_cnt;
 static unsigned g_last_xinput_pad_idx;
-LPDIRECTINPUT8 g_dinput_ctx;
 
 static const GUID common_xinput_guids[] = {
    {MAKELONG(0x28DE, 0x11FF),0x0000,0x0000,{0x00,0x00,0x50,0x49,0x44,0x56,0x49,0x44}}, /* Valve streaming pad */
    {MAKELONG(0x045E, 0x02A1),0x0000,0x0000,{0x00,0x00,0x50,0x49,0x44,0x56,0x49,0x44}}, /* Wired 360 pad */
    {MAKELONG(0x045E, 0x028E),0x0000,0x0000,{0x00,0x00,0x50,0x49,0x44,0x56,0x49,0x44}}  /* wireless 360 pad */
 };
+
+/* forward declarations */
+void dinput_destroy_context(void);
+bool g_xinput_block_pads;
+LPDIRECTINPUT8 g_dinput_ctx;
 
 static void dinput_joypad_destroy(void)
 {

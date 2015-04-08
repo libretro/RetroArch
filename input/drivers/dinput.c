@@ -73,7 +73,7 @@ struct dinput_input
    struct pointer_status pointer_head;  /* dummy head for easier iteration */
 };
 
-static void dinput_destroy_context(void)
+void dinput_destroy_context(void)
 {
    if (!g_dinput_ctx)
       return;
