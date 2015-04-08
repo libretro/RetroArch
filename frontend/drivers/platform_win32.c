@@ -35,20 +35,11 @@ static void frontend_win32_get_os(char *name, size_t sizeof_name, int *major, in
 
 static void frontend_win32_init(void *data)
 {
-	char os_version[PATH_MAX_LENGTH];
-	int major, minor;
 	typedef BOOL (WINAPI *isProcessDPIAwareProc)();
 	typedef BOOL (WINAPI *setProcessDPIAwareProc)();
-
-	(void)data;
-
-	frontend_win32_get_os(os_version, sizeof(os_version), &major, &minor);
-
-	isProcessDPIAwareProc isDPIAwareProc = (isProcessDPIAwareProc)
-		GetProcAddress(GetModuleHandle(TEXT("User32.dll")), "IsProcessDPIAware");
-
-	setProcessDPIAwareProc setDPIAwareProc = (setProcessDPIAwareProc)
-		GetProcAddress(GetModuleHandle(TEXT("User32.dll")), "SetProcessDPIAware");
+	HMODULE handle                         = GetModuleHandle(TEXT("User32.dll"));
+	isProcessDPIAwareProc  isDPIAwareProc  = (isProcessDPIAwareProc)dylib_proc(handle, "IsProcessDPIAware");
+	setProcessDPIAwareProc setDPIAwareProc = (setProcessDPIAwareProc)dylib_proc(handle, "SetProcessDPIAware");
 
 	if (isDPIAwareProc)
 	{
