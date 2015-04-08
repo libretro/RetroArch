@@ -82,7 +82,7 @@ void dinput_destroy_context(void)
    g_dinput_ctx = NULL;
 }
 
-static bool dinput_init_context(void)
+bool dinput_init_context(void)
 {
    if (g_dinput_ctx)
       return true;
