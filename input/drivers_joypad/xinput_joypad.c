@@ -24,6 +24,7 @@
 #include "../input_autodetect.h"
 #include "../input_common.h"
 
+#include "../../dynamic.h"
 #include "../../general.h"
 #include <boolean.h>
 
@@ -103,7 +104,7 @@ extern bool g_xinput_block_pads;
 /* For xinput1_n.dll */
 static HINSTANCE g_xinput_dll;
 
-/* Function pointer, to be assigned with GetProcAddress */
+/* Function pointer, to be assigned with dylib_proc */
 typedef uint32_t (__stdcall *XInputGetStateEx_t)(uint32_t, XINPUT_STATE*);
 static XInputGetStateEx_t g_XInputGetStateEx;
 
@@ -187,7 +188,7 @@ static bool xinput_joypad_init(void)
    /* If we get here then an xinput DLL is correctly loaded.
     * First try to load ordinal 100 (XInputGetStateEx).
     */
-   g_XInputGetStateEx = (XInputGetStateEx_t) GetProcAddress(g_xinput_dll, (const char*)100);
+   g_XInputGetStateEx = (XInputGetStateEx_t)dylib_proc(g_xinput_dll, (const char*)100);
    g_xinput_guide_button_supported = true;
 
    if (!g_XInputGetStateEx)
@@ -196,7 +197,7 @@ static bool xinput_joypad_init(void)
        * XInputGetState, at the cost of losing guide button support.
        */
       g_xinput_guide_button_supported = false;
-      g_XInputGetStateEx = (XInputGetStateEx_t) GetProcAddress(g_xinput_dll, "XInputGetState");
+      g_XInputGetStateEx = (XInputGetStateEx_t)dylib_proc(g_xinput_dll, "XInputGetState");
 
       if (!g_XInputGetStateEx)
       {
@@ -207,7 +208,7 @@ static bool xinput_joypad_init(void)
       RARCH_WARN("XInput: No guide button support.\n");
    }
 
-   g_XInputSetState = (XInputSetState_t) GetProcAddress(g_xinput_dll, "XInputSetState");
+   g_XInputSetState = (XInputSetState_t)dylib_proc(g_xinput_dll, "XInputSetState");
    if (!g_XInputSetState)
    {
       RARCH_ERR("Failed to init XInput: DLL is invalid or corrupt.\n");
