@@ -23,6 +23,7 @@
 
 #if defined(HAVE_DINPUT)
 #include "../input/drivers/dinput.c"
+#include "../input/drivers_joypad/dinput_joypad.c"
 #endif
 
 #if defined(HAVE_XINPUT)
