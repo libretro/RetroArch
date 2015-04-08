@@ -19,7 +19,7 @@
 #endif
 #include <retro_miscellaneous.h>
 #include "../frontend_driver.h"
-#include "../dynamic.h"
+#include "../../dynamic.h"
 
 #include <stdint.h>
 #include <boolean.h>
