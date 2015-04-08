@@ -1,6 +1,6 @@
 TARGET := retroarch_3ds
 OBJS :=
-OBJS += gfx/drivers/ctr_blit.o griffin/griffin.o
+OBJS += gfx/drivers/ctr_sprite.o griffin/griffin.o
 #NO_SMDH = 1
 DEBUG = 0
 
@@ -136,9 +136,11 @@ LD      := $(CXX)
 	3dsxtool $< $@ $(_3DSXFLAGS)
 
 #---------------------------------------------------------------------------------
-%.elf:
+%.elf: .FORCE
 	@echo linking $(notdir $@)
 	$(LD) $(LDFLAGS) $(OBJS) $(LIBDIRS) $(LIBS) -o $@
 	$(NM) -CSn $@ > $(notdir $*.lst)
 
+
+.PHONY: .FORCE
 
