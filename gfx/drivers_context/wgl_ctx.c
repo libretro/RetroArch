@@ -111,7 +111,7 @@ static void create_gl_context(HWND hwnd)
    bool debug       = global->system.hw_render_callback.debug_context;
 
 #ifdef _WIN32
-   dll_handle = LoadLibrary("OpenGL32.dll");
+   dll_handle = (HINSTANCE)dylib_load("OpenGL32.dll");
 #endif
 
    g_hdc = GetDC(hwnd);
