@@ -13,68 +13,35 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "3ds.h"
+#include <stdint.h>
+#include <stdlib.h>
 
-#include "../../general.h"
 #include "../../driver.h"
-#include "retroarch.h"
+#include "../../libretro.h"
+#include "../../general.h"
+#include "../input_common.h"
+#include "../input_joypad.h"
 
-static uint32_t kDown;
-static int16_t pad_state;
+#define MAX_PADS 1
 
-static void *ctr_input_init(void)
+typedef struct ctr_input
 {
-   return (void*)-1;
-}
+   const rarch_joypad_driver_t *joypad;
+} ctr_input_t;
 
 static void ctr_input_poll(void *data)
-{   
-   (void)data;
-   global_t   *global   = global_get_ptr();
-   uint64_t *lifecycle_state = (uint64_t*)&global->lifecycle_state;
+{
+   ctr_input_t *ctr = (ctr_input_t*)data;
 
-   hidScanInput();
-   kDown = hidKeysHeld();
-
-   pad_state = 0;
-   pad_state |= (kDown & KEY_DLEFT) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT) : 0;
-   pad_state |= (kDown & KEY_DDOWN) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN) : 0;
-   pad_state |= (kDown & KEY_DRIGHT) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT) : 0;
-   pad_state |= (kDown & KEY_DUP) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_UP) : 0;
-   pad_state |= (kDown & KEY_START) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_START) : 0;
-   pad_state |= (kDown & KEY_SELECT) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_SELECT) : 0;
-   pad_state |= (kDown & KEY_X) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_X) : 0;
-   pad_state |= (kDown & KEY_Y) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_Y) : 0;
-   pad_state |= (kDown & KEY_B) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_B) : 0;
-   pad_state |= (kDown & KEY_A) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_A) : 0;
-   pad_state |= (kDown & KEY_R) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_R) : 0;
-   pad_state |= (kDown & KEY_L) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_L) : 0;
-
-
-   *lifecycle_state &= ~((1ULL << RARCH_MENU_TOGGLE));
-
-   if(kDown & KEY_TOUCH)
-      *lifecycle_state |= (1ULL << RARCH_MENU_TOGGLE);
-
-   /* panic button */
-   if((kDown & KEY_START) &&
-      (kDown & KEY_SELECT) &&
-      (kDown & KEY_L) &&
-      (kDown & KEY_R))
-      rarch_main_command(RARCH_CMD_QUIT);
-
+   if (ctr->joypad)
+      ctr->joypad->poll();
 }
 
-static int16_t ctr_input_state(void *data,
-      const struct retro_keybind **retro_keybinds, unsigned port,
-      unsigned device, unsigned idx, unsigned id)
+static int16_t ctr_input_state(void *data, const struct retro_keybind **binds,
+      unsigned port, unsigned device,
+      unsigned idx, unsigned id)
 {
-   (void)data;
-   (void)retro_keybinds;
-   (void)port;
-   (void)device;
-   (void)idx;
-   (void)id;
+   ctr_input_t *ctr = (ctr_input_t*)data;
 
    if (port > 0)
       return 0;
@@ -82,42 +49,59 @@ static int16_t ctr_input_state(void *data,
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
-      return pad_state;
-
+         return input_joypad_pressed(ctr->joypad, port, binds[port], id);
       case RETRO_DEVICE_ANALOG:
-      return 0;
+         return input_joypad_analog(ctr->joypad, port, idx, id, binds[port]);
    }
 
    return 0;
 }
 
-static bool ctr_input_key_pressed(void *data, int key)
-{
-   (void)data;
-   global_t   *global   = global_get_ptr();
-
-   return (global->lifecycle_state & (1ULL << key))||
-         (pad_state & (1ULL << key));
-}
-
 static void ctr_input_free_input(void *data)
 {
-   (void)data;
+   ctr_input_t *ctr = (ctr_input_t*)data;
+
+   if (ctr && ctr->joypad)
+      ctr->joypad->destroy();
+
+   free(data);
+}
+
+static void* ctr_input_initialize(void)
+{
+   settings_t *settings = config_get_ptr();
+   ctr_input_t *ctr = (ctr_input_t*)calloc(1, sizeof(*ctr));
+   if (!ctr)
+      return NULL;
+
+   ctr->joypad = input_joypad_init_driver(settings->input.joypad_driver);
+
+   return ctr;
+}
+
+static bool ctr_input_key_pressed(void *data, int key)
+{
+   settings_t *settings = config_get_ptr();
+   global_t   *global   = global_get_ptr();
+   ctr_input_t *ctr     = (ctr_input_t*)data;
+
+   return (global->lifecycle_state & (1ULL << key)) ||
+      input_joypad_pressed(ctr->joypad, 0, settings->input.binds[0], key);
 }
 
 static uint64_t ctr_input_get_capabilities(void *data)
 {
-   uint64_t caps = 0;
+   (void)data;
 
-   caps |= (1 << RETRO_DEVICE_JOYPAD);
-
-   return caps;
+   return (1 << RETRO_DEVICE_JOYPAD) |  (1 << RETRO_DEVICE_ANALOG);
 }
 
-static bool ctr_input_set_sensor_state(void *data,
-      unsigned port, enum retro_sensor_action action, unsigned event_rate)
+static const rarch_joypad_driver_t *ctr_input_get_joypad_driver(void *data)
 {
-   return false;
+   ctr_input_t *ctr = (ctr_input_t*)data;
+   if (ctr)
+      return ctr->joypad;
+   return NULL;
 }
 
 static void ctr_input_grab_mouse(void *data, bool state)
@@ -138,15 +122,16 @@ static bool ctr_input_set_rumble(void *data, unsigned port,
 }
 
 input_driver_t input_ctr = {
-   ctr_input_init,
+   ctr_input_initialize,
    ctr_input_poll,
    ctr_input_state,
    ctr_input_key_pressed,
    ctr_input_free_input,
-   ctr_input_set_sensor_state,
+   NULL,
    NULL,
    ctr_input_get_capabilities,
    "ctr",
    ctr_input_grab_mouse,
    ctr_input_set_rumble,
+   ctr_input_get_joypad_driver,
 };
