@@ -248,6 +248,7 @@ const frontend_ctx_driver_t frontend_ctx_psp = {
    frontend_psp_set_fork,        /* set_fork */
    frontend_psp_shutdown,        /* shutdown */
    NULL,                         /* get_name */
+   NULL,                         /* get_os */
    frontend_psp_get_rating,      /* get_rating */
    NULL,                         /* load_content */
    "psp",

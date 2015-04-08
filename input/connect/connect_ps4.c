@@ -94,7 +94,7 @@ static void* hidpad_ps4_init(void *data, uint32_t slot, send_control_t ptr)
 {
    uint8_t magic_data[0x25];
    struct pad_connection* connection = (struct pad_connection*)data;
-   struct hidpad_ps4_data* device = (struct hidpad_ps4_data*)
+   struct hidpad_ps4_data* device    = (struct hidpad_ps4_data*)
       calloc(1, sizeof(struct hidpad_ps4_data));
 
    if (!device)
@@ -151,7 +151,7 @@ static bool hidpad_ps4_check_dpad(struct ps4 *rpt, unsigned id)
 
 static uint64_t hidpad_ps4_get_buttons(void *data)
 {
-   uint64_t buttonstate = 0;
+   uint64_t buttonstate           = 0;
    struct hidpad_ps4_data *device = (struct hidpad_ps4_data*)data;
    struct ps4 *rpt = device ? (struct ps4*)&device->data : NULL;
 

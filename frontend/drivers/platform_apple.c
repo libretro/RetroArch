@@ -17,7 +17,7 @@
 
 #include "../../apple/common/CFExtensions.h"
 
-#include "../frontend.h"
+#include "../frontend_driver.h"
 #ifdef IOS
 #include "../../menu/drivers/ios.h"
 #endif
@@ -26,6 +26,111 @@
 #include <boolean.h>
 #include <stddef.h>
 #include <string.h>
+
+static bool CopyModel(char** model, uint32_t *majorRev, uint32_t *minorRev)
+{
+#ifdef OSX
+   int mib[2];
+   int count;
+   unsigned long modelLen;
+   char *revStr;
+#endif
+   char *machineModel;
+   bool success  = true;
+   size_t length = 1024;
+
+   if (!model || !majorRev || !minorRev)
+   {
+      RARCH_ERR("CopyModel: Passing NULL arguments\n");
+      return false;
+   }
+
+#ifdef IOS
+   sysctlbyname("hw.machine", NULL, &length, NULL, 0);
+#endif
+
+   machineModel  = malloc(length);
+
+   if (!machineModel)
+   {
+      success   = false;
+      goto exit;
+   }
+#ifdef IOS
+   sysctlbyname("hw.machine", machineModel, &length, NULL, 0);
+   *model        = strndup(machineModel, length);
+#else
+   mib[0]        = CTL_HW;
+   mib[1]        = HW_MODEL;
+
+   if (sysctl(mib, 2, machineModel, &length, NULL, 0))
+   {
+      printf("CopyModel: sysctl (error %d)\n", errno);
+      success  = false;
+      goto exit;
+   }
+
+   modelLen      = strcspn(machineModel, "0123456789");
+
+   if (modelLen  == 0)
+   {
+      RARCH_ERR("CopyModel: Could not find machine model name\n");
+      success   = false;
+      goto exit;
+   }
+
+   *model        = strndup(machineModel, modelLen);
+
+   if (*model    == NULL)
+   {
+      RARCH_ERR("CopyModel: Could not find machine model name\n");
+      success   = false;
+      goto exit;
+   }
+
+   *majorRev     = 0;
+   *minorRev     = 0;
+   revStr        = strpbrk(machineModel, "0123456789");
+
+   if (!revStr)
+   {
+      RARCH_ERR("CopyModel: Could not find machine version number, inferred value is 0,0\n");
+      success   = true;
+      goto exit;
+   }
+
+   count         = sscanf(revStr, "%d,%d", majorRev, minorRev);
+
+   if (count < 2)
+   {
+      RARCH_ERR("CopyModel: Could not find machine version number\n");
+      if (count < 1)
+         *majorRev = 0;
+      *minorRev     = 0;
+      success       = true;
+      goto exit;
+   }
+#endif
+
+exit:
+   if (machineModel)
+      free(machineModel);
+   if (!success)
+   {
+      if (*model)
+         free(*model);
+      *model    = NULL;
+      *majorRev = 0;
+      *minorRev = 0;
+   }
+   return success;
+}
+
+static void frontend_apple_get_name(char *name, size_t sizeof_name)
+{
+    uint32_t major_rev, minor_rev;
+    CopyModel(&name, &major_rev, &minor_rev);
+}
 
 static void frontend_apple_get_environment_settings(int *argc, char *argv[],
       void *args, void *params_data)
@@ -125,10 +230,69 @@ static void frontend_apple_shutdown(bool unused)
 
 static int frontend_apple_get_rating(void)
 {
-   /* TODO/FIXME - look at unique identifier per device and 
-    * determine rating for some */
+   char model[PATH_MAX_LENGTH];
+
+   frontend_apple_get_name(model, sizeof(model));
+
+   /* iPhone 4 */
+#if 0
+   if (strstr(model, "iPhone3"))
+      return -1;
+#endif
+
+   /* iPad 1 */
+#if 0
+   if (strstr(model, "iPad1,1"))
+      return -1;
+#endif
+
+   /* iPhone 4S */
+   if (strstr(model, "iPhone4,1"))
+      return 8;
+
+   /* iPad 2/iPad Mini 1 */
+   if (strstr(model, "iPad2"))
+      return 9;
+
+   /* iPhone 5/5C */
+   if (strstr(model, "iPhone5"))
+      return 13;
+
+   /* iPhone 5S */
+   if (strstr(model, "iPhone6,1") || strstr(model, "iPhone6,2"))
+      return 14;
+
+   /* iPad Mini 2/3 */
+   if (     strstr(model, "iPad4,4")
+         || strstr(model, "iPad4,5")
+         || strstr(model, "iPad4,6")
+         || strstr(model, "iPad4,7")
+         || strstr(model, "iPad4,8")
+         || strstr(model, "iPad4,9")
+         )
+      return 15;
+
+   /* iPad Air */
+   if (     strstr(model, "iPad4,1")
+         || strstr(model, "iPad4,2")
+         || strstr(model, "iPad4,3")
+      )
+      return 16;
+
+   /* iPhone 6, iPhone 6 Plus */
+   if (strstr(model, "iPhone7"))
+      return 17;
+
+   /* iPad Air 2 */
+   if (strstr(model, "iPad5,3") || strstr(model, "iPad5,4"))
+      return 18;
+
+   /* TODO/FIXME - 
+      - more ratings for more systems
+      - determine rating more intelligently*/
    return -1;
 }
+
 const frontend_ctx_driver_t frontend_ctx_apple = {
    frontend_apple_get_environment_settings, /* environment_get */
    NULL,                         /* init */
@@ -138,7 +302,8 @@ const frontend_ctx_driver_t frontend_ctx_apple = {
    NULL,                         /* exec */
    NULL,                         /* set_fork */
    frontend_apple_shutdown,      /* shutdown */
-   NULL,                         /* get_name */
+   frontend_apple_get_name,      /* get_name */
+   NULL,                         /* get_os */
    frontend_apple_get_rating,    /* get_rating */
    frontend_apple_load_content,  /* load_content */
    "apple",

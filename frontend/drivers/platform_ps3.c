@@ -449,6 +449,7 @@ const frontend_ctx_driver_t frontend_ctx_ps3 = {
    frontend_ps3_set_fork,        /* set_fork */
    NULL,                         /* shutdown */
    NULL,                         /* get_name */
+   NULL,                         /* get_os */
    frontend_ps3_get_rating,      /* get_rating */
    NULL,                         /* load_content */
    "ps3",

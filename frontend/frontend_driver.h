@@ -44,6 +44,7 @@ typedef struct frontend_ctx_driver
    void (*set_fork)(bool exitspawn, bool start_game);
    void (*shutdown)(bool);
    void (*get_name)(char *, size_t);
+   void (*get_os)(char *, size_t, int *major, int *minor);
    int  (*get_rating)(void);
    void (*content_loaded)(void);
 
@@ -60,6 +61,7 @@ extern const frontend_ctx_driver_t frontend_ctx_apple;
 extern const frontend_ctx_driver_t frontend_ctx_android;
 extern const frontend_ctx_driver_t frontend_ctx_psp;
 extern const frontend_ctx_driver_t frontend_ctx_ctr;
+extern const frontend_ctx_driver_t frontend_ctx_win32;
 extern const frontend_ctx_driver_t frontend_ctx_null;
 
 /**
@@ -71,6 +73,8 @@ extern const frontend_ctx_driver_t frontend_ctx_null;
  * Returns: pointer to driver if successful, otherwise NULL.
  **/
 const frontend_ctx_driver_t *frontend_ctx_find_driver(const char *ident);
+
+const frontend_ctx_driver_t *frontend_get_ptr(void);
 
 /**
  * frontend_ctx_init_first:

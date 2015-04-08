@@ -213,7 +213,7 @@ if [ "$HAVE_SDL2" = 'yes' ]; then
    fi
 fi
 
-check_lib LIBUSB -lusb
+check_lib LIBUSB -lusb-1.0
 
 if [ "$OS" = 'Win32' ]; then
    check_lib DINPUT -ldinput8

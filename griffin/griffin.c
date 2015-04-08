@@ -226,14 +226,14 @@ VIDEO DRIVER
 #if defined(HAVE_D3D)
 #include "../gfx/d3d/d3d_wrapper.cpp"
 #include "../gfx/d3d/d3d.cpp"
-#include "../gfx/d3d/render_chain_driver.cpp"
+#include "../gfx/d3d/render_chain_driver.c"
 #ifdef _XBOX
 #include "../gfx/d3d/render_chain_xdk.cpp"
 #endif
 #ifdef HAVE_CG
 #include "../gfx/d3d/render_chain_cg.cpp"
 #endif
-#include "../gfx/d3d/render_chain_null.cpp"
+#include "../gfx/d3d/render_chain_null.c"
 #endif
 
 #if defined(GEKKO)
@@ -341,6 +341,7 @@ INPUT
 
 #ifdef HAVE_DINPUT
 #include "../input/drivers/dinput.c"
+#include "../input/drivers_joypad/dinput_joypad.c"
 #endif
 
 #ifdef HAVE_XINPUT
@@ -606,6 +607,9 @@ FRONTEND
 
 #include "../frontend/frontend_driver.c"
 
+#if defined(_WIN32) && !defined(_XBOX)
+#include "../frontend/drivers/platform_win32.c"
+#endif
 #if defined(__CELLOS_LV2__)
 #include "../frontend/drivers/platform_ps3.c"
 #elif defined(GEKKO)

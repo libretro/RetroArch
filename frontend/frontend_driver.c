@@ -15,6 +15,7 @@
  */
 
 #include "frontend_driver.h"
+#include "../driver.h"
 #include <string.h>
 
 #ifdef HAVE_CONFIG_H
@@ -45,6 +46,9 @@ static const frontend_ctx_driver_t *frontend_ctx_drivers[] = {
 #endif
 #if defined(_3DS)
    &frontend_ctx_ctr,
+#endif
+#if defined(_WIN32) && !defined(_XBOX)
+   &frontend_ctx_win32,
 #endif
    &frontend_ctx_null,
    NULL
@@ -86,4 +90,12 @@ const frontend_ctx_driver_t *frontend_ctx_init_first(void)
       return frontend_ctx_drivers[i];
 
    return NULL;
+}
+
+const frontend_ctx_driver_t *frontend_get_ptr(void)
+{
+   driver_t *driver        = driver_get_ptr();
+   if (!driver)
+      return NULL;
+   return driver->frontend_ctx;
 }

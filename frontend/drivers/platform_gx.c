@@ -386,6 +386,7 @@ const frontend_ctx_driver_t frontend_ctx_gx = {
    frontend_gx_set_fork,            /* set_fork */
    NULL,                            /* shutdown */
    NULL,                            /* get_name */
+   NULL,                            /* get_os */
    frontend_gx_get_rating,          /* get_rating */
    NULL,                            /* load_content */
    "gx",

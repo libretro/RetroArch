@@ -186,6 +186,7 @@ const frontend_ctx_driver_t frontend_ctx_ctr = {
    NULL,                         /* set_fork */
    frontend_ctr_shutdown,        /* shutdown */
    NULL,                         /* get_name */
+   NULL,                         /* get_os */
    frontend_ctr_get_rating,      /* get_rating */
    NULL,                         /* load_content */
    "ctr",

@@ -21,7 +21,6 @@
 #include "../dynamic.h"
 #include "../frontend/frontend.h"
 #include "../../retroarch.h"
-#include "../../runloop.h"
 #include "../../performance.h"
 #include <file/file_path.h>
 

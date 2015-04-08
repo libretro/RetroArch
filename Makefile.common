@@ -369,7 +369,8 @@ endif
 ifeq ($(HAVE_DINPUT), 1)
    LIBS += -ldinput8 -ldxguid -lole32
    DEFINES += -DHAVE_DINPUT
-   OBJ += input/drivers/dinput.o
+   OBJ += input/drivers/dinput.o \
+			 input/drivers_joypad/dinput_joypad.o
    JOYCONFIG_LIBS += -ldinput8 -ldxguid -lole32
 endif
 
@@ -709,7 +710,8 @@ ifneq ($(findstring Win32,$(OS)),)
    OBJ += media/rarch.o \
           input/drivers_keyboard/keyboard_event_win32.o \
 			 gfx/drivers_wm/win32_common.o \
-			 gfx/drivers_wm/win32_dwm_common.o
+			 gfx/drivers_wm/win32_dwm_common.o \
+			 frontend/drivers/platform_win32.o
 endif
 
 # Record

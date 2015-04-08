@@ -39,8 +39,16 @@
 #include <string.h>
 #include <windowsx.h>
 
+/* Keep track of which pad indexes are 360 controllers.
+ * Not static, will be read in xinput_joypad.c
+ * -1 = not xbox pad, otherwise 0..3
+ */
+
+int g_xinput_pad_indexes[MAX_USERS];
+bool g_xinput_block_pads;
+
 /* Context has to be global as joypads also ride on this context. */
-static LPDIRECTINPUT8 g_ctx;
+LPDIRECTINPUT8 g_dinput_ctx;
 
 struct pointer_status
 {
@@ -65,28 +73,18 @@ struct dinput_input
    struct pointer_status pointer_head;  /* dummy head for easier iteration */
 };
 
-struct dinput_joypad
+void dinput_destroy_context(void)
 {
-   LPDIRECTINPUTDEVICE8 joypad;
-   DIJOYSTATE2 joy_state;
-   char* joy_name;
-};
-
-static unsigned g_joypad_cnt;
-static struct dinput_joypad g_pads[MAX_USERS];
-
-static void dinput_destroy_context(void)
-{
-   if (!g_ctx)
+   if (!g_dinput_ctx)
       return;
 
-   IDirectInput8_Release(g_ctx);
-   g_ctx = NULL;
+   IDirectInput8_Release(g_dinput_ctx);
+   g_dinput_ctx = NULL;
 }
 
-static bool dinput_init_context(void)
+bool dinput_init_context(void)
 {
-   if (g_ctx)
+   if (g_dinput_ctx)
       return true;
 
    CoInitialize(NULL);
@@ -95,11 +93,11 @@ static bool dinput_init_context(void)
 #ifdef __cplusplus
    if (FAILED(DirectInput8Create(
       GetModuleHandle(NULL), DIRECTINPUT_VERSION, IID_IDirectInput8,
-      (void**)&g_ctx, NULL)))
+      (void**)&g_dinput_ctx, NULL)))
 #else
    if (FAILED(DirectInput8Create(
       GetModuleHandle(NULL), DIRECTINPUT_VERSION, &IID_IDirectInput8,
-      (void**)&g_ctx, NULL)))
+      (void**)&g_dinput_ctx, NULL)))
 #endif
    {
       RARCH_ERR("Failed to init DirectInput.\n");
@@ -126,24 +124,24 @@ static void *dinput_init(void)
       return NULL;
 
 #ifdef __cplusplus
-   if (FAILED(IDirectInput8_CreateDevice(g_ctx, GUID_SysKeyboard, &di->keyboard, NULL)))
+   if (FAILED(IDirectInput8_CreateDevice(g_dinput_ctx, GUID_SysKeyboard, &di->keyboard, NULL)))
    {
       RARCH_ERR("Failed to create keyboard device.\n");
       di->keyboard = NULL;
    }
 
-   if (FAILED(IDirectInput8_CreateDevice(g_ctx, GUID_SysMouse, &di->mouse, NULL)))
+   if (FAILED(IDirectInput8_CreateDevice(g_dinput_ctx, GUID_SysMouse, &di->mouse, NULL)))
    {
       RARCH_ERR("Failed to create mouse device.\n");
       di->mouse = NULL;
    }
 #else
-   if (FAILED(IDirectInput8_CreateDevice(g_ctx, &GUID_SysKeyboard, &di->keyboard, NULL)))
+   if (FAILED(IDirectInput8_CreateDevice(g_dinput_ctx, &GUID_SysKeyboard, &di->keyboard, NULL)))
    {
       RARCH_ERR("Failed to create keyboard device.\n");
       di->keyboard = NULL;
    }
-   if (FAILED(IDirectInput8_CreateDevice(g_ctx, &GUID_SysMouse, &di->mouse, NULL)))
+   if (FAILED(IDirectInput8_CreateDevice(g_dinput_ctx, &GUID_SysMouse, &di->mouse, NULL)))
    {
       RARCH_ERR("Failed to create mouse device.\n");
       di->mouse = NULL;
@@ -302,6 +300,8 @@ static int16_t dinput_lightgun_state(struct dinput_input *di, unsigned id)
 
 static int16_t dinput_mouse_state(struct dinput_input *di, unsigned id)
 {
+   int16_t state = 0;
+
    switch (id)
    {
       case RETRO_DEVICE_ID_MOUSE_X:
@@ -313,29 +313,25 @@ static int16_t dinput_mouse_state(struct dinput_input *di, unsigned id)
       case RETRO_DEVICE_ID_MOUSE_RIGHT:
          return di->mouse_r;
       case RETRO_DEVICE_ID_MOUSE_WHEELUP:
-          {
-              int16_t state = di->mouse_wu ? 1 : 0;
-              di->mouse_wu = false;
-              return state;
-          }
+         if (di->mouse_wu)
+            state = 1;
+         di->mouse_wu = false;
+         return state;
       case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
-          {
-              int16_t state = di->mouse_wd ? 1 : 0;
-              di->mouse_wd = false;
-              return state;
-          }
+         if (di->mouse_wd)
+            state = 1;
+         di->mouse_wd = false;
+         return state;
       case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP:
-          {
-              int16_t state = di->mouse_hwu ? 1 : 0;
-              di->mouse_hwu = false;
-              return state;
-          }
+         if (di->mouse_hwu)
+            state = 1;
+         di->mouse_hwu = false;
+         return state;
       case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN:
-          {
-              int16_t state = di->mouse_hwd ? 1 : 0;
-              di->mouse_hwd = false;
-              return state;
-          }
+         if (di->mouse_hwd)
+            state = 1;
+         di->mouse_hwd = false;
+         return state;
       case RETRO_DEVICE_ID_MOUSE_MIDDLE:
          return di->mouse_m;
    }
@@ -355,16 +351,23 @@ static int16_t dinput_pointer_state(struct dinput_input *di,
    while (check_pos && num < idx)
    {
       num++;
-      check_pos = check_pos->next;
+      check_pos    = check_pos->next;
    }
    if (!check_pos && idx > 0) /* idx = 0 has mouse fallback. */
       return 0;
 
-   x = check_pos ? check_pos->pointer_x : di->mouse_x;
-   y = check_pos ? check_pos->pointer_y : di->mouse_y;
-   pointer_down = check_pos ? true : di->mouse_l;
+   x               = di->mouse_x;
+   y               = di->mouse_y;
+   pointer_down    = di->mouse_l;
 
-   valid = input_translate_coord_viewport(x, y,
+   if (check_pos)
+   {
+      x            = check_pos->pointer_x;
+      y            = check_pos->pointer_y;
+      pointer_down = true;
+   }
+
+   valid           = input_translate_coord_viewport(x, y,
          &res_x, &res_y, &res_screen_x, &res_screen_y);
 
    if (!valid)
@@ -372,8 +375,8 @@ static int16_t dinput_pointer_state(struct dinput_input *di,
 
    if (screen)
    {
-      res_x = res_screen_x;
-      res_y = res_screen_y;
+      res_x        = res_screen_x;
+      res_y        = res_screen_y;
    }
 
    inside = (res_x >= -0x7fff) && (res_y >= -0x7fff);
@@ -451,7 +454,8 @@ static int16_t dinput_input_state(void *data,
 #endif
 
 /* Stores x/y in client coordinates. */
-void dinput_pointer_store_pos(struct pointer_status *pointer, WPARAM lParam)
+static void dinput_pointer_store_pos(
+      struct pointer_status *pointer, WPARAM lParam)
 {
    POINT point;
    driver_t *driver = driver_get_ptr();
@@ -463,7 +467,7 @@ void dinput_pointer_store_pos(struct pointer_status *pointer, WPARAM lParam)
    pointer->pointer_y = point.y;
 }
 
-void dinput_add_pointer(struct dinput_input *di,
+static void dinput_add_pointer(struct dinput_input *di,
       struct pointer_status *new_pointer)
 {
    struct pointer_status *insert_pos = NULL;
@@ -476,7 +480,7 @@ void dinput_add_pointer(struct dinput_input *di,
    insert_pos->next = new_pointer;
 }
 
-void dinput_delete_pointer(struct dinput_input *di, int pointer_id)
+static void dinput_delete_pointer(struct dinput_input *di, int pointer_id)
 {
    struct pointer_status *check_pos = &di->pointer_head;
 
@@ -493,8 +497,8 @@ void dinput_delete_pointer(struct dinput_input *di, int pointer_id)
    }
 }
 
-struct pointer_status *dinput_find_pointer(struct dinput_input *di,
-      int pointer_id)
+static struct pointer_status *dinput_find_pointer(
+      struct dinput_input *di, int pointer_id)
 {
    struct pointer_status *check_pos = di->pointer_head.next;
 
@@ -508,7 +512,7 @@ struct pointer_status *dinput_find_pointer(struct dinput_input *di,
    return check_pos;
 }
 
-void dinput_clear_pointers(struct dinput_input *di)
+static void dinput_clear_pointers(struct dinput_input *di)
 {
    struct pointer_status *pointer = &di->pointer_head;
 
@@ -599,15 +603,15 @@ bool dinput_handle_message(void *dinput, UINT message, WPARAM wParam, LPARAM lPa
 static void dinput_free(void *data)
 {
    struct dinput_input *di = (struct dinput_input*)data;
-   LPDIRECTINPUT8 hold_ctx = g_ctx;
+   LPDIRECTINPUT8 hold_ctx = g_dinput_ctx;
 
    if (di)
    {
       /* Prevent a joypad driver to kill our context prematurely. */
-      g_ctx = NULL;
+      g_dinput_ctx = NULL;
       if (di->joypad)
          di->joypad->destroy();
-      g_ctx = hold_ctx;
+      g_dinput_ctx = hold_ctx;
 
       /* Clear any leftover pointers. */
       dinput_clear_pointers(di);
@@ -685,392 +689,3 @@ input_driver_t input_dinput = {
    dinput_get_joypad_driver,
 };
 
-/* Keep track of which pad indexes are 360 controllers.
- * Not static, will be read in xinput_joypad.c
- * -1 = not xbox pad, otherwise 0..3
- */
-
-int g_xinput_pad_indexes[MAX_USERS];
-bool g_xinput_block_pads;
-
-static void dinput_joypad_destroy(void)
-{
-   unsigned i;
-   settings_t *settings = config_get_ptr();
-
-   for (i = 0; i < MAX_USERS; i++)
-   {
-      if (g_pads[i].joypad)
-      {
-         IDirectInputDevice8_Unacquire(g_pads[i].joypad);
-         IDirectInputDevice8_Release(g_pads[i].joypad);
-      }
-      
-      free(g_pads[i].joy_name);
-      g_pads[i].joy_name = NULL;
-      *settings->input.device_names[i] = '\0';
-   }
-
-   g_joypad_cnt = 0;
-   memset(g_pads, 0, sizeof(g_pads));
-
-   /* Can be blocked by global Dinput context. */
-   dinput_destroy_context();
-}
-
-static BOOL CALLBACK enum_axes_cb(
-      const DIDEVICEOBJECTINSTANCE *inst, void *p)
-{
-   DIPROPRANGE range;
-   LPDIRECTINPUTDEVICE8 joypad = (LPDIRECTINPUTDEVICE8)p;
-
-   memset(&range, 0, sizeof(range));
-   range.diph.dwSize = sizeof(DIPROPRANGE);
-   range.diph.dwHeaderSize = sizeof(DIPROPHEADER);
-   range.diph.dwHow = DIPH_BYID;
-   range.diph.dwObj = inst->dwType;
-   range.lMin = -0x7fff;
-   range.lMax = 0x7fff;
-   IDirectInputDevice8_SetProperty(joypad, DIPROP_RANGE, &range.diph);
-
-   return DIENUM_CONTINUE;
-}
-
-static const GUID common_xinput_guids[] = {
-   {MAKELONG(0x28DE, 0x11FF),0x0000,0x0000,{0x00,0x00,0x50,0x49,0x44,0x56,0x49,0x44}}, /* Valve streaming pad */
-   {MAKELONG(0x045E, 0x02A1),0x0000,0x0000,{0x00,0x00,0x50,0x49,0x44,0x56,0x49,0x44}}, /* Wired 360 pad */
-   {MAKELONG(0x045E, 0x028E),0x0000,0x0000,{0x00,0x00,0x50,0x49,0x44,0x56,0x49,0x44}}  /* wireless 360 pad */
-};
-
-/* Based on SDL2's implementation. */
-static bool guid_is_xinput_device(const GUID* product_guid)
-{
-   unsigned i, num_raw_devs = 0;
-   PRAWINPUTDEVICELIST raw_devs = NULL;
-
-   /* Check for well known XInput device GUIDs, 
-    * thereby removing the need for the IG_ check.
-    * This lets us skip RAWINPUT for popular devices. 
-    *
-    * Also, we need to do this for the Valve Streaming Gamepad 
-    * because it's virtualized and doesn't show up in the device list.  */
-
-   for (i = 0; i < ARRAY_SIZE(common_xinput_guids); ++i)
-   {
-      if (memcmp(product_guid, &common_xinput_guids[i], sizeof(GUID)) == 0)
-         return true;
-   }
-
-   /* Go through RAWINPUT (WinXP and later) to find HID devices. */
-   if (!raw_devs)
-   {
-      if ((GetRawInputDeviceList(NULL, &num_raw_devs,
-                  sizeof(RAWINPUTDEVICELIST)) == (UINT)-1) || (!num_raw_devs))
-         return false;
-
-      raw_devs = (PRAWINPUTDEVICELIST)
-         malloc(sizeof(RAWINPUTDEVICELIST) * num_raw_devs);
-      if (!raw_devs)
-         return false;
-
-      if (GetRawInputDeviceList(raw_devs, &num_raw_devs,
-               sizeof(RAWINPUTDEVICELIST)) == (UINT)-1)
-      {
-         free(raw_devs);
-         raw_devs = NULL;
-         return false;
-      }
-   }
-
-   for (i = 0; i < num_raw_devs; i++)
-   {
-      RID_DEVICE_INFO rdi;
-      char devName[128];
-      UINT rdiSize = sizeof(rdi);
-      UINT nameSize = sizeof(devName);
-
-      rdi.cbSize = sizeof (rdi);
-
-      if ((raw_devs[i].dwType == RIM_TYPEHID) &&
-          (GetRawInputDeviceInfoA(raw_devs[i].hDevice, RIDI_DEVICEINFO, &rdi, &rdiSize) != ((UINT)-1)) &&
-          (MAKELONG(rdi.hid.dwVendorId, rdi.hid.dwProductId) == ((LONG)product_guid->Data1)) &&
-          (GetRawInputDeviceInfoA(raw_devs[i].hDevice, RIDI_DEVICENAME, devName, &nameSize) != ((UINT)-1)) &&
-          (strstr(devName, "IG_") != NULL) )
-      {
-         free(raw_devs);
-         raw_devs = NULL;
-         return true;
-      }
-   }
-   
-   free(raw_devs);
-   raw_devs = NULL;
-   return false;
-}
-
-/* Forward declaration */
-static const char *dinput_joypad_name(unsigned pad);
-
-static unsigned g_last_xinput_pad_idx;
-
-static BOOL CALLBACK enum_joypad_cb(const DIDEVICEINSTANCE *inst, void *p)
-{
-   bool is_xinput_pad;
-   LPDIRECTINPUTDEVICE8 *pad = NULL;
-   driver_t *driver     = driver_get_ptr();
-   settings_t *settings = config_get_ptr();
-
-   (void)p;
-
-   if (g_joypad_cnt == MAX_USERS)
-      return DIENUM_STOP;
-
-   pad = &g_pads[g_joypad_cnt].joypad;
-
-#ifdef __cplusplus
-   if (FAILED(IDirectInput8_CreateDevice(
-               g_ctx, inst->guidInstance, pad, NULL)))
-#else
-   if (FAILED(IDirectInput8_CreateDevice(
-               g_ctx, &inst->guidInstance, pad, NULL)))
-#endif
-   return DIENUM_CONTINUE;
-   
-   g_pads[g_joypad_cnt].joy_name = strdup(inst->tszProductName);
-   
-#ifdef HAVE_XINPUT
-#if 0
-   is_xinput_pad = g_xinput_block_pads 
-      && name_is_xinput_pad(inst->tszProductName);
-#endif
-   is_xinput_pad = g_xinput_block_pads 
-      && guid_is_xinput_device(&inst->guidProduct);
-   
-   if (is_xinput_pad)
-   {
-      if (g_last_xinput_pad_idx < 4)
-         g_xinput_pad_indexes[g_joypad_cnt] = g_last_xinput_pad_idx++;
-      goto enum_iteration_done;
-   }
-#endif
-
-   IDirectInputDevice8_SetDataFormat(*pad, &c_dfDIJoystick2);
-   IDirectInputDevice8_SetCooperativeLevel(*pad, (HWND)driver->video_window,
-         DISCL_NONEXCLUSIVE | DISCL_BACKGROUND);
-
-   IDirectInputDevice8_EnumObjects(*pad, enum_axes_cb, 
-         *pad, DIDFT_ABSAXIS);
-         
-#ifdef HAVE_XINPUT
-   if (!is_xinput_pad)
-#endif
-   {
-      autoconfig_params_t params = {{0}};
-
-      strlcpy(settings->input.device_names[g_joypad_cnt],
-            dinput_joypad_name(g_joypad_cnt),
-            sizeof(settings->input.device_names[g_joypad_cnt]));
-
-      /* TODO - implement VID/PID? */
-      params.idx = g_joypad_cnt;
-      strlcpy(params.name, dinput_joypad_name(g_joypad_cnt), sizeof(params.name));
-      strlcpy(params.driver, dinput_joypad.ident, sizeof(params.driver));
-      input_config_autoconfigure_joypad(&params);
-   }
-
-enum_iteration_done:
-   g_joypad_cnt++;
-   return DIENUM_CONTINUE; 
-}
-
-static bool dinput_joypad_init(void)
-{
-   unsigned i;
-
-   if (!dinput_init_context())
-      return false;
-   
-   g_last_xinput_pad_idx = 0;
-   
-   for (i = 0; i < MAX_USERS; ++i)
-   {
-      g_xinput_pad_indexes[i] = -1;
-      g_pads[i].joy_name = NULL;
-   }
-
-   RARCH_LOG("Enumerating DInput joypads ...\n");
-   IDirectInput8_EnumDevices(g_ctx, DI8DEVCLASS_GAMECTRL,
-         enum_joypad_cb, NULL, DIEDFL_ATTACHEDONLY);
-   RARCH_LOG("Done enumerating DInput joypads ...\n");
-   return true;
-}
-
-static bool dinput_joypad_button(unsigned port_num, uint16_t joykey)
-{
-   const struct dinput_joypad *pad = NULL;
-
-   if (joykey == NO_BTN)
-      return false;
-
-   pad = &g_pads[port_num];
-   if (!pad->joypad)
-      return false;
-
-   /* Check hat. */
-   if (GET_HAT_DIR(joykey))
-   {
-      unsigned pov;
-      unsigned hat   = GET_HAT(joykey);
-      unsigned elems = sizeof(pad->joy_state.rgdwPOV) / 
-         sizeof(pad->joy_state.rgdwPOV[0]);
-
-      if (hat >= elems)
-         return false;
-
-      pov = pad->joy_state.rgdwPOV[hat];
-
-      /* Magic numbers I'm not sure where originate from. */
-      if (pov < 36000)
-      {
-         switch (GET_HAT_DIR(joykey))
-         {
-            case HAT_UP_MASK:
-               return (pov >= 31500) || (pov <= 4500);
-            case HAT_RIGHT_MASK:
-               return (pov >= 4500) && (pov <= 13500);
-            case HAT_DOWN_MASK:
-               return (pov >= 13500) && (pov <= 22500);
-            case HAT_LEFT_MASK:
-               return (pov >= 22500) && (pov <= 31500);
-         }
-      }
-
-      return false;
-   }
-   else
-   {
-      unsigned elems = sizeof(pad->joy_state.rgbButtons) / 
-         sizeof(pad->joy_state.rgbButtons[0]);
-
-      if (joykey < elems)
-         return pad->joy_state.rgbButtons[joykey];
-   }
-
-   return false;
-}
-
-static int16_t dinput_joypad_axis(unsigned port_num, uint32_t joyaxis)
-{
-   const struct dinput_joypad *pad = NULL;
-   int val = 0;
-   int axis    = -1;
-   bool is_neg = false;
-   bool is_pos = false;
-
-   if (joyaxis == AXIS_NONE)
-      return 0;
-
-   pad = &g_pads[port_num];
-   if (!pad->joypad)
-      return 0;
-
-   if (AXIS_NEG_GET(joyaxis) <= 5)
-   {
-      axis = AXIS_NEG_GET(joyaxis);
-      is_neg = true;
-   }
-   else if (AXIS_POS_GET(joyaxis) <= 5)
-   {
-      axis = AXIS_POS_GET(joyaxis);
-      is_pos = true;
-   }
-
-   switch (axis)
-   {
-      case 0:
-         val = pad->joy_state.lX;
-         break;
-      case 1:
-         val = pad->joy_state.lY;
-         break;
-      case 2:
-         val = pad->joy_state.lZ;
-         break;
-      case 3:
-         val = pad->joy_state.lRx;
-         break;
-      case 4:
-         val = pad->joy_state.lRy;
-         break;
-      case 5:
-         val = pad->joy_state.lRz;
-         break;
-   }
-
-   if (is_neg && val > 0)
-      val = 0;
-   else if (is_pos && val < 0)
-      val = 0;
-
-   return val;
-}
-
-static void dinput_joypad_poll(void)
-{
-   unsigned i;
-   for (i = 0; i < MAX_USERS; i++)
-   {
-      struct dinput_joypad *pad = &g_pads[i];
-      bool polled = g_xinput_pad_indexes[i] < 0;
-
-      if (!pad || !pad->joypad || !polled)
-         continue;
-
-      memset(&pad->joy_state, 0, sizeof(pad->joy_state));
-
-      if (FAILED(IDirectInputDevice8_Poll(pad->joypad)))
-      {
-         if (FAILED(IDirectInputDevice8_Acquire(pad->joypad)))
-         {
-            memset(&pad->joy_state, 0, sizeof(DIJOYSTATE2));
-            continue;
-         }
-
-         /* If this fails, something *really* bad must have happened. */
-         if (FAILED(IDirectInputDevice8_Poll(pad->joypad)))
-         {
-            memset(&pad->joy_state, 0, sizeof(DIJOYSTATE2));
-            continue;
-         }
-      }
-
-      IDirectInputDevice8_GetDeviceState(pad->joypad,
-            sizeof(DIJOYSTATE2), &pad->joy_state);
-   }
-}
-
-static bool dinput_joypad_query_pad(unsigned pad)
-{
-   return pad < MAX_USERS && g_pads[pad].joypad;
-}
-
-static const char *dinput_joypad_name(unsigned pad)
-{
-   if (pad < MAX_USERS)
-      return g_pads[pad].joy_name;
-
-   return NULL;
-}
-
-rarch_joypad_driver_t dinput_joypad = {
-   dinput_joypad_init,
-   dinput_joypad_query_pad,
-   dinput_joypad_destroy,
-   dinput_joypad_button,
-   NULL,
-   dinput_joypad_axis,
-   dinput_joypad_poll,
-   NULL,
-   dinput_joypad_name,
-   "dinput",
-};

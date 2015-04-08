@@ -49,8 +49,8 @@ static void hidpad_ps3_send_control(struct hidpad_ps3_data* device)
    };
 
    report_buffer[11] = 1 << ((device->slot % 4) + 1);
-   report_buffer[4] = device->motors[1] >> 8;
-   report_buffer[6] = device->motors[0] >> 8;
+   report_buffer[4]  = device->motors[1] >> 8;
+   report_buffer[6]  = device->motors[0] >> 8;
 
    device->send_control(device->connection, report_buffer, sizeof(report_buffer));
 }
@@ -59,10 +59,10 @@ static void* hidpad_ps3_init(void *data, uint32_t slot, send_control_t ptr)
 {
 #ifdef IOS
    /* Magic packet to start reports. */
-   static uint8_t magic_data[] = {0x53, 0xF4, 0x42, 0x03, 0x00, 0x00};
+   static uint8_t magic_data[]       = {0x53, 0xF4, 0x42, 0x03, 0x00, 0x00};
 #endif
    struct pad_connection* connection = (struct pad_connection*)data;
-   struct hidpad_ps3_data* device = (struct hidpad_ps3_data*)
+   struct hidpad_ps3_data* device    = (struct hidpad_ps3_data*)
       calloc(1, sizeof(struct hidpad_ps3_data));
 
    if (!device)
@@ -74,8 +74,8 @@ static void* hidpad_ps3_init(void *data, uint32_t slot, send_control_t ptr)
       return NULL;
    }
 
-   device->connection = connection;  
-   device->slot = slot;
+   device->connection   = connection;  
+   device->slot         = slot;
    device->send_control = ptr;
 
 #ifdef IOS
@@ -154,9 +154,9 @@ static void hidpad_ps3_packet_handler(void *data, uint8_t *packet, uint16_t size
 
    memcpy(device->data, packet, size);
 
-   device->buttons = 0;
+   device->buttons     = 0;
 
-   pressed_keys = device->data[3] | (device->data[4] << 8) |
+   pressed_keys        = device->data[3] | (device->data[4] << 8) |
       ((device->data[5] & 1) << 16);
 
    for (i = 0; i < 17; i ++)
