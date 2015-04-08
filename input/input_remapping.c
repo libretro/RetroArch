@@ -69,9 +69,12 @@ bool input_remapping_load_file(const char *path)
  * @path                     : Path to remapping file (relative path).
  *
  * Saves remapping values to file.
+ *
+ * Returns: true (1) if successfull, otherwise false (0).
  **/
-void input_remapping_save_file(const char *path)
+bool input_remapping_save_file(const char *path)
 {
+   bool ret;
    unsigned i, j;
    char buf[PATH_MAX_LENGTH];
    char remap_file[PATH_MAX_LENGTH];
@@ -86,10 +89,10 @@ void input_remapping_save_file(const char *path)
    conf = config_file_new(remap_file);
 
    if (!conf)
+   {
       conf = config_file_new(NULL);
-
-   if (!conf)
-      return;
+      return false;
+   }
 
    for (i = 0; i < settings->input.max_users; i++)
    {
@@ -106,8 +109,10 @@ void input_remapping_save_file(const char *path)
       }
    }
 
-   config_file_write(conf, remap_file);
+   ret = config_file_write(conf, remap_file);
    config_file_free(conf);
+
+   return ret;
 }
 
 void input_remapping_set_defaults(void)

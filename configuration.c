@@ -1656,7 +1656,7 @@ bool config_load_override(void)
    settings_t *settings = config_get_ptr();
 
    //early return in case a library isn't loaded
-   if(!global->system.info.library_name || !strcmp(global->system.info.library_name,"No Core"))
+   if (!global->system.info.library_name || !strcmp(global->system.info.library_name,"No Core"))
       return false;
 
    RARCH_LOG("Game name: %s\n",global->basename);
@@ -1701,6 +1701,11 @@ bool config_load_override(void)
    // If a core override exists, add it's location to append_config_path
    if (new_conf)
    {
+      if (settings->core_specific_config)
+      {
+         RARCH_LOG("Can't use overrides in conjunction with per-core configs, disabling overrides\n");
+		 return false;
+	  }
       RARCH_LOG("Core-specific overrides found at %s. Appending.\n", core_path);
       strlcpy(global->append_config_path, core_path, sizeof(global->append_config_path));
       should_append = true;
@@ -1716,8 +1721,13 @@ bool config_load_override(void)
    // If a game override exists, add it's location to append_config_path
    if (new_conf)
    {
+      if (settings->core_specific_config)
+      {
+         RARCH_LOG("Can't use overrides in conjunction with per-core configs, disabling overrides\n");
+		 return false;
+	  }
       RARCH_LOG("Game-specific overrides found at %s. Appending.\n", game_path);
-      if(should_append)
+      if (should_append)
       {
           strlcat(global->append_config_path, "|", sizeof(global->append_config_path));
           strlcat(global->append_config_path, game_path, sizeof(global->append_config_path));
@@ -1731,10 +1741,13 @@ bool config_load_override(void)
       RARCH_LOG("No game-specific overrides found at %s.\n", game_path);
 
    // Re-load the configuration with any overrides that might have been found
-   if(should_append)
+   if (should_append)
    {
-      if(config_load_file(global->config_path, false))
+      if (config_load_file(global->config_path, false))
+	  {
+		  rarch_main_msg_queue_push("Configuration override loaded", 1, 100, true);
           return true;
+	  }
    }
 
    return false;
@@ -1788,7 +1801,7 @@ bool config_load_remap(void)
    settings_t *settings = config_get_ptr();  /* config pointer                                             */
 
    //early return in case a library isn't loaded or remapping is disabled
-   if(!global->system.info.library_name || !strcmp(global->system.info.library_name,"No Core"))
+   if (!global->system.info.library_name || !strcmp(global->system.info.library_name,"No Core"))
       return false;
 
    RARCH_LOG("Game name: %s\n",global->basename);
@@ -1824,10 +1837,13 @@ bool config_load_remap(void)
    if (new_conf)
    {
       RARCH_LOG("Game-specific remap found at %s. Appending.\n", game_path);
-      if(input_remapping_load_file(game_path))
+      if (input_remapping_load_file(game_path))
+	  {
+		 rarch_main_msg_queue_push("Game remap file loaded", 1, 100, true);
          return true;
+	  }
    }
-   else      
+   else
    {
       RARCH_LOG("No core-specific remap found at %s.\n", core_path);
       *settings->input.remapping_path= '\0';
@@ -1843,8 +1859,11 @@ bool config_load_remap(void)
    if (new_conf)
    {
       RARCH_LOG("Core-specific remap found at %s. Loading.\n", core_path);
-      if(input_remapping_load_file(core_path))
+      if (input_remapping_load_file(core_path))
+	  {
+		 rarch_main_msg_queue_push("Core remap file loaded", 1, 100, true);
          return true;
+	  }
    }
    else
    {
@@ -1852,7 +1871,6 @@ bool config_load_remap(void)
       *settings->input.remapping_path= '\0';
       input_remapping_set_defaults();
    }
-      
 
    new_conf = NULL;
 
@@ -2131,6 +2149,9 @@ bool config_save_file(const char *path)
          settings->load_dummy_on_core_shutdown);
    config_set_bool(conf,  "fps_show", settings->fps_show);
    config_set_bool(conf,  "ui_menubar_enable", settings->ui.menubar_enable);
+   config_set_path(conf,  "libretro_path", settings->libretro);
+   config_set_path(conf,  "core_options_path", settings->core_options_path);
+
    config_set_bool(conf,  "suspend_screensaver_enable", settings->ui.suspend_screensaver_enable);
    config_set_path(conf,  "libretro_directory", settings->libretro_directory);
    config_set_path(conf,  "libretro_info_path", settings->libretro_info_path);
