@@ -16,6 +16,8 @@
 
 #include "retroarch-joyconfig.c"
 
+#include "../dylib.c"
+
 #if defined(__linux) && !defined(ANDROID)
 #include "../input/drivers/linuxraw_input.c"
 #include "../input/drivers_joypad/linuxraw_joypad.c"
