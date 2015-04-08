@@ -1656,7 +1656,7 @@ bool config_load_override(void)
    settings_t *settings = config_get_ptr();
 
    //early return in case a library isn't loaded
-   if(!global->system.info.library_name || !strcmp(global->system.info.library_name,"No Core"))
+   if (!global->system.info.library_name || !strcmp(global->system.info.library_name,"No Core"))
       return false;
 
    RARCH_LOG("Game name: %s\n",global->basename);
@@ -1727,7 +1727,7 @@ bool config_load_override(void)
 		 return false;
 	  }	 
       RARCH_LOG("Game-specific overrides found at %s. Appending.\n", game_path);
-      if(should_append)
+      if (should_append)
       {
           strlcat(global->append_config_path, "|", sizeof(global->append_config_path));
           strlcat(global->append_config_path, game_path, sizeof(global->append_config_path));
@@ -1741,9 +1741,9 @@ bool config_load_override(void)
       RARCH_LOG("No game-specific overrides found at %s.\n", game_path);
 
    // Re-load the configuration with any overrides that might have been found
-   if(should_append)
+   if (should_append)
    {
-      if(config_load_file(global->config_path, false))
+      if (config_load_file(global->config_path, false))
 	  {
 		  rarch_main_msg_queue_push("Configuration override loaded", 1, 100, true);
           return true;
@@ -1801,7 +1801,7 @@ bool config_load_remap(void)
    settings_t *settings = config_get_ptr();  /* config pointer                                             */
 
    //early return in case a library isn't loaded or remapping is disabled
-   if(!global->system.info.library_name || !strcmp(global->system.info.library_name,"No Core"))
+   if (!global->system.info.library_name || !strcmp(global->system.info.library_name,"No Core"))
       return false;
 
    RARCH_LOG("Game name: %s\n",global->basename);
@@ -1837,7 +1837,7 @@ bool config_load_remap(void)
    if (new_conf)
    {
       RARCH_LOG("Game-specific remap found at %s. Appending.\n", game_path);
-      if(input_remapping_load_file(game_path))
+      if (input_remapping_load_file(game_path))
          return true;
    }
    else   
@@ -1856,7 +1856,7 @@ bool config_load_remap(void)
    if (new_conf)
    {
       RARCH_LOG("Core-specific remap found at %s. Loading.\n", core_path);
-      if(input_remapping_load_file(core_path))
+      if (input_remapping_load_file(core_path))
          return true;
    }
    else
