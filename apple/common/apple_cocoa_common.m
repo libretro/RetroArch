@@ -507,42 +507,41 @@ static bool apple_gfx_ctx_get_metrics(void *data, enum display_metric_types type
             float *value)
 {
 #ifdef OSX
-    RAScreen *screen           = [RAScreen mainScreen];
-    NSDictionary *description  = [screen deviceDescription];
-    NSSize displayPixelSize    = [[description objectForKey:NSDeviceSize] sizeValue];
-    CGSize displayPhysicalSize = CGDisplayScreenSize(
+    RAScreen *screen              = [RAScreen mainScreen];
+    NSDictionary *description     = [screen deviceDescription];
+    NSSize  display_pixel_size    = [[description objectForKey:NSDeviceSize] sizeValue];
+    CGSize  display_physical_size = CGDisplayScreenSize(
         [[description objectForKey:@"NSScreenNumber"] unsignedIntValue]);
     
-    float   displayWidth       = displayPixelSize.width;
-    float   displayHeight      = displayPixelSize.height;
-    float   physicalWidth      = displayPhysicalSize.width;
-    float   physicalHeight     = displayPhysicalSize.height;
+    float   display_width         = display_pixel_size.width;
+    float   display_height        = display_pixel_size.height;
+    float   physical_width        = display_physical_size.width;
+    float   physical_height       = display_physical_size.height;
 #elif defined(IOS)
-    float   scale              = apple_gfx_ctx_get_native_scale();
-    CGRect screenRect          = [[UIScreen mainScreen] bounds];
+    float   scale                 = apple_gfx_ctx_get_native_scale();
+    CGRect  screen_rect           = [[UIScreen mainScreen] bounds];
     
-    float   displayWidth       = screenRect.size.width;
-    float   displayHeight      = screenRect.size.height;
-    float   physicalWidth      = screenRect.size.width * scale;
-    float   physicalHeight     = screenRect.size.height * scale;
+    float   display_width         = screen_rect.size.width;
+    float   display_height        = screen_rect.size.height;
+    float   physical_width        = screen_rect.size.width  * scale;
+    float   physical_height       = screen_rect.size.height * scale;
 #endif
     
-    (void)displayHeight;
+    (void)display_height;
     
     switch (type)
     {
-        case DISPLAY_METRIC_NONE:
-            return false;
         case DISPLAY_METRIC_MM_WIDTH:
-            *value = physicalWidth;
+            *value = physical_width;
             break;
         case DISPLAY_METRIC_MM_HEIGHT:
-            *value = physicalHeight;
+            *value = physical_height;
             break;
         case DISPLAY_METRIC_DPI:
             /* 25.4 mm in an inch. */
-            *value = (displayWidth/ physicalWidth) * 25.4f;
+            *value = (display_width/ physical_width) * 25.4f;
             break;
+        case DISPLAY_METRIC_NONE:
         default:
             *value = 0;
             return false;
