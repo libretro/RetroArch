@@ -512,18 +512,18 @@ static bool apple_gfx_ctx_get_metrics(void *data, enum display_metric_types type
     NSSize displayPixelSize = [[description objectForKey:NSDeviceSize] sizeValue];
     CGSize displayPhysicalSize = CGDisplayScreenSize(
         [[description objectForKey:@"NSScreenNumber"] unsignedIntValue]);
-    CGFloat displayWidth   = displayPixelSize.width;
-    CGFloat displayHeight  = displayPixelSize.height;
-    CGFloat physicalWidth  = displayPhysicalSize.width;
-    CGFloat physicalHeight = displayPhysicalSize.height;
+    float   displayWidth   = displayPixelSize.width;
+    float   displayHeight  = displayPixelSize.height;
+    float   physicalWidth  = displayPhysicalSize.width;
+    float   physicalHeight = displayPhysicalSize.height;
 #elif defined(IOS)
-    CGFloat scale = [UIScreen mainScreen].scale;
+    float   scale = apple_gfx_ctx_get_native_scale();
     CGRect screenRect = [[UIScreen mainScreen] bounds];
     
-    CGFloat displayWidth   = screenRect.size.width;
-    CGFloat displayHeight  = screenRect.size.height;
-    CGFloat physicalWidth  = screenRect.size.width * scale;
-    CGFloat physicalHeight = screenRect.size.height * scale;
+    float   displayWidth   = screenRect.size.width;
+    float   displayHeight  = screenRect.size.height;
+    float   physicalWidth  = screenRect.size.width * scale;
+    float   physicalHeight = screenRect.size.height * scale;
 #endif
     
     (void)displayHeight;
