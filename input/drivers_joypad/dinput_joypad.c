@@ -48,6 +48,7 @@ static const GUID common_xinput_guids[] = {
 /* forward declarations */
 void dinput_destroy_context(void);
 bool g_xinput_block_pads;
+int g_xinput_pad_indexes[MAX_USERS];
 LPDIRECTINPUT8 g_dinput_ctx;
 
 static void dinput_joypad_destroy(void)
