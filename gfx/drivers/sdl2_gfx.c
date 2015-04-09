@@ -34,10 +34,6 @@
 #include "../common/x11_common.h"
 #endif
 
-#if defined(_WIN32) && !defined(_XBOX)
-#include "../drivers_wm/win32_dwm_common.h"
-#endif
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif

@@ -28,7 +28,6 @@
 
 #include "../common/win32_common.h"
 #ifndef _XBOX
-#include "../drivers_wm/win32_dwm_common.h"
 
 #define HAVE_MONITOR
 #define HAVE_WINDOW
