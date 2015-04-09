@@ -45,7 +45,7 @@ bool input_remapping_load_file(const char *path)
       char buf[64];
       char key_ident[RARCH_FIRST_META_KEY][128];
       char key_strings[RARCH_FIRST_META_KEY][128] = { "b", "y", "select", "start",
-         "up", "down", "left", "right", "a", "x", "l", "r", "l2", "r2", "l3", "r3"};
+         "up", "down", "left", "right", "a", "x", "l", "r", "l2", "r2", "l3", "r3", "l_x_plus", "l_x_minus", "l_y_plus", "l_y_minus", "r_x_plus", "r_x_minus", "r_y_plus", "r_y_minus"};
 
       snprintf(buf, sizeof(buf), "input_player%u", i + 1);
 
@@ -98,7 +98,7 @@ bool input_remapping_save_file(const char *path)
    {
       char key_ident[RARCH_FIRST_META_KEY][128];
       char key_strings[RARCH_FIRST_META_KEY][128] = { "b", "y", "select", "start",
-         "up", "down", "left", "right", "a", "x", "l", "r", "l2", "r2", "l3", "r3"};
+         "up", "down", "left", "right", "a", "x", "l", "r", "l2", "r2", "l3", "r3", "l_x_plus" , "l_x_minus", "l_y_plus", "l_y_minus", "r_x_plus", "r_x_minus", "r_y_plus", "r_y_minus" };
 
       snprintf(buf, sizeof(buf), "input_player%u", i + 1);
 

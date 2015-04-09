@@ -116,8 +116,8 @@ static int action_toggle_input_desc(unsigned type, const char *label,
       unsigned action, bool wraparound)
 {
    unsigned inp_desc_index_offset = type - MENU_SETTINGS_INPUT_DESC_BEGIN;
-   unsigned inp_desc_user         = inp_desc_index_offset / RARCH_FIRST_CUSTOM_BIND;
-   unsigned inp_desc_button_index_offset = inp_desc_index_offset - (inp_desc_user * RARCH_FIRST_CUSTOM_BIND);
+   unsigned inp_desc_user         = inp_desc_index_offset / RARCH_FIRST_META_KEY;
+   unsigned inp_desc_button_index_offset = inp_desc_index_offset - (inp_desc_user * RARCH_FIRST_META_KEY);
    settings_t *settings = config_get_ptr();
 
    switch (action)
@@ -127,7 +127,7 @@ static int action_toggle_input_desc(unsigned type, const char *label,
             settings->input.remap_ids[inp_desc_user][inp_desc_button_index_offset]--;
          break;
       case MENU_ACTION_RIGHT:
-         if (settings->input.remap_ids[inp_desc_user][inp_desc_button_index_offset] < RARCH_FIRST_CUSTOM_BIND)
+         if (settings->input.remap_ids[inp_desc_user][inp_desc_button_index_offset] < RARCH_FIRST_META_KEY)
             settings->input.remap_ids[inp_desc_user][inp_desc_button_index_offset]++;
          break;
    }
