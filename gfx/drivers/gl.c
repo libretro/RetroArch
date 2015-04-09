@@ -776,9 +776,7 @@ void gl_set_viewport(gl_t *gl, unsigned width,
    struct gl_ortho ortho = {0, 1, 0, 1, -1, 1};
    settings_t *settings  = config_get_ptr();
    global_t   *global    = global_get_ptr();
-   driver_t  *driver     = driver_get_ptr();
-   const gfx_ctx_driver_t *ctx = driver ? 
-      (const gfx_ctx_driver_t*)driver->video_context : NULL;
+   const gfx_ctx_driver_t *ctx = gfx_ctx_get_ptr();
 
    if (ctx->translate_aspect)
       device_aspect = ctx->translate_aspect(gl, width, height);
@@ -878,10 +876,9 @@ static void gl_set_rotation(void *data, unsigned rotation)
 static void gl_set_video_mode(void *data, unsigned width, unsigned height,
       bool fullscreen)
 {
-   gl_t *gl = (gl_t*)data;
-   driver_t *driver = driver_get_ptr();
-   const gfx_ctx_driver_t *ctx = driver ? 
-      (const gfx_ctx_driver_t*)driver->video_context : NULL;
+   gl_t                    *gl = (gl_t*)data;
+   driver_t            *driver = driver_get_ptr();
+   const gfx_ctx_driver_t *ctx = gfx_ctx_get_ptr();
 
    if (gl && ctx && ctx->set_video_mode)
       ctx->set_video_mode(gl, width, height, fullscreen);
@@ -1199,11 +1196,13 @@ static void gl_init_textures_data(gl_t *gl)
 static void gl_init_textures(gl_t *gl, const video_info_t *video)
 {
    unsigned i;
+   const gfx_ctx_driver_t *ctx = gfx_ctx_get_ptr();
+
 #if defined(HAVE_EGL) && defined(HAVE_OPENGLES2)
    // Use regular textures if we use HW render.
    gl->egl_images = !gl->hw_render_use && gl_check_eglimage_proc() &&
-      gl->ctx_driver->init_egl_image_buffer
-      && gl->ctx_driver->init_egl_image_buffer(gl, video);
+      ctx && ctx->init_egl_image_buffer 
+      && ctx->init_egl_image_buffer(gl, video);
 #else
    (void)video;
 #endif
@@ -1280,6 +1279,7 @@ static void gl_init_textures(gl_t *gl, const video_info_t *video)
 static INLINE void gl_copy_frame(gl_t *gl, const void *frame,
       unsigned width, unsigned height, unsigned pitch)
 {
+
    RARCH_PERFORMANCE_INIT(copy_frame);
    RARCH_PERFORMANCE_START(copy_frame);
 #if defined(HAVE_OPENGLES2)
@@ -1287,7 +1287,8 @@ static INLINE void gl_copy_frame(gl_t *gl, const void *frame,
    if (gl->egl_images)
    {
       EGLImageKHR img = 0;
-      bool new_egl    = gl->ctx_driver->write_egl_image(gl,
+      const gfx_ctx_driver_t *ctx = gfx_ctx_get_ptr();
+      bool new_egl    = ctx && ctx->write_egl_image(gl,
             frame, width, height, pitch, (gl->base_size == 4),
             gl->tex_index, &img);
 
@@ -1482,12 +1483,11 @@ static bool gl_frame(void *data, const void *frame,
       unsigned width, unsigned height, unsigned pitch, const char *msg)
 {
    const struct font_renderer *font_driver = NULL;
-   gl_t *gl = (gl_t*)data;
-   runloop_t *runloop   = rarch_main_get_ptr();
-   driver_t *driver     = driver_get_ptr();
-   settings_t *settings = config_get_ptr();
-   const gfx_ctx_driver_t *ctx = driver ?
-      (const gfx_ctx_driver_t*)driver->video_context : NULL;
+   gl_t                    *gl = (gl_t*)data;
+   runloop_t *runloop          = rarch_main_get_ptr();
+   driver_t *driver            = driver_get_ptr();
+   settings_t *settings        = config_get_ptr();
+   const gfx_ctx_driver_t *ctx = gfx_ctx_get_ptr();
 
    RARCH_PERFORMANCE_INIT(frame_run);
    RARCH_PERFORMANCE_START(frame_run);
@@ -1734,9 +1734,8 @@ static void gl_free(void *data)
 {
    gl_t *gl = (gl_t*)data;
    const struct font_renderer *font_driver = NULL;
-   driver_t  *driver  = driver_get_ptr();
-   const gfx_ctx_driver_t *ctx = driver ? 
-      (const gfx_ctx_driver_t*)driver->video_context : NULL;
+   driver_t           *driver  = driver_get_ptr();
+   const gfx_ctx_driver_t *ctx = gfx_ctx_get_ptr();
 
    if (!gl)
       return;
@@ -1816,11 +1815,10 @@ static void gl_free(void *data)
 
 static void gl_set_nonblock_state(void *data, bool state)
 {
-   gl_t *gl             = (gl_t*)data;
-   settings_t *settings = config_get_ptr();
-   driver_t  *driver  = driver_get_ptr();
-   const gfx_ctx_driver_t *ctx = driver ? 
-      (const gfx_ctx_driver_t*)driver->video_context : NULL;
+   gl_t             *gl        = (gl_t*)data;
+   settings_t        *settings = config_get_ptr();
+   driver_t           *driver  = driver_get_ptr();
+   const gfx_ctx_driver_t *ctx = gfx_ctx_get_ptr();
 
    if (!gl)
       return;
@@ -2480,8 +2478,7 @@ static bool gl_alive(void *data)
    gl_t *gl = (gl_t*)data;
    runloop_t *runloop = rarch_main_get_ptr();
    driver_t  *driver  = driver_get_ptr();
-   const gfx_ctx_driver_t *ctx = driver ? 
-      (const gfx_ctx_driver_t*)driver->video_context : NULL;
+   const gfx_ctx_driver_t *ctx = gfx_ctx_get_ptr();
     
    if (!gl)
       return false;
@@ -2502,8 +2499,7 @@ static bool gl_focus(void *data)
 {
    gl_t *gl = (gl_t*)data;
    driver_t  *driver  = driver_get_ptr();
-   const gfx_ctx_driver_t *ctx = driver ? 
-      (const gfx_ctx_driver_t*)driver->video_context : NULL;
+   const gfx_ctx_driver_t *ctx = gfx_ctx_get_ptr();
 
    if (!gl)
       return false;
@@ -2514,8 +2510,7 @@ static bool gl_suppress_screensaver(void *data, bool enable)
 {
    gl_t *gl = (gl_t*)data;
    driver_t  *driver  = driver_get_ptr();
-   const gfx_ctx_driver_t *ctx = driver ? 
-      (const gfx_ctx_driver_t*)driver->video_context : NULL;
+   const gfx_ctx_driver_t *ctx = gfx_ctx_get_ptr();
 
    if (gl && ctx)
       return ctx->suppress_screensaver(gl, enable);
@@ -2526,8 +2521,7 @@ static bool gl_has_windowed(void *data)
 {
    gl_t *gl = (gl_t*)data;
    driver_t  *driver  = driver_get_ptr();
-   const gfx_ctx_driver_t *ctx = driver ? 
-      (const gfx_ctx_driver_t*)driver->video_context : NULL;
+   const gfx_ctx_driver_t *ctx = gfx_ctx_get_ptr();
 
    if (gl && ctx)
       return ctx->has_windowed(gl);
@@ -2999,8 +2993,7 @@ static void gl_overlay_enable(void *data, bool state)
 {
    gl_t *gl           = (gl_t*)data;
    driver_t  *driver  = driver_get_ptr();
-   const gfx_ctx_driver_t *ctx = driver ? 
-      (const gfx_ctx_driver_t*)driver->video_context : NULL;
+   const gfx_ctx_driver_t *ctx = gfx_ctx_get_ptr();
 
    if (!gl)
       return;
@@ -3101,8 +3094,7 @@ static uintptr_t gl_get_current_framebuffer(void *data)
 static retro_proc_address_t gl_get_proc_address(void *data, const char *sym)
 {
    driver_t  *driver  = driver_get_ptr();
-   const gfx_ctx_driver_t *ctx = driver ? 
-      (const gfx_ctx_driver_t*)driver->video_context : NULL;
+   const gfx_ctx_driver_t *ctx = gfx_ctx_get_ptr();
 
    return ctx->get_proc_address(sym);
 }
@@ -3211,8 +3203,7 @@ static void gl_show_mouse(void *data, bool state)
 {
    gl_t *gl = (gl_t*)data;
    driver_t  *driver  = driver_get_ptr();
-   const gfx_ctx_driver_t *ctx = driver ? 
-      (const gfx_ctx_driver_t*)driver->video_context : NULL;
+   const gfx_ctx_driver_t *ctx = gfx_ctx_get_ptr();
 
    if (gl && ctx->show_mouse)
       ctx->show_mouse(gl, state);
@@ -3228,8 +3219,7 @@ static void gl_get_video_output_size(void *data, unsigned *width, unsigned *heig
 {
    gl_t *gl = (gl_t*)data;
    driver_t  *driver  = driver_get_ptr();
-   const gfx_ctx_driver_t *ctx = driver ? 
-      (const gfx_ctx_driver_t*)driver->video_context : NULL;
+   const gfx_ctx_driver_t *ctx = gfx_ctx_get_ptr();
 
    if (ctx->get_video_output_size)
       ctx->get_video_output_size(gl, width, height);
@@ -3239,8 +3229,7 @@ static void gl_get_video_output_prev(void *data)
 {
    gl_t *gl = (gl_t*)data;
    driver_t  *driver  = driver_get_ptr();
-   const gfx_ctx_driver_t *ctx = driver ? 
-      (const gfx_ctx_driver_t*)driver->video_context : NULL;
+   const gfx_ctx_driver_t *ctx = gfx_ctx_get_ptr();
 
    if (ctx->get_video_output_prev)
       ctx->get_video_output_prev(gl);
@@ -3250,8 +3239,7 @@ static void gl_get_video_output_next(void *data)
 {
    gl_t *gl = (gl_t*)data;
    driver_t  *driver  = driver_get_ptr();
-   const gfx_ctx_driver_t *ctx = driver ? 
-      (const gfx_ctx_driver_t*)driver->video_context : NULL;
+   const gfx_ctx_driver_t *ctx = gfx_ctx_get_ptr();
 
    if (ctx->get_video_output_next)
       ctx->get_video_output_next(gl);

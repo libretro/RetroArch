@@ -73,6 +73,14 @@ static const gfx_ctx_driver_t *gfx_ctx_drivers[] = {
    NULL
 };
 
+const gfx_ctx_driver_t *gfx_ctx_get_ptr(void)
+{
+   driver_t  *driver     = driver_get_ptr();
+   if (!driver)
+      return NULL; 
+   return (const gfx_ctx_driver_t*)driver->video_context;
+}
+
 /**
  * find_gfx_ctx_driver_index:
  * @ident                      : Identifier of resampler driver to find.
