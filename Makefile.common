@@ -302,6 +302,7 @@ endif
 ifeq ($(HAVE_RGUI), 1)
    OBJ += menu/drivers/rgui.o
    DEFINES += -DHAVE_MENU -DHAVE_RGUI
+   LIBS += -lQt5Quick -lQt5Widgets -lQt5Gui -lQt5Qml -lQt5Network -lQt5Core -lglu32 -lopengl32 -lgdi32 -luser32 -L./qt -lwrapper
    HAVE_MENU_COMMON = 1
 ifeq ($(HAVE_GLUI), 1)
    OBJ += menu/drivers/glui.o
