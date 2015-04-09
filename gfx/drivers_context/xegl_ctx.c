@@ -808,6 +808,41 @@ static void gfx_ctx_xegl_bind_hw_render(void *data, bool enable)
          g_egl_surf, enable ? g_egl_hw_ctx : g_egl_ctx);
 }
 
+static bool gfx_ctx_xegl_get_metrics(void *data,
+	enum display_metric_types type, float *value)
+{
+   int pixels_x, pixels_y, physical_width, physical_height;
+   unsigned     screen_no  = 0;
+   Display           *dpy  = (Display*)XOpenDisplay(NULL);
+   pixels_x                = DisplayWidth(dpy, screen_no);
+   pixels_y                = DisplayHeight(dpy, screen_no);
+   physical_width          = DisplayWidthMM(dpy, screen_no);
+   physical_height         = DisplayHeightMM(dpy, screen_no);
+
+   (void)pixels_y;
+
+   XCloseDisplay(dpy);
+
+   switch (type)
+   {
+      case DISPLAY_METRIC_MM_WIDTH:
+         *value = (float)physical_width;
+         break;
+      case DISPLAY_METRIC_MM_HEIGHT:
+         *value = (float)physical_height;
+         break;
+      case DISPLAY_METRIC_DPI:
+         *value = ((((float)pixels_x) * 25.4) / ((float)physical_width));
+         break;
+		case DISPLAY_METRIC_NONE:
+		default:
+			*value = 0;
+			return false;
+   }
+
+   return true;
+}
+
 const gfx_ctx_driver_t gfx_ctx_x_egl = {
    gfx_ctx_xegl_init,
    gfx_ctx_xegl_destroy,
@@ -818,7 +853,7 @@ const gfx_ctx_driver_t gfx_ctx_x_egl = {
    NULL, /* get_video_output_size */
    NULL, /* get_video_output_prev */
    NULL, /* get_video_output_next */
-   NULL, /* get_metrics */
+   gfx_ctx_xegl_get_metrics,
    NULL,
    gfx_ctx_xegl_update_window_title,
    gfx_ctx_xegl_check_window,
