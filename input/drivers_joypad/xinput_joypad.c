@@ -202,7 +202,7 @@ static bool xinput_joypad_init(void)
       if (!g_XInputGetStateEx)
       {
          RARCH_ERR("Failed to init XInput: DLL is invalid or corrupt.\n");
-         FreeLibrary(g_xinput_dll);
+         dylib_close(g_xinput_dll);
          return false; /* DLL was loaded but did not contain the correct function. */
       }
       RARCH_WARN("XInput: No guide button support.\n");
@@ -212,7 +212,7 @@ static bool xinput_joypad_init(void)
    if (!g_XInputSetState)
    {
       RARCH_ERR("Failed to init XInput: DLL is invalid or corrupt.\n");
-      FreeLibrary(g_xinput_dll);
+      dylib_close(g_xinput_dll);
       return false; /* DLL was loaded but did not contain the correct function. */
    }
 
@@ -280,13 +280,14 @@ static void xinput_joypad_destroy(void)
    for (i = 0; i < 4; ++i)
       memset(&g_xinput_states[i], 0, sizeof(xinput_joypad_state));
 
-   FreeLibrary(g_xinput_dll);
+   dylib_close(g_xinput_dll);
 
-   g_xinput_dll    = NULL;
-   g_XInputGetStateEx = NULL;
-   g_XInputSetState   = NULL;
+   g_xinput_dll        = NULL;
+   g_XInputGetStateEx  = NULL;
+   g_XInputSetState    = NULL;
 
    dinput_joypad.destroy();
+
    g_xinput_block_pads = false;
 }
 
