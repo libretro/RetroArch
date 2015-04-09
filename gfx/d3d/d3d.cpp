@@ -357,12 +357,7 @@ static bool d3d_alive(void *data)
 
 static bool d3d_focus(void *data)
 {
-   d3d_video_t            *d3d = (d3d_video_t*)data;
-   const gfx_ctx_driver_t *ctx = gfx_ctx_get_ptr();
-
-   if (d3d && ctx && ctx->has_focus)
-      return ctx->has_focus(d3d);
-   return false;
+   return gfx_ctx_focus(data);
 }
 
 static bool d3d_suppress_screensaver(void *data, bool enable)
@@ -1625,8 +1620,7 @@ static bool d3d_frame(void *data, const void *frame,
    if (d3d && ctx && ctx->update_window_title)
       ctx->update_window_title(d3d);
 
-   if (d3d && ctx && ctx->swap_buffers)
-      ctx->swap_buffers(d3d);
+   gfx_ctx_swap_buffers(d3d);
 
    return true;
 }
