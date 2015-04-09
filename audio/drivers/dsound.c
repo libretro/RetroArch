@@ -67,7 +67,7 @@ typedef struct dsound
    fifo_buffer_t *buffer;
    CRITICAL_SECTION crit;
 
-   scond_t   *event;
+   HANDLE      event;
    sthread_t *thread;
 
    unsigned buffer_size;
@@ -191,7 +191,7 @@ static void dsound_thread(void *data)
          if (!grab_region(ds, write_ptr, &region))
          {
             ds->thread_alive = false;
-            scond_broadcast(ds->event);
+            SetEvent(ds->event);
             break;
          }
 
@@ -208,7 +208,7 @@ static void dsound_thread(void *data)
          if (!grab_region(ds, write_ptr, &region))
          {
             ds->thread_alive = false;
-            scond_broadcast(ds->event);
+            SetEvent(ds->event);
             break;
          }
 
@@ -222,7 +222,7 @@ static void dsound_thread(void *data)
          release_region(ds, &region);
          write_ptr = (write_ptr + region.size1 + region.size2) % ds->buffer_size;
 
-         scond_broadcast(ds->event);
+         SetEvent(ds->event);
       }
    }
 
@@ -291,8 +291,8 @@ static void dsound_free(void *data)
    if (ds->ds)
       IDirectSound_Release(ds->ds);
 
-   scond_free(ds->event);
-   ds->event = NULL;
+   if (ds->event)
+      CloseHandle(ds->event);
 
    if (ds->buffer)
       fifo_free(ds->buffer);
@@ -371,7 +371,7 @@ static void *dsound_init(const char *device, unsigned rate, unsigned latency)
    bufdesc.dwBufferBytes = ds->buffer_size;
    bufdesc.lpwfxFormat   = &wfx;
 
-   ds->event = scond_new();
+   ds->event = CreateEvent(NULL, false, false, NULL);
    if (!ds->event)
       goto error;
 
@@ -470,7 +470,7 @@ static ssize_t dsound_write(void *data, const void *buf_, size_t size)
          break;
 
       if (avail == 0)
-         scond_lock(ds->event);
+         WaitForSingleObject(ds->event, INFINITE);
    }
 
    return written;
