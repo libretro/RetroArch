@@ -345,9 +345,9 @@ static void menu_action_setting_disp_set_label_input_desc(
    settings_t *settings = config_get_ptr();
    unsigned inp_desc_index_offset = type - MENU_SETTINGS_INPUT_DESC_BEGIN;
    unsigned inp_desc_user         = inp_desc_index_offset / 
-      RARCH_FIRST_CUSTOM_BIND;
+      RARCH_FIRST_META_KEY;
    unsigned inp_desc_button_index_offset = inp_desc_index_offset - 
-      (inp_desc_user * RARCH_FIRST_CUSTOM_BIND);
+      (inp_desc_user * RARCH_FIRST_META_KEY);
    unsigned remap_id = settings->input.remap_ids
       [inp_desc_user][inp_desc_button_index_offset];
 
