@@ -26,6 +26,10 @@
 #include <file/file_path.h>
 #include <retro_inline.h>
 
+#include <pthread.h>
+#include "wrapper.h"
+
+
 #include "../../gfx/drivers_font_renderer/bitmap.h"
 
 #include "shared.h"
@@ -528,7 +532,22 @@ static void rgui_render(void)
 
    if (settings->menu.mouse.enable)
       rgui_blit_cursor(menu);
+
+
 }
+
+//#ifdef RETROQT
+struct Test* t;
+
+void *initGui(void *arg)
+{
+	char **arguments = (char**)arg;
+	t = ctrTest(0, arguments);
+	CreateMainWindow(t);
+	return 0;
+}
+//#endif
+
 
 static void *rgui_init(void)
 {
@@ -558,6 +577,18 @@ static void *rgui_init(void)
    }
 
    fill_rect(&menu->frame_buf, 0, menu->frame_buf.height, menu->frame_buf.width, 4, gray_filler);
+
+//#ifdef RETROQT
+   pthread_t gui;
+   int rc;
+   rc = pthread_create(&gui, NULL, initGui, (void *)NULL);
+   if (rc != 0)
+   {
+	   printf("failed");
+	   exit(1);
+   }
+//#endif
+
 
    return menu;
 
