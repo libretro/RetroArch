@@ -24,7 +24,7 @@
 #include "../font_renderer_driver.h"
 #include <retro_inline.h>
 
-#include "../drivers_wm/x11_common.h"
+#include "../common/x11_common.h"
 
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>

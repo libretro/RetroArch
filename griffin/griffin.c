@@ -135,7 +135,7 @@ VIDEO CONTEXT
 #endif
 
 #ifdef HAVE_X11
-#include "../gfx/drivers_wm/x11_common.c"
+#include "../gfx/common/x11_common.c"
 #endif
 
 
