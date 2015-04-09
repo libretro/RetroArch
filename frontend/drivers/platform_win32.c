@@ -44,14 +44,10 @@ static void frontend_win32_init(void *data)
 
 	if (isDPIAwareProc)
 	{
-		fprintf(stderr, "Is DPI aware...\n");
 		if (!isDPIAwareProc())
 		{
 			if (setDPIAwareProc)
-			{
-				fprintf(stderr, "Set DPI aware.\n");
 				setDPIAwareProc();
-			}
 		}
 	}
 }
