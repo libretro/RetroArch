@@ -71,15 +71,13 @@ static int audioMainLoop(SceSize args, void* argp)
 static void *psp_audio_init(const char *device,
       unsigned rate, unsigned latency)
 {
-   psp1_audio_t* psp;
-   
-   (void)device;
-   (void)latency;
-
-  psp = (psp1_audio_t*)calloc(1, sizeof(psp1_audio_t));
+   psp1_audio_t *psp = (psp1_audio_t*)calloc(1, sizeof(psp1_audio_t));
 
    if (!psp)
       return NULL;
+
+   (void)device;
+   (void)latency;
 
    /* Cache aligned, not necessary but helpful. */
    psp->buffer      = (uint32_t*)
@@ -164,10 +162,10 @@ static bool psp_audio_alive(void *data)
 static bool psp_audio_stop(void *data)
 {
    SceKernelThreadRunStatus runStatus;
-   SceUInt timeout = 100000;
+   SceUInt timeout   = 100000;
    psp1_audio_t* psp = (psp1_audio_t*)data;
 
-   runStatus.size = sizeof(SceKernelThreadRunStatus);
+   runStatus.size    = sizeof(SceKernelThreadRunStatus);
 
    if (sceKernelReferThreadRunStatus(
             psp->thread, &runStatus) < 0) /* Error */
@@ -186,7 +184,7 @@ static bool psp_audio_start(void *data)
    SceKernelThreadRunStatus runStatus;
    psp1_audio_t* psp = (psp1_audio_t*)data;
 
-   runStatus.size = sizeof(SceKernelThreadRunStatus);
+   runStatus.size    = sizeof(SceKernelThreadRunStatus);
 
    if (sceKernelReferThreadRunStatus(
             psp->thread, &runStatus) < 0) /* Error */
