@@ -215,6 +215,9 @@ void gfx_ctx_swap_buffers(void *data);
 
 bool gfx_ctx_focus(void *data);
 
+bool gfx_ctx_check_window(void *data, bool *quit,
+      bool *resize, unsigned *width, unsigned *height);
+
 #ifdef __cplusplus
 }
 #endif

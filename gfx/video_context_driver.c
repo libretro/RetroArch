@@ -82,6 +82,22 @@ const gfx_ctx_driver_t *gfx_ctx_get_ptr(void)
    return (const gfx_ctx_driver_t*)driver->video_context;
 }
 
+bool gfx_ctx_check_window(void *data, bool *quit,
+      bool *resize, unsigned *width, unsigned *height)
+{
+   const gfx_ctx_driver_t *ctx = gfx_ctx_get_ptr();
+   runloop_t          *runloop = rarch_main_get_ptr();
+
+   if (!data)
+      return false;
+
+   ctx->check_window(data, quit, resize,
+         width, height,
+         runloop->frames.video.count);
+
+   return true;
+}
+
 void gfx_ctx_swap_buffers(void *data)
 {
    const gfx_ctx_driver_t *ctx = gfx_ctx_get_ptr();
