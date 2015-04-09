@@ -145,7 +145,7 @@ static int exit_callback(int arg1, int arg2, void *common)
    return 0;
 }
 
-int callback_thread(SceSize args, void *argp)
+static int callback_thread(SceSize args, void *argp)
 {
    int cbid = sceKernelCreateCallback("Exit callback", exit_callback, NULL);
    sceKernelRegisterExitCallback(cbid);
@@ -183,8 +183,6 @@ static void frontend_psp_init(void *data)
    pspSdkLoadStartModule("kernel_functions.prx", PSP_MEMORY_PARTITION_KERNEL);
 #endif
 }
-
-
 
 static void frontend_psp_exec(const char *path, bool should_load_game)
 {
