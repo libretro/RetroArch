@@ -176,24 +176,26 @@ static void dsound_thread(void *data)
          /* No space to write, or we don't have data in our fifo, 
           * but we can wait some time before it underruns ... */
 
-         rarch_sleep(1);
 
          /* We could opt for using the notification interface,
           * but it is not guaranteed to work, so use high 
           * priority sleeping patterns.
           */
+         rarch_sleep(1);
+         continue;
       }
-      else if (fifo_avail < CHUNK_SIZE)
+
+      if (!grab_region(ds, write_ptr, &region))
+      {
+         ds->thread_alive = false;
+         SetEvent(ds->event);
+         break;
+      }
+
+      if (fifo_avail < CHUNK_SIZE)
       {
          /* Got space to write, but nothing in FIFO (underrun), 
           * fill block with silence. */
-
-         if (!grab_region(ds, write_ptr, &region))
-         {
-            ds->thread_alive = false;
-            SetEvent(ds->event);
-            break;
-         }
 
          memset(region.chunk1, 0, region.size1);
          memset(region.chunk2, 0, region.size2);
@@ -204,13 +206,6 @@ static void dsound_thread(void *data)
       else 
       {
          /* All is good. Pull from it and notify FIFO. */
-
-         if (!grab_region(ds, write_ptr, &region))
-         {
-            ds->thread_alive = false;
-            SetEvent(ds->event);
-            break;
-         }
 
          EnterCriticalSection(&ds->crit);
          if (region.chunk1)
