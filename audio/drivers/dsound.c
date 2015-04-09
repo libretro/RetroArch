@@ -67,7 +67,7 @@ typedef struct dsound
    fifo_buffer_t *buffer;
    CRITICAL_SECTION crit;
 
-   slock_t   *event;
+   scond_t   *event;
    sthread_t *thread;
 
    unsigned buffer_size;
@@ -291,7 +291,7 @@ static void dsound_free(void *data)
    if (ds->ds)
       IDirectSound_Release(ds->ds);
 
-   slock_free(ds->event);
+   scond_free(ds->event);
    ds->event = NULL;
 
    if (ds->buffer)
@@ -371,7 +371,7 @@ static void *dsound_init(const char *device, unsigned rate, unsigned latency)
    bufdesc.dwBufferBytes = ds->buffer_size;
    bufdesc.lpwfxFormat   = &wfx;
 
-   ds->event = slock_new();
+   ds->event = scond_new();
    if (!ds->event)
       goto error;
 
@@ -470,7 +470,7 @@ static ssize_t dsound_write(void *data, const void *buf_, size_t size)
          break;
 
       if (avail == 0)
-         slock_lock(ds->event);
+         scond_lock(ds->event);
    }
 
    return written;
