@@ -495,37 +495,7 @@ static void gfx_ctx_d3d_swap_interval(void *data, unsigned interval)
 static bool gfx_ctx_d3d_get_metrics(void *data,
 	enum display_metric_types type, float *value)
 {
-#ifdef _XBOX
-	return false;
-#else
-	HDC monitor            = GetDC(NULL);
-	int pixels_x           = GetDeviceCaps(monitor, HORZRES);
-	int pixels_y           = GetDeviceCaps(monitor, VERTRES);
-	int physical_width     = GetDeviceCaps(monitor, HORZSIZE);
-	int physical_height    = GetDeviceCaps(monitor, VERTSIZE);
-
-	ReleaseDC(NULL, monitor);
-
-	switch (type)
-	{
-		case DISPLAY_METRIC_MM_WIDTH:
-			*value = physical_width;
-			break;
-		case DISPLAY_METRIC_MM_HEIGHT:
-			*value = physical_height;
-			break;
-		case DISPLAY_METRIC_DPI:
-			/* 25.4 mm in an inch. */
-			*value = 254 * pixels_x / physical_width / 10;
-			break;
-		case DISPLAY_METRIC_NONE:
-		default:
-			*value = 0;
-			return false;
-	}
-
-	return true;
-#endif
+   return win32_get_metrics(data, type, value);
 }
 
 const gfx_ctx_driver_t gfx_ctx_d3d = {

@@ -17,6 +17,11 @@
 #ifndef WIN32_COMMON_H__
 #define WIN32_COMMON_H__
 
+#include <string.h>
+#include <boolean.h>
+#include "../../driver.h"
+#include "../video_context_driver.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -31,6 +36,9 @@ LRESULT win32_handle_keyboard_event(HWND hwnd, UINT message,
 
 LRESULT win32_menu_loop(HWND handle, WPARAM wparam);
 #endif
+
+bool win32_get_metrics(void *data,
+	enum display_metric_types type, float *value);
 
 #ifdef __cplusplus
 }

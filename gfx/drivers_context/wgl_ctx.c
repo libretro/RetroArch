@@ -667,34 +667,7 @@ static gfx_ctx_proc_t gfx_ctx_wgl_get_proc_address(const char *symbol)
 static bool gfx_ctx_wgl_get_metrics(void *data,
 	enum display_metric_types type, float *value)
 {
-	bool ret               = true;
-	HDC monitor            = GetDC(NULL);
-	int pixels_x           = GetDeviceCaps(monitor, HORZRES);
-	int pixels_y           = GetDeviceCaps(monitor, VERTRES);
-	int physical_width     = GetDeviceCaps(monitor, HORZSIZE);
-	int physical_height    = GetDeviceCaps(monitor, VERTSIZE);
-
-	ReleaseDC(NULL, monitor);
-
-	switch (type)
-	{
-		case DISPLAY_METRIC_MM_WIDTH:
-			*value = physical_width;
-			break;
-		case DISPLAY_METRIC_MM_HEIGHT:
-			*value = physical_height;
-			break;
-		case DISPLAY_METRIC_DPI:
-			/* 25.4 mm in an inch. */
-			*value = 254 * pixels_x / physical_width / 10;
-			break;
-		case DISPLAY_METRIC_NONE:
-		default:
-			*value = 0;
-			return false;
-	}
-
-	return true;
+   return win32_get_metrics(data, type, value);
 }
 
 static bool gfx_ctx_wgl_bind_api(void *data,
