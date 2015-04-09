@@ -81,6 +81,16 @@ const gfx_ctx_driver_t *gfx_ctx_get_ptr(void)
    return (const gfx_ctx_driver_t*)driver->video_context;
 }
 
+bool gfx_ctx_get_metrics(enum display_metric_types type, float *value)
+{
+   driver_t            *driver = driver_get_ptr(); 
+   const gfx_ctx_driver_t *ctx = gfx_ctx_get_ptr();
+   if (!ctx || !driver)
+      return false;
+   return ctx->get_metrics(driver->video_context_data, type,
+         value);
+}
+
 /**
  * find_gfx_ctx_driver_index:
  * @ident                      : Identifier of resampler driver to find.
