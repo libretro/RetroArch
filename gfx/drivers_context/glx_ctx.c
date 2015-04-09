@@ -16,9 +16,9 @@
 
 #include "../../driver.h"
 #include "../../runloop.h"
-#include "../gl_common.h"
+#include "../drivers/gl_common.h"
 #include "../video_monitor.h"
-#include "../drivers_wm/x11_common.h"
+#include "../common/x11_common.h"
 
 #include <signal.h>
 #include <stdint.h>
@@ -786,6 +786,12 @@ static void gfx_ctx_glx_bind_hw_render(void *data, bool enable)
          glx->g_glx_win, enable ? glx->g_hw_ctx : glx->g_ctx);
 }
 
+static bool gfx_ctx_glx_get_metrics(void *data,
+	enum display_metric_types type, float *value)
+{
+   return x11_get_metrics(data, type, value);
+}
+
 const gfx_ctx_driver_t gfx_ctx_glx = {
    gfx_ctx_glx_init,
    gfx_ctx_glx_destroy,
@@ -796,6 +802,7 @@ const gfx_ctx_driver_t gfx_ctx_glx = {
    NULL, /* get_video_output_size */
    NULL, /* get_video_output_prev */
    NULL, /* get_video_output_next */
+   gfx_ctx_glx_get_metrics,
    NULL,
    gfx_ctx_glx_update_window_title,
    gfx_ctx_glx_check_window,

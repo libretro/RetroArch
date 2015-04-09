@@ -20,9 +20,9 @@
 
 #include "../../driver.h"
 #include "../../runloop.h"
-#include "../gl_common.h"
+#include "../drivers/gl_common.h"
 #include "../video_monitor.h"
-#include "../drivers_wm/x11_common.h"
+#include "../common/x11_common.h"
 
 #include <signal.h>
 #include <stdint.h>
@@ -808,6 +808,12 @@ static void gfx_ctx_xegl_bind_hw_render(void *data, bool enable)
          g_egl_surf, enable ? g_egl_hw_ctx : g_egl_ctx);
 }
 
+static bool gfx_ctx_xegl_get_metrics(void *data,
+	enum display_metric_types type, float *value)
+{
+   return x11_get_metrics(data, type, value);
+}
+
 const gfx_ctx_driver_t gfx_ctx_x_egl = {
    gfx_ctx_xegl_init,
    gfx_ctx_xegl_destroy,
@@ -818,6 +824,7 @@ const gfx_ctx_driver_t gfx_ctx_x_egl = {
    NULL, /* get_video_output_size */
    NULL, /* get_video_output_prev */
    NULL, /* get_video_output_next */
+   gfx_ctx_xegl_get_metrics,
    NULL,
    gfx_ctx_xegl_update_window_title,
    gfx_ctx_xegl_check_window,

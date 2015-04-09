@@ -24,6 +24,7 @@
 #include "../../general.h"
 #include "../../runloop.h"
 #include "../../frontend/frontend.h"
+#include "../../gfx/video_context_driver.h"
 
 #ifndef __has_feature
 /* Compatibility with non-Clang compilers. */
@@ -213,7 +214,7 @@ static RAGameView* g_instance;
 #include "../../gfx/video_viewport.h"
 #include "../../gfx/video_monitor.h"
 #include "../../gfx/video_context_driver.h"
-#include "../../gfx/gl_common.h"
+#include "../../gfx/drivers/gl_common.h"
 #include "../../runloop.h"
 
 //#define HAVE_NSOPENGL
@@ -273,7 +274,7 @@ void apple_bind_game_view_fbo(void)
 static RAScreen* get_chosen_screen(void)
 {
 #if defined(OSX) && !defined(MAC_OS_X_VERSION_10_6)
-	return [NSScreen mainScreen];
+	return [RAScreen mainScreen];
 #else
    settings_t *settings = config_get_ptr();
    if (settings->video.monitor_index >= RAScreen.screens.count)
@@ -502,6 +503,53 @@ static void apple_gfx_ctx_update_window_title(void *data)
         rarch_main_msg_queue_push(buf_fps, 1, 1, false);
 }
 
+static bool apple_gfx_ctx_get_metrics(void *data, enum display_metric_types type,
+            float *value)
+{
+#ifdef OSX
+    RAScreen *screen              = [RAScreen mainScreen];
+    NSDictionary *description     = [screen deviceDescription];
+    NSSize  display_pixel_size    = [[description objectForKey:NSDeviceSize] sizeValue];
+    CGSize  display_physical_size = CGDisplayScreenSize(
+        [[description objectForKey:@"NSScreenNumber"] unsignedIntValue]);
+    
+    float   display_width         = display_pixel_size.width;
+    float   display_height        = display_pixel_size.height;
+    float   physical_width        = display_physical_size.width;
+    float   physical_height       = display_physical_size.height;
+#elif defined(IOS)
+    float   scale                 = apple_gfx_ctx_get_native_scale();
+    CGRect  screen_rect           = [[UIScreen mainScreen] bounds];
+    
+    float   display_width         = screen_rect.size.width;
+    float   display_height        = screen_rect.size.height;
+    float   physical_width        = screen_rect.size.width  * scale;
+    float   physical_height       = screen_rect.size.height * scale;
+#endif
+    
+    (void)display_height;
+    
+    switch (type)
+    {
+        case DISPLAY_METRIC_MM_WIDTH:
+            *value = physical_width;
+            break;
+        case DISPLAY_METRIC_MM_HEIGHT:
+            *value = physical_height;
+            break;
+        case DISPLAY_METRIC_DPI:
+            /* 25.4 mm in an inch. */
+            *value = (display_width/ physical_width) * 25.4f;
+            break;
+        case DISPLAY_METRIC_NONE:
+        default:
+            *value = 0;
+            return false;
+    }
+    
+    return true;
+}
+
 static bool apple_gfx_ctx_has_focus(void *data)
 {
    (void)data;
@@ -614,6 +662,7 @@ const gfx_ctx_driver_t gfx_ctx_apple = {
    NULL, /* get_video_output_size */
    NULL, /* get_video_output_prev */
    NULL, /* get_video_output_next */
+   apple_gfx_ctx_get_metrics,
    NULL,
    apple_gfx_ctx_update_window_title,
    apple_gfx_ctx_check_window,

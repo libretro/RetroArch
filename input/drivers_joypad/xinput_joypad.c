@@ -24,6 +24,7 @@
 #include "../input_autodetect.h"
 #include "../input_common.h"
 
+#include "../../dynamic.h"
 #include "../../general.h"
 #include <boolean.h>
 
@@ -103,7 +104,7 @@ extern bool g_xinput_block_pads;
 /* For xinput1_n.dll */
 static HINSTANCE g_xinput_dll;
 
-/* Function pointer, to be assigned with GetProcAddress */
+/* Function pointer, to be assigned with dylib_proc */
 typedef uint32_t (__stdcall *XInputGetStateEx_t)(uint32_t, XINPUT_STATE*);
 static XInputGetStateEx_t g_XInputGetStateEx;
 
@@ -164,15 +165,15 @@ static bool xinput_joypad_init(void)
     * wrapper DLL (such as x360ce); support these by checking
     * the working directory first.
     *
-    * No need to check for existance as we will be checking LoadLibrary's
+    * No need to check for existance as we will be checking dylib_load's
     * success anyway.
     */
 
    /* Using dylib_* complicates building joyconfig. */
-   g_xinput_dll = LoadLibrary("xinput1_4.dll"); 
+   g_xinput_dll = (HINSTANCE)dylib_load("xinput1_4.dll"); 
    if (!g_xinput_dll)
    {
-      g_xinput_dll = LoadLibrary("xinput1_3.dll");
+      g_xinput_dll = (HINSTANCE)dylib_load("xinput1_3.dll");
       version = "1.3";
    }
 
@@ -187,7 +188,7 @@ static bool xinput_joypad_init(void)
    /* If we get here then an xinput DLL is correctly loaded.
     * First try to load ordinal 100 (XInputGetStateEx).
     */
-   g_XInputGetStateEx = (XInputGetStateEx_t) GetProcAddress(g_xinput_dll, (const char*)100);
+   g_XInputGetStateEx = (XInputGetStateEx_t)dylib_proc(g_xinput_dll, (const char*)100);
    g_xinput_guide_button_supported = true;
 
    if (!g_XInputGetStateEx)
@@ -196,22 +197,22 @@ static bool xinput_joypad_init(void)
        * XInputGetState, at the cost of losing guide button support.
        */
       g_xinput_guide_button_supported = false;
-      g_XInputGetStateEx = (XInputGetStateEx_t) GetProcAddress(g_xinput_dll, "XInputGetState");
+      g_XInputGetStateEx = (XInputGetStateEx_t)dylib_proc(g_xinput_dll, "XInputGetState");
 
       if (!g_XInputGetStateEx)
       {
          RARCH_ERR("Failed to init XInput: DLL is invalid or corrupt.\n");
-         FreeLibrary(g_xinput_dll);
+         dylib_close(g_xinput_dll);
          return false; /* DLL was loaded but did not contain the correct function. */
       }
       RARCH_WARN("XInput: No guide button support.\n");
    }
 
-   g_XInputSetState = (XInputSetState_t) GetProcAddress(g_xinput_dll, "XInputSetState");
+   g_XInputSetState = (XInputSetState_t)dylib_proc(g_xinput_dll, "XInputSetState");
    if (!g_XInputSetState)
    {
       RARCH_ERR("Failed to init XInput: DLL is invalid or corrupt.\n");
-      FreeLibrary(g_xinput_dll);
+      dylib_close(g_xinput_dll);
       return false; /* DLL was loaded but did not contain the correct function. */
    }
 
@@ -279,13 +280,14 @@ static void xinput_joypad_destroy(void)
    for (i = 0; i < 4; ++i)
       memset(&g_xinput_states[i], 0, sizeof(xinput_joypad_state));
 
-   FreeLibrary(g_xinput_dll);
+   dylib_close(g_xinput_dll);
 
-   g_xinput_dll    = NULL;
-   g_XInputGetStateEx = NULL;
-   g_XInputSetState   = NULL;
+   g_xinput_dll        = NULL;
+   g_XInputGetStateEx  = NULL;
+   g_XInputSetState    = NULL;
 
    dinput_joypad.destroy();
+
    g_xinput_block_pads = false;
 }
 

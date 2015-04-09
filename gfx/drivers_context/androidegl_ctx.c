@@ -18,7 +18,7 @@
 #include "../../general.h"
 #include "../../runloop.h"
 #include "../video_monitor.h"
-#include "../gl_common.h"
+#include "../drivers/gl_common.h"
 
 #include <EGL/egl.h>
 
@@ -382,6 +382,93 @@ static void android_gfx_ctx_bind_hw_render(void *data, bool enable)
          android->g_egl_hw_ctx : android->g_egl_ctx);
 }
 
+#define ANDROID_DENSITY_LOW      120
+#define ANDROID_DENSITY_MEDIUM   160
+#define ANDROID_DENSITY_TV       213
+#define ANDROID_DENSITY_XHIGH    320
+#define ANDROID_DENSITY_XXHIGH   480
+#define ANDROID_DENSITY_XXXHIGH  640
+
+static bool android_gfx_ctx_get_metrics(void *data,
+	enum display_metric_types type, float *value)
+{
+   jclass metrics_class;
+   jobject metrics;
+   jmethodID getMetrics;
+   struct android_app *android_app = (struct android_app*)g_android;
+   JNIEnv *env           = (JNIEnv*)jni_thread_getenv();
+
+   GET_METHOD_ID(env, getMetrics, android_app->activity, "getMetrics", "()Landroid/util/DisplayMetrics;");
+   if (!getMetrics)
+      goto error;
+
+   CALL_OBJ_STATIC_METHOD(env, metrics, android_app->activity, getMetrics);
+   GET_OBJECT_CLASS(env, metrics_class, metrics);
+
+   /* Density */
+   float density         = (*env)->GetFloatField(env, metrics, (*env)->GetFieldID(env, metrics_class, "density", "F"));
+   float scaled_density  = (*env)->GetFloatField(env, metrics, (*env)->GetFieldID(env, metrics_class, "scaledDensity", "F"));
+   int     density_dpi   = (*env)->GetIntField(env,   metrics, (*env)->GetFieldID(env, metrics_class, "densityDpi", "I"));
+
+   /* Size */
+   int     width_pixels  = (*env)->GetIntField(env, metrics,   (*env)->GetFieldID(env, metrics_class, "widthPixels", "I"));
+   int    height_pixels  = (*env)->GetIntField(env, metrics,   (*env)->GetFieldID(env, metrics_class, "heightPixels", "I"));
+
+   /* DPI */
+   /* Apparently xdpi and ydpi can't be trusted to be implemented correctly, so don't try to rely on it...
+    *
+    * https://groups.google.com/forum/#!topic/android-developers/QjUlaRohRPI
+    *
+    * "The xdpi and ydpi are supposed to be the real DPI of the screen...  though as you've seen, 
+    * many devices don't set it correctly. :(  This is our fault, it isn't actually used anywhere 
+    * in the platform, so people don't realize they have a bad value, and we haven't had a CTS 
+    * test to try to make sure it is sane (it's not clear how that test should work).  Worse, we 
+    * shipping the original Droid with a graphics driver that reports the wrong value here...  
+    * in fact that reported that same damnable 96."
+    *
+    * Unfortunately, I don't have a good solution if you want to get the real exactly screen dots per inch.  
+    * One thing you could do is compare xdpi/ydpi with densityDpi and if they are significantly 
+    * far apart, assume the values are bad and just fall back on densityDpi as an approximation.  
+    *
+    * Be careful on this, because a correctly working device may have densityDpi fairly different 
+    * than the real dpi -- for example the Samsung TAB uses high density even though its screen's 
+    * really density is a fair amount lower than 240."
+    */
+   float xdpi = (*env)->GetFloatField(env, metrics, (*env)->GetFieldID(env, metrics_class, "xdpi", "F"));
+   float ydpi = (*env)->GetFloatField(env, metrics, (*env)->GetFieldID(env, metrics_class, "ydpi", "F"));
+
+   (void)width_pixels;
+   (void)height_pixels;
+   (void)scaled_density;
+   (void)density;
+   (void)density_dpi;
+
+   switch (type)
+   {
+      case DISPLAY_METRIC_MM_WIDTH:
+         /* can't guarantee this to be accurate - so return false anyway. */
+         *value = xdpi;
+         return false;
+      case DISPLAY_METRIC_MM_HEIGHT:
+         /* can't guarantee this to be accurate - so return false anyway. */
+         *value = ydpi;
+         return false;
+      case DISPLAY_METRIC_DPI:
+         /* just go with quantized DPI. */
+         *value = density_dpi;
+         break;
+      case DISPLAY_METRIC_NONE:
+      default:
+         *value = 0;
+         return false;
+   }
+
+   return true;
+
+error:
+   return false;
+}
+
 const gfx_ctx_driver_t gfx_ctx_android = {
    android_gfx_ctx_init,
    android_gfx_ctx_destroy,
@@ -392,6 +479,7 @@ const gfx_ctx_driver_t gfx_ctx_android = {
    NULL, /* get_video_output_size */
    NULL, /* get_video_output_prev */
    NULL, /* get_video_output_next */
+   android_gfx_ctx_get_metrics,
    NULL,
    android_gfx_ctx_update_window_title,
    android_gfx_ctx_check_window,

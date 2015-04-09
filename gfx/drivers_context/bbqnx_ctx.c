@@ -18,7 +18,7 @@
 #include "../../general.h"
 #include "../../runloop.h"
 #include "../video_monitor.h"
-#include "../gl_common.h"
+#include "../drivers/gl_common.h"
 
 #include <EGL/egl.h>
 #include <bps/screen.h>
@@ -453,6 +453,7 @@ const gfx_ctx_driver_t gfx_ctx_bbqnx = {
    NULL, /* get_video_output_size */
    NULL, /* get_video_output_prev */
    NULL, /* get_video_output_next */
+   NULL, /* get_metrics */
    NULL,
    gfx_ctx_qnx_update_window_title,
    gfx_ctx_qnx_check_window,

@@ -17,16 +17,17 @@
 #ifndef __GL_COMMON_H
 #define __GL_COMMON_H
 
-#include "../general.h"
-#include "font_renderer_driver.h"
+#include "../../general.h"
+#include "../font_renderer_driver.h"
 #include <gfx/math/matrix_4x4.h>
 #include <gfx/scaler/scaler.h>
 #include <formats/image.h>
-#include "video_shader_driver.h"
+#include "../video_context_driver.h"
+#include "../video_shader_driver.h"
 #include <retro_inline.h>
 
 #ifdef HAVE_CONFIG_H
-#include "../config.h"
+#include "../../config.h"
 #endif
 
 #include <string.h>
@@ -244,7 +245,6 @@ struct gl_font_renderer;
 
 typedef struct gl
 {
-   const gfx_ctx_driver_t *ctx_driver;
    const shader_backend_t *shader;
 
    bool vsync;
@@ -366,11 +366,12 @@ typedef struct gl
 
 static INLINE void context_bind_hw_render(gl_t *gl, bool enable)
 {
+   const gfx_ctx_driver_t *ctx = gfx_ctx_get_ptr();
    if (!gl)
       return;
 
-   if (gl->shared_context_use && gl->ctx_driver->bind_hw_render)
-      gl->ctx_driver->bind_hw_render(gl, enable);
+   if (gl->shared_context_use && ctx->bind_hw_render)
+      ctx->bind_hw_render(gl, enable);
 }
 
 static INLINE bool gl_check_error(void)

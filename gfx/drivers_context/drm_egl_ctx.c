@@ -20,7 +20,7 @@
 
 #include "../../driver.h"
 #include "../../runloop.h"
-#include "../gl_common.h"
+#include "../drivers/gl_common.h"
 #include "../video_monitor.h"
 #include <file/dir_list.h>
 
@@ -935,6 +935,8 @@ static bool gfx_ctx_drm_egl_bind_api(void *data,
       default:
          return false;
    }
+
+   return false;
 }
 
 static void gfx_ctx_drm_egl_bind_hw_render(void *data, bool enable)
@@ -970,6 +972,7 @@ const gfx_ctx_driver_t gfx_ctx_drm_egl = {
    NULL, /* get_video_output_size */
    NULL, /* get_video_output_prev */
    NULL, /* get_video_output_next */
+   NULL, /* get_metrics */
    NULL,
    gfx_ctx_drm_egl_update_window_title,
    gfx_ctx_drm_egl_check_window,

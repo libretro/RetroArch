@@ -40,6 +40,14 @@ enum gfx_ctx_api
    GFX_CTX_DIRECT3D9_API,
    GFX_CTX_OPENVG_API
 };
+    
+enum display_metric_types
+{
+   DISPLAY_METRIC_NONE = 0,
+   DISPLAY_METRIC_MM_WIDTH,
+   DISPLAY_METRIC_MM_HEIGHT,
+   DISPLAY_METRIC_DPI,
+};
 
 typedef void (*gfx_ctx_proc_t)(void);
 
@@ -75,6 +83,9 @@ typedef struct gfx_ctx_driver
    void (*get_video_output_prev)(void*);
 
    void (*get_video_output_next)(void*);
+
+   bool (*get_metrics)(void *data, enum display_metric_types type,
+         float *value);
 
    /* Translates a window size to an aspect ratio.
     * In most cases this will be just width / height, but
@@ -188,6 +199,21 @@ void find_next_context_driver(void);
  * Finds previous driver in graphics context driver array.
  **/
 void find_prev_gfx_context_driver(void);
+
+const gfx_ctx_driver_t *gfx_ctx_get_ptr(void);
+
+bool gfx_ctx_get_metrics(enum display_metric_types type, float *value);
+
+void gfx_ctx_translate_aspect(void *data, float *aspect,
+      unsigned width, unsigned height);
+
+void gfx_ctx_set_video_mode(void *data,
+      unsigned width, unsigned height,
+      bool fullscreen);
+
+void gfx_ctx_swap_buffers(void *data);
+
+bool gfx_ctx_focus(void *data);
 
 #ifdef __cplusplus
 }

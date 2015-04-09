@@ -86,9 +86,8 @@ CHEATS
 /*============================================================
 UI COMMON CONTEXT
 ============================================================ */
-#if defined(_WIN32) && !defined(_XBOX)
-#include "../gfx/drivers_wm/win32_common.c"
-#include "../gfx/drivers_wm/win32_dwm_common.c"
+#if defined(_WIN32)
+#include "../gfx/common/win32_common.c"
 #endif
 
 /*============================================================
@@ -135,7 +134,7 @@ VIDEO CONTEXT
 #endif
 
 #ifdef HAVE_X11
-#include "../gfx/drivers_wm/x11_common.c"
+#include "../gfx/common/x11_common.c"
 #endif
 
 
@@ -206,7 +205,7 @@ VIDEO DRIVER
 
 #ifdef HAVE_OPENGL
 #include "../gfx/drivers/gl.c"
-#include "../gfx/gl_common.c"
+#include "../gfx/drivers/gl_common.c"
 
 #ifndef HAVE_PSGL
 #include "../libretro-common/glsym/rglgen.c"
@@ -562,6 +561,7 @@ FILTERS
 /*============================================================
 DYNAMIC
 ============================================================ */
+#include "../dylib.c"
 #include "../dynamic.c"
 #include "../dynamic_dummy.c"
 #include "../gfx/video_filter.c"

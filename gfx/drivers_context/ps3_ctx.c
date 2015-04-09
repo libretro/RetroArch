@@ -36,7 +36,7 @@
 #include "config.h"
 #endif
 
-#include "../gl_common.h"
+#include "../drivers/gl_common.h"
 
 #include "../video_context_driver.h"
 
@@ -388,6 +388,7 @@ const gfx_ctx_driver_t gfx_ctx_ps3 = {
    NULL, /* get_video_output_size */
    NULL, /* get_video_output_prev */
    NULL, /* get_video_output_next */
+   NULL, /* get_metrics */
    NULL,
    gfx_ctx_ps3_update_window_title,
    gfx_ctx_ps3_check_window,

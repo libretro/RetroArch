@@ -1,6 +1,5 @@
 /*  RetroArch - A frontend for libretro.
- *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2015 - Daniel De Matteis
+ *  Copyright (C) 2013-2014 - Jason Fetters
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -14,26 +13,14 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef WIN32_COMMON_H__
-#define WIN32_COMMON_H__
+#ifndef __APPLE_RARCH_GAMECONTROLLER_H__
+#define __APPLE_RARCH_GAMECONTROLLER_H__
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include "../../input/connect/joypad_connection.h"
 
-#ifndef _XBOX
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
-#include "win32_resource.h"
+joypad_connection_t *slots;
 
-LRESULT win32_handle_keyboard_event(HWND hwnd, UINT message,
-      WPARAM wparam, LPARAM lparam);
-
-LRESULT win32_menu_loop(HWND handle, WPARAM wparam);
-#endif
-
-#ifdef __cplusplus
-}
-#endif
+void apple_gamecontroller_init(void);
+void apple_gamecontroller_poll_all(void);
 
 #endif

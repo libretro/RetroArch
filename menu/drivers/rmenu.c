@@ -66,9 +66,9 @@ static bool menu_texture_inited =false;
 
 static int rmenu_entry_iterate(unsigned action)
 {
-   const char *label = NULL;
+   const char *label         = NULL;
    menu_file_list_cbs_t *cbs = NULL;
-   menu_handle_t *menu = menu_driver_get_ptr();
+   menu_handle_t *menu       = menu_driver_get_ptr();
 
    if (!menu)
       return -1;
@@ -261,9 +261,6 @@ static void rmenu_render(void)
       snprintf(message, sizeof(message), "%c %s",
             selected ? '>' : ' ', entry_title_buf);
 
-#if 0
-      blit_line(x, y, message, selected);
-#endif
       font_parms.x = POSITION_EDGE_MIN + POSITION_OFFSET;
       font_parms.y = POSITION_EDGE_MIN + POSITION_RENDER_OFFSET
          + (POSITION_OFFSET * j);

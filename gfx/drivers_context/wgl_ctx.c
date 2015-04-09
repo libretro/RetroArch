@@ -24,9 +24,9 @@
 #include "../../driver.h"
 #include "../../runloop.h"
 #include "../video_context_driver.h"
-#include "../gl_common.h"
+#include "../drivers/gl_common.h"
 #include "../video_monitor.h"
-#include "../drivers_wm/win32_common.h"
+#include "../common/win32_common.h"
 #include "../drivers_wm/win32_shader_dlg.h"
 #include <windows.h>
 #include <commdlg.h>
@@ -111,7 +111,7 @@ static void create_gl_context(HWND hwnd)
    bool debug       = global->system.hw_render_callback.debug_context;
 
 #ifdef _WIN32
-   dll_handle = LoadLibrary("OpenGL32.dll");
+   dll_handle = (HINSTANCE)dylib_load("OpenGL32.dll");
 #endif
 
    g_hdc = GetDC(hwnd);
@@ -664,6 +664,12 @@ static gfx_ctx_proc_t gfx_ctx_wgl_get_proc_address(const char *symbol)
    return (gfx_ctx_proc_t)GetProcAddress(dll_handle, symbol);
 }
 
+static bool gfx_ctx_wgl_get_metrics(void *data,
+	enum display_metric_types type, float *value)
+{
+   return win32_get_metrics(data, type, value);
+}
+
 static bool gfx_ctx_wgl_bind_api(void *data,
       enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
@@ -699,6 +705,7 @@ const gfx_ctx_driver_t gfx_ctx_wgl = {
    NULL, /* get_video_output_size */
    NULL, /* get_video_output_prev */
    NULL, /* get_video_output_next */
+   gfx_ctx_wgl_get_metrics,
    NULL,
    gfx_ctx_wgl_update_window_title,
    gfx_ctx_wgl_check_window,

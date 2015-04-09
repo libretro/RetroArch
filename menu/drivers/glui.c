@@ -24,7 +24,7 @@
 #include "../menu.h"
 
 #include <file/file_path.h>
-#include "../../gfx/gl_common.h"
+#include "../../gfx/drivers/gl_common.h"
 #include "../../gfx/font_driver.h"
 #include "../../gfx/video_texture.h"
 #include <compat/posix_string.h>
@@ -54,10 +54,10 @@ typedef struct glui_handle
 
 static int glui_entry_iterate(unsigned action)
 {
-   const char *label = NULL;
+   const char *label         = NULL;
    menu_file_list_cbs_t *cbs = NULL;
-   menu_handle_t *menu = menu_driver_get_ptr();
-   runloop_t *runloop   = rarch_main_get_ptr();
+   menu_handle_t *menu       = menu_driver_get_ptr();
+   runloop_t *runloop        = rarch_main_get_ptr();
 
    if (!menu || !runloop)
       return -1;
@@ -83,8 +83,6 @@ static int glui_entry_iterate(unsigned action)
 static void glui_blit_line(gl_t *gl, float x, float y, const char *message, uint32_t color)
 {
    struct font_params params = {0};
-
-   /* gl_set_viewport(gl, gl->win_width, gl->win_height, false, false); */
 
    params.x           = x / gl->win_width;
    params.y           = 1.0f - y / gl->win_height;

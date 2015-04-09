@@ -20,7 +20,7 @@
 #include "video_thread_wrapper.h"
 
 #ifdef HAVE_OPENGL
-#include "gl_common.h"
+#include "drivers/gl_common.h"
 
 static void video_texture_png_load_gl(struct texture_image *ti,
       enum texture_filter_type filter_type,

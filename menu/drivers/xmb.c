@@ -25,7 +25,7 @@
 
 #include <file/file_path.h>
 #include "../../gfx/video_thread_wrapper.h"
-#include "../../gfx/gl_common.h"
+#include "../../gfx/drivers/gl_common.h"
 #include "../../gfx/font_driver.h"
 #include "../../gfx/video_texture.h"
 #include <compat/posix_string.h>
@@ -399,8 +399,6 @@ static void xmb_draw_text(gl_t *gl, xmb_handle_t *xmb, const char *str, float x,
    if (x < -xmb->icon.size || x > gl->win_width + xmb->icon.size
          || y < -xmb->icon.size || y > gl->win_height + xmb->icon.size)
       return;
-
-   /* gl_set_viewport(gl, gl->win_width, gl->win_height, false, false); */
 
    params.x           = x / gl->win_width;
    params.y           = 1.0f - y / gl->win_height;

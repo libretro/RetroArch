@@ -16,7 +16,7 @@
  */
 
 #include "../d3d/d3d.h"
-#include "../drivers_wm/win32_common.h"
+#include "../common/win32_common.h"
 
 #include "../../runloop.h"
 #include "../video_monitor.h"
@@ -492,6 +492,12 @@ static void gfx_ctx_d3d_swap_interval(void *data, unsigned interval)
 #endif
 }
 
+static bool gfx_ctx_d3d_get_metrics(void *data,
+	enum display_metric_types type, float *value)
+{
+   return win32_get_metrics(data, type, value);
+}
+
 const gfx_ctx_driver_t gfx_ctx_d3d = {
    gfx_ctx_d3d_init,
    gfx_ctx_d3d_destroy,
@@ -502,6 +508,7 @@ const gfx_ctx_driver_t gfx_ctx_d3d = {
    NULL, /* get_video_output_size */
    NULL, /* get_video_output_prev */
    NULL, /* get_video_output_next */
+   gfx_ctx_d3d_get_metrics,
    NULL,
    gfx_ctx_d3d_update_title,
    gfx_ctx_d3d_check_window,

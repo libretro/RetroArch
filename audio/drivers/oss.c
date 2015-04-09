@@ -191,7 +191,7 @@ static size_t oss_buffer_size(void *data)
    if (ioctl(*fd, SNDCTL_DSP_GETOSPACE, &info) < 0)
    {
       RARCH_ERR("SNDCTL_DSP_GETOSPACE failed ...\n");
-      return 1; // Return something non-zero to avoid SIGFPE.
+      return 1; /* Return something non-zero to avoid SIGFPE. */
    }
 
    return info.fragsize * info.fragstotal;

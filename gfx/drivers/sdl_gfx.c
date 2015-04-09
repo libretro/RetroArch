@@ -27,11 +27,7 @@
 #include "../font_renderer_driver.h"
 
 #ifdef HAVE_X11
-#include "../drivers_wm/x11_common.h"
-#endif
-
-#if defined(_WIN32) && !defined(_XBOX)
-#include "../drivers_context/win32_dwm_common.h"
+#include "../common/x11_common.h"
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -249,10 +245,6 @@ static void *sdl_gfx_init(const video_info_t *video, const input_driver_t **inpu
    unsigned full_x, full_y;
    sdl_video_t *vid = NULL;
    settings_t *settings = config_get_ptr();
-
-#ifdef _WIN32
-   gfx_set_dwm();
-#endif
 
 #ifdef HAVE_X11
    XInitThreads();

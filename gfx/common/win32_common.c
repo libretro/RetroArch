@@ -13,26 +13,29 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "../../general.h"
+#include "win32_common.h"
+
+#if !defined(_XBOX) && defined(_WIN32)
+
 #ifndef _WIN32_WINNT
 #define _WIN32_WINNT 0x0500 //_WIN32_WINNT_WIN2K
 #endif
 
-#include "../../driver.h"
-#include "../../general.h"
-#include "win32_common.h"
 #include <windows.h>
 #include <commdlg.h>
-#include <string.h>
-
-#if !defined(_XBOX) && defined(_WIN32)
 #include "../../retroarch.h"
 
 #ifdef HAVE_OPENGL
-#include "win32_shader_dlg.h"
+#include "../drivers_wm/win32_shader_dlg.h"
 #endif
 
-static bool win32_browser(HWND owner, char *filename, const char *extensions,
-	const char *title, const char *initial_dir)
+static bool win32_browser(
+      HWND owner,
+      char *filename,
+      const char *extensions,
+      const char *title,
+      const char *initial_dir)
 {
 	OPENFILENAME ofn;
 
@@ -177,3 +180,39 @@ LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
 	return 0L;
 }
 #endif
+
+bool win32_get_metrics(void *data,
+	enum display_metric_types type, float *value)
+{
+#ifdef _XBOX
+   return false;
+#else
+   HDC monitor            = GetDC(NULL);
+   int pixels_x           = GetDeviceCaps(monitor, HORZRES);
+   int pixels_y           = GetDeviceCaps(monitor, VERTRES);
+   int physical_width     = GetDeviceCaps(monitor, HORZSIZE);
+   int physical_height    = GetDeviceCaps(monitor, VERTSIZE);
+
+   ReleaseDC(NULL, monitor);
+
+   switch (type)
+   {
+      case DISPLAY_METRIC_MM_WIDTH:
+         *value = physical_width;
+         break;
+      case DISPLAY_METRIC_MM_HEIGHT:
+         *value = physical_height;
+         break;
+      case DISPLAY_METRIC_DPI:
+         /* 25.4 mm in an inch. */
+         *value = 254 * pixels_x / physical_width / 10;
+         break;
+      case DISPLAY_METRIC_NONE:
+      default:
+         *value = 0;
+         return false;
+   }
+
+   return true;
+#endif
+}

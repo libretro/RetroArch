@@ -20,25 +20,13 @@
 #endif
 
 #include <retro_inline.h>
+#include <retro_miscellaneous.h>
+#include <rthreads/rthreads.h>
 
 #ifdef _XBOX
 #define DSERR_BUFFERLOST                MAKE_DSHRESULT(150)
 #define DSERR_INVALIDPARAM              E_INVALIDARG
 #define DSERR_PRIOLEVELNEEDED           MAKE_DSHRESULT(70)
-
-// Send the audio signal (stereo, without attenuation) to all existing speakers
-static DSMIXBINVOLUMEPAIR dsmbvp[8] = {
-   { DSMIXBIN_FRONT_LEFT,    DSBVOLUME_MAX },
-   { DSMIXBIN_FRONT_RIGHT,   DSBVOLUME_MAX },
-   { DSMIXBIN_FRONT_CENTER,  DSBVOLUME_MAX },
-   { DSMIXBIN_FRONT_CENTER,  DSBVOLUME_MAX },
-   { DSMIXBIN_BACK_LEFT,     DSBVOLUME_MAX },
-   { DSMIXBIN_BACK_RIGHT,    DSBVOLUME_MAX },
-   { DSMIXBIN_LOW_FREQUENCY, DSBVOLUME_MAX },
-   { DSMIXBIN_LOW_FREQUENCY, DSBVOLUME_MAX },
-};
-   
-static DSMIXBINS dsmb;
 #endif
 
 #include "../../driver.h"
@@ -65,8 +53,8 @@ typedef struct dsound
    fifo_buffer_t *buffer;
    CRITICAL_SECTION crit;
 
-   HANDLE event;
-   HANDLE thread;
+   HANDLE      event;
+   sthread_t *thread;
 
    unsigned buffer_size;
 
@@ -147,7 +135,7 @@ static INLINE void release_region(dsound_t *ds, const struct audio_lock *region)
    IDirectSoundBuffer_Unlock(ds->dsb, region->chunk1, region->size1, region->chunk2, region->size2);
 }
 
-static DWORD CALLBACK dsound_thread(PVOID data)
+static void dsound_thread(void *data)
 {
    DWORD write_ptr;
    dsound_t *ds = (dsound_t*)data;
@@ -174,24 +162,26 @@ static DWORD CALLBACK dsound_thread(PVOID data)
          /* No space to write, or we don't have data in our fifo, 
           * but we can wait some time before it underruns ... */
 
-         Sleep(1);
 
          /* We could opt for using the notification interface,
           * but it is not guaranteed to work, so use high 
           * priority sleeping patterns.
           */
+         rarch_sleep(1);
+         continue;
       }
-      else if (fifo_avail < CHUNK_SIZE)
+
+      if (!grab_region(ds, write_ptr, &region))
+      {
+         ds->thread_alive = false;
+         SetEvent(ds->event);
+         break;
+      }
+
+      if (fifo_avail < CHUNK_SIZE)
       {
          /* Got space to write, but nothing in FIFO (underrun), 
           * fill block with silence. */
-
-         if (!grab_region(ds, write_ptr, &region))
-         {
-            ds->thread_alive = false;
-            SetEvent(ds->event);
-            break;
-         }
 
          memset(region.chunk1, 0, region.size1);
          memset(region.chunk2, 0, region.size2);
@@ -202,13 +192,6 @@ static DWORD CALLBACK dsound_thread(PVOID data)
       else 
       {
          /* All is good. Pull from it and notify FIFO. */
-
-         if (!grab_region(ds, write_ptr, &region))
-         {
-            ds->thread_alive = false;
-            SetEvent(ds->event);
-            break;
-         }
 
          EnterCriticalSection(&ds->crit);
          if (region.chunk1)
@@ -233,8 +216,8 @@ static void dsound_stop_thread(dsound_t *ds)
       return;
 
    ds->thread_alive = false;
-   WaitForSingleObject(ds->thread, INFINITE);
-   CloseHandle(ds->thread);
+
+   sthread_join(ds->thread);
    ds->thread = NULL;
 }
 
@@ -243,8 +226,8 @@ static bool dsound_start_thread(dsound_t *ds)
    if (!ds->thread)
    {
       ds->thread_alive = true;
-      ds->thread = CreateThread(NULL, 0, dsound_thread, ds, 0, NULL);
-      if (ds->thread == NULL)
+      ds->thread = sthread_create(dsound_thread, ds);
+      if (!ds->thread)
          return false;
    }
 
@@ -275,8 +258,7 @@ static void dsound_free(void *data)
    if (ds->thread)
    {
       ds->thread_alive = false;
-      WaitForSingleObject(ds->thread, INFINITE);
-      CloseHandle(ds->thread);
+      sthread_join(ds->thread);
    }
 
    DeleteCriticalSection(&ds->crit);
@@ -320,10 +302,10 @@ static BOOL CALLBACK enumerate_cb(LPGUID guid, LPCSTR desc, LPCSTR module, LPVOI
 
 static void *dsound_init(const char *device, unsigned rate, unsigned latency)
 {
-   WAVEFORMATEX wfx = {0};
-   DSBUFFERDESC bufdesc = {0};
+   WAVEFORMATEX wfx      = {0};
+   DSBUFFERDESC bufdesc  = {0};
    struct dsound_dev dev = {0};
-   dsound_t *ds = (dsound_t*)calloc(1, sizeof(*ds));
+   dsound_t          *ds = (dsound_t*)calloc(1, sizeof(*ds));
 
    if (!ds)
       goto error;
@@ -346,30 +328,29 @@ static void *dsound_init(const char *device, unsigned rate, unsigned latency)
       goto error;
 #endif
 
-   wfx.wFormatTag = WAVE_FORMAT_PCM;
-   wfx.nChannels = 2;
-   wfx.nSamplesPerSec = rate;
-   wfx.wBitsPerSample = 16;
-   wfx.nBlockAlign = 2 * sizeof(int16_t);
-   wfx.nAvgBytesPerSec = rate * 2 * sizeof(int16_t);
+   wfx.wFormatTag        = WAVE_FORMAT_PCM;
+   wfx.nChannels         = 2;
+   wfx.nSamplesPerSec    = rate;
+   wfx.wBitsPerSample    = 16;
+   wfx.nBlockAlign       = 2 * sizeof(int16_t);
+   wfx.nAvgBytesPerSec   = rate * 2 * sizeof(int16_t);
 
-   ds->buffer_size = (latency * wfx.nAvgBytesPerSec) / 1000;
-   ds->buffer_size /= CHUNK_SIZE;
-   ds->buffer_size *= CHUNK_SIZE;
+   ds->buffer_size       = (latency * wfx.nAvgBytesPerSec) / 1000;
+   ds->buffer_size      /= CHUNK_SIZE;
+   ds->buffer_size      *= CHUNK_SIZE;
    if (ds->buffer_size < 4 * CHUNK_SIZE)
-      ds->buffer_size = 4 * CHUNK_SIZE;
+      ds->buffer_size    = 4 * CHUNK_SIZE;
 
    RARCH_LOG("[DirectSound]: Setting buffer size of %u bytes\n", ds->buffer_size);
    RARCH_LOG("[DirectSound]: Latency = %u ms\n", (unsigned)((1000 * ds->buffer_size) / wfx.nAvgBytesPerSec));
 
-   bufdesc.dwSize = sizeof(DSBUFFERDESC);
-#ifdef _XBOX
-   bufdesc.dwFlags = 0;
-#else
-   bufdesc.dwFlags = DSBCAPS_GETCURRENTPOSITION2 | DSBCAPS_GLOBALFOCUS;
+   bufdesc.dwSize        = sizeof(DSBUFFERDESC);
+   bufdesc.dwFlags       = 0;
+#ifndef _XBOX
+   bufdesc.dwFlags       = DSBCAPS_GETCURRENTPOSITION2 | DSBCAPS_GLOBALFOCUS;
 #endif
    bufdesc.dwBufferBytes = ds->buffer_size;
-   bufdesc.lpwfxFormat = &wfx;
+   bufdesc.lpwfxFormat   = &wfx;
 
    ds->event = CreateEvent(NULL, false, false, NULL);
    if (!ds->event)
@@ -420,7 +401,8 @@ static bool dsound_start(void *data)
    if (!dsound_start_thread(ds))
       return false;
 
-   ds->is_paused = (IDirectSoundBuffer_Play(ds->dsb, 0, 0, DSBPLAY_LOOPING) == DS_OK) ? false : true;
+   ds->is_paused = (IDirectSoundBuffer_Play(
+            ds->dsb, 0, 0, DSBPLAY_LOOPING) == DS_OK) ? false : true;
    return (ds->is_paused) ? false : true;
 }
 
@@ -461,8 +443,8 @@ static ssize_t dsound_write(void *data, const void *buf_, size_t size)
       fifo_write(ds->buffer, buf, avail);
       LeaveCriticalSection(&ds->crit);
 
-      buf += avail;
-      size -= avail;
+      buf     += avail;
+      size    -= avail;
       written += avail;
 
       if (ds->nonblock || !ds->thread_alive)

@@ -10,6 +10,7 @@ endif
 
 ifeq ($(HAVE_DYLIB), 1)
    DEFINES += -DHAVE_DYLIB
+	JOYCONFIG_LIBS += $(DYLIB_LIB)
 endif
 
 ifeq ($(SCALER_NO_SIMD), 1)
@@ -122,6 +123,7 @@ OBJ += frontend/frontend.o \
 		configuration.o \
 		settings_list.o \
 		settings.o \
+		dylib.o \
 		dynamic.o \
 		dynamic_dummy.o \
 		libretro-common/queues/message_queue.o \
@@ -382,7 +384,7 @@ endif
 
 ifeq ($(HAVE_X11), 1)
    OBJ += input/drivers/x11_input.o \
-			 gfx/drivers_wm/x11_common.o \
+			 gfx/common/x11_common.o \
 			 input/drivers_keyboard/keyboard_event_x11.o
    LIBS += $(X11_LIBS) $(XEXT_LIBS) $(XF86VM_LIBS) $(XINERAMA_LIBS)
    DEFINES += $(X11_CFLAGS) $(XEXT_CFLAGS) $(XF86VM_CFLAGS) $(XINERAMA_CFLAGS)
@@ -427,7 +429,7 @@ endif
 ifeq ($(HAVE_OPENGL), 1)
    DEFINES += -DHAVE_OPENGL -DHAVE_GLSL
    OBJ += gfx/drivers/gl.o \
-			 gfx/gl_common.o \
+			 gfx/drivers/gl_common.o \
 			 gfx/video_context_driver.o \
 			 gfx/drivers_context/gfx_null_ctx.o \
 			 gfx/drivers_font/gl_raster_font.o \
@@ -709,8 +711,7 @@ endif
 ifneq ($(findstring Win32,$(OS)),)
    OBJ += media/rarch.o \
           input/drivers_keyboard/keyboard_event_win32.o \
-			 gfx/drivers_wm/win32_common.o \
-			 gfx/drivers_wm/win32_dwm_common.o \
+			 gfx/common/win32_common.o \
 			 frontend/drivers/platform_win32.o
 endif
 
@@ -729,5 +730,4 @@ endif
 
 
 # Joyconfig binary
-
-JOYCONFIG_OBJ += tools/retroarch-joyconfig-griffin.o
+JOYCONFIG_OBJ  += tools/retroarch-joyconfig-griffin.o
