@@ -21,6 +21,8 @@
 #include "../../config.h"
 #endif
 
+#include "../video_context_driver.h"
+
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <X11/extensions/xf86vmode.h>
@@ -52,6 +54,9 @@ unsigned x11_get_xinerama_monitor(Display *dpy,
 bool x11_create_input_context(Display *dpy, Window win, XIM *xim, XIC *xic);
 void x11_destroy_input_context(XIM *xim, XIC *xic);
 void x11_handle_key_event(XEvent *event, XIC ic, bool filter);
+
+bool x11_get_metrics(void *data,
+      enum display_metric_types type, float *value);
 
 #endif
 
