@@ -323,26 +323,28 @@ static void d3d_calculate_rect(d3d_video_t *d3d,
 
 static void d3d_set_nonblock_state(void *data, bool state)
 {
-   d3d_video_t      *d3d = (d3d_video_t*)data;
+   d3d_video_t            *d3d = (d3d_video_t*)data;
+   const gfx_ctx_driver_t *ctx = gfx_ctx_get_ptr();
 
    if (!d3d)
       return;
 
    d3d->video_info.vsync = !state;
 
-   if (d3d->ctx_driver && d3d->ctx_driver->swap_interval)
-      d3d->ctx_driver->swap_interval(d3d, state ? 0 : 1);
+   if (ctx && ctx->swap_interval)
+      ctx->swap_interval(d3d, state ? 0 : 1);
 }
 
 static bool d3d_alive(void *data)
 {
-   d3d_video_t *d3d   = (d3d_video_t*)data;
-   bool quit          = false;
-   bool resize        = false;
-   runloop_t *runloop = rarch_main_get_ptr();
+   d3d_video_t         *d3d   = (d3d_video_t*)data;
+   bool          quit          = false;
+   bool          resize        = false;
+   runloop_t          *runloop = rarch_main_get_ptr();
+   const gfx_ctx_driver_t *ctx = gfx_ctx_get_ptr();
 
-   if (d3d->ctx_driver && d3d->ctx_driver->check_window)
-      d3d->ctx_driver->check_window(d3d, &quit, &resize,
+   if (ctx && ctx->check_window)
+      ctx->check_window(d3d, &quit, &resize,
             &d3d->screen_width, &d3d->screen_height, runloop->frames.video.count);
 
    if (quit)
@@ -355,25 +357,31 @@ static bool d3d_alive(void *data)
 
 static bool d3d_focus(void *data)
 {
-   d3d_video_t *d3d = (d3d_video_t*)data;
-   if (d3d && d3d->ctx_driver && d3d->ctx_driver->has_focus)
-      return d3d->ctx_driver->has_focus(d3d);
+   d3d_video_t            *d3d = (d3d_video_t*)data;
+   const gfx_ctx_driver_t *ctx = gfx_ctx_get_ptr();
+
+   if (d3d && ctx && ctx->has_focus)
+      return ctx->has_focus(d3d);
    return false;
 }
 
 static bool d3d_suppress_screensaver(void *data, bool enable)
 {
-   d3d_video_t *d3d = (d3d_video_t*)data;
-   if (d3d && d3d->ctx_driver && d3d->ctx_driver->suppress_screensaver)
-      return d3d->ctx_driver->suppress_screensaver(d3d, enable);
+   d3d_video_t            *d3d = (d3d_video_t*)data;
+   const gfx_ctx_driver_t *ctx = gfx_ctx_get_ptr();
+
+   if (d3d && ctx && ctx->suppress_screensaver)
+      return ctx->suppress_screensaver(d3d, enable);
    return false;
 }
 
 static bool d3d_has_windowed(void *data)
 {
-   d3d_video_t *d3d = (d3d_video_t*)data;
-   if (d3d && d3d->ctx_driver && d3d->ctx_driver->has_windowed)
-      return d3d->ctx_driver->has_windowed(d3d);
+   d3d_video_t            *d3d = (d3d_video_t*)data;
+   const gfx_ctx_driver_t *ctx = gfx_ctx_get_ptr();
+
+   if (d3d && ctx && ctx->has_windowed)
+      return ctx->has_windowed(d3d);
    return true;
 }
 
@@ -438,8 +446,9 @@ static bool d3d_construct(d3d_video_t *d3d,
       void **input_data)
 {
    unsigned full_x, full_y;
-   driver_t *driver         = driver_get_ptr();
-   settings_t *settings     = config_get_ptr();
+   driver_t    *driver         = driver_get_ptr();
+   settings_t    *settings     = config_get_ptr();
+   const gfx_ctx_driver_t *ctx = gfx_ctx_get_ptr();
 
    d3d->should_resize = false;
 #ifndef _XBOX
@@ -497,8 +506,8 @@ static bool d3d_construct(d3d_video_t *d3d,
          (int)(mon_rect.right  - mon_rect.left),
          (int)(mon_rect.bottom - mon_rect.top));
 #else
-   if (d3d->ctx_driver && d3d->ctx_driver->get_video_size)
-      d3d->ctx_driver->get_video_size(d3d, &full_x, &full_y);
+   if (ctx && ctx->get_video_size)
+      ctx->get_video_size(d3d, &full_x, &full_y);
 #endif
    d3d->screen_width   = info->fullscreen ? full_x : info->width;
    d3d->screen_height  = info->fullscreen ? full_y : info->height;
@@ -537,8 +546,8 @@ static bool d3d_construct(d3d_video_t *d3d,
 #endif
 #endif
 
-   if (d3d && d3d->ctx_driver && d3d->ctx_driver->show_mouse)
-      d3d->ctx_driver->show_mouse(d3d, !info->fullscreen
+   if (d3d && ctx && ctx->show_mouse)
+      ctx->show_mouse(d3d, !info->fullscreen
 #ifdef HAVE_OVERLAY
       || d3d->overlays_enabled
 #endif
@@ -583,9 +592,8 @@ static bool d3d_construct(d3d_video_t *d3d,
    if (!d3d_initialize(d3d, &d3d->video_info))
       return false;
 
-   if (input && input_data &&
-      d3d->ctx_driver && d3d->ctx_driver->input_driver)
-      d3d->ctx_driver->input_driver(d3d, input, input_data);
+   if (input && input_data && ctx && ctx->input_driver)
+      ctx->input_driver(d3d, input, input_data);
 
    RARCH_LOG("[D3D]: Init complete.\n");
    return true;
@@ -616,10 +624,11 @@ static void d3d_set_rotation(void *data, unsigned rot)
 
 static void d3d_show_mouse(void *data, bool state)
 {
-   d3d_video_t *d3d = (d3d_video_t*)data;
+   d3d_video_t            *d3d = (d3d_video_t*)data;
+   const gfx_ctx_driver_t *ctx = gfx_ctx_get_ptr();
 
-   if (d3d && d3d->ctx_driver && d3d->ctx_driver->show_mouse)
-      d3d->ctx_driver->show_mouse(d3d, state);
+   if (d3d && ctx && ctx->show_mouse)
+      ctx->show_mouse(d3d, state);
 }
 
 static const gfx_ctx_driver_t *d3d_get_context(void *data)
@@ -644,8 +653,9 @@ static const gfx_ctx_driver_t *d3d_get_context(void *data)
 static void *d3d_init(const video_info_t *info,
       const input_driver_t **input, void **input_data)
 {
-   d3d_video_t *vid = NULL;
-   driver_t *driver = driver_get_ptr();
+   d3d_video_t            *vid = NULL;
+   driver_t            *driver = driver_get_ptr();
+   const gfx_ctx_driver_t *ctx = NULL;
 
 #ifdef _XBOX
    if (driver->video_data)
@@ -676,8 +686,8 @@ static void *d3d_init(const video_info_t *info,
    if (!vid)
       goto error;
 
-   vid->ctx_driver = d3d_get_context(vid);
-   if (!vid->ctx_driver)
+   ctx = d3d_get_context(vid);
+   if (!ctx)
       goto error;
 
    /* Default values */
@@ -693,6 +703,8 @@ static void *d3d_init(const video_info_t *info,
 #else
    vid->menu                 = NULL;
 #endif
+
+   driver->video_context     = ctx;
 
    if (!d3d_construct(vid, info, input, input_data))
    {
@@ -710,12 +722,15 @@ static void *d3d_init(const video_info_t *info,
 error:
    if (vid)
       free(vid);
+   if (driver)
+      driver->video_context = NULL;
    return NULL;
 }
 
 static void d3d_free(void *data)
 {
-   d3d_video_t *d3d = (d3d_video_t*)data;
+   d3d_video_t            *d3d = (d3d_video_t*)data;
+   const gfx_ctx_driver_t *ctx = gfx_ctx_get_ptr();
 
    if (!d3d)
       return;
@@ -726,9 +741,9 @@ static void d3d_free(void *data)
 #endif
 
 #ifdef _XBOX
-   if (d3d->ctx_driver && d3d->ctx_driver->destroy)
-      d3d->ctx_driver->destroy(d3d);
-   d3d->ctx_driver = NULL;
+   if (ctx && ctx->destroy)
+      ctx->destroy(d3d);
+   ctx = NULL;
 #else
 
 #ifdef HAVE_MENU
@@ -1434,7 +1449,8 @@ static bool d3d_overlay_load(void *data,
 static void d3d_overlay_enable(void *data, bool state)
 {
    unsigned i;
-   d3d_video_t *d3d = (d3d_video_t*)data;
+   d3d_video_t            *d3d = (d3d_video_t*)data;
+   const gfx_ctx_driver_t *ctx = gfx_ctx_get_ptr();
 
    if (!d3d)
       return;
@@ -1442,8 +1458,8 @@ static void d3d_overlay_enable(void *data, bool state)
    for (i = 0; i < d3d->overlays.size(); i++)
       d3d->overlays_enabled = state;
 
-   if (d3d && d3d->ctx_driver && d3d->ctx_driver->show_mouse)
-      d3d->ctx_driver->show_mouse(d3d, state);
+   if (d3d && ctx && ctx->show_mouse)
+      ctx->show_mouse(d3d, state);
 }
 
 static void d3d_overlay_full_screen(void *data, bool enable)
@@ -1492,6 +1508,7 @@ static bool d3d_frame(void *data, const void *frame,
    settings_t *settings            = config_get_ptr();
    global_t *global                = global_get_ptr();
    const font_renderer_t *font_ctx = d3d ? (const font_renderer_t*)d3d->font_driver : NULL;
+   const gfx_ctx_driver_t     *ctx = gfx_ctx_get_ptr();
 
    (void)i;
 
@@ -1605,11 +1622,11 @@ static bool d3d_frame(void *data, const void *frame,
 
    RARCH_PERFORMANCE_STOP(d3d_frame);
 
-   if (d3d && d3d->ctx_driver && d3d->ctx_driver->update_window_title)
-      d3d->ctx_driver->update_window_title(d3d);
+   if (d3d && ctx && ctx->update_window_title)
+      ctx->update_window_title(d3d);
 
-   if (d3d && d3d->ctx_driver && d3d->ctx_driver->swap_buffers)
-      d3d->ctx_driver->swap_buffers(d3d);
+   if (d3d && ctx && ctx->swap_buffers)
+      ctx->swap_buffers(d3d);
 
    return true;
 }
