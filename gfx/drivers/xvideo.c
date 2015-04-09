@@ -674,45 +674,46 @@ static void xv_render_msg(xv_t *xv, const char *msg,
    for (; *msg; msg++)
    {
       int base_x, base_y, glyph_width, glyph_height, max_width, max_height;
-      const uint8_t *src = NULL;
-      uint8_t *out = NULL;
+      const uint8_t *src             = NULL;
+      uint8_t *out                   = NULL;
       const struct font_glyph *glyph = xv->font_driver->get_glyph(xv->font, (uint8_t)*msg);
       if (!glyph)
          continue;
 
       /* Make sure we always start on the correct boundary so the indices are correct. */
-      base_x = (msg_base_x + glyph->draw_offset_x + 1) & ~1; 
-      base_y = msg_base_y + glyph->draw_offset_y;
+      base_x          = (msg_base_x + glyph->draw_offset_x + 1) & ~1; 
+      base_y          = msg_base_y + glyph->draw_offset_y;
 
-      glyph_width  = glyph->width;
-      glyph_height = glyph->height;
+      glyph_width     = glyph->width;
+      glyph_height    = glyph->height;
 
-      src = atlas->buffer + glyph->atlas_offset_x + glyph->atlas_offset_y * atlas->width;
+      src             = atlas->buffer + glyph->atlas_offset_x + 
+                        glyph->atlas_offset_y * atlas->width;
 
       if (base_x < 0)
       {
-         src -= base_x;
-         glyph_width += base_x;
+         src          -= base_x;
+         glyph_width  += base_x;
          base_x = 0;
       }
 
       if (base_y < 0)
       {
-         src -= base_y * (int)atlas->width;
+         src          -= base_y * (int)atlas->width;
          glyph_height += base_y;
          base_y = 0;
       }
 
-      max_width  = width - base_x;
-      max_height = height - base_y;
+      max_width        = width - base_x;
+      max_height       = height - base_y;
 
       if (max_width <= 0 || max_height <= 0)
          continue;
 
       if (glyph_width > max_width)
-         glyph_width = max_width;
+         glyph_width   = max_width;
       if (glyph_height > max_height)
-         glyph_height = max_height;
+         glyph_height  = max_height;
 
       out = (uint8_t*)xv->image->data + base_y * pitch + (base_x << 1);
 
@@ -726,11 +727,10 @@ static void xv_render_msg(xv_t *xv, const char *msg,
             int out_x = x << 1;
 
             alpha[0] = src[x + 0];
+            alpha[1] = 0;
 
             if (x + 1 < glyph_width)
                alpha[1] = src[x + 1];
-            else
-               alpha[1] = 0;
 
             /* Blended alpha for the sub-sampled U/V channels. */
             alpha_sub = (alpha[0] + alpha[1]) >> 1; 
@@ -772,7 +772,7 @@ static bool xv_frame(void *data, const void *frame, unsigned width,
    xv->render_func(xv, frame, width, height, pitch);
 
    calc_out_rect(xv->keep_aspect, &xv->vp, target.width, target.height);
-   xv->vp.full_width = target.width;
+   xv->vp.full_width  = target.width;
    xv->vp.full_height = target.height;
 
    if (msg)
