@@ -59,14 +59,16 @@ struct android_app
    jmethodID getPendingIntentIME;
 };
 
-enum {
+enum
+{
    LOOPER_ID_MAIN = 1,
-   LOOPER_ID_INPUT = 2,
-   LOOPER_ID_USER = 3,
-   LOOPER_ID_INPUT_MSG = 4,
+   LOOPER_ID_INPUT,
+   LOOPER_ID_USER,
+   LOOPER_ID_INPUT_MSG,
 };
 
-enum {
+enum
+{
    APP_CMD_INPUT_CHANGED,
    /**
     * Command from main thread: a new ANativeWindow is ready for use.  Upon
