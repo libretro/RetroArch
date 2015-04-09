@@ -400,8 +400,6 @@ static void xmb_draw_text(gl_t *gl, xmb_handle_t *xmb, const char *str, float x,
          || y < -xmb->icon.size || y > gl->win_height + xmb->icon.size)
       return;
 
-   /* gl_set_viewport(gl, gl->win_width, gl->win_height, false, false); */
-
    params.x           = x / gl->win_width;
    params.y           = 1.0f - y / gl->win_height;
 
