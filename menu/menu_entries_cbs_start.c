@@ -68,8 +68,8 @@ static int action_start_input_desc(unsigned type, const char *label,
 {
    settings_t *settings = config_get_ptr();
    unsigned inp_desc_index_offset = type - MENU_SETTINGS_INPUT_DESC_BEGIN;
-   unsigned inp_desc_user         = inp_desc_index_offset / RARCH_FIRST_CUSTOM_BIND;
-   unsigned inp_desc_button_index_offset = inp_desc_index_offset - (inp_desc_user * RARCH_FIRST_CUSTOM_BIND);
+   unsigned inp_desc_user         = inp_desc_index_offset / RARCH_FIRST_META_KEY;
+   unsigned inp_desc_button_index_offset = inp_desc_index_offset - (inp_desc_user * RARCH_FIRST_META_KEY);
 
    (void)label;
    (void)action;
