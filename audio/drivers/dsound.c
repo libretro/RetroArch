@@ -371,7 +371,7 @@ static void *dsound_init(const char *device, unsigned rate, unsigned latency)
    bufdesc.dwBufferBytes = ds->buffer_size;
    bufdesc.lpwfxFormat   = &wfx;
 
-   ds->event = scond_new();
+   ds->event = slock_new();
    if (!ds->event)
       goto error;
 
