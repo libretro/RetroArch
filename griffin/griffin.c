@@ -87,7 +87,7 @@ CHEATS
 UI COMMON CONTEXT
 ============================================================ */
 #if defined(_WIN32) && !defined(_XBOX)
-#include "../gfx/drivers_wm/win32_common.c"
+#include "../gfx/common/win32_common.c"
 #include "../gfx/drivers_wm/win32_dwm_common.c"
 #endif
 

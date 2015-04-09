@@ -13,26 +13,31 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "../../driver.h"
+#include "../../general.h"
+#include "win32_common.h"
+#include <string.h>
+
+#if !defined(_XBOX) && defined(_WIN32)
+
 #ifndef _WIN32_WINNT
 #define _WIN32_WINNT 0x0500 //_WIN32_WINNT_WIN2K
 #endif
 
-#include "../../driver.h"
-#include "../../general.h"
-#include "win32_common.h"
 #include <windows.h>
 #include <commdlg.h>
-#include <string.h>
-
-#if !defined(_XBOX) && defined(_WIN32)
 #include "../../retroarch.h"
 
 #ifdef HAVE_OPENGL
 #include "win32_shader_dlg.h"
 #endif
 
-static bool win32_browser(HWND owner, char *filename, const char *extensions,
-	const char *title, const char *initial_dir)
+static bool win32_browser(
+      HWND owner,
+      char *filename,
+      const char *extensions,
+      const char *title,
+      const char *initial_dir)
 {
 	OPENFILENAME ofn;
 

@@ -17,7 +17,7 @@
 #ifndef _D3D_WRAPPER_H
 #define _D3D_WRAPPER_H
 
-#include "../drivers_wm/win32_common.h"
+#include "../common/win32_common.h"
 #include "d3d_defines.h"
 
 void d3d_swap(void *data, LPDIRECT3DDEVICE dev);

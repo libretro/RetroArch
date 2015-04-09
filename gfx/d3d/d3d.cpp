@@ -26,8 +26,8 @@
 #include "../../runloop.h"
 #include "render_chain_driver.h"
 
+#include "../common/win32_common.h"
 #ifndef _XBOX
-#include "../drivers_wm/win32_common.h"
 #include "../drivers_wm/win32_dwm_common.h"
 
 #define HAVE_MONITOR
