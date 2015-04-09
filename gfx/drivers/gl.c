@@ -2469,10 +2469,15 @@ static bool gl_alive(void *data)
 {
    bool quit = false, resize = false;
    gl_t *gl = (gl_t*)data;
+   runloop_t *runloop = rarch_main_get_ptr();
+   const gfx_ctx_driver_t *ctx = gfx_ctx_get_ptr();
     
-   if (gfx_ctx_check_window(gl, &quit,
-         &resize, &gl->win_width, &gl->win_height))
+   if (!gl)
       return false;
+
+   ctx->check_window(gl, &quit,
+         &resize, &gl->win_width, &gl->win_height,
+         runloop->frames.video.count);
 
    if (quit)
       gl->quitting = true;
