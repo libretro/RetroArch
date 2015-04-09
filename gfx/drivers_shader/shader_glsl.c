@@ -30,7 +30,7 @@
 #include <stdlib.h>
 
 #ifdef HAVE_OPENGL
-#include "../gl_common.h"
+#include "../drivers/gl_common.h"
 #endif
 
 #ifdef HAVE_OPENGLES2

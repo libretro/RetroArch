@@ -17,7 +17,7 @@
 #include "../../driver.h"
 #include "../../runloop.h"
 #include "../video_context_driver.h"
-#include "../gl_common.h"
+#include "../drivers/gl_common.h"
 #include "../video_monitor.h"
 #include <retro_inline.h>
 

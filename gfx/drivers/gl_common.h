@@ -17,16 +17,16 @@
 #ifndef __GL_COMMON_H
 #define __GL_COMMON_H
 
-#include "../general.h"
-#include "font_renderer_driver.h"
+#include "../../general.h"
+#include "../font_renderer_driver.h"
 #include <gfx/math/matrix_4x4.h>
 #include <gfx/scaler/scaler.h>
 #include <formats/image.h>
-#include "video_shader_driver.h"
+#include "../video_shader_driver.h"
 #include <retro_inline.h>
 
 #ifdef HAVE_CONFIG_H
-#include "../config.h"
+#include "../../config.h"
 #endif
 
 #include <string.h>

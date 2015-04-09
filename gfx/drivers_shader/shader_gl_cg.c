@@ -25,7 +25,7 @@
 #include <Cg/cg.h>
 
 #ifdef HAVE_OPENGL
-#include "../gl_common.h"
+#include "../drivers/gl_common.h"
 #include <Cg/cgGL.h>
 
 #endif

@@ -38,7 +38,7 @@
 #include "config.h"
 #endif
 
-#include "../gl_common.h"
+#include "gl_common.h"
 #include "../font_driver.h"
 #include "../video_viewport.h"
 #include "../video_pixel_converter.h"

@@ -18,7 +18,7 @@
 #include "../../general.h"
 #include "../../runloop.h"
 #include "../video_monitor.h"
-#include "../gl_common.h"
+#include "../drivers/gl_common.h"
 
 #include <EGL/egl.h>
 

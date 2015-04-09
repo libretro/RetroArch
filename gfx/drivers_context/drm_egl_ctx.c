@@ -20,7 +20,7 @@
 
 #include "../../driver.h"
 #include "../../runloop.h"
-#include "../gl_common.h"
+#include "../drivers/gl_common.h"
 #include "../video_monitor.h"
 #include <file/dir_list.h>
 

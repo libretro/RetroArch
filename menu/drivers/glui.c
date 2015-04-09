@@ -24,7 +24,7 @@
 #include "../menu.h"
 
 #include <file/file_path.h>
-#include "../../gfx/gl_common.h"
+#include "../../gfx/drivers/gl_common.h"
 #include "../../gfx/font_driver.h"
 #include "../../gfx/video_texture.h"
 #include <compat/posix_string.h>

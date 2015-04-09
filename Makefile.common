@@ -429,7 +429,7 @@ endif
 ifeq ($(HAVE_OPENGL), 1)
    DEFINES += -DHAVE_OPENGL -DHAVE_GLSL
    OBJ += gfx/drivers/gl.o \
-			 gfx/gl_common.o \
+			 gfx/drivers/gl_common.o \
 			 gfx/video_context_driver.o \
 			 gfx/drivers_context/gfx_null_ctx.o \
 			 gfx/drivers_font/gl_raster_font.o \

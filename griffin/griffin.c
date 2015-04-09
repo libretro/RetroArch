@@ -206,7 +206,7 @@ VIDEO DRIVER
 
 #ifdef HAVE_OPENGL
 #include "../gfx/drivers/gl.c"
-#include "../gfx/gl_common.c"
+#include "../gfx/drivers/gl_common.c"
 
 #ifndef HAVE_PSGL
 #include "../libretro-common/glsym/rglgen.c"

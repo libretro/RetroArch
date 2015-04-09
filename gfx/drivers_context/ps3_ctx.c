@@ -36,7 +36,7 @@
 #include "config.h"
 #endif
 
-#include "../gl_common.h"
+#include "../drivers/gl_common.h"
 
 #include "../video_context_driver.h"
 
