@@ -29,7 +29,7 @@ extern "C" {
 #ifndef _XBOX
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
-#include "win32_resource.h"
+#include "../drivers_wm/win32_resource.h"
 
 LRESULT win32_handle_keyboard_event(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam);
