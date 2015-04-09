@@ -39,12 +39,12 @@ extern char** apple_argv;
 
 extern id<RetroArch_Platform> apple_platform;
 
-// main.m
+/* main.m */
 extern void apple_run_core(int argc, char **argv);
 extern void apple_start_iteration(void);
 extern void apple_stop_iteration(void);
 
-// utility.m
+/* utility.m */
 extern void apple_display_alert(const char *message, const char *title);
 
 @interface RANumberFormatter : NSNumberFormatter
@@ -55,7 +55,6 @@ extern void apple_display_alert(const char *message, const char *title);
 - (id)initWithSetting:(const rarch_setting_t*)setting;
 @end
 
-//
 #define BOXSTRING(x) [NSString stringWithUTF8String:x]
 #define BOXINT(x)    [NSNumber numberWithInt:x]
 #define BOXUINT(x)   [NSNumber numberWithUnsignedInt:x]
