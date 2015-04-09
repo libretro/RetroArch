@@ -776,10 +776,8 @@ void gl_set_viewport(gl_t *gl, unsigned width,
    struct gl_ortho ortho = {0, 1, 0, 1, -1, 1};
    settings_t *settings  = config_get_ptr();
    global_t   *global    = global_get_ptr();
-   const gfx_ctx_driver_t *ctx = gfx_ctx_get_ptr();
 
-   if (ctx->translate_aspect)
-      device_aspect = ctx->translate_aspect(gl, width, height);
+   gfx_ctx_translate_aspect(gl, &device_aspect, width, height);
 
    if (settings->video.scale_integer && !force_full)
    {

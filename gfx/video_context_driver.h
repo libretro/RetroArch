@@ -204,6 +204,9 @@ const gfx_ctx_driver_t *gfx_ctx_get_ptr(void);
 
 bool gfx_ctx_get_metrics(enum display_metric_types type, float *value);
 
+void gfx_ctx_translate_aspect(void *data, float *aspect,
+      unsigned width, unsigned height);
+
 #ifdef __cplusplus
 }
 #endif

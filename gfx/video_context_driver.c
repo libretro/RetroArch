@@ -81,6 +81,14 @@ const gfx_ctx_driver_t *gfx_ctx_get_ptr(void)
    return (const gfx_ctx_driver_t*)driver->video_context;
 }
 
+void gfx_ctx_translate_aspect(void *data, float *aspect,
+      unsigned width, unsigned height)
+{
+   const gfx_ctx_driver_t *ctx = gfx_ctx_get_ptr();
+   if (ctx && ctx->translate_aspect)
+      *aspect = ctx->translate_aspect(data, width, height);
+}
+
 bool gfx_ctx_get_metrics(enum display_metric_types type, float *value)
 {
    driver_t            *driver = driver_get_ptr(); 
