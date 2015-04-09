@@ -935,6 +935,8 @@ static bool gfx_ctx_drm_egl_bind_api(void *data,
       default:
          return false;
    }
+
+   return false;
 }
 
 static void gfx_ctx_drm_egl_bind_hw_render(void *data, bool enable)
