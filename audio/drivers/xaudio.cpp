@@ -101,14 +101,14 @@ static void xaudio2_enumerate_devices(xaudio2_t *xa)
 static void xaudio2_set_wavefmt(WAVEFORMATEX *wfx,
       unsigned channels, unsigned samplerate)
 {
-   wfx->wFormatTag = WAVE_FORMAT_IEEE_FLOAT;
-   wfx->nBlockAlign = channels * sizeof(float);
-   wfx->wBitsPerSample = sizeof(float) * 8;
+   wfx->wFormatTag      = WAVE_FORMAT_IEEE_FLOAT;
+   wfx->nBlockAlign     = channels * sizeof(float);
+   wfx->wBitsPerSample  = sizeof(float) * 8;
 
-   wfx->nChannels = channels;
-   wfx->nSamplesPerSec = samplerate;
+   wfx->nChannels       = channels;
+   wfx->nSamplesPerSec  = samplerate;
    wfx->nAvgBytesPerSec = wfx->nSamplesPerSec * wfx->nBlockAlign;
-   wfx->cbSize = 0;
+   wfx->cbSize          = 0;
 }
 
 static void xaudio2_free(xaudio2_t *handle)
@@ -161,12 +161,12 @@ static xaudio2_t *xaudio2_new(unsigned samplerate, unsigned channels,
                handle)))
       goto error;
 
-   handle->hEvent = CreateEvent(0, FALSE, FALSE, 0);
+   handle->hEvent  = CreateEvent(0, FALSE, FALSE, 0);
    if (!handle->hEvent)
       goto error;
 
    handle->bufsize = size / MAX_BUFFERS;
-   handle->buf = (uint8_t*)calloc(1, handle->bufsize * MAX_BUFFERS);
+   handle->buf     = (uint8_t*)calloc(1, handle->bufsize * MAX_BUFFERS);
    if (!handle->buf)
       goto error;
 
@@ -192,7 +192,7 @@ static size_t xaudio2_write(xaudio2_t *handle, const void *buf, size_t bytes_)
 
    while (bytes)
    {
-      unsigned need = min(bytes, handle->bufsize - handle->bufptr);
+      unsigned need   = min(bytes, handle->bufsize - handle->bufptr);
 
       memcpy(handle->buf + handle->write_buffer * handle->bufsize + handle->bufptr,
             buffer, need);
