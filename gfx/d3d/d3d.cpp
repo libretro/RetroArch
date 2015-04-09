@@ -446,9 +446,6 @@ static bool d3d_construct(d3d_video_t *d3d,
    const gfx_ctx_driver_t *ctx = gfx_ctx_get_ptr();
 
    d3d->should_resize = false;
-#ifndef _XBOX
-   gfx_set_dwm();
-#endif
 
 #if defined(HAVE_MENU)
    if (d3d->menu)

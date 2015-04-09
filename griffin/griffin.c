@@ -88,11 +88,6 @@ UI COMMON CONTEXT
 ============================================================ */
 #if defined(_WIN32)
 #include "../gfx/common/win32_common.c"
-
-#ifndef _XBOX
-#include "../gfx/drivers_wm/win32_dwm_common.c"
-#endif
-
 #endif
 
 /*============================================================

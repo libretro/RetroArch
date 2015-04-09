@@ -2230,9 +2230,6 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    settings_t *settings               = config_get_ptr();
    global_t   *global                 = global_get_ptr();
    driver_t                   *driver = driver_get_ptr();
-#ifdef _WIN32
-   gfx_set_dwm();
-#endif
 
    gl = (gl_t*)calloc(1, sizeof(gl_t));
    if (!gl)

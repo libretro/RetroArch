@@ -376,10 +376,6 @@ static void *sdl2_gfx_init(const video_info_t *video, const input_driver_t **inp
    unsigned flags;
    settings_t *settings = config_get_ptr();
 
-#ifdef _WIN32
-   gfx_set_dwm();
-#endif
-
 #ifdef HAVE_X11
    XInitThreads();
 #endif

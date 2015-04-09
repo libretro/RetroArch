@@ -712,7 +712,6 @@ ifneq ($(findstring Win32,$(OS)),)
    OBJ += media/rarch.o \
           input/drivers_keyboard/keyboard_event_win32.o \
 			 gfx/common/win32_common.o \
-			 gfx/drivers_wm/win32_dwm_common.o \
 			 frontend/drivers/platform_win32.o
 endif
 
