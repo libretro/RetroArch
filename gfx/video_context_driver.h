@@ -207,6 +207,14 @@ bool gfx_ctx_get_metrics(enum display_metric_types type, float *value);
 void gfx_ctx_translate_aspect(void *data, float *aspect,
       unsigned width, unsigned height);
 
+void gfx_ctx_set_video_mode(void *data,
+      unsigned width, unsigned height,
+      bool fullscreen);
+
+void gfx_ctx_swap_buffers(void *data);
+
+bool gfx_ctx_focus(void *data);
+
 #ifdef __cplusplus
 }
 #endif

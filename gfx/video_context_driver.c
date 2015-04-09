@@ -73,12 +73,40 @@ static const gfx_ctx_driver_t *gfx_ctx_drivers[] = {
    NULL
 };
 
+
 const gfx_ctx_driver_t *gfx_ctx_get_ptr(void)
 {
    driver_t  *driver     = driver_get_ptr();
    if (!driver)
       return NULL; 
    return (const gfx_ctx_driver_t*)driver->video_context;
+}
+
+void gfx_ctx_swap_buffers(void *data)
+{
+   const gfx_ctx_driver_t *ctx = gfx_ctx_get_ptr();
+   
+   if (ctx->swap_buffers)
+      ctx->swap_buffers(data);
+}
+
+bool gfx_ctx_focus(void *data)
+{
+   const gfx_ctx_driver_t *ctx = gfx_ctx_get_ptr();
+
+   if (data && ctx && ctx->has_focus)
+      return ctx->has_focus(data);
+   return false;
+}
+
+void gfx_ctx_set_video_mode(void *data,
+      unsigned width, unsigned height,
+      bool fullscreen)
+{
+   const gfx_ctx_driver_t *ctx = gfx_ctx_get_ptr();
+
+   if (ctx && ctx->set_video_mode)
+      ctx->set_video_mode(data, width, height, fullscreen);
 }
 
 void gfx_ctx_translate_aspect(void *data, float *aspect,

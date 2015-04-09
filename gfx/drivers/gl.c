@@ -874,11 +874,7 @@ static void gl_set_rotation(void *data, unsigned rotation)
 static void gl_set_video_mode(void *data, unsigned width, unsigned height,
       bool fullscreen)
 {
-   gl_t                    *gl = (gl_t*)data;
-   const gfx_ctx_driver_t *ctx = gfx_ctx_get_ptr();
-
-   if (gl && ctx && ctx->set_video_mode)
-      ctx->set_video_mode(gl, width, height, fullscreen);
+   gfx_ctx_set_video_mode(data, width, height, fullscreen);
 }
 
 #ifdef HAVE_FBO
@@ -1669,11 +1665,11 @@ static bool gl_frame(void *data, const void *frame,
          !driver->nonblock_state && !runloop->is_slowmotion
          && !runloop->is_paused)
    {
-      ctx->swap_buffers(gl);
+      gfx_ctx_swap_buffers(gl);
       glClear(GL_COLOR_BUFFER_BIT);
    }
 
-   ctx->swap_buffers(gl);
+   gfx_ctx_swap_buffers(gl);
 
 #ifdef HAVE_GL_SYNC
    if (settings->video.hard_sync && gl->have_sync)
@@ -2493,12 +2489,7 @@ static bool gl_alive(void *data)
 
 static bool gl_focus(void *data)
 {
-   gl_t *gl = (gl_t*)data;
-   const gfx_ctx_driver_t *ctx = gfx_ctx_get_ptr();
-
-   if (!gl)
-      return false;
-   return ctx->has_focus(gl);
+   return gfx_ctx_focus(data);
 }
 
 static bool gl_suppress_screensaver(void *data, bool enable)
