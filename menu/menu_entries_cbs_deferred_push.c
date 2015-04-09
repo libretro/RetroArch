@@ -1428,7 +1428,7 @@ static int deferred_push_core_input_remapping_options(void *data, void *userdata
 
    for (p = 0; p < settings->input.max_users; p++)
    {
-      for (retro_id = 0; retro_id < RARCH_FIRST_CUSTOM_BIND; retro_id++)
+      for (retro_id = 0; retro_id < RARCH_FIRST_META_KEY; retro_id++)
       {
          char desc_label[64];
          unsigned user = p + 1;
@@ -1441,7 +1441,7 @@ static int deferred_push_core_input_remapping_options(void *data, void *userdata
                "User %u %s : ", user, description);
          menu_list_push(list, desc_label, "",
                MENU_SETTINGS_INPUT_DESC_BEGIN + 
-               (p * RARCH_FIRST_CUSTOM_BIND) +  retro_id, 0);
+               (p * RARCH_FIRST_META_KEY) +  retro_id, 0);
       }
    }
 
