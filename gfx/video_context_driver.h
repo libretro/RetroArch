@@ -221,6 +221,9 @@ void gfx_ctx_show_mouse(void *data, bool state);
 
 bool gfx_ctx_has_windowed(void *data);
 
+bool gfx_ctx_check_window(void *data, bool *quit, bool *resize,
+      unsigned *width, unsigned *height);
+
 retro_proc_address_t gfx_ctx_get_proc_address(const char *sym);
 
 #ifdef __cplusplus

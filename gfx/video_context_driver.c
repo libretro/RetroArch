@@ -160,6 +160,23 @@ bool gfx_ctx_has_windowed(void *data)
    return true;
 }
 
+bool gfx_ctx_check_window(void *data, bool *quit, bool *resize,
+      unsigned *width, unsigned *height)
+{
+   runloop_t          *runloop = rarch_main_get_ptr();
+   const gfx_ctx_driver_t *ctx = gfx_ctx_get_ptr();
+   unsigned        frame_count = runloop ? 
+      runloop->frames.video.count : 0;
+
+   if (!data)
+      return false;
+   
+   ctx->check_window(data, quit, resize, width, height,
+         frame_count);
+
+   return true;
+}
+
 /**
  * find_gfx_ctx_driver_index:
  * @ident                      : Identifier of resampler driver to find.
