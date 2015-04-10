@@ -358,7 +358,6 @@ static bool xdk_renderchain_render(void *data, const void *frame,
    unsigned i;
    d3d_video_t      *d3d    = (d3d_video_t*)data;
    LPDIRECT3DDEVICE d3dr    = (LPDIRECT3DDEVICE)d3d->dev;
-   runloop_t *runloop       = rarch_main_get_ptr();
    settings_t *settings     = config_get_ptr();
    xdk_renderchain_t *chain = (xdk_renderchain_t*)d3d->renderchain_data;
 
