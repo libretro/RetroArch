@@ -896,8 +896,6 @@ void rarch_main_data_free(void)
 static void data_runloop_iterate(bool is_thread, data_runloop_t *runloop)
 {
    runloop             = (data_runloop_t*)rarch_main_data_get_ptr();
-   nbio_handle_t *nbio = runloop ? &runloop->nbio : NULL;
-   rarch_main_data_nbio_iterate(is_thread, nbio);
 #ifdef HAVE_NETWORKING
    rarch_main_data_http_iterate(is_thread, &runloop->http);
 #endif
@@ -964,22 +962,20 @@ void rarch_main_data_iterate(void)
 {
    data_runloop_t *data_runloop = (data_runloop_t*)rarch_main_data_get_ptr();
    settings_t     *settings     = config_get_ptr();
+   nbio_handle_t          *nbio = data_runloop ? &data_runloop->nbio : NULL;
    
    (void)settings;
 #ifdef HAVE_THREADS
-#if 0
+#if 1
    if (settings->menu.threaded_data_runloop_enable)
    {
       switch (data_runloop->thread_code)
       {
-         case THREAD_CODE_ALIVE:
-            if (data_runloop->alive)
-               return;
-            break;
          case THREAD_CODE_INIT:
             rarch_main_data_thread_init();
             break;
          case THREAD_CODE_DEINIT:
+         case THREAD_CODE_ALIVE:
             break;
       }
    }
@@ -989,7 +985,12 @@ void rarch_main_data_iterate(void)
 #ifdef HAVE_OVERLAY
    rarch_main_data_overlay_iterate(false, data_runloop);
 #endif
+   rarch_main_data_nbio_iterate(false, nbio);
    rarch_main_data_nbio_image_iterate(false, data_runloop);
+
+   if (settings->menu.threaded_data_runloop_enable && data_runloop->alive)
+      return;
+
    data_runloop_iterate(false, data_runloop);
 }
 
