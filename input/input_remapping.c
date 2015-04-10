@@ -127,3 +127,12 @@ void input_remapping_set_defaults(void)
          settings->input.remap_ids[i][j] = settings->input.binds[i][j].id;
    }
 }
+
+void input_remapping_state(unsigned port,
+      unsigned device, unsigned *idx, unsigned *id)
+{
+   settings_t *settings           = config_get_ptr();
+
+   if (*id < RARCH_FIRST_META_KEY)
+      *id = settings->input.remap_ids[port][*id];
+}
