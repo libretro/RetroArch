@@ -116,14 +116,15 @@ bool gfx_ctx_focus(void *data)
    return false;
 }
 
-void gfx_ctx_set_video_mode(void *data,
+bool gfx_ctx_set_video_mode(void *data,
       unsigned width, unsigned height,
       bool fullscreen)
 {
    const gfx_ctx_driver_t *ctx = gfx_ctx_get_ptr();
 
    if (ctx && ctx->set_video_mode)
-      ctx->set_video_mode(data, width, height, fullscreen);
+      return ctx->set_video_mode(data, width, height, fullscreen);
+   return false;
 }
 
 void gfx_ctx_translate_aspect(void *data, float *aspect,

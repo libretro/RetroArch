@@ -2256,7 +2256,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
       win_height = gl->full_y;
    }
 
-   if (!ctx_driver->set_video_mode(gl, win_width, win_height, video->fullscreen))
+   if (!gfx_ctx_set_video_mode(gl, win_width, win_height, video->fullscreen))
       goto error;
 
    /* Clear out potential error flags in case we use cached context. */

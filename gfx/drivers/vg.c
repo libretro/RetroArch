@@ -117,7 +117,7 @@ static void *vg_init(const video_info_t *video, const input_driver_t **input, vo
       win_height = vg->mScreenHeight;
    }
 
-   if (!ctx->set_video_mode(vg, win_width, win_height, video->fullscreen))
+   if (!gfx_ctx_set_video_mode(vg, win_width, win_height, video->fullscreen))
       goto error;
 
    gfx_ctx_get_video_size(vg, &vg->mScreenWidth, &vg->mScreenHeight);
