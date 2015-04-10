@@ -156,12 +156,7 @@ static void gfx_ctx_d3d_show_mouse(void *data, bool state)
 {
    (void)data;
 
-#ifdef HAVE_WINDOW
-   if (state)
-      while (ShowCursor(TRUE) < 0);
-   else
-      while (ShowCursor(FALSE) >= 0);
-#endif
+   win32_show_cursor(state);
 }
 
 void d3d_make_d3dpp(void *data,

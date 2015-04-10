@@ -40,6 +40,8 @@ LRESULT win32_menu_loop(HWND handle, WPARAM wparam);
 bool win32_get_metrics(void *data,
 	enum display_metric_types type, float *value);
 
+void win32_show_cursor(bool state);
+
 #ifdef __cplusplus
 }
 #endif

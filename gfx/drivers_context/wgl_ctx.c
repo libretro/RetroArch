@@ -440,14 +440,6 @@ static bool set_fullscreen(unsigned width, unsigned height, char *dev_name)
    return ChangeDisplaySettingsEx(dev_name, &devmode, NULL, CDS_FULLSCREEN, NULL) == DISP_CHANGE_SUCCESSFUL;
 }
 
-static void show_cursor(bool show)
-{
-   if (show)
-      while (ShowCursor(TRUE) < 0);
-   else
-      while (ShowCursor(FALSE) >= 0);
-}
-
 static void monitor_info(MONITORINFOEX *mon, HMONITOR *hm_to_use)
 {
    unsigned fs_monitor;
@@ -544,7 +536,7 @@ static bool gfx_ctx_wgl_set_video_mode(void *data,
       SetFocus(g_hwnd);
    }
 
-   show_cursor(!fullscreen);
+   win32_show_cursor(!fullscreen);
 
    /* Wait until GL context is created (or failed to do so ...) */
    while (!g_inited && !g_quit && GetMessage(&msg, g_hwnd, 0, 0))
@@ -685,7 +677,7 @@ static bool gfx_ctx_wgl_bind_api(void *data,
 static void gfx_ctx_wgl_show_mouse(void *data, bool state)
 {
    (void)data;
-   show_cursor(state);
+   win32_show_cursor(state);
 }
 
 static void gfx_ctx_wgl_bind_hw_render(void *data, bool enable)

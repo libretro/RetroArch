@@ -216,3 +216,13 @@ bool win32_get_metrics(void *data,
    return true;
 #endif
 }
+
+void win32_show_cursor(bool state)
+{
+#ifdef HAVE_WINDOW
+   if (state)
+      while (ShowCursor(TRUE) < 0);
+   else
+      while (ShowCursor(FALSE) >= 0);
+#endif
+}
