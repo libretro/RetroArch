@@ -135,7 +135,7 @@ static void *vg_init(const video_info_t *video, const input_driver_t **input, vo
          video->smooth ? VG_IMAGE_QUALITY_BETTER : VG_IMAGE_QUALITY_NONANTIALIASED);
    vg_set_nonblock_state(vg, !video->vsync);
 
-   ctx->input_driver(vg, input, input_data);
+   gfx_ctx_input_driver(vg, input, input_data);
 
    if (settings->video.font_enable && font_renderer_create_default(&vg->font_driver, &vg->mFontRenderer,
             *settings->video.font_path ? settings->video.font_path : NULL, settings->video.font_size))

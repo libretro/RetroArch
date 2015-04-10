@@ -2414,8 +2414,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
       goto error;
 #endif
 
-   if (input && input_data)
-      ctx_driver->input_driver(gl, input, input_data);
+   gfx_ctx_input_driver(gl, input, input_data);
    
    if (settings->video.font_enable)
    {

@@ -228,6 +228,15 @@ void gfx_ctx_set_resize(void *data, unsigned width, unsigned height)
       ctx->set_resize(data, width, height);
 }
 
+void gfx_ctx_input_driver(void *data,
+      const input_driver_t **input, void **input_data)
+{
+   const gfx_ctx_driver_t *ctx = gfx_ctx_get_ptr();
+
+   if (ctx)
+      ctx->input_driver(data, input, input_data);
+}
+
 /**
  * find_gfx_ctx_driver_index:
  * @ident                      : Identifier of resampler driver to find.

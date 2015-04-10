@@ -566,8 +566,7 @@ static bool d3d_construct(d3d_video_t *d3d,
    if (!d3d_initialize(d3d, &d3d->video_info))
       return false;
 
-   if (input && input_data && ctx && ctx->input_driver)
-      ctx->input_driver(d3d, input, input_data);
+   gfx_ctx_input_driver(d3d, input, input_data);
 
    RARCH_LOG("[D3D]: Init complete.\n");
    return true;

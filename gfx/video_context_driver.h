@@ -236,6 +236,9 @@ void gfx_ctx_swap_interval(void *data, unsigned interval);
 
 void gfx_ctx_free(void *data);
 
+void gfx_ctx_input_driver(void *data,
+      const input_driver_t **input, void **input_data);
+
 retro_proc_address_t gfx_ctx_get_proc_address(const char *sym);
 
 #ifdef __cplusplus
