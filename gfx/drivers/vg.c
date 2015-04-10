@@ -144,16 +144,14 @@ static void *vg_init(const video_info_t *video, const input_driver_t **input, vo
    if (settings->video.font_enable && font_renderer_create_default(&vg->font_driver, &vg->mFontRenderer,
             *settings->video.font_path ? settings->video.font_path : NULL, settings->video.font_size))
    {
-      vg->mFont = vgCreateFont(0);
+      vg->mFont            = vgCreateFont(0);
 
       if (vg->mFont != VG_INVALID_HANDLE)
       {
-         vg->mFontsOn = true;
-
-         vg->mFontHeight = settings->video.font_size;
-
-         vg->mPaintFg = vgCreatePaint();
-         vg->mPaintBg = vgCreatePaint();
+         vg->mFontsOn      = true;
+         vg->mFontHeight   = settings->video.font_size;
+         vg->mPaintFg      = vgCreatePaint();
+         vg->mPaintBg      = vgCreatePaint();
          VGfloat paintFg[] = { settings->video.msg_color_r, settings->video.msg_color_g, settings->video.msg_color_b, 1.0f };
          VGfloat paintBg[] = { settings->video.msg_color_r / 2.0f, settings->video.msg_color_g / 2.0f, settings->video.msg_color_b / 2.0f, 0.5f };
 
@@ -416,7 +414,8 @@ static bool vg_frame(void *data, const void *frame, unsigned width, unsigned hei
    ctx->update_window_title(vg);
 
    RARCH_PERFORMANCE_STOP(vg_fr);
-   ctx->swap_buffers(vg);
+
+   gfx_ctx_swap_buffers(vg);
 
    return true;
 }
@@ -424,43 +423,26 @@ static bool vg_frame(void *data, const void *frame, unsigned width, unsigned hei
 static bool vg_alive(void *data)
 {
    bool quit;
-   vg_t                    *vg = (vg_t*)data;
-   runloop_t          *runloop = rarch_main_get_ptr();
-   const gfx_ctx_driver_t *ctx = gfx_ctx_get_ptr();
+   vg_t *vg = (vg_t*)data;
 
-   ctx->check_window(vg, &quit,
-         &vg->should_resize, &vg->mScreenWidth, &vg->mScreenHeight,
-         runloop->frames.video.count);
+   gfx_ctx_check_window(data, &quit,
+         &vg->should_resize, &vg->mScreenWidth, &vg->mScreenHeight);
    return !quit;
 }
 
 static bool vg_focus(void *data)
 {
-   vg_t                    *vg = (vg_t*)data;
-   const gfx_ctx_driver_t *ctx = gfx_ctx_get_ptr();
-
-   if (vg && ctx)
-      return ctx->has_focus(vg);
-   return false;
+   return gfx_ctx_focus(data);
 }
 
 static bool vg_suppress_screensaver(void *data, bool enable)
 {
-   vg_t                    *vg = (vg_t*)data;
-   const gfx_ctx_driver_t *ctx = gfx_ctx_get_ptr();
-   if (vg && ctx)
-      return ctx->suppress_screensaver(vg, enable);
-   return false;
+   return gfx_ctx_suppress_screensaver(data, enable);
 }
 
 static bool vg_has_windowed(void *data)
 {
-   vg_t                    *vg = (vg_t*)data;
-   const gfx_ctx_driver_t *ctx = gfx_ctx_get_ptr();
-
-   if (vg && ctx)
-      return ctx->has_windowed(vg);
-   return true;
+   return gfx_ctx_has_windowed(data);
 }
 
 static bool vg_set_shader(void *data,
