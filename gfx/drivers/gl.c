@@ -2666,13 +2666,10 @@ static bool gl_read_viewport(void *data, uint8_t *buffer)
    {
       const uint8_t *ptr  = NULL;
 
-      /* Don't readback if we're in menu mode. */
+      /* Don't readback if we're in menu mode.
+       * We haven't buffered up enough frames yet, come back later. */
       if (!gl->pbo_readback_valid[gl->pbo_readback_index]) 
-      {
-         /* We haven't buffered up enough frames yet, come back later. */
-         context_bind_hw_render(gl, true);
-         return false;
-      }
+         goto error;
 
       gl->pbo_readback_valid[gl->pbo_readback_index] = false;
       glBindBuffer(GL_PIXEL_PACK_BUFFER, gl->pbo_readback[gl->pbo_readback_index]);
@@ -2699,16 +2696,14 @@ static bool gl_read_viewport(void *data, uint8_t *buffer)
       else
       {
          RARCH_ERR("[GL]: Failed to map pixel unpack buffer.\n");
-         context_bind_hw_render(gl, true);
-         return false;
+         goto error;
       }
 #else
       ptr = (const uint8_t*)glMapBuffer(GL_PIXEL_PACK_BUFFER, GL_READ_ONLY);
       if (!ptr)
       {
          RARCH_ERR("[GL]: Failed to map pixel unpack buffer.\n");
-         context_bind_hw_render(gl, true);
-         return false;
+         goto error;
       }
 
       scaler_ctx_scale(&gl->pbo_readback_scaler, buffer, ptr);
@@ -2739,8 +2734,7 @@ static bool gl_read_viewport(void *data, uint8_t *buffer)
       if (!gl->readback_buffer_screenshot)
       {
          RARCH_PERFORMANCE_STOP(read_viewport);
-         context_bind_hw_render(gl, true);
-         return false;
+         goto error;
       }
 
       rarch_render_cached_frame();
@@ -2762,6 +2756,10 @@ static bool gl_read_viewport(void *data, uint8_t *buffer)
    RARCH_PERFORMANCE_STOP(read_viewport);
    context_bind_hw_render(gl, true);
    return true;
+
+error:
+   context_bind_hw_render(gl, true);
+   return false;
 }
 #endif
 
