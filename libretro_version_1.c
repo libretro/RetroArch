@@ -30,6 +30,7 @@
 #include "retroarch.h"
 #include "performance.h"
 #include "input/keyboard_line.h"
+#include "input/input_remapping.h"
 #include "audio/audio_utils.h"
 #include "retroarch_logger.h"
 #include "record/record_driver.h"
@@ -432,7 +433,7 @@ static int16_t input_state(unsigned port, unsigned device,
    }
 
    if (settings->input.remap_binds_enable)
-      input_remapping_state(port, device, &idx, &id);
+      input_remapping_state(port, &device, &idx, &id);
 
    if (!driver->block_libretro_input)
 

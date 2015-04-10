@@ -129,7 +129,7 @@ void input_remapping_set_defaults(void)
 }
 
 void input_remapping_state(unsigned port,
-      unsigned device, unsigned *idx, unsigned *id)
+      unsigned *device, unsigned *idx, unsigned *id)
 {
    settings_t *settings           = config_get_ptr();
 
