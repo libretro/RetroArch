@@ -56,6 +56,7 @@ typedef struct nbio_image_handle
    uint64_t processing_frame_count;
    int processing_final_state;
    msg_queue_t *msg_queue;
+   unsigned status;
 } nbio_image_handle_t;
 
 enum
@@ -664,6 +665,30 @@ static void rarch_main_data_rdl_iterate(void)
 }
 #endif
 
+static void rarch_main_data_nbio_image_iterate(bool is_thread,
+      nbio_handle_t *nbio, nbio_image_handle_t *image)
+{
+   (void)is_thread;
+
+   if (image->handle)
+   {
+      if (image->is_blocking_on_processing)
+      {
+         if (rarch_main_data_image_iterate_process_transfer(nbio) == -1)
+            rarch_main_data_image_iterate_process_transfer_parse(nbio);
+      }
+      else if (!image->is_blocking)
+      {
+         if (rarch_main_data_image_iterate_transfer(nbio) == -1)
+            rarch_main_data_image_iterate_transfer_parse(nbio);
+      }
+      else if (image->is_finished)
+         rarch_main_data_image_iterate_parse_free(nbio);
+   }
+   else
+      rarch_main_data_image_iterate_poll(nbio);
+}
+
 static void rarch_main_data_nbio_iterate(bool is_thread, nbio_handle_t *nbio)
 {
    if (!nbio)
@@ -690,23 +715,8 @@ static void rarch_main_data_nbio_iterate(bool is_thread, nbio_handle_t *nbio)
          break;
    }
 
-   if (nbio->image.handle)
-   {
-      if (nbio->image.is_blocking_on_processing)
-      {
-         if (rarch_main_data_image_iterate_process_transfer(nbio) == -1)
-            rarch_main_data_image_iterate_process_transfer_parse(nbio);
-      }
-      else if (!nbio->image.is_blocking)
-      {
-         if (rarch_main_data_image_iterate_transfer(nbio) == -1)
-            rarch_main_data_image_iterate_transfer_parse(nbio);
-      }
-      else if (nbio->image.is_finished)
-         rarch_main_data_image_iterate_parse_free(nbio);
-   }
-   else
-      rarch_main_data_image_iterate_poll(nbio);
+   rarch_main_data_nbio_image_iterate(is_thread, nbio, &nbio->image);
+
 }
 
 #ifdef HAVE_NETWORKING
