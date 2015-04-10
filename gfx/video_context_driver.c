@@ -99,6 +99,31 @@ void gfx_ctx_update_window_title(void *data)
       ctx->update_window_title(data);
 }
 
+void gfx_ctx_get_video_output_size(void *data,
+      unsigned *width, unsigned *height)
+{
+   const gfx_ctx_driver_t *ctx = gfx_ctx_get_ptr();
+
+   if (ctx->get_video_output_size)
+      ctx->get_video_output_size(data, width, height);
+}
+
+void gfx_ctx_get_video_output_prev(void *data)
+{
+   const gfx_ctx_driver_t *ctx = gfx_ctx_get_ptr();
+
+   if (ctx->get_video_output_prev)
+      ctx->get_video_output_prev(data);
+}
+
+void gfx_ctx_get_video_output_next(void *data)
+{
+   const gfx_ctx_driver_t *ctx = gfx_ctx_get_ptr();
+
+   if (ctx->get_video_output_next)
+      ctx->get_video_output_next(data);
+}
+
 void gfx_ctx_swap_buffers(void *data)
 {
    const gfx_ctx_driver_t *ctx = gfx_ctx_get_ptr();

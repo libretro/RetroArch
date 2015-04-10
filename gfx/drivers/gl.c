@@ -3147,31 +3147,20 @@ static struct video_shader *gl_get_current_shader(void *data)
    return (gl && gl->shader) ? gl->shader->get_current_shader() : NULL;
 }
 
-static void gl_get_video_output_size(void *data, unsigned *width, unsigned *height)
+static void gl_get_video_output_size(void *data,
+      unsigned *width, unsigned *height)
 {
-   gl_t *gl = (gl_t*)data;
-   const gfx_ctx_driver_t *ctx = gfx_ctx_get_ptr();
-
-   if (ctx->get_video_output_size)
-      ctx->get_video_output_size(gl, width, height);
+   gfx_ctx_get_video_output_size(data, width, height);
 }
 
 static void gl_get_video_output_prev(void *data)
 {
-   gl_t *gl = (gl_t*)data;
-   const gfx_ctx_driver_t *ctx = gfx_ctx_get_ptr();
-
-   if (ctx->get_video_output_prev)
-      ctx->get_video_output_prev(gl);
+   gfx_ctx_get_video_output_prev(data);
 }
 
 static void gl_get_video_output_next(void *data)
 {
-   gl_t *gl = (gl_t*)data;
-   const gfx_ctx_driver_t *ctx = gfx_ctx_get_ptr();
-
-   if (ctx->get_video_output_next)
-      ctx->get_video_output_next(gl);
+   gfx_ctx_get_video_output_next(data);
 }
 
 

@@ -238,6 +238,13 @@ void gfx_ctx_swap_interval(void *data, unsigned interval);
 
 void gfx_ctx_bind_hw_render(void *data, bool enable);
 
+void gfx_ctx_get_video_output_size(void *data,
+      unsigned *width, unsigned *height);
+
+void gfx_ctx_get_video_output_prev(void *data);
+
+void gfx_ctx_get_video_output_next(void *data);
+
 void gfx_ctx_free(void *data);
 
 void gfx_ctx_input_driver(void *data,
