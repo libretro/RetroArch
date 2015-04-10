@@ -705,8 +705,8 @@ const struct rarch_key_map rarch_key_map_rwebinput[] = {
    { 0, RETROK_UNKNOWN },
 };
 #endif
-
-#ifdef __linux
+_
+#ifdef __linux__
 const struct rarch_key_map rarch_key_map_linux[] = {
    { KEY_BACKSPACE, RETROK_BACKSPACE },
    { KEY_TAB, RETROK_TAB },
