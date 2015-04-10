@@ -39,6 +39,31 @@ LRESULT win32_handle_keyboard_event(HWND hwnd, UINT message,
       mod |= RETROKMOD_SCROLLOCK;
    if ((GetKeyState(VK_LWIN) | GetKeyState(VK_RWIN)) & 0x80)
       mod |= RETROKMOD_META;
+   if ((GetKeyState(VK_UP) | GetKeyState(VK_UP)) & 0x80)
+   {
+      input_keyboard_event(true, RETROK_UP, wparam, mod, RETRO_DEVICE_KEYBOARD);
+      return TRUE;
+   }
+   if ((GetKeyState(VK_UP) | GetKeyState(VK_UP)) & 0x80)
+   {
+      input_keyboard_event(true, RETROK_UP, wparam, mod, RETRO_DEVICE_KEYBOARD);
+      return TRUE;
+   }
+   if ((GetKeyState(VK_DOWN) | GetKeyState(VK_DOWN)) & 0x80)
+   {
+      input_keyboard_event(true, RETROK_DOWN, wparam, mod, RETRO_DEVICE_KEYBOARD);
+      return TRUE;
+   }
+   if ((GetKeyState(VK_LEFT) | GetKeyState(VK_LEFT)) & 0x80)
+   {
+      input_keyboard_event(true, RETROK_LEFT, wparam, mod, RETRO_DEVICE_KEYBOARD);
+      return TRUE;
+   }
+   if ((GetKeyState(VK_RIGHT) | GetKeyState(VK_RIGHT)) & 0x80)
+   {
+      input_keyboard_event(true, RETROK_RIGHT, wparam, mod, RETRO_DEVICE_KEYBOARD);
+      return TRUE;
+   }
 
    switch (message)
    {
