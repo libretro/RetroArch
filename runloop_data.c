@@ -959,10 +959,6 @@ error:
    slock_free(data_runloop->cond_lock);
    slock_free(data_runloop->overlay_lock);
    scond_free(data_runloop->cond);
-
-   if (data_runloop->thread)
-      sthread_join(data_runloop->thread);
-   data_runloop->thread      = NULL;
 }
 #endif
 
