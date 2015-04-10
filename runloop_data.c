@@ -670,6 +670,9 @@ static void rarch_main_data_nbio_image_iterate(bool is_thread,
 {
    (void)is_thread;
 
+   if (!image)
+      return;
+
    if (image->handle)
    {
       if (image->is_blocking_on_processing)
