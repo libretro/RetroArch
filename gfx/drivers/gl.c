@@ -2235,10 +2235,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
 
    ctx_driver = gl_get_context(gl);
    if (!ctx_driver)
-   {
-      free(gl);
-      return NULL;
-   }
+      goto error;
 
    driver->video_context = ctx_driver;
    gl->video_info        = *video;
@@ -2261,10 +2258,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    }
 
    if (!ctx_driver->set_video_mode(gl, win_width, win_height, video->fullscreen))
-   {
-      free(gl);
-      return NULL;
-   }
+      goto error;
 
    /* Clear out potential error flags in case we use cached context. */
    glGetError(); 
@@ -2284,11 +2278,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    glBlendEquation(GL_FUNC_ADD);
 
    if (!resolve_extensions(gl))
-   {
-      ctx_driver->destroy(gl);
-      free(gl);
-      return NULL;
-   }
+      goto error;
 
 #ifdef GL_DEBUG
    gl_begin_debug(gl);
@@ -2350,9 +2340,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    if (!gl_shader_init(gl))
    {
       RARCH_ERR("[GL]: Shader initialization failed.\n");
-      ctx_driver->destroy(gl);
-      free(gl);
-      return NULL;
+      goto error;
    }
 
    if (gl->shader)
@@ -2412,11 +2400,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    gl->conv_buffer           = calloc(sizeof(uint32_t), gl->tex_w * gl->tex_h);
 
    if (!gl->conv_buffer)
-   {
-      ctx_driver->destroy(gl);
-      free(gl);
-      return NULL;
-   }
+      goto error;
 #endif
 
    gl_init_textures(gl, video);
@@ -2427,11 +2411,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
 
    if (gl->hw_render_use && 
          !gl_init_hw_render(gl, gl->tex_w, gl->tex_h))
-   {
-      ctx_driver->destroy(gl);
-      free(gl);
-      return NULL;
-   }
+      goto error;
 #endif
 
    if (input && input_data)
@@ -2450,14 +2430,16 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
 #endif
 
    if (!gl_check_error())
-   {
-      ctx_driver->destroy(gl);
-      free(gl);
-      return NULL;
-   }
+      goto error;
 
    context_bind_hw_render(gl, true);
    return gl;
+
+error:
+   if (ctx_driver)
+      ctx_driver->destroy(gl);
+   free(gl);
+   return NULL;
 }
 
 static bool gl_alive(void *data)
