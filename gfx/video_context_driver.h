@@ -198,8 +198,6 @@ void find_next_context_driver(void);
  **/
 void find_prev_gfx_context_driver(void);
 
-const gfx_ctx_driver_t *gfx_ctx_get_ptr(void);
-
 bool gfx_ctx_get_metrics(enum display_metric_types type, float *value);
 
 void gfx_ctx_translate_aspect(void *data, float *aspect,

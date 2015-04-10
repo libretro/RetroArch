@@ -1188,9 +1188,6 @@ static void gl_init_textures_data(gl_t *gl)
 static void gl_init_textures(gl_t *gl, const video_info_t *video)
 {
    unsigned i;
-   const gfx_ctx_driver_t *ctx = gfx_ctx_get_ptr();
-    
-   (void)ctx;
 
 #if defined(HAVE_EGL) && defined(HAVE_OPENGLES2)
    // Use regular textures if we use HW render.

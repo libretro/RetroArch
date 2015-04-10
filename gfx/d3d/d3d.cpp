@@ -428,7 +428,6 @@ static bool d3d_construct(d3d_video_t *d3d,
    unsigned full_x, full_y;
    driver_t    *driver         = driver_get_ptr();
    settings_t    *settings     = config_get_ptr();
-   const gfx_ctx_driver_t *ctx = gfx_ctx_get_ptr();
 
    d3d->should_resize = false;
 
@@ -1468,7 +1467,6 @@ static bool d3d_frame(void *data, const void *frame,
    settings_t *settings            = config_get_ptr();
    global_t *global                = global_get_ptr();
    const font_renderer_t *font_ctx = d3d ? (const font_renderer_t*)d3d->font_driver : NULL;
-   const gfx_ctx_driver_t     *ctx = gfx_ctx_get_ptr();
 
    (void)i;
 

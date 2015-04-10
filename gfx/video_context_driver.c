@@ -74,7 +74,7 @@ static const gfx_ctx_driver_t *gfx_ctx_drivers[] = {
 };
 
 
-const gfx_ctx_driver_t *gfx_ctx_get_ptr(void)
+static const gfx_ctx_driver_t *gfx_ctx_get_ptr(void)
 {
    driver_t  *driver     = driver_get_ptr();
    if (!driver)
