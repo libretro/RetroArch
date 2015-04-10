@@ -323,15 +323,13 @@ static void d3d_calculate_rect(d3d_video_t *d3d,
 static void d3d_set_nonblock_state(void *data, bool state)
 {
    d3d_video_t            *d3d = (d3d_video_t*)data;
-   const gfx_ctx_driver_t *ctx = gfx_ctx_get_ptr();
 
    if (!d3d)
       return;
 
    d3d->video_info.vsync = !state;
 
-   if (ctx && ctx->swap_interval)
-      ctx->swap_interval(d3d, state ? 0 : 1);
+   gfx_ctx_swap_interval(d3d, state ? 0 : 1);
 }
 
 static bool d3d_alive(void *data)
