@@ -286,15 +286,8 @@ static void gfx_ctx_d3d_check_window(void *data, bool *quit,
       *quit = true;
    if (d3d->should_resize)
       *resize = true;
-#ifndef _XBOX
-   MSG msg;
 
-   while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
-   {
-      TranslateMessage(&msg);
-      DispatchMessage(&msg);
-   }
-#endif
+   win32_check_window();
 }
 
 #ifdef _XBOX

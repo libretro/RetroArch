@@ -313,16 +313,10 @@ static void gfx_ctx_wgl_swap_interval(void *data, unsigned interval)
 static void gfx_ctx_wgl_check_window(void *data, bool *quit,
       bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
 {
-   MSG msg;
+   win32_check_window();
 
    (void)data;
    (void)frame_count;
-
-   while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
-   {
-      TranslateMessage(&msg);
-      DispatchMessage(&msg);
-   }
 
    *quit = g_quit;
 

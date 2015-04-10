@@ -226,3 +226,16 @@ void win32_show_cursor(bool state)
       while (ShowCursor(FALSE) >= 0);
 #endif
 }
+
+void win32_check_window(void)
+{
+#ifndef _XBOX
+   MSG msg;
+
+   while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
+   {
+      TranslateMessage(&msg);
+      DispatchMessage(&msg);
+   }
+#endif
+}
