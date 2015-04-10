@@ -1743,8 +1743,13 @@ bool config_load_override(void)
    // Re-load the configuration with any overrides that might have been found
    if (should_append)
    {
+	  char buf[PATH_MAX_LENGTH];
+	  //Store the libretro_path we're using since it will be overwritten by the override when reloading
+	  strlcpy(buf,settings->libretro,sizeof(buf));
       if (config_load_file(global->config_path, false))
-	  {
+	  {		  
+		  //Restore the libretro_path we're using since it will be overwritten by the override when reloading
+		  strlcpy(settings->libretro,buf,sizeof(settings->libretro));
 		  rarch_main_msg_queue_push("Configuration override loaded", 1, 100, true);
           return true;
 	  }
