@@ -98,7 +98,6 @@ struct rpng_t
    struct png_ihdr ihdr;
    uint8_t *buff_data;
    uint32_t palette[256];
-   struct png_chunk chunk;
 };
 
 bool rpng_load_image_argb(const char *path, uint32_t **data,
@@ -109,7 +108,7 @@ struct rpng_t *rpng_nbio_load_image_argb_init(const char *path);
 void rpng_nbio_load_image_free(struct rpng_t *rpng);
 
 bool rpng_nbio_load_image_argb_iterate(uint8_t *buf,
-      struct rpng_t *rpng);
+      struct rpng_t *rpng, unsigned *ret);
 
 int rpng_nbio_load_image_argb_process(struct rpng_t *rpng,
       uint32_t **data, unsigned *width, unsigned *height);
