@@ -1479,7 +1479,6 @@ static bool gl_frame(void *data, const void *frame,
    runloop_t *runloop          = rarch_main_get_ptr();
    driver_t *driver            = driver_get_ptr();
    settings_t *settings        = config_get_ptr();
-   const gfx_ctx_driver_t *ctx = gfx_ctx_get_ptr();
 
    RARCH_PERFORMANCE_INIT(frame_run);
    RARCH_PERFORMANCE_START(frame_run);
@@ -1808,7 +1807,6 @@ static void gl_set_nonblock_state(void *data, bool state)
 {
    gl_t             *gl        = (gl_t*)data;
    settings_t        *settings = config_get_ptr();
-   const gfx_ctx_driver_t *ctx = gfx_ctx_get_ptr();
 
    if (!gl)
       return;
