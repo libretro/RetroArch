@@ -392,6 +392,20 @@ void d3d_enable_alpha_blend_texture_func(void *data)
    dev->SetTextureStageState(0, D3DTSS_ALPHAARG2, D3DTA_TEXTURE);
 }
 
+void d3d_frame_postprocess(void *data)
+{
+#if defined(_XBOX1)
+   LPDIRECT3DDEVICE    dev = (LPDIRECT3DDEVICE)data;
+   global_t        *global = global_get_ptr();
+
+   if (!dev)
+      return;
+
+   dev->SetFlickerFilter(global->console.screen.flicker_filter_index);
+   dev->SetSoftDisplayFilter(global->console.softfilter_enable);
+#endif
+}
+
 void d3d_disable_blend_func(void *data)
 {
    LPDIRECT3DDEVICE dev = (LPDIRECT3DDEVICE)data;

@@ -226,13 +226,8 @@ static void renderchain_blit_to_texture(void *data, const void *frame,
    D3DLOCKED_RECT d3dlr;
    xdk_renderchain_t *chain = (xdk_renderchain_t*)data;
    LPDIRECT3DDEVICE d3dr    = (LPDIRECT3DDEVICE)chain->dev;
-   driver_t *driver         = driver_get_ptr();
-   global_t *global         = global_get_ptr();
 
-#if defined(_XBOX1)
-   d3dr->SetFlickerFilter(global->console.screen.flicker_filter_index);
-   d3dr->SetSoftDisplayFilter(global->console.softfilter_enable);
-#endif
+   d3d_frame_postprocess(chain);
 
    if (chain->last_width != width || chain->last_height != height)
    {
