@@ -82,6 +82,23 @@ const gfx_ctx_driver_t *gfx_ctx_get_ptr(void)
    return (const gfx_ctx_driver_t*)driver->video_context;
 }
 
+void gfx_ctx_free(void *data)
+{
+   const gfx_ctx_driver_t *ctx = gfx_ctx_get_ptr();
+
+   if (ctx && ctx->destroy)
+      ctx->destroy(data);
+   ctx = NULL;
+}
+
+void gfx_ctx_update_window_title(void *data)
+{
+   const gfx_ctx_driver_t *ctx = gfx_ctx_get_ptr();
+
+   if (ctx->update_window_title)
+      ctx->update_window_title(data);
+}
+
 void gfx_ctx_swap_buffers(void *data)
 {
    const gfx_ctx_driver_t *ctx = gfx_ctx_get_ptr();

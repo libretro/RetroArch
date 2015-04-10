@@ -226,7 +226,11 @@ bool gfx_ctx_check_window(void *data, bool *quit, bool *resize,
 
 bool gfx_ctx_suppress_screensaver(void *data, bool enable);
 
+void gfx_ctx_update_window_title(void *data);
+
 void gfx_ctx_get_video_size(void *data, unsigned *width, unsigned *height);
+
+void gfx_ctx_free(void *data);
 
 retro_proc_address_t gfx_ctx_get_proc_address(const char *sym);
 

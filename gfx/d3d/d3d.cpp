@@ -703,7 +703,6 @@ error:
 static void d3d_free(void *data)
 {
    d3d_video_t            *d3d = (d3d_video_t*)data;
-   const gfx_ctx_driver_t *ctx = gfx_ctx_get_ptr();
 
    if (!d3d)
       return;
@@ -714,9 +713,7 @@ static void d3d_free(void *data)
 #endif
 
 #ifdef _XBOX
-   if (ctx && ctx->destroy)
-      ctx->destroy(d3d);
-   ctx = NULL;
+   gfx_ctx_free(d3d);
 #else
 
 #ifdef HAVE_MENU
@@ -1591,8 +1588,7 @@ static bool d3d_frame(void *data, const void *frame,
 
    RARCH_PERFORMANCE_STOP(d3d_frame);
 
-   if (d3d && ctx && ctx->update_window_title)
-      ctx->update_window_title(d3d);
+   gfx_ctx_update_window_title(d3d);
 
    gfx_ctx_swap_buffers(d3d);
 

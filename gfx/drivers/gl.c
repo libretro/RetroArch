@@ -1620,7 +1620,7 @@ static bool gl_frame(void *data, const void *frame,
       gl_render_overlay(gl);
 #endif
 
-   ctx->update_window_title(gl);
+   gfx_ctx_update_window_title(gl);
 
    RARCH_PERFORMANCE_STOP(frame_run);
 
@@ -1727,7 +1727,6 @@ static void gl_free(void *data)
 {
    gl_t *gl = (gl_t*)data;
    const struct font_renderer *font_driver = NULL;
-   const gfx_ctx_driver_t *ctx = gfx_ctx_get_ptr();
 
    if (!gl)
       return;
@@ -1798,7 +1797,7 @@ static void gl_free(void *data)
    }
 #endif
 
-   ctx->destroy(gl);
+   gfx_ctx_free(gl);
 
    free(gl->empty_buf);
    free(gl->conv_buffer);

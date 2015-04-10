@@ -107,7 +107,8 @@ static void *vg_init(const video_info_t *video, const input_driver_t **input, vo
    RARCH_LOG("Detecting screen resolution %ux%u.\n", vg->mScreenWidth, vg->mScreenHeight);
 
    ctx->swap_interval(vg, video->vsync ? 1 : 0);
-   ctx->update_window_title(vg);
+
+   gfx_ctx_update_window_title(vg);
 
    vg->mTexType = video->rgb32 ? VG_sXRGB_8888 : VG_sRGB_565;
    vg->mKeepAspect = video->force_aspect;
@@ -192,7 +193,6 @@ error:
 static void vg_free(void *data)
 {
    vg_t                    *vg = (vg_t*)data;
-   const gfx_ctx_driver_t *ctx = gfx_ctx_get_ptr();
 
    if (!vg)
       return;
@@ -207,7 +207,7 @@ static void vg_free(void *data)
       vgDestroyPaint(vg->mPaintBg);
    }
 
-   ctx->destroy(vg);
+   gfx_ctx_free(vg);
 
    free(vg);
 }
@@ -410,7 +410,7 @@ static bool vg_frame(void *data, const void *frame, unsigned width, unsigned hei
       vg_draw_message(vg, msg);
 #endif
 
-   ctx->update_window_title(vg);
+   gfx_ctx_update_window_title(vg);
 
    RARCH_PERFORMANCE_STOP(vg_fr);
 
