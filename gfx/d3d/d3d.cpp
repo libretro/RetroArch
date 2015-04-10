@@ -603,11 +603,7 @@ static void d3d_set_rotation(void *data, unsigned rot)
 
 static void d3d_show_mouse(void *data, bool state)
 {
-   d3d_video_t            *d3d = (d3d_video_t*)data;
-   const gfx_ctx_driver_t *ctx = gfx_ctx_get_ptr();
-
-   if (d3d && ctx && ctx->show_mouse)
-      ctx->show_mouse(d3d, state);
+   gfx_ctx_show_mouse(data, state);
 }
 
 static const gfx_ctx_driver_t *d3d_get_context(void *data)
