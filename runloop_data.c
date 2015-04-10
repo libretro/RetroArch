@@ -58,7 +58,6 @@ typedef struct nbio_image_handle
    bool is_blocking;
    bool is_blocking_on_processing;
    bool is_finished;
-   bool is_finished_with_processing;
    transfer_cb_t  cb;
    struct rpng_t *handle;
    unsigned processing_pos_increment;
@@ -91,7 +90,6 @@ enum
 typedef struct nbio_handle
 {
    nbio_image_handle_t image;
-   bool is_blocking;
    bool is_finished;
    transfer_cb_t  cb;
    struct nbio_t *handle;
@@ -318,10 +316,8 @@ static int cb_image_menu_wallpaper_upload(void *data, size_t len)
    texture_image_free(&nbio->image.ti);
 
    nbio->image.is_blocking_on_processing         = false;
-   nbio->image.is_finished_with_processing       = true;
    nbio->image.is_blocking                       = true;
    nbio->image.is_finished                       = true;
-   nbio->is_blocking                             = true;
    nbio->is_finished                             = true;
 
    return 0;
@@ -349,7 +345,6 @@ static int cb_image_menu_wallpaper(void *data, size_t len)
    nbio->image.cb = &cb_image_menu_wallpaper_upload;
 
    nbio->image.is_blocking_on_processing         = true;
-   nbio->image.is_finished_with_processing       = false;
    nbio->image.is_finished                       = false;
 
    return 0;
@@ -395,7 +390,6 @@ static int cb_nbio_image_menu_wallpaper(void *data, size_t len)
 
    nbio->image.is_blocking   = false;
    nbio->image.is_finished   = false;
-   nbio->is_blocking         = false;
    nbio->is_finished         = true;
 
    return 0;
@@ -526,7 +520,6 @@ static int cb_nbio_default(void *data, size_t len)
 
    (void)len;
 
-   nbio->is_blocking   = false;
    nbio->is_finished   = true;
 
    return 0;
@@ -570,7 +563,6 @@ static int rarch_main_data_nbio_iterate_poll(nbio_handle_t *nbio)
    }
 
    nbio->handle      = handle;
-   nbio->is_blocking = false;
    nbio->is_finished = false;
    nbio->cb          = &cb_nbio_default;
 
@@ -630,7 +622,6 @@ static int rarch_main_data_nbio_iterate_parse_free(nbio_handle_t *nbio)
 
    nbio_free(nbio->handle);
    nbio->handle      = NULL;
-   nbio->is_blocking = false;
    nbio->is_finished = false;
    nbio->frame_count = 0;
 
