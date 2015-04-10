@@ -971,7 +971,6 @@ void rarch_main_data_iterate(void)
    
    (void)settings;
 #ifdef HAVE_THREADS
-#if 1
    if (settings->menu.threaded_data_runloop_enable)
    {
       switch (data_runloop->thread_code)
@@ -985,7 +984,6 @@ void rarch_main_data_iterate(void)
       }
    }
 #endif
-#endif
 
 #ifdef HAVE_OVERLAY
    rarch_main_data_overlay_iterate(false, data_runloop);
@@ -995,9 +993,10 @@ void rarch_main_data_iterate(void)
    rarch_main_data_http_iterate(false, &data_runloop->http);
 #endif
 
+#ifdef HAVE_THREADS
    if (settings->menu.threaded_data_runloop_enable && data_runloop->alive)
       return;
-
+#endif
 
    data_runloop_iterate(false, data_runloop);
 }
