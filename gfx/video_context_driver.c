@@ -127,6 +127,39 @@ bool gfx_ctx_get_metrics(enum display_metric_types type, float *value)
          value);
 }
 
+bool gfx_ctx_write_egl_image(void *data, const void *frame, unsigned width,
+         unsigned height, unsigned pitch, bool rgb32,
+         unsigned index, void **image_handle)
+{
+   const gfx_ctx_driver_t *ctx = gfx_ctx_get_ptr();
+   if (ctx && ctx->write_egl_image)
+      return ctx->write_egl_image(data, frame, width, height, pitch,
+            rgb32, index, image_handle);
+   return false;
+}
+
+retro_proc_address_t gfx_ctx_get_proc_address(const char *sym)
+{
+   const gfx_ctx_driver_t *ctx = gfx_ctx_get_ptr();
+   return ctx->get_proc_address(sym);
+}
+
+void gfx_ctx_show_mouse(void *data, bool state)
+{
+   const gfx_ctx_driver_t *ctx = gfx_ctx_get_ptr();
+   if (data && ctx->show_mouse)
+      ctx->show_mouse(data, state);
+}
+
+bool gfx_ctx_has_windowed(void *data)
+{
+   const gfx_ctx_driver_t *ctx = gfx_ctx_get_ptr();
+
+   if (data && ctx)
+      return ctx->has_windowed(data);
+   return true;
+}
+
 /**
  * find_gfx_ctx_driver_index:
  * @ident                      : Identifier of resampler driver to find.

@@ -215,6 +215,16 @@ void gfx_ctx_swap_buffers(void *data);
 
 bool gfx_ctx_focus(void *data);
 
+bool gfx_ctx_write_egl_image(void *data, const void *frame,
+      unsigned width, unsigned height, unsigned pitch, bool rgb32,
+      unsigned index, void **image_handle);
+
+void gfx_ctx_show_mouse(void *data, bool state);
+
+bool gfx_ctx_has_windowed(void *data);
+
+retro_proc_address_t gfx_ctx_get_proc_address(const char *sym);
+
 #ifdef __cplusplus
 }
 #endif

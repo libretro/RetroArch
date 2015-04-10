@@ -1281,8 +1281,7 @@ static INLINE void gl_copy_frame(gl_t *gl, const void *frame,
    if (gl->egl_images)
    {
       EGLImageKHR img = 0;
-      const gfx_ctx_driver_t *ctx = gfx_ctx_get_ptr();
-      bool new_egl    = ctx && ctx->write_egl_image(gl,
+      bool new_egl    = gfx_ctx_write_egl_image(gl,
             frame, width, height, pitch, (gl->base_size == 4),
             gl->tex_index, &img);
 
@@ -2500,12 +2499,7 @@ static bool gl_suppress_screensaver(void *data, bool enable)
 
 static bool gl_has_windowed(void *data)
 {
-   gl_t *gl = (gl_t*)data;
-   const gfx_ctx_driver_t *ctx = gfx_ctx_get_ptr();
-
-   if (gl && ctx)
-      return ctx->has_windowed(gl);
-   return true;
+   return gfx_ctx_has_windowed(data);
 }
 
 static void gl_update_tex_filter_frame(gl_t *gl)
@@ -3072,9 +3066,7 @@ static uintptr_t gl_get_current_framebuffer(void *data)
 
 static retro_proc_address_t gl_get_proc_address(void *data, const char *sym)
 {
-   const gfx_ctx_driver_t *ctx = gfx_ctx_get_ptr();
-
-   return ctx->get_proc_address(sym);
+   return gfx_ctx_get_proc_address(sym);
 }
 
 static void gl_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
@@ -3179,11 +3171,7 @@ static void gl_set_osd_msg(void *data, const char *msg,
 
 static void gl_show_mouse(void *data, bool state)
 {
-   gl_t *gl = (gl_t*)data;
-   const gfx_ctx_driver_t *ctx = gfx_ctx_get_ptr();
-
-   if (gl && ctx->show_mouse)
-      ctx->show_mouse(gl, state);
+   gfx_ctx_show_mouse(data, state);
 }
 
 static struct video_shader *gl_get_current_shader(void *data)
