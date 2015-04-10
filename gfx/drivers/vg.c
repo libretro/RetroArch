@@ -127,10 +127,9 @@ static void *vg_init(const video_info_t *video, const input_driver_t **input, vo
    RARCH_LOG("Verified window resolution %ux%u.\n", vg->mScreenWidth, vg->mScreenHeight);
    vg->should_resize = true;
 
-   if (ctx->translate_aspect)
-      vg->mScreenAspect = ctx->translate_aspect(vg, vg->mScreenWidth, vg->mScreenHeight);
-   else
-      vg->mScreenAspect = (float)vg->mScreenWidth / vg->mScreenHeight;
+   vg->mScreenAspect = (float)vg->mScreenWidth / vg->mScreenHeight;
+
+   gfx_ctx_translate_aspect(vg, &vg->mScreenAspect, vg->mScreenWidth, vg->mScreenHeight);
 
    vgSetfv(VG_CLEAR_COLOR, 4, clearColor);
 
@@ -387,7 +386,7 @@ static bool vg_frame(void *data, const void *frame, unsigned width, unsigned hei
       vg_calculate_quad(vg);
       matrix_3x3_quad_to_quad(
          vg->x1, vg->y1, vg->x2, vg->y1, vg->x2, vg->y2, vg->x1, vg->y2,
-         // needs to be flipped, Khronos loves their bottom-left origin
+         /* needs to be flipped, Khronos loves their bottom-left origin */
          0, height, width, height, width, 0, 0, 0,
          &vg->mTransformMatrix);
       vgSeti(VG_MATRIX_MODE, VG_MATRIX_IMAGE_USER_TO_SURFACE);
