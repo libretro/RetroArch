@@ -209,6 +209,8 @@ static const struct cmd_map map[] = {
    { "MENU_TOGGLE",            RARCH_MENU_TOGGLE },
    { "MENU_UP",                RETRO_DEVICE_ID_JOYPAD_UP },
    { "MENU_DOWN",              RETRO_DEVICE_ID_JOYPAD_DOWN },
+   { "MENU_LEFT",              RETRO_DEVICE_ID_JOYPAD_LEFT },
+   { "MENU_RIGHT",             RETRO_DEVICE_ID_JOYPAD_RIGHT },
    { "MENU_A",                 RETRO_DEVICE_ID_JOYPAD_A },
    { "MENU_B",                 RETRO_DEVICE_ID_JOYPAD_B },
 };
