@@ -1715,11 +1715,11 @@ static void gl_free_overlay(gl_t *gl)
    free(gl->overlay_vertex_coord);
    free(gl->overlay_tex_coord);
    free(gl->overlay_color_coord);
-   gl->overlay_tex = NULL;
+   gl->overlay_tex          = NULL;
    gl->overlay_vertex_coord = NULL;
-   gl->overlay_tex_coord = NULL;
-   gl->overlay_color_coord = NULL;
-   gl->overlays = 0;
+   gl->overlay_tex_coord    = NULL;
+   gl->overlay_color_coord  = NULL;
+   gl->overlays             = 0;
 }
 #endif
 
