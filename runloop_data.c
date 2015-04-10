@@ -61,6 +61,16 @@ typedef struct nbio_image_handle
 
 enum
 {
+   NBIO_IMAGE_STATUS_POLL = 0,
+   NBIO_IMAGE_STATUS_TRANSFER,
+   NBIO_IMAGE_STATUS_TRANSFER_PARSE,
+   NBIO_IMAGE_STATUS_PROCESS_TRANSFER,
+   NBIO_IMAGE_STATUS_PROCESS_TRANSFER_PARSE,
+   NBIO_IMAGE_STATUS_TRANSFER_PARSE_FREE,
+} nbio_image_status_enum;
+
+enum
+{
    NBIO_STATUS_POLL = 0,
    NBIO_STATUS_TRANSFER,
    NBIO_STATUS_TRANSFER_PARSE,
@@ -673,23 +683,38 @@ static void rarch_main_data_nbio_image_iterate(bool is_thread,
    if (!image)
       return;
 
-   if (image->handle)
+
+   switch (image->status)
    {
-      if (image->is_blocking_on_processing)
-      {
+      case NBIO_IMAGE_STATUS_PROCESS_TRANSFER_PARSE:
+         rarch_main_data_image_iterate_process_transfer_parse(nbio);
+         if (image->is_finished)
+            image->status = NBIO_IMAGE_STATUS_TRANSFER_PARSE_FREE;
+         break;
+      case NBIO_IMAGE_STATUS_PROCESS_TRANSFER:
          if (rarch_main_data_image_iterate_process_transfer(nbio) == -1)
-            rarch_main_data_image_iterate_process_transfer_parse(nbio);
-      }
-      else if (!image->is_blocking)
-      {
-         if (rarch_main_data_image_iterate_transfer(nbio) == -1)
-            rarch_main_data_image_iterate_transfer_parse(nbio);
-      }
-      else if (image->is_finished)
+            image->status = NBIO_IMAGE_STATUS_PROCESS_TRANSFER_PARSE;
+         break;
+      case NBIO_IMAGE_STATUS_TRANSFER_PARSE_FREE:
          rarch_main_data_image_iterate_parse_free(nbio);
+         image->status = NBIO_IMAGE_STATUS_POLL;
+         break;
+      case NBIO_IMAGE_STATUS_TRANSFER_PARSE:
+         rarch_main_data_image_iterate_transfer_parse(nbio);
+         if (image->is_blocking_on_processing)
+            image->status = NBIO_IMAGE_STATUS_PROCESS_TRANSFER;
+         break;
+      case NBIO_IMAGE_STATUS_TRANSFER:
+         if (!image->is_blocking)
+            if (rarch_main_data_image_iterate_transfer(nbio) == -1)
+               image->status = NBIO_IMAGE_STATUS_TRANSFER_PARSE;
+         break;
+      default:
+      case NBIO_IMAGE_STATUS_POLL:
+         if (rarch_main_data_image_iterate_poll(nbio) == 0)
+            image->status = NBIO_IMAGE_STATUS_TRANSFER;
+         break;
    }
-   else
-      rarch_main_data_image_iterate_poll(nbio);
 }
 
 static void rarch_main_data_nbio_iterate(bool is_thread, nbio_handle_t *nbio)
