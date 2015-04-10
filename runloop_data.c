@@ -943,15 +943,26 @@ static void rarch_main_data_thread_init(void)
    data_runloop->overlay_lock    = slock_new();
    data_runloop->cond            = scond_new();
 
-   if (!(data_runloop->thread    = sthread_create(data_thread_loop, data_runloop)))
-   {
-      data_runloop->thread       = NULL;
-      return;
-   }
+   data_runloop->thread    = sthread_create(data_thread_loop, data_runloop);
+
+   if (!data_runloop->thread)
+      goto error;
 
    data_runloop->thread_inited   = true;
    data_runloop->alive           = true;
    data_runloop->thread_code     = THREAD_CODE_ALIVE;
+
+   return;
+
+error:
+   slock_free(data_runloop->lock);
+   slock_free(data_runloop->cond_lock);
+   slock_free(data_runloop->overlay_lock);
+   scond_free(data_runloop->cond);
+
+   if (data_runloop->thread)
+      sthread_join(data_runloop->thread);
+   data_runloop->thread      = NULL;
 }
 #endif
 
