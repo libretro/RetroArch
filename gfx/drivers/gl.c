@@ -2242,7 +2242,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
 
    RARCH_LOG("Found GL context: %s\n", ctx_driver->ident);
 
-   ctx_driver->get_video_size(gl, &gl->full_x, &gl->full_y);
+   gfx_ctx_get_video_size(gl, &gl->full_x, &gl->full_y);
    RARCH_LOG("Detecting screen resolution %ux%u.\n", gl->full_x, gl->full_y);
 
    ctx_driver->swap_interval(gl,
@@ -2288,7 +2288,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    gl->fullscreen = video->fullscreen;
    
    /* Get real known video size, which might have been altered by context. */
-   ctx_driver->get_video_size(gl, &gl->win_width, &gl->win_height);
+   gfx_ctx_get_video_size(gl, &gl->win_width, &gl->win_height);
    RARCH_LOG("GL: Using resolution %ux%u\n", gl->win_width, gl->win_height);
 
    if (gl->full_x || gl->full_y)

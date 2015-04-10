@@ -186,6 +186,15 @@ bool gfx_ctx_suppress_screensaver(void *data, bool enable)
    return false;
 }
 
+void gfx_ctx_get_video_size(void *data,
+      unsigned *width, unsigned *height)
+{
+   const gfx_ctx_driver_t *ctx = gfx_ctx_get_ptr();
+
+   if (ctx)
+      ctx->get_video_size(data, width, height);
+}
+
 /**
  * find_gfx_ctx_driver_index:
  * @ident                      : Identifier of resampler driver to find.

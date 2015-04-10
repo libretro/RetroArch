@@ -485,8 +485,7 @@ static bool d3d_construct(d3d_video_t *d3d,
          (int)(mon_rect.right  - mon_rect.left),
          (int)(mon_rect.bottom - mon_rect.top));
 #else
-   if (ctx && ctx->get_video_size)
-      ctx->get_video_size(d3d, &full_x, &full_y);
+   gfx_ctx_get_video_size(d3d, &full_x, &full_y);
 #endif
    d3d->screen_width   = info->fullscreen ? full_x : info->width;
    d3d->screen_height  = info->fullscreen ? full_y : info->height;

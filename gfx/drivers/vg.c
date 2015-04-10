@@ -103,7 +103,7 @@ static void *vg_init(const video_info_t *video, const input_driver_t **input, vo
 
    driver->video_context = ctx;
 
-   ctx->get_video_size(vg, &vg->mScreenWidth, &vg->mScreenHeight);
+   gfx_ctx_get_video_size(vg, &vg->mScreenWidth, &vg->mScreenHeight);
    RARCH_LOG("Detecting screen resolution %ux%u.\n", vg->mScreenWidth, vg->mScreenHeight);
 
    ctx->swap_interval(vg, video->vsync ? 1 : 0);
@@ -123,7 +123,7 @@ static void *vg_init(const video_info_t *video, const input_driver_t **input, vo
    if (!ctx->set_video_mode(vg, win_width, win_height, video->fullscreen))
       goto error;
 
-   ctx->get_video_size(vg, &vg->mScreenWidth, &vg->mScreenHeight);
+   gfx_ctx_get_video_size(vg, &vg->mScreenWidth, &vg->mScreenHeight);
    RARCH_LOG("Verified window resolution %ux%u.\n", vg->mScreenWidth, vg->mScreenHeight);
    vg->should_resize = true;
 

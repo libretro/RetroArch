@@ -110,9 +110,7 @@ typedef struct gfx_ctx_driver
    bool (*has_focus)(void*);
 
    /* Should the screensaver be suppressed? */
-   bool (*suppress_screensaver)(void *data, bool enable);
-
-   /* Checks if context driver has windowed support. */
+   bool (*suppress_screensaver)(void *data, bool enable); /* Checks if context driver has windowed support. */
    bool (*has_windowed)(void*);
 
    /* Swaps buffers. VBlank sync depends on 
@@ -225,6 +223,8 @@ bool gfx_ctx_check_window(void *data, bool *quit, bool *resize,
       unsigned *width, unsigned *height);
 
 bool gfx_ctx_suppress_screensaver(void *data, bool enable);
+
+void gfx_ctx_get_video_size(void *data, unsigned *width, unsigned *height);
 
 retro_proc_address_t gfx_ctx_get_proc_address(const char *sym);
 
