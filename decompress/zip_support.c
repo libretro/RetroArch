@@ -41,14 +41,15 @@
  * then.
  */
 
-int read_zip_file(const char * archive_path,
-      const char *relative_path, void **buf, const char* optional_outfile)
+int read_zip_file(const char *archive_path,
+      const char *relative_path, void **buf,
+      const char* optional_outfile)
 {
    uLong i;
    unz_global_info global_info;
-   ssize_t bytes_read = -1;
+   ssize_t    bytes_read = -1;
    bool finished_reading = false;
-   unzFile *zipfile = (unzFile*)unzOpen( archive_path );
+   unzFile      *zipfile = (unzFile*)unzOpen(archive_path);
 
    if (!zipfile)
    {
@@ -86,11 +87,12 @@ int read_zip_file(const char * archive_path,
 
       /* Check if this entry is a directory or file. */
       last_char = filename[strlen(filename)-1];
+
       if ( last_char == '/' || last_char == '\\' )
       {
          /* We skip directories */
       }
-      else if (strcmp(filename,relative_path) == 0)
+      else if (!strcmp(filename,relative_path))
       {
          /* We found the correct file in the zip, 
           * now extract it to *buf. */
@@ -109,8 +111,7 @@ int read_zip_file(const char * archive_path,
             if (outsink == NULL)
             {
                RARCH_ERR("Could not open outfilepath %s.\n", optional_outfile);
-               unzCloseCurrentFile(zipfile);
-               goto error;
+               goto close;
             }
 
             bytes_read = 0;
@@ -129,8 +130,7 @@ int read_zip_file(const char * archive_path,
                /* couldn't write all bytes */
                RARCH_ERR("Error writing to %s.\n",optional_outfile);
                fclose(outsink);
-               unzCloseCurrentFile(zipfile);
-               goto error;
+               goto close;
             } while(bytes_read > 0);
 
             fclose(outsink);
@@ -138,8 +138,7 @@ int read_zip_file(const char * archive_path,
          else
          {
             /* Allocate outbuffer */
-            *buf = malloc(file_info.uncompressed_size + 1 );
-
+            *buf       = malloc(file_info.uncompressed_size + 1 );
             bytes_read = unzReadCurrentFile(zipfile, *buf, file_info.uncompressed_size);
 
             if (bytes_read != (ssize_t)file_info.uncompressed_size)
@@ -149,8 +148,7 @@ int read_zip_file(const char * archive_path,
                      (unsigned int) file_info.uncompressed_size, (int)bytes_read,
                      relative_path, archive_path);
                free(*buf);
-               unzCloseCurrentFile(zipfile);
-               goto error;
+               goto close;
             }
             ((char*)(*buf))[file_info.uncompressed_size] = '\0';
          }
@@ -185,6 +183,8 @@ int read_zip_file(const char * archive_path,
 
    return bytes_read;
 
+close:
+   unzCloseCurrentFile(zipfile);
 error:
    unzClose(zipfile);
    return -1;
