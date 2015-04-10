@@ -674,6 +674,8 @@ const gfx_ctx_driver_t gfx_ctx_apple = {
    apple_gfx_ctx_input_driver,
    apple_gfx_ctx_get_proc_address,
    NULL,
+   NULL,
+   NULL,
    "apple",
    apple_gfx_ctx_bind_hw_render,
 };

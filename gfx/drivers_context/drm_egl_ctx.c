@@ -989,4 +989,3 @@ const gfx_ctx_driver_t gfx_ctx_drm_egl = {
    "kms-egl",
    gfx_ctx_drm_egl_bind_hw_render,
 };
-

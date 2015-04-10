@@ -813,10 +813,8 @@ const gfx_ctx_driver_t gfx_ctx_glx = {
    gfx_ctx_glx_swap_buffers,
    gfx_ctx_glx_input_driver,
    gfx_ctx_glx_get_proc_address,
-#ifdef HAVE_EGL
    NULL,
    NULL,
-#endif
    gfx_ctx_glx_show_mouse,
    "glx",
 

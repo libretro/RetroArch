@@ -716,10 +716,8 @@ const gfx_ctx_driver_t gfx_ctx_wgl = {
    gfx_ctx_wgl_swap_buffers,
    gfx_ctx_wgl_input_driver,
    gfx_ctx_wgl_get_proc_address,
-#ifdef HAVE_EGL
    NULL,
    NULL,
-#endif
    gfx_ctx_wgl_show_mouse,
    "wgl",
    gfx_ctx_wgl_bind_hw_render,

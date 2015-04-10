@@ -315,10 +315,8 @@ const gfx_ctx_driver_t gfx_ctx_vivante_fbdev = {
    gfx_ctx_vivante_swap_buffers,
    gfx_ctx_vivante_input_driver,
    gfx_ctx_vivante_get_proc_address,
-#ifdef HAVE_EGL
    NULL,
    NULL,
-#endif
    NULL,
    "vivante-fbdev",
 };

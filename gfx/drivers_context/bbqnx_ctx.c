@@ -464,10 +464,8 @@ const gfx_ctx_driver_t gfx_ctx_bbqnx = {
    gfx_ctx_qnx_swap_buffers,
    gfx_ctx_qnx_input_driver,
    gfx_ctx_qnx_get_proc_address,
-#ifdef HAVE_EGL
    NULL,
    NULL,
-#endif
    NULL,
    "blackberry_qnx",
    gfx_qnx_ctx_bind_hw_render,

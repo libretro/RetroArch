@@ -490,10 +490,8 @@ const gfx_ctx_driver_t gfx_ctx_android = {
    android_gfx_ctx_swap_buffers,
    android_gfx_ctx_input_driver,
    android_gfx_ctx_get_proc_address,
-#ifdef HAVE_EGL
    NULL,
    NULL,
-#endif
    NULL,
    "android",
    android_gfx_ctx_bind_hw_render,

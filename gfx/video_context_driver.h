@@ -127,7 +127,6 @@ typedef struct gfx_ctx_driver
     * Does not take opaque, to avoid lots of ugly wrapper code. */
    gfx_ctx_proc_t (*get_proc_address)(const char*);
 
-#ifdef HAVE_EGL
    /* Returns true if this context supports EGLImage buffers for 
     * screen drawing and was initalized correctly. */
    bool (*init_egl_image_buffer)(void*, const video_info_t*);
@@ -139,7 +138,6 @@ typedef struct gfx_ctx_driver
    bool (*write_egl_image)(void*, const void *frame, unsigned width,
          unsigned height, unsigned pitch, bool rgb32,
          unsigned index, void **image_handle);
-#endif
 
    /* Shows or hides mouse. Can be NULL if context doesn't 
     * have a concept of mouse pointer. */

@@ -332,10 +332,8 @@ const gfx_ctx_driver_t gfx_ctx_mali_fbdev = {
    gfx_ctx_mali_fbdev_swap_buffers,
    gfx_ctx_mali_fbdev_input_driver,
    gfx_ctx_mali_fbdev_get_proc_address,
-#ifdef HAVE_EGL
    NULL,
    NULL,
-#endif
    NULL,
    "mali-fbdev",
 };

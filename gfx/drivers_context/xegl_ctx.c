@@ -1,22 +1,22 @@
 /*  RetroArch - A frontend for libretro.
- *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2015 - Daniel De Matteis
- * 
- *  RetroArch is free software: you can redistribute it and/or modify it under the terms
- *  of the GNU General Public License as published by the Free Software Found-
- *  ation, either version 3 of the License, or (at your option) any later version.
- *
- *  RetroArch is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
- *  without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
- *  PURPOSE.  See the GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License along with RetroArch.
- *  If not, see <http://www.gnu.org/licenses/>.
- */
+*  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
+*  Copyright (C) 2011-2015 - Daniel De Matteis
+* 
+*  RetroArch is free software: you can redistribute it and/or modify it under the terms
+*  of the GNU General Public License as published by the Free Software Found-
+*  ation, either version 3 of the License, or (at your option) any later version.
+*
+*  RetroArch is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+*  without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+*  PURPOSE.  See the GNU General Public License for more details.
+*
+*  You should have received a copy of the GNU General Public License along with RetroArch.
+*  If not, see <http://www.gnu.org/licenses/>.
+*/
 
 /* X/EGL context. Mostly used for testing GLES code paths.
- * Should be its own file as it has lots of X11 stuff baked into it as well.
- */
+* Should be its own file as it has lots of X11 stuff baked into it as well.
+*/
 
 #include "../../driver.h"
 #include "../../runloop.h"
@@ -84,7 +84,7 @@ static int egl_nul_handler(Display *dpy, XErrorEvent *event)
 }
 
 static void gfx_ctx_xegl_get_video_size(void *data,
-      unsigned *width, unsigned *height);
+   unsigned *width, unsigned *height);
 
 static void gfx_ctx_xegl_destroy(void *data);
 
@@ -139,7 +139,7 @@ static void gfx_ctx_xegl_swap_interval(void *data, unsigned interval)
 void x_input_poll_wheel(void *data, XButtonEvent *event, bool latch);
 
 static void gfx_ctx_xegl_check_window(void *data, bool *quit,
-      bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
+   bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
 {
    XEvent event;
    unsigned new_width  = *width;
@@ -160,7 +160,7 @@ static void gfx_ctx_xegl_check_window(void *data, bool *quit,
    while (XPending(g_dpy))
    {
       bool filter;
-      
+
       /* Can get events from older windows. Check this. */
       XNextEvent(g_dpy, &event);
       filter = XFilterEvent(&event, g_win);
@@ -212,7 +212,7 @@ static void gfx_ctx_xegl_swap_buffers(void *data)
 }
 
 static void gfx_ctx_xegl_set_resize(void *data,
-      unsigned width, unsigned height)
+   unsigned width, unsigned height)
 {
    (void)data;
    (void)width;
@@ -234,7 +234,7 @@ static void gfx_ctx_xegl_update_window_title(void *data)
 }
 
 static void gfx_ctx_xegl_get_video_size(void *data,
-      unsigned *width, unsigned *height)
+   unsigned *width, unsigned *height)
 {
    (void)data;
 
@@ -265,12 +265,12 @@ static void gfx_ctx_xegl_get_video_size(void *data,
 }
 
 #define XEGL_ATTRIBS_BASE \
-   EGL_SURFACE_TYPE,    EGL_WINDOW_BIT, \
-   EGL_RED_SIZE,        1, \
-   EGL_GREEN_SIZE,      1, \
-   EGL_BLUE_SIZE,       1, \
-   EGL_ALPHA_SIZE,      0, \
-   EGL_DEPTH_SIZE,      0
+EGL_SURFACE_TYPE,    EGL_WINDOW_BIT, \
+EGL_RED_SIZE,        1, \
+EGL_GREEN_SIZE,      1, \
+EGL_BLUE_SIZE,       1, \
+EGL_ALPHA_SIZE,      0, \
+EGL_DEPTH_SIZE,      0
 
 static bool gfx_ctx_xegl_init(void *data)
 {
@@ -382,46 +382,46 @@ static EGLint *xegl_fill_attribs(EGLint *attr)
    {
 #ifdef EGL_KHR_create_context
       case GFX_CTX_OPENGL_API:
-      {
-         unsigned version = g_major * 1000 + g_minor;
-         bool core = version >= 3001;
-         global_t *global = global_get_ptr();
-         bool debug = global->system.hw_render_callback.debug_context;
+         {
+            unsigned version = g_major * 1000 + g_minor;
+            bool core = version >= 3001;
+            global_t *global = global_get_ptr();
+            bool debug = global->system.hw_render_callback.debug_context;
 
 #ifdef GL_DEBUG
-         debug = true;
+            debug = true;
 #endif
 
-         if (core)
-         {
-            *attr++ = EGL_CONTEXT_MAJOR_VERSION_KHR;
-            *attr++ = g_major;
-            *attr++ = EGL_CONTEXT_MINOR_VERSION_KHR;
-            *attr++ = g_minor;
-
-            /* Technically, we don't have core/compat until 3.2.
-             * Version 3.1 is either compat or not depending 
-             * on GL_ARB_compatibility.
-             */
-            if (version >= 3002)
+            if (core)
             {
-               *attr++ = EGL_CONTEXT_OPENGL_PROFILE_MASK_KHR;
-               *attr++ = EGL_CONTEXT_OPENGL_CORE_PROFILE_BIT_KHR;
+               *attr++ = EGL_CONTEXT_MAJOR_VERSION_KHR;
+               *attr++ = g_major;
+               *attr++ = EGL_CONTEXT_MINOR_VERSION_KHR;
+               *attr++ = g_minor;
+
+               /* Technically, we don't have core/compat until 3.2.
+                * Version 3.1 is either compat or not depending 
+                * on GL_ARB_compatibility.
+                */
+               if (version >= 3002)
+               {
+                  *attr++ = EGL_CONTEXT_OPENGL_PROFILE_MASK_KHR;
+                  *attr++ = EGL_CONTEXT_OPENGL_CORE_PROFILE_BIT_KHR;
+               }
             }
-         }
 
-         if (debug)
-         {
-            *attr++ = EGL_CONTEXT_FLAGS_KHR;
-            *attr++ = EGL_CONTEXT_OPENGL_DEBUG_BIT_KHR;
-         }
+            if (debug)
+            {
+               *attr++ = EGL_CONTEXT_FLAGS_KHR;
+               *attr++ = EGL_CONTEXT_OPENGL_DEBUG_BIT_KHR;
+            }
 
-         break;
-      }
+            break;
+         }
 #endif
 
       case GFX_CTX_OPENGL_ES_API:
-      /* Same as EGL_CONTEXT_MAJOR_VERSION. */
+         /* Same as EGL_CONTEXT_MAJOR_VERSION. */
          *attr++ = EGL_CONTEXT_CLIENT_VERSION;
          *attr++ = g_major ? (EGLint)g_major : 2;
 #ifdef EGL_KHR_create_context
@@ -442,8 +442,8 @@ static EGLint *xegl_fill_attribs(EGLint *attr)
 }
 
 static bool gfx_ctx_xegl_set_video_mode(void *data,
-      unsigned width, unsigned height,
-      bool fullscreen)
+   unsigned width, unsigned height,
+   bool fullscreen)
 {
    EGLint egl_attribs[16];
    EGLint *attr;
@@ -704,12 +704,11 @@ static void gfx_ctx_xegl_destroy(void *data)
 }
 
 static void gfx_ctx_xegl_input_driver(void *data,
-      const input_driver_t **input, void **input_data)
+   const input_driver_t **input, void **input_data)
 {
-   void *xinput;
+   void *xinput = input_x.init();
 
    (void)data;
-   xinput = input_x.init();
 
    *input       = xinput ? &input_x : NULL;
    *input_data  = xinput;
@@ -759,7 +758,7 @@ static gfx_ctx_proc_t gfx_ctx_xegl_get_proc_address(const char *symbol)
 }
 
 static bool gfx_ctx_xegl_bind_api(void *data,
-      enum gfx_ctx_api api, unsigned major, unsigned minor)
+   enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
    (void)data;
 
@@ -809,12 +808,13 @@ static void gfx_ctx_xegl_bind_hw_render(void *data, bool enable)
 }
 
 static bool gfx_ctx_xegl_get_metrics(void *data,
-	enum display_metric_types type, float *value)
+enum display_metric_types type, float *value)
 {
    return x11_get_metrics(data, type, value);
 }
 
-const gfx_ctx_driver_t gfx_ctx_x_egl = {
+const gfx_ctx_driver_t gfx_ctx_x_egl =
+{
    gfx_ctx_xegl_init,
    gfx_ctx_xegl_destroy,
    gfx_ctx_xegl_bind_api,
@@ -841,4 +841,3 @@ const gfx_ctx_driver_t gfx_ctx_x_egl = {
    "x-egl",
    gfx_ctx_xegl_bind_hw_render,
 };
-

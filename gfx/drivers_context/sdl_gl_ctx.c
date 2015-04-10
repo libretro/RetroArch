@@ -447,10 +447,8 @@ const gfx_ctx_driver_t gfx_ctx_sdl_gl =
    sdl_ctx_swap_buffers,
    sdl_ctx_input_driver,
    sdl_ctx_get_proc_address,
-#ifdef HAVE_EGL
    NULL,
    NULL,
-#endif
    sdl_ctx_show_mouse,
    "sdl_gl",
    NULL /* bind_hw_render */
