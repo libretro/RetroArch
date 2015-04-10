@@ -163,23 +163,22 @@ static int rarch_main_data_http_iterate_transfer(http_handle_t *http)
    int percent = 0;
    if (!net_http_update(http->handle, &pos, &tot))
    {
+#if 0
+      char msg[PATH_MAX_LENGTH];
+
       if(tot != 0)
          percent=(unsigned long long)pos*100/(unsigned long long)tot;
       else
          percent=0;   
-//#ifdef _WIN32
-//		RARCH_LOG("%.9I64u / %.9I64u       \r", (unsigned long long)pos, (unsigned long long)tot);
-//#else
-//		RARCH_LOG("%.9llu / %.9llu        \r", (unsigned long long)pos, (unsigned long long)tot);
-//#endif
+
       RARCH_LOG("Download progress: %.d%% \r", percent);
-      char msg[PATH_MAX_LENGTH];
 
       if(percent > 0)
       {
          snprintf(msg, sizeof(msg), "Download progress: %d%%", percent);
          rarch_main_msg_queue_push(msg, 1, 10, true);
       }
+#endif
 
       return -1;
    }
@@ -897,6 +896,9 @@ static void data_runloop_iterate(bool is_thread, data_runloop_t *runloop)
 {
    nbio_handle_t          *nbio = runloop ? &runloop->nbio : NULL;
    rarch_main_data_nbio_iterate(is_thread, nbio);
+#ifdef HAVE_NETWORKING
+   rarch_main_data_http_iterate(is_thread, &runloop->http);
+#endif
    rarch_main_data_db_iterate();
 }
 
@@ -989,9 +991,6 @@ void rarch_main_data_iterate(void)
    rarch_main_data_overlay_iterate(false, data_runloop);
 #endif
    rarch_main_data_nbio_image_iterate(false, data_runloop);
-#ifdef HAVE_NETWORKING
-   rarch_main_data_http_iterate(false, &data_runloop->http);
-#endif
 
 #ifdef HAVE_THREADS
    if (settings->menu.threaded_data_runloop_enable && data_runloop->alive)
