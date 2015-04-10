@@ -537,7 +537,7 @@ static bool d3d_construct(d3d_video_t *d3d,
 #ifdef HAVE_WINDOW
    if (!info->fullscreen && settings->ui.menubar_enable)
    {
-	   RECT rc_temp = {0, 0, win_height, 0x7FFF};
+	   RECT rc_temp = {0, 0, (LONG)win_height, 0x7FFF};
 
 	   SetMenu(d3d->hWnd, LoadMenu(GetModuleHandle(NULL),MAKEINTRESOURCE(IDR_MENU)));
 	   SendMessage(d3d->hWnd, WM_NCCALCSIZE, FALSE, (LPARAM)&rc_temp);
