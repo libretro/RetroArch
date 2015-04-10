@@ -507,10 +507,9 @@ static bool d3d_construct(d3d_video_t *d3d,
    }
 
    video_monitor_get_fps(buffer, sizeof(buffer), NULL, 0);
-   std::string title = buffer;
-   title += " || Direct3D";
+   snprintf(buffer, sizeof(buffer), "%s || Direct3D", buffer);
 
-   d3d->hWnd = CreateWindowEx(0, "RetroArch", title.c_str(),
+   d3d->hWnd = CreateWindowEx(0, "RetroArch", buffer,
          info->fullscreen ?
          (WS_EX_TOPMOST | WS_POPUP) : WS_OVERLAPPEDWINDOW,
          info->fullscreen ? mon_rect.left : CW_USEDEFAULT,
