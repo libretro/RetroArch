@@ -62,8 +62,7 @@ int read_zip_file(const char * archive_path,
       RARCH_ERR("Could not get global ZIP file info of %s."
                 "Could be only a GZIP file without the ZIP part.\n",
                 archive_path);
-      unzClose(zipfile);
-      return -1;
+      goto error;
    }
 
    for ( i = 0; i < global_info.number_entry; ++i )
@@ -82,8 +81,7 @@ int read_zip_file(const char * archive_path,
       {
          RARCH_ERR("Could not read file info in ZIP %s.\n",
                archive_path);
-         unzClose(zipfile);
-         return -1;
+         goto error;
       }
 
       /* Check if this entry is a directory or file. */
@@ -94,27 +92,29 @@ int read_zip_file(const char * archive_path,
       }
       else if (strcmp(filename,relative_path) == 0)
       {
-         /* We found the correct file in the zip, now extract it to *buf */
+         /* We found the correct file in the zip, 
+          * now extract it to *buf. */
          if (unzOpenCurrentFile(zipfile) != UNZ_OK )
          {
             RARCH_ERR("The file %s in %s could not be read.\n", 
                   relative_path, archive_path);
-            unzClose(zipfile);
-            return -1;
+            goto error;
          }
 
          if (optional_outfile != 0)
          {
             char read_buffer[RARCH_ZIP_SUPPORT_BUFFER_SIZE_MAX];
             FILE* outsink = fopen(optional_outfile,"wb");
+
             if (outsink == NULL)
             {
                RARCH_ERR("Could not open outfilepath %s.\n", optional_outfile);
                unzCloseCurrentFile(zipfile);
-               unzClose(zipfile);
-               return -1;
+               goto error;
             }
+
             bytes_read = 0;
+
             do
             {
                ssize_t fwrite_bytes;
@@ -130,9 +130,8 @@ int read_zip_file(const char * archive_path,
                RARCH_ERR("Error writing to %s.\n",optional_outfile);
                fclose(outsink);
                unzCloseCurrentFile(zipfile);
-               unzClose(zipfile);
-               return -1;
-            }while(bytes_read > 0);
+               goto error;
+            } while(bytes_read > 0);
 
             fclose(outsink);
          }
@@ -146,14 +145,12 @@ int read_zip_file(const char * archive_path,
             if (bytes_read != (ssize_t)file_info.uncompressed_size)
             {
                RARCH_ERR(
-                  "Tried to read %d bytes, but only got %d of file %s in ZIP %s.\n",
-                  (unsigned int) file_info.uncompressed_size, (int)bytes_read,
-                  relative_path, archive_path);
+                     "Tried to read %d bytes, but only got %d of file %s in ZIP %s.\n",
+                     (unsigned int) file_info.uncompressed_size, (int)bytes_read,
+                     relative_path, archive_path);
                free(*buf);
                unzCloseCurrentFile(zipfile);
-               unzClose(zipfile);
-
-               return -1;
+               goto error;
             }
             ((char*)(*buf))[file_info.uncompressed_size] = '\0';
          }
@@ -173,8 +170,7 @@ int read_zip_file(const char * archive_path,
          RARCH_ERR(
                "Could not iterate to next file in %s. ZIP file might be corrupt.\n",
                archive_path );
-         unzClose(zipfile);
-         return -1;
+         goto error;
       }
    }
 
@@ -182,11 +178,16 @@ int read_zip_file(const char * archive_path,
 
    if(!finished_reading)
    {
-      RARCH_ERR("File %s not found in %s\n", relative_path, archive_path);
+      RARCH_ERR("File %s not found in %s\n",
+            relative_path, archive_path);
       return -1;
    }
 
    return bytes_read;
+
+error:
+   unzClose(zipfile);
+   return -1;
 }
 
 #undef RARCH_ZIP_SUPPORT_BUFFER_SIZE_MAX
