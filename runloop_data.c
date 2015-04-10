@@ -935,21 +935,23 @@ static void rarch_main_data_thread_init(void)
 {
    data_runloop_t *data_runloop  = (data_runloop_t*)rarch_main_data_get_ptr();
 
-   data_runloop->lock         = slock_new();
-   data_runloop->cond_lock    = slock_new();
-   data_runloop->overlay_lock = slock_new();
-   data_runloop->cond         = scond_new();
-
-   if (!(data_runloop->thread = sthread_create(data_thread_loop, data_runloop)))
-      data_runloop->thread       = NULL;
-
-   data_runloop->thread_inited   = (data_runloop->thread != NULL);
-
-   if (!data_runloop->thread_inited)
+   if (!data_runloop)
       return;
 
-   data_runloop->alive       = true;
-   data_runloop->thread_code = THREAD_CODE_ALIVE;
+   data_runloop->lock            = slock_new();
+   data_runloop->cond_lock       = slock_new();
+   data_runloop->overlay_lock    = slock_new();
+   data_runloop->cond            = scond_new();
+
+   if (!(data_runloop->thread    = sthread_create(data_thread_loop, data_runloop)))
+   {
+      data_runloop->thread       = NULL;
+      return;
+   }
+
+   data_runloop->thread_inited   = true;
+   data_runloop->alive           = true;
+   data_runloop->thread_code     = THREAD_CODE_ALIVE;
 }
 #endif
 
