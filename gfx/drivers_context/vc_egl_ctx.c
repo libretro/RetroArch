@@ -498,7 +498,7 @@ static float gfx_ctx_vc_translate_aspect(void *data,
       return (float)width / height;
 }
 
-static bool gfx_ctx_vc_init_egl_image_buffer(void *data,
+static bool gfx_ctx_vc_image_buffer_init(void *data,
       const video_info_t *video)
 {
    EGLBoolean result;
@@ -572,7 +572,7 @@ fail:
    return false;
 }
 
-static bool gfx_ctx_vc_write_egl_image(void *data, const void *frame, unsigned width,
+static bool gfx_ctx_vc_image_buffer_write(void *data, const void *frame, unsigned width,
       unsigned height, unsigned pitch, bool rgb32, unsigned index, void **image_handle)
 {
    bool ret = false;
@@ -654,8 +654,8 @@ const gfx_ctx_driver_t gfx_ctx_videocore = {
    gfx_ctx_vc_swap_buffers,
    gfx_ctx_vc_input_driver,
    gfx_ctx_vc_get_proc_address,
-   gfx_ctx_vc_init_egl_image_buffer,
-   gfx_ctx_vc_write_egl_image,
+   gfx_ctx_vc_image_buffer_init,
+   gfx_ctx_vc_image_buffer_write,
    NULL,
    "videocore",
    gfx_ctx_vc_bind_hw_render,

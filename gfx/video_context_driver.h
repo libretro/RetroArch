@@ -129,13 +129,13 @@ typedef struct gfx_ctx_driver
 
    /* Returns true if this context supports EGLImage buffers for 
     * screen drawing and was initalized correctly. */
-   bool (*init_egl_image_buffer)(void*, const video_info_t*);
+   bool (*image_buffer_init)(void*, const video_info_t*);
 
    /* Writes the frame to the EGLImage and sets image_handle to it. 
     * Returns true if a new image handle is created.
     * Always returns true the first time it's called for a new index. 
     * The graphics core must handle a change in the handle correctly. */
-   bool (*write_egl_image)(void*, const void *frame, unsigned width,
+   bool (*image_buffer_write)(void*, const void *frame, unsigned width,
          unsigned height, unsigned pitch, bool rgb32,
          unsigned index, void **image_handle);
 
@@ -213,7 +213,9 @@ void gfx_ctx_swap_buffers(void *data);
 
 bool gfx_ctx_focus(void *data);
 
-bool gfx_ctx_write_egl_image(void *data, const void *frame,
+bool gfx_ctx_image_buffer_init(void *data, const video_info_t *info);
+
+bool gfx_ctx_image_buffer_write(void *data, const void *frame,
       unsigned width, unsigned height, unsigned pitch, bool rgb32,
       unsigned index, void **image_handle);
 

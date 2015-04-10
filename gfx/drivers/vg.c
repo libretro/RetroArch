@@ -159,7 +159,7 @@ static void *vg_init(const video_info_t *video, const input_driver_t **input, vo
       }
    }
 
-   if (vg_query_extension("KHR_EGL_image") && ctx->init_egl_image_buffer(vg, video))
+   if (vg_query_extension("KHR_EGL_image") && gfx_ctx_image_buffer_init(vg, video))
    {
       pvgCreateEGLImageTargetKHR = (PFNVGCREATEEGLIMAGETARGETKHRPROC)ctx->get_proc_address("vgCreateEGLImageTargetKHR");
 
@@ -344,8 +344,7 @@ static void vg_copy_frame(void *data, const void *frame, unsigned width, unsigne
    if (vg->mEglImageBuf)
    {
       EGLImageKHR img = 0;
-      const gfx_ctx_driver_t *ctx = gfx_ctx_get_ptr();
-      bool                new_egl = ctx->write_egl_image(vg,
+      bool                new_egl = gfx_ctx_image_buffer_write(vg,
             frame, width, height, pitch, (vg->mTexType == VG_sXRGB_8888), 0, &img);
 
       rarch_assert(img != EGL_NO_IMAGE_KHR);
@@ -370,10 +369,10 @@ static void vg_copy_frame(void *data, const void *frame, unsigned width, unsigne
 
 static bool vg_frame(void *data, const void *frame, unsigned width, unsigned height, unsigned pitch, const char *msg)
 {
+   vg_t                    *vg = (vg_t*)data;
+
    RARCH_PERFORMANCE_INIT(vg_fr);
    RARCH_PERFORMANCE_START(vg_fr);
-   vg_t                    *vg = (vg_t*)data;
-   const gfx_ctx_driver_t *ctx = gfx_ctx_get_ptr();
 
    if (width != vg->mRenderWidth || height != vg->mRenderHeight || vg->should_resize)
    {

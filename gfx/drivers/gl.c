@@ -1195,8 +1195,7 @@ static void gl_init_textures(gl_t *gl, const video_info_t *video)
 #if defined(HAVE_EGL) && defined(HAVE_OPENGLES2)
    // Use regular textures if we use HW render.
    gl->egl_images = !gl->hw_render_use && gl_check_eglimage_proc() &&
-      ctx && ctx->init_egl_image_buffer 
-      && ctx->init_egl_image_buffer(gl, video);
+      gfx_ctx_image_buffer_init(gl, video);
 #else
    (void)video;
 #endif
@@ -1281,7 +1280,7 @@ static INLINE void gl_copy_frame(gl_t *gl, const void *frame,
    if (gl->egl_images)
    {
       EGLImageKHR img = 0;
-      bool new_egl    = gfx_ctx_write_egl_image(gl,
+      bool new_egl    = gfx_ctx_image_buffer_write(gl,
             frame, width, height, pitch, (gl->base_size == 4),
             gl->tex_index, &img);
 

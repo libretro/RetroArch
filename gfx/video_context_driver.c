@@ -144,13 +144,21 @@ bool gfx_ctx_get_metrics(enum display_metric_types type, float *value)
          value);
 }
 
-bool gfx_ctx_write_egl_image(void *data, const void *frame, unsigned width,
+bool gfx_ctx_image_buffer_init(void *data, const video_info_t* info)
+{
+   const gfx_ctx_driver_t *ctx = gfx_ctx_get_ptr();
+   if (!ctx)
+      return false;
+   return ctx->image_buffer_init(data, info);
+}
+
+bool gfx_ctx_image_buffer_write(void *data, const void *frame, unsigned width,
          unsigned height, unsigned pitch, bool rgb32,
          unsigned index, void **image_handle)
 {
    const gfx_ctx_driver_t *ctx = gfx_ctx_get_ptr();
-   if (ctx && ctx->write_egl_image)
-      return ctx->write_egl_image(data, frame, width, height, pitch,
+   if (ctx && ctx->image_buffer_write)
+      return ctx->image_buffer_write(data, frame, width, height, pitch,
             rgb32, index, image_handle);
    return false;
 }
