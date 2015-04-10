@@ -22,6 +22,7 @@
 #endif
 
 #include "../../driver.h"
+#include "../../dynamic.h"
 #include "../../runloop.h"
 #include "../video_context_driver.h"
 #include "../drivers/gl_common.h"
