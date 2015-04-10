@@ -2484,12 +2484,7 @@ static bool gl_focus(void *data)
 
 static bool gl_suppress_screensaver(void *data, bool enable)
 {
-   gl_t *gl = (gl_t*)data;
-   const gfx_ctx_driver_t *ctx = gfx_ctx_get_ptr();
-
-   if (gl && ctx)
-      return ctx->suppress_screensaver(gl, enable);
-   return false;
+   return gfx_ctx_suppress_screensaver(data, enable);
 }
 
 static bool gl_has_windowed(void *data)

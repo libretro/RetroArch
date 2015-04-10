@@ -177,6 +177,15 @@ bool gfx_ctx_check_window(void *data, bool *quit, bool *resize,
    return true;
 }
 
+bool gfx_ctx_suppress_screensaver(void *data, bool enable)
+{
+   const gfx_ctx_driver_t *ctx = gfx_ctx_get_ptr();
+
+   if (data && ctx)
+      return ctx->suppress_screensaver(data, enable);
+   return false;
+}
+
 /**
  * find_gfx_ctx_driver_index:
  * @ident                      : Identifier of resampler driver to find.
