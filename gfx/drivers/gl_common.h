@@ -366,12 +366,11 @@ typedef struct gl
 
 static INLINE void context_bind_hw_render(gl_t *gl, bool enable)
 {
-   const gfx_ctx_driver_t *ctx = gfx_ctx_get_ptr();
    if (!gl)
       return;
 
-   if (gl->shared_context_use && ctx->bind_hw_render)
-      ctx->bind_hw_render(gl, enable);
+   if (gl->shared_context_use)
+      gfx_ctx_bind_hw_render(gl, enable);
 }
 
 static INLINE bool gl_check_error(void)

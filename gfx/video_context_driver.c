@@ -107,6 +107,14 @@ void gfx_ctx_swap_buffers(void *data)
       ctx->swap_buffers(data);
 }
 
+void gfx_ctx_bind_hw_render(void *data, bool enable)
+{
+   const gfx_ctx_driver_t *ctx = gfx_ctx_get_ptr();
+
+   if (ctx && ctx->bind_hw_render)
+      ctx->bind_hw_render(data, enable);
+}
+
 bool gfx_ctx_focus(void *data)
 {
    const gfx_ctx_driver_t *ctx = gfx_ctx_get_ptr();

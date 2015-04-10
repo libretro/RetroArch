@@ -236,6 +236,8 @@ void gfx_ctx_set_resize(void *data, unsigned width, unsigned height);
 
 void gfx_ctx_swap_interval(void *data, unsigned interval);
 
+void gfx_ctx_bind_hw_render(void *data, bool enable);
+
 void gfx_ctx_free(void *data);
 
 void gfx_ctx_input_driver(void *data,
