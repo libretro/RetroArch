@@ -897,9 +897,6 @@ static void data_runloop_iterate(bool is_thread, data_runloop_t *runloop)
 {
    nbio_handle_t          *nbio = runloop ? &runloop->nbio : NULL;
    rarch_main_data_nbio_iterate(is_thread, nbio);
-#ifdef HAVE_NETWORKING
-   rarch_main_data_http_iterate(is_thread, &runloop->http);
-#endif
    rarch_main_data_db_iterate();
 }
 
@@ -987,9 +984,13 @@ void rarch_main_data_iterate(void)
    rarch_main_data_overlay_iterate(false, data_runloop);
 #endif
    rarch_main_data_nbio_image_iterate(false, data_runloop);
+#ifdef HAVE_NETWORKING
+   rarch_main_data_http_iterate(false, &data_runloop->http);
+#endif
 
    if (settings->menu.threaded_data_runloop_enable && data_runloop->alive)
       return;
+
 
    data_runloop_iterate(false, data_runloop);
 }
