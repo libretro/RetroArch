@@ -895,7 +895,8 @@ void rarch_main_data_free(void)
 
 static void data_runloop_iterate(bool is_thread, data_runloop_t *runloop)
 {
-   runloop             = (data_runloop_t*)rarch_main_data_get_ptr();
+   nbio_handle_t          *nbio = runloop ? &runloop->nbio : NULL;
+   rarch_main_data_nbio_iterate(is_thread, nbio);
 #ifdef HAVE_NETWORKING
    rarch_main_data_http_iterate(is_thread, &runloop->http);
 #endif
@@ -985,7 +986,6 @@ void rarch_main_data_iterate(void)
 #ifdef HAVE_OVERLAY
    rarch_main_data_overlay_iterate(false, data_runloop);
 #endif
-   rarch_main_data_nbio_iterate(false, nbio);
    rarch_main_data_nbio_image_iterate(false, data_runloop);
 
    if (settings->menu.threaded_data_runloop_enable && data_runloop->alive)
