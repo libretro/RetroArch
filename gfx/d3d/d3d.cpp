@@ -977,11 +977,7 @@ static bool texture_image_render(d3d_video_t *d3d,
    d3d_vertex_buffer_unlock(out_img->vertex_buf);
 
    d3d_enable_blend_func(d3d->dev);
-
-   /* Also blend the texture with the set alpha value. */
-   d3d->dev->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_MODULATE);
-   d3d->dev->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_DIFFUSE);
-   d3d->dev->SetTextureStageState(0, D3DTSS_ALPHAARG2, D3DTA_TEXTURE);
+   d3d_enable_alpha_blend_texture_func(d3d->dev);
 
    /* Draw the quad. */
    d3d_set_texture(d3dr, 0, out_img->texture_buf);

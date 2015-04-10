@@ -89,4 +89,6 @@ void d3d_disable_blend_func(void *data);
 
 void d3d_set_vertex_declaration(void *data, void *vertex_data);
 
+void d3d_enable_alpha_blend_texture_func(void *data);
+
 #endif

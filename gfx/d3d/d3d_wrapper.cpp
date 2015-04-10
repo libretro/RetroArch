@@ -379,6 +379,19 @@ void d3d_enable_blend_func(void *data)
    dev->SetRenderState(D3DRS_ALPHABLENDENABLE, true);
 }
 
+void d3d_enable_alpha_blend_texture_func(void *data)
+{
+   LPDIRECT3DDEVICE dev = (LPDIRECT3DDEVICE)data;
+
+   if (!dev)
+      return;
+
+   /* Also blend the texture with the set alpha value. */
+   dev->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_MODULATE);
+   dev->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_DIFFUSE);
+   dev->SetTextureStageState(0, D3DTSS_ALPHAARG2, D3DTA_TEXTURE);
+}
+
 void d3d_disable_blend_func(void *data)
 {
    LPDIRECT3DDEVICE dev = (LPDIRECT3DDEVICE)data;
