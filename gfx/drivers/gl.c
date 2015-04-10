@@ -2936,15 +2936,14 @@ static void gl_overlay_vertex_geom(void *data,
 static void gl_overlay_enable(void *data, bool state)
 {
    gl_t *gl           = (gl_t*)data;
-   const gfx_ctx_driver_t *ctx = gfx_ctx_get_ptr();
 
    if (!gl)
       return;
 
    gl->overlay_enable = state;
-   
-   if (ctx->show_mouse && gl->fullscreen)
-      ctx->show_mouse(gl, state);
+
+   if (gl->fullscreen)
+      gfx_ctx_show_mouse(gl, state);
 }
 
 static void gl_overlay_full_screen(void *data, bool enable)

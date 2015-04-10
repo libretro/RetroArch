@@ -521,12 +521,11 @@ static bool d3d_construct(d3d_video_t *d3d,
 #endif
 #endif
 
-   if (d3d && ctx && ctx->show_mouse)
-      ctx->show_mouse(d3d, !info->fullscreen
+   gfx_ctx_show_mouse(d3d, !info->fullscreen
 #ifdef HAVE_OVERLAY
-      || d3d->overlays_enabled
+         || d3d->overlays_enabled
 #endif
-   );
+         );
 
 
 #ifndef _XBOX
@@ -1414,7 +1413,6 @@ static void d3d_overlay_enable(void *data, bool state)
 {
    unsigned i;
    d3d_video_t            *d3d = (d3d_video_t*)data;
-   const gfx_ctx_driver_t *ctx = gfx_ctx_get_ptr();
 
    if (!d3d)
       return;
@@ -1422,8 +1420,7 @@ static void d3d_overlay_enable(void *data, bool state)
    for (i = 0; i < d3d->overlays.size(); i++)
       d3d->overlays_enabled = state;
 
-   if (d3d && ctx && ctx->show_mouse)
-      ctx->show_mouse(d3d, state);
+   gfx_ctx_show_mouse(d3d, state);
 }
 
 static void d3d_overlay_full_screen(void *data, bool enable)
