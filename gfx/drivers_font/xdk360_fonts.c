@@ -428,7 +428,7 @@ static void xdk360_draw_text(xdk360_video_font_t *font,
       pVertex[11] = 0;
       pVertex[12] = m_fCursorX;
       pVertex[13] = m_fCursorY + fHeight;
-#ifndef LSB_FIRST
+#ifdef MSB_FIRST
       ((volatile uint32_t *)pVertex)[2]  = (tu1 << 16) | tv1;         // Merged using big endian rules
       ((volatile uint32_t *)pVertex)[6]  = (tu2 << 16) | tv1;         // Merged using big endian rules
       ((volatile uint32_t*)pVertex)[10] = (tu2 << 16) | tv2;        // Merged using big endian rules
