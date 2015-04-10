@@ -92,6 +92,7 @@ const frontend_ctx_driver_t *frontend_ctx_init_first(void)
    return NULL;
 }
 
+#ifndef IS_SALAMANDER
 const frontend_ctx_driver_t *frontend_get_ptr(void)
 {
    driver_t *driver        = driver_get_ptr();
@@ -99,3 +100,4 @@ const frontend_ctx_driver_t *frontend_get_ptr(void)
       return NULL;
    return driver->frontend_ctx;
 }
+#endif

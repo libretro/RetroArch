@@ -85,9 +85,10 @@ static bool rpng_image_load_argb_shift(const char *path,
 
 #define GX_BLIT_LINE_32(off) \
 { \
+   unsigned x; \
    const uint16_t *tmp_src = src; \
-   uint16_t *tmp_dst = dst; \
-   for (unsigned x = 0; x < width2 >> 3; x++, tmp_src += 8, tmp_dst += 32) \
+   uint16_t       *tmp_dst = dst; \
+   for (x = 0; x < width2 >> 3; x++, tmp_src += 8, tmp_dst += 32) \
    { \
       tmp_dst[  0 + off] = tmp_src[0]; \
       tmp_dst[ 16 + off] = tmp_src[1]; \
