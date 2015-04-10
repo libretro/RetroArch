@@ -122,12 +122,14 @@ static void frontend_ctr_deinit(void *data)
 
    wait_for_input();
 
+   csndExit();
    gfxExit();
-   //   sdmcExit();
-   //   fsExit();
-   //   hidExit();
-   //   aptExit();
-   //   srvExit();
+
+//   sdmcExit();
+//   fsExit();
+//   hidExit();
+//   aptExit();
+//   srvExit();
 #endif
 }
 
@@ -145,8 +147,16 @@ static void frontend_ctr_init(void *data)
    global_t *global   = global_get_ptr();
    global->verbosity = true;
 
+//   srvInit();
+//   aptInit();
+//   hidInit();
+//   fsInit();
+//   sdmcInit();
+
+//   APT_SetAppCpuTimeLimit(NULL, 80);
 //   gfxInitDefault();
    gfxInit(GSP_BGR8_OES,GSP_RGB565_OES,false);
+   csndInit();
    gfxSet3D(false);
    consoleInit(GFX_BOTTOM, NULL);
 #endif
