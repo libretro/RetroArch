@@ -27,6 +27,16 @@ typedef int (*transfer_cb_t               )(void *data, size_t len);
 #ifdef HAVE_NETWORKING
 #include <net/net_http.h>
 
+enum
+{
+   HTTP_STATUS_POLL = 0,
+   HTTP_STATUS_CONNECTION_TRANSFER,
+   HTTP_STATUS_CONNECTION_TRANSFER_PARSE,
+   HTTP_STATUS_TRANSFER,
+   HTTP_STATUS_TRANSFER_PARSE,
+   HTTP_STATUS_TRANSFER_PARSE_FREE,
+} http_status_enum;
+
 typedef struct http_handle
 {
    struct
@@ -38,6 +48,7 @@ typedef struct http_handle
    msg_queue_t *msg_queue;
    struct http_t *handle;
    transfer_cb_t  cb;
+   unsigned status;
 } http_handle_t;
 #endif
 
@@ -742,9 +753,6 @@ static void rarch_main_data_nbio_iterate(bool is_thread, nbio_handle_t *nbio)
             nbio->status = NBIO_STATUS_TRANSFER;
          break;
    }
-
-   rarch_main_data_nbio_image_iterate(is_thread, nbio, &nbio->image);
-
 }
 
 #ifdef HAVE_NETWORKING
@@ -753,19 +761,30 @@ static void rarch_main_data_http_iterate(bool is_thread, http_handle_t *http)
    if (!http)
       return;
 
-   if (http->connection.handle)
+   switch (http->status)
    {
-      if (!rarch_main_data_http_con_iterate_transfer(http))
+      case HTTP_STATUS_CONNECTION_TRANSFER_PARSE:
          rarch_main_data_http_conn_iterate_transfer_parse(http);
-   }
-
-   if (http->handle)
-   {
-      if (!rarch_main_data_http_iterate_transfer(http))
+         http->status = HTTP_STATUS_TRANSFER;
+         break;
+      case HTTP_STATUS_CONNECTION_TRANSFER:
+         if (!rarch_main_data_http_con_iterate_transfer(http))
+            http->status = HTTP_STATUS_CONNECTION_TRANSFER_PARSE;
+         break;
+      case HTTP_STATUS_TRANSFER_PARSE:
          rarch_main_data_http_iterate_transfer_parse(http);
+         http->status = HTTP_STATUS_POLL;
+         break;
+      case HTTP_STATUS_TRANSFER:
+         if (!rarch_main_data_http_iterate_transfer(http))
+            http->status = HTTP_STATUS_TRANSFER_PARSE;
+         break;
+      case HTTP_STATUS_POLL:
+      default:
+         if (rarch_main_data_http_iterate_poll(http) == 0)
+            http->status = HTTP_STATUS_CONNECTION_TRANSFER;
+         break;
    }
-   else
-      rarch_main_data_http_iterate_poll(http);
 }
 #endif
 
@@ -874,11 +893,13 @@ void rarch_main_data_free(void)
 
 static void data_runloop_iterate(bool is_thread, data_runloop_t *runloop)
 {
-   runloop = (data_runloop_t*)rarch_main_data_get_ptr();
+   runloop             = (data_runloop_t*)rarch_main_data_get_ptr();
+   nbio_handle_t *nbio = runloop ? &runloop->nbio : NULL;
 #ifdef HAVE_OVERLAY
    rarch_main_data_overlay_iterate(is_thread, runloop);
 #endif
-   rarch_main_data_nbio_iterate(is_thread, &runloop->nbio);
+   rarch_main_data_nbio_iterate(is_thread, nbio);
+   rarch_main_data_nbio_image_iterate(is_thread, nbio, &nbio->image);
 #ifdef HAVE_NETWORKING
    rarch_main_data_http_iterate(is_thread, &runloop->http);
 #endif
