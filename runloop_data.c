@@ -110,6 +110,7 @@ enum
 
 typedef struct data_runloop
 {
+   msg_queue_t *msg_queue;
 #ifdef HAVE_NETWORKING
    http_handle_t http;
 #endif
@@ -163,7 +164,6 @@ static int rarch_main_data_http_iterate_transfer(http_handle_t *http)
    int percent = 0;
    if (!net_http_update(http->handle, &pos, &tot))
    {
-#if 0
       char msg[PATH_MAX_LENGTH];
 
       if(tot != 0)
@@ -171,14 +171,11 @@ static int rarch_main_data_http_iterate_transfer(http_handle_t *http)
       else
          percent=0;   
 
-      RARCH_LOG("Download progress: %.d%% \r", percent);
-
-      if(percent > 0)
+      if (percent > 0)
       {
          snprintf(msg, sizeof(msg), "Download progress: %d%%", percent);
-         rarch_main_msg_queue_push(msg, 1, 10, true);
+         rarch_main_data_msg_queue_push(DATA_TYPE_MSG, msg, NULL, 1, 10, true);
       }
-#endif
 
       return -1;
    }
@@ -872,6 +869,9 @@ void rarch_main_data_deinit(void)
    if (!data_runloop)
       return;
 
+   if (data_runloop->msg_queue)
+      msg_queue_free(data_runloop->msg_queue);
+
 #ifdef HAVE_THREADS
    if (data_runloop->thread_inited)
    {
@@ -1036,6 +1036,14 @@ void rarch_main_data_init_queues(void)
       rarch_assert(data_runloop->nbio.msg_queue = msg_queue_new(8));
    if (!data_runloop->nbio.image.msg_queue)
       rarch_assert(data_runloop->nbio.image.msg_queue = msg_queue_new(8));
+   if (!data_runloop->msg_queue)
+      rarch_assert(data_runloop->msg_queue = msg_queue_new(8));
+}
+
+const char *rarch_main_data_msg_queue_pull(void)
+{
+   data_runloop_t *runloop = (data_runloop_t*)rarch_main_data_get_ptr();
+   return msg_queue_pull(runloop->msg_queue);
 }
 
 void rarch_main_data_msg_queue_push(unsigned type,
@@ -1046,27 +1054,35 @@ void rarch_main_data_msg_queue_push(unsigned type,
    msg_queue_t *queue = NULL;
    data_runloop_t *data_runloop = (data_runloop_t*)rarch_main_data_get_ptr();
 
-   snprintf(new_msg, sizeof(new_msg), "%s|%s", msg, msg2);
-
    switch(type)
    {
       case DATA_TYPE_NONE:
          break;
       case DATA_TYPE_FILE:
          queue = data_runloop->nbio.msg_queue;
+         snprintf(new_msg, sizeof(new_msg), "%s|%s", msg, msg2);
          break;
       case DATA_TYPE_IMAGE:
          queue = data_runloop->nbio.image.msg_queue;
+         snprintf(new_msg, sizeof(new_msg), "%s|%s", msg, msg2);
          break;
 #ifdef HAVE_NETWORKING
       case DATA_TYPE_HTTP:
          queue = data_runloop->http.msg_queue;
+         snprintf(new_msg, sizeof(new_msg), "%s|%s", msg, msg2);
          break;
 #endif
 #ifdef HAVE_OVERLAY
       case DATA_TYPE_OVERLAY:
+         snprintf(new_msg, sizeof(new_msg), "%s|%s", msg, msg2);
          break;
 #endif
+      case DATA_TYPE_MSG:
+         if (data_runloop->thread_inited)
+            return;
+         queue = data_runloop->msg_queue;
+         snprintf(new_msg, sizeof(new_msg), "%s", msg);
+         break;
    }
 
    if (!queue)

@@ -108,27 +108,29 @@ void msg_queue_push(msg_queue_t *queue, const char *msg,
    if (!queue || queue->ptr >= queue->size)
       return;
 
-   new_elem = (struct queue_elem*)calloc(1, sizeof(struct queue_elem));
+   new_elem                      = (struct queue_elem*)
+      calloc(1, sizeof(struct queue_elem));
    if (!new_elem)
       return;
 
-   new_elem->prio = prio;
-   new_elem->duration = duration;
-   new_elem->msg = msg ? strdup(msg) : NULL;
+   new_elem->prio                = prio;
+   new_elem->duration            = duration;
+   new_elem->msg                 = msg ? strdup(msg) : NULL;
 
-   queue->elems[queue->ptr] = new_elem;
-   tmp_ptr = queue->ptr++;
+   queue->elems[queue->ptr]      = new_elem;
+
+   tmp_ptr                       = queue->ptr++;
 
    while (tmp_ptr > 1)
    {
-      struct queue_elem *parent = queue->elems[tmp_ptr >> 1];
-      struct queue_elem *child  = queue->elems[tmp_ptr];
+      struct queue_elem *parent  = queue->elems[tmp_ptr >> 1];
+      struct queue_elem *child   = queue->elems[tmp_ptr];
 
       if (child->prio <= parent->prio)
          break;
 
       queue->elems[tmp_ptr >> 1] = child;
-      queue->elems[tmp_ptr] = parent;
+      queue->elems[tmp_ptr]      = parent;
 
       tmp_ptr >>= 1;
    }

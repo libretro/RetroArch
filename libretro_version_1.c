@@ -27,6 +27,7 @@
 #include <errno.h>
 #include "general.h"
 #include "runloop.h"
+#include "runloop_data.h"
 #include "retroarch.h"
 #include "performance.h"
 #include "input/keyboard_line.h"
@@ -149,6 +150,7 @@ static void video_frame(const void *data, unsigned width,
       recording_dump_frame(data, width, height, pitch);
 
    msg                = rarch_main_msg_queue_pull();
+
    driver->current_msg = msg;
 
    if (video_frame_filter(data, width, height, pitch,

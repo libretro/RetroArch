@@ -28,6 +28,7 @@ extern "C" {
 enum runloop_data_type
 {
    DATA_TYPE_NONE = 0,
+   DATA_TYPE_MSG,
    DATA_TYPE_FILE,
    DATA_TYPE_IMAGE,
    DATA_TYPE_HTTP,
@@ -39,6 +40,8 @@ enum runloop_data_type
 void rarch_main_data_msg_queue_push(unsigned type,
       const char *msg, const char *msg2,
       unsigned prio, unsigned duration, bool flush);
+
+const char *rarch_main_data_msg_queue_pull(void);
 
 void rarch_main_data_clear_state(void);
 
