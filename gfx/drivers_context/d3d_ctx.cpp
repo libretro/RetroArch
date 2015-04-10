@@ -173,9 +173,8 @@ void d3d_make_d3dpp(void *data,
 
    memset(d3dpp, 0, sizeof(*d3dpp));
 
-#ifdef _XBOX
    d3dpp->Windowed             = false;
-#else
+#ifndef _XBOX
    d3dpp->Windowed             = settings->video.windowed_fullscreen || !info->fullscreen;
 #endif
    d3dpp->PresentationInterval = D3DPRESENT_INTERVAL_IMMEDIATE;
