@@ -687,13 +687,15 @@ static void rarch_main_data_rdl_iterate(void)
 #endif
 
 static void rarch_main_data_nbio_image_iterate(bool is_thread,
-      nbio_handle_t *nbio, nbio_image_handle_t *image)
+      data_runloop_t *runloop)
 {
-   (void)is_thread;
+   nbio_handle_t         *nbio  = runloop ? &runloop->nbio : NULL;
+   nbio_image_handle_t   *image = nbio    ? &nbio->image   : NULL;
 
-   if (!image)
+   if (!image || !nbio)
       return;
 
+   (void)is_thread;
 
    switch (image->status)
    {
@@ -895,11 +897,7 @@ static void data_runloop_iterate(bool is_thread, data_runloop_t *runloop)
 {
    runloop             = (data_runloop_t*)rarch_main_data_get_ptr();
    nbio_handle_t *nbio = runloop ? &runloop->nbio : NULL;
-#ifdef HAVE_OVERLAY
-   rarch_main_data_overlay_iterate(is_thread, runloop);
-#endif
    rarch_main_data_nbio_iterate(is_thread, nbio);
-   rarch_main_data_nbio_image_iterate(is_thread, nbio, &nbio->image);
 #ifdef HAVE_NETWORKING
    rarch_main_data_http_iterate(is_thread, &runloop->http);
 #endif
@@ -988,6 +986,10 @@ void rarch_main_data_iterate(void)
 #endif
 #endif
 
+#ifdef HAVE_OVERLAY
+   rarch_main_data_overlay_iterate(false, data_runloop);
+#endif
+   rarch_main_data_nbio_image_iterate(false, data_runloop);
    data_runloop_iterate(false, data_runloop);
 }
 
