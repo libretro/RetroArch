@@ -58,6 +58,14 @@ typedef struct nbio_image_handle
    msg_queue_t *msg_queue;
 } nbio_image_handle_t;
 
+enum
+{
+   NBIO_STATUS_POLL = 0,
+   NBIO_STATUS_TRANSFER,
+   NBIO_STATUS_TRANSFER_PARSE,
+   NBIO_STATUS_TRANSFER_PARSE_FREE,
+} nbio_status_enum;
+
 typedef struct nbio_handle
 {
    nbio_image_handle_t image;
@@ -68,6 +76,7 @@ typedef struct nbio_handle
    unsigned pos_increment;
    uint64_t frame_count;
    msg_queue_t *msg_queue;
+   unsigned status;
 } nbio_handle_t;
 
 enum
@@ -559,6 +568,7 @@ static int rarch_main_data_nbio_iterate_poll(nbio_handle_t *nbio)
 
    string_list_free(str_list);
 
+
    return 0;
 
 error:
@@ -659,18 +669,26 @@ static void rarch_main_data_nbio_iterate(bool is_thread, nbio_handle_t *nbio)
    if (!nbio)
       return;
 
-   if (nbio->handle)
+   switch (nbio->status)
    {
-      if (!nbio->is_blocking)
-      {
+      case NBIO_STATUS_TRANSFER:
          if (rarch_main_data_nbio_iterate_transfer(nbio) == -1)
-            rarch_main_data_nbio_iterate_parse(nbio);
-      }
-      else if (nbio->is_finished)
+            nbio->status = NBIO_STATUS_TRANSFER_PARSE;
+         break;
+      case NBIO_STATUS_TRANSFER_PARSE:
+         rarch_main_data_nbio_iterate_parse(nbio);
+         nbio->status = NBIO_STATUS_TRANSFER_PARSE_FREE;
+         break;
+      case NBIO_STATUS_TRANSFER_PARSE_FREE:
          rarch_main_data_nbio_iterate_parse_free(nbio);
+         nbio->status = NBIO_STATUS_POLL;
+         break;
+      default:
+      case NBIO_STATUS_POLL:
+         if (rarch_main_data_nbio_iterate_poll(nbio) == 0)
+            nbio->status = NBIO_STATUS_TRANSFER;
+         break;
    }
-   else
-      rarch_main_data_nbio_iterate_poll(nbio);
 
    if (nbio->image.handle)
    {
