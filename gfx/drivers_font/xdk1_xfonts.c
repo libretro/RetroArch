@@ -22,7 +22,7 @@ typedef struct
 {
    d3d_video_t *d3d;
    XFONT *debug_font;
-   D3DSurface *pFrontBuffer;
+   D3DSurface *surf;
 } xfonts_t;
 
 static void *xfonts_init_font(void *video_data,
@@ -77,11 +77,11 @@ static void xfonts_render_msg(void *data, const char *msg,
       y = settings->video.msg_pos_y;
    }
 
-   xfonts->d3d->dev->GetBackBuffer(-1, D3DBACKBUFFER_TYPE_MONO, &xfonts->pFrontBuffer);
+   xfonts->d3d->dev->GetBackBuffer(-1, D3DBACKBUFFER_TYPE_MONO, &xfonts->surf);
 
    mbstowcs(str, msg, sizeof(str) / sizeof(wchar_t));
-   xfonts->debug_font->TextOut(xfonts->pFrontBuffer, str, (unsigned)-1, x, y);
-   xfonts->pFrontBuffer->Release();
+   xfonts->debug_font->TextOut(xfonts->surf, str, (unsigned)-1, x, y);
+   xfonts->surf->Release();
 }
 
 font_renderer_t d3d_xdk1_font = {
