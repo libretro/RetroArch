@@ -42,7 +42,7 @@
 #include "drivers/apple_keycode.h"
 #endif
 
-#ifdef __linux
+#ifdef __linux__
 #include <linux/input.h>
 #include <linux/kd.h>
 #endif
