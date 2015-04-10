@@ -15,6 +15,7 @@
 
 #include "../../general.h"
 #include "../../driver.h"
+#include "../../performance.h"
 
 
 typedef struct
@@ -75,7 +76,7 @@ static void *ctr_audio_init(const char *device, unsigned rate, unsigned latency)
 
    CSND_SetVol(0x8, 0xFFFF, 0);
    CSND_SetVol(0x9, 0, 0xFFFF);
-   csndExecCmds(true);
+   csndExecCmds(false);
 
    return ctr;
 }
@@ -87,7 +88,7 @@ static void ctr_audio_free(void *data)
 //   csndExit();
    CSND_SetPlayState(0x8, 0);
    CSND_SetPlayState(0x9, 0);
-   csndExecCmds(true);
+   csndExecCmds(false);
 
    linearFree(ctr->l);
    linearFree(ctr->r);
@@ -106,6 +107,9 @@ static ssize_t ctr_audio_write(void *data, const void *buf, size_t size)
    int i;
    const uint16_t* src = buf;
 
+   RARCH_PERFORMANCE_INIT(ctraudio_f);
+   RARCH_PERFORMANCE_START(ctraudio_f);
+
    CSND_ChnInfo channel_info;
    csndGetState(0x8, &channel_info);
 
@@ -119,7 +123,7 @@ static ssize_t ctr_audio_write(void *data, const void *buf, size_t size)
    {
       CSND_SetBlock(0x8, 1, ctr->l_paddr, CTR_AUDIO_SIZE);
       CSND_SetBlock(0x9, 1, ctr->r_paddr, CTR_AUDIO_SIZE);
-      csndExecCmds(true);
+      csndExecCmds(false);
       playpos = 0;
    }
 
@@ -150,6 +154,7 @@ static ssize_t ctr_audio_write(void *data, const void *buf, size_t size)
       ctr->pos &= CTR_AUDIO_COUNT_MASK;
    }
 
+   RARCH_PERFORMANCE_STOP(ctraudio_f);
 
    return size;
 }
@@ -160,7 +165,7 @@ static bool ctr_audio_stop(void *data)
 
    CSND_SetBlock(0x8, 1, ctr->silence_paddr, CTR_AUDIO_SIZE);
    CSND_SetBlock(0x9, 1, ctr->silence_paddr, CTR_AUDIO_SIZE);
-   csndExecCmds(true);
+   csndExecCmds(false);
 
    return true;
 }
@@ -181,7 +186,7 @@ static bool ctr_audio_start(void *data)
 
    CSND_SetBlock(0x8, 1, ctr->l_paddr, CTR_AUDIO_SIZE);
    CSND_SetBlock(0x9, 1, ctr->r_paddr, CTR_AUDIO_SIZE);
-   csndExecCmds(true);
+   csndExecCmds(false);
 
    return true;
 }
