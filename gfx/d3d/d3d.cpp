@@ -336,15 +336,13 @@ static void d3d_set_nonblock_state(void *data, bool state)
 
 static bool d3d_alive(void *data)
 {
-   d3d_video_t         *d3d   = (d3d_video_t*)data;
-   bool          quit          = false;
-   bool          resize        = false;
-   runloop_t          *runloop = rarch_main_get_ptr();
-   const gfx_ctx_driver_t *ctx = gfx_ctx_get_ptr();
+   d3d_video_t *d3d   = (d3d_video_t*)data;
+   bool        quit   = false;
+   bool        resize = false;
 
-   if (ctx && ctx->check_window)
-      ctx->check_window(d3d, &quit, &resize,
-            &d3d->screen_width, &d3d->screen_height, runloop->frames.video.count);
+   if (!gfx_ctx_check_window(d3d, &quit, &resize,
+            &d3d->screen_width, &d3d->screen_height))
+			return false;
 
    if (quit)
       d3d->quitting = quit;
@@ -361,22 +359,12 @@ static bool d3d_focus(void *data)
 
 static bool d3d_suppress_screensaver(void *data, bool enable)
 {
-   d3d_video_t            *d3d = (d3d_video_t*)data;
-   const gfx_ctx_driver_t *ctx = gfx_ctx_get_ptr();
-
-   if (d3d && ctx && ctx->suppress_screensaver)
-      return ctx->suppress_screensaver(d3d, enable);
-   return false;
+   return gfx_ctx_suppress_screensaver(data, enable);
 }
 
 static bool d3d_has_windowed(void *data)
 {
-   d3d_video_t            *d3d = (d3d_video_t*)data;
-   const gfx_ctx_driver_t *ctx = gfx_ctx_get_ptr();
-
-   if (d3d && ctx && ctx->has_windowed)
-      return ctx->has_windowed(d3d);
-   return true;
+   return gfx_ctx_has_windowed(data);
 }
 
 static void d3d_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
