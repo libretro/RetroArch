@@ -230,6 +230,10 @@ void gfx_ctx_update_window_title(void *data);
 
 void gfx_ctx_get_video_size(void *data, unsigned *width, unsigned *height);
 
+void gfx_ctx_set_resize(void *data, unsigned width, unsigned height);
+
+void gfx_ctx_swap_interval(void *data, unsigned interval);
+
 void gfx_ctx_free(void *data);
 
 retro_proc_address_t gfx_ctx_get_proc_address(const char *sym);

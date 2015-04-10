@@ -1514,7 +1514,8 @@ static bool gl_frame(void *data, const void *frame,
    if (gl->should_resize)
    {
       gl->should_resize = false;
-      ctx->set_resize(gl, gl->win_width, gl->win_height);
+
+      gfx_ctx_set_resize(gl, gl->win_width, gl->win_height);
 
 #ifdef HAVE_FBO
       if (gl->fbo_inited)
@@ -1816,7 +1817,7 @@ static void gl_set_nonblock_state(void *data, bool state)
    RARCH_LOG("[GL]: VSync => %s\n", state ? "off" : "on");
 
    context_bind_hw_render(gl, false);
-   ctx->swap_interval(gl,
+   gfx_ctx_swap_interval(gl, 
          state ? 0 : settings->video.swap_interval);
    context_bind_hw_render(gl, true);
 }
@@ -2244,7 +2245,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    gfx_ctx_get_video_size(gl, &gl->full_x, &gl->full_y);
    RARCH_LOG("Detecting screen resolution %ux%u.\n", gl->full_x, gl->full_y);
 
-   ctx_driver->swap_interval(gl,
+   gfx_ctx_swap_interval(gl, 
          video->vsync ? settings->video.swap_interval : 0);
 
    win_width  = video->width;

@@ -212,6 +212,22 @@ void gfx_ctx_get_video_size(void *data,
       ctx->get_video_size(data, width, height);
 }
 
+void gfx_ctx_swap_interval(void *data, unsigned interval)
+{
+   const gfx_ctx_driver_t *ctx = gfx_ctx_get_ptr();
+
+   if (ctx)
+      ctx->swap_interval(data, interval);
+}
+
+void gfx_ctx_set_resize(void *data, unsigned width, unsigned height)
+{
+   const gfx_ctx_driver_t *ctx = gfx_ctx_get_ptr();
+
+   if (ctx)
+      ctx->set_resize(data, width, height);
+}
+
 /**
  * find_gfx_ctx_driver_index:
  * @ident                      : Identifier of resampler driver to find.
