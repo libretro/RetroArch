@@ -85,11 +85,15 @@ const frontend_ctx_driver_t *frontend_ctx_find_driver(const char *ident)
 const frontend_ctx_driver_t *frontend_ctx_init_first(void)
 {
    unsigned i;
+   const frontend_ctx_driver_t *frontend = NULL;
 
    for (i = 0; frontend_ctx_drivers[i]; i++)
-      return frontend_ctx_drivers[i];
+   {
+      frontend = frontend_ctx_drivers[i];
+      break;
+   }
 
-   return NULL;
+   return frontend;
 }
 
 #ifndef IS_SALAMANDER
