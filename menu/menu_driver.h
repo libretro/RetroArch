@@ -336,6 +336,19 @@ void  menu_driver_navigation_descend_alphabet(size_t *);
 
 void  menu_driver_navigation_ascend_alphabet(size_t *);
 
+void menu_driver_list_cache(bool state, unsigned action);
+
+void  menu_driver_list_delete(file_list_t *list, size_t i, size_t list_size);
+
+void  menu_driver_list_insert(file_list_t *list, const char *path,
+      const char *label, size_t list_size);
+
+void  menu_driver_list_clear(file_list_t *list);
+
+void  menu_driver_list_set_selection(file_list_t *list);
+
+void  menu_driver_context_destroy(void);
+
 #ifdef __cplusplus
 }
 #endif

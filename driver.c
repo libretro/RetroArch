@@ -431,15 +431,14 @@ void uninit_drivers(int flags)
 #ifdef HAVE_MENU
    if (flags & DRIVER_MENU)
    {
-      if (driver->menu_ctx && driver->menu_ctx->context_destroy)
-            driver->menu_ctx->context_destroy();
+      menu_driver_context_destroy();
 
-         if (!driver->menu_data_own)
-         {
-            menu_free_list(driver->menu);
-            menu_free(driver->menu);
-            driver->menu = NULL;
-         }
+      if (!driver->menu_data_own)
+      {
+         menu_free_list(driver->menu);
+         menu_free(driver->menu);
+         driver->menu = NULL;
+      }
    }
 #endif
 

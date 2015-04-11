@@ -235,8 +235,7 @@ static int action_toggle_mainmenu(unsigned type, const char *label,
    switch (push_list)
    {
       case 1:
-         if (driver->menu_ctx->list_cache)
-            driver->menu_ctx->list_cache(true, action);
+         menu_driver_list_cache(true, action);
 
          if (cbs && cbs->action_content_list_switch)
             return cbs->action_content_list_switch(

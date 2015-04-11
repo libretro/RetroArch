@@ -182,6 +182,55 @@ static const menu_ctx_driver_t *menu_ctx_driver_get_ptr(void)
    return driver->menu_ctx;
 }
 
+void  menu_driver_list_delete(file_list_t *list, size_t i, size_t list_size)
+{
+   const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
+
+   if (driver->list_delete)
+      driver->list_delete(list, i, list_size);
+}
+
+void  menu_driver_list_clear(file_list_t *list)
+{
+   const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
+
+   if (driver->list_clear)
+      driver->list_clear(list);
+}
+
+void  menu_driver_context_destroy(void)
+{
+   const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
+
+   if (driver->context_destroy)
+      driver->context_destroy();
+}
+
+void  menu_driver_list_set_selection(file_list_t *list)
+{
+   const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
+
+   if (driver->list_set_selection)
+      driver->list_set_selection(list);
+}
+
+void  menu_driver_list_insert(file_list_t *list, const char *path,
+      const char *label, size_t list_size)
+{
+   const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
+
+   if (driver->list_insert)
+      driver->list_insert(list, path, label, list_size);
+}
+
+void menu_driver_list_cache(bool state, unsigned action)
+{
+   const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
+
+   if (driver->list_cache)
+      driver->list_cache(state, action);
+}
+
 void menu_driver_navigation_increment(void)
 {
    const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
