@@ -279,7 +279,6 @@ void menu_list_flush_stack_by_needle(menu_list_t *list,
 void menu_list_pop_stack(menu_list_t *list)
 {
    menu_handle_t *menu = menu_driver_get_ptr();
-   driver_t *driver = driver_get_ptr();
    if (!menu || !list)
       return;
 
@@ -396,7 +395,6 @@ int menu_list_push_stack_refresh(menu_list_t *list, const char *path, const char
       unsigned type, size_t directory_ptr)
 {
    menu_handle_t *menu = menu_driver_get_ptr();
-   driver_t *driver = driver_get_ptr();
    if (!menu)
       return -1;
    if (!list)
