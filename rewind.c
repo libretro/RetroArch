@@ -22,6 +22,8 @@
 #include <stdint.h>
 #include <string.h>
 #include <retro_inline.h>
+#include "intl/intl.h"
+#include "dynamic.h"
 
 #ifndef UINT16_MAX
 #define UINT16_MAX 0xffff
@@ -521,4 +523,49 @@ void state_manager_capacity(state_manager_t *state,
       *bytes = state->capacity-remaining;
    if (full)
       *full = remaining <= state->maxcompsize * 2;
+}
+
+void init_rewind(void)
+{
+   void *state          = NULL;
+   driver_t *driver     = driver_get_ptr();
+   settings_t *settings = config_get_ptr();
+   global_t *global     = global_get_ptr();
+
+   (void)driver;
+
+#ifdef HAVE_NETPLAY
+   if (driver->netplay_data)
+      return;
+#endif
+
+   if (!settings->rewind_enable || global->rewind.state)
+      return;
+
+   if (global->system.audio_callback.callback)
+   {
+      RARCH_ERR(RETRO_LOG_REWIND_INIT_FAILED_THREADED_AUDIO);
+      return;
+   }
+
+   global->rewind.size = pretro_serialize_size();
+
+   if (!global->rewind.size)
+   {
+      RARCH_ERR(RETRO_LOG_REWIND_INIT_FAILED_NO_SAVESTATES);
+      return;
+   }
+
+   RARCH_LOG(RETRO_MSG_REWIND_INIT "%u MB\n",
+         (unsigned)(settings->rewind_buffer_size / 1000000));
+
+   global->rewind.state = state_manager_new(global->rewind.size,
+         settings->rewind_buffer_size);
+
+   if (!global->rewind.state)
+      RARCH_WARN(RETRO_LOG_REWIND_INIT_FAILED);
+
+   state_manager_push_where(global->rewind.state, &state);
+   pretro_serialize(state, global->rewind.size);
+   state_manager_push_do(global->rewind.state);
 }

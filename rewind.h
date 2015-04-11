@@ -40,6 +40,8 @@ void state_manager_push_do(state_manager_t *state);
 void state_manager_capacity(state_manager_t *state,
       unsigned int *entries, size_t *bytes, bool *full);
 
+void init_rewind(void);
+
 #ifdef __cplusplus
 }
 #endif
