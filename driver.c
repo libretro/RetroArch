@@ -362,11 +362,6 @@ void init_drivers(int flags)
 
    if (flags & DRIVER_VIDEO)
    {
-      runloop_t *runloop = rarch_main_get_ptr();
-      global_t *global   = global_get_ptr();
-
-      runloop->frames.video.count = 0;
-
       init_video();
 
       if (!driver->video_cache_context_ack
@@ -431,15 +426,14 @@ void uninit_drivers(int flags)
 #ifdef HAVE_MENU
    if (flags & DRIVER_MENU)
    {
-      if (driver->menu_ctx && driver->menu_ctx->context_destroy)
-            driver->menu_ctx->context_destroy();
+      menu_driver_context_destroy();
 
-         if (!driver->menu_data_own)
-         {
-            menu_free_list(driver->menu);
-            menu_free(driver->menu);
-            driver->menu = NULL;
-         }
+      if (!driver->menu_data_own)
+      {
+         menu_free_list(driver->menu);
+         menu_free(driver->menu);
+         driver->menu = NULL;
+      }
    }
 #endif
 

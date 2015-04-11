@@ -174,185 +174,200 @@ menu_handle_t *menu_driver_get_ptr(void)
    return driver->menu;
 }
 
-void menu_driver_navigation_increment(void)
+static const menu_ctx_driver_t *menu_ctx_driver_get_ptr(void)
 {
    driver_t *driver = driver_get_ptr();
-   if (!driver)
-      return;
+   if (!driver || !driver->menu_ctx)
+      return NULL;
+   return driver->menu_ctx;
+}
 
-   if (driver->menu_ctx && driver->menu_ctx->navigation_increment)
-      driver->menu_ctx->navigation_increment();
+void  menu_driver_list_delete(file_list_t *list, size_t i, size_t list_size)
+{
+   const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
+
+   if (driver->list_delete)
+      driver->list_delete(list, i, list_size);
+}
+
+void  menu_driver_list_clear(file_list_t *list)
+{
+   const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
+
+   if (driver->list_clear)
+      driver->list_clear(list);
+}
+
+void  menu_driver_context_destroy(void)
+{
+   const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
+
+   if (driver->context_destroy)
+      driver->context_destroy();
+}
+
+void  menu_driver_list_set_selection(file_list_t *list)
+{
+   const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
+
+   if (driver->list_set_selection)
+      driver->list_set_selection(list);
+}
+
+void  menu_driver_list_insert(file_list_t *list, const char *path,
+      const char *label, size_t list_size)
+{
+   const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
+
+   if (driver->list_insert)
+      driver->list_insert(list, path, label, list_size);
+}
+
+void menu_driver_list_cache(bool state, unsigned action)
+{
+   const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
+
+   if (driver->list_cache)
+      driver->list_cache(state, action);
+}
+
+void menu_driver_navigation_increment(void)
+{
+   const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
+
+   if (driver->navigation_increment)
+      driver->navigation_increment();
 }
 
 void menu_driver_navigation_decrement(void)
 {
-   driver_t *driver = driver_get_ptr();
-   if (!driver)
-      return;
+   const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
 
-   if (driver->menu_ctx && driver->menu_ctx->navigation_decrement)
-      driver->menu_ctx->navigation_decrement();
+   if (driver->navigation_decrement)
+      driver->navigation_decrement();
 }
 
 void menu_driver_navigation_clear(bool pending_push)
 {
-   driver_t *driver = driver_get_ptr();
-   if (!driver)
-      return;
+   const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
 
-   if (driver->menu_ctx && driver->menu_ctx->navigation_clear)
-      driver->menu_ctx->navigation_clear(pending_push);
+   if (driver->navigation_clear)
+      driver->navigation_clear(pending_push);
 }
 
 void menu_driver_navigation_set(bool scroll)
 {
-   driver_t *driver = driver_get_ptr();
-   if (!driver)
-      return;
+   const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
 
-   if (driver->menu_ctx && driver->menu_ctx->navigation_set)
-      driver->menu_ctx->navigation_set(scroll);
+   if (driver->navigation_set)
+      driver->navigation_set(scroll);
 }
 
 void menu_driver_navigation_set_last(void)
 {
-   driver_t *driver = driver_get_ptr();
-   if (!driver)
-      return;
+   const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
 
-   if (driver->menu_ctx && driver->menu_ctx->navigation_set_last)
-      driver->menu_ctx->navigation_set_last();
+   if (driver->navigation_set_last)
+      driver->navigation_set_last();
 }
 
 void menu_driver_set_texture(void)
 {
-   driver_t *driver = driver_get_ptr();
-   if (!driver)
-      return;
+   const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
 
-   if (driver->menu_ctx && driver->menu_ctx->set_texture)
-      driver->menu_ctx->set_texture();
+   if (driver->set_texture)
+      driver->set_texture();
 }
 
 void menu_driver_context_reset(void)
 {
-   driver_t *driver     = driver_get_ptr();
-   if (!driver)
-      return;
+   const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
 
-   if (driver->menu_ctx && driver->menu_ctx->context_reset)
-      driver->menu_ctx->context_reset();
+   if (driver->context_reset)
+      driver->context_reset();
 }
 
 void menu_driver_frame(void)
 {
-   driver_t *driver     = driver_get_ptr();
-   if (!driver)
-      return;
+   const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
 
-   if (driver->menu_ctx && driver->menu_ctx->frame)
-      driver->menu_ctx->frame();
+   if (driver->frame)
+      driver->frame();
 }
 
 void menu_driver_entry_iterate(unsigned action)
 {
-   driver_t *driver     = driver_get_ptr();
-   if (!driver)
-      return;
+   const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
 
-   if (driver->menu_ctx && driver->menu_ctx->entry_iterate)
-      driver->menu_ctx->entry_iterate(action);
+   if (driver->entry_iterate)
+      driver->entry_iterate(action);
 }
 
 void menu_driver_free(menu_handle_t *menu)
 {
-   driver_t *driver     = driver_get_ptr();
-   if (!driver)
-      return;
+   const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
 
-   if (driver->menu_ctx && driver->menu_ctx->free)
-      driver->menu_ctx->free(menu);
+   if (driver->free)
+      driver->free(menu);
 }
 
 void menu_driver_render_messagebox(const char *msg)
 {
-   driver_t *driver     = driver_get_ptr();
-   if (!driver)
-      return;
-   if (!driver->video_data)
-      return;
-   if (!driver->menu_ctx)
-      return;
-   if (!driver->menu_ctx->render_messagebox)
-      return;
+   const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
    if (!msg)
       return;
 
-   if (msg[0] != '\0')
-      driver->menu_ctx->render_messagebox(msg);
+   if (driver->render_messagebox && msg[0] != '\0')
+      driver->render_messagebox(msg);
 }
 
 void menu_driver_render(void)
 {
-   driver_t *driver     = driver_get_ptr();
-   if (!driver)
-      return;
-   if (!driver->video_data)
-      return;
+   const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
    
-   if (driver->menu_ctx && driver->menu_ctx->render)
-      driver->menu_ctx->render();
+   if (driver->render)
+      driver->render();
 }
 
 void menu_driver_toggle(bool latch)
 {
-   driver_t *driver     = driver_get_ptr();
-   if (!driver)
-      return;
+   const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
 
-   if (driver->menu_ctx && driver->menu_ctx->toggle)
-      driver->menu_ctx->toggle(latch);
+   if (driver->toggle)
+      driver->toggle(latch);
 }
 
 void menu_driver_populate_entries(const char *path, const char *label,
          unsigned k)
 {
-   driver_t *driver     = driver_get_ptr();
-   if (!driver)
-      return;
+   const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
 
-   if (driver->menu_ctx && driver->menu_ctx->populate_entries)
-      driver->menu_ctx->populate_entries(path, label, k);
+   if (driver->populate_entries)
+      driver->populate_entries(path, label, k);
 }
 
 bool menu_driver_load_background(void *data)
 {
-   driver_t *driver     = driver_get_ptr();
-   if (!driver)
-      return false;
+   const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
 
-   if (driver->menu_ctx && driver->menu_ctx->load_background)
-      return driver->menu_ctx->load_background(data);
+   if (driver->load_background)
+      return driver->load_background(data);
 
    return false;
 }
 
 void  menu_driver_navigation_descend_alphabet(size_t *ptr_out)
 {
-   driver_t *driver     = driver_get_ptr();
-   if (!driver)
-      return;
+   const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
 
-   if (driver->menu_ctx && driver->menu_ctx->navigation_descend_alphabet)
-      driver->menu_ctx->navigation_descend_alphabet(ptr_out);
+   if (driver->navigation_descend_alphabet)
+      driver->navigation_descend_alphabet(ptr_out);
 }
 
 void  menu_driver_navigation_ascend_alphabet(size_t *ptr_out)
 {
-   driver_t *driver     = driver_get_ptr();
-   if (!driver)
-      return;
+   const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
 
-   if (driver->menu_ctx && driver->menu_ctx->navigation_ascend_alphabet)
-      driver->menu_ctx->navigation_ascend_alphabet(ptr_out);
+   if (driver->navigation_ascend_alphabet)
+      driver->navigation_ascend_alphabet(ptr_out);
 }
