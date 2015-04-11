@@ -21,6 +21,7 @@
 #include "../general.h"
 #include "../libretro.h"
 
+
 static const input_driver_t *input_drivers[] = {
 #ifdef __CELLOS_LV2__
    &input_ps3,
@@ -171,6 +172,13 @@ void find_input_driver(void)
    }
 }
 
+static const input_driver_t *input_get_ptr(driver_t *driver)
+{
+   if (!driver)
+      return NULL;
+   return driver->input;
+}
+
 /**
  * input_driver_set_rumble_state:
  * @port               : User number.
@@ -183,25 +191,36 @@ void find_input_driver(void)
 bool input_driver_set_rumble_state(unsigned port,
       enum retro_rumble_effect effect, uint16_t strength)
 {
-   driver_t *driver = driver_get_ptr();
-   if (driver->input && driver->input_data)
-      return driver->input->set_rumble(driver->input_data,
+   driver_t            *driver = driver_get_ptr();
+   const input_driver_t *input = input_get_ptr(driver);
+
+   if (input->set_rumble)
+      return input->set_rumble(driver->input_data,
             port, effect, strength);
    return false;
+}
+
+bool input_driver_key_pressed(int key)
+{
+   driver_t            *driver = driver_get_ptr();
+   const input_driver_t *input = input_get_ptr(driver);
+
+   return input->key_pressed(driver->input_data, key);
 }
 
 retro_input_t input_driver_keys_pressed(void)
 {
    int key;
-   retro_input_t ret = 0;
-   driver_t *driver = driver_get_ptr();
+   retro_input_t           ret = 0;
+   driver_t            *driver = driver_get_ptr();
+   const input_driver_t *input = input_get_ptr(driver);
 
    for (key = 0; key < RARCH_BIND_LIST_END; key++)
    {
       bool state = false;
       if ((!driver->block_libretro_input && (key < RARCH_FIRST_META_KEY)) ||
             !driver->block_hotkey)
-         state = driver->input->key_pressed(driver->input_data, key);
+         state = input->key_pressed(driver->input_data, key);
 
 #ifdef HAVE_OVERLAY
       state = state || (driver->overlay_state.buttons & (1ULL << key));
@@ -221,28 +240,21 @@ retro_input_t input_driver_keys_pressed(void)
 int16_t input_driver_state(const struct retro_keybind **retro_keybinds,
       unsigned port, unsigned device, unsigned index, unsigned id)
 {
-   driver_t *driver = driver_get_ptr();
-   if (driver->input && driver->input_data)
-      return driver->input->input_state(driver->input_data, retro_keybinds,
-            port, device, index, id);
-   return 0;
+   driver_t            *driver = driver_get_ptr();
+   const input_driver_t *input = input_get_ptr(driver);
+
+   return input->input_state(driver->input_data, retro_keybinds,
+         port, device, index, id);
 }
 
 void input_driver_poll(void)
 {
-   driver_t *driver = driver_get_ptr();
-   if (driver->input && driver->input_data)
-      driver->input->poll(driver->input_data);
+   driver_t            *driver = driver_get_ptr();
+   const input_driver_t *input = input_get_ptr(driver);
+
+   input->poll(driver->input_data);
 }
 
-bool input_driver_key_pressed(int key)
-{
-   driver_t *driver               = driver_get_ptr();
-
-   if (driver && driver->input)
-      return driver->input->key_pressed(driver->input_data, key);
-   return false;
-}
 
 const rarch_joypad_driver_t * input_driver_get_joypad_driver(void)
 {
