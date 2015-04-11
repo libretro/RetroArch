@@ -350,9 +350,9 @@ static void jni_thread_destruct(void *value)
    pthread_setspecific(thread_key, NULL);
 }
 
-// --------------------------------------------------------------------
-// Native activity interaction (called from main thread)
-// --------------------------------------------------------------------
+/*
+ * Native activity interaction (called from main thread)
+ **/
 
 void ANativeActivity_onCreate(ANativeActivity* activity,
       void* savedState, size_t savedStateSize)
@@ -781,7 +781,7 @@ static void frontend_android_deinit(void *data)
 static void frontend_android_shutdown(bool unused)
 {
    (void)unused;
-   // Cleaner approaches don't work sadly.
+   /* Cleaner approaches don't work sadly. */
    exit(0);
 }
 
