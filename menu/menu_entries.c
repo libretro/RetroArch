@@ -91,9 +91,10 @@ int menu_entries_push_list(menu_handle_t *menu,
    if (menu && menu->list_settings)
       settings_list_free(menu->list_settings);
 
-   menu->list_settings = (rarch_setting_t *)setting_new(setting_flags);
+   menu->list_settings      = (rarch_setting_t *)setting_new(setting_flags);
+   setting                  = (rarch_setting_t*)menu_setting_find(label);
 
-   if (!(setting = (rarch_setting_t*)menu_setting_find(label)))
+   if (!setting)
       return -1;
 
    menu_list_clear(list);
@@ -101,10 +102,11 @@ int menu_entries_push_list(menu_handle_t *menu,
    for (; setting->type != ST_END_GROUP; setting++)
    {
       if (
-            setting->type == ST_GROUP ||
-            setting->type == ST_SUB_GROUP ||
-            setting->type == ST_END_SUB_GROUP ||
-            (setting->flags & SD_FLAG_ADVANCED && !settings->menu.show_advanced_settings)
+            setting->type == ST_GROUP 
+            || setting->type == ST_SUB_GROUP
+            || setting->type == ST_END_SUB_GROUP
+            || (setting->flags & SD_FLAG_ADVANCED && 
+               !settings->menu.show_advanced_settings)
          )
          continue;
 
@@ -197,8 +199,8 @@ int menu_entries_push_horizontal_menu_list(menu_handle_t *menu,
       const char *path, const char *label,
       unsigned menu_type)
 {
-   core_info_t *info = NULL;
-   global_t *global = global_get_ptr();
+   core_info_t           *info = NULL;
+   global_t            *global = global_get_ptr();
    core_info_list_t *info_list = (core_info_list_t*)global->core_info;
    settings_t *settings        = config_get_ptr();
 
@@ -327,10 +329,10 @@ int menu_entries_parse_list(
 {
    size_t i, list_size;
    bool path_is_compressed, push_dir;
-   int device = 0;
+   int                   device = 0;
    struct string_list *str_list = NULL;
-   settings_t *settings        = config_get_ptr();
-   global_t *global            = global_get_ptr();
+   settings_t *settings         = config_get_ptr();
+   global_t *global             = global_get_ptr();
 
    (void)device;
 
@@ -488,7 +490,7 @@ int menu_entries_deferred_push(file_list_t *list, file_list_t *menu_list)
    const char *path          = NULL;
    const char *label         = NULL;
    menu_file_list_cbs_t *cbs = NULL;
-   driver_t *driver = driver_get_ptr();
+   driver_t          *driver = driver_get_ptr();
 
    menu_list_get_last_stack(driver->menu->menu_list, &path, &label, &type);
 
