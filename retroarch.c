@@ -2765,12 +2765,7 @@ bool rarch_main_command(unsigned cmd)
          break;
       case RARCH_CMD_NETPLAY_DEINIT:
 #ifdef HAVE_NETPLAY
-         {
-            netplay_t *netplay = (netplay_t*)driver->netplay_data;
-            if (netplay)
-               netplay_free(netplay);
-            driver->netplay_data = NULL;
-         }
+         deinit_netplay();
 #endif
          break;
       case RARCH_CMD_NETWORK_DEINIT:

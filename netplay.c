@@ -1626,6 +1626,15 @@ void netplay_post_frame(netplay_t *netplay)
       netplay_post_frame_net(netplay);
 }
 
+void deinit_netplay(void)
+{
+   driver_t *driver     = driver_get_ptr();
+   netplay_t *netplay = (netplay_t*)driver->netplay_data;
+   if (netplay)
+      netplay_free(netplay);
+   driver->netplay_data = NULL;
+}
+
 #define RARCH_DEFAULT_PORT 55435
 
 /**

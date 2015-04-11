@@ -109,5 +109,7 @@ void netplay_post_frame(netplay_t *handle);
  **/
 bool init_netplay(void);
 
+void deinit_netplay(void);
+
 #endif
 
