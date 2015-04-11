@@ -25,6 +25,7 @@
 #include "general.h"
 #include "autosave.h"
 #include "dynamic.h"
+#include "intl/intl.h"
 
 struct delta_frame
 {
@@ -1623,6 +1624,62 @@ void netplay_post_frame(netplay_t *netplay)
       netplay_post_frame_spectate(netplay);
    else
       netplay_post_frame_net(netplay);
+}
+
+#define RARCH_DEFAULT_PORT 55435
+
+/**
+ * init_netplay:
+ *
+ * Initializes netplay.
+ *
+ * If netplay is already initialized, will return false (0).
+ *
+ * Returns: true (1) if successful, otherwise false (0).
+ **/
+
+bool init_netplay(void)
+{
+   struct retro_callbacks cbs = {0};
+   driver_t *driver     = driver_get_ptr();
+   settings_t *settings = config_get_ptr();
+   global_t *global     = global_get_ptr();
+
+   if (!global->netplay_enable)
+      return false;
+
+   if (global->bsv.movie_start_playback)
+   {
+      RARCH_WARN(RETRO_LOG_MOVIE_STARTED_INIT_NETPLAY_FAILED);
+      return false;
+   }
+
+   retro_set_default_callbacks(&cbs);
+
+   if (*global->netplay_server)
+   {
+      RARCH_LOG("Connecting to netplay host...\n");
+      global->netplay_is_client = true;
+   }
+   else
+      RARCH_LOG("Waiting for client...\n");
+
+   driver->netplay_data = (netplay_t*)netplay_new(
+         global->netplay_is_client ? global->netplay_server : NULL,
+         global->netplay_port ? global->netplay_port : RARCH_DEFAULT_PORT,
+         global->netplay_sync_frames, &cbs, global->netplay_is_spectate,
+         settings->username);
+
+   if (driver->netplay_data)
+      return true;
+
+   global->netplay_is_client = false;
+   RARCH_WARN(RETRO_LOG_INIT_NETPLAY_FAILED);
+
+   rarch_main_msg_queue_push(
+         RETRO_MSG_INIT_NETPLAY_FAILED,
+         0, 180, false);
+   return false;
 }
 
 #ifdef HAVE_SOCKET_LEGACY

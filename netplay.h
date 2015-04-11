@@ -98,5 +98,16 @@ void netplay_pre_frame(netplay_t *handle);
  **/
 void netplay_post_frame(netplay_t *handle);
 
+/**
+ * init_netplay:
+ *
+ * Initializes netplay.
+ *
+ * If netplay is already initialized, will return false (0).
+ *
+ * Returns: true (1) if successful, otherwise false (0).
+ **/
+bool init_netplay(void);
+
 #endif
 
