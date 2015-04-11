@@ -524,9 +524,7 @@ bool audio_driver_start(void)
    driver_t *driver      = driver_get_ptr();
    const audio_driver_t *audio = audio_get_ptr(driver);
 
-   if (audio->start)
-      return audio->start(driver->audio_data);
-   return false;
+   return audio->start(driver->audio_data);
 }
 
 bool audio_driver_stop(void)
@@ -534,16 +532,15 @@ bool audio_driver_stop(void)
    driver_t *driver      = driver_get_ptr();
    const audio_driver_t *audio = audio_get_ptr(driver);
 
-   if (audio->stop)
-      return audio->stop(driver->audio_data);
-   return false;
+   return audio->stop(driver->audio_data);
 }
 
 void audio_driver_set_nonblock_state(bool toggle)
 {
    driver_t *driver     = driver_get_ptr();
-   if (driver && driver->audio)
-      driver->audio->set_nonblock_state(driver->audio_data, toggle);
+   const audio_driver_t *audio = audio_get_ptr(driver);
+
+   audio->set_nonblock_state(driver->audio_data, toggle);
 }
 
 ssize_t audio_driver_write(const void *buf, size_t size)
