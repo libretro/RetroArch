@@ -91,58 +91,56 @@ typedef struct gl_shader_backend gl_shader_backend_t;
 #endif
 #endif
 
-void d3d_make_d3dpp(void *data, const video_info_t *info, D3DPRESENT_PARAMETERS *d3dpp);
-
 typedef struct d3d_video
 {
-      const void *font_driver;
-      void *font_handle;
-      bool should_resize;
-      bool quitting;
+   const void *font_driver;
+   void *font_handle;
+   bool should_resize;
+   bool quitting;
 
 #ifdef HAVE_WINDOW
-      WNDCLASSEX windowClass;
+   WNDCLASSEX windowClass;
 #endif
-      HWND hWnd;
-      LPDIRECT3D g_pD3D;
-      LPDIRECT3DDEVICE dev;
-      HRESULT d3d_err;
-      unsigned cur_mon_id;
+   HWND hWnd;
+   LPDIRECT3D g_pD3D;
+   LPDIRECT3DDEVICE dev;
+   HRESULT d3d_err;
+   unsigned cur_mon_id;
 
-      unsigned screen_width;
-      unsigned screen_height;
-      unsigned dev_rotation;
-      D3DVIEWPORT final_viewport;
+   unsigned screen_width;
+   unsigned screen_height;
+   unsigned dev_rotation;
+   D3DVIEWPORT final_viewport;
 
-      std::string shader_path;
+   std::string shader_path;
 
 #if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
 #ifdef _XBOX
-      const shader_backend_t *shader;
+   const shader_backend_t *shader;
 #else
-      struct video_shader shader;
+   struct video_shader shader;
 #endif
 #endif
-      video_info_t video_info;
+   video_info_t video_info;
 
-      bool needs_restore;
+   bool needs_restore;
 
-      RECT font_rect;
-      RECT font_rect_shifted;
+   RECT font_rect;
+   RECT font_rect_shifted;
 
 #ifdef HAVE_OVERLAY
-      bool overlays_enabled;
-      std::vector<overlay_t> overlays;
+   bool overlays_enabled;
+   std::vector<overlay_t> overlays;
 #endif
 
 #if defined(HAVE_MENU)
-      overlay_t *menu;
+   overlay_t *menu;
 #endif
-      const renderchain_driver_t *renderchain_driver;
-      void *renderchain_data;
+   const renderchain_driver_t *renderchain_driver;
+   void *renderchain_data;
 
-      /* TODO - refactor this away properly. */
-      bool resolution_hd_enable;
+   /* TODO - refactor this away properly. */
+   bool resolution_hd_enable;
 } d3d_video_t;
 
 #ifndef _XBOX
