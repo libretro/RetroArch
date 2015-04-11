@@ -889,12 +889,10 @@ static void rarch_main_iterate_linefeed_overlay(void)
 const char *rarch_main_msg_queue_pull(void)
 {
    runloop_t *runloop = rarch_main_get_ptr();
-   const char *msg    = rarch_main_data_msg_queue_pull();
 
-   if (!msg && runloop)
-      msg    = msg_queue_pull(runloop->msg_queue);
-
-   return msg;
+   if (!runloop)
+      return NULL;
+   return msg_queue_pull(runloop->msg_queue);
 }
 
 void rarch_main_msg_queue_push(const char *msg, unsigned prio, unsigned duration,

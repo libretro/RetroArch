@@ -108,7 +108,6 @@ enum
 
 typedef struct data_runloop
 {
-   msg_queue_t *msg_queue;
 #ifdef HAVE_NETWORKING
    http_handle_t http;
 #endif
@@ -137,6 +136,8 @@ typedef struct data_runloop
 #endif
 } data_runloop_t;
 
+static char data_runloop_msg[PATH_MAX_LENGTH];
+
 static struct data_runloop *g_data_runloop;
 
 static void *rarch_main_data_get_ptr(void)
@@ -162,8 +163,6 @@ static int rarch_main_data_http_iterate_transfer(http_handle_t *http)
    int percent = 0;
    if (!net_http_update(http->handle, &pos, &tot))
    {
-      char msg[PATH_MAX_LENGTH];
-
       if(tot != 0)
          percent=(unsigned long long)pos*100/(unsigned long long)tot;
       else
@@ -171,8 +170,8 @@ static int rarch_main_data_http_iterate_transfer(http_handle_t *http)
 
       if (percent > 0)
       {
-         snprintf(msg, sizeof(msg), "Download progress: %d%%", percent);
-         rarch_main_data_msg_queue_push(DATA_TYPE_MSG, msg, NULL, 1, 10, true);
+         snprintf(data_runloop_msg,
+               sizeof(data_runloop_msg), "Download progress: %d%%", percent);
       }
 
       return -1;
@@ -843,9 +842,6 @@ void rarch_main_data_deinit(void)
    if (!data_runloop)
       return;
 
-   if (data_runloop->msg_queue)
-      msg_queue_free(data_runloop->msg_queue);
-
 #ifdef HAVE_THREADS
    if (data_runloop->thread_inited)
    {
@@ -992,6 +988,12 @@ void rarch_main_data_iterate(void)
 #endif
    rarch_main_data_nbio_image_upload_iterate(false, data_runloop);
 
+   if (data_runloop_msg[0] != '\0')
+   {
+      rarch_main_msg_queue_push(data_runloop_msg, 1, 10, true);
+      data_runloop_msg[0] = '\0';
+   }
+
 #ifdef HAVE_THREADS
    if (settings->menu.threaded_data_runloop_enable && data_runloop->alive)
       return;
@@ -1036,14 +1038,6 @@ void rarch_main_data_init_queues(void)
       rarch_assert(data_runloop->nbio.msg_queue = msg_queue_new(8));
    if (!data_runloop->nbio.image.msg_queue)
       rarch_assert(data_runloop->nbio.image.msg_queue = msg_queue_new(8));
-   if (!data_runloop->msg_queue)
-      rarch_assert(data_runloop->msg_queue = msg_queue_new(8));
-}
-
-const char *rarch_main_data_msg_queue_pull(void)
-{
-   data_runloop_t *runloop = (data_runloop_t*)rarch_main_data_get_ptr();
-   return msg_queue_pull(runloop->msg_queue);
 }
 
 void rarch_main_data_msg_queue_push(unsigned type,
@@ -1077,12 +1071,6 @@ void rarch_main_data_msg_queue_push(unsigned type,
          snprintf(new_msg, sizeof(new_msg), "%s|%s", msg, msg2);
          break;
 #endif
-      case DATA_TYPE_MSG:
-         if (data_runloop->thread_inited)
-            return;
-         queue = data_runloop->msg_queue;
-         snprintf(new_msg, sizeof(new_msg), "%s", msg);
-         break;
    }
 
    if (!queue)
