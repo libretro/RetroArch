@@ -773,7 +773,7 @@ static void rarch_main_data_db_iterate(void)
 {
    driver_t *driver = driver_get_ptr();
 #ifdef HAVE_MENU
-   if (driver->menu && driver->menu->rdl)
+   if (driver && driver->menu && driver->menu->rdl)
       rarch_main_data_rdl_iterate();
 #endif
 }
