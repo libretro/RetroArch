@@ -143,6 +143,9 @@ typedef struct d3d_video
    bool resolution_hd_enable;
 } d3d_video_t;
 
+void d3d_make_d3dpp(void *data,
+      const video_info_t *info, D3DPRESENT_PARAMETERS *d3dpp);
+
 #ifndef _XBOX
 extern "C" bool dinput_handle_message(void *dinput, UINT message, WPARAM wParam, LPARAM lParam);
 #endif

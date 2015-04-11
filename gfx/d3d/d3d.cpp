@@ -111,7 +111,7 @@ static void d3d_deinitialize(d3d_video_t *d3d)
 #endif
 }
 
-static void d3d_make_d3dpp(void *data,
+void d3d_make_d3dpp(void *data,
       const video_info_t *info, D3DPRESENT_PARAMETERS *d3dpp)
 {
    d3d_video_t     *d3d = (d3d_video_t*)data;
