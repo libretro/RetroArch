@@ -85,16 +85,16 @@ typedef struct omapfb_data
 
 static const char *omapfb_get_fb_device(void)
 {
-  static char fbname[12];
-  settings_t *settings = config_get_ptr();
-  const int fbidx = settings->video.monitor_index;
+   static char fbname[12];
+   settings_t *settings = config_get_ptr();
+   const int fbidx = settings->video.monitor_index;
 
-  if (fbidx == 0)
-     return "/dev/fb0";
+   if (fbidx == 0)
+      return "/dev/fb0";
 
-  snprintf(fbname, sizeof(fbname), "/dev/fb%d", fbidx - 1);
-  RARCH_LOG("[video_omap]: Using %s as framebuffer device.\n", fbname);
-  return fbname;
+   snprintf(fbname, sizeof(fbname), "/dev/fb%d", fbidx - 1);
+   RARCH_LOG("[video_omap]: Using %s as framebuffer device.\n", fbname);
+   return fbname;
 }
 
 static omapfb_page_t *omapfb_get_page(omapfb_data_t *pdata)
@@ -121,37 +121,37 @@ static omapfb_page_t *omapfb_get_page(omapfb_data_t *pdata)
 
 static void omapfb_page_flip(omapfb_data_t *pdata)
 {
-  if (pdata->sync)
-     ioctl(pdata->fd, OMAPFB_WAITFORGO);
+   if (pdata->sync)
+      ioctl(pdata->fd, OMAPFB_WAITFORGO);
 
-  /* TODO: should we use the manual update feature of the OMAP here? */
+   /* TODO: should we use the manual update feature of the OMAP here? */
 
-  pdata->current_state->si.yoffset = pdata->cur_page->yoffset;
-  ioctl(pdata->fd, FBIOPAN_DISPLAY, &pdata->current_state->si);
+   pdata->current_state->si.yoffset = pdata->cur_page->yoffset;
+   ioctl(pdata->fd, FBIOPAN_DISPLAY, &pdata->current_state->si);
 
-  if (pdata->old_page)
-    pdata->old_page->used = false;
+   if (pdata->old_page)
+      pdata->old_page->used = false;
 }
 
 static int omapfb_read_sysfs(const char *fname, char *buff, size_t size)
 {
-  int ret;
-  FILE *f = fopen(fname, "r");
+   int ret;
+   FILE *f = fopen(fname, "r");
 
-  if (!f)
-     return -1;
+   if (!f)
+      return -1;
 
-  ret = fread(buff, 1, size - 1, f);
-  fclose(f);
+   ret = fread(buff, 1, size - 1, f);
+   fclose(f);
 
-  if (ret <= 0)
-     return -1;
+   if (ret <= 0)
+      return -1;
 
-  buff[ret] = 0;
-  for (ret--; ret >= 0 && isspace(buff[ret]); ret--)
-    buff[ret] = 0;
+   buff[ret] = 0;
+   for (ret--; ret >= 0 && isspace(buff[ret]); ret--)
+      buff[ret] = 0;
 
-  return 0;
+   return 0;
 }
 
 static INLINE void omapfb_put_pixel_rgb565(
@@ -163,7 +163,7 @@ static INLINE void omapfb_put_pixel_rgb565(
 static INLINE void omapfb_put_pixel_argb8888(
       uint32_t *p, unsigned r, unsigned g, unsigned b)
 {
-  *p = ((r << 16) & 0xff0000) | ((g << 8) & 0x00ff00) | ((b << 0) & 0x0000ff);
+   *p = ((r << 16) & 0xff0000) | ((g << 8) & 0x00ff00) | ((b << 0) & 0x0000ff);
 }
 
 static int omapfb_detect_screen(omapfb_data_t *pdata)
@@ -461,133 +461,133 @@ error:
 
 static int omapfb_setup_screeninfo(omapfb_data_t *pdata, int width, int height)
 {
-  omapfb_state_t* state    = pdata->current_state;
+   omapfb_state_t* state    = pdata->current_state;
 
-  state->si.xres           = width;
-  state->si.yres           = height;
-  state->si.xres_virtual   = width;
-  state->si.yres_virtual   = height * pdata->num_pages;
-  state->si.xoffset        = 0;
-  state->si.yoffset        = 0;
-  state->si.bits_per_pixel = pdata->bpp * 8;
+   state->si.xres           = width;
+   state->si.yres           = height;
+   state->si.xres_virtual   = width;
+   state->si.yres_virtual   = height * pdata->num_pages;
+   state->si.xoffset        = 0;
+   state->si.yoffset        = 0;
+   state->si.bits_per_pixel = pdata->bpp * 8;
 
-  /* OMAPFB_COLOR_ARGB32 for bpp=4, OMAPFB_COLOR_RGB565 for bpp=2 */
-  state->si.nonstd         = 0;
+   /* OMAPFB_COLOR_ARGB32 for bpp=4, OMAPFB_COLOR_RGB565 for bpp=2 */
+   state->si.nonstd         = 0;
 
-  if (ioctl(pdata->fd, FBIOPUT_VSCREENINFO, &state->si) != 0)
-  {
-    RARCH_ERR("[video_omap]: setup screeninfo failed\n");
-    return -1;
-  }
+   if (ioctl(pdata->fd, FBIOPUT_VSCREENINFO, &state->si) != 0)
+   {
+      RARCH_ERR("[video_omap]: setup screeninfo failed\n");
+      return -1;
+   }
 
-  pdata->fb_framesize      = width * height * pdata->bpp;
+   pdata->fb_framesize      = width * height * pdata->bpp;
 
-  return 0;
+   return 0;
 }
 
 static float omapfb_scaling(omapfb_data_t *pdata, int width, int height)
 {
-  const float w_factor = (float)pdata->nat_w / (float)width;
-  const float h_factor = (float)pdata->nat_h / (float)height;
+   const float w_factor = (float)pdata->nat_w / (float)width;
+   const float h_factor = (float)pdata->nat_h / (float)height;
 
-  return (w_factor < h_factor ? w_factor : h_factor);
+   return (w_factor < h_factor ? w_factor : h_factor);
 }
 
 static int omapfb_setup_plane(omapfb_data_t *pdata, int width, int height)
 {
-  int x, y, w, h;
-  struct omapfb_plane_info pi = {0};
-  float scale = omapfb_scaling(pdata, width, height);
-  int w = (int)(scale * width);
-  int h = (int)(scale * height);
+   int x, y, w, h;
+   struct omapfb_plane_info pi = {0};
+   float scale = omapfb_scaling(pdata, width, height);
+   int w = (int)(scale * width);
+   int h = (int)(scale * height);
 
-  RARCH_LOG("omap_video: scaling %dx%d to %dx%d\n", width, height, w, h);
+   RARCH_LOG("omap_video: scaling %dx%d to %dx%d\n", width, height, w, h);
 
-  x = pdata->nat_w / 2 - w / 2;
-  y = pdata->nat_h / 2 - h / 2;
+   x = pdata->nat_w / 2 - w / 2;
+   y = pdata->nat_h / 2 - h / 2;
 
-  if (width * height * pdata->bpp * pdata->num_pages > pdata->current_state->mi.size)
-  {
-    RARCH_ERR("omap_video: fb dimensions too large for allocated buffer\n");
-    return -1;
-  }
+   if (width * height * pdata->bpp * pdata->num_pages > pdata->current_state->mi.size)
+   {
+      RARCH_ERR("omap_video: fb dimensions too large for allocated buffer\n");
+      return -1;
+   }
 
-  if (ioctl(pdata->fd, OMAPFB_QUERY_PLANE, &pi) != 0)
-  {
-    RARCH_ERR("[video_omap]: setup plane (query) failed\n");
-    return -1;
-  }
+   if (ioctl(pdata->fd, OMAPFB_QUERY_PLANE, &pi) != 0)
+   {
+      RARCH_ERR("[video_omap]: setup plane (query) failed\n");
+      return -1;
+   }
 
-  /* Disable the plane during setup to avoid garbage on screen. */
-  pi.pos_x      = x;
-  pi.pos_y      = y;
-  pi.out_width  = w;
-  pi.out_height = h;
-  pi.enabled    = 0;
+   /* Disable the plane during setup to avoid garbage on screen. */
+   pi.pos_x      = x;
+   pi.pos_y      = y;
+   pi.out_width  = w;
+   pi.out_height = h;
+   pi.enabled    = 0;
 
-  if (ioctl(pdata->fd, OMAPFB_SETUP_PLANE, &pi) != 0)
-  {
-    RARCH_ERR("[video_omap]: setup plane (param = %d %d %d %d) failed\n", x, y, w, h);
-    return -1;
-  }
+   if (ioctl(pdata->fd, OMAPFB_SETUP_PLANE, &pi) != 0)
+   {
+      RARCH_ERR("[video_omap]: setup plane (param = %d %d %d %d) failed\n", x, y, w, h);
+      return -1;
+   }
 
-  pdata->current_state->pi = pi;
+   pdata->current_state->pi = pi;
 
-  return 0;
+   return 0;
 }
 
 static int omapfb_enable_plane(omapfb_data_t *pdata)
 {
-  struct omapfb_plane_info pi = {0};
+   struct omapfb_plane_info pi = {0};
 
-  if (ioctl(pdata->fd, OMAPFB_QUERY_PLANE, &pi) != 0)
-  {
-    RARCH_ERR("[video_omap]: enable plane (query) failed\n");
-    return -1;
-  }
+   if (ioctl(pdata->fd, OMAPFB_QUERY_PLANE, &pi) != 0)
+   {
+      RARCH_ERR("[video_omap]: enable plane (query) failed\n");
+      return -1;
+   }
 
-  pi.enabled = 1;
+   pi.enabled = 1;
 
-  if (ioctl(pdata->fd, OMAPFB_SETUP_PLANE, &pi) != 0)
-  {
-    RARCH_ERR("[video_omap]: enable plane failed\n");
-    return -1;
-  }
+   if (ioctl(pdata->fd, OMAPFB_SETUP_PLANE, &pi) != 0)
+   {
+      RARCH_ERR("[video_omap]: enable plane failed\n");
+      return -1;
+   }
 
-  return 0;
+   return 0;
 }
 
 static int omapfb_init(omapfb_data_t *pdata, unsigned bpp)
 {
-  const char *fbname   = omapfb_get_fb_device();
-  int             fd   = open(fbname, O_RDWR);
-  settings_t *settings = config_get_ptr();
+   const char *fbname   = omapfb_get_fb_device();
+   int             fd   = open(fbname, O_RDWR);
+   settings_t *settings = config_get_ptr();
 
-  if (fd == -1)
-  {
-    RARCH_ERR("[video_omap]: can't open framebuffer device\n");
-    return -1;
-  }
+   if (fd == -1)
+   {
+      RARCH_ERR("[video_omap]: can't open framebuffer device\n");
+      return -1;
+   }
 
-  pdata->fbname        = fbname;
-  pdata->fd            = fd;
+   pdata->fbname        = fbname;
+   pdata->fd            = fd;
 
-  if (omapfb_detect_screen(pdata))
-  {
-    close(fd);
+   if (omapfb_detect_screen(pdata))
+   {
+      close(fd);
 
-    pdata->fbname      = NULL;
-    pdata->fd          = -1;
+      pdata->fbname      = NULL;
+      pdata->fd          = -1;
 
-    return -1;
-  }
+      return -1;
+   }
 
-  /* always use triple buffering to reduce chance of tearing */
-  pdata->bpp           = bpp;
-  pdata->num_pages     = 3;
-  pdata->sync          = settings->video.vsync;
+   /* always use triple buffering to reduce chance of tearing */
+   pdata->bpp           = bpp;
+   pdata->num_pages     = 3;
+   pdata->sync          = settings->video.vsync;
 
-  return 0;
+   return 0;
 }
 
 void omapfb_free(omapfb_data_t *pdata)
@@ -684,40 +684,40 @@ static void omapfb_blend_glyph_rgb565(omapfb_data_t *pdata,
       unsigned g_width, unsigned g_height, unsigned g_pitch,
       unsigned dst_x, unsigned dst_y)
 {
-  unsigned x, y;
-  unsigned r, g, b;
-  unsigned dst_pitch = (pdata->current_state->si.xres * pdata->bpp) >> 1;
-  uint16_t *dst      = (uint16_t*)pdata->cur_page->buf + dst_y * dst_pitch + dst_x;
+   unsigned x, y;
+   unsigned r, g, b;
+   unsigned dst_pitch = (pdata->current_state->si.xres * pdata->bpp) >> 1;
+   uint16_t *dst      = (uint16_t*)pdata->cur_page->buf + dst_y * dst_pitch + dst_x;
 
-  for (y = 0; y < g_height; ++y, src += g_pitch, dst += dst_pitch)
-  {
-    for (x = 0; x < g_width; ++x)
-    {
-       const uint8_t blend = src[x];
-       const uint16_t out  = dst[x];
+   for (y = 0; y < g_height; ++y, src += g_pitch, dst += dst_pitch)
+   {
+      for (x = 0; x < g_width; ++x)
+      {
+         const uint8_t blend = src[x];
+         const uint16_t out  = dst[x];
 
-       if (blend == 0)
-          continue;
+         if (blend == 0)
+            continue;
 
-       if (blend == 255)
-       {
-          omapfb_put_pixel_rgb565(&dst[x], f_rgb[0], f_rgb[1], f_rgb[2]);
-          continue;
-       }
+         if (blend == 255)
+         {
+            omapfb_put_pixel_rgb565(&dst[x], f_rgb[0], f_rgb[1], f_rgb[2]);
+            continue;
+         }
 
-       r = (out & 0xf800) >> 11;
-       g = (out & 0x07e0) >> 5;
-       b = (out & 0x001f) >> 0;
+         r = (out & 0xf800) >> 11;
+         g = (out & 0x07e0) >> 5;
+         b = (out & 0x001f) >> 0;
 
-       r = (r << 3) | (r >> 2);
-       g = (g << 2) | (g >> 4);
-       b = (b << 3) | (b >> 2);
+         r = (r << 3) | (r >> 2);
+         g = (g << 2) | (g >> 4);
+         b = (b << 3) | (b >> 2);
 
-       omapfb_put_pixel_rgb565(&dst[x], (r * (256 - blend) + f_rgb[0] * blend) >> 8,
-             (g * (256 - blend) + f_rgb[1] * blend) >> 8,
-             (b * (256 - blend) + f_rgb[2] * blend) >> 8);
-    }
-  }
+         omapfb_put_pixel_rgb565(&dst[x], (r * (256 - blend) + f_rgb[0] * blend) >> 8,
+               (g * (256 - blend) + f_rgb[1] * blend) >> 8,
+               (b * (256 - blend) + f_rgb[2] * blend) >> 8);
+      }
+   }
 }
 
 static void omapfb_blend_glyph_argb8888(omapfb_data_t *pdata,
@@ -725,39 +725,39 @@ static void omapfb_blend_glyph_argb8888(omapfb_data_t *pdata,
       unsigned g_width, unsigned g_height, unsigned g_pitch,
       unsigned dst_x, unsigned dst_y)
 {
-  unsigned x, y;
-  unsigned r, g, b;
-  unsigned dst_pitch = (pdata->current_state->si.xres * pdata->bpp) >> 2;
-  uint32_t *dst      = (uint32_t*)pdata->cur_page->buf + dst_y * dst_pitch + dst_x;
+   unsigned x, y;
+   unsigned r, g, b;
+   unsigned dst_pitch = (pdata->current_state->si.xres * pdata->bpp) >> 2;
+   uint32_t *dst      = (uint32_t*)pdata->cur_page->buf + dst_y * dst_pitch + dst_x;
 
-  for (y = 0; y < g_height; ++y, src += g_pitch, dst += dst_pitch)
-  {
-    for (x = 0; x < g_width; ++x)
-    {
-       const uint8_t blend = src[x];
-       const uint32_t out = dst[x];
+   for (y = 0; y < g_height; ++y, src += g_pitch, dst += dst_pitch)
+   {
+      for (x = 0; x < g_width; ++x)
+      {
+         const uint8_t blend = src[x];
+         const uint32_t out = dst[x];
 
-       if (blend == 0)
-          continue;
-       if (blend == 255)
-       {
-          omapfb_put_pixel_argb8888(&dst[x], f_rgb[0], f_rgb[1], f_rgb[2]);
-          continue;
-       }
+         if (blend == 0)
+            continue;
+         if (blend == 255)
+         {
+            omapfb_put_pixel_argb8888(&dst[x], f_rgb[0], f_rgb[1], f_rgb[2]);
+            continue;
+         }
 
-       r = (out & 0xff0000) >> 16;
-       g = (out & 0x00ff00) >> 8;
-       b = (out & 0x0000ff) >> 0;
+         r = (out & 0xff0000) >> 16;
+         g = (out & 0x00ff00) >> 8;
+         b = (out & 0x0000ff) >> 0;
 
-       omapfb_put_pixel_argb8888(&dst[x], (r * (256 - blend) + f_rgb[0] * blend) >> 8,
-             (g * (256 - blend) + f_rgb[1] * blend) >> 8,
-             (b * (256 - blend) + f_rgb[2] * blend) >> 8);
-    }
-  }
+         omapfb_put_pixel_argb8888(&dst[x], (r * (256 - blend) + f_rgb[0] * blend) >> 8,
+               (g * (256 - blend) + f_rgb[1] * blend) >> 8,
+               (b * (256 - blend) + f_rgb[2] * blend) >> 8);
+      }
+   }
 }
 
 static void omapfb_blit_frame(omapfb_data_t *pdata, const void *src,
-                              unsigned height, unsigned src_pitch)
+      unsigned height, unsigned src_pitch)
 {
    unsigned i;
    void          *dst = pdata->cur_page->buf;
@@ -770,49 +770,49 @@ static void omapfb_blit_frame(omapfb_data_t *pdata, const void *src,
 
 typedef struct omap_video
 {
-  omapfb_data_t *omap;
+   omapfb_data_t *omap;
 
-  void *font;
-  const font_renderer_driver_t *font_driver;
-  uint8_t font_rgb[4];
+   void *font;
+   const font_renderer_driver_t *font_driver;
+   uint8_t font_rgb[4];
 
-  unsigned bytes_per_pixel;
+   unsigned bytes_per_pixel;
 
-  /* current dimensions */
-  unsigned width;
-  unsigned height;
+   /* current dimensions */
+   unsigned width;
+   unsigned height;
 
-  struct
-  {
-    bool active;
-    void *frame;
-    struct scaler_ctx scaler;
-  } menu;
+   struct
+   {
+      bool active;
+      void *frame;
+      struct scaler_ctx scaler;
+   } menu;
 } omap_video_t;
 
 
 static void omap_gfx_free(void *data)
 {
-  omap_video_t *vid = data;
-  if (!vid)
-     return;
+   omap_video_t *vid = data;
+   if (!vid)
+      return;
 
-  omapfb_free(vid->omap);
-  free(vid->omap);
+   omapfb_free(vid->omap);
+   free(vid->omap);
 
-  if (vid->font)
-     vid->font_driver->free(vid->font);
+   if (vid->font)
+      vid->font_driver->free(vid->font);
 
-  scaler_ctx_gen_reset(&vid->menu.scaler);
-  free(vid->menu.frame);
+   scaler_ctx_gen_reset(&vid->menu.scaler);
+   free(vid->menu.frame);
 
-  free(vid);
+   free(vid);
 }
 
 static void omap_init_font(omap_video_t *vid, const char *font_path, unsigned font_size)
 {
    int r, g, b;
-  settings_t *settings = config_get_ptr();
+   settings_t *settings = config_get_ptr();
 
    if (!settings->video.font_enable)
       return;
@@ -917,136 +917,136 @@ static void omap_render_msg(omap_video_t *vid, const char *msg)
 static void *omap_gfx_init(const video_info_t *video,
       const input_driver_t **input, void **input_data)
 {
-  omap_video_t *vid    = NULL;
-  settings_t *settings = config_get_ptr();
-  global_t   *global   = global_get_ptr();
+   omap_video_t *vid    = NULL;
+   settings_t *settings = config_get_ptr();
+   global_t   *global   = global_get_ptr();
 
-  /* Don't support filters at the moment since they make estimations  *
-   * on the maximum used resolution difficult.                        */
-  if (global->filter.filter)
-  {
-    RARCH_ERR("[video_omap]: filters are not supported\n");
-    return NULL;
-  }
+   /* Don't support filters at the moment since they make estimations  *
+    * on the maximum used resolution difficult.                        */
+   if (global->filter.filter)
+   {
+      RARCH_ERR("[video_omap]: filters are not supported\n");
+      return NULL;
+   }
 
-  vid = (omap_video_t*)calloc(1, sizeof(omap_video_t));
-  if (!vid)
-     return NULL;
+   vid = (omap_video_t*)calloc(1, sizeof(omap_video_t));
+   if (!vid)
+      return NULL;
 
-  vid->omap = (omapfb_data_t*)calloc(1, sizeof(omapfb_data_t));
-  if (!vid->omap)
-     goto fail;
+   vid->omap = (omapfb_data_t*)calloc(1, sizeof(omapfb_data_t));
+   if (!vid->omap)
+      goto fail;
 
-  vid->bytes_per_pixel = video->rgb32 ? 4 : 2;
+   vid->bytes_per_pixel = video->rgb32 ? 4 : 2;
 
-  if (omapfb_init(vid->omap, vid->bytes_per_pixel) != 0)
-    goto fail_omapfb;
+   if (omapfb_init(vid->omap, vid->bytes_per_pixel) != 0)
+      goto fail_omapfb;
 
-  if (omapfb_backup_state(vid->omap) != 0 ||
-      omapfb_alloc_mem(vid->omap) != 0 ||
-      omapfb_mmap(vid->omap) != 0)
-     goto fail_omapfb;
+   if (omapfb_backup_state(vid->omap) != 0 ||
+         omapfb_alloc_mem(vid->omap) != 0 ||
+         omapfb_mmap(vid->omap) != 0)
+      goto fail_omapfb;
 
-  /* set some initial mode for the menu */
-  vid->width  = 320;
-  vid->height = 240;
+   /* set some initial mode for the menu */
+   vid->width  = 320;
+   vid->height = 240;
 
-  if (omapfb_set_mode(vid->omap, vid->width, vid->height) != 0)
-    goto fail_omapfb;
+   if (omapfb_set_mode(vid->omap, vid->width, vid->height) != 0)
+      goto fail_omapfb;
 
-  if (input && input_data)
-    *input = NULL;
+   if (input && input_data)
+      *input = NULL;
 
-  omap_init_font(vid, settings->video.font_path, settings->video.font_size);
+   omap_init_font(vid, settings->video.font_path, settings->video.font_size);
 
-  vid->menu.frame = calloc(vid->width * vid->height, vid->bytes_per_pixel);
-  if (!vid->menu.frame)
-    goto fail_omapfb;
+   vid->menu.frame = calloc(vid->width * vid->height, vid->bytes_per_pixel);
+   if (!vid->menu.frame)
+      goto fail_omapfb;
 
-  vid->menu.scaler.scaler_type = SCALER_TYPE_BILINEAR;
-  vid->menu.scaler.out_fmt = (vid->bytes_per_pixel == 4)
-    ? SCALER_FMT_ARGB8888 : SCALER_FMT_RGB565;
+   vid->menu.scaler.scaler_type = SCALER_TYPE_BILINEAR;
+   vid->menu.scaler.out_fmt = (vid->bytes_per_pixel == 4)
+      ? SCALER_FMT_ARGB8888 : SCALER_FMT_RGB565;
 
-  return vid;
+   return vid;
 
 fail_omapfb:
-  omapfb_free(vid->omap);
-  free(vid->omap);
+   omapfb_free(vid->omap);
+   free(vid->omap);
 fail:
-  free(vid);
-  RARCH_ERR("[video_omap]: initialization failed\n");
-  return NULL;
+   free(vid);
+   RARCH_ERR("[video_omap]: initialization failed\n");
+   return NULL;
 }
 
 static bool omap_gfx_frame(void *data, const void *frame, unsigned width,
-                           unsigned height, unsigned pitch, const char *msg)
+      unsigned height, unsigned pitch, const char *msg)
 {
-  omap_video_t *vid;
+   omap_video_t *vid;
 
-  if (!frame)
-     return true;
-  vid = data;
+   if (!frame)
+      return true;
+   vid = data;
 
-  if (width > 4 && height > 4 && (width != vid->width || height != vid->height))
-  {
-    RARCH_LOG("[video_omap]: mode set (resolution changed by core)\n");
+   if (width > 4 && height > 4 && (width != vid->width || height != vid->height))
+   {
+      RARCH_LOG("[video_omap]: mode set (resolution changed by core)\n");
 
-    if (omapfb_set_mode(vid->omap, width, height) != 0)
-    {
-      RARCH_ERR("[video_omap]: mode set failed\n");
-      return false;
-    }
+      if (omapfb_set_mode(vid->omap, width, height) != 0)
+      {
+         RARCH_ERR("[video_omap]: mode set failed\n");
+         return false;
+      }
 
-    vid->width = width;
-    vid->height = height;
-  }
+      vid->width = width;
+      vid->height = height;
+   }
 
-  omapfb_prepare(vid->omap);
-  omapfb_blit_frame(vid->omap, frame, vid->height, pitch);
-  if (vid->menu.active)
-    omapfb_blit_frame(vid->omap, vid->menu.frame,
-      vid->menu.scaler.out_height,
-      vid->menu.scaler.out_stride);
-  if (msg)
-    omap_render_msg(vid, msg);
+   omapfb_prepare(vid->omap);
+   omapfb_blit_frame(vid->omap, frame, vid->height, pitch);
+   if (vid->menu.active)
+      omapfb_blit_frame(vid->omap, vid->menu.frame,
+            vid->menu.scaler.out_height,
+            vid->menu.scaler.out_stride);
+   if (msg)
+      omap_render_msg(vid, msg);
 
-  return true;
+   return true;
 }
 
 static void omap_gfx_set_nonblock_state(void *data, bool state)
 {
-  omap_video_t *vid;
+   omap_video_t *vid;
 
-  if (!data)
-     return;
+   if (!data)
+      return;
 
-  vid = data;
-  vid->omap->sync = !state;
+   vid = data;
+   vid->omap->sync = !state;
 }
 
 static bool omap_gfx_alive(void *data)
 {
-  (void)data;
-  return true; /* always alive */
+   (void)data;
+   return true; /* always alive */
 }
 
 static bool omap_gfx_focus(void *data)
 {
-  (void)data;
-  return true; /* fb device always has focus */
+   (void)data;
+   return true; /* fb device always has focus */
 }
 
 static void omap_gfx_viewport_info(void *data, struct video_viewport *vp)
 {
-  omap_video_t *vid = (omap_video_t*)data;
-  
-  if (!vid)
-     return;
+   omap_video_t *vid = (omap_video_t*)data;
 
-  vp->x = vp->y = 0;
+   if (!vid)
+      return;
 
-  vp->width  = vp->full_width  = vid->width;
-  vp->height = vp->full_height = vid->height;
+   vp->x = vp->y = 0;
+
+   vp->width  = vp->full_width  = vid->width;
+   vp->height = vp->full_height = vid->height;
 }
 
 static bool omap_gfx_suppress_screensaver(void *data, bool enable)
@@ -1090,14 +1090,14 @@ static bool omap_gfx_read_viewport(void *data, uint8_t *buffer)
 }
 
 static void update_scaler(omap_video_t *vid, struct scaler_ctx *scaler,
-                          enum scaler_pix_fmt format, unsigned width,
-                          unsigned height, unsigned pitch)
+      enum scaler_pix_fmt format, unsigned width,
+      unsigned height, unsigned pitch)
 {
    if (
-          width  != scaler->in_width
-       || height != scaler->in_height
-       || format != scaler->in_fmt
-       || pitch  != scaler->in_stride
+         width  != scaler->in_width
+         || height != scaler->in_height
+         || format != scaler->in_fmt
+         || pitch  != scaler->in_stride
       )
    {
       scaler->in_fmt    = format;
@@ -1117,23 +1117,23 @@ static void update_scaler(omap_video_t *vid, struct scaler_ctx *scaler,
 static void omap_gfx_set_texture_frame(void *data, const void *frame, bool rgb32,
       unsigned width, unsigned height, float alpha)
 {
-   (void) alpha;
-   omap_video_t *vid = (omap_video_t*)data;
-
+   omap_video_t          *vid = (omap_video_t*)data;
    enum scaler_pix_fmt format = rgb32 ? SCALER_FMT_ARGB8888 : SCALER_FMT_RGBA4444;
 
+   (void) alpha;
+
    update_scaler(vid, &vid->menu.scaler, format, width, height,
-                 width * (rgb32 ? sizeof(uint32_t) : sizeof(uint16_t)));
+         width * (rgb32 ? sizeof(uint32_t) : sizeof(uint16_t)));
 
    scaler_ctx_scale(&vid->menu.scaler, vid->menu.frame, frame);
 }
 
 static void omap_gfx_set_texture_enable(void *data, bool state, bool full_screen)
 {
-   (void) full_screen;
-
    omap_video_t *vid = (omap_video_t*)data;
    vid->menu.active = state;
+
+   (void) full_screen;
 }
 
 static const video_poke_interface_t omap_gfx_poke_interface = {
@@ -1166,24 +1166,24 @@ static void omap_gfx_get_poke_interface(void *data,
 }
 
 video_driver_t video_omap = {
-  omap_gfx_init,
-  omap_gfx_frame,
-  omap_gfx_set_nonblock_state,
-  omap_gfx_alive,
-  omap_gfx_focus,
-  omap_gfx_suppress_screensaver,
-  omap_gfx_has_windowed,
-  omap_gfx_set_shader,
-  omap_gfx_free,
-  "omap",
+   omap_gfx_init,
+   omap_gfx_frame,
+   omap_gfx_set_nonblock_state,
+   omap_gfx_alive,
+   omap_gfx_focus,
+   omap_gfx_suppress_screensaver,
+   omap_gfx_has_windowed,
+   omap_gfx_set_shader,
+   omap_gfx_free,
+   "omap",
 
-  omap_gfx_set_rotation,
-  omap_gfx_viewport_info,
-  omap_gfx_read_viewport,
-  NULL, /* read_frame_raw */
+   omap_gfx_set_rotation,
+   omap_gfx_viewport_info,
+   omap_gfx_read_viewport,
+   NULL, /* read_frame_raw */
 
 #ifdef HAVE_OVERLAY
-  NULL, /* overlay_interface */
+   NULL, /* overlay_interface */
 #endif
-  omap_gfx_get_poke_interface
+   omap_gfx_get_poke_interface
 };

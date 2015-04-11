@@ -84,8 +84,8 @@ typedef struct ctr_video
 } ctr_video_t;
 
 static INLINE void ctr_set_scale_vector(ctr_scale_vector_t* vec,
-                                        int viewport_width, int viewport_height,
-                                        int texture_width, int texture_height)
+      int viewport_width, int viewport_height,
+      int texture_width, int texture_height)
 {
    vec->x = -2.0 / viewport_width;
    vec->y = -2.0 / viewport_height;
@@ -94,7 +94,7 @@ static INLINE void ctr_set_scale_vector(ctr_scale_vector_t* vec,
 }
 
 static void* ctr_init(const video_info_t* video,
-                      const input_driver_t** input, void** input_data)
+      const input_driver_t** input, void** input_data)
 {
    void* ctrinput = NULL;
    ctr_video_t* ctr = (ctr_video_t*)linearAlloc(sizeof(ctr_video_t));
@@ -216,7 +216,7 @@ static void* ctr_init(const video_info_t* video,
 }
 //#define gspWaitForEvent(...)
 static bool ctr_frame(void* data, const void* frame,
-                      unsigned width, unsigned height, unsigned pitch, const char* msg)
+      unsigned width, unsigned height, unsigned pitch, const char* msg)
 {
    ctr_video_t* ctr = (ctr_video_t*)data;
    settings_t* settings = config_get_ptr();

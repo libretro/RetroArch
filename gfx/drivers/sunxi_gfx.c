@@ -134,7 +134,7 @@ typedef struct
 
 typedef struct
 {
-   unsigned int mode; /* layer work mode */
+   unsigned int mode;         /* layer work mode */
    signed char b_from_screen;
    /*
     * layer pipe,0/1,if in scaler mode, scaler0 must be pipe0,
@@ -146,16 +146,15 @@ typedef struct
     * From bottom to top, priority from low to high
     */
    __u8 prio;
-   signed char alpha_en; /* layer global alpha enable */
-   __u16 alpha_val; /* layer global alpha value */
-   signed char ck_enable; /* layer color key enable */
+   signed char alpha_en;      /* layer global alpha enable */
+   __u16 alpha_val;           /* layer global alpha value */
+   signed char ck_enable;     /* layer color key enable */
    /*  framebuffer source window,only care x,y if is not scaler mode */
    __disp_rect_t src_win;
-   __disp_rect_t scn_win; /* screen window */
-   __disp_fb_t fb; /* framebuffer */
-   signed char b_trd_out; /* if output 3d mode, used for scaler mode layer */
-   /* output 3d mode, used for scaler mode layer */
-   unsigned int out_trd_mode;
+   __disp_rect_t scn_win;     /* screen window */
+   __disp_fb_t fb;            /* framebuffer */
+   signed char b_trd_out;     /* if output 3d mode, used for scaler mode layer */
+   unsigned int out_trd_mode; /* output 3d mode, used for scaler mode layer */
 } __disp_layer_info_t;
 
 /*****************************************************************************
@@ -622,10 +621,7 @@ static void *sunxi_gfx_init(const video_info_t *video,
    _dispvars->pages = (struct sunxi_page*)calloc(NUMPAGES, sizeof (struct sunxi_page));
 
    if (!_dispvars->pages)
-   {
-      free(_dispvars);
-      return NULL;
-   }
+      goto error;
 
    _dispvars->dst_pitch           = _dispvars->sunxi_disp->xres * _dispvars->sunxi_disp->bits_per_pixel / 8;
    /* Considering 4 bytes per pixel since we will be in 32bpp on the CB/CB2/CT for hw scalers to work. */
@@ -645,7 +641,7 @@ static void *sunxi_gfx_init(const video_info_t *video,
          pixman_blit = pixman_composite_src_8888_8888_asm_neon;
          break;
       default:
-         return NULL;
+         goto error;
    }
 
    _dispvars->pending_mutex    = slock_new();
@@ -658,6 +654,11 @@ static void *sunxi_gfx_init(const video_info_t *video,
    _dispvars->vsync_thread     = sthread_create(sunxi_vsync_thread_func, _dispvars);
 
    return _dispvars;
+
+error:
+   if (_dispvars)
+      free(_dispvars);
+   return NULL;
 }
 
 static void sunxi_gfx_free(void *data)
@@ -894,8 +895,7 @@ static void sunxi_set_texture_frame(void *data, const void *frame, bool rgb32,
 {
    uint32_t line[dst_width]; 
    uint16_t src_pix;
-   uint32_t dst_pix;
-   uint32_t R, G, B;
+   uint32_t R, G, B, dst_pix;
    unsigned int i, j;
    struct sunxi_video *_dispvars = (struct sunxi_video*)data;
    
