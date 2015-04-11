@@ -779,7 +779,9 @@ static void *d3d_init(const video_info_t *info,
 #ifdef _XBOX
    vid->should_resize        = false;
 #else
+#ifdef HAVE_MENU
    vid->menu                 = NULL;
+#endif
 #endif
 
    driver->video_context     = ctx;
