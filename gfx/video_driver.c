@@ -287,15 +287,12 @@ bool video_driver_has_focus(void)
 bool video_driver_set_shader(enum rarch_shader_type type,
       const char *path)
 {
-   driver_t *driver            = driver_get_ptr();
-   if (!driver)
-      return false;
-   if (!driver->video_data)
-      return false;
-   if (!driver->video->set_shader)
-      return false;
+   driver_t *driver = driver_get_ptr();
+   const video_driver_t *video = video_driver_ctx_get_ptr();
 
-   return driver->video->set_shader(driver->video_data, type, path);
+   if (video->set_shader)
+      return video->set_shader(driver->video_data, type, path);
+   return false;
 }
 
 static void deinit_video_filter(void)
