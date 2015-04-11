@@ -289,14 +289,15 @@ static void vg_draw_message(vg_t *vg, const char *msg)
 
 static void vg_calculate_quad(vg_t *vg)
 {
-   // set viewport for aspect ratio, taken from the OpenGL driver
+   /* set viewport for aspect ratio, taken from the OpenGL driver. */
    if (vg->mKeepAspect)
    {
       global_t *global     = global_get_ptr();
       float desired_aspect = global->system.aspect_ratio;
 
-      // If the aspect ratios of screen and desired aspect ratio are sufficiently equal (floating point stuff),
-      // assume they are actually equal.
+      /* If the aspect ratios of screen and desired aspect ratio 
+       * are sufficiently equal (floating point stuff),
+       * assume they are actually equal. */
       if (fabs(vg->mScreenAspect - desired_aspect) < 0.0001)
       {
          vg->x1 = 0;
@@ -337,7 +338,8 @@ static void vg_calculate_quad(vg_t *vg)
    vgSetiv(VG_SCISSOR_RECTS, 4, vg->scissor);
 }
 
-static void vg_copy_frame(void *data, const void *frame, unsigned width, unsigned height, unsigned pitch)
+static void vg_copy_frame(void *data, const void *frame,
+      unsigned width, unsigned height, unsigned pitch)
 {
    vg_t *vg = (vg_t*)data;
 
@@ -367,7 +369,8 @@ static void vg_copy_frame(void *data, const void *frame, unsigned width, unsigne
    }
 }
 
-static bool vg_frame(void *data, const void *frame, unsigned width, unsigned height, unsigned pitch, const char *msg)
+static bool vg_frame(void *data, const void *frame,
+      unsigned width, unsigned height, unsigned pitch, const char *msg)
 {
    vg_t                    *vg = (vg_t*)data;
 
