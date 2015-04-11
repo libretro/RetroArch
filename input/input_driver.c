@@ -258,31 +258,32 @@ void input_driver_poll(void)
 
 const rarch_joypad_driver_t * input_driver_get_joypad_driver(void)
 {
-   driver_t *driver               = driver_get_ptr();
+   driver_t            *driver = driver_get_ptr();
+   const input_driver_t *input = input_get_ptr(driver);
 
-   if (driver
-         && driver->input
-         && driver->input->get_joypad_driver)
-      return driver->input->get_joypad_driver(driver->input_data);
+   if (input->get_joypad_driver)
+      return input->get_joypad_driver(driver->input_data);
    return NULL;
 }
 
 uint64_t input_driver_get_capabilities(void)
 {
-   driver_t *driver               = driver_get_ptr();
+   driver_t            *driver = driver_get_ptr();
+   const input_driver_t *input = input_get_ptr(driver);
 
-   if (driver && driver->input)
-      return driver->input->get_capabilities(driver->input_data);
+   if (input->get_capabilities)
+      return input->get_capabilities(driver->input_data);
    return 0; 
 }
 
 bool input_driver_grab_mouse(bool state)
 {
-   driver_t *driver               = driver_get_ptr();
+   driver_t            *driver = driver_get_ptr();
+   const input_driver_t *input = input_get_ptr(driver);
 
-   if (driver && driver->input)
+   if (input->grab_mouse)
    {
-      driver->input->grab_mouse(driver->input_data, state);
+      input->grab_mouse(driver->input_data, state);
       return true;
    }
    return false;
