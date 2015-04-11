@@ -94,7 +94,7 @@ int database_info_write_rdl_iterate(database_info_rdl_handle_t *dbl)
    char parent_dir[PATH_MAX_LENGTH];
    const char *name = NULL;
 
-   if (!dbl)
+   if (!dbl || !dbl->list)
       return -1;
    if (dbl->blocking)
       return 1;
