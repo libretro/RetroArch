@@ -24,6 +24,7 @@
 #include "../video_viewport.h"
 #include "../video_monitor.h"
 #include "../../runloop.h"
+#include "../../dynamic.h"
 #include "render_chain_driver.h"
 
 #include "../common/win32_common.h"
