@@ -673,6 +673,7 @@ static void rarch_main_data_rdl_iterate(void)
 }
 #endif
 
+
 static void rarch_main_data_nbio_image_iterate(bool is_thread,
       data_runloop_t *runloop)
 {
@@ -686,18 +687,9 @@ static void rarch_main_data_nbio_image_iterate(bool is_thread,
 
    switch (image->status)
    {
-      case NBIO_IMAGE_STATUS_PROCESS_TRANSFER_PARSE:
-         rarch_main_data_image_iterate_process_transfer_parse(nbio);
-         if (image->is_finished)
-            image->status = NBIO_IMAGE_STATUS_TRANSFER_PARSE_FREE;
-         break;
       case NBIO_IMAGE_STATUS_PROCESS_TRANSFER:
          if (rarch_main_data_image_iterate_process_transfer(nbio) == -1)
             image->status = NBIO_IMAGE_STATUS_PROCESS_TRANSFER_PARSE;
-         break;
-      case NBIO_IMAGE_STATUS_TRANSFER_PARSE_FREE:
-         rarch_main_data_image_iterate_parse_free(nbio);
-         image->status = NBIO_IMAGE_STATUS_POLL;
          break;
       case NBIO_IMAGE_STATUS_TRANSFER_PARSE:
          rarch_main_data_image_iterate_transfer_parse(nbio);
@@ -887,6 +879,7 @@ static void data_runloop_iterate(bool is_thread, data_runloop_t *runloop)
 {
    nbio_handle_t          *nbio = runloop ? &runloop->nbio : NULL;
    rarch_main_data_nbio_iterate(is_thread, nbio);
+   rarch_main_data_nbio_image_iterate(is_thread, runloop);
 #ifdef HAVE_NETWORKING
    rarch_main_data_http_iterate(is_thread, &runloop->http);
 #endif
@@ -955,6 +948,30 @@ error:
 }
 #endif
 
+static void rarch_main_data_nbio_image_upload_iterate(bool is_thread,
+      data_runloop_t *runloop)
+{
+   nbio_handle_t         *nbio  = runloop ? &runloop->nbio : NULL;
+   nbio_image_handle_t   *image = nbio    ? &nbio->image   : NULL;
+
+   if (!image || !nbio)
+      return;
+
+   (void)is_thread;
+
+   switch (image->status)
+   {
+      case NBIO_IMAGE_STATUS_PROCESS_TRANSFER_PARSE:
+         rarch_main_data_image_iterate_process_transfer_parse(nbio);
+         if (image->is_finished)
+            image->status = NBIO_IMAGE_STATUS_TRANSFER_PARSE_FREE;
+         break;
+      case NBIO_IMAGE_STATUS_TRANSFER_PARSE_FREE:
+         rarch_main_data_image_iterate_parse_free(nbio);
+         image->status = NBIO_IMAGE_STATUS_POLL;
+         break;
+   }
+}
 
 void rarch_main_data_iterate(void)
 {
@@ -981,7 +998,7 @@ void rarch_main_data_iterate(void)
 #ifdef HAVE_OVERLAY
    rarch_main_data_overlay_iterate(false, data_runloop);
 #endif
-   rarch_main_data_nbio_image_iterate(false, data_runloop);
+   rarch_main_data_nbio_image_upload_iterate(false, data_runloop);
 
 #ifdef HAVE_THREADS
    if (settings->menu.threaded_data_runloop_enable && data_runloop->alive)
