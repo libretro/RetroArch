@@ -481,13 +481,10 @@ void init_video(void)
          unsigned base_width = roundf(geom->base_height *
                global->system.aspect_ratio);
          width  = roundf(base_width * settings->video.scale);
-         height = roundf(geom->base_height * settings->video.scale);
       }
       else
-      {
          width  = roundf(geom->base_width   * settings->video.scale);
-         height = roundf(geom->base_height * settings->video.scale);
-      }
+      height = roundf(geom->base_height * settings->video.scale);
    }
 
    if (width && height)
