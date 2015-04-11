@@ -568,9 +568,7 @@ void init_video(void)
    video_driver_set_rotation(
             (settings->video.rotation + global->system.rotation) % 4);
 
-   if (driver->video->suppress_screensaver)
-      driver->video->suppress_screensaver(driver->video_data,
-            settings->ui.suspend_screensaver_enable);
+   video_driver_suppress_screensaver(settings->ui.suspend_screensaver_enable);
 
    if (!driver->input)
       init_video_input(tmp);
@@ -588,6 +586,14 @@ void init_video(void)
 #if defined(PSP)
    video_driver_set_texture_frame(&dummy_pixels, false, 1, 1, 1.0f);
 #endif
+}
+
+bool video_driver_suppress_screensaver(bool enable)
+{
+   driver_t            *driver = driver_get_ptr();
+   const video_driver_t *video = video_driver_ctx_get_ptr();
+
+   return video->suppress_screensaver(driver->video_data, enable);
 }
 
 bool video_driver_has_windowed(void)
