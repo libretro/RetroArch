@@ -1679,7 +1679,7 @@ bool config_load_override(void)
       RARCH_WARN("No config directory set under Settings > Path and retroarch.cfg not found.\n");
       return false;
    }
-     
+
    RARCH_LOG("Config directory: %s\n", config_directory);
 
    core_name = global->system.info.library_name;
@@ -1705,8 +1705,8 @@ bool config_load_override(void)
       if (settings->core_specific_config)
       {
          RARCH_LOG("Can't use overrides in conjunction with per-core configs, disabling overrides\n");
-		 return false;
-	  }
+         return false;
+      }
       RARCH_LOG("Core-specific overrides found at %s. Appending.\n", core_path);
       strlcpy(global->append_config_path, core_path, sizeof(global->append_config_path));
       should_append = true;
@@ -1725,11 +1725,11 @@ bool config_load_override(void)
       RARCH_LOG("Game-specific overrides found at %s. Appending.\n", game_path);
       if (should_append)
       {
-          strlcat(global->append_config_path, "|", sizeof(global->append_config_path));
-          strlcat(global->append_config_path, game_path, sizeof(global->append_config_path));
+         strlcat(global->append_config_path, "|", sizeof(global->append_config_path));
+         strlcat(global->append_config_path, game_path, sizeof(global->append_config_path));
       }
       else
-          strlcpy(global->append_config_path, game_path, sizeof(global->append_config_path));
+         strlcpy(global->append_config_path, game_path, sizeof(global->append_config_path));
 
       should_append = true;
    }
@@ -1739,29 +1739,31 @@ bool config_load_override(void)
    // Re-load the configuration with any overrides that might have been found
    if (should_append)
    {
-	   
+
       if (settings->core_specific_config)
       {
          RARCH_WARN("Can't use overrides in conjunction with per-core configs, disabling overrides\n");
-		 return false;
-	  }
+         return false;
+      }
 
+#ifdef HAVE_NETPLAY
       if (global->netplay_enable)
       {
          RARCH_WARN("Can't use overrides in conjunction with netplay, disabling overrides\n");
-		 return false;
-	  }   	   
-	   
-	  char buf[PATH_MAX_LENGTH];
-	  //Store the libretro_path we're using since it will be overwritten by the override when reloading
-	  strlcpy(buf,settings->libretro,sizeof(buf));
+         return false;
+      }   	   
+#endif
+
+      char buf[PATH_MAX_LENGTH];
+      //Store the libretro_path we're using since it will be overwritten by the override when reloading
+      strlcpy(buf,settings->libretro,sizeof(buf));
       if (config_load_file(global->config_path, false))
-	  {		  
-		  //Restore the libretro_path we're using since it will be overwritten by the override when reloading
-		  strlcpy(settings->libretro,buf,sizeof(settings->libretro));
-		  rarch_main_msg_queue_push("Configuration override loaded", 1, 100, true);
-          return true;
-	  }
+      {		  
+         //Restore the libretro_path we're using since it will be overwritten by the override when reloading
+         strlcpy(settings->libretro,buf,sizeof(settings->libretro));
+         rarch_main_msg_queue_push("Configuration override loaded", 1, 100, true);
+         return true;
+      }
    }
 
    return false;
