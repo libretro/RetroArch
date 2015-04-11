@@ -86,6 +86,13 @@ static const audio_driver_t *audio_drivers[] = {
    NULL,
 };
 
+static const audio_driver_t * audio_get_ptr(const driver_t *driver)
+{
+   if (driver->audio)
+      return driver->audio;
+   return NULL;
+}
+
 /**
  * compute_audio_buffer_statistics:
  *
@@ -464,8 +471,10 @@ bool audio_driver_mute_toggle(void)
 static int audio_driver_write_avail(void)
 {
    driver_t *driver     = driver_get_ptr();
-   if (driver && driver->audio)
-      return driver->audio->write_avail(driver->audio_data);
+   const audio_driver_t *audio = audio_get_ptr(driver);
+
+   if (audio->write_avail)
+      return audio->write_avail(driver->audio_data);
    return 0;
 }
 
@@ -504,28 +513,29 @@ void audio_driver_readjust_input_rate(void)
 bool audio_driver_alive(void)
 {
    driver_t *driver     = driver_get_ptr();
-   if (driver && driver->audio)
-      return driver->audio->alive(driver->audio_data);
-   return false;
+   const audio_driver_t *audio = audio_get_ptr(driver);
+
+   return audio->alive(driver->audio_data);
 }
+
 
 bool audio_driver_start(void)
 {
-   driver_t *driver     = driver_get_ptr();
-   if (driver
-         && driver->audio
-         && driver->audio->start)
-      return driver->audio->start(driver->audio_data);
+   driver_t *driver      = driver_get_ptr();
+   const audio_driver_t *audio = audio_get_ptr(driver);
+
+   if (audio->start)
+      return audio->start(driver->audio_data);
    return false;
 }
 
 bool audio_driver_stop(void)
 {
-   driver_t *driver     = driver_get_ptr();
-   if (driver
-         && driver->audio
-         && driver->audio->stop)
-      return driver->audio->stop(driver->audio_data);
+   driver_t *driver      = driver_get_ptr();
+   const audio_driver_t *audio = audio_get_ptr(driver);
+
+   if (audio->stop)
+      return audio->stop(driver->audio_data);
    return false;
 }
 
@@ -538,8 +548,8 @@ void audio_driver_set_nonblock_state(bool toggle)
 
 ssize_t audio_driver_write(const void *buf, size_t size)
 {
-   driver_t *driver     = driver_get_ptr();
-   if (driver && driver->audio)
-      return driver->audio->write(driver->audio_data, buf, size);
-   return 0;
+   driver_t *driver      = driver_get_ptr();
+   const audio_driver_t *audio = audio_get_ptr(driver);
+
+   return audio->write(driver->audio_data, buf, size);
 }
