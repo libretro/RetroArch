@@ -1679,6 +1679,7 @@ bool config_load_override(void)
       RARCH_WARN("No config directory set under Settings > Path and retroarch.cfg not found.\n");
       return false;
    }
+     
    RARCH_LOG("Config directory: %s\n", config_directory);
 
    core_name = global->system.info.library_name;
@@ -1721,18 +1722,6 @@ bool config_load_override(void)
    // If a game override exists, add it's location to append_config_path
    if (new_conf)
    {
-      if (settings->core_specific_config)
-      {
-         RARCH_WARN("Can't use overrides in conjunction with per-core configs, disabling overrides\n");
-		 return false;
-	  }
-
-      if (global->netplay_enable)
-      {
-         RARCH_WARN("Can't use overrides in conjunction with netplay, disabling overrides\n");
-		 return false;
-	  }
-  
       RARCH_LOG("Game-specific overrides found at %s. Appending.\n", game_path);
       if (should_append)
       {
@@ -1750,6 +1739,19 @@ bool config_load_override(void)
    // Re-load the configuration with any overrides that might have been found
    if (should_append)
    {
+	   
+      if (settings->core_specific_config)
+      {
+         RARCH_WARN("Can't use overrides in conjunction with per-core configs, disabling overrides\n");
+		 return false;
+	  }
+
+      if (global->netplay_enable)
+      {
+         RARCH_WARN("Can't use overrides in conjunction with netplay, disabling overrides\n");
+		 return false;
+	  }   	   
+	   
 	  char buf[PATH_MAX_LENGTH];
 	  //Store the libretro_path we're using since it will be overwritten by the override when reloading
 	  strlcpy(buf,settings->libretro,sizeof(buf));
