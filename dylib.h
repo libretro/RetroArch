@@ -79,5 +79,9 @@ void dylib_close(dylib_t lib);
 function_t dylib_proc(dylib_t lib, const char *proc);
 #endif
 
+#ifdef __cplusplus
+}
+#endif
+
 
 #endif
