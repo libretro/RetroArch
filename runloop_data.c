@@ -647,7 +647,8 @@ static int rarch_main_data_nbio_iterate_parse(nbio_handle_t *nbio)
 }
 
 #ifdef HAVE_MENU
-static void rarch_main_data_db_iterate(void)
+static void rarch_main_data_db_iterate(bool is_thread,
+      data_runloop_t *runloop)
 {
    driver_t *driver = driver_get_ptr();
 
@@ -710,8 +711,9 @@ static void rarch_main_data_nbio_image_iterate(bool is_thread,
    }
 }
 
-static void rarch_main_data_nbio_iterate(bool is_thread, nbio_handle_t *nbio)
+static void rarch_main_data_nbio_iterate(bool is_thread, data_runloop_t *runloop)
 {
+   nbio_handle_t          *nbio = runloop ? &runloop->nbio : NULL;
    if (!nbio)
       return;
 
@@ -738,8 +740,9 @@ static void rarch_main_data_nbio_iterate(bool is_thread, nbio_handle_t *nbio)
 }
 
 #ifdef HAVE_NETWORKING
-static void rarch_main_data_http_iterate(bool is_thread, http_handle_t *http)
+static void rarch_main_data_http_iterate(bool is_thread, data_runloop_t *runloop)
 {
+   http_handle_t *http = runloop ? &runloop->http : NULL;
    if (!http)
       return;
 
@@ -866,14 +869,13 @@ void rarch_main_data_free(void)
 
 static void data_runloop_iterate(bool is_thread, data_runloop_t *runloop)
 {
-   nbio_handle_t          *nbio = runloop ? &runloop->nbio : NULL;
-   rarch_main_data_nbio_iterate(is_thread, nbio);
-   rarch_main_data_nbio_image_iterate(is_thread, runloop);
+   rarch_main_data_nbio_iterate       (is_thread, runloop);
+   rarch_main_data_nbio_image_iterate (is_thread, runloop);
 #ifdef HAVE_NETWORKING
-   rarch_main_data_http_iterate(is_thread, &runloop->http);
+   rarch_main_data_http_iterate       (is_thread, runloop);
 #endif
 #ifdef HAVE_MENU
-   rarch_main_data_db_iterate();
+   rarch_main_data_db_iterate         (is_thread, runloop);
 #endif
 }
 
