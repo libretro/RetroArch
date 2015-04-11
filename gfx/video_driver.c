@@ -230,6 +230,14 @@ static const video_poke_interface_t *video_driver_get_poke_ptr(void)
    return driver->video_poke;
 }
 
+static const video_driver_t *video_driver_ctx_get_ptr(void)
+{
+   driver_t *driver = driver_get_ptr();
+   if (!driver)
+      return NULL;
+   return driver->video;
+}
+
 /**
  * video_driver_get_current_framebuffer:
  *
@@ -263,18 +271,17 @@ retro_proc_address_t video_driver_get_proc_address(const char *sym)
 bool video_driver_is_alive(void)
 {
    driver_t *driver = driver_get_ptr();
-   /* Possible race issue, return true */
-   if (driver->video && driver->video_data)
-      return driver->video->alive(driver->video_data);
-   return false;
+   const video_driver_t *video = video_driver_ctx_get_ptr();
+
+   return video->alive(driver->video_data);
 }
 
 bool video_driver_has_focus(void)
 {
    driver_t *driver = driver_get_ptr();
-   if (driver->video && driver->video_data)
-      return driver->video->focus(driver->video_data);
-   return false;
+   const video_driver_t *video = video_driver_ctx_get_ptr();
+
+   return video->focus(driver->video_data);
 }
 
 bool video_driver_set_shader(enum rarch_shader_type type,
@@ -585,28 +592,29 @@ void init_video(void)
 
 bool video_driver_has_windowed(void)
 {
-   driver_t *driver     = driver_get_ptr();
+   driver_t            *driver = driver_get_ptr();
+   const video_driver_t *video = video_driver_ctx_get_ptr();
 
-   if (!driver || !driver->video)
-      return false;
-   return driver->video->has_windowed(driver->video_data);
+   return video->has_windowed(driver->video_data);
 }
 
 void video_driver_set_nonblock_state(bool toggle)
 {
-   driver_t *driver     = driver_get_ptr();
+   driver_t              *driver = driver_get_ptr();
+   const video_driver_t  *video  = video_driver_ctx_get_ptr();
 
-   if (driver && driver->video)
-      driver->video->set_nonblock_state(driver->video_data, toggle);
+   if (video->set_nonblock_state)
+      video->set_nonblock_state(driver->video_data, toggle);
 }
 
 bool video_driver_set_rotation(unsigned rotation)
 {
-   driver_t *driver     = driver_get_ptr();
+   driver_t                   *driver = driver_get_ptr();
+   const video_driver_t        *video = video_driver_ctx_get_ptr();
 
-   if (driver && driver->video)
+   if (video->set_rotation)
    {
-      driver->video->set_rotation(driver->video_data, rotation);
+      video->set_rotation(driver->video_data, rotation);
       return true;
    }
    return false;
@@ -692,14 +700,12 @@ void video_driver_set_texture_frame(const void *frame, bool rgb32,
 
 bool video_driver_viewport_info(struct video_viewport *vp)
 {
-   driver_t *driver     = driver_get_ptr();
+   driver_t            *driver = driver_get_ptr();
+   const video_driver_t *video = video_driver_ctx_get_ptr();
 
-   if (driver
-         && driver->video_data 
-         && driver->video
-         && driver->video->viewport_info)
+   if (video->viewport_info)
    {
-      driver->video->viewport_info(driver->video_data, vp);
+      video->viewport_info(driver->video_data, vp);
       return true;
    }
    return false;
@@ -707,35 +713,32 @@ bool video_driver_viewport_info(struct video_viewport *vp)
 
 bool video_driver_read_viewport(uint8_t *buffer)
 {
-   driver_t *driver     = driver_get_ptr();
+   driver_t            *driver = driver_get_ptr();
+   const video_driver_t *video = video_driver_ctx_get_ptr();
 
-   if (driver
-         && driver->video
-         && driver->video->read_viewport)
-      return driver->video->read_viewport(driver->video_data,
+   if (video->read_viewport)
+      return video->read_viewport(driver->video_data,
             buffer);
    return false;
 }
 
 bool video_driver_focus(void)
 {
-   driver_t *driver     = driver_get_ptr();
+   driver_t            *driver = driver_get_ptr();
+   const video_driver_t *video = video_driver_ctx_get_ptr();
 
-   if (driver && driver->video)
-      return driver->video->focus(driver->video_data);
-   return false;
+   return video->focus(driver->video_data);
 }
 
 #ifdef HAVE_OVERLAY
 bool video_driver_overlay_interface(const video_overlay_interface_t **iface)
 {
-   driver_t *driver     = driver_get_ptr();
+   driver_t            *driver = driver_get_ptr();
+   const video_driver_t *video = video_driver_ctx_get_ptr();
 
-   if (driver 
-         && driver->video 
-         && driver->video->overlay_interface)
+   if (video->overlay_interface)
    {
-      driver->video->overlay_interface(driver->video_data, iface);
+      video->overlay_interface(driver->video_data, iface);
       return true;
    }
    return false;
@@ -745,12 +748,11 @@ bool video_driver_overlay_interface(const video_overlay_interface_t **iface)
 void * video_driver_read_frame_raw(unsigned *width,
    unsigned *height, size_t *pitch)
 {
-   driver_t *driver     = driver_get_ptr();
+   driver_t            *driver = driver_get_ptr();
+   const video_driver_t *video = video_driver_ctx_get_ptr();
 
-   if (driver 
-         && driver->video
-         && driver->video->read_frame_raw)
-      return driver->video->read_frame_raw(driver->video_data, width,
+   if (video->read_frame_raw)
+      return video->read_frame_raw(driver->video_data, width,
             height, pitch);
    return NULL;
 }
@@ -794,11 +796,12 @@ void video_driver_get_video_output_prev(void)
 bool video_driver_frame(const void *frame, unsigned width,
          unsigned height, unsigned pitch, const char *msg)
 {
-   driver_t *driver     = driver_get_ptr();
-   runloop_t *runloop   = rarch_main_get_ptr();
-   if (driver && driver->video
-         && driver->video->frame(driver->video_data,
-            frame, width, height, pitch, msg))
+   driver_t            *driver = driver_get_ptr();
+   const video_driver_t *video = video_driver_ctx_get_ptr();
+   runloop_t          *runloop = rarch_main_get_ptr();
+
+   if (video->frame(driver->video_data, frame,
+            width, height, pitch, msg))
    {
       runloop->frames.video.count++;
       return true;
