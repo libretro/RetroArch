@@ -100,21 +100,19 @@ static struct {
    const DISC_INTERFACE *interface;
    const char *name;
 } gx_devices[GX_DEVICE_END];
-static mutex_t gx_device_mutex;
-static mutex_t gx_device_cond_mutex;
-static cond_t gx_device_cond;
+
+static slock_t *gx_device_mutex;
+static slock_t *gx_device_cond_mutex;
+static scond_t *gx_device_cond;
 
 static void *gx_devthread(void *a)
 {
-   struct timespec timeout = {0};
-
-   timeout.tv_sec = 1;
-   timeout.tv_nsec = 0;
-
    while (1)
    {
-      LWP_MutexLock(gx_device_mutex);
       unsigned i;
+
+      slock_lock(gx_device_mutex);
+
       for (i = 0; i < GX_DEVICE_END; i++)
       {
          if (gx_devices[i].mounted && 
@@ -126,10 +124,12 @@ static void *gx_devthread(void *a)
             fatUnmount(n);
          }
       }
-      LWP_MutexUnlock(gx_device_mutex);
-      LWP_MutexLock(gx_device_cond_mutex);
-      LWP_CondTimedWait(gx_device_cond, gx_device_cond_mutex, &timeout);
-      LWP_MutexUnlock(gx_device_cond_mutex);
+
+      slock_unlock(gx_device_mutex);
+
+      slock_lock(gx_device_cond_mutex);
+      scond_wait_timeout(gx_device_cond, gx_device_cond_mutex, 1000000);
+      slock_unlock(gx_device_cond_mutex);
    }
 
    return NULL;
@@ -305,9 +305,9 @@ static void frontend_gx_init(void *data)
             gx_devices[GX_DEVICE_USB].name,
             gx_devices[GX_DEVICE_USB].interface);
 
-   OSInitMutex(&gx_device_cond_mutex);
-   OSInitCond(&gx_device_cond);
-   OSInitMutex(&gx_device_mutex);
+   gx_device_cond_mutex = slock_new();
+   gx_device_cond       = scond_new();
+   gx_device_mutex      = slock_new();
    OSCreateThread(&gx_device_thread, gx_devthread, 0, NULL, NULL, 0, 66, 0);
 #endif
 }

@@ -349,14 +349,14 @@ int menu_entries_parse_list(
    }
 
 #if defined(GEKKO) && defined(HW_RVL)
-   LWP_MutexLock(gx_device_mutex);
+   slock_lock(gx_device_mutex);
    device = gx_get_device_from_path(dir);
 
    if (device != -1 && !gx_devices[device].mounted &&
          gx_devices[device].interface->isInserted())
       fatMountSimple(gx_devices[device].name, gx_devices[device].interface);
 
-   LWP_MutexUnlock(gx_device_mutex);
+   slock_unlock(gx_device_mutex);
 #endif
 
    path_is_compressed = path_is_compressed_file(dir);
