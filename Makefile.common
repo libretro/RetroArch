@@ -94,6 +94,8 @@ endif
 OBJ += frontend/frontend.o \
 		frontend/frontend_driver.o \
 		frontend/drivers/platform_null.o \
+		ui/ui_companion_driver.o \
+		ui/drivers/ui_null.o \
 		libretro_version_1.o \
 		retroarch.o \
 		runloop.o \
