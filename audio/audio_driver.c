@@ -409,7 +409,9 @@ void init_audio(void)
    if (!global->system.audio_callback.callback && driver->audio_active &&
          settings->audio.rate_control)
    {
-      if (driver->audio->buffer_size && driver->audio->write_avail)
+      /* Audio rate control requires write_avail
+       * and buffer_size to be implemented. */
+      if (driver->audio->buffer_size)
       {
          global->audio_data.driver_buffer_size = 
             driver->audio->buffer_size(driver->audio_data);
@@ -473,9 +475,7 @@ static int audio_driver_write_avail(void)
    driver_t *driver     = driver_get_ptr();
    const audio_driver_t *audio = audio_get_ptr(driver);
 
-   if (audio->write_avail)
-      return audio->write_avail(driver->audio_data);
-   return 0;
+   return audio->write_avail(driver->audio_data);
 }
 
 /*

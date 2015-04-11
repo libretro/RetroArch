@@ -233,6 +233,7 @@ static bool sdl_audio_use_float(void *data)
 
 static size_t sdl_audio_write_avail(void *data)
 {
+   /* stub */
    (void)data;
    return 0;
 }

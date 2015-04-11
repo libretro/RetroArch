@@ -204,6 +204,13 @@ static bool ctr_audio_use_float(void *data)
    return false;
 }
 
+static size_t ctr_audio_write_avail(void *data)
+{
+   /* stub */
+   (void)data;
+   return 0;
+}
+
 audio_driver_t audio_ctr = {
    ctr_audio_init,
    ctr_audio_write,
@@ -214,6 +221,6 @@ audio_driver_t audio_ctr = {
    ctr_audio_free,
    ctr_audio_use_float,
    "ctr",
-   NULL,
+   ctr_audio_write_avail,
    NULL
 };
