@@ -28,7 +28,6 @@ extern "C" {
 enum runloop_data_type
 {
    DATA_TYPE_NONE = 0,
-   DATA_TYPE_MSG,
    DATA_TYPE_FILE,
    DATA_TYPE_IMAGE,
    DATA_TYPE_HTTP,
