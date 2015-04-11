@@ -646,11 +646,11 @@ static int rarch_main_data_nbio_iterate_parse(nbio_handle_t *nbio)
 }
 
 #ifdef HAVE_MENU
-static void rarch_main_data_rdl_iterate(void)
+static void rarch_main_data_db_iterate(void)
 {
    driver_t *driver = driver_get_ptr();
 
-   if (!driver->menu->rdl)
+   if (!driver || !driver->menu || !driver->menu->rdl)
       return;
 
    if (driver->menu->rdl->blocking)
@@ -769,15 +769,6 @@ static void rarch_main_data_http_iterate(bool is_thread, http_handle_t *http)
 }
 #endif
 
-static void rarch_main_data_db_iterate(void)
-{
-   driver_t *driver = driver_get_ptr();
-#ifdef HAVE_MENU
-   if (driver && driver->menu && driver->menu->rdl)
-      rarch_main_data_rdl_iterate();
-#endif
-}
-
 #ifdef HAVE_OVERLAY
 static void rarch_main_data_overlay_iterate(bool is_thread, data_runloop_t *runloop)
 {
@@ -883,7 +874,9 @@ static void data_runloop_iterate(bool is_thread, data_runloop_t *runloop)
 #ifdef HAVE_NETWORKING
    rarch_main_data_http_iterate(is_thread, &runloop->http);
 #endif
+#ifdef HAVE_MENU
    rarch_main_data_db_iterate();
+#endif
 }
 
 #ifdef HAVE_THREADS
