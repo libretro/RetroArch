@@ -410,15 +410,17 @@ void uninit_video_input(void)
 void init_video(void)
 {
    unsigned max_dim, scale, width, height;
-   video_viewport_t *custom_vp = NULL;
-   const input_driver_t *tmp = NULL;
+   video_viewport_t *custom_vp      = NULL;
+   const input_driver_t *tmp        = NULL;
    const struct retro_game_geometry *geom = NULL;
-   video_info_t video = {0};
+   video_info_t video               = {0};
    static uint16_t dummy_pixels[32] = {0};
-   runloop_t *runloop   = rarch_main_get_ptr();
-   driver_t *driver     = driver_get_ptr();
-   global_t *global     = global_get_ptr();
-   settings_t *settings = config_get_ptr();
+   runloop_t *runloop               = rarch_main_get_ptr();
+   driver_t *driver                 = driver_get_ptr();
+   global_t *global                 = global_get_ptr();
+   settings_t *settings             = config_get_ptr();
+
+   runloop->frames.video.count      = 0;
 
    init_video_filter(global->system.pix_fmt);
    rarch_main_command(RARCH_CMD_SHADER_DIR_INIT);

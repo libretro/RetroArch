@@ -362,11 +362,6 @@ void init_drivers(int flags)
 
    if (flags & DRIVER_VIDEO)
    {
-      runloop_t *runloop = rarch_main_get_ptr();
-      global_t *global   = global_get_ptr();
-
-      runloop->frames.video.count = 0;
-
       init_video();
 
       if (!driver->video_cache_context_ack
