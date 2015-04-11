@@ -55,6 +55,9 @@ bool init_video_pixel_converter(unsigned size)
 
    driver->scaler_out = calloc(sizeof(uint16_t), size * size);
 
+   if (!driver->scaler_out)
+      return false;
+
    return true;
 }
 
