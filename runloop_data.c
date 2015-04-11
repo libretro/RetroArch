@@ -99,6 +99,12 @@ typedef struct nbio_handle
    unsigned status;
 } nbio_handle_t;
 
+typedef struct db_handle
+{
+   msg_queue_t *msg_queue;
+   unsigned status;
+} db_handle_t;
+
 enum
 {
    THREAD_CODE_INIT = 0,
@@ -112,12 +118,8 @@ typedef struct data_runloop
    http_handle_t http;
 #endif
 
-#if 0
 #ifdef HAVE_LIBRETRODB
-   struct
-   {
-   } db;
-#endif
+   db_handle_t db;
 #endif
 
    nbio_handle_t nbio;
@@ -1038,6 +1040,10 @@ void rarch_main_data_init_queues(void)
       rarch_assert(data_runloop->nbio.msg_queue = msg_queue_new(8));
    if (!data_runloop->nbio.image.msg_queue)
       rarch_assert(data_runloop->nbio.image.msg_queue = msg_queue_new(8));
+#ifdef HAVE_LIBRETRODB
+   if (!data_runloop->db.msg_queue)
+      rarch_assert(data_runloop->db.msg_queue = msg_queue_new(8));
+#endif
 }
 
 void rarch_main_data_msg_queue_push(unsigned type,
