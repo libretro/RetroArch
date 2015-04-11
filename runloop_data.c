@@ -977,7 +977,6 @@ void rarch_main_data_iterate(void)
 {
    data_runloop_t *data_runloop = (data_runloop_t*)rarch_main_data_get_ptr();
    settings_t     *settings     = config_get_ptr();
-   nbio_handle_t          *nbio = data_runloop ? &data_runloop->nbio : NULL;
    
    (void)settings;
 #ifdef HAVE_THREADS
