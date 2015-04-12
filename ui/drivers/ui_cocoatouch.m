@@ -53,6 +53,16 @@ static void ui_companion_cocoatouch_notify_content_loaded(void *data)
       [ap showGameView];
 }
 
+static void ui_companion_cocoatouch_toggle(void *data)
+{
+   RetroArch_iOS *ap   = (RetroArch_iOS *)apple_platform;
+
+   (void)data;
+
+   if (ap)
+      [ap toggleUI];
+}
+
 static int ui_companion_cocoatouch_iterate(void *data, unsigned action)
 {
    (void)data;
@@ -84,7 +94,7 @@ const ui_companion_driver_t ui_companion_cocoatouch = {
    ui_companion_cocoatouch_init,
    ui_companion_cocoatouch_deinit,
    ui_companion_cocoatouch_iterate,
-   NULL,
+   ui_companion_cocoatouch_toggle,
    ui_companion_cocoatouch_notify_content_loaded,
    "cocoatouch",
 };

@@ -43,6 +43,7 @@ const void* apple_get_frontend_settings(void);
 + (RetroArch_iOS*)get;
 
 - (void)showGameView;
+- (void)toggleUI;
 
 - (void)loadingCore:(NSString*)core withFile:(const char*)file;
 - (void)unloadingCore;

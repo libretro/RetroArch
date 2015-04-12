@@ -362,16 +362,19 @@ enum
    [[UIApplication sharedApplication] setIdleTimerDisabled:true];
    [self.window setRootViewController:[RAGameView get]];
 
-   runloop->is_paused = false;
-   runloop->is_idle = false;
+   runloop->is_paused                     = false;
+   runloop->is_idle                       = false;
+   runloop->ui_companion_is_on_foreground = false;
 }
 
 - (IBAction)showPauseMenu:(id)sender
 {
    runloop_t *runloop = rarch_main_get_ptr();
 
-   runloop->is_paused = true;
-   runloop->is_idle   = true;
+   runloop->is_paused                     = true;
+   runloop->is_idle                       = true;
+   runloop->ui_companion_is_on_foreground = true;
+
    [[UIApplication sharedApplication] setStatusBarHidden:false withAnimation:UIStatusBarAnimationNone];
    [[UIApplication sharedApplication] setIdleTimerDisabled:false];
    [self.window setRootViewController:self];
@@ -383,6 +386,20 @@ enum
 
    [self refreshSystemConfig];
    [self showGameView];
+}
+
+- (void)toggleUI
+{
+   runloop_t *runloop = rarch_main_get_ptr();
+
+   if (runloop->ui_companion_is_on_foreground)
+   {
+      [self showGameView];
+   }
+   else
+   {
+      [self showPauseMenu:self];
+   }
 }
 
 - (void)unloadingCore
