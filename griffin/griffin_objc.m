@@ -14,6 +14,7 @@
 #include "../apple/iOS/platform.m"
 #include "../apple/iOS/menu.m"
 #include "../apple/iOS/browser.m"
+//#include "../ui/drivers/ui_cocoatouch.m"
 #else
 #include "../apple/OSX/platform.m"
 #include "../apple/OSX/settings.m"
