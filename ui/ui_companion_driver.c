@@ -57,15 +57,11 @@ const ui_companion_driver_t *ui_companion_find_driver(const char *ident)
 const ui_companion_driver_t *ui_companion_init_first(void)
 {
    unsigned i;
-   const ui_companion_driver_t *ui_companion = NULL;
 
    for (i = 0; ui_companion_drivers[i]; i++)
-   {
-      ui_companion = ui_companion_drivers[i];
-      break;
-   }
+      return ui_companion_drivers[i];
 
-   return ui_companion;
+   return NULL;
 }
 
 const ui_companion_driver_t *ui_companion_get_ptr(void)

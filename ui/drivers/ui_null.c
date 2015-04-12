@@ -16,19 +16,33 @@
 #include <stdint.h>
 #include <boolean.h>
 #include <stddef.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include <file/file_path.h>
 #include "../ui_companion_driver.h"
 
+typedef struct ui_companion_null
+{
+   void *empty;
+} ui_companion_null_t;
+
 static void ui_companion_null_deinit(void *data)
 {
-   (void)data;
+   ui_companion_null_t *handle = (ui_companion_null_t*)data;
+
+   if (handle)
+      free(handle);
 }
 
-static void ui_companion_null_init(void *data)
+static void *ui_companion_null_init(void)
 {
-   (void)data;
+   ui_companion_null_t *handle = (ui_companion_null_t*)calloc(1, sizeof(*handle));
+
+   if (!handle)
+      return NULL;
+
+   return handle;
 }
 
 const ui_companion_driver_t ui_companion_null = {

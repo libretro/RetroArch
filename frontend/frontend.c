@@ -91,6 +91,7 @@ void main_exit(args_type() args)
    settings_t *settings                  = config_get_ptr();
    global_t   *global                    = global_get_ptr();
    const frontend_ctx_driver_t *frontend = frontend_get_ptr();
+   const ui_companion_driver_t *ui       = ui_companion_get_ptr();
 
    global->system.shutdown         = false;
 
@@ -122,6 +123,12 @@ void main_exit(args_type() args)
    }
 
    rarch_main_free();
+
+   if (ui)
+   {
+      if (ui->deinit)
+         ui->deinit(driver->ui_companion_data);
+   }
 
    if (frontend)
    {
@@ -332,6 +339,9 @@ returntype main_entry(signature())
                settings->libretro,
                &global->system.info);
    }
+
+   if (driver)
+      driver->ui_companion = (ui_companion_driver_t*)ui_companion_init_first();
 
 #if defined(HAVE_MAIN_LOOP)
    while (rarch_main_iterate() != -1);
