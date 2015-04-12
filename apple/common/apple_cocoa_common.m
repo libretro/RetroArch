@@ -228,8 +228,6 @@ void *glkitview_init(void);
 }
 
 #ifdef OSX
-
-
 - (void)setFrame:(NSRect)frameRect
 {
    [super setFrame:frameRect];
@@ -313,7 +311,6 @@ void *glkitview_init(void);
    
    return YES;
 }
-
 #endif
 
 #ifdef HAVE_AVFOUNDATION
@@ -412,7 +409,7 @@ void event_process_camera_frame(void* pixelBufferPtr)
 didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
        fromConnection:(AVCaptureConnection *)connection
 {
-    // TODO: Don't post if event queue is full
+    /* TODO: Don't post if event queue is full */
     CVPixelBufferRef pixelBuffer = (CVPixelBufferRef)CVPixelBufferRetain(CMSampleBufferGetImageBuffer(sampleBuffer));
     event_process_camera_frame(pixelBuffer);
 }
@@ -429,22 +426,22 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
     RCVOpenGLGetCurrentContext(), NULL, &textureCache);
     (void)ret;
     
-    //-- Setup Capture Session.
+    /* Setup Capture Session. */
     _session = [[AVCaptureSession alloc] init];
     [_session beginConfiguration];
     
-    // TODO: dehardcode this based on device capabilities
+    /* TODO: dehardcode this based on device capabilities */
     _sessionPreset = AVCaptureSessionPreset640x480;
     
-    //-- Set preset session size.
+    /* Set preset session size. */
     [_session setSessionPreset:_sessionPreset];
     
-    //-- Creata a video device and input from that Device.  Add the input to the capture session.
+    /* Creata a video device and input from that Device.  Add the input to the capture session. */
     videoDevice = (AVCaptureDevice*)[AVCaptureDevice defaultDeviceWithMediaType:AVMediaTypeVideo];
     if (videoDevice == nil)
         assert(0);
     
-    //-- Add the device to the session.
+    /* Add the device to the session. */
     input = (AVCaptureDeviceInput*)[AVCaptureDeviceInput deviceInputWithDevice:videoDevice error:&error];
     if (error)
     {
@@ -543,8 +540,9 @@ static CLLocationAccuracy currentVerticalAccuracy;
 
 - (void)onLocationInit
 {
-    // Create the location manager if this object does not
-    // already have one.
+    /* Create the location manager 
+     * if this object does not already have one.
+     */
     
     if (locationManager == nil)
         locationManager = [[CLLocationManager alloc] init];
