@@ -84,7 +84,9 @@ void CFSearchPathForDirectoriesInDomains(unsigned flags,
         unsigned domain_mask, unsigned expand_tilde,
         char *buf, size_t sizeof_buf)
 {
-   CFTypeRef array_val = (CFTypeRef)CFBridgingRetainCompat(NSSearchPathForDirectoriesInDomains(NSConvertFlagsCF(flags), NSConvertDomainFlagsCF(domain_mask), (BOOL)expand_tilde));
+   CFTypeRef array_val = (CFTypeRef)CFBridgingRetainCompat(
+         NSSearchPathForDirectoriesInDomains(NSConvertFlagsCF(flags),
+            NSConvertDomainFlagsCF(domain_mask), (BOOL)expand_tilde));
    CFArrayRef array = array_val ? CFRetain(array_val) : NULL;
    CFTypeRef path_val = (CFTypeRef)CFArrayGetValueAtIndex(array, 0);
    CFStringRef path = path_val ? CFRetain(path_val) : NULL;
@@ -614,7 +616,8 @@ static bool apple_camera_poll(void *data, retro_camera_frame_raw_framebuffer_t f
 
    if (frame_gl_cb && newFrame)
    {
-	   // FIXME: Identity for now. Use proper texture matrix as returned by iOS Camera (if at all?).
+	   /* FIXME: Identity for now. 
+       * Use proper texture matrix as returned by iOS Camera (if at all?). */
 	   static const float affine[] = {
 		   1.0f, 0.0f, 0.0f,
 		   0.0f, 1.0f, 0.0f,
