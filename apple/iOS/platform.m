@@ -28,8 +28,6 @@
 #import "views.h"
 #include "../../input/drivers_hid/btstack_hid.h"
 
-#include "../../menu/drivers/ios.h"
-
 id<RetroArch_Platform> apple_platform;
 static CFRunLoopObserverRef iterate_observer;
 
@@ -261,31 +259,8 @@ enum
    return (RetroArch_iOS*)[[UIApplication sharedApplication] delegate];
 }
 
-void switch_to_ios(void)
-{
-   RetroArch_iOS *ap;
-   runloop_t *runloop = rarch_main_get_ptr();
-
-   if (!apple_platform)
-      return;
-    
-   ap = (RetroArch_iOS *)apple_platform;
-   runloop->is_idle = true;
-   [ap showPauseMenu:ap];
-}
-
-void notify_content_loaded(void)
-{
-   if (!apple_platform)
-      return;
-    
-   RetroArch_iOS *ap = (RetroArch_iOS *)apple_platform;
-   [ap showGameView];
-}
-
 - (void)applicationDidFinishLaunching:(UIApplication *)application
 {
-   driver_t *driver = NULL;
    apple_platform   = self;
 
    [self setDelegate:self];
@@ -304,15 +279,6 @@ void notify_content_loaded(void)
    if (rarch_main(0, NULL))
       apple_rarch_exited();
 
-   driver = driver_get_ptr();
-    
-   if ( driver->menu_ctx && driver->menu_ctx == &menu_ctx_ios && driver->menu && driver->menu->userdata )
-   {
-     ios_handle_t *ih = (ios_handle_t*)driver->menu->userdata;
-     ih->switch_to_ios = switch_to_ios;
-     ih->notify_content_loaded = notify_content_loaded;
-   }
-   
 #ifdef HAVE_MFI
    apple_gamecontroller_init();
 #endif

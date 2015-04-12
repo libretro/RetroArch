@@ -18,9 +18,7 @@
 #include "../../apple/common/CFExtensions.h"
 
 #include "../frontend_driver.h"
-#ifdef IOS
-#include "../../menu/drivers/ios.h"
-#endif
+#include "../ui/ui_companion_driver.h"
 
 #include <stdint.h>
 #include <boolean.h>
@@ -205,22 +203,11 @@ extern void apple_rarch_exited(void);
 
 static void frontend_apple_load_content(void)
 {
-    driver_t *driver = driver_get_ptr();
-    if (!driver->menu_ctx)
-        return;
-    if (!driver->menu)
-        return;
-    if (!driver->menu->userdata)
-        return;
+   driver_t          *driver = driver_get_ptr();
+   const ui_companion_driver_t *ui = ui_companion_get_ptr();
     
-#ifdef IOS
-   if (driver->menu_ctx == &menu_ctx_ios)
-   {
-      ios_handle_t *ih = (ios_handle_t*)driver->menu->userdata;
-      if (ih)
-         ih->notify_content_loaded();
-   }
-#endif
+   if (ui)
+      ui->notify_content_loaded(driver->ui_companion_data);
 }
 
 static void frontend_apple_shutdown(bool unused)

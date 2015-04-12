@@ -751,10 +751,6 @@ MENU
 
 #endif
 
-#ifdef IOS
-#include "../menu/drivers/ios.c"
-#endif
-
 #ifdef HAVE_COMMAND
 #include "../command.c"
 #endif

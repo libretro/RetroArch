@@ -319,8 +319,6 @@ const char *config_get_default_menu(void)
          return "rmenu_xui";
       case MENU_GLUI:
          return "glui";
-      case MENU_IOS:
-         return "ios";
       case MENU_XMB:
          return "xmb";
       default:

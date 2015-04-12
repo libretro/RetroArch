@@ -50,7 +50,7 @@ void notify_content_loaded(void)
    [ap showGameView];
 }
 
-static int ui_companion_cocoatouch_entry_iterate(void *data, unsigned action)
+static int ui_companion_cocoatouch_iterate(void *data, unsigned action)
 {
    (void)data;
 
