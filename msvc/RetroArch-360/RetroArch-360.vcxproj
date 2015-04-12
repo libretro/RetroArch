@@ -356,6 +356,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\..\griffin\griffin.c" />
+    <ClCompile Include="..\..\griffin\griffin_cpp.cpp" />
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="..\..\media\360\rarch.ttf">

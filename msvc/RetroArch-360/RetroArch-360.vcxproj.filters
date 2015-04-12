@@ -19,6 +19,9 @@
     <ClCompile Include="..\..\griffin\griffin.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\griffin\griffin_cpp.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="..\..\media\360\Arial_12.rdf">

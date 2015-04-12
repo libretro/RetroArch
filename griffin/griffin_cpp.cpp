@@ -28,3 +28,51 @@
 #ifdef HAVE_QT
 #include "../ui/drivers/ui_qt.cpp"
 #endif
+
+/*============================================================
+AUDIO
+============================================================ */
+#ifdef HAVE_XAUDIO
+#include "../audio/drivers/xaudio.cpp"
+#endif
+
+/*============================================================
+MENU
+============================================================ */
+#ifdef HAVE_RMENU_XUI
+#include "../menu/drivers/rmenu_xui.cpp"
+#endif
+
+/*============================================================
+VIDEO CONTEXT
+============================================================ */
+
+#if defined(HAVE_D3D)
+#include "../gfx/drivers_context/d3d_ctx.cpp"
+#endif
+
+/*============================================================
+VIDEO DRIVER
+============================================================ */
+#ifdef _XBOX
+#include "../xdk/xdk_resources.cpp"
+#endif
+
+#if defined(HAVE_D3D)
+#include "../gfx/d3d/d3d_wrapper.cpp"
+#include "../gfx/d3d/d3d.cpp"
+#ifdef _XBOX
+#include "../gfx/d3d/render_chain_xdk.cpp"
+#endif
+#ifdef HAVE_CG
+#include "../gfx/d3d/render_chain_cg.cpp"
+#endif
+#endif
+
+/*============================================================
+FONTS
+============================================================ */
+
+#if defined(HAVE_D3D9) && !defined(_XBOX)
+#include "../gfx/drivers_font/d3d_w32_font.cpp"
+#endif

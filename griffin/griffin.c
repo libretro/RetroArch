@@ -99,8 +99,6 @@ VIDEO CONTEXT
 
 #if defined(__CELLOS_LV2__)
 #include "../gfx/drivers_context/ps3_ctx.c"
-#elif defined(HAVE_D3D)
-#include "../gfx/drivers_context/d3d_ctx.cpp"
 #elif defined(ANDROID)
 #include "../gfx/drivers_context/androidegl_ctx.c"
 #elif defined(__QNX__)
@@ -199,10 +197,6 @@ VIDEO DRIVER
 #include "../gfx/drivers/omap_gfx.c"
 #endif
 
-#ifdef _XBOX
-#include "../xdk/xdk_resources.cpp"
-#endif
-
 #ifdef HAVE_OPENGL
 #include "../gfx/drivers/gl.c"
 #include "../gfx/drivers/gl_common.c"
@@ -223,15 +217,7 @@ VIDEO DRIVER
 #endif
 
 #if defined(HAVE_D3D)
-#include "../gfx/d3d/d3d_wrapper.cpp"
-#include "../gfx/d3d/d3d.cpp"
 #include "../gfx/d3d/render_chain_driver.c"
-#ifdef _XBOX
-#include "../gfx/d3d/render_chain_xdk.cpp"
-#endif
-#ifdef HAVE_CG
-#include "../gfx/d3d/render_chain_cg.cpp"
-#endif
 #include "../gfx/d3d/render_chain_null.c"
 #endif
 
@@ -260,10 +246,6 @@ FONTS
 
 #if defined(__APPLE__)
 #include "../gfx/drivers_font_renderer/coretext.c"
-#endif
-
-#if defined(HAVE_D3D9) && !defined(_XBOX)
-#include "../gfx/drivers_font/d3d_w32_font.cpp"
 #endif
 
 #if defined(HAVE_LIBDBGFONT)
@@ -477,10 +459,6 @@ AUDIO
 #include "../audio/drivers/psp1_audio.c"
 #elif defined(_3DS)
 #include "../audio/drivers/ctr_audio.c"
-#endif
-
-#ifdef HAVE_XAUDIO
-#include "../audio/drivers/xaudio.cpp"
 #endif
 
 #ifdef HAVE_DSOUND
@@ -733,10 +711,6 @@ MENU
 
 #ifdef HAVE_RGUI
 #include "../menu/drivers/rgui.c"
-#endif
-
-#ifdef HAVE_RMENU_XUI
-#include "../menu/drivers/rmenu_xui.cpp"
 #endif
 
 #ifdef HAVE_OPENGL

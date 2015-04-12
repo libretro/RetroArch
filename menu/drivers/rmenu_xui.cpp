@@ -24,6 +24,8 @@
 #include <xui.h>
 #include <xuiapp.h>
 
+#include <file/file_path.h>
+
 #include "../menu_driver.h"
 #include "../menu.h"
 #include "../menu_list.h"
