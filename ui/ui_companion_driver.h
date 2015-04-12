@@ -32,8 +32,9 @@ typedef struct ui_companion_driver
 {
    void *(*init)(void);
    void (*deinit)(void *data);
-   void (*toggle_companion_ui)(void);
-   void (*notify_content_loaded)(void);
+   int  (*iterate)(void *data, unsigned action);
+   void (*toggle_companion_ui)(void *data);
+   void (*notify_content_loaded)(void *data);
 
    const char *ident;
 } ui_companion_driver_t;

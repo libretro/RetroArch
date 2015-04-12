@@ -50,5 +50,6 @@ const ui_companion_driver_t ui_companion_null = {
    ui_companion_null_deinit,
    NULL,
    NULL,
+   NULL,
    "null",
 };
