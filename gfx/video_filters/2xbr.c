@@ -234,7 +234,7 @@ static void *twoxbr_generic_create(const struct softfilter_config *config,
       return NULL;
    filt->workers = (struct softfilter_thread_data*)
       calloc(threads, sizeof(struct softfilter_thread_data));
-   filt->threads = threads;
+   filt->threads = 1;
    filt->in_fmt  = in_fmt;
    if (!filt->workers)
    {
