@@ -22,10 +22,6 @@
 #include "../runloop.h"
 #include <file/file_path.h>
 
-#if defined(RARCH_CONSOLE) || defined(RARCH_MOBILE)
-#include "../config.def.h"
-#endif
-
 #if defined(ANDROID)
 
 #define returnfunc() exit(0)
