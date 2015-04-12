@@ -186,7 +186,7 @@ OBJ += gfx/image/image.o
 ifeq ($(HAVE_QT), 1)
 OBJ += ui/drivers/ui_qt.o
 # TODO/FIXME - figure out which libraries we need to link against
-LIBS += -lQt5Quick -lQt5Widgets -lQt5Gui -lQt5Qml -lQt5Network -lQt5Core -lglu32 -lopengl32
+LIBS += -lQt5Quick -lQt5Widgets -lQt5Gui -lQt5Qml -lQt5Network -lQt5Core -lglu32 -lopengl32 -L./ -lwrapper
 # Make this Win32-specific
 # -lgdi32 -luser32 -L./qt -lwrapper
 endif
