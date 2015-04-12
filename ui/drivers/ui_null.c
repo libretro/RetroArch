@@ -45,11 +45,24 @@ static void *ui_companion_null_init(void)
    return handle;
 }
 
+static int ui_companion_null_iterate(void *data, unsigned action)
+{
+   (void)data;
+   (void)action;
+
+   return 0;
+}
+
+static void ui_companion_null_notify_content_loaded(void *data)
+{
+   (void)data;
+}
+
 const ui_companion_driver_t ui_companion_null = {
    ui_companion_null_init,
    ui_companion_null_deinit,
+   ui_companion_null_iterate,
    NULL,
-   NULL,
-   NULL,
+   ui_companion_null_notify_content_loaded,
    "null",
 };
