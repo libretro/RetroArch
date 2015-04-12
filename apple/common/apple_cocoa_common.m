@@ -191,20 +191,11 @@ void apple_display_alert(const char *message, const char *title)
 static RAGameView* g_instance;
 
 #ifdef OSX
-#include <OpenGL/CGLTypes.h>
-#include <OpenGL/OpenGL.h>
-
 void *nsview_get_ptr(void)
 {
     return g_instance;
 }
 #endif
-
-#include "../../gfx/video_viewport.h"
-#include "../../gfx/video_monitor.h"
-#include "../../gfx/video_context_driver.h"
-#include "../../gfx/drivers/gl_common.h"
-#include "../../runloop.h"
 
 /* forward declarations */
 void apple_gfx_ctx_update(void);

@@ -17,9 +17,13 @@
 //#define HAVE_NSOPENGL
 
 #include <CoreGraphics/CGGeometry.h>
-#ifdef OSX
+#if defined(OSX)
+#include <OpenGL/CGLTypes.h>
+#include <OpenGL/OpenGL.h>
 #include <AppKit/NSScreen.h>
 #include <AppKit/NSOpenGL.h>
+#elif defined(IOS)
+#include <GLKit/GLKit.h>
 #endif
 #import "../../apple/common/RetroArch_Apple.h"
 #include "../video_context_driver.h"
@@ -55,16 +59,7 @@
 #define RAScreen NSScreen
 #endif
 
-#if defined(OSX)
-
-/* RAGameView is a container on iOS; 
- * on OSX these are both the same object
- */
-#define g_view g_instance
-
-#elif defined(IOS)
-
-#include <GLKit/GLKit.h>
+#if defined(IOS)
 #define ALMOST_INVISIBLE (.021f)
 static GLKView *g_view;
 static UIView *g_pause_indicator_view;
