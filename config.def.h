@@ -407,11 +407,7 @@ static unsigned swap_interval = 1;
  */
 static const bool video_threaded = false;
 
-#ifdef RARCH_MOBILE
 static const bool threaded_data_runloop_enable = false;
-#else
-static const bool threaded_data_runloop_enable = true;
-#endif
 
 /* Set to true if HW render cores should get their private context. */
 static const bool video_shared_context = false;
