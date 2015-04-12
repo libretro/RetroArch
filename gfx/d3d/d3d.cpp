@@ -167,8 +167,7 @@ void d3d_make_d3dpp(void *data,
       unsigned width          = 0;
       unsigned height         = 0;
 
-      if (d3d->ctx_driver && d3d->ctx_driver->get_video_size)
-         d3d->ctx_driver->get_video_size(d3d, &width, &height);
+	  gfx_ctx_get_video_size(d3d, &width, &height);
 
       d3d->screen_width       = width;
       d3d->screen_height      = height;

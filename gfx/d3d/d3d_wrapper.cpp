@@ -386,10 +386,12 @@ void d3d_enable_alpha_blend_texture_func(void *data)
    if (!dev)
       return;
 
+#ifndef _XBOX360
    /* Also blend the texture with the set alpha value. */
    dev->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_MODULATE);
    dev->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_DIFFUSE);
    dev->SetTextureStageState(0, D3DTSS_ALPHAARG2, D3DTA_TEXTURE);
+#endif
 }
 
 void d3d_frame_postprocess(void *data)

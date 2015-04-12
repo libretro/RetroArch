@@ -189,6 +189,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\griffin\griffin.c" />
+    <ClCompile Include="..\..\griffin\griffin_cpp.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
