@@ -835,8 +835,6 @@ static void data_runloop_thread_deinit(data_runloop_t *runloop)
       slock_free(runloop->overlay_lock);
       scond_free(runloop->cond);
    }
-
-   runloop->thread_inited = false;
 }
 #endif
 
@@ -851,7 +849,9 @@ void rarch_main_data_deinit(void)
    if (runloop->thread_inited)
    {
       data_runloop_thread_deinit(runloop);
-      runloop->thread_code = THREAD_CODE_DEINIT;
+
+      runloop->thread_inited = false;
+      runloop->thread_code   = THREAD_CODE_DEINIT;
    }
 #endif
 
@@ -893,7 +893,7 @@ static void data_thread_loop(void *data)
 
    RARCH_LOG("[Data Thread]: Starting data thread.\n");
 
-   for (;;)
+   while (runloop->alive)
    {
       slock_lock(runloop->lock);
 
@@ -908,8 +908,6 @@ static void data_thread_loop(void *data)
    }
 
    RARCH_LOG("[Data Thread]: Stopping data thread.\n");
-   
-   data_runloop_thread_deinit(runloop);
 }
 
 static void rarch_main_data_thread_init(void)
