@@ -166,24 +166,27 @@ bool texture_image_load(struct texture_image *out_img, const char *path)
    D3DXIMAGE_INFO m_imageInfo;
    driver_t *driver     = driver_get_ptr();
    d3d_video_t *d3d     = (d3d_video_t*)driver->video_data;
-   out_img->vertex_buf  = NULL;
+   LPDIRECT3DTEXTURE d3dt = (LPDIRECT3DTEXTURE)out_img->texture_buf;
+   LPDIRECT3DVERTEXBUFFER d3dv = (LPDIRECT3DVERTEXBUFFER)out_img->vertex_buf;
 
-   out_img->texture_buf = d3d_texture_new(d3d->dev, path,
+   d3dv = NULL;
+
+   d3dt = d3d_texture_new(d3d->dev, path,
          D3DX_DEFAULT, D3DX_DEFAULT, D3DX_DEFAULT, 0,
          D3DFMT_A8R8G8B8, D3DPOOL_MANAGED, D3DX_DEFAULT,
          D3DX_DEFAULT, 0, &m_imageInfo, NULL);
 
-   if (!out_img->texture_buf)
+   if (!d3dt)
       return false;
 
    /* create a vertex buffer for the quad that will display the texture */
-   out_img->vertex_buf = (LPDIRECT3DVERTEXBUFFER)d3d_vertex_buffer_new(
+   d3dv = (LPDIRECT3DVERTEXBUFFER)d3d_vertex_buffer_new(
          d3d->dev, 4 * sizeof(Vertex), D3DUSAGE_WRITEONLY, D3DFVF_CUSTOMVERTEX,
          D3DPOOL_MANAGED, NULL);
 
-   if (!out_img->vertex_buf)
+   if (!d3dv)
    {
-      d3d_texture_free(out_img->texture_buf);
+      d3d_texture_free(d3dt);
       return false;
    }
 
