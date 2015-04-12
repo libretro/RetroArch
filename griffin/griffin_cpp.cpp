@@ -13,6 +13,18 @@
 * If not, see <http://www.gnu.org/licenses/>.
 */
 
+#if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
+#define HAVE_SHADERS
+#endif
+
+#if defined(HAVE_ZLIB) || defined(HAVE_7ZIP)
+#define HAVE_COMPRESSION
+#endif
+
+#if defined(_MSC_VER)
+#include <compat/posix_string.h>
+#endif
+
 #ifdef HAVE_QT
 #include "../ui/drivers/ui_qt.cpp"
 #endif
