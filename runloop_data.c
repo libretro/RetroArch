@@ -903,6 +903,8 @@ static void data_thread_loop(void *data)
       data_runloop_iterate(true, runloop);
 
       slock_unlock(runloop->lock);
+
+      rarch_sleep(10);
    }
 
    RARCH_LOG("[Data Thread]: Stopping data thread.\n");
