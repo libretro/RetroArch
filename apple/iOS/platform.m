@@ -282,8 +282,6 @@ enum
 #ifdef HAVE_MFI
    apple_gamecontroller_init();
 #endif
-    
-   [self showPauseMenu:self];
 
    [self apple_start_iteration];
 }
