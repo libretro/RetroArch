@@ -1279,8 +1279,6 @@ static INLINE void gl_copy_frame(gl_t *gl, const void *frame,
    RARCH_PERFORMANCE_INIT(copy_frame);
    RARCH_PERFORMANCE_START(copy_frame);
 
-   (void)data_buf;
-
 #if defined(HAVE_OPENGLES2)
 #if defined(HAVE_EGL)
    if (gl->egl_images)
