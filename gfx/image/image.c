@@ -161,6 +161,8 @@ void texture_image_free(struct texture_image *img)
 }
 
 #ifdef _XBOX1
+#include "../d3d/d3d.h"
+
 bool texture_image_load(struct texture_image *out_img, const char *path)
 {
    D3DXIMAGE_INFO m_imageInfo;
