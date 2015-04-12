@@ -41,6 +41,7 @@ typedef struct ui_companion_driver
 
 extern const ui_companion_driver_t ui_companion_null;
 extern const ui_companion_driver_t ui_companion_cocoatouch;
+extern const ui_companion_driver_t ui_companion_qt;
 
 /**
  * ui_companion_find_driver:

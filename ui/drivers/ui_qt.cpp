@@ -1,0 +1,115 @@
+/* RetroArch - A frontend for libretro.
+ *  Copyright (C) 2011-2015 - Daniel De Matteis
+ *
+ * RetroArch is free software: you can redistribute it and/or modify it under the terms
+ * of the GNU General Public License as published by the Free Software Found-
+ * ation, either version 3 of the License, or (at your option) any later version.
+ *
+ * RetroArch is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+ * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+ * PURPOSE. See the GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along with RetroArch.
+ * If not, see <http://www.gnu.org/licenses/>.
+ */
+
+#include <stdint.h>
+#include <boolean.h>
+#include <stddef.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include <file/file_path.h>
+#include <rthreads/rthreads.h>
+#include "../ui_companion_driver.h"
+
+#include <QGuiApplication>
+#include <QQmlApplicationEngine>
+#include <QListView>
+#include <QtWidgets/qwidget.h>
+#include <QtWidgets/qapplication.h>
+#include <QtQml/qqmlapplicationengine.h>
+#include <QtCore/qglobal.h>
+
+typedef struct ui_companion_qt
+{
+   volatile bool quit;
+   slock_t *lock;
+   sthread_t *thread;
+} ui_companion_qt_t;
+
+class QtApp : public QGuiApplication
+{
+   Q_OBJECT
+   public:
+      QtApp(int argc, char *argv[]): QGuiApplication(argc, argv) {}
+
+      int CreateMainWindow()
+      {
+         QQmlApplicationEngine engine;
+         engine.load(QUrl(QStringLiteral("qrc:/main.qml")));
+         return this->exec();
+      }
+};
+
+static void qt_thread(void *data)
+{
+   ui_companion_qt_t *handle = (ui_companion_qt_t*)data;
+
+   /* call CreateMainWindow here */
+}
+
+static void ui_companion_qt_deinit(void *data)
+{
+   ui_companion_qt_t *handle = (ui_companion_qt_t*)data;
+
+   if (!handle)
+      return;
+
+   slock_free(handle->lock);
+   sthread_join(handle->thread);
+
+   free(handle);
+}
+
+static void *ui_companion_qt_init(void)
+{
+   ui_companion_qt_t *handle = (ui_companion_qt_t*)calloc(1, sizeof(*handle));
+
+   if (!handle)
+      return NULL;
+
+   handle->lock   = slock_new();
+   handle->thread = sthread_create(qt_thread, handle);
+
+   if (!handle->thread)
+   {
+      slock_free(handle->lock);
+      free(handle);
+      return NULL;
+   }
+
+   return handle;
+}
+
+static int ui_companion_qt_iterate(void *data, unsigned action)
+{
+   (void)data;
+   (void)action;
+
+   return 0;
+}
+
+static void ui_companion_qt_notify_content_loaded(void *data)
+{
+   (void)data;
+}
+
+const ui_companion_driver_t ui_companion_qt = {
+   ui_companion_qt_init,
+   ui_companion_qt_deinit,
+   ui_companion_qt_iterate,
+   NULL,
+   ui_companion_qt_notify_content_loaded,
+   "qt",
+};
