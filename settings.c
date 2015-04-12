@@ -5335,7 +5335,7 @@ static bool setting_append_list_menu_options(
          settings->menu.threaded_data_runloop_enable,
          "threaded_data_runloop_enable",
          "Threaded data runloop",
-         true,
+         threaded_data_runloop_enable,
          "OFF",
          "ON",
          group_info.name,
