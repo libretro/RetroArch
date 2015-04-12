@@ -538,11 +538,13 @@ static bool gl_create_fbo_targets(gl_t *gl)
    glGenFramebuffers(gl->fbo_pass, gl->fbo);
    for (i = 0; i < gl->fbo_pass; i++)
    {
+      GLenum status;
+
       glBindFramebuffer(RARCH_GL_FRAMEBUFFER, gl->fbo[i]);
       glFramebufferTexture2D(RARCH_GL_FRAMEBUFFER,
             RARCH_GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, gl->fbo_texture[i], 0);
 
-      GLenum status = glCheckFramebufferStatus(RARCH_GL_FRAMEBUFFER);
+      status = glCheckFramebufferStatus(RARCH_GL_FRAMEBUFFER);
       if (status != RARCH_GL_FRAMEBUFFER_COMPLETE)
          goto error;
    }
@@ -573,11 +575,11 @@ static void gl_deinit_fbo(gl_t *gl)
 static void gl_init_fbo(gl_t *gl, unsigned width, unsigned height)
 {
    int i;
+   struct gfx_fbo_scale scale, scale_last;
 
    if (!gl || gl->shader->num_shaders() == 0)
       return;
 
-   struct gfx_fbo_scale scale, scale_last;
    gl_shader_scale(gl, 1, &scale);
    gl_shader_scale(gl, gl->shader->num_shaders(), &scale_last);
 
@@ -657,6 +659,7 @@ static void gl_deinit_hw_render(gl_t *gl)
 
 static bool gl_init_hw_render(gl_t *gl, unsigned width, unsigned height)
 {
+   GLenum status;
    unsigned i;
    bool depth = false, stencil = false;
    GLint max_fbo_size = 0, max_renderbuffer_size = 0;
@@ -732,7 +735,7 @@ static bool gl_init_hw_render(gl_t *gl, unsigned width, unsigned height)
          }
       }
 
-      GLenum status = glCheckFramebufferStatus(RARCH_GL_FRAMEBUFFER);
+      status = glCheckFramebufferStatus(RARCH_GL_FRAMEBUFFER);
       if (status != RARCH_GL_FRAMEBUFFER_COMPLETE)
       {
          RARCH_ERR("[GL]: Failed to create HW render FBO #%u, error: 0x%u.\n",
@@ -1188,6 +1191,10 @@ static void gl_init_textures_data(gl_t *gl)
 static void gl_init_textures(gl_t *gl, const video_info_t *video)
 {
    unsigned i;
+   GLenum internal_fmt, texture_type, texture_fmt;
+
+   (void)texture_type;
+   (void)texture_fmt;
 
 #if defined(HAVE_EGL) && defined(HAVE_OPENGLES2)
    // Use regular textures if we use HW render.
@@ -1206,10 +1213,10 @@ static void gl_init_textures(gl_t *gl, const video_info_t *video)
          gl->tex_w * gl->tex_h * gl->base_size * gl->textures, NULL, GL_STREAM_DRAW);
 #endif
 
-   GLenum internal_fmt = gl->internal_fmt;
+   internal_fmt = gl->internal_fmt;
 #ifndef HAVE_PSGL
-   GLenum texture_type = gl->texture_type;
-   GLenum texture_fmt  = gl->texture_fmt;
+   texture_type = gl->texture_type;
+   texture_fmt  = gl->texture_fmt;
 #endif
 
 #ifdef HAVE_OPENGLES2
@@ -1269,9 +1276,11 @@ static void gl_init_textures(gl_t *gl, const video_info_t *video)
 static INLINE void gl_copy_frame(gl_t *gl, const void *frame,
       unsigned width, unsigned height, unsigned pitch)
 {
-
    RARCH_PERFORMANCE_INIT(copy_frame);
    RARCH_PERFORMANCE_START(copy_frame);
+
+   (void)data_buf;
+
 #if defined(HAVE_OPENGLES2)
 #if defined(HAVE_EGL)
    if (gl->egl_images)

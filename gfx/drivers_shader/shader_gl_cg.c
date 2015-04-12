@@ -230,6 +230,7 @@ static void gl_cg_set_params(void *data, unsigned width, unsigned height,
       unsigned fbo_info_cnt)
 {
    unsigned i;
+   CGparameter param;
    const struct gl_tex_info *info = (const struct gl_tex_info*)_info;
    const struct gl_tex_info *prev_info = (const struct gl_tex_info*)_prev_info;
    const struct gl_tex_info *fbo_info = (const struct gl_tex_info*)_fbo_info;
@@ -266,7 +267,7 @@ static void gl_cg_set_params(void *data, unsigned width, unsigned height,
    }
 
    /* Set orig texture. */
-   CGparameter param = cg->prg[cg->active_idx].orig.tex;
+   param = cg->prg[cg->active_idx].orig.tex;
    if (param)
    {
       cgGLSetTextureParameter(param, info->tex);
@@ -321,6 +322,7 @@ static void gl_cg_set_params(void *data, unsigned width, unsigned height,
    /* Set lookup textures. */
    for (i = 0; i < cg->cg_shader->luts; i++)
    {
+      CGparameter vparam;
       CGparameter fparam = cgGetNamedParameter(
             cg->prg[cg->active_idx].fprg, cg->cg_shader->lut[i].id);
 
@@ -330,8 +332,8 @@ static void gl_cg_set_params(void *data, unsigned width, unsigned height,
          cgGLEnableTextureParameter(fparam);
       }
 
-      CGparameter vparam = cgGetNamedParameter(
-            cg->prg[cg->active_idx].vprg, cg->cg_shader->lut[i].id);
+      vparam = cgGetNamedParameter(cg->prg[cg->active_idx].vprg,
+		  cg->cg_shader->lut[i].id);
 
       if (vparam)
       {
@@ -662,11 +664,13 @@ static bool load_shader(cg_shader_data_t *cg, unsigned i)
 static bool load_preset(cg_shader_data_t *cg, const char *path)
 {
    unsigned i;
+   config_file_t *conf = NULL;
+
    if (!load_stock(cg))
       return false;
 
    RARCH_LOG("Loading Cg meta-shader: %s\n", path);
-   config_file_t *conf = config_file_new(path);
+   conf = config_file_new(path);
    if (!conf)
    {
       RARCH_ERR("Failed to load preset.\n");
@@ -886,11 +890,14 @@ static void set_program_attributes(cg_shader_data_t *cg, unsigned i)
 
 static bool gl_cg_init(void *data, const char *path)
 {
+   cg_shader_data_t *cg = NULL;
+   driver_t *driver     = NULL;
    unsigned i;
+
    (void)data;
-   cg_shader_data_t *cg = (cg_shader_data_t*)
-      calloc(1, sizeof(cg_shader_data_t));
-   driver_t *driver = driver_get_ptr();
+
+   cg     = (cg_shader_data_t*)calloc(1, sizeof(cg_shader_data_t));
+   driver = driver_get_ptr();
 
    if (!cg)
       return false;

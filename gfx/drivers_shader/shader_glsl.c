@@ -315,6 +315,7 @@ static bool compile_shader(glsl_shader_data_t *glsl,
       GLuint shader,
       const char *define, const char *program)
 {
+   GLint status;
    char version[32] = {0};
    if (glsl_core && !strstr(program, "#version"))
    {
@@ -345,7 +346,6 @@ static bool compile_shader(glsl_shader_data_t *glsl,
    glShaderSource(shader, ARRAY_SIZE(source), source, NULL);
    glCompileShader(shader);
 
-   GLint status;
    glGetShaderiv(shader, GL_COMPILE_STATUS, &status);
    print_shader_log(shader);
 

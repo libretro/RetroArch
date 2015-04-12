@@ -164,8 +164,11 @@ static void shader_dlg_params_clear(void)
 
 void shader_dlg_params_reload(void)
 {
+   HFONT hFont;
+   RECT parent_rect;
    int i, pos_x, pos_y;
    struct video_shader* shader = video_shader_driver_get_current_shader();
+
    shader_dlg_params_clear();
 
    if (!shader)
@@ -174,7 +177,7 @@ void shader_dlg_params_reload(void)
    if (shader->num_parameters > GFX_MAX_PARAMETERS)
       return;
 
-   HFONT hFont = (HFONT)GetStockObject(DEFAULT_GUI_FONT);
+   hFont = (HFONT)GetStockObject(DEFAULT_GUI_FONT);
 
    pos_y = g_shader_dlg.parameters_start_y;
    pos_x = SHADER_DLG_CTRL_X;
@@ -240,7 +243,6 @@ void shader_dlg_params_reload(void)
 
    shader_dlg_params_refresh();
 
-   RECT parent_rect;
    GetWindowRect(g_shader_dlg.hwnd, &parent_rect);
    SetWindowPos(g_shader_dlg.hwnd, NULL, 0, 0,
          (pos_x - SHADER_DLG_CTRL_X) + SHADER_DLG_WIDTH,
@@ -348,8 +350,10 @@ static LRESULT CALLBACK ShaderDlgWndProc(HWND hwnd, UINT message,
 bool wgl_shader_dlg_init(void)
 {
    static bool inited = false;
-
    const video_driver_t* vid_drv;
+   int pos_y;
+   HFONT hFont;
+
    video_driver_get_ptr(&vid_drv);
    if(vid_drv != &video_gl)
       return false;
@@ -385,8 +389,7 @@ bool wgl_shader_dlg_init(void)
       inited = true;
    }
 
-   int pos_y;
-   HFONT hFont = (HFONT)GetStockObject(DEFAULT_GUI_FONT);
+   hFont = (HFONT)GetStockObject(DEFAULT_GUI_FONT);
 
    g_shader_dlg.hwnd = CreateWindowEx(0, "Shader Dialog", "Shader Parameters", WS_POPUPWINDOW | WS_CAPTION, 100, 100,
          SHADER_DLG_WIDTH, SHADER_DLG_MIN_HEIGHT, NULL, NULL, NULL, NULL);
