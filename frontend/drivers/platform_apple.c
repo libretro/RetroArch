@@ -18,7 +18,7 @@
 #include "../../apple/common/CFExtensions.h"
 
 #include "../frontend_driver.h"
-#include "../ui/ui_companion_driver.h"
+#include "../../ui/ui_companion_driver.h"
 
 #include <stdint.h>
 #include <boolean.h>
