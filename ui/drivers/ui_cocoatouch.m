@@ -28,10 +28,12 @@ typedef struct ui_companion_cocoatouch
    void *empty;
 } ui_companion_cocoatouch_t;
 
-void switch_to_ios(void)
+static void ui_companion_cocoatouch_switch_to_ios(void *data)
 {
-   RetroArch_iOS *ap;
+   RetroArch_iOS *ap  = NULL;
    runloop_t *runloop = rarch_main_get_ptr();
+    
+   (void)data;
 
    if (!apple_platform)
       return;
@@ -41,20 +43,21 @@ void switch_to_ios(void)
    [ap showPauseMenu:ap];
 }
 
-void notify_content_loaded(void)
+static void ui_companion_cocoatouch_notify_content_loaded(void *data)
 {
-   if (!apple_platform)
-      return;
-    
    RetroArch_iOS *ap = (RetroArch_iOS *)apple_platform;
-   [ap showGameView];
+   
+    (void)data;
+    
+   if (ap)
+      [ap showGameView];
 }
 
 static int ui_companion_cocoatouch_iterate(void *data, unsigned action)
 {
    (void)data;
 
-   switch_to_ios();
+   ui_companion_cocoatouch_switch_to_ios(data);
 
    return 0;
 }
@@ -82,6 +85,6 @@ const ui_companion_driver_t ui_companion_cocoatouch = {
    ui_companion_cocoatouch_deinit,
    ui_companion_cocoatouch_iterate,
    NULL,
-   NULL,
-   "null",
+   ui_companion_cocoatouch_notify_content_loaded,
+   "cocoatouch",
 };
