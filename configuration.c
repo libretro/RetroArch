@@ -447,7 +447,7 @@ static void config_set_defaults(void)
       settings->video.threaded = g_defaults.settings.video_threaded_enable;
 
 #ifdef HAVE_THREADS
-   settings->menu.threaded_data_runloop_enable = true;
+   settings->menu.threaded_data_runloop_enable = threaded_data_runloop_enable;
 #endif
    settings->video.shared_context = video_shared_context;
    settings->video.force_srgb_disable = false;
