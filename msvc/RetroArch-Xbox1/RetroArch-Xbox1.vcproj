@@ -21,7 +21,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="3"
 				OptimizeForProcessor="2"
-            AdditionalIncludeDirectories="&quot;$(SolutionDir)\..\libretro-common\include&quot;;&quot;$(SolutionDir)\..\libretro-common\include\compat\msvc&quot;;&quot;$(SolutionDir)\msvc-71&quot;;&quot;$(SolutionDir)\..\deps\zlib&quot;"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)\..\libretro-common\include&quot;;&quot;$(SolutionDir)\..\libretro-common\include\compat\msvc&quot;;&quot;$(SolutionDir)\msvc-71&quot;;&quot;$(SolutionDir)\..\deps\zlib&quot;"
 				PreprocessorDefinitions="_DEBUG;_XBOX;_XBOX1;HAVE_RMENU;HAVE_MENU;RARCH_CONSOLE;HAVE_XINPUT_XBOX1;__STDC_CONSTANT_MACROS;HAVE_ZLIB;HAVE_GRIFFIN;HAVE_LIBRETRO_MANAGEMENT;HAVE_RARCH_EXEC;HAVE_DSOUND;HAVE_D3D;HAVE_D3D8;RARCH_INTERNAL;WANT_ZLIB;SINC_LOWER_QUALITY;HAVE_THREADS;HAVE_FILTERS_BUILTIN;HAVE_BUILTIN_AUTOCONFIG"
 				MinimalRebuild="TRUE"
 				BasicRuntimeChecks="0"
@@ -446,6 +446,9 @@
 						Name="VCCLCompilerTool"
 						CompileAs="2"/>
 				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\..\griffin\griffin_cpp.cpp">
 			</File>
 		</Filter>
 		<Filter
