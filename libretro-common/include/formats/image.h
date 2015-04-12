@@ -35,8 +35,8 @@ struct texture_image
 #ifdef _XBOX1
    unsigned x;
    unsigned y;
-   LPDIRECT3DTEXTURE texture_buf;
-   LPDIRECT3DVERTEXBUFFER vertex_buf;
+   void *texture_buf;
+   void *vertex_buf;
 #endif
    uint32_t *pixels;
 };

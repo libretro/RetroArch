@@ -1044,10 +1044,14 @@ extern struct texture_image *menu_texture;
 #endif
 
 #ifdef _XBOX1
+#include <formats/image.h>
+
 static bool texture_image_render(d3d_video_t *d3d,
       struct texture_image *out_img,
       int x, int y, int w, int h, bool force_fullscreen)
 {
+   LPDIRECT3DTEXTURE d3dt;
+   LPDIRECT3DVERTEXBUFFER d3dv;
    void *verts           = NULL;
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
    float fX              = (float)(x);
@@ -1055,7 +1059,11 @@ static bool texture_image_render(d3d_video_t *d3d,
 
    if (!d3d)
       return false;
-   if (!out_img->pixels || !out_img->vertex_buf)
+
+   d3dt = (LPDIRECT3DTEXTURE)out_img->texture_buf;
+   d3dv = (LPDIRECT3DVERTEXBUFFER)out_img->vertex_buf;
+
+   if (!d3dt || !d3dv)
       return false;
 
    /* Create the new vertices. */
@@ -1069,22 +1077,22 @@ static bool texture_image_render(d3d_video_t *d3d,
    };
 
    /* Load the existing vertices */
-   verts = d3d_vertex_buffer_lock(out_img->vertex_buf);
+   verts = d3d_vertex_buffer_lock(d3dv);
 
    if (!verts)
       return false;
 
    /* Copy the new verts over the old verts */
    memcpy(verts, newVerts, sizeof(newVerts));
-   d3d_vertex_buffer_unlock(out_img->vertex_buf);
+   d3d_vertex_buffer_unlock(d3dv);
 
    d3d_enable_blend_func(d3d->dev);
    d3d_enable_alpha_blend_texture_func(d3d->dev);
 
    /* Draw the quad. */
-   d3d_set_texture(d3dr, 0, out_img->texture_buf);
+   d3d_set_texture(d3dr, 0, d3dt);
    d3d_set_stream_source(d3dr, 0,
-         out_img->vertex_buf, 0, sizeof(Vertex));
+         d3dv, 0, sizeof(Vertex));
    d3d_set_vertex_shader(d3dr, D3DFVF_CUSTOMVERTEX, NULL);
 
    if (force_fullscreen)

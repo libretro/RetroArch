@@ -144,12 +144,16 @@ static bool rpng_gx_convert_texture32(struct texture_image *image)
 
 void texture_image_free(struct texture_image *img)
 {
+#ifdef _XBOX1
+   LPDIRECT3DTEXTURE d3dt = (LPDIRECT3DTEXTURE)img->texture_buf;
+   LPDIRECT3DVERTEXBUFFER d3dv = (LPDIRECT3DVERTEXBUFFER)img->vertex_buf;
+#endif
    if (!img)
       return;
 
 #ifdef _XBOX1
-   d3d_vertex_buffer_free(img->vertex_buf, NULL);
-   d3d_texture_free(img->texture_buf);
+   d3d_vertex_buffer_free(d3dv, NULL);
+   d3d_texture_free(d3dt);
 #endif
    if (img->pixels)
       free(img->pixels);
