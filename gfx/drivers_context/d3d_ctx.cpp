@@ -15,6 +15,10 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifdef _XBOX
+#include <xtl.h>
+#endif
+
 #include "../d3d/d3d.h"
 #include "../common/win32_common.h"
 
