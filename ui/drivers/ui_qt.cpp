@@ -23,13 +23,7 @@
 #include <rthreads/rthreads.h>
 #include "../ui_companion_driver.h"
 
-#include <QGuiApplication>
-#include <QQmlApplicationEngine>
-#include <QListView>
-#include <QtWidgets/qwidget.h>
-#include <QtWidgets/qapplication.h>
-#include <QtQml/qqmlapplicationengine.h>
-#include <QtCore/qglobal.h>
+#include "qt/wrapper/wrapper.h"
 
 typedef struct ui_companion_qt
 {
@@ -38,25 +32,18 @@ typedef struct ui_companion_qt
    sthread_t *thread;
 } ui_companion_qt_t;
 
-class QtApp : public QGuiApplication
-{
-   Q_OBJECT
-   public:
-      QtApp(int argc, char *argv[]): QGuiApplication(argc, argv) {}
-
-      int CreateMainWindow()
-      {
-         QQmlApplicationEngine engine;
-         engine.load(QUrl(QStringLiteral("qrc:/main.qml")));
-         return this->exec();
-      }
-};
-
 static void qt_thread(void *data)
 {
    ui_companion_qt_t *handle = (ui_companion_qt_t*)data;
 
-   /* call CreateMainWindow here */
+   struct Wimp* wimp;
+   char** args = (char**)NULL;
+
+   wimp = ctrWimp(0, args);
+   CreateMainWindow(wimp);
+
+   return;
+
 }
 
 static void ui_companion_qt_deinit(void *data)
