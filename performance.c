@@ -233,11 +233,12 @@ retro_time_t rarch_get_time_usec(void)
 {
 #if defined(_WIN32)
    static LARGE_INTEGER freq;
+   LARGE_INTEGER count;
+
    /* Frequency is guaranteed to not change. */
    if (!freq.QuadPart && !QueryPerformanceFrequency(&freq))
       return 0;
 
-   LARGE_INTEGER count;
    if (!QueryPerformanceCounter(&count))
       return 0;
    return count.QuadPart * 1000000 / freq.QuadPart;
@@ -404,15 +405,16 @@ unsigned rarch_get_cpu_cores(void)
  **/
 uint64_t rarch_get_cpu_features(void)
 {
+   int flags[4];
    uint64_t cpu = 0;
-
    const unsigned MAX_FEATURES = \
          sizeof(" MMX MMXEXT SSE SSE2 SSE3 SSSE3 SS4 SSE4.2 AES AVX AVX2 NEON VMX VMX128 VFPU PS");
    char buf[MAX_FEATURES];
    memset(buf, 0, MAX_FEATURES);
 
+   (void)flags;
+
 #if defined(CPU_X86)
-   int flags[4];
    x86_cpuid(0, flags);
 
    char vendor[13] = {0};
