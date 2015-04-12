@@ -18,10 +18,5 @@ HEADERS +=\
     wimp.h \
     wimp_global.h
 
-unix {
-    target.path = /usr/lib
-    INSTALLS += target
-}
-
 RESOURCES += \
     qml.qrc

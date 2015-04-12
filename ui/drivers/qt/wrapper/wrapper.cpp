@@ -1,5 +1,5 @@
-#include  "../../wimp/wimp/wimp.h"
-#include  "../../wimp/wimp/wimp_global.h"
+#include  "../wimp/wimp.h"
+#include  "../wimp/wimp_global.h"
 #include "wrapper.h"
 
 
