@@ -407,7 +407,7 @@ static unsigned swap_interval = 1;
  */
 static const bool video_threaded = false;
 
-#ifdef HAVE_MOBILE
+#ifdef RARCH_MOBILE
 static const bool threaded_data_runloop_enable = false;
 #else
 static const bool threaded_data_runloop_enable = true;
