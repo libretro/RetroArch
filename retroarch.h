@@ -208,6 +208,27 @@ int rarch_defer_core(core_info_list_t *data,
       const char *dir, const char *path, const char *menu_label,
       char *deferred_path, size_t sizeof_deferred_path);
 
+void rarch_fill_pathnames(void);
+
+/* 
+ * rarch_verify_api_version:
+ *
+ * Compare libretro core API version against API version
+ * used by RetroArch.
+ *
+ * TODO - when libretro v2 gets added, allow for switching
+ * between libretro version backend dynamically.
+ **/
+void rarch_verify_api_version(void);
+
+/**
+ * rarch_init_system_av_info:
+ *
+ * Initialize system A/V information by calling the libretro core's
+ * get_system_av_info function.
+ **/
+void rarch_init_system_av_info(void);
+
 #ifdef __cplusplus
 }
 #endif

@@ -1,5 +1,4 @@
 /*  RetroArch - A frontend for libretro.
- *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2015 - Daniel De Matteis
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
@@ -19,7 +18,6 @@
 
 #include <stdint.h>
 #include <boolean.h>
-
 #ifdef __cplusplus
 extern "C" {
 #endif

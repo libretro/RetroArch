@@ -733,6 +733,8 @@ MENU
 #include "../command.c"
 #endif
 
+#include "../command_event.c"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
