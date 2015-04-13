@@ -774,6 +774,41 @@ static void rarch_main_data_http_iterate(bool is_thread, data_runloop_t *runloop
 #endif
 
 #ifdef HAVE_OVERLAY
+static void rarch_main_data_overlay_image_upload_iterate(bool is_thread, data_runloop_t *runloop)
+{
+   driver_t *driver = driver_get_ptr();
+
+   if (rarch_main_is_idle())
+      return;
+   if (!driver->overlay)
+      return;
+
+#ifdef HAVE_THREADS
+   if (is_thread)
+      slock_lock(runloop->overlay_lock);
+#endif
+
+   switch (driver->overlay->state)
+   {
+      case OVERLAY_STATUS_DEFERRED_LOADING:
+         switch (driver->overlay->state)
+         {
+            case OVERLAY_IMAGE_TRANSFER_DESC_IMAGE_ITERATE:
+               input_overlay_load_overlays_iterate(driver->overlay);
+               break;
+            default:
+               break;
+         }
+         break;
+      default:
+         break;
+   }
+
+#ifdef HAVE_THREADS
+   if (is_thread)
+      slock_unlock(runloop->overlay_lock);
+#endif
+}
 static void rarch_main_data_overlay_iterate(bool is_thread, data_runloop_t *runloop)
 {
    driver_t *driver = driver_get_ptr();
@@ -790,14 +825,21 @@ static void rarch_main_data_overlay_iterate(bool is_thread, data_runloop_t *runl
 
    switch (driver->overlay->state)
    {
-      case OVERLAY_STATUS_NONE:
-      case OVERLAY_STATUS_ALIVE:
-         break;
       case OVERLAY_STATUS_DEFERRED_LOAD:
          input_overlay_load_overlays(driver->overlay);
          break;
+      case OVERLAY_STATUS_NONE:
+      case OVERLAY_STATUS_ALIVE:
+         break;
       case OVERLAY_STATUS_DEFERRED_LOADING:
-         input_overlay_load_overlays_iterate(driver->overlay);
+         switch (driver->overlay->state)
+         {
+            case OVERLAY_IMAGE_TRANSFER_DESC_IMAGE_ITERATE:
+               break;
+            default:
+               input_overlay_load_overlays_iterate(driver->overlay);
+               break;
+         }
          break;
       case OVERLAY_STATUS_DEFERRED_LOADING_RESOLVE:
          input_overlay_load_overlays_resolve_iterate(driver->overlay);
@@ -988,6 +1030,7 @@ void rarch_main_data_iterate(void)
 #endif
 
 #ifdef HAVE_OVERLAY
+   rarch_main_data_overlay_image_upload_iterate(false, runloop);
    rarch_main_data_overlay_iterate(false, runloop);
 #endif
    rarch_main_data_nbio_image_upload_iterate(false, runloop);
