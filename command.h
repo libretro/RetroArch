@@ -14,8 +14,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef RARCH_COMMAND_H__
-#define RARCH_COMMAND_H__
+#ifndef COMMAND_H__
+#define COMMAND_H__
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
