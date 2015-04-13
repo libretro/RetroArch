@@ -244,7 +244,7 @@ static void driver_adjust_system_rates(void)
       return;
 
    if (global->system.force_nonblock)
-      rarch_main_command(RARCH_CMD_VIDEO_SET_NONBLOCKING_STATE);
+      rarch_main_command(EVENT_CMD_VIDEO_SET_NONBLOCKING_STATE);
    else
       driver_set_nonblock_state(driver->nonblock_state);
 }
@@ -313,7 +313,7 @@ bool driver_update_system_av_info(const struct retro_system_av_info *info)
    driver_t *driver = driver_get_ptr();
 
    global->system.av_info = *info;
-   rarch_main_command(RARCH_CMD_REINIT);
+   rarch_main_command(EVENT_CMD_REINIT);
 
    /* Cannot continue recording with different parameters.
     * Take the easiest route out and just restart the recording. */
@@ -322,8 +322,8 @@ bool driver_update_system_av_info(const struct retro_system_av_info *info)
       static const char *msg = "Restarting recording due to driver reinit.";
       rarch_main_msg_queue_push(msg, 2, 180, false);
       RARCH_WARN("%s\n", msg);
-      rarch_main_command(RARCH_CMD_RECORD_DEINIT);
-      rarch_main_command(RARCH_CMD_RECORD_INIT);
+      rarch_main_command(EVENT_CMD_RECORD_DEINIT);
+      rarch_main_command(EVENT_CMD_RECORD_INIT);
    }
 
    return true;

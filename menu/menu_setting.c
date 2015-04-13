@@ -23,7 +23,7 @@ int menu_setting_generic(rarch_setting_t *setting)
    if (!setting)
       return -1;
 
-   if (setting->cmd_trigger.idx != RARCH_CMD_NONE)
+   if (setting->cmd_trigger.idx != EVENT_CMD_NONE)
       setting->cmd_trigger.triggered = true;
 
    if (setting->change_handler)

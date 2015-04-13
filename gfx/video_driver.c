@@ -400,7 +400,7 @@ void uninit_video_input(void)
 {
    driver_t *driver = driver_get_ptr();
 
-   rarch_main_command(RARCH_CMD_OVERLAY_DEINIT);
+   rarch_main_command(EVENT_CMD_OVERLAY_DEINIT);
 
    if (
          !driver->input_data_own &&
@@ -419,7 +419,7 @@ void uninit_video_input(void)
 
    deinit_video_filter();
 
-   rarch_main_command(RARCH_CMD_SHADER_DIR_DEINIT);
+   rarch_main_command(EVENT_CMD_SHADER_DIR_DEINIT);
    video_monitor_compute_fps_statistics();
 }
 
@@ -439,7 +439,7 @@ void init_video(void)
    runloop->frames.video.count      = 0;
 
    init_video_filter(global->system.pix_fmt);
-   rarch_main_command(RARCH_CMD_SHADER_DIR_INIT);
+   rarch_main_command(EVENT_CMD_SHADER_DIR_INIT);
 
    geom      = (const struct retro_game_geometry*)&global->system.av_info.geometry;
    max_dim   = max(geom->max_width, geom->max_height);
@@ -567,8 +567,8 @@ void init_video(void)
    if (!driver->input)
       init_video_input(tmp);
 
-   rarch_main_command(RARCH_CMD_OVERLAY_DEINIT);
-   rarch_main_command(RARCH_CMD_OVERLAY_INIT);
+   rarch_main_command(EVENT_CMD_OVERLAY_DEINIT);
+   rarch_main_command(EVENT_CMD_OVERLAY_INIT);
 
    runloop->measure_data.frame_time_samples_count = 0;
 

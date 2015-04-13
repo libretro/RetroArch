@@ -92,7 +92,7 @@ static int archive_load(void)
    switch (ret)
    {
       case -1:
-         rarch_main_command(RARCH_CMD_LOAD_CORE);
+         rarch_main_command(EVENT_CMD_LOAD_CORE);
          menu_entries_common_load_content(false);
          break;
       case 0:
@@ -461,7 +461,7 @@ static int action_iterate_menu_viewport(const char *label, unsigned action)
          else if (custom->height >= (unsigned)stride_y)
             custom->height -= stride_y;
 
-         rarch_main_command(RARCH_CMD_VIDEO_APPLY_STATE_CHANGES);
+         rarch_main_command(EVENT_CMD_VIDEO_APPLY_STATE_CHANGES);
          break;
 
       case MENU_ACTION_DOWN:
@@ -474,7 +474,7 @@ static int action_iterate_menu_viewport(const char *label, unsigned action)
          else
             custom->height += stride_y;
 
-         rarch_main_command(RARCH_CMD_VIDEO_APPLY_STATE_CHANGES);
+         rarch_main_command(EVENT_CMD_VIDEO_APPLY_STATE_CHANGES);
          break;
 
       case MENU_ACTION_LEFT:
@@ -486,7 +486,7 @@ static int action_iterate_menu_viewport(const char *label, unsigned action)
          else if (custom->width >= (unsigned)stride_x)
             custom->width -= stride_x;
 
-         rarch_main_command(RARCH_CMD_VIDEO_APPLY_STATE_CHANGES);
+         rarch_main_command(EVENT_CMD_VIDEO_APPLY_STATE_CHANGES);
          break;
 
       case MENU_ACTION_RIGHT:
@@ -499,7 +499,7 @@ static int action_iterate_menu_viewport(const char *label, unsigned action)
          else
             custom->width += stride_x;
 
-         rarch_main_command(RARCH_CMD_VIDEO_APPLY_STATE_CHANGES);
+         rarch_main_command(EVENT_CMD_VIDEO_APPLY_STATE_CHANGES);
          break;
 
       case MENU_ACTION_CANCEL:
@@ -543,7 +543,7 @@ static int action_iterate_menu_viewport(const char *label, unsigned action)
                custom->height  = vp.full_height - custom->y;
             }
 
-            rarch_main_command(RARCH_CMD_VIDEO_APPLY_STATE_CHANGES);
+            rarch_main_command(EVENT_CMD_VIDEO_APPLY_STATE_CHANGES);
          }
          break;
 
@@ -596,7 +596,7 @@ static int action_iterate_menu_viewport(const char *label, unsigned action)
    aspectratio_lut[ASPECT_RATIO_CUSTOM].value =
       (float)custom->width / custom->height;
 
-   rarch_main_command(RARCH_CMD_VIDEO_APPLY_STATE_CHANGES);
+   rarch_main_command(EVENT_CMD_VIDEO_APPLY_STATE_CHANGES);
 
    return 0;
 }

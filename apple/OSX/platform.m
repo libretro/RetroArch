@@ -256,7 +256,7 @@ static void poll_iteration(void)
    if (global && global->main_is_init)
       reply = NSTerminateCancel;
 
-   rarch_main_command(RARCH_CMD_QUIT);
+   rarch_main_command(EVENT_CMD_QUIT);
 
    return reply;
 }
@@ -274,7 +274,7 @@ static void poll_iteration(void)
          strlcpy(global->fullpath, __core.UTF8String, sizeof(global->fullpath));
 
       if (core_name)
-         rarch_main_command(RARCH_CMD_LOAD_CONTENT);
+         rarch_main_command(EVENT_CMD_LOAD_CONTENT);
       else
          [self chooseCore];
 
@@ -306,7 +306,7 @@ static void poll_iteration(void)
             strlcpy(global->fullpath, __core.UTF8String, sizeof(global->fullpath));
 
          if (core_name)
-            rarch_main_command(RARCH_CMD_LOAD_CONTENT);
+            rarch_main_command(EVENT_CMD_LOAD_CONTENT);
          else
             [self performSelector:@selector(chooseCore) withObject:nil afterDelay:.5f];
       }
@@ -346,11 +346,11 @@ static void poll_iteration(void)
    if (global && !global->main_is_init)
    {
       /* TODO/FIXME: Set core/content here. */
-      rarch_main_command(RARCH_CMD_LOAD_CORE);
-      rarch_main_command(RARCH_CMD_LOAD_CONTENT);
+      rarch_main_command(EVENT_CMD_LOAD_CORE);
+      rarch_main_command(EVENT_CMD_LOAD_CONTENT);
    }
    else
-      rarch_main_command(RARCH_CMD_QUIT);
+      rarch_main_command(EVENT_CMD_QUIT);
 }
 
 #pragma mark RetroArch_Platform
@@ -388,37 +388,37 @@ static void poll_iteration(void)
    switch (sender_tag)
    {
       case 1:
-         cmd = RARCH_CMD_RESET;
+         cmd = EVENT_CMD_RESET;
          break;
       case 2:
-         cmd = RARCH_CMD_LOAD_STATE;
+         cmd = EVENT_CMD_LOAD_STATE;
          break;
       case 3:
-         cmd = RARCH_CMD_SAVE_STATE;
+         cmd = EVENT_CMD_SAVE_STATE;
          break;
       case 4:
-         cmd = RARCH_CMD_DISK_EJECT_TOGGLE;
+         cmd = EVENT_CMD_DISK_EJECT_TOGGLE;
          break;
       case 5:
-         cmd = RARCH_CMD_DISK_PREV;
+         cmd = EVENT_CMD_DISK_PREV;
          break;
       case 6:
-         cmd = RARCH_CMD_DISK_NEXT;
+         cmd = EVENT_CMD_DISK_NEXT;
          break;
       case 7:
-         cmd = RARCH_CMD_GRAB_MOUSE_TOGGLE;
+         cmd = EVENT_CMD_GRAB_MOUSE_TOGGLE;
          break;
       case 8:
-         cmd = RARCH_CMD_MENU_TOGGLE;
+         cmd = EVENT_CMD_MENU_TOGGLE;
          break;
       case 9:
-         cmd = RARCH_CMD_PAUSE_TOGGLE;
+         cmd = EVENT_CMD_PAUSE_TOGGLE;
          break;
       case 20:
-         cmd = RARCH_CMD_FULLSCREEN_TOGGLE;
+         cmd = EVENT_CMD_FULLSCREEN_TOGGLE;
          break;
       default:
-         cmd = RARCH_CMD_NONE;
+         cmd = EVENT_CMD_NONE;
          break;
    }
    
@@ -426,7 +426,7 @@ static void poll_iteration(void)
    {
       unsigned idx = (sender_tag - (10-1));
       global->pending.windowed_scale = idx;
-      cmd = RARCH_CMD_RESIZE_WINDOWED_SCALE;
+      cmd = EVENT_CMD_RESIZE_WINDOWED_SCALE;
    }
 
    rarch_main_command(cmd);

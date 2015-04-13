@@ -24,177 +24,177 @@
 extern "C" {
 #endif
 
-enum basic_event
+enum event_command
 {
-   RARCH_CMD_NONE = 0,
+   EVENT_CMD_NONE = 0,
    /* Resets RetroArch. */
-   RARCH_CMD_RESET,
+   EVENT_CMD_RESET,
    /* Loads content file. */
-   RARCH_CMD_LOAD_CONTENT,
-   RARCH_CMD_LOAD_CONTENT_PERSIST,
+   EVENT_CMD_LOAD_CONTENT,
+   EVENT_CMD_LOAD_CONTENT_PERSIST,
    /* Loads core. */
-   RARCH_CMD_LOAD_CORE_DEINIT,
-   RARCH_CMD_LOAD_CORE,
-   RARCH_CMD_LOAD_CORE_PERSIST,
-   RARCH_CMD_UNLOAD_CORE,
-   RARCH_CMD_LOAD_STATE,
-   RARCH_CMD_SAVE_STATE,
+   EVENT_CMD_LOAD_CORE_DEINIT,
+   EVENT_CMD_LOAD_CORE,
+   EVENT_CMD_LOAD_CORE_PERSIST,
+   EVENT_CMD_UNLOAD_CORE,
+   EVENT_CMD_LOAD_STATE,
+   EVENT_CMD_SAVE_STATE,
    /* Takes screenshot. */
-   RARCH_CMD_TAKE_SCREENSHOT,
+   EVENT_CMD_TAKE_SCREENSHOT,
    /* Initializes dummy core. */
-   RARCH_CMD_PREPARE_DUMMY,
+   EVENT_CMD_PREPARE_DUMMY,
    /* Quits RetroArch. */
-   RARCH_CMD_QUIT,
+   EVENT_CMD_QUIT,
    /* Reinitialize all drivers. */
-   RARCH_CMD_REINIT,
+   EVENT_CMD_REINIT,
    /* Deinitialize rewind. */
-   RARCH_CMD_REWIND_DEINIT,
+   EVENT_CMD_REWIND_DEINIT,
    /* Initializes rewind. */
-   RARCH_CMD_REWIND_INIT,
+   EVENT_CMD_REWIND_INIT,
    /* Toggles rewind. */
-   RARCH_CMD_REWIND_TOGGLE,
+   EVENT_CMD_REWIND_TOGGLE,
    /* Deinitializes autosave. */
-   RARCH_CMD_AUTOSAVE_DEINIT,
+   EVENT_CMD_AUTOSAVE_DEINIT,
    /* Initializes autosave. */
-   RARCH_CMD_AUTOSAVE_INIT,
-   RARCH_CMD_AUTOSAVE_STATE,
+   EVENT_CMD_AUTOSAVE_INIT,
+   EVENT_CMD_AUTOSAVE_STATE,
    /* Stops audio. */
-   RARCH_CMD_AUDIO_STOP,
+   EVENT_CMD_AUDIO_STOP,
    /* Starts audio. */
-   RARCH_CMD_AUDIO_START,
+   EVENT_CMD_AUDIO_START,
    /* Mutes audio. */
-   RARCH_CMD_AUDIO_MUTE_TOGGLE,
+   EVENT_CMD_AUDIO_MUTE_TOGGLE,
    /* Initializes overlay. */
-   RARCH_CMD_OVERLAY_INIT,
+   EVENT_CMD_OVERLAY_INIT,
    /* Deinitializes overlay. */
-   RARCH_CMD_OVERLAY_DEINIT,
+   EVENT_CMD_OVERLAY_DEINIT,
    /* Sets current scale factor for overlay. */
-   RARCH_CMD_OVERLAY_SET_SCALE_FACTOR,
+   EVENT_CMD_OVERLAY_SET_SCALE_FACTOR,
    /* Sets current alpha modulation for overlay. */
-   RARCH_CMD_OVERLAY_SET_ALPHA_MOD,
+   EVENT_CMD_OVERLAY_SET_ALPHA_MOD,
    /* Cycle to next overlay. */
-   RARCH_CMD_OVERLAY_NEXT,
+   EVENT_CMD_OVERLAY_NEXT,
    /* Deinitializes overlay. */
-   RARCH_CMD_DSP_FILTER_INIT,
+   EVENT_CMD_DSP_FILTER_INIT,
    /* Deinitializes graphics filter. */
-   RARCH_CMD_DSP_FILTER_DEINIT,
+   EVENT_CMD_DSP_FILTER_DEINIT,
    /* Deinitializes GPU recoring. */
-   RARCH_CMD_GPU_RECORD_DEINIT,
+   EVENT_CMD_GPU_RECORD_DEINIT,
    /* Initializes recording system. */
-   RARCH_CMD_RECORD_INIT,
+   EVENT_CMD_RECORD_INIT,
    /* Deinitializes recording system. */
-   RARCH_CMD_RECORD_DEINIT,
+   EVENT_CMD_RECORD_DEINIT,
    /* Deinitializes history playlist. */
-   RARCH_CMD_HISTORY_DEINIT,
+   EVENT_CMD_HISTORY_DEINIT,
    /* Initializes history playlist. */
-   RARCH_CMD_HISTORY_INIT,
+   EVENT_CMD_HISTORY_INIT,
    /* Deinitializes core information. */
-   RARCH_CMD_CORE_INFO_DEINIT,
+   EVENT_CMD_CORE_INFO_DEINIT,
    /* Initializes core information. */
-   RARCH_CMD_CORE_INFO_INIT,
+   EVENT_CMD_CORE_INFO_INIT,
    /* Deinitializes core. */
-   RARCH_CMD_CORE_DEINIT,
+   EVENT_CMD_CORE_DEINIT,
    /* Initializes core. */
-   RARCH_CMD_CORE_INIT,
+   EVENT_CMD_CORE_INIT,
    /* Set audio blocking state. */
-   RARCH_CMD_AUDIO_SET_BLOCKING_STATE,
+   EVENT_CMD_AUDIO_SET_BLOCKING_STATE,
    /* Set audio nonblocking state. */
-   RARCH_CMD_AUDIO_SET_NONBLOCKING_STATE,
+   EVENT_CMD_AUDIO_SET_NONBLOCKING_STATE,
    /* Apply video state changes. */
-   RARCH_CMD_VIDEO_APPLY_STATE_CHANGES,
+   EVENT_CMD_VIDEO_APPLY_STATE_CHANGES,
    /* Set video blocking state. */
-   RARCH_CMD_VIDEO_SET_BLOCKING_STATE,
+   EVENT_CMD_VIDEO_SET_BLOCKING_STATE,
    /* Set video nonblocking state. */
-   RARCH_CMD_VIDEO_SET_NONBLOCKING_STATE,
+   EVENT_CMD_VIDEO_SET_NONBLOCKING_STATE,
    /* Sets current aspect ratio index. */
-   RARCH_CMD_VIDEO_SET_ASPECT_RATIO,
-   RARCH_CMD_RESET_CONTEXT,
+   EVENT_CMD_VIDEO_SET_ASPECT_RATIO,
+   EVENT_CMD_RESET_CONTEXT,
    /* Restarts RetroArch. */
-   RARCH_CMD_RESTART_RETROARCH,
+   EVENT_CMD_RESTART_RETROARCH,
    /* Force-quit RetroArch. */
-   RARCH_CMD_QUIT_RETROARCH,
+   EVENT_CMD_QUIT_RETROARCH,
    /* Resume RetroArch when in menu. */
-   RARCH_CMD_RESUME,
+   EVENT_CMD_RESUME,
    /* Toggles pause. */
-   RARCH_CMD_PAUSE_TOGGLE,
+   EVENT_CMD_PAUSE_TOGGLE,
    /* Pauses RetroArch. */
-   RARCH_CMD_UNPAUSE,
+   EVENT_CMD_UNPAUSE,
    /* Unpauses retroArch. */
-   RARCH_CMD_PAUSE,
-   RARCH_CMD_PAUSE_CHECKS,
-   RARCH_CMD_MENU_SAVE_CONFIG,
-   RARCH_CMD_MENU_PAUSE_LIBRETRO,
+   EVENT_CMD_PAUSE,
+   EVENT_CMD_PAUSE_CHECKS,
+   EVENT_CMD_MENU_SAVE_CONFIG,
+   EVENT_CMD_MENU_PAUSE_LIBRETRO,
    /* Toggles menu on/off. */
-   RARCH_CMD_MENU_TOGGLE,
+   EVENT_CMD_MENU_TOGGLE,
    /* Applies shader changes. */
-   RARCH_CMD_SHADERS_APPLY_CHANGES,
+   EVENT_CMD_SHADERS_APPLY_CHANGES,
    /* Initializes shader directory. */
-   RARCH_CMD_SHADER_DIR_INIT,
+   EVENT_CMD_SHADER_DIR_INIT,
    /* Deinitializes shader directory. */
-   RARCH_CMD_SHADER_DIR_DEINIT,
+   EVENT_CMD_SHADER_DIR_DEINIT,
    /* Initializes controllers. */
-   RARCH_CMD_CONTROLLERS_INIT,
-   RARCH_CMD_SAVEFILES,
+   EVENT_CMD_CONTROLLERS_INIT,
+   EVENT_CMD_SAVEFILES,
    /* Initializes savefiles. */
-   RARCH_CMD_SAVEFILES_INIT,
+   EVENT_CMD_SAVEFILES_INIT,
    /* Deinitializes savefiles. */
-   RARCH_CMD_SAVEFILES_DEINIT,
+   EVENT_CMD_SAVEFILES_DEINIT,
    /* Initializes message queue. */
-   RARCH_CMD_MSG_QUEUE_INIT,
+   EVENT_CMD_MSG_QUEUE_INIT,
    /* Deinitializes message queue. */
-   RARCH_CMD_MSG_QUEUE_DEINIT,
+   EVENT_CMD_MSG_QUEUE_DEINIT,
    /* Initializes cheats. */
-   RARCH_CMD_CHEATS_INIT,
+   EVENT_CMD_CHEATS_INIT,
    /* Deinitializes cheats. */
-   RARCH_CMD_CHEATS_DEINIT,
+   EVENT_CMD_CHEATS_DEINIT,
    /* Deinitializes network system. */
-   RARCH_CMD_NETWORK_DEINIT,
+   EVENT_CMD_NETWORK_DEINIT,
    /* Initializes network system. */
-   RARCH_CMD_NETWORK_INIT,
+   EVENT_CMD_NETWORK_INIT,
    /* Initializes netplay system. */
-   RARCH_CMD_NETPLAY_INIT,
+   EVENT_CMD_NETPLAY_INIT,
    /* Deinitializes netplay system. */
-   RARCH_CMD_NETPLAY_DEINIT,
+   EVENT_CMD_NETPLAY_DEINIT,
    /* Flip netplay players. */
-   RARCH_CMD_NETPLAY_FLIP_PLAYERS,
+   EVENT_CMD_NETPLAY_FLIP_PLAYERS,
    /* Initializes BSV movie. */
-   RARCH_CMD_BSV_MOVIE_INIT,
+   EVENT_CMD_BSV_MOVIE_INIT,
    /* Deinitializes BSV movie. */
-   RARCH_CMD_BSV_MOVIE_DEINIT,
+   EVENT_CMD_BSV_MOVIE_DEINIT,
    /* Initializes command interface. */
-   RARCH_CMD_COMMAND_INIT,
+   EVENT_CMD_COMMAND_INIT,
    /* Deinitialize command interface. */
-   RARCH_CMD_COMMAND_DEINIT,
+   EVENT_CMD_COMMAND_DEINIT,
    /* Deinitializes drivers. */
-   RARCH_CMD_DRIVERS_DEINIT,
+   EVENT_CMD_DRIVERS_DEINIT,
    /* Initializes drivers. */
-   RARCH_CMD_DRIVERS_INIT,
+   EVENT_CMD_DRIVERS_INIT,
    /* Reinitializes audio driver. */
-   RARCH_CMD_AUDIO_REINIT,
+   EVENT_CMD_AUDIO_REINIT,
    /* Resizes windowed scale. Will reinitialize video driver. */
-   RARCH_CMD_RESIZE_WINDOWED_SCALE,
+   EVENT_CMD_RESIZE_WINDOWED_SCALE,
    /* Deinitializes temporary content. */
-   RARCH_CMD_TEMPORARY_CONTENT_DEINIT,
-   RARCH_CMD_SUBSYSTEM_FULLPATHS_DEINIT,
-   RARCH_CMD_LOG_FILE_DEINIT,
+   EVENT_CMD_TEMPORARY_CONTENT_DEINIT,
+   EVENT_CMD_SUBSYSTEM_FULLPATHS_DEINIT,
+   EVENT_CMD_LOG_FILE_DEINIT,
    /* Toggles disk eject. */
-   RARCH_CMD_DISK_EJECT_TOGGLE,
+   EVENT_CMD_DISK_EJECT_TOGGLE,
    /* Cycle to next disk. */
-   RARCH_CMD_DISK_NEXT,
+   EVENT_CMD_DISK_NEXT,
    /* Cycle to previous disk. */
-   RARCH_CMD_DISK_PREV,
+   EVENT_CMD_DISK_PREV,
    /* Stops rumbling. */
-   RARCH_CMD_RUMBLE_STOP,
+   EVENT_CMD_RUMBLE_STOP,
    /* Toggles mouse grab. */
-   RARCH_CMD_GRAB_MOUSE_TOGGLE,
+   EVENT_CMD_GRAB_MOUSE_TOGGLE,
    /* Toggles fullscreen mode. */
-   RARCH_CMD_FULLSCREEN_TOGGLE,
-   RARCH_CMD_PERFCNT_REPORT_FRONTEND_LOG,
-   RARCH_CMD_REMAPPING_INIT,
-   RARCH_CMD_REMAPPING_DEINIT,
-   RARCH_CMD_VOLUME_UP,
-   RARCH_CMD_VOLUME_DOWN,
-   RARCH_CMD_DATA_RUNLOOP_FREE,
+   EVENT_CMD_FULLSCREEN_TOGGLE,
+   EVENT_CMD_PERFCNT_REPORT_FRONTEND_LOG,
+   EVENT_CMD_REMAPPING_INIT,
+   EVENT_CMD_REMAPPING_DEINIT,
+   EVENT_CMD_VOLUME_UP,
+   EVENT_CMD_VOLUME_DOWN,
+   EVENT_CMD_DATA_RUNLOOP_FREE,
 };
 
 enum action_state

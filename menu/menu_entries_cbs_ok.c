@@ -298,7 +298,7 @@ static int action_ok_core_updater_list(const char *path,
       return -1;
 
 #ifdef HAVE_NETWORKING
-   rarch_main_command(RARCH_CMD_NETWORK_INIT);
+   rarch_main_command(EVENT_CMD_NETWORK_INIT);
 
    fill_pathname_join(url_path, settings->network.buildbot_url,
          ".index", sizeof(url_path));
@@ -387,7 +387,7 @@ static int action_ok_video_filter_file_load(const char *path,
    strlcpy(settings->video.softfilter_plugin, filter_path,
          sizeof(settings->video.softfilter_plugin));
 
-   rarch_main_command(RARCH_CMD_REINIT);
+   rarch_main_command(EVENT_CMD_REINIT);
 
    menu_list_flush_stack_by_needle(menu->menu_list, "video_options");
 
@@ -667,7 +667,7 @@ static int action_ok_core_load(const char *path,
 
    fill_pathname_join(settings->libretro, menu_path, path,
          sizeof(settings->libretro));
-   rarch_main_command(RARCH_CMD_LOAD_CORE);
+   rarch_main_command(EVENT_CMD_LOAD_CORE);
    menu_list_flush_stack(menu->menu_list, MENU_SETTINGS);
 #if defined(HAVE_DYNAMIC)
    /* No content needed for this core, load core immediately. */
@@ -683,7 +683,7 @@ static int action_ok_core_load(const char *path,
    /* Core selection on non-console just updates directory listing.
     * Will take effect on new content load. */
 #elif defined(RARCH_CONSOLE)
-   rarch_main_command(RARCH_CMD_RESTART_RETROARCH);
+   rarch_main_command(EVENT_CMD_RESTART_RETROARCH);
    return -1;
 #endif
 }
@@ -818,7 +818,7 @@ static int action_ok_disk_image_append(const char *path,
    fill_pathname_join(image, menu_path, path, sizeof(image));
    rarch_disk_control_append_image(image);
 
-   rarch_main_command(RARCH_CMD_RESUME);
+   rarch_main_command(EVENT_CMD_RESUME);
 
    menu_list_flush_stack(menu->menu_list, MENU_SETTINGS);
    return -1;
@@ -845,7 +845,7 @@ static int action_ok_file_load_with_detect_core(const char *path,
 
    if (ret == -1)
    {
-      rarch_main_command(RARCH_CMD_LOAD_CORE);
+      rarch_main_command(EVENT_CMD_LOAD_CORE);
       menu_entries_common_load_content(false);
       return -1;
    }
@@ -951,7 +951,7 @@ static int action_ok_custom_viewport(const char *path,
 
    settings->video.aspect_ratio_idx = ASPECT_RATIO_CUSTOM;
 
-   rarch_main_command(RARCH_CMD_VIDEO_SET_ASPECT_RATIO);
+   rarch_main_command(EVENT_CMD_VIDEO_SET_ASPECT_RATIO);
    return 0;
 }
 
@@ -967,18 +967,18 @@ static int generic_action_ok_command(unsigned cmd)
 static int action_ok_load_state(const char *path,
       const char *label, unsigned type, size_t idx)
 {
-   if (generic_action_ok_command(RARCH_CMD_LOAD_STATE) == -1)
+   if (generic_action_ok_command(EVENT_CMD_LOAD_STATE) == -1)
       return -1;
-   return generic_action_ok_command(RARCH_CMD_RESUME);
+   return generic_action_ok_command(EVENT_CMD_RESUME);
 }
 
 
 static int action_ok_save_state(const char *path,
       const char *label, unsigned type, size_t idx)
 {
-   if (generic_action_ok_command(RARCH_CMD_SAVE_STATE) == -1)
+   if (generic_action_ok_command(EVENT_CMD_SAVE_STATE) == -1)
       return -1;
-   return generic_action_ok_command(RARCH_CMD_RESUME);
+   return generic_action_ok_command(EVENT_CMD_RESUME);
 }
 
 static int action_ok_core_updater_download(const char *path,
@@ -1005,43 +1005,43 @@ static int action_ok_core_updater_download(const char *path,
 static int action_ok_disk_cycle_tray_status(const char *path,
       const char *label, unsigned type, size_t idx)
 {
-   return generic_action_ok_command(RARCH_CMD_DISK_EJECT_TOGGLE);
+   return generic_action_ok_command(EVENT_CMD_DISK_EJECT_TOGGLE);
 }
 
 static int action_ok_unload_core(const char *path,
       const char *label, unsigned type, size_t idx)
 {
-   return generic_action_ok_command(RARCH_CMD_UNLOAD_CORE);
+   return generic_action_ok_command(EVENT_CMD_UNLOAD_CORE);
 }
 
 static int action_ok_quit(const char *path,
       const char *label, unsigned type, size_t idx)
 {
-   return generic_action_ok_command(RARCH_CMD_QUIT);
+   return generic_action_ok_command(EVENT_CMD_QUIT);
 }
 
 static int action_ok_save_new_config(const char *path,
       const char *label, unsigned type, size_t idx)
 {
-   return generic_action_ok_command(RARCH_CMD_MENU_SAVE_CONFIG);
+   return generic_action_ok_command(EVENT_CMD_MENU_SAVE_CONFIG);
 }
 
 static int action_ok_resume_content(const char *path,
       const char *label, unsigned type, size_t idx)
 {
-   return generic_action_ok_command(RARCH_CMD_RESUME);
+   return generic_action_ok_command(EVENT_CMD_RESUME);
 }
 
 static int action_ok_restart_content(const char *path,
       const char *label, unsigned type, size_t idx)
 {
-   return generic_action_ok_command(RARCH_CMD_RESET);
+   return generic_action_ok_command(EVENT_CMD_RESET);
 }
 
 static int action_ok_screenshot(const char *path,
       const char *label, unsigned type, size_t idx)
 {
-   return generic_action_ok_command(RARCH_CMD_TAKE_SCREENSHOT);
+   return generic_action_ok_command(EVENT_CMD_TAKE_SCREENSHOT);
 }
 
 static int action_ok_file_load_or_resume(const char *path,
@@ -1054,12 +1054,12 @@ static int action_ok_file_load_or_resume(const char *path,
       return -1;
 
    if (!strcmp(menu->deferred_path, global->fullpath))
-      return generic_action_ok_command(RARCH_CMD_RESUME);
+      return generic_action_ok_command(EVENT_CMD_RESUME);
    else
    {
       strlcpy(global->fullpath,
             menu->deferred_path, sizeof(global->fullpath));
-      rarch_main_command(RARCH_CMD_LOAD_CORE);
+      rarch_main_command(EVENT_CMD_LOAD_CORE);
       rarch_main_set_state(RARCH_ACTION_STATE_LOAD_CONTENT);
       return -1;
    }
@@ -1068,7 +1068,7 @@ static int action_ok_file_load_or_resume(const char *path,
 static int action_ok_shader_apply_changes(const char *path,
       const char *label, unsigned type, size_t idx)
 {
-   return generic_action_ok_command(RARCH_CMD_SHADERS_APPLY_CHANGES);
+   return generic_action_ok_command(EVENT_CMD_SHADERS_APPLY_CHANGES);
 }
 
 static int action_ok_lookup_setting(const char *path,
@@ -1188,7 +1188,7 @@ static int action_ok_video_resolution(const char *path,
       global->console.screen.pal60_enable = false;
    }
 
-   rarch_main_command(RARCH_CMD_REINIT);
+   rarch_main_command(EVENT_CMD_REINIT);
 #else
    if (video_driver_get_video_output_size(&width, &height))
       video_driver_set_video_mode(width, height, true);

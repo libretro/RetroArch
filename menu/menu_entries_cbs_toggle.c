@@ -479,10 +479,10 @@ static int disk_options_disk_idx_toggle(unsigned type, const char *label,
    switch (action)
    {
       case MENU_ACTION_LEFT:
-         rarch_main_command(RARCH_CMD_DISK_PREV);
+         rarch_main_command(EVENT_CMD_DISK_PREV);
          break;
       case MENU_ACTION_RIGHT:
-         rarch_main_command(RARCH_CMD_DISK_NEXT);
+         rarch_main_command(EVENT_CMD_DISK_NEXT);
          break;
    }
 

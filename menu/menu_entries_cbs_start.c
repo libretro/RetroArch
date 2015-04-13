@@ -40,7 +40,7 @@ static int action_start_video_filter_file_load(unsigned type, const char *label,
    settings_t *settings = config_get_ptr();
 
    settings->video.softfilter_plugin[0] = '\0';
-   rarch_main_command(RARCH_CMD_REINIT);
+   rarch_main_command(EVENT_CMD_REINIT);
    return 0;
 }
 

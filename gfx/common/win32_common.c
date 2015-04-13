@@ -60,7 +60,7 @@ static bool win32_browser(
 LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
 {
     WPARAM mode         = wparam & 0xffff;
-	unsigned cmd         = RARCH_CMD_NONE;
+	unsigned cmd         = EVENT_CMD_NONE;
 	bool do_wm_close     = false;
    settings_t *settings = config_get_ptr();
    global_t   *global   = global_get_ptr();
@@ -96,11 +96,11 @@ LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
                {
                   case ID_M_LOAD_CORE:
                      strlcpy(settings->libretro, win32_file, sizeof(settings->libretro));
-                     cmd = RARCH_CMD_LOAD_CORE;
+                     cmd = EVENT_CMD_LOAD_CORE;
                      break;
                   case ID_M_LOAD_CONTENT:
                      strlcpy(global->fullpath, win32_file, sizeof(global->fullpath));
-                     cmd = RARCH_CMD_LOAD_CONTENT;
+                     cmd = EVENT_CMD_LOAD_CONTENT;
                      do_wm_close = true;
                      break;
                }
@@ -108,34 +108,34 @@ LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
          }
          break;
       case ID_M_RESET:
-         cmd = RARCH_CMD_RESET;
+         cmd = EVENT_CMD_RESET;
          break;
       case ID_M_MUTE_TOGGLE:
-         cmd = RARCH_CMD_AUDIO_MUTE_TOGGLE;
+         cmd = EVENT_CMD_AUDIO_MUTE_TOGGLE;
          break;
       case ID_M_MENU_TOGGLE:
-         cmd = RARCH_CMD_MENU_TOGGLE;
+         cmd = EVENT_CMD_MENU_TOGGLE;
          break;
       case ID_M_PAUSE_TOGGLE:
-         cmd = RARCH_CMD_PAUSE_TOGGLE;
+         cmd = EVENT_CMD_PAUSE_TOGGLE;
          break;
       case ID_M_LOAD_STATE:
-         cmd = RARCH_CMD_LOAD_STATE;
+         cmd = EVENT_CMD_LOAD_STATE;
          break;
       case ID_M_SAVE_STATE:
-         cmd = RARCH_CMD_SAVE_STATE;
+         cmd = EVENT_CMD_SAVE_STATE;
          break;
       case ID_M_DISK_CYCLE:
-         cmd = RARCH_CMD_DISK_EJECT_TOGGLE;
+         cmd = EVENT_CMD_DISK_EJECT_TOGGLE;
          break;
       case ID_M_DISK_NEXT:
-         cmd = RARCH_CMD_DISK_NEXT;
+         cmd = EVENT_CMD_DISK_NEXT;
          break;
       case ID_M_DISK_PREV:
-         cmd = RARCH_CMD_DISK_PREV;
+         cmd = EVENT_CMD_DISK_PREV;
          break;
       case ID_M_FULL_SCREEN:
-         cmd = RARCH_CMD_FULLSCREEN_TOGGLE;
+         cmd = EVENT_CMD_FULLSCREEN_TOGGLE;
          break;
 #ifdef HAVE_OPENGL
       case ID_M_SHADER_PARAMETERS:
@@ -143,10 +143,10 @@ LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
          break;
 #endif
       case ID_M_MOUSE_GRAB:
-         cmd = RARCH_CMD_GRAB_MOUSE_TOGGLE;
+         cmd = EVENT_CMD_GRAB_MOUSE_TOGGLE;
          break;
       case ID_M_TAKE_SCREENSHOT:
-         cmd = RARCH_CMD_TAKE_SCREENSHOT;
+         cmd = EVENT_CMD_TAKE_SCREENSHOT;
          break;
       case ID_M_QUIT:
          do_wm_close = true;
@@ -156,7 +156,7 @@ LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
          {
             unsigned idx = (mode - (ID_M_WINDOW_SCALE_1X-1));
             global->pending.windowed_scale = idx;
-            cmd = RARCH_CMD_RESIZE_WINDOWED_SCALE;
+            cmd = EVENT_CMD_RESIZE_WINDOWED_SCALE;
          }
          else if (mode == ID_M_STATE_INDEX_AUTO)
          {
@@ -171,7 +171,7 @@ LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
          break;
    }
 
-	if (cmd != RARCH_CMD_NONE)
+	if (cmd != EVENT_CMD_NONE)
 		rarch_main_command(cmd);
 
 	if (do_wm_close)

@@ -237,14 +237,14 @@ static bool ctr_frame(void* data, const void* frame,
 
    if(!aptMainLoop())
    {
-      rarch_main_command(RARCH_CMD_QUIT);
+      rarch_main_command(EVENT_CMD_QUIT);
       goto end;
    }
 
    extern bool select_pressed;
    if (select_pressed)
    {
-      rarch_main_command(RARCH_CMD_QUIT);
+      rarch_main_command(EVENT_CMD_QUIT);
       goto end;
    }
 
