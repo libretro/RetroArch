@@ -208,9 +208,13 @@ enum
 
    get_ios_version(&major, &minor);
     
-   if (!(major >= 7) && [event respondsToSelector:@selector(_gsEvent)])
+   if ((major < 7) && [event respondsToSelector:@selector(_gsEvent)])
    {
-      // Stolen from: http://nacho4d-nacho4d.blogspot.com/2012/01/catching-keyboard-events-in-ios.html
+      /* Keyboard event hack for iOS versions prior to iOS 7.
+       *
+       * Derived from: 
+       * http://nacho4d-nacho4d.blogspot.com/2012/01/catching-keyboard-events-in-ios.html
+       */
       const uint8_t *eventMem = objc_unretainedPointer([event performSelector:@selector(_gsEvent)]);
       int           eventType = eventMem ? *(int*)&eventMem[8] : 0;
 
