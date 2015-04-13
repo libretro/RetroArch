@@ -49,6 +49,6 @@ extern apple_frontend_settings_t apple_frontend_settings;
 - (void)refreshSystemConfig;
 @end
 
-int get_ios_version_major(void);
+void get_ios_version_major(int *major, int *minor);
 
 #endif

@@ -337,10 +337,15 @@ static void file_action(enum file_action action, NSString* source, NSString* tar
 
       if (idx_path)
       {
+         int major, minor;
          bool is_zip;
          UIActionSheet *menu;
-         NSString *button4_name = (get_ios_version_major() >= 7) ? BOXSTRING("AirDrop") : BOXSTRING("Delete");
-         NSString *button5_name = (get_ios_version_major() >= 7) ? BOXSTRING("Delete") : nil;
+         NSString *button4_name, *button5_name;
+          
+         get_ios_version_major(&major, &minor);
+          
+         button4_name = (major >= 7) ? BOXSTRING("AirDrop") : BOXSTRING("Delete");
+         button5_name = (major >= 7) ? BOXSTRING("Delete") : nil;
          
          self.selectedItem      = [self itemForIndexPath:idx_path];
          is_zip                 = !(strcmp(self.selectedItem.path.pathExtension.UTF8String, "zip"));
@@ -357,8 +362,14 @@ static void file_action(enum file_action action, NSString* source, NSString* tar
 /* Called by the action sheet created in (void)fileAction: */
 - (void)actionSheet:(UIActionSheet*)actionSheet clickedButtonAtIndex:(NSInteger)buttonIndex
 {
+   int major, minor;
    NSString* target = self.selectedItem.path;
    NSString* action = [actionSheet buttonTitleAtIndex:buttonIndex];
+    
+   get_ios_version_major(&major, &minor);
+    
+   (void)major;
+   (void)minor;
    
    if (!strcmp(action.UTF8String, "Unzip"))
    {
@@ -382,7 +393,7 @@ static void file_action(enum file_action action, NSString* source, NSString* tar
       [alertView show];
    }
 #ifdef __IPHONE_7_0
-   else if (!strcmp(action.UTF8String, "AirDrop") && (get_ios_version_major() >= 7))
+   else if (!strcmp(action.UTF8String, "AirDrop") && (major >= 7))
    {
       /* TODO: ZIP if not already zipped. */
       NSURL                    *url = [NSURL fileURLWithPath:self.selectedItem.path isDirectory:self.selectedItem.isDirectory];

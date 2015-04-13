@@ -68,14 +68,14 @@ void apple_rarch_exited(void)
 
 apple_frontend_settings_t apple_frontend_settings;
 
-int get_ios_version_major(void)
+void get_ios_version_major(int *major, int *minor)
 {
-   static int version = -1;
-   
-   if (version < 0)
-      version = (int)[[[UIDevice currentDevice] systemVersion] floatValue];
-   
-   return version;
+    NSArray *decomposed_os_version = [[UIDevice currentDevice].systemVersion componentsSeparatedByString:@"."];
+    
+    if (major && decomposed_os_version.count > 0)
+        *major = [decomposed_os_version[0] integerValue];
+    if (minor && decomposed_os_version.count > 1)
+        *minor = [decomposed_os_version[1] integerValue];
 }
 
 extern float apple_gfx_ctx_get_native_scale(void);
@@ -200,12 +200,15 @@ enum
 
 - (void)sendEvent:(UIEvent *)event
 {
+   int major, minor;
    [super sendEvent:event];
 
    if (event.allTouches.count)
       handle_touch_event(event.allTouches.allObjects);
 
-   if (!(get_ios_version_major() >= 7) && [event respondsToSelector:@selector(_gsEvent)])
+   get_ios_version_major(&major, &minor);
+    
+   if (!(major >= 7) && [event respondsToSelector:@selector(_gsEvent)])
    {
       // Stolen from: http://nacho4d-nacho4d.blogspot.com/2012/01/catching-keyboard-events-in-ios.html
       const uint8_t *eventMem = objc_unretainedPointer([event performSelector:@selector(_gsEvent)]);

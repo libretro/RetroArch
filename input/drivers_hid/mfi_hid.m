@@ -15,6 +15,7 @@
 
 #include <AvailabilityMacros.h>
 #import <GameController/GameController.h>
+#include <boolean.h>
 #include "mfi_hid.h"
 #include "../../input/drivers/apple_input.h"
 
@@ -23,9 +24,12 @@ enum
    GCCONTROLLER_PLAYER_INDEX_UNSET = -1,
 };
 
-static BOOL apple_gamecontroller_available(void)
+static bool apple_gamecontroller_available(void)
 {
-   if (get_ios_version_major() <= 6)
+   int major, minor;
+   get_ios_version_major(&major, &minor);
+    
+   if (major <= 6)
       return false;
    /* by checking for extern symbols defined by the framework, we can check for its
     * existence at runtime. This is the Apple endorsed way of dealing with this */
