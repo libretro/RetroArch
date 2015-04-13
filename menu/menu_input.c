@@ -467,6 +467,7 @@ int menu_input_bind_iterate_keyboard(void)
 static int menu_input_mouse(unsigned *action)
 {
    const struct retro_keybind *binds[MAX_USERS];
+   driver_t *driver          = driver_get_ptr();
    menu_handle_t *menu       = menu_driver_get_ptr();
    runloop_t *runloop        = rarch_main_get_ptr();
    settings_t *settings      = config_get_ptr();
@@ -475,7 +476,8 @@ static int menu_input_mouse(unsigned *action)
    if (!menu)
       return -1;
 
-   if (!settings->menu.mouse.enable || settings->input.overlay_enable)
+   if (!settings->menu.mouse.enable || (settings->input.overlay_enable
+         && driver && driver->overlay))
    {
       menu->mouse.left       = 0;
       menu->mouse.right      = 0;
