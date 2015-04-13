@@ -23,25 +23,16 @@
 #include <boolean.h>
 #include "libretro_version_1.h"
 #include "dynamic.h"
-#include "content.h"
 #include "configuration.h"
 #include <file/file_path.h>
-#include <file/dir_list.h>
 #include "general.h"
 #include "retroarch.h"
-#include "runloop.h"
 #include "runloop_data.h"
 #include <compat/strl.h>
-#include "screenshot.h"
 #include "performance.h"
 #include "cheats.h"
 #include <compat/getopt.h>
 #include <compat/posix_string.h>
-
-#include "input/keyboard_line.h"
-#include "input/input_remapping.h"
-
-#include "record/record_driver.h"
 
 #include "git_version.h"
 #include "intl/intl.h"
@@ -50,14 +41,6 @@
 #include "menu/menu.h"
 #include "menu/menu_shader.h"
 #include "menu/menu_input.h"
-#endif
-
-#ifdef HAVE_NETWORKING
-#include <net/net_compat.h>
-#endif
-
-#ifdef HAVE_NETPLAY
-#include "netplay.h"
 #endif
 
 #ifdef _WIN32
