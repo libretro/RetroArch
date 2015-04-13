@@ -385,18 +385,18 @@ const char *config_get_default_location(void)
 static void config_set_defaults(void)
 {
    unsigned i, j;
-   settings_t *settings = config_get_ptr();
-   global_t   *global   = global_get_ptr();
-   const char *def_video = config_get_default_video();
-   const char *def_audio = config_get_default_audio();
+   settings_t *settings            = config_get_ptr();
+   global_t   *global              = global_get_ptr();
+   const char *def_video           = config_get_default_video();
+   const char *def_audio           = config_get_default_audio();
    const char *def_audio_resampler = config_get_default_audio_resampler();
-   const char *def_input = config_get_default_input();
-   const char *def_joypad = config_get_default_joypad();
+   const char *def_input           = config_get_default_input();
+   const char *def_joypad          = config_get_default_joypad();
 #ifdef HAVE_MENU
-   const char *def_menu  = config_get_default_menu();
+   const char *def_menu            = config_get_default_menu();
 #endif
-   const char *def_camera = config_get_default_camera();
-   const char *def_location = config_get_default_location();
+   const char *def_camera          = config_get_default_camera();
+   const char *def_location        = config_get_default_location();
 
    if (def_camera)
       strlcpy(settings->camera.driver,
@@ -425,7 +425,7 @@ static void config_set_defaults(void)
             def_menu,  sizeof(settings->menu.driver));
 #endif
 
-   settings->history_list_enable = def_history_list_enable;
+   settings->history_list_enable         = def_history_list_enable;
    settings->load_dummy_on_core_shutdown = load_dummy_on_core_shutdown;
 
    settings->video.scale                 = scale;
@@ -444,16 +444,16 @@ static void config_set_defaults(void)
    settings->video.threaded              = video_threaded;
 
    if (g_defaults.settings.video_threaded_enable != video_threaded)
-      settings->video.threaded = g_defaults.settings.video_threaded_enable;
+      settings->video.threaded           = g_defaults.settings.video_threaded_enable;
 
 #ifdef HAVE_THREADS
    settings->menu.threaded_data_runloop_enable = threaded_data_runloop_enable;
 #endif
-   settings->video.shared_context = video_shared_context;
-   settings->video.force_srgb_disable = false;
+   settings->video.shared_context              = video_shared_context;
+   settings->video.force_srgb_disable          = false;
 #ifdef GEKKO
-   settings->video.viwidth = video_viwidth;
-   settings->video.vfilter = video_vfilter;
+   settings->video.viwidth                     = video_viwidth;
+   settings->video.vfilter                     = video_vfilter;
 #endif
    settings->video.smooth = video_smooth;
    settings->video.force_aspect = force_aspect;
@@ -474,45 +474,44 @@ static void config_set_defaults(void)
    settings->video.msg_color_g = ((message_color >>  8) & 0xff) / 255.0f;
    settings->video.msg_color_b = ((message_color >>  0) & 0xff) / 255.0f;
 
-   settings->video.refresh_rate = refresh_rate;
+   settings->video.refresh_rate                = refresh_rate;
 
    if (g_defaults.settings.video_refresh_rate > 0.0 &&
          g_defaults.settings.video_refresh_rate != refresh_rate)
-      settings->video.refresh_rate = g_defaults.settings.video_refresh_rate;
+      settings->video.refresh_rate             = g_defaults.settings.video_refresh_rate;
 
-   settings->video.post_filter_record = post_filter_record;
-   settings->video.gpu_record = gpu_record;
-   settings->video.gpu_screenshot = gpu_screenshot;
-   settings->video.rotation = ORIENTATION_NORMAL;
+   settings->video.post_filter_record          = post_filter_record;
+   settings->video.gpu_record                  = gpu_record;
+   settings->video.gpu_screenshot              = gpu_screenshot;
+   settings->video.rotation                    = ORIENTATION_NORMAL;
 
-   settings->audio.enable = audio_enable;
-   settings->audio.mute_enable = false;
-   settings->audio.out_rate = out_rate;
-   settings->audio.block_frames = 0;
+   settings->audio.enable                      = audio_enable;
+   settings->audio.mute_enable                 = false;
+   settings->audio.out_rate                    = out_rate;
+   settings->audio.block_frames                = 0;
    if (audio_device)
       strlcpy(settings->audio.device,
             audio_device, sizeof(settings->audio.device));
 
    if (!g_defaults.settings.out_latency)
-      g_defaults.settings.out_latency = out_latency;
+      g_defaults.settings.out_latency          = out_latency;
 
+   settings->audio.latency                     = g_defaults.settings.out_latency;
+   settings->audio.sync                        = audio_sync;
+   settings->audio.rate_control                = rate_control;
+   settings->audio.rate_control_delta          = rate_control_delta;
+   settings->audio.max_timing_skew             = max_timing_skew;
+   settings->audio.volume                      = audio_volume;
+   global->audio_data.volume_gain              = db_to_gain(settings->audio.volume);
 
-   settings->audio.latency = g_defaults.settings.out_latency;
-   settings->audio.sync = audio_sync;
-   settings->audio.rate_control = rate_control;
-   settings->audio.rate_control_delta = rate_control_delta;
-   settings->audio.max_timing_skew = max_timing_skew;
-   settings->audio.volume = audio_volume;
-   global->audio_data.volume_gain = db_to_gain(settings->audio.volume);
-
-   settings->rewind_enable = rewind_enable;
-   settings->rewind_buffer_size = rewind_buffer_size;
-   settings->rewind_granularity = rewind_granularity;
-   settings->slowmotion_ratio = slowmotion_ratio;
-   settings->fastforward_ratio = fastforward_ratio;
+   settings->rewind_enable                     = rewind_enable;
+   settings->rewind_buffer_size                = rewind_buffer_size;
+   settings->rewind_granularity                = rewind_granularity;
+   settings->slowmotion_ratio                  = slowmotion_ratio;
+   settings->fastforward_ratio                 = fastforward_ratio;
    settings->fastforward_ratio_throttle_enable = fastforward_ratio_throttle_enable;
-   settings->pause_nonactive = pause_nonactive;
-   settings->autosave_interval = autosave_interval;
+   settings->pause_nonactive                   = pause_nonactive;
+   settings->autosave_interval                 = autosave_interval;
 
    settings->block_sram_overwrite = block_sram_overwrite;
    settings->savestate_auto_index = savestate_auto_index;
@@ -521,38 +520,40 @@ static void config_set_defaults(void)
    settings->network_cmd_enable   = network_cmd_enable;
    settings->network_cmd_port     = network_cmd_port;
    settings->stdin_cmd_enable     = stdin_cmd_enable;
-   settings->content_history_size    = default_content_history_size;
+   settings->content_history_size = default_content_history_size;
    settings->libretro_log_level   = libretro_log_level;
 
 #ifdef HAVE_MENU
-   settings->menu_show_start_screen = menu_show_start_screen;
-   settings->menu.pause_libretro    = true;
-   settings->menu.mouse.enable      = false;
-   settings->menu.pointer.enable    = pointer_enable;
-   settings->menu.timedate_enable   = true;
-   settings->menu.core_enable       = true;
-   *settings->menu.wallpaper = '\0';
-   settings->menu.navigation.wraparound.horizontal_enable = true;
-   settings->menu.navigation.wraparound.vertical_enable = true;
+   settings->menu_show_start_screen                 = menu_show_start_screen;
+   settings->menu.pause_libretro                    = true;
+   settings->menu.mouse.enable                      = false;
+   settings->menu.pointer.enable                    = pointer_enable;
+   settings->menu.timedate_enable                   = true;
+   settings->menu.core_enable                       = true;
+   *settings->menu.wallpaper                        = '\0';
+   settings->menu.collapse_subgroups_enable         = collapse_subgroups_enable;
+   settings->menu.show_advanced_settings            = show_advanced_settings;
+   settings->menu.entry_normal_color                = menu_entry_normal_color;
+   settings->menu.entry_hover_color                 = menu_entry_hover_color;
+   settings->menu.title_color                       = menu_title_color;
+
+   settings->menu.navigation.wraparound.horizontal_enable               = true;
+   settings->menu.navigation.wraparound.vertical_enable                 = true;
    settings->menu.navigation.browser.filter.supported_extensions_enable = true;
-   settings->menu.collapse_subgroups_enable = collapse_subgroups_enable;
-   settings->menu.show_advanced_settings = show_advanced_settings;
-   settings->menu.entry_normal_color = menu_entry_normal_color;
-   settings->menu.entry_hover_color  = menu_entry_hover_color;
-   settings->menu.title_color        = menu_title_color;
 #endif
 
-   settings->ui.menubar_enable = true;
-   settings->ui.suspend_screensaver_enable = true;
+   settings->ui.companion_start_on_boot             = true;
+   settings->ui.menubar_enable                      = true;
+   settings->ui.suspend_screensaver_enable          = true;
 
-   settings->location.allow = false;
-   settings->camera.allow = false;
+   settings->location.allow                         = false;
+   settings->camera.allow                           = false;
 
    settings->input.autoconfig_descriptor_label_show = true;
-   settings->input.input_descriptor_label_show = input_descriptor_label_show;
-   settings->input.input_descriptor_hide_unbound = input_descriptor_hide_unbound;
-   settings->input.remap_binds_enable = true;
-   settings->input.max_users = MAX_USERS;
+   settings->input.input_descriptor_label_show      = input_descriptor_label_show;
+   settings->input.input_descriptor_hide_unbound    = input_descriptor_hide_unbound;
+   settings->input.remap_binds_enable               = true;
+   settings->input.max_users                        = MAX_USERS;
 
    rarch_assert(sizeof(settings->input.binds[0]) >= sizeof(retro_keybinds_1));
    rarch_assert(sizeof(settings->input.binds[1]) >= sizeof(retro_keybinds_rest));
@@ -569,7 +570,7 @@ static void config_set_defaults(void)
    {
       for (j = 0; j < RARCH_BIND_LIST_END; j++)
       {
-         settings->input.autoconf_binds[i][j].joykey = NO_BTN;
+         settings->input.autoconf_binds[i][j].joykey  = NO_BTN;
          settings->input.autoconf_binds[i][j].joyaxis = AXIS_NONE;
       }
    }
@@ -1281,6 +1282,8 @@ static bool config_load_file(const char *path, bool set_defaults)
    CONFIG_GET_BOOL_BASE(conf, settings, input.input_descriptor_label_show, "input_descriptor_label_show");
    CONFIG_GET_BOOL_BASE(conf, settings, input.input_descriptor_hide_unbound, "input_descriptor_hide_unbound");
    CONFIG_GET_BOOL_BASE(conf, settings, input.autoconfig_descriptor_label_show, "autoconfig_descriptor_label_show");
+
+   CONFIG_GET_BOOL_BASE(conf, settings, ui.companion_start_on_boot, "ui_companion_start_on_boot");
 
    config_get_path(conf, "core_updater_buildbot_url",
          settings->network.buildbot_url, sizeof(settings->network.buildbot_url));
@@ -2148,6 +2151,7 @@ bool config_save_file(const char *path)
    config_set_int(conf, "input_max_users", settings->input.max_users);
    config_set_float(conf, "input_axis_threshold",
          settings->input.axis_threshold);
+   config_set_bool(conf, "ui_companion_start_on_boot", settings->ui.companion_start_on_boot);
    config_set_bool(conf, "video_gpu_record", settings->video.gpu_record);
    config_set_bool(conf, "input_remap_binds_enable",
          settings->input.remap_binds_enable);

@@ -5475,6 +5475,18 @@ static bool setting_append_list_ui_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
+   
+   CONFIG_BOOL(
+         settings->ui.companion_start_on_boot,
+         "ui_companion_start_on_boot",
+         "UI Companion Start on Boot",
+         true,
+         "OFF",
+         "ON",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
 
    CONFIG_BOOL(
          settings->ui.menubar_enable,
