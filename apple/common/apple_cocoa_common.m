@@ -87,9 +87,9 @@ void CFSearchPathForDirectoriesInDomains(unsigned flags,
    CFTypeRef array_val = (CFTypeRef)CFBridgingRetainCompat(
          NSSearchPathForDirectoriesInDomains(NSConvertFlagsCF(flags),
             NSConvertDomainFlagsCF(domain_mask), (BOOL)expand_tilde));
-   CFArrayRef array = array_val ? CFRetain(array_val) : NULL;
-   CFTypeRef path_val = (CFTypeRef)CFArrayGetValueAtIndex(array, 0);
-   CFStringRef path = path_val ? CFRetain(path_val) : NULL;
+   CFArrayRef   array  = array_val ? CFRetain(array_val) : NULL;
+   CFTypeRef path_val  = (CFTypeRef)CFArrayGetValueAtIndex(array, 0);
+   CFStringRef    path = path_val ? CFRetain(path_val) : NULL;
    if (!path || !array)
       return;
    
@@ -268,10 +268,10 @@ void *glkitview_init(void);
 {
    UIInterfaceOrientation orientation = self.interfaceOrientation;
    CGRect screenSize = [[UIScreen mainScreen] bounds];
-   float width = ((int)orientation < 3) ? CGRectGetWidth(screenSize) : CGRectGetHeight(screenSize);
-   float height = ((int)orientation < 3) ? CGRectGetHeight(screenSize) : CGRectGetWidth(screenSize);
-   float tenpctw = width / 10.0f;
-   float tenpcth = height / 10.0f;
+   float width       = ((int)orientation < 3) ? CGRectGetWidth(screenSize) : CGRectGetHeight(screenSize);
+   float height      = ((int)orientation < 3) ? CGRectGetHeight(screenSize) : CGRectGetWidth(screenSize);
+   float tenpctw     = width / 10.0f;
+   float tenpcth     = height / 10.0f;
    
    g_pause_indicator_view.frame = CGRectMake(tenpctw * 4.0f, 0.0f, tenpctw * 2.0f, tenpcth);
    [g_pause_indicator_view viewWithTag:1].frame = CGRectMake(0, 0, tenpctw * 2.0f, tenpcth);
@@ -443,6 +443,7 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
     
     /* Add the device to the session. */
     input = (AVCaptureDeviceInput*)[AVCaptureDeviceInput deviceInputWithDevice:videoDevice error:&error];
+    
     if (error)
     {
         RARCH_ERR("video device input %s\n", error.localizedDescription.UTF8String);
@@ -503,23 +504,23 @@ static CLLocationAccuracy currentVerticalAccuracy;
 
 - (void)locationManager:(CLLocationManager *)manager didUpdateToLocation:(CLLocation *)newLocation fromLocation:(CLLocation *)oldLocation
 {
-    locationChanged = true;
-    currentLatitude = newLocation.coordinate.latitude;
-    currentLongitude = newLocation.coordinate.longitude;
+    locationChanged           = true;
+    currentLatitude           = newLocation.coordinate.latitude;
+    currentLongitude          = newLocation.coordinate.longitude;
     currentHorizontalAccuracy = newLocation.horizontalAccuracy;
-    currentVerticalAccuracy = newLocation.verticalAccuracy;
+    currentVerticalAccuracy   = newLocation.verticalAccuracy;
     RARCH_LOG("didUpdateToLocation - latitude %f, longitude %f\n", (float)currentLatitude, (float)currentLongitude);
 }
 
 - (void)locationManager:(CLLocationManager *)manager didUpdateLocations:(NSArray *)locations
 {
-    CLLocation *location = (CLLocation*)[locations objectAtIndex:([locations count] - 1)];
+    CLLocation *location      = (CLLocation*)[locations objectAtIndex:([locations count] - 1)];
     
-    locationChanged = true;
-    currentLatitude  = [location coordinate].latitude;
-    currentLongitude = [location coordinate].longitude;
+    locationChanged           = true;
+    currentLatitude           = [location coordinate].latitude;
+    currentLongitude          = [location coordinate].longitude;
     currentHorizontalAccuracy = location.horizontalAccuracy;
-    currentVerticalAccuracy = location.verticalAccuracy;
+    currentVerticalAccuracy   = location.verticalAccuracy;
     RARCH_LOG("didUpdateLocations - latitude %f, longitude %f\n", (float)currentLatitude, (float)currentLongitude);
 }
 
@@ -545,10 +546,10 @@ static CLLocationAccuracy currentVerticalAccuracy;
      */
     
     if (locationManager == nil)
-        locationManager = [[CLLocationManager alloc] init];
-    locationManager.delegate = self;
+        locationManager             = [[CLLocationManager alloc] init];
+    locationManager.delegate        = self;
     locationManager.desiredAccuracy = kCLLocationAccuracyBest;
-    locationManager.distanceFilter = kCLDistanceFilterNone;
+    locationManager.distanceFilter  = kCLDistanceFilterNone;
     [locationManager startUpdatingLocation];
 }
 #endif
