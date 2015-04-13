@@ -25,6 +25,10 @@
 
 #include "qt/wrapper/wrapper.h"
 
+struct Wimp* wimp;
+char* args[] = {""};
+
+
 typedef struct ui_companion_qt
 {
    volatile bool quit;
@@ -36,14 +40,11 @@ static void qt_thread(void *data)
 {
    ui_companion_qt_t *handle = (ui_companion_qt_t*)data;
 
-   struct Wimp* wimp;
-   char** args = (char**)NULL;
-
-   wimp = ctrWimp(0, args);
-   CreateMainWindow(wimp);
+   wimp = ctrWimp(0, NULL);
+   if(wimp)
+      CreateMainWindow(wimp);
 
    return;
-
 }
 
 static void ui_companion_qt_deinit(void *data)
@@ -62,6 +63,9 @@ static void ui_companion_qt_deinit(void *data)
 static void *ui_companion_qt_init(void)
 {
    ui_companion_qt_t *handle = (ui_companion_qt_t*)calloc(1, sizeof(*handle));
+
+   fflush(stdout);
+
 
    if (!handle)
       return NULL;
@@ -83,7 +87,8 @@ static int ui_companion_qt_iterate(void *data, unsigned action)
 {
    (void)data;
    (void)action;
-
+   printf("Test");
+   fflush(stdout);
    return 0;
 }
 
@@ -92,11 +97,16 @@ static void ui_companion_qt_notify_content_loaded(void *data)
    (void)data;
 }
 
+static void ui_companion_qt_toggle(void *data)
+{
+   ui_companion_qt_init();
+}
+
 const ui_companion_driver_t ui_companion_qt = {
    ui_companion_qt_init,
    ui_companion_qt_deinit,
    ui_companion_qt_iterate,
-   NULL,
+   ui_companion_qt_toggle,
    ui_companion_qt_notify_content_loaded,
    "qt",
 };
