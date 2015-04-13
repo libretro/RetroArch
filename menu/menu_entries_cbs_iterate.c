@@ -343,7 +343,8 @@ static int action_iterate_help(const char *label, unsigned action)
          "Load a libretro core (Core).\n"
          "Load a content file (Load Content).     \n"
          " \n"
-         "See Path Settings to set directories for faster access to files.\n"
+         "See Path Settings to set directories \n"
+         "for faster access to files.\n"
          " \n"
 
          "Press Accept/OK to continue.",
