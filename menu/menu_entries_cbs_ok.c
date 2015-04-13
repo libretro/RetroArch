@@ -816,7 +816,7 @@ static int action_ok_disk_image_append(const char *path,
          &menu_path, NULL, NULL);
 
    fill_pathname_join(image, menu_path, path, sizeof(image));
-   rarch_disk_control_append_image(image);
+   event_disk_control_append_image(image);
 
    event_command(EVENT_CMD_RESUME);
 

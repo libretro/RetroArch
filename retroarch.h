@@ -131,33 +131,6 @@ void rarch_main_deinit(void);
 void rarch_render_cached_frame(void);
 
 /**
- * rarch_disk_control_set_eject:
- * @new_state            : Eject or close the virtual drive tray.
- *                         false (0) : Close
- *                         true  (1) : Eject
- * @print_log            : Show message onscreen.
- *
- * Ejects/closes of the virtual drive tray.
- **/
-void rarch_disk_control_set_eject(bool state, bool log);
-
-/**
- * rarch_disk_control_set_index:
- * @index                : Index of disk to set as current.
- *
- * Sets current disk to @index.
- **/
-void rarch_disk_control_set_index(unsigned index);
-
-/**
- * rarch_disk_control_append_image:
- * @path                 : Path to disk image. 
- *
- * Appends disk image to disk image list.
- **/
-void rarch_disk_control_append_image(const char *path);
-
-/**
  * rarch_replace_config:
  * @path                 : Path to config file to replace
  *                         current config file with.
@@ -228,6 +201,8 @@ void rarch_verify_api_version(void);
  * get_system_av_info function.
  **/
 void rarch_init_system_av_info(void);
+
+void rarch_set_paths(const char *path);
 
 #ifdef __cplusplus
 }

@@ -196,6 +196,14 @@ enum event_command
 };
 
 /**
+ * event_disk_control_append_image:
+ * @path                 : Path to disk image. 
+ *
+ * Appends disk image to disk image list.
+ **/
+void event_disk_control_append_image(const char *path);
+
+/**
  * event_command:
  * @cmd                  : Command index.
  *

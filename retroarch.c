@@ -334,7 +334,7 @@ static void set_paths_redirect(const char *path)
    }
 }
 
-static void set_paths(const char *path)
+void rarch_set_paths(const char *path)
 {
    settings_t *settings = config_get_ptr();
    global_t   *global   = global_get_ptr();
@@ -764,7 +764,7 @@ static void parse_input(int argc, char *argv[])
       }
    }
    else if (!*global->subsystem && optind < argc)
-      set_paths(argv[optind]);
+      rarch_set_paths(argv[optind]);
    else if (*global->subsystem && optind < argc)
       set_special_paths(argv + optind, argc - optind);
    else
@@ -887,149 +887,6 @@ void rarch_fill_pathnames(void)
    if (!*global->ips_name)
       fill_pathname_noext(global->ips_name, global->basename, ".ips",
             sizeof(global->ips_name));
-}
-
-/**
- * rarch_disk_control_append_image:
- * @path                 : Path to disk image. 
- *
- * Appends disk image to disk image list.
- **/
-void rarch_disk_control_append_image(const char *path)
-{
-   char msg[PATH_MAX_LENGTH];
-   unsigned new_idx;
-   struct retro_game_info info = {0};
-   global_t *global = global_get_ptr();
-   const struct retro_disk_control_callback *control = 
-      (const struct retro_disk_control_callback*)&global->system.disk_control;
-
-   rarch_disk_control_set_eject(true, false);
-
-   control->add_image_index();
-   new_idx = control->get_num_images();
-   if (!new_idx)
-      return;
-   new_idx--;
-
-   info.path = path;
-   control->replace_image_index(new_idx, &info);
-
-   snprintf(msg, sizeof(msg), "Appended disk: %s", path);
-   RARCH_LOG("%s\n", msg);
-   rarch_main_msg_queue_push(msg, 0, 180, true);
-
-   event_command(EVENT_CMD_AUTOSAVE_DEINIT);
-
-   /* TODO: Need to figure out what to do with subsystems case. */
-   if (!*global->subsystem)
-   {
-      /* Update paths for our new image.
-       * If we actually use append_image, we assume that we
-       * started out in a single disk case, and that this way
-       * of doing it makes the most sense. */
-      set_paths(path);
-      rarch_fill_pathnames();
-   }
-
-   event_command(EVENT_CMD_AUTOSAVE_INIT);
-
-   rarch_disk_control_set_eject(false, false);
-}
-
-/**
- * rarch_disk_control_set_eject:
- * @new_state            : Eject or close the virtual drive tray.
- *                         false (0) : Close
- *                         true  (1) : Eject
- * @print_log            : Show message onscreen.
- *
- * Ejects/closes of the virtual drive tray.
- **/
-void rarch_disk_control_set_eject(bool new_state, bool print_log)
-{
-   char msg[PATH_MAX_LENGTH];
-   global_t *global = global_get_ptr();
-   const struct retro_disk_control_callback *control = 
-      (const struct retro_disk_control_callback*)&global->system.disk_control;
-   bool error = false;
-
-   if (!control->get_num_images)
-      return;
-
-   *msg = '\0';
-
-   if (control->set_eject_state(new_state))
-      snprintf(msg, sizeof(msg), "%s virtual disk tray.",
-            new_state ? "Ejected" : "Closed");
-   else
-   {
-      error = true;
-      snprintf(msg, sizeof(msg), "Failed to %s virtual disk tray.",
-            new_state ? "eject" : "close");
-   }
-
-   if (*msg)
-   {
-      if (error)
-         RARCH_ERR("%s\n", msg);
-      else
-         RARCH_LOG("%s\n", msg);
-
-      /* Only noise in menu. */
-      if (print_log)
-         rarch_main_msg_queue_push(msg, 1, 180, true);
-   }
-}
-
-/**
- * rarch_disk_control_set_index:
- * @idx                : Index of disk to set as current.
- *
- * Sets current disk to @index.
- **/
-void rarch_disk_control_set_index(unsigned idx)
-{
-   char msg[PATH_MAX_LENGTH];
-   unsigned num_disks;
-   global_t *global = global_get_ptr();
-   const struct retro_disk_control_callback *control = 
-      (const struct retro_disk_control_callback*)&global->system.disk_control;
-   bool error = false;
-
-   if (!control->get_num_images)
-      return;
-
-   *msg = '\0';
-
-   num_disks = control->get_num_images();
-
-   if (control->set_image_index(idx))
-   {
-      if (idx < num_disks)
-         snprintf(msg, sizeof(msg), "Setting disk %u of %u in tray.",
-               idx + 1, num_disks);
-      else
-         strlcpy(msg, "Removed disk from tray.", sizeof(msg));
-   }
-   else
-   {
-      if (idx < num_disks)
-         snprintf(msg, sizeof(msg), "Failed to set disk %u of %u.",
-               idx + 1, num_disks);
-      else
-         strlcpy(msg, "Failed to remove disk from tray.", sizeof(msg));
-      error = true;
-   }
-
-   if (*msg)
-   {
-      if (error)
-         RARCH_ERR("%s\n", msg);
-      else
-         RARCH_LOG("%s\n", msg);
-      rarch_main_msg_queue_push(msg, 1, 180, true);
-   }
 }
 
 static bool init_state(void)

@@ -194,6 +194,99 @@ static void event_init_movie(void)
 }
 
 /**
+ * event_disk_control_set_eject:
+ * @new_state            : Eject or close the virtual drive tray.
+ *                         false (0) : Close
+ *                         true  (1) : Eject
+ * @print_log            : Show message onscreen.
+ *
+ * Ejects/closes of the virtual drive tray.
+ **/
+static void event_disk_control_set_eject(bool new_state, bool print_log)
+{
+   char msg[PATH_MAX_LENGTH];
+   global_t *global = global_get_ptr();
+   const struct retro_disk_control_callback *control = 
+      (const struct retro_disk_control_callback*)&global->system.disk_control;
+   bool error = false;
+
+   if (!control->get_num_images)
+      return;
+
+   *msg = '\0';
+
+   if (control->set_eject_state(new_state))
+      snprintf(msg, sizeof(msg), "%s virtual disk tray.",
+            new_state ? "Ejected" : "Closed");
+   else
+   {
+      error = true;
+      snprintf(msg, sizeof(msg), "Failed to %s virtual disk tray.",
+            new_state ? "eject" : "close");
+   }
+
+   if (*msg)
+   {
+      if (error)
+         RARCH_ERR("%s\n", msg);
+      else
+         RARCH_LOG("%s\n", msg);
+
+      /* Only noise in menu. */
+      if (print_log)
+         rarch_main_msg_queue_push(msg, 1, 180, true);
+   }
+}
+
+/**
+ * event_disk_control_append_image:
+ * @path                 : Path to disk image. 
+ *
+ * Appends disk image to disk image list.
+ **/
+void event_disk_control_append_image(const char *path)
+{
+   char msg[PATH_MAX_LENGTH];
+   unsigned new_idx;
+   struct retro_game_info info = {0};
+   global_t *global = global_get_ptr();
+   const struct retro_disk_control_callback *control = 
+      (const struct retro_disk_control_callback*)&global->system.disk_control;
+
+   event_disk_control_set_eject(true, false);
+
+   control->add_image_index();
+   new_idx = control->get_num_images();
+   if (!new_idx)
+      return;
+   new_idx--;
+
+   info.path = path;
+   control->replace_image_index(new_idx, &info);
+
+   snprintf(msg, sizeof(msg), "Appended disk: %s", path);
+   RARCH_LOG("%s\n", msg);
+   rarch_main_msg_queue_push(msg, 0, 180, true);
+
+   event_command(EVENT_CMD_AUTOSAVE_DEINIT);
+
+   /* TODO: Need to figure out what to do with subsystems case. */
+   if (!*global->subsystem)
+   {
+      /* Update paths for our new image.
+       * If we actually use append_image, we assume that we
+       * started out in a single disk case, and that this way
+       * of doing it makes the most sense. */
+      rarch_set_paths(path);
+      rarch_fill_pathnames();
+   }
+
+   event_command(EVENT_CMD_AUTOSAVE_INIT);
+
+   event_disk_control_set_eject(false, false);
+}
+
+/**
  * event_check_disk_eject:
  * @control              : Handle to disk control handle.
  *
@@ -203,7 +296,57 @@ static void event_check_disk_eject(
       const struct retro_disk_control_callback *control)
 {
    bool new_state = !control->get_eject_state();
-   rarch_disk_control_set_eject(new_state, true);
+   event_disk_control_set_eject(new_state, true);
+}
+
+/**
+ * event_disk_control_set_index:
+ * @idx                : Index of disk to set as current.
+ *
+ * Sets current disk to @index.
+ **/
+static void event_disk_control_set_index(unsigned idx)
+{
+   char msg[PATH_MAX_LENGTH];
+   unsigned num_disks;
+   global_t *global = global_get_ptr();
+   const struct retro_disk_control_callback *control = 
+      (const struct retro_disk_control_callback*)&global->system.disk_control;
+   bool error = false;
+
+   if (!control->get_num_images)
+      return;
+
+   *msg = '\0';
+
+   num_disks = control->get_num_images();
+
+   if (control->set_image_index(idx))
+   {
+      if (idx < num_disks)
+         snprintf(msg, sizeof(msg), "Setting disk %u of %u in tray.",
+               idx + 1, num_disks);
+      else
+         strlcpy(msg, "Removed disk from tray.", sizeof(msg));
+   }
+   else
+   {
+      if (idx < num_disks)
+         snprintf(msg, sizeof(msg), "Failed to set disk %u of %u.",
+               idx + 1, num_disks);
+      else
+         strlcpy(msg, "Failed to remove disk from tray.", sizeof(msg));
+      error = true;
+   }
+
+   if (*msg)
+   {
+      if (error)
+         RARCH_ERR("%s\n", msg);
+      else
+         RARCH_LOG("%s\n", msg);
+      rarch_main_msg_queue_push(msg, 1, 180, true);
+   }
 }
 
 /**
@@ -227,7 +370,7 @@ static void event_check_disk_prev(
 
    if (current > 0)
       current--;
-   rarch_disk_control_set_index(current);
+   event_disk_control_set_index(current);
 }
 
 /**
@@ -251,7 +394,7 @@ static void event_check_disk_next(
 
    if (current < num_disks - 1)
       current++;
-   rarch_disk_control_set_index(current);
+   event_disk_control_set_index(current);
 }
 
 /**
