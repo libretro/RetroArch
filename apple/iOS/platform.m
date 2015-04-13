@@ -78,35 +78,6 @@ int get_ios_version_major(void)
    return version;
 }
 
-const void* apple_get_frontend_settings(void)
-{
-   static rarch_setting_t settings[9];
-
-   if (settings[0].type == ST_NONE)
-   {
-      const char *GROUP_NAME    = "Frontend Settings";
-      const char *SUBGROUP_NAME = "Frontend";
-      settings[0] = setting_group_setting(ST_GROUP, "Frontend Settings");
-      settings[1] = setting_group_setting(ST_SUB_GROUP, "Frontend");
-      settings[2] = setting_string_setting(ST_STRING, "ios_btmode", "Bluetooth Input Type", apple_frontend_settings.bluetooth_mode,
-            sizeof(apple_frontend_settings.bluetooth_mode), "none", "<null>", GROUP_NAME, SUBGROUP_NAME, NULL, NULL);
-
-      /* Set iOS_btmode options based on runtime environment. */
-      if (btstack_try_load())
-         settings[2].values = "icade|keyboard|small_keyboard|btstack";
-      else
-         settings[2].values = "icade|keyboard|small_keyboard";
-
-      settings[3] = setting_string_setting(ST_STRING, "ios_orientations", "Screen Orientations", apple_frontend_settings.orientations,
-            sizeof(apple_frontend_settings.orientations), "both", "<null>", GROUP_NAME, SUBGROUP_NAME, NULL, NULL);
-      settings[3].values = "both|landscape|portrait";
-      settings[4] = setting_group_setting(ST_END_SUB_GROUP, 0);
-      settings[5] = setting_group_setting(ST_END_GROUP, 0);
-   }
-
-   return settings;
-}
-
 extern float apple_gfx_ctx_get_native_scale(void);
 
 /* Input helpers: This is kept here because it needs ObjC */
@@ -124,12 +95,13 @@ static void handle_touch_event(NSArray* touches)
    
    for (i = 0; i < touches.count && (apple->touch_count < MAX_TOUCHES); i++)
    {
+      CGPoint       coord;
       UITouch      *touch = [touches objectAtIndex:i];
       
       if (touch.view != [RAGameView get].view)
          continue;
 
-      const CGPoint coord = [touch locationInView:[touch view]];
+      coord = [touch locationInView:[touch view]];
 
       if (touch.phase != UITouchPhaseEnded && touch.phase != UITouchPhaseCancelled)
       {

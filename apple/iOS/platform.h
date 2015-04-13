@@ -29,8 +29,6 @@ typedef struct
 } apple_frontend_settings_t;
 extern apple_frontend_settings_t apple_frontend_settings;
 
-const void* apple_get_frontend_settings(void);
-
 @interface RAGameView : UIViewController<CLLocationManagerDelegate, AVCaptureAudioDataOutputSampleBufferDelegate>
 + (RAGameView*)get;
 @end
