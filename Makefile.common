@@ -35,11 +35,6 @@ ifeq ($(TDM_GCC),)
    LDCXXFLAGS += -static-libstdc++
 endif
 
-ifeq ($(REENTRANT_TEST), 1)
-   DEFINES += -Dmain=retroarch_main
-   OBJ += console/test.o
-endif
-
 CFLAGS += -I./libretro-common/include
 
 # Switches
