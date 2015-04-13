@@ -31,6 +31,8 @@
 #include <compat/posix_string.h>
 #include <string/stdstring.h>
 
+#include "../../runloop_data.h"
+
 #include "shared.h"
 
 #ifndef XMB_THEME
@@ -1708,7 +1710,6 @@ static void xmb_context_reset(void)
 
    {
       char path[PATH_MAX_LENGTH];
-      struct texture_image ti = {0};
 
       fill_pathname_join(path, iconpath,
             "bg.png", sizeof(path));
@@ -1718,13 +1719,7 @@ static void xmb_context_reset(void)
                sizeof(path));
 
       if ( path_file_exists(path))
-      {
-         texture_image_load(&ti, path);
-
-         xmb_load_wallpaper(&ti);
-
-         texture_image_free(&ti);
-      }
+         rarch_main_data_msg_queue_push(DATA_TYPE_IMAGE, path, "cb_menu_wallpaper", 0, 1, true);
    }
 
    xmb->settings_node.icon  = xmb->textures.list[XMB_TEXTURE_SETTINGS].id;
