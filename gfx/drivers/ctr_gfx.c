@@ -202,7 +202,7 @@ static void* ctr_init(const video_info_t* video,
                             CTRGU_ATTRIBFMT(GPU_SHORT, 2) << 4,
                             sizeof(ctr_vertex_t));
    GPUCMD_Finalize();
-   GPUCMD_FlushAndRun(NULL);
+   ctrGuFlushAndRun(true);
    gspWaitForEvent(GSPEVENT_P3D, false);
 
    if (input && input_data)
@@ -214,7 +214,7 @@ static void* ctr_init(const video_info_t* video,
 
    return ctr;
 }
-//#define gspWaitForEvent(...)
+
 static bool ctr_frame(void* data, const void* frame,
                       unsigned width, unsigned height, unsigned pitch, const char* msg)
 {
@@ -249,17 +249,17 @@ static bool ctr_frame(void* data, const void* frame,
    }
 
    frames++;
-   currentTick = osGetTime();
+   currentTick = svcGetSystemTick();
    uint32_t diff = currentTick - lastTick;
-   if(diff > 1000)
+   if(diff > CTR_CPU_TICKS_PER_SECOND)
    {
-      fps = (float)frames * (1000.0 / diff);
+      fps = (float)frames * ((float) CTR_CPU_TICKS_PER_SECOND / (float) diff);
       lastTick = currentTick;
       frames = 0;
    }
 
    printf("fps: %8.4f frames: %i\r", fps, total_frames++);
-   fflush(stdout);
+//   fflush(stdout);
 
    /* enable this to profile the core without video output */
 #if 0
@@ -267,47 +267,73 @@ static bool ctr_frame(void* data, const void* frame,
       goto end;
 #endif
 
+   svcWaitSynchronization(gspEvents[GSPEVENT_P3D], 20000000);
+   svcClearEvent(gspEvents[GSPEVENT_P3D]);
+   svcWaitSynchronization(gspEvents[GSPEVENT_PPF], 20000000);
+   svcClearEvent(gspEvents[GSPEVENT_PPF]);
+
+   gfxSwapBuffersGpu();
+
+   if (ctr->vsync)
+         gspWaitForEvent(GSPEVENT_VBlank0, true);
+
+   ctrGuSetMemoryFill(true, (u32*)CTR_GPU_FRAMEBUFFER, 0x00000000,
+                    (u32*)(CTR_GPU_FRAMEBUFFER + CTR_TOP_FRAMEBUFFER_WIDTH * CTR_TOP_FRAMEBUFFER_HEIGHT * sizeof(uint32_t)),
+                    0x201, (u32*)CTR_GPU_DEPTHBUFFER, 0x00000000,
+                    (u32*)(CTR_GPU_DEPTHBUFFER + CTR_TOP_FRAMEBUFFER_WIDTH * CTR_TOP_FRAMEBUFFER_HEIGHT * sizeof(uint32_t)),
+                    0x201);
+
    GPUCMD_SetBufferOffset(0);
+
+   if (width > ctr->texture_width)
+      width = ctr->texture_width;
+   if (height > ctr->texture_height)
+      height = ctr->texture_height;
 
    if(frame)
    {
-      int i;
-      uint16_t* dst = (uint16_t*)ctr->texture_linear;
-      const uint8_t* src = frame;
-      if (width > ctr->texture_width)
-         width = ctr->texture_width;
-      if (height > ctr->texture_height)
-         height = ctr->texture_height;
-      for (i = 0; i < height; i++)
+      if(((((u32)(frame)) >= 0x14000000 && ((u32)(frame)) < 0x1c000000)) /* frame in linear memory */
+         && !((u32)frame & 0x7F)                                         /* 128-byte aligned */
+         && !((pitch) & 0xF))                                            /* 16-byte aligned */
       {
-         memcpy(dst, src, width * sizeof(uint16_t));
-         dst += ctr->texture_width;
-         src += pitch;
+         /* can copy the buffer directly with the GPU */
+         ctrGuCopyImage(false, frame, pitch / 2, height, CTRGU_RGB565, false,
+                        ctr->texture_swizzled, ctr->texture_width, CTRGU_RGB565,  true);
       }
-      GSPGPU_FlushDataCache(NULL, ctr->texture_linear,
-                            ctr->texture_width * ctr->texture_height * sizeof(uint16_t));
+      else
+      {
+         int i;
+         uint16_t* dst = (uint16_t*)ctr->texture_linear;
+         const uint8_t* src = frame;
+         for (i = 0; i < height; i++)
+         {
+            memcpy(dst, src, width * sizeof(uint16_t));
+            dst += ctr->texture_width;
+            src += pitch;
+         }
+         GSPGPU_FlushDataCache(NULL, ctr->texture_linear,
+                               ctr->texture_width * ctr->texture_height * sizeof(uint16_t));
 
-      ctrGuCopyImage(ctr->texture_linear, ctr->texture_width, ctr->menu.texture_height, CTRGU_RGB565, false,
-                     ctr->texture_swizzled, ctr->texture_width, CTRGU_RGB565,  true);
+         ctrGuCopyImage(false, ctr->texture_linear, ctr->texture_width, ctr->menu.texture_height, CTRGU_RGB565, false,
+                        ctr->texture_swizzled, ctr->texture_width, CTRGU_RGB565,  true);
 
-      gspWaitForEvent(GSPEVENT_PPF, false);
-
-
-      ctrGuSetTexture(GPU_TEXUNIT0, VIRT_TO_PHYS(ctr->texture_swizzled), ctr->texture_width, ctr->texture_height,
-                     GPU_TEXTURE_MAG_FILTER(GPU_LINEAR) | GPU_TEXTURE_MIN_FILTER(GPU_LINEAR) |
-                     GPU_TEXTURE_WRAP_S(GPU_CLAMP_TO_EDGE) | GPU_TEXTURE_WRAP_T(GPU_CLAMP_TO_EDGE),
-                     GPU_RGB565);
-
-      ctr->frame_coords->u = width;
-      ctr->frame_coords->v = height;
-      GSPGPU_FlushDataCache(NULL, (u8*)ctr->frame_coords, sizeof(ctr_vertex_t));
-
-      ctrGuSetAttributeBuffersAddress(VIRT_TO_PHYS(ctr->frame_coords));
-      ctrGuSetVertexShaderFloatUniform(0, (float*)&ctr->scale_vector, 1);
-      GPU_DrawArray(GPU_UNKPRIM, 1);
-
+      }
 
    }
+
+
+   ctrGuSetTexture(GPU_TEXUNIT0, VIRT_TO_PHYS(ctr->texture_swizzled), ctr->texture_width, ctr->texture_height,
+                  GPU_TEXTURE_MAG_FILTER(GPU_LINEAR) | GPU_TEXTURE_MIN_FILTER(GPU_LINEAR) |
+                  GPU_TEXTURE_WRAP_S(GPU_CLAMP_TO_EDGE) | GPU_TEXTURE_WRAP_T(GPU_CLAMP_TO_EDGE),
+                  GPU_RGB565);
+
+   ctr->frame_coords->u = width;
+   ctr->frame_coords->v = height;
+   GSPGPU_FlushDataCache(NULL, (u8*)ctr->frame_coords, sizeof(ctr_vertex_t));
+
+   ctrGuSetAttributeBuffersAddress(VIRT_TO_PHYS(ctr->frame_coords));
+   ctrGuSetVertexShaderFloatUniform(0, (float*)&ctr->scale_vector, 1);
+   GPU_DrawArray(GPU_UNKPRIM, 1);
 
    if (ctr->menu_texture_enable)
    {
@@ -315,11 +341,8 @@ static bool ctr_frame(void* data, const void* frame,
       GSPGPU_FlushDataCache(NULL, ctr->menu.texture_linear,
                             ctr->menu.texture_width * ctr->menu.texture_height * sizeof(uint16_t));
 
-      ctrGuCopyImage(ctr->menu.texture_linear, ctr->menu.texture_width, ctr->menu.texture_height, CTRGU_RGBA4444,false,
+      ctrGuCopyImage(false, ctr->menu.texture_linear, ctr->menu.texture_width, ctr->menu.texture_height, CTRGU_RGBA4444,false,
                      ctr->menu.texture_swizzled, ctr->menu.texture_width, CTRGU_RGBA4444,  true);
-
-      gspWaitForEvent(GSPEVENT_PPF, false);
-
 
       ctrGuSetTexture(GPU_TEXUNIT0, VIRT_TO_PHYS(ctr->menu.texture_swizzled), ctr->menu.texture_width, ctr->menu.texture_height,
                      GPU_TEXTURE_MAG_FILTER(GPU_LINEAR) | GPU_TEXTURE_MIN_FILTER(GPU_LINEAR) |
@@ -334,27 +357,14 @@ static bool ctr_frame(void* data, const void* frame,
 
    GPU_FinishDrawing();
    GPUCMD_Finalize();
-   GPUCMD_FlushAndRun(NULL);
-   gspWaitForEvent(GSPEVENT_P3D, false);
+   ctrGuFlushAndRun(true);
 
-   ctrGuDisplayTransfer(CTR_GPU_FRAMEBUFFER, 240,400, CTRGU_RGBA8,
+   ctrGuDisplayTransfer(true, CTR_GPU_FRAMEBUFFER, 240,400, CTRGU_RGBA8,
                         gfxGetFramebuffer(GFX_TOP, GFX_LEFT, NULL, NULL), 240,400,CTRGU_RGB8, CTRGU_MULTISAMPLE_NONE);
 
-   gspWaitForEvent(GSPEVENT_PPF, false);
-
-   GX_SetMemoryFill(NULL, (u32*)CTR_GPU_FRAMEBUFFER, 0x00000000,
-                    (u32*)(CTR_GPU_FRAMEBUFFER + CTR_TOP_FRAMEBUFFER_WIDTH * CTR_TOP_FRAMEBUFFER_HEIGHT * sizeof(uint32_t)),
-                    0x201, (u32*)CTR_GPU_DEPTHBUFFER, 0x00000000,
-                    (u32*)(CTR_GPU_DEPTHBUFFER + CTR_TOP_FRAMEBUFFER_WIDTH * CTR_TOP_FRAMEBUFFER_HEIGHT * sizeof(uint32_t)),
-                    0x201);
-
-   gspWaitForEvent(GSPEVENT_PSC0, false);
-   gfxSwapBuffersGpu();
-
-//   if (ctr->vsync)
-//      gspWaitForEvent(GSPEVENT_VBlank0, true);
 
 end:
+//   gspWaitForEvent(GSPEVENT_VBlank0, true);
    RARCH_PERFORMANCE_STOP(ctrframe_f);
    return true;
 }
