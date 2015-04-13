@@ -791,14 +791,7 @@ static void rarch_main_data_overlay_image_upload_iterate(bool is_thread, data_ru
    switch (driver->overlay->state)
    {
       case OVERLAY_STATUS_DEFERRED_LOADING:
-         switch (driver->overlay->state)
-         {
-            case OVERLAY_IMAGE_TRANSFER_DESC_IMAGE_ITERATE:
-               input_overlay_load_overlays_iterate(driver->overlay);
-               break;
-            default:
-               break;
-         }
+         input_overlay_load_overlays_iterate(driver->overlay);
          break;
       default:
          break;
@@ -830,16 +823,6 @@ static void rarch_main_data_overlay_iterate(bool is_thread, data_runloop_t *runl
          break;
       case OVERLAY_STATUS_NONE:
       case OVERLAY_STATUS_ALIVE:
-         break;
-      case OVERLAY_STATUS_DEFERRED_LOADING:
-         switch (driver->overlay->state)
-         {
-            case OVERLAY_IMAGE_TRANSFER_DESC_IMAGE_ITERATE:
-               break;
-            default:
-               input_overlay_load_overlays_iterate(driver->overlay);
-               break;
-         }
          break;
       case OVERLAY_STATUS_DEFERRED_LOADING_RESOLVE:
          input_overlay_load_overlays_resolve_iterate(driver->overlay);
@@ -913,6 +896,9 @@ static void data_runloop_iterate(bool is_thread, data_runloop_t *runloop)
 {
    rarch_main_data_nbio_iterate       (is_thread, runloop);
    rarch_main_data_nbio_image_iterate (is_thread, runloop);
+#ifdef HAVE_OVERLAY
+   rarch_main_data_overlay_iterate    (is_thread, runloop);
+#endif
 #ifdef HAVE_NETWORKING
    rarch_main_data_http_iterate       (is_thread, runloop);
 #endif
@@ -1031,7 +1017,6 @@ void rarch_main_data_iterate(void)
 
 #ifdef HAVE_OVERLAY
    rarch_main_data_overlay_image_upload_iterate(false, runloop);
-   rarch_main_data_overlay_iterate(false, runloop);
 #endif
    rarch_main_data_nbio_image_upload_iterate(false, runloop);
 
