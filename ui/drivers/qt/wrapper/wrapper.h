@@ -17,9 +17,6 @@
 #ifndef WRAPPER_H
 #define WRAPPER_H
 
-#include  "../wimp/wimp.h"
-#include  "../wimp/wimp_global.h"
-
 #ifdef __cplusplus
 extern "C" {
 #endif
