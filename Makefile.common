@@ -62,7 +62,7 @@ endif
 
 ifneq ($(findstring Linux,$(OS)),)
    LIBS += -lrt
-   JOYCONFIG_LIBS += -lrt
+   JOYCONFIG_LIBS += -lrt -lpthread
    OBJ += input/drivers/linuxraw_input.o \
 			 input/drivers_joypad/linuxraw_joypad.o
 endif
