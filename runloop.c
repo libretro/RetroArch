@@ -443,7 +443,7 @@ static void do_state_check_menu_toggle(void)
  *
  * Returns: 0.
  **/
-static int do_pre_state_checks(rarch_cmd_state_t *cmd)
+static int do_pre_state_checks(event_cmd_state_t *cmd)
 {
    runloop_t *runloop        = rarch_main_get_ptr();
    global_t *global          = global_get_ptr();
@@ -513,7 +513,7 @@ static int do_pause_state_checks(
  *
  * Returns: 1 if RetroArch is in pause mode, 0 otherwise.
  **/
-static int do_state_checks(rarch_cmd_state_t *cmd)
+static int do_state_checks(event_cmd_state_t *cmd)
 {
    driver_t  *driver         = driver_get_ptr();
    runloop_t *runloop        = rarch_main_get_ptr();
@@ -611,7 +611,7 @@ static int do_state_checks(rarch_cmd_state_t *cmd)
  *
  * Returns: 1 if any of the above conditions are true, otherwise 0.
  **/
-static INLINE int time_to_exit(rarch_cmd_state_t *cmd)
+static INLINE int time_to_exit(event_cmd_state_t *cmd)
 {
    runloop_t *runloop            = rarch_main_get_ptr();
    global_t  *global             = global_get_ptr();
@@ -1020,7 +1020,7 @@ bool rarch_main_is_idle(void)
    return runloop->is_idle;
 }
 
-static void rarch_main_cmd_get_state(rarch_cmd_state_t *cmd,
+static void rarch_main_cmd_get_state(event_cmd_state_t *cmd,
       retro_input_t input, retro_input_t old_input,
       retro_input_t trigger_input)
 {
@@ -1079,7 +1079,7 @@ int rarch_main_iterate(void)
 {
    unsigned i;
    retro_input_t trigger_input;
-   rarch_cmd_state_t    cmd        = {0};
+   event_cmd_state_t    cmd        = {0};
    runloop_t *runloop              = rarch_main_get_ptr();
    int ret                         = 0;
    static retro_input_t last_input = 0;
