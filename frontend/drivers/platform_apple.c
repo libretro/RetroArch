@@ -130,6 +130,14 @@ static void frontend_apple_get_name(char *name, size_t sizeof_name)
     CopyModel(&name, &major_rev, &minor_rev);
 }
 
+static void frontend_apple_get_os(char *name, size_t sizeof_name, int *major, int *minor)
+{
+   (void)name;
+   (void)sizeof_name;
+   (void)major;
+   (void)minor;
+}
+
 static void frontend_apple_get_environment_settings(int *argc, char *argv[],
       void *args, void *params_data)
 {
@@ -280,6 +288,8 @@ static int frontend_apple_get_rating(void)
    return -1;
 }
 
+
+
 const frontend_ctx_driver_t frontend_ctx_apple = {
    frontend_apple_get_environment_settings, /* environment_get */
    NULL,                         /* init */
@@ -290,7 +300,7 @@ const frontend_ctx_driver_t frontend_ctx_apple = {
    NULL,                         /* set_fork */
    frontend_apple_shutdown,      /* shutdown */
    frontend_apple_get_name,      /* get_name */
-   NULL,                         /* get_os */
+   frontend_apple_get_os,        /* get_os */
    frontend_apple_get_rating,    /* get_rating */
    frontend_apple_load_content,  /* load_content */
    "apple",
