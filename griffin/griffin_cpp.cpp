@@ -25,10 +25,6 @@
 #include <compat/posix_string.h>
 #endif
 
-#ifdef HAVE_QT
-#include "../ui/drivers/ui_qt.cpp"
-#endif
-
 /*============================================================
 AUDIO
 ============================================================ */
