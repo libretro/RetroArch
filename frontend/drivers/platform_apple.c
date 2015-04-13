@@ -25,6 +25,10 @@
 #include <stddef.h>
 #include <string.h>
 
+#ifdef IOS
+void get_ios_version(int *major, int *minor);
+#endif
+
 static bool CopyModel(char** model, uint32_t *majorRev, uint32_t *minorRev)
 {
 #ifdef OSX
@@ -136,6 +140,11 @@ static void frontend_apple_get_os(char *name, size_t sizeof_name, int *major, in
    (void)sizeof_name;
    (void)major;
    (void)minor;
+    
+#ifdef IOS
+    get_ios_version(major, minor);
+    snprintf(name, sizeof_name, "iOS %d.%d", *major, *minor);
+#endif
 }
 
 static void frontend_apple_get_environment_settings(int *argc, char *argv[],
