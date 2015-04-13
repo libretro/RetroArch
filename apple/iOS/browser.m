@@ -342,7 +342,7 @@ static void file_action(enum file_action action, NSString* source, NSString* tar
          UIActionSheet *menu;
          NSString *button4_name, *button5_name;
           
-         get_ios_version_major(&major, &minor);
+         get_ios_version(&major, &minor);
           
          button4_name = (major >= 7) ? BOXSTRING("AirDrop") : BOXSTRING("Delete");
          button5_name = (major >= 7) ? BOXSTRING("Delete") : nil;
@@ -366,7 +366,7 @@ static void file_action(enum file_action action, NSString* source, NSString* tar
    NSString* target = self.selectedItem.path;
    NSString* action = [actionSheet buttonTitleAtIndex:buttonIndex];
     
-   get_ios_version_major(&major, &minor);
+   get_ios_version(&major, &minor);
     
    (void)major;
    (void)minor;

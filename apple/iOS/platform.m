@@ -68,7 +68,7 @@ void apple_rarch_exited(void)
 
 apple_frontend_settings_t apple_frontend_settings;
 
-void get_ios_version_major(int *major, int *minor)
+void get_ios_version(int *major, int *minor)
 {
     NSArray *decomposed_os_version = [[UIDevice currentDevice].systemVersion componentsSeparatedByString:@"."];
     
@@ -206,7 +206,7 @@ enum
    if (event.allTouches.count)
       handle_touch_event(event.allTouches.allObjects);
 
-   get_ios_version_major(&major, &minor);
+   get_ios_version(&major, &minor);
     
    if (!(major >= 7) && [event respondsToSelector:@selector(_gsEvent)])
    {

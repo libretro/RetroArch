@@ -27,7 +27,7 @@ enum
 static bool apple_gamecontroller_available(void)
 {
    int major, minor;
-   get_ios_version_major(&major, &minor);
+   get_ios_version(&major, &minor);
     
    if (major <= 6)
       return false;
