@@ -162,7 +162,7 @@ static int pointer_post_iterate(menu_file_list_cbs_t *cbs, const char *path,
    if (!menu)
       return -1;
 
-   if (!settings->menu.pointer.enable || settings->input.overlay_enable)
+   if (!settings->menu.pointer.enable || (settings->input.overlay_enable && driver && driver->overlay))
       return 0;
 
 #if defined(HAVE_XMB)
@@ -221,13 +221,14 @@ static int pointer_post_iterate(menu_file_list_cbs_t *cbs, const char *path,
 static int mouse_post_iterate(menu_file_list_cbs_t *cbs, const char *path,
       const char *label, unsigned type, unsigned action)
 {
+   driver_t      *driver  = driver_get_ptr();
    menu_handle_t *menu    = menu_driver_get_ptr();
    settings_t *settings   = config_get_ptr();
 
    if (!menu)
       return -1;
 
-   if (!settings->menu.mouse.enable || settings->input.overlay_enable)
+   if (!settings->menu.mouse.enable || (settings->input.overlay_enable && driver && driver->overlay))
    {
       menu->mouse.wheeldown = false;
       menu->mouse.wheelup   = false;
