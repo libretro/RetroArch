@@ -339,6 +339,12 @@ returntype main_entry(signature())
    if (driver)
       driver->ui_companion = (ui_companion_driver_t*)ui_companion_init_first();
 
+   if (driver->ui_companion && driver->ui_companion->toggle)
+   {
+      if (settings->ui.companion_start_on_boot)
+         driver->ui_companion->toggle(driver->ui_companion_data);
+   }
+
 #if defined(HAVE_MAIN_LOOP)
    while (rarch_main_iterate() != -1);
 
