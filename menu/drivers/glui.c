@@ -22,6 +22,7 @@
 #include <limits.h>
 
 #include "../menu.h"
+#include "../../runloop_data.h"
 
 #include <file/file_path.h>
 #include "../../gfx/drivers/gl_common.h"
@@ -501,7 +502,8 @@ static void *glui_init(void)
    const video_driver_t *video_driver = NULL;
    const struct font_renderer *font_driver = NULL;
    menu_handle_t *menu = NULL;
-   gl_t *gl = (gl_t*)video_driver_get_ptr(&video_driver);
+   gl_t *gl              = (gl_t*)video_driver_get_ptr(&video_driver);
+   settings_t *settings  = config_get_ptr();
 
    if (video_driver != &video_gl || !gl)
    {
@@ -525,6 +527,8 @@ static void *glui_init(void)
 
    if (font_driver->bind_block && font_driver->flush)
       glui->use_blocks = true;
+
+   rarch_main_data_msg_queue_push(DATA_TYPE_IMAGE, settings->menu.wallpaper, "cb_menu_wallpaper", 0, 1, true);
 
    return menu;
 error:
@@ -599,47 +603,6 @@ static bool glui_load_wallpaper(void *data)
    return true;
 }
 
-static void glui_context_reset(void)
-{
-   const char *path = NULL;
-   glui_handle_t *glui = NULL;
-   menu_handle_t *menu  = menu_driver_get_ptr();
-   settings_t *settings = config_get_ptr();
-    
-   if (!menu)
-      return;
-
-   glui = (glui_handle_t*)menu->userdata;
-
-   if (!glui)
-      return;
-
-   fill_pathname_join(glui->textures.bg.path, settings->assets_directory,
-         "glui", sizeof(glui->textures.bg.path));
-
-   if (*settings->menu.wallpaper)
-      strlcpy(glui->textures.bg.path,
-            settings->menu.wallpaper, sizeof(glui->textures.bg.path));
-   else
-      fill_pathname_join(glui->textures.bg.path,
-            glui->textures.bg.path, "bg.png",
-            sizeof(glui->textures.bg.path));
-
-   path = glui->textures.bg.path;
-
-   if (path_file_exists(path))
-   {
-      struct texture_image ti = {0};
-      texture_image_load(&ti, path);
-
-      strlcpy(glui->textures.bg.path, path, sizeof(glui->textures.bg.path));
-
-      glui_load_wallpaper(&ti);
-
-      texture_image_free(&ti);
-   }
-}
-
 static void glui_navigation_clear(bool pending_push)
 {
    menu_handle_t *menu = menu_driver_get_ptr();
@@ -702,7 +665,7 @@ menu_ctx_driver_t menu_ctx_glui = {
    glui_frame,
    glui_init,
    glui_free,
-   glui_context_reset,
+   NULL,
    glui_context_destroy,
    NULL,
    NULL,
