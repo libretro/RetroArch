@@ -164,12 +164,9 @@ static bool input_overlay_load_texture_image(struct overlay *overlay,
 static bool input_overlay_load_desc_image(input_overlay_t *ol,
       struct overlay_desc *desc,
       struct overlay *input_overlay,
-      unsigned ol_idx, unsigned desc_idx,
-      unsigned width, unsigned height,
-      bool normalized, float alpha_mod, float range_mod)
+      unsigned ol_idx, unsigned desc_idx)
 {
    char overlay_desc_image_key[64], image_path[PATH_MAX_LENGTH];
-   bool ret = true;
 
    snprintf(overlay_desc_image_key, sizeof(overlay_desc_image_key),
          "overlay%u_desc%u_overlay", ol_idx, desc_idx);
@@ -187,7 +184,7 @@ static bool input_overlay_load_desc_image(input_overlay_t *ol,
 
    input_overlay->pos ++;
 
-   return ret;
+   return true;
 }
 
 static bool input_overlay_load_desc(input_overlay_t *ol,
@@ -511,17 +508,9 @@ bool input_overlay_load_overlays_iterate(input_overlay_t *ol)
          {
             if (overlay->pos < overlay->size)
             {
-               if (!input_overlay_load_desc_image(ol, &overlay->descs[overlay->pos], overlay,
-                        ol->pos, overlay->pos,
-                        overlay->image.width, overlay->image.height,
-                        overlay->config.normalized,
-                        overlay->config.alpha_mod, overlay->config.range_mod))
-               {
-                  RARCH_ERR("[Overlay]: Failed to load overlay desc images for overlay #%u.\n",
-                        (unsigned)overlay->pos);
-                  goto error;
-               }
-
+               input_overlay_load_desc_image(ol,
+                     &overlay->descs[overlay->pos], overlay,
+                     ol->pos, overlay->pos);
             }
             else
             {
