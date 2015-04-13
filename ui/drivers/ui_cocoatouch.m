@@ -90,11 +90,22 @@ static void *ui_companion_cocoatouch_init(void)
    return handle;
 }
 
+static void ui_companion_cocoatouch_event_command(void *data, unsigned cmd)
+{
+   ui_companion_cocoatouch_t *handle = (ui_companion_cocoatouch_t*)data;
+
+   if (!handle)
+      return;
+
+   event_command(cmd);
+}
+
 const ui_companion_driver_t ui_companion_cocoatouch = {
    ui_companion_cocoatouch_init,
    ui_companion_cocoatouch_deinit,
    ui_companion_cocoatouch_iterate,
    ui_companion_cocoatouch_toggle,
+   ui_companion_cocoatouch_event_command,
    ui_companion_cocoatouch_notify_content_loaded,
    "cocoatouch",
 };

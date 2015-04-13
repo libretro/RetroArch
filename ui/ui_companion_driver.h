@@ -24,6 +24,8 @@
 #include "../config.h"
 #endif
 
+#include "../command_event.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -34,6 +36,7 @@ typedef struct ui_companion_driver
    void (*deinit)(void *data);
    int  (*iterate)(void *data, unsigned action);
    void (*toggle)(void *data);
+   void (*event_command)(void *data, unsigned action);
    void (*notify_content_loaded)(void *data);
 
    const char *ident;

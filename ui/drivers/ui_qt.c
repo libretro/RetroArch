@@ -102,11 +102,24 @@ static void ui_companion_qt_toggle(void *data)
    ui_companion_qt_init();
 }
 
+static void ui_companion_qt_event_command(void *data, unsigned cmd)
+{
+   ui_companion_qt_t *handle = (ui_companion_qt_t*)data;
+
+   if (!handle)
+      return;
+
+   slock_lock(handle->lock);
+   event_command(cmd);
+   slock_unlock(handle->lock);
+}
+
 const ui_companion_driver_t ui_companion_qt = {
    ui_companion_qt_init,
    ui_companion_qt_deinit,
    ui_companion_qt_iterate,
    ui_companion_qt_toggle,
+   ui_companion_qt_event_command,
    ui_companion_qt_notify_content_loaded,
    "qt",
 };

@@ -63,11 +63,18 @@ static void ui_companion_null_toggle(void *data)
    (void)data;
 }
 
+static void ui_companion_null_event_command(void *data, unsigned cmd)
+{
+   (void)data;
+   (void)cmd;
+}
+
 const ui_companion_driver_t ui_companion_null = {
    ui_companion_null_init,
    ui_companion_null_deinit,
    ui_companion_null_iterate,
    ui_companion_null_toggle,
+   ui_companion_null_event_command,
    ui_companion_null_notify_content_loaded,
    "null",
 };
