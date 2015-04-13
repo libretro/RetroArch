@@ -76,9 +76,9 @@ void menu_update_libretro_info(struct retro_system_info *info)
    retro_get_system_info(info);
 #endif
 
-   rarch_main_command(EVENT_CMD_CORE_INFO_INIT);
+   event_command(EVENT_CMD_CORE_INFO_INIT);
    menu_driver_context_reset();
-   rarch_main_command(EVENT_CMD_LOAD_CORE_PERSIST);
+   event_command(EVENT_CMD_LOAD_CORE_PERSIST);
 }
 
 static void menu_environment_get(int *argc, char *argv[],
@@ -168,13 +168,13 @@ bool menu_load_content(void)
 
    menu_shader_manager_init(driver->menu);
 
-   rarch_main_command(EVENT_CMD_HISTORY_INIT);
+   event_command(EVENT_CMD_HISTORY_INIT);
 
    if (*global->fullpath || (driver->menu && driver->menu->load_no_content))
       push_to_history_playlist();
 
-   rarch_main_command(EVENT_CMD_VIDEO_SET_ASPECT_RATIO);
-   rarch_main_command(EVENT_CMD_RESUME);
+   event_command(EVENT_CMD_VIDEO_SET_ASPECT_RATIO);
+   event_command(EVENT_CMD_RESUME);
 
    return true;
 }
@@ -310,7 +310,7 @@ void menu_free(void *data)
    menu_list_free(menu->menu_list);
    menu->menu_list = NULL;
 
-   rarch_main_command(EVENT_CMD_HISTORY_DEINIT);
+   event_command(EVENT_CMD_HISTORY_DEINIT);
 
    if (global->core_info)
       core_info_list_free(global->core_info);

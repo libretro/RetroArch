@@ -73,7 +73,7 @@ void engine_handle_cmd(void *data)
          slock_unlock(android_app->mutex);
 
          if (runloop->is_paused)
-            rarch_main_command(EVENT_CMD_REINIT);
+            event_command(EVENT_CMD_REINIT);
          break;
 
       case APP_CMD_RESUME:

@@ -256,7 +256,7 @@ static void poll_iteration(void)
    if (global && global->main_is_init)
       reply = NSTerminateCancel;
 
-   rarch_main_command(EVENT_CMD_QUIT);
+   event_command(EVENT_CMD_QUIT);
 
    return reply;
 }
@@ -274,7 +274,7 @@ static void poll_iteration(void)
          strlcpy(global->fullpath, __core.UTF8String, sizeof(global->fullpath));
 
       if (core_name)
-         rarch_main_command(EVENT_CMD_LOAD_CONTENT);
+         event_command(EVENT_CMD_LOAD_CONTENT);
       else
          [self chooseCore];
 
@@ -306,7 +306,7 @@ static void poll_iteration(void)
             strlcpy(global->fullpath, __core.UTF8String, sizeof(global->fullpath));
 
          if (core_name)
-            rarch_main_command(EVENT_CMD_LOAD_CONTENT);
+            event_command(EVENT_CMD_LOAD_CONTENT);
          else
             [self performSelector:@selector(chooseCore) withObject:nil afterDelay:.5f];
       }
@@ -346,11 +346,11 @@ static void poll_iteration(void)
    if (global && !global->main_is_init)
    {
       /* TODO/FIXME: Set core/content here. */
-      rarch_main_command(EVENT_CMD_LOAD_CORE);
-      rarch_main_command(EVENT_CMD_LOAD_CONTENT);
+      event_command(EVENT_CMD_LOAD_CORE);
+      event_command(EVENT_CMD_LOAD_CONTENT);
    }
    else
-      rarch_main_command(EVENT_CMD_QUIT);
+      event_command(EVENT_CMD_QUIT);
 }
 
 #pragma mark RetroArch_Platform
@@ -429,7 +429,7 @@ static void poll_iteration(void)
       cmd = EVENT_CMD_RESIZE_WINDOWED_SCALE;
    }
 
-   rarch_main_command(cmd);
+   event_command(cmd);
 }
 
 - (void)alertDidEnd:(NSAlert *)alert returnCode:(int32_t)returnCode contextInfo:(void *)contextInfo

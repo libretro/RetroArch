@@ -74,7 +74,7 @@ static bool check_pause(bool pause_pressed, bool frameadvance_pressed)
    old_focus = focus;
 
    if (cmd != EVENT_CMD_NONE)
-      rarch_main_command(cmd);
+      event_command(cmd);
 
    if (runloop->is_paused == old_is_paused)
       return false;
@@ -320,7 +320,7 @@ static bool check_movie_record(void)
          RETRO_MSG_MOVIE_RECORD_STOPPING, 2, 180, true);
    RARCH_LOG(RETRO_LOG_MOVIE_RECORD_STOPPING);
 
-   rarch_main_command(EVENT_CMD_BSV_MOVIE_DEINIT);
+   event_command(EVENT_CMD_BSV_MOVIE_DEINIT);
 
    return true;
 }
@@ -342,7 +342,7 @@ static bool check_movie_playback(void)
          RETRO_MSG_MOVIE_PLAYBACK_ENDED, 1, 180, false);
    RARCH_LOG(RETRO_LOG_MOVIE_PLAYBACK_ENDED);
 
-   rarch_main_command(EVENT_CMD_BSV_MOVIE_DEINIT);
+   event_command(EVENT_CMD_BSV_MOVIE_DEINIT);
 
    global->bsv.movie_end      = false;
    global->bsv.movie_playback = false;
@@ -449,16 +449,16 @@ static int do_pre_state_checks(rarch_cmd_state_t *cmd)
    global_t *global          = global_get_ptr();
 
    if (cmd->overlay_next_pressed)
-      rarch_main_command(EVENT_CMD_OVERLAY_NEXT);
+      event_command(EVENT_CMD_OVERLAY_NEXT);
 
    if (!runloop->is_paused || runloop->is_menu)
    {
       if (cmd->fullscreen_toggle)
-         rarch_main_command(EVENT_CMD_FULLSCREEN_TOGGLE);
+         event_command(EVENT_CMD_FULLSCREEN_TOGGLE);
    }
 
    if (cmd->grab_mouse_pressed)
-      rarch_main_command(EVENT_CMD_GRAB_MOUSE_TOGGLE);
+      event_command(EVENT_CMD_GRAB_MOUSE_TOGGLE);
 
 #ifdef HAVE_MENU
    if (cmd->menu_pressed || (global->libretro_dummy))
@@ -474,10 +474,10 @@ static int do_netplay_state_checks(
       bool fullscreen_toggle)
 {
    if (netplay_flip_pressed)
-      rarch_main_command(EVENT_CMD_NETPLAY_FLIP_PLAYERS);
+      event_command(EVENT_CMD_NETPLAY_FLIP_PLAYERS);
 
    if (fullscreen_toggle)
-      rarch_main_command(EVENT_CMD_FULLSCREEN_TOGGLE);
+      event_command(EVENT_CMD_FULLSCREEN_TOGGLE);
    return 0;
 }
 #endif
@@ -496,7 +496,7 @@ static int do_pause_state_checks(
 
    if (fullscreen_toggle_pressed)
    {
-      rarch_main_command(EVENT_CMD_FULLSCREEN_TOGGLE);
+      event_command(EVENT_CMD_FULLSCREEN_TOGGLE);
       rarch_render_cached_frame();
    }
 
@@ -525,10 +525,10 @@ static int do_state_checks(rarch_cmd_state_t *cmd)
       return 1;
 
    if (cmd->screenshot_pressed)
-      rarch_main_command(EVENT_CMD_TAKE_SCREENSHOT);
+      event_command(EVENT_CMD_TAKE_SCREENSHOT);
 
    if (cmd->mute_pressed)
-      rarch_main_command(EVENT_CMD_AUDIO_MUTE_TOGGLE);
+      event_command(EVENT_CMD_AUDIO_MUTE_TOGGLE);
 
    if (cmd->osk_pressed)
    {
@@ -539,9 +539,9 @@ static int do_state_checks(rarch_cmd_state_t *cmd)
    }
       
    if (cmd->volume_up_pressed)
-      rarch_main_command(EVENT_CMD_VOLUME_UP);
+      event_command(EVENT_CMD_VOLUME_UP);
    else if (cmd->volume_down_pressed)
-      rarch_main_command(EVENT_CMD_VOLUME_DOWN);
+      event_command(EVENT_CMD_VOLUME_DOWN);
 
 #ifdef HAVE_NETPLAY
    if (driver->netplay_data)
@@ -561,9 +561,9 @@ static int do_state_checks(rarch_cmd_state_t *cmd)
    check_stateslots(cmd->state_slot_increase, cmd->state_slot_decrease);
 
    if (cmd->save_state_pressed)
-      rarch_main_command(EVENT_CMD_SAVE_STATE);
+      event_command(EVENT_CMD_SAVE_STATE);
    else if (cmd->load_state_pressed)
-      rarch_main_command(EVENT_CMD_LOAD_STATE);
+      event_command(EVENT_CMD_LOAD_STATE);
 
    check_rewind(cmd->rewind_pressed);
    check_slowmotion(cmd->slowmotion_pressed);
@@ -574,14 +574,14 @@ static int do_state_checks(rarch_cmd_state_t *cmd)
    check_shader_dir(cmd->shader_next_pressed, cmd->shader_prev_pressed);
 
    if (cmd->disk_eject_pressed)
-      rarch_main_command(EVENT_CMD_DISK_EJECT_TOGGLE);
+      event_command(EVENT_CMD_DISK_EJECT_TOGGLE);
    else if (cmd->disk_next_pressed)
-      rarch_main_command(EVENT_CMD_DISK_NEXT);
+      event_command(EVENT_CMD_DISK_NEXT);
    else if (cmd->disk_prev_pressed)
-      rarch_main_command(EVENT_CMD_DISK_PREV);	  
+      event_command(EVENT_CMD_DISK_PREV);	  
 
    if (cmd->reset_pressed)
-      rarch_main_command(EVENT_CMD_RESET);
+      event_command(EVENT_CMD_RESET);
 
    if (global->cheat)
    {
@@ -847,7 +847,7 @@ static int rarch_main_iterate_quit(void)
    if (global->core_shutdown_initiated
          && settings->load_dummy_on_core_shutdown)
    {
-      if (!rarch_main_command(EVENT_CMD_PREPARE_DUMMY))
+      if (!event_command(EVENT_CMD_PREPARE_DUMMY))
          return -1;
 
       global->core_shutdown_initiated = false;
@@ -868,19 +868,19 @@ static void rarch_main_iterate_linefeed_overlay(void)
    {
       driver->osk_enable    = false;
       prev_overlay_restore  = true;
-      rarch_main_command(EVENT_CMD_OVERLAY_DEINIT);
+      event_command(EVENT_CMD_OVERLAY_DEINIT);
       return;
    }
    else if (!driver->osk_enable && driver->keyboard_linefeed_enable)
    {
       driver->osk_enable    = true;
       prev_overlay_restore  = false;
-      rarch_main_command(EVENT_CMD_OVERLAY_INIT);
+      event_command(EVENT_CMD_OVERLAY_INIT);
       return;
    }
    else if (prev_overlay_restore)
    {
-      rarch_main_command(EVENT_CMD_OVERLAY_INIT);
+      event_command(EVENT_CMD_OVERLAY_INIT);
       prev_overlay_restore = false;
    }
 }
@@ -952,10 +952,10 @@ void rarch_main_global_free(void)
 {
    global_t *global = NULL;
    
-   rarch_main_command(EVENT_CMD_TEMPORARY_CONTENT_DEINIT);
-   rarch_main_command(EVENT_CMD_SUBSYSTEM_FULLPATHS_DEINIT);
-   rarch_main_command(EVENT_CMD_RECORD_DEINIT);
-   rarch_main_command(EVENT_CMD_LOG_FILE_DEINIT);
+   event_command(EVENT_CMD_TEMPORARY_CONTENT_DEINIT);
+   event_command(EVENT_CMD_SUBSYSTEM_FULLPATHS_DEINIT);
+   event_command(EVENT_CMD_RECORD_DEINIT);
+   event_command(EVENT_CMD_LOG_FILE_DEINIT);
 
    global = global_get_ptr();
 

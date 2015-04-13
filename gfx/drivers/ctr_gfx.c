@@ -226,6 +226,8 @@ static bool ctr_frame(void* data, const void* frame,
    static int total_frames = 0;
    static int frames = 0;
 
+   extern bool select_pressed;
+
    RARCH_PERFORMANCE_INIT(ctrframe_f);
    RARCH_PERFORMANCE_START(ctrframe_f);
 
@@ -237,14 +239,13 @@ static bool ctr_frame(void* data, const void* frame,
 
    if(!aptMainLoop())
    {
-      rarch_main_command(EVENT_CMD_QUIT);
+      event_command(EVENT_CMD_QUIT);
       goto end;
    }
 
-   extern bool select_pressed;
    if (select_pressed)
    {
-      rarch_main_command(EVENT_CMD_QUIT);
+      event_command(EVENT_CMD_QUIT);
       goto end;
    }
 

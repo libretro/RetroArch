@@ -298,7 +298,7 @@ static int action_ok_core_updater_list(const char *path,
       return -1;
 
 #ifdef HAVE_NETWORKING
-   rarch_main_command(EVENT_CMD_NETWORK_INIT);
+   event_command(EVENT_CMD_NETWORK_INIT);
 
    fill_pathname_join(url_path, settings->network.buildbot_url,
          ".index", sizeof(url_path));
@@ -387,7 +387,7 @@ static int action_ok_video_filter_file_load(const char *path,
    strlcpy(settings->video.softfilter_plugin, filter_path,
          sizeof(settings->video.softfilter_plugin));
 
-   rarch_main_command(EVENT_CMD_REINIT);
+   event_command(EVENT_CMD_REINIT);
 
    menu_list_flush_stack_by_needle(menu->menu_list, "video_options");
 
@@ -667,7 +667,7 @@ static int action_ok_core_load(const char *path,
 
    fill_pathname_join(settings->libretro, menu_path, path,
          sizeof(settings->libretro));
-   rarch_main_command(EVENT_CMD_LOAD_CORE);
+   event_command(EVENT_CMD_LOAD_CORE);
    menu_list_flush_stack(menu->menu_list, MENU_SETTINGS);
 #if defined(HAVE_DYNAMIC)
    /* No content needed for this core, load core immediately. */
@@ -683,7 +683,7 @@ static int action_ok_core_load(const char *path,
    /* Core selection on non-console just updates directory listing.
     * Will take effect on new content load. */
 #elif defined(RARCH_CONSOLE)
-   rarch_main_command(EVENT_CMD_RESTART_RETROARCH);
+   event_command(EVENT_CMD_RESTART_RETROARCH);
    return -1;
 #endif
 }
@@ -818,7 +818,7 @@ static int action_ok_disk_image_append(const char *path,
    fill_pathname_join(image, menu_path, path, sizeof(image));
    rarch_disk_control_append_image(image);
 
-   rarch_main_command(EVENT_CMD_RESUME);
+   event_command(EVENT_CMD_RESUME);
 
    menu_list_flush_stack(menu->menu_list, MENU_SETTINGS);
    return -1;
@@ -845,7 +845,7 @@ static int action_ok_file_load_with_detect_core(const char *path,
 
    if (ret == -1)
    {
-      rarch_main_command(EVENT_CMD_LOAD_CORE);
+      event_command(EVENT_CMD_LOAD_CORE);
       menu_entries_common_load_content(false);
       return -1;
    }
@@ -951,7 +951,7 @@ static int action_ok_custom_viewport(const char *path,
 
    settings->video.aspect_ratio_idx = ASPECT_RATIO_CUSTOM;
 
-   rarch_main_command(EVENT_CMD_VIDEO_SET_ASPECT_RATIO);
+   event_command(EVENT_CMD_VIDEO_SET_ASPECT_RATIO);
    return 0;
 }
 
@@ -959,7 +959,7 @@ static int action_ok_custom_viewport(const char *path,
 static int generic_action_ok_command(unsigned cmd)
 {
 
-   if (!rarch_main_command(cmd))
+   if (!event_command(cmd))
       return -1;
    return 0;
 }
@@ -1059,7 +1059,7 @@ static int action_ok_file_load_or_resume(const char *path,
    {
       strlcpy(global->fullpath,
             menu->deferred_path, sizeof(global->fullpath));
-      rarch_main_command(EVENT_CMD_LOAD_CORE);
+      event_command(EVENT_CMD_LOAD_CORE);
       rarch_main_set_state(RARCH_ACTION_STATE_LOAD_CONTENT);
       return -1;
    }
@@ -1188,7 +1188,7 @@ static int action_ok_video_resolution(const char *path,
       global->console.screen.pal60_enable = false;
    }
 
-   rarch_main_command(EVENT_CMD_REINIT);
+   event_command(EVENT_CMD_REINIT);
 #else
    if (video_driver_get_video_output_size(&width, &height))
       video_driver_set_video_mode(width, height, true);

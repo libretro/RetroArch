@@ -786,7 +786,7 @@ static void rarch_init_savefile_paths(void)
 {
    global_t *global = global_get_ptr();
 
-   rarch_main_command(EVENT_CMD_SAVEFILES_DEINIT);
+   event_command(EVENT_CMD_SAVEFILES_DEINIT);
 
    global->savefiles = string_list_new();
    rarch_assert(global->savefiles);
@@ -919,7 +919,7 @@ void rarch_disk_control_append_image(const char *path)
    RARCH_LOG("%s\n", msg);
    rarch_main_msg_queue_push(msg, 0, 180, true);
 
-   rarch_main_command(EVENT_CMD_AUTOSAVE_DEINIT);
+   event_command(EVENT_CMD_AUTOSAVE_DEINIT);
 
    /* TODO: Need to figure out what to do with subsystems case. */
    if (!*global->subsystem)
@@ -932,7 +932,7 @@ void rarch_disk_control_append_image(const char *path)
       rarch_fill_pathnames();
    }
 
-   rarch_main_command(EVENT_CMD_AUTOSAVE_INIT);
+   event_command(EVENT_CMD_AUTOSAVE_INIT);
 
    rarch_disk_control_set_eject(false, false);
 }
@@ -1054,8 +1054,8 @@ static void main_clear_state_drivers(void)
    if (!inited)
       return;
 
-   rarch_main_command(EVENT_CMD_DRIVERS_DEINIT);
-   rarch_main_command(EVENT_CMD_DRIVERS_INIT);
+   event_command(EVENT_CMD_DRIVERS_DEINIT);
+   event_command(EVENT_CMD_DRIVERS_INIT);
 }
 
 static void main_init_state_config(void)
@@ -1081,7 +1081,7 @@ void rarch_main_alloc(void)
    if (!settings)
       return;
 
-   rarch_main_command(EVENT_CMD_HISTORY_DEINIT);
+   event_command(EVENT_CMD_HISTORY_DEINIT);
 
    rarch_main_clear_state();
    rarch_main_data_clear_state();
@@ -1101,14 +1101,14 @@ void rarch_main_new(void)
    init_state();
    main_init_state_config();
 
-   rarch_main_command(EVENT_CMD_MSG_QUEUE_INIT);
+   event_command(EVENT_CMD_MSG_QUEUE_INIT);
 }
 
 void rarch_main_free(void)
 {
-   rarch_main_command(EVENT_CMD_MSG_QUEUE_DEINIT);
-   rarch_main_command(EVENT_CMD_LOG_FILE_DEINIT);
-   rarch_main_command(EVENT_CMD_DRIVERS_DEINIT);
+   event_command(EVENT_CMD_MSG_QUEUE_DEINIT);
+   event_command(EVENT_CMD_LOG_FILE_DEINIT);
+   event_command(EVENT_CMD_DRIVERS_DEINIT);
 
    rarch_main_state_free();
    rarch_main_global_free();
@@ -1257,25 +1257,25 @@ int rarch_main_init(int argc, char *argv[])
 
    init_drivers_pre();
 
-   if (!rarch_main_command(EVENT_CMD_CORE_INIT))
+   if (!event_command(EVENT_CMD_CORE_INIT))
       goto error;
 
-   rarch_main_command(EVENT_CMD_DRIVERS_INIT);
-   rarch_main_command(EVENT_CMD_COMMAND_INIT);
-   rarch_main_command(EVENT_CMD_REWIND_INIT);
-   rarch_main_command(EVENT_CMD_CONTROLLERS_INIT);
-   rarch_main_command(EVENT_CMD_RECORD_INIT);
-   rarch_main_command(EVENT_CMD_CHEATS_INIT);
-   rarch_main_command(EVENT_CMD_REMAPPING_INIT);
+   event_command(EVENT_CMD_DRIVERS_INIT);
+   event_command(EVENT_CMD_COMMAND_INIT);
+   event_command(EVENT_CMD_REWIND_INIT);
+   event_command(EVENT_CMD_CONTROLLERS_INIT);
+   event_command(EVENT_CMD_RECORD_INIT);
+   event_command(EVENT_CMD_CHEATS_INIT);
+   event_command(EVENT_CMD_REMAPPING_INIT);
 
-   rarch_main_command(EVENT_CMD_SAVEFILES_INIT);
+   event_command(EVENT_CMD_SAVEFILES_INIT);
 #if defined(GEKKO) && defined(HW_RVL)
    {
       settings_t *settings = config_get_ptr();
        
       if (settings)
       {
-         rarch_main_command(EVENT_CMD_VIDEO_SET_ASPECT_RATIO);
+         event_command(EVENT_CMD_VIDEO_SET_ASPECT_RATIO);
          video_driver_set_aspect_ratio(settings->video.aspect_ratio_idx);
       }
    }
@@ -1286,7 +1286,7 @@ int rarch_main_init(int argc, char *argv[])
    return 0;
 
 error:
-   rarch_main_command(EVENT_CMD_CORE_DEINIT);
+   event_command(EVENT_CMD_CORE_DEINIT);
 
    global->main_is_init = false;
    return 1;
@@ -1375,12 +1375,12 @@ void rarch_main_set_state(unsigned cmd)
             menu_driver_toggle(true);
 
             /* Menu should always run with vsync on. */
-            rarch_main_command(EVENT_CMD_VIDEO_SET_BLOCKING_STATE);
+            event_command(EVENT_CMD_VIDEO_SET_BLOCKING_STATE);
             /* Stop all rumbling before entering the menu. */
-            rarch_main_command(EVENT_CMD_RUMBLE_STOP);
+            event_command(EVENT_CMD_RUMBLE_STOP);
 
             if (settings->menu.pause_libretro)
-               rarch_main_command(EVENT_CMD_AUDIO_STOP);
+               event_command(EVENT_CMD_AUDIO_STOP);
 
             /* Override keyboard callback to redirect to menu instead.
              * We'll use this later for something ...
@@ -1417,7 +1417,7 @@ void rarch_main_set_state(unsigned cmd)
          driver_set_nonblock_state(driver->nonblock_state);
 
          if (settings && settings->menu.pause_libretro)
-            rarch_main_command(EVENT_CMD_AUDIO_START);
+            event_command(EVENT_CMD_AUDIO_START);
 
          /* Prevent stray input from going to libretro core */
          driver->flushing_input = true;
@@ -1453,26 +1453,26 @@ void rarch_main_deinit(void)
 {
    global_t *global = global_get_ptr();
 
-   rarch_main_command(EVENT_CMD_NETPLAY_DEINIT);
-   rarch_main_command(EVENT_CMD_COMMAND_DEINIT);
+   event_command(EVENT_CMD_NETPLAY_DEINIT);
+   event_command(EVENT_CMD_COMMAND_DEINIT);
 
    if (global->use_sram)
-      rarch_main_command(EVENT_CMD_AUTOSAVE_DEINIT);
+      event_command(EVENT_CMD_AUTOSAVE_DEINIT);
 
-   rarch_main_command(EVENT_CMD_RECORD_DEINIT);
-   rarch_main_command(EVENT_CMD_SAVEFILES);
+   event_command(EVENT_CMD_RECORD_DEINIT);
+   event_command(EVENT_CMD_SAVEFILES);
 
-   rarch_main_command(EVENT_CMD_REWIND_DEINIT);
-   rarch_main_command(EVENT_CMD_CHEATS_DEINIT);
-   rarch_main_command(EVENT_CMD_BSV_MOVIE_DEINIT);
+   event_command(EVENT_CMD_REWIND_DEINIT);
+   event_command(EVENT_CMD_CHEATS_DEINIT);
+   event_command(EVENT_CMD_BSV_MOVIE_DEINIT);
 
-   rarch_main_command(EVENT_CMD_AUTOSAVE_STATE);
+   event_command(EVENT_CMD_AUTOSAVE_STATE);
 
-   rarch_main_command(EVENT_CMD_CORE_DEINIT);
+   event_command(EVENT_CMD_CORE_DEINIT);
 
-   rarch_main_command(EVENT_CMD_TEMPORARY_CONTENT_DEINIT);
-   rarch_main_command(EVENT_CMD_SUBSYSTEM_FULLPATHS_DEINIT);
-   rarch_main_command(EVENT_CMD_SAVEFILES_DEINIT);
+   event_command(EVENT_CMD_TEMPORARY_CONTENT_DEINIT);
+   event_command(EVENT_CMD_SUBSYSTEM_FULLPATHS_DEINIT);
+   event_command(EVENT_CMD_SAVEFILES_DEINIT);
 
    global->main_is_init = false;
 }
@@ -1502,7 +1502,7 @@ void rarch_playlist_load_content(content_playlist_t *playlist,
 
    rarch_environment_cb(RETRO_ENVIRONMENT_EXEC, (void*)path);
 
-   rarch_main_command(EVENT_CMD_LOAD_CORE);
+   event_command(EVENT_CMD_LOAD_CORE);
 }
 
 /**
@@ -1610,7 +1610,7 @@ bool rarch_replace_config(const char *path)
    global->block_config_read = false;
    *settings->libretro = '\0'; /* Load core in new config. */
 
-   rarch_main_command(EVENT_CMD_PREPARE_DUMMY);
+   event_command(EVENT_CMD_PREPARE_DUMMY);
 
    return true;
 }

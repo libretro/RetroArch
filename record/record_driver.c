@@ -113,7 +113,7 @@ void recording_dump_frame(const void *data, unsigned width,
       if (!vp.width || !vp.height)
       {
          RARCH_WARN("Viewport size calculation failed! Will continue using raw data. This will probably not work right ...\n");
-         rarch_main_command(EVENT_CMD_GPU_RECORD_DEINIT);
+         event_command(EVENT_CMD_GPU_RECORD_DEINIT);
 
          recording_dump_frame(data, width, height, pitch);
          return;
@@ -127,7 +127,7 @@ void recording_dump_frame(const void *data, unsigned width,
          RARCH_WARN("%s\n", msg);
 
          rarch_main_msg_queue_push(msg, 1, 180, true);
-         rarch_main_command(EVENT_CMD_RECORD_DEINIT);
+         event_command(EVENT_CMD_RECORD_DEINIT);
          return;
       }
 
@@ -169,7 +169,7 @@ bool recording_deinit(void)
    driver->recording_data = NULL;
    driver->recording      = NULL;
 
-   rarch_main_command(EVENT_CMD_GPU_RECORD_DEINIT);
+   event_command(EVENT_CMD_GPU_RECORD_DEINIT);
 
    return true;
 }
@@ -302,7 +302,7 @@ bool recording_init(void)
    if (!ffemu_init_first(&driver->recording, &driver->recording_data, &params))
    {
       RARCH_ERR(RETRO_LOG_INIT_RECORDING_FAILED);
-      rarch_main_command(EVENT_CMD_GPU_RECORD_DEINIT);
+      event_command(EVENT_CMD_GPU_RECORD_DEINIT);
 
       return false;
    }

@@ -196,14 +196,14 @@ enum event_command
 };
 
 /**
- * rarch_main_command:
+ * event_command:
  * @cmd                  : Command index.
  *
  * Performs RetroArch command with index @cmd.
  *
  * Returns: true (1) on success, otherwise false (0).
  **/
-bool rarch_main_command(unsigned action);
+bool event_command(unsigned action);
 
 #ifdef __cplusplus
 }

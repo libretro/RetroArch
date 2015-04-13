@@ -812,7 +812,7 @@ static void core_list_change_handler(void *data)
   rarch_setting_t *setting = (rarch_setting_t *)data;
   (void)setting;
 
-  rarch_main_command(EVENT_CMD_LOAD_CORE);
+  event_command(EVENT_CMD_LOAD_CORE);
 }
 #endif
 
@@ -942,8 +942,8 @@ static int setting_bool_action_ok_exit(void *data, unsigned action)
 
    if (setting->cmd_trigger.idx != EVENT_CMD_NONE)
    {
-      rarch_main_command(setting->cmd_trigger.idx);
-      rarch_main_command(EVENT_CMD_RESUME);
+      event_command(setting->cmd_trigger.idx);
+      event_command(EVENT_CMD_RESUME);
    }
 
    return 0;
@@ -995,7 +995,7 @@ static int setting_action_ok_video_refresh_rate_auto(
    {
       driver_set_refresh_rate(video_refresh_rate);
       /* Incase refresh rate update forced non-block video. */
-      rarch_main_command(EVENT_CMD_VIDEO_SET_BLOCKING_STATE);
+      event_command(EVENT_CMD_VIDEO_SET_BLOCKING_STATE);
    }
 
    if (setting->cmd_trigger.idx != EVENT_CMD_NONE)
@@ -1054,7 +1054,7 @@ static int setting_action_action_ok(void *data, unsigned action)
       return -1;
 
    if (setting->cmd_trigger.idx != EVENT_CMD_NONE)
-      rarch_main_command(setting->cmd_trigger.idx);
+      event_command(setting->cmd_trigger.idx);
 
    return 0;
 }
@@ -3140,7 +3140,7 @@ static void general_write_handler(void *data)
    }
 
    if (rarch_cmd || setting->cmd_trigger.triggered)
-      rarch_main_command(rarch_cmd);
+      event_command(rarch_cmd);
 }
 
 #define START_GROUP(group_info, NAME) \
@@ -3291,7 +3291,7 @@ static void load_content_change_handler(void *data)
     * crashes. I think it is because LOAD_CORE has not yet run. I'm not
     * sure the best way to test for that.
     */
-   rarch_main_command(EVENT_CMD_LOAD_CONTENT);
+   event_command(EVENT_CMD_LOAD_CONTENT);
 }
 
 static void overlay_enable_toggle_change_handler(void *data)
@@ -3302,9 +3302,9 @@ static void overlay_enable_toggle_change_handler(void *data)
       return;
 
    if (setting->value.boolean)
-      rarch_main_command(EVENT_CMD_OVERLAY_INIT);
+      event_command(EVENT_CMD_OVERLAY_INIT);
    else
-      rarch_main_command(EVENT_CMD_OVERLAY_DEINIT);
+      event_command(EVENT_CMD_OVERLAY_DEINIT);
 }
 
 static bool setting_append_list_main_menu_options(

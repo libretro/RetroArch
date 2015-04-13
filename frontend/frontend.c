@@ -70,7 +70,7 @@ void main_exit_save_config(void)
          config_save_file(global->core_specific_config_path);
    }
 
-   rarch_main_command(EVENT_CMD_AUTOSAVE_STATE);
+   event_command(EVENT_CMD_AUTOSAVE_STATE);
 }
 
 /**
@@ -102,7 +102,7 @@ void main_exit(args_type() args)
       rarch_main_deinit();
    }
 
-   rarch_main_command(EVENT_CMD_PERFCNT_REPORT_FRONTEND_LOG);
+   event_command(EVENT_CMD_PERFCNT_REPORT_FRONTEND_LOG);
 
 #if defined(HAVE_LOGGER) && !defined(ANDROID)
    logger_shutdown();
@@ -264,7 +264,7 @@ bool main_load_content(int argc, char **argv, args_type() args,
       goto error;
    }
 
-   rarch_main_command(EVENT_CMD_RESUME);
+   event_command(EVENT_CMD_RESUME);
 
    if (process_args)
       process_args(rarch_argc_ptr, rarch_argv_ptr);
@@ -321,7 +321,7 @@ returntype main_entry(signature())
       }
    }
 
-   rarch_main_command(EVENT_CMD_HISTORY_INIT);
+   event_command(EVENT_CMD_HISTORY_INIT);
 
    settings = config_get_ptr();
 

@@ -172,7 +172,7 @@ LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
    }
 
 	if (cmd != EVENT_CMD_NONE)
-		rarch_main_command(cmd);
+		event_command(cmd);
 
 	if (do_wm_close)
 		PostMessage(owner, WM_CLOSE, 0, 0);

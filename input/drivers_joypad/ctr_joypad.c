@@ -164,7 +164,7 @@ static void ctr_joypad_poll(void)
       (state_tmp & KEY_SELECT) &&
       (state_tmp & KEY_L) &&
       (state_tmp & KEY_R))
-      rarch_main_command(EVENT_CMD_QUIT);
+      event_command(EVENT_CMD_QUIT);
 
 }
 
