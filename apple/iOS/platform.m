@@ -318,6 +318,11 @@ enum
 
 - (void)applicationDidBecomeActive:(UIApplication *)application
 {
+   settings_t *settings = config_get_ptr();
+    
+   if (settings->ui.companion_start_on_boot)
+      return;
+    
   [self showGameView];
 }
 
