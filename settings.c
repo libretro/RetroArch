@@ -3615,7 +3615,7 @@ static bool setting_append_list_driver_options(
    CONFIG_STRING_OPTIONS(
          settings->input.joypad_driver,
          "input_joypad_driver",
-         "Joypad Driver",
+         "Input Device Driver",
          config_get_default_joypad(),
          config_get_joypad_driver_options(),
          group_info.name,
@@ -4830,7 +4830,7 @@ static bool setting_append_list_input_options(
    START_SUB_GROUP(
          list,
          list_info,
-         "Joypad Mapping",
+         "Input Device Mapping",
          group_info.name,
          subgroup_info);
 
@@ -6157,7 +6157,7 @@ static bool setting_append_list_path_options(
    CONFIG_DIR(
          settings->input.autoconfig_dir,
          "joypad_autoconfig_dir",
-         "Joypad Autoconfig Directory",
+         "Input Device Autoconfig Directory",
          "",
          "<default>",
          group_info.name,

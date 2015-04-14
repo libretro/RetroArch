@@ -130,8 +130,8 @@ static INLINE void get_title(const char *label, const char *dir,
          strlcat(title, " - META KEYS", sizeof_title);
       else if (!strcmp(elem1, "Turbo/Deadzone"))
          strlcat(title, " - TURBO / DEADZONE", sizeof_title);
-      else if (!strcmp(elem1, "Joypad Mapping"))
-         strlcat(title, " - JOYPAD MAPPING", sizeof_title);
+      else if (!strcmp(elem1, "Input Device Mapping"))
+         strlcat(title, " - INPUT DEVICE MAPPING", sizeof_title);
       else if (!strcmp(elem1, "State"))
          strlcat(title, " - STATE", sizeof_title);
       else if (!strcmp(elem1, "Miscellaneous"))
