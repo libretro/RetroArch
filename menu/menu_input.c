@@ -736,10 +736,8 @@ static int menu_input_pointer_post_iterate(menu_file_list_cbs_t *cbs,
       const char *label, unsigned type, unsigned action)
 {
    menu_handle_t *menu    = menu_driver_get_ptr();
-   settings_t *settings      = config_get_ptr();
-#if defined(HAVE_XMB) || defined(HAVE_GLUI)
-   driver_t *driver     = driver_get_ptr();
-#endif
+   settings_t *settings   = config_get_ptr();
+   driver_t *driver       = driver_get_ptr();
 
    if (!menu)
       return -1;
@@ -766,10 +764,10 @@ static int menu_input_pointer_post_iterate(menu_file_list_cbs_t *cbs,
    {
       if (menu->pointer.oldpressed[0])
       {
+         rarch_setting_t *setting = NULL;
+
          menu->pointer.oldpressed[0] = false;
-         driver_t *driver = driver_get_ptr();
-         rarch_setting_t *setting =
-            (rarch_setting_t*)setting_find_setting
+         setting = (rarch_setting_t*)setting_find_setting
             (driver->menu->list_settings,
              driver->menu->menu_list->selection_buf->list[menu->navigation.selection_ptr].label);
 
