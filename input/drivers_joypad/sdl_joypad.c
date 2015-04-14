@@ -145,13 +145,13 @@ static void sdl_pad_connect(unsigned id)
 
    input_config_autoconfigure_joypad(&params);
 
-   RARCH_LOG("[SDL]: Joypad #%u (%04x:%04x) connected: %s.\n", id, vendor,
+   RARCH_LOG("[SDL]: Device #%u (%04x:%04x) connected: %s.\n", id, vendor,
              product, sdl_pad_name(id));
 
 #ifdef HAVE_SDL2
 
    if (pad->controller)
-      RARCH_LOG("[SDL]: Joypad #%u supports game controller api.\n", id);
+      RARCH_LOG("[SDL]: Device #%u supports game controller api.\n", id);
 
    pad->haptic = g_has_haptic ? SDL_HapticOpenFromJoystick(pad->joypad) : NULL;
 
@@ -172,7 +172,7 @@ static void sdl_pad_connect(unsigned id)
       if (SDL_HapticEffectSupported(pad->haptic, &efx) == SDL_FALSE)
       {
          pad->rumble_effect = -2;
-         RARCH_WARN("[SDL]: Joypad #%u does not support rumble.\n", id);
+         RARCH_WARN("[SDL]: Device #%u does not support rumble.\n", id);
       }
    }
 #endif
@@ -184,10 +184,10 @@ static void sdl_pad_connect(unsigned id)
 #ifdef HAVE_SDL2
    pad->num_balls   = SDL_JoystickNumBalls(pad->joypad);
 
-   RARCH_LOG("[SDL]: Joypad #%u has: %u axes, %u buttons, %u hats and %u trackballs.\n",
+   RARCH_LOG("[SDL]: Device #%u has: %u axes, %u buttons, %u hats and %u trackballs.\n",
              id, pad->num_axes, pad->num_buttons, pad->num_hats, pad->num_balls);
 #else
-   RARCH_LOG("[SDL]: Joypad #%u has: %u axes, %u buttons, %u hats.\n",
+   RARCH_LOG("[SDL]: Device #%u has: %u axes, %u buttons, %u hats.\n",
              id, pad->num_axes, pad->num_buttons, pad->num_hats);
 #endif
 }

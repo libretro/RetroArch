@@ -70,7 +70,7 @@ static INLINE void input_conv_analog_id_to_bind_id(unsigned idx, unsigned ident,
 
 /**
  * input_joypad_pressed:
- * @drv                     : Joypad driver handle.
+ * @drv                     : Input device driver handle.
  * @port                    : User number.
  * @binds                   : Binds of user.
  * @key                     : Identifier of key.
@@ -86,7 +86,7 @@ bool input_joypad_pressed(const rarch_joypad_driver_t *driver,
 
 /**
  * input_joypad_analog:
- * @drv                     : Joypad driver handle.
+ * @drv                     : Input device driver handle.
  * @port                    : User number.
  * @idx                     : Analog key index.
  *                            E.g.: 
@@ -109,7 +109,7 @@ int16_t input_joypad_analog(const rarch_joypad_driver_t *driver,
 
 /**
  * input_joypad_set_rumble:
- * @drv                     : Joypad driver handle.
+ * @drv                     : Input device driver handle.
  * @port                    : User number.
  * @effect                  : Rumble effect to set.
  * @strength                : Strength of rumble effect.
@@ -123,7 +123,7 @@ bool input_joypad_set_rumble(const rarch_joypad_driver_t *driver,
 
 /**
  * input_joypad_axis_raw:  
- * @drv                     : Joypad driver handle.
+ * @drv                     : Input device driver handle.
  * @port                    : Joystick number.
  * @axis                    : Identifier of axis.
  *
@@ -138,7 +138,7 @@ int16_t input_joypad_axis_raw(const rarch_joypad_driver_t *driver,
 
 /**
  * input_joypad_button_raw:
- * @drv                     : Joypad driver handle.
+ * @drv                     : Input device driver handle.
  * @port                    : Joystick number.
  * @button                  : Identifier of key.
  *
@@ -156,7 +156,7 @@ bool input_joypad_hat_raw(const rarch_joypad_driver_t *driver,
 
 /**
  * input_joypad_name:  
- * @drv                     : Joypad driver handle.
+ * @drv                     : Input device driver handle.
  * @port                    : Joystick number.
  *
  * Gets name of the joystick (@port).

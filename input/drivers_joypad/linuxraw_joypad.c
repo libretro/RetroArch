@@ -91,20 +91,20 @@ static bool linuxraw_joypad_init_pad(const char *path, struct linuxraw_joypad *p
    {
       if (ioctl(pad->fd, JSIOCGNAME(sizeof(settings->input.device_names[0])), pad->ident) >= 0)
       {
-         RARCH_LOG("[Joypad]: Found pad: %s on %s.\n", pad->ident, path);
+         RARCH_LOG("[Device]: Found pad: %s on %s.\n", pad->ident, path);
 
 #ifndef IS_JOYCONFIG
          if (g_hotplug)
          {
             char msg[512];
-            snprintf(msg, sizeof(msg), "Joypad #%u (%s) connected.", (unsigned)(pad - linuxraw_pads), pad->ident);
+            snprintf(msg, sizeof(msg), "Device #%u (%s) connected.", (unsigned)(pad - linuxraw_pads), pad->ident);
             rarch_main_msg_queue_push(msg, 0, 60, false);
          }
 #endif
       }
 
       else
-         RARCH_ERR("[Joypad]: Didn't find ident of %s.\n", path);
+         RARCH_ERR("[Device]: Didn't find ident of %s.\n", path);
 
       struct epoll_event event;
       event.events = EPOLLIN;
@@ -113,7 +113,7 @@ static bool linuxraw_joypad_init_pad(const char *path, struct linuxraw_joypad *p
       return true;
    }
 
-   RARCH_ERR("[Joypad]: Failed to open pad %s (error: %s).\n", path, strerror(errno));
+   RARCH_ERR("[Device]: Failed to open pad %s (error: %s).\n", path, strerror(errno));
    return false;
 }
 
@@ -160,7 +160,7 @@ static void handle_plugged_pad(void)
                }
 #endif
 
-               RARCH_LOG("[Joypad]: Device %s disconnected.\n", linuxraw_pads[idx].ident);
+               RARCH_LOG("[Device]: Device %s disconnected.\n", linuxraw_pads[idx].ident);
                close(linuxraw_pads[idx].fd);
                linuxraw_pads[idx].buttons = 0;
                memset(linuxraw_pads[idx].axes, 0, sizeof(linuxraw_pads[idx].axes));
