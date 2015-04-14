@@ -875,12 +875,11 @@ static int setting_action_ok_bind_all(void *data, unsigned action)
          MENU_SETTINGS_CUSTOM_BIND,
          menu->navigation.selection_ptr);
 
-   menu->binds.timeout_end =
-      rarch_get_time_usec() + 
-      MENU_KEYBOARD_BIND_TIMEOUT_SECONDS * 1000000;
-
    if (global->menu.bind_mode_keyboard)
    {
+      menu->binds.timeout_end =
+         rarch_get_time_usec() + 
+         MENU_KEYBOARD_BIND_TIMEOUT_SECONDS * 1000000;
       input_keyboard_wait_keys(menu,
             menu_input_custom_bind_keyboard_cb);
    }
@@ -894,7 +893,8 @@ static int setting_action_ok_bind_all(void *data, unsigned action)
 }
 
 static int setting_action_ok_bind_defaults(void *data, unsigned action)
-{ unsigned i;
+{
+   unsigned i;
    struct retro_keybind *target = NULL;
    const struct retro_keybind *def_binds = NULL;
    rarch_setting_t *setting  = (rarch_setting_t*)data;
@@ -1089,11 +1089,10 @@ static int setting_bind_action_ok(void *data, unsigned action)
          MENU_SETTINGS_CUSTOM_BIND_KEYBOARD : MENU_SETTINGS_CUSTOM_BIND,
          menu->navigation.selection_ptr);
 
-   menu->binds.timeout_end = rarch_get_time_usec() +
-      MENU_KEYBOARD_BIND_TIMEOUT_SECONDS * 1000000;
-
    if (global->menu.bind_mode_keyboard)
    {
+      menu->binds.timeout_end = rarch_get_time_usec() +
+         MENU_KEYBOARD_BIND_TIMEOUT_SECONDS * 1000000;
       input_keyboard_wait_keys(menu,
             menu_input_custom_bind_keyboard_cb);
    }
