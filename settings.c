@@ -3437,16 +3437,12 @@ static bool setting_append_list_main_menu_options(
          group_info.name,
          subgroup_info.name);
 
-
-#if !defined(IOS)
-   /* Apple rejects iOS apps that lets you forcibly quit an application. */
    CONFIG_ACTION(
          "quit_retroarch",
          "Quit RetroArch",
          group_info.name,
          subgroup_info.name);
    settings_list_current_add_cmd(list, list_info, EVENT_CMD_QUIT_RETROARCH);
-#endif
 
    END_SUB_GROUP(list, list_info);
    END_GROUP(list, list_info);
