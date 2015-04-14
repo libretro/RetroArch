@@ -193,7 +193,7 @@ void menu_input_key_event(bool down, unsigned keycode,
       menu_input_search_start();
 }
 
-void menu_input_poll_bind_state(struct menu_bind_state *state)
+static void menu_input_poll_bind_state(struct menu_bind_state *state)
 {
    unsigned i, b, a, h;
    const rarch_joypad_driver_t *joypad = input_driver_get_joypad_driver();
@@ -237,7 +237,7 @@ void menu_input_poll_bind_state(struct menu_bind_state *state)
    }
 }
 
-void menu_input_poll_bind_get_rested_axes(struct menu_bind_state *state)
+static void menu_input_poll_bind_get_rested_axes(struct menu_bind_state *state)
 {
    unsigned i, a;
    const rarch_joypad_driver_t *joypad = input_driver_get_joypad_driver();
@@ -380,6 +380,19 @@ int menu_input_set_keyboard_bind_mode(void)
       MENU_KEYBOARD_BIND_TIMEOUT_SECONDS * 1000000;
    input_keyboard_wait_keys(menu,
          menu_input_custom_bind_keyboard_cb);
+
+   return 0;
+}
+
+int menu_input_set_input_device_bind_mode(void)
+{
+   menu_handle_t *menu = menu_driver_get_ptr();
+
+   if (!menu)
+      return -1;
+
+   menu_input_poll_bind_get_rested_axes(&menu->binds);
+   menu_input_poll_bind_state(&menu->binds);
 
    return 0;
 }

@@ -58,10 +58,6 @@ void menu_input_st_string_callback(void *userdata, const char *str);
 
 void menu_input_st_cheat_callback(void *userdata, const char *str);
 
-void menu_input_poll_bind_get_rested_axes(struct menu_bind_state *state);
-
-void menu_input_poll_bind_state(struct menu_bind_state *state);
-
 bool menu_input_poll_find_trigger(struct menu_bind_state *state,
       struct menu_bind_state *new_state);
 
@@ -77,6 +73,8 @@ void menu_input_post_iterate(int *ret, menu_file_list_cbs_t *cbs, const char *pa
 void menu_input_search_start(void);
 
 int menu_input_set_keyboard_bind_mode(void);
+
+int menu_input_set_input_device_bind_mode(void);
 
 #ifdef __cplusplus
 }

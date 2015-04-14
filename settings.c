@@ -878,10 +878,7 @@ static int setting_action_ok_bind_all(void *data, unsigned action)
    if (global->menu.bind_mode_keyboard)
       menu_input_set_keyboard_bind_mode();
    else
-   {
-      menu_input_poll_bind_get_rested_axes(&menu->binds);
-      menu_input_poll_bind_state(&menu->binds);
-   }
+      menu_input_set_input_device_bind_mode();
 
    return 0;
 }
@@ -1086,10 +1083,7 @@ static int setting_bind_action_ok(void *data, unsigned action)
    if (global->menu.bind_mode_keyboard)
       menu_input_set_keyboard_bind_mode();
    else
-   {
-      menu_input_poll_bind_get_rested_axes(&menu->binds);
-      menu_input_poll_bind_state(&menu->binds);
-   }
+      menu_input_set_input_device_bind_mode();
 
    return 0;
 }
