@@ -1231,6 +1231,8 @@ void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
    if (!menu)
       return;
 
+   RARCH_LOG("path: %s, label: %s, elem0 : %s, elem1: %s\n", path, label, elem0, elem1);
+
    cbs->action_ok = action_ok_lookup_setting;
 
    if (elem0[0] != '\0' && is_rdb_entry(elem0))

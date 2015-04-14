@@ -383,7 +383,6 @@ int menu_input_set_keyboard_bind_mode(void *data,
    {
       case MENU_INPUT_BIND_NONE:
          return -1;
-         break;
       case MENU_INPUT_BIND_SINGLE:
          keybind = (struct retro_keybind*)setting->value.keybind;
 
@@ -438,7 +437,6 @@ int menu_input_set_input_device_bind_mode(void *data,
    {
       case MENU_INPUT_BIND_NONE:
          return -1;
-         break;
       case MENU_INPUT_BIND_SINGLE:
          keybind = (struct retro_keybind*)setting->value.keybind;
 

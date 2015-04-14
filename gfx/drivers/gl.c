@@ -1191,7 +1191,7 @@ static void gl_init_textures_data(gl_t *gl)
 static void gl_init_textures(gl_t *gl, const video_info_t *video)
 {
    unsigned i;
-   GLenum internal_fmt, texture_type, texture_fmt;
+   GLenum internal_fmt, texture_type = 0, texture_fmt = 0;
 
    (void)texture_type;
    (void)texture_fmt;
