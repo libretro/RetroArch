@@ -820,7 +820,7 @@ unsigned menu_input_frame(retro_input_t input, retro_input_t trigger_input)
    menu_handle_t *menu = menu_driver_get_ptr();
    driver_t *driver    = driver_get_ptr();
 
-   if (!menu)
+   if (!menu || !driver)
       return 0;
 
    driver->retro_ctx.poll_cb();
