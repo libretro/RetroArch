@@ -656,6 +656,157 @@ static int menu_input_pointer(unsigned *action)
    return 0;
 }
 
+static int menu_input_mouse_post_iterate(menu_file_list_cbs_t *cbs,
+      const char *path,
+      const char *label, unsigned type, unsigned action)
+{
+   driver_t      *driver  = driver_get_ptr();
+   menu_handle_t *menu    = menu_driver_get_ptr();
+   settings_t *settings   = config_get_ptr();
+
+   if (!menu)
+      return -1;
+
+   if (!settings->menu.mouse.enable || (settings->input.overlay_enable && driver && driver->overlay))
+   {
+      menu->mouse.wheeldown = false;
+      menu->mouse.wheelup   = false;
+      menu->mouse.oldleft   = false;
+      menu->mouse.oldright  = false;
+      return 0;
+   }
+
+   if (menu->mouse.left)
+   {
+      if (!menu->mouse.oldleft)
+      {
+         driver_t *driver = driver_get_ptr();
+         rarch_setting_t *setting =
+            (rarch_setting_t*)setting_find_setting
+            (driver->menu->list_settings,
+             driver->menu->menu_list->selection_buf->list[menu->navigation.selection_ptr].label);
+         menu->mouse.oldleft = true;
+
+#if 0
+         RARCH_LOG("action OK: %d\n", cbs && cbs->action_ok);
+         RARCH_LOG("action toggle: %d\n", cbs && cbs->action_toggle);
+         if (setting && setting->type)
+            RARCH_LOG("action type: %d\n", setting->type);
+#endif
+
+         if (menu->mouse.ptr == menu->navigation.selection_ptr
+            && cbs && cbs->action_toggle && setting &&
+            (setting->type == ST_BOOL || setting->type == ST_UINT || setting->type == ST_FLOAT
+             || setting->type == ST_STRING))
+            return cbs->action_toggle(type, label, MENU_ACTION_RIGHT, true);
+         if (menu->mouse.ptr == menu->navigation.selection_ptr
+            && cbs && cbs->action_ok)
+            return cbs->action_ok(path, label, type,
+                  menu->navigation.selection_ptr);
+         else if (menu->mouse.ptr <= menu_list_get_size(menu->menu_list)-1)
+            menu_navigation_set(&menu->navigation, menu->mouse.ptr, false);
+      }
+   }
+   else
+      menu->mouse.oldleft = false;
+
+   if (menu->mouse.right)
+   {
+      if (!menu->mouse.oldright)
+      {
+         menu->mouse.oldright = true;
+         menu_list_pop_stack(menu->menu_list);
+      }
+   }
+   else
+      menu->mouse.oldright = false;
+
+   if (menu->mouse.wheeldown)
+      menu_navigation_increment(&menu->navigation, 1);
+
+   if (menu->mouse.wheelup)
+      menu_navigation_decrement(&menu->navigation, 1);
+
+
+   return 0;
+}
+
+static int menu_input_pointer_post_iterate(menu_file_list_cbs_t *cbs,
+      const char *path,
+      const char *label, unsigned type, unsigned action)
+{
+   menu_handle_t *menu    = menu_driver_get_ptr();
+   settings_t *settings      = config_get_ptr();
+#if defined(HAVE_XMB) || defined(HAVE_GLUI)
+   driver_t *driver     = driver_get_ptr();
+#endif
+
+   if (!menu)
+      return -1;
+
+   if (!settings->menu.pointer.enable || (settings->input.overlay_enable && driver && driver->overlay))
+      return 0;
+
+#if defined(HAVE_XMB)
+   if (driver->menu_ctx == &menu_ctx_xmb)
+      return 0;
+#endif
+
+   if (menu->pointer.pressed[0])
+   {
+      if (menu->pointer.oldpressed[0])
+      {
+         if (menu->mouse.ptr <= menu_list_get_size(menu->menu_list)-1)
+            menu_navigation_set(&menu->navigation, menu->mouse.ptr, false);
+      }
+      else
+         menu->pointer.oldpressed[0] = true;
+   }
+   else
+   {
+      if (menu->pointer.oldpressed[0])
+      {
+         menu->pointer.oldpressed[0] = false;
+         driver_t *driver = driver_get_ptr();
+         rarch_setting_t *setting =
+            (rarch_setting_t*)setting_find_setting
+            (driver->menu->list_settings,
+             driver->menu->menu_list->selection_buf->list[menu->navigation.selection_ptr].label);
+
+         if (menu->mouse.ptr == menu->navigation.selection_ptr && !menu->pointer.cancel
+            && cbs && cbs->action_toggle && setting &&
+            (setting->type == ST_BOOL || setting->type == ST_UINT || setting->type == ST_FLOAT
+             || setting->type == ST_STRING))
+            return cbs->action_toggle(type, label, MENU_ACTION_RIGHT, true);
+         if (menu->mouse.ptr == menu->navigation.selection_ptr && !menu->pointer.cancel
+            && cbs && cbs->action_ok)
+            return cbs->action_ok(path, label, type,
+                  menu->navigation.selection_ptr);
+         else if (menu->mouse.ptr <= menu_list_get_size(menu->menu_list) - 1)
+            menu_navigation_set(&menu->navigation, menu->mouse.ptr, false);
+      }
+   }
+
+   if (menu->pointer.back)
+   {
+      if (!menu->pointer.oldback)
+      {
+         menu->pointer.oldback = true;
+         menu_list_pop_stack(menu->menu_list);
+      }
+   }
+   menu->pointer.oldback = menu->pointer.back;
+
+   return 0;
+}
+
+void menu_input_post_iterate(int *ret, menu_file_list_cbs_t *cbs, const char *path,
+      const char *label, unsigned type, unsigned action)
+{
+   *ret  = menu_input_mouse_post_iterate  (cbs, path, label, type, action);
+   *ret |= menu_input_pointer_post_iterate(cbs, path, label, type, action);
+}
+
 unsigned menu_input_frame(retro_input_t input, retro_input_t trigger_input)
 {
    unsigned ret = 0;
