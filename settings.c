@@ -853,32 +853,15 @@ static int load_content_action_toggle(void *data, unsigned action,
 
 static int setting_action_ok_bind_all(void *data, unsigned action)
 {
-   rarch_setting_t *setting  = (rarch_setting_t*)data;
-   menu_handle_t *menu       = menu_driver_get_ptr();
-   settings_t      *settings = config_get_ptr();
    global_t      *global     = global_get_ptr();
 
-   if (!setting || !menu)
+   if (!global)
       return -1;
 
-   menu->binds.target = &settings->input.binds
-      [setting->index_offset][0];
-   menu->binds.begin = MENU_SETTINGS_BIND_BEGIN;
-   menu->binds.last = MENU_SETTINGS_BIND_LAST;
-
-   menu_list_push_stack(
-         menu->menu_list,
-         "",
-         "custom_bind_all",
-         global->menu.bind_mode_keyboard ?
-         MENU_SETTINGS_CUSTOM_BIND_KEYBOARD :
-         MENU_SETTINGS_CUSTOM_BIND,
-         menu->navigation.selection_ptr);
-
    if (global->menu.bind_mode_keyboard)
-      menu_input_set_keyboard_bind_mode();
+      menu_input_set_keyboard_bind_mode(data, MENU_INPUT_BIND_ALL);
    else
-      menu_input_set_input_device_bind_mode();
+      menu_input_set_input_device_bind_mode(data, MENU_INPUT_BIND_ALL);
 
    return 0;
 }
@@ -1052,38 +1035,12 @@ static int setting_action_action_ok(void *data, unsigned action)
 
 static int setting_bind_action_ok(void *data, unsigned action)
 {
-   struct retro_keybind *keybind = NULL;
-   rarch_setting_t *setting  = (rarch_setting_t*)data;
-   menu_handle_t *menu       = menu_driver_get_ptr();
    global_t      *global     = global_get_ptr();
 
-   if (!setting)
-      return -1;
-
-   if (!menu || !menu->menu_list)
-      return -1;
-   
-   keybind = (struct retro_keybind*)setting->value.keybind;
-
-   if (!keybind)
-      return -1;
-
-   menu->binds.begin  = setting->bind_type;
-   menu->binds.last   = setting->bind_type;
-   menu->binds.target = keybind;
-   menu->binds.user = setting->index_offset;
-   menu_list_push_stack(
-         menu->menu_list,
-         "",
-         "custom_bind",
-         global->menu.bind_mode_keyboard ?
-         MENU_SETTINGS_CUSTOM_BIND_KEYBOARD : MENU_SETTINGS_CUSTOM_BIND,
-         menu->navigation.selection_ptr);
-
    if (global->menu.bind_mode_keyboard)
-      menu_input_set_keyboard_bind_mode();
+      menu_input_set_keyboard_bind_mode(data, MENU_INPUT_BIND_SINGLE);
    else
-      menu_input_set_input_device_bind_mode();
+      menu_input_set_input_device_bind_mode(data, MENU_INPUT_BIND_SINGLE);
 
    return 0;
 }

@@ -368,12 +368,51 @@ static bool menu_input_custom_bind_keyboard_cb(void *data, unsigned code)
    return (menu->binds.begin <= menu->binds.last);
 }
 
-int menu_input_set_keyboard_bind_mode(void)
+int menu_input_set_keyboard_bind_mode(void *data,
+      enum menu_input_bind_mode type)
 {
-   menu_handle_t *menu = menu_driver_get_ptr();
+   struct retro_keybind *keybind = NULL;
+   rarch_setting_t  *setting = (rarch_setting_t*)data;
+   settings_t *settings      = config_get_ptr();
+   menu_handle_t       *menu = menu_driver_get_ptr();
 
-   if (!menu)
+   if (!menu || !setting)
       return -1;
+
+   switch (type)
+   {
+      case MENU_INPUT_BIND_NONE:
+         return -1;
+         break;
+      case MENU_INPUT_BIND_SINGLE:
+         keybind = (struct retro_keybind*)setting->value.keybind;
+
+         if (!keybind)
+            return -1;
+
+         menu->binds.begin  = setting->bind_type;
+         menu->binds.last   = setting->bind_type;
+         menu->binds.target = keybind;
+         menu->binds.user = setting->index_offset;
+         menu_list_push_stack( menu->menu_list,
+               "",
+               "custom_bind",
+               MENU_SETTINGS_CUSTOM_BIND_KEYBOARD,
+               menu->navigation.selection_ptr);
+         break;
+      case MENU_INPUT_BIND_ALL:
+         menu->binds.target = &settings->input.binds
+            [setting->index_offset][0];
+         menu->binds.begin = MENU_SETTINGS_BIND_BEGIN;
+         menu->binds.last = MENU_SETTINGS_BIND_LAST;
+         menu_list_push_stack( menu->menu_list,
+               "",
+               "custom_bind_all",
+               MENU_SETTINGS_CUSTOM_BIND_KEYBOARD,
+               menu->navigation.selection_ptr);
+         break;
+   }
+
 
    menu->binds.timeout_end =
       rarch_get_time_usec() + 
@@ -384,12 +423,49 @@ int menu_input_set_keyboard_bind_mode(void)
    return 0;
 }
 
-int menu_input_set_input_device_bind_mode(void)
+int menu_input_set_input_device_bind_mode(void *data,
+      enum menu_input_bind_mode type)
 {
-   menu_handle_t *menu = menu_driver_get_ptr();
+   struct retro_keybind *keybind = NULL;
+   rarch_setting_t  *setting = (rarch_setting_t*)data;
+   settings_t *settings      = config_get_ptr();
+   menu_handle_t       *menu = menu_driver_get_ptr();
 
-   if (!menu)
+   if (!menu || !setting)
       return -1;
+
+   switch (type)
+   {
+      case MENU_INPUT_BIND_NONE:
+         return -1;
+         break;
+      case MENU_INPUT_BIND_SINGLE:
+         keybind = (struct retro_keybind*)setting->value.keybind;
+
+         if (!keybind)
+            return -1;
+         menu->binds.begin  = setting->bind_type;
+         menu->binds.last   = setting->bind_type;
+         menu->binds.target = keybind;
+         menu->binds.user   = setting->index_offset;
+         menu_list_push_stack( menu->menu_list,
+               "",
+               "custom_bind",
+               MENU_SETTINGS_CUSTOM_BIND,
+               menu->navigation.selection_ptr);
+         break;
+      case MENU_INPUT_BIND_ALL:
+         menu->binds.target = &settings->input.binds
+            [setting->index_offset][0];
+         menu->binds.begin  = MENU_SETTINGS_BIND_BEGIN;
+         menu->binds.last   = MENU_SETTINGS_BIND_LAST;
+         menu_list_push_stack( menu->menu_list,
+               "",
+               "custom_bind_all",
+               MENU_SETTINGS_CUSTOM_BIND,
+               menu->navigation.selection_ptr);
+         break;
+   }
 
    menu_input_poll_bind_get_rested_axes(&menu->binds);
    menu_input_poll_bind_state(&menu->binds);

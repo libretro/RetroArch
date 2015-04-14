@@ -44,6 +44,13 @@ typedef enum
    MENU_ACTION_NOOP
 } menu_action_t;
 
+enum menu_input_bind_mode
+{
+   MENU_INPUT_BIND_NONE,
+   MENU_INPUT_BIND_SINGLE,
+   MENU_INPUT_BIND_ALL,
+};
+
 void menu_input_key_event(bool down, unsigned keycode, uint32_t character,
       uint16_t key_modifiers);
 
@@ -72,9 +79,9 @@ void menu_input_post_iterate(int *ret, menu_file_list_cbs_t *cbs, const char *pa
 
 void menu_input_search_start(void);
 
-int menu_input_set_keyboard_bind_mode(void);
+int menu_input_set_keyboard_bind_mode(void *data, enum menu_input_bind_mode type);
 
-int menu_input_set_input_device_bind_mode(void);
+int menu_input_set_input_device_bind_mode(void *data, enum menu_input_bind_mode type);
 
 #ifdef __cplusplus
 }
