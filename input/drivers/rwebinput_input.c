@@ -24,6 +24,7 @@
 #include "../keyboard_line.h"
 
 #include "../../emscripten/RWebInput.h"
+#include "../input_joypad.h"
 
 static bool uninited = false;
 

@@ -19,6 +19,7 @@
 #include "../../general.h"
 #include <file/config_file.h>
 #include "../../content.h"
+#include "../frontend.h"
 #include "../frontend_driver.h"
 
 static void emscripten_mainloop(void)
