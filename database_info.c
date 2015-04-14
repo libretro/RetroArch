@@ -111,17 +111,17 @@ static int database_info_iterate_rdl_write(
 
    path_parent_dir(parent_dir);
 
-#ifdef HAVE_ZLIB
    if (!strcmp(path_get_extension(name), "zip"))
    {
+#ifdef HAVE_ZLIB
       RARCH_LOG("[ZIP]: name: %s\n", name);
 
       if (!zlib_parse_file(name, NULL, zlib_compare_crc32,
                (void*)parent_dir))
          RARCH_LOG("Could not process ZIP file.\n");
+#endif
    }
    else
-#endif
    {
       char msg[PATH_MAX_LENGTH];
       ssize_t ret;
