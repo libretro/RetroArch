@@ -103,6 +103,8 @@ static INLINE void get_title(const char *label, const char *dir,
       snprintf(title, sizeof_title, "CONFIG %s", dir);
    else if (!strcmp(label, "disk_image_append"))
       snprintf(title, sizeof_title, "DISK APPEND %s", dir);
+   else if (!strcmp(elem0, "Recording Settings"))
+      strlcpy(title, "RECORDING SETTINGS", sizeof_title);
    else if (!strcmp(elem0, "Video Settings"))
    {
       strlcpy(title, "VIDEO SETTINGS", sizeof_title);
