@@ -595,9 +595,9 @@ static int action_iterate_main(const char *label, unsigned action)
 
       case MENU_ACTION_TEST:
 #if 0
-         menu->rdl = database_info_write_rdl_init("/home/squarepusher/roms");
+         menu->db = database_info_init("/home/squarepusher/roms", DATABASE_TYPE_RDL_WRITE);
 
-         if (!menu->rdl)
+         if (!menu->db)
             return -1;
 #endif
          break;

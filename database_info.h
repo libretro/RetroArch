@@ -27,19 +27,26 @@
 extern "C" {
 #endif
 
-enum database_rdl_action_type
+enum database_status
 {
-   DATABASE_RDL_NONE = 0,
-   DATABASE_RDL_ITERATE,
-   DATABASE_RDL_FREE,
+   DATABASE_STATUS_NONE = 0,
+   DATABASE_STATUS_ITERATE,
+   DATABASE_STATUS_FREE,
+};
+
+enum database_type
+{
+   DATABASE_TYPE_NONE = 0,
+   DATABASE_TYPE_RDL_WRITE,
 };
 
 typedef struct
 {
-   enum database_rdl_action_type status;
+   enum database_status status;
+   enum database_type type;
    size_t list_ptr;
    struct string_list *list;
-} database_info_rdl_handle_t;
+} database_info_handle_t;
 
 typedef struct
 {
@@ -76,18 +83,20 @@ typedef struct
    size_t count;
 } database_info_list_t;
 
-database_info_list_t *database_info_list_new(const char *rdb_path, const char *query);
+database_info_list_t *database_info_list_new(const char *rdb_path,
+      const char *query);
 
 void database_info_list_free(database_info_list_t *list);
 
 int database_open_cursor(libretrodb_t *db,
       libretrodb_cursor_t *cur, const char *query);
 
-database_info_rdl_handle_t *database_info_write_rdl_init(const char *dir);
+database_info_handle_t *database_info_init(const char *dir,
+      enum database_type type);
 
-void database_info_write_rdl_free(database_info_rdl_handle_t *dbl);
+void database_info_free(database_info_handle_t *dbl);
 
-int database_info_write_rdl_iterate(database_info_rdl_handle_t *dbl);
+int database_info_iterate(database_info_handle_t *dbl);
 
 #ifdef __cplusplus
 }

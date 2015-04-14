@@ -58,57 +58,56 @@ static int zlib_compare_crc32(const char *name, const char *valid_exts,
 }
 #endif
 
-database_info_rdl_handle_t *database_info_write_rdl_init(const char *dir)
+database_info_handle_t *database_info_init(const char *dir, enum database_type type)
 {
    const char *exts                = "";
    global_t                *global = global_get_ptr();
-   database_info_rdl_handle_t *dbl = (database_info_rdl_handle_t*)calloc(1, sizeof(*dbl));
+   database_info_handle_t     *db  = (database_info_handle_t*)calloc(1, sizeof(*db));
 
-   if (!dbl)
+   if (!db)
       return NULL;
 
    if (global->core_info)
       exts = core_info_list_get_all_extensions(global->core_info);
    
-   dbl->list      = dir_list_new(dir, exts, false);
+   db->list      = dir_list_new(dir, exts, false);
 
-   if (!dbl->list)
+   if (!db->list)
       goto error;
 
-   dbl->list_ptr  = 0;
-   dbl->status    = DATABASE_RDL_ITERATE;
+   db->list_ptr       = 0;
+   db->status         = DATABASE_STATUS_ITERATE;
+   db->type           = type;
 
-   return dbl;
+   return db;
 
 error:
-   if (dbl)
-      free(dbl);
+   if (db)
+      free(db);
    return NULL;
 }
 
-void database_info_write_rdl_free(database_info_rdl_handle_t *dbl)
+void database_info_free(database_info_handle_t *db)
 {
-   if (!dbl)
+   if (!db)
       return;
 
-   string_list_free(dbl->list);
-   free(dbl);
-
-   rarch_main_msg_queue_push("Scanning of directory finished.\n", 1, 180, true);
+   string_list_free(db->list);
+   free(db);
 }
 
-int database_info_write_rdl_iterate(database_info_rdl_handle_t *dbl)
+static int database_info_iterate_rdl_write(
+      database_info_handle_t *db, const char *name)
 {
    char parent_dir[PATH_MAX_LENGTH];
-   const char *name = NULL;
+   bool to_continue = (db->list_ptr < db->list->size);
 
-   if (!dbl || !dbl->list)
+   if (!to_continue)
+   {
+      rarch_main_msg_queue_push("Scanning of directory finished.\n", 1, 180, true);
+      db->status = DATABASE_STATUS_FREE;
       return -1;
-
-   name = dbl->list->elems[dbl->list_ptr].data;
-
-   if (!name)
-      return 0;
+   }
 
    path_parent_dir(parent_dir);
 
@@ -138,7 +137,7 @@ int database_info_write_rdl_iterate(database_info_rdl_handle_t *dbl)
          return 0;
 
       snprintf(msg, sizeof(msg), "%zu/%zu: Scanning %s...\n",
-            dbl->list_ptr, dbl->list->size, name);
+            db->list_ptr, db->list->size, name);
 
       rarch_main_msg_queue_push(msg, 1, 180, true);
 
@@ -150,7 +149,32 @@ int database_info_write_rdl_iterate(database_info_rdl_handle_t *dbl)
          free(ret_buf);
    }
 
-   dbl->list_ptr++;
+   db->list_ptr++;
+
+   return 0;
+}
+
+int database_info_iterate(database_info_handle_t *db)
+{
+   const char *name = NULL;
+
+   if (!db || !db->list)
+      return -1;
+
+   name = db->list->elems[db->list_ptr].data;
+
+   if (!name)
+      return 0;
+
+   switch (db->type)
+   {
+      case DATABASE_TYPE_NONE:
+         break;
+      case DATABASE_TYPE_RDL_WRITE:
+         if (database_info_iterate_rdl_write(db, name) != 0)
+            return -1;
+         break;
+   }
 
    return 0;
 }

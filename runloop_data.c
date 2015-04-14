@@ -653,24 +653,21 @@ static void rarch_main_data_db_iterate(bool is_thread,
 {
    driver_t                *driver = driver_get_ptr();
    menu_handle_t             *menu = menu_driver_get_ptr();
-   database_info_rdl_handle_t *dbl = menu ? menu->rdl : NULL;
+   database_info_handle_t      *db = menu ? menu->db : NULL;
 
-   if (!dbl)
+   if (!db)
       return;
 
-   switch (dbl->status)
+   switch (db->status)
    {
-      case DATABASE_RDL_NONE:
+      case DATABASE_STATUS_NONE:
          break;
-      case DATABASE_RDL_ITERATE:
-         if (dbl->list_ptr < dbl->list->size)
-            database_info_write_rdl_iterate(dbl);
-         else
-            dbl->status = DATABASE_RDL_FREE;
+      case DATABASE_STATUS_ITERATE:
+         database_info_iterate(db);
          break;
-      case DATABASE_RDL_FREE:
-         database_info_write_rdl_free(dbl);
-         dbl = NULL;
+      case DATABASE_STATUS_FREE:
+         database_info_free(db);
+         db = NULL;
          break;
    }
 }

@@ -199,7 +199,7 @@ typedef struct
 
    content_playlist_t *db_playlist;
    char db_playlist_file[PATH_MAX_LENGTH];
-   database_info_rdl_handle_t *rdl;
+   database_info_handle_t *db;
 } menu_handle_t;
 
 typedef struct menu_file_list_cbs
