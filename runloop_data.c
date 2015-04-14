@@ -651,7 +651,6 @@ static int rarch_main_data_nbio_iterate_parse(nbio_handle_t *nbio)
 static void rarch_main_data_db_iterate(bool is_thread,
       data_runloop_t *runloop)
 {
-   driver_t                *driver = driver_get_ptr();
    menu_handle_t             *menu = menu_driver_get_ptr();
    database_info_handle_t      *db = menu ? menu->db : NULL;
 
