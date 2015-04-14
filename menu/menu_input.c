@@ -172,7 +172,6 @@ void menu_input_st_cheat_callback(void *userdata, const char *str)
 
 void menu_input_search_start(void)
 {
-   driver_t *driver    = driver_get_ptr();
    menu_handle_t *menu = menu_driver_get_ptr();
    if (!menu)
       return;
@@ -680,7 +679,6 @@ static int menu_input_mouse_post_iterate(menu_file_list_cbs_t *cbs,
    {
       if (!menu->mouse.oldleft)
       {
-         driver_t *driver = driver_get_ptr();
          rarch_setting_t *setting =
             (rarch_setting_t*)setting_find_setting
             (menu->list_settings,

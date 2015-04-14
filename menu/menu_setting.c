@@ -99,7 +99,6 @@ int menu_setting_handler(rarch_setting_t *setting, unsigned action)
 static int menu_action_handle_setting(rarch_setting_t *setting,
       unsigned type, unsigned action, bool wraparound)
 {
-   driver_t    *driver = driver_get_ptr();
    menu_handle_t *menu = menu_driver_get_ptr();
 
    if (!setting)
