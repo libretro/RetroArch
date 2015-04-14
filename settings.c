@@ -3833,7 +3833,47 @@ static bool setting_append_list_recording_options(
    global_t   *global   = global_get_ptr();
 
    START_GROUP(group_info, "Recording Settings");
+
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
+
+   CONFIG_BOOL(
+         global->record.enable,
+         "record_enable",
+         "Record Enable",
+         false,
+         "OFF",
+         "ON",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+
+   CONFIG_PATH(
+         global->record.config,
+         "record_config",
+         "Record Config",
+         "",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+   settings_list_current_add_values(list, list_info, "cfg");
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_EMPTY);
+
+   CONFIG_STRING(
+         global->record.path,
+         "record_path",
+         "Record Path",
+         "",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
+
+   END_SUB_GROUP(list, list_info);
+
+   START_SUB_GROUP(list, list_info, "Miscellaneous", group_info.name, subgroup_info);
 
    CONFIG_BOOL(
          settings->video.post_filter_record,
@@ -3846,7 +3886,6 @@ static bool setting_append_list_recording_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
-   settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
    CONFIG_BOOL(
          settings->video.gpu_record,
@@ -3859,7 +3898,6 @@ static bool setting_append_list_recording_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
-   settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
    END_SUB_GROUP(list, list_info);
    END_GROUP(list, list_info);
@@ -5868,21 +5906,6 @@ static bool setting_append_list_path_options(
    START_GROUP(group_info, "Path Settings");
 
    START_SUB_GROUP(list, list_info, "Paths", group_info.name, subgroup_info);
-#ifdef HAVE_MENU
-   CONFIG_DIR(
-         settings->menu_content_directory,
-         "rgui_browser_directory",
-         "Browser Directory",
-         "",
-         "<default>",
-         group_info.name,
-         subgroup_info.name,
-         general_write_handler,
-         general_read_handler);
-   settings_data_list_current_add_flags(
-         list,
-         list_info,
-         SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR | SD_FLAG_BROWSER_ACTION);
 
    CONFIG_DIR(
          settings->core_assets_directory,
@@ -5913,6 +5936,23 @@ static bool setting_append_list_path_options(
          list,
          list_info,
          SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR | SD_FLAG_BROWSER_ACTION);
+
+#ifdef HAVE_MENU
+   CONFIG_DIR(
+         settings->menu_content_directory,
+         "rgui_browser_directory",
+         "Browser Directory",
+         "",
+         "<default>",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+   settings_data_list_current_add_flags(
+         list,
+         list_info,
+         SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR | SD_FLAG_BROWSER_ACTION);
+
 
    CONFIG_DIR(
          settings->menu_config_directory,
@@ -6056,6 +6096,36 @@ static bool setting_append_list_path_options(
          "video_shader_dir",
          "Shader Directory",
          g_defaults.shader_dir,
+         "<default>",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+   settings_data_list_current_add_flags(
+         list,
+         list_info,
+         SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR | SD_FLAG_BROWSER_ACTION);
+
+   CONFIG_DIR(
+         global->recording.output_dir,
+         "recording_output_directory",
+         "Recording Output Directory",
+         "",
+         "<default>",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+   settings_data_list_current_add_flags(
+         list,
+         list_info,
+         SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR | SD_FLAG_BROWSER_ACTION);
+
+   CONFIG_DIR(
+         global->recording.config_dir,
+         "recording_config_directory",
+         "Recording Config Directory",
+         "",
          "<default>",
          group_info.name,
          subgroup_info.name,

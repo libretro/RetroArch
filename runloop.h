@@ -192,6 +192,11 @@ typedef struct global
       unsigned windowed_scale;
    } pending;
 
+   struct
+   {
+      char output_dir[PATH_MAX_LENGTH];
+      char config_dir[PATH_MAX_LENGTH];
+   } recording;
 
    struct
    {
