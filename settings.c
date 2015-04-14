@@ -3539,6 +3539,18 @@ static bool setting_append_list_driver_options(
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
 
    CONFIG_STRING_OPTIONS(
+         settings->input.joypad_driver,
+         "input_joypad_driver",
+         "Input Device Driver",
+         config_get_default_joypad(),
+         config_get_joypad_driver_options(),
+         group_info.name,
+         subgroup_info.name,
+         NULL,
+         NULL);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
+
+   CONFIG_STRING_OPTIONS(
          settings->video.driver,
          "video_driver",
          "Video Driver",
@@ -3612,17 +3624,6 @@ static bool setting_append_list_driver_options(
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
 #endif
 
-   CONFIG_STRING_OPTIONS(
-         settings->input.joypad_driver,
-         "input_joypad_driver",
-         "Input Device Driver",
-         config_get_default_joypad(),
-         config_get_joypad_driver_options(),
-         group_info.name,
-         subgroup_info.name,
-         NULL,
-         NULL);
-   settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
 
    END_SUB_GROUP(list, list_info);
    END_GROUP(list, list_info);
