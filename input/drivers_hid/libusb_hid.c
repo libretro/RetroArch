@@ -26,10 +26,13 @@ typedef struct libusb_hid
 {
    libusb_hotplug_callback_handle hp;
    joypad_connection_t *slots;
+   sthread_t *poll_thread;
+   int quit;
 } libusb_hid_t;
 
 struct libusb_adapter
 {
+   libusb_hid_t *hid;
    volatile bool quitting;
    struct libusb_device *device;
    libusb_device_handle *handle;
@@ -51,20 +54,13 @@ struct libusb_adapter
    struct libusb_adapter *next;
 };
 
-struct thread_payload
-{
-   struct libusb_adapter *adapter;
-   libusb_hid_t *hid;
-};
-
 static struct libusb_adapter adapters;
 
 static void adapter_thread(void *data)
 {
-   struct thread_payload *payload = (struct thread_payload*)data;
-   struct libusb_adapter *adapter = payload->adapter;
-   libusb_hid_t *hid              = payload->hid;
-   free(data);
+   struct libusb_adapter *adapter = (struct libusb_adapter*)data;
+   libusb_hid_t *hid              = adapter->hid;
+
    uint8_t send_command_buf[4096];
 
    while (!adapter->quitting)
@@ -295,17 +291,8 @@ static int add_adapter(void *data, struct libusb_device *dev)
    libusb_hid_device_add_autodetect(adapter->slot,
          device_name, libusb_hid.ident, desc.idVendor, desc.idProduct);
 
-   struct thread_payload *payload = malloc(sizeof(payload));
-
-   if (payload == NULL)
-   {
-      fprintf(stderr, "Error allocating payload\n");
-      goto error;
-   }
-
-   payload->adapter = adapter;
-   payload->hid = hid;
-   adapter->thread = sthread_create(adapter_thread, payload);
+   adapter->hid = hid;
+   adapter->thread = sthread_create(adapter_thread, adapter);
 
    if (!adapter->thread)
    {
@@ -472,6 +459,12 @@ static void libusb_hid_free(void *data)
       if (remove_adapter(hid, adapters.next->device) == -1)
          RARCH_ERR("could not remove device %p\n", adapters.next->device);
 
+   if (hid->poll_thread)
+   {
+      hid->quit = 1;
+      sthread_join(hid->poll_thread);
+   }
+
    pad_connection_destroy(hid->slots);
 
    libusb_hotplug_deregister_callback(NULL, hid->hp);
@@ -479,6 +472,17 @@ static void libusb_hid_free(void *data)
    libusb_exit(NULL);
    if (hid)
       free(hid);
+}
+
+static void poll_thread(void *data)
+{
+   libusb_hid_t *hid = (libusb_hid_t*)data;
+
+   while (!hid->quit)
+   {
+      struct timeval timeout = {0};
+      libusb_handle_events_timeout_completed(NULL, &timeout, &hid->quit);
+   }
 }
 
 static void *libusb_hid_init(void)
@@ -531,12 +535,19 @@ static void *libusb_hid_init(void)
       goto error;
    }
 
+   hid->poll_thread = sthread_create(poll_thread, hid);
+
+   if (!hid->poll_thread)
+   {
+      fprintf(stderr, "Error creating polling thread");
+      goto error;
+   }
 
    return hid;
 
 error:
    libusb_hid_free(hid);
-   return hid;
+   return NULL;
 }
 
 
