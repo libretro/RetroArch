@@ -372,28 +372,50 @@ bool menu_input_custom_bind_keyboard_cb(void *data, unsigned code)
 int menu_input_bind_iterate(void)
 {
    char msg[PATH_MAX_LENGTH];
+   int64_t current;
    struct menu_bind_state binds;
+   int timeout = 0;
+   bool timed_out = false;
    menu_handle_t *menu = menu_driver_get_ptr();
    driver_t *driver = driver_get_ptr();
 
    if (!menu)
       return 1;
+
+   (void)timed_out;
    
    binds = menu->binds;
     
    menu_driver_render();
 
-   snprintf(msg, sizeof(msg), "[%s]\npress joypad\n(RETURN to skip)",
+   current = rarch_get_time_usec();
+   timeout = (menu->binds.timeout_end - current) / 1000000;
+   snprintf(msg, sizeof(msg), "[%s]\npress joypad\n(timeout %d seconds)\n(RETURN to skip)",
          input_config_bind_map[
-         menu->binds.begin - MENU_SETTINGS_BIND_BEGIN].desc);
+         menu->binds.begin - MENU_SETTINGS_BIND_BEGIN].desc,
+         timeout);
 
    menu_driver_render_messagebox(msg);
+
+   if (timeout <= 0)
+   {
+      menu->binds.begin++;
+
+      /* Could be unsafe, but whatever. */
+      menu->binds.target->key = RETROK_UNKNOWN;
+
+      menu->binds.target++;
+      menu->binds.timeout_end = rarch_get_time_usec() +
+         MENU_KEYBOARD_BIND_TIMEOUT_SECONDS * 1000000;
+      timed_out = true;
+   }
 
    driver->block_input = true;
    menu_input_poll_bind_state(&binds);
 
    if ((binds.skip && !menu->binds.skip) ||
-         menu_input_poll_find_trigger(&menu->binds, &binds))
+         menu_input_poll_find_trigger(&menu->binds, &binds) ||
+         timed_out)
    {
       driver->block_input = false;
 
