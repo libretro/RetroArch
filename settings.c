@@ -876,13 +876,7 @@ static int setting_action_ok_bind_all(void *data, unsigned action)
          menu->navigation.selection_ptr);
 
    if (global->menu.bind_mode_keyboard)
-   {
-      menu->binds.timeout_end =
-         rarch_get_time_usec() + 
-         MENU_KEYBOARD_BIND_TIMEOUT_SECONDS * 1000000;
-      input_keyboard_wait_keys(menu,
-            menu_input_custom_bind_keyboard_cb);
-   }
+      menu_input_set_keyboard_bind_mode();
    else
    {
       menu_input_poll_bind_get_rested_axes(&menu->binds);
@@ -1090,12 +1084,7 @@ static int setting_bind_action_ok(void *data, unsigned action)
          menu->navigation.selection_ptr);
 
    if (global->menu.bind_mode_keyboard)
-   {
-      menu->binds.timeout_end = rarch_get_time_usec() +
-         MENU_KEYBOARD_BIND_TIMEOUT_SECONDS * 1000000;
-      input_keyboard_wait_keys(menu,
-            menu_input_custom_bind_keyboard_cb);
-   }
+      menu_input_set_keyboard_bind_mode();
    else
    {
       menu_input_poll_bind_get_rested_axes(&menu->binds);

@@ -65,8 +65,6 @@ void menu_input_poll_bind_state(struct menu_bind_state *state);
 bool menu_input_poll_find_trigger(struct menu_bind_state *state,
       struct menu_bind_state *new_state);
 
-bool menu_input_custom_bind_keyboard_cb(void *data, unsigned code);
-
 int menu_input_bind_iterate(void);
 
 int menu_input_bind_iterate_keyboard(void);
@@ -77,6 +75,8 @@ void menu_input_post_iterate(int *ret, menu_file_list_cbs_t *cbs, const char *pa
       const char *label, unsigned type, unsigned action);
 
 void menu_input_search_start(void);
+
+int menu_input_set_keyboard_bind_mode(void);
 
 #ifdef __cplusplus
 }

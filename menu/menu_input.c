@@ -352,7 +352,7 @@ bool menu_input_poll_find_trigger(struct menu_bind_state *state,
    return false;
 }
 
-bool menu_input_custom_bind_keyboard_cb(void *data, unsigned code)
+static bool menu_input_custom_bind_keyboard_cb(void *data, unsigned code)
 {
    menu_handle_t *menu = (menu_handle_t*)data;
 
@@ -366,6 +366,22 @@ bool menu_input_custom_bind_keyboard_cb(void *data, unsigned code)
       MENU_KEYBOARD_BIND_TIMEOUT_SECONDS * 1000000;
 
    return (menu->binds.begin <= menu->binds.last);
+}
+
+int menu_input_set_keyboard_bind_mode(void)
+{
+   menu_handle_t *menu = menu_driver_get_ptr();
+
+   if (!menu)
+      return -1;
+
+   menu->binds.timeout_end =
+      rarch_get_time_usec() + 
+      MENU_KEYBOARD_BIND_TIMEOUT_SECONDS * 1000000;
+   input_keyboard_wait_keys(menu,
+         menu_input_custom_bind_keyboard_cb);
+
+   return 0;
 }
 
 int menu_input_bind_iterate(void)
