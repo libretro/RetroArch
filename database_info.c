@@ -61,8 +61,8 @@ static int zlib_compare_crc32(const char *name, const char *valid_exts,
 database_info_rdl_handle_t *database_info_write_rdl_init(const char *dir)
 {
    const char *exts                = "";
+   global_t                *global = global_get_ptr();
    database_info_rdl_handle_t *dbl = (database_info_rdl_handle_t*)calloc(1, sizeof(*dbl));
-   global_t *global = global_get_ptr();
 
    if (!dbl)
       return NULL;
@@ -71,11 +71,19 @@ database_info_rdl_handle_t *database_info_write_rdl_init(const char *dir)
       exts = core_info_list_get_all_extensions(global->core_info);
    
    dbl->list      = dir_list_new(dir, exts, false);
+
+   if (!dbl->list)
+      goto error;
+
    dbl->list_ptr  = 0;
-   dbl->blocking  = false;
-   dbl->iterating = true;
+   dbl->status    = DATABASE_RDL_ITERATE;
 
    return dbl;
+
+error:
+   if (dbl)
+      free(dbl);
+   return NULL;
 }
 
 void database_info_write_rdl_free(database_info_rdl_handle_t *dbl)
@@ -96,14 +104,6 @@ int database_info_write_rdl_iterate(database_info_rdl_handle_t *dbl)
 
    if (!dbl || !dbl->list)
       return -1;
-   if (dbl->blocking)
-      return 1;
-   if (dbl->list_ptr < dbl->list->size) {}
-   else
-   {
-      dbl->iterating = false;
-      return 1;
-   }
 
    name = dbl->list->elems[dbl->list_ptr].data;
 

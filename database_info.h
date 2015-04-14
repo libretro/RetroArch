@@ -27,10 +27,16 @@
 extern "C" {
 #endif
 
+enum database_rdl_action_type
+{
+   DATABASE_RDL_NONE = 0,
+   DATABASE_RDL_ITERATE,
+   DATABASE_RDL_FREE,
+};
+
 typedef struct
 {
-   bool blocking;
-   bool iterating;
+   enum database_rdl_action_type status;
    size_t list_ptr;
    struct string_list *list;
 } database_info_rdl_handle_t;

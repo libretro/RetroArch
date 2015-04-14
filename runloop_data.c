@@ -646,33 +646,35 @@ static int rarch_main_data_nbio_iterate_parse(nbio_handle_t *nbio)
    return 0;
 }
 
+#ifdef HAVE_LIBRETRODB
 #ifdef HAVE_MENU
 static void rarch_main_data_db_iterate(bool is_thread,
       data_runloop_t *runloop)
 {
-   driver_t *driver = driver_get_ptr();
+   driver_t                *driver = driver_get_ptr();
+   menu_handle_t             *menu = menu_driver_get_ptr();
+   database_info_rdl_handle_t *dbl = menu ? menu->rdl : NULL;
 
-   if (!driver || !driver->menu || !driver->menu->rdl)
+   if (!dbl)
       return;
 
-   if (driver->menu->rdl->blocking)
+   switch (dbl->status)
    {
-      /* Do nonblocking I/O transfers here. */
-      return;
+      case DATABASE_RDL_NONE:
+         break;
+      case DATABASE_RDL_ITERATE:
+         if (dbl->list_ptr < dbl->list->size)
+            database_info_write_rdl_iterate(dbl);
+         else
+            dbl->status = DATABASE_RDL_FREE;
+         break;
+      case DATABASE_RDL_FREE:
+         database_info_write_rdl_free(dbl);
+         dbl = NULL;
+         break;
    }
-
-#ifdef HAVE_LIBRETRODB
-   if (!driver->menu->rdl->iterating)
-   {
-      database_info_write_rdl_free(driver->menu->rdl);
-      driver->menu->rdl = NULL;
-      return;
-   }
-
-   database_info_write_rdl_iterate(driver->menu->rdl);
-#endif
-
 }
+#endif
 #endif
 
 
@@ -902,8 +904,11 @@ static void data_runloop_iterate(bool is_thread, data_runloop_t *runloop)
 #ifdef HAVE_NETWORKING
    rarch_main_data_http_iterate       (is_thread, runloop);
 #endif
+
 #ifdef HAVE_MENU
+#ifdef HAVE_LIBRETRODB
    rarch_main_data_db_iterate         (is_thread, runloop);
+#endif
 #endif
 }
 

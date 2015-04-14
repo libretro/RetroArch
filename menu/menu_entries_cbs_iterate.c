@@ -595,7 +595,7 @@ static int action_iterate_main(const char *label, unsigned action)
 
       case MENU_ACTION_TEST:
 #if 0
-         menu->rdl = database_info_write_rdl_init("/home/twinaphex/roms");
+         menu->rdl = database_info_write_rdl_init("/home/squarepusher/roms");
 
          if (!menu->rdl)
             return -1;
