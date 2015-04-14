@@ -127,6 +127,7 @@ void menu_shader_manager_set_preset(struct video_shader *shader,
    config_file_t *conf         = NULL;
    driver_t *driver            = driver_get_ptr();
    settings_t *settings        = config_get_ptr();
+   menu_handle_t *menu         = menu_driver_get_ptr();
 
    settings->video.shader_enable = false;
 
@@ -162,7 +163,7 @@ void menu_shader_manager_set_preset(struct video_shader *shader,
    }
    config_file_free(conf);
 
-   driver->menu->need_refresh = true;
+   menu->need_refresh = true;
 #endif
 }
 
@@ -184,14 +185,15 @@ void menu_shader_manager_save_preset(
    driver_t *driver            = driver_get_ptr();
    global_t *global            = global_get_ptr();
    settings_t *settings        = config_get_ptr();
+   menu_handle_t *menu         = menu_driver_get_ptr();
 
-   if (!driver->menu)
+   if (!menu)
    {
       RARCH_ERR("Cannot save shader preset, menu handle is not initialized.\n");
       return;
    }
 
-   type = menu_shader_manager_get_type(driver->menu->shader);
+   type = menu_shader_manager_get_type(menu->shader);
 
    if (type == RARCH_SHADER_NONE)
       return;
@@ -214,7 +216,7 @@ void menu_shader_manager_save_preset(
    else
    {
       const char *conf_path = (type == RARCH_SHADER_GLSL) ?
-         driver->menu->default_glslp : driver->menu->default_cgp;
+         menu->default_glslp : menu->default_cgp;
       strlcpy(buffer, conf_path, sizeof(buffer));
    }
 
@@ -230,7 +232,7 @@ void menu_shader_manager_save_preset(
 
    if (!(conf = (config_file_t*)config_file_new(NULL)))
       return;
-   video_shader_write_conf_cgp(conf, driver->menu->shader);
+   video_shader_write_conf_cgp(conf, menu->shader);
 
    for (d = 0; d < ARRAY_SIZE(dirs); d++)
    {
@@ -308,9 +310,10 @@ void menu_shader_manager_apply_changes(void)
 {
 #ifdef HAVE_SHADER_MANAGER
    driver_t *driver = driver_get_ptr();
-   unsigned shader_type = menu_shader_manager_get_type(driver->menu->shader);
+   menu_handle_t *menu         = menu_driver_get_ptr();
+   unsigned shader_type = menu_shader_manager_get_type(menu->shader);
 
-   if (driver->menu->shader->passes 
+   if (menu->shader->passes 
          && shader_type != RARCH_SHADER_NONE)
    {
       menu_shader_manager_save_preset(NULL, true);

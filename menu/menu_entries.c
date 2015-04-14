@@ -332,6 +332,7 @@ int menu_entries_parse_list(
    int                   device = 0;
    struct string_list *str_list = NULL;
    settings_t *settings         = config_get_ptr();
+   menu_handle_t *menu          = menu_driver_get_ptr();
    global_t *global             = global_get_ptr();
 
    (void)device;
@@ -456,7 +457,7 @@ int menu_entries_parse_list(
    {
       driver_t *driver = driver_get_ptr();
 
-      menu_list_get_last_stack(driver->menu->menu_list, &dir, NULL, NULL);
+      menu_list_get_last_stack(menu->menu_list, &dir, NULL, NULL);
       list_size = file_list_get_size(list);
 
       for (i = 0; i < list_size; i++)
@@ -490,18 +491,19 @@ int menu_entries_deferred_push(file_list_t *list, file_list_t *menu_list)
    const char *path          = NULL;
    const char *label         = NULL;
    menu_file_list_cbs_t *cbs = NULL;
+   menu_handle_t       *menu = menu_driver_get_ptr();
    driver_t          *driver = driver_get_ptr();
 
-   menu_list_get_last_stack(driver->menu->menu_list, &path, &label, &type);
+   menu_list_get_last_stack(menu->menu_list, &path, &label, &type);
 
    if (!strcmp(label, "Main Menu"))
-      return menu_entries_push_list(driver->menu, list, path, label, type,
+      return menu_entries_push_list(menu, list, path, label, type,
             SL_FLAG_MAIN_MENU);
    else if (!strcmp(label, "Horizontal Menu"))
-      return menu_entries_push_horizontal_menu_list(driver->menu, list, path, label, type);
+      return menu_entries_push_horizontal_menu_list(menu, list, path, label, type);
 
    cbs = (menu_file_list_cbs_t*)
-      menu_list_get_last_stack_actiondata(driver->menu->menu_list);
+      menu_list_get_last_stack_actiondata(menu->menu_list);
 
    if (!cbs->action_deferred_push)
       return 0;
