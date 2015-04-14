@@ -22,7 +22,7 @@
 #include <string/string_list.h>
 #include "../general.h"
 
-static rarch_joypad_driver_t *joypad_drivers[] = {
+static input_device_driver_t *joypad_drivers[] = {
 #ifdef __CELLOS_LV2__
    &ps3_joypad,
 #endif
@@ -91,7 +91,7 @@ const void *joypad_driver_find_handle(int idx)
  **/
 const char *joypad_driver_find_ident(int idx)
 {
-   const rarch_joypad_driver_t *drv = joypad_drivers[idx];
+   const input_device_driver_t *drv = joypad_drivers[idx];
    if (!drv)
       return NULL;
    return drv->ident;
@@ -152,7 +152,7 @@ const char* config_get_joypad_driver_options(void)
  *
  * Returns: joypad driver if found, otherwise NULL.
  **/
-const rarch_joypad_driver_t *input_joypad_init_driver(const char *ident)
+const input_device_driver_t *input_joypad_init_driver(const char *ident)
 {
    unsigned i;
    if (!ident || !*ident)
@@ -179,7 +179,7 @@ const rarch_joypad_driver_t *input_joypad_init_driver(const char *ident)
  *
  * Returns: joypad driver if found, otherwise NULL.
  **/
-const rarch_joypad_driver_t *input_joypad_init_first(void)
+const input_device_driver_t *input_joypad_init_first(void)
 {
    unsigned i;
 

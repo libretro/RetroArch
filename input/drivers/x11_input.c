@@ -32,7 +32,7 @@
 
 typedef struct x11_input
 {
-   const rarch_joypad_driver_t *joypad;
+   const input_device_driver_t *joypad;
 
    Display *display;
    Window win;
@@ -362,7 +362,7 @@ static bool x_set_rumble(void *data, unsigned port,
    return input_joypad_set_rumble(x11->joypad, port, effect, strength);
 }
 
-static const rarch_joypad_driver_t *x_get_joypad_driver(void *data)
+static const input_device_driver_t *x_get_joypad_driver(void *data)
 {
    x11_input_t *x11 = (x11_input_t*)data;
 

@@ -355,7 +355,7 @@ static const char *parport_joypad_name(unsigned pad)
    return *parport_pads[pad].ident ? parport_pads[pad].ident : NULL;
 }
 
-rarch_joypad_driver_t parport_joypad = {
+input_device_driver_t parport_joypad = {
    parport_joypad_init,
    parport_joypad_query_pad,
    parport_joypad_destroy,

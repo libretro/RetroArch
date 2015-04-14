@@ -62,7 +62,7 @@ struct dinput_input
 {
    LPDIRECTINPUTDEVICE8 keyboard;
    LPDIRECTINPUTDEVICE8 mouse;
-   const rarch_joypad_driver_t *joypad;
+   const input_device_driver_t *joypad;
    uint8_t state[256];
 
    int mouse_rel_x;
@@ -651,7 +651,7 @@ static bool dinput_set_rumble(void *data, unsigned port,
    return input_joypad_set_rumble(di->joypad, port, effect, strength);
 }
 
-static const rarch_joypad_driver_t *dinput_get_joypad_driver(void *data)
+static const input_device_driver_t *dinput_get_joypad_driver(void *data)
 {
    struct dinput_input *di = (struct dinput_input*)data;
    if (!di)

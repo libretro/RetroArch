@@ -31,7 +31,7 @@
 
 typedef struct sdl_input
 {
-   const rarch_joypad_driver_t *joypad;
+   const input_device_driver_t *joypad;
 
    int mouse_x, mouse_y;
    int mouse_abs_x, mouse_abs_y;
@@ -290,7 +290,7 @@ static bool sdl_set_rumble(void *data, unsigned port,
    return input_joypad_set_rumble(sdl->joypad, port, effect, strength);
 }
 
-static const rarch_joypad_driver_t *sdl_get_joypad_driver(void *data)
+static const input_device_driver_t *sdl_get_joypad_driver(void *data)
 {
    sdl_input_t *sdl = (sdl_input_t*)data;
    if (!sdl)

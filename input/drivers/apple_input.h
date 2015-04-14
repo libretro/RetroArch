@@ -57,7 +57,7 @@ typedef struct
    bool small_keyboard_active;
    uint32_t icade_buttons;
     
-   const rarch_joypad_driver_t *joypad;
+   const input_device_driver_t *joypad;
 } apple_input_data_t;
 
 void apple_input_enable_icade(bool on);

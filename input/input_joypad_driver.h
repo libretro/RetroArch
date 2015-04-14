@@ -25,7 +25,7 @@ extern "C" {
 #include <boolean.h>
 #include "../libretro.h"
 
-typedef struct rarch_joypad_driver rarch_joypad_driver_t;
+typedef struct rarch_joypad_driver input_device_driver_t;
 
 enum retro_rumble_effect;
 
@@ -44,21 +44,21 @@ struct rarch_joypad_driver
    const char *ident;
 };
 
-extern rarch_joypad_driver_t dinput_joypad;
-extern rarch_joypad_driver_t linuxraw_joypad;
-extern rarch_joypad_driver_t parport_joypad;
-extern rarch_joypad_driver_t udev_joypad;
-extern rarch_joypad_driver_t xinput_joypad;
-extern rarch_joypad_driver_t sdl_joypad;
-extern rarch_joypad_driver_t ps3_joypad;
-extern rarch_joypad_driver_t psp_joypad;
-extern rarch_joypad_driver_t ctr_joypad;
-extern rarch_joypad_driver_t xdk_joypad;
-extern rarch_joypad_driver_t gx_joypad;
-extern rarch_joypad_driver_t hid_joypad;
-extern rarch_joypad_driver_t android_joypad;
-extern rarch_joypad_driver_t qnx_joypad;
-extern rarch_joypad_driver_t null_joypad;
+extern input_device_driver_t dinput_joypad;
+extern input_device_driver_t linuxraw_joypad;
+extern input_device_driver_t parport_joypad;
+extern input_device_driver_t udev_joypad;
+extern input_device_driver_t xinput_joypad;
+extern input_device_driver_t sdl_joypad;
+extern input_device_driver_t ps3_joypad;
+extern input_device_driver_t psp_joypad;
+extern input_device_driver_t ctr_joypad;
+extern input_device_driver_t xdk_joypad;
+extern input_device_driver_t gx_joypad;
+extern input_device_driver_t hid_joypad;
+extern input_device_driver_t android_joypad;
+extern input_device_driver_t qnx_joypad;
+extern input_device_driver_t null_joypad;
 
 /**
  * joypad_driver_find_handle:
@@ -98,7 +98,7 @@ const char* config_get_joypad_driver_options(void);
  *
  * Returns: joypad driver if found, otherwise NULL.
  **/
-const rarch_joypad_driver_t *input_joypad_init_driver(const char *ident);
+const input_device_driver_t *input_joypad_init_driver(const char *ident);
 
 /**
  * input_joypad_init_first:
@@ -107,7 +107,7 @@ const rarch_joypad_driver_t *input_joypad_init_driver(const char *ident);
  *
  * Returns: joypad driver if found, otherwise NULL.
  **/
-const rarch_joypad_driver_t *input_joypad_init_first(void);
+const input_device_driver_t *input_joypad_init_first(void);
 
 #ifdef __cplusplus
 }

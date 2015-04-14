@@ -29,7 +29,7 @@
 
 typedef struct xdk_input
 {
-   const rarch_joypad_driver_t *joypad;
+   const input_device_driver_t *joypad;
 } xdk_input_t;
 
 static void xdk_input_poll(void *data)
@@ -137,7 +137,7 @@ static bool xdk_input_set_rumble(void *data, unsigned port,
    return val;
 }
 
-static const rarch_joypad_driver_t *xdk_input_get_joypad_driver(void *data)
+static const input_device_driver_t *xdk_input_get_joypad_driver(void *data)
 {
    xdk_input_t *xdk = (xdk_input_t*)data;
    if (!xdk)

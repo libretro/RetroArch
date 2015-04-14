@@ -33,7 +33,7 @@
 
 typedef struct gx_input
 {
-   const rarch_joypad_driver_t *joypad;
+   const input_device_driver_t *joypad;
 } gx_input_t;
 
 static int16_t gx_input_state(void *data, const struct retro_keybind **binds,
@@ -104,7 +104,7 @@ static uint64_t gx_input_get_capabilities(void *data)
    return (1 << RETRO_DEVICE_JOYPAD) |  (1 << RETRO_DEVICE_ANALOG);
 }
 
-static const rarch_joypad_driver_t *gx_input_get_joypad_driver(void *data)
+static const input_device_driver_t  *gx_input_get_joypad_driver(void *data)
 {
    gx_input_t *gx = (gx_input_t*)data;
    if (!gx)

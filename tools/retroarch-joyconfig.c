@@ -93,7 +93,7 @@ struct poll_data
    uint16_t hats[MAX_HATS];
 };
 
-static void poll_joypad(const rarch_joypad_driver_t *driver,
+static void poll_joypad(const input_device_driver_t *driver,
       unsigned pad,
       struct poll_data *data)
 {
@@ -124,7 +124,7 @@ static void get_binds(config_file_t *conf, config_file_t *auto_conf,
       int player, int joypad)
 {
    int i, timeout_cnt;
-   const rarch_joypad_driver_t *driver = input_joypad_init_driver(g_driver);
+   const input_device_driver_t *driver = input_joypad_init_driver(g_driver);
    if (!driver)
    {
       fprintf(stderr, "Cannot find any valid input driver.\n");

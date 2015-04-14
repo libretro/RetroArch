@@ -26,7 +26,7 @@
 
 typedef struct ctr_input
 {
-   const rarch_joypad_driver_t *joypad;
+   const input_device_driver_t *joypad;
 } ctr_input_t;
 
 static void ctr_input_poll(void *data)
@@ -96,7 +96,7 @@ static uint64_t ctr_input_get_capabilities(void *data)
    return (1 << RETRO_DEVICE_JOYPAD) |  (1 << RETRO_DEVICE_ANALOG);
 }
 
-static const rarch_joypad_driver_t *ctr_input_get_joypad_driver(void *data)
+static const input_device_driver_t *ctr_input_get_joypad_driver(void *data)
 {
    ctr_input_t *ctr = (ctr_input_t*)data;
    if (ctr)

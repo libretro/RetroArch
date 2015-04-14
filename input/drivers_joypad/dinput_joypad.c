@@ -412,7 +412,7 @@ static bool dinput_joypad_query_pad(unsigned pad)
 }
 
 
-rarch_joypad_driver_t dinput_joypad = {
+input_device_driver_t dinput_joypad = {
    dinput_joypad_init,
    dinput_joypad_query_pad,
    dinput_joypad_destroy,

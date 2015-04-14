@@ -414,7 +414,7 @@ static void apple_input_grab_mouse(void *data, bool state)
    (void)state;
 }
 
-static const rarch_joypad_driver_t *apple_input_get_joypad_driver(void *data)
+static const input_device_driver_t *apple_input_get_joypad_driver(void *data)
 {
    apple_input_data_t *apple = (apple_input_data_t*)data;
     

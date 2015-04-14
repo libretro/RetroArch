@@ -74,7 +74,7 @@ typedef struct input_driver
    void (*grab_mouse)(void *data, bool state);
    bool (*set_rumble)(void *data, unsigned port,
          enum retro_rumble_effect effect, uint16_t state);
-   const rarch_joypad_driver_t *(*get_joypad_driver)(void *data);
+   const input_device_driver_t *(*get_joypad_driver)(void *data);
 } input_driver_t;
 
 extern input_driver_t input_android;
@@ -147,7 +147,7 @@ bool input_driver_key_pressed(int key);
 
 uint64_t input_driver_get_capabilities(void);
 
-const rarch_joypad_driver_t * input_driver_get_joypad_driver(void);
+const input_device_driver_t * input_driver_get_joypad_driver(void);
 
 bool input_driver_grab_mouse(bool state);
 

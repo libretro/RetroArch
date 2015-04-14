@@ -75,7 +75,7 @@ typedef struct qnx_input
     */
    qnx_input_device_t *port_device[MAX_PADS];
    qnx_input_device_t devices[MAX_PADS];
-   const rarch_joypad_driver_t *joypad;
+   const input_device_driver_t *joypad;
    int16_t analog_state[MAX_PADS][2][2];
    uint64_t pad_state[MAX_PADS];
 } qnx_input_t;
@@ -816,7 +816,7 @@ static uint64_t qnx_input_get_capabilities(void *data)
    return caps;
 }
 
-static const rarch_joypad_driver_t *qnx_input_get_joypad_driver(void *data)
+static const input_device_driver_t *qnx_input_get_joypad_driver(void *data)
 {
    qnx_input_t *qnx = (qnx_input_t*)data;
    return qnx->joypad;

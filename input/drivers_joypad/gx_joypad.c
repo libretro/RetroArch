@@ -642,7 +642,7 @@ static void gx_joypad_destroy(void)
    }
 }
 
-rarch_joypad_driver_t gx_joypad = {
+input_device_driver_t gx_joypad = {
    gx_joypad_init,
    gx_joypad_query_pad,
    gx_joypad_destroy,

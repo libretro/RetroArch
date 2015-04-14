@@ -443,7 +443,7 @@ static const char *sdl_joypad_name(unsigned pad)
    return sdl_pad_name(pad);
 }
 
-rarch_joypad_driver_t sdl_joypad = {
+input_device_driver_t sdl_joypad = {
    sdl_joypad_init,
    sdl_joypad_query_pad,
    sdl_joypad_destroy,

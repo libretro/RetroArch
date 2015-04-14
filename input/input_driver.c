@@ -256,7 +256,7 @@ void input_driver_poll(void)
 }
 
 
-const rarch_joypad_driver_t * input_driver_get_joypad_driver(void)
+const input_device_driver_t *input_driver_get_joypad_driver(void)
 {
    driver_t            *driver = driver_get_ptr();
    const input_driver_t *input = input_get_ptr(driver);

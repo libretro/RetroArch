@@ -32,7 +32,7 @@ static struct termios oldTerm, newTerm;
 
 typedef struct linuxraw_input
 {
-   const rarch_joypad_driver_t *joypad;
+   const input_device_driver_t *joypad;
    bool state[0x80];
 } linuxraw_input_t;
 
@@ -218,7 +218,7 @@ static bool linuxraw_set_rumble(void *data, unsigned port,
    return input_joypad_set_rumble(linuxraw->joypad, port, effect, strength);
 }
 
-static const rarch_joypad_driver_t *linuxraw_get_joypad_driver(void *data)
+static const input_device_driver_t *linuxraw_get_joypad_driver(void *data)
 {
    linuxraw_input_t *linuxraw = (linuxraw_input_t*)data;
    if (!linuxraw)

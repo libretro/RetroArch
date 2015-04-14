@@ -90,7 +90,7 @@ struct udev_input
    uint16_t        *mod_map_bit;
 #endif
 
-   const rarch_joypad_driver_t *joypad;
+   const input_device_driver_t *joypad;
    uint8_t key_state[(KEY_MAX + 7) / 8];
 
    int epfd;
@@ -855,7 +855,7 @@ static bool udev_input_set_rumble(void *data, unsigned port, enum retro_rumble_e
    return false;
 }
 
-static const rarch_joypad_driver_t *udev_input_get_joypad_driver(void *data)
+static const input_device_driver_t *udev_input_get_joypad_driver(void *data)
 {
    udev_input_t *udev = (udev_input_t*)data;
    if (!udev)

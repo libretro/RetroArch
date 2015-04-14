@@ -39,7 +39,7 @@
 
 typedef struct psp_input
 {
-   const rarch_joypad_driver_t *joypad;
+   const input_device_driver_t *joypad;
 } psp_input_t;
 
 static void psp_input_poll(void *data)
@@ -109,7 +109,7 @@ static uint64_t psp_input_get_capabilities(void *data)
    return (1 << RETRO_DEVICE_JOYPAD) |  (1 << RETRO_DEVICE_ANALOG);
 }
 
-static const rarch_joypad_driver_t *psp_input_get_joypad_driver(void *data)
+static const input_device_driver_t *psp_input_get_joypad_driver(void *data)
 {
    psp_input_t *psp = (psp_input_t*)data;
    if (psp)

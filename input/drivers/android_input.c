@@ -89,7 +89,7 @@ typedef struct android_input
    unsigned pointer_count;
    ASensorManager *sensorManager;
    ASensorEventQueue *sensorEventQueue;
-   const rarch_joypad_driver_t *joypad;
+   const input_device_driver_t *joypad;
 } android_input_t;
 
 static void frontend_android_get_version_sdk(int32_t *sdk);
@@ -866,7 +866,7 @@ static float android_input_get_sensor_input(void *data,
    return 0;
 }
 
-static const rarch_joypad_driver_t *android_input_get_joypad_driver(void *data)
+static const input_device_driver_t *android_input_get_joypad_driver(void *data)
 {
    android_input_t *android = (android_input_t*)data;
    if (!android)

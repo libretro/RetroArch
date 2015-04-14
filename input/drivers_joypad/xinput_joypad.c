@@ -459,7 +459,7 @@ static bool xinput_joypad_rumble(unsigned pad,
       == ERROR_SUCCESS;
 }
 
-rarch_joypad_driver_t xinput_joypad = {
+input_device_driver_t xinput_joypad = {
    xinput_joypad_init,
    xinput_joypad_query_pad,
    xinput_joypad_destroy,

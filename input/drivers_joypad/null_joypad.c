@@ -59,7 +59,7 @@ static void null_joypad_destroy(void)
 {
 }
 
-rarch_joypad_driver_t null_joypad = {
+input_device_driver_t null_joypad = {
    null_joypad_init,
    null_joypad_query_pad,
    null_joypad_destroy,

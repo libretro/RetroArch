@@ -652,7 +652,7 @@ static const char *udev_joypad_name(unsigned pad)
    return *udev_pads[pad].ident ? udev_pads[pad].ident : NULL;
 }
 
-rarch_joypad_driver_t udev_joypad = {
+input_device_driver_t udev_joypad = {
    udev_joypad_init,
    udev_joypad_query_pad,
    udev_joypad_destroy,

@@ -80,7 +80,7 @@ static const char *hid_joypad_name(unsigned pad)
    return generic_hid->name(driver->hid_data, pad);
 }
 
-rarch_joypad_driver_t hid_joypad = {
+input_device_driver_t hid_joypad = {
    hid_joypad_init,
    hid_joypad_query_pad,
    hid_joypad_free,

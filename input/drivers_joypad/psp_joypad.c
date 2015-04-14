@@ -175,7 +175,7 @@ static void psp_joypad_destroy(void)
 {
 }
 
-rarch_joypad_driver_t psp_joypad = {
+input_device_driver_t psp_joypad = {
    psp_joypad_init,
    psp_joypad_query_pad,
    psp_joypad_destroy,

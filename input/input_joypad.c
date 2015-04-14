@@ -33,7 +33,7 @@
  *
  * Returns: name of joystick #port.
  **/
-const char *input_joypad_name(const rarch_joypad_driver_t *drv,
+const char *input_joypad_name(const input_device_driver_t *drv,
       unsigned port)
 {
    if (!drv)
@@ -52,7 +52,7 @@ const char *input_joypad_name(const rarch_joypad_driver_t *drv,
  *
  * Returns: true (1) if successful, otherwise false (0).
  **/
-bool input_joypad_set_rumble(const rarch_joypad_driver_t *drv,
+bool input_joypad_set_rumble(const input_device_driver_t *drv,
       unsigned port, enum retro_rumble_effect effect, uint16_t strength)
 {
    settings_t *settings = config_get_ptr();
@@ -81,7 +81,7 @@ bool input_joypad_set_rumble(const rarch_joypad_driver_t *drv,
  * false (0).
  **/
 bool input_joypad_pressed(
-      const rarch_joypad_driver_t *drv,
+      const input_device_driver_t *drv,
       unsigned port,
       const struct retro_keybind *binds,
       unsigned key)
@@ -137,7 +137,7 @@ bool input_joypad_pressed(
  *
  * Returns: analog value on success, otherwise 0.
  **/
-int16_t input_joypad_analog(const rarch_joypad_driver_t *drv,
+int16_t input_joypad_analog(const input_device_driver_t *drv,
       unsigned port, unsigned idx, unsigned ident,
       const struct retro_keybind *binds)
 {
@@ -208,7 +208,7 @@ int16_t input_joypad_analog(const rarch_joypad_driver_t *drv,
  * Returns: true (1) if axis was pressed, otherwise
  * false (0).
  **/
-int16_t input_joypad_axis_raw(const rarch_joypad_driver_t *drv,
+int16_t input_joypad_axis_raw(const input_device_driver_t *drv,
       unsigned port, unsigned axis)
 {
    if (!drv)
@@ -229,7 +229,7 @@ int16_t input_joypad_axis_raw(const rarch_joypad_driver_t *drv,
  * Returns: true (1) if key was pressed, otherwise
  * false (0).
  **/
-bool input_joypad_button_raw(const rarch_joypad_driver_t *drv,
+bool input_joypad_button_raw(const input_device_driver_t *drv,
       unsigned port, unsigned button)
 {
    if (!drv)
@@ -237,7 +237,7 @@ bool input_joypad_button_raw(const rarch_joypad_driver_t *drv,
    return drv->button(port, button);
 }
 
-bool input_joypad_hat_raw(const rarch_joypad_driver_t *drv,
+bool input_joypad_hat_raw(const input_device_driver_t *drv,
       unsigned port, unsigned hat_dir, unsigned hat)
 {
    if (!drv)

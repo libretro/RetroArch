@@ -81,7 +81,7 @@ static INLINE void input_conv_analog_id_to_bind_id(unsigned idx, unsigned ident,
  * Returns: true (1) if key was pressed, otherwise
  * false (0).
  **/
-bool input_joypad_pressed(const rarch_joypad_driver_t *driver,
+bool input_joypad_pressed(const input_device_driver_t *driver,
       unsigned port, const struct retro_keybind *binds, unsigned key);
 
 /**
@@ -103,7 +103,7 @@ bool input_joypad_pressed(const rarch_joypad_driver_t *driver,
  *
  * Returns: analog value on success, otherwise 0.
  **/
-int16_t input_joypad_analog(const rarch_joypad_driver_t *driver,
+int16_t input_joypad_analog(const input_device_driver_t *driver,
       unsigned port, unsigned idx, unsigned ident,
       const struct retro_keybind *binds);
 
@@ -118,7 +118,7 @@ int16_t input_joypad_analog(const rarch_joypad_driver_t *driver,
  *
  * Returns: true (1) if successful, otherwise false (0).
  **/
-bool input_joypad_set_rumble(const rarch_joypad_driver_t *driver,
+bool input_joypad_set_rumble(const input_device_driver_t *driver,
       unsigned port, enum retro_rumble_effect effect, uint16_t strength);
 
 /**
@@ -133,7 +133,7 @@ bool input_joypad_set_rumble(const rarch_joypad_driver_t *driver,
  * Returns: true (1) if axis was pressed, otherwise
  * false (0).
  **/
-int16_t input_joypad_axis_raw(const rarch_joypad_driver_t *driver,
+int16_t input_joypad_axis_raw(const input_device_driver_t *driver,
       unsigned port, unsigned axis);
 
 /**
@@ -148,10 +148,10 @@ int16_t input_joypad_axis_raw(const rarch_joypad_driver_t *driver,
  * Returns: true (1) if key was pressed, otherwise
  * false (0).
  **/
-bool input_joypad_button_raw(const rarch_joypad_driver_t *driver,
+bool input_joypad_button_raw(const input_device_driver_t *driver,
       unsigned port, unsigned button);
 
-bool input_joypad_hat_raw(const rarch_joypad_driver_t *driver,
+bool input_joypad_hat_raw(const input_device_driver_t *driver,
       unsigned joypad, unsigned hat_dir, unsigned hat);
 
 /**
@@ -163,7 +163,7 @@ bool input_joypad_hat_raw(const rarch_joypad_driver_t *driver,
  *
  * Returns: name of joystick #port.
  **/
-const char *input_joypad_name(const rarch_joypad_driver_t *driver,
+const char *input_joypad_name(const input_device_driver_t *driver,
       unsigned port);
 
 #ifdef __cplusplus

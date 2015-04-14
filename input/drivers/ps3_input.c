@@ -48,7 +48,7 @@ typedef struct ps3_input
 #ifdef HAVE_MOUSE
    unsigned mice_connected;
 #endif
-   const rarch_joypad_driver_t *joypad;
+   const input_device_driver_t *joypad;
 } ps3_input_t;
 
 static void ps3_input_poll(void *data)
@@ -233,7 +233,7 @@ static bool ps3_input_set_rumble(void *data, unsigned port,
    return false;
 }
 
-static const rarch_joypad_driver_t *ps3_input_get_joypad_driver(void *data)
+static const input_device_driver_t *ps3_input_get_joypad_driver(void *data)
 {
    ps3_input_t *ps3 = (ps3_input_t*)data;
    if (ps3)

@@ -196,7 +196,7 @@ void menu_input_key_event(bool down, unsigned keycode,
 static void menu_input_poll_bind_state(struct menu_bind_state *state)
 {
    unsigned i, b, a, h;
-   const rarch_joypad_driver_t *joypad = input_driver_get_joypad_driver();
+   const input_device_driver_t *joypad = input_driver_get_joypad_driver();
    settings_t *settings                = config_get_ptr();
 
    if (!state)
@@ -240,7 +240,7 @@ static void menu_input_poll_bind_state(struct menu_bind_state *state)
 static void menu_input_poll_bind_get_rested_axes(struct menu_bind_state *state)
 {
    unsigned i, a;
-   const rarch_joypad_driver_t *joypad = input_driver_get_joypad_driver();
+   const input_device_driver_t *joypad = input_driver_get_joypad_driver();
    settings_t *settings                = config_get_ptr();
 
    if (!state)

@@ -268,7 +268,7 @@ static void xdk_joypad_destroy(void)
 {
 }
 
-rarch_joypad_driver_t xdk_joypad = {
+input_device_driver_t xdk_joypad = {
    xdk_joypad_init,
    xdk_joypad_query_pad,
    xdk_joypad_destroy,

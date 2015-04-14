@@ -179,7 +179,7 @@ static void ctr_joypad_destroy(void)
 {
 }
 
-rarch_joypad_driver_t ctr_joypad = {
+input_device_driver_t ctr_joypad = {
    ctr_joypad_init,
    ctr_joypad_query_pad,
    ctr_joypad_destroy,
