@@ -580,8 +580,11 @@ static int menu_input_mouse(unsigned *action)
    if (!menu)
       return -1;
 
-   if (!settings->menu.mouse.enable || (settings->input.overlay_enable
-         && driver && driver->overlay))
+   if (!settings->menu.mouse.enable
+#ifdef HAVE_OVERLAY
+       || (settings->input.overlay_enable && driver && driver->overlay)
+#endif
+      )
    {
       menu->mouse.left       = 0;
       menu->mouse.right      = 0;
@@ -771,7 +774,11 @@ static int menu_input_mouse_post_iterate(menu_file_list_cbs_t *cbs,
    if (!menu)
       return -1;
 
-   if (!settings->menu.mouse.enable || (settings->input.overlay_enable && driver && driver->overlay))
+   if (!settings->menu.mouse.enable
+#ifdef HAVE_OVERLAY
+       || (settings->input.overlay_enable && driver && driver->overlay)
+#endif
+       )
    {
       menu->mouse.wheeldown = false;
       menu->mouse.wheelup   = false;
@@ -845,7 +852,11 @@ static int menu_input_pointer_post_iterate(menu_file_list_cbs_t *cbs,
    if (!menu)
       return -1;
 
-   if (!settings->menu.pointer.enable || (settings->input.overlay_enable && driver && driver->overlay))
+   if (!settings->menu.pointer.enable
+#ifdef HAVE_OVERLAY
+       || (settings->input.overlay_enable && driver && driver->overlay)
+#endif
+       )
       return 0;
 
 #if defined(HAVE_XMB)
