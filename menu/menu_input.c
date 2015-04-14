@@ -180,7 +180,7 @@ void menu_input_search_start(void)
    menu->keyboard.display = true;
    menu->keyboard.label = "Search: ";
    menu->keyboard.buffer = 
-      input_keyboard_start_line(driver->menu, menu_input_search_callback);
+      input_keyboard_start_line(menu, menu_input_search_callback);
 }
 
 void menu_input_key_event(bool down, unsigned keycode,
@@ -683,8 +683,8 @@ static int menu_input_mouse_post_iterate(menu_file_list_cbs_t *cbs,
          driver_t *driver = driver_get_ptr();
          rarch_setting_t *setting =
             (rarch_setting_t*)setting_find_setting
-            (driver->menu->list_settings,
-             driver->menu->menu_list->selection_buf->list[menu->navigation.selection_ptr].label);
+            (menu->list_settings,
+             menu->menu_list->selection_buf->list[menu->navigation.selection_ptr].label);
          menu->mouse.oldleft = true;
 
 #if 0
@@ -768,8 +768,8 @@ static int menu_input_pointer_post_iterate(menu_file_list_cbs_t *cbs,
 
          menu->pointer.oldpressed[0] = false;
          setting = (rarch_setting_t*)setting_find_setting
-            (driver->menu->list_settings,
-             driver->menu->menu_list->selection_buf->list[menu->navigation.selection_ptr].label);
+            (menu->list_settings,
+             menu->menu_list->selection_buf->list[menu->navigation.selection_ptr].label);
 
          if (menu->mouse.ptr == menu->navigation.selection_ptr && !menu->pointer.cancel
             && cbs && cbs->action_toggle && setting &&

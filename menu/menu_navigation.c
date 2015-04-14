@@ -46,6 +46,7 @@ void menu_navigation_clear(menu_navigation_t *nav, bool pending_push)
 void menu_navigation_decrement(menu_navigation_t *nav, unsigned scroll_speed)
 {
    driver_t *driver     = driver_get_ptr();
+   menu_handle_t *menu  = menu_driver_get_ptr();
    settings_t *settings = config_get_ptr();
 
    if (!nav)
@@ -58,7 +59,7 @@ void menu_navigation_decrement(menu_navigation_t *nav, unsigned scroll_speed)
    {
       if (settings->menu.navigation.wraparound.vertical_enable)
          menu_navigation_set(nav, 
-               menu_list_get_size(driver->menu->menu_list) - 1, true);
+               menu_list_get_size(menu->menu_list) - 1, true);
       else
          menu_navigation_set(nav, 0, true);
    }
@@ -75,11 +76,12 @@ void menu_navigation_increment(menu_navigation_t *nav, unsigned scroll_speed)
 {
    driver_t *driver     = driver_get_ptr();
    settings_t *settings = config_get_ptr();
+   menu_handle_t *menu  = menu_driver_get_ptr();
 
    if (!nav)
       return;
 
-   if (nav->selection_ptr + scroll_speed < (menu_list_get_size(driver->menu->menu_list)))
+   if (nav->selection_ptr + scroll_speed < (menu_list_get_size(menu->menu_list)))
       menu_navigation_set(nav,
             nav->selection_ptr + scroll_speed, true);
    else
@@ -88,7 +90,7 @@ void menu_navigation_increment(menu_navigation_t *nav, unsigned scroll_speed)
          menu_navigation_clear(nav, false);
       else
          menu_navigation_set(nav,
-               menu_list_get_size(driver->menu->menu_list) - 1, true);
+               menu_list_get_size(menu->menu_list) - 1, true);
    }
 
    menu_driver_navigation_increment();

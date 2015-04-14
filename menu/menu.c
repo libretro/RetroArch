@@ -88,11 +88,12 @@ static void menu_environment_get(int *argc, char *argv[],
    driver_t *driver     = driver_get_ptr();
    global_t *global     = global_get_ptr();
    settings_t *settings = config_get_ptr();
+   menu_handle_t *menu  = menu_driver_get_ptr();
     
    if (!wrap_args)
       return;
 
-   wrap_args->no_content       = driver->menu->load_no_content;
+   wrap_args->no_content       = menu->load_no_content;
    if (!global->has_set_verbosity)
       wrap_args->verbose       =  global->verbosity;
 
@@ -140,12 +141,13 @@ static void push_to_history_playlist(void)
  **/
 bool menu_load_content(void)
 {
+   menu_handle_t *menu  = menu_driver_get_ptr();
    driver_t *driver     = driver_get_ptr();
    global_t *global     = global_get_ptr();
 
    /* redraw menu frame */
-   if (driver->menu)
-      driver->menu->msg_force = true;
+   if (menu)
+      menu->msg_force = true;
 
    menu_driver_entry_iterate(MENU_ACTION_NOOP);
 
@@ -160,17 +162,17 @@ bool menu_load_content(void)
       snprintf(msg, sizeof(msg), "Failed to load %s.\n", name);
       rarch_main_msg_queue_push(msg, 1, 90, false);
 
-      if (driver->menu)
-         driver->menu->msg_force = true;
+      if (menu)
+         menu->msg_force = true;
 
       return false;
    }
 
-   menu_shader_manager_init(driver->menu);
+   menu_shader_manager_init(menu);
 
    event_command(EVENT_CMD_HISTORY_INIT);
 
-   if (*global->fullpath || (driver->menu && driver->menu->load_no_content))
+   if (*global->fullpath || (menu && menu->load_no_content))
       push_to_history_playlist();
 
    event_command(EVENT_CMD_VIDEO_SET_ASPECT_RATIO);
