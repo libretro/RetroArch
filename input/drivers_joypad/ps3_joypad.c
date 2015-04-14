@@ -139,7 +139,7 @@ static void ps3_joypad_poll(void)
             char msg[512];
 
             snprintf(msg, sizeof(msg),
-                  "Joypad #%u (%s) disconnected.", port, ps3_joypad.ident);
+                  "Device #%u (%s) disconnected.", port, ps3_joypad.ident);
             rarch_main_msg_queue_push(msg, 0, 60, false);
             RARCH_LOG("%s\n", msg);
 

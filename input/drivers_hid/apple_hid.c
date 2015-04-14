@@ -218,7 +218,7 @@ static void apple_hid_device_remove(void *data, IOReturn result, void* sender)
    {
       char msg[PATH_MAX_LENGTH];
 
-      snprintf(msg, sizeof(msg), "Joypad #%u (%s) disconnected.",
+      snprintf(msg, sizeof(msg), "Device #%u (%s) disconnected.",
             adapter->slot, adapter->name);
       rarch_main_msg_queue_push(msg, 0, 60, false);
 

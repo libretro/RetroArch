@@ -120,7 +120,7 @@ static void input_autoconfigure_joypad_add(
    input_autoconfigure_joypad_conf(conf,
          settings->input.autoconf_binds[params->idx]);
 
-   snprintf(msg, sizeof(msg), "Joypad port #%u (%s) configured.",
+   snprintf(msg, sizeof(msg), "Device port #%u (%s) configured.",
          params->idx, params->name);
 
    if (!block_osd_spam)

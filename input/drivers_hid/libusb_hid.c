@@ -19,6 +19,7 @@
 #include <queues/fifo_buffer.h>
 #include "../connect/joypad_connection.h"
 #include "../../driver.h"
+#include "../../runloop.h"
 #include "../input_autodetect.h"
 #include "../input_hid_driver.h"
 
@@ -77,18 +78,7 @@ static void adapter_thread(void *data)
          if (fifo_read_avail(adapter->send_control_buffer) >= sizeof(send_command_size))
          {
             fifo_read(adapter->send_control_buffer, send_command_buf, send_command_size);
-#if 0
-            report_number = send_command_buf[0];
-            libusb_control_transfer(adapter->handle,
-                  LIBUSB_REQUEST_TYPE_CLASS|LIBUSB_RECIPIENT_INTERFACE|LIBUSB_ENDPOINT_OUT,
-                  0x09/*HID Set_Report*/,
-                  (2/*HID output*/ << 8) | report_number,
-                  adapter->interface_number,
-                  send_command_buf, send_command_size,
-                  1000/*timeout millis*/);
-#else
             libusb_interrupt_transfer(adapter->handle, adapter->endpoint_out, send_command_buf, send_command_size, &tmp, 1000);
-#endif
          }
       }
       slock_unlock(adapter->send_control_lock);
@@ -327,9 +317,14 @@ static int remove_adapter(void *data, struct libusb_device *dev)
    {
       if (adapter->next->device == dev)
       {
-         fprintf(stderr, "Device 0x%p disconnected.\n", adapter->next->device);
-
+         char msg[PATH_MAX_LENGTH];
          struct libusb_adapter *new_next = NULL;
+
+         fprintf(stderr, "Device 0x%p disconnected.\n", adapter->next->device);
+         snprintf(msg, sizeof(msg), "Device #%u (%s) disconnected.",
+               adapter->slot, adapter->next->name);
+         rarch_main_msg_queue_push(msg, 0, 60, false);
+
          adapter->next->quitting = true;
          sthread_join(adapter->next->thread);
 
@@ -344,7 +339,6 @@ static int remove_adapter(void *data, struct libusb_device *dev)
          new_next = adapter->next->next;
          free(adapter->next);
          adapter->next = new_next;
-
 
          return 0;
       }

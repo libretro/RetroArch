@@ -155,12 +155,12 @@ static void handle_plugged_pad(void)
                if (g_hotplug)
                {
                   char msg[512];
-                  snprintf(msg, sizeof(msg), "Joypad #%u (%s) disconnected.", idx, linuxraw_pads[idx].ident);
+                  snprintf(msg, sizeof(msg), "Device #%u (%s) disconnected.", idx, linuxraw_pads[idx].ident);
                   rarch_main_msg_queue_push(msg, 0, 60, false);
                }
 #endif
 
-               RARCH_LOG("[Joypad]: Joypad %s disconnected.\n", linuxraw_pads[idx].ident);
+               RARCH_LOG("[Joypad]: Device %s disconnected.\n", linuxraw_pads[idx].ident);
                close(linuxraw_pads[idx].fd);
                linuxraw_pads[idx].buttons = 0;
                memset(linuxraw_pads[idx].axes, 0, sizeof(linuxraw_pads[idx].axes));

@@ -471,7 +471,7 @@ static void udev_check_device(struct udev_device *dev, const char *path, bool ho
       if (hotplugged)
       {
          char msg[512];
-         snprintf(msg, sizeof(msg), "Joypad #%u (%s) connected.", pad, path);
+         snprintf(msg, sizeof(msg), "Device #%u (%s) connected.", pad, path);
          rarch_main_msg_queue_push(msg, 0, 60, false);
          RARCH_LOG("[udev]: %s\n", msg);
       }
@@ -496,7 +496,7 @@ static void udev_joypad_remove_device(const char *path)
       {
 #ifndef IS_JOYCONFIG
          char msg[512];
-         snprintf(msg, sizeof(msg), "Joypad #%u (%s) disconnected.", i, udev_pads[i].ident);
+         snprintf(msg, sizeof(msg), "Device #%u (%s) disconnected.", i, udev_pads[i].ident);
          rarch_main_msg_queue_push(msg, 0, 60, false);
          RARCH_LOG("[udev]: %s\n", msg);
 #endif
