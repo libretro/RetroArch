@@ -455,8 +455,6 @@ int menu_entries_parse_list(
 
    if (!strcmp(label, "core_list"))
    {
-      driver_t *driver = driver_get_ptr();
-
       menu_list_get_last_stack(menu->menu_list, &dir, NULL, NULL);
       list_size = file_list_get_size(list);
 
@@ -492,7 +490,6 @@ int menu_entries_deferred_push(file_list_t *list, file_list_t *menu_list)
    const char *label         = NULL;
    menu_file_list_cbs_t *cbs = NULL;
    menu_handle_t       *menu = menu_driver_get_ptr();
-   driver_t          *driver = driver_get_ptr();
 
    menu_list_get_last_stack(menu->menu_list, &path, &label, &type);
 

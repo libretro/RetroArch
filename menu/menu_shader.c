@@ -125,7 +125,6 @@ void menu_shader_manager_set_preset(struct video_shader *shader,
 {
 #ifdef HAVE_SHADER_MANAGER
    config_file_t *conf         = NULL;
-   driver_t *driver            = driver_get_ptr();
    settings_t *settings        = config_get_ptr();
    menu_handle_t *menu         = menu_driver_get_ptr();
 
@@ -182,7 +181,6 @@ void menu_shader_manager_save_preset(
    unsigned d, type            = RARCH_SHADER_NONE;
    config_file_t *conf         = NULL;
    bool ret                    = false;
-   driver_t *driver            = driver_get_ptr();
    global_t *global            = global_get_ptr();
    settings_t *settings        = config_get_ptr();
    menu_handle_t *menu         = menu_driver_get_ptr();
@@ -309,7 +307,6 @@ unsigned menu_shader_manager_get_type(const struct video_shader *shader)
 void menu_shader_manager_apply_changes(void)
 {
 #ifdef HAVE_SHADER_MANAGER
-   driver_t *driver = driver_get_ptr();
    menu_handle_t *menu         = menu_driver_get_ptr();
    unsigned shader_type = menu_shader_manager_get_type(menu->shader);
 
