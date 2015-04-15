@@ -427,13 +427,16 @@ static void apple_gfx_ctx_swap_buffers(void *data)
    if (!(--g_fast_forward_skips < 0))
       return;
     
-#ifdef OSX
+#if defined(OSX)
 #ifdef HAVE_NSOPENGL
     [g_context flushBuffer];
 #else
     if (g_context.CGLContextObj)
         CGLFlushDrawable(g_context.CGLContextObj);
 #endif
+#elif defined(IOS)
+    if (g_view)
+        [g_view display];
 #endif
     
    g_fast_forward_skips = g_is_syncing ? 0 : 3;

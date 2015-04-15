@@ -55,9 +55,6 @@ static void rarch_draw(CFRunLoopObserverRef observer, CFRunLoopActivity activity
     
     if (runloop->is_idle)
         return;
-    
-    if (g_view)
-        [g_view display];
     CFRunLoopWakeUp(CFRunLoopGetMain());
 }
 
@@ -354,10 +351,13 @@ enum
 - (IBAction)showPauseMenu:(id)sender
 {
    runloop_t *runloop = rarch_main_get_ptr();
-
-   runloop->is_paused                     = true;
-   runloop->is_idle                       = true;
-   runloop->ui_companion_is_on_foreground = true;
+    
+   if (runloop)
+   {
+       runloop->is_paused                     = true;
+       runloop->is_idle                       = true;
+       runloop->ui_companion_is_on_foreground = true;
+   }
 
    [[UIApplication sharedApplication] setStatusBarHidden:false withAnimation:UIStatusBarAnimationNone];
    [[UIApplication sharedApplication] setIdleTimerDisabled:false];
