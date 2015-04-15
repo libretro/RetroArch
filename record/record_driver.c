@@ -31,12 +31,113 @@
 #include "../config.h"
 #endif
 
-static const ffemu_backend_t *ffemu_backends[] = {
+static const record_driver_t *record_drivers[] = {
 #ifdef HAVE_FFMPEG
    &ffemu_ffmpeg,
 #endif
+   &ffemu_null,
    NULL,
 };
+
+/**
+ * record_driver_find_ident:
+ * @idx                : index of driver to get handle to.
+ *
+ * Returns: Human-readable identifier of record driver at index. Can be NULL
+ * if nothing found.
+ **/
+const char *record_driver_find_ident(int idx)
+{
+   const record_driver_t *drv = record_drivers[idx];
+   if (!drv)
+      return NULL;
+   return drv->ident;
+}
+
+/**
+ * record_driver_find_handle:
+ * @idx                : index of driver to get handle to.
+ *
+ * Returns: handle to record driver at index. Can be NULL
+ * if nothing found.
+ **/
+const void *record_driver_find_handle(int idx)
+{
+   const void *drv = record_drivers[idx];
+   if (!drv)
+      return NULL;
+   return drv;
+}
+
+/**
+ * config_get_record_driver_options:
+ *
+ * Get an enumerated list of all record driver names, separated by '|'.
+ *
+ * Returns: string listing of all record driver names, separated by '|'.
+ **/
+const char* config_get_record_driver_options(void)
+{
+   union string_list_elem_attr attr;
+   unsigned i;
+   char *options = NULL;
+   int options_len = 0;
+   struct string_list *options_l = string_list_new();
+
+   attr.i = 0;
+
+   if (!options_l)
+      return NULL;
+
+   for (i = 0; record_driver_find_handle(i); i++)
+   {
+      const char *opt = record_driver_find_ident(i);
+      options_len += strlen(opt) + 1;
+      string_list_append(options_l, opt, attr);
+   }
+
+   options = (char*)calloc(options_len, sizeof(char));
+
+   if (!options)
+   {
+      string_list_free(options_l);
+      options_l = NULL;
+      return NULL;
+   }
+
+   string_list_join_concat(options, options_len, options_l, "|");
+
+   string_list_free(options_l);
+   options_l = NULL;
+
+   return options;
+}
+
+void find_record_driver(void)
+{
+   driver_t *driver     = driver_get_ptr();
+   settings_t *settings = config_get_ptr();
+
+   int i = find_driver_index("record_driver", settings->record.driver);
+
+   if (i >= 0)
+      driver->recording = (const record_driver_t*)audio_driver_find_handle(i);
+   else
+   {
+      unsigned d;
+      RARCH_ERR("Couldn't find any audio driver named \"%s\"\n",
+            settings->audio.driver);
+      RARCH_LOG_OUTPUT("Available audio drivers are:\n");
+      for (d = 0; audio_driver_find_handle(d); d++)
+         RARCH_LOG_OUTPUT("\t%s\n", record_driver_find_ident(d));
+      RARCH_WARN("Going to default to first audio driver...\n");
+
+      driver->audio = (const audio_driver_t*)audio_driver_find_handle(0);
+
+      if (!driver->audio)
+         rarch_fail(1, "find_audio_driver()");
+   }
+}
 
 /**
  * ffemu_find_backend:
@@ -47,18 +148,19 @@ static const ffemu_backend_t *ffemu_backends[] = {
  * Returns: recording driver handle if successful, otherwise
  * NULL.
  **/
-const ffemu_backend_t *ffemu_find_backend(const char *ident)
+const record_driver_t *ffemu_find_backend(const char *ident)
 {
    unsigned i;
 
-   for (i = 0; ffemu_backends[i]; i++)
+   for (i = 0; record_drivers[i]; i++)
    {
-      if (!strcmp(ffemu_backends[i]->ident, ident))
-         return ffemu_backends[i];
+      if (!strcmp(record_drivers[i]->ident, ident))
+         return record_drivers[i];
    }
 
    return NULL;
 }
+
 
 /**
  * gfx_ctx_init_first:
@@ -70,19 +172,19 @@ const ffemu_backend_t *ffemu_find_backend(const char *ident)
  *
  * Returns: true (1) if successful, otherwise false (0).
  **/
-bool ffemu_init_first(const ffemu_backend_t **backend, void **data,
+bool record_driver_init_first(const record_driver_t **backend, void **data,
       const struct ffemu_params *params)
 {
    unsigned i;
 
-   for (i = 0; ffemu_backends[i]; i++)
+   for (i = 0; record_drivers[i]; i++)
    {
-      void *handle = ffemu_backends[i]->init(params);
+      void *handle = record_drivers[i]->init(params);
 
       if (!handle)
          continue;
 
-      *backend = ffemu_backends[i];
+      *backend = record_drivers[i];
       *data = handle;
       return true;
    }
@@ -308,7 +410,7 @@ bool recording_init(void)
          params.fb_width, params.fb_height,
          (unsigned)params.pix_fmt);
 
-   if (!ffemu_init_first(&driver->recording, &driver->recording_data, &params))
+   if (!record_driver_init_first(&driver->recording, &driver->recording_data, &params))
    {
       RARCH_ERR(RETRO_LOG_INIT_RECORDING_FAILED);
       event_command(EVENT_CMD_GPU_RECORD_DEINIT);

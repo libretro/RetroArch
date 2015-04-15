@@ -124,6 +124,19 @@ const char *config_get_default_audio(void)
    return "null";
 }
 
+const char *config_get_default_record(void)
+{
+   switch (RECORD_DEFAULT_DRIVER)
+   {
+      case RECORD_FFMPEG:
+         return "ffmpeg";
+      default:
+         break;
+   }
+
+   return "null";
+}
+
 /**
  * config_get_default_audio_resampler:
  *
@@ -397,6 +410,7 @@ static void config_set_defaults(void)
 #endif
    const char *def_camera          = config_get_default_camera();
    const char *def_location        = config_get_default_location();
+   const char *def_record          = config_get_default_record();
 
    if (def_camera)
       strlcpy(settings->camera.driver,
@@ -419,6 +433,9 @@ static void config_set_defaults(void)
    if (def_joypad)
       strlcpy(settings->input.joypad_driver,
             def_joypad, sizeof(settings->input.joypad_driver));
+   if (def_record)
+      strlcpy(settings->record.driver,
+            def_record, sizeof(settings->record.driver));
 #ifdef HAVE_MENU
    if (def_menu)
       strlcpy(settings->menu.driver,

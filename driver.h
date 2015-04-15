@@ -199,7 +199,7 @@ typedef struct driver
    const camera_driver_t *camera;
    const location_driver_t *location;
    const rarch_resampler_t *resampler;
-   const ffemu_backend_t *recording;
+   const record_driver_t *recording;
    struct retro_callbacks retro_ctx;
 
    void *audio_data;

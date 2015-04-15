@@ -172,6 +172,7 @@ OBJ += frontend/frontend.o \
 		playlist.o \
 		movie.o \
 		record/record_driver.o \
+		record/drivers/record_null.o \
 		performance.o
 
 

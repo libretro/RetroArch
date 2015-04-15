@@ -94,6 +94,11 @@ typedef struct settings
 
    struct
    {
+      char driver[32];
+   } record;
+
+   struct
+   {
       bool menubar_enable;
       bool suspend_screensaver_enable;
       bool companion_start_on_boot;
@@ -392,6 +397,8 @@ const char *config_get_default_joypad(void);
  **/
 const char *config_get_default_menu(void);
 #endif
+
+const char *config_get_default_record(void);
 
 /**
  * config_load:

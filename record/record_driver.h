@@ -13,7 +13,6 @@
  *  You should have received a copy of the GNU General Public License along with RetroArch.
  *  If not, see <http://www.gnu.org/licenses/>.
  */
-
 #ifndef __RECORD_DRIVER_H
 #define __RECORD_DRIVER_H
 
@@ -81,7 +80,7 @@ struct ffemu_audio_data
    size_t frames;
 };
 
-typedef struct ffemu_backend
+typedef struct record_driver
 {
    void *(*init)(const struct ffemu_params *params);
    void  (*free)(void *data);
@@ -89,9 +88,19 @@ typedef struct ffemu_backend
    bool  (*push_audio)(void *data, const struct ffemu_audio_data *audio_data);
    bool  (*finalize)(void *data);
    const char *ident;
-} ffemu_backend_t;
+} record_driver_t;
 
-extern const ffemu_backend_t ffemu_ffmpeg;
+extern const record_driver_t ffemu_ffmpeg;
+extern const record_driver_t ffemu_null;
+
+/**
+ * config_get_record_driver_options:
+ *
+ * Get an enumerated list of all record driver names, separated by '|'.
+ *
+ * Returns: string listing of all record driver names, separated by '|'.
+ **/
+const char* config_get_record_driver_options(void);
 
 /**
  * ffemu_find_backend:
@@ -102,7 +111,25 @@ extern const ffemu_backend_t ffemu_ffmpeg;
  * Returns: recording driver handle if successful, otherwise
  * NULL.
  **/
-const ffemu_backend_t *ffemu_find_backend(const char *ident);
+const record_driver_t *ffemu_find_backend(const char *ident);
+
+/**
+ * record_driver_find_handle:
+ * @idx                : index of driver to get handle to.
+ *
+ * Returns: handle to record driver at index. Can be NULL
+ * if nothing found.
+ **/
+const void *record_driver_find_handle(int idx);
+
+/**
+ * record_driver_find_ident:
+ * @idx                : index of driver to get handle to.
+ *
+ * Returns: Human-readable identifier of record driver at index. Can be NULL
+ * if nothing found.
+ **/
+const char *record_driver_find_ident(int idx);
 
 /**
  * gfx_ctx_init_first:
@@ -114,7 +141,7 @@ const ffemu_backend_t *ffemu_find_backend(const char *ident);
  *
  * Returns: true (1) if successful, otherwise false (0).
  **/
-bool ffemu_init_first(const ffemu_backend_t **backend, void **data,
+bool record_driver_init_first(const record_driver_t **backend, void **data,
       const struct ffemu_params *params);
 
 void recording_dump_frame(const void *data, unsigned width,
