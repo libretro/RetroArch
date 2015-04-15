@@ -39,13 +39,6 @@ void menu_entries_common_load_content(bool persist)
    menu->msg_force = true;
 }
 
-int menu_action_setting_set_current_string(
-      rarch_setting_t *setting, const char *str)
-{
-   strlcpy(setting->value.string, str, setting->size);
-   return menu_setting_generic(setting);
-}
-
 #ifdef HAVE_NETWORKING
 /* HACK - we have to find some way to pass state inbetween
  * function pointer callback functions that don't necessarily

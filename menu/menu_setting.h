@@ -27,9 +27,6 @@ int menu_setting_generic(rarch_setting_t *setting);
 
 int menu_setting_handler(rarch_setting_t *setting, unsigned action);
 
-int menu_action_setting_set_current_string(
-      rarch_setting_t *setting, const char *str);
-
 int menu_setting_set(unsigned type, const char *label,
       unsigned action, bool wraparound);
 

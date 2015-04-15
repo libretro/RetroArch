@@ -134,7 +134,10 @@ void menu_input_st_string_callback(void *userdata, const char *str)
       if ((current_setting = (rarch_setting_t*)
                setting_find_setting(
                   menu->list_settings, menu->keyboard.label_setting)))
-         menu_action_setting_set_current_string(current_setting, str);
+      {
+         strlcpy(current_setting->value.string, str, current_setting->size);
+         menu_setting_generic(current_setting);
+      }
       else
       {
          if (!strcmp(menu->keyboard.label_setting, "video_shader_preset_save_as"))
