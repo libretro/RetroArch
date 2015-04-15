@@ -1231,7 +1231,9 @@ void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
    if (!menu)
       return;
 
+#if 0
    RARCH_LOG("path: %s, label: %s, elem0 : %s, elem1: %s\n", path, label, elem0, elem1);
+#endif
 
    cbs->action_ok = action_ok_lookup_setting;
 
