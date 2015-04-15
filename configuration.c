@@ -1085,7 +1085,7 @@ static void config_read_keybinds_conf(config_file_t *conf)
 }
 
 /* Also dumps inherited values, useful for logging. */
-
+#if 0
 static void config_file_dump_all(config_file_t *conf)
 {
    struct config_entry_list *list = NULL;
@@ -1101,12 +1101,12 @@ static void config_file_dump_all(config_file_t *conf)
 
    while (list)
    {
-      RARCH_LOG("%s = \"%s\" %s\n", list->key,
-            list->value, list->readonly ? "(included)" : "");
+      RARCH_LOG("%s = \"%s\"%s\n", list->key,
+            list->value, list->readonly ? " (included)" : "");
       list = list->next;
    }
 }
-
+#endif
 /**
  * config_load:
  * @path                : path to be read from.
@@ -1155,14 +1155,14 @@ static bool config_load_file(const char *path, bool set_defaults)
          RARCH_ERR("Failed to append config \"%s\"\n", extra_path);
       extra_path = strtok_r(NULL, "|", &save);
    }
-
+#if 0
    if (global->verbosity)
    {
       RARCH_LOG_OUTPUT("=== Config ===\n");
       config_file_dump_all(conf);
       RARCH_LOG_OUTPUT("=== Config end ===\n");
    }
-
+#endif
 
    CONFIG_GET_FLOAT_BASE(conf, settings, video.scale, "video_scale");
    CONFIG_GET_INT_BASE  (conf, settings, video.fullscreen_x, "video_fullscreen_x");
