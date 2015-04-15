@@ -699,7 +699,8 @@ static int menu_input_pointer(unsigned *action)
    menu->pointer.x = ((pointer_x + 0x7fff) * (int)menu->frame_buf.width) / 0xFFFF;
    menu->pointer.y = ((pointer_y + 0x7fff) * (int)menu->frame_buf.height) / 0xFFFF;
 
-   if (menu->pointer.pressed[0] || menu->pointer.back || menu->pointer.dragging
+   if (menu->pointer.pressed[0] || menu->pointer.oldpressed[0]
+     || menu->pointer.back || menu->pointer.dragging
      || menu->pointer.dy != 0 || menu->pointer.dx != 0)
      runloop->frames.video.current.menu.animation.is_active = true;
 
