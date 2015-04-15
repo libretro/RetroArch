@@ -353,7 +353,6 @@ static int action_ok_record_configfile_load(const char *path,
       const char *label, unsigned type, size_t idx)
 {
    const char *menu_path = NULL;
-   char record_configpath[PATH_MAX_LENGTH];
    global_t     *global = global_get_ptr();
    menu_handle_t *menu  = menu_driver_get_ptr();
    if (!menu || !global)
