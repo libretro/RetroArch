@@ -15,6 +15,7 @@
  */
 
 #include <string.h>
+#include <file/file_path.h>
 #include "record_driver.h"
 
 #include "../driver.h"
@@ -183,6 +184,7 @@ bool recording_deinit(void)
  **/
 bool recording_init(void)
 {
+   char recording_file[PATH_MAX_LENGTH];
    struct ffemu_params params = {0};
    global_t *global = global_get_ptr();
    driver_t *driver     = driver_get_ptr();
@@ -209,12 +211,19 @@ bool recording_init(void)
          (float)global->system.av_info.timing.fps,
          (float)global->system.av_info.timing.sample_rate);
 
+   strlcpy(recording_file, global->record.path, sizeof(recording_file));
+
+   if (global->record.use_output_dir)
+      fill_pathname_join(recording_file,
+            global->record.output_dir,
+            global->record.path, sizeof(recording_file));
+
    params.out_width  = info->geometry.base_width;
    params.out_height = info->geometry.base_height;
    params.fb_width   = info->geometry.max_width;
    params.fb_height  = info->geometry.max_height;
    params.channels   = 2;
-   params.filename   = global->record.path;
+   params.filename   = recording_file;
    params.fps        = global->system.av_info.timing.fps;
    params.samplerate = global->system.av_info.timing.sample_rate;
    params.pix_fmt    = (global->system.pix_fmt == RETRO_PIXEL_FORMAT_XRGB8888) ?

@@ -633,8 +633,8 @@ static void config_set_defaults(void)
    if (!global->has_set_ips_pref)
       global->ips_pref = false;
 
-   *global->recording.output_dir = '\0';
-   *global->recording.config_dir = '\0';
+   *global->record.output_dir = '\0';
+   *global->record.config_dir = '\0';
 
    *settings->core_options_path = '\0';
    *settings->content_history_path = '\0';
@@ -1420,8 +1420,8 @@ static bool config_load_file(const char *path, bool set_defaults)
 
    CONFIG_GET_INT_BASE(conf, settings, archive.mode, "archive_mode");
 
-   config_get_path(conf, "recording_output_directory", global->recording.output_dir, sizeof(global->recording.output_dir));
-   config_get_path(conf, "recording_config_directory", global->recording.config_dir, sizeof(global->recording.config_dir));
+   config_get_path(conf, "recording_output_directory", global->record.output_dir, sizeof(global->record.output_dir));
+   config_get_path(conf, "recording_config_directory", global->record.config_dir, sizeof(global->record.config_dir));
 
 #ifdef HAVE_OVERLAY
    config_get_path(conf, "overlay_directory", global->overlay_dir, sizeof(global->overlay_dir));
@@ -2176,8 +2176,8 @@ bool config_save_file(const char *path)
    config_set_path(conf,  "libretro_path", settings->libretro);
    config_set_path(conf,  "core_options_path", settings->core_options_path);
 
-   config_set_path(conf,  "recording_output_directory", global->recording.output_dir);
-   config_set_path(conf,  "recording_config_directory", global->recording.config_dir);
+   config_set_path(conf,  "recording_output_directory", global->record.output_dir);
+   config_set_path(conf,  "recording_config_directory", global->record.config_dir);
 
    config_set_bool(conf,  "suspend_screensaver_enable", settings->ui.suspend_screensaver_enable);
    config_set_path(conf,  "libretro_directory", settings->libretro_directory);

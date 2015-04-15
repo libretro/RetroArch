@@ -3871,6 +3871,18 @@ static bool setting_append_list_recording_options(
          general_read_handler);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
 
+   CONFIG_BOOL(
+         global->record.use_output_dir,
+         "record_use_output_dir",
+         "Use output directory",
+         false,
+         "OFF",
+         "ON",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+
    END_SUB_GROUP(list, list_info);
 
    START_SUB_GROUP(list, list_info, "Miscellaneous", group_info.name, subgroup_info);
@@ -6107,7 +6119,7 @@ static bool setting_append_list_path_options(
          SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR | SD_FLAG_BROWSER_ACTION);
 
    CONFIG_DIR(
-         global->recording.output_dir,
+         global->record.output_dir,
          "recording_output_directory",
          "Recording Output Directory",
          "",
@@ -6122,7 +6134,7 @@ static bool setting_append_list_path_options(
          SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR | SD_FLAG_BROWSER_ACTION);
 
    CONFIG_DIR(
-         global->recording.config_dir,
+         global->record.config_dir,
          "recording_config_directory",
          "Recording Config Directory",
          "",

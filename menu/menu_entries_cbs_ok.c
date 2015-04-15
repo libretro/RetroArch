@@ -330,7 +330,7 @@ static int action_ok_record_configfile(const char *path,
 
    return menu_list_push_stack_refresh(
          menu->menu_list,
-         global->recording.config_dir,
+         global->record.config_dir,
          label, type, idx);
 }
 
