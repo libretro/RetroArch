@@ -327,6 +327,21 @@ static int action_ok_remap_file(const char *path,
          label, type, idx);
 }
 
+static int action_ok_record_configfile(const char *path,
+      const char *label, unsigned type, size_t idx)
+{
+   menu_handle_t *menu      = menu_driver_get_ptr();
+   global_t   *global       = global_get_ptr();
+
+   if (!menu)
+      return -1;
+
+   return menu_list_push_stack_refresh(
+         menu->menu_list,
+         global->recording.config_dir,
+         label, type, idx);
+}
+
 static int action_ok_core_list(const char *path,
       const char *label, unsigned type, size_t idx)
 {
@@ -1289,6 +1304,8 @@ void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
       cbs->action_ok = action_ok_video_filter;
    else if (!strcmp(label, "remap_file_load"))
       cbs->action_ok = action_ok_remap_file;
+   else if (!strcmp(label, "record_config"))
+      cbs->action_ok = action_ok_record_configfile;
    else if (!strcmp(label, "core_updater_list"))
       cbs->action_ok = action_ok_core_updater_list;
    else if (!strcmp(label, "video_shader_parameters") ||
