@@ -1563,6 +1563,9 @@ int cb_core_updater_list(void *data_, size_t len)
    if (!data)
       return -1;
 
+   if (core_buf)
+      free(core_buf);
+
    core_buf = (char*)malloc(len * sizeof(char));
 
    if (!core_buf)
@@ -1583,9 +1586,6 @@ static int deferred_push_core_updater_list(void *data, void *userdata,
    menu_list_clear(list);
 
    print_buf_lines(list, core_buf, core_len, MENU_FILE_DOWNLOAD_CORE);
-
-   if (core_buf)
-      free(core_buf);
 
    menu_list_populate_generic(list, path, label, type);
 
