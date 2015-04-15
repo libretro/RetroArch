@@ -416,7 +416,11 @@ static unsigned swap_interval = 1;
  */
 static const bool video_threaded = false;
 
+#ifdef HAVE_THREADS
+static const bool threaded_data_runloop_enable = true;
+#else
 static const bool threaded_data_runloop_enable = false;
+#endif
 
 /* Set to true if HW render cores should get their private context. */
 static const bool video_shared_context = false;
