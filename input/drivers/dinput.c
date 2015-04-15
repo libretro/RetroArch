@@ -655,7 +655,7 @@ static const input_device_driver_t *dinput_get_joypad_driver(void *data)
 {
    struct dinput_input *di = (struct dinput_input*)data;
    if (!di)
-      return false;
+      return NULL;
    return di->joypad;
 }
 
