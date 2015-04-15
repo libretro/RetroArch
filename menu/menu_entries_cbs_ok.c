@@ -27,9 +27,6 @@
 #include "../input/input_remapping.h"
 
 /* FIXME - Global variables, refactor */
-char core_updater_list_path[PATH_MAX_LENGTH];
-char core_updater_list_label[PATH_MAX_LENGTH];
-unsigned core_updater_list_type;
 unsigned rdb_entry_start_game_selection_ptr;
 size_t hack_shader_pass = 0;
 #ifdef HAVE_NETWORKING
@@ -288,11 +285,6 @@ static int action_ok_core_updater_list(const char *path,
    driver->menu->nonblocking_refresh = true;
 
    (void)url_path;
-#ifdef HAVE_NETWORKING
-   strlcpy(core_updater_list_path, path, sizeof(core_updater_list_path));
-   strlcpy(core_updater_list_label, label, sizeof(core_updater_list_label));
-   core_updater_list_type = type;
-#endif
 
    if (settings->network.buildbot_url[0] == '\0')
       return -1;

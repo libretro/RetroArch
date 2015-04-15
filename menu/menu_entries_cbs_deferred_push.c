@@ -1550,9 +1550,6 @@ static void print_buf_lines(file_list_t *list, char *buf, int buf_size,
 /* HACK - we have to find some way to pass state inbetween
  * function pointer callback functions that don't necessarily
  * call each other. */
-extern char core_updater_list_path[PATH_MAX_LENGTH];
-extern char core_updater_list_label[PATH_MAX_LENGTH];
-extern unsigned core_updater_list_type;
 static char *core_buf;
 static size_t core_len;
 
@@ -1590,8 +1587,7 @@ static int deferred_push_core_updater_list(void *data, void *userdata,
    if (core_buf)
       free(core_buf);
 
-   menu_list_populate_generic(list, core_updater_list_path,
-         core_updater_list_label, core_updater_list_type);
+   menu_list_populate_generic(list, path, label, type);
 
    return 0;
 }
