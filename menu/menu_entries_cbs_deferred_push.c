@@ -1759,6 +1759,13 @@ static int deferred_push_remap_file_load(void *data, void *userdata,
          MENU_FILE_REMAP, "rmp", NULL);
 }
 
+static int deferred_push_record_configfile(void *data, void *userdata,
+      const char *path, const char *label, unsigned type)
+{
+   return menu_entries_parse_list((file_list_t*)data, (file_list_t*)userdata, path, label, type,
+         MENU_FILE_RECORD_CONFIG, "cfg", NULL);
+}
+
 static int deferred_push_input_overlay(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
@@ -1871,6 +1878,8 @@ void menu_entries_cbs_init_bind_deferred_push(menu_file_list_cbs_t *cbs,
       cbs->action_deferred_push = deferred_push_cheat_file_load;
    else if (!strcmp(label, "remap_file_load"))
       cbs->action_deferred_push = deferred_push_remap_file_load;
+   else if (!strcmp(label, "record_config"))
+      cbs->action_deferred_push = deferred_push_record_configfile;
    else if (!strcmp(label, "content_actions"))
       cbs->action_deferred_push = deferred_push_content_actions;
    else if (!strcmp(label, "shader_options"))

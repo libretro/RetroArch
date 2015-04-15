@@ -349,6 +349,25 @@ static int action_ok_core_list(const char *path,
          label, type, idx);
 }
 
+static int action_ok_record_configfile_load(const char *path,
+      const char *label, unsigned type, size_t idx)
+{
+   const char *menu_path = NULL;
+   char record_configpath[PATH_MAX_LENGTH];
+   global_t     *global = global_get_ptr();
+   menu_handle_t *menu  = menu_driver_get_ptr();
+   if (!menu || !global)
+      return -1;
+
+   menu_list_get_last_stack(menu->menu_list, &menu_path, NULL,
+         NULL);
+
+   fill_pathname_join(global->record.config, menu_path, path, sizeof(global->record.config));
+
+   menu_list_flush_stack_by_needle(menu->menu_list, "Recording Settings");
+   return 0;
+}
+
 static int action_ok_remap_file_load(const char *path,
       const char *label, unsigned type, size_t idx)
 {
@@ -1370,6 +1389,9 @@ void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
          break;
       case MENU_FILE_CHEAT:
          cbs->action_ok = action_ok_cheat_file_load;
+         break;
+      case MENU_FILE_RECORD_CONFIG:
+         cbs->action_ok = action_ok_record_configfile_load;
          break;
       case MENU_FILE_REMAP:
          cbs->action_ok = action_ok_remap_file_load;
