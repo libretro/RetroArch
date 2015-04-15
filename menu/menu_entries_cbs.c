@@ -138,6 +138,7 @@ int menu_entries_common_is_settings_entry(const char *label)
     !strcmp(label, "Driver Settings") ||
     !strcmp(label, "General Settings") ||
     !strcmp(label, "Video Settings") ||
+    !strcmp(label, "Recording Settings") ||
     !strcmp(label, "Shader Settings") ||
     !strcmp(label, "Font Settings") ||
     !strcmp(label, "Audio Settings") ||
