@@ -47,7 +47,7 @@ typedef struct glui_handle
       } bg;
    } textures;
 
-   gl_font_raster_block_t raster_block;
+   gl_font_raster_block_t list_block;
    bool use_blocks;
 } glui_handle_t;
 
@@ -336,75 +336,20 @@ static void glui_render(void)
       menu->scroll_y = 0;
 }
 
-static void glui_frame(void)
+static void glui_render_menu_list(runloop_t *runloop, gl_t *gl, glui_handle_t *glui,
+                                  menu_handle_t *menu, const char *label, uint32_t normal_color,
+                                  uint32_t hover_color)
 {
-   unsigned y;
-   size_t i;
-   char title[PATH_MAX_LENGTH], title_buf[PATH_MAX_LENGTH], 
-        title_msg[PATH_MAX_LENGTH];
-   char timedate[PATH_MAX_LENGTH];
-   const char *dir = NULL;
-   const char *label = NULL;
-   unsigned menu_type = 0;
-   gl_t *gl = NULL;
-   glui_handle_t *glui = NULL;
-   const char *core_name = NULL;
-   const char *core_version = NULL;
-   const struct font_renderer *font_driver = NULL;
-   menu_handle_t *menu  = menu_driver_get_ptr();
-   settings_t *settings = config_get_ptr();
-   const uint32_t normal_color = FONT_COLOR_ARGB_TO_RGBA(settings->menu.entry_normal_color);
-   const uint32_t hover_color = FONT_COLOR_ARGB_TO_RGBA(settings->menu.entry_hover_color);
-   const uint32_t title_color = FONT_COLOR_ARGB_TO_RGBA(settings->menu.title_color);
-   runloop_t *runloop = rarch_main_get_ptr();
-   global_t  *global  = global_get_ptr();
-
-   if (!menu)
-      return;
-
-   gl = (gl_t*)video_driver_get_ptr(NULL);
-
-   if (!gl)
-      return;
-
-   font_driver = (const struct font_renderer*)gl->font_driver;
-
-   glui = (glui_handle_t*)menu->userdata;
-
-   if (!glui)
-      return;
-
-   if (menu->need_refresh
-         && runloop->is_menu
-         && !menu->msg_force)
-      return;
-
-   gl_set_viewport(gl, gl->win_width, gl->win_height, true, false);
-
-   glui_render_background(settings, gl, glui, false);
+   const struct font_renderer *font_driver = (const struct font_renderer *)gl->font_driver;
+   size_t i = 0;
 
    if (glui->use_blocks)
-   {
-      font_driver->bind_block(gl->font_handle, &glui->raster_block);
+      font_driver->bind_block(gl->font_handle, &glui->list_block);
 
-      if (!menu_display_update_pending())
-         goto draw_text;
-   }
+   if (!menu_display_update_pending())
+      goto draw_text;
 
-   glui->raster_block.carr.coords.vertices = 0;
-
-   runloop->frames.video.current.menu.animation.is_active = false;
-   runloop->frames.video.current.menu.label.is_updated    = false;
-   runloop->frames.video.current.menu.framebuf.dirty      = false;
-
-   menu_list_get_last_stack(menu->menu_list, &dir, &label, &menu_type);
-
-   get_title(label, dir, menu_type, title, sizeof(title));
-
-   glui_render_quad(gl, 0,
-         menu->header_height - menu->scroll_y + glui->line_height *
-         menu->navigation.selection_ptr - glui->line_height / 2 - 4,
-         gl->win_width, glui->line_height, 1, 1, 1, 0.1);
+   glui->list_block.carr.coords.vertices = 0;
 
    for (i = 0; i < menu_list_get_size(menu->menu_list); i++)
    {
@@ -420,8 +365,7 @@ static void glui_frame(void)
                               &entry_label, &type);
 
       cbs = (menu_file_list_cbs_t*)
-            menu_list_get_actiondata_at_offset(menu->menu_list->selection_buf,
-                                               i);
+            menu_list_get_actiondata_at_offset(menu->menu_list->selection_buf, i);
 
       if (cbs && cbs->action_get_representation)
          cbs->action_get_representation(menu->menu_list->selection_buf,
@@ -439,7 +383,7 @@ static void glui_frame(void)
 
       strlcpy(message, entry_title_buf, sizeof(message));
 
-      y = menu->header_height - menu->scroll_y + (glui->line_height * i);
+      unsigned y = menu->header_height - menu->scroll_y + (glui->line_height * i);
 
       glui_blit_line(gl, glui->margin, y, message,
             selected ? hover_color : normal_color, TEXT_ALIGN_LEFT);
@@ -447,6 +391,71 @@ static void glui_frame(void)
       glui_blit_line(gl, gl->win_width - glui->margin, y, type_str_buf,
             selected ? hover_color : normal_color, TEXT_ALIGN_RIGHT);
    }
+
+draw_text:
+   if (glui->use_blocks)
+   {
+      font_driver->flush(gl->font_handle);
+      font_driver->bind_block(gl->font_handle, NULL);
+   }
+}
+
+static void glui_frame(void)
+{
+   char title[PATH_MAX_LENGTH], title_buf[PATH_MAX_LENGTH], 
+        title_msg[PATH_MAX_LENGTH];
+   char timedate[PATH_MAX_LENGTH];
+   const char *dir = NULL;
+   const char *label = NULL;
+   unsigned menu_type = 0;
+   gl_t *gl = NULL;
+   glui_handle_t *glui = NULL;
+   const char *core_name = NULL;
+   const char *core_version = NULL;
+   menu_handle_t *menu  = menu_driver_get_ptr();
+   settings_t *settings = config_get_ptr();
+   const uint32_t normal_color = FONT_COLOR_ARGB_TO_RGBA(settings->menu.entry_normal_color);
+   const uint32_t hover_color = FONT_COLOR_ARGB_TO_RGBA(settings->menu.entry_hover_color);
+   const uint32_t title_color = FONT_COLOR_ARGB_TO_RGBA(settings->menu.title_color);
+   runloop_t *runloop = rarch_main_get_ptr();
+   global_t  *global  = global_get_ptr();
+
+   if (!menu)
+      return;
+
+   gl = (gl_t*)video_driver_get_ptr(NULL);
+
+   if (!gl)
+      return;
+
+   glui = (glui_handle_t*)menu->userdata;
+
+   if (!glui)
+      return;
+
+   if (menu->need_refresh
+         && runloop->is_menu
+         && !menu->msg_force)
+      return;
+
+   gl_set_viewport(gl, gl->win_width, gl->win_height, true, false);
+
+   glui_render_background(settings, gl, glui, false);
+
+   menu_list_get_last_stack(menu->menu_list, &dir, &label, &menu_type);
+
+   get_title(label, dir, menu_type, title, sizeof(title));
+
+   glui_render_quad(gl, 0,
+         menu->header_height - menu->scroll_y + glui->line_height *
+         menu->navigation.selection_ptr - glui->line_height / 2 - 4,
+         gl->win_width, glui->line_height, 1, 1, 1, 0.1);
+
+   glui_render_menu_list(runloop, gl, glui, menu, label, normal_color, hover_color);
+
+   runloop->frames.video.current.menu.animation.is_active = false;
+   runloop->frames.video.current.menu.label.is_updated    = false;
+   runloop->frames.video.current.menu.framebuf.dirty      = false;
 
    glui_render_quad(gl, 0, 0, gl->win_width,
          menu->header_height - glui->line_height/2 - 4, 0.2, 0.2, 0.2, 1);
@@ -489,14 +498,6 @@ static void glui_frame(void)
       glui_blit_line(gl, gl->win_width - glui->margin,
             gl->win_height - glui->line_height, timedate, hover_color,
             TEXT_ALIGN_RIGHT);
-   }
-
-draw_text:
-
-   if (glui->use_blocks)
-   {
-      font_driver->flush(gl->font_handle);
-      font_driver->bind_block(gl->font_handle, NULL);
    }
 
    if (menu->keyboard.display)
@@ -580,7 +581,7 @@ static void glui_free(void *data)
    if (!glui)
       return;
 
-   gl_coord_array_free(&glui->raster_block.carr);
+   gl_coord_array_free(&glui->list_block.carr);
 
    font_driver = (const struct font_renderer*)gl->font_driver;
 
