@@ -353,18 +353,22 @@ static int deferred_push_system_information(void *data, void *userdata,
                MENU_SETTINGS_CORE_INFO_NONE, 0);
 
          if (frontend->get_name)
+         {
             frontend->get_name(tmp2, sizeof(tmp2));
-         snprintf(tmp, sizeof(tmp), "Frontend name: %s",
-               frontend->get_name ? tmp2 : "N/A");
-         menu_list_push(list, tmp, "",
-               MENU_SETTINGS_CORE_INFO_NONE, 0);
+            snprintf(tmp, sizeof(tmp), "Frontend name: %s",
+                  frontend->get_name ? tmp2 : "N/A");
+            menu_list_push(list, tmp, "",
+                  MENU_SETTINGS_CORE_INFO_NONE, 0);
+         }
 
          if (frontend->get_os)
+         {
             frontend->get_os(tmp2, sizeof(tmp2), &major, &minor);
-         snprintf(tmp, sizeof(tmp), "Frontend OS: %s %d.%d",
-               frontend->get_os ? tmp2 : "N/A", major, minor);
-         menu_list_push(list, tmp, "",
-               MENU_SETTINGS_CORE_INFO_NONE, 0);
+            snprintf(tmp, sizeof(tmp), "Frontend OS: %s %d.%d",
+                  frontend->get_os ? tmp2 : "N/A", major, minor);
+            menu_list_push(list, tmp, "",
+                  MENU_SETTINGS_CORE_INFO_NONE, 0);
+         }
 
          snprintf(tmp, sizeof(tmp), "RetroRating level: %d", 
                frontend->get_rating ? frontend->get_rating() : -1);
