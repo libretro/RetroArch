@@ -146,6 +146,18 @@ static const bool _cg_supp = true;
 static const bool _cg_supp = false;
 #endif
 
+#ifdef HAVE_GLSL
+static const bool _glsl_supp = true;
+#else
+static const bool _glsl_supp = false;
+#endif
+
+#ifdef HAVE_HLSL
+static const bool _hlsl_supp = true;
+#else
+static const bool _hlsl_supp = false;
+#endif
+
 #ifdef HAVE_LIBXML2
 static const bool _libxml2_supp = true;
 #else

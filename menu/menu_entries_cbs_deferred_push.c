@@ -522,7 +522,17 @@ static int deferred_push_system_information(void *data, void *userdata,
             MENU_SETTINGS_CORE_INFO_NONE, 0);
 
       snprintf(feat_str, sizeof(feat_str),
-            "Cg library support: %s", _cg_supp ? "true" : "false");
+            "Cg support: %s", _cg_supp ? "true" : "false");
+      menu_list_push(list, feat_str, "",
+            MENU_SETTINGS_CORE_INFO_NONE, 0);
+
+      snprintf(feat_str, sizeof(feat_str),
+            "GLSL support: %s", _glsl_supp ? "true" : "false");
+      menu_list_push(list, feat_str, "",
+            MENU_SETTINGS_CORE_INFO_NONE, 0);
+
+      snprintf(feat_str, sizeof(feat_str),
+            "HLSL support: %s", _hlsl_supp ? "true" : "false");
       menu_list_push(list, feat_str, "",
             MENU_SETTINGS_CORE_INFO_NONE, 0);
 

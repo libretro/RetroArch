@@ -115,6 +115,8 @@ static void print_features(void)
    _PSUPP(al, "OpenAL", "audio driver");
    _PSUPP(dylib, "External", "External filter and plugin support");
    _PSUPP(cg, "Cg", "Cg pixel shaders");
+   _PSUPP(glsl, "GLSL", "GLSL pixel shaders");
+   _PSUPP(glsl, "HLSL", "HLSL pixel shaders");
    _PSUPP(libxml2, "libxml2", "libxml2 XML parsing");
    _PSUPP(sdl_image, "SDL_image", "SDL_image image loading");
    _PSUPP(fbo, "FBO", "OpenGL render-to-texture (multi-pass shaders)");
