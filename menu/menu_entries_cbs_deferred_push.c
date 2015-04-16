@@ -302,6 +302,8 @@ static int deferred_push_system_information(void *data, void *userdata,
 
       if (frontend)
       {
+         int major = 0, minor = 0;
+
          snprintf(tmp, sizeof(tmp), "Frontend identifier: %s",
                frontend->ident);
          menu_list_push(list, tmp, "",
@@ -311,6 +313,13 @@ static int deferred_push_system_information(void *data, void *userdata,
             frontend->get_name(tmp2, sizeof(tmp2));
          snprintf(tmp, sizeof(tmp), "Frontend name: %s",
                frontend->get_name ? tmp2 : "N/A");
+         menu_list_push(list, tmp, "",
+               MENU_SETTINGS_CORE_INFO_NONE, 0);
+
+         if (frontend->get_os)
+            frontend->get_os(tmp2, sizeof(tmp2), &major, &minor);
+         snprintf(tmp, sizeof(tmp), "Frontend OS: %s %d.%d",
+               frontend->get_os ? tmp2 : "N/A", major, minor);
          menu_list_push(list, tmp, "",
                MENU_SETTINGS_CORE_INFO_NONE, 0);
 
