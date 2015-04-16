@@ -622,12 +622,13 @@ static void event_set_savestate_auto_index(void)
 
 static bool event_init_content(void)
 {
+   driver_t *driver = driver_get_ptr();
    global_t *global = global_get_ptr();
 
    /* No content to be loaded for dummy core,
     * just successfully exit. */
    if (global->libretro_dummy) 
-      return true;
+      goto end;
 
    if (!global->libretro_no_content)
       rarch_fill_pathnames();
@@ -647,12 +648,15 @@ static bool event_init_content(void)
    event_command(EVENT_CMD_BSV_MOVIE_INIT);
    event_command(EVENT_CMD_NETPLAY_INIT);
 
+end:
+   retro_init_libretro_cbs(&driver->retro_ctx);
+   rarch_init_system_av_info();
+
    return true;
 }
 
 static bool event_init_core(void)
 {
-   driver_t *driver = driver_get_ptr();
    global_t *global = global_get_ptr();   
    
    if (config_load_override())
@@ -672,9 +676,6 @@ static bool event_init_core(void)
 
    if (!event_init_content())
       return false;
-
-   retro_init_libretro_cbs(&driver->retro_ctx);
-   rarch_init_system_av_info();
 
    return true;
 }
