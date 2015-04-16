@@ -28,8 +28,6 @@
 #include <stdint.h>
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
-#include <X11/Xlib.h>
-#include <X11/Xutil.h>
 
 #ifndef EGL_OPENGL_ES3_BIT_KHR
 #define EGL_OPENGL_ES3_BIT_KHR 0x0040
