@@ -1211,6 +1211,8 @@ static void xmb_render(void)
 {
    unsigned i, current, end;
    runloop_t *runloop = rarch_main_get_ptr();
+   settings_t *settings = config_get_ptr();
+
 
    menu_handle_t *menu = menu_driver_get_ptr();
    if (!menu)
@@ -1226,12 +1228,26 @@ static void xmb_render(void)
    current = menu->navigation.selection_ptr;
    end     = menu_list_get_size(menu->menu_list);
 
-   for (i = 0; i < end; i++)
+   if (settings->menu.pointer.enable)
    {
-      float item_y = xmb->margins.screen.top + xmb_item_y(xmb, i, current);
+      for (i = 0; i < end; i++)
+      {
+         float item_y = xmb->margins.screen.top + xmb_item_y(xmb, i, current);
 
-      if (menu->mouse.y > item_y && menu->mouse.y < item_y + xmb->icon.size)
-         menu->mouse.ptr = i;
+         if (menu->pointer.y > item_y && menu->pointer.y < item_y + xmb->icon.size)
+            menu->pointer.ptr = i;
+      }
+   }
+
+   if (settings->menu.mouse.enable)
+   {
+      for (i = 0; i < end; i++)
+      {
+         float item_y = xmb->margins.screen.top + xmb_item_y(xmb, i, current);
+
+         if (menu->mouse.y > item_y && menu->mouse.y < item_y + xmb->icon.size)
+            menu->mouse.ptr = i;
+      }
    }
 
    runloop->frames.video.current.menu.animation.is_active = false;
@@ -1498,6 +1514,7 @@ static void *xmb_init(void)
    xmb->margins.setting.left    = 600.0 * scale_factor;
 
    menu->categories.size      = 1;
+   menu->header_height = xmb->icon.size;
 
    if (global->core_info)
       menu->categories.size   = global->core_info->count + 1;

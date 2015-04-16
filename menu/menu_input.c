@@ -804,7 +804,7 @@ static int pointer_tap(menu_file_list_cbs_t *cbs, const char *path,
    else if (menu->pointer.ptr == menu->navigation.selection_ptr)
       return cbs->action_ok(path, label, type, menu->navigation.selection_ptr);
    else
-      menu->navigation.selection_ptr = menu->pointer.ptr;
+      menu_navigation_set(&menu->navigation, menu->pointer.ptr, false);
 
    return 0;
 }
