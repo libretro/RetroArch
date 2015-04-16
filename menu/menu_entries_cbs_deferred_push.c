@@ -300,6 +300,10 @@ static int deferred_push_system_information(void *data, void *userdata,
             MENU_SETTINGS_CORE_INFO_NONE, 0);
 #endif
 
+      rarch_print_compiler(tmp, sizeof(tmp));
+      menu_list_push(list, tmp, "",
+            MENU_SETTINGS_CORE_INFO_NONE, 0);
+
       if (frontend)
       {
          int major = 0, minor = 0;

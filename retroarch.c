@@ -127,35 +127,33 @@ static void print_features(void)
 #undef _PSUPP
 
 /**
- * print_compiler:
+ * rarch_print_compiler:
  *
  * Prints compiler that was used for compiling RetroArch.
  **/
-static void print_compiler(FILE *file)
+void rarch_print_compiler(char *str, size_t sizeof_str)
 {
-   fprintf(file, "\nCompiler: ");
 #if defined(_MSC_VER)
-   fprintf(file, "MSVC (%d) %u-bit\n", _MSC_VER, (unsigned)
+   snprintf(str, sizeof_str, "Compiler: MSVC (%d) %u-bit", _MSC_VER, (unsigned)
          (CHAR_BIT * sizeof(size_t)));
 #elif defined(__SNC__)
-   fprintf(file, "SNC (%d) %u-bit\n",
+   snprintf(str, sizeof_str, "Compiler: SNC (%d) %u-bit",
       __SN_VER__, (unsigned)(CHAR_BIT * sizeof(size_t)));
 #elif defined(_WIN32) && defined(__GNUC__)
-   fprintf(file, "MinGW (%d.%d.%d) %u-bit\n",
+   snprintf(str, sizeof_str, "Compiler: MinGW (%d.%d.%d) %u-bit",
       __GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__, (unsigned)
       (CHAR_BIT * sizeof(size_t)));
 #elif defined(__clang__)
-   fprintf(file, "Clang/LLVM (%s) %u-bit\n",
+   snprintf(str, sizeof_str, "Compiler: Clang/LLVM (%s) %u-bit",
       __clang_version__, (unsigned)(CHAR_BIT * sizeof(size_t)));
 #elif defined(__GNUC__)
-   fprintf(file, "GCC (%d.%d.%d) %u-bit\n",
+   snprintf(str, sizeof_str, "Compiler: GCC (%d.%d.%d) %u-bit",
       __GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__, (unsigned)
       (CHAR_BIT * sizeof(size_t)));
 #else
-   fprintf(file, "Unknown compiler %u-bit\n",
+   snprintf(str, sizeof_str, "Unknown compiler %u-bit",
       (unsigned)(CHAR_BIT * sizeof(size_t)));
 #endif
-   fprintf(file, "Built: %s\n", __DATE__);
 }
 
 /**
@@ -165,13 +163,17 @@ static void print_compiler(FILE *file)
  **/
 static void print_help(void)
 {
+   char str[PATH_MAX_LENGTH];
+
    puts("===================================================================");
 #ifdef HAVE_GIT_VERSION
    printf(RETRO_FRONTEND ": Frontend for libretro -- v" PACKAGE_VERSION " -- %s --\n", rarch_git_version);
 #else
    puts(RETRO_FRONTEND ": Frontend for libretro -- v" PACKAGE_VERSION " --");
 #endif
-   print_compiler(stdout);
+   rarch_print_compiler(str, sizeof(str));
+   fprintf(stdout, str);
+   fprintf(stdout, "Built: %s\n", __DATE__);
    puts("===================================================================");
    puts("Usage: retroarch [content file] [options...]");
    puts("\t-h/--help: Show this help message.");
@@ -1097,8 +1099,12 @@ int rarch_main_init(int argc, char *argv[])
 
    if (global->verbosity)
    {
+      char str[PATH_MAX_LENGTH];
+
       RARCH_LOG_OUTPUT("=== Build =======================================");
-      print_compiler(stderr);
+      rarch_print_compiler(str, sizeof(str));
+      fprintf(stderr, str);
+      fprintf(stderr, "Built: %s\n", __DATE__);
       RARCH_LOG_OUTPUT("Version: %s\n", PACKAGE_VERSION);
 #ifdef HAVE_GIT_VERSION
       RARCH_LOG_OUTPUT("Git: %s\n", rarch_git_version);
