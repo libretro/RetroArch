@@ -349,6 +349,7 @@ static void rgui_blit_cursor(menu_handle_t *menu)
 static void rgui_render(void)
 {
    size_t i, end;
+   int bottom;
    char title[256], title_buf[256], title_msg[64];
    char timedate[PATH_MAX_LENGTH];
    unsigned x, y, menu_type  = 0;
@@ -383,18 +384,38 @@ static void rgui_render(void)
    runloop->frames.video.current.menu.animation.is_active = false;
    runloop->frames.video.current.menu.label.is_updated    = false;
 
-   menu->mouse.ptr = menu->mouse.y / 11 - 2 + menu->begin;
+   if (settings->menu.pointer.enable)
+   {
+      menu->pointer.ptr = menu->pointer.y / 11 - 2 + menu->begin;
 
-   if (menu->mouse.scrolldown && menu->begin
-         < menu_list_get_size(menu->menu_list) - RGUI_TERM_HEIGHT)
-      menu->begin++;
+      if (menu->pointer.dragging)
+      {
+         menu->scroll_y += menu->pointer.dy;
+         menu->begin = -menu->scroll_y / 11 + 2;
+         if (menu->scroll_y > 0)
+            menu->scroll_y = 0;
+      }
+   }
+   
+   if (settings->menu.mouse.enable)
+   {
+      if (menu->mouse.scrolldown && menu->begin
+            < menu_list_get_size(menu->menu_list) - RGUI_TERM_HEIGHT)
+         menu->begin++;
 
-   if (menu->mouse.scrollup && menu->begin > 0)
-      menu->begin--;
+      if (menu->mouse.scrollup && menu->begin > 0)
+         menu->begin--;
+
+      menu->mouse.ptr = menu->mouse.y / 11 - 2 + menu->begin;
+   }
 
    /* Do not scroll if all items are visible. */
    if (menu_list_get_size(menu->menu_list) <= RGUI_TERM_HEIGHT)
       menu->begin = 0;
+
+   bottom = menu_list_get_size(menu->menu_list) - RGUI_TERM_HEIGHT;
+   if (menu->begin > bottom)
+      menu->begin = bottom;
 
    end = (menu->begin + RGUI_TERM_HEIGHT <=
          menu_list_get_size(menu->menu_list)) ?
@@ -546,6 +567,7 @@ static void *rgui_init(void)
 
    menu->frame_buf.width           = 320;
    menu->frame_buf.height          = 240;
+   menu->header_height             = 11;
    menu->begin                     = 0;
    menu->frame_buf.pitch           = menu->frame_buf.width * sizeof(uint16_t);
 
@@ -608,8 +630,11 @@ static void rgui_set_texture(void)
 static void rgui_navigation_clear(bool pending_push)
 {
    menu_handle_t *menu = menu_driver_get_ptr();
-   if (menu)
-      menu->begin = 0;
+   if (!menu)
+      return;
+
+   menu->begin = 0;
+   menu->scroll_y = 0;
 }
 
 static void rgui_navigation_set(bool scroll)
