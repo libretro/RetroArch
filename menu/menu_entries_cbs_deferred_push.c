@@ -286,6 +286,7 @@ static int deferred_push_system_information(void *data, void *userdata,
 
    {
       char tmp[PATH_MAX_LENGTH];
+      const char *tmp_string;
       char tmp2[PATH_MAX_LENGTH];
       const frontend_ctx_driver_t *frontend = frontend_get_ptr();
 
@@ -318,6 +319,13 @@ static int deferred_push_system_information(void *data, void *userdata,
          menu_list_push(list, tmp, "",
                MENU_SETTINGS_CORE_INFO_NONE, 0);
       }
+
+      tmp_string = gfx_ctx_get_ident();
+
+      snprintf(tmp, sizeof(tmp), "Video context driver: %s",
+            tmp_string ? tmp_string : "N/A");
+      menu_list_push(list, tmp, "",
+            MENU_SETTINGS_CORE_INFO_NONE, 0);
 
       {
          float val = 0.0f;

@@ -91,6 +91,15 @@ void gfx_ctx_free(void *data)
    ctx = NULL;
 }
 
+const char *gfx_ctx_get_ident(void)
+{
+   const gfx_ctx_driver_t *ctx = gfx_ctx_get_ptr();
+
+   if (!ctx)
+      return NULL;
+   return ctx->ident;
+}
+
 void gfx_ctx_update_window_title(void *data)
 {
    const gfx_ctx_driver_t *ctx = gfx_ctx_get_ptr();

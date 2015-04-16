@@ -243,6 +243,8 @@ void gfx_ctx_get_video_output_prev(void *data);
 
 void gfx_ctx_get_video_output_next(void *data);
 
+const char *gfx_ctx_get_ident(void);
+
 void gfx_ctx_free(void *data);
 
 void gfx_ctx_input_driver(void *data,
