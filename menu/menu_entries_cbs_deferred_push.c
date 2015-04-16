@@ -31,6 +31,7 @@
 
 #include "../gfx/video_shader_driver.h"
 #include "../git_version.h"
+#include "../config.features.h"
 
 #ifdef HAVE_LIBRETRODB
 static int create_string_list_rdb_entry_string(const char *desc, const char *label,
@@ -404,6 +405,161 @@ static int deferred_push_system_information(void *data, void *userdata,
                   MENU_SETTINGS_CORE_INFO_NONE, 0);
          }
       }
+   }
+
+   {
+      char feat_str[PATH_MAX_LENGTH];
+
+      snprintf(feat_str, sizeof(feat_str),
+            "SDL1.2 support: %s", _sdl_supp ? "true" : "false");
+      menu_list_push(list, feat_str, "",
+            MENU_SETTINGS_CORE_INFO_NONE, 0);
+
+      snprintf(feat_str, sizeof(feat_str),
+            "SDL2 support: %s", _sdl2_supp ? "true" : "false");
+      menu_list_push(list, feat_str, "",
+            MENU_SETTINGS_CORE_INFO_NONE, 0);
+
+
+      snprintf(feat_str, sizeof(feat_str),
+            "OpenGL support: %s", _opengl_supp ? "true" : "false");
+      menu_list_push(list, feat_str, "",
+            MENU_SETTINGS_CORE_INFO_NONE, 0);
+
+      snprintf(feat_str, sizeof(feat_str),
+            "Threading support: %s", _thread_supp ? "true" : "false");
+      menu_list_push(list, feat_str, "",
+            MENU_SETTINGS_CORE_INFO_NONE, 0);
+
+      snprintf(feat_str, sizeof(feat_str),
+            "KMS/EGL support: %s", _kms_supp ? "true" : "false");
+      menu_list_push(list, feat_str, "",
+            MENU_SETTINGS_CORE_INFO_NONE, 0);
+
+      snprintf(feat_str, sizeof(feat_str),
+            "Udev support: %s", _udev_supp ? "true" : "false");
+      menu_list_push(list, feat_str, "",
+            MENU_SETTINGS_CORE_INFO_NONE, 0);
+
+      snprintf(feat_str, sizeof(feat_str),
+            "OpenVG support: %s", _vg_supp ? "true" : "false");
+      menu_list_push(list, feat_str, "",
+            MENU_SETTINGS_CORE_INFO_NONE, 0);
+
+      snprintf(feat_str, sizeof(feat_str),
+            "EGL support: %s", _egl_supp ? "true" : "false");
+      menu_list_push(list, feat_str, "",
+            MENU_SETTINGS_CORE_INFO_NONE, 0);
+
+      snprintf(feat_str, sizeof(feat_str),
+            "X11 support: %s", _x11_supp ? "true" : "false");
+      menu_list_push(list, feat_str, "",
+            MENU_SETTINGS_CORE_INFO_NONE, 0);
+
+      snprintf(feat_str, sizeof(feat_str),
+            "Wayland support: %s", _wayland_supp ? "true" : "false");
+      menu_list_push(list, feat_str, "",
+            MENU_SETTINGS_CORE_INFO_NONE, 0);
+
+      snprintf(feat_str, sizeof(feat_str),
+            "XVideo support: %s", _xvideo_supp ? "true" : "false");
+      menu_list_push(list, feat_str, "",
+            MENU_SETTINGS_CORE_INFO_NONE, 0);
+
+      snprintf(feat_str, sizeof(feat_str),
+            "ALSA support: %s", _alsa_supp ? "true" : "false");
+      menu_list_push(list, feat_str, "",
+            MENU_SETTINGS_CORE_INFO_NONE, 0);
+
+      snprintf(feat_str, sizeof(feat_str),
+            "OSS support: %s", _oss_supp ? "true" : "false");
+      menu_list_push(list, feat_str, "",
+            MENU_SETTINGS_CORE_INFO_NONE, 0);
+
+      snprintf(feat_str, sizeof(feat_str),
+            "OpenAL support: %s", _al_supp ? "true" : "false");
+      menu_list_push(list, feat_str, "",
+            MENU_SETTINGS_CORE_INFO_NONE, 0);
+
+      snprintf(feat_str, sizeof(feat_str),
+            "RSound support: %s", _rsound_supp ? "true" : "false");
+      menu_list_push(list, feat_str, "",
+            MENU_SETTINGS_CORE_INFO_NONE, 0);
+
+      snprintf(feat_str, sizeof(feat_str),
+            "RoarAudio support: %s", _roar_supp ? "true" : "false");
+      menu_list_push(list, feat_str, "",
+            MENU_SETTINGS_CORE_INFO_NONE, 0);
+
+      snprintf(feat_str, sizeof(feat_str),
+            "JACK support: %s", _jack_supp ? "true" : "false");
+      menu_list_push(list, feat_str, "",
+            MENU_SETTINGS_CORE_INFO_NONE, 0);
+
+      snprintf(feat_str, sizeof(feat_str),
+            "PulseAudio support: %s", _pulse_supp ? "true" : "false");
+      menu_list_push(list, feat_str, "",
+            MENU_SETTINGS_CORE_INFO_NONE, 0);
+
+      snprintf(feat_str, sizeof(feat_str),
+            "DirectSound support: %s", _dsound_supp ? "true" : "false");
+      menu_list_push(list, feat_str, "",
+            MENU_SETTINGS_CORE_INFO_NONE, 0);
+
+      snprintf(feat_str, sizeof(feat_str),
+            "XAudio2 support: %s", _xaudio_supp ? "true" : "false");
+      menu_list_push(list, feat_str, "",
+            MENU_SETTINGS_CORE_INFO_NONE, 0);
+
+      snprintf(feat_str, sizeof(feat_str),
+            "Zlib support: %s", _zlib_supp ? "true" : "false");
+      menu_list_push(list, feat_str, "",
+            MENU_SETTINGS_CORE_INFO_NONE, 0);
+
+      snprintf(feat_str, sizeof(feat_str),
+            "Dynamic library support: %s", _dylib_supp ? "true" : "false");
+      menu_list_push(list, feat_str, "",
+            MENU_SETTINGS_CORE_INFO_NONE, 0);
+
+      snprintf(feat_str, sizeof(feat_str),
+            "Cg library support: %s", _cg_supp ? "true" : "false");
+      menu_list_push(list, feat_str, "",
+            MENU_SETTINGS_CORE_INFO_NONE, 0);
+
+      snprintf(feat_str, sizeof(feat_str),
+            "libxml2 XML parsing support: %s", _libxml2_supp ? "true" : "false");
+      menu_list_push(list, feat_str, "",
+            MENU_SETTINGS_CORE_INFO_NONE, 0);
+      
+      snprintf(feat_str, sizeof(feat_str),
+            "SDL image support: %s", _sdl_image_supp ? "true" : "false");
+      menu_list_push(list, feat_str, "",
+            MENU_SETTINGS_CORE_INFO_NONE, 0);
+
+      snprintf(feat_str, sizeof(feat_str),
+            "OpenGL/Direct3D render-to-texture (multi-pass shaders) support: %s", _fbo_supp ? "true" : "false");
+      menu_list_push(list, feat_str, "",
+            MENU_SETTINGS_CORE_INFO_NONE, 0);
+
+      snprintf(feat_str, sizeof(feat_str),
+            "FFmpeg support: %s", _ffmpeg_supp ? "true" : "false");
+      menu_list_push(list, feat_str, "",
+            MENU_SETTINGS_CORE_INFO_NONE, 0);
+
+      snprintf(feat_str, sizeof(feat_str),
+            "FreeType support: %s", _freetype_supp ? "true" : "false");
+      menu_list_push(list, feat_str, "",
+            MENU_SETTINGS_CORE_INFO_NONE, 0);
+
+      snprintf(feat_str, sizeof(feat_str),
+            "Netplay (peer-to-peer) support: %s", _netplay_supp ? "true" : "false");
+      menu_list_push(list, feat_str, "",
+            MENU_SETTINGS_CORE_INFO_NONE, 0);
+
+      snprintf(feat_str, sizeof(feat_str),
+            "Python (script support in shaders) support: %s", _python_supp ? "true" : "false");
+      menu_list_push(list, feat_str, "",
+            MENU_SETTINGS_CORE_INFO_NONE, 0);
    }
 
    menu_driver_populate_entries(path, label, type);
