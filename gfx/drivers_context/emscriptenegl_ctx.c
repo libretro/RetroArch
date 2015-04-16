@@ -200,8 +200,10 @@ static bool gfx_ctx_emscripten_bind_api(void *data,
       case GFX_CTX_OPENGL_ES_API:
          return eglBindAPI(EGL_OPENGL_ES_API);
       default:
-         return false;
+         break;
    }
+
+   return false;
 }
 
 static void gfx_ctx_emscripten_destroy(void *data)
