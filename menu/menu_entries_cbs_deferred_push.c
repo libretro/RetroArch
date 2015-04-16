@@ -272,12 +272,8 @@ static int deferred_push_core_information(void *data, void *userdata,
 static int deferred_push_system_information(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
-   unsigned i;
    file_list_t *list      = (file_list_t*)data;
    file_list_t *menu_list = (file_list_t*)userdata;
-   settings_t *settings   = config_get_ptr();
-   driver_t *driver       = driver_get_ptr();
-   global_t *global       = global_get_ptr();
 
    if (!list || !menu_list)
       return -1;

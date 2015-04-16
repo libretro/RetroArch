@@ -172,7 +172,7 @@ static void print_help(void)
    puts(RETRO_FRONTEND ": Frontend for libretro -- v" PACKAGE_VERSION " --");
 #endif
    rarch_print_compiler(str, sizeof(str));
-   fprintf(stdout, str);
+   fprintf(stdout, "%s", str);
    fprintf(stdout, "Built: %s\n", __DATE__);
    puts("===================================================================");
    puts("Usage: retroarch [content file] [options...]");
@@ -1103,7 +1103,7 @@ int rarch_main_init(int argc, char *argv[])
 
       RARCH_LOG_OUTPUT("=== Build =======================================");
       rarch_print_compiler(str, sizeof(str));
-      fprintf(stderr, str);
+      fprintf(stderr, "%s", str);
       fprintf(stderr, "Built: %s\n", __DATE__);
       RARCH_LOG_OUTPUT("Version: %s\n", PACKAGE_VERSION);
 #ifdef HAVE_GIT_VERSION
