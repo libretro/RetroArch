@@ -116,13 +116,7 @@ VIDEO CONTEXT
 #if defined(HAVE_VIDEOCORE)
 #include "../gfx/drivers_context/vc_egl_ctx.c"
 #endif
-#if defined(HAVE_X11) && !defined(HAVE_OPENGLES)
-#include "../gfx/drivers_context/glx_ctx.c"
-#endif
 
-#if defined(HAVE_EGL)
-#include "../gfx/drivers_context/xegl_ctx.c"
-#endif
 
 #if defined(_WIN32) && !defined(_XBOX)
 #include "../gfx/drivers_context/wgl_ctx.c"
@@ -131,8 +125,17 @@ VIDEO CONTEXT
 
 #endif
 
-#ifdef HAVE_X11
+#if defined(HAVE_X11)
 #include "../gfx/common/x11_common.c"
+
+#ifndef HAVE_OPENGLES
+#include "../gfx/drivers_context/glx_ctx.c"
+#endif
+
+#ifdef HAVE_EGL
+#include "../gfx/drivers_context/xegl_ctx.c"
+#endif
+
 #endif
 
 

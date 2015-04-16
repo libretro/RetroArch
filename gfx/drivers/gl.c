@@ -1197,7 +1197,7 @@ static void gl_init_textures(gl_t *gl, const video_info_t *video)
    (void)texture_fmt;
 
 #if defined(HAVE_EGL) && defined(HAVE_OPENGLES2)
-   // Use regular textures if we use HW render.
+   /* Use regular textures if we use HW render. */
    gl->egl_images = !gl->hw_render_use && gl_check_eglimage_proc() &&
       gfx_ctx_image_buffer_init(gl, video);
 #else
