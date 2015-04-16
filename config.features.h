@@ -8,6 +8,36 @@
 #include "config.h"
 #endif
 
+#ifdef HAVE_OVERLAY
+static const bool _overlay_supp = true;
+#else
+static const bool _overlay_supp = false;
+#endif
+
+#ifdef HAVE_V4L2
+static const bool _v4l2_supp = true;
+#else
+static const bool _v4l2_supp = false;
+#endif
+
+#ifdef HAVE_COMMAND
+static const bool _command_supp = true;
+#else
+static const bool _command_supp = false;
+#endif
+
+#ifdef HAVE_NETWORK_CMD
+static const bool _network_command_supp = true;
+#else
+static const bool _network_command_supp = false;
+#endif
+
+#ifdef HAVE_LIBUSB
+static const bool _libusb_supp = true;
+#else
+static const bool _libusb_supp = false;
+#endif
+
 #ifdef HAVE_SDL
 static const bool _sdl_supp = true;
 #else
@@ -92,6 +122,18 @@ static const bool _al_supp = true;
 static const bool _al_supp = false;
 #endif
 
+#ifdef HAVE_SL
+static const bool _sl_supp = true;
+#else
+static const bool _sl_supp = false;
+#endif
+
+#ifdef HAVE_LIBRETRODB
+static const bool _libretrodb_supp = true;
+#else
+static const bool _libretrodb_supp = false;
+#endif
+
 #ifdef HAVE_RSOUND
 static const bool _rsound_supp = true;
 #else
@@ -132,6 +174,12 @@ static const bool _xaudio_supp = false;
 static const bool _zlib_supp = true;
 #else
 static const bool _zlib_supp = false;
+#endif
+
+#ifdef HAVE_7ZIP
+static const bool _7zip_supp = true;
+#else
+static const bool _7zip_supp = false;
 #endif
 
 #ifdef HAVE_DYLIB

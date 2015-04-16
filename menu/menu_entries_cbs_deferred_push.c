@@ -411,6 +411,26 @@ static int deferred_push_system_information(void *data, void *userdata,
       char feat_str[PATH_MAX_LENGTH];
 
       snprintf(feat_str, sizeof(feat_str),
+            "LibretroDB support: %s", _libretrodb_supp ? "true" : "false");
+      menu_list_push(list, feat_str, "",
+            MENU_SETTINGS_CORE_INFO_NONE, 0);
+
+      snprintf(feat_str, sizeof(feat_str),
+            "Overlay support: %s", _overlay_supp ? "true" : "false");
+      menu_list_push(list, feat_str, "",
+            MENU_SETTINGS_CORE_INFO_NONE, 0);
+
+      snprintf(feat_str, sizeof(feat_str),
+            "Command interface support: %s", _command_supp ? "true" : "false");
+      menu_list_push(list, feat_str, "",
+            MENU_SETTINGS_CORE_INFO_NONE, 0);
+
+      snprintf(feat_str, sizeof(feat_str),
+            "Network Command interface support: %s", _network_command_supp ? "true" : "false");
+      menu_list_push(list, feat_str, "",
+            MENU_SETTINGS_CORE_INFO_NONE, 0);
+      
+      snprintf(feat_str, sizeof(feat_str),
             "SDL1.2 support: %s", _sdl_supp ? "true" : "false");
       menu_list_push(list, feat_str, "",
             MENU_SETTINGS_CORE_INFO_NONE, 0);
@@ -482,6 +502,11 @@ static int deferred_push_system_information(void *data, void *userdata,
             MENU_SETTINGS_CORE_INFO_NONE, 0);
 
       snprintf(feat_str, sizeof(feat_str),
+            "OpenSL support: %s", _sl_supp ? "true" : "false");
+      menu_list_push(list, feat_str, "",
+            MENU_SETTINGS_CORE_INFO_NONE, 0);
+
+      snprintf(feat_str, sizeof(feat_str),
             "RSound support: %s", _rsound_supp ? "true" : "false");
       menu_list_push(list, feat_str, "",
             MENU_SETTINGS_CORE_INFO_NONE, 0);
@@ -513,6 +538,11 @@ static int deferred_push_system_information(void *data, void *userdata,
 
       snprintf(feat_str, sizeof(feat_str),
             "Zlib support: %s", _zlib_supp ? "true" : "false");
+      menu_list_push(list, feat_str, "",
+            MENU_SETTINGS_CORE_INFO_NONE, 0);
+
+      snprintf(feat_str, sizeof(feat_str),
+            "7zip support: %s", _7zip_supp ? "true" : "false");
       menu_list_push(list, feat_str, "",
             MENU_SETTINGS_CORE_INFO_NONE, 0);
 
@@ -568,6 +598,16 @@ static int deferred_push_system_information(void *data, void *userdata,
 
       snprintf(feat_str, sizeof(feat_str),
             "Python (script support in shaders) support: %s", _python_supp ? "true" : "false");
+      menu_list_push(list, feat_str, "",
+            MENU_SETTINGS_CORE_INFO_NONE, 0);
+
+      snprintf(feat_str, sizeof(feat_str),
+            "Video4Linux2 support: %s", _v4l2_supp ? "true" : "false");
+      menu_list_push(list, feat_str, "",
+            MENU_SETTINGS_CORE_INFO_NONE, 0);
+
+      snprintf(feat_str, sizeof(feat_str),
+            "Libusb support: %s", _libusb_supp ? "true" : "false");
       menu_list_push(list, feat_str, "",
             MENU_SETTINGS_CORE_INFO_NONE, 0);
    }

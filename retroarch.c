@@ -92,6 +92,9 @@ static void print_features(void)
 {
    puts("");
    puts("Features:");
+   _PSUPP(libretrodb, "LibretroDB", "LibretroDB support");
+   _PSUPP(command, "Command", "Command interface support");
+   _PSUPP(network_command, "Network Command", "Network Command interface support");
    _PSUPP(sdl, "SDL", "SDL drivers");
    _PSUPP(sdl2, "SDL2", "SDL2 drivers");
    _PSUPP(x11, "X11", "X11 drivers");
@@ -111,8 +114,10 @@ static void print_features(void)
    _PSUPP(pulse, "PulseAudio", "audio driver");
    _PSUPP(dsound, "DirectSound", "audio driver");
    _PSUPP(xaudio, "XAudio2", "audio driver");
+   _PSUPP(7zip, "7zip", "7zip support");
    _PSUPP(zlib, "zlib", "PNG encode/decode and .zip extraction");
    _PSUPP(al, "OpenAL", "audio driver");
+   _PSUPP(sl, "OpenSL", "audio driver");
    _PSUPP(dylib, "External", "External filter and plugin support");
    _PSUPP(cg, "Cg", "Cg pixel shaders");
    _PSUPP(glsl, "GLSL", "GLSL pixel shaders");
@@ -125,6 +130,7 @@ static void print_features(void)
    _PSUPP(freetype, "FreeType", "TTF font rendering with FreeType");
    _PSUPP(netplay, "Netplay", "Peer-to-peer netplay");
    _PSUPP(python, "Python", "Script support in shaders");
+   _PSUPP(libusb, "Libusb", "Libusb support");
 }
 #undef _PSUPP
 
