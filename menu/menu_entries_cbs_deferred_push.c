@@ -447,6 +447,11 @@ static int deferred_push_system_information(void *data, void *userdata,
             MENU_SETTINGS_CORE_INFO_NONE, 0);
 
       snprintf(feat_str, sizeof(feat_str),
+            "OpenGL ES support: %s", _opengles_supp ? "true" : "false");
+      menu_list_push(list, feat_str, "",
+            MENU_SETTINGS_CORE_INFO_NONE, 0);
+
+      snprintf(feat_str, sizeof(feat_str),
             "Threading support: %s", _thread_supp ? "true" : "false");
       menu_list_push(list, feat_str, "",
             MENU_SETTINGS_CORE_INFO_NONE, 0);

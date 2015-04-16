@@ -101,6 +101,7 @@ static void print_features(void)
    _PSUPP(wayland, "wayland", "Wayland drivers");
    _PSUPP(thread, "Threads", "Threading support");
    _PSUPP(opengl, "OpenGL", "OpenGL driver");
+   _PSUPP(opengles, "OpenGL ES", "OpenGL ES driver");
    _PSUPP(kms, "KMS", "KMS/EGL context support");
    _PSUPP(udev, "UDEV", "UDEV/EVDEV input driver support");
    _PSUPP(egl, "EGL", "EGL context support");
