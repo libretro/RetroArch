@@ -3353,6 +3353,12 @@ static bool setting_append_list_main_menu_options(
          group_info.name,
          subgroup_info.name);
 
+   CONFIG_ACTION(
+         "system_information",
+         "System Information",
+         group_info.name,
+         subgroup_info.name);
+
    if (global->perfcnt_enable)
    {
       CONFIG_ACTION(

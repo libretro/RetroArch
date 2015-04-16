@@ -30,6 +30,7 @@
 #include "menu_database.h"
 
 #include "../gfx/video_shader_driver.h"
+#include "../git_version.h"
 
 #ifdef HAVE_LIBRETRODB
 static int create_string_list_rdb_entry_string(const char *desc, const char *label,
@@ -262,6 +263,63 @@ static int deferred_push_core_information(void *data, void *userdata,
       menu_list_push(list,
             "No information available.", "",
             MENU_SETTINGS_CORE_OPTION_NONE, 0);
+
+   menu_driver_populate_entries(path, label, type);
+
+   return 0;
+}
+
+static int deferred_push_system_information(void *data, void *userdata,
+      const char *path, const char *label, unsigned type)
+{
+   unsigned i;
+   file_list_t *list      = (file_list_t*)data;
+   file_list_t *menu_list = (file_list_t*)userdata;
+   settings_t *settings   = config_get_ptr();
+   driver_t *driver       = driver_get_ptr();
+   global_t *global       = global_get_ptr();
+
+   if (!list || !menu_list)
+      return -1;
+
+   menu_list_clear(list);
+
+   {
+      char tmp[PATH_MAX_LENGTH];
+      char tmp2[PATH_MAX_LENGTH];
+      const frontend_ctx_driver_t *frontend = frontend_get_ptr();
+
+      snprintf(tmp, sizeof(tmp), "Build date: %s", __DATE__);
+      menu_list_push(list, tmp, "",
+            MENU_SETTINGS_CORE_INFO_NONE, 0);
+
+#ifdef HAVE_GIT_VERSION
+      snprintf(tmp, sizeof(tmp), "Git version: %s", rarch_git_version);
+      menu_list_push(list, tmp, "",
+            MENU_SETTINGS_CORE_INFO_NONE, 0);
+#endif
+
+      if (frontend)
+      {
+
+         snprintf(tmp, sizeof(tmp), "Frontend identifier: %s",
+               frontend->ident);
+         menu_list_push(list, tmp, "",
+               MENU_SETTINGS_CORE_INFO_NONE, 0);
+
+         if (frontend->get_name)
+            frontend->get_name(tmp2, sizeof(tmp2));
+         snprintf(tmp, sizeof(tmp), "Frontend name: %s",
+               frontend->get_name ? tmp2 : "N/A");
+         menu_list_push(list, tmp, "",
+               MENU_SETTINGS_CORE_INFO_NONE, 0);
+
+         snprintf(tmp, sizeof(tmp), "RetroRating level: %d", 
+               frontend->get_rating ? frontend->get_rating() : -1);
+         menu_list_push(list, tmp, "",
+               MENU_SETTINGS_CORE_INFO_NONE, 0);
+      }
+   }
 
    menu_driver_populate_entries(path, label, type);
 
@@ -1921,6 +1979,8 @@ void menu_entries_cbs_init_bind_deferred_push(menu_file_list_cbs_t *cbs,
       cbs->action_deferred_push = deferred_push_cursor_manager_list_deferred_query_subsearch;
    else if (!strcmp(label, "core_information"))
       cbs->action_deferred_push = deferred_push_core_information;
+   else if (!strcmp(label, "system_information"))
+      cbs->action_deferred_push = deferred_push_system_information;
    else if (!strcmp(label, "performance_counters"))
       cbs->action_deferred_push = deferred_push_performance_counters;
    else if (!strcmp(label, "core_counters"))

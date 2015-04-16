@@ -283,6 +283,8 @@ static INLINE void get_title(const char *label, const char *dir,
       strlcpy(title, "CORE INPUT REMAPPING OPTIONS", sizeof_title);
    else if (!strcmp(label, "core_information"))
       strlcpy(title, "CORE INFO", sizeof_title);
+   else if (!strcmp(label, "system_information"))
+      strlcpy(title, "SYSTEM INFO", sizeof_title);
    else if (!strcmp(elem0, "Privacy Settings"))
    {
       strlcpy(title, "PRIVACY SETTINGS", sizeof_title);
