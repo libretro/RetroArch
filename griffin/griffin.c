@@ -633,6 +633,14 @@ MAIN
 #endif
 
 /*============================================================
+GIT
+============================================================ */
+
+#ifdef HAVE_GIT_VERSION
+#include "../git_version.c"
+#endif
+
+/*============================================================
 RETROARCH
 ============================================================ */
 #include "../libretro_version_1.c"
@@ -817,6 +825,7 @@ XML
 #include "../libretro-db/query.c"
 #include "../database_info.c"
 #endif
+
 
 #ifdef __cplusplus
 }
