@@ -300,6 +300,48 @@ static int deferred_push_system_information(void *data, void *userdata,
       menu_list_push(list, tmp, "",
             MENU_SETTINGS_CORE_INFO_NONE, 0);
 
+      {
+         char cpu_str[PATH_MAX_LENGTH];
+         uint64_t cpu = rarch_get_cpu_features();
+
+         snprintf(cpu_str, sizeof(cpu_str), "CPU Features: ");
+
+         if (cpu & RETRO_SIMD_MMX)
+            strlcat(cpu_str, "MMX ", sizeof(cpu_str));
+         if (cpu & RETRO_SIMD_MMXEXT)
+            strlcat(cpu_str, "MMXEXT ", sizeof(cpu_str));
+         if (cpu & RETRO_SIMD_SSE)
+            strlcat(cpu_str, "SSE1 ", sizeof(cpu_str));
+         if (cpu & RETRO_SIMD_SSE2)
+            strlcat(cpu_str, "SSE2 ", sizeof(cpu_str));
+         if (cpu & RETRO_SIMD_SSE3)
+            strlcat(cpu_str, "SSE3 ", sizeof(cpu_str));
+         if (cpu & RETRO_SIMD_SSSE3)
+            strlcat(cpu_str, "SSSE3 ", sizeof(cpu_str));
+         if (cpu & RETRO_SIMD_SSE4)
+            strlcat(cpu_str, "SSE4 ", sizeof(cpu_str));
+         if (cpu & RETRO_SIMD_SSE42)
+            strlcat(cpu_str, "SSE4.2 ", sizeof(cpu_str));
+         if (cpu & RETRO_SIMD_AVX)
+            strlcat(cpu_str, "AVX ", sizeof(cpu_str));
+         if (cpu & RETRO_SIMD_AVX2)
+            strlcat(cpu_str, "AVX2 ", sizeof(cpu_str));
+         if (cpu & RETRO_SIMD_VFPU)
+            strlcat(cpu_str, "VFPU ", sizeof(cpu_str));
+         if (cpu & RETRO_SIMD_NEON)
+            strlcat(cpu_str, "NEON ", sizeof(cpu_str));
+         if (cpu & RETRO_SIMD_PS)
+            strlcat(cpu_str, "PS ", sizeof(cpu_str));
+         if (cpu & RETRO_SIMD_AES)
+            strlcat(cpu_str, "AES ", sizeof(cpu_str));
+         if (cpu & RETRO_SIMD_VMX)
+            strlcat(cpu_str, "VMX ", sizeof(cpu_str));
+         if (cpu & RETRO_SIMD_VMX128)
+            strlcat(cpu_str, "VMX128 ", sizeof(cpu_str));
+         menu_list_push(list, cpu_str, "",
+               MENU_SETTINGS_CORE_INFO_NONE, 0);
+      }
+
       if (frontend)
       {
          int major = 0, minor = 0;
