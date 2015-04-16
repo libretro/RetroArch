@@ -174,6 +174,8 @@ bool gfx_ctx_get_metrics(enum display_metric_types type, float *value)
    const gfx_ctx_driver_t *ctx = gfx_ctx_get_ptr();
    if (!ctx || !driver)
       return false;
+   if (!ctx->get_metrics)
+      return false;
    return ctx->get_metrics(driver->video_context_data, type,
          value);
 }
