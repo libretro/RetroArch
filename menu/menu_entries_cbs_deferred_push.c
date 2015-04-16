@@ -301,7 +301,6 @@ static int deferred_push_system_information(void *data, void *userdata,
 
       if (frontend)
       {
-
          snprintf(tmp, sizeof(tmp), "Frontend identifier: %s",
                frontend->ident);
          menu_list_push(list, tmp, "",
@@ -318,6 +317,33 @@ static int deferred_push_system_information(void *data, void *userdata,
                frontend->get_rating ? frontend->get_rating() : -1);
          menu_list_push(list, tmp, "",
                MENU_SETTINGS_CORE_INFO_NONE, 0);
+      }
+
+      {
+         float val = 0.0f;
+         if (gfx_ctx_get_metrics(DISPLAY_METRIC_MM_WIDTH, &val))
+         {
+            snprintf(tmp, sizeof(tmp), "Display metric width (mm): %.2f", 
+                  val);
+            menu_list_push(list, tmp, "",
+                  MENU_SETTINGS_CORE_INFO_NONE, 0);
+         }
+
+         if (gfx_ctx_get_metrics(DISPLAY_METRIC_MM_HEIGHT, &val))
+         {
+            snprintf(tmp, sizeof(tmp), "Display metric height (mm): %.2f", 
+                  val);
+            menu_list_push(list, tmp, "",
+                  MENU_SETTINGS_CORE_INFO_NONE, 0);
+         }
+
+         if (gfx_ctx_get_metrics(DISPLAY_METRIC_DPI, &val))
+         {
+            snprintf(tmp, sizeof(tmp), "Display metric DPI: %.2f", 
+                  val);
+            menu_list_push(list, tmp, "",
+                  MENU_SETTINGS_CORE_INFO_NONE, 0);
+         }
       }
    }
 
