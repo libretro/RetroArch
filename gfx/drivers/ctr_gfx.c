@@ -228,28 +228,37 @@ static bool ctr_frame(void* data, const void* frame,
 
    extern bool select_pressed;
 
-   RARCH_PERFORMANCE_INIT(ctrframe_f);
-   RARCH_PERFORMANCE_START(ctrframe_f);
-
    if (!width || !height)
    {
       gspWaitForEvent(GSPEVENT_VBlank0, true);
-      goto end;
+      return true;
    }
 
    if(!aptMainLoop())
    {
       event_command(EVENT_CMD_QUIT);
-      goto end;
+      return true;
    }
 
    if (select_pressed)
    {
       event_command(EVENT_CMD_QUIT);
-      goto end;
+      return true;
    }
 
+   svcWaitSynchronization(gspEvents[GSPEVENT_P3D], 20000000);
+   svcClearEvent(gspEvents[GSPEVENT_P3D]);
+   svcWaitSynchronization(gspEvents[GSPEVENT_PPF], 20000000);
+   svcClearEvent(gspEvents[GSPEVENT_PPF]);
+
+   gfxSwapBuffersGpu();   
    frames++;
+
+   if (ctr->vsync)
+      svcWaitSynchronization(gspEvents[GSPEVENT_VBlank0], U64_MAX);
+
+   svcClearEvent(gspEvents[GSPEVENT_VBlank0]);
+
    currentTick = svcGetSystemTick();
    uint32_t diff = currentTick - lastTick;
    if(diff > CTR_CPU_TICKS_PER_SECOND)
@@ -260,23 +269,10 @@ static bool ctr_frame(void* data, const void* frame,
    }
 
    printf("fps: %8.4f frames: %i\r", fps, total_frames++);
-//   fflush(stdout);
+   fflush(stdout);
 
-   /* enable this to profile the core without video output */
-#if 0
-   if (!ctr->menu_texture_enable)
-      goto end;
-#endif
-
-   svcWaitSynchronization(gspEvents[GSPEVENT_P3D], 20000000);
-   svcClearEvent(gspEvents[GSPEVENT_P3D]);
-   svcWaitSynchronization(gspEvents[GSPEVENT_PPF], 20000000);
-   svcClearEvent(gspEvents[GSPEVENT_PPF]);
-
-   gfxSwapBuffersGpu();
-
-   if (ctr->vsync)
-         gspWaitForEvent(GSPEVENT_VBlank0, true);
+   RARCH_PERFORMANCE_INIT(ctrframe_f);
+   RARCH_PERFORMANCE_START(ctrframe_f);
 
    ctrGuSetMemoryFill(true, (u32*)CTR_GPU_FRAMEBUFFER, 0x00000000,
                     (u32*)(CTR_GPU_FRAMEBUFFER + CTR_TOP_FRAMEBUFFER_WIDTH * CTR_TOP_FRAMEBUFFER_HEIGHT * sizeof(uint32_t)),
@@ -363,9 +359,6 @@ static bool ctr_frame(void* data, const void* frame,
    ctrGuDisplayTransfer(true, CTR_GPU_FRAMEBUFFER, 240,400, CTRGU_RGBA8,
                         gfxGetFramebuffer(GFX_TOP, GFX_LEFT, NULL, NULL), 240,400,CTRGU_RGB8, CTRGU_MULTISAMPLE_NONE);
 
-
-end:
-//   gspWaitForEvent(GSPEVENT_VBlank0, true);
    RARCH_PERFORMANCE_STOP(ctrframe_f);
    return true;
 }
