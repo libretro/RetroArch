@@ -725,6 +725,7 @@ static bool event_save_core_config(void)
         config_path[PATH_MAX_LENGTH], msg[PATH_MAX_LENGTH];
    bool ret             = false;
    bool found_path      = false;
+   bool overrides_active = false;
    settings_t *settings = config_get_ptr();
    global_t   *global   = global_get_ptr();
 
@@ -786,6 +787,13 @@ static bool event_save_core_config(void)
             sizeof(config_path));
    }
 
+   /* Overrides block config file saving, make it appear as overrides weren't enabled for a manual save */
+   if (global->overrides_active)
+   {
+      global->overrides_active = false;
+	  overrides_active = true;
+   }
+
    if ((ret = config_save_file(config_path)))
    {
       strlcpy(global->config_path, config_path,
@@ -802,7 +810,7 @@ static bool event_save_core_config(void)
    }
 
    rarch_main_msg_queue_push(msg, 1, 180, true);
-
+   global->overrides_active = overrides_active;
    return ret;
 }
 
