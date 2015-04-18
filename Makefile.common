@@ -64,7 +64,8 @@ ifneq ($(findstring Linux,$(OS)),)
    LIBS += -lrt
    JOYCONFIG_LIBS += -lrt -lpthread
    OBJ += input/drivers/linuxraw_input.o \
-			 input/drivers_joypad/linuxraw_joypad.o
+			 input/drivers_joypad/linuxraw_joypad.o \
+			 frontend/drivers/platform_linux.o
 endif
 
 ifeq ($(findstring Haiku,$(OS)),)

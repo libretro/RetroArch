@@ -610,6 +610,8 @@ FRONTEND
 #include "../frontend/drivers/platform_apple.c"
 #elif defined(ANDROID)
 #include "../frontend/drivers/platform_android.c"
+#elif defined(__linux__) && !defined(ANDROID)
+#include "../frontend/drivers/platform_linux.c"
 #endif
 #include "../frontend/drivers/platform_null.c"
 

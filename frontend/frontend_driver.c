@@ -41,6 +41,9 @@ static const frontend_ctx_driver_t *frontend_ctx_drivers[] = {
 #if defined(ANDROID)
    &frontend_ctx_android,
 #endif
+#if defined(__linux__) && !defined(ANDROID)
+   &frontend_ctx_linux,
+#endif
 #if defined(PSP)
    &frontend_ctx_psp,
 #endif
