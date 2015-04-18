@@ -310,6 +310,15 @@ typedef struct settings
    bool core_specific_config;
    bool auto_overrides_enable;
    bool auto_remaps_enable;
+   
+   unsigned menu_ok;
+   unsigned menu_cancel;
+   unsigned menu_test;
+   unsigned menu_search;
+   unsigned menu_default;
+   unsigned menu_info;
+   unsigned menu_scroll_down;
+   unsigned menu_scroll_up;
 
    char username[32];
    unsigned int user_language;

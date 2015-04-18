@@ -956,21 +956,21 @@ unsigned menu_input_frame(retro_input_t input, retro_input_t trigger_input)
       ret = MENU_ACTION_LEFT;
    else if (trigger_input & (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT))
       ret = MENU_ACTION_RIGHT;
-   else if (trigger_input & (1ULL << RETRO_DEVICE_ID_JOYPAD_L))
+   else if (trigger_input & (1ULL << settings->menu_scroll_up))
       ret = MENU_ACTION_SCROLL_UP;
-   else if (trigger_input & (1ULL << RETRO_DEVICE_ID_JOYPAD_R))
+   else if (trigger_input & (1ULL << settings->menu_scroll_down))
       ret = MENU_ACTION_SCROLL_DOWN;
-   else if (trigger_input & (1ULL << RETRO_DEVICE_ID_JOYPAD_B))
+   else if (trigger_input & (1ULL << settings->menu_cancel))
       ret = MENU_ACTION_CANCEL;
-   else if (trigger_input & (1ULL << RETRO_DEVICE_ID_JOYPAD_A))
+   else if (trigger_input & (1ULL << settings->menu_ok))
       ret = MENU_ACTION_OK;
-   else if (trigger_input & (1ULL << RETRO_DEVICE_ID_JOYPAD_X))
+   else if (trigger_input & (1ULL << settings->menu_search))
       ret = MENU_ACTION_SEARCH;
-   else if (trigger_input & (1ULL << RETRO_DEVICE_ID_JOYPAD_Y))
+   else if (trigger_input & (1ULL << settings->menu_test))
       ret = MENU_ACTION_TEST;
-   else if (trigger_input & (1ULL << RETRO_DEVICE_ID_JOYPAD_START))
+   else if (trigger_input & (1ULL << settings->menu_default))
       ret = MENU_ACTION_START;
-   else if (trigger_input & (1ULL << RETRO_DEVICE_ID_JOYPAD_SELECT))
+   else if (trigger_input & (1ULL << settings->menu_info))
       ret = MENU_ACTION_SELECT;
    else if (trigger_input & (1ULL << RARCH_MENU_TOGGLE))
       ret = MENU_ACTION_TOGGLE;
