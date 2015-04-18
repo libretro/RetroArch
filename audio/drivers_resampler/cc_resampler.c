@@ -380,7 +380,7 @@ static void resampler_CC_upsample(void *re_, struct resampler_data *data)
 }
 
 
-#elif defined (__ARM_NEON__)
+#elif defined (HAVE_NEON)
 
 #define CC_RESAMPLER_IDENT "NEON"
 
