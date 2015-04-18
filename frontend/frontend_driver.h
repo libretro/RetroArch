@@ -45,6 +45,7 @@ enum frontend_architecture
    FRONTEND_ARCH_PPC,
    FRONTEND_ARCH_ARM,
    FRONTEND_ARCH_MIPS,
+   FRONTEND_ARCH_TILE,
 };
 
 typedef void (*environment_get_t)(int *argc, char *argv[], void *args,

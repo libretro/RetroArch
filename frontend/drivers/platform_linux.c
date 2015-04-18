@@ -398,6 +398,14 @@ enum frontend_architecture frontend_linux_get_architecture(void)
       return FRONTEND_ARCH_X86_64;
    if (!strcmp(buffer.machine, "x86"))
       return FRONTEND_ARCH_X86;
+   if (!strcmp(buffer.machine, "arm"))
+      return FRONTEND_ARCH_ARM;
+   if (!strcmp(buffer.machine, "ppc64"))
+      return FRONTEND_ARCH_PPC;
+   if (!strcmp(buffer.machine, "mips"))
+      return FRONTEND_ARCH_MIPS;
+   if (!strcmp(buffer.machine, "tile"))
+      return FRONTEND_ARCH_TILE;
 
    return FRONTEND_ARCH_NONE;
 }
