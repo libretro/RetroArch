@@ -103,6 +103,61 @@ static void frontend_win32_get_os(char *name, size_t sizeof_name, int *major, in
 
 	*major   = (DWORD)(LOBYTE(LOWORD(version)));
 	*minor   = (DWORD)(HIBYTE(LOWORD(version)));
+
+   switch (*major)
+   {
+      case 6:
+         switch (*minor)
+         {
+            case 3:
+               strlcpy(name, "Windows 8.1", sizeof_name);
+               break;
+            case 2:
+               strlcpy(name, "Windows 8", sizeof_name);
+               break;
+            case 1:
+               strlcpy(name, "Windows 7/2008 R2", sizeof_name);
+               break;
+            case 0:
+               strlcpy(name, "Windows Vista/2008", sizeof_name);
+               break;
+            default:
+               break;
+         }
+         break;
+      case 5:
+         switch (*minor)
+         {
+            case 2:
+               strlcpy(name, "Windows 2003", sizeof_name);
+               break;
+            case 1:
+               strlcpy(name, "Windows XP", sizeof_name);
+               break;
+            case 0:
+               strlcpy(name, "Windows 2000", sizeof_name);
+               break;
+         }
+         break;
+      case 4:
+         switch (*minor)
+         {
+            case 0:
+               strlcpy(name, "Windows NT 4.0", sizeof_name);
+               break;
+            case 90:
+               strlcpy(name, "Windows ME", sizeof_name);
+               break;
+            case 10:
+               strlcpy(name, "Windows 98", sizeof_name);
+               break;
+            case 0:
+               strlcpy(name, "Windows 95", sizeof_name);
+         }
+         break;
+      default:
+         break;
+   }
 }
 
 static void frontend_win32_init(void *data)
