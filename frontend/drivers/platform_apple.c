@@ -410,71 +410,71 @@ static int frontend_apple_get_rating(void)
 
 static enum frontend_powerstate frontend_apple_get_powerstate(int *seconds, int *percent)
 {
-    enum frontend_powerstate ret = FRONTEND_POWERSTATE_NONE;
+   enum frontend_powerstate ret = FRONTEND_POWERSTATE_NONE;
 #if defined(OSX)
-    CFIndex i, total;
-    CFArrayRef list;
-    bool have_ac, have_battery, charging;
-    CFTypeRef blob = IOPSCopyPowerSourcesInfo();
-    
-    *seconds       = -1;
-    *percent       = -1;
-    
-    if (!blob)
-        goto end;
-    
-    list = IOPSCopyPowerSourcesList(blob);
-        
-    if (!list)
-        goto end;
-        
-     /* don't CFRelease() the list items, or dictionaries! */
-     have_ac = false;
-     have_battery = false;
-     charging = false;
-     total = CFArrayGetCount(list);
+   CFIndex i, total;
+   CFArrayRef list;
+   bool have_ac, have_battery, charging;
+   CFTypeRef blob  = IOPSCopyPowerSourcesInfo();
 
-     for (i = 0; i < total; i++)
-     {
-                CFTypeRef ps = (CFTypeRef)CFArrayGetValueAtIndex(list, i);
-                CFDictionaryRef dict = IOPSGetPowerSourceDescription(blob, ps);
-                if (dict)
-                    checkps(dict, &have_ac, &have_battery, &charging,
-                            seconds, percent);
-            }
-            
-            if (!have_battery)
-                ret = FRONTEND_POWERSTATE_NO_SOURCE;
-            else if (charging)
-                ret = FRONTEND_POWERSTATE_CHARGING;
-            else if (have_ac)
-                ret = FRONTEND_POWERSTATE_CHARGED;
-            else
-                ret = FRONTEND_POWERSTATE_ON_POWER_SOURCE;
-            
-            CFRelease(list);
-                end:
-                if (blob)
-                    CFRelease(blob);
-                
+   *seconds        = -1;
+   *percent        = -1;
+
+   if (!blob)
+      goto end;
+
+   list = IOPSCopyPowerSourcesList(blob);
+
+   if (!list)
+      goto end;
+
+   /* don't CFRelease() the list items, or dictionaries! */
+   have_ac         = false;
+   have_battery    = false;
+   charging        = false;
+   total           = CFArrayGetCount(list);
+
+   for (i = 0; i < total; i++)
+   {
+      CFTypeRef ps = (CFTypeRef)CFArrayGetValueAtIndex(list, i);
+      CFDictionaryRef dict = IOPSGetPowerSourceDescription(blob, ps);
+      if (dict)
+         checkps(dict, &have_ac, &have_battery, &charging,
+               seconds, percent);
+   }
+
+   if (!have_battery)
+      ret = FRONTEND_POWERSTATE_NO_SOURCE;
+   else if (charging)
+      ret = FRONTEND_POWERSTATE_CHARGING;
+   else if (have_ac)
+      ret = FRONTEND_POWERSTATE_CHARGED;
+   else
+      ret = FRONTEND_POWERSTATE_ON_POWER_SOURCE;
+
+   CFRelease(list);
+end:
+   if (blob)
+      CFRelease(blob);
+
 #endif
    return ret;
 }
 
 
 const frontend_ctx_driver_t frontend_ctx_apple = {
-   frontend_apple_get_environment_settings, /* environment_get */
+   frontend_apple_get_environment_settings,
    NULL,                         /* init */
    NULL,                         /* deinit */
    NULL,                         /* exitspawn */
    NULL,                         /* process_args */
    NULL,                         /* exec */
    NULL,                         /* set_fork */
-   frontend_apple_shutdown,      /* shutdown */
-   frontend_apple_get_name,      /* get_name */
-   frontend_apple_get_os,        /* get_os */
-   frontend_apple_get_rating,    /* get_rating */
-   frontend_apple_load_content,  /* load_content */
+   frontend_apple_shutdown,
+   frontend_apple_get_name,
+   frontend_apple_get_os,
+   frontend_apple_get_rating,
+   frontend_apple_load_content,
    frontend_apple_get_powerstate,
    "apple",
 };
