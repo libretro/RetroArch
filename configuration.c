@@ -681,6 +681,7 @@ static void config_set_defaults(void)
    *settings->menu_config_directory = '\0';
 #endif
    settings->core_specific_config = default_core_specific_config;
+   settings->auto_overrides_enable = default_auto_overrides_enable;
    settings->user_language = 0;
 
    global->console.sound.system_bgm_enable = false;
@@ -1595,6 +1596,7 @@ static bool config_load_file(const char *path, bool set_defaults)
    config_read_keybinds_conf(conf);
 
    CONFIG_GET_BOOL_BASE(conf, settings, core_specific_config, "core_specific_config");
+   CONFIG_GET_BOOL_BASE(conf, settings, auto_overrides_enable, "auto_overrides_enable");
 
    config_file_free(conf);
    return true;
@@ -2467,6 +2469,8 @@ bool config_save_file(const char *path)
 
    config_set_bool(conf, "core_specific_config",
          settings->core_specific_config);
+   config_set_bool(conf, "auto_overrides_enable",
+         settings->auto_overrides_enable);
    config_set_int(conf, "libretro_log_level", settings->libretro_log_level);
    config_set_bool(conf, "log_verbosity", global->verbosity);
    config_set_bool(conf, "perfcnt_enable", global->perfcnt_enable);

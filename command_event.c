@@ -657,12 +657,16 @@ end:
 
 static bool event_init_core(void)
 {
-   global_t *global = global_get_ptr();   
-   
-   if (config_load_override())
-      global->overrides_active = true;
-   else
-      global->overrides_active = false; 
+   global_t *global = global_get_ptr();
+   settings_t *settings = config_get_ptr();
+
+   if(settings->auto_overrides_enable)
+   {
+      if (config_load_override())
+         global->overrides_active = true;
+      else
+         global->overrides_active = false; 
+   }
 
    pretro_set_environment(rarch_environment_cb);  
   

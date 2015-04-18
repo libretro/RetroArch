@@ -308,6 +308,7 @@ typedef struct settings
    bool load_dummy_on_core_shutdown;
 
    bool core_specific_config;
+   bool auto_overrides_enable;
 
    char username[32];
    unsigned int user_language;
