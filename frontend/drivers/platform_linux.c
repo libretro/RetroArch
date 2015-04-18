@@ -27,6 +27,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/utsname.h>
+#include <compat/strl.h>
 
 static const char *proc_apm_path = "/proc/apm";
 static const char *proc_acpi_battery_path = "/proc/acpi/battery";
@@ -401,6 +402,16 @@ enum frontend_architecture frontend_linux_get_architecture(void)
    return FRONTEND_ARCH_NONE;
 }
 
+static void frontend_linux_get_os(char *name, size_t sizeof_name, int *major, int *minor)
+{
+   struct utsname buffer;
+
+   if (uname(&buffer) != 0)
+      return;
+
+   strlcpy(name, buffer.release, sizeof_name);
+}
+
 const frontend_ctx_driver_t frontend_ctx_linux = {
    NULL,                         /* environment_get */
    NULL,                         /* init */
@@ -411,7 +422,7 @@ const frontend_ctx_driver_t frontend_ctx_linux = {
    NULL,                         /* set_fork */
    NULL,                         /* shutdown */
    NULL,                         /* get_name */
-   NULL,                         /* get_os */
+   frontend_linux_get_os,
    NULL,                         /* get_rating */
    NULL,                         /* load_content */
    frontend_linux_get_architecture,
