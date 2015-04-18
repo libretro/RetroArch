@@ -25,6 +25,8 @@
 #include <stddef.h>
 #include <string.h>
 
+#include <sys/utsname.h>
+
 #if defined(OSX)
 #include <Carbon/Carbon.h>
 #include <IOKit/ps/IOPowerSources.h>
@@ -256,7 +258,7 @@ static void frontend_apple_get_os(char *name, size_t sizeof_name, int *major, in
     
 #ifdef IOS
     get_ios_version(major, minor);
-    snprintf(name, sizeof_name, "iOS %d.%d", *major, *minor);
+    strlcpy(name, "iOS", sizeof_name);
 #endif
 }
 
@@ -466,7 +468,20 @@ end:
 
 enum frontend_architecture frontend_apple_get_architecture(void)
 {
-   /* stub */
+   struct utsname buffer;
+    
+   if (uname(&buffer) != 0)
+      return FRONTEND_ARCH_NONE;
+    
+#ifdef OSX
+   if (!strcmp(buffer.machine, "x86_64"))
+       return FRONTEND_ARCH_X86_64;
+    if (!strcmp(buffer.machine, "x86"))
+        return FRONTEND_ARCH_X86;
+    if (!strcmp(buffer.machine, "Power Macintosh"))
+        return FRONTEND_ARCH_PPC;
+#endif
+    
    return FRONTEND_ARCH_NONE;
 }
 
