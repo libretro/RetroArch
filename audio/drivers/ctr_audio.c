@@ -128,7 +128,7 @@ static ssize_t ctr_audio_write(void *data, const void *buf, size_t size)
       {
          do{
             /* todo: compute the correct sleep period */
-            svcSleepThread(100000);
+            rarch_sleep(1);
             current_tick = svcGetSystemTick();
             samples_played = (current_tick - ctr->cpu_ticks_last) / ctr->cpu_ticks_per_sample;
             ctr->playpos = (ctr->playpos + samples_played) & CTR_AUDIO_COUNT_MASK;
