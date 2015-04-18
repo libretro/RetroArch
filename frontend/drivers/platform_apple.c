@@ -33,10 +33,12 @@
 
 #if defined(IOS)
 void get_ios_version(int *major, int *minor);
+
+enum frontend_powerstate ios_get_powerstate(int *seconds, int *percent);
 #endif
 
 #if defined(OSX)
-/* Carbon is so verbose... */
+
 #define PMGMT_STRMATCH(a,b) (CFStringCompare(a, b, 0) == kCFCompareEqualTo)
 #define PMGMT_GETVAL(k,v)   CFDictionaryGetValueIfPresent(dict, CFSTR(k), (const void **) v)
 
@@ -456,7 +458,8 @@ static enum frontend_powerstate frontend_apple_get_powerstate(int *seconds, int 
 end:
    if (blob)
       CFRelease(blob);
-
+#elif defined(IOS)
+   ret = ios_get_powerstate(seconds, percent);
 #endif
    return ret;
 }

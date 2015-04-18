@@ -65,6 +65,41 @@ void apple_rarch_exited(void)
 
 apple_frontend_settings_t apple_frontend_settings;
 
+enum frontend_powerstate ios_get_powerstate(int *seconds, int *percent)
+{
+    float level;
+    enum frontend_powerstate ret = FRONTEND_POWERSTATE_NONE;
+    UIDevice *uidev = [UIDevice currentDevice];
+    
+    if (!uidev)
+        return ret;
+    
+    [uidev setBatteryMonitoringEnabled:true];
+    
+    switch (uidev.batteryState)
+    {
+        case UIDeviceBatteryStateCharging:
+            ret = FRONTEND_POWERSTATE_CHARGING;
+            break;
+        case UIDeviceBatteryStateFull:
+            ret = FRONTEND_POWERSTATE_CHARGED;
+            break;
+        case UIDeviceBatteryStateUnplugged:
+            ret = FRONTEND_POWERSTATE_ON_POWER_SOURCE;
+            break;
+        case UIDeviceBatteryStateUnknown:
+            break;
+    }
+    
+    level = uidev.batteryLevel;
+    
+    *percent = ((level < 0.0f) ? -1 : ((int)((level * 100) + 0.5f)));
+
+    [uidev setBatteryMonitoringEnabled:false];
+    
+    return ret;
+}
+
 void get_ios_version(int *major, int *minor)
 {
     NSArray *decomposed_os_version = [[UIDevice currentDevice].systemVersion componentsSeparatedByString:@"."];
