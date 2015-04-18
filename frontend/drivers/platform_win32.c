@@ -151,8 +151,6 @@ static void frontend_win32_get_os(char *name, size_t sizeof_name, int *major, in
             case 10:
                strlcpy(name, "Windows 98", sizeof_name);
                break;
-            case 0:
-               strlcpy(name, "Windows 95", sizeof_name);
          }
          break;
       default:
