@@ -218,7 +218,7 @@ void audio_convert_float_to_s16_altivec(int16_t *out,
    }
    audio_convert_float_to_s16_C(out, in, samples_in);
 }
-#elif defined(__ARM_NEON__)
+#elif defined(HAVE_NEON)
 /* Avoid potential hard-float/soft-float ABI issues. */
 void audio_convert_s16_float_asm(float *out, const int16_t *in,
       size_t samples, const float *gain);
@@ -429,7 +429,7 @@ void audio_convert_init_simd(void)
    unsigned cpu = audio_convert_get_cpu_features();
 
    (void)cpu;
-#if defined(__ARM_NEON__) 
+#if defined(HAVE_NEON)
    audio_convert_s16_to_float_arm = cpu & RETRO_SIMD_NEON ?
       audio_convert_s16_to_float_neon : audio_convert_s16_to_float_C;
    audio_convert_float_to_s16_arm = cpu & RETRO_SIMD_NEON ?
