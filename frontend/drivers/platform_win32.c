@@ -125,9 +125,34 @@ static void frontend_win32_init(void *data)
    gfx_set_dwm();
 }
 
+enum frontend_powerstate frontend_win32_get_powerstate(int *seconds, int *percent)
+{
+    SYSTEM_POWER_STATUS status;
+	enum frontend_powerstate ret = FRONTEND_POWERSTATE_NONE;
+
+	if (!GetSystemPowerStatus(&status))
+		return ret;
+
+	if (status.BatteryFlag == 0xFF)
+		ret = FRONTEND_POWERSTATE_NONE;
+	if (status.BatteryFlag & (1 << 7))
+		ret = FRONTEND_POWERSTATE_NO_SOURCE;
+	else if (status.BatteryFlag & (1 << 3))
+		ret = FRONTEND_POWERSTATE_CHARGING;
+	else if (status.ACLineStatus == 1)
+		ret = FRONTEND_POWERSTATE_CHARGED;
+	else
+		ret = FRONTEND_POWERSTATE_ON_POWER_SOURCE;
+
+	*percent  = (int)status.BatteryLifePercent;
+	*seconds  = (int)status.BatteryLifeTime;
+
+	return ret;
+}
+
 const frontend_ctx_driver_t frontend_ctx_win32 = {
    NULL,						   /* environment_get */
-   frontend_win32_init,            /* init */
+   frontend_win32_init,
    NULL,                           /* deinit */
    NULL,                           /* exitspawn */
    NULL,                           /* process_args */
@@ -135,9 +160,9 @@ const frontend_ctx_driver_t frontend_ctx_win32 = {
    NULL,                           /* set_fork */
    NULL,                           /* shutdown */
    NULL,                           /* get_name */
-   frontend_win32_get_os,          /* get_os */
+   frontend_win32_get_os,
    NULL,                           /* get_rating */
    NULL,                           /* load_content */
-   NULL,                           /* get_powerstate */
+   frontend_win32_get_powerstate,
    "win32",
 };
