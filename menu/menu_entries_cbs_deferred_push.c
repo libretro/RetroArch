@@ -374,6 +374,41 @@ static int deferred_push_system_information(void *data, void *userdata,
                frontend->get_rating ? frontend->get_rating() : -1);
          menu_list_push(list, tmp, "",
                MENU_SETTINGS_CORE_INFO_NONE, 0);
+
+         if (frontend->get_powerstate)
+         {
+            int seconds = 0, percent = 0;
+            enum frontend_powerstate state = frontend->get_powerstate(&seconds, &percent);
+
+            tmp2[0] = '\0';
+
+            if (percent != 0)
+               snprintf(tmp2, sizeof(tmp2), "%d%%", percent);
+
+            switch (state)
+            {
+               case FRONTEND_POWERSTATE_NONE:
+                  strlcat(tmp2, " N/A", sizeof(tmp));
+                  break;
+               case FRONTEND_POWERSTATE_NO_SOURCE:
+                  strlcat(tmp2, " (No source)", sizeof(tmp));
+                  break;
+               case FRONTEND_POWERSTATE_CHARGING:
+                  strlcat(tmp2, " (Charging)", sizeof(tmp));
+                  break;
+               case FRONTEND_POWERSTATE_CHARGED:
+                  strlcat(tmp2, " (Charged)", sizeof(tmp));
+                  break;
+               case FRONTEND_POWERSTATE_ON_POWER_SOURCE:
+                  strlcat(tmp2, " (Using power)", sizeof(tmp));
+                  break;
+            }
+
+            snprintf(tmp, sizeof(tmp), "Power source : %s",
+                  tmp2);
+            menu_list_push(list, tmp, "",
+                  MENU_SETTINGS_CORE_INFO_NONE, 0);
+         }
       }
 
       tmp_string = gfx_ctx_get_ident();
