@@ -400,7 +400,7 @@ static int deferred_push_system_information(void *data, void *userdata,
                   strlcat(tmp2, " (Charged)", sizeof(tmp));
                   break;
                case FRONTEND_POWERSTATE_ON_POWER_SOURCE:
-                  strlcat(tmp2, " (Using power)", sizeof(tmp));
+                  strlcat(tmp2, " (Discharging)", sizeof(tmp));
                   break;
             }
 
