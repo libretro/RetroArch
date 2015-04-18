@@ -28,6 +28,15 @@
 extern "C" {
 #endif
 
+enum frontend_powerstate
+{
+   FRONTEND_POWERSTATE_NONE = 0,
+   FRONTEND_POWERSTATE_NO_SOURCE,
+   FRONTEND_POWERSTATE_CHARGING,
+   FRONTEND_POWERSTATE_CHARGED,
+   FRONTEND_POWERSTATE_ON_POWER_SOURCE,
+};
+
 typedef void (*environment_get_t)(int *argc, char *argv[], void *args,
    void *params_data);
 typedef void (*process_args_t)(int *argc, char *argv[]);
@@ -47,6 +56,7 @@ typedef struct frontend_ctx_driver
    void (*get_os)(char *, size_t, int *major, int *minor);
    int  (*get_rating)(void);
    void (*content_loaded)(void);
+   enum frontend_powerstate (*get_powerstate)(int *seconds, int *percent);
 
    const char *ident;
 

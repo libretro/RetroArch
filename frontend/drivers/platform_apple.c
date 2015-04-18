@@ -312,5 +312,6 @@ const frontend_ctx_driver_t frontend_ctx_apple = {
    frontend_apple_get_os,        /* get_os */
    frontend_apple_get_rating,    /* get_rating */
    frontend_apple_load_content,  /* load_content */
+   NULL,                         /* get_powerstate */
    "apple",
 };

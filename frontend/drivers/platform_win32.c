@@ -138,5 +138,6 @@ const frontend_ctx_driver_t frontend_ctx_win32 = {
    frontend_win32_get_os,          /* get_os */
    NULL,                           /* get_rating */
    NULL,                           /* load_content */
+   NULL,                           /* get_powerstate */
    "win32",
 };

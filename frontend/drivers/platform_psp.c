@@ -249,5 +249,6 @@ const frontend_ctx_driver_t frontend_ctx_psp = {
    NULL,                         /* get_os */
    frontend_psp_get_rating,      /* get_rating */
    NULL,                         /* load_content */
+   NULL,                         /* get_powerstate */
    "psp",
 };
