@@ -144,109 +144,16 @@ static void checkps(CFDictionaryRef dict, bool * have_ac, bool * have_battery,
 }
 #endif
 
-static bool CopyModel(char** model, uint32_t *majorRev, uint32_t *minorRev)
-{
-#ifdef OSX
-   int mib[2];
-   int count;
-   unsigned long modelLen;
-   char *revStr;
-#endif
-   char *machineModel;
-   bool success  = true;
-   size_t length = 1024;
-
-   if (!model || !majorRev || !minorRev)
-   {
-      RARCH_ERR("CopyModel: Passing NULL arguments\n");
-      return false;
-   }
-
-#ifdef IOS
-   sysctlbyname("hw.machine", NULL, &length, NULL, 0);
-#endif
-
-   machineModel  = malloc(length);
-
-   if (!machineModel)
-   {
-      success   = false;
-      goto exit;
-   }
-#ifdef IOS
-   sysctlbyname("hw.machine", machineModel, &length, NULL, 0);
-   *model        = strndup(machineModel, length);
-#else
-   mib[0]        = CTL_HW;
-   mib[1]        = HW_MODEL;
-
-   if (sysctl(mib, 2, machineModel, &length, NULL, 0))
-   {
-      printf("CopyModel: sysctl (error %d)\n", errno);
-      success  = false;
-      goto exit;
-   }
-
-   modelLen      = strcspn(machineModel, "0123456789");
-
-   if (modelLen  == 0)
-   {
-      RARCH_ERR("CopyModel: Could not find machine model name\n");
-      success   = false;
-      goto exit;
-   }
-
-   *model        = strndup(machineModel, modelLen);
-
-   if (*model    == NULL)
-   {
-      RARCH_ERR("CopyModel: Could not find machine model name\n");
-      success   = false;
-      goto exit;
-   }
-
-   *majorRev     = 0;
-   *minorRev     = 0;
-   revStr        = strpbrk(machineModel, "0123456789");
-
-   if (!revStr)
-   {
-      RARCH_ERR("CopyModel: Could not find machine version number, inferred value is 0,0\n");
-      success   = true;
-      goto exit;
-   }
-
-   count         = sscanf(revStr, "%d,%d", majorRev, minorRev);
-
-   if (count < 2)
-   {
-      RARCH_ERR("CopyModel: Could not find machine version number\n");
-      if (count < 1)
-         *majorRev = 0;
-      *minorRev     = 0;
-      success       = true;
-      goto exit;
-   }
-#endif
-
-exit:
-   if (machineModel)
-      free(machineModel);
-   if (!success)
-   {
-      if (*model)
-         free(*model);
-      *model    = NULL;
-      *majorRev = 0;
-      *minorRev = 0;
-   }
-   return success;
-}
-
 static void frontend_apple_get_name(char *name, size_t sizeof_name)
 {
-    uint32_t major_rev, minor_rev;
-    CopyModel(&name, &major_rev, &minor_rev);
+#ifdef IOS
+    struct utsname buffer;
+    
+    if (uname(&buffer) != 0)
+        return;
+    
+    strlcpy(name, buffer.machine, sizeof_name);
+#endif
 }
 
 static void frontend_apple_get_os(char *name, size_t sizeof_name, int *major, int *minor)
