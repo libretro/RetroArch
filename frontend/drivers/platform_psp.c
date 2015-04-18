@@ -236,19 +236,45 @@ static int frontend_psp_get_rating(void)
    return 4;
 }
 
+static enum frontend_powerstate frontend_psp_get_powerstate(int *seconds, int *percent)
+{
+   enum frontend_powerstate ret = FRONTEND_POWERSTATE_NONE;
+   int battery                  = scePowerIsBatteryExist();
+   int plugged                  = scePowerIsPowerOnline();
+   int charging                 = scePowerIsBatteryCharging();
+
+   *percent = scePowerGetBatteryLifePercent();
+   *seconds = scePowerGetBatteryLifeTime() * 60;
+
+   if (!battery)
+   {
+      ret = FRONTEND_POWERSTATE_NO_SOURCE;
+      *seconds = -1;
+      *percent = -1;
+   }
+   else if (charging)
+      ret = FRONTEND_POWERSTATE_CHARGING;
+   else if (plugged)
+      ret = FRONTEND_POWERSTATE_CHARGED;
+   else
+      ret = FRONTEND_POWERSTATE_ON_POWER_SOURCE;
+
+   return ret;
+}
+
 const frontend_ctx_driver_t frontend_ctx_psp = {
-   frontend_psp_get_environment_settings, /* get_environment_settings */
-   frontend_psp_init,            /* init */
-   frontend_psp_deinit,          /* deinit */
-   frontend_psp_exitspawn,       /* exitspawn */
+   frontend_psp_get_environment_settings,
+   frontend_psp_init,
+   frontend_psp_deinit,
+   frontend_psp_exitspawn,
    NULL,                         /* process_args */
-   frontend_psp_exec,            /* exec */
-   frontend_psp_set_fork,        /* set_fork */
-   frontend_psp_shutdown,        /* shutdown */
+   frontend_psp_exec,
+   frontend_psp_set_fork,
+   frontend_psp_shutdown,
    NULL,                         /* get_name */
    NULL,                         /* get_os */
-   frontend_psp_get_rating,      /* get_rating */
+   frontend_psp_get_rating,
    NULL,                         /* load_content */
-   NULL,                         /* get_powerstate */
+   frontend_psp_get_powerstate,
    "psp",
 };
