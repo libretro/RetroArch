@@ -59,19 +59,25 @@ static void frontend_qnx_get_environment_settings(int *argc, char *argv[],
          "playlists", sizeof(g_defaults.playlist_dir));
 }
 
+enum frontend_architecture frontend_qnx_get_architecture(void)
+{
+   return FRONTEND_ARCH_ARM;
+}
+
 const frontend_ctx_driver_t frontend_ctx_qnx = {
-   frontend_qnx_get_environment_settings, /* get_environment_settings */
-   frontend_qnx_init,            /* init */
+   frontend_qnx_get_environment_settings,
+   frontend_qnx_init,
    NULL,                         /* deinit */
    NULL,                         /* exitspawn */
    NULL,                         /* process_args */
    NULL,                         /* exec */
    NULL,                         /* set_fork */
-   frontend_qnx_shutdown,        /* shutdown */
+   frontend_qnx_shutdown,
    NULL,                         /* get_name */
    NULL,                         /* get_os */
-   frontend_qnx_get_rating,      /* get_rating */
+   frontend_qnx_get_rating,
    NULL,                         /* load_content */
+   frontend_qnx_get_architecture,
    NULL,                         /* get_powerstate */
    "qnx",
 };

@@ -26,6 +26,7 @@
 #include <dirent.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <sys/utsname.h>
 
 static const char *proc_apm_path = "/proc/apm";
 static const char *proc_acpi_battery_path = "/proc/acpi/battery";
@@ -385,6 +386,21 @@ frontend_linux_get_powerstate(int *seconds, int *percent)
    return FRONTEND_POWERSTATE_NONE;
 }
 
+enum frontend_architecture frontend_linux_get_architecture(void)
+{
+   struct utsname buffer;
+
+   if (uname(&buffer) != 0)
+      return FRONTEND_ARCH_NONE;
+
+   if (!strcmp(buffer.machine, "x86_64"))
+      return FRONTEND_ARCH_X86_64;
+   if (!strcmp(buffer.machine, "x86"))
+      return FRONTEND_ARCH_X86;
+
+   return FRONTEND_ARCH_NONE;
+}
+
 const frontend_ctx_driver_t frontend_ctx_linux = {
    NULL,                         /* environment_get */
    NULL,                         /* init */
@@ -398,6 +414,7 @@ const frontend_ctx_driver_t frontend_ctx_linux = {
    NULL,                         /* get_os */
    NULL,                         /* get_rating */
    NULL,                         /* load_content */
+   frontend_linux_get_architecture,
    frontend_linux_get_powerstate,
    "linux",
 };

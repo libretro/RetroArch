@@ -464,6 +464,11 @@ end:
    return ret;
 }
 
+enum frontend_architecture frontend_apple_get_architecture(void)
+{
+   /* stub */
+   return FRONTEND_ARCH_NONE;
+}
 
 const frontend_ctx_driver_t frontend_ctx_apple = {
    frontend_apple_get_environment_settings,
@@ -478,6 +483,7 @@ const frontend_ctx_driver_t frontend_ctx_apple = {
    frontend_apple_get_os,
    frontend_apple_get_rating,
    frontend_apple_load_content,
+   frontend_apple_get_architecture,
    frontend_apple_get_powerstate,
    "apple",
 };

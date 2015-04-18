@@ -37,6 +37,16 @@ enum frontend_powerstate
    FRONTEND_POWERSTATE_ON_POWER_SOURCE,
 };
 
+enum frontend_architecture
+{
+   FRONTEND_ARCH_NONE = 0,
+   FRONTEND_ARCH_X86,
+   FRONTEND_ARCH_X86_64,
+   FRONTEND_ARCH_PPC,
+   FRONTEND_ARCH_ARM,
+   FRONTEND_ARCH_MIPS,
+};
+
 typedef void (*environment_get_t)(int *argc, char *argv[], void *args,
    void *params_data);
 typedef void (*process_args_t)(int *argc, char *argv[]);
@@ -56,6 +66,7 @@ typedef struct frontend_ctx_driver
    void (*get_os)(char *, size_t, int *major, int *minor);
    int  (*get_rating)(void);
    void (*content_loaded)(void);
+   enum frontend_architecture (*get_architecture)(void);
    enum frontend_powerstate (*get_powerstate)(int *seconds, int *percent);
 
    const char *ident;

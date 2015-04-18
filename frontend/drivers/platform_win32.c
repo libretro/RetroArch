@@ -150,6 +150,12 @@ enum frontend_powerstate frontend_win32_get_powerstate(int *seconds, int *percen
 	return ret;
 }
 
+enum frontend_architecture frontend_win32_get_architecture(void)
+{
+   /* stub */
+   return FRONTEND_ARCH_NONE;
+}
+
 const frontend_ctx_driver_t frontend_ctx_win32 = {
    NULL,						   /* environment_get */
    frontend_win32_init,
@@ -163,6 +169,7 @@ const frontend_ctx_driver_t frontend_ctx_win32 = {
    frontend_win32_get_os,
    NULL,                           /* get_rating */
    NULL,                           /* load_content */
+   frontend_win32_get_architecture,
    frontend_win32_get_powerstate,
    "win32",
 };

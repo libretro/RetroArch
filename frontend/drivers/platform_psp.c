@@ -262,6 +262,11 @@ static enum frontend_powerstate frontend_psp_get_powerstate(int *seconds, int *p
    return ret;
 }
 
+enum frontend_architecture frontend_psp_get_architecture(void)
+{
+   return FRONTEND_ARCH_MIPS;
+}
+
 const frontend_ctx_driver_t frontend_ctx_psp = {
    frontend_psp_get_environment_settings,
    frontend_psp_init,
@@ -275,6 +280,7 @@ const frontend_ctx_driver_t frontend_ctx_psp = {
    NULL,                         /* get_os */
    frontend_psp_get_rating,
    NULL,                         /* load_content */
+   frontend_psp_get_architecture,
    frontend_psp_get_powerstate,
    "psp",
 };

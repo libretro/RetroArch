@@ -195,19 +195,25 @@ void wait_for_input(void)
    }
 }
 
+enum frontend_architecture frontend_ctr_get_architecture(void)
+{
+   return FRONTEND_ARCH_ARM;
+}
+
 const frontend_ctx_driver_t frontend_ctx_ctr = {
-   frontend_ctr_get_environment_settings, /* get_environment_settings */
-   frontend_ctr_init,            /* init */
-   frontend_ctr_deinit,          /* deinit */
+   frontend_ctr_get_environment_settings,
+   frontend_ctr_init,
+   frontend_ctr_deinit,
    NULL,                         /* exitspawn */
    NULL,                         /* process_args */
    NULL,                         /* exec */
    NULL,                         /* set_fork */
-   frontend_ctr_shutdown,        /* shutdown */
+   frontend_ctr_shutdown,
    NULL,                         /* get_name */
    NULL,                         /* get_os */
-   frontend_ctr_get_rating,      /* get_rating */
+   frontend_ctr_get_rating,
    NULL,                         /* load_content */
+   frontend_ctr_get_architecture,
    NULL,                         /* get_powerstate */
    "ctr",
 };

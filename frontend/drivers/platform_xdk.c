@@ -367,19 +367,31 @@ static int frontend_xdk_get_rating(void)
 #endif
 }
 
+enum frontend_architecture frontend_xdk_get_architecture(void)
+{
+#if defined(_XBOX360)
+   return FRONTEND_ARCH_PPC;
+#elif defined(_XBOX1)
+   return FRONTEND_ARCH_X86;
+#else
+   return FRONTEND_ARCH_NONE;
+#endif
+}
+
 const frontend_ctx_driver_t frontend_ctx_xdk = {
-   frontend_xdk_get_environment_settings,     /* get_environment_settings */
-   frontend_xdk_init,            /* init */
+   frontend_xdk_get_environment_settings,
+   frontend_xdk_init,
    NULL,                         /* deinit */
-   frontend_xdk_exitspawn,       /* exitspawn */
+   frontend_xdk_exitspawn,
    NULL,                         /* process_args */
-   frontend_xdk_exec,            /* exec */
-   frontend_xdk_set_fork,        /* set_fork */
+   frontend_xdk_exec,
+   frontend_xdk_set_fork,
    NULL,                         /* shutdown */
    NULL,                         /* get_name */
    NULL,                         /* get_os */
-   frontend_xdk_get_rating,      /* get_rating */
+   frontend_xdk_get_rating,
    NULL,                         /* load_content */
+   frontend_xdk_get_architecture,
    NULL,                         /* get_powerstate */
    "xdk",
 };
