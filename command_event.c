@@ -670,7 +670,8 @@ static bool event_init_core(void)
 
    pretro_set_environment(rarch_environment_cb);  
   
-   config_load_remap();
+   if(settings->auto_remaps_enable)
+      config_load_remap();
 
    rarch_verify_api_version();
    pretro_init();

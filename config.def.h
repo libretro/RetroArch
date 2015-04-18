@@ -492,6 +492,7 @@ static bool default_core_specific_config = false;
 #endif
 
 static bool default_auto_overrides_enable = false;
+static bool default_auto_remaps_enable = false;
 
 /* Crop overscanned frames. */
 static const bool crop_overscan = true;

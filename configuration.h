@@ -309,6 +309,7 @@ typedef struct settings
 
    bool core_specific_config;
    bool auto_overrides_enable;
+   bool auto_remaps_enable;
 
    char username[32];
    unsigned int user_language;
