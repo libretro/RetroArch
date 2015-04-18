@@ -412,12 +412,14 @@ enum frontend_architecture frontend_linux_get_architecture(void)
 
 static void frontend_linux_get_os(char *name, size_t sizeof_name, int *major, int *minor)
 {
+   unsigned krel;
    struct utsname buffer;
 
    if (uname(&buffer) != 0)
       return;
 
-   strlcpy(name, buffer.release, sizeof_name);
+   sscanf(buffer.release, "%u.%u.%u", major, minor, &krel);
+   strlcpy(name, "Linux", sizeof_name);
 }
 
 const frontend_ctx_driver_t frontend_ctx_linux = {
