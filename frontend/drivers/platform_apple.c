@@ -25,8 +25,119 @@
 #include <stddef.h>
 #include <string.h>
 
-#ifdef IOS
+#if defined(OSX)
+#include <Carbon/Carbon.h>
+#include <IOKit/ps/IOPowerSources.h>
+#include <IOKit/ps/IOPSKeys.h>
+#endif
+
+#if defined(IOS)
 void get_ios_version(int *major, int *minor);
+#endif
+
+#if defined(OSX)
+/* Carbon is so verbose... */
+#define PMGMT_STRMATCH(a,b) (CFStringCompare(a, b, 0) == kCFCompareEqualTo)
+#define PMGMT_GETVAL(k,v)   CFDictionaryGetValueIfPresent(dict, CFSTR(k), (const void **) v)
+
+/* Note that AC power sources also include a laptop battery it is charging. */
+static void checkps(CFDictionaryRef dict, bool * have_ac, bool * have_battery,
+        bool * charging, int *seconds, int *percent)
+{
+    CFStringRef strval; /* don't CFRelease() this. */
+    CFBooleanRef bval;
+    CFNumberRef numval;
+    bool charge = false;
+    bool choose = false;
+    bool  is_ac = false;
+    int    secs = -1;
+    int  maxpct = -1;
+    int     pct = -1;
+    
+    if ((PMGMT_GETVAL(kIOPSIsPresentKey, &bval)) && (bval == kCFBooleanFalse))
+        return;                 /* nothing to see here. */
+    
+    if (!PMGMT_GETVAL(kIOPSPowerSourceStateKey, &strval))
+        return;
+    
+    if (PMGMT_STRMATCH(strval, CFSTR(kIOPSACPowerValue)))
+        is_ac = *have_ac = true;
+    else if (!PMGMT_STRMATCH(strval, CFSTR(kIOPSBatteryPowerValue)))
+        return;                 /* not a battery? */
+    
+    if ((PMGMT_GETVAL(kIOPSIsChargingKey, &bval)) && (bval == kCFBooleanTrue))
+        charge = true;
+    
+    if (PMGMT_GETVAL(kIOPSMaxCapacityKey, &numval))
+    {
+        SInt32 val = -1;
+        CFNumberGetValue(numval, kCFNumberSInt32Type, &val);
+        if (val > 0)
+        {
+            *have_battery = true;
+            maxpct        = (int) val;
+        }
+    }
+    
+    if (PMGMT_GETVAL(kIOPSMaxCapacityKey, &numval))
+    {
+        SInt32 val = -1;
+        CFNumberGetValue(numval, kCFNumberSInt32Type, &val);
+        if (val > 0)
+        {
+            *have_battery = true;
+            maxpct        = (int) val;
+        }
+    }
+    
+    if (PMGMT_GETVAL(kIOPSTimeToEmptyKey, &numval))
+    {
+        SInt32 val = -1;
+        CFNumberGetValue(numval, kCFNumberSInt32Type, &val);
+        
+        /* Mac OS X reports 0 minutes until empty if you're plugged in. :( */
+        if ((val == 0) && (is_ac))
+            val = -1;           /* !!! FIXME: calc from timeToFull and capacity? */
+        
+        secs = (int) val;
+        if (secs > 0)
+            secs *= 60;         /* value is in minutes, so convert to seconds. */
+    }
+    
+    if (PMGMT_GETVAL(kIOPSCurrentCapacityKey, &numval))
+    {
+        SInt32 val = -1;
+        CFNumberGetValue(numval, kCFNumberSInt32Type, &val);
+        pct = (int) val;
+    }
+    
+    if ((pct > 0) && (maxpct > 0))
+        pct = (int) ((((double) pct) / ((double) maxpct)) * 100.0);
+    
+    if (pct > 100)
+        pct = 100;
+    
+    /*
+     * We pick the battery that claims to have the most minutes left.
+     *  (failing a report of minutes, we'll take the highest percent.)
+     */
+    if ((secs < 0) && (*seconds < 0))
+    {
+        if ((pct < 0) && (*percent < 0))
+            choose = true;  /* at least we know there's a battery. */
+        if (pct > *percent)
+            choose = true;
+    }
+    else if (secs > *seconds)
+        choose = true;
+    
+    if (choose)
+    {
+        *seconds  = secs;
+        *percent  = pct;
+        *charging = charge;
+    }
+}
 #endif
 
 static bool CopyModel(char** model, uint32_t *majorRev, uint32_t *minorRev)
@@ -297,6 +408,58 @@ static int frontend_apple_get_rating(void)
    return -1;
 }
 
+static enum frontend_powerstate frontend_apple_get_powerstate(int *seconds, int *percent)
+{
+    enum frontend_powerstate ret = FRONTEND_POWERSTATE_NONE;
+#if defined(OSX)
+    CFIndex i, total;
+    CFArrayRef list;
+    bool have_ac, have_battery, charging;
+    CFTypeRef blob = IOPSCopyPowerSourcesInfo();
+    
+    *seconds       = -1;
+    *percent       = -1;
+    
+    if (!blob)
+        goto end;
+    
+    list = IOPSCopyPowerSourcesList(blob);
+        
+    if (!list)
+        goto end;
+        
+     /* don't CFRelease() the list items, or dictionaries! */
+     have_ac = false;
+     have_battery = false;
+     charging = false;
+     total = CFArrayGetCount(list);
+
+     for (i = 0; i < total; i++)
+     {
+                CFTypeRef ps = (CFTypeRef)CFArrayGetValueAtIndex(list, i);
+                CFDictionaryRef dict = IOPSGetPowerSourceDescription(blob, ps);
+                if (dict)
+                    checkps(dict, &have_ac, &have_battery, &charging,
+                            seconds, percent);
+            }
+            
+            if (!have_battery)
+                ret = FRONTEND_POWERSTATE_NO_SOURCE;
+            else if (charging)
+                ret = FRONTEND_POWERSTATE_CHARGING;
+            else if (have_ac)
+                ret = FRONTEND_POWERSTATE_CHARGED;
+            else
+                ret = FRONTEND_POWERSTATE_ON_POWER_SOURCE;
+            
+            CFRelease(list);
+                end:
+                if (blob)
+                    CFRelease(blob);
+                
+#endif
+   return ret;
+}
 
 
 const frontend_ctx_driver_t frontend_ctx_apple = {
@@ -312,6 +475,6 @@ const frontend_ctx_driver_t frontend_ctx_apple = {
    frontend_apple_get_os,        /* get_os */
    frontend_apple_get_rating,    /* get_rating */
    frontend_apple_load_content,  /* load_content */
-   NULL,                         /* get_powerstate */
+   frontend_apple_get_powerstate,
    "apple",
 };
