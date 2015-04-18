@@ -1612,6 +1612,8 @@ static int deferred_push_options(void *data, void *userdata,
       if (global->has_set_input_descriptors)
          menu_list_push(list, "Core Input Remapping Options", "core_input_remapping_options",
                MENU_SETTING_ACTION, 0);
+      menu_list_push(list, "Menu Input Remapping Options", "menu_input_remapping_options",
+            MENU_SETTING_ACTION, 0);			   			   
       menu_list_push(list, "Core Cheat Options", "core_cheat_options",
             MENU_SETTING_ACTION, 0);
       if (!global->libretro_dummy && global->system.disk_control.get_num_images)
@@ -1802,6 +1804,29 @@ static int deferred_push_core_input_remapping_options(void *data, void *userdata
                (p * RARCH_FIRST_META_KEY) +  retro_id, 0);
       }
    }
+
+   menu_driver_populate_entries(path, label, type);
+
+   return 0;
+}
+
+static int deferred_push_menu_input_remapping_options(void *data, void *userdata,
+      const char *path, const char *label, unsigned type)
+{
+   unsigned p, retro_id;
+   file_list_t *list      = (file_list_t*)data;
+   settings_t *settings   = config_get_ptr();
+   global_t *global       = global_get_ptr();
+
+   (void)userdata;
+   (void)type;
+
+   if (!list)
+      return -1;
+
+   menu_list_clear(list);
+
+
 
    menu_driver_populate_entries(path, label, type);
 
@@ -2299,6 +2324,8 @@ void menu_entries_cbs_init_bind_deferred_push(menu_file_list_cbs_t *cbs,
       cbs->action_deferred_push = deferred_push_core_cheat_options;
    else if (!strcmp(label, "core_input_remapping_options"))
       cbs->action_deferred_push = deferred_push_core_input_remapping_options;
+   else if (!strcmp(label, "menu_input_remapping_options"))
+      cbs->action_deferred_push = deferred_push_menu_input_remapping_options;  
    else if (!strcmp(label, "disk_options"))
       cbs->action_deferred_push = deferred_push_disk_options;
    else if (!strcmp(label, "core_list"))
