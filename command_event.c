@@ -657,16 +657,21 @@ end:
 
 static bool event_init_core(void)
 {
-   global_t *global = global_get_ptr();   
-   
-   if (config_load_override())
-      global->overrides_active = true;
-   else
-      global->overrides_active = false; 
+   global_t *global = global_get_ptr();
+   settings_t *settings = config_get_ptr();
+
+   if(settings->auto_overrides_enable)
+   {
+      if (config_load_override())
+         global->overrides_active = true;
+      else
+         global->overrides_active = false; 
+   }
 
    pretro_set_environment(rarch_environment_cb);  
   
-   config_load_remap();
+   if(settings->auto_remaps_enable)
+      config_load_remap();
 
    rarch_verify_api_version();
    pretro_init();
@@ -725,6 +730,7 @@ static bool event_save_core_config(void)
         config_path[PATH_MAX_LENGTH], msg[PATH_MAX_LENGTH];
    bool ret             = false;
    bool found_path      = false;
+   bool overrides_active = false;
    settings_t *settings = config_get_ptr();
    global_t   *global   = global_get_ptr();
 
@@ -786,6 +792,13 @@ static bool event_save_core_config(void)
             sizeof(config_path));
    }
 
+   /* Overrides block config file saving, make it appear as overrides weren't enabled for a manual save */
+   if (global->overrides_active)
+   {
+      global->overrides_active = false;
+	  overrides_active = true;
+   }
+
    if ((ret = config_save_file(config_path)))
    {
       strlcpy(global->config_path, config_path,
@@ -802,7 +815,7 @@ static bool event_save_core_config(void)
    }
 
    rarch_main_msg_queue_push(msg, 1, 180, true);
-
+   global->overrides_active = overrides_active;
    return ret;
 }
 
