@@ -146,13 +146,16 @@ static void checkps(CFDictionaryRef dict, bool * have_ac, bool * have_battery,
 
 static void frontend_apple_get_name(char *name, size_t sizeof_name)
 {
-#ifdef IOS
+#if defined(IOS)
     struct utsname buffer;
     
     if (uname(&buffer) != 0)
         return;
     
     strlcpy(name, buffer.machine, sizeof_name);
+#elif defined(OSX)
+    size_t length = 0;
+    sysctlbyname("hw.model", name, &length, NULL, 0);
 #endif
 }
 
@@ -163,9 +166,11 @@ static void frontend_apple_get_os(char *name, size_t sizeof_name, int *major, in
    (void)major;
    (void)minor;
     
-#ifdef IOS
+#if defined(IOS)
     get_ios_version(major, minor);
     strlcpy(name, "iOS", sizeof_name);
+#elif defined(OSX)
+    strlcpy(name, "OSX", sizeof_name);
 #endif
 }
 
