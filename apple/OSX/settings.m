@@ -15,6 +15,7 @@
  */
 
 #import "../common/RetroArch_Apple.h"
+#import <objc/runtime.h>
 #include <retro_miscellaneous.h>
 #include "../../settings.h"
 #include "../../input/drivers/cocoa_input.h"

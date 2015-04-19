@@ -754,6 +754,15 @@ ifeq ($(HAVE_COMPRESSION), 1)
    DEFINES += -DHAVE_COMPRESSION
 endif 
 
+ifeq ($(HAVE_COCOA),1)
+   OBJ += apple/common/apple_cocoa_common.o \
+	  apple/OSX/platform.o \
+          apple/OSX/settings.o \
+	  input/drivers/cocoa_input.o \
+	  input/drivers_keyboard/keyboard_event_apple.o \
+	  gfx/drivers_context/apple_cocoa_gl.o
+endif
+
 
 # Joyconfig binary
 JOYCONFIG_OBJ  += tools/retroarch-joyconfig-griffin.o

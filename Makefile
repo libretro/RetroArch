@@ -42,8 +42,9 @@ ifeq ($(DEBUG), 1)
    OPTIMIZE_FLAG = -O0
 endif
 
-CFLAGS += -Wall $(OPTIMIZE_FLAG) $(INCLUDE_DIRS) $(DEBUG_FLAG) -I.
+CFLAGS   += -Wall $(OPTIMIZE_FLAG) $(INCLUDE_DIRS) $(DEBUG_FLAG) -I.
 CXXFLAGS := $(CFLAGS) -std=c++0x -D__STDC_CONSTANT_MACROS
+OBJCFLAGS :=  $(CFLAGS) -D__STDC_CONSTANT_MACROS
 
 ifeq ($(CXX_BUILD), 1)
    LINK = $(CXX)
@@ -101,6 +102,11 @@ $(OBJDIR)/%.o: %.cpp
 	@mkdir -p $(dir $@)
 	@$(if $(Q), $(shell echo echo CXX $<),)
 	$(Q)$(CXX) $(CXXFLAGS) $(DEFINES) -MMD -c -o $@ $<
+
+$(OBJDIR)/%.o: %.m
+	@mkdir -p $(dir $@)
+	@$(if $(Q), $(shell echo echo CXX $<),)
+	$(Q)$(CXX) $(OBJCFLAGS) $(DEFINES) -MMD -c -o $@ $<
 
 .FORCE:
 

@@ -99,7 +99,7 @@ void CFSearchPathForDirectoriesInDomains(unsigned flags,
 
 void apple_display_alert(const char *message, const char *title)
 {
-#ifdef IOS
+#if defined(HAVE_COCOATOUCH)
    UIAlertView* alert = [[UIAlertView alloc] initWithTitle:BOXSTRING(title)
                                              message:BOXSTRING(message)
                                              delegate:nil
@@ -159,7 +159,7 @@ void apple_display_alert(const char *message, const char *title)
    return YES;
 }
 
-#ifdef IOS
+#if defined(HAVE_COCOATOUCH)
 - (BOOL)textField:(UITextField *)textField shouldChangeCharactersInRange:(NSRange)range replacementString:(NSString *)string
 {
    NSString* text = (NSString*)[[textField text] stringByReplacingCharactersInRange:range withString:string];
@@ -186,7 +186,7 @@ void apple_display_alert(const char *message, const char *title)
 
 static RAGameView* g_instance;
 
-#ifdef OSX
+#if defined(HAVE_COCOA)
 void *nsview_get_ptr(void)
 {
     return g_instance;
@@ -210,9 +210,9 @@ void *glkitview_init(void);
 {
    self = [super init];
    
-#if defined(OSX)
+#if defined(HAVE_COCOA)
    [self setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
-#elif defined(IOS)
+#elif defined(HAVE_COCOATOUCH)
    self.view = (__bridge GLKView*)glkitview_init();
    
    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(showPauseIndicator) name:UIApplicationWillEnterForegroundNotification object:nil];
@@ -221,7 +221,7 @@ void *glkitview_init(void);
    return self;
 }
 
-#ifdef OSX
+#if defined(HAVE_COCOA)
 - (void)setFrame:(NSRect)frameRect
 {
    [super setFrame:frameRect];
@@ -244,7 +244,7 @@ void *glkitview_init(void);
 {
 }
 
-#elif defined(IOS)
+#elif defined(HAVE_COCOATOUCH)
 - (void)viewDidAppear:(BOOL)animated
 {
    /* Pause Menus. */

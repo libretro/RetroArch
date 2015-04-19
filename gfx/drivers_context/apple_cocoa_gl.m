@@ -17,12 +17,12 @@
 //#define HAVE_NSOPENGL
 
 #include <CoreGraphics/CGGeometry.h>
-#if defined(OSX)
+#if defined(HAVE_COCOA)
 #include <OpenGL/CGLTypes.h>
 #include <OpenGL/OpenGL.h>
 #include <AppKit/NSScreen.h>
 #include <AppKit/NSOpenGL.h>
-#elif defined(IOS)
+#elif defined(HAVE_COCOATOUCH)
 #include <GLKit/GLKit.h>
 #endif
 #import "../../apple/common/RetroArch_Apple.h"
@@ -31,7 +31,7 @@
 #include "../../configuration.h"
 #include "../../runloop.h"
 
-#ifdef IOS
+#if defined(HAVE_COCOATOUCH)
 #define GLContextClass EAGLContext
 #define GLFrameworkID CFSTR("com.apple.opengles")
 #define RAScreen UIScreen
@@ -59,7 +59,7 @@
 #define RAScreen NSScreen
 #endif
 
-#if defined(IOS)
+#if defined(HAVE_COCOATOUCH)
 #define ALMOST_INVISIBLE (.021f)
 static GLKView *g_view;
 static UIView *g_pause_indicator_view;
@@ -72,7 +72,7 @@ static int g_fast_forward_skips;
 static bool g_is_syncing = true;
 static bool g_use_hw_ctx;
 
-#ifdef OSX
+#if defined(HAVE_COCOA)
 static bool g_has_went_fullscreen;
 static NSOpenGLPixelFormat* g_format;
 #endif
@@ -83,7 +83,7 @@ static unsigned g_major = 0;
 /* forward declaration */
 void *nsview_get_ptr(void);
 
-#ifdef IOS
+#if defined(HAVE_COCOATOUCH)
 static void glkitview_init_xibs(void)
 {
    /* iOS Pause menu and lifecycle. */
@@ -94,7 +94,7 @@ static void glkitview_init_xibs(void)
 
 void *glkitview_init(void)
 {
-#ifdef IOS
+#if defined(HAVE_COCOATOUCH)
    glkitview_init_xibs();
 
    g_view = [GLKView new];
@@ -108,7 +108,7 @@ void *glkitview_init(void)
 #endif
 }
 
-#ifdef IOS
+#if defined(HAVE_COCOATOUCH)
 void cocoagl_bind_game_view_fbo(void)
 {
    if (g_context)
@@ -118,7 +118,7 @@ void cocoagl_bind_game_view_fbo(void)
 
 static RAScreen* get_chosen_screen(void)
 {
-#if defined(OSX) && !defined(MAC_OS_X_VERSION_10_6)
+#if defined(HAVE_COCOA) && !defined(MAC_OS_X_VERSION_10_6)
 	return [RAScreen mainScreen];
 #else
    settings_t *settings = config_get_ptr();
@@ -135,7 +135,7 @@ static RAScreen* get_chosen_screen(void)
 
 void cocoagl_gfx_ctx_update(void)
 {
-#ifdef OSX
+#if defined(HAVE_COCOA)
 #if MAC_OS_X_VERSION_10_7 && !defined(HAVE_NSOPENGL)
    CGLUpdateContext(g_context.CGLContextObj);
 #else
@@ -148,7 +148,7 @@ static bool cocoagl_gfx_ctx_init(void *data)
 {
    (void)data;
     
-#ifdef OSX
+#if defined(HAVE_COCOA)
     RAGameView *g_view = (RAGameView*)nsview_get_ptr();
     NSOpenGLPixelFormatAttribute attributes [] = {
         NSOpenGLPFAColorSize, 24,
@@ -198,9 +198,9 @@ static void cocoagl_gfx_ctx_destroy(void *data)
 
    [GLContextClass clearCurrentContext];
 
-#if defined(IOS)
+#if defined(HAVE_COCOATOUCH)
    g_view.context = nil;
-#elif defined(OSX)
+#elif defined(HAVE_COCOA)
     [g_context clearDrawable];
     if (g_context)
         [g_context release];
@@ -219,10 +219,10 @@ static void cocoagl_gfx_ctx_destroy(void *data)
 static bool cocoagl_gfx_ctx_bind_api(void *data, enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
    (void)data;
-#if defined(IOS)
+#if defined(HAVE_COCOATOUCH)
    if (api != GFX_CTX_OPENGL_ES_API)
       return false;
-#elif defined(OSX)
+#elif defined(HAVE_COCOA)
    if (api != GFX_CTX_OPENGL_API)
       return false;
 #endif
@@ -236,11 +236,11 @@ static bool cocoagl_gfx_ctx_bind_api(void *data, enum gfx_ctx_api api, unsigned 
 static void cocoagl_gfx_ctx_swap_interval(void *data, unsigned interval)
 {
    (void)data;
-#ifdef IOS // < No way to disable Vsync on iOS?
+#if defined(HAVE_COCOATOUCH) // < No way to disable Vsync on iOS?
            //   Just skip presents so fast forward still works.
    g_is_syncing = interval ? true : false;
    g_fast_forward_skips = interval ? 0 : 3;
-#elif defined(OSX)
+#elif defined(HAVE_COCOA)
    GLint value = interval ? 1 : 0;
 #ifdef HAVE_NSOPENGL
    [g_context setValues:&value forParameter:NSOpenGLCPSwapInterval];
@@ -253,7 +253,7 @@ static void cocoagl_gfx_ctx_swap_interval(void *data, unsigned interval)
 
 static bool cocoagl_gfx_ctx_set_video_mode(void *data, unsigned width, unsigned height, bool fullscreen)
 {
-#ifdef OSX
+#if defined(HAVE_COCOA)
    RAGameView *g_view = (RAGameView*)nsview_get_ptr();
    /* TODO: Screen mode support. */
    
@@ -315,7 +315,7 @@ static void cocoagl_gfx_ctx_get_video_size(void *data, unsigned* width, unsigned
    CGRect size = screen.bounds;
    float screenscale = cocoagl_gfx_ctx_get_native_scale();
 	
-#if defined(OSX)
+#if defined(HAVE_COCOA)
    RAGameView *g_view = (RAGameView*)nsview_get_ptr();
    CGRect cgrect = NSRectToCGRect([g_view frame]);
    size = CGRectMake(0, 0, CGRectGetWidth(cgrect), CGRectGetHeight(cgrect));
@@ -336,7 +336,7 @@ static void cocoagl_gfx_ctx_update_window_title(void *data)
 
    (void)got_text;
 
-#ifdef OSX
+#if defined(HAVE_COCOA)
    RAGameView *g_view = (RAGameView*)nsview_get_ptr();
    static const char* const text = buf; /* < Can't access buffer directly in the block */
    if (got_text)
@@ -349,7 +349,7 @@ static void cocoagl_gfx_ctx_update_window_title(void *data)
 static bool cocoagl_gfx_ctx_get_metrics(void *data, enum display_metric_types type,
             float *value)
 {
-#ifdef OSX
+#if defined(HAVE_COCOA)
     RAScreen *screen              = [RAScreen mainScreen];
     NSDictionary *description     = [screen deviceDescription];
     NSSize  display_pixel_size    = [[description objectForKey:NSDeviceSize] sizeValue];
@@ -360,7 +360,7 @@ static bool cocoagl_gfx_ctx_get_metrics(void *data, enum display_metric_types ty
     float   display_height        = display_pixel_size.height;
     float   physical_width        = display_physical_size.width;
     float   physical_height       = display_physical_size.height;
-#elif defined(IOS)
+#elif defined(HAVE_COCOATOUCH)
     float   scale                 = cocoagl_gfx_ctx_get_native_scale();
     CGRect  screen_rect           = [[UIScreen mainScreen] bounds];
     
@@ -396,7 +396,7 @@ static bool cocoagl_gfx_ctx_get_metrics(void *data, enum display_metric_types ty
 static bool cocoagl_gfx_ctx_has_focus(void *data)
 {
    (void)data;
-#ifdef IOS
+#if defined(HAVE_COCOATOUCH)
     return ([[UIApplication sharedApplication] applicationState] == UIApplicationStateActive);
 #else
     return [NSApp isActive];
@@ -415,7 +415,7 @@ static bool cocoagl_gfx_ctx_has_windowed(void *data)
 {
    (void)data;
 
-#ifdef IOS
+#if defined(HAVE_COCOATOUCH)
    return false;
 #else
    return true;
@@ -427,14 +427,14 @@ static void cocoagl_gfx_ctx_swap_buffers(void *data)
    if (!(--g_fast_forward_skips < 0))
       return;
     
-#if defined(OSX)
+#if defined(HAVE_COCOA)
 #ifdef HAVE_NSOPENGL
     [g_context flushBuffer];
 #else
     if (g_context.CGLContextObj)
         CGLFlushDrawable(g_context.CGLContextObj);
 #endif
-#elif defined(IOS)
+#elif defined(HAVE_COCOATOUCH)
     if (g_view)
         [g_view display];
 #endif

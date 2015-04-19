@@ -30,7 +30,7 @@
 - (void)unloadingCore;
 @end
 
-#ifdef IOS
+#if defined(HAVE_COCOATOUCH)
 #include <UIKit/UIKit.h>
 
 #include <CoreLocation/CoreLocation.h>
@@ -183,7 +183,7 @@ extern apple_frontend_settings_t apple_frontend_settings;
 
 void get_ios_version(int *major, int *minor);
 
-#elif defined(OSX)
+#elif defined(HAVE_COCOA)
 #include <AppKit/AppKit.h>
 #ifdef HAVE_LOCATION
 #include <CoreLocation/CoreLocation.h>
