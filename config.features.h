@@ -290,6 +290,12 @@ static const bool _coretext_supp = true;
 static const bool _coretext_supp = false;
 #endif
 
+#ifdef HAVE_AVFOUNDATION
+static const bool _avfoundation_supp = true;
+#else
+static const bool _avfoundation_supp = false;
+#endif
+
 #if !defined(_WIN32) && !defined(GLOBAL_CONFIG_DIR)
 #if defined(__HAIKU__)
 #define GLOBAL_CONFIG_DIR "/system/settings"
