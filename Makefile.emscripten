@@ -3,7 +3,7 @@ TARGET = retroarch.js
 OS = Emscripten
 OBJ :=
 DEFINES := -DRARCH_INTERNAL -DHAVE_OVERLAY
-DEFINES += -DHAVE_OPENGL -DHAVE_OPENGLES -DHAVE_OPENGLES2 -DHAVE_EGL -DHAVE_OVERLAY -DHAVE_GLSL
+DEFINES += -DHAVE_OPENGL -DHAVE_OPENGLES -DHAVE_OPENGLES2 -DHAVE_EGL -DHAVE_OVERLAY -DHAVE_GLSL -DHAVE_FILTERS_BUILTIN
 
 HAVE_OPENGL = 1
 HAVE_GLES = 1
@@ -27,6 +27,27 @@ LDFLAGS := -L. -s TOTAL_MEMORY=$(MEMORY) -s OUTLINING_LIMIT=50000 --js-library e
 
 include Makefile.common
 
+OBJ += gfx/video_filters/2xsai.o
+OBJ += gfx/video_filters/super2xsai.o
+OBJ += gfx/video_filters/supereagle.o
+OBJ += gfx/video_filters/2xbr.o
+OBJ += gfx/video_filters/darken.o
+OBJ += gfx/video_filters/epx.o
+OBJ += gfx/video_filters/scale2x.o
+OBJ += gfx/video_filters/blargg_ntsc_snes.o
+OBJ += gfx/video_filters/lq2x.o
+OBJ += gfx/video_filters/phosphor2x.o
+
+OBJ += audio/audio_filters/echo.o
+OBJ += audio/audio_filters/eq.o
+OBJ += audio/audio_filters/chorus.o
+OBJ += audio/audio_filters/iir.o
+OBJ += audio/audio_filters/panning.o
+OBJ += audio/audio_filters/phaser.o
+OBJ += audio/audio_filters/reverb.o
+OBJ += audio/audio_filters/wahwah.o
+
+CFLAGS += -Ideps/zlib/
 libretro = libretro_emscripten.bc
 
 ifneq ($(V), 1)
