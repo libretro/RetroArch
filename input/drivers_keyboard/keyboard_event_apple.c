@@ -25,11 +25,11 @@
 
 #include "../drivers/apple_keycode.h"
 
-#if defined(IOS)
+#if defined(HAVE_COCOATOUCH)
 
 #define HIDKEY(X) X
 
-#elif defined(OSX)
+#elif defined(HAVE_COCOA)
 
 /* Taken from https://github.com/depp/keycode,
  * check keycode.h for license. */
