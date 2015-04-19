@@ -258,7 +258,12 @@ if [ "$HAVE_THREADS" != 'no' ]; then
       check_pkgconf AVUTIL libavutil 51
       check_pkgconf SWSCALE libswscale 2.1
       check_header AV_CHANNEL_LAYOUT libavutil/channel_layout.h
-      ( [ "$HAVE_FFMPEG" = 'auto' ] && ( [ "$HAVE_AVCODEC" = 'no' ] || [ "$HAVE_AVFORMAT" = 'no' ] || [ "$HAVE_AVUTIL" = 'no' ] || [ "$HAVE_SWSCALE" = 'no' ] ) && HAVE_FFMPEG='no' ) || HAVE_FFMPEG='yes'
+
+      HAVE_FFMPEG='yes'
+      if [ "$HAVE_AVCODEC" = 'no' ] || [ "$HAVE_AVFORMAT" = 'no' ] || [ "$HAVE_AVUTIL" = 'no' ] || [ "$HAVE_SWSCALE" = 'no' ]; then
+         HAVE_FFMPEG='no'
+         echo "Notice: FFmpeg recording disabled due to missing or unsuitable packages."
+      fi
    fi
 else
    echo "Notice: Not building with threading support. Will skip FFmpeg."
