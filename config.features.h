@@ -260,6 +260,24 @@ static const bool _python_supp = true;
 static const bool _python_supp = false;
 #endif
 
+#if defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH)
+static const bool _cocoa_supp = true;
+#else
+static const bool _cocoa_supp = false;
+#endif
+
+#ifdef HAVE_RPNG
+static const bool _rpng_supp = true;
+#else
+static const bool _rpng_supp = false;
+#endif
+
+#ifdef HAVE_CORETEXT
+static const bool _coretext_supp = true;
+#else
+static const bool _coretext_supp = false;
+#endif
+
 #if !defined(_WIN32) && !defined(GLOBAL_CONFIG_DIR)
 #if defined(__HAIKU__)
 #define GLOBAL_CONFIG_DIR "/system/settings"

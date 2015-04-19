@@ -129,9 +129,11 @@ static void print_features(void)
    _PSUPP(dynamic, "Dynamic", "Dynamic run-time loading of libretro library");
    _PSUPP(ffmpeg, "FFmpeg", "On-the-fly recording of gameplay with libavcodec");
    _PSUPP(freetype, "FreeType", "TTF font rendering with FreeType");
+   _PSUPP(coretext, "CoreText", "TTF font rendering with Apple CoreText");
    _PSUPP(netplay, "Netplay", "Peer-to-peer netplay");
    _PSUPP(python, "Python", "Script support in shaders");
    _PSUPP(libusb, "Libusb", "Libusb support");
+   _PSUPP(cocoa, "Cocoa", "Cocoa UI companion support (for OSX and/or iOS).");
 }
 #undef _PSUPP
 

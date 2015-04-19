@@ -650,7 +650,7 @@ ifeq ($(HAVE_ZLIB), 1)
 	OBJ += libretro-common/file/file_extract.o
    OBJ += $(ZLIB_OBJS)
    DEFINES += -DHAVE_ZLIB
-	#HAVE_RPNG = 1
+	HAVE_RPNG = 1
    HAVE_COMPRESSION = 1 
    ifeq ($(WANT_ZLIB), 1)
       DEFINES += -DWANT_ZLIB

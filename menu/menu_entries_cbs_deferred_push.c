@@ -468,6 +468,16 @@ static int deferred_push_system_information(void *data, void *userdata,
             "Network Command interface support: %s", _network_command_supp ? "true" : "false");
       menu_list_push(list, feat_str, "",
             MENU_SETTINGS_CORE_INFO_NONE, 0);
+
+      snprintf(feat_str, sizeof(feat_str),
+            "Cocoa support: %s", _cocoa_supp ? "true" : "false");
+      menu_list_push(list, feat_str, "",
+            MENU_SETTINGS_CORE_INFO_NONE, 0);
+
+      snprintf(feat_str, sizeof(feat_str),
+            "PNG support (RPNG): %s", _rpng_supp ? "true" : "false");
+      menu_list_push(list, feat_str, "",
+            MENU_SETTINGS_CORE_INFO_NONE, 0);
       
       snprintf(feat_str, sizeof(feat_str),
             "SDL1.2 support: %s", _sdl_supp ? "true" : "false");
@@ -627,6 +637,11 @@ static int deferred_push_system_information(void *data, void *userdata,
 
       snprintf(feat_str, sizeof(feat_str),
             "FFmpeg support: %s", _ffmpeg_supp ? "true" : "false");
+      menu_list_push(list, feat_str, "",
+            MENU_SETTINGS_CORE_INFO_NONE, 0);
+
+      snprintf(feat_str, sizeof(feat_str),
+            "CoreText support: %s", _coretext_supp ? "true" : "false");
       menu_list_push(list, feat_str, "",
             MENU_SETTINGS_CORE_INFO_NONE, 0);
 
