@@ -116,6 +116,12 @@ static const bool _alsa_supp = true;
 static const bool _alsa_supp = false;
 #endif
 
+#ifdef HAVE_COREAUDIO
+static const bool _coreaudio_supp = true;
+#else
+static const bool _coreaudio_supp = false;
+#endif
+
 #if defined(HAVE_OSS) || defined(HAVE_OSS_BSD)
 static const bool _oss_supp = true;
 #else
@@ -264,6 +270,12 @@ static const bool _python_supp = false;
 static const bool _cocoa_supp = true;
 #else
 static const bool _cocoa_supp = false;
+#endif
+
+#ifdef HAVE_QT
+static const bool _qt_supp = true;
+#else
+static const bool _qt_supp = false;
 #endif
 
 #ifdef HAVE_RPNG
