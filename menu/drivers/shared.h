@@ -58,8 +58,8 @@ static INLINE void get_title(const char *label, const char *dir,
 #endif
    if (!strcmp(label, "core_list"))
       snprintf(title, sizeof_title, "CORE SELECTION %s", dir);
-   else if (!strcmp(label, "core_updater_list"))
-      snprintf(title, sizeof_title, "CORE UPDATER %s", dir);
+   else if (!strcmp(label, "deferred_core_updater_list"))
+      strlcpy(title, "CORE UPDATER", sizeof_title);
    else if (!strcmp(label, "deferred_database_manager_list"))
       snprintf(title, sizeof_title, "DATABASE SELECTION - %s", (elem0_path[0] != '\0') ? path_basename(elem0_path) : "");
    else if (!strcmp(label, "database_manager_list"))
@@ -137,18 +137,11 @@ static INLINE void get_title(const char *label, const char *dir,
          menu_type == MENU_SETTINGS_CUSTOM_BIND_KEYBOARD)
    {
       strlcpy(title, "INPUT SETTINGS", sizeof_title);
-      if (strstr(elem1, "User"))
-         strlcat(title, " - USER", sizeof_title);
-      else if (!strcmp(elem1, "Meta Keys"))
-         strlcat(title, " - META KEYS", sizeof_title);
-      else if (!strcmp(elem1, "Turbo/Deadzone"))
-         strlcat(title, " - TURBO / DEADZONE", sizeof_title);
-      else if (!strcmp(elem1, "Input Device Mapping"))
-         strlcat(title, " - INPUT DEVICE MAPPING", sizeof_title);
-      else if (!strcmp(elem1, "State"))
-         strlcat(title, " - STATE", sizeof_title);
-      else if (!strcmp(elem1, "Miscellaneous"))
-         strlcat(title, " - MISCELLANEOUS", sizeof_title);
+      if (elem1[0] != '\0')
+      {
+         strlcat(title, " - ", sizeof_title);
+         strlcat(title, string_to_upper(elem1), sizeof_title);
+      }
    }
    else if (!strcmp(label, "management"))
       strlcpy(title, "MANAGEMENT", sizeof_title);
