@@ -254,7 +254,7 @@ else
 fi
 
 if [ "$OS" = 'Darwin' ]; then
-   check_lib ZLIB "-libz"
+   check_lib ZLIB "-lz"
 else
    check_pkgconf ZLIB zlib
 fi
