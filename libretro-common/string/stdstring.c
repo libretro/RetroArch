@@ -21,6 +21,7 @@
  */
 
 #include <string/stdstring.h>
+#include <ctype.h>
 
 bool string_is_empty(const char *data)
 {
