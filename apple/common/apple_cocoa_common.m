@@ -630,7 +630,7 @@ camera_driver_t camera_apple = {
    apple_camera_start,
    apple_camera_stop,
    apple_camera_poll,
-   "apple",
+   "avfoundation",
 };
 #endif
 
