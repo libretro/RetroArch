@@ -116,7 +116,8 @@ static void print_features(void)
    _PSUPP(dsound, "DirectSound", "audio driver");
    _PSUPP(xaudio, "XAudio2", "audio driver");
    _PSUPP(7zip, "7zip", "7zip support");
-   _PSUPP(zlib, "zlib", "PNG encode/decode and .zip extraction");
+   _PSUPP(zlib, "zlib", ".zip extraction");
+   _PSUPP(rpng, "rpng", "PNG encode/decode");
    _PSUPP(al, "OpenAL", "audio driver");
    _PSUPP(sl, "OpenSL", "audio driver");
    _PSUPP(dylib, "External", "External filter and plugin support");
