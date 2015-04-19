@@ -104,17 +104,14 @@ check_pkgconf()	#$1 = HAVE_$1	$2 = package	$3 = version	$4 = critical error mess
 {	tmpval="$(eval echo \$HAVE_$1)"
 	[ "$tmpval" = 'no' ] && return 0
 
-	[ "$PKG_CONF_PATH" ] || {
-		ECHOBUF="Checking for pkg-config"
-#		echo -n "Checking for pkg-config"
-		for PKG_CONF_PATH in $(which "${CROSS_COMPILE}pkg-config") ''; do [ "$PKG_CONF_PATH" ] && break; done
-		[ "$PKG_CONF_PATH" ] || { echo "pkg-config not found. Exiting ..."; exit 1;}
-		echo "$ECHOBUF ... $PKG_CONF_PATH"
-	}
-
 	ECHOBUF="Checking presence of package $2"
 	[ "$3" ] && ECHOBUF="$ECHOBUF >= $3"
-#	echo -n "$ECHOBUF ... "
+
+	[ "$PKG_CONF_PATH" = "none" ] && {
+		echo "$ECHOBUF ... no"
+		return 0
+	}
+
 	answer='no'
 	version='no'
 	$PKG_CONF_PATH --atleast-version="${3:-0.0}" "$2" && {

@@ -78,3 +78,20 @@ if [ "$OS" = "Win32" ]; then
 	fi
 	echo "$ECHOBUF ... $WINDRES"
 fi
+
+[ "$PKG_CONF_PATH" ] && [ "$PKG_CONF_PATH" != "none" ] || {
+	ECHOBUF="Checking for pkg-config"
+	PKG_CONF_PATH="none"
+
+	for path in $(which "${CROSS_COMPILE}pkg-config" 2>/dev/null) ''; do
+		[ -n "$path" ] && {
+			PKG_CONF_PATH=$path;
+			break;
+		}
+	done
+
+	echo "$ECHOBUF ... $PKG_CONF_PATH"
+	if [ "$PKG_CONF_PATH" = "none" ] && [ "$OS" != "Darwin" ]; then
+		echo "Warning: pkg-config not found, package checks will fail."
+	fi
+}
