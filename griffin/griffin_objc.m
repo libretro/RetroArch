@@ -23,19 +23,25 @@
 #define __IPHONE_OS_VERSION_MAX_ALLOWED 00000
 #endif
 
+#if defined(HAVE_COCOATOUCH) || defined(HAVE_COCOA)
 #include "../gfx/drivers_context/apple_cocoa_gl.m"
 #include "../apple/common/apple_cocoa_common.m"
 
+#if defined(HAVE_COCOATOUCH)
+
 #if TARGET_OS_IPHONE
-#include "../apple/iOS/platform.m"
 #include "../apple/iOS/menu.m"
 #include "../apple/iOS/browser.m"
-#ifdef HAVE_COCOATOUCH
+#include "../apple/iOS/platform.m"
 #include "../ui/drivers/ui_cocoatouch.m"
 #endif
-#else
+
+#elif defined(HAVE_COCOA)
+
 #include "../apple/OSX/platform.m"
 #include "../apple/OSX/settings.m"
+#endif
+
 #endif
 
 #ifdef HAVE_MFI
