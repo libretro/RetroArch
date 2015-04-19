@@ -104,9 +104,9 @@ static void print_features(void)
    _PSUPP(opengles, "OpenGL ES", "OpenGL ES driver");
    _PSUPP(xvideo, "XVideo", "XVideo video driver");
    _PSUPP(udev, "UDEV", "UDEV/EVDEV input driver support");
-   _PSUPP(egl, "EGL",   "context driver");
-   _PSUPP(kms, "KMS",   "context driver");
-   _PSUPP(vg, "OpenVG", "context driver");
+   _PSUPP(egl, "EGL",   "video context driver");
+   _PSUPP(kms, "KMS",   "video context driver");
+   _PSUPP(vg, "OpenVG", "video context driver");
    _PSUPP(coreaudio, "CoreAudio", "audio driver");
    _PSUPP(alsa, "ALSA", "audio driver");
    _PSUPP(oss, "OSS", "audio driver");
