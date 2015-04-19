@@ -15,10 +15,14 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <CoreFoundation/CoreFoundation.h>
+#include <retro_miscellaneous.h>
+#include <file/file_path.h>
 #include "../../apple/common/CFExtensions.h"
 
 #include "../frontend_driver.h"
 #include "../../ui/ui_companion_driver.h"
+#include "../../general.h"
 
 #include <stdint.h>
 #include <boolean.h>
@@ -177,6 +181,7 @@ static void frontend_apple_get_os(char *name, size_t sizeof_name, int *major, in
 static void frontend_apple_get_environment_settings(int *argc, char *argv[],
       void *args, void *params_data)
 {
+#if defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH)
    char temp_dir[PATH_MAX_LENGTH];
    char bundle_path_buf[PATH_MAX_LENGTH], home_dir_buf[PATH_MAX_LENGTH];
    CFURLRef bundle_url;
@@ -241,9 +246,12 @@ static void frontend_apple_get_environment_settings(int *argc, char *argv[],
 
    CFRelease(bundle_path);
    CFRelease(bundle_url);
+#endif
 }
 
+#if defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH)
 extern void apple_rarch_exited(void);
+#endif
 
 static void frontend_apple_load_content(void)
 {
@@ -256,7 +264,9 @@ static void frontend_apple_load_content(void)
 
 static void frontend_apple_shutdown(bool unused)
 {
+#if defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH)
     apple_rarch_exited();
+#endif
 }
 
 static int frontend_apple_get_rating(void)
