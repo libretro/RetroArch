@@ -19,7 +19,6 @@
 #import "../common/RetroArch_Apple.h"
 #include "../../input/drivers/cocoa_input.h"
 #include "../../frontend/frontend.h"
-#include "../../menu/menu.h"
 #include "../../retroarch.h"
 
 #include <objc/objc-runtime.h>

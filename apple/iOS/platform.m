@@ -22,8 +22,6 @@
 #ifdef HAVE_MFI
 #include "../../input/drivers_hid/mfi_hid.h"
 #endif
-#include "menu.h"
-#include "../../menu/menu.h"
 
 #include "../../input/drivers_hid/btstack_hid.h"
 

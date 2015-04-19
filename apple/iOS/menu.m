@@ -20,11 +20,9 @@
 #include "../../input/drivers/cocoa_input.h"
 #include <file/file_path.h>
 #include <retro_miscellaneous.h>
-#include "menu.h"
 
 #include <objc/runtime.h>
 
-#include "../../menu/menu.h"
 #include "../../menu/menu_entries.h"
 #include "../../menu/drivers/shared.h"
 
