@@ -253,7 +253,11 @@ else
    HAVE_CG='no'
 fi
 
-check_pkgconf ZLIB zlib
+if [ "$OS" = 'Darwin' ]; then
+   check_lib ZLIB "-libz"
+else
+   check_pkgconf ZLIB zlib
+fi
 
 if [ "$HAVE_THREADS" != 'no' ]; then
    if [ "$HAVE_FFMPEG" != 'no' ]; then
