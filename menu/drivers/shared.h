@@ -123,6 +123,7 @@ static INLINE void get_title(const char *label, const char *dir,
          || !strcmp(elem0, "Font Settings")
          || !strcmp(elem0, "Shader Settings")
          || !strcmp(elem0, "Archive Settings")
+         || !strcmp(elem0, "Input Settings")
          )
    {
       strlcpy(title, string_to_upper(elem0), sizeof_title);
@@ -132,8 +133,7 @@ static INLINE void get_title(const char *label, const char *dir,
          strlcat(title, string_to_upper(elem1), sizeof_title);
       }
    }
-   else if (!strcmp(elem0, "Input Settings") ||
-         menu_type == MENU_SETTINGS_CUSTOM_BIND ||
+   else if (menu_type == MENU_SETTINGS_CUSTOM_BIND ||
          menu_type == MENU_SETTINGS_CUSTOM_BIND_KEYBOARD)
    {
       strlcpy(title, "INPUT SETTINGS", sizeof_title);
@@ -143,12 +143,15 @@ static INLINE void get_title(const char *label, const char *dir,
          strlcat(title, string_to_upper(elem1), sizeof_title);
       }
    }
-   else if (!strcmp(label, "management"))
-      strlcpy(title, "MANAGEMENT", sizeof_title);
-   else if (!strcmp(label, "options"))
-      strlcpy(title, "OPTIONS", sizeof_title);
-   else if (!strcmp(label, "settings"))
-      strlcpy(title, "SETTINGS", sizeof_title);
+   else if (!strcmp(label, "management")
+         || !strcmp(label, "options")
+         || !strcmp(label, "settings")
+         )
+   {
+      char upper_label[PATH_MAX_LENGTH];
+      strlcpy(upper_label, label, sizeof(upper_label));
+      strlcpy(title, string_to_upper(upper_label), sizeof_title);
+   }
    else if (!strcmp(label, "performance_counters"))
       strlcpy(title, "PERFORMANCE COUNTERS", sizeof_title);
    else if (!strcmp(label, "frontend_counters"))
