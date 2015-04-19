@@ -325,6 +325,7 @@
 				MACOSX_DEPLOYMENT_TARGET = 10.5;
 				OTHER_CFLAGS = (
 					"-DHAVE_GRIFFIN",
+               "-DHAVE_CORETEXT",
                "-DHAVE_IOHIDMANAGER",
 					"-DHAVE_LOCATION",
 					"-DHAVE_RGUI",

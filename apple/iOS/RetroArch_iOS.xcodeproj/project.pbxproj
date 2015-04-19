@@ -494,6 +494,7 @@
 					"-DHAVE_NETWORKING",
 					"-DHAVE_CAMERA",
 					"-DHAVE_GRIFFIN",
+               "-DHAVE_CORETEXT",
 					"-DHAVE_LOCATION",
 					"-DHAVE_RGUI",
 					"-DHAVE_MENU",

@@ -25,7 +25,7 @@ static const font_renderer_driver_t *font_backends[] = {
 #ifdef HAVE_FREETYPE
    &freetype_font_renderer,
 #endif
-#ifdef __APPLE__
+#if defined(__APPLE__) && defined(HAVE_CORETEXT)
    &coretext_font_renderer,
 #endif
    &bitmap_font_renderer,

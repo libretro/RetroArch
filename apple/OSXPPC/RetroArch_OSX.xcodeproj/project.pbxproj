@@ -282,6 +282,7 @@
 				ONLY_ACTIVE_ARCH = YES;
 				OTHER_CFLAGS = (
 					"-DHAVE_GRIFFIN",
+               "-DHAVE_CORETEXT",
                "-DHAVE_IOHIDMANAGER",
 					"-DHAVE_RGUI",
 					"-DHAVE_MENU",

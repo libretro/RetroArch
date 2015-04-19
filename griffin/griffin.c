@@ -247,7 +247,7 @@ FONTS
 #include "../gfx/drivers_font_renderer/freetype.c"
 #endif
 
-#if defined(__APPLE__)
+#if defined(__APPLE__) && defined(HAVE_CORETEXT)
 #include "../gfx/drivers_font_renderer/coretext.c"
 #endif
 
