@@ -304,8 +304,8 @@ static void gl_disable_client_arrays(gl_t *gl)
 
 #ifdef IOS
 /* There is no default frame buffer on iOS. */
-void apple_bind_game_view_fbo(void);
-#define gl_bind_backbuffer() apple_bind_game_view_fbo()
+void cocoagl_bind_game_view_fbo(void);
+#define gl_bind_backbuffer() cocoagl_bind_game_view_fbo()
 #else
 #define gl_bind_backbuffer() glBindFramebuffer(RARCH_GL_FRAMEBUFFER, 0)
 #endif
