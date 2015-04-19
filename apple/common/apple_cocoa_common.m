@@ -200,7 +200,7 @@ void *nsview_get_ptr(void)
 #endif
 
 /* forward declarations */
-void apple_gfx_ctx_update(void);
+void cocoagl_gfx_ctx_update(void);
 void *glkitview_init(void);
 
 @implementation RAGameView
@@ -232,7 +232,7 @@ void *glkitview_init(void);
 {
    [super setFrame:frameRect];
 
-   apple_gfx_ctx_update();
+   cocoagl_gfx_ctx_update();
 }
 
 /* Stop the annoying sound when pressing a key. */

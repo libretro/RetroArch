@@ -110,7 +110,7 @@ void get_ios_version(int *major, int *minor)
         *minor = [decomposed_os_version[1] integerValue];
 }
 
-extern float apple_gfx_ctx_get_native_scale(void);
+extern float cocoagl_gfx_ctx_get_native_scale(void);
 
 /* Input helpers: This is kept here because it needs ObjC */
 static void handle_touch_event(NSArray* touches)
@@ -118,7 +118,7 @@ static void handle_touch_event(NSArray* touches)
    unsigned i;
    driver_t *driver          = driver_get_ptr();
    apple_input_data_t *apple = (apple_input_data_t*)driver->input_data;
-   float scale               = apple_gfx_ctx_get_native_scale();
+   float scale               = cocoagl_gfx_ctx_get_native_scale();
 
    if (!apple)
       return;
