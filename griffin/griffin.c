@@ -609,7 +609,7 @@ FRONTEND
 #include "../frontend/drivers/platform_ctr.c"
 #elif defined(__QNX__)
 #include "../frontend/drivers/platform_qnx.c"
-#elif defined(OSX) || defined(IOS)
+#elif defined(__APPLE__)
 #include "../frontend/drivers/platform_apple.c"
 #elif defined(ANDROID)
 #include "../frontend/drivers/platform_android.c"
