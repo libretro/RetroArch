@@ -31,7 +31,7 @@ static const camera_driver_t *camera_drivers[] = {
 #ifdef ANDROID
    &camera_android,
 #endif
-#if defined(__IPHONE_4_0) && defined(IOS)
+#ifdef HAVE_AVFOUNDATION
     &camera_apple,
 #endif
    &camera_null,

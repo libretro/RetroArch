@@ -818,6 +818,7 @@
 					"-DHAVE_XMB",
 					"-D_LZMA_UINT32_IS_ULONG",
 					"-DHAVE_MFI",
+               "-DHAVE_AVFOUNDATION",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE = "";
@@ -885,6 +886,7 @@
 					"-DHAVE_XMB",
 					"-D_LZMA_UINT32_IS_ULONG",
 					"-DHAVE_MFI",
+               "-DHAVE_AVFOUNDATION",
 				);
 				"OTHER_CFLAGS[arch=*]" = (
 					"-DNS_BLOCK_ASSERTIONS=1",
@@ -924,6 +926,7 @@
 					"-DHAVE_XMB",
 					"-D_LZMA_UINT32_IS_ULONG",
 					"-DHAVE_MFI",
+               "-DHAVE_AVFOUNDATION",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE = "";

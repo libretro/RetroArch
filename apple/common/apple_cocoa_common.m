@@ -171,11 +171,6 @@ void apple_display_alert(const char *message, const char *title)
 
 /* Define compatibility symbols and categories. */
 
-//#if defined(MAC_OS_X_VERSION_10_7) || defined(__IPHONE_4_0)
-#if defined(__IPHONE_4_0) && defined(IOS)
-#define HAVE_AVFOUNDATION
-#endif
-
 #ifdef HAVE_AVFOUNDATION
 #include <AVFoundation/AVCaptureSession.h>
 #include <AVFoundation/AVCaptureDevice.h>
