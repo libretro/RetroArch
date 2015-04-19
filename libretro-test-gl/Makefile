@@ -45,7 +45,7 @@ else ifeq ($(platform), osx)
    GL_LIB := -framework OpenGL
    CFLAGS += -DOSX
 	ifeq ($(arch),ppc)
-		CFLAGS += -DBLARGG_BIG_ENDIAN=1 -D__ppc__ -DOSX_PPC
+		CFLAGS += -D__ppc__ -DOSX_PPC
 	endif
 	OSXVER = `sw_vers -productVersion | cut -d. -f 2`
 	OSX_LT_MAVERICKS = `(( $(OSXVER) <= 9)) && echo "YES"`
