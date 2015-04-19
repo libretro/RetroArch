@@ -20,6 +20,7 @@
 #include <Foundation/Foundation.h>
 #import <CoreFoundation/CoreFoundation.h>
 
+#include "../common/CFExtensions.h"
 #include "../../core_info.h"
 #include "../../settings.h"
 
@@ -71,7 +72,6 @@ void get_ios_version(int *major, int *minor);
 #include <CoreLocation/CoreLocation.h>
 #endif
 
-#include "../common/CFExtensions.h"
 
 @interface RAGameView : NSView
 #ifdef HAVE_LOCATION

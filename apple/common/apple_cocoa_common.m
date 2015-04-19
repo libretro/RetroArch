@@ -19,7 +19,6 @@
 #include <CoreFoundation/CFArray.h>
 #include <CoreFoundation/CFString.h>
 #import <Foundation/NSPathUtilities.h>
-#include "CFExtensions.h"
 #import "RetroArch_Apple.h"
 #include "../../general.h"
 #include "../../runloop.h"
