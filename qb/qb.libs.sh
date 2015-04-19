@@ -108,6 +108,7 @@ check_pkgconf()	#$1 = HAVE_$1	$2 = package	$3 = version	$4 = critical error mess
 	[ "$3" ] && ECHOBUF="$ECHOBUF >= $3"
 
 	[ "$PKG_CONF_PATH" = "none" ] && {
+		eval HAVE_$1="no"
 		echo "$ECHOBUF ... no"
 		return 0
 	}
