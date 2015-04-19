@@ -24,7 +24,6 @@
 
 #include <objc/objc-runtime.h>
 
-static void* const associated_core_key = (void*)&associated_core_key;
 id<RetroArch_Platform> apple_platform;
 
 void apple_rarch_exited(void);
@@ -334,14 +333,6 @@ static void poll_iteration(void)
 
    if (global && global->system.shutdown)
       return;
-
-   /* TODO - rewrite this. */
-
-   cb = (NSComboBox*)[[self.coreSelectSheet contentView] viewWithTag:1];
-#if defined(MAC_OS_X_VERSION_10_6)
-   /* FIXME - Rewrite this so that this is no longer an associated object - requires ObjC 2.0 runtime */
-   self.core = objc_getAssociatedObject(cb.objectValueOfSelectedItem, associated_core_key);
-#endif
 
    if (global && !global->main_is_init)
    {
