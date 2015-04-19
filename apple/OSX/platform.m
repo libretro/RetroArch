@@ -138,23 +138,17 @@ static char** waiting_argv;
 
 @interface RetroArch_OSX()
 @property (nonatomic, retain) NSWindowController* settingsWindow;
-@property (nonatomic, retain) NSWindow IBOutlet* coreSelectSheet;
-@property (nonatomic, copy) NSString* core;
 @end
 
 @implementation RetroArch_OSX
 
 @synthesize window = _window;
 @synthesize settingsWindow = _settingsWindow;
-@synthesize coreSelectSheet = _coreSelectSheet;
-@synthesize core = _core;
 
 - (void)dealloc
 {
    [_window release];
-   [_coreSelectSheet release];
    [_settingsWindow release];
-   [_core release];
    [super dealloc];
 }
 
@@ -273,8 +267,6 @@ static void poll_iteration(void)
 
       if (core_name)
          event_command(EVENT_CMD_LOAD_CONTENT);
-      else
-         [self chooseCore];
 
       [sender replyToOpenOrPrint:NSApplicationDelegateReplySuccess];
    }
@@ -313,33 +305,6 @@ static void poll_iteration(void)
    [panel beginSheetForDirectory:nil file:nil modalForWindopw:[self window] modalDelegate:self didEndSelector:@selector(didEndSaveSheet:returnCode:contextInfo:) contextInfo:NULL];
 #endif
    [[NSApplication sharedApplication] runModalForWindow:panel];
-}
-
-- (void)chooseCore
-{
-   [[NSApplication sharedApplication] beginSheet:self.coreSelectSheet modalForWindow:self.window modalDelegate:nil didEndSelector:nil contextInfo:nil];
-   [[NSApplication sharedApplication] runModalForWindow:self.coreSelectSheet];
-}
-
-- (IBAction)coreWasChosen:(id)sender
-{
-   global_t *global = global_get_ptr();
-
-   [[NSApplication sharedApplication] stopModal];
-   [[NSApplication sharedApplication] endSheet:self.coreSelectSheet returnCode:0];
-   [self.coreSelectSheet orderOut:self];
-
-   if (global && global->system.shutdown)
-      return;
-
-   if (global && !global->main_is_init)
-   {
-      /* TODO/FIXME: Set core/content here. */
-      event_command(EVENT_CMD_LOAD_CORE);
-      event_command(EVENT_CMD_LOAD_CONTENT);
-   }
-   else
-      event_command(EVENT_CMD_QUIT);
 }
 
 - (void)loadingCore:(const NSString*)core withFile:(const char*)file
