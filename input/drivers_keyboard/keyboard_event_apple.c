@@ -136,7 +136,7 @@ static void handle_icade_event(unsigned keycode)
    }
 }
 
-void apple_input_keyboard_event(bool down,
+void cocoa_input_keyboard_event(bool down,
       unsigned code, uint32_t character, uint32_t mod, unsigned device)
 {
    driver_t *driver = driver_get_ptr();

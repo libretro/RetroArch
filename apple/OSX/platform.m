@@ -79,11 +79,11 @@ void apple_rarch_exited(void)
                mod |=  RETROKMOD_NUMLOCK;
             
             for (i = 1; i < ch.length; i++)
-               apple_input_keyboard_event(event_type == NSKeyDown,
+               cocoa_input_keyboard_event(event_type == NSKeyDown,
                      0, [ch characterAtIndex:i], mod, RETRO_DEVICE_KEYBOARD);
          }
          
-         apple_input_keyboard_event(event_type == NSKeyDown,
+         cocoa_input_keyboard_event(event_type == NSKeyDown,
                event.keyCode, character, mod, RETRO_DEVICE_KEYBOARD);
       }
          break;
@@ -94,7 +94,7 @@ void apple_rarch_exited(void)
          bool down = (new_flags & old_flags) == old_flags;
          old_flags = new_flags;
 
-         apple_input_keyboard_event(down, event.keyCode,
+         cocoa_input_keyboard_event(down, event.keyCode,
                0, event.modifierFlags, RETRO_DEVICE_KEYBOARD);
       }
          break;
