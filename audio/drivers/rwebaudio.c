@@ -13,11 +13,23 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdlib.h>
+#include <unistd.h>
+#include <boolean.h>
+
 #include "../../driver.h"
 #include "../../general.h"
 
-#include "../../emscripten/RWebAudio.h"
-
+/* forward declarations */
+unsigned RWebAudioSampleRate(void);
+void *RWebAudioInit(unsigned latency);
+ssize_t RWebAudioWrite(const void *buf, size_t size);
+bool RWebAudioStop(void);
+bool RWebAudioStart(void);
+void RWebAudioSetNonblockState(bool state);
+void RWebAudioFree(void);
+size_t RWebAudioWriteAvail(void);
+size_t RWebAudioBufferSize(void);
 static bool rwebaudio_is_paused;
 
 static void rwebaudio_free(void *data)

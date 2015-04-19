@@ -13,8 +13,17 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdint.h>
+#include <boolean.h>
 #include "../../driver.h"
-#include "../../emscripten/RWebCam.h"
+
+/* forward declarations */
+void *RWebCamInit(uint64_t caps, unsigned width, unsigned height);
+void RWebCamFree(void *data);
+bool RWebCamStart(void *data);
+void RWebCamStop(void *data);
+bool RWebCamPoll(void *data, retro_camera_frame_raw_framebuffer_t frame_raw_cb,
+      retro_camera_frame_opengl_texture_t frame_gl_cb);
 
 static void *rwebcam_init(const char *device, uint64_t caps,
       unsigned width, unsigned height)

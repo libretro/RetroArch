@@ -19,12 +19,24 @@
 
 #include "../../driver.h"
 
+#include <stdlib.h>
 #include <boolean.h>
 #include "../../general.h"
 #include "../keyboard_line.h"
-
-#include "../../emscripten/RWebInput.h"
 #include "../input_joypad.h"
+
+typedef struct rwebinput_state
+{
+   uint8_t keys[32];
+   int mouse_x;
+   int mouse_y;
+   char mouse_l;
+   char mouse_r;
+} rwebinput_state_t;
+
+int RWebInputInit(void);
+rwebinput_state_t *RWebInputPoll(int context);
+void RWebInputDestroy(int context);
 
 static bool uninited = false;
 
