@@ -66,6 +66,10 @@
 #include <unistd.h>
 #endif
 
+#ifdef __APPLE__
+#include <CoreFoundation/CoreFoundation.h>
+#endif
+
 void fill_pathname_expand_special(char *out_path,
       const char *in_path, size_t size)
 {
