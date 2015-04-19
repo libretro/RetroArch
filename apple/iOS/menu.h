@@ -18,7 +18,6 @@
 #define __APPLE_RARCH_IOS_MENU_H__
 
 #include "../../playlist.h"
-#include "views.h"
 #include "../../settings.h"
 
 @protocol RAMenuItemBase

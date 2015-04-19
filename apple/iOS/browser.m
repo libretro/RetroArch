@@ -16,9 +16,7 @@
 
 #include <file/file_extract.h>
 
-#import "../common/RetroArch_Apple.h"
-#import "views.h"
-
+#include "../common/RetroArch_Apple.h"
 #include "../../content.h"
 #include "../../general.h"
 #include <file/dir_list.h>

@@ -25,7 +25,6 @@
 #include "menu.h"
 #include "../../menu/menu.h"
 
-#import "views.h"
 #include "../../input/drivers_hid/btstack_hid.h"
 
 id<RetroArch_Platform> apple_platform;
