@@ -324,7 +324,6 @@ static void poll_iteration(void)
 
 - (IBAction)coreWasChosen:(id)sender
 {
-   NSComboBox* cb = NULL;
    global_t *global = global_get_ptr();
 
    [[NSApplication sharedApplication] stopModal];
