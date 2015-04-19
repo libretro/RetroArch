@@ -225,6 +225,10 @@ ifeq ($(HAVE_COREAUDIO), 1)
    LIBS += -framework CoreServices -framework CoreAudio -framework AudioUnit
 endif
 
+ifeq ($(HAVE_CORETEXT), 1)
+   OBJ += gfx/drivers_font_renderer/coretext.o
+endif
+
 ifeq ($(HAVE_OSS), 1)
    OBJ += audio/drivers/oss.o
 endif
