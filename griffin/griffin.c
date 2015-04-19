@@ -362,7 +362,7 @@ INPUT (HID)
 
 #if defined(__APPLE__) && defined(IOS)
 #include "../input/drivers_hid/btstack_hid.c"
-#elif defined(__APPLE__) && !defined(IOS)
+#elif defined(__APPLE__) && defined(HAVE_IOHIDMANAGER)
 #include "../input/drivers_hid/apple_hid.c"
 #endif
 

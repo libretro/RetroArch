@@ -282,6 +282,7 @@
 				ONLY_ACTIVE_ARCH = YES;
 				OTHER_CFLAGS = (
 					"-DHAVE_GRIFFIN",
+               "-DHAVE_IOHIDMANAGER",
 					"-DHAVE_RGUI",
 					"-DHAVE_MENU",
 					"-DOSX",
@@ -343,6 +344,7 @@
 					"-DNS_BLOCK_ASSERTIONS=1",
 					"-DNDEBUG",
 					"-DHAVE_GRIFFIN",
+               "-DHAVE_IOHIDMANAGER",
 					"-DHAVE_RGUI",
 					"-DHAVE_MENU",
 					"-DOSX",

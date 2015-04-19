@@ -26,7 +26,7 @@ static hid_driver_t *hid_drivers[] = {
 #if defined(__APPLE__) && defined(IOS)
    &btstack_hid,
 #endif
-#if defined(__APPLE__) && !defined(IOS)
+#if defined(__APPLE__) && defined(HAVE_IOHIDMANAGER)
    &apple_hid,
 #endif
 #ifdef HAVE_LIBUSB
