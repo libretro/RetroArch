@@ -196,7 +196,7 @@ void get_ios_version(int *major, int *minor);
 #endif
 
 + (RAGameView*)get;
-#ifndef OSX
+#if !defined(HAVE_COCOA)
 - (void)display;
 #endif
 
@@ -225,7 +225,7 @@ extern id<RetroArch_Platform> apple_platform;
 extern void apple_display_alert(const char *message, const char *title);
 
 @interface RANumberFormatter : NSNumberFormatter
-#ifdef IOS
+#if defined(HAVE_COCOATOUCH)
 <UITextFieldDelegate>
 #endif
 
