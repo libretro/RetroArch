@@ -31,6 +31,14 @@
 #include <AudioUnit/AudioUnit.h>
 #include <AudioUnit/AUComponent.h>
 
+#if defined(__powerpc__) || defined(__ppc__) || defined(__POWERPC__)
+
+#ifndef OSX_PPC
+#define OSX_PPC
+#endif
+
+#endif
+
 typedef struct coreaudio
 {
    pthread_mutex_t lock;
