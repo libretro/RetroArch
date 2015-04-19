@@ -105,7 +105,7 @@ $(OBJDIR)/%.o: %.cpp
 
 $(OBJDIR)/%.o: %.m
 	@mkdir -p $(dir $@)
-	@$(if $(Q), $(shell echo echo CXX $<),)
+	@$(if $(Q), $(shell echo echo OBJC $<),)
 	$(Q)$(CXX) $(OBJCFLAGS) $(DEFINES) -MMD -c -o $@ $<
 
 .FORCE:
