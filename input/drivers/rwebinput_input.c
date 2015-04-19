@@ -50,18 +50,20 @@ static void *rwebinput_input_init(void)
 {
    rwebinput_input_t *rwebinput = (rwebinput_input_t*)calloc(1, sizeof(*rwebinput));
    if (!rwebinput)
-      return NULL;
+      goto error;
 
    rwebinput->context = RWebInputInit();
    if (!rwebinput->context)
-   {
-      free(rwebinput);
-      return NULL;
-   }
+      goto error;
 
    input_keymaps_init_keyboard_lut(rarch_key_map_rwebinput);
 
    return rwebinput;
+
+error:
+   if (rwebinput)
+      free(rwebinput);
+   return NULL;
 }
 
 static bool rwebinput_key_pressed(rwebinput_input_t *rwebinput, int key)
