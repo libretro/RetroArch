@@ -986,14 +986,6 @@
 				</object>
 				<object class="IBConnectionRecord">
 					<object class="IBActionConnection" key="connection">
-						<string key="label">coreWasChosen:</string>
-						<reference key="source" ref="976324537"/>
-						<reference key="destination" ref="59737118"/>
-					</object>
-					<int key="connectionID">580</int>
-				</object>
-				<object class="IBConnectionRecord">
-					<object class="IBActionConnection" key="connection">
 						<string key="label">showPreferences:</string>
 						<reference key="source" ref="976324537"/>
 						<reference key="destination" ref="609285721"/>
@@ -1007,14 +999,6 @@
 						<reference key="destination" ref="777071989"/>
 					</object>
 					<int key="connectionID">588</int>
-				</object>
-				<object class="IBConnectionRecord">
-					<object class="IBOutletConnection" key="connection">
-						<string key="label">coreSelectSheet</string>
-						<reference key="source" ref="976324537"/>
-						<reference key="destination" ref="361653618"/>
-					</object>
-					<int key="connectionID">590</int>
 				</object>
 				<object class="IBConnectionRecord">
 					<object class="IBOutletConnection" key="connection">
