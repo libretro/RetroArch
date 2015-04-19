@@ -33,7 +33,7 @@
 
 #include <CoreLocation/CoreLocation.h>
 #import <AVFoundation/AVCaptureOutput.h>
-#include "views.h"
+#include "../iOS/views.h"
 
 typedef struct
 {
