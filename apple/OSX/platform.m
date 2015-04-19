@@ -353,7 +353,6 @@ static void poll_iteration(void)
       event_command(EVENT_CMD_QUIT);
 }
 
-#pragma mark RetroArch_Platform
 - (void)loadingCore:(const NSString*)core withFile:(const char*)file
 {
    if (file)
@@ -365,7 +364,6 @@ static void poll_iteration(void)
    [[NSApplication sharedApplication] terminate:nil];
 }
 
-#pragma mark Menus
 - (IBAction)showCoresDirectory:(id)sender
 {
    settings_t *settings = config_get_ptr();

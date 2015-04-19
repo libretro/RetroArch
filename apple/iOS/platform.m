@@ -364,7 +364,6 @@ enum
    cocoa_input_reset_icade_buttons();
    [self setToolbarHidden:![[viewController toolbarItems] count] animated:YES];
    
-   // Workaround to keep frontend settings fresh
    [self refreshSystemConfig];
 }
 
