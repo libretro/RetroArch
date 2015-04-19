@@ -206,9 +206,6 @@ void get_ios_version(int *major, int *minor);
 {
    NSWindow* _window;
    NSWindowController* _settingsWindow;
-   NSWindow* _coreSelectSheet;
-   NSString* _file;
-   NSString* _core;
 }
 
 @property (nonatomic, retain) NSWindow IBOutlet* window;
