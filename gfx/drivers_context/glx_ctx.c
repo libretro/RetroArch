@@ -22,8 +22,6 @@
 
 #include <signal.h>
 #include <stdint.h>
-#include <X11/Xlib.h>
-#include <X11/Xutil.h>
 #include <GL/glx.h>
 
 static int (*g_pglSwapInterval)(int);

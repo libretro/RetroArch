@@ -192,11 +192,6 @@ typedef struct global
       unsigned windowed_scale;
    } pending;
 
-   struct
-   {
-      char output_dir[PATH_MAX_LENGTH];
-      char config_dir[PATH_MAX_LENGTH];
-   } recording;
 
    struct
    {
@@ -348,6 +343,9 @@ typedef struct global
       uint8_t *gpu_buffer;
       size_t gpu_width;
       size_t gpu_height;
+      char output_dir[PATH_MAX_LENGTH];
+      char config_dir[PATH_MAX_LENGTH];
+      bool use_output_dir;
    } record;
 
    struct

@@ -141,9 +141,11 @@ static int database_info_iterate_rdl_write(
 
       rarch_main_msg_queue_push(msg, 1, 180, true);
 
+#ifdef HAVE_ZLIB
       crc = zlib_crc32_calculate(ret_buf, ret);
 
       RARCH_LOG("CRC32: 0x%x .\n", (unsigned)crc);
+#endif
 
       if (ret_buf)
          free(ret_buf);

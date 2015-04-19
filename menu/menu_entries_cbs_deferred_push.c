@@ -30,6 +30,8 @@
 #include "menu_database.h"
 
 #include "../gfx/video_shader_driver.h"
+#include "../git_version.h"
+#include "../config.features.h"
 
 #ifdef HAVE_LIBRETRODB
 static int create_string_list_rdb_entry_string(const char *desc, const char *label,
@@ -262,6 +264,412 @@ static int deferred_push_core_information(void *data, void *userdata,
       menu_list_push(list,
             "No information available.", "",
             MENU_SETTINGS_CORE_OPTION_NONE, 0);
+
+   menu_driver_populate_entries(path, label, type);
+
+   return 0;
+}
+
+static int deferred_push_system_information(void *data, void *userdata,
+      const char *path, const char *label, unsigned type)
+{
+   file_list_t *list      = (file_list_t*)data;
+   file_list_t *menu_list = (file_list_t*)userdata;
+
+   if (!list || !menu_list)
+      return -1;
+
+   menu_list_clear(list);
+
+   {
+      char tmp[PATH_MAX_LENGTH];
+      const char *tmp_string;
+      char tmp2[PATH_MAX_LENGTH];
+      const frontend_ctx_driver_t *frontend = frontend_get_ptr();
+
+      snprintf(tmp, sizeof(tmp), "Build date: %s", __DATE__);
+      menu_list_push(list, tmp, "",
+            MENU_SETTINGS_CORE_INFO_NONE, 0);
+
+#ifdef HAVE_GIT_VERSION
+      snprintf(tmp, sizeof(tmp), "Git version: %s", rarch_git_version);
+      menu_list_push(list, tmp, "",
+            MENU_SETTINGS_CORE_INFO_NONE, 0);
+#endif
+
+      rarch_print_compiler(tmp, sizeof(tmp));
+      menu_list_push(list, tmp, "",
+            MENU_SETTINGS_CORE_INFO_NONE, 0);
+
+      {
+         char cpu_str[PATH_MAX_LENGTH];
+         uint64_t cpu = rarch_get_cpu_features();
+
+         snprintf(cpu_str, sizeof(cpu_str), "CPU Features: ");
+
+         if (cpu & RETRO_SIMD_MMX)
+            strlcat(cpu_str, "MMX ", sizeof(cpu_str));
+         if (cpu & RETRO_SIMD_MMXEXT)
+            strlcat(cpu_str, "MMXEXT ", sizeof(cpu_str));
+         if (cpu & RETRO_SIMD_SSE)
+            strlcat(cpu_str, "SSE1 ", sizeof(cpu_str));
+         if (cpu & RETRO_SIMD_SSE2)
+            strlcat(cpu_str, "SSE2 ", sizeof(cpu_str));
+         if (cpu & RETRO_SIMD_SSE3)
+            strlcat(cpu_str, "SSE3 ", sizeof(cpu_str));
+         if (cpu & RETRO_SIMD_SSSE3)
+            strlcat(cpu_str, "SSSE3 ", sizeof(cpu_str));
+         if (cpu & RETRO_SIMD_SSE4)
+            strlcat(cpu_str, "SSE4 ", sizeof(cpu_str));
+         if (cpu & RETRO_SIMD_SSE42)
+            strlcat(cpu_str, "SSE4.2 ", sizeof(cpu_str));
+         if (cpu & RETRO_SIMD_AVX)
+            strlcat(cpu_str, "AVX ", sizeof(cpu_str));
+         if (cpu & RETRO_SIMD_AVX2)
+            strlcat(cpu_str, "AVX2 ", sizeof(cpu_str));
+         if (cpu & RETRO_SIMD_VFPU)
+            strlcat(cpu_str, "VFPU ", sizeof(cpu_str));
+         if (cpu & RETRO_SIMD_NEON)
+            strlcat(cpu_str, "NEON ", sizeof(cpu_str));
+         if (cpu & RETRO_SIMD_PS)
+            strlcat(cpu_str, "PS ", sizeof(cpu_str));
+         if (cpu & RETRO_SIMD_AES)
+            strlcat(cpu_str, "AES ", sizeof(cpu_str));
+         if (cpu & RETRO_SIMD_VMX)
+            strlcat(cpu_str, "VMX ", sizeof(cpu_str));
+         if (cpu & RETRO_SIMD_VMX128)
+            strlcat(cpu_str, "VMX128 ", sizeof(cpu_str));
+         menu_list_push(list, cpu_str, "",
+               MENU_SETTINGS_CORE_INFO_NONE, 0);
+      }
+
+      if (frontend)
+      {
+         int major = 0, minor = 0;
+
+         snprintf(tmp, sizeof(tmp), "Frontend identifier: %s",
+               frontend->ident);
+         menu_list_push(list, tmp, "",
+               MENU_SETTINGS_CORE_INFO_NONE, 0);
+
+         if (frontend->get_name)
+         {
+            frontend->get_name(tmp2, sizeof(tmp2));
+            snprintf(tmp, sizeof(tmp), "Frontend name: %s",
+                  frontend->get_name ? tmp2 : "N/A");
+            menu_list_push(list, tmp, "",
+                  MENU_SETTINGS_CORE_INFO_NONE, 0);
+         }
+
+         if (frontend->get_os)
+         {
+            frontend->get_os(tmp2, sizeof(tmp2), &major, &minor);
+            snprintf(tmp, sizeof(tmp), "Frontend OS: %s %d.%d",
+                  frontend->get_os ? tmp2 : "N/A", major, minor);
+            menu_list_push(list, tmp, "",
+                  MENU_SETTINGS_CORE_INFO_NONE, 0);
+         }
+
+         snprintf(tmp, sizeof(tmp), "RetroRating level: %d", 
+               frontend->get_rating ? frontend->get_rating() : -1);
+         menu_list_push(list, tmp, "",
+               MENU_SETTINGS_CORE_INFO_NONE, 0);
+
+         if (frontend->get_powerstate)
+         {
+            int seconds = 0, percent = 0;
+            enum frontend_powerstate state = frontend->get_powerstate(&seconds, &percent);
+
+            tmp2[0] = '\0';
+
+            if (percent != 0)
+               snprintf(tmp2, sizeof(tmp2), "%d%%", percent);
+
+            switch (state)
+            {
+               case FRONTEND_POWERSTATE_NONE:
+                  strlcat(tmp2, " N/A", sizeof(tmp));
+                  break;
+               case FRONTEND_POWERSTATE_NO_SOURCE:
+                  strlcat(tmp2, " (No source)", sizeof(tmp));
+                  break;
+               case FRONTEND_POWERSTATE_CHARGING:
+                  strlcat(tmp2, " (Charging)", sizeof(tmp));
+                  break;
+               case FRONTEND_POWERSTATE_CHARGED:
+                  strlcat(tmp2, " (Charged)", sizeof(tmp));
+                  break;
+               case FRONTEND_POWERSTATE_ON_POWER_SOURCE:
+                  strlcat(tmp2, " (Discharging)", sizeof(tmp));
+                  break;
+            }
+
+            snprintf(tmp, sizeof(tmp), "Power source : %s",
+                  tmp2);
+            menu_list_push(list, tmp, "",
+                  MENU_SETTINGS_CORE_INFO_NONE, 0);
+         }
+      }
+
+      tmp_string = gfx_ctx_get_ident();
+
+      snprintf(tmp, sizeof(tmp), "Video context driver: %s",
+            tmp_string ? tmp_string : "N/A");
+      menu_list_push(list, tmp, "",
+            MENU_SETTINGS_CORE_INFO_NONE, 0);
+
+      {
+         float val = 0.0f;
+         if (gfx_ctx_get_metrics(DISPLAY_METRIC_MM_WIDTH, &val))
+         {
+            snprintf(tmp, sizeof(tmp), "Display metric width (mm): %.2f", 
+                  val);
+            menu_list_push(list, tmp, "",
+                  MENU_SETTINGS_CORE_INFO_NONE, 0);
+         }
+
+         if (gfx_ctx_get_metrics(DISPLAY_METRIC_MM_HEIGHT, &val))
+         {
+            snprintf(tmp, sizeof(tmp), "Display metric height (mm): %.2f", 
+                  val);
+            menu_list_push(list, tmp, "",
+                  MENU_SETTINGS_CORE_INFO_NONE, 0);
+         }
+
+         if (gfx_ctx_get_metrics(DISPLAY_METRIC_DPI, &val))
+         {
+            snprintf(tmp, sizeof(tmp), "Display metric DPI: %.2f", 
+                  val);
+            menu_list_push(list, tmp, "",
+                  MENU_SETTINGS_CORE_INFO_NONE, 0);
+         }
+      }
+   }
+
+   {
+      char feat_str[PATH_MAX_LENGTH];
+
+      snprintf(feat_str, sizeof(feat_str),
+            "LibretroDB support: %s", _libretrodb_supp ? "true" : "false");
+      menu_list_push(list, feat_str, "",
+            MENU_SETTINGS_CORE_INFO_NONE, 0);
+
+      snprintf(feat_str, sizeof(feat_str),
+            "Overlay support: %s", _overlay_supp ? "true" : "false");
+      menu_list_push(list, feat_str, "",
+            MENU_SETTINGS_CORE_INFO_NONE, 0);
+
+      snprintf(feat_str, sizeof(feat_str),
+            "Command interface support: %s", _command_supp ? "true" : "false");
+      menu_list_push(list, feat_str, "",
+            MENU_SETTINGS_CORE_INFO_NONE, 0);
+
+      snprintf(feat_str, sizeof(feat_str),
+            "Network Command interface support: %s", _network_command_supp ? "true" : "false");
+      menu_list_push(list, feat_str, "",
+            MENU_SETTINGS_CORE_INFO_NONE, 0);
+
+      snprintf(feat_str, sizeof(feat_str),
+            "Cocoa support: %s", _cocoa_supp ? "true" : "false");
+      menu_list_push(list, feat_str, "",
+            MENU_SETTINGS_CORE_INFO_NONE, 0);
+
+      snprintf(feat_str, sizeof(feat_str),
+            "PNG support (RPNG): %s", _rpng_supp ? "true" : "false");
+      menu_list_push(list, feat_str, "",
+            MENU_SETTINGS_CORE_INFO_NONE, 0);
+      
+      snprintf(feat_str, sizeof(feat_str),
+            "SDL1.2 support: %s", _sdl_supp ? "true" : "false");
+      menu_list_push(list, feat_str, "",
+            MENU_SETTINGS_CORE_INFO_NONE, 0);
+
+      snprintf(feat_str, sizeof(feat_str),
+            "SDL2 support: %s", _sdl2_supp ? "true" : "false");
+      menu_list_push(list, feat_str, "",
+            MENU_SETTINGS_CORE_INFO_NONE, 0);
+
+
+      snprintf(feat_str, sizeof(feat_str),
+            "OpenGL support: %s", _opengl_supp ? "true" : "false");
+      menu_list_push(list, feat_str, "",
+            MENU_SETTINGS_CORE_INFO_NONE, 0);
+
+      snprintf(feat_str, sizeof(feat_str),
+            "OpenGL ES support: %s", _opengles_supp ? "true" : "false");
+      menu_list_push(list, feat_str, "",
+            MENU_SETTINGS_CORE_INFO_NONE, 0);
+
+      snprintf(feat_str, sizeof(feat_str),
+            "Threading support: %s", _thread_supp ? "true" : "false");
+      menu_list_push(list, feat_str, "",
+            MENU_SETTINGS_CORE_INFO_NONE, 0);
+
+      snprintf(feat_str, sizeof(feat_str),
+            "KMS/EGL support: %s", _kms_supp ? "true" : "false");
+      menu_list_push(list, feat_str, "",
+            MENU_SETTINGS_CORE_INFO_NONE, 0);
+
+      snprintf(feat_str, sizeof(feat_str),
+            "Udev support: %s", _udev_supp ? "true" : "false");
+      menu_list_push(list, feat_str, "",
+            MENU_SETTINGS_CORE_INFO_NONE, 0);
+
+      snprintf(feat_str, sizeof(feat_str),
+            "OpenVG support: %s", _vg_supp ? "true" : "false");
+      menu_list_push(list, feat_str, "",
+            MENU_SETTINGS_CORE_INFO_NONE, 0);
+
+      snprintf(feat_str, sizeof(feat_str),
+            "EGL support: %s", _egl_supp ? "true" : "false");
+      menu_list_push(list, feat_str, "",
+            MENU_SETTINGS_CORE_INFO_NONE, 0);
+
+      snprintf(feat_str, sizeof(feat_str),
+            "X11 support: %s", _x11_supp ? "true" : "false");
+      menu_list_push(list, feat_str, "",
+            MENU_SETTINGS_CORE_INFO_NONE, 0);
+
+      snprintf(feat_str, sizeof(feat_str),
+            "Wayland support: %s", _wayland_supp ? "true" : "false");
+      menu_list_push(list, feat_str, "",
+            MENU_SETTINGS_CORE_INFO_NONE, 0);
+
+      snprintf(feat_str, sizeof(feat_str),
+            "XVideo support: %s", _xvideo_supp ? "true" : "false");
+      menu_list_push(list, feat_str, "",
+            MENU_SETTINGS_CORE_INFO_NONE, 0);
+
+      snprintf(feat_str, sizeof(feat_str),
+            "ALSA support: %s", _alsa_supp ? "true" : "false");
+      menu_list_push(list, feat_str, "",
+            MENU_SETTINGS_CORE_INFO_NONE, 0);
+
+      snprintf(feat_str, sizeof(feat_str),
+            "OSS support: %s", _oss_supp ? "true" : "false");
+      menu_list_push(list, feat_str, "",
+            MENU_SETTINGS_CORE_INFO_NONE, 0);
+
+      snprintf(feat_str, sizeof(feat_str),
+            "OpenAL support: %s", _al_supp ? "true" : "false");
+      menu_list_push(list, feat_str, "",
+            MENU_SETTINGS_CORE_INFO_NONE, 0);
+
+      snprintf(feat_str, sizeof(feat_str),
+            "OpenSL support: %s", _sl_supp ? "true" : "false");
+      menu_list_push(list, feat_str, "",
+            MENU_SETTINGS_CORE_INFO_NONE, 0);
+
+      snprintf(feat_str, sizeof(feat_str),
+            "RSound support: %s", _rsound_supp ? "true" : "false");
+      menu_list_push(list, feat_str, "",
+            MENU_SETTINGS_CORE_INFO_NONE, 0);
+
+      snprintf(feat_str, sizeof(feat_str),
+            "RoarAudio support: %s", _roar_supp ? "true" : "false");
+      menu_list_push(list, feat_str, "",
+            MENU_SETTINGS_CORE_INFO_NONE, 0);
+
+      snprintf(feat_str, sizeof(feat_str),
+            "JACK support: %s", _jack_supp ? "true" : "false");
+      menu_list_push(list, feat_str, "",
+            MENU_SETTINGS_CORE_INFO_NONE, 0);
+
+      snprintf(feat_str, sizeof(feat_str),
+            "PulseAudio support: %s", _pulse_supp ? "true" : "false");
+      menu_list_push(list, feat_str, "",
+            MENU_SETTINGS_CORE_INFO_NONE, 0);
+
+      snprintf(feat_str, sizeof(feat_str),
+            "DirectSound support: %s", _dsound_supp ? "true" : "false");
+      menu_list_push(list, feat_str, "",
+            MENU_SETTINGS_CORE_INFO_NONE, 0);
+
+      snprintf(feat_str, sizeof(feat_str),
+            "XAudio2 support: %s", _xaudio_supp ? "true" : "false");
+      menu_list_push(list, feat_str, "",
+            MENU_SETTINGS_CORE_INFO_NONE, 0);
+
+      snprintf(feat_str, sizeof(feat_str),
+            "Zlib support: %s", _zlib_supp ? "true" : "false");
+      menu_list_push(list, feat_str, "",
+            MENU_SETTINGS_CORE_INFO_NONE, 0);
+
+      snprintf(feat_str, sizeof(feat_str),
+            "7zip support: %s", _7zip_supp ? "true" : "false");
+      menu_list_push(list, feat_str, "",
+            MENU_SETTINGS_CORE_INFO_NONE, 0);
+
+      snprintf(feat_str, sizeof(feat_str),
+            "Dynamic library support: %s", _dylib_supp ? "true" : "false");
+      menu_list_push(list, feat_str, "",
+            MENU_SETTINGS_CORE_INFO_NONE, 0);
+
+      snprintf(feat_str, sizeof(feat_str),
+            "Cg support: %s", _cg_supp ? "true" : "false");
+      menu_list_push(list, feat_str, "",
+            MENU_SETTINGS_CORE_INFO_NONE, 0);
+
+      snprintf(feat_str, sizeof(feat_str),
+            "GLSL support: %s", _glsl_supp ? "true" : "false");
+      menu_list_push(list, feat_str, "",
+            MENU_SETTINGS_CORE_INFO_NONE, 0);
+
+      snprintf(feat_str, sizeof(feat_str),
+            "HLSL support: %s", _hlsl_supp ? "true" : "false");
+      menu_list_push(list, feat_str, "",
+            MENU_SETTINGS_CORE_INFO_NONE, 0);
+
+      snprintf(feat_str, sizeof(feat_str),
+            "libxml2 XML parsing support: %s", _libxml2_supp ? "true" : "false");
+      menu_list_push(list, feat_str, "",
+            MENU_SETTINGS_CORE_INFO_NONE, 0);
+      
+      snprintf(feat_str, sizeof(feat_str),
+            "SDL image support: %s", _sdl_image_supp ? "true" : "false");
+      menu_list_push(list, feat_str, "",
+            MENU_SETTINGS_CORE_INFO_NONE, 0);
+
+      snprintf(feat_str, sizeof(feat_str),
+            "OpenGL/Direct3D render-to-texture (multi-pass shaders) support: %s", _fbo_supp ? "true" : "false");
+      menu_list_push(list, feat_str, "",
+            MENU_SETTINGS_CORE_INFO_NONE, 0);
+
+      snprintf(feat_str, sizeof(feat_str),
+            "FFmpeg support: %s", _ffmpeg_supp ? "true" : "false");
+      menu_list_push(list, feat_str, "",
+            MENU_SETTINGS_CORE_INFO_NONE, 0);
+
+      snprintf(feat_str, sizeof(feat_str),
+            "CoreText support: %s", _coretext_supp ? "true" : "false");
+      menu_list_push(list, feat_str, "",
+            MENU_SETTINGS_CORE_INFO_NONE, 0);
+
+      snprintf(feat_str, sizeof(feat_str),
+            "FreeType support: %s", _freetype_supp ? "true" : "false");
+      menu_list_push(list, feat_str, "",
+            MENU_SETTINGS_CORE_INFO_NONE, 0);
+
+      snprintf(feat_str, sizeof(feat_str),
+            "Netplay (peer-to-peer) support: %s", _netplay_supp ? "true" : "false");
+      menu_list_push(list, feat_str, "",
+            MENU_SETTINGS_CORE_INFO_NONE, 0);
+
+      snprintf(feat_str, sizeof(feat_str),
+            "Python (script support in shaders) support: %s", _python_supp ? "true" : "false");
+      menu_list_push(list, feat_str, "",
+            MENU_SETTINGS_CORE_INFO_NONE, 0);
+
+      snprintf(feat_str, sizeof(feat_str),
+            "Video4Linux2 support: %s", _v4l2_supp ? "true" : "false");
+      menu_list_push(list, feat_str, "",
+            MENU_SETTINGS_CORE_INFO_NONE, 0);
+
+      snprintf(feat_str, sizeof(feat_str),
+            "Libusb support: %s", _libusb_supp ? "true" : "false");
+      menu_list_push(list, feat_str, "",
+            MENU_SETTINGS_CORE_INFO_NONE, 0);
+   }
 
    menu_driver_populate_entries(path, label, type);
 
@@ -1550,9 +1958,6 @@ static void print_buf_lines(file_list_t *list, char *buf, int buf_size,
 /* HACK - we have to find some way to pass state inbetween
  * function pointer callback functions that don't necessarily
  * call each other. */
-extern char core_updater_list_path[PATH_MAX_LENGTH];
-extern char core_updater_list_label[PATH_MAX_LENGTH];
-extern unsigned core_updater_list_type;
 static char *core_buf;
 static size_t core_len;
 
@@ -1565,6 +1970,9 @@ int cb_core_updater_list(void *data_, size_t len)
 
    if (!data)
       return -1;
+
+   if (core_buf)
+      free(core_buf);
 
    core_buf = (char*)malloc(len * sizeof(char));
 
@@ -1587,11 +1995,7 @@ static int deferred_push_core_updater_list(void *data, void *userdata,
 
    print_buf_lines(list, core_buf, core_len, MENU_FILE_DOWNLOAD_CORE);
 
-   if (core_buf)
-      free(core_buf);
-
-   menu_list_populate_generic(list, core_updater_list_path,
-         core_updater_list_label, core_updater_list_type);
+   menu_list_populate_generic(list, path, label, type);
 
    return 0;
 }
@@ -1763,6 +2167,13 @@ static int deferred_push_remap_file_load(void *data, void *userdata,
          MENU_FILE_REMAP, "rmp", NULL);
 }
 
+static int deferred_push_record_configfile(void *data, void *userdata,
+      const char *path, const char *label, unsigned type)
+{
+   return menu_entries_parse_list((file_list_t*)data, (file_list_t*)userdata, path, label, type,
+         MENU_FILE_RECORD_CONFIG, "cfg", NULL);
+}
+
 static int deferred_push_input_overlay(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
@@ -1875,6 +2286,8 @@ void menu_entries_cbs_init_bind_deferred_push(menu_file_list_cbs_t *cbs,
       cbs->action_deferred_push = deferred_push_cheat_file_load;
    else if (!strcmp(label, "remap_file_load"))
       cbs->action_deferred_push = deferred_push_remap_file_load;
+   else if (!strcmp(label, "record_config"))
+      cbs->action_deferred_push = deferred_push_record_configfile;
    else if (!strcmp(label, "content_actions"))
       cbs->action_deferred_push = deferred_push_content_actions;
    else if (!strcmp(label, "shader_options"))
@@ -1916,6 +2329,8 @@ void menu_entries_cbs_init_bind_deferred_push(menu_file_list_cbs_t *cbs,
       cbs->action_deferred_push = deferred_push_cursor_manager_list_deferred_query_subsearch;
    else if (!strcmp(label, "core_information"))
       cbs->action_deferred_push = deferred_push_core_information;
+   else if (!strcmp(label, "system_information"))
+      cbs->action_deferred_push = deferred_push_system_information;
    else if (!strcmp(label, "performance_counters"))
       cbs->action_deferred_push = deferred_push_performance_counters;
    else if (!strcmp(label, "core_counters"))

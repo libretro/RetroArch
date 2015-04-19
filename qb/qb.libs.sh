@@ -104,25 +104,26 @@ check_pkgconf()	#$1 = HAVE_$1	$2 = package	$3 = version	$4 = critical error mess
 {	tmpval="$(eval echo \$HAVE_$1)"
 	[ "$tmpval" = 'no' ] && return 0
 
-	[ "$PKG_CONF_PATH" ] || {
-		ECHOBUF="Checking for pkg-config"
-#		echo -n "Checking for pkg-config"
-		for PKG_CONF_PATH in $(which "${CROSS_COMPILE}pkg-config") ''; do [ "$PKG_CONF_PATH" ] && break; done
-		[ "$PKG_CONF_PATH" ] || { echo "pkg-config not found. Exiting ..."; exit 1;}
-		echo "$ECHOBUF ... $PKG_CONF_PATH"
+	ECHOBUF="Checking presence of package $2"
+	[ "$3" ] && ECHOBUF="$ECHOBUF >= $3"
+
+	[ "$PKG_CONF_PATH" = "none" ] && {
+		eval HAVE_$1="no"
+		echo "$ECHOBUF ... no"
+		return 0
 	}
 
-	ECHOBUF="Checking presence of package $2"
-	[ "$3" ] && ECHOBUF="$ECHOBUF with minimum version $3"
-#	echo -n "$ECHOBUF ... "
 	answer='no'
+	version='no'
 	$PKG_CONF_PATH --atleast-version="${3:-0.0}" "$2" && {
 		answer='yes'
+		version=$($PKG_CONF_PATH --modversion "$2")
 		eval $1_CFLAGS=\"$($PKG_CONF_PATH $2 --cflags)\"
 		eval $1_LIBS=\"$($PKG_CONF_PATH $2 --libs)\"
 	}
 	
-	eval HAVE_$1="$answer"; echo "$ECHOBUF ... $answer"
+	eval HAVE_$1="$answer";
+	echo "$ECHOBUF ... $version"
 	PKG_CONF_USED="$PKG_CONF_USED $1"
 	[ "$answer" = 'no' ] && {
 		[ "$4" ] && { echo "$4"; exit 1;}

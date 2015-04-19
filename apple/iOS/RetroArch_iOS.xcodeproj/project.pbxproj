@@ -494,6 +494,7 @@
 					"-DHAVE_NETWORKING",
 					"-DHAVE_CAMERA",
 					"-DHAVE_GRIFFIN",
+               "-DHAVE_CORETEXT",
 					"-DHAVE_LOCATION",
 					"-DHAVE_RGUI",
 					"-DHAVE_MENU",
@@ -512,6 +513,8 @@
 					"-DHAVE_DYNAMIC",
 					"-DHAVE_OVERLAY",
 					"-DHAVE_ZLIB",
+               "-DHAVE_RPNG",
+               "-DHAVE_COCOATOUCH",
 					"-DWANT_ZLIB",
 					"-DSINC_LOWER_QUALITY",
 					"-DRARCH_INTERNAL",
@@ -575,6 +578,8 @@
 					"-DHAVE_DYNAMIC",
 					"-DHAVE_OVERLAY",
 					"-DHAVE_ZLIB",
+               "-DHAVE_RPNG",
+               "-DHAVE_COCOATOUCH",
 					"-DWANT_ZLIB",
 					"-DSINC_LOWER_QUALITY",
 					"-DRARCH_INTERNAL",
@@ -612,6 +617,8 @@
 					"-DRARCH_INTERNAL",
 					"-DHAVE_OVERLAY",
 					"-DHAVE_ZLIB",
+               "-DHAVE_RPNG",
+               "-DHAVE_COCOATOUCH",
 					"-DWANT_ZLIB",
 					"-DSINC_LOWER_QUALITY",
 					"-DHAVE_THREADS",
@@ -681,6 +688,8 @@
 					"-DHAVE_FBO",
 					"-DHAVE_OVERLAY",
 					"-DHAVE_ZLIB",
+               "-DHAVE_RPNG",
+               "-DHAVE_COCOATOUCH",
 					"-DWANT_ZLIB",
 					"-DSINC_LOWER_QUALITY",
 				);
@@ -739,6 +748,8 @@
 					"-DHAVE_FBO",
 					"-DHAVE_OVERLAY",
 					"-DHAVE_ZLIB",
+               "-DHAVE_RPNG",
+               "-DHAVE_COCOATOUCH",
 					"-DWANT_ZLIB",
 					"-DSINC_LOWER_QUALITY",
 				);
@@ -796,6 +807,8 @@
 					"-DHAVE_DYNAMIC",
 					"-DHAVE_OVERLAY",
 					"-DHAVE_ZLIB",
+               "-DHAVE_RPNG",
+               "-DHAVE_COCOATOUCH",
 					"-DWANT_ZLIB",
 					"-DSINC_LOWER_QUALITY",
 					"-DRARCH_INTERNAL",
@@ -805,6 +818,7 @@
 					"-DHAVE_XMB",
 					"-D_LZMA_UINT32_IS_ULONG",
 					"-DHAVE_MFI",
+               "-DHAVE_AVFOUNDATION",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE = "";
@@ -860,6 +874,8 @@
 					"-DHAVE_DYNAMIC",
 					"-DHAVE_OVERLAY",
 					"-DHAVE_ZLIB",
+               "-DHAVE_RPNG",
+               "-DHAVE_COCOATOUCH",
 					"-DWANT_ZLIB",
 					"-DSINC_LOWER_QUALITY",
 					"-DRARCH_INTERNAL",
@@ -870,6 +886,7 @@
 					"-DHAVE_XMB",
 					"-D_LZMA_UINT32_IS_ULONG",
 					"-DHAVE_MFI",
+               "-DHAVE_AVFOUNDATION",
 				);
 				"OTHER_CFLAGS[arch=*]" = (
 					"-DNS_BLOCK_ASSERTIONS=1",
@@ -898,6 +915,8 @@
 					"-DRARCH_INTERNAL",
 					"-DHAVE_OVERLAY",
 					"-DHAVE_ZLIB",
+               "-DHAVE_RPNG",
+               "-DHAVE_COCOATOUCH",
 					"-DWANT_ZLIB",
 					"-DSINC_LOWER_QUALITY",
 					"-DHAVE_THREADS",
@@ -907,6 +926,7 @@
 					"-DHAVE_XMB",
 					"-D_LZMA_UINT32_IS_ULONG",
 					"-DHAVE_MFI",
+               "-DHAVE_AVFOUNDATION",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE = "";

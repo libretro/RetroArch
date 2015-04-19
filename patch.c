@@ -50,7 +50,9 @@ struct bps_data
 static uint8_t bps_read(struct bps_data *bps)
 {
    uint8_t data = bps->modify_data[bps->modify_offset++];
+#ifdef HAVE_ZLIB
    bps->modify_checksum = zlib_crc32_adjust(bps->modify_checksum, data);
+#endif
    return data;
 }
 
@@ -77,7 +79,9 @@ static void bps_write(struct bps_data *bps, uint8_t data)
       return;
 
    bps->target_data[bps->output_offset++] = data;
+#ifdef HAVE_ZLIB
    bps->target_checksum = zlib_crc32_adjust(bps->target_checksum, data);
+#endif
 }
 
 patch_error_t bps_apply_patch(
@@ -175,7 +179,12 @@ patch_error_t bps_apply_patch(
    for (i = 0; i < 32; i += 8)
       modify_modify_checksum |= bps_read(&bps) << i;
 
+#ifdef HAVE_ZLIB
    bps.source_checksum = zlib_crc32_calculate(bps.source_data, bps.source_length);
+#else
+   return PATCH_PATCH_CHECKSUM_INVALID;
+#endif
+
    bps.target_checksum = ~bps.target_checksum;
 
    if (bps.source_checksum != modify_source_checksum)
@@ -204,7 +213,9 @@ static uint8_t ups_patch_read(struct ups_data *data)
    if (data && data->patch_offset < data->patch_length) 
    {
       uint8_t n = data->patch_data[data->patch_offset++];
+#ifdef HAVE_ZLIB
       data->patch_checksum = zlib_crc32_adjust(data->patch_checksum, n);
+#endif
       return n;
    }
    return 0x00;
@@ -215,7 +226,9 @@ static uint8_t ups_source_read(struct ups_data *data)
    if (data && data->source_offset < data->source_length) 
    {
       uint8_t n = data->source_data[data->source_offset++];
+#ifdef HAVE_ZLIB
       data->source_checksum = zlib_crc32_adjust(data->source_checksum, n);
+#endif
       return n;
    }
    return 0x00;
@@ -226,7 +239,9 @@ static void ups_target_write(struct ups_data *data, uint8_t n)
    if (data && data->target_offset < data->target_length) 
    {
       data->target_data[data->target_offset] = n;
+#ifdef HAVE_ZLIB
       data->target_checksum = zlib_crc32_adjust(data->target_checksum, n);
+#endif
    }
 
    if (data)

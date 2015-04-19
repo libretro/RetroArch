@@ -22,7 +22,7 @@
 #endif
 
 static const ui_companion_driver_t *ui_companion_drivers[] = {
-#ifdef IOS
+#ifdef HAVE_COCOATOUCH
    &ui_companion_cocoatouch,
 #endif
 #ifdef HAVE_QT

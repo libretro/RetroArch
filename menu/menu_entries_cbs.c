@@ -39,18 +39,12 @@ void menu_entries_common_load_content(bool persist)
    menu->msg_force = true;
 }
 
-int menu_action_setting_set_current_string(
-      rarch_setting_t *setting, const char *str)
-{
-   strlcpy(setting->value.string, str, setting->size);
-   return menu_setting_generic(setting);
-}
-
 #ifdef HAVE_NETWORKING
 /* HACK - we have to find some way to pass state inbetween
  * function pointer callback functions that don't necessarily
  * call each other. */
 
+#ifdef HAVE_ZLIB
 static int zlib_extract_core_callback(const char *name, const char *valid_exts,
       const uint8_t *cdata, unsigned cmode, uint32_t csize, uint32_t size,
       uint32_t crc32, void *userdata)
@@ -92,6 +86,7 @@ error:
    RARCH_ERR("Failed to deflate to: %s.\n", path);
    return 0;
 }
+#endif
 
 int cb_core_updater_download(void *data, size_t len)
 {
@@ -138,6 +133,7 @@ int menu_entries_common_is_settings_entry(const char *label)
     !strcmp(label, "Driver Settings") ||
     !strcmp(label, "General Settings") ||
     !strcmp(label, "Video Settings") ||
+    !strcmp(label, "Recording Settings") ||
     !strcmp(label, "Shader Settings") ||
     !strcmp(label, "Font Settings") ||
     !strcmp(label, "Audio Settings") ||

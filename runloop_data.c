@@ -59,7 +59,9 @@ typedef struct nbio_image_handle
    bool is_blocking_on_processing;
    bool is_finished;
    transfer_cb_t  cb;
+#ifdef HAVE_RPNG
    struct rpng_t *handle;
+#endif
    unsigned processing_pos_increment;
    unsigned pos_increment;
    uint64_t frame_count;
@@ -301,6 +303,8 @@ static int rarch_main_data_http_iterate_poll(http_handle_t *http)
 #endif
 
 #ifdef HAVE_MENU
+
+#ifdef HAVE_RPNG
 static int cb_image_menu_wallpaper_upload(void *data, size_t len)
 {
    nbio_handle_t *nbio = (nbio_handle_t*)data; 
@@ -395,7 +399,6 @@ static int cb_nbio_image_menu_wallpaper(void *data, size_t len)
 
    return 0;
 }
-#endif
 
 static int rarch_main_data_image_iterate_poll(nbio_handle_t *nbio)
 {
@@ -511,6 +514,9 @@ static int rarch_main_data_image_iterate_transfer_parse(nbio_handle_t *nbio)
 
    return 0;
 }
+#endif
+
+#endif
 
 static int cb_nbio_default(void *data, size_t len)
 {
@@ -569,7 +575,7 @@ static int rarch_main_data_nbio_iterate_poll(nbio_handle_t *nbio)
 
    if (elem1[0] != '\0')
    {
-#ifdef HAVE_MENU
+#if defined(HAVE_MENU) && defined(HAVE_RPNG)
       if (!strcmp(elem1, "cb_menu_wallpaper"))
          nbio->cb = &cb_nbio_image_menu_wallpaper;
 #endif
@@ -648,6 +654,7 @@ static int rarch_main_data_nbio_iterate_parse(nbio_handle_t *nbio)
 
 #ifdef HAVE_LIBRETRODB
 #ifdef HAVE_MENU
+
 static void rarch_main_data_db_iterate(bool is_thread,
       data_runloop_t *runloop)
 {
@@ -670,10 +677,12 @@ static void rarch_main_data_db_iterate(bool is_thread,
          break;
    }
 }
+
 #endif
 #endif
 
 
+#ifdef HAVE_RPNG
 static void rarch_main_data_nbio_image_iterate(bool is_thread,
       data_runloop_t *runloop)
 {
@@ -708,6 +717,7 @@ static void rarch_main_data_nbio_image_iterate(bool is_thread,
          break;
    }
 }
+#endif
 
 static void rarch_main_data_nbio_iterate(bool is_thread, data_runloop_t *runloop)
 {
@@ -893,7 +903,9 @@ void rarch_main_data_free(void)
 static void data_runloop_iterate(bool is_thread, data_runloop_t *runloop)
 {
    rarch_main_data_nbio_iterate       (is_thread, runloop);
+#ifdef HAVE_RPNG
    rarch_main_data_nbio_image_iterate (is_thread, runloop);
+#endif
 #ifdef HAVE_OVERLAY
    rarch_main_data_overlay_iterate    (is_thread, runloop);
 #endif
@@ -970,6 +982,7 @@ error:
 }
 #endif
 
+#ifdef HAVE_RPNG
 static void rarch_main_data_nbio_image_upload_iterate(bool is_thread,
       data_runloop_t *runloop)
 {
@@ -994,6 +1007,7 @@ static void rarch_main_data_nbio_image_upload_iterate(bool is_thread,
          break;
    }
 }
+#endif
 
 void rarch_main_data_iterate(void)
 {
@@ -1019,7 +1033,9 @@ void rarch_main_data_iterate(void)
 #ifdef HAVE_OVERLAY
    rarch_main_data_overlay_image_upload_iterate(false, runloop);
 #endif
+#ifdef HAVE_RPNG
    rarch_main_data_nbio_image_upload_iterate(false, runloop);
+#endif
 
    if (data_runloop_msg[0] != '\0')
    {

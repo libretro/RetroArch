@@ -34,6 +34,8 @@ extern "C" {
 
 bool string_is_empty(const char *data);
 
+char *string_to_upper(char *s);
+
 char *string_replace_substring(const char *in, const char *pattern,
       const char *by);
 

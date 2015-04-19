@@ -14,8 +14,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __APPLE_RARCH_INPUT_H__
-#define __APPLE_RARCH_INPUT_H__
+#ifndef __COCOA_INPUT_H__
+#define __COCOA_INPUT_H__
 
 #include <stdint.h>
 #include "../../general.h"
@@ -33,11 +33,11 @@ typedef struct
    int16_t screen_x, screen_y;
    int16_t fixed_x, fixed_y;
    int16_t full_x, full_y;
-} apple_touch_data_t;
+} cocoa_touch_data_t;
 
 typedef struct
 {
-   apple_touch_data_t touches[MAX_TOUCHES];
+   cocoa_touch_data_t touches[MAX_TOUCHES];
    uint32_t touch_count;
 
    uint32_t mouse_buttons;
@@ -58,21 +58,21 @@ typedef struct
    uint32_t icade_buttons;
     
    const input_device_driver_t *joypad;
-} apple_input_data_t;
+} cocoa_input_data_t;
 
-void apple_input_enable_icade(bool on);
+void cocoa_input_enable_icade(bool on);
 
-void apple_input_enable_small_keyboard(bool on);
+void cocoa_input_enable_small_keyboard(bool on);
 
-void apple_input_reset_icade_buttons(void);
+void cocoa_input_reset_icade_buttons(void);
 
-void apple_input_keyboard_event(bool down, unsigned code,
+void cocoa_input_keyboard_event(bool down, unsigned code,
       uint32_t character, uint32_t mod, unsigned device);
 
-extern int32_t apple_input_find_any_key(void);
+extern int32_t cocoa_input_find_any_key(void);
 
-extern int32_t apple_input_find_any_button(uint32_t port);
+extern int32_t cocoa_input_find_any_button(uint32_t port);
 
-extern int32_t apple_input_find_any_axis(uint32_t port);
+extern int32_t cocoa_input_find_any_axis(uint32_t port);
 
 #endif

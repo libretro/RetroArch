@@ -304,8 +304,8 @@ static void gl_disable_client_arrays(gl_t *gl)
 
 #ifdef IOS
 /* There is no default frame buffer on iOS. */
-void apple_bind_game_view_fbo(void);
-#define gl_bind_backbuffer() apple_bind_game_view_fbo()
+void cocoagl_bind_game_view_fbo(void);
+#define gl_bind_backbuffer() cocoagl_bind_game_view_fbo()
 #else
 #define gl_bind_backbuffer() glBindFramebuffer(RARCH_GL_FRAMEBUFFER, 0)
 #endif
@@ -1197,7 +1197,7 @@ static void gl_init_textures(gl_t *gl, const video_info_t *video)
    (void)texture_fmt;
 
 #if defined(HAVE_EGL) && defined(HAVE_OPENGLES2)
-   // Use regular textures if we use HW render.
+   /* Use regular textures if we use HW render. */
    gl->egl_images = !gl->hw_render_use && gl_check_eglimage_proc() &&
       gfx_ctx_image_buffer_init(gl, video);
 #else

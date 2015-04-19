@@ -29,12 +29,11 @@
 
 
 int __stacksize__ = 1*1024*1024;
-//char elf_path[512];
 
 const char* elf_path_cst = "sdmc:/retroarch/test.3dsx";
 
-
 void wait_for_input(void);
+
 #define DEBUG_HOLD() do{printf("%s@%s:%d.\n",__FUNCTION__, __FILE__, __LINE__);fflush(stdout);wait_for_input();}while(0)
 
 static void frontend_ctr_get_environment_settings(int *argc, char *argv[],
@@ -42,7 +41,6 @@ static void frontend_ctr_get_environment_settings(int *argc, char *argv[],
 {
    (void)args;
 
-//   return;
 #ifndef IS_SALAMANDER
 #if defined(HAVE_LOGGER)
    logger_init();
@@ -52,9 +50,6 @@ static void frontend_ctr_get_environment_settings(int *argc, char *argv[],
 #endif
 #endif
 
-//   strlcpy(elf_path, argv[0], sizeof(elf_path));
-
-//   fill_pathname_basedir(g_defaults.port_dir, argv[0], sizeof(g_defaults.port_dir));
    fill_pathname_basedir(g_defaults.port_dir, elf_path_cst, sizeof(g_defaults.port_dir));
    RARCH_LOG("port dir: [%s]\n", g_defaults.port_dir);
 
@@ -76,34 +71,36 @@ static void frontend_ctr_get_environment_settings(int *argc, char *argv[],
          "retroarch.cfg", sizeof(g_defaults.config_path));
 
 #ifndef IS_SALAMANDER
-//   if (argv[1] && (argv[1][0] != '\0'))
-//   {
-//      static char path[PATH_MAX_LENGTH];
-//      struct rarch_main_wrap *args = NULL;
+#if 0
+   if (argv[1] && (argv[1][0] != '\0'))
+   {
+      static char path[PATH_MAX_LENGTH];
+      struct rarch_main_wrap *args = NULL;
 
-//      *path = '\0';
-//      args = (struct rarch_main_wrap*)params_data;
+      *path = '\0';
+      args = (struct rarch_main_wrap*)params_data;
 
-//      if (args)
-//      {
-//         strlcpy(path, argv[1], sizeof(path));
+      if (args)
+      {
+         strlcpy(path, argv[1], sizeof(path));
 
-//         args->touched        = true;
-//         args->no_content     = false;
-//         args->verbose        = false;
-//         args->config_path    = NULL;
-//         args->sram_path      = NULL;
-//         args->state_path     = NULL;
-//         args->content_path   = path;
-//         args->libretro_path  = NULL;
+         args->touched        = true;
+         args->no_content     = false;
+         args->verbose        = false;
+         args->config_path    = NULL;
+         args->sram_path      = NULL;
+         args->state_path     = NULL;
+         args->content_path   = path;
+         args->libretro_path  = NULL;
 
-//         RARCH_LOG("argv[0]: %s\n", argv[0]);
-//         RARCH_LOG("argv[1]: %s\n", argv[1]);
-//         RARCH_LOG("argv[2]: %s\n", argv[2]);
+         RARCH_LOG("argv[0]: %s\n", argv[0]);
+         RARCH_LOG("argv[1]: %s\n", argv[1]);
+         RARCH_LOG("argv[2]: %s\n", argv[2]);
 
-//         RARCH_LOG("Auto-start game %s.\n", argv[1]);
-//      }
-//   }
+         RARCH_LOG("Auto-start game %s.\n", argv[1]);
+      }
+   }
+#endif
 #endif
 }
 
@@ -125,11 +122,13 @@ static void frontend_ctr_deinit(void *data)
    csndExit();
    gfxExit();
 
-//   sdmcExit();
-//   fsExit();
-//   hidExit();
-//   aptExit();
-//   srvExit();
+#if 0
+   sdmcExit();
+   fsExit();
+   hidExit();
+   aptExit();
+   srvExit();
+#endif
 #endif
 }
 
@@ -140,6 +139,7 @@ static void frontend_ctr_shutdown(bool unused)
 
 #define PRINTFPOS(X,Y) "\x1b["#X";"#Y"H"
 #define PRINTFPOS_STR(X,Y) "\x1b["X";"Y"H"
+
 static void frontend_ctr_init(void *data)
 {
 #ifndef IS_SALAMANDER
@@ -147,20 +147,21 @@ static void frontend_ctr_init(void *data)
    global_t *global   = global_get_ptr();
    global->verbosity = true;
 
-//   srvInit();
-//   aptInit();
-//   hidInit();
-//   fsInit();
-//   sdmcInit();
+#if 0
+   srvInit();
+   aptInit();
+   hidInit();
+   fsInit();
+   sdmcInit();
 
-//   APT_SetAppCpuTimeLimit(NULL, 80);
-//   gfxInitDefault();
+   APT_SetAppCpuTimeLimit(NULL, 80);
+   gfxInitDefault();
+#endif
    gfxInit(GSP_BGR8_OES,GSP_RGB565_OES,false);
    csndInit();
    gfxSet3D(false);
    consoleInit(GFX_BOTTOM, NULL);
 #endif
-
 }
 
 
@@ -168,36 +169,51 @@ static int frontend_ctr_get_rating(void)
 {
    return 3;
 }
+
 bool select_pressed = false;
-void wait_for_input()
+
+void wait_for_input(void)
 {
-   printf("\n\nPress Start.\n\n");fflush(stdout);
+   printf("\n\nPress Start.\n\n");
+   fflush(stdout);
+
    while(aptMainLoop())
    {
+      u32 kDown;
+
       hidScanInput();
-      u32 kDown = hidKeysDown();
+
+      kDown = hidKeysDown();
+
       if (kDown & KEY_START)
          break;
 
       if (kDown & KEY_SELECT)
          select_pressed = true;
 
-      svcSleepThread(1000000);
+      rarch_sleep(1);
    }
 }
 
+enum frontend_architecture frontend_ctr_get_architecture(void)
+{
+   return FRONTEND_ARCH_ARM;
+}
+
 const frontend_ctx_driver_t frontend_ctx_ctr = {
-   frontend_ctr_get_environment_settings, /* get_environment_settings */
-   frontend_ctr_init,            /* init */
-   frontend_ctr_deinit,          /* deinit */
+   frontend_ctr_get_environment_settings,
+   frontend_ctr_init,
+   frontend_ctr_deinit,
    NULL,                         /* exitspawn */
    NULL,                         /* process_args */
    NULL,                         /* exec */
    NULL,                         /* set_fork */
-   frontend_ctr_shutdown,        /* shutdown */
+   frontend_ctr_shutdown,
    NULL,                         /* get_name */
    NULL,                         /* get_os */
-   frontend_ctr_get_rating,      /* get_rating */
+   frontend_ctr_get_rating,
    NULL,                         /* load_content */
+   frontend_ctr_get_architecture,
+   NULL,                         /* get_powerstate */
    "ctr",
 };

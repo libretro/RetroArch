@@ -124,6 +124,19 @@ const char *config_get_default_audio(void)
    return "null";
 }
 
+const char *config_get_default_record(void)
+{
+   switch (RECORD_DEFAULT_DRIVER)
+   {
+      case RECORD_FFMPEG:
+         return "ffmpeg";
+      default:
+         break;
+   }
+
+   return "null";
+}
+
 /**
  * config_get_default_audio_resampler:
  *
@@ -238,8 +251,8 @@ const char *config_get_default_input(void)
          return "linuxraw";
       case INPUT_UDEV:
          return "udev";
-      case INPUT_APPLE:
-         return "apple_input";
+      case INPUT_COCOA:
+         return "cocoa";
       case INPUT_QNX:
       	 return "qnx_input";
       case INPUT_RWEBINPUT:
@@ -346,8 +359,8 @@ const char *config_get_default_camera(void)
          return "rwebcam";
       case CAMERA_ANDROID:
          return "android";
-      case CAMERA_APPLE:
-         return "apple";
+      case CAMERA_AVFOUNDATION:
+         return "avfoundation";
       default:
          break;
    }
@@ -397,6 +410,7 @@ static void config_set_defaults(void)
 #endif
    const char *def_camera          = config_get_default_camera();
    const char *def_location        = config_get_default_location();
+   const char *def_record          = config_get_default_record();
 
    if (def_camera)
       strlcpy(settings->camera.driver,
@@ -419,6 +433,9 @@ static void config_set_defaults(void)
    if (def_joypad)
       strlcpy(settings->input.joypad_driver,
             def_joypad, sizeof(settings->input.joypad_driver));
+   if (def_record)
+      strlcpy(settings->record.driver,
+            def_record, sizeof(settings->record.driver));
 #ifdef HAVE_MENU
    if (def_menu)
       strlcpy(settings->menu.driver,
@@ -633,8 +650,8 @@ static void config_set_defaults(void)
    if (!global->has_set_ips_pref)
       global->ips_pref = false;
 
-   *global->recording.output_dir = '\0';
-   *global->recording.config_dir = '\0';
+   *global->record.output_dir = '\0';
+   *global->record.config_dir = '\0';
 
    *settings->core_options_path = '\0';
    *settings->content_history_path = '\0';
@@ -664,6 +681,8 @@ static void config_set_defaults(void)
    *settings->menu_config_directory = '\0';
 #endif
    settings->core_specific_config = default_core_specific_config;
+   settings->auto_overrides_enable = default_auto_overrides_enable;
+   settings->auto_remaps_enable = default_auto_remaps_enable;
    settings->user_language = 0;
 
    global->console.sound.system_bgm_enable = false;
@@ -1068,7 +1087,7 @@ static void config_read_keybinds_conf(config_file_t *conf)
 }
 
 /* Also dumps inherited values, useful for logging. */
-
+#if 0
 static void config_file_dump_all(config_file_t *conf)
 {
    struct config_entry_list *list = NULL;
@@ -1084,12 +1103,12 @@ static void config_file_dump_all(config_file_t *conf)
 
    while (list)
    {
-      RARCH_LOG("%s = \"%s\" %s\n", list->key,
-            list->value, list->readonly ? "(included)" : "");
+      RARCH_LOG("%s = \"%s\"%s\n", list->key,
+            list->value, list->readonly ? " (included)" : "");
       list = list->next;
    }
 }
-
+#endif
 /**
  * config_load:
  * @path                : path to be read from.
@@ -1138,14 +1157,14 @@ static bool config_load_file(const char *path, bool set_defaults)
          RARCH_ERR("Failed to append config \"%s\"\n", extra_path);
       extra_path = strtok_r(NULL, "|", &save);
    }
-
+#if 0
    if (global->verbosity)
    {
       RARCH_LOG_OUTPUT("=== Config ===\n");
       config_file_dump_all(conf);
       RARCH_LOG_OUTPUT("=== Config end ===\n");
    }
-
+#endif
 
    CONFIG_GET_FLOAT_BASE(conf, settings, video.scale, "video_scale");
    CONFIG_GET_INT_BASE  (conf, settings, video.fullscreen_x, "video_fullscreen_x");
@@ -1420,8 +1439,8 @@ static bool config_load_file(const char *path, bool set_defaults)
 
    CONFIG_GET_INT_BASE(conf, settings, archive.mode, "archive_mode");
 
-   config_get_path(conf, "recording_output_directory", global->recording.output_dir, sizeof(global->recording.output_dir));
-   config_get_path(conf, "recording_config_directory", global->recording.config_dir, sizeof(global->recording.config_dir));
+   config_get_path(conf, "recording_output_directory", global->record.output_dir, sizeof(global->record.output_dir));
+   config_get_path(conf, "recording_config_directory", global->record.config_dir, sizeof(global->record.config_dir));
 
 #ifdef HAVE_OVERLAY
    config_get_path(conf, "overlay_directory", global->overlay_dir, sizeof(global->overlay_dir));
@@ -1578,6 +1597,8 @@ static bool config_load_file(const char *path, bool set_defaults)
    config_read_keybinds_conf(conf);
 
    CONFIG_GET_BOOL_BASE(conf, settings, core_specific_config, "core_specific_config");
+   CONFIG_GET_BOOL_BASE(conf, settings, auto_overrides_enable, "auto_overrides_enable");
+   CONFIG_GET_BOOL_BASE(conf, settings, auto_remaps_enable, "auto_remaps_enable");
 
    config_file_free(conf);
    return true;
@@ -2176,8 +2197,8 @@ bool config_save_file(const char *path)
    config_set_path(conf,  "libretro_path", settings->libretro);
    config_set_path(conf,  "core_options_path", settings->core_options_path);
 
-   config_set_path(conf,  "recording_output_directory", global->recording.output_dir);
-   config_set_path(conf,  "recording_config_directory", global->recording.config_dir);
+   config_set_path(conf,  "recording_output_directory", global->record.output_dir);
+   config_set_path(conf,  "recording_config_directory", global->record.config_dir);
 
    config_set_bool(conf,  "suspend_screensaver_enable", settings->ui.suspend_screensaver_enable);
    config_set_path(conf,  "libretro_directory", settings->libretro_directory);
@@ -2450,6 +2471,10 @@ bool config_save_file(const char *path)
 
    config_set_bool(conf, "core_specific_config",
          settings->core_specific_config);
+   config_set_bool(conf, "auto_overrides_enable",
+         settings->auto_overrides_enable);
+   config_set_bool(conf, "auto_remaps_enable",
+         settings->auto_remaps_enable);
    config_set_int(conf, "libretro_log_level", settings->libretro_log_level);
    config_set_bool(conf, "log_verbosity", global->verbosity);
    config_set_bool(conf, "perfcnt_enable", global->perfcnt_enable);

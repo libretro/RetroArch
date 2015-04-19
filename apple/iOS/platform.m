@@ -17,15 +17,12 @@
 #include <string.h>
 
 #include "../common/RetroArch_Apple.h"
-#include "../../input/drivers/apple_input.h"
+#include "../../input/drivers/cocoa_input.h"
 #include "../../settings.h"
 #ifdef HAVE_MFI
 #include "../../input/drivers_hid/mfi_hid.h"
 #endif
-#include "menu.h"
-#include "../../menu/menu.h"
 
-#import "views.h"
 #include "../../input/drivers_hid/btstack_hid.h"
 
 id<RetroArch_Platform> apple_platform;
@@ -55,9 +52,6 @@ static void rarch_draw(CFRunLoopObserverRef observer, CFRunLoopActivity activity
     
     if (runloop->is_idle)
         return;
-    
-    if (g_view)
-        [g_view display];
     CFRunLoopWakeUp(CFRunLoopGetMain());
 }
 
@@ -67,6 +61,41 @@ void apple_rarch_exited(void)
 }
 
 apple_frontend_settings_t apple_frontend_settings;
+
+enum frontend_powerstate ios_get_powerstate(int *seconds, int *percent)
+{
+    float level;
+    enum frontend_powerstate ret = FRONTEND_POWERSTATE_NONE;
+    UIDevice *uidev = [UIDevice currentDevice];
+    
+    if (!uidev)
+        return ret;
+    
+    [uidev setBatteryMonitoringEnabled:true];
+    
+    switch (uidev.batteryState)
+    {
+        case UIDeviceBatteryStateCharging:
+            ret = FRONTEND_POWERSTATE_CHARGING;
+            break;
+        case UIDeviceBatteryStateFull:
+            ret = FRONTEND_POWERSTATE_CHARGED;
+            break;
+        case UIDeviceBatteryStateUnplugged:
+            ret = FRONTEND_POWERSTATE_ON_POWER_SOURCE;
+            break;
+        case UIDeviceBatteryStateUnknown:
+            break;
+    }
+    
+    level = uidev.batteryLevel;
+    
+    *percent = ((level < 0.0f) ? -1 : ((int)((level * 100) + 0.5f)));
+
+    [uidev setBatteryMonitoringEnabled:false];
+    
+    return ret;
+}
 
 void get_ios_version(int *major, int *minor)
 {
@@ -78,15 +107,15 @@ void get_ios_version(int *major, int *minor)
         *minor = [decomposed_os_version[1] integerValue];
 }
 
-extern float apple_gfx_ctx_get_native_scale(void);
+extern float cocoagl_gfx_ctx_get_native_scale(void);
 
 /* Input helpers: This is kept here because it needs ObjC */
 static void handle_touch_event(NSArray* touches)
 {
    unsigned i;
    driver_t *driver          = driver_get_ptr();
-   apple_input_data_t *apple = (apple_input_data_t*)driver->input_data;
-   float scale               = apple_gfx_ctx_get_native_scale();
+   cocoa_input_data_t *apple = (cocoa_input_data_t*)driver->input_data;
+   float scale               = cocoagl_gfx_ctx_get_native_scale();
 
    if (!apple)
       return;
@@ -177,17 +206,17 @@ enum
          unsigned i;
          character = [ch characterAtIndex:0];
 
-         apple_input_keyboard_event(event._isKeyDown,
+         cocoa_input_keyboard_event(event._isKeyDown,
                (uint32_t)event._keyCode, 0, mod,
                RETRO_DEVICE_KEYBOARD);
          
          for (i = 1; i < ch.length; i++)
-            apple_input_keyboard_event(event._isKeyDown,
+            cocoa_input_keyboard_event(event._isKeyDown,
                   0, [ch characterAtIndex:i], mod,
                   RETRO_DEVICE_KEYBOARD);
       }
       
-      apple_input_keyboard_event(event._isKeyDown,
+      cocoa_input_keyboard_event(event._isKeyDown,
             (uint32_t)event._keyCode, character, mod,
             RETRO_DEVICE_KEYBOARD);
    }
@@ -222,7 +251,7 @@ enum
       {
          case GSEVENT_TYPE_KEYDOWN:
            case GSEVENT_TYPE_KEYUP:
-            apple_input_keyboard_event(eventType == GSEVENT_TYPE_KEYDOWN,
+            cocoa_input_keyboard_event(eventType == GSEVENT_TYPE_KEYDOWN,
                   *(uint16_t*)&eventMem[0x3C], 0, 0, RETRO_DEVICE_KEYBOARD);
             break;
       }
@@ -329,10 +358,9 @@ enum
 
 - (void)navigationController:(UINavigationController *)navigationController willShowViewController:(UIViewController *)viewController animated:(BOOL)animated
 {
-   apple_input_reset_icade_buttons();
+   cocoa_input_reset_icade_buttons();
    [self setToolbarHidden:![[viewController toolbarItems] count] animated:YES];
    
-   // Workaround to keep frontend settings fresh
    [self refreshSystemConfig];
 }
 
@@ -354,10 +382,13 @@ enum
 - (IBAction)showPauseMenu:(id)sender
 {
    runloop_t *runloop = rarch_main_get_ptr();
-
-   runloop->is_paused                     = true;
-   runloop->is_idle                       = true;
-   runloop->ui_companion_is_on_foreground = true;
+    
+   if (runloop)
+   {
+       runloop->is_paused                     = true;
+       runloop->is_idle                       = true;
+       runloop->ui_companion_is_on_foreground = true;
+   }
 
    [[UIApplication sharedApplication] setStatusBarHidden:false withAnimation:UIStatusBarAnimationNone];
    [[UIApplication sharedApplication] setIdleTimerDisabled:false];
@@ -409,8 +440,8 @@ enum
    is_icade       = !(strcmp(apple_frontend_settings.bluetooth_mode, "icade"));
    is_btstack     = !(strcmp(apple_frontend_settings.bluetooth_mode, "btstack"));
        
-   apple_input_enable_small_keyboard(small_keyboard);
-   apple_input_enable_icade(is_icade);
+   cocoa_input_enable_small_keyboard(small_keyboard);
+   cocoa_input_enable_icade(is_icade);
    btstack_set_poweron(is_btstack);
 }
 

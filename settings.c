@@ -3353,6 +3353,12 @@ static bool setting_append_list_main_menu_options(
          group_info.name,
          subgroup_info.name);
 
+   CONFIG_ACTION(
+         "system_information",
+         "System Information",
+         group_info.name,
+         subgroup_info.name);
+
    if (global->perfcnt_enable)
    {
       CONFIG_ACTION(
@@ -3437,12 +3443,16 @@ static bool setting_append_list_main_menu_options(
          group_info.name,
          subgroup_info.name);
 
+
+#if !defined(IOS)
+   /* Apple rejects iOS apps that lets you forcibly quit an application. */
    CONFIG_ACTION(
          "quit_retroarch",
          "Quit RetroArch",
          group_info.name,
          subgroup_info.name);
    settings_list_current_add_cmd(list, list_info, EVENT_CMD_QUIT_RETROARCH);
+#endif
 
    END_SUB_GROUP(list, list_info);
    END_GROUP(list, list_info);
@@ -3560,6 +3570,17 @@ static bool setting_append_list_driver_options(
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
 #endif
 
+   CONFIG_STRING_OPTIONS(
+         settings->record.driver,
+         "record_driver",
+         "Record Driver",
+         config_get_default_record(),
+         config_get_record_driver_options(),
+         group_info.name,
+         subgroup_info.name,
+         NULL,
+         NULL);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
 
    END_SUB_GROUP(list, list_info);
    END_GROUP(list, list_info);
@@ -3605,6 +3626,29 @@ static bool setting_append_list_general_options(
          general_write_handler,
          general_read_handler);
 
+   CONFIG_BOOL(
+         settings->auto_overrides_enable,
+         "auto_overrides_enable",
+         "Load Override Files Automatically",
+         default_auto_overrides_enable,
+         "OFF",
+         "ON",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+
+   CONFIG_BOOL(
+         settings->auto_remaps_enable,
+         "auto_remaps_enable",
+         "Load Remap Files Automatically",
+         default_auto_remaps_enable,
+         "OFF",
+         "ON",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
 
    END_SUB_GROUP(list, list_info);
 
@@ -3866,6 +3910,18 @@ static bool setting_append_list_recording_options(
          general_write_handler,
          general_read_handler);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
+
+   CONFIG_BOOL(
+         global->record.use_output_dir,
+         "record_use_output_dir",
+         "Use output directory",
+         false,
+         "OFF",
+         "ON",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
 
    END_SUB_GROUP(list, list_info);
 
@@ -6103,7 +6159,7 @@ static bool setting_append_list_path_options(
          SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR | SD_FLAG_BROWSER_ACTION);
 
    CONFIG_DIR(
-         global->recording.output_dir,
+         global->record.output_dir,
          "recording_output_directory",
          "Recording Output Directory",
          "",
@@ -6118,7 +6174,7 @@ static bool setting_append_list_path_options(
          SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR | SD_FLAG_BROWSER_ACTION);
 
    CONFIG_DIR(
-         global->recording.config_dir,
+         global->record.config_dir,
          "recording_config_directory",
          "Recording Config Directory",
          "",

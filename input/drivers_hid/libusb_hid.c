@@ -188,6 +188,7 @@ static int add_adapter(void *data, struct libusb_device *dev)
 
    if (!adapter || !hid)
    {
+      free(adapter);
       fprintf(stderr, "Allocation of adapter failed.\n");
       return -1;
    }

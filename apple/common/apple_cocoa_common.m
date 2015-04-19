@@ -19,7 +19,6 @@
 #include <CoreFoundation/CFArray.h>
 #include <CoreFoundation/CFString.h>
 #import <Foundation/NSPathUtilities.h>
-#include "CFExtensions.h"
 #import "RetroArch_Apple.h"
 #include "../../general.h"
 #include "../../runloop.h"
@@ -172,11 +171,6 @@ void apple_display_alert(const char *message, const char *title)
 
 /* Define compatibility symbols and categories. */
 
-//#if defined(MAC_OS_X_VERSION_10_7) || defined(__IPHONE_4_0)
-#if defined(__IPHONE_4_0) && defined(IOS)
-#define HAVE_AVFOUNDATION
-#endif
-
 #ifdef HAVE_AVFOUNDATION
 #include <AVFoundation/AVCaptureSession.h>
 #include <AVFoundation/AVCaptureDevice.h>
@@ -200,7 +194,7 @@ void *nsview_get_ptr(void)
 #endif
 
 /* forward declarations */
-void apple_gfx_ctx_update(void);
+void cocoagl_gfx_ctx_update(void);
 void *glkitview_init(void);
 
 @implementation RAGameView
@@ -232,7 +226,7 @@ void *glkitview_init(void);
 {
    [super setFrame:frameRect];
 
-   apple_gfx_ctx_update();
+   cocoagl_gfx_ctx_update();
 }
 
 /* Stop the annoying sound when pressing a key. */
@@ -636,7 +630,7 @@ camera_driver_t camera_apple = {
    apple_camera_start,
    apple_camera_stop,
    apple_camera_poll,
-   "apple",
+   "avfoundation",
 };
 #endif
 

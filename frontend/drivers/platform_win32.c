@@ -103,6 +103,59 @@ static void frontend_win32_get_os(char *name, size_t sizeof_name, int *major, in
 
 	*major   = (DWORD)(LOBYTE(LOWORD(version)));
 	*minor   = (DWORD)(HIBYTE(LOWORD(version)));
+
+   switch (*major)
+   {
+      case 6:
+         switch (*minor)
+         {
+            case 3:
+               strlcpy(name, "Windows 8.1", sizeof_name);
+               break;
+            case 2:
+               strlcpy(name, "Windows 8", sizeof_name);
+               break;
+            case 1:
+               strlcpy(name, "Windows 7/2008 R2", sizeof_name);
+               break;
+            case 0:
+               strlcpy(name, "Windows Vista/2008", sizeof_name);
+               break;
+            default:
+               break;
+         }
+         break;
+      case 5:
+         switch (*minor)
+         {
+            case 2:
+               strlcpy(name, "Windows 2003", sizeof_name);
+               break;
+            case 1:
+               strlcpy(name, "Windows XP", sizeof_name);
+               break;
+            case 0:
+               strlcpy(name, "Windows 2000", sizeof_name);
+               break;
+         }
+         break;
+      case 4:
+         switch (*minor)
+         {
+            case 0:
+               strlcpy(name, "Windows NT 4.0", sizeof_name);
+               break;
+            case 90:
+               strlcpy(name, "Windows ME", sizeof_name);
+               break;
+            case 10:
+               strlcpy(name, "Windows 98", sizeof_name);
+               break;
+         }
+         break;
+      default:
+         break;
+   }
 }
 
 static void frontend_win32_init(void *data)
@@ -125,9 +178,40 @@ static void frontend_win32_init(void *data)
    gfx_set_dwm();
 }
 
+enum frontend_powerstate frontend_win32_get_powerstate(int *seconds, int *percent)
+{
+    SYSTEM_POWER_STATUS status;
+	enum frontend_powerstate ret = FRONTEND_POWERSTATE_NONE;
+
+	if (!GetSystemPowerStatus(&status))
+		return ret;
+
+	if (status.BatteryFlag == 0xFF)
+		ret = FRONTEND_POWERSTATE_NONE;
+	if (status.BatteryFlag & (1 << 7))
+		ret = FRONTEND_POWERSTATE_NO_SOURCE;
+	else if (status.BatteryFlag & (1 << 3))
+		ret = FRONTEND_POWERSTATE_CHARGING;
+	else if (status.ACLineStatus == 1)
+		ret = FRONTEND_POWERSTATE_CHARGED;
+	else
+		ret = FRONTEND_POWERSTATE_ON_POWER_SOURCE;
+
+	*percent  = (int)status.BatteryLifePercent;
+	*seconds  = (int)status.BatteryLifeTime;
+
+	return ret;
+}
+
+enum frontend_architecture frontend_win32_get_architecture(void)
+{
+   /* stub */
+   return FRONTEND_ARCH_NONE;
+}
+
 const frontend_ctx_driver_t frontend_ctx_win32 = {
    NULL,						   /* environment_get */
-   frontend_win32_init,            /* init */
+   frontend_win32_init,
    NULL,                           /* deinit */
    NULL,                           /* exitspawn */
    NULL,                           /* process_args */
@@ -135,8 +219,10 @@ const frontend_ctx_driver_t frontend_ctx_win32 = {
    NULL,                           /* set_fork */
    NULL,                           /* shutdown */
    NULL,                           /* get_name */
-   frontend_win32_get_os,          /* get_os */
+   frontend_win32_get_os,
    NULL,                           /* get_rating */
    NULL,                           /* load_content */
+   frontend_win32_get_architecture,
+   frontend_win32_get_powerstate,
    "win32",
 };

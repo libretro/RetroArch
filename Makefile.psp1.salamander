@@ -18,7 +18,7 @@ RARCH_DEFINES = -DPSP -DIS_SALAMANDER -DRARCH_CONSOLE
 
 LIBDIR =
 LDFLAGS =
-LIBS = -lstdc++ -lm
+LIBS = -lstdc++ -lm -lpsppower
 
 ifeq ($(HAVE_FILE_LOGGER), 1)
 CFLAGS		+= -DHAVE_FILE_LOGGER

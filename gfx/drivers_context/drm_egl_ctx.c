@@ -933,7 +933,7 @@ static bool gfx_ctx_drm_egl_bind_api(void *data,
       case GFX_CTX_OPENVG_API:
          return eglBindAPI(EGL_OPENVG_API);
       default:
-         return false;
+         break;
    }
 
    return false;

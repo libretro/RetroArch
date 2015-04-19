@@ -27,9 +27,6 @@
 #include "../input/input_remapping.h"
 
 /* FIXME - Global variables, refactor */
-char core_updater_list_path[PATH_MAX_LENGTH];
-char core_updater_list_label[PATH_MAX_LENGTH];
-unsigned core_updater_list_type;
 unsigned rdb_entry_start_game_selection_ptr;
 size_t hack_shader_pass = 0;
 #ifdef HAVE_NETWORKING
@@ -288,11 +285,6 @@ static int action_ok_core_updater_list(const char *path,
    driver->menu->nonblocking_refresh = true;
 
    (void)url_path;
-#ifdef HAVE_NETWORKING
-   strlcpy(core_updater_list_path, path, sizeof(core_updater_list_path));
-   strlcpy(core_updater_list_label, label, sizeof(core_updater_list_label));
-   core_updater_list_type = type;
-#endif
 
    if (settings->network.buildbot_url[0] == '\0')
       return -1;
@@ -327,6 +319,21 @@ static int action_ok_remap_file(const char *path,
          label, type, idx);
 }
 
+static int action_ok_record_configfile(const char *path,
+      const char *label, unsigned type, size_t idx)
+{
+   menu_handle_t *menu      = menu_driver_get_ptr();
+   global_t   *global       = global_get_ptr();
+
+   if (!menu)
+      return -1;
+
+   return menu_list_push_stack_refresh(
+         menu->menu_list,
+         global->record.config_dir,
+         label, type, idx);
+}
+
 static int action_ok_core_list(const char *path,
       const char *label, unsigned type, size_t idx)
 {
@@ -340,6 +347,24 @@ static int action_ok_core_list(const char *path,
          menu->menu_list,
          settings->libretro_directory,
          label, type, idx);
+}
+
+static int action_ok_record_configfile_load(const char *path,
+      const char *label, unsigned type, size_t idx)
+{
+   const char *menu_path = NULL;
+   global_t     *global = global_get_ptr();
+   menu_handle_t *menu  = menu_driver_get_ptr();
+   if (!menu || !global)
+      return -1;
+
+   menu_list_get_last_stack(menu->menu_list, &menu_path, NULL,
+         NULL);
+
+   fill_pathname_join(global->record.config, menu_path, path, sizeof(global->record.config));
+
+   menu_list_flush_stack_by_needle(menu->menu_list, "Recording Settings");
+   return 0;
 }
 
 static int action_ok_remap_file_load(const char *path,
@@ -593,7 +618,8 @@ static int action_ok_path_use_directory(const char *path,
    if (setting->type != ST_DIR)
       return -1;
 
-   menu_action_setting_set_current_string(setting, menu_path);
+   strlcpy(setting->value.string, menu_path, setting->size);
+   menu_setting_generic(setting);
    menu_list_pop_stack_by_needle(menu->menu_list, setting->name);
 
    return 0;
@@ -1231,7 +1257,9 @@ void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
    if (!menu)
       return;
 
+#if 0
    RARCH_LOG("path: %s, label: %s, elem0 : %s, elem1: %s\n", path, label, elem0, elem1);
+#endif
 
    cbs->action_ok = action_ok_lookup_setting;
 
@@ -1287,6 +1315,8 @@ void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
       cbs->action_ok = action_ok_video_filter;
    else if (!strcmp(label, "remap_file_load"))
       cbs->action_ok = action_ok_remap_file;
+   else if (!strcmp(label, "record_config"))
+      cbs->action_ok = action_ok_record_configfile;
    else if (!strcmp(label, "core_updater_list"))
       cbs->action_ok = action_ok_core_updater_list;
    else if (!strcmp(label, "video_shader_parameters") ||
@@ -1301,6 +1331,7 @@ void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
          !strcmp(label, "core_cheat_options") ||
          !strcmp(label, "core_input_remapping_options") ||
          !strcmp(label, "core_information") ||
+         !strcmp(label, "system_information") ||
          !strcmp(label, "disk_options") ||
          !strcmp(label, "settings") ||
          !strcmp(label, "performance_counters") ||
@@ -1358,6 +1389,9 @@ void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
          break;
       case MENU_FILE_CHEAT:
          cbs->action_ok = action_ok_cheat_file_load;
+         break;
+      case MENU_FILE_RECORD_CONFIG:
+         cbs->action_ok = action_ok_record_configfile_load;
          break;
       case MENU_FILE_REMAP:
          cbs->action_ok = action_ok_remap_file_load;

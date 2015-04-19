@@ -19,7 +19,7 @@
 
 #include "../input_common.h"
 #include "../input_keymaps.h"
-#include "../drivers/apple_input.h"
+#include "../drivers/cocoa_input.h"
 #include "../../general.h"
 #include "../../driver.h"
 
@@ -70,7 +70,7 @@ static bool handle_small_keyboard(unsigned* code, bool down)
       { 0 }
    };
    driver_t *driver = driver_get_ptr();
-   apple_input_data_t *apple = (apple_input_data_t*)driver->input_data;
+   cocoa_input_data_t *apple = (cocoa_input_data_t*)driver->input_data;
    unsigned translated_code  = 0;
    
    if (!map_initialized)
@@ -122,7 +122,7 @@ static void handle_icade_event(unsigned keycode)
       { false,  4 }, { true ,  1 }, { false, -1 }, { false, -1 }  // C
    };
    driver_t *driver = driver_get_ptr();
-   apple_input_data_t *apple = (apple_input_data_t*)driver->input_data;
+   cocoa_input_data_t *apple = (cocoa_input_data_t*)driver->input_data;
       
    if (apple->icade_enabled && (keycode < 0x20)
          && (icade_map[keycode].button >= 0))
@@ -136,11 +136,11 @@ static void handle_icade_event(unsigned keycode)
    }
 }
 
-void apple_input_keyboard_event(bool down,
+void cocoa_input_keyboard_event(bool down,
       unsigned code, uint32_t character, uint32_t mod, unsigned device)
 {
    driver_t *driver = driver_get_ptr();
-   apple_input_data_t *apple = (apple_input_data_t*)driver->input_data;
+   cocoa_input_data_t *apple = (cocoa_input_data_t*)driver->input_data;
 
    if (!apple)
       return;

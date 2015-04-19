@@ -17,7 +17,7 @@
 #import <GameController/GameController.h>
 #include <boolean.h>
 #include "mfi_hid.h"
-#include "../../input/drivers/apple_input.h"
+#include "../../input/drivers/cocoa_input.h"
 
 enum
 {
@@ -44,7 +44,7 @@ static void apple_gamecontroller_poll(GCController *controller)
 {
    uint32_t slot, pause;
    driver_t *driver = driver_get_ptr();
-   apple_input_data_t *apple = (apple_input_data_t*)driver->input_data;
+   cocoa_input_data_t *apple = (cocoa_input_data_t*)driver->input_data;
    if (!apple || !controller || controller.playerIndex == MAX_USERS)
       return;
 
@@ -105,7 +105,7 @@ void apple_gamecontroller_poll_all(void)
 static void apple_gamecontroller_register(GCGamepad *gamepad)
 {
    driver_t *driver = driver_get_ptr();
-   apple_input_data_t *apple = (apple_input_data_t*)driver->input_data;
+   cocoa_input_data_t *apple = (cocoa_input_data_t*)driver->input_data;
    gamepad.valueChangedHandler = ^(GCGamepad *updateGamepad, GCControllerElement *element) {
       apple_gamecontroller_poll(updateGamepad.controller);
    };

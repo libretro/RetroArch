@@ -163,7 +163,7 @@ extern const gfx_ctx_driver_t gfx_ctx_ps3;
 extern const gfx_ctx_driver_t gfx_ctx_wgl;
 extern const gfx_ctx_driver_t gfx_ctx_videocore;
 extern const gfx_ctx_driver_t gfx_ctx_bbqnx;
-extern const gfx_ctx_driver_t gfx_ctx_apple;
+extern const gfx_ctx_driver_t gfx_ctx_cocoagl;
 extern const gfx_ctx_driver_t gfx_ctx_emscripten;
 extern const gfx_ctx_driver_t gfx_ctx_null;
 
@@ -242,6 +242,8 @@ void gfx_ctx_get_video_output_size(void *data,
 void gfx_ctx_get_video_output_prev(void *data);
 
 void gfx_ctx_get_video_output_next(void *data);
+
+const char *gfx_ctx_get_ident(void);
 
 void gfx_ctx_free(void *data);
 

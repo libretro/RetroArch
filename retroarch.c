@@ -92,70 +92,84 @@ static void print_features(void)
 {
    puts("");
    puts("Features:");
-   _PSUPP(sdl, "SDL", "SDL drivers");
-   _PSUPP(sdl2, "SDL2", "SDL2 drivers");
-   _PSUPP(x11, "X11", "X11 drivers");
-   _PSUPP(wayland, "wayland", "Wayland drivers");
+   _PSUPP(libretrodb, "LibretroDB", "LibretroDB support");
+   _PSUPP(command, "Command", "Command interface support");
+   _PSUPP(network_command, "Network Command", "Network Command interface support");
+   _PSUPP(sdl, "SDL", "SDL input/audio/video drivers");
+   _PSUPP(sdl2, "SDL2", "SDL2 input/audio/video drivers");
+   _PSUPP(x11, "X11", "X11 input/video drivers");
+   _PSUPP(wayland, "wayland", "Wayland input/video drivers");
    _PSUPP(thread, "Threads", "Threading support");
    _PSUPP(opengl, "OpenGL", "OpenGL driver");
-   _PSUPP(kms, "KMS", "KMS/EGL context support");
+   _PSUPP(opengles, "OpenGL ES", "OpenGL ES driver");
+   _PSUPP(xvideo, "XVideo", "Video driver");
    _PSUPP(udev, "UDEV", "UDEV/EVDEV input driver support");
-   _PSUPP(egl, "EGL", "EGL context support");
-   _PSUPP(vg, "OpenVG", "OpenVG output support");
-   _PSUPP(xvideo, "XVideo", "XVideo output");
-   _PSUPP(alsa, "ALSA", "audio driver");
-   _PSUPP(oss, "OSS", "audio driver");
-   _PSUPP(jack, "Jack", "audio driver");
-   _PSUPP(rsound, "RSound", "audio driver");
-   _PSUPP(roar, "RoarAudio", "audio driver");
-   _PSUPP(pulse, "PulseAudio", "audio driver");
-   _PSUPP(dsound, "DirectSound", "audio driver");
-   _PSUPP(xaudio, "XAudio2", "audio driver");
-   _PSUPP(zlib, "zlib", "PNG encode/decode and .zip extraction");
-   _PSUPP(al, "OpenAL", "audio driver");
+   _PSUPP(egl, "EGL",   "video context driver");
+   _PSUPP(kms, "KMS",   "video context driver");
+   _PSUPP(vg, "OpenVG", "video context driver");
+   _PSUPP(coreaudio, "CoreAudio", "Audio driver");
+   _PSUPP(alsa, "ALSA", "Audio driver");
+   _PSUPP(oss, "OSS", "Audio driver");
+   _PSUPP(jack, "Jack", "Audio driver");
+   _PSUPP(rsound, "RSound", "Audio driver");
+   _PSUPP(roar, "RoarAudio", "Audio driver");
+   _PSUPP(pulse, "PulseAudio", "Audio driver");
+   _PSUPP(dsound, "DirectSound", "Audio driver");
+   _PSUPP(xaudio, "XAudio2", "Audio driver");
+   _PSUPP(al, "OpenAL", "Audio driver");
+   _PSUPP(sl, "OpenSL", "Audio driver");
+   _PSUPP(7zip, "7zip", "7zip support");
+   _PSUPP(zlib, "zlib", ".zip extraction");
    _PSUPP(dylib, "External", "External filter and plugin support");
-   _PSUPP(cg, "Cg", "Cg pixel shaders");
+   _PSUPP(cg, "Cg", "Fragment/vertex shader driver");
+   _PSUPP(glsl, "GLSL", "Fragment/vertex shader driver");
+   _PSUPP(glsl, "HLSL", "Fragment/vertex shader driver");
    _PSUPP(libxml2, "libxml2", "libxml2 XML parsing");
    _PSUPP(sdl_image, "SDL_image", "SDL_image image loading");
+   _PSUPP(rpng, "rpng", "PNG image loading/encoding");
    _PSUPP(fbo, "FBO", "OpenGL render-to-texture (multi-pass shaders)");
    _PSUPP(dynamic, "Dynamic", "Dynamic run-time loading of libretro library");
    _PSUPP(ffmpeg, "FFmpeg", "On-the-fly recording of gameplay with libavcodec");
-   _PSUPP(freetype, "FreeType", "TTF font rendering with FreeType");
+   _PSUPP(freetype, "FreeType", "TTF font rendering driver");
+   _PSUPP(coretext, "CoreText", "TTF font rendering driver (for OSX and/or iOS)");
    _PSUPP(netplay, "Netplay", "Peer-to-peer netplay");
    _PSUPP(python, "Python", "Script support in shaders");
+   _PSUPP(libusb, "Libusb", "Libusb support");
+   _PSUPP(cocoa, "Cocoa", "Cocoa UI companion support (for OSX and/or iOS)");
+   _PSUPP(qt, "QT", "QT UI companion support");
+   _PSUPP(avfoundation, "AVFoundation", "Camera driver");
+   _PSUPP(v4l2, "Video4Linux2", "Camera driver");
 }
 #undef _PSUPP
 
 /**
- * print_compiler:
+ * rarch_print_compiler:
  *
  * Prints compiler that was used for compiling RetroArch.
  **/
-static void print_compiler(FILE *file)
+void rarch_print_compiler(char *str, size_t sizeof_str)
 {
-   fprintf(file, "\nCompiler: ");
 #if defined(_MSC_VER)
-   fprintf(file, "MSVC (%d) %u-bit\n", _MSC_VER, (unsigned)
+   snprintf(str, sizeof_str, "Compiler: MSVC (%d) %u-bit", _MSC_VER, (unsigned)
          (CHAR_BIT * sizeof(size_t)));
 #elif defined(__SNC__)
-   fprintf(file, "SNC (%d) %u-bit\n",
+   snprintf(str, sizeof_str, "Compiler: SNC (%d) %u-bit",
       __SN_VER__, (unsigned)(CHAR_BIT * sizeof(size_t)));
 #elif defined(_WIN32) && defined(__GNUC__)
-   fprintf(file, "MinGW (%d.%d.%d) %u-bit\n",
+   snprintf(str, sizeof_str, "Compiler: MinGW (%d.%d.%d) %u-bit",
       __GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__, (unsigned)
       (CHAR_BIT * sizeof(size_t)));
 #elif defined(__clang__)
-   fprintf(file, "Clang/LLVM (%s) %u-bit\n",
+   snprintf(str, sizeof_str, "Compiler: Clang/LLVM (%s) %u-bit",
       __clang_version__, (unsigned)(CHAR_BIT * sizeof(size_t)));
 #elif defined(__GNUC__)
-   fprintf(file, "GCC (%d.%d.%d) %u-bit\n",
+   snprintf(str, sizeof_str, "Compiler: GCC (%d.%d.%d) %u-bit",
       __GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__, (unsigned)
       (CHAR_BIT * sizeof(size_t)));
 #else
-   fprintf(file, "Unknown compiler %u-bit\n",
+   snprintf(str, sizeof_str, "Unknown compiler %u-bit",
       (unsigned)(CHAR_BIT * sizeof(size_t)));
 #endif
-   fprintf(file, "Built: %s\n", __DATE__);
 }
 
 /**
@@ -165,13 +179,17 @@ static void print_compiler(FILE *file)
  **/
 static void print_help(void)
 {
+   char str[PATH_MAX_LENGTH];
+
    puts("===================================================================");
 #ifdef HAVE_GIT_VERSION
    printf(RETRO_FRONTEND ": Frontend for libretro -- v" PACKAGE_VERSION " -- %s --\n", rarch_git_version);
 #else
    puts(RETRO_FRONTEND ": Frontend for libretro -- v" PACKAGE_VERSION " --");
 #endif
-   print_compiler(stdout);
+   rarch_print_compiler(str, sizeof(str));
+   fprintf(stdout, "%s", str);
+   fprintf(stdout, "Built: %s\n", __DATE__);
    puts("===================================================================");
    puts("Usage: retroarch [content file] [options...]");
    puts("\t-h/--help: Show this help message.");
@@ -1097,8 +1115,12 @@ int rarch_main_init(int argc, char *argv[])
 
    if (global->verbosity)
    {
+      char str[PATH_MAX_LENGTH];
+
       RARCH_LOG_OUTPUT("=== Build =======================================");
-      print_compiler(stderr);
+      rarch_print_compiler(str, sizeof(str));
+      fprintf(stderr, "%s", str);
+      fprintf(stderr, "Built: %s\n", __DATE__);
       RARCH_LOG_OUTPUT("Version: %s\n", PACKAGE_VERSION);
 #ifdef HAVE_GIT_VERSION
       RARCH_LOG_OUTPUT("Git: %s\n", rarch_git_version);

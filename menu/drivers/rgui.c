@@ -349,6 +349,7 @@ static void rgui_blit_cursor(menu_handle_t *menu)
 static void rgui_render(void)
 {
    size_t i, end;
+   int bottom;
    char title[256], title_buf[256], title_msg[64];
    char timedate[PATH_MAX_LENGTH];
    unsigned x, y, menu_type  = 0;
@@ -383,18 +384,38 @@ static void rgui_render(void)
    runloop->frames.video.current.menu.animation.is_active = false;
    runloop->frames.video.current.menu.label.is_updated    = false;
 
-   menu->mouse.ptr = menu->mouse.y / 11 - 2 + menu->begin;
+   if (settings->menu.pointer.enable)
+   {
+      menu->pointer.ptr = menu->pointer.y / 11 - 2 + menu->begin;
 
-   if (menu->mouse.scrolldown && menu->begin
-         < menu_list_get_size(menu->menu_list) - RGUI_TERM_HEIGHT)
-      menu->begin++;
+      if (menu->pointer.dragging)
+      {
+         menu->scroll_y += menu->pointer.dy;
+         menu->begin = -menu->scroll_y / 11 + 2;
+         if (menu->scroll_y > 0)
+            menu->scroll_y = 0;
+      }
+   }
+   
+   if (settings->menu.mouse.enable)
+   {
+      if (menu->mouse.scrolldown && menu->begin
+            < menu_list_get_size(menu->menu_list) - RGUI_TERM_HEIGHT)
+         menu->begin++;
 
-   if (menu->mouse.scrollup && menu->begin > 0)
-      menu->begin--;
+      if (menu->mouse.scrollup && menu->begin > 0)
+         menu->begin--;
+
+      menu->mouse.ptr = menu->mouse.y / 11 - 2 + menu->begin;
+   }
 
    /* Do not scroll if all items are visible. */
    if (menu_list_get_size(menu->menu_list) <= RGUI_TERM_HEIGHT)
       menu->begin = 0;
+
+   bottom = menu_list_get_size(menu->menu_list) - RGUI_TERM_HEIGHT;
+   if (menu->begin > bottom)
+      menu->begin = bottom;
 
    end = (menu->begin + RGUI_TERM_HEIGHT <=
          menu_list_get_size(menu->menu_list)) ?
@@ -412,13 +433,20 @@ static void rgui_render(void)
 
    get_title(label, dir, menu_type, title, sizeof(title));
 
-   menu_animation_ticker_line(title_buf, RGUI_TERM_WIDTH - 3,
+   menu_animation_ticker_line(title_buf, RGUI_TERM_WIDTH - 10,
          runloop->frames.video.count / RGUI_TERM_START_X, title, true);
 
    hover_color = HOVER_COLOR(settings);
    normal_color = NORMAL_COLOR(settings);
 
-   blit_line(menu, RGUI_TERM_START_X + RGUI_TERM_START_X, RGUI_TERM_START_X, title_buf, TITLE_COLOR(settings));
+   if (file_list_get_size(menu->menu_list->menu_stack) > 1)
+      blit_line(menu,
+            RGUI_TERM_START_X, RGUI_TERM_START_X,
+            "BACK", TITLE_COLOR(settings));
+
+   blit_line(menu,
+         RGUI_TERM_START_X + (RGUI_TERM_WIDTH - strlen(title_buf)) * FONT_WIDTH_STRIDE / 2,
+         RGUI_TERM_START_X, title_buf, TITLE_COLOR(settings));
 
    core_name = global->menu.info.library_name;
    if (!core_name)
@@ -434,11 +462,10 @@ static void rgui_render(void)
       if (!core_version)
          core_version = "";
 
-
       snprintf(title_msg, sizeof(title_msg), "%s - %s %s", PACKAGE_VERSION,
             core_name, core_version);
       blit_line(menu,
-            RGUI_TERM_START_X + RGUI_TERM_START_X,
+            RGUI_TERM_START_X,
             (RGUI_TERM_HEIGHT * FONT_HEIGHT_STRIDE) +
             RGUI_TERM_START_Y + 2, title_msg, hover_color);
    }
@@ -448,11 +475,10 @@ static void rgui_render(void)
       disp_timedate_set_label(timedate, sizeof(timedate), 3);
 
       blit_line(menu,
-            (RGUI_TERM_WIDTH * FONT_HEIGHT_STRIDE) + (60),
+            RGUI_TERM_WIDTH * FONT_WIDTH_STRIDE - RGUI_TERM_START_X,
             (RGUI_TERM_HEIGHT * FONT_HEIGHT_STRIDE) +
             RGUI_TERM_START_Y + 2, timedate, hover_color);
    }
-
 
    x = RGUI_TERM_START_X;
    y = RGUI_TERM_START_Y;
@@ -546,6 +572,7 @@ static void *rgui_init(void)
 
    menu->frame_buf.width           = 320;
    menu->frame_buf.height          = 240;
+   menu->header_height             = FONT_HEIGHT_STRIDE * 2;
    menu->begin                     = 0;
    menu->frame_buf.pitch           = menu->frame_buf.width * sizeof(uint16_t);
 
@@ -608,8 +635,11 @@ static void rgui_set_texture(void)
 static void rgui_navigation_clear(bool pending_push)
 {
    menu_handle_t *menu = menu_driver_get_ptr();
-   if (menu)
-      menu->begin = 0;
+   if (!menu)
+      return;
+
+   menu->begin = 0;
+   menu->scroll_y = 0;
 }
 
 static void rgui_navigation_set(bool scroll)

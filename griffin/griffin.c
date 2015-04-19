@@ -116,13 +116,7 @@ VIDEO CONTEXT
 #if defined(HAVE_VIDEOCORE)
 #include "../gfx/drivers_context/vc_egl_ctx.c"
 #endif
-#if defined(HAVE_X11) && !defined(HAVE_OPENGLES)
-#include "../gfx/drivers_context/glx_ctx.c"
-#endif
 
-#if defined(HAVE_EGL)
-#include "../gfx/drivers_context/xegl_ctx.c"
-#endif
 
 #if defined(_WIN32) && !defined(_XBOX)
 #include "../gfx/drivers_context/wgl_ctx.c"
@@ -131,8 +125,17 @@ VIDEO CONTEXT
 
 #endif
 
-#ifdef HAVE_X11
+#if defined(HAVE_X11)
 #include "../gfx/common/x11_common.c"
+
+#ifndef HAVE_OPENGLES
+#include "../gfx/drivers_context/glx_ctx.c"
+#endif
+
+#ifdef HAVE_EGL
+#include "../gfx/drivers_context/xegl_ctx.c"
+#endif
+
 #endif
 
 
@@ -170,10 +173,13 @@ VIDEO IMAGE
 #include "../gfx/video_texture.c"
 
 #include "../libretro-common/formats/tga/tga_decode.c"
+
+#ifdef HAVE_RPNG
 #include "../libretro-common/formats/png/rpng_fbio.c"
 #include "../libretro-common/formats/png/rpng_nbio.c"
 #include "../libretro-common/formats/png/rpng_decode.c"
 #include "../libretro-common/formats/png/rpng_encode.c"
+#endif
 
 /*============================================================
 VIDEO DRIVER
@@ -244,7 +250,7 @@ FONTS
 #include "../gfx/drivers_font_renderer/freetype.c"
 #endif
 
-#if defined(__APPLE__)
+#if defined(__APPLE__) && defined(HAVE_CORETEXT)
 #include "../gfx/drivers_font_renderer/coretext.c"
 #endif
 
@@ -311,8 +317,8 @@ INPUT
 #elif defined(ANDROID)
 #include "../input/drivers/android_input.c"
 #include "../input/drivers_joypad/android_joypad.c"
-#elif defined(__APPLE__)
-#include "../input/drivers/apple_input.c"
+#elif defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH)
+#include "../input/drivers/cocoa_input.c"
 #elif defined(__QNX__)
 #include "../input/drivers/qnx_input.c"
 #include "../input/drivers_joypad/qnx_joypad.c"
@@ -359,7 +365,7 @@ INPUT (HID)
 
 #if defined(__APPLE__) && defined(IOS)
 #include "../input/drivers_hid/btstack_hid.c"
-#elif defined(__APPLE__) && !defined(IOS)
+#elif defined(__APPLE__) && defined(HAVE_IOHIDMANAGER)
 #include "../input/drivers_hid/apple_hid.c"
 #endif
 
@@ -603,10 +609,12 @@ FRONTEND
 #include "../frontend/drivers/platform_ctr.c"
 #elif defined(__QNX__)
 #include "../frontend/drivers/platform_qnx.c"
-#elif defined(OSX) || defined(IOS)
+#elif defined(__APPLE__)
 #include "../frontend/drivers/platform_apple.c"
 #elif defined(ANDROID)
 #include "../frontend/drivers/platform_android.c"
+#elif defined(__linux__) && !defined(ANDROID)
+#include "../frontend/drivers/platform_linux.c"
 #endif
 #include "../frontend/drivers/platform_null.c"
 
@@ -633,6 +641,14 @@ MAIN
 #endif
 
 /*============================================================
+GIT
+============================================================ */
+
+#ifdef HAVE_GIT_VERSION
+#include "../git_version.c"
+#endif
+
+/*============================================================
 RETROARCH
 ============================================================ */
 #include "../libretro_version_1.c"
@@ -645,6 +661,7 @@ RECORDING
 ============================================================ */
 #include "../movie.c"
 #include "../record/record_driver.c"
+#include "../record/drivers/record_null.c"
 
 /*============================================================
 THREAD
@@ -816,6 +833,7 @@ XML
 #include "../libretro-db/query.c"
 #include "../database_info.c"
 #endif
+
 
 #ifdef __cplusplus
 }

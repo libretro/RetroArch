@@ -137,19 +137,6 @@ static int load_or_open_zip_iterate(unsigned action)
    return 0;
 }
 
-static INLINE struct video_shader *shader_manager_get_current_shader(const char *label, unsigned type)
-{
-   menu_handle_t *menu = menu_driver_get_ptr();
-   if (!menu)
-      return NULL;
-
-   if (!strcmp(label, "video_shader_preset_parameters"))
-      return menu->shader;
-   else if (!strcmp(label, "video_shader_parameters"))
-      return video_shader_driver_get_current_shader();
-   return NULL;
-}
-
 static int action_iterate_help(const char *label, unsigned action)
 {
    unsigned i;

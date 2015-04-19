@@ -15,123 +15,152 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <CoreFoundation/CoreFoundation.h>
+#include <retro_miscellaneous.h>
+#include <file/file_path.h>
 #include "../../apple/common/CFExtensions.h"
 
 #include "../frontend_driver.h"
 #include "../../ui/ui_companion_driver.h"
+#include "../../general.h"
 
 #include <stdint.h>
 #include <boolean.h>
 #include <stddef.h>
 #include <string.h>
 
-#ifdef IOS
+#include <sys/utsname.h>
+
+#if defined(OSX)
+#include <Carbon/Carbon.h>
+#include <IOKit/ps/IOPowerSources.h>
+#include <IOKit/ps/IOPSKeys.h>
+#endif
+
+#if defined(IOS)
 void get_ios_version(int *major, int *minor);
+
+enum frontend_powerstate ios_get_powerstate(int *seconds, int *percent);
 #endif
 
-static bool CopyModel(char** model, uint32_t *majorRev, uint32_t *minorRev)
+#if defined(OSX)
+
+#define PMGMT_STRMATCH(a,b) (CFStringCompare(a, b, 0) == kCFCompareEqualTo)
+#define PMGMT_GETVAL(k,v)   CFDictionaryGetValueIfPresent(dict, CFSTR(k), (const void **) v)
+
+/* Note that AC power sources also include a laptop battery it is charging. */
+static void checkps(CFDictionaryRef dict, bool * have_ac, bool * have_battery,
+        bool * charging, int *seconds, int *percent)
 {
-#ifdef OSX
-   int mib[2];
-   int count;
-   unsigned long modelLen;
-   char *revStr;
-#endif
-   char *machineModel;
-   bool success  = true;
-   size_t length = 1024;
-
-   if (!model || !majorRev || !minorRev)
-   {
-      RARCH_ERR("CopyModel: Passing NULL arguments\n");
-      return false;
-   }
-
-#ifdef IOS
-   sysctlbyname("hw.machine", NULL, &length, NULL, 0);
-#endif
-
-   machineModel  = malloc(length);
-
-   if (!machineModel)
-   {
-      success   = false;
-      goto exit;
-   }
-#ifdef IOS
-   sysctlbyname("hw.machine", machineModel, &length, NULL, 0);
-   *model        = strndup(machineModel, length);
-#else
-   mib[0]        = CTL_HW;
-   mib[1]        = HW_MODEL;
-
-   if (sysctl(mib, 2, machineModel, &length, NULL, 0))
-   {
-      printf("CopyModel: sysctl (error %d)\n", errno);
-      success  = false;
-      goto exit;
-   }
-
-   modelLen      = strcspn(machineModel, "0123456789");
-
-   if (modelLen  == 0)
-   {
-      RARCH_ERR("CopyModel: Could not find machine model name\n");
-      success   = false;
-      goto exit;
-   }
-
-   *model        = strndup(machineModel, modelLen);
-
-   if (*model    == NULL)
-   {
-      RARCH_ERR("CopyModel: Could not find machine model name\n");
-      success   = false;
-      goto exit;
-   }
-
-   *majorRev     = 0;
-   *minorRev     = 0;
-   revStr        = strpbrk(machineModel, "0123456789");
-
-   if (!revStr)
-   {
-      RARCH_ERR("CopyModel: Could not find machine version number, inferred value is 0,0\n");
-      success   = true;
-      goto exit;
-   }
-
-   count         = sscanf(revStr, "%d,%d", majorRev, minorRev);
-
-   if (count < 2)
-   {
-      RARCH_ERR("CopyModel: Could not find machine version number\n");
-      if (count < 1)
-         *majorRev = 0;
-      *minorRev     = 0;
-      success       = true;
-      goto exit;
-   }
-#endif
-
-exit:
-   if (machineModel)
-      free(machineModel);
-   if (!success)
-   {
-      if (*model)
-         free(*model);
-      *model    = NULL;
-      *majorRev = 0;
-      *minorRev = 0;
-   }
-   return success;
+    CFStringRef strval; /* don't CFRelease() this. */
+    CFBooleanRef bval;
+    CFNumberRef numval;
+    bool charge = false;
+    bool choose = false;
+    bool  is_ac = false;
+    int    secs = -1;
+    int  maxpct = -1;
+    int     pct = -1;
+    
+    if ((PMGMT_GETVAL(kIOPSIsPresentKey, &bval)) && (bval == kCFBooleanFalse))
+        return;                 /* nothing to see here. */
+    
+    if (!PMGMT_GETVAL(kIOPSPowerSourceStateKey, &strval))
+        return;
+    
+    if (PMGMT_STRMATCH(strval, CFSTR(kIOPSACPowerValue)))
+        is_ac = *have_ac = true;
+    else if (!PMGMT_STRMATCH(strval, CFSTR(kIOPSBatteryPowerValue)))
+        return;                 /* not a battery? */
+    
+    if ((PMGMT_GETVAL(kIOPSIsChargingKey, &bval)) && (bval == kCFBooleanTrue))
+        charge = true;
+    
+    if (PMGMT_GETVAL(kIOPSMaxCapacityKey, &numval))
+    {
+        SInt32 val = -1;
+        CFNumberGetValue(numval, kCFNumberSInt32Type, &val);
+        if (val > 0)
+        {
+            *have_battery = true;
+            maxpct        = (int) val;
+        }
+    }
+    
+    if (PMGMT_GETVAL(kIOPSMaxCapacityKey, &numval))
+    {
+        SInt32 val = -1;
+        CFNumberGetValue(numval, kCFNumberSInt32Type, &val);
+        if (val > 0)
+        {
+            *have_battery = true;
+            maxpct        = (int) val;
+        }
+    }
+    
+    if (PMGMT_GETVAL(kIOPSTimeToEmptyKey, &numval))
+    {
+        SInt32 val = -1;
+        CFNumberGetValue(numval, kCFNumberSInt32Type, &val);
+        
+        /* Mac OS X reports 0 minutes until empty if you're plugged in. :( */
+        if ((val == 0) && (is_ac))
+            val = -1;           /* !!! FIXME: calc from timeToFull and capacity? */
+        
+        secs = (int) val;
+        if (secs > 0)
+            secs *= 60;         /* value is in minutes, so convert to seconds. */
+    }
+    
+    if (PMGMT_GETVAL(kIOPSCurrentCapacityKey, &numval))
+    {
+        SInt32 val = -1;
+        CFNumberGetValue(numval, kCFNumberSInt32Type, &val);
+        pct = (int) val;
+    }
+    
+    if ((pct > 0) && (maxpct > 0))
+        pct = (int) ((((double) pct) / ((double) maxpct)) * 100.0);
+    
+    if (pct > 100)
+        pct = 100;
+    
+    /*
+     * We pick the battery that claims to have the most minutes left.
+     *  (failing a report of minutes, we'll take the highest percent.)
+     */
+    if ((secs < 0) && (*seconds < 0))
+    {
+        if ((pct < 0) && (*percent < 0))
+            choose = true;  /* at least we know there's a battery. */
+        if (pct > *percent)
+            choose = true;
+    }
+    else if (secs > *seconds)
+        choose = true;
+    
+    if (choose)
+    {
+        *seconds  = secs;
+        *percent  = pct;
+        *charging = charge;
+    }
 }
+#endif
 
 static void frontend_apple_get_name(char *name, size_t sizeof_name)
 {
-    uint32_t major_rev, minor_rev;
-    CopyModel(&name, &major_rev, &minor_rev);
+#if defined(IOS)
+    struct utsname buffer;
+    
+    if (uname(&buffer) != 0)
+        return;
+    
+    strlcpy(name, buffer.machine, sizeof_name);
+#elif defined(OSX)
+    size_t length = 0;
+    sysctlbyname("hw.model", name, &length, NULL, 0);
+#endif
 }
 
 static void frontend_apple_get_os(char *name, size_t sizeof_name, int *major, int *minor)
@@ -141,15 +170,18 @@ static void frontend_apple_get_os(char *name, size_t sizeof_name, int *major, in
    (void)major;
    (void)minor;
     
-#ifdef IOS
+#if defined(IOS)
     get_ios_version(major, minor);
-    snprintf(name, sizeof_name, "iOS %d.%d", *major, *minor);
+    strlcpy(name, "iOS", sizeof_name);
+#elif defined(OSX)
+    strlcpy(name, "OSX", sizeof_name);
 #endif
 }
 
 static void frontend_apple_get_environment_settings(int *argc, char *argv[],
       void *args, void *params_data)
 {
+#if defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH)
    char temp_dir[PATH_MAX_LENGTH];
    char bundle_path_buf[PATH_MAX_LENGTH], home_dir_buf[PATH_MAX_LENGTH];
    CFURLRef bundle_url;
@@ -214,9 +246,12 @@ static void frontend_apple_get_environment_settings(int *argc, char *argv[],
 
    CFRelease(bundle_path);
    CFRelease(bundle_url);
+#endif
 }
 
+#if defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH)
 extern void apple_rarch_exited(void);
+#endif
 
 static void frontend_apple_load_content(void)
 {
@@ -229,7 +264,9 @@ static void frontend_apple_load_content(void)
 
 static void frontend_apple_shutdown(bool unused)
 {
+#if defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH)
     apple_rarch_exited();
+#endif
 }
 
 static int frontend_apple_get_rating(void)
@@ -297,20 +334,100 @@ static int frontend_apple_get_rating(void)
    return -1;
 }
 
+static enum frontend_powerstate frontend_apple_get_powerstate(int *seconds, int *percent)
+{
+   enum frontend_powerstate ret = FRONTEND_POWERSTATE_NONE;
+#if defined(OSX)
+   CFIndex i, total;
+   CFArrayRef list;
+   bool have_ac, have_battery, charging;
+   CFTypeRef blob  = IOPSCopyPowerSourcesInfo();
 
+   *seconds        = -1;
+   *percent        = -1;
+
+   if (!blob)
+      goto end;
+
+   list = IOPSCopyPowerSourcesList(blob);
+
+   if (!list)
+      goto end;
+
+   /* don't CFRelease() the list items, or dictionaries! */
+   have_ac         = false;
+   have_battery    = false;
+   charging        = false;
+   total           = CFArrayGetCount(list);
+
+   for (i = 0; i < total; i++)
+   {
+      CFTypeRef ps = (CFTypeRef)CFArrayGetValueAtIndex(list, i);
+      CFDictionaryRef dict = IOPSGetPowerSourceDescription(blob, ps);
+      if (dict)
+         checkps(dict, &have_ac, &have_battery, &charging,
+               seconds, percent);
+   }
+
+   if (!have_battery)
+      ret = FRONTEND_POWERSTATE_NO_SOURCE;
+   else if (charging)
+      ret = FRONTEND_POWERSTATE_CHARGING;
+   else if (have_ac)
+      ret = FRONTEND_POWERSTATE_CHARGED;
+   else
+      ret = FRONTEND_POWERSTATE_ON_POWER_SOURCE;
+
+   CFRelease(list);
+end:
+   if (blob)
+      CFRelease(blob);
+#elif defined(IOS)
+   ret = ios_get_powerstate(seconds, percent);
+#endif
+   return ret;
+}
+
+enum frontend_architecture frontend_apple_get_architecture(void)
+{
+   struct utsname buffer;
+    
+   if (uname(&buffer) != 0)
+      return FRONTEND_ARCH_NONE;
+    
+#ifdef OSX
+   if (!strcmp(buffer.machine, "x86_64"))
+       return FRONTEND_ARCH_X86_64;
+    if (!strcmp(buffer.machine, "x86"))
+        return FRONTEND_ARCH_X86;
+    if (!strcmp(buffer.machine, "Power Macintosh"))
+        return FRONTEND_ARCH_PPC;
+#endif
+    
+   return FRONTEND_ARCH_NONE;
+}
 
 const frontend_ctx_driver_t frontend_ctx_apple = {
-   frontend_apple_get_environment_settings, /* environment_get */
+   frontend_apple_get_environment_settings,
    NULL,                         /* init */
    NULL,                         /* deinit */
    NULL,                         /* exitspawn */
    NULL,                         /* process_args */
    NULL,                         /* exec */
    NULL,                         /* set_fork */
-   frontend_apple_shutdown,      /* shutdown */
-   frontend_apple_get_name,      /* get_name */
-   frontend_apple_get_os,        /* get_os */
-   frontend_apple_get_rating,    /* get_rating */
-   frontend_apple_load_content,  /* load_content */
+   frontend_apple_shutdown,
+   frontend_apple_get_name,
+   frontend_apple_get_os,
+   frontend_apple_get_rating,
+   frontend_apple_load_content,
+   frontend_apple_get_architecture,
+   frontend_apple_get_powerstate,
    "apple",
 };
+
+#if !defined(HAVE_COCOA) && !defined(HAVE_COCOATOUCH)
+int main(int argc, char *argv[])
+{
+   return rarch_main(argc, argv);
+}
+#endif

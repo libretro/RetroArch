@@ -14,26 +14,49 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _MENU_SETTING_H
-#define _MENU_SETTING_H
+#include <compat/msvc.h>
 
-#include "../settings_list.h"
-
-#ifdef __cplusplus
-extern "C" {
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
 #endif
 
-int menu_setting_generic(rarch_setting_t *setting);
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <boolean.h>
+#include "../record_driver.h"
 
-int menu_setting_handler(rarch_setting_t *setting, unsigned action);
-
-int menu_setting_set(unsigned type, const char *label,
-      unsigned action, bool wraparound);
-
-rarch_setting_t *menu_setting_find(const char *label);
-
-#ifdef __cplusplus
+static void record_null_free(void *data)
+{
 }
-#endif
 
-#endif
+static void *record_null_new(const struct ffemu_params *params)
+{
+   return NULL;
+}
+
+static bool record_null_push_video(void *data,
+      const struct ffemu_video_data *video_data)
+{
+   return false;
+}
+
+static bool record_null_push_audio(void *data,
+      const struct ffemu_audio_data *audio_data)
+{
+   return false;
+}
+
+static bool record_null_finalize(void *data)
+{
+   return false;
+}
+
+const record_driver_t ffemu_null = {
+   record_null_new,
+   record_null_free,
+   record_null_push_video,
+   record_null_push_audio,
+   record_null_finalize,
+   "null",
+};

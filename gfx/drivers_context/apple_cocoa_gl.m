@@ -109,7 +109,7 @@ void *glkitview_init(void)
 }
 
 #ifdef IOS
-void apple_bind_game_view_fbo(void)
+void cocoagl_bind_game_view_fbo(void)
 {
    if (g_context)
       [g_view bindDrawable];
@@ -133,7 +133,7 @@ static RAScreen* get_chosen_screen(void)
 #endif
 }
 
-void apple_gfx_ctx_update(void)
+void cocoagl_gfx_ctx_update(void)
 {
 #ifdef OSX
 #if MAC_OS_X_VERSION_10_7 && !defined(HAVE_NSOPENGL)
@@ -144,7 +144,7 @@ void apple_gfx_ctx_update(void)
 #endif
 }
 
-static bool apple_gfx_ctx_init(void *data)
+static bool cocoagl_gfx_ctx_init(void *data)
 {
    (void)data;
     
@@ -192,7 +192,7 @@ static bool apple_gfx_ctx_init(void *data)
    return true;
 }
 
-static void apple_gfx_ctx_destroy(void *data)
+static void cocoagl_gfx_ctx_destroy(void *data)
 {
    (void)data;
 
@@ -216,7 +216,7 @@ static void apple_gfx_ctx_destroy(void *data)
    g_context = nil;
 }
 
-static bool apple_gfx_ctx_bind_api(void *data, enum gfx_ctx_api api, unsigned major, unsigned minor)
+static bool cocoagl_gfx_ctx_bind_api(void *data, enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
    (void)data;
 #if defined(IOS)
@@ -233,7 +233,7 @@ static bool apple_gfx_ctx_bind_api(void *data, enum gfx_ctx_api api, unsigned ma
    return true;
 }
 
-static void apple_gfx_ctx_swap_interval(void *data, unsigned interval)
+static void cocoagl_gfx_ctx_swap_interval(void *data, unsigned interval)
 {
    (void)data;
 #ifdef IOS // < No way to disable Vsync on iOS?
@@ -251,7 +251,7 @@ static void apple_gfx_ctx_swap_interval(void *data, unsigned interval)
 #endif
 }
 
-static bool apple_gfx_ctx_set_video_mode(void *data, unsigned width, unsigned height, bool fullscreen)
+static bool cocoagl_gfx_ctx_set_video_mode(void *data, unsigned width, unsigned height, bool fullscreen)
 {
 #ifdef OSX
    RAGameView *g_view = (RAGameView*)nsview_get_ptr();
@@ -276,12 +276,12 @@ static bool apple_gfx_ctx_set_video_mode(void *data, unsigned width, unsigned he
     
    (void)data;
 
-   // TODO: Maybe iOS users should be apple to show/hide the status bar here?
+   // TODO: Maybe iOS users should be able to show/hide the status bar here?
 
    return true;
 }
 
-float apple_gfx_ctx_get_native_scale(void)
+float cocoagl_gfx_ctx_get_native_scale(void)
 {
     static float ret = 0.0f;
     SEL selector = NSSelectorFromString(BOXSTRING("nativeScale"));
@@ -309,11 +309,11 @@ float apple_gfx_ctx_get_native_scale(void)
    return ret;
 }
 
-static void apple_gfx_ctx_get_video_size(void *data, unsigned* width, unsigned* height)
+static void cocoagl_gfx_ctx_get_video_size(void *data, unsigned* width, unsigned* height)
 {
    RAScreen *screen = (RAScreen*)get_chosen_screen();
    CGRect size = screen.bounds;
-   float screenscale = apple_gfx_ctx_get_native_scale();
+   float screenscale = cocoagl_gfx_ctx_get_native_scale();
 	
 #if defined(OSX)
    RAGameView *g_view = (RAGameView*)nsview_get_ptr();
@@ -327,7 +327,7 @@ static void apple_gfx_ctx_get_video_size(void *data, unsigned* width, unsigned* 
    *height = CGRectGetHeight(size) * screenscale;
 }
 
-static void apple_gfx_ctx_update_window_title(void *data)
+static void cocoagl_gfx_ctx_update_window_title(void *data)
 {
    static char buf[128], buf_fps[128];
    bool got_text = video_monitor_get_fps(buf, sizeof(buf),
@@ -346,7 +346,7 @@ static void apple_gfx_ctx_update_window_title(void *data)
         rarch_main_msg_queue_push(buf_fps, 1, 1, false);
 }
 
-static bool apple_gfx_ctx_get_metrics(void *data, enum display_metric_types type,
+static bool cocoagl_gfx_ctx_get_metrics(void *data, enum display_metric_types type,
             float *value)
 {
 #ifdef OSX
@@ -361,7 +361,7 @@ static bool apple_gfx_ctx_get_metrics(void *data, enum display_metric_types type
     float   physical_width        = display_physical_size.width;
     float   physical_height       = display_physical_size.height;
 #elif defined(IOS)
-    float   scale                 = apple_gfx_ctx_get_native_scale();
+    float   scale                 = cocoagl_gfx_ctx_get_native_scale();
     CGRect  screen_rect           = [[UIScreen mainScreen] bounds];
     
     float   display_width         = screen_rect.size.width;
@@ -393,7 +393,7 @@ static bool apple_gfx_ctx_get_metrics(void *data, enum display_metric_types type
     return true;
 }
 
-static bool apple_gfx_ctx_has_focus(void *data)
+static bool cocoagl_gfx_ctx_has_focus(void *data)
 {
    (void)data;
 #ifdef IOS
@@ -403,7 +403,7 @@ static bool apple_gfx_ctx_has_focus(void *data)
 #endif
 }
 
-static bool apple_gfx_ctx_suppress_screensaver(void *data, bool enable)
+static bool cocoagl_gfx_ctx_suppress_screensaver(void *data, bool enable)
 {
    (void)data;
    (void)enable;
@@ -411,7 +411,7 @@ static bool apple_gfx_ctx_suppress_screensaver(void *data, bool enable)
    return false;
 }
 
-static bool apple_gfx_ctx_has_windowed(void *data)
+static bool cocoagl_gfx_ctx_has_windowed(void *data)
 {
    (void)data;
 
@@ -422,24 +422,27 @@ static bool apple_gfx_ctx_has_windowed(void *data)
 #endif
 }
 
-static void apple_gfx_ctx_swap_buffers(void *data)
+static void cocoagl_gfx_ctx_swap_buffers(void *data)
 {
    if (!(--g_fast_forward_skips < 0))
       return;
     
-#ifdef OSX
+#if defined(OSX)
 #ifdef HAVE_NSOPENGL
     [g_context flushBuffer];
 #else
     if (g_context.CGLContextObj)
         CGLFlushDrawable(g_context.CGLContextObj);
 #endif
+#elif defined(IOS)
+    if (g_view)
+        [g_view display];
 #endif
     
    g_fast_forward_skips = g_is_syncing ? 0 : 3;
 }
 
-static gfx_ctx_proc_t apple_gfx_ctx_get_proc_address(const char *symbol_name)
+static gfx_ctx_proc_t cocoagl_gfx_ctx_get_proc_address(const char *symbol_name)
 {
    return (gfx_ctx_proc_t)CFBundleGetFunctionPointerForName(CFBundleGetBundleWithIdentifier(GLFrameworkID),
    (
@@ -452,7 +455,7 @@ CFStringRef)BOXSTRING(symbol_name)
          );
 }
 
-static void apple_gfx_ctx_check_window(void *data, bool *quit,
+static void cocoagl_gfx_ctx_check_window(void *data, bool *quit,
       bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
 {
    unsigned new_width, new_height;
@@ -460,7 +463,7 @@ static void apple_gfx_ctx_check_window(void *data, bool *quit,
 
    *quit = false;
 
-   apple_gfx_ctx_get_video_size(data, &new_width, &new_height);
+   cocoagl_gfx_ctx_get_video_size(data, &new_width, &new_height);
    if (new_width != *width || new_height != *height)
    {
       *width  = new_width;
@@ -469,21 +472,21 @@ static void apple_gfx_ctx_check_window(void *data, bool *quit,
    }
 }
 
-static void apple_gfx_ctx_set_resize(void *data, unsigned width, unsigned height)
+static void cocoagl_gfx_ctx_set_resize(void *data, unsigned width, unsigned height)
 {
    (void)data;
    (void)width;
    (void)height;
 }
 
-static void apple_gfx_ctx_input_driver(void *data, const input_driver_t **input, void **input_data)
+static void cocoagl_gfx_ctx_input_driver(void *data, const input_driver_t **input, void **input_data)
 {
    (void)data;
    *input = NULL;
    *input_data = NULL;
 }
 
-static void apple_gfx_ctx_bind_hw_render(void *data, bool enable)
+static void cocoagl_gfx_ctx_bind_hw_render(void *data, bool enable)
 {
    (void)data;
    g_use_hw_ctx = enable;
@@ -494,30 +497,30 @@ static void apple_gfx_ctx_bind_hw_render(void *data, bool enable)
         [g_context makeCurrentContext];
 }
 
-const gfx_ctx_driver_t gfx_ctx_apple = {
-   apple_gfx_ctx_init,
-   apple_gfx_ctx_destroy,
-   apple_gfx_ctx_bind_api,
-   apple_gfx_ctx_swap_interval,
-   apple_gfx_ctx_set_video_mode,
-   apple_gfx_ctx_get_video_size,
+const gfx_ctx_driver_t gfx_ctx_cocoagl = {
+   cocoagl_gfx_ctx_init,
+   cocoagl_gfx_ctx_destroy,
+   cocoagl_gfx_ctx_bind_api,
+   cocoagl_gfx_ctx_swap_interval,
+   cocoagl_gfx_ctx_set_video_mode,
+   cocoagl_gfx_ctx_get_video_size,
    NULL, /* get_video_output_size */
    NULL, /* get_video_output_prev */
    NULL, /* get_video_output_next */
-   apple_gfx_ctx_get_metrics,
+   cocoagl_gfx_ctx_get_metrics,
    NULL,
-   apple_gfx_ctx_update_window_title,
-   apple_gfx_ctx_check_window,
-   apple_gfx_ctx_set_resize,
-   apple_gfx_ctx_has_focus,
-   apple_gfx_ctx_suppress_screensaver,
-   apple_gfx_ctx_has_windowed,
-   apple_gfx_ctx_swap_buffers,
-   apple_gfx_ctx_input_driver,
-   apple_gfx_ctx_get_proc_address,
+   cocoagl_gfx_ctx_update_window_title,
+   cocoagl_gfx_ctx_check_window,
+   cocoagl_gfx_ctx_set_resize,
+   cocoagl_gfx_ctx_has_focus,
+   cocoagl_gfx_ctx_suppress_screensaver,
+   cocoagl_gfx_ctx_has_windowed,
+   cocoagl_gfx_ctx_swap_buffers,
+   cocoagl_gfx_ctx_input_driver,
+   cocoagl_gfx_ctx_get_proc_address,
    NULL,
    NULL,
    NULL,
-   "apple",
-   apple_gfx_ctx_bind_hw_render,
+   "cocoagl",
+   cocoagl_gfx_ctx_bind_hw_render,
 };

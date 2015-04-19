@@ -73,9 +73,11 @@ static bool read_content_file(unsigned i, const char *path, void **buf,
    if (!global->block_patch)
       patch_content(&ret_buf, length);
    
+#ifdef HAVE_ZLIB
    global->content_crc = zlib_crc32_calculate(ret_buf, *length);
 
    RARCH_LOG("CRC32: 0x%x .\n", (unsigned)global->content_crc);
+#endif
    *buf = ret_buf;
 
    return true;

@@ -28,6 +28,26 @@
 extern "C" {
 #endif
 
+enum frontend_powerstate
+{
+   FRONTEND_POWERSTATE_NONE = 0,
+   FRONTEND_POWERSTATE_NO_SOURCE,
+   FRONTEND_POWERSTATE_CHARGING,
+   FRONTEND_POWERSTATE_CHARGED,
+   FRONTEND_POWERSTATE_ON_POWER_SOURCE,
+};
+
+enum frontend_architecture
+{
+   FRONTEND_ARCH_NONE = 0,
+   FRONTEND_ARCH_X86,
+   FRONTEND_ARCH_X86_64,
+   FRONTEND_ARCH_PPC,
+   FRONTEND_ARCH_ARM,
+   FRONTEND_ARCH_MIPS,
+   FRONTEND_ARCH_TILE,
+};
+
 typedef void (*environment_get_t)(int *argc, char *argv[], void *args,
    void *params_data);
 typedef void (*process_args_t)(int *argc, char *argv[]);
@@ -47,6 +67,8 @@ typedef struct frontend_ctx_driver
    void (*get_os)(char *, size_t, int *major, int *minor);
    int  (*get_rating)(void);
    void (*content_loaded)(void);
+   enum frontend_architecture (*get_architecture)(void);
+   enum frontend_powerstate (*get_powerstate)(int *seconds, int *percent);
 
    const char *ident;
 
@@ -59,6 +81,7 @@ extern const frontend_ctx_driver_t frontend_ctx_xdk;
 extern const frontend_ctx_driver_t frontend_ctx_qnx;
 extern const frontend_ctx_driver_t frontend_ctx_apple;
 extern const frontend_ctx_driver_t frontend_ctx_android;
+extern const frontend_ctx_driver_t frontend_ctx_linux;
 extern const frontend_ctx_driver_t frontend_ctx_psp;
 extern const frontend_ctx_driver_t frontend_ctx_ctr;
 extern const frontend_ctx_driver_t frontend_ctx_win32;

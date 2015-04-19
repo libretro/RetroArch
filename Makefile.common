@@ -56,6 +56,7 @@ endif
 ifneq ($(findstring Darwin,$(OS)),)
    OSX := 1
    LIBS += -framework AppKit
+   JOYCONFIG_LIBS += -framework CoreFoundation
 else
    OSX := 0
 endif
@@ -64,7 +65,8 @@ ifneq ($(findstring Linux,$(OS)),)
    LIBS += -lrt
    JOYCONFIG_LIBS += -lrt -lpthread
    OBJ += input/drivers/linuxraw_input.o \
-			 input/drivers_joypad/linuxraw_joypad.o
+			 input/drivers_joypad/linuxraw_joypad.o \
+			 frontend/drivers/platform_linux.o
 endif
 
 ifeq ($(findstring Haiku,$(OS)),)
@@ -172,6 +174,7 @@ OBJ += frontend/frontend.o \
 		playlist.o \
 		movie.o \
 		record/record_driver.o \
+		record/drivers/record_null.o \
 		performance.o
 
 
@@ -250,6 +253,10 @@ ifeq ($(HAVE_AL), 1)
    else
       LIBS += -lopenal
    endif
+endif
+
+ifeq ($(OSX), 1)
+	OBJ += frontend/drivers/platform_apple.o
 endif
 
 ifeq ($(HAVE_JACK),1)
@@ -430,14 +437,15 @@ ifeq ($(HAVE_PARPORT), 1)
    OBJ += input/drivers_joypad/parport_joypad.o
 endif
 
+OBJ += gfx/video_context_driver.o \
+		 gfx/drivers_context/gfx_null_ctx.o
+
 # Video
 #
 ifeq ($(HAVE_OPENGL), 1)
    DEFINES += -DHAVE_OPENGL -DHAVE_GLSL
    OBJ += gfx/drivers/gl.o \
 			 gfx/drivers/gl_common.o \
-			 gfx/video_context_driver.o \
-			 gfx/drivers_context/gfx_null_ctx.o \
 			 gfx/drivers_font/gl_raster_font.o \
 			 libretro-common/gfx/math/matrix_4x4.o \
 			 gfx/video_state_tracker.o \
@@ -640,13 +648,10 @@ endif
 
 ifeq ($(HAVE_ZLIB), 1)
    ZLIB_OBJS =	decompress/zip_support.o 
-   OBJ += libretro-common/formats/png/rpng_nbio.o \
-			 libretro-common/formats/png/rpng_fbio.o \
-			 libretro-common/formats/png/rpng_decode.o \
-			 libretro-common/formats/png/rpng_encode.o \
-			 libretro-common/file/file_extract.o
+	OBJ += libretro-common/file/file_extract.o
    OBJ += $(ZLIB_OBJS)
    DEFINES += -DHAVE_ZLIB
+	HAVE_RPNG = 1
    HAVE_COMPRESSION = 1 
    ifeq ($(WANT_ZLIB), 1)
       DEFINES += -DWANT_ZLIB
@@ -654,6 +659,17 @@ ifeq ($(HAVE_ZLIB), 1)
       LIBS += -lz
 		HAVE_ZLIB_DEFLATE = 1
    endif
+endif
+
+ifdef HAVE_RPNG
+	DEFINES += -DHAVE_RPNG
+endif
+
+ifeq ($(HAVE_RPNG), 1)
+   OBJ += libretro-common/formats/png/rpng_nbio.o \
+			 libretro-common/formats/png/rpng_fbio.o \
+			 libretro-common/formats/png/rpng_decode.o \
+			 libretro-common/formats/png/rpng_encode.o
 endif
 
 ifdef HAVE_COMPRESSION

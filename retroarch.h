@@ -167,6 +167,13 @@ void rarch_init_system_av_info(void);
 
 void rarch_set_paths(const char *path);
 
+/**
+ * rarch_print_compiler:
+ *
+ * Prints compiler that was used for compiling RetroArch.
+ **/
+void rarch_print_compiler(char *str, size_t sizeof_str);
+
 #ifdef __cplusplus
 }
 #endif

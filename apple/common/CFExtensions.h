@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
+ *  Copyright (C) 2013-2014 - Jason Fetters
  *  Copyright (C) 2011-2015 - Daniel De Matteis
- *  Copyright (C) 2014-2015 - Jay McCarthy
- *
+ * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -14,9 +14,10 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _CFEXTENSIONS_H
-#define _CFEXTENSIONS_H
+#ifndef __CFEXTENSIONS_H
+#define __CFEXTENSIONS_H
 
+#import <CoreFoundation/CoreFoundation.h>
 #include <CoreFoundation/CFArray.h>
 
 typedef enum

@@ -376,18 +376,25 @@ static int frontend_gx_get_rating(void)
 #endif
 }
 
+static enum frontend_architecture frontend_gx_get_architecture(void)
+{
+   return FRONTEND_ARCH_PPC;
+}
+
 const frontend_ctx_driver_t frontend_ctx_gx = {
-   frontend_gx_get_environment_settings, /* get_environment_settings */
-   frontend_gx_init,                /* init */
+   frontend_gx_get_environment_settings,
+   frontend_gx_init,
    NULL,                            /* deinit */
-   frontend_gx_exitspawn,           /* exitspawn */
-   frontend_gx_process_args,        /* process_args */
-   frontend_gx_exec,                /* exec */
-   frontend_gx_set_fork,            /* set_fork */
+   frontend_gx_exitspawn,
+   frontend_gx_process_args,
+   frontend_gx_exec,
+   frontend_gx_set_fork,
    NULL,                            /* shutdown */
    NULL,                            /* get_name */
    NULL,                            /* get_os */
-   frontend_gx_get_rating,          /* get_rating */
+   frontend_gx_get_rating,
    NULL,                            /* load_content */
+   frontend_gx_get_architecture,
+   NULL,                            /* get_powerstate */
    "gx",
 };

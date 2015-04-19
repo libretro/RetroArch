@@ -368,8 +368,10 @@ static bool gfx_ctx_vc_bind_api(void *data,
       case GFX_CTX_OPENVG_API:
          return eglBindAPI(EGL_OPENVG_API);
       default:
-         return false;
+         break;
    }
+
+   return false;
 }
 
 static void gfx_ctx_vc_destroy(void *data)

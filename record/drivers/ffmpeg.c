@@ -1408,7 +1408,7 @@ static void ffmpeg_thread(void *data)
    av_free(audio_buf);
 }
 
-const ffemu_backend_t ffemu_ffmpeg = {
+const record_driver_t ffemu_ffmpeg = {
    ffmpeg_new,
    ffmpeg_free,
    ffmpeg_push_video,

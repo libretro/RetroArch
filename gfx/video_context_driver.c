@@ -59,9 +59,8 @@ static const gfx_ctx_driver_t *gfx_ctx_drivers[] = {
 #if defined(__QNX__)
    &gfx_ctx_bbqnx,
 #endif
-#if defined(IOS) || defined(OSX)
-   /* Don't use __APPLE__ as it breaks basic SDL builds. */
-   &gfx_ctx_apple,
+#if defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH)
+   &gfx_ctx_cocoagl,
 #endif
 #if (defined(HAVE_SDL) || defined(HAVE_SDL2)) && defined(HAVE_OPENGL)
    &gfx_ctx_sdl_gl,
@@ -89,6 +88,15 @@ void gfx_ctx_free(void *data)
    if (ctx && ctx->destroy)
       ctx->destroy(data);
    ctx = NULL;
+}
+
+const char *gfx_ctx_get_ident(void)
+{
+   const gfx_ctx_driver_t *ctx = gfx_ctx_get_ptr();
+
+   if (!ctx)
+      return NULL;
+   return ctx->ident;
 }
 
 void gfx_ctx_update_window_title(void *data)
@@ -173,6 +181,8 @@ bool gfx_ctx_get_metrics(enum display_metric_types type, float *value)
    driver_t            *driver = driver_get_ptr(); 
    const gfx_ctx_driver_t *ctx = gfx_ctx_get_ptr();
    if (!ctx || !driver)
+      return false;
+   if (!ctx->get_metrics)
       return false;
    return ctx->get_metrics(driver->video_context_data, type,
          value);

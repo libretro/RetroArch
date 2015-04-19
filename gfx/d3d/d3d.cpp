@@ -759,7 +759,7 @@ static void *d3d_init(const video_info_t *info,
    }
 #endif
 
-   vid = (d3d_video_t*)calloc(1, sizeof(*vid));
+   vid = new d3d_video_t();
    if (!vid)
       goto error;
 
@@ -800,7 +800,7 @@ static void *d3d_init(const video_info_t *info,
 
 error:
    if (vid)
-      free(vid);
+      delete vid;
    if (driver)
       driver->video_context = NULL;
    return NULL;
@@ -839,7 +839,7 @@ static void d3d_free(void *data)
 #endif
 
    if (d3d)
-      free(d3d);
+      delete d3d;
 
 #ifndef _XBOX
    UnregisterClass("RetroArch", GetModuleHandle(NULL));

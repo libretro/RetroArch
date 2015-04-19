@@ -17,14 +17,12 @@
 #include <string.h>
 
 #import "../common/RetroArch_Apple.h"
-#include "../../input/drivers/apple_input.h"
+#include "../../input/drivers/cocoa_input.h"
 #include "../../frontend/frontend.h"
-#include "../../menu/menu.h"
 #include "../../retroarch.h"
 
 #include <objc/objc-runtime.h>
 
-static void* const associated_core_key = (void*)&associated_core_key;
 id<RetroArch_Platform> apple_platform;
 
 void apple_rarch_exited(void);
@@ -42,11 +40,11 @@ void apple_rarch_exited(void)
 - (void)sendEvent:(NSEvent *)event
 {
    NSEventType event_type;
-   apple_input_data_t *apple = NULL;
+   cocoa_input_data_t *apple = NULL;
    driver_t *driver = driver_get_ptr();
    [super sendEvent:event];
 
-   apple = (apple_input_data_t*)driver->input_data;
+   apple = (cocoa_input_data_t*)driver->input_data;
    event_type = event.type;
    
    if (!apple)
@@ -80,11 +78,11 @@ void apple_rarch_exited(void)
                mod |=  RETROKMOD_NUMLOCK;
             
             for (i = 1; i < ch.length; i++)
-               apple_input_keyboard_event(event_type == NSKeyDown,
+               cocoa_input_keyboard_event(event_type == NSKeyDown,
                      0, [ch characterAtIndex:i], mod, RETRO_DEVICE_KEYBOARD);
          }
          
-         apple_input_keyboard_event(event_type == NSKeyDown,
+         cocoa_input_keyboard_event(event_type == NSKeyDown,
                event.keyCode, character, mod, RETRO_DEVICE_KEYBOARD);
       }
          break;
@@ -95,7 +93,7 @@ void apple_rarch_exited(void)
          bool down = (new_flags & old_flags) == old_flags;
          old_flags = new_flags;
 
-         apple_input_keyboard_event(down, event.keyCode,
+         cocoa_input_keyboard_event(down, event.keyCode,
                0, event.modifierFlags, RETRO_DEVICE_KEYBOARD);
       }
          break;
@@ -195,7 +193,7 @@ static void poll_iteration(void)
 {
     NSEvent *event = NULL;
     driver_t *driver = driver_get_ptr();
-    apple_input_data_t *apple = (apple_input_data_t*)driver->input_data;
+    cocoa_input_data_t *apple = (cocoa_input_data_t*)driver->input_data;
 
     if (!apple)
       return;
@@ -325,7 +323,6 @@ static void poll_iteration(void)
 
 - (IBAction)coreWasChosen:(id)sender
 {
-   NSComboBox* cb = NULL;
    global_t *global = global_get_ptr();
 
    [[NSApplication sharedApplication] stopModal];
@@ -334,14 +331,6 @@ static void poll_iteration(void)
 
    if (global && global->system.shutdown)
       return;
-
-   /* TODO - rewrite this. */
-
-   cb = (NSComboBox*)[[self.coreSelectSheet contentView] viewWithTag:1];
-#if defined(MAC_OS_X_VERSION_10_6)
-   /* FIXME - Rewrite this so that this is no longer an associated object - requires ObjC 2.0 runtime */
-   self.core = objc_getAssociatedObject(cb.objectValueOfSelectedItem, associated_core_key);
-#endif
 
    if (global && !global->main_is_init)
    {
@@ -353,7 +342,6 @@ static void poll_iteration(void)
       event_command(EVENT_CMD_QUIT);
 }
 
-#pragma mark RetroArch_Platform
 - (void)loadingCore:(const NSString*)core withFile:(const char*)file
 {
    if (file)
@@ -365,7 +353,6 @@ static void poll_iteration(void)
    [[NSApplication sharedApplication] terminate:nil];
 }
 
-#pragma mark Menus
 - (IBAction)showCoresDirectory:(id)sender
 {
    settings_t *settings = config_get_ptr();

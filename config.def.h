@@ -88,7 +88,7 @@ enum
    INPUT_XINPUT,
    INPUT_UDEV,
    INPUT_LINUXRAW,
-   INPUT_APPLE,
+   INPUT_COCOA,
    INPUT_QNX,
    INPUT_RWEBINPUT,
    INPUT_NULL,
@@ -111,7 +111,7 @@ enum
    CAMERA_V4L2,
    CAMERA_RWEBCAM,
    CAMERA_ANDROID,
-   CAMERA_APPLE,
+   CAMERA_AVFOUNDATION,
    CAMERA_NULL,
 
    LOCATION_ANDROID,
@@ -126,6 +126,9 @@ enum
    MENU_RMENU_XUI,
    MENU_GLUI,
    MENU_XMB,
+
+   RECORD_FFMPEG,
+   RECORD_NULL,
 };
 
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) || defined(__CELLOS_LV2__)
@@ -210,6 +213,12 @@ enum
 #define AUDIO_DEFAULT_RESAMPLER_DRIVER  AUDIO_RESAMPLER_SINC
 #endif
 
+#if defined(HAVE_FFMPEG)
+#define RECORD_DEFAULT_DRIVER RECORD_FFMPEG
+#else
+#define RECORD_DEFAULT_DRIVER RECORD_NULL
+#endif
+
 #if defined(XENON)
 #define INPUT_DEFAULT_DRIVER INPUT_XENON360
 #elif defined(_XBOX360) || defined(_XBOX) || defined(HAVE_XINPUT2) || defined(HAVE_XINPUT_XBOX1)
@@ -236,8 +245,8 @@ enum
 #define INPUT_DEFAULT_DRIVER INPUT_X
 #elif defined(HAVE_WAYLAND)
 #define INPUT_DEFAULT_DRIVER INPUT_WAYLAND
-#elif defined(IOS) || defined(OSX)
-#define INPUT_DEFAULT_DRIVER INPUT_APPLE
+#elif defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH)
+#define INPUT_DEFAULT_DRIVER INPUT_COCOA
 #elif defined(__QNX__)
 #define INPUT_DEFAULT_DRIVER INPUT_QNX
 #elif defined(HAVE_SDL)
@@ -284,8 +293,8 @@ enum
 #define CAMERA_DEFAULT_DRIVER CAMERA_RWEBCAM
 #elif defined(ANDROID)
 #define CAMERA_DEFAULT_DRIVER CAMERA_ANDROID
-#elif defined(MAC_OS_X_VERSION_10_7) || defined(__IPHONE_4_0)
-#define CAMERA_DEFAULT_DRIVER CAMERA_APPLE
+#elif defined(HAVE_AVFOUNDATION)
+#define CAMERA_DEFAULT_DRIVER CAMERA_AVFOUNDATION
 #else
 #define CAMERA_DEFAULT_DRIVER CAMERA_NULL
 #endif
@@ -407,7 +416,11 @@ static unsigned swap_interval = 1;
  */
 static const bool video_threaded = false;
 
+#ifdef HAVE_THREADS
+static const bool threaded_data_runloop_enable = true;
+#else
 static const bool threaded_data_runloop_enable = false;
+#endif
 
 /* Set to true if HW render cores should get their private context. */
 static const bool video_shared_context = false;
@@ -477,6 +490,9 @@ static bool default_core_specific_config = true;
 #else
 static bool default_core_specific_config = false;
 #endif
+
+static bool default_auto_overrides_enable = false;
+static bool default_auto_remaps_enable = false;
 
 /* Crop overscanned frames. */
 static const bool crop_overscan = true;

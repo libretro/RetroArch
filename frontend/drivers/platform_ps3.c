@@ -439,18 +439,25 @@ static int frontend_ps3_get_rating(void)
    return 10;
 }
 
+enum frontend_architecture frontend_ps3_get_architecture(void)
+{
+   return FRONTEND_ARCH_PPC;
+}
+
 const frontend_ctx_driver_t frontend_ctx_ps3 = {
-   frontend_ps3_get_environment_settings,     /* get_environment_settings */
-   frontend_ps3_init,            /* init */
-   frontend_ps3_deinit,          /* deinit */
-   frontend_ps3_exitspawn,       /* exitspawn */
+   frontend_ps3_get_environment_settings,
+   frontend_ps3_init,
+   frontend_ps3_deinit,
+   frontend_ps3_exitspawn,
    NULL,                         /* process_args */
-   frontend_ps3_exec,            /* exec */
-   frontend_ps3_set_fork,        /* set_fork */
+   frontend_ps3_exec,
+   frontend_ps3_set_fork,
    NULL,                         /* shutdown */
    NULL,                         /* get_name */
    NULL,                         /* get_os */
-   frontend_ps3_get_rating,      /* get_rating */
+   frontend_ps3_get_rating,
    NULL,                         /* load_content */
+   frontend_ps3_get_architecture,
+   NULL,                         /* get_powerstate */
    "ps3",
 };
