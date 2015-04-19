@@ -113,16 +113,19 @@ check_pkgconf()	#$1 = HAVE_$1	$2 = package	$3 = version	$4 = critical error mess
 	}
 
 	ECHOBUF="Checking presence of package $2"
-	[ "$3" ] && ECHOBUF="$ECHOBUF with minimum version $3"
+	[ "$3" ] && ECHOBUF="$ECHOBUF >= $3"
 #	echo -n "$ECHOBUF ... "
 	answer='no'
+	version='no'
 	$PKG_CONF_PATH --atleast-version="${3:-0.0}" "$2" && {
 		answer='yes'
+		version=$($PKG_CONF_PATH --modversion "$2")
 		eval $1_CFLAGS=\"$($PKG_CONF_PATH $2 --cflags)\"
 		eval $1_LIBS=\"$($PKG_CONF_PATH $2 --libs)\"
 	}
 	
-	eval HAVE_$1="$answer"; echo "$ECHOBUF ... $answer"
+	eval HAVE_$1="$answer";
+	echo "$ECHOBUF ... $version"
 	PKG_CONF_USED="$PKG_CONF_USED $1"
 	[ "$answer" = 'no' ] && {
 		[ "$4" ] && { echo "$4"; exit 1;}
