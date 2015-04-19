@@ -30,7 +30,9 @@
 #include "../apple/iOS/platform.m"
 #include "../apple/iOS/menu.m"
 #include "../apple/iOS/browser.m"
+#ifdef HAVE_COCOATOUCH
 #include "../ui/drivers/ui_cocoatouch.m"
+#endif
 #else
 #include "../apple/OSX/platform.m"
 #include "../apple/OSX/settings.m"
