@@ -18,6 +18,7 @@
 
 #include "../../settings.h"
 #include <string/string_list.h>
+#include <string/stdstring.h>
 #include <time.h>
 
 static INLINE void get_title(const char *label, const char *dir,
@@ -103,23 +104,33 @@ static INLINE void get_title(const char *label, const char *dir,
       snprintf(title, sizeof_title, "CONFIG %s", dir);
    else if (!strcmp(label, "disk_image_append"))
       snprintf(title, sizeof_title, "DISK APPEND %s", dir);
-   else if (!strcmp(elem0, "Recording Settings"))
-      strlcpy(title, "RECORDING SETTINGS", sizeof_title);
-   else if (!strcmp(elem0, "Video Settings"))
+   else if (!strcmp(elem0, "Video Settings")
+         || !strcmp(elem0, "Overlay Settings")
+         || !strcmp(elem0, "Recording Settings")
+         || !strcmp(elem0, "Menu Settings")
+         || !strcmp(elem0, "General Settings")
+         || !strcmp(elem0, "Patch Settings")
+         || !strcmp(elem0, "UI Settings")
+         || !strcmp(elem0, "Playlist Settings")
+         || !strcmp(elem0, "Network Settings")
+         || !strcmp(elem0, "Core Updater Settings")
+         || !strcmp(elem0, "User Settings")
+         || !strcmp(elem0, "Path Settings")
+         || !strcmp(elem0, "Driver Settings")
+         || !strcmp(elem0, "Privacy Settings")
+         || !strcmp(elem0, "Onscreen Keyboard Overlay Settings")
+         || !strcmp(elem0, "Audio Settings")
+         || !strcmp(elem0, "Font Settings")
+         || !strcmp(elem0, "Shader Settings")
+         || !strcmp(elem0, "Archive Settings")
+         )
    {
-      strlcpy(title, "VIDEO SETTINGS", sizeof_title);
-      if (!strcmp(elem1, "Monitor"))
-         strlcat(title, " - MONITOR", sizeof_title);
-      else if (!strcmp(elem1, "Aspect"))
-         strlcat(title, " - ASPECT", sizeof_title);
-      else if (!strcmp(elem1, "Scaling"))
-         strlcat(title, " - SCALING", sizeof_title);
-      else if (!strcmp(elem1, "Synchronization"))
-         strlcat(title, " - SYNCHRONIZATION", sizeof_title);
-      else if (!strcmp(elem1, "Miscellaneous"))
-         strlcat(title, " - MISCELLANEOUS", sizeof_title);
-      else if (!strcmp(elem1, "State"))
-         strlcat(title, " - STATE", sizeof_title);
+      strlcpy(title, string_to_upper(elem0), sizeof_title);
+      if (elem1[0] != '\0')
+      {
+         strlcat(title, " - ", sizeof_title);
+         strlcat(title, string_to_upper(elem1), sizeof_title);
+      }
    }
    else if (!strcmp(elem0, "Input Settings") ||
          menu_type == MENU_SETTINGS_CUSTOM_BIND ||
@@ -139,136 +150,22 @@ static INLINE void get_title(const char *label, const char *dir,
       else if (!strcmp(elem1, "Miscellaneous"))
          strlcat(title, " - MISCELLANEOUS", sizeof_title);
    }
-   else if (!strcmp(elem0, "Overlay Settings"))
-   {
-      strlcpy(title, "OVERLAY SETTINGS", sizeof_title);
-      if (!strcmp(elem1, "State"))
-         strlcat(title, " - STATE", sizeof_title);
-   }
-   else if (!strcmp(elem0, "Menu Settings"))
-   {
-      strlcpy(title, "MENU SETTINGS", sizeof_title);
-      if (!strcmp(elem1, "State"))
-         strlcat(title, " - STATE", sizeof_title);
-      else if (!strcmp(elem1, "Navigation"))
-         strlcat(title, " - NAVIGATION", sizeof_title);
-      else if (!strcmp(elem1, "Settings View"))
-         strlcat(title, " - SETTINGS VIEW", sizeof_title);
-      else if (!strcmp(elem1, "Browser"))
-         strlcat(title, " - BROWSER", sizeof_title);
-   }
-   else if (!strcmp(elem0, "Onscreen Keyboard Overlay Settings"))
-   {
-      strlcpy(title, "ONSCREEN KEYBOARD OVERLAY SETTINGS", sizeof_title);
-      if (!strcmp(elem1, "State"))
-         strlcat(title, " - STATE", sizeof_title);
-   }
-   else if (!strcmp(elem0, "Patch Settings"))
-   {
-      strlcpy(title, "PATCH SETTINGS", sizeof_title);
-      if (!strcmp(elem1, "State"))
-         strlcat(title, " - STATE", sizeof_title);
-   }
-   else if (!strcmp(elem0, "UI Settings"))
-   {
-      strlcpy(title, "UI SETTINGS", sizeof_title);
-      if (!strcmp(elem1, "State"))
-         strlcat(title, " - STATE", sizeof_title);
-   }
-   else if (!strcmp(elem0, "Playlist Settings"))
-   {
-      strlcpy(title, "PLAYLIST SETTINGS", sizeof_title);
-      if (!strcmp(elem1, "State"))
-         strlcat(title, " - STATE", sizeof_title);
-      if (!strcmp(elem1, "History"))
-         strlcat(title, " - HISTORY", sizeof_title);
-   }
-   else if (!strcmp(elem0, "Network Settings"))
-   {
-      strlcpy(title, "NETWORK SETTINGS", sizeof_title);
-      if (!strcmp(elem1, "State"))
-         strlcat(title, " - STATE", sizeof_title);
-      if (!strcmp(elem1, "Netplay"))
-         strlcat(title, " - NETPLAY", sizeof_title);
-      if (!strcmp(elem1, "Miscellaneous"))
-         strlcat(title, " - MISCELLANEOUS", sizeof_title);
-   }
-   else if (!strcmp(elem0, "Core Updater Settings"))
-   {
-      strlcpy(title, "CORE UPDATER SETTINGS", sizeof_title);
-      if (!strcmp(elem1, "State"))
-         strlcat(title, " - STATE", sizeof_title);
-   }
-   else if (!strcmp(elem0, "User Settings"))
-   {
-      strlcpy(title, "USER SETTINGS", sizeof_title);
-      if (!strcmp(elem1, "State"))
-         strlcat(title, " - STATE", sizeof_title);
-   }
-   else if (!strcmp(elem0, "Path Settings"))
-   {
-      strlcpy(title, "PATH SETTINGS", sizeof_title);
-      if (!strcmp(elem1, "State"))
-         strlcat(title, " - STATE", sizeof_title);
-      if (!strcmp(elem1, "Paths"))
-         strlcat(title, " - PATHS", sizeof_title);
-   }
    else if (!strcmp(label, "management"))
       strlcpy(title, "MANAGEMENT", sizeof_title);
    else if (!strcmp(label, "options"))
       strlcpy(title, "OPTIONS", sizeof_title);
    else if (!strcmp(label, "settings"))
       strlcpy(title, "SETTINGS", sizeof_title);
-   else if (!strcmp(elem0, "Driver Settings"))
-   {
-      strlcpy(title, "DRIVER SETTINGS", sizeof_title);
-      if (!strcmp(elem1, "State"))
-         strlcat(title, " - STATE", sizeof_title);
-   }
    else if (!strcmp(label, "performance_counters"))
       strlcpy(title, "PERFORMANCE COUNTERS", sizeof_title);
    else if (!strcmp(label, "frontend_counters"))
       strlcpy(title, "FRONTEND PERFORMANCE COUNTERS", sizeof_title);
    else if (!strcmp(label, "core_counters"))
       strlcpy(title, "CORE PERFORMANCE COUNTERS", sizeof_title);
-   else if (!strcmp(elem0, "Shader Settings"))
-   {
-      strlcpy(title, "SHADER SETTINGS", sizeof_title);
-      if (!strcmp(elem1, "State"))
-         strlcat(title, " - STATE", sizeof_title);
-   }
-   else if (!strcmp(elem0, "Archive Settings"))
-   {
-      strlcpy(title, "ARCHIVE SETTINGS", sizeof_title);
-      if (!strcmp(elem1, "State"))
-         strlcat(title, " - STATE", sizeof_title);
-   }
    else if (!strcmp(label, "video_shader_parameters"))
       strlcpy(title, "SHADER PARAMETERS (CURRENT)", sizeof_title);
    else if (!strcmp(label, "video_shader_preset_parameters"))
       strlcpy(title, "SHADER PARAMETERS (MENU PRESET)", sizeof_title);
-   else if (!strcmp(elem0, "Font Settings"))
-   {
-      strlcpy(title, "FONT SETTINGS", sizeof_title);
-      if (!strcmp(elem1, "Messages"))
-         strlcat(title, " - MESSAGES", sizeof_title);
-   }
-   else if (!strcmp(elem0, "General Settings"))
-   {
-      strlcpy(title, "GENERAL SETTINGS", sizeof_title);
-      if (!strcmp(elem1, "State"))
-         strlcat(title, " - STATE", sizeof_title);
-   }
-   else if (!strcmp(elem0, "Audio Settings"))
-   {
-      strlcpy(title, "AUDIO SETTINGS", sizeof_title);
-      if (!strcmp(elem1, "State"))
-         strlcat(title, " - STATE", sizeof_title);
-      else if (!strcmp(elem1, "Synchronization"))
-         strlcat(title, " - SYNCHRONIZATION", sizeof_title);
-      else if (!strcmp(elem1, "Miscellaneous"))
-         strlcat(title, " - MISCELLANEOUS", sizeof_title);
-   }
    else if (!strcmp(label, "disk_options"))
       strlcpy(title, "DISK OPTIONS", sizeof_title);
    else if (!strcmp(label, "core_options"))
@@ -285,12 +182,6 @@ static INLINE void get_title(const char *label, const char *dir,
       strlcpy(title, "CORE INFO", sizeof_title);
    else if (!strcmp(label, "system_information"))
       strlcpy(title, "SYSTEM INFO", sizeof_title);
-   else if (!strcmp(elem0, "Privacy Settings"))
-   {
-      strlcpy(title, "PRIVACY SETTINGS", sizeof_title);
-      if (!strcmp(elem1, "State"))
-         strlcat(title, " - STATE", sizeof_title);
-   }
    else if (!strcmp(label, "video_shader_pass"))
       snprintf(title, sizeof_title, "SHADER %s", dir);
    else if (!strcmp(label, "video_shader_preset"))

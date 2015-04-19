@@ -35,6 +35,14 @@ bool string_is_empty(const char *data)
 	return false;
 }
 
+char *string_to_upper(char *s)
+{
+   unsigned char *ucs = (unsigned char *)s;
+   for ( ; *ucs != '\0'; ucs++)
+      *ucs = toupper(*ucs);
+   return s;
+}
+
 char *string_replace_substring(const char *in, const char *pattern, const char *replacement)
 {
    char *needle = NULL;
