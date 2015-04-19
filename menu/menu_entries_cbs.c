@@ -44,6 +44,7 @@ void menu_entries_common_load_content(bool persist)
  * function pointer callback functions that don't necessarily
  * call each other. */
 
+#ifdef HAVE_ZLIB
 static int zlib_extract_core_callback(const char *name, const char *valid_exts,
       const uint8_t *cdata, unsigned cmode, uint32_t csize, uint32_t size,
       uint32_t crc32, void *userdata)
@@ -85,6 +86,7 @@ error:
    RARCH_ERR("Failed to deflate to: %s.\n", path);
    return 0;
 }
+#endif
 
 int cb_core_updater_download(void *data, size_t len)
 {
