@@ -414,3 +414,10 @@ const frontend_ctx_driver_t frontend_ctx_apple = {
    frontend_apple_get_powerstate,
    "apple",
 };
+
+#if !defined(HAVE_COCOA) && !defined(HAVE_COCOATOUCH)
+int main(int argc, char *argv[])
+{
+   return rarch_main(argc, argv);
+}
+#endif
