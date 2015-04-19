@@ -464,7 +464,8 @@ static void glui_frame(void)
          runloop->frames.video.count / 100, title, true);
    glui_blit_line(gl, gl->win_width/2, glui->line_height, title_buf, title_color, TEXT_ALIGN_CENTER);
 
-   glui_blit_line(gl, glui->margin, glui->line_height, "BACK", title_color, TEXT_ALIGN_LEFT);
+   if (file_list_get_size(menu->menu_list->menu_stack) > 1)
+      glui_blit_line(gl, glui->margin, glui->line_height, "BACK", title_color, TEXT_ALIGN_LEFT);
 
    glui_render_quad(gl, 0,
          gl->win_height - (menu->header_height - glui->line_height/2 + 4),
