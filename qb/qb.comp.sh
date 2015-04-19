@@ -91,7 +91,7 @@ fi
 	done
 
 	echo "$ECHOBUF ... $PKG_CONF_PATH"
-	if [ "$PKG_CONF_PATH" = "none" ] && [ "$OS" != "Darwin" ]; then
+	if [ "$PKG_CONF_PATH" = "none" ]; then
 		echo "Warning: pkg-config not found, package checks will fail."
 	fi
 }
