@@ -26,7 +26,13 @@ if [ -z "$CROSS_COMPILE" ] || [ -z "$OS" ]; then
 	esac
 fi
 
-echo "$ECHOBUF ... $OS"
+DISTRO=''
+if [ -e /etc/lsb-release ]; then
+	. /etc/lsb-release
+	DISTRO="(${DISTRIB_DESCRIPTION} ${DISTRIB_RELEASE})"
+fi
+
+echo "$ECHOBUF ... $OS ${DISTRO}"
 
 # Checking for working C compiler
 if [ "$USE_LANG_C" = 'yes' ]; then
@@ -37,7 +43,7 @@ if [ "$USE_LANG_C" = 'yes' ]; then
 int main(void) { puts("Hai world!"); return 0; }
 EOF
 	if [ -z "$CC" ]; then
-		for CC in ${CC:=$(which ${CROSS_COMPILE}gcc ${CROSS_COMPILE}cc ${CROSS_COMPILE}clang)} ''; do
+		for CC in ${CC:=$(which ${CROSS_COMPILE}gcc ${CROSS_COMPILE}cc ${CROSS_COMPILE}clang 2>/dev/null)} ''; do
 			"$CC" -o "$TEMP_EXE" "$TEMP_C" >/dev/null 2>&1 && break
 		done
 	fi
@@ -55,7 +61,7 @@ if [ "$USE_LANG_CXX" = 'yes' ]; then
 int main() { std::cout << "Hai guise" << std::endl; return 0; }
 EOF
 	if [ -z "$CXX" ]; then
-		for CXX in ${CXX:=$(which ${CROSS_COMPILE}g++ ${CROSS_COMPILE}c++ ${CROSS_COMPILE}clang++)} ''; do
+		for CXX in ${CXX:=$(which ${CROSS_COMPILE}g++ ${CROSS_COMPILE}c++ ${CROSS_COMPILE}clang++ 2>/dev/null)} ''; do
 			"$CXX" -o "$TEMP_EXE" "$TEMP_CXX" >/dev/null 2>&1 && break
 		done
 	fi
