@@ -41,8 +41,7 @@
 #include <xgraphics.h>
 #endif
 
-#ifdef HAVE_ZLIB_DEFLATE
-
+#if defined(HAVE_ZLIB_DEFLATE) && defined(HAVE_RPNG)
 #include <formats/rpng.h>
 #define IMG_EXT "png"
 
@@ -379,7 +378,7 @@ bool screenshot_dump(const char *folder, const void *frame,
    }
 
    ret = false;
-#elif defined(HAVE_ZLIB_DEFLATE)
+#elif defined(HAVE_ZLIB_DEFLATE) && defined(HAVE_RPNG)
    out_buffer = (uint8_t*)malloc(width * height * 3);
    if (!out_buffer)
       return false;

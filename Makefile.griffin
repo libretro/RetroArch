@@ -76,6 +76,7 @@ endif
   HAVE_FILTERS_BUILTIN     := 1
   HAVE_THREADS             := 1
   HAVE_ZLIB                := 1
+  HAVE_RPNG						:= 1
   HAVE_7ZIP                := 1
   HAVE_RPNG                := 1
   HAVE_OVERLAY             := 1
@@ -118,6 +119,7 @@ endif
 HAVE_7ZIP                  := 1
   HAVE_LIBRETRO_MANAGEMENT := 1
   HAVE_ZLIB                := 1
+  HAVE_RPNG                := 1
   HAVE_RPNG                := 1
   HAVE_OVERLAY             := 1
   HAVE_LIBSICKSAXIS			:= 0
@@ -170,6 +172,10 @@ endif
 
 ifeq ($(HAVE_ZLIB), 1)
 CFLAGS      += -DHAVE_ZLIB -DWANT_ZLIB
+endif
+
+ifeq ($(HAVE_RPNG), 1)
+CFLAGS      += -DHAVE_RPNG
 endif
 
 ifeq ($(HAVE_7ZIP), 1)

@@ -19,7 +19,9 @@
 #endif
 
 #include <formats/image.h>
+#ifdef HAVE_RPNG
 #include <formats/rpng.h>
+#endif
 #include <formats/tga.h>
 #ifdef _XBOX1
 #include "../d3d/d3d_wrapper.h"
@@ -46,7 +48,7 @@
 
 #endif
 
-#ifdef HAVE_ZLIB
+#ifdef HAVE_RPNG
 static bool rpng_image_load_argb_shift(const char *path,
       struct texture_image *out_img,
       unsigned a_shift, unsigned r_shift,
@@ -397,13 +399,12 @@ bool texture_image_load(struct texture_image *out_img, const char *path)
       if (buf)
          free(buf);
    }
-#ifdef HAVE_ZLIB
+#ifdef HAVE_RPNG
    else if (strstr(path, ".png"))
    {
       ret = rpng_image_load_argb_shift(path, out_img,
             a_shift, r_shift, g_shift, b_shift);
    }
-#endif
 
 #ifdef GEKKO
    if (ret)
@@ -415,6 +416,9 @@ bool texture_image_load(struct texture_image *out_img, const char *path)
       }
    }
 #endif
+
+#endif
+
 
    return ret;
 }

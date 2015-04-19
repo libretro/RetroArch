@@ -173,10 +173,13 @@ VIDEO IMAGE
 #include "../gfx/video_texture.c"
 
 #include "../libretro-common/formats/tga/tga_decode.c"
+
+#ifdef HAVE_RPNG
 #include "../libretro-common/formats/png/rpng_fbio.c"
 #include "../libretro-common/formats/png/rpng_nbio.c"
 #include "../libretro-common/formats/png/rpng_decode.c"
 #include "../libretro-common/formats/png/rpng_encode.c"
+#endif
 
 /*============================================================
 VIDEO DRIVER
