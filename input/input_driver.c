@@ -59,9 +59,8 @@ static const input_driver_t *input_drivers[] = {
 #if defined(__linux__) && !defined(ANDROID)
    &input_linuxraw,
 #endif
-#if defined(IOS) || defined(OSX)
-   /* Don't use __APPLE__ as it breaks basic SDL builds */
-   &input_apple,
+#if defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH)
+   &input_cocoa,
 #endif
 #ifdef __QNX__
    &input_qnx,

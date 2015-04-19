@@ -317,8 +317,8 @@ INPUT
 #elif defined(ANDROID)
 #include "../input/drivers/android_input.c"
 #include "../input/drivers_joypad/android_joypad.c"
-#elif defined(__APPLE__)
-#include "../input/drivers/apple_input.c"
+#elif defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH)
+#include "../input/drivers/cocoa_input.c"
 #elif defined(__QNX__)
 #include "../input/drivers/qnx_input.c"
 #include "../input/drivers_joypad/qnx_joypad.c"

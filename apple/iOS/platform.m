@@ -17,7 +17,7 @@
 #include <string.h>
 
 #include "../common/RetroArch_Apple.h"
-#include "../../input/drivers/apple_input.h"
+#include "../../input/drivers/cocoa_input.h"
 #include "../../settings.h"
 #ifdef HAVE_MFI
 #include "../../input/drivers_hid/mfi_hid.h"
@@ -117,7 +117,7 @@ static void handle_touch_event(NSArray* touches)
 {
    unsigned i;
    driver_t *driver          = driver_get_ptr();
-   apple_input_data_t *apple = (apple_input_data_t*)driver->input_data;
+   cocoa_input_data_t *apple = (cocoa_input_data_t*)driver->input_data;
    float scale               = cocoagl_gfx_ctx_get_native_scale();
 
    if (!apple)
@@ -361,7 +361,7 @@ enum
 
 - (void)navigationController:(UINavigationController *)navigationController willShowViewController:(UIViewController *)viewController animated:(BOOL)animated
 {
-   apple_input_reset_icade_buttons();
+   cocoa_input_reset_icade_buttons();
    [self setToolbarHidden:![[viewController toolbarItems] count] animated:YES];
    
    // Workaround to keep frontend settings fresh
@@ -444,8 +444,8 @@ enum
    is_icade       = !(strcmp(apple_frontend_settings.bluetooth_mode, "icade"));
    is_btstack     = !(strcmp(apple_frontend_settings.bluetooth_mode, "btstack"));
        
-   apple_input_enable_small_keyboard(small_keyboard);
-   apple_input_enable_icade(is_icade);
+   cocoa_input_enable_small_keyboard(small_keyboard);
+   cocoa_input_enable_icade(is_icade);
    btstack_set_poweron(is_btstack);
 }
 

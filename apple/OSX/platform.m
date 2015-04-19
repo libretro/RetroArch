@@ -17,7 +17,7 @@
 #include <string.h>
 
 #import "../common/RetroArch_Apple.h"
-#include "../../input/drivers/apple_input.h"
+#include "../../input/drivers/cocoa_input.h"
 #include "../../frontend/frontend.h"
 #include "../../menu/menu.h"
 #include "../../retroarch.h"
@@ -42,11 +42,11 @@ void apple_rarch_exited(void)
 - (void)sendEvent:(NSEvent *)event
 {
    NSEventType event_type;
-   apple_input_data_t *apple = NULL;
+   cocoa_input_data_t *apple = NULL;
    driver_t *driver = driver_get_ptr();
    [super sendEvent:event];
 
-   apple = (apple_input_data_t*)driver->input_data;
+   apple = (cocoa_input_data_t*)driver->input_data;
    event_type = event.type;
    
    if (!apple)
@@ -195,7 +195,7 @@ static void poll_iteration(void)
 {
     NSEvent *event = NULL;
     driver_t *driver = driver_get_ptr();
-    apple_input_data_t *apple = (apple_input_data_t*)driver->input_data;
+    cocoa_input_data_t *apple = (cocoa_input_data_t*)driver->input_data;
 
     if (!apple)
       return;

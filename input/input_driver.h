@@ -90,7 +90,7 @@ extern input_driver_t input_gx;
 extern input_driver_t input_xinput;
 extern input_driver_t input_linuxraw;
 extern input_driver_t input_udev;
-extern input_driver_t input_apple;
+extern input_driver_t input_cocoa;
 extern input_driver_t input_qnx;
 extern input_driver_t input_rwebinput;
 extern input_driver_t input_null;

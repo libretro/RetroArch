@@ -17,7 +17,7 @@
 #include <IOKit/hid/IOHIDManager.h>
 #include <IOKit/hid/IOHIDKeys.h>
 #include "../connect/joypad_connection.h"
-#include "../drivers/apple_input.h"
+#include "../drivers/cocoa_input.h"
 #include "../input_hid_driver.h"
 
 typedef struct apple_hid
@@ -139,7 +139,7 @@ static void apple_hid_device_input_callback(void *data, IOReturn result,
       void* sender, IOHIDValueRef value)
 {
    driver_t                  *driver = driver_get_ptr();
-   apple_input_data_t         *apple = (apple_input_data_t*)driver->input_data;
+   cocoa_input_data_t         *apple = (cocoa_input_data_t*)driver->input_data;
    struct apple_hid_adapter *adapter = (struct apple_hid_adapter*)data;
    IOHIDElementRef element           = IOHIDValueGetElement(value);
    uint32_t type                     = IOHIDElementGetType(element);
@@ -210,7 +210,7 @@ static void apple_hid_device_input_callback(void *data, IOReturn result,
 static void apple_hid_device_remove(void *data, IOReturn result, void* sender)
 {
    driver_t                  *driver = driver_get_ptr();
-   apple_input_data_t         *apple = (apple_input_data_t*)driver->input_data;
+   cocoa_input_data_t         *apple = (cocoa_input_data_t*)driver->input_data;
    struct apple_hid_adapter *adapter = (struct apple_hid_adapter*)data;
    apple_hid_t                  *hid = driver ? (apple_hid_t*)driver->hid_data : NULL;
 

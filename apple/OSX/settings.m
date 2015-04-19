@@ -17,7 +17,7 @@
 #import "../common/RetroArch_Apple.h"
 #include <retro_miscellaneous.h>
 #include "../../settings.h"
-#include "../../input/drivers/apple_input.h"
+#include "../../input/drivers/cocoa_input.h"
 
 #include "../../driver.h"
 #include "../../input/input_common.h"
@@ -76,11 +76,11 @@ static void* const associated_name_tag = (void*)&associated_name_tag;
    if (self.setting->index)
       idx = self.setting->index - 1;
 
-   if ((value = apple_input_find_any_key()))
+   if ((value = cocoa_input_find_any_key()))
       BINDFOR(*[self setting]).key = input_keymaps_translate_keysym_to_rk(value);
-   else if ((value = apple_input_find_any_button(idx)) >= 0)
+   else if ((value = cocoa_input_find_any_button(idx)) >= 0)
       BINDFOR(*[self setting]).joykey = value;
-   else if ((value = apple_input_find_any_axis(idx)))
+   else if ((value = cocoa_input_find_any_axis(idx)))
       BINDFOR(*[self setting]).joyaxis = (value > 0) ? AXIS_POS(value - 1) : AXIS_NEG(abs(value) - 1);
    else
       return;
