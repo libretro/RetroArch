@@ -25,7 +25,6 @@
 #include "../../menu/menu.h"
 
 @protocol RetroArch_Platform
-- (void)loadingCore:(NSString*)core withFile:(const char*)file;
 - (void)unloadingCore;
 @end
 
@@ -209,7 +208,6 @@ void get_ios_version(int *major, int *minor);
 
 @property (nonatomic, retain) NSWindow IBOutlet* window;
 
-- (void)loadingCore:(NSString*)core withFile:(const char*)file;
 - (void)unloadingCore;
 
 @end

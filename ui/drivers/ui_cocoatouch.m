@@ -288,7 +288,10 @@ enum
 
    [self pushViewController:[RAMainMenu new] animated:YES];
 
-   [apple_platform loadingCore:nil withFile:nil];
+   btpad_set_inquiry_state(false);
+    
+   [self refreshSystemConfig];
+   [self showGameView];
 
    if (rarch_main(0, NULL, NULL))
       apple_rarch_exited();
@@ -403,10 +406,7 @@ enum
 
 - (void)loadingCore:(NSString*)core withFile:(const char*)file
 {
-   btpad_set_inquiry_state(false);
-
-   [self refreshSystemConfig];
-   [self showGameView];
+ 
 }
 
 - (void)toggleUI

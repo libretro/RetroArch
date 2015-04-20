@@ -172,8 +172,6 @@ static char** waiting_argv;
    [self.window makeFirstResponder:[CocoaView get]];
 
    self.settingsWindow = [[[NSWindowController alloc] initWithWindowNibName:BOXSTRING("Settings")] autorelease];
-
-   [apple_platform loadingCore:nil withFile:nil];
    
    if (rarch_main(waiting_argc, waiting_argv, NULL))
       apple_rarch_exited();
@@ -303,12 +301,6 @@ static void poll_iteration(void)
    [panel beginSheetForDirectory:nil file:nil modalForWindopw:[self window] modalDelegate:self didEndSelector:@selector(didEndSaveSheet:returnCode:contextInfo:) contextInfo:NULL];
 #endif
    [[NSApplication sharedApplication] runModalForWindow:panel];
-}
-
-- (void)loadingCore:(const NSString*)core withFile:(const char*)file
-{
-   if (file)
-      [[NSDocumentController sharedDocumentController] noteNewRecentDocumentURL:[NSURL fileURLWithPath:BOXSTRING(file)]];
 }
 
 - (void)unloadingCore
