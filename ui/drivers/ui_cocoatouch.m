@@ -279,7 +279,7 @@ enum
 
    [self setDelegate:self];
     
-   if (rarch_main(0, NULL))
+   if (rarch_main(0, NULL, NULL))
        apple_rarch_exited();
 
    /* Setup window */
@@ -290,7 +290,7 @@ enum
 
    [apple_platform loadingCore:nil withFile:nil];
 
-   if (rarch_main(0, NULL))
+   if (rarch_main(0, NULL, NULL))
       apple_rarch_exited();
 
 #ifdef HAVE_MFI

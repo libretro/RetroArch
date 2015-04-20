@@ -29,9 +29,6 @@
 struct android_app *g_android;
 static pthread_key_t thread_key;
 
-/* Forward declaration. */
-extern void android_app_entry(void *args);
-
 void engine_handle_cmd(void *data)
 {
    int8_t cmd;
@@ -348,6 +345,23 @@ static void jni_thread_destruct(void *value)
       (*android_app->activity->vm)->
          DetachCurrentThread(android_app->activity->vm);
    pthread_setspecific(thread_key, NULL);
+}
+
+static void android_app_entry(void *data)
+{
+   char *argv[1];
+   int argc = 0;
+
+   if (rarch_main(argc, argv, data) != 0)
+      goto end;
+#ifndef HAVE_MAIN
+   while (rarch_main_iterate() != -1);
+
+   main_exit(args);
+#endif
+
+end:
+   exit(0);
 }
 
 /*

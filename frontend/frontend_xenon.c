@@ -33,18 +33,6 @@
 #include <dirent.h>
 #include "../compat/strl.h"
 
-#undef main
-
-int rarch_main(int argc, char **argv);
-static void start_rarch(const char *path)
-{
-   char arg0[] = "retroarch";
-   char arg1[256];
-   strlcpy(arg1, path, sizeof(arg1));
-   char *argv[3] = { arg0, arg1, NULL };
-   rarch_main(sizeof(argv) / sizeof(argv[0]) - 1, argv);
-}
-
 #define FG_COL -1
 #define BG_COL 0
 
@@ -168,8 +156,6 @@ int main(void)
             strlcat(fn, entries[pos].d_name, sizeof(fn));
 
             printf("%s\n", fn);
-
-            start_rarch(fn);
          }
       }
 

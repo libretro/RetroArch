@@ -175,7 +175,7 @@ static char** waiting_argv;
 
    [apple_platform loadingCore:nil withFile:nil];
    
-   if (rarch_main(waiting_argc, waiting_argv))
+   if (rarch_main(waiting_argc, waiting_argv, NULL))
       apple_rarch_exited();
 
    waiting_argc = 0;

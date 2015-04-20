@@ -108,9 +108,6 @@ struct defaults
 /* Public data structures. */
 extern struct defaults g_defaults;
 
-/* Public functions. */
-int rarch_main(int argc, char *argv[]);
-
 #ifdef __cplusplus
 }
 #endif

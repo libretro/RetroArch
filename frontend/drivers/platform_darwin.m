@@ -529,10 +529,3 @@ const frontend_ctx_driver_t frontend_ctx_darwin = {
    frontend_darwin_get_powerstate,
    "darwin",
 };
-
-#if !defined(HAVE_COCOA) && !defined(HAVE_COCOATOUCH)
-int main(int argc, char *argv[])
-{
-   return rarch_main(argc, argv);
-}
-#endif

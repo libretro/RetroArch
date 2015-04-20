@@ -59,11 +59,7 @@ void main_exit_save_config(void);
  *
  * Returns: varies per platform.
  **/
-#if defined(ANDROID)
-void android_app_entry(void *data);
-#else
-int rarch_main(int argc, char *argv[]);
-#endif
+int rarch_main(int argc, char *argv[], void *data);
 
 /**
  * main_load_content:

@@ -22,16 +22,6 @@
 #include "../runloop.h"
 #include <file/file_path.h>
 
-#if defined(ANDROID)
-#define returnfunc() exit(0)
-#define return_var(var) return
-#define args_initial_ptr() data
-#else
-#define returnfunc() return 0
-#define return_var(var) return var
-#define args_initial_ptr() NULL
-#endif
-
 #define MAX_ARGS 32
 
 /**
@@ -276,17 +266,9 @@ error:
  *
  * Returns: varies per platform.
  **/
-#if defined(ANDROID)
-void android_app_entry(void *data)
-#else
-int rarch_main(int argc, char *argv[])
-#endif
+int rarch_main(int argc, char *argv[], void *data)
 {
-#ifdef ANDROID
-   char *argv[1];
-   int argc = 0;
-#endif
-   void *args                      = (void *)args_initial_ptr();
+   void *args                      = (void*)data;
    int ret                         = 0;
    settings_t *settings            = NULL;
    driver_t *driver                = NULL;
@@ -311,9 +293,7 @@ int rarch_main(int argc, char *argv[])
       if (!(ret = (main_load_content(argc, argv, args,
                      driver->frontend_ctx->environment_get,
                      driver->frontend_ctx->process_args))))
-      {
-         return_var(ret);
-      }
+         return ret;
    }
 
    event_command(EVENT_CMD_HISTORY_INIT);
@@ -346,12 +326,12 @@ int rarch_main(int argc, char *argv[])
    main_exit(args);
 #endif
 
-   returnfunc();
+   return 0;
 }
 
 #ifndef HAVE_MAIN
 int main(int argc, char *argv[])
 {
-   return rarch_main(argc, argv);
+   return rarch_main(argc, argv, NULL);
 }
 #endif

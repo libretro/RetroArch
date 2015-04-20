@@ -22,12 +22,12 @@
 #include "../general.h"
 #include <string.h>
 
-int rarch_main(int argc, char *argv[]);
+int rarch_main(int argc, char *argv[], void *data);
 
 #undef main
 int main(int argc, char *argv[])
 {
-   while (rarch_main(argc, argv) == 0)
+   while (rarch_main(argc, argv, NULL) == 0)
    {
       if (optind + 1 >= argc)
          return 0;
