@@ -29,8 +29,6 @@
 id<RetroArch_Platform> apple_platform;
 static CFRunLoopObserverRef iterate_observer;
 
-void apple_rarch_exited(void);
-
 void main_exit_save_config(void);
 
 static void rarch_draw(CFRunLoopObserverRef observer, CFRunLoopActivity activity, void *info)

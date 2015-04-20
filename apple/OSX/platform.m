@@ -24,8 +24,6 @@
 
 id<RetroArch_Platform> apple_platform;
 
-void apple_rarch_exited(void);
-
 void apple_rarch_exited(void)
 {
    [apple_platform unloadingCore];
