@@ -299,7 +299,6 @@ static void frontend_apple_get_os(char *name, size_t sizeof_name, int *major, in
 static void frontend_apple_get_environment_settings(int *argc, char *argv[],
       void *args, void *params_data)
 {
-#if defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH)
    char temp_dir[PATH_MAX_LENGTH];
    char bundle_path_buf[PATH_MAX_LENGTH], home_dir_buf[PATH_MAX_LENGTH];
    CFURLRef bundle_url;
@@ -364,7 +363,6 @@ static void frontend_apple_get_environment_settings(int *argc, char *argv[],
 
    CFRelease(bundle_path);
    CFRelease(bundle_url);
-#endif
 }
 
 #if defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH)
