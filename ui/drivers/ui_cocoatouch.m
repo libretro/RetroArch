@@ -543,11 +543,7 @@ static void *ui_companion_cocoatouch_init(void)
 static void ui_companion_cocoatouch_event_command(void *data,
     enum event_command cmd)
 {
-   ui_companion_cocoatouch_t *handle = (ui_companion_cocoatouch_t*)data;
-
-   if (!handle)
-      return;
-
+   (void)data;
    event_command(cmd);
 }
 
