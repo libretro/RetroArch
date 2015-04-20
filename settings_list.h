@@ -173,7 +173,7 @@ typedef struct rarch_setting
 
    struct
    {
-      unsigned idx;
+      enum event_command idx;
       bool triggered;
    } cmd_trigger;
 
@@ -219,7 +219,7 @@ void settings_list_current_add_values(
 void settings_list_current_add_cmd(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info,
-      unsigned values);
+      enum event_command values);
 
 void settings_info_list_free(rarch_setting_info_t *list_info);
 

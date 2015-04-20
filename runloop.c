@@ -54,7 +54,7 @@ static bool check_pause(bool pause_pressed, bool frameadvance_pressed)
    runloop_t *runloop       = rarch_main_get_ptr();
    static bool old_focus    = true;
    bool focus               = true;
-   unsigned cmd             = EVENT_CMD_NONE;
+   enum event_command cmd   = EVENT_CMD_NONE;
    bool old_is_paused       = runloop->is_paused;
    settings_t *settings     = config_get_ptr();
 

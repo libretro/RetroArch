@@ -982,9 +982,8 @@ static int action_ok_custom_viewport(const char *path,
 }
 
 
-static int generic_action_ok_command(unsigned cmd)
+static int generic_action_ok_command(enum event_command cmd)
 {
-
    if (!event_command(cmd))
       return -1;
    return 0;

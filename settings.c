@@ -2937,7 +2937,7 @@ static void general_read_handler(void *data)
 
 static void general_write_handler(void *data)
 {
-   unsigned rarch_cmd = EVENT_CMD_NONE;
+   enum event_command rarch_cmd = EVENT_CMD_NONE;
    rarch_setting_t *setting = (rarch_setting_t*)data;
    settings_t *settings     = config_get_ptr();
    driver_t *driver         = driver_get_ptr();

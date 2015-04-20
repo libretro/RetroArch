@@ -59,9 +59,9 @@ static bool win32_browser(
 
 LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
 {
-    WPARAM mode         = wparam & 0xffff;
-	unsigned cmd         = EVENT_CMD_NONE;
-	bool do_wm_close     = false;
+   WPARAM mode         = wparam & 0xffff;
+   enum event_command cmd         = EVENT_CMD_NONE;
+   bool do_wm_close     = false;
    settings_t *settings = config_get_ptr();
    global_t   *global   = global_get_ptr();
 

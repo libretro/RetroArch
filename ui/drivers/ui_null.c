@@ -63,7 +63,7 @@ static void ui_companion_null_toggle(void *data)
    (void)data;
 }
 
-static void ui_companion_null_event_command(void *data, unsigned cmd)
+static void ui_companion_null_event_command(void *data, enum event_command cmd)
 {
    (void)data;
    (void)cmd;

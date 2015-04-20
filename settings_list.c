@@ -114,7 +114,7 @@ void settings_list_current_add_values(
 void settings_list_current_add_cmd(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info,
-      unsigned values)
+      enum event_command values)
 {
    unsigned idx = list_info->index - 1;
    (*list)[idx].cmd_trigger.idx = values;
