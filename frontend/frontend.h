@@ -24,21 +24,6 @@
 
 #if defined(ANDROID)
 #include "drivers/platform_android.h"
-#define main_entry android_app_entry
-#define args_type() struct android_app*
-#define signature() void* data
-#define signature_expand() data
-#define returntype void
-#else
-#if defined(__APPLE__) || defined(HAVE_BB10) || defined(EMSCRIPTEN)
-#define main_entry rarch_main
-#else
-#define main_entry main
-#endif
-#define args_type() void*
-#define signature() int argc, char *argv[]
-#define signature_expand() argc, argv
-#define returntype int
 #endif
 
 #ifdef __cplusplus
@@ -53,7 +38,7 @@ extern "C" {
  * Also saves configuration files to disk,
  * and (optionally) autosave state.
  **/
-void main_exit(args_type() args);
+void main_exit(void *args);
     
 /**
  * main_exit_save_config:
@@ -74,7 +59,13 @@ void main_exit_save_config(void);
  *
  * Returns: varies per platform.
  **/
-returntype main_entry(signature());
+#if defined(ANDROID)
+void android_app_entry(void *data);
+#elif defined(__APPLE__) || defined(HAVE_BB10) || defined(EMSCRIPTEN)
+int rarch_main(int argc, char *argv[]);
+#else
+int main(int argc, char *argv[]);
+#endif
 
 /**
  * main_load_content:
@@ -91,7 +82,7 @@ returntype main_entry(signature());
  * Returns: false (0) if rarch_main_init failed, otherwise true (1).
  **/
 bool main_load_content(int argc, char **argv,
-      args_type() args, environment_get_t environ_get,
+      void *args, environment_get_t environ_get,
       process_args_t process_args);
 
 #ifdef __cplusplus

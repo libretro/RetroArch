@@ -23,20 +23,13 @@
 #include <file/file_path.h>
 
 #if defined(ANDROID)
-
 #define returnfunc() exit(0)
 #define return_var(var) return
-#define declare_argc() int argc = 0;
-#define declare_argv() char *argv[1]
 #define args_initial_ptr() data
 #else
-
 #define returnfunc() return 0
 #define return_var(var) return var
-#define declare_argc()
-#define declare_argv()
 #define args_initial_ptr() NULL
-
 #endif
 
 #if !defined(__APPLE__) && !defined(EMSCRIPTEN)
@@ -81,7 +74,7 @@ void main_exit_save_config(void)
  * Also saves configuration files to disk,
  * and (optionally) autosave state.
  **/
-void main_exit(args_type() args)
+void main_exit(void *args)
 {
    driver_t *driver                      = driver_get_ptr();
    settings_t *settings                  = config_get_ptr();
@@ -218,7 +211,7 @@ static void history_playlist_push(content_playlist_t *playlist,
  *
  * Returns: false (0) if rarch_main_init failed, otherwise true (1).
  **/
-bool main_load_content(int argc, char **argv, args_type() args,
+bool main_load_content(int argc, char **argv, void *args,
       environment_get_t environ_get,
       process_args_t process_args)
 {
@@ -287,15 +280,23 @@ error:
  *
  * Returns: varies per platform.
  **/
-returntype main_entry(signature())
+#if defined(ANDROID)
+void android_app_entry(void *data)
+#elif defined(__APPLE__) || defined(HAVE_BB10) || defined(EMSCRIPTEN)
+int rarch_main(int argc, char *argv[])
+#else
+int main(int argc, char *argv[])
+#endif
 {
-   declare_argc();
-   declare_argv();
-   args_type() args                = (args_type())args_initial_ptr();
+#ifdef ANDROID
+   char *argv[1];
+   int argc = 0;
+#endif
+   void *args                      = (void *)args_initial_ptr();
    int ret                         = 0;
    settings_t *settings            = NULL;
    driver_t *driver                = NULL;
-   
+
    rarch_main_alloc();
 
    driver = driver_get_ptr();
@@ -314,8 +315,8 @@ returntype main_entry(signature())
    if (driver->frontend_ctx)
    {
       if (!(ret = (main_load_content(argc, argv, args,
-         driver->frontend_ctx->environment_get,
-         driver->frontend_ctx->process_args))))
+                     driver->frontend_ctx->environment_get,
+                     driver->frontend_ctx->process_args))))
       {
          return_var(ret);
       }
