@@ -14,17 +14,18 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#import "../common/RetroArch_Apple.h"
 #import <objc/runtime.h>
+
+#include <compat/apple_compat.h>
 #include <retro_miscellaneous.h>
+
+#import "../common/RetroArch_Apple.h"
 #include "../../settings.h"
 #include "../../input/drivers/cocoa_input.h"
 
 #include "../../driver.h"
 #include "../../input/input_common.h"
 #include "../../input/input_keymaps.h"
-
-#include <compat/apple_compat.h>
 
 static void* const associated_name_tag = (void*)&associated_name_tag;
 

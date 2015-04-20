@@ -14,14 +14,13 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <objc/objc-runtime.h>
 #include <string.h>
 
 #import "../common/RetroArch_Apple.h"
 #include "../../input/drivers/cocoa_input.h"
 #include "../../frontend/frontend.h"
 #include "../../retroarch.h"
-
-#include <objc/objc-runtime.h>
 
 id<RetroArch_Platform> apple_platform;
 

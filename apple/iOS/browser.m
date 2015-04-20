@@ -15,13 +15,13 @@
  */
 
 #include <file/file_extract.h>
+#include <file/dir_list.h>
+#include <file/file_path.h>
+#include <retro_miscellaneous.h>
 
 #include "../common/RetroArch_Apple.h"
 #include "../../content.h"
 #include "../../general.h"
-#include <file/dir_list.h>
-#include <file/file_path.h>
-#include <retro_miscellaneous.h>
 
 enum file_action
 {
