@@ -429,6 +429,19 @@ ifeq ($(HAVE_LIBUSB), 1)
 	HAVE_HID = 1
 endif
 
+ifeq ($(HAVE_IOHIDMANAGER), 1)
+	DEFINES += -DHAVE_IOHIDMANAGER
+	OBJ += input/drivers_hid/iohidmanager_hid.o
+	HAVE_HID = 1
+	LIBS += -framework IOKit
+	JOYCONFIG_LIBS += -framework IOKit
+endif
+
+ifeq ($(HAVE_CORELOCATION), 1)
+	DEFINES += -DHAVE_CORELOCATION
+	LIBS += -framework CoreLocation
+endif
+
 ifeq ($(HAVE_HID), 1)
 	DEFINES += -DHAVE_HID
 	OBJ += input/connect/joypad_connection.o \
@@ -739,6 +752,13 @@ ifneq ($(findstring Win32,$(OS)),)
           input/drivers_keyboard/keyboard_event_win32.o \
 			 gfx/common/win32_common.o \
 			 frontend/drivers/platform_win32.o
+endif
+
+ifeq ($(HAVE_AVFOUNDATION), 1)
+   DEFINES += -DHAVE_AVFOUNDATION
+   LIBS += -framework AVFoundation
+   LIBS += -framework CoreVideo
+   LIBS += -framework CoreMedia
 endif
 
 # Record

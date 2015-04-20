@@ -308,6 +308,7 @@ void *glkitview_init(void);
 #endif
 
 #ifdef HAVE_AVFOUNDATION
+#include "../../gfx/drivers/gl_common.h"
 
 #ifndef GL_BGRA
 #define GL_BGRA 0x80E1

@@ -18,6 +18,7 @@
 #include <IOKit/hid/IOHIDKeys.h>
 #include "../connect/joypad_connection.h"
 #include "../drivers/cocoa_input.h"
+#include "../input_autodetect.h"
 #include "../input_hid_driver.h"
 
 typedef struct apple_hid

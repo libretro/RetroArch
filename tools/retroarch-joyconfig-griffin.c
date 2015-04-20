@@ -64,6 +64,17 @@
 #include "../input/connect/joypad_connection.c"
 #endif
 
+#if defined(__APPLE__) && defined(HAVE_IOHIDMANAGER)
+#include "../input/drivers_hid/iohidmanager_hid.c"
+#endif
+
+#ifdef HAVE_HID
+#include "../input/connect/joypad_connection.c"
+#include "../input/connect/connect_ps3.c"
+#include "../input/connect/connect_ps4.c"
+#include "../input/connect/connect_wii.c"
+#endif
+
 #include "../input/drivers_joypad/hid_joypad.c"
 #include "../input/drivers_joypad/null_joypad.c"
 
