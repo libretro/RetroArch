@@ -392,27 +392,30 @@ static void android_gfx_ctx_bind_hw_render(void *data, bool enable)
 static bool android_gfx_ctx_get_metrics(void *data,
 	enum display_metric_types type, float *value)
 {
-   jclass metrics_class;
    jobject metrics;
    jmethodID getMetrics;
-   struct android_app *android_app = (struct android_app*)g_android;
+   jclass class = NULL;
    JNIEnv *env           = (JNIEnv*)jni_thread_getenv();
 
-   GET_METHOD_ID(env, getMetrics, android_app->activity, "getMetrics", "()Landroid/util/DisplayMetrics;");
+   FIND_CLASS(env, class, "android/util/DisplayMetrics");
+   if (!class)
+      goto error;
+
+   GET_METHOD_ID(env, getMetrics, class, "getMetrics", "()Landroid/util/DisplayMetrics;");
    if (!getMetrics)
       goto error;
 
-   CALL_OBJ_STATIC_METHOD(env, metrics, android_app->activity, getMetrics);
-   GET_OBJECT_CLASS(env, metrics_class, metrics);
+   CALL_OBJ_STATIC_METHOD(env, metrics, class, getMetrics);
+   GET_OBJECT_CLASS(env, class, metrics);
 
    /* Density */
-   float density         = (*env)->GetFloatField(env, metrics, (*env)->GetFieldID(env, metrics_class, "density", "F"));
-   float scaled_density  = (*env)->GetFloatField(env, metrics, (*env)->GetFieldID(env, metrics_class, "scaledDensity", "F"));
-   int     density_dpi   = (*env)->GetIntField(env,   metrics, (*env)->GetFieldID(env, metrics_class, "densityDpi", "I"));
+   float density         = (*env)->GetFloatField(env, metrics, (*env)->GetFieldID(env, class, "density", "F"));
+   float scaled_density  = (*env)->GetFloatField(env, metrics, (*env)->GetFieldID(env, class, "scaledDensity", "F"));
+   int     density_dpi   = (*env)->GetIntField(env,   metrics, (*env)->GetFieldID(env, class, "densityDpi", "I"));
 
    /* Size */
-   int     width_pixels  = (*env)->GetIntField(env, metrics,   (*env)->GetFieldID(env, metrics_class, "widthPixels", "I"));
-   int    height_pixels  = (*env)->GetIntField(env, metrics,   (*env)->GetFieldID(env, metrics_class, "heightPixels", "I"));
+   int     width_pixels  = (*env)->GetIntField(env, metrics,   (*env)->GetFieldID(env, class, "widthPixels", "I"));
+   int    height_pixels  = (*env)->GetIntField(env, metrics,   (*env)->GetFieldID(env, class, "heightPixels", "I"));
 
    /* DPI */
    /* Apparently xdpi and ydpi can't be trusted to be implemented correctly, so don't try to rely on it...
@@ -434,8 +437,8 @@ static bool android_gfx_ctx_get_metrics(void *data,
     * than the real dpi -- for example the Samsung TAB uses high density even though its screen's 
     * really density is a fair amount lower than 240."
     */
-   float xdpi = (*env)->GetFloatField(env, metrics, (*env)->GetFieldID(env, metrics_class, "xdpi", "F"));
-   float ydpi = (*env)->GetFloatField(env, metrics, (*env)->GetFieldID(env, metrics_class, "ydpi", "F"));
+   float xdpi = (*env)->GetFloatField(env, metrics, (*env)->GetFieldID(env, class, "xdpi", "F"));
+   float ydpi = (*env)->GetFloatField(env, metrics, (*env)->GetFieldID(env, class, "ydpi", "F"));
 
    (void)width_pixels;
    (void)height_pixels;
