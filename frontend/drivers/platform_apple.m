@@ -45,42 +45,42 @@
 
 typedef enum
 {
-    CFApplicationDirectory = 1,             // supported applications (Applications)
-    CFDemoApplicationDirectory,             // unsupported applications, demonstration versions (Demos)
-    CFDeveloperApplicationDirectory,        // developer applications (Developer/Applications). DEPRECATED - there is no one single Developer directory.
-    CFAdminApplicationDirectory,            // system and network administration applications (Administration)
-    CFLibraryDirectory,                     // various documentation, support, and configuration files, resources (Library)
-    CFDeveloperDirectory,                   // developer resources (Developer) DEPRECATED - there is no one single Developer directory.
-    CFUserDirectory,                        // user home directories (Users)
-    CFDocumentationDirectory,               // documentation (Documentation)
-    CFDocumentDirectory,                    // documents (Documents)
-    CFCoreServiceDirectory,                 // location of CoreServices directory (System/Library/CoreServices)
-    CFAutosavedInformationDirectory = 11,   // location of autosaved documents (Documents/Autosaved)
-    CFDesktopDirectory = 12,                // location of user's desktop
-    CFCachesDirectory = 13,                 // location of discardable cache files (Library/Caches)
-    CFApplicationSupportDirectory = 14,     // location of application support files (plug-ins, etc) (Library/Application Support)
-    CFDownloadsDirectory = 15,              // location of the user's "Downloads" directory
-    CFInputMethodsDirectory = 16,           // input methods (Library/Input Methods)
-    CFMoviesDirectory = 17,                 // location of user's Movies directory (~/Movies)
-    CFMusicDirectory = 18,                  // location of user's Music directory (~/Music)
-    CFPicturesDirectory = 19,               // location of user's Pictures directory (~/Pictures)
-    CFPrinterDescriptionDirectory = 20,     // location of system's PPDs directory (Library/Printers/PPDs)
-    CFSharedPublicDirectory = 21,           // location of user's Public sharing directory (~/Public)
-    CFPreferencePanesDirectory = 22,        // location of the PreferencePanes directory for use with System Preferences (Library/PreferencePanes)
-    CFApplicationScriptsDirectory = 23,     // location of the user scripts folder for the calling application (~/Library/Application Scripts/code-signing-id)
-    CFItemReplacementDirectory = 99,	     // For use with NSFileManager's URLForDirectory:inDomain:appropriateForURL:create:error:
-    CFAllApplicationsDirectory = 100,       // all directories where applications can occur
-    CFAllLibrariesDirectory = 101,          // all directories where resources can occur
-    CFTrashDirectory = 102                  // location of Trash directory
+   CFApplicationDirectory = 1,             // supported applications (Applications)
+   CFDemoApplicationDirectory,             // unsupported applications, demonstration versions (Demos)
+   CFDeveloperApplicationDirectory,        // developer applications (Developer/Applications). DEPRECATED - there is no one single Developer directory.
+   CFAdminApplicationDirectory,            // system and network administration applications (Administration)
+   CFLibraryDirectory,                     // various documentation, support, and configuration files, resources (Library)
+   CFDeveloperDirectory,                   // developer resources (Developer) DEPRECATED - there is no one single Developer directory.
+   CFUserDirectory,                        // user home directories (Users)
+   CFDocumentationDirectory,               // documentation (Documentation)
+   CFDocumentDirectory,                    // documents (Documents)
+   CFCoreServiceDirectory,                 // location of CoreServices directory (System/Library/CoreServices)
+   CFAutosavedInformationDirectory = 11,   // location of autosaved documents (Documents/Autosaved)
+   CFDesktopDirectory = 12,                // location of user's desktop
+   CFCachesDirectory = 13,                 // location of discardable cache files (Library/Caches)
+   CFApplicationSupportDirectory = 14,     // location of application support files (plug-ins, etc) (Library/Application Support)
+   CFDownloadsDirectory = 15,              // location of the user's "Downloads" directory
+   CFInputMethodsDirectory = 16,           // input methods (Library/Input Methods)
+   CFMoviesDirectory = 17,                 // location of user's Movies directory (~/Movies)
+   CFMusicDirectory = 18,                  // location of user's Music directory (~/Music)
+   CFPicturesDirectory = 19,               // location of user's Pictures directory (~/Pictures)
+   CFPrinterDescriptionDirectory = 20,     // location of system's PPDs directory (Library/Printers/PPDs)
+   CFSharedPublicDirectory = 21,           // location of user's Public sharing directory (~/Public)
+   CFPreferencePanesDirectory = 22,        // location of the PreferencePanes directory for use with System Preferences (Library/PreferencePanes)
+   CFApplicationScriptsDirectory = 23,     // location of the user scripts folder for the calling application (~/Library/Application Scripts/code-signing-id)
+   CFItemReplacementDirectory = 99,	     // For use with NSFileManager's URLForDirectory:inDomain:appropriateForURL:create:error:
+   CFAllApplicationsDirectory = 100,       // all directories where applications can occur
+   CFAllLibrariesDirectory = 101,          // all directories where resources can occur
+   CFTrashDirectory = 102                  // location of Trash directory
 } CFSearchPathDirectory;
 
 typedef enum
 {
-    CFUserDomainMask = 1,       // user's home directory --- place to install user's personal items (~)
-    CFLocalDomainMask = 2,      // local to the current machine --- place to install items available to everyone on this machine (/Library)
-    CFNetworkDomainMask = 4,    // publically available location in the local area network --- place to install items available on the network (/Network)
-    CFSystemDomainMask = 8,     // provided by Apple, unmodifiable (/System)
-    CFAllDomainsMask = 0x0ffff  // all domains: all of the above and future items
+   CFUserDomainMask = 1,       // user's home directory --- place to install user's personal items (~)
+   CFLocalDomainMask = 2,      // local to the current machine --- place to install items available to everyone on this machine (/Library)
+   CFNetworkDomainMask = 4,    // publically available location in the local area network --- place to install items available on the network (/Network)
+   CFSystemDomainMask = 8,     // provided by Apple, unmodifiable (/System)
+   CFAllDomainsMask = 0x0ffff  // all domains: all of the above and future items
 } CFDomainMask;
 
 #ifndef __has_feature
@@ -99,37 +99,37 @@ typedef enum
 NS_INLINE CF_RETURNS_RETAINED CFTypeRef CFBridgingRetainCompat(id X)
 {
 #if __has_feature(objc_arc)
-	return (__bridge_retained CFTypeRef)X;
+   return (__bridge_retained CFTypeRef)X;
 #else
-	return X;
+   return X;
 #endif
 }
 
 static NSSearchPathDirectory NSConvertFlagsCF(unsigned flags)
 {
-    switch (flags)
-    {
-        case CFDocumentDirectory:
-            return NSDocumentDirectory;
-    }
-    
-    return 0;
+   switch (flags)
+   {
+      case CFDocumentDirectory:
+         return NSDocumentDirectory;
+   }
+
+   return 0;
 }
 
 static NSSearchPathDomainMask NSConvertDomainFlagsCF(unsigned flags)
 {
-    switch (flags)
-    {
-	    case CFUserDomainMask:
-		    return NSUserDomainMask;
-    }
-    
-    return 0;
+   switch (flags)
+   {
+      case CFUserDomainMask:
+         return NSUserDomainMask;
+   }
+
+   return 0;
 }
 
-void CFSearchPathForDirectoriesInDomains(unsigned flags,
-        unsigned domain_mask, unsigned expand_tilde,
-        char *buf, size_t sizeof_buf)
+static void CFSearchPathForDirectoriesInDomains(unsigned flags,
+      unsigned domain_mask, unsigned expand_tilde,
+      char *buf, size_t sizeof_buf)
 {
    CFTypeRef array_val = (CFTypeRef)CFBridgingRetainCompat(
          NSSearchPathForDirectoriesInDomains(NSConvertFlagsCF(flags),
@@ -139,20 +139,20 @@ void CFSearchPathForDirectoriesInDomains(unsigned flags,
    CFStringRef    path = path_val ? CFRetain(path_val) : NULL;
    if (!path || !array)
       return;
-   
+
    CFStringGetCString(path, buf, sizeof_buf, kCFStringEncodingUTF8);
    CFRelease(path);
    CFRelease(array);
 }
 
-void CFTemporaryDirectory(char *buf, size_t sizeof_buf)
+static void CFTemporaryDirectory(char *buf, size_t sizeof_buf)
 {
 #if __has_feature(objc_arc)
-    CFStringRef path = (__bridge_retained CFStringRef)NSTemporaryDirectory();
+   CFStringRef path = (__bridge_retained CFStringRef)NSTemporaryDirectory();
 #else
-    CFStringRef path = (CFStringRef)NSTemporaryDirectory();
+   CFStringRef path = (CFStringRef)NSTemporaryDirectory();
 #endif
-    CFStringGetCString(path, buf, sizeof_buf, kCFStringEncodingUTF8);
+   CFStringGetCString(path, buf, sizeof_buf, kCFStringEncodingUTF8);
 }
 
 #if defined(IOS)
@@ -168,116 +168,116 @@ enum frontend_powerstate ios_get_powerstate(int *seconds, int *percent);
 
 /* Note that AC power sources also include a laptop battery it is charging. */
 static void checkps(CFDictionaryRef dict, bool * have_ac, bool * have_battery,
-        bool * charging, int *seconds, int *percent)
+      bool * charging, int *seconds, int *percent)
 {
-    CFStringRef strval; /* don't CFRelease() this. */
-    CFBooleanRef bval;
-    CFNumberRef numval;
-    bool charge = false;
-    bool choose = false;
-    bool  is_ac = false;
-    int    secs = -1;
-    int  maxpct = -1;
-    int     pct = -1;
-    
-    if ((PMGMT_GETVAL(kIOPSIsPresentKey, &bval)) && (bval == kCFBooleanFalse))
-        return;                 /* nothing to see here. */
-    
-    if (!PMGMT_GETVAL(kIOPSPowerSourceStateKey, &strval))
-        return;
-    
-    if (PMGMT_STRMATCH(strval, CFSTR(kIOPSACPowerValue)))
-        is_ac = *have_ac = true;
-    else if (!PMGMT_STRMATCH(strval, CFSTR(kIOPSBatteryPowerValue)))
-        return;                 /* not a battery? */
-    
-    if ((PMGMT_GETVAL(kIOPSIsChargingKey, &bval)) && (bval == kCFBooleanTrue))
-        charge = true;
-    
-    if (PMGMT_GETVAL(kIOPSMaxCapacityKey, &numval))
-    {
-        SInt32 val = -1;
-        CFNumberGetValue(numval, kCFNumberSInt32Type, &val);
-        if (val > 0)
-        {
-            *have_battery = true;
-            maxpct        = (int) val;
-        }
-    }
-    
-    if (PMGMT_GETVAL(kIOPSMaxCapacityKey, &numval))
-    {
-        SInt32 val = -1;
-        CFNumberGetValue(numval, kCFNumberSInt32Type, &val);
-        if (val > 0)
-        {
-            *have_battery = true;
-            maxpct        = (int) val;
-        }
-    }
-    
-    if (PMGMT_GETVAL(kIOPSTimeToEmptyKey, &numval))
-    {
-        SInt32 val = -1;
-        CFNumberGetValue(numval, kCFNumberSInt32Type, &val);
-        
-        /* Mac OS X reports 0 minutes until empty if you're plugged in. :( */
-        if ((val == 0) && (is_ac))
-            val = -1;           /* !!! FIXME: calc from timeToFull and capacity? */
-        
-        secs = (int) val;
-        if (secs > 0)
-            secs *= 60;         /* value is in minutes, so convert to seconds. */
-    }
-    
-    if (PMGMT_GETVAL(kIOPSCurrentCapacityKey, &numval))
-    {
-        SInt32 val = -1;
-        CFNumberGetValue(numval, kCFNumberSInt32Type, &val);
-        pct = (int) val;
-    }
-    
-    if ((pct > 0) && (maxpct > 0))
-        pct = (int) ((((double) pct) / ((double) maxpct)) * 100.0);
-    
-    if (pct > 100)
-        pct = 100;
-    
-    /*
-     * We pick the battery that claims to have the most minutes left.
-     *  (failing a report of minutes, we'll take the highest percent.)
-     */
-    if ((secs < 0) && (*seconds < 0))
-    {
-        if ((pct < 0) && (*percent < 0))
-            choose = true;  /* at least we know there's a battery. */
-        if (pct > *percent)
-            choose = true;
-    }
-    else if (secs > *seconds)
-        choose = true;
-    
-    if (choose)
-    {
-        *seconds  = secs;
-        *percent  = pct;
-        *charging = charge;
-    }
+   CFStringRef strval; /* don't CFRelease() this. */
+   CFBooleanRef bval;
+   CFNumberRef numval;
+   bool charge = false;
+   bool choose = false;
+   bool  is_ac = false;
+   int    secs = -1;
+   int  maxpct = -1;
+   int     pct = -1;
+
+   if ((PMGMT_GETVAL(kIOPSIsPresentKey, &bval)) && (bval == kCFBooleanFalse))
+      return;                 /* nothing to see here. */
+
+   if (!PMGMT_GETVAL(kIOPSPowerSourceStateKey, &strval))
+      return;
+
+   if (PMGMT_STRMATCH(strval, CFSTR(kIOPSACPowerValue)))
+      is_ac = *have_ac = true;
+   else if (!PMGMT_STRMATCH(strval, CFSTR(kIOPSBatteryPowerValue)))
+      return;                 /* not a battery? */
+
+   if ((PMGMT_GETVAL(kIOPSIsChargingKey, &bval)) && (bval == kCFBooleanTrue))
+      charge = true;
+
+   if (PMGMT_GETVAL(kIOPSMaxCapacityKey, &numval))
+   {
+      SInt32 val = -1;
+      CFNumberGetValue(numval, kCFNumberSInt32Type, &val);
+      if (val > 0)
+      {
+         *have_battery = true;
+         maxpct        = (int) val;
+      }
+   }
+
+   if (PMGMT_GETVAL(kIOPSMaxCapacityKey, &numval))
+   {
+      SInt32 val = -1;
+      CFNumberGetValue(numval, kCFNumberSInt32Type, &val);
+      if (val > 0)
+      {
+         *have_battery = true;
+         maxpct        = (int) val;
+      }
+   }
+
+   if (PMGMT_GETVAL(kIOPSTimeToEmptyKey, &numval))
+   {
+      SInt32 val = -1;
+      CFNumberGetValue(numval, kCFNumberSInt32Type, &val);
+
+      /* Mac OS X reports 0 minutes until empty if you're plugged in. :( */
+      if ((val == 0) && (is_ac))
+         val = -1;           /* !!! FIXME: calc from timeToFull and capacity? */
+
+      secs = (int) val;
+      if (secs > 0)
+         secs *= 60;         /* value is in minutes, so convert to seconds. */
+   }
+
+   if (PMGMT_GETVAL(kIOPSCurrentCapacityKey, &numval))
+   {
+      SInt32 val = -1;
+      CFNumberGetValue(numval, kCFNumberSInt32Type, &val);
+      pct = (int) val;
+   }
+
+   if ((pct > 0) && (maxpct > 0))
+      pct = (int) ((((double) pct) / ((double) maxpct)) * 100.0);
+
+   if (pct > 100)
+      pct = 100;
+
+   /*
+    * We pick the battery that claims to have the most minutes left.
+    *  (failing a report of minutes, we'll take the highest percent.)
+    */
+   if ((secs < 0) && (*seconds < 0))
+   {
+      if ((pct < 0) && (*percent < 0))
+         choose = true;  /* at least we know there's a battery. */
+      if (pct > *percent)
+         choose = true;
+   }
+   else if (secs > *seconds)
+      choose = true;
+
+   if (choose)
+   {
+      *seconds  = secs;
+      *percent  = pct;
+      *charging = charge;
+   }
 }
 #endif
 
 static void frontend_apple_get_name(char *name, size_t sizeof_name)
 {
 #if defined(IOS)
-    struct utsname buffer;
-    
-    if (uname(&buffer) != 0)
-        return;
-    
-    strlcpy(name, buffer.machine, sizeof_name);
+   struct utsname buffer;
+
+   if (uname(&buffer) != 0)
+      return;
+
+   strlcpy(name, buffer.machine, sizeof_name);
 #elif defined(OSX)
-    size_t length = 0;
-    sysctlbyname("hw.model", name, &length, NULL, 0);
+   size_t length = 0;
+   sysctlbyname("hw.model", name, &length, NULL, 0);
 #endif
 }
 
@@ -287,12 +287,12 @@ static void frontend_apple_get_os(char *name, size_t sizeof_name, int *major, in
    (void)sizeof_name;
    (void)major;
    (void)minor;
-    
+
 #if defined(IOS)
-    get_ios_version(major, minor);
-    strlcpy(name, "iOS", sizeof_name);
+   get_ios_version(major, minor);
+   strlcpy(name, "iOS", sizeof_name);
 #elif defined(OSX)
-    strlcpy(name, "OSX", sizeof_name);
+   strlcpy(name, "OSX", sizeof_name);
 #endif
 }
 
@@ -305,7 +305,7 @@ static void frontend_apple_get_environment_settings(int *argc, char *argv[],
    CFURLRef bundle_url;
    CFStringRef bundle_path;
    CFBundleRef bundle = CFBundleGetMainBundle();
-    
+
    (void)temp_dir;
 
    if (!bundle)
@@ -313,16 +313,16 @@ static void frontend_apple_get_environment_settings(int *argc, char *argv[],
 
    bundle_url  = CFBundleCopyBundleURL(bundle);
    bundle_path = CFURLCopyPath(bundle_url);
-    
+
    CFStringGetCString(bundle_path, bundle_path_buf, sizeof(bundle_path_buf), kCFStringEncodingUTF8);
    (void)home_dir_buf;
 
    CFSearchPathForDirectoriesInDomains(CFDocumentDirectory, CFUserDomainMask, 1, home_dir_buf, sizeof(home_dir_buf));
-    
+
 #ifdef OSX
-    strlcat(home_dir_buf, "/RetroArch", sizeof(home_dir_buf));
+   strlcat(home_dir_buf, "/RetroArch", sizeof(home_dir_buf));
 #endif
-    
+
    fill_pathname_join(g_defaults.core_dir, home_dir_buf, "modules", sizeof(g_defaults.core_dir));
    fill_pathname_join(g_defaults.core_info_dir, home_dir_buf, "info", sizeof(g_defaults.core_info_dir));
    fill_pathname_join(g_defaults.overlay_dir, home_dir_buf, "overlays", sizeof(g_defaults.overlay_dir));
@@ -336,31 +336,31 @@ static void frontend_apple_get_environment_settings(int *argc, char *argv[],
    fill_pathname_join(g_defaults.cheats_dir, home_dir_buf, "cht", sizeof(g_defaults.cheats_dir));
    strlcpy(g_defaults.sram_dir, g_defaults.system_dir, sizeof(g_defaults.sram_dir));
    strlcpy(g_defaults.savestate_dir, g_defaults.system_dir, sizeof(g_defaults.savestate_dir));
-    
+
    CFTemporaryDirectory(temp_dir, sizeof(temp_dir));
    strlcpy(g_defaults.extraction_dir, temp_dir, sizeof(g_defaults.extraction_dir));
-    
+
    fill_pathname_join(g_defaults.shader_dir, home_dir_buf, "shaders_glsl", sizeof(g_defaults.shader_dir));
-    
+
 #if defined(OSX)
 #ifdef HAVE_CG
    fill_pathname_join(g_defaults.shader_dir, home_dir_buf, "shaders_cg", sizeof(g_defaults.shader_dir));
 #endif
-    fill_pathname_join(g_defaults.audio_filter_dir, home_dir_buf, "audio_filters", sizeof(g_defaults.audio_filter_dir));
-    fill_pathname_join(g_defaults.video_filter_dir, home_dir_buf, "video_filters", sizeof(g_defaults.video_filter_dir));
+   fill_pathname_join(g_defaults.audio_filter_dir, home_dir_buf, "audio_filters", sizeof(g_defaults.audio_filter_dir));
+   fill_pathname_join(g_defaults.video_filter_dir, home_dir_buf, "video_filters", sizeof(g_defaults.video_filter_dir));
 #endif
-    
+
    path_mkdir(bundle_path_buf);
-    
+
    if (access(bundle_path_buf, 0755) != 0)
       RARCH_ERR("Failed to create or access base directory: %s\n", bundle_path_buf);
-    else
-    {
-        path_mkdir(g_defaults.system_dir);
-        
-        if (access(g_defaults.system_dir, 0755) != 0)
-            RARCH_ERR("Failed to create or access system directory: %s.\n", g_defaults.system_dir);
-    }
+   else
+   {
+      path_mkdir(g_defaults.system_dir);
+
+      if (access(g_defaults.system_dir, 0755) != 0)
+         RARCH_ERR("Failed to create or access system directory: %s.\n", g_defaults.system_dir);
+   }
 
    CFRelease(bundle_path);
    CFRelease(bundle_url);
@@ -375,7 +375,7 @@ static void frontend_apple_load_content(void)
 {
    driver_t          *driver = driver_get_ptr();
    const ui_companion_driver_t *ui = ui_companion_get_ptr();
-    
+
    if (ui && ui->notify_content_loaded)
       ui->notify_content_loaded(driver->ui_companion_data);
 }
@@ -383,7 +383,7 @@ static void frontend_apple_load_content(void)
 static void frontend_apple_shutdown(bool unused)
 {
 #if defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH)
-    apple_rarch_exited();
+   apple_rarch_exited();
 #endif
 }
 
@@ -428,7 +428,7 @@ static int frontend_apple_get_rating(void)
          || strstr(model, "iPad4,7")
          || strstr(model, "iPad4,8")
          || strstr(model, "iPad4,9")
-         )
+      )
       return 15;
 
    /* iPad Air */
@@ -509,19 +509,19 @@ end:
 enum frontend_architecture frontend_apple_get_architecture(void)
 {
    struct utsname buffer;
-    
+
    if (uname(&buffer) != 0)
       return FRONTEND_ARCH_NONE;
-    
+
 #ifdef OSX
    if (!strcmp(buffer.machine, "x86_64"))
-       return FRONTEND_ARCH_X86_64;
-    if (!strcmp(buffer.machine, "x86"))
-        return FRONTEND_ARCH_X86;
-    if (!strcmp(buffer.machine, "Power Macintosh"))
-        return FRONTEND_ARCH_PPC;
+      return FRONTEND_ARCH_X86_64;
+   if (!strcmp(buffer.machine, "x86"))
+      return FRONTEND_ARCH_X86;
+   if (!strcmp(buffer.machine, "Power Macintosh"))
+      return FRONTEND_ARCH_PPC;
 #endif
-    
+
    return FRONTEND_ARCH_NONE;
 }
 
