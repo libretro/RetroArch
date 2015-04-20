@@ -19,13 +19,13 @@
 #include <file/file_path.h>
 #include <retro_miscellaneous.h>
 
-#include "../../ui/drivers/cocoa/cocoa_common.h"
-#include "../../input/input_common.h"
-#include "../../input/input_keymaps.h"
-#include "../../input/drivers/cocoa_input.h"
+#include "cocoa_common.h"
+#include "../../../input/input_common.h"
+#include "../../../input/input_keymaps.h"
+#include "../../../input/drivers/cocoa_input.h"
 
-#include "../../menu/menu_entries.h"
-#include "../../menu/drivers/shared.h"
+#include "../../../menu/menu_entries.h"
+#include "../../../menu/drivers/shared.h"
 
 /*********************************************/
 /* RunActionSheet                            */

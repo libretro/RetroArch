@@ -19,13 +19,13 @@
 #include <compat/apple_compat.h>
 #include <retro_miscellaneous.h>
 
-#include "../../ui/drivers/cocoa/cocoa_common.h"
-#include "../../settings.h"
-#include "../../input/drivers/cocoa_input.h"
+#include "cocoa_common.h"
+#include "../../../settings.h"
+#include "../../../input/drivers/cocoa_input.h"
 
-#include "../../driver.h"
-#include "../../input/input_common.h"
-#include "../../input/input_keymaps.h"
+#include "../../../driver.h"
+#include "../../../input/input_common.h"
+#include "../../../input/input_keymaps.h"
 
 static void* const associated_name_tag = (void*)&associated_name_tag;
 

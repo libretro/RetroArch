@@ -34,14 +34,14 @@
 #if defined(HAVE_COCOATOUCH)
 
 #if TARGET_OS_IPHONE
-#include "../apple/iOS/menu.m"
-#include "../apple/iOS/browser.m"
+#include "../ui/drivers/cocoa/cocoatouch_menu.m"
+#include "../ui/drivers/cocoa/cocoatouch_browser.m"
 
 #include "../ui/drivers/ui_cocoatouch.m"
 #endif
 
 #elif defined(HAVE_COCOA)
-#include "../apple/OSX/settings.m"
+#include "../ui/drivers/cocoa/cocoa_settings.m"
 
 #include "../ui/drivers/ui_cocoa.m"
 #endif

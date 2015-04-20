@@ -777,11 +777,11 @@ ifeq ($(HAVE_COMPRESSION), 1)
 endif 
 
 ifeq ($(HAVE_COCOA),1)
-	OBJ += apple/OSX/settings.o \
-			 input/drivers/cocoa_input.o \
+	OBJ += input/drivers/cocoa_input.o \
 			 input/drivers_keyboard/keyboard_event_apple.o \
 			 ui/drivers/ui_cocoa.o \
 			 ui/drivers/cocoa/cocoa_common.o \
+			 ui/drivers/cocoa/cocoa_settings.o \
 			 gfx/drivers_context/apple_cocoa_gl.o
 endif
 
