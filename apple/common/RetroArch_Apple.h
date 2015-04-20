@@ -168,7 +168,7 @@ extern apple_frontend_settings_t apple_frontend_settings;
 @interface RetroArch_iOS : UINavigationController<UIApplicationDelegate, UINavigationControllerDelegate, RetroArch_Platform>
 
 @property (nonatomic) UIWindow* window;
-@property (nonatomic) NSString* documentsDirectory; // e.g. /var/mobile/Documents
+@property (nonatomic) NSString* documentsDirectory;
 
 + (RetroArch_iOS*)get;
 
@@ -221,7 +221,6 @@ void get_ios_version(int *major, int *minor);
 
 extern id<RetroArch_Platform> apple_platform;
 
-/* utility.m */
 extern void apple_display_alert(const char *message, const char *title);
 
 @interface RANumberFormatter : NSNumberFormatter
