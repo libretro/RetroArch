@@ -14,8 +14,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __CFEXTENSIONS_H
-#define __CFEXTENSIONS_H
+#ifndef __COREFOUNDATION_TO_NSFOUNDATION_EXTENSIONS_H
+#define __COREFOUNDATION_TO_NSFOUNDATION_EXTENSIONS_H
 
 #include <CoreFoundation/CoreFoundation.h>
 #include <CoreFoundation/CFArray.h>
@@ -44,12 +44,11 @@ typedef enum
     CFPrinterDescriptionDirectory = 20,     // location of system's PPDs directory (Library/Printers/PPDs)
     CFSharedPublicDirectory = 21,           // location of user's Public sharing directory (~/Public)
     CFPreferencePanesDirectory = 22,        // location of the PreferencePanes directory for use with System Preferences (Library/PreferencePanes)
-    CFApplicationScriptsDirectory = 23,      // location of the user scripts folder for the calling application (~/Library/Application Scripts/code-signing-id)
-    CFItemReplacementDirectory = 99,	    // For use with NSFileManager's URLForDirectory:inDomain:appropriateForURL:create:error:
+    CFApplicationScriptsDirectory = 23,     // location of the user scripts folder for the calling application (~/Library/Application Scripts/code-signing-id)
+    CFItemReplacementDirectory = 99,	     // For use with NSFileManager's URLForDirectory:inDomain:appropriateForURL:create:error:
     CFAllApplicationsDirectory = 100,       // all directories where applications can occur
     CFAllLibrariesDirectory = 101,          // all directories where resources can occur
-    CFTrashDirectory = 102                   // location of Trash directory
-    
+    CFTrashDirectory = 102                  // location of Trash directory
 } CFSearchPathDirectory;
 
 typedef enum

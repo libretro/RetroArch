@@ -14,8 +14,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __RARCH_APPLE_H
-#define __RARCH_APPLE_H
+#ifndef __COCOA_COMMON_H
+#define __COCOA_COMMON_H
 
 #include <Foundation/Foundation.h>
 
