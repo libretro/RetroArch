@@ -18,29 +18,6 @@
 #include <sys/stat.h>
 #include "cocoa_common.h"
 
-void apple_display_alert(const char *message, const char *title)
-{
-#if defined(HAVE_COCOATOUCH)
-   UIAlertView* alert = [[UIAlertView alloc] initWithTitle:BOXSTRING(title)
-                                             message:BOXSTRING(message)
-                                             delegate:nil
-                                             cancelButtonTitle:BOXSTRING("OK")
-                                             otherButtonTitles:nil];
-   [alert show];
-#else
-   NSAlert* alert = [[NSAlert new] autorelease];
-   
-   [alert setMessageText:(*title) ? BOXSTRING(title) : BOXSTRING("RetroArch")];
-   [alert setInformativeText:BOXSTRING(message)];
-   [alert setAlertStyle:NSInformationalAlertStyle];
-   [alert beginSheetModalForWindow:[RetroArch_OSX get].window
-          modalDelegate:apple_platform
-          didEndSelector:@selector(alertDidEnd:returnCode:contextInfo:)
-          contextInfo:nil];
-   [[NSApplication sharedApplication] runModalForWindow:[alert window]];
-#endif
-}
-
 // Number formatter class for setting strings
 @implementation RANumberFormatter
 - (id)initWithSetting:(const rarch_setting_t*)setting

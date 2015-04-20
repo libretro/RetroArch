@@ -411,6 +411,20 @@ int main(int argc, char *argv[])
    return NSApplicationMain(argc, (const char **) argv);
 }
 
+void apple_display_alert(const char *message, const char *title)
+{
+    NSAlert* alert = [[NSAlert new] autorelease];
+    
+    [alert setMessageText:(*title) ? BOXSTRING(title) : BOXSTRING("RetroArch")];
+    [alert setInformativeText:BOXSTRING(message)];
+    [alert setAlertStyle:NSInformationalAlertStyle];
+    [alert beginSheetModalForWindow:[RetroArch_OSX get].window
+                      modalDelegate:apple_platform
+                     didEndSelector:@selector(alertDidEnd:returnCode:contextInfo:)
+                        contextInfo:nil];
+    [[NSApplication sharedApplication] runModalForWindow:[alert window]];
+}
+
 typedef struct ui_companion_cocoa
 {
    void *empty;

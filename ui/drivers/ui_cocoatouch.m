@@ -461,6 +461,16 @@ int main(int argc, char *argv[])
    }
 }
 
+void apple_display_alert(const char *message, const char *title)
+{
+   UIAlertView* alert = [[UIAlertView alloc] initWithTitle:BOXSTRING(title)
+                                             message:BOXSTRING(message)
+                                             delegate:nil
+                                             cancelButtonTitle:BOXSTRING("OK")
+                                             otherButtonTitles:nil];
+   [alert show];
+}
+
 typedef struct ui_companion_cocoatouch
 {
    void *empty;
