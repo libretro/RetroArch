@@ -58,10 +58,9 @@
 #include "../input/drivers_hid/libusb_hid.c"
 #include "../libretro-common/rthreads/rthreads.c"
 
-#include "../input/connect/connect_ps3.c"
-#include "../input/connect/connect_ps4.c"
-#include "../input/connect/connect_wii.c"
-#include "../input/connect/joypad_connection.c"
+#ifndef HAVE_HID
+#define HAVE_HID
+#endif
 #endif
 
 #if defined(__APPLE__) && defined(HAVE_IOHIDMANAGER)
