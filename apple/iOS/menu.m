@@ -19,7 +19,7 @@
 #include <file/file_path.h>
 #include <retro_miscellaneous.h>
 
-#include "../common/RetroArch_Apple.h"
+#include "../../ui/drivers/cocoa/cocoa_common.h"
 #include "../../input/input_common.h"
 #include "../../input/input_keymaps.h"
 #include "../../input/drivers/cocoa_input.h"

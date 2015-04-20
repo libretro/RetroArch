@@ -13,7 +13,7 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../apple/common/RetroArch_Apple.h"
+#include "cocoa/cocoa_common.h"
 #include <stdint.h>
 #include <boolean.h>
 #include <stddef.h>

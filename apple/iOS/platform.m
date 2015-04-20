@@ -16,7 +16,7 @@
 
 #include <string.h>
 
-#include "../common/RetroArch_Apple.h"
+#include "../../ui/drivers/cocoa/cocoa_common.h"
 #include "../../input/drivers/cocoa_input.h"
 #include "../../settings.h"
 #ifdef HAVE_MFI

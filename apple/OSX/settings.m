@@ -19,7 +19,7 @@
 #include <compat/apple_compat.h>
 #include <retro_miscellaneous.h>
 
-#import "../common/RetroArch_Apple.h"
+#include "../../ui/drivers/cocoa/cocoa_common.h"
 #include "../../settings.h"
 #include "../../input/drivers/cocoa_input.h"
 
