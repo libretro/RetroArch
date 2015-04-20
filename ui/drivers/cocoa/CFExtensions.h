@@ -17,7 +17,7 @@
 #ifndef __CFEXTENSIONS_H
 #define __CFEXTENSIONS_H
 
-#import <CoreFoundation/CoreFoundation.h>
+#include <CoreFoundation/CoreFoundation.h>
 #include <CoreFoundation/CFArray.h>
 
 typedef enum
