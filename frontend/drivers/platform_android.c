@@ -449,7 +449,7 @@ static bool android_run_events(void *data)
    return true;
 }
 
-static int system_property_get(const char *name, char *value)
+int system_property_get(const char *name, char *value)
 {
    FILE *pipe;
    int length = 0;

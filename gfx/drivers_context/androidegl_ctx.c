@@ -27,6 +27,9 @@
 
 #include <stdint.h>
 
+/* forward declaration */
+int system_property_get(const char *name, char *value);
+
 typedef struct gfx_ctx_android_data
 {
    bool g_use_hw_ctx;
@@ -382,83 +385,72 @@ static void android_gfx_ctx_bind_hw_render(void *data, bool enable)
          android->g_egl_hw_ctx : android->g_egl_ctx);
 }
 
-#define ANDROID_DENSITY_LOW      120
-#define ANDROID_DENSITY_MEDIUM   160
-#define ANDROID_DENSITY_TV       213
-#define ANDROID_DENSITY_XHIGH    320
-#define ANDROID_DENSITY_XXHIGH   480
-#define ANDROID_DENSITY_XXXHIGH  640
+static int system_property_get_density(char *value)
+{
+   FILE *pipe;
+   int length = 0;
+   char buffer[PATH_MAX_LENGTH];
+   char cmd[PATH_MAX_LENGTH];
+   char *curpos = NULL;
+
+   snprintf(cmd, sizeof(cmd), "wm density");
+
+   pipe = popen(cmd, "r");
+
+   if (!pipe)
+   {
+      RARCH_ERR("Could not create pipe.\n");
+      return 0;
+   }
+
+   curpos = value;
+   
+   while (!feof(pipe))
+   {
+      if (fgets(buffer, 128, pipe) != NULL)
+      {
+         int curlen = strlen(buffer);
+
+         memcpy(curpos, buffer, curlen);
+
+         curpos    += curlen;
+         length    += curlen;
+      }
+   }
+
+   *curpos = '\0';
+
+   pclose(pipe);
+
+   return length;
+}
+
+static void dpi_get_density(char *name, size_t sizeof_name)
+{
+   system_property_get("ro.sf.lcd_density", name);
+
+   if (name[0] == '\0')
+      system_property_get_density(name);
+}
 
 static bool android_gfx_ctx_get_metrics(void *data,
 	enum display_metric_types type, float *value)
 {
-   jobject metrics;
-   jmethodID getMetrics;
-   jclass class = NULL;
-   JNIEnv *env           = (JNIEnv*)jni_thread_getenv();
-
-   FIND_CLASS(env, class, "android/util/DisplayMetrics");
-   if (!class)
-      goto error;
-
-   GET_METHOD_ID(env, getMetrics, class, "getMetrics", "()Landroid/util/DisplayMetrics;");
-   if (!getMetrics)
-      goto error;
-
-   CALL_OBJ_STATIC_METHOD(env, metrics, class, getMetrics);
-   GET_OBJECT_CLASS(env, class, metrics);
-
-   /* Density */
-   float density         = (*env)->GetFloatField(env, metrics, (*env)->GetFieldID(env, class, "density", "F"));
-   float scaled_density  = (*env)->GetFloatField(env, metrics, (*env)->GetFieldID(env, class, "scaledDensity", "F"));
-   int     density_dpi   = (*env)->GetIntField(env,   metrics, (*env)->GetFieldID(env, class, "densityDpi", "I"));
-
-   /* Size */
-   int     width_pixels  = (*env)->GetIntField(env, metrics,   (*env)->GetFieldID(env, class, "widthPixels", "I"));
-   int    height_pixels  = (*env)->GetIntField(env, metrics,   (*env)->GetFieldID(env, class, "heightPixels", "I"));
-
-   /* DPI */
-   /* Apparently xdpi and ydpi can't be trusted to be implemented correctly, so don't try to rely on it...
-    *
-    * https://groups.google.com/forum/#!topic/android-developers/QjUlaRohRPI
-    *
-    * "The xdpi and ydpi are supposed to be the real DPI of the screen...  though as you've seen, 
-    * many devices don't set it correctly. :(  This is our fault, it isn't actually used anywhere 
-    * in the platform, so people don't realize they have a bad value, and we haven't had a CTS 
-    * test to try to make sure it is sane (it's not clear how that test should work).  Worse, we 
-    * shipping the original Droid with a graphics driver that reports the wrong value here...  
-    * in fact that reported that same damnable 96."
-    *
-    * Unfortunately, I don't have a good solution if you want to get the real exactly screen dots per inch.  
-    * One thing you could do is compare xdpi/ydpi with densityDpi and if they are significantly 
-    * far apart, assume the values are bad and just fall back on densityDpi as an approximation.  
-    *
-    * Be careful on this, because a correctly working device may have densityDpi fairly different 
-    * than the real dpi -- for example the Samsung TAB uses high density even though its screen's 
-    * really density is a fair amount lower than 240."
-    */
-   float xdpi = (*env)->GetFloatField(env, metrics, (*env)->GetFieldID(env, class, "xdpi", "F"));
-   float ydpi = (*env)->GetFloatField(env, metrics, (*env)->GetFieldID(env, class, "ydpi", "F"));
-
-   (void)width_pixels;
-   (void)height_pixels;
-   (void)scaled_density;
-   (void)density;
-   (void)density_dpi;
+   int dpi;
+   char density[PROP_VALUE_MAX];
+   dpi_get_density(density, sizeof(density));
 
    switch (type)
    {
       case DISPLAY_METRIC_MM_WIDTH:
-         /* can't guarantee this to be accurate - so return false anyway. */
-         *value = xdpi;
          return false;
       case DISPLAY_METRIC_MM_HEIGHT:
-         /* can't guarantee this to be accurate - so return false anyway. */
-         *value = ydpi;
          return false;
       case DISPLAY_METRIC_DPI:
-         /* just go with quantized DPI. */
-         *value = density_dpi;
+         if (density[0] == '\0')
+            return false;
+         dpi    = atoi(density);
+         *value = (float)dpi;
          break;
       case DISPLAY_METRIC_NONE:
       default:
@@ -467,9 +459,6 @@ static bool android_gfx_ctx_get_metrics(void *data,
    }
 
    return true;
-
-error:
-   return false;
 }
 
 const gfx_ctx_driver_t gfx_ctx_android = {
