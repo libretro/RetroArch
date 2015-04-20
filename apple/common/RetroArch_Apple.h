@@ -185,13 +185,13 @@ void get_ios_version(int *major, int *minor);
 
 #elif defined(HAVE_COCOA)
 #include <AppKit/AppKit.h>
-#ifdef HAVE_LOCATION
+#ifdef HAVE_CORELOCATION
 #include <CoreLocation/CoreLocation.h>
 #endif
 
 
 @interface RAGameView : NSView
-#ifdef HAVE_LOCATION
+#ifdef HAVE_CORELOCATION
 <CLLocationManagerDelegate>
 #endif
 

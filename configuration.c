@@ -381,8 +381,8 @@ const char *config_get_default_location(void)
    {
       case LOCATION_ANDROID:
          return "android";
-      case LOCATION_APPLE:
-         return "apple";
+      case LOCATION_CORELOCATION:
+         return "corelocation";
       default:
          break;
    }

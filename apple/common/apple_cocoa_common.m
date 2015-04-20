@@ -476,7 +476,7 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
 }
 #endif
 
-#ifdef HAVE_LOCATION
+#ifdef HAVE_CORELOCATION
 #include <CoreLocation/CoreLocation.h>
 
 static CLLocationManager *locationManager;
@@ -634,7 +634,7 @@ camera_driver_t camera_apple = {
 };
 #endif
 
-#ifdef HAVE_LOCATION
+#ifdef HAVE_CORELOCATION
 typedef struct apple_location
 {
 	void *empty;
@@ -708,14 +708,14 @@ fail:
    return false;
 }
 
-location_driver_t location_apple = {
+location_driver_t location_corelocation = {
 	apple_location_init,
 	apple_location_free,
 	apple_location_start,
 	apple_location_stop,
 	apple_location_get_position,
 	apple_location_set_interval,
-	"apple",
+	"corelocation",
 };
 #endif
 

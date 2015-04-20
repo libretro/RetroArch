@@ -40,7 +40,7 @@ typedef struct location_driver
    const char *ident;
 } location_driver_t;
 
-extern location_driver_t location_apple;
+extern location_driver_t location_corelocation;
 extern location_driver_t location_android;
 extern location_driver_t location_null;
 
