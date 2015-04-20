@@ -19,9 +19,7 @@
 #include <retro_miscellaneous.h>
 #include <file/file_path.h>
 
-#if defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH)
 #include "../../ui/drivers/cocoa/CFExtensions.h"
-#endif
 
 #include "../frontend_driver.h"
 #include "../../ui/ui_companion_driver.h"
