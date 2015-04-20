@@ -152,7 +152,7 @@ int16_t pad_connection_get_axis(joypad_connection_t *joyconn,
 
 bool pad_connection_has_interface(joypad_connection_t *joyconn, unsigned pad)
 {
-   if (joyconn && pad >= 0 && pad < MAX_USERS && joyconn[pad].connected && joyconn[pad].iface)
+   if (joyconn && pad < MAX_USERS && joyconn[pad].connected && joyconn[pad].iface)
       return true;
    return false;
 }
