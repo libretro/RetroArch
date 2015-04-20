@@ -755,10 +755,12 @@ ifneq ($(findstring Win32,$(OS)),)
 endif
 
 ifeq ($(HAVE_AVFOUNDATION), 1)
+ifeq ($(HAVE_COCOA), 1)
    DEFINES += -DHAVE_AVFOUNDATION
    LIBS += -framework AVFoundation
    LIBS += -framework CoreVideo
    LIBS += -framework CoreMedia
+endif
 endif
 
 # Record

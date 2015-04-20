@@ -26,7 +26,9 @@ static const location_driver_t *location_drivers[] = {
    &location_android,
 #endif
 #ifdef HAVE_CORELOCATION
+#if defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH)
    &location_corelocation,
+#endif
 #endif
    &location_null,
    NULL,
