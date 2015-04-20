@@ -217,13 +217,7 @@ extern id<RetroArch_Platform> apple_platform;
 
 extern void apple_display_alert(const char *message, const char *title);
 
-@interface RANumberFormatter : NSNumberFormatter
-#if defined(HAVE_COCOATOUCH)
-<UITextFieldDelegate>
-#endif
 
-- (id)initWithSetting:(const rarch_setting_t*)setting;
-@end
 
 #define BOXSTRING(x) [NSString stringWithUTF8String:x]
 #define BOXINT(x)    [NSNumber numberWithInt:x]
