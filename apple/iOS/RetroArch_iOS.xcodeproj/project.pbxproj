@@ -42,6 +42,8 @@
 		503700A71ACA18E400A51A37 /* cht in Resources */ = {isa = PBXBuildFile; fileRef = 84F9A9C11A87E180003AF12F /* cht */; };
 		503700A81ACA18E400A51A37 /* cursors in Resources */ = {isa = PBXBuildFile; fileRef = 84F9A9C41A87E1D0003AF12F /* cursors */; };
 		503700A91ACA18E400A51A37 /* rdb in Resources */ = {isa = PBXBuildFile; fileRef = 84F9A9C61A87E1E8003AF12F /* rdb */; };
+		5040F0501AE47ED4006F6972 /* libz.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 5040F04F1AE47ED4006F6972 /* libz.dylib */; };
+		5040F0511AE47EE2006F6972 /* libz.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 5040F04F1AE47ED4006F6972 /* libz.dylib */; };
 		5041BAF41A9D40D000A77A33 /* GameController.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 963C3C33186E3DED00A6EB1E /* GameController.framework */; settings = {ATTRIBUTES = (Weak, ); }; };
 		50521A441AA23BF500185CC9 /* griffin_objc.m in Sources */ = {isa = PBXBuildFile; fileRef = 50521A431AA23BF500185CC9 /* griffin_objc.m */; };
 		50C3B1AE1AB1107200F478D3 /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 50C3B1AD1AB1107100F478D3 /* QuartzCore.framework */; };
@@ -78,6 +80,7 @@
 		501881ED184BB54C006F665D /* CoreMedia.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreMedia.framework; path = System/Library/Frameworks/CoreMedia.framework; sourceTree = SDKROOT; };
 		503700AD1ACA18E400A51A37 /* RetroArch copy.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "RetroArch copy.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		503700AE1ACA18E400A51A37 /* RetroArch copy-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = "RetroArch copy-Info.plist"; path = "/Users/squarepusher/libretro-super/retroarch/apple/iOS/RetroArch copy-Info.plist"; sourceTree = "<absolute>"; };
+		5040F04F1AE47ED4006F6972 /* libz.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libz.dylib; path = usr/lib/libz.dylib; sourceTree = SDKROOT; };
 		50521A431AA23BF500185CC9 /* griffin_objc.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = griffin_objc.m; path = ../../griffin/griffin_objc.m; sourceTree = "<group>"; };
 		50C3B1AD1AB1107100F478D3 /* QuartzCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QuartzCore.framework; path = System/Library/Frameworks/QuartzCore.framework; sourceTree = SDKROOT; };
 		50CCC827185E0E7D001F5BC8 /* CoreLocation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreLocation.framework; path = System/Library/Frameworks/CoreLocation.framework; sourceTree = SDKROOT; };
@@ -115,6 +118,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				5040F0511AE47EE2006F6972 /* libz.dylib in Frameworks */,
 				5037008E1ACA18E400A51A37 /* QuartzCore.framework in Frameworks */,
 				503700901ACA18E400A51A37 /* CoreText.framework in Frameworks */,
 				503700911ACA18E400A51A37 /* CoreLocation.framework in Frameworks */,
@@ -135,6 +139,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				5040F0501AE47ED4006F6972 /* libz.dylib in Frameworks */,
 				50C3B1AE1AB1107200F478D3 /* QuartzCore.framework in Frameworks */,
 				5041BAF41A9D40D000A77A33 /* GameController.framework in Frameworks */,
 				696012F219F3389A006A1088 /* CoreText.framework in Frameworks */,
@@ -209,6 +214,7 @@
 		96AFAE2816C1D4EA009DE44C /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				5040F04F1AE47ED4006F6972 /* libz.dylib */,
 				50C3B1AD1AB1107100F478D3 /* QuartzCore.framework */,
 				696012F119F3389A006A1088 /* CoreText.framework */,
 				963C3C33186E3DED00A6EB1E /* GameController.framework */,
@@ -494,7 +500,7 @@
 					"-DHAVE_NETWORKING",
 					"-DHAVE_CAMERA",
 					"-DHAVE_GRIFFIN",
-               "-DHAVE_CORETEXT",
+					"-DHAVE_CORETEXT",
 					"-DHAVE_LOCATION",
 					"-DHAVE_RGUI",
 					"-DHAVE_MENU",
@@ -513,9 +519,8 @@
 					"-DHAVE_DYNAMIC",
 					"-DHAVE_OVERLAY",
 					"-DHAVE_ZLIB",
-               "-DHAVE_RPNG",
-               "-DHAVE_COCOATOUCH",
-					"-DWANT_ZLIB",
+					"-DHAVE_RPNG",
+					"-DHAVE_COCOATOUCH",
 					"-DSINC_LOWER_QUALITY",
 					"-DRARCH_INTERNAL",
 					"-DHAVE_THREADS",
@@ -578,9 +583,8 @@
 					"-DHAVE_DYNAMIC",
 					"-DHAVE_OVERLAY",
 					"-DHAVE_ZLIB",
-               "-DHAVE_RPNG",
-               "-DHAVE_COCOATOUCH",
-					"-DWANT_ZLIB",
+					"-DHAVE_RPNG",
+					"-DHAVE_COCOATOUCH",
 					"-DSINC_LOWER_QUALITY",
 					"-DRARCH_INTERNAL",
 					"-DHAVE_THREADS",
@@ -617,9 +621,8 @@
 					"-DRARCH_INTERNAL",
 					"-DHAVE_OVERLAY",
 					"-DHAVE_ZLIB",
-               "-DHAVE_RPNG",
-               "-DHAVE_COCOATOUCH",
-					"-DWANT_ZLIB",
+					"-DHAVE_RPNG",
+					"-DHAVE_COCOATOUCH",
 					"-DSINC_LOWER_QUALITY",
 					"-DHAVE_THREADS",
 					"-DHAVE_FILTERS_BUILTIN",
@@ -688,9 +691,8 @@
 					"-DHAVE_FBO",
 					"-DHAVE_OVERLAY",
 					"-DHAVE_ZLIB",
-               "-DHAVE_RPNG",
-               "-DHAVE_COCOATOUCH",
-					"-DWANT_ZLIB",
+					"-DHAVE_RPNG",
+					"-DHAVE_COCOATOUCH",
 					"-DSINC_LOWER_QUALITY",
 				);
 				"OTHER_LDFLAGS[arch=*]" = "";
@@ -748,9 +750,8 @@
 					"-DHAVE_FBO",
 					"-DHAVE_OVERLAY",
 					"-DHAVE_ZLIB",
-               "-DHAVE_RPNG",
-               "-DHAVE_COCOATOUCH",
-					"-DWANT_ZLIB",
+					"-DHAVE_RPNG",
+					"-DHAVE_COCOATOUCH",
 					"-DSINC_LOWER_QUALITY",
 				);
 				"OTHER_LDFLAGS[arch=*]" = "";
@@ -807,9 +808,8 @@
 					"-DHAVE_DYNAMIC",
 					"-DHAVE_OVERLAY",
 					"-DHAVE_ZLIB",
-               "-DHAVE_RPNG",
-               "-DHAVE_COCOATOUCH",
-					"-DWANT_ZLIB",
+					"-DHAVE_RPNG",
+					"-DHAVE_COCOATOUCH",
 					"-DSINC_LOWER_QUALITY",
 					"-DRARCH_INTERNAL",
 					"-DHAVE_THREADS",
@@ -818,7 +818,7 @@
 					"-DHAVE_XMB",
 					"-D_LZMA_UINT32_IS_ULONG",
 					"-DHAVE_MFI",
-               "-DHAVE_AVFOUNDATION",
+					"-DHAVE_AVFOUNDATION",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE = "";
@@ -874,9 +874,8 @@
 					"-DHAVE_DYNAMIC",
 					"-DHAVE_OVERLAY",
 					"-DHAVE_ZLIB",
-               "-DHAVE_RPNG",
-               "-DHAVE_COCOATOUCH",
-					"-DWANT_ZLIB",
+					"-DHAVE_RPNG",
+					"-DHAVE_COCOATOUCH",
 					"-DSINC_LOWER_QUALITY",
 					"-DRARCH_INTERNAL",
 					"-DHAVE_THREADS",
@@ -886,7 +885,7 @@
 					"-DHAVE_XMB",
 					"-D_LZMA_UINT32_IS_ULONG",
 					"-DHAVE_MFI",
-               "-DHAVE_AVFOUNDATION",
+					"-DHAVE_AVFOUNDATION",
 				);
 				"OTHER_CFLAGS[arch=*]" = (
 					"-DNS_BLOCK_ASSERTIONS=1",
@@ -915,9 +914,8 @@
 					"-DRARCH_INTERNAL",
 					"-DHAVE_OVERLAY",
 					"-DHAVE_ZLIB",
-               "-DHAVE_RPNG",
-               "-DHAVE_COCOATOUCH",
-					"-DWANT_ZLIB",
+					"-DHAVE_RPNG",
+					"-DHAVE_COCOATOUCH",
 					"-DSINC_LOWER_QUALITY",
 					"-DHAVE_THREADS",
 					"-DHAVE_FILTERS_BUILTIN",
@@ -926,7 +924,7 @@
 					"-DHAVE_XMB",
 					"-D_LZMA_UINT32_IS_ULONG",
 					"-DHAVE_MFI",
-               "-DHAVE_AVFOUNDATION",
+					"-DHAVE_AVFOUNDATION",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE = "";
