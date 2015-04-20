@@ -24,6 +24,7 @@
 #endif
 
 #include "../../input/drivers_hid/btstack_hid.h"
+#include "../../frontend/frontend.h"
 
 id<RetroArch_Platform> apple_platform;
 static CFRunLoopObserverRef iterate_observer;
