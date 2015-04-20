@@ -173,7 +173,6 @@ extern apple_frontend_settings_t apple_frontend_settings;
 - (void)showGameView;
 - (void)toggleUI;
 
-- (void)loadingCore:(NSString*)core withFile:(const char*)file;
 - (void)unloadingCore;
 
 - (void)refreshSystemConfig;

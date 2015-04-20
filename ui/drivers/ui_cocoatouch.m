@@ -404,11 +404,6 @@ enum
    [self.window setRootViewController:self];
 }
 
-- (void)loadingCore:(NSString*)core withFile:(const char*)file
-{
- 
-}
-
 - (void)toggleUI
 {
    runloop_t *runloop = rarch_main_get_ptr();
