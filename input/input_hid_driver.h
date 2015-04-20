@@ -43,7 +43,7 @@ struct hid_driver
    const char *ident;
 };
 
-extern hid_driver_t apple_hid;
+extern hid_driver_t iohidmanager_hid;
 extern hid_driver_t btstack_hid;
 extern hid_driver_t libusb_hid;
 extern hid_driver_t null_hid;
