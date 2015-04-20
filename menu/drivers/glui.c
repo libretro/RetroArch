@@ -297,6 +297,8 @@ static void glui_render(void)
    if (!gl)
       return;
 
+   menu_animation_update(menu->animation, menu->dt / IDEAL_DT);
+
    menu->frame_buf.width  = gl->win_width;
    menu->frame_buf.height = gl->win_height;
 
@@ -650,6 +652,7 @@ static void glui_navigation_set(bool scroll)
    glui_handle_t *glui = NULL;
    menu_handle_t *menu = menu_driver_get_ptr();
    gl_t *gl = (gl_t*)video_driver_get_ptr(NULL);
+   float sy = 0;
 
    if (!menu)
       return;
@@ -664,9 +667,12 @@ static void glui_navigation_set(bool scroll)
    int half = (gl->win_height / glui->line_height) / 2;
 
    if (menu->navigation.selection_ptr < half)
-      menu->scroll_y = 0;
+      sy = 0;
    else
-      menu->scroll_y = ((menu->navigation.selection_ptr + 2 - half) * glui->line_height);
+      sy = ((menu->navigation.selection_ptr + 2 - half) * glui->line_height);
+
+   menu_animation_push(menu->animation, 10, sy,
+         &menu->scroll_y, EASING_IN_OUT_QUAD, NULL);
 }
 
 static void glui_navigation_set_last(void)

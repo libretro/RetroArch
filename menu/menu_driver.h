@@ -113,7 +113,7 @@ typedef struct
 
    size_t begin;
    unsigned header_height;
-   int scroll_y;
+   float scroll_y;
 
    menu_list_t *menu_list;
    menu_navigation_t navigation;
