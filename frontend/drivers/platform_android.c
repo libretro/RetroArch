@@ -857,17 +857,17 @@ static int frontend_android_get_rating(void)
 }
 
 const frontend_ctx_driver_t frontend_ctx_android = {
-   frontend_android_get_environment_settings, /* get_environment_settings */
-   frontend_android_init,        /* init */
-   frontend_android_deinit,      /* deinit */
+   frontend_android_get_environment_settings,
+   frontend_android_init,
+   frontend_android_deinit,
    NULL,                         /* exitspawn */
    NULL,                         /* process_args */
    NULL,                         /* exec */
    NULL,                         /* set_fork */
-   frontend_android_shutdown,    /* shutdown */
-   frontend_android_get_name,    /* get_name */
+   frontend_android_shutdown,
+   frontend_android_get_name,
    NULL,                         /* get_os */
-   frontend_android_get_rating,  /* get_rating */
+   frontend_android_get_rating,
    NULL,                         /* load_content */
    NULL,                         /* get_powerstate */
    "android",
