@@ -247,7 +247,7 @@ static void poll_iteration(void)
    if (global && global->main_is_init)
       reply = NSTerminateCancel;
 
-   event_command(EVENT_CMD_QUIT);
+   ui_companion_event_command(EVENT_CMD_QUIT);
 
    return reply;
 }
@@ -265,7 +265,7 @@ static void poll_iteration(void)
          strlcpy(global->fullpath, __core.UTF8String, sizeof(global->fullpath));
 
       if (core_name)
-         event_command(EVENT_CMD_LOAD_CONTENT);
+         ui_companion_event_command(EVENT_CMD_LOAD_CONTENT);
 
       [sender replyToOpenOrPrint:NSApplicationDelegateReplySuccess];
    }
@@ -295,7 +295,7 @@ static void poll_iteration(void)
             strlcpy(global->fullpath, __core.UTF8String, sizeof(global->fullpath));
 
          if (core_name)
-            event_command(EVENT_CMD_LOAD_CONTENT);
+            ui_companion_event_command(EVENT_CMD_LOAD_CONTENT);
          else
             [self performSelector:@selector(chooseCore) withObject:nil afterDelay:.5f];
       }
@@ -380,7 +380,7 @@ static void poll_iteration(void)
       cmd = EVENT_CMD_RESIZE_WINDOWED_SCALE;
    }
 
-   event_command(cmd);
+   ui_companion_event_command(cmd);
 }
 
 - (void)alertDidEnd:(NSAlert *)alert returnCode:(int32_t)returnCode contextInfo:(void *)contextInfo
