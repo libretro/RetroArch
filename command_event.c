@@ -936,7 +936,7 @@ static bool event_update_system_info(struct retro_system_info *_info,
  *
  * Returns: true (1) on success, otherwise false (0).
  **/
-bool event_command(unsigned cmd)
+bool event_command(enum event_command cmd)
 {
    unsigned i           = 0;
    bool boolean         = false;
@@ -1613,6 +1613,8 @@ bool event_command(unsigned cmd)
          break;
       case EVENT_CMD_VOLUME_DOWN:
          event_set_volume(-0.5f);
+         break;
+      case EVENT_CMD_NONE:
          break;
    }
 

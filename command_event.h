@@ -247,7 +247,7 @@ void event_disk_control_append_image(const char *path);
  *
  * Returns: true (1) on success, otherwise false (0).
  **/
-bool event_command(unsigned action);
+bool event_command(enum event_command action);
 
 #ifdef __cplusplus
 }
