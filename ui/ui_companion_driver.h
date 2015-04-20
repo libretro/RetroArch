@@ -43,6 +43,7 @@ typedef struct ui_companion_driver
 } ui_companion_driver_t;
 
 extern const ui_companion_driver_t ui_companion_null;
+extern const ui_companion_driver_t ui_companion_cocoa;
 extern const ui_companion_driver_t ui_companion_cocoatouch;
 extern const ui_companion_driver_t ui_companion_qt;
 

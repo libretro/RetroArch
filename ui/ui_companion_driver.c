@@ -22,6 +22,9 @@
 #endif
 
 static const ui_companion_driver_t *ui_companion_drivers[] = {
+#ifdef HAVE_COCOA
+   &ui_companion_cocoa,
+#endif
 #ifdef HAVE_COCOATOUCH
    &ui_companion_cocoatouch,
 #endif
