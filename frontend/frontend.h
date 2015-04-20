@@ -22,10 +22,6 @@
 #include <stddef.h>
 #include <boolean.h>
 
-#if defined(ANDROID)
-#include "drivers/platform_android.h"
-#endif
-
 #ifdef __cplusplus
 extern "C" {
 #endif
