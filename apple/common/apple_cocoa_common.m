@@ -624,7 +624,7 @@ static bool apple_camera_poll(void *data, retro_camera_frame_raw_framebuffer_t f
    return true;
 }
 
-camera_driver_t camera_apple = {
+camera_driver_t camera_avfoundation = {
    apple_camera_init,
    apple_camera_free,
    apple_camera_start,

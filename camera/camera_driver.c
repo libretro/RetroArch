@@ -32,7 +32,7 @@ static const camera_driver_t *camera_drivers[] = {
    &camera_android,
 #endif
 #ifdef HAVE_AVFOUNDATION
-    &camera_apple,
+    &camera_avfoundation,
 #endif
    &camera_null,
    NULL,
