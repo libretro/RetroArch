@@ -32,10 +32,6 @@
 #define args_initial_ptr() NULL
 #endif
 
-#if !defined(__APPLE__) && !defined(EMSCRIPTEN)
-#define HAVE_MAIN_LOOP
-#endif
-
 #define MAX_ARGS 32
 
 /**
@@ -274,7 +270,7 @@ error:
  *
  * Main function of RetroArch.
  *
- * If HAVE_MAIN_LOOP is defined, will contain main loop and will not
+ * If HAVE_MAIN is not defined, will contain main loop and will not
  * be exited from until we exit the program. Otherwise, will 
  * just do initialization.
  *
@@ -344,7 +340,7 @@ int rarch_main(int argc, char *argv[])
          driver->ui_companion->toggle(driver->ui_companion_data);
    }
 
-#if defined(HAVE_MAIN_LOOP)
+#ifndef HAVE_MAIN
    while (rarch_main_iterate() != -1);
 
    main_exit(args);

@@ -53,7 +53,7 @@ void main_exit_save_config(void);
  *
  * Main function of RetroArch.
  *
- * If HAVE_MAIN_LOOP is defined, will contain main loop and will not
+ * If HAVE_MAIN is not defined, will contain main loop and will not
  * be exited from until we exit the program. Otherwise, will 
  * just do initialization.
  *
