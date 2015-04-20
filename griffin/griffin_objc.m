@@ -34,7 +34,6 @@
 #if defined(HAVE_COCOATOUCH)
 
 #if TARGET_OS_IPHONE
-#include "../apple/iOS/platform.m"
 #include "../apple/iOS/menu.m"
 #include "../apple/iOS/browser.m"
 
@@ -42,7 +41,6 @@
 #endif
 
 #elif defined(HAVE_COCOA)
-#include "../apple/OSX/platform.m"
 #include "../apple/OSX/settings.m"
 
 #include "../ui/drivers/ui_cocoa.m"
