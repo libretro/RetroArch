@@ -81,7 +81,7 @@ const ui_companion_driver_t *ui_companion_get_ptr(void)
    return driver->ui_companion;
 }
 
-void ui_companion_event_command(unsigned action)
+void ui_companion_event_command(enum event_command action)
 {
    driver_t *driver        = driver_get_ptr();
    const ui_companion_driver_t *ui = ui_companion_get_ptr();

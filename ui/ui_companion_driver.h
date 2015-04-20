@@ -36,7 +36,7 @@ typedef struct ui_companion_driver
    void (*deinit)(void *data);
    int  (*iterate)(void *data, unsigned action);
    void (*toggle)(void *data);
-   void (*event_command)(void *data, unsigned action);
+   void (*event_command)(void *data, enum event_command action);
    void (*notify_content_loaded)(void *data);
 
    const char *ident;
@@ -68,7 +68,7 @@ const ui_companion_driver_t *ui_companion_get_ptr(void);
  **/
 const ui_companion_driver_t *ui_companion_init_first(void);
 
-void ui_companion_event_command(unsigned action);
+void ui_companion_event_command(enum event_command action);
 
 #ifdef __cplusplus
 }
