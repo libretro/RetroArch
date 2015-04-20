@@ -19,7 +19,6 @@
 
 #include <Foundation/Foundation.h>
 
-#include "CFExtensions.h"
 #include "../../core_info.h"
 #include "../../playlist.h"
 #include "../../settings.h"

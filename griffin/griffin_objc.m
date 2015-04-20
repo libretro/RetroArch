@@ -23,6 +23,10 @@
 #define __IPHONE_OS_VERSION_MAX_ALLOWED 00000
 #endif
 
+#if defined(__APPLE__)
+#include "../frontend/drivers/platform_apple.m"
+#endif
+
 #if defined(HAVE_COCOATOUCH) || defined(HAVE_COCOA)
 #include "../gfx/drivers_context/apple_cocoa_gl.m"
 #include "../ui/drivers/cocoa/cocoa_common.m"
