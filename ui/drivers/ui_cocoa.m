@@ -30,22 +30,12 @@ typedef struct ui_companion_cocoa
 
 static void ui_companion_cocoa_notify_content_loaded(void *data)
 {
-   RetroArch_iOS *ap = (RetroArch_iOS *)apple_platform;
-   
     (void)data;
-    
-   if (ap)
-      [ap showGameView];
 }
 
 static void ui_companion_cocoa_toggle(void *data)
 {
-   RetroArch_iOS *ap   = (RetroArch_iOS *)apple_platform;
-
    (void)data;
-
-   if (ap)
-      [ap toggleUI];
 }
 
 static int ui_companion_cocoa_iterate(void *data, unsigned action)
