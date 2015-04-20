@@ -209,8 +209,6 @@ void get_ios_version(int *major, int *minor);
 
 @property (nonatomic, retain) NSWindow IBOutlet* window;
 
-+ (RetroArch_OSX*)get;
-
 - (void)loadingCore:(NSString*)core withFile:(const char*)file;
 - (void)unloadingCore;
 

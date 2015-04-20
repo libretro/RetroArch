@@ -156,11 +156,6 @@ static char** waiting_argv;
    [super dealloc];
 }
 
-+ (RetroArch_OSX*)get
-{
-   return (RetroArch_OSX*)[[NSApplication sharedApplication] delegate];
-}
-
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification
 {
    apple_platform = self;
@@ -418,7 +413,7 @@ void apple_display_alert(const char *message, const char *title)
     [alert setMessageText:(*title) ? BOXSTRING(title) : BOXSTRING("RetroArch")];
     [alert setInformativeText:BOXSTRING(message)];
     [alert setAlertStyle:NSInformationalAlertStyle];
-    [alert beginSheetModalForWindow:[RetroArch_OSX get].window
+    [alert beginSheetModalForWindow:((RetroArch_OSX*)[[NSApplication sharedApplication] delegate]).window
                       modalDelegate:apple_platform
                      didEndSelector:@selector(alertDidEnd:returnCode:contextInfo:)
                         contextInfo:nil];
