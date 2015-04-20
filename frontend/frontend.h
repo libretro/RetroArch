@@ -61,10 +61,8 @@ void main_exit_save_config(void);
  **/
 #if defined(ANDROID)
 void android_app_entry(void *data);
-#elif defined(__APPLE__) || defined(HAVE_BB10) || defined(EMSCRIPTEN)
-int rarch_main(int argc, char *argv[]);
 #else
-int main(int argc, char *argv[]);
+int rarch_main(int argc, char *argv[]);
 #endif
 
 /**

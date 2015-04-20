@@ -521,6 +521,7 @@
 					"-DHAVE_ZLIB",
 					"-DHAVE_RPNG",
 					"-DHAVE_COCOATOUCH",
+					"-DHAVE_MAIN",
 					"-DSINC_LOWER_QUALITY",
 					"-DRARCH_INTERNAL",
 					"-DHAVE_THREADS",
@@ -585,6 +586,7 @@
 					"-DHAVE_ZLIB",
 					"-DHAVE_RPNG",
 					"-DHAVE_COCOATOUCH",
+					"-DHAVE_MAIN",
 					"-DSINC_LOWER_QUALITY",
 					"-DRARCH_INTERNAL",
 					"-DHAVE_THREADS",
@@ -623,6 +625,7 @@
 					"-DHAVE_ZLIB",
 					"-DHAVE_RPNG",
 					"-DHAVE_COCOATOUCH",
+					"-DHAVE_MAIN",
 					"-DSINC_LOWER_QUALITY",
 					"-DHAVE_THREADS",
 					"-DHAVE_FILTERS_BUILTIN",
@@ -693,6 +696,7 @@
 					"-DHAVE_ZLIB",
 					"-DHAVE_RPNG",
 					"-DHAVE_COCOATOUCH",
+					"-DHAVE_MAIN",
 					"-DSINC_LOWER_QUALITY",
 				);
 				"OTHER_LDFLAGS[arch=*]" = "";
@@ -752,6 +756,7 @@
 					"-DHAVE_ZLIB",
 					"-DHAVE_RPNG",
 					"-DHAVE_COCOATOUCH",
+					"-DHAVE_MAIN",
 					"-DSINC_LOWER_QUALITY",
 				);
 				"OTHER_LDFLAGS[arch=*]" = "";
@@ -810,6 +815,7 @@
 					"-DHAVE_ZLIB",
 					"-DHAVE_RPNG",
 					"-DHAVE_COCOATOUCH",
+					"-DHAVE_MAIN",
 					"-DSINC_LOWER_QUALITY",
 					"-DRARCH_INTERNAL",
 					"-DHAVE_THREADS",
@@ -876,6 +882,7 @@
 					"-DHAVE_ZLIB",
 					"-DHAVE_RPNG",
 					"-DHAVE_COCOATOUCH",
+					"-DHAVE_MAIN",
 					"-DSINC_LOWER_QUALITY",
 					"-DRARCH_INTERNAL",
 					"-DHAVE_THREADS",
@@ -916,6 +923,7 @@
 					"-DHAVE_ZLIB",
 					"-DHAVE_RPNG",
 					"-DHAVE_COCOATOUCH",
+					"-DHAVE_MAIN",
 					"-DSINC_LOWER_QUALITY",
 					"-DHAVE_THREADS",
 					"-DHAVE_FILTERS_BUILTIN",

@@ -756,7 +756,7 @@ endif
 
 ifeq ($(HAVE_AVFOUNDATION), 1)
 ifeq ($(HAVE_COCOA), 1)
-   DEFINES += -DHAVE_AVFOUNDATION
+   DEFINES += -DHAVE_AVFOUNDATION 
    LIBS += -framework AVFoundation
    LIBS += -framework CoreVideo
    LIBS += -framework CoreMedia
@@ -777,6 +777,7 @@ ifeq ($(HAVE_COMPRESSION), 1)
 endif 
 
 ifeq ($(HAVE_COCOA),1)
+	DEFINES += -DHAVE_MAIN
 	OBJ += input/drivers/cocoa_input.o \
 			 input/drivers_keyboard/keyboard_event_apple.o \
 			 ui/drivers/ui_cocoa.o \
