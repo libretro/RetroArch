@@ -25,9 +25,9 @@
 
 #include "cocoa/cocoa_common.h"
 #include "../ui_companion_driver.h"
-#include "../input/drivers/cocoa_input.h"
-#include "../frontend/frontend.h"
-#include "../retroarch.h"
+#include "../../input/drivers/cocoa_input.h"
+#include "../../frontend/frontend.h"
+#include "../../retroarch.h"
 
 id<RetroArch_Platform> apple_platform;
 
