@@ -259,8 +259,8 @@ ifeq ($(HAVE_AL), 1)
    endif
 endif
 
-ifeq ($(OSX), 1)
-	OBJ += frontend/drivers/platform_apple.o
+ifneq ($(findstring Darwin,$(OS)),)
+	OBJ += frontend/drivers/platform_darwin.o
 endif
 
 ifeq ($(HAVE_JACK),1)

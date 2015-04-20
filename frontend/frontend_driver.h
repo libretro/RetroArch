@@ -79,7 +79,7 @@ extern const frontend_ctx_driver_t frontend_ctx_gx;
 extern const frontend_ctx_driver_t frontend_ctx_ps3;
 extern const frontend_ctx_driver_t frontend_ctx_xdk;
 extern const frontend_ctx_driver_t frontend_ctx_qnx;
-extern const frontend_ctx_driver_t frontend_ctx_apple;
+extern const frontend_ctx_driver_t frontend_ctx_darwin;
 extern const frontend_ctx_driver_t frontend_ctx_android;
 extern const frontend_ctx_driver_t frontend_ctx_linux;
 extern const frontend_ctx_driver_t frontend_ctx_psp;

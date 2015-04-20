@@ -266,7 +266,7 @@ static void checkps(CFDictionaryRef dict, bool * have_ac, bool * have_battery,
 }
 #endif
 
-static void frontend_apple_get_name(char *name, size_t sizeof_name)
+static void frontend_darwin_get_name(char *name, size_t sizeof_name)
 {
 #if defined(IOS)
    struct utsname buffer;
@@ -281,7 +281,7 @@ static void frontend_apple_get_name(char *name, size_t sizeof_name)
 #endif
 }
 
-static void frontend_apple_get_os(char *name, size_t sizeof_name, int *major, int *minor)
+static void frontend_darwin_get_os(char *name, size_t sizeof_name, int *major, int *minor)
 {
    (void)name;
    (void)sizeof_name;
@@ -296,7 +296,7 @@ static void frontend_apple_get_os(char *name, size_t sizeof_name, int *major, in
 #endif
 }
 
-static void frontend_apple_get_environment_settings(int *argc, char *argv[],
+static void frontend_darwin_get_environment_settings(int *argc, char *argv[],
       void *args, void *params_data)
 {
    char temp_dir[PATH_MAX_LENGTH];
@@ -365,7 +365,7 @@ static void frontend_apple_get_environment_settings(int *argc, char *argv[],
    CFRelease(bundle_url);
 }
 
-static void frontend_apple_load_content(void)
+static void frontend_darwin_load_content(void)
 {
    driver_t          *driver = driver_get_ptr();
    const ui_companion_driver_t *ui = ui_companion_get_ptr();
@@ -374,11 +374,11 @@ static void frontend_apple_load_content(void)
       ui->notify_content_loaded(driver->ui_companion_data);
 }
 
-static int frontend_apple_get_rating(void)
+static int frontend_darwin_get_rating(void)
 {
    char model[PATH_MAX_LENGTH];
 
-   frontend_apple_get_name(model, sizeof(model));
+   frontend_darwin_get_name(model, sizeof(model));
 
    /* iPhone 4 */
 #if 0
@@ -439,7 +439,7 @@ static int frontend_apple_get_rating(void)
    return -1;
 }
 
-static enum frontend_powerstate frontend_apple_get_powerstate(int *seconds, int *percent)
+static enum frontend_powerstate frontend_darwin_get_powerstate(int *seconds, int *percent)
 {
    enum frontend_powerstate ret = FRONTEND_POWERSTATE_NONE;
 #if defined(OSX)
@@ -493,7 +493,7 @@ end:
    return ret;
 }
 
-enum frontend_architecture frontend_apple_get_architecture(void)
+enum frontend_architecture frontend_darwin_get_architecture(void)
 {
    struct utsname buffer;
 
@@ -512,8 +512,8 @@ enum frontend_architecture frontend_apple_get_architecture(void)
    return FRONTEND_ARCH_NONE;
 }
 
-const frontend_ctx_driver_t frontend_ctx_apple = {
-   frontend_apple_get_environment_settings,
+const frontend_ctx_driver_t frontend_ctx_darwin = {
+   frontend_darwin_get_environment_settings,
    NULL,                         /* init */
    NULL,                         /* deinit */
    NULL,                         /* exitspawn */
@@ -521,13 +521,13 @@ const frontend_ctx_driver_t frontend_ctx_apple = {
    NULL,                         /* exec */
    NULL,                         /* set_fork */
    NULL,                         /* shutdown */
-   frontend_apple_get_name,
-   frontend_apple_get_os,
-   frontend_apple_get_rating,
-   frontend_apple_load_content,
-   frontend_apple_get_architecture,
-   frontend_apple_get_powerstate,
-   "apple",
+   frontend_darwin_get_name,
+   frontend_darwin_get_os,
+   frontend_darwin_get_rating,
+   frontend_darwin_load_content,
+   frontend_darwin_get_architecture,
+   frontend_darwin_get_powerstate,
+   "darwin",
 };
 
 #if !defined(HAVE_COCOA) && !defined(HAVE_COCOATOUCH)

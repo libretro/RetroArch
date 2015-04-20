@@ -23,8 +23,8 @@
 #define __IPHONE_OS_VERSION_MAX_ALLOWED 00000
 #endif
 
-#if defined(__APPLE__)
-#include "../frontend/drivers/platform_apple.m"
+#if defined(__APPLE__) && defined(__MACH__)
+#include "../frontend/drivers/platform_darwin.m"
 #endif
 
 #if defined(HAVE_COCOATOUCH) || defined(HAVE_COCOA)
