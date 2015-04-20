@@ -464,11 +464,7 @@ static void *ui_companion_cocoa_init(void)
 
 static void ui_companion_cocoa_event_command(void *data, enum event_command cmd)
 {
-   ui_companion_cocoa_t *handle = (ui_companion_cocoa_t*)data;
-
-   if (!handle)
-      return;
-
+   (void)data;
    event_command(cmd);
 }
 
