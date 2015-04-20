@@ -1615,8 +1615,12 @@ bool event_command(enum event_command cmd)
          event_set_volume(-0.5f);
          break;
       case EVENT_CMD_NONE:
-         break;
+      default:
+         goto error;
    }
 
    return true;
+
+error:
+   return false;
 }
