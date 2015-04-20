@@ -37,9 +37,8 @@
 id<RetroArch_Platform> apple_platform;
 static CFRunLoopObserverRef iterate_observer;
 
-void main_exit_save_config(void);
-
-static void rarch_draw(CFRunLoopObserverRef observer, CFRunLoopActivity activity, void *info)
+static void rarch_draw(CFRunLoopObserverRef observer,
+    CFRunLoopActivity activity, void *info)
 {
     runloop_t *runloop = rarch_main_get_ptr();
     int ret            = 0;
@@ -532,7 +531,8 @@ static void ui_companion_cocoatouch_deinit(void *data)
 
 static void *ui_companion_cocoatouch_init(void)
 {
-   ui_companion_cocoatouch_t *handle = (ui_companion_cocoatouch_t*)calloc(1, sizeof(*handle));
+   ui_companion_cocoatouch_t *handle = (ui_companion_cocoatouch_t*)
+    calloc(1, sizeof(*handle));
 
    if (!handle)
       return NULL;
