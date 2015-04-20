@@ -747,7 +747,11 @@ static int menu_input_mouse_post_iterate(menu_file_list_cbs_t *cbs,
          if (setting && setting->type)
             RARCH_LOG("action type: %d\n", setting->type);
 #endif
-
+         if (menu->mouse.y < menu->header_height)
+         {
+            menu_list_pop_stack(menu->menu_list);
+            return 0;
+         }
          if (menu->mouse.ptr == menu->navigation.selection_ptr
             && cbs && cbs->action_toggle && setting &&
             (setting->type == ST_BOOL || setting->type == ST_UINT || setting->type == ST_FLOAT
