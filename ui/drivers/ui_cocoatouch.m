@@ -133,7 +133,7 @@ static void handle_touch_event(NSArray* touches)
       CGPoint       coord;
       UITouch      *touch = [touches objectAtIndex:i];
       
-      if (touch.view != [RAGameView get].view)
+      if (touch.view != [CocoaView get].view)
          continue;
 
       coord = [touch locationInView:[touch view]];
@@ -378,7 +378,7 @@ enum
    [self setToolbarHidden:true animated:NO];
    [[UIApplication sharedApplication] setStatusBarHidden:true withAnimation:UIStatusBarAnimationNone];
    [[UIApplication sharedApplication] setIdleTimerDisabled:true];
-   [self.window setRootViewController:[RAGameView get]];
+   [self.window setRootViewController:[CocoaView get]];
 
    runloop->is_paused                     = false;
    runloop->is_idle                       = false;

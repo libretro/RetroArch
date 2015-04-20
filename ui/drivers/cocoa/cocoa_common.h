@@ -160,8 +160,8 @@ typedef struct
 } apple_frontend_settings_t;
 extern apple_frontend_settings_t apple_frontend_settings;
 
-@interface RAGameView : UIViewController<CLLocationManagerDelegate, AVCaptureAudioDataOutputSampleBufferDelegate>
-+ (RAGameView*)get;
+@interface CocoaView : UIViewController<CLLocationManagerDelegate, AVCaptureAudioDataOutputSampleBufferDelegate>
++ (CocoaView*)get;
 @end
 
 @interface RetroArch_iOS : UINavigationController<UIApplicationDelegate, UINavigationControllerDelegate, RetroArch_Platform>
@@ -189,12 +189,12 @@ void get_ios_version(int *major, int *minor);
 #endif
 
 
-@interface RAGameView : NSView
+@interface CocoaView : NSView
 #ifdef HAVE_CORELOCATION
 <CLLocationManagerDelegate>
 #endif
 
-+ (RAGameView*)get;
++ (CocoaView*)get;
 #if !defined(HAVE_COCOA)
 - (void)display;
 #endif

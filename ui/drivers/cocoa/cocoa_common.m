@@ -82,7 +82,7 @@
 #endif
 #endif
 
-static RAGameView* g_instance;
+static CocoaView* g_instance;
 
 #if defined(HAVE_COCOA)
 void *nsview_get_ptr(void)
@@ -95,11 +95,11 @@ void *nsview_get_ptr(void)
 void cocoagl_gfx_ctx_update(void);
 void *glkitview_init(void);
 
-@implementation RAGameView
-+ (RAGameView*)get
+@implementation CocoaView
++ (CocoaView*)get
 {
    if (!g_instance)
-      g_instance = [RAGameView new];
+      g_instance = [CocoaView new];
    
    return g_instance;
 }
@@ -469,7 +469,7 @@ static void *apple_camera_init(const char *device, uint64_t caps, unsigned width
    if (!applecamera)
       return NULL;
 
-   [[RAGameView get] onCameraInit];
+   [[CocoaView get] onCameraInit];
 
    return applecamera;
 }
@@ -478,7 +478,7 @@ static void apple_camera_free(void *data)
 {
    applecamera_t *applecamera = (applecamera_t*)data;
     
-   [[RAGameView get] onCameraFree];
+   [[CocoaView get] onCameraFree];
 
    if (applecamera)
       free(applecamera);
@@ -489,14 +489,14 @@ static bool apple_camera_start(void *data)
 {
    (void)data;
 
-   [[RAGameView get] onCameraStart];
+   [[CocoaView get] onCameraStart];
 
    return true;
 }
 
 static void apple_camera_stop(void *data)
 {
-   [[RAGameView get] onCameraStop];
+   [[CocoaView get] onCameraStop];
 }
 
 static bool apple_camera_poll(void *data, retro_camera_frame_raw_framebuffer_t frame_raw_cb,
@@ -545,7 +545,7 @@ static void *apple_location_init(void)
 	if (!applelocation)
 		return NULL;
     
-   [[RAGameView get] onLocationInit];
+   [[CocoaView get] onLocationInit];
 	
 	return applelocation;
 }
@@ -588,7 +588,7 @@ static bool apple_location_get_position(void *data, double *lat, double *lon, do
 {
 	(void)data;
 
-   bool ret = [[RAGameView get] onLocationHasChanged];
+   bool ret = [[CocoaView get] onLocationHasChanged];
 
    if (!ret)
       goto fail;

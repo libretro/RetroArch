@@ -149,7 +149,7 @@ static bool cocoagl_gfx_ctx_init(void *data)
    (void)data;
     
 #if defined(HAVE_COCOA)
-    RAGameView *g_view = (RAGameView*)nsview_get_ptr();
+    CocoaView *g_view = (CocoaView*)nsview_get_ptr();
     NSOpenGLPixelFormatAttribute attributes [] = {
         NSOpenGLPFAColorSize, 24,
         NSOpenGLPFADoubleBuffer,
@@ -188,7 +188,7 @@ static bool cocoagl_gfx_ctx_init(void *data)
     
     [g_context makeCurrentContext];
    // Make sure the view was created
-   [RAGameView get];
+   [CocoaView get];
    return true;
 }
 
@@ -254,7 +254,7 @@ static void cocoagl_gfx_ctx_swap_interval(void *data, unsigned interval)
 static bool cocoagl_gfx_ctx_set_video_mode(void *data, unsigned width, unsigned height, bool fullscreen)
 {
 #if defined(HAVE_COCOA)
-   RAGameView *g_view = (RAGameView*)nsview_get_ptr();
+   CocoaView *g_view = (CocoaView*)nsview_get_ptr();
    /* TODO: Screen mode support. */
    
    if (fullscreen && !g_has_went_fullscreen)
@@ -316,7 +316,7 @@ static void cocoagl_gfx_ctx_get_video_size(void *data, unsigned* width, unsigned
    float screenscale = cocoagl_gfx_ctx_get_native_scale();
 	
 #if defined(HAVE_COCOA)
-   RAGameView *g_view = (RAGameView*)nsview_get_ptr();
+   CocoaView *g_view = (CocoaView*)nsview_get_ptr();
    CGRect cgrect = NSRectToCGRect([g_view frame]);
    size = CGRectMake(0, 0, CGRectGetWidth(cgrect), CGRectGetHeight(cgrect));
 #else
@@ -337,7 +337,7 @@ static void cocoagl_gfx_ctx_update_window_title(void *data)
    (void)got_text;
 
 #if defined(HAVE_COCOA)
-   RAGameView *g_view = (RAGameView*)nsview_get_ptr();
+   CocoaView *g_view = (CocoaView*)nsview_get_ptr();
    static const char* const text = buf; /* < Can't access buffer directly in the block */
    if (got_text)
        [[g_view window] setTitle:[NSString stringWithCString:text encoding:NSUTF8StringEncoding]];

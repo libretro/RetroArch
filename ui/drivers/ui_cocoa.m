@@ -111,7 +111,7 @@ void apple_rarch_exited(void)
          apple->mouse_y = event.deltaY;
 
          /* Absolute */
-         pos = [[RAGameView get] convertPoint:[event locationInWindow] fromView:nil];
+         pos = [[CocoaView get] convertPoint:[event locationInWindow] fromView:nil];
          apple->touches[0].screen_x = pos.x;
          apple->touches[0].screen_y = pos.y;
       }
@@ -166,10 +166,10 @@ static char** waiting_argv;
    
    [self.window setAcceptsMouseMovedEvents: YES];
 
-   [[RAGameView get] setFrame: [[self.window contentView] bounds]];
+   [[CocoaView get] setFrame: [[self.window contentView] bounds]];
    [[self.window contentView] setAutoresizesSubviews:YES];
-   [[self.window contentView] addSubview:[RAGameView get]];
-   [self.window makeFirstResponder:[RAGameView get]];
+   [[self.window contentView] addSubview:[CocoaView get]];
+   [self.window makeFirstResponder:[CocoaView get]];
 
    self.settingsWindow = [[[NSWindowController alloc] initWithWindowNibName:BOXSTRING("Settings")] autorelease];
 

@@ -12,16 +12,10 @@ SRC_DIR := ../..
 APPLICATION_NAME = RetroArch
 ${APPLICATION_NAME}_FRAMEWORKS = Foundation UIKit CoreGraphics AudioToolbox GLKit OpenGLES CoreText CoreLocation CoreAudio AVFoundation CoreMedia CoreVideo GameController
 ${APPLICATION_NAME}_FILES = $(SRC_DIR)/griffin/griffin.c \
+		  $(SRC_DIR)/griffin/griffin_objc.m \
 		  $(SRC_DIR)/audio/audio_utils_neon.S \
 		  $(SRC_DIR)/audio/drivers_resampler/sinc_neon.S \
-		  $(SRC_DIR)/audio/drivers_resampler/cc_resampler_neon.S \
-		  $(SRC_DIR)/apple/iOS/browser.m \
-		  $(SRC_DIR)/apple/iOS/menu.m \
-		  $(SRC_DIR)/apple/iOS/platform.m \
-		  $(SRC_DIR)/apple/common/apple_gamecontroller.m \
-		  $(SRC_DIR)/apple/common/CFExtensions.m \
-		  $(SRC_DIR)/apple/common/RAGameView.m \
-		  $(SRC_DIR)/apple/common/utility.m \
+		  $(SRC_DIR)/audio/drivers_resampler/cc_resampler_neon.S
 
 COMMON_FLAGS := -DIOS -DHAVE_GRIFFIN -DHAVE_CORELOCATION -DHAVE_NETPLAY -DHAVE_RGUI -DHAVE_MENU -DHAVE_DYNAMIC -DHAVE_OPENGL -DHAVE_FBO -DHAVE_OPENGLES -DHAVE_OPENGLES2 -DHAVE_GLSL -DINLINE=inline -DLSB_FIRST -DHAVE_THREADS -D__LIBRETRO__ -DRARCH_MOBILE -std=gnu99 -DHAVE_COREAUDIO -DHAVE_FBO -DHAVE_OVERLAY -DHAVE_ZLIB -DWANT_ZLIB -DSINC_LOWER_QUALITY -DRARCH_INTERNAL -DHAVE_FILTERS_BUILTIN -DHAVE_XMB -D_LZMA_UINT32_IS_ULONG -DHAVE_STRL
 COMMON_FLAGS += -DHAVE_AVFOUNDATION
