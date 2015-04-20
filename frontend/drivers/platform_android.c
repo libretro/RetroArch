@@ -495,30 +495,39 @@ static void frontend_android_get_name(char *name, size_t sizeof_name)
    (void)len;
 }
 
-static void frontend_android_get_version(int32_t *major, int32_t *minor, int32_t *bugfix)
+static void frontend_android_get_version(int32_t *major, int32_t *minor, int32_t *rel)
 {
    char os_version_str[PROP_VALUE_MAX];
    system_property_get("ro.build.version.release", os_version_str);
 
    *major  = 0;
    *minor  = 0;
-   *bugfix = 0;
+   *rel    = 0;
 
    /* Parse out the OS version numbers from the system properties. */
    if (os_version_str[0])
    {
       /* Try to parse out the version numbers from the string. */
-      int num_read = sscanf(os_version_str, "%d.%d.%d", major, minor, bugfix);
+      int num_read = sscanf(os_version_str, "%d.%d.%d", major, minor, rel);
 
       if (num_read > 0)
       {
          if (num_read < 2)
             *minor = 0;
          if (num_read < 3)
-            *bugfix = 0;
+            *rel = 0;
          return;
       }
    }
+}
+
+static void frontend_android_get_os(char *name, size_t sizeof_name, int *major, int *minor)
+{
+   int rel;
+
+   frontend_android_get_version(major, minor, &rel);
+
+   strlcpy(name, "Android", sizeof_name);
 }
 
 static void frontend_android_get_version_sdk(int32_t *sdk)
@@ -566,7 +575,7 @@ static bool device_is_game_console(const char *name)
 static void frontend_android_get_environment_settings(int *argc,
       char *argv[], void *data, void *params_data)
 {
-   int32_t major, minor, bugfix;
+   int32_t major, minor, rel;
    char device_model[PROP_VALUE_MAX], device_id[PROP_VALUE_MAX];
 
    JNIEnv *env;
@@ -591,9 +600,9 @@ static void frontend_android_get_environment_settings(int *argc,
       args->state_path = NULL;
    }
    
-   frontend_android_get_version(&major, &minor, &bugfix);
+   frontend_android_get_version(&major, &minor, &rel);
 
-   RARCH_LOG("Android OS version (major : %d, minor : %d, bugfix : %d)\n", major, minor, bugfix);
+   RARCH_LOG("Android OS version (major : %d, minor : %d, rel : %d)\n", major, minor, rel);
 
    CALL_OBJ_METHOD(env, obj, android_app->activity->clazz,
          android_app->getIntent);
@@ -881,7 +890,7 @@ const frontend_ctx_driver_t frontend_ctx_android = {
    NULL,                         /* set_fork */
    frontend_android_shutdown,
    frontend_android_get_name,
-   NULL,                         /* get_os */
+   frontend_android_get_os,
    frontend_android_get_rating,
    NULL,                         /* load_content */
    NULL,                         /* get_architecture */
