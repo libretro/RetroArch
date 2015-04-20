@@ -462,7 +462,7 @@ static void *ui_companion_cocoa_init(void)
    return handle;
 }
 
-static void ui_companion_cocoa_event_command(void *data, unsigned cmd)
+static void ui_companion_cocoa_event_command(void *data, enum event_command cmd)
 {
    ui_companion_cocoa_t *handle = (ui_companion_cocoa_t*)data;
 
