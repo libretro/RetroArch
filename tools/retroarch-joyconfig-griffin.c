@@ -65,6 +65,10 @@
 
 #if defined(__APPLE__) && defined(HAVE_IOHIDMANAGER)
 #include "../input/drivers_hid/iohidmanager_hid.c"
+
+#ifndef HAVE_HID
+#define HAVE_HID
+#endif
 #endif
 
 #ifdef HAVE_HID
