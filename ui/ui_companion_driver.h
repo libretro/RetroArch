@@ -68,6 +68,8 @@ const ui_companion_driver_t *ui_companion_get_ptr(void);
  **/
 const ui_companion_driver_t *ui_companion_init_first(void);
 
+void ui_companion_event_command(unsigned action);
+
 #ifdef __cplusplus
 }
 #endif
