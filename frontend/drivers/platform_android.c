@@ -23,6 +23,7 @@
 
 #include "platform_android.h"
 
+#include "../frontend.h"
 #include "../../general.h"
 #include <retro_inline.h>
 
