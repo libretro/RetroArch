@@ -76,6 +76,8 @@ static void ui_companion_cocoatouch_deinit(void *data)
 {
    ui_companion_cocoatouch_t *handle = (ui_companion_cocoatouch_t*)data;
 
+   apple_rarch_exited();
+
    if (handle)
       free(handle);
 }

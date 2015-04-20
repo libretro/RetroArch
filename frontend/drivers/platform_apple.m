@@ -365,10 +365,6 @@ static void frontend_apple_get_environment_settings(int *argc, char *argv[],
    CFRelease(bundle_url);
 }
 
-#if defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH)
-extern void apple_rarch_exited(void);
-#endif
-
 static void frontend_apple_load_content(void)
 {
    driver_t          *driver = driver_get_ptr();
@@ -376,13 +372,6 @@ static void frontend_apple_load_content(void)
 
    if (ui && ui->notify_content_loaded)
       ui->notify_content_loaded(driver->ui_companion_data);
-}
-
-static void frontend_apple_shutdown(bool unused)
-{
-#if defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH)
-   apple_rarch_exited();
-#endif
 }
 
 static int frontend_apple_get_rating(void)
@@ -531,7 +520,7 @@ const frontend_ctx_driver_t frontend_ctx_apple = {
    NULL,                         /* process_args */
    NULL,                         /* exec */
    NULL,                         /* set_fork */
-   frontend_apple_shutdown,
+   NULL,                         /* shutdown */
    frontend_apple_get_name,
    frontend_apple_get_os,
    frontend_apple_get_rating,

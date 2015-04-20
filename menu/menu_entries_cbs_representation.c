@@ -548,6 +548,19 @@ static void menu_action_setting_disp_set_label_menu_file_plain(
          path, "(FILE)", path_buf, path_buf_size);
 }
 
+static void menu_action_setting_disp_set_label_menu_file_image(
+      file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *type_str, size_t type_str_size,
+      const char *entry_label,
+      const char *path,
+      char *path_buf, size_t path_buf_size)
+{
+   menu_action_setting_generic_disp_set_label(w, type_str, type_str_size,
+         path, "(IMG)", path_buf, path_buf_size);
+}
+
 static void menu_action_setting_disp_set_label_menu_file_use_directory(
       file_list_t* list,
       unsigned *w, unsigned type, unsigned i,
@@ -831,6 +844,10 @@ void menu_entries_cbs_init_bind_get_string_representation(menu_file_list_cbs_t *
          case MENU_FILE_PLAIN:
             cbs->action_get_representation = 
                menu_action_setting_disp_set_label_menu_file_plain;
+            break;
+         case MENU_FILE_IMAGE:
+            cbs->action_get_representation = 
+               menu_action_setting_disp_set_label_menu_file_image;
             break;
          case MENU_FILE_USE_DIRECTORY:
             cbs->action_get_representation = 

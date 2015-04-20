@@ -49,6 +49,8 @@ static void ui_companion_cocoa_deinit(void *data)
 {
    ui_companion_cocoa_t *handle = (ui_companion_cocoa_t*)data;
 
+   apple_rarch_exited();
+
    if (handle)
       free(handle);
 }
