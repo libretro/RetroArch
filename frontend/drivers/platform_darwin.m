@@ -493,7 +493,7 @@ end:
    return ret;
 }
 
-enum frontend_architecture frontend_darwin_get_architecture(void)
+static enum frontend_architecture frontend_darwin_get_architecture(void)
 {
    struct utsname buffer;
 

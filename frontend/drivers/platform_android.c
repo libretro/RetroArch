@@ -880,6 +880,23 @@ static int frontend_android_get_rating(void)
    return -1;
 }
 
+static enum frontend_architecture frontend_android_get_architecture(void)
+{
+   char abi[PROP_VALUE_MAX];
+   system_property_get("ro.product.cpu.abi", abi);
+
+   if (!strcmp(abi, "armeabi-v7a"))
+      return FRONTEND_ARCH_ARM;
+   if (!strcmp(abi, "armeabi"))
+      return FRONTEND_ARCH_ARM;
+   if (!strcmp(abi, "mips"))
+      return FRONTEND_ARCH_MIPS;
+   if (!strcmp(abi, "x86"))
+      return FRONTEND_ARCH_X86;
+
+   return FRONTEND_ARCH_NONE;
+}
+
 const frontend_ctx_driver_t frontend_ctx_android = {
    frontend_android_get_environment_settings,
    frontend_android_init,
@@ -893,7 +910,7 @@ const frontend_ctx_driver_t frontend_ctx_android = {
    frontend_android_get_os,
    frontend_android_get_rating,
    NULL,                         /* load_content */
-   NULL,                         /* get_architecture */
+   frontend_android_get_architecture,
    NULL,                         /* get_powerstate */
    "android",
 };
