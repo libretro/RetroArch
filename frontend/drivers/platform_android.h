@@ -29,6 +29,8 @@
 
 #include <rthreads/rthreads.h>
 
+#include "../frontend.h"
+
 struct android_app
 {
    ANativeActivity* activity;

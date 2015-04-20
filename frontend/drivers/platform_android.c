@@ -357,7 +357,7 @@ static void android_app_entry(void *data)
 #ifndef HAVE_MAIN
    while (rarch_main_iterate() != -1);
 
-   main_exit(args);
+   main_exit(data);
 #endif
 
 end:
