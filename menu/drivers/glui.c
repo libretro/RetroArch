@@ -644,8 +644,7 @@ static void glui_navigation_clear(bool pending_push)
       return;
 
    menu->begin = 0;
-   menu_animation_push(menu->animation, 10, 0,
-         &menu->scroll_y, EASING_IN_OUT_QUAD, NULL);
+   menu->scroll_y = 0;
 }
 
 static void glui_navigation_set(bool scroll)
