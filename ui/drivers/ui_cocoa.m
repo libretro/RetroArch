@@ -330,7 +330,7 @@ static void poll_iteration(void)
 
 - (IBAction)basicEvent:(id)sender
 {
-   unsigned cmd;
+   enum event_command cmd;
    unsigned sender_tag = (unsigned)[sender tag];
    global_t *global = global_get_ptr();
    
