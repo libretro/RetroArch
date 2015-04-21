@@ -114,7 +114,7 @@ font_renderer_t d3d_win32_font = {
    d3dfonts_w32_init_font,
    d3dfonts_w32_free_font,
    d3dfonts_w32_render_msg,
-   "d3d-fonts-w32",
+   "d3dxfont",
    NULL,                      /* get_glyph */
    NULL,                      /* bind_block */
    NULL,                      /* flush */
