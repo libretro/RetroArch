@@ -679,6 +679,42 @@ static bool glui_load_wallpaper(void *data)
    return true;
 }
 
+static float glui_get_scroll()
+{
+   glui_handle_t *glui = NULL;
+   menu_handle_t *menu = menu_driver_get_ptr();
+   gl_t *gl = (gl_t*)video_driver_get_ptr(NULL);
+   float sy = 0;
+
+   if (!menu)
+      return 0;
+   
+   glui = (glui_handle_t*)menu->userdata;
+
+   if (!glui)
+      return 0;
+
+   int half = (gl->win_height / glui->line_height) / 2;
+
+   if (menu->navigation.selection_ptr < half)
+      return 0;
+   else
+      return ((menu->navigation.selection_ptr + 2 - half) * glui->line_height);
+}
+
+static void glui_navigation_set(bool scroll)
+{
+   menu_handle_t *menu = menu_driver_get_ptr();
+   if (!menu)
+      return;
+
+   if (!scroll)
+      return;
+
+   menu_animation_push(menu->animation, 10, glui_get_scroll(),
+         &menu->scroll_y, EASING_IN_OUT_QUAD, NULL);
+}
+
 static void glui_navigation_clear(bool pending_push)
 {
    menu_handle_t *menu = menu_driver_get_ptr();
@@ -689,53 +725,29 @@ static void glui_navigation_clear(bool pending_push)
    menu->scroll_y = 0;
 }
 
-static void glui_navigation_set(bool scroll)
-{
-   glui_handle_t *glui = NULL;
-   menu_handle_t *menu = menu_driver_get_ptr();
-   gl_t *gl = (gl_t*)video_driver_get_ptr(NULL);
-   float sy = 0;
-
-   if (!menu)
-      return;
-   
-   glui = (glui_handle_t*)menu->userdata;
-
-   if (!glui)
-      return;
-   if (!scroll)
-      return;
-
-   int half = (gl->win_height / glui->line_height) / 2;
-
-   if (menu->navigation.selection_ptr < half)
-      sy = 0;
-   else
-      sy = ((menu->navigation.selection_ptr + 2 - half) * glui->line_height);
-
-   menu_animation_push(menu->animation, 10, sy,
-         &menu->scroll_y, EASING_IN_OUT_QUAD, NULL);
-}
-
 static void glui_navigation_set_last(void)
 {
-   menu_handle_t *menu = menu_driver_get_ptr();
-   if (menu)
-      glui_navigation_set(true);
+   glui_navigation_set(true);
 }
 
 static void glui_navigation_descend_alphabet(size_t *unused)
 {
-   menu_handle_t *menu = menu_driver_get_ptr();
-   if (menu)
-      glui_navigation_set(true);
+   glui_navigation_set(true);
 }
 
 static void glui_navigation_ascend_alphabet(size_t *unused)
 {
+   glui_navigation_set(true);
+}
+
+static void glui_populate_entries(const char *path,
+      const char *label, unsigned i)
+{
    menu_handle_t *menu = menu_driver_get_ptr();
-   if (menu)
-      glui_navigation_set(true);
+   if (!menu)
+      return;
+
+   menu->scroll_y = glui_get_scroll();
 }
 
 menu_ctx_driver_t menu_ctx_glui = {
@@ -747,7 +759,7 @@ menu_ctx_driver_t menu_ctx_glui = {
    glui_free,
    NULL,
    glui_context_destroy,
-   NULL,
+   glui_populate_entries,
    NULL,
    glui_navigation_clear,
    NULL,
