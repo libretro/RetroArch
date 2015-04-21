@@ -28,11 +28,11 @@
 #include "../../input/drivers/cocoa_input.h"
 #include "../../frontend/frontend.h"
 
-id<RetroArch_Platform> apple_platform;
+static id apple_platform;
 
 void apple_rarch_exited(void)
 {
-   [apple_platform unloadingCore];
+   [[NSApplication sharedApplication] terminate:nil];
 }
 
 @interface RApplication : NSApplication
@@ -158,7 +158,6 @@ static char** waiting_argv;
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification
 {
    apple_platform = self;
-
    
 #if __MAC_OS_X_VERSION_MAX_ALLOWED >= 1070
    [self.window setCollectionBehavior:[self.window collectionBehavior] | NSWindowCollectionBehaviorFullScreenPrimary];
@@ -305,7 +304,6 @@ static void poll_iteration(void)
 
 - (void)unloadingCore
 {
-   [[NSApplication sharedApplication] terminate:nil];
 }
 
 - (IBAction)showCoresDirectory:(id)sender

@@ -34,7 +34,7 @@
 #include "../../input/drivers_hid/btstack_hid.h"
 #include "../../frontend/frontend.h"
 
-id<RetroArch_Platform> apple_platform;
+static id apple_platform;
 static CFRunLoopObserverRef iterate_observer;
 
 static void rarch_draw(CFRunLoopObserverRef observer,
@@ -63,7 +63,10 @@ static void rarch_draw(CFRunLoopObserverRef observer,
 
 void apple_rarch_exited(void)
 {
-   [apple_platform unloadingCore];
+   RetroArch_iOS *ap = (RetroArch_iOS *)apple_platform;
+    
+   if (ap)
+      [ap unloadingCore];
 }
 
 apple_frontend_settings_t apple_frontend_settings;

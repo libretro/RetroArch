@@ -116,8 +116,6 @@ void get_ios_version(int *major, int *minor);
 
 #endif
 
-extern id<RetroArch_Platform> apple_platform;
-
 extern void apple_display_alert(const char *message, const char *title);
 
 
