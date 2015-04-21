@@ -24,9 +24,6 @@
 #include "../../settings.h"
 #include "../../menu/menu.h"
 
-@protocol RetroArch_Platform
-@end
-
 #if defined(HAVE_COCOATOUCH)
 #include <UIKit/UIKit.h>
 
@@ -65,7 +62,7 @@ extern apple_frontend_settings_t apple_frontend_settings;
 + (CocoaView*)get;
 @end
 
-@interface RetroArch_iOS : UINavigationController<UIApplicationDelegate, UINavigationControllerDelegate, RetroArch_Platform>
+@interface RetroArch_iOS : UINavigationController<UIApplicationDelegate, UINavigationControllerDelegate>
 
 @property (nonatomic) UIWindow* window;
 @property (nonatomic) NSString* documentsDirectory;
@@ -99,7 +96,7 @@ void get_ios_version(int *major, int *minor);
 
 @end
 
-@interface RetroArch_OSX : NSObject<RetroArch_Platform>
+@interface RetroArch_OSX : NSObject
 {
    NSWindow* _window;
    NSWindowController* _settingsWindow;
