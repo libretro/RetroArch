@@ -19,6 +19,9 @@
 #include <android/keycodes.h>
 #include <unistd.h>
 #include <dlfcn.h>
+
+#include <retro_inline.h>
+
 #include "../../frontend/drivers/platform_android.h"
 #include "../input_autodetect.h"
 #include "../input_common.h"
@@ -27,7 +30,6 @@
 #include "../../general.h"
 #include "../../driver.h"
 
-#include <retro_inline.h>
 
 #define MAX_TOUCH 16
 #define MAX_PADS 8
