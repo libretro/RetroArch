@@ -41,6 +41,8 @@
 #include <IOKit/ps/IOPSKeys.h>
 
 #include <sys/sysctl.h>
+#elif defined(IOS)
+#include <UIKit/UIDevice.h>
 #endif
 
 typedef enum
@@ -157,8 +159,6 @@ static void CFTemporaryDirectory(char *buf, size_t sizeof_buf)
 
 #if defined(IOS)
 void get_ios_version(int *major, int *minor);
-
-enum frontend_powerstate ios_get_powerstate(int *seconds, int *percent);
 #endif
 
 #if defined(OSX)
@@ -488,7 +488,34 @@ end:
    if (blob)
       CFRelease(blob);
 #elif defined(IOS)
-   ret = ios_get_powerstate(seconds, percent);
+   float level;
+   UIDevice *uidev = [UIDevice currentDevice];
+
+   if (!uidev)
+	   return ret;
+
+   [uidev setBatteryMonitoringEnabled:true];
+
+   switch (uidev.batteryState)
+   {
+	   case UIDeviceBatteryStateCharging:
+		   ret = FRONTEND_POWERSTATE_CHARGING;
+		   break;
+	   case UIDeviceBatteryStateFull:
+		   ret = FRONTEND_POWERSTATE_CHARGED;
+		   break;
+	   case UIDeviceBatteryStateUnplugged:
+		   ret = FRONTEND_POWERSTATE_ON_POWER_SOURCE;
+		   break;
+	   case UIDeviceBatteryStateUnknown:
+		   break;
+   }
+
+   level = uidev.batteryLevel;
+
+   *percent = ((level < 0.0f) ? -1 : ((int)((level * 100) + 0.5f)));
+
+   [uidev setBatteryMonitoringEnabled:false];
 #endif
    return ret;
 }
