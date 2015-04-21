@@ -692,7 +692,6 @@ static float glui_get_scroll()
    glui_handle_t *glui = NULL;
    menu_handle_t *menu = menu_driver_get_ptr();
    gl_t *gl = (gl_t*)video_driver_get_ptr(NULL);
-   float sy = 0;
 
    if (!menu)
       return 0;
@@ -795,7 +794,6 @@ static void glui_context_reset(void)
    glui_handle_t *glui = NULL;
    const font_renderer_driver_t *font_drv = NULL;
    menu_handle_t *menu = menu_driver_get_ptr();
-   settings_t *settings = config_get_ptr();
 
    if (!menu)
       return;
