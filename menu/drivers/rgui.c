@@ -171,7 +171,8 @@ static void color_rect(menu_handle_t *menu,
             menu->frame_buf.data[j * (menu->frame_buf.pitch >> 1) + i] = color;
 }
 
-static void blit_line(menu_handle_t *menu, int x, int y, const char *message, uint16_t color)
+static void blit_line(menu_handle_t *menu, int x, int y,
+      const char *message, uint16_t color)
 {
    unsigned i, j;
 
@@ -260,11 +261,13 @@ static void rgui_render_background(void)
    }
 
    fill_rect(&menu->frame_buf, 5, 5, menu->frame_buf.width - 10, 5, green_filler);
-   fill_rect(&menu->frame_buf, 5, menu->frame_buf.height - 10, menu->frame_buf.width - 10, 5,
+   fill_rect(&menu->frame_buf, 5, menu->frame_buf.height - 10,
+         menu->frame_buf.width - 10, 5,
          green_filler);
 
    fill_rect(&menu->frame_buf, 5, 5, 5, menu->frame_buf.height - 10, green_filler);
-   fill_rect(&menu->frame_buf, menu->frame_buf.width - 10, 5, 5, menu->frame_buf.height - 10,
+   fill_rect(&menu->frame_buf, menu->frame_buf.width - 10, 5, 5,
+         menu->frame_buf.height - 10,
          green_filler);
 }
 
@@ -318,11 +321,15 @@ static void rgui_render_messagebox(const char *message)
    x      = (menu->frame_buf.width - width) / 2;
    y      = (menu->frame_buf.height - height) / 2;
 
-   fill_rect(&menu->frame_buf, x + 5, y + 5, width - 10, height - 10, gray_filler);
+   fill_rect(&menu->frame_buf, x + 5, y + 5, width - 10,
+         height - 10, gray_filler);
    fill_rect(&menu->frame_buf, x, y, width - 5, 5, green_filler);
-   fill_rect(&menu->frame_buf, x + width - 5, y, 5, height - 5, green_filler);
-   fill_rect(&menu->frame_buf, x + 5, y + height - 5, width - 5, 5, green_filler);
-   fill_rect(&menu->frame_buf, x, y + 5, 5, height - 5, green_filler);
+   fill_rect(&menu->frame_buf, x + width - 5, y, 5,
+         height - 5, green_filler);
+   fill_rect(&menu->frame_buf, x + 5, y + height - 5,
+         width - 5, 5, green_filler);
+   fill_rect(&menu->frame_buf, x, y + 5, 5,
+         height - 5, green_filler);
 
    color = NORMAL_COLOR(settings);
 
@@ -515,7 +522,8 @@ static void rgui_render(void)
 
       menu_animation_ticker_line(entry_title_buf, RGUI_TERM_WIDTH - (w + 1 + 2),
             runloop->frames.video.count / RGUI_TERM_START_X, path_buf, selected);
-      menu_animation_ticker_line(type_str_buf, w, runloop->frames.video.count / RGUI_TERM_START_X,
+      menu_animation_ticker_line(type_str_buf, w,
+            runloop->frames.video.count / RGUI_TERM_START_X,
             type_str, selected);
 
       snprintf(message, sizeof(message), "%c %-*.*s %-*s",
@@ -585,7 +593,8 @@ static void *rgui_init(void)
       goto error;
    }
 
-   fill_rect(&menu->frame_buf, 0, menu->frame_buf.height, menu->frame_buf.width, 4, gray_filler);
+   fill_rect(&menu->frame_buf, 0, menu->frame_buf.height,
+         menu->frame_buf.width, 4, gray_filler);
 
    return menu;
 
