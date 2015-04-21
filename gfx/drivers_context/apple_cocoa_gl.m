@@ -14,8 +14,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-//#define HAVE_NSOPENGL
-
 #include <CoreGraphics/CGGeometry.h>
 #if defined(HAVE_COCOA)
 #include <OpenGL/CGLTypes.h>
@@ -136,11 +134,7 @@ static RAScreen* get_chosen_screen(void)
 void cocoagl_gfx_ctx_update(void)
 {
 #if defined(HAVE_COCOA)
-#if MAC_OS_X_VERSION_10_7 && !defined(HAVE_NSOPENGL)
-   CGLUpdateContext(g_context.CGLContextObj);
-#else
 	[g_context update];
-#endif
 #endif
 }
 
@@ -242,11 +236,7 @@ static void cocoagl_gfx_ctx_swap_interval(void *data, unsigned interval)
    g_fast_forward_skips = interval ? 0 : 3;
 #elif defined(HAVE_COCOA)
    GLint value = interval ? 1 : 0;
-#ifdef HAVE_NSOPENGL
    [g_context setValues:&value forParameter:NSOpenGLCPSwapInterval];
-#else
-    CGLSetParameter(g_context.CGLContextObj, kCGLCPSwapInterval, &value);
-#endif
     
 #endif
 }
@@ -428,12 +418,7 @@ static void cocoagl_gfx_ctx_swap_buffers(void *data)
       return;
     
 #if defined(HAVE_COCOA)
-#ifdef HAVE_NSOPENGL
     [g_context flushBuffer];
-#else
-    if (g_context.CGLContextObj)
-        CGLFlushDrawable(g_context.CGLContextObj);
-#endif
 #elif defined(HAVE_COCOATOUCH)
     if (g_view)
         [g_view display];
