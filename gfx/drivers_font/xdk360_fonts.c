@@ -494,7 +494,7 @@ font_renderer_t d3d_xbox360_font = {
    xdk360_free_font,
    xdk360_render_msg,
    "Xbox 360 fonts",
-   NULL,
-   NULL,
-   NULL,
+   NULL,                      /* get_glyph */
+   NULL,                      /* bind_block */
+   NULL,                      /* flush */
 };

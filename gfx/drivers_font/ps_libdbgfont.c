@@ -103,4 +103,7 @@ font_renderer_t libdbg_font = {
    libdbg_font_free_font,
    libdbg_font_render_msg,
    "GL raster",
+   NULL,                      /* get_glyph */
+   NULL,                      /* bind_block */
+   NULL,                      /* flush */
 };

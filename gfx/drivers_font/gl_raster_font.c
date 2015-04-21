@@ -45,7 +45,7 @@ typedef struct
    gl_font_raster_block_t *block;
 } gl_raster_t;
 
-static void *gl_raster_font_init_font(void *gl_data,
+static void *gl_raster_font_init_font(void *data,
       const char *font_path, float font_size)
 {
    unsigned width, height;
@@ -56,7 +56,7 @@ static void *gl_raster_font_init_font(void *gl_data,
    if (!font)
       return NULL;
 
-   font->gl = (gl_t*)gl_data;
+   font->gl = (gl_t*)data;
 
    if (!font_renderer_create_default(&font->font_driver,
             &font->font_data, font_path, font_size))
@@ -109,6 +109,7 @@ static void *gl_raster_font_init_font(void *gl_data,
    font->tex_height = height;
 
    glBindTexture(GL_TEXTURE_2D, font->gl->texture[font->gl->tex_index]);
+
    return font;
 }
 
@@ -127,22 +128,21 @@ static void gl_raster_font_free_font(void *data)
 
 static int get_message_width(gl_raster_t *font, const char *msg)
 {
-   int delta_x;
-   unsigned i, msg_len_full, msg_len;
-
-   msg_len_full   = strlen(msg);
-   msg_len        = min(msg_len_full, MAX_MSG_LEN_CHUNK);
-
-   delta_x        = 0;
+   unsigned i;
+   unsigned msg_len_full   = strlen(msg);
+   unsigned msg_len        = min(msg_len_full, MAX_MSG_LEN_CHUNK);
+   int      delta_x        = 0;
 
    while (msg_len_full)
    {
       for (i = 0; i < msg_len; i++)
       {
          const struct font_glyph *glyph = 
-            (const struct font_glyph*)font->font_driver->get_glyph(font->font_data, (uint8_t)msg[i]);
-         if (!glyph)
-            glyph = (const struct font_glyph*)font->font_driver->get_glyph(font->font_data, '?'); /* Do something smarter here ... */
+            (const struct font_glyph*)
+            font->font_driver->get_glyph(font->font_data, (uint8_t)msg[i]);
+         if (!glyph) /* Do something smarter here ... */
+            glyph = (const struct font_glyph*)
+               font->font_driver->get_glyph(font->font_data, '?');
          if (!glyph)
             continue;
 
@@ -150,8 +150,8 @@ static int get_message_width(gl_raster_t *font, const char *msg)
       }
 
       msg_len_full -= msg_len;
-      msg += msg_len;
-      msg_len = min(msg_len_full, MAX_MSG_LEN_CHUNK);
+      msg          += msg_len;
+      msg_len       = min(msg_len_full, MAX_MSG_LEN_CHUNK);
    }
 
    return delta_x;
@@ -159,14 +159,19 @@ static int get_message_width(gl_raster_t *font, const char *msg)
 
 static void gl_raster_font_draw_vertices(gl_t *gl, const gl_coords_t *coords)
 {
+   if (!gl)
+      return;
+
    gl->shader->set_coords(coords);
    gl->shader->set_mvp(gl, &gl->mvp_no_rot);
 
    glDrawArrays(GL_TRIANGLES, 0, coords->vertices);
 }
 
-static void gl_raster_font_render_message(gl_raster_t *font, const char *msg, GLfloat scale,
-      const GLfloat color[4], GLfloat pos_x, GLfloat pos_y, unsigned text_align)
+static void gl_raster_font_render_message(
+      gl_raster_t *font, const char *msg, GLfloat scale,
+      const GLfloat color[4], GLfloat pos_x, GLfloat pos_y,
+      unsigned text_align)
 {
    int x, y, delta_x, delta_y;
    float inv_tex_size_x, inv_tex_size_y, inv_win_width, inv_win_height;
@@ -174,8 +179,11 @@ static void gl_raster_font_render_message(gl_raster_t *font, const char *msg, GL
    GLfloat font_tex_coords[2 * 6 * MAX_MSG_LEN_CHUNK];
    GLfloat font_vertex[2 * 6 * MAX_MSG_LEN_CHUNK]; 
    GLfloat font_color[4 * 6 * MAX_MSG_LEN_CHUNK];
-   gl_t *gl = font->gl;
    struct gl_coords coords;
+   gl_t *gl       = font ? font->gl : NULL;
+
+   if (!gl)
+      return;
 
    msg_len_full   = strlen(msg);
    msg_len        = min(msg_len_full, MAX_MSG_LEN_CHUNK);
@@ -207,8 +215,9 @@ static void gl_raster_font_render_message(gl_raster_t *font, const char *msg, GL
          int off_x, off_y, tex_x, tex_y, width, height;
          const struct font_glyph *glyph =
             (const struct font_glyph*)font->font_driver->get_glyph(font->font_data, (uint8_t)msg[i]);
-         if (!glyph)
-            glyph = (const struct font_glyph*)font->font_driver->get_glyph(font->font_data, '?'); /* Do something smarter here ... */
+
+         if (!glyph) /* Do something smarter here ... */
+            glyph = (const struct font_glyph*)font->font_driver->get_glyph(font->font_data, '?');
          if (!glyph)
             continue;
 
@@ -231,10 +240,10 @@ static void gl_raster_font_render_message(gl_raster_t *font, const char *msg, GL
          delta_y -= glyph->advance_y;
       }
 
-      coords.tex_coord = font_tex_coords;
-      coords.vertex    = font_vertex;
-      coords.color     = font_color;
-      coords.vertices  = 6 * msg_len;
+      coords.tex_coord     = font_tex_coords;
+      coords.vertex        = font_vertex;
+      coords.color         = font_color;
+      coords.vertices      = 6 * msg_len;
       coords.lut_tex_coord = gl->coords.lut_tex_coord;
 
       if (font->block)
@@ -243,14 +252,17 @@ static void gl_raster_font_render_message(gl_raster_t *font, const char *msg, GL
          gl_raster_font_draw_vertices(gl, &coords);
 
       msg_len_full -= msg_len;
-      msg += msg_len;
-      msg_len = min(msg_len_full, MAX_MSG_LEN_CHUNK);
+      msg          += msg_len;
+      msg_len       = min(msg_len_full, MAX_MSG_LEN_CHUNK);
    }
 }
 
 static void gl_raster_font_setup_viewport(gl_raster_t *font, bool full_screen)
 {
    gl_t *gl = font->gl;
+
+   if (!gl)
+      return;
 
    gl_set_viewport(gl, gl->win_width, gl->win_height, full_screen, false);
 
@@ -366,7 +378,7 @@ static void gl_raster_font_flush_block(void *data)
    gl_raster_t       *font       = (gl_raster_t*)data;
    gl_font_raster_block_t *block = font->block;
 
-   if (block->carr.coords.vertices)
+   if (font && block->carr.coords.vertices)
    {
       gl_raster_font_setup_viewport(font, block->fullscreen);
       gl_raster_font_draw_vertices(font->gl, (gl_coords_t*)&block->carr.coords);
@@ -379,7 +391,7 @@ static void gl_raster_font_bind_block(void *data, void *userdata)
    gl_raster_t *font = (gl_raster_t*)data;
    gl_font_raster_block_t *block = (gl_font_raster_block_t*)userdata;
 
-   if (font)
+   if (font && block)
       font->block = block;
 }
 

@@ -57,7 +57,8 @@ static void *d3dfonts_w32_init_font(void *video_data,
    d3dfonts->d3d   = (d3d_video_t*)video_data;
    d3dfonts->color = D3DCOLOR_XRGB(r, g, b);
 
-   if (SUCCEEDED(D3DXCreateFontIndirect(d3dfonts->d3d->dev, &desc, &d3dfonts->font)))
+   if (SUCCEEDED(D3DXCreateFontIndirect(
+               d3dfonts->d3d->dev, &desc, &d3dfonts->font)))
       return d3dfonts;
 
    free(d3dfonts);
@@ -114,7 +115,7 @@ font_renderer_t d3d_win32_font = {
    d3dfonts_w32_free_font,
    d3dfonts_w32_render_msg,
    "d3d-fonts-w32",
-   NULL,
-   NULL,
-   NULL,
+   NULL,                      /* get_glyph */
+   NULL,                      /* bind_block */
+   NULL,                      /* flush */
 };
