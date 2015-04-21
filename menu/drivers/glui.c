@@ -25,6 +25,7 @@
 #include "../../runloop_data.h"
 
 #include <file/file_path.h>
+#include "../../gfx/video_thread_wrapper.h"
 #include "../../gfx/drivers/gl_common.h"
 #include "../../gfx/font_driver.h"
 #include "../../gfx/video_texture.h"
@@ -38,6 +39,13 @@ typedef struct glui_handle
    unsigned margin;
    unsigned ticker_limit;
    char box_message[PATH_MAX_LENGTH];
+
+   struct
+   {
+      void *buf;
+      int size;
+   } font;
+
    struct
    {
       struct
@@ -83,7 +91,6 @@ static void glui_blit_line(gl_t *gl, float x, float y, const char *message, uint
 {
    glui_handle_t *glui = NULL;
    menu_handle_t *menu = menu_driver_get_ptr();
-   settings_t *settings = config_get_ptr();
 
    if (!menu)
       return;
@@ -93,13 +100,13 @@ static void glui_blit_line(gl_t *gl, float x, float y, const char *message, uint
    struct font_params params = {0};
 
    params.x           = x / gl->win_width;
-   params.y           = 1.0f - (y + glui->line_height/2 + settings->video.font_size/3) / gl->win_height;
+   params.y           = 1.0f - (y + glui->line_height/2 + glui->font.size/3) / gl->win_height;
    params.scale       = 1.0;
    params.color       = color;
    params.full_screen = true;
    params.text_align  = text_align;
 
-   video_driver_set_osd_msg(message, &params, NULL);
+   video_driver_set_osd_msg(message, &params, glui->font.buf);
 }
 
 static void glui_render_background(settings_t *settings, gl_t *gl,
@@ -297,7 +304,7 @@ static void glui_render_messagebox(const char *message)
       goto end;
 
    x = gl->win_width / 2;
-   y = gl->win_height / 2 - list->size * settings->video.font_size / 2;
+   y = gl->win_height / 2 - list->size * glui->font.size / 2;
 
    normal_color = FONT_COLOR_ARGB_TO_RGBA(settings->menu.entry_normal_color);
 
@@ -305,7 +312,7 @@ static void glui_render_messagebox(const char *message)
    {
       const char *msg = list->elems[i].data;
       if (msg)
-         glui_blit_line(gl, x, y + i * settings->video.font_size, msg, normal_color, TEXT_ALIGN_CENTER);
+         glui_blit_line(gl, x, y + i * glui->font.size, msg, normal_color, TEXT_ALIGN_CENTER);
    }
 
 end:
@@ -491,7 +498,7 @@ static void glui_frame(void)
 
    glui_render_menu_list(runloop, gl, glui, menu, label, normal_color, hover_color);
 
-   runloop->frames.video.current.menu.animation.is_active = false;
+   runloop->frames.video.current.menu.animation.is_active = true;
    runloop->frames.video.current.menu.label.is_updated    = false;
    runloop->frames.video.current.menu.framebuf.dirty      = false;
 
@@ -601,6 +608,7 @@ static void *glui_init(void)
    glui->margin = dpi/6;
    glui->ticker_limit = dpi/3;
    menu->header_height = dpi/3;
+   glui->font.size = dpi/8;
    glui->textures.bg.id = 0;
 
    if (font_driver->bind_block && font_driver->flush)
@@ -750,6 +758,63 @@ static void glui_populate_entries(const char *path,
    menu->scroll_y = glui_get_scroll();
 }
 
+static bool glui_font_init_first(const void **font_driver,
+      void **font_handle, void *video_data, const char *font_path,
+      float font_size)
+{
+   settings_t *settings = config_get_ptr();
+   global_t   *global   = global_get_ptr();
+
+   if (settings->video.threaded
+         && !global->system.hw_render_callback.context_type)
+   {
+      driver_t *driver    = driver_get_ptr();
+      thread_video_t *thr = (thread_video_t*)driver->video_data;
+
+      if (!thr)
+         return false;
+
+      thr->cmd_data.font_init.method      = gl_font_init_first;
+      thr->cmd_data.font_init.font_driver = (const void**)font_driver;
+      thr->cmd_data.font_init.font_handle = font_handle;
+      thr->cmd_data.font_init.video_data = video_data;
+      thr->cmd_data.font_init.font_path = font_path;
+      thr->cmd_data.font_init.font_size = font_size;
+      thr->send_cmd_func(thr, CMD_FONT_INIT);
+      thr->wait_reply_func(thr, CMD_FONT_INIT);
+
+      return thr->cmd_data.font_init.return_value;
+   }
+
+   return gl_font_init_first(font_driver, font_handle, video_data,
+         font_path, font_size);
+}
+
+static void glui_context_reset(void)
+{
+   glui_handle_t *glui = NULL;
+   const font_renderer_driver_t *font_drv = NULL;
+   menu_handle_t *menu = menu_driver_get_ptr();
+   settings_t *settings = config_get_ptr();
+
+   if (!menu)
+      return;
+   
+   glui = (glui_handle_t*)menu->userdata;
+
+   if (!glui)
+      return;
+
+   gl_t *gl = (gl_t*)video_driver_get_ptr(NULL);
+   if (!gl)
+      return;
+
+   font_drv = (const font_renderer_driver_t *)gl->font_driver;
+
+   glui_font_init_first(&gl->font_driver,
+         &glui->font.buf, gl, font_drv->get_default_font(), glui->font.size);
+}
+
 menu_ctx_driver_t menu_ctx_glui = {
    NULL,
    glui_get_message,
@@ -757,7 +822,7 @@ menu_ctx_driver_t menu_ctx_glui = {
    glui_frame,
    glui_init,
    glui_free,
-   NULL,
+   glui_context_reset,
    glui_context_destroy,
    glui_populate_entries,
    NULL,
