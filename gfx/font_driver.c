@@ -29,7 +29,7 @@ static const font_renderer_t *d3d_font_backends[] = {
 #endif
 };
 
-bool d3d_font_init_first(
+static bool d3d_font_init_first(
       const void **font_driver, void **font_handle,
       void *video_data, const char *font_path, float font_size)
 {
@@ -62,7 +62,8 @@ static const font_renderer_t *gl_font_backends[] = {
    NULL,
 };
 
-bool gl_font_init_first(const void **font_driver, void **font_handle,
+static bool gl_font_init_first(
+      const void **font_driver, void **font_handle,
       void *video_data, const char *font_path, float font_size)
 {
    unsigned i;
@@ -82,3 +83,29 @@ bool gl_font_init_first(const void **font_driver, void **font_handle,
    return false;
 }
 #endif
+
+bool font_init_first(const void **font_driver, void **font_handle,
+      void *video_data, const char *font_path, float font_size,
+      enum font_driver_render_api api)
+{
+   switch (api)
+   {
+#ifdef HAVE_D3D
+      case FONT_DRIVER_RENDER_DIRECT3D_API:
+         return d3d_font_init_first(font_driver, font_handle,
+               video_data, font_path, font_size);
+#endif
+#ifdef HAVE_OPENGL
+      case FONT_DRIVER_RENDER_OPENGL_API:
+         return gl_font_init_first(font_driver, font_handle,
+               video_data, font_path, font_size);
+#endif
+      case FONT_DRIVER_RENDER_DONT_CARE:
+         /* TODO/FIXME - lookup graphics driver's 'API' */
+         break;
+      default:
+         break;
+   }
+
+   return false;
+}

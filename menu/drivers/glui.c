@@ -785,20 +785,22 @@ static bool glui_font_init_first(const void **font_driver,
       if (!thr)
          return false;
 
-      thr->cmd_data.font_init.method      = gl_font_init_first;
+      thr->cmd_data.font_init.method      = font_init_first;
       thr->cmd_data.font_init.font_driver = (const void**)font_driver;
       thr->cmd_data.font_init.font_handle = font_handle;
       thr->cmd_data.font_init.video_data  = video_data;
       thr->cmd_data.font_init.font_path   = font_path;
       thr->cmd_data.font_init.font_size   = font_size;
+      thr->cmd_data.font_init.api         = FONT_DRIVER_RENDER_OPENGL_API;
+
       thr->send_cmd_func(thr,   CMD_FONT_INIT);
       thr->wait_reply_func(thr, CMD_FONT_INIT);
 
       return thr->cmd_data.font_init.return_value;
    }
 
-   return gl_font_init_first(font_driver, font_handle, video_data,
-         font_path, font_size);
+   return font_init_first(font_driver, font_handle, video_data,
+         font_path, font_size, FONT_DRIVER_RENDER_OPENGL_API);
 }
 
 static void glui_context_reset(void)

@@ -307,7 +307,8 @@ static void thread_loop(void *data)
                         thr->cmd_data.font_init.font_handle,
                         thr->cmd_data.font_init.video_data,
                         thr->cmd_data.font_init.font_path,
-                        thr->cmd_data.font_init.font_size);
+                        thr->cmd_data.font_init.font_size,
+                        thr->cmd_data.font_init.api);
             thread_reply(thr, CMD_FONT_INIT);
             break;
 

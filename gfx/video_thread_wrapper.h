@@ -21,6 +21,7 @@
 #include "../general.h"
 #include <boolean.h>
 #include <rthreads/rthreads.h>
+#include "font_driver.h"
 
 enum thread_cmd
 {
@@ -173,13 +174,14 @@ typedef struct thread_video
       {
          bool (*method)(const void **font_driver,
                void **font_handle, void *video_data, const char *font_path,
-               float font_size);
+               float font_size, enum font_driver_render_api api);
          const void **font_driver;
          void **font_handle;
          void *video_data;
          const char *font_path;
          float font_size;
          bool return_value;
+         enum font_driver_render_api api;
       } font_init;
 
    } cmd_data;

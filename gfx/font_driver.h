@@ -25,17 +25,17 @@
 extern "C" {
 #endif
 
-#ifdef HAVE_D3D
-bool d3d_font_init_first(
-      const void **font_driver, void **font_handle,
-      void *video_data, const char *font_path, float font_size);
-#endif
+enum font_driver_render_api
+{
+   FONT_DRIVER_RENDER_DONT_CARE,
+   FONT_DRIVER_RENDER_OPENGL_API,
+   FONT_DRIVER_RENDER_DIRECT3D_API,
+};
 
-#ifdef HAVE_OPENGL
-bool gl_font_init_first(const void **font_driver,
-      void **font_handle, void *gl_data,
-      const char *font_path, float font_size);
-#endif
+bool font_init_first(
+      const void **font_driver, void **font_handle,
+      void *video_data, const char *font_path, float font_size,
+      enum font_driver_render_api api);
 
 #ifdef __cplusplus
 }
