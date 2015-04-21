@@ -632,14 +632,73 @@ static int android_input_get_id(android_input_t *android, AInputEvent *event)
    return id;
 }
 
+static void android_input_handle_input(void *data)
+{
+   AInputEvent *event = NULL;
+   android_input_t    *android     = (android_input_t*)data;
+   struct android_app *android_app = (struct android_app*)g_android;
+
+   /* Read all pending events. */
+   while (AInputQueue_hasEvents(android_app->inputQueue))
+   {
+      while (AInputQueue_getEvent(android_app->inputQueue, &event) >= 0)
+      {
+         int32_t handled = 1;
+         int predispatched = AInputQueue_preDispatchEvent(android_app->inputQueue, event);
+         int source = AInputEvent_getSource(event);
+         int type_event = AInputEvent_getType(event);
+         int id = android_input_get_id(android, event);
+         int port = android_input_get_id_port(android, id, source);
+
+         if (port < 0)
+            handle_hotplug(android, android_app,
+                  &android->pads_connected, id, source);
+
+         if (type_event == AINPUT_EVENT_TYPE_MOTION)
+         {
+            if (android_input_poll_event_type_motion(android, event,
+                     port, source))
+               engine_handle_dpad(android, event, port, source);
+         }
+         else if (type_event == AINPUT_EVENT_TYPE_KEY)
+         {
+            int keycode = AKeyEvent_getKeyCode(event);
+            android_input_poll_event_type_key(android, android_app,
+                  event, port, keycode, source, type_event, &handled);
+         }
+
+         if (!predispatched)
+            AInputQueue_finishEvent(android_app->inputQueue, event,
+                  handled);
+      }
+   }
+}
+
+static void android_input_handle_user(void *data)
+{
+   android_input_t    *android     = (android_input_t*)data;
+   struct android_app *android_app = (struct android_app*)g_android;
+
+   if ((android_app->sensor_state_mask & (1ULL <<
+               RETRO_SENSOR_ACCELEROMETER_ENABLE))
+         && android_app->accelerometerSensor)
+   {
+      ASensorEvent event;
+      while (ASensorEventQueue_getEvents(android->sensorEventQueue, &event, 1) > 0)
+      {
+         android->accelerometer_state.x = event.acceleration.x;
+         android->accelerometer_state.y = event.acceleration.y;
+         android->accelerometer_state.z = event.acceleration.z;
+      }
+   }
+}
+
 /* Handle all events. If our activity is in pause state,
  * block until we're unpaused.
  */
 static void android_input_poll(void *data)
 {
    int ident;
-   struct android_app *android_app = (struct android_app*)g_android;
-   android_input_t    *android     = (android_input_t*)data;
    driver_t *driver = driver_get_ptr();
 
    while ((ident = 
@@ -647,62 +706,18 @@ static void android_input_poll(void *data)
                ? -1 : 0,
                NULL, NULL, NULL)) >= 0)
    {
-      if (ident == LOOPER_ID_INPUT)
+      switch (ident)
       {
-         AInputEvent *event = NULL;
-
-         /* Read all pending events. */
-         while (AInputQueue_hasEvents(android_app->inputQueue))
-         {
-            while (AInputQueue_getEvent(android_app->inputQueue, &event) >= 0)
-            {
-               int32_t handled = 1;
-               int predispatched = AInputQueue_preDispatchEvent(android_app->inputQueue, event);
-               int source = AInputEvent_getSource(event);
-               int type_event = AInputEvent_getType(event);
-               int id = android_input_get_id(android, event);
-               int port = android_input_get_id_port(android, id, source);
-
-               if (port < 0)
-                  handle_hotplug(android, android_app,
-                        &android->pads_connected, id, source);
-
-               if (type_event == AINPUT_EVENT_TYPE_MOTION)
-               {
-                  if (android_input_poll_event_type_motion(android, event,
-                           port, source))
-                     engine_handle_dpad(android, event, port, source);
-               }
-               else if (type_event == AINPUT_EVENT_TYPE_KEY)
-               {
-                  int keycode = AKeyEvent_getKeyCode(event);
-                  android_input_poll_event_type_key(android, android_app,
-                        event, port, keycode, source, type_event, &handled);
-               }
-
-               if (!predispatched)
-                  AInputQueue_finishEvent(android_app->inputQueue, event,
-                        handled);
-            }
-         }
+         case LOOPER_ID_INPUT:
+            android_input_handle_input(data);
+            break;
+         case LOOPER_ID_USER:
+            android_input_handle_user(data);
+            break;
+         case LOOPER_ID_MAIN:
+            engine_handle_cmd(driver->input_data);
+            break;
       }
-      else if (ident == LOOPER_ID_USER)
-      {
-         if ((android_app->sensor_state_mask & (1ULL <<
-                     RETRO_SENSOR_ACCELEROMETER_ENABLE))
-               && android_app->accelerometerSensor)
-         {
-            ASensorEvent event;
-            while (ASensorEventQueue_getEvents(android->sensorEventQueue, &event, 1) > 0)
-            {
-               android->accelerometer_state.x = event.acceleration.x;
-               android->accelerometer_state.y = event.acceleration.y;
-               android->accelerometer_state.z = event.acceleration.z;
-            }
-         }
-      }
-      else if (ident == LOOPER_ID_MAIN)
-         engine_handle_cmd(driver->input_data);
    }
 }
 
