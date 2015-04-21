@@ -271,6 +271,18 @@ static bool cocoagl_gfx_ctx_set_video_mode(void *data, unsigned width, unsigned 
    return true;
 }
 
+static float cocoagl_gfx_ctx_get_scale_from_selector(RAScreen *screen, SEL selector)
+{
+    float ret;
+    NSInvocation *invocation = [NSInvocation invocationWithMethodSignature:
+                                [[screen class] instanceMethodSignatureForSelector:selector]];
+    [invocation setSelector:selector];
+    [invocation setTarget:screen];
+    [invocation invoke];
+    [invocation getReturnValue:&ret];
+    return ret;
+}
+
 float cocoagl_gfx_ctx_get_native_scale(void)
 {
     static float ret = 0.0f;
@@ -283,15 +295,7 @@ float cocoagl_gfx_ctx_get_native_scale(void)
        return 0.0f;
     
    if ([screen respondsToSelector:selector])
-   {
-       NSInvocation *invocation = [NSInvocation invocationWithMethodSignature:
-                                   [[screen class] instanceMethodSignatureForSelector:selector]];
-       [invocation setSelector:selector];
-       [invocation setTarget:screen];
-       [invocation invoke];
-       [invocation getReturnValue:&ret];
-       return ret;
-   }
+       return cocoagl_gfx_ctx_get_scale_from_selector(screen, selector);
     
    ret = 1.0f;
    if ([screen respondsToSelector:@selector(scale)])
