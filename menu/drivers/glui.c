@@ -600,9 +600,9 @@ static void *glui_init(void)
 
    glui = (glui_handle_t*)menu->userdata;
 
-   float dpi = 96;
+   float dpi = 128;
    if (!gfx_ctx_get_metrics(DISPLAY_METRIC_DPI, &dpi))
-      dpi = 96;
+      dpi = 128;
 
    glui->line_height = dpi/3;
    glui->margin = dpi/6;
