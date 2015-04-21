@@ -783,7 +783,7 @@ ifeq ($(HAVE_COCOA),1)
 			 ui/drivers/ui_cocoa.o \
 			 ui/drivers/cocoa/cocoa_common.o \
 			 ui/drivers/cocoa/cocoa_settings.o \
-			 gfx/drivers_context/apple_cocoa_gl.o
+			 gfx/drivers_context/cocoa_gl_ctx.o
 endif
 
 
