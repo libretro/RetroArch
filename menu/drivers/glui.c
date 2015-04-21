@@ -218,6 +218,35 @@ static void glui_draw_cursor(gl_t *gl, float x, float y)
    glui_render_quad(gl, x-5, y-5, 10, 10, 1, 1, 1, 1);
 }
 
+static void glui_draw_scrollbar(gl_t *gl)
+{
+   int width = 4;
+   glui_handle_t *glui = NULL;
+   menu_handle_t *menu = menu_driver_get_ptr();
+
+   if (!menu)
+      return;
+
+   glui = (glui_handle_t*)menu->userdata;
+
+   float content_height = menu_list_get_size(menu->menu_list) * glui->line_height;
+   float total_height = gl->win_height - menu->header_height * 2;
+
+   float height = total_height / (content_height / total_height);
+
+   float y = total_height * menu->scroll_y / content_height;
+
+   if (content_height < total_height)
+      return;
+
+   glui_render_quad(gl,
+         gl->win_width - width,
+         menu->header_height + y,
+         width,
+         height,
+         1, 1, 1, 1);
+}
+
 static void glui_get_message(const char *message)
 {
    glui_handle_t *glui = NULL;
@@ -480,6 +509,8 @@ static void glui_frame(void)
          gl->win_height - menu->header_height,
          gl->win_width, menu->header_height,
          0.2, 0.2, 0.2, 1);
+
+   glui_draw_scrollbar(gl);
 
    core_name = global->menu.info.library_name;
    if (!core_name)
