@@ -102,9 +102,8 @@ static void glui_blit_line(gl_t *gl, float x, float y, const char *message, uint
    video_driver_set_osd_msg(message, &params, NULL);
 }
 
-static void glui_render_background(settings_t *settings,
-      gl_t *gl, glui_handle_t *glui,
-      bool force_transparency)
+static void glui_render_background(settings_t *settings, gl_t *gl,
+      glui_handle_t *glui)
 {
    static const GLfloat vertex[] = {
       0, 0,
@@ -145,7 +144,6 @@ static void glui_render_background(settings_t *settings,
 
    if ((settings->menu.pause_libretro
       || !global->main_is_init || global->libretro_dummy)
-      && !force_transparency
       && glui->textures.bg.id)
    {
       coords.color = color;
@@ -451,7 +449,7 @@ static void glui_frame(void)
 
    gl_set_viewport(gl, gl->win_width, gl->win_height, true, false);
 
-   glui_render_background(settings, gl, glui, false);
+   glui_render_background(settings, gl, glui);
 
    menu_list_get_last_stack(menu->menu_list, &dir, &label, &menu_type);
 
@@ -518,14 +516,14 @@ static void glui_frame(void)
       const char *str = *menu->keyboard.buffer;
       if (!str)
          str = "";
-      glui_render_background(settings, gl, glui, true);
+      glui_render_quad(gl, 0, 0, gl->win_width, gl->win_height, 0, 0, 0, 0.75);
       snprintf(msg, sizeof(msg), "%s\n%s", menu->keyboard.label, str);
       glui_render_messagebox(msg);
    }
 
    if (glui->box_message[0] != '\0')
    {
-      glui_render_background(settings, gl, glui, true);
+      glui_render_quad(gl, 0, 0, gl->win_width, gl->win_height, 0, 0, 0, 0.75);
       glui_render_messagebox(glui->box_message);
       glui->box_message[0] = '\0';
    }
