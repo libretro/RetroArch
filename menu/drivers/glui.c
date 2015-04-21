@@ -81,10 +81,19 @@ static int glui_entry_iterate(unsigned action)
 
 static void glui_blit_line(gl_t *gl, float x, float y, const char *message, uint32_t color, enum text_alignment text_align)
 {
+   glui_handle_t *glui = NULL;
+   menu_handle_t *menu = menu_driver_get_ptr();
+   settings_t *settings = config_get_ptr();
+
+   if (!menu)
+      return;
+
+   glui = (glui_handle_t*)menu->userdata;
+
    struct font_params params = {0};
 
    params.x           = x / gl->win_width;
-   params.y           = 1.0f - y / gl->win_height;
+   params.y           = 1.0f - (y + glui->line_height/2 + settings->video.font_size/3) / gl->win_height;
    params.scale       = 1.0;
    params.color       = color;
    params.full_screen = true;
@@ -328,12 +337,12 @@ static void glui_render(void)
    if (menu->scroll_y < 0)
       menu->scroll_y = 0;
 
-   bottom = (menu_list_get_size(menu->menu_list)-1) * glui->line_height
+   bottom = menu_list_get_size(menu->menu_list) * glui->line_height
          - gl->win_height + menu->header_height * 2;
    if (menu->scroll_y > bottom)
       menu->scroll_y = bottom;
 
-   if ((menu_list_get_size(menu->menu_list)-1) * glui->line_height
+   if (menu_list_get_size(menu->menu_list) * glui->line_height
       < gl->win_height - menu->header_height*2)
       menu->scroll_y = 0;
 }
@@ -450,7 +459,7 @@ static void glui_frame(void)
 
    glui_render_quad(gl, 0,
          menu->header_height - menu->scroll_y + glui->line_height *
-         menu->navigation.selection_ptr - glui->line_height / 2 - 4,
+         menu->navigation.selection_ptr,
          gl->win_width, glui->line_height, 1, 1, 1, 0.1);
 
    glui_render_menu_list(runloop, gl, glui, menu, label, normal_color, hover_color);
@@ -460,18 +469,18 @@ static void glui_frame(void)
    runloop->frames.video.current.menu.framebuf.dirty      = false;
 
    glui_render_quad(gl, 0, 0, gl->win_width,
-         menu->header_height - glui->line_height/2 - 4, 0.2, 0.2, 0.2, 1);
+         menu->header_height, 0.2, 0.2, 0.2, 1);
 
    menu_animation_ticker_line(title_buf, glui->ticker_limit,
          runloop->frames.video.count / 100, title, true);
-   glui_blit_line(gl, gl->win_width/2, glui->line_height, title_buf, title_color, TEXT_ALIGN_CENTER);
+   glui_blit_line(gl, gl->win_width/2, 0, title_buf, title_color, TEXT_ALIGN_CENTER);
 
    if (file_list_get_size(menu->menu_list->menu_stack) > 1)
-      glui_blit_line(gl, glui->margin, glui->line_height, "BACK", title_color, TEXT_ALIGN_LEFT);
+      glui_blit_line(gl, glui->margin, 0, "BACK", title_color, TEXT_ALIGN_LEFT);
 
    glui_render_quad(gl, 0,
-         gl->win_height - (menu->header_height - glui->line_height/2 + 4),
-         gl->win_width, menu->header_height - glui->line_height/2 + 4,
+         gl->win_height - menu->header_height,
+         gl->win_width, menu->header_height,
          0.2, 0.2, 0.2, 1);
 
    core_name = global->menu.info.library_name;
@@ -555,10 +564,14 @@ static void *glui_init(void)
 
    glui = (glui_handle_t*)menu->userdata;
 
-   glui->line_height = 44;
-   glui->margin = 22;
-   glui->ticker_limit = 44;
-   menu->header_height = 88;
+   float dpi = 96;
+   if (!gfx_ctx_get_metrics(DISPLAY_METRIC_DPI, &dpi))
+      dpi = 96;
+
+   glui->line_height = dpi/3;
+   glui->margin = dpi/6;
+   glui->ticker_limit = dpi/3;
+   menu->header_height = dpi/3;
    glui->textures.bg.id = 0;
 
    if (font_driver->bind_block && font_driver->flush)
