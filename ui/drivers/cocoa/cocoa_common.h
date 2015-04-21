@@ -25,7 +25,6 @@
 #include "../../menu/menu.h"
 
 @protocol RetroArch_Platform
-- (void)unloadingCore;
 @end
 
 #if defined(HAVE_COCOATOUCH)
@@ -76,8 +75,6 @@ extern apple_frontend_settings_t apple_frontend_settings;
 - (void)showGameView;
 - (void)toggleUI;
 
-- (void)unloadingCore;
-
 - (void)refreshSystemConfig;
 @end
 
@@ -109,8 +106,6 @@ void get_ios_version(int *major, int *minor);
 }
 
 @property (nonatomic, retain) NSWindow IBOutlet* window;
-
-- (void)unloadingCore;
 
 @end
 

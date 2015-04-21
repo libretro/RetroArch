@@ -37,6 +37,9 @@
 static id apple_platform;
 static CFRunLoopObserverRef iterate_observer;
 
+/* forward declaration */
+void apple_rarch_exited(void);
+
 static void rarch_draw(CFRunLoopObserverRef observer,
     CFRunLoopActivity activity, void *info)
 {
@@ -59,14 +62,6 @@ static void rarch_draw(CFRunLoopObserverRef observer,
     if (runloop->is_idle)
         return;
     CFRunLoopWakeUp(CFRunLoopGetMain());
-}
-
-void apple_rarch_exited(void)
-{
-   RetroArch_iOS *ap = (RetroArch_iOS *)apple_platform;
-    
-   if (ap)
-      [ap unloadingCore];
 }
 
 apple_frontend_settings_t apple_frontend_settings;
@@ -421,12 +416,6 @@ enum
    }
 }
 
-- (void)unloadingCore
-{
-   [self showPauseMenu:self];
-   btpad_set_inquiry_state(true);
-}
-
 - (void)refreshSystemConfig
 {
    bool small_keyboard, is_icade, is_btstack;
@@ -466,6 +455,16 @@ void apple_display_alert(const char *message, const char *title)
                                              cancelButtonTitle:BOXSTRING("OK")
                                              otherButtonTitles:nil];
    [alert show];
+}
+
+void apple_rarch_exited(void)
+{
+    RetroArch_iOS *ap = (RetroArch_iOS *)apple_platform;
+    
+    if (!ap)
+        return;
+    [ap showPauseMenu:ap];
+    btpad_set_inquiry_state(true);
 }
 
 typedef struct ui_companion_cocoatouch
