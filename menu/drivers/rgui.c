@@ -22,6 +22,7 @@
 #include <limits.h>
 
 #include "../menu.h"
+#include "../menu_display.h"
 #include <compat/posix_string.h>
 #include <file/file_path.h>
 #include <retro_inline.h>

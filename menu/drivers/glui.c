@@ -22,6 +22,7 @@
 #include <limits.h>
 
 #include "../menu.h"
+#include "../menu_display.h"
 #include "../../runloop_data.h"
 
 #include <file/file_path.h>

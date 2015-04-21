@@ -15,7 +15,7 @@
  */
 
 #include "menu.h"
-#include "menu_animation.h"
+#include "menu_display.h"
 #include "menu_entries.h"
 #include "menu_shader.h"
 #include "../dynamic.h"
@@ -23,46 +23,6 @@
 #include "../../retroarch.h"
 #include "../../performance.h"
 #include <file/file_path.h>
-
-bool menu_display_update_pending(void)
-{
-   runloop_t *runloop = rarch_main_get_ptr();
-   if (!runloop)
-      return false;
-   if (runloop->frames.video.current.menu.animation.is_active ||
-         runloop->frames.video.current.menu.label.is_updated ||
-         runloop->frames.video.current.menu.framebuf.dirty)
-      return true;
-   return false;
-}
-
-/**
- ** draw_frame:
- *
- * Draws menu graphics onscreen.
- **/
-static void draw_frame(void)
-{
-   driver_t *driver     = driver_get_ptr();
-   global_t *global     = global_get_ptr();
-   settings_t *settings = config_get_ptr();
-
-   video_driver_set_texture_enable(true, false);
-
-   if (!settings->menu.pause_libretro)
-   {
-      if (global->main_is_init && !global->libretro_dummy)
-      {
-         bool block_libretro_input = driver->block_libretro_input;
-         driver->block_libretro_input = true;
-         pretro_run();
-         driver->block_libretro_input = block_libretro_input;
-         return;
-      }
-   }
-    
-   rarch_render_cached_frame();
-}
 
 /**
  * menu_update_libretro_info:
@@ -150,7 +110,7 @@ bool menu_load_content(void)
 
    menu_driver_entry_iterate(MENU_ACTION_NOOP);
 
-   draw_frame();
+   menu_display_fb();
 
    if (!(main_load_content(0, NULL, NULL, menu_environment_get,
          driver->frontend_ctx->process_args)))
@@ -224,9 +184,7 @@ void *menu_init(const void *data)
 
    menu_shader_manager_init(menu);
 
-   menu->animation = (animation_t*)calloc(1, sizeof(animation_t));
-
-   if (!menu->animation)
+   if (!menu_display_init(menu))
       goto error;
 
    rarch_assert(menu->msg_queue = msg_queue_new(8));
@@ -301,8 +259,7 @@ void menu_free(void *data)
       msg_queue_free(menu->msg_queue);
    menu->msg_queue = NULL;
 
-   menu_animation_free(menu->animation);
-   menu->animation = NULL;
+   menu_display_free(menu);
 
    if (menu->frame_buf.data)
       free(menu->frame_buf.data);
@@ -420,7 +377,7 @@ int menu_iterate(retro_input_t input,
    menu_driver_entry_iterate(action);
 
    if (runloop->is_menu && !runloop->is_idle)
-      draw_frame();
+      menu_display_fb();
 
    menu_driver_set_texture();
 
