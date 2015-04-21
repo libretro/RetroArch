@@ -28,6 +28,8 @@ bool menu_display_init(void *data);
 
 bool menu_display_update_pending(void);
 
+float menu_display_get_dpi(void *data);
+
 #ifdef __cplusplus
 }
 #endif

@@ -18,6 +18,7 @@
 #include "menu_animation.h"
 #include "../dynamic.h"
 #include "../../retroarch.h"
+#include "../gfx/video_context_driver.h"
 
 bool menu_display_update_pending(void)
 {
@@ -83,4 +84,18 @@ bool menu_display_init(void *data)
       return false;
 
    return true;
+}
+
+float menu_display_get_dpi(void *data)
+{
+   float dpi, dpi_orig = 128;
+   menu_handle_t *menu = (menu_handle_t*)data;
+
+   if (!menu)
+      return dpi_orig;
+
+   if (!gfx_ctx_get_metrics(DISPLAY_METRIC_DPI, &dpi))
+      dpi = dpi_orig;
+
+   return dpi;
 }

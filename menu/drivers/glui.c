@@ -601,15 +601,13 @@ static void *glui_init(void)
 
    glui = (glui_handle_t*)menu->userdata;
 
-   float dpi = 128;
-   if (!gfx_ctx_get_metrics(DISPLAY_METRIC_DPI, &dpi))
-      dpi = 128;
+   float dpi = menu_display_get_dpi(menu);
 
-   glui->line_height = dpi/3;
-   glui->margin = dpi/6;
-   glui->ticker_limit = dpi/3;
-   menu->header_height = dpi/3;
-   glui->font.size = dpi/8;
+   glui->line_height    = dpi / 3;
+   glui->margin         = dpi / 6;
+   glui->ticker_limit   = dpi / 3;
+   menu->header_height  = dpi / 3;
+   glui->font.size      = dpi / 8;
    glui->textures.bg.id = 0;
 
    if (font_driver->bind_block && font_driver->flush)
