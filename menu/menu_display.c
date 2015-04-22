@@ -60,10 +60,8 @@ void menu_display_fb(void)
    rarch_render_cached_frame();
 }
 
-void menu_display_free(void *data)
+void menu_display_free(menu_handle_t *menu)
 {
-   menu_handle_t *menu         = (menu_handle_t*)data;
-
    if (!menu)
       return;
 
@@ -71,10 +69,8 @@ void menu_display_free(void *data)
    menu->animation = NULL;
 }
 
-bool menu_display_init(void *data)
+bool menu_display_init(menu_handle_t *menu)
 {
-   menu_handle_t *menu         = (menu_handle_t*)data;
-
    if (!menu)
       return false;
 
@@ -86,10 +82,9 @@ bool menu_display_init(void *data)
    return true;
 }
 
-float menu_display_get_dpi(void *data)
+float menu_display_get_dpi(menu_handle_t *menu)
 {
    float dpi, dpi_orig = 128;
-   menu_handle_t *menu = (menu_handle_t*)data;
 
    if (!menu)
       return dpi_orig;

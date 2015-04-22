@@ -16,19 +16,21 @@
 #ifndef __MENU_DISPLAY_H__
 #define __MENU_DISPLAY_H__
 
+#include "menu_driver.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 void menu_display_fb(void);
 
-void menu_display_free(void *data);
+void menu_display_free(menu_handle_t *menu);
 
-bool menu_display_init(void *data);
+bool menu_display_init(menu_handle_t *menu);
 
 bool menu_display_update_pending(void);
 
-float menu_display_get_dpi(void *data);
+float menu_display_get_dpi(menu_handle_t *menu);
 
 #ifdef __cplusplus
 }
