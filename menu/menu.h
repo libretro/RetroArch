@@ -156,11 +156,11 @@ void *menu_init(const void *data);
 
 /**
  * menu_free_list:
- * @data                     : Menu handle.
+ * @menu                     : Menu handle.
  *
  * Frees menu lists.
  **/
-void menu_free_list(void *data);
+void menu_free_list(menu_handle_t *menu);
 
 /**
  * menu_iterate:
@@ -178,11 +178,11 @@ int menu_iterate(retro_input_t input,
 
 /**
  * menu_free:
- * @info                     : Menu handle.
+ * @menu                     : Menu handle.
  *
  * Frees a menu handle
  **/
-void menu_free(void *data);
+void menu_free(menu_handle_t *menu);
 
 /**
  * menu_load_content:

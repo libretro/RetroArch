@@ -210,14 +210,12 @@ error:
 
 /**
  * menu_free_list:
- * @data                     : Menu handle.
+ * @menu                     : Menu handle.
  *
  * Frees menu lists.
  **/
-void menu_free_list(void *data)
+void menu_free_list(menu_handle_t *menu)
 {
-   menu_handle_t *menu  = (menu_handle_t*)data;
-
    if (!menu)
       return;
 
@@ -227,13 +225,12 @@ void menu_free_list(void *data)
 
 /**
  * menu_free:
- * @info                     : Menu handle.
+ * @menu                     : Menu handle.
  *
  * Frees a menu handle
  **/
-void menu_free(void *data)
+void menu_free(menu_handle_t *menu)
 {
-   menu_handle_t *menu = (menu_handle_t*)data;
    global_t *global    = global_get_ptr();
 
    if (!menu)
@@ -275,8 +272,6 @@ void menu_free(void *data)
 
    if (global->core_info_current)
       free(global->core_info_current);
-
-   free(data);
 }
 
 void menu_apply_deferred_settings(void)
