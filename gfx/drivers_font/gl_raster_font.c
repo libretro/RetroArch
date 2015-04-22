@@ -366,8 +366,10 @@ static const struct font_glyph *gl_raster_font_get_glyph(
 {
    gl_raster_t *font = (gl_raster_t*)data;
 
-   if (!font)
+   if (!font || !font->font_driver)
       return NULL;
+   if (!font->font_driver->ident)
+       return NULL;
    return font->font_driver->get_glyph((void*)font->font_driver, code);
 }
 
