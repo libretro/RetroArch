@@ -90,7 +90,7 @@ static bool input_try_autoconfigure_joypad_from_conf(config_file_t *conf,
    }
 
    /* Check for name match - name starts with ident */
-   if (!strncmp(params->name, ident, strlen(ident)))
+   if (ident[0] != '\0' && !strncmp(params->name, ident, strlen(ident)))
    {
       BIT32_SET(*match, AUTODETECT_MATCH_IDENT);
       ret = true;
