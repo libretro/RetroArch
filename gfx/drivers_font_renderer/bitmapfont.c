@@ -40,7 +40,7 @@ static const struct font_atlas *font_renderer_bmp_get_atlas(void *data)
    return &handle->atlas;
 }
 
-static const void *font_renderer_bmp_get_glyph(
+static const struct font_glyph *font_renderer_bmp_get_glyph(
       void *data, uint32_t code)
 {
    bm_renderer_t *handle = (bm_renderer_t*)data;

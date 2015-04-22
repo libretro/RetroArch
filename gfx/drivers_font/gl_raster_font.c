@@ -138,11 +138,9 @@ static int get_message_width(gl_raster_t *font, const char *msg)
       for (i = 0; i < msg_len; i++)
       {
          const struct font_glyph *glyph = 
-            (const struct font_glyph*)
             font->font_driver->get_glyph(font->font_data, (uint8_t)msg[i]);
          if (!glyph) /* Do something smarter here ... */
-            glyph = (const struct font_glyph*)
-               font->font_driver->get_glyph(font->font_data, '?');
+            glyph = font->font_driver->get_glyph(font->font_data, '?');
          if (!glyph)
             continue;
 
@@ -214,10 +212,10 @@ static void gl_raster_font_render_message(
       {
          int off_x, off_y, tex_x, tex_y, width, height;
          const struct font_glyph *glyph =
-            (const struct font_glyph*)font->font_driver->get_glyph(font->font_data, (uint8_t)msg[i]);
+            font->font_driver->get_glyph(font->font_data, (uint8_t)msg[i]);
 
          if (!glyph) /* Do something smarter here ... */
-            glyph = (const struct font_glyph*)font->font_driver->get_glyph(font->font_data, '?');
+            glyph = font->font_driver->get_glyph(font->font_data, '?');
          if (!glyph)
             continue;
 
@@ -363,7 +361,7 @@ static void gl_raster_font_render_msg(void *data, const char *msg,
       gl_raster_font_restore_viewport(gl);
 }
 
-static const void *gl_raster_font_get_glyph(
+static const struct font_glyph *gl_raster_font_get_glyph(
       void *data, uint32_t code)
 {
    gl_raster_t *font = (gl_raster_t*)data;
