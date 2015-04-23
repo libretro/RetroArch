@@ -54,10 +54,9 @@ static bool d3d_font_init_first(
 
 #ifdef HAVE_OPENGL
 static const font_renderer_t *gl_font_backends[] = {
+   &gl_raster_font,
 #if defined(HAVE_LIBDBGFONT)
    &libdbg_font,
-#else
-   &gl_raster_font,
 #endif
    NULL,
 };

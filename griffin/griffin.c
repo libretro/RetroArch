@@ -258,7 +258,7 @@ FONTS
 #include "../gfx/drivers_font/ps_libdbgfont.c"
 #endif
 
-#if defined(HAVE_OPENGL) && !defined(__CELLOS_LV2__)
+#if defined(HAVE_OPENGL)
 #include "../gfx/drivers_font/gl_raster_font.c"
 #endif
 
