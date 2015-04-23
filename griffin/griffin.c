@@ -185,9 +185,7 @@ VIDEO IMAGE
 VIDEO DRIVER
 ============================================================ */
 
-#if defined(HAVE_OPENGL)
-#include "../libretro-common/gfx/math/matrix_4x4.c"
-#elif defined(GEKKO)
+#if defined(GEKKO)
 #ifdef HW_RVL
 #include "../wii/vi_encoder.c"
 #include "../wii/mem2_manager.c"
@@ -204,6 +202,8 @@ VIDEO DRIVER
 #endif
 
 #ifdef HAVE_OPENGL
+#include "../libretro-common/gfx/math/matrix_4x4.c"
+
 #include "../gfx/drivers/gl.c"
 #include "../gfx/drivers/gl_common.c"
 
