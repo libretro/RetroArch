@@ -199,7 +199,7 @@ void menu_update_system_info(menu_handle_t *menu, bool *load_no_content);
 void menu_apply_deferred_settings(void);
 
 
-void menu_update_libretro_info(struct retro_system_info *info);
+void menu_update_libretro_info(void);
 
 #ifdef __cplusplus
 }

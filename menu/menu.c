@@ -26,12 +26,17 @@
 
 /**
  * menu_update_libretro_info:
- * @info                     : Pointer to system info
  *
  * Update menu state which depends on config.
  **/
-void menu_update_libretro_info(struct retro_system_info *info)
+void menu_update_libretro_info(void)
 {
+   global_t *global               = global_get_ptr();
+   struct retro_system_info *info = global ? &global->menu.info : NULL;
+
+   if (!global || !info)
+      return;
+
 #ifndef HAVE_DYNAMIC
    retro_get_system_info(info);
 #endif
@@ -158,8 +163,6 @@ void *menu_init(const void *data)
 
    if (!menu_ctx)
       return NULL;
-
-   menu_update_libretro_info(&global->menu.info);
 
    if (!(menu = (menu_handle_t*)menu_ctx->init()))
       return NULL;

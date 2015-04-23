@@ -393,7 +393,7 @@ void init_drivers(int flags)
    if (flags & DRIVER_MENU)
    {
       init_menu();
-      menu_update_libretro_info(&global->menu.info);
+      menu_update_libretro_info();
    }
 #endif
 
