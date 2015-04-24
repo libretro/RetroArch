@@ -1478,16 +1478,14 @@ static INLINE void gl_draw_texture(gl_t *gl)
 static bool gl_frame(void *data, const void *frame,
       unsigned width, unsigned height, unsigned pitch, const char *msg)
 {
-   const struct font_renderer *font_driver = NULL;
    gl_t                    *gl = (gl_t*)data;
    runloop_t *runloop          = rarch_main_get_ptr();
    driver_t *driver            = driver_get_ptr();
    settings_t *settings        = config_get_ptr();
+   const struct font_renderer *font_driver = driver ? driver->font_osd_driver : NULL;
 
    RARCH_PERFORMANCE_INIT(frame_run);
    RARCH_PERFORMANCE_START(frame_run);
-
-   font_driver = (const struct font_renderer*)gl->font_driver;
 
    context_bind_hw_render(gl, false);
 
@@ -1615,8 +1613,8 @@ static bool gl_frame(void *data, const void *frame,
       gl_draw_texture(gl);
 #endif
 
-   if (msg && font_driver && gl->font_handle)
-      font_driver->render_msg(gl->font_handle, msg, NULL);
+   if (msg && driver->font_osd_driver && driver->font_osd_data)
+      font_driver->render_msg(driver->font_osd_data, msg, NULL);
 
 #ifdef HAVE_OVERLAY
    if (gl->overlay_enable)
@@ -1729,12 +1727,13 @@ static void gl_free_overlay(gl_t *gl)
 static void gl_free(void *data)
 {
    gl_t *gl = (gl_t*)data;
+   driver_t *driver = driver_get_ptr();
    const struct font_renderer *font_driver = NULL;
 
    if (!gl)
       return;
 
-   font_driver = (const struct font_renderer*)gl->font_driver;
+   font_driver = (const struct font_renderer*)driver->font_osd_driver;
 
    context_bind_hw_render(gl, false);
 
@@ -1753,8 +1752,8 @@ static void gl_free(void *data)
    }
 #endif
 
-   if (font_driver && gl->font_handle)
-      font_driver->free(gl->font_handle);
+   if (font_driver && driver->font_osd_data)
+      font_driver->free(driver->font_osd_data);
    gl_shader_deinit(gl);
 
 #ifndef NO_GL_FF_VERTEX
@@ -2419,7 +2418,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    
    if (settings->video.font_enable)
    {
-      if (!font_init_first(&gl->font_driver, &gl->font_handle,
+      if (!font_init_first((const void**)&driver->font_osd_driver, &driver->font_osd_data,
             gl, *settings->video.font_path 
             ? settings->video.font_path : NULL, settings->video.font_size,
             FONT_DRIVER_RENDER_OPENGL_API))
@@ -3125,16 +3124,17 @@ static void gl_set_osd_msg(void *data, const char *msg,
       const struct font_params *params, void *font)
 {
    const struct font_renderer *font_driver = NULL;
+   driver_t *driver = driver_get_ptr();
    gl_t *gl = (gl_t*)data;
    if (!gl)
       return;
 
-   font_driver = (const struct font_renderer*)gl->font_driver;
+   font_driver = (const struct font_renderer*)driver->font_osd_driver;
 
-   if (font_driver && gl->font_handle)
+   if (driver->font_osd_driver && driver->font_osd_data)
    {
       context_bind_hw_render(gl, false);
-      font_driver->render_msg(font ? font : gl->font_handle, msg, params);
+      font_driver->render_msg(font ? font : driver->font_osd_data, msg, params);
       context_bind_hw_render(gl, true);
    }
 }

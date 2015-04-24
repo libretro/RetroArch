@@ -29,6 +29,7 @@
 #include "frontend/frontend_driver.h"
 #include "ui/ui_companion_driver.h"
 #include "gfx/video_driver.h"
+#include "gfx/font_renderer_driver.h"
 #include "audio/audio_driver.h"
 
 #include "menu/menu_driver.h"
@@ -201,7 +202,9 @@ typedef struct driver
    const rarch_resampler_t *resampler;
    const record_driver_t *recording;
    struct retro_callbacks retro_ctx;
+   const struct font_renderer *font_osd_driver;
 
+   void *font_osd_data;
    void *audio_data;
    void *video_data;
    void *video_context_data;

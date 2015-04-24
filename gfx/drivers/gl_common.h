@@ -319,10 +319,6 @@ typedef struct gl
    bool have_es2_compat;
 #endif
 
-   /* Fonts */
-   const void *font_driver;
-   void *font_handle;
-
    bool egl_images;
    video_info_t video_info;
 

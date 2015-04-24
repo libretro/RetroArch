@@ -443,6 +443,7 @@ static void glui_frame(void)
    glui_handle_t *glui          = NULL;
    const char *core_name        = NULL;
    const char *core_version     = NULL;
+   driver_t *driver             = driver_get_ptr();
    menu_handle_t *menu          = menu_driver_get_ptr();
    settings_t *settings         = config_get_ptr();
    const uint32_t normal_color  = FONT_COLOR_ARGB_TO_RGBA(
@@ -486,7 +487,7 @@ static void glui_frame(void)
          menu->navigation.selection_ptr,
          gl->win_width, glui->line_height, 1, 1, 1, 0.1);
 
-   font_driver = (const struct font_renderer*)gl->font_driver;
+   font_driver = driver->font_osd_driver;
 
    menu_display_font_bind_block(menu, font_driver, &glui->list_block);
 
@@ -624,6 +625,7 @@ static void glui_free(void *data)
    gl_t *gl                                = NULL;
    const struct font_renderer *font_driver = NULL;
    menu_handle_t *menu                     = (menu_handle_t*)data;
+   driver_t      *driver                   = driver_get_ptr();
    glui_handle_t *glui                     = (glui_handle_t*)menu->userdata;
 
    if (!glui || !menu)
@@ -633,10 +635,10 @@ static void glui_free(void *data)
 
    gl = (gl_t*)video_driver_get_ptr(NULL);
 
-   font_driver = gl ? (const struct font_renderer*)gl->font_driver : NULL;
+   font_driver = gl ? (const struct font_renderer*)driver->font_osd_driver : NULL;
 
    if (font_driver && font_driver->bind_block)
-      font_driver->bind_block(gl->font_handle, NULL);
+      font_driver->bind_block(driver->font_osd_data, NULL);
 
    if (menu->userdata)
       free(menu->userdata);
@@ -753,10 +755,8 @@ static void glui_context_reset(void)
 {
    gl_t *gl                               = NULL;
    glui_handle_t *glui                    = NULL;
-   const font_renderer_driver_t *font_drv = NULL;
+   driver_t *driver                       = driver_get_ptr();
    menu_handle_t *menu                    = menu_driver_get_ptr();
-
-   (void)font_drv;
 
    if (!menu)
       return;
@@ -770,10 +770,8 @@ static void glui_context_reset(void)
    if (!gl)
       return;
 
-   font_drv = (const font_renderer_driver_t *)gl->font_driver;
-
    menu_display_font_init_first(
-         &gl->font_driver,
+         (const void**)&driver->font_osd_driver,
          &menu->font.buf,
          gl,
          NULL,

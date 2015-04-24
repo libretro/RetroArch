@@ -1571,15 +1571,11 @@ error:
 
 static void xmb_free(void *data)
 {
-   menu_handle_t *menu = (menu_handle_t*)data;
    xmb_handle_t *xmb = NULL;
-   const struct font_renderer *font_driver = NULL;
-   gl_t *gl = (gl_t*)video_driver_get_ptr(NULL);
-
-   if (!gl)
-      return;
-   
-   font_driver = (const struct font_renderer*)gl->font_driver;
+   menu_handle_t *menu = (menu_handle_t*)data;
+   driver_t *driver    = driver_get_ptr();
+   const struct font_renderer *font_driver = 
+      (const struct font_renderer*)driver->font_osd_driver;
 
    if (menu && menu->userdata)
    {
@@ -1595,7 +1591,7 @@ static void xmb_free(void *data)
    }
 
    if (font_driver->bind_block)
-      font_driver->bind_block(gl->font_handle, NULL);
+      font_driver->bind_block(driver->font_osd_data, NULL);
 }
 
 static bool xmb_load_wallpaper(void *data)
@@ -1640,6 +1636,7 @@ static void xmb_context_reset(void)
    menu_handle_t *menu         = menu_driver_get_ptr();
    settings_t *settings        = config_get_ptr();
    global_t   *global          = global_get_ptr();
+   driver_t *driver            = driver_get_ptr();
 
    if (!menu)
       return;
@@ -1666,7 +1663,7 @@ static void xmb_context_reset(void)
    fill_pathname_join(fontpath, themepath, "font.ttf", sizeof(fontpath));
 
    menu_display_font_init_first(
-         &gl->font_driver,
+         (const void**)&driver->font_osd_driver,
          &menu->font.buf,
          gl,
          fontpath,
