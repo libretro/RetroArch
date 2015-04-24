@@ -388,14 +388,9 @@ static void glui_render_menu_list(runloop_t *runloop,
       uint32_t hover_color)
 {
    size_t i = 0;
-   const struct font_renderer *font_driver = (const struct font_renderer *)
-      gl->font_driver;
-
-   if (font_driver->bind_block)
-      font_driver->bind_block(gl->font_handle, &glui->list_block);
 
    if (!menu_display_update_pending())
-      goto draw_text;
+      return;
 
    glui->list_block.carr.coords.vertices = 0;
 
@@ -441,13 +436,6 @@ static void glui_render_menu_list(runloop_t *runloop,
       glui_blit_line(gl, gl->win_width - glui->margin, y, type_str_buf,
             selected ? hover_color : normal_color, TEXT_ALIGN_RIGHT);
    }
-
-draw_text:
-   if (font_driver->flush)
-   {
-      font_driver->flush(gl->font_handle);
-      font_driver->bind_block(gl->font_handle, NULL);
-   }
 }
 
 static void glui_frame(void)
@@ -471,6 +459,7 @@ static void glui_frame(void)
          settings->menu.title_color);
    runloop_t *runloop           = rarch_main_get_ptr();
    global_t  *global            = global_get_ptr();
+   const struct font_renderer *font_driver = NULL;
 
    if (!menu)
       return;
@@ -502,6 +491,11 @@ static void glui_frame(void)
          menu->header_height - menu->scroll_y + glui->line_height *
          menu->navigation.selection_ptr,
          gl->win_width, glui->line_height, 1, 1, 1, 0.1);
+
+   font_driver = (const struct font_renderer*)gl->font_driver;
+
+   if (font_driver->bind_block)
+      font_driver->bind_block(gl->font_handle, &glui->list_block);
 
    glui_render_menu_list(runloop, gl, glui, menu,
          label, normal_color, hover_color);
@@ -560,6 +554,12 @@ static void glui_frame(void)
             TEXT_ALIGN_RIGHT);
    }
 
+   if (font_driver->flush)
+   {
+      font_driver->flush(gl->font_handle);
+      font_driver->bind_block(gl->font_handle, NULL);
+   }
+
    if (menu->keyboard.display)
    {
       char msg[PATH_MAX_LENGTH];
@@ -589,7 +589,6 @@ static void *glui_init(void)
    float dpi;
    glui_handle_t *glui                     = NULL;
    const video_driver_t *video_driver      = NULL;
-   const struct font_renderer *font_driver = NULL;
    menu_handle_t                     *menu = NULL;
    settings_t *settings                    = config_get_ptr();
    gl_t *gl                                = (gl_t*)
@@ -601,7 +600,6 @@ static void *glui_init(void)
       return NULL;
    }
 
-   font_driver          = (const struct font_renderer*)gl->font_driver;
    menu                 = (menu_handle_t*)calloc(1, sizeof(*menu));
 
    if (!menu)
