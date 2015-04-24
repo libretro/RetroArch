@@ -133,16 +133,6 @@ bool menu_display_font_init_first(const void **font_driver,
          font_path, font_size, FONT_DRIVER_RENDER_OPENGL_API);
 }
 
-bool menu_display_font_flush_block(menu_handle_t *menu,
-      const struct font_renderer *font_driver)
-{
-   if (!font_driver || !font_driver->flush)
-      return false;
-
-   font_driver->flush(menu->font.buf);
-   return true;
-}
-
 bool menu_display_font_bind_block(menu_handle_t *menu,
       const struct font_renderer *font_driver, void *userdata)
 {
@@ -152,4 +142,16 @@ bool menu_display_font_bind_block(menu_handle_t *menu,
    font_driver->bind_block(menu->font.buf, userdata);
 
    return true;
+}
+
+bool menu_display_font_flush_block(menu_handle_t *menu,
+      const struct font_renderer *font_driver)
+{
+   if (!font_driver || !font_driver->flush)
+      return false;
+
+   font_driver->flush(menu->font.buf);
+
+   return menu_display_font_bind_block(menu,
+         font_driver, NULL);
 }

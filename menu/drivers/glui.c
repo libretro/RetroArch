@@ -547,8 +547,7 @@ static void glui_frame(void)
             TEXT_ALIGN_RIGHT);
    }
 
-   if (menu_display_font_flush_block(menu, font_driver))
-      menu_display_font_bind_block(menu, font_driver, NULL);
+   menu_display_font_flush_block(menu, font_driver);
 
    if (menu->keyboard.display)
    {
