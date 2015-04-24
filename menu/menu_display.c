@@ -132,3 +132,24 @@ bool menu_display_font_init_first(const void **font_driver,
    return font_init_first(font_driver, font_handle, video_data,
          font_path, font_size, FONT_DRIVER_RENDER_OPENGL_API);
 }
+
+bool menu_display_font_flush_block(menu_handle_t *menu,
+      const struct font_renderer *font_driver)
+{
+   if (!font_driver || !font_driver->flush)
+      return false;
+
+   font_driver->flush(menu->font.buf);
+   return true;
+}
+
+bool menu_display_font_bind_block(menu_handle_t *menu,
+      const struct font_renderer *font_driver, void *userdata)
+{
+   if (!font_driver || !font_driver->bind_block)
+      return false;
+
+   font_driver->bind_block(menu->font.buf, userdata);
+
+   return true;
+}

@@ -488,8 +488,7 @@ static void glui_frame(void)
 
    font_driver = (const struct font_renderer*)gl->font_driver;
 
-   if (font_driver->bind_block)
-      font_driver->bind_block(menu->font.buf, &glui->list_block);
+   menu_display_font_bind_block(menu, font_driver, &glui->list_block);
 
    glui_render_menu_list(runloop, gl, glui, menu,
          label, normal_color, hover_color);
@@ -548,11 +547,8 @@ static void glui_frame(void)
             TEXT_ALIGN_RIGHT);
    }
 
-   if (font_driver->flush)
-   {
-      font_driver->flush(menu->font.buf);
-      font_driver->bind_block(menu->font.buf, NULL);
-   }
+   if (menu_display_font_flush_block(menu, font_driver))
+      menu_display_font_bind_block(menu, font_driver, NULL);
 
    if (menu->keyboard.display)
    {

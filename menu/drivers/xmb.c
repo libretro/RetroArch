@@ -1313,8 +1313,6 @@ static void xmb_frame(void)
    if (!menu)
       return;
     
-   (void)font_driver;
-
    xmb = (xmb_handle_t*)menu->userdata;
 
    if (!xmb)
@@ -1325,10 +1323,7 @@ static void xmb_frame(void)
    if (!gl)
       return;
 
-   font_driver = (const struct font_renderer*)gl->font_driver;
-
-   if (font_driver->bind_block)
-      font_driver->bind_block(menu->font.buf, &xmb->raster_block);
+   menu_display_font_bind_block(menu, font_driver, &xmb->raster_block);
 
    xmb->raster_block.carr.coords.vertices = 0;
 
@@ -1428,11 +1423,8 @@ static void xmb_frame(void)
       }
    }
 
-   if (font_driver->flush)
-   {
-      font_driver->flush(menu->font.buf);
-      font_driver->bind_block(menu->font.buf, NULL);
-   }
+   if (menu_display_font_flush_block(menu, font_driver))
+      menu_display_font_bind_block(menu, font_driver, NULL);
 
    if (menu->keyboard.display)
    {

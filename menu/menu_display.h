@@ -18,6 +18,7 @@
 
 #include "menu_driver.h"
 #include "../gfx/video_thread_wrapper.h"
+#include "../gfx/font_renderer_driver.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -36,6 +37,12 @@ float menu_display_get_dpi(menu_handle_t *menu);
 bool menu_display_font_init_first(const void **font_driver,
       void **font_handle, void *video_data, const char *font_path,
       float font_size);
+
+bool menu_display_font_bind_block(menu_handle_t *menu,
+      const struct font_renderer *font_driver, void *userdata);
+
+bool menu_display_font_flush_block(menu_handle_t *menu,
+      const struct font_renderer *font_driver);
 
 #ifdef __cplusplus
 }
