@@ -17,6 +17,7 @@
 #define __MENU_DISPLAY_H__
 
 #include "menu_driver.h"
+#include "../gfx/video_thread_wrapper.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -31,6 +32,10 @@ bool menu_display_init(menu_handle_t *menu);
 bool menu_display_update_pending(void);
 
 float menu_display_get_dpi(menu_handle_t *menu);
+
+bool menu_display_font_init_first(const void **font_driver,
+      void **font_handle, void *video_data, const char *font_path,
+      float font_size);
 
 #ifdef __cplusplus
 }

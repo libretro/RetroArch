@@ -1610,40 +1610,6 @@ static void xmb_free(void *data)
       font_driver->bind_block(gl->font_handle, NULL);
 }
 
-static bool xmb_font_init_first(const void **font_driver,
-      void **font_handle, void *video_data, const char *font_path,
-      float xmb_font_size)
-{
-   settings_t *settings = config_get_ptr();
-   global_t   *global   = global_get_ptr();
-
-   if (settings->video.threaded
-         && !global->system.hw_render_callback.context_type)
-   {
-      driver_t *driver    = driver_get_ptr();
-      thread_video_t *thr = (thread_video_t*)driver->video_data;
-
-      if (!thr)
-         return false;
-
-      thr->cmd_data.font_init.method      = font_init_first;
-      thr->cmd_data.font_init.font_driver = (const void**)font_driver;
-      thr->cmd_data.font_init.font_handle = font_handle;
-      thr->cmd_data.font_init.video_data  = video_data;
-      thr->cmd_data.font_init.font_path   = font_path;
-      thr->cmd_data.font_init.font_size   = xmb_font_size;
-      thr->cmd_data.font_init.api         = FONT_DRIVER_RENDER_OPENGL_API;
-
-      thr->send_cmd_func(thr, CMD_FONT_INIT);
-      thr->wait_reply_func(thr, CMD_FONT_INIT);
-
-      return thr->cmd_data.font_init.return_value;
-   }
-
-   return font_init_first(font_driver, font_handle, video_data,
-         font_path, xmb_font_size, FONT_DRIVER_RENDER_OPENGL_API);
-}
-
 static bool xmb_load_wallpaper(void *data)
 {
    xmb_handle_t *xmb = NULL;
@@ -1711,7 +1677,12 @@ static void xmb_context_reset(void)
 
    fill_pathname_join(fontpath, themepath, "font.ttf", sizeof(fontpath));
 
-   xmb_font_init_first(&gl->font_driver, &xmb->font.buf, gl, fontpath, xmb->font.size);
+   menu_display_font_init_first(
+         &gl->font_driver,
+         &xmb->font.buf,
+         gl,
+         fontpath,
+         xmb->font.size);
 
    fill_pathname_join(xmb->textures.list[XMB_TEXTURE_SETTINGS].path, iconpath,
          "settings.png", sizeof(xmb->textures.list[XMB_TEXTURE_SETTINGS].path));

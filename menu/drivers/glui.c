@@ -769,46 +769,14 @@ static void glui_populate_entries(const char *path,
    menu->scroll_y      = glui_get_scroll();
 }
 
-static bool glui_font_init_first(const void **font_driver,
-      void **font_handle, void *video_data, const char *font_path,
-      float font_size)
-{
-   settings_t *settings = config_get_ptr();
-   global_t   *global   = global_get_ptr();
-
-   if (settings->video.threaded
-         && !global->system.hw_render_callback.context_type)
-   {
-      driver_t *driver    = driver_get_ptr();
-      thread_video_t *thr = driver ? (thread_video_t*)driver->video_data : NULL;
-
-      if (!thr)
-         return false;
-
-      thr->cmd_data.font_init.method      = font_init_first;
-      thr->cmd_data.font_init.font_driver = (const void**)font_driver;
-      thr->cmd_data.font_init.font_handle = font_handle;
-      thr->cmd_data.font_init.video_data  = video_data;
-      thr->cmd_data.font_init.font_path   = font_path;
-      thr->cmd_data.font_init.font_size   = font_size;
-      thr->cmd_data.font_init.api         = FONT_DRIVER_RENDER_OPENGL_API;
-
-      thr->send_cmd_func(thr,   CMD_FONT_INIT);
-      thr->wait_reply_func(thr, CMD_FONT_INIT);
-
-      return thr->cmd_data.font_init.return_value;
-   }
-
-   return font_init_first(font_driver, font_handle, video_data,
-         font_path, font_size, FONT_DRIVER_RENDER_OPENGL_API);
-}
-
 static void glui_context_reset(void)
 {
    gl_t *gl                               = NULL;
    glui_handle_t *glui                    = NULL;
    const font_renderer_driver_t *font_drv = NULL;
    menu_handle_t *menu                    = menu_driver_get_ptr();
+
+   (void)font_drv;
 
    if (!menu)
       return;
@@ -824,9 +792,10 @@ static void glui_context_reset(void)
 
    font_drv = (const font_renderer_driver_t *)gl->font_driver;
 
-   glui_font_init_first(&gl->font_driver,
+   menu_display_font_init_first(
+         &gl->font_driver,
          &glui->font.buf,
-		 gl,
+         gl,
          NULL,
          glui->font.size);
 }
