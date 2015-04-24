@@ -96,14 +96,15 @@ static void d3d_deinit_chain(d3d_video_t *d3d)
 
 static void d3d_deinitialize(d3d_video_t *d3d)
 {
+   driver_t *driver = driver_get_ptr();
    const font_renderer_t *font_ctx = NULL;
    if (!d3d)
       return;
 
-   font_ctx = (const font_renderer_t*)d3d->font_driver;
+   font_ctx = (const font_renderer_t*)driver->font_osd_driver;
 
    if (font_ctx->free)
-      font_ctx->free(d3d->font_handle);
+      font_ctx->free(driver->font_osd_data);
    font_ctx = NULL;
    d3d_deinit_chain(d3d);
 
@@ -272,6 +273,7 @@ static bool d3d_initialize(d3d_video_t *d3d, const video_info_t *info)
 {
    bool ret             = true;
    settings_t *settings = config_get_ptr();
+   driver_t   *driver   = driver_get_ptr();
    global_t   *global   = global_get_ptr();
 
    if (!d3d)
@@ -338,7 +340,7 @@ static bool d3d_initialize(d3d_video_t *d3d, const video_info_t *info)
    strlcpy(settings->video.font_path, "game:\\media\\Arial_12.xpr",
          sizeof(settings->video.font_path));
 #endif
-   if (!font_init_first(&d3d->font_driver, &d3d->font_handle,
+   if (!font_init_first((const void**)&driver->font_osd_driver, &driver->font_osd_data,
          d3d, settings->video.font_path, 0, FONT_DRIVER_RENDER_DIRECT3D_API))
    {
       RARCH_ERR("[D3D]: Failed to initialize font renderer.\n");
@@ -519,13 +521,14 @@ static void d3d_set_osd_msg(void *data, const char *msg,
       const struct font_params *params, void *font)
 {
    d3d_video_t          *d3d = (d3d_video_t*)data;
-   font_renderer_t *font_ctx = d3d ? (font_renderer_t*)d3d->font_driver : NULL;
+   driver_t          *driver = driver_get_ptr();
+   const font_renderer_t *font_ctx = driver->font_osd_driver;
 
    if (params)
       d3d_set_font_rect(d3d, params);
 
    if (font_ctx->render_msg)
-      font_ctx->render_msg(d3d->font_handle, msg, params);
+      font_ctx->render_msg(driver->font_osd_data, msg, params);
 }
 
 /* Delay constructor due to lack of exceptions. */
@@ -1585,7 +1588,7 @@ static bool d3d_frame(void *data, const void *frame,
    driver_t *driver                = driver_get_ptr();
    settings_t *settings            = config_get_ptr();
    global_t *global                = global_get_ptr();
-   const font_renderer_t *font_ctx = d3d ? (const font_renderer_t*)d3d->font_driver : NULL;
+   const font_renderer_t *font_ctx = driver->font_osd_driver;
 
    (void)i;
 
@@ -1668,7 +1671,7 @@ static bool d3d_frame(void *data, const void *frame,
       font_parms.y                  = msg_height;
       font_parms.scale              = 21;
 #endif
-      font_ctx->render_msg(d3d->font_handle, msg, &font_parms);
+      font_ctx->render_msg(driver->font_osd_data, msg, &font_parms);
    }
 
 #ifdef HAVE_MENU

@@ -93,8 +93,6 @@ typedef struct gl_shader_backend gl_shader_backend_t;
 
 typedef struct d3d_video
 {
-   const void *font_driver;
-   void *font_handle;
    bool should_resize;
    bool quitting;
 
