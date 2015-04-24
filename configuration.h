@@ -139,6 +139,13 @@ typedef struct settings
             } filter;
          } browser;
       } navigation;
+
+      struct
+      {
+         bool     override_enable;
+         unsigned override_value;
+      } dpi;
+
       bool collapse_subgroups_enable;
       bool show_advanced_settings;
 #ifdef HAVE_THREADS

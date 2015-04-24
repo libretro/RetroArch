@@ -554,6 +554,9 @@ static void config_set_defaults(void)
    settings->menu.entry_hover_color                 = menu_entry_hover_color;
    settings->menu.title_color                       = menu_title_color;
 
+   settings->menu.dpi.override_enable               = menu_dpi_override_enable;
+   settings->menu.dpi.override_value                = menu_dpi_override_value;
+
    settings->menu.navigation.wraparound.horizontal_enable               = true;
    settings->menu.navigation.wraparound.vertical_enable                 = true;
    settings->menu.navigation.browser.filter.supported_extensions_enable = true;
@@ -1183,6 +1186,10 @@ static bool config_load_file(const char *path, bool set_defaults)
 #ifdef HAVE_THREADS
    CONFIG_GET_BOOL_BASE(conf, settings, menu.threaded_data_runloop_enable, "threaded_data_runloop_enable");
 #endif
+
+   CONFIG_GET_BOOL_BASE(conf, settings, menu.dpi.override_enable, "dpi_override_enable");
+   CONFIG_GET_INT_BASE (conf, settings, menu.dpi.override_value,  "dpi_override_value");
+
    CONFIG_GET_BOOL_BASE(conf, settings, menu.pause_libretro, "menu_pause_libretro");
    CONFIG_GET_BOOL_BASE(conf, settings, menu.mouse.enable,   "menu_mouse_enable");
    CONFIG_GET_BOOL_BASE(conf, settings, menu.pointer.enable, "menu_pointer_enable");
@@ -2244,6 +2251,9 @@ bool config_save_file(const char *path)
 #ifdef HAVE_THREADS
    config_set_bool(conf,"threaded_data_runloop_enable", settings->menu.threaded_data_runloop_enable);
 #endif
+
+   config_set_bool(conf, "dpi_override_enable", settings->menu.dpi.override_enable);
+   config_set_int (conf, "dpi_override_value", settings->menu.dpi.override_value);
    config_set_string(conf,"menu_driver", settings->menu.driver);
    config_set_bool(conf,"menu_pause_libretro", settings->menu.pause_libretro);
    config_set_bool(conf,"menu_mouse_enable", settings->menu.mouse.enable);

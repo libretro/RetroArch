@@ -5482,6 +5482,33 @@ static bool setting_append_list_menu_options(
 
    END_SUB_GROUP(list, list_info);
 
+   START_SUB_GROUP(list, list_info, "Display", group_info.name, subgroup_info);
+
+   CONFIG_BOOL(
+         settings->menu.dpi.override_enable,
+         "dpi_override_enable",
+         "DPI Override Enable",
+         menu_dpi_override_enable,
+         "OFF",
+         "ON",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+
+   CONFIG_UINT(
+         settings->menu.dpi.override_value,
+         "dpi_override_value",
+         "DPI Override",
+         menu_dpi_override_value,
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+   settings_list_current_add_range(list, list_info, 72, 999, 1, true, true);
+
+   END_SUB_GROUP(list, list_info);
+
    END_GROUP(list, list_info);
 #endif
 
