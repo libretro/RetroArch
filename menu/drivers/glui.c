@@ -494,6 +494,8 @@ static void glui_frame(void)
    glui_render_menu_list(runloop, gl, glui, menu,
          label, normal_color, hover_color);
 
+   menu_display_font_flush_block(menu, font_driver);
+
    runloop->frames.video.current.menu.animation.is_active = true;
    runloop->frames.video.current.menu.label.is_updated    = false;
    runloop->frames.video.current.menu.framebuf.dirty      = false;
@@ -547,8 +549,6 @@ static void glui_frame(void)
             gl->win_height - glui->line_height, timedate, hover_color,
             TEXT_ALIGN_RIGHT);
    }
-
-   menu_display_font_flush_block(menu, font_driver);
 
    if (menu->keyboard.display)
    {
