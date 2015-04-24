@@ -683,7 +683,7 @@ static bool glui_load_wallpaper(void *data)
    return true;
 }
 
-static float glui_get_scroll()
+static float glui_get_scroll(void)
 {
    int half;
    glui_handle_t *glui = NULL;
