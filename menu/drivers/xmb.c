@@ -207,12 +207,6 @@ typedef struct xmb_handle
       } passive;
    } item;
 
-   struct
-   {
-      void *buf;
-      int size;
-   } font;
-
    xmb_node_t settings_node;
    bool prevent_populate;
 
@@ -385,7 +379,8 @@ static void xmb_draw_icon_predone(gl_t *gl, xmb_handle_t *xmb,
    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 }
 
-static void xmb_draw_text(gl_t *gl, xmb_handle_t *xmb,
+static void xmb_draw_text(menu_handle_t *menu,
+      gl_t *gl, xmb_handle_t *xmb,
       const char *str, float x,
       float y, float scale_factor, float alpha,
       enum text_alignment text_align)
@@ -413,7 +408,7 @@ static void xmb_draw_text(gl_t *gl, xmb_handle_t *xmb,
    params.full_screen = true;
    params.text_align  = text_align;
 
-   video_driver_set_osd_msg(str, &params, xmb->font.buf);
+   video_driver_set_osd_msg(str, &params, menu->font.buf);
 }
 
 static void xmb_frame_background(settings_t *settings,
@@ -531,16 +526,16 @@ static void xmb_frame_messagebox(const char *message)
    if (list->elems == 0)
       goto end;
 
-   x = gl->win_width / 2 - strlen(list->elems[0].data) * xmb->font.size / 4;
-   y = gl->win_height / 2 - list->size * xmb->font.size / 2;
+   x = gl->win_width / 2 - strlen(list->elems[0].data) * menu->font.size / 4;
+   y = gl->win_height / 2 - list->size * menu->font.size / 2;
 
    for (i = 0; i < list->size; i++)
    {
       const char *msg = list->elems[i].data;
 
       if (msg)
-         xmb_draw_text(gl, xmb, msg, x,
-               y + i * xmb->font.size, 1, 1, TEXT_ALIGN_LEFT);
+         xmb_draw_text(menu, gl, xmb, msg, x,
+               y + i * menu->font.size, 1, 1, TEXT_ALIGN_LEFT);
    }
 
 end:
@@ -1091,6 +1086,7 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
       GLuint icon                           = 0;
       xmb_node_t *node = (xmb_node_t*)file_list_get_userdata_at_offset(list, i);
       runloop_t *runloop = rarch_main_get_ptr();
+      menu_handle_t *menu = menu_driver_get_ptr();
 
       if (!node)
          continue;
@@ -1148,7 +1144,7 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
             runloop->frames.video.count / 20, path_buf,
             (i == current));
 
-      xmb_draw_text(gl, xmb, name,
+      xmb_draw_text(menu, gl, xmb, name,
             node->x + xmb->margins.screen.left + 
             xmb->icon.spacing.horizontal + xmb->margins.label.left, 
             xmb->margins.screen.top + node->y + xmb->margins.label.top, 
@@ -1171,7 +1167,7 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
             && !xmb->textures.list[XMB_TEXTURE_SWITCH_ON].id)
             || (!strcmp(type_str, "OFF")
             && !xmb->textures.list[XMB_TEXTURE_SWITCH_OFF].id)))
-         xmb_draw_text(gl, xmb, value,
+         xmb_draw_text(menu, gl, xmb, value,
                node->x + xmb->margins.screen.left + xmb->icon.spacing.horizontal + 
                xmb->margins.label.left + xmb->margins.setting.left, 
                xmb->margins.screen.top + node->y + xmb->margins.label.top, 
@@ -1332,13 +1328,13 @@ static void xmb_frame(void)
    font_driver = (const struct font_renderer*)gl->font_driver;
 
    if (font_driver->bind_block)
-      font_driver->bind_block(xmb->font.buf, &xmb->raster_block);
+      font_driver->bind_block(menu->font.buf, &xmb->raster_block);
 
    xmb->raster_block.carr.coords.vertices = 0;
 
    xmb_frame_background(settings, gl, xmb, false);
 
-   xmb_draw_text(gl, xmb,
+   xmb_draw_text(menu, gl, xmb,
          xmb->title_name, xmb->margins.title.left,
          xmb->margins.title.top, 1, 1, TEXT_ALIGN_LEFT);
 
@@ -1346,7 +1342,7 @@ static void xmb_frame(void)
    {
       disp_timedate_set_label(timedate, sizeof(timedate), 0);
 
-      xmb_draw_text(gl, xmb,
+      xmb_draw_text(menu, gl, xmb,
             timedate,
             gl->win_width - xmb->margins.title.left - xmb->icon.size / 4, 
             xmb->margins.title.top, 1, 1, TEXT_ALIGN_RIGHT);
@@ -1370,7 +1366,7 @@ static void xmb_frame(void)
 
       snprintf(title_msg, sizeof(title_msg), "%s - %s %s", PACKAGE_VERSION,
             core_name, core_version);
-      xmb_draw_text(gl, xmb, title_msg, xmb->margins.title.left, 
+      xmb_draw_text(menu, gl, xmb, title_msg, xmb->margins.title.left, 
             gl->win_height - xmb->margins.title.bottom, 1, 1, TEXT_ALIGN_LEFT);
    }
 
@@ -1434,8 +1430,8 @@ static void xmb_frame(void)
 
    if (font_driver->flush)
    {
-      font_driver->flush(xmb->font.buf);
-      font_driver->bind_block(xmb->font.buf, NULL);
+      font_driver->flush(menu->font.buf);
+      font_driver->bind_block(menu->font.buf, NULL);
    }
 
    if (menu->keyboard.display)
@@ -1552,16 +1548,16 @@ static void *xmb_init(void)
 
    xmb->icon.size               = 128.0 * scale_factor;
    xmb->cursor.size             = 48.0;
-   xmb->font.size               = 32.0 * scale_factor;
+   menu->font.size              = 32.0 * scale_factor;
    xmb->icon.spacing.horizontal = 200.0 * scale_factor;
    xmb->icon.spacing.vertical   = 64.0 * scale_factor;
    xmb->margins.screen.left     = 336.0 * scale_factor;
    xmb->margins.screen.top      = (256+32) * scale_factor;
    xmb->margins.title.left      = 60 * scale_factor;
-   xmb->margins.title.top       = 60 * scale_factor + xmb->font.size/3;
-   xmb->margins.title.bottom    = 60 * scale_factor - xmb->font.size/3;
+   xmb->margins.title.top       = 60 * scale_factor + menu->font.size/3;
+   xmb->margins.title.bottom    = 60 * scale_factor - menu->font.size/3;
    xmb->margins.label.left      = 85.0 * scale_factor;
-   xmb->margins.label.top       = xmb->font.size/3.0;
+   xmb->margins.label.top       = menu->font.size/3.0;
    xmb->margins.setting.left    = 600.0 * scale_factor;
 
    menu->categories.size      = 1;
@@ -1680,10 +1676,10 @@ static void xmb_context_reset(void)
 
    menu_display_font_init_first(
          &gl->font_driver,
-         &xmb->font.buf,
+         &menu->font.buf,
          gl,
          fontpath,
-         xmb->font.size);
+         menu->font.size);
 
    fill_pathname_join(xmb->textures.list[XMB_TEXTURE_SETTINGS].path, iconpath,
          "settings.png", sizeof(xmb->textures.list[XMB_TEXTURE_SETTINGS].path));

@@ -145,8 +145,15 @@ typedef struct
 
    menu_framebuf_t frame_buf;
 
-   const uint8_t *font;
-   bool alloc_font;
+
+   struct
+   {
+      void *buf;
+      int size;
+
+      const uint8_t *framebuf;
+      bool alloc_framebuf;
+   } font;
 
    bool load_no_content;
 

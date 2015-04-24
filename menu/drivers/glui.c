@@ -43,12 +43,6 @@ typedef struct glui_handle
 
    struct
    {
-      void *buf;
-      int size;
-   } font;
-
-   struct
-   {
       struct
       {
          GLuint id;
@@ -101,14 +95,14 @@ static void glui_blit_line(gl_t *gl, float x, float y,
    struct font_params params = {0};
 
    params.x           = x / gl->win_width;
-   params.y           = 1.0f - (y + glui->line_height/2 + glui->font.size/3) 
+   params.y           = 1.0f - (y + glui->line_height/2 + menu->font.size/3) 
                         / gl->win_height;
    params.scale       = 1.0;
    params.color       = color;
    params.full_screen = true;
    params.text_align  = text_align;
 
-   video_driver_set_osd_msg(message, &params, glui->font.buf);
+   video_driver_set_osd_msg(message, &params, menu->font.buf);
 }
 
 static void glui_render_background(settings_t *settings, gl_t *gl,
@@ -305,7 +299,7 @@ static void glui_render_messagebox(const char *message)
       goto end;
 
    x = gl->win_width / 2;
-   y = gl->win_height / 2 - list->size * glui->font.size / 2;
+   y = gl->win_height / 2 - list->size * menu->font.size / 2;
 
    normal_color = FONT_COLOR_ARGB_TO_RGBA(settings->menu.entry_normal_color);
 
@@ -313,7 +307,7 @@ static void glui_render_messagebox(const char *message)
    {
       const char *msg = list->elems[i].data;
       if (msg)
-         glui_blit_line(gl, x, y + i * glui->font.size, msg, normal_color, TEXT_ALIGN_CENTER);
+         glui_blit_line(gl, x, y + i * menu->font.size, msg, normal_color, TEXT_ALIGN_CENTER);
    }
 
 end:
@@ -495,7 +489,7 @@ static void glui_frame(void)
    font_driver = (const struct font_renderer*)gl->font_driver;
 
    if (font_driver->bind_block)
-      font_driver->bind_block(glui->font.buf, &glui->list_block);
+      font_driver->bind_block(menu->font.buf, &glui->list_block);
 
    glui_render_menu_list(runloop, gl, glui, menu,
          label, normal_color, hover_color);
@@ -556,8 +550,8 @@ static void glui_frame(void)
 
    if (font_driver->flush)
    {
-      font_driver->flush(glui->font.buf);
-      font_driver->bind_block(glui->font.buf, NULL);
+      font_driver->flush(menu->font.buf);
+      font_driver->bind_block(menu->font.buf, NULL);
    }
 
    if (menu->keyboard.display)
@@ -617,7 +611,7 @@ static void *glui_init(void)
    glui->margin         = dpi / 6;
    glui->ticker_limit   = dpi / 3;
    menu->header_height  = dpi / 3;
-   glui->font.size      = dpi / 8;
+   menu->font.size      = dpi / 8;
    glui->textures.bg.id = 0;
 
    rarch_main_data_msg_queue_push(DATA_TYPE_IMAGE,
@@ -648,9 +642,6 @@ static void glui_free(void *data)
 
    if (font_driver && font_driver->bind_block)
       font_driver->bind_block(gl->font_handle, NULL);
-
-   if (menu->alloc_font)
-      free((uint8_t*)menu->font);
 
    if (menu->userdata)
       free(menu->userdata);
@@ -788,10 +779,10 @@ static void glui_context_reset(void)
 
    menu_display_font_init_first(
          &gl->font_driver,
-         &glui->font.buf,
+         &menu->font.buf,
          gl,
          NULL,
-         glui->font.size);
+         menu->font.size);
 }
 
 menu_ctx_driver_t menu_ctx_glui = {

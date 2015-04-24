@@ -184,7 +184,7 @@ static void blit_line(menu_handle_t *menu, int x, int y,
          {
             uint8_t rem = 1 << ((i + j * FONT_WIDTH) & 7);
             int offset  = (i + j * FONT_WIDTH) >> 3;
-            bool col    = (menu->font[FONT_OFFSET
+            bool col    = (menu->font.framebuf[FONT_OFFSET
                   ((unsigned char)*message) + offset] & rem);
 
             if (!col)
@@ -211,7 +211,7 @@ static bool init_font(menu_handle_t *menu, const uint8_t *font_bmp_buf)
       return false;
    }
 
-   menu->alloc_font = true;
+   menu->font.alloc_framebuf = true;
    for (i = 0; i < 256; i++)
    {
       unsigned y = i / 16;
@@ -220,7 +220,7 @@ static bool init_font(menu_handle_t *menu, const uint8_t *font_bmp_buf)
             font_bmp_buf + 54 + 3 * (256 * (255 - 16 * y) + 16 * x));
    }
 
-   menu->font = font;
+   menu->font.framebuf = font;
    return true;
 }
 
@@ -238,7 +238,7 @@ static bool rguidisp_init_font(menu_handle_t *menu)
    if (!font_bin_buf)
       return false;
 
-   menu->font = font_bin_buf;
+   menu->font.framebuf = font_bin_buf;
 
    return true;
 }
@@ -621,8 +621,8 @@ static void rgui_free(void *data)
       free(menu->userdata);
    menu->userdata = NULL;
 
-   if (menu->alloc_font)
-      free((uint8_t*)menu->font);
+   if (menu->font.alloc_framebuf)
+      free((uint8_t*)menu->font.framebuf);
 }
 
 static void rgui_set_texture(void)
