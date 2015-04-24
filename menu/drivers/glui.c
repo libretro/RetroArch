@@ -57,7 +57,6 @@ typedef struct glui_handle
    } textures;
 
    gl_font_raster_block_t list_block;
-   bool use_blocks;
 } glui_handle_t;
 
 static int glui_entry_iterate(unsigned action)
@@ -392,7 +391,7 @@ static void glui_render_menu_list(runloop_t *runloop,
    const struct font_renderer *font_driver = (const struct font_renderer *)
       gl->font_driver;
 
-   if (glui->use_blocks)
+   if (font_driver->bind_block)
       font_driver->bind_block(gl->font_handle, &glui->list_block);
 
    if (!menu_display_update_pending())
@@ -444,7 +443,7 @@ static void glui_render_menu_list(runloop_t *runloop,
    }
 
 draw_text:
-   if (glui->use_blocks)
+   if (font_driver->flush)
    {
       font_driver->flush(gl->font_handle);
       font_driver->bind_block(gl->font_handle, NULL);
@@ -623,9 +622,6 @@ static void *glui_init(void)
    glui->font.size      = dpi / 8;
    glui->textures.bg.id = 0;
 
-   if (font_driver->bind_block && font_driver->flush)
-      glui->use_blocks  = true;
-
    rarch_main_data_msg_queue_push(DATA_TYPE_IMAGE,
          settings->menu.wallpaper, "cb_menu_wallpaper", 0, 1, true);
 
@@ -652,7 +648,7 @@ static void glui_free(void *data)
 
    font_driver = gl ? (const struct font_renderer*)gl->font_driver : NULL;
 
-   if (glui->use_blocks && font_driver)
+   if (font_driver && font_driver->bind_block)
       font_driver->bind_block(gl->font_handle, NULL);
 
    if (menu->alloc_font)

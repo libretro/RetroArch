@@ -22,6 +22,7 @@
 
 #include "../menu.h"
 #include "../menu_animation.h"
+#include "../menu_display.h"
 
 #include <file/file_path.h>
 #include "../../gfx/video_thread_wrapper.h"
