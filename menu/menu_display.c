@@ -18,6 +18,7 @@
 #include "menu_animation.h"
 #include "../dynamic.h"
 #include "../../retroarch.h"
+#include "../../config.def.h"
 #include "../gfx/video_context_driver.h"
 
 bool menu_display_update_pending(void)
@@ -88,7 +89,7 @@ float menu_display_get_dpi(menu_handle_t *menu)
    settings_t *settings = config_get_ptr();
 
    if (!menu || !settings)
-      return 128;
+      return menu_dpi_override_value;
 
    if (   settings->menu.dpi.override_enable ||
          !gfx_ctx_get_metrics(DISPLAY_METRIC_DPI, &dpi)
