@@ -825,8 +825,9 @@ static void glui_context_reset(void)
    font_drv = (const font_renderer_driver_t *)gl->font_driver;
 
    glui_font_init_first(&gl->font_driver,
-         &glui->font.buf, gl,
-         font_drv ? font_drv->get_default_font() : NULL,
+         &glui->font.buf,
+		 gl,
+         NULL,
          glui->font.size);
 }
 
