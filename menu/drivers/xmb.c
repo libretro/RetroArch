@@ -1981,6 +1981,7 @@ static void xmb_context_destroy(void)
    unsigned i;
    xmb_handle_t *xmb   = NULL;
    menu_handle_t *menu = menu_driver_get_ptr();
+   driver_t *driver    = driver_get_ptr();
 
    if (!menu)
       return;
@@ -2004,6 +2005,9 @@ static void xmb_context_destroy(void)
       glDeleteTextures(1, &node->icon);
       glDeleteTextures(1, &node->content_icon);
    }
+
+   if (menu->font.buf)
+      driver->font_osd_driver->free(menu->font.buf);
 }
 
 static void xmb_toggle(bool menu_on)
