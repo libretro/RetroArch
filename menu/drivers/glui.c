@@ -158,7 +158,6 @@ static void glui_render_background(settings_t *settings, gl_t *gl,
       glBindTexture(GL_TEXTURE_2D, 0);
    }
 
-   gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
    gl->shader->set_coords(&coords);
    gl->shader->set_mvp(gl, &gl->mvp_no_rot);
 
@@ -205,7 +204,6 @@ static void glui_render_quad(gl_t *gl, int x, int y, int w, int h,
    coords.color = color;
    glBindTexture(GL_TEXTURE_2D, 0);
 
-   gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
    gl->shader->set_coords(&coords);
    gl->shader->set_mvp(gl, &gl->mvp_no_rot);
 
@@ -570,6 +568,8 @@ static void glui_frame(void)
 
    if (settings->menu.mouse.enable)
       glui_draw_cursor(gl, menu->mouse.x, menu->mouse.y);
+
+   gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
 
    gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
 }
