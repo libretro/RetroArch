@@ -275,6 +275,8 @@ void menu_free(menu_handle_t *menu)
 
    if (global->core_info_current)
       free(global->core_info_current);
+
+   free(menu);
 }
 
 void menu_apply_deferred_settings(void)
