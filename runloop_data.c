@@ -661,7 +661,7 @@ static void rarch_main_data_db_iterate(bool is_thread,
    menu_handle_t             *menu = menu_driver_get_ptr();
    database_info_handle_t      *db = menu ? menu->db : NULL;
 
-   if (!db)
+   if (!db || !menu)
       return;
 
    switch (db->status)
@@ -812,10 +812,13 @@ static void rarch_main_data_overlay_image_upload_iterate(bool is_thread, data_ru
 }
 static void rarch_main_data_overlay_iterate(bool is_thread, data_runloop_t *runloop)
 {
-   driver_t *driver = driver_get_ptr();
-
+   driver_t *driver = NULL;
+   
    if (rarch_main_is_idle())
       return;
+
+   driver = driver_get_ptr();
+
    if (!driver || !driver->overlay)
       return;
 
