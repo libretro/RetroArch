@@ -816,7 +816,7 @@ static void rarch_main_data_overlay_iterate(bool is_thread, data_runloop_t *runl
 
    if (rarch_main_is_idle())
       return;
-   if (!driver->overlay)
+   if (!driver || !driver->overlay)
       return;
 
 #ifdef HAVE_THREADS
