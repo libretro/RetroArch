@@ -166,7 +166,7 @@ void init_menu(void)
 menu_handle_t *menu_driver_get_ptr(void)
 {
    driver_t *driver = driver_get_ptr();
-   if (!driver->menu)
+   if (!drver || !driver->menu)
       return NULL;
    return driver->menu;
 }
