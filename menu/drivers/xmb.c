@@ -1584,6 +1584,9 @@ static void xmb_free(void *data)
       if (!xmb)
          return;
 
+      free(xmb->menu_stack_old);
+      free(xmb->selection_buf_old);
+
       gl_coord_array_free(&xmb->raster_block.carr);
 
       free(menu->userdata);
