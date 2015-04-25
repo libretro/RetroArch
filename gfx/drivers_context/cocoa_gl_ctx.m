@@ -134,7 +134,11 @@ static RAScreen* get_chosen_screen(void)
 void cocoagl_gfx_ctx_update(void)
 {
 #if defined(HAVE_COCOA)
+#if MAC_OS_X_VERSION_10_7
+   CGLUpdateContext(g_context.CGLContextObj);
+#else
 	[g_context update];
+#endif
 #endif
 }
 
