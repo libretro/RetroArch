@@ -644,6 +644,12 @@ static void glui_free(void *data)
       free(menu->userdata);
 }
 
+static void glui_context_bg_destroy(glui_handle_t *glui)
+{
+   if (glui && glui->textures.bg.id)
+      glDeleteTextures(1, &glui->textures.bg.id);
+}
+
 static void glui_context_destroy(void)
 {
    glui_handle_t *glui = NULL;
@@ -654,11 +660,7 @@ static void glui_context_destroy(void)
 
    glui = (glui_handle_t*)menu->userdata;
 
-   if (!glui)
-      return;
-
-   if (glui->textures.bg.id)
-      glDeleteTextures(1, &glui->textures.bg.id);
+   glui_context_bg_destroy(glui);
 }
 
 static bool glui_load_wallpaper(void *data)
@@ -673,9 +675,8 @@ static bool glui_load_wallpaper(void *data)
 
    if (!glui)
       return false;
-
-   if (glui->textures.bg.id)
-      glDeleteTextures(1, &glui->textures.bg.id);
+   
+   glui_context_bg_destroy(glui);
 
    glui->textures.bg.id   = video_texture_load(data,
          TEXTURE_BACKEND_OPENGL, TEXTURE_FILTER_MIPMAP_LINEAR);
@@ -757,6 +758,7 @@ static void glui_context_reset(void)
    glui_handle_t *glui                    = NULL;
    driver_t *driver                       = driver_get_ptr();
    menu_handle_t *menu                    = menu_driver_get_ptr();
+   settings_t *settings                   = config_get_ptr();
 
    if (!menu)
       return;
@@ -776,6 +778,11 @@ static void glui_context_reset(void)
          gl,
          NULL,
          menu->font.size);
+
+   glui_context_bg_destroy(glui);
+
+   rarch_main_data_msg_queue_push(DATA_TYPE_IMAGE,
+         settings->menu.wallpaper, "cb_menu_wallpaper", 0, 1, true);
 }
 
 menu_ctx_driver_t menu_ctx_glui = {
