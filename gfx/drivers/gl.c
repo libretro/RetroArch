@@ -3175,6 +3175,8 @@ static const video_poke_interface_t gl_poke_interface = {
    gl_get_video_output_next,
 #ifdef HAVE_FBO
    gl_get_current_framebuffer,
+#else
+   NULL,
 #endif
    gl_get_proc_address,
    gl_set_aspect_ratio,

@@ -938,10 +938,8 @@ static const video_poke_interface_t thread_poke = {
    thread_get_video_output_size,
    thread_get_video_output_prev,
    thread_get_video_output_next,
-#ifdef HAVE_FBO
-   NULL,
-#endif
-   NULL,
+   NULL, /* get_current_framebuffer */
+   NULL, /* get_proc_address */
    thread_set_aspect_ratio,
    thread_apply_state_changes,
 #if defined(HAVE_MENU)

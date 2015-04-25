@@ -1142,10 +1142,8 @@ static const video_poke_interface_t omap_gfx_poke_interface = {
    NULL, /* get_video_output_size */
    NULL, /* get_video_output_prev */
    NULL, /* get_video_output_next */
-#ifdef HAVE_FBO
-   NULL,
-   NULL,
-#endif
+   NULL, /* get_current_framebuffer */
+   NULL, /* get_proc_address */
    NULL, /* set_aspect_ratio */
    NULL, /* apply_state_changes */
 #ifdef HAVE_MENU

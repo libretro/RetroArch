@@ -105,9 +105,7 @@ typedef struct video_poke_interface
    void (*get_video_output_size)(void *data, unsigned *width, unsigned *height);
    void (*get_video_output_prev)(void *data);
    void (*get_video_output_next)(void *data);
-#ifdef HAVE_FBO
    uintptr_t (*get_current_framebuffer)(void *data);
-#endif
    retro_proc_address_t (*get_proc_address)(void *data, const char *sym);
    void (*set_aspect_ratio)(void *data, unsigned aspectratio_index);
    void (*apply_state_changes)(void *data);

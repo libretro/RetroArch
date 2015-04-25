@@ -504,9 +504,7 @@ static const video_poke_interface_t ctr_poke_interface =
    NULL, /* get_video_output_size */
    NULL, /* get_video_output_prev */
    NULL, /* get_video_output_next */
-#ifdef HAVE_FBO
-   NULL,
-#endif
+   NULL, /* get_current_framebuffer */
    NULL,
    ctr_set_aspect_ratio,
    ctr_apply_state_changes,

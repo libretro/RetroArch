@@ -722,10 +722,8 @@ static video_poke_interface_t sdl2_video_poke_interface = {
    NULL, /* get_video_output_size */
    NULL, /* get_video_output_prev */
    NULL, /* get_video_output_next */
-#ifdef HAVE_FBO
-   NULL,
-#endif
-   NULL,
+   NULL, /* get_current_framebuffer */
+   NULL, /* get_proc_address */
    sdl2_poke_set_aspect_ratio,
    sdl2_poke_apply_state_changes,
 #ifdef HAVE_MENU

@@ -248,13 +248,11 @@ static const video_driver_t *video_driver_ctx_get_ptr(void)
  **/
 uintptr_t video_driver_get_current_framebuffer(void)
 {
-#ifdef HAVE_FBO
    driver_t                   *driver = driver_get_ptr();
    const video_poke_interface_t *poke = video_driver_get_poke_ptr();
 
    if (poke && poke->get_current_framebuffer)
       return poke->get_current_framebuffer(driver->video_data);
-#endif
    return 0;
 }
 
