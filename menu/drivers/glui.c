@@ -81,7 +81,7 @@ static int glui_entry_iterate(unsigned action)
    return -1;
 }
 
-static void glui_blit_line(gl_t *gl, float x, float y,
+static void glui_blit_line(float x, float y,
       const char *message, uint32_t color, enum text_alignment text_align)
 {
    glui_handle_t *glui = NULL;
@@ -273,17 +273,11 @@ static void glui_render_messagebox(const char *message)
    int x, y;
    struct string_list *list = NULL;
    glui_handle_t *glui = NULL;
-   gl_t *gl = NULL;
    menu_handle_t *menu  = menu_driver_get_ptr();
    settings_t *settings = config_get_ptr();
    global_t *global     = global_get_ptr();
 
    if (!menu)
-      return;
-
-   gl = (gl_t*)video_driver_get_ptr(NULL);
-
-   if (!gl)
       return;
 
    glui = (glui_handle_t*)menu->userdata;
@@ -308,7 +302,7 @@ static void glui_render_messagebox(const char *message)
    {
       const char *msg = list->elems[i].data;
       if (msg)
-         glui_blit_line(gl, x, y + i * menu->font.size, msg, normal_color, TEXT_ALIGN_CENTER);
+         glui_blit_line(x, y + i * menu->font.size, msg, normal_color, TEXT_ALIGN_CENTER);
    }
 
 end:
@@ -319,7 +313,6 @@ static void glui_render(void)
 {
    int bottom;
    glui_handle_t *glui = NULL;
-   gl_t *gl = NULL;
    menu_handle_t *menu  = menu_driver_get_ptr();
    settings_t *settings = config_get_ptr();
    global_t *global     = global_get_ptr();
@@ -330,11 +323,6 @@ static void glui_render(void)
    glui = (glui_handle_t*)menu->userdata;
 
    if (!glui)
-      return;
-
-   gl = (gl_t*)video_driver_get_ptr(NULL);
-
-   if (!gl)
       return;
 
    menu_animation_update(menu->animation, menu->dt / IDEAL_DT);
@@ -379,7 +367,7 @@ static void glui_render(void)
 }
 
 static void glui_render_menu_list(runloop_t *runloop,
-      gl_t *gl, glui_handle_t *glui, menu_handle_t *menu,
+      glui_handle_t *glui, menu_handle_t *menu,
       const char *label, uint32_t normal_color,
       uint32_t hover_color)
 {
@@ -427,10 +415,10 @@ static void glui_render_menu_list(runloop_t *runloop,
 
       y = menu->header_height - menu->scroll_y + (glui->line_height * i);
 
-      glui_blit_line(gl, glui->margin, y, message,
+      glui_blit_line(glui->margin, y, message,
             selected ? hover_color : normal_color, TEXT_ALIGN_LEFT);
 
-      glui_blit_line(gl, global->video_data.width - glui->margin, y, type_str_buf,
+      glui_blit_line(global->video_data.width - glui->margin, y, type_str_buf,
             selected ? hover_color : normal_color, TEXT_ALIGN_RIGHT);
    }
 }
@@ -494,7 +482,7 @@ static void glui_frame(void)
 
    menu_display_font_bind_block(menu, font_driver, &glui->list_block);
 
-   glui_render_menu_list(runloop, gl, glui, menu,
+   glui_render_menu_list(runloop, glui, menu,
          label, normal_color, hover_color);
 
    menu_display_font_flush_block(menu, font_driver);
@@ -508,11 +496,11 @@ static void glui_frame(void)
 
    menu_animation_ticker_line(title_buf, glui->ticker_limit,
          runloop->frames.video.count / 100, title, true);
-   glui_blit_line(gl, global->video_data.width / 2, 0, title_buf,
+   glui_blit_line(global->video_data.width / 2, 0, title_buf,
          title_color, TEXT_ALIGN_CENTER);
 
    if (file_list_get_size(menu->menu_list->menu_stack) > 1)
-      glui_blit_line(gl, glui->margin, 0, "BACK",
+      glui_blit_line(glui->margin, 0, "BACK",
             title_color, TEXT_ALIGN_LEFT);
 
    glui_render_quad(gl, 0,
@@ -540,7 +528,7 @@ static void glui_frame(void)
             "%s - %s %s", PACKAGE_VERSION,
             core_name, core_version);
 
-      glui_blit_line(gl, glui->margin,
+      glui_blit_line(glui->margin,
             global->video_data.height - glui->line_height, title_msg,
             title_color, TEXT_ALIGN_LEFT);
    }
@@ -548,7 +536,7 @@ static void glui_frame(void)
    if (settings->menu.timedate_enable)
    {
       disp_timedate_set_label(timedate, sizeof(timedate), 0);
-      glui_blit_line(gl, global->video_data.width - glui->margin,
+      glui_blit_line(global->video_data.width - glui->margin,
             global->video_data.height - glui->line_height, timedate, hover_color,
             TEXT_ALIGN_RIGHT);
    }
