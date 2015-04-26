@@ -168,7 +168,7 @@ static bool gfx_ctx_cgl_bind_api(void *data, enum gfx_ctx_api api,
    (void)major;
    (void)minor;
 
-   return true;
+   return api == GFX_CTX_OPENGL_API;
 }
 
 static void gfx_ctx_cgl_show_mouse(void *data, bool state)
