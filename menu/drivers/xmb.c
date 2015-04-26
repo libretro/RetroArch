@@ -446,9 +446,6 @@ static void xmb_frame_background(settings_t *settings,
       0.0f, 0.0f, 0.0f, alpha,
    };
 
-   /* force viewport to fullscreen */
-   gl_set_viewport(gl, global->video_data.width,
-         global->video_data.height, true, false);
 
    coords.vertices      = 4;
    coords.vertex        = vertex;
@@ -1323,6 +1320,9 @@ static void xmb_frame(void)
 
    if (!gl)
       return;
+
+   gl_set_viewport(gl, global->video_data.width,
+         global->video_data.height, true, false);
 
    menu_display_font_bind_block(menu, font_driver, &xmb->raster_block);
 
