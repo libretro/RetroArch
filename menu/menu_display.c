@@ -22,10 +22,6 @@
 #include "../../config.def.h"
 #include "../gfx/video_context_driver.h"
 
-#ifdef HAVE_D3D
-#include "../gfx/d3d/d3d.h"
-#endif
-
 bool menu_display_update_pending(void)
 {
    runloop_t *runloop = rarch_main_get_ptr();
