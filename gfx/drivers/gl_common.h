@@ -292,8 +292,6 @@ typedef struct gl
 
    unsigned full_x, full_y;
 
-   unsigned win_width;
-   unsigned win_height;
    struct video_viewport vp;
    unsigned vp_out_width;
    unsigned vp_out_height;

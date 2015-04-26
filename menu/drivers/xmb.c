@@ -289,6 +289,7 @@ static void xmb_draw_icon(gl_t *gl, xmb_handle_t *xmb,
 {
    struct gl_coords coords;
    math_matrix_4x4 mymat, mrot, mscal;
+   global_t *global = global_get_ptr();
 
    if (alpha > xmb->alpha)
       alpha = xmb->alpha;
@@ -298,9 +299,9 @@ static void xmb_draw_icon(gl_t *gl, xmb_handle_t *xmb,
 
    if (
          x < -xmb->icon.size/2 || 
-         x > gl->win_width ||
+         x > global->video_data.width ||
          y < xmb->icon.size/2 ||
-         y > gl->win_height + xmb->icon.size)
+         y > global->video_data.height + xmb->icon.size)
       return;
 
    GLfloat color[] = {
@@ -313,7 +314,7 @@ static void xmb_draw_icon(gl_t *gl, xmb_handle_t *xmb,
    if (gl->shader && gl->shader->use)
       gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
 
-   glViewport(x, gl->win_height - y, xmb->icon.size, xmb->icon.size);
+   glViewport(x, global->video_data.height - y, xmb->icon.size, xmb->icon.size);
 
    coords.vertices      = 4;
    coords.vertex        = rmb_vertex;
@@ -340,6 +341,7 @@ static void xmb_draw_icon_predone(gl_t *gl, xmb_handle_t *xmb,
       float alpha, float rotation, float scale_factor)
 {
    struct gl_coords coords;
+   global_t *global = global_get_ptr();
 
    if (alpha > xmb->alpha)
       alpha = xmb->alpha;
@@ -349,9 +351,9 @@ static void xmb_draw_icon_predone(gl_t *gl, xmb_handle_t *xmb,
 
    if (
          x < -xmb->icon.size/2 || 
-         x > gl->win_width ||
+         x > global->video_data.width ||
          y < xmb->icon.size/2 ||
-         y > gl->win_height + xmb->icon.size)
+         y > global->video_data.height + xmb->icon.size)
       return;
 
    GLfloat color[] = {
@@ -364,7 +366,7 @@ static void xmb_draw_icon_predone(gl_t *gl, xmb_handle_t *xmb,
    if (gl->shader && gl->shader->use)
       gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
 
-   glViewport(x, gl->win_height - y, xmb->icon.size, xmb->icon.size);
+   glViewport(x, global->video_data.height - y, xmb->icon.size, xmb->icon.size);
 
    coords.vertices      = 4;
    coords.vertex        = rmb_vertex;
@@ -385,8 +387,9 @@ static void xmb_draw_text(menu_handle_t *menu,
       float y, float scale_factor, float alpha,
       enum text_alignment text_align)
 {
-   uint8_t a8                = 0;
+   uint8_t a8                =   0;
    struct font_params params = {0};
+   global_t *global          = global_get_ptr();
 
    if (alpha > xmb->alpha)
       alpha = xmb->alpha;
@@ -396,12 +399,12 @@ static void xmb_draw_text(menu_handle_t *menu,
    if (a8 == 0)
       return;
 
-   if (x < -xmb->icon.size || x > gl->win_width + xmb->icon.size
-         || y < -xmb->icon.size || y > gl->win_height + xmb->icon.size)
+   if (x < -xmb->icon.size || x > global->video_data.width + xmb->icon.size
+         || y < -xmb->icon.size || y > global->video_data.height + xmb->icon.size)
       return;
 
-   params.x           = x / gl->win_width;
-   params.y           = 1.0f - y / gl->win_height;
+   params.x           = x        / global->video_data.width;
+   params.y           = 1.0f - y / global->video_data.height;
 
    params.scale       = scale_factor;
    params.color       = FONT_COLOR_RGBA(255, 255, 255, a8);
@@ -450,7 +453,8 @@ static void xmb_frame_background(settings_t *settings,
    };
 
    /* force viewport to fullscreen */
-   gl_set_viewport(gl, gl->win_width, gl->win_height, true, false);
+   gl_set_viewport(gl, global->video_data.width,
+         global->video_data.height, true, false);
 
    coords.vertices      = 4;
    coords.vertex        = vertex;
@@ -505,6 +509,7 @@ static void xmb_frame_messagebox(const char *message)
    gl_t *gl                 = NULL;
    xmb_handle_t *xmb        = NULL;
    menu_handle_t *menu      = menu_driver_get_ptr();
+   global_t *global         = global_get_ptr();
 
    if (!menu)
       return;
@@ -526,8 +531,8 @@ static void xmb_frame_messagebox(const char *message)
    if (list->elems == 0)
       goto end;
 
-   x = gl->win_width / 2 - strlen(list->elems[0].data) * menu->font.size / 4;
-   y = gl->win_height / 2 - list->size * menu->font.size / 2;
+   x = global->video_data.width  / 2 - strlen(list->elems[0].data) * menu->font.size / 4;
+   y = global->video_data.height / 2 - list->size * menu->font.size / 2;
 
    for (i = 0; i < list->size; i++)
    {
@@ -1058,6 +1063,7 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
    const char *label     = NULL;
    xmb_node_t *core_node = NULL;
    size_t end            = 0;
+   global_t *global      = global_get_ptr();
 
    if (!list || !list->size)
       return;
@@ -1097,9 +1103,9 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
 
       if (
             icon_x < -xmb->icon.size / 2 || 
-            icon_x > gl->win_width ||
+            icon_x > global->video_data.width ||
             icon_y < xmb->icon.size / 2 ||
-            icon_y > gl->win_height + xmb->icon.size)
+            icon_y > global->video_data.height + xmb->icon.size)
          continue;
 
       menu_list_get_at_offset(list, i, &path, &entry_label, &type);
@@ -1213,6 +1219,7 @@ static void xmb_draw_cursor(gl_t *gl, xmb_handle_t *xmb, float x, float y)
 {
    struct gl_coords coords;
    math_matrix_4x4 mymat, mrot;
+   global_t *global = global_get_ptr();
 
    GLfloat color[] = {
       1.0f, 1.0f, 1.0f, xmb->alpha,
@@ -1221,7 +1228,7 @@ static void xmb_draw_cursor(gl_t *gl, xmb_handle_t *xmb, float x, float y)
       1.0f, 1.0f, 1.0f, xmb->alpha,
    };
 
-   glViewport(x, gl->win_height - y, xmb->cursor.size, xmb->cursor.size);
+   glViewport(x, global->video_data.height - y, xmb->cursor.size, xmb->cursor.size);
 
    coords.vertices      = 4;
    coords.vertex        = rmb_vertex;
@@ -1339,7 +1346,7 @@ static void xmb_frame(void)
 
       xmb_draw_text(menu, gl, xmb,
             timedate,
-            gl->win_width - xmb->margins.title.left - xmb->icon.size / 4, 
+            global->video_data.width - xmb->margins.title.left - xmb->icon.size / 4, 
             xmb->margins.title.top, 1, 1, TEXT_ALIGN_RIGHT);
    }
 
@@ -1362,7 +1369,7 @@ static void xmb_frame(void)
       snprintf(title_msg, sizeof(title_msg), "%s - %s %s", PACKAGE_VERSION,
             core_name, core_version);
       xmb_draw_text(menu, gl, xmb, title_msg, xmb->margins.title.left, 
-            gl->win_height - xmb->margins.title.bottom, 1, 1, TEXT_ALIGN_LEFT);
+            global->video_data.height - xmb->margins.title.bottom, 1, 1, TEXT_ALIGN_LEFT);
    }
 
    depth = file_list_get_size(menu->menu_list->menu_stack);
@@ -1390,7 +1397,7 @@ static void xmb_frame(void)
 
    if (settings->menu.timedate_enable)
       xmb_draw_icon_predone(gl, xmb, &mymat, xmb->textures.list[XMB_TEXTURE_CLOCK].id,
-            gl->win_width - xmb->icon.size, xmb->icon.size, 1, 0, 1);
+            global->video_data.width - xmb->icon.size, xmb->icon.size, 1, 0, 1);
 
    xmb_draw_icon_predone(gl, xmb, &mymat, xmb->textures.list[XMB_TEXTURE_ARROW].id,
          xmb->x + xmb->margins.screen.left + 
@@ -1453,7 +1460,7 @@ static void xmb_frame(void)
    if (settings->menu.mouse.enable)
       xmb_draw_cursor(gl, xmb, menu->mouse.x, menu->mouse.y);
 
-   gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
+   gl_set_viewport(gl, global->video_data.width, global->video_data.height, false, true);
 }
 
 static void *xmb_init(void)
@@ -1519,20 +1526,20 @@ static void *xmb_init(void)
    xmb->item.active.factor      = 3.0;
    xmb->under_offset.item       = 5.0;
 
-   menu->frame_buf.width  = gl->win_width;
-   menu->frame_buf.height = gl->win_height;
+   menu->frame_buf.width  = global->video_data.width;
+   menu->frame_buf.height = global->video_data.height;
 
-   if (gl->win_width >= 3840)
+   if (global->video_data.width >= 3840)
       scale_factor              = 2.0;
-   else if (gl->win_width >= 2560)
+   else if (global->video_data.width >= 2560)
       scale_factor              = 1.5;
-   else if (gl->win_width >= 1920)
+   else if (global->video_data.width >= 1920)
       scale_factor              = 1.0;
-   else if (gl->win_width >= 1280)
+   else if (global->video_data.width >= 1280)
       scale_factor              = 0.75;
-   else if (gl->win_width >=  640)
+   else if (global->video_data.width >=  640)
       scale_factor              = 0.5;
-   else if (gl->win_width >=  320)
+   else if (global->video_data.width >=  320)
       scale_factor              = 0.25;
 
    strlcpy(xmb->icon.dir, "256", sizeof(xmb->icon.dir));

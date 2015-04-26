@@ -262,6 +262,12 @@ typedef struct global
       float volume_gain;
    } audio_data;
 
+   struct
+   {
+      unsigned width;
+      unsigned height;
+   } video_data;
+
 
    struct
    {

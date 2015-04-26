@@ -576,6 +576,7 @@ static void gl_init_fbo(gl_t *gl, unsigned width, unsigned height)
 {
    int i;
    struct gfx_fbo_scale scale, scale_last;
+   global_t *global = global_get_ptr();
 
    if (!gl || gl->shader->num_shaders() == 0)
       return;
@@ -620,7 +621,7 @@ static void gl_init_fbo(gl_t *gl, unsigned width, unsigned height)
       }
    }
 
-   gl_compute_fbo_geometry(gl, width, height, gl->win_width, gl->win_height);
+   gl_compute_fbo_geometry(gl, width, height, global->video_data.width, global->video_data.height);
 
    for (i = 0; i < gl->fbo_pass; i++)
    {
@@ -800,7 +801,7 @@ void gl_set_viewport(gl_t *gl, unsigned width,
 
          /* GL has bottom-left origin viewport. */
          x      = custom->x;
-         y      = gl->win_height - custom->y - custom->height;
+         y      = global->video_data.height - custom->y - custom->height;
          width  = custom->width;
          height = custom->height;
       }
@@ -969,6 +970,7 @@ static void gl_frame_fbo(gl_t *gl,
    unsigned fbo_tex_info_cnt = 0;
    GLfloat fbo_tex_coords[8] = {0.0f};
    runloop_t *runloop = rarch_main_get_ptr();
+   global_t *global = global_get_ptr();
 
    /* Render the rest of our passes. */
    gl->coords.tex_coord = fbo_tex_coords;
@@ -1050,7 +1052,7 @@ static void gl_frame_fbo(gl_t *gl,
       glGenerateMipmap(GL_TEXTURE_2D);
 
    glClear(GL_COLOR_BUFFER_BIT);
-   gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
+   gl_set_viewport(gl, global->video_data.width, global->video_data.height, false, true);
 
    gl->shader->set_params(gl,
          prev_rect->img_width, prev_rect->img_height, 
@@ -1397,8 +1399,10 @@ static INLINE void gl_set_prev_texture(gl_t *gl,
 
 static INLINE void gl_set_shader_viewport(gl_t *gl, unsigned shader)
 {
+   global_t *global = global_get_ptr();
+
    gl->shader->use(gl, shader);
-   gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
+   gl_set_viewport(gl, global->video_data.width, global->video_data.height, false, true);
 }
 
 #if defined(HAVE_GL_ASYNC_READBACK) && defined(HAVE_MENU)
@@ -1443,6 +1447,7 @@ static INLINE void gl_draw_texture(gl_t *gl)
       1.0f, 1.0f, 1.0f, gl->menu_texture_alpha,
       1.0f, 1.0f, 1.0f, gl->menu_texture_alpha,
    };
+   global_t *global = global_get_ptr();
    if (!gl->menu_texture)
       return;
 
@@ -1460,7 +1465,7 @@ static INLINE void gl_draw_texture(gl_t *gl)
 
    if (gl->menu_texture_full_screen)
    {
-      glViewport(0, 0, gl->win_width, gl->win_height);
+      glViewport(0, 0, global->video_data.width, global->video_data.height);
       glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
       glViewport(gl->vp.x, gl->vp.y, gl->vp.width, gl->vp.height);
    }
@@ -1482,6 +1487,7 @@ static bool gl_frame(void *data, const void *frame,
    runloop_t *runloop          = rarch_main_get_ptr();
    driver_t *driver            = driver_get_ptr();
    settings_t *settings        = config_get_ptr();
+   global_t *global            = global_get_ptr();
    const struct font_renderer *font_driver = driver ? driver->font_osd_driver : NULL;
 
    RARCH_PERFORMANCE_INIT(frame_run);
@@ -1498,7 +1504,7 @@ static bool gl_frame(void *data, const void *frame,
 
 #ifdef IOS
    /* Apparently the viewport is lost each frame, thanks Apple. */
-   gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
+   gl_set_viewport(gl, global->video_data.width, global->video_data.height, false, true);
 #endif
 
 #ifdef HAVE_FBO
@@ -1515,7 +1521,7 @@ static bool gl_frame(void *data, const void *frame,
    {
       gl->should_resize = false;
 
-      gfx_ctx_set_resize(gl, gl->win_width, gl->win_height);
+      gfx_ctx_set_resize(gl, global->video_data.width, global->video_data.height);
 
 #ifdef HAVE_FBO
       if (gl->fbo_inited)
@@ -1528,7 +1534,7 @@ static bool gl_frame(void *data, const void *frame,
       }
       else
 #endif
-         gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
+         gl_set_viewport(gl, global->video_data.width, global->video_data.height, false, true);
    }
 
    gl->tex_index = frame ?
@@ -1561,7 +1567,7 @@ static bool gl_frame(void *data, const void *frame,
       if (!gl->fbo_inited)
       {
          gl_bind_backbuffer();
-         gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
+         gl_set_viewport(gl, global->video_data.width, global->video_data.height, false, true);
       }
 
 #ifndef HAVE_OPENGLES
@@ -2288,14 +2294,14 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    gl->fullscreen = video->fullscreen;
    
    /* Get real known video size, which might have been altered by context. */
-   gfx_ctx_get_video_size(gl, &gl->win_width, &gl->win_height);
-   RARCH_LOG("GL: Using resolution %ux%u\n", gl->win_width, gl->win_height);
+   gfx_ctx_get_video_size(gl, &global->video_data.width, &global->video_data.height);
+   RARCH_LOG("GL: Using resolution %ux%u\n", global->video_data.width, global->video_data.height);
 
    if (gl->full_x || gl->full_y)
    {
       /* We got bogus from gfx_ctx_get_video_size. Replace. */
-      gl->full_x = gl->win_width;
-      gl->full_y = gl->win_height;
+      gl->full_x = global->video_data.width;
+      gl->full_y = global->video_data.height;
    }
 
    hw_render         = &global->system.hw_render_callback;
@@ -2445,10 +2451,11 @@ error:
 static bool gl_alive(void *data)
 {
    bool quit = false, resize = false;
-   gl_t *gl = (gl_t*)data;
+   gl_t         *gl = (gl_t*)data;
+   global_t *global = global_get_ptr();
 
    if (!gfx_ctx_check_window(data, &quit,
-            &resize, &gl->win_width, &gl->win_height))
+            &resize, &global->video_data.width, &global->video_data.height))
       return false;
 
    if (quit)
@@ -2630,15 +2637,16 @@ static bool gl_set_shader(void *data,
 static void gl_viewport_info(void *data, struct video_viewport *vp)
 {
    unsigned top_y, top_dist;
-   gl_t *gl        = (gl_t*)data;
+   gl_t *gl         = (gl_t*)data;
+   global_t *global = global_get_ptr();
 
    *vp             = gl->vp;
-   vp->full_width  = gl->win_width;
-   vp->full_height = gl->win_height;
+   vp->full_width  = global->video_data.width;
+   vp->full_height = global->video_data.height;
 
    /* Adjust as GL viewport is bottom-up. */
    top_y           = vp->y + vp->height;
-   top_dist        = gl->win_height - top_y;
+   top_dist        = global->video_data.height - top_y;
    vp->y           = top_dist;
 }
 
@@ -2975,6 +2983,7 @@ static void gl_overlay_set_alpha(void *data, unsigned image, float mod)
 static void gl_render_overlay(void *data)
 {
    unsigned i;
+   global_t *global = global_get_ptr();
    gl_t *gl = (gl_t*)data;
    if (!gl)
       return;
@@ -2982,7 +2991,8 @@ static void gl_render_overlay(void *data)
    glEnable(GL_BLEND);
 
    if (gl->overlay_full_screen)
-      glViewport(0, 0, gl->win_width, gl->win_height);
+      glViewport(0, 0,
+            global->video_data.width, global->video_data.height);
 
    /* Ensure that we reset the attrib array. */
    gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
