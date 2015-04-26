@@ -175,6 +175,7 @@ bool rpng_load_image_argb_iterate(FILE **fd, struct rpng_t *rpng)
             return false;
          }
 
+         png_free_chunk(&chunk);
          rpng->has_ihdr = true;
          break;
 
@@ -282,6 +283,9 @@ end:
    free(rpng.process.inflate_buf);
 
    if (rpng.process.stream)
+   {
       zlib_stream_free(rpng.process.stream);
+      free(rpng.process.stream);
+   }
    return ret;
 }

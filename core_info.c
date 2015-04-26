@@ -239,6 +239,7 @@ void core_info_list_free(core_info_list_t *core_info_list)
          continue;
 
       free(info->path);
+      free(info->core_name);
       free(info->systemname);
       free(info->system_manufacturer);
       free(info->display_name);
