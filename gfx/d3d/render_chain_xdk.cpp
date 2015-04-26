@@ -132,6 +132,7 @@ static void renderchain_set_vertices(void *data, unsigned pass,
 {
    d3d_video_t *d3d         = (d3d_video_t*)data;
    runloop_t *runloop       = rarch_main_get_ptr();
+   global_t *global         = global_get_ptr();
    xdk_renderchain_t *chain = (xdk_renderchain_t*)d3d->renderchain_data;
 
    if (chain->last_width != width || chain->last_height != height)
@@ -207,13 +208,13 @@ static void renderchain_set_vertices(void *data, unsigned pass,
 #ifdef _XBOX
    if (d3d->shader)
    {
-      renderchain_set_mvp(d3d, d3d->screen_width, d3d->screen_height, d3d->dev_rotation);
+      renderchain_set_mvp(d3d, global->video_data.width, global->video_data.height, d3d->dev_rotation);
       if (d3d->shader->use)
          d3d->shader->use(d3d, pass);
       if (d3d->shader->set_params)
          d3d->shader->set_params(d3d, width, height, chain->tex_w,
-               chain->tex_h, d3d->screen_width,
-               d3d->screen_height, runloop->frames.video.count,
+               chain->tex_h, global->video_data.width,
+               global->video_data.height, runloop->frames.video.count,
                NULL, NULL, NULL, 0);
    }
 #endif
@@ -334,10 +335,10 @@ static bool xdk_renderchain_init(void *data,
       return false;
 
    if (global->console.screen.viewports.custom_vp.width == 0)
-      global->console.screen.viewports.custom_vp.width = d3d->screen_width;
+      global->console.screen.viewports.custom_vp.width = global->video_data.width;
 
    if (global->console.screen.viewports.custom_vp.height == 0)
-      global->console.screen.viewports.custom_vp.height = d3d->screen_height;
+      global->console.screen.viewports.custom_vp.height = global->video_data.height;
 
    return true;
 }
@@ -359,6 +360,7 @@ static bool xdk_renderchain_render(void *data, const void *frame,
    d3d_video_t      *d3d    = (d3d_video_t*)data;
    LPDIRECT3DDEVICE d3dr    = (LPDIRECT3DDEVICE)d3d->dev;
    settings_t *settings     = config_get_ptr();
+   global_t   *global       = global_get_ptr();
    xdk_renderchain_t *chain = (xdk_renderchain_t*)d3d->renderchain_data;
 
    renderchain_blit_to_texture(chain, frame, width, height, pitch);
@@ -376,7 +378,8 @@ static bool xdk_renderchain_render(void *data, const void *frame,
       d3d_set_stream_source(d3dr, i, chain->vertex_buf, 0, sizeof(Vertex));
 
    d3d_draw_primitive(d3dr, D3DPT_TRIANGLESTRIP, 0, 2);
-   renderchain_set_mvp(d3d, d3d->screen_width, d3d->screen_height, d3d->dev_rotation);
+   renderchain_set_mvp(d3d, global->video_data.width,
+	   global->video_data.height, d3d->dev_rotation);
 
    return true;
 }

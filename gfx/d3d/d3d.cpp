@@ -170,8 +170,8 @@ void d3d_make_d3dpp(void *data,
 
 	  gfx_ctx_get_video_size(d3d, &width, &height);
 
-      d3d->screen_width       = width;
-      d3d->screen_height      = height;
+      global->video_data.width       = width;
+      global->video_data.height      = height;
 #endif
       d3dpp->BackBufferWidth  = global->video_data.width;
       d3dpp->BackBufferHeight = global->video_data.height;

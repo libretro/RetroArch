@@ -423,6 +423,7 @@ static void rmenu_xui_frame(void)
    d3d_video_t *d3d = NULL;
    menu_handle_t *menu   = menu_driver_get_ptr();
    driver_t      *driver = driver_get_ptr();
+   global_t      *global = global_get_ptr();
 
    if (!menu)
       return;
@@ -439,12 +440,12 @@ static void rmenu_xui_frame(void)
 
    (void)menu;
 
-   vp_full.X = 0;
-   vp_full.Y = 0;
-   vp_full.Width = d3d->screen_width;
-   vp_full.Height = d3d->screen_height;
-   vp_full.MinZ = 0.0f;
-   vp_full.MaxZ = 1.0f;
+   vp_full.X      = 0;
+   vp_full.Y      = 0;
+   vp_full.Width  = global->video_data.width;
+   vp_full.Height = global->video_data.height;
+   vp_full.MinZ   = 0.0f;
+   vp_full.MaxZ   = 1.0f;
    d3d_set_viewport(d3dr, &vp_full);
 
    app.RunFrame();
