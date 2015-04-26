@@ -15,7 +15,6 @@
  */
 
 #include "../font_renderer_driver.h"
-#include "../drivers/gl_common.h"
 #include "../font_driver.h"
 
 #if defined(SN_TARGET_PSP2)
@@ -35,7 +34,7 @@
 
 static void *libdbg_font_init_font(void *gl_data, const char *font_path, float font_size)
 {
-   gl_t *gl = (gl_t*)gl_data;
+   global_t *global = global_get_ptr();
 
    (void)font_path;
    (void)font_size;
@@ -45,8 +44,8 @@ static void *libdbg_font_init_font(void *gl_data, const char *font_path, float f
    cfg.fontSize     = SCE_DBGFONT_FONTSIZE_LARGE;
 #elif defined(__CELLOS_LV2__)
    cfg.bufSize      = SCE_DBGFONT_BUFSIZE_LARGE;
-   cfg.screenWidth  = gl->win_width;
-   cfg.screenHeight = gl->win_height;
+   cfg.screenWidth  = global->video_data.width;
+   cfg.screenHeight = global->video_data.height;
 #endif
 
    DbgFontInit(&cfg);
