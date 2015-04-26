@@ -105,7 +105,7 @@ VIDEO CONTEXT
 #include "../gfx/drivers_context/bbqnx_ctx.c"
 #elif defined(EMSCRIPTEN)
 #include "../gfx/drivers_context/emscriptenegl_ctx.c"
-#elif defined(__APPLE__)
+#elif defined(__APPLE__) && !defined(TARGET_IPHONE_SIMULATOR) && !defined(TARGET_OS_IPHONE)
 #include "../gfx/drivers_context/cgl_ctx.c"
 #endif
 

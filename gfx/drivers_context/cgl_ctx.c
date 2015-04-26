@@ -19,6 +19,7 @@
  */
 
 #include <CoreGraphics/CoreGraphics.h>
+
 #include <OpenGL/CGLTypes.h>
 #include <OpenGL/CGLCurrent.h>
 #include <OpenGL/OpenGL.h>
