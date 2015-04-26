@@ -288,10 +288,11 @@ static void vg_draw_message(vg_t *vg, const char *msg)
 
 static void vg_calculate_quad(vg_t *vg)
 {
+   global_t *global     = global_get_ptr();
+
    /* set viewport for aspect ratio, taken from the OpenGL driver. */
    if (vg->mKeepAspect)
    {
-      global_t *global     = global_get_ptr();
       float desired_aspect = global->system.aspect_ratio;
 
       /* If the aspect ratios of screen and desired aspect ratio 
@@ -372,6 +373,7 @@ static bool vg_frame(void *data, const void *frame,
       unsigned width, unsigned height, unsigned pitch, const char *msg)
 {
    vg_t                    *vg = (vg_t*)data;
+   global_t            *global = global_get_ptr();
 
    RARCH_PERFORMANCE_INIT(vg_fr);
    RARCH_PERFORMANCE_START(vg_fr);
