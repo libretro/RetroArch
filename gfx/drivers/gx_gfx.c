@@ -1510,6 +1510,7 @@ video_driver_t video_gx = {
    gx_set_shader,
    gx_free,
    "gx",
+   NULL, /* set_viewport */
    gx_set_rotation,
    gx_viewport_info,
    gx_read_viewport,

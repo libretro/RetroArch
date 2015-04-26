@@ -491,6 +491,7 @@ video_driver_t video_vg = {
    vg_set_shader,
    vg_free,
    "vg",
+   NULL, /* set_viewport */
    vg_set_rotation,
    vg_viewport_info,
    vg_read_viewport,

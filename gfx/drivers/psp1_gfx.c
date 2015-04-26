@@ -969,7 +969,7 @@ video_driver_t video_psp1 = {
    psp_set_shader,
    psp_free,
    "psp1",
-
+   NULL, /* set_viewport */
    psp_set_rotation,
    psp_viewport_info,
    psp_read_viewport,

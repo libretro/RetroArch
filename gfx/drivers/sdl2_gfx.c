@@ -764,6 +764,7 @@ video_driver_t video_sdl2 = {
    sdl2_gfx_free,
    "sdl2",
 
+   NULL,
    sdl2_gfx_set_rotation,
    sdl2_gfx_viewport_info,
    sdl2_gfx_read_viewport,

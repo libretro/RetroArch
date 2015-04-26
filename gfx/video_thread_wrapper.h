@@ -30,6 +30,7 @@ enum thread_cmd
    CMD_SET_SHADER,
    CMD_FREE,
    CMD_ALIVE, /* Blocking alive check. Used when paused. */
+   CMD_SET_VIEWPORT,
    CMD_SET_ROTATION,
    CMD_READ_VIEWPORT,
 
@@ -125,6 +126,14 @@ typedef struct thread_video
          enum rarch_shader_type type;
          const char *path;
       } set_shader;
+
+      struct
+      {
+         unsigned width;
+         unsigned height;
+         bool force_full;
+         bool allow_rotate;
+      } set_viewport;
 
       struct
       {

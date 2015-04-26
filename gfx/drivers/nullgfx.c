@@ -127,6 +127,7 @@ video_driver_t video_null = {
    null_gfx_set_shader,
    null_gfx_free,
    "null",
+   NULL, /* set_viewport */
    null_gfx_set_rotation,
    null_gfx_viewport_info,
    null_gfx_read_viewport,

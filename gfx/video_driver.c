@@ -613,6 +613,21 @@ void video_driver_set_nonblock_state(bool toggle)
       video->set_nonblock_state(driver->video_data, toggle);
 }
 
+bool video_driver_set_viewport(unsigned width, unsigned height,
+      bool force_fullscreen, bool allow_rotate)
+{
+   driver_t                   *driver = driver_get_ptr();
+   const video_driver_t        *video = video_driver_ctx_get_ptr();
+
+   if (video->set_viewport)
+   {
+      video->set_viewport(driver->video_data, width, height,
+            force_fullscreen, allow_rotate);
+      return true;
+   }
+   return false;
+}
+
 bool video_driver_set_rotation(unsigned rotation)
 {
    driver_t                   *driver = driver_get_ptr();

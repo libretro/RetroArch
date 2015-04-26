@@ -1174,7 +1174,7 @@ video_driver_t video_omap = {
    omap_gfx_set_shader,
    omap_gfx_free,
    "omap",
-
+   NULL, /* set_viewport */
    omap_gfx_set_rotation,
    omap_gfx_viewport_info,
    omap_gfx_read_viewport,

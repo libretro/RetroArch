@@ -320,6 +320,7 @@ video_driver_t video_xenon360 = {
    xenon360_gfx_set_shader,
    xenon360_gfx_free,
    "xenon360",
+   NULL, /* set_viewport */
    xenon360_gfx_set_rotation,
    xenon360_gfx_viewport_info,
    xenon360_gfx_read_viewport,

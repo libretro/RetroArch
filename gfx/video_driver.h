@@ -166,6 +166,9 @@ typedef struct video_driver
    /* Human-readable identifier. */
    const char *ident;
 
+   void (*set_viewport)(void *data, unsigned width, unsigned height,
+         bool force_full, bool allow_rotate);
+
    void (*set_rotation)(void *data, unsigned rotation);
    void (*viewport_info)(void *data, struct video_viewport *vp);
 
@@ -332,6 +335,9 @@ bool video_driver_frame(const void *frame, unsigned width,
 bool video_driver_suppress_screensaver(bool enable);
 
 const char *video_driver_get_ident(void);
+
+bool video_driver_set_viewport(unsigned width, unsigned height,
+      bool force_fullscreen, bool allow_rotate);
 
 #ifdef __cplusplus
 }

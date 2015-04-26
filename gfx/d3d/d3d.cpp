@@ -374,6 +374,31 @@ static void d3d_set_viewport(d3d_video_t *d3d, int x, int y,
 
    d3d_set_font_rect(d3d, NULL);
 }
+
+static void d3d_set_viewport_wrap(void *data,
+      unsigned width, unsigned height,
+      bool force_fullscreen,
+      bool allow_rotate)
+{
+   D3DVIEWPORT vp_full;
+   LPDIRECT3DDEVICE d3dr;
+   d3d_video_t *d3d = (d3d_video_t*)data;
+
+   vp_full.X      = 0;
+   vp_full.Y      = 0;
+   vp_full.Width  = width;
+   vp_full.Height = height;
+   vp_full.MinZ   = 0.0f;
+   vp_full.MaxZ   = 1.0f;
+
+   d3dr = (LPDIRECT3DDEVICE)d3d->dev;
+
+   if (force_fullscreen)
+      d3d_set_viewport(d3dr, &vp_full);
+   else
+      d3d_set_viewport(d3dr, &d3d->final_viewport);
+}
+
 bool d3d_restore(d3d_video_t *d3d)
 {
    d3d_deinitialize(d3d);
@@ -1973,6 +1998,7 @@ video_driver_t video_d3d = {
    d3d_set_shader,
    d3d_free,
    "d3d",
+   d3d_set_viewport_wrap,
    d3d_set_rotation,
    d3d_viewport_info,
    d3d_read_viewport,

@@ -965,6 +965,7 @@ video_driver_t video_sunxi = {
   sunxi_gfx_set_shader,
   sunxi_gfx_free,
   "sunxi",
+  NULL, /* set_viewport */
   sunxi_gfx_set_rotation,
   sunxi_gfx_viewport_info,
   NULL, /* read_viewport */

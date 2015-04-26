@@ -771,7 +771,7 @@ static void gl_set_projection(gl_t *gl, struct gl_ortho *ortho, bool allow_rotat
    matrix_4x4_multiply(&gl->mvp, &rot, &gl->mvp_no_rot);
 }
 
-void gl_set_viewport(gl_t *gl, unsigned width,
+static void gl_set_viewport(void *data, unsigned width,
       unsigned height, bool force_full, bool allow_rotate)
 {
    int x = 0, y = 0;
@@ -779,6 +779,7 @@ void gl_set_viewport(gl_t *gl, unsigned width,
    struct gl_ortho ortho = {0, 1, 0, 1, -1, 1};
    settings_t *settings  = config_get_ptr();
    global_t   *global    = global_get_ptr();
+   gl_t           *gl    = (gl_t*)data;
 
    gfx_ctx_translate_aspect(gl, &device_aspect, width, height);
 
@@ -3224,6 +3225,7 @@ video_driver_t video_gl = {
    gl_free,
    "gl",
 
+   gl_set_viewport,
    gl_set_rotation,
 
    gl_viewport_info,

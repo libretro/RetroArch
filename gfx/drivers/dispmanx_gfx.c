@@ -651,7 +651,7 @@ video_driver_t video_dispmanx = {
 	dispmanx_gfx_set_shader,
 	dispmanx_gfx_free,
 	"dispmanx",
-
+   NULL, /* set_viewport */
 	dispmanx_gfx_set_rotation,
 	dispmanx_gfx_viewport_info,
 	dispmanx_gfx_read_viewport,

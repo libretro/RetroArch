@@ -1675,6 +1675,7 @@ video_driver_t video_exynos = {
   exynos_gfx_set_shader,
   exynos_gfx_free,
   "exynos",
+  NULL, /* set_viewport */
   exynos_gfx_set_rotation,
   exynos_gfx_viewport_info,
   exynos_gfx_read_viewport,

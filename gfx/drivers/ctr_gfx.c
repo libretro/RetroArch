@@ -553,7 +553,7 @@ video_driver_t video_ctr =
    ctr_set_shader,
    ctr_free,
    "ctr",
-
+   NULL, /* set_viewport */
    ctr_set_rotation,
    ctr_viewport_info,
    ctr_read_viewport,

@@ -392,9 +392,6 @@ static INLINE bool gl_check_error(void)
    return false;
 }
 
-void gl_set_viewport(gl_t *gl, unsigned width, unsigned height,
-      bool force_full, bool allow_rotate);
-
 void gl_load_texture_data(GLuint id,
       enum gfx_wrap_type wrap_type,
       enum texture_filter_type filter_type,
