@@ -438,15 +438,7 @@ static void rmenu_xui_frame(void)
    if (!d3dr)
       return;
 
-   (void)menu;
-
-   vp_full.X      = 0;
-   vp_full.Y      = 0;
-   vp_full.Width  = global->video_data.width;
-   vp_full.Height = global->video_data.height;
-   vp_full.MinZ   = 0.0f;
-   vp_full.MaxZ   = 1.0f;
-   d3d_set_viewport(d3dr, &vp_full);
+   menu_display_set_viewport(menu);
 
    app.RunFrame();
    XuiTimersRun();

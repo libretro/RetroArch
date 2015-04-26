@@ -465,7 +465,7 @@ static void glui_frame(void)
          && !menu->msg_force)
       return;
 
-   gl_set_viewport(gl, global->video_data.width, global->video_data.height, true, false);
+   menu_display_set_viewport(menu);
 
    glui_render_background(settings, gl, glui);
 

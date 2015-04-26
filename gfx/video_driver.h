@@ -331,6 +331,8 @@ bool video_driver_frame(const void *frame, unsigned width,
 
 bool video_driver_suppress_screensaver(bool enable);
 
+const char *video_driver_get_ident(void);
+
 #ifdef __cplusplus
 }
 #endif

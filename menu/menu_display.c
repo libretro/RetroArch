@@ -17,9 +17,14 @@
 #include "menu_display.h"
 #include "menu_animation.h"
 #include "../dynamic.h"
+#include "../../gfx/drivers/gl_common.h"
 #include "../../retroarch.h"
 #include "../../config.def.h"
 #include "../gfx/video_context_driver.h"
+
+#ifdef HAVE_D3D
+#include "../gfx/d3d/d3d.h"
+#endif
 
 bool menu_display_update_pending(void)
 {
@@ -154,4 +159,41 @@ bool menu_display_font_flush_block(menu_handle_t *menu,
 
    return menu_display_font_bind_block(menu,
          font_driver, NULL);
+}
+
+void menu_display_set_viewport(menu_handle_t *menu)
+{
+   global_t *global    = global_get_ptr();
+   driver_t *driver    = driver_get_ptr();
+   const char *ident   = video_driver_get_ident();
+
+#ifdef HAVE_OPENGL
+   if (!strcmp(ident, "gl"))
+   {
+      gl_set_viewport(driver->video_data,
+            global->video_data.width,
+            global->video_data.height, true, false);
+      return;
+   }
+#endif
+#ifdef HAVE_D3D
+   if (!strcmp(ident, "d3d"))
+   {
+      D3DVIEWPORT vp_full;
+      LPDIRECT3DDEVICE d3dr;
+      d3d_video_t *d3d = (d3d_video_t*)driver->video_data;
+
+      vp_full.X      = 0;
+      vp_full.Y      = 0;
+      vp_full.Width  = global->video_data.width;
+      vp_full.Height = global->video_data.height;
+      vp_full.MinZ   = 0.0f;
+      vp_full.MaxZ   = 1.0f;
+
+      d3dr = (LPDIRECT3DDEVICE)d3d->dev;
+
+      d3d_set_viewport(d3dr, &vp_full);
+      return;
+   }
+#endif
 }

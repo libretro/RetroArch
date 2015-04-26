@@ -1321,8 +1321,7 @@ static void xmb_frame(void)
    if (!gl)
       return;
 
-   gl_set_viewport(gl, global->video_data.width,
-         global->video_data.height, true, false);
+   menu_display_set_viewport(menu);
 
    menu_display_font_bind_block(menu, font_driver, &xmb->raster_block);
 

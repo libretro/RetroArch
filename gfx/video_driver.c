@@ -238,6 +238,14 @@ static const video_driver_t *video_driver_ctx_get_ptr(void)
    return driver->video;
 }
 
+const char *video_driver_get_ident(void)
+{
+   const video_driver_t *video = video_driver_ctx_get_ptr();
+   if (video)
+      return video->ident;
+   return NULL;
+}
+
 /**
  * video_driver_get_current_framebuffer:
  *
