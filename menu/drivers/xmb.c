@@ -277,6 +277,18 @@ static void xmb_draw_icon_end(void)
    glDisable(GL_BLEND);
 }
 
+static void xmb_draw_frame(
+      const shader_backend_t *shader,
+      struct gl_coords *coords,
+      math_matrix_4x4 *mat)
+{
+   driver_t *driver = driver_get_ptr();
+   shader->set_coords(coords);
+   shader->set_mvp(driver->video_data, mat);
+
+   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+}
+
 static void xmb_draw_icon(gl_t *gl, xmb_handle_t *xmb,
       GLuint texture, float x, float y,
       float alpha, float rotation, float scale_factor)
@@ -323,10 +335,7 @@ static void xmb_draw_icon(gl_t *gl, xmb_handle_t *xmb,
    matrix_4x4_scale(&mscal, scale_factor, scale_factor, 1);
    matrix_4x4_multiply(&mymat, &mscal, &mymat);
 
-   gl->shader->set_coords(&coords);
-   gl->shader->set_mvp(gl, &mymat);
-
-   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+   xmb_draw_frame(gl->shader, &coords, &mymat);
 }
 
 static void xmb_draw_icon_predone(gl_t *gl, xmb_handle_t *xmb,
@@ -369,10 +378,7 @@ static void xmb_draw_icon_predone(gl_t *gl, xmb_handle_t *xmb,
    coords.color         = color;
    glBindTexture(GL_TEXTURE_2D, texture);
 
-   gl->shader->set_coords(&coords);
-   gl->shader->set_mvp(gl, mymat);
-
-   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+   xmb_draw_frame(gl->shader, &coords, mymat);
 }
 
 static void xmb_draw_text(menu_handle_t *menu,
@@ -1206,6 +1212,7 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
 
 }
 
+
 static void xmb_draw_cursor(gl_t *gl, xmb_handle_t *xmb, float x, float y)
 {
    struct gl_coords coords;
@@ -1235,10 +1242,7 @@ static void xmb_draw_cursor(gl_t *gl, xmb_handle_t *xmb, float x, float y)
    glEnable(GL_BLEND);
    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-   gl->shader->set_coords(&coords);
-   gl->shader->set_mvp(gl, &mymat);
-
-   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+   xmb_draw_frame(gl->shader, &coords, &mymat);
 
    glDisable(GL_BLEND);
 }
