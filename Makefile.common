@@ -525,10 +525,11 @@ ifeq ($(HAVE_OPENGL), 1)
       OBJ += libretro-common/glsym/glsym_gl.o
       ifeq ($(OSX), 1)
          LIBS += -framework OpenGL
+         OBJ += gfx/drivers_context/cgl_ctx.o
       else ifneq ($(findstring Win32,$(OS)),)
          LIBS += -lopengl32 -lgdi32 -lcomdlg32 -lcomctl32
          OBJ += gfx/drivers_context/wgl_ctx.o \
-					 gfx/drivers_wm/win32_shader_dlg.o
+		gfx/drivers_wm/win32_shader_dlg.o
       else
          LIBS += -lGL
       endif

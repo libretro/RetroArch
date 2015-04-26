@@ -105,6 +105,8 @@ VIDEO CONTEXT
 #include "../gfx/drivers_context/bbqnx_ctx.c"
 #elif defined(EMSCRIPTEN)
 #include "../gfx/drivers_context/emscriptenegl_ctx.c"
+#elif defined(__APPLE__)
+#include "../gfx/drivers_context/cgl_ctx.c"
 #endif
 
 

@@ -62,6 +62,9 @@ static const gfx_ctx_driver_t *gfx_ctx_drivers[] = {
 #if defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH)
    &gfx_ctx_cocoagl,
 #endif
+#if defined(__APPLE__)
+   &gfx_ctx_cgl,
+#endif
 #if (defined(HAVE_SDL) || defined(HAVE_SDL2)) && defined(HAVE_OPENGL)
    &gfx_ctx_sdl_gl,
 #endif
