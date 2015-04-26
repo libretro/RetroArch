@@ -1584,6 +1584,9 @@ static void xmb_free(void *data)
       if (!xmb)
          return;
 
+      free(xmb->menu_stack_old);
+      free(xmb->selection_buf_old);
+
       gl_coord_array_free(&xmb->raster_block.carr);
 
       free(menu->userdata);
@@ -1981,6 +1984,7 @@ static void xmb_context_destroy(void)
    unsigned i;
    xmb_handle_t *xmb   = NULL;
    menu_handle_t *menu = menu_driver_get_ptr();
+   driver_t *driver    = driver_get_ptr();
 
    if (!menu)
       return;
@@ -2004,6 +2008,9 @@ static void xmb_context_destroy(void)
       glDeleteTextures(1, &node->icon);
       glDeleteTextures(1, &node->content_icon);
    }
+
+   if (menu->font.buf)
+      driver->font_osd_driver->free(menu->font.buf);
 }
 
 static void xmb_toggle(bool menu_on)
