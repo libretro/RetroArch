@@ -282,6 +282,9 @@ end:
    free(rpng.process.inflate_buf);
 
    if (rpng.process.stream)
+   {
       zlib_stream_free(rpng.process.stream);
+      free(rpng.process.stream);
+   }
    return ret;
 }
