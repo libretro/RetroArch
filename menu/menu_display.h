@@ -44,6 +44,10 @@ bool menu_display_font_bind_block(menu_handle_t *menu,
 bool menu_display_font_flush_block(menu_handle_t *menu,
       const struct font_renderer *font_driver);
 
+void menu_display_set_viewport(menu_handle_t *menu);
+
+void menu_display_unset_viewport(menu_handle_t *menu);
+
 #ifdef __cplusplus
 }
 #endif

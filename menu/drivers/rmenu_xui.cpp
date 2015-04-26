@@ -420,6 +420,7 @@ static void rmenu_xui_frame(void)
    D3DXMATRIX matOrigView;
    D3DVIEWPORT vp_full;
    LPDIRECT3DDEVICE d3dr;
+   const char *message;
    d3d_video_t *d3d = NULL;
    menu_handle_t *menu   = menu_driver_get_ptr();
    driver_t      *driver = driver_get_ptr();
@@ -451,20 +452,20 @@ static void rmenu_xui_frame(void)
 
    XuiRenderSetViewTransform( app.GetDC(), &matOrigView );
 
-   const char *message = rarch_main_msg_queue_pull();
+   message = rarch_main_msg_queue_pull();
 
    if (message)
       xui_render_message(message);
    else
    {
-      const char *message = rarch_main_msg_queue_pull();
+      message = rarch_main_msg_queue_pull();
       if (message)
          xui_render_message(message);
    }
 
    XuiRenderEnd( app.GetDC() );
 
-   d3d_set_viewport(d3dr, &d3d->final_viewport);
+   menu_display_unset_viewport(menu);
 }
 
 static void blit_line(int x, int y, const char *message, bool green)

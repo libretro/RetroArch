@@ -564,7 +564,7 @@ static void glui_frame(void)
 
    gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
 
-   gl_set_viewport(gl, global->video_data.width, global->video_data.height, false, true);
+   menu_display_unset_viewport(menu);
 }
 
 static void *glui_init(void)

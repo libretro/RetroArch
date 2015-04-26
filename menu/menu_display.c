@@ -197,3 +197,30 @@ void menu_display_set_viewport(menu_handle_t *menu)
    }
 #endif
 }
+
+void menu_display_unset_viewport(menu_handle_t *menu)
+{
+   driver_t *driver    = driver_get_ptr();
+   global_t *global    = global_get_ptr();
+   const char *ident   = video_driver_get_ident();
+
+#ifdef HAVE_OPENGL
+   if (!strcmp(ident, "gl"))
+   {
+      gl_set_viewport(driver->video_data,
+            global->video_data.width,
+            global->video_data.height,
+            false, true);
+      return;
+   }
+#endif
+#ifdef HAVE_D3D
+   if (!strcmp(ident, "d3d"))
+   {
+      d3d_video_t *d3d = (d3d_video_t*)driver->video_data;
+      LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
+      d3d_set_viewport(d3dr, &d3d->final_viewport);
+      return;
+   }
+#endif
+}

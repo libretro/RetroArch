@@ -1452,7 +1452,7 @@ static void xmb_frame(void)
    if (settings->menu.mouse.enable)
       xmb_draw_cursor(gl, xmb, menu->mouse.x, menu->mouse.y);
 
-   gl_set_viewport(gl, global->video_data.width, global->video_data.height, false, true);
+   menu_display_unset_viewport(menu);
 }
 
 static void *xmb_init(void)
