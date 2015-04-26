@@ -34,8 +34,6 @@
 
 typedef struct
 {
-   uint32_t mScreenWidth;
-   uint32_t mScreenHeight;
    bool should_resize;
    float mScreenAspect;
    bool mKeepAspect;
@@ -85,6 +83,7 @@ static void *vg_init(const video_info_t *video, const input_driver_t **input, vo
    VGfloat clearColor[4] = {0, 0, 0, 1};
    settings_t        *settings = config_get_ptr();
    driver_t            *driver = driver_get_ptr();
+   global_t            *global = global_get_ptr();
    const gfx_ctx_driver_t *ctx = NULL;
    vg_t                    *vg = (vg_t*)calloc(1, sizeof(vg_t));
 
@@ -99,8 +98,8 @@ static void *vg_init(const video_info_t *video, const input_driver_t **input, vo
 
    driver->video_context = ctx;
 
-   gfx_ctx_get_video_size(vg, &vg->mScreenWidth, &vg->mScreenHeight);
-   RARCH_LOG("Detecting screen resolution %ux%u.\n", vg->mScreenWidth, vg->mScreenHeight);
+   gfx_ctx_get_video_size(vg, &global->video_data.width, &global->video_data.height);
+   RARCH_LOG("Detecting screen resolution %ux%u.\n", global->video_data.width, global->video_data.height);
 
    gfx_ctx_swap_interval(vg, video->vsync ? 1 : 0);
 
@@ -113,20 +112,20 @@ static void *vg_init(const video_info_t *video, const input_driver_t **input, vo
    unsigned win_height = video->height;
    if (video->fullscreen && (win_width == 0) && (win_height == 0))
    {
-      win_width  = vg->mScreenWidth;
-      win_height = vg->mScreenHeight;
+      win_width  = global->video_data.width;
+      win_height = global->video_data.height;
    }
 
    if (!gfx_ctx_set_video_mode(vg, win_width, win_height, video->fullscreen))
       goto error;
 
-   gfx_ctx_get_video_size(vg, &vg->mScreenWidth, &vg->mScreenHeight);
-   RARCH_LOG("Verified window resolution %ux%u.\n", vg->mScreenWidth, vg->mScreenHeight);
+   gfx_ctx_get_video_size(vg, &global->video_data.width, &global->video_data.height);
+   RARCH_LOG("Verified window resolution %ux%u.\n", global->video_data.width, global->video_data.height);
    vg->should_resize = true;
 
-   vg->mScreenAspect = (float)vg->mScreenWidth / vg->mScreenHeight;
+   vg->mScreenAspect = (float)global->video_data.width / global->video_data.height;
 
-   gfx_ctx_translate_aspect(vg, &vg->mScreenAspect, vg->mScreenWidth, vg->mScreenHeight);
+   gfx_ctx_translate_aspect(vg, &vg->mScreenAspect, global->video_data.width, global->video_data.height);
 
    vgSetfv(VG_CLEAR_COLOR, 4, clearColor);
 
@@ -269,8 +268,8 @@ static void vg_draw_message(vg_t *vg, const char *msg)
    vgSeti(VG_IMAGE_MODE, VG_DRAW_IMAGE_STENCIL);
 
    VGfloat origins[] = {
-      vg->mScreenWidth  * settings->video.msg_pos_x - 2.0f,
-      vg->mScreenHeight * settings->video.msg_pos_y - 2.0f,
+      global->video_data.width  * settings->video.msg_pos_x - 2.0f,
+      global->video_data.height * settings->video.msg_pos_y - 2.0f,
    };
 
    vgSetfv(VG_GLYPH_ORIGIN, 2, origins);
@@ -302,32 +301,32 @@ static void vg_calculate_quad(vg_t *vg)
       {
          vg->x1 = 0;
          vg->y1 = 0;
-         vg->x2 = vg->mScreenWidth;
-         vg->y2 = vg->mScreenHeight;
+         vg->x2 = global->video_data.width;
+         vg->y2 = global->video_data.height;
       }
       else if (vg->mScreenAspect > desired_aspect)
       {
          float delta = (desired_aspect / vg->mScreenAspect - 1.0) / 2.0 + 0.5;
-         vg->x1 = vg->mScreenWidth * (0.5 - delta);
+         vg->x1 = global->video_data.width * (0.5 - delta);
          vg->y1 = 0;
-         vg->x2 = 2.0 * vg->mScreenWidth * delta + vg->x1;
-         vg->y2 = vg->mScreenHeight + vg->y1;
+         vg->x2 = 2.0 * global->video_data.width * delta + vg->x1;
+         vg->y2 = global->video_data.height + vg->y1;
       }
       else
       {
          float delta = (vg->mScreenAspect / desired_aspect - 1.0) / 2.0 + 0.5;
          vg->x1 = 0;
-         vg->y1 = vg->mScreenHeight * (0.5 - delta);
-         vg->x2 = vg->mScreenWidth + vg->x1;
-         vg->y2 = 2.0 * vg->mScreenHeight * delta + vg->y1;
+         vg->y1 = global->video_data.height * (0.5 - delta);
+         vg->x2 = global->video_data.width + vg->x1;
+         vg->y2 = 2.0 * global->video_data.height * delta + vg->y1;
       }
    }
    else
    {
       vg->x1 = 0;
       vg->y1 = 0;
-      vg->x2 = vg->mScreenWidth;
-      vg->y2 = vg->mScreenHeight;
+      vg->x2 = global->video_data.width;
+      vg->y2 = global->video_data.height;
    }
 
    vg->scissor[0] = vg->x1;
@@ -393,7 +392,7 @@ static bool vg_frame(void *data, const void *frame,
       vg->should_resize = false;
    }
    vgSeti(VG_SCISSORING, VG_FALSE);
-   vgClear(0, 0, vg->mScreenWidth, vg->mScreenHeight);
+   vgClear(0, 0, global->video_data.width, global->video_data.height);
    vgSeti(VG_SCISSORING, VG_TRUE);
 
    RARCH_PERFORMANCE_INIT(vg_image);
@@ -420,10 +419,11 @@ static bool vg_frame(void *data, const void *frame,
 static bool vg_alive(void *data)
 {
    bool quit;
-   vg_t *vg = (vg_t*)data;
+   vg_t         *vg = (vg_t*)data;
+   global_t *global = global_get_ptr();
 
    gfx_ctx_check_window(data, &quit,
-         &vg->should_resize, &vg->mScreenWidth, &vg->mScreenHeight);
+         &vg->should_resize, &global->video_data.width, &global->video_data.height);
    return !quit;
 }
 
