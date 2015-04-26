@@ -104,9 +104,6 @@ typedef struct d3d_video
    LPDIRECT3DDEVICE dev;
    HRESULT d3d_err;
    unsigned cur_mon_id;
-
-   unsigned screen_width;
-   unsigned screen_height;
    unsigned dev_rotation;
    D3DVIEWPORT final_viewport;
 
