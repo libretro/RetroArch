@@ -245,6 +245,18 @@ static void cocoagl_gfx_ctx_swap_interval(void *data, unsigned interval)
 #endif
 }
 
+static void cocoagl_gfx_ctx_show_mouse(void *data, bool state)
+{
+    (void)data;
+    
+#ifdef HAVE_COCOA
+    if (state)
+        [NSCursor unhide];
+    else
+        [NSCursor hide];
+#endif
+}
+
 static bool cocoagl_gfx_ctx_set_video_mode(void *data, unsigned width, unsigned height, bool fullscreen)
 {
 #if defined(HAVE_COCOA)
@@ -254,13 +266,13 @@ static bool cocoagl_gfx_ctx_set_video_mode(void *data, unsigned width, unsigned 
    if (fullscreen && !g_has_went_fullscreen)
    {
       [g_view enterFullScreenMode:get_chosen_screen() withOptions:nil];
-      [NSCursor hide];
+      cocoagl_gfx_ctx_show_mouse(data, false);
    }
    else if (!fullscreen && g_has_went_fullscreen)
    {
       [g_view exitFullScreenModeWithOptions:nil];
       [[g_view window] makeFirstResponder:g_view];
-      [NSCursor unhide];
+      cocoagl_gfx_ctx_show_mouse(data, true);
    }
    
    g_has_went_fullscreen = fullscreen;
