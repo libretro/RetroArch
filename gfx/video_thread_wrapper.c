@@ -15,10 +15,8 @@
  */
 
 #include "video_thread_wrapper.h"
-#include "video_viewport.h"
 #include "../performance.h"
 #include "../runloop.h"
-#include <file/dir_list.h>
 #include <stdlib.h>
 #include <string.h>
 #include <limits.h>
