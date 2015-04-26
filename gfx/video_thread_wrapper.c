@@ -126,16 +126,6 @@ static void thread_loop(void *data)
             thread_reply(thr, CMD_FREE);
             return;
 
-         case CMD_SET_VIEWPORT:
-            if (thr->driver && thr->driver->set_viewport)
-               thr->driver->set_viewport(thr->driver_data,
-                     thr->cmd_data.set_viewport.width,
-                     thr->cmd_data.set_viewport.height,
-                     thr->cmd_data.set_viewport.force_full,
-                     thr->cmd_data.set_viewport.allow_rotate);
-            thread_reply(thr, CMD_SET_VIEWPORT);
-            break;
-
          case CMD_SET_ROTATION:
             if (thr->driver && thr->driver->set_rotation)
                thr->driver->set_rotation(thr->driver_data, thr->cmd_data.i);
@@ -622,14 +612,22 @@ static void thread_set_viewport(void *data, unsigned width,
 
    if (!thr)
       return;
+    
+   slock_lock(thr->lock);
 
    thr->cmd_data.set_viewport.width        = width;
    thr->cmd_data.set_viewport.height       = height;
    thr->cmd_data.set_viewport.force_full   = force_full;
    thr->cmd_data.set_viewport.allow_rotate = allow_rotate;
-
-   thread_send_cmd(thr,   CMD_SET_VIEWPORT);
-   thread_wait_reply(thr, CMD_SET_VIEWPORT);
+    
+    if (thr->driver && thr->driver->set_viewport)
+        thr->driver->set_viewport(thr->driver_data,
+                                  thr->cmd_data.set_viewport.width,
+                                  thr->cmd_data.set_viewport.height,
+                                  thr->cmd_data.set_viewport.force_full,
+                                  thr->cmd_data.set_viewport.allow_rotate);
+    
+   slock_unlock(thr->lock);
 }
 
 static void thread_set_rotation(void *data, unsigned rotation)
