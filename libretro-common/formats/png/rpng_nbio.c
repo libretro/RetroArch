@@ -221,6 +221,8 @@ void rpng_nbio_load_image_free(struct rpng_t *rpng)
       free(rpng->idat_buf.data);
    if (rpng->process.inflate_buf)
       free(rpng->process.inflate_buf);
+   if (rpng->process.stream)
+      zlib_stream_free(rpng->process.stream);
 
    if (rpng)
       free(rpng);
