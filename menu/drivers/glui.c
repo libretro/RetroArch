@@ -695,7 +695,6 @@ static float glui_get_scroll(void)
    glui_handle_t *glui = NULL;
    menu_handle_t *menu = menu_driver_get_ptr();
    global_t *global    = global_get_ptr();
-   gl_t *gl            = (gl_t*)video_driver_get_ptr(NULL);
 
    if (!menu)
       return 0;
