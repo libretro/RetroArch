@@ -266,20 +266,14 @@ static int xmb_entry_iterate(unsigned action)
    return -1;
 }
 
-static void xmb_draw_icon_begin(gl_t *gl, xmb_handle_t *xmb)
+static void xmb_draw_icon_begin(void)
 {
-   if (!gl)
-      return;
-
    glEnable(GL_BLEND);
    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 }
 
-static void xmb_draw_icon_end(gl_t *gl, xmb_handle_t *xmb)
+static void xmb_draw_icon_end(void)
 {
-   if (!gl)
-      return;
-
    glDisable(GL_BLEND);
 }
 
@@ -382,7 +376,7 @@ static void xmb_draw_icon_predone(gl_t *gl, xmb_handle_t *xmb,
 }
 
 static void xmb_draw_text(menu_handle_t *menu,
-      gl_t *gl, xmb_handle_t *xmb,
+      xmb_handle_t *xmb,
       const char *str, float x,
       float y, float scale_factor, float alpha,
       enum text_alignment text_align)
@@ -539,7 +533,7 @@ static void xmb_frame_messagebox(const char *message)
       const char *msg = list->elems[i].data;
 
       if (msg)
-         xmb_draw_text(menu, gl, xmb, msg, x,
+         xmb_draw_text(menu, xmb, msg, x,
                y + i * menu->font.size, 1, 1, TEXT_ALIGN_LEFT);
    }
 
@@ -1150,7 +1144,7 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
             runloop->frames.video.count / 20, path_buf,
             (i == current));
 
-      xmb_draw_text(menu, gl, xmb, name,
+      xmb_draw_text(menu, xmb, name,
             node->x + xmb->margins.screen.left + 
             xmb->icon.spacing.horizontal + xmb->margins.label.left, 
             xmb->margins.screen.top + node->y + xmb->margins.label.top, 
@@ -1173,7 +1167,7 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
             && !xmb->textures.list[XMB_TEXTURE_SWITCH_ON].id)
             || (!strcmp(type_str, "OFF")
             && !xmb->textures.list[XMB_TEXTURE_SWITCH_OFF].id)))
-         xmb_draw_text(menu, gl, xmb, value,
+         xmb_draw_text(menu, xmb, value,
                node->x + xmb->margins.screen.left + xmb->icon.spacing.horizontal + 
                xmb->margins.label.left + xmb->margins.setting.left, 
                xmb->margins.screen.top + node->y + xmb->margins.label.top, 
@@ -1182,7 +1176,7 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
                TEXT_ALIGN_LEFT);
 
 
-      xmb_draw_icon_begin(gl, xmb);
+      xmb_draw_icon_begin();
 
       xmb_draw_icon(gl, xmb, icon, icon_x, icon_y, node->alpha, 0, node->zoom);
 
@@ -1210,7 +1204,7 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
                1);
       }
 
-      xmb_draw_icon_end(gl, xmb);
+      xmb_draw_icon_end();
    }
 
 }
@@ -1336,7 +1330,7 @@ static void xmb_frame(void)
 
    xmb_frame_background(settings, gl, xmb, false);
 
-   xmb_draw_text(menu, gl, xmb,
+   xmb_draw_text(menu, xmb,
          xmb->title_name, xmb->margins.title.left,
          xmb->margins.title.top, 1, 1, TEXT_ALIGN_LEFT);
 
@@ -1344,8 +1338,7 @@ static void xmb_frame(void)
    {
       disp_timedate_set_label(timedate, sizeof(timedate), 0);
 
-      xmb_draw_text(menu, gl, xmb,
-            timedate,
+      xmb_draw_text(menu, xmb, timedate,
             global->video_data.width - xmb->margins.title.left - xmb->icon.size / 4, 
             xmb->margins.title.top, 1, 1, TEXT_ALIGN_RIGHT);
    }
@@ -1368,7 +1361,7 @@ static void xmb_frame(void)
 
       snprintf(title_msg, sizeof(title_msg), "%s - %s %s", PACKAGE_VERSION,
             core_name, core_version);
-      xmb_draw_text(menu, gl, xmb, title_msg, xmb->margins.title.left, 
+      xmb_draw_text(menu, xmb, title_msg, xmb->margins.title.left, 
             global->video_data.height - xmb->margins.title.bottom, 1, 1, TEXT_ALIGN_LEFT);
    }
 
@@ -1393,7 +1386,7 @@ static void xmb_frame(void)
    matrix_4x4_scale(&mscal, 1 /* scale_factor */, 1 /* scale_factor */, 1);
    matrix_4x4_multiply(&mymat, &mscal, &mymat);
 
-   xmb_draw_icon_begin(gl, xmb);
+   xmb_draw_icon_begin();
 
    if (settings->menu.timedate_enable)
       xmb_draw_icon_predone(gl, xmb, &mymat, xmb->textures.list[XMB_TEXTURE_CLOCK].id,
@@ -1417,7 +1410,7 @@ static void xmb_frame(void)
 
       if (node)
       {
-         xmb_draw_icon_begin(gl, xmb);
+         xmb_draw_icon_begin();
          xmb_draw_icon(gl, xmb, node->icon, 
                xmb->x + xmb->categories.x_pos + 
                xmb->margins.screen.left + 
@@ -1426,7 +1419,7 @@ static void xmb_frame(void)
                node->alpha, 
                0, 
                node->zoom);
-         xmb_draw_icon_end(gl, xmb);
+         xmb_draw_icon_end();
       }
    }
 
