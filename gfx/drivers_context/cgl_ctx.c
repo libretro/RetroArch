@@ -60,15 +60,27 @@ static void gfx_ctx_cgl_swap_interval(void *data, unsigned interval)
    CGLSetParameter(cgl->glCtx, kCGLCPSwapInterval, &params);
 }
 
+static void gfx_ctx_cgl_get_video_size(void *data, unsigned *width, unsigned *height)
+{
+   gfx_ctx_cgl_data_t *cgl = (gfx_ctx_cgl_data_t*)data;
+   *width  = cgl->width;
+   *height = cgl->height;
+}
+
 static void gfx_ctx_cgl_check_window(void *data, bool *quit,
       bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
 {
    (void)frame_count;
-   (void)data;
-   (void)quit;
-   (void)width;
-   (void)height;
-   (void)resize;
+
+   *quit = false;
+
+   gfx_ctx_cgl_get_video_size(data, &new_width, &new_height);
+   if (new_width != *width || new_height != *height)
+   {
+      *width  = new_width;
+      *height = new_height;
+      *resize = true;
+   }
 }
 
 static void gfx_ctx_cgl_swap_buffers(void *data)
@@ -90,12 +102,6 @@ static void gfx_ctx_cgl_update_window_title(void *data)
    (void)data;
 }
 
-static void gfx_ctx_cgl_get_video_size(void *data, unsigned *width, unsigned *height)
-{
-   (void)data;
-   *width  = 320;
-   *height = 240;
-}
 
 static bool gfx_ctx_cgl_set_video_mode(void *data,
       unsigned width, unsigned height,
