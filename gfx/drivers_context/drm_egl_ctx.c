@@ -94,10 +94,49 @@ struct drm_fb
    uint32_t fb_id;
 };
 
-static struct drm_fb *drm_fb_get_from_bo(
-      gfx_ctx_drm_egl_data_t *drm, struct gbm_bo *bo);
+static void drm_fb_destroy_callback(struct gbm_bo *bo, void *data)
+{
+   driver_t *driver = driver_get_ptr();
+   struct drm_fb *fb = (struct drm_fb*)data;
+   gfx_ctx_drm_egl_data_t *drm = (gfx_ctx_drm_egl_data_t*)driver->video_context_data;
 
-static void gfx_ctx_drm_egl_destroy(void *data);
+   if (drm && fb->fb_id)
+      drmModeRmFB(drm->g_drm_fd, fb->fb_id);
+
+   free(fb);
+}
+
+static struct drm_fb *drm_fb_get_from_bo(
+      gfx_ctx_drm_egl_data_t *drm,
+      struct gbm_bo *bo)
+{
+   int ret;
+   unsigned width, height, stride, handle;
+   struct drm_fb *fb = (struct drm_fb*)gbm_bo_get_user_data(bo);
+   if (fb)
+      return fb;
+
+   fb = (struct drm_fb*)calloc(1, sizeof(*fb));
+   fb->bo = bo;
+
+   width  = gbm_bo_get_width(bo);
+   height = gbm_bo_get_height(bo);
+   stride = gbm_bo_get_stride(bo);
+   handle = gbm_bo_get_handle(bo).u32;
+
+   RARCH_LOG("[KMS/EGL]: New FB: %ux%u (stride: %u).\n", width, height, stride);
+
+   ret = drmModeAddFB(drm->g_drm_fd, width, height, 24, 32, stride, handle, &fb->fb_id);
+   if (ret < 0)
+   {
+      RARCH_ERR("[KMS/EGL]: Failed to create FB: %s\n", strerror(errno));
+      free(fb);
+      return NULL;
+   }
+
+   gbm_bo_set_user_data(bo, fb, drm_fb_destroy_callback);
+   return fb;
+}
 
 static void sighandler(int sig)
 {
@@ -546,49 +585,7 @@ error:
    return false;
 }
 
-static void drm_fb_destroy_callback(struct gbm_bo *bo, void *data)
-{
-   driver_t *driver = driver_get_ptr();
-   struct drm_fb *fb = (struct drm_fb*)data;
-   gfx_ctx_drm_egl_data_t *drm = (gfx_ctx_drm_egl_data_t*)driver->video_context_data;
 
-   if (drm && fb->fb_id)
-      drmModeRmFB(drm->g_drm_fd, fb->fb_id);
-
-   free(fb);
-}
-
-static struct drm_fb *drm_fb_get_from_bo(
-      gfx_ctx_drm_egl_data_t *drm,
-      struct gbm_bo *bo)
-{
-   int ret;
-   unsigned width, height, stride, handle;
-   struct drm_fb *fb = (struct drm_fb*)gbm_bo_get_user_data(bo);
-   if (fb)
-      return fb;
-
-   fb = (struct drm_fb*)calloc(1, sizeof(*fb));
-   fb->bo = bo;
-
-   width  = gbm_bo_get_width(bo);
-   height = gbm_bo_get_height(bo);
-   stride = gbm_bo_get_stride(bo);
-   handle = gbm_bo_get_handle(bo).u32;
-
-   RARCH_LOG("[KMS/EGL]: New FB: %ux%u (stride: %u).\n", width, height, stride);
-
-   ret = drmModeAddFB(drm->g_drm_fd, width, height, 24, 32, stride, handle, &fb->fb_id);
-   if (ret < 0)
-   {
-      RARCH_ERR("[KMS/EGL]: Failed to create FB: %s\n", strerror(errno));
-      free(fb);
-      return NULL;
-   }
-
-   gbm_bo_set_user_data(bo, fb, drm_fb_destroy_callback);
-   return fb;
-}
 
 static EGLint *egl_fill_attribs(EGLint *attr)
 {
