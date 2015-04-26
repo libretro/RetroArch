@@ -71,7 +71,6 @@ static bool g_is_syncing = true;
 static bool g_use_hw_ctx;
 
 #if defined(HAVE_COCOA)
-static bool g_has_went_fullscreen;
 static NSOpenGLPixelFormat* g_format;
 #endif
 
@@ -260,23 +259,24 @@ static void cocoagl_gfx_ctx_show_mouse(void *data, bool state)
 static bool cocoagl_gfx_ctx_set_video_mode(void *data, unsigned width, unsigned height, bool fullscreen)
 {
 #if defined(HAVE_COCOA)
+   static bool has_went_fullscreen = false;
    CocoaView *g_view = (CocoaView*)nsview_get_ptr();
    /* TODO: Screen mode support. */
    
-   if (fullscreen && !g_has_went_fullscreen)
+   if (fullscreen && !has_went_fullscreen)
    {
       [g_view enterFullScreenMode:get_chosen_screen() withOptions:nil];
       cocoagl_gfx_ctx_show_mouse(data, false);
    }
-   else if (!fullscreen && g_has_went_fullscreen)
+   else if (!fullscreen && has_went_fullscreen)
    {
       [g_view exitFullScreenModeWithOptions:nil];
       [[g_view window] makeFirstResponder:g_view];
       cocoagl_gfx_ctx_show_mouse(data, true);
    }
    
-   g_has_went_fullscreen = fullscreen;
-   if (!g_has_went_fullscreen)
+   has_went_fullscreen = fullscreen;
+   if (!has_went_fullscreen)
       [[g_view window] setContentSize:NSMakeSize(width, height)];
 #endif
     
