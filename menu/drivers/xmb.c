@@ -280,13 +280,20 @@ static void xmb_draw_icon_end(void)
 static void xmb_draw_frame(
       const shader_backend_t *shader,
       struct gl_coords *coords,
-      math_matrix_4x4 *mat)
+      math_matrix_4x4 *mat, 
+      bool blend)
 {
    driver_t *driver = driver_get_ptr();
    shader->set_coords(coords);
    shader->set_mvp(driver->video_data, mat);
 
+   if (blend)
+      glEnable(GL_BLEND);
+
    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+   if (blend)
+      glDisable(GL_BLEND);
 }
 
 static void xmb_draw_icon(gl_t *gl, xmb_handle_t *xmb,
@@ -335,7 +342,7 @@ static void xmb_draw_icon(gl_t *gl, xmb_handle_t *xmb,
    matrix_4x4_scale(&mscal, scale_factor, scale_factor, 1);
    matrix_4x4_multiply(&mymat, &mscal, &mymat);
 
-   xmb_draw_frame(gl->shader, &coords, &mymat);
+   xmb_draw_frame(gl->shader, &coords, &mymat, false);
 }
 
 static void xmb_draw_icon_predone(gl_t *gl, xmb_handle_t *xmb,
@@ -378,7 +385,7 @@ static void xmb_draw_icon_predone(gl_t *gl, xmb_handle_t *xmb,
    coords.color         = color;
    glBindTexture(GL_TEXTURE_2D, texture);
 
-   xmb_draw_frame(gl->shader, &coords, mymat);
+   xmb_draw_frame(gl->shader, &coords, mymat, false);
 }
 
 static void xmb_draw_text(menu_handle_t *menu,
@@ -475,12 +482,8 @@ static void xmb_frame_background(menu_handle_t *menu,
       glBindTexture(GL_TEXTURE_2D, 0);
    }
 
-   gl->shader->set_coords(&coords);
-   gl->shader->set_mvp(gl, &gl->mvp_no_rot);
-
-   glEnable(GL_BLEND);
-   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-   glDisable(GL_BLEND);
+   xmb_draw_frame(gl->shader, &coords,
+         &gl->mvp_no_rot, true);
 
    gl->coords.color = gl->white_color_ptr;
 }
@@ -1242,12 +1245,8 @@ static void xmb_draw_cursor(gl_t *gl, xmb_handle_t *xmb, float x, float y)
    matrix_4x4_rotate_z(&mrot, 0);
    matrix_4x4_multiply(&mymat, &mrot, &gl->mvp_no_rot);
 
-   glEnable(GL_BLEND);
-   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-   xmb_draw_frame(gl->shader, &coords, &mymat);
-
-   glDisable(GL_BLEND);
+   xmb_draw_icon_begin();
+   xmb_draw_frame(gl->shader, &coords, &mymat, true);
 }
 
 static void xmb_render(void)
