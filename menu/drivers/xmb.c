@@ -314,7 +314,6 @@ static void xmb_draw_icon(gl_t *gl, xmb_handle_t *xmb,
    coords.tex_coord     = rmb_tex_coord;
    coords.lut_tex_coord = rmb_tex_coord;
    coords.color         = color;
-   glBindTexture(GL_TEXTURE_2D, texture);
 
    matrix_4x4_rotate_z(&mrot, rotation);
    matrix_4x4_multiply(&mymat, &mrot, &gl->mvp_no_rot);
@@ -322,7 +321,7 @@ static void xmb_draw_icon(gl_t *gl, xmb_handle_t *xmb,
    matrix_4x4_scale(&mscal, scale_factor, scale_factor, 1);
    matrix_4x4_multiply(&mymat, &mscal, &mymat);
 
-   menu_gl_draw_frame(gl->shader, &coords, &mymat, false);
+   menu_gl_draw_frame(gl->shader, &coords, &mymat, false, texture);
 }
 
 static void xmb_draw_icon_predone(gl_t *gl, xmb_handle_t *xmb,
@@ -363,9 +362,8 @@ static void xmb_draw_icon_predone(gl_t *gl, xmb_handle_t *xmb,
    coords.tex_coord     = rmb_tex_coord;
    coords.lut_tex_coord = rmb_tex_coord;
    coords.color         = color;
-   glBindTexture(GL_TEXTURE_2D, texture);
 
-   menu_gl_draw_frame(gl->shader, &coords, mymat, false);
+   menu_gl_draw_frame(gl->shader, &coords, mymat, false, texture);
 }
 
 static void xmb_draw_text(menu_handle_t *menu,
@@ -1146,13 +1144,12 @@ static void xmb_draw_cursor(gl_t *gl, xmb_handle_t *xmb, float x, float y)
    coords.lut_tex_coord = rmb_tex_coord;
    coords.color         = color;
 
-   glBindTexture(GL_TEXTURE_2D, xmb->textures.list[XMB_TEXTURE_POINTER].id);
-
    matrix_4x4_rotate_z(&mrot, 0);
    matrix_4x4_multiply(&mymat, &mrot, &gl->mvp_no_rot);
 
    xmb_draw_icon_begin(gl);
-   menu_gl_draw_frame(gl->shader, &coords, &mymat, true);
+
+   menu_gl_draw_frame(gl->shader, &coords, &mymat, true, xmb->textures.list[XMB_TEXTURE_POINTER].id);
 }
 
 static void xmb_render(void)

@@ -28,9 +28,14 @@ static INLINE void menu_gl_draw_frame(
       const shader_backend_t *shader,
       struct gl_coords *coords,
       math_matrix_4x4 *mat, 
-      bool blend)
+      bool blend,
+      GLuint texture
+      )
 {
    driver_t *driver = driver_get_ptr();
+
+   glBindTexture(GL_TEXTURE_2D, texture);
+
    shader->set_coords(coords);
    shader->set_mvp(driver->video_data, mat);
 
@@ -100,10 +105,8 @@ static INLINE void gl_menu_frame_background(
       && texture)
       coords.color = color;
 
-   glBindTexture(GL_TEXTURE_2D, texture);
-
    menu_gl_draw_frame(gl->shader, &coords,
-         &gl->mvp_no_rot, true);
+         &gl->mvp_no_rot, true, texture);
 
    gl->coords.color = gl->white_color_ptr;
 }

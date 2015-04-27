@@ -140,10 +140,8 @@ static void glui_render_quad(gl_t *gl, int x, int y, int w, int h,
    coords.lut_tex_coord = tex_coord;
 
    coords.color = color;
-   glBindTexture(GL_TEXTURE_2D, 0);
 
-
-   menu_gl_draw_frame(gl->shader, &coords, &gl->mvp_no_rot, true);
+   menu_gl_draw_frame(gl->shader, &coords, &gl->mvp_no_rot, true, 0);
 
    gl->coords.color = gl->white_color_ptr;
 }
