@@ -143,8 +143,20 @@ static void gfx_ctx_cgl_input_driver(void *data, const input_driver_t **input, v
 
 static gfx_ctx_proc_t gfx_ctx_cgl_get_proc_address(const char *symbol_name)
 {
-   CFBundleRef gl = CFBundleGetBundleWithIdentifier(CFSTR("com.apple.opengl"));
-   return (gfx_ctx_proc_t)CFBundleGetFunctionPointerForName(gl, (CFStringRef)symbol_name);
+   CFURLRef bundle_url = CFURLCreateWithFileSystemPath(kCFAllocatorDefault,
+         CFSTR
+         ("/System/Library/Frameworks/OpenGL.framework"),
+         kCFURLPOSIXPathStyle, true);
+   CFBundleRef opengl_bundle_ref  = CFBundleCreate(kCFAllocatorDefault, bundle_url);
+   CFStringRef function =  CFStringCreateWithCString(kCFAllocatorDefault, symbol_name,
+         kCFStringEncodingASCII);
+   gfx_ctx_proc_t ret = (gfx_ctx_proc_t)CFBundleGetFunctionPointerForName(
+         opengl_bundle_ref, function);
+
+   CFRelease(bundle_ref);
+   CFRelease(function);
+
+   return ret;
 }
 
 static bool gfx_ctx_cgl_has_focus(void *data)
