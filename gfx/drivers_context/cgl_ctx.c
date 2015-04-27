@@ -186,7 +186,7 @@ static bool gfx_ctx_cgl_suppress_screensaver(void *data, bool enable)
 static bool gfx_ctx_cgl_has_windowed(void *data)
 {
    (void)data;
-   return true;
+   return false;
 }
 
 static bool gfx_ctx_cgl_bind_api(void *data, enum gfx_ctx_api api,
@@ -219,7 +219,7 @@ static void gfx_ctx_cgl_bind_hw_render(void *data, bool enable)
 
 static CGLContextObj gfx_ctx_cgl_init_create(void)
 {
-   GLint num;
+   GLint num, params = 1;
    CGLPixelFormatObj pix;
    CGLContextObj glCtx = NULL;
    CGLPixelFormatAttribute attributes[] = {
@@ -234,6 +234,8 @@ static CGLContextObj gfx_ctx_cgl_init_create(void)
    CGLDestroyPixelFormat(pix);
 
    printf("glCtx: %p\n", glCtx);
+
+   CGLSetParameter(glCtx, kCGLCPSwapInterval, &params);
 
    return glCtx;
 }
@@ -315,6 +317,8 @@ static bool gfx_ctx_cgl_init(void *data)
 
    attach_gl_context_to_window(cgl->glCtx,
    CGShieldingWindowID(cgl->displayID), &cgl->width, &cgl->height);
+
+   printf("size:%dx%d\n", cgl->width, cgl->height);
 
    CGLSetCurrentContext(cgl->glCtx);
 
