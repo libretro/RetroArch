@@ -26,7 +26,6 @@
 
 #include <file/file_path.h>
 #include "../../gfx/video_thread_wrapper.h"
-#include "../../gfx/drivers/gl_common.h"
 #include "../../gfx/font_driver.h"
 #include "../../gfx/video_texture.h"
 #include <compat/posix_string.h>
@@ -277,25 +276,6 @@ static void xmb_draw_icon_end(void)
    glDisable(GL_BLEND);
 }
 
-static void xmb_draw_frame(
-      const shader_backend_t *shader,
-      struct gl_coords *coords,
-      math_matrix_4x4 *mat, 
-      bool blend)
-{
-   driver_t *driver = driver_get_ptr();
-   shader->set_coords(coords);
-   shader->set_mvp(driver->video_data, mat);
-
-   if (blend)
-      glEnable(GL_BLEND);
-
-   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-
-   if (blend)
-      glDisable(GL_BLEND);
-}
-
 static void xmb_draw_icon(gl_t *gl, xmb_handle_t *xmb,
       GLuint texture, float x, float y,
       float alpha, float rotation, float scale_factor)
@@ -342,7 +322,7 @@ static void xmb_draw_icon(gl_t *gl, xmb_handle_t *xmb,
    matrix_4x4_scale(&mscal, scale_factor, scale_factor, 1);
    matrix_4x4_multiply(&mymat, &mscal, &mymat);
 
-   xmb_draw_frame(gl->shader, &coords, &mymat, false);
+   menu_gl_draw_frame(gl->shader, &coords, &mymat, false);
 }
 
 static void xmb_draw_icon_predone(gl_t *gl, xmb_handle_t *xmb,
@@ -385,7 +365,7 @@ static void xmb_draw_icon_predone(gl_t *gl, xmb_handle_t *xmb,
    coords.color         = color;
    glBindTexture(GL_TEXTURE_2D, texture);
 
-   xmb_draw_frame(gl->shader, &coords, mymat, false);
+   menu_gl_draw_frame(gl->shader, &coords, mymat, false);
 }
 
 static void xmb_draw_text(menu_handle_t *menu,
@@ -482,7 +462,7 @@ static void xmb_frame_background(menu_handle_t *menu,
       glBindTexture(GL_TEXTURE_2D, 0);
    }
 
-   xmb_draw_frame(gl->shader, &coords,
+   menu_gl_draw_frame(gl->shader, &coords,
          &gl->mvp_no_rot, true);
 
    gl->coords.color = gl->white_color_ptr;
@@ -1246,7 +1226,7 @@ static void xmb_draw_cursor(gl_t *gl, xmb_handle_t *xmb, float x, float y)
    matrix_4x4_multiply(&mymat, &mrot, &gl->mvp_no_rot);
 
    xmb_draw_icon_begin();
-   xmb_draw_frame(gl->shader, &coords, &mymat, true);
+   menu_gl_draw_frame(gl->shader, &coords, &mymat, true);
 }
 
 static void xmb_render(void)

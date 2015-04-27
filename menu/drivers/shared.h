@@ -21,6 +21,29 @@
 #include <string/stdstring.h>
 #include <time.h>
 
+#ifdef HAVE_OPENGL
+#include "../../gfx/drivers/gl_common.h"
+
+static INLINE void menu_gl_draw_frame(
+      const shader_backend_t *shader,
+      struct gl_coords *coords,
+      math_matrix_4x4 *mat, 
+      bool blend)
+{
+   driver_t *driver = driver_get_ptr();
+   shader->set_coords(coords);
+   shader->set_mvp(driver->video_data, mat);
+
+   if (blend)
+      glEnable(GL_BLEND);
+
+   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+   if (blend)
+      glDisable(GL_BLEND);
+}
+#endif
+
 static INLINE void get_title(const char *label, const char *dir,
       unsigned menu_type, char *title, size_t sizeof_title)
 {

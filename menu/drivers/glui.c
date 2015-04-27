@@ -159,12 +159,7 @@ static void glui_render_background(settings_t *settings, gl_t *gl,
       glBindTexture(GL_TEXTURE_2D, 0);
    }
 
-   gl->shader->set_coords(&coords);
-   gl->shader->set_mvp(gl, &gl->mvp_no_rot);
-
-   glEnable(GL_BLEND);
-   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-   glDisable(GL_BLEND);
+   menu_gl_draw_frame(gl->shader, &coords, &gl->mvp_no_rot, true);
 
    gl->coords.color = gl->white_color_ptr;
 }
@@ -205,12 +200,8 @@ static void glui_render_quad(gl_t *gl, int x, int y, int w, int h,
    coords.color = color;
    glBindTexture(GL_TEXTURE_2D, 0);
 
-   gl->shader->set_coords(&coords);
-   gl->shader->set_mvp(gl, &gl->mvp_no_rot);
 
-   glEnable(GL_BLEND);
-   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-   glDisable(GL_BLEND);
+   menu_gl_draw_frame(gl->shader, &coords, &gl->mvp_no_rot, true);
 
    gl->coords.color = gl->white_color_ptr;
 }
