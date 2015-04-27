@@ -1036,7 +1036,7 @@ static void rarch_main_cmd_get_state(event_cmd_state_t *cmd,
    cmd->quit_key_pressed            = BIT64_GET(input, RARCH_QUIT_KEY);
    cmd->screenshot_pressed          = BIT64_GET(trigger_input, RARCH_SCREENSHOT);
    cmd->mute_pressed                = BIT64_GET(trigger_input, RARCH_MUTE);
-   cmd->osk_pressed                = BIT64_GET(trigger_input, RARCH_OSK);
+   cmd->osk_pressed                 = BIT64_GET(trigger_input, RARCH_OSK);
    cmd->volume_up_pressed           = BIT64_GET(input, RARCH_VOLUME_UP);
    cmd->volume_down_pressed         = BIT64_GET(input, RARCH_VOLUME_DOWN);
    cmd->reset_pressed               = BIT64_GET(trigger_input, RARCH_RESET);

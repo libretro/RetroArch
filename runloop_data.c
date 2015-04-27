@@ -1084,15 +1084,15 @@ void rarch_main_data_init_queues(void)
    data_runloop_t *runloop = (data_runloop_t*)rarch_main_data_get_ptr();
 #ifdef HAVE_NETWORKING
    if (!runloop->http.msg_queue)
-      rarch_assert(runloop->http.msg_queue = msg_queue_new(8));
+      rarch_assert(runloop->http.msg_queue       = msg_queue_new(8));
 #endif
    if (!runloop->nbio.msg_queue)
-      rarch_assert(runloop->nbio.msg_queue = msg_queue_new(8));
+      rarch_assert(runloop->nbio.msg_queue       = msg_queue_new(8));
    if (!runloop->nbio.image.msg_queue)
       rarch_assert(runloop->nbio.image.msg_queue = msg_queue_new(8));
 #ifdef HAVE_LIBRETRODB
    if (!runloop->db.msg_queue)
-      rarch_assert(runloop->db.msg_queue = msg_queue_new(8));
+      rarch_assert(runloop->db.msg_queue         = msg_queue_new(8));
 #endif
 }
 
