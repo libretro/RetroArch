@@ -29,6 +29,8 @@
 #include <stdlib.h>
 
 #include "../../driver.h"
+#include "../../runloop.h"
+#include "../../configuration.h"
 #include "../video_context_driver.h"
 #include "../video_monitor.h"
 
@@ -101,7 +103,15 @@ static void gfx_ctx_cgl_set_resize(void *data, unsigned width, unsigned height)
 
 static void gfx_ctx_cgl_update_window_title(void *data)
 {
+   char buf[128], buf_fps[128];
+   settings_t *settings = config_get_ptr();
+
    (void)data;
+
+   video_monitor_get_fps(buf, sizeof(buf),
+      buf_fps, sizeof(buf_fps));
+   if (settings->fps_show)
+      rarch_main_msg_queue_push(buf_fps, 1, 1, false);
 }
 
 
@@ -219,8 +229,11 @@ static CGLContextObj gfx_ctx_cgl_init_create(void)
    };
 
    CGLChoosePixelFormat(attributes, &pix, &num);
+   printf("pix %p num: %d\n", pix, num);
    CGLCreateContext(pix, NULL, &glCtx);
    CGLDestroyPixelFormat(pix);
+
+   printf("glCtx: %p\n", glCtx);
 
    return glCtx;
 }
@@ -302,6 +315,8 @@ static bool gfx_ctx_cgl_init(void *data)
 
    attach_gl_context_to_window(cgl->glCtx,
    CGShieldingWindowID(cgl->displayID), &cgl->width, &cgl->height);
+
+   CGLSetCurrentContext(cgl->glCtx);
 
    driver->video_context_data = cgl;
 
