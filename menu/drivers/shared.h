@@ -90,6 +90,7 @@ static INLINE void gl_menu_frame_background(
    coords.vertex        = vertex;
    coords.tex_coord     = tex_coord;
    coords.lut_tex_coord = tex_coord;
+   coords.color         = black_color;
 
    menu_display_set_viewport(menu);
 
@@ -97,15 +98,9 @@ static INLINE void gl_menu_frame_background(
       || !global->main_is_init || global->libretro_dummy)
       && !force_transparency
       && texture)
-   {
       coords.color = color;
-      glBindTexture(GL_TEXTURE_2D, texture);
-   }
-   else
-   {
-      coords.color = black_color;
-      glBindTexture(GL_TEXTURE_2D, 0);
-   }
+
+   glBindTexture(GL_TEXTURE_2D, texture);
 
    menu_gl_draw_frame(gl->shader, &coords,
          &gl->mvp_no_rot, true);
