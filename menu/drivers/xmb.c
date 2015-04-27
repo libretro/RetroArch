@@ -265,10 +265,13 @@ static int xmb_entry_iterate(unsigned action)
    return -1;
 }
 
-static void xmb_draw_icon_begin(void)
+static void xmb_draw_icon_begin(gl_t *gl)
 {
    glEnable(GL_BLEND);
    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+   if (gl->shader && gl->shader->use)
+      gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
 }
 
 static void xmb_draw_icon_end(void)
@@ -303,9 +306,6 @@ static void xmb_draw_icon(gl_t *gl, xmb_handle_t *xmb,
       1.0f, 1.0f, 1.0f, alpha,
       1.0f, 1.0f, 1.0f, alpha,
    };
-
-   if (gl->shader && gl->shader->use)
-      gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
 
    glViewport(x, global->video_data.height - y, xmb->icon.size, xmb->icon.size);
 
@@ -1099,7 +1099,7 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
                TEXT_ALIGN_LEFT);
 
 
-      xmb_draw_icon_begin();
+      xmb_draw_icon_begin(gl);
 
       xmb_draw_icon(gl, xmb, icon, icon_x, icon_y, node->alpha, 0, node->zoom);
 
@@ -1151,7 +1151,7 @@ static void xmb_draw_cursor(gl_t *gl, xmb_handle_t *xmb, float x, float y)
    matrix_4x4_rotate_z(&mrot, 0);
    matrix_4x4_multiply(&mymat, &mrot, &gl->mvp_no_rot);
 
-   xmb_draw_icon_begin();
+   xmb_draw_icon_begin(gl);
    menu_gl_draw_frame(gl->shader, &coords, &mymat, true);
 }
 
@@ -1295,7 +1295,7 @@ static void xmb_frame(void)
    matrix_4x4_scale(&mscal, 1 /* scale_factor */, 1 /* scale_factor */, 1);
    matrix_4x4_multiply(&mymat, &mscal, &mymat);
 
-   xmb_draw_icon_begin();
+   xmb_draw_icon_begin(gl);
 
    if (settings->menu.timedate_enable)
       xmb_draw_icon_predone(gl, xmb, &mymat, xmb->textures.list[XMB_TEXTURE_CLOCK].id,
@@ -1319,7 +1319,7 @@ static void xmb_frame(void)
 
       if (node)
       {
-         xmb_draw_icon_begin();
+         xmb_draw_icon_begin(gl);
          xmb_draw_icon(gl, xmb, node->icon, 
                xmb->x + xmb->categories.x_pos + 
                xmb->margins.screen.left + 
