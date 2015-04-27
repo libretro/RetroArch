@@ -153,8 +153,9 @@ static gfx_ctx_proc_t gfx_ctx_cgl_get_proc_address(const char *symbol_name)
    gfx_ctx_proc_t ret = (gfx_ctx_proc_t)CFBundleGetFunctionPointerForName(
          opengl_bundle_ref, function);
 
-   CFRelease(bundle_ref);
+   CFRelease(bundle_url);
    CFRelease(function);
+   CFRelease(opengl_bundle_ref);
 
    return ret;
 }
