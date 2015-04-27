@@ -390,10 +390,12 @@ void init_drivers(int flags)
       init_location();
 
 #ifdef HAVE_MENU
+   menu_update_libretro_info();
+
    if (flags & DRIVER_MENU)
    {
       init_menu();
-      menu_update_libretro_info();
+      menu_driver_context_reset();
    }
 #endif
 

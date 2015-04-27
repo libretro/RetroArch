@@ -42,7 +42,6 @@ void menu_update_libretro_info(void)
 #endif
 
    event_command(EVENT_CMD_CORE_INFO_INIT);
-   menu_driver_context_reset();
    event_command(EVENT_CMD_LOAD_CORE_PERSIST);
 }
 
