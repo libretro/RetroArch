@@ -112,6 +112,21 @@ static INLINE void gl_menu_frame_background(
 }
 #endif
 
+static INLINE void replchars(char *str, char c1, char c2)
+{
+   char *pos;
+   while((pos = strchr(str, c1)))
+      *pos = c2;
+}
+
+static INLINE void sanitize_to_string(char *title, const char *label, size_t sizeof_title)
+{
+   char new_label[PATH_MAX_LENGTH];
+   strlcpy(new_label, label, sizeof(new_label));
+   strlcpy(title, string_to_upper(new_label), sizeof_title);
+   replchars(title, '_', ' ');
+}
+
 static INLINE void get_title(const char *label, const char *dir,
       unsigned menu_type, char *title, size_t sizeof_title)
 {
@@ -147,16 +162,8 @@ static INLINE void get_title(const char *label, const char *dir,
 #if 0
    RARCH_LOG("label %s, elem0 %s, elem1 %s\n", label, elem0, elem1);
 #endif
-   if (!strcmp(label, "core_list"))
-      snprintf(title, sizeof_title, "CORE SELECTION %s", dir);
-   else if (!strcmp(label, "deferred_core_updater_list"))
-      strlcpy(title, "CORE UPDATER", sizeof_title);
-   else if (!strcmp(label, "deferred_database_manager_list"))
+   if (!strcmp(label, "deferred_database_manager_list"))
       snprintf(title, sizeof_title, "DATABASE SELECTION - %s", (elem0_path[0] != '\0') ? path_basename(elem0_path) : "");
-   else if (!strcmp(label, "database_manager_list"))
-      snprintf(title, sizeof_title, "DATABASE SELECTION");
-   else if (!strcmp(label, "cursor_manager_list"))
-      snprintf(title, sizeof_title, "DATABASE CURSOR SELECTION");
    else if (!strcmp(label, "deferred_cursor_manager_list"))
       snprintf(title, sizeof_title, "DATABASE CURSOR LIST - %s", (elem0_path[0] != '\0') ? path_basename(elem0_path) : "");
    else if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_developer"))
@@ -234,41 +241,33 @@ static INLINE void get_title(const char *label, const char *dir,
          strlcat(title, string_to_upper(elem1), sizeof_title);
       }
    }
-   else if (!strcmp(label, "management")
+   else if (
+            !strcmp(label, "performance_counters")
+         || !strcmp(label, "core_list")
+         || !strcmp(label, "management")
          || !strcmp(label, "options")
          || !strcmp(label, "settings")
+         || !strcmp(label, "frontend_counters")
+         || !strcmp(label, "core_counters")
+         || !strcmp(label, "history_list")
+         || !strcmp(label, "info_screen")
+         || !strcmp(label, "system_information")
+         || !strcmp(label, "core_information")
+         || !strcmp(label, "video_shader_parameters")
+         || !strcmp(label, "video_shader_preset_parameters")
+         || !strcmp(label, "disk_options")
+         || !strcmp(label, "core_options")
+         || !strcmp(label, "shader_options")
+         || !strcmp(label, "video_options")
+         || !strcmp(label, "core_cheat_options")
+         || !strcmp(label, "core_input_remapping_options")
+         || !strcmp(label, "database_manager_list")
+         || !strcmp(label, "cursor_manager_list")
+         || (!strcmp(label, "deferred_core_updater_list"))
          )
    {
-      char upper_label[PATH_MAX_LENGTH];
-      strlcpy(upper_label, label, sizeof(upper_label));
-      strlcpy(title, string_to_upper(upper_label), sizeof_title);
+      sanitize_to_string(title, label, sizeof_title);
    }
-   else if (!strcmp(label, "performance_counters"))
-      strlcpy(title, "PERFORMANCE COUNTERS", sizeof_title);
-   else if (!strcmp(label, "frontend_counters"))
-      strlcpy(title, "FRONTEND PERFORMANCE COUNTERS", sizeof_title);
-   else if (!strcmp(label, "core_counters"))
-      strlcpy(title, "CORE PERFORMANCE COUNTERS", sizeof_title);
-   else if (!strcmp(label, "video_shader_parameters"))
-      strlcpy(title, "SHADER PARAMETERS (CURRENT)", sizeof_title);
-   else if (!strcmp(label, "video_shader_preset_parameters"))
-      strlcpy(title, "SHADER PARAMETERS (MENU PRESET)", sizeof_title);
-   else if (!strcmp(label, "disk_options"))
-      strlcpy(title, "DISK OPTIONS", sizeof_title);
-   else if (!strcmp(label, "core_options"))
-      strlcpy(title, "CORE OPTIONS", sizeof_title);
-   else if (!strcmp(label, "shader_options"))
-      strlcpy(title, "SHADER OPTIONS", sizeof_title);
-   else if (!strcmp(label, "video_options"))
-      strlcpy(title, "VIDEO OPTIONS", sizeof_title);
-   else if (!strcmp(label, "core_cheat_options"))
-      strlcpy(title, "CORE CHEAT OPTIONS", sizeof_title);
-   else if (!strcmp(label, "core_input_remapping_options"))
-      strlcpy(title, "CORE INPUT REMAPPING OPTIONS", sizeof_title);
-   else if (!strcmp(label, "core_information"))
-      strlcpy(title, "CORE INFO", sizeof_title);
-   else if (!strcmp(label, "system_information"))
-      strlcpy(title, "SYSTEM INFO", sizeof_title);
    else if (!strcmp(label, "video_shader_pass"))
       snprintf(title, sizeof_title, "SHADER %s", dir);
    else if (!strcmp(label, "video_shader_preset"))
@@ -282,10 +281,6 @@ static INLINE void get_title(const char *label, const char *dir,
          !strcmp(label, "help") ||
          menu_type == MENU_SETTINGS)
       snprintf(title, sizeof_title, "MENU %s", dir);
-   else if (!strcmp(label, "history_list"))
-      strlcpy(title, "LOAD HISTORY", sizeof_title);
-   else if (!strcmp(label, "info_screen"))
-      strlcpy(title, "INFO", sizeof_title);
    else if (!strcmp(label, "input_overlay"))
       snprintf(title, sizeof_title, "OVERLAY %s", dir);
    else if (!strcmp(label, "video_font_path"))
