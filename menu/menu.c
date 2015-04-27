@@ -24,27 +24,6 @@
 #include "../../performance.h"
 #include <file/file_path.h>
 
-/**
- * menu_update_libretro_info:
- *
- * Update menu state which depends on config.
- **/
-void menu_update_libretro_info(void)
-{
-   global_t *global               = global_get_ptr();
-   struct retro_system_info *info = global ? &global->menu.info : NULL;
-
-   if (!global || !info)
-      return;
-
-#ifndef HAVE_DYNAMIC
-   retro_get_system_info(info);
-#endif
-
-   event_command(EVENT_CMD_CORE_INFO_INIT);
-   event_command(EVENT_CMD_LOAD_CORE_PERSIST);
-}
-
 static void menu_environment_get(int *argc, char *argv[],
       void *args, void *params_data)
 {

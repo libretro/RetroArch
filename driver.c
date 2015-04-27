@@ -336,6 +336,27 @@ bool driver_update_system_av_info(const struct retro_system_av_info *info)
 }
 
 /**
+ * menu_update_libretro_info:
+ *
+ * Update menu state which depends on config.
+ **/
+static void menu_update_libretro_info(void)
+{
+   global_t *global               = global_get_ptr();
+   struct retro_system_info *info = global ? &global->menu.info : NULL;
+
+   if (!global || !info)
+      return;
+
+#ifndef HAVE_DYNAMIC
+   retro_get_system_info(info);
+#endif
+
+   event_command(EVENT_CMD_CORE_INFO_INIT);
+   event_command(EVENT_CMD_LOAD_CORE_PERSIST);
+}
+
+/**
  * init_drivers:
  * @flags              : Bitmask of drivers to initialize.
  *
