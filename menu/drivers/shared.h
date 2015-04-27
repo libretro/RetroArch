@@ -42,6 +42,76 @@ static INLINE void menu_gl_draw_frame(
    if (blend)
       glDisable(GL_BLEND);
 }
+
+static INLINE void gl_menu_frame_background(
+      menu_handle_t *menu,
+      settings_t *settings,
+      gl_t *gl,
+      GLuint texture,
+      float handle_alpha,
+      float alpha,
+      bool force_transparency)
+{
+   struct gl_coords coords;
+   static const GLfloat vertex[] = {
+      0, 0,
+      1, 0,
+      0, 1,
+      1, 1,
+   };
+   global_t *global = global_get_ptr();
+
+   static const GLfloat tex_coord[] = {
+      0, 1,
+      1, 1,
+      0, 0,
+      1, 0,
+   };
+
+   GLfloat color[] = {
+      1.0f, 1.0f, 1.0f, handle_alpha,
+      1.0f, 1.0f, 1.0f, handle_alpha,
+      1.0f, 1.0f, 1.0f, handle_alpha,
+      1.0f, 1.0f, 1.0f, handle_alpha,
+   };
+
+   if (alpha > handle_alpha)
+      alpha = handle_alpha;
+
+   GLfloat black_color[] = {
+      0.0f, 0.0f, 0.0f, alpha,
+      0.0f, 0.0f, 0.0f, alpha,
+      0.0f, 0.0f, 0.0f, alpha,
+      0.0f, 0.0f, 0.0f, alpha,
+   };
+
+
+   coords.vertices      = 4;
+   coords.vertex        = vertex;
+   coords.tex_coord     = tex_coord;
+   coords.lut_tex_coord = tex_coord;
+
+   menu_display_set_viewport(menu);
+
+   if ((settings->menu.pause_libretro
+      || !global->main_is_init || global->libretro_dummy)
+      && !force_transparency
+      && texture)
+   {
+      coords.color = color;
+      glBindTexture(GL_TEXTURE_2D, texture);
+   }
+   else
+   {
+      coords.color = black_color;
+      glBindTexture(GL_TEXTURE_2D, 0);
+   }
+
+   menu_gl_draw_frame(gl->shader, &coords,
+         &gl->mvp_no_rot, true);
+
+   gl->coords.color = gl->white_color_ptr;
+}
 #endif
 
 static INLINE void get_title(const char *label, const char *dir,

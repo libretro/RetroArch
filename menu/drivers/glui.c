@@ -106,64 +106,6 @@ static void glui_blit_line(float x, float y,
    video_driver_set_osd_msg(message, &params, menu->font.buf);
 }
 
-static void glui_render_background(settings_t *settings, gl_t *gl,
-      glui_handle_t *glui)
-{
-   static const GLfloat vertex[] = {
-      0, 0,
-      1, 0,
-      0, 1,
-      1, 1,
-   };
-
-   static const GLfloat tex_coord[] = {
-      0, 1,
-      1, 1,
-      0, 0,
-      1, 0,
-   };
-   struct gl_coords coords;
-   float alpha = 0.75f;
-   GLfloat color[] = {
-      1.0f, 1.0f, 1.0f, alpha,
-      1.0f, 1.0f, 1.0f, alpha,
-      1.0f, 1.0f, 1.0f, alpha,
-      1.0f, 1.0f, 1.0f, alpha,
-   };
-
-   GLfloat black_color[] = {
-      0.0f, 0.0f, 0.0f, alpha,
-      0.0f, 0.0f, 0.0f, alpha,
-      0.0f, 0.0f, 0.0f, alpha,
-      0.0f, 0.0f, 0.0f, alpha,
-   };
-   global_t *global = global_get_ptr();
-
-   glViewport(0, 0, global->video_data.width, global->video_data.height);
-
-   coords.vertices      = 4;
-   coords.vertex        = vertex;
-   coords.tex_coord     = tex_coord;
-   coords.lut_tex_coord = tex_coord;
-
-   if ((settings->menu.pause_libretro
-      || !global->main_is_init || global->libretro_dummy)
-      && glui->textures.bg.id)
-   {
-      coords.color = color;
-      glBindTexture(GL_TEXTURE_2D, glui->textures.bg.id);
-   }
-   else
-   {
-      coords.color = black_color;
-      glBindTexture(GL_TEXTURE_2D, 0);
-   }
-
-   menu_gl_draw_frame(gl->shader, &coords, &gl->mvp_no_rot, true);
-
-   gl->coords.color = gl->white_color_ptr;
-}
-
 static void glui_render_quad(gl_t *gl, int x, int y, int w, int h,
       float r, float g, float b, float a)
 {
@@ -458,7 +400,7 @@ static void glui_frame(void)
 
    menu_display_set_viewport(menu);
 
-   glui_render_background(settings, gl, glui);
+   gl_menu_frame_background(menu, settings, gl, glui->textures.bg.id, 0.75f, 0.75f, false);
 
    menu_list_get_last_stack(menu->menu_list, &dir, &label, &menu_type);
 
