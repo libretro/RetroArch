@@ -1066,6 +1066,7 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
 
    for (i = 0; i < end; i++)
    {
+      GLuint texture_switch = 0;
       float icon_x, icon_y;
       char type_str[PATH_MAX_LENGTH], path_buf[PATH_MAX_LENGTH];
       char name[PATH_MAX_LENGTH], value[PATH_MAX_LENGTH];
@@ -1170,28 +1171,20 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
       xmb_draw_icon(gl, xmb, icon, icon_x, icon_y, node->alpha, 0, node->zoom);
 
       if (!strcmp(type_str, "ON") && xmb->textures.list[XMB_TEXTURE_SWITCH_ON].id)
-      {
-         xmb_draw_icon_predone(gl, xmb, &mymat,
-               xmb->textures.list[XMB_TEXTURE_SWITCH_ON].id,
-               node->x + xmb->margins.screen.left + xmb->icon.spacing.horizontal
-               + xmb->icon.size / 2.0 + xmb->margins.setting.left,
-               xmb->margins.screen.top + node->y + xmb->icon.size / 2.0,
-               node->alpha,
-               0,
-               1);
-      }
+         texture_switch = xmb->textures.list[XMB_TEXTURE_SWITCH_ON].id;
 
       if (!strcmp(type_str, "OFF") && xmb->textures.list[XMB_TEXTURE_SWITCH_OFF].id)
-      {
+         texture_switch = xmb->textures.list[XMB_TEXTURE_SWITCH_OFF].id;
+
+      if (texture_switch != 0)
          xmb_draw_icon_predone(gl, xmb, &mymat,
-               xmb->textures.list[XMB_TEXTURE_SWITCH_OFF].id,
+               texture_switch,
                node->x + xmb->margins.screen.left + xmb->icon.spacing.horizontal
                + xmb->icon.size / 2.0 + xmb->margins.setting.left,
                xmb->margins.screen.top + node->y + xmb->icon.size / 2.0,
                node->alpha,
                0,
                1);
-      }
 
       xmb_draw_icon_end();
    }
