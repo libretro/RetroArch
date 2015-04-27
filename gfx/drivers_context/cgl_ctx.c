@@ -141,6 +141,12 @@ static void gfx_ctx_cgl_input_driver(void *data, const input_driver_t **input, v
    (void)input_data;
 }
 
+static gfx_ctx_proc_t gfx_ctx_cgl_get_proc_address(const char *symbol_name)
+{
+   CFBundleRef gl = CFBundleGetBundleWithIdentifier(CFSTR("com.apple.opengl"));
+   return (gfx_ctx_proc_t)CFBundleGetFunctionPointerForName(gl, (CFStringRef)symbol_name);
+}
+
 static bool gfx_ctx_cgl_has_focus(void *data)
 {
    (void)data;
@@ -314,7 +320,7 @@ const gfx_ctx_driver_t gfx_ctx_cgl = {
    gfx_ctx_cgl_has_windowed,
    gfx_ctx_cgl_swap_buffers,
    gfx_ctx_cgl_input_driver,
-   NULL,
+   gfx_ctx_cgl_get_proc_address,
    NULL,
    NULL,
    gfx_ctx_cgl_show_mouse,
