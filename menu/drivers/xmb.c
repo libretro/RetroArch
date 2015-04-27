@@ -414,7 +414,8 @@ static void xmb_draw_text(menu_handle_t *menu,
    video_driver_set_osd_msg(str, &params, menu->font.buf);
 }
 
-static void xmb_frame_background(settings_t *settings,
+static void xmb_frame_background(menu_handle_t *menu,
+      settings_t *settings,
       gl_t *gl, xmb_handle_t *xmb,
       bool force_transparency)
 {
@@ -457,6 +458,8 @@ static void xmb_frame_background(settings_t *settings,
    coords.vertex        = vertex;
    coords.tex_coord     = tex_coord;
    coords.lut_tex_coord = tex_coord;
+
+   menu_display_set_viewport(menu);
 
    if ((settings->menu.pause_libretro
       || !global->main_is_init || global->libretro_dummy)
@@ -1325,13 +1328,11 @@ static void xmb_frame(void)
    if (!gl)
       return;
 
-   menu_display_set_viewport(menu);
-
    menu_display_font_bind_block(menu, font_driver, &xmb->raster_block);
 
    xmb->raster_block.carr.coords.vertices = 0;
 
-   xmb_frame_background(settings, gl, xmb, false);
+   xmb_frame_background(menu, settings, gl, xmb, false);
 
    xmb_draw_text(menu, xmb,
          xmb->title_name, xmb->margins.title.left,
@@ -1449,7 +1450,7 @@ static void xmb_frame(void)
 
    if (render_background)
    {
-      xmb_frame_background(settings, gl, xmb, true);
+      xmb_frame_background(menu, settings, gl, xmb, true);
       xmb_frame_messagebox(msg);
    }
 
