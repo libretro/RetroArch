@@ -17,7 +17,6 @@
 #include "menu_display.h"
 #include "menu_animation.h"
 #include "../dynamic.h"
-#include "../../gfx/drivers/gl_common.h"
 #include "../../retroarch.h"
 #include "../../config.def.h"
 #include "../gfx/video_context_driver.h"
