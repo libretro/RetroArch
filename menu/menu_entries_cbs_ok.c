@@ -1329,6 +1329,7 @@ void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
          !strcmp(label, "core_options") ||
          !strcmp(label, "core_cheat_options") ||
          !strcmp(label, "core_input_remapping_options") ||
+		 !strcmp(label, "menu_input_remapping_options") ||
          !strcmp(label, "core_information") ||
          !strcmp(label, "system_information") ||
          !strcmp(label, "disk_options") ||

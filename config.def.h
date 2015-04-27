@@ -494,6 +494,16 @@ static bool default_core_specific_config = false;
 static bool default_auto_overrides_enable = false;
 static bool default_auto_remaps_enable = false;
 
+static unsigned default_menu_ok          = RETRO_DEVICE_ID_JOYPAD_A;
+static unsigned default_menu_cancel      = RETRO_DEVICE_ID_JOYPAD_B;
+static unsigned default_menu_search      = RETRO_DEVICE_ID_JOYPAD_X;
+static unsigned default_menu_test        = RETRO_DEVICE_ID_JOYPAD_Y;
+static unsigned default_menu_default     = RETRO_DEVICE_ID_JOYPAD_START;
+static unsigned default_menu_info        = RETRO_DEVICE_ID_JOYPAD_SELECT;
+static unsigned default_menu_scroll_down = RETRO_DEVICE_ID_JOYPAD_R;
+static unsigned default_menu_scroll_up   = RETRO_DEVICE_ID_JOYPAD_L;
+
+
 /* Crop overscanned frames. */
 static const bool crop_overscan = true;
 

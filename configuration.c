@@ -686,6 +686,16 @@ static void config_set_defaults(void)
    settings->core_specific_config = default_core_specific_config;
    settings->auto_overrides_enable = default_auto_overrides_enable;
    settings->auto_remaps_enable = default_auto_remaps_enable;
+
+   settings->menu_ok          = default_menu_ok;
+   settings->menu_cancel      = default_menu_cancel;
+   settings->menu_test        = default_menu_test;
+   settings->menu_search      = default_menu_search;
+   settings->menu_default     = default_menu_default;
+   settings->menu_info        = default_menu_info;
+   settings->menu_scroll_down = default_menu_scroll_down;
+   settings->menu_scroll_up   = default_menu_scroll_up;   
+   
    settings->user_language = 0;
 
    global->console.sound.system_bgm_enable = false;
@@ -1606,6 +1616,16 @@ static bool config_load_file(const char *path, bool set_defaults)
    CONFIG_GET_BOOL_BASE(conf, settings, core_specific_config, "core_specific_config");
    CONFIG_GET_BOOL_BASE(conf, settings, auto_overrides_enable, "auto_overrides_enable");
    CONFIG_GET_BOOL_BASE(conf, settings, auto_remaps_enable, "auto_remaps_enable");
+   
+   CONFIG_GET_INT_BASE(conf, settings, menu_ok,          "menu_ok");
+   CONFIG_GET_INT_BASE(conf, settings, menu_cancel,      "menu_cancel");
+   CONFIG_GET_INT_BASE(conf, settings, menu_search,      "menu_search");
+   CONFIG_GET_INT_BASE(conf, settings, menu_test,        "menu_test");
+   CONFIG_GET_INT_BASE(conf, settings, menu_info,        "menu_info");
+   CONFIG_GET_INT_BASE(conf, settings, menu_default,     "menu_default");
+   CONFIG_GET_INT_BASE(conf, settings, menu_cancel,      "menu_cancel");
+   CONFIG_GET_INT_BASE(conf, settings, menu_scroll_down, "menu_scroll_down");
+   CONFIG_GET_INT_BASE(conf, settings, menu_scroll_up,   "menu_scroll_up");
 
    config_file_free(conf);
    return true;
@@ -2491,6 +2511,15 @@ bool config_save_file(const char *path)
 
    config_set_int(conf, "archive_mode", settings->archive.mode);
 
+   config_set_int(conf, "menu_ok",          settings->menu_ok);
+   config_set_int(conf, "menu_cancel",      settings->menu_cancel);
+   config_set_int(conf, "menu_test",        settings->menu_test);
+   config_set_int(conf, "menu_search",      settings->menu_search);
+   config_set_int(conf, "menu_info",        settings->menu_info);
+   config_set_int(conf, "menu_default",     settings->menu_default);
+   config_set_int(conf, "menu_scroll_down", settings->menu_scroll_down);
+   config_set_int(conf, "menu_scroll_up",   settings->menu_scroll_up);   
+   
    ret = config_file_write(conf, path);
    config_file_free(conf);
    return ret;
