@@ -3588,6 +3588,39 @@ static bool setting_append_list_driver_options(
    return true;
 }
 
+static bool setting_append_list_core_options(
+      rarch_setting_t **list,
+      rarch_setting_info_t *list_info)
+{
+   rarch_setting_group_info_t group_info;
+   rarch_setting_group_info_t subgroup_info;
+   settings_t *settings = config_get_ptr();
+   global_t   *global   = global_get_ptr();
+
+   START_GROUP(group_info, "Core Settings");
+
+   START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
+
+   CONFIG_BOOL(
+         settings->core.set_supports_no_game_enable,
+         "core_set_supports_no_game_enable",
+         "Supports No Content Enable",
+         true,
+         "OFF",
+         "ON",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
+
+   END_SUB_GROUP(list, list_info);
+
+   END_GROUP(list, list_info);
+
+   return true;
+}
+
 static bool setting_append_list_general_options(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info)
@@ -6445,6 +6478,12 @@ rarch_setting_t *setting_new(unsigned mask)
    if (mask & SL_FLAG_DRIVER_OPTIONS)
    {
       if (!setting_append_list_driver_options(&list, list_info))
+         goto error;
+   }
+
+   if (mask & SL_FLAG_CORE_OPTIONS)
+   {
+      if (!setting_append_list_core_options(&list, list_info))
          goto error;
    }
 

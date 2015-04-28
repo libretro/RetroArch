@@ -697,7 +697,8 @@ static int action_ok_core_load(const char *path,
    menu_list_flush_stack(menu->menu_list, MENU_SETTINGS);
 #if defined(HAVE_DYNAMIC)
    /* No content needed for this core, load core immediately. */
-   if (menu->load_no_content)
+
+   if (menu->load_no_content && settings->core.set_supports_no_game_enable)
    {
       *global->fullpath = '\0';
 

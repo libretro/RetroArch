@@ -259,6 +259,11 @@ typedef struct settings
       bool buildbot_auto_extract_archive;
    } network;
 
+   struct
+   {
+      bool set_supports_no_game_enable;
+   } core;
+
    int state_slot;
 
    char core_options_path[PATH_MAX_LENGTH];

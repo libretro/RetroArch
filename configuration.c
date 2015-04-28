@@ -630,6 +630,8 @@ static void config_set_defaults(void)
          settings->input.libretro_device[i] = RETRO_DEVICE_JOYPAD;
    }
 
+   settings->core.set_supports_no_game_enable = true;
+
    global->console.screen.viewports.custom_vp.width = 0;
    global->console.screen.viewports.custom_vp.height = 0;
    global->console.screen.viewports.custom_vp.x = 0;
@@ -1248,6 +1250,8 @@ static bool config_load_file(const char *path, bool set_defaults)
    CONFIG_GET_INT_BASE(conf, settings, video.rotation, "video_rotation");
 
    CONFIG_GET_BOOL_BASE(conf, settings, video.force_srgb_disable, "video_force_srgb_disable");
+
+   CONFIG_GET_BOOL_BASE(conf, settings, core.set_supports_no_game_enable, "core_set_supports_no_game_enable");
 
 #ifdef RARCH_CONSOLE
    /* TODO - will be refactored later to make it more clean - it's more
@@ -2488,6 +2492,8 @@ bool config_save_file(const char *path)
    config_set_int(conf, "libretro_log_level", settings->libretro_log_level);
    config_set_bool(conf, "log_verbosity", global->verbosity);
    config_set_bool(conf, "perfcnt_enable", global->perfcnt_enable);
+
+   config_set_bool(conf, "core_set_supports_no_game_enable", settings->core.set_supports_no_game_enable);
 
    config_set_int(conf, "archive_mode", settings->archive.mode);
 
