@@ -3595,7 +3595,6 @@ static bool setting_append_list_core_options(
    rarch_setting_group_info_t group_info;
    rarch_setting_group_info_t subgroup_info;
    settings_t *settings = config_get_ptr();
-   global_t   *global   = global_get_ptr();
 
    START_GROUP(group_info, "Core Settings");
 

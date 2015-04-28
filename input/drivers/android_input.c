@@ -654,17 +654,20 @@ static void android_input_handle_input(void *data)
             handle_hotplug(android, android_app,
                   &android->pads_connected, id, source);
 
-         if (type_event == AINPUT_EVENT_TYPE_MOTION)
+         switch (type_event)
          {
-            if (android_input_poll_event_type_motion(android, event,
-                     port, source))
-               engine_handle_dpad(android, event, port, source);
-         }
-         else if (type_event == AINPUT_EVENT_TYPE_KEY)
-         {
-            int keycode = AKeyEvent_getKeyCode(event);
-            android_input_poll_event_type_key(android, android_app,
-                  event, port, keycode, source, type_event, &handled);
+            case AINPUT_EVENT_TYPE_MOTION:
+               if (android_input_poll_event_type_motion(android, event,
+                        port, source))
+                  engine_handle_dpad(android, event, port, source);
+               break;
+            case AINPUT_EVENT_TYPE_KEY:
+               {
+                  int keycode = AKeyEvent_getKeyCode(event);
+                  android_input_poll_event_type_key(android, android_app,
+                        event, port, keycode, source, type_event, &handled);
+               }
+               break;
          }
 
          if (!predispatched)
