@@ -78,14 +78,19 @@ typedef struct state_device
    char name[256];
 } state_device_t;
 
+typedef struct android_input_state
+{
+   int16_t analog_state[MAX_PADS][MAX_AXIS];
+   int8_t hat_state[MAX_PADS][2];
+} android_input_state_t;
+
 typedef struct android_input
 {
    unsigned pads_connected;
    state_device_t pad_states[MAX_PADS];
    uint8_t pad_state[MAX_PADS][(LAST_KEYCODE + 7) / 8];
-   int8_t hat_state[MAX_PADS][2];
-   
-   int16_t analog_state[MAX_PADS][MAX_AXIS];
+
+   android_input_state_t copy;
    sensor_t accelerometer_state;
    struct input_pointer pointer[MAX_TOUCH];
    unsigned pointer_count;
@@ -99,7 +104,10 @@ static void frontend_android_get_version_sdk(int32_t *sdk);
 bool (*engine_lookup_name)(char *buf,
       int *vendorId, int *productId, size_t size, int id);
 
-void (*engine_handle_dpad)(android_input_t *android, AInputEvent*, int, int);
+void (*engine_handle_dpad)(android_input_t *android,
+      android_input_state_t *state,
+      AInputEvent*, int, int);
+
 static bool android_input_set_sensor_state(void *data, unsigned port,
       enum retro_sensor_action action, unsigned event_rate);
 
@@ -111,18 +119,19 @@ static typeof(AMotionEvent_getAxisValue) *p_AMotionEvent_getAxisValue;
 #define AMotionEvent_getAxisValue (*p_AMotionEvent_getAxisValue)
 
 static void engine_handle_dpad_default(android_input_t *android,
-      AInputEvent *event, int port, int source)
+      android_input_state_t *state, AInputEvent *event, int port, int source)
 {
    size_t motion_pointer = AMotionEvent_getAction(event) >>
       AMOTION_EVENT_ACTION_POINTER_INDEX_SHIFT;
    float x = AMotionEvent_getX(event, motion_pointer);
    float y = AMotionEvent_getY(event, motion_pointer);
 
-   android->analog_state[port][0] = (int16_t)(x * 32767.0f);
-   android->analog_state[port][1] = (int16_t)(y * 32767.0f);
+   state->analog_state[port][0] = (int16_t)(x * 32767.0f);
+   state->analog_state[port][1] = (int16_t)(y * 32767.0f);
 }
 
 static void engine_handle_dpad_getaxisvalue(android_input_t *android,
+      android_input_state_t *state,
       AInputEvent *event, int port, int source)
 {
    size_t motion_pointer = AMotionEvent_getAction(event) >>
@@ -138,22 +147,20 @@ static void engine_handle_dpad_getaxisvalue(android_input_t *android,
    float brake = AMotionEvent_getAxisValue(event, AXIS_BRAKE, motion_pointer);
    float gas = AMotionEvent_getAxisValue(event, AXIS_GAS, motion_pointer);
 
-   android->hat_state[port][0] = (int)hatx;
-   android->hat_state[port][1] = (int)haty;
+   state->hat_state[port][0] = (int)hatx;
+   state->hat_state[port][1] = (int)haty;
 
    /* XXX: this could be a loop instead, but do we really want to 
     * loop through every axis?
     */
-   android->analog_state[port][0] = (int16_t)(x * 32767.0f);
-   android->analog_state[port][1] = (int16_t)(y * 32767.0f);
-   android->analog_state[port][2] = (int16_t)(z * 32767.0f);
-   android->analog_state[port][3] = (int16_t)(rz * 32767.0f);
-   //android->analog_state[port][4] = (int16_t)(hatx * 32767.0f);
-   //android->analog_state[port][5] = (int16_t)(haty * 32767.0f);
-   android->analog_state[port][6] = (int16_t)(ltrig * 32767.0f);
-   android->analog_state[port][7] = (int16_t)(rtrig * 32767.0f);
-   android->analog_state[port][8] = (int16_t)(brake * 32767.0f);
-   android->analog_state[port][9] = (int16_t)(gas * 32767.0f);
+   state->analog_state[port][0] = (int16_t)(x * 32767.0f);
+   state->analog_state[port][1] = (int16_t)(y * 32767.0f);
+   state->analog_state[port][2] = (int16_t)(z * 32767.0f);
+   state->analog_state[port][3] = (int16_t)(rz * 32767.0f);
+   state->analog_state[port][6] = (int16_t)(ltrig * 32767.0f);
+   state->analog_state[port][7] = (int16_t)(rtrig * 32767.0f);
+   state->analog_state[port][8] = (int16_t)(brake * 32767.0f);
+   state->analog_state[port][9] = (int16_t)(gas * 32767.0f);
 }
 
 static bool android_input_lookup_name_prekitkat(char *buf,
@@ -784,7 +791,7 @@ static void android_input_handle_input(void *data)
             case AINPUT_EVENT_TYPE_MOTION:
                if (android_input_poll_event_type_motion(android, event,
                         port, source))
-                  engine_handle_dpad(android, event, port, source);
+                  engine_handle_dpad(android, &android->copy, event, port, source);
                break;
             case AINPUT_EVENT_TYPE_KEY:
                {
