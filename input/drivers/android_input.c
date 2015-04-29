@@ -303,6 +303,131 @@ error:
    return false;
 }
 
+static void engine_handle_cmd(void *data)
+{
+   int8_t cmd;
+   struct android_app *android_app = (struct android_app*)g_android;
+   runloop_t *runloop = rarch_main_get_ptr();
+   global_t  *global  = global_get_ptr();
+   driver_t  *driver  = driver_get_ptr();
+
+   if (read(android_app->msgread, &cmd, sizeof(cmd)) != sizeof(cmd))
+      cmd = -1;
+
+   switch (cmd)
+   {
+      case APP_CMD_INPUT_CHANGED:
+         slock_lock(android_app->mutex);
+
+         if (android_app->inputQueue)
+            AInputQueue_detachLooper(android_app->inputQueue);
+
+         android_app->inputQueue = android_app->pendingInputQueue;
+
+         if (android_app->inputQueue)
+         {
+            RARCH_LOG("Attaching input queue to looper");
+            AInputQueue_attachLooper(android_app->inputQueue,
+                  android_app->looper, LOOPER_ID_INPUT, NULL,
+                  NULL);
+         }
+
+         scond_broadcast(android_app->cond);
+         slock_unlock(android_app->mutex);
+         
+         break;
+
+      case APP_CMD_INIT_WINDOW:
+         slock_lock(android_app->mutex);
+         android_app->window = android_app->pendingWindow;
+         scond_broadcast(android_app->cond);
+         slock_unlock(android_app->mutex);
+
+         if (runloop->is_paused)
+            event_command(EVENT_CMD_REINIT);
+         break;
+
+      case APP_CMD_RESUME:
+         slock_lock(android_app->mutex);
+         android_app->activityState = cmd;
+         scond_broadcast(android_app->cond);
+         slock_unlock(android_app->mutex);
+         break;
+
+      case APP_CMD_START:
+         slock_lock(android_app->mutex);
+         android_app->activityState = cmd;
+         scond_broadcast(android_app->cond);
+         slock_unlock(android_app->mutex);
+         break;
+
+      case APP_CMD_PAUSE:
+         slock_lock(android_app->mutex);
+         android_app->activityState = cmd;
+         scond_broadcast(android_app->cond);
+         slock_unlock(android_app->mutex);
+
+         if (!global->system.shutdown)
+         {
+            RARCH_LOG("Pausing RetroArch.\n");
+            runloop->is_paused = true;
+            runloop->is_idle   = true;
+         }
+         break;
+
+      case APP_CMD_STOP:
+         slock_lock(android_app->mutex);
+         android_app->activityState = cmd;
+         scond_broadcast(android_app->cond);
+         slock_unlock(android_app->mutex);
+         break;
+
+      case APP_CMD_CONFIG_CHANGED:
+         break;
+      case APP_CMD_TERM_WINDOW:
+         slock_lock(android_app->mutex);
+
+         /* The window is being hidden or closed, clean it up. */
+         /* terminate display/EGL context here */
+
+#if 0
+         RARCH_WARN("Window is terminated outside PAUSED state.\n");
+#endif
+
+         android_app->window = NULL;
+         scond_broadcast(android_app->cond);
+         slock_unlock(android_app->mutex);
+         break;
+
+      case APP_CMD_GAINED_FOCUS:
+         runloop->is_paused = false;
+         runloop->is_idle   = false;
+
+         if ((android_app->sensor_state_mask 
+                  & (1ULL << RETRO_SENSOR_ACCELEROMETER_ENABLE))
+               && android_app->accelerometerSensor == NULL
+               && driver->input_data)
+            android_input_set_sensor_state(driver->input_data, 0,
+                  RETRO_SENSOR_ACCELEROMETER_ENABLE,
+                  android_app->accelerometer_event_rate);
+         break;
+      case APP_CMD_LOST_FOCUS:
+         /* Avoid draining battery while app is not being used. */
+         if ((android_app->sensor_state_mask
+                  & (1ULL << RETRO_SENSOR_ACCELEROMETER_ENABLE))
+               && android_app->accelerometerSensor != NULL
+               && driver->input_data)
+            android_input_set_sensor_state(driver->input_data, 0,
+                  RETRO_SENSOR_ACCELEROMETER_DISABLE,
+                  android_app->accelerometer_event_rate);
+         break;
+
+      case APP_CMD_DESTROY:
+         global->system.shutdown = true;
+         break;
+   }
+}
+
 static void *android_input_init(void)
 {
    int32_t sdk;
@@ -722,6 +847,22 @@ static void android_input_poll(void *data)
             break;
       }
    }
+}
+
+bool android_run_events(void *data)
+{
+   global_t *global = global_get_ptr();
+   driver_t *driver = driver_get_ptr();
+   int id = ALooper_pollOnce(-1, NULL, NULL, NULL);
+
+   if (id == LOOPER_ID_MAIN)
+      engine_handle_cmd(driver->input_data);
+
+   /* Check if we are exiting. */
+   if (global->system.shutdown)
+      return false;
+
+   return true;
 }
 
 static int16_t android_input_state(void *data,

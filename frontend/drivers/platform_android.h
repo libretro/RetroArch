@@ -227,7 +227,6 @@ enum
    var = (*env)->CallIntMethod(env, clazz_obj, methodId); \
    JNI_EXCEPTION(env)
 
-extern void engine_handle_cmd(void*);
 extern JNIEnv *jni_thread_getenv(void);
 
 extern struct android_app *g_android;
