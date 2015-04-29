@@ -634,15 +634,11 @@ static void handle_hotplug(android_input_state_t *android,
    }      
    else if (strstr(device_name, "Sun4i-keypad"))
       strlcpy(name_buf, "iDroid x360", sizeof(name_buf));
-   else if (strstr(device_name, "mtk-kpd"))
-      strlcpy(name_buf, "MUCH iReadyGo i5", sizeof(name_buf));
    else if (strstr(device_name, "360 Wireless"))
       strlcpy(name_buf, "XBox 360 Wireless", sizeof(name_buf));
    else if (strstr(device_name, "Microsoft"))
    {
-      if (strstr(device_name, "Dual Strike"))
-         strlcpy(device_name, "SideWinder Dual Strike", sizeof(device_name));
-      else if (strstr(device_name, "SideWinder"))
+      if (strstr(device_name, "SideWinder"))
          strlcpy(name_buf, "SideWinder Classic", sizeof(name_buf));
       else if (strstr(device_name, "X-Box 360")
             || strstr(device_name, "X-Box"))
@@ -699,11 +695,6 @@ static void handle_hotplug(android_input_state_t *android,
       strlcpy(name_buf, "JXD S7800B", sizeof(name_buf));
    else if (strstr(device_name, "2Axes 11Keys Game  Pad"))
       strlcpy(name_buf, "Tomee NES USB", sizeof(name_buf));
-   else if (
-         strstr(device_name, "rk29-keypad") ||
-         strstr(device_name, "GAMEMID")
-         )
-      strlcpy(name_buf, "GameMID", sizeof(name_buf));
    else if (strstr(device_name, "USB Gamepad"))
       strlcpy(name_buf, "Defender Game Racer Classic", sizeof(name_buf));
    else if (strstr(device_name, "NVIDIA Controller"))
