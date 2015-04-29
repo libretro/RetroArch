@@ -67,7 +67,7 @@ static bool android_joypad_button(unsigned port, uint16_t joykey)
    if (!android || port >= MAX_PADS)
       return false;
 
-   buf = android->pad_state[port];
+   buf = android->copy.pad_state[port];
 
    if (GET_HAT_DIR(joykey))
    {
@@ -134,7 +134,7 @@ static bool android_joypad_query_pad(unsigned pad)
 {
    driver_t *driver         = driver_get_ptr();
    android_input_t *android = (android_input_t*)driver->input_data;
-   return (pad < MAX_USERS && pad < android->pads_connected);
+   return (pad < MAX_USERS && pad < android->copy.pads_connected);
 }
 
 

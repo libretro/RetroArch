@@ -82,18 +82,17 @@ typedef struct android_input_state
 {
    int16_t analog_state[MAX_PADS][MAX_AXIS];
    int8_t hat_state[MAX_PADS][2];
+   uint8_t pad_state[MAX_PADS][(LAST_KEYCODE + 7) / 8];
+   unsigned pads_connected;
+   state_device_t pad_states[MAX_PADS];
+   struct input_pointer pointer[MAX_TOUCH];
+   unsigned pointer_count;
 } android_input_state_t;
 
 typedef struct android_input
 {
-   unsigned pads_connected;
-   state_device_t pad_states[MAX_PADS];
-   uint8_t pad_state[MAX_PADS][(LAST_KEYCODE + 7) / 8];
-
    android_input_state_t copy;
    sensor_t accelerometer_state;
-   struct input_pointer pointer[MAX_TOUCH];
-   unsigned pointer_count;
    ASensorManager *sensorManager;
    ASensorEventQueue *sensorEventQueue;
    const input_device_driver_t *joypad;
@@ -104,8 +103,7 @@ static void frontend_android_get_version_sdk(int32_t *sdk);
 bool (*engine_lookup_name)(char *buf,
       int *vendorId, int *productId, size_t size, int id);
 
-void (*engine_handle_dpad)(android_input_t *android,
-      android_input_state_t *state,
+void (*engine_handle_dpad)(android_input_state_t *state,
       AInputEvent*, int, int);
 
 static bool android_input_set_sensor_state(void *data, unsigned port,
@@ -118,7 +116,7 @@ static typeof(AMotionEvent_getAxisValue) *p_AMotionEvent_getAxisValue;
 
 #define AMotionEvent_getAxisValue (*p_AMotionEvent_getAxisValue)
 
-static void engine_handle_dpad_default(android_input_t *android,
+static void engine_handle_dpad_default(
       android_input_state_t *state, AInputEvent *event, int port, int source)
 {
    size_t motion_pointer = AMotionEvent_getAction(event) >>
@@ -130,22 +128,22 @@ static void engine_handle_dpad_default(android_input_t *android,
    state->analog_state[port][1] = (int16_t)(y * 32767.0f);
 }
 
-static void engine_handle_dpad_getaxisvalue(android_input_t *android,
+static void engine_handle_dpad_getaxisvalue(
       android_input_state_t *state,
       AInputEvent *event, int port, int source)
 {
    size_t motion_pointer = AMotionEvent_getAction(event) >>
       AMOTION_EVENT_ACTION_POINTER_INDEX_SHIFT;
-   float x = AMotionEvent_getAxisValue(event, AXIS_X, motion_pointer);
-   float y = AMotionEvent_getAxisValue(event, AXIS_Y, motion_pointer);
-   float z = AMotionEvent_getAxisValue(event, AXIS_Z, motion_pointer);
-   float rz = AMotionEvent_getAxisValue(event, AXIS_RZ, motion_pointer);
-   float hatx = AMotionEvent_getAxisValue(event, AXIS_HAT_X, motion_pointer);
-   float haty = AMotionEvent_getAxisValue(event, AXIS_HAT_Y, motion_pointer);
-   float ltrig = AMotionEvent_getAxisValue(event, AXIS_LTRIGGER, motion_pointer);
-   float rtrig = AMotionEvent_getAxisValue(event, AXIS_RTRIGGER, motion_pointer);
-   float brake = AMotionEvent_getAxisValue(event, AXIS_BRAKE, motion_pointer);
-   float gas = AMotionEvent_getAxisValue(event, AXIS_GAS, motion_pointer);
+   float x     = AMotionEvent_getAxisValue(event, AXIS_X,         motion_pointer);
+   float y     = AMotionEvent_getAxisValue(event, AXIS_Y,         motion_pointer);
+   float z     = AMotionEvent_getAxisValue(event, AXIS_Z,         motion_pointer);
+   float rz    = AMotionEvent_getAxisValue(event, AXIS_RZ,        motion_pointer);
+   float hatx  = AMotionEvent_getAxisValue(event, AXIS_HAT_X,     motion_pointer);
+   float haty  = AMotionEvent_getAxisValue(event, AXIS_HAT_Y,     motion_pointer);
+   float ltrig = AMotionEvent_getAxisValue(event, AXIS_LTRIGGER,  motion_pointer);
+   float rtrig = AMotionEvent_getAxisValue(event, AXIS_RTRIGGER,  motion_pointer);
+   float brake = AMotionEvent_getAxisValue(event, AXIS_BRAKE,     motion_pointer);
+   float gas = AMotionEvent_getAxisValue(event,   AXIS_GAS,       motion_pointer);
 
    state->hat_state[port][0] = (int)hatx;
    state->hat_state[port][1] = (int)haty;
@@ -444,7 +442,7 @@ static void *android_input_init(void)
    if (!android)
       return NULL;
 
-   android->pads_connected = 0;
+   android->copy.pads_connected = 0;
    android->joypad = input_joypad_init_driver(settings->input.joypad_driver);
 
    frontend_android_get_version_sdk(&sdk);
@@ -463,7 +461,7 @@ static int zeus_id = -1;
 static int zeus_second_id = -1;
 
 static INLINE int android_input_poll_event_type_motion(
-      android_input_t *android, AInputEvent *event,
+      android_input_state_t *android, AInputEvent *event,
       int port, int source)
 {
    int getaction, action;
@@ -517,7 +515,7 @@ static INLINE int android_input_poll_event_type_motion(
 }
 
 static INLINE void android_input_poll_event_type_key(
-      android_input_t *android, struct android_app *android_app,
+      android_input_state_t *android, struct android_app *android_app,
       AInputEvent *event, int port, int keycode, int source,
       int type_event, int *handled)
 {
@@ -538,7 +536,7 @@ static INLINE void android_input_poll_event_type_key(
       *handled = 0;
 }
 
-static int android_input_get_id_port(android_input_t *android, int id,
+static int android_input_get_id_port(android_input_state_t *android, int id,
       int source)
 {
    unsigned i;
@@ -556,7 +554,7 @@ static int android_input_get_id_port(android_input_t *android, int id,
 
 
 /* Returns the index inside android->pad_state */
-static int android_input_get_id_index_from_name(android_input_t *android,
+static int android_input_get_id_index_from_name(android_input_state_t *android,
       const char *name)
 {
    int i;
@@ -569,7 +567,7 @@ static int android_input_get_id_index_from_name(android_input_t *android,
    return -1;
 }
 
-static void handle_hotplug(android_input_t *android,
+static void handle_hotplug(android_input_state_t *android,
       struct android_app *android_app, unsigned *port, unsigned id,
       int source)
 {
@@ -753,7 +751,7 @@ static void handle_hotplug(android_input_t *android,
    android->pads_connected++;
 }
 
-static int android_input_get_id(android_input_t *android, AInputEvent *event)
+static int android_input_get_id(AInputEvent *event)
 {
    int id = AInputEvent_getDeviceId(event);
 
@@ -764,10 +762,9 @@ static int android_input_get_id(android_input_t *android, AInputEvent *event)
    return id;
 }
 
-static void android_input_handle_input(void *data)
+static void android_input_handle_input(android_input_state_t *android)
 {
    AInputEvent *event = NULL;
-   android_input_t    *android     = (android_input_t*)data;
    struct android_app *android_app = (struct android_app*)g_android;
 
    /* Read all pending events. */
@@ -779,7 +776,7 @@ static void android_input_handle_input(void *data)
          int predispatched = AInputQueue_preDispatchEvent(android_app->inputQueue, event);
          int source = AInputEvent_getSource(event);
          int type_event = AInputEvent_getType(event);
-         int id = android_input_get_id(android, event);
+         int id = android_input_get_id(event);
          int port = android_input_get_id_port(android, id, source);
 
          if (port < 0)
@@ -791,7 +788,7 @@ static void android_input_handle_input(void *data)
             case AINPUT_EVENT_TYPE_MOTION:
                if (android_input_poll_event_type_motion(android, event,
                         port, source))
-                  engine_handle_dpad(android, &android->copy, event, port, source);
+                  engine_handle_dpad(android, event, port, source);
                break;
             case AINPUT_EVENT_TYPE_KEY:
                {
@@ -834,6 +831,7 @@ static void android_input_handle_user(void *data)
 static void android_input_poll(void *data)
 {
    int ident;
+   android_input_t    *android     = (android_input_t*)data;
 
    while ((ident = 
             ALooper_pollAll((input_driver_key_pressed(RARCH_PAUSE_TOGGLE))
@@ -843,7 +841,7 @@ static void android_input_poll(void *data)
       switch (ident)
       {
          case LOOPER_ID_INPUT:
-            android_input_handle_input(data);
+            android_input_handle_input(&android->copy);
             break;
          case LOOPER_ID_USER:
             android_input_handle_user(data);
@@ -887,30 +885,30 @@ static int16_t android_input_state(void *data,
          switch (id)
          {
             case RETRO_DEVICE_ID_POINTER_X:
-               return android->pointer[idx].x;
+               return android->copy.pointer[idx].x;
             case RETRO_DEVICE_ID_POINTER_Y:
-               return android->pointer[idx].y;
+               return android->copy.pointer[idx].y;
             case RETRO_DEVICE_ID_POINTER_PRESSED:
-               return (idx < android->pointer_count) &&
-                  (android->pointer[idx].x != -0x8000) &&
-                  (android->pointer[idx].y != -0x8000);
+               return (idx < android->copy.pointer_count) &&
+                  (android->copy.pointer[idx].x != -0x8000) &&
+                  (android->copy.pointer[idx].y != -0x8000);
             case RARCH_DEVICE_ID_POINTER_BACK:
-               return BIT_GET(android->pad_state[0], AKEYCODE_BACK);
+               return BIT_GET(android->copy.pad_state[0], AKEYCODE_BACK);
          }
          break;
       case RARCH_DEVICE_POINTER_SCREEN:
          switch (id)
          {
             case RETRO_DEVICE_ID_POINTER_X:
-               return android->pointer[idx].full_x;
+               return android->copy.pointer[idx].full_x;
             case RETRO_DEVICE_ID_POINTER_Y:
-               return android->pointer[idx].full_y;
+               return android->copy.pointer[idx].full_y;
             case RETRO_DEVICE_ID_POINTER_PRESSED:
-               return (idx < android->pointer_count) &&
-                  (android->pointer[idx].full_x != -0x8000) &&
-                  (android->pointer[idx].full_y != -0x8000);
+               return (idx < android->copy.pointer_count) &&
+                  (android->copy.pointer[idx].full_x != -0x8000) &&
+                  (android->copy.pointer[idx].full_y != -0x8000);
             case RARCH_DEVICE_ID_POINTER_BACK:
-               return BIT_GET(android->pad_state[0], AKEYCODE_BACK);
+               return BIT_GET(android->copy.pad_state[0], AKEYCODE_BACK);
          }
          break;
    }
