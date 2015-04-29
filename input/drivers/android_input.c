@@ -91,7 +91,7 @@ typedef struct android_input_state
 
 typedef struct android_input
 {
-   android_input_state_t copy;
+   android_input_state_t copy, thread;
    sensor_t accelerometer_state;
    ASensorManager *sensorManager;
    ASensorEventQueue *sensorEventQueue;
@@ -841,7 +841,7 @@ static void android_input_poll(void *data)
       switch (ident)
       {
          case LOOPER_ID_INPUT:
-            android_input_handle_input(&android->copy);
+            android_input_handle_input(&android->thread);
             break;
          case LOOPER_ID_USER:
             android_input_handle_user(data);
@@ -851,6 +851,8 @@ static void android_input_poll(void *data)
             break;
       }
    }
+
+   memcpy(&android->copy, &android->thread, sizeof(android->copy));
 }
 
 bool android_run_events(void *data)
