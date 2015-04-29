@@ -224,7 +224,7 @@ const char *config_get_default_input(void)
    switch (INPUT_DEFAULT_DRIVER)
    {
       case INPUT_ANDROID:
-         return "android_input";
+         return "android";
       case INPUT_PS3:
          return "ps3";
       case INPUT_PSP:
