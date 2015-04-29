@@ -48,8 +48,6 @@ struct android_app
    uint64_t sensor_state_mask;
    sthread_t *thread;
    char current_ime[PATH_MAX_LENGTH];
-   ASensorEventQueue *sensorEventQueue;
-   ASensorManager *sensorManager;
    jmethodID getIntent;
    jmethodID onRetroArchExit;
    jmethodID getStringExtra;
