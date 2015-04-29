@@ -111,8 +111,6 @@ if [ "$HAVE_EXYNOS" != "no" ]; then
 fi
 
 if [ "$HAVE_DISPMANX" != "no" ]; then
-   DISPMANX_LIBS="-L/opt/vc/lib -lbcm_host -lvcos -lvchiq_arm"
-   DISPMANX_INCLUDES="-I/opt/vc/include -I/opt/vc/include/interface/vmcs_host/linux/ -I/opt/vc/include/interface/vcos/pthreads"
    PKG_CONF_USED="$PKG_CONF_USED DISPMANX"
 fi
 
