@@ -768,41 +768,38 @@ static void android_input_handle_input(android_input_state_t *android)
    struct android_app *android_app = (struct android_app*)g_android;
 
    /* Read all pending events. */
-   while (AInputQueue_hasEvents(android_app->inputQueue))
+   while (AInputQueue_getEvent(android_app->inputQueue, &event) >= 0)
    {
-      while (AInputQueue_getEvent(android_app->inputQueue, &event) >= 0)
+      int32_t handled = 1;
+      int predispatched = AInputQueue_preDispatchEvent(android_app->inputQueue, event);
+      int source = AInputEvent_getSource(event);
+      int type_event = AInputEvent_getType(event);
+      int id = android_input_get_id(event);
+      int port = android_input_get_id_port(android, id, source);
+
+      if (port < 0)
+         handle_hotplug(android, android_app,
+               &android->pads_connected, id, source);
+
+      switch (type_event)
       {
-         int32_t handled = 1;
-         int predispatched = AInputQueue_preDispatchEvent(android_app->inputQueue, event);
-         int source = AInputEvent_getSource(event);
-         int type_event = AInputEvent_getType(event);
-         int id = android_input_get_id(event);
-         int port = android_input_get_id_port(android, id, source);
-
-         if (port < 0)
-            handle_hotplug(android, android_app,
-                  &android->pads_connected, id, source);
-
-         switch (type_event)
-         {
-            case AINPUT_EVENT_TYPE_MOTION:
-               if (android_input_poll_event_type_motion(android, event,
-                        port, source))
-                  engine_handle_dpad(android, event, port, source);
-               break;
-            case AINPUT_EVENT_TYPE_KEY:
-               {
-                  int keycode = AKeyEvent_getKeyCode(event);
-                  android_input_poll_event_type_key(android, android_app,
-                        event, port, keycode, source, type_event, &handled);
-               }
-               break;
-         }
-
-         if (!predispatched)
-            AInputQueue_finishEvent(android_app->inputQueue, event,
-                  handled);
+         case AINPUT_EVENT_TYPE_MOTION:
+            if (android_input_poll_event_type_motion(android, event,
+                     port, source))
+               engine_handle_dpad(android, event, port, source);
+            break;
+         case AINPUT_EVENT_TYPE_KEY:
+            {
+               int keycode = AKeyEvent_getKeyCode(event);
+               android_input_poll_event_type_key(android, android_app,
+                     event, port, keycode, source, type_event, &handled);
+            }
+            break;
       }
+
+      if (!predispatched)
+         AInputQueue_finishEvent(android_app->inputQueue, event,
+               handled);
    }
 }
 
