@@ -42,6 +42,12 @@
 
 #define LAST_KEYCODE AKEYCODE_ASSIST
 
+enum input_msg
+{
+   INPUT_MSG_UPDATE_INPUT_QUEUE = 0,
+   INPUT_MSG_DIE,
+};
+
 typedef struct
 {
    float x;
@@ -87,16 +93,22 @@ typedef struct android_input_state
    state_device_t pad_states[MAX_PADS];
    struct input_pointer pointer[MAX_TOUCH];
    unsigned pointer_count;
+   sensor_t accelerometer_state;
 } android_input_state_t;
 
 typedef struct android_input
 {
+   int msgpipe[2];
+
+   sthread_t *input_thread;
+   slock_t *lock;
+
    android_input_state_t copy, thread;
-   sensor_t accelerometer_state;
-   ASensorManager *sensorManager;
-   ASensorEventQueue *sensorEventQueue;
    const input_device_driver_t *joypad;
 } android_input_t;
+
+static int zeus_id = -1;
+static int zeus_second_id = -1;
 
 static void frontend_android_get_version_sdk(int32_t *sdk);
 
@@ -308,9 +320,10 @@ error:
    return false;
 }
 
-static void engine_handle_cmd(void)
+static void engine_handle_cmd(void *data)
 {
    int8_t cmd;
+   android_input_t *android = (android_input_t*)data;
    struct android_app *android_app = (struct android_app*)g_android;
    runloop_t *runloop = rarch_main_get_ptr();
    global_t  *global  = global_get_ptr();
@@ -322,23 +335,31 @@ static void engine_handle_cmd(void)
    switch (cmd)
    {
       case APP_CMD_INPUT_CHANGED:
-         slock_lock(android_app->mutex);
-
-         if (android_app->inputQueue)
-            AInputQueue_detachLooper(android_app->inputQueue);
-
-         android_app->inputQueue = android_app->pendingInputQueue;
-
-         if (android_app->inputQueue)
+         if (android)
          {
-            RARCH_LOG("Attaching input queue to looper");
-            AInputQueue_attachLooper(android_app->inputQueue,
-                  android_app->looper, LOOPER_ID_INPUT, NULL,
-                  NULL);
+            int msg = INPUT_MSG_UPDATE_INPUT_QUEUE;
+            write(android->msgpipe[1], &msg, sizeof(msg));
          }
+         else
+         {
+            slock_lock(android_app->mutex);
 
-         scond_broadcast(android_app->cond);
-         slock_unlock(android_app->mutex);
+            if (android_app->inputQueue)
+               AInputQueue_detachLooper(android_app->inputQueue);
+
+            android_app->inputQueue = android_app->pendingInputQueue;
+
+            if (android_app->inputQueue)
+            {
+               RARCH_LOG("Attaching input queue to looper");
+               AInputQueue_attachLooper(android_app->inputQueue,
+                     android_app->looper, LOOPER_ID_INPUT, NULL,
+                     NULL);
+            }
+
+            scond_broadcast(android_app->cond);
+            slock_unlock(android_app->mutex);
+         }
          
          break;
 
@@ -433,107 +454,26 @@ static void engine_handle_cmd(void)
    }
 }
 
-static void *android_input_init(void)
+static void set_input_queue(ALooper *looper, AInputQueue *pending)
 {
-   int32_t sdk;
-   settings_t *settings = config_get_ptr();
-   android_input_t *android = (android_input_t*)calloc(1, sizeof(*android));
+   struct android_app *android_app = (struct android_app*)g_android;
+   slock_lock(android_app->mutex);
 
-   if (!android)
-      return NULL;
+   if (android_app->inputQueue != NULL)
+      AInputQueue_detachLooper(android_app->inputQueue);
 
-   android->copy.pads_connected = 0;
-   android->joypad = input_joypad_init_driver(settings->input.joypad_driver);
+   android_app->inputQueue = pending;
 
-   frontend_android_get_version_sdk(&sdk);
-
-   RARCH_LOG("sdk version: %d\n", sdk);
-   
-   if (sdk >= 19)
-      engine_lookup_name = android_input_lookup_name;
-   else
-      engine_lookup_name = android_input_lookup_name_prekitkat;
-
-   return android;
-}
-
-static int zeus_id = -1;
-static int zeus_second_id = -1;
-
-static INLINE int android_input_poll_event_type_motion(
-      android_input_state_t *android, AInputEvent *event,
-      int port, int source)
-{
-   int getaction, action;
-   size_t motion_pointer;
-   bool keyup;
-
-   if (source & ~(AINPUT_SOURCE_TOUCHSCREEN | AINPUT_SOURCE_MOUSE))
-      return 1;
-
-   getaction = AMotionEvent_getAction(event);
-   action = getaction & AMOTION_EVENT_ACTION_MASK;
-   motion_pointer = getaction >> AMOTION_EVENT_ACTION_POINTER_INDEX_SHIFT;
-   keyup = (
-         action == AMOTION_EVENT_ACTION_UP ||
-         action == AMOTION_EVENT_ACTION_CANCEL ||
-         action == AMOTION_EVENT_ACTION_POINTER_UP) ||
-      (source == AINPUT_SOURCE_MOUSE &&
-       action != AMOTION_EVENT_ACTION_DOWN);
-
-   if (keyup && motion_pointer < MAX_TOUCH)
+   if (android_app->inputQueue != NULL && looper)
    {
-      memmove(android->pointer + motion_pointer, 
-            android->pointer + motion_pointer + 1,
-            (MAX_TOUCH - motion_pointer - 1) * sizeof(struct input_pointer));
-      if (android->pointer_count > 0)
-         android->pointer_count--;
-   }
-   else
-   {
-      float x, y;
-      int pointer_max = min(AMotionEvent_getPointerCount(event), MAX_TOUCH);
-
-      for (motion_pointer = 0; motion_pointer < pointer_max; motion_pointer++)
-      {
-         x = AMotionEvent_getX(event, motion_pointer);
-         y = AMotionEvent_getY(event, motion_pointer);
-
-         input_translate_coord_viewport(x, y,
-               &android->pointer[motion_pointer].x,
-               &android->pointer[motion_pointer].y,
-               &android->pointer[motion_pointer].full_x,
-               &android->pointer[motion_pointer].full_y);
-
-         android->pointer_count = max(
-               android->pointer_count,
-               motion_pointer + 1);
-      }
+      RARCH_LOG("Attaching input queue to looper");
+      AInputQueue_attachLooper(android_app->inputQueue,
+            looper, LOOPER_ID_INPUT, NULL,
+            NULL);
    }
 
-   return 0;
-}
-
-static INLINE void android_input_poll_event_type_key(
-      android_input_state_t *android, struct android_app *android_app,
-      AInputEvent *event, int port, int keycode, int source,
-      int type_event, int *handled)
-{
-   uint8_t *buf = android->pad_state[port];
-   int action  = AKeyEvent_getAction(event);
-
-   /* some controllers send both the up and down events at once
-    * when the button is released for "special" buttons, like menu buttons
-    * work around that by only using down events for meta keys (which get
-    * cleared every poll anyway)
-    */
-   if (action == AKEY_EVENT_ACTION_UP)
-      BIT_CLEAR(buf, keycode);
-   else if (action == AKEY_EVENT_ACTION_DOWN)
-      BIT_SET(buf, keycode);
-
-   if ((keycode == AKEYCODE_VOLUME_UP || keycode == AKEYCODE_VOLUME_DOWN))
-      *handled = 0;
+   scond_broadcast(android_app->cond);
+   slock_unlock(android_app->mutex);
 }
 
 static int android_input_get_id_port(android_input_state_t *android, int id,
@@ -551,20 +491,15 @@ static int android_input_get_id_port(android_input_state_t *android, int id,
    return -1;
 }
 
-
-
-/* Returns the index inside android->pad_state */
-static int android_input_get_id_index_from_name(android_input_state_t *android,
-      const char *name)
+static int android_input_get_id(AInputEvent *event)
 {
-   int i;
-   for (i = 0; i < android->pads_connected; i++)
-   {
-      if (strcmp(name, android->pad_states[i].name) == 0)
-         return i;
-   }
+   int id = AInputEvent_getDeviceId(event);
 
-   return -1;
+   /* Needs to be cleaned up */
+   if (id == zeus_second_id)
+      id = zeus_id;
+
+   return id;
 }
 
 static void handle_hotplug(android_input_state_t *android,
@@ -751,15 +686,80 @@ static void handle_hotplug(android_input_state_t *android,
    android->pads_connected++;
 }
 
-static int android_input_get_id(AInputEvent *event)
+static INLINE void android_input_poll_event_type_key(
+      android_input_state_t *android, struct android_app *android_app,
+      AInputEvent *event, int port, int keycode, int source,
+      int type_event, int *handled)
 {
-   int id = AInputEvent_getDeviceId(event);
+   uint8_t *buf = android->pad_state[port];
+   int action  = AKeyEvent_getAction(event);
 
-   /* Needs to be cleaned up */
-   if (id == zeus_second_id)
-      id = zeus_id;
+   /* some controllers send both the up and down events at once
+    * when the button is released for "special" buttons, like menu buttons
+    * work around that by only using down events for meta keys (which get
+    * cleared every poll anyway)
+    */
+   if (action == AKEY_EVENT_ACTION_UP)
+      BIT_CLEAR(buf, keycode);
+   else if (action == AKEY_EVENT_ACTION_DOWN)
+      BIT_SET(buf, keycode);
 
-   return id;
+   if ((keycode == AKEYCODE_VOLUME_UP || keycode == AKEYCODE_VOLUME_DOWN))
+      *handled = 0;
+}
+
+static INLINE int android_input_poll_event_type_motion(
+      android_input_state_t *android, AInputEvent *event,
+      int port, int source)
+{
+   int getaction, action;
+   size_t motion_pointer;
+   bool keyup;
+
+   if (source & ~(AINPUT_SOURCE_TOUCHSCREEN | AINPUT_SOURCE_MOUSE))
+      return 1;
+
+   getaction = AMotionEvent_getAction(event);
+   action = getaction & AMOTION_EVENT_ACTION_MASK;
+   motion_pointer = getaction >> AMOTION_EVENT_ACTION_POINTER_INDEX_SHIFT;
+   keyup = (
+         action == AMOTION_EVENT_ACTION_UP ||
+         action == AMOTION_EVENT_ACTION_CANCEL ||
+         action == AMOTION_EVENT_ACTION_POINTER_UP) ||
+      (source == AINPUT_SOURCE_MOUSE &&
+       action != AMOTION_EVENT_ACTION_DOWN);
+
+   if (keyup && motion_pointer < MAX_TOUCH)
+   {
+      memmove(android->pointer + motion_pointer, 
+            android->pointer + motion_pointer + 1,
+            (MAX_TOUCH - motion_pointer - 1) * sizeof(struct input_pointer));
+      if (android->pointer_count > 0)
+         android->pointer_count--;
+   }
+   else
+   {
+      float x, y;
+      int pointer_max = min(AMotionEvent_getPointerCount(event), MAX_TOUCH);
+
+      for (motion_pointer = 0; motion_pointer < pointer_max; motion_pointer++)
+      {
+         x = AMotionEvent_getX(event, motion_pointer);
+         y = AMotionEvent_getY(event, motion_pointer);
+
+         input_translate_coord_viewport(x, y,
+               &android->pointer[motion_pointer].x,
+               &android->pointer[motion_pointer].y,
+               &android->pointer[motion_pointer].full_x,
+               &android->pointer[motion_pointer].full_y);
+
+         android->pointer_count = max(
+               android->pointer_count,
+               motion_pointer + 1);
+      }
+   }
+
+   return 0;
 }
 
 static void android_input_handle_input(android_input_state_t *android)
@@ -806,9 +806,8 @@ static void android_input_handle_input(android_input_state_t *android)
    }
 }
 
-static void android_input_handle_user(void *data)
+static void android_input_handle_user(android_input_state_t *android)
 {
-   android_input_t    *android     = (android_input_t*)data;
    struct android_app *android_app = (struct android_app*)g_android;
 
    if ((android_app->sensor_state_mask & (1ULL <<
@@ -816,7 +815,7 @@ static void android_input_handle_user(void *data)
          && android_app->accelerometerSensor)
    {
       ASensorEvent event;
-      while (ASensorEventQueue_getEvents(android->sensorEventQueue, &event, 1) > 0)
+      while (ASensorEventQueue_getEvents(android_app->sensorEventQueue, &event, 1) > 0)
       {
          android->accelerometer_state.x = event.acceleration.x;
          android->accelerometer_state.y = event.acceleration.y;
@@ -824,6 +823,108 @@ static void android_input_handle_user(void *data)
       }
    }
 }
+
+static void event_handling_thread(void *data)
+{
+   int ident;
+   android_input_t *android = (android_input_t*)data;
+   struct android_app *android_app = (struct android_app*)g_android;
+   ALooper *looper = ALooper_prepare(ALOOPER_PREPARE_ALLOW_NON_CALLBACKS);
+   ALooper_addFd(looper, android->msgpipe[0], LOOPER_ID_INPUT_MSG, ALOOPER_EVENT_INPUT, NULL, NULL);
+
+   if (android_app->inputQueue)
+   {
+      AInputQueue_attachLooper(android_app->inputQueue,
+            looper, LOOPER_ID_INPUT, NULL,
+            NULL);
+   }
+
+   while ((ident = ALooper_pollAll(-1, NULL, NULL, NULL)) >= 0)
+   {
+      switch (ident)
+      {
+         case LOOPER_ID_INPUT_MSG:
+            {
+               int msg = 0;
+               if (read(android->msgpipe[0], &msg, sizeof(msg)) != (ssize_t)sizeof(msg))
+                  break;
+
+               switch (msg)
+               {
+                  case INPUT_MSG_DIE:
+                     return;
+
+                  case INPUT_MSG_UPDATE_INPUT_QUEUE:
+                     set_input_queue(looper, android_app->pendingInputQueue);
+                     break;
+               }
+            }
+            break;
+         case LOOPER_ID_INPUT:
+            slock_lock(android->lock);
+            android_input_handle_input(&android->thread);
+            slock_unlock(android->lock);
+            break;
+         case LOOPER_ID_USER:
+            slock_lock(android->lock);
+            android_input_handle_user(&android->thread);
+            slock_unlock(android->lock);
+            break;
+      }
+   }
+}
+
+static void *android_input_init(void)
+{
+   int32_t sdk;
+   settings_t *settings = config_get_ptr();
+   android_input_t *android = (android_input_t*)calloc(1, sizeof(*android));
+
+   if (!android)
+      return NULL;
+
+   android->copy.pads_connected = 0;
+   android->joypad = input_joypad_init_driver(settings->input.joypad_driver);
+
+   frontend_android_get_version_sdk(&sdk);
+
+   RARCH_LOG("sdk version: %d\n", sdk);
+   
+   if (sdk >= 19)
+      engine_lookup_name = android_input_lookup_name;
+   else
+      engine_lookup_name = android_input_lookup_name_prekitkat;
+
+   pipe(android->msgpipe);
+   android->lock = slock_new();
+   android->input_thread = sthread_create(event_handling_thread, android);
+
+   return android;
+}
+
+
+
+
+
+
+
+/* Returns the index inside android->pad_state */
+static int android_input_get_id_index_from_name(android_input_state_t *android,
+      const char *name)
+{
+   int i;
+   for (i = 0; i < android->pads_connected; i++)
+   {
+      if (strcmp(name, android->pad_states[i].name) == 0)
+         return i;
+   }
+
+   return -1;
+}
+
+
+
+
 
 /* Handle all events. If our activity is in pause state,
  * block until we're unpaused.
@@ -840,19 +941,15 @@ static void android_input_poll(void *data)
    {
       switch (ident)
       {
-         case LOOPER_ID_INPUT:
-            android_input_handle_input(&android->thread);
-            break;
-         case LOOPER_ID_USER:
-            android_input_handle_user(data);
-            break;
          case LOOPER_ID_MAIN:
-            engine_handle_cmd();
+            engine_handle_cmd(android);
             break;
       }
    }
 
+   slock_lock(android->lock);
    memcpy(&android->copy, &android->thread, sizeof(android->copy));
+   slock_unlock(android->lock);
 }
 
 bool android_run_events(void *data)
@@ -861,7 +958,7 @@ bool android_run_events(void *data)
    int id = ALooper_pollOnce(-1, NULL, NULL, NULL);
 
    if (id == LOOPER_ID_MAIN)
-      engine_handle_cmd();
+      engine_handle_cmd(NULL);
 
    /* Check if we are exiting. */
    if (global->system.shutdown)
@@ -935,13 +1032,22 @@ static bool android_input_key_pressed(void *data, int key)
 
 static void android_input_free_input(void *data)
 {
+   int msg;
    android_input_t *android = (android_input_t*)data;
+   struct android_app *android_app = (struct android_app*)g_android;
    if (!android)
       return;
 
-   if (android->sensorManager)
-      ASensorManager_destroyEventQueue(android->sensorManager,
-            android->sensorEventQueue);
+   if (android_app->sensorManager)
+      ASensorManager_destroyEventQueue(android_app->sensorManager,
+            android_app->sensorEventQueue);
+
+   msg = INPUT_MSG_DIE;
+   write(android->msgpipe[1], &msg, sizeof(msg));
+   sthread_join(android->input_thread);
+   slock_free(android->lock);
+   close(android->msgpipe[0]);
+   close(android->msgpipe[1]);
 
    free(data);
 }
@@ -956,25 +1062,25 @@ static uint64_t android_input_get_capabilities(void *data)
       (1 << RETRO_DEVICE_ANALOG);
 }
 
-static void android_input_enable_sensor_manager(void *data)
+static void android_input_enable_sensor_manager(void)
 {
-   android_input_t *android = (android_input_t*)data;
    struct android_app *android_app = (struct android_app*)g_android;
 
-   android->sensorManager = ASensorManager_getInstance();
+   android_app->sensorManager = ASensorManager_getInstance();
    android_app->accelerometerSensor =
-      ASensorManager_getDefaultSensor(android->sensorManager,
+      ASensorManager_getDefaultSensor(android_app->sensorManager,
          ASENSOR_TYPE_ACCELEROMETER);
-   android->sensorEventQueue =
-      ASensorManager_createEventQueue(android->sensorManager,
+   android_app->sensorEventQueue =
+      ASensorManager_createEventQueue(android_app->sensorManager,
          android_app->looper, LOOPER_ID_USER, NULL, NULL);
 }
 
 static bool android_input_set_sensor_state(void *data, unsigned port,
       enum retro_sensor_action action, unsigned event_rate)
 {
-   android_input_t *android = (android_input_t*)data;
    struct android_app *android_app = (struct android_app*)g_android;
+
+   (void)data;
 
    if (event_rate == 0)
       event_rate = 60;
@@ -983,15 +1089,15 @@ static bool android_input_set_sensor_state(void *data, unsigned port,
    {
       case RETRO_SENSOR_ACCELEROMETER_ENABLE:
          if (!android_app->accelerometerSensor)
-            android_input_enable_sensor_manager(android);
+            android_input_enable_sensor_manager();
 
          if (android_app->accelerometerSensor)
-            ASensorEventQueue_enableSensor(android->sensorEventQueue,
+            ASensorEventQueue_enableSensor(android_app->sensorEventQueue,
                   android_app->accelerometerSensor);
 
          // events per second (in us).
          if (android_app->accelerometerSensor)
-            ASensorEventQueue_setEventRate(android->sensorEventQueue,
+            ASensorEventQueue_setEventRate(android_app->sensorEventQueue,
                   android_app->accelerometerSensor, (1000L / event_rate)
                   * 1000);
 
@@ -1001,7 +1107,7 @@ static bool android_input_set_sensor_state(void *data, unsigned port,
 
       case RETRO_SENSOR_ACCELEROMETER_DISABLE:
          if (android_app->accelerometerSensor)
-            ASensorEventQueue_disableSensor(android->sensorEventQueue,
+            ASensorEventQueue_disableSensor(android_app->sensorEventQueue,
                   android_app->accelerometerSensor);
          
          android_app->sensor_state_mask &= ~(1ULL << RETRO_SENSOR_ACCELEROMETER_ENABLE);
@@ -1022,11 +1128,11 @@ static float android_input_get_sensor_input(void *data,
    switch (id)
    {
       case RETRO_SENSOR_ACCELEROMETER_X:
-         return android->accelerometer_state.x;
+         return android->copy.accelerometer_state.x;
       case RETRO_SENSOR_ACCELEROMETER_Y:
-         return android->accelerometer_state.y;
+         return android->copy.accelerometer_state.y;
       case RETRO_SENSOR_ACCELEROMETER_Z:
-         return android->accelerometer_state.z;
+         return android->copy.accelerometer_state.z;
    }
 
    return 0;
