@@ -227,16 +227,23 @@ static void android_app_entry(void *data)
 {
    char *argv[1];
    int argc = 0;
+   struct android_app *android_app = (struct android_app*)data;
 
-   if (rarch_main(argc, argv, data) != 0)
+   memset(&g_android, 0, sizeof(g_android));
+   g_android = android_app;
+
+   slock_lock(android_app->mutex);
+   android_app->running = 1;
+   scond_broadcast(android_app->cond);
+   slock_unlock(android_app->mutex);
+
+   if (rarch_main(argc, argv, android_app) != 0)
       goto end;
-#ifndef HAVE_MAIN
+
    while (rarch_main_iterate() != -1);
 
-   main_exit(data);
-#endif
-
 end:
+   main_exit(data);
    exit(0);
 }
 
@@ -254,19 +261,19 @@ void ANativeActivity_onCreate(ANativeActivity* activity,
    (void)savedStateSize;
 
    RARCH_LOG("Creating Native Activity: %p\n", activity);
-   activity->callbacks->onDestroy = onDestroy;
-   activity->callbacks->onStart = onStart;
-   activity->callbacks->onResume = onResume;
-   activity->callbacks->onSaveInstanceState = NULL;
-   activity->callbacks->onPause = onPause;
-   activity->callbacks->onStop = onStop;
-   activity->callbacks->onConfigurationChanged = onConfigurationChanged;
-   activity->callbacks->onLowMemory = NULL;
-   activity->callbacks->onWindowFocusChanged = onWindowFocusChanged;
-   activity->callbacks->onNativeWindowCreated = onNativeWindowCreated;
+   activity->callbacks->onDestroy               = onDestroy;
+   activity->callbacks->onStart                 = onStart;
+   activity->callbacks->onResume                = onResume;
+   activity->callbacks->onSaveInstanceState     = NULL;
+   activity->callbacks->onPause                 = onPause;
+   activity->callbacks->onStop                  = onStop;
+   activity->callbacks->onConfigurationChanged  = onConfigurationChanged;
+   activity->callbacks->onLowMemory             = NULL;
+   activity->callbacks->onWindowFocusChanged    = onWindowFocusChanged;
+   activity->callbacks->onNativeWindowCreated   = onNativeWindowCreated;
    activity->callbacks->onNativeWindowDestroyed = onNativeWindowDestroyed;
-   activity->callbacks->onInputQueueCreated = onInputQueueCreated;
-   activity->callbacks->onInputQueueDestroyed = onInputQueueDestroyed;
+   activity->callbacks->onInputQueueCreated     = onInputQueueCreated;
+   activity->callbacks->onInputQueueDestroyed   = onInputQueueDestroyed;
 
    /* These are set only for the native activity,
     * and are reset when it ends. */
@@ -686,14 +693,6 @@ static void frontend_android_init(void *data)
    ALooper_addFd(looper, android_app->msgread, LOOPER_ID_MAIN,
          ALOOPER_EVENT_INPUT, NULL, NULL);
    android_app->looper = looper;
-
-   slock_lock(android_app->mutex);
-   android_app->running = 1;
-   scond_broadcast(android_app->cond);
-   slock_unlock(android_app->mutex);
-
-   memset(&g_android, 0, sizeof(g_android));
-   g_android = (struct android_app*)android_app;
 
    RARCH_LOG("Waiting for Android Native Window to be initialized ...\n");
 
