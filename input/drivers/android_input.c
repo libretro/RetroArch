@@ -303,7 +303,7 @@ error:
    return false;
 }
 
-static void engine_handle_cmd(void *data)
+static void engine_handle_cmd(void)
 {
    int8_t cmd;
    struct android_app *android_app = (struct android_app*)g_android;
@@ -827,7 +827,6 @@ static void android_input_handle_user(void *data)
 static void android_input_poll(void *data)
 {
    int ident;
-   driver_t *driver = driver_get_ptr();
 
    while ((ident = 
             ALooper_pollAll((input_driver_key_pressed(RARCH_PAUSE_TOGGLE))
@@ -843,7 +842,7 @@ static void android_input_poll(void *data)
             android_input_handle_user(data);
             break;
          case LOOPER_ID_MAIN:
-            engine_handle_cmd(driver->input_data);
+            engine_handle_cmd();
             break;
       }
    }
@@ -852,11 +851,10 @@ static void android_input_poll(void *data)
 bool android_run_events(void *data)
 {
    global_t *global = global_get_ptr();
-   driver_t *driver = driver_get_ptr();
    int id = ALooper_pollOnce(-1, NULL, NULL, NULL);
 
    if (id == LOOPER_ID_MAIN)
-      engine_handle_cmd(driver->input_data);
+      engine_handle_cmd();
 
    /* Check if we are exiting. */
    if (global->system.shutdown)
