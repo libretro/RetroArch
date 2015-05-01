@@ -157,6 +157,41 @@ bool menu_display_font_flush_block(menu_handle_t *menu,
          font_driver, NULL);
 }
 
+void menu_display_free_main_font(menu_handle_t *menu)
+{
+   driver_t *driver = driver_get_ptr();
+   if (menu->font.buf)
+   {
+      driver->font_osd_driver->free(menu->font.buf);
+      menu->font.buf = NULL;
+   }
+}
+
+bool menu_display_init_main_font(menu_handle_t *menu,
+      const char *font_path, float font_size)
+{
+   driver_t *driver = driver_get_ptr();
+   void     *video  = video_driver_get_ptr(NULL);
+   bool      result;
+
+   if (menu->font.buf)
+      menu_display_free_main_font(menu);
+
+   if (!font_path[0])
+      font_path = NULL;
+
+   result = menu_display_font_init_first(
+         (const void**)&driver->font_osd_driver, &menu->font.buf, video,
+         font_path, font_size);
+
+   if (result)
+      menu->font.size = font_size;
+   else
+      menu->font.buf = NULL;
+
+   return result;
+}
+
 void menu_display_set_viewport(menu_handle_t *menu)
 {
    global_t *global    = global_get_ptr();
