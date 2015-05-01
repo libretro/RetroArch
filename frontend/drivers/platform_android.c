@@ -28,6 +28,7 @@
 #include <retro_inline.h>
 
 struct android_app *g_android;
+struct android_app_userdata *g_android_userdata;
 static pthread_key_t thread_key;
 
 void android_app_write_cmd(struct android_app *android_app, int8_t cmd)
@@ -225,8 +226,8 @@ static void android_app_entry(void *data)
    int ret_iterate;
    struct android_app *android_app = (struct android_app*)data;
 
-   memset(&g_android, 0, sizeof(g_android));
-   g_android = android_app;
+   g_android          = android_app;
+   g_android_userdata = (struct android_app_userdata*)calloc(1, sizeof(*g_android_userdata));
 
    slock_lock(android_app->mutex);
    android_app->running = 1;
@@ -242,6 +243,11 @@ static void android_app_entry(void *data)
 
 end:
    main_exit(data);
+
+   if (g_android_userdata)
+      free(g_android_userdata);
+   g_android_userdata = NULL;
+
    exit(0);
 }
 
@@ -282,11 +288,6 @@ void ANativeActivity_onCreate(ANativeActivity* activity,
       RARCH_ERR("Error initializing pthread_key\n");
 
    android_app = (struct android_app*)calloc(1, sizeof(*android_app));
-   if (!android_app)
-   {
-      RARCH_ERR("Failed to initialize android_app\n");
-      return;
-   }
 
    memset(android_app, 0, sizeof(struct android_app));
    
@@ -447,6 +448,8 @@ static void frontend_android_get_environment_settings(int *argc,
    jobject obj = NULL;
    jstring jstr = NULL;
    struct android_app* android_app = (struct android_app*)data;
+   struct android_app_userdata *userdata = 
+      (struct android_app_userdata*)g_android_userdata;
 
    if (!android_app)
       return;
@@ -470,14 +473,14 @@ static void frontend_android_get_environment_settings(int *argc,
    RARCH_LOG("Android OS version (major : %d, minor : %d, rel : %d)\n", major, minor, rel);
 
    CALL_OBJ_METHOD(env, obj, android_app->activity->clazz,
-         android_app->getIntent);
+         userdata->getIntent);
    RARCH_LOG("Checking arguments passed from intent ...\n");
 
    /* Config file. */
-   CALL_OBJ_METHOD_PARAM(env, jstr, obj, android_app->getStringExtra,
+   CALL_OBJ_METHOD_PARAM(env, jstr, obj, userdata->getStringExtra,
          (*env)->NewStringUTF(env, "CONFIGFILE"));
 
-   if (android_app->getStringExtra && jstr)
+   if (userdata->getStringExtra && jstr)
    {
       static char config_path[PATH_MAX_LENGTH];
       const char *argv = NULL;
@@ -495,23 +498,23 @@ static void frontend_android_get_environment_settings(int *argc,
    }
 
    /* Current IME. */
-   CALL_OBJ_METHOD_PARAM(env, jstr, obj, android_app->getStringExtra,
+   CALL_OBJ_METHOD_PARAM(env, jstr, obj, userdata->getStringExtra,
          (*env)->NewStringUTF(env, "IME"));
 
-   if (android_app->getStringExtra && jstr)
+   if (userdata->getStringExtra && jstr)
    {
       const char *argv = (*env)->GetStringUTFChars(env, jstr, 0);
-      strlcpy(android_app->current_ime, argv,
-            sizeof(android_app->current_ime));
+      strlcpy(userdata->current_ime, argv,
+            sizeof(userdata->current_ime));
       (*env)->ReleaseStringUTFChars(env, jstr, argv);
 
-      RARCH_LOG("Current IME: [%s].\n", android_app->current_ime);
+      RARCH_LOG("Current IME: [%s].\n", userdata->current_ime);
    }
 
-   CALL_OBJ_METHOD_PARAM(env, jstr, obj, android_app->getStringExtra,
+   CALL_OBJ_METHOD_PARAM(env, jstr, obj, userdata->getStringExtra,
          (*env)->NewStringUTF(env, "USED"));
 
-   if (android_app->getStringExtra && jstr)
+   if (userdata->getStringExtra && jstr)
    {
       const char *argv = (*env)->GetStringUTFChars(env, jstr, 0);
       bool used = (strcmp(argv, "false") == 0) ? false : true;
@@ -521,10 +524,10 @@ static void frontend_android_get_environment_settings(int *argc,
    }
 
    /* LIBRETRO. */
-   CALL_OBJ_METHOD_PARAM(env, jstr, obj, android_app->getStringExtra,
+   CALL_OBJ_METHOD_PARAM(env, jstr, obj, userdata->getStringExtra,
          (*env)->NewStringUTF(env, "LIBRETRO"));
 
-   if (android_app->getStringExtra && jstr)
+   if (userdata->getStringExtra && jstr)
    {
       static char core_path[PATH_MAX_LENGTH];
       const char *argv = NULL;
@@ -541,10 +544,10 @@ static void frontend_android_get_environment_settings(int *argc,
    }
 
    /* Content. */
-   CALL_OBJ_METHOD_PARAM(env, jstr, obj, android_app->getStringExtra,
+   CALL_OBJ_METHOD_PARAM(env, jstr, obj, userdata->getStringExtra,
          (*env)->NewStringUTF(env, "ROM"));
 
-   if (android_app->getStringExtra && jstr)
+   if (userdata->getStringExtra && jstr)
    {
       static char path[PATH_MAX_LENGTH];
       const char *argv = NULL;
@@ -565,10 +568,10 @@ static void frontend_android_get_environment_settings(int *argc,
    }
 
    /* Content. */
-   CALL_OBJ_METHOD_PARAM(env, jstr, obj, android_app->getStringExtra,
+   CALL_OBJ_METHOD_PARAM(env, jstr, obj, userdata->getStringExtra,
          (*env)->NewStringUTF(env, "DATADIR"));
 
-   if (android_app->getStringExtra && jstr)
+   if (userdata->getStringExtra && jstr)
    {
       static char path[PATH_MAX_LENGTH];
       const char *argv = NULL;
@@ -647,6 +650,8 @@ static void frontend_android_deinit(void *data)
 {
    JNIEnv *env;
    struct android_app *android_app = (struct android_app*)data;
+   struct android_app_userdata *userdata = 
+      (struct android_app_userdata*)g_android_userdata;
 
    if (!android_app)
       return;
@@ -656,9 +661,9 @@ static void frontend_android_deinit(void *data)
 
    env = jni_thread_getenv();
 
-   if (env && android_app->onRetroArchExit)
+   if (env && userdata->onRetroArchExit)
       CALL_VOID_METHOD(env, android_app->activity->clazz,
-            android_app->onRetroArchExit);
+            userdata->onRetroArchExit);
 
    if (android_app->inputQueue)
    {
@@ -831,6 +836,8 @@ static void frontend_android_init(void *data)
    jclass class = NULL;
    jobject obj = NULL;
    struct android_app* android_app = (struct android_app*)data;
+   struct android_app_userdata *userdata = 
+      (struct android_app_userdata*)g_android_userdata;
 
    if (!android_app)
       return;
@@ -859,15 +866,15 @@ static void frontend_android_init(void *data)
       return;
 
    GET_OBJECT_CLASS(env, class, android_app->activity->clazz);
-   GET_METHOD_ID(env, android_app->getIntent, class,
+   GET_METHOD_ID(env, userdata->getIntent, class,
          "getIntent", "()Landroid/content/Intent;");
-   GET_METHOD_ID(env, android_app->onRetroArchExit, class,
+   GET_METHOD_ID(env, userdata->onRetroArchExit, class,
          "onRetroArchExit", "()V");
    CALL_OBJ_METHOD(env, obj, android_app->activity->clazz,
-         android_app->getIntent);
+         userdata->getIntent);
 
    GET_OBJECT_CLASS(env, class, obj);
-   GET_METHOD_ID(env, android_app->getStringExtra, class,
+   GET_METHOD_ID(env, userdata->getStringExtra, class,
          "getStringExtra", "(Ljava/lang/String;)Ljava/lang/String;");
 
    frontend_android_get_version_sdk(&sdk);

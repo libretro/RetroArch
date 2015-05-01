@@ -177,7 +177,10 @@ struct android_app
    AInputQueue* pendingInputQueue;
    ANativeWindow* pendingWindow;
    ARect pendingContentRect;
+};
 
+struct android_app_userdata
+{
    unsigned accelerometer_event_rate;
    const ASensor* accelerometerSensor;
    uint64_t sensor_state_mask;
@@ -192,7 +195,6 @@ struct android_app
    jmethodID getPendingIntentFullPath;
    jmethodID getPendingIntentIME;
    android_input_state_t thread_state;
-
    ASensorManager *sensorManager;
    ASensorEventQueue *sensorEventQueue;
 };
@@ -397,5 +399,6 @@ JNIEnv *jni_thread_getenv(void);
 void android_app_write_cmd(struct android_app *android_app, int8_t cmd);
 
 extern struct android_app *g_android;
+extern struct android_app_userdata *g_android_userdata;
 
 #endif /* _PLATFORM_ANDROID_H */
