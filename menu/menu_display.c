@@ -86,16 +86,18 @@ bool menu_display_init(menu_handle_t *menu)
 
 float menu_display_get_dpi(menu_handle_t *menu)
 {
-   float dpi;
+   float dpi = menu_dpi_override_value;
    settings_t *settings = config_get_ptr();
 
    if (!menu || !settings)
-      return menu_dpi_override_value;
+      return dpi;
 
-   if (   settings->menu.dpi.override_enable ||
-         !gfx_ctx_get_metrics(DISPLAY_METRIC_DPI, &dpi)
-      )
-      return settings->menu.dpi.override_value;
+   if (settings->menu.dpi.override_enable)
+      dpi = settings->menu.dpi.override_value;
+#if defined(HAVE_OPENGL) || defined(HAVE_GLES)
+   else if (!gfx_ctx_get_metrics(DISPLAY_METRIC_DPI, &dpi))
+      dpi = menu_dpi_override_value;
+#endif
 
    return dpi;
 }

@@ -411,6 +411,7 @@ static int deferred_push_system_information(void *data, void *userdata,
          }
       }
 
+#if defined(HAVE_OPENGL) || defined(HAVE_GLES)
       tmp_string = gfx_ctx_get_ident();
 
       snprintf(tmp, sizeof(tmp), "Video context driver: %s",
@@ -444,6 +445,8 @@ static int deferred_push_system_information(void *data, void *userdata,
                   MENU_SETTINGS_CORE_INFO_NONE, 0);
          }
       }
+#endif
+
    }
 
    {
