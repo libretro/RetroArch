@@ -604,7 +604,7 @@ void android_input_handle_user(android_input_state_t *state)
    }
 }
 
-void android_main_poll(void *data)
+int android_main_poll(void *data)
 {
    int ident;
    android_input_t    *android     = (android_input_t*)data;
@@ -632,6 +632,8 @@ void android_main_poll(void *data)
    }
 
    memcpy(&android->copy, &userdata->thread_state, sizeof(android->copy));
+
+   return 0;
 }
 
 static void android_input_poll(void *data)

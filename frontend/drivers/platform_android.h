@@ -169,4 +169,6 @@ extern struct android_app_userdata *g_android_userdata;
 
 void android_main(struct android_app *android_app);
 
+int android_main_poll(void *data);
+
 #endif /* _PLATFORM_ANDROID_H */
