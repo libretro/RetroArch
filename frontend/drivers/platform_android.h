@@ -401,4 +401,6 @@ void android_app_write_cmd(struct android_app *android_app, int8_t cmd);
 extern struct android_app *g_android;
 extern struct android_app_userdata *g_android_userdata;
 
+void android_main(struct android_app *android_app);
+
 #endif /* _PLATFORM_ANDROID_H */
