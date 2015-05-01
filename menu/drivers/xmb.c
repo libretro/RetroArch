@@ -1545,7 +1545,6 @@ static void xmb_context_reset(void)
    menu_handle_t *menu         = menu_driver_get_ptr();
    settings_t *settings        = config_get_ptr();
    global_t   *global          = global_get_ptr();
-   driver_t *driver            = driver_get_ptr();
 
    if (!menu)
       return;
@@ -1886,7 +1885,6 @@ static void xmb_context_destroy(void)
    unsigned i;
    xmb_handle_t *xmb   = NULL;
    menu_handle_t *menu = menu_driver_get_ptr();
-   driver_t *driver    = driver_get_ptr();
 
    if (!menu)
       return;
