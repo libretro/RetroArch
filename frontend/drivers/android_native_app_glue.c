@@ -17,9 +17,6 @@
 
 #include "platform_android.h"
 
-struct android_app *g_android;
-struct android_app_userdata *g_android_userdata;
-
 static void free_saved_state(struct android_app* android_app)
 {
     pthread_mutex_lock(&android_app->mutex);

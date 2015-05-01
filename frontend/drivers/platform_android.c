@@ -29,6 +29,9 @@
 
 static pthread_key_t thread_key;
 
+struct android_app *g_android;
+struct android_app_userdata *g_android_userdata;
+
 JNIEnv *jni_thread_getenv(void)
 {
    JNIEnv *env;
