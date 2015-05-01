@@ -280,6 +280,9 @@ enum
    var = (*env)->CallIntMethod(env, clazz_obj, methodId); \
    JNI_EXCEPTION(env)
 
+bool (*engine_lookup_name)(char *buf,
+      int *vendorId, int *productId, size_t size, int id);
+
 extern JNIEnv *jni_thread_getenv(void);
 
 extern struct android_app *g_android;

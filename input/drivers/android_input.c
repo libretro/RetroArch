@@ -55,9 +55,6 @@ typedef struct android_input
 
 static void frontend_android_get_version_sdk(int32_t *sdk);
 
-bool (*engine_lookup_name)(char *buf,
-      int *vendorId, int *productId, size_t size, int id);
-
 void (*engine_handle_dpad)(android_input_state_t *state,
       AInputEvent*, int, int);
 
@@ -114,153 +111,6 @@ static void engine_handle_dpad_getaxisvalue(
    state->analog_state[port][7] = (int16_t)(rtrig * 32767.0f);
    state->analog_state[port][8] = (int16_t)(brake * 32767.0f);
    state->analog_state[port][9] = (int16_t)(gas * 32767.0f);
-}
-
-static bool android_input_lookup_name_prekitkat(char *buf,
-      int *vendorId, int *productId, size_t size, int id)
-{
-   RARCH_LOG("Using old lookup");
-
-   jclass class;
-   jmethodID method, getName;
-   jobject device, name;
-   const char *str = NULL;
-   JNIEnv *env = (JNIEnv*)jni_thread_getenv();
-
-   if (!env)
-      goto error;
-
-   class = NULL;
-   FIND_CLASS(env, class, "android/view/InputDevice");
-   if (!class)
-      goto error;
-
-   method = NULL;
-   GET_STATIC_METHOD_ID(env, method, class, "getDevice",
-         "(I)Landroid/view/InputDevice;");
-   if (!method)
-      goto error;
-
-   device = NULL;
-   CALL_OBJ_STATIC_METHOD_PARAM(env, device, class, method, (jint)id);
-   if (!device)
-   {
-      RARCH_ERR("Failed to find device for ID: %d\n", id);
-      goto error;
-   }
-
-   getName = NULL;
-   GET_METHOD_ID(env, getName, class, "getName", "()Ljava/lang/String;");
-   if (!getName)
-      goto error;
-
-   name = NULL;
-   CALL_OBJ_METHOD(env, name, device, getName);
-   if (!name)
-   {
-      RARCH_ERR("Failed to find name for device ID: %d\n", id);
-      goto error;
-   }
-
-   buf[0] = '\0';
-
-   str = (*env)->GetStringUTFChars(env, name, 0);
-   if (str)
-      strlcpy(buf, str, size);
-   (*env)->ReleaseStringUTFChars(env, name, str);
-
-   RARCH_LOG("device name: %s\n", buf);
-
-   return true;
-error:
-   return false;
-}
-
-static bool android_input_lookup_name(char *buf,
-      int *vendorId, int *productId, size_t size, int id)
-{
-   RARCH_LOG("Using new lookup");
-
-   jclass class;
-   jmethodID method, getName, getVendorId, getProductId;
-   jobject device, name;
-   const char *str = NULL;
-   JNIEnv *env = (JNIEnv*)jni_thread_getenv();
-
-   if (!env)
-      goto error;
-
-   class = NULL;
-   FIND_CLASS(env, class, "android/view/InputDevice");
-   if (!class)
-      goto error;
-
-   method = NULL;
-   GET_STATIC_METHOD_ID(env, method, class, "getDevice",
-         "(I)Landroid/view/InputDevice;");
-   if (!method)
-      goto error;
-
-   device = NULL;
-   CALL_OBJ_STATIC_METHOD_PARAM(env, device, class, method, (jint)id);
-   if (!device)
-   {
-      RARCH_ERR("Failed to find device for ID: %d\n", id);
-      goto error;
-   }
-
-   getName = NULL;
-   GET_METHOD_ID(env, getName, class, "getName", "()Ljava/lang/String;");
-   if (!getName)
-      goto error;
-
-   name = NULL;
-   CALL_OBJ_METHOD(env, name, device, getName);
-   if (!name)
-   {
-      RARCH_ERR("Failed to find name for device ID: %d\n", id);
-      goto error;
-   }
-
-   buf[0] = '\0';
-
-   str = (*env)->GetStringUTFChars(env, name, 0);
-   if (str)
-      strlcpy(buf, str, size);
-   (*env)->ReleaseStringUTFChars(env, name, str);
-
-   RARCH_LOG("device name: %s\n", buf);
-
-   getVendorId = NULL;
-   GET_METHOD_ID(env, getVendorId, class, "getVendorId", "()I");
-   if (!getVendorId)
-      goto error;
-
-   CALL_INT_METHOD(env, *vendorId, device, getVendorId);
-   if (!*vendorId)
-   {
-      RARCH_ERR("Failed to find vendor id for device ID: %d\n", id);
-      goto error;
-   }
-   RARCH_LOG("device vendor id: %d\n", *vendorId);
-
-   getProductId = NULL;
-   GET_METHOD_ID(env, getProductId, class, "getProductId", "()I");
-   if (!getProductId)
-      goto error;
-
-   *productId = 0;
-   CALL_INT_METHOD(env, *productId, device, getProductId);
-   if (!*productId)
-   {
-      RARCH_ERR("Failed to find product id for device ID: %d\n", id);
-      goto error;
-   }
-   RARCH_LOG("device product id: %d\n", *productId);
-
-   return true;
-error:
-   return false;
 }
 
 static void engine_handle_cmd(void)
@@ -390,7 +240,6 @@ static void engine_handle_cmd(void)
 
 static void *android_input_init(void)
 {
-   int32_t sdk;
    settings_t *settings = config_get_ptr();
    android_input_t *android = (android_input_t*)calloc(1, sizeof(*android));
 
@@ -399,15 +248,6 @@ static void *android_input_init(void)
 
    android->copy.pads_connected = 0;
    android->joypad = input_joypad_init_driver(settings->input.joypad_driver);
-
-   frontend_android_get_version_sdk(&sdk);
-
-   RARCH_LOG("sdk version: %d\n", sdk);
-   
-   if (sdk >= 19)
-      engine_lookup_name = android_input_lookup_name;
-   else
-      engine_lookup_name = android_input_lookup_name_prekitkat;
 
    return android;
 }
@@ -505,8 +345,6 @@ static int android_input_get_id_port(android_input_state_t *android, int id,
 
    return -1;
 }
-
-
 
 /* Returns the index inside android->pad_state */
 static int android_input_get_id_index_from_name(android_input_state_t *android,
