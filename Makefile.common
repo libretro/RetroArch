@@ -455,20 +455,20 @@ ifeq ($(HAVE_PARPORT), 1)
    OBJ += input/drivers_joypad/parport_joypad.o
 endif
 
-OBJ += gfx/video_context_driver.o \
-		 gfx/drivers_context/gfx_null_ctx.o
-
 # Video
 #
 ifeq ($(HAVE_OPENGL), 1)
+
    DEFINES += -DHAVE_OPENGL -DHAVE_GLSL
    OBJ += gfx/drivers/gl.o \
-			 gfx/drivers/gl_common.o \
-			 gfx/drivers_font/gl_raster_font.o \
-			 libretro-common/gfx/math/matrix_4x4.o \
-			 gfx/video_state_tracker.o \
-			 gfx/video_texture.o \
-			 libretro-common/glsym/rglgen.o
+			gfx/video_context_driver.o \
+			gfx/drivers_context/gfx_null_ctx.o \
+			gfx/drivers/gl_common.o \
+			gfx/drivers_font/gl_raster_font.o \
+			libretro-common/gfx/math/matrix_4x4.o \
+			gfx/video_state_tracker.o \
+			gfx/video_texture.o \
+			libretro-common/glsym/rglgen.o
 
    ifeq ($(HAVE_KMS), 1)
       OBJ += gfx/drivers_context/drm_egl_ctx.o
