@@ -30,13 +30,8 @@
 struct android_app *g_android;
 static pthread_key_t thread_key;
 
-static INLINE void android_app_write_cmd(void *data, int8_t cmd)
+void android_app_write_cmd(struct android_app *android_app, int8_t cmd)
 {
-   struct android_app *android_app = (struct android_app*)data;
-
-   if (!android_app)
-      return;
-
    if (write(android_app->msgwrite, &cmd, sizeof(cmd)) != sizeof(cmd))
       RARCH_ERR("Failure writing android_app cmd: %s\n", strerror(errno));
 }
