@@ -30,6 +30,7 @@
 #include "../../gfx/font_driver.h"
 #include "../../gfx/video_texture.h"
 #include <compat/posix_string.h>
+#include "retroarch_logger.h"
 
 #include "shared.h"
 
@@ -575,13 +576,17 @@ static void glui_context_bg_destroy(glui_handle_t *glui)
 
 static void glui_context_destroy(void)
 {
-   glui_handle_t *glui = NULL;
-   menu_handle_t *menu = menu_driver_get_ptr();
+   gl_t          *gl     = (gl_t*)video_driver_get_ptr(NULL);
+   glui_handle_t *glui   = NULL;
+   menu_handle_t *menu   = menu_driver_get_ptr();
+   driver_t      *driver = driver_get_ptr();
     
-   if (!menu)
+   if (!menu || !menu->userdata || !gl || !driver)
       return;
 
    glui = (glui_handle_t*)menu->userdata;
+
+   menu_display_free_main_font(menu);
 
    glui_context_bg_destroy(glui);
 }
@@ -677,30 +682,21 @@ static void glui_populate_entries(const char *path,
 
 static void glui_context_reset(void)
 {
-   gl_t *gl                               = NULL;
-   glui_handle_t *glui                    = NULL;
-   driver_t *driver                       = driver_get_ptr();
-   menu_handle_t *menu                    = menu_driver_get_ptr();
-   settings_t *settings                   = config_get_ptr();
+   gl_t *gl              = (gl_t*)video_driver_get_ptr(NULL);
+   glui_handle_t *glui   = NULL;
+   driver_t *driver      = driver_get_ptr();
+   menu_handle_t *menu   = menu_driver_get_ptr();
+   settings_t *settings  = config_get_ptr();
+   const char *font_path = NULL;
 
-   if (!menu)
+   if (!menu || !menu->userdata || !settings || !gl)
       return;
 
    glui     = (glui_handle_t*)menu->userdata;
+   font_path = settings->video.font_path;
 
-   if (!glui)
-      return;
-
-   gl       = (gl_t*)video_driver_get_ptr(NULL);
-   if (!gl)
-      return;
-
-   menu_display_font_init_first(
-         (const void**)&driver->font_osd_driver,
-         &menu->font.buf,
-         gl,
-         NULL,
-         menu->font.size);
+   if (!menu_display_init_main_font(menu, font_path, menu->font.size))
+      RARCH_WARN("Failed to load font.");
 
    glui_context_bg_destroy(glui);
 
