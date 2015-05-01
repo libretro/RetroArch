@@ -30,6 +30,7 @@
 #include "../../gfx/font_driver.h"
 #include "../../gfx/video_texture.h"
 #include <compat/posix_string.h>
+#include "retroarch_logger.h"
 
 #include "shared.h"
 
@@ -202,17 +203,11 @@ static void glui_render_messagebox(const char *message)
    uint32_t normal_color;
    int x, y;
    struct string_list *list = NULL;
-   glui_handle_t *glui = NULL;
    menu_handle_t *menu  = menu_driver_get_ptr();
    settings_t *settings = config_get_ptr();
    global_t *global     = global_get_ptr();
 
-   if (!menu)
-      return;
-
-   glui = (glui_handle_t*)menu->userdata;
-
-   if (!glui)
+   if (!menu || !menu->userdata)
       return;
 
    list = (struct string_list*)string_split(message, "\n");
@@ -247,13 +242,10 @@ static void glui_render(void)
    settings_t *settings = config_get_ptr();
    global_t *global     = global_get_ptr();
 
-   if (!menu)
+   if (!menu || !menu->userdata)
       return;
 
    glui = (glui_handle_t*)menu->userdata;
-
-   if (!glui)
-      return;
 
    menu_animation_update(menu->animation, menu->dt / IDEAL_DT);
 
@@ -377,7 +369,7 @@ static void glui_frame(void)
    global_t  *global            = global_get_ptr();
    const struct font_renderer *font_driver = NULL;
 
-   if (!menu)
+   if (!menu || !menu->userdata)
       return;
 
    gl = (gl_t*)video_driver_get_ptr(NULL);
@@ -386,9 +378,6 @@ static void glui_frame(void)
       return;
 
    glui = (glui_handle_t*)menu->userdata;
-
-   if (!glui)
-      return;
 
    if (menu->need_refresh
          && runloop->is_menu
@@ -575,13 +564,17 @@ static void glui_context_bg_destroy(glui_handle_t *glui)
 
 static void glui_context_destroy(void)
 {
-   glui_handle_t *glui = NULL;
-   menu_handle_t *menu = menu_driver_get_ptr();
+   gl_t          *gl     = (gl_t*)video_driver_get_ptr(NULL);
+   glui_handle_t *glui   = NULL;
+   menu_handle_t *menu   = menu_driver_get_ptr();
+   driver_t      *driver = driver_get_ptr();
     
-   if (!menu)
+   if (!menu || !menu->userdata || !gl || !driver)
       return;
 
    glui = (glui_handle_t*)menu->userdata;
+
+   menu_display_free_main_font(menu);
 
    glui_context_bg_destroy(glui);
 }
@@ -591,13 +584,10 @@ static bool glui_load_wallpaper(void *data)
    glui_handle_t *glui = NULL;
    menu_handle_t *menu = menu_driver_get_ptr();
 
-   if (!menu)
+   if (!menu || !menu->userdata)
       return false;
    
    glui = (glui_handle_t*)menu->userdata;
-
-   if (!glui)
-      return false;
    
    glui_context_bg_destroy(glui);
 
@@ -614,14 +604,10 @@ static float glui_get_scroll(void)
    menu_handle_t *menu = menu_driver_get_ptr();
    global_t *global    = global_get_ptr();
 
-   if (!menu)
+   if (!menu || !menu->userdata)
       return 0;
 
    glui = (glui_handle_t*)menu->userdata;
-
-   if (!glui)
-      return 0;
-
    half = (global->video_data.height / glui->line_height) / 2;
 
    if (menu->navigation.selection_ptr < half)
@@ -677,30 +663,19 @@ static void glui_populate_entries(const char *path,
 
 static void glui_context_reset(void)
 {
-   gl_t *gl                               = NULL;
-   glui_handle_t *glui                    = NULL;
-   driver_t *driver                       = driver_get_ptr();
-   menu_handle_t *menu                    = menu_driver_get_ptr();
-   settings_t *settings                   = config_get_ptr();
+   glui_handle_t *glui   = NULL;
+   menu_handle_t *menu   = menu_driver_get_ptr();
+   settings_t *settings  = config_get_ptr();
+   const char *font_path = NULL;
 
-   if (!menu)
+   if (!menu || !menu->userdata || !settings)
       return;
 
-   glui     = (glui_handle_t*)menu->userdata;
+   glui      = (glui_handle_t*)menu->userdata;
+   font_path = settings->video.font_path;
 
-   if (!glui)
-      return;
-
-   gl       = (gl_t*)video_driver_get_ptr(NULL);
-   if (!gl)
-      return;
-
-   menu_display_font_init_first(
-         (const void**)&driver->font_osd_driver,
-         &menu->font.buf,
-         gl,
-         NULL,
-         menu->font.size);
+   if (!menu_display_init_main_font(menu, font_path, menu->font.size))
+      RARCH_WARN("Failed to load font.");
 
    glui_context_bg_destroy(glui);
 
