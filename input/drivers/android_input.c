@@ -32,13 +32,6 @@
 
 #define AKEY_EVENT_NO_ACTION 255
 
-typedef struct
-{
-   float x;
-   float y;
-   float z;
-} sensor_t;
-
 enum
 {
    AXIS_X = 0,
@@ -57,9 +50,6 @@ enum
 typedef struct android_input
 {
    android_input_state_t copy;
-   sensor_t accelerometer_state;
-   ASensorManager *sensorManager;
-   ASensorEventQueue *sensorEventQueue;
    const input_device_driver_t *joypad;
 } android_input_t;
 
@@ -759,9 +749,8 @@ static void android_input_handle_input(android_input_state_t *android)
    }
 }
 
-static void android_input_handle_user(void *data)
+static void android_input_handle_user(android_input_state_t *state)
 {
-   android_input_t    *android     = (android_input_t*)data;
    struct android_app *android_app = (struct android_app*)g_android;
 
    if ((android_app->sensor_state_mask & (1ULL <<
@@ -769,11 +758,11 @@ static void android_input_handle_user(void *data)
          && android_app->accelerometerSensor)
    {
       ASensorEvent event;
-      while (ASensorEventQueue_getEvents(android->sensorEventQueue, &event, 1) > 0)
+      while (ASensorEventQueue_getEvents(android_app->sensorEventQueue, &event, 1) > 0)
       {
-         android->accelerometer_state.x = event.acceleration.x;
-         android->accelerometer_state.y = event.acceleration.y;
-         android->accelerometer_state.z = event.acceleration.z;
+         state->accelerometer_state.x = event.acceleration.x;
+         state->accelerometer_state.y = event.acceleration.y;
+         state->accelerometer_state.z = event.acceleration.z;
       }
    }
 }
@@ -798,7 +787,7 @@ static void android_input_poll(void *data)
             android_input_handle_input(&android_app->thread_state);
             break;
          case LOOPER_ID_USER:
-            android_input_handle_user(data);
+            android_input_handle_user(&android_app->thread_state);
             break;
          case LOOPER_ID_MAIN:
             engine_handle_cmd();
@@ -889,13 +878,11 @@ static bool android_input_key_pressed(void *data, int key)
 
 static void android_input_free_input(void *data)
 {
-   android_input_t *android = (android_input_t*)data;
-   if (!android)
-      return;
+   struct android_app *android_app = (struct android_app*)g_android;
 
-   if (android->sensorManager)
-      ASensorManager_destroyEventQueue(android->sensorManager,
-            android->sensorEventQueue);
+   if (android_app->sensorManager)
+      ASensorManager_destroyEventQueue(android_app->sensorManager,
+            android_app->sensorEventQueue);
 
    free(data);
 }
@@ -912,15 +899,14 @@ static uint64_t android_input_get_capabilities(void *data)
 
 static void android_input_enable_sensor_manager(void *data)
 {
-   android_input_t *android = (android_input_t*)data;
    struct android_app *android_app = (struct android_app*)g_android;
 
-   android->sensorManager = ASensorManager_getInstance();
+   android_app->sensorManager = ASensorManager_getInstance();
    android_app->accelerometerSensor =
-      ASensorManager_getDefaultSensor(android->sensorManager,
+      ASensorManager_getDefaultSensor(android_app->sensorManager,
          ASENSOR_TYPE_ACCELEROMETER);
-   android->sensorEventQueue =
-      ASensorManager_createEventQueue(android->sensorManager,
+   android_app->sensorEventQueue =
+      ASensorManager_createEventQueue(android_app->sensorManager,
          android_app->looper, LOOPER_ID_USER, NULL, NULL);
 }
 
@@ -940,12 +926,12 @@ static bool android_input_set_sensor_state(void *data, unsigned port,
             android_input_enable_sensor_manager(android);
 
          if (android_app->accelerometerSensor)
-            ASensorEventQueue_enableSensor(android->sensorEventQueue,
+            ASensorEventQueue_enableSensor(android_app->sensorEventQueue,
                   android_app->accelerometerSensor);
 
          // events per second (in us).
          if (android_app->accelerometerSensor)
-            ASensorEventQueue_setEventRate(android->sensorEventQueue,
+            ASensorEventQueue_setEventRate(android_app->sensorEventQueue,
                   android_app->accelerometerSensor, (1000L / event_rate)
                   * 1000);
 
@@ -955,7 +941,7 @@ static bool android_input_set_sensor_state(void *data, unsigned port,
 
       case RETRO_SENSOR_ACCELEROMETER_DISABLE:
          if (android_app->accelerometerSensor)
-            ASensorEventQueue_disableSensor(android->sensorEventQueue,
+            ASensorEventQueue_disableSensor(android_app->sensorEventQueue,
                   android_app->accelerometerSensor);
          
          android_app->sensor_state_mask &= ~(1ULL << RETRO_SENSOR_ACCELEROMETER_ENABLE);
@@ -976,11 +962,11 @@ static float android_input_get_sensor_input(void *data,
    switch (id)
    {
       case RETRO_SENSOR_ACCELEROMETER_X:
-         return android->accelerometer_state.x;
+         return android->copy.accelerometer_state.x;
       case RETRO_SENSOR_ACCELEROMETER_Y:
-         return android->accelerometer_state.y;
+         return android->copy.accelerometer_state.y;
       case RETRO_SENSOR_ACCELEROMETER_Z:
-         return android->accelerometer_state.z;
+         return android->copy.accelerometer_state.z;
    }
 
    return 0;

@@ -60,6 +60,13 @@ struct input_pointer
    int16_t full_x, full_y;
 };
 
+typedef struct
+{
+   float x;
+   float y;
+   float z;
+} sensor_t;
+
 typedef struct android_input_state
 {
    int16_t analog_state[MAX_PADS][MAX_AXIS];
@@ -68,6 +75,7 @@ typedef struct android_input_state
    unsigned pads_connected;
    state_device_t pad_states[MAX_PADS];
    struct input_pointer pointer[MAX_TOUCH];
+   sensor_t accelerometer_state;
    unsigned pointer_count;
 } android_input_state_t;
 
@@ -79,6 +87,8 @@ struct android_app
    AInputQueue* pendingInputQueue;
    ANativeWindow* window;
    ANativeWindow* pendingWindow;
+   ASensorManager *sensorManager;
+   ASensorEventQueue *sensorEventQueue;
    slock_t *mutex;
    scond_t *cond;
    int activityState;

@@ -227,6 +227,7 @@ static void android_app_entry(void *data)
 {
    char *argv[1];
    int argc = 0;
+   int ret_iterate;
    struct android_app *android_app = (struct android_app*)data;
 
    memset(&g_android, 0, sizeof(g_android));
@@ -240,7 +241,9 @@ static void android_app_entry(void *data)
    if (rarch_main(argc, argv, android_app) != 0)
       goto end;
 
-   while (rarch_main_iterate() != -1);
+   do{
+      ret_iterate = rarch_main_iterate();
+   }while(ret_iterate != 1);
 
 end:
    main_exit(data);
