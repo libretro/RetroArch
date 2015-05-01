@@ -266,10 +266,10 @@ static INLINE int android_input_poll_event_type_motion(
    if (source & ~(AINPUT_SOURCE_TOUCHSCREEN | AINPUT_SOURCE_MOUSE))
       return 1;
 
-   getaction = AMotionEvent_getAction(event);
-   action = getaction & AMOTION_EVENT_ACTION_MASK;
+   getaction      = AMotionEvent_getAction(event);
+   action         = getaction & AMOTION_EVENT_ACTION_MASK;
    motion_pointer = getaction >> AMOTION_EVENT_ACTION_POINTER_INDEX_SHIFT;
-   keyup = (
+   keyup          = (
          action == AMOTION_EVENT_ACTION_UP ||
          action == AMOTION_EVENT_ACTION_CANCEL ||
          action == AMOTION_EVENT_ACTION_POINTER_UP) ||
@@ -518,11 +518,11 @@ static void handle_hotplug(android_input_state_t *android,
             name_buf, sizeof(settings->input.device_names[*port]));
 
       RARCH_LOG("Port %d: %s.\n", *port, name_buf);
-      params.idx = *port;
       strlcpy(params.name, name_buf, sizeof(params.name));
+      params.idx = *port;
       params.vid = vendorId;
       params.pid = productId;
-      strlcpy(params.driver, android_joypad.ident, sizeof(params.driver));
+      strlcpy(params.driver, "android", sizeof(params.driver));
       input_config_autoconfigure_joypad(&params);
    }
 
@@ -554,12 +554,12 @@ static void android_input_handle_input(android_input_state_t *android)
    /* Read all pending events. */
    while (AInputQueue_getEvent(android_app->inputQueue, &event) >= 0)
    {
-      int32_t handled = 1;
+      int32_t handled   = 1;
       int predispatched = AInputQueue_preDispatchEvent(android_app->inputQueue, event);
-      int source = AInputEvent_getSource(event);
-      int type_event = AInputEvent_getType(event);
-      int id = android_input_get_id(event);
-      int port = android_input_get_id_port(android, id, source);
+      int source        = AInputEvent_getSource(event);
+      int type_event    = AInputEvent_getType(event);
+      int id            = android_input_get_id(event);
+      int port          = android_input_get_id_port(android, id, source);
 
       if (port < 0)
          handle_hotplug(android, android_app,
