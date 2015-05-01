@@ -1571,12 +1571,8 @@ static void xmb_context_reset(void)
 
    fill_pathname_join(fontpath, themepath, "font.ttf", sizeof(fontpath));
 
-   menu_display_font_init_first(
-         (const void**)&driver->font_osd_driver,
-         &menu->font.buf,
-         gl,
-         fontpath,
-         menu->font.size);
+   if (!menu_display_init_main_font(menu, fontpath, menu->font.size))
+      RARCH_WARN("Failed to load font.");
 
    fill_pathname_join(xmb->textures.list[XMB_TEXTURE_SETTINGS].path, iconpath,
          "settings.png", sizeof(xmb->textures.list[XMB_TEXTURE_SETTINGS].path));
@@ -1915,8 +1911,7 @@ static void xmb_context_destroy(void)
       glDeleteTextures(1, &node->content_icon);
    }
 
-   if (menu->font.buf)
-      driver->font_osd_driver->free(menu->font.buf);
+   menu_display_free_main_font(menu);
 }
 
 static void xmb_toggle(bool menu_on)
