@@ -115,15 +115,12 @@ static void engine_handle_dpad_getaxisvalue(
 
 static void engine_handle_cmd(void)
 {
-   int8_t cmd;
    struct android_app *android_app = (struct android_app*)g_android;
    struct android_app_userdata *userdata = (struct android_app_userdata*)g_android_userdata;
    runloop_t *runloop = rarch_main_get_ptr();
    global_t  *global  = global_get_ptr();
    driver_t  *driver  = driver_get_ptr();
-
-   if (read(android_app->msgread, &cmd, sizeof(cmd)) != sizeof(cmd))
-      cmd = -1;
+   int8_t cmd = android_app_read_cmd(android_app);
 
    switch (cmd)
    {

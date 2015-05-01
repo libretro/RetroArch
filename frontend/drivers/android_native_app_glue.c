@@ -20,10 +20,42 @@
 struct android_app *g_android;
 struct android_app_userdata *g_android_userdata;
 
+static void free_saved_state(struct android_app* android_app)
+{
+    slock_lock(android_app->mutex);
+    if (android_app->savedState != NULL)
+    {
+        free(android_app->savedState);
+        android_app->savedState = NULL;
+        android_app->savedStateSize = 0;
+    }
+    slock_unlock(android_app->mutex);
+}
+
 void android_app_write_cmd(struct android_app *android_app, int8_t cmd)
 {
    if (write(android_app->msgwrite, &cmd, sizeof(cmd)) != sizeof(cmd))
       RARCH_ERR("Failure writing android_app cmd: %s\n", strerror(errno));
+}
+
+int8_t android_app_read_cmd(struct android_app *android_app)
+{
+   int8_t cmd;
+   if (read(android_app->msgread, &cmd, sizeof(cmd)) == sizeof(cmd))
+   {
+      switch (cmd)
+      {
+         case APP_CMD_SAVE_STATE:
+            free_saved_state(android_app);
+            break;
+      }
+      return cmd;
+   }
+   else
+   {
+      RARCH_ERR("No data on command pipe.\n");
+   }
+   return 1;
 }
 
 static void android_app_set_input(void *data, AInputQueue* inputQueue)

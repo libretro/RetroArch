@@ -332,6 +332,10 @@ enum
    APP_CMD_DEAD,
 };
 
+void android_app_write_cmd(struct android_app *android_app, int8_t cmd);
+
+int8_t android_app_read_cmd(struct android_app *android_app);
+
 #ifdef __cplusplus
 }
 #endif
