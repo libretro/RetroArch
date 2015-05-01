@@ -87,6 +87,46 @@ end:
    exit(0);
 }
 
+int system_property_get(const char *name, char *value)
+{
+   FILE *pipe;
+   int length = 0;
+   char buffer[PATH_MAX_LENGTH];
+   char cmd[PATH_MAX_LENGTH];
+   char *curpos = NULL;
+
+   snprintf(cmd, sizeof(cmd), "getprop %s", name);
+
+   pipe = popen(cmd, "r");
+
+   if (!pipe)
+   {
+      RARCH_ERR("Could not create pipe.\n");
+      return 0;
+   }
+
+   curpos = value;
+   
+   while (!feof(pipe))
+   {
+      if (fgets(buffer, 128, pipe) != NULL)
+      {
+         int curlen = strlen(buffer);
+
+         memcpy(curpos, buffer, curlen);
+
+         curpos    += curlen;
+         length    += curlen;
+      }
+   }
+
+   *curpos = '\0';
+
+   pclose(pipe);
+
+   return length;
+}
+
 static void frontend_android_get_name(char *name, size_t sizeof_name)
 {
    int len = system_property_get("ro.product.model", name);

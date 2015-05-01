@@ -351,10 +351,67 @@ static void onInputQueueDestroyed(ANativeActivity* activity,
    android_app_set_input((struct android_app*)activity->instance, NULL);
 }
 
+static void process_cmd(struct android_app* app, struct android_poll_source* source)
+{
+   int8_t cmd = android_app_read_cmd(app);
+   android_app_pre_exec_cmd(app, cmd);
+   if (app->onAppCmd != NULL)
+      app->onAppCmd(app, cmd);
+   android_app_post_exec_cmd(app, cmd);
+}
+
+static void process_input(struct android_app* app, struct android_poll_source* source)
+{
+    AInputEvent* event = NULL;
+    int processed = 0;
+
+    while (AInputQueue_getEvent(app->inputQueue, &event) >= 0)
+    {
+       int32_t handled = 0;
+        RARCH_LOG("New input event: type=%d\n", AInputEvent_getType(event));
+        if (AInputQueue_preDispatchEvent(app->inputQueue, event))
+            continue;
+        if (app->onInputEvent != NULL)
+           handled = app->onInputEvent(app, event);
+        AInputQueue_finishEvent(app->inputQueue, event, handled);
+        processed = 1;
+    }
+    if (processed == 0)
+        RARCH_ERR("Failure reading next input event: %s\n", strerror(errno));
+}
+
+static void android_app_destroy(struct android_app* android_app)
+{
+    RARCH_LOG("android_app_destroy!");
+    free_saved_state(android_app);
+    pthread_mutex_lock(&android_app->mutex);
+    if (android_app->inputQueue != NULL)
+        AInputQueue_detachLooper(android_app->inputQueue);
+    AConfiguration_delete(android_app->config);
+    android_app->destroyed = 1;
+    pthread_cond_broadcast(&android_app->cond);
+    pthread_mutex_unlock(&android_app->mutex);
+    /* Can't touch android_app object after this. */
+}
+
 static void *android_app_entry(void *param)
 {
+   ALooper *looper;
    struct android_app* android_app = (struct android_app*)param;
-   ALooper *looper = (ALooper*)ALooper_prepare(ALOOPER_PREPARE_ALLOW_NON_CALLBACKS);
+
+   android_app->config = AConfiguration_new();
+   AConfiguration_fromAssetManager(android_app->config, android_app->activity->assetManager);
+
+   print_cur_config(android_app);
+
+   android_app->cmdPollSource.id        = LOOPER_ID_MAIN;
+   android_app->cmdPollSource.app       = android_app;
+   android_app->cmdPollSource.process   = process_cmd;
+   android_app->inputPollSource.id      = LOOPER_ID_INPUT;
+   android_app->inputPollSource.app     = android_app;
+   android_app->inputPollSource.process = process_input;
+
+   looper = (ALooper*)ALooper_prepare(ALOOPER_PREPARE_ALLOW_NON_CALLBACKS);
    ALooper_addFd(looper, android_app->msgread, LOOPER_ID_MAIN,
          ALOOPER_EVENT_INPUT, NULL, NULL);
    android_app->looper = looper;
@@ -365,6 +422,8 @@ static void *android_app_entry(void *param)
    pthread_mutex_unlock(&android_app->mutex);
 
    android_main(android_app);
+
+   android_app_destroy(android_app);
    return NULL;
 }
 
@@ -436,44 +495,4 @@ void ANativeActivity_onCreate(ANativeActivity* activity,
    activity->callbacks->onInputQueueDestroyed   = onInputQueueDestroyed;
 
    activity->instance = android_app_create(activity, savedState, savedStateSize);
-}
-
-int system_property_get(const char *name, char *value)
-{
-   FILE *pipe;
-   int length = 0;
-   char buffer[PATH_MAX_LENGTH];
-   char cmd[PATH_MAX_LENGTH];
-   char *curpos = NULL;
-
-   snprintf(cmd, sizeof(cmd), "getprop %s", name);
-
-   pipe = popen(cmd, "r");
-
-   if (!pipe)
-   {
-      RARCH_ERR("Could not create pipe.\n");
-      return 0;
-   }
-
-   curpos = value;
-   
-   while (!feof(pipe))
-   {
-      if (fgets(buffer, 128, pipe) != NULL)
-      {
-         int curlen = strlen(buffer);
-
-         memcpy(curpos, buffer, curlen);
-
-         curpos    += curlen;
-         length    += curlen;
-      }
-   }
-
-   *curpos = '\0';
-
-   pclose(pipe);
-
-   return length;
 }
