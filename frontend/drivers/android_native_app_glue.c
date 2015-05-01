@@ -58,6 +58,117 @@ int8_t android_app_read_cmd(struct android_app *android_app)
    return 1;
 }
 
+static void print_cur_config(struct android_app* android_app)
+{
+   char lang[2], country[2];
+   AConfiguration_getLanguage(android_app->config, lang);
+   AConfiguration_getCountry(android_app->config, country);
+
+   RARCH_LOG("Config: mcc=%d mnc=%d lang=%c%c cnt=%c%c orien=%d touch=%d dens=%d "
+         "keys=%d nav=%d keysHid=%d navHid=%d sdk=%d size=%d long=%d "
+         "modetype=%d modenight=%d\n",
+         AConfiguration_getMcc(android_app->config),
+         AConfiguration_getMnc(android_app->config),
+         lang[0], lang[1], country[0], country[1],
+         AConfiguration_getOrientation(android_app->config),
+         AConfiguration_getTouchscreen(android_app->config),
+         AConfiguration_getDensity(android_app->config),
+         AConfiguration_getKeyboard(android_app->config),
+         AConfiguration_getNavigation(android_app->config),
+         AConfiguration_getKeysHidden(android_app->config),
+         AConfiguration_getNavHidden(android_app->config),
+         AConfiguration_getSdkVersion(android_app->config),
+         AConfiguration_getScreenSize(android_app->config),
+         AConfiguration_getScreenLong(android_app->config),
+         AConfiguration_getUiModeType(android_app->config),
+         AConfiguration_getUiModeNight(android_app->config));
+}
+
+void android_app_pre_exec_cmd(struct android_app* android_app, int8_t cmd)
+{
+   switch (cmd)
+   {
+      case APP_CMD_INPUT_CHANGED:
+         RARCH_LOG("APP_CMD_INPUT_CHANGED\n");
+         pthread_mutex_lock(&android_app->mutex);
+         if (android_app->inputQueue != NULL)
+            AInputQueue_detachLooper(android_app->inputQueue);
+         android_app->inputQueue = android_app->pendingInputQueue;
+         if (android_app->inputQueue != NULL)
+         {
+            RARCH_LOG("Attaching input queue to looper");
+            AInputQueue_attachLooper(android_app->inputQueue,
+                  android_app->looper, LOOPER_ID_INPUT, NULL,
+                  &android_app->inputPollSource);
+         }
+         pthread_cond_broadcast(&android_app->cond);
+         pthread_mutex_unlock(&android_app->mutex);
+         break;
+
+      case APP_CMD_INIT_WINDOW:
+         RARCH_LOG("APP_CMD_INIT_WINDOW\n");
+         pthread_mutex_lock(&android_app->mutex);
+         android_app->window = android_app->pendingWindow;
+         pthread_cond_broadcast(&android_app->cond);
+         pthread_mutex_unlock(&android_app->mutex);
+         break;
+
+      case APP_CMD_TERM_WINDOW:
+         RARCH_LOG("APP_CMD_TERM_WINDOW\n");
+         pthread_cond_broadcast(&android_app->cond);
+         break;
+
+      case APP_CMD_RESUME:
+      case APP_CMD_START:
+      case APP_CMD_PAUSE:
+      case APP_CMD_STOP:
+         RARCH_LOG("activityState=%d\n", cmd);
+         pthread_mutex_lock(&android_app->mutex);
+         android_app->activityState = cmd;
+         pthread_cond_broadcast(&android_app->cond);
+         pthread_mutex_unlock(&android_app->mutex);
+         break;
+
+      case APP_CMD_CONFIG_CHANGED:
+         RARCH_LOG("APP_CMD_CONFIG_CHANGED\n");
+         AConfiguration_fromAssetManager(android_app->config,
+               android_app->activity->assetManager);
+         print_cur_config(android_app);
+         break;
+
+      case APP_CMD_DESTROY:
+         RARCH_LOG("APP_CMD_DESTROY\n");
+         android_app->destroyRequested = 1;
+         break;
+   }
+}
+
+void android_app_post_exec_cmd(struct android_app* android_app, int8_t cmd)
+{
+   switch (cmd)
+   {
+      case APP_CMD_TERM_WINDOW:
+         RARCH_LOG("APP_CMD_TERM_WINDOW\n");
+         pthread_mutex_lock(&android_app->mutex);
+         android_app->window = NULL;
+         pthread_cond_broadcast(&android_app->cond);
+         pthread_mutex_unlock(&android_app->mutex);
+         break;
+
+      case APP_CMD_SAVE_STATE:
+         RARCH_LOG("APP_CMD_SAVE_STATE\n");
+         pthread_mutex_lock(&android_app->mutex);
+         android_app->stateSaved = 1;
+         pthread_cond_broadcast(&android_app->cond);
+         pthread_mutex_unlock(&android_app->mutex);
+         break;
+
+      case APP_CMD_RESUME:
+         free_saved_state(android_app);
+         break;
+   }
+}
+
 static void android_app_set_input(void *data, AInputQueue* inputQueue)
 {
    struct android_app *android_app = (struct android_app*)data;
