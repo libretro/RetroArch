@@ -113,7 +113,7 @@ static void engine_handle_dpad_getaxisvalue(
    state->analog_state[port][9] = (int16_t)(gas * 32767.0f);
 }
 
-static void engine_handle_cmd(void)
+void engine_handle_cmd(void)
 {
    struct android_app *android_app = (struct android_app*)g_android;
    struct android_app_userdata *userdata = (struct android_app_userdata*)g_android_userdata;
@@ -586,7 +586,7 @@ static void android_input_handle_input(android_input_state_t *android)
    }
 }
 
-static void android_input_handle_user(android_input_state_t *state)
+void android_input_handle_user(android_input_state_t *state)
 {
    struct android_app_userdata *userdata = (struct android_app_userdata*)g_android_userdata;
 
@@ -604,15 +604,14 @@ static void android_input_handle_user(android_input_state_t *state)
    }
 }
 
-/* Handle all events. If our activity is in pause state,
- * block until we're unpaused.
- */
-static void android_input_poll(void *data)
+void android_main_poll(void *data)
 {
    int ident;
    android_input_t    *android     = (android_input_t*)data;
    struct android_app_userdata *userdata = (struct android_app_userdata*)g_android_userdata;
 
+   /* Handle all events. If our activity is in pause state,
+    * block until we're unpaused. */
    while ((ident = 
             ALooper_pollAll((input_driver_key_pressed(RARCH_PAUSE_TOGGLE))
                ? -1 : 0,
@@ -633,6 +632,11 @@ static void android_input_poll(void *data)
    }
 
    memcpy(&android->copy, &userdata->thread_state, sizeof(android->copy));
+}
+
+static void android_input_poll(void *data)
+{
+   android_main_poll(data);
 }
 
 bool android_run_events(void *data)

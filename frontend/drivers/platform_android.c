@@ -68,7 +68,7 @@ void android_main(struct android_app *android_app)
 {
    char *argv[1];
    int argc = 0;
-   int ret_iterate;
+   int ret_iterate, ret_poll;
 
    g_android          = android_app;
    g_android_userdata = (struct android_app_userdata*)calloc(1, sizeof(*g_android_userdata));
@@ -77,8 +77,9 @@ void android_main(struct android_app *android_app)
       goto end;
 
    do{
+      ret_poll    = 0;
       ret_iterate = rarch_main_iterate();
-   }while(ret_iterate != 1);
+   }while(ret_iterate != -1 && ret_poll != -1);
 
 end:
    main_exit(android_app);
