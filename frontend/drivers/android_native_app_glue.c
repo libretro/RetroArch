@@ -22,14 +22,14 @@ struct android_app_userdata *g_android_userdata;
 
 static void free_saved_state(struct android_app* android_app)
 {
-    slock_lock(android_app->mutex);
+    pthread_mutex_lock(&android_app->mutex);
     if (android_app->savedState != NULL)
     {
         free(android_app->savedState);
         android_app->savedState = NULL;
         android_app->savedStateSize = 0;
     }
-    slock_unlock(android_app->mutex);
+    pthread_mutex_unlock(&android_app->mutex);
 }
 
 void android_app_write_cmd(struct android_app *android_app, int8_t cmd)
@@ -65,14 +65,14 @@ static void android_app_set_input(void *data, AInputQueue* inputQueue)
    if (!android_app)
       return;
 
-   slock_lock(android_app->mutex);
+   pthread_mutex_lock(&android_app->mutex);
    android_app->pendingInputQueue = inputQueue;
    android_app_write_cmd(android_app, APP_CMD_INPUT_CHANGED);
 
    while (android_app->inputQueue != android_app->pendingInputQueue)
-      scond_wait(android_app->cond, android_app->mutex);
+      pthread_cond_wait(&android_app->cond, &android_app->mutex);
 
-   slock_unlock(android_app->mutex);
+   pthread_mutex_unlock(&android_app->mutex);
 }
 
 static void android_app_set_window(void *data, ANativeWindow* window)
@@ -82,7 +82,7 @@ static void android_app_set_window(void *data, ANativeWindow* window)
    if (!android_app)
       return;
 
-   slock_lock(android_app->mutex);
+   pthread_mutex_lock(&android_app->mutex);
    if (android_app->pendingWindow)
       android_app_write_cmd(android_app, APP_CMD_TERM_WINDOW);
 
@@ -92,9 +92,9 @@ static void android_app_set_window(void *data, ANativeWindow* window)
       android_app_write_cmd(android_app, APP_CMD_INIT_WINDOW);
 
    while (android_app->window != android_app->pendingWindow)
-      scond_wait(android_app->cond, android_app->mutex);
+      pthread_cond_wait(&android_app->cond, &android_app->mutex);
 
-   slock_unlock(android_app->mutex);
+   pthread_mutex_unlock(&android_app->mutex);
 }
 
 static void android_app_set_activity_state(void *data, int8_t cmd)
@@ -104,34 +104,36 @@ static void android_app_set_activity_state(void *data, int8_t cmd)
    if (!android_app)
       return;
 
-   slock_lock(android_app->mutex);
+   pthread_mutex_lock(&android_app->mutex);
    android_app_write_cmd(android_app, cmd);
    while (android_app->activityState != cmd
          && android_app->activityState != APP_CMD_DEAD)
-      scond_wait(android_app->cond, android_app->mutex);
-   slock_unlock(android_app->mutex);
+      pthread_cond_wait(&android_app->cond, &android_app->mutex);
+   pthread_mutex_unlock(&android_app->mutex);
 
    if (android_app->activityState == APP_CMD_DEAD)
       RARCH_LOG("RetroArch native thread is dead.\n");
 }
 
+static void android_app_free(struct android_app* android_app)
+{
+    pthread_mutex_lock(&android_app->mutex);
+    android_app_write_cmd(android_app, APP_CMD_DESTROY);
+    while (!android_app->destroyed)
+        pthread_cond_wait(&android_app->cond, &android_app->mutex);
+    pthread_mutex_unlock(&android_app->mutex);
+
+    close(android_app->msgread);
+    close(android_app->msgwrite);
+    pthread_cond_destroy(&android_app->cond);
+    pthread_mutex_destroy(&android_app->mutex);
+    free(android_app);
+}
+
 static void onDestroy(ANativeActivity* activity)
 {
-   struct android_app *android_app = (struct android_app*)activity->instance;
-
-   if (!android_app)
-      return;
-
-   RARCH_LOG("onDestroy: %p\n", activity);
-   sthread_join(android_app->thread);
-   RARCH_LOG("Joined with RetroArch native thread.\n");
-
-   close(android_app->msgread);
-   close(android_app->msgwrite);
-   scond_free(android_app->cond);
-   slock_free(android_app->mutex);
-
-   free(android_app);
+   RARCH_LOG("Destroy: %p\n", activity);
+   android_app_free((struct android_app*)activity->instance);
 }
 
 static void onStart(ANativeActivity* activity)
@@ -153,11 +155,11 @@ static void* onSaveInstanceState(ANativeActivity* activity, size_t* outLen)
    struct android_app* android_app = (struct android_app*)activity->instance;
    void* savedState = NULL;
 
-   slock_lock(android_app->mutex);
+   pthread_mutex_lock(&android_app->mutex);
    android_app->stateSaved = 0;
    android_app_write_cmd(android_app, APP_CMD_SAVE_STATE);
    while (!android_app->stateSaved)
-      scond_wait(android_app->cond, android_app->mutex);
+      pthread_cond_wait(&android_app->cond, &android_app->mutex);
 
    if (android_app->savedState != NULL)
    {
@@ -167,7 +169,7 @@ static void* onSaveInstanceState(ANativeActivity* activity, size_t* outLen)
       android_app->savedStateSize = 0;
    }
 
-   slock_unlock(android_app->mutex);
+   pthread_mutex_unlock(&android_app->mutex);
 
    return savedState;
 }
@@ -238,7 +240,7 @@ static void onInputQueueDestroyed(ANativeActivity* activity,
    android_app_set_input((struct android_app*)activity->instance, NULL);
 }
 
-static void android_app_entry(void *param)
+static void *android_app_entry(void *param)
 {
    struct android_app* android_app = (struct android_app*)param;
    ALooper *looper = (ALooper*)ALooper_prepare(ALOOPER_PREPARE_ALLOW_NON_CALLBACKS);
@@ -246,12 +248,13 @@ static void android_app_entry(void *param)
          ALOOPER_EVENT_INPUT, NULL, NULL);
    android_app->looper = looper;
 
-   slock_lock(android_app->mutex);
+   pthread_mutex_lock(&android_app->mutex);
    android_app->running = 1;
-   scond_broadcast(android_app->cond);
-   slock_unlock(android_app->mutex);
+   pthread_cond_broadcast(&android_app->cond);
+   pthread_mutex_unlock(&android_app->mutex);
 
    android_main(android_app);
+   return NULL;
 }
 
 static struct android_app* android_app_create(ANativeActivity* activity,
@@ -262,8 +265,8 @@ static struct android_app* android_app_create(ANativeActivity* activity,
       calloc(1, sizeof(*android_app));
    android_app->activity = activity;
 
-   android_app->mutex    = slock_new();
-   android_app->cond     = scond_new();
+   pthread_mutex_init(&android_app->mutex, NULL);
+   pthread_cond_init(&android_app->cond, NULL);
 
    if (savedState != NULL)
    {
@@ -280,13 +283,16 @@ static struct android_app* android_app_create(ANativeActivity* activity,
    android_app->msgread  = msgpipe[0];
    android_app->msgwrite = msgpipe[1];
 
-   android_app->thread   = sthread_create(android_app_entry, android_app);
+   pthread_attr_t attr; 
+   pthread_attr_init(&attr);
+   pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+   pthread_create(&android_app->thread, &attr, android_app_entry, android_app);
 
    /* Wait for thread to start. */
-   slock_lock(android_app->mutex);
+   pthread_mutex_lock(&android_app->mutex);
    while (!android_app->running)
-      scond_wait(android_app->cond, android_app->mutex);
-   slock_unlock(android_app->mutex);
+      pthread_cond_wait(&android_app->cond, &android_app->mutex);
+   pthread_mutex_unlock(&android_app->mutex);
 
    /* These are set only for the native activity,
     * and are reset when it ends. */

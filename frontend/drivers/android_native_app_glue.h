@@ -36,7 +36,7 @@
 #define _ANDROID_NATIVE_APP_GLUE_H
 
 #include <poll.h>
-#include <rthreads/rthreads.h>
+#include <pthread.h>
 #include <sched.h>
 
 #include <android/configuration.h>
@@ -183,13 +183,13 @@ struct android_app
 
    /* Below are "private" implementation variables of the glue code. */
 
-   slock_t *mutex;
-   scond_t *cond;
+   pthread_mutex_t mutex;
+   pthread_cond_t cond;
 
    int msgread;
    int msgwrite;
 
-   sthread_t *thread;
+   pthread_t thread;
 
    struct android_poll_source cmdPollSource;
    struct android_poll_source inputPollSource;
