@@ -30,7 +30,7 @@
 #include "../../gfx/font_driver.h"
 #include "../../gfx/video_texture.h"
 #include <compat/posix_string.h>
-#include "retroarch_logger.h"
+#include "../../retroarch_logger.h"
 
 #include "shared.h"
 

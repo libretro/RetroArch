@@ -29,6 +29,48 @@
 
 #include <rthreads/rthreads.h>
 
+#ifndef MAX_AXIS
+#define MAX_AXIS 10
+#endif
+
+#ifndef MAX_PADS
+#define MAX_PADS 8
+#endif
+
+#ifndef MAX_TOUCH
+#define MAX_TOUCH 16
+#endif
+
+#ifndef AKEYCODE_ASSIST
+#define AKEYCODE_ASSIST 219
+#endif
+
+#define LAST_KEYCODE AKEYCODE_ASSIST
+
+typedef struct state_device
+{
+   int id;
+   int port;
+   char name[256];
+} state_device_t;
+
+struct input_pointer
+{
+   int16_t x, y;
+   int16_t full_x, full_y;
+};
+
+typedef struct android_input_state
+{
+   int16_t analog_state[MAX_PADS][MAX_AXIS];
+   int8_t hat_state[MAX_PADS][2];
+   uint8_t pad_state[MAX_PADS][(LAST_KEYCODE + 7) / 8];
+   unsigned pads_connected;
+   state_device_t pad_states[MAX_PADS];
+   struct input_pointer pointer[MAX_TOUCH];
+   unsigned pointer_count;
+} android_input_state_t;
+
 struct android_app
 {
    ANativeActivity* activity;
@@ -57,6 +99,7 @@ struct android_app
    jmethodID getPendingIntentLibretroPath;
    jmethodID getPendingIntentFullPath;
    jmethodID getPendingIntentIME;
+   android_input_state_t thread_state;
 };
 
 enum

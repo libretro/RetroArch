@@ -30,17 +30,7 @@
 #include "../../general.h"
 #include "../../driver.h"
 
-
-#define MAX_TOUCH 16
-#define MAX_PADS 8
-
 #define AKEY_EVENT_NO_ACTION 255
-
-#ifndef AKEYCODE_ASSIST
-#define AKEYCODE_ASSIST 219
-#endif
-
-#define LAST_KEYCODE AKEYCODE_ASSIST
 
 typedef struct
 {
@@ -48,12 +38,6 @@ typedef struct
    float y;
    float z;
 } sensor_t;
-
-struct input_pointer
-{
-   int16_t x, y;
-   int16_t full_x, full_y;
-};
 
 enum
 {
@@ -69,29 +53,10 @@ enum
    AXIS_BRAKE = 23,
 };
 
-#define MAX_AXIS 10
-
-typedef struct state_device
-{
-   int id;
-   int port;
-   char name[256];
-} state_device_t;
-
-typedef struct android_input_state
-{
-   int16_t analog_state[MAX_PADS][MAX_AXIS];
-   int8_t hat_state[MAX_PADS][2];
-   uint8_t pad_state[MAX_PADS][(LAST_KEYCODE + 7) / 8];
-   unsigned pads_connected;
-   state_device_t pad_states[MAX_PADS];
-   struct input_pointer pointer[MAX_TOUCH];
-   unsigned pointer_count;
-} android_input_state_t;
 
 typedef struct android_input
 {
-   android_input_state_t copy, thread;
+   android_input_state_t copy;
    sensor_t accelerometer_state;
    ASensorManager *sensorManager;
    ASensorEventQueue *sensorEventQueue;
@@ -820,6 +785,7 @@ static void android_input_poll(void *data)
 {
    int ident;
    android_input_t    *android     = (android_input_t*)data;
+   struct android_app *android_app = (struct android_app*)g_android;
 
    while ((ident = 
             ALooper_pollAll((input_driver_key_pressed(RARCH_PAUSE_TOGGLE))
@@ -829,7 +795,7 @@ static void android_input_poll(void *data)
       switch (ident)
       {
          case LOOPER_ID_INPUT:
-            android_input_handle_input(&android->thread);
+            android_input_handle_input(&android_app->thread_state);
             break;
          case LOOPER_ID_USER:
             android_input_handle_user(data);
@@ -840,7 +806,7 @@ static void android_input_poll(void *data)
       }
    }
 
-   memcpy(&android->copy, &android->thread, sizeof(android->copy));
+   memcpy(&android->copy, &android_app->thread_state, sizeof(android->copy));
 }
 
 bool android_run_events(void *data)
