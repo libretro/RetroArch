@@ -426,7 +426,7 @@ static void frontend_android_get_environment_settings(int *argc,
 #endif
 }
 
-bool android_run_events(void *data);
+int android_run_events(void *data);
 
 static bool android_input_lookup_name_prekitkat(char *buf,
       int *vendorId, int *productId, size_t size, int id)
@@ -600,7 +600,7 @@ static void frontend_android_init(void *data)
 
    while (!android_app->window)
    {
-      if (!android_run_events(android_app))
+      if (android_run_events(android_app) == -1)
          return;
    }
 

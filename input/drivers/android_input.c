@@ -648,7 +648,7 @@ static void android_input_poll(void *data)
    android_main_poll(data);
 }
 
-bool android_run_events(void *data)
+int android_run_events(void *data)
 {
    global_t *global = global_get_ptr();
    struct android_app *android_app = (struct android_app*)g_android;
@@ -660,9 +660,9 @@ bool android_run_events(void *data)
 
    /* Check if we are exiting. */
    if (global->system.shutdown)
-      return false;
+      return -1;
 
-   return true;
+   return 0;
 }
 
 static int16_t android_input_state(void *data,
