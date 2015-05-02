@@ -81,7 +81,6 @@ struct android_app_userdata
    uint64_t sensor_state_mask;
    char current_ime[PATH_MAX_LENGTH];
    jmethodID getIntent;
-   jmethodID onRetroArchExit;
    jmethodID getStringExtra;
    jmethodID clearPendingIntent;
    jmethodID hasPendingIntent;

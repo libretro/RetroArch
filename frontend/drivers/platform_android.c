@@ -428,28 +428,13 @@ static void frontend_android_get_environment_settings(int *argc,
 
 static void frontend_android_deinit(void *data)
 {
-   JNIEnv *env;
    struct android_app *android_app = (struct android_app*)data;
-   struct android_app_userdata *userdata = 
-      (struct android_app_userdata*)g_android_userdata;
 
    if (!android_app)
       return;
 
    RARCH_LOG("Deinitializing RetroArch ...\n");
    android_app->activityState = APP_CMD_DEAD;
-
-   env = jni_thread_getenv();
-
-   if (env && userdata->onRetroArchExit)
-      CALL_VOID_METHOD(env, android_app->activity->clazz,
-            userdata->onRetroArchExit);
-
-   if (android_app->inputQueue)
-   {
-      RARCH_LOG("Detaching Android input queue looper ...\n");
-      AInputQueue_detachLooper(android_app->inputQueue);
-   }
 }
 
 static void frontend_android_shutdown(bool unused)
@@ -650,8 +635,6 @@ static void frontend_android_init(void *data)
    GET_OBJECT_CLASS(env, class, android_app->activity->clazz);
    GET_METHOD_ID(env, userdata->getIntent, class,
          "getIntent", "()Landroid/content/Intent;");
-   GET_METHOD_ID(env, userdata->onRetroArchExit, class,
-         "onRetroArchExit", "()V");
    CALL_OBJ_METHOD(env, obj, android_app->activity->clazz,
          userdata->getIntent);
 
