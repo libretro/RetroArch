@@ -47,13 +47,13 @@ static void input_autoconfigure_joypad_conf(config_file_t *conf,
    }
 }
 
-static bool input_try_autoconfigure_joypad_from_conf(config_file_t *conf,
+static int input_try_autoconfigure_joypad_from_conf(config_file_t *conf,
       autoconfig_params_t *params, unsigned *match)
 {
    char ident[PATH_MAX_LENGTH], ident_idx[PATH_MAX_LENGTH];
    char input_driver[PATH_MAX_LENGTH];
    int input_vid = 0, input_pid = 0;
-   bool ret = false;
+   int ret = 0;
 
    if (!conf)
       return false;
@@ -79,24 +79,33 @@ static bool input_try_autoconfigure_joypad_from_conf(config_file_t *conf,
    {
       BIT32_SET(*match, AUTODETECT_MATCH_VID);
       BIT32_SET(*match, AUTODETECT_MATCH_PID);
-      ret = true;
+      ret = 1;
    }
 
    /* Check for name match. */
    if (!strcmp(ident_idx, params->name))
    {
       BIT32_SET(*match, AUTODETECT_MATCH_NAME);
-      ret = true;
+      ret = 1;
    }
-
+ 
    /* Check for name match - name starts with ident */
    if (ident[0] != '\0' && !strncmp(params->name, ident, strlen(ident)))
    {
       BIT32_SET(*match, AUTODETECT_MATCH_IDENT);
-      ret = true;
+      ret = 2;
       if (!strcmp(params->driver, input_driver))
           BIT32_SET(*match, AUTODETECT_MATCH_DRIVER);
    }
+   
+   /* Check for name match */
+   if (!strcmp(ident, params->name))
+   {
+      BIT32_SET(*match, AUTODETECT_MATCH_IDENT);
+      ret = 1;
+      if (!strcmp(params->driver, input_driver))
+          BIT32_SET(*match, AUTODETECT_MATCH_DRIVER);
+   }   
 
    return ret;
 }
@@ -128,10 +137,10 @@ static void input_autoconfigure_joypad_add(
    RARCH_LOG("%s\n", msg);
 }
 
-static bool input_autoconfigure_joypad_from_conf(
+static int input_autoconfigure_joypad_from_conf(
       config_file_t *conf, autoconfig_params_t *params)
 {
-   bool ret = false;
+   int ret = 0;
    uint32_t match = 0;
 
    if (!conf)
@@ -152,7 +161,7 @@ static bool input_autoconfigure_joypad_from_conf_dir(
       autoconfig_params_t *params)
 {
    size_t i;
-   bool ret = false;
+   int ret = 0;
    settings_t *settings = config_get_ptr();
    struct string_list *list = settings ? dir_list_new(
          settings->input.autoconfig_dir, "cfg", false) : NULL;
@@ -163,14 +172,16 @@ static bool input_autoconfigure_joypad_from_conf_dir(
    for (i = 0; i < list->size; i++)
    {
       config_file_t *conf = config_file_new(list->elems[i].data);
+      ret = input_autoconfigure_joypad_from_conf(conf, params);
+	  
+	  if (ret == 1)
+		  break;
 
-      if ((ret = input_autoconfigure_joypad_from_conf(conf, params)))
-         break;
    }
 
    string_list_free(list);
 
-   return ret;
+   return ret !=0 ? true : false;
 }
 
 #if defined(HAVE_BUILTIN_AUTOCONFIG)
