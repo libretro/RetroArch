@@ -923,7 +923,68 @@ static void data_runloop_iterate(bool is_thread, data_runloop_t *runloop)
 #endif
 }
 
+
 #ifdef HAVE_THREADS
+static bool rarch_main_data_active(void)
+{
+   bool                  image_active, nbio_active, http_active,
+                         http_conn_active, overlay_active, db_active;
+   bool                  active = false;
+
+   data_runloop_t      *runloop = (data_runloop_t*)rarch_main_data_get_ptr();
+   driver_t             *driver = driver_get_ptr();
+   nbio_handle_t          *nbio = runloop ? &runloop->nbio : NULL;
+#ifdef HAVE_RPNG
+   nbio_image_handle_t   *image = nbio ? &nbio->image : NULL;
+#endif
+#ifdef HAVE_NETWORKING
+   http_handle_t          *http = runloop ? &runloop->http : NULL;
+   struct http_connection_t *http_conn = http ? http->connection.handle : NULL;
+#endif
+#ifdef HAVE_LIBRETRODB
+#ifdef HAVE_MENU
+   menu_handle_t          *menu = menu_driver_get_ptr();
+   database_info_handle_t   *db = menu ? menu->db : NULL;
+   db_active                    = db && db->status != DATABASE_STATUS_NONE;
+   active                       = active || db_active;
+#endif
+#endif
+
+#ifdef HAVE_OVERLAY
+   overlay_active               = driver && driver->overlay && 
+      (driver->overlay->state != OVERLAY_STATUS_ALIVE 
+       && driver->overlay->state != OVERLAY_STATUS_NONE);
+   active                       = active || overlay_active;
+#endif
+#ifdef HAVE_RPNG
+   image_active                 = image && image->handle != NULL;
+   active                       = active || image_active;
+#endif
+   nbio_active                  = nbio->handle != NULL;
+   active                       = active || nbio_active;
+#ifdef HAVE_NETWORKING
+   http_active                  = http && http->handle != NULL;
+   active                       = active || http_active;
+   http_conn_active             = http_conn != NULL;
+   active                       = active || http_conn_active;
+#endif
+
+   (void)active;
+   (void)image_active;
+   (void)nbio_active;
+   (void)http_active;
+   (void)http_conn_active;
+   (void)overlay_active;
+
+#if 0
+   RARCH_LOG("runloop nbio : %d, image: %d, http: %d, http conn: %d, overlay: %d\n", nbio_active, image_active,
+         http_active, http_conn_active, overlay_active);
+   RARCH_LOG("active: %d\n", active);
+#endif
+
+   return active;
+}
+
 static void data_thread_loop(void *data)
 {
    data_runloop_t *runloop = (data_runloop_t*)data;
@@ -948,7 +1009,8 @@ static void data_thread_loop(void *data)
 
       slock_unlock(runloop->lock);
 
-      rarch_sleep(10);
+      if (!rarch_main_data_active())
+         rarch_sleep(10);
    }
 
    RARCH_LOG("[Data Thread]: Stopping data thread.\n");
@@ -1011,6 +1073,7 @@ static void rarch_main_data_nbio_image_upload_iterate(bool is_thread,
    }
 }
 #endif
+
 
 void rarch_main_data_iterate(void)
 {
