@@ -625,10 +625,13 @@ int android_main_poll(void *data)
       switch (ident)
       {
          case LOOPER_ID_INPUT:
-            while (AInputQueue_getEvent(android_app->inputQueue, &event) >= 0)
+            while (AInputQueue_hasEvents(android_app->inputQueue))
             {
-               engine_handle_input(android_app, event);
-               copy_state = true;
+               if (AInputQueue_getEvent(android_app->inputQueue, &event) >= 0)
+               {
+                  engine_handle_input(android_app, event);
+                  copy_state = true;
+               }
             }
             break;
          case LOOPER_ID_USER:
