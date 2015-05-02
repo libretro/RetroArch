@@ -609,6 +609,7 @@ int android_main_poll(void *data)
    int ident, events;
    AInputEvent *event;
    struct android_poll_source *source;
+   bool copy_state = false;
    android_input_t    *android     = (android_input_t*)data;
    struct android_app *android_app = (struct android_app*)g_android;
    struct android_app_userdata *userdata = (struct android_app_userdata*)g_android_userdata;
@@ -624,10 +625,14 @@ int android_main_poll(void *data)
       {
          case LOOPER_ID_INPUT:
             while (AInputQueue_getEvent(android_app->inputQueue, &event) >= 0)
+            {
                engine_handle_input(android_app, event);
+               copy_state = true;
+            }
             break;
          case LOOPER_ID_USER:
             android_input_handle_user(&userdata->thread_state);
+            copy_state = true;
             break;
          case LOOPER_ID_MAIN:
             {
@@ -638,7 +643,8 @@ int android_main_poll(void *data)
       }
    }
 
-   memcpy(&android->copy, &userdata->thread_state, sizeof(android->copy));
+   if (copy_state)
+      memcpy(&android->copy, &userdata->thread_state, sizeof(android->copy));
 
    return 0;
 }
