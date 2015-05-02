@@ -228,7 +228,7 @@ static void *android_app_entry(void *param)
 
    looper = (ALooper*)ALooper_prepare(ALOOPER_PREPARE_ALLOW_NON_CALLBACKS);
    ALooper_addFd(looper, android_app->msgread, LOOPER_ID_MAIN,
-         ALOOPER_EVENT_INPUT, NULL, NULL);
+         ALOOPER_EVENT_INPUT, NULL, &android_app->cmdPollSource);
    android_app->looper = looper;
 
    pthread_mutex_lock(&android_app->mutex);
