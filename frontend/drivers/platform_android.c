@@ -64,16 +64,20 @@ static void jni_thread_destruct(void *value)
    pthread_setspecific(thread_key, NULL);
 }
 
-void android_main(struct android_app *android_app)
+void android_main(struct android_app *state)
 {
    char *argv[1];
    int argc = 0;
    int ret_iterate, ret_poll;
 
-   g_android          = android_app;
+   g_android          = state;
    g_android_userdata = (struct android_app_userdata*)calloc(1, sizeof(*g_android_userdata));
 
-   if (rarch_main(argc, argv, android_app) != 0)
+   state->userData     = g_android_userdata;
+   state->onAppCmd     = engine_handle_cmd;
+   state->onInputEvent = engine_handle_input;
+
+   if (rarch_main(argc, argv, state) != 0)
       goto end;
 
    do{
@@ -82,7 +86,7 @@ void android_main(struct android_app *android_app)
    }while(ret_iterate != -1 && ret_poll != -1);
 
 end:
-   main_exit(android_app);
+   main_exit(state);
 
    if (g_android_userdata)
       free(g_android_userdata);

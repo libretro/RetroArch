@@ -113,14 +113,12 @@ static void engine_handle_dpad_getaxisvalue(
    state->analog_state[port][9] = (int16_t)(gas * 32767.0f);
 }
 
-void engine_handle_cmd(void)
+void engine_handle_cmd(struct android_app *android_app, int32_t cmd)
 {
-   struct android_app *android_app = (struct android_app*)g_android;
    struct android_app_userdata *userdata = (struct android_app_userdata*)g_android_userdata;
    runloop_t *runloop = rarch_main_get_ptr();
    global_t  *global  = global_get_ptr();
    driver_t  *driver  = driver_get_ptr();
-   int8_t cmd = android_app_read_cmd(android_app);
 
    switch (cmd)
    {
@@ -544,46 +542,48 @@ static int android_input_get_id(AInputEvent *event)
    return id;
 }
 
-static void android_input_handle_input(android_input_state_t *android)
+static int32_t engine_handle_input(struct android_app *android_app, AInputEvent *event)
 {
-   AInputEvent *event = NULL;
-   struct android_app *android_app = (struct android_app*)g_android;
    struct android_app_userdata *userdata = (struct android_app_userdata*)g_android_userdata;
+   android_input_state_t *android = &userdata->thread_state;
 
    /* Read all pending events. */
-   while (AInputQueue_getEvent(android_app->inputQueue, &event) >= 0)
+   int32_t handled   = 1;
+   int predispatched = AInputQueue_preDispatchEvent(android_app->inputQueue, event);
+   int source        = AInputEvent_getSource(event);
+   int type_event    = AInputEvent_getType(event);
+   int id            = android_input_get_id(event);
+   int port          = android_input_get_id_port(android, id, source);
+
+   if (port < 0)
+      handle_hotplug(android, userdata,
+            &android->pads_connected, id, source);
+
+   switch (type_event)
    {
-      int32_t handled   = 1;
-      int predispatched = AInputQueue_preDispatchEvent(android_app->inputQueue, event);
-      int source        = AInputEvent_getSource(event);
-      int type_event    = AInputEvent_getType(event);
-      int id            = android_input_get_id(event);
-      int port          = android_input_get_id_port(android, id, source);
-
-      if (port < 0)
-         handle_hotplug(android, userdata,
-               &android->pads_connected, id, source);
-
-      switch (type_event)
-      {
-         case AINPUT_EVENT_TYPE_MOTION:
-            if (android_input_poll_event_type_motion(android, event,
-                     port, source))
-               engine_handle_dpad(android, event, port, source);
-            break;
-         case AINPUT_EVENT_TYPE_KEY:
-            {
-               int keycode = AKeyEvent_getKeyCode(event);
-               android_input_poll_event_type_key(android, android_app,
-                     event, port, keycode, source, type_event, &handled);
-            }
-            break;
-      }
-
-      if (!predispatched)
-         AInputQueue_finishEvent(android_app->inputQueue, event,
-               handled);
+      case AINPUT_EVENT_TYPE_MOTION:
+         if (android_input_poll_event_type_motion(android, event,
+                  port, source))
+         {
+            engine_handle_dpad(android, event, port, source);
+            handled = 0;
+         }
+         break;
+      case AINPUT_EVENT_TYPE_KEY:
+         {
+            int keycode = AKeyEvent_getKeyCode(event);
+            android_input_poll_event_type_key(android, android_app,
+                  event, port, keycode, source, type_event, &handled);
+            handled = 0;
+         }
+         break;
    }
+
+   if (!predispatched)
+      AInputQueue_finishEvent(android_app->inputQueue, event,
+            handled);
+
+   return handled;
 }
 
 void android_input_handle_user(android_input_state_t *state)
@@ -606,8 +606,11 @@ void android_input_handle_user(android_input_state_t *state)
 
 int android_main_poll(void *data)
 {
-   int ident;
+   int ident, events;
+   AInputEvent *event;
+   struct android_poll_source *source;
    android_input_t    *android     = (android_input_t*)data;
+   struct android_app *android_app = (struct android_app*)g_android;
    struct android_app_userdata *userdata = (struct android_app_userdata*)g_android_userdata;
 
    /* Handle all events. If our activity is in pause state,
@@ -615,18 +618,22 @@ int android_main_poll(void *data)
    while ((ident = 
             ALooper_pollAll((input_driver_key_pressed(RARCH_PAUSE_TOGGLE))
                ? -1 : 0,
-               NULL, NULL, NULL)) >= 0)
+               NULL, &events, (void**)&source)) >= 0)
    {
       switch (ident)
       {
          case LOOPER_ID_INPUT:
-            android_input_handle_input(&userdata->thread_state);
+            while (AInputQueue_getEvent(android_app->inputQueue, &event) >= 0)
+               engine_handle_input(android_app, event);
             break;
          case LOOPER_ID_USER:
             android_input_handle_user(&userdata->thread_state);
             break;
          case LOOPER_ID_MAIN:
-            engine_handle_cmd();
+            {
+               int32_t cmd = android_app_read_cmd(android_app);
+               engine_handle_cmd(android_app, cmd);
+            }
             break;
       }
    }
@@ -644,10 +651,12 @@ static void android_input_poll(void *data)
 bool android_run_events(void *data)
 {
    global_t *global = global_get_ptr();
+   struct android_app *android_app = (struct android_app*)g_android;
    int id = ALooper_pollOnce(-1, NULL, NULL, NULL);
+   int32_t cmd = android_app_read_cmd(android_app);
 
    if (id == LOOPER_ID_MAIN)
-      engine_handle_cmd();
+      engine_handle_cmd(android_app, cmd);
 
    /* Check if we are exiting. */
    if (global->system.shutdown)
