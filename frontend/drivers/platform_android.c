@@ -426,16 +426,6 @@ static void frontend_android_get_environment_settings(int *argc,
 #endif
 }
 
-static void frontend_android_deinit(void *data)
-{
-   struct android_app *android_app = (struct android_app*)data;
-
-   if (!android_app)
-      return;
-
-   RARCH_LOG("Deinitializing RetroArch ...\n");
-}
-
 bool android_run_events(void *data);
 
 static bool android_input_lookup_name_prekitkat(char *buf,
@@ -611,10 +601,7 @@ static void frontend_android_init(void *data)
    while (!android_app->window)
    {
       if (!android_run_events(android_app))
-      {
-         frontend_android_deinit(android_app);
          return;
-      }
    }
 
    RARCH_LOG("Android Native Window initialized.\n");
@@ -677,7 +664,7 @@ static enum frontend_architecture frontend_android_get_architecture(void)
 const frontend_ctx_driver_t frontend_ctx_android = {
    frontend_android_get_environment_settings,
    frontend_android_init,
-   frontend_android_deinit,
+   NULL,                         /* deinit */
    NULL,                         /* exitspawn */
    NULL,                         /* process_args */
    NULL,                         /* exec */
