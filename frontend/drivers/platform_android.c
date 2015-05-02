@@ -624,6 +624,11 @@ static void frontend_android_init(void *data)
    if (pthread_key_create(&thread_key, jni_thread_destruct))
       RARCH_ERR("Error initializing pthread_key\n");
 
+   /* These are set only for the native activity,
+    * and are reset when it ends. */
+   ANativeActivity_setWindowFlags(android_app->activity,
+         AWINDOW_FLAG_KEEP_SCREEN_ON | AWINDOW_FLAG_FULLSCREEN, 0);
+
    RARCH_LOG("Waiting for Android Native Window to be initialized ...\n");
 
    while (!android_app->window)

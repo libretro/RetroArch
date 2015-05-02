@@ -29,11 +29,6 @@ static void free_saved_state(struct android_app* android_app)
     pthread_mutex_unlock(&android_app->mutex);
 }
 
-void android_app_write_cmd(struct android_app *android_app, int8_t cmd)
-{
-   if (write(android_app->msgwrite, &cmd, sizeof(cmd)) != sizeof(cmd))
-      RARCH_ERR("Failure writing android_app cmd: %s\n", strerror(errno));
-}
 
 int8_t android_app_read_cmd(struct android_app *android_app)
 {
@@ -166,12 +161,143 @@ void android_app_post_exec_cmd(struct android_app* android_app, int8_t cmd)
    }
 }
 
+void app_dummy(void)
+{
+
+}
+
+static void android_app_destroy(struct android_app* android_app)
+{
+    RARCH_LOG("android_app_destroy!");
+    free_saved_state(android_app);
+    pthread_mutex_lock(&android_app->mutex);
+    if (android_app->inputQueue != NULL)
+        AInputQueue_detachLooper(android_app->inputQueue);
+    AConfiguration_delete(android_app->config);
+    android_app->destroyed = 1;
+    pthread_cond_broadcast(&android_app->cond);
+    pthread_mutex_unlock(&android_app->mutex);
+    /* Can't touch android_app object after this. */
+}
+
+static void process_input(struct android_app* app, struct android_poll_source* source)
+{
+    AInputEvent* event = NULL;
+    int processed = 0;
+
+    while (AInputQueue_getEvent(app->inputQueue, &event) >= 0)
+    {
+       int32_t handled = 0;
+        RARCH_LOG("New input event: type=%d\n", AInputEvent_getType(event));
+        if (AInputQueue_preDispatchEvent(app->inputQueue, event))
+            continue;
+        if (app->onInputEvent != NULL)
+           handled = app->onInputEvent(app, event);
+        AInputQueue_finishEvent(app->inputQueue, event, handled);
+        processed = 1;
+    }
+    if (processed == 0)
+        RARCH_ERR("Failure reading next input event: %s\n", strerror(errno));
+}
+
+static void process_cmd(struct android_app* app, struct android_poll_source* source)
+{
+   int8_t cmd = android_app_read_cmd(app);
+   android_app_pre_exec_cmd(app, cmd);
+   if (app->onAppCmd != NULL)
+      app->onAppCmd(app, cmd);
+   android_app_post_exec_cmd(app, cmd);
+}
+
+static void *android_app_entry(void *param)
+{
+   ALooper *looper;
+   struct android_app* android_app = (struct android_app*)param;
+
+   android_app->config = AConfiguration_new();
+   AConfiguration_fromAssetManager(android_app->config, android_app->activity->assetManager);
+
+   print_cur_config(android_app);
+
+   android_app->cmdPollSource.id        = LOOPER_ID_MAIN;
+   android_app->cmdPollSource.app       = android_app;
+   android_app->cmdPollSource.process   = process_cmd;
+   android_app->inputPollSource.id      = LOOPER_ID_INPUT;
+   android_app->inputPollSource.app     = android_app;
+   android_app->inputPollSource.process = process_input;
+
+   looper = (ALooper*)ALooper_prepare(ALOOPER_PREPARE_ALLOW_NON_CALLBACKS);
+   ALooper_addFd(looper, android_app->msgread, LOOPER_ID_MAIN,
+         ALOOPER_EVENT_INPUT, NULL, NULL);
+   android_app->looper = looper;
+
+   pthread_mutex_lock(&android_app->mutex);
+   android_app->running = 1;
+   pthread_cond_broadcast(&android_app->cond);
+   pthread_mutex_unlock(&android_app->mutex);
+
+   android_main(android_app);
+
+   android_app_destroy(android_app);
+   return NULL;
+}
+
+/* --------------------------------------------------------------------
+ * Native activity interaction (called from main thread)
+ * --------------------------------------------------------------------
+ */
+
+static struct android_app* android_app_create(ANativeActivity* activity,
+        void* savedState, size_t savedStateSize)
+{
+   int msgpipe[2];
+   struct android_app* android_app = (struct android_app*)
+      calloc(1, sizeof(*android_app));
+   android_app->activity = activity;
+
+   pthread_mutex_init(&android_app->mutex, NULL);
+   pthread_cond_init(&android_app->cond, NULL);
+
+   if (savedState != NULL)
+   {
+      android_app->savedState = malloc(savedStateSize);
+      android_app->savedStateSize = savedStateSize;
+      memcpy(android_app->savedState, savedState, savedStateSize);
+   }
+
+   if (pipe(msgpipe))
+   {
+      RARCH_ERR("could not create pipe: %s.\n", strerror(errno));
+      activity->instance = NULL;
+   }
+   android_app->msgread  = msgpipe[0];
+   android_app->msgwrite = msgpipe[1];
+
+   pthread_attr_t attr; 
+   pthread_attr_init(&attr);
+   pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+   pthread_create(&android_app->thread, &attr, android_app_entry, android_app);
+
+   /* Wait for thread to start. */
+   pthread_mutex_lock(&android_app->mutex);
+   while (!android_app->running)
+      pthread_cond_wait(&android_app->cond, &android_app->mutex);
+   pthread_mutex_unlock(&android_app->mutex);
+
+   return android_app;
+}
+
+void android_app_write_cmd(struct android_app *android_app, int8_t cmd)
+{
+   if (write(android_app->msgwrite, &cmd, sizeof(cmd)) != sizeof(cmd))
+      RARCH_ERR("Failure writing android_app cmd: %s\n", strerror(errno));
+}
+
 static void android_app_set_input(void *data, AInputQueue* inputQueue)
 {
    struct android_app *android_app = (struct android_app*)data;
 
-   if (!android_app)
-      return;
+   if (!android_app) return;
 
    pthread_mutex_lock(&android_app->mutex);
    android_app->pendingInputQueue = inputQueue;
@@ -205,13 +331,8 @@ static void android_app_set_window(void *data, ANativeWindow* window)
    pthread_mutex_unlock(&android_app->mutex);
 }
 
-static void android_app_set_activity_state(void *data, int8_t cmd)
+static void android_app_set_activity_state(struct android_app *android_app, int8_t cmd)
 {
-   struct android_app *android_app = (struct android_app*)data;
-
-   if (!android_app)
-      return;
-
    pthread_mutex_lock(&android_app->mutex);
    android_app_write_cmd(android_app, cmd);
    while (android_app->activityState != cmd
@@ -347,131 +468,6 @@ static void onInputQueueDestroyed(ANativeActivity* activity,
    RARCH_LOG("InputQueueDestroyed: %p -- %p\n", activity, queue);
    android_app_set_input((struct android_app*)activity->instance, NULL);
 }
-
-static void process_cmd(struct android_app* app, struct android_poll_source* source)
-{
-   int8_t cmd = android_app_read_cmd(app);
-   android_app_pre_exec_cmd(app, cmd);
-   if (app->onAppCmd != NULL)
-      app->onAppCmd(app, cmd);
-   android_app_post_exec_cmd(app, cmd);
-}
-
-static void process_input(struct android_app* app, struct android_poll_source* source)
-{
-    AInputEvent* event = NULL;
-    int processed = 0;
-
-    while (AInputQueue_getEvent(app->inputQueue, &event) >= 0)
-    {
-       int32_t handled = 0;
-        RARCH_LOG("New input event: type=%d\n", AInputEvent_getType(event));
-        if (AInputQueue_preDispatchEvent(app->inputQueue, event))
-            continue;
-        if (app->onInputEvent != NULL)
-           handled = app->onInputEvent(app, event);
-        AInputQueue_finishEvent(app->inputQueue, event, handled);
-        processed = 1;
-    }
-    if (processed == 0)
-        RARCH_ERR("Failure reading next input event: %s\n", strerror(errno));
-}
-
-static void android_app_destroy(struct android_app* android_app)
-{
-    RARCH_LOG("android_app_destroy!");
-    free_saved_state(android_app);
-    pthread_mutex_lock(&android_app->mutex);
-    if (android_app->inputQueue != NULL)
-        AInputQueue_detachLooper(android_app->inputQueue);
-    AConfiguration_delete(android_app->config);
-    android_app->destroyed = 1;
-    pthread_cond_broadcast(&android_app->cond);
-    pthread_mutex_unlock(&android_app->mutex);
-    /* Can't touch android_app object after this. */
-}
-
-static void *android_app_entry(void *param)
-{
-   ALooper *looper;
-   struct android_app* android_app = (struct android_app*)param;
-
-   android_app->config = AConfiguration_new();
-   AConfiguration_fromAssetManager(android_app->config, android_app->activity->assetManager);
-
-   print_cur_config(android_app);
-
-   android_app->cmdPollSource.id        = LOOPER_ID_MAIN;
-   android_app->cmdPollSource.app       = android_app;
-   android_app->cmdPollSource.process   = process_cmd;
-   android_app->inputPollSource.id      = LOOPER_ID_INPUT;
-   android_app->inputPollSource.app     = android_app;
-   android_app->inputPollSource.process = process_input;
-
-   looper = (ALooper*)ALooper_prepare(ALOOPER_PREPARE_ALLOW_NON_CALLBACKS);
-   ALooper_addFd(looper, android_app->msgread, LOOPER_ID_MAIN,
-         ALOOPER_EVENT_INPUT, NULL, NULL);
-   android_app->looper = looper;
-
-   pthread_mutex_lock(&android_app->mutex);
-   android_app->running = 1;
-   pthread_cond_broadcast(&android_app->cond);
-   pthread_mutex_unlock(&android_app->mutex);
-
-   android_main(android_app);
-
-   android_app_destroy(android_app);
-   return NULL;
-}
-
-static struct android_app* android_app_create(ANativeActivity* activity,
-        void* savedState, size_t savedStateSize)
-{
-   int msgpipe[2];
-   struct android_app* android_app = (struct android_app*)
-      calloc(1, sizeof(*android_app));
-   android_app->activity = activity;
-
-   pthread_mutex_init(&android_app->mutex, NULL);
-   pthread_cond_init(&android_app->cond, NULL);
-
-   if (savedState != NULL)
-   {
-      android_app->savedState = malloc(savedStateSize);
-      android_app->savedStateSize = savedStateSize;
-      memcpy(android_app->savedState, savedState, savedStateSize);
-   }
-
-   if (pipe(msgpipe))
-   {
-      RARCH_ERR("could not create pipe: %s.\n", strerror(errno));
-      activity->instance = NULL;
-   }
-   android_app->msgread  = msgpipe[0];
-   android_app->msgwrite = msgpipe[1];
-
-   pthread_attr_t attr; 
-   pthread_attr_init(&attr);
-   pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-   pthread_create(&android_app->thread, &attr, android_app_entry, android_app);
-
-   /* Wait for thread to start. */
-   pthread_mutex_lock(&android_app->mutex);
-   while (!android_app->running)
-      pthread_cond_wait(&android_app->cond, &android_app->mutex);
-   pthread_mutex_unlock(&android_app->mutex);
-
-   /* These are set only for the native activity,
-    * and are reset when it ends. */
-   ANativeActivity_setWindowFlags(activity, AWINDOW_FLAG_KEEP_SCREEN_ON
-         | AWINDOW_FLAG_FULLSCREEN, 0);
-
-   return android_app;
-}
-
-/*
- * Native activity interaction (called from main thread)
- **/
 
 void ANativeActivity_onCreate(ANativeActivity* activity,
       void* savedState, size_t savedStateSize)
