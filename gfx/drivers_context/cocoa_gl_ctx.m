@@ -382,7 +382,7 @@ static bool cocoagl_gfx_ctx_get_metrics(void *data, enum display_metric_types ty
     float   scale                 = cocoagl_gfx_ctx_get_native_scale();
     CGRect  screen_rect           = [[UIScreen mainScreen] bounds];
     
-    float   display_width         = screen_rect.size.width;
+    //float   display_width         = screen_rect.size.width;
     float   display_height        = screen_rect.size.height;
     float   physical_width        = screen_rect.size.width  * scale;
     float   physical_height       = screen_rect.size.height * scale;

@@ -21,6 +21,8 @@
 #include <string/stdstring.h>
 #include <time.h>
 
+#include "../menu_display.h"
+
 #ifdef HAVE_OPENGL
 #include "../../gfx/drivers/gl_common.h"
 
