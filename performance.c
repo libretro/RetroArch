@@ -484,7 +484,6 @@ uint64_t rarch_get_cpu_features(void)
 
 #elif defined(ANDROID) && defined(ANDROID_ARM)
    uint64_t cpu_flags = android_getCpuFeatures();
-   (void)cpu_flags;
 
 #ifdef __ARM_NEON__
    if (cpu_flags & ANDROID_CPU_ARM_FEATURE_NEON)
@@ -493,6 +492,8 @@ uint64_t rarch_get_cpu_features(void)
       arm_enable_runfast_mode();
    }
 #endif
+   if (cpu_flags & ANDROID_CPU_ARM_FEATURE_VFPv3)
+      cpu |= RETRO_SIMD_VFPV3;
 
 #elif defined(__ARM_NEON__)
    cpu |= RETRO_SIMD_NEON;
@@ -519,6 +520,8 @@ uint64_t rarch_get_cpu_features(void)
    if (cpu & RETRO_SIMD_AVX)    strlcat(buf, " AVX", sizeof(buf));
    if (cpu & RETRO_SIMD_AVX2)   strlcat(buf, " AVX2", sizeof(buf));
    if (cpu & RETRO_SIMD_NEON)   strlcat(buf, " NEON", sizeof(buf));
+   if (cpu & RETRO_SIMD_VFPV3)  strlcat(buf, " VFPv3", sizeof(buf));
+   if (cpu & RETRO_SIMD_VFPV4)  strlcat(buf, " VFPv4", sizeof(buf));
    if (cpu & RETRO_SIMD_VMX)    strlcat(buf, " VMX", sizeof(buf));
    if (cpu & RETRO_SIMD_VMX128) strlcat(buf, " VMX128", sizeof(buf));
    if (cpu & RETRO_SIMD_VFPU)   strlcat(buf, " VFPU", sizeof(buf));

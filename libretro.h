@@ -1127,6 +1127,8 @@ struct retro_log_callback
 #define RETRO_SIMD_VFPU     (1 << 13)
 #define RETRO_SIMD_PS       (1 << 14)
 #define RETRO_SIMD_AES      (1 << 15)
+#define RETRO_SIMD_VFPV3    (1 << 16)
+#define RETRO_SIMD_VFPV4    (1 << 17)
 
 typedef uint64_t retro_perf_tick_t;
 typedef int64_t retro_time_t;
