@@ -327,9 +327,6 @@ enum
     * and waiting for the app thread to clean up and exit before proceeding.
     */
    APP_CMD_DESTROY,
-
-   // Set by thread when it will no longer reply to commands.
-   APP_CMD_DEAD,
 };
 
 void android_app_write_cmd(struct android_app *android_app, int8_t cmd);

@@ -335,13 +335,9 @@ static void android_app_set_activity_state(struct android_app *android_app, int8
 {
    pthread_mutex_lock(&android_app->mutex);
    android_app_write_cmd(android_app, cmd);
-   while (android_app->activityState != cmd
-         && android_app->activityState != APP_CMD_DEAD)
+   while (android_app->activityState != cmd)
       pthread_cond_wait(&android_app->cond, &android_app->mutex);
    pthread_mutex_unlock(&android_app->mutex);
-
-   if (android_app->activityState == APP_CMD_DEAD)
-      RARCH_LOG("RetroArch native thread is dead.\n");
 }
 
 static void android_app_free(struct android_app* android_app)

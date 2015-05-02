@@ -434,14 +434,6 @@ static void frontend_android_deinit(void *data)
       return;
 
    RARCH_LOG("Deinitializing RetroArch ...\n");
-   android_app->activityState = APP_CMD_DEAD;
-}
-
-static void frontend_android_shutdown(bool unused)
-{
-   (void)unused;
-   /* Cleaner approaches don't work sadly. */
-   exit(0);
 }
 
 bool android_run_events(void *data);
@@ -621,7 +613,6 @@ static void frontend_android_init(void *data)
       if (!android_run_events(android_app))
       {
          frontend_android_deinit(android_app);
-         frontend_android_shutdown(android_app);
          return;
       }
    }
@@ -691,7 +682,7 @@ const frontend_ctx_driver_t frontend_ctx_android = {
    NULL,                         /* process_args */
    NULL,                         /* exec */
    NULL,                         /* set_fork */
-   frontend_android_shutdown,
+   NULL,                         /* shutdown */
    frontend_android_get_name,
    frontend_android_get_os,
    frontend_android_get_rating,
