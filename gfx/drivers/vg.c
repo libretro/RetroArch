@@ -202,8 +202,6 @@ static void vg_free(void *data)
       vgDestroyPaint(vg->mPaintBg);
    }
 
-   gfx_ctx_free(vg);
-
    free(vg);
 }
 
