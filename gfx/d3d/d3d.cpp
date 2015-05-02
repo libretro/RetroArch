@@ -851,6 +851,10 @@ static void d3d_free(void *data)
    d3d_free_overlays(d3d);
 #endif
 
+#ifdef _XBOX
+   gfx_ctx_free(d3d);
+#else
+
 #ifdef HAVE_MENU
    d3d_free_overlay(d3d, d3d->menu);
 #endif

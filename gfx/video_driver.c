@@ -17,7 +17,6 @@
 #include <string.h>
 #include <string/string_list.h>
 #include "video_driver.h"
-#include "video_context_driver.h"
 #include "video_thread_wrapper.h"
 #include "video_pixel_converter.h"
 #include "video_monitor.h"
@@ -414,9 +413,6 @@ void uninit_video_input(void)
          (driver->input_data != driver->video_data)
       )
       input_driver_free();
-
-   if (driver->video_context && driver->video_data)
-      gfx_ctx_free(driver->video_data);
 
    if (
          !driver->video_data_own &&

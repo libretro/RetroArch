@@ -1806,6 +1806,8 @@ static void gl_free(void *data)
    }
 #endif
 
+   gfx_ctx_free(gl);
+
    free(gl->empty_buf);
    free(gl->conv_buffer);
    free(gl);
