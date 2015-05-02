@@ -606,6 +606,7 @@ void android_input_handle_user(android_input_state_t *state)
 
 int android_main_poll(void *data)
 {
+   global_t *global = global_get_ptr();
    int ident, events;
    AInputEvent *event;
    struct android_poll_source *source;
@@ -617,8 +618,8 @@ int android_main_poll(void *data)
    /* Handle all events. If our activity is in pause state,
     * block until we're unpaused. */
    while ((ident = 
-            ALooper_pollAll((input_driver_key_pressed(RARCH_PAUSE_TOGGLE))
-               ? -1 : 0,
+            ALooper_pollAll(
+               input_driver_key_pressed(RARCH_PAUSE_TOGGLE) ? -1 : 0,
                NULL, &events, (void**)&source)) >= 0)
    {
       switch (ident)
@@ -643,7 +644,11 @@ int android_main_poll(void *data)
       }
    }
 
-   if (copy_state)
+   /* Check if we are exiting. */
+   if (global && global->system.shutdown)
+      return -1;
+
+   if (copy_state && android)
       memcpy(&android->copy, &userdata->thread_state, sizeof(android->copy));
 
    return 0;
@@ -652,23 +657,6 @@ int android_main_poll(void *data)
 static void android_input_poll(void *data)
 {
    android_main_poll(data);
-}
-
-int android_run_events(void *data)
-{
-   global_t *global = global_get_ptr();
-   struct android_app *android_app = (struct android_app*)g_android;
-   int id = ALooper_pollOnce(-1, NULL, NULL, NULL);
-   int32_t cmd = android_app_read_cmd(android_app);
-
-   if (id == LOOPER_ID_MAIN)
-      engine_handle_cmd(android_app, cmd);
-
-   /* Check if we are exiting. */
-   if (global->system.shutdown)
-      return -1;
-
-   return 0;
 }
 
 static int16_t android_input_state(void *data,
