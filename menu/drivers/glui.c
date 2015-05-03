@@ -672,7 +672,7 @@ static void glui_context_reset(void)
       return;
 
    glui      = (glui_handle_t*)menu->userdata;
-   font_path = settings->video.font_path;
+   font_path = settings->video.font_enable ? settings->video.font_path : NULL;
 
    if (!menu_display_init_main_font(menu, font_path, menu->font.size))
       RARCH_WARN("Failed to load font.");
