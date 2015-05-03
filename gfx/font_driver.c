@@ -87,6 +87,9 @@ bool font_init_first(const void **font_driver, void **font_handle,
       void *video_data, const char *font_path, float font_size,
       enum font_driver_render_api api)
 {
+   if (font_path && !font_path[0])
+      font_path = NULL;
+
    switch (api)
    {
 #ifdef HAVE_D3D

@@ -179,9 +179,6 @@ bool menu_display_init_main_font(menu_handle_t *menu,
    if (menu->font.buf)
       menu_display_free_main_font(menu);
 
-   if (!font_path[0])
-      font_path = NULL;
-
    result = menu_display_font_init_first(
          (const void**)&driver->font_osd_driver, &menu->font.buf, video,
          font_path, font_size);
