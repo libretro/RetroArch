@@ -817,15 +817,15 @@ static void rarch_main_data_overlay_iterate(bool is_thread, data_runloop_t *runl
    if (rarch_main_is_idle())
       return;
 
-   driver = driver_get_ptr();
-
-   if (!driver || !driver->overlay)
-      return;
-
 #ifdef HAVE_THREADS
    if (is_thread)
       slock_lock(runloop->overlay_lock);
 #endif
+
+   driver = driver_get_ptr();
+
+   if (!driver || !driver->overlay)
+      goto end;
 
    switch (driver->overlay->state)
    {
@@ -848,6 +848,7 @@ static void rarch_main_data_overlay_iterate(bool is_thread, data_runloop_t *runl
          break;
    }
 
+end:
 #ifdef HAVE_THREADS
    if (is_thread)
       slock_unlock(runloop->overlay_lock);
@@ -925,13 +926,12 @@ static void data_runloop_iterate(bool is_thread, data_runloop_t *runloop)
 
 
 #ifdef HAVE_THREADS
-static bool rarch_main_data_active(void)
+static bool rarch_main_data_active(data_runloop_t *runloop)
 {
    bool                  image_active, nbio_active, http_active,
                          http_conn_active, overlay_active, db_active;
    bool                  active = false;
 
-   data_runloop_t      *runloop = (data_runloop_t*)rarch_main_data_get_ptr();
    driver_t             *driver = driver_get_ptr();
    nbio_handle_t          *nbio = runloop ? &runloop->nbio : NULL;
 #ifdef HAVE_RPNG
@@ -1007,7 +1007,7 @@ static void data_thread_loop(void *data)
 
       data_runloop_iterate(true, runloop);
 
-      if (!rarch_main_data_active())
+      if (!rarch_main_data_active(runloop))
          rarch_sleep(10);
 
       slock_unlock(runloop->lock);
