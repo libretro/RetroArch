@@ -194,9 +194,9 @@ bool gfx_ctx_get_metrics(enum display_metric_types type, float *value)
 bool gfx_ctx_image_buffer_init(void *data, const video_info_t* info)
 {
    const gfx_ctx_driver_t *ctx = gfx_ctx_get_ptr();
-   if (!ctx)
-      return false;
-   return ctx->image_buffer_init(data, info);
+   if (ctx && ctx->image_buffer_init)
+      return ctx->image_buffer_init(data, info);
+   return false;
 }
 
 bool gfx_ctx_image_buffer_write(void *data, const void *frame, unsigned width,
