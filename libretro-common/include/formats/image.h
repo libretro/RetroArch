@@ -41,6 +41,13 @@ struct texture_image
    uint32_t *pixels;
 };
 
+bool texture_image_set_color_shifts(unsigned *r_shift, unsigned *g_shift,
+      unsigned *b_shift, unsigned *a_shift);
+
+bool texture_image_color_convert(unsigned r_shift,
+      unsigned g_shift, unsigned b_shift, unsigned a_shift,
+      struct texture_image *out_img);
+
 bool texture_image_load(struct texture_image *img, const char *path);
 void texture_image_free(struct texture_image *img);
 

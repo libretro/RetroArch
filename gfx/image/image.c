@@ -62,18 +62,10 @@ bool texture_image_set_color_shifts(unsigned *r_shift, unsigned *g_shift,
    return use_rgba;
 }
 
-#ifdef HAVE_RPNG
-static bool rpng_image_load_argb_shift(const char *path,
-      struct texture_image *out_img,
-      unsigned a_shift, unsigned r_shift,
-      unsigned g_shift, unsigned b_shift)
+bool texture_image_color_convert(unsigned r_shift,
+      unsigned g_shift, unsigned b_shift, unsigned a_shift,
+      struct texture_image *out_img)
 {
-   bool ret = rpng_load_image_argb(path,
-         &out_img->pixels, &out_img->width, &out_img->height);
-
-   if (!ret)
-      return false;
-
    /* This is quite uncommon. */
    if (a_shift != 24 || r_shift != 16 || g_shift != 8 || b_shift != 0)
    {
@@ -91,7 +83,27 @@ static bool rpng_image_load_argb_shift(const char *path,
          pixels[i] = (a << a_shift) |
             (r << r_shift) | (g << g_shift) | (b << b_shift);
       }
+
+      return true;
    }
+
+   return false;
+}
+
+#ifdef HAVE_RPNG
+static bool rpng_image_load_argb_shift(const char *path,
+      struct texture_image *out_img,
+      unsigned a_shift, unsigned r_shift,
+      unsigned g_shift, unsigned b_shift)
+{
+   bool ret = rpng_load_image_argb(path,
+         &out_img->pixels, &out_img->width, &out_img->height);
+
+   if (!ret)
+      return false;
+
+   texture_image_color_convert(r_shift, g_shift, b_shift,
+         a_shift, out_img);
 
    return true;
 }
