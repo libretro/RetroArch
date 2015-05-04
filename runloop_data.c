@@ -307,6 +307,7 @@ static int rarch_main_data_http_iterate_poll(http_handle_t *http)
 #ifdef HAVE_RPNG
 static int cb_image_menu_wallpaper_upload(void *data, size_t len)
 {
+   unsigned r_shift, g_shift, b_shift, a_shift;
    nbio_handle_t *nbio = (nbio_handle_t*)data; 
 
    if (!nbio || !data)
@@ -315,6 +316,12 @@ static int cb_image_menu_wallpaper_upload(void *data, size_t len)
    if (nbio->image.processing_final_state == IMAGE_PROCESS_ERROR ||
          nbio->image.processing_final_state == IMAGE_PROCESS_ERROR_END)
       return -1;
+
+   texture_image_set_color_shifts(&r_shift, &g_shift, &b_shift,
+         &a_shift);
+
+   texture_image_color_convert(r_shift, g_shift, b_shift,
+         a_shift, &nbio->image.ti);
 
    menu_driver_load_background(&nbio->image.ti);
 
