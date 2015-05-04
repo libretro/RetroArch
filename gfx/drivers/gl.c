@@ -1829,7 +1829,7 @@ static void gl_set_nonblock_state(void *data, bool state)
    context_bind_hw_render(gl, true);
 }
 
-static bool resolve_extensions(gl_t *gl)
+static bool resolve_extensions(gl_t *gl, const char *context_ident)
 {
    driver_t *driver     = driver_get_ptr();
    global_t *global     = global_get_ptr();
@@ -1880,9 +1880,12 @@ static bool resolve_extensions(gl_t *gl)
    const char *version = NULL;
    bool gles3          = false;
    unsigned gles_major = 0, gles_minor = 0;
+   /* Videocore hardware supports BGRA8888 extension, but
+    * should be purposefully avoided. */
+   bool is_videocore   = !strcmp(context_ident, "videocore");
 
    /* There are both APPLE and EXT variants. */
-   if (gl_query_extension(gl, "BGRA8888"))
+   if (gl_query_extension(gl, "BGRA8888") && !is_videocore)
       RARCH_LOG("[GL]: BGRA8888 extension found for GLES.\n");
    else
    {
@@ -2284,7 +2287,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
    glBlendEquation(GL_FUNC_ADD);
 
-   if (!resolve_extensions(gl))
+   if (!resolve_extensions(gl, ctx_driver->ident))
       goto error;
 
 #ifdef GL_DEBUG
