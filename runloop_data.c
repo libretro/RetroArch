@@ -1041,9 +1041,11 @@ static void rarch_main_data_thread_init(void)
    if (!runloop->thread)
       goto error;
 
+   slock_lock(runloop->lock);
    runloop->thread_inited   = true;
    runloop->alive           = true;
    runloop->thread_code     = THREAD_CODE_ALIVE;
+   slock_unlock(runloop->lock);
 
    return;
 
