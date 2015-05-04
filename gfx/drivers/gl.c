@@ -1834,11 +1834,15 @@ static bool resolve_extensions(gl_t *gl, const char *context_ident)
    driver_t *driver     = driver_get_ptr();
    global_t *global     = global_get_ptr();
    settings_t *settings = config_get_ptr();
+   const char *vendor   = (const char*)glGetString(GL_VENDOR);
+   const char *renderer = (const char*)glGetString(GL_RENDERER);
+   const char *version  = (const char*)glGetString(GL_VERSION);
     
    (void)global;
+   (void)vendor;
+   (void)renderer;
+   (void)version;
 #ifndef HAVE_OPENGLES
-   const char *vendor   = NULL;
-   const char *renderer = NULL;
    gl->core_context     = 
       (global->system.hw_render_callback.context_type 
        == RETRO_HW_CONTEXT_OPENGL_CORE);
@@ -1860,8 +1864,6 @@ static bool resolve_extensions(gl_t *gl, const char *context_ident)
     * The speed gain from using GL_RGB565 is worth 
     * adding some workarounds for.
     */
-   vendor   = (const char*)glGetString(GL_VENDOR);
-   renderer = (const char*)glGetString(GL_RENDERER);
 
    if (vendor && renderer && (strstr(vendor, "ATI") || strstr(renderer, "ATI")))
       RARCH_LOG("[GL]: ATI card detected, skipping check for GL_RGB565 support.\n");
@@ -1877,7 +1879,6 @@ static bool resolve_extensions(gl_t *gl, const char *context_ident)
 
    driver->gfx_use_rgba = false;
 #ifdef HAVE_OPENGLES2
-   const char *version = NULL;
    bool gles3          = false;
    unsigned gles_major = 0, gles_minor = 0;
 
@@ -1894,7 +1895,6 @@ static bool resolve_extensions(gl_t *gl, const char *context_ident)
    }
 
    
-   version = (const char*)glGetString(GL_VERSION);
 
    /* This format is mandated by GLES. */
    if (version && sscanf(version, "OpenGL ES %u.%u",
