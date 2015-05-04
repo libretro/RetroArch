@@ -48,6 +48,20 @@
 
 #endif
 
+bool texture_image_set_color_shifts(unsigned *r_shift, unsigned *g_shift,
+      unsigned *b_shift, unsigned *a_shift)
+{
+   driver_t *driver     = driver_get_ptr();
+   /* This interface "leak" is very ugly. FIXME: Fix this properly ... */
+   bool use_rgba    = driver ? driver->gfx_use_rgba : false;
+   *a_shift = 24;
+   *r_shift = use_rgba ? 0 : 16;
+   *g_shift = 8;
+   *b_shift = use_rgba ? 16 : 0;
+
+   return use_rgba;
+}
+
 #ifdef HAVE_RPNG
 static bool rpng_image_load_argb_shift(const char *path,
       struct texture_image *out_img,
@@ -355,6 +369,7 @@ error:
    return false;
 }
 
+
 bool texture_image_load(struct texture_image *out_img, const char *path)
 {
    if (!out_img)
@@ -368,22 +383,21 @@ bool texture_image_load(struct texture_image *out_img, const char *path)
 #else
 bool texture_image_load(struct texture_image *out_img, const char *path)
 {
+   bool ret = false;
+   unsigned r_shift, g_shift, b_shift, a_shift;
    driver_t *driver = driver_get_ptr();
 
-   /* This interface "leak" is very ugly. FIXME: Fix this properly ... */
-   bool ret         = false;
-   bool use_rgba    = driver->gfx_use_rgba;
-   unsigned a_shift = 24;
-   unsigned r_shift = use_rgba ? 0 : 16;
-   unsigned g_shift = 8;
-   unsigned b_shift = use_rgba ? 16 : 0;
+   texture_image_set_color_shifts(&r_shift, &g_shift, &b_shift,
+         &a_shift);
+
+   (void)ret;
 
    if (strstr(path, ".tga"))
    {
       void *raw_buf = NULL;
       uint8_t *buf = NULL;
       ssize_t len;
-      bool ret = read_file(path, &raw_buf, &len);
+      ret = read_file(path, &raw_buf, &len);
 
       if (!ret || len < 0)
       {
@@ -418,7 +432,6 @@ bool texture_image_load(struct texture_image *out_img, const char *path)
 #endif
 
 #endif
-
 
    return ret;
 }
