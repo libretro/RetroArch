@@ -1880,12 +1880,11 @@ static bool resolve_extensions(gl_t *gl, const char *context_ident)
    const char *version = NULL;
    bool gles3          = false;
    unsigned gles_major = 0, gles_minor = 0;
-   /* Videocore hardware supports BGRA8888 extension, but
-    * should be purposefully avoided. */
-   bool is_videocore   = !strcmp(context_ident, "videocore");
 
    /* There are both APPLE and EXT variants. */
-   if (gl_query_extension(gl, "BGRA8888") && !is_videocore)
+   /* Videocore hardware supports BGRA8888 extension, but
+    * should be purposefully avoided. */
+   if (gl_query_extension(gl, "BGRA8888") && !strstr(renderer, "VideoCore"))
       RARCH_LOG("[GL]: BGRA8888 extension found for GLES.\n");
    else
    {
