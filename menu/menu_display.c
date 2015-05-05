@@ -208,7 +208,7 @@ void menu_display_unset_viewport(menu_handle_t *menu)
          global->video_data.height, false, true);
 }
 
-void menu_display_setting_label(unsigned i,
+menu_file_list_cbs_t *menu_display_setting_label(unsigned i,
       unsigned *w, unsigned *type,
       const char *label, 
       char *type_str, size_t sizeof_type_str,
@@ -238,4 +238,6 @@ void menu_display_setting_label(unsigned i,
 
    if (entry_label && entry_label_buf != NULL)
       strlcpy(entry_label_buf, entry_label, sizeof_entry_label_buf);
+
+   return cbs;
 }
