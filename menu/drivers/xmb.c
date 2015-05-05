@@ -1002,6 +1002,7 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
       char entry_label_buf[PATH_MAX_LENGTH];
       char type_str[PATH_MAX_LENGTH], path_buf[PATH_MAX_LENGTH];
       char name[PATH_MAX_LENGTH], value[PATH_MAX_LENGTH];
+      const char *entry_label = NULL;
       unsigned type                         = 0;
       unsigned w                            = 0;
       GLuint icon                           = 0;
@@ -1029,6 +1030,7 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
             type_str,        sizeof(type_str),
             path_buf,        sizeof(path_buf),
             entry_label_buf, sizeof(entry_label_buf),
+            entry_label,
             list);
 
       if (type == MENU_FILE_CONTENTLIST_ENTRY)

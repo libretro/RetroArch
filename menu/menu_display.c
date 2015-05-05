@@ -214,9 +214,9 @@ void menu_display_setting_label(unsigned i,
       char *type_str, size_t sizeof_type_str,
       char *path_buf, size_t sizeof_path_buf,
       char *entry_label_buf, size_t sizeof_entry_label_buf,
+      const char *entry_label,
       void *userdata)
 {
-   const char *entry_label = NULL;
    const char *path = NULL;
    menu_file_list_cbs_t *cbs = NULL;
    menu_handle_t *menu      = menu_driver_get_ptr();

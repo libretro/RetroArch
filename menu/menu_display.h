@@ -59,6 +59,7 @@ void menu_display_setting_label(unsigned i,
       char *type_str, size_t sizeof_type_str,
       char *path_buf, size_t sizeof_path_buf,
       char *entry_label_buf, size_t sizeof_entry_label_buf,
+      const char *entry_label,
       void *userdata);
 
 #ifdef __cplusplus

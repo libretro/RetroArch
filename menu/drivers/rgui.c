@@ -491,6 +491,7 @@ static void rgui_render(void)
       char message[PATH_MAX_LENGTH], type_str[PATH_MAX_LENGTH],
            entry_title_buf[PATH_MAX_LENGTH], type_str_buf[PATH_MAX_LENGTH],
            path_buf[PATH_MAX_LENGTH];
+      const char *entry_label = NULL;
       unsigned type = 0;
       unsigned w    = 0;
       bool selected = false;
@@ -501,6 +502,7 @@ static void rgui_render(void)
             type_str, sizeof(type_str),
             path_buf, sizeof(path_buf),
             NULL, 0,
+            entry_label,
             NULL);
 
       selected = (i == menu->navigation.selection_ptr);
