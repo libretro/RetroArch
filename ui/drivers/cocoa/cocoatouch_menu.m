@@ -351,13 +351,12 @@ typedef struct ios_menu_item
    char description[PATH_MAX_LENGTH];
 } ios_menu_item_t;
 
-static id *menu_item_init(ios_menu_item_t *item, unsigned type)
+static void *menu_item_init(ios_menu_item_t *item, unsigned type)
 {
    switch (type)
    {
       case MENU_ITEM_BASIC:
-         return [RAMenuItemBasic itemWithDescription:BOXSTRING(item->description)
-                              action:^{}]
+         return (__bridge void*)[RAMenuItemBasic itemWithDescription:BOXSTRING(item->description) action:^{}];
    }
 
    return nil;
@@ -377,14 +376,14 @@ static id *menu_item_init(ios_menu_item_t *item, unsigned type)
 
 + (id)itemForSetting:(rarch_setting_t*)setting action:(void (^)())action
 {
-   ios_menu_item_t item;
+   ios_menu_item_t menu_item;
 
    switch (setting->type)
    {
       case ST_NONE:
       case ST_ACTION:
-         strlcpy(item.description, "Shouldn't be called with ST_NONE or ST_ACTION", sizeof(item.description));
-         return menu_item_init(&item, MENU_ITEM_BASIC);
+         strlcpy(menu_item.description, "Shouldn't be called with ST_NONE or ST_ACTION", sizeof(menu_item.description));
+         return (__bridge RAMenuItemBasic*)menu_item_init(&menu_item, MENU_ITEM_BASIC);
       case ST_BOOL:
          return [[RAMenuItemBooleanSetting alloc] initWithSetting:setting action:action];
       case ST_INT:
@@ -404,8 +403,8 @@ static id *menu_item_init(ios_menu_item_t *item, unsigned type)
       case ST_END_GROUP:
       case ST_END_SUB_GROUP:
       default:
-         strlcpy(item.description, "Shouldn't be called with ST_GROUP", sizeof(item.description));
-         return menu_item_init(&item, MENU_ITEM_BASIC);
+         strlcpy(menu_item.description, "Shouldn't be called with ST_GROUP", sizeof(menu_item.description));
+         return (__bridge RAMenuItemBasic*)menu_item_init(&menu_item, MENU_ITEM_BASIC);
    }
 
    if (setting->type == ST_STRING && setting->values)
