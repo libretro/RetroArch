@@ -363,7 +363,7 @@ static void file_action(enum file_action action, NSString* source, NSString* tar
    int major, minor;
    NSString* target       = self.selectedItem.path;
    NSString* action       = [actionSheet buttonTitleAtIndex:buttonIndex];
-   const char *action_str = action.UTF8String
+   const char *action_str = action.UTF8String;
     
    get_ios_version(&major, &minor);
     
