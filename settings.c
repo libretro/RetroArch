@@ -6640,3 +6640,15 @@ bool setting_is_of_general_type(rarch_setting_t *setting)
       return true;
    return false;
 }
+
+bool setting_is_of_numeric_type(rarch_setting_t *setting)
+{
+   if    (
+         setting &&
+         (setting->type == ST_INT)  &&
+         (setting->type == ST_UINT) &&
+         (setting->type == ST_FLOAT)
+         )
+      return true;
+   return false;
+}
