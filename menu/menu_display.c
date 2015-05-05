@@ -20,6 +20,7 @@
 #include "../../retroarch.h"
 #include "../../config.def.h"
 #include "../gfx/video_context_driver.h"
+#include "menu_list.h"
 
 bool menu_display_update_pending(void)
 {
@@ -207,28 +208,34 @@ void menu_display_unset_viewport(menu_handle_t *menu)
          global->video_data.height, false, true);
 }
 
-void menu_display_setting_label(unsigned i, unsigned *w,
+void menu_display_setting_label(unsigned i,
+      unsigned *w, unsigned *type,
       const char *label, 
       char *type_str, size_t sizeof_type_str,
-      char *path_buf, size_t sizeof_path_buf)
+      char *path_buf, size_t sizeof_path_buf,
+      char *entry_label_buf, size_t sizeof_entry_label_buf,
+      void *userdata)
 {
-   unsigned type = 0;
-   const char *path = NULL;
    const char *entry_label = NULL;
+   const char *path = NULL;
    menu_file_list_cbs_t *cbs = NULL;
    menu_handle_t *menu      = menu_driver_get_ptr();
+   file_list_t *list        = userdata ? (file_list_t*)userdata 
+      : menu->menu_list->selection_buf;
 
-   menu_list_get_at_offset(menu->menu_list->selection_buf, i, &path,
-         &entry_label, &type);
+   menu_list_get_at_offset(list, i, &path, &entry_label, type);
 
    cbs = (menu_file_list_cbs_t*)
-      menu_list_get_actiondata_at_offset(menu->menu_list->selection_buf,
+      menu_list_get_actiondata_at_offset(list,
             i);
 
    if (cbs && cbs->action_get_representation)
-      cbs->action_get_representation(menu->menu_list->selection_buf,
-            w, type, i, label,
+      cbs->action_get_representation(list,
+            w, *type, i, label,
             type_str, sizeof_type_str, 
             entry_label, path,
             path_buf, sizeof_path_buf);
+
+   if (entry_label && entry_label_buf != NULL)
+      strlcpy(entry_label_buf, entry_label, sizeof_entry_label_buf);
 }

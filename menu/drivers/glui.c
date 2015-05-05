@@ -303,12 +303,17 @@ static void glui_render_menu_list(runloop_t *runloop,
       char message[PATH_MAX_LENGTH], type_str[PATH_MAX_LENGTH],
            entry_title_buf[PATH_MAX_LENGTH], type_str_buf[PATH_MAX_LENGTH],
            path_buf[PATH_MAX_LENGTH];
+      unsigned type             = 0;
       unsigned w                = 0;
       bool selected             = false;
 
-      menu_display_setting_label(i, &w, label,
+      menu_display_setting_label(i,
+            &w, &type,
+            label,
             type_str, sizeof(type_str),
-            path_buf, sizeof(path_buf));
+            path_buf, sizeof(path_buf),
+            NULL, 0,
+            NULL);
 
       selected = (i == menu->navigation.selection_ptr);
 

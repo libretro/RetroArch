@@ -53,10 +53,13 @@ void menu_display_set_viewport(menu_handle_t *menu);
 
 void menu_display_unset_viewport(menu_handle_t *menu);
 
-void menu_display_setting_label(unsigned i, unsigned *w,
+void menu_display_setting_label(unsigned i,
+      unsigned *w, unsigned *type,
       const char *label,
       char *type_str, size_t sizeof_type_str,
-      char *path_buf, size_t sizeof_path_buf);
+      char *path_buf, size_t sizeof_path_buf,
+      char *entry_label_buf, size_t sizeof_entry_label_buf,
+      void *userdata);
 
 #ifdef __cplusplus
 }

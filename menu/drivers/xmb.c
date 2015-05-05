@@ -999,11 +999,11 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
    {
       GLuint texture_switch = 0;
       float icon_x, icon_y;
+      char entry_label_buf[PATH_MAX_LENGTH];
       char type_str[PATH_MAX_LENGTH], path_buf[PATH_MAX_LENGTH];
       char name[PATH_MAX_LENGTH], value[PATH_MAX_LENGTH];
-      const char *path = NULL, *entry_label = NULL;
-      unsigned type = 0, w                  = 0;
-      menu_file_list_cbs_t *cbs             = NULL;
+      unsigned type                         = 0;
+      unsigned w                            = 0;
       GLuint icon                           = 0;
       xmb_node_t *node = (xmb_node_t*)file_list_get_userdata_at_offset(list, i);
       runloop_t *runloop = rarch_main_get_ptr();
@@ -1023,41 +1023,38 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
             icon_y > global->video_data.height + xmb->icon.size)
          continue;
 
-      menu_list_get_at_offset(list, i, &path, &entry_label, &type);
-
-      cbs = (menu_file_list_cbs_t*)menu_list_get_actiondata_at_offset(list, i);
-
-      if (cbs && cbs->action_get_representation)
-         cbs->action_get_representation(list,
-               &w, type, i, label,
-               type_str, sizeof(type_str), 
-               entry_label, path,
-               path_buf, sizeof(path_buf));
+      menu_display_setting_label(i,
+            &w, &type,
+            label,
+            type_str,        sizeof(type_str),
+            path_buf,        sizeof(path_buf),
+            entry_label_buf, sizeof(entry_label_buf),
+            list);
 
       if (type == MENU_FILE_CONTENTLIST_ENTRY)
          strlcpy(path_buf, path_basename(path_buf), sizeof(path_buf));
 
       icon = xmb_icon_get_type(xmb, core_node, type);
 
-      if (!strcmp(entry_label, "core_options"))
+      if (!strcmp(entry_label_buf, "core_options"))
          icon = xmb->textures.list[XMB_TEXTURE_CORE_OPTIONS].id;
-      else if (!strcmp(entry_label, "core_information"))
+      else if (!strcmp(entry_label_buf, "core_information"))
          icon = xmb->textures.list[XMB_TEXTURE_CORE_INFO].id;
-      else if (!strcmp(entry_label, "core_input_remapping_options"))
+      else if (!strcmp(entry_label_buf, "core_input_remapping_options"))
          icon = xmb->textures.list[XMB_TEXTURE_INPUT_REMAPPING_OPTIONS].id;
-      else if (!strcmp(entry_label, "core_cheat_options"))
+      else if (!strcmp(entry_label_buf, "core_cheat_options"))
          icon = xmb->textures.list[XMB_TEXTURE_CHEAT_OPTIONS].id;
-      else if (!strcmp(entry_label, "core_disk_options"))
+      else if (!strcmp(entry_label_buf, "core_disk_options"))
          icon = xmb->textures.list[XMB_TEXTURE_DISK_OPTIONS].id;
-      else if (!strcmp(entry_label, "savestate"))
+      else if (!strcmp(entry_label_buf, "savestate"))
          icon = xmb->textures.list[XMB_TEXTURE_SAVESTATE].id;
-      else if (!strcmp(entry_label, "loadstate"))
+      else if (!strcmp(entry_label_buf, "loadstate"))
          icon = xmb->textures.list[XMB_TEXTURE_LOADSTATE].id;
-      else if (!strcmp(entry_label, "take_screenshot"))
+      else if (!strcmp(entry_label_buf, "take_screenshot"))
          icon = xmb->textures.list[XMB_TEXTURE_SCREENSHOT].id;
-      else if (!strcmp(entry_label, "restart_content"))
+      else if (!strcmp(entry_label_buf, "restart_content"))
          icon = xmb->textures.list[XMB_TEXTURE_RELOAD].id;
-      else if (!strcmp(entry_label, "resume_content"))
+      else if (!strcmp(entry_label_buf, "resume_content"))
          icon = xmb->textures.list[XMB_TEXTURE_RESUME].id;
 
 
