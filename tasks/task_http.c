@@ -24,7 +24,6 @@
 int cb_core_updater_download(void *data_, size_t len);
 int cb_core_updater_list(void *data_, size_t len);
 
-
 static int rarch_main_data_http_con_iterate_transfer(http_handle_t *http)
 {
    if (!net_http_connection_iterate(http->connection.handle))

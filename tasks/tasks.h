@@ -34,10 +34,20 @@ extern "C" {
  * with the transfer on the next frame.
  **/
 void rarch_main_data_http_iterate(bool is_thread,
-void *data);
+   void *data);
 #endif
+
+#ifdef HAVE_RPNG
+void rarch_main_data_nbio_image_iterate(bool is_thread,
+   void *data);
+void rarch_main_data_nbio_image_upload_iterate(bool is_thread,
+   void *data);
+#endif
+
+void rarch_main_data_nbio_iterate(bool is_thread,
+   void *runloop);
     
-    void data_runloop_osd_msg(const char *msg, size_t sizeof_msg);
+void data_runloop_osd_msg(const char *msg, size_t sizeof_msg);
 
 #ifdef __cplusplus
 }

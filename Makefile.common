@@ -98,6 +98,7 @@ OBJ += frontend/frontend.o \
 		command_event.o \
 		runloop.o \
 		runloop_data.o \
+		tasks/task_file_transfer.o \
 		content.o \
 		libretro-common/file/file_list.o \
 		libretro-common/file/dir_list.o \
