@@ -852,7 +852,7 @@ static void *menu_item_init(ios_menu_item_t *item, unsigned type)
                initWithSetting:setting
                         action:^{}]];
       }
-      else if (setting && ST_ACTION < setting->type && setting->type < ST_GROUP)
+      else if (setting_is_of_general_type(setting))
       {
          [everything
             addObject:
