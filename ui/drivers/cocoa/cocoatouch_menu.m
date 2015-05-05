@@ -608,10 +608,7 @@ static void *menu_item_init(ios_menu_item_t *item, unsigned type)
    RAMenuItemPathSetting __weak* weakSelf = self;
    rarch_setting_t *setting = self.setting;
 
-   if (setting && setting->type == ST_ACTION &&
-         setting->flags & SD_FLAG_BROWSER_ACTION &&
-         setting->action_toggle &&
-         setting->change_handler )
+   if (setting_is_of_path_type(setting))
       setting->action_toggle( setting, MENU_ACTION_RIGHT, false);
 
    path = BOXSTRING(setting->value.string);
@@ -847,10 +844,7 @@ static void *menu_item_init(ios_menu_item_t *item, unsigned type)
              entry_label, path,
              path_buf, sizeof(path_buf));
 
-      if (setting && setting->type == ST_ACTION &&
-            setting->flags & SD_FLAG_BROWSER_ACTION &&
-            setting->action_toggle &&
-            setting->change_handler )
+      if (setting_is_of_path_type(setting))
       {
          [everything
             addObject:
