@@ -407,7 +407,7 @@ static void *menu_item_init(ios_menu_item_t *item, unsigned type)
          return (__bridge RAMenuItemBasic*)menu_item_init(&menu_item, MENU_ITEM_BASIC);
    }
 
-   if (setting->type == ST_STRING && setting->values)
+   if (setting_is_of_enum_type(setting))
       return [[RAMenuItemEnumSetting alloc] initWithSetting:setting action:action];
 
    RAMenuItemGeneralSetting* item = [[RAMenuItemGeneralSetting alloc] initWithSetting:setting action:action];
