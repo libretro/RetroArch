@@ -24,7 +24,7 @@
 #include "tasks.h"
 
 #ifdef HAVE_MENU
-#include "menu/menu_driver.h"
+#include "../menu/menu_driver.h"
 
 #ifdef HAVE_RPNG
 static int cb_image_menu_wallpaper_upload(void *data, size_t len)
