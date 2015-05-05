@@ -341,6 +341,28 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 
 @end
 
+enum
+{
+   MENU_ITEM_BASIC = 0,
+};
+
+typedef struct ios_menu_item
+{
+   char description[PATH_MAX_LENGTH];
+} ios_menu_item_t;
+
+static id *menu_item_init(ios_menu_item_t *item, unsigned type)
+{
+   switch (type)
+   {
+      case MENU_ITEM_BASIC:
+         return [RAMenuItemBasic itemWithDescription:BOXSTRING(item->description)
+                              action:^{}]
+   }
+
+   return nil;
+}
+
 /*********************************************/
 /* RAMenuItemGeneralSetting                  */
 /* A simple menu item that displays the      */
@@ -355,32 +377,35 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 
 + (id)itemForSetting:(rarch_setting_t*)setting action:(void (^)())action
 {
-   switch (setting->type) {
+   ios_menu_item_t item;
+
+   switch (setting->type)
+   {
       case ST_NONE:
-    case ST_ACTION:
-    return [RAMenuItemBasic itemWithDescription:BOXSTRING("Shouldn't be called with ST_NONE or ST_ACTION")
-                                         action:^{}];                     
-    case ST_BOOL:
-    return [[RAMenuItemBooleanSetting alloc] initWithSetting:setting action:action];
-    case ST_INT:
-   case ST_UINT:
-  case ST_FLOAT:
-    break;
-  case ST_PATH:
-   case ST_DIR:
-    return [[RAMenuItemPathSetting alloc] initWithSetting:setting action:action];
-   case ST_STRING:
+      case ST_ACTION:
+         strlcpy(item.description, "Shouldn't be called with ST_NONE or ST_ACTION", sizeof(item.description));
+         return menu_item_init(&item, MENU_ITEM_BASIC);
+      case ST_BOOL:
+         return [[RAMenuItemBooleanSetting alloc] initWithSetting:setting action:action];
+      case ST_INT:
+      case ST_UINT:
+      case ST_FLOAT:
+         break;
+      case ST_PATH:
+      case ST_DIR:
+         return [[RAMenuItemPathSetting alloc] initWithSetting:setting action:action];
+      case ST_STRING:
       case ST_HEX:
-    break;
+         break;
       case ST_BIND:
-    return [[RAMenuItemBindSetting alloc] initWithSetting:setting action:action];
+         return [[RAMenuItemBindSetting alloc] initWithSetting:setting action:action];
       case ST_GROUP:
-  case ST_SUB_GROUP:
-  case ST_END_GROUP:
-  case ST_END_SUB_GROUP:
-                default:
-    return [RAMenuItemBasic itemWithDescription:BOXSTRING("Shouldn't be called with ST_*GROUP")
-                                         action:^{}];
+      case ST_SUB_GROUP:
+      case ST_END_GROUP:
+      case ST_END_SUB_GROUP:
+      default:
+         strlcpy(item.description, "Shouldn't be called with ST_GROUP", sizeof(item.description));
+         return menu_item_init(&item, MENU_ITEM_BASIC);
    }
 
    if (setting->type == ST_STRING && setting->values)
