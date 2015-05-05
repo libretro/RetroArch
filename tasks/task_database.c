@@ -40,15 +40,12 @@ static int zlib_compare_crc32(const char *name, const char *valid_exts,
 static int database_info_iterate_rdl_write(
       database_info_handle_t *db, const char *name)
 {
+   int ret = 0;
    char parent_dir[PATH_MAX_LENGTH];
    bool to_continue = (db->list_ptr < db->list->size);
 
    if (!to_continue)
-   {
-      rarch_main_msg_queue_push("Scanning of directory finished.\n", 1, 180, true);
-      db->status = DATABASE_STATUS_FREE;
       return -1;
-   }
 
    path_parent_dir(parent_dir);
 
@@ -72,9 +69,7 @@ static int database_info_iterate_rdl_write(
 
       (void)target_crc;
 
-      if (read_from != 1)
-         return 0;
-      if (ret <= 0)
+      if (read_from != 1 || ret <= 0)
          return 0;
 
       snprintf(msg, sizeof(msg), "%zu/%zu: Scanning %s...\n",
@@ -115,7 +110,11 @@ static int database_info_iterate(database_info_handle_t *db)
          break;
       case DATABASE_TYPE_RDL_WRITE:
          if (database_info_iterate_rdl_write(db, name) != 0)
+         {
+            rarch_main_msg_queue_push("Scanning of directory finished.\n", 0, 180, true);
+            db->status = DATABASE_STATUS_FREE;
             return -1;
+         }
          break;
    }
 
