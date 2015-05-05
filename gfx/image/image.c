@@ -397,7 +397,6 @@ bool texture_image_load(struct texture_image *out_img, const char *path)
 {
    bool ret = false;
    unsigned r_shift, g_shift, b_shift, a_shift;
-   driver_t *driver = driver_get_ptr();
 
    texture_image_set_color_shifts(&r_shift, &g_shift, &b_shift,
          &a_shift);
