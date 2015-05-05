@@ -214,9 +214,8 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
    size_t i;
    RARunActionSheetDelegate* delegate = [[RARunActionSheetDelegate alloc] initWithCallbackBlock:callback];
    UIActionSheet* actionSheet = [UIActionSheet new];
-
-   actionSheet.title = BOXSTRING(title);
-   actionSheet.delegate = delegate;
+   actionSheet.title          = BOXSTRING(title);
+   actionSheet.delegate       = delegate;
 
    for (i = 0; i < items->size; i ++)
       [actionSheet addButtonWithTitle:BOXSTRING(items->elems[i].data)];
@@ -313,10 +312,10 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 + (RAMenuItemBasic*)itemWithDescription:(NSString*)description association:(id)userdata action:(void (^)())action detail:(NSString* (^)())detail
 {
    RAMenuItemBasic* item = [RAMenuItemBasic new];
-   item.description = description;
-   item.userdata = userdata;
-   item.action = action;
-   item.detail = detail;
+   item.description      = description;
+   item.userdata         = userdata;
+   item.action           = action;
+   item.detail           = detail;
    return item;
 }
 
@@ -328,8 +327,8 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
    if (!result)
       result = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleValue1 reuseIdentifier:cell_id];
 
-   result.selectionStyle = UITableViewCellSelectionStyleNone;
-   result.textLabel.text = self.description;
+   result.selectionStyle       = UITableViewCellSelectionStyleNone;
+   result.textLabel.text       = self.description;
    result.detailTextLabel.text = self.detail ? self.detail(self.userdata) : nil;
    return result;
 }
@@ -399,7 +398,8 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 
 - (id)initWithSetting:(rarch_setting_t*)setting action:(void (^)())action
 {
-   if ((self = [super init])) {
+   if ((self = [super init]))
+   {
       _setting = setting;
       _action = action;
    }
@@ -494,14 +494,11 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 
 - (void)resetValue:(UIGestureRecognizer*)gesture
 {
-   struct string_list* items;
-   RAMenuItemGeneralSetting __weak* weakSelf;
+   RAMenuItemGeneralSetting __weak* weakSelf = self;
+   struct string_list *items = string_split("OK", "|");
 
    if (gesture.state != UIGestureRecognizerStateBegan)
       return;
-
-   weakSelf = self;
-   items = (struct string_list*)string_split("OK", "|");
 
    RunActionSheet("Really Reset Value?", items, self.parentTable,
          ^(UIActionSheet* actionSheet, NSInteger buttonIndex)
@@ -641,11 +638,10 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 
 - (void)wasSelectedOnTableView:(UITableView*)tableView ofController:(UIViewController*)controller
 {
-   struct string_list* items;
    RAMenuItemEnumSetting __weak* weakSelf = self;
-   rarch_setting_t *setting = self.setting;
-
-   items = (struct string_list*)string_split(setting->values, "|");
+   rarch_setting_t *setting  = self.setting;
+   struct string_list *items = string_split(setting->values, "|");
+    
    RunActionSheet(setting->short_description, items, self.parentTable,
          ^(UIActionSheet* actionSheet, NSInteger buttonIndex)
          {
@@ -890,9 +886,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 - (void)menuRefresh
 {
    menu_handle_t *menu = menu_driver_get_ptr();
-   if (!menu)
-      return;
-   if (!menu->need_refresh)
+   if (!menu || !menu->need_refresh)
       return;
 
    menu_entries_deferred_push(menu->menu_list->selection_buf,
