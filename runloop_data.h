@@ -20,9 +20,10 @@
 #include <formats/image.h>
 #include <formats/rpng.h>
 #include <queues/message_queue.h>
-#ifdef HAVE_NETWORKING
-#include <net/net_http.h>
+#ifdef HAVE_THREADS
+#include <rthreads/rthreads.h>
 #endif
+#include "tasks/tasks.h"
 
 #ifdef __cplusplus
 extern "C" {
