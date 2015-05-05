@@ -6617,3 +6617,15 @@ error:
 
    return NULL;
 }
+
+bool setting_is_of_path_type(rarch_setting_t *setting)
+{
+   if    (
+         setting &&
+         setting->type == ST_ACTION &&
+         (setting->flags & SD_FLAG_BROWSER_ACTION) &&
+         setting->action_toggle &&
+         setting->change_handler)
+      return true;
+   return false;
+}
