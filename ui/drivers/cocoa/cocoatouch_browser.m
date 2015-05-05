@@ -246,7 +246,7 @@ static void file_action(enum file_action action, NSString* source, NSString* tar
    settings_t         *settings = config_get_ptr();
 
    self.path                    = path;
-   self.title                   = self.path.lastPathComponent;
+   self.title                   = path.lastPathComponent;
 
    /* Need one array per section. */
    self.sections                = [NSMutableArray array];
@@ -255,7 +255,7 @@ static void file_action(enum file_action action, NSString* source, NSString* tar
       [self.sections addObject:[NSMutableArray arrayWithObject:i]];
 
    /* List contents */
-   contents                     = dir_list_new(self.path.UTF8String,
+   contents                     = dir_list_new(path.UTF8String,
          settings->menu.navigation.browser.filter.supported_extensions_enable ? self.extensions.UTF8String : NULL, true);
 
    if (contents)
@@ -444,23 +444,16 @@ static void file_action(enum file_action action, NSString* source, NSString* tar
 {
    if ((self = [super initWithStyle:UITableViewStyleGrouped]))
    {
-      NSString *sourceItem;
-      RAMenuItemBasic *parentItem;
-      NSMutableArray *items;
-      struct string_list* contents;
       RAFoldersList* __weak weakSelf = self;
-      self.path = path;
-
-      /* Parent item */
-      sourceItem = self.path.stringByDeletingLastPathComponent;
-
-      parentItem = [RAMenuItemBasic itemWithDescription:BOXSTRING("<Parent>") association:sourceItem.stringByDeletingLastPathComponent
+      NSString *sourceItem           = path.stringByDeletingLastPathComponent;  /* Parent item */
+      RAMenuItemBasic *parentItem    = [RAMenuItemBasic itemWithDescription:BOXSTRING("<Parent>") association:sourceItem.stringByDeletingLastPathComponent
          action:^(id userdata){ [weakSelf moveInto:userdata]; } detail:NULL];
+      struct string_list *contents   = dir_list_new([path stringByDeletingLastPathComponent].UTF8String, NULL, true);
+      NSMutableArray *items          = [NSMutableArray arrayWithObject:BOXSTRING("")];
+
       [self.sections addObject:@[BOXSTRING(""), parentItem]];
 
-      /* List contents */
-      contents   = dir_list_new([self.path stringByDeletingLastPathComponent].UTF8String, NULL, true);
-      items      = [NSMutableArray arrayWithObject:BOXSTRING("")];
+      self.path = path;
 
       if (contents)
       {
