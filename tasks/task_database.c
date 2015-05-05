@@ -13,8 +13,9 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <file/file_path.h>
-#include "file_ext.h"
 #include <file/dir_list.h>
+#include "../file_ext.h"
+#include "../file_ops.h"
 
 #include "../menu/menu_driver.h"
 
