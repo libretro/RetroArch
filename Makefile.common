@@ -138,6 +138,7 @@ OBJ += frontend/frontend.o \
 		input/input_remapping.o \
 		input/input_sensor.o \
 		input/keyboard_line.o \
+		tasks/task_overlay.o \
 		input/input_overlay.o \
 		patch.o \
 		libretro-common/queues/fifo_buffer.o \

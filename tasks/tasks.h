@@ -50,6 +50,13 @@ void rarch_main_data_db_iterate(bool is_thread, void *data);
 #endif
 #endif
 
+#ifdef HAVE_OVERLAY
+void rarch_main_data_overlay_image_upload_iterate(bool is_thread,
+   void *data);
+
+void rarch_main_data_overlay_iterate(bool is_thread, void *data);
+#endif
+
 void rarch_main_data_nbio_iterate(bool is_thread,
    void *runloop);
     

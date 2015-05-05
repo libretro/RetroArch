@@ -287,6 +287,7 @@ INPUT
 
 #ifdef HAVE_OVERLAY
 #include "../input/input_overlay.c"
+#include "../tasks/task_overlay.c"
 #endif
 
 #if defined(__CELLOS_LV2__)
