@@ -221,17 +221,17 @@ static void file_action(enum file_action action, NSString* source, NSString* tar
 
 - (void)gotoHomeDir
 {
-    [self browseTo:NSHomeDirectory()];
+   [self browseTo:NSHomeDirectory()];
 }
 
 - (void)gotoAppDir
 {
-    [self browseTo:NSBundle.mainBundle.bundlePath];
+   [self browseTo:NSBundle.mainBundle.bundlePath];
 }
 
 - (void)gotoRootDir
 {
-    [self browseTo:@"/"];
+   [self browseTo:@"/"];
 }
 
 - (void)refresh
@@ -343,7 +343,7 @@ static void file_action(enum file_action action, NSString* source, NSString* tar
          get_ios_version(&major, &minor);
           
          button4_name = (major >= 7) ? BOXSTRING("AirDrop") : BOXSTRING("Delete");
-         button5_name = (major >= 7) ? BOXSTRING("Delete") : nil;
+         button5_name = (major >= 7) ? BOXSTRING("Delete")  : nil;
          
          self.selectedItem      = [self itemForIndexPath:idx_path];
          is_zip                 = !(strcmp(self.selectedItem.path.pathExtension.UTF8String, "zip"));
@@ -361,15 +361,16 @@ static void file_action(enum file_action action, NSString* source, NSString* tar
 - (void)actionSheet:(UIActionSheet*)actionSheet clickedButtonAtIndex:(NSInteger)buttonIndex
 {
    int major, minor;
-   NSString* target = self.selectedItem.path;
-   NSString* action = [actionSheet buttonTitleAtIndex:buttonIndex];
+   NSString* target       = self.selectedItem.path;
+   NSString* action       = [actionSheet buttonTitleAtIndex:buttonIndex];
+   const char *action_str = action.UTF8String
     
    get_ios_version(&major, &minor);
     
    (void)major;
    (void)minor;
    
-   if (!strcmp(action.UTF8String, "Unzip"))
+   if (!strcmp(action_str, "Unzip"))
    {
       UIAlertView* alertView              = [[UIAlertView alloc] initWithTitle:BOXSTRING("Enter target directory") message:@"" delegate:self
                                                              cancelButtonTitle:BOXSTRING("Cancel") otherButtonTitles:BOXSTRING("OK"), nil];
@@ -378,9 +379,9 @@ static void file_action(enum file_action action, NSString* source, NSString* tar
       [alertView textFieldAtIndex:0].text = [[target lastPathComponent] stringByDeletingPathExtension];
       [alertView show];
    }
-   else if (!strcmp(action.UTF8String, "Move"))
+   else if (!strcmp(action_str, "Move"))
       [self.navigationController pushViewController:[[RAFoldersList alloc] initWithFilePath:target] animated:YES];
-   else if (!strcmp(action.UTF8String, "Rename"))
+   else if (!strcmp(action_str, "Rename"))
    {
       UIAlertView* alertView              = [[UIAlertView alloc] 
          initWithTitle:BOXSTRING("Enter new name") message:@"" 
@@ -391,7 +392,7 @@ static void file_action(enum file_action action, NSString* source, NSString* tar
       [alertView show];
    }
 #ifdef __IPHONE_7_0
-   else if (!strcmp(action.UTF8String, "AirDrop") && (major >= 7))
+   else if (!strcmp(action_str, "AirDrop") && (major >= 7))
    {
       /* TODO: ZIP if not already zipped. */
       NSURL                    *url = [NSURL fileURLWithPath:self.selectedItem.path isDirectory:self.selectedItem.isDirectory];
@@ -401,13 +402,13 @@ static void file_action(enum file_action action, NSString* source, NSString* tar
       [self presentViewController:avc animated:YES completion:nil];
    }
 #endif
-   else if (!strcmp(action.UTF8String, "Delete"))
+   else if (!strcmp(action_str, "Delete"))
    {
       UIAlertView         *alertView = [[UIAlertView alloc] initWithTitle:BOXSTRING("Really delete?") message:@"" delegate:self cancelButtonTitle:BOXSTRING("Cancel") otherButtonTitles:BOXSTRING("OK"), nil];
       alertView.tag                  = FA_DELETE;
       [alertView show];
    }
-   else if (!strcmp(action.UTF8String, "Cancel")) /* Zip */
+   else if (!strcmp(action_str, "Cancel")) /* Zip */
       apple_display_alert("Action not supported.", "Action Failed");
 }
 
