@@ -39,34 +39,6 @@ static void *rarch_main_data_get_ptr(void)
    return g_data_runloop;
 }
 
-#ifdef HAVE_LIBRETRODB
-#ifdef HAVE_MENU
-static void rarch_main_data_db_iterate(bool is_thread,
-      data_runloop_t *runloop)
-{
-   menu_handle_t             *menu = menu_driver_get_ptr();
-   database_info_handle_t      *db = menu ? menu->db : NULL;
-
-   if (!db || !menu)
-      return;
-
-   switch (db->status)
-   {
-      case DATABASE_STATUS_NONE:
-         break;
-      case DATABASE_STATUS_ITERATE:
-         database_info_iterate(db);
-         break;
-      case DATABASE_STATUS_FREE:
-         database_info_free(db);
-         db = NULL;
-         break;
-   }
-}
-
-#endif
-#endif
-
 #ifdef HAVE_OVERLAY
 static void rarch_main_data_overlay_image_upload_iterate(bool is_thread, data_runloop_t *runloop)
 {

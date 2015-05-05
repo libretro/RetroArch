@@ -692,6 +692,9 @@ NETPLAY
 DATA RUNLOOP
 ============================================================ */
 #include "../tasks/task_file_transfer.c"
+#ifdef HAVE_LIBRETRODB
+#include "../tasks/task_database.c"
+#endif
 
 /*============================================================
 SCREENSHOTS

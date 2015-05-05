@@ -197,7 +197,8 @@ OBJ += libretro-db/bintree.o \
 		 libretro-db/query.o \
 		 libretro-db/rmsgpack.o \
 		 libretro-db/rmsgpack_dom.o \
-		 database_info.o
+		 database_info.o \
+		 tasks/task_database.o 
 endif
 
 # Miscellaneous

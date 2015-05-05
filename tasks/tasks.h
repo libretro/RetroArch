@@ -44,6 +44,12 @@ void rarch_main_data_nbio_image_upload_iterate(bool is_thread,
    void *data);
 #endif
 
+#ifdef HAVE_LIBRETRODB
+#ifdef HAVE_MENU
+void rarch_main_data_db_iterate(bool is_thread, void *data);
+#endif
+#endif
+
 void rarch_main_data_nbio_iterate(bool is_thread,
    void *runloop);
     
