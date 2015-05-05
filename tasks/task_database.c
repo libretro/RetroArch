@@ -40,7 +40,6 @@ static int zlib_compare_crc32(const char *name, const char *valid_exts,
 static int database_info_iterate_rdl_write(
       database_info_handle_t *db, const char *name)
 {
-   int ret = 0;
    char parent_dir[PATH_MAX_LENGTH];
    bool to_continue = (db->list_ptr < db->list->size);
 
