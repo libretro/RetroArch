@@ -491,24 +491,12 @@ static void rgui_render(void)
       char message[PATH_MAX_LENGTH], type_str[PATH_MAX_LENGTH],
            entry_title_buf[PATH_MAX_LENGTH], type_str_buf[PATH_MAX_LENGTH],
            path_buf[PATH_MAX_LENGTH];
-      const char *path = NULL, *entry_label = NULL;
-      unsigned type = 0, w = 0;
+      unsigned w = 0;
       bool selected = false;
-      menu_file_list_cbs_t *cbs = NULL;
 
-      menu_list_get_at_offset(menu->menu_list->selection_buf, i, &path,
-            &entry_label, &type);
-
-      cbs = (menu_file_list_cbs_t*)
-         menu_list_get_actiondata_at_offset(menu->menu_list->selection_buf,
-               i);
-
-      if (cbs && cbs->action_get_representation)
-         cbs->action_get_representation(menu->menu_list->selection_buf,
-               &w, type, i, label,
-               type_str, sizeof(type_str), 
-               entry_label, path,
-               path_buf, sizeof(path_buf));
+      menu_display_setting_label(i, &w, label,
+            type_str, sizeof(type_str),
+            path_buf, sizeof(path_buf));
 
       selected = (i == menu->navigation.selection_ptr);
 

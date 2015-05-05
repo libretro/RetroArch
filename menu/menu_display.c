@@ -206,3 +206,29 @@ void menu_display_unset_viewport(menu_handle_t *menu)
    video_driver_set_viewport(global->video_data.width,
          global->video_data.height, false, true);
 }
+
+void menu_display_setting_label(unsigned i, unsigned *w,
+      const char *label, 
+      char *type_str, size_t sizeof_type_str,
+      char *path_buf, size_t sizeof_path_buf)
+{
+   unsigned type = 0;
+   const char *path = NULL;
+   const char *entry_label = NULL;
+   menu_file_list_cbs_t *cbs = NULL;
+   menu_handle_t *menu      = menu_driver_get_ptr();
+
+   menu_list_get_at_offset(menu->menu_list->selection_buf, i, &path,
+         &entry_label, &type);
+
+   cbs = (menu_file_list_cbs_t*)
+      menu_list_get_actiondata_at_offset(menu->menu_list->selection_buf,
+            i);
+
+   if (cbs && cbs->action_get_representation)
+      cbs->action_get_representation(menu->menu_list->selection_buf,
+            w, type, i, label,
+            type_str, sizeof_type_str, 
+            entry_label, path,
+            path_buf, sizeof_path_buf);
+}
