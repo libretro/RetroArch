@@ -6652,3 +6652,14 @@ bool setting_is_of_numeric_type(rarch_setting_t *setting)
       return true;
    return false;
 }
+
+bool setting_is_of_enum_type(rarch_setting_t *setting)
+{
+   if    (
+         setting &&
+         (setting->type == ST_STRING)  &&
+         setting->values
+         )
+      return true;
+   return false;
+}
