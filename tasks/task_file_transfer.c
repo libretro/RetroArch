@@ -18,6 +18,7 @@
 #include <retro_miscellaneous.h>
 #include <queues/message_queue.h>
 #include <string/string_list.h>
+#include <compat/strl.h>
 
 #include "../runloop_data.h"
 #include "tasks.h"
