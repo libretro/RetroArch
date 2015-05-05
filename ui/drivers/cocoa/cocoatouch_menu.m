@@ -412,9 +412,7 @@ static void *menu_item_init(ios_menu_item_t *item, unsigned type)
 
    RAMenuItemGeneralSetting* item = [[RAMenuItemGeneralSetting alloc] initWithSetting:setting action:action];
 
-   if (item.setting->type == ST_INT  ||
-         item.setting->type == ST_UINT ||
-         item.setting->type == ST_FLOAT)
+   if (setting_is_of_numeric_type(item.setting))
       item.formatter = [[RANumberFormatter alloc] initWithSetting:item.setting];
 
    return item;
