@@ -307,8 +307,9 @@ static void glui_render_menu_list(runloop_t *runloop,
       unsigned type             = 0;
       unsigned w                = 0;
       bool selected             = false;
+      menu_file_list_cbs_t *cbs = NULL;
 
-      menu_display_setting_label(i,
+      menu_display_setting_label(cbs, i,
             &w, &type,
             label,
             type_str, sizeof(type_str),

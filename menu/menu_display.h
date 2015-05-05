@@ -53,7 +53,9 @@ void menu_display_set_viewport(menu_handle_t *menu);
 
 void menu_display_unset_viewport(menu_handle_t *menu);
 
-menu_file_list_cbs_t *menu_display_setting_label(unsigned i,
+void menu_display_setting_label(
+      menu_file_list_cbs_t *cbs,
+      unsigned i,
       unsigned *w, unsigned *type,
       const char *label,
       char *type_str, size_t sizeof_type_str,
