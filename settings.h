@@ -345,6 +345,8 @@ rarch_setting_t* setting_new(unsigned mask);
 
 bool setting_is_of_path_type(rarch_setting_t *setting);
 
+bool setting_is_of_general_type(rarch_setting_t *setting);
+
 #ifdef __cplusplus
 }
 #endif
