@@ -819,6 +819,37 @@ static void *menu_item_init(ios_menu_item_t *item, unsigned type)
      apple_display_alert(menu->message_contents, NULL);
 }
 
+- (void) set_leftbutton:(NSString *)title target:(id)target action:(SEL)action
+{
+  self.navigationItem.leftBarButtonItem =
+    [[UIBarButtonItem alloc]
+           initWithTitle:title
+                   style:UIBarButtonItemStyleBordered
+                  target:target
+                  action:action];
+}
+
+// JM: This could go down into RA
+void get_core_title(char *title_msg, size_t title_msg_len)
+{
+   global_t *global          = global_get_ptr();
+   const char *core_name     = global->menu.info.library_name;
+   const char *core_version  = global->menu.info.library_version;
+   
+   if (!core_name)
+     core_name = global->system.info.library_name;
+   if (!core_name)
+     core_name = "No Core";
+
+   if (!core_version)
+     core_version = global->system.info.library_version;
+   if (!core_version)
+     core_version = "";
+
+   snprintf(title_msg, title_msg_len, "%s - %s %s", PACKAGE_VERSION,
+            core_name, core_version);
+}
+
 - (NSObject<RAMenuItemBase>*)make_menu_item_for_entry: (uint) i
 {
   menu_handle_t *menu       = menu_driver_get_ptr();
