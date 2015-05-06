@@ -809,30 +809,38 @@ void get_core_title(char *title_msg, size_t title_msg_len)
     (menu->list_settings,
      menu->menu_list->selection_buf->list[i].label);
 
-  if (setting && setting->type == ST_ACTION &&
-      setting->flags & SD_FLAG_BROWSER_ACTION &&
-      setting->action_toggle &&
-      setting->change_handler) {
+  if (setting_is_of_path_type(setting))
+  {
     return [[RAMenuItemPathSetting alloc]
                        initWithSetting:setting
                                 action:^{}];
-  } else if (setting && setting->type == ST_BOOL ) {
+  }
+  else if (setting && setting->type == ST_BOOL )
+  {
     return [[RAMenuItemBooleanSetting alloc]
                initWithSetting:setting
                         action:^{[weakSelf menuSelect: i];}];
-  } else if (setting && ST_PATH <= setting->type && setting->type <= ST_DIR) {
+  }
+  else if (setting && ST_PATH <= setting->type && setting->type <= ST_DIR)
+  {
     return [[RAMenuItemPathSetting alloc]
                initWithSetting:setting
                         action:^{[weakSelf menuSelect: i];}];
-  } else if (setting && setting->type == ST_BIND ) {
+  }
+  else if (setting && setting->type == ST_BIND )
+  {
     return [[RAMenuItemBindSetting alloc]
                initWithSetting:setting
                         action:^{[weakSelf menuSelect: i];}];
-  } else if (setting && setting->type == ST_STRING && setting->values ) {
+  }
+  else if (setting_is_of_enum_type(setting))
+  {
     return [[RAMenuItemEnumSetting alloc]
              initWithSetting:setting
                       action:^{[weakSelf menuSelect: i];}];
-  } else if (setting && ST_INT <= setting->type && setting->type <= ST_HEX) {
+  }
+  else if (setting && ST_INT <= setting->type && setting->type <= ST_HEX)
+  {
     RAMenuItemGeneralSetting* item =
       [[RAMenuItemGeneralSetting alloc]
         initWithSetting:setting
@@ -844,11 +852,14 @@ void get_core_title(char *title_msg, size_t title_msg_len)
       item.formatter = [[RANumberFormatter alloc] initWithSetting:item.setting];
    
     return item;
-  } else { // This is for ST_GROUP/etc
+  }
+  else
+  { // This is for ST_GROUP/etc
     cbs = (menu_file_list_cbs_t*)
       menu_list_get_actiondata_at_offset(menu->menu_list->selection_buf, i);
   
-    if (cbs && cbs->action_get_representation) {
+    if (cbs && cbs->action_get_representation)
+    {
       cbs->action_get_representation
         (menu->menu_list->selection_buf,
          &w, type, i, label,
@@ -865,14 +876,16 @@ void get_core_title(char *title_msg, size_t title_msg_len)
 
 - (void)menuSelect: (uint) i
 {
-  if (menu_select_entry(i)) {
+  if (menu_select_entry(i))
+  {
     [self menuRefresh];
     [self reloadData];
   }
 }
 
 // JM: This could be moved down to RA
-uint menu_select_entry(uint i) {
+uint menu_select_entry(uint i)
+{
   menu_handle_t *menu       = menu_driver_get_ptr();
   rarch_setting_t *setting;
   menu_file_list_cbs_t *cbs = NULL;
