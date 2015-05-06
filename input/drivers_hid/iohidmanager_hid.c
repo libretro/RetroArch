@@ -303,7 +303,7 @@ static void iohidmanager_hid_device_add(void *data, IOReturn result,
    ret = IOHIDDeviceOpen(device, kIOHIDOptionsTypeNone);
 
    if (ret != kIOReturnSuccess)
-      goto error;
+      return;
 
    /* Move the device's run loop to this thread. */
    IOHIDDeviceScheduleWithRunLoop(device, CFRunLoopGetCurrent(),
@@ -321,6 +321,9 @@ static void iohidmanager_hid_device_add(void *data, IOReturn result,
    adapter->slot = pad_connection_pad_init(hid->slots,
          adapter->name, dev_vid, dev_pid, adapter, &iohidmanager_hid_device_send_control);
 
+   if (adapter->slot == -1)
+       return;
+
    if (pad_connection_has_interface(hid->slots, adapter->slot))
       IOHIDDeviceRegisterInputReportCallback(device,
             adapter->data + 1, sizeof(adapter->data) - 1,
@@ -337,9 +340,6 @@ static void iohidmanager_hid_device_add(void *data, IOReturn result,
 
    iohidmanager_hid_device_add_autodetect(adapter->slot,
          adapter->name, iohidmanager_hid.ident, dev_vid, dev_pid);
-
-error:
-   return;
 }
 
 static void iohidmanager_hid_append_matching_dictionary(CFMutableArrayRef array,
@@ -430,6 +430,7 @@ static void *iohidmanager_hid_init(void)
       goto error;
 
    hid_apple->slots = (joypad_connection_t*)pad_connection_init(MAX_USERS);
+
 
    return hid_apple;
 

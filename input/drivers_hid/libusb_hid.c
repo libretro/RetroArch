@@ -253,6 +253,9 @@ static int add_adapter(void *data, struct libusb_device *dev)
    adapter->slot = pad_connection_pad_init(hid->slots,
          device_name, desc.idVendor, desc.idProduct, adapter, &libusb_hid_device_send_control);
 
+   if (adapter->slot == -1)
+      goto error;
+
    if (!pad_connection_has_interface(hid->slots, adapter->slot))
    {
       fprintf(stderr, " Interface not found (%s).\n", adapter->name);
