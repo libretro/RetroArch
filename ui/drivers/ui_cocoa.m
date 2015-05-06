@@ -45,6 +45,8 @@ void apple_rarch_exited(void)
    NSEventType event_type;
    cocoa_input_data_t *apple = NULL;
    driver_t *driver = driver_get_ptr();
+   if (!driver)
+      return;
    [super sendEvent:event];
 
    apple = (cocoa_input_data_t*)driver->input_data;
