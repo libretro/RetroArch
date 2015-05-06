@@ -928,6 +928,65 @@ void get_core_title(char *title_msg, size_t title_msg_len)
     }
 }
 
+- (void)menuSelect: (uint) i
+{
+  if (menu_select_entry(i)) {
+    [self menuRefresh];
+    [self reloadData];
+  }
+}
+
+// JM: This could be moved down to RA
+uint menu_select_entry(uint i) {
+  menu_handle_t *menu       = menu_driver_get_ptr();
+  rarch_setting_t *setting;
+  menu_file_list_cbs_t *cbs = NULL;
+  const char *path = NULL, *entry_label = NULL;
+  unsigned type = 0;
+  const char *dir           = NULL;
+  const char *label         = NULL;
+  unsigned menu_type        = 0;
+
+  menu_list_get_last_stack(menu->menu_list, &dir, &label, &menu_type);
+
+  menu_list_get_at_offset(menu->menu_list->selection_buf, i, &path,
+                          &entry_label, &type);
+
+  setting =
+    (rarch_setting_t*)setting_find_setting
+    (menu->list_settings,
+     menu->menu_list->selection_buf->list[i].label);
+
+  cbs = (menu_file_list_cbs_t*)
+    menu_list_get_actiondata_at_offset(menu->menu_list->selection_buf, i);
+  
+  if (setting && setting->type == ST_ACTION &&
+      setting->flags & SD_FLAG_BROWSER_ACTION &&
+      setting->action_toggle &&
+      setting->change_handler) {
+    return FALSE;
+  } else if (setting && ST_ACTION < setting->type && setting->type < ST_GROUP) {
+    menu->navigation.selection_ptr = i;
+    if (cbs && cbs->action_ok)
+      cbs->action_ok(path, entry_label, type, i);
+    
+    return FALSE;
+  } else {
+    menu->navigation.selection_ptr = i;
+    if (cbs && cbs->action_ok) {
+      cbs->action_ok(path, entry_label, type, i);
+    } else {
+      if (cbs && cbs->action_start)
+        cbs->action_start(type, entry_label, MENU_ACTION_START);
+      if (cbs && cbs->action_toggle)
+        cbs->action_toggle(type, entry_label, MENU_ACTION_RIGHT, true);
+      menu_list_push_stack(menu->menu_list, "",
+                           "info_screen", 0, i);
+    }
+    return TRUE;
+  }
+}
+
 - (void)menuRefresh
 {
    menu_handle_t *menu = menu_driver_get_ptr();
