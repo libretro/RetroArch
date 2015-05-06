@@ -16,6 +16,7 @@
 
 #include <objc/runtime.h>
 
+#include <boolean.h>
 #include <file/file_path.h>
 #include <retro_miscellaneous.h>
 
@@ -901,13 +902,13 @@ uint menu_select_entry(uint i) {
       setting->flags & SD_FLAG_BROWSER_ACTION &&
       setting->action_toggle &&
       setting->change_handler) {
-    return FALSE;
+    return false;
   } else if (setting && ST_ACTION < setting->type && setting->type < ST_GROUP) {
     menu->navigation.selection_ptr = i;
     if (cbs && cbs->action_ok)
       cbs->action_ok(path, entry_label, type, i);
     
-    return FALSE;
+    return false;
   } else {
     menu->navigation.selection_ptr = i;
     if (cbs && cbs->action_ok) {
@@ -920,7 +921,7 @@ uint menu_select_entry(uint i) {
       menu_list_push_stack(menu->menu_list, "",
                            "info_screen", 0, i);
     }
-    return TRUE;
+    return true;
   }
 }
 
