@@ -780,123 +780,121 @@ static void *menu_item_init(ios_menu_item_t *item, unsigned type)
    char title[256], title_msg[256];
    NSMutableArray *everything;
    RAMainMenu* __weak weakSelf;
-   global_t *global          = global_get_ptr();
-   const char *core_name     = global->menu.info.library_name;
-   const char *core_version  = global->menu.info.library_version;
    const char *dir           = NULL;
    const char *label         = NULL;
    unsigned menu_type        = 0;
    menu_handle_t *menu       = menu_driver_get_ptr();
-
+   
    if (!menu)
       return;
+   
+   everything = [NSMutableArray array];
 
-   menu_list_get_last_stack(menu->menu_list,
-         &dir, &label, &menu_type);
-
-   get_title(label, dir, menu_type, title, sizeof(title));
-
-   weakSelf = self;
-   self.sections = [NSMutableArray array];
-
-   if (!core_name)
-      core_name = global->system.info.library_name;
-   if (!core_name)
-      core_name = "No Core";
-
-   if (!core_version)
-      core_version = global->system.info.library_version;
-   if (!core_version)
-      core_version = "";
-
-   snprintf(title_msg, sizeof(title_msg), "%s - %s %s", PACKAGE_VERSION,
-         core_name, core_version);
+   get_core_title(title_msg, sizeof(title_msg));
    self.title = BOXSTRING(title_msg);
 
-   everything = [NSMutableArray array];
+   menu_list_get_last_stack(menu->menu_list, &dir, &label, &menu_type);
+   get_title(label, dir, menu_type, title, sizeof(title));
    [everything addObject:BOXSTRING(title)];
-
-   end = menu_list_get_size(menu->menu_list);
-
-   for (i = menu->begin; i < end; i++)
-   {
-      rarch_setting_t *setting;
-      char type_str[PATH_MAX_LENGTH], path_buf[PATH_MAX_LENGTH];
-      menu_file_list_cbs_t *cbs = NULL;
-      const char *path = NULL, *entry_label = NULL;
-      unsigned type = 0, w = 0;
-
-      menu_list_get_at_offset(menu->menu_list->selection_buf, i, &path,
-            &entry_label, &type);
-      setting = setting_find_setting(menu->list_settings,
-            menu->menu_list->selection_buf->list[i].label);
-
-      cbs = (menu_file_list_cbs_t*)menu_list_get_actiondata_at_offset(
-            menu->menu_list->selection_buf, i);
-
-      if (cbs && cbs->action_get_representation)
-         cbs->action_get_representation
-            (menu->menu_list->selection_buf,
-             &w, type, i, label,
-             type_str, sizeof(type_str), 
-             entry_label, path,
-             path_buf, sizeof(path_buf));
-
-      if (setting_is_of_path_type(setting))
-      {
-         [everything
-            addObject:
-               [[RAMenuItemPathSetting alloc]
-               initWithSetting:setting
-                        action:^{}]];
-      }
-      else if (setting_is_of_general_type(setting))
-      {
-         [everything
-            addObject:
-               [RAMenuItemGeneralSetting
-               itemForSetting:setting
-                       action:^{
-                          menu->navigation.selection_ptr = i;
-                          if (cbs && cbs->action_ok)
-                             cbs->action_ok(path, entry_label, type, i);
-                       }]];
-      }
-      else
-      {
-         [everything
-            addObject:
-               [RAMenuItemBasic
-               itemWithDescription:BOXSTRING(path_buf)
-                            action:^{                       
-                               menu->navigation.selection_ptr = i;
-                               if (cbs && cbs->action_ok)
-                                  cbs->action_ok(path, entry_label, type, i);
-                               else
-                               {
-                                  if (cbs && cbs->action_start)
-                                     cbs->action_start(type, entry_label, MENU_ACTION_START);
-                                  if (cbs && cbs->action_toggle)
-                                     cbs->action_toggle(type, entry_label, MENU_ACTION_RIGHT, true);
-                                  menu_list_push_stack(menu->menu_list, "",
-                                        "info_screen", 0, i);
-                               }
-
-                               [weakSelf menuRefresh];
-                               [weakSelf reloadData];
-                            }]];
-      }
+  
+   end = menu_list_get_size(menu->menu_list); 
+   for (i = menu->begin; i < end; i++) {
+     [everything addObject:[self make_menu_item_for_entry: i]];     
    }
-
+   
+   self.sections = [NSMutableArray array];
    [self.sections addObject:everything];
 
+   weakSelf = self;
    if (menu_list_get_stack_size(menu->menu_list) > 1)
-      self.navigationItem.leftBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:BOXSTRING("Back") style:UIBarButtonItemStyleBordered target:weakSelf action:@selector(menuBack)];
+     [self set_leftbutton:BOXSTRING("Back")
+                   target:weakSelf
+                   action:@selector(menuBack)];
    else
-      self.navigationItem.leftBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:BOXSTRING("Resume") style:UIBarButtonItemStyleBordered target:[RetroArch_iOS get] action:@selector(showGameView)];
+     [self set_leftbutton:BOXSTRING("Resume")
+                   target:[RetroArch_iOS get]
+                   action:@selector(showGameView)];
 
    if ( menu->message_contents[0] != '\0' )
-      apple_display_alert(menu->message_contents, NULL);
+     apple_display_alert(menu->message_contents, NULL);
+}
+
+- (NSObject<RAMenuItemBase>*)make_menu_item_for_entry: (uint) i
+{
+  menu_handle_t *menu       = menu_driver_get_ptr();
+  RAMainMenu* __weak weakSelf;
+  rarch_setting_t *setting;
+  char type_str[PATH_MAX_LENGTH], path_buf[PATH_MAX_LENGTH];
+  menu_file_list_cbs_t *cbs = NULL;
+  const char *path = NULL, *entry_label = NULL;
+  unsigned type = 0, w = 0;
+  const char *dir           = NULL;
+  const char *label         = NULL;
+  unsigned menu_type        = 0;
+
+  weakSelf = self;
+  menu_list_get_last_stack(menu->menu_list, &dir, &label, &menu_type);
+
+  menu_list_get_at_offset(menu->menu_list->selection_buf, i, &path,
+                          &entry_label, &type);
+  setting =
+    (rarch_setting_t*)setting_find_setting
+    (menu->list_settings,
+     menu->menu_list->selection_buf->list[i].label);
+
+  cbs = (menu_file_list_cbs_t*)
+    menu_list_get_actiondata_at_offset(menu->menu_list->selection_buf, i);
+  
+  if (cbs && cbs->action_get_representation) {
+    cbs->action_get_representation
+      (menu->menu_list->selection_buf,
+       &w, type, i, label,
+       type_str, sizeof(type_str), 
+       entry_label, path,
+       path_buf, sizeof(path_buf));
+  }
+      
+  if (setting && setting->type == ST_ACTION &&
+      setting->flags & SD_FLAG_BROWSER_ACTION &&
+      setting->action_toggle &&
+      setting->change_handler )
+    {
+      return [[RAMenuItemPathSetting alloc]
+                       initWithSetting:setting
+                                action:^{}];
+    }
+  else if (setting && ST_ACTION < setting->type && setting->type < ST_GROUP)
+    {
+      return [RAMenuItemGeneralSetting
+                       itemForSetting:setting
+                               action:^{
+          menu->navigation.selection_ptr = i;
+          if (cbs && cbs->action_ok)
+            cbs->action_ok(path, entry_label, type, i);
+        }];
+    }
+  else
+    {
+      return [RAMenuItemBasic
+                       itemWithDescription:BOXSTRING(path_buf)
+                                    action:^{                       
+          menu->navigation.selection_ptr = i;
+          if (cbs && cbs->action_ok)
+            cbs->action_ok(path, entry_label, type, i);
+          else
+            {
+              if (cbs && cbs->action_start)
+                cbs->action_start(type, entry_label, MENU_ACTION_START);
+              if (cbs && cbs->action_toggle)
+                cbs->action_toggle(type, entry_label, MENU_ACTION_RIGHT, true);
+              menu_list_push_stack(menu->menu_list, "",
+                                   "info_screen", 0, i);
+            }
+
+          [weakSelf menuRefresh];
+          [weakSelf reloadData];
+        }];
+    }
 }
 
 - (void)menuRefresh
