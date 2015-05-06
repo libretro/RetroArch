@@ -336,7 +336,7 @@ static void iohidmanager_hid_device_add(void *data, IOReturn result,
       return;
 
    strlcpy(settings->input.device_names[adapter->slot],
-         adapter->name, sizeof(settings->input.device_names));
+         adapter->name, sizeof(settings->input.device_names[adapter->slot]));
 
    iohidmanager_hid_device_add_autodetect(adapter->slot,
          adapter->name, iohidmanager_hid.ident, dev_vid, dev_pid);
