@@ -538,10 +538,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
    RADirectoryList* list;
    RAMenuItemPathSetting __weak* weakSelf = self;
 
-   if (self.setting && self.setting->type == ST_ACTION &&
-       self.setting->flags & SD_FLAG_BROWSER_ACTION &&
-       self.setting->action_toggle &&
-       self.setting->change_handler )
+   if (setting_is_of_path_type(self.setting))
      self.setting->action_toggle( self.setting, MENU_ACTION_RIGHT, false);
 
    path = BOXSTRING(self.setting->value.string);
@@ -898,22 +895,23 @@ uint menu_select_entry(uint i) {
   cbs = (menu_file_list_cbs_t*)
     menu_list_get_actiondata_at_offset(menu->menu_list->selection_buf, i);
   
-  if (setting && setting->type == ST_ACTION &&
-      setting->flags & SD_FLAG_BROWSER_ACTION &&
-      setting->action_toggle &&
-      setting->change_handler) {
+  if (setting_is_of_path_type(setting))
     return false;
-  } else if (setting && ST_ACTION < setting->type && setting->type < ST_GROUP) {
+  else if (setting && ST_ACTION < setting->type && setting->type < ST_GROUP)
+  {
     menu->navigation.selection_ptr = i;
     if (cbs && cbs->action_ok)
       cbs->action_ok(path, entry_label, type, i);
     
     return false;
-  } else {
+  }
+  else
+  {
     menu->navigation.selection_ptr = i;
-    if (cbs && cbs->action_ok) {
+    if (cbs && cbs->action_ok)
       cbs->action_ok(path, entry_label, type, i);
-    } else {
+    else
+    {
       if (cbs && cbs->action_start)
         cbs->action_start(type, entry_label, MENU_ACTION_START);
       if (cbs && cbs->action_toggle)
