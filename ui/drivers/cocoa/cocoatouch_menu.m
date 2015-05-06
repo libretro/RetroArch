@@ -897,7 +897,7 @@ uint menu_select_entry(uint i) {
   
   if (setting_is_of_path_type(setting))
     return false;
-  else if (setting && ST_ACTION < setting->type && setting->type < ST_GROUP)
+  else if (setting_is_of_general_type(setting))
   {
     menu->navigation.selection_ptr = i;
     if (cbs && cbs->action_ok)
