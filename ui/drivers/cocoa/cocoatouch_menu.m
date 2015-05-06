@@ -60,7 +60,6 @@
 @property (nonatomic) rarch_setting_t* setting;
 @property (copy) void (^action)();
 @property (nonatomic, weak) UITableView* parentTable;
-+ (id)itemForSetting:(rarch_setting_t*)setting action:(void (^)())action;
 - (id)initWithSetting:(rarch_setting_t*)setting action:(void (^)())action;
 @end
 
@@ -135,45 +134,45 @@
 @implementation RANumberFormatter
 - (id)initWithSetting:(const rarch_setting_t*)setting
 {
-   if ((self = [super init]))
-   {
-      [self setAllowsFloats:(setting->type == ST_FLOAT)];
-
-      if (setting->flags & SD_FLAG_HAS_RANGE)
-      {
-         [self setMinimum:BOXFLOAT(setting->min)];
-         [self setMaximum:BOXFLOAT(setting->max)];
-      }
-   }
-
-   return self;
+    if ((self = [super init]))
+    {
+        [self setAllowsFloats:(setting->type == ST_FLOAT)];
+        
+        if (setting->flags & SD_FLAG_HAS_RANGE)
+        {
+            [self setMinimum:BOXFLOAT(setting->min)];
+            [self setMaximum:BOXFLOAT(setting->max)];
+        }
+    }
+    
+    return self;
 }
 
 - (BOOL)isPartialStringValid:(NSString*)partialString newEditingString:(NSString**)newString errorDescription:(NSString**)error
 {
-   unsigned i;
-   bool hasDot = false;
-
-   if (partialString.length)
-      for (i = 0; i < partialString.length; i ++)
-      {
-         unichar ch = [partialString characterAtIndex:i];
-
-         if (i == 0 && (!self.minimum || self.minimum.intValue < 0) && ch == '-')
-            continue;
-         else if (self.allowsFloats && !hasDot && ch == '.')
-            hasDot = true;
-         else if (!isdigit(ch))
-            return NO;
-      }
-
-   return YES;
+    unsigned i;
+    bool hasDot = false;
+    
+    if (partialString.length)
+        for (i = 0; i < partialString.length; i ++)
+        {
+            unichar ch = [partialString characterAtIndex:i];
+            
+            if (i == 0 && (!self.minimum || self.minimum.intValue < 0) && ch == '-')
+                continue;
+            else if (self.allowsFloats && !hasDot && ch == '.')
+                hasDot = true;
+            else if (!isdigit(ch))
+                return NO;
+        }
+    
+    return YES;
 }
 
 - (BOOL)textField:(UITextField *)textField shouldChangeCharactersInRange:(NSRange)range replacementString:(NSString *)string
 {
-   NSString* text = (NSString*)[[textField text] stringByReplacingCharactersInRange:range withString:string];
-   return [self isPartialStringValid:text newEditingString:nil errorDescription:nil];
+    NSString* text = (NSString*)[[textField text] stringByReplacingCharactersInRange:range withString:string];
+    return [self isPartialStringValid:text newEditingString:nil errorDescription:nil];
 }
 
 @end
@@ -214,16 +213,17 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
    size_t i;
    RARunActionSheetDelegate* delegate = [[RARunActionSheetDelegate alloc] initWithCallbackBlock:callback];
    UIActionSheet* actionSheet = [UIActionSheet new];
-   actionSheet.title          = BOXSTRING(title);
-   actionSheet.delegate       = delegate;
 
+   actionSheet.title = BOXSTRING(title);
+   actionSheet.delegate = delegate;
+   
    for (i = 0; i < items->size; i ++)
       [actionSheet addButtonWithTitle:BOXSTRING(items->elems[i].data)];
-
+   
    actionSheet.cancelButtonIndex = [actionSheet addButtonWithTitle:BOXSTRING("Cancel")];
-
+   
    objc_setAssociatedObject(actionSheet, associated_delegate_key, delegate, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
-
+   
    [actionSheet showInView:parent];
 }
 
@@ -250,7 +250,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 - (NSString*)tableView:(UITableView*)tableView titleForHeaderInSection:(NSInteger)section
 {
    if (self.hidesHeaders)
-      return nil;
+       return nil;
    return self.sections[section][0];
 }
 
@@ -276,7 +276,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 
 - (void)willReloadData
 {
-
+   
 }
 
 - (void)reloadData
@@ -312,23 +312,23 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 + (RAMenuItemBasic*)itemWithDescription:(NSString*)description association:(id)userdata action:(void (^)())action detail:(NSString* (^)())detail
 {
    RAMenuItemBasic* item = [RAMenuItemBasic new];
-   item.description      = description;
-   item.userdata         = userdata;
-   item.action           = action;
-   item.detail           = detail;
+   item.description = description;
+   item.userdata = userdata;
+   item.action = action;
+   item.detail = detail;
    return item;
 }
 
 - (UITableViewCell*)cellForTableView:(UITableView*)tableView
 {
    static NSString* const cell_id = @"text";
-
+   
    UITableViewCell* result = [tableView dequeueReusableCellWithIdentifier:cell_id];
    if (!result)
       result = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleValue1 reuseIdentifier:cell_id];
-
-   result.selectionStyle       = UITableViewCellSelectionStyleNone;
-   result.textLabel.text       = self.description;
+   
+   result.selectionStyle = UITableViewCellSelectionStyleNone;
+   result.textLabel.text = self.description;
    result.detailTextLabel.text = self.detail ? self.detail(self.userdata) : nil;
    return result;
 }
@@ -340,27 +340,6 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 }
 
 @end
-
-enum
-{
-   MENU_ITEM_BASIC = 0,
-};
-
-typedef struct ios_menu_item
-{
-   char description[PATH_MAX_LENGTH];
-} ios_menu_item_t;
-
-static void *menu_item_init(ios_menu_item_t *item, unsigned type)
-{
-   switch (type)
-   {
-      case MENU_ITEM_BASIC:
-         return (__bridge void*)[RAMenuItemBasic itemWithDescription:BOXSTRING(item->description) action:^{}];
-   }
-
-   return nil;
-}
 
 /*********************************************/
 /* RAMenuItemGeneralSetting                  */
@@ -374,58 +353,13 @@ static void *menu_item_init(ios_menu_item_t *item, unsigned type)
 
 @implementation RAMenuItemGeneralSetting
 
-+ (id)itemForSetting:(rarch_setting_t*)setting action:(void (^)())action
-{
-   ios_menu_item_t menu_item;
-
-   switch (setting->type)
-   {
-      case ST_NONE:
-      case ST_ACTION:
-         strlcpy(menu_item.description, "Shouldn't be called with ST_NONE or ST_ACTION", sizeof(menu_item.description));
-         return (__bridge RAMenuItemBasic*)menu_item_init(&menu_item, MENU_ITEM_BASIC);
-      case ST_BOOL:
-         return [[RAMenuItemBooleanSetting alloc] initWithSetting:setting action:action];
-      case ST_INT:
-      case ST_UINT:
-      case ST_FLOAT:
-         break;
-      case ST_PATH:
-      case ST_DIR:
-         return [[RAMenuItemPathSetting alloc] initWithSetting:setting action:action];
-      case ST_STRING:
-      case ST_HEX:
-         break;
-      case ST_BIND:
-         return [[RAMenuItemBindSetting alloc] initWithSetting:setting action:action];
-      case ST_GROUP:
-      case ST_SUB_GROUP:
-      case ST_END_GROUP:
-      case ST_END_SUB_GROUP:
-      default:
-         strlcpy(menu_item.description, "Shouldn't be called with ST_GROUP", sizeof(menu_item.description));
-         return (__bridge RAMenuItemBasic*)menu_item_init(&menu_item, MENU_ITEM_BASIC);
-   }
-
-   if (setting_is_of_enum_type(setting))
-      return [[RAMenuItemEnumSetting alloc] initWithSetting:setting action:action];
-
-   RAMenuItemGeneralSetting* item = [[RAMenuItemGeneralSetting alloc] initWithSetting:setting action:action];
-
-   if (setting_is_of_numeric_type(item.setting))
-      item.formatter = [[RANumberFormatter alloc] initWithSetting:item.setting];
-
-   return item;
-}
-
 - (id)initWithSetting:(rarch_setting_t*)setting action:(void (^)())action
 {
-   if ((self = [super init]))
-   {
-      _setting = setting;
-      _action = action;
-   }
-   return self;
+  if ((self = [super init])) {
+    _setting = setting;
+    _action = action;
+  }
+  return self;
 }
 
 - (UITableViewCell*)cellForTableView:(UITableView*)tableView
@@ -433,7 +367,6 @@ static void *menu_item_init(ios_menu_item_t *item, unsigned type)
    char buffer[PATH_MAX_LENGTH];
    UITableViewCell* result;
    static NSString* const cell_id = @"string_setting";
-   rarch_setting_t *setting = self.setting;
 
    self.parentTable = tableView;
 
@@ -443,23 +376,23 @@ static void *menu_item_init(ios_menu_item_t *item, unsigned type)
       result = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleValue1 reuseIdentifier:cell_id];
       result.selectionStyle = UITableViewCellSelectionStyleNone;
    }
-
+   
    [self attachDefaultingGestureTo:result];
 
    result.textLabel.text = BOXSTRING("<Uninitialized>");
 
-   if (setting)
+   if (self.setting)
    {
-      if (setting->short_description)
-         result.textLabel.text = BOXSTRING(setting->short_description);
+      if (self.setting->short_description)
+         result.textLabel.text = BOXSTRING(self.setting->short_description);
 
-      setting_get_string_representation(setting, buffer, sizeof(buffer));
+      setting_get_string_representation(self.setting, buffer, sizeof(buffer));
       if (buffer[0] == '\0')
          strlcpy(buffer, "<default>", sizeof(buffer));
 
       result.detailTextLabel.text = BOXSTRING(buffer);
 
-      if (setting->type == ST_PATH)
+      if (self.setting->type == ST_PATH)
          result.detailTextLabel.text = [result.detailTextLabel.text lastPathComponent];
    }
    return result;
@@ -471,19 +404,18 @@ static void *menu_item_init(ios_menu_item_t *item, unsigned type)
    NSString *desc = BOXSTRING("N/A");
    UIAlertView *alertView;
    UITextField *field;
-   rarch_setting_t *setting = self.setting;
-
-   if (setting && setting->short_description)
-      desc = BOXSTRING(setting->short_description);
-
+    
+   if (self.setting && self.setting->short_description)
+      desc = BOXSTRING(self.setting->short_description);
+    
    alertView = [[UIAlertView alloc] initWithTitle:BOXSTRING("Enter new value") message:desc delegate:self cancelButtonTitle:BOXSTRING("Cancel") otherButtonTitles:BOXSTRING("OK"), nil];
    alertView.alertViewStyle = UIAlertViewStylePlainTextInput;
 
    field = [alertView textFieldAtIndex:0];
-
+   
    field.delegate = self.formatter;
 
-   setting_get_string_representation(setting, buffer, sizeof(buffer));
+   setting_get_string_representation(self.setting, buffer, sizeof(buffer));
    if (buffer[0] == '\0')
       strlcpy(buffer, "N/A", sizeof(buffer));
 
@@ -495,15 +427,14 @@ static void *menu_item_init(ios_menu_item_t *item, unsigned type)
 - (void)alertView:(UIAlertView*)alertView clickedButtonAtIndex:(NSInteger)buttonIndex
 {
    NSString* text = (NSString*)[alertView textFieldAtIndex:0].text;
-   rarch_setting_t *setting = self.setting;
 
    if (buttonIndex != alertView.firstOtherButtonIndex)
-      return;
-   if (!text.length)
-      return;
-
-   setting_set_with_string_representation(setting, [text UTF8String]);
-   [self.parentTable reloadData];
+       return;
+    if (!text.length)
+        return;
+    
+    setting_set_with_string_representation(self.setting, [text UTF8String]);
+    [self.parentTable reloadData];
 }
 
 - (void)attachDefaultingGestureTo:(UIView*)view
@@ -511,25 +442,28 @@ static void *menu_item_init(ios_menu_item_t *item, unsigned type)
    for (UIGestureRecognizer* i in view.gestureRecognizers)
       [view removeGestureRecognizer:i];
    [view addGestureRecognizer:[[UILongPressGestureRecognizer alloc] initWithTarget:self
-                       action:@selector(resetValue:)]];
+                                                                    action:@selector(resetValue:)]];
 }
 
 - (void)resetValue:(UIGestureRecognizer*)gesture
 {
-   RAMenuItemGeneralSetting __weak* weakSelf = self;
-   struct string_list *items = string_split("OK", "|");
-
+   struct string_list* items;
+   RAMenuItemGeneralSetting __weak* weakSelf;
+   
    if (gesture.state != UIGestureRecognizerStateBegan)
       return;
-
+   
+   weakSelf = self;
+   items = (struct string_list*)string_split("OK", "|");
+   
    RunActionSheet("Really Reset Value?", items, self.parentTable,
          ^(UIActionSheet* actionSheet, NSInteger buttonIndex)
          {
-         if (buttonIndex != actionSheet.cancelButtonIndex)
-         setting_reset_setting(self.setting);
-         [weakSelf.parentTable reloadData];
+            if (buttonIndex != actionSheet.cancelButtonIndex)
+               setting_reset_setting(self.setting);
+            [weakSelf.parentTable reloadData];
          });
-
+   
    string_list_free(items);
 }
 
@@ -545,44 +479,42 @@ static void *menu_item_init(ios_menu_item_t *item, unsigned type)
 
 - (id)initWithSetting:(rarch_setting_t*)setting action:(void (^)())action
 {
-   if ((self = [super init]))
-   {
-      _setting = setting;
-      _action = action;
-   }
+  if ((self = [super init]))
+  {
+    _setting = setting;
+    _action = action;
+  }
    return self;
 }
 
 - (UITableViewCell*)cellForTableView:(UITableView*)tableView
 {
    static NSString* const cell_id = @"boolean_setting";
-
+   
    UITableViewCell* result = (UITableViewCell*)[tableView dequeueReusableCellWithIdentifier:cell_id];
-   rarch_setting_t *setting = self.setting;
-
+   
    if (!result)
    {
       result = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleValue1 reuseIdentifier:cell_id];
       result.selectionStyle = UITableViewCellSelectionStyleNone;
       result.accessoryView = [UISwitch new];
    }
-
-   result.textLabel.text = BOXSTRING(setting->short_description);
+   
+   result.textLabel.text = BOXSTRING(self.setting->short_description);
    [(id)result.accessoryView removeTarget:nil action:NULL forControlEvents:UIControlEventValueChanged];
    [(id)result.accessoryView addTarget:self action:@selector(handleBooleanSwitch:) forControlEvents:UIControlEventValueChanged];
-
-   if (setting)
-      [(id)result.accessoryView setOn:*setting->value.boolean];
+   
+   if (self.setting)
+      [(id)result.accessoryView setOn:*self.setting->value.boolean];
    return result;
 }
 
 - (void)handleBooleanSwitch:(UISwitch*)swt
 {
-   rarch_setting_t *setting = self.setting;
-   if (setting)
-      *setting->value.boolean = swt.on ? true : false;
-   if (self.action)
-      self.action();
+  if (self.setting)
+    *self.setting->value.boolean = swt.on ? true : false;
+  if (self.action)
+    self.action();
 }
 
 - (void)wasSelectedOnTableView:(UITableView*)tableView ofController:(UIViewController*)controller
@@ -604,44 +536,46 @@ static void *menu_item_init(ios_menu_item_t *item, unsigned type)
    NSString *path;
    RADirectoryList* list;
    RAMenuItemPathSetting __weak* weakSelf = self;
-   rarch_setting_t *setting = self.setting;
 
-   if (setting_is_of_path_type(setting))
-      setting->action_toggle( setting, MENU_ACTION_RIGHT, false);
+   if (self.setting && self.setting->type == ST_ACTION &&
+       self.setting->flags & SD_FLAG_BROWSER_ACTION &&
+       self.setting->action_toggle &&
+       self.setting->change_handler )
+     self.setting->action_toggle( self.setting, MENU_ACTION_RIGHT, false);
 
-   path = BOXSTRING(setting->value.string);
-
-   if (setting->type == ST_PATH )
-      path = [path stringByDeletingLastPathComponent];
-
-   list = [[RADirectoryList alloc] initWithPath:path extensions:setting->values action:
+   path = BOXSTRING(self.setting->value.string);
+   
+   if ( self.setting->type == ST_PATH )
+     path = [path stringByDeletingLastPathComponent];
+      
+   list = [[RADirectoryList alloc] initWithPath:path extensions:self.setting->values action:
       ^(RADirectoryList* list, RADirectoryItem* item)
       {
-         const char *newval = "";
-         if (item)
-         {
-            if (list.forDirectory && !item.isDirectory)
-               return;
+        const char *newval = "";
+        if (item)
+        {
+          if (list.forDirectory && !item.isDirectory)
+            return;
 
-            newval = [item.path UTF8String];
-         }
-         else
-         {
-            if (!list.allowBlank)
-               return;
-         }
+          newval = [item.path UTF8String];
+        }
+        else
+        {
+          if (!list.allowBlank)
+            return;
+        }
 
-         setting_set_with_string_representation(weakSelf.setting, newval);
-         [[list navigationController] popViewControllerAnimated:YES];
+        setting_set_with_string_representation(weakSelf.setting, newval);
+        [[list navigationController] popViewControllerAnimated:YES];
 
-         weakSelf.action();
-
-         [weakSelf.parentTable reloadData];
+        weakSelf.action();
+         
+        [weakSelf.parentTable reloadData];
       }];
 
-   list.allowBlank   = (setting->flags & SD_FLAG_ALLOW_EMPTY);
-   list.forDirectory = (setting->flags & SD_FLAG_PATH_DIR);
-
+   list.allowBlank = (self.setting->flags & SD_FLAG_ALLOW_EMPTY);
+   list.forDirectory = (self.setting->flags & SD_FLAG_PATH_DIR);
+   
    [controller.navigationController pushViewController:list animated:YES];
 }
 
@@ -657,19 +591,19 @@ static void *menu_item_init(ios_menu_item_t *item, unsigned type)
 
 - (void)wasSelectedOnTableView:(UITableView*)tableView ofController:(UIViewController*)controller
 {
+   struct string_list* items;
    RAMenuItemEnumSetting __weak* weakSelf = self;
-   rarch_setting_t *setting  = self.setting;
-   struct string_list *items = string_split(setting->values, "|");
-    
-   RunActionSheet(setting->short_description, items, self.parentTable,
-         ^(UIActionSheet* actionSheet, NSInteger buttonIndex)
-         {
+   
+   items = (struct string_list*)string_split(self.setting->values, "|");
+   RunActionSheet(self.setting->short_description, items, self.parentTable,
+      ^(UIActionSheet* actionSheet, NSInteger buttonIndex)
+      {
          if (buttonIndex == actionSheet.cancelButtonIndex)
-         return;
-
-         setting_set_with_string_representation(setting, [[actionSheet buttonTitleAtIndex:buttonIndex] UTF8String]);
+            return;
+         
+         setting_set_with_string_representation(self.setting, [[actionSheet buttonTitleAtIndex:buttonIndex] UTF8String]);
          [weakSelf.parentTable reloadData];
-         });
+      });
    string_list_free(items);
 }
 
@@ -691,17 +625,17 @@ static void *menu_item_init(ios_menu_item_t *item, unsigned type)
 - (void)wasSelectedOnTableView:(UITableView *)tableView ofController:(UIViewController *)controller
 {
    self.alert = [[UIAlertView alloc] initWithTitle:BOXSTRING("RetroArch")
-                                           message:BOXSTRING(self.setting->short_description)
-                                          delegate:self
-                                 cancelButtonTitle:BOXSTRING("Cancel")
-                                 otherButtonTitles:BOXSTRING("Clear Keyboard"), BOXSTRING("Clear Joystick"), BOXSTRING("Clear Axis"), nil];
+                                     message:BOXSTRING(self.setting->short_description)
+                                     delegate:self
+                                     cancelButtonTitle:BOXSTRING("Cancel")
+                                     otherButtonTitles:BOXSTRING("Clear Keyboard"), BOXSTRING("Clear Joystick"), BOXSTRING("Clear Axis"), nil];
 
    [self.alert show];
-
+   
    [self.parentTable reloadData];
-
+   
    self.bindTimer = [NSTimer scheduledTimerWithTimeInterval:.1f target:self selector:@selector(checkBind:)
-                                                   userInfo:nil repeats:YES];
+                             userInfo:nil repeats:YES];
 }
 
 - (void)finishWithClickedButton:(bool)clicked
@@ -714,20 +648,19 @@ static void *menu_item_init(ios_menu_item_t *item, unsigned type)
 
    [self.bindTimer invalidate];
    self.bindTimer = nil;
-
+   
    cocoa_input_reset_icade_buttons();
 }
 
 - (void)alertView:(UIAlertView*)alertView clickedButtonAtIndex:(NSInteger)buttonIndex
 {
-   rarch_setting_t *setting = self.setting;
    if (buttonIndex == alertView.firstOtherButtonIndex)
-      BINDFOR(*setting).key = RETROK_UNKNOWN;
+      BINDFOR(*self.setting).key = RETROK_UNKNOWN;
    else if(buttonIndex == alertView.firstOtherButtonIndex + 1)
-      BINDFOR(*setting).joykey = NO_BTN;
+      BINDFOR(*self.setting).joykey = NO_BTN;
    else if(buttonIndex == alertView.firstOtherButtonIndex + 2)
-      BINDFOR(*setting).joyaxis = AXIS_NONE;
-
+      BINDFOR(*self.setting).joyaxis = AXIS_NONE;
+   
    [self finishWithClickedButton:true];
 }
 
@@ -735,17 +668,16 @@ static void *menu_item_init(ios_menu_item_t *item, unsigned type)
 {
    int32_t value = 0;
    int32_t idx = 0;
-   rarch_setting_t *setting = self.setting;
 
-   if (setting->index)
-      idx = setting->index - 1;
+   if (self.setting->index)
+      idx = self.setting->index - 1;
 
    if ((value = cocoa_input_find_any_key()))
-      BINDFOR(*setting).key = input_keymaps_translate_keysym_to_rk(value);
+      BINDFOR(*self.setting).key = input_keymaps_translate_keysym_to_rk(value);
    else if ((value = cocoa_input_find_any_button(idx)) >= 0)
-      BINDFOR(*setting).joykey = value;
+      BINDFOR(*self.setting).joykey = value;
    else if ((value = cocoa_input_find_any_axis(idx)))
-      BINDFOR(*setting).joyaxis = (value > 0) ? AXIS_POS(value - 1) : AXIS_NEG(abs(value) - 1);
+      BINDFOR(*self.setting).joyaxis = (value > 0) ? AXIS_POS(value - 1) : AXIS_NEG(abs(value) - 1);
    else
       return;
 
@@ -868,64 +800,69 @@ void get_core_title(char *title_msg, size_t title_msg_len)
 
   menu_list_get_at_offset(menu->menu_list->selection_buf, i, &path,
                           &entry_label, &type);
+
+  // JM: Ideally, this would be simpler because RA would provide a
+  // function that takes "i" and returns either Path, DirPath, Bool,
+  // Bind, Enum, Number, String, Action. [Sub-menus would be action,
+  // because it causes an effect]
+
   setting =
     (rarch_setting_t*)setting_find_setting
     (menu->list_settings,
      menu->menu_list->selection_buf->list[i].label);
 
-  cbs = (menu_file_list_cbs_t*)
-    menu_list_get_actiondata_at_offset(menu->menu_list->selection_buf, i);
-  
-  if (cbs && cbs->action_get_representation) {
-    cbs->action_get_representation
-      (menu->menu_list->selection_buf,
-       &w, type, i, label,
-       type_str, sizeof(type_str), 
-       entry_label, path,
-       path_buf, sizeof(path_buf));
-  }
-      
   if (setting && setting->type == ST_ACTION &&
       setting->flags & SD_FLAG_BROWSER_ACTION &&
       setting->action_toggle &&
-      setting->change_handler )
-    {
-      return [[RAMenuItemPathSetting alloc]
+      setting->change_handler) {
+    return [[RAMenuItemPathSetting alloc]
                        initWithSetting:setting
                                 action:^{}];
+  } else if (setting && setting->type == ST_BOOL ) {
+    return [[RAMenuItemBooleanSetting alloc]
+               initWithSetting:setting
+                        action:^{[weakSelf menuSelect: i];}];
+  } else if (setting && ST_PATH <= setting->type && setting->type <= ST_DIR) {
+    return [[RAMenuItemPathSetting alloc]
+               initWithSetting:setting
+                        action:^{[weakSelf menuSelect: i];}];
+  } else if (setting && setting->type == ST_BIND ) {
+    return [[RAMenuItemBindSetting alloc]
+               initWithSetting:setting
+                        action:^{[weakSelf menuSelect: i];}];
+  } else if (setting && setting->type == ST_STRING && setting->values ) {
+    return [[RAMenuItemEnumSetting alloc]
+             initWithSetting:setting
+                      action:^{[weakSelf menuSelect: i];}];
+  } else if (setting && ST_INT <= setting->type && setting->type <= ST_HEX) {
+    RAMenuItemGeneralSetting* item =
+      [[RAMenuItemGeneralSetting alloc]
+        initWithSetting:setting
+                 action:^{[weakSelf menuSelect: i];}];
+   
+    if (setting->type == ST_INT  ||
+        setting->type == ST_UINT ||
+        setting->type == ST_FLOAT)
+      item.formatter = [[RANumberFormatter alloc] initWithSetting:item.setting];
+   
+    return item;
+  } else { // This is for ST_GROUP/etc
+    cbs = (menu_file_list_cbs_t*)
+      menu_list_get_actiondata_at_offset(menu->menu_list->selection_buf, i);
+  
+    if (cbs && cbs->action_get_representation) {
+      cbs->action_get_representation
+        (menu->menu_list->selection_buf,
+         &w, type, i, label,
+         type_str, sizeof(type_str), 
+         entry_label, path,
+         path_buf, sizeof(path_buf));
     }
-  else if (setting && ST_ACTION < setting->type && setting->type < ST_GROUP)
-    {
-      return [RAMenuItemGeneralSetting
-                       itemForSetting:setting
-                               action:^{
-          menu->navigation.selection_ptr = i;
-          if (cbs && cbs->action_ok)
-            cbs->action_ok(path, entry_label, type, i);
-        }];
-    }
-  else
-    {
-      return [RAMenuItemBasic
+    
+    return [RAMenuItemBasic
                        itemWithDescription:BOXSTRING(path_buf)
-                                    action:^{                       
-          menu->navigation.selection_ptr = i;
-          if (cbs && cbs->action_ok)
-            cbs->action_ok(path, entry_label, type, i);
-          else
-            {
-              if (cbs && cbs->action_start)
-                cbs->action_start(type, entry_label, MENU_ACTION_START);
-              if (cbs && cbs->action_toggle)
-                cbs->action_toggle(type, entry_label, MENU_ACTION_RIGHT, true);
-              menu_list_push_stack(menu->menu_list, "",
-                                   "info_screen", 0, i);
-            }
-
-          [weakSelf menuRefresh];
-          [weakSelf reloadData];
-        }];
-    }
+                                    action:^{[weakSelf menuSelect: i];}];
+  }
 }
 
 - (void)menuSelect: (uint) i
@@ -989,13 +926,15 @@ uint menu_select_entry(uint i) {
 
 - (void)menuRefresh
 {
-   menu_handle_t *menu = menu_driver_get_ptr();
-   if (!menu || !menu->need_refresh)
-      return;
-
-   menu_entries_deferred_push(menu->menu_list->selection_buf,
-         menu->menu_list->menu_stack);
-   menu->need_refresh = false;
+  menu_handle_t *menu = menu_driver_get_ptr();
+  if (!menu)
+     return;
+  if (!menu->need_refresh)
+     return;
+   
+    menu_entries_deferred_push(menu->menu_list->selection_buf,
+                               menu->menu_list->menu_stack);
+    menu->need_refresh = false;
 }
 
 - (void)menuBack
@@ -1003,11 +942,11 @@ uint menu_select_entry(uint i) {
    menu_handle_t *menu = menu_driver_get_ptr();
    if (!menu)
       return;
-
-   menu_apply_deferred_settings();
-   menu_list_pop_stack(menu->menu_list);
-   [self menuRefresh];
-   [self reloadData];
+   
+  menu_apply_deferred_settings();
+  menu_list_pop_stack(menu->menu_list);
+  [self menuRefresh];
+  [self reloadData];
 }
 
 @end
