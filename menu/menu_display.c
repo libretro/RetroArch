@@ -240,5 +240,11 @@ bool menu_display_setting_label(
    if (entry_label)
       strlcpy(entry->label, entry_label, sizeof(entry->label));
 
+#if 0
+   RARCH_LOG("Entry label : %s\n", entry->label ? entry->label : "N/A");
+   RARCH_LOG("Entry path  : %s\n", entry->path);
+   RARCH_LOG("Entry value : %s\n", entry->value);
+#endif
+
    return true;
 }
