@@ -26,6 +26,8 @@
 #include "../../../input/drivers/cocoa_input.h"
 
 #include "../../../menu/menu_entries.h"
+#include "../../../menu/menu_navigation.h"
+#include "../../../menu/menu_list.h"
 #include "../../../menu/drivers/shared.h"
 
 @protocol RAMenuItemBase
@@ -727,10 +729,10 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
    get_title(label, dir, menu_type, title, sizeof(title));
    [everything addObject:BOXSTRING(title)];
   
-   end = menu_list_get_size(menu->menu_list); 
-   for (i = menu->begin; i < end; i++) {
-     [everything addObject:[self make_menu_item_for_entry: i]];     
-   }
+   end = menu_list_get_size(menu->menu_list);
+    
+   for (i = menu->begin; i < end; i++)
+     [everything addObject:[self make_menu_item_for_entry: i]];
    
    self.sections = [NSMutableArray array];
    [self.sections addObject:everything];
@@ -884,35 +886,36 @@ void get_core_title(char *title_msg, size_t title_msg_len)
 }
 
 // JM: This could be moved down to RA
-uint menu_select_entry(uint i)
+uint32_t menu_select_entry(uint32_t i)
 {
-  menu_handle_t *menu       = menu_driver_get_ptr();
   rarch_setting_t *setting;
   menu_file_list_cbs_t *cbs = NULL;
   const char *path = NULL, *entry_label = NULL;
   unsigned type = 0;
   const char *dir           = NULL;
   const char *label         = NULL;
-  unsigned menu_type        = 0;
+    unsigned menu_type        = 0;
+  menu_handle_t     *menu   = menu_driver_get_ptr();
+  menu_navigation_t *nav    = menu_navigation_get_ptr();
+  menu_list_t    *menu_list = menu_list_get_ptr();
+    
+  menu_list_get_last_stack(menu_list, &dir, &label, &menu_type);
 
-  menu_list_get_last_stack(menu->menu_list, &dir, &label, &menu_type);
-
-  menu_list_get_at_offset(menu->menu_list->selection_buf, i, &path,
+  menu_list_get_at_offset(menu_list->selection_buf, i, &path,
                           &entry_label, &type);
 
-  setting =
-    (rarch_setting_t*)setting_find_setting
+  setting = setting_find_setting
     (menu->list_settings,
-     menu->menu_list->selection_buf->list[i].label);
+     menu_list->selection_buf->list[i].label);
 
   cbs = (menu_file_list_cbs_t*)
-    menu_list_get_actiondata_at_offset(menu->menu_list->selection_buf, i);
+    menu_list_get_actiondata_at_offset(menu_list->selection_buf, i);
   
   if (setting_is_of_path_type(setting))
     return false;
   else if (setting_is_of_general_type(setting))
   {
-    menu->navigation.selection_ptr = i;
+    nav->selection_ptr = i;
     if (cbs && cbs->action_ok)
       cbs->action_ok(path, entry_label, type, i);
     
@@ -920,7 +923,7 @@ uint menu_select_entry(uint i)
   }
   else
   {
-    menu->navigation.selection_ptr = i;
+    nav->selection_ptr = i;
     if (cbs && cbs->action_ok)
       cbs->action_ok(path, entry_label, type, i);
     else
@@ -929,7 +932,7 @@ uint menu_select_entry(uint i)
         cbs->action_start(type, entry_label, MENU_ACTION_START);
       if (cbs && cbs->action_toggle)
         cbs->action_toggle(type, entry_label, MENU_ACTION_RIGHT, true);
-      menu_list_push_stack(menu->menu_list, "",
+      menu_list_push_stack(menu_list, "",
                            "info_screen", 0, i);
     }
     return true;
@@ -938,25 +941,26 @@ uint menu_select_entry(uint i)
 
 - (void)menuRefresh
 {
-  menu_handle_t *menu = menu_driver_get_ptr();
-  if (!menu)
+  menu_handle_t *menu    = menu_driver_get_ptr();
+  menu_list_t *menu_list = menu_list_get_ptr();
+  if (!menu || !menu_list)
      return;
   if (!menu->need_refresh)
      return;
    
-    menu_entries_deferred_push(menu->menu_list->selection_buf,
-                               menu->menu_list->menu_stack);
+    menu_entries_deferred_push(menu_list->selection_buf,
+                               menu_list->menu_stack);
     menu->need_refresh = false;
 }
 
 - (void)menuBack
 {
-   menu_handle_t *menu = menu_driver_get_ptr();
-   if (!menu)
+   menu_list_t *menu_list = menu_list_get_ptr();
+   if (!menu_list)
       return;
    
   menu_apply_deferred_settings();
-  menu_list_pop_stack(menu->menu_list);
+  menu_list_pop_stack(menu_list);
   [self menuRefresh];
   [self reloadData];
 }
