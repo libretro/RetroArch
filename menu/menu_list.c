@@ -494,7 +494,6 @@ bool menu_list_entry_is_currently_selected(menu_entry_t *entry)
 int menu_list_get_current_entry_id(void)
 {
    size_t i;
-   const char        *label = NULL;
    menu_list_t   *menu_list = menu_list_get_ptr();
    size_t               end = menu_list_get_size(menu_list);
 
