@@ -356,7 +356,7 @@ void set_paths_redirect(const char *path)
    {
       fill_pathname_dir(global->savefile_name, global->basename,
             ".srm", sizeof(global->savefile_name));
-      RARCH_LOG("%s \nRedirecting save file to \"%s\".\n", orig_savefile_dir,global->savefile_name);
+      RARCH_LOG("Redirecting save file to \"%s\".\n", global->savefile_name);
    }
 
    if (path_is_directory(global->savestate_name))
