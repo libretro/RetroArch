@@ -111,8 +111,9 @@ static void data_runloop_iterate(bool is_thread, data_runloop_t *runloop)
 static bool rarch_main_data_active(data_runloop_t *runloop)
 {
    bool                  image_active, nbio_active, http_active,
-                         http_conn_active, overlay_active, db_active;
+                         http_conn_active, overlay_active;
    bool                  active = false;
+   bool               db_active = false;
 
    driver_t             *driver = driver_get_ptr();
    nbio_handle_t          *nbio = runloop ? &runloop->nbio : NULL;
@@ -157,6 +158,7 @@ static bool rarch_main_data_active(data_runloop_t *runloop)
    (void)http_active;
    (void)http_conn_active;
    (void)overlay_active;
+   (void)db_active;
 
 #if 0
    RARCH_LOG("runloop nbio : %d, image: %d, http: %d, http conn: %d, overlay: %d\n", nbio_active, image_active,
