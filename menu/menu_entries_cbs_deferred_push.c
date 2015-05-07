@@ -291,6 +291,8 @@ static int deferred_push_system_information(void *data, void *userdata,
       menu_list_push(list, tmp, "",
             MENU_SETTINGS_CORE_INFO_NONE, 0);
 
+      (void)tmp_string;
+
 #ifdef HAVE_GIT_VERSION
       snprintf(tmp, sizeof(tmp), "Git version: %s", rarch_git_version);
       menu_list_push(list, tmp, "",
