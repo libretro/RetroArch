@@ -491,16 +491,18 @@ static int action_iterate_main(const char *label, unsigned action)
    const char *path_offset   = NULL;
    menu_file_list_cbs_t *cbs = NULL;
    menu_handle_t *menu       = menu_driver_get_ptr();
+   menu_navigation_t *nav    = menu_navigation_get_ptr();
    global_t *global          = global_get_ptr();
+   size_t selected           = menu_navigation_get_current_selection();
    if (!menu)
       return 0;
 
    cbs = (menu_file_list_cbs_t*)
       menu_list_get_actiondata_at_offset(menu->menu_list->selection_buf,
-            menu->navigation.selection_ptr);
+            selected);
 
    menu_list_get_at_offset(menu->menu_list->selection_buf,
-         menu->navigation.selection_ptr, &path_offset, &label_offset, &type_offset);
+         selected, &path_offset, &label_offset, &type_offset);
 
    if (!strcmp(label, "help"))
       return action_iterate_help(label, action);
@@ -538,20 +540,20 @@ static int action_iterate_main(const char *label, unsigned action)
             ret = cbs->action_up_or_down(type_offset, label_offset, action);
          break;
       case MENU_ACTION_SCROLL_UP:
-         menu_navigation_descend_alphabet(&menu->navigation, &menu->navigation.selection_ptr);
+         menu_navigation_descend_alphabet(nav, &nav->selection_ptr);
          break;
       case MENU_ACTION_SCROLL_DOWN:
-         menu_navigation_ascend_alphabet(&menu->navigation, &menu->navigation.selection_ptr);
+         menu_navigation_ascend_alphabet(nav, &nav->selection_ptr);
          break;
 
       case MENU_ACTION_CANCEL:
          if (cbs && cbs->action_cancel)
-            return cbs->action_cancel(path_offset, label_offset, type_offset, menu->navigation.selection_ptr);
+            return cbs->action_cancel(path_offset, label_offset, type_offset, selected);
          break;
 
       case MENU_ACTION_OK:
          if (cbs && cbs->action_ok)
-            return cbs->action_ok(path_offset, label_offset, type_offset, menu->navigation.selection_ptr);
+            return cbs->action_ok(path_offset, label_offset, type_offset, selected);
          break;
       case MENU_ACTION_START:
          if (cbs && cbs->action_start)
