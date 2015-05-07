@@ -105,6 +105,9 @@ void menu_list_set_alt_at_offset(file_list_t *list, size_t idx,
 int menu_list_populate_generic(file_list_t *list,
       const char *path, const char *label, unsigned type);
 
+void menu_list_get_entry(menu_entry_t *entry, size_t i, const char *label,
+      void *userdata);
+
 #ifdef __cplusplus
 }
 #endif

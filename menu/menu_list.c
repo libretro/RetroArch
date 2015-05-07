@@ -443,3 +443,29 @@ int menu_list_populate_generic(file_list_t *list, const char *path,
 
    return 0;
 }
+
+void menu_list_get_entry(menu_entry_t *entry, size_t i,
+      const char *label, void *userdata)
+{
+   const char *path          = NULL;
+   const char *entry_label   = NULL;
+   menu_file_list_cbs_t *cbs = NULL;
+   menu_handle_t *menu       = menu_driver_get_ptr();
+   file_list_t *list         = userdata ? (file_list_t*)userdata 
+      : menu->menu_list->selection_buf;
+   menu_list_get_at_offset(list, i, &path, &entry_label, &entry->type);
+
+   cbs = (menu_file_list_cbs_t*)
+      menu_list_get_actiondata_at_offset(list,
+            i);
+
+   if (cbs && cbs->action_get_representation)
+      cbs->action_get_representation(list,
+            &entry->spacing, entry->type, i, label,
+            entry->value,  sizeof(entry->value), 
+            entry_label, path,
+            entry->path, sizeof(entry->path));
+
+   if (entry_label)
+      strlcpy(entry->label, entry_label, sizeof(entry->label));
+}
