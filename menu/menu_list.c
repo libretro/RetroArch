@@ -40,19 +40,19 @@ static menu_list_t *menu_list_get_ptr(void)
  **/
 static void menu_entries_refresh(file_list_t *list)
 {
-   menu_handle_t *menu      = menu_driver_get_ptr();
+   menu_navigation_t *nav   = menu_navigation_get_ptr();
    menu_list_t   *menu_list = menu_list_get_ptr();
-   if (!menu || !menu_list)
+   if (!nav || !menu_list)
       return;
    if (!list)
       return;
 
-   if (menu->navigation.selection_ptr >= menu_list_get_size(menu_list)
+   if (nav->selection_ptr >= menu_list_get_size(menu_list)
          && menu_list_get_size(menu_list))
-      menu_navigation_set(&menu->navigation,
+      menu_navigation_set(nav,
             menu_list_get_size(menu_list) - 1, true);
    else if (!menu_list_get_size(menu_list))
-      menu_navigation_clear(&menu->navigation, true);
+      menu_navigation_clear(nav, true);
 }
 
 /**
@@ -109,15 +109,9 @@ static void menu_entries_build_scroll_indices(file_list_t *list)
    size_t i;
    int current;
    bool current_is_dir;
-   menu_navigation_t *nav = NULL;
-   menu_handle_t *menu = menu_driver_get_ptr();
+   menu_navigation_t *nav = menu_navigation_get_ptr();
 
-   if (!menu || !list)
-      return;
-
-   nav = &menu->navigation;
-
-   if (!nav)
+   if (!nav || !list)
       return;
 
    nav->scroll.indices.size = 0;
@@ -439,12 +433,12 @@ void menu_list_sort_on_alt(file_list_t *list)
 int menu_list_populate_generic(file_list_t *list, const char *path,
       const char *label, unsigned type)
 {
-   menu_handle_t *menu = menu_driver_get_ptr();
+   menu_navigation_t *nav = menu_navigation_get_ptr();
 
-   if (!menu)
+   if (!nav)
       return -1;
 
-   menu->navigation.scroll.indices.size = 0;
+   nav->scroll.indices.size = 0;
 
    menu_entries_build_scroll_indices(list);
    menu_entries_refresh(list);
