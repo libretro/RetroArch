@@ -782,7 +782,7 @@ void get_core_title(char *title_msg, size_t title_msg_len)
             core_name, core_version);
 }
 
-- (NSObject<RAMenuItemBase>*)make_menu_item_for_entry: (uint) i
+- (NSObject<RAMenuItemBase>*)make_menu_item_for_entry: (uint32_t) i
 {
   menu_handle_t *menu       = menu_driver_get_ptr();
   RAMainMenu* __weak weakSelf;
@@ -876,7 +876,7 @@ void get_core_title(char *title_msg, size_t title_msg_len)
   }
 }
 
-- (void)menuSelect: (uint) i
+- (void)menuSelect: (uint32_t) i
 {
   if (menu_select_entry(i))
   {
