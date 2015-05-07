@@ -1020,7 +1020,7 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
             icon_y > global->video_data.height + xmb->icon.size)
          continue;
 
-      menu_display_setting_label(&entry, i, label, list);
+      menu_list_get_entry(&entry, i, label, list);
 
       if (entry.type == MENU_FILE_CONTENTLIST_ENTRY)
          strlcpy(entry.path, path_basename(entry.path), sizeof(entry.path));

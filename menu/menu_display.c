@@ -207,22 +207,3 @@ void menu_display_unset_viewport(menu_handle_t *menu)
    video_driver_set_viewport(global->video_data.width,
          global->video_data.height, false, true);
 }
-
-bool menu_display_setting_label(
-      menu_entry_t *entry,
-      unsigned i,
-      const char *label, 
-      void *userdata)
-{
-   if (!entry)
-      return false;
-
-   menu_list_get_entry(entry, i, label, userdata);
-#if 0
-   RARCH_LOG("Entry label : %s\n", entry->label ? entry->label : "N/A");
-   RARCH_LOG("Entry path  : %s\n", entry->path);
-   RARCH_LOG("Entry value : %s\n", entry->value);
-#endif
-
-   return true;
-}
