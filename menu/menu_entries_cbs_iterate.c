@@ -213,11 +213,12 @@ static int action_iterate_info(const char *label, unsigned action)
    rarch_setting_t *current_setting = NULL;
    file_list_t *list                = NULL;
    menu_handle_t *menu              = menu_driver_get_ptr();
+   menu_list_t *menu_list           = menu_list_get_ptr();
    size_t selection                 = menu_navigation_get_current_selection();
    if (!menu)
       return 0;
 
-   list = (file_list_t*)menu->menu_list->selection_buf;
+   list = (file_list_t*)menu_list->selection_buf;
 
    menu_driver_render();
 
@@ -248,7 +249,7 @@ static int action_iterate_info(const char *label, unsigned action)
    menu_driver_render_messagebox(msg);
 
    if (action == MENU_ACTION_OK)
-      menu_list_pop(menu->menu_list->menu_stack, &menu->navigation.selection_ptr);
+      menu_list_pop(menu_list->menu_stack, &menu->navigation.selection_ptr);
 
    return 0;
 }
@@ -282,12 +283,13 @@ static int action_iterate_menu_viewport(const char *label, unsigned action)
    global_t      *global            = global_get_ptr();
    video_viewport_t *custom         = &global->console.screen.viewports.custom_vp;
    menu_handle_t *menu              = menu_driver_get_ptr();
+   menu_list_t *menu_list           = menu_list_get_ptr();
    settings_t *settings             = config_get_ptr();
 
    if (!menu)
       return -1;
 
-   menu_list_get_last_stack(menu->menu_list, NULL, NULL, &type);
+   menu_list_get_last_stack(menu_list, NULL, NULL, &type);
 
    geom = (struct retro_game_geometry*)&global->system.av_info.geometry;
 
@@ -350,25 +352,23 @@ static int action_iterate_menu_viewport(const char *label, unsigned action)
          break;
 
       case MENU_ACTION_CANCEL:
-         menu_list_pop_stack(menu->menu_list);
+         menu_list_pop_stack(menu_list);
 
          if (!strcmp(label, "custom_viewport_2"))
          {
-            menu_list_push_stack(menu->menu_list, "", "",
+            menu_list_push_stack(menu_list, "", "",
                   MENU_SETTINGS_CUSTOM_VIEWPORT,
                   menu->navigation.selection_ptr);
          }
          break;
 
       case MENU_ACTION_OK:
-         menu_list_pop_stack(menu->menu_list);
+         menu_list_pop_stack(menu_list);
 
          if (type == MENU_SETTINGS_CUSTOM_VIEWPORT
                && !settings->video.scale_integer)
-         {
-            menu_list_push_stack(menu->menu_list, "",
+            menu_list_push_stack(menu_list, "",
                   "custom_viewport_2", 0, menu->navigation.selection_ptr);
-         }
          break;
 
       case MENU_ACTION_START:
@@ -402,7 +402,7 @@ static int action_iterate_menu_viewport(const char *label, unsigned action)
          break;
    }
 
-   menu_list_get_last_stack(menu->menu_list, NULL, &label, &type);
+   menu_list_get_last_stack(menu_list, NULL, &label, &type);
 
    menu_driver_render();
 
