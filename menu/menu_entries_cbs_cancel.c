@@ -16,6 +16,7 @@
 #include <file/file_path.h>
 #include "menu.h"
 #include "menu_entries_cbs.h"
+#include "menu_list.h"
 #include "menu_setting.h"
 #include "menu_entries.h"
 
@@ -28,12 +29,12 @@ static int action_cancel_lookup_setting(const char *path,
 static int action_cancel_pop_default(const char *path,
       const char *label, unsigned type, size_t idx)
 {
-   menu_handle_t *menu = menu_driver_get_ptr();
-   if (!menu)
+   menu_list_t *menu_list = menu_list_get_ptr();
+   if (!menu_list)
       return -1;
 
    menu_apply_deferred_settings();
-   menu_list_pop_stack(menu->menu_list);
+   menu_list_pop_stack(menu_list);
    return 0;
 }
 
