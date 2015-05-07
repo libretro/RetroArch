@@ -159,34 +159,29 @@ static int action_toggle_scroll(unsigned type, const char *label,
       unsigned action, bool wraparound)
 {
    unsigned scroll_speed = 0, fast_scroll_speed = 0;
-   menu_handle_t *menu = menu_driver_get_ptr();
-   if (!menu)
+   menu_list_t *menu_list = menu_list_get_ptr();
+   menu_navigation_t *nav = menu_navigation_get_ptr();
+   if (!nav || !menu_list)
       return -1;
 
-   scroll_speed      = (max(menu->navigation.scroll.acceleration, 2) - 2) / 4 + 1;
+   scroll_speed      = (max(nav->scroll.acceleration, 2) - 2) / 4 + 1;
    fast_scroll_speed = 4 + 4 * scroll_speed;
 
    switch (action)
    {
       case MENU_ACTION_LEFT:
-         if (menu->navigation.selection_ptr > fast_scroll_speed)
-            menu_navigation_set(&menu->navigation,
-                  menu->navigation.selection_ptr - fast_scroll_speed, true);
+         if (nav->selection_ptr > fast_scroll_speed)
+            menu_navigation_set(nav, nav->selection_ptr - fast_scroll_speed, true);
          else
-            menu_navigation_clear(&menu->navigation, false);
+            menu_navigation_clear(nav, false);
          break;
       case MENU_ACTION_RIGHT:
-         if (menu->navigation.selection_ptr + fast_scroll_speed < (menu_list_get_size(menu->menu_list)))
-         {
-            menu_navigation_set(&menu->navigation,
-                  menu->navigation.selection_ptr + fast_scroll_speed, true);
-         }
+         if (nav->selection_ptr + fast_scroll_speed < (menu_list_get_size(menu_list)))
+            menu_navigation_set(nav, nav->selection_ptr + fast_scroll_speed, true);
          else
          {
-            if ((menu_list_get_size(menu->menu_list) > 0))
-            {
-               menu_navigation_set_last(&menu->navigation);
-            }
+            if ((menu_list_get_size(menu_list) > 0))
+               menu_navigation_set_last(nav);
          }
          break;
    }

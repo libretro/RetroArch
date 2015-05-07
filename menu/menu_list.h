@@ -40,6 +40,8 @@ typedef struct menu_entry
    unsigned spacing;
 } menu_entry_t;
 
+menu_list_t *menu_list_get_ptr(void);
+
 void menu_list_free(menu_list_t *menu_list);
 
 menu_list_t *menu_list_new(void);

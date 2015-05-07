@@ -22,8 +22,7 @@
 #include <string.h>
 #include <retro_inline.h>
 
-
-static menu_list_t *menu_list_get_ptr(void)
+menu_list_t *menu_list_get_ptr(void)
 {
    menu_handle_t *menu       = menu_driver_get_ptr();
    if (!menu)
