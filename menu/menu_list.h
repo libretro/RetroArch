@@ -110,6 +110,8 @@ int menu_list_populate_generic(file_list_t *list,
 void menu_list_get_entry(menu_entry_t *entry, size_t i, const char *label,
       void *userdata);
 
+bool menu_list_entry_is_currently_selected(menu_entry_t *entry);
+
 #ifdef __cplusplus
 }
 #endif

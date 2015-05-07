@@ -235,8 +235,7 @@ static void rmenu_render(void)
       bool selected = false;
 
       menu_list_get_entry(&entry, i, label, NULL);
-
-      selected = (i == menu->navigation.selection_ptr);
+      selected = menu_list_entry_is_currently_selected(&entry);
 
       menu_animation_ticker_line(entry_title_buf, RMENU_TERM_WIDTH - (entry.spacing + 1 + 2),
             runloop->frames.video.count / 15, entry.path, selected);

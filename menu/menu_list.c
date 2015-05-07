@@ -475,6 +475,16 @@ void menu_list_get_entry(menu_entry_t *entry, size_t i,
             entry_label, path,
             entry->path, sizeof(entry->path));
 
+   entry->id         = i;
+
    if (entry_label)
       strlcpy(entry->label, entry_label, sizeof(entry->label));
+}
+
+bool menu_list_entry_is_currently_selected(menu_entry_t *entry)
+{
+   menu_navigation_t *nav = menu_navigation_get_ptr();
+   if (!entry || !nav)
+      return false;
+   return (entry->id == nav->selection_ptr);
 }

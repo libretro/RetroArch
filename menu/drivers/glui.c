@@ -306,8 +306,7 @@ static void glui_render_menu_list(runloop_t *runloop,
       bool selected             = false;
 
       menu_list_get_entry(&entry, i, label, NULL);
-
-      selected = (i == menu->navigation.selection_ptr);
+      selected = menu_list_entry_is_currently_selected(&entry);
 
       menu_animation_ticker_line(entry_title_buf, glui->ticker_limit,
             runloop->frames.video.count / 100, entry.path, selected);
