@@ -72,6 +72,7 @@ static int archive_load(void)
    menu_handle_t *menu    = menu_driver_get_ptr();
    settings_t *settings   = config_get_ptr();
    global_t      *global  = global_get_ptr();
+   size_t selected        = menu_navigation_get_current_selection();
 
    if (!menu)
       return -1;
@@ -85,7 +86,7 @@ static int archive_load(void)
       return 0;
 
    menu_list_get_at_offset(menu->menu_list->selection_buf,
-         menu->navigation.selection_ptr, &path, NULL, &type);
+         selected, &path, NULL, &type);
 
    ret = rarch_defer_core(global->core_info, menu_path, path, menu_label,
          menu->deferred_path, sizeof(menu->deferred_path));
@@ -101,8 +102,7 @@ static int archive_load(void)
                menu->menu_list,
                settings->libretro_directory,
                "deferred_core_list",
-               0,
-               menu->navigation.selection_ptr);
+               0, selected);
          break;
    }
 
@@ -213,6 +213,7 @@ static int action_iterate_info(const char *label, unsigned action)
    rarch_setting_t *current_setting = NULL;
    file_list_t *list                = NULL;
    menu_handle_t *menu              = menu_driver_get_ptr();
+   size_t selection                 = menu_navigation_get_current_selection();
    if (!menu)
       return 0;
 
@@ -222,13 +223,13 @@ static int action_iterate_info(const char *label, unsigned action)
 
    current_setting = (rarch_setting_t*)setting_find_setting(
          menu->list_settings,
-         list->list[menu->navigation.selection_ptr].label);
+         list->list[selection].label);
 
    if (current_setting)
       strlcpy(needle, current_setting->name, sizeof(needle));
    else if ((current_setting = (rarch_setting_t*)setting_find_setting(
                menu->list_settings,
-               list->list[menu->navigation.selection_ptr].label)))
+               list->list[selection].label)))
    {
       if (current_setting)
          strlcpy(needle, current_setting->name, sizeof(needle));
@@ -236,9 +237,7 @@ static int action_iterate_info(const char *label, unsigned action)
    else
    {
       const char *lbl = NULL;
-      menu_list_get_at_offset(list,
-            menu->navigation.selection_ptr, NULL, &lbl,
-            &info_type);
+      menu_list_get_at_offset(list, selection, NULL, &lbl, &info_type);
 
       if (lbl)
          strlcpy(needle, lbl, sizeof(needle));
