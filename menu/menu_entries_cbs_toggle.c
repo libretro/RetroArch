@@ -193,13 +193,14 @@ static int action_toggle_mainmenu(unsigned type, const char *label,
       unsigned action, bool wraparound)
 {
    menu_file_list_cbs_t *cbs = NULL;
-   unsigned push_list = 0;
-   driver_t *driver = driver_get_ptr();
-   menu_handle_t *menu = menu_driver_get_ptr();
+   unsigned        push_list = 0;
+   driver_t          *driver = driver_get_ptr();
+   menu_list_t    *menu_list = menu_list_get_ptr();
+   menu_handle_t       *menu = menu_driver_get_ptr();
    if (!menu)
       return -1;
 
-   if (file_list_get_size(menu->menu_list->menu_stack) == 1)
+   if (file_list_get_size(menu_list->menu_stack) == 1)
    {
 
       if (!strcmp(driver->menu_ctx->ident, "xmb"))
@@ -224,7 +225,7 @@ static int action_toggle_mainmenu(unsigned type, const char *label,
       push_list = 2;
 
    cbs = (menu_file_list_cbs_t*)
-      menu_list_get_actiondata_at_offset(menu->menu_list->selection_buf,
+      menu_list_get_actiondata_at_offset(menu_list->selection_buf,
             menu->navigation.selection_ptr);
 
    switch (push_list)
@@ -234,12 +235,8 @@ static int action_toggle_mainmenu(unsigned type, const char *label,
 
          if (cbs && cbs->action_content_list_switch)
             return cbs->action_content_list_switch(
-                  menu->menu_list->selection_buf,
-                  menu->menu_list->menu_stack,
-                  "",
-                  "",
-                  0);
-
+                  menu_list->selection_buf, menu_list->menu_stack,
+                  "", "", 0);
          break;
       case 2:
          action_toggle_scroll(0, "", action, false);
