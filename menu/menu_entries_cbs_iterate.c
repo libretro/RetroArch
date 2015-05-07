@@ -34,29 +34,30 @@ static int archive_open(void)
    const char *menu_label = NULL;
    const char* path       = NULL;
    unsigned int type      = 0;
-   menu_handle_t *menu    = menu_driver_get_ptr();
+   menu_navigation_t *nav = menu_navigation_get_ptr();
+   menu_list_t *menu_list = menu_list_get_ptr();
 
-   if (!menu)
+   if (!menu_list || !nav)
       return -1;
 
-   menu_list_pop_stack(menu->menu_list);
+   menu_list_pop_stack(menu_list);
 
-   menu_list_get_last_stack(menu->menu_list,
+   menu_list_get_last_stack(menu_list,
          &menu_path, &menu_label, NULL);
 
-   if (menu_list_get_size(menu->menu_list) == 0)
+   if (menu_list_get_size(menu_list) == 0)
       return 0;
 
-   menu_list_get_at_offset(menu->menu_list->selection_buf,
-         menu->navigation.selection_ptr, &path, NULL, &type);
+   menu_list_get_at_offset(menu_list->selection_buf,
+         nav->selection_ptr, &path, NULL, &type);
 
    fill_pathname_join(cat_path, menu_path, path, sizeof(cat_path));
    menu_list_push_stack_refresh(
-         menu->menu_list,
+         menu_list,
          cat_path,
          menu_label,
          type,
-         menu->navigation.selection_ptr);
+         nav->selection_ptr);
 
    return 0;
 }
@@ -450,21 +451,21 @@ static int action_iterate_menu_viewport(const char *label, unsigned action)
 
 static int action_iterate_custom_bind(const char *label, unsigned action)
 {
-   menu_handle_t *menu    = menu_driver_get_ptr();
-   if (!menu)
+   menu_list_t *menu_list = menu_list_get_ptr();
+   if (!menu_list)
       return -1;
    if (menu_input_bind_iterate())
-      menu_list_pop_stack(menu->menu_list);
+      menu_list_pop_stack(menu_list);
    return 0;
 }
 
 static int action_iterate_custom_bind_keyboard(const char *label, unsigned action)
 {
-   menu_handle_t *menu    = menu_driver_get_ptr();
-   if (!menu)
+   menu_list_t *menu_list = menu_list_get_ptr();
+   if (!menu_list)
       return -1;
    if (menu_input_bind_iterate_keyboard())
-      menu_list_pop_stack(menu->menu_list);
+      menu_list_pop_stack(menu_list);
    return 0;
 }
 
