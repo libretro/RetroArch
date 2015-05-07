@@ -330,13 +330,12 @@ static void set_paths_redirect(const char *path)
 {
    global_t   *global   = global_get_ptr();
 
-   
    if(path_is_directory(global->savefile_dir))
 	   strlcpy(global->savefile_name,global->savefile_dir,sizeof(global->savefile_dir));
 
    if(path_is_directory(global->savestate_dir))
 	   strlcpy(global->savestate_name,global->savestate_dir,sizeof(global->savestate_dir));
-    
+
    if (path_is_directory(global->savefile_name))
    {
       fill_pathname_dir(global->savefile_name, global->basename,
