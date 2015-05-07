@@ -80,13 +80,13 @@ void menu_navigation_decrement(menu_navigation_t *nav, unsigned scroll_speed)
  **/
 void menu_navigation_increment(menu_navigation_t *nav, unsigned scroll_speed)
 {
-   settings_t *settings = config_get_ptr();
-   menu_handle_t *menu  = menu_driver_get_ptr();
+   settings_t *settings   = config_get_ptr();
+   menu_list_t *menu_list = menu_list_get_ptr();
 
    if (!nav)
       return;
 
-   if (nav->selection_ptr + scroll_speed < (menu_list_get_size(menu->menu_list)))
+   if (nav->selection_ptr + scroll_speed < (menu_list_get_size(menu_list)))
       menu_navigation_set(nav,
             nav->selection_ptr + scroll_speed, true);
    else
@@ -95,7 +95,7 @@ void menu_navigation_increment(menu_navigation_t *nav, unsigned scroll_speed)
          menu_navigation_clear(nav, false);
       else
          menu_navigation_set(nav,
-               menu_list_get_size(menu->menu_list) - 1, true);
+               menu_list_get_size(menu_list) - 1, true);
    }
 
    menu_driver_navigation_increment();
@@ -126,11 +126,11 @@ void menu_navigation_set(menu_navigation_t *nav,
  **/
 void menu_navigation_set_last(menu_navigation_t *nav)
 {
-   menu_handle_t *menu = menu_driver_get_ptr();
-   if (!menu || !nav)
+   menu_list_t *menu_list = menu_list_get_ptr();
+   if (!menu_list || !nav)
       return;
 
-   nav->selection_ptr = menu_list_get_size(menu->menu_list) - 1;
+   nav->selection_ptr = menu_list_get_size(menu_list) - 1;
 
    menu_driver_navigation_set_last();
 }
