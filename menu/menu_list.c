@@ -488,3 +488,25 @@ bool menu_list_entry_is_currently_selected(menu_entry_t *entry)
       return false;
    return (entry->id == nav->selection_ptr);
 }
+
+int menu_list_get_current_entry_id(void)
+{
+   size_t i;
+   const char        *label = NULL;
+   menu_list_t   *menu_list = menu_list_get_ptr();
+   size_t               end = menu_list_get_size(menu_list);
+
+   menu_list_get_last_stack(menu_list,
+         NULL, &label, NULL);
+
+   for (i = 0; i < end; i++)
+   {
+      menu_entry_t entry;
+      menu_list_get_entry(&entry, i, label, NULL);
+
+      if (menu_list_entry_is_currently_selected(&entry))
+         return i;
+   }
+
+   return -1;
+}
