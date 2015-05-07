@@ -1669,6 +1669,11 @@ static void config_load_core_specific(void)
 
    if (settings->core_specific_config)
    {
+
+	  // Toggle has_save_path to false so it resets
+	  global->has_set_save_path = false;
+	  global->has_set_state_path = false;
+
       char tmp[PATH_MAX_LENGTH];
       strlcpy(tmp, settings->libretro, sizeof(tmp));
       RARCH_LOG("Loading core-specific config from: %s.\n",
@@ -1683,6 +1688,10 @@ static void config_load_core_specific(void)
 
       /* This must be true for core specific configs. */
       settings->core_specific_config = true;
+
+	  // Reset save paths
+	  global->has_set_save_path = true;
+	  global->has_set_state_path = true;
    }
 }
 
@@ -1812,13 +1821,22 @@ bool config_load_override(void)
 #endif
 
       char buf[PATH_MAX_LENGTH];
-      //Store the libretro_path we're using since it will be overwritten by the override when reloading
+      // Store the libretro_path we're using since it will be overwritten by the override when reloading
       strlcpy(buf,settings->libretro,sizeof(buf));
+
+	  // Toggle has_save_path to false so it resets
+	   global->has_set_save_path = false;
+	   global->has_set_state_path = false;
+
       if (config_load_file(global->config_path, false))
       {		  
-         //Restore the libretro_path we're using since it will be overwritten by the override when reloading
+         // Restore the libretro_path we're using since it will be overwritten by the override when reloading
          strlcpy(settings->libretro,buf,sizeof(settings->libretro));
          rarch_main_msg_queue_push("Configuration override loaded", 1, 100, true);
+
+		 // Reset save paths
+	     global->has_set_save_path = true;
+	     global->has_set_state_path = true;
          return true;
       }
    }
@@ -1842,9 +1860,19 @@ bool config_load_override(void)
       return false;
 
    *global->append_config_path = '\0';
+   
+   	// Toggle has_save_path to false so it resets
+	global->has_set_save_path = false;
+	global->has_set_state_path = false;
+   
    if (config_load_file(global->config_path, false))
    {
        RARCH_LOG("Configuration overrides unloaded, original configuration reset\n");
+       	   
+	   // Reset save paths	   
+	   global->has_set_save_path = true;
+	   global->has_set_state_path = true;
+
        return true;
    }
    else
