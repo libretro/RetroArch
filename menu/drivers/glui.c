@@ -304,9 +304,8 @@ static void glui_render_menu_list(runloop_t *runloop,
       char message[PATH_MAX_LENGTH],
            entry_title_buf[PATH_MAX_LENGTH], type_str_buf[PATH_MAX_LENGTH];
       bool selected             = false;
-      menu_file_list_cbs_t *cbs = NULL;
 
-      menu_display_setting_label(cbs, &entry, i, label, NULL);
+      menu_display_setting_label(&entry, i, label, NULL);
 
       selected = (i == menu->navigation.selection_ptr);
 
