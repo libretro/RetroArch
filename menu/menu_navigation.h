@@ -87,6 +87,8 @@ void menu_navigation_descend_alphabet(menu_navigation_t *nav, size_t *ptr_out);
  **/
 void menu_navigation_ascend_alphabet(menu_navigation_t *nav, size_t *ptr_out);
 
+size_t menu_navigation_get_current_selection(void);
+
 #ifdef __cplusplus
 }
 #endif

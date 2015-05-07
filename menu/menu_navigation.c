@@ -52,8 +52,9 @@ void menu_navigation_clear(menu_navigation_t *nav, bool pending_push)
  **/
 void menu_navigation_decrement(menu_navigation_t *nav, unsigned scroll_speed)
 {
-   menu_handle_t *menu  = menu_driver_get_ptr();
-   settings_t *settings = config_get_ptr();
+   menu_list_t *menu_list = menu_list_get_ptr();
+   menu_handle_t *menu    = menu_driver_get_ptr();
+   settings_t *settings   = config_get_ptr();
 
    if (!nav)
       return;
@@ -65,7 +66,7 @@ void menu_navigation_decrement(menu_navigation_t *nav, unsigned scroll_speed)
    {
       if (settings->menu.navigation.wraparound.vertical_enable)
          menu_navigation_set(nav, 
-               menu_list_get_size(menu->menu_list) - 1, true);
+               menu_list_get_size(menu_list) - 1, true);
       else
          menu_navigation_set(nav, 0, true);
    }
@@ -194,4 +195,12 @@ void menu_navigation_ascend_alphabet(menu_navigation_t *nav, size_t *ptr_out)
    *ptr_out = nav->scroll.indices.list[i + 1];
 
    menu_driver_navigation_ascend_alphabet(ptr_out);
+}
+
+size_t menu_navigation_get_current_selection(void)
+{
+   menu_navigation_t *nav = menu_navigation_get_ptr();
+   if (!nav)
+      return -1;
+   return nav->selection_ptr;
 }
