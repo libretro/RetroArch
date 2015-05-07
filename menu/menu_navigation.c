@@ -53,7 +53,6 @@ void menu_navigation_clear(menu_navigation_t *nav, bool pending_push)
 void menu_navigation_decrement(menu_navigation_t *nav, unsigned scroll_speed)
 {
    menu_list_t *menu_list = menu_list_get_ptr();
-   menu_handle_t *menu    = menu_driver_get_ptr();
    settings_t *settings   = config_get_ptr();
 
    if (!nav)
