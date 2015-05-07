@@ -602,28 +602,13 @@ static void rmenu_xui_render(void)
 	end = menu_list_get_size(menu->menu_list);
 	for (i = 0; i < end; i++)
    {
+      menu_entry_t entry;
       wchar_t msg_left[PATH_MAX_LENGTH], msg_right[PATH_MAX_LENGTH];
-      char type_str[PATH_MAX_LENGTH], path_buf[PATH_MAX_LENGTH];
-      const char *path = NULL, *entry_label = NULL;
-      unsigned type = 0, w = 0;
-      menu_file_list_cbs_t *cbs = NULL;
 
-      menu_list_get_at_offset(menu->menu_list->selection_buf, i, &path,
-            &entry_label, &type);
+      menu_list_get_entry(&entry, i, label, NULL);
 
-      cbs = (menu_file_list_cbs_t*)
-         menu_list_get_actiondata_at_offset(menu->menu_list->selection_buf,
-               i);
-
-      if (cbs && cbs->action_get_representation)
-         cbs->action_get_representation(menu->menu_list->selection_buf,
-               &w, type, i, label,
-               type_str, sizeof(type_str), 
-               entry_label, path,
-               path_buf, sizeof(path_buf));
-
-      mbstowcs(msg_left, path_buf, sizeof(msg_left) / sizeof(wchar_t));
-      mbstowcs(msg_right, type_str, sizeof(msg_right) / sizeof(wchar_t));
+      mbstowcs(msg_left,  entry.path,  sizeof(msg_left)  / sizeof(wchar_t));
+      mbstowcs(msg_right, entry.value, sizeof(msg_right) / sizeof(wchar_t));
       rmenu_xui_set_list_text(i, msg_left, msg_right);
    }
 	XuiListSetCurSelVisible(m_menulist, menu->navigation.selection_ptr);
