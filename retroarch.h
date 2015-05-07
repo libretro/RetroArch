@@ -167,6 +167,8 @@ void rarch_init_system_av_info(void);
 
 void rarch_set_paths(const char *path);
 
+void set_paths_redirect(const char *path);
+
 /**
  * rarch_print_compiler:
  *

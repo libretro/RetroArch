@@ -665,9 +665,12 @@ static bool event_init_core(void)
    }
 
    pretro_set_environment(rarch_environment_cb);  
-  
+
    if(settings->auto_remaps_enable)
       config_load_remap();
+
+   if(settings->sort_savestates_enable || settings->sort_savefiles_enable)
+      set_paths_redirect(global->basename);
 
    rarch_verify_api_version();
    pretro_init();

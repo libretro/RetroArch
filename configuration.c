@@ -689,6 +689,9 @@ static void config_set_defaults(void)
    settings->auto_overrides_enable = default_auto_overrides_enable;
    settings->auto_remaps_enable = default_auto_remaps_enable;
 
+   settings->sort_savefiles_enable = default_sort_savefiles_enable;
+   settings->sort_savestates_enable = default_sort_savestates_enable;
+
    settings->menu_ok_btn          = default_menu_btn_ok;
    settings->menu_cancel_btn      = default_menu_btn_cancel;
    settings->menu_search_btn      = default_menu_btn_search;
@@ -1620,6 +1623,9 @@ static bool config_load_file(const char *path, bool set_defaults)
    CONFIG_GET_BOOL_BASE(conf, settings, auto_overrides_enable, "auto_overrides_enable");
    CONFIG_GET_BOOL_BASE(conf, settings, auto_remaps_enable, "auto_remaps_enable");
 
+   CONFIG_GET_BOOL_BASE(conf, settings, sort_savefiles_enable, "sort_savefiles_enable");
+   CONFIG_GET_BOOL_BASE(conf, settings, sort_savestates_enable, "sort_savestates_enable");
+
    CONFIG_GET_INT_BASE(conf, settings, menu_ok_btn,          "menu_ok_btn");
    CONFIG_GET_INT_BASE(conf, settings, menu_cancel_btn,      "menu_cancel_btn");
    CONFIG_GET_INT_BASE(conf, settings, menu_search_btn,      "menu_search_btn");
@@ -1817,7 +1823,7 @@ bool config_load_override(void)
       {
          RARCH_WARN("Can't use overrides in conjunction with netplay, disabling overrides\n");
          return false;
-      }   	   
+      }
 #endif
 
       char buf[PATH_MAX_LENGTH];
@@ -1829,7 +1835,7 @@ bool config_load_override(void)
 	   global->has_set_state_path = false;
 
       if (config_load_file(global->config_path, false))
-      {		  
+      {
          // Restore the libretro_path we're using since it will be overwritten by the override when reloading
          strlcpy(settings->libretro,buf,sizeof(settings->libretro));
          rarch_main_msg_queue_push("Configuration override loaded", 1, 100, true);
@@ -1860,16 +1866,16 @@ bool config_load_override(void)
       return false;
 
    *global->append_config_path = '\0';
-   
+
    	// Toggle has_save_path to false so it resets
 	global->has_set_save_path = false;
 	global->has_set_state_path = false;
-   
+
    if (config_load_file(global->config_path, false))
    {
        RARCH_LOG("Configuration overrides unloaded, original configuration reset\n");
-       	   
-	   // Reset save paths	   
+
+	   // Reset save paths
 	   global->has_set_save_path = true;
 	   global->has_set_state_path = true;
 
@@ -2535,6 +2541,10 @@ bool config_save_file(const char *path)
          settings->auto_overrides_enable);
    config_set_bool(conf, "auto_remaps_enable",
          settings->auto_remaps_enable);
+   config_set_bool(conf, "sort_savefiles_enable",
+         settings->sort_savefiles_enable);
+   config_set_bool(conf, "sort_savestates_enable",
+         settings->sort_savestates_enable);
    config_set_int(conf, "libretro_log_level", settings->libretro_log_level);
    config_set_bool(conf, "log_verbosity", global->verbosity);
    config_set_bool(conf, "perfcnt_enable", global->perfcnt_enable);
