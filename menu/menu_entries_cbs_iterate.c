@@ -490,6 +490,7 @@ static int action_iterate_main(const char *label, unsigned action)
    const char *path_offset   = NULL;
    menu_file_list_cbs_t *cbs = NULL;
    menu_handle_t *menu       = menu_driver_get_ptr();
+   menu_list_t *menu_list    = menu_list_get_ptr();
    menu_navigation_t *nav    = menu_navigation_get_ptr();
    global_t *global          = global_get_ptr();
    size_t selected           = menu_navigation_get_current_selection();
@@ -497,10 +498,10 @@ static int action_iterate_main(const char *label, unsigned action)
       return 0;
 
    cbs = (menu_file_list_cbs_t*)
-      menu_list_get_actiondata_at_offset(menu->menu_list->selection_buf,
+      menu_list_get_actiondata_at_offset(menu_list->selection_buf,
             selected);
 
-   menu_list_get_at_offset(menu->menu_list->selection_buf,
+   menu_list_get_at_offset(menu_list->selection_buf,
          selected, &path_offset, &label_offset, &type_offset);
 
    if (!strcmp(label, "help"))
@@ -570,8 +571,7 @@ static int action_iterate_main(const char *label, unsigned action)
 
       case MENU_ACTION_REFRESH:
          if (cbs && cbs->action_refresh)
-            ret = cbs->action_refresh(menu->menu_list->selection_buf,
-                  menu->menu_list->menu_stack);
+            ret = cbs->action_refresh(menu_list->selection_buf, menu_list->menu_stack);
          break;
 
       case MENU_ACTION_MESSAGE:
@@ -605,7 +605,7 @@ static int action_iterate_main(const char *label, unsigned action)
    /* Have to defer it so we let settings refresh. */
    if (menu->push_start_screen)
    {
-      menu_list_push_stack(menu->menu_list, "", "help", 0, 0);
+      menu_list_push_stack(menu_list, "", "help", 0, 0);
       menu->push_start_screen = false;
    }
 
