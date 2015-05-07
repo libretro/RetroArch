@@ -22,6 +22,15 @@
 #include <string.h>
 #include <retro_inline.h>
 
+
+static menu_list_t *menu_list_get_ptr(void)
+{
+   menu_handle_t *menu       = menu_driver_get_ptr();
+   if (!menu)
+      return NULL;
+   return menu->menu_list;
+}
+
 /**
  * Before a refresh, we could have deleted a 
  * file on disk, causing selection_ptr to 
@@ -31,17 +40,18 @@
  **/
 static void menu_entries_refresh(file_list_t *list)
 {
-   menu_handle_t *menu = menu_driver_get_ptr();
-   if (!menu)
+   menu_handle_t *menu      = menu_driver_get_ptr();
+   menu_list_t   *menu_list = menu_list_get_ptr();
+   if (!menu || !menu_list)
       return;
    if (!list)
       return;
 
-   if (menu->navigation.selection_ptr >= menu_list_get_size(menu->menu_list)
-         && menu_list_get_size(menu->menu_list))
+   if (menu->navigation.selection_ptr >= menu_list_get_size(menu_list)
+         && menu_list_get_size(menu_list))
       menu_navigation_set(&menu->navigation,
-            menu_list_get_size(menu->menu_list) - 1, true);
-   else if (!menu_list_get_size(menu->menu_list))
+            menu_list_get_size(menu_list) - 1, true);
+   else if (!menu_list_get_size(menu_list))
       menu_navigation_clear(&menu->navigation, true);
 }
 
@@ -450,14 +460,20 @@ void menu_list_get_entry(menu_entry_t *entry, size_t i,
    const char *path          = NULL;
    const char *entry_label   = NULL;
    menu_file_list_cbs_t *cbs = NULL;
-   menu_handle_t *menu       = menu_driver_get_ptr();
-   file_list_t *list         = userdata ? (file_list_t*)userdata 
-      : menu->menu_list->selection_buf;
+   file_list_t *list         = NULL;
+   menu_list_t *menu_list    = menu_list_get_ptr();
+
+   if (!menu_list)
+      return;
+   
+   list = userdata ? (file_list_t*)userdata : menu_list->selection_buf;
+
+   if (!list)
+      return;
+
    menu_list_get_at_offset(list, i, &path, &entry_label, &entry->type);
 
-   cbs = (menu_file_list_cbs_t*)
-      menu_list_get_actiondata_at_offset(list,
-            i);
+   cbs = (menu_file_list_cbs_t*)menu_list_get_actiondata_at_offset(list, i);
 
    if (cbs && cbs->action_get_representation)
       cbs->action_get_representation(list,
