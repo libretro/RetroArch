@@ -120,9 +120,6 @@ static int read_generic_file(const char *path, void **buf, ssize_t *len)
    if ((ret = fread(content_buf, 1, content_buf_size, file)) < content_buf_size)
       RARCH_WARN("Didn't read whole file.\n");
 
-   if (!content_buf)
-      goto error;
-
    *buf    = content_buf;
 
    /* Allow for easy reading of strings to be safe.
