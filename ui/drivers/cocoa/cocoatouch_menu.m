@@ -742,8 +742,8 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
      [self set_leftbutton:BOXSTRING("Back")
                    target:weakSelf
                    action:@selector(menuBack)];
-   else
-     [self set_leftbutton:BOXSTRING("Resume")
+    
+   [self set_rightbutton:BOXSTRING("Resume")
                    target:[RetroArch_iOS get]
                    action:@selector(showGameView)];
 
@@ -759,6 +759,16 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
                    style:UIBarButtonItemStyleBordered
                   target:target
                   action:action];
+}
+
+- (void) set_rightbutton:(NSString *)title target:(id)target action:(SEL)action
+{
+    self.navigationItem.rightBarButtonItem =
+    [[UIBarButtonItem alloc]
+     initWithTitle:title
+     style:UIBarButtonItemStyleBordered
+     target:target
+     action:action];
 }
 
 // JM: This could go down into RA
