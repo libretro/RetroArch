@@ -67,13 +67,14 @@ static void menu_input_key_end_line(void)
 static void menu_input_search_callback(void *userdata, const char *str)
 {
    size_t idx;
-   menu_handle_t *menu = menu_driver_get_ptr();
+   menu_list_t *menu_list = menu_list_get_ptr();
+   menu_navigation_t *nav = menu_navigation_get_ptr();
 
-   if (!menu)
+   if (!menu_list || !nav)
       return;
 
-   if (str && *str && file_list_search(menu->menu_list->selection_buf, str, &idx))
-         menu_navigation_set(&menu->navigation, idx, true);
+   if (str && *str && file_list_search(menu_list->selection_buf, str, &idx))
+         menu_navigation_set(nav, idx, true);
 
    menu_input_key_end_line();
 }
@@ -378,6 +379,7 @@ int menu_input_set_keyboard_bind_mode(void *data,
    rarch_setting_t  *setting = (rarch_setting_t*)data;
    settings_t *settings      = config_get_ptr();
    menu_handle_t       *menu = menu_driver_get_ptr();
+   menu_navigation_t   *nav  = menu_navigation_get_ptr();
 
    if (!menu || !setting)
       return -1;
@@ -400,7 +402,7 @@ int menu_input_set_keyboard_bind_mode(void *data,
                "",
                "custom_bind",
                MENU_SETTINGS_CUSTOM_BIND_KEYBOARD,
-               menu->navigation.selection_ptr);
+               nav->selection_ptr);
          break;
       case MENU_INPUT_BIND_ALL:
          menu->binds.target = &settings->input.binds
@@ -411,7 +413,7 @@ int menu_input_set_keyboard_bind_mode(void *data,
                "",
                "custom_bind_all",
                MENU_SETTINGS_CUSTOM_BIND_KEYBOARD,
-               menu->navigation.selection_ptr);
+               nav->selection_ptr);
          break;
    }
 
@@ -432,6 +434,7 @@ int menu_input_set_input_device_bind_mode(void *data,
    rarch_setting_t  *setting = (rarch_setting_t*)data;
    settings_t *settings      = config_get_ptr();
    menu_handle_t       *menu = menu_driver_get_ptr();
+   menu_navigation_t   *nav  = menu_navigation_get_ptr();
 
    if (!menu || !setting)
       return -1;
@@ -453,7 +456,7 @@ int menu_input_set_input_device_bind_mode(void *data,
                "",
                "custom_bind",
                MENU_SETTINGS_CUSTOM_BIND,
-               menu->navigation.selection_ptr);
+               nav->selection_ptr);
          break;
       case MENU_INPUT_BIND_ALL:
          menu->binds.target = &settings->input.binds
@@ -464,7 +467,7 @@ int menu_input_set_input_device_bind_mode(void *data,
                "",
                "custom_bind_all",
                MENU_SETTINGS_CUSTOM_BIND,
-               menu->navigation.selection_ptr);
+               nav->selection_ptr);
          break;
    }
 
@@ -712,8 +715,9 @@ static int menu_input_mouse_post_iterate(menu_file_list_cbs_t *cbs,
       const char *label, unsigned type, unsigned action)
 {
    driver_t      *driver  = driver_get_ptr();
-   menu_handle_t *menu    = menu_driver_get_ptr();
    settings_t *settings   = config_get_ptr();
+   menu_handle_t *menu    = menu_driver_get_ptr();
+   menu_navigation_t *nav = menu_navigation_get_ptr();
 
    if (!menu)
       return -1;
@@ -738,7 +742,7 @@ static int menu_input_mouse_post_iterate(menu_file_list_cbs_t *cbs,
          rarch_setting_t *setting =
             (rarch_setting_t*)setting_find_setting
             (menu->list_settings,
-             menu->menu_list->selection_buf->list[menu->navigation.selection_ptr].label);
+             menu->menu_list->selection_buf->list[nav->selection_ptr].label);
          menu->mouse.oldleft = true;
 
 #if 0
@@ -752,17 +756,16 @@ static int menu_input_mouse_post_iterate(menu_file_list_cbs_t *cbs,
             menu_list_pop_stack(menu->menu_list);
             return 0;
          }
-         if (menu->mouse.ptr == menu->navigation.selection_ptr
+         if (menu->mouse.ptr == nav->selection_ptr
             && cbs && cbs->action_toggle && setting &&
             (setting->type == ST_BOOL || setting->type == ST_UINT || setting->type == ST_FLOAT
              || setting->type == ST_STRING))
             return cbs->action_toggle(type, label, MENU_ACTION_RIGHT, true);
-         if (menu->mouse.ptr == menu->navigation.selection_ptr
+         if (menu->mouse.ptr == nav->selection_ptr
             && cbs && cbs->action_ok)
-            return cbs->action_ok(path, label, type,
-                  menu->navigation.selection_ptr);
+            return cbs->action_ok(path, label, type, nav->selection_ptr);
          else if (menu->mouse.ptr <= menu_list_get_size(menu->menu_list)-1)
-            menu_navigation_set(&menu->navigation, menu->mouse.ptr, false);
+            menu_navigation_set(nav, menu->mouse.ptr, false);
       }
    }
    else
@@ -780,11 +783,10 @@ static int menu_input_mouse_post_iterate(menu_file_list_cbs_t *cbs,
       menu->mouse.oldright = false;
 
    if (menu->mouse.wheeldown)
-      menu_navigation_increment(&menu->navigation, 1);
+      menu_navigation_increment(nav, 1);
 
    if (menu->mouse.wheelup)
-      menu_navigation_decrement(&menu->navigation, 1);
-
+      menu_navigation_decrement(nav, 1);
 
    return 0;
 }
@@ -793,7 +795,6 @@ static int pointer_tap(menu_file_list_cbs_t *cbs, const char *path,
       const char *label, unsigned type, unsigned action)
 {
    menu_handle_t *menu = menu_driver_get_ptr();
-
    driver_t *driver = driver_get_ptr();
    rarch_setting_t *setting =
       (rarch_setting_t*)setting_find_setting
