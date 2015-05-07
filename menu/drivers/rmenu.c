@@ -229,34 +229,20 @@ static void rmenu_render(void)
 
    for (i = begin; i < end; i++, j++)
    {
-      char message[PATH_MAX_LENGTH], type_str[PATH_MAX_LENGTH],
-           entry_title_buf[PATH_MAX_LENGTH], type_str_buf[PATH_MAX_LENGTH],
-           path_buf[PATH_MAX_LENGTH];
-      const char *path = NULL, *entry_label = NULL;
-      unsigned type = 0, w = 0;
+      menu_entry_t entry;
+      char message[PATH_MAX_LENGTH],
+           entry_title_buf[PATH_MAX_LENGTH], type_str_buf[PATH_MAX_LENGTH];
       bool selected = false;
-      menu_file_list_cbs_t *cbs = NULL;
 
-      menu_list_get_at_offset(menu->menu_list->selection_buf, i,
-            &path, &entry_label, &type);
-
-      cbs = (menu_file_list_cbs_t*)
-         menu_list_get_actiondata_at_offset(menu->menu_list->selection_buf,
-               i);
-
-      if (cbs && cbs->action_get_representation)
-         cbs->action_get_representation(menu->menu_list->selection_buf,
-               &w, type, i, label,
-               type_str, sizeof(type_str), 
-               entry_label, path,
-               path_buf, sizeof(path_buf));
+      menu_list_get_entry(&entry, i, label, NULL);
 
       selected = (i == menu->navigation.selection_ptr);
 
-      menu_animation_ticker_line(entry_title_buf, RMENU_TERM_WIDTH - (w + 1 + 2),
-            runloop->frames.video.count / 15, path, selected);
-      menu_animation_ticker_line(type_str_buf, w, runloop->frames.video.count / 15,
-            type_str, selected);
+      menu_animation_ticker_line(entry_title_buf, RMENU_TERM_WIDTH - (entry.spacing + 1 + 2),
+            runloop->frames.video.count / 15, entry.path, selected);
+      menu_animation_ticker_line(type_str_buf, entry.spacing,
+            runloop->frames.video.count / 15,
+            entry.value, selected);
 
       snprintf(message, sizeof(message), "%c %s",
             selected ? '>' : ' ', entry_title_buf);
