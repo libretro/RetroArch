@@ -22,6 +22,13 @@
 #include <ctype.h>
 #include "menu_navigation.h"
 
+menu_navigation_t *menu_navigation_get_ptr(void)
+{
+   menu_handle_t *menu  = menu_driver_get_ptr();
+   if (!menu)
+      return NULL;
+   return &menu->navigation;
+}
 /**
  * menu_navigation_clear:
  * @pending_push          : pending push ?

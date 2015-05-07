@@ -23,6 +23,8 @@
 extern "C" {
 #endif
 
+menu_navigation_t *menu_navigation_get_ptr(void);
+
 /**
  * menu_navigation_clear:
  * @pending_push          : pending push ?
