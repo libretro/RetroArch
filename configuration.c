@@ -688,6 +688,15 @@ static void config_set_defaults(void)
    settings->core_specific_config = default_core_specific_config;
    settings->auto_overrides_enable = default_auto_overrides_enable;
    settings->auto_remaps_enable = default_auto_remaps_enable;
+
+   settings->menu_ok_btn          = default_menu_btn_ok;
+   settings->menu_cancel_btn      = default_menu_btn_cancel;
+   settings->menu_search_btn      = default_menu_btn_search;
+   settings->menu_default_btn     = default_menu_btn_default;
+   settings->menu_info_btn        = default_menu_btn_info;
+   settings->menu_scroll_down_btn = default_menu_btn_scroll_down;
+   settings->menu_scroll_up_btn   = default_menu_btn_scroll_up;
+
    settings->user_language = 0;
 
    global->console.sound.system_bgm_enable = false;
@@ -1611,6 +1620,15 @@ static bool config_load_file(const char *path, bool set_defaults)
    CONFIG_GET_BOOL_BASE(conf, settings, auto_overrides_enable, "auto_overrides_enable");
    CONFIG_GET_BOOL_BASE(conf, settings, auto_remaps_enable, "auto_remaps_enable");
 
+   CONFIG_GET_INT_BASE(conf, settings, menu_ok_btn,          "menu_ok_btn");
+   CONFIG_GET_INT_BASE(conf, settings, menu_cancel_btn,      "menu_cancel_btn");
+   CONFIG_GET_INT_BASE(conf, settings, menu_search_btn,      "menu_search_btn");
+   CONFIG_GET_INT_BASE(conf, settings, menu_info_btn,        "menu_info_btn");
+   CONFIG_GET_INT_BASE(conf, settings, menu_default_btn,     "menu_default_btn");
+   CONFIG_GET_INT_BASE(conf, settings, menu_cancel_btn,      "menu_cancel_btn");
+   CONFIG_GET_INT_BASE(conf, settings, menu_scroll_down_btn, "menu_scroll_down_btn");
+   CONFIG_GET_INT_BASE(conf, settings, menu_scroll_up_btn,   "menu_scroll_up_btn");
+
    config_file_free(conf);
    return true;
 }
@@ -2496,6 +2514,14 @@ bool config_save_file(const char *path)
    config_set_bool(conf, "core_set_supports_no_game_enable", settings->core.set_supports_no_game_enable);
 
    config_set_int(conf, "archive_mode", settings->archive.mode);
+
+   config_set_int(conf, "menu_ok_btn",          settings->menu_ok_btn);
+   config_set_int(conf, "menu_cancel_btn",      settings->menu_cancel_btn);
+   config_set_int(conf, "menu_search_btn",      settings->menu_search_btn);
+   config_set_int(conf, "menu_info_btn",        settings->menu_info_btn);
+   config_set_int(conf, "menu_default_btn",     settings->menu_default_btn);
+   config_set_int(conf, "menu_scroll_down_btn", settings->menu_scroll_down_btn);
+   config_set_int(conf, "menu_scroll_up_btn",   settings->menu_scroll_up_btn);
 
    ret = config_file_write(conf, path);
    config_file_free(conf);
