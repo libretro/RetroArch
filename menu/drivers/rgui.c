@@ -493,7 +493,7 @@ static void rgui_render(void)
            entry_title_buf[PATH_MAX_LENGTH], type_str_buf[PATH_MAX_LENGTH];
       bool selected = false;
 
-      menu_list_get_entry(&entry, i, label, NULL);
+      menu_list_get_entry(&entry, i, NULL);
       selected = menu_list_entry_is_currently_selected(&entry);
 
       if (i > (menu->navigation.selection_ptr + 100))

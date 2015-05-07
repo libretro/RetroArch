@@ -447,9 +447,9 @@ int menu_list_populate_generic(file_list_t *list, const char *path,
    return 0;
 }
 
-void menu_list_get_entry(menu_entry_t *entry, size_t i,
-      const char *label, void *userdata)
+void menu_list_get_entry(menu_entry_t *entry, size_t i, void *userdata)
 {
+   const char *label         = NULL;
    const char *path          = NULL;
    const char *entry_label   = NULL;
    menu_file_list_cbs_t *cbs = NULL;
@@ -458,6 +458,8 @@ void menu_list_get_entry(menu_entry_t *entry, size_t i,
 
    if (!menu_list)
       return;
+
+   menu_list_get_last_stack(menu_list, NULL, &label, NULL);
    
    list = userdata ? (file_list_t*)userdata : menu_list->selection_buf;
 
@@ -496,13 +498,10 @@ int menu_list_get_current_entry_id(void)
    menu_list_t   *menu_list = menu_list_get_ptr();
    size_t               end = menu_list_get_size(menu_list);
 
-   menu_list_get_last_stack(menu_list,
-         NULL, &label, NULL);
-
    for (i = 0; i < end; i++)
    {
       menu_entry_t entry;
-      menu_list_get_entry(&entry, i, label, NULL);
+      menu_list_get_entry(&entry, i, NULL);
 
       if (menu_list_entry_is_currently_selected(&entry))
          return i;

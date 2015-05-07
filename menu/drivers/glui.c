@@ -286,7 +286,7 @@ static void glui_render(void)
 
 static void glui_render_menu_list(runloop_t *runloop,
       glui_handle_t *glui, menu_handle_t *menu,
-      const char *label, uint32_t normal_color,
+      uint32_t normal_color,
       uint32_t hover_color)
 {
    size_t i = 0;
@@ -305,7 +305,7 @@ static void glui_render_menu_list(runloop_t *runloop,
            entry_title_buf[PATH_MAX_LENGTH], type_str_buf[PATH_MAX_LENGTH];
       bool selected             = false;
 
-      menu_list_get_entry(&entry, i, label, NULL);
+      menu_list_get_entry(&entry, i, NULL);
       selected = menu_list_entry_is_currently_selected(&entry);
 
       menu_animation_ticker_line(entry_title_buf, glui->ticker_limit,
@@ -381,8 +381,7 @@ static void glui_frame(void)
 
    menu_display_font_bind_block(menu, font_driver, &glui->list_block);
 
-   glui_render_menu_list(runloop, glui, menu,
-         label, normal_color, hover_color);
+   glui_render_menu_list(runloop, glui, menu, normal_color, hover_color);
 
    menu_display_font_flush_block(menu, font_driver);
 
