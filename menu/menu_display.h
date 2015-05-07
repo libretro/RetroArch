@@ -17,6 +17,7 @@
 #define __MENU_DISPLAY_H__
 
 #include "menu_driver.h"
+#include "menu_list.h"
 #include "../gfx/video_thread_wrapper.h"
 #include "../gfx/font_renderer_driver.h"
 
@@ -53,15 +54,11 @@ void menu_display_set_viewport(menu_handle_t *menu);
 
 void menu_display_unset_viewport(menu_handle_t *menu);
 
-void menu_display_setting_label(
+bool menu_display_setting_label(
       menu_file_list_cbs_t *cbs,
+      menu_entry_t *entry,
       unsigned i,
-      unsigned *w, unsigned *type,
       const char *label,
-      char *type_str, size_t sizeof_type_str,
-      char *path_buf, size_t sizeof_path_buf,
-      char *entry_label_buf, size_t sizeof_entry_label_buf,
-      const char *entry_label,
       void *userdata);
 
 #ifdef __cplusplus

@@ -167,7 +167,7 @@ void menu_list_free(menu_list_t *menu_list)
    menu_list_destroy(menu_list->selection_buf);
 }
 
-void *menu_list_new(void)
+menu_list_t *menu_list_new(void)
 {
    menu_list_t *list = (menu_list_t*)calloc(1, sizeof(*list));
 

@@ -208,23 +208,23 @@ void menu_display_unset_viewport(menu_handle_t *menu)
          global->video_data.height, false, true);
 }
 
-void menu_display_setting_label(
+bool menu_display_setting_label(
       menu_file_list_cbs_t *cbs,
+      menu_entry_t *entry,
       unsigned i,
-      unsigned *w, unsigned *type,
       const char *label, 
-      char *type_str, size_t sizeof_type_str,
-      char *path_buf, size_t sizeof_path_buf,
-      char *entry_label_buf, size_t sizeof_entry_label_buf,
-      const char *entry_label,
       void *userdata)
 {
-   const char *path = NULL;
+   const char *entry_label  = NULL;
+   const char *path         = NULL;
    menu_handle_t *menu      = menu_driver_get_ptr();
    file_list_t *list        = userdata ? (file_list_t*)userdata 
       : menu->menu_list->selection_buf;
 
-   menu_list_get_at_offset(list, i, &path, &entry_label, type);
+   if (!entry)
+      return false;
+
+   menu_list_get_at_offset(list, i, &path, &entry_label, &entry->type);
 
    cbs = (menu_file_list_cbs_t*)
       menu_list_get_actiondata_at_offset(list,
@@ -232,11 +232,13 @@ void menu_display_setting_label(
 
    if (cbs && cbs->action_get_representation)
       cbs->action_get_representation(list,
-            w, *type, i, label,
-            type_str, sizeof_type_str, 
+            &entry->spacing, entry->type, i, label,
+            entry->value,  sizeof(entry->value), 
             entry_label, path,
-            path_buf, sizeof_path_buf);
+            entry->path, sizeof(entry->path));
 
-   if (entry_label && entry_label_buf != NULL)
-      strlcpy(entry_label_buf, entry_label, sizeof_entry_label_buf);
+   if (entry_label)
+      strlcpy(entry->label, entry_label, sizeof(entry->label));
+
+   return true;
 }

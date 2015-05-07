@@ -997,14 +997,10 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
 
    for (i = 0; i < end; i++)
    {
-      GLuint texture_switch = 0;
+      menu_entry_t entry;
       float icon_x, icon_y;
-      char entry_label_buf[PATH_MAX_LENGTH];
-      char type_str[PATH_MAX_LENGTH], path_buf[PATH_MAX_LENGTH];
+      GLuint texture_switch = 0;
       char name[PATH_MAX_LENGTH], value[PATH_MAX_LENGTH];
-      const char *entry_label = NULL;
-      unsigned type                         = 0;
-      unsigned w                            = 0;
       GLuint icon                           = 0;
       xmb_node_t *node = (xmb_node_t*)file_list_get_userdata_at_offset(list, i);
       runloop_t *runloop = rarch_main_get_ptr();
@@ -1025,44 +1021,37 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
             icon_y > global->video_data.height + xmb->icon.size)
          continue;
 
-      menu_display_setting_label(cbs, i,
-            &w, &type,
-            label,
-            type_str,        sizeof(type_str),
-            path_buf,        sizeof(path_buf),
-            entry_label_buf, sizeof(entry_label_buf),
-            entry_label,
-            list);
+      menu_display_setting_label(cbs, &entry, i, label, list);
 
-      if (type == MENU_FILE_CONTENTLIST_ENTRY)
-         strlcpy(path_buf, path_basename(path_buf), sizeof(path_buf));
+      if (entry.type == MENU_FILE_CONTENTLIST_ENTRY)
+         strlcpy(entry.path, path_basename(entry.path), sizeof(entry.path));
 
-      icon = xmb_icon_get_type(xmb, core_node, type);
+      icon = xmb_icon_get_type(xmb, core_node, entry.type);
 
-      if (!strcmp(entry_label_buf, "core_options"))
+      if (!strcmp(entry.label, "core_options"))
          icon = xmb->textures.list[XMB_TEXTURE_CORE_OPTIONS].id;
-      else if (!strcmp(entry_label_buf, "core_information"))
+      else if (!strcmp(entry.label, "core_information"))
          icon = xmb->textures.list[XMB_TEXTURE_CORE_INFO].id;
-      else if (!strcmp(entry_label_buf, "core_input_remapping_options"))
+      else if (!strcmp(entry.label, "core_input_remapping_options"))
          icon = xmb->textures.list[XMB_TEXTURE_INPUT_REMAPPING_OPTIONS].id;
-      else if (!strcmp(entry_label_buf, "core_cheat_options"))
+      else if (!strcmp(entry.label, "core_cheat_options"))
          icon = xmb->textures.list[XMB_TEXTURE_CHEAT_OPTIONS].id;
-      else if (!strcmp(entry_label_buf, "core_disk_options"))
+      else if (!strcmp(entry.label, "core_disk_options"))
          icon = xmb->textures.list[XMB_TEXTURE_DISK_OPTIONS].id;
-      else if (!strcmp(entry_label_buf, "savestate"))
+      else if (!strcmp(entry.label, "savestate"))
          icon = xmb->textures.list[XMB_TEXTURE_SAVESTATE].id;
-      else if (!strcmp(entry_label_buf, "loadstate"))
+      else if (!strcmp(entry.label, "loadstate"))
          icon = xmb->textures.list[XMB_TEXTURE_LOADSTATE].id;
-      else if (!strcmp(entry_label_buf, "take_screenshot"))
+      else if (!strcmp(entry.label, "take_screenshot"))
          icon = xmb->textures.list[XMB_TEXTURE_SCREENSHOT].id;
-      else if (!strcmp(entry_label_buf, "restart_content"))
+      else if (!strcmp(entry.label, "restart_content"))
          icon = xmb->textures.list[XMB_TEXTURE_RELOAD].id;
-      else if (!strcmp(entry_label_buf, "resume_content"))
+      else if (!strcmp(entry.label, "resume_content"))
          icon = xmb->textures.list[XMB_TEXTURE_RESUME].id;
 
 
       menu_animation_ticker_line(name, 35,
-            runloop->frames.video.count / 20, path_buf,
+            runloop->frames.video.count / 20, entry.path,
             (i == current));
 
       xmb_draw_text(menu, xmb, name,
@@ -1072,21 +1061,21 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
             1, node->label_alpha, TEXT_ALIGN_LEFT);
 
       menu_animation_ticker_line(value, 35,
-            runloop->frames.video.count / 20, type_str,
+            runloop->frames.video.count / 20, entry.value,
             (i == current));
 
-      if((     strcmp(type_str, "...")
-            && strcmp(type_str, "(CORE)")
-            && strcmp(type_str, "(RDB)")
-            && strcmp(type_str, "(CURSOR)")
-            && strcmp(type_str, "(FILE)")
-            && strcmp(type_str, "(DIR)")
-            && strcmp(type_str, "(COMP)")
-            && strcmp(type_str, "ON")
-            && strcmp(type_str, "OFF"))
-            || ((!strcmp(type_str, "ON")
+      if((     strcmp(entry.value, "...")
+            && strcmp(entry.value, "(CORE)")
+            && strcmp(entry.value, "(RDB)")
+            && strcmp(entry.value, "(CURSOR)")
+            && strcmp(entry.value, "(FILE)")
+            && strcmp(entry.value, "(DIR)")
+            && strcmp(entry.value, "(COMP)")
+            && strcmp(entry.value, "ON")
+            && strcmp(entry.value, "OFF"))
+            || ((!strcmp(entry.value, "ON")
             && !xmb->textures.list[XMB_TEXTURE_SWITCH_ON].id)
-            || (!strcmp(type_str, "OFF")
+            || (!strcmp(entry.value, "OFF")
             && !xmb->textures.list[XMB_TEXTURE_SWITCH_OFF].id)))
          xmb_draw_text(menu, xmb, value,
                node->x + xmb->margins.screen.left + xmb->icon.spacing.horizontal + 
@@ -1101,10 +1090,10 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
 
       xmb_draw_icon(gl, xmb, icon, icon_x, icon_y, node->alpha, 0, node->zoom);
 
-      if (!strcmp(type_str, "ON") && xmb->textures.list[XMB_TEXTURE_SWITCH_ON].id)
+      if (!strcmp(entry.value, "ON") && xmb->textures.list[XMB_TEXTURE_SWITCH_ON].id)
          texture_switch = xmb->textures.list[XMB_TEXTURE_SWITCH_ON].id;
 
-      if (!strcmp(type_str, "OFF") && xmb->textures.list[XMB_TEXTURE_SWITCH_OFF].id)
+      if (!strcmp(entry.value, "OFF") && xmb->textures.list[XMB_TEXTURE_SWITCH_OFF].id)
          texture_switch = xmb->textures.list[XMB_TEXTURE_SWITCH_OFF].id;
 
       if (texture_switch != 0)

@@ -488,43 +488,31 @@ static void rgui_render(void)
 
    for (i = menu->begin; i < end; i++, y += FONT_HEIGHT_STRIDE)
    {
-      char message[PATH_MAX_LENGTH], type_str[PATH_MAX_LENGTH],
-           entry_title_buf[PATH_MAX_LENGTH], type_str_buf[PATH_MAX_LENGTH],
-           path_buf[PATH_MAX_LENGTH];
-      const char *entry_label = NULL;
-      unsigned type = 0;
-      unsigned w    = 0;
+      menu_entry_t entry;
+      char message[PATH_MAX_LENGTH], 
+           entry_title_buf[PATH_MAX_LENGTH], type_str_buf[PATH_MAX_LENGTH];
       bool selected = false;
       menu_file_list_cbs_t *cbs = NULL;
 
-      menu_display_setting_label(
-            cbs,
-            i,
-            &w, &type,
-            label,
-            type_str, sizeof(type_str),
-            path_buf, sizeof(path_buf),
-            NULL, 0,
-            entry_label,
-            NULL);
+      menu_display_setting_label(cbs, &entry, i, label, NULL);
 
       selected = (i == menu->navigation.selection_ptr);
 
       if (i > (menu->navigation.selection_ptr + 100))
          continue;
 
-      menu_animation_ticker_line(entry_title_buf, RGUI_TERM_WIDTH - (w + 1 + 2),
-            runloop->frames.video.count / RGUI_TERM_START_X, path_buf, selected);
-      menu_animation_ticker_line(type_str_buf, w,
+      menu_animation_ticker_line(entry_title_buf, RGUI_TERM_WIDTH - (entry.spacing + 1 + 2),
+            runloop->frames.video.count / RGUI_TERM_START_X, entry.path, selected);
+      menu_animation_ticker_line(type_str_buf, entry.spacing,
             runloop->frames.video.count / RGUI_TERM_START_X,
-            type_str, selected);
+            entry.value, selected);
 
       snprintf(message, sizeof(message), "%c %-*.*s %-*s",
             selected ? '>' : ' ',
-            RGUI_TERM_WIDTH - (w + 1 + 2),
-            RGUI_TERM_WIDTH - (w + 1 + 2),
+            RGUI_TERM_WIDTH - (entry.spacing + 1 + 2),
+            RGUI_TERM_WIDTH - (entry.spacing + 1 + 2),
             entry_title_buf,
-            w,
+            entry.spacing,
             type_str_buf);
 
       blit_line(menu, x, y, message, selected ? hover_color : normal_color);

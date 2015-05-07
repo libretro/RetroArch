@@ -30,9 +30,19 @@ typedef struct menu_list
    file_list_t *selection_buf;
 } menu_list_t;
 
+typedef struct menu_entry
+{
+   char  path[PATH_MAX_LENGTH];
+   char label[PATH_MAX_LENGTH];
+   char value[PATH_MAX_LENGTH];
+   unsigned id;
+   unsigned type;
+   unsigned spacing;
+} menu_entry_t;
+
 void menu_list_free(menu_list_t *menu_list);
 
-void *menu_list_new(void);
+menu_list_t *menu_list_new(void);
 
 void menu_list_flush_stack(menu_list_t *list,
       unsigned final_type);

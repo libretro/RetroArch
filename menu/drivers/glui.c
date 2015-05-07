@@ -300,30 +300,20 @@ static void glui_render_menu_list(runloop_t *runloop,
    for (i = 0; i < menu_list_get_size(menu->menu_list); i++)
    {
       unsigned y;
-      char message[PATH_MAX_LENGTH], type_str[PATH_MAX_LENGTH],
-           entry_title_buf[PATH_MAX_LENGTH], type_str_buf[PATH_MAX_LENGTH],
-           path_buf[PATH_MAX_LENGTH];
-      const char *entry_label   = NULL;
-      unsigned type             = 0;
-      unsigned w                = 0;
+      menu_entry_t entry;
+      char message[PATH_MAX_LENGTH],
+           entry_title_buf[PATH_MAX_LENGTH], type_str_buf[PATH_MAX_LENGTH];
       bool selected             = false;
       menu_file_list_cbs_t *cbs = NULL;
 
-      menu_display_setting_label(cbs, i,
-            &w, &type,
-            label,
-            type_str, sizeof(type_str),
-            path_buf, sizeof(path_buf),
-            NULL, 0,
-            entry_label,
-            NULL);
+      menu_display_setting_label(cbs, &entry, i, label, NULL);
 
       selected = (i == menu->navigation.selection_ptr);
 
       menu_animation_ticker_line(entry_title_buf, glui->ticker_limit,
-            runloop->frames.video.count / 100, path_buf, selected);
+            runloop->frames.video.count / 100, entry.path, selected);
       menu_animation_ticker_line(type_str_buf, glui->ticker_limit,
-            runloop->frames.video.count / 100, type_str, selected);
+            runloop->frames.video.count / 100, entry.value, selected);
 
       strlcpy(message, entry_title_buf, sizeof(message));
 
