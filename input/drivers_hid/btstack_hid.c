@@ -29,7 +29,7 @@
 
 #define BUILDING_BTDYNAMIC
 #include "btstack_hid.h"
-#include "../../dylib.h"
+#include <dynamic/dylib.h>
 #include "../connect/joypad_connection.h"
 
 typedef struct btstack_hid

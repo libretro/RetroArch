@@ -51,7 +51,7 @@
 #endif
 #endif
 
-#include "../../dylib.h"
+#include <dynamic/dylib.h>
 
 /* forward declarations */
 static void d3d_calculate_rect(d3d_video_t *d3d,

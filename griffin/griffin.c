@@ -548,7 +548,7 @@ FILTERS
 /*============================================================
 DYNAMIC
 ============================================================ */
-#include "../dylib.c"
+#include "../libretro-common/dynamic/dylib.c"
 #include "../dynamic.c"
 #include "../dynamic_dummy.c"
 #include "../gfx/video_filter.c"

@@ -24,7 +24,7 @@
 #include "../input_autodetect.h"
 #include "../input_common.h"
 
-#include "../../dylib.h"
+#include <dynamic/dylib.h>
 #include "../../general.h"
 #include <boolean.h>
 

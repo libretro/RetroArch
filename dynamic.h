@@ -24,7 +24,7 @@
 #include "config.h"
 #endif
 
-#include "dylib.h"
+#include <dynamic/dylib.h>
 
 #ifdef __cplusplus
 extern "C" {
