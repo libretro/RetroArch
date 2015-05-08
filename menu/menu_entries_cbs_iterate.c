@@ -482,6 +482,92 @@ static int action_iterate_message(const char *label, unsigned action)
    return 0;
 }
 
+static int action_iterate_switch(const char *label, unsigned action)
+{
+   unsigned type_offset      = 0;
+   const char *label_offset  = NULL;
+   const char *path_offset   = NULL;
+   menu_file_list_cbs_t *cbs = NULL;
+   menu_handle_t *menu       = menu_driver_get_ptr();
+   menu_list_t *menu_list    = menu_list_get_ptr();
+   menu_navigation_t *nav    = menu_navigation_get_ptr();
+   global_t *global          = global_get_ptr();
+   size_t selected           = menu_navigation_get_current_selection();
+   if (!menu)
+      return 0;
+
+   cbs = (menu_file_list_cbs_t*)
+      menu_list_get_actiondata_at_offset(menu_list->selection_buf,
+            selected);
+
+   menu_list_get_at_offset(menu_list->selection_buf,
+         selected, &path_offset, &label_offset, &type_offset);
+   switch (action)
+   {
+      case MENU_ACTION_UP:
+      case MENU_ACTION_DOWN:
+         if (cbs && cbs->action_up_or_down)
+            return cbs->action_up_or_down(type_offset, label_offset, action);
+         break;
+      case MENU_ACTION_SCROLL_UP:
+         menu_navigation_descend_alphabet(nav, &nav->selection_ptr);
+         break;
+      case MENU_ACTION_SCROLL_DOWN:
+         menu_navigation_ascend_alphabet(nav, &nav->selection_ptr);
+         break;
+
+      case MENU_ACTION_CANCEL:
+         if (cbs && cbs->action_cancel)
+            return cbs->action_cancel(path_offset, label_offset, type_offset, selected);
+         break;
+
+      case MENU_ACTION_OK:
+         if (cbs && cbs->action_ok)
+            return cbs->action_ok(path_offset, label_offset, type_offset, selected);
+         break;
+      case MENU_ACTION_START:
+         if (cbs && cbs->action_start)
+            return cbs->action_start(type_offset, label_offset, action);
+         break;
+      case MENU_ACTION_LEFT:
+      case MENU_ACTION_RIGHT:
+         if (cbs && cbs->action_toggle)
+            return cbs->action_toggle(type_offset, label_offset, action, false);
+         break;
+      case MENU_ACTION_SELECT:
+         if (cbs && cbs->action_select)
+            return cbs->action_select(type_offset, label_offset, action);
+         break;
+
+      case MENU_ACTION_REFRESH:
+         if (cbs && cbs->action_refresh)
+            return cbs->action_refresh(menu_list->selection_buf, menu_list->menu_stack);
+         break;
+
+      case MENU_ACTION_MESSAGE:
+         menu->msg_force = true;
+         break;
+
+      case MENU_ACTION_SEARCH:
+         menu_input_search_start();
+         break;
+
+      case MENU_ACTION_TEST:
+#if 0
+         menu->db = database_info_init("/home/squarepusher/roms", DATABASE_TYPE_RDL_WRITE);
+
+         if (!menu->db)
+            return -1;
+#endif
+         break;
+
+      default:
+         break;
+   }
+
+   return 0;
+}
+
 static int action_iterate_main(const char *label, unsigned action)
 {
    int ret                   = 0;
@@ -532,68 +618,7 @@ static int action_iterate_main(const char *label, unsigned action)
    if (menu->need_refresh && !menu->nonblocking_refresh && action != MENU_ACTION_MESSAGE)
       action = MENU_ACTION_REFRESH;
 
-   switch (action)
-   {
-      case MENU_ACTION_UP:
-      case MENU_ACTION_DOWN:
-         if (cbs && cbs->action_up_or_down)
-            ret = cbs->action_up_or_down(type_offset, label_offset, action);
-         break;
-      case MENU_ACTION_SCROLL_UP:
-         menu_navigation_descend_alphabet(nav, &nav->selection_ptr);
-         break;
-      case MENU_ACTION_SCROLL_DOWN:
-         menu_navigation_ascend_alphabet(nav, &nav->selection_ptr);
-         break;
-
-      case MENU_ACTION_CANCEL:
-         if (cbs && cbs->action_cancel)
-            return cbs->action_cancel(path_offset, label_offset, type_offset, selected);
-         break;
-
-      case MENU_ACTION_OK:
-         if (cbs && cbs->action_ok)
-            return cbs->action_ok(path_offset, label_offset, type_offset, selected);
-         break;
-      case MENU_ACTION_START:
-         if (cbs && cbs->action_start)
-            return cbs->action_start(type_offset, label_offset, action);
-         break;
-      case MENU_ACTION_LEFT:
-      case MENU_ACTION_RIGHT:
-         if (cbs && cbs->action_toggle)
-            ret = cbs->action_toggle(type_offset, label_offset, action, false);
-         break;
-      case MENU_ACTION_SELECT:
-         if (cbs && cbs->action_select)
-            ret = cbs->action_select(type_offset, label_offset, action);
-         break;
-
-      case MENU_ACTION_REFRESH:
-         if (cbs && cbs->action_refresh)
-            ret = cbs->action_refresh(menu_list->selection_buf, menu_list->menu_stack);
-         break;
-
-      case MENU_ACTION_MESSAGE:
-         menu->msg_force = true;
-         break;
-
-      case MENU_ACTION_SEARCH:
-         menu_input_search_start();
-         break;
-
-      case MENU_ACTION_TEST:
-#if 0
-         menu->db = database_info_init("/home/squarepusher/roms", DATABASE_TYPE_RDL_WRITE);
-
-         if (!menu->db)
-            return -1;
-#endif
-         break;
-
-      default:
-         break;
-   }
+   ret = action_iterate_switch(label, action);
 
    if (ret)
       return ret;
