@@ -331,19 +331,16 @@ void set_paths_redirect(const char *path)
    global_t   *global   = global_get_ptr();
    settings_t *settings = config_get_ptr();
 
-   char orig_savestate_dir[PATH_MAX_LENGTH] = "";
-   char orig_savefile_dir[PATH_MAX_LENGTH] = "";
-
-   if (global->system.info.library_name && strcmp(global->system.info.library_name,"No Core") && settings->sort_savefiles_enable)
+   if(global->system.info.library_name && strcmp(global->system.info.library_name,"No Core") && settings->sort_savefiles_enable)
    {
-	   strlcpy(orig_savefile_dir,global->savefile_dir,sizeof(global->savefile_dir));
-	   fill_pathname_dir(global->savefile_dir,global->savefile_dir,global->system.info.library_name,sizeof(global->savefile_dir));
+	      strlcpy(orig_savefile_dir,global->savefile_dir,sizeof(global->savefile_dir));
+	      fill_pathname_dir(global->savefile_dir,global->savefile_dir,global->system.info.library_name,sizeof(global->savefile_dir));
    }
 
    if (global->system.info.library_name && strcmp(global->system.info.library_name,"No Core") && settings->sort_savestates_enable)
    {
-       strlcpy(orig_savestate_dir,global->savestate_dir,sizeof(global->savestate_dir));
-	   fill_pathname_dir(global->savestate_dir,global->savestate_dir,global->system.info.library_name,sizeof(global->savestate_dir));
+          strlcpy(orig_savestate_dir,global->savestate_dir,sizeof(global->savestate_dir));
+	      fill_pathname_dir(global->savestate_dir,global->savestate_dir,global->system.info.library_name,sizeof(global->savestate_dir));
    }
 
    if(path_is_directory(global->savefile_dir))
@@ -372,13 +369,6 @@ void set_paths_redirect(const char *path)
             ".state", sizeof(global->cheatfile_name));
       RARCH_LOG("Redirecting cheat file to \"%s\".\n", global->cheatfile_name);
    }
-
-   if(global->system.info.library_name && strcmp(global->system.info.library_name,"No Core") && settings->sort_savefiles_enable)
-	   strlcpy(global->savefile_dir,orig_savefile_dir,sizeof(global->savefile_dir));
-
-   if(global->system.info.library_name && strcmp(global->system.info.library_name,"No Core") && settings->sort_savestates_enable)
-	   strlcpy(global->savestate_dir,orig_savestate_dir,sizeof(global->savestate_dir));
-
 }
 
 void rarch_set_paths(const char *path)
@@ -1180,7 +1170,7 @@ int rarch_main_init(int argc, char *argv[])
 #if defined(GEKKO) && defined(HW_RVL)
    {
       settings_t *settings = config_get_ptr();
-       
+
       if (settings)
       {
          event_command(EVENT_CMD_VIDEO_SET_ASPECT_RATIO);

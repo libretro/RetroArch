@@ -449,7 +449,7 @@ static void event_init_controllers(void)
       {
          /* If we're trying to connect a completely unknown device,
           * revert back to JOYPAD. */
-         
+
          if (device != RETRO_DEVICE_JOYPAD && device != RETRO_DEVICE_NONE)
          {
             /* Do not fix settings->input.libretro_device[i],
@@ -484,18 +484,20 @@ static void event_init_controllers(void)
 static void event_deinit_core(bool reinit)
 {
    global_t *global = global_get_ptr();
-   
+   settings_t *settings = config_get_ptr();
+
    pretro_unload_game();
    pretro_deinit();
 
    if (reinit)
       event_command(EVENT_CMD_DRIVERS_DEINIT);
-    
+
    if(global->overrides_active)
    {
       config_unload_override();
       global->overrides_active = false;
    }
+
    pretro_set_environment(rarch_environment_cb);
    uninit_libretro_sym();
 }
@@ -530,7 +532,7 @@ static bool event_load_save_files(void)
    for (i = 0; i < global->savefiles->size; i++)
       load_ram_file(global->savefiles->elems[i].data,
             global->savefiles->elems[i].attr.i);
-    
+
    return true;
 }
 
@@ -656,6 +658,9 @@ static bool event_init_core(void)
    driver_t *driver     = driver_get_ptr();
    settings_t *settings = config_get_ptr();
 
+   strlcpy(orig_savefile_dir,global->savefile_dir,sizeof(orig_savefile_dir));
+   strlcpy(orig_savestate_dir,global->savestate_dir,sizeof(orig_savestate_dir));
+
    if(settings->auto_overrides_enable)
    {
       if (config_load_override())
@@ -664,7 +669,7 @@ static bool event_init_core(void)
          global->overrides_active = false; 
    }
 
-   pretro_set_environment(rarch_environment_cb);  
+   pretro_set_environment(rarch_environment_cb);
 
    if(settings->auto_remaps_enable)
       config_load_remap();
@@ -683,6 +688,11 @@ static bool event_init_core(void)
 
    retro_init_libretro_cbs(&driver->retro_ctx);
    rarch_init_system_av_info();
+
+   if(settings->sort_savefiles_enable)
+	   strlcpy(global->savefile_dir,orig_savefile_dir,sizeof(global->savefile_dir));
+   if(settings->sort_savestates_enable)
+	   strlcpy(global->savestate_dir,orig_savestate_dir,sizeof(global->savestate_dir)); 
 
    return true;
 }
@@ -704,7 +714,7 @@ static bool event_save_auto_state(void)
    ret = save_state(savestate_name_auto);
    RARCH_LOG("Auto save state to \"%s\" %s.\n", savestate_name_auto, ret ?
          "succeeded" : "failed");
-    
+
    return true;
 }
 

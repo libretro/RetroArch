@@ -176,6 +176,9 @@ void set_paths_redirect(const char *path);
  **/
 void rarch_print_compiler(char *str, size_t sizeof_str);
 
+char orig_savestate_dir[PATH_MAX_LENGTH];
+char orig_savefile_dir[PATH_MAX_LENGTH];
+
 #ifdef __cplusplus
 }
 #endif
