@@ -14,8 +14,9 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <string.h>
+
 #include "dynamic.h"
-#include "general.h"
 
 #ifdef NEED_DYNAMIC
 
@@ -37,16 +38,10 @@ dylib_t dylib_load(const char *path)
 {
 #ifdef _WIN32
    dylib_t lib = LoadLibrary(path);
-   if (!lib)
-      RARCH_ERR("Failed to load library, error code: 0x%x\n",
-            (unsigned)GetLastError());
-   return lib;
 #else
    dylib_t lib = dlopen(path, RTLD_LAZY);
-   if (!lib)
-      RARCH_ERR("dylib_load() failed: \"%s\".\n", dlerror());
-   return lib;
 #endif
+   return lib;
 }
 
 function_t dylib_proc(dylib_t lib, const char *proc)
