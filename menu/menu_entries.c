@@ -80,44 +80,6 @@ int menu_entries_push_query(libretrodb_t *db,
 }
 #endif
 
-int menu_entries_push_list(menu_handle_t *menu,
-      file_list_t *list,
-      const char *path, const char *label,
-      unsigned type, unsigned setting_flags)
-{
-   rarch_setting_t *setting = NULL;
-   settings_t *settings     = config_get_ptr();
-   
-   if (menu && menu->list_settings)
-      settings_list_free(menu->list_settings);
-
-   menu->list_settings      = (rarch_setting_t *)setting_new(setting_flags);
-   setting                  = (rarch_setting_t*)menu_setting_find(label);
-
-   if (!setting)
-      return -1;
-
-   menu_list_clear(list);
-
-   for (; setting->type != ST_END_GROUP; setting++)
-   {
-      if (
-            setting->type == ST_GROUP 
-            || setting->type == ST_SUB_GROUP
-            || setting->type == ST_END_SUB_GROUP
-            || (setting->flags & SD_FLAG_ADVANCED && 
-               !settings->menu.show_advanced_settings)
-         )
-         continue;
-
-      menu_list_push(list, setting->short_description,
-            setting->name, menu_entries_setting_set_flags(setting), 0);
-   }
-
-   menu_driver_populate_entries(path, label, type);
-
-   return 0;
-}
 
 static void menu_entries_content_list_push(
       file_list_t *list, core_info_t *info, const char* path)
@@ -194,10 +156,49 @@ static int menu_entries_push_cores_list(file_list_t *list, core_info_t *info,
    return 0;
 }
 
+int menu_entries_push_list(menu_handle_t *menu,
+      file_list_t *list,
+      const char *path, const char *label,
+      unsigned type, unsigned setting_flags)
+{
+   rarch_setting_t *setting = NULL;
+   settings_t *settings     = config_get_ptr();
+   
+   if (menu && menu->list_settings)
+      settings_list_free(menu->list_settings);
+
+   menu->list_settings      = (rarch_setting_t *)setting_new(setting_flags);
+   setting                  = (rarch_setting_t*)menu_setting_find(label);
+
+   if (!setting)
+      return -1;
+
+   menu_list_clear(list);
+
+   for (; setting->type != ST_END_GROUP; setting++)
+   {
+      if (
+            setting->type == ST_GROUP 
+            || setting->type == ST_SUB_GROUP
+            || setting->type == ST_END_SUB_GROUP
+            || (setting->flags & SD_FLAG_ADVANCED && 
+               !settings->menu.show_advanced_settings)
+         )
+         continue;
+
+      menu_list_push(list, setting->short_description,
+            setting->name, menu_entries_setting_set_flags(setting), 0);
+   }
+
+   menu_driver_populate_entries(path, label, type);
+
+   return 0;
+}
+
 int menu_entries_push_horizontal_menu_list(menu_handle_t *menu,
       file_list_t *list,
       const char *path, const char *label,
-      unsigned menu_type)
+      unsigned type)
 {
    core_info_t           *info = NULL;
    global_t            *global = global_get_ptr();
@@ -218,7 +219,7 @@ int menu_entries_push_horizontal_menu_list(menu_handle_t *menu,
 
    menu_entries_push_cores_list(list, info, settings->core_assets_directory, true);
 
-   menu_list_populate_generic(list, path, label, menu_type);
+   menu_list_populate_generic(list, path, label, type);
 
    return 0;
 }
