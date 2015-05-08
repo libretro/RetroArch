@@ -690,9 +690,9 @@ static bool event_init_core(void)
    rarch_init_system_av_info();
 
    if(settings->sort_savefiles_enable)
-	   strlcpy(global->savefile_dir,orig_savefile_dir,sizeof(global->savefile_dir));
+      strlcpy(global->savefile_dir,orig_savefile_dir,sizeof(global->savefile_dir));
    if(settings->sort_savestates_enable)
-	   strlcpy(global->savestate_dir,orig_savestate_dir,sizeof(global->savestate_dir)); 
+      strlcpy(global->savestate_dir,orig_savestate_dir,sizeof(global->savestate_dir)); 
 
    return true;
 }
