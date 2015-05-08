@@ -234,7 +234,7 @@ static void rmenu_render(void)
            entry_title_buf[PATH_MAX_LENGTH], type_str_buf[PATH_MAX_LENGTH];
       bool selected = false;
 
-      menu_list_get_entry(&entry, i, NULL);
+      menu_list_get_entry(&entry, i, NULL, true);
       selected = menu_list_entry_is_currently_selected(&entry);
 
       menu_animation_ticker_line(entry_title_buf, RMENU_TERM_WIDTH - (entry.spacing + 1 + 2),

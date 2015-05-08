@@ -605,7 +605,7 @@ static void rmenu_xui_render(void)
       menu_entry_t entry;
       wchar_t msg_left[PATH_MAX_LENGTH], msg_right[PATH_MAX_LENGTH];
 
-      menu_list_get_entry(&entry, i, NULL);
+      menu_list_get_entry(&entry, i, NULL, true);
 
       mbstowcs(msg_left,  entry.path,  sizeof(msg_left)  / sizeof(wchar_t));
       mbstowcs(msg_right, entry.value, sizeof(msg_right) / sizeof(wchar_t));

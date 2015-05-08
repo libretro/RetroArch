@@ -447,7 +447,8 @@ int menu_list_populate_generic(file_list_t *list, const char *path,
    return 0;
 }
 
-void menu_list_get_entry(menu_entry_t *entry, size_t i, void *userdata)
+void menu_list_get_entry(menu_entry_t *entry, size_t i, void *userdata,
+      bool use_representation)
 {
    const char *label         = NULL;
    const char *path          = NULL;
@@ -470,7 +471,7 @@ void menu_list_get_entry(menu_entry_t *entry, size_t i, void *userdata)
 
    cbs = (menu_file_list_cbs_t*)menu_list_get_actiondata_at_offset(list, i);
 
-   if (cbs && cbs->action_get_representation)
+   if (cbs && cbs->action_get_representation && use_representation)
       cbs->action_get_representation(list,
             &entry->spacing, entry->type, i, label,
             entry->value,  sizeof(entry->value), 
@@ -491,7 +492,7 @@ bool menu_list_entry_is_currently_selected(menu_entry_t *entry)
    return (entry->id == nav->selection_ptr);
 }
 
-int menu_list_get_current_entry_id(void)
+int menu_list_get_current_entry_id(bool use_representation)
 {
    size_t i;
    menu_list_t   *menu_list = menu_list_get_ptr();
@@ -500,7 +501,8 @@ int menu_list_get_current_entry_id(void)
    for (i = 0; i < end; i++)
    {
       menu_entry_t entry;
-      menu_list_get_entry(&entry, i, NULL);
+      menu_list_get_entry(&entry, i,
+            NULL, use_representation);
 
       if (menu_list_entry_is_currently_selected(&entry))
          return i;
