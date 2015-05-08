@@ -2889,8 +2889,7 @@ void setting_get_label(file_list_t *list, char *type_str,
    if (!setting_data)
       return;
 
-   setting = (rarch_setting_t*)setting_find_setting(setting_data,
-         list->list[idx].label);
+   setting = setting_find_setting(setting_data, list->list[idx].label);
 
    if (setting)
       setting_get_string_representation(setting, type_str, type_str_size);

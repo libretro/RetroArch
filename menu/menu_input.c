@@ -89,9 +89,7 @@ void menu_input_st_uint_callback(void *userdata, const char *str)
    if (str && *str)
    {
       rarch_setting_t *current_setting = NULL;
-      if ((current_setting = (rarch_setting_t*)
-               setting_find_setting(
-                  menu->list_settings, menu->keyboard.label_setting)))
+      if ((current_setting = menu_setting_find(menu->keyboard.label_setting)))
          *current_setting->value.unsigned_integer = strtoul(str, NULL, 0);
    }
 
@@ -108,9 +106,7 @@ void menu_input_st_hex_callback(void *userdata, const char *str)
    if (str && *str)
    {
       rarch_setting_t *current_setting = NULL;
-      if ((current_setting = (rarch_setting_t*)
-               setting_find_setting(
-                  menu->list_settings, menu->keyboard.label_setting)))
+      if ((current_setting = menu_setting_find(menu->keyboard.label_setting)))
          if (str[0] == '#')
             str++;
          *current_setting->value.unsigned_integer = strtoul(str, NULL, 16);
@@ -132,9 +128,7 @@ void menu_input_st_string_callback(void *userdata, const char *str)
       rarch_setting_t *current_setting = NULL;
       global_t *global = global_get_ptr();
 
-      if ((current_setting = (rarch_setting_t*)
-               setting_find_setting(
-                  menu->list_settings, menu->keyboard.label_setting)))
+      if ((current_setting = menu_setting_find(menu->keyboard.label_setting)))
       {
          strlcpy(current_setting->value.string, str, current_setting->size);
          menu_setting_generic(current_setting);
@@ -739,10 +733,8 @@ static int menu_input_mouse_post_iterate(menu_file_list_cbs_t *cbs,
    {
       if (!menu->mouse.oldleft)
       {
-         rarch_setting_t *setting =
-            (rarch_setting_t*)setting_find_setting
-            (menu->list_settings,
-             menu->menu_list->selection_buf->list[nav->selection_ptr].label);
+         rarch_setting_t *setting = menu_setting_find(
+               menu->menu_list->selection_buf->list[nav->selection_ptr].label);
          menu->mouse.oldleft = true;
 
 #if 0
@@ -797,14 +789,13 @@ static int pointer_tap(menu_file_list_cbs_t *cbs, const char *path,
    menu_handle_t *menu = menu_driver_get_ptr();
    driver_t *driver = driver_get_ptr();
    rarch_setting_t *setting =
-      (rarch_setting_t*)setting_find_setting
-      (driver->menu->list_settings,
-       driver->menu->menu_list->selection_buf->list[menu->navigation.selection_ptr].label);
+      menu_setting_find(
+            driver->menu->menu_list->selection_buf->list[menu->navigation.selection_ptr].label);
 
    if (menu->pointer.ptr == menu->navigation.selection_ptr
-      && cbs && cbs->action_toggle && setting &&
-      (setting->type == ST_BOOL || setting->type == ST_UINT
-      || setting->type == ST_FLOAT || setting->type == ST_STRING))
+         && cbs && cbs->action_toggle && setting &&
+         (setting->type == ST_BOOL || setting->type == ST_UINT
+          || setting->type == ST_FLOAT || setting->type == ST_STRING))
       return cbs->action_toggle(type, label, MENU_ACTION_RIGHT, true);
    else if (menu->pointer.ptr == menu->navigation.selection_ptr)
       return cbs->action_ok(path, label, type, menu->navigation.selection_ptr);

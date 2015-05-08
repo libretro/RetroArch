@@ -222,15 +222,11 @@ static int action_iterate_info(const char *label, unsigned action)
 
    menu_driver_render();
 
-   current_setting = (rarch_setting_t*)setting_find_setting(
-         menu->list_settings,
-         list->list[selection].label);
+   current_setting = menu_setting_find(list->list[selection].label);
 
    if (current_setting)
       strlcpy(needle, current_setting->name, sizeof(needle));
-   else if ((current_setting = (rarch_setting_t*)setting_find_setting(
-               menu->list_settings,
-               list->list[selection].label)))
+   else if ((current_setting = menu_setting_find(list->list[selection].label)))
    {
       if (current_setting)
          strlcpy(needle, current_setting->name, sizeof(needle));

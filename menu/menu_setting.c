@@ -138,8 +138,7 @@ rarch_setting_t *menu_setting_find(const char *label)
 
    if (!menu)
       return NULL;
-   return (rarch_setting_t*)setting_find_setting(
-         menu->list_settings, label);
+   return setting_find_setting(menu->list_settings, label);
 }
 
 int menu_setting_set(unsigned type, const char *label,
