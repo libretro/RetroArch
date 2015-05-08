@@ -568,9 +568,8 @@ static int action_iterate_switch(const char *label, unsigned action)
    return 0;
 }
 
-static int action_iterate_main(const char *label, unsigned action)
+static void action_iterate_post(int *ret, const char *label, unsigned action)
 {
-   int ret                   = 0;
    unsigned type_offset      = 0;
    const char *label_offset  = NULL;
    const char *path_offset   = NULL;
@@ -580,8 +579,6 @@ static int action_iterate_main(const char *label, unsigned action)
    menu_navigation_t *nav    = menu_navigation_get_ptr();
    global_t *global          = global_get_ptr();
    size_t selected           = menu_navigation_get_current_selection();
-   if (!menu)
-      return 0;
 
    cbs = (menu_file_list_cbs_t*)
       menu_list_get_actiondata_at_offset(menu_list->selection_buf,
@@ -589,6 +586,17 @@ static int action_iterate_main(const char *label, unsigned action)
 
    menu_list_get_at_offset(menu_list->selection_buf,
          selected, &path_offset, &label_offset, &type_offset);
+
+   menu_input_post_iterate(ret, cbs, path_offset, label_offset, type_offset, action);
+}
+
+static int action_iterate_main(const char *label, unsigned action)
+{
+   int ret                   = 0;
+   menu_handle_t *menu       = menu_driver_get_ptr();
+   global_t *global          = global_get_ptr();
+   if (!menu)
+      return 0;
 
    if (!strcmp(label, "help"))
       return action_iterate_help(label, action);
@@ -623,13 +631,15 @@ static int action_iterate_main(const char *label, unsigned action)
    if (ret)
       return ret;
 
-   menu_input_post_iterate(&ret, cbs, path_offset, label_offset, type_offset, action);
+   action_iterate_post(&ret, label, action);
 
    menu_driver_render();
 
    /* Have to defer it so we let settings refresh. */
    if (menu->push_start_screen)
    {
+      menu_list_t *menu_list    = menu_list_get_ptr();
+
       menu_list_push_stack(menu_list, "", "help", 0, 0);
       menu->push_start_screen = false;
    }
