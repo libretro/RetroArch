@@ -31,28 +31,28 @@
 
 #include "shared.h"
 
-#define RGUI_TERM_START_X (menu->frame_buf.width / 21)
-#define RGUI_TERM_START_Y (menu->frame_buf.height / 9)
-#define RGUI_TERM_WIDTH (((menu->frame_buf.width - RGUI_TERM_START_X - RGUI_TERM_START_X) / (FONT_WIDTH_STRIDE)))
-#define RGUI_TERM_HEIGHT (((menu->frame_buf.height - RGUI_TERM_START_Y - RGUI_TERM_START_X) / (FONT_HEIGHT_STRIDE)) - 1)
+#define RGUI_TERM_START_X        (menu->frame_buf.width / 21)
+#define RGUI_TERM_START_Y        (menu->frame_buf.height / 9)
+#define RGUI_TERM_WIDTH          (((menu->frame_buf.width - RGUI_TERM_START_X - RGUI_TERM_START_X) / (FONT_WIDTH_STRIDE)))
+#define RGUI_TERM_HEIGHT         (((menu->frame_buf.height - RGUI_TERM_START_Y - RGUI_TERM_START_X) / (FONT_HEIGHT_STRIDE)) - 1)
 
 #if defined(GEKKO)|| defined(PSP)
-#define HOVER_COLOR(settings) ((3 << 0) | (10 << 4) | (3 << 8) | (7 << 12))
-#define NORMAL_COLOR(settings) 0x7FFF
-#define TITLE_COLOR(settings) HOVER_COLOR(settings)
+#define HOVER_COLOR(settings)    ((3 << 0) | (10 << 4) | (3 << 8) | (7 << 12))
+#define NORMAL_COLOR(settings)   0x7FFF
+#define TITLE_COLOR(settings)    HOVER_COLOR(settings)
 #else
-#define HOVER_COLOR(settings) (argb32_to_rgba4444(settings->menu.entry_hover_color))
-#define NORMAL_COLOR(settings) (argb32_to_rgba4444(settings->menu.entry_normal_color))
-#define TITLE_COLOR(settings) (argb32_to_rgba4444(settings->menu.title_color))
+#define HOVER_COLOR(settings)    (argb32_to_rgba4444(settings->menu.entry_hover_color))
+#define NORMAL_COLOR(settings)   (argb32_to_rgba4444(settings->menu.entry_normal_color))
+#define TITLE_COLOR(settings)    (argb32_to_rgba4444(settings->menu.title_color))
 #endif
 
 static INLINE uint16_t argb32_to_rgba4444(uint32_t col)
 {
    unsigned a = ((col >> 24) & 0xff) >> 4;
    unsigned r = ((col >> 16) & 0xff) >> 4;
-   unsigned g = ((col >> 8) & 0xff) >> 4;
-   unsigned b = (col & 0xff) >> 4;
-   return (r << 12) | (g << 8)  | (b << 4) | a;
+   unsigned g = ((col >> 8) & 0xff)  >> 4;
+   unsigned b =  (col & 0xff)        >> 4;
+   return (r << 12) | (g << 8) | (b << 4) | a;
 }
 
 static int rgui_entry_iterate(unsigned action)

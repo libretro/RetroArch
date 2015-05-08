@@ -114,7 +114,7 @@ static INLINE void gl_menu_frame_background(
 }
 #endif
 
-static INLINE void replchars(char *str, char c1, char c2)
+static INLINE void replace_chars(char *str, char c1, char c2)
 {
    char *pos;
    while((pos = strchr(str, c1)))
@@ -126,7 +126,7 @@ static INLINE void sanitize_to_string(char *title, const char *label, size_t siz
    char new_label[PATH_MAX_LENGTH];
    strlcpy(new_label, label, sizeof(new_label));
    strlcpy(title, string_to_upper(new_label), sizeof_title);
-   replchars(title, '_', ' ');
+   replace_chars(title, '_', ' ');
 }
 
 static INLINE void get_title(const char *label, const char *dir,
