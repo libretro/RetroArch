@@ -18,7 +18,6 @@
 #define __DYLIB_H
 
 #include <boolean.h>
-#include "libretro.h"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -36,26 +35,6 @@ extern "C" {
 
 typedef void *dylib_t;
 typedef void (*function_t)(void);
-
-/**
- * init_libretro_sym:
- * @dummy                        : Load dummy symbols if true
- *
- * Initializes libretro symbols and
- * setups environment callback functions.
- **/
-void init_libretro_sym(bool dummy);
-
-/**
- * uninit_libretro_sym:
- *
- * Frees libretro core.
- *
- * Frees all core options,
- * associated state, and
- * unbind all libretro callback symbols.
- **/
-void uninit_libretro_sym(void);
 
 #ifdef NEED_DYNAMIC
 /**

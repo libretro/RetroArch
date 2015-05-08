@@ -166,6 +166,26 @@ extern void *(*pretro_get_memory_data)(unsigned);
 
 extern size_t (*pretro_get_memory_size)(unsigned);
 
+/**
+ * init_libretro_sym:
+ * @dummy                        : Load dummy symbols if true
+ *
+ * Initializes libretro symbols and
+ * setups environment callback functions.
+ **/
+void init_libretro_sym(bool dummy);
+
+/**
+ * uninit_libretro_sym:
+ *
+ * Frees libretro core.
+ *
+ * Frees all core options,
+ * associated state, and
+ * unbind all libretro callback symbols.
+ **/
+void uninit_libretro_sym(void);
+
 
 #ifdef __cplusplus
 }

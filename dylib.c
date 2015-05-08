@@ -15,8 +15,7 @@
  */
 
 #include <string.h>
-
-#include "dynamic.h"
+#include "dylib.h"
 
 #ifdef NEED_DYNAMIC
 
