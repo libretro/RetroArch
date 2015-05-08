@@ -480,6 +480,8 @@ void menu_list_get_entry(menu_entry_t *entry, size_t i, void *userdata,
 
    entry->id         = i;
 
+   if (path)
+      strlcpy(entry->path,  path,        sizeof(entry->path));
    if (entry_label)
       strlcpy(entry->label, entry_label, sizeof(entry->label));
 }
