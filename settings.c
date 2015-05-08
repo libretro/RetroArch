@@ -6658,7 +6658,7 @@ bool setting_is_of_general_type(rarch_setting_t *setting)
 {
    if    (
          setting &&
-         (setting->type < ST_ACTION) &&
+         (setting->type > ST_ACTION) &&
          (setting->type < ST_GROUP)
          )
       return true;
