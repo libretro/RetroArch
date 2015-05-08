@@ -28,6 +28,7 @@
 #include "../../../menu/menu_entries.h"
 #include "../../../menu/menu_navigation.h"
 #include "../../../menu/menu_list.h"
+#include "../../../menu/menu_setting.h"
 #include "../../../menu/drivers/shared.h"
 
 @protocol RAMenuItemBase
@@ -901,13 +902,10 @@ uint32_t menu_select_entry(uint32_t i)
   menu_entry_t entry;
   rarch_setting_t *setting;
   menu_file_list_cbs_t *cbs = NULL;
-  menu_handle_t     *menu   = menu_driver_get_ptr();
   menu_navigation_t *nav    = menu_navigation_get_ptr();
   menu_list_t    *menu_list = menu_list_get_ptr();
 
-  setting = setting_find_setting
-    (menu->list_settings,
-     menu_list->selection_buf->list[i].label);
+  setting = menu_setting_find(menu_list->selection_buf->list[i].label);
     
   menu_list_get_entry(&entry, i, NULL, false);
 
