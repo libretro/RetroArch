@@ -143,11 +143,11 @@ rarch_setting_t *menu_setting_get_ptr(void)
 
 rarch_setting_t *menu_setting_find(const char *label)
 {
-   menu_handle_t *menu = menu_driver_get_ptr();
+   rarch_setting_t *settings = menu_setting_get_ptr();
 
-   if (!menu)
+   if (!settings)
       return NULL;
-   return setting_find_setting(menu->list_settings, label);
+   return setting_find_setting(settings, label);
 }
 
 int menu_setting_set(unsigned type, const char *label,
