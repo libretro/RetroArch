@@ -492,6 +492,7 @@ static void event_deinit_core(bool reinit)
    if (reinit)
       event_command(EVENT_CMD_DRIVERS_DEINIT);
 
+   /* auto overrides: reload the original config */
    if(global->overrides_active)
    {
       config_unload_override();
@@ -658,9 +659,11 @@ static bool event_init_core(void)
    driver_t *driver     = driver_get_ptr();
    settings_t *settings = config_get_ptr();
 
+   /* per-core saves: save the original path */
    strlcpy(orig_savefile_dir,global->savefile_dir,sizeof(orig_savefile_dir));
    strlcpy(orig_savestate_dir,global->savestate_dir,sizeof(orig_savestate_dir));
 
+   /* auto overrides: apply overrides */
    if(settings->auto_overrides_enable)
    {
       if (config_load_override())
@@ -671,9 +674,11 @@ static bool event_init_core(void)
 
    pretro_set_environment(rarch_environment_cb);
 
+   /* auto-remap: apply remap files */
    if(settings->auto_remaps_enable)
       config_load_remap();
 
+   /* per-core saves: reset redirection paths */
    if(settings->sort_savestates_enable || settings->sort_savefiles_enable)
       set_paths_redirect(global->basename);
 
@@ -689,6 +694,7 @@ static bool event_init_core(void)
    retro_init_libretro_cbs(&driver->retro_ctx);
    rarch_init_system_av_info();
 
+   /* per-core saves: restore the original path so the config is not affected */
    if(settings->sort_savefiles_enable)
       strlcpy(global->savefile_dir,orig_savefile_dir,sizeof(global->savefile_dir));
    if(settings->sort_savestates_enable)
