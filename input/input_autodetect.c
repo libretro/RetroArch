@@ -137,31 +137,12 @@ static void input_autoconfigure_joypad_add(
    RARCH_LOG("%s\n", msg);
 }
 
-static int input_autoconfigure_joypad_from_conf(
-      config_file_t *conf, autoconfig_params_t *params)
-{
-   int ret = 0;
-   uint32_t match = 0;
-
-   if (!conf)
-      return false;
-   
-   ret = input_try_autoconfigure_joypad_from_conf(conf,
-         params, &match);
-
-   if (ret)
-      input_autoconfigure_joypad_add(conf, params);
-
-   config_file_free(conf);
-
-   return ret;
-}
-
 static bool input_autoconfigure_joypad_from_conf_dir(
       autoconfig_params_t *params)
 {
    size_t i;
    int ret = 0;
+   config_file_t *best_conf = NULL;
    settings_t *settings = config_get_ptr();
    struct string_list *list = settings ? dir_list_new(
          settings->input.autoconfig_dir, "cfg", false) : NULL;
@@ -172,16 +153,34 @@ static bool input_autoconfigure_joypad_from_conf_dir(
    for (i = 0; i < list->size; i++)
    {
       config_file_t *conf = config_file_new(list->elems[i].data);
-      ret = input_autoconfigure_joypad_from_conf(conf, params);
-	  
-	  if (ret == 1)
-		  break;
+      unsigned match = 0;
+      ret = input_try_autoconfigure_joypad_from_conf(conf, params, &match);
+      if (ret)
+      {
+         if (best_conf) config_file_free(best_conf);
+         best_conf = conf;
+         if (BIT32_GET(match, AUTODETECT_MATCH_VID) && BIT32_GET(match, AUTODETECT_MATCH_PID))
+         {
+            /* prefect match, no need to look any further */
+            break;
+         }
+      }
+      else
+      {
+         config_file_free(conf);
+      }
+   }
 
+   if (best_conf)
+   {
+     input_autoconfigure_joypad_add(best_conf, params);
+     config_file_free(best_conf);
+     ret = 1;
    }
 
    string_list_free(list);
 
-   return ret !=0 ? true : false;
+   return ret != 0 ? true : false;
 }
 
 #if defined(HAVE_BUILTIN_AUTOCONFIG)
@@ -190,16 +189,37 @@ static bool input_autoconfigure_joypad_from_conf_internal(
 {
    size_t i;
    settings_t *settings = config_get_ptr();
-   bool ret = false;
+   int ret = 0;
+   config_file_t *best_conf = NULL;
 
    /* Load internal autoconfig files  */
    for (i = 0; input_builtin_autoconfs[i]; i++)
    {
       config_file_t *conf = config_file_new_from_string(
             input_builtin_autoconfs[i]);
+      unsigned match = 0;
+      ret = input_try_autoconfigure_joypad_from_conf(conf, params, &match);
+      if (ret)
+      {
+         if (best_conf) config_file_free(best_conf);
+         best_conf = conf;
+         if (BIT32_GET(match, AUTODETECT_MATCH_VID) && BIT32_GET(match, AUTODETECT_MATCH_PID))
+         {
+            /* prefect match, no need to look any further */
+            break;
+         }
+      }
+      else
+      {
+         config_file_free(best_conf);
+      }
+   }                                                                                      
 
-      if ((ret = input_autoconfigure_joypad_from_conf(conf, params)))
-         break;
+   if (best_conf != NULL)
+   {
+      input_autoconfigure_joypad_add(best_conf, params);
+      config_file_free(best_conf);
+      ret = 1;
    }
 
    if (ret || !*settings->input.autoconfig_dir)
