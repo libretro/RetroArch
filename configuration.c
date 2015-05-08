@@ -472,24 +472,24 @@ static void config_set_defaults(void)
    settings->video.viwidth                     = video_viwidth;
    settings->video.vfilter                     = video_vfilter;
 #endif
-   settings->video.smooth = video_smooth;
-   settings->video.force_aspect = force_aspect;
-   settings->video.scale_integer = scale_integer;
-   settings->video.crop_overscan = crop_overscan;
-   settings->video.aspect_ratio = aspect_ratio;
-   settings->video.aspect_ratio_auto = aspect_ratio_auto; /* Let implementation decide if automatic, or 1:1 PAR. */
-   settings->video.aspect_ratio_idx = aspect_ratio_idx;
-   settings->video.shader_enable = shader_enable;
-   settings->video.allow_rotate = allow_rotate;
+   settings->video.smooth                      = video_smooth;
+   settings->video.force_aspect                = force_aspect;
+   settings->video.scale_integer               = scale_integer;
+   settings->video.crop_overscan               = crop_overscan;
+   settings->video.aspect_ratio                = aspect_ratio;
+   settings->video.aspect_ratio_auto           = aspect_ratio_auto; /* Let implementation decide if automatic, or 1:1 PAR. */
+   settings->video.aspect_ratio_idx            = aspect_ratio_idx;
+   settings->video.shader_enable               = shader_enable;
+   settings->video.allow_rotate                = allow_rotate;
 
-   settings->video.font_enable = font_enable;
-   settings->video.font_size = font_size;
-   settings->video.msg_pos_x = message_pos_offset_x;
-   settings->video.msg_pos_y = message_pos_offset_y;
+   settings->video.font_enable                 = font_enable;
+   settings->video.font_size                   = font_size;
+   settings->video.msg_pos_x                   = message_pos_offset_x;
+   settings->video.msg_pos_y                   = message_pos_offset_y;
 
-   settings->video.msg_color_r = ((message_color >> 16) & 0xff) / 255.0f;
-   settings->video.msg_color_g = ((message_color >>  8) & 0xff) / 255.0f;
-   settings->video.msg_color_b = ((message_color >>  0) & 0xff) / 255.0f;
+   settings->video.msg_color_r                 = ((message_color >> 16) & 0xff) / 255.0f;
+   settings->video.msg_color_g                 = ((message_color >>  8) & 0xff) / 255.0f;
+   settings->video.msg_color_b                 = ((message_color >>  0) & 0xff) / 255.0f;
 
    settings->video.refresh_rate                = refresh_rate;
 
@@ -530,32 +530,32 @@ static void config_set_defaults(void)
    settings->pause_nonactive                   = pause_nonactive;
    settings->autosave_interval                 = autosave_interval;
 
-   settings->block_sram_overwrite = block_sram_overwrite;
-   settings->savestate_auto_index = savestate_auto_index;
-   settings->savestate_auto_save  = savestate_auto_save;
-   settings->savestate_auto_load  = savestate_auto_load;
-   settings->network_cmd_enable   = network_cmd_enable;
-   settings->network_cmd_port     = network_cmd_port;
-   settings->stdin_cmd_enable     = stdin_cmd_enable;
-   settings->content_history_size = default_content_history_size;
-   settings->libretro_log_level   = libretro_log_level;
+   settings->block_sram_overwrite              = block_sram_overwrite;
+   settings->savestate_auto_index              = savestate_auto_index;
+   settings->savestate_auto_save               = savestate_auto_save;
+   settings->savestate_auto_load               = savestate_auto_load;
+   settings->network_cmd_enable                = network_cmd_enable;
+   settings->network_cmd_port                  = network_cmd_port;
+   settings->stdin_cmd_enable                  = stdin_cmd_enable;
+   settings->content_history_size              = default_content_history_size;
+   settings->libretro_log_level                = libretro_log_level;
 
 #ifdef HAVE_MENU
-   settings->menu_show_start_screen                 = menu_show_start_screen;
-   settings->menu.pause_libretro                    = true;
-   settings->menu.mouse.enable                      = false;
-   settings->menu.pointer.enable                    = pointer_enable;
-   settings->menu.timedate_enable                   = true;
-   settings->menu.core_enable                       = true;
-   *settings->menu.wallpaper                        = '\0';
-   settings->menu.collapse_subgroups_enable         = collapse_subgroups_enable;
-   settings->menu.show_advanced_settings            = show_advanced_settings;
-   settings->menu.entry_normal_color                = menu_entry_normal_color;
-   settings->menu.entry_hover_color                 = menu_entry_hover_color;
-   settings->menu.title_color                       = menu_title_color;
+   settings->menu_show_start_screen            = menu_show_start_screen;
+   settings->menu.pause_libretro               = true;
+   settings->menu.mouse.enable                 = false;
+   settings->menu.pointer.enable               = pointer_enable;
+   settings->menu.timedate_enable              = true;
+   settings->menu.core_enable                  = true;
+   *settings->menu.wallpaper                   = '\0';
+   settings->menu.collapse_subgroups_enable    = collapse_subgroups_enable;
+   settings->menu.show_advanced_settings       = show_advanced_settings;
+   settings->menu.entry_normal_color           = menu_entry_normal_color;
+   settings->menu.entry_hover_color            = menu_entry_hover_color;
+   settings->menu.title_color                  = menu_title_color;
 
-   settings->menu.dpi.override_enable               = menu_dpi_override_enable;
-   settings->menu.dpi.override_value                = menu_dpi_override_value;
+   settings->menu.dpi.override_enable          = menu_dpi_override_enable;
+   settings->menu.dpi.override_value           = menu_dpi_override_value;
 
    settings->menu.navigation.wraparound.horizontal_enable               = true;
    settings->menu.navigation.wraparound.vertical_enable                 = true;
@@ -605,10 +605,10 @@ static void config_set_defaults(void)
             rarch_assert(j == settings->input.binds[i][j].id);
       }
 
-   settings->input.axis_threshold = axis_threshold;
-   settings->input.netplay_client_swap_input = netplay_client_swap_input;
-   settings->input.turbo_period = turbo_period;
-   settings->input.turbo_duty_cycle = turbo_duty_cycle;
+   settings->input.axis_threshold                  = axis_threshold;
+   settings->input.netplay_client_swap_input       = netplay_client_swap_input;
+   settings->input.turbo_period                    = turbo_period;
+   settings->input.turbo_duty_cycle                = turbo_duty_cycle;
 
    strlcpy(settings->network.buildbot_url, buildbot_server_url,
          sizeof(settings->network.buildbot_url));
@@ -616,11 +616,11 @@ static void config_set_defaults(void)
          sizeof(settings->network.buildbot_assets_url));
    settings->network.buildbot_auto_extract_archive = true;
 
-   settings->input.overlay_enable = true;
-   settings->input.overlay_opacity = 0.7f;
-   settings->input.overlay_scale = 1.0f;
-   settings->input.autodetect_enable = input_autodetect_enable;
-   *settings->input.keyboard_layout = '\0';
+   settings->input.overlay_enable                  = true;
+   settings->input.overlay_opacity                 = 0.7f;
+   settings->input.overlay_scale                   = 1.0f;
+   settings->input.autodetect_enable               = input_autodetect_enable;
+   *settings->input.keyboard_layout                = '\0';
 
    for (i = 0; i < MAX_USERS; i++)
    {
@@ -630,12 +630,12 @@ static void config_set_defaults(void)
          settings->input.libretro_device[i] = RETRO_DEVICE_JOYPAD;
    }
 
-   settings->core.set_supports_no_game_enable = true;
+   settings->core.set_supports_no_game_enable        = true;
 
-   global->console.screen.viewports.custom_vp.width = 0;
+   global->console.screen.viewports.custom_vp.width  = 0;
    global->console.screen.viewports.custom_vp.height = 0;
-   global->console.screen.viewports.custom_vp.x = 0;
-   global->console.screen.viewports.custom_vp.y = 0;
+   global->console.screen.viewports.custom_vp.x      = 0;
+   global->console.screen.viewports.custom_vp.y      = 0;
 
    /* Make sure settings from other configs carry over into defaults
     * for another config. */
