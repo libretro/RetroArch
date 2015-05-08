@@ -898,25 +898,18 @@ void get_core_title(char *title_msg, size_t title_msg_len)
 // JM: This could be moved down to RA
 uint32_t menu_select_entry(uint32_t i)
 {
+  menu_entry_t entry;
   rarch_setting_t *setting;
   menu_file_list_cbs_t *cbs = NULL;
-  const char *path = NULL, *entry_label = NULL;
-  unsigned type = 0;
-  const char *dir           = NULL;
-  const char *label         = NULL;
-    unsigned menu_type        = 0;
   menu_handle_t     *menu   = menu_driver_get_ptr();
   menu_navigation_t *nav    = menu_navigation_get_ptr();
   menu_list_t    *menu_list = menu_list_get_ptr();
-    
-  menu_list_get_last_stack(menu_list, &dir, &label, &menu_type);
-
-  menu_list_get_at_offset(menu_list->selection_buf, i, &path,
-                          &entry_label, &type);
 
   setting = setting_find_setting
     (menu->list_settings,
      menu_list->selection_buf->list[i].label);
+    
+  menu_list_get_entry(&entry, i, NULL, false);
 
   cbs = (menu_file_list_cbs_t*)
     menu_list_get_actiondata_at_offset(menu_list->selection_buf, i);
@@ -927,7 +920,7 @@ uint32_t menu_select_entry(uint32_t i)
   {
     nav->selection_ptr = i;
     if (cbs && cbs->action_ok)
-      cbs->action_ok(path, entry_label, type, i);
+      cbs->action_ok(entry.path, entry.label, entry.type, i);
     
     return false;
   }
@@ -935,13 +928,13 @@ uint32_t menu_select_entry(uint32_t i)
   {
     nav->selection_ptr = i;
     if (cbs && cbs->action_ok)
-      cbs->action_ok(path, entry_label, type, i);
+      cbs->action_ok(entry.path, entry.label, entry.type, i);
     else
     {
       if (cbs && cbs->action_start)
-        cbs->action_start(type, entry_label, MENU_ACTION_START);
+        cbs->action_start(entry.type, entry.label, MENU_ACTION_START);
       if (cbs && cbs->action_toggle)
-        cbs->action_toggle(type, entry_label, MENU_ACTION_RIGHT, true);
+        cbs->action_toggle(entry.type, entry.label, MENU_ACTION_RIGHT, true);
       menu_list_push_stack(menu_list, "",
                            "info_screen", 0, i);
     }
