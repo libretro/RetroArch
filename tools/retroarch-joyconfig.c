@@ -46,8 +46,6 @@ static char *g_out_path = NULL;
 static char *g_auto_path = NULL;
 static char *g_driver = NULL;
 static unsigned g_meta_level = 0;
-static int g_input_vid = 0;
-static int g_input_pid = 0;
 
 bool rarch_main_verbosity(void)
 {
@@ -143,19 +141,10 @@ static void get_binds(config_file_t *conf, config_file_t *auto_conf,
    const char *joypad_name = input_joypad_name(driver, joypad);
    fprintf(stderr, "Using joypad: %s\n", joypad_name ? joypad_name : "Unknown");
 
-   if (auto_conf)
+   if (joypad_name && auto_conf)
    {
-      if (joypad_name)
-      {
-         config_set_string(auto_conf, "input_device", joypad_name);
-         config_set_string(auto_conf, "input_driver", driver->ident);
-      }
-      
-      if (g_input_vid != 0 && g_input_pid != 0)
-      {
-         config_set_int(auto_conf, "input_vendor_id", g_input_vid);
-         config_set_int(auto_conf, "input_product_id", g_input_pid);
-      }
+      config_set_string(auto_conf, "input_device", joypad_name);
+      config_set_string(auto_conf, "input_driver", driver->ident);
    }
 
    int16_t initial_axes[MAX_AXES] = {0};
@@ -461,8 +450,7 @@ static void parse_input(int argc, char *argv[])
 
 void input_config_autoconfigure_joypad(autoconfig_params_t *params)
 {
-   g_input_vid = params->vid;
-   g_input_pid = params->pid;
+   (void)params;
 }
 
 // Need SDL_main on OSX.
