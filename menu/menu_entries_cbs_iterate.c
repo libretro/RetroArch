@@ -491,7 +491,6 @@ static int action_iterate_switch(const char *label, unsigned action)
    menu_handle_t *menu       = menu_driver_get_ptr();
    menu_list_t *menu_list    = menu_list_get_ptr();
    menu_navigation_t *nav    = menu_navigation_get_ptr();
-   global_t *global          = global_get_ptr();
    size_t selected           = menu_navigation_get_current_selection();
    if (!menu)
       return 0;
@@ -574,10 +573,7 @@ static void action_iterate_post(int *ret, const char *label, unsigned action)
    const char *label_offset  = NULL;
    const char *path_offset   = NULL;
    menu_file_list_cbs_t *cbs = NULL;
-   menu_handle_t *menu       = menu_driver_get_ptr();
    menu_list_t *menu_list    = menu_list_get_ptr();
-   menu_navigation_t *nav    = menu_navigation_get_ptr();
-   global_t *global          = global_get_ptr();
    size_t selected           = menu_navigation_get_current_selection();
 
    cbs = (menu_file_list_cbs_t*)
