@@ -23,7 +23,7 @@ static int action_select_default(unsigned type, const char *label,
    menu_handle_t *menu    = menu_driver_get_ptr();
    if (!menu)
       return 0;
-   menu_list_push_stack(menu->menu_list, "", "info_screen",
+   menu_list_push(menu->menu_list->menu_stack, "", "info_screen",
          0, menu->navigation.selection_ptr);
    return 0;
 }

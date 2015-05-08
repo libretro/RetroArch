@@ -392,9 +392,8 @@ int menu_input_set_keyboard_bind_mode(void *data,
          menu->binds.last   = setting->bind_type;
          menu->binds.target = keybind;
          menu->binds.user = setting->index_offset;
-         menu_list_push_stack( menu->menu_list,
-               "",
-               "custom_bind",
+         menu_list_push( menu->menu_list->menu_stack,
+               "", "custom_bind",
                MENU_SETTINGS_CUSTOM_BIND_KEYBOARD,
                nav->selection_ptr);
          break;
@@ -403,7 +402,7 @@ int menu_input_set_keyboard_bind_mode(void *data,
             [setting->index_offset][0];
          menu->binds.begin = MENU_SETTINGS_BIND_BEGIN;
          menu->binds.last = MENU_SETTINGS_BIND_LAST;
-         menu_list_push_stack( menu->menu_list,
+         menu_list_push( menu->menu_list->menu_stack,
                "",
                "custom_bind_all",
                MENU_SETTINGS_CUSTOM_BIND_KEYBOARD,
@@ -446,7 +445,7 @@ int menu_input_set_input_device_bind_mode(void *data,
          menu->binds.last   = setting->bind_type;
          menu->binds.target = keybind;
          menu->binds.user   = setting->index_offset;
-         menu_list_push_stack( menu->menu_list,
+         menu_list_push( menu->menu_list->menu_stack,
                "",
                "custom_bind",
                MENU_SETTINGS_CUSTOM_BIND,
@@ -457,7 +456,7 @@ int menu_input_set_input_device_bind_mode(void *data,
             [setting->index_offset][0];
          menu->binds.begin  = MENU_SETTINGS_BIND_BEGIN;
          menu->binds.last   = MENU_SETTINGS_BIND_LAST;
-         menu_list_push_stack( menu->menu_list,
+         menu_list_push( menu->menu_list->menu_stack,
                "",
                "custom_bind_all",
                MENU_SETTINGS_CUSTOM_BIND,

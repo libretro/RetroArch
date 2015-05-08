@@ -352,7 +352,7 @@ static int action_iterate_menu_viewport(const char *label, unsigned action)
 
          if (!strcmp(label, "custom_viewport_2"))
          {
-            menu_list_push_stack(menu_list, "", "",
+            menu_list_push(menu_list->menu_stack, "", "",
                   MENU_SETTINGS_CUSTOM_VIEWPORT,
                   menu->navigation.selection_ptr);
          }
@@ -363,7 +363,7 @@ static int action_iterate_menu_viewport(const char *label, unsigned action)
 
          if (type == MENU_SETTINGS_CUSTOM_VIEWPORT
                && !settings->video.scale_integer)
-            menu_list_push_stack(menu_list, "",
+            menu_list_push(menu_list->menu_stack, "",
                   "custom_viewport_2", 0, menu->navigation.selection_ptr);
          break;
 
@@ -623,7 +623,7 @@ static int action_iterate_main(const char *label, unsigned action)
    {
       menu_list_t *menu_list    = menu_list_get_ptr();
 
-      menu_list_push_stack(menu_list, "", "help", 0, 0);
+      menu_list_push(menu_list->menu_stack, "", "help", 0, 0);
       menu->push_start_screen = false;
    }
 

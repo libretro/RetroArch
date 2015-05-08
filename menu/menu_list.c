@@ -374,14 +374,6 @@ void menu_list_push(file_list_t *list,
    menu_list_insert(list, path, label, type, directory_ptr);
 }
 
-void menu_list_push_stack(menu_list_t *list,
-      const char *path, const char *label,
-      unsigned type, size_t directory_ptr)
-{
-   if (list)
-      menu_list_push(list->menu_stack, path, label, type, directory_ptr);
-}
-
 int menu_list_push_stack_refresh(menu_list_t *list, const char *path, const char *label,
       unsigned type, size_t directory_ptr)
 {
@@ -393,7 +385,7 @@ int menu_list_push_stack_refresh(menu_list_t *list, const char *path, const char
 
    menu_driver_list_cache(false, 0);
 
-   menu_list_push_stack(list, path, label, type, directory_ptr);
+   menu_list_push(list->menu_stack, path, label, type, directory_ptr);
    menu_navigation_clear(&menu->navigation, true);
    menu->need_refresh = true;
 

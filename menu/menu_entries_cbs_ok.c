@@ -728,12 +728,8 @@ static int action_ok_compressed_archive_push(const char *path,
    if (!menu)
       return -1;
 
-   menu_list_push_stack(
-         menu->menu_list,
-         path,
-         "load_open_zip",
-         0,
-         idx);
+   menu_list_push(menu->menu_list->menu_stack,
+         path, "load_open_zip", 0, idx);
 
    return 0;
 }
@@ -964,8 +960,8 @@ static int action_ok_custom_viewport(const char *path,
       return -1;
 
 
-   menu_list_push_stack(
-         menu->menu_list,
+   menu_list_push(
+         menu->menu_list->menu_stack,
          "",
          "custom_viewport_1",
          MENU_SETTINGS_CUSTOM_VIEWPORT,
@@ -1179,8 +1175,8 @@ static int action_ok_help(const char *path,
    if (!menu)
       return -1;
 
-   menu_list_push_stack(
-         menu->menu_list,
+   menu_list_push(
+         menu->menu_list->menu_stack,
          "",
          "help",
          0,
