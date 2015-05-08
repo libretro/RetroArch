@@ -334,13 +334,13 @@ void set_paths_redirect(const char *path)
    if(global->system.info.library_name && strcmp(global->system.info.library_name,"No Core") && settings->sort_savefiles_enable)
    {
       strlcpy(orig_savefile_dir,global->savefile_dir,sizeof(global->savefile_dir));
-	  fill_pathname_dir(global->savefile_dir,global->savefile_dir,global->system.info.library_name,sizeof(global->savefile_dir));
+      fill_pathname_dir(global->savefile_dir,global->savefile_dir,global->system.info.library_name,sizeof(global->savefile_dir));
    }
 
    if (global->system.info.library_name && strcmp(global->system.info.library_name,"No Core") && settings->sort_savestates_enable)
    {
       strlcpy(orig_savestate_dir,global->savestate_dir,sizeof(global->savestate_dir));
-	  fill_pathname_dir(global->savestate_dir,global->savestate_dir,global->system.info.library_name,sizeof(global->savestate_dir));
+      fill_pathname_dir(global->savestate_dir,global->savestate_dir,global->system.info.library_name,sizeof(global->savestate_dir));
    }
 
    if(path_is_directory(global->savefile_dir))
