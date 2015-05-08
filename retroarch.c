@@ -273,7 +273,7 @@ static void set_basename(const char *path)
     * /file/to/path/comp.7z#folder/game.extension
     *
     * The choice I take here is:
-    * /file/to/path/game as basename. We might end up in a writable 
+    * /file/to/path/game as basename. We might end up in a writable
     * directory then and the name of srm and states are meaningful.
     *
     */
@@ -326,9 +326,40 @@ static void set_special_paths(char **argv, unsigned num_content)
             sizeof(settings->system_directory));
 }
 
-static void set_paths_redirect(const char *path)
+void set_paths_redirect(const char *path)
 {
    global_t   *global   = global_get_ptr();
+   settings_t *settings = config_get_ptr();
+
+   /* per-core saves: append the library_name to the save location */
+   if(global->system.info.library_name && strcmp(global->system.info.library_name,"No Core") && settings->sort_savefiles_enable)
+   {
+      strlcpy(orig_savefile_dir,global->savefile_dir,sizeof(global->savefile_dir));
+      fill_pathname_dir(global->savefile_dir,global->savefile_dir,global->system.info.library_name,sizeof(global->savefile_dir));
+
+	  // if path doesn't exist try to create it, if everything fails revert to the original path
+	  if(!path_is_directory(global->savefile_dir))
+         if(!path_mkdir(global->savefile_dir))
+            strlcpy(global->savefile_dir,orig_savefile_dir,sizeof(global->savefile_dir));
+   }
+
+   /* per-core states: append the library_name to the save location */
+   if (global->system.info.library_name && strcmp(global->system.info.library_name,"No Core") && settings->sort_savestates_enable)
+   {
+      strlcpy(orig_savestate_dir,global->savestate_dir,sizeof(global->savestate_dir));
+      fill_pathname_dir(global->savestate_dir,global->savestate_dir,global->system.info.library_name,sizeof(global->savestate_dir));
+
+	  // if path doesn't exist try to create it, if everything fails revert to the original path
+	  if(!path_is_directory(global->savestate_dir))
+         if(!path_mkdir(global->savestate_dir))
+            strlcpy(global->savestate_dir,orig_savestate_dir,sizeof(global->savestate_dir));
+   }
+
+   if(path_is_directory(global->savefile_dir))
+      strlcpy(global->savefile_name,global->savefile_dir,sizeof(global->savefile_dir));
+
+   if(path_is_directory(global->savestate_dir))
+      strlcpy(global->savestate_name,global->savestate_dir,sizeof(global->savestate_dir));
 
    if (path_is_directory(global->savefile_name))
    {
@@ -382,7 +413,7 @@ void rarch_set_paths(const char *path)
 /**
  * parse_input:
  * @argc                 : Count of (commandline) arguments.
- * @argv                 : (Commandline) arguments. 
+ * @argv                 : (Commandline) arguments.
  *
  * Parses (commandline) arguments passed to RetroArch.
  *
@@ -417,8 +448,8 @@ static void parse_input(int argc, char *argv[])
    *global->bps_name                     = '\0';
    *global->ips_name                     = '\0';
    *global->subsystem                    = '\0';
-   
-   global->overrides_active              = false; 
+
+   global->overrides_active              = false;
 
    if (argc < 2)
    {
@@ -814,7 +845,7 @@ static void rarch_init_savefile_paths(void)
       /* For subsystems, we know exactly which RAM types are supported. */
 
       unsigned i, j;
-      const struct retro_subsystem_info *info = 
+      const struct retro_subsystem_info *info =
          libretro_find_subsystem_info(
                global->system.special, global->system.num_special,
                global->subsystem);
@@ -1151,7 +1182,7 @@ int rarch_main_init(int argc, char *argv[])
 #if defined(GEKKO) && defined(HW_RVL)
    {
       settings_t *settings = config_get_ptr();
-       
+
       if (settings)
       {
          event_command(EVENT_CMD_VIDEO_SET_ASPECT_RATIO);
@@ -1439,7 +1470,7 @@ int rarch_defer_core(core_info_list_t *core_info, const char *dir,
    else
       strlcpy(new_core_path, info->path, sizeof(new_core_path));
 
-   /* There are multiple deferred cores and a 
+   /* There are multiple deferred cores and a
     * selection needs to be made from a list, return 0. */
    if (supported != 1)
       return 0;
@@ -1477,7 +1508,7 @@ bool rarch_replace_config(const char *path)
    settings_t *settings = config_get_ptr();
    global_t   *global   = global_get_ptr();
 
-   /* If config file to be replaced is the same as the 
+   /* If config file to be replaced is the same as the
     * current config file, exit. */
    if (!strcmp(path, global->config_path))
       return false;

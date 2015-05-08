@@ -33,7 +33,7 @@ extern "C" {
 
 typedef struct settings
 {
-   struct 
+   struct
    {
       char driver[32];
       char context_driver[32];
@@ -105,7 +105,7 @@ typedef struct settings
    } ui;
 
 #ifdef HAVE_MENU
-   struct 
+   struct
    {
       char driver[32];
       bool pause_libretro;
@@ -322,6 +322,9 @@ typedef struct settings
    bool core_specific_config;
    bool auto_overrides_enable;
    bool auto_remaps_enable;
+
+   bool sort_savefiles_enable;
+   bool sort_savestates_enable;
 
    unsigned menu_ok_btn;
    unsigned menu_cancel_btn;

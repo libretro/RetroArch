@@ -494,6 +494,9 @@ static bool default_core_specific_config = false;
 static bool default_auto_overrides_enable = false;
 static bool default_auto_remaps_enable = false;
 
+static bool default_sort_savefiles_enable = false;
+static bool default_sort_savestates_enable = false;
+
 static unsigned default_menu_btn_ok          = RETRO_DEVICE_ID_JOYPAD_A;
 static unsigned default_menu_btn_cancel      = RETRO_DEVICE_ID_JOYPAD_B;
 static unsigned default_menu_btn_search      = RETRO_DEVICE_ID_JOYPAD_X;
