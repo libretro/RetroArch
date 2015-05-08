@@ -31,30 +31,6 @@ menu_list_t *menu_list_get_ptr(void)
 }
 
 /**
- * Before a refresh, we could have deleted a 
- * file on disk, causing selection_ptr to 
- * suddendly be out of range.
- *
- * Ensure it doesn't overflow.
- **/
-static void menu_entries_refresh(file_list_t *list)
-{
-   menu_navigation_t *nav   = menu_navigation_get_ptr();
-   menu_list_t   *menu_list = menu_list_get_ptr();
-   if (!nav || !menu_list)
-      return;
-   if (!list)
-      return;
-
-   if (nav->selection_ptr >= menu_list_get_size(menu_list)
-         && menu_list_get_size(menu_list))
-      menu_navigation_set(nav,
-            menu_list_get_size(menu_list) - 1, true);
-   else if (!menu_list_get_size(menu_list))
-      menu_navigation_clear(nav, true);
-}
-
-/**
  * menu_entries_list_elem_is_dir:
  * @list                     : File list handle.
  * @offset                   : Offset index of element.
@@ -103,7 +79,7 @@ static INLINE int menu_entries_list_get_first_char(
    return ret;
 }
 
-static void menu_entries_build_scroll_indices(file_list_t *list)
+static void menu_list_build_scroll_indices(file_list_t *list)
 {
    size_t i;
    int current;
@@ -137,6 +113,32 @@ static void menu_entries_build_scroll_indices(file_list_t *list)
 
    nav->scroll.indices.list[nav->scroll.indices.size++] = 
       list->size - 1;
+}
+
+/**
+ * Before a refresh, we could have deleted a 
+ * file on disk, causing selection_ptr to 
+ * suddendly be out of range.
+ *
+ * Ensure it doesn't overflow.
+ **/
+static void menu_list_refresh(file_list_t *list)
+{
+   menu_navigation_t *nav   = menu_navigation_get_ptr();
+   menu_list_t   *menu_list = menu_list_get_ptr();
+   if (!nav || !menu_list)
+      return;
+   if (!list)
+      return;
+
+   menu_list_build_scroll_indices(list);
+
+   if (nav->selection_ptr >= menu_list_get_size(menu_list)
+         && menu_list_get_size(menu_list))
+      menu_navigation_set(nav,
+            menu_list_get_size(menu_list) - 1, true);
+   else if (!menu_list_get_size(menu_list))
+      menu_navigation_clear(nav, true);
 }
 
 static void menu_list_destroy(file_list_t *list)
@@ -419,8 +421,7 @@ int menu_list_populate_generic(file_list_t *list, const char *path,
 
    nav->scroll.indices.size = 0;
 
-   menu_entries_build_scroll_indices(list);
-   menu_entries_refresh(list);
+   menu_list_refresh(list);
 
    menu_driver_populate_entries(path, label, type);
 
