@@ -126,10 +126,10 @@ static void menu_list_refresh(file_list_t *list)
 {
    menu_navigation_t *nav   = menu_navigation_get_ptr();
    menu_list_t   *menu_list = menu_list_get_ptr();
-   if (!nav || !menu_list)
+   if (!nav || !menu_list || !list)
       return;
-   if (!list)
-      return;
+
+   nav->scroll.indices.size = 0;
 
    menu_list_build_scroll_indices(list);
 
@@ -414,15 +414,7 @@ void menu_list_sort_on_alt(file_list_t *list)
 int menu_list_populate_generic(file_list_t *list, const char *path,
       const char *label, unsigned type)
 {
-   menu_navigation_t *nav = menu_navigation_get_ptr();
-
-   if (!nav)
-      return -1;
-
-   nav->scroll.indices.size = 0;
-
    menu_list_refresh(list);
-
    menu_driver_populate_entries(path, label, type);
 
    return 0;
@@ -484,8 +476,7 @@ int menu_list_get_current_entry_id(bool use_representation)
    for (i = 0; i < end; i++)
    {
       menu_entry_t entry;
-      menu_list_get_entry(&entry, i,
-            NULL, use_representation);
+      menu_list_get_entry(&entry, i, NULL, use_representation);
 
       if (menu_list_entry_is_currently_selected(&entry))
          return i;
