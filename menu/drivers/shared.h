@@ -22,6 +22,7 @@
 #include <time.h>
 
 #include "../menu_display.h"
+#include "../menu_entries_cbs.h"
 
 #ifdef HAVE_OPENGL
 #include "../../gfx/drivers/gl_common.h"
@@ -204,27 +205,7 @@ static INLINE void get_title(const char *label, const char *dir,
       snprintf(title, sizeof_title, "CONFIG %s", dir);
    else if (!strcmp(label, "disk_image_append"))
       snprintf(title, sizeof_title, "DISK APPEND %s", dir);
-   else if (!strcmp(elem0, "Video Settings")
-         || !strcmp(elem0, "Overlay Settings")
-         || !strcmp(elem0, "Recording Settings")
-         || !strcmp(elem0, "Menu Settings")
-         || !strcmp(elem0, "General Settings")
-         || !strcmp(elem0, "Patch Settings")
-         || !strcmp(elem0, "UI Settings")
-         || !strcmp(elem0, "Playlist Settings")
-         || !strcmp(elem0, "Network Settings")
-         || !strcmp(elem0, "Core Updater Settings")
-         || !strcmp(elem0, "User Settings")
-         || !strcmp(elem0, "Path Settings")
-         || !strcmp(elem0, "Driver Settings")
-         || !strcmp(elem0, "Privacy Settings")
-         || !strcmp(elem0, "Onscreen Keyboard Overlay Settings")
-         || !strcmp(elem0, "Audio Settings")
-         || !strcmp(elem0, "Font Settings")
-         || !strcmp(elem0, "Shader Settings")
-         || !strcmp(elem0, "Archive Settings")
-         || !strcmp(elem0, "Input Settings")
-         )
+   else if (menu_entries_common_is_settings_entry(elem0))
    {
       strlcpy(title, string_to_upper(elem0), sizeof_title);
       if (elem1[0] != '\0')
