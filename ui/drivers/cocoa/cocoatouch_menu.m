@@ -816,8 +816,7 @@ void get_core_title(char *title_msg, size_t title_msg_len)
   // Bind, Enum, Number, String, Action. [Sub-menus would be action,
   // because it causes an effect]
 
-  setting =
-    (rarch_setting_t*)setting_find_setting
+  setting = setting_find_setting
     (menu->list_settings,
      menu->menu_list->selection_buf->list[i].label);
 
