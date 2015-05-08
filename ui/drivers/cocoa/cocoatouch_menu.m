@@ -933,7 +933,7 @@ uint32_t menu_select_entry(uint32_t i)
         cbs->action_start(entry.type, entry.label, MENU_ACTION_START);
       if (cbs && cbs->action_toggle)
         cbs->action_toggle(entry.type, entry.label, MENU_ACTION_RIGHT, true);
-      menu_list_push_stack(menu_list, "",
+      menu_list_push(menu_list->menu_stack, "",
                            "info_screen", 0, i);
     }
     return true;
