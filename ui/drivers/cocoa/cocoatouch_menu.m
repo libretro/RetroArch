@@ -803,12 +803,13 @@ void get_core_title(char *title_msg, size_t title_msg_len)
   unsigned type = 0, w = 0;
   const char *dir           = NULL;
   const char *label         = NULL;
+  menu_list_t *menu_list    = menu_list_get_ptr();
   unsigned menu_type        = 0;
 
   weakSelf = self;
-  menu_list_get_last_stack(menu->menu_list, &dir, &label, &menu_type);
+  menu_list_get_last_stack(menu_list, &dir, &label, &menu_type);
 
-  menu_list_get_at_offset(menu->menu_list->selection_buf, i, &path,
+  menu_list_get_at_offset(menu_list->selection_buf, i, &path,
                           &entry_label, &type);
 
   // JM: Ideally, this would be simpler because RA would provide a
@@ -818,7 +819,7 @@ void get_core_title(char *title_msg, size_t title_msg_len)
 
   setting = setting_find_setting
     (menu->list_settings,
-     menu->menu_list->selection_buf->list[i].label);
+     menu_list->selection_buf->list[i].label);
 
   if (setting_is_of_path_type(setting))
   {
@@ -867,12 +868,12 @@ void get_core_title(char *title_msg, size_t title_msg_len)
   else
   { // This is for ST_GROUP/etc
     cbs = (menu_file_list_cbs_t*)
-      menu_list_get_actiondata_at_offset(menu->menu_list->selection_buf, i);
+      menu_list_get_actiondata_at_offset(menu_list->selection_buf, i);
   
     if (cbs && cbs->action_get_representation)
     {
       cbs->action_get_representation
-        (menu->menu_list->selection_buf,
+        (menu_list->selection_buf,
          &w, type, i, label,
          type_str, sizeof(type_str), 
          entry_label, path,
