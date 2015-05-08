@@ -565,21 +565,16 @@ static int action_iterate_switch(const char *label, unsigned action)
 
 static void action_iterate_post(int *ret, const char *label, unsigned action)
 {
-   unsigned type_offset      = 0;
-   const char *label_offset  = NULL;
-   const char *path_offset   = NULL;
+   menu_entry_t entry;
    menu_file_list_cbs_t *cbs = NULL;
    menu_list_t *menu_list    = menu_list_get_ptr();
    size_t selected           = menu_navigation_get_current_selection();
 
-   cbs = (menu_file_list_cbs_t*)
-      menu_list_get_actiondata_at_offset(menu_list->selection_buf,
-            selected);
+   menu_list_get_entry(&entry, selected, NULL, false);
 
-   menu_list_get_at_offset(menu_list->selection_buf,
-         selected, &path_offset, &label_offset, &type_offset);
+   cbs = (menu_file_list_cbs_t*)menu_list_get_actiondata_at_offset(menu_list->selection_buf, selected);
 
-   menu_input_post_iterate(ret, cbs, path_offset, label_offset, type_offset, action);
+   menu_input_post_iterate(ret, cbs, entry.path, entry.label, entry.type, action);
 }
 
 static int action_iterate_main(const char *label, unsigned action)
