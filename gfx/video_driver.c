@@ -819,13 +819,9 @@ bool video_driver_frame(const void *frame, unsigned width,
 {
    driver_t            *driver = driver_get_ptr();
    const video_driver_t *video = video_driver_ctx_get_ptr();
-   runloop_t          *runloop = rarch_main_get_ptr();
 
    if (video->frame(driver->video_data, frame,
             width, height, pitch, msg))
-   {
-      runloop->frames.video.count++;
       return true;
-   }
    return false;
 }

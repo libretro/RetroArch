@@ -124,6 +124,7 @@ static void video_frame(const void *data, unsigned width,
    driver_t  *driver    = driver_get_ptr();
    global_t  *global    = global_get_ptr();
    settings_t *settings = config_get_ptr();
+   runloop_t   *runloop = rarch_main_get_ptr();
 
    if (!driver->video_active)
       return;
@@ -164,6 +165,8 @@ static void video_frame(const void *data, unsigned width,
 
    if (!video_driver_frame(data, width, height, pitch, msg))
       driver->video_active = false;
+
+   runloop->frames.video.count++;
 }
 
 /**
