@@ -365,8 +365,9 @@ static void menu_update_libretro_info(void)
  **/
 void init_drivers(int flags)
 {
-   driver_t *driver = driver_get_ptr();
-   global_t *global = global_get_ptr();
+   driver_t *driver   = driver_get_ptr();
+   global_t *global   = global_get_ptr();
+   runloop_t *runloop = rarch_main_get_ptr();
 
    if (flags & DRIVER_VIDEO)
       driver->video_data_own = false;
@@ -389,6 +390,9 @@ void init_drivers(int flags)
 
    if (flags & DRIVER_VIDEO)
    {
+      runloop->frames.video.count      = 0;
+      runloop->measure_data.frame_time_samples_count = 0;
+
       init_video();
 
       if (!driver->video_cache_context_ack

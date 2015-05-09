@@ -22,7 +22,6 @@
 #include "video_monitor.h"
 #include "../general.h"
 #include "../retroarch.h"
-#include "../runloop.h"
 
 static const video_driver_t *video_drivers[] = {
 #ifdef HAVE_OPENGL
@@ -437,12 +436,9 @@ void init_video(void)
    const struct retro_game_geometry *geom = NULL;
    video_info_t video               = {0};
    static uint16_t dummy_pixels[32] = {0};
-   runloop_t *runloop               = rarch_main_get_ptr();
    driver_t *driver                 = driver_get_ptr();
    global_t *global                 = global_get_ptr();
    settings_t *settings             = config_get_ptr();
-
-   runloop->frames.video.count      = 0;
 
    init_video_filter(global->system.pix_fmt);
    event_command(EVENT_CMD_SHADER_DIR_INIT);
@@ -575,8 +571,6 @@ void init_video(void)
 
    event_command(EVENT_CMD_OVERLAY_DEINIT);
    event_command(EVENT_CMD_OVERLAY_INIT);
-
-   runloop->measure_data.frame_time_samples_count = 0;
 
    global->frame_cache.width  = 4;
    global->frame_cache.height = 4;
