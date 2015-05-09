@@ -27,10 +27,169 @@
 #include "../../general.h"
 #include <retro_inline.h>
 
+struct android_app *g_android;
 static pthread_key_t thread_key;
 
-struct android_app *g_android;
-struct android_app_userdata *g_android_userdata;
+static INLINE void android_app_write_cmd(void *data, int8_t cmd)
+{
+   struct android_app *android_app = (struct android_app*)data;
+
+   if (!android_app)
+      return;
+
+   if (write(android_app->msgwrite, &cmd, sizeof(cmd)) != sizeof(cmd))
+      RARCH_ERR("Failure writing android_app cmd: %s\n", strerror(errno));
+}
+
+static void android_app_set_input(void *data, AInputQueue* inputQueue)
+{
+   struct android_app *android_app = (struct android_app*)data;
+
+   if (!android_app)
+      return;
+
+   slock_lock(android_app->mutex);
+   android_app->pendingInputQueue = inputQueue;
+   android_app_write_cmd(android_app, APP_CMD_INPUT_CHANGED);
+
+   while (android_app->inputQueue != android_app->pendingInputQueue)
+      scond_wait(android_app->cond, android_app->mutex);
+
+   slock_unlock(android_app->mutex);
+}
+
+static void android_app_set_window(void *data, ANativeWindow* window)
+{
+   struct android_app *android_app = (struct android_app*)data;
+
+   if (!android_app)
+      return;
+
+   slock_lock(android_app->mutex);
+   if (android_app->pendingWindow)
+      android_app_write_cmd(android_app, APP_CMD_TERM_WINDOW);
+
+   android_app->pendingWindow = window;
+
+   if (window)
+      android_app_write_cmd(android_app, APP_CMD_INIT_WINDOW);
+
+   while (android_app->window != android_app->pendingWindow)
+      scond_wait(android_app->cond, android_app->mutex);
+
+   slock_unlock(android_app->mutex);
+}
+
+static void android_app_set_activity_state(void *data, int8_t cmd)
+{
+   struct android_app *android_app = (struct android_app*)data;
+
+   if (!android_app)
+      return;
+
+   slock_lock(android_app->mutex);
+   android_app_write_cmd(android_app, cmd);
+   while (android_app->activityState != cmd
+         && android_app->activityState != APP_CMD_DEAD)
+      scond_wait(android_app->cond, android_app->mutex);
+   slock_unlock(android_app->mutex);
+
+   if (android_app->activityState == APP_CMD_DEAD)
+      RARCH_LOG("RetroArch native thread is dead.\n");
+}
+
+static void onDestroy(ANativeActivity* activity)
+{
+   struct android_app *android_app = (struct android_app*)activity->instance;
+
+   if (!android_app)
+      return;
+
+   RARCH_LOG("onDestroy: %p\n", activity);
+   sthread_join(android_app->thread);
+   RARCH_LOG("Joined with RetroArch native thread.\n");
+
+   close(android_app->msgread);
+   close(android_app->msgwrite);
+   scond_free(android_app->cond);
+   slock_free(android_app->mutex);
+
+   free(android_app);
+}
+
+static void onStart(ANativeActivity* activity)
+{
+   RARCH_LOG("Start: %p\n", activity);
+   android_app_set_activity_state((struct android_app*)
+         activity->instance, APP_CMD_START);
+}
+
+static void onResume(ANativeActivity* activity)
+{
+   RARCH_LOG("Resume: %p\n", activity);
+   android_app_set_activity_state((struct android_app*)
+         activity->instance, APP_CMD_RESUME);
+}
+
+static void onPause(ANativeActivity* activity)
+{
+   RARCH_LOG("Pause: %p\n", activity);
+   android_app_set_activity_state((struct android_app*)
+         activity->instance, APP_CMD_PAUSE);
+}
+
+static void onStop(ANativeActivity* activity)
+{
+   RARCH_LOG("Stop: %p\n", activity);
+   android_app_set_activity_state((struct android_app*)
+         activity->instance, APP_CMD_STOP);
+}
+
+static void onConfigurationChanged(ANativeActivity *activity)
+{
+   struct android_app* android_app = (struct android_app*)
+      activity->instance;
+
+   if (!android_app)
+      return;
+
+   RARCH_LOG("ConfigurationChanged: %p\n", activity);
+   android_app_write_cmd(android_app, APP_CMD_CONFIG_CHANGED);
+}
+
+static void onWindowFocusChanged(ANativeActivity* activity, int focused)
+{
+   RARCH_LOG("WindowFocusChanged: %p -- %d\n", activity, focused);
+   android_app_write_cmd((struct android_app*)activity->instance,
+         focused ? APP_CMD_GAINED_FOCUS : APP_CMD_LOST_FOCUS);
+}
+
+static void onNativeWindowCreated(ANativeActivity* activity,
+      ANativeWindow* window)
+{
+   RARCH_LOG("NativeWindowCreated: %p -- %p\n", activity, window);
+   android_app_set_window((struct android_app*)activity->instance, window);
+}
+
+static void onNativeWindowDestroyed(ANativeActivity* activity,
+      ANativeWindow* window)
+{
+   RARCH_LOG("NativeWindowDestroyed: %p -- %p\n", activity, window);
+   android_app_set_window((struct android_app*)activity->instance, NULL);
+}
+
+static void onInputQueueCreated(ANativeActivity* activity, AInputQueue* queue)
+{
+   RARCH_LOG("InputQueueCreated: %p -- %p\n", activity, queue);
+   android_app_set_input((struct android_app*)activity->instance, queue);
+}
+
+static void onInputQueueDestroyed(ANativeActivity* activity,
+      AInputQueue* queue)
+{
+   RARCH_LOG("InputQueueDestroyed: %p -- %p\n", activity, queue);
+   android_app_set_input((struct android_app*)activity->instance, NULL);
+}
 
 JNIEnv *jni_thread_getenv(void)
 {
@@ -64,36 +223,91 @@ static void jni_thread_destruct(void *value)
    pthread_setspecific(thread_key, NULL);
 }
 
-void android_main(struct android_app *state)
+static void android_app_entry(void *data)
 {
    char *argv[1];
    int argc = 0;
-   int ret_iterate, ret_poll;
 
-   g_android          = state;
-   g_android_userdata = (struct android_app_userdata*)calloc(1, sizeof(*g_android_userdata));
-
-   state->userData     = g_android_userdata;
-   state->onAppCmd     = engine_handle_cmd;
-   state->onInputEvent = engine_handle_input;
-
-   if (rarch_main(argc, argv, state) != 0)
+   if (rarch_main(argc, argv, data) != 0)
       goto end;
+#ifndef HAVE_MAIN
+   while (rarch_main_iterate() != -1);
 
-   do{
-      ret_poll    = 0;
-      ret_iterate = rarch_main_iterate();
-   }while(ret_iterate != -1 && ret_poll != -1);
+   main_exit(data);
+#endif
 
 end:
-   main_exit(state);
-
-   if (g_android_userdata)
-      free(g_android_userdata);
-   g_android_userdata = NULL;
-
    exit(0);
 }
+
+/*
+ * Native activity interaction (called from main thread)
+ **/
+
+void ANativeActivity_onCreate(ANativeActivity* activity,
+      void* savedState, size_t savedStateSize)
+{
+   int msgpipe[2];
+   struct android_app* android_app;
+
+   (void)savedState;
+   (void)savedStateSize;
+
+   RARCH_LOG("Creating Native Activity: %p\n", activity);
+   activity->callbacks->onDestroy = onDestroy;
+   activity->callbacks->onStart = onStart;
+   activity->callbacks->onResume = onResume;
+   activity->callbacks->onSaveInstanceState = NULL;
+   activity->callbacks->onPause = onPause;
+   activity->callbacks->onStop = onStop;
+   activity->callbacks->onConfigurationChanged = onConfigurationChanged;
+   activity->callbacks->onLowMemory = NULL;
+   activity->callbacks->onWindowFocusChanged = onWindowFocusChanged;
+   activity->callbacks->onNativeWindowCreated = onNativeWindowCreated;
+   activity->callbacks->onNativeWindowDestroyed = onNativeWindowDestroyed;
+   activity->callbacks->onInputQueueCreated = onInputQueueCreated;
+   activity->callbacks->onInputQueueDestroyed = onInputQueueDestroyed;
+
+   /* These are set only for the native activity,
+    * and are reset when it ends. */
+   ANativeActivity_setWindowFlags(activity, AWINDOW_FLAG_KEEP_SCREEN_ON
+         | AWINDOW_FLAG_FULLSCREEN, 0);
+
+   if (pthread_key_create(&thread_key, jni_thread_destruct))
+      RARCH_ERR("Error initializing pthread_key\n");
+
+   android_app = (struct android_app*)calloc(1, sizeof(*android_app));
+   if (!android_app)
+   {
+      RARCH_ERR("Failed to initialize android_app\n");
+      return;
+   }
+
+   memset(android_app, 0, sizeof(struct android_app));
+   
+   android_app->activity = activity;
+   android_app->mutex    = slock_new();
+   android_app->cond     = scond_new();
+
+   if (pipe(msgpipe))
+   {
+      RARCH_ERR("could not create pipe: %s.\n", strerror(errno));
+      activity->instance = NULL;
+   }
+   android_app->msgread  = msgpipe[0];
+   android_app->msgwrite = msgpipe[1];
+
+   android_app->thread   = sthread_create(android_app_entry, android_app);
+
+   /* Wait for thread to start. */
+   slock_lock(android_app->mutex);
+   while (!android_app->running)
+      scond_wait(android_app->cond, android_app->mutex);
+   slock_unlock(android_app->mutex);
+
+   activity->instance = android_app;
+}
+
 
 int system_property_get(const char *name, char *value)
 {
@@ -228,8 +442,6 @@ static void frontend_android_get_environment_settings(int *argc,
    jobject obj = NULL;
    jstring jstr = NULL;
    struct android_app* android_app = (struct android_app*)data;
-   struct android_app_userdata *userdata = 
-      (struct android_app_userdata*)g_android_userdata;
 
    if (!android_app)
       return;
@@ -253,14 +465,14 @@ static void frontend_android_get_environment_settings(int *argc,
    RARCH_LOG("Android OS version (major : %d, minor : %d, rel : %d)\n", major, minor, rel);
 
    CALL_OBJ_METHOD(env, obj, android_app->activity->clazz,
-         userdata->getIntent);
+         android_app->getIntent);
    RARCH_LOG("Checking arguments passed from intent ...\n");
 
    /* Config file. */
-   CALL_OBJ_METHOD_PARAM(env, jstr, obj, userdata->getStringExtra,
+   CALL_OBJ_METHOD_PARAM(env, jstr, obj, android_app->getStringExtra,
          (*env)->NewStringUTF(env, "CONFIGFILE"));
 
-   if (userdata->getStringExtra && jstr)
+   if (android_app->getStringExtra && jstr)
    {
       static char config_path[PATH_MAX_LENGTH];
       const char *argv = NULL;
@@ -278,23 +490,23 @@ static void frontend_android_get_environment_settings(int *argc,
    }
 
    /* Current IME. */
-   CALL_OBJ_METHOD_PARAM(env, jstr, obj, userdata->getStringExtra,
+   CALL_OBJ_METHOD_PARAM(env, jstr, obj, android_app->getStringExtra,
          (*env)->NewStringUTF(env, "IME"));
 
-   if (userdata->getStringExtra && jstr)
+   if (android_app->getStringExtra && jstr)
    {
       const char *argv = (*env)->GetStringUTFChars(env, jstr, 0);
-      strlcpy(userdata->current_ime, argv,
-            sizeof(userdata->current_ime));
+      strlcpy(android_app->current_ime, argv,
+            sizeof(android_app->current_ime));
       (*env)->ReleaseStringUTFChars(env, jstr, argv);
 
-      RARCH_LOG("Current IME: [%s].\n", userdata->current_ime);
+      RARCH_LOG("Current IME: [%s].\n", android_app->current_ime);
    }
 
-   CALL_OBJ_METHOD_PARAM(env, jstr, obj, userdata->getStringExtra,
+   CALL_OBJ_METHOD_PARAM(env, jstr, obj, android_app->getStringExtra,
          (*env)->NewStringUTF(env, "USED"));
 
-   if (userdata->getStringExtra && jstr)
+   if (android_app->getStringExtra && jstr)
    {
       const char *argv = (*env)->GetStringUTFChars(env, jstr, 0);
       bool used = (strcmp(argv, "false") == 0) ? false : true;
@@ -304,10 +516,10 @@ static void frontend_android_get_environment_settings(int *argc,
    }
 
    /* LIBRETRO. */
-   CALL_OBJ_METHOD_PARAM(env, jstr, obj, userdata->getStringExtra,
+   CALL_OBJ_METHOD_PARAM(env, jstr, obj, android_app->getStringExtra,
          (*env)->NewStringUTF(env, "LIBRETRO"));
 
-   if (userdata->getStringExtra && jstr)
+   if (android_app->getStringExtra && jstr)
    {
       static char core_path[PATH_MAX_LENGTH];
       const char *argv = NULL;
@@ -324,10 +536,10 @@ static void frontend_android_get_environment_settings(int *argc,
    }
 
    /* Content. */
-   CALL_OBJ_METHOD_PARAM(env, jstr, obj, userdata->getStringExtra,
+   CALL_OBJ_METHOD_PARAM(env, jstr, obj, android_app->getStringExtra,
          (*env)->NewStringUTF(env, "ROM"));
 
-   if (userdata->getStringExtra && jstr)
+   if (android_app->getStringExtra && jstr)
    {
       static char path[PATH_MAX_LENGTH];
       const char *argv = NULL;
@@ -348,10 +560,10 @@ static void frontend_android_get_environment_settings(int *argc,
    }
 
    /* Content. */
-   CALL_OBJ_METHOD_PARAM(env, jstr, obj, userdata->getStringExtra,
+   CALL_OBJ_METHOD_PARAM(env, jstr, obj, android_app->getStringExtra,
          (*env)->NewStringUTF(env, "DATADIR"));
 
-   if (userdata->getStringExtra && jstr)
+   if (android_app->getStringExtra && jstr)
    {
       static char path[PATH_MAX_LENGTH];
       const char *argv = NULL;
@@ -426,182 +638,73 @@ static void frontend_android_get_environment_settings(int *argc,
 #endif
 }
 
-int android_main_poll(void *data);
-
-static bool android_input_lookup_name_prekitkat(char *buf,
-      int *vendorId, int *productId, size_t size, int id)
+static void frontend_android_deinit(void *data)
 {
-   RARCH_LOG("Using old lookup");
-
-   jclass class;
-   jmethodID method, getName;
-   jobject device, name;
-   const char *str = NULL;
-   JNIEnv *env = (JNIEnv*)jni_thread_getenv();
-
-   if (!env)
-      goto error;
-
-   class = NULL;
-   FIND_CLASS(env, class, "android/view/InputDevice");
-   if (!class)
-      goto error;
-
-   method = NULL;
-   GET_STATIC_METHOD_ID(env, method, class, "getDevice",
-         "(I)Landroid/view/InputDevice;");
-   if (!method)
-      goto error;
-
-   device = NULL;
-   CALL_OBJ_STATIC_METHOD_PARAM(env, device, class, method, (jint)id);
-   if (!device)
-   {
-      RARCH_ERR("Failed to find device for ID: %d\n", id);
-      goto error;
-   }
-
-   getName = NULL;
-   GET_METHOD_ID(env, getName, class, "getName", "()Ljava/lang/String;");
-   if (!getName)
-      goto error;
-
-   name = NULL;
-   CALL_OBJ_METHOD(env, name, device, getName);
-   if (!name)
-   {
-      RARCH_ERR("Failed to find name for device ID: %d\n", id);
-      goto error;
-   }
-
-   buf[0] = '\0';
-
-   str = (*env)->GetStringUTFChars(env, name, 0);
-   if (str)
-      strlcpy(buf, str, size);
-   (*env)->ReleaseStringUTFChars(env, name, str);
-
-   RARCH_LOG("device name: %s\n", buf);
-
-   return true;
-error:
-   return false;
-}
-
-static bool android_input_lookup_name(char *buf,
-      int *vendorId, int *productId, size_t size, int id)
-{
-   RARCH_LOG("Using new lookup");
-
-   jclass class;
-   jmethodID method, getName, getVendorId, getProductId;
-   jobject device, name;
-   const char *str = NULL;
-   JNIEnv *env = (JNIEnv*)jni_thread_getenv();
-
-   if (!env)
-      goto error;
-
-   class = NULL;
-   FIND_CLASS(env, class, "android/view/InputDevice");
-   if (!class)
-      goto error;
-
-   method = NULL;
-   GET_STATIC_METHOD_ID(env, method, class, "getDevice",
-         "(I)Landroid/view/InputDevice;");
-   if (!method)
-      goto error;
-
-   device = NULL;
-   CALL_OBJ_STATIC_METHOD_PARAM(env, device, class, method, (jint)id);
-   if (!device)
-   {
-      RARCH_ERR("Failed to find device for ID: %d\n", id);
-      goto error;
-   }
-
-   getName = NULL;
-   GET_METHOD_ID(env, getName, class, "getName", "()Ljava/lang/String;");
-   if (!getName)
-      goto error;
-
-   name = NULL;
-   CALL_OBJ_METHOD(env, name, device, getName);
-   if (!name)
-   {
-      RARCH_ERR("Failed to find name for device ID: %d\n", id);
-      goto error;
-   }
-
-   buf[0] = '\0';
-
-   str = (*env)->GetStringUTFChars(env, name, 0);
-   if (str)
-      strlcpy(buf, str, size);
-   (*env)->ReleaseStringUTFChars(env, name, str);
-
-   RARCH_LOG("device name: %s\n", buf);
-
-   getVendorId = NULL;
-   GET_METHOD_ID(env, getVendorId, class, "getVendorId", "()I");
-   if (!getVendorId)
-      goto error;
-
-   CALL_INT_METHOD(env, *vendorId, device, getVendorId);
-   if (!*vendorId)
-   {
-      RARCH_ERR("Failed to find vendor id for device ID: %d\n", id);
-      goto error;
-   }
-   RARCH_LOG("device vendor id: %d\n", *vendorId);
-
-   getProductId = NULL;
-   GET_METHOD_ID(env, getProductId, class, "getProductId", "()I");
-   if (!getProductId)
-      goto error;
-
-   *productId = 0;
-   CALL_INT_METHOD(env, *productId, device, getProductId);
-   if (!*productId)
-   {
-      RARCH_ERR("Failed to find product id for device ID: %d\n", id);
-      goto error;
-   }
-   RARCH_LOG("device product id: %d\n", *productId);
-
-   return true;
-error:
-   return false;
-}
-
-static void frontend_android_init(void *data)
-{
-   int32_t sdk;
    JNIEnv *env;
-   jclass class = NULL;
-   jobject obj = NULL;
-   struct android_app* android_app = (struct android_app*)data;
-   struct android_app_userdata *userdata = 
-      (struct android_app_userdata*)g_android_userdata;
+   struct android_app *android_app = (struct android_app*)data;
 
    if (!android_app)
       return;
 
-   if (pthread_key_create(&thread_key, jni_thread_destruct))
-      RARCH_ERR("Error initializing pthread_key\n");
+   RARCH_LOG("Deinitializing RetroArch ...\n");
+   android_app->activityState = APP_CMD_DEAD;
 
-   /* These are set only for the native activity,
-    * and are reset when it ends. */
-   ANativeActivity_setWindowFlags(android_app->activity,
-         AWINDOW_FLAG_KEEP_SCREEN_ON | AWINDOW_FLAG_FULLSCREEN, 0);
+   env = jni_thread_getenv();
+
+   if (env && android_app->onRetroArchExit)
+      CALL_VOID_METHOD(env, android_app->activity->clazz,
+            android_app->onRetroArchExit);
+
+   if (android_app->inputQueue)
+   {
+      RARCH_LOG("Detaching Android input queue looper ...\n");
+      AInputQueue_detachLooper(android_app->inputQueue);
+   }
+}
+
+static void frontend_android_shutdown(bool unused)
+{
+   (void)unused;
+   /* Cleaner approaches don't work sadly. */
+   exit(0);
+}
+
+bool android_run_events(void *data);
+
+static void frontend_android_init(void *data)
+{
+   JNIEnv *env;
+   ALooper *looper;
+   jclass class = NULL;
+   jobject obj = NULL;
+   struct android_app* android_app = (struct android_app*)data;
+
+   if (!android_app)
+      return;
+
+   looper = (ALooper*)ALooper_prepare(ALOOPER_PREPARE_ALLOW_NON_CALLBACKS);
+   ALooper_addFd(looper, android_app->msgread, LOOPER_ID_MAIN,
+         ALOOPER_EVENT_INPUT, NULL, NULL);
+   android_app->looper = looper;
+
+   slock_lock(android_app->mutex);
+   android_app->running = 1;
+   scond_broadcast(android_app->cond);
+   slock_unlock(android_app->mutex);
+
+   memset(&g_android, 0, sizeof(g_android));
+   g_android = (struct android_app*)android_app;
 
    RARCH_LOG("Waiting for Android Native Window to be initialized ...\n");
 
    while (!android_app->window)
    {
-      if (android_main_poll(NULL) == -1)
+      if (!android_run_events(android_app))
+      {
+         frontend_android_deinit(android_app);
+         frontend_android_shutdown(android_app);
          return;
+      }
    }
 
    RARCH_LOG("Android Native Window initialized.\n");
@@ -611,21 +714,16 @@ static void frontend_android_init(void *data)
       return;
 
    GET_OBJECT_CLASS(env, class, android_app->activity->clazz);
-   GET_METHOD_ID(env, userdata->getIntent, class,
+   GET_METHOD_ID(env, android_app->getIntent, class,
          "getIntent", "()Landroid/content/Intent;");
+   GET_METHOD_ID(env, android_app->onRetroArchExit, class,
+         "onRetroArchExit", "()V");
    CALL_OBJ_METHOD(env, obj, android_app->activity->clazz,
-         userdata->getIntent);
+         android_app->getIntent);
 
    GET_OBJECT_CLASS(env, class, obj);
-   GET_METHOD_ID(env, userdata->getStringExtra, class,
+   GET_METHOD_ID(env, android_app->getStringExtra, class,
          "getStringExtra", "(Ljava/lang/String;)Ljava/lang/String;");
-
-   frontend_android_get_version_sdk(&sdk);
-
-   if (sdk >= 19)
-      engine_lookup_name = android_input_lookup_name;
-   else
-      engine_lookup_name = android_input_lookup_name_prekitkat;
 }
 
 static int frontend_android_get_rating(void)
@@ -664,12 +762,12 @@ static enum frontend_architecture frontend_android_get_architecture(void)
 const frontend_ctx_driver_t frontend_ctx_android = {
    frontend_android_get_environment_settings,
    frontend_android_init,
-   NULL,                         /* deinit */
+   frontend_android_deinit,
    NULL,                         /* exitspawn */
    NULL,                         /* process_args */
    NULL,                         /* exec */
    NULL,                         /* set_fork */
-   NULL,                         /* shutdown */
+   frontend_android_shutdown,
    frontend_android_get_name,
    frontend_android_get_os,
    frontend_android_get_rating,

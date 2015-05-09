@@ -19,68 +19,37 @@
 #define _PLATFORM_ANDROID_H
 
 #include <jni.h>
+#include <poll.h>
+#include <sched.h>
 
-#include "android_native_app_glue.h"
+#include <android/looper.h>
+#include <android/native_activity.h>
 #include <android/window.h>
 #include <android/sensor.h>
 
-#ifndef MAX_AXIS
-#define MAX_AXIS 10
-#endif
+#include <rthreads/rthreads.h>
 
-#ifndef MAX_PADS
-#define MAX_PADS 8
-#endif
-
-#ifndef MAX_TOUCH
-#define MAX_TOUCH 16
-#endif
-
-#ifndef AKEYCODE_ASSIST
-#define AKEYCODE_ASSIST 219
-#endif
-
-#define LAST_KEYCODE AKEYCODE_ASSIST
-
-typedef struct state_device
+struct android_app
 {
-   int id;
-   int port;
-   char name[256];
-} state_device_t;
-
-struct input_pointer
-{
-   int16_t x, y;
-   int16_t full_x, full_y;
-};
-
-typedef struct
-{
-   float x;
-   float y;
-   float z;
-} sensor_t;
-
-typedef struct android_input_state
-{
-   int16_t analog_state[MAX_PADS][MAX_AXIS];
-   int8_t hat_state[MAX_PADS][2];
-   uint8_t pad_state[MAX_PADS][(LAST_KEYCODE + 7) / 8];
-   unsigned pads_connected;
-   state_device_t pad_states[MAX_PADS];
-   struct input_pointer pointer[MAX_TOUCH];
-   sensor_t accelerometer_state;
-   unsigned pointer_count;
-} android_input_state_t;
-
-struct android_app_userdata
-{
+   ANativeActivity* activity;
+   ALooper* looper;
+   AInputQueue* inputQueue;
+   AInputQueue* pendingInputQueue;
+   ANativeWindow* window;
+   ANativeWindow* pendingWindow;
+   slock_t *mutex;
+   scond_t *cond;
+   int activityState;
+   int msgread;
+   int msgwrite;
+   int running;
    unsigned accelerometer_event_rate;
    const ASensor* accelerometerSensor;
    uint64_t sensor_state_mask;
+   sthread_t *thread;
    char current_ime[PATH_MAX_LENGTH];
    jmethodID getIntent;
+   jmethodID onRetroArchExit;
    jmethodID getStringExtra;
    jmethodID clearPendingIntent;
    jmethodID hasPendingIntent;
@@ -88,9 +57,111 @@ struct android_app_userdata
    jmethodID getPendingIntentLibretroPath;
    jmethodID getPendingIntentFullPath;
    jmethodID getPendingIntentIME;
-   android_input_state_t thread_state;
-   ASensorManager *sensorManager;
-   ASensorEventQueue *sensorEventQueue;
+};
+
+enum
+{
+   LOOPER_ID_MAIN = 1,
+   LOOPER_ID_INPUT,
+   LOOPER_ID_USER,
+   LOOPER_ID_INPUT_MSG,
+};
+
+enum
+{
+   APP_CMD_INPUT_CHANGED,
+   /**
+    * Command from main thread: a new ANativeWindow is ready for use.  Upon
+    * receiving this command, android_app->window will contain the new window
+    * surface.
+    */
+   APP_CMD_INIT_WINDOW,
+
+   /**
+    * Command from main thread: the existing ANativeWindow needs to be
+    * terminated.  Upon receiving this command, android_app->window still
+    * contains the existing window; after calling android_app_exec_cmd
+    * it will be set to NULL.
+    */
+   APP_CMD_TERM_WINDOW,
+
+   /**
+    * Command from main thread: the current ANativeWindow has been resized.
+    * Please redraw with its new size.
+    */
+   APP_CMD_WINDOW_RESIZED,
+
+   /**
+    * Command from main thread: the system needs that the current ANativeWindow
+    * be redrawn.  You should redraw the window before handing this to
+    * android_app_exec_cmd() in order to avoid transient drawing glitches.
+    */
+   APP_CMD_WINDOW_REDRAW_NEEDED,
+
+   /**
+    * Command from main thread: the content area of the window has changed,
+    * such as from the soft input window being shown or hidden.  You can
+    * find the new content rect in android_app::contentRect.
+    */
+   APP_CMD_CONTENT_RECT_CHANGED,
+
+   /**
+    * Command from main thread: the app's activity window has gained
+    * input focus.
+    */
+   APP_CMD_GAINED_FOCUS,
+
+   /**
+    * Command from main thread: the app's activity window has lost
+    * input focus.
+    */
+   APP_CMD_LOST_FOCUS,
+
+   /**
+    * Command from main thread: the current device configuration has changed.
+    */
+   APP_CMD_CONFIG_CHANGED,
+
+   /**
+    * Command from main thread: the system is running low on memory.
+    * Try to reduce your memory use.
+    */
+   APP_CMD_LOW_MEMORY,
+
+   /**
+    * Command from main thread: the app's activity has been started.
+    */
+   APP_CMD_START,
+
+   /**
+    * Command from main thread: the app's activity has been resumed.
+    */
+   APP_CMD_RESUME,
+
+   /**
+    * Command from main thread: the app should generate a new saved state
+    * for itself, to restore from later if needed.  
+    */
+   APP_CMD_SAVE_STATE,
+
+   /**
+    * Command from main thread: the app's activity has been paused.
+    */
+   APP_CMD_PAUSE,
+
+   /**
+    * Command from main thread: the app's activity has been stopped.
+    */
+   APP_CMD_STOP,
+
+   /**
+    * Command from main thread: the app's activity is being destroyed,
+    * and waiting for the app thread to clean up and exit before proceeding.
+    */
+   APP_CMD_DESTROY,
+
+   // Set by thread when it will no longer reply to commands.
+   APP_CMD_DEAD,
 };
 
 #define JNI_EXCEPTION(env) \
@@ -156,18 +227,8 @@ struct android_app_userdata
    var = (*env)->CallIntMethod(env, clazz_obj, methodId); \
    JNI_EXCEPTION(env)
 
-bool (*engine_lookup_name)(char *buf,
-      int *vendorId, int *productId, size_t size, int id);
-
-JNIEnv *jni_thread_getenv(void);
-
-void android_app_write_cmd(struct android_app *android_app, int8_t cmd);
+extern JNIEnv *jni_thread_getenv(void);
 
 extern struct android_app *g_android;
-extern struct android_app_userdata *g_android_userdata;
-
-void android_main(struct android_app *android_app);
-
-int android_main_poll(void *data);
 
 #endif /* _PLATFORM_ANDROID_H */

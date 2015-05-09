@@ -613,7 +613,6 @@ FRONTEND
 #elif defined(__QNX__)
 #include "../frontend/drivers/platform_qnx.c"
 #elif defined(ANDROID)
-#include "../frontend/drivers/android_native_app_glue.c"
 #include "../frontend/drivers/platform_android.c"
 #elif defined(__linux__) && !defined(ANDROID)
 #include "../frontend/drivers/platform_linux.c"

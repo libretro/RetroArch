@@ -67,7 +67,7 @@ static bool android_joypad_button(unsigned port, uint16_t joykey)
    if (!android || port >= MAX_PADS)
       return false;
 
-   buf = android->copy.pad_state[port];
+   buf = android->pad_state[port];
 
    if (GET_HAT_DIR(joykey))
    {
@@ -78,13 +78,13 @@ static bool android_joypad_button(unsigned port, uint16_t joykey)
       switch (GET_HAT_DIR(joykey))
       {
          case HAT_LEFT_MASK:
-            return android->copy.hat_state[port][0] == -1;
+            return android->hat_state[port][0] == -1;
          case HAT_RIGHT_MASK:
-            return android->copy.hat_state[port][0] ==  1;
+            return android->hat_state[port][0] ==  1;
          case HAT_UP_MASK:
-            return android->copy.hat_state[port][1] == -1;
+            return android->hat_state[port][1] == -1;
          case HAT_DOWN_MASK:
-            return android->copy.hat_state[port][1] ==  1;
+            return android->hat_state[port][1] ==  1;
          default:
             return false;
       }
@@ -116,7 +116,7 @@ static int16_t android_joypad_axis(unsigned port, uint32_t joyaxis)
       is_pos = true;
    }
 
-   val = android->copy.analog_state[port][axis];
+   val = android->analog_state[port][axis];
 
    if (is_neg && val > 0)
       val = 0;
@@ -134,7 +134,7 @@ static bool android_joypad_query_pad(unsigned pad)
 {
    driver_t *driver         = driver_get_ptr();
    android_input_t *android = (android_input_t*)driver->input_data;
-   return (pad < MAX_USERS && pad < android->copy.pads_connected);
+   return (pad < MAX_USERS && pad < android->pads_connected);
 }
 
 
