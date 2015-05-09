@@ -3184,8 +3184,17 @@ static void gl_get_video_output_next(void *data)
    gfx_ctx_get_video_output_next(data);
 }
 
+static uint64_t gl_get_frame_count(void *data)
+{
+   gl_t *gl = (gl_t*)data;
+   if (!gl)
+      return 0;
+   return gl->frame_count;
+}
+
 
 static const video_poke_interface_t gl_poke_interface = {
+   gl_get_frame_count,
    gl_set_video_mode,
    NULL,
    gl_get_video_output_size,

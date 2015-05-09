@@ -589,22 +589,31 @@ static bool dispmanx_gfx_read_viewport(void *data, uint8_t *buffer)
    return true;
 }
 
+static uint64_t dispmanx_gfx_get_frame_count(void *data)
+{
+   struct dispmanx_video *_dispvars = data;
+   if (!_dispvars)
+      return 0;
+   return _dispvars->frame_count;
+}
+
 static const video_poke_interface_t dispmanx_poke_interface = {
-  NULL, /* set_video_mode */
-  NULL, /* set_filtering */
-  NULL, /* get_video_output_size */
-  NULL, /* get_video_output_prev */
-  NULL, /* get_video_output_next */
-  NULL, /* get_current_framebuffer */
-  NULL, /* get_proc_address */
-  NULL, /* dispmanx_set_aspect_ratio */
-  NULL, /* dispmanx_apply_state_changes */
+   dispmanx_get_frame_count,
+   NULL, /* set_video_mode */
+   NULL, /* set_filtering */
+   NULL, /* get_video_output_size */
+   NULL, /* get_video_output_prev */
+   NULL, /* get_video_output_next */
+   NULL, /* get_current_framebuffer */
+   NULL, /* get_proc_address */
+   NULL, /* dispmanx_set_aspect_ratio */
+   NULL, /* dispmanx_apply_state_changes */
 #ifdef HAVE_MENU
-  dispmanx_set_texture_frame,
-  dispmanx_set_texture_enable,
+   dispmanx_set_texture_frame,
+   dispmanx_set_texture_enable,
 #endif
-  NULL, /* dispmanx_set_osd_msg */
-  NULL  /* dispmanx_show_mouse */
+   NULL, /* dispmanx_set_osd_msg */
+   NULL  /* dispmanx_show_mouse */
 };
 
 static void dispmanx_gfx_get_poke_interface(void *data,

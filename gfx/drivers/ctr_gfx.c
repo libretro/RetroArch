@@ -501,8 +501,17 @@ static void ctr_viewport_info(void* data, struct video_viewport* vp)
    return;
 }
 
+static uint64_t ctr_get_frame_count(void *data)
+{
+   ctr_video_t* ctr = (ctr_video_t*)data;
+   if (!ctr)
+      return 0;
+   return ctr->frame_count;
+}
+
 static const video_poke_interface_t ctr_poke_interface =
 {
+   ctr_get_frame_count,
    NULL,
    ctr_set_filtering,
    NULL, /* get_video_output_size */

@@ -1623,22 +1623,31 @@ static void exynos_show_mouse(void *data, bool state)
    (void)state;
 }
 
+static uint64_t exynos_get_frame_count(void *data)
+{
+   struct exynos_video *vid = data;
+   if (!vid)
+      return 0;
+   return vid->frame_count;
+}
+
 static const video_poke_interface_t exynos_poke_interface = {
-  NULL, /* set_video_mode */
-  NULL, /* set_filtering */
-  NULL, /* get_video_output_size */
-  NULL, /* get_video_output_prev */
-  NULL, /* get_video_output_next */
-  NULL, /* get_current_framebuffer */
-  NULL, /* get_proc_address */
-  exynos_set_aspect_ratio,
-  exynos_apply_state_changes,
+   exynos_get_frame_count,
+   NULL, /* set_video_mode */
+   NULL, /* set_filtering */
+   NULL, /* get_video_output_size */
+   NULL, /* get_video_output_prev */
+   NULL, /* get_video_output_next */
+   NULL, /* get_current_framebuffer */
+   NULL, /* get_proc_address */
+   exynos_set_aspect_ratio,
+   exynos_apply_state_changes,
 #ifdef HAVE_MENU
-  exynos_set_texture_frame,
-  exynos_set_texture_enable,
+   exynos_set_texture_frame,
+   exynos_set_texture_enable,
 #endif
-  exynos_set_osd_msg,
-  exynos_show_mouse
+   exynos_set_osd_msg,
+   exynos_show_mouse
 };
 
 static void exynos_gfx_get_poke_interface(void *data,

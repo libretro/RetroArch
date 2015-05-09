@@ -719,7 +719,16 @@ void sdl2_grab_mouse_toggle(void *data)
    SDL_SetWindowGrab(vid->window, SDL_GetWindowGrab(vid->window));
 }
 
+static uint64_t sdl2_get_frame_count(void *data)
+{
+   sdl2_video_t *vid = (sdl2_video_t*)data;
+   if (!vid)
+      return 0;
+   return vid->frame_count;
+}
+
 static video_poke_interface_t sdl2_video_poke_interface = {
+   sdl2_get_frame_count,
    NULL,
    sdl2_poke_set_filtering,
    NULL, /* get_video_output_size */

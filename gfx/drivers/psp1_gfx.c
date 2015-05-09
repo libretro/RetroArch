@@ -840,7 +840,16 @@ static void psp_viewport_info(void *data, struct video_viewport *vp)
       *vp = psp->vp;
 }
 
+static uint64_t psp_get_frame_count(void *data)
+{
+   psp1_video_t *psp = (psp1_video_t*)data;
+   if (!psp)
+      return 0;
+   return psp->frame_count;
+}
+
 static const video_poke_interface_t psp_poke_interface = {
+   psp_get_frame_count,
    NULL,
    psp_set_filtering,
    NULL, /* get_video_output_size */

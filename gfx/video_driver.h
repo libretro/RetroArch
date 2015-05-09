@@ -100,6 +100,7 @@ enum texture_filter_type
 
 typedef struct video_poke_interface
 {
+   uint64_t (*get_frame_count)(void *data);
    void (*set_video_mode)(void *data, unsigned width, unsigned height, bool fullscreen);
    void (*set_filtering)(void *data, unsigned index, bool smooth);
    void (*get_video_output_size)(void *data, unsigned *width, unsigned *height);

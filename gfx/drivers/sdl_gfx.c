@@ -515,7 +515,16 @@ static void sdl_grab_mouse_toggle(void *data)
    SDL_WM_GrabInput(mode == SDL_GRAB_ON ? SDL_GRAB_OFF : SDL_GRAB_ON);
 }
 
+static void sdl_get_frame_count(void *data)
+{
+   sdl_video_t *vid = (sdl_video_t*)data;
+   if (!vid)
+      return 0;
+   return vid->frame_count;
+}
+
 static const video_poke_interface_t sdl_poke_interface = {
+   sdl_get_frame_count,
    NULL,
    sdl_set_filtering,
    NULL, /* get_video_output_size */

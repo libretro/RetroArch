@@ -932,22 +932,31 @@ static void sunxi_set_texture_frame(void *data, const void *frame, bool rgb32,
          _dispvars->pages[0].offset, width, height, _dispvars->sunxi_disp->xres);
 }
 
+static uint64_t sunxi_get_frame_count(void *data)
+{
+   struct sunxi_video *_dispvars = (struct sunxi_video*)data;
+   if (!_dispvars)
+      return 0;
+   return _dispvars->frame_count;
+}
+
 static const video_poke_interface_t sunxi_poke_interface = {
-  NULL, /* set_video_mode */
-  NULL, /* set_filtering */
-  NULL, /* get_video_output_size */
-  NULL, /* get_video_output_prev */
-  NULL, /* get_video_output_next */
-  NULL, /* get_current_framebuffer */
-  NULL, /* get_proc_address */
-  NULL, /* sunxi_set_aspect_ratio */
-  NULL, /* sunxi_apply_state_changes */
+   sunxi_get_frame_count,
+   NULL, /* set_video_mode */
+   NULL, /* set_filtering */
+   NULL, /* get_video_output_size */
+   NULL, /* get_video_output_prev */
+   NULL, /* get_video_output_next */
+   NULL, /* get_current_framebuffer */
+   NULL, /* get_proc_address */
+   NULL, /* sunxi_set_aspect_ratio */
+   NULL, /* sunxi_apply_state_changes */
 #ifdef HAVE_MENU
-  sunxi_set_texture_frame,
-  sunxi_set_texture_enable,
+   sunxi_set_texture_frame,
+   sunxi_set_texture_enable,
 #endif
-  NULL, /* sunxi_set_osd_msg */
-  NULL  /* sunxi_show_mouse */
+   NULL, /* sunxi_set_osd_msg */
+   NULL  /* sunxi_show_mouse */
 };
 
 static void sunxi_gfx_get_poke_interface(void *data,

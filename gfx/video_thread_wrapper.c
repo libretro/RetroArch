@@ -948,14 +948,21 @@ static void thread_apply_state_changes(void *data)
 static struct video_shader *thread_get_current_shader(void *data)
 {
    thread_video_t *thr = (thread_video_t*)data;
-   if (!thr)
-      return NULL;
-   if (!thr->poke)
+   if (!thr || !thr->poke)
       return NULL;
    return thr->poke->get_current_shader(thr->driver_data);
 }
 
+static uint64_t thread_get_frame_count(void *data)
+{
+   thread_video_t *thr = (thread_video_t*)data;
+   if (!thr || !thr->poke)
+      return NULL;
+   return thr->poke->get_frame_count(thr->driver_data);
+}
+
 static const video_poke_interface_t thread_poke = {
+   thread_get_frame_count,
    thread_set_video_mode,
    thread_set_filtering,
    thread_get_video_output_size,

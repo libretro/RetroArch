@@ -1138,7 +1138,16 @@ static void omap_gfx_set_texture_enable(void *data, bool state, bool full_screen
    (void) full_screen;
 }
 
+static uint64_t omap_gfx_get_frame_count(void *data)
+{
+   omap_video_t *vid = (omap_video_t*)data;
+   if (!vid)
+      return 0;
+   return vid->frame_count;
+}
+
 static const video_poke_interface_t omap_gfx_poke_interface = {
+   omap_gfx_get_frame_count,
    NULL,
    NULL, /* set_filtering */
    NULL, /* get_video_output_size */
