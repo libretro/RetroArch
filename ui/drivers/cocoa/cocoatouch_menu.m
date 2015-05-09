@@ -744,7 +744,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
                    target:weakSelf
                    action:@selector(menuBack)];
     
-   [self set_rightbutton:BOXSTRING("Resume")
+   [self set_rightbutton:BOXSTRING("Switch")
                    target:[RetroArch_iOS get]
                    action:@selector(showGameView)];
 
