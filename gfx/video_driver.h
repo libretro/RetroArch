@@ -340,6 +340,8 @@ const char *video_driver_get_ident(void);
 bool video_driver_set_viewport(unsigned width, unsigned height,
       bool force_fullscreen, bool allow_rotate);
 
+uint64_t video_driver_get_frame_count(void);
+
 #ifdef __cplusplus
 }
 #endif

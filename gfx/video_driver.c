@@ -263,6 +263,24 @@ uintptr_t video_driver_get_current_framebuffer(void)
    return 0;
 }
 
+uint64_t video_driver_get_frame_count(void)
+{
+   static bool warn_once = true;
+   driver_t                   *driver = driver_get_ptr();
+   const video_poke_interface_t *poke = video_driver_get_poke_ptr();
+
+   if (!poke || !poke->get_frame_count)
+   {
+      if (warn_once)
+      {
+         RARCH_WARN("Frame count not implemented!\n");
+         warn_once = false;
+      }
+      return 0;
+   }
+   return poke->get_frame_count(driver->video_data);
+}
+
 retro_proc_address_t video_driver_get_proc_address(const char *sym)
 {
    driver_t                   *driver = driver_get_ptr();
