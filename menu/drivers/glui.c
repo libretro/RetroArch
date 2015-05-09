@@ -48,6 +48,7 @@ typedef struct glui_handle
          GLuint id;
          char path[PATH_MAX_LENGTH];
       } bg;
+      GLuint white;
    } textures;
 
    gl_font_raster_block_t list_block;
@@ -105,7 +106,10 @@ static void glui_blit_line(float x, float y,
 static void glui_render_quad(gl_t *gl, int x, int y, int w, int h,
       float r, float g, float b, float a)
 {
+
    struct gl_coords coords;
+   menu_handle_t *menu = menu_driver_get_ptr();
+   glui_handle_t *glui = (glui_handle_t*)menu->userdata;
    static const GLfloat vertex[] = {
       0, 0,
       1, 0,
@@ -137,7 +141,7 @@ static void glui_render_quad(gl_t *gl, int x, int y, int w, int h,
 
    coords.color = color;
 
-   menu_gl_draw_frame(gl->shader, &coords, &gl->mvp_no_rot, true, 0);
+   menu_gl_draw_frame(gl->shader, &coords, &gl->mvp_no_rot, true, glui->textures.white);
 
    gl->coords.color = gl->white_color_ptr;
 }
@@ -468,6 +472,7 @@ static void glui_frame(void)
 static void *glui_init(void)
 {
    float dpi;
+   static const uint8_t white_data[] = { 0xff, 0xff, 0xff, 0xff };
    glui_handle_t *glui                     = NULL;
    const video_driver_t *video_driver      = NULL;
    menu_handle_t                     *menu = NULL;
@@ -500,6 +505,14 @@ static void *glui_init(void)
    menu->header_height  = dpi / 3;
    menu->font.size      = dpi / 8;
    glui->textures.bg.id = 0;
+
+   glGenTextures(1, &glui->textures.white);
+   glBindTexture(GL_TEXTURE_2D, glui->textures.white);
+   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, white_data);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
    rarch_main_data_msg_queue_push(DATA_TYPE_IMAGE,
          settings->menu.wallpaper, "cb_menu_wallpaper", 0, 1, true);
@@ -556,6 +569,7 @@ static void glui_context_destroy(void)
    menu_display_free_main_font(menu);
 
    glui_context_bg_destroy(glui);
+   glDeleteTextures(1, &glui->textures.white);
 }
 
 static bool glui_load_wallpaper(void *data)
