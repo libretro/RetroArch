@@ -95,6 +95,7 @@ typedef struct gl_shader_backend gl_shader_backend_t;
 
 typedef struct d3d_video
 {
+   uint64_t frame_count;
    bool should_resize;
    bool quitting;
 

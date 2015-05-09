@@ -63,6 +63,7 @@ typedef struct ctr_video
       ctr_vertex_t* frame_coords;
    }menu;
 
+   uint64_t frame_count;
    uint32_t* display_list;
    int display_list_size;
    void* texture_linear;
@@ -360,6 +361,9 @@ static bool ctr_frame(void* data, const void* frame,
                         gfxGetFramebuffer(GFX_TOP, GFX_LEFT, NULL, NULL), 240,400,CTRGU_RGB8, CTRGU_MULTISAMPLE_NONE);
 
    RARCH_PERFORMANCE_STOP(ctrframe_f);
+
+   ctr->frame_count++;
+
    return true;
 }
 

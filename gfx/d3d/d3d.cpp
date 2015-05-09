@@ -1737,6 +1737,8 @@ static bool d3d_frame(void *data, const void *frame,
 
    gfx_ctx_swap_buffers(d3d);
 
+   d3d->frame_count++;
+
    return true;
 }
 

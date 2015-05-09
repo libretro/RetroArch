@@ -84,6 +84,7 @@ static bool g_quitting;
 
 typedef struct gl
 {
+   uint64_t frame_count;
    unsigned char *screen;
    struct XenosVertexBuffer *vb;
    struct XenosDevice * gl_device;
@@ -237,6 +238,8 @@ static bool xenon360_gfx_frame(void *data, const void *frame, unsigned width, un
    // Resolve
    Xe_Resolve(vid->gl_device);
    Xe_Sync(vid->gl_device);
+
+   vid->frame_count++;
 
    return true;
 }

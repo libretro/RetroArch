@@ -46,6 +46,7 @@ struct gx_overlay_data
 
 typedef struct gx_video
 {
+   uint64_t frame_count;
    bool should_resize;
    bool keep_aspect;
    bool double_strike;
@@ -1157,6 +1158,8 @@ static bool gx_frame(void *data, const void *frame,
    VIFlush();
 
    RARCH_PERFORMANCE_STOP(gx_frame);
+
+   gx->frame_count++;
 
    return true;
 }

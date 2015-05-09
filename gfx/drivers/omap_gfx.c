@@ -770,6 +770,7 @@ static void omapfb_blit_frame(omapfb_data_t *pdata, const void *src,
 
 typedef struct omap_video
 {
+   uint64_t frame_count;
    omapfb_data_t *omap;
 
    void *font;
@@ -981,11 +982,10 @@ fail:
 static bool omap_gfx_frame(void *data, const void *frame, unsigned width,
       unsigned height, unsigned pitch, const char *msg)
 {
-   omap_video_t *vid;
+   omap_video_t *vid = (omap_video_t*)data;
 
    if (!frame)
       return true;
-   vid = data;
 
    if (width > 4 && height > 4 && (width != vid->width || height != vid->height))
    {
@@ -1009,6 +1009,8 @@ static bool omap_gfx_frame(void *data, const void *frame, unsigned width,
             vid->menu.scaler.out_stride);
    if (msg)
       omap_render_msg(vid, msg);
+
+   vid->frame_count++;
 
    return true;
 }

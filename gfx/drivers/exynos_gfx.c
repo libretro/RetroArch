@@ -1471,6 +1471,8 @@ static bool exynos_gfx_frame(void *data, const void *frame, unsigned width,
    if (exynos_flip(vid->data, page) != 0)
       goto fail;
 
+   vid->frame_count++;
+
    return true;
 
 fail:

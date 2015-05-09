@@ -51,6 +51,7 @@ typedef struct sdl2_tex
 
 typedef struct _sdl2_video
 {
+   uint64_t frame_count;
    SDL_Window *window;
    SDL_Renderer *renderer;
 
@@ -517,6 +518,8 @@ static bool sdl2_gfx_frame(void *data, const void *frame, unsigned width,
 
    if (video_monitor_get_fps(buf, sizeof(buf), NULL, 0))
       SDL_SetWindowTitle(vid->window, buf);
+
+   vid->frame_count++;
 
    return true;
 }

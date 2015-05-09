@@ -85,6 +85,7 @@ typedef struct psp1_menu_frame
 
 typedef struct psp1_video
 {
+   uint64_t frame_count;
    void* main_dList;
    void* frame_dList;
    void* draw_buffer;
@@ -525,6 +526,7 @@ static bool psp_frame(void *data, const void *frame,
 #endif
 
    psp->draw_buffer = FROM_GU_POINTER(sceGuSwapBuffers());
+   psp->frame_count++;
 
    RARCH_PERFORMANCE_INIT(psp_frame_run);
    RARCH_PERFORMANCE_START(psp_frame_run);

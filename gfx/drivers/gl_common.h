@@ -245,6 +245,7 @@ struct gl_font_renderer;
 
 typedef struct gl
 {
+   uint64_t frame_count;
    const shader_backend_t *shader;
 
    bool vsync;
@@ -261,8 +262,6 @@ typedef struct gl
 
    void *conv_buffer;
    struct scaler_ctx scaler;
-
-   unsigned frame_count;
 
 #ifdef HAVE_FBO
    /* Render-to-texture, multipass shaders. */

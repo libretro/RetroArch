@@ -498,6 +498,7 @@ struct sunxi_page
 
 struct sunxi_video
 {
+   uint64_t frame_count;
    void *font;
    const font_renderer_driver_t *font_driver;
 
@@ -801,6 +802,8 @@ static bool sunxi_gfx_frame(void *data, const void *frame, unsigned width,
    }
 
    sunxi_update_main(frame, _dispvars);
+
+   _dispvars->frame_count++;
 
    return true;
 }

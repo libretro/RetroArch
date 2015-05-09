@@ -36,7 +36,8 @@
 #define NUMPAGES 2
 
 struct dispmanx_video
-{ 
+{
+   uint64_t frame_count;
    DISPMANX_DISPLAY_HANDLE_T display;
    DISPMANX_MODEINFO_T amode;
    DISPMANX_UPDATE_HANDLE_T update;
@@ -382,19 +383,19 @@ static bool dispmanx_gfx_frame(void *data, const void *frame, unsigned width,
 
    if (width != _dispvars->width || height != _dispvars->height)
    {
-       /* Sanity check. */
-       if (width == 0 || height == 0)
-       return true;
+      /* Sanity check. */
+      if (width == 0 || height == 0)
+         return true;
 
-       RARCH_LOG("video_dispmanx: internal frame resolution changed by core\n");
-       
-       if (!dispmanx_setup_scale(_dispvars, width, height, pitch))
-       {
-	  RARCH_ERR("video_dispmanx: frame resolution set failed\n");
-	  return false;
-       }
- 
-       dispmanx_blank_console (_dispvars);
+      RARCH_LOG("video_dispmanx: internal frame resolution changed by core\n");
+
+      if (!dispmanx_setup_scale(_dispvars, width, height, pitch))
+      {
+         RARCH_ERR("video_dispmanx: frame resolution set failed\n");
+         return false;
+      }
+
+      dispmanx_blank_console (_dispvars);
    }
 
    if (_dispvars->menu_active)
@@ -405,6 +406,8 @@ static bool dispmanx_gfx_frame(void *data, const void *frame, unsigned width,
 
    /* Update main game screen: locate free page, blit and flip. */
    dispmanx_update_main(_dispvars, frame);
+
+   _dispvars->frame_count++;
 
    return true;
 }

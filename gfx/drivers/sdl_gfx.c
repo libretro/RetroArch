@@ -46,6 +46,7 @@ typedef struct sdl_menu_frame
 
 typedef struct sdl_video
 {
+   uint64_t frame_count;
    SDL_Surface *screen;
    bool quitting;
 
@@ -376,6 +377,8 @@ static bool sdl_gfx_frame(void *data, const void *frame, unsigned width,
       SDL_WM_SetCaption(buf, NULL);
 
    SDL_Flip(vid->screen);
+
+   vid->frame_count++;
 
    return true;
 }
