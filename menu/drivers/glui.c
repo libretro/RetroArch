@@ -376,18 +376,20 @@ static void glui_frame(void)
 
    get_title(label, dir, menu_type, title, sizeof(title));
 
-   glui_render_quad(gl, 0,
-         menu->header_height - menu->scroll_y + glui->line_height *
-         menu->navigation.selection_ptr,
-         global->video_data.width, glui->line_height, 1, 1, 1, 0.1);
 
    font_driver = driver->font_osd_driver;
 
    menu_display_font_bind_block(menu, font_driver, &glui->list_block);
 
+
    glui_render_menu_list(runloop, glui, menu, normal_color, hover_color);
 
    menu_display_font_flush_block(menu, font_driver);
+
+   glui_render_quad(gl, 0,
+         menu->header_height - menu->scroll_y + glui->line_height *
+         menu->navigation.selection_ptr,
+         global->video_data.width, glui->line_height, 1, 1, 1, 0.1);
 
    runloop->frames.video.current.menu.animation.is_active = true;
    runloop->frames.video.current.menu.label.is_updated    = false;
