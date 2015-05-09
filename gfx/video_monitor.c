@@ -179,6 +179,13 @@ bool video_monitor_fps_statistics(double *refresh_rate,
  * otherwise false.
  *
  **/
+
+#ifdef _WIN32
+#define U64_SIGN "%I64u"
+#else
+#define U64_SIGN "%llu"
+#endif
+
 bool video_monitor_get_fps(char *buf, size_t size,
       char *buf_fps, size_t size_fps)
 {
@@ -209,14 +216,14 @@ bool video_monitor_get_fps(char *buf, size_t size,
          last_fps = TIME_TO_FPS(curr_time, new_time, FPS_UPDATE_INTERVAL);
          curr_time = new_time;
 
-         snprintf(buf, size, "%s || FPS: %6.1f || Frames: %lu",
-               global->title_buf, last_fps, frame_count);
+         snprintf(buf, size, "%s || FPS: %6.1f || Frames: " U64_SIGN,
+               global->title_buf, last_fps, (unsigned long long)frame_count);
          ret = true;
       }
 
       if (buf_fps)
-         snprintf(buf_fps, size_fps, "FPS: %6.1f || Frames: %lu",
-               last_fps, frame_count);
+         snprintf(buf_fps, size_fps, "FPS: %6.1f || Frames: " U64_SIGN,
+               last_fps, (unsigned long long)frame_count);
 
       return ret;
    }
