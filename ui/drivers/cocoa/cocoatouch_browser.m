@@ -165,6 +165,78 @@ static void file_action(enum file_action action, NSString* source, NSString* tar
 
 @end
 
+/*********************************************/
+/* RAMenuItemBasic                           */
+/* A simple menu item that displays a text   */
+/* description and calls a block object when */
+/* selected.                                 */
+/*********************************************/
+@interface RAMenuItemBasic : NSObject
+@property (nonatomic) NSString* description;
+@property (nonatomic) id userdata;
+@property (copy) void (^action)(id userdata);
+@property (copy) NSString* (^detail)(id userdata);
+
++ (RAMenuItemBasic*)itemWithDescription:(NSString*)description action:(void (^)())action;
++ (RAMenuItemBasic*)itemWithDescription:(NSString*)description action:(void (^)())action detail:(NSString* (^)())detail;
++ (RAMenuItemBasic*)itemWithDescription:(NSString*)description association:(id)userdata action:(void (^)())action detail:(NSString* (^)())detail;
+
+@end
+
+/*********************************************/
+/* RAMenuItemBasic                           */
+/* A simple menu item that displays a text   */
+/* description and calls a block object when */
+/* selected.                                 */
+/*********************************************/
+@implementation RAMenuItemBasic
+@synthesize description;
+@synthesize userdata;
+@synthesize action;
+@synthesize detail;
+
++ (RAMenuItemBasic*)itemWithDescription:(NSString*)description action:(void (^)())action
+{
+   return [self itemWithDescription:description action:action detail:Nil];
+}
+
++ (RAMenuItemBasic*)itemWithDescription:(NSString*)description action:(void (^)())action detail:(NSString* (^)())detail
+{
+   return [self itemWithDescription:description association:nil action:action detail:detail];
+}
+
++ (RAMenuItemBasic*)itemWithDescription:(NSString*)description association:(id)userdata action:(void (^)())action detail:(NSString* (^)())detail
+{
+   RAMenuItemBasic* item = [RAMenuItemBasic new];
+   item.description = description;
+   item.userdata = userdata;
+   item.action = action;
+   item.detail = detail;
+   return item;
+}
+
+- (UITableViewCell*)cellForTableView:(UITableView*)tableView
+{
+   static NSString* const cell_id = @"text";
+   
+   UITableViewCell* result = [tableView dequeueReusableCellWithIdentifier:cell_id];
+   if (!result)
+      result = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleValue1 reuseIdentifier:cell_id];
+   
+   result.selectionStyle = UITableViewCellSelectionStyleNone;
+   result.textLabel.text = self.description;
+   result.detailTextLabel.text = self.detail ? self.detail(self.userdata) : nil;
+   return result;
+}
+
+- (void)wasSelectedOnTableView:(UITableView*)tableView ofController:(UIViewController*)controller
+{
+   if (self.action)
+      self.action(self.userdata);
+}
+
+@end
+
 @implementation RADirectoryList
 
 - (id)initWithPath:(NSString*)path extensions:(const char*)extensions 
