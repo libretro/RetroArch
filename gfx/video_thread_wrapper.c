@@ -1087,6 +1087,7 @@ void *rarch_threaded_video_get_ptr(const video_driver_t **drv)
    if (drv)
       *drv = thr->driver;
 
+   if (!thr)
+      return NULL;
    return thr->driver_data;
 }
-
