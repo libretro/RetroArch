@@ -957,7 +957,7 @@ static uint64_t thread_get_frame_count(void *data)
 {
    thread_video_t *thr = (thread_video_t*)data;
    if (!thr || !thr->poke)
-      return NULL;
+      return 0;
    return thr->poke->get_frame_count(thr->driver_data);
 }
 
