@@ -507,7 +507,7 @@ ifeq ($(HAVE_OPENGL), 1)
          DEFINES += $(EGL_CFLAGS)
          LIBS += $(EGL_LIBS)
       endif
-      ifneq ($(HAVE_EGL), 1)
+      ifneq ($(HAVE_GLES), 1)
 			OBJ += gfx/drivers_context/glx_ctx.o
 		endif
    endif
