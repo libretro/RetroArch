@@ -978,6 +978,7 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
    xmb_node_t *core_node = NULL;
    size_t end            = 0;
    global_t *global      = global_get_ptr();
+   uint64_t frame_count  = video_driver_get_frame_count();
 
    if (!list || !list->size)
       return;
@@ -1050,7 +1051,7 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
 
 
       menu_animation_ticker_line(name, 35,
-            runloop->frames.video.count / 20, entry.path,
+            frame_count / 20, entry.path,
             (i == current));
 
       xmb_draw_text(menu, xmb, name,
@@ -1060,7 +1061,7 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
             1, node->label_alpha, TEXT_ALIGN_LEFT);
 
       menu_animation_ticker_line(value, 35,
-            runloop->frames.video.count / 20, entry.value,
+            frame_count / 20, entry.value,
             (i == current));
 
       if((     strcmp(entry.value, "...")

@@ -366,6 +366,7 @@ static void rgui_render(void)
    driver_t *driver         = driver_get_ptr();
    global_t *global         = global_get_ptr();
    settings_t *settings     = config_get_ptr();
+   uint64_t frame_count     = video_driver_get_frame_count();
 
    (void)driver;
 
@@ -437,7 +438,7 @@ static void rgui_render(void)
    get_title(label, dir, menu_type, title, sizeof(title));
 
    menu_animation_ticker_line(title_buf, RGUI_TERM_WIDTH - 10,
-         runloop->frames.video.count / RGUI_TERM_START_X, title, true);
+         frame_count / RGUI_TERM_START_X, title, true);
 
    hover_color = HOVER_COLOR(settings);
    normal_color = NORMAL_COLOR(settings);
@@ -500,9 +501,9 @@ static void rgui_render(void)
          continue;
 
       menu_animation_ticker_line(entry_title_buf, RGUI_TERM_WIDTH - (entry.spacing + 1 + 2),
-            runloop->frames.video.count / RGUI_TERM_START_X, entry.path, selected);
+            frame_count / RGUI_TERM_START_X, entry.path, selected);
       menu_animation_ticker_line(type_str_buf, entry.spacing,
-            runloop->frames.video.count / RGUI_TERM_START_X,
+            frame_count / RGUI_TERM_START_X,
             entry.value, selected);
 
       snprintf(message, sizeof(message), "%c %-*.*s %-*s",

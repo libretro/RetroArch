@@ -618,8 +618,9 @@ static INLINE int time_to_exit(event_cmd_state_t *cmd)
    bool shutdown_pressed         = global->system.shutdown;
    bool video_alive              = video_driver_is_alive();
    bool movie_end                = (global->bsv.movie_end && global->bsv.eof_exit);
+   uint64_t frame_count          = video_driver_get_frame_count();
    bool frame_count_end          = (runloop->frames.video.max && 
-         runloop->frames.video.count >= runloop->frames.video.max);
+         frame_count >= runloop->frames.video.max);
 
    if (shutdown_pressed || cmd->quit_key_pressed || frame_count_end || movie_end
          || !video_alive)

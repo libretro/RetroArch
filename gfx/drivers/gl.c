@@ -972,6 +972,7 @@ static void gl_frame_fbo(gl_t *gl,
    GLfloat fbo_tex_coords[8] = {0.0f};
    runloop_t *runloop = rarch_main_get_ptr();
    global_t *global = global_get_ptr();
+   uint64_t frame_count = video_driver_get_frame_count();
 
    /* Render the rest of our passes. */
    gl->coords.tex_coord = fbo_tex_coords;
@@ -1011,7 +1012,7 @@ static void gl_frame_fbo(gl_t *gl,
       gl_set_viewport(gl, rect->img_width, rect->img_height, true, false);
       gl->shader->set_params(gl, prev_rect->img_width, prev_rect->img_height, 
             prev_rect->width, prev_rect->height, 
-            gl->vp.width, gl->vp.height, runloop->frames.video.count, 
+            gl->vp.width, gl->vp.height, frame_count, 
             tex_info, gl->prev_info, fbo_tex_info, fbo_tex_info_cnt);
 
       gl->coords.vertices = 4;
@@ -1058,7 +1059,7 @@ static void gl_frame_fbo(gl_t *gl,
    gl->shader->set_params(gl,
          prev_rect->img_width, prev_rect->img_height, 
          prev_rect->width, prev_rect->height, 
-         gl->vp.width, gl->vp.height, runloop->frames.video.count, 
+         gl->vp.width, gl->vp.height, frame_count, 
          tex_info, gl->prev_info, fbo_tex_info, fbo_tex_info_cnt);
 
    gl->coords.vertex = gl->vertex_ptr;
@@ -1489,6 +1490,7 @@ static bool gl_frame(void *data, const void *frame,
    driver_t *driver            = driver_get_ptr();
    settings_t *settings        = config_get_ptr();
    global_t *global            = global_get_ptr();
+   uint64_t frame_count        = video_driver_get_frame_count();
    const struct font_renderer *font_driver = driver ? driver->font_osd_driver : NULL;
 
    RARCH_PERFORMANCE_INIT(frame_run);
@@ -1597,7 +1599,7 @@ static bool gl_frame(void *data, const void *frame,
    gl->shader->set_params(gl, width, height,
          gl->tex_w, gl->tex_h,
          gl->vp.width, gl->vp.height,
-         runloop->frames.video.count, 
+         frame_count, 
          &gl->tex_info, gl->prev_info, NULL, 0);
 
    gl->coords.vertices = 4;

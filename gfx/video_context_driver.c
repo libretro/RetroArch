@@ -237,8 +237,7 @@ bool gfx_ctx_check_window(void *data, bool *quit, bool *resize,
 {
    runloop_t          *runloop = rarch_main_get_ptr();
    const gfx_ctx_driver_t *ctx = gfx_ctx_get_ptr();
-   unsigned        frame_count = runloop ? 
-      runloop->frames.video.count : 0;
+   uint64_t        frame_count = video_driver_get_frame_count();
 
    if (!data)
       return false;

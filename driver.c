@@ -390,7 +390,6 @@ void init_drivers(int flags)
 
    if (flags & DRIVER_VIDEO)
    {
-      runloop->frames.video.count      = 0;
       runloop->measure_data.frame_time_samples_count = 0;
 
       init_video();

@@ -294,7 +294,8 @@ static void glui_render_menu_list(runloop_t *runloop,
       uint32_t hover_color)
 {
    size_t i = 0;
-   global_t *global = global_get_ptr();
+   uint64_t frame_count = video_driver_get_frame_count();
+   global_t     *global = global_get_ptr();
 
    if (!menu_display_update_pending())
       return;
@@ -313,9 +314,9 @@ static void glui_render_menu_list(runloop_t *runloop,
       selected = menu_list_entry_is_currently_selected(&entry);
 
       menu_animation_ticker_line(entry_title_buf, glui->ticker_limit,
-            runloop->frames.video.count / 100, entry.path, selected);
+            frame_count / 100, entry.path, selected);
       menu_animation_ticker_line(type_str_buf, glui->ticker_limit,
-            runloop->frames.video.count / 100, entry.value, selected);
+            frame_count / 100, entry.value, selected);
 
       strlcpy(message, entry_title_buf, sizeof(message));
 
@@ -340,6 +341,7 @@ static void glui_frame(void)
    glui_handle_t *glui          = NULL;
    const char *core_name        = NULL;
    const char *core_version     = NULL;
+   const struct font_renderer *font_driver = NULL;
    driver_t *driver             = driver_get_ptr();
    menu_handle_t *menu          = menu_driver_get_ptr();
    settings_t *settings         = config_get_ptr();
@@ -351,7 +353,7 @@ static void glui_frame(void)
          settings->menu.title_color);
    runloop_t *runloop           = rarch_main_get_ptr();
    global_t  *global            = global_get_ptr();
-   const struct font_renderer *font_driver = NULL;
+   uint64_t frame_count         = video_driver_get_frame_count();
 
    if (!menu || !menu->userdata)
       return;
@@ -399,7 +401,7 @@ static void glui_frame(void)
          menu->header_height, 0.2, 0.2, 0.2, 1);
 
    menu_animation_ticker_line(title_buf, glui->ticker_limit,
-         runloop->frames.video.count / 100, title, true);
+         frame_count / 100, title, true);
    glui_blit_line(global->video_data.width / 2, 0, title_buf,
          title_color, TEXT_ALIGN_CENTER);
 

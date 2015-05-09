@@ -165,8 +165,6 @@ static void video_frame(const void *data, unsigned width,
 
    if (!video_driver_frame(data, width, height, pitch, msg))
       driver->video_active = false;
-
-   runloop->frames.video.count++;
 }
 
 /**

@@ -186,14 +186,15 @@ bool video_monitor_get_fps(char *buf, size_t size,
    retro_time_t        new_time;
    static retro_time_t curr_time;
    static retro_time_t fps_time;
-   runloop_t *runloop = rarch_main_get_ptr();
-   global_t  *global  = global_get_ptr();
+   uint64_t frame_count = video_driver_get_frame_count();
+   runloop_t *runloop   = rarch_main_get_ptr();
+   global_t  *global    = global_get_ptr();
 
    *buf = '\0';
 
    new_time = rarch_get_time_usec();
 
-   if (runloop->frames.video.count)
+   if (frame_count)
    {
       bool ret = false;
       unsigned write_index = 
@@ -203,19 +204,19 @@ bool video_monitor_get_fps(char *buf, size_t size,
          new_time - fps_time;
       fps_time = new_time;
 
-      if ((runloop->frames.video.count % FPS_UPDATE_INTERVAL) == 0)
+      if ((frame_count % FPS_UPDATE_INTERVAL) == 0)
       {
          last_fps = TIME_TO_FPS(curr_time, new_time, FPS_UPDATE_INTERVAL);
          curr_time = new_time;
 
-         snprintf(buf, size, "%s || FPS: %6.1f || Frames: %u",
-               global->title_buf, last_fps, runloop->frames.video.count);
+         snprintf(buf, size, "%s || FPS: %6.1f || Frames: %lu",
+               global->title_buf, last_fps, frame_count);
          ret = true;
       }
 
       if (buf_fps)
-         snprintf(buf_fps, size_fps, "FPS: %6.1f || Frames: %u",
-               last_fps, runloop->frames.video.count);
+         snprintf(buf_fps, size_fps, "FPS: %6.1f || Frames: %lu",
+               last_fps, frame_count);
 
       return ret;
    }

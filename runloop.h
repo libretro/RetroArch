@@ -54,7 +54,6 @@ typedef struct runloop
    {
       struct
       {
-         unsigned count;
          unsigned max;
          struct
          {
