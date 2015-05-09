@@ -274,6 +274,7 @@ static int cb_nbio_default(void *data, size_t len)
    return 0;
 }
 
+#ifdef HAVE_RPNG
 static int cb_nbio_image_menu_wallpaper(void *data, size_t len)
 {
    void *ptr           = NULL;
@@ -318,6 +319,7 @@ static int cb_nbio_image_menu_wallpaper(void *data, size_t len)
 
    return 0;
 }
+#endif
 
 static int rarch_main_data_nbio_iterate_poll(nbio_handle_t *nbio)
 {
