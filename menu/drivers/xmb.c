@@ -1491,6 +1491,12 @@ static void xmb_free(void *data)
       font_driver->bind_block(driver->font_osd_data, NULL);
 }
 
+static void xmb_context_bg_destroy(xmb_handle_t *xmb)
+{
+   if (xmb->textures.bg.id)
+      glDeleteTextures(1, &xmb->textures.bg.id);
+}
+
 static bool xmb_load_wallpaper(void *data)
 {
    xmb_handle_t *xmb = NULL;
@@ -1506,8 +1512,7 @@ static bool xmb_load_wallpaper(void *data)
    if (!data)
       return false;
 
-   if (xmb->textures.bg.id)
-      glDeleteTextures(1, &xmb->textures.bg.id);
+   xmb_context_bg_destroy(xmb);
 
    xmb->textures.bg.id   = video_texture_load(data,
          TEXTURE_BACKEND_OPENGL, TEXTURE_FILTER_MIPMAP_LINEAR);
