@@ -593,6 +593,7 @@ static bool glui_load_wallpaper(void *data)
 
    glui->textures.bg.id   = video_texture_load(data,
          TEXTURE_BACKEND_OPENGL, TEXTURE_FILTER_MIPMAP_LINEAR);
+   glui_allocate_white_texture(glui);
 
    return true;
 }
