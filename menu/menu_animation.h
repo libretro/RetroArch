@@ -113,7 +113,7 @@ bool menu_animation_update(animation_t *animation, float dt);
  * Take the contents of @str and apply a ticker effect to it,
  * and write the results in @buf.
  **/
-void menu_animation_ticker_line(char *buf, size_t len, unsigned tick,
+void menu_animation_ticker_line(char *buf, size_t len, uint64_t tick,
       const char *str, bool selected);
 
 #ifdef __cplusplus

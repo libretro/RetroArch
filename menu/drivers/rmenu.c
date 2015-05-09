@@ -152,6 +152,7 @@ static void rmenu_render(void)
    menu_handle_t *menu      = menu_driver_get_ptr();
    global_t    *global      = global_get_ptr();
    runloop_t *runloop       = rarch_main_get_ptr();
+   uint64_t frame_count     = video_driver_get_frame_count();
 
    if (!menu)
       return;
@@ -193,7 +194,7 @@ static void rmenu_render(void)
    get_title(label, dir, menu_type, title, sizeof(title));
 
    menu_animation_ticker_line(title_buf, RMENU_TERM_WIDTH,
-         runloop->frames.video.count / 15, title, true);
+         frame_count / 15, title, true);
 
    font_parms.x = POSITION_EDGE_MIN + POSITION_OFFSET;
    font_parms.y = POSITION_EDGE_MIN + POSITION_RENDER_OFFSET
@@ -238,10 +239,9 @@ static void rmenu_render(void)
       selected = menu_list_entry_is_currently_selected(&entry);
 
       menu_animation_ticker_line(entry_title_buf, RMENU_TERM_WIDTH - (entry.spacing + 1 + 2),
-            runloop->frames.video.count / 15, entry.path, selected);
+            frame_count / 15, entry.path, selected);
       menu_animation_ticker_line(type_str_buf, entry.spacing,
-            runloop->frames.video.count / 15,
-            entry.value, selected);
+            frame_count / 15, entry.value, selected);
 
       snprintf(message, sizeof(message), "%c %s",
             selected ? '>' : ' ', entry_title_buf);

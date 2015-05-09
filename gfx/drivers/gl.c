@@ -1010,7 +1010,7 @@ static void gl_frame_fbo(gl_t *gl, uint64_t frame_count,
       gl_set_viewport(gl, rect->img_width, rect->img_height, true, false);
       gl->shader->set_params(gl, prev_rect->img_width, prev_rect->img_height, 
             prev_rect->width, prev_rect->height, 
-            gl->vp.width, gl->vp.height, frame_count, 
+            gl->vp.width, gl->vp.height, (unsigned int)frame_count, 
             tex_info, gl->prev_info, fbo_tex_info, fbo_tex_info_cnt);
 
       gl->coords.vertices = 4;
@@ -1057,7 +1057,7 @@ static void gl_frame_fbo(gl_t *gl, uint64_t frame_count,
    gl->shader->set_params(gl,
          prev_rect->img_width, prev_rect->img_height, 
          prev_rect->width, prev_rect->height, 
-         gl->vp.width, gl->vp.height, frame_count, 
+         gl->vp.width, gl->vp.height, (unsigned int)frame_count, 
          tex_info, gl->prev_info, fbo_tex_info, fbo_tex_info_cnt);
 
    gl->coords.vertex = gl->vertex_ptr;
@@ -1597,7 +1597,7 @@ static bool gl_frame(void *data, const void *frame,
    gl->shader->set_params(gl, width, height,
          gl->tex_w, gl->tex_h,
          gl->vp.width, gl->vp.height,
-         frame_count, 
+         (unsigned int)frame_count, 
          &gl->tex_info, gl->prev_info, NULL, 0);
 
    gl->coords.vertices = 4;

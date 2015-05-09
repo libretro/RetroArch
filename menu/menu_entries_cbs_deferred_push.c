@@ -283,8 +283,8 @@ static int deferred_push_system_information(void *data, void *userdata,
 
    {
       char tmp[PATH_MAX_LENGTH];
-      const char *tmp_string;
       char tmp2[PATH_MAX_LENGTH];
+      const char *tmp_string = NULL;
       const frontend_ctx_driver_t *frontend = frontend_get_ptr();
 
       snprintf(tmp, sizeof(tmp), "Build date: %s", __DATE__);

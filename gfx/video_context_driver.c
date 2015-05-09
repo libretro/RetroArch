@@ -242,7 +242,7 @@ bool gfx_ctx_check_window(void *data, bool *quit, bool *resize,
       return false;
    
    ctx->check_window(data, quit, resize, width, height,
-         frame_count);
+         (unsigned int)frame_count);
 
    return true;
 }
