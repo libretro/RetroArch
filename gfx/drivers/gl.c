@@ -970,7 +970,6 @@ static void gl_frame_fbo(gl_t *gl,
    GLfloat xamt, yamt;
    unsigned fbo_tex_info_cnt = 0;
    GLfloat fbo_tex_coords[8] = {0.0f};
-   runloop_t *runloop = rarch_main_get_ptr();
    global_t *global = global_get_ptr();
    uint64_t frame_count = video_driver_get_frame_count();
 

@@ -1000,12 +1000,11 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
    {
       menu_entry_t entry;
       float icon_x, icon_y;
-      GLuint texture_switch = 0;
       char name[PATH_MAX_LENGTH], value[PATH_MAX_LENGTH];
-      GLuint icon                           = 0;
-      xmb_node_t *node = (xmb_node_t*)file_list_get_userdata_at_offset(list, i);
-      runloop_t *runloop = rarch_main_get_ptr();
-      menu_handle_t *menu = menu_driver_get_ptr();
+      GLuint texture_switch = 0;
+      GLuint         icon   = 0;
+      xmb_node_t *   node   = (xmb_node_t*)file_list_get_userdata_at_offset(list, i);
+      menu_handle_t *menu   = menu_driver_get_ptr();
 
       if (!node)
          continue;

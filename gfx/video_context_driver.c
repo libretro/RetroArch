@@ -235,7 +235,6 @@ bool gfx_ctx_has_windowed(void *data)
 bool gfx_ctx_check_window(void *data, bool *quit, bool *resize,
       unsigned *width, unsigned *height)
 {
-   runloop_t          *runloop = rarch_main_get_ptr();
    const gfx_ctx_driver_t *ctx = gfx_ctx_get_ptr();
    uint64_t        frame_count = video_driver_get_frame_count();
 
