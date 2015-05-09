@@ -551,8 +551,9 @@ static void rmenu_xui_render(void)
 	char title[PATH_MAX_LENGTH];
 	const char *dir = NULL, *label = NULL;
 	unsigned menu_type = 0;
-   menu_handle_t *menu = menu_driver_get_ptr();
-   runloop_t *runloop  = rarch_main_get_ptr();
+   menu_handle_t *menu  = menu_driver_get_ptr();
+   runloop_t *runloop   = rarch_main_get_ptr();
+   uint64_t frame_count = video_driver_get_frame_count();
 
    if (!menu)
       return;
@@ -573,7 +574,7 @@ static void rmenu_xui_render(void)
 		get_title(label, dir, menu_type, title, sizeof(title));
 		mbstowcs(strw_buffer, title, sizeof(strw_buffer) / sizeof(wchar_t));
 		XuiTextElementSetText(m_menutitle, strw_buffer);
-		menu_animation_ticker_line(title, RXUI_TERM_WIDTH - 3, runloop->frames.video.count / 15, title, true);
+		menu_animation_ticker_line(title, RXUI_TERM_WIDTH - 3, (unsigned int)frame_count / 15, title, true);
 	}
 
 	if (XuiHandleIsValid(m_menutitle))
