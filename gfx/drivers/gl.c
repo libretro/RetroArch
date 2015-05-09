@@ -959,7 +959,7 @@ static void gl_check_fbo_dimensions(gl_t *gl)
    }
 }
 
-static void gl_frame_fbo(gl_t *gl,
+static void gl_frame_fbo(gl_t *gl, uint64_t frame_count,
       const struct gl_tex_info *tex_info)
 {
    const struct gl_fbo_rect *prev_rect;
@@ -971,7 +971,6 @@ static void gl_frame_fbo(gl_t *gl,
    unsigned fbo_tex_info_cnt = 0;
    GLfloat fbo_tex_coords[8] = {0.0f};
    global_t *global = global_get_ptr();
-   uint64_t frame_count = video_driver_get_frame_count();
 
    /* Render the rest of our passes. */
    gl->coords.tex_coord = fbo_tex_coords;
@@ -1608,7 +1607,7 @@ static bool gl_frame(void *data, const void *frame,
 
 #ifdef HAVE_FBO
    if (gl->fbo_inited)
-      gl_frame_fbo(gl, &gl->tex_info);
+      gl_frame_fbo(gl, frame_count, &gl->tex_info);
 #endif
 
    gl_set_prev_texture(gl, &gl->tex_info);
