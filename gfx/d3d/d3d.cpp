@@ -73,7 +73,9 @@ static void d3d_free_overlay(d3d_video_t *d3d, overlay_t *overlay);
 
 #define IDI_ICON 1
 
+#ifndef MAX_MONITORS
 #define MAX_MONITORS 9
+#endif
 
 extern LRESULT CALLBACK WindowProc(HWND hWnd, UINT message,
         WPARAM wParam, LPARAM lParam);
