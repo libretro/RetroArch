@@ -955,10 +955,15 @@ static struct video_shader *thread_get_current_shader(void *data)
 
 static uint64_t thread_get_frame_count(void *data)
 {
+   uint64_t ret;
    thread_video_t *thr = (thread_video_t*)data;
-   if (!thr || !thr->poke)
+   if (!thr)
       return 0;
-   return thr->poke->get_frame_count(thr->driver_data);
+   
+   slock_lock(thr->lock);
+   ret = thr->hit_count+thr->miss_count;
+   slock_unlock(thr->lock);
+   return ret;
 }
 
 static const video_poke_interface_t thread_poke = {
