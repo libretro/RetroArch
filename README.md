@@ -115,10 +115,9 @@ To configure joypads, use the built-in menu or the <tt>retroarch-joyconfig</tt> 
 ```bash
 sudo apt-get install -y make git-core curl g++ pkg-config libglu1-mesa-dev freeglut3-dev mesa-common-dev libsdl1.2-dev libsdl-image1.2-dev libsdl-mixer1.2-dev libsdl-ttf2.0-dev
 ```
-- ```bash
+- Compiling:
+```bash
 ./configure
-```
-- ```bash
 make
 ```
 
