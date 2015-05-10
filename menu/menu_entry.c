@@ -1,5 +1,38 @@
-// JM: The idea of this file is that these will be moved down into
-// ../../../menu/something
+/*  RetroArch - A frontend for libretro.
+ *  Copyright (C) 2014-2015 - Jay McCarthy
+ *
+ *  RetroArch is free software: you can redistribute it and/or modify it under the terms
+ *  of the GNU General Public License as published by the Free Software Found-
+ *  ation, either version 3 of the License, or (at your option) any later version.
+ *
+ *  RetroArch is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+ *  without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+ *  PURPOSE.  See the GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License along with RetroArch.
+ *  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+#include "menu.h"
+#include "menu_navigation.h"
+#include "menu_setting.h"
+#include "menu_input.h"
+#include "../settings.h"
+
+enum menu_entry_type
+{
+   MENU_ENTRY_ACTION = 0,
+   MENU_ENTRY_BOOL,
+   MENU_ENTRY_INT,
+   MENU_ENTRY_UINT,
+   MENU_ENTRY_FLOAT,
+   MENU_ENTRY_PATH,
+   MENU_ENTRY_DIR,
+   MENU_ENTRY_STRING,
+   MENU_ENTRY_HEX,
+   MENU_ENTRY_BIND,
+   MENU_ENTRY_ENUM,
+};
 
 void get_core_title(char *title_msg, size_t title_msg_len)
 {
@@ -21,21 +54,6 @@ void get_core_title(char *title_msg, size_t title_msg_len)
          core_name, core_version);
 }
 
-enum menu_entry_type
-{
-   MENU_ENTRY_ACTION = 0,
-   MENU_ENTRY_BOOL,
-   MENU_ENTRY_INT,
-   MENU_ENTRY_UINT,
-   MENU_ENTRY_FLOAT,
-   MENU_ENTRY_PATH,
-   MENU_ENTRY_DIR,
-   MENU_ENTRY_STRING,
-   MENU_ENTRY_HEX,
-   MENU_ENTRY_BIND,
-   MENU_ENTRY_ENUM,
-};
-
 rarch_setting_t *get_menu_entry_setting(uint32_t i)
 {
    menu_handle_t *menu       = menu_driver_get_ptr();
@@ -52,9 +70,8 @@ rarch_setting_t *get_menu_entry_setting(uint32_t i)
    menu_list_get_at_offset(menu_list->selection_buf, i, &path,
          &entry_label, &type);
 
-   setting = setting_find_setting
-      (menu->list_settings,
-       menu_list->selection_buf->list[i].label);
+   setting = menu_setting_find(
+         menu_list->selection_buf->list[i].label);
 
    return setting;
 }
