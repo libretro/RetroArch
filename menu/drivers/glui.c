@@ -545,9 +545,13 @@ static void glui_free(void *data)
 
 static void glui_context_bg_destroy(glui_handle_t *glui)
 {
-   if (glui && glui->textures.bg.id)
-      glDeleteTextures(1, &glui->textures.bg.id);
-   glDeleteTextures(1, &glui->textures.white);
+   if (glui)
+   {
+      if (glui->textures.bg.id)
+         glDeleteTextures(1, &glui->textures.bg.id);
+      if (glui->textures.white)
+         glDeleteTextures(1, &glui->textures.white);
+   }
 }
 
 static void glui_context_destroy(void)
@@ -565,7 +569,6 @@ static void glui_context_destroy(void)
    menu_display_free_main_font(menu);
 
    glui_context_bg_destroy(glui);
-   glDeleteTextures(1, &glui->textures.white);
 }
 
 static bool glui_load_wallpaper(void *data)
