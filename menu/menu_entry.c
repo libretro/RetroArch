@@ -209,8 +209,9 @@ void menu_entry_reset(uint32_t i)
 
 void menu_entry_get_value(uint32_t i, char *s, size_t len)
 {
-   rarch_setting_t *setting = menu_entry_get_setting(i);
-   setting_get_string_representation(setting, s, len);
+   menu_entry_t entry;
+   menu_entry_get(&entry, i, NULL, true);
+   strlcpy(s, entry.value, len);
 }
 
 void menu_entry_set_value(uint32_t i, const char *s)
