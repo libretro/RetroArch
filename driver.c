@@ -443,18 +443,6 @@ void uninit_drivers(int flags)
 {
    driver_t *driver = driver_get_ptr();
 
-   if (flags & DRIVER_AUDIO)
-      uninit_audio();
-
-   if (flags & DRIVER_VIDEO)
-   {
-      global_t *global = global_get_ptr();
-
-      if (global->system.hw_render_callback.context_destroy &&
-               !driver->video_cache_context)
-            global->system.hw_render_callback.context_destroy();
-   }
-
 #ifdef HAVE_MENU
    if (flags & DRIVER_MENU)
    {
@@ -469,11 +457,11 @@ void uninit_drivers(int flags)
    }
 #endif
 
-   if (flags & DRIVERS_VIDEO_INPUT)
-      uninit_video_input();
-
-   if ((flags & DRIVER_VIDEO) && !driver->video_data_own)
-      driver->video_data = NULL;
+   if ((flags & DRIVER_LOCATION) && !driver->location_data_own)
+   {
+      uninit_location();
+      driver->location_data = NULL;
+   }
 
    if ((flags & DRIVER_CAMERA) && !driver->camera_data_own)
    {
@@ -481,12 +469,24 @@ void uninit_drivers(int flags)
       driver->camera_data = NULL;
    }
 
-   if ((flags & DRIVER_LOCATION) && !driver->location_data_own)
+   if (flags & DRIVER_AUDIO)
+      uninit_audio();
+
+   if (flags & DRIVERS_VIDEO_INPUT)
+      uninit_video_input();
+
+   if (flags & DRIVER_VIDEO)
    {
-      uninit_location();
-      driver->location_data = NULL;
+      global_t *global = global_get_ptr();
+
+      if (global->system.hw_render_callback.context_destroy &&
+               !driver->video_cache_context)
+            global->system.hw_render_callback.context_destroy();
    }
-   
+
+   if ((flags & DRIVER_VIDEO) && !driver->video_data_own)
+      driver->video_data = NULL;
+
    if ((flags & DRIVER_INPUT) && !driver->input_data_own)
       driver->input_data = NULL;
 
