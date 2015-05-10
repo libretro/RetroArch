@@ -114,13 +114,13 @@ const char *menu_entry_get_label(uint32_t i)
    return "";
 }
 
-uint32_t menu_entry_bool_get_value(uint32_t i)
+uint32_t menu_entry_get_bool_value(uint32_t i)
 {
    rarch_setting_t *setting = menu_entry_get_setting(i);
    return *setting->value.boolean;
 }
 
-void menu_entry_bool_set_value(uint32_t i, uint32_t new_val)
+void menu_entry_set_bool_value(uint32_t i, uint32_t new_val)
 {
    rarch_setting_t *setting = menu_entry_get_setting(i);
    *setting->value.boolean = new_val;
