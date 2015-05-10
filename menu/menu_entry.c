@@ -109,7 +109,7 @@ enum menu_entry_type menu_entry_get_type(uint32_t i)
 void menu_entry_get_label(uint32_t i, char *label, size_t sizeof_label)
 {
    menu_entry_t entry;
-   menu_entry_get_entry(&entry, i, NULL, true);
+   menu_entry_get(&entry, i, NULL, true);
 
    strlcpy(label, entry.path, sizeof(label));
 }
