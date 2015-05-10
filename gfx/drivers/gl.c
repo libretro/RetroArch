@@ -3151,9 +3151,9 @@ static void gl_set_osd_msg(void *data, const char *msg,
 
    if (driver->font_osd_driver && font)
    {
-      context_bind_hw_render(gl, false);
+      /* context_bind_hw_render(gl, false); */
       font_driver->render_msg(font, msg, params);
-      context_bind_hw_render(gl, true);
+      /* context_bind_hw_render(gl, true); */
    }
 }
 
