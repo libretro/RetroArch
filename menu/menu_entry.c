@@ -111,7 +111,7 @@ void menu_entry_get_label(uint32_t i, char *label, size_t sizeof_label)
    menu_entry_t entry;
    menu_entry_get(&entry, i, NULL, true);
 
-   strlcpy(label, entry.path, sizeof(label));
+   strlcpy(label, entry.path, sizeof_label);
 }
 
 uint32_t menu_entry_get_bool_value(uint32_t i)
