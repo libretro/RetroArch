@@ -332,7 +332,12 @@ static bool load_content_dont_need_fullpath(
 
    /* First content file is significant, attempt to do patching,
     * CRC checking, etc. */
-   bool ret = read_content_file(i, path, (void**)&info->data, &len);
+   bool ret = false;
+
+   if (i == 0)
+      ret = read_content_file(i, path, (void**)&info->data, &len);
+   else
+      ret = read_file(path, (void**)&info->data, &len);
 
    if (!ret || len < 0)
    {
