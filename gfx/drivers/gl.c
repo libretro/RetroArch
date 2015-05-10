@@ -1737,12 +1737,11 @@ static void gl_free(void *data)
 {
    gl_t *gl = (gl_t*)data;
    driver_t *driver = driver_get_ptr();
-   const struct font_renderer *font_driver = NULL;
+   const struct font_renderer *font_driver = driver ? 
+      driver->font_osd_driver : NULL;
 
    if (!gl)
       return;
-
-   font_driver = (const struct font_renderer*)driver->font_osd_driver;
 
    context_bind_hw_render(gl, false);
 
@@ -3138,13 +3137,12 @@ static void gl_apply_state_changes(void *data)
 static void gl_set_osd_msg(void *data, const char *msg,
       const struct font_params *params, void *font)
 {
-   const struct font_renderer *font_driver = NULL;
    driver_t *driver = driver_get_ptr();
+   const struct font_renderer *font_driver = driver ? 
+      driver->font_osd_driver : NULL;
    gl_t *gl = (gl_t*)data;
    if (!gl)
       return;
-
-   font_driver = (const struct font_renderer*)driver->font_osd_driver;
 
    if (!font)
       font = driver->font_osd_data;
