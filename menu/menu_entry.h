@@ -39,19 +39,19 @@ enum menu_entry_type
 
 void get_core_title(char *title_msg, size_t title_msg_len);
 
-rarch_setting_t *get_menu_entry_setting(uint32_t i);
+rarch_setting_t *menu_entry_get_setting(uint32_t i);
 
-enum menu_entry_type get_menu_entry_type(uint32_t i);
+enum menu_entry_type menu_entry_get_type(uint32_t i);
 
-const char *get_menu_entry_label(uint32_t i);
+const char *menu_entry_get_label(uint32_t i);
 
-uint32_t menu_entry_bool_value_get(uint32_t i);
+uint32_t menu_entry_get_bool_value(uint32_t i);
 
-void menu_entry_bool_value_set(uint32_t i, uint32_t new_val);
+void menu_entry_set_bool_value(uint32_t i, uint32_t new_val);
 
 struct string_list *menu_entry_enum_values(uint32_t i);
 
-void menu_entry_enum_value_set_with_string(uint32_t i, const char *s);
+void menu_entry_enum_set_value_with_string(uint32_t i, const char *s);
 
 int32_t menu_entry_bind_index(uint32_t i);
 
@@ -67,17 +67,17 @@ uint32_t menu_entry_pathdir_allow_empty(uint32_t i);
 
 uint32_t menu_entry_pathdir_for_directory(uint32_t i);
 
-const char *menu_entry_pathdir_value_get(uint32_t i);
+const char *menu_entry_pathdir_get_value(uint32_t i);
 
-void menu_entry_pathdir_value_set(uint32_t i, const char *s);
+void menu_entry_pathdir_set_value(uint32_t i, const char *s);
 
 const char *menu_entry_pathdir_extensions(uint32_t i);
 
 void menu_entry_reset(uint32_t i);
 
-void menu_entry_value_get(uint32_t i, char *s, size_t len);
+void menu_entry_get_value(uint32_t i, char *s, size_t len);
 
-void menu_entry_value_set(uint32_t i, const char *s);
+void menu_entry_set_value(uint32_t i, const char *s);
 
 uint32_t menu_entry_num_has_range(uint32_t i);
 
@@ -85,7 +85,7 @@ float menu_entry_num_min(uint32_t i);
 
 float menu_entry_num_max(uint32_t i);
 
-uint32_t menu_select_entry(uint32_t i);
+uint32_t menu_entry_select(uint32_t i);
 
 #ifdef __cplusplus
 }

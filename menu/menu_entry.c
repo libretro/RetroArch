@@ -40,7 +40,7 @@ void get_core_title(char *title_msg, size_t title_msg_len)
          core_name, core_version);
 }
 
-rarch_setting_t *get_menu_entry_setting(uint32_t i)
+rarch_setting_t *menu_entry_get_setting(uint32_t i)
 {
    rarch_setting_t *setting;
    const char *path = NULL, *entry_label = NULL;
@@ -61,7 +61,7 @@ rarch_setting_t *get_menu_entry_setting(uint32_t i)
    return setting;
 }
 
-enum menu_entry_type get_menu_entry_type(uint32_t i)
+enum menu_entry_type menu_entry_get_type(uint32_t i)
 {
    rarch_setting_t *setting;
    const char *path = NULL, *entry_label = NULL;
@@ -76,7 +76,7 @@ enum menu_entry_type get_menu_entry_type(uint32_t i)
    menu_list_get_at_offset(menu_list->selection_buf, i, &path,
          &entry_label, &type);
 
-   setting = get_menu_entry_setting(i);
+   setting = menu_entry_get_setting(i);
 
    // XXX Really a special kind of ST_ACTION, but this should be
    // changed
@@ -106,41 +106,41 @@ enum menu_entry_type get_menu_entry_type(uint32_t i)
       return MENU_ENTRY_ACTION;
 }
 
-const char *get_menu_entry_label(uint32_t i)
+const char *menu_entry_get_label(uint32_t i)
 {
-   rarch_setting_t *setting = get_menu_entry_setting(i);
+   rarch_setting_t *setting = menu_entry_get_setting(i);
    if (setting)
       return setting->short_description;
    return "";
 }
 
-uint32_t menu_entry_bool_value_get(uint32_t i)
+uint32_t menu_entry_bool_get_value(uint32_t i)
 {
-   rarch_setting_t *setting = get_menu_entry_setting(i);
+   rarch_setting_t *setting = menu_entry_get_setting(i);
    return *setting->value.boolean;
 }
 
-void menu_entry_bool_value_set(uint32_t i, uint32_t new_val)
+void menu_entry_bool_set_value(uint32_t i, uint32_t new_val)
 {
-   rarch_setting_t *setting = get_menu_entry_setting(i);
+   rarch_setting_t *setting = menu_entry_get_setting(i);
    *setting->value.boolean = new_val;
 }
 
 struct string_list *menu_entry_enum_values(uint32_t i)
 {
-   rarch_setting_t *setting = get_menu_entry_setting(i);
+   rarch_setting_t *setting = menu_entry_get_setting(i);
    return string_split(setting->values, "|");
 }
 
-void menu_entry_enum_value_set_with_string(uint32_t i, const char *s)
+void menu_entry_enum_set_value_with_string(uint32_t i, const char *s)
 {
-   rarch_setting_t *setting = get_menu_entry_setting(i);
+   rarch_setting_t *setting = menu_entry_get_setting(i);
    setting_set_with_string_representation(setting, s);
 }
 
 int32_t menu_entry_bind_index(uint32_t i)
 {
-   rarch_setting_t *setting = get_menu_entry_setting(i);
+   rarch_setting_t *setting = menu_entry_get_setting(i);
    if (setting->index)
       return setting->index - 1;
    return 0;
@@ -148,97 +148,97 @@ int32_t menu_entry_bind_index(uint32_t i)
 
 void menu_entry_bind_key_set(uint32_t i, int32_t value)
 {
-   rarch_setting_t *setting = get_menu_entry_setting(i);
+   rarch_setting_t *setting = menu_entry_get_setting(i);
    BINDFOR(*setting).key = value;
 }
 
 void menu_entry_bind_joykey_set(uint32_t i, int32_t value)
 {
-   rarch_setting_t *setting = get_menu_entry_setting(i);
+   rarch_setting_t *setting = menu_entry_get_setting(i);
    BINDFOR(*setting).joykey = value;
 }
 
 void menu_entry_bind_joyaxis_set(uint32_t i, int32_t value)
 {
-   rarch_setting_t *setting = get_menu_entry_setting(i);
+   rarch_setting_t *setting = menu_entry_get_setting(i);
    BINDFOR(*setting).joyaxis = value;
 }
 
 void menu_entry_pathdir_selected(uint32_t i)
 {
-   rarch_setting_t *setting = get_menu_entry_setting(i);
+   rarch_setting_t *setting = menu_entry_get_setting(i);
    if (setting_is_of_path_type(setting))
       setting->action_toggle( setting, MENU_ACTION_RIGHT, false);
 }
 
 uint32_t menu_entry_pathdir_allow_empty(uint32_t i)
 {
-   rarch_setting_t *setting = get_menu_entry_setting(i);
+   rarch_setting_t *setting = menu_entry_get_setting(i);
    return setting->flags & SD_FLAG_ALLOW_EMPTY;
 }
 
 uint32_t menu_entry_pathdir_for_directory(uint32_t i)
 {
-   rarch_setting_t *setting = get_menu_entry_setting(i);
+   rarch_setting_t *setting = menu_entry_get_setting(i);
    return setting->flags & SD_FLAG_PATH_DIR;
 }
 
-const char *menu_entry_pathdir_value_get(uint32_t i)
+const char *menu_entry_pathdir_get_value(uint32_t i)
 {
-   rarch_setting_t *setting = get_menu_entry_setting(i);
+   rarch_setting_t *setting = menu_entry_get_setting(i);
    return setting->value.string;
 }
 
-void menu_entry_pathdir_value_set(uint32_t i, const char *s)
+void menu_entry_pathdir_set_value(uint32_t i, const char *s)
 {
-   rarch_setting_t *setting = get_menu_entry_setting(i);
+   rarch_setting_t *setting = menu_entry_get_setting(i);
    setting_set_with_string_representation(setting, s);
 }
 
 const char *menu_entry_pathdir_extensions(uint32_t i)
 {
-   rarch_setting_t *setting = get_menu_entry_setting(i);
+   rarch_setting_t *setting = menu_entry_get_setting(i);
    return setting->values;
 }
 
 void menu_entry_reset(uint32_t i)
 {
-   rarch_setting_t *setting = get_menu_entry_setting(i);
+   rarch_setting_t *setting = menu_entry_get_setting(i);
    setting_reset_setting(setting);
 }
 
-void menu_entry_value_get(uint32_t i, char *s, size_t len)
+void menu_entry_get_value(uint32_t i, char *s, size_t len)
 {
-   rarch_setting_t *setting = get_menu_entry_setting(i);
+   rarch_setting_t *setting = menu_entry_get_setting(i);
    setting_get_string_representation(setting, s, len);
 }
 
-void menu_entry_value_set(uint32_t i, const char *s)
+void menu_entry_set_value(uint32_t i, const char *s)
 {
-   rarch_setting_t *setting = get_menu_entry_setting(i);
+   rarch_setting_t *setting = menu_entry_get_setting(i);
    setting_set_with_string_representation(setting, s);
 }
 
 uint32_t menu_entry_num_has_range(uint32_t i)
 {
-   rarch_setting_t *setting = get_menu_entry_setting(i);
+   rarch_setting_t *setting = menu_entry_get_setting(i);
    return (setting->flags & SD_FLAG_HAS_RANGE);
 }
 
 float menu_entry_num_min(uint32_t i)
 {
-   rarch_setting_t *setting = get_menu_entry_setting(i);
+   rarch_setting_t *setting = menu_entry_get_setting(i);
    return setting->min;
 }
 
 float menu_entry_num_max(uint32_t i)
 {
-   rarch_setting_t *setting = get_menu_entry_setting(i);
+   rarch_setting_t *setting = menu_entry_get_setting(i);
    return setting->max;
 }
 
 /* Returns true if the menu should reload */
-uint32_t menu_select_entry(uint32_t i)
+uint32_t menu_entry_select(uint32_t i)
 {
    menu_entry_t entry;
    menu_file_list_cbs_t *cbs = NULL;
