@@ -16,6 +16,7 @@
 #include <file/file_path.h>
 #include <retro_inline.h>
 #include "menu.h"
+#include "menu_entry.h"
 #include "menu_entries_cbs.h"
 #include "menu_setting.h"
 #include "menu_input.h"
@@ -489,7 +490,7 @@ static int action_iterate_switch(const char *label, unsigned action)
    if (!menu)
       return 0;
 
-   menu_list_get_entry(&entry, selected, NULL, false);
+   menu_entry_get(&entry, selected, NULL, false);
 
    cbs = (menu_file_list_cbs_t*)menu_list_get_actiondata_at_offset(menu_list->selection_buf, selected);
 
@@ -566,7 +567,7 @@ static void action_iterate_post(int *ret, const char *label, unsigned action)
    menu_list_t *menu_list    = menu_list_get_ptr();
    size_t selected           = menu_navigation_get_current_selection();
 
-   menu_list_get_entry(&entry, selected, NULL, false);
+   menu_entry_get(&entry, selected, NULL, false);
 
    cbs = (menu_file_list_cbs_t*)menu_list_get_actiondata_at_offset(menu_list->selection_buf, selected);
 

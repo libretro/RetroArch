@@ -22,6 +22,7 @@
 #include <limits.h>
 
 #include "../menu.h"
+#include "../menu_entry.h"
 #include "../menu_display.h"
 #include "../../runloop_data.h"
 
@@ -310,8 +311,8 @@ static void glui_render_menu_list(runloop_t *runloop,
            entry_title_buf[PATH_MAX_LENGTH], type_str_buf[PATH_MAX_LENGTH];
       bool selected             = false;
 
-      menu_list_get_entry(&entry, i, NULL, true);
-      selected = menu_list_entry_is_currently_selected(&entry);
+      menu_entry_get(&entry, i, NULL, true);
+      selected = menu_entry_is_currently_selected(&entry);
 
       menu_animation_ticker_line(entry_title_buf, glui->ticker_limit,
             frame_count / 100, entry.path, selected);

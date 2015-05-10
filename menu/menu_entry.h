@@ -37,6 +37,16 @@ enum menu_entry_type
    MENU_ENTRY_ENUM,
 };
 
+typedef struct menu_entry
+{
+   char  path[PATH_MAX_LENGTH];
+   char label[PATH_MAX_LENGTH];
+   char value[PATH_MAX_LENGTH];
+   unsigned id;
+   unsigned type;
+   unsigned spacing;
+} menu_entry_t;
+
 void get_core_title(char *title_msg, size_t title_msg_len);
 
 rarch_setting_t *menu_entry_get_setting(uint32_t i);
@@ -84,6 +94,13 @@ uint32_t menu_entry_num_has_range(uint32_t i);
 float menu_entry_num_min(uint32_t i);
 
 float menu_entry_num_max(uint32_t i);
+
+int menu_entry_get_current_id(bool use_representation);
+
+bool menu_entry_is_currently_selected(menu_entry_t *entry);
+
+void menu_entry_get(menu_entry_t *entry, size_t i,
+      void *userdata, bool use_representation);
 
 uint32_t menu_entry_select(uint32_t i);
 

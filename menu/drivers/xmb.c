@@ -21,6 +21,7 @@
 #include <limits.h>
 
 #include "../menu.h"
+#include "../menu_entry.h"
 #include "../menu_animation.h"
 #include "../menu_display.h"
 
@@ -1020,7 +1021,7 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
             icon_y > global->video_data.height + xmb->icon.size)
          continue;
 
-      menu_list_get_entry(&entry, i, list, true);
+      menu_entry_get(&entry, i, list, true);
 
       if (entry.type == MENU_FILE_CONTENTLIST_ENTRY)
          strlcpy(entry.path, path_basename(entry.path), sizeof(entry.path));

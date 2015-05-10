@@ -30,16 +30,6 @@ typedef struct menu_list
    file_list_t *selection_buf;
 } menu_list_t;
 
-typedef struct menu_entry
-{
-   char  path[PATH_MAX_LENGTH];
-   char label[PATH_MAX_LENGTH];
-   char value[PATH_MAX_LENGTH];
-   unsigned id;
-   unsigned type;
-   unsigned spacing;
-} menu_entry_t;
-
 menu_list_t *menu_list_get_ptr(void);
 
 void menu_list_free(menu_list_t *menu_list);
@@ -98,12 +88,6 @@ void menu_list_set_alt_at_offset(file_list_t *list, size_t idx,
 
 int menu_list_populate_generic(file_list_t *list,
       const char *path, const char *label, unsigned type);
-
-void menu_list_get_entry(menu_entry_t *entry, size_t i, void *userdata, bool use_representation);
-
-int menu_list_get_current_entry_id(bool use_representation);
-
-bool menu_list_entry_is_currently_selected(menu_entry_t *entry);
 
 #ifdef __cplusplus
 }

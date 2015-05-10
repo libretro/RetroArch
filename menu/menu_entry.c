@@ -237,6 +237,71 @@ float menu_entry_num_max(uint32_t i)
    return setting->max;
 }
 
+void menu_entry_get(menu_entry_t *entry, size_t i,
+      void *userdata, bool use_representation)
+{
+   const char *label         = NULL;
+   const char *path          = NULL;
+   const char *entry_label   = NULL;
+   menu_file_list_cbs_t *cbs = NULL;
+   file_list_t *list         = NULL;
+   menu_list_t *menu_list    = menu_list_get_ptr();
+
+   if (!menu_list)
+      return;
+
+   menu_list_get_last_stack(menu_list, NULL, &label, NULL);
+   
+   list = userdata ? (file_list_t*)userdata : menu_list->selection_buf;
+
+   if (!list)
+      return;
+
+   menu_list_get_at_offset(list, i, &path, &entry_label, &entry->type);
+
+   cbs = (menu_file_list_cbs_t*)menu_list_get_actiondata_at_offset(list, i);
+
+   if (cbs && cbs->action_get_representation && use_representation)
+      cbs->action_get_representation(list,
+            &entry->spacing, entry->type, i, label,
+            entry->value,  sizeof(entry->value), 
+            entry_label, path,
+            entry->path, sizeof(entry->path));
+
+   entry->id         = i;
+
+   if (path)
+      strlcpy(entry->path,  path,        sizeof(entry->path));
+   if (entry_label)
+      strlcpy(entry->label, entry_label, sizeof(entry->label));
+}
+
+bool menu_entry_is_currently_selected(menu_entry_t *entry)
+{
+   menu_navigation_t *nav = menu_navigation_get_ptr();
+   if (!entry || !nav)
+      return false;
+   return (entry->id == nav->selection_ptr);
+}
+
+int menu_entry_get_current_id(bool use_representation)
+{
+   size_t i;
+   menu_list_t   *menu_list = menu_list_get_ptr();
+   size_t               end = menu_list_get_size(menu_list);
+
+   for (i = 0; i < end; i++)
+   {
+      menu_entry_t entry;
+      menu_entry_get(&entry, i, NULL, use_representation);
+
+      if (menu_entry_is_currently_selected(&entry))
+         return i;
+   }
+
+   return -1;
+}
+
 /* Returns true if the menu should reload */
 uint32_t menu_entry_select(uint32_t i)
 {
@@ -247,7 +312,7 @@ uint32_t menu_entry_select(uint32_t i)
    rarch_setting_t *setting  = menu_setting_find(
          menu_list->selection_buf->list[i].label);
 
-   menu_list_get_entry(&entry, i, NULL, false);
+   menu_entry_get(&entry, i, NULL, false);
 
    cbs = (menu_file_list_cbs_t*)
       menu_list_get_actiondata_at_offset(menu_list->selection_buf, i);
