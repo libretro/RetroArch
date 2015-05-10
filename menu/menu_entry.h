@@ -53,7 +53,7 @@ rarch_setting_t *menu_entry_get_setting(uint32_t i);
 
 enum menu_entry_type menu_entry_get_type(uint32_t i);
 
-const char *menu_entry_get_label(uint32_t i);
+void menu_entry_get_label(uint32_t i, char *label, size_t sizeof_label);
 
 uint32_t menu_entry_get_bool_value(uint32_t i);
 

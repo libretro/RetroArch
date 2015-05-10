@@ -107,6 +107,7 @@ static void RunActionSheet(const char* title, const struct string_list* items,
 - (UITableViewCell*)cellForTableView:(UITableView*)tableView
 {
   char buffer[PATH_MAX_LENGTH];
+  char label[PATH_MAX_LENGTH];
   static NSString* const cell_id = @"text";
 
   self.parentTable = tableView;
@@ -115,12 +116,17 @@ static void RunActionSheet(const char* title, const struct string_list* items,
   if (!result)
     result = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleValue1
                                     reuseIdentifier:cell_id];
+
+  menu_entry_get_label(self.i, label, sizeof(label));
+  menu_entry_get_value(self.i, buffer, sizeof(buffer));
   
   result.selectionStyle = UITableViewCellSelectionStyleNone;
-  result.textLabel.text = BOXSTRING(menu_entry_get_label(self.i));
-  menu_entry_get_value(self.i, buffer, sizeof(buffer));
+  result.textLabel.text = BOXSTRING(label);
+
   if (buffer[0] == '\0')
     strlcpy(buffer, "<default>", sizeof(buffer));
+  if (label[0] == '\0')
+    strlcpy(buffer, "N/A", sizeof(buffer));
   result.detailTextLabel.text = BOXSTRING(buffer);
   return result;
 }
@@ -138,6 +144,7 @@ static void RunActionSheet(const char* title, const struct string_list* items,
 
 - (UITableViewCell*)cellForTableView:(UITableView*)tableView
 {
+   char label[PATH_MAX_LENGTH];
    static NSString* const cell_id = @"boolean_setting";
    
    UITableViewCell* result =
@@ -150,8 +157,10 @@ static void RunActionSheet(const char* title, const struct string_list* items,
       result.selectionStyle = UITableViewCellSelectionStyleNone;
       result.accessoryView = [UISwitch new];
    }
+
+   menu_entry_get_label(self.i, label, sizeof(label));
    
-   result.textLabel.text = BOXSTRING(menu_entry_get_label(self.i));
+   result.textLabel.text = BOXSTRING(label);
    [(id)result.accessoryView removeTarget:nil
                                    action:NULL
                          forControlEvents:UIControlEventValueChanged];
@@ -195,10 +204,13 @@ static void RunActionSheet(const char* title, const struct string_list* items,
                   ofController:(UIViewController*)controller
 {
    struct string_list* items;
+   char label[PATH_MAX_LENGTH];
    RAMenuItemEnum __weak* weakSelf = self;
-   
+
+   menu_entry_get_label(self.i, label, sizeof(label));
    items = menu_entry_enum_values(self.i);
-   RunActionSheet(menu_entry_get_label(self.i), items, self.parentTable,
+
+   RunActionSheet(label, items, self.parentTable,
       ^(UIActionSheet* actionSheet, NSInteger buttonIndex)
       {
          if (buttonIndex == actionSheet.cancelButtonIndex)
@@ -222,24 +234,28 @@ static void RunActionSheet(const char* title, const struct string_list* items,
 - (void)wasSelectedOnTableView:(UITableView *)tableView
                   ofController:(UIViewController *)controller
 {
-  self.alert = [[UIAlertView alloc]
-                 initWithTitle:BOXSTRING("RetroArch")
-                       message:BOXSTRING(menu_entry_get_label(self.i))
-                      delegate:self
+   char label[PATH_MAX_LENGTH];
+
+   menu_entry_get_label(self.i, label, sizeof(label));
+
+   self.alert = [[UIAlertView alloc]
+   initWithTitle:BOXSTRING("RetroArch")
+         message:BOXSTRING(label)
+        delegate:self
                  cancelButtonTitle:BOXSTRING("Cancel")
                  otherButtonTitles:BOXSTRING("Clear Keyboard"),
-                 BOXSTRING("Clear Joystick"), BOXSTRING("Clear Axis"), nil];
+      BOXSTRING("Clear Joystick"), BOXSTRING("Clear Axis"), nil];
 
    [self.alert show];
-   
+
    [self.parentTable reloadData];
-   
+
    self.bindTimer = [NSTimer
-                      scheduledTimerWithTimeInterval:.1f
-                                              target:self
-                                            selector:@selector(checkBind:)
-                                            userInfo:nil
-                                             repeats:YES];
+      scheduledTimerWithTimeInterval:.1f
+                              target:self
+                            selector:@selector(checkBind:)
+                            userInfo:nil
+                             repeats:YES];
 }
 
 - (void)finishWithClickedButton:(bool)clicked
@@ -437,11 +453,14 @@ replacementString:(NSString *)string
                   ofController:(UIViewController*)controller
 {
    char buffer[PATH_MAX_LENGTH];
+   char label[PATH_MAX_LENGTH];
    NSString *desc = BOXSTRING("N/A");
    UIAlertView *alertView;
    UITextField *field;
 
-   desc = BOXSTRING(menu_entry_get_label(self.i));
+   menu_entry_get_label(self.i, label, sizeof(label));
+
+   desc = BOXSTRING(label);
     
    alertView =
      [[UIAlertView alloc] initWithTitle:BOXSTRING("Enter new value")

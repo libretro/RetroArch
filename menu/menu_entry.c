@@ -106,12 +106,12 @@ enum menu_entry_type menu_entry_get_type(uint32_t i)
       return MENU_ENTRY_ACTION;
 }
 
-const char *menu_entry_get_label(uint32_t i)
+void menu_entry_get_label(uint32_t i, char *label, size_t sizeof_label)
 {
-   rarch_setting_t *setting = menu_entry_get_setting(i);
-   if (setting)
-      return setting->short_description;
-   return "";
+   menu_entry_t entry;
+   menu_entry_get_entry(&entry, i, NULL, true);
+
+   strlcpy(label, entry.path, sizeof(label));
 }
 
 uint32_t menu_entry_get_bool_value(uint32_t i)
