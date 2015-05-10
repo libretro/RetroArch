@@ -482,82 +482,11 @@ static int action_iterate_message(const char *label, unsigned action)
 static int action_iterate_switch(const char *label, unsigned action)
 {
    menu_entry_t entry;
-   menu_file_list_cbs_t *cbs = NULL;
-   menu_list_t *menu_list    = menu_list_get_ptr();
-   menu_handle_t *menu       = menu_driver_get_ptr();
-   menu_navigation_t *nav    = menu_navigation_get_ptr();
    size_t selected           = menu_navigation_get_current_selection();
-   if (!menu)
-      return 0;
 
-   menu_entry_get(&entry, selected, NULL, false);
+   menu_entry_get(&entry,    selected, NULL, false);
 
-   cbs = (menu_file_list_cbs_t*)menu_list_get_actiondata_at_offset(menu_list->selection_buf, selected);
-
-   switch (action)
-   {
-      case MENU_ACTION_UP:
-      case MENU_ACTION_DOWN:
-         if (cbs && cbs->action_up_or_down)
-            return cbs->action_up_or_down(entry.type, entry.label, action);
-         break;
-      case MENU_ACTION_SCROLL_UP:
-         menu_navigation_descend_alphabet(nav, &nav->selection_ptr);
-         break;
-      case MENU_ACTION_SCROLL_DOWN:
-         menu_navigation_ascend_alphabet(nav, &nav->selection_ptr);
-         break;
-
-      case MENU_ACTION_CANCEL:
-         if (cbs && cbs->action_cancel)
-            return cbs->action_cancel(entry.path, entry.label, entry.type, selected);
-         break;
-
-      case MENU_ACTION_OK:
-         if (cbs && cbs->action_ok)
-            return cbs->action_ok(entry.path, entry.label, entry.type, selected);
-         break;
-      case MENU_ACTION_START:
-         if (cbs && cbs->action_start)
-            return cbs->action_start(entry.type, entry.label, action);
-         break;
-      case MENU_ACTION_LEFT:
-      case MENU_ACTION_RIGHT:
-         if (cbs && cbs->action_toggle)
-            return cbs->action_toggle(entry.type, entry.label, action, false);
-         break;
-      case MENU_ACTION_SELECT:
-         if (cbs && cbs->action_select)
-            return cbs->action_select(entry.type, entry.label, action);
-         break;
-
-      case MENU_ACTION_REFRESH:
-         if (cbs && cbs->action_refresh)
-            return cbs->action_refresh(menu_list->selection_buf, menu_list->menu_stack);
-         break;
-
-      case MENU_ACTION_MESSAGE:
-         menu->msg_force = true;
-         break;
-
-      case MENU_ACTION_SEARCH:
-         menu_input_search_start();
-         break;
-
-      case MENU_ACTION_TEST:
-#if 0
-         menu->db = database_info_init("/home/squarepusher/roms", DATABASE_TYPE_RDL_WRITE);
-
-         if (!menu->db)
-            return -1;
-#endif
-         break;
-
-      default:
-         break;
-   }
-
-   return 0;
+   return menu_entry_action(&entry, selected, action);
 }
 
 static void action_iterate_post(int *ret, const char *label, unsigned action)
