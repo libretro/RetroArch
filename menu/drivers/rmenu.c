@@ -147,8 +147,6 @@ static void rmenu_render(void)
    char title_msg[64];
    const char *dir          = NULL;
    const char *label        = NULL;
-   const char *core_name    = NULL;
-   const char *core_version = NULL;
    unsigned menu_type       = 0;
    menu_handle_t *menu      = menu_driver_get_ptr();
    global_t    *global      = global_get_ptr();
@@ -205,25 +203,12 @@ static void rmenu_render(void)
 
    video_driver_set_osd_msg(title_buf, &font_parms, NULL);
 
-   core_name = global->menu.info.library_name;
-   if (!core_name)
-      core_name = global->system.info.library_name;
-   if (!core_name)
-      core_name = "No Core";
-
-   core_version = global->menu.info.library_version;
-   if (!core_version)
-      core_version = global->system.info.library_version;
-   if (!core_version)
-      core_version = "";
-
    font_parms.x = POSITION_EDGE_MIN + POSITION_OFFSET;
    font_parms.y = POSITION_EDGE_MAX - (POSITION_OFFSET*2);
    font_parms.scale = FONT_SIZE_NORMAL;
    font_parms.color = WHITE;
 
-   snprintf(title_msg, sizeof(title_msg), "%s - %s %s",
-         PACKAGE_VERSION, core_name, core_version);
+   get_core_title(title_msg, sizeof(title_msg));
 
    video_driver_set_osd_msg(title_msg, &font_parms, NULL);
 

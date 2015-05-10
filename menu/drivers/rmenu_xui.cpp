@@ -580,22 +580,7 @@ static void rmenu_xui_render(void)
 
 	if (XuiHandleIsValid(m_menutitle))
 	{
-      const char *core_version = NULL;
-      global_t *global         = global_get_ptr();
-		const char *core_name    = global->menu.info.library_name;
-		if (!core_name)
-			core_name = global->system.info.library_name;
-		if (!core_name)
-			core_name = "No Core";
-
-		core_version = global->menu.info.library_version;
-		if (!core_version)
-			core_version = global->system.info.library_version;
-		if (!core_version)
-			core_version = "";
-
-		snprintf(title, sizeof(title), "%s - %s %s",
-			PACKAGE_VERSION, core_name, core_version);
+      get_core_title(title, sizeof(title));
 
 		mbstowcs(strw_buffer, title, sizeof(strw_buffer) / sizeof(wchar_t));
 		XuiTextElementSetText(m_menutitlebottom, strw_buffer);

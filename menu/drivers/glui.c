@@ -340,8 +340,6 @@ static void glui_frame(void)
    unsigned menu_type           = 0;
    gl_t *gl                     = NULL;
    glui_handle_t *glui          = NULL;
-   const char *core_name        = NULL;
-   const char *core_version     = NULL;
    const struct font_renderer *font_driver = NULL;
    driver_t *driver             = driver_get_ptr();
    menu_handle_t *menu          = menu_driver_get_ptr();
@@ -417,23 +415,9 @@ static void glui_frame(void)
 
    glui_draw_scrollbar(gl);
 
-   core_name = global->menu.info.library_name;
-   if (!core_name)
-      core_name = global->system.info.library_name;
-   if (!core_name)
-      core_name = "No Core";
-
    if (settings->menu.core_enable)
    {
-      core_version = global->menu.info.library_version;
-      if (!core_version)
-         core_version = global->system.info.library_version;
-      if (!core_version)
-         core_version = "";
-
-      snprintf(title_msg, sizeof(title_msg),
-            "%s - %s %s", PACKAGE_VERSION,
-            core_name, core_version);
+      get_core_title(title_msg, sizeof(title_msg));
 
       glui_blit_line(glui->margin,
             global->video_data.height - glui->line_height, title_msg,

@@ -360,8 +360,6 @@ static void rgui_render(void)
    uint16_t hover_color, normal_color;
    const char *dir          = NULL;
    const char *label        = NULL;
-   const char *core_name    = NULL;
-   const char *core_version = NULL;
    menu_handle_t *menu      = menu_driver_get_ptr();
    runloop_t *runloop       = rarch_main_get_ptr();
    driver_t *driver         = driver_get_ptr();
@@ -453,22 +451,9 @@ static void rgui_render(void)
          RGUI_TERM_START_X + (RGUI_TERM_WIDTH - strlen(title_buf)) * FONT_WIDTH_STRIDE / 2,
          RGUI_TERM_START_X, title_buf, TITLE_COLOR(settings));
 
-   core_name = global->menu.info.library_name;
-   if (!core_name)
-      core_name = global->system.info.library_name;
-   if (!core_name)
-      core_name = "No Core";
-
    if (settings->menu.core_enable)
    {
-      core_version = global->menu.info.library_version;
-      if (!core_version)
-         core_version = global->system.info.library_version;
-      if (!core_version)
-         core_version = "";
-
-      snprintf(title_msg, sizeof(title_msg), "%s - %s %s", PACKAGE_VERSION,
-            core_name, core_version);
+      get_core_title(title_msg, sizeof(title_msg));
       blit_line(menu,
             RGUI_TERM_START_X,
             (RGUI_TERM_HEIGHT * FONT_HEIGHT_STRIDE) +

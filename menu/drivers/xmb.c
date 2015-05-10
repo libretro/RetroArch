@@ -1197,8 +1197,6 @@ static void xmb_frame(void)
    char msg[PATH_MAX_LENGTH];
    char title_msg[PATH_MAX_LENGTH], timedate[PATH_MAX_LENGTH];
    bool render_background = false;
-   const char *core_name = NULL;
-   const char *core_version = NULL;
    xmb_handle_t *xmb = NULL;
    gl_t *gl = NULL;
    const struct font_renderer *font_driver = NULL;
@@ -1240,22 +1238,7 @@ static void xmb_frame(void)
 
    if (settings->menu.core_enable)
    {
-      core_name = global->menu.info.library_name;
-
-      if (!core_name)
-         core_name = global->system.info.library_name;
-      if (!core_name)
-         core_name = "No Core";
-
-      core_version = global->menu.info.library_version;
-
-      if (!core_version)
-         core_version = global->system.info.library_version;
-      if (!core_version)
-         core_version = "";
-
-      snprintf(title_msg, sizeof(title_msg), "%s - %s %s", PACKAGE_VERSION,
-            core_name, core_version);
+      get_core_title(title_msg, sizeof(title_msg));
       xmb_draw_text(menu, xmb, title_msg, xmb->margins.title.left, 
             global->video_data.height - xmb->margins.title.bottom, 1, 1, TEXT_ALIGN_LEFT);
    }
