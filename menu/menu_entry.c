@@ -271,7 +271,7 @@ void menu_entry_get(menu_entry_t *entry, size_t i,
 
    entry->id         = i;
 
-   if (path)
+   if (path && !use_representation)
       strlcpy(entry->path,  path,        sizeof(entry->path));
    if (entry_label)
       strlcpy(entry->label, entry_label, sizeof(entry->label));
