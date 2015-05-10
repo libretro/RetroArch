@@ -42,7 +42,6 @@ void get_core_title(char *title_msg, size_t title_msg_len)
 
 rarch_setting_t *get_menu_entry_setting(uint32_t i)
 {
-   menu_handle_t *menu       = menu_driver_get_ptr();
    rarch_setting_t *setting;
    const char *path = NULL, *entry_label = NULL;
    unsigned type = 0;

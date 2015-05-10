@@ -31,7 +31,7 @@
 #include "../../../menu/menu_setting.h"
 #include "../../../menu/drivers/shared.h"
 
-#include "cocoatouch_support.c"
+#include "../../../menu/menu_entry.h"
 
 // Menu Support
 
