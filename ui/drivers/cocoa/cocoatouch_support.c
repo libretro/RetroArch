@@ -235,16 +235,15 @@ float menu_entry_num_max(uint32_t i)
    return setting->max;
 }
 
-// Returns true if the menu should reload
+/* Returns true if the menu should reload */
 uint32_t menu_select_entry(uint32_t i)
 {
    menu_entry_t entry;
-   rarch_setting_t *setting;
    menu_file_list_cbs_t *cbs = NULL;
    menu_navigation_t *nav    = menu_navigation_get_ptr();
    menu_list_t    *menu_list = menu_list_get_ptr();
-
-   setting = menu_setting_find(menu_list->selection_buf->list[i].label);
+   rarch_setting_t *setting  = menu_setting_find(
+         menu_list->selection_buf->list[i].label);
 
    menu_list_get_entry(&entry, i, NULL, false);
 
@@ -253,7 +252,7 @@ uint32_t menu_select_entry(uint32_t i)
 
    if (setting_is_of_path_type(setting))
       return false;
-   else if (setting_is_of_general_type(setting))
+   if (setting_is_of_general_type(setting))
    {
       nav->selection_ptr = i;
       if (cbs && cbs->action_ok)
@@ -261,20 +260,18 @@ uint32_t menu_select_entry(uint32_t i)
 
       return false;
    }
+
+   nav->selection_ptr = i;
+   if (cbs && cbs->action_ok)
+      cbs->action_ok(entry.path, entry.label, entry.type, i);
    else
    {
-      nav->selection_ptr = i;
-      if (cbs && cbs->action_ok)
-         cbs->action_ok(entry.path, entry.label, entry.type, i);
-      else
-      {
-         if (cbs && cbs->action_start)
-            cbs->action_start(entry.type, entry.label, MENU_ACTION_START);
-         if (cbs && cbs->action_toggle)
-            cbs->action_toggle(entry.type, entry.label, MENU_ACTION_RIGHT, true);
-         menu_list_push(menu_list->menu_stack, "",
-               "info_screen", 0, i);
-      }
-      return true;
+      if (cbs && cbs->action_start)
+         cbs->action_start(entry.type, entry.label, MENU_ACTION_START);
+      if (cbs && cbs->action_toggle)
+         cbs->action_toggle(entry.type, entry.label, MENU_ACTION_RIGHT, true);
+      menu_list_push(menu_list->menu_stack, "",
+            "info_screen", 0, i);
    }
+   return true;
 }
