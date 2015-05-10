@@ -20,21 +20,6 @@
 #include "menu_input.h"
 #include "../settings.h"
 
-enum menu_entry_type
-{
-   MENU_ENTRY_ACTION = 0,
-   MENU_ENTRY_BOOL,
-   MENU_ENTRY_INT,
-   MENU_ENTRY_UINT,
-   MENU_ENTRY_FLOAT,
-   MENU_ENTRY_PATH,
-   MENU_ENTRY_DIR,
-   MENU_ENTRY_STRING,
-   MENU_ENTRY_HEX,
-   MENU_ENTRY_BIND,
-   MENU_ENTRY_ENUM,
-};
-
 void get_core_title(char *title_msg, size_t title_msg_len)
 {
    global_t *global          = global_get_ptr();
