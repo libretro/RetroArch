@@ -332,13 +332,16 @@ static void RunActionSheet(const char* title, const struct string_list* items,
 - (void)wasSelectedOnTableView:(UITableView*)tableView
                   ofController:(UIViewController*)controller
 {
+   char pathdir[PATH_MAX_LENGTH], pathdir_ext[PATH_MAX_LENGTH];
    NSString *path;
    RADirectoryList* list;
    RAMenuItemPathDir __weak* weakSelf = self;
 
    menu_entry_pathdir_selected(self.i);
+   menu_entry_pathdir_get_value(self.i, pathdir, sizeof(pathdir));
+   menu_entry_pathdir_extensions(self.i, pathdir_ext, sizeof(pathdir_ext));
 
-   path = BOXSTRING(menu_entry_pathdir_get_value(self.i));
+   path = BOXSTRING(pathdir);
    
    if ( menu_entry_get_type(self.i) == MENU_ENTRY_PATH )
      path = [path stringByDeletingLastPathComponent];
@@ -346,7 +349,7 @@ static void RunActionSheet(const char* title, const struct string_list* items,
    list =
      [[RADirectoryList alloc]
             initWithPath:path
-              extensions:menu_entry_pathdir_extensions(self.i)
+              extensions:pathdir_ext
                   action:^(RADirectoryList* list, RADirectoryItem* item) {
          const char *newval = "";
          if (item) {
