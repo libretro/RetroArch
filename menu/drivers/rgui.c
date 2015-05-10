@@ -363,7 +363,6 @@ static void rgui_render(void)
    menu_handle_t *menu      = menu_driver_get_ptr();
    runloop_t *runloop       = rarch_main_get_ptr();
    driver_t *driver         = driver_get_ptr();
-   global_t *global         = global_get_ptr();
    settings_t *settings     = config_get_ptr();
    uint64_t frame_count     = video_driver_get_frame_count();
 
