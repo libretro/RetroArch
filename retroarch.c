@@ -855,7 +855,7 @@ static void rarch_init_savefile_paths(void)
             global->subsystem_fullpaths ?
             global->subsystem_fullpaths->size : 0);
 
-      bool use_sram_dir = path_is_directory(global->savefile_name);
+      bool use_sram_dir = path_is_directory(global->savefile_dir);
 
       for (i = 0; i < num_content; i++)
       {
@@ -872,7 +872,7 @@ static void rarch_init_savefile_paths(void)
             if (use_sram_dir)
             {
                /* Redirect content fullpath to save directory. */
-               strlcpy(path, global->savefile_name, sizeof(path));
+               strlcpy(path, global->savefile_dir, sizeof(path));
                fill_pathname_dir(path,
                      global->subsystem_fullpaths->elems[i].data, ext,
                      sizeof(path));
