@@ -418,9 +418,9 @@ static void rmenu_xui_frame(void)
    XUIMessage msg;
    XUIMessageRender msgRender;
    D3DXMATRIX matOrigView;
-   D3DVIEWPORT vp_full;
    LPDIRECT3DDEVICE d3dr;
    const char *message;
+   D3DVIEWPORT vp_full = {0};
    d3d_video_t *d3d = NULL;
    menu_handle_t *menu   = menu_driver_get_ptr();
    driver_t      *driver = driver_get_ptr();

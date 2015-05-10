@@ -128,7 +128,7 @@ static bool renderchain_create_first_pass(void *data,
 }
 
 static void renderchain_set_vertices(void *data, unsigned pass,
-      unsigned width, unsigned height)
+      unsigned width, unsigned height, uint64_t frame_count)
 {
    d3d_video_t *d3d         = (d3d_video_t*)data;
    runloop_t *runloop       = rarch_main_get_ptr();
@@ -214,8 +214,7 @@ static void renderchain_set_vertices(void *data, unsigned pass,
       if (d3d->shader->set_params)
          d3d->shader->set_params(d3d, width, height, chain->tex_w,
                chain->tex_h, global->video_data.width,
-               global->video_data.height, runloop->frames.video.count,
-               NULL, NULL, NULL, 0);
+               global->video_data.height, frame_count, NULL, NULL, NULL, 0);
    }
 #endif
 #endif
@@ -362,9 +361,10 @@ static bool xdk_renderchain_render(void *data, const void *frame,
    settings_t *settings     = config_get_ptr();
    global_t   *global       = global_get_ptr();
    xdk_renderchain_t *chain = (xdk_renderchain_t*)d3d->renderchain_data;
+   uint64_t frame_count     = video_driver_get_frame_count();
 
    renderchain_blit_to_texture(chain, frame, width, height, pitch);
-   renderchain_set_vertices(d3d, 1, width, height);
+   renderchain_set_vertices(d3d, 1, width, height, frame_count);
 
    d3d_set_texture(d3dr, 0, chain->tex);
    d3d_set_viewport(chain->dev, &d3d->final_viewport);
