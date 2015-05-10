@@ -107,7 +107,6 @@ static void glui_blit_line(float x, float y,
 static void glui_render_quad(gl_t *gl, int x, int y, int w, int h,
       float r, float g, float b, float a)
 {
-
    struct gl_coords coords;
    menu_handle_t *menu = menu_driver_get_ptr();
    glui_handle_t *glui = (glui_handle_t*)menu->userdata;
@@ -366,7 +365,8 @@ static void glui_frame(void)
 
    if (menu->need_refresh
          && runloop->is_menu
-         && !menu->msg_force)
+         && !menu->msg_force
+         && !glui->box_message[0])
       return;
 
    menu_display_set_viewport(menu);
