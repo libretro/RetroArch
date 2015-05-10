@@ -183,10 +183,11 @@ uint32_t menu_entry_pathdir_for_directory(uint32_t i)
    return setting->flags & SD_FLAG_PATH_DIR;
 }
 
-const char *menu_entry_pathdir_get_value(uint32_t i)
+void menu_entry_pathdir_get_value(uint32_t i, char *s, size_t len)
 {
-   rarch_setting_t *setting = menu_entry_get_setting(i);
-   return setting->value.string;
+   menu_entry_t entry;
+   menu_entry_get(&entry, i, NULL, true);
+   strlcpy(s, entry.value, len);
 }
 
 void menu_entry_pathdir_set_value(uint32_t i, const char *s)
@@ -195,10 +196,11 @@ void menu_entry_pathdir_set_value(uint32_t i, const char *s)
    setting_set_with_string_representation(setting, s);
 }
 
-const char *menu_entry_pathdir_extensions(uint32_t i)
+void menu_entry_pathdir_extensions(uint32_t i, char *s, size_t len)
 {
    rarch_setting_t *setting = menu_entry_get_setting(i);
-   return setting->values;
+   if (setting)
+      strlcpy(s, setting->values, len);
 }
 
 void menu_entry_reset(uint32_t i)

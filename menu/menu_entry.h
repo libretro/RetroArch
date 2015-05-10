@@ -77,11 +77,11 @@ uint32_t menu_entry_pathdir_allow_empty(uint32_t i);
 
 uint32_t menu_entry_pathdir_for_directory(uint32_t i);
 
-const char *menu_entry_pathdir_get_value(uint32_t i);
+void menu_entry_pathdir_get_value(uint32_t i, char *s, size_t len);
 
 void menu_entry_pathdir_set_value(uint32_t i, const char *s);
 
-const char *menu_entry_pathdir_extensions(uint32_t i);
+void menu_entry_pathdir_extensions(uint32_t i, char *s, size_t len);
 
 void menu_entry_reset(uint32_t i);
 
