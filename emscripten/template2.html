@@ -7,6 +7,9 @@
   <link rel="stylesheet" type="text/css" href="http://fonts.googleapis.com/css?family=Share+Tech+Mono">
   <script src="//code.jquery.com/jquery-1.10.2.js"></script>
   <script src="//code.jquery.com/ui/1.11.4/jquery-ui.js"></script>
+  <script src="modernizr.js"></script>
+  <script type="text/javascript" src="browserfs.js"></script>
+
   <style>
     .emscripten { padding-right: 0; margin-left: auto; margin-right: auto; display: block; }
     textarea.emscripten { border: 0px; font-family: 'Share Tech Mono'; font-size: 12px; width: 100%; overflow:hide; resize:none; color:black; }
@@ -31,12 +34,10 @@
   <h3>Settings</h3>
   <div class="emscripten">
 
+
+
       <button id="content" onclick="document.getElementById('rom').click()">Upload content</button>
       <input style="display: none" type="file" id="rom" name="upload" onclick="document.getElementById('content').click();" onchange="runEmulator(event.target.files);" multiple /></p>
-      <button id="saves" onclick="document.getElementById('savefiles').click()">Upload saves</button>
-      <input style="display: none" type="file" id="savefiles" name="upload" onclick="document.getElementById('saves').click();" onchange="uploadSaveFiles(event.target.files);" multiple /></p>	  
-      <button id="states" onclick="document.getElementById('savestates').click()">Upload states</button>
-      <input style="display: none" type="file" id="savestates" name="upload" onclick="document.getElementById('states').click();" onchange="uploadSaveStateFiles(event.target.files);" multiple /></p>	  
       <input type="checkbox" id="resize"><label for="resize">Resize canvas</label></p>	  
       <input type="checkbox" id="pointerLock" checked><label for="pointerLock">Lock/hide mouse pointer</label></p>
       <input type="button" value="Fullscreen" onclick="Module.requestFullScreen(document.getElementById('pointerLock').checked, document.getElementById('resize').checked)"></p>
@@ -52,6 +53,6 @@
    <progress value="0" max="100" id="progress" hidden=0></progress>  
 </div>
 <script type="text/javascript" src="web.js"></script>
-<script type="text/javascript" src="retroarch.js"></script> 
+<script type="text/javascript" src="gambatte.js"></script> 
 </body>
 </html>
