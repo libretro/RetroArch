@@ -708,15 +708,28 @@ enum mouse_action
 {
    MOUSE_ACTION_NONE = 0,
    MOUSE_ACTION_BUTTON_L,
+   MOUSE_ACTION_BUTTON_L_OK,
+   MOUSE_ACTION_BUTTON_L_TOGGLE,
    MOUSE_ACTION_BUTTON_R,
    MOUSE_ACTION_WHEEL_UP,
    MOUSE_ACTION_WHEEL_DOWN,
 };
 
-static void menu_input_mouse_frame(uint64_t input_mouse)
+static int menu_input_mouse_frame(
+      menu_file_list_cbs_t *cbs, menu_entry_t *entry,
+      uint64_t input_mouse)
 {
    menu_list_t *menu_list = menu_list_get_ptr();
    menu_navigation_t *nav = menu_navigation_get_ptr();
+
+   if (BIT64_GET(input_mouse, MOUSE_ACTION_BUTTON_L))
+   {
+      if (BIT64_GET(input_mouse, MOUSE_ACTION_BUTTON_L_TOGGLE))
+         return cbs->action_toggle(entry->type, entry->label, MENU_ACTION_RIGHT, true);
+
+      if (BIT64_GET(input_mouse, MOUSE_ACTION_BUTTON_L_OK))
+         return cbs->action_ok(entry->path, entry->label, entry->type, nav->selection_ptr);
+   }
 
    if (BIT64_GET(input_mouse, MOUSE_ACTION_BUTTON_R))
    {
@@ -732,6 +745,8 @@ static void menu_input_mouse_frame(uint64_t input_mouse)
    {
       menu_navigation_decrement(nav, 1);
    }
+
+   return 0;
 }
 
 static int menu_input_mouse_post_iterate(uint64_t *input_mouse,
@@ -764,6 +779,8 @@ static int menu_input_mouse_post_iterate(uint64_t *input_mouse,
    {
       if (!menu->mouse.oldleft)
       {
+         BIT64_SET(*input_mouse, MOUSE_ACTION_BUTTON_L);
+
          rarch_setting_t *setting = menu_setting_find(
                menu_list->selection_buf->list[nav->selection_ptr].label);
          menu->mouse.oldleft = true;
@@ -783,10 +800,14 @@ static int menu_input_mouse_post_iterate(uint64_t *input_mouse,
             && cbs && cbs->action_toggle && setting &&
             (setting->type == ST_BOOL || setting->type == ST_UINT || setting->type == ST_FLOAT
              || setting->type == ST_STRING))
-            return cbs->action_toggle(entry->type, entry->label, MENU_ACTION_RIGHT, true);
-         if (menu->mouse.ptr == nav->selection_ptr
+         {
+            BIT64_SET(*input_mouse, MOUSE_ACTION_BUTTON_L_TOGGLE);
+         }
+         else if (menu->mouse.ptr == nav->selection_ptr
             && cbs && cbs->action_ok)
-            return cbs->action_ok(entry->path, entry->label, entry->type, nav->selection_ptr);
+         {
+            BIT64_SET(*input_mouse, MOUSE_ACTION_BUTTON_L_OK);
+         }
          else if (menu->mouse.ptr <= menu_list_get_size(menu_list)-1)
             menu_navigation_set(nav, menu->mouse.ptr, false);
       }
@@ -934,7 +955,7 @@ void menu_input_post_iterate(int *ret, unsigned action)
    if (settings->menu.mouse.enable)
       *ret  = menu_input_mouse_post_iterate  (&input_mouse, cbs, &entry, action);
 
-   menu_input_mouse_frame(input_mouse);
+   *ret = menu_input_mouse_frame(cbs, &entry, input_mouse);
 
    if (settings->menu.pointer.enable)
       *ret |= menu_input_pointer_post_iterate(cbs, &entry, action);
