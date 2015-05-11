@@ -736,8 +736,7 @@ static void menu_input_mouse_frame(uint64_t input_mouse)
 
 static int menu_input_mouse_post_iterate(uint64_t *input_mouse,
       menu_file_list_cbs_t *cbs,
-      const char *path, const char *label,
-      unsigned type, unsigned action)
+      menu_entry_t *entry, unsigned action)
 {
    driver_t      *driver  = driver_get_ptr();
    settings_t *settings   = config_get_ptr();
@@ -784,10 +783,10 @@ static int menu_input_mouse_post_iterate(uint64_t *input_mouse,
             && cbs && cbs->action_toggle && setting &&
             (setting->type == ST_BOOL || setting->type == ST_UINT || setting->type == ST_FLOAT
              || setting->type == ST_STRING))
-            return cbs->action_toggle(type, label, MENU_ACTION_RIGHT, true);
+            return cbs->action_toggle(entry->type, entry->label, MENU_ACTION_RIGHT, true);
          if (menu->mouse.ptr == nav->selection_ptr
             && cbs && cbs->action_ok)
-            return cbs->action_ok(path, label, type, nav->selection_ptr);
+            return cbs->action_ok(entry->path, entry->label, entry->type, nav->selection_ptr);
          else if (menu->mouse.ptr <= menu_list_get_size(menu_list)-1)
             menu_navigation_set(nav, menu->mouse.ptr, false);
       }
@@ -844,8 +843,7 @@ static int pointer_tap(menu_file_list_cbs_t *cbs, const char *path,
 }
 
 static int menu_input_pointer_post_iterate(menu_file_list_cbs_t *cbs,
-      const char *path,
-      const char *label, unsigned type, unsigned action)
+      menu_entry_t *entry, unsigned action)
 {
    int ret = 0;
    menu_handle_t *menu  = menu_driver_get_ptr();
@@ -895,7 +893,7 @@ static int menu_input_pointer_post_iterate(menu_file_list_cbs_t *cbs,
             else if (menu->pointer.ptr <= menu_list_get_size(menu->menu_list)-1)
             {
                menu->pointer.oldpressed[0] = false;
-               ret = pointer_tap(cbs, path, label, type, action);
+               ret = pointer_tap(cbs, entry->path, entry->label, entry->type, action);
             }
          }
          menu->pointer.oldpressed[0] = false;
@@ -935,12 +933,12 @@ void menu_input_post_iterate(int *ret, unsigned action)
    menu_entry_get(&entry, selected, NULL, false);
 
    if (settings->menu.mouse.enable)
-      *ret  = menu_input_mouse_post_iterate  (&input_mouse, cbs, entry.path, entry.label, entry.type, action);
+      *ret  = menu_input_mouse_post_iterate  (&input_mouse, cbs, &entry, action);
 
    menu_input_mouse_frame(input_mouse);
 
    if (settings->menu.pointer.enable)
-      *ret |= menu_input_pointer_post_iterate(cbs, entry.path, entry.label, entry.type, action);
+      *ret |= menu_input_pointer_post_iterate(cbs, &entry, action);
 }
 
 unsigned menu_input_frame(retro_input_t input, retro_input_t trigger_input)
