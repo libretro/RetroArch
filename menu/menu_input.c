@@ -818,8 +818,8 @@ static int menu_input_mouse_post_iterate(uint64_t *input_mouse,
    return 0;
 }
 
-static int pointer_tap(menu_file_list_cbs_t *cbs, const char *path,
-      const char *label, unsigned type, unsigned action)
+static int pointer_tap(menu_file_list_cbs_t *cbs,
+      menu_entry_t *entry, unsigned action)
 {
    menu_handle_t *menu = menu_driver_get_ptr();
    menu_list_t   *menu_list = menu_list_get_ptr();
@@ -832,9 +832,9 @@ static int pointer_tap(menu_file_list_cbs_t *cbs, const char *path,
          && cbs && cbs->action_toggle && setting &&
          (setting->type == ST_BOOL || setting->type == ST_UINT
           || setting->type == ST_FLOAT || setting->type == ST_STRING))
-      return cbs->action_toggle(type, label, MENU_ACTION_RIGHT, true);
+      return cbs->action_toggle(entry->type, entry->label, MENU_ACTION_RIGHT, true);
    else if (menu->pointer.ptr == menu->navigation.selection_ptr)
-      return cbs->action_ok(path, label, type, menu->navigation.selection_ptr);
+      return cbs->action_ok(entry->path, entry->label, entry->type, menu->navigation.selection_ptr);
    else
       menu_navigation_set(&menu->navigation, menu->pointer.ptr, false);
 
@@ -892,7 +892,7 @@ static int menu_input_pointer_post_iterate(menu_file_list_cbs_t *cbs,
             else if (menu->pointer.ptr <= menu_list_get_size(menu->menu_list)-1)
             {
                menu->pointer.oldpressed[0] = false;
-               ret = pointer_tap(cbs, entry->path, entry->label, entry->type, action);
+               ret = pointer_tap(cbs, entry, action);
             }
          }
          menu->pointer.oldpressed[0] = false;
