@@ -206,11 +206,12 @@ static int action_iterate_help(const char *label, unsigned action)
 
    menu_input_post_iterate(&ret, action);
 
-   return 0;
+   return ret;
 }
 
 static int action_iterate_info(const char *label, unsigned action)
 {
+   int ret = 0;
    char msg[PATH_MAX_LENGTH];
    char needle[PATH_MAX_LENGTH];
    unsigned info_type               = 0;
@@ -251,7 +252,9 @@ static int action_iterate_info(const char *label, unsigned action)
    if (action == MENU_ACTION_OK)
       menu_list_pop(menu_list->menu_stack, &menu->navigation.selection_ptr);
 
-   return 0;
+   menu_input_post_iterate(&ret, action);
+
+   return ret;
 }
 
 static int action_iterate_load_open_zip(const char *label, unsigned action)
