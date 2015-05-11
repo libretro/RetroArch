@@ -712,7 +712,7 @@ static int menu_input_mouse_frame(
 
    if (BIT64_GET(input_mouse, MOUSE_ACTION_BUTTON_L))
    {
-      if (BIT64_GET(input_mouse, MOUSE_ACTION_BUTTON_L_TOGGLE))
+      if (BIT64_GET(input_mouse, MOUSE_ACTION_BUTTON_L_TOGGLE) && menu->mouse.oldleft)
          return cbs->action_toggle(entry->type, entry->label, MENU_ACTION_RIGHT, true);
 
       if (BIT64_GET(input_mouse, MOUSE_ACTION_BUTTON_L_OK))
