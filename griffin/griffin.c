@@ -732,6 +732,7 @@ MENU
 #include "../menu/menu_shader.c"
 #include "../menu/menu_navigation.c"
 #include "../menu/menu_display.c"
+#include "../menu/menu_displaylist.c"
 #include "../menu/menu_animation.c"
 #include "../menu/menu_database.c"
 

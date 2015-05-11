@@ -13,20 +13,19 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "menu.h"
-#include "menu_displaylist.h"
-#include "menu_entries.h"
-#include "menu_entries_cbs.h"
+#ifndef _MENU_DISPLAYLIST_H
+#define _MENU_DISPLAYLIST_H
 
-static int action_refresh_default(file_list_t *list, file_list_t *menu_list)
-{
-   return menu_displaylist_push(list, menu_list);
-}
+#include "menu_list.h"
 
-void menu_entries_cbs_init_bind_refresh(menu_file_list_cbs_t *cbs,
-      const char *path, const char *label, unsigned type, size_t idx,
-      const char *elem0, const char *elem1)
-{
-   if (cbs)
-      cbs->action_refresh = action_refresh_default;
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+int menu_displaylist_push(file_list_t *list, file_list_t *menu_list);
+
+#ifdef __cplusplus
 }
+#endif
+
+#endif

@@ -15,6 +15,7 @@
 
 #include <file/file_path.h>
 #include "menu.h"
+#include "menu_displaylist.h"
 #include "menu_entries_cbs.h"
 #include "menu_setting.h"
 #include "menu_entries.h"
@@ -2090,7 +2091,7 @@ int deferred_push_content_list(void *data, void *userdata,
    menu_handle_t *menu    = menu_driver_get_ptr();
    if (!menu)
       return -1;
-   return menu_entries_deferred_push((file_list_t*)data, menu->menu_list->selection_buf);
+   return menu_displaylist_push((file_list_t*)data, menu->menu_list->selection_buf);
 }
 
 static int deferred_push_database_manager_list(void *data, void *userdata,

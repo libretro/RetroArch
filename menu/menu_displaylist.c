@@ -14,19 +14,24 @@
  */
 
 #include "menu.h"
-#include "menu_displaylist.h"
+#include "menu_display.h"
 #include "menu_entries.h"
-#include "menu_entries_cbs.h"
 
-static int action_refresh_default(file_list_t *list, file_list_t *menu_list)
+int menu_displaylist_push(file_list_t *list, file_list_t *menu_list)
 {
-   return menu_displaylist_push(list, menu_list);
-}
+   menu_handle_t *menu    = menu_driver_get_ptr();
+   driver_t       *driver = driver_get_ptr();
+   int                ret = menu_entries_deferred_push(list, menu_list);
 
-void menu_entries_cbs_init_bind_refresh(menu_file_list_cbs_t *cbs,
-      const char *path, const char *label, unsigned type, size_t idx,
-      const char *elem0, const char *elem1)
-{
-   if (cbs)
-      cbs->action_refresh = action_refresh_default;
+   menu->need_refresh = false;
+
+   if (ret == 0)
+   {
+      const ui_companion_driver_t *ui = ui_companion_get_ptr();
+
+      if (ui)
+         ui->notify_list_loaded(driver->ui_companion_data, list, menu_list);
+   }
+
+   return ret;
 }
