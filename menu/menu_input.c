@@ -710,6 +710,7 @@ static int menu_input_mouse_post_iterate(menu_file_list_cbs_t *cbs,
    driver_t      *driver  = driver_get_ptr();
    settings_t *settings   = config_get_ptr();
    menu_handle_t *menu    = menu_driver_get_ptr();
+   menu_list_t *menu_list = menu_list_get_ptr();
    menu_navigation_t *nav = menu_navigation_get_ptr();
 
    if (!menu)
@@ -733,7 +734,7 @@ static int menu_input_mouse_post_iterate(menu_file_list_cbs_t *cbs,
       if (!menu->mouse.oldleft)
       {
          rarch_setting_t *setting = menu_setting_find(
-               menu->menu_list->selection_buf->list[nav->selection_ptr].label);
+               menu_list->selection_buf->list[nav->selection_ptr].label);
          menu->mouse.oldleft = true;
 
 #if 0
@@ -744,7 +745,7 @@ static int menu_input_mouse_post_iterate(menu_file_list_cbs_t *cbs,
 #endif
          if (menu->mouse.y < menu->header_height)
          {
-            menu_list_pop_stack(menu->menu_list);
+            menu_list_pop_stack(menu_list);
             return 0;
          }
          if (menu->mouse.ptr == nav->selection_ptr
@@ -755,7 +756,7 @@ static int menu_input_mouse_post_iterate(menu_file_list_cbs_t *cbs,
          if (menu->mouse.ptr == nav->selection_ptr
             && cbs && cbs->action_ok)
             return cbs->action_ok(path, label, type, nav->selection_ptr);
-         else if (menu->mouse.ptr <= menu_list_get_size(menu->menu_list)-1)
+         else if (menu->mouse.ptr <= menu_list_get_size(menu_list)-1)
             menu_navigation_set(nav, menu->mouse.ptr, false);
       }
    }
@@ -767,7 +768,7 @@ static int menu_input_mouse_post_iterate(menu_file_list_cbs_t *cbs,
       if (!menu->mouse.oldright)
       {
          menu->mouse.oldright = true;
-         menu_list_pop_stack(menu->menu_list);
+         menu_list_pop_stack(menu_list);
       }
    }
    else
@@ -786,10 +787,12 @@ static int pointer_tap(menu_file_list_cbs_t *cbs, const char *path,
       const char *label, unsigned type, unsigned action)
 {
    menu_handle_t *menu = menu_driver_get_ptr();
+   menu_list_t   *menu_list = menu_list_get_ptr();
+   menu_navigation_t *nav   = menu_navigation_get_ptr();
    driver_t *driver = driver_get_ptr();
    rarch_setting_t *setting =
       menu_setting_find(
-            driver->menu->menu_list->selection_buf->list[menu->navigation.selection_ptr].label);
+            menu_list->selection_buf->list[nav->selection_ptr].label);
 
    if (menu->pointer.ptr == menu->navigation.selection_ptr
          && cbs && cbs->action_toggle && setting &&
