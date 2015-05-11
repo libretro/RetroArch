@@ -24,6 +24,7 @@
 #include <string.h>
 #include "menu_input.h"
 #include "menu.h"
+#include "menu_entry.h"
 #include "menu_setting.h"
 #include "menu_shader.h"
 #include "menu_navigation.h"
@@ -921,19 +922,25 @@ static int menu_input_pointer_post_iterate(menu_file_list_cbs_t *cbs,
    return ret;
 }
 
-void menu_input_post_iterate(int *ret, menu_file_list_cbs_t *cbs, const char *path,
-      const char *label, unsigned type, unsigned action)
+void menu_input_post_iterate(int *ret, unsigned action)
 {
-   uint64_t input_mouse = MOUSE_ACTION_NONE;
-   settings_t *settings = config_get_ptr();
+   menu_entry_t entry;
+   menu_list_t *menu_list    = menu_list_get_ptr();
+   uint64_t input_mouse      = MOUSE_ACTION_NONE;
+   settings_t *settings      = config_get_ptr();
+   size_t selected           = menu_navigation_get_current_selection();
+   menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)
+      menu_list_get_actiondata_at_offset(menu_list->selection_buf, selected);
+
+   menu_entry_get(&entry, selected, NULL, false);
 
    if (settings->menu.mouse.enable)
-      *ret  = menu_input_mouse_post_iterate  (&input_mouse, cbs, path, label, type, action);
+      *ret  = menu_input_mouse_post_iterate  (&input_mouse, cbs, entry.path, entry.label, entry.type, action);
 
    menu_input_mouse_frame(input_mouse);
 
    if (settings->menu.pointer.enable)
-      *ret |= menu_input_pointer_post_iterate(cbs, path, label, type, action);
+      *ret |= menu_input_pointer_post_iterate(cbs, entry.path, entry.label, entry.type, action);
 }
 
 unsigned menu_input_frame(retro_input_t input, retro_input_t trigger_input)

@@ -489,20 +489,6 @@ static int action_iterate_switch(const char *label, unsigned action)
    return menu_entry_action(&entry, selected, action);
 }
 
-static void action_iterate_post(int *ret, const char *label, unsigned action)
-{
-   menu_entry_t entry;
-   menu_file_list_cbs_t *cbs = NULL;
-   menu_list_t *menu_list    = menu_list_get_ptr();
-   size_t selected           = menu_navigation_get_current_selection();
-
-   menu_entry_get(&entry, selected, NULL, false);
-
-   cbs = (menu_file_list_cbs_t*)menu_list_get_actiondata_at_offset(menu_list->selection_buf, selected);
-
-   menu_input_post_iterate(ret, cbs, entry.path, entry.label, entry.type, action);
-}
-
 static int action_iterate_main(const char *label, unsigned action)
 {
    int ret                   = 0;
@@ -544,7 +530,7 @@ static int action_iterate_main(const char *label, unsigned action)
    if (ret)
       return ret;
 
-   action_iterate_post(&ret, label, action);
+   menu_input_post_iterate(&ret, action);
 
    menu_driver_render();
 

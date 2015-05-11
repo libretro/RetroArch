@@ -74,8 +74,7 @@ int menu_input_bind_iterate_keyboard(void);
 
 unsigned menu_input_frame(retro_input_t input, retro_input_t trigger_state);
 
-void menu_input_post_iterate(int *ret, menu_file_list_cbs_t *cbs, const char *path,
-      const char *label, unsigned type, unsigned action);
+void menu_input_post_iterate(int *ret, unsigned action);
 
 void menu_input_search_start(void);
 
