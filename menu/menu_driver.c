@@ -292,14 +292,6 @@ void menu_driver_frame(void)
       driver->frame();
 }
 
-void menu_driver_entry_iterate(unsigned action)
-{
-   const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
-
-   if (driver->entry_iterate)
-      driver->entry_iterate(action);
-}
-
 void menu_driver_free(menu_handle_t *menu)
 {
    const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();

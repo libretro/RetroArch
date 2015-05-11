@@ -61,11 +61,6 @@ HXUIOBJ root_menu;
 HXUIOBJ current_menu;
 static msg_queue_t *xui_msg_queue;
 
-static int rmenu_xui_entry_iterate(unsigned action)
-{
-   return menu_entry_iterate(action);
-}
-
 class CRetroArch : public CXuiModule
 {
    protected:
@@ -688,7 +683,6 @@ menu_ctx_driver_t menu_ctx_rmenu_xui = {
    rmenu_xui_list_clear,
    NULL,
    rmenu_xui_list_set_selection,
-   rmenu_xui_entry_iterate,
    NULL,
    "rmenu_xui",
 };

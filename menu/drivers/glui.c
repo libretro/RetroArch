@@ -55,11 +55,6 @@ typedef struct glui_handle
    gl_font_raster_block_t list_block;
 } glui_handle_t;
 
-static int glui_entry_iterate(unsigned action)
-{
-   return menu_entry_iterate(action);
-}
-
 static void glui_blit_line(float x, float y,
       const char *message, uint32_t color, enum text_alignment text_align)
 {
@@ -681,7 +676,6 @@ menu_ctx_driver_t menu_ctx_glui = {
    NULL,
    NULL,
    NULL,
-   glui_entry_iterate,
    glui_load_wallpaper,
    "glui",
 };

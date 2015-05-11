@@ -65,11 +65,6 @@ struct texture_image *menu_texture;
 static bool render_normal = true;
 static bool menu_texture_inited =false;
 
-static int rmenu_entry_iterate(unsigned action)
-{
-   return menu_entry_iterate(action);
-}
-
 static void rmenu_render_background(void)
 {
 }
@@ -335,7 +330,6 @@ menu_ctx_driver_t menu_ctx_rmenu = {
    NULL,
    NULL,
    NULL,
-   rmenu_entry_iterate,
    NULL,
    "rmenu",
 };

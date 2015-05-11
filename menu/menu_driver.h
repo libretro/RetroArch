@@ -269,7 +269,6 @@ typedef struct menu_ctx_driver
    void  (*list_clear)(file_list_t *list);
    void  (*list_cache)(bool, unsigned);
    void  (*list_set_selection)(file_list_t *list);
-   int   (*entry_iterate)(unsigned);
    bool  (*load_background)(void *data);
    const char *ident;
 } menu_ctx_driver_t;
@@ -331,8 +330,6 @@ void menu_driver_set_texture(void);
 void menu_driver_frame(void);
 
 void menu_driver_context_reset(void);
-
-void menu_driver_entry_iterate(unsigned action);
 
 void menu_driver_free(menu_handle_t *menu);
 

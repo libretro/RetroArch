@@ -16,6 +16,7 @@
 
 #include "menu.h"
 #include "menu_display.h"
+#include "menu_entry.h"
 #include "menu_entries.h"
 #include "menu_shader.h"
 #include "../dynamic.h"
@@ -91,7 +92,7 @@ bool menu_load_content(void)
    if (menu)
       menu->msg_force = true;
 
-   menu_driver_entry_iterate(MENU_ACTION_NOOP);
+   menu_entry_iterate(MENU_ACTION_NOOP);
 
    menu_display_fb();
 
@@ -352,7 +353,7 @@ int menu_iterate(retro_input_t input,
       last_clock_update = menu->cur_time;
    }
 
-   menu_driver_entry_iterate(action);
+   menu_entry_iterate(action);
 
    if (runloop->is_menu && !runloop->is_idle)
       menu_display_fb();

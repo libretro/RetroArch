@@ -245,11 +245,6 @@ static float xmb_item_y(xmb_handle_t *xmb, int i, size_t current)
    return iy;
 }
 
-static int xmb_entry_iterate(unsigned action)
-{
-   return menu_entry_iterate(action);
-}
-
 static void xmb_draw_icon_begin(gl_t *gl)
 {
    glEnable(GL_BLEND);
@@ -1947,7 +1942,6 @@ menu_ctx_driver_t menu_ctx_xmb = {
    NULL,
    xmb_list_cache,
    NULL,
-   xmb_entry_iterate,
    xmb_load_wallpaper,
    "xmb",
 };

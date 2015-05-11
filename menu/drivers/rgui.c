@@ -56,11 +56,6 @@ static INLINE uint16_t argb32_to_rgba4444(uint32_t col)
    return (r << 12) | (g << 8) | (b << 4) | a;
 }
 
-static int rgui_entry_iterate(unsigned action)
-{
-   return menu_entry_iterate(action);
-}
-
 static void rgui_copy_glyph(uint8_t *glyph, const uint8_t *buf)
 {
    int x, y;
@@ -669,7 +664,6 @@ menu_ctx_driver_t menu_ctx_rgui = {
    NULL,
    NULL,
    NULL,
-   rgui_entry_iterate,
    NULL,
    "rgui",
 };
