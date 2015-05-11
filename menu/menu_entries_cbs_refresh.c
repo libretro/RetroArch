@@ -20,6 +20,7 @@
 static int action_refresh_default(file_list_t *list, file_list_t *menu_list)
 {
    int ret                = 0;
+   driver_t     *driver   = driver_get_ptr();
    menu_handle_t *menu    = menu_driver_get_ptr();
    if (!menu)
       return -1;
@@ -27,6 +28,14 @@ static int action_refresh_default(file_list_t *list, file_list_t *menu_list)
    ret = menu_entries_deferred_push(list, menu_list);
 
    menu->need_refresh = false;
+    
+   if (ret == 0)
+   {
+       const ui_companion_driver_t *ui = ui_companion_get_ptr();
+       
+       if (ui)
+           ui->notify_list_loaded(driver->ui_companion_data, list, menu_list);
+   }
 
    return ret;
 }

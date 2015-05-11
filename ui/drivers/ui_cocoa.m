@@ -459,6 +459,14 @@ static void ui_companion_cocoa_event_command(void *data, enum event_command cmd)
    event_command(cmd);
 }
 
+static void ui_companion_cocoa_notify_list_pushed(void *data,
+    file_list_t *list, file_list_t *menu_list)
+{
+    (void)data;
+    (void)list;
+    (void)menu_list;
+}
+
 const ui_companion_driver_t ui_companion_cocoa = {
    ui_companion_cocoa_init,
    ui_companion_cocoa_deinit,
@@ -466,5 +474,6 @@ const ui_companion_driver_t ui_companion_cocoa = {
    ui_companion_cocoa_toggle,
    ui_companion_cocoa_event_command,
    ui_companion_cocoa_notify_content_loaded,
+   ui_companion_cocoa_notify_list_pushed,
    "cocoa",
 };

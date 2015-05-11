@@ -69,6 +69,14 @@ static void ui_companion_null_event_command(void *data, enum event_command cmd)
    (void)cmd;
 }
 
+static void ui_companion_null_notify_list_pushed(void *data,
+        file_list_t *list, file_list_t *menu_list)
+{
+    (void)data;
+    (void)list;
+    (void)menu_list;
+}
+
 const ui_companion_driver_t ui_companion_null = {
    ui_companion_null_init,
    ui_companion_null_deinit,
@@ -76,5 +84,6 @@ const ui_companion_driver_t ui_companion_null = {
    ui_companion_null_toggle,
    ui_companion_null_event_command,
    ui_companion_null_notify_content_loaded,
+   ui_companion_null_notify_list_pushed,
    "null",
 };

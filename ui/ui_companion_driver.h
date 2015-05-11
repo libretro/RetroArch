@@ -20,6 +20,8 @@
 #include <stddef.h>
 #include <boolean.h>
 
+#include <file/file_list.h>
+
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
 #endif
@@ -38,7 +40,7 @@ typedef struct ui_companion_driver
    void (*toggle)(void *data);
    void (*event_command)(void *data, enum event_command action);
    void (*notify_content_loaded)(void *data);
-
+   void (*notify_list_loaded)(void *data, file_list_t *list, file_list_t *menu_list);
    const char *ident;
 } ui_companion_driver_t;
 

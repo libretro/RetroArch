@@ -114,6 +114,14 @@ static void ui_companion_qt_event_command(void *data, enum event_command cmd)
    slock_unlock(handle->lock);
 }
 
+static void ui_companion_qt_notify_list_pushed(void *data, file_list_t *list,
+   file_list_t *menu_list)
+{
+   (void)data;
+   (void)list;
+   (void)menu_list;
+}
+
 const ui_companion_driver_t ui_companion_qt = {
    ui_companion_qt_init,
    ui_companion_qt_deinit,
@@ -121,5 +129,6 @@ const ui_companion_driver_t ui_companion_qt = {
    ui_companion_qt_toggle,
    ui_companion_qt_event_command,
    ui_companion_qt_notify_content_loaded,
+   ui_companion_qt_notify_list_pushed,
    "qt",
 };
