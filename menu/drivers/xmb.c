@@ -1123,7 +1123,6 @@ static void xmb_draw_cursor(gl_t *gl, xmb_handle_t *xmb, float x, float y)
 static void xmb_render(void)
 {
    unsigned i, current, end;
-   runloop_t *runloop = rarch_main_get_ptr();
    settings_t *settings = config_get_ptr();
 
 

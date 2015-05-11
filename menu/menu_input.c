@@ -571,7 +571,6 @@ static int menu_input_mouse(unsigned *action)
    const struct retro_keybind *binds[MAX_USERS];
    driver_t *driver          = driver_get_ptr();
    menu_handle_t *menu       = menu_driver_get_ptr();
-   runloop_t *runloop        = rarch_main_get_ptr();
    settings_t *settings      = config_get_ptr();
    video_viewport_t vp;
 
@@ -667,7 +666,6 @@ static int menu_input_pointer(unsigned *action)
    int pointer_device, pointer_x, pointer_y;
    const struct retro_keybind *binds[MAX_USERS];      
    menu_handle_t *menu       = menu_driver_get_ptr();
-   runloop_t *runloop        = rarch_main_get_ptr();
    settings_t *settings      = config_get_ptr();
    driver_t *driver     = driver_get_ptr();
 

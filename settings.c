@@ -1141,8 +1141,6 @@ static void setting_get_string_representation_st_float_video_refresh_rate_auto(v
 
    if (video_monitor_fps_statistics(&video_refresh_rate, &deviation, &sample_points))
    {
-      runloop_t *runloop = rarch_main_get_ptr();
-
       snprintf(type_str, type_str_size, "%.3f Hz (%.1f%% dev, %u samples)",
             video_refresh_rate, 100.0 * deviation, sample_points);
 #ifdef HAVE_MENU

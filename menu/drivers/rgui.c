@@ -567,7 +567,6 @@ static void rgui_free(void *data)
 static void rgui_set_texture(void)
 {
    menu_handle_t *menu = menu_driver_get_ptr();
-   runloop_t *runloop  = rarch_main_get_ptr();
 
    if (!menu)
       return;
