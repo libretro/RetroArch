@@ -359,7 +359,7 @@ int menu_entry_iterate(unsigned action)
       return -1;
 
    if (action != MENU_ACTION_NOOP || menu->need_refresh || menu_display_update_pending())
-      runloop->frames.video.current.menu.framebuf.dirty   = true;
+      menu->framebuf.dirty   = true;
 
    cbs = (menu_file_list_cbs_t*)menu_list_get_last_stack_actiondata(menu_list);
 

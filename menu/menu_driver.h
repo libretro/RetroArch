@@ -210,12 +210,29 @@ typedef struct
       unsigned idx;
    } keyboard;
 
+   struct
+   {
+      bool is_updated;
+   } label;
+
+   struct
+   {
+      bool dirty;
+   } framebuf;
+
+   struct
+   {
+      bool active;
+   } action;
+
    rarch_setting_t *list_settings;
    animation_t *animation;
+   bool animation_is_active;
 
    content_playlist_t *db_playlist;
    char db_playlist_file[PATH_MAX_LENGTH];
    database_info_handle_t *db;
+
 } menu_handle_t;
 
 typedef struct menu_file_list_cbs

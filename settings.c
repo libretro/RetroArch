@@ -1145,7 +1145,14 @@ static void setting_get_string_representation_st_float_video_refresh_rate_auto(v
 
       snprintf(type_str, type_str_size, "%.3f Hz (%.1f%% dev, %u samples)",
             video_refresh_rate, 100.0 * deviation, sample_points);
-      runloop->frames.video.current.menu.label.is_updated = true;
+#ifdef HAVE_MENU
+      {
+         menu_handle_t *menu = menu_driver_get_ptr();
+
+         if (menu)
+            menu->label.is_updated = true;
+      }
+#endif
    }
    else
       strlcpy(type_str, "N/A", type_str_size);

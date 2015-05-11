@@ -1164,9 +1164,8 @@ static void xmb_render(void)
       }
    }
 
-   runloop->frames.video.current.menu.animation.is_active = false;
-   runloop->frames.video.current.menu.label.is_updated    = false;
-   runloop->frames.video.current.menu.framebuf.dirty      = false;
+   menu->animation_is_active = false;
+   menu->label.is_updated    = false;
 }
 
 static void xmb_frame(void)

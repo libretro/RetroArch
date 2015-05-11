@@ -24,12 +24,10 @@
 
 bool menu_display_update_pending(void)
 {
-   runloop_t *runloop = rarch_main_get_ptr();
-   if (runloop)
+   menu_handle_t *menu = menu_driver_get_ptr();
+   if (menu)
    {
-      if (runloop->frames.video.current.menu.animation.is_active ||
-            runloop->frames.video.current.menu.label.is_updated ||
-            runloop->frames.video.current.menu.framebuf.dirty)
+      if (menu->animation_is_active || menu->label.is_updated || menu->framebuf.dirty)
          return true;
    }
    return false;

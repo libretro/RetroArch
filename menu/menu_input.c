@@ -657,7 +657,7 @@ static int menu_input_mouse(unsigned *action)
       || menu->mouse.wheelup || menu->mouse.wheeldown
       || menu->mouse.hwheelup || menu->mouse.hwheeldown
       || menu->mouse.scrollup || menu->mouse.scrolldown)
-      runloop->frames.video.current.menu.animation.is_active = true;
+      menu->animation_is_active = true;
 
    return 0;
 }
@@ -699,7 +699,7 @@ static int menu_input_pointer(unsigned *action)
    if (menu->pointer.pressed[0] || menu->pointer.oldpressed[0]
      || menu->pointer.back || menu->pointer.dragging
      || menu->pointer.dy != 0 || menu->pointer.dx != 0)
-     runloop->frames.video.current.menu.animation.is_active = true;
+     menu->animation_is_active = true;
 
    return 0;
 }

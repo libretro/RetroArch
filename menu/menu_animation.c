@@ -439,7 +439,7 @@ bool menu_animation_update(animation_t *animation, float dt)
 {
    unsigned i;
    unsigned active_tweens = 0;
-   runloop_t *runloop = rarch_main_get_ptr();
+   menu_handle_t *menu = menu_driver_get_ptr();
 
    for(i = 0; i < animation->size; i++)
       menu_animation_iterate(&animation->list[i], dt, &active_tweens);
@@ -450,7 +450,7 @@ bool menu_animation_update(animation_t *animation, float dt)
       return false;
    }
 
-   runloop->frames.video.current.menu.animation.is_active = true;
+   menu->animation_is_active = true;
 
    return true;
 }
@@ -473,7 +473,7 @@ void menu_animation_ticker_line(char *buf, size_t len, uint64_t idx,
    unsigned phase_left_moving, phase_right_stop;
    unsigned left_offset, right_offset;
    size_t str_len = strlen(str);
-   runloop_t *runloop = rarch_main_get_ptr();
+   menu_handle_t *menu = menu_driver_get_ptr();
 
    if (str_len <= len)
    {
@@ -514,5 +514,5 @@ void menu_animation_ticker_line(char *buf, size_t len, uint64_t idx,
    else
       strlcpy(buf, str + right_offset, len + 1);
 
-   runloop->frames.video.current.menu.animation.is_active = true;
+   menu->animation_is_active = true;
 }

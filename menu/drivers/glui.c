@@ -368,9 +368,8 @@ static void glui_frame(void)
          menu->navigation.selection_ptr,
          global->video_data.width, glui->line_height, 1, 1, 1, 0.1);
 
-   runloop->frames.video.current.menu.animation.is_active = true;
-   runloop->frames.video.current.menu.label.is_updated    = false;
-   runloop->frames.video.current.menu.framebuf.dirty      = false;
+   menu->animation_is_active = true;
+   menu->label.is_updated    = false;
 
    glui_render_quad(gl, 0, 0, global->video_data.width,
          menu->header_height, 0.2, 0.2, 0.2, 1);

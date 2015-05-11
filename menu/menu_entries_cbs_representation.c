@@ -388,10 +388,10 @@ static void menu_action_setting_disp_set_label_perf_counters(
       const char *path,
       char *path_buf, size_t path_buf_size)
 {
+   menu_handle_t *menu = menu_driver_get_ptr();
    const struct retro_perf_counter **counters = 
       (const struct retro_perf_counter **)perf_counters_rarch;
    unsigned offset = type - MENU_SETTINGS_PERF_COUNTERS_BEGIN;
-   runloop_t *runloop = rarch_main_get_ptr();
 
    *type_str = '\0';
    *w = 19;
@@ -412,7 +412,7 @@ static void menu_action_setting_disp_set_label_perf_counters(
           (unsigned long long)counters[offset]->call_cnt),
          (unsigned long long)counters[offset]->call_cnt);
 
-   runloop->frames.video.current.menu.label.is_updated = true;
+   menu->label.is_updated = true;
 }
 
 static void menu_action_setting_disp_set_label_libretro_perf_counters(
@@ -424,10 +424,10 @@ static void menu_action_setting_disp_set_label_libretro_perf_counters(
       const char *path,
       char *path_buf, size_t path_buf_size)
 {
+   menu_handle_t *menu = menu_driver_get_ptr();
    const struct retro_perf_counter **counters = 
       (const struct retro_perf_counter **)perf_counters_libretro;
    unsigned offset = type - MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_BEGIN;
-   runloop_t *runloop = rarch_main_get_ptr();
 
    *type_str = '\0';
    *w = 19;
@@ -448,7 +448,7 @@ static void menu_action_setting_disp_set_label_libretro_perf_counters(
           (unsigned long long)counters[offset]->call_cnt),
          (unsigned long long)counters[offset]->call_cnt);
 
-   runloop->frames.video.current.menu.label.is_updated = true;
+   menu->label.is_updated = true;
 }
 
 static void menu_action_setting_disp_set_label_menu_more(

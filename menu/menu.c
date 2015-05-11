@@ -171,7 +171,7 @@ void *menu_init(const void *data)
 
    rarch_assert(menu->msg_queue = msg_queue_new(8));
 
-   runloop->frames.video.current.menu.framebuf.dirty = true;
+   menu->framebuf.dirty = true;
 
    return menu;
 error:
@@ -349,7 +349,7 @@ int menu_iterate(retro_input_t input,
 
    if (menu->cur_time - last_clock_update > 1000000 && settings->menu.timedate_enable)
    {
-      runloop->frames.video.current.menu.label.is_updated = true;
+      menu->label.is_updated = true;
       last_clock_update = menu->cur_time;
    }
 

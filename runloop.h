@@ -55,31 +55,6 @@ typedef struct runloop
       struct
       {
          unsigned max;
-         struct
-         {
-            struct
-            {
-               struct
-               {
-                  bool is_updated;
-               } label;
-
-               struct
-               {
-                  bool is_active;
-               } animation;
-
-               struct
-               {
-                  bool dirty;
-               } framebuf;
-
-               struct
-               {
-                  bool active;
-               } action;
-            } menu;
-         } current;
       } video;
 
       struct

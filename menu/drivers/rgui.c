@@ -356,9 +356,9 @@ static void rgui_render(void)
       return;
 
    /* ensures the framebuffer will be rendered on the screen */
-   runloop->frames.video.current.menu.framebuf.dirty = true;
-   runloop->frames.video.current.menu.animation.is_active = false;
-   runloop->frames.video.current.menu.label.is_updated    = false;
+   menu->framebuf.dirty = true;
+   menu->animation_is_active = false;
+   menu->label.is_updated    = false;
 
    if (settings->menu.pointer.enable)
    {
@@ -571,10 +571,10 @@ static void rgui_set_texture(void)
 
    if (!menu)
       return;
-   if (!runloop->frames.video.current.menu.framebuf.dirty)
+   if (!menu->framebuf.dirty)
       return;
 
-   runloop->frames.video.current.menu.framebuf.dirty = false;
+   menu->framebuf.dirty = false;
 
    video_driver_set_texture_frame(
          menu->frame_buf.data, false,

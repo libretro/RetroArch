@@ -1091,9 +1091,15 @@ bool event_command(enum event_command cmd)
          input_driver_poll();
 
 #ifdef HAVE_MENU
-         runloop->frames.video.current.menu.framebuf.dirty = true;
-         if (runloop->is_menu)
-             event_command(EVENT_CMD_VIDEO_SET_BLOCKING_STATE);
+         {
+            menu_handle_t *menu = menu_driver_get_ptr();
+            
+            if (menu)
+               menu->framebuf.dirty = true;
+
+            if (runloop->is_menu)
+               event_command(EVENT_CMD_VIDEO_SET_BLOCKING_STATE);
+         }
 #endif
          break;
       case EVENT_CMD_CHEATS_DEINIT:
