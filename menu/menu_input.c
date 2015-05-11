@@ -703,9 +703,40 @@ static int menu_input_pointer(unsigned *action)
    return 0;
 }
 
-static int menu_input_mouse_post_iterate(menu_file_list_cbs_t *cbs,
-      const char *path,
-      const char *label, unsigned type, unsigned action)
+enum mouse_action
+{
+   MOUSE_ACTION_NONE = 0,
+   MOUSE_ACTION_BUTTON_L,
+   MOUSE_ACTION_BUTTON_R,
+   MOUSE_ACTION_WHEEL_UP,
+   MOUSE_ACTION_WHEEL_DOWN,
+};
+
+static void menu_input_mouse_frame(uint64_t input_mouse)
+{
+   menu_list_t *menu_list = menu_list_get_ptr();
+   menu_navigation_t *nav = menu_navigation_get_ptr();
+
+   if (BIT64_GET(input_mouse, MOUSE_ACTION_BUTTON_R))
+   {
+      menu_list_pop_stack(menu_list);
+   }
+
+   if (BIT64_GET(input_mouse, MOUSE_ACTION_WHEEL_DOWN))
+   {
+      menu_navigation_increment(nav, 1);
+   }
+
+   if (BIT64_GET(input_mouse, MOUSE_ACTION_WHEEL_UP))
+   {
+      menu_navigation_decrement(nav, 1);
+   }
+}
+
+static int menu_input_mouse_post_iterate(uint64_t *input_mouse,
+      menu_file_list_cbs_t *cbs,
+      const char *path, const char *label,
+      unsigned type, unsigned action)
 {
    driver_t      *driver  = driver_get_ptr();
    settings_t *settings   = config_get_ptr();
@@ -768,17 +799,21 @@ static int menu_input_mouse_post_iterate(menu_file_list_cbs_t *cbs,
       if (!menu->mouse.oldright)
       {
          menu->mouse.oldright = true;
-         menu_list_pop_stack(menu_list);
+         BIT64_SET(*input_mouse, MOUSE_ACTION_BUTTON_R);
       }
    }
    else
       menu->mouse.oldright = false;
 
    if (menu->mouse.wheeldown)
-      menu_navigation_increment(nav, 1);
+   {
+      BIT64_SET(*input_mouse, MOUSE_ACTION_WHEEL_DOWN);
+   }
 
    if (menu->mouse.wheelup)
-      menu_navigation_decrement(nav, 1);
+   {
+      BIT64_SET(*input_mouse, MOUSE_ACTION_WHEEL_UP);
+   }
 
    return 0;
 }
@@ -889,10 +924,14 @@ static int menu_input_pointer_post_iterate(menu_file_list_cbs_t *cbs,
 void menu_input_post_iterate(int *ret, menu_file_list_cbs_t *cbs, const char *path,
       const char *label, unsigned type, unsigned action)
 {
+   uint64_t input_mouse = MOUSE_ACTION_NONE;
    settings_t *settings = config_get_ptr();
 
    if (settings->menu.mouse.enable)
-      *ret  = menu_input_mouse_post_iterate  (cbs, path, label, type, action);
+      *ret  = menu_input_mouse_post_iterate  (&input_mouse, cbs, path, label, type, action);
+
+   menu_input_mouse_frame(input_mouse);
+
    if (settings->menu.pointer.enable)
       *ret |= menu_input_pointer_post_iterate(cbs, path, label, type, action);
 }
