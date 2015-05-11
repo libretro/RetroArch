@@ -14,6 +14,7 @@
  */
 
 #include "menu.h"
+#include "menu_display.h"
 #include "menu_entry.h"
 #include "menu_navigation.h"
 #include "menu_setting.h"
@@ -344,6 +345,32 @@ uint32_t menu_entry_select(uint32_t i)
             "info_screen", 0, i);
    }
    return true;
+}
+
+int menu_entry_iterate(unsigned action)
+{
+   const char *label         = NULL;
+   menu_file_list_cbs_t *cbs = NULL;
+   menu_navigation_t *nav    = menu_navigation_get_ptr();
+   menu_list_t *menu_list    = menu_list_get_ptr();
+   menu_handle_t *menu       = menu_driver_get_ptr();
+   runloop_t *runloop        = rarch_main_get_ptr();
+
+   if (!menu_list)
+      return -1;
+
+   if (action != MENU_ACTION_NOOP || menu->need_refresh || menu_display_update_pending())
+      runloop->frames.video.current.menu.framebuf.dirty   = true;
+
+   cbs = (menu_file_list_cbs_t*)menu_list_get_actiondata_at_offset(
+         menu_list->selection_buf, nav->selection_ptr);
+
+   menu_list_get_last_stack(menu_list, NULL, &label, NULL);
+
+   if (cbs && cbs->action_iterate)
+      return cbs->action_iterate(label, action);
+
+   return -1;
 }
 
 int menu_entry_action(menu_entry_t *entry, unsigned i, unsigned action)

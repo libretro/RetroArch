@@ -247,23 +247,7 @@ static float xmb_item_y(xmb_handle_t *xmb, int i, size_t current)
 
 static int xmb_entry_iterate(unsigned action)
 {
-   const char *label         = NULL;
-   menu_file_list_cbs_t *cbs = NULL;
-   menu_handle_t *menu       = menu_driver_get_ptr();
-
-   if (!menu)
-      return -1;
-   
-   cbs = (menu_file_list_cbs_t*)
-      menu_list_get_actiondata_at_offset(menu->menu_list->selection_buf,
-            menu->navigation.selection_ptr);
-
-   menu_list_get_last_stack(menu->menu_list, NULL, &label, NULL);
-
-   if (cbs && cbs->action_iterate)
-      return cbs->action_iterate(label, action);
-   
-   return -1;
+   return menu_entry_iterate(action);
 }
 
 static void xmb_draw_icon_begin(gl_t *gl)

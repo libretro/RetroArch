@@ -102,6 +102,8 @@ bool menu_entry_is_currently_selected(menu_entry_t *entry);
 void menu_entry_get(menu_entry_t *entry, size_t i,
       void *userdata, bool use_representation);
 
+int menu_entry_iterate(unsigned action);
+
 uint32_t menu_entry_select(uint32_t i);
 
 int menu_entry_action(menu_entry_t *entry, unsigned i, unsigned action);
