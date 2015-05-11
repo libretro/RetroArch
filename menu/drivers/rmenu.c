@@ -69,13 +69,14 @@ static int rmenu_entry_iterate(unsigned action)
 {
    const char *label         = NULL;
    menu_file_list_cbs_t *cbs = NULL;
+   menu_navigation_t *nav    = menu_navigation_get_ptr();
    menu_handle_t *menu       = menu_driver_get_ptr();
 
    if (!menu)
       return -1;
    
    cbs = (menu_file_list_cbs_t*)menu_list_get_actiondata_at_offset(
-         menu->menu_list->selection_buf, menu->navigation.selection_ptr);
+         menu->menu_list->selection_buf, nav->selection_ptr);
 
    menu_list_get_last_stack(menu->menu_list, NULL, &label, NULL);
 
