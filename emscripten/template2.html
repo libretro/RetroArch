@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>RetroArch Web Player</title>
+  <link rel="stylesheet" href="//code.jquery.com/ui/1.11.4/themes/smoothness/jquery-ui.css">
+  <link rel="stylesheet" type="text/css" href="http://fonts.googleapis.com/css?family=Share+Tech+Mono">
+  <script src="//code.jquery.com/jquery-1.10.2.js"></script>
+  <script src="//code.jquery.com/ui/1.11.4/jquery-ui.js"></script>
+  <style>
+    .emscripten { padding-right: 0; margin-left: auto; margin-right: auto; display: block; }
+    textarea.emscripten { border: 0px; font-family: 'Share Tech Mono'; font-size: 12px; width: 100%; overflow:hide; resize:none; color:black; }
+    div.emscripten, h1 { text-align: left; }
+    div.canvas_border { background-color:gray; width:800px; height:600px; margin-left: auto; margin-right: auto; }
+    canvas.emscripten { border: 0px none; }
+  </style>
+  
+  <script>
+  $(function() {
+    $( "#accordion" ).accordion();
+  });
+  </script>
+</head>
+<body>
+</p>
+<div class="canvas_border" id="canvas_div" style="display: block">
+  <canvas class="emscripten" id="canvas" oncontextmenu="event.preventDefault()"></canvas>
+</div>
+</p>
+<div id="accordion" class="emscripten">
+  <h3>Settings</h3>
+  <div class="emscripten">
+
+      <button id="content" onclick="document.getElementById('rom').click()">Upload content</button>
+      <input style="display: none" type="file" id="rom" name="upload" onclick="document.getElementById('content').click();" onchange="runEmulator(event.target.files);" multiple /></p>
+      <button id="saves" onclick="document.getElementById('savefiles').click()">Upload saves</button>
+      <input style="display: none" type="file" id="savefiles" name="upload" onclick="document.getElementById('saves').click();" onchange="uploadSaveFiles(event.target.files);" multiple /></p>	  
+      <button id="states" onclick="document.getElementById('savestates').click()">Upload states</button>
+      <input style="display: none" type="file" id="savestates" name="upload" onclick="document.getElementById('states').click();" onchange="uploadSaveStateFiles(event.target.files);" multiple /></p>	  
+      <input type="checkbox" id="resize"><label for="resize">Resize canvas</label></p>	  
+      <input type="checkbox" id="pointerLock" checked><label for="pointerLock">Lock/hide mouse pointer</label></p>
+      <input type="button" value="Fullscreen" onclick="Module.requestFullScreen(document.getElementById('pointerLock').checked, document.getElementById('resize').checked)"></p>
+      <input type="checkbox" id="vsync"><label for="vsync" id="vsync-label">Enable V-sync (can only be done before loading game)</label></p>
+      <input type="textbox" id="latency" size="3" maxlength="3" value="96"> <label for="latency" id="latency-label">Audio latency (ms) (increase if you hear pops at fullspeed, can only be done before loading game)</label></p>
+  </div>
+  <h3>Console</h3>
+  <div class="emscripten">
+	<textarea class="emscripten" id="output" rows="20"></textarea>
+  </div>
+</div>
+<div class="emscripten" id="status">Status: </div>
+   <progress value="0" max="100" id="progress" hidden=0></progress>  
+</div>
+<script type="text/javascript" src="web.js"></script>
+<script type="text/javascript" src="retroarch.js"></script> 
+</body>
+</html>
