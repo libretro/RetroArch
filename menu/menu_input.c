@@ -708,6 +708,7 @@ enum mouse_action
    MOUSE_ACTION_BUTTON_L,
    MOUSE_ACTION_BUTTON_L_OK,
    MOUSE_ACTION_BUTTON_L_TOGGLE,
+   MOUSE_ACTION_BUTTON_L_SET_NAVIGATION,
    MOUSE_ACTION_BUTTON_R,
    MOUSE_ACTION_WHEEL_UP,
    MOUSE_ACTION_WHEEL_DOWN,
@@ -717,6 +718,7 @@ static int menu_input_mouse_frame(
       menu_file_list_cbs_t *cbs, menu_entry_t *entry,
       uint64_t input_mouse)
 {
+   menu_handle_t *menu    = menu_driver_get_ptr();
    menu_list_t *menu_list = menu_list_get_ptr();
    menu_navigation_t *nav = menu_navigation_get_ptr();
 
@@ -727,6 +729,11 @@ static int menu_input_mouse_frame(
 
       if (BIT64_GET(input_mouse, MOUSE_ACTION_BUTTON_L_OK))
          return cbs->action_ok(entry->path, entry->label, entry->type, nav->selection_ptr);
+
+      if (BIT64_GET(input_mouse, MOUSE_ACTION_BUTTON_L_SET_NAVIGATION))
+      {
+         menu_navigation_set(nav, menu->mouse.ptr, false);
+      }
    }
 
    if (BIT64_GET(input_mouse, MOUSE_ACTION_BUTTON_R))
@@ -783,12 +790,6 @@ static int menu_input_mouse_post_iterate(uint64_t *input_mouse,
                menu_list->selection_buf->list[nav->selection_ptr].label);
          menu->mouse.oldleft = true;
 
-#if 0
-         RARCH_LOG("action OK: %d\n", cbs && cbs->action_ok);
-         RARCH_LOG("action toggle: %d\n", cbs && cbs->action_toggle);
-         if (setting && setting->type)
-            RARCH_LOG("action type: %d\n", setting->type);
-#endif
          if (menu->mouse.y < menu->header_height)
          {
             menu_list_pop_stack(menu_list);
@@ -807,7 +808,9 @@ static int menu_input_mouse_post_iterate(uint64_t *input_mouse,
             BIT64_SET(*input_mouse, MOUSE_ACTION_BUTTON_L_OK);
          }
          else if (menu->mouse.ptr <= menu_list_get_size(menu_list)-1)
-            menu_navigation_set(nav, menu->mouse.ptr, false);
+         {
+            BIT64_SET(*input_mouse, MOUSE_ACTION_BUTTON_L_SET_NAVIGATION);
+         }
       }
    }
    else
