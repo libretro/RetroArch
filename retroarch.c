@@ -1302,7 +1302,8 @@ void rarch_main_set_state(unsigned cmd)
                global->system.frame_time_last = 0;
             }
 
-            runloop->is_menu = true;
+            menu->need_refresh = true;
+            runloop->is_menu   = true;
          }
 #endif
          break;
