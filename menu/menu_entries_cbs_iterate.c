@@ -141,6 +141,7 @@ static int load_or_open_zip_iterate(unsigned action)
 
 static int action_iterate_help(const char *label, unsigned action)
 {
+   int ret;
    unsigned i;
    static const unsigned binds[] = {
       RETRO_DEVICE_ID_JOYPAD_UP,
@@ -202,6 +203,8 @@ static int action_iterate_help(const char *label, unsigned action)
 
    if (action == MENU_ACTION_OK)
       menu_list_pop(menu->menu_list->menu_stack, NULL);
+
+   menu_input_post_iterate(&ret, action);
 
    return 0;
 }

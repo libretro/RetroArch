@@ -702,18 +702,6 @@ static int menu_input_pointer(unsigned *action)
    return 0;
 }
 
-enum mouse_action
-{
-   MOUSE_ACTION_NONE = 0,
-   MOUSE_ACTION_BUTTON_L,
-   MOUSE_ACTION_BUTTON_L_OK,
-   MOUSE_ACTION_BUTTON_L_TOGGLE,
-   MOUSE_ACTION_BUTTON_L_SET_NAVIGATION,
-   MOUSE_ACTION_BUTTON_R,
-   MOUSE_ACTION_WHEEL_UP,
-   MOUSE_ACTION_WHEEL_DOWN,
-};
-
 static int menu_input_mouse_frame(
       menu_file_list_cbs_t *cbs, menu_entry_t *entry,
       uint64_t input_mouse)
