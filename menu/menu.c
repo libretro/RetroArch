@@ -332,11 +332,11 @@ int menu_iterate(retro_input_t input,
 {
    static retro_time_t last_clock_update = 0;
    int32_t ret          = 0;
-   unsigned action      = menu_input_frame(input, trigger_input);
    runloop_t *runloop   = rarch_main_get_ptr();
    menu_handle_t *menu  = menu_driver_get_ptr();
    settings_t *settings = config_get_ptr();
 
+   menu->input.joypad   = menu_input_frame(input, trigger_input);
    menu->cur_time       = rarch_get_time_usec();
    menu->dt             = menu->cur_time - menu->old_time;
 
@@ -352,7 +352,7 @@ int menu_iterate(retro_input_t input,
       last_clock_update = menu->cur_time;
    }
 
-   menu_entry_iterate(action);
+   menu_entry_iterate(menu->input.joypad);
 
    if (runloop->is_menu && !runloop->is_idle)
       menu_display_fb();

@@ -225,6 +225,12 @@ typedef struct
       bool active;
    } action;
 
+   struct
+   {
+      unsigned joypad;
+      uint64_t mouse;
+   } input;
+
    rarch_setting_t *list_settings;
    animation_t *animation;
    bool animation_is_active;

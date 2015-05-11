@@ -764,6 +764,8 @@ static int menu_input_mouse_post_iterate(uint64_t *input_mouse,
    menu_list_t *menu_list = menu_list_get_ptr();
    menu_navigation_t *nav = menu_navigation_get_ptr();
 
+   *input_mouse = MOUSE_ACTION_NONE;
+
    if (!menu)
       return -1;
 
@@ -944,8 +946,8 @@ static int menu_input_pointer_post_iterate(menu_file_list_cbs_t *cbs,
 void menu_input_post_iterate(int *ret, unsigned action)
 {
    menu_entry_t entry;
+   menu_handle_t *menu       = menu_driver_get_ptr();
    menu_list_t *menu_list    = menu_list_get_ptr();
-   uint64_t input_mouse      = MOUSE_ACTION_NONE;
    settings_t *settings      = config_get_ptr();
    size_t selected           = menu_navigation_get_current_selection();
    menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)
@@ -954,9 +956,9 @@ void menu_input_post_iterate(int *ret, unsigned action)
    menu_entry_get(&entry, selected, NULL, false);
 
    if (settings->menu.mouse.enable)
-      *ret  = menu_input_mouse_post_iterate  (&input_mouse, cbs, &entry, action);
+      *ret  = menu_input_mouse_post_iterate  (&menu->input.mouse, cbs, &entry, action);
 
-   *ret = menu_input_mouse_frame(cbs, &entry, input_mouse);
+   *ret = menu_input_mouse_frame(cbs, &entry, menu->input.mouse);
 
    if (settings->menu.pointer.enable)
       *ret |= menu_input_pointer_post_iterate(cbs, &entry, action);
