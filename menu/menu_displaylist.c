@@ -802,6 +802,53 @@ static int menu_displaylist_parse_all_settings(menu_displaylist_info_t *info)
    return 0;
 }
 
+static int menu_displaylist_parse_shader_options(menu_displaylist_info_t *info)
+{
+   unsigned i;
+   struct video_shader *shader = NULL;
+   menu_handle_t *menu = menu_driver_get_ptr();
+
+   if (!menu)
+      return -1;
+
+   shader = menu->shader;
+
+   if (!shader)
+      return -1;
+
+   menu_list_push(info->list, "Apply Shader Changes", "shader_apply_changes",
+         MENU_SETTING_ACTION, 0);
+   menu_list_push(info->list, "Load Shader Preset", "video_shader_preset",
+         MENU_FILE_PATH, 0);
+   menu_list_push(info->list, "Shader Preset Save As",
+         "video_shader_preset_save_as", MENU_SETTING_ACTION, 0);
+   menu_list_push(info->list, "Parameters (Current)",
+         "video_shader_parameters", MENU_SETTING_ACTION, 0);
+   menu_list_push(info->list, "Parameters (Menu)",
+         "video_shader_preset_parameters", MENU_SETTING_ACTION, 0);
+   menu_list_push(info->list, "Shader Passes", "video_shader_num_passes",
+         0, 0);
+
+   for (i = 0; i < shader->passes; i++)
+   {
+      char buf[64];
+
+      snprintf(buf, sizeof(buf), "Shader #%u", i);
+      menu_list_push(info->list, buf, "video_shader_pass",
+            MENU_SETTINGS_SHADER_PASS_0 + i, 0);
+
+      snprintf(buf, sizeof(buf), "Shader #%u Filter", i);
+      menu_list_push(info->list, buf, "video_shader_filter_pass",
+            MENU_SETTINGS_SHADER_PASS_FILTER_0 + i, 0);
+
+      snprintf(buf, sizeof(buf), "Shader #%u Scale", i);
+      menu_list_push(info->list, buf, "video_shader_scale_pass",
+            MENU_SETTINGS_SHADER_PASS_SCALE_0 + i, 0);
+   }
+
+   return 0;
+}
+
 int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
 {
    int ret = 0;
@@ -854,6 +901,13 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          menu_list_push(info->list, "Video Filter", "video_filter",
                0, 0);
 #endif
+
+         need_push    = true;
+         break;
+      case DISPLAYLIST_OPTIONS_SHADERS:
+         menu_list_clear(info->list);
+
+         ret = menu_displaylist_parse_shader_options(info);
 
          need_push    = true;
          break;

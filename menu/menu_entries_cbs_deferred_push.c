@@ -1190,60 +1190,15 @@ static int deferred_push_video_options(void *data, void *userdata,
 static int deferred_push_shader_options(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
-   unsigned i;
-   struct video_shader *shader = NULL;
-   file_list_t *list      = NULL;
-   file_list_t *menu_list = NULL;
-   menu_handle_t *menu = menu_driver_get_ptr();
+   menu_displaylist_info_t info = {0};
 
-   if (!menu)
-      return -1;
+   info.list      = (file_list_t*)data;
+   info.menu_list = (file_list_t*)userdata;
+   info.type      = type;
+   strlcpy(info.path,  path, sizeof(info.path));
+   strlcpy(info.label, label, sizeof(info.label));
 
-   list           = (file_list_t*)data;
-   menu_list      = (file_list_t*)userdata;
-
-   if (!list || !menu_list)
-      return -1;
-
-   shader = menu->shader;
-
-   if (!shader)
-      return -1;
-
-   menu_list_clear(list);
-   menu_list_push(list, "Apply Shader Changes", "shader_apply_changes",
-         MENU_SETTING_ACTION, 0);
-   menu_list_push(list, "Load Shader Preset", "video_shader_preset",
-         MENU_FILE_PATH, 0);
-   menu_list_push(list, "Shader Preset Save As",
-         "video_shader_preset_save_as", MENU_SETTING_ACTION, 0);
-   menu_list_push(list, "Parameters (Current)",
-         "video_shader_parameters", MENU_SETTING_ACTION, 0);
-   menu_list_push(list, "Parameters (Menu)",
-         "video_shader_preset_parameters", MENU_SETTING_ACTION, 0);
-   menu_list_push(list, "Shader Passes", "video_shader_num_passes",
-         0, 0);
-
-   for (i = 0; i < shader->passes; i++)
-   {
-      char buf[64];
-
-      snprintf(buf, sizeof(buf), "Shader #%u", i);
-      menu_list_push(list, buf, "video_shader_pass",
-            MENU_SETTINGS_SHADER_PASS_0 + i, 0);
-
-      snprintf(buf, sizeof(buf), "Shader #%u Filter", i);
-      menu_list_push(list, buf, "video_shader_filter_pass",
-            MENU_SETTINGS_SHADER_PASS_FILTER_0 + i, 0);
-
-      snprintf(buf, sizeof(buf), "Shader #%u Scale", i);
-      menu_list_push(list, buf, "video_shader_scale_pass",
-            MENU_SETTINGS_SHADER_PASS_SCALE_0 + i, 0);
-   }
-
-   menu_driver_populate_entries(path, label, type);
-
-   return 0;
+   return menu_displaylist_push_list(&info, DISPLAYLIST_OPTIONS_SHADERS);
 }
 
 static int deferred_push_options(void *data, void *userdata,
