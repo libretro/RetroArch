@@ -43,6 +43,11 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          ret = menu_entries_push_list(menu, info->list,
                info->path, info->label, info->type, info->flags);
          break;
+      case DISPLAYLIST_CORES:
+         ret = menu_entries_parse_list(info->list, info->menu_list,
+               info->path, info->label, info->type,
+               info->type_default, info->exts, NULL);
+         break;
    }
 
    return ret;

@@ -29,6 +29,7 @@ enum
    DISPLAYLIST_NONE = 0,
    DISPLAYLIST_MAIN_MENU,
    DISPLAYLIST_SETTINGS,
+   DISPLAYLIST_CORES,
 };
 
 typedef struct menu_displaylist_info
@@ -37,7 +38,9 @@ typedef struct menu_displaylist_info
    file_list_t *menu_list;
    char path[PATH_MAX_LENGTH];
    char label[PATH_MAX_LENGTH];
+   char exts[PATH_MAX_LENGTH];
    unsigned type;
+   unsigned type_default;
    unsigned flags;
 } menu_displaylist_info_t;
 
