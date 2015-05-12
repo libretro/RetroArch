@@ -1187,170 +1187,18 @@ static int deferred_push_cursor_manager_list_deferred_query_subsearch(
    return 0;
 }
 
-#if 0
-static int deferred_push_core_information(void *data, void *userdata,
-      const char *path, const char *label, unsigned type)
-{
-   unsigned i;
-   core_info_t *info      = NULL;
-   file_list_t *list      = (file_list_t*)data;
-   file_list_t *menu_list = (file_list_t*)userdata;
-   driver_t *driver       = driver_get_ptr();
-   global_t *global       = global_get_ptr();
-
-   if (!list || !menu_list)
-      return -1;
-
-   info = (core_info_t*)global->core_info_current;
-   menu_list_clear(list);
-
-   if (info->data)
-   {
-      char tmp[PATH_MAX_LENGTH];
-
-      snprintf(tmp, sizeof(tmp), "Core name: %s",
-            info->core_name ? info->core_name : "");
-      menu_list_push(list, tmp, "",
-            MENU_SETTINGS_CORE_INFO_NONE, 0);
-
-      snprintf(tmp, sizeof(tmp), "Core label: %s",
-            info->display_name ? info->display_name : "");
-      menu_list_push(list, tmp, "",
-            MENU_SETTINGS_CORE_INFO_NONE, 0);
-
-      if (info->systemname)
-      {
-         snprintf(tmp, sizeof(tmp), "System name: %s",
-               info->systemname);
-         menu_list_push(list, tmp, "",
-               MENU_SETTINGS_CORE_INFO_NONE, 0);
-      }
-
-      if (info->system_manufacturer)
-      {
-         snprintf(tmp, sizeof(tmp), "System manufacturer: %s",
-               info->system_manufacturer);
-         menu_list_push(list, tmp, "",
-               MENU_SETTINGS_CORE_INFO_NONE, 0);
-      }
-
-      if (info->categories_list)
-      {
-         strlcpy(tmp, "Categories: ", sizeof(tmp));
-         string_list_join_concat(tmp, sizeof(tmp),
-               info->categories_list, ", ");
-         menu_list_push(list, tmp, "",
-               MENU_SETTINGS_CORE_INFO_NONE, 0);
-      }
-
-      if (info->authors_list)
-      {
-         strlcpy(tmp, "Authors: ", sizeof(tmp));
-         string_list_join_concat(tmp, sizeof(tmp),
-               info->authors_list, ", ");
-         menu_list_push(list, tmp, "",
-               MENU_SETTINGS_CORE_INFO_NONE, 0);
-      }
-
-      if (info->permissions_list)
-      {
-         strlcpy(tmp, "Permissions: ", sizeof(tmp));
-         string_list_join_concat(tmp, sizeof(tmp),
-               info->permissions_list, ", ");
-         menu_list_push(list, tmp, "",
-               MENU_SETTINGS_CORE_INFO_NONE, 0);
-      }
-
-      if (info->licenses_list)
-      {
-         strlcpy(tmp, "License(s): ", sizeof(tmp));
-         string_list_join_concat(tmp, sizeof(tmp),
-               info->licenses_list, ", ");
-         menu_list_push(list, tmp, "",
-               MENU_SETTINGS_CORE_INFO_NONE, 0);
-      }
-
-      if (info->supported_extensions_list)
-      {
-         strlcpy(tmp, "Supported extensions: ", sizeof(tmp));
-         string_list_join_concat(tmp, sizeof(tmp),
-               info->supported_extensions_list, ", ");
-         menu_list_push(list, tmp, "",
-               MENU_SETTINGS_CORE_INFO_NONE, 0);
-      }
-
-      if (info->firmware_count > 0)
-      {
-         core_info_list_update_missing_firmware(
-               global->core_info, info->path,
-               settings->system_directory);
-
-         menu_list_push(list, "Firmware: ", "",
-               MENU_SETTINGS_CORE_INFO_NONE, 0);
-         for (i = 0; i < info->firmware_count; i++)
-         {
-            if (info->firmware[i].desc)
-            {
-               snprintf(tmp, sizeof(tmp), "	name: %s",
-                     info->firmware[i].desc ? info->firmware[i].desc : "");
-               menu_list_push(list, tmp, "",
-                     MENU_SETTINGS_CORE_INFO_NONE, 0);
-
-               snprintf(tmp, sizeof(tmp), "	status: %s, %s",
-                     info->firmware[i].missing ?
-                     "missing" : "present",
-                     info->firmware[i].optional ?
-                     "optional" : "required");
-               menu_list_push(list, tmp, "",
-                     MENU_SETTINGS_CORE_INFO_NONE, 0);
-            }
-         }
-      }
-
-      if (info->notes)
-      {
-         snprintf(tmp, sizeof(tmp), "Core notes: ");
-         menu_list_push(list, tmp, "",
-               MENU_SETTINGS_CORE_INFO_NONE, 0);
-
-         for (i = 0; i < info->note_list->size; i++)
-         {
-            snprintf(tmp, sizeof(tmp), " %s",
-                  info->note_list->elems[i].data);
-            menu_list_push(list, tmp, "",
-                  MENU_SETTINGS_CORE_INFO_NONE, 0);
-         }
-      }
-   }
-   else
-      menu_list_push(list,
-            "No information available.", "",
-            MENU_SETTINGS_CORE_OPTION_NONE, 0);
-
-   menu_driver_populate_entries(path, label, type);
-
-   return 0;
-}
-#endif
-
 static int deferred_push_performance_counters(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
-   file_list_t *list      = (file_list_t*)data;
-   file_list_t *menu_list = (file_list_t*)userdata;
+   menu_displaylist_info_t info = {0};
 
-   if (!list || !menu_list)
-      return -1;
+   info.list      = (file_list_t*)data;
+   info.menu_list = (file_list_t*)userdata;
+   info.type      = type;
+   strlcpy(info.path, path, sizeof(info.path));
+   strlcpy(info.label, label, sizeof(info.label));
 
-   menu_list_clear(list);
-   menu_list_push(list, "Frontend Counters", "frontend_counters",
-         MENU_SETTING_ACTION, 0);
-   menu_list_push(list, "Core Counters", "core_counters",
-         MENU_SETTING_ACTION, 0);
-
-   menu_driver_populate_entries(path, label, type);
-
-   return 0;
+   return menu_displaylist_push_list(&info, DISPLAYLIST_PERFCOUNTER_SELECTION);
 }
 
 static int deferred_push_video_shader_parameters_common(void *data, void *userdata,

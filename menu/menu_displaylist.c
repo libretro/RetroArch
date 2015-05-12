@@ -47,6 +47,14 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          ret = menu_entries_parse_list(info->list, info->menu_list,
                info->path, info->label, info->type,
                info->type_default, info->exts, NULL);
+      case DISPLAYLIST_PERFCOUNTER_SELECTION:
+         menu_list_clear(info->list);
+         menu_list_push(info->list, "Frontend Counters", "frontend_counters",
+               MENU_SETTING_ACTION, 0);
+         menu_list_push(info->list, "Core Counters", "core_counters",
+               MENU_SETTING_ACTION, 0);
+
+         menu_driver_populate_entries(info->path, info->label, info->type);
          break;
    }
 
