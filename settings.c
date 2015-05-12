@@ -6484,15 +6484,14 @@ static bool setting_append_list_privacy_options(
  **/
 rarch_setting_t *setting_new(unsigned mask)
 {
-   rarch_setting_t terminator = { ST_NONE };
-   rarch_setting_t* list = NULL;
-   rarch_setting_t* resized_list = NULL;
-   rarch_setting_info_t *list_info = (rarch_setting_info_t*)
-      settings_info_list_new();
+   rarch_setting_t terminator      = { ST_NONE };
+   rarch_setting_t* list           = NULL;
+   rarch_setting_t* resized_list   = NULL;
+   rarch_setting_info_t *list_info = settings_info_list_new();
    if (!list_info)
       return NULL;
 
-   list = (rarch_setting_t*)settings_list_new(list_info->size);
+   list = settings_list_new(list_info->size);
    if (!list)
       goto error;
 
