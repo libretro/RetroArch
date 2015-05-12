@@ -327,8 +327,8 @@ static int menu_entries_push_list(menu_handle_t *menu,
    if (menu && menu->list_settings)
       settings_list_free(menu->list_settings);
 
-   menu->list_settings      = (rarch_setting_t *)setting_new(setting_flags);
-   setting                  = (rarch_setting_t*)menu_setting_find(label);
+   menu->list_settings      = setting_new(setting_flags);
+   setting                  = menu_setting_find(label);
 
    if (!setting)
       return -1;
