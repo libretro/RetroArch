@@ -354,6 +354,111 @@ static int menu_entries_push_list(menu_handle_t *menu,
    return 0;
 }
 
+static void menu_entries_push_horizontal_menu_list_content(
+      file_list_t *list, core_info_t *info, const char* path)
+{
+   unsigned j;
+   struct string_list *str_list = NULL;
+
+   if (!info)
+      return;
+
+   str_list = (struct string_list*)dir_list_new(path,
+         info->supported_extensions, true);
+
+   if (!str_list)
+      return;
+
+   dir_list_sort(str_list, true);
+
+   for (j = 0; j < str_list->size; j++)
+   {
+      const char *name = str_list->elems[j].data;
+      
+      if (!name)
+         continue;
+
+      if (str_list->elems[j].attr.i == RARCH_DIRECTORY)
+         menu_entries_push_horizontal_menu_list_content(list, info, name);
+      else
+         menu_list_push(
+               list, name,
+               "content_actions",
+               MENU_FILE_CONTENTLIST_ENTRY, 0);
+   }
+
+   string_list_free(str_list);
+}
+
+static int menu_entries_push_horizontal_menu_list_cores(
+      file_list_t *list, core_info_t *info,
+      const char *path, bool push_databases_enable)
+{
+   size_t i;
+   settings_t *settings     = config_get_ptr();
+
+   if (!info->supports_no_game)
+      menu_entries_push_horizontal_menu_list_content(list, info, path);
+   else
+      menu_list_push(list, info->display_name, "content_actions",
+            MENU_FILE_CONTENTLIST_ENTRY, 0);
+
+   if (!push_databases_enable)
+      return 0;
+   if (!info->databases_list)
+      return 0;
+
+   for (i = 0; i < info->databases_list->size; i++)
+   {
+      char db_path[PATH_MAX_LENGTH];
+      struct string_list *str_list = (struct string_list*)info->databases_list;
+
+      if (!str_list)
+         continue;
+
+      fill_pathname_join(db_path, settings->content_database,
+            str_list->elems[i].data, sizeof(db_path));
+      strlcat(db_path, ".rdb", sizeof(db_path));
+
+      if (!path_file_exists(db_path))
+         continue;
+
+      menu_list_push(list, path_basename(db_path), "core_database",
+            MENU_FILE_RDB, 0);
+   }
+
+   return 0;
+}
+
+static int menu_entries_push_horizontal_menu_list(
+      menu_handle_t *menu, file_list_t *list,
+      const char *path, const char *label,
+      unsigned type)
+{
+   core_info_t           *info = NULL;
+   global_t            *global = global_get_ptr();
+   core_info_list_t *info_list = (core_info_list_t*)global->core_info;
+   settings_t *settings        = config_get_ptr();
+
+   if (!info_list)
+      return -1;
+
+   info = (core_info_t*)&info_list->list[menu->categories.selection_ptr - 1];
+
+   if (!info)
+      return -1;
+
+   strlcpy(settings->libretro, info->path, sizeof(settings->libretro));
+
+   menu_list_clear(list);
+
+   menu_entries_push_horizontal_menu_list_cores(list, info, settings->core_assets_directory, true);
+
+   menu_list_populate_generic(list, path, label, type);
+
+   return 0;
+}
+
 int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
 {
    int ret = 0;

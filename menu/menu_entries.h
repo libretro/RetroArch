@@ -45,11 +45,6 @@ bool menu_entries_init(menu_handle_t *menu);
 
 int menu_entries_setting_set_flags(rarch_setting_t *setting);
 
-int menu_entries_push_horizontal_menu_list(menu_handle_t *menu,
-      file_list_t *list,
-      const char *path, const char *label,
-      unsigned menu_type);
-
 #ifdef __cplusplus
 }
 #endif
