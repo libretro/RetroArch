@@ -173,7 +173,6 @@ static int menu_displaylist_parse(
    if (!*dir)
    {
       menu_displaylist_parse_drive_list(list);
-      menu_driver_populate_entries(dir, label, type);
       return 0;
    }
 
@@ -306,7 +305,7 @@ static int menu_displaylist_parse(
       menu_list_sort_on_alt(list);
    }
 
-   menu_list_populate_generic(list, dir, label, type);
+   menu_list_refresh(list);
 
    return 0;
 }
@@ -498,6 +497,8 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          ret = menu_displaylist_parse(info->list, info->menu_list,
                info->path, info->label, info->type,
                info->type_default, info->exts, info->setting);
+         if (ret == 0)
+            menu_driver_populate_entries(info->path, info->label, info->type);
          break;
       case DISPLAYLIST_DATABASE_QUERY:
          menu_list_clear(info->list);

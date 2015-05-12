@@ -86,6 +86,8 @@ void menu_list_get_alt_at_offset(const file_list_t *list, size_t idx,
 void menu_list_set_alt_at_offset(file_list_t *list, size_t idx,
       const char *alt);
 
+void menu_list_refresh(file_list_t *list);
+
 int menu_list_populate_generic(file_list_t *list,
       const char *path, const char *label, unsigned type);
 

@@ -124,7 +124,7 @@ static void menu_list_build_scroll_indices(file_list_t *list)
  *
  * Ensure it doesn't overflow.
  **/
-static void menu_list_refresh(file_list_t *list)
+void menu_list_refresh(file_list_t *list)
 {
    menu_navigation_t *nav   = menu_navigation_get_ptr();
    menu_list_t   *menu_list = menu_list_get_ptr();
