@@ -28,6 +28,7 @@ enum
 {
    DISPLAYLIST_NONE = 0,
    DISPLAYLIST_MAIN_MENU,
+   DISPLAYLIST_SETTINGS,
 };
 
 typedef struct menu_displaylist_info

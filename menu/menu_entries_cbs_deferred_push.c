@@ -1550,12 +1550,19 @@ static int deferred_push_settings_subgroup(void *data, void *userdata,
 static int deferred_push_category(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
+   menu_displaylist_info_t info = {0};
    menu_handle_t *menu = menu_driver_get_ptr();
 
    if (!menu)
       return -1;
-   return menu_entries_push_list(menu, (file_list_t*)data,
-         path, label, type, SL_FLAG_ALL_SETTINGS);
+
+   info.list  = (file_list_t*)data;
+   info.type  = type;
+   info.flags = SL_FLAG_ALL_SETTINGS;
+   strlcpy(info.path,  path, sizeof(info.path));
+   strlcpy(info.label, label, sizeof(info.label));
+
+   return menu_displaylist_push_list(&info, DISPLAYLIST_SETTINGS);
 }
 
 static int deferred_push_video_options(void *data, void *userdata,

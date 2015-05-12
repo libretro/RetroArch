@@ -19,9 +19,9 @@
 #include "menu_displaylist.h"
 #include "menu_navigation.h"
 
-
 int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
 {
+   int ret = 0;
    menu_handle_t    *menu = menu_driver_get_ptr();
    menu_list_t *menu_list = menu_list_get_ptr();
    menu_navigation_t *nav = menu_navigation_get_ptr();
@@ -36,12 +36,16 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          menu_list_push(menu_list->menu_stack,
                info->path, info->label, info->type, info->flags);
          menu_navigation_clear(nav, true);
-         menu_entries_push_list(menu, info->list,
+         ret = menu_entries_push_list(menu, info->list,
+               info->path, info->label, info->type, info->flags);
+         break;
+      case DISPLAYLIST_SETTINGS:
+         ret = menu_entries_push_list(menu, info->list,
                info->path, info->label, info->type, info->flags);
          break;
    }
 
-   return 0;
+   return ret;
 }
 
 int menu_displaylist_deferred_push(menu_displaylist_info_t *info)
