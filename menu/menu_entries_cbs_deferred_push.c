@@ -1711,52 +1711,11 @@ static int deferred_push_disk_options(void *data, void *userdata,
 }
 
 #ifdef HAVE_NETWORKING
-static void print_buf_lines(file_list_t *list, char *buf, int buf_size,
-      unsigned type)
-{
-   int i;
-   char c, *line_start = buf;
-
-   for (i = 0; i < buf_size; i++)
-   {
-      size_t ln;
-
-      /* The end of the buffer, print the last bit */
-      if (*(buf + i) == '\0')
-         break;
-
-      if (*(buf + i) != '\n')
-         continue;
-
-      /* Found a line ending, print the line and compute new line_start */
-
-      /* Save the next char  */
-      c = *(buf + i + 1);
-      /* replace with \0 */
-      *(buf + i + 1) = '\0';
-
-      /* We need to strip the newline. */
-      ln = strlen(line_start) - 1;
-      if (line_start[ln] == '\n')
-         line_start[ln] = '\0';
-
-      menu_list_push(list, line_start, "",
-            type, 0);
-
-      /* Restore the saved char */
-      *(buf + i + 1) = c;
-      line_start = buf + i + 1;
-   }
-   /* If the buffer was completely full, and didn't end with a newline, just
-    * ignore the partial last line.
-    */
-}
-
 /* HACK - we have to find some way to pass state inbetween
  * function pointer callback functions that don't necessarily
  * call each other. */
-static char *core_buf;
-static size_t core_len;
+char *core_buf;
+size_t core_len;
 
 int cb_core_updater_list(void *data_, size_t len)
 {
@@ -1787,14 +1746,15 @@ int cb_core_updater_list(void *data_, size_t len)
 static int deferred_push_core_updater_list(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
-   file_list_t *list      = (file_list_t*)data;
-   menu_list_clear(list);
+   menu_displaylist_info_t info = {0};
 
-   print_buf_lines(list, core_buf, core_len, MENU_FILE_DOWNLOAD_CORE);
+   info.list         = (file_list_t*)data;
+   info.menu_list    = (file_list_t*)userdata;
+   info.type         = type;
+   strlcpy(info.path, path, sizeof(info.path));
+   strlcpy(info.label, label, sizeof(info.label));
 
-   menu_list_populate_generic(list, path, label, type);
-
-   return 0;
+   return menu_displaylist_push_list(&info, DISPLAYLIST_CORES_UPDATER);
 }
 #endif
 

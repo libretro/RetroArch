@@ -28,6 +28,52 @@
 #include "../performance.h"
 #include "../settings.h"
 
+#ifdef HAVE_NETWORKING
+extern char *core_buf;
+extern size_t core_len;
+
+static void print_buf_lines(file_list_t *list, char *buf, int buf_size,
+      unsigned type)
+{
+   int i;
+   char c, *line_start = buf;
+
+   for (i = 0; i < buf_size; i++)
+   {
+      size_t ln;
+
+      /* The end of the buffer, print the last bit */
+      if (*(buf + i) == '\0')
+         break;
+
+      if (*(buf + i) != '\n')
+         continue;
+
+      /* Found a line ending, print the line and compute new line_start */
+
+      /* Save the next char  */
+      c = *(buf + i + 1);
+      /* replace with \0 */
+      *(buf + i + 1) = '\0';
+
+      /* We need to strip the newline. */
+      ln = strlen(line_start) - 1;
+      if (line_start[ln] == '\n')
+         line_start[ln] = '\0';
+
+      menu_list_push(list, line_start, "",
+            type, 0);
+
+      /* Restore the saved char */
+      *(buf + i + 1) = c;
+      line_start = buf + i + 1;
+   }
+   /* If the buffer was completely full, and didn't end with a newline, just
+    * ignore the partial last line.
+    */
+}
+#endif
+
 static void menu_displaylist_push_perfcounter(
       menu_displaylist_info_t *info,
       const struct retro_perf_counter **counters,
@@ -605,6 +651,11 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
 
          menu_driver_populate_entries(
                info->path, info->label, info->type);
+         break;
+      case DISPLAYLIST_CORES_UPDATER:
+         menu_list_clear(info->list);
+         print_buf_lines(info->list, core_buf, core_len, MENU_FILE_DOWNLOAD_CORE);
+         menu_list_populate_generic(info->list, info->path, info->label, info->type);
          break;
    }
 
