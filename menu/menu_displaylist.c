@@ -207,8 +207,6 @@ static int menu_displaylist_parse(menu_displaylist_info_t *info)
 
    (void)device;
 
-   menu_list_clear(info->list);
-
    if (!*info->path)
    {
       menu_displaylist_parse_drive_list(info->list);
@@ -346,8 +344,6 @@ static int menu_displaylist_parse(menu_displaylist_info_t *info)
       }
       menu_list_sort_on_alt(info->list);
    }
-
-   menu_list_refresh(info->list);
 
    return 0;
 }
@@ -650,9 +646,13 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
       case DISPLAYLIST_RECORD_CONFIG_FILES:
       case DISPLAYLIST_CONFIG_FILES:
       case DISPLAYLIST_CONTENT_HISTORY:
+         menu_list_clear(info->list);
          ret = menu_displaylist_parse(info);
          if (ret == 0)
-            need_push = true;
+         {
+            need_refresh = true;
+            need_push    = true;
+         }
          break;
       case DISPLAYLIST_CORE_OPTIONS:
          menu_list_clear(info->list);
