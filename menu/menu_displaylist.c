@@ -74,6 +74,7 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          ret = menu_entries_push_list(menu, info->list,
                info->path, info->label, info->type, info->flags);
          break;
+      case DISPLAYLIST_DEFAULT:
       case DISPLAYLIST_CORES:
       case DISPLAYLIST_CORES_DETECTED:
       case DISPLAYLIST_SHADER_PASS:
@@ -92,7 +93,7 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
       case DISPLAYLIST_CONTENT_HISTORY:
          ret = menu_entries_parse_list(info->list, info->menu_list,
                info->path, info->label, info->type,
-               info->type_default, info->exts, NULL);
+               info->type_default, info->exts, info->setting);
          break;
       case DISPLAYLIST_PERFCOUNTER_SELECTION:
          menu_list_clear(info->list);

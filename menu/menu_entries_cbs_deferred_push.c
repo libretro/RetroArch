@@ -2197,35 +2197,28 @@ static int deferred_push_detect_core_list(void *data, void *userdata,
 static int deferred_push_default(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
-   char ext_buf[PATH_MAX_LENGTH];
-   const char *exts         = NULL;
-   file_list_t *list        = (file_list_t*)data;
-   file_list_t *menu_list   = (file_list_t*)userdata;
-   rarch_setting_t *setting = (rarch_setting_t*)
-      menu_setting_find(label);
+   menu_displaylist_info_t info = {0};
    global_t *global         = global_get_ptr();
 
-   if (!list || !menu_list)
-      return -1;
+   info.list         = (file_list_t*)data;
+   info.menu_list    = (file_list_t*)userdata;
+   info.type         = type;
+   info.type_default = MENU_FILE_PLAIN;
+   strlcpy(info.path, path, sizeof(info.path));
+   strlcpy(info.label, label, sizeof(info.label));
+   info.setting      = menu_setting_find(label);
 
-   if (setting && setting->browser_selection_type == ST_DIR)
-      exts = ""; /* we ignore files anyway */
+   if (info.setting && info.setting->browser_selection_type == ST_DIR) {}
    else if (global->menu.info.valid_extensions)
    {
-      exts = ext_buf;
       if (*global->menu.info.valid_extensions)
-         snprintf(ext_buf, sizeof(ext_buf), "%s",
+         snprintf(info.exts, sizeof(info.exts), "%s",
                global->menu.info.valid_extensions);
-      else
-         *ext_buf = '\0';
    }
    else
-      exts = global->system.valid_extensions;
+      strlcpy(info.exts, global->system.valid_extensions, sizeof(info.exts));
 
-   menu_entries_parse_list(list, menu_list, path, label,
-         type, MENU_FILE_PLAIN, exts, setting);
-
-   return 0;
+   return menu_displaylist_push_list(&info, DISPLAYLIST_DEFAULT);
 }
 
 void menu_entries_cbs_init_bind_deferred_push(menu_file_list_cbs_t *cbs,

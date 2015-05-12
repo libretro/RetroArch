@@ -19,6 +19,7 @@
 #include <stdint.h>
 #include <retro_miscellaneous.h>
 #include "menu_list.h"
+#include "menu_setting.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -29,6 +30,7 @@ enum
    DISPLAYLIST_NONE = 0,
    DISPLAYLIST_MAIN_MENU,
    DISPLAYLIST_SETTINGS,
+   DISPLAYLIST_DEFAULT,
    DISPLAYLIST_CORES,
    DISPLAYLIST_CORES_DETECTED,
    DISPLAYLIST_PERFCOUNTER_SELECTION,
@@ -60,6 +62,7 @@ typedef struct menu_displaylist_info
    unsigned type;
    unsigned type_default;
    unsigned flags;
+   rarch_setting_t *setting;
 } menu_displaylist_info_t;
 
 int menu_displaylist_deferred_push(menu_displaylist_info_t *info);
