@@ -49,7 +49,7 @@ function createConfig()
 
 function setupFileSystem()
 {
-   console.log("setupFileSystem");	
+   console.log("setupFileSystem");
 
    if(localStorage.getItem("fs_inited")!="true")
    {
@@ -59,8 +59,11 @@ function setupFileSystem()
 
       FS.mount(BFS, {root: '/'}, '/home');
 
-      localStorage.setItem("fs_inited","true");
-      console.log('Filesystem initialized: ' + localStorage.getItem("fs_inited"));		  		
+      console.log('Filesystem initialized');
+   }
+   else
+   {
+      console.log('Filesystem already initialized');
    }
 }
 
@@ -69,7 +72,8 @@ function runEmulator(files)
 
    if (Modernizr.localstorage)
    {
-      setupFileSystem();
+      if(firstRun)
+         setupFileSystem();
    }
 
    setupFolders();
@@ -99,7 +103,29 @@ function runEmulator(files)
 function uploadContent(data, name)
 {
    var dataView = new Uint8Array(data);
-   Module.FS_createDataFile('/', name, dataView, true, false);	
+   FS.createDataFile('/', name, dataView, true, false);
+}
+
+function copyFile(src,dest)
+{
+   console.log('copying: ' + src + ' to: ' + dest);
+   var contents = FS.readFile(src,{ encoding: 'binary' });
+   console.log(contents);
+   FS.writeFile(dest,contents,{ encoding: 'binary' });
+}
+
+function uploadData(files, path)
+{
+   count = files.length;
+   for (var i = 0; i < files.length; i++)
+   {
+      filereader = new FileReader();
+      filereader.file_name = files[i].name;
+      filereader.readAsArrayBuffer(files[i]);
+      filereader.onload = function(){uploadContent(this.result, '/tmp/' + this.file_name)};
+      filereader.onloadend = function(){copyFile('/tmp/' + this.file_name,'/home/web_user/retroarch/' + path + '/' + this.file_name)};
+
+    }
 }
 
 function initFromData()

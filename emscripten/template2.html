@@ -33,16 +33,17 @@
 <div id="accordion" class="emscripten">
   <h3>Settings</h3>
   <div class="emscripten">
-
-
-
-      <button id="content" onclick="document.getElementById('rom').click()">Upload content</button>
+      <button id="content" onclick="document.getElementById('rom').click()">Start</button>
       <input style="display: none" type="file" id="rom" name="upload" onclick="document.getElementById('content').click();" onchange="runEmulator(event.target.files);" multiple /></p>
-      <input type="checkbox" id="resize"><label for="resize">Resize canvas</label></p>	  
+
+      <button id="saves" onclick="document.getElementById('savefiles').click()">Upload Savefiles</button>
+      <input style="display: none" type="file" id="savefiles" name="upload" onclick="document.getElementById('saves').click();" onchange="uploadData(event.target.files,'saves');" multiple /></p>
+
+      <button id="states" onclick="document.getElementById('savestates').click()">Upload Savestates</button>
+      <input style="display: none" type="file" id="savestates" name="upload" onclick="document.getElementById('states').click();" onchange="uploadData(event.target.files,'states');" multiple /></p>
+
       <input type="checkbox" id="pointerLock" checked><label for="pointerLock">Lock/hide mouse pointer</label></p>
       <input type="button" value="Fullscreen" onclick="Module.requestFullScreen(document.getElementById('pointerLock').checked, document.getElementById('resize').checked)"></p>
-      <input type="checkbox" id="vsync"><label for="vsync" id="vsync-label">Enable V-sync (can only be done before loading game)</label></p>
-      <input type="textbox" id="latency" size="3" maxlength="3" value="96"> <label for="latency" id="latency-label">Audio latency (ms) (increase if you hear pops at fullspeed, can only be done before loading game)</label></p>
   </div>
   <h3>Console</h3>
   <div class="emscripten">
