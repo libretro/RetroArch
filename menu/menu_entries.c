@@ -48,7 +48,7 @@ int menu_entries_setting_set_flags(rarch_setting_t *setting)
    return 0;
 }
 
-static void menu_entries_content_list_push(
+static void menu_entries_push_horizontal_menu_list_content(
       file_list_t *list, core_info_t *info, const char* path)
 {
    unsigned j;
@@ -73,7 +73,7 @@ static void menu_entries_content_list_push(
          continue;
 
       if (str_list->elems[j].attr.i == RARCH_DIRECTORY)
-         menu_entries_content_list_push(list, info, name);
+         menu_entries_push_horizontal_menu_list_content(list, info, name);
       else
          menu_list_push(
                list, name,
@@ -92,7 +92,7 @@ static int menu_entries_push_horizontal_menu_list_cores(
    settings_t *settings     = config_get_ptr();
 
    if (!info->supports_no_game)
-      menu_entries_content_list_push(list, info, path);
+      menu_entries_push_horizontal_menu_list_content(list, info, path);
    else
       menu_list_push(list, info->display_name, "content_actions",
             MENU_FILE_CONTENTLIST_ENTRY, 0);

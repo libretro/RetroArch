@@ -333,9 +333,6 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          menu_list_push(menu_list->menu_stack,
                info->path, info->label, info->type, info->flags);
          menu_navigation_clear(nav, true);
-         ret = menu_entries_push_list(menu, info->list,
-               info->path, info->label, info->type, info->flags);
-         break;
       case DISPLAYLIST_SETTINGS:
          ret = menu_entries_push_list(menu, info->list,
                info->path, info->label, info->type, info->flags);
