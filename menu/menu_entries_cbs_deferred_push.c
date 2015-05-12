@@ -1775,36 +1775,15 @@ static int deferred_push_history_list(void *data, void *userdata,
 static int deferred_push_content_actions(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
-   file_list_t *list      = (file_list_t*)data;
-   menu_handle_t *menu    = menu_driver_get_ptr();
-   global_t *global       = global_get_ptr();
-   if (!menu)
-      return -1;
+   menu_displaylist_info_t info = {0};
 
-   (void)userdata;
+   info.list         = (file_list_t*)data;
+   info.menu_list    = (file_list_t*)userdata;
+   info.type         = type;
+   strlcpy(info.path, path, sizeof(info.path));
+   strlcpy(info.label, label, sizeof(info.label));
 
-   if (!list)
-      return -1;
-
-   menu_list_clear(list);
-
-   if (global->main_is_init && !global->libretro_dummy &&
-         !strcmp(menu->deferred_path, global->fullpath))
-   {
-      menu_list_push(list, "Resume", "file_load_or_resume", MENU_SETTING_ACTION_RUN, 0);
-      menu_list_push(list, "Save State", "savestate", MENU_SETTING_ACTION_SAVESTATE, 0);
-      menu_list_push(list, "Load State", "loadstate", MENU_SETTING_ACTION_LOADSTATE, 0);
-      menu_list_push(list, "Core Information", "core_information", MENU_SETTING_ACTION_CORE_INFORMATION, 0);
-      menu_list_push(list, "Options", "options", MENU_SETTING_ACTION_CORE_OPTIONS, 0);
-      menu_list_push(list, "Take Screenshot", "take_screenshot", MENU_SETTING_ACTION_SCREENSHOT, 0);
-      menu_list_push(list, "Reset", "restart_content", MENU_SETTING_ACTION_RESET, 0);
-   }
-   else
-      menu_list_push(list, "Run", "file_load_or_resume", MENU_SETTING_ACTION_RUN, 0);
-
-   menu_list_populate_generic(list, path, label, type);
-
-   return 0;
+   return menu_displaylist_push_list(&info, DISPLAYLIST_HORIZONTAL_CONTENT_ACTIONS);
 }
 
 int deferred_push_content_list(void *data, void *userdata,

@@ -561,6 +561,30 @@ static int menu_displaylist_parse_cores(menu_displaylist_info_t *info)
    return 0;
 }
 
+int menu_displaylist_parse_horizontal_content_actions(menu_displaylist_info_t *info)
+{
+   menu_handle_t *menu    = menu_driver_get_ptr();
+   global_t *global       = global_get_ptr();
+   if (!menu)
+      return -1;
+
+   if (global->main_is_init && !global->libretro_dummy &&
+         !strcmp(menu->deferred_path, global->fullpath))
+   {
+      menu_list_push(info->list, "Resume", "file_load_or_resume", MENU_SETTING_ACTION_RUN, 0);
+      menu_list_push(info->list, "Save State", "savestate", MENU_SETTING_ACTION_SAVESTATE, 0);
+      menu_list_push(info->list, "Load State", "loadstate", MENU_SETTING_ACTION_LOADSTATE, 0);
+      menu_list_push(info->list, "Core Information", "core_information", MENU_SETTING_ACTION_CORE_INFORMATION, 0);
+      menu_list_push(info->list, "Options", "options", MENU_SETTING_ACTION_CORE_OPTIONS, 0);
+      menu_list_push(info->list, "Take Screenshot", "take_screenshot", MENU_SETTING_ACTION_SCREENSHOT, 0);
+      menu_list_push(info->list, "Reset", "restart_content", MENU_SETTING_ACTION_RESET, 0);
+   }
+   else
+      menu_list_push(info->list, "Run", "file_load_or_resume", MENU_SETTING_ACTION_RUN, 0);
+
+   return 0;
+}
+
 int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
 {
    int ret = 0;
@@ -583,6 +607,11 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
                info->path, info->label, info->type, info->flags);
          break;
       case DISPLAYLIST_HORIZONTAL:
+         break;
+      case DISPLAYLIST_HORIZONTAL_CONTENT_ACTIONS:
+         menu_list_clear(info->list);
+         ret = menu_displaylist_parse_horizontal_content_actions(info);
+         menu_list_populate_generic(info->list, info->path, info->label, info->type);
          break;
       case DISPLAYLIST_DEFAULT:
       case DISPLAYLIST_CORES:
