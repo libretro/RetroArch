@@ -195,7 +195,7 @@ static void menu_displaylist_parse_drive_list(file_list_t *list)
 #endif
 }
 
-static int menu_displaylist_parse(menu_displaylist_info_t *info)
+static int menu_displaylist_parse(menu_displaylist_info_t *info, bool *need_sort)
 {
    size_t i, list_size;
    bool path_is_compressed, push_dir;
@@ -342,7 +342,7 @@ static int menu_displaylist_parse(menu_displaylist_info_t *info)
                   core_path, display_name, sizeof(display_name)))
             menu_list_set_alt_at_offset(info->list, i, display_name);
       }
-      menu_list_sort_on_alt(info->list);
+      *need_sort = true;
    }
 
    return 0;
@@ -601,6 +601,7 @@ static int menu_displaylist_parse_core_options(menu_displaylist_info_t *info)
 int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
 {
    int ret = 0;
+   bool need_sort    = false;
    bool need_refresh = false;
    bool need_push    = false;
    menu_handle_t    *menu = menu_driver_get_ptr();
@@ -647,7 +648,7 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
       case DISPLAYLIST_CONFIG_FILES:
       case DISPLAYLIST_CONTENT_HISTORY:
          menu_list_clear(info->list);
-         ret = menu_displaylist_parse(info);
+         ret = menu_displaylist_parse(info, &need_sort);
          if (ret == 0)
          {
             need_refresh = true;
@@ -666,8 +667,7 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
 
          ret = menu_displaylist_parse_cores(info);
 
-         menu_list_sort_on_alt(info->list);
-
+         need_sort    = true;
          need_refresh = true;
          need_push    = true;
          break;
@@ -685,8 +685,8 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
       case DISPLAYLIST_DATABASE_QUERY:
          menu_list_clear(info->list);
          menu_database_populate_query(info->list, info->path, (info->path_c[0] == '\0') ? NULL : info->path_c);
-         menu_list_sort_on_alt(info->list);
 
+         need_sort    = true;
          need_refresh = true;
          need_push    = true;
          strlcpy(info->path, info->path_b, sizeof(info->path));
@@ -722,6 +722,9 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          need_refresh = true;
          break;
    }
+
+   if (need_sort)
+      menu_list_sort_on_alt(info->list);
 
    if (need_push)
       menu_list_populate_generic(info->list,
