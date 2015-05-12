@@ -1920,17 +1920,35 @@ int deferred_push_content_list(void *data, void *userdata,
 static int deferred_push_database_manager_list(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
+   menu_displaylist_info_t info = {0};
    settings_t *settings   = config_get_ptr();
-   return menu_entries_parse_list((file_list_t*)data, (file_list_t*)userdata, settings->content_database, label, type,
-         MENU_FILE_RDB, "rdb", NULL);
+
+   info.list         = (file_list_t*)data;
+   info.menu_list    = (file_list_t*)userdata;
+   info.type         = type;
+   info.type_default = MENU_FILE_RDB;
+   strlcpy(info.exts, "rdb", sizeof(info.exts));
+   strlcpy(info.path, settings->content_database, sizeof(info.path));
+   strlcpy(info.label, label, sizeof(info.label));
+
+   return menu_displaylist_push_list(&info, DISPLAYLIST_DATABASES);
 }
 
 static int deferred_push_cursor_manager_list(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
+   menu_displaylist_info_t info = {0};
    settings_t *settings   = config_get_ptr();
-   return menu_entries_parse_list((file_list_t*)data, (file_list_t*)userdata, settings->cursor_directory, label, type,
-         MENU_FILE_CURSOR, "dbc", NULL);
+
+   info.list         = (file_list_t*)data;
+   info.menu_list    = (file_list_t*)userdata;
+   info.type         = type;
+   info.type_default = MENU_FILE_CURSOR;
+   strlcpy(info.exts, "dbc", sizeof(info.exts));
+   strlcpy(info.path, settings->cursor_directory, sizeof(info.path));
+   strlcpy(info.label, label, sizeof(info.label));
+
+   return menu_displaylist_push_list(&info, DISPLAYLIST_DATABASE_CURSORS);
 }
 
 static int deferred_push_core_list(void *data, void *userdata,
