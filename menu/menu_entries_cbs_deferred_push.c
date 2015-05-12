@@ -967,39 +967,15 @@ done:
 static int deferred_push_core_list_deferred(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
-   unsigned i;
-   size_t list_size = 0;
-   const core_info_t *info = NULL;
-   file_list_t *list       = NULL;
-   file_list_t *menu_list  = NULL;
-   global_t *global        = global_get_ptr();
-   menu_handle_t *menu     = menu_driver_get_ptr();
-   if (!menu)
-      return -1;
+   menu_displaylist_info_t info = {0};
 
-   list      = (file_list_t*)data;
-   menu_list = (file_list_t*)userdata;
+   info.list      = (file_list_t*)data;
+   info.menu_list = (file_list_t*)userdata;
+   info.type      = type;
+   strlcpy(info.path,   path, sizeof(info.path));
+   strlcpy(info.label, label, sizeof(info.label));
 
-   if (!list || !menu_list)
-      return -1;
-
-   menu_list_clear(list);
-   core_info_list_get_supported_cores(global->core_info,
-         menu->deferred_path, &info, &list_size);
-
-   for (i = 0; i < list_size; i++)
-   {
-      menu_list_push(list, info[i].path, "",
-            MENU_FILE_CORE, 0);
-      menu_list_set_alt_at_offset(list, i,
-            info[i].display_name);
-   }
-
-   menu_list_sort_on_alt(list);
-
-   menu_list_populate_generic(list, path, label, type);
-
-   return 0;
+   return menu_displaylist_push_list(&info, DISPLAYLIST_CORES_ALL);
 }
 
 static int deferred_push_database_manager_list_deferred(void *data, void *userdata,

@@ -491,6 +491,30 @@ static int menu_displaylist_parse_historylist(menu_displaylist_info_t *info)
    return 0;
 }
 
+static int menu_displaylist_parse_cores(menu_displaylist_info_t *info)
+{
+   unsigned i;
+   size_t list_size = 0;
+   const core_info_t *core_info = NULL;
+   global_t *global        = global_get_ptr();
+   menu_handle_t *menu     = menu_driver_get_ptr();
+   if (!menu)
+      return -1;
+
+   core_info_list_get_supported_cores(global->core_info,
+         menu->deferred_path, &core_info, &list_size);
+
+   for (i = 0; i < list_size; i++)
+   {
+      menu_list_push(info->list, core_info[i].path, "",
+            MENU_FILE_CORE, 0);
+      menu_list_set_alt_at_offset(info->list, i,
+            core_info[i].display_name);
+   }
+
+   return 0;
+}
+
 int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
 {
    int ret = 0;
@@ -536,6 +560,14 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
                info->type_default, info->exts, info->setting);
          if (ret == 0)
             menu_driver_populate_entries(info->path, info->label, info->type);
+         break;
+      case DISPLAYLIST_CORES_ALL:
+         menu_list_clear(info->list);
+
+         ret = menu_displaylist_parse_cores(info);
+
+         menu_list_sort_on_alt(info->list);
+         menu_list_populate_generic(info->list, info->path, info->label, info->type);
          break;
       case DISPLAYLIST_HISTORY:
          menu_list_clear(info->list);
