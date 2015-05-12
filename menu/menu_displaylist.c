@@ -340,6 +340,8 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          ret = menu_entries_push_list(menu, info->list,
                info->path, info->label, info->type, info->flags);
          break;
+      case DISPLAYLIST_HORIZONTAL:
+         break;
       case DISPLAYLIST_DEFAULT:
       case DISPLAYLIST_CORES:
       case DISPLAYLIST_CORES_DETECTED:
