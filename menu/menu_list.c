@@ -14,13 +14,14 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <string.h>
+
+#include <retro_inline.h>
+
 #include "../driver.h"
 #include "menu_common_list.h"
 #include "menu_list.h"
 #include "menu_navigation.h"
-#include "menu_entries.h"
-#include <string.h>
-#include <retro_inline.h>
 
 menu_list_t *menu_list_get_ptr(void)
 {

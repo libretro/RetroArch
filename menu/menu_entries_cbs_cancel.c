@@ -18,7 +18,6 @@
 #include "menu_entries_cbs.h"
 #include "menu_list.h"
 #include "menu_setting.h"
-#include "menu_entries.h"
 
 static int action_cancel_lookup_setting(const char *path,
       const char *label, unsigned type, size_t idx)

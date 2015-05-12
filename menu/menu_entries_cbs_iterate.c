@@ -20,11 +20,11 @@
 #include "menu_entries_cbs.h"
 #include "menu_setting.h"
 #include "menu_input.h"
-#include "menu_entries.h"
 #include "menu_shader.h"
 #include "menu_navigation.h"
 
 #include "../retroarch.h"
+#include "../settings.h"
 
 #include "../input/input_autodetect.h"
 

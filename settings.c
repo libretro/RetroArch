@@ -36,7 +36,7 @@
 #endif
 
 #ifdef HAVE_MENU
-#include "menu/menu_entries.h"
+#include "menu/menu_setting.h"
 #endif
 
 /**

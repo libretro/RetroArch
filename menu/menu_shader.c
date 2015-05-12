@@ -14,10 +14,15 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "menu_shader.h"
-#include "menu_entries.h"
+#include <string.h>
+
+#include <compat/strl.h>
 #include <file/file_path.h>
 
+#include "menu_shader.h"
+#include "../configuration.h"
+#include "../runloop.h"
+#include "../settings.h"
 
 /**
  * menu_shader_manager_init:

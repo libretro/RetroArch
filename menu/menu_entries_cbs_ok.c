@@ -17,7 +17,6 @@
 #include "menu.h"
 #include "menu_entries_cbs.h"
 #include "menu_setting.h"
-#include "menu_entries.h"
 #include "menu_shader.h"
 #include "menu_navigation.h"
 

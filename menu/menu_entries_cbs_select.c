@@ -14,7 +14,6 @@
  */
 
 #include "menu.h"
-#include "menu_entries.h"
 #include "menu_entries_cbs.h"
 
 static int action_select_default(unsigned type, const char *label,

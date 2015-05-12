@@ -17,11 +17,14 @@
 #ifndef _MENU_SETTING_H
 #define _MENU_SETTING_H
 
+#include "menu.h"
 #include "../settings_list.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+int menu_setting_set_flags(rarch_setting_t *setting);
 
 int menu_setting_generic(rarch_setting_t *setting);
 

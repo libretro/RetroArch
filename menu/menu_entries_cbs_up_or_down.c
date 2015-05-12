@@ -14,7 +14,6 @@
  */
 
 #include "menu.h"
-#include "menu_entries.h"
 #include "menu_navigation.h"
 #include "menu_entries_cbs.h"
 

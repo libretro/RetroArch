@@ -18,10 +18,10 @@
 #include "menu_displaylist.h"
 #include "menu_entries_cbs.h"
 #include "menu_setting.h"
-#include "menu_entries.h"
 
 #include "../file_ext.h"
 #include "../retroarch.h"
+#include "../settings.h"
 #include "../performance.h"
 
 #ifdef HAVE_LIBRETRODB
@@ -1287,7 +1287,7 @@ static int deferred_push_settings(void *data, void *userdata,
       {
          if (setting->type == ST_GROUP)
             menu_list_push(list, setting->short_description,
-                  setting->name, menu_entries_setting_set_flags(setting), 0);
+                  setting->name, menu_setting_set_flags(setting), 0);
       }
    }
    else
@@ -1387,7 +1387,7 @@ static int deferred_push_settings_subgroup(void *data, void *userdata,
 
       strlcpy(group_label, setting->name, sizeof(group_label));
       menu_list_push(list, setting->short_description,
-            group_label, menu_entries_setting_set_flags(setting), 0);
+            group_label, menu_setting_set_flags(setting), 0);
    }
 
    menu_driver_populate_entries(path, label, type);

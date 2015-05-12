@@ -22,10 +22,11 @@
 
 #include "menu.h"
 #include "menu_display.h"
-#include "menu_entries.h"
 #include "menu_displaylist.h"
 #include "menu_navigation.h"
+
 #include "../performance.h"
+#include "../settings.h"
 
 static void menu_displaylist_push_perfcounter(
       menu_displaylist_info_t *info,
@@ -346,7 +347,7 @@ static int menu_entries_push_list(menu_handle_t *menu,
          continue;
 
       menu_list_push(list, setting->short_description,
-            setting->name, menu_entries_setting_set_flags(setting), 0);
+            setting->name, menu_setting_set_flags(setting), 0);
    }
 
    menu_driver_populate_entries(path, label, type);

@@ -16,10 +16,11 @@
 #include <file/file_path.h>
 #include "menu.h"
 #include "menu_entries_cbs.h"
-#include "menu_entries.h"
 #include "menu_shader.h"
+#include "menu_setting.h"
 
 #include "../performance.h"
+#include "../settings.h"
 
 static void menu_action_setting_disp_set_label_cheat_num_passes(
       file_list_t* list,
