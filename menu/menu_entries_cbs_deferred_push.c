@@ -1658,33 +1658,15 @@ static int deferred_push_core_input_remapping_options(void *data, void *userdata
 static int deferred_push_core_options(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
-   unsigned i;
-   file_list_t *list      = (file_list_t*)data;
-   global_t *global       = global_get_ptr();
+   menu_displaylist_info_t info = {0};
 
-   (void)userdata;
+   info.list      = (file_list_t*)data;
+   info.menu_list = (file_list_t*)userdata;
+   info.type      =  type;
+   strlcpy(info.path, path, sizeof(info.path));
+   strlcpy(info.label, label, sizeof(info.label));
 
-   if (!list)
-      return -1;
-
-   menu_list_clear(list);
-
-   if (global->system.core_options)
-   {
-      size_t opts = core_option_size(global->system.core_options);
-
-      for (i = 0; i < opts; i++)
-         menu_list_push(list,
-               core_option_get_desc(global->system.core_options, i), "",
-               MENU_SETTINGS_CORE_OPTION_START + i, 0);
-   }
-   else
-      menu_list_push(list, "No options available.", "",
-               MENU_SETTINGS_CORE_OPTION_NONE, 0);
-
-   menu_driver_populate_entries(path, label, type);
-
-   return 0;
+   return menu_displaylist_push_list(&info, DISPLAYLIST_CORE_OPTIONS);
 }
 
 static int deferred_push_disk_options(void *data, void *userdata,

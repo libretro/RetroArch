@@ -585,6 +585,27 @@ int menu_displaylist_parse_horizontal_content_actions(menu_displaylist_info_t *i
    return 0;
 }
 
+static int menu_displaylist_parse_core_options(menu_displaylist_info_t *info)
+{
+   unsigned i;
+   global_t *global       = global_get_ptr();
+
+   if (global->system.core_options)
+   {
+      size_t opts = core_option_size(global->system.core_options);
+
+      for (i = 0; i < opts; i++)
+         menu_list_push(info->list,
+               core_option_get_desc(global->system.core_options, i), "",
+               MENU_SETTINGS_CORE_OPTION_START + i, 0);
+   }
+   else
+      menu_list_push(info->list, "No options available.", "",
+               MENU_SETTINGS_CORE_OPTION_NONE, 0);
+
+   return 0;
+}
+
 int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
 {
    int ret = 0;
@@ -638,6 +659,13 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
                info->type_default, info->exts, info->setting);
          if (ret == 0)
             need_push = true;
+         break;
+      case DISPLAYLIST_CORE_OPTIONS:
+         menu_list_clear(info->list);
+
+         ret = menu_displaylist_parse_core_options(info);
+
+         need_push = true;
          break;
       case DISPLAYLIST_CORES_ALL:
          menu_list_clear(info->list);
