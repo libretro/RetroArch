@@ -249,7 +249,9 @@ enum
    self.window      = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
    [self.window makeKeyAndVisible];
 
-   [self pushViewController:[RAMainMenu new] animated:YES];
+   self.mainmenu = [RAMainMenu new];
+
+   [self pushViewController:self.mainmenu animated:YES];
 
    btpad_set_inquiry_state(false);
     
@@ -403,6 +405,11 @@ enum
    btstack_set_poweron(is_btstack);
 }
 
+- (void)mainMenuRefresh
+{
+  [self.mainmenu menuRefresh];
+}
+
 @end
 
 int main(int argc, char *argv[])
@@ -515,6 +522,19 @@ static void ui_companion_cocoatouch_notify_list_pushed(void *data,
     (void)data;
     (void)list;
     (void)menu_list;
+
+    RetroArch_iOS *ap   = (RetroArch_iOS *)apple_platform;
+
+    RARCH_WARN("notify list pushed (this log entry is not printed)");
+
+    // JM: Ideally, RA would have set this, but I'm going to force it
+    // for testing, because my menu refresh relies on it.
+    menu_handle_t *menu    = menu_driver_get_ptr();
+    if (!menu) return;
+    menu->need_refresh = true;
+    
+    if (ap)
+      [ap mainMenuRefresh];
 }
 
 const ui_companion_driver_t ui_companion_cocoatouch = {

@@ -633,13 +633,16 @@ didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 
 - (void)willReloadData
 {
-   
 }
 
 - (void)reloadData
 {
    [self willReloadData];
    [[self tableView] reloadData];
+}
+
+- (void)menuRefresh
+{
 }
 
 @end
