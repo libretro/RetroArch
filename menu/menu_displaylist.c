@@ -80,8 +80,11 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
       case DISPLAYLIST_SHADER_PRESET:
       case DISPLAYLIST_DATABASES:
       case DISPLAYLIST_DATABASE_CURSORS:
-      case DISPLAYLIST_VIDEO_FILTER:
+      case DISPLAYLIST_VIDEO_FILTERS:
+      case DISPLAYLIST_AUDIO_FILTERS:
       case DISPLAYLIST_IMAGES:
+      case DISPLAYLIST_CHEAT_FILES:
+      case DISPLAYLIST_REMAP_FILES:
          ret = menu_entries_parse_list(info->list, info->menu_list,
                info->path, info->label, info->type,
                info->type_default, info->exts, NULL);

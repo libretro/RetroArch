@@ -2019,7 +2019,7 @@ static int deferred_push_video_filter(void *data, void *userdata,
    strlcpy(info.path, path, sizeof(info.path));
    strlcpy(info.label, label, sizeof(info.label));
 
-   return menu_displaylist_push_list(&info, DISPLAYLIST_VIDEO_FILTER);
+   return menu_displaylist_push_list(&info, DISPLAYLIST_VIDEO_FILTERS);
 }
 
 static int deferred_push_images(void *data, void *userdata,
@@ -2041,22 +2041,49 @@ static int deferred_push_images(void *data, void *userdata,
 static int deferred_push_audio_dsp_plugin(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
-   return menu_entries_parse_list((file_list_t*)data, (file_list_t*)userdata, path, label, type,
-         MENU_FILE_AUDIOFILTER, "dsp", NULL);
+   menu_displaylist_info_t info = {0};
+
+   info.list         = (file_list_t*)data;
+   info.menu_list    = (file_list_t*)userdata;
+   info.type         = type;
+   info.type_default = MENU_FILE_AUDIOFILTER;
+   strlcpy(info.exts, "dsp", sizeof(info.exts));
+   strlcpy(info.path, path, sizeof(info.path));
+   strlcpy(info.label, label, sizeof(info.label));
+
+   return menu_displaylist_push_list(&info, DISPLAYLIST_AUDIO_FILTERS);
 }
 
 static int deferred_push_cheat_file_load(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
-   return menu_entries_parse_list((file_list_t*)data, (file_list_t*)userdata, path, label, type,
-         MENU_FILE_CHEAT, "cht", NULL);
+   menu_displaylist_info_t info = {0};
+
+   info.list         = (file_list_t*)data;
+   info.menu_list    = (file_list_t*)userdata;
+   info.type         = type;
+   info.type_default = MENU_FILE_CHEAT;
+   strlcpy(info.exts, "cht", sizeof(info.exts));
+   strlcpy(info.path, path, sizeof(info.path));
+   strlcpy(info.label, label, sizeof(info.label));
+
+   return menu_displaylist_push_list(&info, DISPLAYLIST_CHEAT_FILES);
 }
 
 static int deferred_push_remap_file_load(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
-   return menu_entries_parse_list((file_list_t*)data, (file_list_t*)userdata, path, label, type,
-         MENU_FILE_REMAP, "rmp", NULL);
+   menu_displaylist_info_t info = {0};
+
+   info.list         = (file_list_t*)data;
+   info.menu_list    = (file_list_t*)userdata;
+   info.type         = type;
+   info.type_default = MENU_FILE_REMAP;
+   strlcpy(info.exts, "rmp", sizeof(info.exts));
+   strlcpy(info.path, path, sizeof(info.path));
+   strlcpy(info.label, label, sizeof(info.label));
+
+   return menu_displaylist_push_list(&info, DISPLAYLIST_REMAP_FILES);
 }
 
 static int deferred_push_record_configfile(void *data, void *userdata,
