@@ -1005,49 +1005,33 @@ static int deferred_push_core_list_deferred(void *data, void *userdata,
 static int deferred_push_database_manager_list_deferred(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
-   file_list_t *list      = NULL;
-   file_list_t *menu_list = NULL;
+   menu_displaylist_info_t info = {0};
    menu_handle_t *menu = menu_driver_get_ptr();
    if (!menu)
       return -1;
 
-   list      = (file_list_t*)data;
-   menu_list = (file_list_t*)userdata;
+   info.list      = (file_list_t*)data;
+   info.menu_list = (file_list_t*)userdata;
+   info.type      = type;
+   strlcpy(info.path,   path, sizeof(info.path));
+   strlcpy(info.path_b,    path, sizeof(info.path_b));
+   strlcpy(info.label, label, sizeof(info.label));
+   info.path_c[0] = '\0';
 
-   if (!list || !menu_list)
-      return -1;
-
-   menu_list_clear(list);
-
-   menu_database_populate_query(list, path, NULL);
-
-   menu_list_sort_on_alt(list);
-
-   menu_list_populate_generic(list, path, label, type);
-
-   return 0;
+   return menu_displaylist_push_list(&info, DISPLAYLIST_DATABASE_QUERY);
 }
 
 static int deferred_push_cursor_manager_list_deferred(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
+   menu_displaylist_info_t info = {0};
    char *query = NULL, *rdb = NULL;
    char rdb_path[PATH_MAX_LENGTH];
    config_file_t *conf    = NULL;
-   file_list_t *list      = NULL;
-   file_list_t *menu_list = NULL;
    menu_handle_t *menu    = menu_driver_get_ptr();
    settings_t *settings   = config_get_ptr();
    if (!menu)
       return -1;
-
-   list                   = (file_list_t*)data;
-   menu_list              = (file_list_t*)userdata;
-
-   if (!list || !menu_list)
-      return -1;
-
-   menu_list_clear(list);
 
    conf = config_file_new(path);
 
@@ -1069,11 +1053,15 @@ static int deferred_push_cursor_manager_list_deferred(void *data, void *userdata
    fill_pathname_join(rdb_path, settings->content_database,
          rdb, sizeof(rdb_path));
 
-   menu_database_populate_query(list, rdb_path, query);
+   info.list      = (file_list_t*)data;
+   info.menu_list = (file_list_t*)userdata;
+   info.type      = type;
+   strlcpy(info.path,   rdb_path, sizeof(info.path));
+   strlcpy(info.path_b,    path, sizeof(info.path_b));
+   strlcpy(info.path_c,    query, sizeof(info.path_c));
+   strlcpy(info.label, label, sizeof(info.label));
 
-   menu_list_sort_on_alt(list);
-
-   menu_list_populate_generic(list, path, label, type);
+   menu_displaylist_push_list(&info, DISPLAYLIST_DATABASE_QUERY);
 
    config_file_free(conf);
    return 0;
@@ -1083,6 +1071,8 @@ static int deferred_push_cursor_manager_list_deferred_query_subsearch(
       void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
+   int ret;
+   menu_displaylist_info_t info = {0};
    char query[PATH_MAX_LENGTH];
    struct string_list *str_list = NULL;
    bool add_quotes = true;
@@ -1174,17 +1164,19 @@ static int deferred_push_cursor_manager_list_deferred_query_subsearch(
       return -1;
    }
 
-   menu_list_clear(list);
+   info.list      = (file_list_t*)data;
+   info.menu_list = (file_list_t*)userdata;
+   info.type      = type;
+   strlcpy(info.path,   str_list->elems[1].data, sizeof(info.path));
+   strlcpy(info.path_b,    str_list->elems[0].data, sizeof(info.path_b));
+   strlcpy(info.path_c,    query, sizeof(info.path_c));
+   strlcpy(info.label, label, sizeof(info.label));
 
-   menu_database_populate_query(list, str_list->elems[1].data, query);
-
-   menu_list_sort_on_alt(list);
-
-   menu_list_populate_generic(list, str_list->elems[0].data, label, type);
+   ret = menu_displaylist_push_list(&info, DISPLAYLIST_DATABASE_QUERY);
 
    string_list_free(str_list);
 
-   return 0;
+   return ret;
 }
 
 static int deferred_push_performance_counters(void *data, void *userdata,

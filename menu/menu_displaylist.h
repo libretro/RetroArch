@@ -42,6 +42,7 @@ enum
    DISPLAYLIST_SHADER_PRESET,
    DISPLAYLIST_DATABASES,
    DISPLAYLIST_DATABASE_CURSORS,
+   DISPLAYLIST_DATABASE_QUERY,
    DISPLAYLIST_AUDIO_FILTERS,
    DISPLAYLIST_VIDEO_FILTERS,
    DISPLAYLIST_CHEAT_FILES,
@@ -59,6 +60,8 @@ typedef struct menu_displaylist_info
    file_list_t *list;
    file_list_t *menu_list;
    char path[PATH_MAX_LENGTH];
+   char path_b[PATH_MAX_LENGTH];
+   char path_c[PATH_MAX_LENGTH];
    char label[PATH_MAX_LENGTH];
    char exts[PATH_MAX_LENGTH];
    unsigned type;

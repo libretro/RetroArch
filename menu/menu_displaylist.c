@@ -504,6 +504,12 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
                info->path, info->label, info->type,
                info->type_default, info->exts, info->setting);
          break;
+      case DISPLAYLIST_DATABASE_QUERY:
+         menu_list_clear(info->list);
+         menu_database_populate_query(info->list, info->path, (info->path_c[0] == '\0') ? NULL : info->path_c);
+         menu_list_sort_on_alt(info->list);
+         menu_list_populate_generic(info->list, info->path_b, info->label, info->type);
+         break;
       case DISPLAYLIST_PERFCOUNTER_SELECTION:
          menu_list_clear(info->list);
          menu_list_push(info->list, "Frontend Counters", "frontend_counters",
