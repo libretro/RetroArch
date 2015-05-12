@@ -495,10 +495,17 @@ int menu_entries_parse_list(
  **/
 bool menu_entries_init(menu_handle_t *menu)
 {
-   if (!menu)
+   menu_list_t *menu_list = menu_list_get_ptr();
+   menu_displaylist_info_t info = {0};
+   if (!menu || !menu_list)
       return false;
 
-   menu_displaylist_push_list(DISPLAYLIST_MAIN_MENU);
+   info.list  = menu_list->selection_buf;
+   info.type  = MENU_SETTINGS;
+   info.flags = SL_FLAG_MAIN_MENU;
+   strlcpy(info.label, "Main Menu", sizeof(info.label));
+
+   menu_displaylist_push_list(&info, DISPLAYLIST_MAIN_MENU);
 
    return true;
 }

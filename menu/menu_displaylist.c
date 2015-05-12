@@ -19,6 +19,31 @@
 #include "menu_displaylist.h"
 #include "menu_navigation.h"
 
+
+int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
+{
+   menu_handle_t    *menu = menu_driver_get_ptr();
+   menu_list_t *menu_list = menu_list_get_ptr();
+   menu_navigation_t *nav = menu_navigation_get_ptr();
+
+   switch (type)
+   {
+      case DISPLAYLIST_NONE:
+         break;
+      case DISPLAYLIST_MAIN_MENU:
+         menu->list_settings = setting_new(SL_FLAG_ALL);
+
+         menu_list_push(menu_list->menu_stack,
+               info->path, info->label, info->type, info->flags);
+         menu_navigation_clear(nav, true);
+         menu_entries_push_list(menu, info->list,
+               info->path, info->label, info->type, info->flags);
+         break;
+   }
+
+   return 0;
+}
+
 int menu_displaylist_deferred_push(menu_displaylist_info_t *info)
 {
    unsigned type             = 0;
@@ -45,29 +70,6 @@ int menu_displaylist_deferred_push(menu_displaylist_info_t *info)
       return 0;
 
    return cbs->action_deferred_push(info->list, info->menu_list, path, label, type);
-}
-
-int menu_displaylist_push_list(unsigned type)
-{
-   menu_handle_t    *menu = menu_driver_get_ptr();
-   menu_list_t *menu_list = menu_list_get_ptr();
-   menu_navigation_t *nav = menu_navigation_get_ptr();
-
-   switch (type)
-   {
-      case DISPLAYLIST_NONE:
-         break;
-      case DISPLAYLIST_MAIN_MENU:
-         menu->list_settings = setting_new(SL_FLAG_ALL);
-
-         menu_list_push(menu_list->menu_stack, "", "Main Menu", MENU_SETTINGS, 0);
-         menu_navigation_clear(nav, true);
-         menu_entries_push_list(menu, menu_list->selection_buf,
-               "", "Main Menu", 0, SL_FLAG_MAIN_MENU);
-         break;
-   }
-
-   return 0;
 }
 
 int menu_displaylist_push(file_list_t *list, file_list_t *menu_list)
