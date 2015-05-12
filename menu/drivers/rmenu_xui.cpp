@@ -542,9 +542,9 @@ static void rmenu_xui_render(void)
 		runloop->is_menu && !menu->msg_force)
 		return;
 
-   runloop->frames.video.current.menu.animation.is_active = false;
-   runloop->frames.video.current.menu.label.is_updated    = false;
-   runloop->frames.video.current.menu.framebuf.dirty      = false;
+   menu->framebuf.dirty      = false;
+   menu->animation_is_active = false;
+   menu->label.is_updated    = false;
 
 	rmenu_xui_render_background();
 
