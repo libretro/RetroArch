@@ -14,6 +14,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "menu_displaylist.h"
 #include "menu_entries.h"
 #include "menu_setting.h"
 #include "menu_navigation.h"
@@ -497,12 +498,7 @@ bool menu_entries_init(menu_handle_t *menu)
    if (!menu)
       return false;
 
-   menu->list_settings = setting_new(SL_FLAG_ALL);
-
-   menu_list_push(menu->menu_list->menu_stack, "", "Main Menu", MENU_SETTINGS, 0);
-   menu_navigation_clear(&menu->navigation, true);
-   menu_entries_push_list(menu, menu->menu_list->selection_buf,
-         "", "Main Menu", 0, SL_FLAG_MAIN_MENU);
+   menu_displaylist_push_list(DISPLAYLIST_MAIN_MENU);
 
    return true;
 }

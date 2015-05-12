@@ -24,6 +24,12 @@
 extern "C" {
 #endif
 
+enum
+{
+   DISPLAYLIST_NONE = 0,
+   DISPLAYLIST_MAIN_MENU,
+};
+
 typedef struct menu_displaylist_info
 {
    file_list_t *list;
@@ -35,6 +41,8 @@ typedef struct menu_displaylist_info
 } menu_displaylist_info_t;
 
 int menu_displaylist_deferred_push(menu_displaylist_info_t *info);
+
+int menu_displaylist_push_list(unsigned type);
 
 int menu_displaylist_push(file_list_t *list, file_list_t *menu_list);
 
