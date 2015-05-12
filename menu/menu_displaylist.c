@@ -495,7 +495,7 @@ static int menu_entries_push_horizontal_menu_list(
 
    menu_entries_push_horizontal_menu_list_cores(list, info, settings->core_assets_directory, true);
 
-   menu_list_populate_generic(list, path, label, type);
+   menu_list_populate_generic(list, path, label, type, true);
 
    return 0;
 }
@@ -588,6 +588,8 @@ int menu_displaylist_parse_horizontal_content_actions(menu_displaylist_info_t *i
 int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
 {
    int ret = 0;
+   bool need_refresh = false;
+   bool need_push    = false;
    menu_handle_t    *menu = menu_driver_get_ptr();
    menu_list_t *menu_list = menu_list_get_ptr();
    menu_navigation_t *nav = menu_navigation_get_ptr();
@@ -611,7 +613,8 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
       case DISPLAYLIST_HORIZONTAL_CONTENT_ACTIONS:
          menu_list_clear(info->list);
          ret = menu_displaylist_parse_horizontal_content_actions(info);
-         menu_list_populate_generic(info->list, info->path, info->label, info->type);
+         need_refresh = true;
+         need_push    = true;
          break;
       case DISPLAYLIST_DEFAULT:
       case DISPLAYLIST_CORES:
@@ -634,7 +637,7 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
                info->path, info->label, info->type,
                info->type_default, info->exts, info->setting);
          if (ret == 0)
-            menu_driver_populate_entries(info->path, info->label, info->type);
+            need_push = true;
          break;
       case DISPLAYLIST_CORES_ALL:
          menu_list_clear(info->list);
@@ -642,7 +645,9 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          ret = menu_displaylist_parse_cores(info);
 
          menu_list_sort_on_alt(info->list);
-         menu_list_populate_generic(info->list, info->path, info->label, info->type);
+
+         need_refresh = true;
+         need_push    = true;
          break;
       case DISPLAYLIST_HISTORY:
          menu_list_clear(info->list);
@@ -650,13 +655,19 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          ret = menu_displaylist_parse_historylist(info);
 
          if (ret == 0)
-            menu_list_populate_generic(info->list, info->path, info->label, info->type);
+         {
+            need_refresh = true;
+            need_push    = true;
+         }
          break;
       case DISPLAYLIST_DATABASE_QUERY:
          menu_list_clear(info->list);
          menu_database_populate_query(info->list, info->path, (info->path_c[0] == '\0') ? NULL : info->path_c);
          menu_list_sort_on_alt(info->list);
-         menu_list_populate_generic(info->list, info->path_b, info->label, info->type);
+
+         need_refresh = true;
+         need_push    = true;
+         strlcpy(info->path, info->path_b, sizeof(info->path));
          break;
       case DISPLAYLIST_PERFCOUNTER_SELECTION:
          menu_list_clear(info->list);
@@ -665,7 +676,8 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          menu_list_push(info->list, "Core Counters", "core_counters",
                MENU_SETTING_ACTION, 0);
 
-         menu_driver_populate_entries(info->path, info->label, info->type);
+         need_refresh = true;
+         need_push    = true;
          break;
       case DISPLAYLIST_PERFCOUNTERS_CORE:
       case DISPLAYLIST_PERFCOUNTERS_FRONTEND:
@@ -678,15 +690,20 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
               (type == DISPLAYLIST_PERFCOUNTERS_CORE) ? 
               MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_BEGIN : MENU_SETTINGS_PERF_COUNTERS_BEGIN);
 
-         menu_driver_populate_entries(
-               info->path, info->label, info->type);
+         need_refresh = false;
+         need_push    = true;
          break;
       case DISPLAYLIST_CORES_UPDATER:
          menu_list_clear(info->list);
          print_buf_lines(info->list, core_buf, core_len, MENU_FILE_DOWNLOAD_CORE);
-         menu_list_populate_generic(info->list, info->path, info->label, info->type);
+         need_push    = true;
+         need_refresh = true;
          break;
    }
+
+   if (need_push)
+      menu_list_populate_generic(info->list,
+            info->path, info->label, info->type, need_refresh);
 
    return ret;
 }

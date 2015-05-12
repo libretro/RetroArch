@@ -415,9 +415,10 @@ void menu_list_sort_on_alt(file_list_t *list)
 }
 
 int menu_list_populate_generic(file_list_t *list, const char *path,
-      const char *label, unsigned type)
+      const char *label, unsigned type, bool need_refresh)
 {
-   menu_list_refresh(list);
+   if (need_refresh)
+      menu_list_refresh(list);
    menu_driver_populate_entries(path, label, type);
 
    return 0;
