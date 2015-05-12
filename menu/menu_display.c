@@ -83,12 +83,12 @@ bool menu_display_init(menu_handle_t *menu)
    return true;
 }
 
-float menu_display_get_dpi(menu_handle_t *menu)
+float menu_display_get_dpi(void)
 {
    float dpi = menu_dpi_override_value;
    settings_t *settings = config_get_ptr();
 
-   if (!menu || !settings)
+   if (!settings)
       return dpi;
 
    if (settings->menu.dpi.override_enable)
@@ -191,7 +191,7 @@ bool menu_display_init_main_font(menu_handle_t *menu,
    return result;
 }
 
-void menu_display_set_viewport(menu_handle_t *menu)
+void menu_display_set_viewport(void)
 {
    global_t *global    = global_get_ptr();
 
@@ -199,7 +199,7 @@ void menu_display_set_viewport(menu_handle_t *menu)
          global->video_data.height, true, false);
 }
 
-void menu_display_unset_viewport(menu_handle_t *menu)
+void menu_display_unset_viewport(void)
 {
    global_t *global    = global_get_ptr();
 

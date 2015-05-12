@@ -345,7 +345,7 @@ static void glui_frame(void)
          && !glui->box_message[0])
       return;
 
-   menu_display_set_viewport(menu);
+   menu_display_set_viewport();
 
    gl_menu_frame_background(menu, settings, gl, glui->textures.bg.id, 0.75f, 0.75f, false);
 
@@ -430,7 +430,7 @@ static void glui_frame(void)
 
    gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
 
-   menu_display_unset_viewport(menu);
+   menu_display_unset_viewport();
 }
 
 static void glui_allocate_white_texture(glui_handle_t *glui)
@@ -473,7 +473,7 @@ static void *glui_init(void)
       goto error;
 
    glui                 = (glui_handle_t*)menu->userdata;
-   dpi                  = menu_display_get_dpi(menu);
+   dpi                  = menu_display_get_dpi();
 
    glui->line_height    = dpi / 3;
    glui->margin         = dpi / 6;

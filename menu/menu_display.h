@@ -33,7 +33,7 @@ bool menu_display_init(menu_handle_t *menu);
 
 bool menu_display_update_pending(void);
 
-float menu_display_get_dpi(menu_handle_t *menu);
+float menu_display_get_dpi(void);
 
 bool menu_display_font_init_first(const void **font_driver,
       void **font_handle, void *video_data, const char *font_path,
@@ -50,9 +50,9 @@ bool menu_display_init_main_font(menu_handle_t *menu,
       const char *font_path, float font_size);
 void menu_display_free_main_font(menu_handle_t *menu);
 
-void menu_display_set_viewport(menu_handle_t *menu);
+void menu_display_set_viewport(void);
 
-void menu_display_unset_viewport(menu_handle_t *menu);
+void menu_display_unset_viewport(void);
 
 #ifdef __cplusplus
 }

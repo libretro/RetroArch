@@ -1308,7 +1308,7 @@ static void xmb_frame(void)
    if (settings->menu.mouse.enable)
       xmb_draw_cursor(gl, xmb, menu->mouse.x, menu->mouse.y);
 
-   menu_display_unset_viewport(menu);
+   menu_display_unset_viewport();
 }
 
 static void *xmb_init(void)

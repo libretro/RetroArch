@@ -100,7 +100,7 @@ static INLINE void gl_menu_frame_background(
    coords.lut_tex_coord = tex_coord;
    coords.color         = black_color;
 
-   menu_display_set_viewport(menu);
+   menu_display_set_viewport();
 
    if ((settings->menu.pause_libretro
       || !global->main_is_init || global->libretro_dummy)
