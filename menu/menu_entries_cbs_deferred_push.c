@@ -1822,47 +1822,18 @@ static int deferred_push_core_updater_list(void *data, void *userdata,
 }
 #endif
 
-
-
 static int deferred_push_history_list(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
-   unsigned i;
-   size_t list_size = 0;
-   file_list_t *list      = (file_list_t*)data;
+   menu_displaylist_info_t info = {0};
 
-   if (!list)
-      return -1;
+   info.list         = (file_list_t*)data;
+   info.menu_list    = (file_list_t*)userdata;
+   info.type         = type;
+   strlcpy(info.path, path, sizeof(info.path));
+   strlcpy(info.label, label, sizeof(info.label));
 
-   (void)userdata;
-
-   menu_list_clear(list);
-   list_size = content_playlist_size(g_defaults.history);
-
-   for (i = 0; i < list_size; i++)
-   {
-      char fill_buf[PATH_MAX_LENGTH];
-      const char *core_name = NULL;
-
-      content_playlist_get_index(g_defaults.history, i,
-            &path, NULL, &core_name);
-      strlcpy(fill_buf, core_name, sizeof(fill_buf));
-
-      if (path)
-      {
-         char path_short[PATH_MAX_LENGTH];
-         fill_short_pathname_representation(path_short,path,sizeof(path_short));
-         snprintf(fill_buf,sizeof(fill_buf),"%s (%s)",
-               path_short,core_name);
-      }
-
-      menu_list_push(list, fill_buf, "",
-            MENU_FILE_PLAYLIST_ENTRY, 0);
-   }
-
-   menu_list_populate_generic(list, path, label, type);
-
-   return 0;
+   return menu_displaylist_push_list(&info, DISPLAYLIST_HISTORY);
 }
 
 static int deferred_push_content_actions(void *data, void *userdata,
