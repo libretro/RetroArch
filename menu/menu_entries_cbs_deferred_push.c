@@ -1970,8 +1970,17 @@ static int deferred_push_core_list(void *data, void *userdata,
 static int deferred_push_configurations(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
-   return menu_entries_parse_list((file_list_t*)data, (file_list_t*)userdata, path, label, type,
-         MENU_FILE_CONFIG, "cfg", NULL);
+   menu_displaylist_info_t info = {0};
+
+   info.list         = (file_list_t*)data;
+   info.menu_list    = (file_list_t*)userdata;
+   info.type         = type;
+   info.type_default = MENU_FILE_CONFIG;
+   strlcpy(info.exts, "cfg", sizeof(info.exts));
+   strlcpy(info.path, path, sizeof(info.path));
+   strlcpy(info.label, label, sizeof(info.label));
+
+   return menu_displaylist_push_list(&info, DISPLAYLIST_CONFIG_FILES);
 }
 
 static int deferred_push_video_shader_preset(void *data, void *userdata,
@@ -2089,36 +2098,81 @@ static int deferred_push_remap_file_load(void *data, void *userdata,
 static int deferred_push_record_configfile(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
-   return menu_entries_parse_list((file_list_t*)data, (file_list_t*)userdata, path, label, type,
-         MENU_FILE_RECORD_CONFIG, "cfg", NULL);
+   menu_displaylist_info_t info = {0};
+
+   info.list         = (file_list_t*)data;
+   info.menu_list    = (file_list_t*)userdata;
+   info.type         = type;
+   info.type_default = MENU_FILE_RECORD_CONFIG;
+   strlcpy(info.exts, "cfg", sizeof(info.exts));
+   strlcpy(info.path, path, sizeof(info.path));
+   strlcpy(info.label, label, sizeof(info.label));
+
+   return menu_displaylist_push_list(&info, DISPLAYLIST_RECORD_CONFIG_FILES);
 }
 
 static int deferred_push_input_overlay(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
-   return menu_entries_parse_list((file_list_t*)data, (file_list_t*)userdata, path, label, type,
-         MENU_FILE_OVERLAY, "cfg", NULL);
+   menu_displaylist_info_t info = {0};
+
+   info.list         = (file_list_t*)data;
+   info.menu_list    = (file_list_t*)userdata;
+   info.type         = type;
+   info.type_default = MENU_FILE_OVERLAY;
+   strlcpy(info.exts, "cfg", sizeof(info.exts));
+   strlcpy(info.path, path, sizeof(info.path));
+   strlcpy(info.label, label, sizeof(info.label));
+
+   return menu_displaylist_push_list(&info, DISPLAYLIST_OVERLAYS);
 }
 
 static int deferred_push_input_osk_overlay(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
-   return menu_entries_parse_list((file_list_t*)data, (file_list_t*)userdata, path, label, type,
-         MENU_FILE_OVERLAY, "cfg", NULL);
+   menu_displaylist_info_t info = {0};
+
+   info.list         = (file_list_t*)data;
+   info.menu_list    = (file_list_t*)userdata;
+   info.type         = type;
+   info.type_default = MENU_FILE_OVERLAY;
+   strlcpy(info.exts, "cfg", sizeof(info.exts));
+   strlcpy(info.path, path, sizeof(info.path));
+   strlcpy(info.label, label, sizeof(info.label));
+
+   return menu_displaylist_push_list(&info, DISPLAYLIST_OVERLAYS);
 }
 
 static int deferred_push_video_font_path(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
-   return menu_entries_parse_list((file_list_t*)data, (file_list_t*)userdata, path, label, type,
-         MENU_FILE_FONT, "ttf", NULL);
+   menu_displaylist_info_t info = {0};
+
+   info.list         = (file_list_t*)data;
+   info.menu_list    = (file_list_t*)userdata;
+   info.type         = type;
+   info.type_default = MENU_FILE_FONT;
+   strlcpy(info.exts, "ttf", sizeof(info.exts));
+   strlcpy(info.path, path, sizeof(info.path));
+   strlcpy(info.label, label, sizeof(info.label));
+
+   return menu_displaylist_push_list(&info, DISPLAYLIST_FONTS);
 }
 
 static int deferred_push_content_history_path(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
-   return menu_entries_parse_list((file_list_t*)data, (file_list_t*)userdata, path, label, type,
-         MENU_FILE_PLAIN, "cfg", NULL);
+   menu_displaylist_info_t info = {0};
+
+   info.list         = (file_list_t*)data;
+   info.menu_list    = (file_list_t*)userdata;
+   info.type         = type;
+   info.type_default = MENU_FILE_PLAIN;
+   strlcpy(info.exts, "cfg", sizeof(info.exts));
+   strlcpy(info.path, path, sizeof(info.path));
+   strlcpy(info.label, label, sizeof(info.label));
+
+   return menu_displaylist_push_list(&info, DISPLAYLIST_CONTENT_HISTORY);
 }
 
 static int deferred_push_detect_core_list(void *data, void *userdata,
