@@ -43,6 +43,7 @@
 
 - (id)initWithStyle:(UITableViewStyle)style;
 - (id)itemForIndexPath:(NSIndexPath*)indexPath;
+- (void)menuRefresh;
 
 @end
 
@@ -66,13 +67,15 @@ extern apple_frontend_settings_t apple_frontend_settings;
 
 @property (nonatomic) UIWindow* window;
 @property (nonatomic) NSString* documentsDirectory;
-
+@property (nonatomic) RAMenuBase* mainmenu;
+                      
 + (RetroArch_iOS*)get;
 
 - (void)showGameView;
 - (void)toggleUI;
 
 - (void)refreshSystemConfig;
+- (void)mainMenuRefresh;
 @end
 
 void get_ios_version(int *major, int *minor);
