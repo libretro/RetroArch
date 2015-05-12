@@ -1903,10 +1903,10 @@ static int deferred_push_content_actions(void *data, void *userdata,
 int deferred_push_content_list(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
-   menu_handle_t *menu    = menu_driver_get_ptr();
-   if (!menu)
+   menu_list_t *menu_list = menu_list_get_ptr();
+   if (!menu_list)
       return -1;
-   return menu_displaylist_push((file_list_t*)data, menu->menu_list->selection_buf);
+   return menu_displaylist_push((file_list_t*)data, menu_list->selection_buf);
 }
 
 static int deferred_push_database_manager_list(void *data, void *userdata,
