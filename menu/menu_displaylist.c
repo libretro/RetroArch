@@ -16,12 +16,47 @@
 #include "menu.h"
 #include "menu_display.h"
 #include "menu_entries.h"
+#include "menu_displaylist.h"
+
+int menu_displaylist_deferred_push(menu_displaylist_info_t *info)
+{
+   unsigned type             = 0;
+   const char *path          = NULL;
+   const char *label         = NULL;
+   menu_file_list_cbs_t *cbs = NULL;
+   menu_handle_t       *menu = menu_driver_get_ptr();
+
+   if (!info->list)
+      return -1;
+
+   menu_list_get_last_stack(menu->menu_list, &path, &label, &type);
+
+   if (!strcmp(label, "Main Menu"))
+      return menu_entries_push_list(menu, info->list, path, label, type,
+            SL_FLAG_MAIN_MENU);
+   else if (!strcmp(label, "Horizontal Menu"))
+      return menu_entries_push_horizontal_menu_list(menu, info->list, path, label, type);
+
+   cbs = (menu_file_list_cbs_t*)
+      menu_list_get_last_stack_actiondata(menu->menu_list);
+
+   if (!cbs->action_deferred_push)
+      return 0;
+
+   return cbs->action_deferred_push(info->list, info->menu_list, path, label, type);
+}
 
 int menu_displaylist_push(file_list_t *list, file_list_t *menu_list)
 {
+   int ret;
    menu_handle_t *menu    = menu_driver_get_ptr();
    driver_t       *driver = driver_get_ptr();
-   int                ret = menu_entries_deferred_push(list, menu_list);
+   menu_displaylist_info_t info = {0};
+
+   info.list      = list;
+   info.menu_list = menu_list;
+   
+   ret = menu_displaylist_deferred_push(&info);
 
    menu->need_refresh = false;
 

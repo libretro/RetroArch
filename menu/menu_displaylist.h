@@ -27,11 +27,14 @@ extern "C" {
 typedef struct menu_displaylist_info
 {
    file_list_t *list;
+   file_list_t *menu_list;
    char path[PATH_MAX_LENGTH];
    char label[PATH_MAX_LENGTH];
    unsigned type;
    unsigned flags;
 } menu_displaylist_info_t;
+
+int menu_displaylist_deferred_push(menu_displaylist_info_t *info);
 
 int menu_displaylist_push(file_list_t *list, file_list_t *menu_list);
 

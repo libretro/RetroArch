@@ -25,6 +25,7 @@
 #include "../../../input/input_keymaps.h"
 #include "../../../input/drivers/cocoa_input.h"
 
+#include "../../../menu/menu_displaylist.h"
 #include "../../../menu/menu_entries.h"
 #include "../../../menu/menu_navigation.h"
 #include "../../../menu/menu_list.h"
@@ -769,16 +770,19 @@ didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 
 - (void)menuRefresh
 {
-  menu_handle_t *menu    = menu_driver_get_ptr();
-  menu_list_t *menu_list = menu_list_get_ptr();
-  if (!menu || !menu_list)
-     return;
-  if (!menu->need_refresh)
-     return;
-   
-    menu_entries_deferred_push(menu_list->selection_buf,
-                               menu_list->menu_stack);
-    menu->need_refresh = false;
+   menu_displaylist_info_t info = {0};
+   menu_handle_t *menu    = menu_driver_get_ptr();
+   menu_list_t *menu_list = menu_list_get_ptr();
+   if (!menu || !menu_list)
+      return;
+   if (!menu->need_refresh)
+      return;
+
+   info.list      = menu_list->selection_buf;
+   info.menu_list = menu_list->menu_stack;
+
+   menu_displaylist_deferred_push(&info);
+   menu->need_refresh = false;
 }
 
 - (void)menuBack

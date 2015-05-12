@@ -484,31 +484,6 @@ int menu_entries_parse_list(
    return 0;
 }
 
-int menu_entries_deferred_push(file_list_t *list, file_list_t *menu_list)
-{
-   unsigned type             = 0;
-   const char *path          = NULL;
-   const char *label         = NULL;
-   menu_file_list_cbs_t *cbs = NULL;
-   menu_handle_t       *menu = menu_driver_get_ptr();
-
-   menu_list_get_last_stack(menu->menu_list, &path, &label, &type);
-
-   if (!strcmp(label, "Main Menu"))
-      return menu_entries_push_list(menu, list, path, label, type,
-            SL_FLAG_MAIN_MENU);
-   else if (!strcmp(label, "Horizontal Menu"))
-      return menu_entries_push_horizontal_menu_list(menu, list, path, label, type);
-
-   cbs = (menu_file_list_cbs_t*)
-      menu_list_get_last_stack_actiondata(menu->menu_list);
-
-   if (!cbs->action_deferred_push)
-      return 0;
-
-   return cbs->action_deferred_push(list, menu_list, path, label, type);
-}
-
 /**
  * menu_entries_init:
  * @menu                     : Menu handle.
