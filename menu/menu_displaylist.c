@@ -618,6 +618,140 @@ static int deferred_push_video_shader_parameters_common(
 }
 #endif
 
+static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
+{
+   unsigned i;
+   settings_t *settings   = config_get_ptr();
+   global_t *global       = global_get_ptr();
+   core_info_t *core_info = (core_info_t*)global->core_info_current;
+
+   if (core_info && core_info->data)
+   {
+      char tmp[PATH_MAX_LENGTH];
+
+      snprintf(tmp, sizeof(tmp), "Core name: %s",
+            core_info->core_name ? core_info->core_name : "");
+      menu_list_push(info->list, tmp, "",
+            MENU_SETTINGS_CORE_INFO_NONE, 0);
+
+      snprintf(tmp, sizeof(tmp), "Core label: %s",
+            core_info->display_name ? core_info->display_name : "");
+      menu_list_push(info->list, tmp, "",
+            MENU_SETTINGS_CORE_INFO_NONE, 0);
+
+      if (core_info->systemname)
+      {
+         snprintf(tmp, sizeof(tmp), "System name: %s",
+               core_info->systemname);
+         menu_list_push(info->list, tmp, "",
+               MENU_SETTINGS_CORE_INFO_NONE, 0);
+      }
+
+      if (core_info->system_manufacturer)
+      {
+         snprintf(tmp, sizeof(tmp), "System manufacturer: %s",
+               core_info->system_manufacturer);
+         menu_list_push(info->list, tmp, "",
+               MENU_SETTINGS_CORE_INFO_NONE, 0);
+      }
+
+      if (core_info->categories_list)
+      {
+         strlcpy(tmp, "Categories: ", sizeof(tmp));
+         string_list_join_concat(tmp, sizeof(tmp),
+               core_info->categories_list, ", ");
+         menu_list_push(info->list, tmp, "",
+               MENU_SETTINGS_CORE_INFO_NONE, 0);
+      }
+
+      if (core_info->authors_list)
+      {
+         strlcpy(tmp, "Authors: ", sizeof(tmp));
+         string_list_join_concat(tmp, sizeof(tmp),
+               core_info->authors_list, ", ");
+         menu_list_push(info->list, tmp, "",
+               MENU_SETTINGS_CORE_INFO_NONE, 0);
+      }
+
+      if (core_info->permissions_list)
+      {
+         strlcpy(tmp, "Permissions: ", sizeof(tmp));
+         string_list_join_concat(tmp, sizeof(tmp),
+               core_info->permissions_list, ", ");
+         menu_list_push(info->list, tmp, "",
+               MENU_SETTINGS_CORE_INFO_NONE, 0);
+      }
+
+      if (core_info->licenses_list)
+      {
+         strlcpy(tmp, "License(s): ", sizeof(tmp));
+         string_list_join_concat(tmp, sizeof(tmp),
+               core_info->licenses_list, ", ");
+         menu_list_push(info->list, tmp, "",
+               MENU_SETTINGS_CORE_INFO_NONE, 0);
+      }
+
+      if (core_info->supported_extensions_list)
+      {
+         strlcpy(tmp, "Supported extensions: ", sizeof(tmp));
+         string_list_join_concat(tmp, sizeof(tmp),
+               core_info->supported_extensions_list, ", ");
+         menu_list_push(info->list, tmp, "",
+               MENU_SETTINGS_CORE_INFO_NONE, 0);
+      }
+
+      if (core_info->firmware_count > 0)
+      {
+         core_info_list_update_missing_firmware(
+               global->core_info, core_info->path,
+               settings->system_directory);
+
+         menu_list_push(info->list, "Firmware: ", "",
+               MENU_SETTINGS_CORE_INFO_NONE, 0);
+         for (i = 0; i < core_info->firmware_count; i++)
+         {
+            if (core_info->firmware[i].desc)
+            {
+               snprintf(tmp, sizeof(tmp), "	name: %s",
+                     core_info->firmware[i].desc ? 
+                     core_info->firmware[i].desc : "");
+               menu_list_push(info->list, tmp, "",
+                     MENU_SETTINGS_CORE_INFO_NONE, 0);
+
+               snprintf(tmp, sizeof(tmp), "	status: %s, %s",
+                     core_info->firmware[i].missing ?
+                     "missing" : "present",
+                     core_info->firmware[i].optional ?
+                     "optional" : "required");
+               menu_list_push(info->list, tmp, "",
+                     MENU_SETTINGS_CORE_INFO_NONE, 0);
+            }
+         }
+      }
+
+      if (core_info->notes)
+      {
+         snprintf(tmp, sizeof(tmp), "Core notes: ");
+         menu_list_push(info->list, tmp, "",
+               MENU_SETTINGS_CORE_INFO_NONE, 0);
+
+         for (i = 0; i < core_info->note_list->size; i++)
+         {
+            snprintf(tmp, sizeof(tmp), " %s",
+                  core_info->note_list->elems[i].data);
+            menu_list_push(info->list, tmp, "",
+                  MENU_SETTINGS_CORE_INFO_NONE, 0);
+         }
+      }
+   }
+   else
+      menu_list_push(info->list,
+            "No information available.", "",
+            MENU_SETTINGS_CORE_OPTION_NONE, 0);
+
+   return 0;
+}
+
 int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
 {
    int ret = 0;
@@ -679,6 +813,13 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          menu_list_clear(info->list);
 
          ret = menu_displaylist_parse_core_options(info);
+
+         need_push = true;
+         break;
+      case DISPLAYLIST_CORE_INFO:
+         menu_list_clear(info->list);
+
+         ret = menu_displaylist_parse_core_info(info);
 
          need_push = true;
          break;
