@@ -18,7 +18,7 @@
 #include <string/string_list.h>
 #include "menu_driver.h"
 #include "menu.h"
-#include "menu_entries.h"
+#include "menu_displaylist.h"
 #include "../driver.h"
 #include "../general.h"
 
@@ -156,9 +156,9 @@ void init_menu(void)
       rarch_fail(1, "init_menu()");
    }
 
-   if (!(menu_entries_init(driver->menu)))
+   if (!(menu_displaylist_init(driver->menu)))
    {
-      RARCH_ERR("Cannot initialize menu lists.\n");
+      RARCH_ERR("Cannot initialize menu display list.\n");
       rarch_fail(1, "init_menu()");
    }
 }

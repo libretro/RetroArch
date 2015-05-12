@@ -33,16 +33,6 @@ void menu_entries_cbs_init_bind_toggle(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx,
       const char *elem0, const char *elem1, const char *menu_label);
 
-/**
- * menu_entries_init:
- * @menu                     : Menu handle.
- *
- * Creates and initializes menu entries.
- *
- * Returns: true (1) if successful, otherwise false (0).
- **/
-bool menu_entries_init(menu_handle_t *menu);
-
 int menu_entries_setting_set_flags(rarch_setting_t *setting);
 
 #ifdef __cplusplus

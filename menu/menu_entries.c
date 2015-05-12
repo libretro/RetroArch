@@ -18,10 +18,6 @@
 #include "menu_entries.h"
 #include "menu_setting.h"
 #include "menu_navigation.h"
-#include <file/file_list.h>
-#include <file/file_path.h>
-#include <file/file_extract.h>
-#include <file/dir_list.h>
 
 int menu_entries_setting_set_flags(rarch_setting_t *setting)
 {
@@ -46,29 +42,4 @@ int menu_entries_setting_set_flags(rarch_setting_t *setting)
    }
 
    return 0;
-}
-
-/**
- * menu_entries_init:
- * @menu                     : Menu handle.
- *
- * Creates and initializes menu entries.
- *
- * Returns: true (1) if successful, otherwise false (0).
- **/
-bool menu_entries_init(menu_handle_t *menu)
-{
-   menu_list_t *menu_list = menu_list_get_ptr();
-   menu_displaylist_info_t info = {0};
-   if (!menu || !menu_list)
-      return false;
-
-   info.list  = menu_list->selection_buf;
-   info.type  = MENU_SETTINGS;
-   info.flags = SL_FLAG_MAIN_MENU;
-   strlcpy(info.label, "Main Menu", sizeof(info.label));
-
-   menu_displaylist_push_list(&info, DISPLAYLIST_MAIN_MENU);
-
-   return true;
 }
