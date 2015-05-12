@@ -55,6 +55,7 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
    menu_handle_t    *menu = menu_driver_get_ptr();
    menu_list_t *menu_list = menu_list_get_ptr();
    menu_navigation_t *nav = menu_navigation_get_ptr();
+   global_t       *global = global_get_ptr();
 
    switch (type)
    {
@@ -74,6 +75,7 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
                info->path, info->label, info->type, info->flags);
          break;
       case DISPLAYLIST_CORES:
+      case DISPLAYLIST_CORES_DETECTED:
          ret = menu_entries_parse_list(info->list, info->menu_list,
                info->path, info->label, info->type,
                info->type_default, info->exts, NULL);
