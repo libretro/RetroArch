@@ -1169,59 +1169,32 @@ static int deferred_push_performance_counters(void *data, void *userdata,
    return menu_displaylist_push_list(&info, DISPLAYLIST_PERFCOUNTER_SELECTION);
 }
 
-static int deferred_push_video_shader_parameters_common(void *data, void *userdata,
-      const char *path, const char *label, unsigned type,
-      struct video_shader *shader, unsigned base_parameter)
-{
-   unsigned i;
-   file_list_t *list      = (file_list_t*)data;
-   file_list_t *menu_list = (file_list_t*)userdata;
-
-   if (!list || !menu_list)
-      return -1;
-
-   menu_list_clear(list);
-
-   for (i = 0; i < shader->num_parameters; i++)
-   {
-      menu_list_push(list,
-            shader->parameters[i].desc, label,
-            base_parameter + i, 0);
-   }
-
-   menu_driver_populate_entries(path, label, type);
-
-   return 0;
-}
-
 static int deferred_push_video_shader_preset_parameters(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
-   menu_handle_t *menu = menu_driver_get_ptr();
-   if (!menu)
-      return -1;
-   if (!menu->shader)
-      return 0;
+   menu_displaylist_info_t info = {0};
 
-   return deferred_push_video_shader_parameters_common(data, userdata,
-         path, label, type,
-         menu->shader, MENU_SETTINGS_SHADER_PRESET_PARAMETER_0);
+   info.list      = (file_list_t*)data;
+   info.menu_list = (file_list_t*)userdata;
+   info.type      = type;
+   strlcpy(info.path, path, sizeof(info.path));
+   strlcpy(info.label, label, sizeof(info.label));
+
+   return menu_displaylist_push_list(&info, DISPLAYLIST_SHADER_PARAMETERS_PRESET);
 }
 
 static int deferred_push_video_shader_parameters(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
-#ifdef HAVE_SHADER_MANAGER
-   struct video_shader *shader = video_shader_driver_get_current_shader();
-   if (!shader)
-      return 0;
+   menu_displaylist_info_t info = {0};
 
-   return deferred_push_video_shader_parameters_common(data, userdata,
-         path, label, type,
-         shader, MENU_SETTINGS_SHADER_PARAMETER_0);
-#else
-   return 0;
-#endif
+   info.list      = (file_list_t*)data;
+   info.menu_list = (file_list_t*)userdata;
+   info.type      = type;
+   strlcpy(info.path, path, sizeof(info.path));
+   strlcpy(info.label, label, sizeof(info.label));
+
+   return menu_displaylist_push_list(&info, DISPLAYLIST_SHADER_PARAMETERS);
 }
 
 static int deferred_push_settings(void *data, void *userdata,
