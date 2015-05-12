@@ -18,6 +18,36 @@
 #include "menu_entries.h"
 #include "menu_displaylist.h"
 #include "menu_navigation.h"
+#include "../performance.h"
+
+static void menu_displaylist_push_perfcounter(
+      menu_displaylist_info_t *info,
+      const struct retro_perf_counter **counters,
+      unsigned num, unsigned id)
+{
+   unsigned i;
+   if (!counters || num == 0)
+      return;
+
+   for (i = 0; i < num; i++)
+      if (counters[i] && counters[i]->ident)
+         menu_list_push(info->list,
+               counters[i]->ident, "", id + i, 0);
+}
+
+static int menu_displaylist_push_perfcounter_generic(
+      menu_displaylist_info_t *info,
+      const struct retro_perf_counter **counters,
+      unsigned num, unsigned ident)
+{
+   menu_list_clear(info->list);
+   menu_displaylist_push_perfcounter(info, counters, num, ident);
+
+   menu_driver_populate_entries(
+         info->path, info->label, info->type);
+
+   return 0;
+}
 
 int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
 {
@@ -55,6 +85,16 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
                MENU_SETTING_ACTION, 0);
 
          menu_driver_populate_entries(info->path, info->label, info->type);
+         break;
+      case DISPLAYLIST_PERFCOUNTERS_CORE:
+         ret = menu_displaylist_push_perfcounter_generic(info,
+               perf_counters_libretro, perf_ptr_libretro, 
+               MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_BEGIN);
+         break;
+      case DISPLAYLIST_PERFCOUNTERS_FRONTEND:
+         ret = menu_displaylist_push_perfcounter_generic(info,
+               perf_counters_rarch, perf_ptr_rarch, 
+               MENU_SETTINGS_PERF_COUNTERS_BEGIN);
          break;
    }
 

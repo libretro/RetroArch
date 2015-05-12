@@ -1564,64 +1564,32 @@ static int deferred_push_management_options(void *data, void *userdata,
    return 0;
 }
 
-static void push_perfcounter(menu_handle_t *menu,
-      file_list_t *list,
-      const struct retro_perf_counter **counters,
-      unsigned num, unsigned id)
-{
-   unsigned i;
-   if (!counters || num == 0)
-      return;
-
-   for (i = 0; i < num; i++)
-      if (counters[i] && counters[i]->ident)
-         menu_list_push(list, counters[i]->ident, "",
-               id + i, 0);
-}
-
-static int push_perfcounter_generic(
-      void *data,
-      void *userdata,
-      const char *path, const char *label,
-      const struct retro_perf_counter **counters,
-      unsigned num, unsigned ident,
-      unsigned type)
-{
-   file_list_t *list      = NULL;
-   file_list_t *menu_list = NULL;
-   menu_handle_t *menu = menu_driver_get_ptr();
-
-   if (!menu)
-      return -1;
-
-   list      = (file_list_t*)data;
-   menu_list = (file_list_t*)userdata;
-
-   if (!list || !menu_list)
-      return -1;
-
-   menu_list_clear(list);
-   push_perfcounter(menu, list, counters, num, ident);
-
-   menu_driver_populate_entries(path, label, type);
-
-   return 0;
-}
-
 static int deferred_push_core_counters(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
-   return push_perfcounter_generic(data, userdata, path, label,
-         perf_counters_libretro, perf_ptr_libretro, 
-         MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_BEGIN, type);
+   menu_displaylist_info_t info = {0};
+
+   info.list      = (file_list_t*)data;
+   info.menu_list = (file_list_t*)userdata;
+   info.type      =  type;
+   strlcpy(info.path, path, sizeof(info.path));
+   strlcpy(info.label, label, sizeof(info.label));
+
+   return menu_displaylist_push_list(&info, DISPLAYLIST_PERFCOUNTERS_CORE);
 }
 
 static int deferred_push_frontend_counters(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
-   return push_perfcounter_generic(data, userdata, path, label,
-         perf_counters_rarch, perf_ptr_rarch, 
-         MENU_SETTINGS_PERF_COUNTERS_BEGIN, type);
+   menu_displaylist_info_t info = {0};
+
+   info.list      = (file_list_t*)data;
+   info.menu_list = (file_list_t*)userdata;
+   info.type      =  type;
+   strlcpy(info.path, path, sizeof(info.path));
+   strlcpy(info.label, label, sizeof(info.label));
+
+   return menu_displaylist_push_list(&info, DISPLAYLIST_PERFCOUNTERS_FRONTEND);
 }
 
 static int deferred_push_core_cheat_options(void *data, void *userdata,
