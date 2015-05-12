@@ -76,6 +76,8 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          break;
       case DISPLAYLIST_CORES:
       case DISPLAYLIST_CORES_DETECTED:
+      case DISPLAYLIST_SHADER_PASS:
+      case DISPLAYLIST_SHADER_PRESET:
          ret = menu_entries_parse_list(info->list, info->menu_list,
                info->path, info->label, info->type,
                info->type_default, info->exts, NULL);
