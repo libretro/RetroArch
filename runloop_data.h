@@ -29,7 +29,7 @@
 extern "C" {
 #endif
 
-typedef int (*transfer_cb_t               )(void *data, size_t len);
+typedef int (*transfer_cb_t)(void *data, size_t len);
 
 enum runloop_data_type
 {

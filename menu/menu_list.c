@@ -19,6 +19,7 @@
 #include <retro_inline.h>
 
 #include "../driver.h"
+#include "menu.h"
 #include "menu_common_list.h"
 #include "menu_list.h"
 #include "menu_navigation.h"

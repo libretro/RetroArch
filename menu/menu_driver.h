@@ -24,6 +24,7 @@
 #include <queues/message_queue.h>
 #include "menu_animation.h"
 #include "menu_list.h"
+#include "menu_navigation.h"
 #include "menu_database.h"
 #include "../settings_list.h"
 #include "../playlist.h"
@@ -78,22 +79,6 @@ typedef struct menu_framebuf
    unsigned height;
    size_t pitch;
 } menu_framebuf_t;
-
-typedef struct menu_navigation
-{
-   struct
-   {
-      /* Quick jumping indices with L/R.
-       * Rebuilt when parsing directory. */
-      struct
-      {
-         size_t list[2 * (26 + 2) + 1];
-         unsigned size;
-      } indices;
-      unsigned acceleration;
-   } scroll;
-   size_t selection_ptr;
-} menu_navigation_t;
 
 typedef struct
 {

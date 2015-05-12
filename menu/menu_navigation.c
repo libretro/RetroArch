@@ -20,7 +20,12 @@
 #include <string.h>
 #include <limits.h>
 #include <ctype.h>
+
+#include <boolean.h>
+
 #include "menu_navigation.h"
+#include "menu_driver.h"
+#include "menu_setting.h"
 
 menu_navigation_t *menu_navigation_get_ptr(void)
 {

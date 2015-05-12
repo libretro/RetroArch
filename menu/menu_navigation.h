@@ -17,11 +17,25 @@
 #ifndef _MENU_NAVIGATION_H
 #define _MENU_NAVIGATION_H
 
-#include "menu.h"
-
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+typedef struct menu_navigation
+{
+   struct
+   {
+      /* Quick jumping indices with L/R.
+       * Rebuilt when parsing directory. */
+      struct
+      {
+         size_t list[2 * (26 + 2) + 1];
+         unsigned size;
+      } indices;
+      unsigned acceleration;
+   } scroll;
+   size_t selection_ptr;
+} menu_navigation_t;
 
 menu_navigation_t *menu_navigation_get_ptr(void);
 
