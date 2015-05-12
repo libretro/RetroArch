@@ -752,6 +752,56 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
    return 0;
 }
 
+static int menu_displaylist_parse_all_settings(menu_displaylist_info_t *info)
+{
+   rarch_setting_t *setting = NULL;
+   menu_handle_t *menu      = menu_driver_get_ptr();
+   settings_t *settings     = config_get_ptr();
+
+   settings_list_free(menu->list_settings);
+   menu->list_settings = setting_new(SL_FLAG_ALL_SETTINGS);
+
+   setting = menu_setting_find("Driver Settings");
+
+   if (settings->menu.collapse_subgroups_enable)
+   {
+      for (; setting->type != ST_NONE; setting++)
+      {
+         if (setting->type == ST_GROUP)
+            menu_list_push(info->list, setting->short_description,
+                  setting->name, menu_setting_set_flags(setting), 0);
+      }
+   }
+   else
+   {
+      for (; setting->type != ST_NONE; setting++)
+      {
+         char group_label[PATH_MAX_LENGTH];
+         char subgroup_label[PATH_MAX_LENGTH];
+
+         if (setting->type == ST_GROUP)
+            strlcpy(group_label, setting->name, sizeof(group_label));
+         else if (setting->type == ST_SUB_GROUP)
+         {
+            char new_label[PATH_MAX_LENGTH], new_path[PATH_MAX_LENGTH];
+            strlcpy(subgroup_label, setting->name, sizeof(group_label));
+            strlcpy(new_label, group_label, sizeof(new_label));
+            strlcat(new_label, "|", sizeof(new_label));
+            strlcat(new_label, subgroup_label, sizeof(new_label));
+
+            strlcpy(new_path, group_label, sizeof(new_path));
+            strlcat(new_path, " - ", sizeof(new_path));
+            strlcat(new_path, setting->short_description, sizeof(new_path));
+
+            menu_list_push(info->list, new_path,
+                  new_label, MENU_SETTING_SUBGROUP, 0);
+         }
+      }
+   }
+
+   return 0;
+}
+
 int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
 {
    int ret = 0;
@@ -776,12 +826,35 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          ret = menu_entries_push_list(menu, info->list,
                info->path, info->label, info->type, info->flags);
          break;
+      case DISPLAYLIST_SETTINGS_ALL:
+         menu_list_clear(info->list);
+
+         ret = menu_displaylist_parse_all_settings(info);
+
+         need_push    = true;
+         break;
       case DISPLAYLIST_HORIZONTAL:
          break;
       case DISPLAYLIST_HORIZONTAL_CONTENT_ACTIONS:
          menu_list_clear(info->list);
          ret = menu_displaylist_parse_horizontal_content_actions(info);
          need_refresh = true;
+         need_push    = true;
+         break;
+      case DISPLAYLIST_OPTIONS_VIDEO:
+         menu_list_clear(info->list);
+
+#if defined(GEKKO) || defined(__CELLOS_LV2__)
+         menu_list_push(info->list, "Screen Resolution", "",
+               MENU_SETTINGS_VIDEO_RESOLUTION, 0);
+#endif
+         menu_list_push(info->list, "Custom Ratio", "",
+               MENU_SETTINGS_CUSTOM_VIEWPORT, 0);
+#ifndef HAVE_FILTERS_BUILTIN
+         menu_list_push(info->list, "Video Filter", "video_filter",
+               0, 0);
+#endif
+
          need_push    = true;
          break;
       case DISPLAYLIST_DEFAULT:

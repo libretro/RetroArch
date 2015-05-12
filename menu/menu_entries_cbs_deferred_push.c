@@ -1070,67 +1070,16 @@ static int deferred_push_video_shader_parameters(void *data, void *userdata,
 static int deferred_push_settings(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
-   rarch_setting_t *setting = NULL;
-   file_list_t *list        = NULL;
-   file_list_t *menu_list   = NULL;
-   menu_handle_t *menu      = menu_driver_get_ptr();
-   settings_t *settings     = config_get_ptr();
+   menu_displaylist_info_t info = {0};
 
-   if (!menu)
-      return -1;
+   info.list      = (file_list_t*)data;
+   info.menu_list = (file_list_t*)userdata;
+   info.type      = type;
+   strlcpy(info.path, path, sizeof(info.path));
+   strlcpy(info.label, label, sizeof(info.label));
 
-   list        = (file_list_t*)data;
-   menu_list   = (file_list_t*)userdata;
+   return menu_displaylist_push_list(&info, DISPLAYLIST_SETTINGS_ALL);
 
-   if (!list || !menu_list)
-      return -1;
-
-   settings_list_free(menu->list_settings);
-   menu->list_settings = setting_new(SL_FLAG_ALL_SETTINGS);
-
-   setting = menu_setting_find("Driver Settings");
-
-   menu_list_clear(list);
-
-   if (settings->menu.collapse_subgroups_enable)
-   {
-      for (; setting->type != ST_NONE; setting++)
-      {
-         if (setting->type == ST_GROUP)
-            menu_list_push(list, setting->short_description,
-                  setting->name, menu_setting_set_flags(setting), 0);
-      }
-   }
-   else
-   {
-      for (; setting->type != ST_NONE; setting++)
-      {
-         char group_label[PATH_MAX_LENGTH];
-         char subgroup_label[PATH_MAX_LENGTH];
-
-         if (setting->type == ST_GROUP)
-            strlcpy(group_label, setting->name, sizeof(group_label));
-         else if (setting->type == ST_SUB_GROUP)
-         {
-            char new_label[PATH_MAX_LENGTH], new_path[PATH_MAX_LENGTH];
-            strlcpy(subgroup_label, setting->name, sizeof(group_label));
-            strlcpy(new_label, group_label, sizeof(new_label));
-            strlcat(new_label, "|", sizeof(new_label));
-            strlcat(new_label, subgroup_label, sizeof(new_label));
-
-            strlcpy(new_path, group_label, sizeof(new_path));
-            strlcat(new_path, " - ", sizeof(new_path));
-            strlcat(new_path, setting->short_description, sizeof(new_path));
-
-            menu_list_push(list, new_path,
-                  new_label, MENU_SETTING_SUBGROUP, 0);
-         }
-      }
-   }
-
-   menu_driver_populate_entries(path, label, type);
-
-   return 0;
 }
 
 static int deferred_push_settings_subgroup(void *data, void *userdata,
@@ -1227,34 +1176,15 @@ static int deferred_push_category(void *data, void *userdata,
 static int deferred_push_video_options(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
-   file_list_t *list      = NULL;
-   file_list_t *menu_list = NULL;
-   menu_handle_t *menu    = menu_driver_get_ptr();
+   menu_displaylist_info_t info = {0};
 
-   if (!menu)
-      return -1;
+   info.list      = (file_list_t*)data;
+   info.menu_list = (file_list_t*)userdata;
+   info.type      = type;
+   strlcpy(info.path,  path, sizeof(info.path));
+   strlcpy(info.label, label, sizeof(info.label));
 
-   list           = (file_list_t*)data;
-   menu_list      = (file_list_t*)userdata;
-
-   if (!list || !menu_list)
-      return -1;
-
-   menu_list_clear(list);
-#if defined(GEKKO) || defined(__CELLOS_LV2__)
-   menu_list_push(list, "Screen Resolution", "",
-         MENU_SETTINGS_VIDEO_RESOLUTION, 0);
-#endif
-   menu_list_push(list, "Custom Ratio", "",
-         MENU_SETTINGS_CUSTOM_VIEWPORT, 0);
-#ifndef HAVE_FILTERS_BUILTIN
-   menu_list_push(list, "Video Filter", "video_filter",
-         0, 0);
-#endif
-
-   menu_driver_populate_entries(path, label, type);
-
-   return 0;
+   return menu_displaylist_push_list(&info, DISPLAYLIST_OPTIONS_VIDEO);
 }
 
 static int deferred_push_shader_options(void *data, void *userdata,
