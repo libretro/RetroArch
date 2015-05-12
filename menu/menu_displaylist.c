@@ -195,11 +195,7 @@ static void menu_displaylist_parse_drive_list(file_list_t *list)
 #endif
 }
 
-static int menu_displaylist_parse(
-      file_list_t *list, file_list_t *menu_list,
-      const char *dir, const char *label, unsigned type,
-      unsigned default_type_plain, const char *exts,
-      rarch_setting_t *setting)
+static int menu_displaylist_parse(menu_displaylist_info_t *info)
 {
    size_t i, list_size;
    bool path_is_compressed, push_dir;
@@ -211,20 +207,17 @@ static int menu_displaylist_parse(
 
    (void)device;
 
-   if (!list || !menu_list)
-      return -1;
+   menu_list_clear(info->list);
 
-   menu_list_clear(list);
-
-   if (!*dir)
+   if (!*info->path)
    {
-      menu_displaylist_parse_drive_list(list);
+      menu_displaylist_parse_drive_list(info->list);
       return 0;
    }
 
 #if defined(GEKKO) && defined(HW_RVL)
    slock_lock(gx_device_mutex);
-   device = gx_get_device_from_path(dir);
+   device = gx_get_device_from_path(info->path);
 
    if (device != -1 && !gx_devices[device].mounted &&
          gx_devices[device].interface->isInserted())
@@ -233,18 +226,19 @@ static int menu_displaylist_parse(
    slock_unlock(gx_device_mutex);
 #endif
 
-   path_is_compressed = path_is_compressed_file(dir);
-   push_dir           = (setting && setting->browser_selection_type == ST_DIR);
+   path_is_compressed = path_is_compressed_file(info->path);
+   push_dir           = (info->setting 
+         && info->setting->browser_selection_type == ST_DIR);
 
    if (path_is_compressed)
-      str_list = compressed_file_list_new(dir,exts);
+      str_list = compressed_file_list_new(info->path, info->exts);
    else
-      str_list = dir_list_new(dir,
+      str_list = dir_list_new(info->path,
             settings->menu.navigation.browser.filter.supported_extensions_enable 
-            ? exts : NULL, true);
+            ? info->exts : NULL, true);
 
    if (push_dir)
-      menu_list_push(list, "<Use this directory>", "",
+      menu_list_push(info->list, "<Use this directory>", "",
             MENU_FILE_USE_DIRECTORY, 0);
 
    if (!str_list)
@@ -273,7 +267,7 @@ static int menu_displaylist_parse(
             break;
          case RARCH_PLAIN_FILE:
          default:
-            if (!strcmp(label, "detect_core_list"))
+            if (!strcmp(info->label, "detect_core_list"))
             {
                if (path_is_compressed_file(str_list->elems[i].data))
                {
@@ -284,7 +278,7 @@ static int menu_displaylist_parse(
                   break;
                }
             }
-            file_type = (menu_file_type_t)default_type_plain;
+            file_type = (menu_file_type_t)info->type_default;
             break;
       }
 
@@ -296,13 +290,13 @@ static int menu_displaylist_parse(
       /* Need to preserve slash first time. */
       path = str_list->elems[i].data;
 
-      if (*dir && !path_is_compressed)
+      if (*info->path && !path_is_compressed)
          path = path_basename(path);
 
 
 #ifdef HAVE_LIBRETRO_MANAGEMENT
 #ifdef RARCH_CONSOLE
-      if (!strcmp(label, "core_list") && (is_dir ||
+      if (!strcmp(info->label, "core_list") && (is_dir ||
                strcasecmp(path, SALAMANDER_FILE) == 0))
          continue;
 #endif
@@ -310,33 +304,35 @@ static int menu_displaylist_parse(
 
       /* Push type further down in the chain.
        * Needed for shader manager currently. */
-      if (!strcmp(label, "core_list"))
+      if (!strcmp(info->label, "core_list"))
       {
          /* Compressed cores are unsupported */
          if (file_type == MENU_FILE_CARCHIVE)
             continue;
 
-         menu_list_push(list, path, "",
+         menu_list_push(info->list, path, "",
                is_dir ? MENU_FILE_DIRECTORY : MENU_FILE_CORE, 0);
       }
       else
-      menu_list_push(list, path, "",
+      menu_list_push(info->list, path, "",
             file_type, 0);
    }
 
    string_list_free(str_list);
 
-   if (!strcmp(label, "core_list"))
+   if (!strcmp(info->label, "core_list"))
    {
+      const char *dir = NULL;
       menu_list_get_last_stack(menu->menu_list, &dir, NULL, NULL);
-      list_size = file_list_get_size(list);
+      list_size = file_list_get_size(info->list);
 
       for (i = 0; i < list_size; i++)
       {
+         unsigned type = 0;
          char core_path[PATH_MAX_LENGTH], display_name[PATH_MAX_LENGTH];
          const char *path = NULL;
 
-         menu_list_get_at_offset(list, i, &path, NULL, &type);
+         menu_list_get_at_offset(info->list, i, &path, NULL, &type);
 
          if (type != MENU_FILE_CORE)
             continue;
@@ -346,12 +342,12 @@ static int menu_displaylist_parse(
          if (global->core_info &&
                core_info_list_get_display_name(global->core_info,
                   core_path, display_name, sizeof(display_name)))
-            menu_list_set_alt_at_offset(list, i, display_name);
+            menu_list_set_alt_at_offset(info->list, i, display_name);
       }
-      menu_list_sort_on_alt(list);
+      menu_list_sort_on_alt(info->list);
    }
 
-   menu_list_refresh(list);
+   menu_list_refresh(info->list);
 
    return 0;
 }
@@ -654,9 +650,7 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
       case DISPLAYLIST_RECORD_CONFIG_FILES:
       case DISPLAYLIST_CONFIG_FILES:
       case DISPLAYLIST_CONTENT_HISTORY:
-         ret = menu_displaylist_parse(info->list, info->menu_list,
-               info->path, info->label, info->type,
-               info->type_default, info->exts, info->setting);
+         ret = menu_displaylist_parse(info);
          if (ret == 0)
             need_push = true;
          break;
