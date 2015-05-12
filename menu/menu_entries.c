@@ -84,7 +84,8 @@ static void menu_entries_content_list_push(
    string_list_free(str_list);
 }
 
-static int menu_entries_push_cores_list(file_list_t *list, core_info_t *info,
+static int menu_entries_push_horizontal_menu_list_cores(
+      file_list_t *list, core_info_t *info,
       const char *path, bool push_databases_enable)
 {
    size_t i;
@@ -162,8 +163,8 @@ int menu_entries_push_list(menu_handle_t *menu,
    return 0;
 }
 
-int menu_entries_push_horizontal_menu_list(menu_handle_t *menu,
-      file_list_t *list,
+int menu_entries_push_horizontal_menu_list(
+      menu_handle_t *menu, file_list_t *list,
       const char *path, const char *label,
       unsigned type)
 {
@@ -184,7 +185,7 @@ int menu_entries_push_horizontal_menu_list(menu_handle_t *menu,
 
    menu_list_clear(list);
 
-   menu_entries_push_cores_list(list, info, settings->core_assets_directory, true);
+   menu_entries_push_horizontal_menu_list_cores(list, info, settings->core_assets_directory, true);
 
    menu_list_populate_generic(list, path, label, type);
 
