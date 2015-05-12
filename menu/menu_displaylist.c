@@ -48,12 +48,7 @@ static int menu_displaylist_push_perfcounter_generic(
       const struct retro_perf_counter **counters,
       unsigned num, unsigned ident)
 {
-   menu_list_clear(info->list);
    menu_displaylist_push_perfcounter(info, counters, num, ident);
-
-   menu_driver_populate_entries(
-         info->path, info->label, info->type);
-
    return 0;
 }
 
@@ -520,14 +515,18 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          menu_driver_populate_entries(info->path, info->label, info->type);
          break;
       case DISPLAYLIST_PERFCOUNTERS_CORE:
-         ret = menu_displaylist_push_perfcounter_generic(info,
-               perf_counters_libretro, perf_ptr_libretro, 
-               MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_BEGIN);
-         break;
       case DISPLAYLIST_PERFCOUNTERS_FRONTEND:
+         menu_list_clear(info->list);
          ret = menu_displaylist_push_perfcounter_generic(info,
-               perf_counters_rarch, perf_ptr_rarch, 
-               MENU_SETTINGS_PERF_COUNTERS_BEGIN);
+              (type == DISPLAYLIST_PERFCOUNTERS_CORE) ? 
+              perf_counters_libretro : perf_counters_rarch,
+              (type == DISPLAYLIST_PERFCOUNTERS_CORE) ?
+              perf_ptr_libretro : perf_ptr_rarch , 
+              (type == DISPLAYLIST_PERFCOUNTERS_CORE) ? 
+              MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_BEGIN : MENU_SETTINGS_PERF_COUNTERS_BEGIN);
+
+         menu_driver_populate_entries(
+               info->path, info->label, info->type);
          break;
    }
 
