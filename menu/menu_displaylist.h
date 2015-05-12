@@ -16,11 +16,22 @@
 #ifndef _MENU_DISPLAYLIST_H
 #define _MENU_DISPLAYLIST_H
 
+#include <stdint.h>
+#include <retro_miscellaneous.h>
 #include "menu_list.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+typedef struct menu_displaylist_info
+{
+   file_list_t *list;
+   char path[PATH_MAX_LENGTH];
+   char label[PATH_MAX_LENGTH];
+   unsigned type;
+   unsigned flags;
+} menu_displaylist_info_t;
 
 int menu_displaylist_push(file_list_t *list, file_list_t *menu_list);
 
