@@ -55,11 +55,6 @@ int menu_entries_push_horizontal_menu_list(menu_handle_t *menu,
       const char *path, const char *label,
       unsigned menu_type);
 
-#ifdef HAVE_LIBRETRODB
-int menu_entries_push_query(libretrodb_t *db,
-   libretrodb_cursor_t *cur, file_list_t *list);
-#endif
-
 #ifdef __cplusplus
 }
 #endif

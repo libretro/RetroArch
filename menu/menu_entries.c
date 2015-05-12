@@ -48,40 +48,6 @@ int menu_entries_setting_set_flags(rarch_setting_t *setting)
    return 0;
 }
 
-#ifdef HAVE_LIBRETRODB
-int menu_entries_push_query(libretrodb_t *db,
-   libretrodb_cursor_t *cur, file_list_t *list)
-{
-   unsigned i;
-   struct rmsgpack_dom_value item;
-    
-   while (libretrodb_cursor_read_item(cur, &item) == 0)
-   {
-      if (item.type != RDT_MAP)
-         continue;
-        
-      for (i = 0; i < item.map.len; i++)
-      {
-         struct rmsgpack_dom_value *key = &item.map.items[i].key;
-         struct rmsgpack_dom_value *val = &item.map.items[i].value;
-
-         if (!key || !val)
-            continue;
-            
-         if (!strcmp(key->string.buff, "name"))
-         {
-            menu_list_push(list, val->string.buff, db->path,
-            MENU_FILE_RDB_ENTRY, 0);
-            break;
-         }
-      }
-   }
-    
-   return 0;
-}
-#endif
-
-
 static void menu_entries_content_list_push(
       file_list_t *list, core_info_t *info, const char* path)
 {
