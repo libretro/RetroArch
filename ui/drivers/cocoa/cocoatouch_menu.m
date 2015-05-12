@@ -26,7 +26,6 @@
 #include "../../../input/drivers/cocoa_input.h"
 
 #include "../../../menu/menu_displaylist.h"
-#include "../../../menu/menu_entries.h"
 #include "../../../menu/menu_navigation.h"
 #include "../../../menu/menu_list.h"
 #include "../../../menu/menu_setting.h"

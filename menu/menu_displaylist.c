@@ -466,7 +466,6 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
    menu_handle_t    *menu = menu_driver_get_ptr();
    menu_list_t *menu_list = menu_list_get_ptr();
    menu_navigation_t *nav = menu_navigation_get_ptr();
-   global_t       *global = global_get_ptr();
 
    switch (type)
    {
