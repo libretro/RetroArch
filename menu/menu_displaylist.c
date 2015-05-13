@@ -1959,7 +1959,6 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
 
 int menu_displaylist_deferred_push(menu_displaylist_info_t *info)
 {
-   int ret;
    menu_file_list_cbs_t *cbs = NULL;
    menu_handle_t       *menu = menu_driver_get_ptr();
 
@@ -1988,11 +1987,10 @@ int menu_displaylist_deferred_push(menu_displaylist_info_t *info)
 int menu_displaylist_push(file_list_t *list, file_list_t *menu_list)
 {
    int ret;
-   unsigned type             = 0;
-   const char *path          = NULL;
-   const char *label         = NULL;
-   menu_handle_t *menu    = menu_driver_get_ptr();
-   driver_t       *driver = driver_get_ptr();
+   unsigned type                = 0;
+   const char *path             = NULL;
+   const char *label            = NULL;
+   menu_handle_t *menu          = menu_driver_get_ptr();
    menu_displaylist_info_t info = {0};
 
    menu_list_get_last_stack(menu->menu_list, &path, &label, &type);
@@ -2006,7 +2004,6 @@ int menu_displaylist_push(file_list_t *list, file_list_t *menu_list)
    ret = menu_displaylist_deferred_push(&info);
 
    menu->need_refresh = false;
-
 
    return ret;
 }
