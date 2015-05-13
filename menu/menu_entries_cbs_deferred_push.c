@@ -1204,37 +1204,15 @@ static int deferred_push_shader_options(void *data, void *userdata,
 static int deferred_push_options(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
-   file_list_t *list           = (file_list_t*)data;
-   file_list_t *menu_list      = (file_list_t*)userdata;
-   global_t *global            = global_get_ptr();
+   menu_displaylist_info_t info = {0};
 
-   if (!list || !menu_list)
-      return -1;
+   info.list      = (file_list_t*)data;
+   info.menu_list = (file_list_t*)userdata;
+   info.type      = type;
+   strlcpy(info.path,  path, sizeof(info.path));
+   strlcpy(info.label, label, sizeof(info.label));
 
-   menu_list_clear(list);
-   menu_list_push(list, "Core Options", "core_options",
-         MENU_SETTING_ACTION, 0);
-   if (global->main_is_init)
-   {
-      if (global->has_set_input_descriptors)
-         menu_list_push(list, "Core Input Remapping Options", "core_input_remapping_options",
-               MENU_SETTING_ACTION, 0);
-      menu_list_push(list, "Core Cheat Options", "core_cheat_options",
-            MENU_SETTING_ACTION, 0);
-      if (!global->libretro_dummy && global->system.disk_control.get_num_images)
-         menu_list_push(list, "Core Disk Options", "disk_options",
-               MENU_SETTING_ACTION, 0);
-   }
-   menu_list_push(list, "Video Options", "video_options",
-         MENU_SETTING_ACTION, 0);
-#ifdef HAVE_SHADER_MANAGER
-   menu_list_push(list, "Shader Options", "shader_options",
-         MENU_SETTING_ACTION, 0);
-#endif
-
-   menu_driver_populate_entries(path, label, type);
-
-   return 0;
+   return menu_displaylist_push_list(&info, DISPLAYLIST_OPTIONS);
 }
 
 static int deferred_push_management_options(void *data, void *userdata,

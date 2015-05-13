@@ -860,6 +860,33 @@ static int menu_displaylist_parse_disk_options(menu_displaylist_info_t *info)
    return 0;
 }
 
+static int menu_displaylist_parse_options(menu_displaylist_info_t *info)
+{
+   global_t *global            = global_get_ptr();
+
+   menu_list_push(info->list, "Core Options", "core_options",
+         MENU_SETTING_ACTION, 0);
+   if (global->main_is_init)
+   {
+      if (global->has_set_input_descriptors)
+         menu_list_push(info->list, "Core Input Remapping Options", "core_input_remapping_options",
+               MENU_SETTING_ACTION, 0);
+      menu_list_push(info->list, "Core Cheat Options", "core_cheat_options",
+            MENU_SETTING_ACTION, 0);
+      if (!global->libretro_dummy && global->system.disk_control.get_num_images)
+         menu_list_push(info->list, "Core Disk Options", "disk_options",
+               MENU_SETTING_ACTION, 0);
+   }
+   menu_list_push(info->list, "Video Options", "video_options",
+         MENU_SETTING_ACTION, 0);
+#ifdef HAVE_SHADER_MANAGER
+   menu_list_push(info->list, "Shader Options", "shader_options",
+         MENU_SETTING_ACTION, 0);
+#endif
+
+   return 0;
+}
+
 int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
 {
    int ret = 0;
@@ -897,6 +924,13 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          menu_list_clear(info->list);
          ret = menu_displaylist_parse_horizontal_content_actions(info);
          need_refresh = true;
+         need_push    = true;
+         break;
+      case DISPLAYLIST_OPTIONS:
+         menu_list_clear(info->list);
+
+         ret = menu_displaylist_parse_options(info);
+
          need_push    = true;
          break;
       case DISPLAYLIST_OPTIONS_VIDEO:
