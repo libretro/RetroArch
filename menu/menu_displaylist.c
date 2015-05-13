@@ -926,8 +926,6 @@ static int menu_displaylist_parse_settings_in_subgroup(menu_displaylist_info_t *
 
    info->setting = menu_setting_find(elem0);
 
-   menu_list_clear(info->list);
-
    if (!info->setting)
       return -1;
 
