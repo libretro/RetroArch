@@ -143,36 +143,6 @@ static void print_features(void)
 #undef _PSUPP
 
 /**
- * rarch_print_compiler:
- *
- * Prints compiler that was used for compiling RetroArch.
- **/
-void rarch_print_compiler(char *str, size_t sizeof_str)
-{
-#if defined(_MSC_VER)
-   snprintf(str, sizeof_str, "Compiler: MSVC (%d) %u-bit", _MSC_VER, (unsigned)
-         (CHAR_BIT * sizeof(size_t)));
-#elif defined(__SNC__)
-   snprintf(str, sizeof_str, "Compiler: SNC (%d) %u-bit",
-      __SN_VER__, (unsigned)(CHAR_BIT * sizeof(size_t)));
-#elif defined(_WIN32) && defined(__GNUC__)
-   snprintf(str, sizeof_str, "Compiler: MinGW (%d.%d.%d) %u-bit",
-      __GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__, (unsigned)
-      (CHAR_BIT * sizeof(size_t)));
-#elif defined(__clang__)
-   snprintf(str, sizeof_str, "Compiler: Clang/LLVM (%s) %u-bit",
-      __clang_version__, (unsigned)(CHAR_BIT * sizeof(size_t)));
-#elif defined(__GNUC__)
-   snprintf(str, sizeof_str, "Compiler: GCC (%d.%d.%d) %u-bit",
-      __GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__, (unsigned)
-      (CHAR_BIT * sizeof(size_t)));
-#else
-   snprintf(str, sizeof_str, "Unknown compiler %u-bit",
-      (unsigned)(CHAR_BIT * sizeof(size_t)));
-#endif
-}
-
-/**
  * print_help:
  *
  * Prints help message explaining RetroArch's commandline switches.
@@ -187,7 +157,7 @@ static void print_help(void)
 #else
    puts(RETRO_FRONTEND ": Frontend for libretro -- v" PACKAGE_VERSION " --");
 #endif
-   rarch_print_compiler(str, sizeof(str));
+   rarch_info_get_capabilities(RARCH_CAPABILITIES_COMPILER, str, sizeof(str));
    fprintf(stdout, "%s", str);
    fprintf(stdout, "Built: %s\n", __DATE__);
    puts("===================================================================");
@@ -1149,7 +1119,7 @@ int rarch_main_init(int argc, char *argv[])
       char str[PATH_MAX_LENGTH];
 
       RARCH_LOG_OUTPUT("=== Build =======================================");
-      rarch_print_compiler(str, sizeof(str));
+      rarch_info_get_capabilities(RARCH_CAPABILITIES_CPU, str, sizeof(str));
       fprintf(stderr, "%s", str);
       fprintf(stderr, "Built: %s\n", __DATE__);
       RARCH_LOG_OUTPUT("Version: %s\n", PACKAGE_VERSION);

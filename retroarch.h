@@ -35,6 +35,13 @@ enum action_state
    RARCH_ACTION_STATE_FORCE_QUIT,
 };
 
+enum rarch_capabilities
+{
+   RARCH_CAPABILITIES_NONE = 0,
+   RARCH_CAPABILITIES_CPU,
+   RARCH_CAPABILITIES_COMPILER,
+};
+
 struct rarch_main_wrap
 {
    const char *content_path;
@@ -169,12 +176,7 @@ void rarch_set_paths(const char *path);
 
 void set_paths_redirect(const char *path);
 
-/**
- * rarch_print_compiler:
- *
- * Prints compiler that was used for compiling RetroArch.
- **/
-void rarch_print_compiler(char *str, size_t sizeof_str);
+int rarch_info_get_capabilities(enum rarch_capabilities type, char *s, size_t len);
 
 char orig_savestate_dir[PATH_MAX_LENGTH];
 char orig_savefile_dir[PATH_MAX_LENGTH];
