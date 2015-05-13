@@ -1739,10 +1739,8 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
    bool need_refresh = false;
    bool need_push    = false;
    menu_handle_t    *menu = menu_driver_get_ptr();
-   menu_list_t *menu_list = menu_list_get_ptr();
 
    menu_list_clear(info->list);
-
 
    switch (type)
    {
@@ -1944,8 +1942,17 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
       menu_list_sort_on_alt(info->list);
 
    if (need_push)
+   {
+      driver_t *driver                = driver_get_ptr();
+      const ui_companion_driver_t *ui = ui_companion_get_ptr();
+
       menu_list_populate_generic(info->list,
             info->path, info->label, info->type, need_refresh);
+
+      if (ui && driver)
+         ui->notify_list_loaded(driver->ui_companion_data,
+               info->list, info->menu_list);
+   }
 
    return ret;
 }
@@ -2000,13 +2007,6 @@ int menu_displaylist_push(file_list_t *list, file_list_t *menu_list)
 
    menu->need_refresh = false;
 
-   if (ret == 0)
-   {
-      const ui_companion_driver_t *ui = ui_companion_get_ptr();
-
-      if (ui)
-         ui->notify_list_loaded(driver->ui_companion_data, list, menu_list);
-   }
 
    return ret;
 }
