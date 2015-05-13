@@ -31,6 +31,9 @@ extern "C" {
 int menu_database_populate_query(file_list_t *list, const char *path,
                                      const char *query);
 
+int menu_database_build_query(
+      char *query, size_t len, const char *label, const char *path);
+
 void menu_database_free(void *data);
 
 bool menu_database_realloc(const char *path,

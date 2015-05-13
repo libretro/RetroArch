@@ -19,6 +19,78 @@
 #include "../playlist.h"
 #include <string.h>
 
+int menu_database_build_query(
+      char *query, size_t len, const char *label, const char *path)
+{
+   bool add_quotes = true;
+
+   strlcpy(query, "{'", len);
+
+   if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_publisher"))
+      strlcat(query, "publisher", len);
+   else if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_developer"))
+      strlcat(query, "developer", len);
+   else if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_origin"))
+      strlcat(query, "origin", len);
+   else if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_franchise"))
+      strlcat(query, "franchise", len);
+   else if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_esrb_rating"))
+      strlcat(query, "esrb_rating", len);
+   else if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_bbfc_rating"))
+      strlcat(query, "bbfc_rating", len);
+   else if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_elspa_rating"))
+      strlcat(query, "elspa_rating", len);
+   else if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_pegi_rating"))
+      strlcat(query, "pegi_rating", len);
+   else if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_enhancement_hw"))
+      strlcat(query, "enhancement_hw", len);
+   else if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_cero_rating"))
+      strlcat(query, "cero_rating", len);
+   else if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_edge_magazine_rating"))
+   {
+      strlcat(query, "edge_rating", len);
+      add_quotes = false;
+   }
+   else if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_edge_magazine_issue"))
+   {
+      strlcat(query, "edge_issue", len);
+      add_quotes = false;
+   }
+   else if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_famitsu_magazine_rating"))
+   {
+      strlcat(query, "famitsu_rating", len);
+      add_quotes = false;
+   }
+   else if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_releasemonth"))
+   {
+      strlcat(query, "releasemonth", len);
+      add_quotes = false;
+   }
+   else if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_releaseyear"))
+   {
+      strlcat(query, "releaseyear", len);
+      add_quotes = false;
+   }
+   else if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_max_users"))
+   {
+      strlcat(query, "users", len);
+      add_quotes = false;
+   }
+
+   strlcat(query, "':", len);
+   if (add_quotes)
+      strlcat(query, "\"", len);
+   strlcat(query, path, len);
+   if (add_quotes)
+      strlcat(query, "\"", len);
+   strlcat(query, "}", len);
+
+#if 0
+   RARCH_LOG("query: %s\n", query);
+#endif
+   return 0;
+}
+
 #ifdef HAVE_LIBRETRODB
 static int menu_database_push_query(libretrodb_t *db,
    libretrodb_cursor_t *cur, file_list_t *list)

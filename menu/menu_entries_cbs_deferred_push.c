@@ -918,89 +918,9 @@ static int deferred_push_cursor_manager_list_deferred_query_subsearch(
    int ret;
    menu_displaylist_info_t info = {0};
    char query[PATH_MAX_LENGTH];
-   struct string_list *str_list = NULL;
-   bool add_quotes = true;
-   file_list_t *list = NULL;
-   file_list_t *menu_list = NULL;
-   menu_handle_t *menu    = menu_driver_get_ptr();
-   if (!menu)
-      return -1;
+   struct string_list *str_list  = string_split(path, "|"); 
 
-   str_list  = string_split(path, "|"); 
-
-   list                   = (file_list_t*)data;
-   menu_list              = (file_list_t*)userdata;
-
-   if (!list || !menu_list)
-   {
-      string_list_free(str_list);
-      return -1;
-   }
-
-   strlcpy(query, "{'", sizeof(query));
-
-   if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_publisher"))
-      strlcat(query, "publisher", sizeof(query));
-   else if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_developer"))
-      strlcat(query, "developer", sizeof(query));
-   else if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_origin"))
-      strlcat(query, "origin", sizeof(query));
-   else if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_franchise"))
-      strlcat(query, "franchise", sizeof(query));
-   else if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_esrb_rating"))
-      strlcat(query, "esrb_rating", sizeof(query));
-   else if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_bbfc_rating"))
-      strlcat(query, "bbfc_rating", sizeof(query));
-   else if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_elspa_rating"))
-      strlcat(query, "elspa_rating", sizeof(query));
-   else if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_pegi_rating"))
-      strlcat(query, "pegi_rating", sizeof(query));
-   else if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_enhancement_hw"))
-      strlcat(query, "enhancement_hw", sizeof(query));
-   else if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_cero_rating"))
-      strlcat(query, "cero_rating", sizeof(query));
-   else if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_edge_magazine_rating"))
-   {
-      strlcat(query, "edge_rating", sizeof(query));
-      add_quotes = false;
-   }
-   else if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_edge_magazine_issue"))
-   {
-      strlcat(query, "edge_issue", sizeof(query));
-      add_quotes = false;
-   }
-   else if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_famitsu_magazine_rating"))
-   {
-      strlcat(query, "famitsu_rating", sizeof(query));
-      add_quotes = false;
-   }
-   else if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_releasemonth"))
-   {
-      strlcat(query, "releasemonth", sizeof(query));
-      add_quotes = false;
-   }
-   else if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_releaseyear"))
-   {
-      strlcat(query, "releaseyear", sizeof(query));
-      add_quotes = false;
-   }
-   else if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_max_users"))
-   {
-      strlcat(query, "users", sizeof(query));
-      add_quotes = false;
-   }
-
-   strlcat(query, "':", sizeof(query));
-   if (add_quotes)
-      strlcat(query, "\"", sizeof(query));
-   strlcat(query, str_list->elems[0].data, sizeof(query));
-   if (add_quotes)
-      strlcat(query, "\"", sizeof(query));
-   strlcat(query, "}", sizeof(query));
-
-#if 0
-   RARCH_LOG("query: %s\n", query);
-#endif
+   menu_database_build_query(query, sizeof(query), label, str_list->elems[0].data);
 
    if (query[0] == '\0')
    {
