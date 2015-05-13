@@ -1926,7 +1926,7 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
       case DISPLAYLIST_DATABASE_ENTRY:
          menu_list_clear(info->list);
 
-         ret =- menu_displaylist_parse_database_entry(info);
+         ret = menu_displaylist_parse_database_entry(info);
 
          need_push    = true;
          break;
