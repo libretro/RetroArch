@@ -354,7 +354,7 @@ static int menu_displaylist_parse(menu_displaylist_info_t *info, bool *need_sort
    return 0;
 }
 
-static int menu_entries_push_list(menu_handle_t *menu,
+static int menu_displaylist_parse_settings(menu_handle_t *menu,
       menu_displaylist_info_t *info, unsigned setting_flags)
 {
    rarch_setting_t *setting = NULL;
@@ -388,7 +388,7 @@ static int menu_entries_push_list(menu_handle_t *menu,
    return 0;
 }
 
-static void menu_entries_push_horizontal_menu_list_content(
+static void menu_displaylist_push_horizontal_menu_list_content(
       file_list_t *list, core_info_t *info, const char* path)
 {
    unsigned j;
@@ -413,7 +413,7 @@ static void menu_entries_push_horizontal_menu_list_content(
          continue;
 
       if (str_list->elems[j].attr.i == RARCH_DIRECTORY)
-         menu_entries_push_horizontal_menu_list_content(list, info, name);
+         menu_displaylist_push_horizontal_menu_list_content(list, info, name);
       else
          menu_list_push(
                list, name,
@@ -424,7 +424,7 @@ static void menu_entries_push_horizontal_menu_list_content(
    string_list_free(str_list);
 }
 
-static int menu_entries_push_horizontal_menu_list_cores(
+static int menu_displaylist_push_horizontal_menu_list_cores(
       file_list_t *list, core_info_t *info,
       const char *path, bool push_databases_enable)
 {
@@ -432,7 +432,7 @@ static int menu_entries_push_horizontal_menu_list_cores(
    settings_t *settings     = config_get_ptr();
 
    if (!info->supports_no_game)
-      menu_entries_push_horizontal_menu_list_content(list, info, path);
+      menu_displaylist_push_horizontal_menu_list_content(list, info, path);
    else
       menu_list_push(list, info->display_name, "content_actions",
             MENU_FILE_CONTENTLIST_ENTRY, 0);
@@ -482,7 +482,7 @@ static int menu_displaylist_parse_horizontal_list(menu_displaylist_info_t *info)
 
    strlcpy(settings->libretro, core_info->path, sizeof(settings->libretro));
 
-   menu_entries_push_horizontal_menu_list_cores(info->list,
+   menu_displaylist_push_horizontal_menu_list_cores(info->list,
          core_info, settings->core_assets_directory, true);
 
    return 0;
@@ -1748,11 +1748,8 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
       case DISPLAYLIST_NONE:
          break;
       case DISPLAYLIST_MAIN_MENU:
-         ret = menu_entries_push_list(menu, info, info->flags);
-         need_push    = true;
-         break;
       case DISPLAYLIST_SETTINGS:
-         ret = menu_entries_push_list(menu, info, info->flags);
+         ret = menu_displaylist_parse_settings(menu, info, info->flags);
          need_push    = true;
          break;
       case DISPLAYLIST_SETTINGS_ALL:
