@@ -2019,8 +2019,9 @@ int menu_displaylist_push(file_list_t *list, file_list_t *menu_list)
  *
  * Returns: true (1) if successful, otherwise false (0).
  **/
-bool menu_displaylist_init(menu_handle_t *menu)
+bool menu_displaylist_init(void *data)
 {
+   menu_handle_t *menu    = (menu_handle_t*)data;
    menu_list_t *menu_list = menu_list_get_ptr();
    menu_navigation_t *nav = menu_navigation_get_ptr();
    menu_displaylist_info_t info = {0};

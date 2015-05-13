@@ -18,7 +18,6 @@
 
 #include <stdint.h>
 #include <retro_miscellaneous.h>
-#include "menu.h"
 #include "menu_list.h"
 #include "menu_setting.h"
 
@@ -103,7 +102,7 @@ int menu_displaylist_push(file_list_t *list, file_list_t *menu_list);
  *
  * Returns: true (1) if successful, otherwise false (0).
  **/
-bool menu_displaylist_init(menu_handle_t *menu);
+bool menu_displaylist_init(void *data);
 
 #ifdef __cplusplus
 }
