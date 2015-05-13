@@ -1759,6 +1759,10 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          menu_list_push(menu_list->menu_stack,
                info->path, info->label, info->type, info->flags);
          menu_navigation_clear(nav, true);
+         menu_list_clear(info->list);
+         ret = menu_entries_push_list(menu, info, info->flags);
+         need_push    = true;
+         break;
       case DISPLAYLIST_SETTINGS:
          menu_list_clear(info->list);
          ret = menu_entries_push_list(menu, info, info->flags);
