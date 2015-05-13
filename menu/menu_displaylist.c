@@ -887,6 +887,17 @@ static int menu_displaylist_parse_options(menu_displaylist_info_t *info)
    return 0;
 }
 
+static int menu_displaylist_parse_options_management(menu_displaylist_info_t *info)
+{
+#ifdef HAVE_LIBRETRODB
+   menu_list_push(info->list, "Database Manager", "database_manager_list",
+         MENU_SETTING_ACTION, 0);
+   menu_list_push(info->list, "Cursor Manager", "cursor_manager_list",
+         MENU_SETTING_ACTION, 0);
+#endif
+   return 0;
+}
+
 int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
 {
    int ret = 0;
@@ -930,6 +941,13 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          menu_list_clear(info->list);
 
          ret = menu_displaylist_parse_options(info);
+
+         need_push    = true;
+         break;
+      case DISPLAYLIST_OPTIONS_MANAGEMENT:
+         menu_list_clear(info->list);
+
+         ret = menu_displaylist_parse_options_management(info);
 
          need_push    = true;
          break;

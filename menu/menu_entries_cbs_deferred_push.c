@@ -1218,24 +1218,15 @@ static int deferred_push_options(void *data, void *userdata,
 static int deferred_push_management_options(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
-   file_list_t *list           = (file_list_t*)data;
-   file_list_t *menu_list      = (file_list_t*)userdata;
+   menu_displaylist_info_t info = {0};
 
-   if (!list || !menu_list)
-      return -1;
+   info.list      = (file_list_t*)data;
+   info.menu_list = (file_list_t*)userdata;
+   info.type      =  type;
+   strlcpy(info.path, path, sizeof(info.path));
+   strlcpy(info.label, label, sizeof(info.label));
 
-   menu_list_clear(list);
-
-#ifdef HAVE_LIBRETRODB
-   menu_list_push(list, "Database Manager", "database_manager_list",
-         MENU_SETTING_ACTION, 0);
-   menu_list_push(list, "Cursor Manager", "cursor_manager_list",
-         MENU_SETTING_ACTION, 0);
-#endif
-
-   menu_driver_populate_entries(path, label, type);
-
-   return 0;
+   return menu_displaylist_push_list(&info, DISPLAYLIST_OPTIONS_MANAGEMENT);
 }
 
 static int deferred_push_core_counters(void *data, void *userdata,
