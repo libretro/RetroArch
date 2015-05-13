@@ -2016,10 +2016,10 @@ int menu_displaylist_deferred_push(menu_displaylist_info_t *info)
    cbs = (menu_file_list_cbs_t*)
       menu_list_get_last_stack_actiondata(menu->menu_list);
 
-   if (!cbs->action_deferred_push)
-      return 0;
+   if (cbs->action_deferred_push)
+      return cbs->action_deferred_push(info->list, info->menu_list, path, label, type);
 
-   return cbs->action_deferred_push(info->list, info->menu_list, path, label, type);
+   return 0;
 }
 
 int menu_displaylist_push(file_list_t *list, file_list_t *menu_list)
