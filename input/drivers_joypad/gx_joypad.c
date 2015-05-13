@@ -2,7 +2,7 @@
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2015 - Daniel De Matteis
  *  Copyright (C) 2012-2015 - Michael Lelli
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -39,8 +39,9 @@
 #define WPADProbe WPAD_Probe
 #endif
 
-#define WPAD_EXP_SICKSAXIS 253
-#define WPAD_EXP_GAMECUBE  254
+#define WPAD_EXP_SICKSAXIS     252
+#define WPAD_EXP_GAMECUBE      253
+#define WPAD_EXP_NOCONTROLLER  254
 
 #ifdef HW_RVL
 #ifdef HAVE_LIBSICKSAXIS
@@ -114,7 +115,7 @@ enum
 #define WII_JOYSTICK_THRESHOLD (40 * 256)
 
 static uint64_t pad_state[MAX_PADS];
-static uint32_t pad_type[MAX_PADS];
+static uint32_t pad_type[MAX_PADS] = { WPAD_EXP_NOCONTROLLER, WPAD_EXP_NOCONTROLLER, WPAD_EXP_NOCONTROLLER, WPAD_EXP_NOCONTROLLER };
 static int16_t analog_state[MAX_PADS][2][2];
 static bool g_menu;
 #ifdef HW_RVL
@@ -171,88 +172,28 @@ static const char *gx_joypad_name(unsigned pad)
    return NULL;
 }
 
-static const char *gx_joypad_name_static(unsigned pad)
-{
-   switch (pad_type[pad])
-   {
-#ifdef HW_RVL
-      case WPAD_EXP_NONE:
-         return "Wiimote Controller";
-      case WPAD_EXP_NUNCHUK:
-         return "Nunchuk Controller";
-      case WPAD_EXP_CLASSIC:
-         return "Classic Controller";
-#ifdef HAVE_LIBSICKSAXIS
-      case WPAD_EXP_SICKSAXIS:
-         return "Sixaxis Controller";
-#endif
-#endif
-      case WPAD_EXP_GAMECUBE:
-         return "GameCube Controller";
-   }
-
-   return NULL;
-}
-
 static void handle_hotplug(unsigned port, uint32_t ptype)
 {
-   autoconfig_params_t params = {{0}};
-   settings_t *settings       = config_get_ptr();
-   
    pad_type[port] = ptype;
 
-   if (!settings->input.autodetect_enable)
-      return;
-
-   strlcpy(settings->input.device_names[port],
-         gx_joypad_name(port),
-         sizeof(settings->input.device_names[port]));
-
-   /* TODO - implement VID/PID? */
-   params.idx = port;
-   strlcpy(params.name, gx_joypad_name(port), sizeof(params.name));
-   strlcpy(params.driver, gx_joypad.ident, sizeof(params.driver));
-   input_config_autoconfigure_joypad(&params);
-}
-
-static bool gx_joypad_init(void)
-{
-   int autoconf_pad;
-   autoconfig_params_t params = {{0}};
-   settings_t *settings       = config_get_ptr();
-
-   SYS_SetResetCallback(reset_cb);
-#ifdef HW_RVL
-   SYS_SetPowerCallback(power_callback);
-#endif
-
-   PAD_Init();
-#ifdef HW_RVL
-   WPADInit();
-#endif
-#ifdef HAVE_LIBSICKSAXIS
-   int i;
-   USB_Initialize();
-   ss_init();
-   for (i = 0; i < MAX_PADS; i++)
-      ss_initialize(&dev[i]);
-#endif
-
-   for (autoconf_pad = 0; autoconf_pad < MAX_PADS; autoconf_pad++)
+   if (ptype != WPAD_EXP_NOCONTROLLER)
    {
-      pad_type[autoconf_pad] = WPAD_EXP_GAMECUBE;
-      strlcpy(settings->input.device_names[autoconf_pad],
-            gx_joypad_name_static(autoconf_pad),
-            sizeof(settings->input.device_names[autoconf_pad]));
+      autoconfig_params_t params = {{0}};
+      settings_t *settings       = config_get_ptr();
+
+      if (!settings->input.autodetect_enable)
+         return;
+
+      strlcpy(settings->input.device_names[port],
+            gx_joypad_name(port),
+            sizeof(settings->input.device_names[port]));
 
       /* TODO - implement VID/PID? */
-      params.idx = autoconf_pad;
-      strlcpy(params.name, gx_joypad_name_static(autoconf_pad), sizeof(params.name));
+      params.idx = port;
+      strlcpy(params.name, gx_joypad_name(port), sizeof(params.name));
       strlcpy(params.driver, gx_joypad.ident, sizeof(params.driver));
       input_config_autoconfigure_joypad(&params);
    }
-
-   return true;
 }
 
 static bool gx_joypad_button(unsigned port, uint16_t joykey)
@@ -357,7 +298,7 @@ static s8 WPAD_StickX(WPADData *data, u8 chan,u8 right)
   else if (mag < -1.0)
      mag = -1.0;
   double val = mag * sin(PI * ang/180.0f);
- 
+
   return (s8)(val * 128.0f);
 }
 
@@ -400,7 +341,7 @@ static s8 WPAD_StickY(WPADData *data, u8 chan, u8 right)
   else if (mag < -1.0)
      mag = -1.0;
   double val = mag * cos(PI * ang/180.0f);
- 
+
   return (s8)(val * 128.0f);
 }
 #endif
@@ -424,7 +365,7 @@ static void gx_joypad_poll(void)
 
    for (port = 0; port < MAX_PADS; port++)
    {
-      uint32_t down = 0, ptype = 0;
+      uint32_t down = 0, ptype = WPAD_EXP_NOCONTROLLER;
       uint64_t *state_cur = &pad_state[port];
 
 #ifdef HW_RVL
@@ -480,7 +421,7 @@ static void gx_joypad_poll(void)
          }
          else if (ptype == WPAD_EXP_NUNCHUK)
          {
-            /* Wiimote is held upright with nunchuk, 
+            /* Wiimote is held upright with nunchuk,
              * do not change d-pad orientation. */
             *state_cur |= (down & WPAD_BUTTON_UP) ? (1ULL << GX_WIIMOTE_UP) : 0;
             *state_cur |= (down & WPAD_BUTTON_DOWN) ? (1ULL << GX_WIIMOTE_DOWN) : 0;
@@ -510,8 +451,6 @@ static void gx_joypad_poll(void)
          }
       }
       else
-#else
-      ptype = WPAD_EXP_GAMECUBE;
 #endif
       {
          if (gcpad & (1 << port))
@@ -544,7 +483,7 @@ static void gx_joypad_poll(void)
             analog_state[port][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_X] = rs_x;
             analog_state[port][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_Y] = rs_y;
 
-            menu_combo = (1ULL << GX_GC_START) | (1ULL << GX_GC_Z_TRIGGER) | 
+            menu_combo = (1ULL << GX_GC_START) | (1ULL << GX_GC_Z_TRIGGER) |
                (1ULL << GX_GC_L_TRIGGER) | (1ULL << GX_GC_R_TRIGGER);
 
             if ((*state_cur & menu_combo) == menu_combo)
@@ -619,9 +558,33 @@ static void gx_joypad_poll(void)
       *lifecycle_state |= (1ULL << RARCH_MENU_TOGGLE);
 }
 
+static bool gx_joypad_init(void)
+{
+   SYS_SetResetCallback(reset_cb);
+#ifdef HW_RVL
+   SYS_SetPowerCallback(power_callback);
+#endif
+
+   PAD_Init();
+#ifdef HW_RVL
+   WPADInit();
+#endif
+#ifdef HAVE_LIBSICKSAXIS
+   int i;
+   USB_Initialize();
+   ss_init();
+   for (i = 0; i < MAX_PADS; i++)
+      ss_initialize(&dev[i]);
+#endif
+
+   gx_joypad_poll();
+
+   return true;
+}
+
 static bool gx_joypad_query_pad(unsigned pad)
 {
-   return pad < MAX_USERS && pad_state[pad];
+   return pad < MAX_USERS && pad_type[pad] != WPAD_EXP_NOCONTROLLER;
 }
 
 static void gx_joypad_destroy(void)
