@@ -898,6 +898,67 @@ static int menu_displaylist_parse_options_management(menu_displaylist_info_t *in
    return 0;
 }
 
+static int menu_displaylist_parse_settings_in_subgroup(menu_displaylist_info_t *info)
+{
+   char elem0[PATH_MAX_LENGTH], elem1[PATH_MAX_LENGTH];
+   struct string_list *str_list = NULL;
+   menu_handle_t *menu = menu_driver_get_ptr();
+
+   if (!menu)
+      return -1;
+
+   if (info->label)
+   {
+      str_list = string_split(info->label, "|");
+
+      if (str_list && str_list->size > 0)
+         strlcpy(elem0, str_list->elems[0].data, sizeof(elem0));
+      if (str_list && str_list->size > 1)
+         strlcpy(elem1, str_list->elems[1].data, sizeof(elem1));
+
+      if (str_list)
+      {
+         string_list_free(str_list);
+         str_list = NULL;
+      }
+   }
+
+   settings_list_free(menu->list_settings);
+   menu->list_settings = setting_new(SL_FLAG_ALL_SETTINGS);
+
+   info->setting = menu_setting_find(elem0);
+
+   menu_list_clear(info->list);
+
+   if (!info->setting)
+      return -1;
+
+   while (1)
+   {
+      if (!info->setting)
+         return -1;
+      if (info->setting->type == ST_SUB_GROUP)
+      {
+         if ((strlen(info->setting->name) != 0) && !strcmp(info->setting->name, elem1))
+            break;
+      }
+      info->setting++;
+   }
+
+   info->setting++;
+
+   for (; info->setting->type != ST_END_SUB_GROUP; info->setting++)
+   {
+      char group_label[PATH_MAX_LENGTH];
+
+      strlcpy(group_label, info->setting->name, sizeof(group_label));
+      menu_list_push(info->list, info->setting->short_description,
+            group_label, menu_setting_set_flags(info->setting), 0);
+   }
+
+   return 0;
+}
+
 int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
 {
    int ret = 0;
@@ -926,6 +987,13 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          menu_list_clear(info->list);
 
          ret = menu_displaylist_parse_all_settings(info);
+
+         need_push    = true;
+         break;
+      case DISPLAYLIST_SETTINGS_SUBGROUP:
+         menu_list_clear(info->list);
+
+         ret = menu_displaylist_parse_settings_in_subgroup(info);
 
          need_push    = true;
          break;

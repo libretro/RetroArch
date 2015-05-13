@@ -815,8 +815,6 @@ static int deferred_push_rdb_entry_detail(void *data, void *userdata,
          }
       }
    }
-   
-
 
    if (db_info->count < 1)
       menu_list_push(list,
@@ -1082,28 +1080,18 @@ static int deferred_push_settings(void *data, void *userdata,
 
 }
 
-static int deferred_push_settings_subgroup(void *data, void *userdata,
-      const char *path, const char *label, unsigned type)
+int menu_displaylist_parse_settings_in_subgroup(menu_displaylist_info_t *info)
 {
    char elem0[PATH_MAX_LENGTH], elem1[PATH_MAX_LENGTH];
-   rarch_setting_t *setting = NULL;
    struct string_list *str_list = NULL;
-   file_list_t *list      = NULL;
-   file_list_t *menu_list = NULL;
    menu_handle_t *menu = menu_driver_get_ptr();
 
    if (!menu)
       return -1;
 
-   list        = (file_list_t*)data;
-   menu_list   = (file_list_t*)userdata;
-
-   if (!list || !menu_list)
-      return -1;
-
-   if (label)
+   if (info->label)
    {
-      str_list = string_split(label, "|");
+      str_list = string_split(info->label, "|");
 
       if (str_list && str_list->size > 0)
          strlcpy(elem0, str_list->elems[0].data, sizeof(elem0));
@@ -1120,39 +1108,50 @@ static int deferred_push_settings_subgroup(void *data, void *userdata,
    settings_list_free(menu->list_settings);
    menu->list_settings = setting_new(SL_FLAG_ALL_SETTINGS);
 
-   setting = menu_setting_find(elem0);
+   info->setting = menu_setting_find(elem0);
 
-   menu_list_clear(list);
+   menu_list_clear(info->list);
 
-   if (!setting)
+   if (!info->setting)
       return -1;
 
    while (1)
    {
-      if (!setting)
+      if (!info->setting)
          return -1;
-      if (setting->type == ST_SUB_GROUP)
+      if (info->setting->type == ST_SUB_GROUP)
       {
-         if ((strlen(setting->name) != 0) && !strcmp(setting->name, elem1))
+         if ((strlen(info->setting->name) != 0) && !strcmp(info->setting->name, elem1))
             break;
       }
-      setting++;
+      info->setting++;
    }
 
-   setting++;
+   info->setting++;
 
-   for (; setting->type != ST_END_SUB_GROUP; setting++)
+   for (; info->setting->type != ST_END_SUB_GROUP; info->setting++)
    {
       char group_label[PATH_MAX_LENGTH];
 
-      strlcpy(group_label, setting->name, sizeof(group_label));
-      menu_list_push(list, setting->short_description,
-            group_label, menu_setting_set_flags(setting), 0);
+      strlcpy(group_label, info->setting->name, sizeof(group_label));
+      menu_list_push(info->list, info->setting->short_description,
+            group_label, menu_setting_set_flags(info->setting), 0);
    }
 
-   menu_driver_populate_entries(path, label, type);
-
    return 0;
+}
+
+static int deferred_push_settings_subgroup(void *data, void *userdata,
+      const char *path, const char *label, unsigned type)
+{
+   menu_displaylist_info_t info = {0};
+
+   info.list  = (file_list_t*)data;
+   info.type  = type;
+   strlcpy(info.path,  path, sizeof(info.path));
+   strlcpy(info.label, label, sizeof(info.label));
+
+   return menu_displaylist_push_list(&info, DISPLAYLIST_SETTINGS_SUBGROUP);
 }
 
 static int deferred_push_category(void *data, void *userdata,
