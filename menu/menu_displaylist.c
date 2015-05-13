@@ -1736,25 +1736,20 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
 {
    int ret = 0;
    bool need_sort    = false;
-   bool need_clear   = false;
    bool need_refresh = false;
    bool need_push    = false;
    menu_handle_t    *menu = menu_driver_get_ptr();
    menu_list_t *menu_list = menu_list_get_ptr();
-   menu_navigation_t *nav = menu_navigation_get_ptr();
 
    menu_list_clear(info->list);
+
 
    switch (type)
    {
       case DISPLAYLIST_NONE:
          break;
       case DISPLAYLIST_MAIN_MENU:
-         menu_list_push(menu_list->menu_stack,
-               info->path, info->label, info->type, info->flags);
-
          ret = menu_entries_push_list(menu, info, info->flags);
-         need_clear   = true;
          need_push    = true;
          break;
       case DISPLAYLIST_SETTINGS:
@@ -1944,8 +1939,6 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          break;
    }
 
-   if (need_clear)
-      menu_navigation_clear(nav, true);
 
    if (need_sort)
       menu_list_sort_on_alt(info->list);
@@ -1968,10 +1961,8 @@ int menu_displaylist_deferred_push(menu_displaylist_info_t *info)
 
    if (!strcmp(info->label, "Main Menu"))
    {
-      menu_list_clear(info->list);
-      ret = menu_entries_push_list(menu, info, SL_FLAG_MAIN_MENU);
-      menu_driver_populate_entries(info->path, info->label, info->type);
-      return ret;
+      info->flags = SL_FLAG_MAIN_MENU;
+      return menu_displaylist_push_list(info, DISPLAYLIST_MAIN_MENU);
    }
    else if (!strcmp(info->label, "Horizontal Menu"))
    {
@@ -2031,6 +2022,7 @@ int menu_displaylist_push(file_list_t *list, file_list_t *menu_list)
 bool menu_displaylist_init(menu_handle_t *menu)
 {
    menu_list_t *menu_list = menu_list_get_ptr();
+   menu_navigation_t *nav = menu_navigation_get_ptr();
    menu_displaylist_info_t info = {0};
    if (!menu || !menu_list)
       return false;
@@ -2040,7 +2032,10 @@ bool menu_displaylist_init(menu_handle_t *menu)
    info.flags = SL_FLAG_MAIN_MENU;
    strlcpy(info.label, "Main Menu", sizeof(info.label));
 
+   menu_list_push(menu_list->menu_stack,
+         info.path, info.label, info.type, info.flags);
    menu_displaylist_push_list(&info, DISPLAYLIST_MAIN_MENU);
+   menu_navigation_clear(nav, true);
 
    return true;
 }
