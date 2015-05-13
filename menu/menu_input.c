@@ -67,7 +67,7 @@ static void menu_input_key_end_line(void)
 
 static void menu_input_search_callback(void *userdata, const char *str)
 {
-   size_t idx;
+   size_t idx = 0;
    menu_list_t *menu_list = menu_list_get_ptr();
    menu_navigation_t *nav = menu_navigation_get_ptr();
 
@@ -123,7 +123,7 @@ void menu_input_st_string_callback(void *userdata, const char *str)
 
    if (!menu)
       return;
- 
+
    if (str && *str)
    {
       rarch_setting_t *current_setting = NULL;
@@ -156,7 +156,7 @@ void menu_input_st_cheat_callback(void *userdata, const char *str)
 
    if (!menu)
       return;
- 
+
    if (cheat && str && *str)
    {
       unsigned cheat_index = menu->keyboard.type - MENU_SETTINGS_CHEAT_BEGIN;
@@ -177,7 +177,7 @@ void menu_input_search_start(void)
 
    menu->keyboard.display = true;
    menu->keyboard.label = "Search: ";
-   menu->keyboard.buffer = 
+   menu->keyboard.buffer =
       input_keyboard_start_line(menu, menu_input_search_callback);
 }
 
@@ -281,9 +281,9 @@ static bool menu_input_poll_find_trigger_pad(struct menu_bind_state *state,
    /* Axes are a bit tricky ... */
    for (a = 0; a < MENU_MAX_AXES; a++)
    {
-      int locked_distance = abs(n->axes[a] - 
+      int locked_distance = abs(n->axes[a] -
             new_state->axis_state[p].locked_axes[a]);
-      int rested_distance = abs(n->axes[a] - 
+      int rested_distance = abs(n->axes[a] -
             new_state->axis_state[p].rested_axes[a]);
 
       if (abs(n->axes[a]) >= 20000 &&
@@ -413,7 +413,7 @@ int menu_input_set_keyboard_bind_mode(void *data,
 
 
    menu->binds.timeout_end =
-      rarch_get_time_usec() + 
+      rarch_get_time_usec() +
       MENU_KEYBOARD_BIND_TIMEOUT_SECONDS * 1000000;
    input_keyboard_wait_keys(menu,
          menu_input_custom_bind_keyboard_cb);
@@ -480,9 +480,9 @@ int menu_input_bind_iterate(void)
 
    if (!menu)
       return 1;
-   
+
    binds = menu->binds;
-    
+
    menu_driver_render();
 
    snprintf(msg, sizeof(msg), "[%s]\npress joypad\n(RETURN to skip)",
@@ -664,7 +664,7 @@ static int menu_input_mouse(unsigned *action)
 static int menu_input_pointer(unsigned *action)
 {
    int pointer_device, pointer_x, pointer_y;
-   const struct retro_keybind *binds[MAX_USERS];      
+   const struct retro_keybind *binds[MAX_USERS];
    menu_handle_t *menu       = menu_driver_get_ptr();
    settings_t *settings      = config_get_ptr();
    driver_t *driver     = driver_get_ptr();
@@ -989,7 +989,7 @@ unsigned menu_input_frame(retro_input_t input, retro_input_t trigger_input)
       {
          first_held = false;
          trigger_input |= input & input_repeat;
-         menu->navigation.scroll.acceleration = 
+         menu->navigation.scroll.acceleration =
             min(menu->navigation.scroll.acceleration + 1, 64);
       }
 
