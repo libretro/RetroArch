@@ -2009,9 +2009,10 @@ int menu_displaylist_deferred_push(menu_displaylist_info_t *info)
 
    if (!strcmp(info->label, "Main Menu"))
    {
-      info->type  = MENU_SETTINGS;
-      info->flags = SL_FLAG_MAIN_MENU;
-      return menu_displaylist_push_list(info, DISPLAYLIST_MAIN_MENU);
+      menu_list_clear(info->list);
+      ret = menu_entries_push_list(menu, info, SL_FLAG_MAIN_MENU);
+      menu_driver_populate_entries(info->path, info->label, info->type);
+      return ret;
    }
    else if (!strcmp(info->label, "Horizontal Menu"))
       return menu_entries_push_horizontal_menu_list(menu, info->list, info->path, info->label, info->type);
