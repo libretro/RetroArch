@@ -1743,6 +1743,7 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
 {
    int ret = 0;
    bool need_sort    = false;
+   bool need_clear   = false;
    bool need_refresh = false;
    bool need_push    = false;
    menu_handle_t    *menu = menu_driver_get_ptr();
@@ -1760,8 +1761,8 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
 
          menu_list_push(menu_list->menu_stack,
                info->path, info->label, info->type, info->flags);
-         menu_navigation_clear(nav, true);
          ret = menu_entries_push_list(menu, info, info->flags);
+         need_clear   = true;
          need_push    = true;
          break;
       case DISPLAYLIST_SETTINGS:
@@ -1984,6 +1985,9 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
 #endif
          break;
    }
+
+   if (need_clear)
+      menu_navigation_clear(nav, true);
 
    if (need_sort)
       menu_list_sort_on_alt(info->list);
