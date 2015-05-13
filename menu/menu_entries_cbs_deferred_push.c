@@ -1080,67 +1080,6 @@ static int deferred_push_settings(void *data, void *userdata,
 
 }
 
-int menu_displaylist_parse_settings_in_subgroup(menu_displaylist_info_t *info)
-{
-   char elem0[PATH_MAX_LENGTH], elem1[PATH_MAX_LENGTH];
-   struct string_list *str_list = NULL;
-   menu_handle_t *menu = menu_driver_get_ptr();
-
-   if (!menu)
-      return -1;
-
-   if (info->label)
-   {
-      str_list = string_split(info->label, "|");
-
-      if (str_list && str_list->size > 0)
-         strlcpy(elem0, str_list->elems[0].data, sizeof(elem0));
-      if (str_list && str_list->size > 1)
-         strlcpy(elem1, str_list->elems[1].data, sizeof(elem1));
-
-      if (str_list)
-      {
-         string_list_free(str_list);
-         str_list = NULL;
-      }
-   }
-
-   settings_list_free(menu->list_settings);
-   menu->list_settings = setting_new(SL_FLAG_ALL_SETTINGS);
-
-   info->setting = menu_setting_find(elem0);
-
-   menu_list_clear(info->list);
-
-   if (!info->setting)
-      return -1;
-
-   while (1)
-   {
-      if (!info->setting)
-         return -1;
-      if (info->setting->type == ST_SUB_GROUP)
-      {
-         if ((strlen(info->setting->name) != 0) && !strcmp(info->setting->name, elem1))
-            break;
-      }
-      info->setting++;
-   }
-
-   info->setting++;
-
-   for (; info->setting->type != ST_END_SUB_GROUP; info->setting++)
-   {
-      char group_label[PATH_MAX_LENGTH];
-
-      strlcpy(group_label, info->setting->name, sizeof(group_label));
-      menu_list_push(info->list, info->setting->short_description,
-            group_label, menu_setting_set_flags(info->setting), 0);
-   }
-
-   return 0;
-}
-
 static int deferred_push_settings_subgroup(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
@@ -1259,48 +1198,15 @@ static int deferred_push_frontend_counters(void *data, void *userdata,
 static int deferred_push_core_cheat_options(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
-   unsigned i;
-   file_list_t *list      = (file_list_t*)data;
-   global_t *global       = global_get_ptr();
-   cheat_manager_t *cheat = global->cheat;
+   menu_displaylist_info_t info = {0};
 
-   (void)userdata;
-   (void)type;
+   info.list      = (file_list_t*)data;
+   info.menu_list = (file_list_t*)userdata;
+   info.type      =  type;
+   strlcpy(info.path, path, sizeof(info.path));
+   strlcpy(info.label, label, sizeof(info.label));
 
-   if (!list)
-      return -1;
-
-   if (!cheat)
-   {
-      global->cheat = cheat_manager_new(0);
-
-      if (!global->cheat)
-         return -1;
-      cheat = global->cheat;
-   }
-
-   menu_list_clear(list);
-   menu_list_push(list, "Cheat File Load", "cheat_file_load",
-         MENU_SETTING_ACTION, 0);
-   menu_list_push(list, "Cheat File Save As",
-         "cheat_file_save_as", MENU_SETTING_ACTION, 0);
-   menu_list_push(list, "Cheat Passes", "cheat_num_passes",
-         0, 0);
-   menu_list_push(list, "Apply Cheat Changes", "cheat_apply_changes",
-         MENU_SETTING_ACTION, 0);
-
-   for (i = 0; i < cheat->size; i++)
-   {
-      char cheat_label[64];
-      snprintf(cheat_label, sizeof(cheat_label), "Cheat #%u: ", i);
-      if (cheat->cheats[i].desc)
-         strlcat(cheat_label, cheat->cheats[i].desc, sizeof(cheat_label));
-      menu_list_push(list, cheat_label, "", MENU_SETTINGS_CHEAT_BEGIN + i, 0);
-   }
-
-   menu_driver_populate_entries(path, label, type);
-
-   return 0;
+   return menu_displaylist_push_list(&info, DISPLAYLIST_OPTIONS_CHEATS);
 }
 
 static int deferred_push_core_input_remapping_options(void *data, void *userdata,
