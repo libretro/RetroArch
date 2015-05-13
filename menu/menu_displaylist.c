@@ -1074,10 +1074,12 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          need_push    = true;
          break;
       case DISPLAYLIST_CORES_UPDATER:
+#ifdef HAVE_NETWORKING
          menu_list_clear(info->list);
          print_buf_lines(info->list, core_buf, core_len, MENU_FILE_DOWNLOAD_CORE);
          need_push    = true;
          need_refresh = true;
+#endif
          break;
       case DISPLAYLIST_SHADER_PARAMETERS:
       case DISPLAYLIST_SHADER_PARAMETERS_PRESET:
