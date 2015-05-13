@@ -871,15 +871,10 @@ static int deferred_push_cursor_manager_list_deferred(void *data, void *userdata
    menu_displaylist_info_t info = {0};
    char *query = NULL, *rdb = NULL;
    char rdb_path[PATH_MAX_LENGTH];
-   config_file_t *conf    = NULL;
-   menu_handle_t *menu    = menu_driver_get_ptr();
    settings_t *settings   = config_get_ptr();
-   if (!menu)
-      return -1;
+   config_file_t *conf = config_file_new(path);
 
-   conf = config_file_new(path);
-
-   if (!conf)
+   if (!conf || !settings)
       return -1;
 
    if (!config_get_string(conf, "query", &query))
