@@ -1937,7 +1937,7 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
 
 
    if (need_sort)
-      menu_list_sort_on_alt(info->list);
+      file_list_sort_on_alt(info->list);
 
    if (need_push)
    {

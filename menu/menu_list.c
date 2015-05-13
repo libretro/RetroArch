@@ -409,11 +409,6 @@ void menu_list_get_alt_at_offset(const file_list_t *list, size_t idx,
    file_list_get_alt_at_offset(list, idx, alt);
 }
 
-void menu_list_sort_on_alt(file_list_t *list)
-{
-   file_list_sort_on_alt(list);
-}
-
 int menu_list_populate_generic(file_list_t *list, const char *path,
       const char *label, unsigned type, bool need_refresh)
 {
