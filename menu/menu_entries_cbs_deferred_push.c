@@ -49,7 +49,7 @@ static int deferred_push_system_information(void *data, void *userdata,
    strlcpy(info.path,   path, sizeof(info.path));
    strlcpy(info.label, label, sizeof(info.label));
 
-   return menu_displaylist_push_list(&info, DISPLAYLIST_CORE_INFO);
+   return menu_displaylist_push_list(&info, DISPLAYLIST_SYSTEM_INFO);
 }
 
 static int deferred_push_rdb_entry_detail(void *data, void *userdata,
