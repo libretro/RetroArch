@@ -23,6 +23,7 @@
 #include <retro_miscellaneous.h>
 #include <queues/message_queue.h>
 #include "menu_animation.h"
+#include "menu_displaylist.h"
 #include "menu_list.h"
 #include "menu_navigation.h"
 #include "menu_database.h"
@@ -229,8 +230,7 @@ typedef struct
 typedef struct menu_file_list_cbs
 {
    int (*action_iterate)(const char *label, unsigned action);
-   int (*action_deferred_push)(void *data, void *userdata, const char
-         *path, const char *label, unsigned type);
+   int (*action_deferred_push)(menu_displaylist_info_t *info);
    int (*action_ok)(const char *path, const char *label, unsigned type,
          size_t idx);
    int (*action_cancel)(const char *path, const char *label, unsigned type,

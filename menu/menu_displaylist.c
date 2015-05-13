@@ -24,6 +24,7 @@
 #include "menu_display.h"
 #include "menu_displaylist.h"
 #include "menu_navigation.h"
+#include "menu_setting.h"
 
 #include "../gfx/video_shader_driver.h"
 #include "../config.features.h"
@@ -1979,7 +1980,7 @@ int menu_displaylist_deferred_push(menu_displaylist_info_t *info)
       menu_list_get_last_stack_actiondata(menu->menu_list);
 
    if (cbs->action_deferred_push)
-      return cbs->action_deferred_push(info->list, info->menu_list, info->path, info->label, info->type);
+      return cbs->action_deferred_push(info);
 
    return 0;
 }

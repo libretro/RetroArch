@@ -17,9 +17,11 @@
 #define _MENU_DISPLAYLIST_H
 
 #include <stdint.h>
+
 #include <retro_miscellaneous.h>
-#include "menu_list.h"
-#include "menu_setting.h"
+#include <file/file_list.h>
+
+#include "../settings.h"
 
 #ifdef __cplusplus
 extern "C" {
