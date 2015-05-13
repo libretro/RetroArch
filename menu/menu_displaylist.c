@@ -1955,7 +1955,7 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
    return ret;
 }
 
-int menu_displaylist_deferred_push(menu_displaylist_info_t *info)
+static int menu_displaylist_deferred_push(menu_displaylist_info_t *info)
 {
    menu_file_list_cbs_t *cbs = NULL;
    menu_handle_t       *menu = menu_driver_get_ptr();
