@@ -1209,52 +1209,19 @@ static int deferred_push_core_cheat_options(void *data, void *userdata,
    return menu_displaylist_push_list(&info, DISPLAYLIST_OPTIONS_CHEATS);
 }
 
+
 static int deferred_push_core_input_remapping_options(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
-   unsigned p, retro_id;
-   file_list_t *list      = (file_list_t*)data;
-   settings_t *settings   = config_get_ptr();
-   global_t *global       = global_get_ptr();
+   menu_displaylist_info_t info = {0};
 
-   (void)userdata;
-   (void)type;
+   info.list      = (file_list_t*)data;
+   info.menu_list = (file_list_t*)userdata;
+   info.type      =  type;
+   strlcpy(info.path, path, sizeof(info.path));
+   strlcpy(info.label, label, sizeof(info.label));
 
-   if (!list)
-      return -1;
-
-   menu_list_clear(list);
-   menu_list_push(list, "Load Remap File", "remap_file_load",
-         MENU_SETTING_ACTION, 0);
-   menu_list_push(list, "Save Remap File As",
-         "remap_file_save_as", MENU_SETTING_ACTION, 0);
-   menu_list_push(list, "Save Core Remap File",
-         "remap_file_save_core", MENU_SETTING_ACTION, 0);
-   menu_list_push(list, "Save Game Remap File",
-         "remap_file_save_game", MENU_SETTING_ACTION, 0);         
-
-   for (p = 0; p < settings->input.max_users; p++)
-   {
-      for (retro_id = 0; retro_id < RARCH_FIRST_META_KEY; retro_id++)
-      {
-         char desc_label[64];
-         unsigned user = p + 1;
-         const char *description = global->system.input_desc_btn[p][retro_id];
-
-         if (!description)
-            continue;
-
-         snprintf(desc_label, sizeof(desc_label),
-               "User %u %s : ", user, description);
-         menu_list_push(list, desc_label, "",
-               MENU_SETTINGS_INPUT_DESC_BEGIN + 
-               (p * RARCH_FIRST_META_KEY) +  retro_id, 0);
-      }
-   }
-
-   menu_driver_populate_entries(path, label, type);
-
-   return 0;
+   return menu_displaylist_push_list(&info, DISPLAYLIST_OPTIONS_REMAPPINGS);
 }
 
 static int deferred_push_core_options(void *data, void *userdata,

@@ -995,6 +995,43 @@ static int menu_displaylist_parse_options_cheats(menu_displaylist_info_t *info)
    return 0;
 }
 
+static int menu_displaylist_parse_options_remappings(menu_displaylist_info_t *info)
+{
+   unsigned p, retro_id;
+   settings_t *settings   = config_get_ptr();
+   global_t *global       = global_get_ptr();
+
+   menu_list_push(info->list, "Load Remap File", "remap_file_load",
+         MENU_SETTING_ACTION, 0);
+   menu_list_push(info->list, "Save Remap File As",
+         "remap_file_save_as", MENU_SETTING_ACTION, 0);
+   menu_list_push(info->list, "Save Core Remap File",
+         "remap_file_save_core", MENU_SETTING_ACTION, 0);
+   menu_list_push(info->list, "Save Game Remap File",
+         "remap_file_save_game", MENU_SETTING_ACTION, 0);         
+
+   for (p = 0; p < settings->input.max_users; p++)
+   {
+      for (retro_id = 0; retro_id < RARCH_FIRST_META_KEY; retro_id++)
+      {
+         char desc_label[64];
+         unsigned user = p + 1;
+         const char *description = global->system.input_desc_btn[p][retro_id];
+
+         if (!description)
+            continue;
+
+         snprintf(desc_label, sizeof(desc_label),
+               "User %u %s : ", user, description);
+         menu_list_push(info->list, desc_label, "",
+               MENU_SETTINGS_INPUT_DESC_BEGIN + 
+               (p * RARCH_FIRST_META_KEY) +  retro_id, 0);
+      }
+   }
+
+   return 0;
+}
+
 int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
 {
    int ret = 0;
@@ -1059,6 +1096,13 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          menu_list_clear(info->list);
 
          ret = menu_displaylist_parse_options_management(info);
+
+         need_push    = true;
+         break;
+      case DISPLAYLIST_OPTIONS_REMAPPINGS:
+         menu_list_clear(info->list);
+
+         ret = menu_displaylist_parse_options_remappings(info);
 
          need_push    = true;
          break;
