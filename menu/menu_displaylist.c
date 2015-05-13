@@ -354,9 +354,7 @@ static int menu_displaylist_parse(menu_displaylist_info_t *info, bool *need_sort
 }
 
 static int menu_entries_push_list(menu_handle_t *menu,
-      file_list_t *list,
-      const char *path, const char *label,
-      unsigned type, unsigned setting_flags)
+      menu_displaylist_info_t *info, unsigned setting_flags)
 {
    rarch_setting_t *setting = NULL;
    settings_t *settings     = config_get_ptr();
@@ -365,12 +363,11 @@ static int menu_entries_push_list(menu_handle_t *menu,
       settings_list_free(menu->list_settings);
 
    menu->list_settings      = setting_new(setting_flags);
-   setting                  = menu_setting_find(label);
+   setting                  = menu_setting_find(info->label);
 
    if (!setting)
       return -1;
 
-   menu_list_clear(list);
 
    for (; setting->type != ST_END_GROUP; setting++)
    {
@@ -383,11 +380,9 @@ static int menu_entries_push_list(menu_handle_t *menu,
          )
          continue;
 
-      menu_list_push(list, setting->short_description,
+      menu_list_push(info->list, setting->short_description,
             setting->name, menu_setting_set_flags(setting), 0);
    }
-
-   menu_driver_populate_entries(path, label, type);
 
    return 0;
 }
@@ -1765,8 +1760,9 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
                info->path, info->label, info->type, info->flags);
          menu_navigation_clear(nav, true);
       case DISPLAYLIST_SETTINGS:
-         ret = menu_entries_push_list(menu, info->list,
-               info->path, info->label, info->type, info->flags);
+         menu_list_clear(info->list);
+         ret = menu_entries_push_list(menu, info, info->flags);
+         need_push    = true;
          break;
       case DISPLAYLIST_SETTINGS_ALL:
          menu_list_clear(info->list);
@@ -1996,6 +1992,7 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
 
 int menu_displaylist_deferred_push(menu_displaylist_info_t *info)
 {
+   int ret;
    menu_file_list_cbs_t *cbs = NULL;
    menu_handle_t       *menu = menu_driver_get_ptr();
 
@@ -2003,9 +2000,12 @@ int menu_displaylist_deferred_push(menu_displaylist_info_t *info)
       return -1;
 
    if (!strcmp(info->label, "Main Menu"))
-      return menu_entries_push_list(menu, info->list,
-            info->path, info->label, info->type,
-            SL_FLAG_MAIN_MENU);
+   {
+      menu_list_clear(info->list);
+      ret = menu_entries_push_list(menu, info, SL_FLAG_MAIN_MENU);
+      menu_driver_populate_entries(info->path, info->label, info->type);
+      return ret;
+   }
    else if (!strcmp(info->label, "Horizontal Menu"))
       return menu_entries_push_horizontal_menu_list(menu, info->list, info->path, info->label, info->type);
 
