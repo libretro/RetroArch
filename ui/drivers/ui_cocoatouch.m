@@ -519,6 +519,7 @@ static void ui_companion_cocoatouch_event_command(void *data,
 static void ui_companion_cocoatouch_notify_list_pushed(void *data,
    file_list_t *list, file_list_t *menu_list)
 {
+#if 0
     (void)data;
     (void)list;
     (void)menu_list;
@@ -535,6 +536,7 @@ static void ui_companion_cocoatouch_notify_list_pushed(void *data,
     
     if (ap)
       [ap mainMenuRefresh];
+#endif
 }
 
 const ui_companion_driver_t ui_companion_cocoatouch = {
