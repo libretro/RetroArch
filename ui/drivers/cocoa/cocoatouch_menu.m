@@ -772,27 +772,14 @@ didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 
 - (void)menuRefresh
 {
-   menu_displaylist_info_t info = {0};
-   unsigned type             = 0;
-   const char *path          = NULL;
-   const char *label         = NULL;
    menu_handle_t *menu    = menu_driver_get_ptr();
    menu_list_t *menu_list = menu_list_get_ptr();
    if (!menu || !menu_list)
       return;
    if (!menu->need_refresh)
       return;
-
-   menu_list_get_last_stack(menu->menu_list, &path, &label, &type);
-
-   info.list      = menu_list->selection_buf;
-   info.menu_list = menu_list->menu_stack;
-   info.type      = type;
-   strlcpy(info.path, path, sizeof(info.path));
-   strlcpy(info.label, label, sizeof(info.label));
-
-   menu_displaylist_deferred_push(&info);
-   menu->need_refresh = false;
+    
+   menu_displaylist_push(menu_list->selection_buf, menu_list->menu_stack);
 }
 
 - (void)menuBack
