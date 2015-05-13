@@ -27,6 +27,9 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/* HACK */
+extern unsigned int rdb_entry_start_game_selection_ptr;
     
 int menu_database_populate_query(file_list_t *list, const char *path,
                                      const char *query);

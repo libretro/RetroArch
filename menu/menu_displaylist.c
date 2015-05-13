@@ -1401,6 +1401,349 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
    return 0;
 }
 
+#ifdef HAVE_LIBRETRODB
+static int create_string_list_rdb_entry_string(const char *desc, const char *label,
+      const char *actual_string, const char *path, file_list_t *list)
+{
+   char tmp[PATH_MAX_LENGTH];
+   union string_list_elem_attr attr;
+   char *output_label = NULL;
+   int str_len = 0;
+   struct string_list *str_list = string_list_new();
+
+   if (!str_list)
+      return -1;
+
+   attr.i = 0;
+
+   str_len += strlen(label) + 1;
+   string_list_append(str_list, label, attr);
+
+   str_len += strlen(actual_string) + 1;
+   string_list_append(str_list, actual_string, attr);
+
+   str_len += strlen(path) + 1;
+   string_list_append(str_list, path, attr);
+
+   output_label = (char*)calloc(str_len, sizeof(char));
+
+   if (!output_label)
+   {
+      string_list_free(str_list);
+      return -1;
+   }
+
+   string_list_join_concat(output_label, str_len, str_list, "|");
+
+   snprintf(tmp, sizeof(tmp), "%s: %s", desc, actual_string);
+   menu_list_push(list, tmp, output_label, 0, 0);
+
+   if (output_label)
+      free(output_label);
+   string_list_free(str_list);
+   str_list = NULL;
+
+   return 0;
+}
+
+static int create_string_list_rdb_entry_int(const char *desc, const char *label,
+      int actual_int, const char *path, file_list_t *list)
+{
+   char tmp[PATH_MAX_LENGTH];
+   union string_list_elem_attr attr;
+   char str[PATH_MAX_LENGTH];
+   char *output_label = NULL;
+   int str_len = 0;
+   struct string_list *str_list = string_list_new();
+
+   if (!str_list)
+      return -1;
+
+   attr.i = 0;
+
+   str_len += strlen(label) + 1;
+   string_list_append(str_list, label, attr);
+
+   snprintf(str, sizeof(str), "%d", actual_int);
+   str_len += strlen(str) + 1;
+   string_list_append(str_list, str, attr);
+
+   str_len += strlen(path) + 1;
+   string_list_append(str_list, path, attr);
+
+   output_label = (char*)calloc(str_len, sizeof(char));
+
+   if (!output_label)
+   {
+      string_list_free(str_list);
+      return -1;
+   }
+
+   string_list_join_concat(output_label, str_len, str_list, "|");
+
+   snprintf(tmp, sizeof(tmp), "%s: %d", desc, actual_int);
+   menu_list_push(list, tmp, output_label,
+         0, 0);
+
+   if (output_label)
+      free(output_label);
+   string_list_free(str_list);
+   str_list = NULL;
+
+   return 0;
+}
+#endif
+
+static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
+{
+#ifdef HAVE_LIBRETRODB
+   char query[PATH_MAX_LENGTH];
+   content_playlist_t *playlist;
+   database_info_list_t *db_info = NULL;
+   char path_rdl[PATH_MAX_LENGTH], path_base[PATH_MAX_LENGTH];
+   unsigned i, j;
+   menu_handle_t *menu           = menu_driver_get_ptr();
+   settings_t *settings          = config_get_ptr();
+   if (!menu)
+      return -1;
+
+   strlcpy(query, "{'name':\"", sizeof(query));
+   strlcat(query, info->path_b, sizeof(query));
+   strlcat(query, "\"}", sizeof(query));
+
+   if (!(db_info = database_info_list_new(info->path, query)))
+      return -1;
+
+   strlcpy(path_base, path_basename(info->path), sizeof(path_base));
+   path_remove_extension(path_base);
+   strlcat(path_base, ".rdl", sizeof(path_base));
+
+   fill_pathname_join(path_rdl, settings->content_database, path_base,
+         sizeof(path_rdl));
+
+   menu_database_realloc(path_rdl, false);
+
+   playlist = menu->db_playlist;
+
+   for (i = 0; i < db_info->count; i++)
+   {
+      char tmp[PATH_MAX_LENGTH];
+      database_info_t *db_info_entry = &db_info->list[i];
+
+      if (!db_info_entry)
+         continue;
+
+
+      if (db_info_entry->name)
+      {
+         snprintf(tmp, sizeof(tmp), "Name: %s", db_info_entry->name);
+         menu_list_push(info->list, tmp, "rdb_entry_name",
+               0, 0);
+      }
+      if (db_info_entry->description)
+      {
+         snprintf(tmp, sizeof(tmp), "Description: %s", db_info_entry->description);
+         menu_list_push(info->list, tmp, "rdb_entry_description",
+               0, 0);
+      }
+      if (db_info_entry->publisher)
+      {
+         if (create_string_list_rdb_entry_string("Publisher", "rdb_entry_publisher",
+               db_info_entry->publisher, info->path, info->list) == -1)
+            return -1;
+      }
+      if (db_info_entry->developer)
+      {
+         if (create_string_list_rdb_entry_string("Developer", "rdb_entry_developer",
+               db_info_entry->developer, info->path, info->list) == -1)
+            return -1;
+      }
+      if (db_info_entry->origin)
+      {
+         if (create_string_list_rdb_entry_string("Origin", "rdb_entry_origin",
+               db_info_entry->origin, info->path, info->list) == -1)
+            return -1;
+      }
+      if (db_info_entry->franchise)
+      {
+         if (create_string_list_rdb_entry_string("Franchise", "rdb_entry_franchise",
+               db_info_entry->franchise, info->path, info->list) == -1)
+            return -1;
+      }
+      if (db_info_entry->max_users)
+      {
+         if (create_string_list_rdb_entry_int("Max Users",
+               "rdb_entry_max_users", db_info_entry->max_users,
+               info->path, info->list) == -1)
+            return -1;
+      }
+      if (db_info_entry->famitsu_magazine_rating)
+      {
+         if (create_string_list_rdb_entry_int("Famitsu Magazine Rating",
+               "rdb_entry_famitsu_magazine_rating", db_info_entry->famitsu_magazine_rating,
+               info->path, info->list) == -1)
+            return -1;
+      }
+      if (db_info_entry->edge_magazine_review)
+      {
+         if (create_string_list_rdb_entry_string("Edge Magazine Review", "rdb_entry_edge_magazine_review",
+               db_info_entry->edge_magazine_review, info->path, info->list) == -1)
+            return -1;
+      }
+      if (db_info_entry->edge_magazine_rating)
+      {
+         if (create_string_list_rdb_entry_int("Edge Magazine Rating",
+               "rdb_entry_edge_magazine_rating", db_info_entry->edge_magazine_rating,
+               info->path, info->list) == -1)
+            return -1;
+      }
+      if (db_info_entry->edge_magazine_issue)
+      {
+         if (create_string_list_rdb_entry_int("Edge Magazine Issue",
+               "rdb_entry_edge_magazine_issue", db_info_entry->edge_magazine_issue,
+               info->path, info->list) == -1)
+            return -1;
+      }
+      if (db_info_entry->releasemonth)
+      {
+         if (create_string_list_rdb_entry_int("Releasedate Month",
+               "rdb_entry_releasemonth", db_info_entry->releasemonth,
+               info->path, info->list) == -1)
+            return -1;
+      }
+
+      if (db_info_entry->releaseyear)
+      {
+         if (create_string_list_rdb_entry_int("Releasedate Year",
+               "rdb_entry_releaseyear", db_info_entry->releaseyear,
+               info->path, info->list) == -1)
+            return -1;
+      }
+      if (db_info_entry->bbfc_rating)
+      {
+         if (create_string_list_rdb_entry_string("BBFC Rating", "rdb_entry_bbfc_rating",
+               db_info_entry->bbfc_rating, info->path, info->list) == -1)
+            return -1;
+      }
+      if (db_info_entry->esrb_rating)
+      {
+         if (create_string_list_rdb_entry_string("ESRB Rating", "rdb_entry_esrb_rating",
+               db_info_entry->esrb_rating, info->path, info->list) == -1)
+            return -1;
+      }
+      if (db_info_entry->elspa_rating)
+      {
+         if (create_string_list_rdb_entry_string("ELSPA Rating", "rdb_entry_elspa_rating",
+               db_info_entry->elspa_rating, info->path, info->list) == -1)
+            return -1;
+      }
+      if (db_info_entry->pegi_rating)
+      {
+         if (create_string_list_rdb_entry_string("PEGI Rating", "rdb_entry_pegi_rating",
+               db_info_entry->pegi_rating, info->path, info->list) == -1)
+            return -1;
+      }
+      if (db_info_entry->enhancement_hw)
+      {
+         if (create_string_list_rdb_entry_string("Enhancement Hardware", "rdb_entry_enhancement_hw",
+               db_info_entry->enhancement_hw, info->path, info->list) == -1)
+            return -1;
+      }
+      if (db_info_entry->cero_rating)
+      {
+         if (create_string_list_rdb_entry_string("CERO Rating", "rdb_entry_cero_rating",
+               db_info_entry->cero_rating, info->path, info->list) == -1)
+            return -1;
+      }
+      snprintf(tmp, sizeof(tmp),
+            "Analog supported: %s",
+            (db_info_entry->analog_supported == 1)  ? "true" : 
+            (db_info_entry->analog_supported == -1) ? "N/A"  : "false");
+      menu_list_push(info->list, tmp, "rdb_entry_analog",
+            0, 0);
+      snprintf(tmp, sizeof(tmp),
+            "Rumble supported: %s",
+            (db_info_entry->rumble_supported == 1)  ? "true" : 
+            (db_info_entry->rumble_supported == -1) ? "N/A"  :  "false");
+      menu_list_push(info->list, tmp, "rdb_entry_rumble",
+            0, 0);
+
+      if (db_info_entry->crc32)
+      {
+         if (create_string_list_rdb_entry_string("CRC32 Checksum",
+               "rdb_entry_crc32", db_info_entry->crc32,
+               info->path, info->list) == -1)
+            return -1;
+      }
+      if (db_info_entry->sha1)
+      {
+         if (create_string_list_rdb_entry_string("SHA1 Checksum",
+               "rdb_entry_sha1", db_info_entry->sha1,
+               info->path, info->list) == -1)
+            return -1;
+      }
+      if (db_info_entry->md5)
+      {
+         if (create_string_list_rdb_entry_string("MD5 Checksum",
+               "rdb_entry_md5", db_info_entry->md5,
+               info->path, info->list) == -1)
+            return -1;
+      }
+
+      if (playlist)
+      {
+         for (j = 0; j < playlist->size; j++)
+         {
+            char elem0[PATH_MAX_LENGTH], elem1[PATH_MAX_LENGTH];
+            bool match_found = false;
+            struct string_list *tmp_str_list = string_split(
+                  playlist->entries[j].core_name, "|"); 
+
+            if (!tmp_str_list)
+               continue;
+
+            if (tmp_str_list->size > 0)
+               strlcpy(elem0, tmp_str_list->elems[0].data, sizeof(elem0));
+            if (tmp_str_list->size > 1)
+               strlcpy(elem1, tmp_str_list->elems[1].data, sizeof(elem1));
+
+            if (!strcmp(elem1, "crc"))
+            {
+               if (!strcmp(db_info_entry->crc32, elem0))
+                  match_found = true;
+            }
+            else if (!strcmp(elem1, "sha1"))
+            {
+               if (!strcmp(db_info_entry->sha1, elem0))
+                  match_found = true;
+            }
+            else if (!strcmp(elem1, "md5"))
+            {
+               if (!strcmp(db_info_entry->md5, elem0))
+                  match_found = true;
+            }
+
+            string_list_free(tmp_str_list);
+
+            if (!match_found)
+               continue;
+
+            rdb_entry_start_game_selection_ptr = j;
+            menu_list_push(info->list, "Start Content", "rdb_entry_start_game",
+                  MENU_FILE_PLAYLIST_ENTRY, 0);
+         }
+      }
+   }
+
+   if (db_info->count < 1)
+      menu_list_push(info->list,
+            "No information available.", "",
+            0, 0);
+#endif
+
+   return 0;
+}
+
 int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
 {
    int ret = 0;
@@ -1579,6 +1922,13 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          need_refresh = true;
          need_push    = true;
          strlcpy(info->path, info->path_b, sizeof(info->path));
+         break;
+      case DISPLAYLIST_DATABASE_ENTRY:
+         menu_list_clear(info->list);
+
+         ret =- menu_displaylist_parse_database_entry(info);
+
+         need_push    = true;
          break;
       case DISPLAYLIST_PERFCOUNTER_SELECTION:
          menu_list_clear(info->list);

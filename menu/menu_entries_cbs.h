@@ -25,7 +25,6 @@ extern "C" {
 
 /* FIXME - Externs, refactor */
 extern size_t hack_shader_pass;
-extern unsigned rdb_entry_start_game_selection_ptr;
 #ifdef HAVE_NETWORKING
 extern char core_updater_path[PATH_MAX_LENGTH];
 #endif
