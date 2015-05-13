@@ -463,31 +463,26 @@ static int menu_entries_push_horizontal_menu_list_cores(
    return 0;
 }
 
-static int menu_entries_push_horizontal_menu_list(
-      menu_handle_t *menu, file_list_t *list,
-      const char *path, const char *label,
-      unsigned type)
+static int menu_displaylist_parse_horizontal_list(menu_displaylist_info_t *info) 
 {
-   core_info_t           *info = NULL;
+   core_info_t      *core_info = NULL;
    global_t            *global = global_get_ptr();
    core_info_list_t *info_list = (core_info_list_t*)global->core_info;
+   menu_handle_t        *menu  = menu_driver_get_ptr();
    settings_t *settings        = config_get_ptr();
 
    if (!info_list)
       return -1;
 
-   info = (core_info_t*)&info_list->list[menu->categories.selection_ptr - 1];
+   core_info = (core_info_t*)&info_list->list[menu->categories.selection_ptr - 1];
 
-   if (!info)
+   if (!core_info)
       return -1;
 
-   strlcpy(settings->libretro, info->path, sizeof(settings->libretro));
+   strlcpy(settings->libretro, core_info->path, sizeof(settings->libretro));
 
-   menu_list_clear(list);
-
-   menu_entries_push_horizontal_menu_list_cores(list, info, settings->core_assets_directory, true);
-
-   menu_list_populate_generic(list, path, label, type, true);
+   menu_entries_push_horizontal_menu_list_cores(info->list,
+         core_info, settings->core_assets_directory, true);
 
    return 0;
 }
@@ -1777,6 +1772,10 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          need_push    = true;
          break;
       case DISPLAYLIST_HORIZONTAL:
+         ret = menu_displaylist_parse_horizontal_list(info);
+
+         need_refresh = true;
+         need_push    = true;
          break;
       case DISPLAYLIST_HORIZONTAL_CONTENT_ACTIONS:
          ret = menu_displaylist_parse_horizontal_content_actions(info);
@@ -1975,7 +1974,9 @@ int menu_displaylist_deferred_push(menu_displaylist_info_t *info)
       return ret;
    }
    else if (!strcmp(info->label, "Horizontal Menu"))
-      return menu_entries_push_horizontal_menu_list(menu, info->list, info->path, info->label, info->type);
+   {
+      return menu_displaylist_push_list(info, DISPLAYLIST_HORIZONTAL);
+   }
 
    cbs = (menu_file_list_cbs_t*)
       menu_list_get_last_stack_actiondata(menu->menu_list);
