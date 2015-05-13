@@ -1400,24 +1400,15 @@ static int deferred_push_core_options(void *data, void *userdata,
 static int deferred_push_disk_options(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
-   file_list_t *list      = (file_list_t*)data;
+   menu_displaylist_info_t info = {0};
 
-   (void)userdata;
+   info.list      = (file_list_t*)data;
+   info.menu_list = (file_list_t*)userdata;
+   info.type      =  type;
+   strlcpy(info.path, path, sizeof(info.path));
+   strlcpy(info.label, label, sizeof(info.label));
 
-   if (!list)
-      return -1;
-
-   menu_list_clear(list);
-   menu_list_push(list, "Disk Index", "disk_idx",
-         MENU_SETTINGS_CORE_DISK_OPTIONS_DISK_INDEX, 0);
-   menu_list_push(list, "Disk Cycle Tray Status", "disk_cycle_tray_status",
-         MENU_SETTINGS_CORE_DISK_OPTIONS_DISK_CYCLE_TRAY_STATUS, 0);
-   menu_list_push(list, "Disk Image Append", "disk_image_append",
-         MENU_SETTINGS_CORE_DISK_OPTIONS_DISK_IMAGE_APPEND, 0);
-
-   menu_driver_populate_entries(path, label, type);
-
-   return 0;
+   return menu_displaylist_push_list(&info, DISPLAYLIST_OPTIONS_DISK);
 }
 
 #ifdef HAVE_NETWORKING

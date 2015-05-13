@@ -849,6 +849,17 @@ static int menu_displaylist_parse_shader_options(menu_displaylist_info_t *info)
    return 0;
 }
 
+static int menu_displaylist_parse_disk_options(menu_displaylist_info_t *info)
+{
+   menu_list_push(info->list, "Disk Index", "disk_idx",
+         MENU_SETTINGS_CORE_DISK_OPTIONS_DISK_INDEX, 0);
+   menu_list_push(info->list, "Disk Cycle Tray Status", "disk_cycle_tray_status",
+         MENU_SETTINGS_CORE_DISK_OPTIONS_DISK_CYCLE_TRAY_STATUS, 0);
+   menu_list_push(info->list, "Disk Image Append", "disk_image_append",
+         MENU_SETTINGS_CORE_DISK_OPTIONS_DISK_IMAGE_APPEND, 0);
+   return 0;
+}
+
 int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
 {
    int ret = 0;
@@ -901,6 +912,13 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          menu_list_push(info->list, "Video Filter", "video_filter",
                0, 0);
 #endif
+
+         need_push    = true;
+         break;
+      case DISPLAYLIST_OPTIONS_DISK:
+         menu_list_clear(info->list);
+
+         ret = menu_displaylist_parse_disk_options(info);
 
          need_push    = true;
          break;
