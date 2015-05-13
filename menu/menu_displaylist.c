@@ -1996,28 +1996,24 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
 
 int menu_displaylist_deferred_push(menu_displaylist_info_t *info)
 {
-   unsigned type             = 0;
-   const char *path          = NULL;
-   const char *label         = NULL;
    menu_file_list_cbs_t *cbs = NULL;
    menu_handle_t       *menu = menu_driver_get_ptr();
 
    if (!info->list)
       return -1;
 
-   menu_list_get_last_stack(menu->menu_list, &path, &label, &type);
-
-   if (!strcmp(label, "Main Menu"))
-      return menu_entries_push_list(menu, info->list, path, label, type,
+   if (!strcmp(info->label, "Main Menu"))
+      return menu_entries_push_list(menu, info->list,
+            info->path, info->label, info->type,
             SL_FLAG_MAIN_MENU);
-   else if (!strcmp(label, "Horizontal Menu"))
-      return menu_entries_push_horizontal_menu_list(menu, info->list, path, label, type);
+   else if (!strcmp(info->label, "Horizontal Menu"))
+      return menu_entries_push_horizontal_menu_list(menu, info->list, info->path, info->label, info->type);
 
    cbs = (menu_file_list_cbs_t*)
       menu_list_get_last_stack_actiondata(menu->menu_list);
 
    if (cbs->action_deferred_push)
-      return cbs->action_deferred_push(info->list, info->menu_list, path, label, type);
+      return cbs->action_deferred_push(info->list, info->menu_list, info->path, info->label, info->type);
 
    return 0;
 }
@@ -2025,12 +2021,20 @@ int menu_displaylist_deferred_push(menu_displaylist_info_t *info)
 int menu_displaylist_push(file_list_t *list, file_list_t *menu_list)
 {
    int ret;
+   unsigned type             = 0;
+   const char *path          = NULL;
+   const char *label         = NULL;
    menu_handle_t *menu    = menu_driver_get_ptr();
    driver_t       *driver = driver_get_ptr();
    menu_displaylist_info_t info = {0};
 
+   menu_list_get_last_stack(menu->menu_list, &path, &label, &type);
+
    info.list      = list;
    info.menu_list = menu_list;
+   info.type      = type;
+   strlcpy(info.path, path, sizeof(info.path));
+   strlcpy(info.label, label, sizeof(info.label));
    
    ret = menu_displaylist_deferred_push(&info);
 
