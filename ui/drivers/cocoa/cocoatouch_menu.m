@@ -25,12 +25,6 @@
 #include "../../../input/input_keymaps.h"
 #include "../../../input/drivers/cocoa_input.h"
 
-#include "../../../menu/menu_displaylist.h"
-#include "../../../menu/menu_navigation.h"
-#include "../../../menu/menu_list.h"
-#include "../../../menu/menu_setting.h"
-#include "../../../menu/drivers/shared.h"
-
 #include "../../../menu/menu_entry.h"
 
 // Menu Support
@@ -123,8 +117,6 @@ static void RunActionSheet(const char* title, const struct string_list* items,
   result.selectionStyle = UITableViewCellSelectionStyleNone;
   result.textLabel.text = BOXSTRING(label);
 
-  if (buffer[0] == '\0')
-    strlcpy(buffer, "<default>", sizeof(buffer));
   if (label[0] == '\0')
     strlcpy(buffer, "N/A", sizeof(buffer));
   result.detailTextLabel.text = BOXSTRING(buffer);
@@ -641,10 +633,6 @@ didSelectRowAtIndexPath:(NSIndexPath *)indexPath
    [[self tableView] reloadData];
 }
 
-- (void)menuRefresh
-{
-}
-
 @end
 
 @interface RAMainMenu : RAMenuBase<RAMenuActioner>
@@ -670,32 +658,24 @@ didSelectRowAtIndexPath:(NSIndexPath *)indexPath
    char title[256], title_msg[256];
    NSMutableArray *everything;
    RAMainMenu* __weak weakSelf;
-   const char *dir           = NULL;
-   const char *label         = NULL;
-   unsigned menu_type        = 0;
-   menu_handle_t *menu       = menu_driver_get_ptr();
-   
-   if (!menu)
-      return;
    
    everything = [NSMutableArray array];
 
-   get_core_title(title_msg, sizeof(title_msg));
+   menu_entries_get_core_title(title_msg, sizeof(title_msg));
    self.title = BOXSTRING(title_msg);
 
-   menu_list_get_last_stack(menu->menu_list, &dir, &label, &menu_type);
-   get_title(label, dir, menu_type, title, sizeof(title));
+   menu_entries_get_title(title, sizeof(title));
    [everything addObject:BOXSTRING(title)];
   
-   end = menu_list_get_size(menu->menu_list);    
-   for (i = menu->begin; i < end; i++)
+   end = menu_entries_get_end();    
+   for (i = menu_entries_get_start(); i < end; i++)
      [everything addObject:[self make_menu_item_for_entry: i]];
    
    self.sections = [NSMutableArray array];
    [self.sections addObject:everything];
 
    weakSelf = self;
-   if (menu_list_get_stack_size(menu->menu_list) > 1)
+   if (menu_entries_show_back())
      [self set_leftbutton:BOXSTRING("Back")
                    target:weakSelf
                    action:@selector(menuBack)];
@@ -703,9 +683,6 @@ didSelectRowAtIndexPath:(NSIndexPath *)indexPath
    [self set_rightbutton:BOXSTRING("Switch")
                    target:[RetroArch_iOS get]
                    action:@selector(showGameView)];
-
-   if ( menu->message_contents[0] != '\0' )
-     apple_display_alert(menu->message_contents, NULL);
 }
 
 - (void) set_leftbutton:(NSString *)title target:(id)target action:(SEL)action
@@ -763,35 +740,12 @@ didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 
 - (void)menuSelect: (uint32_t) i
 {
-  if (menu_entry_select(i))
-  {
-    [self menuRefresh];
-    [self reloadData];
-  }
-}
-
-- (void)menuRefresh
-{
-   menu_handle_t *menu    = menu_driver_get_ptr();
-   menu_list_t *menu_list = menu_list_get_ptr();
-   if (!menu || !menu_list)
-      return;
-   if (!menu->need_refresh)
-      return;
-    
-   menu_displaylist_push(menu_list->selection_buf, menu_list->menu_stack);
+  menu_entry_select(i);
 }
 
 - (void)menuBack
 {
-   menu_list_t *menu_list = menu_list_get_ptr();
-   if (!menu_list)
-      return;
-   
-  menu_apply_deferred_settings();
-  menu_list_pop_stack(menu_list);
-  [self menuRefresh];
-  [self reloadData];
+  menu_entries_select_back();
 }
 
 @end

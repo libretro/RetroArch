@@ -43,7 +43,6 @@
 
 - (id)initWithStyle:(UITableViewStyle)style;
 - (id)itemForIndexPath:(NSIndexPath*)indexPath;
-- (void)menuRefresh;
 
 @end
 
