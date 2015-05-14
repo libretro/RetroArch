@@ -126,7 +126,7 @@ static void gl_raster_font_free_font(void *data)
    free(font);
 }
 
-static int get_message_width(gl_raster_t *font, const char *msg)
+static int get_message_width(gl_raster_t *font, const char *msg, float scale)
 {
    unsigned i;
    unsigned msg_len_full   = strlen(msg);
@@ -152,7 +152,7 @@ static int get_message_width(gl_raster_t *font, const char *msg)
       msg_len       = min(msg_len_full, MAX_MSG_LEN_CHUNK);
    }
 
-   return delta_x;
+   return delta_x * scale;
 }
 
 static void gl_raster_font_draw_vertices(gl_t *gl, const gl_coords_t *coords)
@@ -194,10 +194,10 @@ static void gl_raster_font_render_message(
    switch (text_align)
    {
       case TEXT_ALIGN_RIGHT:
-         x -= get_message_width(font, msg);
+         x -= get_message_width(font, msg, scale);
          break;
       case TEXT_ALIGN_CENTER:
-         x -= get_message_width(font, msg) / 2.0;
+         x -= get_message_width(font, msg, scale) / 2.0;
          break;
    }
 
