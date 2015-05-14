@@ -85,7 +85,7 @@ int menu_entries_select_back(void)
   if (!menu_list)
     return -1;
   
-  menu_apply_deferred_settings();
+  menu_setting_apply_deferred();
   menu_list_pop_stack(menu_list);
 
   return 0;

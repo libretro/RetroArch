@@ -256,65 +256,6 @@ void menu_free(menu_handle_t *menu)
    free(menu);
 }
 
-void menu_apply_deferred_settings(void)
-{
-   menu_handle_t   *menu    = menu_driver_get_ptr();
-   rarch_setting_t *setting = menu ? menu->list_settings : NULL;
-    
-   if (!menu || !setting)
-      return;
-    
-   for (; setting->type != ST_NONE; setting++)
-   {
-      if (setting->type >= ST_GROUP)
-         continue;
-
-      if (!(setting->flags & SD_FLAG_IS_DEFERRED))
-         continue;
-
-      switch (setting->type)
-      {
-         case ST_BOOL:
-            if (*setting->value.boolean != setting->original_value.boolean)
-            {
-               setting->original_value.boolean = *setting->value.boolean;
-               setting->deferred_handler(setting);
-            }
-            break;
-         case ST_INT:
-            if (*setting->value.integer != setting->original_value.integer)
-            {
-               setting->original_value.integer = *setting->value.integer;
-               setting->deferred_handler(setting);
-            }
-            break;
-         case ST_UINT:
-            if (*setting->value.unsigned_integer != setting->original_value.unsigned_integer)
-            {
-               setting->original_value.unsigned_integer = *setting->value.unsigned_integer;
-               setting->deferred_handler(setting);
-            }
-            break;
-         case ST_FLOAT:
-            if (*setting->value.fraction != setting->original_value.fraction)
-            {
-               setting->original_value.fraction = *setting->value.fraction;
-               setting->deferred_handler(setting);
-            }
-            break;
-         case ST_PATH:
-         case ST_DIR:
-         case ST_STRING:
-         case ST_BIND:
-            /* Always run the deferred write handler */
-            setting->deferred_handler(setting);
-            break;
-         default:
-            break;
-      }
-   }
-}
-
 /**
  * menu_iterate:
  * @input                    : input sample for this frame

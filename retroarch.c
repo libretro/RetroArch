@@ -39,6 +39,7 @@
 
 #ifdef HAVE_MENU
 #include "menu/menu.h"
+#include "menu/menu_setting.h"
 #include "menu/menu_shader.h"
 #include "menu/menu_input.h"
 #endif
@@ -1288,7 +1289,7 @@ void rarch_main_set_state(unsigned cmd)
          break;
       case RARCH_ACTION_STATE_MENU_RUNNING_FINISHED:
 #ifdef HAVE_MENU
-         menu_apply_deferred_settings();
+         menu_setting_apply_deferred();
 
          menu_driver_toggle(false);
 
