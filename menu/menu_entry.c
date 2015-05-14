@@ -277,8 +277,10 @@ void menu_entry_pathdir_extensions(uint32_t i, char *s, size_t len)
 
 void menu_entry_reset(uint32_t i)
 {
-   rarch_setting_t *setting = menu_entry_get_setting(i);
-   setting_reset_setting(setting);
+   menu_entry_t entry;
+   menu_entry_get(&entry, i, NULL, true);
+
+   menu_entry_action(&entry, i, MENU_ACTION_START);
 }
 
 void menu_entry_get_value(uint32_t i, char *s, size_t len)
