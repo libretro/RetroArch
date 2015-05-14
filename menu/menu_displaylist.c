@@ -545,6 +545,13 @@ static int menu_displaylist_parse_cores(menu_displaylist_info_t *info)
    core_info_list_get_supported_cores(global->core_info,
          menu->deferred_path, &core_info, &list_size);
 
+   if (list_size <= 0)
+   {
+      menu_list_push(info->list,
+            "No cores available.", "",
+            0, 0);
+   }
+
    for (i = 0; i < list_size; i++)
    {
       menu_list_push(info->list, core_info[i].path, "",
@@ -748,7 +755,7 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
    else
       menu_list_push(info->list,
             "No information available.", "",
-            MENU_SETTINGS_CORE_OPTION_NONE, 0);
+            0, 0);
 
    return 0;
 }
