@@ -78,15 +78,17 @@ uint32_t menu_entries_show_back(void)
    return (menu_list_get_stack_size(menu->menu_list) > 1);
 }
 
-// Clicks the back button
-void menu_entries_select_back(void)
+/* Clicks the back button */
+int menu_entries_select_back(void)
 {
   menu_list_t *menu_list = menu_list_get_ptr();
   if (!menu_list)
-    return;
+    return -1;
   
   menu_apply_deferred_settings();
   menu_list_pop_stack(menu_list);
+
+  return 0;
 }
 
 // Sets title_msg to the name of the current core (shown at the top of the UI)
