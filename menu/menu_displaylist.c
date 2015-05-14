@@ -246,7 +246,14 @@ static int menu_displaylist_parse(menu_displaylist_info_t *info, bool *need_sort
             MENU_FILE_USE_DIRECTORY, 0);
 
    if (!str_list)
-      return -1;
+   {
+      const char *str = path_is_compressed
+            ? "Unable to read compressed file"
+            : "Directory not found";
+
+      menu_list_push(info->list, str, "", 0, 0);
+      return 0;
+   }
 
    dir_list_sort(str_list, true);
 
