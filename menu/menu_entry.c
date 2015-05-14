@@ -30,7 +30,7 @@
 // notify_list_loaded on the UI companion.
 
 // Returns the starting index of the menu entry list
-size_t menu_entries_get_start()
+size_t menu_entries_get_start(void)
 {
    menu_handle_t *menu       = menu_driver_get_ptr();
    
@@ -41,7 +41,7 @@ size_t menu_entries_get_start()
 }
 
 // Returns the last index + 1 of the menu entry list
-size_t menu_entries_get_end()
+size_t menu_entries_get_end(void)
 {
    menu_handle_t *menu       = menu_driver_get_ptr();
    
@@ -69,7 +69,7 @@ void menu_entries_get_title(char *title, size_t title_len)
 
 // Returns true if a Back button should be shown (i.e. we are at least
 // one level deep in the menu hierarchy)
-uint32_t menu_entries_show_back()
+uint32_t menu_entries_show_back(void)
 {
    menu_handle_t *menu       = menu_driver_get_ptr();
    
@@ -80,7 +80,7 @@ uint32_t menu_entries_show_back()
 }
 
 // Clicks the back button
-void menu_entries_select_back()
+void menu_entries_select_back(void)
 {
   menu_list_t *menu_list = menu_list_get_ptr();
   if (!menu_list)
