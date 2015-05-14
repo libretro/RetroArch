@@ -22,6 +22,14 @@
 #include "../settings.h"
 #include "drivers/shared.h"
 
+// This file provides an abstraction of the currently displayed
+// menu. It is organized into event-system where the UI companion
+// calls this functions and RetroArch responds by changing the global
+// state (including arranging for these functions to return different
+// values). Its only interaction back to the UI is to arrange for
+// notify_list_loaded on the UI companion.
+
+// Returns the starting index of the menu entry list
 size_t menu_entries_get_start()
 {
    menu_handle_t *menu       = menu_driver_get_ptr();
@@ -32,6 +40,7 @@ size_t menu_entries_get_start()
    return menu->begin;
 }
 
+// Returns the last index + 1 of the menu entry list
 size_t menu_entries_get_end()
 {
    menu_handle_t *menu       = menu_driver_get_ptr();
@@ -42,6 +51,7 @@ size_t menu_entries_get_end()
    return menu_list_get_size(menu->menu_list);
 }
 
+// Sets title to what the name of the current menu should be
 void menu_entries_get_title(char *title, size_t title_len)
 {
    const char *dir           = NULL;
@@ -57,6 +67,8 @@ void menu_entries_get_title(char *title, size_t title_len)
    return;
 }
 
+// Returns true if a Back button should be shown (i.e. we are at least
+// one level deep in the menu hierarchy)
 uint32_t menu_entries_show_back()
 {
    menu_handle_t *menu       = menu_driver_get_ptr();
@@ -67,6 +79,7 @@ uint32_t menu_entries_show_back()
    return (menu_list_get_stack_size(menu->menu_list) > 1);
 }
 
+// Clicks the back button
 void menu_entries_select_back()
 {
   menu_list_t *menu_list = menu_list_get_ptr();
@@ -77,6 +90,7 @@ void menu_entries_select_back()
   menu_list_pop_stack(menu_list);
 }
 
+// Sets title_msg to the name of the current core (shown at the top of the UI)
 void menu_entries_get_core_title(char *title_msg, size_t title_msg_len)
 {
    global_t *global          = global_get_ptr();
@@ -362,9 +376,10 @@ int menu_entry_get_current_id(bool use_representation)
    return -1;
 }
 
-// JM: In the cases where this used to return true, it should actually
-// arrange for menu_entries_* to start returning new things AND ensure
-// that ui_companion_cocoatouch_notify_list_pushed is called.
+// Performs whatever actions are associated with menu entry 'i'. This
+// is the most important function because it does all the work
+// associated with clicking on things in the UI. This includes loading
+// cores and updating the currently displayed menu
 void menu_entry_select(uint32_t i)
 {
    menu_entry_t entry;
