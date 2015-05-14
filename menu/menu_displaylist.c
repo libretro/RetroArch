@@ -252,7 +252,16 @@ static int menu_displaylist_parse(menu_displaylist_info_t *info, bool *need_sort
 
 
    list_size = str_list->size;
-   for (i = 0; i < str_list->size; i++)
+
+   if (list_size <= 0)
+   {
+      menu_list_push(info->list,
+            "No items.", "", 0, 0);
+      string_list_free(str_list);
+      return 0;
+   }
+
+   for (i = 0; i < list_size; i++)
    {
       bool is_dir;
       const char *path = NULL;
@@ -550,6 +559,7 @@ static int menu_displaylist_parse_cores(menu_displaylist_info_t *info)
       menu_list_push(info->list,
             "No cores available.", "",
             0, 0);
+      return 0;
    }
 
    for (i = 0; i < list_size; i++)
