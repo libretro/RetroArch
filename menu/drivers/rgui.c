@@ -376,7 +376,7 @@ static void rgui_render(void)
    if (settings->menu.mouse.enable)
    {
       if (menu->mouse.scrolldown && menu->begin
-            < menu_list_get_size(menu->menu_list) - RGUI_TERM_HEIGHT)
+            < menu_entries_get_end() - RGUI_TERM_HEIGHT)
          menu->begin++;
 
       if (menu->mouse.scrollup && menu->begin > 0)
@@ -386,17 +386,15 @@ static void rgui_render(void)
    }
 
    /* Do not scroll if all items are visible. */
-   if (menu_list_get_size(menu->menu_list) <= RGUI_TERM_HEIGHT)
+   if (menu_entries_get_end() <= RGUI_TERM_HEIGHT)
       menu->begin = 0;
 
-   bottom = menu_list_get_size(menu->menu_list) - RGUI_TERM_HEIGHT;
+   bottom = menu_entries_get_end() - RGUI_TERM_HEIGHT;
    if (menu->begin > bottom)
       menu->begin = bottom;
 
-   end = (menu->begin + RGUI_TERM_HEIGHT <=
-         menu_list_get_size(menu->menu_list)) ?
-      menu->begin + RGUI_TERM_HEIGHT :
-      menu_list_get_size(menu->menu_list);
+   end = (menu->begin + RGUI_TERM_HEIGHT <= menu_entries_get_end()) ?
+      menu->begin + RGUI_TERM_HEIGHT : menu_entries_get_end();
 
    rgui_render_background();
 
@@ -445,8 +443,9 @@ static void rgui_render(void)
 
    x = RGUI_TERM_START_X;
    y = RGUI_TERM_START_Y;
+   i = 0;
 
-   for (i = menu->begin; i < end; i++, y += FONT_HEIGHT_STRIDE)
+   for (i = menu_entries_get_start(); i < end; i++, y += FONT_HEIGHT_STRIDE)
    {
       menu_entry_t entry;
       char message[PATH_MAX_LENGTH], 
@@ -595,6 +594,7 @@ static void rgui_navigation_set(bool scroll)
    menu_handle_t *menu = menu_driver_get_ptr();
    if (!menu)
       return;
+   size_t end = menu_entries_get_end();
 
    if (!scroll)
       return;
@@ -602,13 +602,10 @@ static void rgui_navigation_set(bool scroll)
    if (menu->navigation.selection_ptr < RGUI_TERM_HEIGHT/2)
       menu->begin = 0;
    else if (menu->navigation.selection_ptr >= RGUI_TERM_HEIGHT/2
-         && menu->navigation.selection_ptr <
-         menu_list_get_size(menu->menu_list) - RGUI_TERM_HEIGHT/2)
+         && menu->navigation.selection_ptr < (end - RGUI_TERM_HEIGHT/2))
       menu->begin = menu->navigation.selection_ptr - RGUI_TERM_HEIGHT/2;
-   else if (menu->navigation.selection_ptr >=
-         menu_list_get_size(menu->menu_list) - RGUI_TERM_HEIGHT/2)
-      menu->begin = menu_list_get_size(menu->menu_list)
-            - RGUI_TERM_HEIGHT;
+   else if (menu->navigation.selection_ptr >= (end - RGUI_TERM_HEIGHT/2))
+      menu->begin = end - RGUI_TERM_HEIGHT;
 }
 
 static void rgui_navigation_set_last(void)

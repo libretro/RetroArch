@@ -139,8 +139,7 @@ static void glui_draw_scrollbar(gl_t *gl)
       return;
 
    glui                 = (glui_handle_t*)menu->userdata;
-   content_height       = menu_list_get_size(menu->menu_list) 
-                          * glui->line_height;
+   content_height       = menu_entries_get_end() * glui->line_height;
    total_height         = global->video_data.height - menu->header_height * 2;
    height               = total_height / (content_height / total_height);
    y                    = total_height * menu->scroll_y / content_height;
@@ -254,12 +253,12 @@ static void glui_render(void)
    if (menu->scroll_y < 0)
       menu->scroll_y = 0;
 
-   bottom = menu_list_get_size(menu->menu_list) * glui->line_height
+   bottom = menu_entries_get_end() * glui->line_height
          - global->video_data.height + menu->header_height * 2;
    if (menu->scroll_y > bottom)
       menu->scroll_y = bottom;
 
-   if (menu_list_get_size(menu->menu_list) * glui->line_height
+   if (menu_entries_get_end() * glui->line_height
       < global->video_data.height - menu->header_height*2)
       menu->scroll_y = 0;
 }
@@ -272,13 +271,14 @@ static void glui_render_menu_list(runloop_t *runloop,
    size_t i = 0;
    uint64_t frame_count = video_driver_get_frame_count();
    global_t     *global = global_get_ptr();
+   size_t          end  = menu_entries_get_end();
 
    if (!menu_display_update_pending())
       return;
 
    glui->list_block.carr.coords.vertices = 0;
 
-   for (i = 0; i < menu_list_get_size(menu->menu_list); i++)
+   for (i = 0; i < end; i++)
    {
       unsigned y;
       menu_entry_t entry;

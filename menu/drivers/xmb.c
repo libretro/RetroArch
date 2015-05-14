@@ -456,7 +456,7 @@ static void xmb_selection_pointer_changed(void)
       return;
 
    current = menu->navigation.selection_ptr;
-   end     = menu_list_get_size(menu->menu_list);
+   end     = menu_entries_get_end();
 
    for (i = 0; i < end; i++)
    {

@@ -132,6 +132,7 @@ static void rmenu_render(void)
    global_t    *global      = global_get_ptr();
    runloop_t *runloop       = rarch_main_get_ptr();
    uint64_t frame_count     = video_driver_get_frame_count();
+   size_t  entries_end      = menu_entries_get_end():
 
    if (!menu)
       return;
@@ -155,12 +156,10 @@ static void rmenu_render(void)
 
    begin = (menu->navigation.selection_ptr >= (ENTRIES_HEIGHT / 2)) ? 
       (menu->navigation.selection_ptr - (ENTRIES_HEIGHT / 2)) : 0;
-   end   = ((menu->navigation.selection_ptr + ENTRIES_HEIGHT) <= 
-         menu_list_get_size(menu->menu_list)) ?
-      menu->navigation.selection_ptr + ENTRIES_HEIGHT :
-      menu_list_get_size(menu->menu_list);
+   end   = ((menu->navigation.selection_ptr + ENTRIES_HEIGHT) <= entries_end)
+      ? menu->navigation.selection_ptr + ENTRIES_HEIGHT : entries_end;
 
-   if (menu_list_get_size(menu->menu_list) <= ENTRIES_HEIGHT)
+   if (entries_end <= ENTRIES_HEIGHT)
       begin = 0;
 
    if (end - begin > ENTRIES_HEIGHT)

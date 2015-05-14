@@ -566,7 +566,7 @@ static void rmenu_xui_render(void)
 		XuiTextElementSetText(m_menutitlebottom, strw_buffer);
 	}
 
-	end = menu_list_get_size(menu->menu_list);
+	end = menu_entries_get_end();
 	for (i = 0; i < end; i++)
    {
       menu_entry_t entry;
