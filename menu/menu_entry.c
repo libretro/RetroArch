@@ -57,12 +57,12 @@ void menu_entries_get_title(char *title, size_t title_len)
    const char *dir           = NULL;
    const char *label         = NULL;
    unsigned menu_type        = 0;
-   menu_handle_t *menu       = menu_driver_get_ptr();
+   menu_list_t *menu_list    = menu_list_get_ptr();
    
-   if (!menu)
+   if (!menu_list)
       return;
 
-   menu_list_get_last_stack(menu->menu_list, &dir, &label, &menu_type);
+   menu_list_get_last_stack(menu_list, &dir, &label, &menu_type);
    get_title(label, dir, menu_type, title, title_len);
 }
 
@@ -70,12 +70,12 @@ void menu_entries_get_title(char *title, size_t title_len)
 // one level deep in the menu hierarchy)
 uint32_t menu_entries_show_back(void)
 {
-   menu_handle_t *menu       = menu_driver_get_ptr();
+   menu_list_t *menu_list    = menu_list_get_ptr();
    
-   if (!menu)
+   if (!menu_list)
       return false;
 
-   return (menu_list_get_stack_size(menu->menu_list) > 1);
+   return (menu_list_get_stack_size(menu_list) > 1);
 }
 
 /* Clicks the back button */
