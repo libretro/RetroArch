@@ -620,16 +620,23 @@ static int menu_displaylist_parse_core_options(menu_displaylist_info_t *info)
 
 #ifdef HAVE_SHADER_MANAGER
 static int deferred_push_video_shader_parameters_common(
-      file_list_t *list, file_list_t *menu_list,
-      const char *path, const char *label, unsigned type,
+      menu_displaylist_info_t *info,
       struct video_shader *shader, unsigned base_parameter)
 {
    unsigned i;
+   size_t list_size = shader->num_parameters;
 
-   for (i = 0; i < shader->num_parameters; i++)
+   if (list_size <= 0)
    {
-      menu_list_push(list, shader->parameters[i].desc, label,
-            base_parameter + i, 0);
+      menu_list_push(info->list,
+            "No shader parameters.", "", 0, 0);
+      return 0;
+   }
+
+   for (i = 0; i < list_size; i++)
+   {
+      menu_list_push(info->list, shader->parameters[i].desc,
+            info->label, base_parameter + i, 0);
    }
 
    return 0;
@@ -1946,9 +1953,7 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
             if (!shader)
                return 0;
 
-            ret = deferred_push_video_shader_parameters_common(info->list,
-                  info->menu_list,
-                  info->path, info->label, info->type, shader,
+            ret = deferred_push_video_shader_parameters_common(info, shader,
                   (type == DISPLAYLIST_SHADER_PARAMETERS) 
                   ? MENU_SETTINGS_SHADER_PARAMETER_0 : MENU_SETTINGS_SHADER_PRESET_PARAMETER_0
                   );
