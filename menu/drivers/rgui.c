@@ -408,7 +408,7 @@ static void rgui_render(void)
    hover_color = HOVER_COLOR(settings);
    normal_color = NORMAL_COLOR(settings);
 
-   if (file_list_get_size(menu->menu_list->menu_stack) > 1)
+   if (menu_entries_show_back())
       blit_line(menu,
             RGUI_TERM_START_X, RGUI_TERM_START_X,
             "BACK", TITLE_COLOR(settings));

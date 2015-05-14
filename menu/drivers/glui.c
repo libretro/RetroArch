@@ -373,7 +373,7 @@ static void glui_frame(void)
    glui_blit_line(global->video_data.width / 2, 0, title_buf,
          title_color, TEXT_ALIGN_CENTER);
 
-   if (file_list_get_size(menu->menu_list->menu_stack) > 1)
+   if (menu_entries_show_back())
       glui_blit_line(glui->margin, 0, "BACK",
             title_color, TEXT_ALIGN_LEFT);
 
