@@ -426,7 +426,7 @@ static void rgui_render(void)
 
    if (settings->menu.core_enable)
    {
-      get_core_title(title_msg, sizeof(title_msg));
+      menu_entries_get_core_title(title_msg, sizeof(title_msg));
       blit_line(menu,
             RGUI_TERM_START_X,
             (RGUI_TERM_HEIGHT * FONT_HEIGHT_STRIDE) +

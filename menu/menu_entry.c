@@ -20,8 +20,64 @@
 #include "menu_setting.h"
 #include "menu_input.h"
 #include "../settings.h"
+#include "drivers/shared.h"
 
-void get_core_title(char *title_msg, size_t title_msg_len)
+size_t menu_entries_get_start()
+{
+   menu_handle_t *menu       = menu_driver_get_ptr();
+   
+   if (!menu)
+     return 0;
+
+   return menu->begin;
+}
+
+size_t menu_entries_get_end()
+{
+   menu_handle_t *menu       = menu_driver_get_ptr();
+   
+   if (!menu)
+      return 0;
+
+   return menu_list_get_size(menu->menu_list);
+}
+
+void menu_entries_get_title(char *title, size_t title_len)
+{
+   const char *dir           = NULL;
+   const char *label         = NULL;
+   unsigned menu_type        = 0;
+   menu_handle_t *menu       = menu_driver_get_ptr();
+   
+   if (!menu)
+      return;
+
+   menu_list_get_last_stack(menu->menu_list, &dir, &label, &menu_type);
+   get_title(label, dir, menu_type, title, title_len);
+   return;
+}
+
+uint32_t menu_entries_show_back()
+{
+   menu_handle_t *menu       = menu_driver_get_ptr();
+   
+   if (!menu)
+      return false;
+
+   return (menu_list_get_stack_size(menu->menu_list) > 1);
+}
+
+void menu_entries_select_back()
+{
+  menu_list_t *menu_list = menu_list_get_ptr();
+  if (!menu_list)
+    return;
+  
+  menu_apply_deferred_settings();
+  menu_list_pop_stack(menu_list);
+}
+
+void menu_entries_get_core_title(char *title_msg, size_t title_msg_len)
 {
    global_t *global          = global_get_ptr();
    const char *core_name     = global->menu.info.library_name;
@@ -306,8 +362,10 @@ int menu_entry_get_current_id(bool use_representation)
    return -1;
 }
 
-/* Returns true if the menu should reload */
-uint32_t menu_entry_select(uint32_t i)
+// JM: In the cases where this used to return true, it should actually
+// arrange for menu_entries_* to start returning new things AND ensure
+// that ui_companion_cocoatouch_notify_list_pushed is called.
+void menu_entry_select(uint32_t i)
 {
    menu_entry_t entry;
    menu_file_list_cbs_t *cbs = NULL;
@@ -322,14 +380,14 @@ uint32_t menu_entry_select(uint32_t i)
       menu_list_get_actiondata_at_offset(menu_list->selection_buf, i);
 
    if (setting_is_of_path_type(setting))
-      return false;
+      return;
    if (setting_is_of_general_type(setting))
    {
       nav->selection_ptr = i;
       if (cbs && cbs->action_ok)
          cbs->action_ok(entry.path, entry.label, entry.type, i);
 
-      return false;
+      return;
    }
 
    nav->selection_ptr = i;
@@ -344,7 +402,7 @@ uint32_t menu_entry_select(uint32_t i)
       menu_list_push(menu_list->menu_stack, "",
             "info_screen", 0, i);
    }
-   return true;
+   return;
 }
 
 int menu_entry_iterate(unsigned action)

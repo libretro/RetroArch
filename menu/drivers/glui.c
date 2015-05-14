@@ -392,7 +392,7 @@ static void glui_frame(void)
 
    if (settings->menu.core_enable)
    {
-      get_core_title(title_msg, sizeof(title_msg));
+      menu_entries_get_core_title(title_msg, sizeof(title_msg));
 
       glui_blit_line(glui->margin,
             global->video_data.height - glui->line_height, title_msg,

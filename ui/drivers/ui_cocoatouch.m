@@ -407,7 +407,7 @@ enum
 
 - (void)mainMenuRefresh
 {
-  [self.mainmenu menuRefresh];
+  [self.mainmenu reloadData];
 }
 
 @end
@@ -519,24 +519,14 @@ static void ui_companion_cocoatouch_event_command(void *data,
 static void ui_companion_cocoatouch_notify_list_pushed(void *data,
    file_list_t *list, file_list_t *menu_list)
 {
-#if 0
     (void)data;
     (void)list;
     (void)menu_list;
 
     RetroArch_iOS *ap   = (RetroArch_iOS *)apple_platform;
 
-    RARCH_WARN("notify list pushed (this log entry is not printed)");
-
-    // JM: Ideally, RA would have set this, but I'm going to force it
-    // for testing, because my menu refresh relies on it.
-    menu_handle_t *menu    = menu_driver_get_ptr();
-    if (!menu) return;
-    menu->need_refresh = true;
-    
     if (ap)
       [ap mainMenuRefresh];
-#endif
 }
 
 const ui_companion_driver_t ui_companion_cocoatouch = {

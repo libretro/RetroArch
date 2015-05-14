@@ -1215,7 +1215,7 @@ static void xmb_frame(void)
 
    if (settings->menu.core_enable)
    {
-      get_core_title(title_msg, sizeof(title_msg));
+      menu_entries_get_core_title(title_msg, sizeof(title_msg));
       xmb_draw_text(menu, xmb, title_msg, xmb->margins.title.left, 
             global->video_data.height - xmb->margins.title.bottom, 1, 1, TEXT_ALIGN_LEFT);
    }

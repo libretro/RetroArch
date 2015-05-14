@@ -47,7 +47,12 @@ typedef struct menu_entry
    unsigned spacing;
 } menu_entry_t;
 
-void get_core_title(char *title_msg, size_t title_msg_len);
+size_t menu_entries_get_start();
+size_t menu_entries_get_end();
+void menu_entries_get_title(char *title, size_t title_len);
+uint32_t menu_entries_show_back();
+void menu_entries_select_back();
+void menu_entries_get_core_title(char *title_msg, size_t title_msg_len);
 
 rarch_setting_t *menu_entry_get_setting(uint32_t i);
 
@@ -104,7 +109,7 @@ void menu_entry_get(menu_entry_t *entry, size_t i,
 
 int menu_entry_iterate(unsigned action);
 
-uint32_t menu_entry_select(uint32_t i);
+void menu_entry_select(uint32_t i);
 
 int menu_entry_action(menu_entry_t *entry, unsigned i, unsigned action);
 
