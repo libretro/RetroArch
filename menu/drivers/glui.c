@@ -349,10 +349,7 @@ static void glui_frame(void)
 
    gl_menu_frame_background(menu, settings, gl, glui->textures.bg.id, 0.75f, 0.75f, false);
 
-   menu_list_get_last_stack(menu->menu_list, &dir, &label, &menu_type);
-
-   get_title(label, dir, menu_type, title, sizeof(title));
-
+   menu_entries_get_title(title, sizeof(title));
 
    font_driver = driver->font_osd_driver;
 

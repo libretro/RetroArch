@@ -548,11 +548,9 @@ static void rmenu_xui_render(void)
 
 	rmenu_xui_render_background();
 
-	menu_list_get_last_stack(menu->menu_list, &dir, &label, &menu_type);
-
 	if (XuiHandleIsValid(m_menutitle))
 	{
-		get_title(label, dir, menu_type, title, sizeof(title));
+      menu_entries_get_title(title, sizeof(title));
 		mbstowcs(strw_buffer, title, sizeof(strw_buffer) / sizeof(wchar_t));
 		XuiTextElementSetText(m_menutitle, strw_buffer);
 		menu_animation_ticker_line(title, RXUI_TERM_WIDTH - 3, (unsigned int)frame_count / 15, title, true);

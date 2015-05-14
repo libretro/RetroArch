@@ -398,14 +398,11 @@ static void rgui_render(void)
 
    rgui_render_background();
 
-   menu_list_get_last_stack(menu->menu_list,
-         &dir, &label, &menu_type);
-
 #if 0
    RARCH_LOG("Dir is: %s\n", label);
 #endif
 
-   get_title(label, dir, menu_type, title, sizeof(title));
+   menu_entries_get_title(title, sizeof(title));
 
    menu_animation_ticker_line(title_buf, RGUI_TERM_WIDTH - 10,
          frame_count / RGUI_TERM_START_X, title, true);

@@ -167,9 +167,7 @@ static void rmenu_render(void)
    
    rmenu_render_background();
 
-   menu_list_get_last_stack(menu->menu_list, &dir, &label, &menu_type);
-
-   get_title(label, dir, menu_type, title, sizeof(title));
+   menu_entries_get_title(title, sizeof(title));
 
    menu_animation_ticker_line(title_buf, RMENU_TERM_WIDTH,
          frame_count / 15, title, true);

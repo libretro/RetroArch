@@ -722,13 +722,7 @@ static void xmb_set_title(xmb_handle_t *xmb)
 
    if (menu->categories.selection_ptr == 0)
    {
-      const char *dir   = NULL;
-      const char *label = NULL;
-      unsigned menu_type = 0;
-
-      menu_list_get_last_stack(menu->menu_list, &dir, &label, &menu_type);
-      get_title(label, dir, menu_type,
-            xmb->title_name, sizeof(xmb->title_name));
+      menu_entries_get_title(xmb->title_name, sizeof(xmb->title_name));
    }
    else
    {

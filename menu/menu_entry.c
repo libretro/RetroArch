@@ -64,7 +64,6 @@ void menu_entries_get_title(char *title, size_t title_len)
 
    menu_list_get_last_stack(menu->menu_list, &dir, &label, &menu_type);
    get_title(label, dir, menu_type, title, title_len);
-   return;
 }
 
 // Returns true if a Back button should be shown (i.e. we are at least
