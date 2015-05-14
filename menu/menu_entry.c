@@ -43,12 +43,12 @@ size_t menu_entries_get_start(void)
 // Returns the last index + 1 of the menu entry list
 size_t menu_entries_get_end(void)
 {
-   menu_handle_t *menu       = menu_driver_get_ptr();
+   menu_list_t *menu_list    = menu_list_get_ptr();
    
-   if (!menu)
+   if (!menu_list)
       return 0;
 
-   return menu_list_get_size(menu->menu_list);
+   return menu_list_get_size(menu_list);
 }
 
 // Sets title to what the name of the current menu should be
