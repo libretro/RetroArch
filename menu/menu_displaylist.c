@@ -493,6 +493,13 @@ static int menu_displaylist_parse_historylist(menu_displaylist_info_t *info)
    unsigned i;
    size_t list_size = content_playlist_size(g_defaults.history);
 
+   if (list_size <= 0)
+   {
+      menu_list_push(info->list, "No history available.", "",
+            MENU_SETTINGS_CORE_OPTION_NONE, 0);
+      return 0;
+   }
+
    for (i = 0; i < list_size; i++)
    {
       char fill_buf[PATH_MAX_LENGTH];
