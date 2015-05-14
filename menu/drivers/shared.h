@@ -16,10 +16,13 @@
 #ifndef _DISP_SHARED_H
 #define _DISP_SHARED_H
 
-#include "../../settings.h"
+#include <time.h>
+
 #include <string/string_list.h>
 #include <string/stdstring.h>
-#include <time.h>
+#include <file/file_path.h>
+
+#include "../../settings.h"
 
 #include "../menu_display.h"
 #include "../menu_entries_cbs.h"

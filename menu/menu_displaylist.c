@@ -1944,8 +1944,7 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
       driver_t *driver                = driver_get_ptr();
       const ui_companion_driver_t *ui = ui_companion_get_ptr();
 
-      menu_list_populate_generic(info->list,
-            info->path, info->label, info->type, need_refresh);
+      menu_list_populate_generic(info, need_refresh);
 
       if (ui && driver)
          ui->notify_list_loaded(driver->ui_companion_data,

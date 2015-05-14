@@ -409,12 +409,11 @@ void menu_list_get_alt_at_offset(const file_list_t *list, size_t idx,
    file_list_get_alt_at_offset(list, idx, alt);
 }
 
-int menu_list_populate_generic(file_list_t *list, const char *path,
-      const char *label, unsigned type, bool need_refresh)
+int menu_list_populate_generic(menu_displaylist_info_t *info, bool need_refresh)
 {
    if (need_refresh)
-      menu_list_refresh(list);
-   menu_driver_populate_entries(path, label, type);
+      menu_list_refresh(info->list);
+   menu_driver_populate_entries(info->path, info->label, info->type);
 
    return 0;
 }

@@ -20,6 +20,8 @@
 #include <stddef.h>
 #include <file/file_list.h>
 
+#include "menu_displaylist.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -86,8 +88,7 @@ void menu_list_set_alt_at_offset(file_list_t *list, size_t idx,
 
 void menu_list_refresh(file_list_t *list);
 
-int menu_list_populate_generic(file_list_t *list,
-      const char *path, const char *label, unsigned type,
+int menu_list_populate_generic(menu_displaylist_info_t *info,
       bool need_refresh);
 
 #ifdef __cplusplus
