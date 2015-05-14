@@ -485,7 +485,7 @@ static int action_iterate_message(const char *label, unsigned action)
    return 0;
 }
 
-static int action_iterate_switch(const char *label, unsigned action)
+static int action_iterate_switch(unsigned action)
 {
    menu_entry_t entry;
    size_t selected           = menu_navigation_get_current_selection();
@@ -531,7 +531,7 @@ static int action_iterate_main(const char *label, unsigned action)
    if (menu->need_refresh && !menu->nonblocking_refresh && action != MENU_ACTION_MESSAGE)
       action = MENU_ACTION_REFRESH;
 
-   ret = action_iterate_switch(label, action);
+   ret = action_iterate_switch(action);
 
    if (ret)
       return ret;
