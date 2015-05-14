@@ -310,9 +310,6 @@ static void glui_frame(void)
 {
    char title[PATH_MAX_LENGTH],     title_buf[PATH_MAX_LENGTH], 
         title_msg[PATH_MAX_LENGTH], timedate[PATH_MAX_LENGTH];
-   const char *dir              = NULL;
-   const char *label            = NULL;
-   unsigned menu_type           = 0;
    gl_t *gl                     = NULL;
    glui_handle_t *glui          = NULL;
    const struct font_renderer *font_driver = NULL;

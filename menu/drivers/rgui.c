@@ -330,10 +330,8 @@ static void rgui_render(void)
    int bottom;
    char title[256], title_buf[256], title_msg[64];
    char timedate[PATH_MAX_LENGTH];
-   unsigned x, y, menu_type  = 0;
+   unsigned x, y;
    uint16_t hover_color, normal_color;
-   const char *dir          = NULL;
-   const char *label        = NULL;
    menu_handle_t *menu      = menu_driver_get_ptr();
    runloop_t *runloop       = rarch_main_get_ptr();
    driver_t *driver         = driver_get_ptr();
