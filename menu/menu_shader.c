@@ -19,6 +19,7 @@
 #include <compat/strl.h>
 #include <file/file_path.h>
 
+#include "menu.h"
 #include "menu_shader.h"
 #include "../configuration.h"
 #include "../runloop.h"
