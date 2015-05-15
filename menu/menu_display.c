@@ -87,6 +87,7 @@ float menu_display_get_dpi(void)
 {
    float dpi = menu_dpi_override_value;
    settings_t *settings = config_get_ptr();
+   global_t *global     = global_get_ptr();
 
    if (!settings)
       return dpi;
@@ -95,7 +96,7 @@ float menu_display_get_dpi(void)
       dpi = settings->menu.dpi.override_value;
 #if defined(HAVE_OPENGL) || defined(HAVE_GLES)
    else if (!gfx_ctx_get_metrics(DISPLAY_METRIC_DPI, &dpi))
-      dpi = menu_dpi_override_value;
+      dpi = global->video_data.height / 6;
 #endif
 
    return dpi;
