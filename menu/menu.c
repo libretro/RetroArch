@@ -300,7 +300,7 @@ int menu_iterate(retro_input_t input,
    if (menu->need_refresh && !menu->nonblocking_refresh && action != MENU_ACTION_MESSAGE)
       action = MENU_ACTION_REFRESH;
 
-   menu_entry_iterate(action);
+   ret = menu_entry_iterate(action);
 
    if (runloop->is_menu && !runloop->is_idle)
       menu_display_fb();
