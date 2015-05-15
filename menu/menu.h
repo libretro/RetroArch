@@ -155,14 +155,6 @@ typedef enum
 void *menu_init(const void *data);
 
 /**
- * menu_free_list:
- * @menu                     : Menu handle.
- *
- * Frees menu lists.
- **/
-void menu_free_list(menu_handle_t *menu);
-
-/**
  * menu_iterate:
  * @input                    : input sample for this frame
  * @old_input                : input sample of the previous frame

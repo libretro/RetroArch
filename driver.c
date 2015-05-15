@@ -450,7 +450,6 @@ void uninit_drivers(int flags)
 
       if (!driver->menu_data_own)
       {
-         menu_free_list(driver->menu);
          menu_free(driver->menu);
          driver->menu = NULL;
       }

@@ -194,7 +194,7 @@ error:
  *
  * Frees menu lists.
  **/
-void menu_free_list(menu_handle_t *menu)
+static void menu_free_list(menu_handle_t *menu)
 {
    if (!menu)
       return;
@@ -215,6 +215,8 @@ void menu_free(menu_handle_t *menu)
 
    if (!menu)
       return;
+
+   menu_free_list(menu);
   
 #ifdef HAVE_SHADER_MANAGER
    if (menu->shader)
