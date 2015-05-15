@@ -383,7 +383,7 @@ int menu_entry_get_current_id(bool use_representation)
 // is the most important function because it does all the work
 // associated with clicking on things in the UI. This includes loading
 // cores and updating the currently displayed menu
-void menu_entry_select(uint32_t i)
+int menu_entry_select(uint32_t i)
 {
    menu_entry_t entry;
    menu_file_list_cbs_t *cbs = NULL;
@@ -398,14 +398,15 @@ void menu_entry_select(uint32_t i)
       menu_list_get_actiondata_at_offset(menu_list->selection_buf, i);
 
    if (setting_is_of_path_type(setting))
-      return;
+      return 0;
    if (setting_is_of_general_type(setting))
    {
       nav->selection_ptr = i;
+       
       if (cbs && cbs->action_ok)
          cbs->action_ok(entry.path, entry.label, entry.type, i);
 
-      return;
+      return 0;
    }
 
    nav->selection_ptr = i;
@@ -420,7 +421,7 @@ void menu_entry_select(uint32_t i)
       menu_list_push(menu_list->menu_stack, "",
             "info_screen", 0, i);
    }
-   return;
+   return 0;
 }
 
 int menu_entry_iterate(unsigned action)
