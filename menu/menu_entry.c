@@ -386,6 +386,7 @@ int menu_entry_get_current_id(bool use_representation)
 int menu_entry_select(uint32_t i)
 {
    menu_entry_t entry;
+   enum menu_action action   = MENU_ACTION_NOOP;
    menu_file_list_cbs_t *cbs = NULL;
    menu_navigation_t *nav    = menu_navigation_get_ptr();
    menu_list_t    *menu_list = menu_list_get_ptr();
@@ -399,28 +400,20 @@ int menu_entry_select(uint32_t i)
 
    if (setting_is_of_path_type(setting))
       return 0;
-   if (setting_is_of_general_type(setting))
-   {
-      nav->selection_ptr = i;
-       
-      if (cbs && cbs->action_ok)
-         cbs->action_ok(entry.path, entry.label, entry.type, i);
-
-      return 0;
-   }
 
    nav->selection_ptr = i;
-   if (cbs && cbs->action_ok)
-      cbs->action_ok(entry.path, entry.label, entry.type, i);
+   if ((cbs && cbs->action_ok) || setting_is_of_general_type(setting))
+       action = MENU_ACTION_OK;
    else
    {
       if (cbs && cbs->action_start)
-         cbs->action_start(entry.type, entry.label, MENU_ACTION_START);
+         action = MENU_ACTION_START;
       if (cbs && cbs->action_toggle)
-         cbs->action_toggle(entry.type, entry.label, MENU_ACTION_RIGHT, true);
-      menu_list_push(menu_list->menu_stack, "",
-            "info_screen", 0, i);
+         action = MENU_ACTION_RIGHT;
    }
+    
+   if (action != MENU_ACTION_NOOP)
+       return menu_entry_action(&entry, i, action);
    return 0;
 }
 
