@@ -347,12 +347,12 @@ static int action_toggle_cheat_num_passes(unsigned type, const char *label,
       case MENU_ACTION_LEFT:
          if (cheat->size)
             new_size = cheat->size - 1;
-         menu->need_refresh = true;
+         menu_set_refresh();
          break;
 
       case MENU_ACTION_RIGHT:
          new_size = cheat->size + 1;
-         menu->need_refresh = true;
+         menu_set_refresh();
          break;
    }
 
@@ -380,13 +380,13 @@ static int action_toggle_shader_num_passes(unsigned type, const char *label,
       case MENU_ACTION_LEFT:
          if (shader->passes)
             shader->passes--;
-         menu->need_refresh = true;
+         menu_set_refresh();
          break;
 
       case MENU_ACTION_RIGHT:
          if ((shader->passes < GFX_MAX_SHADERS))
             shader->passes++;
-         menu->need_refresh = true;
+         menu_set_refresh();
          break;
    }
 

@@ -1273,7 +1273,7 @@ void rarch_main_set_state(unsigned cmd)
                global->system.frame_time_last = 0;
             }
 
-            menu->need_refresh = true;
+            menu_set_refresh();
             runloop->is_menu   = true;
          }
 #endif

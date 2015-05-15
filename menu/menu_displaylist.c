@@ -2036,7 +2036,7 @@ int menu_displaylist_push(file_list_t *list, file_list_t *menu_list)
    
    ret = menu_displaylist_deferred_push(&info);
 
-   menu->need_refresh = false;
+   menu_unset_refresh();
 
    return ret;
 }

@@ -312,3 +312,19 @@ int menu_iterate(retro_input_t input,
 
    return 0;
 }
+
+void menu_set_refresh(void)
+{
+   menu_handle_t *menu  = menu_driver_get_ptr();
+   if (!menu)
+      return;
+   menu->need_refresh = true;
+}
+
+void menu_unset_refresh(void)
+{
+   menu_handle_t *menu  = menu_driver_get_ptr();
+   if (!menu)
+      return;
+   menu->need_refresh = false;
+}

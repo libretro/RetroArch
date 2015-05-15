@@ -253,7 +253,7 @@ void menu_list_flush_stack(menu_list_t *list,
    if (!menu || !list)
       return;
 
-   menu->need_refresh = true;
+   menu_set_refresh();
    file_list_get_last(list->menu_stack, &path, &label, &type);
 
    while (type != final_type)
@@ -273,7 +273,7 @@ void menu_list_flush_stack_by_needle(menu_list_t *list,
    if (!menu || !list)
       return;
 
-   menu->need_refresh = true;
+   menu_set_refresh();
    file_list_get_last(list->menu_stack, &path, &label, &type);
 
    while (strcmp(needle, label) != 0)
@@ -295,7 +295,7 @@ void menu_list_pop_stack(menu_list_t *list)
    menu_driver_list_cache(false, 0);
 
    menu_list_pop(list->menu_stack, &menu->navigation.selection_ptr);
-   menu->need_refresh = true;
+   menu_set_refresh();
 }
 
 void menu_list_pop_stack_by_needle(menu_list_t *list,
@@ -309,7 +309,7 @@ void menu_list_pop_stack_by_needle(menu_list_t *list,
    if (!menu || !list)
       return;
 
-   menu->need_refresh = true;
+   menu_set_refresh();
    file_list_get_last(list->menu_stack, &path, &label, &type);
 
    while (strcmp(needle, label) == 0)
@@ -392,7 +392,7 @@ int menu_list_push_stack_refresh(menu_list_t *list,
 
    menu_list_push(list->menu_stack, path, label, type, directory_ptr);
    menu_navigation_clear(&menu->navigation, true);
-   menu->need_refresh = true;
+   menu_set_refresh();
 
    return 0;
 }

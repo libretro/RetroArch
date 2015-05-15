@@ -209,7 +209,7 @@ static int action_start_shader_num_passes(unsigned type, const char *label,
       return -1;
    if (shader->passes)
       shader->passes = 0;
-   menu->need_refresh = true;
+   menu_set_refresh();
 
    video_shader_resolve_parameters(NULL, menu->shader);
 #endif
@@ -231,7 +231,7 @@ static int action_start_cheat_num_passes(unsigned type, const char *label,
    if (cheat->size)
    {
       cheat_manager_realloc(cheat, 0);
-      menu->need_refresh = true;
+      menu_set_refresh();
    }
 
    return 0;
