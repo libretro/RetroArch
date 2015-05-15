@@ -132,7 +132,6 @@ void menu_shader_manager_set_preset(struct video_shader *shader,
 #ifdef HAVE_SHADER_MANAGER
    config_file_t *conf         = NULL;
    settings_t *settings        = config_get_ptr();
-   menu_handle_t *menu         = menu_driver_get_ptr();
 
    settings->video.shader_enable = false;
 
