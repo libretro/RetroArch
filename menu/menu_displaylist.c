@@ -248,8 +248,8 @@ static int menu_displaylist_parse(menu_displaylist_info_t *info, bool *need_sort
    if (!str_list)
    {
       const char *str = path_is_compressed
-            ? "Unable to read compressed file"
-            : "Directory not found";
+            ? "Unable to read compressed file."
+            : "Directory not found.";
 
       menu_list_push(info->list, str, "", 0, 0);
       return 0;

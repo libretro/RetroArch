@@ -464,7 +464,6 @@ static void ui_companion_cocoatouch_notify_content_loaded(void *data)
    RetroArch_iOS *ap = (RetroArch_iOS *)apple_platform;
    
     (void)data;
-   RARCH_LOG("Gets here.\n");
     
    if (ap)
       [ap showGameView];
@@ -525,6 +524,8 @@ static void ui_companion_cocoatouch_notify_list_pushed(void *data,
     (void)menu_list;
 
     RetroArch_iOS *ap   = (RetroArch_iOS *)apple_platform;
+
+   RARCH_LOG("Gets here.\n");
 
     if (ap)
       [ap mainMenuRefresh];
