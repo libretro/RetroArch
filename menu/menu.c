@@ -297,7 +297,7 @@ int menu_iterate(retro_input_t input,
 
    action = menu->input.joypad;
 
-   if (menu->need_refresh && !menu->nonblocking_refresh && action != MENU_ACTION_MESSAGE)
+   if (menu_needs_refresh() && !menu->nonblocking_refresh && action != MENU_ACTION_MESSAGE)
       action = MENU_ACTION_REFRESH;
 
    ret = menu_entry_iterate(action);
@@ -311,6 +311,14 @@ int menu_iterate(retro_input_t input,
       return -1;
 
    return 0;
+}
+
+bool menu_needs_refresh(void)
+{
+   menu_handle_t *menu  = menu_driver_get_ptr();
+   if (!menu)
+      return false;
+   return menu->need_refresh;
 }
 
 void menu_set_refresh(void)

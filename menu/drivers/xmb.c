@@ -1885,7 +1885,7 @@ static void xmb_toggle(bool menu_on)
    menu_animation_push(menu->animation, XMB_DELAY, 1.0f,
          &xmb->alpha, EASING_IN_OUT_QUAD, NULL);
 
-   xmb->prevent_populate = !menu->need_refresh;
+   xmb->prevent_populate = !menu_needs_refresh();
 
    for (i = 0; i < menu->categories.size; i++)
    {

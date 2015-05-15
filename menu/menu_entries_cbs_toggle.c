@@ -356,7 +356,7 @@ static int action_toggle_cheat_num_passes(unsigned type, const char *label,
          break;
    }
 
-   if (menu->need_refresh)
+   if (menu_needs_refresh())
       cheat_manager_realloc(cheat, new_size);
 
    return 0;
@@ -390,7 +390,7 @@ static int action_toggle_shader_num_passes(unsigned type, const char *label,
          break;
    }
 
-   if (menu->need_refresh)
+   if (menu_needs_refresh())
       video_shader_resolve_parameters(NULL, menu->shader);
 
 #endif

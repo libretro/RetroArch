@@ -538,7 +538,7 @@ static void rmenu_xui_render(void)
 
    if (!menu)
       return;
-	if (menu->need_refresh && 
+	if (menu_needs_refresh() && 
 		runloop->is_menu && !menu->msg_force)
 		return;
 
