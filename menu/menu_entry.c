@@ -87,6 +87,9 @@ int menu_entries_select_back(void)
   
   menu_setting_apply_deferred();
   menu_list_pop_stack(menu_list);
+    
+  if (menu_needs_refresh())
+      menu_do_refresh(MENU_ACTION_CANCEL);
 
   return 0;
 }
