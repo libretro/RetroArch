@@ -258,21 +258,6 @@ void menu_free(menu_handle_t *menu)
    free(menu);
 }
 
-int menu_refresh(void)
-{
-   menu_handle_t *menu  = menu_driver_get_ptr();
-   if (!menu->need_refresh)
-      return -1;
-   if (menu->nonblocking_refresh)
-      return -1;
-   if (menu->input.joypad == MENU_ACTION_MESSAGE)
-      return -1;
-
-   menu_entry_iterate(MENU_ACTION_REFRESH);
-
-   return 0;
-}
-
 /**
  * menu_iterate:
  * @input                    : input sample for this frame
@@ -290,6 +275,7 @@ int menu_iterate(retro_input_t input,
    static retro_time_t last_clock_update = 0;
    int32_t ret          = 0;
    unsigned action      = 0;
+   runloop_t *runloop   = rarch_main_get_ptr();
    menu_handle_t *menu  = menu_driver_get_ptr();
    settings_t *settings = config_get_ptr();
 
@@ -311,7 +297,15 @@ int menu_iterate(retro_input_t input,
 
    action = menu->input.joypad;
 
+   if (menu->need_refresh && !menu->nonblocking_refresh && action != MENU_ACTION_MESSAGE)
+      action = MENU_ACTION_REFRESH;
+
    menu_entry_iterate(action);
+
+   if (runloop->is_menu && !runloop->is_idle)
+      menu_display_fb();
+
+   menu_driver_set_texture();
 
    if (ret)
       return -1;

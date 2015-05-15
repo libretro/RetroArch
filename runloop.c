@@ -29,7 +29,6 @@
 
 #ifdef HAVE_MENU
 #include "menu/menu.h"
-#include "menu/menu_display.h"
 #endif
 
 #ifdef HAVE_NETPLAY
@@ -1114,20 +1113,15 @@ int rarch_main_iterate(void)
    rarch_main_data_iterate();
 
 #ifdef HAVE_MENU
-   if (menu_refresh() == -1)
-   {
-      if (runloop->is_menu)
-      {
-         if (menu_iterate(input, old_input, trigger_input) == -1)
-            rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING_FINISHED);
-      }
-   }
-
    if (runloop->is_menu)
    {
+      menu_handle_t *menu = menu_driver_get_ptr();
+      if (menu)
+         if (menu_iterate(input, old_input, trigger_input) == -1)
+            rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING_FINISHED);
+
       if (!input && settings->menu.pause_libretro)
-         ret = 1;
-      menu_display_frame();
+        ret = 1;
       goto success;
    }
 #endif

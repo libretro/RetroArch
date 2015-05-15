@@ -154,8 +154,6 @@ typedef enum
  **/
 void *menu_init(const void *data);
 
-int menu_refresh(void);
-
 /**
  * menu_iterate:
  * @input                    : input sample for this frame

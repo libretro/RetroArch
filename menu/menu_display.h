@@ -54,8 +54,6 @@ void menu_display_set_viewport(void);
 
 void menu_display_unset_viewport(void);
 
-void menu_display_frame(void);
-
 #ifdef __cplusplus
 }
 #endif
