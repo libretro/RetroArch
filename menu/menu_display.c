@@ -206,3 +206,13 @@ void menu_display_unset_viewport(void)
    video_driver_set_viewport(global->video_data.width,
          global->video_data.height, false, true);
 }
+
+void menu_display_frame(void)
+{
+   runloop_t *runloop   = rarch_main_get_ptr();
+
+   if (runloop->is_menu && !runloop->is_idle)
+      menu_display_fb();
+
+   menu_driver_set_texture();
+}
