@@ -385,6 +385,7 @@ int menu_entry_get_current_id(bool use_representation)
 // cores and updating the currently displayed menu
 int menu_entry_select(uint32_t i)
 {
+   int ret = 0;
    menu_entry_t entry;
    enum menu_action action   = MENU_ACTION_NOOP;
    menu_file_list_cbs_t *cbs = NULL;
@@ -413,8 +414,12 @@ int menu_entry_select(uint32_t i)
    }
     
    if (action != MENU_ACTION_NOOP)
-       return menu_entry_action(&entry, i, action);
-   return 0;
+       ret = menu_entry_action(&entry, i, action);
+    
+   if (menu_needs_refresh())
+       menu_do_refresh(action);
+    
+   return ret;
 }
 
 int menu_entry_iterate(unsigned action)
