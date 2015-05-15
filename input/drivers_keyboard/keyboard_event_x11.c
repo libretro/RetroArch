@@ -80,19 +80,17 @@ static size_t conv_utf8_utf32(uint32_t *out,
 void x11_handle_key_event(XEvent *event, XIC ic, bool filter)
 {
    int i;
-   unsigned state;
+   unsigned state, key;
    uint16_t mod = 0;
    char keybuf[32] = {0};
    uint32_t chars[32] = {0};
 
-   bool down    = event->type == KeyPress;
-   unsigned key = input_keymaps_translate_keysym_to_rk(XLookupKeysym(&event->xkey, 0));
-   int num      = 0;
+   bool down     = event->type == KeyPress;
+   int num       = 0;
+   KeySym keysym = 0;
 
    if (down && !filter)
    {
-      KeySym keysym = 0;
-
 #ifdef X_HAVE_UTF8_STRING
       Status status = 0;
 
@@ -112,6 +110,7 @@ void x11_handle_key_event(XEvent *event, XIC ic, bool filter)
 #endif
    }
 
+   key   = input_keymaps_translate_keysym_to_rk(keysym);
    state = event->xkey.state;
 
    if (state & ShiftMask)
@@ -124,6 +123,8 @@ void x11_handle_key_event(XEvent *event, XIC ic, bool filter)
       mod |= RETROKMOD_ALT;
    if (state & Mod4Mask)
       mod |= RETROKMOD_META;
+   if (IsKeypadKey(keysym))
+      mod |= RETROKMOD_NUMLOCK;
 
    input_keyboard_event(down, key, chars[0], mod, RETRO_DEVICE_KEYBOARD);
 
