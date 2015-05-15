@@ -274,6 +274,7 @@ int menu_iterate(retro_input_t input,
 {
    static retro_time_t last_clock_update = 0;
    int32_t ret          = 0;
+   unsigned action      = 0;
    runloop_t *runloop   = rarch_main_get_ptr();
    menu_handle_t *menu  = menu_driver_get_ptr();
    settings_t *settings = config_get_ptr();
@@ -294,7 +295,12 @@ int menu_iterate(retro_input_t input,
       last_clock_update = menu->cur_time;
    }
 
-   menu_entry_iterate(menu->input.joypad);
+   action = menu->input.joypad;
+
+   if (menu->need_refresh && !menu->nonblocking_refresh && action != MENU_ACTION_MESSAGE)
+      action = MENU_ACTION_REFRESH;
+
+   menu_entry_iterate(action);
 
    if (runloop->is_menu && !runloop->is_idle)
       menu_display_fb();

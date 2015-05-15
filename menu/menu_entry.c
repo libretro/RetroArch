@@ -413,9 +413,6 @@ int menu_entry_select(uint32_t i)
          action = MENU_ACTION_RIGHT;
    }
     
-   if (menu->need_refresh && !menu->nonblocking_refresh && action != MENU_ACTION_MESSAGE)
-       action = MENU_ACTION_REFRESH;
-    
    if (action != MENU_ACTION_NOOP)
        return menu_entry_action(&entry, i, action);
    return 0;
