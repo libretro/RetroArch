@@ -24,7 +24,7 @@
 extern "C" {
 #endif
 
-typedef enum
+typedef enum menu_action
 {
    MENU_ACTION_UP,
    MENU_ACTION_DOWN,

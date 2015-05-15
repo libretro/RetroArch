@@ -447,7 +447,7 @@ int menu_entry_iterate(unsigned action)
    return -1;
 }
 
-int menu_entry_action(menu_entry_t *entry, unsigned i, unsigned action)
+int menu_entry_action(menu_entry_t *entry, unsigned i, enum menu_action action)
 {
    menu_navigation_t *nav    = menu_navigation_get_ptr();
    menu_handle_t *menu       = menu_driver_get_ptr();
