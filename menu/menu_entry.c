@@ -389,7 +389,6 @@ int menu_entry_select(uint32_t i)
    enum menu_action action   = MENU_ACTION_NOOP;
    menu_file_list_cbs_t *cbs = NULL;
    menu_navigation_t *nav    = menu_navigation_get_ptr();
-   menu_handle_t *menu       = menu_driver_get_ptr();
    menu_list_t    *menu_list = menu_list_get_ptr();
    rarch_setting_t *setting  = menu_setting_find(
          menu_list->selection_buf->list[i].label);
