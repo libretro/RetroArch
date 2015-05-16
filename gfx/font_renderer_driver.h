@@ -103,6 +103,8 @@ extern font_renderer_driver_t bitmap_font_renderer;
 /* font_path can be NULL for default font. */
 bool font_renderer_create_default(const font_renderer_driver_t **driver,
       void **handle, const char *font_path, unsigned font_size);
+      
+int font_renderer_get_message_width(const char *msg, float scale);
 
 #ifdef __cplusplus
 }
