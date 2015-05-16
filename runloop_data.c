@@ -273,7 +273,8 @@ void rarch_main_data_iterate(void)
    }
 
 #ifdef HAVE_MENU
-   menu_do_refresh(MENU_ACTION_REFRESH);
+   if (menu_needs_refresh())
+      menu_do_refresh(MENU_ACTION_REFRESH);
 #endif
 
 #ifdef HAVE_THREADS

@@ -419,9 +419,6 @@ int menu_entry_select(uint32_t i)
    if (action != MENU_ACTION_NOOP)
        ret = menu_entry_action(&entry, i, action);
     
-   if (menu_needs_refresh())
-       menu_do_refresh(action);
-    
    return ret;
 }
 
