@@ -21,10 +21,13 @@
 #include "../../content.h"
 #include "../frontend.h"
 #include "../frontend_driver.h"
+#include "../runloop_data.h"
 
 static void emscripten_mainloop(void)
 {
-   if (rarch_main_iterate() != -1)
+   int ret = rarch_main_iterate();
+   rarch_main_data_iterate();
+   if (ret != -1)
       return;
 
    main_exit(NULL);

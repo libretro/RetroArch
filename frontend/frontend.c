@@ -20,6 +20,7 @@
 #include "../general.h"
 #include "../retroarch.h"
 #include "../runloop.h"
+#include "../runloop_data.h"
 #include <file/file_path.h>
 
 #define MAX_ARGS 32
@@ -321,7 +322,10 @@ int rarch_main(int argc, char *argv[], void *data)
    }
 
 #ifndef HAVE_MAIN
-   while (rarch_main_iterate() != -1);
+   do{
+      ret = rarch_main_iterate();
+      rarch_main_data_iterate();
+   }while(ret != -1);
 
    main_exit(args);
 #endif

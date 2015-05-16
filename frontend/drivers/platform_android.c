@@ -227,11 +227,16 @@ static void android_app_entry(void *data)
 {
    char *argv[1];
    int argc = 0;
+   int ret  = 0;
 
    if (rarch_main(argc, argv, data) != 0)
       goto end;
 #ifndef HAVE_MAIN
-   while (rarch_main_iterate() != -1);
+   do
+   {
+      ret = rarch_main_iterate();
+      rarch_main_data_iterate();
+   }while (ret != -1);
 
    main_exit(data);
 #endif

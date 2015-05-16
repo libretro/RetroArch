@@ -27,6 +27,7 @@
 #include "../ui_companion_driver.h"
 #include "../../input/drivers/cocoa_input.h"
 #include "../../frontend/frontend.h"
+#include "../../runloop_data.h"
 
 static id apple_platform;
 
@@ -207,6 +208,7 @@ static void poll_iteration(void)
     {
         poll_iteration();
         ret = rarch_main_iterate();
+        rarch_main_data_iterate();
         while(CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.002, FALSE) == kCFRunLoopRunHandledSource);
     }
     

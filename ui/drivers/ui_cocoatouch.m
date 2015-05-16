@@ -33,6 +33,7 @@
 
 #include "../../input/drivers_hid/btstack_hid.h"
 #include "../../frontend/frontend.h"
+#include "../../runloop_data.h"
 
 static id apple_platform;
 static CFRunLoopObserverRef iterate_observer;
@@ -51,6 +52,7 @@ static void rarch_draw(CFRunLoopObserverRef observer,
         return;
     
     ret                = rarch_main_iterate();
+    rarch_main_data_iterate();
     
     if (ret == -1)
     {
