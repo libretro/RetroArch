@@ -70,6 +70,8 @@ typedef struct font_renderer
    const struct font_glyph *(*get_glyph)(void *data, uint32_t code);
    void (*bind_block)(void *data, void *block);
    void (*flush)(void *data);
+   
+   int (*get_message_width)(void *data, const char *msg, float scale);
 } font_renderer_t;
 
 extern font_renderer_t gl_raster_font;
@@ -101,6 +103,8 @@ extern font_renderer_driver_t bitmap_font_renderer;
 /* font_path can be NULL for default font. */
 bool font_renderer_create_default(const font_renderer_driver_t **driver,
       void **handle, const char *font_path, unsigned font_size);
+      
+int font_renderer_get_message_width(const char *msg, float scale);
 
 #ifdef __cplusplus
 }

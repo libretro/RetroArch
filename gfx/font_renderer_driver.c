@@ -32,6 +32,17 @@ static const font_renderer_driver_t *font_backends[] = {
    NULL
 };
 
+int font_renderer_get_message_width(const char *msg, float scale)
+{
+    driver_t *driver                        = driver_get_ptr();  
+    const struct font_renderer *font_driver = driver ? driver->font_osd_driver : NULL;
+    
+    if (!font_driver || !font_driver->get_message_width)
+       return 0;
+       
+    return font_driver->get_message_width(driver->font_osd_data, msg, scale);
+}
+
 bool font_renderer_create_default(
       const font_renderer_driver_t **drv, void **handle,
       const char *font_path, unsigned font_size)
