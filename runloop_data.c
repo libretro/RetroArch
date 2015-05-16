@@ -34,7 +34,7 @@ static char data_runloop_msg[PATH_MAX_LENGTH];
 
 static struct data_runloop *g_data_runloop;
 
-static void *rarch_main_data_get_ptr(void)
+data_runloop_t *rarch_main_data_get_ptr(void)
 {
    return g_data_runloop;
 }
@@ -60,7 +60,7 @@ static void data_runloop_thread_deinit(data_runloop_t *runloop)
 
 void rarch_main_data_deinit(void)
 {
-   data_runloop_t *runloop = (data_runloop_t*)rarch_main_data_get_ptr();
+   data_runloop_t *runloop = rarch_main_data_get_ptr();
 
    if (!runloop)
       return;
@@ -80,7 +80,7 @@ void rarch_main_data_deinit(void)
 
 void rarch_main_data_free(void)
 {
-   data_runloop_t *runloop = (data_runloop_t*)rarch_main_data_get_ptr();
+   data_runloop_t *runloop = rarch_main_data_get_ptr();
 
    if (runloop)
       free(runloop);
@@ -203,7 +203,7 @@ static void data_thread_loop(void *data)
 #ifdef HAVE_THREADS
 static void rarch_main_data_thread_init(void)
 {
-   data_runloop_t *runloop  = (data_runloop_t*)rarch_main_data_get_ptr();
+   data_runloop_t *runloop  = rarch_main_data_get_ptr();
 
    if (!runloop)
       return;
@@ -236,7 +236,7 @@ error:
 
 void rarch_main_data_iterate(void)
 {
-   data_runloop_t *runloop      = (data_runloop_t*)rarch_main_data_get_ptr();
+   data_runloop_t *runloop      = rarch_main_data_get_ptr();
    settings_t     *settings     = config_get_ptr();
    
    (void)settings;
@@ -302,7 +302,7 @@ void rarch_main_data_clear_state(void)
 
 void rarch_main_data_init_queues(void)
 {
-   data_runloop_t *runloop = (data_runloop_t*)rarch_main_data_get_ptr();
+   data_runloop_t *runloop = rarch_main_data_get_ptr();
 #ifdef HAVE_NETWORKING
    if (!runloop->http.msg_queue)
       rarch_assert(runloop->http.msg_queue       = msg_queue_new(8));
@@ -323,7 +323,7 @@ void rarch_main_data_msg_queue_push(unsigned type,
 {
    char new_msg[PATH_MAX_LENGTH];
    msg_queue_t *queue = NULL;
-   data_runloop_t *runloop = (data_runloop_t*)rarch_main_data_get_ptr();
+   data_runloop_t *runloop = rarch_main_data_get_ptr();
 
    switch(type)
    {

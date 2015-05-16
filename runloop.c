@@ -1081,6 +1081,7 @@ int rarch_main_iterate(void)
    unsigned i;
    retro_input_t trigger_input;
    event_cmd_state_t    cmd        = {0};
+   data_runloop_t *data            = NULL;
    runloop_t *runloop              = rarch_main_get_ptr();
    int ret                         = 0;
    static retro_input_t last_input = 0;
@@ -1110,7 +1111,9 @@ int rarch_main_iterate(void)
    rarch_main_iterate_linefeed_overlay();
 #endif
    
-   if (rarch_main_data_active(runloop))
+   data = rarch_main_data_get_ptr();
+
+   if (rarch_main_data_active(data))
       rarch_main_data_iterate();
 
 #ifdef HAVE_MENU

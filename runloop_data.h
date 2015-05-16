@@ -165,6 +165,8 @@ void rarch_main_data_init_queues(void);
 
 bool rarch_main_data_active(data_runloop_t *runloop);
 
+data_runloop_t *rarch_main_data_get_ptr(void);
+
 #ifdef __cplusplus
 }
 #endif
