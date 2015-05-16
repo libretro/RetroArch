@@ -70,6 +70,8 @@ typedef struct font_renderer
    const struct font_glyph *(*get_glyph)(void *data, uint32_t code);
    void (*bind_block)(void *data, void *block);
    void (*flush)(void *data);
+   
+   int (*get_message_width)(void *data, const char *msg, float scale);
 } font_renderer_t;
 
 extern font_renderer_t gl_raster_font;

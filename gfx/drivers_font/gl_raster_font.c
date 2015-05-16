@@ -407,5 +407,6 @@ font_renderer_t gl_raster_font = {
    "GL raster",
    gl_raster_font_get_glyph,
    gl_raster_font_bind_block,
-   gl_raster_font_flush_block
+   gl_raster_font_flush_block,
+   NULL                         /* get_message_width */
 };

@@ -104,5 +104,6 @@ font_renderer_t libdbg_font = {
    "libdbgfont",
    NULL,                      /* get_glyph */
    NULL,                      /* bind_block */
-   NULL,                      /* flush */
+   NULL,                      /* flush */,
+   NULL,                      /* get_message_width */
 };
