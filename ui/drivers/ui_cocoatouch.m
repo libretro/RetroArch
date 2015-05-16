@@ -49,7 +49,10 @@ static void rarch_draw(CFRunLoopObserverRef observer,
     bool iterate       = iterate_observer && !runloop->is_paused;
     
     if (!iterate)
+    {
+        rarch_main_data_iterate();
         return;
+    }
     
     ret                = rarch_main_iterate();
     rarch_main_data_iterate();
