@@ -107,8 +107,7 @@ static void data_runloop_iterate(bool is_thread, data_runloop_t *runloop)
 }
 
 
-#ifdef HAVE_THREADS
-static bool rarch_main_data_active(data_runloop_t *runloop)
+bool rarch_main_data_active(data_runloop_t *runloop)
 {
    bool                  image_active, nbio_active, http_active,
                          http_conn_active, overlay_active;
@@ -201,6 +200,7 @@ static void data_thread_loop(void *data)
    RARCH_LOG("[Data Thread]: Stopping data thread.\n");
 }
 
+#ifdef HAVE_THREADS
 static void rarch_main_data_thread_init(void)
 {
    data_runloop_t *runloop  = (data_runloop_t*)rarch_main_data_get_ptr();

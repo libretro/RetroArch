@@ -1110,7 +1110,8 @@ int rarch_main_iterate(void)
    rarch_main_iterate_linefeed_overlay();
 #endif
    
-   rarch_main_data_iterate();
+   if (rarch_main_data_active(runloop))
+      rarch_main_data_iterate();
 
 #ifdef HAVE_MENU
    if (runloop->is_menu)
