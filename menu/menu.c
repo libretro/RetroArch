@@ -317,8 +317,6 @@ int menu_do_refresh(unsigned action)
       return -1;
    if (!menu_needs_refresh())
       return -1;
-   if (action == MENU_ACTION_MESSAGE)
-      return -1;
    return menu_entry_iterate(MENU_ACTION_REFRESH);
 }
 
