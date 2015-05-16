@@ -1111,10 +1111,7 @@ int rarch_main_iterate(void)
    rarch_main_iterate_linefeed_overlay();
 #endif
    
-   data = rarch_main_data_get_ptr();
-
-   if (rarch_main_data_active(data))
-      rarch_main_data_iterate();
+   rarch_main_data_iterate();
 
 #ifdef HAVE_MENU
    if (runloop->is_menu)
