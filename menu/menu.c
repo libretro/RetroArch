@@ -297,9 +297,6 @@ int menu_iterate(retro_input_t input,
 
    action = menu->input.joypad;
 
-   if (menu_do_refresh(action) == 0)
-      return 0;
-
    ret = menu_entry_iterate(action);
 
    if (runloop->is_menu && !runloop->is_idle)

@@ -22,6 +22,10 @@
 #include <rthreads/rthreads.h>
 #endif
 
+#ifdef HAVE_MENU
+#include "menu/menu.h"
+#endif
+
 enum
 {
    THREAD_CODE_INIT = 0,
@@ -267,6 +271,10 @@ void rarch_main_data_iterate(void)
       rarch_main_msg_queue_push(data_runloop_msg, 1, 10, true);
       data_runloop_msg[0] = '\0';
    }
+
+#ifdef HAVE_MENU
+   menu_do_refresh(MENU_ACTION_REFRESH);
+#endif
 
 #ifdef HAVE_THREADS
    if (settings->menu.threaded_data_runloop_enable && runloop->alive)
