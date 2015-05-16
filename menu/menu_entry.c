@@ -491,7 +491,11 @@ int menu_entry_action(menu_entry_t *entry, unsigned i, enum menu_action action)
 
       case MENU_ACTION_REFRESH:
          if (cbs && cbs->action_refresh)
-            return cbs->action_refresh(menu_list->selection_buf, menu_list->menu_stack);
+         {
+            int ret = cbs->action_refresh(menu_list->selection_buf, menu_list->menu_stack);
+            menu_unset_refresh();
+            return ret;
+         }
          break;
 
       case MENU_ACTION_MESSAGE:

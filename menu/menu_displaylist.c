@@ -2034,11 +2034,7 @@ int menu_displaylist_push(file_list_t *list, file_list_t *menu_list)
    strlcpy(info.path, path, sizeof(info.path));
    strlcpy(info.label, label, sizeof(info.label));
    
-   ret = menu_displaylist_deferred_push(&info);
-
-   menu_unset_refresh();
-
-   return ret;
+   return menu_displaylist_deferred_push(&info);
 }
 
 /**
