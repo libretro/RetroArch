@@ -80,7 +80,7 @@ enum setting_list_flags
    SL_FLAG_CORE_UPDATER_OPTIONS  =  (1 << 13),
    SL_FLAG_NETPLAY_OPTIONS       =  (1 << 14),
    SL_FLAG_USER_OPTIONS          =  (1 << 15),
-   SL_FLAG_PATH_OPTIONS          =  (1 << 16),
+   SL_FLAG_DIRECTORY_OPTIONS     =  (1 << 16),
    SL_FLAG_PRIVACY_OPTIONS       =  (1 << 17),
    SL_FLAG_PLAYLIST_OPTIONS      =  (1 << 18),
    SL_FLAG_ARCHIVE_OPTIONS       =  (1 << 19),

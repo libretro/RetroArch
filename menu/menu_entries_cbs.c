@@ -147,7 +147,7 @@ int menu_entries_common_is_settings_entry(const char *label)
     !strcmp(label, "Network Settings") ||
     !strcmp(label, "Archive Settings") ||
     !strcmp(label, "User Settings") ||
-    !strcmp(label, "Path Settings") ||
+    !strcmp(label, "Directory Settings") ||
     !strcmp(label, "Privacy Settings"));
 }
 

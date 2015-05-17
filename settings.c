@@ -6034,7 +6034,7 @@ static bool setting_append_list_user_options(
    return true;
 }
 
-static bool setting_append_list_path_options(
+static bool setting_append_list_directory_options(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info)
 {
@@ -6043,9 +6043,9 @@ static bool setting_append_list_path_options(
    settings_t *settings = config_get_ptr();
    global_t *global     = global_get_ptr();
 
-   START_GROUP(group_info, "Path Settings");
+   START_GROUP(group_info, "Directory Settings");
 
-   START_SUB_GROUP(list, list_info, "Paths", group_info.name, subgroup_info);
+   START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
 
    CONFIG_DIR(
          settings->core_assets_directory,
@@ -6601,9 +6601,9 @@ rarch_setting_t *setting_new(unsigned mask)
          goto error;
    }
 
-   if (mask & SL_FLAG_PATH_OPTIONS)
+   if (mask & SL_FLAG_DIRECTORY_OPTIONS)
    {
-      if (!setting_append_list_path_options(&list, list_info))
+      if (!setting_append_list_directory_options(&list, list_info))
          goto error;
    }
 
