@@ -37,25 +37,31 @@
 
 static id apple_platform;
 static CFRunLoopObserverRef iterate_observer;
+static CFRunLoopTimerRef iterate_timer;
 
 /* forward declaration */
 void apple_rarch_exited(void);
 
-static void rarch_draw(CFRunLoopObserverRef observer,
-    CFRunLoopActivity activity, void *info)
+static void rarch_draw()
 {
+    data_runloop_t *data_runloop      = rarch_main_data_get_ptr();
     runloop_t *runloop = rarch_main_get_ptr();
     int ret            = 0;
     bool iterate       = iterate_observer && !runloop->is_paused;
     
-    if (!iterate)
+    if (iterate)
     {
-        rarch_main_data_iterate();
-        return;
+      ret                = rarch_main_iterate();
     }
     
-    ret                = rarch_main_iterate();
     rarch_main_data_iterate();
+    if (iterate_timer) {
+      if (rarch_main_data_active(data_runloop)) {
+        CFRunLoopAddTimer(CFRunLoopGetMain(), iterate_timer, kCFRunLoopCommonModes); 
+      } else {
+        CFRunLoopRemoveTimer(CFRunLoopGetMain(), iterate_timer, kCFRunLoopCommonModes); 
+      }
+    }
     
     if (ret == -1)
     {
@@ -68,6 +74,18 @@ static void rarch_draw(CFRunLoopObserverRef observer,
         return;
     CFRunLoopWakeUp(CFRunLoopGetMain());
 }
+
+static void rarch_draw_observer(CFRunLoopObserverRef observer,
+    CFRunLoopActivity activity, void *info)
+{
+  rarch_draw();
+}
+
+static void rarch_draw_timer(CFRunLoopTimerRef timer, void *info)
+{
+  rarch_draw();
+}
+
 
 apple_frontend_settings_t apple_frontend_settings;
 
@@ -273,17 +291,36 @@ enum
    [self apple_start_iteration];
 }
 
-- (void) apple_start_iteration
+void apple_start_iterate_observer()
 {
-    if (iterate_observer)
-        return;
-    
-    iterate_observer = CFRunLoopObserverCreate(0, kCFRunLoopBeforeWaiting,
-                                               true, 0, rarch_draw, 0);
-    CFRunLoopAddObserver(CFRunLoopGetMain(), iterate_observer, kCFRunLoopCommonModes);
+  if (iterate_observer)
+    return;
+  
+  iterate_observer = CFRunLoopObserverCreate(0, kCFRunLoopBeforeWaiting,
+                                             true, 0, rarch_draw_observer, 0);
+  CFRunLoopAddObserver(CFRunLoopGetMain(), iterate_observer, kCFRunLoopCommonModes);
 }
 
-- (void) apple_stop_iteration
+void apple_start_iterate_timer()
+{
+  CFTimeInterval interval;
+  
+  if (iterate_timer)
+    return;
+
+  // This number is a double measured in seconds.
+  interval = 1.0 / 60.0 / 1000.0;
+
+  iterate_timer = CFRunLoopTimerCreate(0, interval, interval, 0, 0, rarch_draw_timer, 0);
+}
+
+- (void) apple_start_iteration
+{
+  apple_start_iterate_observer();
+  apple_start_iterate_timer();
+}
+
+void apple_stop_iterate_observer()
 {
     if (!iterate_observer)
         return;
@@ -291,6 +328,22 @@ enum
     CFRunLoopObserverInvalidate(iterate_observer);
     CFRelease(iterate_observer);
     iterate_observer = NULL;
+}
+
+void apple_stop_iterate_timer()
+{
+    if (!iterate_timer)
+        return;
+    
+    CFRunLoopTimerInvalidate(iterate_timer);
+    CFRelease(iterate_timer);
+    iterate_timer = NULL;
+}
+
+- (void) apple_stop_iteration
+{
+  apple_stop_iterate_observer();
+  apple_stop_iterate_timer();
 }
 
 - (void)applicationDidEnterBackground:(UIApplication *)application
