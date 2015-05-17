@@ -713,7 +713,7 @@ static int menu_input_mouse_frame(
    if (BIT64_GET(input_mouse, MOUSE_ACTION_BUTTON_L))
    {
       if (BIT64_GET(input_mouse, MOUSE_ACTION_BUTTON_L_TOGGLE))
-         return cbs->action_toggle(entry->type, entry->label, MENU_ACTION_RIGHT, true);
+         return menu_entry_action(entry, nav->selection_ptr, MENU_ACTION_RIGHT);
 
       if (BIT64_GET(input_mouse, MOUSE_ACTION_BUTTON_L_OK))
          return menu_entry_action(entry, nav->selection_ptr, MENU_ACTION_OK);
@@ -844,7 +844,7 @@ static int pointer_tap(menu_file_list_cbs_t *cbs,
          && cbs && cbs->action_toggle && setting &&
          (setting->type == ST_BOOL || setting->type == ST_UINT
           || setting->type == ST_FLOAT || setting->type == ST_STRING))
-      return cbs->action_toggle(entry->type, entry->label, MENU_ACTION_RIGHT, true);
+      return menu_entry_action(entry, menu->navigation.selection_ptr, MENU_ACTION_RIGHT);
    else if (menu->pointer.ptr == menu->navigation.selection_ptr)
       return menu_entry_action(entry, menu->navigation.selection_ptr, MENU_ACTION_OK);
    else
