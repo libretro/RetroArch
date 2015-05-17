@@ -31,6 +31,7 @@ enum
 {
    DISPLAYLIST_NONE = 0,
    DISPLAYLIST_MAIN_MENU,
+   DISPLAYLIST_GENERIC,
    DISPLAYLIST_SETTINGS,
    DISPLAYLIST_SETTINGS_ALL,
    DISPLAYLIST_SETTINGS_SUBGROUP,
@@ -86,6 +87,7 @@ typedef struct menu_displaylist_info
    char exts[PATH_MAX_LENGTH];
    unsigned type;
    unsigned type_default;
+   size_t directory_ptr;
    unsigned flags;
    rarch_setting_t *setting;
 } menu_displaylist_info_t;
