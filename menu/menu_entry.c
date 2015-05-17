@@ -451,7 +451,6 @@ int menu_entry_iterate(unsigned action)
 
 int menu_entry_action(menu_entry_t *entry, unsigned i, enum menu_action action)
 {
-   menu_displaylist_info_t info = {0};
    menu_navigation_t *nav    = menu_navigation_get_ptr();
    menu_handle_t *menu       = menu_driver_get_ptr();
    menu_list_t *menu_list    = menu_list_get_ptr();
@@ -478,14 +477,7 @@ int menu_entry_action(menu_entry_t *entry, unsigned i, enum menu_action action)
 
       case MENU_ACTION_OK:
          if (cbs && cbs->action_ok)
-         {
-            info.list = menu_list->menu_stack;
-            info.type = entry->type;
-            info.directory_ptr = i;
-            strlcpy(info.path,  entry->path, sizeof(info.path));
-            strlcpy(info.label, entry->label, sizeof(info.label));
-            return cbs->action_ok(&info);
-         }
+            return cbs->action_ok(entry->path, entry->label, entry->type, i);
          break;
       case MENU_ACTION_START:
          if (cbs && cbs->action_start)
