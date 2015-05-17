@@ -220,7 +220,7 @@ if [ "$HAVE_SDL2" = 'yes' ]; then
    fi
 fi
 
-check_pkgconf LIBUSB libusb-1.0
+check_pkgconf LIBUSB libusb-1.0 1.0.16
 
 if [ "$OS" = 'Win32' ]; then
    check_lib DINPUT -ldinput8
