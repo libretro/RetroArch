@@ -64,10 +64,7 @@ void menu_list_free(menu_list_t *menu_list);
 menu_list_t *menu_list_new(void);
 
 void menu_list_flush_stack(menu_list_t *list,
-      unsigned final_type);
-
-void menu_list_flush_stack_by_needle(menu_list_t *list,
-      const char *needle);
+      const char *needle, unsigned final_type);
 
 void menu_list_pop(file_list_t *list, size_t *directory_ptr);
 

@@ -243,28 +243,17 @@ void *menu_list_get_last_stack_actiondata(const menu_list_t *list)
    return file_list_get_last_actiondata(list->menu_stack);
 }
 
-void menu_list_flush_stack(menu_list_t *list,
-      unsigned final_type)
+static int menu_list_flush_stack_type(
+      const char *needle, const char *label,
+      unsigned type, unsigned final_type)
 {
-   const char *path = NULL;
-   const char *label = NULL;
-   unsigned type = 0;
-   menu_handle_t *menu = menu_driver_get_ptr();
-   if (!menu || !list)
-      return;
-
-   menu_set_refresh();
-   file_list_get_last(list->menu_stack, &path, &label, &type);
-
-   while (type != final_type)
-   {
-      menu_list_pop(list->menu_stack, &menu->navigation.selection_ptr);
-      file_list_get_last(list->menu_stack, &path, &label, &type);
-   }
+   if (needle)
+      return strcmp(needle, label);
+   return type != final_type;
 }
 
-void menu_list_flush_stack_by_needle(menu_list_t *list,
-      const char *needle)
+void menu_list_flush_stack(menu_list_t *list,
+      const char *needle, unsigned final_type)
 {
    const char *path = NULL;
    const char *label = NULL;
@@ -276,7 +265,7 @@ void menu_list_flush_stack_by_needle(menu_list_t *list,
    menu_set_refresh();
    file_list_get_last(list->menu_stack, &path, &label, &type);
 
-   while (strcmp(needle, label) != 0)
+   while (menu_list_flush_stack_type(needle, label, type, final_type) != 0)
    {
       menu_list_pop(list->menu_stack, &menu->navigation.selection_ptr);
       file_list_get_last(list->menu_stack, &path, &label, &type);

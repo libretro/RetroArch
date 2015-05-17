@@ -34,7 +34,7 @@ void menu_entries_common_load_content(bool persist)
 
    event_command(persist ? EVENT_CMD_LOAD_CONTENT_PERSIST : EVENT_CMD_LOAD_CONTENT);
 
-   menu_list_flush_stack(menu->menu_list, MENU_SETTINGS);
+   menu_list_flush_stack(menu->menu_list, NULL, MENU_SETTINGS);
    menu->msg_force = true;
 }
 

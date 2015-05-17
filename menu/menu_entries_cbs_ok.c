@@ -60,7 +60,7 @@ static int action_ok_playlist_entry(const char *path,
 
    rarch_playlist_load_content(g_defaults.history,
          menu->navigation.selection_ptr);
-   menu_list_flush_stack(menu->menu_list, MENU_SETTINGS);
+   menu_list_flush_stack(menu->menu_list, NULL, MENU_SETTINGS);
    return -1;
 }
 
@@ -101,7 +101,7 @@ static int action_ok_shader_pass_load(const char *path,
 
    /* This will reset any changed parameters. */
    video_shader_resolve_parameters(NULL, menu->shader);
-   menu_list_flush_stack_by_needle(menu->menu_list, "shader_options");
+   menu_list_flush_stack(menu->menu_list, "shader_options", 0);
    return 0;
 #else
    return -1;
@@ -424,7 +424,7 @@ static int action_ok_record_configfile_load(const char *path,
 
    fill_pathname_join(global->record.config, menu_path, path, sizeof(global->record.config));
 
-   menu_list_flush_stack_by_needle(menu->menu_list, "Recording Settings");
+   menu_list_flush_stack(menu->menu_list, "Recording Settings", 0);
    return 0;
 }
 
@@ -446,7 +446,7 @@ static int action_ok_remap_file_load(const char *path,
    fill_pathname_join(remap_path, menu_path, path, sizeof(remap_path));
    input_remapping_load_file(remap_path);
 
-   menu_list_flush_stack_by_needle(menu->menu_list, "core_input_remapping_options");
+   menu_list_flush_stack(menu->menu_list, "core_input_remapping_options", 0);
 
    return 0;
 }
@@ -475,7 +475,7 @@ static int action_ok_video_filter_file_load(const char *path,
 
    event_command(EVENT_CMD_REINIT);
 
-   menu_list_flush_stack_by_needle(menu->menu_list, "video_options");
+   menu_list_flush_stack(menu->menu_list, "video_options", 0);
 
    return 0;
 }
@@ -505,7 +505,7 @@ static int action_ok_cheat_file_load(const char *path,
    if (!global->cheat)
       return -1;
 
-   menu_list_flush_stack_by_needle(menu->menu_list, "core_cheat_options");
+   menu_list_flush_stack(menu->menu_list, "core_cheat_options", 0);
 
    return 0;
 }
@@ -564,7 +564,7 @@ static int action_ok_shader_preset_load(const char *path,
    menu_shader_manager_set_preset(menu->shader,
          video_shader_parse_type(shader_path, RARCH_SHADER_NONE),
          shader_path);
-   menu_list_flush_stack_by_needle(menu->menu_list, "shader_options");
+   menu_list_flush_stack(menu->menu_list, "shader_options", 0);
    return 0;
 #else
    return -1;
@@ -758,7 +758,7 @@ static int action_ok_core_load(const char *path,
    fill_pathname_join(settings->libretro, menu_path, path,
          sizeof(settings->libretro));
    event_command(EVENT_CMD_LOAD_CORE);
-   menu_list_flush_stack(menu->menu_list, MENU_SETTINGS);
+   menu_list_flush_stack(menu->menu_list, NULL, MENU_SETTINGS);
 #if defined(HAVE_DYNAMIC)
    /* No content needed for this core, load core immediately. */
 
@@ -890,7 +890,7 @@ static int action_ok_config_load(const char *path,
          &menu_path, NULL, NULL);
 
    fill_pathname_join(config, menu_path, path, sizeof(config));
-   menu_list_flush_stack(menu->menu_list, MENU_SETTINGS);
+   menu_list_flush_stack(menu->menu_list, NULL, MENU_SETTINGS);
    menu->msg_force = true;
    if (rarch_replace_config(config))
    {
@@ -919,7 +919,7 @@ static int action_ok_disk_image_append(const char *path,
 
    event_command(EVENT_CMD_RESUME);
 
-   menu_list_flush_stack(menu->menu_list, MENU_SETTINGS);
+   menu_list_flush_stack(menu->menu_list, NULL, MENU_SETTINGS);
    return -1;
 }
 
