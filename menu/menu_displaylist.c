@@ -2019,7 +2019,6 @@ static int menu_displaylist_deferred_push(menu_displaylist_info_t *info)
 
 int menu_displaylist_push(file_list_t *list, file_list_t *menu_list)
 {
-   int ret;
    unsigned type                = 0;
    const char *path             = NULL;
    const char *label            = NULL;
