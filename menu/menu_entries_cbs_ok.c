@@ -225,7 +225,6 @@ static int action_ok_core_updater_list(menu_displaylist_info_t *info)
 {
    char url_path[PATH_MAX_LENGTH];
    menu_handle_t *menu      = menu_driver_get_ptr();
-   driver_t *driver         = driver_get_ptr();
    settings_t *settings     = config_get_ptr();
    if (!menu)
       return -1;
