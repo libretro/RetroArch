@@ -124,6 +124,7 @@ int menu_setting_handler(rarch_setting_t *setting, unsigned action)
 static int menu_action_handle_setting(rarch_setting_t *setting,
       unsigned type, unsigned action, bool wraparound)
 {
+   menu_displaylist_info_t info = {0};
    menu_handle_t *menu = menu_driver_get_ptr();
 
    if (!setting)
@@ -133,12 +134,15 @@ static int menu_action_handle_setting(rarch_setting_t *setting,
    {
       case ST_PATH:
          if (action == MENU_ACTION_OK)
-            menu_list_push_stack_refresh(
-                  menu->menu_list,
-                  setting->default_value.string,
-                  setting->name,
-                  type,
-                  menu->navigation.selection_ptr);
+         {
+            info.list          = menu->menu_list->menu_stack;
+            info.type          = type;
+            info.directory_ptr = menu->navigation.selection_ptr;
+            strlcpy(info.path, setting->default_value.string, sizeof(info.path));
+            strlcpy(info.label, setting->name, sizeof(info.label));
+
+            menu_displaylist_push_list(&info, DISPLAYLIST_GENERIC);
+         }
          /* fall-through. */
       case ST_BOOL:
       case ST_INT:

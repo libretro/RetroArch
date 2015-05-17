@@ -31,6 +31,7 @@
 static int archive_open(void)
 {
    char cat_path[PATH_MAX_LENGTH];
+   menu_displaylist_info_t info = {0};
    const char *menu_path  = NULL;
    const char *menu_label = NULL;
    const char* path       = NULL;
@@ -53,19 +54,20 @@ static int archive_open(void)
          nav->selection_ptr, &path, NULL, &type);
 
    fill_pathname_join(cat_path, menu_path, path, sizeof(cat_path));
-   menu_list_push_stack_refresh(
-         menu_list,
-         cat_path,
-         menu_label,
-         type,
-         nav->selection_ptr);
 
-   return 0;
+   info.list          = menu_list->menu_stack;
+   info.type          = type;
+   info.directory_ptr = nav->selection_ptr;
+   strlcpy(info.path, cat_path, sizeof(info.path));
+   strlcpy(info.label, menu_label, sizeof(info.label));
+
+   return menu_displaylist_push_list(&info, DISPLAYLIST_GENERIC);
 }
 
 static int archive_load(void)
 {
-   int ret;
+   int ret = 0;
+   menu_displaylist_info_t info = {0};
    const char *menu_path  = NULL;
    const char *menu_label = NULL;
    const char* path       = NULL;
@@ -99,15 +101,17 @@ static int archive_load(void)
          menu_entries_common_load_content(false);
          break;
       case 0:
-         menu_list_push_stack_refresh(
-               menu->menu_list,
-               settings->libretro_directory,
-               "deferred_core_list",
-               0, selected);
+         info.list          = menu->menu_list->menu_stack;
+         info.type          = 0;
+         info.directory_ptr = selected;
+         strlcpy(info.path, settings->libretro_directory, sizeof(info.path));
+         strlcpy(info.label, "deferred_core_list", sizeof(info.label));
+
+         ret = menu_displaylist_push_list(&info, DISPLAYLIST_GENERIC);
          break;
    }
 
-   return 0;
+   return ret;
 }
 
 static int load_or_open_zip_iterate(unsigned action)

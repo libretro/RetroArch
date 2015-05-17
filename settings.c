@@ -2942,6 +2942,7 @@ static void general_read_handler(void *data)
 static void general_write_handler(void *data)
 {
    enum event_command rarch_cmd = EVENT_CMD_NONE;
+   menu_displaylist_info_t info = {0};
    rarch_setting_t *setting = (rarch_setting_t*)data;
    settings_t *settings     = config_get_ptr();
    driver_t *driver         = driver_get_ptr();
@@ -2972,12 +2973,12 @@ static void general_write_handler(void *data)
       if (*setting->value.boolean)
       {
 #ifdef HAVE_MENU
-         menu_list_push_stack_refresh(
-               menu->menu_list,
-               "",
-               "help",
-               0,
-               0);
+         info.list          = menu->menu_list->menu_stack;
+         info.type          = 0; 
+         info.directory_ptr = 0;
+         strlcpy(info.label, "help", sizeof(info.label));
+
+         menu_displaylist_push_list(&info, DISPLAYLIST_GENERIC);
 #endif
          *setting->value.boolean = false;
       }

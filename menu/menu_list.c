@@ -378,27 +378,6 @@ void menu_list_push(file_list_t *list,
    menu_list_insert(list, path, label, type, directory_ptr);
 }
 
-int menu_list_push_stack_refresh(menu_list_t *list,
-      const char *path, const char *label,
-      unsigned type, size_t directory_ptr)
-{
-   menu_displaylist_info_t info = {0};
-
-   menu_handle_t *menu = menu_driver_get_ptr();
-   if (!menu)
-      return -1;
-   if (!list)
-      return -1;
-
-   info.list          = list->menu_stack;
-   info.type          = type;
-   info.directory_ptr = directory_ptr;
-   strlcpy(info.path, path, sizeof(info.path));
-   strlcpy(info.label, label, sizeof(info.label));
-   
-   return menu_displaylist_push_list(&info, DISPLAYLIST_GENERIC);
-}
-
 void menu_list_set_alt_at_offset(file_list_t *list, size_t idx,
       const char *alt)
 {

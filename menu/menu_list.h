@@ -101,10 +101,6 @@ void menu_list_push(file_list_t *list,
       const char *path, const char *label,
       unsigned type, size_t directory_ptr);
 
-int menu_list_push_stack_refresh(menu_list_t *list,
-      const char *path, const char *label,
-      unsigned type, size_t directory_ptr);
-
 void menu_list_get_alt_at_offset(const file_list_t *list, size_t idx,
       const char **alt);
 
