@@ -6190,17 +6190,6 @@ static bool setting_append_list_path_options(
          list_info,
          SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR | SD_FLAG_BROWSER_ACTION);
 
-   CONFIG_PATH(
-         settings->content_history_path,
-         "game_history_path",
-         "Content History Path",
-         "",
-         group_info.name,
-         subgroup_info.name,
-         general_write_handler,
-         general_read_handler);
-   settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_EMPTY);
-
    CONFIG_DIR(
          settings->video.filter_dir,
          "video_filter_dir",
