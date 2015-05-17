@@ -227,31 +227,6 @@ typedef struct
 
 } menu_handle_t;
 
-typedef struct menu_file_list_cbs
-{
-   int (*action_iterate)(const char *label, unsigned action);
-   int (*action_deferred_push)(menu_displaylist_info_t *info);
-   int (*action_ok)(const char *path, const char *label, unsigned type,
-         size_t idx);
-   int (*action_cancel)(const char *path, const char *label, unsigned type,
-         size_t idx);
-   int (*action_start)(unsigned type,  const char *label, unsigned action);
-   int (*action_select)(unsigned type,  const char *label, unsigned action);
-   int (*action_content_list_switch)(void *data, void *userdata, const char
-         *path, const char *label, unsigned type);
-   int (*action_toggle)(unsigned type, const char *label, unsigned action,
-         bool wraparound);
-   int (*action_refresh)(file_list_t *list, file_list_t *menu_list);
-   int (*action_up_or_down)(unsigned type, const char *label, unsigned action);
-   void (*action_get_representation)(file_list_t* list,
-         unsigned *w, unsigned type, unsigned i,
-         const char *label,
-         char *type_str, size_t type_str_size,
-         const char *entry_label,
-         const char *path,
-         char *path_buf, size_t path_buf_size);
-} menu_file_list_cbs_t;
-
 typedef struct menu_ctx_driver
 {
    void  (*set_texture)(void);

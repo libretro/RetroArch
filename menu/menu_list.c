@@ -229,7 +229,7 @@ void menu_list_get_last_stack(const menu_list_t *list,
       file_list_get_last(list->menu_stack, path, label, file_type);
 }
 
-void *menu_list_get_actiondata_at_offset(const file_list_t *list, size_t idx)
+menu_file_list_cbs_t *menu_list_get_actiondata_at_offset(const file_list_t *list, size_t idx)
 {
    if (!list)
       return NULL;

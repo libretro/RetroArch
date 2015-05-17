@@ -342,7 +342,7 @@ void menu_entry_get(menu_entry_t *entry, size_t i,
 
    menu_list_get_at_offset(list, i, &path, &entry_label, &entry->type);
 
-   cbs = (menu_file_list_cbs_t*)menu_list_get_actiondata_at_offset(list, i);
+   cbs = menu_list_get_actiondata_at_offset(list, i);
 
    if (cbs && cbs->action_get_representation && use_representation)
       cbs->action_get_representation(list,
@@ -402,8 +402,7 @@ int menu_entry_select(uint32_t i)
 
    menu_entry_get(&entry, i, NULL, false);
 
-   cbs = (menu_file_list_cbs_t*)
-      menu_list_get_actiondata_at_offset(menu_list->selection_buf, i);
+   cbs = menu_list_get_actiondata_at_offset(menu_list->selection_buf, i);
 
    if (setting_is_of_path_type(setting))
       return 0;
@@ -455,7 +454,7 @@ int menu_entry_action(menu_entry_t *entry, unsigned i, enum menu_action action)
    menu_navigation_t *nav    = menu_navigation_get_ptr();
    menu_handle_t *menu       = menu_driver_get_ptr();
    menu_list_t *menu_list    = menu_list_get_ptr();
-   menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)menu_list_get_actiondata_at_offset(menu_list->selection_buf, i);
+   menu_file_list_cbs_t *cbs = menu_list_get_actiondata_at_offset(menu_list->selection_buf, i);
 
    switch (action)
    {

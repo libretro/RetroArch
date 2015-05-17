@@ -214,9 +214,8 @@ static int action_toggle_mainmenu(unsigned type, const char *label,
    else 
       push_list = 2;
 
-   cbs = (menu_file_list_cbs_t*)
-      menu_list_get_actiondata_at_offset(menu_list->selection_buf,
-            menu->navigation.selection_ptr);
+   cbs = menu_list_get_actiondata_at_offset(menu_list->selection_buf,
+         menu->navigation.selection_ptr);
 
    switch (push_list)
    {
