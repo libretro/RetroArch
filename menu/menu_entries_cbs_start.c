@@ -157,14 +157,12 @@ static int action_start_shader_scale_pass(unsigned type, const char *label,
    shader      = menu->shader;
 
    if (shader)
-   {
       shader_pass = &shader->pass[pass];
 
-      if (shader_pass)
-      {
-         shader_pass->fbo.scale_x = shader_pass->fbo.scale_y = 0;
-         shader_pass->fbo.valid = false;
-      }
+   if (shader_pass)
+   {
+      shader_pass->fbo.scale_x = shader_pass->fbo.scale_y = 0;
+      shader_pass->fbo.valid = false;
    }
 #endif
 
