@@ -322,6 +322,7 @@ static int action_ok_core_updater_list(const char *path,
 {
    char url_path[PATH_MAX_LENGTH];
    menu_displaylist_info_t info = {0};
+   driver_t *driver         = driver_get_ptr();
    menu_handle_t *menu      = menu_driver_get_ptr();
    settings_t *settings     = config_get_ptr();
    if (!menu)
