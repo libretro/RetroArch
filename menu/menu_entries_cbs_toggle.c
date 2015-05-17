@@ -22,17 +22,15 @@
 
 #include "../retroarch.h"
 
-static int shader_action_parameter_toggle(unsigned type, const char *label,
-      unsigned action, bool wraparound)
-{
+
 #ifdef HAVE_SHADER_MANAGER
-   struct video_shader_parameter *param = NULL;
-   struct video_shader *shader = video_shader_driver_get_current_shader();
-
+static void shader_action_parameter_toggle_common(
+      struct video_shader_parameter *param,
+      struct video_shader *shader,
+      unsigned action)
+{
    if (!shader)
-      return 0;
-
-   param = &shader->parameters[type - MENU_SETTINGS_SHADER_PARAMETER_0];
+      return;
 
    switch (action)
    {
@@ -49,7 +47,18 @@ static int shader_action_parameter_toggle(unsigned type, const char *label,
    }
 
    param->current = min(max(param->minimum, param->current), param->maximum);
+}
+#endif
 
+static int shader_action_parameter_toggle(unsigned type, const char *label,
+      unsigned action, bool wraparound)
+{
+#ifdef HAVE_SHADER_MANAGER
+   struct video_shader *shader = video_shader_driver_get_current_shader();
+   struct video_shader_parameter *param = 
+      &shader->parameters[type - MENU_SETTINGS_SHADER_PARAMETER_0];
+
+   shader_action_parameter_toggle_common(param, shader, action);
 #endif
    return 0;
 }
@@ -58,33 +67,15 @@ static int shader_action_parameter_preset_toggle(unsigned type, const char *labe
       unsigned action, bool wraparound)
 {
 #ifdef HAVE_SHADER_MANAGER
-   struct video_shader *shader = NULL;
    struct video_shader_parameter *param = NULL;
    menu_handle_t *menu = menu_driver_get_ptr();
-   if (!menu)
+   struct video_shader *shader = menu ? menu->shader : NULL;
+   if (!menu || !shader)
       return -1;
-
-   if (!(shader = menu->shader))
-      return 0;
 
    param = &shader->parameters[type - MENU_SETTINGS_SHADER_PRESET_PARAMETER_0];
 
-   switch (action)
-   {
-      case MENU_ACTION_LEFT:
-         param->current -= param->step;
-         break;
-
-      case MENU_ACTION_RIGHT:
-         param->current += param->step;
-         break;
-
-      default:
-         break;
-   }
-
-   param->current = min(max(param->minimum, param->current), param->maximum);
-
+   shader_action_parameter_toggle_common(param, shader, action);
 #endif
    return 0;
 }
