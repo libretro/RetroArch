@@ -380,6 +380,27 @@ static void menu_action_setting_disp_set_label_cheat(
    strlcpy(path_buf, path, path_buf_size);
 }
 
+static void menu_action_setting_disp_set_label_perf_counters_common(
+      const struct retro_perf_counter **counters,
+      unsigned offset, char *type_str, size_t type_str_size
+      )
+{
+   if (!counters[offset])
+      return;
+   if (!counters[offset]->call_cnt)
+      return;
+
+   snprintf(type_str, type_str_size,
+#ifdef _WIN32
+         "%I64u ticks, %I64u runs.",
+#else
+         "%llu ticks, %llu runs.",
+#endif
+         ((unsigned long long)counters[offset]->total /
+          (unsigned long long)counters[offset]->call_cnt),
+         (unsigned long long)counters[offset]->call_cnt);
+}
+
 static void menu_action_setting_disp_set_label_perf_counters(
       file_list_t* list,
       unsigned *w, unsigned type, unsigned i,
@@ -398,20 +419,8 @@ static void menu_action_setting_disp_set_label_perf_counters(
    *w = 19;
    strlcpy(path_buf, path, path_buf_size);
 
-   if (!counters[offset])
-      return;
-   if (!counters[offset]->call_cnt)
-      return;
-
-   snprintf(type_str, type_str_size,
-#ifdef _WIN32
-         "%I64u ticks, %I64u runs.",
-#else
-         "%llu ticks, %llu runs.",
-#endif
-         ((unsigned long long)counters[offset]->total /
-          (unsigned long long)counters[offset]->call_cnt),
-         (unsigned long long)counters[offset]->call_cnt);
+   menu_action_setting_disp_set_label_perf_counters_common(
+         counters, offset, type_str, type_str_size);
 
    menu->label.is_updated = true;
 }
@@ -434,20 +443,8 @@ static void menu_action_setting_disp_set_label_libretro_perf_counters(
    *w = 19;
    strlcpy(path_buf, path, path_buf_size);
 
-   if (!counters[offset])
-      return;
-   if (!counters[offset]->call_cnt)
-      return;
-
-   snprintf(type_str, type_str_size,
-#ifdef _WIN32
-         "%I64u ticks, %I64u runs.",
-#else
-         "%llu ticks, %llu runs.",
-#endif
-         ((unsigned long long)counters[offset]->total /
-          (unsigned long long)counters[offset]->call_cnt),
-         (unsigned long long)counters[offset]->call_cnt);
+   menu_action_setting_disp_set_label_perf_counters_common(
+         counters, offset, type_str, type_str_size);
 
    menu->label.is_updated = true;
 }
