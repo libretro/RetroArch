@@ -1785,6 +1785,11 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
    {
       case DISPLAYLIST_NONE:
          break;
+      case DISPLAYLIST_CUSTOM_BIND:
+         menu_list_push(info->list,
+               info->path, info->label, info->type,
+               info->flags);
+         break;
       case DISPLAYLIST_MAIN_MENU:
       case DISPLAYLIST_SETTINGS:
          ret = menu_displaylist_parse_settings(menu, info, info->flags);
