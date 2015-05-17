@@ -375,7 +375,6 @@ int menu_input_set_keyboard_bind_mode(void *data,
    settings_t *settings      = config_get_ptr();
    menu_handle_t       *menu = menu_driver_get_ptr();
    menu_navigation_t   *nav  = menu_navigation_get_ptr();
-   menu_displaylist_info_t info = {0};
 
    if (!menu || !setting)
       return -1;
@@ -394,25 +393,21 @@ int menu_input_set_keyboard_bind_mode(void *data,
          menu->binds.last   = setting->bind_type;
          menu->binds.target = keybind;
          menu->binds.user = setting->index_offset;
-
-         info.list = menu->menu_list->menu_stack;
-         strlcpy(info.label, "custom_bind", sizeof(info.label));
-         info.type = MENU_SETTINGS_CUSTOM_BIND_KEYBOARD;
-         info.flags = nav->selection_ptr;
-         menu_displaylist_push_list(&info, DISPLAYLIST_CUSTOM_BIND);
+         menu_list_push( menu->menu_list->menu_stack,
+               "", "custom_bind",
+               MENU_SETTINGS_CUSTOM_BIND_KEYBOARD,
+               nav->selection_ptr);
          break;
       case MENU_INPUT_BIND_ALL:
          menu->binds.target = &settings->input.binds
             [setting->index_offset][0];
          menu->binds.begin = MENU_SETTINGS_BIND_BEGIN;
          menu->binds.last = MENU_SETTINGS_BIND_LAST;
-
-         info.list = menu->menu_list->menu_stack;
-         strlcpy(info.label, "custom_bind_all", sizeof(info.label));
-         info.type = MENU_SETTINGS_CUSTOM_BIND_KEYBOARD;
-         info.flags = nav->selection_ptr;
-
-         menu_displaylist_push_list(&info, DISPLAYLIST_CUSTOM_BIND);
+         menu_list_push( menu->menu_list->menu_stack,
+               "",
+               "custom_bind_all",
+               MENU_SETTINGS_CUSTOM_BIND_KEYBOARD,
+               nav->selection_ptr);
          break;
    }
 
