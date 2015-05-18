@@ -1034,7 +1034,8 @@ static int action_ok_set_path(const char *path,
 static int action_ok_custom_viewport(const char *path,
       const char *label, unsigned type, size_t idx)
 {
-   /* Start with something sane. */
+   menu_displaylist_info_t info = {0};
+   int ret                  = 0;
    global_t *global         = global_get_ptr();
    video_viewport_t *custom = &global->console.screen.viewports.custom_vp;
    menu_handle_t *menu      = menu_driver_get_ptr();
@@ -1043,13 +1044,12 @@ static int action_ok_custom_viewport(const char *path,
    if (!menu)
       return -1;
 
+   info.list          = menu->menu_list->menu_stack;
+   info.type          = MENU_SETTINGS_CUSTOM_VIEWPORT;
+   info.directory_ptr = idx;
+   strlcpy(info.label, "custom_viewport_1", sizeof(info.label));
 
-   menu_list_push(
-         menu->menu_list->menu_stack,
-         "",
-         "custom_viewport_1",
-         MENU_SETTINGS_CUSTOM_VIEWPORT,
-         idx);
+   ret = menu_displaylist_push_list(&info, DISPLAYLIST_GENERIC);
 
    video_driver_viewport_info(custom);
 
@@ -1059,7 +1059,7 @@ static int action_ok_custom_viewport(const char *path,
    settings->video.aspect_ratio_idx = ASPECT_RATIO_CUSTOM;
 
    event_command(EVENT_CMD_VIDEO_SET_ASPECT_RATIO);
-   return 0;
+   return ret;
 }
 
 
