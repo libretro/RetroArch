@@ -764,6 +764,13 @@ static int menu_displaylist_parse(menu_displaylist_info_t *info,
 
    switch (type)
    {
+      case DISPLAYLIST_CORES_UPDATER:
+#ifdef HAVE_NETWORKING
+         print_buf_lines(info->list, core_buf, core_len, MENU_FILE_DOWNLOAD_CORE);
+         *need_push    = true;
+         *need_refresh = true;
+#endif
+         break;
       case DISPLAYLIST_PERFCOUNTER_SELECTION:
          menu_list_push(info->list, "Frontend Counters", "frontend_counters",
                MENU_SETTING_ACTION, 0);
@@ -1984,6 +1991,7 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
       case DISPLAYLIST_HISTORY:
       case DISPLAYLIST_SETTINGS_ALL:
       case DISPLAYLIST_PERFCOUNTER_SELECTION:
+      case DISPLAYLIST_CORES_UPDATER:
          ret = menu_displaylist_parse(info, type,
                &need_sort, &need_refresh, &need_push);
          break;
@@ -2015,14 +2023,6 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
 
          need_refresh = false;
          need_push    = true;
-         break;
-      case DISPLAYLIST_CORES_UPDATER:
-         menu_list_clear(info->list);
-#ifdef HAVE_NETWORKING
-         print_buf_lines(info->list, core_buf, core_len, MENU_FILE_DOWNLOAD_CORE);
-         need_push    = true;
-         need_refresh = true;
-#endif
          break;
       case DISPLAYLIST_SHADER_PARAMETERS:
       case DISPLAYLIST_SHADER_PARAMETERS_PRESET:
