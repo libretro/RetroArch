@@ -788,14 +788,17 @@ static int action_ok_core_download(const char *path,
 static int action_ok_compressed_archive_push(const char *path,
       const char *label, unsigned type, size_t idx)
 {
-   menu_handle_t *menu = menu_driver_get_ptr();
-   if (!menu)
+   menu_displaylist_info_t info = {0};
+   menu_list_t *menu_list = menu_list_get_ptr();
+   if (!menu_list)
       return -1;
 
-   menu_list_push(menu->menu_list->menu_stack,
-         path, "load_open_zip", 0, idx);
+   info.list          = menu_list->menu_stack;
+   info.directory_ptr = idx;
+   strlcpy(info.path, path, sizeof(info.path));
+   strlcpy(info.label, "load_open_zip", sizeof(info.label));
 
-   return 0;
+   return menu_displaylist_push_list(&info, DISPLAYLIST_SELECT);
 }
 
 static int action_ok_directory_push(const char *path,

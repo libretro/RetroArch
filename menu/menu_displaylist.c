@@ -1779,7 +1779,6 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
    bool need_push    = false;
    menu_handle_t    *menu = menu_driver_get_ptr();
 
-
    switch (type)
    {
       case DISPLAYLIST_NONE:
