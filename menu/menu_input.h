@@ -77,9 +77,6 @@ void menu_input_st_string_callback(void *userdata, const char *str);
 
 void menu_input_st_cheat_callback(void *userdata, const char *str);
 
-bool menu_input_poll_find_trigger(struct menu_bind_state *state,
-      struct menu_bind_state *new_state);
-
 int menu_input_bind_iterate(void);
 
 unsigned menu_input_frame(retro_input_t input, retro_input_t trigger_state);

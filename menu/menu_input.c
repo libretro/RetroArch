@@ -329,7 +329,7 @@ static bool menu_input_poll_find_trigger_pad(struct menu_bind_state *state,
    return false;
 }
 
-bool menu_input_poll_find_trigger(struct menu_bind_state *state,
+static bool menu_input_poll_find_trigger(struct menu_bind_state *state,
       struct menu_bind_state *new_state)
 {
    unsigned i;
