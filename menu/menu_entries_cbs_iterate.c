@@ -485,6 +485,7 @@ enum action_iterate_type action_iterate_type(const char *label)
 
 static int action_iterate_main(const char *label, unsigned action)
 {
+   static bool did_messagebox = false;
    char msg[PATH_MAX_LENGTH];
    enum action_iterate_type iterate_type;
    menu_entry_t entry;
@@ -556,6 +557,11 @@ static int action_iterate_main(const char *label, unsigned action)
          }
          break;
    }
+
+   did_messagebox = did_messagebox != do_messagebox;
+
+   if (did_messagebox)
+      menu->framebuf.dirty = true;
 
    if (do_messagebox)
       menu_driver_render_messagebox(msg);
