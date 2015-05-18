@@ -822,15 +822,15 @@ static int pointer_tap(menu_file_list_cbs_t *cbs,
       menu_setting_find(
             menu_list->selection_buf->list[nav->selection_ptr].label);
 
-   if (menu->pointer.ptr == menu->navigation.selection_ptr
+   if (menu->pointer.ptr == nav->selection_ptr
          && cbs && cbs->action_right && setting &&
          (setting->type == ST_BOOL || setting->type == ST_UINT
           || setting->type == ST_FLOAT || setting->type == ST_STRING))
-      return menu_entry_action(entry, menu->navigation.selection_ptr, MENU_ACTION_RIGHT);
-   else if (menu->pointer.ptr == menu->navigation.selection_ptr)
-      return menu_entry_action(entry, menu->navigation.selection_ptr, MENU_ACTION_OK);
+      return menu_entry_action(entry, nav->selection_ptr, MENU_ACTION_RIGHT);
+   else if (menu->pointer.ptr == nav->selection_ptr)
+      return menu_entry_action(entry, nav->selection_ptr, MENU_ACTION_OK);
    else
-      menu_navigation_set(&menu->navigation, menu->pointer.ptr, false);
+      menu_navigation_set(nav, menu->pointer.ptr, false);
 
    return 0;
 }
@@ -946,11 +946,12 @@ unsigned menu_input_frame(retro_input_t input, retro_input_t trigger_input)
       | (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT)
       | (1ULL << RETRO_DEVICE_ID_JOYPAD_L)
       | (1ULL << RETRO_DEVICE_ID_JOYPAD_R);
-   menu_handle_t *menu = menu_driver_get_ptr();
-   driver_t *driver    = driver_get_ptr();
-   settings_t *settings = config_get_ptr();
+   menu_navigation_t *nav = menu_navigation_get_ptr();
+   menu_handle_t *menu    = menu_driver_get_ptr();
+   driver_t *driver       = driver_get_ptr();
+   settings_t *settings   = config_get_ptr();
 
-   if (!menu || !driver)
+   if (!menu || !driver || !nav)
       return 0;
 
    driver->retro_ctx.poll_cb();
@@ -971,8 +972,8 @@ unsigned menu_input_frame(retro_input_t input, retro_input_t trigger_input)
       {
          first_held = false;
          trigger_input |= input & input_repeat;
-         menu->navigation.scroll.acceleration =
-            min(menu->navigation.scroll.acceleration + 1, 64);
+         nav->scroll.acceleration =
+            min(nav->scroll.acceleration + 1, 64);
       }
 
       initial_held = false;
@@ -981,7 +982,7 @@ unsigned menu_input_frame(retro_input_t input, retro_input_t trigger_input)
    {
       first_held = false;
       initial_held = true;
-      menu->navigation.scroll.acceleration = 0;
+      nav->scroll.acceleration = 0;
    }
 
    menu->delay.count += menu->dt / IDEAL_DT;
