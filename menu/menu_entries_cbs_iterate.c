@@ -251,9 +251,6 @@ static int action_iterate_info(const char *label, unsigned action)
 
    menu_driver_render_messagebox(msg);
 
-   if (action == MENU_ACTION_OK)
-      menu_list_pop(menu_list->menu_stack, &menu->navigation.selection_ptr);
-
    return ret;
 }
 
@@ -468,9 +465,6 @@ static int action_iterate_message(const char *label, unsigned action)
 
    menu_driver_render_messagebox(menu->message_contents);
 
-   if (action == MENU_ACTION_OK)
-      menu_list_pop_stack(menu->menu_list);
-
    return 0;
 }
 
@@ -514,6 +508,7 @@ static int action_iterate_main(const char *label, unsigned action)
    enum action_iterate_type iterate_type;
    menu_entry_t entry;
    size_t selected;
+   bool do_pop_stack         = false;
    bool do_post_iterate      = false;
    bool do_render            = false;
    int ret                   = 0;
@@ -539,6 +534,7 @@ static int action_iterate_main(const char *label, unsigned action)
          break;
       case ITERATE_TYPE_INFO:
          ret = action_iterate_info(label, action);
+         do_pop_stack    = true;
          do_post_iterate = true;
          break;
       case ITERATE_TYPE_ZIP:
@@ -546,6 +542,7 @@ static int action_iterate_main(const char *label, unsigned action)
          break;
       case ITERATE_TYPE_MESSAGE:
          ret = action_iterate_message(label, action);
+         do_pop_stack    = true;
          break;
       case ITERATE_TYPE_DEFAULT:
          selected           = menu_navigation_get_current_selection();
@@ -570,6 +567,9 @@ static int action_iterate_main(const char *label, unsigned action)
          }
          break;
    }
+
+   if (do_pop_stack && action == MENU_ACTION_OK)
+      menu_list_pop(menu_list->menu_stack, &menu->navigation.selection_ptr);
    
    if (do_post_iterate)
       menu_input_post_iterate(&ret, action);
