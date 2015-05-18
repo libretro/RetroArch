@@ -561,7 +561,7 @@ static int action_iterate_main(const char *label, unsigned action)
    did_messagebox = did_messagebox != do_messagebox;
 
    if (did_messagebox)
-      menu->framebuf.dirty = true;
+      menu_display_fb_set_dirty();
 
    if (do_messagebox)
       menu_driver_render_messagebox(msg);
