@@ -447,17 +447,6 @@ static int action_iterate_menu_viewport(char *s, size_t len, const char *label, 
    return 0;
 }
 
-static int action_iterate_message(const char *label)
-{
-   menu_handle_t *menu    = menu_driver_get_ptr();
-   if (!menu)
-      return -1;
-
-   menu_driver_render_messagebox(menu->message_contents);
-
-   return 0;
-}
-
 enum action_iterate_type
 {
    ITERATE_TYPE_DEFAULT = 0,
@@ -538,8 +527,9 @@ static int action_iterate_main(const char *label, unsigned action)
          ret = action_iterate_load_open_zip(label, msg, sizeof(msg), action);
          break;
       case ITERATE_TYPE_MESSAGE:
-         ret = action_iterate_message(label);
+         strlcpy(msg, menu->message_contents, sizeof(msg));
          pop_selected    = &menu->navigation.selection_ptr;
+         do_messagebox   = true;
          do_pop_stack    = true;
          break;
       case ITERATE_TYPE_DEFAULT:
