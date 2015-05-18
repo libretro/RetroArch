@@ -114,21 +114,20 @@ static int archive_load(void)
    return ret;
 }
 
-static int load_or_open_zip_iterate(unsigned action)
+static int load_or_open_zip_iterate(char *s, size_t len, unsigned action)
 {
-   char msg[PATH_MAX_LENGTH];
    menu_handle_t *menu = menu_driver_get_ptr();
 
    if (!menu)
       return -1;
 
-   snprintf(msg, sizeof(msg), "Opening compressed file\n"
+   snprintf(s, len, "Opening compressed file\n"
          " \n"
 
          " - OK to open as Folder\n"
          " - Cancel/Back to Load \n");
 
-   menu_driver_render_messagebox(msg);
+   menu_driver_render_messagebox(s);
 
    switch (action)
    {
@@ -143,7 +142,7 @@ static int load_or_open_zip_iterate(unsigned action)
    return 0;
 }
 
-static int action_iterate_help(const char *label)
+static int action_iterate_help(char *s, size_t len, const char *label)
 {
    int ret;
    unsigned i;
@@ -158,7 +157,6 @@ static int action_iterate_help(const char *label)
       RETRO_DEVICE_ID_JOYPAD_X,
    };
    char desc[ARRAY_SIZE(binds)][64];
-   char msg[PATH_MAX_LENGTH];
    menu_handle_t *menu    = menu_driver_get_ptr();
    settings_t *settings   = config_get_ptr();
 
@@ -177,7 +175,7 @@ static int action_iterate_help(const char *label)
       input_get_bind_string(desc[i], keybind, auto_bind, sizeof(desc[i]));
    }
 
-   snprintf(msg, sizeof(msg),
+   snprintf(s, len,
          "-- Welcome to RetroArch --\n"
          " \n" // strtok_r doesn't split empty strings.
 
@@ -203,15 +201,14 @@ static int action_iterate_help(const char *label)
          "Press Accept/OK to continue.",
       desc[0], desc[1], desc[2], desc[3], desc[4], desc[5], desc[6], desc[7]);
 
-   menu_driver_render_messagebox(msg);
+   menu_driver_render_messagebox(s);
 
    return ret;
 }
 
-static int action_iterate_info(const char *label)
+static int action_iterate_info(char *s, size_t len, const char *label)
 {
    int ret = 0;
-   char msg[PATH_MAX_LENGTH];
    char needle[PATH_MAX_LENGTH];
    unsigned info_type               = 0;
    rarch_setting_t *current_setting = NULL;
@@ -244,21 +241,21 @@ static int action_iterate_info(const char *label)
          strlcpy(needle, lbl, sizeof(needle));
    }
 
-   setting_get_description(needle, msg, sizeof(msg));
+   setting_get_description(needle, s, len);
 
-   menu_driver_render_messagebox(msg);
+   menu_driver_render_messagebox(s);
 
    return ret;
 }
 
-static int action_iterate_load_open_zip(const char *label, unsigned action)
+static int action_iterate_load_open_zip(const char *label, char *s, size_t len, unsigned action)
 {
    settings_t *settings   = config_get_ptr();
 
    switch (settings->archive.mode)
    {
       case 0:
-         return load_or_open_zip_iterate(action);
+         return load_or_open_zip_iterate(s, len, action);
       case 1:
          return archive_load();
       case 2:
@@ -270,10 +267,9 @@ static int action_iterate_load_open_zip(const char *label, unsigned action)
    return 0;
 }
 
-static int action_iterate_menu_viewport(const char *label, unsigned action)
+static int action_iterate_menu_viewport(char *s, size_t len, const char *label, unsigned action)
 {
    int stride_x = 1, stride_y = 1;
-   char msg[PATH_MAX_LENGTH];
    menu_displaylist_info_t info     = {0};
    struct retro_game_geometry *geom = NULL;
    const char *base_msg             = NULL;
@@ -422,7 +418,7 @@ static int action_iterate_menu_viewport(const char *label, unsigned action)
             geom->base_height) * geom->base_height;
       base_msg       = "Set scale";
        
-      snprintf(msg, sizeof(msg), "%s (%4ux%4u, %u x %u scale)",
+      snprintf(s, len, "%s (%4ux%4u, %u x %u scale)",
             base_msg,
             custom->width, custom->height,
             custom->width / geom->base_width,
@@ -435,11 +431,11 @@ static int action_iterate_menu_viewport(const char *label, unsigned action)
       else if (!strcmp(label, "custom_viewport_2"))
          base_msg = "Set Bottom-Right Corner";
 
-      snprintf(msg, sizeof(msg), "%s (%d, %d : %4ux%4u)",
+      snprintf(s, len, "%s (%d, %d : %4ux%4u)",
             base_msg, custom->x, custom->y, custom->width, custom->height);
    }
 
-   menu_driver_render_messagebox(msg);
+   menu_driver_render_messagebox(s);
 
    if (!custom->width)
       custom->width = stride_x;
@@ -502,6 +498,7 @@ enum action_iterate_type action_iterate_type(const char *label)
 
 static int action_iterate_main(const char *label, unsigned action)
 {
+   char msg[PATH_MAX_LENGTH];
    enum action_iterate_type iterate_type;
    menu_entry_t entry;
    size_t selected, *pop_selected = false;
@@ -519,7 +516,7 @@ static int action_iterate_main(const char *label, unsigned action)
    switch (iterate_type)
    {
       case ITERATE_TYPE_HELP:
-         ret = action_iterate_help(label);
+         ret = action_iterate_help(msg, sizeof(msg), label);
          pop_selected    = NULL;
          do_pop_stack    = true;
          do_post_iterate = true;
@@ -529,16 +526,16 @@ static int action_iterate_main(const char *label, unsigned action)
             menu_list_pop_stack(menu_list);
          break;
       case ITERATE_TYPE_VIEWPORT:
-         ret = action_iterate_menu_viewport(label, action);
+         ret = action_iterate_menu_viewport(msg, sizeof(msg), label, action);
          break;
       case ITERATE_TYPE_INFO:
-         ret = action_iterate_info(label);
+         ret = action_iterate_info(msg, sizeof(msg), label);
          pop_selected    = &menu->navigation.selection_ptr;
          do_pop_stack    = true;
          do_post_iterate = true;
          break;
       case ITERATE_TYPE_ZIP:
-         ret = action_iterate_load_open_zip(label, action);
+         ret = action_iterate_load_open_zip(label, msg, sizeof(msg), action);
          break;
       case ITERATE_TYPE_MESSAGE:
          ret = action_iterate_message(label);
