@@ -201,7 +201,6 @@ static int action_iterate_help(char *s, size_t len, const char *label)
          "Press Accept/OK to continue.",
       desc[0], desc[1], desc[2], desc[3], desc[4], desc[5], desc[6], desc[7]);
 
-   menu_driver_render_messagebox(s);
 
    return ret;
 }
@@ -242,8 +241,6 @@ static int action_iterate_info(char *s, size_t len, const char *label)
    }
 
    setting_get_description(needle, s, len);
-
-   menu_driver_render_messagebox(s);
 
    return ret;
 }
@@ -502,6 +499,7 @@ static int action_iterate_main(const char *label, unsigned action)
    enum action_iterate_type iterate_type;
    menu_entry_t entry;
    size_t selected, *pop_selected = false;
+   bool do_messagebox        = false;
    bool do_pop_stack         = false;
    bool do_post_iterate      = false;
    bool do_render            = false;
@@ -518,6 +516,7 @@ static int action_iterate_main(const char *label, unsigned action)
       case ITERATE_TYPE_HELP:
          ret = action_iterate_help(msg, sizeof(msg), label);
          pop_selected    = NULL;
+         do_messagebox   = true;
          do_pop_stack    = true;
          do_post_iterate = true;
          break;
@@ -531,6 +530,7 @@ static int action_iterate_main(const char *label, unsigned action)
       case ITERATE_TYPE_INFO:
          ret = action_iterate_info(msg, sizeof(msg), label);
          pop_selected    = &menu->navigation.selection_ptr;
+         do_messagebox   = true;
          do_pop_stack    = true;
          do_post_iterate = true;
          break;
@@ -565,6 +565,9 @@ static int action_iterate_main(const char *label, unsigned action)
          }
          break;
    }
+
+   if (do_messagebox)
+      menu_driver_render_messagebox(msg);
 
    if (do_pop_stack && action == MENU_ACTION_OK)
       menu_list_pop(menu_list->menu_stack, pop_selected);
