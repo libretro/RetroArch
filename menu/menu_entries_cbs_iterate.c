@@ -478,63 +478,98 @@ static int action_iterate_message(const char *label, unsigned action)
    return 0;
 }
 
-static int action_iterate_main(const char *label, unsigned action)
+enum action_iterate_type
 {
-   menu_entry_t entry;
-   size_t selected;
-   int ret                   = 0;
-   menu_handle_t *menu       = menu_driver_get_ptr();
-   if (!menu)
-      return 0;
+   ITERATE_TYPE_DEFAULT = 0,
+   ITERATE_TYPE_HELP,
+   ITERATE_TYPE_INFO,
+   ITERATE_TYPE_ZIP,
+   ITERATE_TYPE_MESSAGE,
+   ITERATE_TYPE_VIEWPORT,
+   ITERATE_TYPE_BIND,
+};
 
+enum action_iterate_type action_iterate_type(const char *label)
+{
    if (!strcmp(label, "help"))
-      return action_iterate_help(label, action);
+      return ITERATE_TYPE_HELP;
    else if (!strcmp(label, "info_screen"))
-      return action_iterate_info(label, action);
+      return ITERATE_TYPE_INFO;
    else if (!strcmp(label, "load_open_zip"))
-      return action_iterate_load_open_zip(label, action);
+      return ITERATE_TYPE_ZIP;
    else if (!strcmp(label, "message"))
-      return action_iterate_message(label, action);
+      return ITERATE_TYPE_MESSAGE;
    else if (
          !strcmp(label, "custom_viewport_1") ||
          !strcmp(label, "custom_viewport_2")
          )
-      return action_iterate_menu_viewport(label, action);
+      return ITERATE_TYPE_VIEWPORT;
    else if (
          !strcmp(label, "custom_bind") ||
          !strcmp(label, "custom_bind_all") ||
          !strcmp(label, "custom_bind_defaults")
          )
-   {
-      menu_list_t *menu_list = menu_list_get_ptr();
-      if (!menu_list)
-         return -1;
-      if (menu_input_bind_iterate())
-         menu_list_pop_stack(menu_list);
+      return ITERATE_TYPE_BIND;
+   return ITERATE_TYPE_DEFAULT;
+}
+
+static int action_iterate_main(const char *label, unsigned action)
+{
+   enum action_iterate_type iterate_type;
+   menu_entry_t entry;
+   size_t selected;
+   int ret                   = 0;
+   menu_handle_t *menu       = menu_driver_get_ptr();
+   menu_list_t *menu_list    = menu_list_get_ptr();
+   if (!menu || !menu_list)
       return 0;
-   }
+   
+   iterate_type              = action_iterate_type(label);
 
-   selected           = menu_navigation_get_current_selection();
-   menu_entry_get(&entry,    selected, NULL, false);
-   ret = menu_entry_action(&entry, selected, action);
-
-   if (ret)
-      return ret;
-
-   menu_input_post_iterate(&ret, action);
-
-   menu_driver_render();
-
-   /* Have to defer it so we let settings refresh. */
-   if (menu->push_start_screen)
+   switch (iterate_type)
    {
-      menu_list_t *menu_list    = menu_list_get_ptr();
-      menu_displaylist_info_t info = {0};
+      case ITERATE_TYPE_HELP:
+         ret = action_iterate_help(label, action);
+         break;
+      case ITERATE_TYPE_BIND:
+         if (menu_input_bind_iterate())
+            menu_list_pop_stack(menu_list);
+         break;
+      case ITERATE_TYPE_VIEWPORT:
+         ret = action_iterate_menu_viewport(label, action);
+         break;
+      case ITERATE_TYPE_INFO:
+         ret = action_iterate_info(label, action);
+         break;
+      case ITERATE_TYPE_ZIP:
+         ret = action_iterate_load_open_zip(label, action);
+         break;
+      case ITERATE_TYPE_MESSAGE:
+         ret = action_iterate_message(label, action);
+         break;
+      case ITERATE_TYPE_DEFAULT:
+         selected           = menu_navigation_get_current_selection();
+         menu_entry_get(&entry,    selected, NULL, false);
+         ret = menu_entry_action(&entry, selected, action);
 
-      info.list = menu_list->menu_stack;
-      strlcpy(info.label, "help", sizeof(info.label));
+         if (ret)
+            return ret;
 
-      menu_displaylist_push_list(&info, DISPLAYLIST_HELP);
+         menu_input_post_iterate(&ret, action);
+
+         menu_driver_render();
+
+         /* Have to defer it so we let settings refresh. */
+         if (menu->push_start_screen)
+         {
+            menu_displaylist_info_t info = {0};
+
+            info.list = menu_list->menu_stack;
+            strlcpy(info.label, "help", sizeof(info.label));
+
+            menu_displaylist_push_list(&info, DISPLAYLIST_HELP);
+         }
+         break;
    }
 
    return ret;
