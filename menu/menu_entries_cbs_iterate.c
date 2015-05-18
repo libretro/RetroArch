@@ -143,7 +143,7 @@ static int load_or_open_zip_iterate(unsigned action)
    return 0;
 }
 
-static int action_iterate_help(const char *label, unsigned action)
+static int action_iterate_help(const char *label)
 {
    int ret;
    unsigned i;
@@ -208,7 +208,7 @@ static int action_iterate_help(const char *label, unsigned action)
    return ret;
 }
 
-static int action_iterate_info(const char *label, unsigned action)
+static int action_iterate_info(const char *label)
 {
    int ret = 0;
    char msg[PATH_MAX_LENGTH];
@@ -519,7 +519,7 @@ static int action_iterate_main(const char *label, unsigned action)
    switch (iterate_type)
    {
       case ITERATE_TYPE_HELP:
-         ret = action_iterate_help(label, action);
+         ret = action_iterate_help(label);
          pop_selected    = NULL;
          do_pop_stack    = true;
          do_post_iterate = true;
@@ -532,7 +532,7 @@ static int action_iterate_main(const char *label, unsigned action)
          ret = action_iterate_menu_viewport(label, action);
          break;
       case ITERATE_TYPE_INFO:
-         ret = action_iterate_info(label, action);
+         ret = action_iterate_info(label);
          pop_selected    = &menu->navigation.selection_ptr;
          do_pop_stack    = true;
          do_post_iterate = true;
