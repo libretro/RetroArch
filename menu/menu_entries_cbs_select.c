@@ -16,8 +16,7 @@
 #include "menu.h"
 #include "menu_entries_cbs.h"
 
-static int action_select_default(unsigned type, const char *label,
-      unsigned action)
+static int action_select_default(unsigned type, const char *label)
 {
    menu_displaylist_info_t info = {0};
    menu_handle_t *menu    = menu_driver_get_ptr();

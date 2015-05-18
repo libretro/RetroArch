@@ -490,7 +490,7 @@ int menu_entry_action(menu_entry_t *entry, unsigned i, enum menu_action action)
          break;
       case MENU_ACTION_SELECT:
          if (cbs && cbs->action_select)
-            return cbs->action_select(entry->type, entry->label, action);
+            return cbs->action_select(entry->type, entry->label);
          break;
 
       case MENU_ACTION_REFRESH:
