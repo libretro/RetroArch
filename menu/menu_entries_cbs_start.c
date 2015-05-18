@@ -23,8 +23,7 @@
 
 #include "../input/input_remapping.h"
 
-static int action_start_remap_file_load(unsigned type, const char *label,
-      unsigned action)
+static int action_start_remap_file_load(unsigned type, const char *label)
 {
    settings_t *settings = config_get_ptr();
 
@@ -33,8 +32,7 @@ static int action_start_remap_file_load(unsigned type, const char *label,
    return 0;
 }
 
-static int action_start_video_filter_file_load(unsigned type, const char *label,
-      unsigned action)
+static int action_start_video_filter_file_load(unsigned type, const char *label)
 {
    settings_t *settings = config_get_ptr();
 
@@ -43,15 +41,13 @@ static int action_start_video_filter_file_load(unsigned type, const char *label,
    return 0;
 }
 
-static int action_start_performance_counters_core(unsigned type, const char *label,
-      unsigned action)
+static int action_start_performance_counters_core(unsigned type, const char *label)
 {
    struct retro_perf_counter **counters = (struct retro_perf_counter**)
       perf_counters_libretro;
    unsigned offset = type - MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_BEGIN;
 
    (void)label;
-   (void)action;
 
    if (counters[offset])
    {
@@ -62,8 +58,7 @@ static int action_start_performance_counters_core(unsigned type, const char *lab
    return 0;
 }
 
-static int action_start_input_desc(unsigned type, const char *label,
-      unsigned action)
+static int action_start_input_desc(unsigned type, const char *label)
 {
    settings_t *settings = config_get_ptr();
    unsigned inp_desc_index_offset = type - MENU_SETTINGS_INPUT_DESC_BEGIN;
@@ -71,7 +66,6 @@ static int action_start_input_desc(unsigned type, const char *label,
    unsigned inp_desc_button_index_offset = inp_desc_index_offset - (inp_desc_user * RARCH_FIRST_META_KEY);
 
    (void)label;
-   (void)action;
 
    settings->input.remap_ids[inp_desc_user][inp_desc_button_index_offset] = 
       settings->input.binds[inp_desc_user][inp_desc_button_index_offset].id;
@@ -79,8 +73,7 @@ static int action_start_input_desc(unsigned type, const char *label,
    return 0;
 }
 
-static int action_start_shader_action_parameter(unsigned type, const char *label,
-      unsigned action)
+static int action_start_shader_action_parameter(unsigned type, const char *label)
 {
 #ifdef HAVE_SHADER_MANAGER
    struct video_shader_parameter *param = NULL;
@@ -98,8 +91,7 @@ static int action_start_shader_action_parameter(unsigned type, const char *label
    return 0;
 }
 
-static int action_start_shader_action_preset_parameter(unsigned type, const char *label,
-      unsigned action)
+static int action_start_shader_action_preset_parameter(unsigned type, const char *label)
 {
 #ifdef HAVE_SHADER_MANAGER
    struct video_shader *shader = NULL;
@@ -119,8 +111,7 @@ static int action_start_shader_action_preset_parameter(unsigned type, const char
    return 0;
 }
 
-static int action_start_shader_pass(unsigned type, const char *label,
-      unsigned action)
+static int action_start_shader_pass(unsigned type, const char *label)
 {
 #ifdef HAVE_SHADER_MANAGER
    hack_shader_pass = type - MENU_SETTINGS_SHADER_PASS_0;
@@ -143,8 +134,7 @@ static int action_start_shader_pass(unsigned type, const char *label,
 }
 
 
-static int action_start_shader_scale_pass(unsigned type, const char *label,
-      unsigned action)
+static int action_start_shader_scale_pass(unsigned type, const char *label)
 {
 #ifdef HAVE_SHADER_MANAGER
    struct video_shader *shader = NULL;
@@ -169,8 +159,7 @@ static int action_start_shader_scale_pass(unsigned type, const char *label,
    return 0;
 }
 
-static int action_start_shader_filter_pass(unsigned type, const char *label,
-      unsigned action)
+static int action_start_shader_filter_pass(unsigned type, const char *label)
 {
 #ifdef HAVE_SHADER_MANAGER
    unsigned pass = type - MENU_SETTINGS_SHADER_PASS_FILTER_0;
@@ -193,8 +182,7 @@ static int action_start_shader_filter_pass(unsigned type, const char *label,
    return 0;
 }
 
-static int action_start_shader_num_passes(unsigned type, const char *label,
-      unsigned action)
+static int action_start_shader_num_passes(unsigned type, const char *label)
 {
 #ifdef HAVE_SHADER_MANAGER
    struct video_shader *shader = NULL;
@@ -214,8 +202,7 @@ static int action_start_shader_num_passes(unsigned type, const char *label,
    return 0;
 }
 
-static int action_start_cheat_num_passes(unsigned type, const char *label,
-      unsigned action)
+static int action_start_cheat_num_passes(unsigned type, const char *label)
 {
    global_t *global       = global_get_ptr();
    cheat_manager_t *cheat = global->cheat;
@@ -235,8 +222,8 @@ static int action_start_cheat_num_passes(unsigned type, const char *label,
    return 0;
 }
 
-static int action_start_performance_counters_frontend(unsigned type, const char *label,
-      unsigned action)
+static int action_start_performance_counters_frontend(unsigned type,
+      const char *label)
 {
    struct retro_perf_counter **counters = (struct retro_perf_counter**)
       perf_counters_rarch;
@@ -254,7 +241,7 @@ static int action_start_performance_counters_frontend(unsigned type, const char 
 }
 
 static int action_start_core_setting(unsigned type,
-      const char *label, unsigned action)
+      const char *label)
 {
    global_t *global       = global_get_ptr();
    unsigned idx           = type - MENU_SETTINGS_CORE_OPTION_START;
@@ -266,8 +253,7 @@ static int action_start_core_setting(unsigned type,
    return 0;
 }
 
-static int action_start_lookup_setting(unsigned type, const char *label,
-      unsigned action)
+static int action_start_lookup_setting(unsigned type, const char *label)
 {
    int ret = menu_setting_set(type, label, MENU_ACTION_START, false);
 

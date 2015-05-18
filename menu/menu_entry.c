@@ -481,7 +481,7 @@ int menu_entry_action(menu_entry_t *entry, unsigned i, enum menu_action action)
          break;
       case MENU_ACTION_START:
          if (cbs && cbs->action_start)
-            return cbs->action_start(entry->type, entry->label, action);
+            return cbs->action_start(entry->type, entry->label);
          break;
       case MENU_ACTION_LEFT:
       case MENU_ACTION_RIGHT:
