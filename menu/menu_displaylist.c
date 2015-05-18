@@ -701,6 +701,50 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
    return 0;
 }
 
+static int menu_displaylist_parse_historylist(menu_displaylist_info_t *info)
+{
+   unsigned i;
+   size_t list_size = content_playlist_size(g_defaults.history);
+
+   if (list_size <= 0)
+   {
+      menu_list_push(info->list, "No history available.", "",
+            MENU_SETTINGS_CORE_OPTION_NONE, 0);
+      return 0;
+   }
+
+   for (i = 0; i < list_size; i++)
+   {
+      char fill_buf[PATH_MAX_LENGTH];
+      char path_copy[PATH_MAX_LENGTH];
+      const char *core_name = NULL;
+      const char *path      = NULL;
+      
+      strlcpy(path_copy, info->path, sizeof(path_copy));
+
+      path = path_copy;
+
+      content_playlist_get_index(g_defaults.history, i,
+            &path, NULL, &core_name);
+      strlcpy(fill_buf, core_name, sizeof(fill_buf));
+
+      if (path)
+      {
+         char path_short[PATH_MAX_LENGTH];
+
+         fill_short_pathname_representation(path_short, path,
+               sizeof(path_short));
+         snprintf(fill_buf,sizeof(fill_buf),"%s (%s)",
+               path_short, core_name);
+      }
+
+      menu_list_push(info->list, fill_buf, "",
+            MENU_FILE_PLAYLIST_ENTRY, 0);
+   }
+
+   return 0;
+}
+
 static int menu_displaylist_parse(menu_displaylist_info_t *info,
       unsigned type, bool *need_sort, bool *need_refresh,
       bool *need_push)
@@ -719,6 +763,23 @@ static int menu_displaylist_parse(menu_displaylist_info_t *info,
 
    switch (type)
    {
+      case DISPLAYLIST_HISTORY:
+         if (menu_displaylist_parse_historylist(info) == 0)
+         {
+            *need_refresh = true;
+            *need_push    = true;
+         }
+         break;
+      case DISPLAYLIST_OPTIONS_DISK:
+         menu_list_push(info->list, "Disk Index", "disk_idx",
+               MENU_SETTINGS_CORE_DISK_OPTIONS_DISK_INDEX, 0);
+         menu_list_push(info->list, "Disk Cycle Tray Status", "disk_cycle_tray_status",
+               MENU_SETTINGS_CORE_DISK_OPTIONS_DISK_CYCLE_TRAY_STATUS, 0);
+         menu_list_push(info->list, "Disk Image Append", "disk_image_append",
+               MENU_SETTINGS_CORE_DISK_OPTIONS_DISK_IMAGE_APPEND, 0);
+
+         *need_push    = true;
+         break;
       case DISPLAYLIST_SYSTEM_INFO:
          menu_displaylist_parse_system_info(info);
          *need_push    = true;
@@ -1082,49 +1143,6 @@ static int menu_displaylist_parse_horizontal_list(menu_displaylist_info_t *info)
    return 0;
 }
 
-static int menu_displaylist_parse_historylist(menu_displaylist_info_t *info)
-{
-   unsigned i;
-   size_t list_size = content_playlist_size(g_defaults.history);
-
-   if (list_size <= 0)
-   {
-      menu_list_push(info->list, "No history available.", "",
-            MENU_SETTINGS_CORE_OPTION_NONE, 0);
-      return 0;
-   }
-
-   for (i = 0; i < list_size; i++)
-   {
-      char fill_buf[PATH_MAX_LENGTH];
-      char path_copy[PATH_MAX_LENGTH];
-      const char *core_name = NULL;
-      const char *path      = NULL;
-      
-      strlcpy(path_copy, info->path, sizeof(path_copy));
-
-      path = path_copy;
-
-      content_playlist_get_index(g_defaults.history, i,
-            &path, NULL, &core_name);
-      strlcpy(fill_buf, core_name, sizeof(fill_buf));
-
-      if (path)
-      {
-         char path_short[PATH_MAX_LENGTH];
-
-         fill_short_pathname_representation(path_short, path,
-               sizeof(path_short));
-         snprintf(fill_buf,sizeof(fill_buf),"%s (%s)",
-               path_short, core_name);
-      }
-
-      menu_list_push(info->list, fill_buf, "",
-            MENU_FILE_PLAYLIST_ENTRY, 0);
-   }
-
-   return 0;
-}
 
 int menu_displaylist_parse_horizontal_content_actions(menu_displaylist_info_t *info)
 {
@@ -1270,17 +1288,6 @@ static int menu_displaylist_parse_shader_options(menu_displaylist_info_t *info)
             MENU_SETTINGS_SHADER_PASS_SCALE_0 + i, 0);
    }
 
-   return 0;
-}
-
-static int menu_displaylist_parse_disk_options(menu_displaylist_info_t *info)
-{
-   menu_list_push(info->list, "Disk Index", "disk_idx",
-         MENU_SETTINGS_CORE_DISK_OPTIONS_DISK_INDEX, 0);
-   menu_list_push(info->list, "Disk Cycle Tray Status", "disk_cycle_tray_status",
-         MENU_SETTINGS_CORE_DISK_OPTIONS_DISK_CYCLE_TRAY_STATUS, 0);
-   menu_list_push(info->list, "Disk Image Append", "disk_image_append",
-         MENU_SETTINGS_CORE_DISK_OPTIONS_DISK_IMAGE_APPEND, 0);
    return 0;
 }
 
@@ -1949,12 +1956,6 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
 
          need_push    = true;
          break;
-      case DISPLAYLIST_OPTIONS_DISK:
-         menu_list_clear(info->list);
-         ret = menu_displaylist_parse_disk_options(info);
-
-         need_push    = true;
-         break;
       case DISPLAYLIST_OPTIONS_SHADERS:
          menu_list_clear(info->list);
          ret = menu_displaylist_parse_shader_options(info);
@@ -1982,18 +1983,10 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
       case DISPLAYLIST_CORE_INFO:
       case DISPLAYLIST_CORES_ALL:
       case DISPLAYLIST_SYSTEM_INFO:
+      case DISPLAYLIST_OPTIONS_DISK:
+      case DISPLAYLIST_HISTORY:
          ret = menu_displaylist_parse(info, type,
                &need_sort, &need_refresh, &need_push);
-         break;
-      case DISPLAYLIST_HISTORY:
-         menu_list_clear(info->list);
-         ret = menu_displaylist_parse_historylist(info);
-
-         if (ret == 0)
-         {
-            need_refresh = true;
-            need_push    = true;
-         }
          break;
       case DISPLAYLIST_DATABASE_QUERY:
          menu_list_clear(info->list);
