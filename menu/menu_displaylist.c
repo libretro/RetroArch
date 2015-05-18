@@ -201,7 +201,9 @@ static void menu_displaylist_parse_drive_list(file_list_t *list)
 #endif
 }
 
-static int menu_displaylist_parse(menu_displaylist_info_t *info, bool *need_sort)
+static int menu_displaylist_parse(menu_displaylist_info_t *info,
+      unsigned type, bool *need_sort, bool *need_refresh,
+      bool *need_push)
 {
    size_t i, list_size;
    bool path_is_compressed, push_dir;
@@ -213,158 +215,199 @@ static int menu_displaylist_parse(menu_displaylist_info_t *info, bool *need_sort
 
    (void)device;
 
-   if (!*info->path)
+   menu_list_clear(info->list);
+
+   switch (type)
    {
-      menu_displaylist_parse_drive_list(info->list);
-      return 0;
-   }
+      case DISPLAYLIST_CORE_OPTIONS:
+         if (global->system.core_options)
+         {
+            size_t opts = core_option_size(global->system.core_options);
+
+            for (i = 0; i < opts; i++)
+               menu_list_push(info->list,
+                     core_option_get_desc(global->system.core_options, i), "",
+                     MENU_SETTINGS_CORE_OPTION_START + i, 0);
+         }
+         else
+            menu_list_push(info->list, "No options available.", "",
+                  MENU_SETTINGS_CORE_OPTION_NONE, 0);
+         *need_push = true;
+         break;
+      case DISPLAYLIST_DEFAULT:
+      case DISPLAYLIST_CORES:
+      case DISPLAYLIST_CORES_DETECTED:
+      case DISPLAYLIST_SHADER_PASS:
+      case DISPLAYLIST_SHADER_PRESET:
+      case DISPLAYLIST_DATABASES:
+      case DISPLAYLIST_DATABASE_CURSORS:
+      case DISPLAYLIST_VIDEO_FILTERS:
+      case DISPLAYLIST_AUDIO_FILTERS:
+      case DISPLAYLIST_IMAGES:
+      case DISPLAYLIST_OVERLAYS:
+      case DISPLAYLIST_FONTS:
+      case DISPLAYLIST_CHEAT_FILES:
+      case DISPLAYLIST_REMAP_FILES:
+      case DISPLAYLIST_RECORD_CONFIG_FILES:
+      case DISPLAYLIST_CONFIG_FILES:
+      case DISPLAYLIST_CONTENT_HISTORY:
+         if (!*info->path)
+         {
+            menu_displaylist_parse_drive_list(info->list);
+            return 0;
+         }
 
 #if defined(GEKKO) && defined(HW_RVL)
-   slock_lock(gx_device_mutex);
-   device = gx_get_device_from_path(info->path);
+         slock_lock(gx_device_mutex);
+         device = gx_get_device_from_path(info->path);
 
-   if (device != -1 && !gx_devices[device].mounted &&
-         gx_devices[device].interface->isInserted())
-      fatMountSimple(gx_devices[device].name, gx_devices[device].interface);
+         if (device != -1 && !gx_devices[device].mounted &&
+               gx_devices[device].interface->isInserted())
+            fatMountSimple(gx_devices[device].name, gx_devices[device].interface);
 
-   slock_unlock(gx_device_mutex);
+         slock_unlock(gx_device_mutex);
 #endif
 
-   path_is_compressed = path_is_compressed_file(info->path);
-   push_dir           = (info->setting 
-         && info->setting->browser_selection_type == ST_DIR);
+         path_is_compressed = path_is_compressed_file(info->path);
+         push_dir           = (info->setting 
+               && info->setting->browser_selection_type == ST_DIR);
 
-   if (path_is_compressed)
-      str_list = compressed_file_list_new(info->path, info->exts);
-   else
-      str_list = dir_list_new(info->path,
-            settings->menu.navigation.browser.filter.supported_extensions_enable 
-            ? info->exts : NULL, true);
+         if (path_is_compressed)
+            str_list = compressed_file_list_new(info->path, info->exts);
+         else
+            str_list = dir_list_new(info->path,
+                  settings->menu.navigation.browser.filter.supported_extensions_enable 
+                  ? info->exts : NULL, true);
 
-   if (push_dir)
-      menu_list_push(info->list, "<Use this directory>", "",
-            MENU_FILE_USE_DIRECTORY, 0);
+         if (push_dir)
+            menu_list_push(info->list, "<Use this directory>", "",
+                  MENU_FILE_USE_DIRECTORY, 0);
 
-   if (!str_list)
-   {
-      const char *str = path_is_compressed
-            ? "Unable to read compressed file."
-            : "Directory not found.";
+         if (!str_list)
+         {
+            const char *str = path_is_compressed
+               ? "Unable to read compressed file."
+               : "Directory not found.";
 
-      menu_list_push(info->list, str, "", 0, 0);
-      return 0;
-   }
+            menu_list_push(info->list, str, "", 0, 0);
+            return 0;
+         }
 
-   dir_list_sort(str_list, true);
+         dir_list_sort(str_list, true);
 
 
-   list_size = str_list->size;
+         list_size = str_list->size;
 
-   if (list_size <= 0)
-   {
-      menu_list_push(info->list,
-            "No items.", "", 0, 0);
-      string_list_free(str_list);
-      return 0;
-   }
+         if (list_size <= 0)
+         {
+            menu_list_push(info->list,
+                  "No items.", "", 0, 0);
+            string_list_free(str_list);
+            return 0;
+         }
 
-   for (i = 0; i < list_size; i++)
-   {
-      bool is_dir;
-      const char *path = NULL;
-      menu_file_type_t file_type = MENU_FILE_NONE;
+         for (i = 0; i < list_size; i++)
+         {
+            bool is_dir;
+            const char *path = NULL;
+            menu_file_type_t file_type = MENU_FILE_NONE;
 
-      switch (str_list->elems[i].attr.i)
-      {
-         case RARCH_DIRECTORY:
-            file_type = MENU_FILE_DIRECTORY;
-            break;
-         case RARCH_COMPRESSED_ARCHIVE:
-            file_type = MENU_FILE_CARCHIVE;
-            break;
-         case RARCH_COMPRESSED_FILE_IN_ARCHIVE:
-            file_type = MENU_FILE_IN_CARCHIVE;
-            break;
-         case RARCH_PLAIN_FILE:
-         default:
-            if (!strcmp(info->label, "detect_core_list"))
+            switch (str_list->elems[i].attr.i)
             {
-               if (path_is_compressed_file(str_list->elems[i].data))
-               {
-                  /* in case of deferred_core_list we have to interpret
-                   * every archive as an archive to disallow instant loading
-                   */
+               case RARCH_DIRECTORY:
+                  file_type = MENU_FILE_DIRECTORY;
+                  break;
+               case RARCH_COMPRESSED_ARCHIVE:
                   file_type = MENU_FILE_CARCHIVE;
                   break;
-               }
+               case RARCH_COMPRESSED_FILE_IN_ARCHIVE:
+                  file_type = MENU_FILE_IN_CARCHIVE;
+                  break;
+               case RARCH_PLAIN_FILE:
+               default:
+                  if (!strcmp(info->label, "detect_core_list"))
+                  {
+                     if (path_is_compressed_file(str_list->elems[i].data))
+                     {
+                        /* in case of deferred_core_list we have to interpret
+                         * every archive as an archive to disallow instant loading
+                         */
+                        file_type = MENU_FILE_CARCHIVE;
+                        break;
+                     }
+                  }
+                  file_type = (menu_file_type_t)info->type_default;
+                  break;
             }
-            file_type = (menu_file_type_t)info->type_default;
-            break;
-      }
 
-      is_dir = (file_type == MENU_FILE_DIRECTORY);
+            is_dir = (file_type == MENU_FILE_DIRECTORY);
 
-      if (push_dir && !is_dir)
-         continue;
+            if (push_dir && !is_dir)
+               continue;
 
-      /* Need to preserve slash first time. */
-      path = str_list->elems[i].data;
+            /* Need to preserve slash first time. */
+            path = str_list->elems[i].data;
 
-      if (*info->path && !path_is_compressed)
-         path = path_basename(path);
+            if (*info->path && !path_is_compressed)
+               path = path_basename(path);
 
 
 #ifdef HAVE_LIBRETRO_MANAGEMENT
 #ifdef RARCH_CONSOLE
-      if (!strcmp(info->label, "core_list") && (is_dir ||
-               strcasecmp(path, SALAMANDER_FILE) == 0))
-         continue;
+            if (!strcmp(info->label, "core_list") && (is_dir ||
+                     strcasecmp(path, SALAMANDER_FILE) == 0))
+               continue;
 #endif
 #endif
 
-      /* Push type further down in the chain.
-       * Needed for shader manager currently. */
-      if (!strcmp(info->label, "core_list"))
-      {
-         /* Compressed cores are unsupported */
-         if (file_type == MENU_FILE_CARCHIVE)
-            continue;
+            /* Push type further down in the chain.
+             * Needed for shader manager currently. */
+            if (!strcmp(info->label, "core_list"))
+            {
+               /* Compressed cores are unsupported */
+               if (file_type == MENU_FILE_CARCHIVE)
+                  continue;
 
-         menu_list_push(info->list, path, "",
-               is_dir ? MENU_FILE_DIRECTORY : MENU_FILE_CORE, 0);
-      }
-      else
-      menu_list_push(info->list, path, "",
-            file_type, 0);
-   }
+               menu_list_push(info->list, path, "",
+                     is_dir ? MENU_FILE_DIRECTORY : MENU_FILE_CORE, 0);
+            }
+            else
+               menu_list_push(info->list, path, "",
+                     file_type, 0);
+         }
 
-   string_list_free(str_list);
+         string_list_free(str_list);
 
-   if (!strcmp(info->label, "core_list"))
-   {
-      const char *dir = NULL;
-      menu_list_get_last_stack(menu->menu_list, &dir, NULL, NULL);
-      list_size = file_list_get_size(info->list);
+         if (!strcmp(info->label, "core_list"))
+         {
+            const char *dir = NULL;
+            menu_list_get_last_stack(menu->menu_list, &dir, NULL, NULL);
+            list_size = file_list_get_size(info->list);
 
-      for (i = 0; i < list_size; i++)
-      {
-         unsigned type = 0;
-         char core_path[PATH_MAX_LENGTH], display_name[PATH_MAX_LENGTH];
-         const char *path = NULL;
+            for (i = 0; i < list_size; i++)
+            {
+               unsigned type = 0;
+               char core_path[PATH_MAX_LENGTH], display_name[PATH_MAX_LENGTH];
+               const char *path = NULL;
 
-         menu_list_get_at_offset(info->list, i, &path, NULL, &type);
+               menu_list_get_at_offset(info->list, i, &path, NULL, &type);
 
-         if (type != MENU_FILE_CORE)
-            continue;
+               if (type != MENU_FILE_CORE)
+                  continue;
 
-         fill_pathname_join(core_path, dir, path, sizeof(core_path));
+               fill_pathname_join(core_path, dir, path, sizeof(core_path));
 
-         if (global->core_info &&
-               core_info_list_get_display_name(global->core_info,
-                  core_path, display_name, sizeof(display_name)))
-            menu_list_set_alt_at_offset(info->list, i, display_name);
-      }
-      *need_sort = true;
+               if (global->core_info &&
+                     core_info_list_get_display_name(global->core_info,
+                        core_path, display_name, sizeof(display_name)))
+                  menu_list_set_alt_at_offset(info->list, i, display_name);
+            }
+            *need_sort = true;
+         }
+
+         *need_refresh = true;
+         *need_push    = true;
+         break;
    }
 
    return 0;
@@ -600,27 +643,6 @@ int menu_displaylist_parse_horizontal_content_actions(menu_displaylist_info_t *i
    }
    else
       menu_list_push(info->list, "Run", "file_load_or_resume", MENU_SETTING_ACTION_RUN, 0);
-
-   return 0;
-}
-
-static int menu_displaylist_parse_core_options(menu_displaylist_info_t *info)
-{
-   unsigned i;
-   global_t *global       = global_get_ptr();
-
-   if (global->system.core_options)
-   {
-      size_t opts = core_option_size(global->system.core_options);
-
-      for (i = 0; i < opts; i++)
-         menu_list_push(info->list,
-               core_option_get_desc(global->system.core_options, i), "",
-               MENU_SETTINGS_CORE_OPTION_START + i, 0);
-   }
-   else
-      menu_list_push(info->list, "No options available.", "",
-               MENU_SETTINGS_CORE_OPTION_NONE, 0);
 
    return 0;
 }
@@ -1951,19 +1973,9 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
       case DISPLAYLIST_RECORD_CONFIG_FILES:
       case DISPLAYLIST_CONFIG_FILES:
       case DISPLAYLIST_CONTENT_HISTORY:
-         menu_list_clear(info->list);
-         ret = menu_displaylist_parse(info, &need_sort);
-         if (ret == 0)
-         {
-            need_refresh = true;
-            need_push    = true;
-         }
-         break;
       case DISPLAYLIST_CORE_OPTIONS:
-         menu_list_clear(info->list);
-         ret = menu_displaylist_parse_core_options(info);
-
-         need_push = true;
+         ret = menu_displaylist_parse(info, type,
+               &need_sort, &need_refresh, &need_push);
          break;
       case DISPLAYLIST_CORE_INFO:
          menu_list_clear(info->list);
