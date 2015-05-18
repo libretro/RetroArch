@@ -451,6 +451,7 @@ int menu_entry_iterate(unsigned action)
 
 int menu_entry_action(menu_entry_t *entry, unsigned i, enum menu_action action)
 {
+   int ret                   = 0;
    menu_navigation_t *nav    = menu_navigation_get_ptr();
    menu_handle_t *menu       = menu_driver_get_ptr();
    menu_list_t *menu_list    = menu_list_get_ptr();
@@ -460,11 +461,11 @@ int menu_entry_action(menu_entry_t *entry, unsigned i, enum menu_action action)
    {
       case MENU_ACTION_UP:
          if (cbs && cbs->action_up)
-            return cbs->action_up(entry->type, entry->label);
+            ret = cbs->action_up(entry->type, entry->label);
          break;
       case MENU_ACTION_DOWN:
          if (cbs && cbs->action_down)
-            return cbs->action_down(entry->type, entry->label);
+            ret = cbs->action_down(entry->type, entry->label);
          break;
       case MENU_ACTION_SCROLL_UP:
          menu_navigation_descend_alphabet(nav, &nav->selection_ptr);
@@ -475,36 +476,35 @@ int menu_entry_action(menu_entry_t *entry, unsigned i, enum menu_action action)
 
       case MENU_ACTION_CANCEL:
          if (cbs && cbs->action_cancel)
-            return cbs->action_cancel(entry->path, entry->label, entry->type, i);
+            ret = cbs->action_cancel(entry->path, entry->label, entry->type, i);
          break;
 
       case MENU_ACTION_OK:
          if (cbs && cbs->action_ok)
-            return cbs->action_ok(entry->path, entry->label, entry->type, i);
+            ret = cbs->action_ok(entry->path, entry->label, entry->type, i);
          break;
       case MENU_ACTION_START:
          if (cbs && cbs->action_start)
-            return cbs->action_start(entry->type, entry->label);
+            ret = cbs->action_start(entry->type, entry->label);
          break;
       case MENU_ACTION_LEFT:
          if (cbs && cbs->action_left)
-            return cbs->action_left(entry->type, entry->label, false);
+            ret = cbs->action_left(entry->type, entry->label, false);
          break;
       case MENU_ACTION_RIGHT:
          if (cbs && cbs->action_right)
-            return cbs->action_right(entry->type, entry->label, false);
+            ret = cbs->action_right(entry->type, entry->label, false);
          break;
       case MENU_ACTION_SELECT:
          if (cbs && cbs->action_select)
-            return cbs->action_select(entry->type, entry->label);
+            ret = cbs->action_select(entry->type, entry->label);
          break;
 
       case MENU_ACTION_REFRESH:
          if (cbs && cbs->action_refresh)
          {
-            int ret = cbs->action_refresh(menu_list->selection_buf, menu_list->menu_stack);
+            ret = cbs->action_refresh(menu_list->selection_buf, menu_list->menu_stack);
             menu_unset_refresh();
-            return ret;
          }
          break;
 
@@ -521,7 +521,7 @@ int menu_entry_action(menu_entry_t *entry, unsigned i, enum menu_action action)
          menu->db = database_info_init("/home/squarepusher/roms", DATABASE_TYPE_RDL_WRITE);
 
          if (!menu->db)
-            return -1;
+            ret = -1;
 #endif
          break;
 
@@ -529,5 +529,5 @@ int menu_entry_action(menu_entry_t *entry, unsigned i, enum menu_action action)
          break;
    }
 
-   return 0;
+   return ret;
 }
