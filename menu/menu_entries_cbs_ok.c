@@ -15,6 +15,7 @@
 
 #include <file/file_path.h>
 #include "menu.h"
+#include "menu_display.h"
 #include "menu_entries_cbs.h"
 #include "menu_setting.h"
 #include "menu_shader.h"
@@ -1263,7 +1264,6 @@ static int action_ok_help(const char *path,
    menu_list_t *menu_list    = menu_list_get_ptr();
    if (!menu || !menu_list)
       return -1;
-
 
    info.list = menu_list->menu_stack;
    strlcpy(info.label, "help", sizeof(info.label));

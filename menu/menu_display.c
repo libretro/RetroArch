@@ -22,6 +22,14 @@
 #include "../gfx/video_context_driver.h"
 #include "menu_list.h"
 
+bool menu_display_fb_in_use(void)
+{
+   menu_handle_t *menu = menu_driver_get_ptr();
+   if (!menu)
+      return false;
+   return menu->frame_buf.data != NULL;
+}
+
 bool menu_display_update_pending(void)
 {
    menu_handle_t *menu = menu_driver_get_ptr();
