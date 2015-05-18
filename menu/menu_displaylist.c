@@ -753,6 +753,7 @@ static int menu_displaylist_parse(menu_displaylist_info_t *info,
    bool path_is_compressed, push_dir;
    int                   device = 0;
    struct string_list *str_list = NULL;
+   rarch_setting_t *setting     = NULL;
    settings_t *settings         = config_get_ptr();
    menu_handle_t *menu          = menu_driver_get_ptr();
    global_t *global             = global_get_ptr();
@@ -763,6 +764,61 @@ static int menu_displaylist_parse(menu_displaylist_info_t *info,
 
    switch (type)
    {
+      case DISPLAYLIST_PERFCOUNTER_SELECTION:
+         menu_list_clear(info->list);
+         menu_list_push(info->list, "Frontend Counters", "frontend_counters",
+               MENU_SETTING_ACTION, 0);
+         menu_list_push(info->list, "Core Counters", "core_counters",
+               MENU_SETTING_ACTION, 0);
+
+         *need_refresh = true;
+         *need_push    = true;
+         break;
+      case DISPLAYLIST_SETTINGS_ALL:
+         menu_list_clear(info->list);
+         settings_list_free(menu->list_settings);
+         menu->list_settings = setting_new(SL_FLAG_ALL_SETTINGS);
+
+         setting = menu_setting_find("Driver Settings");
+
+         if (settings->menu.collapse_subgroups_enable)
+         {
+            for (; setting->type != ST_NONE; setting++)
+            {
+               if (setting->type == ST_GROUP)
+                  menu_list_push(info->list, setting->short_description,
+                        setting->name, menu_setting_set_flags(setting), 0);
+            }
+         }
+         else
+         {
+            for (; setting->type != ST_NONE; setting++)
+            {
+               char group_label[PATH_MAX_LENGTH];
+               char subgroup_label[PATH_MAX_LENGTH];
+
+               if (setting->type == ST_GROUP)
+                  strlcpy(group_label, setting->name, sizeof(group_label));
+               else if (setting->type == ST_SUB_GROUP)
+               {
+                  char new_label[PATH_MAX_LENGTH], new_path[PATH_MAX_LENGTH];
+                  strlcpy(subgroup_label, setting->name, sizeof(group_label));
+                  strlcpy(new_label, group_label, sizeof(new_label));
+                  strlcat(new_label, "|", sizeof(new_label));
+                  strlcat(new_label, subgroup_label, sizeof(new_label));
+
+                  strlcpy(new_path, group_label, sizeof(new_path));
+                  strlcat(new_path, " - ", sizeof(new_path));
+                  strlcat(new_path, setting->short_description, sizeof(new_path));
+
+                  menu_list_push(info->list, new_path,
+                        new_label, MENU_SETTING_SUBGROUP, 0);
+               }
+            }
+         }
+
+         *need_push    = true;
+         break;
       case DISPLAYLIST_HISTORY:
          if (menu_displaylist_parse_historylist(info) == 0)
          {
@@ -1192,57 +1248,6 @@ static int deferred_push_video_shader_parameters_common(
    return 0;
 }
 #endif
-
-
-static int menu_displaylist_parse_all_settings(menu_displaylist_info_t *info)
-{
-   rarch_setting_t *setting = NULL;
-   menu_handle_t *menu      = menu_driver_get_ptr();
-   settings_t *settings     = config_get_ptr();
-
-   settings_list_free(menu->list_settings);
-   menu->list_settings = setting_new(SL_FLAG_ALL_SETTINGS);
-
-   setting = menu_setting_find("Driver Settings");
-
-   if (settings->menu.collapse_subgroups_enable)
-   {
-      for (; setting->type != ST_NONE; setting++)
-      {
-         if (setting->type == ST_GROUP)
-            menu_list_push(info->list, setting->short_description,
-                  setting->name, menu_setting_set_flags(setting), 0);
-      }
-   }
-   else
-   {
-      for (; setting->type != ST_NONE; setting++)
-      {
-         char group_label[PATH_MAX_LENGTH];
-         char subgroup_label[PATH_MAX_LENGTH];
-
-         if (setting->type == ST_GROUP)
-            strlcpy(group_label, setting->name, sizeof(group_label));
-         else if (setting->type == ST_SUB_GROUP)
-         {
-            char new_label[PATH_MAX_LENGTH], new_path[PATH_MAX_LENGTH];
-            strlcpy(subgroup_label, setting->name, sizeof(group_label));
-            strlcpy(new_label, group_label, sizeof(new_label));
-            strlcat(new_label, "|", sizeof(new_label));
-            strlcat(new_label, subgroup_label, sizeof(new_label));
-
-            strlcpy(new_path, group_label, sizeof(new_path));
-            strlcat(new_path, " - ", sizeof(new_path));
-            strlcat(new_path, setting->short_description, sizeof(new_path));
-
-            menu_list_push(info->list, new_path,
-                  new_label, MENU_SETTING_SUBGROUP, 0);
-         }
-      }
-   }
-
-   return 0;
-}
 
 static int menu_displaylist_parse_shader_options(menu_displaylist_info_t *info)
 {
@@ -1892,12 +1897,6 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          menu_navigation_clear(&menu->navigation, true);
          menu_set_refresh();
          break;
-      case DISPLAYLIST_SETTINGS_ALL:
-         menu_list_clear(info->list);
-         ret = menu_displaylist_parse_all_settings(info);
-
-         need_push    = true;
-         break;
       case DISPLAYLIST_SETTINGS_SUBGROUP:
          menu_list_clear(info->list);
          ret = menu_displaylist_parse_settings_in_subgroup(info);
@@ -1985,6 +1984,8 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
       case DISPLAYLIST_SYSTEM_INFO:
       case DISPLAYLIST_OPTIONS_DISK:
       case DISPLAYLIST_HISTORY:
+      case DISPLAYLIST_SETTINGS_ALL:
+      case DISPLAYLIST_PERFCOUNTER_SELECTION:
          ret = menu_displaylist_parse(info, type,
                &need_sort, &need_refresh, &need_push);
          break;
@@ -2001,16 +2002,6 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          menu_list_clear(info->list);
          ret = menu_displaylist_parse_database_entry(info);
 
-         need_push    = true;
-         break;
-      case DISPLAYLIST_PERFCOUNTER_SELECTION:
-         menu_list_clear(info->list);
-         menu_list_push(info->list, "Frontend Counters", "frontend_counters",
-               MENU_SETTING_ACTION, 0);
-         menu_list_push(info->list, "Core Counters", "core_counters",
-               MENU_SETTING_ACTION, 0);
-
-         need_refresh = true;
          need_push    = true;
          break;
       case DISPLAYLIST_PERFCOUNTERS_CORE:
