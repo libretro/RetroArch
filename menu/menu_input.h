@@ -82,8 +82,6 @@ bool menu_input_poll_find_trigger(struct menu_bind_state *state,
 
 int menu_input_bind_iterate(void);
 
-int menu_input_bind_iterate_keyboard(void);
-
 unsigned menu_input_frame(retro_input_t input, retro_input_t trigger_state);
 
 void menu_input_post_iterate(int *ret, unsigned action);

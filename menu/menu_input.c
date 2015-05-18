@@ -454,50 +454,7 @@ int menu_input_set_input_device_bind_mode(void *data,
    return 0;
 }
 
-int menu_input_bind_iterate(void)
-{
-   char msg[PATH_MAX_LENGTH];
-   struct menu_bind_state binds;
-   menu_handle_t *menu = menu_driver_get_ptr();
-   driver_t *driver = driver_get_ptr();
-
-   if (!menu)
-      return 1;
-
-   binds = menu->binds;
-
-   menu_driver_render();
-
-   snprintf(msg, sizeof(msg), "[%s]\npress joypad\n(RETURN to skip)",
-         input_config_bind_map[
-         menu->binds.begin - MENU_SETTINGS_BIND_BEGIN].desc);
-
-   menu_driver_render_messagebox(msg);
-
-   driver->block_input = true;
-   menu_input_poll_bind_state(&binds);
-
-   if ((binds.skip && !menu->binds.skip) ||
-         menu_input_poll_find_trigger(&menu->binds, &binds))
-   {
-      driver->block_input = false;
-
-      /* Avoid new binds triggering things right away. */
-      driver->flushing_input = true;
-
-      binds.begin++;
-
-      if (binds.begin > binds.last)
-         return 1;
-
-      binds.target++;
-   }
-   menu->binds = binds;
-
-   return 0;
-}
-
-int menu_input_bind_iterate_keyboard(void)
+static int menu_input_bind_iterate_keyboard(void)
 {
    char msg[PATH_MAX_LENGTH];
    int64_t current;
@@ -547,6 +504,54 @@ int menu_input_bind_iterate_keyboard(void)
 
    return 0;
 }
+
+int menu_input_bind_iterate(void)
+{
+   char msg[PATH_MAX_LENGTH];
+   struct menu_bind_state binds;
+   menu_handle_t *menu = menu_driver_get_ptr();
+   driver_t *driver = driver_get_ptr();
+   global_t *global = global_get_ptr();
+
+   if (!menu)
+      return 1;
+   
+   if (global && global->menu.bind_mode_keyboard)
+      return menu_input_bind_iterate_keyboard();
+
+   binds = menu->binds;
+
+   menu_driver_render();
+
+   snprintf(msg, sizeof(msg), "[%s]\npress joypad\n(RETURN to skip)",
+         input_config_bind_map[
+         menu->binds.begin - MENU_SETTINGS_BIND_BEGIN].desc);
+
+   menu_driver_render_messagebox(msg);
+
+   driver->block_input = true;
+   menu_input_poll_bind_state(&binds);
+
+   if ((binds.skip && !menu->binds.skip) ||
+         menu_input_poll_find_trigger(&menu->binds, &binds))
+   {
+      driver->block_input = false;
+
+      /* Avoid new binds triggering things right away. */
+      driver->flushing_input = true;
+
+      binds.begin++;
+
+      if (binds.begin > binds.last)
+         return 1;
+
+      binds.target++;
+   }
+   menu->binds = binds;
+
+   return 0;
+}
+
 
 static int menu_input_mouse(unsigned *action)
 {

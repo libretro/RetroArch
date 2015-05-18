@@ -455,26 +455,6 @@ static int action_iterate_menu_viewport(const char *label, unsigned action)
    return 0;
 }
 
-static int action_iterate_custom_bind(const char *label, unsigned action)
-{
-   menu_list_t *menu_list = menu_list_get_ptr();
-   if (!menu_list)
-      return -1;
-   if (menu_input_bind_iterate())
-      menu_list_pop_stack(menu_list);
-   return 0;
-}
-
-static int action_iterate_custom_bind_keyboard(const char *label, unsigned action)
-{
-   menu_list_t *menu_list = menu_list_get_ptr();
-   if (!menu_list)
-      return -1;
-   if (menu_input_bind_iterate_keyboard())
-      menu_list_pop_stack(menu_list);
-   return 0;
-}
-
 static int action_iterate_message(const char *label, unsigned action)
 {
    menu_handle_t *menu    = menu_driver_get_ptr();
@@ -526,10 +506,12 @@ static int action_iterate_main(const char *label, unsigned action)
          !strcmp(label, "custom_bind_defaults")
          )
    {
-      if (global->menu.bind_mode_keyboard)
-         return action_iterate_custom_bind_keyboard(label, action);
-      else
-         return action_iterate_custom_bind(label, action);
+      menu_list_t *menu_list = menu_list_get_ptr();
+      if (!menu_list)
+         return -1;
+      if (menu_input_bind_iterate())
+         menu_list_pop_stack(menu_list);
+      return 0;
    }
 
    ret = action_iterate_switch(action);
