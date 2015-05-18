@@ -147,7 +147,7 @@ static void rmenu_render(void)
          && !menu->msg_force)
       return;
 
-   menu->framebuf.dirty      = false;
+   menu_display_fb_unset_dirty();
    menu->animation_is_active = false;
    menu->label.is_updated    = false;
 

@@ -29,6 +29,10 @@ void menu_display_fb(void);
 
 bool menu_display_fb_in_use(void);
 
+void menu_display_fb_set_dirty(void);
+
+void menu_display_fb_unset_dirty(void);
+
 void menu_display_free(menu_handle_t *menu);
 
 bool menu_display_init(menu_handle_t *menu);

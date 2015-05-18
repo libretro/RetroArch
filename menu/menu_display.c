@@ -30,6 +30,26 @@ bool menu_display_fb_in_use(void)
    return menu->frame_buf.data != NULL;
 }
 
+void menu_display_fb_set_dirty(void)
+{
+   menu_handle_t *menu = menu_driver_get_ptr();
+   if (!menu)
+      return false;
+   if (!menu_display_fb_in_use())
+      return false;
+   menu->framebuf.dirty = true;
+}
+
+void menu_display_fb_unset_dirty(void)
+{
+   menu_handle_t *menu = menu_driver_get_ptr();
+   if (!menu)
+      return false;
+   if (!menu_display_fb_in_use())
+      return false;
+   menu->framebuf.dirty = false;
+}
+
 bool menu_display_update_pending(void)
 {
    menu_handle_t *menu = menu_driver_get_ptr();

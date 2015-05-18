@@ -1843,8 +1843,7 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
       case DISPLAYLIST_HELP:
          menu_list_push(info->list, info->path, info->label, info->type, info->directory_ptr);
          menu->push_start_screen = false;
-         if (menu_display_fb_in_use())
-            menu->framebuf.dirty = true;
+         menu_display_fb_set_dirty();
          break;
       case DISPLAYLIST_MAIN_MENU:
       case DISPLAYLIST_SETTINGS:

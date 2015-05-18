@@ -353,7 +353,7 @@ static void rgui_render(void)
       return;
 
    /* ensures the framebuffer will be rendered on the screen */
-   menu->framebuf.dirty = true;
+   menu_display_fb_set_dirty();
    menu->animation_is_active = false;
    menu->label.is_updated    = false;
 
@@ -563,10 +563,8 @@ static void rgui_set_texture(void)
 
    if (!menu)
       return;
-   if (!menu->framebuf.dirty)
-      return;
 
-   menu->framebuf.dirty = false;
+   menu_display_fb_unset_dirty();
 
    video_driver_set_texture_frame(
          menu->frame_buf.data, false,

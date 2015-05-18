@@ -169,7 +169,7 @@ void *menu_init(const void *data)
 
    rarch_assert(menu->msg_queue = msg_queue_new(8));
 
-   menu->framebuf.dirty = true;
+   menu_display_fb_set_dirty();
 
    return menu;
 error:

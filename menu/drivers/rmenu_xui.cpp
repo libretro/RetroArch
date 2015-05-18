@@ -542,7 +542,7 @@ static void rmenu_xui_render(void)
 		runloop->is_menu && !menu->msg_force)
 		return;
 
-   menu->framebuf.dirty      = false;
+   menu_display_fb_unset_dirty();
    menu->animation_is_active = false;
    menu->label.is_updated    = false;
 
