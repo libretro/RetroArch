@@ -50,17 +50,6 @@ void menu_display_fb_unset_dirty(void)
    menu->framebuf.dirty = false;
 }
 
-bool menu_display_update_pending(void)
-{
-   menu_handle_t *menu = menu_driver_get_ptr();
-   if (menu)
-   {
-      if (menu->animation_is_active || menu->label.is_updated || menu->framebuf.dirty)
-         return true;
-   }
-   return false;
-}
-
 /**
  ** menu_display_fb:
  *
@@ -87,6 +76,17 @@ void menu_display_fb(void)
    }
     
    rarch_render_cached_frame();
+}
+
+bool menu_display_update_pending(void)
+{
+   menu_handle_t *menu = menu_driver_get_ptr();
+   if (menu)
+   {
+      if (menu->animation_is_active || menu->label.is_updated || menu->framebuf.dirty)
+         return true;
+   }
+   return false;
 }
 
 void menu_display_free(menu_handle_t *menu)
