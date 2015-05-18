@@ -208,8 +208,6 @@ static int action_iterate_help(const char *label, unsigned action)
    if (action == MENU_ACTION_OK)
       menu_list_pop(menu->menu_list->menu_stack, NULL);
 
-   menu_input_post_iterate(&ret, action);
-
    return ret;
 }
 
@@ -255,8 +253,6 @@ static int action_iterate_info(const char *label, unsigned action)
 
    if (action == MENU_ACTION_OK)
       menu_list_pop(menu_list->menu_stack, &menu->navigation.selection_ptr);
-
-   menu_input_post_iterate(&ret, action);
 
    return ret;
 }
@@ -518,6 +514,8 @@ static int action_iterate_main(const char *label, unsigned action)
    enum action_iterate_type iterate_type;
    menu_entry_t entry;
    size_t selected;
+   bool do_post_iterate      = false;
+   bool do_render            = false;
    int ret                   = 0;
    menu_handle_t *menu       = menu_driver_get_ptr();
    menu_list_t *menu_list    = menu_list_get_ptr();
@@ -530,6 +528,7 @@ static int action_iterate_main(const char *label, unsigned action)
    {
       case ITERATE_TYPE_HELP:
          ret = action_iterate_help(label, action);
+         do_post_iterate = true;
          break;
       case ITERATE_TYPE_BIND:
          if (menu_input_bind_iterate())
@@ -540,6 +539,7 @@ static int action_iterate_main(const char *label, unsigned action)
          break;
       case ITERATE_TYPE_INFO:
          ret = action_iterate_info(label, action);
+         do_post_iterate = true;
          break;
       case ITERATE_TYPE_ZIP:
          ret = action_iterate_load_open_zip(label, action);
@@ -555,9 +555,8 @@ static int action_iterate_main(const char *label, unsigned action)
          if (ret)
             return ret;
 
-         menu_input_post_iterate(&ret, action);
-
-         menu_driver_render();
+         do_post_iterate = true;
+         do_render       = true;
 
          /* Have to defer it so we let settings refresh. */
          if (menu->push_start_screen)
@@ -571,6 +570,12 @@ static int action_iterate_main(const char *label, unsigned action)
          }
          break;
    }
+   
+   if (do_post_iterate)
+      menu_input_post_iterate(&ret, action);
+
+   if (do_render)
+      menu_driver_render();
 
    return ret;
 }
