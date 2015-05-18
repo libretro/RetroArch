@@ -522,11 +522,10 @@ int menu_input_bind_iterate_keyboard(void)
 
    if (timeout <= 0)
    {
-      menu->binds.begin++;
-
       /* Could be unsafe, but whatever. */
       menu->binds.target->key = RETROK_UNKNOWN;
 
+      menu->binds.begin++;
       menu->binds.target++;
       menu->binds.timeout_end = rarch_get_time_usec() +
          MENU_KEYBOARD_BIND_TIMEOUT_SECONDS * 1000000;

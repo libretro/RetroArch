@@ -19,12 +19,6 @@
 #include "menu_entry.h"
 #include "menu_setting.h"
 
-static int action_cancel_lookup_setting(const char *path,
-      const char *label, unsigned type, size_t idx)
-{
-   return menu_setting_set(type, label, MENU_ACTION_CANCEL, false);
-}
-
 static int action_cancel_pop_default(const char *path,
       const char *label, unsigned type, size_t idx)
 {
@@ -38,8 +32,5 @@ void menu_entries_cbs_init_bind_cancel(menu_file_list_cbs_t *cbs,
    if (!cbs)
       return;
 
-   cbs->action_cancel = action_cancel_lookup_setting;
-
-   /* TODO - add some stuff here. */
    cbs->action_cancel = action_cancel_pop_default;
 }
