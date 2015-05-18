@@ -459,9 +459,12 @@ int menu_entry_action(menu_entry_t *entry, unsigned i, enum menu_action action)
    switch (action)
    {
       case MENU_ACTION_UP:
+         if (cbs && cbs->action_up)
+            return cbs->action_up(entry->type, entry->label);
+         break;
       case MENU_ACTION_DOWN:
-         if (cbs && cbs->action_up_or_down)
-            return cbs->action_up_or_down(entry->type, entry->label, action);
+         if (cbs && cbs->action_down)
+            return cbs->action_down(entry->type, entry->label);
          break;
       case MENU_ACTION_SCROLL_UP:
          menu_navigation_descend_alphabet(nav, &nav->selection_ptr);
