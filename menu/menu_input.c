@@ -454,26 +454,15 @@ int menu_input_set_input_device_bind_mode(void *data,
    return 0;
 }
 
-static int menu_input_bind_iterate_keyboard(void)
+static int menu_input_bind_iterate_keyboard(int64_t current, int timeout)
 {
    char msg[PATH_MAX_LENGTH];
-   int64_t current;
-   int timeout = 0;
    bool timed_out = false;
    menu_handle_t *menu = menu_driver_get_ptr();
    driver_t *driver = driver_get_ptr();
 
    if (!menu)
       return -1;
-
-   current = rarch_get_time_usec();
-   timeout = (menu->binds.timeout_end - current) / 1000000;
-   snprintf(msg, sizeof(msg), "[%s]\npress keyboard\n(timeout %d seconds)",
-         input_config_bind_map[
-         menu->binds.begin - MENU_SETTINGS_BIND_BEGIN].desc,
-         timeout);
-
-   menu_driver_render_messagebox(msg);
 
    if (timeout <= 0)
    {
@@ -505,28 +494,36 @@ static int menu_input_bind_iterate_keyboard(void)
 
 int menu_input_bind_iterate(void)
 {
+   int64_t current;
    char msg[PATH_MAX_LENGTH];
    struct menu_bind_state binds;
+   int timeout = 0;
    menu_handle_t *menu = menu_driver_get_ptr();
    driver_t *driver = driver_get_ptr();
    global_t *global = global_get_ptr();
+   bool bind_mode_kb = global ? global->menu.bind_mode_keyboard : false;
 
    if (!menu)
       return 1;
 
    menu_driver_render();
-   
-   if (global && global->menu.bind_mode_keyboard)
-      return menu_input_bind_iterate_keyboard();
 
-   binds = menu->binds;
+   current = rarch_get_time_usec();
+   timeout = (menu->binds.timeout_end - current) / 1000000;
 
-
-   snprintf(msg, sizeof(msg), "[%s]\npress joypad\n(RETURN to skip)",
+   snprintf(msg, sizeof(msg),
+         bind_mode_kb ? "[%s]\npress keyboard\n(timeout %d seconds)" :
+         "[%s]\npress joypad\n(RETURN to skip)",
          input_config_bind_map[
-         menu->binds.begin - MENU_SETTINGS_BIND_BEGIN].desc);
+         menu->binds.begin - MENU_SETTINGS_BIND_BEGIN].desc,
+         timeout);
 
    menu_driver_render_messagebox(msg);
+   
+   if (bind_mode_kb)
+      return menu_input_bind_iterate_keyboard(current, timeout);
+
+   binds = menu->binds;
 
    driver->block_input = true;
    menu_input_poll_bind_state(&binds);
