@@ -172,6 +172,7 @@ bool rarch_main_data_active(data_runloop_t *runloop)
    return active;
 }
 
+#ifdef HAVE_THREADS
 static void data_thread_loop(void *data)
 {
    data_runloop_t *runloop = (data_runloop_t*)data;
@@ -203,6 +204,7 @@ static void data_thread_loop(void *data)
 
    RARCH_LOG("[Data Thread]: Stopping data thread.\n");
 }
+#endif
 
 #ifdef HAVE_THREADS
 static void rarch_main_data_thread_init(void)
