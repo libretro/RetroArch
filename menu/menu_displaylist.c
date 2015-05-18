@@ -765,7 +765,6 @@ static int menu_displaylist_parse(menu_displaylist_info_t *info,
    switch (type)
    {
       case DISPLAYLIST_PERFCOUNTER_SELECTION:
-         menu_list_clear(info->list);
          menu_list_push(info->list, "Frontend Counters", "frontend_counters",
                MENU_SETTING_ACTION, 0);
          menu_list_push(info->list, "Core Counters", "core_counters",
@@ -775,7 +774,6 @@ static int menu_displaylist_parse(menu_displaylist_info_t *info,
          *need_push    = true;
          break;
       case DISPLAYLIST_SETTINGS_ALL:
-         menu_list_clear(info->list);
          settings_list_free(menu->list_settings);
          menu->list_settings = setting_new(SL_FLAG_ALL_SETTINGS);
 
