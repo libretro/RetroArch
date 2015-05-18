@@ -478,18 +478,10 @@ static int action_iterate_message(const char *label, unsigned action)
    return 0;
 }
 
-static int action_iterate_switch(unsigned action)
-{
-   menu_entry_t entry;
-   size_t selected           = menu_navigation_get_current_selection();
-
-   menu_entry_get(&entry,    selected, NULL, false);
-
-   return menu_entry_action(&entry, selected, action);
-}
-
 static int action_iterate_main(const char *label, unsigned action)
 {
+   menu_entry_t entry;
+   size_t selected;
    int ret                   = 0;
    menu_handle_t *menu       = menu_driver_get_ptr();
    if (!menu)
@@ -522,7 +514,9 @@ static int action_iterate_main(const char *label, unsigned action)
       return 0;
    }
 
-   ret = action_iterate_switch(action);
+   selected           = menu_navigation_get_current_selection();
+   menu_entry_get(&entry,    selected, NULL, false);
+   ret = menu_entry_action(&entry, selected, action);
 
    if (ret)
       return ret;
