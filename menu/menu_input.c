@@ -456,7 +456,6 @@ int menu_input_set_input_device_bind_mode(void *data,
 
 static int menu_input_bind_iterate_keyboard(int64_t current, int timeout)
 {
-   char msg[PATH_MAX_LENGTH];
    bool timed_out = false;
    menu_handle_t *menu = menu_driver_get_ptr();
    driver_t *driver = driver_get_ptr();

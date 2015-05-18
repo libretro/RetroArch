@@ -483,7 +483,6 @@ static int action_iterate_main(const char *label, unsigned action)
 {
    int ret                   = 0;
    menu_handle_t *menu       = menu_driver_get_ptr();
-   global_t *global          = global_get_ptr();
    if (!menu)
       return 0;
 
