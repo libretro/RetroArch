@@ -768,7 +768,7 @@ static int menu_input_mouse_post_iterate(uint64_t *input_mouse,
             return 0;
          }
          if (menu->mouse.ptr == nav->selection_ptr
-            && cbs && cbs->action_toggle && setting &&
+            && cbs && cbs->action_right && setting &&
             (setting->type == ST_BOOL || setting->type == ST_UINT || setting->type == ST_FLOAT
              || setting->type == ST_STRING))
          {
@@ -823,7 +823,7 @@ static int pointer_tap(menu_file_list_cbs_t *cbs,
             menu_list->selection_buf->list[nav->selection_ptr].label);
 
    if (menu->pointer.ptr == menu->navigation.selection_ptr
-         && cbs && cbs->action_toggle && setting &&
+         && cbs && cbs->action_right && setting &&
          (setting->type == ST_BOOL || setting->type == ST_UINT
           || setting->type == ST_FLOAT || setting->type == ST_STRING))
       return menu_entry_action(entry, menu->navigation.selection_ptr, MENU_ACTION_RIGHT);

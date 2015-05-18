@@ -44,8 +44,8 @@ typedef struct menu_file_list_cbs
    int (*action_select)(unsigned type,  const char *label);
    int (*action_content_list_switch)(void *data, void *userdata, const char
          *path, const char *label, unsigned type);
-   int (*action_toggle)(unsigned type, const char *label, unsigned action,
-         bool wraparound);
+   int (*action_left)(unsigned type, const char *label, bool wraparound);
+   int (*action_right)(unsigned type, const char *label, bool wraparound);
    int (*action_refresh)(file_list_t *list, file_list_t *menu_list);
    int (*action_up)(unsigned type, const char *label);
    int (*action_down)(unsigned type, const char *label);

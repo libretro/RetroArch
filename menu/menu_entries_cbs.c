@@ -196,7 +196,8 @@ void menu_entries_cbs_init(void *data,
    menu_entries_cbs_init_bind_content_list_switch(cbs, path, label, type, idx, elem0, elem1);
    menu_entries_cbs_init_bind_up(cbs, path, label, type, idx, elem0, elem1);
    menu_entries_cbs_init_bind_down(cbs, path, label, type, idx, elem0, elem1);
-   menu_entries_cbs_init_bind_toggle(cbs, path, label, type, idx, elem0, elem1, menu_label);
+   menu_entries_cbs_init_bind_left(cbs, path, label, type, idx, elem0, elem1, menu_label);
+   menu_entries_cbs_init_bind_right(cbs, path, label, type, idx, elem0, elem1, menu_label);
    menu_entries_cbs_init_bind_deferred_push(cbs, path, label, type, idx, elem0, elem1);
    menu_entries_cbs_init_bind_refresh(cbs, path, label, type, idx, elem0, elem1);
    menu_entries_cbs_init_bind_iterate(cbs, path, label, type, idx, elem0, elem1);

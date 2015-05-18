@@ -414,7 +414,7 @@ int menu_entry_select(uint32_t i)
    {
       if (cbs && cbs->action_start)
          action = MENU_ACTION_START;
-      if (cbs && cbs->action_toggle)
+      if (cbs && cbs->action_right)
          action = MENU_ACTION_RIGHT;
    }
     
@@ -487,9 +487,12 @@ int menu_entry_action(menu_entry_t *entry, unsigned i, enum menu_action action)
             return cbs->action_start(entry->type, entry->label);
          break;
       case MENU_ACTION_LEFT:
+         if (cbs && cbs->action_left)
+            return cbs->action_left(entry->type, entry->label, false);
+         break;
       case MENU_ACTION_RIGHT:
-         if (cbs && cbs->action_toggle)
-            return cbs->action_toggle(entry->type, entry->label, action, false);
+         if (cbs && cbs->action_right)
+            return cbs->action_right(entry->type, entry->label, false);
          break;
       case MENU_ACTION_SELECT:
          if (cbs && cbs->action_select)
