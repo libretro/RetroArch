@@ -454,7 +454,7 @@ static int action_iterate_menu_viewport(const char *label, unsigned action)
    return 0;
 }
 
-static int action_iterate_message(const char *label, unsigned action)
+static int action_iterate_message(const char *label)
 {
    menu_handle_t *menu    = menu_driver_get_ptr();
    if (!menu)
@@ -541,7 +541,7 @@ static int action_iterate_main(const char *label, unsigned action)
          ret = action_iterate_load_open_zip(label, action);
          break;
       case ITERATE_TYPE_MESSAGE:
-         ret = action_iterate_message(label, action);
+         ret = action_iterate_message(label);
          pop_selected    = &menu->navigation.selection_ptr;
          do_pop_stack    = true;
          break;
