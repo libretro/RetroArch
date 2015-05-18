@@ -34,9 +34,9 @@ void menu_display_fb_set_dirty(void)
 {
    menu_handle_t *menu = menu_driver_get_ptr();
    if (!menu)
-      return false;
+      return;
    if (!menu_display_fb_in_use())
-      return false;
+      return;
    menu->framebuf.dirty = true;
 }
 
@@ -44,9 +44,9 @@ void menu_display_fb_unset_dirty(void)
 {
    menu_handle_t *menu = menu_driver_get_ptr();
    if (!menu)
-      return false;
+      return;
    if (!menu_display_fb_in_use())
-      return false;
+      return;
    menu->framebuf.dirty = false;
 }
 

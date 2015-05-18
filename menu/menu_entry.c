@@ -431,7 +431,6 @@ int menu_entry_iterate(unsigned action)
    const char *label         = NULL;
    menu_file_list_cbs_t *cbs = NULL;
    menu_list_t *menu_list    = menu_list_get_ptr();
-   menu_handle_t *menu       = menu_driver_get_ptr();
 
    if (!menu_list)
       return -1;
