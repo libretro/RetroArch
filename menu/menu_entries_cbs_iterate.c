@@ -284,6 +284,7 @@ static int action_iterate_menu_viewport(const char *label, unsigned action)
 {
    int stride_x = 1, stride_y = 1;
    char msg[PATH_MAX_LENGTH];
+   menu_displaylist_info_t info     = {0};
    struct retro_game_geometry *geom = NULL;
    const char *base_msg             = NULL;
    unsigned type                    = 0;
@@ -363,9 +364,11 @@ static int action_iterate_menu_viewport(const char *label, unsigned action)
 
          if (!strcmp(label, "custom_viewport_2"))
          {
-            menu_list_push(menu_list->menu_stack, "", "",
-                  MENU_SETTINGS_CUSTOM_VIEWPORT,
-                  menu->navigation.selection_ptr);
+            info.list          = menu_list->menu_stack;
+            info.type          = MENU_SETTINGS_CUSTOM_VIEWPORT;
+            info.directory_ptr = menu->navigation.selection_ptr;
+
+            menu_displaylist_push_list(&info, DISPLAYLIST_SELECT);
          }
          break;
 
@@ -374,8 +377,14 @@ static int action_iterate_menu_viewport(const char *label, unsigned action)
 
          if (type == MENU_SETTINGS_CUSTOM_VIEWPORT
                && !settings->video.scale_integer)
-            menu_list_push(menu_list->menu_stack, "",
-                  "custom_viewport_2", 0, menu->navigation.selection_ptr);
+         {
+            info.list          = menu_list->menu_stack;
+            strlcpy(info.label, "custom_viewport_2", sizeof(info.label));
+            info.type          = 0;
+            info.directory_ptr = menu->navigation.selection_ptr;
+
+            menu_displaylist_push_list(&info, DISPLAYLIST_SELECT);
+         }
          break;
 
       case MENU_ACTION_START:
