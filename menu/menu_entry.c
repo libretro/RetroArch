@@ -437,7 +437,10 @@ int menu_entry_iterate(unsigned action)
       return -1;
 
    if (action != MENU_ACTION_NOOP || menu_needs_refresh() || menu_display_update_pending())
-      menu->framebuf.dirty   = true;
+   {
+      if (menu_display_fb_in_use())
+         menu->framebuf.dirty   = true;
+   }
 
    cbs = (menu_file_list_cbs_t*)menu_list_get_last_stack_actiondata(menu_list);
 

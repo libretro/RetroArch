@@ -30,6 +30,7 @@
 
 #ifdef HAVE_MENU
 #include "menu/menu.h"
+#include "menu/menu_display.h"
 #include "menu/menu_shader.h"
 #include "menu/menu_input.h"
 #endif
@@ -1094,7 +1095,7 @@ bool event_command(enum event_command cmd)
          {
             menu_handle_t *menu = menu_driver_get_ptr();
             
-            if (menu)
+            if (menu && menu_display_fb_in_use())
                menu->framebuf.dirty = true;
 
             if (runloop->is_menu)
