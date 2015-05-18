@@ -9,12 +9,12 @@
 *.map
 config.log
 /retroarch
-/retroarch.*
+/retroarch.cfg
+/retroarch.exe
 /config.h
 /config.mk
 /tools/retroarch-joyconfig
-/tools/retroarch-joyconfig.*
-/tools/retrolaunch/retrolaunch
+/tools/retroarch-joyconfig.exe
 *.ncb
 *.sdf
 *.opensdf
