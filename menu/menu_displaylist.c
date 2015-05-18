@@ -1784,6 +1784,9 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
    {
       case DISPLAYLIST_NONE:
          break;
+      case DISPLAYLIST_SELECT:
+         menu_list_push(info->list, info->path, info->label, info->type, info->directory_ptr);
+         break;
       case DISPLAYLIST_MAIN_MENU:
       case DISPLAYLIST_SETTINGS:
          menu_list_clear(info->list);

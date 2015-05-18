@@ -19,12 +19,15 @@
 static int action_select_default(unsigned type, const char *label,
       unsigned action)
 {
+   menu_displaylist_info_t info = {0};
    menu_handle_t *menu    = menu_driver_get_ptr();
    if (!menu)
       return 0;
-   menu_list_push(menu->menu_list->menu_stack, "", "info_screen",
-         0, menu->navigation.selection_ptr);
-   return 0;
+   info.list = menu->menu_list->menu_stack;
+   strlcpy(info.label, "info_screen", sizeof(info.label));
+   info.directory_ptr = menu->navigation.selection_ptr;
+
+   return menu_displaylist_push_list(&info, DISPLAYLIST_SELECT);
 }
 
 void menu_entries_cbs_init_bind_select(menu_file_list_cbs_t *cbs,
