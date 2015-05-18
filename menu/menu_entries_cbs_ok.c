@@ -1255,19 +1255,17 @@ static int action_ok_rdb_entry_submenu(const char *path,
 static int action_ok_help(const char *path,
       const char *label, unsigned type, size_t idx)
 {
+   menu_displaylist_info_t info = {0};
    menu_handle_t *menu = menu_driver_get_ptr();
-   if (!menu)
+   menu_list_t *menu_list    = menu_list_get_ptr();
+   if (!menu || !menu_list)
       return -1;
 
-   menu_list_push(
-         menu->menu_list->menu_stack,
-         "",
-         "help",
-         0,
-         0);
-   menu->push_start_screen = false;
 
-   return 0;
+   info.list = menu_list->menu_stack;
+   strlcpy(info.label, "help", sizeof(info.label));
+
+   return menu_displaylist_push_list(&info, DISPLAYLIST_HELP);
 }
 
 static int action_ok_video_resolution(const char *path,

@@ -545,9 +545,12 @@ static int action_iterate_main(const char *label, unsigned action)
    if (menu->push_start_screen)
    {
       menu_list_t *menu_list    = menu_list_get_ptr();
+      menu_displaylist_info_t info = {0};
 
-      menu_list_push(menu_list->menu_stack, "", "help", 0, 0);
-      menu->push_start_screen = false;
+      info.list = menu_list->menu_stack;
+      strlcpy(info.label, "help", sizeof(info.label));
+
+      menu_displaylist_push_list(&info, DISPLAYLIST_HELP);
    }
 
    return ret;
