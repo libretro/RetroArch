@@ -189,7 +189,7 @@ void menu_input_key_event(bool down, unsigned keycode,
    (void)mod;
 
    if (character == '/')
-      menu_input_search_start();
+      menu_entry_action(NULL, 0, MENU_ACTION_SEARCH);
 }
 
 static void menu_input_poll_bind_state(struct menu_bind_state *state)
