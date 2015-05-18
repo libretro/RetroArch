@@ -91,60 +91,6 @@ int menu_database_build_query(
    return 0;
 }
 
-#ifdef HAVE_LIBRETRODB
-static int menu_database_push_query(libretrodb_t *db,
-   libretrodb_cursor_t *cur, file_list_t *list)
-{
-   unsigned i;
-   struct rmsgpack_dom_value item;
-    
-   while (libretrodb_cursor_read_item(cur, &item) == 0)
-   {
-      if (item.type != RDT_MAP)
-         continue;
-        
-      for (i = 0; i < item.map.len; i++)
-      {
-         struct rmsgpack_dom_value *key = &item.map.items[i].key;
-         struct rmsgpack_dom_value *val = &item.map.items[i].value;
-
-         if (!key || !val)
-            continue;
-            
-         if (!strcmp(key->string.buff, "name"))
-         {
-            menu_list_push(list, val->string.buff, db->path,
-            MENU_FILE_RDB_ENTRY, 0);
-            break;
-         }
-      }
-   }
-    
-   return 0;
-}
-#endif
-
-int menu_database_populate_query(file_list_t *list, const char *path,
-    const char *query)
-{
-#ifdef HAVE_LIBRETRODB
-   libretrodb_t db;
-   libretrodb_cursor_t cur;
-
-   if ((libretrodb_open(path, &db)) != 0)
-      return -1;
-   if ((database_open_cursor(&db, &cur, query) != 0))
-      return -1;
-   if ((menu_database_push_query(&db, &cur, list)) != 0)
-      return -1;
-
-   libretrodb_cursor_close(&cur);
-   libretrodb_close(&db);
-#endif
-
-   return 0;
-}
-
 static void menu_database_playlist_free(menu_handle_t *menu)
 {
    if (menu->db_playlist)
