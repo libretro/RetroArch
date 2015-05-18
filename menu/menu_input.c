@@ -466,8 +466,6 @@ static int menu_input_bind_iterate_keyboard(void)
    if (!menu)
       return -1;
 
-   menu_driver_render();
-
    current = rarch_get_time_usec();
    timeout = (menu->binds.timeout_end - current) / 1000000;
    snprintf(msg, sizeof(msg), "[%s]\npress keyboard\n(timeout %d seconds)",
@@ -515,13 +513,14 @@ int menu_input_bind_iterate(void)
 
    if (!menu)
       return 1;
+
+   menu_driver_render();
    
    if (global && global->menu.bind_mode_keyboard)
       return menu_input_bind_iterate_keyboard();
 
    binds = menu->binds;
 
-   menu_driver_render();
 
    snprintf(msg, sizeof(msg), "[%s]\npress joypad\n(RETURN to skip)",
          input_config_bind_map[
