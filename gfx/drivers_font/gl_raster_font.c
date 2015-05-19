@@ -29,8 +29,8 @@
    font_color[      4 * (6 * i + c) + 1] = color[1]; \
    font_color[      4 * (6 * i + c) + 2] = color[2]; \
    font_color[      4 * (6 * i + c) + 3] = color[3]; \
-   font_lut_tex_coord[    4 * (6 * i + c) + 0] = gl->coords.lut_tex_coord[0]; \
-   font_lut_tex_coord[    4 * (6 * i + c) + 1] = gl->coords.lut_tex_coord[1]; \
+   font_lut_tex_coord[    2 * (6 * i + c) + 0] = gl->coords.lut_tex_coord[0]; \
+   font_lut_tex_coord[    2 * (6 * i + c) + 1] = gl->coords.lut_tex_coord[1]; \
 } while(0)
 
 #define MAX_MSG_LEN_CHUNK 64
