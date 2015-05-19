@@ -18,27 +18,6 @@
 #include "menu.h"
 #include "menu_entries_cbs.h"
 
-void menu_common_list_insert(void *data,
-      const char *path, const char *label,
-      unsigned type, size_t idx)
-{
-   file_list_t *list = (file_list_t*)data;
-
-   if (!list)
-      return;
-
-   list->list[idx].actiondata = (menu_file_list_cbs_t*)
-      calloc(1, sizeof(menu_file_list_cbs_t));
-
-   if (!list->list[idx].actiondata)
-   {
-      RARCH_ERR("Action data could not be allocated.\n");
-      return;
-   }
-
-   menu_entries_cbs_init(list, path, label, type, idx);
-}
-
 void menu_common_list_delete(void *data, size_t idx,
       size_t list_size)
 {

@@ -21,6 +21,7 @@
 #include "../driver.h"
 #include "menu.h"
 #include "menu_common_list.h"
+#include "menu_entries_cbs.h"
 #include "menu_list.h"
 #include "menu_navigation.h"
 
@@ -349,12 +350,25 @@ void menu_list_push(file_list_t *list,
       const char *path, const char *label,
       unsigned type, size_t directory_ptr)
 {
+   size_t idx = 0;
    if (!list || !label)
       return;
 
+   idx = list->size - 1;
+
    file_list_push(list, path, label, type, directory_ptr);
-   menu_driver_list_insert(list, path, label, list->size - 1);
-   menu_common_list_insert(list, path, label, type, list->size - 1);
+   menu_driver_list_insert(list, path, label, idx);
+
+   list->list[idx].actiondata = (menu_file_list_cbs_t*)
+      calloc(1, sizeof(menu_file_list_cbs_t));
+
+   if (!list->list[idx].actiondata)
+   {
+      RARCH_ERR("Action data could not be allocated.\n");
+      return;
+   }
+
+   menu_entries_cbs_init(list, path, label, type, idx);
 }
 
 void menu_list_set_alt_at_offset(file_list_t *list, size_t idx,
