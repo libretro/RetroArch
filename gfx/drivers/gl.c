@@ -2926,6 +2926,12 @@ static void gl_overlay_vertex_geom(void *data,
    if (!gl)
       return;
 
+   if (image > gl->overlays)
+   {
+      RARCH_ERR("Invalid overlay id: %u\n", image);
+      return;
+   }
+
    vertex          = (GLfloat*)&gl->overlay_vertex_coord[image * 8];
 
    /* Flipped, so we preserve top-down semantics. */

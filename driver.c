@@ -30,14 +30,14 @@
 #include "config.h"
 #endif
 
-static driver_t *g_driver;
+static driver_t *g_driver = NULL;
 
 void driver_free(void)
 {
-   driver_t *driver   = driver_get_ptr();
+   if (g_driver)
+      free(g_driver);
 
-   if (driver)
-      free(driver);
+   g_driver = NULL;
 }
 
 static driver_t *driver_new(void)
