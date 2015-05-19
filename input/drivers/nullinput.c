@@ -97,5 +97,6 @@ input_driver_t input_null = {
    nullinput_get_capabilities,
    "null",
    nullinput_grab_mouse,
+   NULL,
    nullinput_set_rumble,
 };

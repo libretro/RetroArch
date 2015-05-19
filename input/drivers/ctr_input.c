@@ -132,6 +132,7 @@ input_driver_t input_ctr = {
    ctr_input_get_capabilities,
    "ctr",
    ctr_input_grab_mouse,
+   NULL,
    ctr_input_set_rumble,
    ctr_input_get_joypad_driver,
 };

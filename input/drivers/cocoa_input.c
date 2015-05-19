@@ -434,6 +434,7 @@ input_driver_t input_cocoa = {
    cocoa_input_get_capabilities,
    "cocoa",
    cocoa_input_grab_mouse,
+   NULL,
    cocoa_input_set_rumble,
    cocoa_input_get_joypad_driver
 };

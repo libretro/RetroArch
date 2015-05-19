@@ -850,6 +850,7 @@ input_driver_t input_qnx = {
    qnx_input_get_capabilities,
    "qnx_input",
    qnx_input_grab_mouse,
+   NULL,
    qnx_input_set_rumble,
    qnx_input_get_joypad_driver,
 };

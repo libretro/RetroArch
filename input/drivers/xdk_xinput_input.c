@@ -162,6 +162,7 @@ input_driver_t input_xinput = {
    xdk_input_get_capabilities,
    "xinput",
    xdk_input_grab_mouse,
+   NULL,
    xdk_input_set_rumble,
    xdk_input_get_joypad_driver,
 };

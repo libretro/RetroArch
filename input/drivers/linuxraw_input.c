@@ -28,6 +28,7 @@
 #include "../input_joypad.h"
 
 static long oldKbmd = 0xffff;
+static bool linuxraw_stdin_claimed = false;
 static struct termios oldTerm, newTerm;
 
 typedef struct linuxraw_input
@@ -39,7 +40,6 @@ typedef struct linuxraw_input
 
 static void linuxraw_reset_kbmd(void)
 {
-   driver_t *driver = driver_get_ptr();
    if (oldKbmd != 0xffff)
    {
       ioctl(0, KDSKBMODE, oldKbmd);
@@ -47,7 +47,7 @@ static void linuxraw_reset_kbmd(void)
       oldKbmd = 0xffff;
    }
 
-   driver->stdin_claimed = false;
+   linuxraw_stdin_claimed = false;
 }
 
 static void linuxraw_exit_gracefully(int sig)
@@ -67,7 +67,7 @@ static void *linuxraw_input_init(void)
    if (!isatty(0))
       return NULL;
 
-   if (driver->stdin_claimed)
+   if (linuxraw_stdin_claimed)
    {
       RARCH_WARN("stdin is already used for content loading. Cannot use stdin for input.\n");
       return NULL;
@@ -122,9 +122,14 @@ static void *linuxraw_input_init(void)
 
    /* We need to disable use of stdin command interface if 
     * stdin is supposed to be used for input. */
-   driver->stdin_claimed = true; 
+   linuxraw_stdin_claimed = true; 
 
    return linuxraw;
+}
+
+static bool linuxraw_grab_stdin(void *data)
+{
+   return linuxraw_stdin_claimed;
 }
 
 static bool linuxraw_key_pressed(linuxraw_input_t *linuxraw, int key)
@@ -282,6 +287,7 @@ input_driver_t input_linuxraw = {
    linuxraw_get_capabilities,
    "linuxraw",
    linuxraw_grab_mouse,
+   linuxraw_grab_stdin,
    linuxraw_set_rumble,
    linuxraw_get_joypad_driver,
 };

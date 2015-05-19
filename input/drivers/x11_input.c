@@ -396,6 +396,7 @@ input_driver_t input_x = {
    x_input_get_capabilities,
    "x",
    x_grab_mouse,
+   NULL,
    x_set_rumble,
    x_get_joypad_driver,
 };

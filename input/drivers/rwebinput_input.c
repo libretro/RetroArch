@@ -237,5 +237,6 @@ input_driver_t input_rwebinput = {
    rwebinput_get_capabilities,
    "rwebinput",
    rwebinput_grab_mouse,
+   NULL,
    rwebinput_set_rumble,
 };

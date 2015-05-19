@@ -141,6 +141,7 @@ input_driver_t input_gx = {
    "gx",
 
    gx_input_grab_mouse,
+   NULL,
    gx_input_set_rumble,
    gx_input_get_joypad_driver,
 };

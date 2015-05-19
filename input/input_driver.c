@@ -290,6 +290,16 @@ bool input_driver_grab_mouse(bool state)
    return false;
 }
 
+bool input_driver_grab_stdin(void)
+{
+   driver_t            *driver = driver_get_ptr();
+   const input_driver_t *input = input_get_ptr(driver);
+
+   if (input->grab_stdin)
+      return input->grab_stdin(driver->input_data);
+   return false;
+}
+
 void *input_driver_init(void)
 {
    driver_t *driver               = driver_get_ptr();

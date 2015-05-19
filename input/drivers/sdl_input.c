@@ -395,6 +395,7 @@ input_driver_t input_sdl = {
    "sdl",
 #endif
    sdl_grab_mouse,
+   NULL,
    sdl_set_rumble,
    sdl_get_joypad_driver,
 };

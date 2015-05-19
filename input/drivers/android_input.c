@@ -1062,6 +1062,7 @@ input_driver_t input_android = {
    "android",
 
    android_input_grab_mouse,
+   NULL,
    android_input_set_rumble,
    android_input_get_joypad_driver,
 };

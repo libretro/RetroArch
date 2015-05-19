@@ -146,6 +146,7 @@ input_driver_t input_psp = {
    "psp",
 
    psp_input_grab_mouse,
+   NULL,
    psp_input_set_rumble,
    psp_input_get_joypad_driver,
 };

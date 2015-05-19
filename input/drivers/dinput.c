@@ -685,6 +685,7 @@ input_driver_t input_dinput = {
    "dinput",
 
    dinput_grab_mouse,
+   NULL,
    dinput_set_rumble,
    dinput_get_joypad_driver,
 };

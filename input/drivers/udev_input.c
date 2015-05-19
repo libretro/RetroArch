@@ -874,6 +874,7 @@ input_driver_t input_udev = {
    udev_input_get_capabilities,
    "udev",
    udev_input_grab_mouse,
+   NULL,
    udev_input_set_rumble,
    udev_input_get_joypad_driver,
 };

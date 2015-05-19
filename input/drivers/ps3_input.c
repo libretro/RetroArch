@@ -259,6 +259,7 @@ input_driver_t input_ps3 = {
    "ps3",
 
    ps3_input_grab_mouse,
+   NULL,
    ps3_input_set_rumble,
    ps3_input_get_joypad_driver,
 };
