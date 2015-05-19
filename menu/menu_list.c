@@ -20,7 +20,6 @@
 
 #include "../driver.h"
 #include "menu.h"
-#include "menu_common_list.h"
 #include "menu_entries_cbs.h"
 #include "menu_list.h"
 #include "menu_navigation.h"
@@ -142,6 +141,30 @@ void menu_list_refresh(file_list_t *list)
             menu_list_get_size(menu_list) - 1, true);
    else if (!menu_list_get_size(menu_list))
       menu_navigation_clear(nav, true);
+}
+
+static void menu_common_list_delete(void *data, size_t idx,
+      size_t list_size)
+{
+   menu_file_list_cbs_t *cbs = NULL;
+   file_list_t *list = (file_list_t*)data;
+
+   if (!list)
+      return;
+
+   cbs = (menu_file_list_cbs_t*)list->list[idx].actiondata;
+
+   if (cbs)
+   {
+      cbs->action_start         = NULL;
+      cbs->action_ok            = NULL;
+      cbs->action_cancel        = NULL;
+      cbs->action_left          = NULL;
+      cbs->action_right         = NULL;
+      cbs->action_deferred_push = NULL;
+      free(list->list[idx].actiondata);
+   }
+   list->list[idx].actiondata = NULL;
 }
 
 static void menu_list_destroy(file_list_t *list)
