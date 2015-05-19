@@ -55,6 +55,7 @@ typedef struct audio_driver_input_data
    size_t driver_buffer_size;
 
    float volume_gain;
+   struct retro_audio_callback audio_callback;
 } audio_driver_input_data_t;
 
 static audio_driver_input_data_t audio_data;
@@ -322,7 +323,6 @@ void init_audio(void)
    size_t outsamples_max, max_bufsamples = AUDIO_CHUNK_SIZE_NONBLOCKING * 2;
    runloop_t *runloop   = rarch_main_get_ptr();
    driver_t *driver     = driver_get_ptr();
-   global_t *global     = global_get_ptr();
    settings_t *settings = config_get_ptr();
 
    audio_convert_init_simd();
@@ -364,7 +364,7 @@ void init_audio(void)
 
    find_audio_driver();
 #ifdef HAVE_THREADS
-   if (global->system.audio_callback.callback)
+   if (audio_data.audio_callback.callback)
    {
       RARCH_LOG("Starting threaded audio driver ...\n");
       if (!rarch_threaded_audio_init(&driver->audio, &driver->audio_data,
@@ -437,7 +437,7 @@ void init_audio(void)
       goto error;
 
    audio_data.rate_control = false;
-   if (!global->system.audio_callback.callback && driver->audio_active &&
+   if (!audio_data.audio_callback.callback && driver->audio_active &&
          settings->audio.rate_control)
    {
       /* Audio rate control requires write_avail
@@ -457,7 +457,7 @@ void init_audio(void)
    runloop->measure_data.buffer_free_samples_count = 0;
 
    if (driver->audio_active && !settings->audio.mute_enable &&
-         global->system.audio_callback.callback)
+         audio_data.audio_callback.callback)
    {
       /* Threaded driver is initially stopped. */
       driver->audio->start(driver->audio_data);
@@ -858,4 +858,30 @@ void audio_monitor_set_refresh_rate(void)
 void audio_driver_set_buffer_size(size_t bufsize)
 {
    audio_data.driver_buffer_size = bufsize;
+}
+
+void audio_driver_set_callback(const void *data)
+{
+   const struct retro_audio_callback *cb = 
+      (const struct retro_audio_callback*)data;
+
+   if (cb)
+      audio_data.audio_callback = *cb;
+}
+
+bool audio_driver_has_callback(void)
+{
+   return audio_data.audio_callback.callback;
+}
+
+void audio_driver_callback(void)
+{
+   if (audio_driver_has_callback())
+      audio_data.audio_callback.callback();
+}
+
+void audio_driver_callback_set_state(bool state)
+{
+   if (audio_driver_has_callback())
+      audio_data.audio_callback.set_state(state);
 }

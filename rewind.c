@@ -542,7 +542,7 @@ void init_rewind(void)
    if (!settings->rewind_enable || global->rewind.state)
       return;
 
-   if (global->system.audio_callback.callback)
+   if (audio_driver_has_callback())
    {
       RARCH_ERR(RETRO_LOG_REWIND_INIT_FAILED_THREADED_AUDIO);
       return;

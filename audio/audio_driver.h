@@ -169,6 +169,14 @@ void audio_driver_frame_is_reverse(void);
 
 void audio_driver_set_buffer_size(size_t bufsize);
 
+void audio_driver_set_callback(const void *info);
+
+bool audio_driver_has_callback(void);
+
+void audio_driver_callback(void);
+
+void audio_driver_callback_set_state(bool state);
+
 #ifdef __cplusplus
 }
 #endif

@@ -910,7 +910,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
             return false;
 #endif
 
-         global->system.audio_callback = *info;
+         audio_driver_set_callback(info);
          break;
       }
 #endif
