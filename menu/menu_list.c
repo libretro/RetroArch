@@ -312,11 +312,7 @@ void menu_list_pop(file_list_t *list, size_t *directory_ptr)
       goto end;
 
    if (list->size != 0)
-   {
-      size_t list_size = list->size - 1;
-
-      menu_driver_list_delete(list, list_size, list_size);
-   }
+      menu_driver_list_delete(list, list->size - 1, list->size - 1);
 
 end:
    file_list_pop(list, directory_ptr);
