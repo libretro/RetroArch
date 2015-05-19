@@ -249,6 +249,8 @@ void net_http_connection_free(struct http_connection_t *conn)
 
    if (conn->urlcopy)
       free(conn->urlcopy);
+
+   free(conn);
 }
 
 struct http_t *net_http_new(struct http_connection_t *conn)
