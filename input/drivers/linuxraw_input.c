@@ -37,7 +37,7 @@ typedef struct linuxraw_input
 } linuxraw_input_t;
 
 
-static void linuxraw_resetKbmd(void)
+static void linuxraw_reset_kbmd(void)
 {
    driver_t *driver = driver_get_ptr();
    if (oldKbmd != 0xffff)
@@ -50,9 +50,9 @@ static void linuxraw_resetKbmd(void)
    driver->stdin_claimed = false;
 }
 
-static void linuxraw_exitGracefully(int sig)
+static void linuxraw_exit_gracefully(int sig)
 {
-   linuxraw_resetKbmd();
+   linuxraw_reset_kbmd();
    kill(getpid(), sig);
 }
 
@@ -97,12 +97,12 @@ static void *linuxraw_input_init(void)
 
    if (ioctl(0, KDSKBMODE, K_MEDIUMRAW) != 0)
    {
-      linuxraw_resetKbmd();
+      linuxraw_reset_kbmd();
       free(linuxraw);
       return NULL;
    }
 
-   sa.sa_handler = linuxraw_exitGracefully;
+   sa.sa_handler = linuxraw_exit_gracefully;
    sa.sa_flags = SA_RESTART | SA_RESETHAND;
    sigemptyset(&sa.sa_mask);
 
@@ -115,7 +115,7 @@ static void *linuxraw_input_init(void)
    sigaction(SIGQUIT, &sa, NULL);
    sigaction(SIGSEGV, &sa, NULL);
 
-   atexit(linuxraw_resetKbmd);
+   atexit(linuxraw_reset_kbmd);
 
    linuxraw->joypad = input_joypad_init_driver(settings->input.joypad_driver);
    input_keymaps_init_keyboard_lut(rarch_key_map_linux);
@@ -205,7 +205,7 @@ static void linuxraw_input_free(void *data)
    if (linuxraw->joypad)
       linuxraw->joypad->destroy();
 
-   linuxraw_resetKbmd();
+   linuxraw_reset_kbmd();
    free(data);
 }
 
