@@ -1257,7 +1257,7 @@ static int menu_displaylist_parse_settings_in_subgroup(menu_displaylist_info_t *
    if (!menu)
       return -1;
 
-   if (info->label)
+   if (info->label[0] != '\0')
    {
       str_list = string_split(info->label, "|");
 
