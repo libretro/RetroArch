@@ -353,18 +353,21 @@ static void xdk_renderchain_set_final_viewport(void *data,
 }
 
 static bool xdk_renderchain_render(void *data, const void *frame,
-      unsigned width, unsigned height, unsigned pitch, unsigned rotation)
+      unsigned frame_width, unsigned frame_height,
+      unsigned pitch, unsigned rotation)
 {
    unsigned i;
+   unsigned width, height;
    d3d_video_t      *d3d    = (d3d_video_t*)data;
    LPDIRECT3DDEVICE d3dr    = (LPDIRECT3DDEVICE)d3d->dev;
    settings_t *settings     = config_get_ptr();
-   global_t   *global       = global_get_ptr();
    xdk_renderchain_t *chain = (xdk_renderchain_t*)d3d->renderchain_data;
    uint64_t frame_count     = video_driver_get_frame_count();
 
-   renderchain_blit_to_texture(chain, frame, width, height, pitch);
-   renderchain_set_vertices(d3d, 1, width, height, frame_count);
+   video_driver_get_size(&width, &height);
+
+   renderchain_blit_to_texture(chain, frame, frame_width, frame_height, pitch);
+   renderchain_set_vertices(d3d, 1, frame_width, frame_height, frame_count);
 
    d3d_set_texture(d3dr, 0, chain->tex);
    d3d_set_viewport(chain->dev, &d3d->final_viewport);
@@ -378,8 +381,7 @@ static bool xdk_renderchain_render(void *data, const void *frame,
       d3d_set_stream_source(d3dr, i, chain->vertex_buf, 0, sizeof(Vertex));
 
    d3d_draw_primitive(d3dr, D3DPT_TRIANGLESTRIP, 0, 2);
-   renderchain_set_mvp(d3d, global->video_data.width,
-	   global->video_data.height, d3d->dev_rotation);
+   renderchain_set_mvp(d3d, width, height, d3d->dev_rotation);
 
    return true;
 }

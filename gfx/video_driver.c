@@ -846,3 +846,19 @@ void video_driver_get_size(unsigned *width, unsigned *height)
    if (height)
       *height = global->video_data.height;
 }
+
+void video_driver_set_size_width(unsigned width)
+{
+   global_t *global    = global_get_ptr();
+   if (!global)
+      return;
+   global->video_data.width = width;
+}
+
+void video_driver_set_size_height(unsigned height)
+{
+   global_t *global    = global_get_ptr();
+   if (!global)
+      return;
+   global->video_data.height = height;
+}

@@ -342,6 +342,10 @@ bool video_driver_set_viewport(unsigned width, unsigned height,
 
 void video_driver_get_size(unsigned *width, unsigned *height);
 
+void video_driver_set_size_width(unsigned width);
+
+void video_driver_set_size_height(unsigned width);
+
 uint64_t video_driver_get_frame_count(void);
 
 #ifdef __cplusplus

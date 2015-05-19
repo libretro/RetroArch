@@ -55,7 +55,6 @@ static void d3d_resize(void *data, unsigned new_width, unsigned new_height)
 {
    d3d_video_t *d3d      = (d3d_video_t*)curD3D;
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
-   global_t *global      = global_get_ptr();
 
    if (!d3dr)
       return;
@@ -65,8 +64,10 @@ static void d3d_resize(void *data, unsigned new_width, unsigned new_height)
    if (new_width != d3d->video_info.width || new_height != d3d->video_info.height)
    {
       RARCH_LOG("[D3D]: Resize %ux%u.\n", new_width, new_height);
-      d3d->video_info.width  = global->video_data.width  = new_width;
-      d3d->video_info.height = global->video_data.height = new_height;
+      d3d->video_info.width  = new_width;
+      d3d->video_info.height = new_height;
+      video_driver_set_size_width(new_width);
+      video_driver_set_size_height(new_height);
       d3d_restore(d3d);
    }
 }
