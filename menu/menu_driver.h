@@ -343,6 +343,8 @@ void  menu_driver_list_clear(file_list_t *list);
 
 void  menu_driver_list_set_selection(file_list_t *list);
 
+const menu_ctx_driver_t *menu_ctx_driver_get_ptr(void);
+
 void  menu_driver_context_destroy(void);
 
 bool menu_driver_alive(void);

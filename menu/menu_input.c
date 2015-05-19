@@ -940,14 +940,6 @@ void menu_input_post_iterate(int *ret, unsigned action)
       *ret |= menu_input_pointer_post_iterate(cbs, &entry, action);
 }
 
-static const menu_ctx_driver_t *menu_ctx_driver_get_ptr(void)
-{
-   driver_t *driver = driver_get_ptr();
-   if (!driver || !driver->menu_ctx)
-      return NULL;
-   return driver->menu_ctx;
-}
-
 unsigned menu_input_frame(retro_input_t input, retro_input_t trigger_input)
 {
    unsigned ret = 0;

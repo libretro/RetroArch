@@ -173,7 +173,7 @@ menu_handle_t *menu_driver_get_ptr(void)
    return driver->menu;
 }
 
-static const menu_ctx_driver_t *menu_ctx_driver_get_ptr(void)
+const menu_ctx_driver_t *menu_ctx_driver_get_ptr(void)
 {
    driver_t *driver = driver_get_ptr();
    if (!driver || !driver->menu_ctx)
