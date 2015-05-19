@@ -954,8 +954,6 @@ void rarch_main_global_free(void)
    event_command(EVENT_CMD_RECORD_DEINIT);
    event_command(EVENT_CMD_LOG_FILE_DEINIT);
 
-   g_extern = global_get_ptr();
-
    if (!g_extern)
       return;
 
