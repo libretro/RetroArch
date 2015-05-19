@@ -572,14 +572,16 @@ static void gl_deinit_fbo(gl_t *gl)
 
 /* Set up render to texture. */
 
-static void gl_init_fbo(gl_t *gl, unsigned width, unsigned height)
+static void gl_init_fbo(gl_t *gl, unsigned fbo_width, unsigned fbo_height)
 {
    int i;
+   unsigned width, height;
    struct gfx_fbo_scale scale, scale_last;
-   global_t *global = global_get_ptr();
 
    if (!gl || gl->shader->num_shaders() == 0)
       return;
+
+   video_driver_get_size(&width, &height);
 
    gl_shader_scale(gl, 1, &scale);
    gl_shader_scale(gl, gl->shader->num_shaders(), &scale_last);
@@ -621,7 +623,7 @@ static void gl_init_fbo(gl_t *gl, unsigned width, unsigned height)
       }
    }
 
-   gl_compute_fbo_geometry(gl, width, height, global->video_data.width, global->video_data.height);
+   gl_compute_fbo_geometry(gl, fbo_width, fbo_height, width, height);
 
    for (i = 0; i < gl->fbo_pass; i++)
    {
@@ -771,24 +773,29 @@ static void gl_set_projection(gl_t *gl, struct gl_ortho *ortho, bool allow_rotat
    matrix_4x4_multiply(&gl->mvp, &rot, &gl->mvp_no_rot);
 }
 
-static void gl_set_viewport(void *data, unsigned width,
-      unsigned height, bool force_full, bool allow_rotate)
+static void gl_set_viewport(void *data, unsigned viewport_width,
+      unsigned viewport_height, bool force_full, bool allow_rotate)
 {
+   unsigned width, height;
    int x = 0, y = 0;
-   float device_aspect   = (float)width / height;
+   float device_aspect   = (float)viewport_width / viewport_height;
    struct gl_ortho ortho = {0, 1, 0, 1, -1, 1};
    settings_t *settings  = config_get_ptr();
    global_t   *global    = global_get_ptr();
    gl_t           *gl    = (gl_t*)data;
 
-   gfx_ctx_translate_aspect(gl, &device_aspect, width, height);
+   video_driver_get_size(&width, &height);
+
+   gfx_ctx_translate_aspect(gl, &device_aspect,
+         viewport_width, viewport_height);
 
    if (settings->video.scale_integer && !force_full)
    {
-      video_viewport_get_scaled_integer(&gl->vp, width, height,
+      video_viewport_get_scaled_integer(&gl->vp,
+            viewport_width, viewport_height,
             global->system.aspect_ratio, gl->keep_aspect);
-      width  = gl->vp.width;
-      height = gl->vp.height;
+      viewport_width  = gl->vp.width;
+      viewport_height = gl->vp.height;
    }
    else if (gl->keep_aspect && !force_full)
    {
@@ -802,9 +809,9 @@ static void gl_set_viewport(void *data, unsigned width,
 
          /* GL has bottom-left origin viewport. */
          x      = custom->x;
-         y      = global->video_data.height - custom->y - custom->height;
-         width  = custom->width;
-         height = custom->height;
+         y      = height - custom->y - custom->height;
+         viewport_width  = custom->width;
+         viewport_height = custom->height;
       }
       else
 #endif
@@ -819,27 +826,27 @@ static void gl_set_viewport(void *data, unsigned width,
          else if (device_aspect > desired_aspect)
          {
             delta = (desired_aspect / device_aspect - 1.0f) / 2.0f + 0.5f;
-            x     = (int)roundf(width * (0.5f - delta));
-            width = (unsigned)roundf(2.0f * width * delta);
+            x     = (int)roundf(viewport_width * (0.5f - delta));
+            viewport_width = (unsigned)roundf(2.0f * viewport_width * delta);
          }
          else
          {
             delta  = (device_aspect / desired_aspect - 1.0f) / 2.0f + 0.5f;
-            y      = (int)roundf(height * (0.5f - delta));
-            height = (unsigned)roundf(2.0f * height * delta);
+            y      = (int)roundf(viewport_height * (0.5f - delta));
+            viewport_height = (unsigned)roundf(2.0f * viewport_height * delta);
          }
       }
 
       gl->vp.x      = x;
       gl->vp.y      = y;
-      gl->vp.width  = width;
-      gl->vp.height = height;
+      gl->vp.width  = viewport_width;
+      gl->vp.height = viewport_height;
    }
    else
    {
       gl->vp.x      = gl->vp.y = 0;
-      gl->vp.width  = width;
-      gl->vp.height = height;
+      gl->vp.width  = viewport_width;
+      gl->vp.height = viewport_height;
    }
 
 #if defined(RARCH_MOBILE)
@@ -854,12 +861,12 @@ static void gl_set_viewport(void *data, unsigned width,
    /* Set last backbuffer viewport. */
    if (!force_full)
    {
-      gl->vp_out_width  = width;
-      gl->vp_out_height = height;
+      gl->vp_out_width  = viewport_width;
+      gl->vp_out_height = viewport_height;
    }
 
 #if 0
-   RARCH_LOG("Setting viewport @ %ux%u\n", width, height);
+   RARCH_LOG("Setting viewport @ %ux%u\n", viewport_width, viewport_height);
 #endif
 }
 
@@ -962,6 +969,7 @@ static void gl_check_fbo_dimensions(gl_t *gl)
 static void gl_frame_fbo(gl_t *gl, uint64_t frame_count,
       const struct gl_tex_info *tex_info)
 {
+   unsigned width, height;
    const struct gl_fbo_rect *prev_rect;
    const struct gl_fbo_rect *rect;
    struct gl_tex_info *fbo_info;
@@ -970,7 +978,8 @@ static void gl_frame_fbo(gl_t *gl, uint64_t frame_count,
    GLfloat xamt, yamt;
    unsigned fbo_tex_info_cnt = 0;
    GLfloat fbo_tex_coords[8] = {0.0f};
-   global_t *global = global_get_ptr();
+
+   video_driver_get_size(&width, &height);
 
    /* Render the rest of our passes. */
    gl->coords.tex_coord = fbo_tex_coords;
@@ -1052,7 +1061,7 @@ static void gl_frame_fbo(gl_t *gl, uint64_t frame_count,
       glGenerateMipmap(GL_TEXTURE_2D);
 
    glClear(GL_COLOR_BUFFER_BIT);
-   gl_set_viewport(gl, global->video_data.width, global->video_data.height, false, true);
+   gl_set_viewport(gl, width, height, false, true);
 
    gl->shader->set_params(gl,
          prev_rect->img_width, prev_rect->img_height, 
@@ -1399,10 +1408,12 @@ static INLINE void gl_set_prev_texture(gl_t *gl,
 
 static INLINE void gl_set_shader_viewport(gl_t *gl, unsigned shader)
 {
-   global_t *global = global_get_ptr();
+   unsigned width, height;
+
+   video_driver_get_size(&width, &height);
 
    gl->shader->use(gl, shader);
-   gl_set_viewport(gl, global->video_data.width, global->video_data.height, false, true);
+   gl_set_viewport(gl, width, height, false, true);
 }
 
 #if defined(HAVE_GL_ASYNC_READBACK) && defined(HAVE_MENU)
@@ -1441,15 +1452,18 @@ static void gl_pbo_async_readback(gl_t *gl)
 #if defined(HAVE_MENU)
 static INLINE void gl_draw_texture(gl_t *gl)
 {
+   unsigned width, height;
+
    const GLfloat color[] = {
       1.0f, 1.0f, 1.0f, gl->menu_texture_alpha,
       1.0f, 1.0f, 1.0f, gl->menu_texture_alpha,
       1.0f, 1.0f, 1.0f, gl->menu_texture_alpha,
       1.0f, 1.0f, 1.0f, gl->menu_texture_alpha,
    };
-   global_t *global = global_get_ptr();
    if (!gl->menu_texture)
       return;
+
+   video_driver_get_size(&width, &height);
 
    gl->coords.vertex    = vertexes_flipped;
    gl->coords.tex_coord = tex_coords;
@@ -1465,7 +1479,7 @@ static INLINE void gl_draw_texture(gl_t *gl)
 
    if (gl->menu_texture_full_screen)
    {
-      glViewport(0, 0, global->video_data.width, global->video_data.height);
+      glViewport(0, 0, width, height);
       glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
       glViewport(gl->vp.x, gl->vp.y, gl->vp.width, gl->vp.height);
    }
@@ -1481,18 +1495,21 @@ static INLINE void gl_draw_texture(gl_t *gl)
 #endif
 
 static bool gl_frame(void *data, const void *frame,
-      unsigned width, unsigned height, unsigned pitch, const char *msg)
+      unsigned frame_width, unsigned frame_height,
+      unsigned pitch, const char *msg)
 {
+   unsigned width, height;
    gl_t                    *gl = (gl_t*)data;
    runloop_t *runloop          = rarch_main_get_ptr();
    driver_t *driver            = driver_get_ptr();
    settings_t *settings        = config_get_ptr();
-   global_t *global            = global_get_ptr();
    uint64_t frame_count        = video_driver_get_frame_count();
    const struct font_renderer *font_driver = driver ? driver->font_osd_driver : NULL;
 
    RARCH_PERFORMANCE_INIT(frame_run);
    RARCH_PERFORMANCE_START(frame_run);
+
+   video_driver_get_size(&width, &height);
 
    context_bind_hw_render(gl, false);
 
@@ -1505,14 +1522,14 @@ static bool gl_frame(void *data, const void *frame,
 
 #ifdef IOS
    /* Apparently the viewport is lost each frame, thanks Apple. */
-   gl_set_viewport(gl, global->video_data.width, global->video_data.height, false, true);
+   gl_set_viewport(gl, width, height, false, true);
 #endif
 
 #ifdef HAVE_FBO
    /* Render to texture in first pass. */
    if (gl->fbo_inited)
    {
-      gl_compute_fbo_geometry(gl, width, height,
+      gl_compute_fbo_geometry(gl, frame_width, frame_height,
             gl->vp_out_width, gl->vp_out_height);
       gl_start_frame_fbo(gl);
    }
@@ -1522,7 +1539,7 @@ static bool gl_frame(void *data, const void *frame,
    {
       gl->should_resize = false;
 
-      gfx_ctx_set_resize(gl, global->video_data.width, global->video_data.height);
+      gfx_ctx_set_resize(gl, width, height);
 
 #ifdef HAVE_FBO
       if (gl->fbo_inited)
@@ -1535,7 +1552,7 @@ static bool gl_frame(void *data, const void *frame,
       }
       else
 #endif
-         gl_set_viewport(gl, global->video_data.width, global->video_data.height, false, true);
+         gl_set_viewport(gl, width, height, false, true);
    }
 
    gl->tex_index = frame ?
@@ -1549,8 +1566,8 @@ static bool gl_frame(void *data, const void *frame,
       if (!gl->hw_render_fbo_init)
 #endif
       {
-         gl_update_input_size(gl, width, height, pitch, true);
-         gl_copy_frame(gl, frame, width, height, pitch);
+         gl_update_input_size(gl, frame_width, frame_height, pitch, true);
+         gl_copy_frame(gl, frame, frame_width, frame_height, pitch);
       }
 
       /* No point regenerating mipmaps 
@@ -1564,11 +1581,11 @@ static bool gl_frame(void *data, const void *frame,
 #ifdef HAVE_FBO
    if (gl->hw_render_fbo_init)
    {
-      gl_update_input_size(gl, width, height, pitch, false);
+      gl_update_input_size(gl, frame_width, frame_height, pitch, false);
       if (!gl->fbo_inited)
       {
          gl_bind_backbuffer();
-         gl_set_viewport(gl, global->video_data.width, global->video_data.height, false, true);
+         gl_set_viewport(gl, width, height, false, true);
       }
 
 #ifndef HAVE_OPENGLES
@@ -1587,14 +1604,15 @@ static bool gl_frame(void *data, const void *frame,
 #endif
 
    gl->tex_info.tex           = gl->texture[gl->tex_index];
-   gl->tex_info.input_size[0] = width;
-   gl->tex_info.input_size[1] = height;
+   gl->tex_info.input_size[0] = frame_width;
+   gl->tex_info.input_size[1] = frame_height;
    gl->tex_info.tex_size[0]   = gl->tex_w;
    gl->tex_info.tex_size[1]   = gl->tex_h;
 
    glClear(GL_COLOR_BUFFER_BIT);
 
-   gl->shader->set_params(gl, width, height,
+   gl->shader->set_params(gl,
+         frame_width, frame_height,
          gl->tex_w, gl->tex_h,
          gl->vp.width, gl->vp.height,
          (unsigned int)frame_count, 
@@ -2640,17 +2658,19 @@ static bool gl_set_shader(void *data,
 
 static void gl_viewport_info(void *data, struct video_viewport *vp)
 {
+   unsigned width, height;
    unsigned top_y, top_dist;
    gl_t *gl         = (gl_t*)data;
-   global_t *global = global_get_ptr();
+
+   video_driver_get_size(&width, &height);
 
    *vp             = gl->vp;
-   vp->full_width  = global->video_data.width;
-   vp->full_height = global->video_data.height;
+   vp->full_width  = width;
+   vp->full_height = height;
 
    /* Adjust as GL viewport is bottom-up. */
    top_y           = vp->y + vp->height;
-   top_dist        = global->video_data.height - top_y;
+   top_dist        = height - top_y;
    vp->y           = top_dist;
 }
 
@@ -2993,16 +3013,17 @@ static void gl_overlay_set_alpha(void *data, unsigned image, float mod)
 static void gl_render_overlay(void *data)
 {
    unsigned i;
-   global_t *global = global_get_ptr();
+   unsigned width, height;
    gl_t *gl = (gl_t*)data;
    if (!gl)
       return;
 
+   video_driver_get_size(&width, &height);
+
    glEnable(GL_BLEND);
 
    if (gl->overlay_full_screen)
-      glViewport(0, 0,
-            global->video_data.width, global->video_data.height);
+      glViewport(0, 0, width, height);
 
    /* Ensure that we reset the attrib array. */
    gl->shader->use(gl, GL_SHADER_STOCK_BLEND);

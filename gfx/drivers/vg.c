@@ -289,7 +289,10 @@ static void vg_draw_message(vg_t *vg, const char *msg)
 
 static void vg_calculate_quad(vg_t *vg)
 {
+   unsigned width, height;
    global_t *global     = global_get_ptr();
+
+   video_driver_get_size(&width, &height);
 
    /* set viewport for aspect ratio, taken from the OpenGL driver. */
    if (vg->mKeepAspect)
@@ -303,32 +306,32 @@ static void vg_calculate_quad(vg_t *vg)
       {
          vg->x1 = 0;
          vg->y1 = 0;
-         vg->x2 = global->video_data.width;
-         vg->y2 = global->video_data.height;
+         vg->x2 = width;
+         vg->y2 = height;
       }
       else if (vg->mScreenAspect > desired_aspect)
       {
          float delta = (desired_aspect / vg->mScreenAspect - 1.0) / 2.0 + 0.5;
-         vg->x1 = global->video_data.width * (0.5 - delta);
+         vg->x1 = width * (0.5 - delta);
          vg->y1 = 0;
-         vg->x2 = 2.0 * global->video_data.width * delta + vg->x1;
-         vg->y2 = global->video_data.height + vg->y1;
+         vg->x2 = 2.0 * width * delta + vg->x1;
+         vg->y2 = height + vg->y1;
       }
       else
       {
          float delta = (vg->mScreenAspect / desired_aspect - 1.0) / 2.0 + 0.5;
          vg->x1 = 0;
-         vg->y1 = global->video_data.height * (0.5 - delta);
-         vg->x2 = global->video_data.width + vg->x1;
-         vg->y2 = 2.0 * global->video_data.height * delta + vg->y1;
+         vg->y1 = height * (0.5 - delta);
+         vg->x2 = width + vg->x1;
+         vg->y2 = 2.0 * height * delta + vg->y1;
       }
    }
    else
    {
       vg->x1 = 0;
       vg->y1 = 0;
-      vg->x2 = global->video_data.width;
-      vg->y2 = global->video_data.height;
+      vg->x2 = width;
+      vg->y2 = height;
    }
 
    vg->scissor[0] = vg->x1;
@@ -369,36 +372,40 @@ static void vg_copy_frame(void *data, const void *frame,
 }
 
 static bool vg_frame(void *data, const void *frame,
-      unsigned width, unsigned height, unsigned pitch, const char *msg)
+      unsigned frame_width, unsigned frame_height, unsigned pitch, const char *msg)
 {
+   unsigned width, height;
    vg_t                    *vg = (vg_t*)data;
    global_t            *global = global_get_ptr();
 
    RARCH_PERFORMANCE_INIT(vg_fr);
    RARCH_PERFORMANCE_START(vg_fr);
 
-   if (width != vg->mRenderWidth || height != vg->mRenderHeight || vg->should_resize)
+   video_driver_get_size(&width, &height);
+
+   if (frame_width != vg->mRenderWidth || frame_height != vg->mRenderHeight || vg->should_resize)
    {
-      vg->mRenderWidth = width;
-      vg->mRenderHeight = height;
+      vg->mRenderWidth  = frame_width;
+      vg->mRenderHeight = frame_height;
       vg_calculate_quad(vg);
       matrix_3x3_quad_to_quad(
          vg->x1, vg->y1, vg->x2, vg->y1, vg->x2, vg->y2, vg->x1, vg->y2,
          /* needs to be flipped, Khronos loves their bottom-left origin */
-         0, height, width, height, width, 0, 0, 0,
+         0, frame_height, frame_width, frame_height, frame_width, 0, 0, 0,
          &vg->mTransformMatrix);
       vgSeti(VG_MATRIX_MODE, VG_MATRIX_IMAGE_USER_TO_SURFACE);
       vgLoadMatrix(vg->mTransformMatrix.data);
 
       vg->should_resize = false;
    }
+
    vgSeti(VG_SCISSORING, VG_FALSE);
-   vgClear(0, 0, global->video_data.width, global->video_data.height);
+   vgClear(0, 0, width, height);
    vgSeti(VG_SCISSORING, VG_TRUE);
 
    RARCH_PERFORMANCE_INIT(vg_image);
    RARCH_PERFORMANCE_START(vg_image);
-   vg_copy_frame(vg, frame, width, height, pitch);
+   vg_copy_frame(vg, frame, frame_width, frame_height, pitch);
    RARCH_PERFORMANCE_STOP(vg_image);
 
    vgDrawImage(vg->mImage);
