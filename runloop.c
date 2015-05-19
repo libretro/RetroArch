@@ -948,19 +948,16 @@ void rarch_main_state_free(void)
 
 void rarch_main_global_free(void)
 {
-   global_t *global = NULL;
-   
    event_command(EVENT_CMD_TEMPORARY_CONTENT_DEINIT);
    event_command(EVENT_CMD_SUBSYSTEM_FULLPATHS_DEINIT);
    event_command(EVENT_CMD_RECORD_DEINIT);
    event_command(EVENT_CMD_LOG_FILE_DEINIT);
 
-   global = global_get_ptr();
-
-   if (!global)
+   if (!g_extern)
       return;
 
-   free(global);
+   free(g_extern);
+   g_extern = NULL;
 }
 
 bool rarch_main_verbosity(void)

@@ -78,6 +78,12 @@ endif
 RARCH_OBJ := $(addprefix $(OBJDIR)/,$(OBJ))
 RARCH_JOYCONFIG_OBJ := $(addprefix $(OBJDIR)/,$(JOYCONFIG_OBJ))
 
+ifneq ($(SANITIZER),)
+    CFLAGS   := -fsanitize=$(SANITIZER) $(CFLAGS)
+    CXXFLAGS := -fsanitize=$(SANITIZER) $(CXXFLAGS)
+    LDFLAGS  := -fsanitize=$(SANITIZER) $(LDLAGS)
+endif
+
 all: $(TARGET) $(JTARGET) config.mk
 
 -include $(RARCH_OBJ:.o=.d) $(RARCH_JOYCONFIG_OBJ:.o=.d)
