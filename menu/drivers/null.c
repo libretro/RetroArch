@@ -48,4 +48,5 @@ menu_ctx_driver_t menu_ctx_null = {
   NULL, // list_set_selection
   NULL,
   "null",
+  NULL,
 };
