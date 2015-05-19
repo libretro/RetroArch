@@ -448,7 +448,10 @@ int zlib_inflate_data_to_file(zlib_file_handle_t *handle,
       const uint8_t *cdata, uint32_t csize, uint32_t size, uint32_t checksum)
 {
    if (handle)
+   {
       zlib_stream_free(handle->stream);
+      free(handle->stream);
+   }
 
    if (!handle || ret == -1)
    {

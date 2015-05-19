@@ -172,6 +172,7 @@ void menu_list_free(menu_list_t *menu_list)
 
    menu_list_destroy(menu_list->menu_stack);
    menu_list_destroy(menu_list->selection_buf);
+   free(menu_list);
 }
 
 menu_list_t *menu_list_new(void)

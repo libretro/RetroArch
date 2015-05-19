@@ -23,7 +23,13 @@ void menu_common_list_clear(void *data)
    file_list_t *list = (file_list_t*)data;
 
    if (list)
+   {
+      size_t i;
+      for (i = 0; i < list->size; i++)
+         menu_common_list_delete(data, i, 0);
+
       file_list_clear(list);
+   }
 }
 
 void menu_common_list_set_selection(void *data)
