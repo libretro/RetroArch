@@ -32,6 +32,7 @@
 #include "performance.h"
 #include "input/keyboard_line.h"
 #include "input/input_remapping.h"
+#include "audio/audio_driver.h"
 #include "audio/audio_utils.h"
 #include "retroarch_logger.h"
 #include "record/record_driver.h"
@@ -164,192 +165,6 @@ static void video_frame(const void *data, unsigned width,
 
    if (!video_driver_frame(data, width, height, pitch, msg))
       driver->video_active = false;
-}
-
-/**
- * retro_flush_audio:
- * @data                 : pointer to audio buffer.
- * @right                : amount of samples to write.
- *
- * Writes audio samples to audio driver. Will first
- * perform DSP processing (if enabled) and resampling.
- *
- * Returns: true (1) if audio samples were written to the audio
- * driver, false (0) in case of an error.
- **/
-bool retro_flush_audio(const int16_t *data, size_t samples)
-{
-   const void *output_data        = NULL;
-   unsigned output_frames         = 0;
-   size_t   output_size           = sizeof(float);
-   struct resampler_data src_data = {0};
-   struct rarch_dsp_data dsp_data = {0};
-   runloop_t *runloop             = rarch_main_get_ptr();
-   driver_t  *driver              = driver_get_ptr();
-   global_t  *global              = global_get_ptr();
-   settings_t *settings           = config_get_ptr();
-
-   if (driver->recording_data)
-   {
-      struct ffemu_audio_data ffemu_data = {0};
-      ffemu_data.data                    = data;
-      ffemu_data.frames                  = samples / 2;
-
-      if (driver->recording && driver->recording->push_audio)
-         driver->recording->push_audio(driver->recording_data, &ffemu_data);
-   }
-
-   if (runloop->is_paused || settings->audio.mute_enable)
-      return true;
-   if (!driver->audio_active || !global->audio_data.data)
-      return false;
-
-   RARCH_PERFORMANCE_INIT(audio_convert_s16);
-   RARCH_PERFORMANCE_START(audio_convert_s16);
-   audio_convert_s16_to_float(global->audio_data.data, data, samples,
-         global->audio_data.volume_gain);
-   RARCH_PERFORMANCE_STOP(audio_convert_s16);
-
-   src_data.data_in               = global->audio_data.data;
-   src_data.input_frames          = samples >> 1;
-
-   dsp_data.input                 = global->audio_data.data;
-   dsp_data.input_frames          = samples >> 1;
-
-   if (global->audio_data.dsp)
-   {
-      RARCH_PERFORMANCE_INIT(audio_dsp);
-      RARCH_PERFORMANCE_START(audio_dsp);
-      rarch_dsp_filter_process(global->audio_data.dsp, &dsp_data);
-      RARCH_PERFORMANCE_STOP(audio_dsp);
-
-      if (dsp_data.output)
-      {
-         src_data.data_in      = dsp_data.output;
-         src_data.input_frames = dsp_data.output_frames;
-      }
-   }
-
-   src_data.data_out = global->audio_data.outsamples;
-
-   if (global->audio_data.rate_control)
-      audio_driver_readjust_input_rate();
-
-   src_data.ratio = global->audio_data.src_ratio;
-   if (runloop->is_slowmotion)
-      src_data.ratio *= settings->slowmotion_ratio;
-
-   RARCH_PERFORMANCE_INIT(resampler_proc);
-   RARCH_PERFORMANCE_START(resampler_proc);
-   rarch_resampler_process(driver->resampler,
-         driver->resampler_data, &src_data);
-   RARCH_PERFORMANCE_STOP(resampler_proc);
-
-   output_data   = global->audio_data.outsamples;
-   output_frames = src_data.output_frames;
-
-   if (!global->audio_data.use_float)
-   {
-      RARCH_PERFORMANCE_INIT(audio_convert_float);
-      RARCH_PERFORMANCE_START(audio_convert_float);
-      audio_convert_float_to_s16(global->audio_data.conv_outsamples,
-            (const float*)output_data, output_frames * 2);
-      RARCH_PERFORMANCE_STOP(audio_convert_float);
-
-      output_data = global->audio_data.conv_outsamples;
-      output_size = sizeof(int16_t);
-   }
-
-   if (audio_driver_write(output_data, output_frames * output_size * 2) < 0)
-   {
-      RARCH_ERR(RETRO_LOG_AUDIO_WRITE_FAILED);
-
-      driver->audio_active = false;
-      return false;
-   }
-
-   return true;
-}
-
-/**
- * audio_sample:
- * @left                 : value of the left audio channel.
- * @right                : value of the right audio channel.
- *
- * Audio sample render callback function.
- **/
-static void audio_sample(int16_t left, int16_t right)
-{
-   global_t *global = global_get_ptr();
-
-   global->audio_data.conv_outsamples[global->audio_data.data_ptr++] = left;
-   global->audio_data.conv_outsamples[global->audio_data.data_ptr++] = right;
-
-   if (global->audio_data.data_ptr < global->audio_data.chunk_size)
-      return;
-
-   retro_flush_audio(global->audio_data.conv_outsamples, global->audio_data.data_ptr);
-
-   global->audio_data.data_ptr = 0;
-}
-
-/**
- * audio_sample_batch:
- * @data                 : pointer to audio buffer.
- * @frames               : amount of audio frames to push.
- *
- * Batched audio sample render callback function.
- *
- * Returns: amount of frames sampled. Will be equal to @frames
- * unless @frames exceeds (AUDIO_CHUNK_SIZE_NONBLOCKING / 2).
- **/
-static size_t audio_sample_batch(const int16_t *data, size_t frames)
-{
-   if (frames > (AUDIO_CHUNK_SIZE_NONBLOCKING >> 1))
-      frames = AUDIO_CHUNK_SIZE_NONBLOCKING >> 1;
-
-   retro_flush_audio(data, frames << 1);
-
-   return frames;
-}
-
-/**
- * audio_sample_rewind:
- * @left                 : value of the left audio channel.
- * @right                : value of the right audio channel.
- *
- * Audio sample render callback function (rewind version). This callback
- * function will be used instead of audio_sample when rewinding is activated.
- **/
-static void audio_sample_rewind(int16_t left, int16_t right)
-{
-   global_t *global = global_get_ptr();
-
-   global->audio_data.rewind_buf[--global->audio_data.rewind_ptr] = right;
-   global->audio_data.rewind_buf[--global->audio_data.rewind_ptr] = left;
-}
-
-/**
- * audio_sample_batch_rewind:
- * @data                 : pointer to audio buffer.
- * @frames               : amount of audio frames to push.
- *
- * Batched audio sample render callback function (rewind version). This callback
- * function will be used instead of audio_sample_batch when rewinding is activated.
- *
- * Returns: amount of frames sampled. Will be equal to @frames
- * unless @frames exceeds (AUDIO_CHUNK_SIZE_NONBLOCKING / 2).
- **/
-static size_t audio_sample_batch_rewind(const int16_t *data, size_t frames)
-{
-   size_t i;
-   size_t samples   = frames << 1;
-   global_t *global = global_get_ptr();
-
-   for (i = 0; i < samples; i++)
-      global->audio_data.rewind_buf[--global->audio_data.rewind_ptr] = data[i];
-
-   return frames;
 }
 
 /**
@@ -666,8 +481,8 @@ void retro_set_default_callbacks(void *data)
       return;
 
    cbs->frame_cb        = video_frame;
-   cbs->sample_cb       = audio_sample;
-   cbs->sample_batch_cb = audio_sample_batch;
+   cbs->sample_cb       = audio_driver_sample;
+   cbs->sample_batch_cb = audio_driver_sample_batch;
    cbs->state_cb        = input_state;
    cbs->poll_cb         = input_poll;
 }
@@ -692,8 +507,8 @@ void retro_init_libretro_cbs(void *data)
    (void)global;
 
    pretro_set_video_refresh(video_frame);
-   pretro_set_audio_sample(audio_sample);
-   pretro_set_audio_sample_batch(audio_sample_batch);
+   pretro_set_audio_sample(audio_driver_sample);
+   pretro_set_audio_sample_batch(audio_driver_sample_batch);
    pretro_set_input_state(input_state);
    pretro_set_input_poll(input_poll);
 
@@ -732,12 +547,12 @@ void retro_set_rewind_callbacks(void)
 
    if (global->rewind.frame_is_reverse)
    {
-      pretro_set_audio_sample(audio_sample_rewind);
-      pretro_set_audio_sample_batch(audio_sample_batch_rewind);
+      pretro_set_audio_sample(audio_driver_sample_rewind);
+      pretro_set_audio_sample_batch(audio_driver_sample_batch_rewind);
    }
    else
    {
-      pretro_set_audio_sample(audio_sample);
-      pretro_set_audio_sample_batch(audio_sample_batch);
+      pretro_set_audio_sample(audio_driver_sample);
+      pretro_set_audio_sample_batch(audio_driver_sample_batch);
    }
 }

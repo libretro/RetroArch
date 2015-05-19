@@ -111,7 +111,6 @@ OBJ += frontend/frontend.o \
 		file_path_special.o \
 		hash.o \
 		audio/audio_driver.o \
-		audio/audio_monitor.o \
 		input/input_driver.o \
 		input/input_hid_driver.o \
 		gfx/video_driver.o \

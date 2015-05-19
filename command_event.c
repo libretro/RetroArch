@@ -419,7 +419,7 @@ static void event_set_volume(float gain)
    rarch_main_msg_queue_push(msg, 1, 180, true);
    RARCH_LOG("%s\n", msg);
 
-   global->audio_data.volume_gain = db_to_gain(settings->audio.volume);
+   audio_driver_set_volume_gain(db_to_gain(settings->audio.volume));
 }
 
 /**
@@ -1223,20 +1223,13 @@ bool event_command(enum event_command cmd)
          if (!global)
             break;
 
-         if (global->audio_data.dsp)
-            rarch_dsp_filter_free(global->audio_data.dsp);
-         global->audio_data.dsp = NULL;
+         audio_driver_dsp_filter_free();
          break;
       case EVENT_CMD_DSP_FILTER_INIT:
          event_command(EVENT_CMD_DSP_FILTER_DEINIT);
          if (!*settings->audio.dsp_plugin)
             break;
-
-         global->audio_data.dsp = rarch_dsp_filter_new(
-               settings->audio.dsp_plugin, global->audio_data.in_rate);
-         if (!global->audio_data.dsp)
-            RARCH_ERR("[DSP]: Failed to initialize DSP filter \"%s\".\n",
-                  settings->audio.dsp_plugin);
+         audio_driver_dsp_filter_init(settings->audio.dsp_plugin);
          break;
       case EVENT_CMD_GPU_RECORD_DEINIT:
          if (!global)

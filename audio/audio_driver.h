@@ -128,6 +128,8 @@ bool audio_driver_stop(void);
 
 void audio_driver_set_nonblock_state(bool toggle);
 
+void audio_driver_set_nonblocking_state(bool enable);
+
 /**
  * config_get_audio_driver_options:
  *
@@ -144,6 +146,28 @@ void uninit_audio(void);
 void init_audio(void);
 
 ssize_t audio_driver_write(const void *buf, size_t size);
+
+bool audio_driver_flush(const int16_t *data, size_t samples);
+
+void audio_driver_sample(int16_t left, int16_t right);
+
+size_t audio_driver_sample_batch(const int16_t *data, size_t frames);
+
+void audio_driver_sample_rewind(int16_t left, int16_t right);
+
+size_t audio_driver_sample_batch_rewind(const int16_t *data, size_t frames);
+
+void audio_driver_set_volume_gain(float gain);
+
+void audio_driver_dsp_filter_free(void);
+
+void audio_driver_dsp_filter_init(const char *device);
+
+void audio_driver_setup_rewind(void);
+
+void audio_driver_frame_is_reverse(void);
+
+void audio_driver_set_buffer_size(size_t bufsize);
 
 #ifdef __cplusplus
 }

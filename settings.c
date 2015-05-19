@@ -3016,7 +3016,9 @@ static void general_write_handler(void *data)
       }
    }
    else if (!strcmp(setting->name, "audio_volume"))
-      global->audio_data.volume_gain = db_to_gain(*setting->value.fraction);
+   {
+      audio_driver_set_volume_gain(db_to_gain(*setting->value.fraction));
+   }
    else if (!strcmp(setting->name, "audio_latency"))
       rarch_cmd = EVENT_CMD_AUDIO_REINIT;
    else if (!strcmp(setting->name, "audio_rate_control_delta"))

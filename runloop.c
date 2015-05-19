@@ -141,26 +141,6 @@ static void check_stateslots(bool pressed_increase, bool pressed_decrease)
    RARCH_LOG("%s\n", msg);
 }
 
-static INLINE void setup_rewind_audio(void)
-{
-   unsigned i;
-   global_t *global = global_get_ptr();
-
-   /* Push audio ready to be played. */
-   global->audio_data.rewind_ptr = global->audio_data.rewind_size;
-
-   for (i = 0; i < global->audio_data.data_ptr; i += 2)
-   {
-      global->audio_data.rewind_buf[--global->audio_data.rewind_ptr] =
-         global->audio_data.conv_outsamples[i + 1];
-
-      global->audio_data.rewind_buf[--global->audio_data.rewind_ptr] =
-         global->audio_data.conv_outsamples[i + 0];
-   }
-
-   global->audio_data.data_ptr = 0;
-}
-
 /**
  * check_rewind:
  * @pressed              : was rewind key pressed or held?
@@ -174,11 +154,7 @@ static void check_rewind(bool pressed)
 
    if (global->rewind.frame_is_reverse)
    {
-      /* We just rewound. Flush rewind audio buffer. */
-      retro_flush_audio(global->audio_data.rewind_buf
-            + global->audio_data.rewind_ptr,
-            global->audio_data.rewind_size - global->audio_data.rewind_ptr);
-
+      audio_driver_frame_is_reverse();
       global->rewind.frame_is_reverse = false;
    }
 
@@ -199,7 +175,7 @@ static void check_rewind(bool pressed)
       if (state_manager_pop(global->rewind.state, &buf))
       {
          global->rewind.frame_is_reverse = true;
-         setup_rewind_audio();
+         audio_driver_setup_rewind();
 
          rarch_main_msg_queue_push(RETRO_MSG_REWINDING, 0,
                runloop->is_paused ? 1 : 30, true);

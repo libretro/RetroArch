@@ -207,36 +207,6 @@ typedef struct global
 
    struct
    {
-      float *data;
-
-      size_t data_ptr;
-      size_t chunk_size;
-      size_t nonblock_chunk_size;
-      size_t block_chunk_size;
-
-      double src_ratio;
-      float in_rate;
-
-      bool use_float;
-
-      float *outsamples;
-      int16_t *conv_outsamples;
-
-      int16_t *rewind_buf;
-      size_t rewind_ptr;
-      size_t rewind_size;
-
-      rarch_dsp_filter_t *dsp;
-
-      bool rate_control; 
-      double orig_src_ratio;
-      size_t driver_buffer_size;
-
-      float volume_gain;
-   } audio_data;
-
-   struct
-   {
       unsigned width;
       unsigned height;
    } video_data;

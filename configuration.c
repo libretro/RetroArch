@@ -519,7 +519,8 @@ static void config_set_defaults(void)
    settings->audio.rate_control_delta          = rate_control_delta;
    settings->audio.max_timing_skew             = max_timing_skew;
    settings->audio.volume                      = audio_volume;
-   global->audio_data.volume_gain              = db_to_gain(settings->audio.volume);
+
+   audio_driver_set_volume_gain(db_to_gain(settings->audio.volume));
 
    settings->rewind_enable                     = rewind_enable;
    settings->rewind_buffer_size                = rewind_buffer_size;
@@ -1378,7 +1379,7 @@ static bool config_load_file(const char *path, bool set_defaults)
    CONFIG_GET_FLOAT_BASE(conf, settings, audio.max_timing_skew, "audio_max_timing_skew");
    CONFIG_GET_FLOAT_BASE(conf, settings, audio.volume, "audio_volume");
    CONFIG_GET_STRING_BASE(conf, settings, audio.resampler, "audio_resampler");
-   global->audio_data.volume_gain = db_to_gain(settings->audio.volume);
+   audio_driver_set_volume_gain(db_to_gain(settings->audio.volume));
 
    CONFIG_GET_STRING_BASE(conf, settings, camera.device, "camera_device");
    CONFIG_GET_BOOL_BASE(conf, settings, camera.allow, "camera_allow");
