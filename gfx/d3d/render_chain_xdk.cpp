@@ -128,27 +128,28 @@ static bool renderchain_create_first_pass(void *data,
 }
 
 static void renderchain_set_vertices(void *data, unsigned pass,
-      unsigned width, unsigned height, uint64_t frame_count)
+      unsigned vert_width, unsigned vert_height, uint64_t frame_count)
 {
+   unsigned width, height;
    d3d_video_t *d3d         = (d3d_video_t*)data;
-   runloop_t *runloop       = rarch_main_get_ptr();
-   global_t *global         = global_get_ptr();
-   xdk_renderchain_t *chain = (xdk_renderchain_t*)d3d->renderchain_data;
+   xdk_renderchain_t *chain = d3d ? (xdk_renderchain_t*)d3d->renderchain_data : NULL;
 
-   if (chain->last_width != width || chain->last_height != height)
+   video_driver_get_size(&width, &height);
+
+   if (chain->last_width != vert_width || chain->last_height != vert_height)
    {
       unsigned i;
       Vertex vert[4];
       void *verts      = NULL;
 
-      chain->last_width  = width;
-      chain->last_height = height;
+      chain->last_width  = vert_width;
+      chain->last_height = vert_height;
 
-      float tex_w      = width;
-      float tex_h      = height;
+      float tex_w        = vert_width;
+      float tex_h        = vert_height;
 #ifdef _XBOX360
-      tex_w           /= ((float)chain->tex_w);
-      tex_h           /= ((float)chain->tex_h);
+      tex_w             /= ((float)chain->tex_w);
+      tex_h             /= ((float)chain->tex_h);
 #endif
 
       vert[0].x        = -1.0f;
@@ -208,13 +209,12 @@ static void renderchain_set_vertices(void *data, unsigned pass,
 #ifdef _XBOX
    if (d3d->shader)
    {
-      renderchain_set_mvp(d3d, global->video_data.width, global->video_data.height, d3d->dev_rotation);
+      renderchain_set_mvp(d3d, width, height, d3d->dev_rotation);
       if (d3d->shader->use)
          d3d->shader->use(d3d, pass);
       if (d3d->shader->set_params)
-         d3d->shader->set_params(d3d, width, height, chain->tex_w,
-               chain->tex_h, global->video_data.width,
-               global->video_data.height, frame_count, NULL, NULL, NULL, 0);
+         d3d->shader->set_params(d3d, vert_width, vert_height, chain->tex_w,
+               chain->tex_h, width, height, frame_count, NULL, NULL, NULL, 0);
    }
 #endif
 #endif
