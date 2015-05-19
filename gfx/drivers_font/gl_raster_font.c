@@ -264,14 +264,16 @@ static void gl_raster_font_render_message(
 
 static void gl_raster_font_setup_viewport(gl_raster_t *font, bool full_screen)
 {
+   unsigned width, height;
    gl_t         *gl = font->gl;
    global_t *global = global_get_ptr();
 
    if (!gl)
       return;
 
-   video_driver_set_viewport(global->video_data.width,
-         global->video_data.height, full_screen, false);
+   video_driver_get_size(&width, &height);
+
+   video_driver_set_viewport(width, height, full_screen, false);
 
    glEnable(GL_BLEND);
    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -285,13 +287,15 @@ static void gl_raster_font_setup_viewport(gl_raster_t *font, bool full_screen)
 
 static void gl_raster_font_restore_viewport(gl_t *gl)
 {
+   unsigned width, height;
    global_t *global = global_get_ptr();
+
+   video_driver_get_size(&width, &height);
 
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
 
    glDisable(GL_BLEND);
-   video_driver_set_viewport(global->video_data.width,
-         global->video_data.height, false, true);
+   video_driver_set_viewport(width, height, false, true);
 }
 
 static void gl_raster_font_render_msg(void *data, const char *msg,

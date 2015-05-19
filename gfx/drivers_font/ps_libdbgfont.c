@@ -34,18 +34,22 @@
 
 static void *libdbg_font_init_font(void *gl_data, const char *font_path, float font_size)
 {
-   global_t *global = global_get_ptr();
+   unsigned width, height;
+
+   video_driver_get_size(&width, &height);
 
    (void)font_path;
    (void)font_size;
+   (void)width;
+   (void)height;
 
    DbgFontConfig cfg;
 #if defined(SN_TARGET_PSP2)
    cfg.fontSize     = SCE_DBGFONT_FONTSIZE_LARGE;
 #elif defined(__CELLOS_LV2__)
    cfg.bufSize      = SCE_DBGFONT_BUFSIZE_LARGE;
-   cfg.screenWidth  = global->video_data.width;
-   cfg.screenHeight = global->video_data.height;
+   cfg.screenWidth  = width;
+   cfg.screenHeight = height;
 #endif
 
    DbgFontInit(&cfg);
