@@ -409,7 +409,6 @@ static void event_set_volume(float gain)
 {
    char msg[PATH_MAX_LENGTH];
    settings_t *settings    = config_get_ptr();
-   global_t   *global      = global_get_ptr();
 
    settings->audio.volume += gain;
    settings->audio.volume  = max(settings->audio.volume, -80.0f);

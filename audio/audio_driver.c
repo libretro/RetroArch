@@ -612,7 +612,6 @@ bool audio_driver_flush(const int16_t *data, size_t samples)
    struct rarch_dsp_data dsp_data = {0};
    runloop_t *runloop             = rarch_main_get_ptr();
    driver_t  *driver              = driver_get_ptr();
-   global_t  *global              = global_get_ptr();
    settings_t *settings           = config_get_ptr();
 
    if (driver->recording_data)
