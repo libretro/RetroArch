@@ -23,10 +23,6 @@
 extern "C" {
 #endif
 
-void menu_common_list_clear(void *data);
-
-void menu_common_list_set_selection(void *data);
-
 void menu_common_list_insert(void *data,
       const char *path, const char *label,
       unsigned type, size_t idx);
