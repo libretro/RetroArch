@@ -315,6 +315,7 @@ static bool xdk_renderchain_init(void *data,
       unsigned fmt
       )
 {
+   unsigned width, height;
    d3d_video_t *d3d             = (d3d_video_t*)data;
    LPDIRECT3DDEVICE d3dr        = (LPDIRECT3DDEVICE)d3d->dev;
    global_t *global             = global_get_ptr();
@@ -323,6 +324,8 @@ static bool xdk_renderchain_init(void *data,
    xdk_renderchain_t *chain     = (xdk_renderchain_t*)d3d->renderchain_data;
    (void)final_viewport_data;
    (void)fmt;
+
+   video_driver_get_size(&width, &height);
 
    chain->dev                   = (LPDIRECT3DDEVICE)dev_data;
    //chain->video_info            = video_info;
@@ -334,10 +337,10 @@ static bool xdk_renderchain_init(void *data,
       return false;
 
    if (global->console.screen.viewports.custom_vp.width == 0)
-      global->console.screen.viewports.custom_vp.width = global->video_data.width;
+      global->console.screen.viewports.custom_vp.width = width;
 
    if (global->console.screen.viewports.custom_vp.height == 0)
-      global->console.screen.viewports.custom_vp.height = global->video_data.height;
+      global->console.screen.viewports.custom_vp.height = height;
 
    return true;
 }
