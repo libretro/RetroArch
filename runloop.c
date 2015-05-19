@@ -35,9 +35,8 @@
 #include "netplay.h"
 #endif
 
-static struct runloop *g_runloop;
-
-static struct global *g_extern;
+static struct runloop *g_runloop = NULL;
+static struct global *g_extern   = NULL;
 
 /**
  * check_pause:
@@ -941,12 +940,11 @@ runloop_t *rarch_main_get_ptr(void)
 
 void rarch_main_state_free(void)
 {
-   runloop_t *runloop = rarch_main_get_ptr();
-
-   if (!runloop)
+   if (!g_runloop)
       return;
 
-   free(runloop);
+   free(g_runloop);
+   g_runloop = NULL;
 }
 
 void rarch_main_global_free(void)
