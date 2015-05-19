@@ -18,6 +18,18 @@
 #include "menu.h"
 #include "menu_entries_cbs.h"
 
+void menu_common_list_clear(void *data)
+{
+   file_list_t *list = (file_list_t*)data;
+
+   if (list)
+      file_list_clear(list);
+}
+
+void menu_common_list_set_selection(void *data)
+{
+}
+
 void menu_common_list_insert(void *data,
       const char *path, const char *label,
       unsigned type, size_t idx)
