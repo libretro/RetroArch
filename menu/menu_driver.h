@@ -254,6 +254,7 @@ typedef struct menu_ctx_driver
    void  (*list_set_selection)(file_list_t *list);
    bool  (*load_background)(void *data);
    const char *ident;
+   bool  (*perform_action)(void* data, unsigned action);
 } menu_ctx_driver_t;
 
 extern menu_ctx_driver_t menu_ctx_rmenu;

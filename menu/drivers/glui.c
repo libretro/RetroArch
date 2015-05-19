@@ -674,4 +674,5 @@ menu_ctx_driver_t menu_ctx_glui = {
    NULL,
    glui_load_wallpaper,
    "glui",
+   NULL,
 };

@@ -1936,4 +1936,5 @@ menu_ctx_driver_t menu_ctx_xmb = {
    NULL,
    xmb_load_wallpaper,
    "xmb",
+   NULL,
 };
