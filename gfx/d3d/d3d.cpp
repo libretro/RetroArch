@@ -716,19 +716,21 @@ static bool d3d_construct(d3d_video_t *d3d,
 
 static void d3d_viewport_info(void *data, struct video_viewport *vp)
 {
+   unsigned width, height;
    d3d_video_t *d3d = (d3d_video_t*)data;
-   global_t *global = global_get_ptr();
 
    if (!d3d || !vp)
       return;
+
+   video_driver_get_size(&width, &height);
 
    vp->x            = d3d->final_viewport.X;
    vp->y            = d3d->final_viewport.Y;
    vp->width        = d3d->final_viewport.Width;
    vp->height       = d3d->final_viewport.Height;
 
-   vp->full_width   = global->video_data.width;
-   vp->full_height  = global->video_data.height;
+   vp->full_width   = width;
+   vp->full_height  = height;
 }
 
 static void d3d_set_rotation(void *data, unsigned rot)
@@ -1332,6 +1334,7 @@ static bool d3d_init_luts(d3d_video_t *d3d)
 #ifdef HAVE_OVERLAY
 static void d3d_overlay_render(d3d_video_t *d3d, overlay_t *overlay)
 {
+   unsigned width, height;
    void *verts;
    unsigned i;
    struct overlay_vertex
@@ -1424,6 +1427,8 @@ static void d3d_overlay_render(d3d_video_t *d3d, overlay_t *overlay)
    d3d_set_stream_source(d3d->dev, 0, overlay->vert_buf,
          0, sizeof(overlay_vertex));
 
+   video_driver_get_size(&width, &height);
+
    if (overlay->fullscreen)
    {
       /* Set viewport to full window. */
@@ -1431,8 +1436,8 @@ static void d3d_overlay_render(d3d_video_t *d3d, overlay_t *overlay)
 
       vp_full.X           = 0;
       vp_full.Y           = 0;
-      vp_full.Width       = global->video_data.width;
-      vp_full.Height      = global->video_data.height;
+      vp_full.Width       = width;
+      vp_full.Height      = height;
       vp_full.MinZ        = 0.0f;
       vp_full.MaxZ        = 1.0f;
       d3d_set_viewport(d3d->dev, &vp_full);
@@ -1610,9 +1615,11 @@ static void d3d_get_overlay_interface(void *data,
 #endif
 
 static bool d3d_frame(void *data, const void *frame,
-      unsigned width, unsigned height, unsigned pitch,
+      unsigned frame_width, unsigned frame_height,
+      unsigned pitch,
       const char *msg)
 {
+   unsigned width, height;
    D3DVIEWPORT screen_vp;
    unsigned i                      = 0;
    d3d_video_t *d3d                = (d3d_video_t*)data;
@@ -1625,8 +1632,10 @@ static bool d3d_frame(void *data, const void *frame,
 
    (void)i;
 
-  if (!frame)
+   if (!frame)
       return true;
+
+   video_driver_get_size(&width, &height);
 
    RARCH_PERFORMANCE_INIT(d3d_frame);
    RARCH_PERFORMANCE_START(d3d_frame);
@@ -1644,8 +1653,7 @@ static bool d3d_frame(void *data, const void *frame,
 
    if (d3d->should_resize)
    {
-      d3d_calculate_rect(d3d, global->video_data.width,
-            global->video_data.width, d3d->video_info.force_aspect,
+      d3d_calculate_rect(d3d, width, width, d3d->video_info.force_aspect,
             global->system.aspect_ratio);
 
       d3d->renderchain_driver->set_final_viewport(d3d,
@@ -1660,8 +1668,8 @@ static bool d3d_frame(void *data, const void *frame,
    screen_vp.Y       = 0;
    screen_vp.MinZ    = 0;
    screen_vp.MaxZ    = 1;
-   screen_vp.Width   = global->video_data.width;
-   screen_vp.Height  = global->video_data.height;
+   screen_vp.Width   = width;
+   screen_vp.Height  = height;
    d3d_set_viewport(d3dr, &screen_vp);
    d3d_clear(d3dr, 0, 0, D3DCLEAR_TARGET, 0, 1, 0);
 
@@ -1682,7 +1690,7 @@ static bool d3d_frame(void *data, const void *frame,
 #else
             d3d->renderchain_data,
 #endif
-            frame, width, height,
+            frame, frame_width, frame_height,
             pitch, d3d->dev_rotation))
    {
       RARCH_ERR("[D3D]: Failed to render scene.\n");
@@ -1746,6 +1754,7 @@ static bool d3d_frame(void *data, const void *frame,
 
 static bool d3d_read_viewport(void *data, uint8_t *buffer)
 {
+   unsigned width, height;
 #ifndef _XBOX
    D3DLOCKED_RECT rect;
    LPDIRECT3DSURFACE target = NULL;
@@ -1754,7 +1763,8 @@ static bool d3d_read_viewport(void *data, uint8_t *buffer)
    bool ret                 = true;
    d3d_video_t *d3d         = (d3d_video_t*)data;
    LPDIRECT3DDEVICE d3dr    = (LPDIRECT3DDEVICE)d3d->dev;
-   global_t *global         = global_get_ptr();
+
+   video_driver_get_size(&width, &height);
 
    RARCH_PERFORMANCE_INIT(d3d_read_viewport);
    RARCH_PERFORMANCE_START(d3d_read_viewport);
@@ -1772,8 +1782,7 @@ static bool d3d_read_viewport(void *data, uint8_t *buffer)
    }
 
    if (FAILED(d3d->d3d_err = d3dr->CreateOffscreenPlainSurface(
-               global->video_data.width,
-               global->video_data.height,
+               width, height,
                D3DFMT_X8R8G8B8, D3DPOOL_SYSTEMMEM,
                &dest, NULL)))
    {
