@@ -837,3 +837,12 @@ bool video_driver_frame(const void *frame, unsigned width,
       return true;
    return false;
 }
+
+void video_driver_get_size(unsigned *width, unsigned *height)
+{
+   global_t *global    = global_get_ptr();
+   if (width)
+      *width  = global->video_data.width;
+   if (height)
+      *height = global->video_data.height;
+}

@@ -65,7 +65,7 @@ static void glui_blit_line(float x, float y,
    if (!menu)
       return;
 
-   menu_display_get_size(&width, &height);
+   video_driver_get_size(&width, &height);
 
    glui = (glui_handle_t*)menu->userdata;
 
@@ -110,7 +110,7 @@ static void glui_render_quad(gl_t *gl, int x, int y, int w, int h,
       r, g, b, a,
    };
 
-   menu_display_get_size(&width, &height);
+   video_driver_get_size(&width, &height);
 
    glViewport(x, height - y - h, w, h);
 
@@ -142,7 +142,7 @@ static void glui_draw_scrollbar(gl_t *gl)
    if (!menu)
       return;
 
-   menu_display_get_size(&width, &height);
+   video_driver_get_size(&width, &height);
 
    glui                 = (glui_handle_t*)menu->userdata;
    content_height       = menu_entries_get_end() * glui->line_height;
@@ -199,7 +199,7 @@ static void glui_render_messagebox(const char *message)
    if (list->elems == 0)
       goto end;
 
-   menu_display_get_size(&width, &height);
+   video_driver_get_size(&width, &height);
 
    x = width  / 2;
    y = height / 2 - list->size * menu->font.size / 2;
@@ -228,7 +228,7 @@ static void glui_render(void)
    if (!menu || !menu->userdata)
       return;
 
-   menu_display_get_size(&width, &height);
+   video_driver_get_size(&width, &height);
 
    glui = (glui_handle_t*)menu->userdata;
 
@@ -286,7 +286,7 @@ static void glui_render_menu_list(runloop_t *runloop,
    if (!menu_display_update_pending())
       return;
 
-   menu_display_get_size(&width, &height);
+   video_driver_get_size(&width, &height);
 
    glui->list_block.carr.coords.vertices = 0;
 
@@ -354,7 +354,7 @@ static void glui_frame(void)
          && !glui->box_message[0])
       return;
 
-   menu_display_get_size(&width, &height);
+   video_driver_get_size(&width, &height);
 
    menu_display_set_viewport();
 
@@ -587,7 +587,7 @@ static float glui_get_scroll(void)
    if (!menu || !menu->userdata)
       return 0;
 
-   menu_display_get_size(&width, &height);
+   video_driver_get_size(&width, &height);
 
    glui = (glui_handle_t*)menu->userdata;
    half = (height / glui->line_height) / 2;

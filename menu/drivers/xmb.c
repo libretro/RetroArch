@@ -273,7 +273,7 @@ static void xmb_draw_icon(gl_t *gl, xmb_handle_t *xmb,
    if (alpha == 0)
       return;
 
-   menu_display_get_size(&width, &height);
+   video_driver_get_size(&width, &height);
 
    if (
          x < -xmb->icon.size/2 || 
@@ -320,7 +320,7 @@ static void xmb_draw_icon_predone(gl_t *gl, xmb_handle_t *xmb,
    if (alpha == 0)
       return;
 
-   menu_display_get_size(&width, &height);
+   video_driver_get_size(&width, &height);
 
    if (
          x < -xmb->icon.size/2 || 
@@ -368,7 +368,7 @@ static void xmb_draw_text(menu_handle_t *menu,
    if (a8 == 0)
       return;
 
-   menu_display_get_size(&width, &height);
+   video_driver_get_size(&width, &height);
 
    if (x < -xmb->icon.size || x > width + xmb->icon.size
          || y < -xmb->icon.size || y > height + xmb->icon.size)
@@ -414,7 +414,7 @@ static void xmb_frame_messagebox(const char *message)
    if (!menu)
       return;
 
-   menu_display_get_size(&width, &height);
+   video_driver_get_size(&width, &height);
 
    xmb = (xmb_handle_t*)menu->userdata;
 
@@ -963,7 +963,7 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
    if (!list || !list->size)
       return;
 
-   menu_display_get_size(&width, &height);
+   video_driver_get_size(&width, &height);
 
    file_list_get_last(stack, NULL, &label, NULL);
 
@@ -1106,7 +1106,7 @@ static void xmb_draw_cursor(gl_t *gl, xmb_handle_t *xmb, float x, float y)
       1.0f, 1.0f, 1.0f, xmb->alpha,
    };
 
-   menu_display_get_size(&width, &height);
+   video_driver_get_size(&width, &height);
 
    glViewport(x, height - y, xmb->cursor.size, xmb->cursor.size);
 
@@ -1198,7 +1198,7 @@ static void xmb_frame(void)
    if (!gl)
       return;
 
-   menu_display_get_size(&width, &height);
+   video_driver_get_size(&width, &height);
 
    menu_display_font_bind_block(menu, font_driver, &xmb->raster_block);
 
@@ -1339,7 +1339,7 @@ static void *xmb_init(void)
    if (!menu)
       goto error;
 
-   menu_display_get_size(&width, &height);
+   video_driver_get_size(&width, &height);
 
    menu->userdata             = (xmb_handle_t*)calloc(1, sizeof(xmb_handle_t));
 
