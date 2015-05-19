@@ -1744,9 +1744,9 @@ bool config_load_override(void)
    /* Config directory: config_directory.
     * Try config directory setting first, 
     * fallback to the location of the current configuration file. */
-   if (settings->menu_config_directory)
+   if (settings->menu_config_directory[0] != '\0')
       strlcpy(config_directory, settings->menu_config_directory, PATH_MAX_LENGTH);
-   else if (global->config_path)
+   else if (global->config_path[0] != '\0')
       fill_pathname_basedir(config_directory, global->config_path, PATH_MAX_LENGTH);
    else
    {
@@ -1918,7 +1918,7 @@ bool config_load_remap(void)
 
    /* Remap directory: remap_directory.
     * Try remap directory setting, no fallbacks defined */
-   if (settings->input_remapping_directory)
+   if (settings->input_remapping_directory[0] != '\0')
       strlcpy(remap_directory, settings->input_remapping_directory, PATH_MAX_LENGTH);
    else
    {
