@@ -478,8 +478,9 @@ static void *glui_init(void)
 
    glui_allocate_white_texture(glui);
 
-   rarch_main_data_msg_queue_push(DATA_TYPE_IMAGE,
-         settings->menu.wallpaper, "cb_menu_wallpaper", 0, 1, true);
+   if (settings->menu.wallpaper[0] != '\0')
+      rarch_main_data_msg_queue_push(DATA_TYPE_IMAGE,
+            settings->menu.wallpaper, "cb_menu_wallpaper", 0, 1, true);
 
    return menu;
 error:
