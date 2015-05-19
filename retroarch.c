@@ -1239,7 +1239,6 @@ void rarch_main_init_wrap(const struct rarch_main_wrap *args,
 
 void rarch_main_set_state(unsigned cmd)
 {
-   runloop_t *runloop   = rarch_main_get_ptr();
    driver_t *driver     = driver_get_ptr();
    global_t *global     = global_get_ptr();
    settings_t *settings = config_get_ptr();

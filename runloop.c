@@ -1078,7 +1078,6 @@ int rarch_main_iterate(void)
    unsigned i;
    retro_input_t trigger_input;
    event_cmd_state_t    cmd        = {0};
-   runloop_t *runloop              = rarch_main_get_ptr();
    int ret                         = 0;
    static retro_input_t last_input = 0;
    retro_input_t old_input         = last_input;
