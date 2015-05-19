@@ -227,12 +227,13 @@ int cb_core_updater_list(void *data_, size_t len)
    if (core_buf)
       free(core_buf);
 
-   core_buf = (char*)malloc(len * sizeof(char));
+   core_buf = (char*)malloc((len+1) * sizeof(char));
 
    if (!core_buf)
       return -1;
 
    memcpy(core_buf, data, len * sizeof(char));
+   core_buf[len] = '\0';
    core_len = len;
 
    menu->nonblocking_refresh = false;
