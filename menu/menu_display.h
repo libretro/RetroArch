@@ -56,6 +56,8 @@ bool menu_display_init_main_font(menu_handle_t *menu,
       const char *font_path, float font_size);
 void menu_display_free_main_font(menu_handle_t *menu);
 
+void menu_display_get_size(unsigned *width, unsigned *height);
+
 void menu_display_set_viewport(void);
 
 void menu_display_unset_viewport(void);

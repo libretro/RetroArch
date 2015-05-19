@@ -219,18 +219,28 @@ bool menu_display_init_main_font(menu_handle_t *menu,
    return result;
 }
 
-void menu_display_set_viewport(void)
+void menu_display_get_size(unsigned *width, unsigned *height)
 {
    global_t *global    = global_get_ptr();
+   if (width)
+      *width  = global->video_data.width;
+   if (height)
+      *height = global->video_data.height;
+}
 
-   video_driver_set_viewport(global->video_data.width,
-         global->video_data.height, true, false);
+void menu_display_set_viewport(void)
+{
+   unsigned width, height;
+   menu_display_get_size(&width, &height);
+
+   video_driver_set_viewport(width, height, true, false);
 }
 
 void menu_display_unset_viewport(void)
 {
-   global_t *global    = global_get_ptr();
+   unsigned width, height;
+   menu_display_get_size(&width, &height);
 
-   video_driver_set_viewport(global->video_data.width,
-         global->video_data.height, false, true);
+   video_driver_set_viewport(width,
+         height, false, true);
 }

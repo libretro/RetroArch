@@ -264,8 +264,8 @@ static void xmb_draw_icon(gl_t *gl, xmb_handle_t *xmb,
       float alpha, float rotation, float scale_factor)
 {
    struct gl_coords coords;
+   unsigned width, height;
    math_matrix_4x4 mymat, mrot, mscal;
-   global_t *global = global_get_ptr();
 
    if (alpha > xmb->alpha)
       alpha = xmb->alpha;
@@ -273,11 +273,13 @@ static void xmb_draw_icon(gl_t *gl, xmb_handle_t *xmb,
    if (alpha == 0)
       return;
 
+   menu_display_get_size(&width, &height);
+
    if (
          x < -xmb->icon.size/2 || 
-         x > global->video_data.width ||
+         x > width ||
          y < xmb->icon.size/2 ||
-         y > global->video_data.height + xmb->icon.size)
+         y > height + xmb->icon.size)
       return;
 
    GLfloat color[] = {
@@ -287,7 +289,7 @@ static void xmb_draw_icon(gl_t *gl, xmb_handle_t *xmb,
       1.0f, 1.0f, 1.0f, alpha,
    };
 
-   glViewport(x, global->video_data.height - y, xmb->icon.size, xmb->icon.size);
+   glViewport(x, height - y, xmb->icon.size, xmb->icon.size);
 
    coords.vertices      = 4;
    coords.vertex        = rmb_vertex;
@@ -310,7 +312,7 @@ static void xmb_draw_icon_predone(gl_t *gl, xmb_handle_t *xmb,
       float alpha, float rotation, float scale_factor)
 {
    struct gl_coords coords;
-   global_t *global = global_get_ptr();
+   unsigned width, height;
 
    if (alpha > xmb->alpha)
       alpha = xmb->alpha;
@@ -318,11 +320,13 @@ static void xmb_draw_icon_predone(gl_t *gl, xmb_handle_t *xmb,
    if (alpha == 0)
       return;
 
+   menu_display_get_size(&width, &height);
+
    if (
          x < -xmb->icon.size/2 || 
-         x > global->video_data.width ||
+         x > width ||
          y < xmb->icon.size/2 ||
-         y > global->video_data.height + xmb->icon.size)
+         y > height + xmb->icon.size)
       return;
 
    GLfloat color[] = {
@@ -335,7 +339,7 @@ static void xmb_draw_icon_predone(gl_t *gl, xmb_handle_t *xmb,
    if (gl->shader && gl->shader->use)
       gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
 
-   glViewport(x, global->video_data.height - y, xmb->icon.size, xmb->icon.size);
+   glViewport(x, height - y, xmb->icon.size, xmb->icon.size);
 
    coords.vertices      = 4;
    coords.vertex        = rmb_vertex;
@@ -352,9 +356,9 @@ static void xmb_draw_text(menu_handle_t *menu,
       float y, float scale_factor, float alpha,
       enum text_alignment text_align)
 {
+   unsigned width, height;
    uint8_t a8                =   0;
    struct font_params params = {0};
-   global_t *global          = global_get_ptr();
 
    if (alpha > xmb->alpha)
       alpha = xmb->alpha;
@@ -364,12 +368,14 @@ static void xmb_draw_text(menu_handle_t *menu,
    if (a8 == 0)
       return;
 
-   if (x < -xmb->icon.size || x > global->video_data.width + xmb->icon.size
-         || y < -xmb->icon.size || y > global->video_data.height + xmb->icon.size)
+   menu_display_get_size(&width, &height);
+
+   if (x < -xmb->icon.size || x > width + xmb->icon.size
+         || y < -xmb->icon.size || y > height + xmb->icon.size)
       return;
 
-   params.x           = x        / global->video_data.width;
-   params.y           = 1.0f - y / global->video_data.height;
+   params.x           = x        / width;
+   params.y           = 1.0f - y / height;
 
    params.scale       = scale_factor;
    params.color       = FONT_COLOR_RGBA(255, 255, 255, a8);
@@ -399,14 +405,16 @@ static void xmb_frame_messagebox(const char *message)
 {
    int x, y;
    unsigned i;
+   unsigned width, height;
    struct string_list *list = NULL;
    gl_t *gl                 = NULL;
    xmb_handle_t *xmb        = NULL;
    menu_handle_t *menu      = menu_driver_get_ptr();
-   global_t *global         = global_get_ptr();
 
    if (!menu)
       return;
+
+   menu_display_get_size(&width, &height);
 
    xmb = (xmb_handle_t*)menu->userdata;
 
@@ -425,8 +433,8 @@ static void xmb_frame_messagebox(const char *message)
    if (list->elems == 0)
       goto end;
 
-   x = global->video_data.width  / 2 - strlen(list->elems[0].data) * menu->font.size / 4;
-   y = global->video_data.height / 2 - list->size * menu->font.size / 2;
+   x = width  / 2 - strlen(list->elems[0].data) * menu->font.size / 4;
+   y = height / 2 - list->size * menu->font.size / 2;
 
    for (i = 0; i < list->size; i++)
    {
@@ -577,7 +585,7 @@ static xmb_node_t *xmb_node_allocate_userdata(xmb_handle_t *xmb,
 {
    xmb_node_t *node            = NULL;
    global_t *global            = global_get_ptr();
-   core_info_list_t *info_list = (core_info_list_t*)global->core_info;
+   core_info_list_t *info_list = global ? (core_info_list_t*)global->core_info : NULL;
 
    if (!info_list)
       return NULL;
@@ -622,7 +630,7 @@ static xmb_node_t* xmb_get_userdata_from_core(xmb_handle_t *xmb,
       core_info_t *info, unsigned i)
 {
    global_t *global            = global_get_ptr();
-   core_info_list_t *info_list = (core_info_list_t*)global->core_info;
+   core_info_list_t *info_list = global ? (core_info_list_t*)global->core_info : NULL;
 
    if (!info_list)
       return NULL;
@@ -721,14 +729,12 @@ static void xmb_set_title(xmb_handle_t *xmb)
       return;
 
    if (menu->categories.selection_ptr == 0)
-   {
       menu_entries_get_title(xmb->title_name, sizeof(xmb->title_name));
-   }
    else
    {
       core_info_t *info           = NULL;
       global_t *global            = global_get_ptr();
-      core_info_list_t *info_list = (core_info_list_t*)global->core_info;
+      core_info_list_t *info_list = global ? (core_info_list_t*)global->core_info : NULL;
 
       if (!info_list)
          return;
@@ -946,16 +952,18 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
       size_t current, size_t cat_selection_ptr)
 {
    unsigned i;
+   unsigned width, height;
    math_matrix_4x4 mymat, mrot, mscal;
    core_info_t *info     = NULL;
    const char *label     = NULL;
    xmb_node_t *core_node = NULL;
    size_t end            = 0;
-   global_t *global      = global_get_ptr();
    uint64_t frame_count  = video_driver_get_frame_count();
 
    if (!list || !list->size)
       return;
+
+   menu_display_get_size(&width, &height);
 
    file_list_get_last(stack, NULL, &label, NULL);
 
@@ -989,9 +997,9 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
 
       if (
             icon_x < -xmb->icon.size / 2 || 
-            icon_x > global->video_data.width ||
+            icon_x > width ||
             icon_y < xmb->icon.size / 2 ||
-            icon_y > global->video_data.height + xmb->icon.size)
+            icon_y > height + xmb->icon.size)
          continue;
 
       menu_entry_get(&entry, i, list, true);
@@ -1087,9 +1095,9 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
 
 static void xmb_draw_cursor(gl_t *gl, xmb_handle_t *xmb, float x, float y)
 {
+   unsigned width, height;
    struct gl_coords coords;
    math_matrix_4x4 mymat, mrot;
-   global_t *global = global_get_ptr();
 
    GLfloat color[] = {
       1.0f, 1.0f, 1.0f, xmb->alpha,
@@ -1098,7 +1106,9 @@ static void xmb_draw_cursor(gl_t *gl, xmb_handle_t *xmb, float x, float y)
       1.0f, 1.0f, 1.0f, xmb->alpha,
    };
 
-   glViewport(x, global->video_data.height - y, xmb->cursor.size, xmb->cursor.size);
+   menu_display_get_size(&width, &height);
+
+   glViewport(x, height - y, xmb->cursor.size, xmb->cursor.size);
 
    coords.vertices      = 4;
    coords.vertex        = rmb_vertex;
@@ -1165,6 +1175,7 @@ static void xmb_frame(void)
 {
    math_matrix_4x4 mymat, mrot, mscal;
    unsigned i, depth;
+   unsigned width, height;
    char msg[PATH_MAX_LENGTH];
    char title_msg[PATH_MAX_LENGTH], timedate[PATH_MAX_LENGTH];
    bool render_background = false;
@@ -1173,7 +1184,6 @@ static void xmb_frame(void)
    const struct font_renderer *font_driver = NULL;
    menu_handle_t *menu  = menu_driver_get_ptr();
    settings_t *settings = config_get_ptr();
-   global_t *global     = global_get_ptr();
 
    if (!menu)
       return;
@@ -1187,6 +1197,8 @@ static void xmb_frame(void)
 
    if (!gl)
       return;
+
+   menu_display_get_size(&width, &height);
 
    menu_display_font_bind_block(menu, font_driver, &xmb->raster_block);
 
@@ -1203,7 +1215,7 @@ static void xmb_frame(void)
       disp_timedate_set_label(timedate, sizeof(timedate), 0);
 
       xmb_draw_text(menu, xmb, timedate,
-            global->video_data.width - xmb->margins.title.left - xmb->icon.size / 4, 
+            width - xmb->margins.title.left - xmb->icon.size / 4, 
             xmb->margins.title.top, 1, 1, TEXT_ALIGN_RIGHT);
    }
 
@@ -1211,7 +1223,7 @@ static void xmb_frame(void)
    {
       menu_entries_get_core_title(title_msg, sizeof(title_msg));
       xmb_draw_text(menu, xmb, title_msg, xmb->margins.title.left, 
-            global->video_data.height - xmb->margins.title.bottom, 1, 1, TEXT_ALIGN_LEFT);
+            height - xmb->margins.title.bottom, 1, 1, TEXT_ALIGN_LEFT);
    }
 
    depth = file_list_get_size(menu->menu_list->menu_stack);
@@ -1239,7 +1251,7 @@ static void xmb_frame(void)
 
    if (settings->menu.timedate_enable)
       xmb_draw_icon_predone(gl, xmb, &mymat, xmb->textures.list[XMB_TEXTURE_CLOCK].id,
-            global->video_data.width - xmb->icon.size, xmb->icon.size, 1, 0, 1);
+            width - xmb->icon.size, xmb->icon.size, 1, 0, 1);
 
    xmb_draw_icon_predone(gl, xmb, &mymat, xmb->textures.list[XMB_TEXTURE_ARROW].id,
          xmb->x + xmb->margins.screen.left + 
@@ -1307,6 +1319,7 @@ static void xmb_frame(void)
 
 static void *xmb_init(void)
 {
+   unsigned width, height;
    menu_handle_t *menu                = NULL;
    xmb_handle_t *xmb                  = NULL;
    const video_driver_t *video_driver = NULL;
@@ -1325,6 +1338,8 @@ static void *xmb_init(void)
 
    if (!menu)
       goto error;
+
+   menu_display_get_size(&width, &height);
 
    menu->userdata             = (xmb_handle_t*)calloc(1, sizeof(xmb_handle_t));
 
@@ -1368,20 +1383,20 @@ static void *xmb_init(void)
    xmb->item.active.factor      = 3.0;
    xmb->under_offset.item       = 5.0;
 
-   menu->frame_buf.width  = global->video_data.width;
-   menu->frame_buf.height = global->video_data.height;
+   menu->frame_buf.width  = width;
+   menu->frame_buf.height = height;
 
-   if (global->video_data.width >= 3840)
+   if (width >= 3840)
       scale_factor              = 2.0;
-   else if (global->video_data.width >= 2560)
+   else if (width >= 2560)
       scale_factor              = 1.5;
-   else if (global->video_data.width >= 1920)
+   else if (width >= 1920)
       scale_factor              = 1.0;
-   else if (global->video_data.width >= 1280)
+   else if (width >= 1280)
       scale_factor              = 0.75;
-   else if (global->video_data.width >=  640)
+   else if (width >=  640)
       scale_factor              = 0.5;
-   else if (global->video_data.width >=  320)
+   else if (width >=  320)
       scale_factor              = 0.25;
 
    strlcpy(xmb->icon.dir, "256", sizeof(xmb->icon.dir));
@@ -1604,7 +1619,7 @@ static void xmb_context_reset(void)
    xmb->settings_node.alpha = xmb->categories.active.alpha;
    xmb->settings_node.zoom  = xmb->categories.active.zoom;
 
-   info_list = (core_info_list_t*)global->core_info;
+   info_list = global ? (core_info_list_t*)global->core_info : NULL;
 
    if (!info_list)
       return;
