@@ -145,7 +145,6 @@ static int load_or_open_zip_iterate(char *s, size_t len, unsigned action)
 
 static int action_iterate_help(char *s, size_t len, const char *label)
 {
-   int ret;
    unsigned i;
    static const unsigned binds[] = {
       RETRO_DEVICE_ID_JOYPAD_UP,
@@ -202,8 +201,7 @@ static int action_iterate_help(char *s, size_t len, const char *label)
          "Press Accept/OK to continue.",
       desc[0], desc[1], desc[2], desc[3], desc[4], desc[5], desc[6], desc[7]);
 
-
-   return ret;
+   return 0;
 }
 
 static int action_iterate_info(char *s, size_t len, const char *label)
