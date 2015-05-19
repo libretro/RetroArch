@@ -337,7 +337,7 @@ void menu_driver_list_cache(bool state, unsigned action);
 void  menu_driver_list_delete(file_list_t *list, size_t i, size_t list_size);
 
 void  menu_driver_list_insert(file_list_t *list, const char *path,
-      const char *label, size_t list_size);
+      const char *label, unsigned type, size_t list_size);
 
 void  menu_driver_list_clear(file_list_t *list);
 
