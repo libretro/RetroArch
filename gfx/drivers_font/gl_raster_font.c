@@ -29,6 +29,8 @@
    font_color[      4 * (6 * i + c) + 1] = color[1]; \
    font_color[      4 * (6 * i + c) + 2] = color[2]; \
    font_color[      4 * (6 * i + c) + 3] = color[3]; \
+   font_lut_tex_coord[    4 * (6 * i + c) + 0] = gl->coords.lut_tex_coord[0]; \
+   font_lut_tex_coord[    4 * (6 * i + c) + 1] = gl->coords.lut_tex_coord[1]; \
 } while(0)
 
 #define MAX_MSG_LEN_CHUNK 64
@@ -181,6 +183,7 @@ static void gl_raster_font_render_message(
    GLfloat font_tex_coords[2 * 6 * MAX_MSG_LEN_CHUNK];
    GLfloat font_vertex[2 * 6 * MAX_MSG_LEN_CHUNK]; 
    GLfloat font_color[4 * 6 * MAX_MSG_LEN_CHUNK];
+   GLfloat font_lut_tex_coord[2 * 6 * MAX_MSG_LEN_CHUNK];
    struct gl_coords coords;
    gl_t *gl       = font ? font->gl : NULL;
 
@@ -246,7 +249,7 @@ static void gl_raster_font_render_message(
       coords.vertex        = font_vertex;
       coords.color         = font_color;
       coords.vertices      = 6 * msg_len;
-      coords.lut_tex_coord = gl->coords.lut_tex_coord;
+      coords.lut_tex_coord = font_lut_tex_coord;
 
       if (font->block)
          gl_coord_array_add(&font->block->carr, &coords, coords.vertices);

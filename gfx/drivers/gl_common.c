@@ -199,7 +199,7 @@ bool gl_coord_array_add(gl_coord_array_t *ca, const gl_coords_t *coords, unsigne
 
    if (success)
    {
-      size_t base_size = coords->vertices * sizeof(GLfloat);
+      size_t base_size = count * sizeof(GLfloat);
       size_t offset    = ca->coords.vertices;
 
       /* XXX: i wish we used interlaced arrays so we could call memcpy only once */
