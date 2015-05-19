@@ -22,6 +22,8 @@
 #include "../driver.h"
 #include "../general.h"
 
+static bool menu_alive = false;
+
 static const menu_ctx_driver_t *menu_ctx_drivers[] = {
 #if defined(HAVE_RMENU)
    &menu_ctx_rmenu,
@@ -359,4 +361,19 @@ void  menu_driver_navigation_ascend_alphabet(size_t *ptr_out)
 
    if (driver->navigation_ascend_alphabet)
       driver->navigation_ascend_alphabet(ptr_out);
+}
+
+bool menu_driver_alive(void)
+{
+   return menu_alive;
+}
+
+void menu_driver_set_alive(void)
+{
+   menu_alive = true;
+}
+
+void menu_driver_unset_alive(void)
+{
+   menu_alive = false;
 }

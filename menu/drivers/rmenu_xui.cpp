@@ -539,7 +539,7 @@ static void rmenu_xui_render(void)
    if (!menu)
       return;
 	if (menu_needs_refresh() && 
-		runloop->is_menu && !menu->msg_force)
+		menu_driver_alive() && !menu->msg_force)
 		return;
 
    menu_display_fb_unset_dirty();

@@ -143,7 +143,7 @@ static void rmenu_render(void)
       return;
    }
 
-   if (menu_needs_refresh() && runloop->is_menu
+   if (menu_needs_refresh() && menu_driver_alive() 
          && !menu->msg_force)
       return;
 

@@ -1613,7 +1613,7 @@ static bool gl_frame(void *data, const void *frame,
    gl_set_prev_texture(gl, &gl->tex_info);
 
 #if defined(HAVE_MENU)
-   if (runloop->is_menu)
+   if (menu_driver_alive())
       menu_driver_frame();
 
    if (gl->menu_texture_enable)

@@ -418,10 +418,9 @@ static void check_shader_dir(bool pressed_next, bool pressed_prev)
 #ifdef HAVE_MENU
 static void do_state_check_menu_toggle(void)
 {
-   runloop_t *runloop = rarch_main_get_ptr();
    global_t *global   = global_get_ptr();
 
-   if (runloop->is_menu)
+   if (menu_driver_alive())
    {
       if (global->main_is_init && !global->libretro_dummy)
          rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING_FINISHED);
@@ -450,7 +449,7 @@ static int do_pre_state_checks(event_cmd_state_t *cmd)
    if (cmd->overlay_next_pressed)
       event_command(EVENT_CMD_OVERLAY_NEXT);
 
-   if (!runloop->is_paused || runloop->is_menu)
+   if (!runloop->is_paused || menu_driver_alive())
    {
       if (cmd->fullscreen_toggle)
          event_command(EVENT_CMD_FULLSCREEN_TOGGLE);
@@ -1109,7 +1108,7 @@ int rarch_main_iterate(void)
 #endif
    
 #ifdef HAVE_MENU
-   if (runloop->is_menu)
+   if (menu_driver_alive())
    {
       menu_handle_t *menu = menu_driver_get_ptr();
       if (menu)

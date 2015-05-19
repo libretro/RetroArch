@@ -47,7 +47,6 @@ typedef struct runloop
    bool is_paused;
    bool is_idle;
    bool ui_companion_is_on_foreground;
-   bool is_menu;
    bool is_slowmotion;
 
    struct

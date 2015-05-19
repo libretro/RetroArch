@@ -1274,7 +1274,7 @@ void rarch_main_set_state(unsigned cmd)
             }
 
             menu_set_refresh();
-            runloop->is_menu   = true;
+            menu_driver_set_alive();
          }
 #endif
          break;
@@ -1292,8 +1292,7 @@ void rarch_main_set_state(unsigned cmd)
          menu_setting_apply_deferred();
 
          menu_driver_toggle(false);
-
-         runloop->is_menu = false;
+         menu_driver_unset_alive();
 
          driver_set_nonblock_state(driver->nonblock_state);
 

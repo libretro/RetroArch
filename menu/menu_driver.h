@@ -344,6 +344,12 @@ void  menu_driver_list_set_selection(file_list_t *list);
 
 void  menu_driver_context_destroy(void);
 
+bool menu_driver_alive(void);
+
+void menu_driver_set_alive(void);
+
+void menu_driver_unset_alive(void);
+
 #ifdef __cplusplus
 }
 #endif

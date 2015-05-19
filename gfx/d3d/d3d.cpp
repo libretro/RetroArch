@@ -1723,7 +1723,7 @@ static bool d3d_frame(void *data, const void *frame,
 #endif
 
 #ifdef HAVE_MENU
-   if (runloop->is_menu)
+   if (menu_driver_alive())
       menu_driver_frame();
 
 #ifdef _XBOX

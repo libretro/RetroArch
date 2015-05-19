@@ -1030,7 +1030,7 @@ bool event_command(enum event_command cmd)
          global->pending.windowed_scale = 0;
          break;
       case EVENT_CMD_MENU_TOGGLE:
-         if (runloop->is_menu)
+         if (menu_driver_alive())
             rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING_FINISHED);
          else
             rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING);
@@ -1094,7 +1094,7 @@ bool event_command(enum event_command cmd)
 #ifdef HAVE_MENU
          menu_display_fb_set_dirty();
 
-         if (runloop->is_menu)
+         if (menu_driver_alive())
             event_command(EVENT_CMD_VIDEO_SET_BLOCKING_STATE);
 #endif
          break;
@@ -1387,7 +1387,7 @@ bool event_command(enum event_command cmd)
          event_command(EVENT_CMD_PAUSE_CHECKS);
          break;
       case EVENT_CMD_MENU_PAUSE_LIBRETRO:
-         if (runloop->is_menu)
+         if (menu_driver_alive())
          {
             if (settings->menu.pause_libretro)
                event_command(EVENT_CMD_AUDIO_STOP);

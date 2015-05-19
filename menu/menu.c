@@ -170,6 +170,7 @@ void *menu_init(const void *data)
    rarch_assert(menu->msg_queue = msg_queue_new(8));
 
    menu_display_fb_set_dirty();
+   menu_driver_set_alive();
 
    return menu;
 error:
@@ -255,6 +256,8 @@ void menu_free(menu_handle_t *menu)
    if (global->core_info_current)
       free(global->core_info_current);
 
+   menu_driver_unset_alive();
+
    free(menu);
 }
 
@@ -299,7 +302,7 @@ int menu_iterate(retro_input_t input,
 
    ret = menu_entry_iterate(action);
 
-   if (runloop->is_menu && !runloop->is_idle)
+   if (menu_driver_alive() && !runloop->is_idle)
       menu_display_fb();
 
    menu_driver_set_texture();
