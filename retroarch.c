@@ -1117,7 +1117,7 @@ int rarch_main_init(int argc, char *argv[])
 
    if (global->verbosity)
    {
-      char str[PATH_MAX_LENGTH];
+      char str[PATH_MAX_LENGTH] = {0};
 
       RARCH_LOG_OUTPUT("=== Build =======================================");
       rarch_info_get_capabilities(RARCH_CAPABILITIES_CPU, str, sizeof(str));
