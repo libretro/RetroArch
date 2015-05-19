@@ -330,7 +330,6 @@ end:
       return;
 
    menu_driver_list_set_selection(list);
-   menu_common_list_set_selection(list);
 }
 
 void menu_list_clear(file_list_t *list)
@@ -342,7 +341,8 @@ void menu_list_clear(file_list_t *list)
    menu_driver_list_clear(list);
 
 end:
-   menu_common_list_clear(list);
+   if (list)
+      file_list_clear(list);
 }
 
 void menu_list_push(file_list_t *list,
