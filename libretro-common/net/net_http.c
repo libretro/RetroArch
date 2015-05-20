@@ -507,11 +507,14 @@ parse_again:
    return (state->part == P_DONE);
 
 fail:
-   state->error  = true;
-   state->part   = P_ERROR;
-   state->status = -1;
+   if (state)
+   {
+      state->error  = true;
+      state->part   = P_ERROR;
+      state->status = -1;
+   }
 
-   return true;
+   return false;
 }
 
 int net_http_status(struct http_t *state)
