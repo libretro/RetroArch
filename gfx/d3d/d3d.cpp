@@ -2,7 +2,7 @@
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2015 - Daniel De Matteis
  *  Copyright (C) 2012-2014 - OV2
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -154,9 +154,9 @@ void d3d_make_d3dpp(void *data,
    d3dpp->SwapEffect = D3DSWAPEFFECT_DISCARD;
    d3dpp->BackBufferCount = 2;
 #ifdef _XBOX
-   d3dpp->BackBufferFormat = 
+   d3dpp->BackBufferFormat =
 #ifdef _XBOX360
-      global->console.screen.gamma_correction ? 
+      global->console.screen.gamma_correction ?
       (D3DFORMAT)MAKESRGBFMT(info->rgb32 ? D3DFMT_X8R8G8B8 : D3DFMT_LIN_R5G6B5) :
 #endif
       info->rgb32 ? D3DFMT_X8R8G8B8 : D3DFMT_LIN_R5G6B5;
@@ -317,7 +317,7 @@ static bool d3d_initialize(d3d_video_t *d3d, const video_info_t *info)
 #else
          RARCH_WARN("[D3D]: Attempting to recover from dead state.\n");
 #endif
-         d3d_deinitialize(d3d); 
+         d3d_deinitialize(d3d);
          d3d->g_pD3D->Release();
          d3d->g_pD3D = NULL;
          ret = d3d_init_base(d3d, info);
@@ -433,7 +433,7 @@ static void d3d_calculate_rect(d3d_video_t *d3d,
          video_viewport_t *custom = video_viewport_get_custom();
 
          if (custom)
-            d3d_set_viewport(d3d, custom->x, custom->y, 
+            d3d_set_viewport(d3d, custom->x, custom->y,
                   custom->width, custom->height);
       }
       else
@@ -516,8 +516,7 @@ static bool d3d_has_windowed(void *data)
 static void d3d_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
-   struct retro_system_av_info *av_info =- 
-      video_viewport_get_system_av_info();
+   struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
 
    switch (aspect_ratio_idx)
    {
@@ -624,11 +623,11 @@ static bool d3d_construct(d3d_video_t *d3d,
 
    bool windowed_full = settings->video.windowed_fullscreen;
 
-   full_x = (windowed_full || info->width  == 0) ? 
+   full_x = (windowed_full || info->width  == 0) ?
       (mon_rect.right  - mon_rect.left) : info->width;
-   full_y = (windowed_full || info->height == 0) ? 
+   full_y = (windowed_full || info->height == 0) ?
       (mon_rect.bottom - mon_rect.top)  : info->height;
-   RARCH_LOG("[D3D]: Monitor size: %dx%d.\n", 
+   RARCH_LOG("[D3D]: Monitor size: %dx%d.\n",
          (int)(mon_rect.right  - mon_rect.left),
          (int)(mon_rect.bottom - mon_rect.top));
 #else
@@ -700,7 +699,7 @@ static bool d3d_construct(d3d_video_t *d3d,
    /* This should only be done once here
     * to avoid set_shader() to be overridden
     * later. */
-   enum rarch_shader_type type = 
+   enum rarch_shader_type type =
       video_shader_parse_type(settings->video.shader_path, RARCH_SHADER_NONE);
    if (settings->video.shader_enable && type == RARCH_SHADER_CG)
       d3d->shader_path = settings->video.shader_path;
@@ -783,7 +782,7 @@ static void *d3d_init(const video_info_t *info,
    {
       d3d_video_t *vid = (d3d_video_t*)driver->video_data;
 
-      /* Reinitialize renderchain as we 
+      /* Reinitialize renderchain as we
        * might have changed pixel formats.*/
       if (vid->renderchain_driver->reinit(vid, (const void*)info))
       {
@@ -916,7 +915,7 @@ static RECT d3d_monitor_rect(d3d_video_t *d3d)
    hm_to_use            = monitor_last;
    fs_monitor           = settings->video.monitor_index;
 
-   if (fs_monitor && fs_monitor <= monitor_count 
+   if (fs_monitor && fs_monitor <= monitor_count
          && monitor_all[fs_monitor - 1])
    {
       hm_to_use = monitor_all[fs_monitor - 1];
@@ -964,7 +963,7 @@ static bool d3d_init_imports(d3d_video_t *d3d)
       tracker_info.script_is_file = true;
    }
 
-   tracker_info.script_class = 
+   tracker_info.script_class =
       *d3d->shader.script_class ? d3d->shader.script_class : NULL;
 #endif
 
@@ -998,7 +997,7 @@ static bool d3d_init_chain(d3d_video_t *d3d, const video_info_t *video_info)
 #ifndef _XBOX
    link_info.pass  = &d3d->shader.pass[0];
 #endif
-   link_info.tex_w = link_info.tex_h = 
+   link_info.tex_w = link_info.tex_h =
       video_info->input_scale * RARCH_SCALE_BASE;
 
    if (!renderchain_init_first(&d3d->renderchain_driver,
@@ -1022,7 +1021,7 @@ static bool d3d_init_chain(d3d_video_t *d3d, const video_info_t *video_info)
 #ifdef _XBOX
    if (!d3d->renderchain_driver->init(d3d, &d3d->video_info,
             d3dr, &d3d->final_viewport, &link_info,
-            d3d->video_info.rgb32 ? 
+            d3d->video_info.rgb32 ?
             RETRO_PIXEL_FORMAT_XRGB8888 : RETRO_PIXEL_FORMAT_RGB565))
 #else
    if (!d3d->renderchain_driver->init(d3d->renderchain_data, &d3d->video_info,
@@ -1220,7 +1219,7 @@ static bool d3d_init_multipass(d3d_video_t *d3d)
       d3d->shader.pass[i].fbo.type_y  = RARCH_SCALE_INPUT;
    }
 
-   use_extra_pass       = d3d->shader.passes < GFX_MAX_SHADERS && 
+   use_extra_pass       = d3d->shader.passes < GFX_MAX_SHADERS &&
       d3d->shader.pass[d3d->shader.passes - 1].fbo.valid;
 
    if (use_extra_pass)
@@ -1264,12 +1263,12 @@ static void d3d_set_font_rect(d3d_video_t *d3d,
    if (!d3d)
       return;
 
-   d3d->font_rect.left            = d3d->final_viewport.X + 
+   d3d->font_rect.left            = d3d->final_viewport.X +
       d3d->final_viewport.Width * pos_x;
-   d3d->font_rect.right           = d3d->final_viewport.X + 
+   d3d->font_rect.right           = d3d->final_viewport.X +
       d3d->final_viewport.Width;
-   d3d->font_rect.top             = d3d->final_viewport.Y + 
-      (1.0f - pos_y) * d3d->final_viewport.Height - font_size; 
+   d3d->font_rect.top             = d3d->final_viewport.Y +
+      (1.0f - pos_y) * d3d->final_viewport.Height - font_size;
    d3d->font_rect.bottom          = d3d->final_viewport.Height;
 
    d3d->font_rect_shifted         = d3d->font_rect;
@@ -1541,7 +1540,7 @@ static bool d3d_overlay_load(void *data,
                   width, height, 1,
                   0,
                   D3DFMT_A8R8G8B8,
-                  D3DPOOL_MANAGED, 0, 0, 0, 
+                  D3DPOOL_MANAGED, 0, 0, 0,
                   NULL, NULL);
 
       if (!overlay->tex)
@@ -1667,7 +1666,7 @@ static bool d3d_frame(void *data, const void *frame,
       d3d->should_resize = false;
    }
 
-   /* render_chain() only clears out viewport, 
+   /* render_chain() only clears out viewport,
     * clear out everything. */
    screen_vp.X       = 0;
    screen_vp.Y       = 0;
@@ -1678,7 +1677,7 @@ static bool d3d_frame(void *data, const void *frame,
    d3d_set_viewport(d3dr, &screen_vp);
    d3d_clear(d3dr, 0, 0, D3DCLEAR_TARGET, 0, 1, 0);
 
-   /* Insert black frame first, so we 
+   /* Insert black frame first, so we
     * can screenshot, etc. */
    if (settings->video.black_frame_insertion)
    {
@@ -1890,11 +1889,11 @@ static void d3d_set_menu_texture_frame(void *data,
    (void)height;
    (void)alpha;
 
-   if (!d3d->menu->tex || d3d->menu->tex_w != width 
+   if (!d3d->menu->tex || d3d->menu->tex_w != width
          || d3d->menu->tex_h != height)
    {
       if (d3d->menu)
-	     d3d_texture_free(d3d->menu->tex); 
+	     d3d_texture_free(d3d->menu->tex);
 
       d3d->menu->tex = (LPDIRECT3DTEXTURE)
          d3d_texture_new(d3d->dev, NULL,
