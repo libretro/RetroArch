@@ -170,13 +170,12 @@ void d3d_make_d3dpp(void *data,
       unsigned width          = 0;
       unsigned height         = 0;
 
-	  gfx_ctx_get_video_size(d3d, &width, &height);
+      gfx_ctx_get_video_size(d3d, &width, &height);
 
-      global->video_data.width       = width;
-      global->video_data.height      = height;
+      video_driver_set_size_width(width);
+      video_driver_set_size_height(height);
 #endif
-      d3dpp->BackBufferWidth  = global->video_data.width;
-      d3dpp->BackBufferHeight = global->video_data.height;
+      video_driver_get_size(&d3dpp->BackBufferWidth, &d3dpp->BackBufferHeight);
    }
 
 #ifdef _XBOX
@@ -273,6 +272,7 @@ static bool d3d_init_base(void *data, const video_info_t *info)
 
 static bool d3d_initialize(d3d_video_t *d3d, const video_info_t *info)
 {
+   unsigned width, height;
    bool ret             = true;
    settings_t *settings = config_get_ptr();
    driver_t   *driver   = driver_get_ptr();
@@ -329,10 +329,10 @@ static bool d3d_initialize(d3d_video_t *d3d, const video_info_t *info)
    if (!ret)
       return ret;
 
+   video_driver_get_size(&width, &height);
+
    d3d_calculate_rect(d3d,
-	   global->video_data.width,
-	   global->video_data.height,
-         info->force_aspect, global->system.aspect_ratio);
+	   width, height, info->force_aspect, global->system.aspect_ratio);
 
    if (!d3d_init_chain(d3d, info))
    {
@@ -474,21 +474,30 @@ static void d3d_set_nonblock_state(void *data, bool state)
 
 static bool d3d_alive(void *data)
 {
+   unsigned temp_width = 0, temp_height = 0;
+   int ret = false;
    d3d_video_t *d3d   = (d3d_video_t*)data;
    bool        quit   = false;
    bool        resize = false;
-   global_t *global   = global_get_ptr();
 
-   if (!gfx_ctx_check_window(d3d, &quit, &resize,
-            &global->video_data.width, &global->video_data.height))
-			return false;
+   if (gfx_ctx_check_window(d3d, &quit, &resize,
+            &temp_width, &temp_height))
+   {
+      if (quit)
+         d3d->quitting = quit;
+      else if (resize)
+         d3d->should_resize = true;
 
-   if (quit)
-      d3d->quitting = quit;
-   else if (resize)
-      d3d->should_resize = true;
+      ret = !quit;
+   }
 
-   return !quit;
+   if (temp_width != 0 && temp_height != 0)
+   {
+      video_driver_set_size_width(temp_width);
+      video_driver_set_size_height(temp_height);
+   }
+
+   return ret;
 }
 
 static bool d3d_focus(void *data)
@@ -627,20 +636,20 @@ static bool d3d_construct(d3d_video_t *d3d,
 #else
    gfx_ctx_get_video_size(d3d, &full_x, &full_y);
 #endif
-   global->video_data.width   = info->fullscreen ? full_x : info->width;
-   global->video_data.height  = info->fullscreen ? full_y : info->height;
+   video_driver_set_size_width(info->fullscreen  ? full_x : info->width);
+   video_driver_set_size_height(info->fullscreen ? full_y : info->height);
 
 #ifndef _XBOX
 #ifdef HAVE_WINDOW
    char buffer[128];
-   unsigned win_width  = global->video_data.width;
-   unsigned win_height = global->video_data.height;
+   unsigned win_width, win_height;
    RECT rect = {0};
+
+   video_driver_get_size(&win_width, &win_height);
 
    if (!info->fullscreen)
    {
-      rect.right  = global->video_data.width;
-      rect.bottom = global->video_data.height;
+      video_driver_get_size(&rect.right, &rect.bottom);
       AdjustWindowRect(&rect, WS_OVERLAPPEDWINDOW, FALSE);
       win_width   = rect.right - rect.left;
       win_height  = rect.bottom - rect.top;
