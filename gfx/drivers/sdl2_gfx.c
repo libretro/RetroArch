@@ -262,7 +262,6 @@ static void sdl_refresh_viewport(sdl2_video_t *vid)
 {
    int win_w, win_h;
    settings_t *settings = config_get_ptr();
-   global_t   *global   = global_get_ptr();
 
    SDL_GetWindowSize(vid->window, &win_w, &win_h);
 

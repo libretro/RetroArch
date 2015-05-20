@@ -599,7 +599,6 @@ static EGLint *egl_fill_attribs(EGLint *attr)
 #ifdef GL_DEBUG
          bool debug       = true;
 #else
-         global_t *global = global_get_ptr();
          const struct retro_hw_render_callback *hw_render = 
             (const struct retro_hw_render_callback*)video_driver_callback();
          bool debug       = hw_render->debug_context;

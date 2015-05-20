@@ -421,7 +421,6 @@ static void *xv_init(const video_info_t *video,
    XvAdaptorInfo *adaptor_info = NULL;
    driver_t *driver     = driver_get_ptr();
    settings_t *settings = config_get_ptr();
-   global_t *global     = global_get_ptr();
    const struct retro_game_geometry *geom = NULL;
    struct retro_system_av_info *av_info = NULL;
    xv_t *xv = (xv_t*)calloc(1, sizeof(*xv));

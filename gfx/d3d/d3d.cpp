@@ -276,7 +276,6 @@ static bool d3d_initialize(d3d_video_t *d3d, const video_info_t *info)
    bool ret             = true;
    settings_t *settings = config_get_ptr();
    driver_t   *driver   = driver_get_ptr();
-   global_t   *global   = global_get_ptr();
 
    if (!d3d)
       return false;
@@ -417,7 +416,6 @@ static void d3d_calculate_rect(d3d_video_t *d3d,
    bool keep, float desired_aspect)
 {
    settings_t *settings = config_get_ptr();
-   global_t   *global   = global_get_ptr();
 
    if (settings->video.scale_integer)
    {
@@ -579,7 +577,6 @@ static bool d3d_construct(d3d_video_t *d3d,
    unsigned full_x, full_y;
    driver_t    *driver         = driver_get_ptr();
    settings_t    *settings     = config_get_ptr();
-   global_t      *global       = global_get_ptr();
 
    d3d->should_resize = false;
 
@@ -1366,7 +1363,6 @@ static void d3d_overlay_render(d3d_video_t *d3d, overlay_t *overlay)
       D3DDECL_END()
    };
 #endif
-   global_t *global = global_get_ptr();
 
    if (!d3d)
       return;
@@ -1636,7 +1632,6 @@ static bool d3d_frame(void *data, const void *frame,
    runloop_t *runloop              = rarch_main_get_ptr();
    driver_t *driver                = driver_get_ptr();
    settings_t *settings            = config_get_ptr();
-   global_t *global                = global_get_ptr();
    const font_renderer_t *font_ctx = driver->font_osd_driver;
 
    (void)i;

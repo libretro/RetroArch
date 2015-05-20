@@ -258,7 +258,6 @@ static void *psp_init(const video_info_t *video,
    int pixel_format, lut_pixel_format, lut_block_count;
    unsigned int red_shift, color_mask;
    void *displayBuffer, *LUT_r, *LUT_b;
-   global_t *global         = global_get_ptr();
    psp1_video_t *psp        = (psp1_video_t*)calloc(1, sizeof(psp1_video_t));
 
    if (!psp)
@@ -698,7 +697,6 @@ static void psp_update_viewport(psp1_video_t* psp)
    float width          = SCEGU_SCR_WIDTH;
    float height         = SCEGU_SCR_HEIGHT;
    settings_t *settings = config_get_ptr();
-   global_t   *global   = global_get_ptr();
 
    if (settings->video.scale_integer)
    {

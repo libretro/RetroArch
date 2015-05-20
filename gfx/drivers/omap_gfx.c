@@ -392,7 +392,6 @@ static int omapfb_alloc_mem(omapfb_data_t *pdata)
    void* mem = NULL;
    const struct retro_game_geometry *geom = NULL;
    struct retro_system_av_info *av_info = NULL;
-   global_t   *global   = global_get_ptr();
 
    assert(pdata->current_state == NULL);
 
