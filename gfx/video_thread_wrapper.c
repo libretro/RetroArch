@@ -32,13 +32,53 @@ static void *thread_init_never_call(const video_info_t *video,
    return NULL;
 }
 
-static void thread_reply(thread_video_t *thr, enum thread_cmd cmd)
+/* thread -> user */
+static void thread_reply(thread_video_t *thr, const thread_packet_t *pkt)
 {
    slock_lock(thr->lock);
-   thr->reply_cmd = cmd;
-   thr->send_cmd = CMD_NONE;
+
+   thr->cmd_data = *pkt;
+
+   thr->reply_cmd = pkt->type;
+   thr->send_cmd  = CMD_NONE;
+
    scond_signal(thr->cond_cmd);
    slock_unlock(thr->lock);
+}
+
+/* user -> thread */
+static void thread_send_packet(thread_video_t *thr, const thread_packet_t *pkt)
+{
+   slock_lock(thr->lock);
+
+   thr->cmd_data = *pkt;
+
+   thr->send_cmd  = pkt->type;
+   thr->reply_cmd = CMD_NONE;
+
+   scond_signal(thr->cond_thread);
+   slock_unlock(thr->lock);
+
+}
+
+/* user -> thread */
+static void thread_wait_reply(thread_video_t *thr, thread_packet_t *pkt)
+{
+   slock_lock(thr->lock);
+
+   while (pkt->type != thr->reply_cmd)
+      scond_wait(thr->cond_cmd, thr->lock);
+
+   *pkt = thr->cmd_data;
+
+   slock_unlock(thr->lock);
+}
+
+/* user -> thread */
+static void thread_send_and_wait(thread_video_t *thr, thread_packet_t *pkt)
+{
+   thread_send_packet(thr, pkt);
+   thread_wait_reply(thr, pkt);
 }
 
 static void thread_update_driver_state(thread_video_t *thr)
@@ -82,6 +122,237 @@ static void thread_update_driver_state(thread_video_t *thr)
    }
 }
 
+/* returns true when thread_loop should quit */
+static bool thread_handle_packet(thread_video_t *thr, const thread_packet_t *incoming)
+{
+   thread_packet_t pkt = *incoming;
+   bool ret   = false;
+   unsigned i = 0;
+
+   switch (pkt.type)
+   {
+      case CMD_INIT:
+         thr->driver_data = thr->driver->init(&thr->info,
+               thr->input, thr->input_data);
+         pkt.data.b = thr->driver_data;
+         thr->driver->viewport_info(thr->driver_data, &thr->vp);
+         thread_reply(thr, &pkt);
+         break;
+
+      case CMD_FREE:
+         if (thr->driver_data)
+         {
+            if (thr->driver && thr->driver->free)
+               thr->driver->free(thr->driver_data);
+         }
+         thr->driver_data = NULL;
+         thread_reply(thr, &pkt);
+         return true;
+
+      case CMD_SET_ROTATION:
+         if (thr->driver && thr->driver->set_rotation)
+            thr->driver->set_rotation(thr->driver_data, pkt.data.i);
+         thread_reply(thr, &pkt);
+         break;
+
+      case CMD_READ_VIEWPORT:
+      {
+         struct video_viewport vp = {0};
+
+         thr->driver->viewport_info(thr->driver_data, &vp);
+
+         if (memcmp(&vp, &thr->read_vp, sizeof(vp)) == 0)
+         {
+            /* We can read safely
+             *
+             * read_viewport() in GL driver calls
+             * video_driver_cached_frame() to be able to read from
+             * back buffer.
+             *
+             * This means frame() callback in threaded wrapper will
+             * be called from this thread, causing a timeout, and
+             * no frame to be rendered.
+             *
+             * To avoid this, set a flag so wrapper can see if
+             * it's called in this "special" way. */
+            thr->frame.within_thread = true;
+
+            if (thr->driver && thr->driver->read_viewport)
+               ret = thr->driver->read_viewport(thr->driver_data,
+                     (uint8_t*)pkt.data.v);
+
+            pkt.data.b = ret;
+            thr->frame.within_thread = false;
+         }
+         else
+         {
+            /* Viewport dimensions changed right after main
+             * thread read the async value. Cannot read safely. */
+            pkt.data.b = false;
+         }
+         thread_reply(thr, &pkt);
+         break;
+      }
+
+      case CMD_SET_SHADER:
+         if (thr->driver && thr->driver->set_shader)
+            ret = thr->driver->set_shader(thr->driver_data,
+                     pkt.data.set_shader.type,
+                     pkt.data.set_shader.path);
+
+         pkt.data.b = ret;
+         thread_reply(thr, &pkt);
+         break;
+
+      case CMD_ALIVE:
+         if (thr->driver && thr->driver->alive)
+            ret = thr->driver->alive(thr->driver_data);
+
+         pkt.data.b = ret;
+         thread_reply(thr, &pkt);
+         break;
+
+#ifdef HAVE_OVERLAY
+      case CMD_OVERLAY_ENABLE:
+         if (thr->overlay && thr->overlay->enable)
+            thr->overlay->enable(thr->driver_data, pkt.data.b);
+         thread_reply(thr, &pkt);
+         break;
+
+      case CMD_OVERLAY_LOAD:
+
+         if (thr->overlay && thr->overlay->load)
+            ret = thr->overlay->load(thr->driver_data,
+                  pkt.data.image.data,
+                  pkt.data.image.num);
+
+         pkt.data.b = ret;
+         thr->alpha_mods = pkt.data.image.num;
+         thr->alpha_mod = (float*)realloc(thr->alpha_mod,
+               thr->alpha_mods * sizeof(float));
+
+         for (i = 0; i < thr->alpha_mods; i++)
+         {
+            /* Avoid temporary garbage data. */
+            thr->alpha_mod[i] = 1.0f;
+         }
+
+         thread_reply(thr, &pkt);
+         break;
+
+      case CMD_OVERLAY_TEX_GEOM:
+         if (thr->overlay && thr->overlay->tex_geom)
+            thr->overlay->tex_geom(thr->driver_data,
+                  pkt.data.rect.index,
+                  pkt.data.rect.x,
+                  pkt.data.rect.y,
+                  pkt.data.rect.w,
+                  pkt.data.rect.h);
+         thread_reply(thr, &pkt);
+         break;
+
+      case CMD_OVERLAY_VERTEX_GEOM:
+         if (thr->overlay && thr->overlay->vertex_geom)
+            thr->overlay->vertex_geom(thr->driver_data,
+                  pkt.data.rect.index,
+                  pkt.data.rect.x,
+                  pkt.data.rect.y,
+                  pkt.data.rect.w,
+                  pkt.data.rect.h);
+         thread_reply(thr, &pkt);
+         break;
+
+      case CMD_OVERLAY_FULL_SCREEN:
+         if (thr->overlay && thr->overlay->full_screen)
+            thr->overlay->full_screen(thr->driver_data,
+                  pkt.data.b);
+         thread_reply(thr, &pkt);
+         break;
+#endif
+
+      case CMD_POKE_SET_VIDEO_MODE:
+         if (thr->poke && thr->poke->set_video_mode)
+            thr->poke->set_video_mode(thr->driver_data,
+                  pkt.data.new_mode.width,
+                  pkt.data.new_mode.height,
+                  pkt.data.new_mode.fullscreen);
+         thread_reply(thr, &pkt);
+         break;
+      case CMD_POKE_SET_FILTERING:
+         if (thr->poke && thr->poke->set_filtering)
+            thr->poke->set_filtering(thr->driver_data,
+                  pkt.data.filtering.index,
+                  pkt.data.filtering.smooth);
+         thread_reply(thr, &pkt);
+         break;
+
+      case CMD_POKE_GET_VIDEO_OUTPUT_SIZE:
+         if (thr->poke && thr->poke->get_video_output_size)
+            thr->poke->get_video_output_size(thr->driver_data,
+                  &pkt.data.output.width,
+                  &pkt.data.output.height);
+         thread_reply(thr, &pkt);
+         break;
+
+      case CMD_POKE_GET_VIDEO_OUTPUT_PREV:
+         if (thr->poke && thr->poke->get_video_output_prev)
+            thr->poke->get_video_output_prev(thr->driver_data);
+         thread_reply(thr, &pkt);
+         break;
+
+      case CMD_POKE_GET_VIDEO_OUTPUT_NEXT:
+         if (thr->poke && thr->poke->get_video_output_next)
+            thr->poke->get_video_output_next(thr->driver_data);
+         thread_reply(thr, &pkt);
+         break;
+
+      case CMD_POKE_SET_ASPECT_RATIO:
+         thr->poke->set_aspect_ratio(thr->driver_data,
+               pkt.data.i);
+         thread_reply(thr, &pkt);
+         break;
+
+      case CMD_POKE_SET_OSD_MSG:
+         if (thr->poke && thr->poke->set_osd_msg)
+            thr->poke->set_osd_msg(thr->driver_data,
+                  pkt.data.osd_message.msg,
+                  &pkt.data.osd_message.params, NULL);
+         thread_reply(thr, &pkt);
+         break;
+
+      case CMD_FONT_INIT:
+         if (pkt.data.font_init.method)
+            pkt.data.font_init.return_value =
+                  pkt.data.font_init.method
+                  (pkt.data.font_init.font_driver,
+                     pkt.data.font_init.font_handle,
+                     pkt.data.font_init.video_data,
+                     pkt.data.font_init.font_path,
+                     pkt.data.font_init.font_size,
+                     pkt.data.font_init.api);
+         thread_reply(thr, &pkt);
+         break;
+
+      case CMD_CUSTOM_COMMAND:
+         if (pkt.data.custom_command.method)
+            pkt.data.custom_command.return_value =
+                  pkt.data.custom_command.method
+                  (pkt.data.custom_command.data);
+         thread_reply(thr, &pkt);
+         break;
+
+      case CMD_NONE:
+         /* Never reply on no command. Possible deadlock if
+          * thread sends command right after frame update. */
+         break;
+      default:
+         thread_reply(thr, &pkt);
+         break;
+   }
+
+   return false;
+}
+
 static void thread_loop(void *data)
 {
    thread_video_t *thr = (thread_video_t*)data;
@@ -90,6 +361,7 @@ static void thread_loop(void *data)
 
    for (;;)
    {
+      thread_packet_t pkt;
       enum thread_cmd send_cmd;
       bool ret = false;
       bool updated = false;
@@ -102,231 +374,13 @@ static void thread_loop(void *data)
 
       /* To avoid race condition where send_cmd is updated 
        * right after the switch is checked. */
-
       send_cmd = thr->send_cmd;
+      pkt = thr->cmd_data;
+
       slock_unlock(thr->lock);
 
-      switch (send_cmd)
-      {
-         case CMD_INIT:
-            thr->driver_data = thr->driver->init(&thr->info,
-                  thr->input, thr->input_data);
-            thr->cmd_data.b = thr->driver_data;
-            thr->driver->viewport_info(thr->driver_data, &thr->vp);
-            thread_reply(thr, CMD_INIT);
-            break;
-
-         case CMD_FREE:
-            if (thr->driver_data)
-            {
-               if (thr->driver && thr->driver->free)
-                  thr->driver->free(thr->driver_data);
-            }
-            thr->driver_data = NULL;
-            thread_reply(thr, CMD_FREE);
-            return;
-
-         case CMD_SET_ROTATION:
-            if (thr->driver && thr->driver->set_rotation)
-               thr->driver->set_rotation(thr->driver_data, thr->cmd_data.i);
-            thread_reply(thr, CMD_SET_ROTATION);
-            break;
-
-         case CMD_READ_VIEWPORT:
-         {
-            struct video_viewport vp = {0};
-
-            thr->driver->viewport_info(thr->driver_data, &vp);
-
-            if (memcmp(&vp, &thr->read_vp, sizeof(vp)) == 0)
-            {
-               /* We can read safely
-                *
-                * read_viewport() in GL driver calls 
-                * video_driver_cached_frame() to be able to read from 
-                * back buffer.
-                *
-                * This means frame() callback in threaded wrapper will 
-                * be called from this thread, causing a timeout, and 
-                * no frame to be rendered.
-                *
-                * To avoid this, set a flag so wrapper can see if 
-                * it's called in this "special" way. */
-               thr->frame.within_thread = true;
-
-               if (thr->driver && thr->driver->read_viewport)
-                  ret = thr->driver->read_viewport(thr->driver_data,
-                        (uint8_t*)thr->cmd_data.v);
-
-               thr->cmd_data.b = ret;
-               thr->frame.within_thread = false;
-            }
-            else
-            {
-               /* Viewport dimensions changed right after main 
-                * thread read the async value. Cannot read safely. */
-               thr->cmd_data.b = false;
-            }
-            thread_reply(thr, CMD_READ_VIEWPORT);
-            break;
-         }
-            
-         case CMD_SET_SHADER:
-            if (thr->driver && thr->driver->set_shader)
-               ret = thr->driver->set_shader(thr->driver_data,
-                        thr->cmd_data.set_shader.type,
-                        thr->cmd_data.set_shader.path);
-
-            thr->cmd_data.b = ret;
-            thread_reply(thr, CMD_SET_SHADER);
-            break;
-
-         case CMD_ALIVE:
-            if (thr->driver && thr->driver->alive)
-               ret = thr->driver->alive(thr->driver_data);
-
-            thr->cmd_data.b = ret;
-            thread_reply(thr, CMD_ALIVE);
-            break;
-
-#ifdef HAVE_OVERLAY
-         case CMD_OVERLAY_ENABLE:
-            if (thr->overlay && thr->overlay->enable)
-               thr->overlay->enable(thr->driver_data, thr->cmd_data.b);
-            thread_reply(thr, CMD_OVERLAY_ENABLE);
-            break;
-
-         case CMD_OVERLAY_LOAD:
-
-            if (thr->overlay && thr->overlay->load)
-               ret = thr->overlay->load(thr->driver_data,
-                     thr->cmd_data.image.data,
-                     thr->cmd_data.image.num);
-
-            thr->cmd_data.b = ret;
-            thr->alpha_mods = thr->cmd_data.image.num;
-            thr->alpha_mod = (float*)realloc(thr->alpha_mod,
-                  thr->alpha_mods * sizeof(float));
-
-            for (i = 0; i < thr->alpha_mods; i++)
-            {
-               /* Avoid temporary garbage data. */
-               thr->alpha_mod[i] = 1.0f;
-            }
-            thread_reply(thr, CMD_OVERLAY_LOAD);
-
-            break;
-
-         case CMD_OVERLAY_TEX_GEOM:
-            if (thr->overlay && thr->overlay->tex_geom)
-               thr->overlay->tex_geom(thr->driver_data,
-                     thr->cmd_data.rect.index,
-                     thr->cmd_data.rect.x,
-                     thr->cmd_data.rect.y,
-                     thr->cmd_data.rect.w,
-                     thr->cmd_data.rect.h);
-            thread_reply(thr, CMD_OVERLAY_TEX_GEOM);
-            break;
-
-         case CMD_OVERLAY_VERTEX_GEOM:
-            if (thr->overlay && thr->overlay->vertex_geom)
-               thr->overlay->vertex_geom(thr->driver_data,
-                     thr->cmd_data.rect.index,
-                     thr->cmd_data.rect.x,
-                     thr->cmd_data.rect.y,
-                     thr->cmd_data.rect.w,
-                     thr->cmd_data.rect.h);
-            thread_reply(thr, CMD_OVERLAY_VERTEX_GEOM);
-            break;
-
-         case CMD_OVERLAY_FULL_SCREEN:
-            if (thr->overlay && thr->overlay->full_screen)
-               thr->overlay->full_screen(thr->driver_data,
-                     thr->cmd_data.b);
-            thread_reply(thr, CMD_OVERLAY_FULL_SCREEN);
-            break;
-#endif
-
-         case CMD_POKE_SET_VIDEO_MODE:
-            if (thr->poke && thr->poke->set_video_mode)
-               thr->poke->set_video_mode(thr->driver_data,
-                     thr->cmd_data.new_mode.width,
-                     thr->cmd_data.new_mode.height,
-                     thr->cmd_data.new_mode.fullscreen);
-            thread_reply(thr, CMD_POKE_SET_VIDEO_MODE);
-            break;
-         case CMD_POKE_SET_FILTERING:
-            if (thr->poke && thr->poke->set_filtering)
-               thr->poke->set_filtering(thr->driver_data,
-                     thr->cmd_data.filtering.index,
-                     thr->cmd_data.filtering.smooth);
-            thread_reply(thr, CMD_POKE_SET_FILTERING);
-            break;
-
-         case CMD_POKE_GET_VIDEO_OUTPUT_SIZE:
-            if (thr->poke && thr->poke->get_video_output_size)
-               thr->poke->get_video_output_size(thr->driver_data,
-                     &thr->cmd_data.output.width,
-                     &thr->cmd_data.output.height);
-            thread_reply(thr, CMD_POKE_GET_VIDEO_OUTPUT_SIZE);
-            break;
-
-         case CMD_POKE_GET_VIDEO_OUTPUT_PREV:
-            if (thr->poke && thr->poke->get_video_output_prev)
-               thr->poke->get_video_output_prev(thr->driver_data);
-            thread_reply(thr, CMD_POKE_GET_VIDEO_OUTPUT_PREV);
-            break;
-
-         case CMD_POKE_GET_VIDEO_OUTPUT_NEXT:
-            if (thr->poke && thr->poke->get_video_output_next)
-               thr->poke->get_video_output_next(thr->driver_data);
-            thread_reply(thr, CMD_POKE_GET_VIDEO_OUTPUT_NEXT);
-            break;
-
-         case CMD_POKE_SET_ASPECT_RATIO:
-            thr->poke->set_aspect_ratio(thr->driver_data,
-                  thr->cmd_data.i);
-            thread_reply(thr, CMD_POKE_SET_ASPECT_RATIO);
-            break;
-
-         case CMD_POKE_SET_OSD_MSG:
-            if (thr->poke && thr->poke->set_osd_msg)
-               thr->poke->set_osd_msg(thr->driver_data,
-                     thr->cmd_data.osd_message.msg,
-                     &thr->cmd_data.osd_message.params, NULL);
-            thread_reply(thr, CMD_POKE_SET_OSD_MSG);
-            break;
-
-         case CMD_FONT_INIT:
-            if (thr->cmd_data.font_init.method)
-               thr->cmd_data.font_init.return_value =
-                     thr->cmd_data.font_init.method
-                     (thr->cmd_data.font_init.font_driver,
-                        thr->cmd_data.font_init.font_handle,
-                        thr->cmd_data.font_init.video_data,
-                        thr->cmd_data.font_init.font_path,
-                        thr->cmd_data.font_init.font_size,
-                        thr->cmd_data.font_init.api);
-            thread_reply(thr, CMD_FONT_INIT);
-            break;
-
-         case CMD_CUSTOM_COMMAND:
-            if (thr->cmd_data.custom_command.method)
-               thr->cmd_data.custom_command.return_value =
-                     thr->cmd_data.custom_command.method
-                     (thr->cmd_data.custom_command.data);
-            thread_reply(thr, CMD_CUSTOM_COMMAND);
-            break;
-
-         case CMD_NONE:
-            /* Never reply on no command. Possible deadlock if 
-             * thread sends command right after frame update. */
-            break;
-
-         default:
-            thread_reply(thr, send_cmd);
-            break;
-      }
+      if (thread_handle_packet(thr, &pkt))
+         return;
 
       if (updated)
       {
@@ -371,22 +425,8 @@ static void thread_loop(void *data)
    }
 }
 
-static void thread_send_cmd(thread_video_t *thr, enum thread_cmd cmd)
-{
-   slock_lock(thr->lock);
-   thr->send_cmd = cmd;
-   thr->reply_cmd = CMD_NONE;
-   scond_signal(thr->cond_thread);
-   slock_unlock(thr->lock);
-}
 
-static void thread_wait_reply(thread_video_t *thr, enum thread_cmd cmd)
-{
-   slock_lock(thr->lock);
-   while (cmd != thr->reply_cmd)
-      scond_wait(thr->cond_cmd, thr->lock);
-   slock_unlock(thr->lock);
-}
+
 
 static bool thread_alive(void *data)
 {
@@ -396,9 +436,9 @@ static bool thread_alive(void *data)
 
    if (runloop->is_paused)
    {
-      thread_send_cmd(thr, CMD_ALIVE);
-      thread_wait_reply(thr, CMD_ALIVE);
-      return thr->cmd_data.b;
+      thread_packet_t pkt = { CMD_ALIVE };
+      thread_send_and_wait(thr, &pkt);
+      return pkt.data.b;
    }
 
    slock_lock(thr->lock);
@@ -551,6 +591,7 @@ static bool thread_init(thread_video_t *thr, const video_info_t *info,
       const input_driver_t **input, void **input_data)
 {
    size_t max_size;
+   thread_packet_t pkt = {CMD_INIT};
 
    thr->lock                 = slock_new();
    thr->alpha_lock           = slock_new();
@@ -580,52 +621,42 @@ static bool thread_init(thread_video_t *thr, const video_info_t *info,
    if (!thr->thread)
       return false;
 
-   thread_send_cmd(thr, CMD_INIT);
-   thread_wait_reply(thr, CMD_INIT);
+   thread_send_and_wait(thr, &pkt);
 
-   thr->send_cmd_func   = thread_send_cmd;
-   thr->wait_reply_func = thread_wait_reply;
+//   thr->send_cmd_func   = thread_send_cmd;
+//   thr->wait_reply_func = thread_wait_reply;
 
-   return thr->cmd_data.b;
+   thr->send_and_wait = thread_send_and_wait;
+   return pkt.data.b;
 }
 
 static bool thread_set_shader(void *data,
       enum rarch_shader_type type, const char *path)
 {
    thread_video_t *thr = (thread_video_t*)data;
-
+   thread_packet_t pkt = {CMD_SET_SHADER};
    if (!thr)
       return false;
 
-   thr->cmd_data.set_shader.type = type;
-   thr->cmd_data.set_shader.path = path;
-   thread_send_cmd(thr, CMD_SET_SHADER);
-   thread_wait_reply(thr, CMD_SET_SHADER);
+   pkt.data.set_shader.type = type;
+   pkt.data.set_shader.path = path;
+   thread_send_and_wait(thr, &pkt);
 
-   return thr->cmd_data.b;
+   return pkt.data.b;
 }
 
 static void thread_set_viewport(void *data, unsigned width,
       unsigned height, bool force_full, bool allow_rotate)
 {
    thread_video_t *thr = (thread_video_t*)data;
-
    if (!thr)
       return;
     
    slock_lock(thr->lock);
 
-   thr->cmd_data.set_viewport.width        = width;
-   thr->cmd_data.set_viewport.height       = height;
-   thr->cmd_data.set_viewport.force_full   = force_full;
-   thr->cmd_data.set_viewport.allow_rotate = allow_rotate;
-    
     if (thr->driver && thr->driver->set_viewport)
-        thr->driver->set_viewport(thr->driver_data,
-                                  thr->cmd_data.set_viewport.width,
-                                  thr->cmd_data.set_viewport.height,
-                                  thr->cmd_data.set_viewport.force_full,
-                                  thr->cmd_data.set_viewport.allow_rotate);
+        thr->driver->set_viewport(thr->driver_data, width, height,
+                                  force_full, allow_rotate);
     
    slock_unlock(thr->lock);
 }
@@ -633,13 +664,13 @@ static void thread_set_viewport(void *data, unsigned width,
 static void thread_set_rotation(void *data, unsigned rotation)
 {
    thread_video_t *thr = (thread_video_t*)data;
+   thread_packet_t pkt = { CMD_SET_ROTATION };
 
    if (!thr)
       return;
 
-   thr->cmd_data.i = rotation;
-   thread_send_cmd(thr, CMD_SET_ROTATION);
-   thread_wait_reply(thr, CMD_SET_ROTATION);
+   pkt.data.i = rotation;
+   thread_send_and_wait(thr, &pkt);
 }
 
 /* This value is set async as stalling on the video driver for 
@@ -665,24 +696,27 @@ static void thread_viewport_info(void *data, struct video_viewport *vp)
 static bool thread_read_viewport(void *data, uint8_t *buffer)
 {
    thread_video_t *thr = (thread_video_t*)data;
+   thread_packet_t pkt = { CMD_READ_VIEWPORT };
+
    if (!thr)
       return false;
 
-   thr->cmd_data.v = buffer;
-   thread_send_cmd(thr, CMD_READ_VIEWPORT);
-   thread_wait_reply(thr, CMD_READ_VIEWPORT);
+   pkt.data.v = buffer;
+   thread_send_and_wait(thr, &pkt);
 
-   return thr->cmd_data.b;
+   return pkt.data.b;
 }
 
 static void thread_free(void *data)
 {
    thread_video_t *thr = (thread_video_t*)data;
+   thread_packet_t pkt = { CMD_FREE };
+
    if (!thr)
       return;
 
-   thread_send_cmd(thr, CMD_FREE);
-   thread_wait_reply(thr, CMD_FREE);
+   thread_send_and_wait(thr, &pkt);
+
    sthread_join(thr->thread);
 
 #if defined(HAVE_MENU)
@@ -707,69 +741,73 @@ static void thread_free(void *data)
 static void thread_overlay_enable(void *data, bool state)
 {
    thread_video_t *thr = (thread_video_t*)data;
+   thread_packet_t pkt = { CMD_OVERLAY_ENABLE };
 
    if (!thr)
       return;
-   thr->cmd_data.b = state;
-   thread_send_cmd(thr, CMD_OVERLAY_ENABLE);
-   thread_wait_reply(thr, CMD_OVERLAY_ENABLE);
+
+   pkt.data.b = state;
+   thread_send_and_wait(thr, &pkt);
 }
 
 static bool thread_overlay_load(void *data,
       const struct texture_image *images, unsigned num_images)
 {
    thread_video_t *thr = (thread_video_t*)data;
+   thread_packet_t pkt = { CMD_OVERLAY_LOAD };
 
    if (!thr)
       return false;
 
-   thr->cmd_data.image.data = images;
-   thr->cmd_data.image.num = num_images;
-   thread_send_cmd(thr, CMD_OVERLAY_LOAD);
-   thread_wait_reply(thr, CMD_OVERLAY_LOAD);
+   pkt.data.image.data = images;
+   pkt.data.image.num = num_images;
+   thread_send_and_wait(thr, &pkt);
 
-   return thr->cmd_data.b;
+   return pkt.data.b;
 }
 
 static void thread_overlay_tex_geom(void *data,
       unsigned idx, float x, float y, float w, float h)
 {
    thread_video_t *thr = (thread_video_t*)data;
+   thread_packet_t pkt = { CMD_OVERLAY_TEX_GEOM };
 
    if (!thr)
       return;
-   thr->cmd_data.rect.index = idx;
-   thr->cmd_data.rect.x = x;
-   thr->cmd_data.rect.y = y;
-   thr->cmd_data.rect.w = w;
-   thr->cmd_data.rect.h = h;
-   thread_send_cmd(thr, CMD_OVERLAY_TEX_GEOM);
-   thread_wait_reply(thr, CMD_OVERLAY_TEX_GEOM);
+   pkt.data.rect.index = idx;
+   pkt.data.rect.x = x;
+   pkt.data.rect.y = y;
+   pkt.data.rect.w = w;
+   pkt.data.rect.h = h;
+
+   thread_send_and_wait(thr, &pkt);
 }
 
 static void thread_overlay_vertex_geom(void *data,
       unsigned idx, float x, float y, float w, float h)
 {
    thread_video_t *thr = (thread_video_t*)data;
+   thread_packet_t pkt = { CMD_OVERLAY_VERTEX_GEOM };
 
    if (!thr)
       return;
-   thr->cmd_data.rect.index = idx;
-   thr->cmd_data.rect.x = x;
-   thr->cmd_data.rect.y = y;
-   thr->cmd_data.rect.w = w;
-   thr->cmd_data.rect.h = h;
-   thread_send_cmd(thr, CMD_OVERLAY_VERTEX_GEOM);
-   thread_wait_reply(thr, CMD_OVERLAY_VERTEX_GEOM);
+
+   pkt.data.rect.index = idx;
+   pkt.data.rect.x = x;
+   pkt.data.rect.y = y;
+   pkt.data.rect.w = w;
+   pkt.data.rect.h = h;
+
+   thread_send_and_wait(thr, &pkt);
 }
 
 static void thread_overlay_full_screen(void *data, bool enable)
 {
    thread_video_t *thr = (thread_video_t*)data;
+   thread_packet_t pkt = { CMD_OVERLAY_FULL_SCREEN };
 
-   thr->cmd_data.b = enable;
-   thread_send_cmd(thr, CMD_OVERLAY_FULL_SCREEN);
-   thread_wait_reply(thr, CMD_OVERLAY_FULL_SCREEN);
+   pkt.data.b = enable;
+   thread_send_and_wait(thr, &pkt);
 }
 
 /* We cannot wait for this to complete. Totally blocks the main thread. */
@@ -809,70 +847,73 @@ static void thread_set_video_mode(void *data, unsigned width, unsigned height,
       bool fullscreen)
 {
    thread_video_t *thr = (thread_video_t*)data;
+   thread_packet_t pkt = { CMD_POKE_SET_VIDEO_MODE };
 
    if (!thr)
       return;
-   thr->cmd_data.new_mode.width      = width;
-   thr->cmd_data.new_mode.height     = height;
-   thr->cmd_data.new_mode.fullscreen = fullscreen;
-   thread_send_cmd(thr, CMD_POKE_SET_VIDEO_MODE);
-   thread_wait_reply(thr, CMD_POKE_SET_VIDEO_MODE);
+
+   pkt.data.new_mode.width      = width;
+   pkt.data.new_mode.height     = height;
+   pkt.data.new_mode.fullscreen = fullscreen;
+   thread_send_and_wait(thr, &pkt);
 }
 
 static void thread_set_filtering(void *data, unsigned idx, bool smooth)
 {
    thread_video_t *thr = (thread_video_t*)data;
+   thread_packet_t pkt = { CMD_POKE_SET_FILTERING };
 
    if (!thr)
       return;
-   thr->cmd_data.filtering.index  = idx;
-   thr->cmd_data.filtering.smooth = smooth;
-   thread_send_cmd(thr, CMD_POKE_SET_FILTERING);
-   thread_wait_reply(thr, CMD_POKE_SET_FILTERING);
+   pkt.data.filtering.index  = idx;
+   pkt.data.filtering.smooth = smooth;
+   thread_send_and_wait(thr, &pkt);
 }
 
 static void thread_get_video_output_size(void *data,
       unsigned *width, unsigned *height)
 {
    thread_video_t *thr = (thread_video_t*)data;
+   thread_packet_t pkt = { CMD_POKE_GET_VIDEO_OUTPUT_SIZE };
 
    if (!thr)
       return;
-   thread_send_cmd(thr, CMD_POKE_GET_VIDEO_OUTPUT_SIZE);
-   thread_wait_reply(thr, CMD_POKE_GET_VIDEO_OUTPUT_SIZE);
-   *width  = thr->cmd_data.output.width;
-   *height = thr->cmd_data.output.height;
+
+   thread_send_and_wait(thr, &pkt);
+
+   *width  = pkt.data.output.width;
+   *height = pkt.data.output.height;
 }
 
 static void thread_get_video_output_prev(void *data)
 {
    thread_video_t *thr = (thread_video_t*)data;
+   thread_packet_t pkt = { CMD_POKE_GET_VIDEO_OUTPUT_PREV };
 
    if (!thr)
       return;
-   thread_send_cmd(thr, CMD_POKE_GET_VIDEO_OUTPUT_PREV);
-   thread_wait_reply(thr, CMD_POKE_GET_VIDEO_OUTPUT_PREV);
+   thread_send_and_wait(thr, &pkt);
 }
 
 static void thread_get_video_output_next(void *data)
 {
    thread_video_t *thr = (thread_video_t*)data;
+   thread_packet_t pkt = { CMD_POKE_GET_VIDEO_OUTPUT_NEXT };
 
    if (!thr)
       return;
-   thread_send_cmd(thr, CMD_POKE_GET_VIDEO_OUTPUT_NEXT);
-   thread_wait_reply(thr, CMD_POKE_GET_VIDEO_OUTPUT_NEXT);
+   thread_send_and_wait(thr, &pkt);
 }
 
 static void thread_set_aspect_ratio(void *data, unsigned aspectratio_idx)
 {
    thread_video_t *thr = (thread_video_t*)data;
+   thread_packet_t pkt = { CMD_POKE_SET_ASPECT_RATIO };
 
    if (!thr)
       return;
-   thr->cmd_data.i = aspectratio_idx;
-   thread_send_cmd(thr, CMD_POKE_SET_ASPECT_RATIO);
-   thread_wait_reply(thr, CMD_POKE_SET_ASPECT_RATIO);
+   pkt.data.i = aspectratio_idx;
+   thread_send_and_wait(thr, &pkt);
 }
 
 #if defined(HAVE_MENU)
