@@ -266,7 +266,6 @@ static void gl_raster_font_setup_viewport(gl_raster_t *font, bool full_screen)
 {
    unsigned width, height;
    gl_t         *gl = font->gl;
-   global_t *global = global_get_ptr();
 
    if (!gl)
       return;
@@ -288,7 +287,6 @@ static void gl_raster_font_setup_viewport(gl_raster_t *font, bool full_screen)
 static void gl_raster_font_restore_viewport(gl_t *gl)
 {
    unsigned width, height;
-   global_t *global = global_get_ptr();
 
    video_driver_get_size(&width, &height);
 
