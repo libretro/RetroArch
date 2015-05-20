@@ -1362,7 +1362,7 @@ bool event_command(enum event_command cmd)
             event_command(EVENT_CMD_AUDIO_STOP);
 
             if (settings->video.black_frame_insertion)
-               rarch_render_cached_frame();
+               video_driver_cached_frame();
          }
          else
          {

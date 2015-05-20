@@ -53,39 +53,6 @@
 #endif
 #endif
 
-/**
- * rarch_render_cached_frame:
- *
- * Renders the current video frame.
- **/
-void rarch_render_cached_frame(void)
-{
-   driver_t *driver   = driver_get_ptr();
-   global_t *global   = global_get_ptr();
-   runloop_t *runloop = rarch_main_get_ptr();
-   void *recording    = driver ? driver->recording_data : NULL;
-
-   if (runloop->is_idle)
-      return;
-
-   /* Cannot allow recording when pushing duped frames. */
-   driver->recording_data = NULL;
-
-   /* Not 100% safe, since the library might have
-    * freed the memory, but no known implementations do this.
-    * It would be really stupid at any rate ...
-    */
-   if (driver->retro_ctx.frame_cb)
-      driver->retro_ctx.frame_cb(
-            (global->frame_cache.data == RETRO_HW_FRAME_BUFFER_VALID)
-            ? NULL : global->frame_cache.data,
-            global->frame_cache.width,
-            global->frame_cache.height,
-            global->frame_cache.pitch);
-
-   driver->recording_data = recording;
-}
-
 #include "config.features.h"
 
 #define _PSUPP(var, name, desc) printf("\t%s:\n\t\t%s: %s\n", name, desc, _##var##_supp ? "yes" : "no")

@@ -143,7 +143,7 @@ static void thread_loop(void *data)
                /* We can read safely
                 *
                 * read_viewport() in GL driver calls 
-                * rarch_render_cached_frame() to be able to read from 
+                * video_driver_cached_frame() to be able to read from 
                 * back buffer.
                 *
                 * This means frame() callback in threaded wrapper will 

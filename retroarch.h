@@ -94,13 +94,6 @@ void rarch_main_init_wrap(const struct rarch_main_wrap *args,
 void rarch_main_deinit(void);
 
 /**
- * rarch_render_cached_frame:
- *
- * Renders the current video frame.
- **/
-void rarch_render_cached_frame(void);
-
-/**
  * rarch_replace_config:
  * @path                 : Path to config file to replace
  *                         current config file with.

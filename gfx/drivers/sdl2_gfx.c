@@ -605,15 +605,16 @@ static void sdl2_gfx_viewport_info(void *data, struct video_viewport *vp)
 
 static bool sdl2_gfx_read_viewport(void *data, uint8_t *buffer)
 {
+   SDL_Surface *surf = NULL, *bgr24 = NULL;
    sdl2_video_t *vid = (sdl2_video_t*)data;
 
    RARCH_PERFORMANCE_INIT(sdl2_gfx_read_viewport);
    RARCH_PERFORMANCE_START(sdl2_gfx_read_viewport);
 
-   rarch_render_cached_frame();
+   video_driver_cached_frame();
 
-   SDL_Surface *surf = SDL_GetWindowSurface(vid->window);
-   SDL_Surface *bgr24 = SDL_ConvertSurfaceFormat(surf, SDL_PIXELFORMAT_BGR24, 0);
+   surf  = SDL_GetWindowSurface(vid->window);
+   bgr24 = SDL_ConvertSurfaceFormat(surf, SDL_PIXELFORMAT_BGR24, 0);
 
    if (!bgr24)
    {

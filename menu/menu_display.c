@@ -75,7 +75,7 @@ void menu_display_fb(void)
       }
    }
     
-   rarch_render_cached_frame();
+   video_driver_cached_frame();
 }
 
 bool menu_display_update_pending(void)

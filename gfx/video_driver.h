@@ -374,6 +374,13 @@ enum retro_pixel_format video_driver_get_pixel_format(void);
 
 void video_driver_set_pixel_format(enum retro_pixel_format fmt);
 
+/**
+ * video_driver_cached_frame:
+ *
+ * Renders the current video frame.
+ **/
+void video_driver_cached_frame(void);
+
 #ifdef __cplusplus
 }
 #endif

@@ -231,7 +231,7 @@ static void check_slowmotion(bool slowmotion_pressed)
       return;
 
    if (settings->video.black_frame_insertion)
-      rarch_render_cached_frame();
+      video_driver_cached_frame();
 
    rarch_main_msg_queue_push(global->rewind.frame_is_reverse ?
          "Slow motion rewind." : "Slow motion.", 0, 30, true);
@@ -471,7 +471,7 @@ static int do_pause_state_checks(
    if (fullscreen_toggle_pressed)
    {
       event_command(EVENT_CMD_FULLSCREEN_TOGGLE);
-      rarch_render_cached_frame();
+      video_driver_cached_frame();
    }
 
    if (!check_is_oneshot)
