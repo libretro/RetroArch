@@ -38,6 +38,10 @@
 static struct runloop *g_runloop = NULL;
 static struct global *g_extern   = NULL;
 
+#ifdef HAVE_THREADS
+static slock_t *mq_lock = NULL;
+#endif
+
 /**
  * check_pause:
  * @pressed              : was libretro pause key pressed?
@@ -864,10 +868,22 @@ static void rarch_main_iterate_linefeed_overlay(void)
 const char *rarch_main_msg_queue_pull(void)
 {
    runloop_t *runloop = rarch_main_get_ptr();
+   const char *ret = NULL;
 
    if (!runloop)
       return NULL;
-   return msg_queue_pull(runloop->msg_queue);
+
+#ifdef HAVE_THREADS
+   slock_lock(mq_lock);
+#endif
+
+   ret = msg_queue_pull(runloop->msg_queue);
+
+#ifdef HAVE_THREADS
+   slock_unlock(mq_lock);
+#endif
+
+   return ret;
 }
 
 void rarch_main_msg_queue_push(const char *msg, unsigned prio, unsigned duration,
@@ -877,9 +893,17 @@ void rarch_main_msg_queue_push(const char *msg, unsigned prio, unsigned duration
    if (!runloop->msg_queue)
       return;
 
+#ifdef HAVE_THREADS
+   slock_lock(mq_lock);
+#endif
+
    if (flush)
       msg_queue_clear(runloop->msg_queue);
    msg_queue_push(runloop->msg_queue, msg, prio, duration);
+
+#ifdef HAVE_THREADS
+   slock_unlock(mq_lock);
+#endif
 }
 
 void rarch_main_msg_queue_free(void)
@@ -889,7 +913,19 @@ void rarch_main_msg_queue_free(void)
       return;
 
    if (runloop->msg_queue)
+   {
+#ifdef HAVE_THREADS
+   slock_lock(mq_lock);
+#endif
+
       msg_queue_free(runloop->msg_queue);
+
+#ifdef HAVE_THREADS
+      slock_unlock(mq_lock);
+      slock_free(mq_lock);
+#endif
+   }
+
    runloop->msg_queue = NULL;
 }
 
@@ -900,7 +936,15 @@ void rarch_main_msg_queue_init(void)
       return;
 
    if (!runloop->msg_queue)
-      rarch_assert(runloop->msg_queue = msg_queue_new(8));
+   {
+      runloop->msg_queue = msg_queue_new(8);
+      rarch_assert(runloop->msg_queue);
+
+#ifdef HAVE_THREADS
+      mq_lock = slock_new();
+      rarch_assert(mq_lock);
+#endif
+   }
 }
 
 global_t *global_get_ptr(void)
