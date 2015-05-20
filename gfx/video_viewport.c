@@ -17,6 +17,8 @@
 #include "video_viewport.h"
 #include "../general.h"
 
+static video_viewport_t video_viewport_custom;
+
 struct aspect_ratio_elem aspectratio_lut[ASPECT_RATIO_END] = {
    { "4:3",           1.3333f },
    { "16:9",          1.7778f },
@@ -229,10 +231,7 @@ struct retro_system_av_info *video_viewport_get_system_av_info(void)
 
 struct video_viewport *video_viewport_get_custom(void)
 {
-   global_t *global = global_get_ptr();
-   if (!global)
-      return NULL;
-   return &global->console.screen.viewports.custom_vp;
+   return &video_viewport_custom;
 }
 
 void video_viewport_reset_custom(void)

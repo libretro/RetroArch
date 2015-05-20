@@ -1139,10 +1139,12 @@ static bool config_load_file(const char *path, bool set_defaults)
    char *save, tmp_str[PATH_MAX_LENGTH];
    char tmp_append_path[PATH_MAX_LENGTH]; /* Don't destroy append_config_path. */
    const char *extra_path;
+   int vp_width = 0, vp_height = 0, vp_x = 0, vp_y = 0; 
    unsigned msg_color = 0;
    config_file_t *conf = NULL;
    settings_t *settings = config_get_ptr();
    global_t   *global   = global_get_ptr();
+   video_viewport_t *custom_vp = (video_viewport_t*)video_viewport_get_custom();
 
    if (path)
    {
@@ -1286,14 +1288,19 @@ static bool config_load_file(const char *path, bool set_defaults)
 #endif
    CONFIG_GET_INT_BASE(conf, settings, state_slot, "state_slot");
 
-   CONFIG_GET_INT_BASE(conf, global, console.screen.viewports.custom_vp.x,
-         "custom_viewport_x");
-   CONFIG_GET_INT_BASE(conf, global, console.screen.viewports.custom_vp.y,
-         "custom_viewport_y");
-   CONFIG_GET_INT_BASE(conf, global, console.screen.viewports.custom_vp.width,
-         "custom_viewport_width");
-   CONFIG_GET_INT_BASE(conf, global, console.screen.viewports.custom_vp.height,
-         "custom_viewport_height");
+
+   config_get_int(conf, "custom_viewport_width",  &vp_width);
+   config_get_int(conf, "custom_viewport_height", &vp_height);
+   config_get_int(conf, "custom_viewport_x",      &vp_x);
+   config_get_int(conf, "custom_viewport_y",      &vp_y);
+
+   if (custom_vp)
+   {
+      custom_vp->width  = vp_width;
+      custom_vp->height = vp_height;
+      custom_vp->x      = vp_x;
+      custom_vp->y      = vp_y;
+   }
 
    if (config_get_hex(conf, "video_message_color", &msg_color))
    {
@@ -2229,7 +2236,8 @@ bool config_save_file(const char *path)
    config_file_t *conf  = config_file_new(path);
    settings_t *settings = config_get_ptr();
    global_t   *global   = global_get_ptr();
-   const video_viewport_t *custom_vp = (const video_viewport_t*)video_viewport_get_custom();
+   const video_viewport_t *custom_vp = (const video_viewport_t*)
+      video_viewport_get_custom();
 
    if (!conf)
       conf = config_file_new(NULL);
@@ -2478,6 +2486,8 @@ bool config_save_file(const char *path)
          custom_vp->x);
    config_set_int(conf, "custom_viewport_y",
          custom_vp->y);
+
+
    config_set_float(conf, "video_font_size", settings->video.font_size);
 
    config_set_bool(conf, "block_sram_overwrite",

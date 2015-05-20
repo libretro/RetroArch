@@ -289,12 +289,6 @@ typedef struct global
             bool check;
          } resolutions;
 
-
-         struct
-         {
-            video_viewport_t custom_vp;
-         } viewports;
-
          unsigned gamma_correction;
          unsigned char flicker_filter_index;
          unsigned char soft_filter_index;
