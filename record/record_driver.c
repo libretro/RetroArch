@@ -291,7 +291,7 @@ bool recording_init(void)
    global_t *global = global_get_ptr();
    driver_t *driver     = driver_get_ptr();
    settings_t *settings = config_get_ptr();
-   const struct retro_system_av_info *info = &global->system.av_info;
+   struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
 
    if (!global->record.enable)
       return false;
@@ -310,8 +310,8 @@ bool recording_init(void)
    }
 
    RARCH_LOG("Custom timing given: FPS: %.4f, Sample rate: %.4f\n",
-         (float)global->system.av_info.timing.fps,
-         (float)global->system.av_info.timing.sample_rate);
+         (float)av_info->timing.fps,
+         (float)av_info->timing.sample_rate);
 
    strlcpy(recording_file, global->record.path, sizeof(recording_file));
 
@@ -320,14 +320,14 @@ bool recording_init(void)
             global->record.output_dir,
             global->record.path, sizeof(recording_file));
 
-   params.out_width  = info->geometry.base_width;
-   params.out_height = info->geometry.base_height;
-   params.fb_width   = info->geometry.max_width;
-   params.fb_height  = info->geometry.max_height;
+   params.out_width  = av_info->geometry.base_width;
+   params.out_height = av_info->geometry.base_height;
+   params.fb_width   = av_info->geometry.max_width;
+   params.fb_height  = av_info->geometry.max_height;
    params.channels   = 2;
    params.filename   = recording_file;
-   params.fps        = global->system.av_info.timing.fps;
-   params.samplerate = global->system.av_info.timing.sample_rate;
+   params.fps        = av_info->timing.fps;
+   params.samplerate = av_info->timing.sample_rate;
    params.pix_fmt    = (global->system.pix_fmt == RETRO_PIXEL_FORMAT_XRGB8888) ?
       FFEMU_PIX_ARGB8888 : FFEMU_PIX_RGB565;
    params.config     = NULL;

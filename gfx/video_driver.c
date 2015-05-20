@@ -350,6 +350,8 @@ static void init_video_filter(enum retro_pixel_format colfmt)
    struct retro_game_geometry *geom = NULL;
    global_t *global                 = global_get_ptr();
    settings_t *settings             = config_get_ptr();
+   struct retro_system_av_info *av_info = 
+      video_viewport_get_system_av_info();
 
    deinit_video_filter();
 
@@ -366,7 +368,7 @@ static void init_video_filter(enum retro_pixel_format colfmt)
       return;
    }
 
-   geom    = (struct retro_game_geometry*)&global->system.av_info.geometry;
+   geom    = av_info ? (struct retro_game_geometry*)&av_info->geometry : NULL;
    width   = geom->max_width;
    height  = geom->max_height;
 
@@ -474,11 +476,14 @@ void init_video(void)
    driver_t *driver                 = driver_get_ptr();
    global_t *global                 = global_get_ptr();
    settings_t *settings             = config_get_ptr();
+   struct retro_system_av_info *av_info = 
+      video_viewport_get_system_av_info();
 
    init_video_filter(global->system.pix_fmt);
    event_command(EVENT_CMD_SHADER_DIR_INIT);
 
-   geom      = (const struct retro_game_geometry*)&global->system.av_info.geometry;
+   if (av_info)
+      geom      = (const struct retro_game_geometry*)&av_info->geometry;
    max_dim   = max(geom->max_width, geom->max_height);
    scale     = next_pow2(max_dim) / RARCH_SCALE_BASE;
    scale     = max(scale, 1);
@@ -876,12 +881,17 @@ void video_driver_set_size_height(unsigned height)
 void video_monitor_adjust_system_rates(void)
 {
    float timing_skew;
-   global_t *global = global_get_ptr();
-   const struct retro_system_timing *info = 
-      (const struct retro_system_timing*)&global->system.av_info.timing;
+   const struct retro_system_timing *info = NULL;
+   struct retro_system_av_info *av_info = 
+      video_viewport_get_system_av_info();
    settings_t *settings = config_get_ptr();
+   global_t *global = global_get_ptr();
 
-   global->system.force_nonblock = false;
+   if (global)
+      global->system.force_nonblock = false;
+
+   if  (av_info)
+      info = (const struct retro_system_timing*)&av_info->timing;
 
    if (info->fps <= 0.0)
       return;

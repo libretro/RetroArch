@@ -419,10 +419,11 @@ static void *xv_init(const video_info_t *video,
    XVisualInfo *visualinfo = NULL;
    XVisualInfo visualtemplate = {0};
    XvAdaptorInfo *adaptor_info = NULL;
-   const struct retro_game_geometry *geom = NULL;
    driver_t *driver     = driver_get_ptr();
    settings_t *settings = config_get_ptr();
    global_t *global     = global_get_ptr();
+   const struct retro_game_geometry *geom = NULL;
+   struct retro_system_av_info *av_info = NULL;
    xv_t *xv = (xv_t*)calloc(1, sizeof(*xv));
    if (!xv)
       return NULL;
@@ -430,7 +431,11 @@ static void *xv_init(const video_info_t *video,
    XInitThreads();
 
    xv->display = XOpenDisplay(NULL);
-   geom        = &global->system.av_info.geometry;
+   
+   av_info = video_viewport_get_system_av_info();
+
+   if (av_info)
+      geom        = &av_info->geometry;
 
    if (!XShmQueryExtension(xv->display))
    {

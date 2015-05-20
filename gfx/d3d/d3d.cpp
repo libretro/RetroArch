@@ -518,14 +518,15 @@ static bool d3d_has_windowed(void *data)
 static void d3d_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
-   global_t *global = global_get_ptr();
+   struct retro_system_av_info *av_info =- 
+      video_viewport_get_system_av_info();
 
    switch (aspect_ratio_idx)
    {
       case ASPECT_RATIO_SQUARE:
          video_viewport_set_square_pixel(
-               global->system.av_info.geometry.base_width,
-               global->system.av_info.geometry.base_height);
+               av_info->geometry.base_width,
+               av_info->geometry.base_height);
          break;
 
       case ASPECT_RATIO_CORE:

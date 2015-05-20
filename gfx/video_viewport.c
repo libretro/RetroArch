@@ -51,6 +51,8 @@ char rotation_lut[4][32] =
    "270 deg"
 };
 
+static struct retro_system_av_info video_viewport_av_info;
+
 /**
  * video_viewport_set_square_pixel:
  * @width         : Width.
@@ -90,8 +92,9 @@ void video_viewport_set_square_pixel(unsigned width, unsigned height)
  **/
 void video_viewport_set_core(void)
 {
-   global_t *global = global_get_ptr();
-   struct retro_game_geometry *geom = &global->system.av_info.geometry;
+   struct retro_system_av_info *av_info = 
+      video_viewport_get_system_av_info();
+   struct retro_game_geometry *geom = &av_info->geometry;
 
    if (!geom || geom->base_width <= 0.0f || geom->base_height <= 0.0f)
       return;
@@ -112,11 +115,11 @@ void video_viewport_set_core(void)
 void video_viewport_set_config(void)
 {
    settings_t *settings = config_get_ptr();
-   global_t *global     = global_get_ptr();
+   struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
 
    if (settings->video.aspect_ratio < 0.0f)
    {
-      struct retro_game_geometry *geom = &global->system.av_info.geometry;
+      struct retro_game_geometry *geom = &av_info->geometry;
 
       if (geom && geom->aspect_ratio > 0.0f && settings->video.aspect_ratio_auto)
          aspectratio_lut[ASPECT_RATIO_CONFIG].value = geom->aspect_ratio;
@@ -156,15 +159,13 @@ void video_viewport_get_scaled_integer(struct video_viewport *vp,
 {
    int padding_x = 0, padding_y = 0;
    settings_t *settings = config_get_ptr();
-   global_t *global     = global_get_ptr();
 
    if (!vp)
       return;
 
    if (settings->video.aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
    {
-      const struct video_viewport *custom = 
-         &global->console.screen.viewports.custom_vp;
+      struct video_viewport *custom = video_viewport_get_custom();
 
       if (custom)
       {
@@ -179,7 +180,8 @@ void video_viewport_get_scaled_integer(struct video_viewport *vp,
       unsigned base_width;
       /* Use system reported sizes as these define the 
        * geometry for the "normal" case. */
-      unsigned base_height = global->system.av_info.geometry.base_height;
+      struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
+      unsigned base_height = av_info ? av_info->geometry.base_height : 0;
 
       if (base_height == 0)
          base_height = 1;
@@ -218,4 +220,17 @@ void video_viewport_get_scaled_integer(struct video_viewport *vp,
    vp->height = height;
    vp->x      = padding_x / 2;
    vp->y      = padding_y / 2;
+}
+
+struct retro_system_av_info *video_viewport_get_system_av_info(void)
+{
+   return (struct retro_system_av_info*)&video_viewport_av_info;
+}
+
+struct video_viewport *video_viewport_get_custom(void)
+{
+   global_t *global = global_get_ptr();
+   if (!global)
+      return NULL;
+   return &global->console.screen.viewports.custom_vp;
 }

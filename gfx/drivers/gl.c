@@ -805,7 +805,7 @@ static void gl_set_viewport(void *data, unsigned viewport_width,
 #if defined(HAVE_MENU)
       if (settings->video.aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
       {
-         const struct video_viewport *custom = &global->console.screen.viewports.custom_vp;
+         const struct video_viewport *custom = video_viewport_get_custom();
 
          /* GL has bottom-left origin viewport. */
          x      = custom->x;
@@ -3100,14 +3100,14 @@ static retro_proc_address_t gl_get_proc_address(void *data, const char *sym)
 static void gl_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
 {
    gl_t *gl         = (gl_t*)data;
-   global_t *global = global_get_ptr();
+   struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
 
    switch (aspect_ratio_idx)
    {
       case ASPECT_RATIO_SQUARE:
          video_viewport_set_square_pixel(
-               global->system.av_info.geometry.base_width,
-               global->system.av_info.geometry.base_height);
+               av_info->geometry.base_width,
+               av_info->geometry.base_height);
          break;
 
       case ASPECT_RATIO_CORE:

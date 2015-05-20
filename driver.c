@@ -309,10 +309,10 @@ void driver_set_nonblock_state(bool enable)
  **/
 bool driver_update_system_av_info(const struct retro_system_av_info *info)
 {
-   global_t *global = global_get_ptr();
+   struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
    driver_t *driver = driver_get_ptr();
 
-   global->system.av_info = *info;
+   memcpy(av_info, info, sizeof(*av_info));
    event_command(EVENT_CMD_REINIT);
 
    /* Cannot continue recording with different parameters.

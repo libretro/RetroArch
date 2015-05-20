@@ -435,13 +435,13 @@ static void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines,
 static void gx_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
 {
    driver_t *driver = driver_get_ptr();
-   global_t *global = global_get_ptr();
    gx_video_t *gx = (gx_video_t*)driver->video_data;
+   struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
 
    if (aspect_ratio_idx == ASPECT_RATIO_SQUARE)
       video_viewport_set_square_pixel(
-            global->system.av_info.geometry.base_width,
-            global->system.av_info.geometry.base_height);
+            av_info->geometry.base_width,
+            av_info->geometry.base_height);
    else if (aspect_ratio_idx == ASPECT_RATIO_CORE)
       video_viewport_set_core();
    else if (aspect_ratio_idx == ASPECT_RATIO_CONFIG)

@@ -1102,9 +1102,11 @@ bool rarch_environment_cb(unsigned cmd, void *data)
 
       case RETRO_ENVIRONMENT_SET_GEOMETRY:
       {
+         struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
          const struct retro_game_geometry *in_geom = 
             (const struct retro_game_geometry*)data;
-         struct retro_game_geometry *geom = &global->system.av_info.geometry;
+         struct retro_game_geometry *geom = av_info ? 
+            (struct retro_game_geometry*)&av_info->geometry : NULL;
 
          RARCH_LOG("Environ SET_GEOMETRY.\n");
 

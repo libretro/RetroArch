@@ -391,6 +391,7 @@ static int omapfb_alloc_mem(omapfb_data_t *pdata)
    unsigned mem_size;
    void* mem = NULL;
    const struct retro_game_geometry *geom = NULL;
+   struct retro_system_av_info *av_info = NULL;
    global_t   *global   = global_get_ptr();
 
    assert(pdata->current_state == NULL);
@@ -423,7 +424,10 @@ static int omapfb_alloc_mem(omapfb_data_t *pdata)
       }
    }
 
-   geom     = &global->system.av_info.geometry;
+   av_info  = video_viewport_get_system_av_info();
+
+   if (av_info)
+      geom     = &av_info->geometry;
    mem_size = geom->max_width * geom->max_height *
       pdata->bpp * pdata->num_pages;
 

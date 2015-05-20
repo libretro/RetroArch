@@ -152,7 +152,6 @@ typedef struct global
    struct
    {
       struct retro_system_info info;
-      struct retro_system_av_info av_info;
 
       unsigned rotation;
       bool shutdown;
