@@ -2481,20 +2481,29 @@ error:
 
 static bool gl_alive(void *data)
 {
+   unsigned temp_width = 0, temp_height = 0;
+   int ret = false;
    bool quit = false, resize = false;
    gl_t         *gl = (gl_t*)data;
-   global_t *global = global_get_ptr();
 
-   if (!gfx_ctx_check_window(data, &quit,
-            &resize, &global->video_data.width, &global->video_data.height))
-      return false;
+   if (gfx_ctx_check_window(data, &quit,
+            &resize, &temp_width, &temp_height))
+   {
+      if (quit)
+         gl->quitting = true;
+      else if (resize)
+         gl->should_resize = true;
 
-   if (quit)
-      gl->quitting = true;
-   else if (resize)
-      gl->should_resize = true;
+      ret = !gl->quitting;
+   }
 
-   return !gl->quitting;
+   if (temp_width != 0 && temp_height != 0)
+   {
+      video_driver_set_size_width(temp_width);
+      video_driver_set_size_height(temp_height);
+   }
+
+   return ret;
 }
 
 static bool gl_focus(void *data)
