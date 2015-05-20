@@ -781,7 +781,6 @@ static void gl_set_viewport(void *data, unsigned viewport_width,
    float device_aspect   = (float)viewport_width / viewport_height;
    struct gl_ortho ortho = {0, 1, 0, 1, -1, 1};
    settings_t *settings  = config_get_ptr();
-   global_t   *global    = global_get_ptr();
    gl_t           *gl    = (gl_t*)data;
 
    video_driver_get_size(&width, &height);
