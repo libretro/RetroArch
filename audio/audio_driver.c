@@ -27,6 +27,10 @@
 #include "../performance.h"
 #include "../intl/intl.h"
 
+#ifndef AUDIO_BUFFER_FREE_SAMPLES_COUNT
+#define AUDIO_BUFFER_FREE_SAMPLES_COUNT (8 * 1024)
+#endif
+
 typedef struct audio_driver_input_data
 {
    float *data;
@@ -56,6 +60,9 @@ typedef struct audio_driver_input_data
 
    float volume_gain;
    struct retro_audio_callback audio_callback;
+
+   unsigned buffer_free_samples[AUDIO_BUFFER_FREE_SAMPLES_COUNT];
+   uint64_t buffer_free_samples_count;
 } audio_driver_input_data_t;
 
 static audio_driver_input_data_t audio_data;
@@ -142,22 +149,21 @@ static void compute_audio_buffer_statistics(void)
    uint64_t accum = 0, accum_var = 0;
    unsigned low_water_count = 0, high_water_count = 0;
    unsigned samples = 0;
-   runloop_t *runloop = rarch_main_get_ptr();
    
-   samples = min(runloop->measure_data.buffer_free_samples_count,
+   samples = min(audio_data.buffer_free_samples_count,
          AUDIO_BUFFER_FREE_SAMPLES_COUNT);
 
    if (samples < 3)
       return;
 
    for (i = 1; i < samples; i++)
-      accum += runloop->measure_data.buffer_free_samples[i];
+      accum += audio_data.buffer_free_samples[i];
 
    avg = accum / (samples - 1);
 
    for (i = 1; i < samples; i++)
    {
-      int diff = avg - runloop->measure_data.buffer_free_samples[i];
+      int diff = avg - audio_data.buffer_free_samples[i];
       accum_var += diff * diff;
    }
 
@@ -170,9 +176,9 @@ static void compute_audio_buffer_statistics(void)
 
    for (i = 1; i < samples; i++)
    {
-      if (runloop->measure_data.buffer_free_samples[i] >= low_water_size)
+      if (audio_data.buffer_free_samples[i] >= low_water_size)
          low_water_count++;
-      else if (runloop->measure_data.buffer_free_samples[i] <= high_water_size)
+      else if (audio_data.buffer_free_samples[i] <= high_water_size)
          high_water_count++;
    }
 
@@ -321,7 +327,6 @@ void uninit_audio(void)
 void init_audio(void)
 {
    size_t outsamples_max, max_bufsamples = AUDIO_CHUNK_SIZE_NONBLOCKING * 2;
-   runloop_t *runloop   = rarch_main_get_ptr();
    driver_t *driver     = driver_get_ptr();
    settings_t *settings = config_get_ptr();
 
@@ -454,7 +459,7 @@ void init_audio(void)
 
    event_command(EVENT_CMD_DSP_FILTER_INIT);
 
-   runloop->measure_data.buffer_free_samples_count = 0;
+   audio_data.buffer_free_samples_count = 0;
 
    if (driver->audio_active && !settings->audio.mute_enable &&
          audio_data.audio_callback.callback)
@@ -516,9 +521,8 @@ static int audio_driver_write_avail(void)
  */
 void audio_driver_readjust_input_rate(void)
 {
-   runloop_t *runloop   = rarch_main_get_ptr();
    settings_t *settings = config_get_ptr();
-   unsigned write_idx   = runloop->measure_data.buffer_free_samples_count++ &
+   unsigned write_idx   = audio_data.buffer_free_samples_count++ &
       (AUDIO_BUFFER_FREE_SAMPLES_COUNT - 1);
    int      half_size   = audio_data.driver_buffer_size / 2;
    int      avail       = audio_driver_write_avail();
@@ -531,7 +535,7 @@ void audio_driver_readjust_input_rate(void)
          (unsigned)(100 - (avail * 100) / audio_data.driver_buffer_size));
 #endif
 
-   runloop->measure_data.buffer_free_samples[write_idx] = avail;
+   audio_data.buffer_free_samples[write_idx] = avail;
    audio_data.src_ratio = audio_data.orig_src_ratio * adjust;
 
 #if 0
