@@ -107,9 +107,10 @@ static void setup_pixel_format(HDC hdc)
 static void create_gl_context(HWND hwnd)
 {
    bool core_context;
-   global_t *global = global_get_ptr();
+   const struct retro_hw_render_callback *hw_render =
+      (const struct retro_hw_render_callback*)video_driver_callback();
    driver_t *driver = driver_get_ptr();
-   bool debug       = global->system.hw_render_callback.debug_context;
+   bool debug       = hw_render->debug_context;
 
 #ifdef _WIN32
    dll_handle = (HINSTANCE)dylib_load("OpenGL32.dll");

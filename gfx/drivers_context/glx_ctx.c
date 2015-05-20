@@ -347,7 +347,8 @@ static bool gfx_ctx_glx_init(void *data)
    GLXFBConfig *fbcs       = NULL;
    gfx_ctx_glx_data_t *glx = (gfx_ctx_glx_data_t*)calloc(1, sizeof(gfx_ctx_glx_data_t));
    driver_t *driver        = driver_get_ptr();
-   global_t *global        = global_get_ptr();
+   const struct retro_hw_render_callback *hw_render =
+      (const struct retro_hw_render_callback*)video_driver_callback();
 
    if (!glx)
       return false;
@@ -373,7 +374,7 @@ static bool gfx_ctx_glx_init(void *data)
 #ifdef GL_DEBUG
    glx->g_debug = true;
 #else
-   glx->g_debug = global->system.hw_render_callback.debug_context;
+   glx->g_debug = hw_render->debug_context;
 #endif
 
    /* Have to use ContextAttribs */

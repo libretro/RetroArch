@@ -666,7 +666,8 @@ static bool gl_init_hw_render(gl_t *gl, unsigned width, unsigned height)
    unsigned i;
    bool depth = false, stencil = false;
    GLint max_fbo_size = 0, max_renderbuffer_size = 0;
-   global_t *global = global_get_ptr();
+   const struct retro_hw_render_callback *hw_render =
+      (const struct retro_hw_render_callback*)video_driver_callback();
 
    /* We can only share texture objects through contexts.
     * FBOs are "abstract" objects and are not shared. */
@@ -684,8 +685,8 @@ static bool gl_init_hw_render(gl_t *gl, unsigned width, unsigned height)
    glBindTexture(GL_TEXTURE_2D, 0);
    glGenFramebuffers(gl->textures, gl->hw_render_fbo);
 
-   depth   = global->system.hw_render_callback.depth;
-   stencil = global->system.hw_render_callback.stencil;
+   depth   = hw_render->depth;
+   stencil = hw_render->stencil;
 
 #ifdef HAVE_OPENGLES2
    if (stencil && !gl_query_extension(gl, "OES_packed_depth_stencil"))
@@ -1850,20 +1851,19 @@ static void gl_set_nonblock_state(void *data, bool state)
 static bool resolve_extensions(gl_t *gl, const char *context_ident)
 {
    driver_t *driver     = driver_get_ptr();
-   global_t *global     = global_get_ptr();
    settings_t *settings = config_get_ptr();
    const char *vendor   = (const char*)glGetString(GL_VENDOR);
    const char *renderer = (const char*)glGetString(GL_RENDERER);
    const char *version  = (const char*)glGetString(GL_VERSION);
+   const struct retro_hw_render_callback *hw_render =
+      (const struct retro_hw_render_callback*)video_driver_callback();
     
-   (void)global;
    (void)vendor;
    (void)renderer;
    (void)version;
 #ifndef HAVE_OPENGLES
    gl->core_context     = 
-      (global->system.hw_render_callback.context_type 
-       == RETRO_HW_CONTEXT_OPENGL_CORE);
+      (hw_render->context_type == RETRO_HW_CONTEXT_OPENGL_CORE);
    
    if (gl->core_context)
    {
@@ -2072,10 +2072,8 @@ static void gl_init_pbo_readback(gl_t *gl)
 
 static const gfx_ctx_driver_t *gl_get_context(gl_t *gl)
 {
-   global_t *global = global_get_ptr();
    const struct retro_hw_render_callback *cb = 
-      (const struct retro_hw_render_callback*)
-      &global->system.hw_render_callback;
+      (const struct retro_hw_render_callback*)video_driver_callback();
    unsigned major = cb->version_major;
    unsigned minor = cb->version_minor;
    settings_t *settings = config_get_ptr();
@@ -2253,7 +2251,6 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    const char *version                = NULL;
    struct retro_hw_render_callback *hw_render = NULL;
    settings_t *settings               = config_get_ptr();
-   global_t   *global                 = global_get_ptr();
    driver_t                   *driver = driver_get_ptr();
 
    gl = (gl_t*)calloc(1, sizeof(gl_t));
@@ -2334,7 +2331,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
       gl->full_y = temp_height;
    }
 
-   hw_render         = &global->system.hw_render_callback;
+   hw_render         = video_driver_callback();
    gl->vertex_ptr    = hw_render->bottom_left_origin ? vertexes : vertexes_flipped;
 
    /* Better pipelining with GPU due to synchronous glSubTexImage.

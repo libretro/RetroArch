@@ -805,6 +805,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
       case RETRO_ENVIRONMENT_SET_HW_RENDER:
       case RETRO_ENVIRONMENT_SET_HW_RENDER | RETRO_ENVIRONMENT_EXPERIMENTAL:
       {
+         struct retro_hw_render_callback *hw_render = video_driver_callback();
          struct retro_hw_render_callback *cb = 
             (struct retro_hw_render_callback*)data;
 
@@ -866,10 +867,10 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          cb->get_proc_address        = video_driver_get_proc_address;
 
          if (cmd & RETRO_ENVIRONMENT_EXPERIMENTAL) /* Old ABI. Don't copy garbage. */
-            memcpy(&global->system.hw_render_callback,
+            memcpy(hw_render,
                   cb, offsetof(struct retro_hw_render_callback, stencil));
          else
-            memcpy(&global->system.hw_render_callback, cb, sizeof(*cb));
+            memcpy(hw_render, cb, sizeof(*cb));
          break;
       }
 

@@ -31,6 +31,7 @@
 typedef struct video_driver_state
 {
    retro_time_t frame_time_samples[MEASURE_FRAME_TIME_SAMPLES_COUNT];
+   struct retro_hw_render_callback hw_render_callback;
    uint64_t frame_time_samples_count;
 
    unsigned video_width;
@@ -174,7 +175,7 @@ void find_video_driver(void)
    (void)global;
 
 #if defined(HAVE_OPENGL) && defined(HAVE_FBO)
-   if (global->system.hw_render_callback.context_type)
+   if (video_state.hw_render_callback.context_type)
    {
       RARCH_LOG("Using HW render, OpenGL driver forced.\n");
       driver->video = &video_gl;
@@ -229,7 +230,7 @@ void *video_driver_get_ptr(const video_driver_t **drv)
 
 #ifdef HAVE_THREADS
    if (settings->video.threaded
-         && !global->system.hw_render_callback.context_type)
+         && !video_state.hw_render_callback.context_type)
       return rarch_threaded_video_get_ptr(drv);
 #endif
    if (drv)
@@ -362,7 +363,7 @@ static void init_video_filter(enum retro_pixel_format colfmt)
    if (colfmt == RETRO_PIXEL_FORMAT_0RGB1555)
       colfmt = RETRO_PIXEL_FORMAT_RGB565;
 
-   if (global->system.hw_render_callback.context_type)
+   if (video_state.hw_render_callback.context_type)
    {
       RARCH_WARN("Cannot use CPU filters when hardware rendering is used.\n");
       return;
@@ -461,6 +462,7 @@ void uninit_video_input(void)
 
    deinit_video_filter();
 
+   video_driver_unset_callback();
    event_command(EVENT_CMD_SHADER_DIR_DEINIT);
    video_monitor_compute_fps_statistics();
 }
@@ -564,7 +566,7 @@ void init_video(void)
    find_video_driver();
 
 #ifdef HAVE_THREADS
-   if (settings->video.threaded && !global->system.hw_render_callback.context_type)
+   if (settings->video.threaded && !video_state.hw_render_callback.context_type)
    {
       /* Can't do hardware rendering with threaded driver currently. */
       RARCH_LOG("Starting threaded video driver ...\n");
@@ -1107,4 +1109,18 @@ float video_driver_get_aspect_ratio(void)
 void video_driver_set_aspect_ratio_value(float value)
 {
    video_state.aspect_ratio = value;
+}
+
+struct retro_hw_render_callback *video_driver_callback(void)
+{
+   return &video_state.hw_render_callback;
+}
+
+void video_driver_unset_callback(void)
+{
+   struct retro_hw_render_callback *hw_render =
+      video_driver_callback();
+
+   if (hw_render)
+      hw_render = NULL;
 }

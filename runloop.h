@@ -168,7 +168,6 @@ typedef struct global
       retro_keyboard_event_t key_event;
 
       struct retro_disk_control_callback disk_control; 
-      struct retro_hw_render_callback hw_render_callback;
       struct retro_camera_callback camera_callback;
       struct retro_location_callback location_callback;
 

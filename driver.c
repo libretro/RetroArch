@@ -383,13 +383,16 @@ void init_drivers(int flags)
 
    if (flags & DRIVER_VIDEO)
    {
+      const struct retro_hw_render_callback *hw_render = 
+         (const struct retro_hw_render_callback*)video_driver_callback();
+
       video_monitor_reset();
 
       init_video();
 
       if (!driver->video_cache_context_ack
-            && global->system.hw_render_callback.context_reset)
-         global->system.hw_render_callback.context_reset();
+            && hw_render->context_reset)
+         hw_render->context_reset();
       driver->video_cache_context_ack = false;
 
       global->system.frame_time_last = 0;
@@ -469,11 +472,11 @@ void uninit_drivers(int flags)
 
    if (flags & DRIVER_VIDEO)
    {
-      global_t *global = global_get_ptr();
+      const struct retro_hw_render_callback *hw_render = 
+         (const struct retro_hw_render_callback*)video_driver_callback();
 
-      if (global->system.hw_render_callback.context_destroy &&
-               !driver->video_cache_context)
-            global->system.hw_render_callback.context_destroy();
+      if (hw_render->context_destroy && !driver->video_cache_context)
+            hw_render->context_destroy();
    }
 
    if ((flags & DRIVER_VIDEO) && !driver->video_data_own)

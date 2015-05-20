@@ -1081,21 +1081,25 @@ bool event_command(enum event_command cmd)
          rarch_main_set_state(RARCH_ACTION_STATE_QUIT);
          break;
       case EVENT_CMD_REINIT:
-         driver->video_cache_context = 
-            global->system.hw_render_callback.cache_context;
-         driver->video_cache_context_ack = false;
-         event_command(EVENT_CMD_RESET_CONTEXT);
-         driver->video_cache_context = false;
+         {
+            const struct retro_hw_render_callback *hw_render =
+               (const struct retro_hw_render_callback*)video_driver_callback();
 
-         /* Poll input to avoid possibly stale data to corrupt things. */
-         input_driver_poll();
+            driver->video_cache_context     = hw_render->cache_context;
+            driver->video_cache_context_ack = false;
+            event_command(EVENT_CMD_RESET_CONTEXT);
+            driver->video_cache_context     = false;
+
+            /* Poll input to avoid possibly stale data to corrupt things. */
+            input_driver_poll();
 
 #ifdef HAVE_MENU
-         menu_display_fb_set_dirty();
+            menu_display_fb_set_dirty();
 
-         if (menu_driver_alive())
-            event_command(EVENT_CMD_VIDEO_SET_BLOCKING_STATE);
+            if (menu_driver_alive())
+               event_command(EVENT_CMD_VIDEO_SET_BLOCKING_STATE);
 #endif
+         }
          break;
       case EVENT_CMD_CHEATS_DEINIT:
          if (!global)

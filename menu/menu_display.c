@@ -134,10 +134,10 @@ bool menu_display_font_init_first(const void **font_driver,
       float font_size)
 {
    settings_t *settings = config_get_ptr();
-   global_t   *global   = global_get_ptr();
+   const struct retro_hw_render_callback *hw_render =
+      (const struct retro_hw_render_callback*)video_driver_callback();
 
-   if (settings->video.threaded
-         && !global->system.hw_render_callback.context_type)
+   if (settings->video.threaded && !hw_render->context_type)
    {
       driver_t *driver    = driver_get_ptr();
       thread_video_t *thr = (thread_video_t*)driver->video_data;

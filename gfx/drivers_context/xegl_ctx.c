@@ -381,10 +381,11 @@ static EGLint *xegl_fill_attribs(EGLint *attr)
 #ifdef EGL_KHR_create_context
       case GFX_CTX_OPENGL_API:
          {
+            const struct retro_hw_render_callback *hw_render =
+               (const struct retro_hw_render_callback*)video_driver_callback();
             unsigned version = g_major * 1000 + g_minor;
-            bool core = version >= 3001;
-            global_t *global = global_get_ptr();
-            bool debug = global->system.hw_render_callback.debug_context;
+            bool core        = version >= 3001;
+            bool debug       = hw_render->debug_context;
 
 #ifdef GL_DEBUG
             debug = true;

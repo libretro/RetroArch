@@ -292,6 +292,8 @@ bool recording_init(void)
    driver_t *driver     = driver_get_ptr();
    settings_t *settings = config_get_ptr();
    struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
+   const struct retro_hw_render_callback *hw_render = 
+      (const struct retro_hw_render_callback*)video_driver_callback();
 
    if (!global->record.enable)
       return false;
@@ -302,8 +304,7 @@ bool recording_init(void)
       return false;
    }
 
-   if (!settings->video.gpu_record
-         && global->system.hw_render_callback.context_type)
+   if (!settings->video.gpu_record && hw_render->context_type)
    {
       RARCH_WARN("Libretro core is hardware rendered. Must use post-shaded recording as well.\n");
       return false;

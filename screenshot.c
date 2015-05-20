@@ -262,13 +262,15 @@ bool take_screenshot(void)
    driver_t *driver     = driver_get_ptr();
    settings_t *settings = config_get_ptr();
    global_t *global     = global_get_ptr();
+   const struct retro_hw_render_callback *hw_render = 
+      (const struct retro_hw_render_callback*)video_driver_callback();
 
    /* No way to infer screenshot directory. */
    if ((!*settings->screenshot_directory) && (!*global->basename))
       return false;
 
    viewport_read = (settings->video.gpu_screenshot ||
-         ((global->system.hw_render_callback.context_type
+         ((hw_render->context_type
          != RETRO_HW_CONTEXT_NONE) && !driver->video->read_frame_raw))
          && driver->video->read_viewport && driver->video->viewport_info;
 
