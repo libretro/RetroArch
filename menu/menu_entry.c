@@ -227,7 +227,7 @@ int32_t menu_entry_bind_index(uint32_t i)
 void menu_entry_bind_key_set(uint32_t i, int32_t value)
 {
    rarch_setting_t *setting = menu_entry_get_setting(i);
-   BINDFOR(*setting).key = (retro_key)value;
+   BINDFOR(*setting).key = (enum retro_key)value;
 }
 
 void menu_entry_bind_joykey_set(uint32_t i, int32_t value)

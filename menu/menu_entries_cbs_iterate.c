@@ -535,7 +535,7 @@ static int action_iterate_main(const char *label, unsigned action)
       case ITERATE_TYPE_DEFAULT:
          selected           = menu_navigation_get_current_selection();
          menu_entry_get(&entry,    selected, NULL, false);
-         ret = menu_entry_action(&entry, selected, (menu_action)action);
+         ret = menu_entry_action(&entry, selected, (enum menu_action)action);
 
          if (ret)
             return ret;
