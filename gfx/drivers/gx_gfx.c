@@ -237,7 +237,6 @@ static void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines,
    gx_video_t *gx       = (gx_video_t*)data;
    menu_handle_t *menu  = menu_driver_get_ptr();
    settings_t *settings = config_get_ptr();
-   global_t   *global   = global_get_ptr();
 
    (void)level;
 
@@ -835,7 +834,7 @@ static void gx_resize(void *data)
    int x = 0, y = 0;
    unsigned width = gx->vp.full_width, height = gx->vp.full_height;
    settings_t *settings = config_get_ptr();
-   global_t *global     = global_get_ptr();
+   const global_t *global     = (const global_t*)global_get_ptr();
    struct video_viewport *custom_vp = video_viewport_get_custom();
 
 #ifdef HW_RVL
