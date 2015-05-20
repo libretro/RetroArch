@@ -169,10 +169,7 @@ void find_video_driver(void)
 {
    int i;
    driver_t *driver     = driver_get_ptr();
-   global_t *global     = global_get_ptr();
    settings_t *settings = config_get_ptr();
-
-   (void)global;
 
 #if defined(HAVE_OPENGL) && defined(HAVE_FBO)
    if (video_state.hw_render_callback.context_type)
