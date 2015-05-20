@@ -362,7 +362,6 @@ static void thread_loop(void *data)
    for (;;)
    {
       thread_packet_t pkt;
-      enum thread_cmd send_cmd;
       bool ret = false;
       bool updated = false;
 
@@ -374,7 +373,6 @@ static void thread_loop(void *data)
 
       /* To avoid race condition where send_cmd is updated 
        * right after the switch is checked. */
-      send_cmd = thr->send_cmd;
       pkt = thr->cmd_data;
 
       slock_unlock(thr->lock);
