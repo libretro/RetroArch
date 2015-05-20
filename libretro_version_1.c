@@ -53,7 +53,7 @@ static bool video_frame_scale(const void *data,
 
    if (!data)
       return false;
-   if (global->system.pix_fmt != RETRO_PIXEL_FORMAT_0RGB1555)
+   if (video_driver_get_pixel_format() != RETRO_PIXEL_FORMAT_0RGB1555)
       return false;
    if (data == RETRO_HW_FRAME_BUFFER_VALID)
       return false;

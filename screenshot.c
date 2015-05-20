@@ -129,7 +129,6 @@ static void dump_content(FILE *file, const void *frame,
 {
    size_t line_size;
    int i, j;
-   global_t *global = NULL;
    union
    {
       const uint8_t *u8;
@@ -143,7 +142,6 @@ static void dump_content(FILE *file, const void *frame,
 
    u.u8      = (const uint8_t*)frame;
    line_size = (width * 3 + 3) & ~3;
-   global    = global_get_ptr();
 
    for (i = 0; i < height; i++)
    {
@@ -157,7 +155,7 @@ static void dump_content(FILE *file, const void *frame,
       for (j = 0; j < height; j++, u.u8 += pitch)
          dump_line_bgr(lines[j], u.u8, width);
    }
-   else if (global->system.pix_fmt == RETRO_PIXEL_FORMAT_XRGB8888)
+   else if (video_driver_get_pixel_format() == RETRO_PIXEL_FORMAT_XRGB8888)
    {
       for (j = 0; j < height; j++, u.u8 += pitch)
          dump_line_32(lines[j], u.u32, width);
@@ -351,13 +349,11 @@ bool screenshot_dump(const char *folder, const void *frame,
    FILE *file          = NULL;
    uint8_t *out_buffer = NULL;
    bool ret            = false;
-   global_t *global    = global_get_ptr();
    driver_t *driver    = driver_get_ptr();
 
    (void)file;
    (void)out_buffer;
    (void)scaler;
-   (void)global;
    (void)driver;
 
    fill_dated_filename(shotname, IMG_EXT, sizeof(shotname));
@@ -396,7 +392,7 @@ bool screenshot_dump(const char *folder, const void *frame,
 
    if (bgr24)
       scaler.in_fmt = SCALER_FMT_BGR24;
-   else if (global->system.pix_fmt == RETRO_PIXEL_FORMAT_XRGB8888)
+   else if (video_driver_get_pixel_format() == RETRO_PIXEL_FORMAT_XRGB8888)
       scaler.in_fmt = SCALER_FMT_ARGB8888;
    else
       scaler.in_fmt = SCALER_FMT_RGB565;

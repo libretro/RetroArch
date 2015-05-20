@@ -370,6 +370,10 @@ rarch_softfilter_t *video_driver_frame_filter_get_ptr(void);
 
 void *video_driver_frame_filter_get_buf_ptr(void);
 
+enum retro_pixel_format video_driver_get_pixel_format(void);
+
+void video_driver_set_pixel_format(enum retro_pixel_format fmt);
+
 #ifdef __cplusplus
 }
 #endif

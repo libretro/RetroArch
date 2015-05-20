@@ -357,7 +357,7 @@ static void *psp_init(const video_info_t *video,
       psp->bpp_log2         = 1;
 
       pixel_format          = 
-         (global->system.pix_fmt == RETRO_PIXEL_FORMAT_0RGB1555) 
+         (video_driver_get_pixel_format() == RETRO_PIXEL_FORMAT_0RGB1555) 
          ? GU_PSM_5551 : GU_PSM_5650 ;
 
       lut_pixel_format      = GU_PSM_T16;

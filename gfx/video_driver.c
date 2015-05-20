@@ -33,6 +33,7 @@ typedef struct video_driver_state
    retro_time_t frame_time_samples[MEASURE_FRAME_TIME_SAMPLES_COUNT];
    struct retro_hw_render_callback hw_render_callback;
    uint64_t frame_time_samples_count;
+   enum retro_pixel_format pix_fmt;
 
    unsigned video_width;
    unsigned video_height;
@@ -483,7 +484,7 @@ void init_video(void)
    struct retro_system_av_info *av_info = 
       video_viewport_get_system_av_info();
 
-   init_video_filter(global->system.pix_fmt);
+   init_video_filter(video_state.pix_fmt);
    event_command(EVENT_CMD_SHADER_DIR_INIT);
 
    if (av_info)
@@ -561,7 +562,7 @@ void init_video(void)
    video.input_scale  = scale;
    video.rgb32        = video_state.filter.filter ? 
       video_state.filter.out_rgb32 : 
-      (global->system.pix_fmt == RETRO_PIXEL_FORMAT_XRGB8888);
+      (video_state.pix_fmt == RETRO_PIXEL_FORMAT_XRGB8888);
 
    tmp = (const input_driver_t*)driver->input;
    /* Need to grab the "real" video driver interface on a reinit. */
@@ -1180,4 +1181,14 @@ rarch_softfilter_t *video_driver_frame_filter_get_ptr(void)
 void *video_driver_frame_filter_get_buf_ptr(void)
 {
    return video_state.filter.buffer;
+}
+
+enum retro_pixel_format video_driver_get_pixel_format(void)
+{
+   return video_state.pix_fmt;
+}
+
+void video_driver_set_pixel_format(enum retro_pixel_format fmt)
+{
+   video_state.pix_fmt = fmt;
 }

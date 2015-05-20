@@ -31,7 +31,6 @@ void deinit_pixel_converter(void)
 bool init_video_pixel_converter(unsigned size)
 {
    driver_t *driver = driver_get_ptr();
-   global_t *global = global_get_ptr();
 
    /* This function can be called multiple times
     * without deiniting first on consoles. */
@@ -39,7 +38,7 @@ bool init_video_pixel_converter(unsigned size)
 
    /* If pixel format is not 0RGB1555, we don't need to do
     * any internal pixel conversion. */
-   if (global->system.pix_fmt != RETRO_PIXEL_FORMAT_0RGB1555)
+   if (video_driver_get_pixel_format() != RETRO_PIXEL_FORMAT_0RGB1555)
       return true;
 
    RARCH_WARN("0RGB1555 pixel format is deprecated, and will be slower. For 15/16-bit, RGB565 format is preferred.\n");

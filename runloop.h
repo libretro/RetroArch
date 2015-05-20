@@ -156,7 +156,6 @@ typedef struct global
       unsigned rotation;
       bool shutdown;
       unsigned performance_level;
-      enum retro_pixel_format pix_fmt;
 
       bool block_extract;
       bool force_nonblock;

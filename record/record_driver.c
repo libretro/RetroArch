@@ -329,7 +329,7 @@ bool recording_init(void)
    params.filename   = recording_file;
    params.fps        = av_info->timing.fps;
    params.samplerate = av_info->timing.sample_rate;
-   params.pix_fmt    = (global->system.pix_fmt == RETRO_PIXEL_FORMAT_XRGB8888) ?
+   params.pix_fmt    = (video_driver_get_pixel_format() == RETRO_PIXEL_FORMAT_XRGB8888) ?
       FFEMU_PIX_ARGB8888 : FFEMU_PIX_RGB565;
    params.config     = NULL;
    

@@ -692,7 +692,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
                return false;
          }
 
-         global->system.pix_fmt = pix_fmt;
+         video_driver_set_pixel_format(pix_fmt);
          break;
       }
 
