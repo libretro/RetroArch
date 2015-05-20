@@ -81,6 +81,7 @@ static INLINE bool vg_query_extension(const char *ext)
 
 static void *vg_init(const video_info_t *video, const input_driver_t **input, void **input_data)
 {
+   unsigned temp_width = 0, temp_height = 0;
    VGfloat clearColor[4] = {0, 0, 0, 1};
    settings_t        *settings = config_get_ptr();
    driver_t            *driver = driver_get_ptr();
@@ -99,8 +100,14 @@ static void *vg_init(const video_info_t *video, const input_driver_t **input, vo
 
    driver->video_context = ctx;
 
-   gfx_ctx_get_video_size(vg, &global->video_data.width, &global->video_data.height);
-   RARCH_LOG("Detecting screen resolution %ux%u.\n", global->video_data.width, global->video_data.height);
+   gfx_ctx_get_video_size(vg, &temp_width, &temp_height);
+   RARCH_LOG("Detecting screen resolution %ux%u.\n", temp_width, temp_height);
+
+   if (temp_width != 0 && temp_height != 0)
+   {
+      video_driver_set_size_width(temp_width);
+      video_driver_set_size_width(temp_height);
+   }
 
    gfx_ctx_swap_interval(vg, video->vsync ? 1 : 0);
 
@@ -113,20 +120,34 @@ static void *vg_init(const video_info_t *video, const input_driver_t **input, vo
    unsigned win_height = video->height;
    if (video->fullscreen && (win_width == 0) && (win_height == 0))
    {
-      win_width  = global->video_data.width;
-      win_height = global->video_data.height;
+      video_driver_get_size(&temp_width, &temp_height);
+
+      win_width  = temp_width;
+      win_height = temp_height;
    }
 
    if (!gfx_ctx_set_video_mode(vg, win_width, win_height, video->fullscreen))
       goto error;
 
-   gfx_ctx_get_video_size(vg, &global->video_data.width, &global->video_data.height);
-   RARCH_LOG("Verified window resolution %ux%u.\n", global->video_data.width, global->video_data.height);
+   video_driver_get_size(&temp_width, &temp_height);
+
+   temp_width  = 0;
+   temp_height = 0;
+   gfx_ctx_get_video_size(vg, &temp_width, &temp_height);
    vg->should_resize = true;
 
-   vg->mScreenAspect = (float)global->video_data.width / global->video_data.height;
+   if (temp_width != 0 && temp_height != 0)
+   {
+      RARCH_LOG("Verified window resolution %ux%u.\n", temp_width, temp_height);
+      video_driver_set_size_width(temp_width);
+      video_driver_set_size_height(temp_height);
+   }
 
-   gfx_ctx_translate_aspect(vg, &vg->mScreenAspect, global->video_data.width, global->video_data.height);
+   video_driver_get_size(&temp_width, &temp_height);
+
+   vg->mScreenAspect = (float)temp_width / temp_height;
+
+   gfx_ctx_translate_aspect(vg, &vg->mScreenAspect, temp_width, temp_height);
 
    vgSetfv(VG_CLEAR_COLOR, 4, clearColor);
 
@@ -207,85 +228,6 @@ static void vg_free(void *data)
 
    free(vg);
 }
-
-#if 0
-static void vg_render_message(vg_t *vg, const char *msg)
-{
-   free(vg->mLastMsg);
-   vg->mLastMsg = strdup(msg);
-
-   if (vg->mMsgLength)
-   {
-      while (--vg->mMsgLength)
-         vgClearGlyph(vg->mFont, vg->mMsgLength);
-
-      vgClearGlyph(vg->mFont, 0);
-   }
-
-   struct font_output_list out;
-   vg->font_driver->render_msg(vg->mFontRenderer, msg, &out);
-   struct font_output *head = out.head;
-
-   while (head)
-   {
-      if (vg->mMsgLength >= 1024)
-         break;
-
-      VGfloat origin[2], escapement[2];
-      VGImage img;
-
-      escapement[0] = head->advance_x;
-      escapement[1] = head->advance_y;
-      origin[0] = -head->char_off_x;
-      origin[1] = -head->char_off_y;
-
-      img = vgCreateImage(VG_A_8, head->width, head->height, VG_IMAGE_QUALITY_NONANTIALIASED);
-
-      // flip it
-      for (unsigned i = 0; i < head->height; i++)
-         vgImageSubData(img, head->output + head->pitch * i, head->pitch, VG_A_8, 0, head->height - i - 1, head->width, 1);
-
-      vgSetGlyphToImage(vg->mFont, vg->mMsgLength, img, origin, escapement);
-      vgDestroyImage(img);
-
-      vg->mMsgLength++;
-      head = head->next;
-   }
-
-   vg->font_driver->free_output(vg->mFontRenderer, &out);
-
-   for (unsigned i = 0; i < vg->mMsgLength; i++)
-      vg->mGlyphIndices[i] = i;
-}
-
-static void vg_draw_message(vg_t *vg, const char *msg)
-{
-   settings_t *settings = config_get_ptr();
-
-   if (!vg->mLastMsg || strcmp(vg->mLastMsg, msg))
-      vg_render_message(vg, msg);
-
-   vgSeti(VG_SCISSORING, VG_FALSE);
-   vgSeti(VG_IMAGE_MODE, VG_DRAW_IMAGE_STENCIL);
-
-   VGfloat origins[] = {
-      global->video_data.width  * settings->video.msg_pos_x - 2.0f,
-      global->video_data.height * settings->video.msg_pos_y - 2.0f,
-   };
-
-   vgSetfv(VG_GLYPH_ORIGIN, 2, origins);
-   vgSetPaint(vg->mPaintBg, VG_FILL_PATH);
-   vgDrawGlyphs(vg->mFont, vg->mMsgLength, vg->mGlyphIndices, NULL, NULL, VG_FILL_PATH, VG_TRUE);
-   origins[0] += 2.0f;
-   origins[1] += 2.0f;
-   vgSetfv(VG_GLYPH_ORIGIN, 2, origins);
-   vgSetPaint(vg->mPaintFg, VG_FILL_PATH);
-   vgDrawGlyphs(vg->mFont, vg->mMsgLength, vg->mGlyphIndices, NULL, NULL, VG_FILL_PATH, VG_TRUE);
-
-   vgSeti(VG_SCISSORING, VG_TRUE);
-   vgSeti(VG_IMAGE_MODE, VG_DRAW_IMAGE_NORMAL);
-}
-#endif
 
 static void vg_calculate_quad(vg_t *vg)
 {
@@ -429,11 +371,19 @@ static bool vg_frame(void *data, const void *frame,
 static bool vg_alive(void *data)
 {
    bool quit;
+   bool ret = false;
+   unsigned temp_width = 0, temp_height = 0;
    vg_t         *vg = (vg_t*)data;
-   global_t *global = global_get_ptr();
 
    gfx_ctx_check_window(data, &quit,
-         &vg->should_resize, &global->video_data.width, &global->video_data.height);
+         &vg->should_resize, &temp_width, &temp_height);
+
+   if (temp_width != 0 && temp_height != 0)
+   {
+      video_driver_set_size_width(temp_width);
+      video_driver_set_size_height(temp_height);
+   }
+
    return !quit;
 }
 

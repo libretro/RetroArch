@@ -2482,7 +2482,7 @@ error:
 static bool gl_alive(void *data)
 {
    unsigned temp_width = 0, temp_height = 0;
-   int ret = false;
+   bool ret = false;
    bool quit = false, resize = false;
    gl_t         *gl = (gl_t*)data;
 

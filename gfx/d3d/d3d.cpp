@@ -475,7 +475,7 @@ static void d3d_set_nonblock_state(void *data, bool state)
 static bool d3d_alive(void *data)
 {
    unsigned temp_width = 0, temp_height = 0;
-   int ret = false;
+   bool ret = false;
    d3d_video_t *d3d   = (d3d_video_t*)data;
    bool        quit   = false;
    bool        resize = false;
