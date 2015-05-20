@@ -533,7 +533,6 @@ static void rmenu_xui_render(void)
 	const char *dir = NULL, *label = NULL;
 	unsigned menu_type = 0;
    menu_handle_t *menu  = menu_driver_get_ptr();
-   runloop_t *runloop   = rarch_main_get_ptr();
    uint64_t frame_count = video_driver_get_frame_count();
 
    if (!menu)

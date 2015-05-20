@@ -130,7 +130,6 @@ static void rmenu_render(void)
    unsigned menu_type       = 0;
    menu_handle_t *menu      = menu_driver_get_ptr();
    global_t    *global      = global_get_ptr();
-   runloop_t *runloop       = rarch_main_get_ptr();
    uint64_t frame_count     = video_driver_get_frame_count();
    size_t  entries_end      = menu_entries_get_end():
 

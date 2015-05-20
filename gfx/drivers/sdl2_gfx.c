@@ -21,7 +21,6 @@
 #include <string.h>
 #include "../../general.h"
 #include "../../retroarch.h"
-#include "../../runloop.h"
 #include "../../performance.h"
 #include <retro_inline.h>
 #include <gfx/scaler/scaler.h>
@@ -483,7 +482,6 @@ static bool sdl2_gfx_frame(void *data, const void *frame, unsigned width,
 {
    char buf[128];
    sdl2_video_t *vid = (sdl2_video_t*)data;
-   runloop_t *runloop = rarch_main_get_ptr();
    driver_t *driver = driver_get_ptr();
 
    if (vid->should_resize)
