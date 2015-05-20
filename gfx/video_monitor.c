@@ -235,3 +235,11 @@ bool video_monitor_get_fps(char *buf, size_t size,
 
    return true;
 }
+
+void video_monitor_reset(void)
+{
+   runloop_t *runloop = rarch_main_get_ptr();
+
+   if (runloop)
+      runloop->measure_data.frame_time_samples_count = 0;
+}

@@ -17,7 +17,6 @@
 #include "driver.h"
 #include "general.h"
 #include "retroarch.h"
-#include "runloop.h"
 #include "compat/posix_string.h"
 #include "gfx/video_monitor.h"
 #include "audio/audio_monitor.h"
@@ -362,7 +361,6 @@ void init_drivers(int flags)
 {
    driver_t *driver   = driver_get_ptr();
    global_t *global   = global_get_ptr();
-   runloop_t *runloop = rarch_main_get_ptr();
 
    if (flags & DRIVER_VIDEO)
       driver->video_data_own = false;
@@ -385,7 +383,7 @@ void init_drivers(int flags)
 
    if (flags & DRIVER_VIDEO)
    {
-      runloop->measure_data.frame_time_samples_count = 0;
+      video_monitor_reset();
 
       init_video();
 

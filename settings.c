@@ -383,13 +383,7 @@ static int setting_action_start_libretro_device_type(void *data)
 static int setting_action_start_video_refresh_rate_auto(
       void *data)
 {
-   rarch_setting_t *setting = (rarch_setting_t*)data;
-   runloop_t *runloop = rarch_main_get_ptr();
-
-   if (!setting)
-      return -1;
-
-   runloop->measure_data.frame_time_samples_count = 0;
+   video_monitor_reset();
 
    return 0;
 }
