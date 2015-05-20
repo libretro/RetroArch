@@ -273,8 +273,8 @@ static void glui_render(void)
       menu->scroll_y = 0;
 }
 
-static void glui_render_menu_list(runloop_t *runloop,
-      glui_handle_t *glui, menu_handle_t *menu,
+static void glui_render_menu_list(glui_handle_t *glui,
+      menu_handle_t *menu,
       uint32_t normal_color,
       uint32_t hover_color)
 {
@@ -335,7 +335,6 @@ static void glui_frame(void)
          settings->menu.entry_hover_color);
    const uint32_t title_color   = FONT_COLOR_ARGB_TO_RGBA(
          settings->menu.title_color);
-   runloop_t *runloop           = rarch_main_get_ptr();
    uint64_t frame_count         = video_driver_get_frame_count();
 
    if (!menu || !menu->userdata)
@@ -367,7 +366,7 @@ static void glui_frame(void)
    menu_display_font_bind_block(menu, font_driver, &glui->list_block);
 
 
-   glui_render_menu_list(runloop, glui, menu, normal_color, hover_color);
+   glui_render_menu_list(glui, menu, normal_color, hover_color);
 
    menu_display_font_flush_block(menu, font_driver);
 
