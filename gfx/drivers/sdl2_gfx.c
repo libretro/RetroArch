@@ -639,7 +639,8 @@ void sdl2_poke_set_filtering(void *data, unsigned index, bool smooth)
 static void sdl2_poke_set_aspect_ratio(void *data, unsigned aspectratio_index)
 {
    sdl2_video_t *vid    = (sdl2_video_t*)data;
-   struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
+   const struct retro_system_av_info *av_info = 
+      (const struct retro_system_av_info*)video_viewport_get_system_av_info();
 
    switch (aspectratio_index)
    {

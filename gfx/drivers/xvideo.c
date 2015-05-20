@@ -501,7 +501,7 @@ static void *xv_init(const video_info_t *video,
    attributes.event_mask = StructureNotifyMask | KeyPressMask | 
       KeyReleaseMask | ButtonReleaseMask | ButtonPressMask | DestroyNotify | ClientMessage;
 
-   width = video->fullscreen ? ((video->width == 0) ? geom->base_width : video->width) : video->width;
+   width = video->fullscreen ? ( (video->width  == 0) ? geom->base_width : video->width) : video->width;
    height = video->fullscreen ? ((video->height == 0) ? geom->base_height : video->height) : video->height;
    xv->window = XCreateWindow(xv->display, DefaultRootWindow(xv->display),
          0, 0, width, height,
@@ -531,7 +531,7 @@ static void *xv_init(const video_info_t *video,
    if (atom != None)
       XvSetPortAttribute(xv->display, xv->port, atom, 1);
 
-   xv->width = geom->max_width;
+   xv->width  = geom->max_width;
    xv->height = geom->max_height;
 
    xv->image = XvShmCreateImage(xv->display, xv->port, xv->fourcc,

@@ -2229,7 +2229,7 @@ bool config_save_file(const char *path)
    config_file_t *conf  = config_file_new(path);
    settings_t *settings = config_get_ptr();
    global_t   *global   = global_get_ptr();
-   video_viewport_t *custom_vp = video_viewport_get_custom();
+   const video_viewport_t *custom_vp = (const video_viewport_t*)video_viewport_get_custom();
 
    if (!conf)
       conf = config_file_new(NULL);
