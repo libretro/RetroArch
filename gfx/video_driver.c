@@ -225,7 +225,6 @@ void find_video_driver(void)
 void *video_driver_get_ptr(const video_driver_t **drv)
 {
    driver_t *driver     = driver_get_ptr();
-   global_t *global     = global_get_ptr();
    settings_t *settings = config_get_ptr();
 
 #ifdef HAVE_THREADS
