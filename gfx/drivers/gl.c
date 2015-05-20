@@ -2245,7 +2245,7 @@ static void gl_begin_debug(gl_t *gl)
 
 static void *gl_init(const video_info_t *video, const input_driver_t **input, void **input_data)
 {
-   unsigned win_width, win_height;
+   unsigned win_width, win_height, temp_width = 0, temp_height = 0;
    bool force_smooth                  = false;
    gl_t *gl                           = NULL;
    const gfx_ctx_driver_t *ctx_driver = NULL;
@@ -2316,14 +2316,23 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    gl->fullscreen = video->fullscreen;
    
    /* Get real known video size, which might have been altered by context. */
-   gfx_ctx_get_video_size(gl, &global->video_data.width, &global->video_data.height);
-   RARCH_LOG("GL: Using resolution %ux%u\n", global->video_data.width, global->video_data.height);
+   gfx_ctx_get_video_size(gl, &temp_width, &temp_height);
+
+   if (temp_width != 0 && temp_height != 0)
+   {
+      video_driver_set_size_width(temp_width);
+      video_driver_set_size_height(temp_height);
+   }
+
+   video_driver_get_size(&temp_width, &temp_height);
+
+   RARCH_LOG("GL: Using resolution %ux%u\n", temp_width, temp_height);
 
    if (gl->full_x || gl->full_y)
    {
       /* We got bogus from gfx_ctx_get_video_size. Replace. */
-      gl->full_x = global->video_data.width;
-      gl->full_y = global->video_data.height;
+      gl->full_x = temp_width;
+      gl->full_y = temp_height;
    }
 
    hw_render         = &global->system.hw_render_callback;
