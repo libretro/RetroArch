@@ -501,7 +501,6 @@ AUDIO
 DRIVERS
 ============================================================ */
 #include "../gfx/video_driver.c"
-#include "../gfx/video_monitor.c"
 #include "../gfx/video_pixel_converter.c"
 #include "../gfx/video_viewport.c"
 #include "../input/input_driver.c"

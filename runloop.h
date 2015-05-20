@@ -27,10 +27,6 @@
 #include "movie.h"
 #include "cheats.h"
 
-#ifndef MEASURE_FRAME_TIME_SAMPLES_COUNT
-#define MEASURE_FRAME_TIME_SAMPLES_COUNT (2 * 1024)
-#endif
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -58,12 +54,6 @@ typedef struct runloop
          retro_time_t last_time;
       } limit;
    } frames;
-
-   struct
-   {
-      retro_time_t frame_time_samples[MEASURE_FRAME_TIME_SAMPLES_COUNT];
-      uint64_t frame_time_samples_count;
-   } measure_data;
 
    msg_queue_t *msg_queue;
 } runloop_t;
