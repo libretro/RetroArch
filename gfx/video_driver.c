@@ -617,10 +617,7 @@ void init_video(void)
    event_command(EVENT_CMD_OVERLAY_DEINIT);
    event_command(EVENT_CMD_OVERLAY_INIT);
 
-   global->frame_cache.width  = 4;
-   global->frame_cache.height = 4;
-   global->frame_cache.pitch  = 8;
-   global->frame_cache.data   = &dummy_pixels;
+   video_driver_cached_frame_set(&dummy_pixels, 4, 4, 8);
 
 #if defined(PSP)
    video_driver_set_texture_frame(&dummy_pixels, false, 1, 1, 1.0f);
@@ -896,6 +893,20 @@ void video_driver_cached_frame(void)
             global->frame_cache.pitch);
 
    driver->recording_data = recording;
+}
+
+void video_driver_cached_frame_set(const void *data, unsigned width,
+      unsigned height, size_t pitch)
+{
+   global_t  *global    = global_get_ptr();
+
+   if (!global)
+      return;
+
+   global->frame_cache.data   = data;
+   global->frame_cache.width  = width;
+   global->frame_cache.height = height;
+   global->frame_cache.pitch  = pitch;
 }
 
 void video_driver_get_size(unsigned *width, unsigned *height)

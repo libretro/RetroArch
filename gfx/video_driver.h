@@ -381,6 +381,9 @@ void video_driver_set_pixel_format(enum retro_pixel_format fmt);
  **/
 void video_driver_cached_frame(void);
 
+void video_driver_cached_frame_set(const void *data, unsigned width,
+      unsigned height, size_t pitch);
+
 #ifdef __cplusplus
 }
 #endif

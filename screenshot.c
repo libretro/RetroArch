@@ -307,10 +307,8 @@ bool take_screenshot(void)
       else
          ret = false;
 
-      global->frame_cache.data   = old_data;
-      global->frame_cache.width  = old_width;
-      global->frame_cache.height = old_height;
-      global->frame_cache.pitch  = old_pitch;
+      video_driver_cached_frame_set(old_data,
+            old_width, old_height, old_pitch);
    }
    else
    {

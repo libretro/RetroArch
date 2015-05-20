@@ -94,10 +94,7 @@ static void video_frame(const void *data, unsigned width,
    if (!driver->video_active)
       return;
 
-   global->frame_cache.data   = data;
-   global->frame_cache.width  = width;
-   global->frame_cache.height = height;
-   global->frame_cache.pitch  = pitch;
+   video_driver_cached_frame_set(data, width, height, pitch);
 
    if (video_frame_scale(data, width, height, pitch))
    {
