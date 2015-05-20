@@ -120,6 +120,7 @@ void d3d_make_d3dpp(void *data,
 {
    d3d_video_t     *d3d = (d3d_video_t*)data;
    settings_t *settings = config_get_ptr();
+   /* TODO/FIXME - get rid of global state dependencies. */
    global_t *global     = global_get_ptr();
 
    memset(d3dpp, 0, sizeof(*d3dpp));

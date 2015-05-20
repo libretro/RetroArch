@@ -926,7 +926,11 @@ static void *omap_gfx_init(const video_info_t *video,
    global_t   *global   = global_get_ptr();
 
    /* Don't support filters at the moment since they make estimations  *
-    * on the maximum used resolution difficult.                        */
+    * on the maximum used resolution difficult.
+    *
+    * TODO/FIXME -we can't have global state dependencies
+    * in video drivers, please refactor and do away with this check.
+    * */
    if (global->filter.filter)
    {
       RARCH_ERR("[video_omap]: filters are not supported\n");
