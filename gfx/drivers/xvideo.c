@@ -358,13 +358,12 @@ static void calc_out_rect(bool keep_aspect, struct video_viewport *vp,
       unsigned vp_width, unsigned vp_height)
 {
    settings_t *settings = config_get_ptr();
-   global_t   *global   = global_get_ptr();
 
    vp->full_width  = vp_width;
    vp->full_height = vp_height;
 
    if (settings->video.scale_integer)
-      video_viewport_get_scaled_integer(vp, vp_width, vp_height, global->system.aspect_ratio, keep_aspect);
+      video_viewport_get_scaled_integer(vp, vp_width, vp_height, video_driver_get_aspect_ratio(), keep_aspect);
    else if (!keep_aspect)
    {
       vp->x = 0; vp->y = 0;
@@ -373,7 +372,7 @@ static void calc_out_rect(bool keep_aspect, struct video_viewport *vp,
    }
    else
    {
-      float desired_aspect = global->system.aspect_ratio;
+      float desired_aspect = video_driver_get_aspect_ratio();
       float device_aspect  = (float)vp_width / vp_height;
 
       /* If the aspect ratios of screen and desired aspect ratio 

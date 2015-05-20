@@ -703,14 +703,14 @@ static void psp_update_viewport(psp1_video_t* psp)
    if (settings->video.scale_integer)
    {
       video_viewport_get_scaled_integer(&psp->vp, SCEGU_SCR_WIDTH,
-            SCEGU_SCR_HEIGHT, global->system.aspect_ratio, psp->keep_aspect);
+            SCEGU_SCR_HEIGHT, video_driver_get_aspect_ratio(), psp->keep_aspect);
       width  = psp->vp.width;
       height = psp->vp.height;
    }
    else if (psp->keep_aspect)
    {
       float delta;
-      float desired_aspect = global->system.aspect_ratio;
+      float desired_aspect = video_driver_get_aspect_ratio();
 
 #if defined(HAVE_MENU)
       if (settings->video.aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
@@ -818,7 +818,7 @@ static void psp_set_aspect_ratio(void *data, unsigned aspectratio_index)
          break;
    }
 
-   global->system.aspect_ratio = aspectratio_lut[aspectratio_index].value;
+   video_driver_set_aspect_ratio_value(aspectratio_lut[aspectratio_index].value);
 
    psp->keep_aspect = true;
    psp->should_resize = true;

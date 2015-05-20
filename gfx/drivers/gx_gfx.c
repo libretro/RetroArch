@@ -447,7 +447,8 @@ static void gx_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
    else if (aspect_ratio_idx == ASPECT_RATIO_CONFIG)
       video_viewport_set_config();
 
-   global->system.aspect_ratio = aspectratio_lut[aspect_ratio_idx].value;
+   video_driver_set_aspect_ratio_value(
+         aspectratio_lut[aspect_ratio_idx].value);
 
    if (!gx)
       return;
@@ -845,7 +846,7 @@ static void gx_resize(void *data)
 
    if (gx->keep_aspect && gx_mode.efbHeight >= 240) /* ignore this for custom resolutions */
    {
-      float desired_aspect = global->system.aspect_ratio;
+      float desired_aspect = video_driver_get_aspect_ratio();
       if (desired_aspect == 0.0)
          desired_aspect = 1.0;
 #ifdef HW_RVL

@@ -467,7 +467,7 @@ static void sdl_set_aspect_ratio(void *data, unsigned aspectratio_index)
          break;
    }
 
-   global->system.aspect_ratio = aspectratio_lut[aspectratio_index].value;
+   video_driver_set_aspect_ratio_value(aspectratio_lut[aspectratio_index].value);
 }
 
 static void sdl_apply_state_changes(void *data)

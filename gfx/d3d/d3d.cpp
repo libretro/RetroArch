@@ -332,7 +332,7 @@ static bool d3d_initialize(d3d_video_t *d3d, const video_info_t *info)
    video_driver_get_size(&width, &height);
 
    d3d_calculate_rect(d3d,
-	   width, height, info->force_aspect, global->system.aspect_ratio);
+	   width, height, info->force_aspect, video_driver_get_aspect_ratio());
 
    if (!d3d_init_chain(d3d, info))
    {
@@ -540,7 +540,7 @@ static void d3d_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
          break;
    }
 
-   global->system.aspect_ratio = aspectratio_lut[aspect_ratio_idx].value;
+   video_driver_set_aspect_ratio_value(aspectratio_lut[aspect_ratio_idx].value);
 
    if (!d3d)
       return;
@@ -1663,7 +1663,7 @@ static bool d3d_frame(void *data, const void *frame,
    if (d3d->should_resize)
    {
       d3d_calculate_rect(d3d, width, width, d3d->video_info.force_aspect,
-            global->system.aspect_ratio);
+            video_driver_get_aspect_ratio());
 
       d3d->renderchain_driver->set_final_viewport(d3d,
             d3d->renderchain_data, &d3d->final_viewport);

@@ -85,7 +85,6 @@ static void *vg_init(const video_info_t *video, const input_driver_t **input, vo
    VGfloat clearColor[4] = {0, 0, 0, 1};
    settings_t        *settings = config_get_ptr();
    driver_t            *driver = driver_get_ptr();
-   global_t            *global = global_get_ptr();
    const gfx_ctx_driver_t *ctx = NULL;
    vg_t                    *vg = (vg_t*)calloc(1, sizeof(vg_t));
 
@@ -232,14 +231,12 @@ static void vg_free(void *data)
 static void vg_calculate_quad(vg_t *vg)
 {
    unsigned width, height;
-   global_t *global     = global_get_ptr();
-
    video_driver_get_size(&width, &height);
 
    /* set viewport for aspect ratio, taken from the OpenGL driver. */
    if (vg->mKeepAspect)
    {
-      float desired_aspect = global->system.aspect_ratio;
+      float desired_aspect = video_driver_get_aspect_ratio();
 
       /* If the aspect ratios of screen and desired aspect ratio 
        * are sufficiently equal (floating point stuff),
@@ -318,7 +315,6 @@ static bool vg_frame(void *data, const void *frame,
 {
    unsigned width, height;
    vg_t                    *vg = (vg_t*)data;
-   global_t            *global = global_get_ptr();
 
    RARCH_PERFORMANCE_INIT(vg_fr);
    RARCH_PERFORMANCE_START(vg_fr);

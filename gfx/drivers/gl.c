@@ -793,14 +793,14 @@ static void gl_set_viewport(void *data, unsigned viewport_width,
    {
       video_viewport_get_scaled_integer(&gl->vp,
             viewport_width, viewport_height,
-            global->system.aspect_ratio, gl->keep_aspect);
+            video_driver_get_aspect_ratio(), gl->keep_aspect);
       viewport_width  = gl->vp.width;
       viewport_height = gl->vp.height;
    }
    else if (gl->keep_aspect && !force_full)
    {
       float delta;
-      float desired_aspect = global->system.aspect_ratio;
+      float desired_aspect = video_driver_get_aspect_ratio();
 
 #if defined(HAVE_MENU)
       if (settings->video.aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
@@ -3122,7 +3122,7 @@ static void gl_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
          break;
    }
 
-   global->system.aspect_ratio = aspectratio_lut[aspect_ratio_idx].value;
+   video_driver_set_aspect_ratio_value(aspectratio_lut[aspect_ratio_idx].value);
 
    if (!gl)
       return;

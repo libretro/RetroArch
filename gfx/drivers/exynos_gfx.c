@@ -1562,7 +1562,7 @@ static void exynos_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
          break;
    }
 
-   global->system.aspect_ratio = aspectratio_lut[aspect_ratio_idx].value;
+   video_driver_set_aspect_ratio_value(aspectratio_lut[aspect_ratio_idx].value);
    vid->aspect_changed = true;
 }
 

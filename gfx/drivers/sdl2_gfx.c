@@ -274,7 +274,7 @@ static void sdl_refresh_viewport(sdl2_video_t *vid)
    vid->vp.full_height = win_h;
 
    if (settings->video.scale_integer)
-      video_viewport_get_scaled_integer(&vid->vp, win_w, win_h, global->system.aspect_ratio,
+      video_viewport_get_scaled_integer(&vid->vp, win_w, win_h, video_driver_get_aspect_ratio(),
                         vid->video.force_aspect);
    else if (settings->video.aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
    {
@@ -292,7 +292,7 @@ static void sdl_refresh_viewport(sdl2_video_t *vid)
    {
       float delta;
       float device_aspect  = (float)win_w / win_h;
-      float desired_aspect = global->system.aspect_ratio;
+      float desired_aspect = video_driver_get_aspect_ratio();
 
       if (fabsf(device_aspect - desired_aspect) < 0.0001f)
       {
@@ -660,7 +660,8 @@ static void sdl2_poke_set_aspect_ratio(void *data, unsigned aspectratio_index)
          break;
    }
 
-   global->system.aspect_ratio = aspectratio_lut[aspectratio_index].value;
+   video_driver_set_aspect_ratio_value(
+         aspectratio_lut[aspectratio_index].value);
 
    vid->video.force_aspect = true;
    vid->should_resize = true;

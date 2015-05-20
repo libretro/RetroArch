@@ -35,6 +35,7 @@ typedef struct video_driver_state
 
    unsigned video_width;
    unsigned video_height;
+   float aspect_ratio;
 } video_driver_state_t;
 
 static video_driver_state_t video_state;
@@ -501,8 +502,8 @@ void init_video(void)
          (float)custom_vp->width / custom_vp->height : default_aspect;
    }
 
-   global->system.aspect_ratio = 
-      aspectratio_lut[settings->video.aspect_ratio_idx].value;
+   video_driver_set_aspect_ratio_value(
+      aspectratio_lut[settings->video.aspect_ratio_idx].value);
 
    if (settings->video.fullscreen)
    {
@@ -514,8 +515,8 @@ void init_video(void)
       if (settings->video.force_aspect)
       {
          /* Do rounding here to simplify integer scale correctness. */
-         unsigned base_width = roundf(geom->base_height *
-               global->system.aspect_ratio);
+         unsigned base_width = 
+            roundf(geom->base_height * video_driver_get_aspect_ratio());
          width  = roundf(base_width * settings->video.scale);
       }
       else
@@ -1086,4 +1087,14 @@ bool video_monitor_get_fps(char *buf, size_t size,
 void video_monitor_reset(void)
 {
    video_state.frame_time_samples_count = 0;
+}
+
+float video_driver_get_aspect_ratio(void)
+{
+   return video_state.aspect_ratio;
+}
+
+void video_driver_set_aspect_ratio_value(float value)
+{
+   video_state.aspect_ratio = value;
 }

@@ -153,7 +153,6 @@ typedef struct global
    {
       struct retro_system_info info;
       struct retro_system_av_info av_info;
-      float aspect_ratio;
 
       unsigned rotation;
       bool shutdown;

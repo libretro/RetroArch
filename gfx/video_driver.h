@@ -348,6 +348,10 @@ void video_driver_set_size_height(unsigned width);
 
 uint64_t video_driver_get_frame_count(void);
 
+float video_driver_get_aspect_ratio(void);
+
+void video_driver_set_aspect_ratio_value(float value);
+
 #ifdef __cplusplus
 }
 #endif
