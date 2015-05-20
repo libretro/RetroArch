@@ -256,15 +256,6 @@ typedef struct global
       bool use_output_dir;
    } record;
 
-   struct
-   {
-      const void *data;
-      unsigned width;
-      unsigned height;
-      size_t pitch;
-   } frame_cache;
-
-
    char title_buf[64];
 
    struct

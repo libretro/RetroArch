@@ -41,6 +41,14 @@ typedef struct video_driver_state
 
    struct
    {
+      const void *data;
+      unsigned width;
+      unsigned height;
+      size_t pitch;
+   } frame_cache;
+
+   struct
+   {
       rarch_softfilter_t *filter;
 
       void *buffer;
@@ -870,7 +878,6 @@ bool video_driver_frame(const void *frame, unsigned width,
 void video_driver_cached_frame(void)
 {
    driver_t *driver   = driver_get_ptr();
-   global_t *global   = global_get_ptr();
    runloop_t *runloop = rarch_main_get_ptr();
    void *recording    = driver ? driver->recording_data : NULL;
 
@@ -886,61 +893,50 @@ void video_driver_cached_frame(void)
     */
    if (driver->retro_ctx.frame_cb)
       driver->retro_ctx.frame_cb(
-            (global->frame_cache.data == RETRO_HW_FRAME_BUFFER_VALID)
-            ? NULL : global->frame_cache.data,
-            global->frame_cache.width,
-            global->frame_cache.height,
-            global->frame_cache.pitch);
+            (video_state.frame_cache.data == RETRO_HW_FRAME_BUFFER_VALID)
+            ? NULL : video_state.frame_cache.data,
+            video_state.frame_cache.width,
+            video_state.frame_cache.height,
+            video_state.frame_cache.pitch);
 
    driver->recording_data = recording;
 }
 
 bool video_driver_cached_frame_has_valid_fb(void)
 {
-   global_t  *global    = global_get_ptr();
-
-   if (!global || global->frame_cache.data)
+   if (!video_state.frame_cache.data)
       return false;
-   return (global->frame_cache.data == RETRO_HW_FRAME_BUFFER_VALID);
+   return (video_state.frame_cache.data == RETRO_HW_FRAME_BUFFER_VALID);
 }
 
 void video_driver_cached_frame_set_ptr(const void *data)
 {
-   global_t  *global    = global_get_ptr();
-
-   if (!global || !data)
+   if (!data)
       return;
 
-   global->frame_cache.data   = data;
+   video_state.frame_cache.data   = data;
 }
 
 void video_driver_cached_frame_set(const void *data, unsigned width,
       unsigned height, size_t pitch)
 {
-   global_t  *global    = global_get_ptr();
-
-   if (!global)
-      return;
-
-   global->frame_cache.data   = data;
-
-   global->frame_cache.width  = width;
-   global->frame_cache.height = height;
-   global->frame_cache.pitch  = pitch;
+   video_state.frame_cache.data   = data;
+   video_state.frame_cache.width  = width;
+   video_state.frame_cache.height = height;
+   video_state.frame_cache.pitch  = pitch;
 }
 
 void video_driver_cached_frame_get(const void *data, unsigned *width,
       unsigned *height, size_t *pitch)
 {
-   global_t  *global    = global_get_ptr();
-
-   if (!global)
-      return;
-
-   data    = global->frame_cache.data;
-   *width  = global->frame_cache.width;
-   *height = global->frame_cache.height;
-   *pitch  = global->frame_cache.pitch;
+   if (data)
+      data    = video_state.frame_cache.data;
+   if (width)
+      *width  = video_state.frame_cache.width;
+   if (height)
+      *height = video_state.frame_cache.height;
+   if (pitch)
+      *pitch  = video_state.frame_cache.pitch;
 }
 
 void video_driver_get_size(unsigned *width, unsigned *height)
