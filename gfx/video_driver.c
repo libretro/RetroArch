@@ -23,6 +23,9 @@
 #include "../general.h"
 #include "../retroarch.h"
 
+static unsigned video_width;
+static unsigned video_height;
+
 static const video_driver_t *video_drivers[] = {
 #ifdef HAVE_OPENGL
    &video_gl,
@@ -840,25 +843,18 @@ bool video_driver_frame(const void *frame, unsigned width,
 
 void video_driver_get_size(unsigned *width, unsigned *height)
 {
-   global_t *global    = global_get_ptr();
    if (width)
-      *width  = global->video_data.width;
+      *width  = video_width;
    if (height)
-      *height = global->video_data.height;
+      *height = video_height;
 }
 
 void video_driver_set_size_width(unsigned width)
 {
-   global_t *global    = global_get_ptr();
-   if (!global)
-      return;
-   global->video_data.width = width;
+   video_width = width;
 }
 
 void video_driver_set_size_height(unsigned height)
 {
-   global_t *global    = global_get_ptr();
-   if (!global)
-      return;
-   global->video_data.height = height;
+   video_height = height;
 }

@@ -205,13 +205,6 @@ typedef struct global
 
    struct
    {
-      unsigned width;
-      unsigned height;
-   } video_data;
-
-
-   struct
-   {
       rarch_softfilter_t *filter;
 
       void *buffer;
