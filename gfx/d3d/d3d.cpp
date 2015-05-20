@@ -649,7 +649,7 @@ static bool d3d_construct(d3d_video_t *d3d,
 
    if (!info->fullscreen)
    {
-      video_driver_get_size(&rect.right, &rect.bottom);
+      video_driver_get_size((unsigned*)&rect.right, (unsigned*)&rect.bottom);
       AdjustWindowRect(&rect, WS_OVERLAPPEDWINDOW, FALSE);
       win_width   = rect.right - rect.left;
       win_height  = rect.bottom - rect.top;

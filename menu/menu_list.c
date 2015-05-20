@@ -230,7 +230,7 @@ menu_file_list_cbs_t *menu_list_get_actiondata_at_offset(const file_list_t *list
 {
    if (!list)
       return NULL;
-   return file_list_get_actiondata_at_offset(list, idx);
+   return (menu_file_list_cbs_t*)file_list_get_actiondata_at_offset(list, idx);
 }
 
 void *menu_list_get_last_stack_actiondata(const menu_list_t *list)
