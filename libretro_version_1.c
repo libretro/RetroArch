@@ -47,7 +47,6 @@ static bool video_frame_scale(const void *data,
       size_t pitch)
 {
    driver_t *driver = driver_get_ptr();
-   global_t *global = global_get_ptr();
 
    RARCH_PERFORMANCE_INIT(video_frame_conv);
 
