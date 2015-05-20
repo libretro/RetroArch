@@ -1861,6 +1861,7 @@ static bool resolve_extensions(gl_t *gl, const char *context_ident)
    (void)vendor;
    (void)renderer;
    (void)version;
+   (void)hw_render;
 #ifndef HAVE_OPENGLES
    gl->core_context     = 
       (hw_render->context_type == RETRO_HW_CONTEXT_OPENGL_CORE);
