@@ -185,6 +185,8 @@ static bool ctr_audio_alive(void *data)
 static bool ctr_audio_start(void *data)
 {
    ctr_audio_t* ctr = (ctr_audio_t*)data;
+   /* TODO/FIXME - we should not depend upon global state
+    * in audio/video/input drivers. */
    global_t *global     = global_get_ptr();
 
    /* prevents restarting audio when the menu

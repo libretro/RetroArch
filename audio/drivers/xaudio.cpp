@@ -77,6 +77,7 @@ struct xaudio2 : public IXAudio2VoiceCallback
    unsigned write_buffer;
 };
 
+#if 0
 static void xaudio2_enumerate_devices(xaudio2_t *xa)
 {
    uint32_t dev_count = 0;
@@ -97,6 +98,7 @@ static void xaudio2_enumerate_devices(xaudio2_t *xa)
    }
 #endif
 }
+#endif
 
 static void xaudio2_set_wavefmt(WAVEFORMATEX *wfx,
       unsigned channels, unsigned samplerate)
@@ -226,16 +228,13 @@ static size_t xaudio2_write(xaudio2_t *handle, const void *buf, size_t bytes_)
 static void *xa_init(const char *device, unsigned rate, unsigned latency)
 {
    size_t bufsize;
-   xa_t *xa = NULL;
    unsigned device_index = 0;
-   global_t *global = global_get_ptr();
+   xa_t *xa = (xa_t*)calloc(1, sizeof(*xa));
+   if (!xa)
+      return NULL;
 
    if (latency < 8)
       latency = 8; /* Do not allow shenanigans. */
-
-   xa = (xa_t*)calloc(1, sizeof(*xa));
-   if (!xa)
-      return NULL;
 
    bufsize = latency * rate / 1000;
 
@@ -254,9 +253,6 @@ static void *xa_init(const char *device, unsigned rate, unsigned latency)
       free(xa);
       return NULL;
    }
-
-   if (global->verbosity)
-      xaudio2_enumerate_devices(xa->xa);
 
    return xa;
 }
