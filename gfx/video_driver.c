@@ -895,6 +895,25 @@ void video_driver_cached_frame(void)
    driver->recording_data = recording;
 }
 
+bool video_driver_cached_frame_has_valid_fb(void)
+{
+   global_t  *global    = global_get_ptr();
+
+   if (!global || global->frame_cache.data)
+      return false;
+   return (global->frame_cache.data == RETRO_HW_FRAME_BUFFER_VALID);
+}
+
+void video_driver_cached_frame_set_ptr(const void *data)
+{
+   global_t  *global    = global_get_ptr();
+
+   if (!global || !data)
+      return;
+
+   global->frame_cache.data   = data;
+}
+
 void video_driver_cached_frame_set(const void *data, unsigned width,
       unsigned height, size_t pitch)
 {
@@ -904,9 +923,24 @@ void video_driver_cached_frame_set(const void *data, unsigned width,
       return;
 
    global->frame_cache.data   = data;
+
    global->frame_cache.width  = width;
    global->frame_cache.height = height;
    global->frame_cache.pitch  = pitch;
+}
+
+void video_driver_cached_frame_get(const void *data, unsigned *width,
+      unsigned *height, size_t *pitch)
+{
+   global_t  *global    = global_get_ptr();
+
+   if (!global)
+      return;
+
+   data    = global->frame_cache.data;
+   *width  = global->frame_cache.width;
+   *height = global->frame_cache.height;
+   *pitch  = global->frame_cache.pitch;
 }
 
 void video_driver_get_size(unsigned *width, unsigned *height)

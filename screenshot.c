@@ -220,14 +220,15 @@ done:
 
 static bool take_screenshot_raw(void)
 {
+   unsigned width, height;
+   size_t pitch;
    char screenshot_path[PATH_MAX_LENGTH];
    global_t *global           = global_get_ptr();
-   const void *data           = global->frame_cache.data;
-   unsigned width             = global->frame_cache.width;
-   unsigned height            = global->frame_cache.height;
-   int pitch                  = global->frame_cache.pitch;
+   const void *data = NULL;
    settings_t *settings       = config_get_ptr();
    const char *screenshot_dir = NULL;
+
+   video_driver_cached_frame_get(data, &width, &height, &pitch);
    
    screenshot_dir = settings->screenshot_directory;
 
@@ -283,32 +284,33 @@ bool take_screenshot(void)
 
    if (viewport_read)
       ret = take_screenshot_viewport();
-   else if (global->frame_cache.data &&
-         (global->frame_cache.data != RETRO_HW_FRAME_BUFFER_VALID))
+   else if (!video_driver_cached_frame_has_valid_fb())
       ret = take_screenshot_raw();
    else if (driver->video->read_frame_raw)
    {
-      const void* old_data = global->frame_cache.data;
-      unsigned old_width   = global->frame_cache.width;
-      unsigned old_height  = global->frame_cache.height;
-      size_t old_pitch     = global->frame_cache.pitch;
-
+      unsigned old_width, old_height;
+      size_t old_pitch;
+      const void* old_data = NULL;
+      
+      video_driver_cached_frame_get(old_data, &old_width, &old_height,
+            &old_pitch);
+      
       void* frame_data = video_driver_read_frame_raw(
-            &global->frame_cache.width,
-            &global->frame_cache.height,
-            &global->frame_cache.pitch);
+            &old_width,
+            &old_height,
+            &old_pitch);
+
+      video_driver_cached_frame_set(old_data, old_width, old_height,
+            old_pitch);
 
       if (frame_data)
       {
-         global->frame_cache.data = frame_data;
+         video_driver_cached_frame_set_ptr(frame_data);
          ret = take_screenshot_raw();
          free(frame_data);
       }
       else
          ret = false;
-
-      video_driver_cached_frame_set(old_data,
-            old_width, old_height, old_pitch);
    }
    else
    {
