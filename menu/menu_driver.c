@@ -217,13 +217,9 @@ void  menu_driver_list_delete(file_list_t *list, size_t i, size_t list_size)
 void  menu_driver_list_clear(file_list_t *list)
 {
    const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
-   size_t i;
 
    if (driver->list_clear)
       driver->list_clear(list);
-
-   for (i = 0; i < list->size; ++i)
-      menu_driver_list_delete_common(list, i, list->size);
 }
 
 void  menu_driver_context_destroy(void)
