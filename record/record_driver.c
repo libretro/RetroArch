@@ -388,17 +388,18 @@ bool recording_init(void)
       else
          params.aspect_ratio = (float)params.out_width / params.out_height;
 
-      if (settings->video.post_filter_record && global->filter.filter)
+      if (settings->video.post_filter_record && video_driver_frame_filter_alive())
       {
          unsigned max_width  = 0;
          unsigned max_height = 0;
 
-         if (global->filter.out_rgb32)
+         if (video_driver_frame_filter_is_32bit())
             params.pix_fmt = FFEMU_PIX_ARGB8888;
          else
             params.pix_fmt =  FFEMU_PIX_RGB565;
 
-         rarch_softfilter_get_max_output_size(global->filter.filter,
+         rarch_softfilter_get_max_output_size(
+               video_driver_frame_filter_get_ptr(),
                &max_width, &max_height);
          params.fb_width  = next_pow2(max_width);
          params.fb_height = next_pow2(max_height);

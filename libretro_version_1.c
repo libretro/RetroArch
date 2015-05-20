@@ -74,40 +74,6 @@ static bool video_frame_scale(const void *data,
    return true;
 }
 
-static bool video_frame_filter(const void *data,
-      unsigned width, unsigned height,
-      size_t pitch,
-      unsigned *output_width, unsigned *output_height,
-      unsigned *output_pitch)
-{
-   settings_t *settings = config_get_ptr();
-   global_t   *global   = global_get_ptr();
-
-   RARCH_PERFORMANCE_INIT(softfilter_process);
-
-   if (!global->filter.filter)
-      return false;
-   if (!data)
-      return false;
-
-   rarch_softfilter_get_output_size(global->filter.filter,
-         output_width, output_height, width, height);
-
-   *output_pitch = (*output_width) * global->filter.out_bpp;
-
-   RARCH_PERFORMANCE_START(softfilter_process);
-   rarch_softfilter_process(global->filter.filter,
-         global->filter.buffer, *output_pitch,
-         data, width, height, pitch);
-   RARCH_PERFORMANCE_STOP(softfilter_process);
-
-   if (settings->video.post_filter_record)
-      recording_dump_frame(global->filter.buffer,
-            *output_width, *output_height, *output_pitch);
-
-   return true;
-}
-
 /**
  * video_frame:
  * @data                 : pointer to data of the video frame.
@@ -144,7 +110,7 @@ static void video_frame(const void *data, unsigned width,
     * but we really need to do processing before blocking on VSync
     * for best possible scheduling.
     */
-   if ((!global->filter.filter
+   if ((!video_driver_frame_filter_alive()
             || !settings->video.post_filter_record || !data
             || global->record.gpu_buffer)
       )
@@ -154,10 +120,10 @@ static void video_frame(const void *data, unsigned width,
 
    driver->current_msg = msg;
 
-   if (video_frame_filter(data, width, height, pitch,
+   if (video_driver_frame_filter(data, width, height, pitch,
             &output_width, &output_height, &output_pitch))
    {
-      data   = global->filter.buffer;
+      data   = video_driver_frame_filter_get_buf_ptr();
       width  = output_width;
       height = output_height;
       pitch  = output_pitch;

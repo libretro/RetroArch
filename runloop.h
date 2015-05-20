@@ -183,16 +183,6 @@ typedef struct global
       unsigned num_ports;
    } system;
 
-   struct
-   {
-      rarch_softfilter_t *filter;
-
-      void *buffer;
-      unsigned scale;
-      unsigned out_bpp;
-      bool out_rgb32;
-   } filter;
-
 #ifdef HAVE_MENU
    struct
    {
@@ -200,7 +190,6 @@ typedef struct global
       bool bind_mode_keyboard;
    } menu;
 #endif
-
 
    bool exec;
 

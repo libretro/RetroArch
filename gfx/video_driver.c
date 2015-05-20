@@ -37,6 +37,16 @@ typedef struct video_driver_state
    unsigned video_width;
    unsigned video_height;
    float aspect_ratio;
+
+   struct
+   {
+      rarch_softfilter_t *filter;
+
+      void *buffer;
+      unsigned scale;
+      unsigned out_bpp;
+      bool out_rgb32;
+   } filter;
 } video_driver_state_t;
 
 static video_driver_state_t video_state;
@@ -334,18 +344,15 @@ bool video_driver_set_shader(enum rarch_shader_type type,
 
 static void deinit_video_filter(void)
 {
-   global_t *global     = global_get_ptr();
-
-   rarch_softfilter_free(global->filter.filter);
-   free(global->filter.buffer);
-   memset(&global->filter, 0, sizeof(global->filter));
+   rarch_softfilter_free(video_state.filter.filter);
+   free(video_state.filter.buffer);
+   memset(&video_state.filter, 0, sizeof(video_state.filter));
 }
 
 static void init_video_filter(enum retro_pixel_format colfmt)
 {
    unsigned width, height, pow2_x, pow2_y, maxsize;
    struct retro_game_geometry *geom = NULL;
-   global_t *global                 = global_get_ptr();
    settings_t *settings             = config_get_ptr();
    struct retro_system_av_info *av_info = 
       video_viewport_get_system_av_info();
@@ -369,33 +376,32 @@ static void init_video_filter(enum retro_pixel_format colfmt)
    width   = geom->max_width;
    height  = geom->max_height;
 
-   global->filter.filter = rarch_softfilter_new(
+   video_state.filter.filter = rarch_softfilter_new(
          settings->video.softfilter_plugin,
          RARCH_SOFTFILTER_THREADS_AUTO, colfmt, width, height);
 
-   if (!global->filter.filter)
+   if (!video_state.filter.filter)
    {
       RARCH_ERR("Failed to load filter.\n");
       return;
    }
 
-   rarch_softfilter_get_max_output_size(global->filter.filter,
+   rarch_softfilter_get_max_output_size(video_state.filter.filter,
          &width, &height);
 
-   pow2_x                = next_pow2(width);
-   pow2_y                = next_pow2(height);
-   maxsize               = max(pow2_x, pow2_y); 
-   global->filter.scale  = maxsize / RARCH_SCALE_BASE;
+   pow2_x                    = next_pow2(width);
+   pow2_y                    = next_pow2(height);
+   maxsize                   = max(pow2_x, pow2_y); 
+   video_state.filter.scale  = maxsize / RARCH_SCALE_BASE;
+   video_state.filter.out_rgb32 = rarch_softfilter_get_output_format(
+         video_state.filter.filter) == RETRO_PIXEL_FORMAT_XRGB8888;
 
-   global->filter.out_rgb32 = rarch_softfilter_get_output_format(
-         global->filter.filter) == RETRO_PIXEL_FORMAT_XRGB8888;
-
-   global->filter.out_bpp = global->filter.out_rgb32 ?
+   video_state.filter.out_bpp = video_state.filter.out_rgb32 ?
       sizeof(uint32_t) : sizeof(uint16_t);
 
    /* TODO: Aligned output. */
-   global->filter.buffer = malloc(width * height * global->filter.out_bpp);
-   if (!global->filter.buffer)
+   video_state.filter.buffer = malloc(width * height * video_state.filter.out_bpp);
+   if (!video_state.filter.buffer)
       goto error;
 
    return;
@@ -486,8 +492,8 @@ void init_video(void)
    scale     = next_pow2(max_dim) / RARCH_SCALE_BASE;
    scale     = max(scale, 1);
 
-   if (global->filter.filter)
-      scale = global->filter.scale;
+   if (video_state.filter.filter)
+      scale = video_state.filter.scale;
 
    /* Update core-dependent aspect ratio values. */
    video_viewport_set_square_pixel(geom->base_width, geom->base_height);
@@ -553,8 +559,8 @@ void init_video(void)
 #endif
    video.smooth       = settings->video.smooth;
    video.input_scale  = scale;
-   video.rgb32        = global->filter.filter ? 
-      global->filter.out_rgb32 : 
+   video.rgb32        = video_state.filter.filter ? 
+      video_state.filter.out_rgb32 : 
       (global->system.pix_fmt == RETRO_PIXEL_FORMAT_XRGB8888);
 
    tmp = (const input_driver_t*)driver->input;
@@ -1119,4 +1125,59 @@ void video_driver_unset_callback(void)
 
    if (hw_render)
       hw_render = NULL;
+}
+
+bool video_driver_frame_filter(const void *data,
+      unsigned width, unsigned height,
+      size_t pitch,
+      unsigned *output_width, unsigned *output_height,
+      unsigned *output_pitch)
+{
+   settings_t *settings = config_get_ptr();
+
+   RARCH_PERFORMANCE_INIT(softfilter_process);
+
+   if (!video_state.filter.filter)
+      return false;
+   if (!data)
+      return false;
+
+   rarch_softfilter_get_output_size(video_state.filter.filter,
+         output_width, output_height, width, height);
+
+   *output_pitch = (*output_width) * video_state.filter.out_bpp;
+
+   RARCH_PERFORMANCE_START(softfilter_process);
+   rarch_softfilter_process(video_state.filter.filter,
+         video_state.filter.buffer, *output_pitch,
+         data, width, height, pitch);
+   RARCH_PERFORMANCE_STOP(softfilter_process);
+
+   if (settings->video.post_filter_record)
+      recording_dump_frame(video_state.filter.buffer,
+            *output_width, *output_height, *output_pitch);
+
+   return true;
+}
+
+bool video_driver_frame_filter_is_32bit(void)
+{
+   return video_state.filter.out_rgb32;
+}
+
+bool video_driver_frame_filter_alive(void)
+{
+   if (video_state.filter.filter)
+      return true;
+   return false;
+}
+
+rarch_softfilter_t *video_driver_frame_filter_get_ptr(void)
+{
+   return video_state.filter.filter;
+}
+
+void *video_driver_frame_filter_get_buf_ptr(void)
+{
+   return video_state.filter.buffer;
 }

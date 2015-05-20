@@ -356,6 +356,20 @@ struct retro_hw_render_callback *video_driver_callback(void);
 
 void video_driver_unset_callback(void);
 
+bool video_driver_frame_filter(const void *data,
+      unsigned width, unsigned height,
+      size_t pitch,
+      unsigned *output_width, unsigned *output_height,
+      unsigned *output_pitch);
+
+bool video_driver_frame_filter_alive(void);
+
+bool video_driver_frame_filter_is_32bit(void);
+
+rarch_softfilter_t *video_driver_frame_filter_get_ptr(void);
+
+void *video_driver_frame_filter_get_buf_ptr(void);
+
 #ifdef __cplusplus
 }
 #endif
