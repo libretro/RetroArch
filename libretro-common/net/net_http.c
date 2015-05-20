@@ -66,10 +66,8 @@ struct http_connection_t
 static int net_http_new_socket(const char * domain, int port)
 {
    char portstr[16];
-   int fd, i = 1;
-#ifdef _WIN32
-   u_long mode = 1;
-#else
+   int fd;
+#ifndef _WIN32
    struct timeval timeout;
 #endif
    struct addrinfo hints, *addr = NULL;
@@ -83,8 +81,6 @@ static int net_http_new_socket(const char * domain, int port)
 
    if (getaddrinfo_rarch(domain, portstr, &hints, &addr) < 0)
       return -1;
-
-   (void)i;
 
    fd = socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol);
 
