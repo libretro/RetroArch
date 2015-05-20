@@ -362,8 +362,15 @@ static config_file_t *config_file_new_internal(
    if (!conf)
       return NULL;
 
-   if (!path)
+   if (!path || !*path)
       return conf;
+
+   if (path_is_directory(path))
+   {
+      RARCH_ERR("%s is not a regular file.\n", path);
+      free(conf);
+      return NULL;
+   }
 
    conf->path = strdup(path);
    if (!conf->path)
@@ -410,6 +417,11 @@ static config_file_t *config_file_new_internal(
          }
 
          free(line);
+      }
+      else
+      {
+         free(list);
+         continue;
       }
 
       if (list != conf->tail)
