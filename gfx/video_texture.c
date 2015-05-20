@@ -91,6 +91,7 @@ unsigned video_texture_load(void *data,
    {
       driver_t     *driver = driver_get_ptr();
       thread_video_t *thr  = (thread_video_t*)driver->video_data;
+      thread_packet_t pkt = { CMD_CUSTOM_COMMAND };
 
       if (!thr)
          return 0;
@@ -100,22 +101,21 @@ unsigned video_texture_load(void *data,
          case TEXTURE_BACKEND_OPENGL:
             if (filter_type == TEXTURE_FILTER_MIPMAP_LINEAR ||
                   filter_type == TEXTURE_FILTER_MIPMAP_NEAREST)
-               thr->cmd_data.custom_command.method = video_texture_png_load_wrap_gl_mipmap;
+               pkt.data.custom_command.method = video_texture_png_load_wrap_gl_mipmap;
             else
-               thr->cmd_data.custom_command.method = video_texture_png_load_wrap_gl;
+               pkt.data.custom_command.method = video_texture_png_load_wrap_gl;
             break;
          case TEXTURE_BACKEND_DEFAULT:
          default:
-            thr->cmd_data.custom_command.method = video_texture_png_load_wrap;
+            pkt.data.custom_command.method = video_texture_png_load_wrap;
             break;
       }
 
-      thr->cmd_data.custom_command.data   = (void*)data;
+      pkt.data.custom_command.data   = (void*)data;
 
-      thr->send_cmd_func(thr, CMD_CUSTOM_COMMAND);
-      thr->wait_reply_func(thr, CMD_CUSTOM_COMMAND);
+      thr->send_and_wait(thr, &pkt);
 
-      return thr->cmd_data.custom_command.return_value;
+      return pkt.data.custom_command.return_value;
    }
 
    return video_texture_png_load(data, type, filter_type);

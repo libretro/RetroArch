@@ -59,60 +59,9 @@ enum thread_cmd
    CMD_DUMMY = INT_MAX
 };
 
-typedef struct thread_video
+typedef struct
 {
-   slock_t *lock;
-   scond_t *cond_cmd;
-   scond_t *cond_thread;
-   sthread_t *thread;
-
-   video_info_t info;
-   const video_driver_t *driver;
-
-#ifdef HAVE_OVERLAY
-   const video_overlay_interface_t *overlay;
-#endif
-   const video_poke_interface_t *poke;
-
-   void *driver_data;
-   const input_driver_t **input;
-   void **input_data;
-
-#if defined(HAVE_MENU)
-   struct
-   {
-      void *frame;
-      size_t frame_cap;
-      unsigned width;
-      unsigned height;
-      float alpha;
-      bool frame_updated;
-      bool rgb32;
-      bool enable;
-      bool full_screen;
-   } texture;
-#endif
-   bool apply_state_changes;
-
-   bool alive;
-   bool focus;
-   bool suppress_screensaver;
-   bool has_windowed;
-   bool nonblock;
-
-   retro_time_t last_time;
-   unsigned hit_count;
-   unsigned miss_count;
-
-   float *alpha_mod;
-   unsigned alpha_mods;
-   bool alpha_update;
-   slock_t *alpha_lock;
-
-   void (*send_cmd_func)(struct thread_video *, enum thread_cmd);
-   void (*wait_reply_func)(struct thread_video *, enum thread_cmd);
-   enum thread_cmd send_cmd;
-   enum thread_cmd reply_cmd;
+   enum thread_cmd type;
    union
    {
       bool b;
@@ -182,8 +131,8 @@ typedef struct thread_video
       struct
       {
          bool (*method)(const void **font_driver,
-               void **font_handle, void *video_data, const char *font_path,
-               float font_size, enum font_driver_render_api api);
+                        void **font_handle, void *video_data, const char *font_path,
+                        float font_size, enum font_driver_render_api api);
          const void **font_driver;
          void **font_handle;
          void *video_data;
@@ -192,8 +141,65 @@ typedef struct thread_video
          bool return_value;
          enum font_driver_render_api api;
       } font_init;
+   } data;
+} thread_packet_t;
 
-   } cmd_data;
+typedef struct thread_video
+{
+   slock_t *lock;
+   scond_t *cond_cmd;
+   scond_t *cond_thread;
+   sthread_t *thread;
+
+   video_info_t info;
+   const video_driver_t *driver;
+
+#ifdef HAVE_OVERLAY
+   const video_overlay_interface_t *overlay;
+#endif
+   const video_poke_interface_t *poke;
+
+   void *driver_data;
+   const input_driver_t **input;
+   void **input_data;
+
+#if defined(HAVE_MENU)
+   struct
+   {
+      void *frame;
+      size_t frame_cap;
+      unsigned width;
+      unsigned height;
+      float alpha;
+      bool frame_updated;
+      bool rgb32;
+      bool enable;
+      bool full_screen;
+   } texture;
+#endif
+   bool apply_state_changes;
+
+   bool alive;
+   bool focus;
+   bool suppress_screensaver;
+   bool has_windowed;
+   bool nonblock;
+
+   retro_time_t last_time;
+   unsigned hit_count;
+   unsigned miss_count;
+
+   float *alpha_mod;
+   unsigned alpha_mods;
+   bool alpha_update;
+   slock_t *alpha_lock;
+
+//   void (*send_cmd_func)(struct thread_video *, enum thread_cmd);
+//   void (*wait_reply_func)(struct thread_video *, enum thread_cmd);
+   void (*send_and_wait)(struct thread_video *, thread_packet_t*);
+   enum thread_cmd send_cmd;
+   enum thread_cmd reply_cmd;
+   thread_packet_t cmd_data;
 
    struct video_viewport vp;
    struct video_viewport read_vp; /* Last viewport reported to caller. */
