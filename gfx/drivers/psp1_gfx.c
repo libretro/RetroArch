@@ -715,8 +715,7 @@ static void psp_update_viewport(psp1_video_t* psp)
 #if defined(HAVE_MENU)
       if (settings->video.aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
       {
-         const struct video_viewport *custom = 
-            &global->console.screen.viewports.custom_vp;
+         struct video_viewport *custom = video_viewport_get_custom();
 
          if (custom)
          {

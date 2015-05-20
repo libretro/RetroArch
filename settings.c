@@ -4022,6 +4022,7 @@ static bool setting_append_list_video_options(
    rarch_setting_group_info_t subgroup_info;
    settings_t *settings = config_get_ptr();
    global_t   *global   = global_get_ptr();
+   video_viewport_t *custom_vp = video_viewport_get_custom();
 
    START_GROUP(group_info, "Video Settings");
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
@@ -4254,7 +4255,7 @@ static bool setting_append_list_video_options(
          general_read_handler);
 
    CONFIG_INT(
-         global->console.screen.viewports.custom_vp.x,
+         custom_vp->x,
          "custom_viewport_x",
          "Custom Viewport X",
          0,
@@ -4265,7 +4266,7 @@ static bool setting_append_list_video_options(
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
    
    CONFIG_INT(
-         global->console.screen.viewports.custom_vp.y,
+         custom_vp->y,
          "custom_viewport_y",
          "Custom Viewport Y",
          0,
@@ -4276,7 +4277,7 @@ static bool setting_append_list_video_options(
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
    CONFIG_UINT(
-         global->console.screen.viewports.custom_vp.width,
+         custom_vp->width,
          "custom_viewport_width",
          "Custom Viewport Width",
          0,
@@ -4287,7 +4288,7 @@ static bool setting_append_list_video_options(
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
    CONFIG_UINT(
-         global->console.screen.viewports.custom_vp.height,
+         custom_vp->height,
          "custom_viewport_height",
          "Custom Viewport Height",
          0,

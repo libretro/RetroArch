@@ -278,7 +278,7 @@ static void sdl_refresh_viewport(sdl2_video_t *vid)
                         vid->video.force_aspect);
    else if (settings->video.aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
    {
-      const struct video_viewport *custom = &global->console.screen.viewports.custom_vp;
+      const struct video_viewport *custom = (const struct video_viewport*)video_viewport_get_custom();
 
       if (custom)
       {

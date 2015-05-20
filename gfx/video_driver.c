@@ -497,7 +497,7 @@ void init_video(void)
    video_viewport_set_config();
 
    /* Update CUSTOM viewport. */
-   custom_vp = &global->console.screen.viewports.custom_vp;
+   custom_vp = video_viewport_get_custom();
 
    if (settings->video.aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
    {

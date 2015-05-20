@@ -633,10 +633,7 @@ static void config_set_defaults(void)
 
    settings->core.set_supports_no_game_enable        = true;
 
-   global->console.screen.viewports.custom_vp.width  = 0;
-   global->console.screen.viewports.custom_vp.height = 0;
-   global->console.screen.viewports.custom_vp.x      = 0;
-   global->console.screen.viewports.custom_vp.y      = 0;
+   video_viewport_reset_custom();
 
    /* Make sure settings from other configs carry over into defaults
     * for another config. */
@@ -2232,6 +2229,7 @@ bool config_save_file(const char *path)
    config_file_t *conf  = config_file_new(path);
    settings_t *settings = config_get_ptr();
    global_t   *global   = global_get_ptr();
+   video_viewport_t *custom_vp = video_viewport_get_custom();
 
    if (!conf)
       conf = config_file_new(NULL);
@@ -2473,13 +2471,13 @@ bool config_save_file(const char *path)
    config_set_int(conf, "current_resolution_id",
          global->console.screen.resolutions.current.id);
    config_set_int(conf, "custom_viewport_width",
-         global->console.screen.viewports.custom_vp.width);
+         custom_vp->width);
    config_set_int(conf, "custom_viewport_height",
-         global->console.screen.viewports.custom_vp.height);
+         custom_vp->height);
    config_set_int(conf, "custom_viewport_x",
-         global->console.screen.viewports.custom_vp.x);
+         custom_vp->x);
    config_set_int(conf, "custom_viewport_y",
-         global->console.screen.viewports.custom_vp.y);
+         custom_vp->y);
    config_set_float(conf, "video_font_size", settings->video.font_size);
 
    config_set_bool(conf, "block_sram_overwrite",

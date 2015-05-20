@@ -424,10 +424,7 @@ static void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines,
    }
 
    /* custom viewports for older resolutions will most likely be corrupted, reset them */
-   global->console.screen.viewports.custom_vp.x = 0;
-   global->console.screen.viewports.custom_vp.y = 0;
-   global->console.screen.viewports.custom_vp.width = 0;
-   global->console.screen.viewports.custom_vp.height = 0;
+   video_viewport_reset_custom();
 
    g_current_framebuf = 0;
 }
@@ -838,6 +835,7 @@ static void gx_resize(void *data)
    unsigned width = gx->vp.full_width, height = gx->vp.full_height;
    settings_t *settings = config_get_ptr();
    global_t *global     = global_get_ptr();
+   struct video_viewport *custom_vp = video_viewport_get_custom();
 
 #ifdef HW_RVL
    VIDEO_SetTrapFilter(global->console.softfilter_enable);
@@ -863,19 +861,18 @@ static void gx_resize(void *data)
 #ifdef RARCH_CONSOLE
       if (settings->video.aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
       {
-         if (!global->console.screen.viewports.custom_vp.width ||
-               !global->console.screen.viewports.custom_vp.height)
+         if (!custom_vp->width || !custom_vp->height)
          {
-            global->console.screen.viewports.custom_vp.x = 0;
-            global->console.screen.viewports.custom_vp.y = 0;
-            global->console.screen.viewports.custom_vp.width = gx->vp.full_width;
-            global->console.screen.viewports.custom_vp.height = gx->vp.full_height;
+            custom_vp->x = 0;
+            custom_vp->y = 0;
+            custom_vp->width = gx->vp.full_width;
+            custom_vp->height = gx->vp.full_height;
          }
 
-         x      = global->console.screen.viewports.custom_vp.x;
-         y      = global->console.screen.viewports.custom_vp.y;
-         width  = global->console.screen.viewports.custom_vp.width;
-         height = global->console.screen.viewports.custom_vp.height;
+         x      = custom_vp->x;
+         y      = custom_vp->y;
+         width  = custom_vp->width;
+         height = custom_vp->height;
       }
       else
 #endif

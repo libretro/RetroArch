@@ -234,3 +234,15 @@ struct video_viewport *video_viewport_get_custom(void)
       return NULL;
    return &global->console.screen.viewports.custom_vp;
 }
+
+void video_viewport_reset_custom(void)
+{
+   struct video_viewport *custom_vp = video_viewport_get_custom();
+   if (!custom_vp)
+      return;
+
+   custom_vp->width  = 0;
+   custom_vp->height = 0;
+   custom_vp->x      = 0;
+   custom_vp->y      = 0;
+}

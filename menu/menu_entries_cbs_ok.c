@@ -1037,8 +1037,7 @@ static int action_ok_custom_viewport(const char *path,
 {
    menu_displaylist_info_t info = {0};
    int ret                  = 0;
-   global_t *global         = global_get_ptr();
-   video_viewport_t *custom = &global->console.screen.viewports.custom_vp;
+   video_viewport_t *custom = video_viewport_get_custom();
    menu_handle_t *menu      = menu_driver_get_ptr();
    settings_t *settings     = config_get_ptr();
 
