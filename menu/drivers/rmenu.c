@@ -125,13 +125,10 @@ static void rmenu_render(void)
    struct font_params font_parms;
    char title[256], title_buf[256];
    char title_msg[64];
-   const char *dir          = NULL;
-   const char *label        = NULL;
-   unsigned menu_type       = 0;
    menu_handle_t *menu      = menu_driver_get_ptr();
    global_t    *global      = global_get_ptr();
    uint64_t frame_count     = video_driver_get_frame_count();
-   size_t  entries_end      = menu_entries_get_end():
+   size_t  entries_end      = menu_entries_get_end();
 
    if (!menu)
       return;
@@ -184,7 +181,7 @@ static void rmenu_render(void)
    font_parms.scale = FONT_SIZE_NORMAL;
    font_parms.color = WHITE;
 
-   get_core_title(title_msg, sizeof(title_msg));
+   menu_entries_get_core_title(title_msg, sizeof(title_msg));
 
    video_driver_set_osd_msg(title_msg, &font_parms, NULL);
 
