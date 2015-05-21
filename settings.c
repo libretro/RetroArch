@@ -3260,6 +3260,13 @@ static bool setting_append_list_main_menu_options(
 
    START_GROUP(group_info, "Main Menu");
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
+#ifdef HAVE_LIBRETRODB
+   CONFIG_ACTION(
+         "content_collection_list",
+         "Content Collection List",
+         group_info.name,
+         subgroup_info.name);
+#endif
 #if defined(HAVE_DYNAMIC) || defined(HAVE_LIBRETRO_MANAGEMENT)
    CONFIG_ACTION(
          "core_list",

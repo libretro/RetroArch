@@ -392,6 +392,25 @@ static int action_ok_record_configfile(const char *path,
    return menu_displaylist_push_list(&info, DISPLAYLIST_GENERIC);
 }
 
+static int action_ok_content_collection_list(const char *path,
+      const char *label, unsigned type, size_t idx)
+{
+   menu_displaylist_info_t info = {0};
+   menu_handle_t *menu      = menu_driver_get_ptr();
+   settings_t *settings     = config_get_ptr();
+
+   if (!menu)
+      return -1;
+
+   info.list          = menu->menu_list->menu_stack;
+   info.type          = type;
+   info.directory_ptr = idx;
+   strlcpy(info.path, settings->playlist_directory, sizeof(info.path));
+   strlcpy(info.label, label, sizeof(info.label));
+
+   return menu_displaylist_push_list(&info, DISPLAYLIST_GENERIC);
+}
+
 static int action_ok_core_list(const char *path,
       const char *label, unsigned type, size_t idx)
 {
@@ -1446,6 +1465,8 @@ void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
       cbs->action_ok = action_ok_remap_file_save_core;
    else if (!strcmp(label, "remap_file_save_game"))
       cbs->action_ok = action_ok_remap_file_save_game;
+   else if (!strcmp(label, "content_collection_list"))
+      cbs->action_ok = action_ok_content_collection_list;
    else if (!strcmp(label, "core_list"))
       cbs->action_ok = action_ok_core_list;
    else if (!strcmp(label, "disk_image_append"))

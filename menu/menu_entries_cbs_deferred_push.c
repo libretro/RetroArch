@@ -288,6 +288,14 @@ static int deferred_push_cursor_manager_list(menu_displaylist_info_t *info)
    return menu_displaylist_push_list(info, DISPLAYLIST_DATABASE_CURSORS);
 }
 
+static int deferred_push_content_collection_list(menu_displaylist_info_t *info)
+{
+   info->type_default = MENU_FILE_PLAIN;
+   strlcpy(info->exts, "rdl", sizeof(info->exts));
+
+   return menu_displaylist_push_list(info, DISPLAYLIST_DATABASE_PLAYLISTS);
+}
+
 static int deferred_push_core_list(menu_displaylist_info_t *info)
 {
    info->type_default = MENU_FILE_PLAIN;
@@ -538,6 +546,8 @@ void menu_entries_cbs_init_bind_deferred_push(menu_file_list_cbs_t *cbs,
       cbs->action_deferred_push = deferred_push_disk_options;
    else if (!strcmp(label, "core_list"))
       cbs->action_deferred_push = deferred_push_core_list;
+   else if (!strcmp(label, "content_collection_list"))
+      cbs->action_deferred_push = deferred_push_content_collection_list;
    else if (!strcmp(label, "configurations"))
       cbs->action_deferred_push = deferred_push_configurations;
    else if (!strcmp(label, "video_shader_preset"))
