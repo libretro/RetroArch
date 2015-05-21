@@ -4023,6 +4023,8 @@ static bool setting_append_list_video_options(
    global_t *global     = global_get_ptr();
    settings_t *settings = config_get_ptr();
    video_viewport_t *custom_vp = video_viewport_get_custom();
+    
+   (void)global;
 
    START_GROUP(group_info, "Video Settings");
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
