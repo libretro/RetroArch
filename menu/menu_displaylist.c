@@ -892,7 +892,7 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
    char query[PATH_MAX_LENGTH];
    content_playlist_t *playlist;
    database_info_list_t *db_info = NULL;
-   char path_rdl[PATH_MAX_LENGTH], path_base[PATH_MAX_LENGTH];
+   char path_playlist[PATH_MAX_LENGTH], path_base[PATH_MAX_LENGTH];
    unsigned i, j;
    menu_handle_t *menu           = menu_driver_get_ptr();
    settings_t *settings          = config_get_ptr();
@@ -910,10 +910,10 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
    path_remove_extension(path_base);
    strlcat(path_base, ".cfg", sizeof(path_base));
 
-   fill_pathname_join(path_rdl, settings->playlist_directory, path_base,
-         sizeof(path_rdl));
+   fill_pathname_join(path_playlist, settings->playlist_directory, path_base,
+         sizeof(path_playlist));
 
-   menu_database_realloc(path_rdl, false);
+   menu_database_realloc(path_playlist, false);
 
    playlist = menu->db_playlist;
 
