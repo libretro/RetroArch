@@ -1817,6 +1817,8 @@ static int menu_displaylist_parse(menu_displaylist_info_t *info,
          if (!*info->path)
          {
             menu_displaylist_parse_drive_list(info->list);
+            *need_refresh = true;
+            *need_push    = true;
             return 0;
          }
 
