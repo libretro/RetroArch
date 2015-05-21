@@ -557,7 +557,7 @@ static void rmenu_xui_render(void)
 
 	if (XuiHandleIsValid(m_menutitle))
 	{
-      get_core_title(title, sizeof(title));
+      menu_entries_get_core_title(title, sizeof(title));
 
 		mbstowcs(strw_buffer, title, sizeof(strw_buffer) / sizeof(wchar_t));
 		XuiTextElementSetText(m_menutitlebottom, strw_buffer);
