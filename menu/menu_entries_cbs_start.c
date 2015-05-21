@@ -62,13 +62,17 @@ static int action_start_input_desc(unsigned type, const char *label)
 {
    settings_t *settings = config_get_ptr();
    unsigned inp_desc_index_offset = type - MENU_SETTINGS_INPUT_DESC_BEGIN;
-   unsigned inp_desc_user         = inp_desc_index_offset / RARCH_FIRST_META_KEY;
-   unsigned inp_desc_button_index_offset = inp_desc_index_offset - (inp_desc_user * RARCH_FIRST_META_KEY);
+   unsigned inp_desc_user         = inp_desc_index_offset / (RARCH_FIRST_CUSTOM_BIND + 4);
+   unsigned inp_desc_button_index_offset = inp_desc_index_offset - (inp_desc_user * (RARCH_FIRST_CUSTOM_BIND + 4));
 
    (void)label;
 
-   settings->input.remap_ids[inp_desc_user][inp_desc_button_index_offset] = 
-      settings->input.binds[inp_desc_user][inp_desc_button_index_offset].id;
+   if (inp_desc_button_index_offset < RARCH_FIRST_CUSTOM_BIND)
+      settings->input.remap_ids[inp_desc_user][inp_desc_button_index_offset] =
+         settings->input.binds[inp_desc_user][inp_desc_button_index_offset].id;
+   else
+      settings->input.remap_ids[inp_desc_user][inp_desc_button_index_offset] =
+         inp_desc_button_index_offset - RARCH_FIRST_CUSTOM_BIND;
 
    return 0;
 }
@@ -168,7 +172,7 @@ static int action_start_shader_filter_pass(unsigned type, const char *label)
    menu_handle_t *menu = menu_driver_get_ptr();
    if (!menu)
       return -1;
-   
+
    shader = menu->shader;
    if (!shader)
       return -1;
@@ -189,7 +193,7 @@ static int action_start_shader_num_passes(unsigned type, const char *label)
    menu_handle_t *menu = menu_driver_get_ptr();
    if (!menu)
       return -1;
-   
+
    shader = menu->shader;
    if (!shader)
       return -1;

@@ -21,6 +21,14 @@
 
 #include "../performance.h"
 #include "../settings.h"
+#include "../intl/intl.h"
+
+const char axis_labels[4][128] = {
+   RETRO_LBL_ANALOG_LEFT_X,
+   RETRO_LBL_ANALOG_LEFT_Y,
+   RETRO_LBL_ANALOG_RIGHT_X,
+   RETRO_LBL_ANALOG_RIGHT_Y
+};
 
 static void menu_action_setting_disp_set_label_cheat_num_passes(
       file_list_t* list,
@@ -345,15 +353,20 @@ static void menu_action_setting_disp_set_label_input_desc(
 {
    settings_t *settings = config_get_ptr();
    unsigned inp_desc_index_offset = type - MENU_SETTINGS_INPUT_DESC_BEGIN;
-   unsigned inp_desc_user         = inp_desc_index_offset / 
-      RARCH_FIRST_META_KEY;
-   unsigned inp_desc_button_index_offset = inp_desc_index_offset - 
-      (inp_desc_user * RARCH_FIRST_META_KEY);
+   unsigned inp_desc_user         = inp_desc_index_offset /
+      (RARCH_FIRST_CUSTOM_BIND + 4);
+   unsigned inp_desc_button_index_offset = inp_desc_index_offset -
+      (inp_desc_user * (RARCH_FIRST_CUSTOM_BIND + 4));
    unsigned remap_id = settings->input.remap_ids
       [inp_desc_user][inp_desc_button_index_offset];
 
-   snprintf(type_str, type_str_size, "%s",
-         settings->input.binds[inp_desc_user][remap_id].desc);
+   if (inp_desc_button_index_offset < RARCH_FIRST_CUSTOM_BIND)
+      snprintf(type_str, type_str_size, "%s",
+            settings->input.binds[inp_desc_user][remap_id].desc);
+   else
+      snprintf(type_str, type_str_size, "%s",
+            axis_labels[remap_id]);
+
    *w = 19;
    strlcpy(path_buf, path, path_buf_size);
 }
@@ -411,7 +424,7 @@ static void menu_action_setting_disp_set_label_perf_counters(
       char *path_buf, size_t path_buf_size)
 {
    menu_handle_t *menu = menu_driver_get_ptr();
-   const struct retro_perf_counter **counters = 
+   const struct retro_perf_counter **counters =
       (const struct retro_perf_counter **)perf_counters_rarch;
    unsigned offset = type - MENU_SETTINGS_PERF_COUNTERS_BEGIN;
 
@@ -435,7 +448,7 @@ static void menu_action_setting_disp_set_label_libretro_perf_counters(
       char *path_buf, size_t path_buf_size)
 {
    menu_handle_t *menu = menu_driver_get_ptr();
-   const struct retro_perf_counter **counters = 
+   const struct retro_perf_counter **counters =
       (const struct retro_perf_counter **)perf_counters_libretro;
    unsigned offset = type - MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_BEGIN;
 
@@ -782,33 +795,33 @@ void menu_entries_cbs_init_bind_get_string_representation(menu_file_list_cbs_t *
 
    if (type >= MENU_SETTINGS_INPUT_DESC_BEGIN
          && type <= MENU_SETTINGS_INPUT_DESC_END)
-      cbs->action_get_representation = 
+      cbs->action_get_representation =
          menu_action_setting_disp_set_label_input_desc;
    else if (type >= MENU_SETTINGS_CHEAT_BEGIN
          && type <= MENU_SETTINGS_CHEAT_END)
-      cbs->action_get_representation = 
+      cbs->action_get_representation =
          menu_action_setting_disp_set_label_cheat;
    else if (type >= MENU_SETTINGS_PERF_COUNTERS_BEGIN
          && type <= MENU_SETTINGS_PERF_COUNTERS_END)
-      cbs->action_get_representation = 
+      cbs->action_get_representation =
          menu_action_setting_disp_set_label_perf_counters;
    else if (type >= MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_BEGIN
          && type <= MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_END)
-      cbs->action_get_representation = 
+      cbs->action_get_representation =
          menu_action_setting_disp_set_label_libretro_perf_counters;
    else if (type >= MENU_SETTINGS_SHADER_PRESET_PARAMETER_0
          && type <= MENU_SETTINGS_SHADER_PRESET_PARAMETER_LAST)
-      cbs->action_get_representation = 
+      cbs->action_get_representation =
          menu_action_setting_disp_set_label_shader_preset_parameter;
    else if (type >= MENU_SETTINGS_SHADER_PARAMETER_0
          && type <= MENU_SETTINGS_SHADER_PARAMETER_LAST)
-      cbs->action_get_representation = 
+      cbs->action_get_representation =
          menu_action_setting_disp_set_label_shader_parameter;
    else if (!strcmp(label, "cheat_num_passes"))
-      cbs->action_get_representation = 
+      cbs->action_get_representation =
          menu_action_setting_disp_set_label_cheat_num_passes;
    else if (!strcmp(label, "remap_file_load"))
-      cbs->action_get_representation = 
+      cbs->action_get_representation =
          menu_action_setting_disp_set_label_remap_file_load;
    else if (!strcmp(label, "video_shader_filter_pass"))
       cbs->action_get_representation =
@@ -836,87 +849,87 @@ void menu_entries_cbs_init_bind_get_string_representation(menu_file_list_cbs_t *
       switch (type)
       {
          case MENU_FILE_CORE:
-            cbs->action_get_representation = 
+            cbs->action_get_representation =
                menu_action_setting_disp_set_label_menu_file_core;
             break;
          case MENU_FILE_PLAIN:
-            cbs->action_get_representation = 
+            cbs->action_get_representation =
                menu_action_setting_disp_set_label_menu_file_plain;
             break;
          case MENU_FILE_IMAGE:
-            cbs->action_get_representation = 
+            cbs->action_get_representation =
                menu_action_setting_disp_set_label_menu_file_image;
             break;
          case MENU_FILE_USE_DIRECTORY:
-            cbs->action_get_representation = 
+            cbs->action_get_representation =
                menu_action_setting_disp_set_label_menu_file_use_directory;
             break;
          case MENU_FILE_DIRECTORY:
-            cbs->action_get_representation = 
+            cbs->action_get_representation =
                menu_action_setting_disp_set_label_menu_file_directory;
             break;
          case MENU_FILE_CARCHIVE:
-            cbs->action_get_representation = 
+            cbs->action_get_representation =
                menu_action_setting_disp_set_label_menu_file_carchive;
             break;
          case MENU_FILE_OVERLAY:
-            cbs->action_get_representation = 
+            cbs->action_get_representation =
                menu_action_setting_disp_set_label_menu_file_overlay;
             break;
          case MENU_FILE_FONT:
-            cbs->action_get_representation = 
+            cbs->action_get_representation =
                menu_action_setting_disp_set_label_menu_file_font;
             break;
          case MENU_FILE_SHADER:
-            cbs->action_get_representation = 
+            cbs->action_get_representation =
                menu_action_setting_disp_set_label_menu_file_shader;
             break;
          case MENU_FILE_SHADER_PRESET:
-            cbs->action_get_representation = 
+            cbs->action_get_representation =
                menu_action_setting_disp_set_label_menu_file_shader_preset;
             break;
          case MENU_FILE_CONFIG:
-            cbs->action_get_representation = 
+            cbs->action_get_representation =
                menu_action_setting_disp_set_label_menu_file_config;
             break;
          case MENU_FILE_IN_CARCHIVE:
-            cbs->action_get_representation = 
+            cbs->action_get_representation =
                menu_action_setting_disp_set_label_menu_file_in_carchive;
             break;
          case MENU_FILE_VIDEOFILTER:
          case MENU_FILE_AUDIOFILTER:
-            cbs->action_get_representation = 
+            cbs->action_get_representation =
                menu_action_setting_disp_set_label_menu_file_filter;
             break;
          case MENU_FILE_DOWNLOAD_CORE:
-            cbs->action_get_representation = 
+            cbs->action_get_representation =
                menu_action_setting_disp_set_label_menu_file_url;
             break;
          case MENU_FILE_RDB:
-            cbs->action_get_representation = 
+            cbs->action_get_representation =
                menu_action_setting_disp_set_label_menu_file_rdb;
             break;
          case MENU_FILE_CURSOR:
-            cbs->action_get_representation = 
+            cbs->action_get_representation =
                menu_action_setting_disp_set_label_menu_file_cursor;
             break;
          case MENU_FILE_CHEAT:
-            cbs->action_get_representation = 
+            cbs->action_get_representation =
                menu_action_setting_disp_set_label_menu_file_cheat;
             break;
          case MENU_SETTING_SUBGROUP:
          case MENU_SETTINGS_CUSTOM_VIEWPORT:
          case MENU_SETTINGS_CUSTOM_BIND_ALL:
          case MENU_SETTINGS_CUSTOM_BIND_DEFAULT_ALL:
-            cbs->action_get_representation = 
+            cbs->action_get_representation =
                menu_action_setting_disp_set_label_menu_more;
             break;
          case MENU_SETTINGS_CORE_DISK_OPTIONS_DISK_INDEX:
-            cbs->action_get_representation = 
+            cbs->action_get_representation =
                menu_action_setting_disp_set_label_menu_disk_index;
             break;
          case MENU_SETTINGS_VIDEO_RESOLUTION:
-            cbs->action_get_representation = 
+            cbs->action_get_representation =
                menu_action_setting_disp_set_label_menu_video_resolution;
             break;
          default:

@@ -296,7 +296,7 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
             if (core_info->firmware[i].desc)
             {
                snprintf(tmp, sizeof(tmp), "	name: %s",
-                     core_info->firmware[i].desc ? 
+                     core_info->firmware[i].desc ?
                      core_info->firmware[i].desc : "");
                menu_list_push(info->list, tmp, "",
                      MENU_SETTINGS_CORE_INFO_NONE, 0);
@@ -394,7 +394,7 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
                   MENU_SETTINGS_CORE_INFO_NONE, 0);
          }
 
-         snprintf(tmp, sizeof(tmp), "RetroRating level: %d", 
+         snprintf(tmp, sizeof(tmp), "RetroRating level: %d",
                frontend->get_rating ? frontend->get_rating() : -1);
          menu_list_push(info->list, tmp, "",
                MENU_SETTINGS_CORE_INFO_NONE, 0);
@@ -447,7 +447,7 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
          float val = 0.0f;
          if (gfx_ctx_get_metrics(DISPLAY_METRIC_MM_WIDTH, &val))
          {
-            snprintf(tmp, sizeof(tmp), "Display metric width (mm): %.2f", 
+            snprintf(tmp, sizeof(tmp), "Display metric width (mm): %.2f",
                   val);
             menu_list_push(info->list, tmp, "",
                   MENU_SETTINGS_CORE_INFO_NONE, 0);
@@ -455,7 +455,7 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
 
          if (gfx_ctx_get_metrics(DISPLAY_METRIC_MM_HEIGHT, &val))
          {
-            snprintf(tmp, sizeof(tmp), "Display metric height (mm): %.2f", 
+            snprintf(tmp, sizeof(tmp), "Display metric height (mm): %.2f",
                   val);
             menu_list_push(info->list, tmp, "",
                   MENU_SETTINGS_CORE_INFO_NONE, 0);
@@ -463,7 +463,7 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
 
          if (gfx_ctx_get_metrics(DISPLAY_METRIC_DPI, &val))
          {
-            snprintf(tmp, sizeof(tmp), "Display metric DPI: %.2f", 
+            snprintf(tmp, sizeof(tmp), "Display metric DPI: %.2f",
                   val);
             menu_list_push(info->list, tmp, "",
                   MENU_SETTINGS_CORE_INFO_NONE, 0);
@@ -719,7 +719,7 @@ static int menu_displaylist_parse_historylist(menu_displaylist_info_t *info)
       char path_copy[PATH_MAX_LENGTH];
       const char *core_name = NULL;
       const char *path      = NULL;
-      
+
       strlcpy(path_copy, info->path, sizeof(path_copy));
 
       path = path_copy;
@@ -1048,13 +1048,13 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
       }
       snprintf(tmp, sizeof(tmp),
             "Analog supported: %s",
-            (db_info_entry->analog_supported == 1)  ? "true" : 
+            (db_info_entry->analog_supported == 1)  ? "true" :
             (db_info_entry->analog_supported == -1) ? "N/A"  : "false");
       menu_list_push(info->list, tmp, "rdb_entry_analog",
             0, 0);
       snprintf(tmp, sizeof(tmp),
             "Rumble supported: %s",
-            (db_info_entry->rumble_supported == 1)  ? "true" : 
+            (db_info_entry->rumble_supported == 1)  ? "true" :
             (db_info_entry->rumble_supported == -1) ? "N/A"  :  "false");
       menu_list_push(info->list, tmp, "rdb_entry_rumble",
             0, 0);
@@ -1088,7 +1088,7 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
             char elem0[PATH_MAX_LENGTH], elem1[PATH_MAX_LENGTH];
             bool match_found = false;
             struct string_list *tmp_str_list = string_split(
-                  playlist->entries[j].core_name, "|"); 
+                  playlist->entries[j].core_name, "|");
 
             if (!tmp_str_list)
                continue;
@@ -1141,12 +1141,12 @@ static int menu_database_push_query(libretrodb_t *db,
 {
    unsigned i;
    struct rmsgpack_dom_value item;
-    
+
    while (libretrodb_cursor_read_item(cur, &item) == 0)
    {
       if (item.type != RDT_MAP)
          continue;
-        
+
       for (i = 0; i < item.map.len; i++)
       {
          struct rmsgpack_dom_value *key = &item.map.items[i].key;
@@ -1154,7 +1154,7 @@ static int menu_database_push_query(libretrodb_t *db,
 
          if (!key || !val)
             continue;
-            
+
          if (!strcmp(key->string.buff, "name"))
          {
             menu_list_push(list, val->string.buff, db->path,
@@ -1163,7 +1163,7 @@ static int menu_database_push_query(libretrodb_t *db,
          }
       }
    }
-    
+
    return 0;
 }
 #endif
@@ -1219,7 +1219,7 @@ static int menu_displaylist_parse_settings(menu_handle_t *menu,
 {
    rarch_setting_t *setting = NULL;
    settings_t *settings     = config_get_ptr();
-   
+
    if (menu && menu->list_settings)
       settings_list_free(menu->list_settings);
 
@@ -1233,10 +1233,10 @@ static int menu_displaylist_parse_settings(menu_handle_t *menu,
    for (; setting->type != ST_END_GROUP; setting++)
    {
       if (
-            setting->type == ST_GROUP 
+            setting->type == ST_GROUP
             || setting->type == ST_SUB_GROUP
             || setting->type == ST_END_SUB_GROUP
-            || (setting->flags & SD_FLAG_ADVANCED && 
+            || (setting->flags & SD_FLAG_ADVANCED &&
                !settings->menu.show_advanced_settings)
          )
          continue;
@@ -1327,7 +1327,7 @@ static void menu_displaylist_push_horizontal_menu_list_content(
    for (j = 0; j < str_list->size; j++)
    {
       const char *name = str_list->elems[j].data;
-      
+
       if (!name)
          continue;
 
@@ -1384,7 +1384,7 @@ static int menu_displaylist_push_horizontal_menu_list_cores(
 }
 
 
-static int menu_displaylist_parse_horizontal_list(menu_displaylist_info_t *info) 
+static int menu_displaylist_parse_horizontal_list(menu_displaylist_info_t *info)
 {
    core_info_t      *core_info = NULL;
    global_t            *global = global_get_ptr();
@@ -1519,15 +1519,20 @@ static int menu_displaylist_parse_options_remappings(menu_displaylist_info_t *in
    menu_list_push(info->list, "Save Core Remap File",
          "remap_file_save_core", MENU_SETTING_ACTION, 0);
    menu_list_push(info->list, "Save Game Remap File",
-         "remap_file_save_game", MENU_SETTING_ACTION, 0);         
+         "remap_file_save_game", MENU_SETTING_ACTION, 0);
 
    for (p = 0; p < settings->input.max_users; p++)
    {
-      for (retro_id = 0; retro_id < RARCH_FIRST_META_KEY; retro_id++)
+      for (retro_id = 0; retro_id < RARCH_FIRST_CUSTOM_BIND + 4; retro_id++)
       {
          char desc_label[64];
          unsigned user = p + 1;
-         const char *description = global->system.input_desc_btn[p][retro_id];
+         unsigned desc_offset = retro_id;
+
+         if (desc_offset >= RARCH_FIRST_CUSTOM_BIND)
+            desc_offset = RARCH_FIRST_CUSTOM_BIND + (desc_offset - RARCH_FIRST_CUSTOM_BIND) * 2;
+
+         const char *description = global->system.input_desc_btn[p][desc_offset];
 
          if (!description)
             continue;
@@ -1535,7 +1540,7 @@ static int menu_displaylist_parse_options_remappings(menu_displaylist_info_t *in
          snprintf(desc_label, sizeof(desc_label),
                "User %u %s : ", user, description);
          menu_list_push(info->list, desc_label, "",
-               MENU_SETTINGS_INPUT_DESC_BEGIN + 
+               MENU_SETTINGS_INPUT_DESC_BEGIN +
                (p * RARCH_FIRST_META_KEY) +  retro_id, 0);
       }
    }
@@ -1612,7 +1617,7 @@ static int menu_displaylist_parse(menu_displaylist_info_t *info,
                return 0;
 
             ret = deferred_push_video_shader_parameters_common(info, shader,
-                  (type == DISPLAYLIST_SHADER_PARAMETERS) 
+                  (type == DISPLAYLIST_SHADER_PARAMETERS)
                   ? MENU_SETTINGS_SHADER_PARAMETER_0 : MENU_SETTINGS_SHADER_PRESET_PARAMETER_0
                   );
 
@@ -1637,11 +1642,11 @@ static int menu_displaylist_parse(menu_displaylist_info_t *info,
       case DISPLAYLIST_PERFCOUNTERS_CORE:
       case DISPLAYLIST_PERFCOUNTERS_FRONTEND:
          ret = menu_displaylist_push_perfcounter_generic(info,
-              (type == DISPLAYLIST_PERFCOUNTERS_CORE) ? 
+              (type == DISPLAYLIST_PERFCOUNTERS_CORE) ?
               perf_counters_libretro : perf_counters_rarch,
               (type == DISPLAYLIST_PERFCOUNTERS_CORE) ?
-              perf_ptr_libretro : perf_ptr_rarch , 
-              (type == DISPLAYLIST_PERFCOUNTERS_CORE) ? 
+              perf_ptr_libretro : perf_ptr_rarch ,
+              (type == DISPLAYLIST_PERFCOUNTERS_CORE) ?
               MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_BEGIN : MENU_SETTINGS_PERF_COUNTERS_BEGIN);
 
          *need_refresh = false;
@@ -1827,14 +1832,14 @@ static int menu_displaylist_parse(menu_displaylist_info_t *info,
 #endif
 
          path_is_compressed = path_is_compressed_file(info->path);
-         push_dir           = (info->setting 
+         push_dir           = (info->setting
                && info->setting->browser_selection_type == ST_DIR);
 
          if (path_is_compressed)
             str_list = compressed_file_list_new(info->path, info->exts);
          else
             str_list = dir_list_new(info->path,
-                  settings->menu.navigation.browser.filter.supported_extensions_enable 
+                  settings->menu.navigation.browser.filter.supported_extensions_enable
                   ? info->exts : NULL, true);
 
          if (push_dir)
@@ -2073,7 +2078,7 @@ int menu_displaylist_push(file_list_t *list, file_list_t *menu_list)
    info.type      = type;
    strlcpy(info.path, path, sizeof(info.path));
    strlcpy(info.label, label, sizeof(info.label));
-   
+
    return menu_displaylist_deferred_push(&info);
 }
 

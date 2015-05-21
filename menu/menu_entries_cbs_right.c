@@ -40,7 +40,7 @@ static int shader_action_parameter_right(unsigned type, const char *label, bool 
 {
 #ifdef HAVE_SHADER_MANAGER
    struct video_shader *shader = video_shader_driver_get_current_shader();
-   struct video_shader_parameter *param = 
+   struct video_shader_parameter *param =
       &shader->parameters[type - MENU_SETTINGS_SHADER_PARAMETER_0];
 
    shader_action_parameter_right_common(param, shader);
@@ -85,12 +85,20 @@ static int action_right_input_desc(unsigned type, const char *label,
       bool wraparound)
 {
    unsigned inp_desc_index_offset = type - MENU_SETTINGS_INPUT_DESC_BEGIN;
-   unsigned inp_desc_user         = inp_desc_index_offset / RARCH_FIRST_META_KEY;
-   unsigned inp_desc_button_index_offset = inp_desc_index_offset - (inp_desc_user * RARCH_FIRST_META_KEY);
+   unsigned inp_desc_user         = inp_desc_index_offset / (RARCH_FIRST_CUSTOM_BIND + 4);
+   unsigned inp_desc_button_index_offset = inp_desc_index_offset - (inp_desc_user * (RARCH_FIRST_CUSTOM_BIND + 4));
    settings_t *settings = config_get_ptr();
 
-   if (settings->input.remap_ids[inp_desc_user][inp_desc_button_index_offset] < RARCH_FIRST_META_KEY)
-      settings->input.remap_ids[inp_desc_user][inp_desc_button_index_offset]++;
+   if (inp_desc_button_index_offset < RARCH_FIRST_CUSTOM_BIND)
+   {
+      if (settings->input.remap_ids[inp_desc_user][inp_desc_button_index_offset] < RARCH_FIRST_CUSTOM_BIND - 1)
+         settings->input.remap_ids[inp_desc_user][inp_desc_button_index_offset]++;
+   }
+   else
+   {
+      if (settings->input.remap_ids[inp_desc_user][inp_desc_button_index_offset] < 4 - 1)
+         settings->input.remap_ids[inp_desc_user][inp_desc_button_index_offset]++;
+   }
 
    return 0;
 }
@@ -150,7 +158,7 @@ static int action_right_mainmenu(unsigned type, const char *label,
             push_list = 1;
       }
    }
-   else 
+   else
       push_list = 2;
 
    cbs = menu_list_get_actiondata_at_offset(menu_list->selection_buf,
@@ -187,7 +195,7 @@ static int action_right_shader_scale_pass(unsigned type, const char *label,
    menu_handle_t *menu = menu_driver_get_ptr();
    if (!menu)
       return -1;
-   
+
    shader = menu->shader;
    if (!shader)
       return -1;
@@ -218,7 +226,7 @@ static int action_right_shader_filter_pass(unsigned type, const char *label,
    menu_handle_t *menu = menu_driver_get_ptr();
    if (!menu)
       return -1;
-   
+
    shader = menu->shader;
    if (!shader)
       return -1;
@@ -274,7 +282,7 @@ static int action_right_shader_num_passes(unsigned type, const char *label,
    menu_handle_t *menu = menu_driver_get_ptr();
    if (!menu)
       return -1;
-   
+
    shader = menu->shader;
    if (!shader)
       return -1;
@@ -292,9 +300,9 @@ static int action_right_shader_num_passes(unsigned type, const char *label,
 
 static int action_right_video_resolution(unsigned type, const char *label,
       bool wraparound)
-{ 
+{
    global_t *global = global_get_ptr();
-    
+
    (void)global;
 
 #if defined(__CELLOS_LV2__)

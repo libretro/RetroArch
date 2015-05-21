@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2015 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -36,6 +36,10 @@
 #define RETRO_LBL_JOYPAD_L3 "RetroPad L3 Button"
 #define RETRO_LBL_JOYPAD_R3 "RetroPad R3 Button"
 #define RETRO_LBL_TURBO_ENABLE "Turbo Enable"
+#define RETRO_LBL_ANALOG_LEFT_X "Left Analog X"
+#define RETRO_LBL_ANALOG_LEFT_Y "Left Analog Y"
+#define RETRO_LBL_ANALOG_RIGHT_X "Right Analog X"
+#define RETRO_LBL_ANALOG_RIGHT_Y "Right Analog Y"
 #define RETRO_LBL_ANALOG_LEFT_X_PLUS "Left Analog X +"
 #define RETRO_LBL_ANALOG_LEFT_X_MINUS "Left Analog X -"
 #define RETRO_LBL_ANALOG_LEFT_Y_PLUS "Left Analog Y +"
@@ -112,7 +116,7 @@
 #define RETRO_LOG_REWIND_REACHED_END RETRO_MSG_REWIND_REACHED_END TERM_STR
 #define RETRO_LOG_MOVIE_RECORD_STOPPING RETRO_MSG_MOVIE_RECORD_STOPPING TERM_STR
 #define RETRO_LOG_MOVIE_PLAYBACK_ENDED RETRO_MSG_MOVIE_PLAYBACK_ENDED TERM_STR
-#define RETRO_LOG_LIBRETRO_ABI_BREAK RETRO_MSG_LIBRETRO_ABI_BREAK RETRO_FRONTEND TERM_STR 
+#define RETRO_LOG_LIBRETRO_ABI_BREAK RETRO_MSG_LIBRETRO_ABI_BREAK RETRO_FRONTEND TERM_STR
 #define RETRO_LOG_RESETTING_CONTENT RETRO_MSG_RESETTING_CONTENT TERM_STR
 #define RETRO_LOG_REWIND_INIT RETRO_MSG_REWIND_INIT TERM_STR
 #define RETRO_LOG_REWIND_INIT_FAILED RETRO_MSG_REWIND_INIT_FAILED TERM_STR
