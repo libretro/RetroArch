@@ -37,7 +37,7 @@ static int zlib_compare_crc32(const char *name, const char *valid_exts,
    return 1;
 }
 #endif
-static int database_info_iterate_rdl_write(
+static int database_info_iterate_playlist_write(
       database_info_handle_t *db, const char *name)
 {
    char parent_dir[PATH_MAX_LENGTH];
@@ -108,7 +108,7 @@ static int database_info_iterate(database_info_handle_t *db)
       case DATABASE_TYPE_NONE:
          break;
       case DATABASE_TYPE_RDL_WRITE:
-         if (database_info_iterate_rdl_write(db, name) != 0)
+         if (database_info_iterate_playlist_write(db, name) != 0)
          {
             rarch_main_msg_queue_push("Scanning of directory finished.\n", 0, 180, true);
             db->status = DATABASE_STATUS_FREE;
