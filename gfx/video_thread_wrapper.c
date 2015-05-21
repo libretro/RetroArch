@@ -70,6 +70,7 @@ static void thread_wait_reply(thread_video_t *thr, thread_packet_t *pkt)
       scond_wait(thr->cond_cmd, thr->lock);
 
    *pkt = thr->cmd_data;
+   thr->cmd_data.type = CMD_NONE;
 
    slock_unlock(thr->lock);
 }
