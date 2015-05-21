@@ -392,6 +392,24 @@ static int action_ok_record_configfile(const char *path,
    return menu_displaylist_push_list(&info, DISPLAYLIST_GENERIC);
 }
 
+static int action_ok_playlist_collection(const char *path,
+      const char *label, unsigned type, size_t idx)
+{
+   menu_handle_t *menu      = menu_driver_get_ptr();
+   menu_displaylist_info_t info = {0};
+
+   if (!menu)
+      return -1;
+
+   info.list          = menu->menu_list->menu_stack;
+   info.type          = type;
+   info.directory_ptr = idx;
+   strlcpy(info.path, path, sizeof(info.path));
+   strlcpy(info.label, label, sizeof(info.label));
+
+   return menu_displaylist_push_list(&info, DISPLAYLIST_PLAYLIST_COLLECTION);
+}
+
 static int action_ok_content_collection_list(const char *path,
       const char *label, unsigned type, size_t idx)
 {
@@ -1289,13 +1307,6 @@ static int action_ok_help(const char *path,
    return menu_displaylist_push_list(&info, DISPLAYLIST_HELP);
 }
 
-static int action_ok_playlist_collection(const char *path,
-      const char *label, unsigned type, size_t idx)
-{
-   RARCH_LOG("Gets here.\n");
-   return 0;
-}
-
 static int action_ok_video_resolution(const char *path,
       const char *label, unsigned type, size_t idx)
 {
@@ -1486,14 +1497,14 @@ void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
       case MENU_SETTINGS_VIDEO_RESOLUTION:
          cbs->action_ok = action_ok_video_resolution;
          break;
-      case MENU_FILE_PLAYLIST_COLLECTION:
-         cbs->action_ok = action_ok_playlist_collection;
-         break;
       case MENU_FILE_PLAYLIST_ENTRY:
          if (!strcmp(label, "rdb_entry_start_game"))
             cbs->action_ok = action_ok_rdb_playlist_entry;
          else
             cbs->action_ok = action_ok_playlist_entry;
+         break;
+      case MENU_FILE_PLAYLIST_COLLECTION:
+         cbs->action_ok = action_ok_playlist_collection;
          break;
       case MENU_FILE_CONTENTLIST_ENTRY:
          cbs->action_ok = action_ok_push_generic_list;

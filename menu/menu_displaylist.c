@@ -701,14 +701,15 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
    return 0;
 }
 
-static int menu_displaylist_parse_historylist(menu_displaylist_info_t *info)
+static int menu_displaylist_parse_historylist(menu_displaylist_info_t *info,
+      content_playlist_t *playlist)
 {
    unsigned i;
-   size_t list_size = content_playlist_size(g_defaults.history);
+   size_t list_size = content_playlist_size(playlist);
 
    if (list_size <= 0)
    {
-      menu_list_push(info->list, "No history available.", "",
+      menu_list_push(info->list, "No playlist available.", "",
             MENU_SETTINGS_CORE_OPTION_NONE, 0);
       return 0;
    }
@@ -724,7 +725,7 @@ static int menu_displaylist_parse_historylist(menu_displaylist_info_t *info)
 
       path = path_copy;
 
-      content_playlist_get_index(g_defaults.history, i,
+      content_playlist_get_index(playlist, i,
             &path, NULL, &core_name);
       strlcpy(fill_buf, core_name, sizeof(fill_buf));
 
@@ -907,9 +908,9 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
 
    strlcpy(path_base, path_basename(info->path), sizeof(path_base));
    path_remove_extension(path_base);
-   strlcat(path_base, ".rdl", sizeof(path_base));
+   strlcat(path_base, ".cfg", sizeof(path_base));
 
-   fill_pathname_join(path_rdl, settings->content_database, path_base,
+   fill_pathname_join(path_rdl, settings->playlist_directory, path_base,
          sizeof(path_rdl));
 
    menu_database_realloc(path_rdl, false);
@@ -1616,6 +1617,7 @@ static int menu_displaylist_parse_generic(menu_displaylist_info_t *info, bool *n
    {
       bool is_dir;
       const char *path = NULL;
+      char label[PATH_MAX_LENGTH];
       menu_file_type_t file_type = MENU_FILE_NONE;
 
       switch (str_list->elems[i].attr.i)
@@ -1678,7 +1680,7 @@ static int menu_displaylist_parse_generic(menu_displaylist_info_t *info, bool *n
          file_type = is_dir ? MENU_FILE_DIRECTORY : MENU_FILE_CORE;
       }
 
-      menu_list_push(info->list, path, "",
+      menu_list_push(info->list, path, label,
             file_type, 0);
    }
 
@@ -1894,11 +1896,27 @@ static int menu_displaylist_parse(menu_displaylist_info_t *info,
 
          *need_push    = true;
          break;
+      case DISPLAYLIST_PLAYLIST_COLLECTION:
       case DISPLAYLIST_HISTORY:
-         if (menu_displaylist_parse_historylist(info) == 0)
          {
-            *need_refresh = true;
-            *need_push    = true;
+            RARCH_LOG("Gets here.\n");
+            content_playlist_t *playlist = NULL;
+            
+            switch (type)
+            {
+               case DISPLAYLIST_HISTORY:
+               case DISPLAYLIST_PLAYLIST_COLLECTION:
+                  playlist = g_defaults.history;
+                  break;
+               default:
+                  break;
+            }
+
+            if (menu_displaylist_parse_historylist(info, playlist) == 0)
+            {
+               *need_refresh = true;
+               *need_push    = true;
+            }
          }
          break;
       case DISPLAYLIST_OPTIONS_DISK:

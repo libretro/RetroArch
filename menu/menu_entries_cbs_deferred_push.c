@@ -34,6 +34,12 @@ static int deferred_push_system_information(menu_displaylist_info_t *info)
    return menu_displaylist_push_list(info, DISPLAYLIST_SYSTEM_INFO);
 }
 
+static int deferred_push_rdb_collection(menu_displaylist_info_t *info)
+{
+   /* TODO/FIXME - add path? */
+   return menu_displaylist_push_list(info, DISPLAYLIST_PLAYLIST_COLLECTION);
+}
+
 static int deferred_push_rdb_entry_detail(menu_displaylist_info_t *info)
 {
    int ret;
@@ -291,7 +297,7 @@ static int deferred_push_cursor_manager_list(menu_displaylist_info_t *info)
 static int deferred_push_content_collection_list(menu_displaylist_info_t *info)
 {
    info->type_default = MENU_FILE_PLAIN;
-   strlcpy(info->exts, "rdl", sizeof(info->exts));
+   strlcpy(info->exts, "cfg", sizeof(info->exts));
 
    return menu_displaylist_push_list(info, DISPLAYLIST_DATABASE_PLAYLISTS);
 }
@@ -493,6 +499,8 @@ void menu_entries_cbs_init_bind_deferred_push(menu_file_list_cbs_t *cbs,
       cbs->action_deferred_push = deferred_push_management_options;
    else if (type == MENU_SETTING_GROUP)
       cbs->action_deferred_push = deferred_push_category;
+   else if (type == MENU_FILE_PLAYLIST_COLLECTION)
+      cbs->action_deferred_push = deferred_push_rdb_collection;
    else if (!strcmp(label, "deferred_core_list"))
       cbs->action_deferred_push = deferred_push_core_list_deferred;
    else if (!strcmp(label, "deferred_video_filter"))
