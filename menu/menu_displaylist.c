@@ -1657,29 +1657,29 @@ static int menu_displaylist_parse_generic(menu_displaylist_info_t *info, bool *n
       if (*info->path && !path_is_compressed)
          path = path_basename(path);
 
-
-#ifdef HAVE_LIBRETRO_MANAGEMENT
-#ifdef RARCH_CONSOLE
-      if (!strcmp(info->label, "core_list") && (is_dir ||
-               strcasecmp(path, SALAMANDER_FILE) == 0))
-         continue;
-#endif
-#endif
-
       /* Push type further down in the chain.
        * Needed for shader manager currently. */
-      if (!strcmp(info->label, "core_list"))
+      if (!strcmp(info->label, "content_collection_list"))
       {
+         file_type = MENU_FILE_PLAYLIST_COLLECTION;
+      }
+      else if (!strcmp(info->label, "core_list"))
+      {
+#ifdef HAVE_LIBRETRO_MANAGEMENT
+#ifdef RARCH_CONSOLE
+         if (is_dir || strcasecmp(path, SALAMANDER_FILE) == 0)
+            continue;
+#endif
+#endif
          /* Compressed cores are unsupported */
          if (file_type == MENU_FILE_CARCHIVE)
             continue;
 
-         menu_list_push(info->list, path, "",
-               is_dir ? MENU_FILE_DIRECTORY : MENU_FILE_CORE, 0);
+         file_type = is_dir ? MENU_FILE_DIRECTORY : MENU_FILE_CORE;
       }
-      else
-         menu_list_push(info->list, path, "",
-               file_type, 0);
+
+      menu_list_push(info->list, path, "",
+            file_type, 0);
    }
 
    string_list_free(str_list);

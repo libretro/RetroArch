@@ -1289,6 +1289,13 @@ static int action_ok_help(const char *path,
    return menu_displaylist_push_list(&info, DISPLAYLIST_HELP);
 }
 
+static int action_ok_playlist_collection(const char *path,
+      const char *label, unsigned type, size_t idx)
+{
+   RARCH_LOG("Gets here.\n");
+   return 0;
+}
+
 static int action_ok_video_resolution(const char *path,
       const char *label, unsigned type, size_t idx)
 {
@@ -1478,6 +1485,9 @@ void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
    {
       case MENU_SETTINGS_VIDEO_RESOLUTION:
          cbs->action_ok = action_ok_video_resolution;
+         break;
+      case MENU_FILE_PLAYLIST_COLLECTION:
+         cbs->action_ok = action_ok_playlist_collection;
          break;
       case MENU_FILE_PLAYLIST_ENTRY:
          if (!strcmp(label, "rdb_entry_start_game"))
