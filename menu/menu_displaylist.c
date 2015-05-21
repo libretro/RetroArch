@@ -1855,6 +1855,8 @@ static int menu_displaylist_parse(menu_displaylist_info_t *info,
                : "Directory not found.";
 
             menu_list_push(info->list, str, "", 0, 0);
+            *need_refresh = true;
+            *need_push    = true;
             return 0;
          }
 
@@ -1868,6 +1870,8 @@ static int menu_displaylist_parse(menu_displaylist_info_t *info,
             menu_list_push(info->list,
                   "No items.", "", 0, 0);
             string_list_free(str_list);
+            *need_refresh = true;
+            *need_push    = true;
             return 0;
          }
 
