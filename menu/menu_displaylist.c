@@ -705,7 +705,12 @@ static int menu_displaylist_parse_historylist(menu_displaylist_info_t *info,
       content_playlist_t *playlist)
 {
    unsigned i;
-   size_t list_size = content_playlist_size(playlist);
+   size_t list_size = 0;
+
+   if (!playlist)
+      return -1;
+   
+   list_size = content_playlist_size(playlist);
 
    if (list_size <= 0)
    {
@@ -1899,14 +1904,23 @@ static int menu_displaylist_parse(menu_displaylist_info_t *info,
       case DISPLAYLIST_PLAYLIST_COLLECTION:
       case DISPLAYLIST_HISTORY:
          {
-            RARCH_LOG("Gets here.\n");
+            char path_playlist[PATH_MAX_LENGTH];
+            bool free_list = false;
             content_playlist_t *playlist = NULL;
-            
+
             switch (type)
             {
                case DISPLAYLIST_HISTORY:
-               case DISPLAYLIST_PLAYLIST_COLLECTION:
                   playlist = g_defaults.history;
+                  break;
+               case DISPLAYLIST_PLAYLIST_COLLECTION:
+                  fill_pathname_join(path_playlist,
+                        settings->playlist_directory, info->path,
+                        sizeof(path_playlist));
+                  playlist  = content_playlist_init(path_playlist,
+                        999);
+                  if (playlist)
+                     free_list = true;
                   break;
                default:
                   break;
@@ -1917,6 +1931,9 @@ static int menu_displaylist_parse(menu_displaylist_info_t *info,
                *need_refresh = true;
                *need_push    = true;
             }
+
+            if (free_list)
+               content_playlist_free(playlist);
          }
          break;
       case DISPLAYLIST_OPTIONS_DISK:
