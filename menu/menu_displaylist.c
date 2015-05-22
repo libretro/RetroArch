@@ -747,6 +747,7 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
       if (!strcmp(path_playlist, "collection"))
       {
          menu_list_set_alt_at_offset(info->list, i, path);
+         menu_list_set_alt2_at_offset(info->list, i, info->path);
       }
 
       menu_list_push(info->list, fill_buf, path_playlist,
@@ -1923,10 +1924,9 @@ static int menu_displaylist_parse(menu_displaylist_info_t *info,
                   fill_pathname_join(path_playlist,
                         settings->playlist_directory, info->path,
                         sizeof(path_playlist));
-                  playlist  = content_playlist_init(path_playlist,
+                  menu->db_playlist  = content_playlist_init(path_playlist,
                         999);
-                  if (playlist)
-                     free_list = true;
+                  playlist = menu->db_playlist;
                   strlcpy(path_playlist, "collection", sizeof(path_playlist));
                   break;
                default:

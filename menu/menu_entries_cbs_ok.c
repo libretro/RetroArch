@@ -55,11 +55,15 @@ static int action_ok_rdb_playlist_entry(const char *path,
 static int action_ok_playlist_entry(const char *path,
       const char *label, unsigned type, size_t idx)
 {
+   content_playlist_t *playlist = g_defaults.history;
    menu_handle_t *menu = menu_driver_get_ptr();
    if (!menu)
       return -1;
 
-   rarch_playlist_load_content(g_defaults.history,
+   if (!strcmp(label, "collection"))
+      playlist = menu->db_playlist;
+
+   rarch_playlist_load_content(playlist,
          menu->navigation.selection_ptr);
    menu_list_flush_stack(menu->menu_list, NULL, MENU_SETTINGS);
    return -1;

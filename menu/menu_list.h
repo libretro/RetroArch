@@ -102,7 +102,13 @@ void menu_list_push(file_list_t *list,
 void menu_list_get_alt_at_offset(const file_list_t *list, size_t idx,
       const char **alt);
 
+void menu_list_get_alt2_at_offset(const file_list_t *list, size_t idx,
+      const char **alt);
+
 void menu_list_set_alt_at_offset(file_list_t *list, size_t idx,
+      const char *alt);
+
+void menu_list_set_alt2_at_offset(file_list_t *list, size_t idx,
       const char *alt);
 
 void menu_list_refresh(file_list_t *list);
