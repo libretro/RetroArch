@@ -1565,9 +1565,12 @@ static int menu_displaylist_parse_generic(menu_displaylist_info_t *info, bool *n
    bool path_is_compressed, push_dir;
    struct string_list *str_list = NULL;
    size_t i, list_size;
+   int                   device = 0;
    menu_handle_t *menu          = menu_driver_get_ptr();
    global_t *global             = global_get_ptr();
    settings_t *settings         = config_get_ptr();
+
+   (void)device;
 
    if (!*info->path)
    {
@@ -1733,13 +1736,10 @@ static int menu_displaylist_parse(menu_displaylist_info_t *info,
 {
    int ret = 0;
    size_t i, list_size;
-   int                   device = 0;
    rarch_setting_t *setting     = NULL;
    settings_t *settings         = config_get_ptr();
    menu_handle_t *menu          = menu_driver_get_ptr();
    global_t *global             = global_get_ptr();
-
-   (void)device;
 
    menu_list_clear(info->list);
 
