@@ -34,6 +34,7 @@ struct item_file
    char *path;
    char *label;
    char *alt;
+   char *alt2;
    unsigned type;
    size_t directory_ptr;
    void *userdata;
@@ -86,8 +87,14 @@ void file_list_set_label_at_offset(file_list_t *list, size_t index,
 void file_list_get_label_at_offset(const file_list_t *list, size_t index,
       const char **label);
 
+void file_list_set_alt2_at_offset(file_list_t *list, size_t index,
+      const char *alt);
+
 void file_list_set_alt_at_offset(file_list_t *list, size_t index,
       const char *alt);
+
+void file_list_get_alt2_at_offset(const file_list_t *list, size_t index,
+      const char **alt);
 
 void file_list_get_alt_at_offset(const file_list_t *list, size_t index,
       const char **alt);
