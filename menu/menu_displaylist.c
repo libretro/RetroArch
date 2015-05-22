@@ -1926,7 +1926,9 @@ static int menu_displaylist_parse(menu_displaylist_info_t *info,
                   break;
             }
 
-            if (menu_displaylist_parse_historylist(info, playlist) == 0)
+            ret = menu_displaylist_parse_historylist(info, playlist);
+
+            if (ret == 0)
             {
                *need_refresh = true;
                *need_push    = true;

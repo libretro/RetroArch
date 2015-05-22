@@ -407,7 +407,7 @@ static int action_ok_playlist_collection(const char *path,
    strlcpy(info.path, path, sizeof(info.path));
    strlcpy(info.label, label, sizeof(info.label));
 
-   return menu_displaylist_push_list(&info, DISPLAYLIST_PLAYLIST_COLLECTION);
+   return menu_displaylist_push_list(&info, DISPLAYLIST_GENERIC);
 }
 
 static int action_ok_content_collection_list(const char *path,
