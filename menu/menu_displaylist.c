@@ -701,8 +701,8 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
    return 0;
 }
 
-static int menu_displaylist_parse_historylist(menu_displaylist_info_t *info,
-      content_playlist_t *playlist)
+static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
+      content_playlist_t *playlist, const char *path_playlist)
 {
    unsigned i;
    size_t list_size = 0;
@@ -744,7 +744,12 @@ static int menu_displaylist_parse_historylist(menu_displaylist_info_t *info,
                path_short, core_name);
       }
 
-      menu_list_push(info->list, fill_buf, "",
+      if (!strcmp(path_playlist, "collection"))
+      {
+         menu_list_set_alt_at_offset(info->list, i, path);
+      }
+
+      menu_list_push(info->list, fill_buf, path_playlist,
             MENU_FILE_PLAYLIST_ENTRY, 0);
    }
 
@@ -1912,6 +1917,7 @@ static int menu_displaylist_parse(menu_displaylist_info_t *info,
             {
                case DISPLAYLIST_HISTORY:
                   playlist = g_defaults.history;
+                  strlcpy(path_playlist, "history", sizeof(path_playlist));
                   break;
                case DISPLAYLIST_PLAYLIST_COLLECTION:
                   fill_pathname_join(path_playlist,
@@ -1921,12 +1927,13 @@ static int menu_displaylist_parse(menu_displaylist_info_t *info,
                         999);
                   if (playlist)
                      free_list = true;
+                  strlcpy(path_playlist, "collection", sizeof(path_playlist));
                   break;
                default:
                   break;
             }
 
-            ret = menu_displaylist_parse_historylist(info, playlist);
+            ret = menu_displaylist_parse_playlist(info, playlist, path_playlist);
 
             if (ret == 0)
             {
