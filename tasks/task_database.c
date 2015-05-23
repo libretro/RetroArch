@@ -117,13 +117,34 @@ static int database_info_iterate(database_info_handle_t *db)
    return 0;
 }
 
+static int database_info_poll(db_handle_t *db)
+{
+   const char *path = msg_queue_pull(db->msg_queue);
+
+   if (!path)
+      return -1;
+
+   RARCH_LOG("Gets here.\n");
+
+   db->handle = database_info_init("/home/squarepusher/roms", DATABASE_TYPE_ITERATE);
+
+   return 0;
+}
+
 void rarch_main_data_db_iterate(bool is_thread, void *data)
 {
    data_runloop_t         *runloop = (data_runloop_t*)data;
    database_info_handle_t      *db = runloop ? runloop->db.handle : NULL;
 
    if (!db || !runloop)
+   {
+      if (database_info_poll(&runloop->db) != -1)
+      {
+         if (runloop->db.handle)
+            runloop->db.handle->status = DATABASE_STATUS_ITERATE;
+      }
       return;
+   }
 
    switch (db->status)
    {
@@ -136,6 +157,8 @@ void rarch_main_data_db_iterate(bool is_thread, void *data)
          break;
       default:
       case DATABASE_STATUS_NONE:
+         if (database_info_poll(&runloop->db) != -1)
+            db->status = DATABASE_STATUS_ITERATE;
          break;
    }
 }

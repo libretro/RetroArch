@@ -40,12 +40,8 @@ enum runloop_data_type
    DATA_TYPE_FILE,
    DATA_TYPE_IMAGE,
    DATA_TYPE_HTTP,
-#ifdef HAVE_OVERLAY
    DATA_TYPE_OVERLAY,
-#endif
-#ifdef HAVE_LIBRETRODB
    DATA_TYPE_DB,
-#endif
 };
 
 #ifdef HAVE_NETWORKING
