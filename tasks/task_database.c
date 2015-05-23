@@ -50,7 +50,6 @@ static int database_info_iterate_playlist(
       snprintf(msg, sizeof(msg), "%zu/%zu: Scanning %s...\n",
             db->list_ptr, db->list->size, name);
 
-      rarch_main_msg_queue_push(msg, 1, 180, true);
 
       if (!zlib_parse_file(name, NULL, zlib_compare_crc32,
                (void*)parent_dir))
@@ -72,8 +71,6 @@ static int database_info_iterate_playlist(
       snprintf(msg, sizeof(msg), "%zu/%zu: Scanning %s...\n",
             db->list_ptr, db->list->size, name);
 
-      rarch_main_msg_queue_push(msg, 1, 180, true);
-
 #ifdef HAVE_ZLIB
       crc = zlib_crc32_calculate(ret_buf, ret);
 
@@ -83,6 +80,9 @@ static int database_info_iterate_playlist(
       if (ret_buf)
          free(ret_buf);
    }
+
+   if (msg[0] != '\0')
+      rarch_main_msg_queue_push(msg, 1, 180, true);
 
    db->status = DATABASE_STATUS_ITERATE_NEXT;
 
