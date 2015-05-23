@@ -37,7 +37,7 @@ enum database_status
 enum database_type
 {
    DATABASE_TYPE_NONE = 0,
-   DATABASE_TYPE_RDL_WRITE,
+   DATABASE_TYPE_ITERATE,
 };
 
 typedef struct
