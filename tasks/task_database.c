@@ -86,9 +86,6 @@ static int database_info_iterate_playlist(
       RARCH_LOG("CRC32: 0x%x .\n", (unsigned)crc);
 #endif
 
-      if (db_state->buf)
-         free(db_state->buf);
-      db_state->buf = NULL;
    }
 
 
@@ -158,6 +155,18 @@ error:
    return -1;
 }
 
+static void rarch_main_data_db_cleanup_state(void *data)
+{
+   data_runloop_t         *runloop = (data_runloop_t*)data;
+
+   if (!runloop)
+      return;
+
+   if (runloop->db.state.buf)
+      free(runloop->db.state.buf);
+   runloop->db.state.buf = NULL;
+}
+
 void rarch_main_data_db_iterate(bool is_thread, void *data)
 {
    data_runloop_t         *runloop = (data_runloop_t*)data;
@@ -170,6 +179,7 @@ void rarch_main_data_db_iterate(bool is_thread, void *data)
    switch (db->status)
    {
       case DATABASE_STATUS_ITERATE_START:
+         rarch_main_data_db_cleanup_state(data);
          database_info_iterate_start(db, name);
          break;
       case DATABASE_STATUS_ITERATE:
@@ -178,7 +188,9 @@ void rarch_main_data_db_iterate(bool is_thread, void *data)
          break;
       case DATABASE_STATUS_ITERATE_NEXT:
          if (database_info_iterate_next(db) == 0)
+         {
             db->status = DATABASE_STATUS_ITERATE_START;
+         }
          else
          {
             rarch_main_msg_queue_push("Scanning of directory finished.\n", 0, 180, true);
@@ -186,6 +198,7 @@ void rarch_main_data_db_iterate(bool is_thread, void *data)
          }
          break;
       case DATABASE_STATUS_FREE:
+         rarch_main_data_db_cleanup_state(data);
          database_info_free(db);
          if (runloop->db.handle)
             free(runloop->db.handle);
