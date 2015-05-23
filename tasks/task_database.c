@@ -34,11 +34,29 @@ static int zlib_compare_crc32(const char *name, const char *valid_exts,
    return 1;
 }
 #endif
+
+static int database_info_iterate_start
+(database_info_handle_t *db, const char *name)
+{
+   char msg[PATH_MAX_LENGTH];
+   snprintf(msg, sizeof(msg), "%zu/%zu: Scanning %s...\n",
+         db->list_ptr, db->list->size, name);
+
+   if (msg[0] != '\0')
+      rarch_main_msg_queue_push(msg, 1, 180, true);
+
+   RARCH_LOG("msg: %s\n", msg);
+
+   db->status = DATABASE_STATUS_ITERATE;
+
+   return 0;
+}
+
 static int database_info_iterate_playlist(
+      database_state_handle_t *db_state,
       database_info_handle_t *db, const char *name)
 {
    char parent_dir[PATH_MAX_LENGTH];
-   char msg[PATH_MAX_LENGTH];
 
    path_parent_dir(parent_dir);
 
@@ -54,8 +72,7 @@ static int database_info_iterate_playlist(
    {
       ssize_t ret;
       uint32_t crc, target_crc = 0;
-      uint8_t *ret_buf         = NULL;
-      int read_from            = read_file(name, (void**)&ret_buf, &ret);
+      int read_from            = read_file(name, (void**)&db_state->buf, &ret);
 
       (void)target_crc;
 
@@ -64,20 +81,15 @@ static int database_info_iterate_playlist(
 
 
 #ifdef HAVE_ZLIB
-      crc = zlib_crc32_calculate(ret_buf, ret);
+      crc = zlib_crc32_calculate(db_state->buf, ret);
 
       RARCH_LOG("CRC32: 0x%x .\n", (unsigned)crc);
 #endif
 
-      if (ret_buf)
-         free(ret_buf);
+      if (db_state->buf)
+         free(db_state->buf);
+      db_state->buf = NULL;
    }
-
-   snprintf(msg, sizeof(msg), "%zu/%zu: Scanning %s...\n",
-         db->list_ptr, db->list->size, name);
-
-   if (msg[0] != '\0')
-      rarch_main_msg_queue_push(msg, 1, 180, true);
 
    db->status = DATABASE_STATUS_ITERATE_NEXT;
 
@@ -94,14 +106,12 @@ static int database_info_iterate_next(
    return -1;
 }
 
-static int database_info_iterate(database_info_handle_t *db)
+static int database_info_iterate(database_state_handle_t *state, database_info_handle_t *db)
 {
-   const char *name = NULL;
+   const char *name = db ? db->list->elems[db->list_ptr].data : NULL;
 
    if (!db || !db->list)
       return -1;
-
-   name = db->list->elems[db->list_ptr].data;
 
    if (!name)
       return 0;
@@ -111,7 +121,7 @@ static int database_info_iterate(database_info_handle_t *db)
       case DATABASE_TYPE_NONE:
          break;
       case DATABASE_TYPE_ITERATE:
-         return database_info_iterate_playlist(db, name);
+         return database_info_iterate_playlist(state, db, name);
          break;
    }
 
@@ -134,18 +144,22 @@ void rarch_main_data_db_iterate(bool is_thread, void *data)
 {
    data_runloop_t         *runloop = (data_runloop_t*)data;
    database_info_handle_t      *db = runloop ? runloop->db.handle : NULL;
+   const char *name = db ? db->list->elems[db->list_ptr].data : NULL;
 
    if (!db || !runloop)
       goto do_poll;
 
    switch (db->status)
    {
+      case DATABASE_STATUS_ITERATE_START:
+         database_info_iterate_start(db, name);
+         break;
       case DATABASE_STATUS_ITERATE:
-         database_info_iterate(db);
+         database_info_iterate(&runloop->db.state, db);
          break;
       case DATABASE_STATUS_ITERATE_NEXT:
          if (database_info_iterate_next(db) == 0)
-            db->status = DATABASE_STATUS_ITERATE;
+            db->status = DATABASE_STATUS_ITERATE_START;
          else
          {
             rarch_main_msg_queue_push("Scanning of directory finished.\n", 0, 180, true);
@@ -169,7 +183,7 @@ do_poll:
    if (database_info_poll(&runloop->db) != -1)
    {
       if (runloop->db.handle)
-         runloop->db.handle->status = DATABASE_STATUS_ITERATE;
+         runloop->db.handle->status = DATABASE_STATUS_ITERATE_START;
    }
 }
 #endif

@@ -119,8 +119,14 @@ typedef struct nbio_handle
    unsigned status;
 } nbio_handle_t;
 
+typedef struct database_state_handle
+{
+   uint8_t *buf;
+} database_state_handle_t;
+
 typedef struct db_handle
 {
+   database_state_handle_t state;
    database_info_handle_t *handle;
    msg_queue_t *msg_queue;
    unsigned status;
