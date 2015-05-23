@@ -1281,8 +1281,15 @@ bool event_command(enum event_command cmd)
             global->core_info = core_info_list_new(settings->libretro_directory);
          break;
       case EVENT_CMD_CORE_DEINIT:
+      {
+         struct retro_hw_render_callback *cb = video_driver_callback();
          event_deinit_core(true);
+
+         if (cb)
+            memset(cb, 0, sizeof(*cb));
+
          break;
+      }
       case EVENT_CMD_CORE_INIT:
          if (!event_init_core())
             return false;
