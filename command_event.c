@@ -1073,9 +1073,7 @@ bool event_command(enum event_command cmd)
          break;
       case EVENT_CMD_UNLOAD_CORE:
          event_command(EVENT_CMD_PREPARE_DUMMY);
-#ifdef HAVE_DYNAMIC
-         libretro_free_system_info(&global->menu.info);
-#endif
+         event_command(EVENT_CMD_LOAD_CORE_DEINIT);
          break;
       case EVENT_CMD_QUIT:
          rarch_main_set_state(RARCH_ACTION_STATE_QUIT);
