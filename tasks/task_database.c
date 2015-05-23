@@ -130,14 +130,34 @@ static int database_info_iterate(database_state_handle_t *state, database_info_h
 
 static int database_info_poll(db_handle_t *db)
 {
+   char elem0[PATH_MAX_LENGTH], elem1[PATH_MAX_LENGTH];
+   struct string_list *str_list = NULL;
    const char *path = msg_queue_pull(db->msg_queue);
 
    if (!path)
       return -1;
 
-   db->handle = database_info_init("/home/squarepusher/roms", DATABASE_TYPE_ITERATE);
+   str_list                     = string_split(path, "|"); 
+
+   if (!str_list)
+      goto error;
+
+   if (str_list->size > 0)
+      strlcpy(elem0, str_list->elems[0].data, sizeof(elem0));
+   if (str_list->size > 1)
+      strlcpy(elem1, str_list->elems[1].data, sizeof(elem1));
+
+   db->handle = database_info_init(elem0, DATABASE_TYPE_ITERATE);
+
+   string_list_free(str_list);
 
    return 0;
+
+error:
+   if (str_list)
+      string_list_free(str_list);
+
+   return -1;
 }
 
 void rarch_main_data_db_iterate(bool is_thread, void *data)
