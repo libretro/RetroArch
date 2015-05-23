@@ -358,6 +358,12 @@ void rarch_main_data_msg_queue_push(unsigned type,
          snprintf(new_msg, sizeof(new_msg), "%s|%s", msg, msg2);
          break;
 #endif
+#ifdef HAVE_LIBRETRODB
+      case DATA_TYPE_DB:
+         queue = runloop->db.msg_queue;
+         snprintf(new_msg, sizeof(new_msg), "%s|%s", msg, msg2);
+         break;
+#endif
    }
 
    if (!queue)
