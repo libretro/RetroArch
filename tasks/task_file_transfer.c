@@ -399,14 +399,11 @@ static int rarch_main_data_nbio_iterate_transfer(nbio_handle_t *nbio)
    for (i = 0; i < nbio->pos_increment; i++)
    {
       if (nbio_iterate(nbio->handle))
-         goto error;
+         return -1;
    }
 
    nbio->frame_count++;
    return 0;
-
-error:
-   return -1;
 }
 
 static int rarch_main_data_nbio_iterate_parse_free(nbio_handle_t *nbio)
@@ -448,20 +445,20 @@ void rarch_main_data_nbio_iterate(bool is_thread, void *data)
 
    switch (nbio->status)
    {
-      case NBIO_STATUS_TRANSFER:
-         if (rarch_main_data_nbio_iterate_transfer(nbio) == -1)
-            nbio->status = NBIO_STATUS_TRANSFER_PARSE;
-         break;
       case NBIO_STATUS_TRANSFER_PARSE:
          rarch_main_data_nbio_iterate_parse(nbio);
          nbio->status = NBIO_STATUS_TRANSFER_PARSE_FREE;
+         break;
+      case NBIO_STATUS_TRANSFER:
+         if (rarch_main_data_nbio_iterate_transfer(nbio) == -1)
+            nbio->status = NBIO_STATUS_TRANSFER_PARSE;
          break;
       case NBIO_STATUS_TRANSFER_PARSE_FREE:
          rarch_main_data_nbio_iterate_parse_free(nbio);
          nbio->status = NBIO_STATUS_POLL;
          break;
-      default:
       case NBIO_STATUS_POLL:
+      default:
          if (rarch_main_data_nbio_iterate_poll(nbio) == 0)
             nbio->status = NBIO_STATUS_TRANSFER;
          break;
