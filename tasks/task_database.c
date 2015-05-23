@@ -131,14 +131,15 @@ void rarch_main_data_db_iterate(bool is_thread, void *data)
 
    switch (db->status)
    {
-      case DATABASE_STATUS_NONE:
-         break;
       case DATABASE_STATUS_ITERATE:
          database_info_iterate(db);
          break;
       case DATABASE_STATUS_FREE:
          database_info_free(db);
          db = NULL;
+         break;
+      default:
+      case DATABASE_STATUS_NONE:
          break;
    }
 }
