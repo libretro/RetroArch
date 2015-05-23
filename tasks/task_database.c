@@ -38,10 +38,6 @@ static int database_info_iterate_playlist(
       database_info_handle_t *db, const char *name)
 {
    char parent_dir[PATH_MAX_LENGTH];
-   bool to_continue = (db->list_ptr < db->list->size);
-
-   if (!to_continue)
-      return -1;
 
    path_parent_dir(parent_dir);
 
@@ -85,7 +81,9 @@ static int database_info_iterate_playlist(
 
    db->list_ptr++;
 
-   return 0;
+   if (db->list_ptr < db->list->size)
+      return 0;
+   return -1;
 }
 
 static int database_info_iterate(database_info_handle_t *db)
@@ -105,12 +103,7 @@ static int database_info_iterate(database_info_handle_t *db)
       case DATABASE_TYPE_NONE:
          break;
       case DATABASE_TYPE_ITERATE:
-         if (database_info_iterate_playlist(db, name) != 0)
-         {
-            rarch_main_msg_queue_push("Scanning of directory finished.\n", 0, 180, true);
-            db->status = DATABASE_STATUS_FREE;
-            return -1;
-         }
+         return database_info_iterate_playlist(db, name);
          break;
    }
 
@@ -124,8 +117,6 @@ static int database_info_poll(db_handle_t *db)
    if (!path)
       return -1;
 
-   RARCH_LOG("Gets here.\n");
-
    db->handle = database_info_init("/home/squarepusher/roms", DATABASE_TYPE_ITERATE);
 
    return 0;
@@ -137,29 +128,35 @@ void rarch_main_data_db_iterate(bool is_thread, void *data)
    database_info_handle_t      *db = runloop ? runloop->db.handle : NULL;
 
    if (!db || !runloop)
-   {
-      if (database_info_poll(&runloop->db) != -1)
-      {
-         if (runloop->db.handle)
-            runloop->db.handle->status = DATABASE_STATUS_ITERATE;
-      }
-      return;
-   }
+      goto do_poll;
 
    switch (db->status)
    {
       case DATABASE_STATUS_ITERATE:
-         database_info_iterate(db);
+         if (database_info_iterate(db) != 0)
+         {
+            rarch_main_msg_queue_push("Scanning of directory finished.\n", 0, 180, true);
+            db->status = DATABASE_STATUS_FREE;
+         }
          break;
       case DATABASE_STATUS_FREE:
          database_info_free(db);
-         db = NULL;
+         if (runloop->db.handle)
+            free(runloop->db.handle);
+         runloop->db.handle = NULL;
          break;
       default:
       case DATABASE_STATUS_NONE:
-         if (database_info_poll(&runloop->db) != -1)
-            db->status = DATABASE_STATUS_ITERATE;
-         break;
+         goto do_poll;
+   }
+
+   return;
+
+do_poll:
+   if (database_info_poll(&runloop->db) != -1)
+   {
+      if (runloop->db.handle)
+         runloop->db.handle->status = DATABASE_STATUS_ITERATE;
    }
 }
 #endif

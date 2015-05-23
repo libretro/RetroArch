@@ -83,7 +83,6 @@ void database_info_free(database_info_handle_t *db)
       return;
 
    string_list_free(db->list);
-   free(db);
 }
 
 static char *bin_to_hex_alloc(const uint8_t *data, size_t len)
