@@ -103,10 +103,8 @@ static void data_runloop_iterate(bool is_thread, data_runloop_t *runloop)
 #ifdef HAVE_NETWORKING
    rarch_main_data_http_iterate       (is_thread, runloop);
 #endif
-#ifdef HAVE_MENU
 #ifdef HAVE_LIBRETRODB
    rarch_main_data_db_iterate         (is_thread, runloop);
-#endif
 #endif
 }
 
@@ -128,12 +126,9 @@ bool rarch_main_data_active(data_runloop_t *runloop)
    struct http_connection_t *http_conn = http ? http->connection.handle : NULL;
 #endif
 #ifdef HAVE_LIBRETRODB
-#ifdef HAVE_MENU
-   menu_handle_t          *menu = menu_driver_get_ptr();
-   database_info_handle_t   *db = menu ? menu->db : NULL;
+   database_info_handle_t   *db = runloop ? runloop->db.handle : NULL;
    db_active                    = db && db->status != DATABASE_STATUS_NONE;
    active                       = active || db_active;
-#endif
 #endif
 
 #ifdef HAVE_OVERLAY

@@ -23,6 +23,9 @@
 #ifdef HAVE_THREADS
 #include <rthreads/rthreads.h>
 #endif
+#ifdef HAVE_LIBRETRODB
+#include "database_info.h"
+#endif
 #include "tasks/tasks.h"
 
 #ifdef __cplusplus
@@ -122,6 +125,7 @@ typedef struct nbio_handle
 
 typedef struct db_handle
 {
+   database_info_handle_t *handle;
    msg_queue_t *msg_queue;
    unsigned status;
 } db_handle_t;

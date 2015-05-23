@@ -17,15 +17,12 @@
 #include "../file_ext.h"
 #include "../file_ops.h"
 
-#include "../menu/menu_driver.h"
-
 #include "../general.h"
 #include "../runloop_data.h"
 #include "tasks.h"
 
 
 #ifdef HAVE_LIBRETRODB
-#ifdef HAVE_MENU
 
 #ifdef HAVE_ZLIB
 static int zlib_compare_crc32(const char *name, const char *valid_exts,
@@ -123,10 +120,9 @@ static int database_info_iterate(database_info_handle_t *db)
 void rarch_main_data_db_iterate(bool is_thread, void *data)
 {
    data_runloop_t         *runloop = (data_runloop_t*)data;
-   menu_handle_t             *menu = menu_driver_get_ptr();
-   database_info_handle_t      *db = menu ? menu->db : NULL;
+   database_info_handle_t      *db = runloop ? runloop->db.handle : NULL;
 
-   if (!db || !menu || !runloop)
+   if (!db || !runloop)
       return;
 
    switch (db->status)
@@ -143,5 +139,4 @@ void rarch_main_data_db_iterate(bool is_thread, void *data)
          break;
    }
 }
-#endif
 #endif
