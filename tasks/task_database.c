@@ -79,6 +79,14 @@ static int database_info_iterate_playlist(
          free(ret_buf);
    }
 
+   db->status = DATABASE_STATUS_ITERATE_NEXT;
+
+   return 0;
+}
+
+static int database_info_iterate_next(
+      database_info_handle_t *db)
+{
    db->list_ptr++;
 
    if (db->list_ptr < db->list->size)
@@ -133,7 +141,12 @@ void rarch_main_data_db_iterate(bool is_thread, void *data)
    switch (db->status)
    {
       case DATABASE_STATUS_ITERATE:
-         if (database_info_iterate(db) != 0)
+         database_info_iterate(db);
+         break;
+      case DATABASE_STATUS_ITERATE_NEXT:
+         if (database_info_iterate_next(db) == 0)
+            db->status = DATABASE_STATUS_ITERATE;
+         else
          {
             rarch_main_msg_queue_push("Scanning of directory finished.\n", 0, 180, true);
             db->status = DATABASE_STATUS_FREE;
