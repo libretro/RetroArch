@@ -91,7 +91,6 @@ static int database_info_iterate_playlist(
       db_state->buf = NULL;
    }
 
-   db->status = DATABASE_STATUS_ITERATE_NEXT;
 
    return 0;
 }
@@ -122,7 +121,6 @@ static int database_info_iterate(database_state_handle_t *state, database_info_h
          break;
       case DATABASE_TYPE_ITERATE:
          return database_info_iterate_playlist(state, db, name);
-         break;
    }
 
    return 0;
@@ -175,7 +173,8 @@ void rarch_main_data_db_iterate(bool is_thread, void *data)
          database_info_iterate_start(db, name);
          break;
       case DATABASE_STATUS_ITERATE:
-         database_info_iterate(&runloop->db.state, db);
+         if (database_info_iterate(&runloop->db.state, db) == 0)
+            db->status = DATABASE_STATUS_ITERATE_NEXT;
          break;
       case DATABASE_STATUS_ITERATE_NEXT:
          if (database_info_iterate_next(db) == 0)
