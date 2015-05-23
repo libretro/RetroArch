@@ -45,12 +45,6 @@ static int database_info_iterate_playlist(
    if (!strcmp(path_get_extension(name), "zip"))
    {
 #ifdef HAVE_ZLIB
-      RARCH_LOG("[ZIP]: name: %s\n", name);
-
-      snprintf(msg, sizeof(msg), "%zu/%zu: Scanning %s...\n",
-            db->list_ptr, db->list->size, name);
-
-
       if (!zlib_parse_file(name, NULL, zlib_compare_crc32,
                (void*)parent_dir))
          RARCH_LOG("Could not process ZIP file.\n");
@@ -68,8 +62,6 @@ static int database_info_iterate_playlist(
       if (read_from != 1 || ret <= 0)
          return 0;
 
-      snprintf(msg, sizeof(msg), "%zu/%zu: Scanning %s...\n",
-            db->list_ptr, db->list->size, name);
 
 #ifdef HAVE_ZLIB
       crc = zlib_crc32_calculate(ret_buf, ret);
@@ -80,6 +72,9 @@ static int database_info_iterate_playlist(
       if (ret_buf)
          free(ret_buf);
    }
+
+   snprintf(msg, sizeof(msg), "%zu/%zu: Scanning %s...\n",
+         db->list_ptr, db->list->size, name);
 
    if (msg[0] != '\0')
       rarch_main_msg_queue_push(msg, 1, 180, true);
