@@ -38,6 +38,7 @@ static int database_info_iterate_playlist(
       database_info_handle_t *db, const char *name)
 {
    char parent_dir[PATH_MAX_LENGTH];
+   char msg[PATH_MAX_LENGTH];
 
    path_parent_dir(parent_dir);
 
@@ -46,6 +47,11 @@ static int database_info_iterate_playlist(
 #ifdef HAVE_ZLIB
       RARCH_LOG("[ZIP]: name: %s\n", name);
 
+      snprintf(msg, sizeof(msg), "%zu/%zu: Scanning %s...\n",
+            db->list_ptr, db->list->size, name);
+
+      rarch_main_msg_queue_push(msg, 1, 180, true);
+
       if (!zlib_parse_file(name, NULL, zlib_compare_crc32,
                (void*)parent_dir))
          RARCH_LOG("Could not process ZIP file.\n");
@@ -53,7 +59,6 @@ static int database_info_iterate_playlist(
    }
    else
    {
-      char msg[PATH_MAX_LENGTH];
       ssize_t ret;
       uint32_t crc, target_crc = 0;
       uint8_t *ret_buf         = NULL;
