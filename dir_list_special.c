@@ -15,9 +15,11 @@
  */
 
 #include "dir_list_special.h"
+#include "general.h"
+#include "file_ext.h"
 #include "configuration.h"
 
-struct string_list *dir_list_new_special(enum dir_list_type type)
+struct string_list *dir_list_new_special(const char *input_dir, enum dir_list_type type)
 {
    const char *dir   = NULL;
    const char *exts  = NULL;
@@ -25,13 +27,22 @@ struct string_list *dir_list_new_special(enum dir_list_type type)
 
    settings_t *settings = config_get_ptr();
 
+   (void)input_dir;
    (void)settings;
 
    switch (type)
    {
+      case DIR_LIST_CORES:
+         dir = settings->libretro_directory;
+         exts = EXT_EXECUTABLES;
+         break;
       case DIR_LIST_SHADERS:
          dir  = settings->video.shader_dir;
          exts = "cg|cgp|glsl|glslp";
+         break;
+      case DIR_LIST_PLAIN:
+         dir = input_dir;
+         exts = NULL;
          break;
       case DIR_LIST_NONE:
       default:

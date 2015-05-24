@@ -71,7 +71,7 @@ typedef struct
    char *all_ext;
 } core_info_list_t;
 
-core_info_list_t *core_info_list_new(const char *modules_path);
+core_info_list_t *core_info_list_new(void);
 void core_info_list_free(core_info_list_t *list);
 
 size_t core_info_list_num_info_files(core_info_list_t *list);

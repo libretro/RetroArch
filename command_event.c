@@ -590,7 +590,7 @@ static void event_set_savestate_auto_index(void)
    fill_pathname_base(state_base, global->savestate_name,
          sizeof(state_base));
 
-   if (!(dir_list = dir_list_new(state_dir, NULL, false)))
+   if (!(dir_list = dir_list_new_special(state_dir, DIR_LIST_PLAIN)))
       return;
 
    for (i = 0; i < dir_list->size; i++)
@@ -1276,7 +1276,7 @@ bool event_command(enum event_command cmd)
          event_command(EVENT_CMD_CORE_INFO_DEINIT);
 
          if (*settings->libretro_directory)
-            global->core_info = core_info_list_new(settings->libretro_directory);
+            global->core_info = core_info_list_new();
          break;
       case EVENT_CMD_CORE_DEINIT:
       {
@@ -1413,7 +1413,7 @@ bool event_command(enum event_command cmd)
          if (!*settings->video.shader_dir)
             return false;
 
-         global->shader_dir.list = dir_list_new_special(DIR_LIST_SHADERS);
+         global->shader_dir.list = dir_list_new_special(NULL, DIR_LIST_SHADERS);
 
          if (!global->shader_dir.list || global->shader_dir.list->size == 0)
          {

@@ -20,7 +20,7 @@
 #include <file/file_path.h>
 #include "file_ext.h"
 #include <file/file_extract.h>
-#include <file/dir_list.h>
+#include "dir_list_special.h"
 #include "config.def.h"
 
 #ifdef HAVE_CONFIG_H
@@ -100,14 +100,13 @@ static void core_info_list_resolve_all_firmware(
    }
 }
 
-core_info_list_t *core_info_list_new(const char *modules_path)
+core_info_list_t *core_info_list_new(void)
 {
    size_t i;
    core_info_t *core_info = NULL;
    core_info_list_t *core_info_list = NULL;
    settings_t *settings = config_get_ptr();
-   struct string_list *contents = (struct string_list*)
-      dir_list_new(modules_path, EXT_EXECUTABLES, false);
+   struct string_list *contents = dir_list_new_special(NULL, DIR_LIST_CORES);
 
    if (!contents)
       return NULL;
@@ -144,7 +143,7 @@ core_info_list_t *core_info_list_new(const char *modules_path)
       strlcat(info_path_base, ".info", sizeof(info_path_base));
 
       fill_pathname_join(info_path, (*settings->libretro_info_path) ?
-            settings->libretro_info_path : modules_path,
+            settings->libretro_info_path : settings->libretro_directory,
             info_path_base, sizeof(info_path));
 
       core_info[i].data = config_file_new(info_path);
