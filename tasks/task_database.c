@@ -70,21 +70,16 @@ static int database_info_iterate_playlist(
    else
    {
       ssize_t ret;
-      uint32_t crc, target_crc = 0;
       int read_from            = read_file(name, (void**)&db_state->buf, &ret);
-
-      (void)target_crc;
 
       if (read_from != 1 || ret <= 0)
          return 0;
 
 
 #ifdef HAVE_ZLIB
-      crc = zlib_crc32_calculate(db_state->buf, ret);
-
-      RARCH_LOG("CRC32: 0x%x .\n", (unsigned)crc);
+      db_state->crc = zlib_crc32_calculate(db_state->buf, ret);
+      RARCH_LOG("CRC32: 0x%x .\n", (unsigned)db_state->crc);
 #endif
-
    }
 
 
@@ -168,8 +163,9 @@ static void rarch_main_data_db_cleanup_state(void *data)
 
 void rarch_main_data_db_iterate(bool is_thread, void *data)
 {
-   data_runloop_t         *runloop = (data_runloop_t*)data;
-   database_info_handle_t      *db = runloop ? runloop->db.handle : NULL;
+   data_runloop_t         *runloop   = (data_runloop_t*)data;
+   database_info_handle_t      *db   = runloop ? runloop->db.handle : NULL;
+   database_state_handle_t *db_state = runloop ? &runloop->db.state : NULL;
    const char *name = db ? db->list->elems[db->list_ptr].data : NULL;
 
    if (!db || !runloop)
@@ -178,16 +174,14 @@ void rarch_main_data_db_iterate(bool is_thread, void *data)
    switch (db->status)
    {
       case DATABASE_STATUS_ITERATE_BEGIN:
-         if (!runloop->db.list)
-         {
-            runloop->db.list = dir_list_new_special(NULL, DIR_LIST_DATABASES);
-            runloop->db.list_index  = 0;
-            runloop->db.entry_index = 0;
-         }
+         if (db_state && !db_state->list)
+            db_state->list = dir_list_new_special(NULL, DIR_LIST_DATABASES);
          db->status = DATABASE_STATUS_ITERATE_START;
          break;
       case DATABASE_STATUS_ITERATE_START:
          rarch_main_data_db_cleanup_state(data);
+         db_state->list_index  = 0;
+         db_state->entry_index = 0;
          database_info_iterate_start(db, name);
          break;
       case DATABASE_STATUS_ITERATE:
@@ -206,9 +200,9 @@ void rarch_main_data_db_iterate(bool is_thread, void *data)
          }
          break;
       case DATABASE_STATUS_FREE:
-         if (runloop->db.list)
-            dir_list_free(runloop->db.list);
-         runloop->db.list = NULL;
+         if (db_state->list)
+            dir_list_free(db_state->list);
+         db_state->list = NULL;
          rarch_main_data_db_cleanup_state(data);
          database_info_free(db);
          if (runloop->db.handle)

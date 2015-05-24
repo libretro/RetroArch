@@ -121,14 +121,15 @@ typedef struct nbio_handle
 
 typedef struct database_state_handle
 {
+   struct string_list *list;
+   size_t list_index;
+   size_t entry_index;
+   uint32_t crc;
    uint8_t *buf;
 } database_state_handle_t;
 
 typedef struct db_handle
 {
-   struct string_list *list;
-   size_t list_index;
-   size_t entry_index;
    database_state_handle_t state;
    database_info_handle_t *handle;
    msg_queue_t *msg_queue;
