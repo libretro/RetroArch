@@ -45,8 +45,12 @@ struct string_list *dir_list_new_special(const char *input_dir, enum dir_list_ty
          dir  = settings->video.shader_dir;
          exts = "cg|cgp|glsl|glslp";
          break;
+      case DIR_LIST_DATABASES:
+         dir  = settings->content_database;
+         exts = "rdb";
+         break;
       case DIR_LIST_PLAIN:
-         dir = input_dir;
+         dir  = input_dir;
          exts = NULL;
          break;
       case DIR_LIST_NONE:

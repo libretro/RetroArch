@@ -178,6 +178,9 @@ void rarch_main_data_db_iterate(bool is_thread, void *data)
 
    switch (db->status)
    {
+      case DATABASE_STATUS_ITERATE_BEGIN:
+         db->status = DATABASE_STATUS_ITERATE_START;
+         break;
       case DATABASE_STATUS_ITERATE_START:
          rarch_main_data_db_cleanup_state(data);
          database_info_iterate_start(db, name);
@@ -215,7 +218,7 @@ do_poll:
    if (database_info_poll(&runloop->db) != -1)
    {
       if (runloop->db.handle)
-         runloop->db.handle->status = DATABASE_STATUS_ITERATE_START;
+         runloop->db.handle->status = DATABASE_STATUS_ITERATE_BEGIN;
    }
 }
 #endif
