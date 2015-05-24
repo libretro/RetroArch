@@ -1178,7 +1178,7 @@ static int menu_database_push_query(libretrodb_t *db,
 }
 #endif
 
-static int menu_database_populate_query(file_list_t *list, const char *path,
+static int menu_database_parse_query(file_list_t *list, const char *path,
     const char *query)
 {
 #ifdef HAVE_LIBRETRODB
@@ -1832,7 +1832,7 @@ static int menu_displaylist_parse(menu_displaylist_info_t *info,
          *need_push    = true;
          break;
       case DISPLAYLIST_DATABASE_QUERY:
-         ret = menu_database_populate_query(info->list, info->path, (info->path_c[0] == '\0') ? NULL : info->path_c);
+         ret = menu_database_parse_query(info->list, info->path, (info->path_c[0] == '\0') ? NULL : info->path_c);
          strlcpy(info->path, info->path_b, sizeof(info->path));
 
          *need_sort    = true;
