@@ -1145,37 +1145,6 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
    return 0;
 }
 
-#ifdef HAVE_LIBRETRODB
-static int database_cursor_iterate(libretrodb_cursor_t *cur, char *s, size_t len)
-{
-   unsigned i;
-   struct rmsgpack_dom_value item;
-
-   if (libretrodb_cursor_read_item(cur, &item) != 0)
-      return -1;
-
-   if (item.type != RDT_MAP)
-      return 1;
-
-   for (i = 0; i < item.map.len; i++)
-   {
-      struct rmsgpack_dom_value *key = &item.map.items[i].key;
-      struct rmsgpack_dom_value *val = &item.map.items[i].value;
-
-      if (!key || !val)
-         continue;
-
-      if (!strcmp(key->string.buff, "name"))
-      {
-         strlcpy(s, val->string.buff, len);
-         return 0;
-      }
-   }
-
-   return 1;
-}
-#endif
-
 static int menu_database_parse_query(file_list_t *list, const char *path,
     const char *query)
 {

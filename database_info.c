@@ -103,6 +103,35 @@ int database_info_build_query(
    return 0;
 }
 
+int database_cursor_iterate(libretrodb_cursor_t *cur, char *s, size_t len)
+{
+   unsigned i;
+   struct rmsgpack_dom_value item;
+
+   if (libretrodb_cursor_read_item(cur, &item) != 0)
+      return -1;
+
+   if (item.type != RDT_MAP)
+      return 1;
+
+   for (i = 0; i < item.map.len; i++)
+   {
+      struct rmsgpack_dom_value *key = &item.map.items[i].key;
+      struct rmsgpack_dom_value *val = &item.map.items[i].value;
+
+      if (!key || !val)
+         continue;
+
+      if (!strcmp(key->string.buff, "name"))
+      {
+         strlcpy(s, val->string.buff, len);
+         return 0;
+      }
+   }
+
+   return 1;
+}
+
 int database_open_cursor(libretrodb_t *db,
       libretrodb_cursor_t *cur, const char *query)
 {
