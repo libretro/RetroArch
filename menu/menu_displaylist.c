@@ -910,7 +910,7 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
    if (!menu)
       return -1;
 
-   menu_database_build_query(query, sizeof(query), "displaylist_parse_database_entry", info->path_b);
+   database_info_build_query(query, sizeof(query), "displaylist_parse_database_entry", info->path_b);
 
    if (!(db_info = database_info_list_new(info->path, query)))
       return -1;

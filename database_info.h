@@ -99,6 +99,9 @@ database_info_handle_t *database_info_init(const char *dir,
 
 void database_info_free(database_info_handle_t *dbl);
 
+int database_info_build_query(
+      char *query, size_t len, const char *label, const char *path);
+
 #ifdef __cplusplus
 }
 #endif

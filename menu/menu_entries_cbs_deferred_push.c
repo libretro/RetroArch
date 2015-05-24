@@ -112,7 +112,7 @@ static int deferred_push_cursor_manager_list_deferred_query_subsearch(menu_displ
    char query[PATH_MAX_LENGTH];
    struct string_list *str_list  = string_split(info->path, "|"); 
 
-   menu_database_build_query(query, sizeof(query), info->label, str_list->elems[0].data);
+   database_info_build_query(query, sizeof(query), info->label, str_list->elems[0].data);
 
    if (query[0] == '\0')
    {
