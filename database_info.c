@@ -15,9 +15,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <file/file_path.h>
 #include "file_ext.h"
-#include <file/dir_list.h>
+#include "dir_list_special.h"
 #include <file/file_extract.h>
 
 #include "database_info.h"
@@ -50,17 +49,12 @@ int database_open_cursor(libretrodb_t *db,
 
 database_info_handle_t *database_info_init(const char *dir, enum database_type type)
 {
-   const char *exts                = "";
-   global_t                *global = global_get_ptr();
    database_info_handle_t     *db  = (database_info_handle_t*)calloc(1, sizeof(*db));
 
    if (!db)
       return NULL;
 
-   if (global->core_info)
-      exts = core_info_list_get_all_extensions(global->core_info);
-   
-   db->list      = dir_list_new(dir, exts, false);
+   db->list           = dir_list_new_special(dir, DIR_LIST_CORE_INFO);
 
    if (!db->list)
       goto error;

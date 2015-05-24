@@ -28,6 +28,7 @@ enum dir_list_type
 {
    DIR_LIST_NONE = 0,
    DIR_LIST_CORES,
+   DIR_LIST_CORE_INFO,
    DIR_LIST_PLAIN,
    DIR_LIST_SHADERS,
 };
