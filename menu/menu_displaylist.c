@@ -910,9 +910,7 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
    if (!menu)
       return -1;
 
-   strlcpy(query, "{'name':\"", sizeof(query));
-   strlcat(query, info->path_b, sizeof(query));
-   strlcat(query, "\"}", sizeof(query));
+   menu_database_build_query(query, sizeof(query), "displaylist_parse_database_entry", info->path_b);
 
    if (!(db_info = database_info_list_new(info->path, query)))
       return -1;

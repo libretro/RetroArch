@@ -26,7 +26,9 @@ int menu_database_build_query(
 
    strlcpy(query, "{'", len);
 
-   if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_publisher"))
+   if (!strcmp(label, "displaylist_parse_database_entry"))
+      strlcat(query, "name", len);
+   else if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_publisher"))
       strlcat(query, "publisher", len);
    else if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_developer"))
       strlcat(query, "developer", len);
