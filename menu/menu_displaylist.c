@@ -1155,7 +1155,7 @@ static int menu_database_parse_query(file_list_t *list, const char *path,
 
    if ((libretrodb_open(path, &db)) != 0)
       return -1;
-   if ((database_open_cursor(&db, &cur, query) != 0))
+   if ((database_cursor_open(&db, &cur, query) != 0))
       return -1;
    while (ret != -1)
    {
