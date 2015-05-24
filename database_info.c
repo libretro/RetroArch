@@ -230,28 +230,8 @@ database_info_list_t *database_info_list_new(const char *rdb_path, const char *q
       if (!db_info)
          continue;
 
-      db_info->name                   = NULL;
-      db_info->description            = NULL;
-      db_info->publisher              = NULL;
-      db_info->developer              = NULL;
-      db_info->origin                 = NULL;
-      db_info->franchise              = NULL;
-      db_info->bbfc_rating            = NULL;
-      db_info->elspa_rating           = NULL;
-      db_info->esrb_rating            = NULL;
-      db_info->pegi_rating            = NULL;
-      db_info->cero_rating            = NULL;
-      db_info->edge_magazine_review   = NULL;
-      db_info->enhancement_hw         = NULL;
-      db_info->crc32                  = NULL;
-      db_info->sha1                   = NULL;
-      db_info->md5                    = NULL;
-      db_info->famitsu_magazine_rating= 0;
-      db_info->edge_magazine_rating   = 0;
-      db_info->edge_magazine_issue    = 0;
-      db_info->max_users              = 0;
-      db_info->releasemonth           = 0;
-      db_info->releaseyear            = 0;
+      memset(db_info, 0, sizeof(*db_info));
+
       db_info->analog_supported       = -1;
       db_info->rumble_supported       = -1;
 
