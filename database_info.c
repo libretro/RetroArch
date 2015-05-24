@@ -231,6 +231,12 @@ int database_cursor_open(libretrodb_t *db,
    return 0;
 }
 
+int database_cursor_close(libretrodb_t *db, libretrodb_cursor_t *cur)
+{
+   libretrodb_cursor_close(cur);
+   libretrodb_close(db);
+}
+
 database_info_handle_t *database_info_init(const char *dir, enum database_type type)
 {
    database_info_handle_t     *db  = (database_info_handle_t*)calloc(1, sizeof(*db));
@@ -316,8 +322,7 @@ database_info_list_t *database_info_list_new(const char *rdb_path, const char *q
    database_info_list->count = k;
 
 end:
-   libretrodb_cursor_close(&cur);
-   libretrodb_close(&db);
+   database_cursor_close(&db, &cur);
 
    return database_info_list;
 }

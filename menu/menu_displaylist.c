@@ -1169,8 +1169,7 @@ static int menu_database_parse_query(file_list_t *list, const char *path,
       }
    }
 
-   libretrodb_cursor_close(&cur);
-   libretrodb_close(&db);
+   database_cursor_close(&db, &cur);
 #endif
 
    return 0;
