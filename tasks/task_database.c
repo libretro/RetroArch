@@ -28,6 +28,8 @@ static int zlib_compare_crc32(const char *name, const char *valid_exts,
       const uint8_t *cdata, unsigned cmode, uint32_t csize, uint32_t size,
       uint32_t crc32, void *userdata)
 {
+   database_state_handle_t *db_state = (database_state_handle_t*)userdata;
+
    RARCH_LOG("CRC32: 0x%x\n", crc32);
 
    return 1;
@@ -63,7 +65,7 @@ static int database_info_iterate_playlist(
    {
 #ifdef HAVE_ZLIB
       if (!zlib_parse_file(name, NULL, zlib_compare_crc32,
-               (void*)parent_dir))
+               (void*)db_state))
          RARCH_LOG("Could not process ZIP file.\n");
 #endif
    }
