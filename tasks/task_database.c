@@ -12,9 +12,8 @@
  *  You should have received a copy of the GNU General Public License along with RetroArch.
  *  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <file/file_path.h>
-#include <file/dir_list.h>
-#include "../file_ext.h"
+
+#include "../dir_list_special.h"
 #include "../file_ops.h"
 
 #include "../general.h"
@@ -179,6 +178,12 @@ void rarch_main_data_db_iterate(bool is_thread, void *data)
    switch (db->status)
    {
       case DATABASE_STATUS_ITERATE_BEGIN:
+         if (!runloop->db.list)
+         {
+            runloop->db.list = dir_list_new_special(NULL, DIR_LIST_DATABASES);
+            runloop->db.list_index  = 0;
+            runloop->db.entry_index = 0;
+         }
          db->status = DATABASE_STATUS_ITERATE_START;
          break;
       case DATABASE_STATUS_ITERATE_START:
@@ -201,6 +206,9 @@ void rarch_main_data_db_iterate(bool is_thread, void *data)
          }
          break;
       case DATABASE_STATUS_FREE:
+         if (runloop->db.list)
+            dir_list_free(runloop->db.list);
+         runloop->db.list = NULL;
          rarch_main_data_db_cleanup_state(data);
          database_info_free(db);
          if (runloop->db.handle)
