@@ -1159,11 +1159,14 @@ static int menu_database_parse_query(file_list_t *list, const char *path,
       return -1;
    while (ret != -1)
    {
-      char path[PATH_MAX_LENGTH];
-      ret = database_cursor_iterate(&cur, path, sizeof(path));
+      database_info_t dbinfo = {0};
+      ret = database_cursor_iterate(&cur, &dbinfo);
 
       if (ret == 0)
-         menu_list_push(list, path, db.path, MENU_FILE_RDB_ENTRY, 0);
+      {
+         if (dbinfo.name && dbinfo.name[0] != '\0')
+            menu_list_push(list, dbinfo.name, db.path, MENU_FILE_RDB_ENTRY, 0);
+      }
    }
 
    libretrodb_cursor_close(&cur);

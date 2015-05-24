@@ -103,7 +103,21 @@ int database_info_build_query(
    return 0;
 }
 
-int database_cursor_iterate(libretrodb_cursor_t *cur, char *s, size_t len)
+static char *bin_to_hex_alloc(const uint8_t *data, size_t len)
+{
+   size_t i;
+   char *ret = (char*)malloc(len * 2 + 1);
+
+   if (len && !ret)
+      return NULL;
+   
+   for (i = 0; i < len; i++)
+      snprintf(ret+i*2, 3, "%02X", data[i]);
+   return ret;
+}
+
+int database_cursor_iterate(libretrodb_cursor_t *cur,
+      database_info_t *db_info)
 {
    unsigned i;
    struct rmsgpack_dom_value item;
@@ -114,6 +128,9 @@ int database_cursor_iterate(libretrodb_cursor_t *cur, char *s, size_t len)
    if (item.type != RDT_MAP)
       return 1;
 
+   db_info->analog_supported       = -1;
+   db_info->rumble_supported       = -1;
+
    for (i = 0; i < item.map.len; i++)
    {
       struct rmsgpack_dom_value *key = &item.map.items[i].key;
@@ -123,13 +140,77 @@ int database_cursor_iterate(libretrodb_cursor_t *cur, char *s, size_t len)
          continue;
 
       if (!strcmp(key->string.buff, "name"))
-      {
-         strlcpy(s, val->string.buff, len);
-         return 0;
-      }
+         db_info->name = strdup(val->string.buff);
+
+      if (!strcmp(key->string.buff, "description"))
+         db_info->description = strdup(val->string.buff);
+
+      if (!strcmp(key->string.buff, "publisher"))
+         db_info->publisher = strdup(val->string.buff);
+
+      if (!strcmp(key->string.buff, "developer"))
+         db_info->developer = strdup(val->string.buff);
+
+      if (!strcmp(key->string.buff, "origin"))
+         db_info->origin = strdup(val->string.buff);
+
+      if (!strcmp(key->string.buff, "franchise"))
+         db_info->franchise = strdup(val->string.buff);
+
+      if (!strcmp(key->string.buff, "bbfc_rating"))
+         db_info->bbfc_rating = strdup(val->string.buff);
+
+      if (!strcmp(key->string.buff, "esrb_rating"))
+         db_info->esrb_rating = strdup(val->string.buff);
+
+      if (!strcmp(key->string.buff, "elspa_rating"))
+         db_info->elspa_rating = strdup(val->string.buff);
+
+      if (!strcmp(key->string.buff, "cero_rating"))
+         db_info->cero_rating = strdup(val->string.buff);
+
+      if (!strcmp(key->string.buff, "pegi_rating"))
+         db_info->pegi_rating = strdup(val->string.buff);
+
+      if (!strcmp(key->string.buff, "enhancement_hw"))
+         db_info->enhancement_hw = strdup(val->string.buff);
+
+      if (!strcmp(key->string.buff, "edge_review"))
+         db_info->edge_magazine_review = strdup(val->string.buff);
+
+      if (!strcmp(key->string.buff, "edge_rating"))
+         db_info->edge_magazine_rating = val->uint_;
+
+      if (!strcmp(key->string.buff, "edge_issue"))
+         db_info->edge_magazine_issue = val->uint_;
+
+      if (!strcmp(key->string.buff, "famitsu_rating"))
+         db_info->famitsu_magazine_rating = val->uint_;
+
+      if (!strcmp(key->string.buff, "users"))
+         db_info->max_users = val->uint_;
+
+      if (!strcmp(key->string.buff, "releasemonth"))
+         db_info->releasemonth = val->uint_;
+
+      if (!strcmp(key->string.buff, "releaseyear"))
+         db_info->releaseyear = val->uint_;
+
+      if (!strcmp(key->string.buff, "rumble"))
+         db_info->rumble_supported = val->uint_;
+
+      if (!strcmp(key->string.buff, "analog"))
+         db_info->analog_supported = val->uint_;
+
+      if (!strcmp(key->string.buff, "crc"))
+         db_info->crc32 = bin_to_hex_alloc((uint8_t*)val->binary.buff, val->binary.len);
+      if (!strcmp(key->string.buff, "sha1"))
+         db_info->sha1 = bin_to_hex_alloc((uint8_t*)val->binary.buff, val->binary.len);
+      if (!strcmp(key->string.buff, "md5"))
+         db_info->md5 = bin_to_hex_alloc((uint8_t*)val->binary.buff, val->binary.len);
    }
 
-   return 1;
+   return 0;
 }
 
 int database_cursor_open(libretrodb_t *db,
@@ -182,21 +263,10 @@ void database_info_free(database_info_handle_t *db)
    string_list_free(db->list);
 }
 
-static char *bin_to_hex_alloc(const uint8_t *data, size_t len)
-{
-   size_t i;
-   char *ret = (char*)malloc(len * 2 + 1);
-
-   if (len && !ret)
-      return NULL;
-   
-   for (i = 0; i < len; i++)
-      snprintf(ret+i*2, 3, "%02X", data[i]);
-   return ret;
-}
 
 database_info_list_t *database_info_list_new(const char *rdb_path, const char *query)
 {
+   int ret = 0;
    libretrodb_t db;
    libretrodb_cursor_t cur;
    struct rmsgpack_dom_value item;
@@ -214,104 +284,29 @@ database_info_list_t *database_info_list_new(const char *rdb_path, const char *q
    if (!database_info_list)
       goto error;
 
-   while (libretrodb_cursor_read_item(&cur, &item) == 0)
+   while (ret != -1)
    {
-      database_info_t *db_info = NULL;
-      if (item.type != RDT_MAP)
-         continue;
+      database_info_t db_info = {0};
+      ret = database_cursor_iterate(&cur, &db_info);
 
-      database_info = (database_info_t*)realloc(database_info, (k+1) * sizeof(database_info_t));
-
-      if (!database_info)
-         goto error;
-
-      db_info = &database_info[k];
-
-      if (!db_info)
-         continue;
-
-      memset(db_info, 0, sizeof(*db_info));
-
-      db_info->analog_supported       = -1;
-      db_info->rumble_supported       = -1;
-
-      for (j = 0; j < item.map.len; j++)
+      if (ret == 0)
       {
-         struct rmsgpack_dom_value *key = &item.map.items[j].key;
-         struct rmsgpack_dom_value *val = &item.map.items[j].value;
+         database_info_t *db_ptr = NULL;
+         database_info = (database_info_t*)realloc(database_info, (k+1) * sizeof(database_info_t));
 
-         if (!strcmp(key->string.buff, "name"))
-            db_info->name = strdup(val->string.buff);
+         if (!database_info)
+            goto error;
 
-         if (!strcmp(key->string.buff, "description"))
-            db_info->description = strdup(val->string.buff);
+         db_ptr = &database_info[k];
 
-         if (!strcmp(key->string.buff, "publisher"))
-            db_info->publisher = strdup(val->string.buff);
+         if (!db_ptr)
+            continue;
 
-         if (!strcmp(key->string.buff, "developer"))
-            db_info->developer = strdup(val->string.buff);
+         memcpy(db_ptr, &db_info, sizeof(*db_ptr));
 
-         if (!strcmp(key->string.buff, "origin"))
-            db_info->origin = strdup(val->string.buff);
-
-         if (!strcmp(key->string.buff, "franchise"))
-            db_info->franchise = strdup(val->string.buff);
-
-         if (!strcmp(key->string.buff, "bbfc_rating"))
-            db_info->bbfc_rating = strdup(val->string.buff);
-
-         if (!strcmp(key->string.buff, "esrb_rating"))
-            db_info->esrb_rating = strdup(val->string.buff);
-
-         if (!strcmp(key->string.buff, "elspa_rating"))
-            db_info->elspa_rating = strdup(val->string.buff);
-
-         if (!strcmp(key->string.buff, "cero_rating"))
-            db_info->cero_rating = strdup(val->string.buff);
-
-         if (!strcmp(key->string.buff, "pegi_rating"))
-            db_info->pegi_rating = strdup(val->string.buff);
-
-         if (!strcmp(key->string.buff, "enhancement_hw"))
-            db_info->enhancement_hw = strdup(val->string.buff);
-
-         if (!strcmp(key->string.buff, "edge_review"))
-            db_info->edge_magazine_review = strdup(val->string.buff);
-
-         if (!strcmp(key->string.buff, "edge_rating"))
-            db_info->edge_magazine_rating = val->uint_;
-
-         if (!strcmp(key->string.buff, "edge_issue"))
-            db_info->edge_magazine_issue = val->uint_;
-
-         if (!strcmp(key->string.buff, "famitsu_rating"))
-            db_info->famitsu_magazine_rating = val->uint_;
-
-         if (!strcmp(key->string.buff, "users"))
-            db_info->max_users = val->uint_;
-
-         if (!strcmp(key->string.buff, "releasemonth"))
-            db_info->releasemonth = val->uint_;
-
-         if (!strcmp(key->string.buff, "releaseyear"))
-            db_info->releaseyear = val->uint_;
-
-         if (!strcmp(key->string.buff, "rumble"))
-            db_info->rumble_supported = val->uint_;
-
-         if (!strcmp(key->string.buff, "analog"))
-            db_info->analog_supported = val->uint_;
-
-         if (!strcmp(key->string.buff, "crc"))
-            db_info->crc32 = bin_to_hex_alloc((uint8_t*)val->binary.buff, val->binary.len);
-         if (!strcmp(key->string.buff, "sha1"))
-            db_info->sha1 = bin_to_hex_alloc((uint8_t*)val->binary.buff, val->binary.len);
-         if (!strcmp(key->string.buff, "md5"))
-            db_info->md5 = bin_to_hex_alloc((uint8_t*)val->binary.buff, val->binary.len);
+         k++;
       }
-      k++;
-   }
+   } 
 
    database_info_list->list  = database_info;
    database_info_list->count = k;
