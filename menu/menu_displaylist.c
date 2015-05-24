@@ -1147,34 +1147,33 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
 
 #ifdef HAVE_LIBRETRODB
 static int menu_database_push_query(libretrodb_t *db,
-   libretrodb_cursor_t *cur, file_list_t *list)
+   libretrodb_cursor_t *cur, char *s, size_t len)
 {
    unsigned i;
    struct rmsgpack_dom_value item;
 
-   while (libretrodb_cursor_read_item(cur, &item) == 0)
+   if (libretrodb_cursor_read_item(cur, &item) != 0)
+      return -1;
+
+   if (item.type != RDT_MAP)
+      return 1;
+
+   for (i = 0; i < item.map.len; i++)
    {
-      if (item.type != RDT_MAP)
+      struct rmsgpack_dom_value *key = &item.map.items[i].key;
+      struct rmsgpack_dom_value *val = &item.map.items[i].value;
+
+      if (!key || !val)
          continue;
 
-      for (i = 0; i < item.map.len; i++)
+      if (!strcmp(key->string.buff, "name"))
       {
-         struct rmsgpack_dom_value *key = &item.map.items[i].key;
-         struct rmsgpack_dom_value *val = &item.map.items[i].value;
-
-         if (!key || !val)
-            continue;
-
-         if (!strcmp(key->string.buff, "name"))
-         {
-            menu_list_push(list, val->string.buff, db->path,
-            MENU_FILE_RDB_ENTRY, 0);
-            break;
-         }
+         strlcpy(s, val->string.buff, len);
+         return 0;
       }
    }
 
-   return 0;
+   return 1;
 }
 #endif
 
@@ -1182,6 +1181,7 @@ static int menu_database_parse_query(file_list_t *list, const char *path,
     const char *query)
 {
 #ifdef HAVE_LIBRETRODB
+   int ret = 0;
    libretrodb_t db;
    libretrodb_cursor_t cur;
 
@@ -1189,8 +1189,14 @@ static int menu_database_parse_query(file_list_t *list, const char *path,
       return -1;
    if ((database_open_cursor(&db, &cur, query) != 0))
       return -1;
-   if ((menu_database_push_query(&db, &cur, list)) != 0)
-      return -1;
+   while (ret != -1)
+   {
+      char path[PATH_MAX_LENGTH];
+      ret = menu_database_push_query(&db, &cur, path, sizeof(path));
+
+      if (ret == 0)
+         menu_list_push(list, path, db.path, MENU_FILE_RDB_ENTRY, 0);
+   }
 
    libretrodb_cursor_close(&cur);
    libretrodb_close(&db);
