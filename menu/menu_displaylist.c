@@ -1146,8 +1146,7 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
 }
 
 #ifdef HAVE_LIBRETRODB
-static int menu_database_push_query(libretrodb_t *db,
-   libretrodb_cursor_t *cur, char *s, size_t len)
+static int database_cursor_iterate(libretrodb_cursor_t *cur, char *s, size_t len)
 {
    unsigned i;
    struct rmsgpack_dom_value item;
@@ -1192,7 +1191,7 @@ static int menu_database_parse_query(file_list_t *list, const char *path,
    while (ret != -1)
    {
       char path[PATH_MAX_LENGTH];
-      ret = menu_database_push_query(&db, &cur, path, sizeof(path));
+      ret = database_cursor_iterate(&cur, path, sizeof(path));
 
       if (ret == 0)
          menu_list_push(list, path, db.path, MENU_FILE_RDB_ENTRY, 0);
