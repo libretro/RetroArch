@@ -1326,8 +1326,7 @@ static void menu_displaylist_push_horizontal_menu_list_content(
    if (!info)
       return;
 
-   str_list = (struct string_list*)dir_list_new(path,
-         info->supported_extensions, true);
+   str_list = dir_list_new(path, info->supported_extensions, true);
 
    if (!str_list)
       return;

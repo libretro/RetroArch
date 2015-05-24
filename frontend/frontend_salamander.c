@@ -42,7 +42,7 @@ static void find_first_libretro_core(char *first_file,
    RARCH_LOG("Searching for valid libretro implementation in: \"%s\".\n",
          dir);
 
-   list = (struct string_list*)dir_list_new(dir, ext, false);
+   list = dir_list_new(dir, ext, false);
    if (!list)
    {
       RARCH_ERR("Couldn't read directory. Cannot infer default libretro core.\n");
