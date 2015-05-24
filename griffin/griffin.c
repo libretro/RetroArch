@@ -560,6 +560,7 @@ FILE
 #include "../libretro-common/file/file_path.c"
 #include "../file_path_special.c"
 #include "../libretro-common/file/dir_list.c"
+#include "../dir_list_special.c"
 #include "../libretro-common/string/string_list.c"
 #include "../libretro-common/string/stdstring.c"
 #include "../file_ops.c"

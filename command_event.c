@@ -22,9 +22,7 @@
 #include "screenshot.h"
 #include "intl/intl.h"
 #include "retroarch.h"
-
-#include <file/file_path.h>
-#include <file/dir_list.h>
+#include "dir_list_special.h"
 
 #include "input/input_remapping.h"
 
@@ -1415,8 +1413,7 @@ bool event_command(enum event_command cmd)
          if (!*settings->video.shader_dir)
             return false;
 
-         global->shader_dir.list = dir_list_new(settings->video.shader_dir,
-               "cg|cgp|glsl|glslp", false);
+         global->shader_dir.list = dir_list_new_special(DIR_LIST_SHADERS);
 
          if (!global->shader_dir.list || global->shader_dir.list->size == 0)
          {
