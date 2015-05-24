@@ -126,6 +126,9 @@ typedef struct database_state_handle
 
 typedef struct db_handle
 {
+   struct string_list *list;
+   size_t list_index;
+   size_t entry_index;
    database_state_handle_t state;
    database_info_handle_t *handle;
    msg_queue_t *msg_queue;
