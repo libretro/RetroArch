@@ -282,7 +282,7 @@ database_info_list_t *database_info_list_new(const char *rdb_path, const char *q
 
    database_info_list = (database_info_list_t*)calloc(1, sizeof(*database_info_list));
    if (!database_info_list)
-      goto error;
+      goto end;
 
    while (ret != -1)
    {
@@ -295,7 +295,11 @@ database_info_list_t *database_info_list_new(const char *rdb_path, const char *q
          database_info = (database_info_t*)realloc(database_info, (k+1) * sizeof(database_info_t));
 
          if (!database_info)
-            goto error;
+         {
+            database_info_list_free(database_info_list);
+            database_info_list = NULL;
+            goto end;
+         }
 
          db_ptr = &database_info[k];
 
@@ -311,13 +315,11 @@ database_info_list_t *database_info_list_new(const char *rdb_path, const char *q
    database_info_list->list  = database_info;
    database_info_list->count = k;
 
-   return database_info_list;
-
-error:
+end:
    libretrodb_cursor_close(&cur);
    libretrodb_close(&db);
-   database_info_list_free(database_info_list);
-   return NULL;
+
+   return database_info_list;
 }
 
 void database_info_list_free(database_info_list_t *database_info_list)
