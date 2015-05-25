@@ -742,9 +742,15 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
 
          fill_short_pathname_representation(path_short, path,
                sizeof(path_short));
-         snprintf(fill_buf,sizeof(fill_buf),"%s (%s)",
-               (label && label[0] != '\0') ? label : path_short,
-               core_name);
+         snprintf(fill_buf,sizeof(fill_buf),"%s",
+               (label && label[0] != '\0') ? label : path_short);
+
+         if (core_name && core_name[0] != '\0')
+         {
+            char tmp[PATH_MAX_LENGTH];
+            snprintf(tmp, sizeof(tmp), " (%s)", core_name);
+            strlcat(fill_buf, tmp, sizeof(fill_buf));
+         }
       }
 
       if (!strcmp(path_playlist, "collection"))
