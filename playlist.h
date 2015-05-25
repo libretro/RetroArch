@@ -109,6 +109,8 @@ void content_playlist_get_index_by_path(content_playlist_t *playlist,
       char **path, char **core_path,
       char **core_name);
 
+void content_playlist_write_file(content_playlist_t *playlist);
+
 #ifdef __cplusplus
 }
 #endif

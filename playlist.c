@@ -170,7 +170,7 @@ void content_playlist_push(content_playlist_t *playlist,
    playlist->size++;
 }
 
-static void content_playlist_write_file(content_playlist_t *playlist)
+void content_playlist_write_file(content_playlist_t *playlist)
 {
    size_t i;
    FILE *file = NULL;

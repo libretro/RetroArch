@@ -129,6 +129,52 @@ static int database_info_list_iterate_next(
    return 1;
 }
 
+/* TODO/FIXME -
+ * * - What 'core' to bind a playlist entry to if
+ * we are in Load Content (Detect Core)? Let the user
+ * choose the core to be loaded with it upon selecting
+ * the playlist entry?
+ * * - Extension needs to be changed from 'rdb' to
+ * 'cfg'
+ **/
+static int database_info_list_iterate_found_match(
+      database_state_handle_t *db_state,
+      database_info_handle_t *db
+      )
+{
+   char db_playlist_path[PATH_MAX_LENGTH];
+   const char *db_playlist_base = NULL;
+   content_playlist_t *playlist = NULL;
+   settings_t *settings = config_get_ptr();
+   const char *db_path = db_state->list->elems[db_state->list_index].data;
+   const char *entry_path = db ? db->list->elems[db->list_ptr].data : NULL;
+   database_info_t *db_info_entry = &db_state->info->list[db_state->entry_index];
+
+   db_playlist_base = path_basename(db_path);
+   fill_pathname_join(db_playlist_path, settings->playlist_directory,
+         db_playlist_base, sizeof(db_playlist_path));
+
+   playlist = content_playlist_init(db_playlist_path, 1000);
+
+#if 0
+   RARCH_LOG("Found match in database !\n");
+
+   RARCH_LOG("Path: %s\n", db_path);
+   RARCH_LOG("Playlist Path: %s\n", db_playlist_path);
+   RARCH_LOG("Entry Path: %s\n", entry_path);
+   RARCH_LOG("Playlist not NULL: %d\n", playlist != NULL);
+#endif
+
+   content_playlist_push(playlist,
+         entry_path,
+         "Test",
+         db_info_entry->name);
+
+   content_playlist_write_file(playlist);
+   content_playlist_free(playlist);
+   return 0;
+}
+
 static int database_info_iterate_crc_lookup(
       database_state_handle_t *db_state,
       database_info_handle_t *db)
@@ -156,12 +202,7 @@ static int database_info_iterate_crc_lookup(
 #endif
 
          if (strcasestr(entry_state_crc, db_info_entry->crc32))
-         {
-#if 0
-            RARCH_LOG("Found match in database !\n");
-#endif
-            return 0;
-         }
+            return database_info_list_iterate_found_match(db_state, db);
       }
    }
 
