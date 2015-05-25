@@ -93,13 +93,6 @@ database_info_list_t *database_info_list_new(const char *rdb_path,
 
 void database_info_list_free(database_info_list_t *list);
 
-int database_cursor_open(libretrodb_t *db,
-      libretrodb_cursor_t *cur, const char *path, const char *query);
-
-int database_cursor_close(libretrodb_t *db, libretrodb_cursor_t *cur);
-
-int database_cursor_iterate(libretrodb_cursor_t *cur, database_info_t *db_info);
-
 database_info_handle_t *database_info_init(const char *dir,
       enum database_type type);
 

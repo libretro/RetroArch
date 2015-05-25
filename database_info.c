@@ -116,7 +116,7 @@ static char *bin_to_hex_alloc(const uint8_t *data, size_t len)
    return ret;
 }
 
-int database_cursor_iterate(libretrodb_cursor_t *cur,
+static int database_cursor_iterate(libretrodb_cursor_t *cur,
       database_info_t *db_info)
 {
    unsigned i;
@@ -213,7 +213,7 @@ int database_cursor_iterate(libretrodb_cursor_t *cur,
    return 0;
 }
 
-int database_cursor_open(libretrodb_t *db,
+static int database_cursor_open(libretrodb_t *db,
       libretrodb_cursor_t *cur, const char *path, const char *query)
 {
    const char *error     = NULL;
@@ -234,7 +234,7 @@ int database_cursor_open(libretrodb_t *db,
    return 0;
 }
 
-int database_cursor_close(libretrodb_t *db, libretrodb_cursor_t *cur)
+static int database_cursor_close(libretrodb_t *db, libretrodb_cursor_t *cur)
 {
    libretrodb_cursor_close(cur);
    libretrodb_close(db);
