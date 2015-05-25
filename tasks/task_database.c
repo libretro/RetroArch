@@ -29,6 +29,8 @@ static int zlib_compare_crc32(const char *name, const char *valid_exts,
       uint32_t crc32, void *userdata)
 {
    database_state_handle_t *db_state = (database_state_handle_t*)userdata;
+    
+   (void)db_state;
 
    RARCH_LOG("CRC32: 0x%x\n", crc32);
 
@@ -146,8 +148,6 @@ static int database_info_iterate_crc_lookup(
       {
          char entry_state_crc[PATH_MAX_LENGTH];
          /* Check if the CRC matches with the current entry. */
-
-         unsigned int entry_crc = (unsigned int)atol(db_info_entry->crc32);
          snprintf(entry_state_crc, sizeof(entry_state_crc), "%x", db_state->crc);
 
 #if 0

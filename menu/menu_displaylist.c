@@ -1157,7 +1157,7 @@ static int menu_database_parse_query(file_list_t *list, const char *path,
     const char *query)
 {
 #ifdef HAVE_LIBRETRODB
-   int ret = 0, i;
+   int i;
    database_info_list_t *db_list = database_info_list_new(path, query);
 
    if (!db_list)

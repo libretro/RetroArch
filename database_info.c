@@ -280,8 +280,6 @@ database_info_list_t *database_info_list_new(const char *rdb_path, const char *q
    int ret = 0;
    libretrodb_t db;
    libretrodb_cursor_t cur;
-   struct rmsgpack_dom_value item;
-   size_t j;
    unsigned k                               = 0;
    database_info_t *database_info           = NULL;
    database_info_list_t *database_info_list = NULL;
