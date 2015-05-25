@@ -235,6 +235,8 @@ int database_cursor_close(libretrodb_t *db, libretrodb_cursor_t *cur)
 {
    libretrodb_cursor_close(cur);
    libretrodb_close(db);
+
+   return 0;
 }
 
 database_info_handle_t *database_info_init(const char *dir, enum database_type type)
