@@ -127,14 +127,16 @@ static int database_info_iterate_crc_lookup(
 
       if (db_info_entry && db_info_entry->crc32 && db_info_entry->crc32[0] != '\0')
       {
+         char entry_state_crc[PATH_MAX_LENGTH];
          /* Check if the CRC matches with the current entry. */
 
          unsigned int entry_crc = (unsigned int)atol(db_info_entry->crc32);
+         snprintf(entry_state_crc, sizeof(entry_state_crc), "%x", db_state->crc);
 
-         RARCH_LOG("CRC32: 0x%x , entry CRC32: 0x%s [REAL: 0x%x] (%s).\n",
-               (unsigned)db_state->crc, db_info_entry->crc32, entry_crc, db_info_entry->name);
+         RARCH_LOG("CRC32: 0x%s , entry CRC32: 0x%s (%s).\n",
+               entry_state_crc, db_info_entry->crc32, db_info_entry->name);
 
-         if (db_state->crc == entry_crc)
+         if (strcasestr(entry_state_crc, db_info_entry->crc32))
          {
             RARCH_LOG("Found match in database !\n");
             return 0;
