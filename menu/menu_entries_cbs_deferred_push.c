@@ -108,6 +108,7 @@ static int deferred_push_cursor_manager_list_deferred(menu_displaylist_info_t *i
 
 static int deferred_push_cursor_manager_list_deferred_query_subsearch(menu_displaylist_info_t *info)
 {
+#ifdef HAVE_LIBRETRODB
    int ret;
    char query[PATH_MAX_LENGTH];
    struct string_list *str_list  = string_split(info->path, "|"); 
@@ -129,6 +130,9 @@ static int deferred_push_cursor_manager_list_deferred_query_subsearch(menu_displ
    string_list_free(str_list);
 
    return ret;
+#else
+   return 0;
+#endif
 }
 
 static int deferred_push_performance_counters(menu_displaylist_info_t *info)
