@@ -161,16 +161,14 @@ error:
    return -1;
 }
 
-static void rarch_main_data_db_cleanup_state(void *data)
+static void rarch_main_data_db_cleanup_state(database_state_handle_t *db_state)
 {
-   data_runloop_t         *runloop = (data_runloop_t*)data;
-
-   if (!runloop)
+   if (!db_state)
       return;
 
-   if (runloop->db.state.buf)
-      free(runloop->db.state.buf);
-   runloop->db.state.buf = NULL;
+   if (db_state->buf)
+      free(db_state->buf);
+   db_state->buf = NULL;
 }
 
 void rarch_main_data_db_iterate(bool is_thread, void *data)
@@ -191,7 +189,7 @@ void rarch_main_data_db_iterate(bool is_thread, void *data)
          db->status = DATABASE_STATUS_ITERATE_START;
          break;
       case DATABASE_STATUS_ITERATE_START:
-         rarch_main_data_db_cleanup_state(data);
+         rarch_main_data_db_cleanup_state(db_state);
          db_state->list_index  = 0;
          db_state->entry_index = 0;
          database_info_iterate_start(db, name);
@@ -218,7 +216,7 @@ void rarch_main_data_db_iterate(bool is_thread, void *data)
          if (db_state->list)
             dir_list_free(db_state->list);
          db_state->list = NULL;
-         rarch_main_data_db_cleanup_state(data);
+         rarch_main_data_db_cleanup_state(db_state);
          database_info_free(db);
          if (runloop->db.handle)
             free(runloop->db.handle);
