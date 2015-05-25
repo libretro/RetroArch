@@ -102,15 +102,67 @@ static int database_info_iterate_crc_lookup(
       database_state_handle_t *db_state,
       database_info_handle_t *db)
 {
-   if (db_state->list_index == 0)
+
+   if ((unsigned)db_state->list_index == (unsigned)db_state->list->size)
    {
-      /* Grab database state */
+      /* Reached end of database list, CRC match probably didn't succeed. */
+      db_state->list_index  = 0;
+      db_state->entry_index = 0;
+      return 0;
    }
 
-   RARCH_LOG("CRC32: 0x%x .\n", (unsigned)db_state->crc);
+   if (db_state->entry_index == 0)
+   {
+      /* Grab database state */
+
+      const char *new_database = db_state->list->elems[db_state->list_index].data;
+      RARCH_LOG("Check database [%d/%d] : %s\n", (unsigned)db_state->list_index, 
+            (unsigned)db_state->list->size, new_database);
+      db_state->info = database_info_list_new(new_database, NULL);
+   }
+
+   if (db_state->info)
+   {
+      database_info_t *db_info_entry = &db_state->info->list[db_state->entry_index];
+
+      if (db_info_entry && db_info_entry->crc32 && db_info_entry->crc32[0] != '\0')
+      {
+         /* Check if the CRC matches with the current entry. */
+
+         unsigned int entry_crc = (unsigned int)atol(db_info_entry->crc32);
+
+         RARCH_LOG("CRC32: 0x%x , entry CRC32: 0x%s [REAL: 0x%x] (%s).\n",
+               (unsigned)db_state->crc, db_info_entry->crc32, entry_crc, db_info_entry->name);
+
+         if (db_state->crc == entry_crc)
+         {
+            RARCH_LOG("Found match in database !\n");
+            return 0;
+         }
+      }
+   }
 
    db_state->entry_index++;
 
+   if (db_state->entry_index >= db_state->info->count)
+   {
+      /* End of entries in database info list and didn't find a 
+       * match, go to the next database. */
+      db_state->list_index++;
+      db_state->entry_index = 0;
+      database_info_list_free(db_state->info);
+      return 1;
+   }
+
+   if (db_state->list_index < db_state->list->size)
+   {
+      /* Didn't reach the end of the database list yet,
+       * continue iterating. */
+      return 1;
+   }
+
+   if (db_state->info)
+      database_info_list_free(db_state->info);
    return 0;
 }
 
@@ -213,6 +265,7 @@ void rarch_main_data_db_iterate(bool is_thread, void *data)
          if (database_info_iterate_next(db) == 0)
          {
             db->status = DATABASE_STATUS_ITERATE_START;
+            db->type   = DATABASE_TYPE_ITERATE;
          }
          else
          {
