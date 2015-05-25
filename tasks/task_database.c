@@ -88,8 +88,7 @@ static int database_info_iterate_playlist(
    return 0;
 }
 
-static int database_info_iterate_next(
-      database_info_handle_t *db)
+static int database_info_iterate_next(database_info_handle_t *db)
 {
    db->list_ptr++;
 
@@ -98,28 +97,46 @@ static int database_info_iterate_next(
    return -1;
 }
 
+static int database_info_list_iterate_new(database_state_handle_t *db_state)
+{
+   const char *new_database = db_state->list->elems[db_state->list_index].data;
+   RARCH_LOG("Check database [%d/%d] : %s\n", (unsigned)db_state->list_index, 
+         (unsigned)db_state->list->size, new_database);
+   db_state->info = database_info_list_new(new_database, NULL);
+   return 0;
+}
+
+static int database_info_list_iterate_end_no_match(database_state_handle_t *db_state)
+{
+   /* Reached end of database list, CRC match probably didn't succeed. */
+   db_state->list_index  = 0;
+   db_state->entry_index = 0;
+   return 0;
+}
+
+/* End of entries in database info list and didn't find a 
+ * match, go to the next database. */
+static int database_info_list_iterate_next(
+      database_state_handle_t *db_state
+      )
+{
+   db_state->list_index++;
+   db_state->entry_index = 0;
+   database_info_list_free(db_state->info);
+
+   return 1;
+}
+
 static int database_info_iterate_crc_lookup(
       database_state_handle_t *db_state,
       database_info_handle_t *db)
 {
 
    if ((unsigned)db_state->list_index == (unsigned)db_state->list->size)
-   {
-      /* Reached end of database list, CRC match probably didn't succeed. */
-      db_state->list_index  = 0;
-      db_state->entry_index = 0;
-      return 0;
-   }
+      return database_info_list_iterate_end_no_match(db_state);
 
    if (db_state->entry_index == 0)
-   {
-      /* Grab database state */
-
-      const char *new_database = db_state->list->elems[db_state->list_index].data;
-      RARCH_LOG("Check database [%d/%d] : %s\n", (unsigned)db_state->list_index, 
-            (unsigned)db_state->list->size, new_database);
-      db_state->info = database_info_list_new(new_database, NULL);
-   }
+      database_info_list_iterate_new(db_state);
 
    if (db_state->info)
    {
@@ -133,12 +150,16 @@ static int database_info_iterate_crc_lookup(
          unsigned int entry_crc = (unsigned int)atol(db_info_entry->crc32);
          snprintf(entry_state_crc, sizeof(entry_state_crc), "%x", db_state->crc);
 
+#if 0
          RARCH_LOG("CRC32: 0x%s , entry CRC32: 0x%s (%s).\n",
                entry_state_crc, db_info_entry->crc32, db_info_entry->name);
+#endif
 
          if (strcasestr(entry_state_crc, db_info_entry->crc32))
          {
+#if 0
             RARCH_LOG("Found match in database !\n");
+#endif
             return 0;
          }
       }
@@ -147,14 +168,7 @@ static int database_info_iterate_crc_lookup(
    db_state->entry_index++;
 
    if (db_state->entry_index >= db_state->info->count)
-   {
-      /* End of entries in database info list and didn't find a 
-       * match, go to the next database. */
-      db_state->list_index++;
-      db_state->entry_index = 0;
-      database_info_list_free(db_state->info);
-      return 1;
-   }
+      return database_info_list_iterate_next(db_state);
 
    if (db_state->list_index < db_state->list->size)
    {
