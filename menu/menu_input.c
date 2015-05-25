@@ -1014,7 +1014,7 @@ unsigned menu_input_frame(retro_input_t input, retro_input_t trigger_input)
    else if (trigger_input & (1ULL << settings->menu_search_btn))
       ret = MENU_ACTION_SEARCH;
    else if (trigger_input & (1ULL << RETRO_DEVICE_ID_JOYPAD_Y))
-      ret = MENU_ACTION_TEST;
+      ret = MENU_ACTION_SCAN;
    else if (trigger_input & (1ULL << settings->menu_default_btn))
       ret = MENU_ACTION_START;
    else if (trigger_input & (1ULL << settings->menu_info_btn))

@@ -515,7 +515,7 @@ int menu_entry_action(menu_entry_t *entry, unsigned i, enum menu_action action)
          menu_input_search_start();
          break;
 
-      case MENU_ACTION_TEST:
+      case MENU_ACTION_SCAN:
          rarch_main_data_msg_queue_push(DATA_TYPE_DB, "/home/squarepusher/roms", "cb_db_scan", 0, 1,
                true);
          break;
