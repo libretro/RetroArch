@@ -142,6 +142,7 @@ static int database_info_list_iterate_found_match(
       database_info_handle_t *db
       )
 {
+   char db_crc[PATH_MAX_LENGTH];
    char db_playlist_path[PATH_MAX_LENGTH];
    const char *db_playlist_base = NULL;
    content_playlist_t *playlist = NULL;
@@ -165,10 +166,9 @@ static int database_info_list_iterate_found_match(
    RARCH_LOG("Playlist not NULL: %d\n", playlist != NULL);
 #endif
 
-   content_playlist_push(playlist,
-         entry_path,
-         "Test",
-         db_info_entry->name);
+   snprintf(db_crc, sizeof(db_crc), "%s|crc", db_info_entry->crc32);
+
+   content_playlist_push(playlist, entry_path, "Test", db_crc);
 
    content_playlist_write_file(playlist);
    content_playlist_free(playlist);
