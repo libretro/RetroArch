@@ -214,10 +214,13 @@ int database_cursor_iterate(libretrodb_cursor_t *cur,
 }
 
 int database_cursor_open(libretrodb_t *db,
-      libretrodb_cursor_t *cur, const char *query)
+      libretrodb_cursor_t *cur, const char *path, const char *query)
 {
    const char *error     = NULL;
    libretrodb_query_t *q = NULL;
+
+   if ((libretrodb_open(path, db)) != 0)
+      return -1;
 
    if (query) 
       q = (libretrodb_query_t*)libretrodb_query_compile(db, query,
@@ -283,9 +286,7 @@ database_info_list_t *database_info_list_new(const char *rdb_path, const char *q
    database_info_t *database_info           = NULL;
    database_info_list_t *database_info_list = NULL;
 
-   if ((libretrodb_open(rdb_path, &db)) != 0)
-      return NULL;
-   if ((database_cursor_open(&db, &cur, query) != 0))
+   if ((database_cursor_open(&db, &cur, rdb_path, query) != 0))
       return NULL;
 
    database_info_list = (database_info_list_t*)calloc(1, sizeof(*database_info_list));

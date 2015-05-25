@@ -94,7 +94,7 @@ database_info_list_t *database_info_list_new(const char *rdb_path,
 void database_info_list_free(database_info_list_t *list);
 
 int database_cursor_open(libretrodb_t *db,
-      libretrodb_cursor_t *cur, const char *query);
+      libretrodb_cursor_t *cur, const char *path, const char *query);
 
 int database_cursor_close(libretrodb_t *db, libretrodb_cursor_t *cur);
 
