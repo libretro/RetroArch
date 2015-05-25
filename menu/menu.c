@@ -230,7 +230,7 @@ void menu_free(menu_handle_t *menu)
    menu_driver_free(menu);
 
 #ifdef HAVE_LIBRETRODB
-   menu_database_free(menu);
+   database_playlist_free(menu->db_playlist);
 #endif
 
 #ifdef HAVE_DYNAMIC

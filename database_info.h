@@ -22,6 +22,7 @@
 #include <stddef.h>
 #include <boolean.h>
 #include "libretro-db/libretrodb.h"
+#include "playlist.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -106,6 +107,11 @@ void database_info_free(database_info_handle_t *dbl);
 
 int database_info_build_query(
       char *query, size_t len, const char *label, const char *path);
+
+void database_playlist_free(content_playlist_t *db_playlist);
+
+bool database_playlist_realloc(
+      content_playlist_t *db_playlist, const char *path);
 
 #ifdef __cplusplus
 }

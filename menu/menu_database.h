@@ -31,11 +31,6 @@ extern "C" {
 /* HACK */
 extern unsigned int rdb_entry_start_game_selection_ptr;
     
-void menu_database_free(void *data);
-
-bool menu_database_realloc(const char *path,
-      bool force);
-
 #ifdef __cplusplus
 }
 #endif

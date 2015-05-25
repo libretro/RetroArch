@@ -381,3 +381,23 @@ void database_info_list_free(database_info_list_t *database_info_list)
    free(database_info_list->list);
    free(database_info_list);
 }
+
+void database_playlist_free(content_playlist_t *db_playlist)
+{
+   if (db_playlist)
+      content_playlist_free(db_playlist);
+}
+
+bool database_playlist_realloc(
+      content_playlist_t *db_playlist,
+      const char *path)
+{
+   database_playlist_free(db_playlist);
+
+   db_playlist = content_playlist_init(path, 1000);
+
+   if (!db_playlist)
+      return false;
+
+   return true;
+}

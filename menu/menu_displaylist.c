@@ -900,6 +900,7 @@ static int create_string_list_rdb_entry_int(const char *desc, const char *label,
 static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
 {
 #ifdef HAVE_LIBRETRODB
+   bool reallocate_playlist = false;
    char query[PATH_MAX_LENGTH];
    content_playlist_t *playlist;
    database_info_list_t *db_info = NULL;
@@ -922,7 +923,14 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
    fill_pathname_join(path_playlist, settings->playlist_directory, path_base,
          sizeof(path_playlist));
 
-   menu_database_realloc(path_playlist, false);
+   reallocate_playlist = !(!strcmp(menu->db_playlist_file, path_playlist));
+
+   if (reallocate_playlist)
+   {
+      if (database_playlist_realloc(menu->db_playlist, path_playlist))
+         strlcpy(menu->db_playlist_file, path_playlist,
+               sizeof(menu->db_playlist_file));
+   }
 
    playlist = menu->db_playlist;
 
