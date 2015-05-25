@@ -482,6 +482,7 @@ static void event_init_controllers(void)
 static void event_deinit_core(bool reinit)
 {
    global_t *global = global_get_ptr();
+   settings_t *settings = config_get_ptr();
 
    pretro_unload_game();
    pretro_deinit();
@@ -489,7 +490,13 @@ static void event_deinit_core(bool reinit)
    if (reinit)
       event_command(EVENT_CMD_DRIVERS_DEINIT);
 
-   /* auto overrides: reload the original config */
+   /* per-core saves: restore the original path so the config is not affected */
+   if(settings->sort_savefiles_enable)
+      strlcpy(global->savefile_dir,orig_savefile_dir,sizeof(global->savefile_dir));
+   if(settings->sort_savestates_enable)
+      strlcpy(global->savestate_dir,orig_savestate_dir,sizeof(global->savestate_dir)); 
+  
+  /* auto overrides: reload the original config */
    if(global->overrides_active)
    {
       config_unload_override();
@@ -690,12 +697,6 @@ static bool event_init_core(void)
 
    retro_init_libretro_cbs(&driver->retro_ctx);
    rarch_init_system_av_info();
-
-   /* per-core saves: restore the original path so the config is not affected */
-   if(settings->sort_savefiles_enable)
-      strlcpy(global->savefile_dir,orig_savefile_dir,sizeof(global->savefile_dir));
-   if(settings->sort_savestates_enable)
-      strlcpy(global->savestate_dir,orig_savestate_dir,sizeof(global->savestate_dir)); 
 
    return true;
 }
