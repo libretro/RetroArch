@@ -80,10 +80,10 @@ static int database_info_iterate_playlist(
 
 #ifdef HAVE_ZLIB
       db_state->crc = zlib_crc32_calculate(db_state->buf, ret);
-      RARCH_LOG("CRC32: 0x%x .\n", (unsigned)db_state->crc);
 #endif
+      db->type = DATABASE_TYPE_CRC_LOOKUP;
+      return 1;
    }
-
 
    return 0;
 }
@@ -96,6 +96,14 @@ static int database_info_iterate_next(
    if (db->list_ptr < db->list->size)
       return 0;
    return -1;
+}
+
+static int database_info_iterate_crc_lookup(
+      database_state_handle_t *db_state,
+      database_info_handle_t *db)
+{
+   RARCH_LOG("CRC32: 0x%x .\n", (unsigned)db_state->crc);
+   return 0;
 }
 
 static int database_info_iterate(database_state_handle_t *state, database_info_handle_t *db)
@@ -114,6 +122,8 @@ static int database_info_iterate(database_state_handle_t *state, database_info_h
          break;
       case DATABASE_TYPE_ITERATE:
          return database_info_iterate_playlist(state, db, name);
+      case DATABASE_TYPE_CRC_LOOKUP:
+         return database_info_iterate_crc_lookup(state, db);
    }
 
    return 0;
@@ -188,7 +198,10 @@ void rarch_main_data_db_iterate(bool is_thread, void *data)
          break;
       case DATABASE_STATUS_ITERATE:
          if (database_info_iterate(&runloop->db.state, db) == 0)
+         {
             db->status = DATABASE_STATUS_ITERATE_NEXT;
+            db->type   = DATABASE_TYPE_ITERATE;
+         }
          break;
       case DATABASE_STATUS_ITERATE_NEXT:
          if (database_info_iterate_next(db) == 0)

@@ -41,6 +41,7 @@ enum database_type
 {
    DATABASE_TYPE_NONE = 0,
    DATABASE_TYPE_ITERATE,
+   DATABASE_TYPE_CRC_LOOKUP,
 };
 
 typedef struct
