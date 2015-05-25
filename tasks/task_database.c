@@ -13,6 +13,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <compat/strl.h>
+
 #include "../dir_list_special.h"
 #include "../file_ops.h"
 
@@ -144,6 +146,7 @@ static int database_info_list_iterate_found_match(
 {
    char db_crc[PATH_MAX_LENGTH];
    char db_playlist_path[PATH_MAX_LENGTH];
+   char  db_playlist_base_str[PATH_MAX_LENGTH];
    const char *db_playlist_base = NULL;
    content_playlist_t *playlist = NULL;
    settings_t *settings = config_get_ptr();
@@ -152,8 +155,14 @@ static int database_info_list_iterate_found_match(
    database_info_t *db_info_entry = &db_state->info->list[db_state->entry_index];
 
    db_playlist_base = path_basename(db_path);
+
+   strlcpy(db_playlist_base_str, db_playlist_base, sizeof(db_playlist_base_str));
+
+   path_remove_extension(db_playlist_base_str);
+
+   strlcat(db_playlist_base_str, ".rpl", sizeof(db_playlist_base_str));
    fill_pathname_join(db_playlist_path, settings->playlist_directory,
-         db_playlist_base, sizeof(db_playlist_path));
+         db_playlist_base_str, sizeof(db_playlist_path));
 
    playlist = content_playlist_init(db_playlist_path, 1000);
 
