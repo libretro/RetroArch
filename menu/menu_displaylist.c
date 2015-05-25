@@ -1157,25 +1157,20 @@ static int menu_database_parse_query(file_list_t *list, const char *path,
     const char *query)
 {
 #ifdef HAVE_LIBRETRODB
-   int ret = 0;
-   libretrodb_t db;
-   libretrodb_cursor_t cur;
+   int ret = 0, i;
+   database_info_list_t *db_list = database_info_list_new(path, query);
 
-   if ((database_cursor_open(&db, &cur, path, query) != 0))
+   if (!db_list)
       return -1;
-   while (ret != -1)
-   {
-      database_info_t dbinfo = {0};
-      ret = database_cursor_iterate(&cur, &dbinfo);
 
-      if (ret == 0)
-      {
-         if (dbinfo.name && dbinfo.name[0] != '\0')
-            menu_list_push(list, dbinfo.name, db.path, MENU_FILE_RDB_ENTRY, 0);
-      }
+   for (i = 0; i < db_list->count; i++)
+   {
+         if (db_list->list[i].name && db_list->list[i].name[0] != '\0')
+            menu_list_push(list, db_list->list[i].name,
+                  path, MENU_FILE_RDB_ENTRY, 0);
    }
 
-   database_cursor_close(&db, &cur);
+   database_info_list_free(db_list);
 #endif
 
    return 0;
