@@ -102,7 +102,15 @@ static int database_info_iterate_crc_lookup(
       database_state_handle_t *db_state,
       database_info_handle_t *db)
 {
+   if (db_state->list_index == 0)
+   {
+      /* Grab database state */
+   }
+
    RARCH_LOG("CRC32: 0x%x .\n", (unsigned)db_state->crc);
+
+   db_state->entry_index++;
+
    return 0;
 }
 
