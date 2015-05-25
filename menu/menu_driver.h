@@ -28,7 +28,6 @@
 #include "menu_navigation.h"
 #include "menu_database.h"
 #include "../settings_list.h"
-#include "../playlist.h"
 #include "../../libretro.h"
 
 #ifdef __cplusplus
@@ -221,7 +220,6 @@ typedef struct
    animation_t *animation;
    bool animation_is_active;
 
-   content_playlist_t *db_playlist;
    char db_playlist_file[PATH_MAX_LENGTH];
 } menu_handle_t;
 

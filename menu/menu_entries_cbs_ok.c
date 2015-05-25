@@ -40,31 +40,35 @@ static int menu_action_setting_set_current_string_path(
    return menu_setting_generic(setting);
 }
 
-static int action_ok_rdb_playlist_entry(const char *path,
-      const char *label, unsigned type, size_t idx)
-{
-   menu_handle_t *menu = menu_driver_get_ptr();
-   if (!menu)
-      return -1;
-
-   rarch_playlist_load_content(menu->db_playlist,
-         rdb_entry_start_game_selection_ptr);
-   return -1;
-}
-
 static int action_ok_playlist_entry(const char *path,
       const char *label, unsigned type, size_t idx)
 {
+   bool free_list = false;
+   size_t selection_ptr = 0;
    content_playlist_t *playlist = g_defaults.history;
    menu_handle_t *menu = menu_driver_get_ptr();
    if (!menu)
       return -1;
 
-   if (!strcmp(label, "collection"))
-      playlist = menu->db_playlist;
+   if (!strcmp(label, "collection") ||
+         !strcmp(label, "rdb_entry_start_game"))
+   {
+      playlist  = NULL;
+      free_list = true;
 
-   rarch_playlist_load_content(playlist,
-         menu->navigation.selection_ptr);
+      database_playlist_realloc(playlist, menu->db_playlist_file);
+   }
+
+   selection_ptr = menu->navigation.selection_ptr;
+
+   if (!strcmp(label, "rdb_entry_start_game"))
+      selection_ptr =- rdb_entry_start_game_selection_ptr;
+
+   rarch_playlist_load_content(playlist, selection_ptr);
+
+   if (free_list)
+      database_playlist_free(playlist);
+
    menu_list_flush_stack(menu->menu_list, NULL, MENU_SETTINGS);
    return -1;
 }
@@ -1502,9 +1506,6 @@ void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
          cbs->action_ok = action_ok_video_resolution;
          break;
       case MENU_FILE_PLAYLIST_ENTRY:
-         if (!strcmp(label, "rdb_entry_start_game"))
-            cbs->action_ok = action_ok_rdb_playlist_entry;
-         else
             cbs->action_ok = action_ok_playlist_entry;
          break;
       case MENU_FILE_PLAYLIST_COLLECTION:

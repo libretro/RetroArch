@@ -231,10 +231,6 @@ void menu_free(menu_handle_t *menu)
 
    menu_driver_free(menu);
 
-#ifdef HAVE_LIBRETRODB
-   database_playlist_free(menu->db_playlist);
-#endif
-
 #ifdef HAVE_DYNAMIC
    libretro_free_system_info(&global->menu.info);
 #endif
