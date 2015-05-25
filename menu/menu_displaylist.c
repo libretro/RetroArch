@@ -725,13 +725,15 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
       char path_copy[PATH_MAX_LENGTH];
       const char *core_name = NULL;
       const char *path      = NULL;
+      const char *label     = NULL;
+      const char *crc32     = NULL;
 
       strlcpy(path_copy, info->path, sizeof(path_copy));
 
       path = path_copy;
 
       content_playlist_get_index(playlist, i,
-            &path, NULL, &core_name);
+            &path, &label, NULL, &core_name, &crc32);
       strlcpy(fill_buf, core_name, sizeof(fill_buf));
 
       if (path)
@@ -741,7 +743,8 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
          fill_short_pathname_representation(path_short, path,
                sizeof(path_short));
          snprintf(fill_buf,sizeof(fill_buf),"%s (%s)",
-               path_short, core_name);
+               (label && label[0] != '\0') ? label : path_short,
+               core_name);
       }
 
       if (!strcmp(path_playlist, "collection"))

@@ -301,7 +301,7 @@ static int deferred_push_cursor_manager_list(menu_displaylist_info_t *info)
 static int deferred_push_content_collection_list(menu_displaylist_info_t *info)
 {
    info->type_default = MENU_FILE_PLAIN;
-   strlcpy(info->exts, "cfg", sizeof(info->exts));
+   strlcpy(info->exts, "rpl", sizeof(info->exts));
 
    return menu_displaylist_push_list(info, DISPLAYLIST_DATABASE_PLAYLISTS);
 }
@@ -413,7 +413,7 @@ static int deferred_push_video_font_path(menu_displaylist_info_t *info)
 static int deferred_push_content_history_path(menu_displaylist_info_t *info)
 {
    info->type_default = MENU_FILE_PLAIN;
-   strlcpy(info->exts, "cfg", sizeof(info->exts));
+   strlcpy(info->exts, "rpl", sizeof(info->exts));
 
    return menu_displaylist_push_list(info, DISPLAYLIST_CONTENT_HISTORY);
 }
@@ -578,7 +578,7 @@ void menu_entries_cbs_init_bind_deferred_push(menu_file_list_cbs_t *cbs,
       cbs->action_deferred_push = deferred_push_input_osk_overlay;
    else if (!strcmp(label, "video_font_path"))
       cbs->action_deferred_push = deferred_push_video_font_path;
-   else if (!strcmp(label, "game_history_path"))
+   else if (!strcmp(label, "content_history_path"))
       cbs->action_deferred_push = deferred_push_content_history_path;
    else if (!strcmp(label, "detect_core_list"))
       cbs->action_deferred_push = deferred_push_detect_core_list;

@@ -1529,8 +1529,8 @@ static bool config_load_file(const char *path, bool set_defaults)
 
    CONFIG_GET_BOOL_BASE(conf, settings, history_list_enable, "history_list_enable");
 
-   CONFIG_GET_PATH_BASE(conf, settings, content_history_path, "game_history_path");
-   CONFIG_GET_INT_BASE(conf, settings, content_history_size, "game_history_size");
+   CONFIG_GET_PATH_BASE(conf, settings, content_history_path, "content_history_path");
+   CONFIG_GET_INT_BASE(conf, settings, content_history_size, "content_history_size");
 
    CONFIG_GET_INT_BASE(conf, settings, input.turbo_period, "input_turbo_period");
    CONFIG_GET_INT_BASE(conf, settings, input.turbo_duty_cycle, "input_duty_cycle");
@@ -1601,13 +1601,13 @@ static bool config_load_file(const char *path, bool set_defaults)
       {
          fill_pathname_join(settings->content_history_path,
                settings->content_history_directory,
-               "retroarch-content-history.txt",
+               "content_history.rpl",
                sizeof(settings->content_history_path));
       }
       else
       {
          fill_pathname_resolve_relative(settings->content_history_path,
-               global->config_path, "retroarch-content-history.txt",
+               global->config_path, "content_history.rpl",
                sizeof(settings->content_history_path));
       }
    }
@@ -2438,8 +2438,8 @@ bool config_save_file(const char *path)
          settings->menu.title_color);
 #endif
 
-   config_set_path(conf, "game_history_path", settings->content_history_path);
-   config_set_int(conf, "game_history_size", settings->content_history_size);
+   config_set_path(conf, "content_history_path", settings->content_history_path);
+   config_set_int(conf, "content_history_size", settings->content_history_size);
    config_set_path(conf, "joypad_autoconfig_dir",
          settings->input.autoconfig_dir);
    config_set_bool(conf, "input_autodetect_enable",

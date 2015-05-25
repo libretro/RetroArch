@@ -253,7 +253,7 @@ public final class UserPreferences
 		}
 
 		config.setBoolean("video_font_enable", prefs.getBoolean("video_font_enable", true));
-		config.setString("game_history_path", dataDir + "/retroarch-content-history.txt");
+		config.setString("content_history_path", dataDir + "/content_history.rpl");
 
 		// FIXME: This is incomplete. Need analog axes as well.
 		for (int i = 1; i <= 4; i++)

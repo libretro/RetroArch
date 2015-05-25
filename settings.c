@@ -5977,7 +5977,7 @@ static bool setting_append_list_playlist_options(
 
    CONFIG_UINT(
          settings->content_history_size,
-         "game_history_size",
+         "content_history_size",
          "History List Size",
          default_content_history_size,
          group_info.name,

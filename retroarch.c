@@ -1340,7 +1340,7 @@ void rarch_playlist_load_content(content_playlist_t *playlist,
    settings_t  *settings = config_get_ptr();
 
    content_playlist_get_index(playlist,
-         idx, &path, &core_path, NULL);
+         idx, &path, NULL, &core_path, NULL, NULL);
 
    strlcpy(settings->libretro, core_path, sizeof(settings->libretro));
 

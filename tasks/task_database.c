@@ -168,7 +168,7 @@ static int database_info_list_iterate_found_match(
 
    snprintf(db_crc, sizeof(db_crc), "%s|crc", db_info_entry->crc32);
 
-   content_playlist_push(playlist, entry_path, "Test", db_crc);
+   content_playlist_push(playlist, entry_path, db_info_entry->name, "DETECT", "DETECT", db_crc);
 
    content_playlist_write_file(playlist);
    content_playlist_free(playlist);

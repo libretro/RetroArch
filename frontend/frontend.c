@@ -180,8 +180,10 @@ static void history_playlist_push(content_playlist_t *playlist,
    if (global->system.no_content || *tmp)
       content_playlist_push(playlist,
             *tmp ? tmp : NULL,
+            NULL,
             core_path,
-            info->library_name);
+            info->library_name,
+            NULL);
 }
 
 /**

@@ -69,8 +69,10 @@ static void push_to_history_playlist(void)
 
    content_playlist_push(g_defaults.history,
          global->fullpath,
+         NULL,
          settings->libretro,
-         global->menu.info.library_name);
+         global->menu.info.library_name,
+         NULL);
 }
 
 /**

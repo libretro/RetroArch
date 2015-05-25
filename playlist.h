@@ -27,8 +27,10 @@ extern "C" {
 typedef struct content_playlist_entry
 {
    char *path;
+   char *label;
    char *core_path;
    char *core_name;
+   char *crc32;
 } content_playlist_entry_t;
 
 typedef struct content_playlist
@@ -87,9 +89,10 @@ size_t content_playlist_size(content_playlist_t *playlist);
  * Gets values of playlist index: 
  **/
 void content_playlist_get_index(content_playlist_t *playlist,
-      size_t index,
-      const char **path, const char **core_path,
-      const char **core_name);
+      size_t idx,
+      const char **path, const char **label,
+      const char **core_path, const char **core_name,
+      const char **crc32);
 
 /**
  * content_playlist_push:
@@ -101,13 +104,15 @@ void content_playlist_get_index(content_playlist_t *playlist,
  * Push entry to top of playlist.
  **/
 void content_playlist_push(content_playlist_t *playlist,
-      const char *path, const char *core_path,
-      const char *core_name);
+      const char *path, const char *label,
+      const char *core_path, const char *core_name,
+      const char *crc32);
 
 void content_playlist_get_index_by_path(content_playlist_t *playlist,
       const char *search_path,
-      char **path, char **core_path,
-      char **core_name);
+      char **path, char **label,
+      char **core_path, char **core_name,
+      char **crc32);
 
 void content_playlist_write_file(content_playlist_t *playlist);
 
