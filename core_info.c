@@ -109,7 +109,7 @@ void core_info_get_name(const char *path, char *s, size_t len)
    struct string_list *contents = dir_list_new_special(NULL, DIR_LIST_CORES);
 
    if (!contents)
-      return NULL;
+      return;
 
    core_info_list = (core_info_list_t*)calloc(1, sizeof(*core_info_list));
    if (!core_info_list)
