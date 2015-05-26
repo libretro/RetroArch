@@ -489,6 +489,44 @@ typedef struct zlib_transfer
    const struct zlib_file_backend *backend;
 } zlib_transfer_t;
 
+int zlib_parse_file_iterate(zlib_transfer_t *state, char *filename,
+      const uint8_t **cdata,
+      unsigned *cmode, uint32_t *size, uint32_t *csize,
+      uint32_t *checksum, unsigned *payback)
+{
+   uint32_t offset;
+   uint32_t namelength, extralength, commentlength,
+            offsetNL, offsetEL;
+   uint32_t signature = read_le(state->directory + 0, 4);
+
+   if (signature != CENTRAL_FILE_HEADER_SIGNATURE)
+      return 0;
+
+   *cmode         = read_le(state->directory + 10, 2);
+   *checksum      = read_le(state->directory + 16, 4);
+   *csize         = read_le(state->directory + 20, 4);
+   *size          = read_le(state->directory + 24, 4);
+
+   namelength    = read_le(state->directory + 28, 2);
+   extralength   = read_le(state->directory + 30, 2);
+   commentlength = read_le(state->directory + 32, 2);
+
+   if (namelength >= PATH_MAX_LENGTH)
+      return -1;
+
+   memcpy(filename, state->directory + 46, namelength);
+
+   offset        = read_le(state->directory + 42, 4);
+   offsetNL      = read_le(state->data + offset + 26, 2);
+   offsetEL      = read_le(state->data + offset + 28, 2);
+
+   *cdata = state->data + offset + 30 + offsetNL + offsetEL;
+
+   *payback = 46 + namelength + extralength + commentlength;
+
+   return 1;
+}
+
 /**
  * zlib_parse_file:
  * @file                        : filename path of archive
@@ -542,35 +580,20 @@ bool zlib_parse_file(const char *file, const char *valid_exts,
 
    for (;;)
    {
-      uint32_t checksum, csize, size, offset;
-      unsigned cmode, namelength, extralength, commentlength,
-               offsetNL, offsetEL;
-      char filename[PATH_MAX_LENGTH] = {0};
       const uint8_t *cdata = NULL;
-      uint32_t signature = read_le(state.directory + 0, 4);
+      uint32_t checksum    = 0;
+      uint32_t size        = 0;
+      uint32_t csize       = 0;
+      unsigned cmode       = 0;
+      unsigned payload     = 0;
+      char filename[PATH_MAX_LENGTH] = {0};
+      int ret = zlib_parse_file_iterate(&state, filename, &cdata, &cmode, &size, &csize,
+            &checksum, &payload);
 
-      if (signature != CENTRAL_FILE_HEADER_SIGNATURE)
+      if (ret == 0)
          break;
-
-      cmode         = read_le(state.directory + 10, 2);
-      checksum      = read_le(state.directory + 16, 4);
-      csize         = read_le(state.directory + 20, 4);
-      size          = read_le(state.directory + 24, 4);
-
-      namelength    = read_le(state.directory + 28, 2);
-      extralength   = read_le(state.directory + 30, 2);
-      commentlength = read_le(state.directory + 32, 2);
-
-      if (namelength >= PATH_MAX_LENGTH)
+      if (ret == -1)
          GOTO_END_ERROR();
-
-      memcpy(filename, state.directory + 46, namelength);
-
-      offset        = read_le(state.directory + 42, 4);
-      offsetNL      = read_le(state.data + offset + 26, 2);
-      offsetEL      = read_le(state.data + offset + 28, 2);
-
-      cdata = state.data + offset + 30 + offsetNL + offsetEL;
 
 #if 0
       RARCH_LOG("OFFSET: %u, CSIZE: %u, SIZE: %u.\n", offset + 30 + 
@@ -581,7 +604,7 @@ bool zlib_parse_file(const char *file, const char *valid_exts,
                csize, size, checksum, userdata))
          break;
 
-      state.directory += 46 + namelength + extralength + commentlength;
+      state.directory += payload;
    }
 
 end:
