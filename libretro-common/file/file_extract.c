@@ -557,6 +557,42 @@ int zlib_parse_file_iterate_step(zlib_transfer_t *state,
    return 1;
 }
 
+int zlib_parse_file_init(zlib_transfer_t *state,
+      const char *file)
+{
+   state->backend = zlib_get_default_file_backend();
+
+   if (!state->backend)
+      return -1;
+
+   state->handle = state->backend->open(file);
+   if (!state->handle)
+      return -1;
+
+   state->zip_size = state->backend->size(state->handle);
+   if (state->zip_size < 22)
+      return -1;
+
+   state->data   = state->backend->data(state->handle);
+   state->footer = state->data + state->zip_size - 22;
+
+   for (;; state->footer--)
+   {
+      if (state->footer <= state->data + 22)
+         return -1;
+      if (read_le(state->footer, 4) == END_OF_CENTRAL_DIR_SIGNATURE)
+      {
+         unsigned comment_len = read_le(state->footer + 20, 2);
+         if (state->footer + 22 + comment_len == state->data + state->zip_size)
+            break;
+      }
+   }
+
+   state->directory = state->data + read_le(state->footer + 16, 4);
+
+   return 0;
+}
+
 /**
  * zlib_parse_file:
  * @file                        : filename path of archive
@@ -576,35 +612,8 @@ bool zlib_parse_file(const char *file, const char *valid_exts,
    zlib_transfer_t state = {0};
    bool ret = true;
 
-   state.backend = zlib_get_default_file_backend();
-
-   if (!state.backend)
-      return false;
-
-   state.handle = state.backend->open(file);
-   if (!state.handle)
+   if (zlib_parse_file_init(&state, file) != 0)
       GOTO_END_ERROR();
-
-   state.zip_size = state.backend->size(state.handle);
-   if (state.zip_size < 22)
-      GOTO_END_ERROR();
-
-   state.data = state.backend->data(state.handle);
-
-   state.footer = state.data + state.zip_size - 22;
-   for (;; state.footer--)
-   {
-      if (state.footer <= state.data + 22)
-         GOTO_END_ERROR();
-      if (read_le(state.footer, 4) == END_OF_CENTRAL_DIR_SIGNATURE)
-      {
-         unsigned comment_len = read_le(state.footer + 20, 2);
-         if (state.footer + 22 + comment_len == state.data + state.zip_size)
-            break;
-      }
-   }
-
-   state.directory = state.data + read_le(state.footer + 16, 4);
 
    for (;;)
    {
