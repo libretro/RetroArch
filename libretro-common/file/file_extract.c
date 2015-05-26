@@ -527,6 +527,36 @@ int zlib_parse_file_iterate(zlib_transfer_t *state, char *filename,
    return 1;
 }
 
+int zlib_parse_file_iterate_step(zlib_transfer_t *state,
+      const char *valid_exts, void *userdata, zlib_file_cb file_cb)
+{
+   const uint8_t *cdata = NULL;
+   uint32_t checksum    = 0;
+   uint32_t size        = 0;
+   uint32_t csize       = 0;
+   unsigned cmode       = 0;
+   unsigned payload     = 0;
+   char filename[PATH_MAX_LENGTH] = {0};
+   int ret = zlib_parse_file_iterate(state, filename, &cdata, &cmode, &size, &csize,
+         &checksum, &payload);
+
+   if (ret != 1)
+      return ret;
+
+#if 0
+   RARCH_LOG("OFFSET: %u, CSIZE: %u, SIZE: %u.\n", offset + 30 + 
+         offsetNL + offsetEL, csize, size);
+#endif
+
+   if (!file_cb(filename, valid_exts, cdata, cmode,
+            csize, size, checksum, userdata))
+      return 0;
+
+   state->directory += payload;
+
+   return 1;
+}
+
 /**
  * zlib_parse_file:
  * @file                        : filename path of archive
@@ -550,8 +580,6 @@ bool zlib_parse_file(const char *file, const char *valid_exts,
 
    if (!state.backend)
       return false;
-
-   (void)valid_exts;
 
    state.handle = state.backend->open(file);
    if (!state.handle)
@@ -580,31 +608,12 @@ bool zlib_parse_file(const char *file, const char *valid_exts,
 
    for (;;)
    {
-      const uint8_t *cdata = NULL;
-      uint32_t checksum    = 0;
-      uint32_t size        = 0;
-      uint32_t csize       = 0;
-      unsigned cmode       = 0;
-      unsigned payload     = 0;
-      char filename[PATH_MAX_LENGTH] = {0};
-      int ret = zlib_parse_file_iterate(&state, filename, &cdata, &cmode, &size, &csize,
-            &checksum, &payload);
-
-      if (ret == 0)
+      int ret2 = zlib_parse_file_iterate_step(&state,
+            valid_exts, userdata, file_cb);
+      if (ret2 == 0)
          break;
-      if (ret == -1)
+      if (ret2 == -1)
          GOTO_END_ERROR();
-
-#if 0
-      RARCH_LOG("OFFSET: %u, CSIZE: %u, SIZE: %u.\n", offset + 30 + 
-      offsetNL + offsetEL, csize, size);
-#endif
-
-      if (!file_cb(filename, valid_exts, cdata, cmode,
-               csize, size, checksum, userdata))
-         break;
-
-      state.directory += payload;
    }
 
 end:
