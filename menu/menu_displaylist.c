@@ -1895,7 +1895,6 @@ static int menu_displaylist_parse(menu_displaylist_info_t *info,
       case DISPLAYLIST_HISTORY:
          {
             char path_playlist[PATH_MAX_LENGTH];
-            bool free_list = false;
             content_playlist_t *playlist = NULL;
 
             switch (type)
@@ -1905,13 +1904,16 @@ static int menu_displaylist_parse(menu_displaylist_info_t *info,
                   strlcpy(path_playlist, "history", sizeof(path_playlist));
                   break;
                case DISPLAYLIST_PLAYLIST_COLLECTION:
+                  if (menu->playlist)
+                     content_playlist_free(menu->playlist);
+
                   fill_pathname_join(path_playlist,
                         settings->playlist_directory, info->path,
                         sizeof(path_playlist));
-                  playlist  = content_playlist_init(path_playlist,
+                  menu->playlist  = content_playlist_init(path_playlist,
                         999);
                   strlcpy(path_playlist, "collection", sizeof(path_playlist));
-                  free_list = true;
+                  playlist = menu->playlist;
                   break;
                default:
                   break;
@@ -1924,9 +1926,6 @@ static int menu_displaylist_parse(menu_displaylist_info_t *info,
                *need_refresh = true;
                *need_push    = true;
             }
-
-            if (free_list)
-               content_playlist_free(playlist);
          }
          break;
       case DISPLAYLIST_OPTIONS_DISK:
