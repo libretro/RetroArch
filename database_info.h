@@ -21,6 +21,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <boolean.h>
+#include <file/file_extract.h>
 #include "libretro-db/libretrodb.h"
 #include "playlist.h"
 
@@ -42,6 +43,7 @@ enum database_type
 {
    DATABASE_TYPE_NONE = 0,
    DATABASE_TYPE_ITERATE,
+   DATABASE_TYPE_ITERATE_ZIP,
    DATABASE_TYPE_CRC_LOOKUP,
 };
 
@@ -51,6 +53,9 @@ typedef struct
    enum database_type type;
    size_t list_ptr;
    struct string_list *list;
+#ifdef HAVE_ZLIB
+   zlib_transfer_t state;
+#endif
 } database_info_handle_t;
 
 typedef struct

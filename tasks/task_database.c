@@ -68,9 +68,11 @@ static int database_info_iterate_playlist(
    if (!strcmp(path_get_extension(name), "zip"))
    {
 #ifdef HAVE_ZLIB
-      if (!zlib_parse_file(name, NULL, zlib_compare_crc32,
-               (void*)db_state))
-         RARCH_LOG("Could not process ZIP file.\n");
+      db->type = DATABASE_TYPE_ITERATE_ZIP;
+      memset(&db->state, 0, sizeof(zlib_transfer_t));
+      db->state.type = ZLIB_TRANSFER_INIT;
+
+      return 1;
 #endif
    }
    else
@@ -90,6 +92,21 @@ static int database_info_iterate_playlist(
    }
 
    return 0;
+}
+
+static int database_info_iterate_playlist_zip(
+      database_state_handle_t *db_state,
+      database_info_handle_t *db, const char *name)
+{
+   bool returnerr = true;
+#ifdef HAVE_ZLIB
+   if (zlib_parse_file_iterate(&db->state,
+            &returnerr, name, NULL, zlib_compare_crc32,
+            (void*)db_state) != 0)
+      return 0;
+#endif
+
+   return 1;
 }
 
 static int database_info_iterate_next(database_info_handle_t *db)
@@ -247,6 +264,8 @@ static int database_info_iterate(database_state_handle_t *state, database_info_h
          break;
       case DATABASE_TYPE_ITERATE:
          return database_info_iterate_playlist(state, db, name);
+      case DATABASE_TYPE_ITERATE_ZIP:
+         return database_info_iterate_playlist_zip(state, db, name);
       case DATABASE_TYPE_CRC_LOOKUP:
          return database_info_iterate_crc_lookup(state, db);
    }

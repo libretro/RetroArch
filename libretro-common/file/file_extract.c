@@ -479,25 +479,6 @@ end:
    return ret;
 }
 
-enum zlib_transfer_type
-{
-   ZLIB_TRANSFER_NONE = 0,
-   ZLIB_TRANSFER_INIT,
-   ZLIB_TRANSFER_ITERATE,
-   ZLIB_TRANSFER_DEINIT,
-   ZLIB_TRANSFER_DEINIT_ERROR,
-};
-
-typedef struct zlib_transfer
-{
-   void *handle;
-   const uint8_t *footer;
-   const uint8_t *directory;
-   const uint8_t *data;
-   ssize_t zip_size;
-   enum zlib_transfer_type type;
-   const struct zlib_file_backend *backend;
-} zlib_transfer_t;
 
 int zlib_parse_file_iterate_step_internal(
       zlib_transfer_t *state, char *filename,
