@@ -53,10 +53,12 @@ static int action_ok_playlist_entry(const char *path,
    if (!strcmp(label, "collection") ||
          !strcmp(label, "rdb_entry_start_game"))
    {
-      playlist  = NULL;
       free_list = true;
 
-      database_playlist_realloc(playlist, menu->db_playlist_file);
+      playlist = content_playlist_init(menu->db_playlist_file, 1000);
+
+      if (!playlist)
+         return -1;
    }
 
    selection_ptr = menu->navigation.selection_ptr;

@@ -103,9 +103,6 @@ int database_info_build_query(
 
 void database_playlist_free(content_playlist_t *db_playlist);
 
-bool database_playlist_realloc(
-      content_playlist_t *db_playlist, const char *path);
-
 #ifdef __cplusplus
 }
 #endif
