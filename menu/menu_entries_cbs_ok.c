@@ -73,7 +73,10 @@ static int action_ok_file_load_with_detect_core(const char *path,
       info.type          = 0;
       info.directory_ptr = idx;
       strlcpy(info.path, settings->libretro_directory, sizeof(info.path));
-      strlcpy(info.label, "deferred_core_list", sizeof(info.label));
+      if (!strcmp(label, "collection"))
+         strlcpy(info.label, "deferred_core_list_set", sizeof(info.label));
+      else
+         strlcpy(info.label, "deferred_core_list", sizeof(info.label));
 
       ret = menu_displaylist_push_list(&info, DISPLAYLIST_GENERIC);
    }
@@ -783,6 +786,31 @@ static int action_ok_path_use_directory(const char *path,
    menu_list_pop_stack_by_needle(menu->menu_list, setting->name);
 
    return 0;
+}
+
+static int action_ok_core_deferred_set(const char *path,
+      const char *label, unsigned type, size_t idx)
+{
+   char core_display_name[PATH_MAX_LENGTH];
+   menu_handle_t *menu = menu_driver_get_ptr();
+   content_playlist_t *playlist = menu ? menu->playlist : NULL;
+   if (!menu)
+      return -1;
+
+   core_info_get_name(path, core_display_name, sizeof(core_display_name));
+
+   content_playlist_update(playlist, idx,
+         NULL, NULL,
+         path , core_display_name,
+         NULL);
+
+   content_playlist_write_file(playlist);
+   content_playlist_free(playlist);
+   menu->playlist = NULL;
+
+   menu_list_flush_stack(menu->menu_list, NULL, MENU_SETTINGS);
+
+   return -1;
 }
 
 static int action_ok_core_load_deferred(const char *path,
@@ -1560,6 +1588,8 @@ void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
       case MENU_FILE_CORE:
          if (!strcmp(menu_label, "deferred_core_list"))
             cbs->action_ok = action_ok_core_load_deferred;
+         else if (!strcmp(menu_label, "deferred_core_list_set"))
+            cbs->action_ok = action_ok_core_deferred_set;
          else if (!strcmp(menu_label, "core_list"))
             cbs->action_ok = action_ok_core_load;
          else if (!strcmp(menu_label, "core_updater_list"))

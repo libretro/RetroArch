@@ -505,7 +505,8 @@ void menu_entries_cbs_init_bind_deferred_push(menu_file_list_cbs_t *cbs,
       cbs->action_deferred_push = deferred_push_category;
    else if (type == MENU_FILE_PLAYLIST_COLLECTION)
       cbs->action_deferred_push = deferred_push_rdb_collection;
-   else if (!strcmp(label, "deferred_core_list"))
+   else if (!strcmp(label, "deferred_core_list") ||
+         !strcmp(label, "deferred_core_list_set"))
       cbs->action_deferred_push = deferred_push_core_list_deferred;
    else if (!strcmp(label, "deferred_video_filter"))
       cbs->action_deferred_push = deferred_push_video_filter;

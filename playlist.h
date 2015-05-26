@@ -108,6 +108,11 @@ void content_playlist_push(content_playlist_t *playlist,
       const char *core_path, const char *core_name,
       const char *crc32);
 
+void content_playlist_update(content_playlist_t *playlist, size_t idx,
+      const char *path, const char *label,
+      const char *core_path, const char *core_name,
+      const char *crc32);
+
 void content_playlist_get_index_by_path(content_playlist_t *playlist,
       const char *search_path,
       char **path, char **label,

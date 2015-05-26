@@ -119,6 +119,33 @@ static void content_playlist_free_entry(content_playlist_entry_t *entry)
    memset(entry, 0, sizeof(*entry));
 }
 
+void content_playlist_update(content_playlist_t *playlist, size_t idx,
+      const char *path, const char *label,
+      const char *core_path, const char *core_name,
+      const char *crc32)
+{
+   if (!playlist)
+      return;
+   idx = idx - 1;
+   if (idx > playlist->size)
+      return;
+
+   if (path != NULL)
+      playlist->entries[idx].path      = strdup(path);
+   if (label != NULL)
+      playlist->entries[idx].label     = strdup(label);
+   if (core_path != NULL)
+   {
+      playlist->entries[idx].core_path = strdup(core_path);
+   }
+   if (core_name != NULL)
+   {
+      playlist->entries[idx].core_name = strdup(core_name);
+   }
+   if (crc32 != NULL)
+      playlist->entries[idx].crc32     = strdup(crc32);
+}
+
 /**
  * content_playlist_push:
  * @playlist        	   : Playlist handle.

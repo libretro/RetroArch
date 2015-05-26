@@ -100,6 +100,71 @@ static void core_info_list_resolve_all_firmware(
    }
 }
 
+void core_info_get_name(const char *path, char *s, size_t len)
+{
+   size_t i;
+   core_info_t *core_info = NULL;
+   core_info_list_t *core_info_list = NULL;
+   settings_t *settings = config_get_ptr();
+   struct string_list *contents = dir_list_new_special(NULL, DIR_LIST_CORES);
+
+   if (!contents)
+      return NULL;
+
+   core_info_list = (core_info_list_t*)calloc(1, sizeof(*core_info_list));
+   if (!core_info_list)
+      goto error;
+
+   core_info = (core_info_t*)calloc(contents->size, sizeof(*core_info));
+   if (!core_info)
+      goto error;
+
+   core_info_list->list = core_info;
+   core_info_list->count = contents->size;
+
+   for (i = 0; i < contents->size; i++)
+   {
+      char info_path_base[PATH_MAX_LENGTH], info_path[PATH_MAX_LENGTH];
+      core_info[i].path = strdup(contents->elems[i].data);
+
+      if (!core_info[i].path)
+         break;
+
+      if (strcmp(core_info[i].path, path) != 0)
+            continue;
+
+      fill_pathname_base(info_path_base, contents->elems[i].data,
+            sizeof(info_path_base));
+      path_remove_extension(info_path_base);
+
+#if defined(RARCH_MOBILE) || (defined(RARCH_CONSOLE) && !defined(PSP))
+      char *substr = strrchr(info_path_base, '_');
+      if (substr)
+         *substr = '\0';
+#endif
+
+      strlcat(info_path_base, ".info", sizeof(info_path_base));
+
+      fill_pathname_join(info_path, (*settings->libretro_info_path) ?
+            settings->libretro_info_path : settings->libretro_directory,
+            info_path_base, sizeof(info_path));
+
+      core_info[i].data = config_file_new(info_path);
+
+      if (core_info[i].data)
+         config_get_string(core_info[i].data, "corename",
+               &core_info[i].core_name);
+
+      strlcpy(s, core_info[i].core_name, len);
+   }
+
+error:
+   if (contents)
+      dir_list_free(contents);
+   contents = NULL;
+   core_info_list_free(core_info_list);
+}
+
 core_info_list_t *core_info_list_new(void)
 {
    size_t i;
