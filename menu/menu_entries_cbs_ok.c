@@ -804,7 +804,6 @@ static int action_ok_core_deferred_set(const char *path,
          path , core_display_name,
          NULL);
 
-   content_playlist_write_file(playlist);
    content_playlist_free(playlist);
    menu->playlist = NULL;
 

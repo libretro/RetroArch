@@ -124,26 +124,25 @@ void content_playlist_update(content_playlist_t *playlist, size_t idx,
       const char *core_path, const char *core_name,
       const char *crc32)
 {
+   content_playlist_entry_t *entry = NULL;
    if (!playlist)
       return;
    idx = idx - 1;
    if (idx > playlist->size)
       return;
 
+   entry = &playlist->entries[idx];
+
    if (path != NULL)
-      playlist->entries[idx].path      = strdup(path);
+      entry->path      = strdup(path);
    if (label != NULL)
-      playlist->entries[idx].label     = strdup(label);
+      entry->label     = strdup(label);
    if (core_path != NULL)
-   {
-      playlist->entries[idx].core_path = strdup(core_path);
-   }
+      entry->core_path = strdup(core_path);
    if (core_name != NULL)
-   {
-      playlist->entries[idx].core_name = strdup(core_name);
-   }
+      entry->core_name = strdup(core_name);
    if (crc32 != NULL)
-      playlist->entries[idx].crc32     = strdup(crc32);
+      entry->crc32     = strdup(crc32);
 }
 
 /**
