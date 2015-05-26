@@ -479,6 +479,15 @@ end:
    return ret;
 }
 
+enum zlib_transfer_type
+{
+   ZLIB_TRANSFER_NONE = 0,
+   ZLIB_TRANSFER_INIT,
+   ZLIB_TRANSFER_ITERATE,
+   ZLIB_TRANSFER_DEINIT,
+   ZLIB_TRANSFER_DEINIT_ERROR,
+};
+
 typedef struct zlib_transfer
 {
    void *handle;
@@ -486,6 +495,7 @@ typedef struct zlib_transfer
    const uint8_t *directory;
    const uint8_t *data;
    ssize_t zip_size;
+   enum zlib_transfer_type type;
    const struct zlib_file_backend *backend;
 } zlib_transfer_t;
 
@@ -610,25 +620,46 @@ bool zlib_parse_file(const char *file, const char *valid_exts,
       zlib_file_cb file_cb, void *userdata)
 {
    zlib_transfer_t state = {0};
-   bool ret = true;
+   bool returnerr = true;
 
-   if (zlib_parse_file_init(&state, file) != 0)
-      GOTO_END_ERROR();
+   state.type = ZLIB_TRANSFER_INIT;
 
    for (;;)
    {
-      int ret2 = zlib_parse_file_iterate_step(&state,
-            valid_exts, userdata, file_cb);
-      if (ret2 == 0)
+      switch (state.type)
+      {
+         case ZLIB_TRANSFER_NONE:
+            break;
+         case ZLIB_TRANSFER_INIT:
+            if (zlib_parse_file_init(&state, file) == 0)
+               state.type = ZLIB_TRANSFER_ITERATE;
+            else
+               state.type = ZLIB_TRANSFER_DEINIT_ERROR;
+            break;
+         case ZLIB_TRANSFER_ITERATE:
+            {
+               int ret2 = zlib_parse_file_iterate_step(&state,
+                     valid_exts, userdata, file_cb);
+               if (ret2 != 1)
+                  state.type = ZLIB_TRANSFER_DEINIT;
+               if (ret2 == -1)
+                  state.type = ZLIB_TRANSFER_DEINIT_ERROR;
+            }
+            break;
+         case ZLIB_TRANSFER_DEINIT_ERROR:
+            returnerr = false;
+         case ZLIB_TRANSFER_DEINIT:
+            if (state.handle)
+               state.backend->free(state.handle);
+            break;
+      }
+
+      if (state.type == ZLIB_TRANSFER_DEINIT ||
+            state.type == ZLIB_TRANSFER_DEINIT_ERROR)
          break;
-      if (ret2 == -1)
-         GOTO_END_ERROR();
    }
 
-end:
-   if (state.handle)
-      state.backend->free(state.handle);
-   return ret;
+   return returnerr;
 }
 
 struct zip_extract_userdata
