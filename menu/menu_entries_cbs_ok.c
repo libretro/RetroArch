@@ -74,7 +74,10 @@ static int action_ok_file_load_with_detect_core(const char *path,
       info.directory_ptr = idx;
       strlcpy(info.path, settings->libretro_directory, sizeof(info.path));
       if (!strcmp(label, "collection"))
+      {
+         rdb_entry_start_game_selection_ptr = idx;
          strlcpy(info.label, "deferred_core_list_set", sizeof(info.label));
+      }
       else
          strlcpy(info.label, "deferred_core_list", sizeof(info.label));
 
@@ -793,18 +796,24 @@ static int action_ok_core_deferred_set(const char *path,
 {
    char core_display_name[PATH_MAX_LENGTH];
    menu_handle_t *menu = menu_driver_get_ptr();
-   content_playlist_t *playlist = menu ? menu->playlist : NULL;
    if (!menu)
       return -1;
 
+   if (menu->playlist)
+   content_playlist_free(menu->playlist);
+
+   menu->playlist = content_playlist_init(menu->db_playlist_file, 1000);
+
    core_info_get_name(path, core_display_name, sizeof(core_display_name));
 
-   content_playlist_update(playlist, idx,
-         NULL, NULL,
-         path , core_display_name,
-         NULL);
+   idx = rdb_entry_start_game_selection_ptr;
 
-   content_playlist_free(playlist);
+   content_playlist_update(menu->playlist, idx,
+         menu->playlist->entries[idx].path, menu->playlist->entries[idx].label,
+         path , core_display_name,
+         menu->playlist->entries[idx].crc32);
+
+   content_playlist_free(menu->playlist);
    menu->playlist = NULL;
 
    menu_list_flush_stack(menu->menu_list, NULL, MENU_SETTINGS);

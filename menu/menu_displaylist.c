@@ -756,12 +756,6 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
          }
       }
 
-      if (!strcmp(path_playlist, "collection"))
-      {
-         menu_list_set_alt_at_offset(info->list, i, path);
-         menu_list_set_alt2_at_offset(info->list, i, info->path);
-      }
-
       menu_list_push(info->list, fill_buf, path_playlist,
             MENU_FILE_PLAYLIST_ENTRY, i);
    }
@@ -1915,6 +1909,7 @@ static int menu_displaylist_parse(menu_displaylist_info_t *info,
                         sizeof(path_playlist));
                   menu->playlist  = content_playlist_init(path_playlist,
                         999);
+                  strlcpy(menu->db_playlist_file, path_playlist, sizeof(menu->db_playlist_file));
                   strlcpy(path_playlist, "collection", sizeof(path_playlist));
                   playlist = menu->playlist;
                   break;
