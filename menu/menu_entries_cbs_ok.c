@@ -69,7 +69,7 @@ static int action_ok_playlist_entry(const char *path,
    rarch_playlist_load_content(playlist, selection_ptr);
 
    if (free_list)
-      database_playlist_free(playlist);
+      content_playlist_free(playlist);
 
    menu_list_flush_stack(menu->menu_list, NULL, MENU_SETTINGS);
    return -1;

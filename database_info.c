@@ -380,9 +380,3 @@ void database_info_list_free(database_info_list_t *database_info_list)
    free(database_info_list->list);
    free(database_info_list);
 }
-
-void database_playlist_free(content_playlist_t *db_playlist)
-{
-   if (db_playlist)
-      content_playlist_free(db_playlist);
-}

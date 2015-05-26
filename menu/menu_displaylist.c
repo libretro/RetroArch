@@ -1153,12 +1153,12 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
             0, 0);
 #endif
 
-   database_playlist_free(playlist);
+   content_playlist_free(playlist);
 
    return 0;
 
 error:
-   database_playlist_free(playlist);
+   content_playlist_free(playlist);
 
    return -1;
 }

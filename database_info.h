@@ -101,8 +101,6 @@ void database_info_free(database_info_handle_t *dbl);
 int database_info_build_query(
       char *query, size_t len, const char *label, const char *path);
 
-void database_playlist_free(content_playlist_t *db_playlist);
-
 #ifdef __cplusplus
 }
 #endif
