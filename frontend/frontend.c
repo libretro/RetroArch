@@ -38,7 +38,7 @@ void main_exit_save_config(void)
 
    if (settings->config_save_on_exit && *global->config_path)
    {
-	  /* restore original paths in case per-core organization is enabled */
+      /* restore original paths in case per-core organization is enabled */
       if (settings->sort_savefiles_enable && orig_savefile_dir != '\0')
 	     strlcpy(global->savefile_dir,orig_savefile_dir,sizeof(global->savefile_dir));
       if (settings->sort_savestates_enable && orig_savestate_dir != '\0')
