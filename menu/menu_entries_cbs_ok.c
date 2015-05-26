@@ -40,9 +40,54 @@ static int menu_action_setting_set_current_string_path(
    return menu_setting_generic(setting);
 }
 
+static int action_ok_file_load_with_detect_core(const char *path,
+      const char *label, unsigned type, size_t idx)
+{
+   int ret;
+   menu_displaylist_info_t info = {0};
+   const char *menu_path    = NULL;
+   menu_handle_t *menu      = menu_driver_get_ptr();
+   settings_t *settings     = config_get_ptr();
+   global_t *global         = global_get_ptr();
+
+   if (!menu)
+      return -1;
+
+   menu_list_get_last_stack(menu->menu_list,
+         &menu_path, NULL, NULL);
+
+   ret = rarch_defer_core(global->core_info,
+         menu_path, path, label, menu->deferred_path,
+         sizeof(menu->deferred_path));
+
+   if (ret == -1)
+   {
+      event_command(EVENT_CMD_LOAD_CORE);
+      menu_entries_common_load_content(false);
+      return -1;
+   }
+
+   if (ret == 0)
+   {
+      info.list          = menu->menu_list->menu_stack;
+      info.type          = 0;
+      info.directory_ptr = idx;
+      strlcpy(info.path, settings->libretro_directory, sizeof(info.path));
+      strlcpy(info.label, "deferred_core_list", sizeof(info.label));
+
+      ret = menu_displaylist_push_list(&info, DISPLAYLIST_GENERIC);
+   }
+
+   return ret;
+}
+
 static int action_ok_playlist_entry(const char *path,
       const char *label, unsigned type, size_t idx)
 {
+   const char *entry_path  = NULL;
+   const char *entry_label = NULL;
+   const char *core_path   = NULL;
+   const char *core_name   = NULL;
    size_t selection_ptr = 0;
    content_playlist_t *playlist = g_defaults.history;
    menu_handle_t *menu = menu_driver_get_ptr();
@@ -62,6 +107,18 @@ static int action_ok_playlist_entry(const char *path,
 
    if (!strcmp(label, "rdb_entry_start_game"))
       selection_ptr = rdb_entry_start_game_selection_ptr;
+
+   content_playlist_get_index(playlist, idx,
+         &entry_path, &entry_label, &core_path, &core_name, NULL); 
+
+#if 0
+   RARCH_LOG("path: %s, label: %s, core path: %s, core name: %s\n", entry_path, entry_label,
+         core_path, core_name);
+#endif
+
+   if (!strcmp(core_path, "DETECT") && !strcmp(core_name, "DETECT"))
+      return action_ok_file_load_with_detect_core(entry_path, label, type, idx);
+
 
    rarch_playlist_load_content(playlist, selection_ptr);
 
@@ -968,46 +1025,6 @@ static int action_ok_disk_image_append(const char *path,
    return -1;
 }
 
-static int action_ok_file_load_with_detect_core(const char *path,
-      const char *label, unsigned type, size_t idx)
-{
-   int ret;
-   menu_displaylist_info_t info = {0};
-   const char *menu_path    = NULL;
-   menu_handle_t *menu      = menu_driver_get_ptr();
-   settings_t *settings     = config_get_ptr();
-   global_t *global         = global_get_ptr();
-
-   if (!menu)
-      return -1;
-
-   menu_list_get_last_stack(menu->menu_list,
-         &menu_path, NULL, NULL);
-
-   ret = rarch_defer_core(global->core_info,
-         menu_path, path, label, menu->deferred_path,
-         sizeof(menu->deferred_path));
-
-   if (ret == -1)
-   {
-      event_command(EVENT_CMD_LOAD_CORE);
-      menu_entries_common_load_content(false);
-      return -1;
-   }
-
-   if (ret == 0)
-   {
-      info.list          = menu->menu_list->menu_stack;
-      info.type          = 0;
-      info.directory_ptr = idx;
-      strlcpy(info.path, settings->libretro_directory, sizeof(info.path));
-      strlcpy(info.label, "deferred_core_list", sizeof(info.label));
-
-      ret = menu_displaylist_push_list(&info, DISPLAYLIST_GENERIC);
-   }
-
-   return ret;
-}
 
 static int action_ok_file_load(const char *path,
       const char *label, unsigned type, size_t idx)
