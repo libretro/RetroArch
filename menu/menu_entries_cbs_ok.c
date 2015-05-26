@@ -104,7 +104,12 @@ static int action_ok_playlist_entry(const char *path,
          !strcmp(label, "rdb_entry_start_game"))
    {
       if (!menu->playlist)
-         return -1;
+      {
+         menu->playlist = content_playlist_init(menu->db_playlist_file, 1000);
+
+         if (!menu->playlist)
+            return -1;
+      }
 
       playlist = menu->playlist;
    }
@@ -117,12 +122,13 @@ static int action_ok_playlist_entry(const char *path,
    content_playlist_get_index(playlist, idx,
          &entry_path, &entry_label, &core_path, &core_name, NULL); 
 
-#if 0
+#if 1
    RARCH_LOG("path: %s, label: %s, core path: %s, core name: %s\n", entry_path, entry_label,
          core_path, core_name);
 #endif
 
-   if (!strcmp(core_path, "DETECT") && !strcmp(core_name, "DETECT"))
+   if (core_path && core_path[0] != '\0' && core_name &&
+         core_name[0] != '\0' && !strcmp(core_path, "DETECT") && !strcmp(core_name, "DETECT"))
       return action_ok_file_load_with_detect_core(entry_path, label, type, idx);
 
 
