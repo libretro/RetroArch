@@ -44,6 +44,8 @@ extern "C" {
 size_t strlcpy(char *dest, const char *source, size_t size);
 size_t strlcat(char *dest, const char *source, size_t size);
 
+char *rarch_strcasestr(const char *s, const char *find);
+
 #ifdef __cplusplus
 }
 #endif
