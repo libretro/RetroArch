@@ -220,6 +220,7 @@ typedef struct
    animation_t *animation;
    bool animation_is_active;
 
+   content_playlist_t *playlist;
    char db_playlist_file[PATH_MAX_LENGTH];
 } menu_handle_t;
 

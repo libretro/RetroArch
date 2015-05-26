@@ -43,7 +43,6 @@ static int menu_action_setting_set_current_string_path(
 static int action_ok_playlist_entry(const char *path,
       const char *label, unsigned type, size_t idx)
 {
-   bool free_list = false;
    size_t selection_ptr = 0;
    content_playlist_t *playlist = g_defaults.history;
    menu_handle_t *menu = menu_driver_get_ptr();
@@ -53,12 +52,10 @@ static int action_ok_playlist_entry(const char *path,
    if (!strcmp(label, "collection") ||
          !strcmp(label, "rdb_entry_start_game"))
    {
-      free_list = true;
-
-      playlist = content_playlist_init(menu->db_playlist_file, 1000);
-
-      if (!playlist)
+      if (!menu->playlist)
          return -1;
+
+      playlist = menu->playlist;
    }
 
    selection_ptr = menu->navigation.selection_ptr;
@@ -67,9 +64,6 @@ static int action_ok_playlist_entry(const char *path,
       selection_ptr = rdb_entry_start_game_selection_ptr;
 
    rarch_playlist_load_content(playlist, selection_ptr);
-
-   if (free_list)
-      content_playlist_free(playlist);
 
    menu_list_flush_stack(menu->menu_list, NULL, MENU_SETTINGS);
    return -1;

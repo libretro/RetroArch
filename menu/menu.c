@@ -222,6 +222,10 @@ void menu_free(menu_handle_t *menu)
       return;
 
    menu_free_list(menu);
+
+   if (menu->playlist)
+      content_playlist_free(menu->playlist);
+   menu->playlist = NULL;
   
 #ifdef HAVE_SHADER_MANAGER
    if (menu->shader)
