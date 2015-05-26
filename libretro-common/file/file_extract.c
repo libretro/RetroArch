@@ -499,7 +499,8 @@ typedef struct zlib_transfer
    const struct zlib_file_backend *backend;
 } zlib_transfer_t;
 
-int zlib_parse_file_iterate(zlib_transfer_t *state, char *filename,
+int zlib_parse_file_iterate_step_internal(
+      zlib_transfer_t *state, char *filename,
       const uint8_t **cdata,
       unsigned *cmode, uint32_t *size, uint32_t *csize,
       uint32_t *checksum, unsigned *payback)
@@ -547,7 +548,7 @@ int zlib_parse_file_iterate_step(zlib_transfer_t *state,
    unsigned cmode       = 0;
    unsigned payload     = 0;
    char filename[PATH_MAX_LENGTH] = {0};
-   int ret = zlib_parse_file_iterate(state, filename, &cdata, &cmode, &size, &csize,
+   int ret = zlib_parse_file_iterate_step_internal(state, filename, &cdata, &cmode, &size, &csize,
          &checksum, &payload);
 
    if (ret != 1)
@@ -603,6 +604,49 @@ int zlib_parse_file_init(zlib_transfer_t *state,
    return 0;
 }
 
+int zlib_parse_file_iterate(void *data, bool *returnerr, const char *file,
+      const char *valid_exts, zlib_file_cb file_cb, void *userdata)
+{
+   zlib_transfer_t *state = (zlib_transfer_t*)data;
+
+   if (!state)
+      return -1;
+
+   switch (state->type)
+   {
+      case ZLIB_TRANSFER_NONE:
+         break;
+      case ZLIB_TRANSFER_INIT:
+         if (zlib_parse_file_init(state, file) == 0)
+            state->type = ZLIB_TRANSFER_ITERATE;
+         else
+            state->type = ZLIB_TRANSFER_DEINIT_ERROR;
+         break;
+      case ZLIB_TRANSFER_ITERATE:
+         {
+            int ret2 = zlib_parse_file_iterate_step(state,
+                  valid_exts, userdata, file_cb);
+            if (ret2 != 1)
+               state->type = ZLIB_TRANSFER_DEINIT;
+            if (ret2 == -1)
+               state->type = ZLIB_TRANSFER_DEINIT_ERROR;
+         }
+         break;
+      case ZLIB_TRANSFER_DEINIT_ERROR:
+         *returnerr = false;
+      case ZLIB_TRANSFER_DEINIT:
+         if (state->handle)
+            state->backend->free(state->handle);
+         break;
+   }
+
+   if (state->type == ZLIB_TRANSFER_DEINIT ||
+         state->type == ZLIB_TRANSFER_DEINIT_ERROR)
+      return -1;
+
+   return 0;
+}
+
 /**
  * zlib_parse_file:
  * @file                        : filename path of archive
@@ -626,36 +670,10 @@ bool zlib_parse_file(const char *file, const char *valid_exts,
 
    for (;;)
    {
-      switch (state.type)
-      {
-         case ZLIB_TRANSFER_NONE:
-            break;
-         case ZLIB_TRANSFER_INIT:
-            if (zlib_parse_file_init(&state, file) == 0)
-               state.type = ZLIB_TRANSFER_ITERATE;
-            else
-               state.type = ZLIB_TRANSFER_DEINIT_ERROR;
-            break;
-         case ZLIB_TRANSFER_ITERATE:
-            {
-               int ret2 = zlib_parse_file_iterate_step(&state,
-                     valid_exts, userdata, file_cb);
-               if (ret2 != 1)
-                  state.type = ZLIB_TRANSFER_DEINIT;
-               if (ret2 == -1)
-                  state.type = ZLIB_TRANSFER_DEINIT_ERROR;
-            }
-            break;
-         case ZLIB_TRANSFER_DEINIT_ERROR:
-            returnerr = false;
-         case ZLIB_TRANSFER_DEINIT:
-            if (state.handle)
-               state.backend->free(state.handle);
-            break;
-      }
+      int ret = zlib_parse_file_iterate(&state, &returnerr, file,
+            valid_exts, file_cb, userdata);
 
-      if (state.type == ZLIB_TRANSFER_DEINIT ||
-            state.type == ZLIB_TRANSFER_DEINIT_ERROR)
+      if (ret != 0)
          break;
    }
 
