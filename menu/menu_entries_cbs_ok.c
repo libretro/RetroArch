@@ -62,7 +62,7 @@ static int action_ok_playlist_entry(const char *path,
    selection_ptr = menu->navigation.selection_ptr;
 
    if (!strcmp(label, "rdb_entry_start_game"))
-      selection_ptr =- rdb_entry_start_game_selection_ptr;
+      selection_ptr = rdb_entry_start_game_selection_ptr;
 
    rarch_playlist_load_content(playlist, selection_ptr);
 
