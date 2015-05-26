@@ -479,6 +479,16 @@ end:
    return ret;
 }
 
+typedef struct zlib_transfer
+{
+   void *handle;
+   const uint8_t *footer;
+   const uint8_t *directory;
+   const uint8_t *data;
+   ssize_t zip_size;
+   const struct zlib_file_backend *backend;
+} zlib_transfer_t;
+
 /**
  * zlib_parse_file:
  * @file                        : filename path of archive
@@ -495,43 +505,40 @@ end:
 bool zlib_parse_file(const char *file, const char *valid_exts,
       zlib_file_cb file_cb, void *userdata)
 {
-   void *handle;
-   const uint8_t *footer    = NULL;
-   const uint8_t *directory = NULL;
-   const uint8_t *data      = NULL;
-   ssize_t zip_size = 0;
+   zlib_transfer_t state = {0};
    bool ret = true;
-   const struct zlib_file_backend *backend = zlib_get_default_file_backend();
 
-   if (!backend)
+   state.backend = zlib_get_default_file_backend();
+
+   if (!state.backend)
       return false;
 
    (void)valid_exts;
 
-   handle = backend->open(file);
-   if (!handle)
+   state.handle = state.backend->open(file);
+   if (!state.handle)
       GOTO_END_ERROR();
 
-   zip_size = backend->size(handle);
-   if (zip_size < 22)
+   state.zip_size = state.backend->size(state.handle);
+   if (state.zip_size < 22)
       GOTO_END_ERROR();
 
-   data = backend->data(handle);
+   state.data = state.backend->data(state.handle);
 
-   footer = data + zip_size - 22;
-   for (;; footer--)
+   state.footer = state.data + state.zip_size - 22;
+   for (;; state.footer--)
    {
-      if (footer <= data + 22)
+      if (state.footer <= state.data + 22)
          GOTO_END_ERROR();
-      if (read_le(footer, 4) == END_OF_CENTRAL_DIR_SIGNATURE)
+      if (read_le(state.footer, 4) == END_OF_CENTRAL_DIR_SIGNATURE)
       {
-         unsigned comment_len = read_le(footer + 20, 2);
-         if (footer + 22 + comment_len == data + zip_size)
+         unsigned comment_len = read_le(state.footer + 20, 2);
+         if (state.footer + 22 + comment_len == state.data + state.zip_size)
             break;
       }
    }
 
-   directory = data + read_le(footer + 16, 4);
+   state.directory = state.data + read_le(state.footer + 16, 4);
 
    for (;;)
    {
@@ -540,30 +547,30 @@ bool zlib_parse_file(const char *file, const char *valid_exts,
                offsetNL, offsetEL;
       char filename[PATH_MAX_LENGTH] = {0};
       const uint8_t *cdata = NULL;
-      uint32_t signature = read_le(directory + 0, 4);
+      uint32_t signature = read_le(state.directory + 0, 4);
 
       if (signature != CENTRAL_FILE_HEADER_SIGNATURE)
          break;
 
-      cmode         = read_le(directory + 10, 2);
-      checksum      = read_le(directory + 16, 4);
-      csize         = read_le(directory + 20, 4);
-      size          = read_le(directory + 24, 4);
+      cmode         = read_le(state.directory + 10, 2);
+      checksum      = read_le(state.directory + 16, 4);
+      csize         = read_le(state.directory + 20, 4);
+      size          = read_le(state.directory + 24, 4);
 
-      namelength    = read_le(directory + 28, 2);
-      extralength   = read_le(directory + 30, 2);
-      commentlength = read_le(directory + 32, 2);
+      namelength    = read_le(state.directory + 28, 2);
+      extralength   = read_le(state.directory + 30, 2);
+      commentlength = read_le(state.directory + 32, 2);
 
       if (namelength >= PATH_MAX_LENGTH)
          GOTO_END_ERROR();
 
-      memcpy(filename, directory + 46, namelength);
+      memcpy(filename, state.directory + 46, namelength);
 
-      offset        = read_le(directory + 42, 4);
-      offsetNL      = read_le(data + offset + 26, 2);
-      offsetEL      = read_le(data + offset + 28, 2);
+      offset        = read_le(state.directory + 42, 4);
+      offsetNL      = read_le(state.data + offset + 26, 2);
+      offsetEL      = read_le(state.data + offset + 28, 2);
 
-      cdata = data + offset + 30 + offsetNL + offsetEL;
+      cdata = state.data + offset + 30 + offsetNL + offsetEL;
 
 #if 0
       RARCH_LOG("OFFSET: %u, CSIZE: %u, SIZE: %u.\n", offset + 30 + 
@@ -574,12 +581,12 @@ bool zlib_parse_file(const char *file, const char *valid_exts,
                csize, size, checksum, userdata))
          break;
 
-      directory += 46 + namelength + extralength + commentlength;
+      state.directory += 46 + namelength + extralength + commentlength;
    }
 
 end:
-   if (handle)
-      backend->free(handle);
+   if (state.handle)
+      state.backend->free(state.handle);
    return ret;
 }
 
