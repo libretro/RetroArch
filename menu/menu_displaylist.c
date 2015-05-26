@@ -747,9 +747,12 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
 
          if (core_name && core_name[0] != '\0')
          {
-            char tmp[PATH_MAX_LENGTH];
-            snprintf(tmp, sizeof(tmp), " (%s)", core_name);
-            strlcat(fill_buf, tmp, sizeof(fill_buf));
+            if (strcmp(core_name, "DETECT") != 0)
+            {
+               char tmp[PATH_MAX_LENGTH];
+               snprintf(tmp, sizeof(tmp), " (%s)", core_name);
+               strlcat(fill_buf, tmp, sizeof(fill_buf));
+            }
          }
       }
 
@@ -760,7 +763,7 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
       }
 
       menu_list_push(info->list, fill_buf, path_playlist,
-            MENU_FILE_PLAYLIST_ENTRY, 0);
+            MENU_FILE_PLAYLIST_ENTRY, i);
    }
 
    return 0;
