@@ -136,8 +136,7 @@ static int database_info_list_iterate_next(
  * we are in Load Content (Detect Core)? Let the user
  * choose the core to be loaded with it upon selecting
  * the playlist entry?
- * * - Extension needs to be changed from 'rdb' to
- * 'cfg'
+ * * - Implement ZIP handling.
  **/
 static int database_info_list_iterate_found_match(
       database_state_handle_t *db_state,
