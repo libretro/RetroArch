@@ -189,7 +189,6 @@ static int action_iterate_help(char *s, size_t len, const char *label)
          "Enter/Exit Menu: %-20s\n"
          " Exit RetroArch: %-20s\n"
          "Toggle Keyboard: %-20s\n"
-         "           Scan: %-20s\n"
          " \n"
 
          "To run content:\n"
@@ -201,7 +200,7 @@ static int action_iterate_help(char *s, size_t len, const char *label)
          " \n"
 
          "Press Accept/OK to continue.",
-      desc[0], desc[1], desc[2], desc[3], desc[4], desc[5], desc[6], desc[7], desc[8]);
+      desc[0], desc[1], desc[2], desc[3], desc[4], desc[5], desc[6], desc[7]);
 
    return 0;
 }
