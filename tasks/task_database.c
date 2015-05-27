@@ -32,9 +32,9 @@ static int zlib_compare_crc32(const char *name, const char *valid_exts,
 {
    database_state_handle_t *db_state = (database_state_handle_t*)userdata;
     
-   (void)db_state;
+   db_state->crc = crc32;
 
-   RARCH_LOG("CRC32: 0x%x\n", crc32);
+   RARCH_LOG("Going to compare CRC 0x%x for %s\n", crc32, name);
 
    return 1;
 }
@@ -94,19 +94,15 @@ static int database_info_iterate_playlist(
    return 0;
 }
 
-static int database_info_iterate_playlist_zip(
-      database_state_handle_t *db_state,
-      database_info_handle_t *db, const char *name)
+static int database_info_list_iterate_end_no_match(database_state_handle_t *db_state)
 {
-   bool returnerr = true;
-#ifdef HAVE_ZLIB
-   if (zlib_parse_file_iterate(&db->state,
-            &returnerr, name, NULL, zlib_compare_crc32,
-            (void*)db_state) != 0)
-      return 0;
-#endif
+   /* Reached end of database list, CRC match probably didn't succeed. */
+   db_state->list_index  = 0;
+   db_state->entry_index = 0;
 
-   return 1;
+   if (db_state->crc != 0)
+      db_state->crc = 0;
+   return 0;
 }
 
 static int database_info_iterate_next(database_info_handle_t *db)
@@ -125,27 +121,6 @@ static int database_info_list_iterate_new(database_state_handle_t *db_state)
          (unsigned)db_state->list->size, new_database);
    db_state->info = database_info_list_new(new_database, NULL);
    return 0;
-}
-
-static int database_info_list_iterate_end_no_match(database_state_handle_t *db_state)
-{
-   /* Reached end of database list, CRC match probably didn't succeed. */
-   db_state->list_index  = 0;
-   db_state->entry_index = 0;
-   return 0;
-}
-
-/* End of entries in database info list and didn't find a 
- * match, go to the next database. */
-static int database_info_list_iterate_next(
-      database_state_handle_t *db_state
-      )
-{
-   db_state->list_index++;
-   db_state->entry_index = 0;
-   database_info_list_free(db_state->info);
-
-   return 1;
 }
 
 /* TODO/FIXME -
@@ -200,6 +175,19 @@ static int database_info_list_iterate_found_match(
    return 0;
 }
 
+/* End of entries in database info list and didn't find a 
+ * match, go to the next database. */
+static int database_info_list_iterate_next(
+      database_state_handle_t *db_state
+      )
+{
+   db_state->list_index++;
+   db_state->entry_index = 0;
+   database_info_list_free(db_state->info);
+
+   return 1;
+}
+
 static int database_info_iterate_crc_lookup(
       database_state_handle_t *db_state,
       database_info_handle_t *db)
@@ -247,6 +235,29 @@ static int database_info_iterate_crc_lookup(
       database_info_list_free(db_state->info);
    return 0;
 }
+
+static int database_info_iterate_playlist_zip(
+      database_state_handle_t *db_state,
+      database_info_handle_t *db, const char *name)
+{
+   bool returnerr = true;
+#ifdef HAVE_ZLIB
+   if (db_state->crc != 0)
+      return database_info_iterate_crc_lookup(db_state, db);
+   else
+   {
+      if (zlib_parse_file_iterate(&db->state,
+               &returnerr, name, NULL, zlib_compare_crc32,
+               (void*)db_state) != 0)
+         return 0;
+   }
+#endif
+
+   return 1;
+}
+
+
+
 
 static int database_info_iterate(database_state_handle_t *state, database_info_handle_t *db)
 {
