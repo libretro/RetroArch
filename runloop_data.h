@@ -127,6 +127,7 @@ typedef struct database_state_handle
    size_t entry_index;
    uint32_t crc;
    uint8_t *buf;
+   char zip_name[PATH_MAX_LENGTH];
 } database_state_handle_t;
 
 typedef struct db_handle

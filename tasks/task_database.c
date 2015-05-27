@@ -34,6 +34,8 @@ static int zlib_compare_crc32(const char *name, const char *valid_exts,
     
    db_state->crc = crc32;
 
+   strlcpy(db_state->zip_name, name, sizeof(db_state->zip_name));
+
    RARCH_LOG("Going to compare CRC 0x%x for %s\n", crc32, name);
 
    return 1;
@@ -70,6 +72,7 @@ static int database_info_iterate_playlist(
 #ifdef HAVE_ZLIB
       db->type = DATABASE_TYPE_ITERATE_ZIP;
       memset(&db->state, 0, sizeof(zlib_transfer_t));
+      db_state->zip_name[0] = '\0';
       db->state.type = ZLIB_TRANSFER_INIT;
 
       return 1;
@@ -132,12 +135,14 @@ static int database_info_list_iterate_new(database_state_handle_t *db_state)
  **/
 static int database_info_list_iterate_found_match(
       database_state_handle_t *db_state,
-      database_info_handle_t *db
+      database_info_handle_t *db,
+      const char *zip_name
       )
 {
    char db_crc[PATH_MAX_LENGTH];
    char db_playlist_path[PATH_MAX_LENGTH];
    char  db_playlist_base_str[PATH_MAX_LENGTH];
+   char entry_path_str[PATH_MAX_LENGTH];
    const char *db_playlist_base = NULL;
    content_playlist_t *playlist = NULL;
    settings_t *settings = config_get_ptr();
@@ -164,11 +169,19 @@ static int database_info_list_iterate_found_match(
    RARCH_LOG("Playlist Path: %s\n", db_playlist_path);
    RARCH_LOG("Entry Path: %s\n", entry_path);
    RARCH_LOG("Playlist not NULL: %d\n", playlist != NULL);
+   RARCH_LOG("ZIP entry: %s\n", zip_name);
 #endif
 
    snprintf(db_crc, sizeof(db_crc), "%s|crc", db_info_entry->crc32);
 
-   content_playlist_push(playlist, entry_path, db_info_entry->name, "DETECT", "DETECT", db_crc);
+   strlcpy(entry_path_str, entry_path, sizeof(entry_path_str));
+   if (zip_name && zip_name[0] != '\0')
+   {
+      strlcat(entry_path_str, "#", sizeof(entry_path_str));
+      strlcat(entry_path_str, zip_name, sizeof(entry_path_str));
+   }
+
+   content_playlist_push(playlist, entry_path_str, db_info_entry->name, "DETECT", "DETECT", db_crc);
 
    content_playlist_write_file(playlist);
    content_playlist_free(playlist);
@@ -190,7 +203,8 @@ static int database_info_list_iterate_next(
 
 static int database_info_iterate_crc_lookup(
       database_state_handle_t *db_state,
-      database_info_handle_t *db)
+      database_info_handle_t *db,
+      const char *zip_entry)
 {
 
    if ((unsigned)db_state->list_index == (unsigned)db_state->list->size)
@@ -215,7 +229,7 @@ static int database_info_iterate_crc_lookup(
 #endif
 
          if (rarch_strcasestr(entry_state_crc, db_info_entry->crc32))
-            return database_info_list_iterate_found_match(db_state, db);
+            return database_info_list_iterate_found_match(db_state, db, zip_entry);
       }
    }
 
@@ -243,7 +257,7 @@ static int database_info_iterate_playlist_zip(
    bool returnerr = true;
 #ifdef HAVE_ZLIB
    if (db_state->crc != 0)
-      return database_info_iterate_crc_lookup(db_state, db);
+      return database_info_iterate_crc_lookup(db_state, db, db_state->zip_name);
    else
    {
       if (zlib_parse_file_iterate(&db->state,
@@ -278,7 +292,7 @@ static int database_info_iterate(database_state_handle_t *state, database_info_h
       case DATABASE_TYPE_ITERATE_ZIP:
          return database_info_iterate_playlist_zip(state, db, name);
       case DATABASE_TYPE_CRC_LOOKUP:
-         return database_info_iterate_crc_lookup(state, db);
+         return database_info_iterate_crc_lookup(state, db, NULL);
    }
 
    return 0;
