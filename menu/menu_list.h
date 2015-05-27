@@ -40,6 +40,8 @@ typedef struct menu_file_list_cbs
          size_t idx);
    int (*action_cancel)(const char *path, const char *label, unsigned type,
          size_t idx);
+   int (*action_scan)(const char *path, const char *label, unsigned type,
+         size_t idx);
    int (*action_start)(unsigned type,  const char *label);
    int (*action_select)(unsigned type,  const char *label);
    int (*action_content_list_switch)(void *data, void *userdata, const char

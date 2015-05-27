@@ -200,6 +200,7 @@ static void menu_driver_list_delete_common(file_list_t *list, size_t idx,
       cbs->action_left          = NULL;
       cbs->action_right         = NULL;
       cbs->action_deferred_push = NULL;
+      cbs->action_scan          = NULL;
       free(list->list[idx].actiondata);
    }
    list->list[idx].actiondata = NULL;

@@ -723,6 +723,7 @@ MENU
 #include "../menu/menu_entries_cbs_left.c"
 #include "../menu/menu_entries_cbs_right.c"
 #include "../menu/menu_entries_cbs_deferred_push.c"
+#include "../menu/menu_entries_cbs_scan.c"
 #include "../menu/menu_entries_cbs_representation.c"
 #include "../menu/menu_entries_cbs_iterate.c"
 #include "../menu/menu_entries_cbs_up.c"

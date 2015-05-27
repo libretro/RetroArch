@@ -85,6 +85,10 @@ void menu_entries_cbs_init_bind_deferred_push(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx,
       const char *elem0, const char *elem1);
 
+void menu_entries_cbs_init_bind_scan(menu_file_list_cbs_t *cbs,
+      const char *path, const char *label, unsigned type, size_t idx,
+      const char *elem0, const char *elem1);
+
 int deferred_push_content_list(void *data, void *userdata,
       const char *path, const char *label, unsigned type);
 

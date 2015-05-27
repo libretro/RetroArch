@@ -191,6 +191,7 @@ void menu_entries_cbs_init(void *data,
 
    menu_entries_cbs_init_bind_ok(cbs, path, label, type, idx, elem0, elem1, menu_label);
    menu_entries_cbs_init_bind_cancel(cbs, path, label, type, idx, elem0, elem1);
+   menu_entries_cbs_init_bind_scan(cbs, path, label, type, idx, elem0, elem1);
    menu_entries_cbs_init_bind_start(cbs, path, label, type, idx, elem0, elem1);
    menu_entries_cbs_init_bind_select(cbs, path, label, type, idx, elem0, elem1);
    menu_entries_cbs_init_bind_content_list_switch(cbs, path, label, type, idx, elem0, elem1);
