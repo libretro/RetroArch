@@ -62,9 +62,24 @@ static int action_ok_file_load_with_detect_core(const char *path,
 
    if (ret == -1)
    {
-      event_command(EVENT_CMD_LOAD_CORE);
-      menu_entries_common_load_content(false);
-      return -1;
+
+      if (!strcmp(label, "collection"))
+      {
+         info.list          = menu->menu_list->menu_stack;
+         info.type          = 0;
+         info.directory_ptr = idx;
+         rdb_entry_start_game_selection_ptr = idx;
+         strlcpy(info.path, settings->libretro_directory, sizeof(info.path));
+         strlcpy(info.label, "deferred_core_list_set", sizeof(info.label));
+
+         return menu_displaylist_push_list(&info, DISPLAYLIST_GENERIC);
+      }
+      else
+      {
+         event_command(EVENT_CMD_LOAD_CORE);
+         menu_entries_common_load_content(false);
+         return -1;
+      }
    }
 
    if (ret == 0)
@@ -806,7 +821,7 @@ static int action_ok_core_deferred_set(const char *path,
       return -1;
 
    if (menu->playlist)
-   content_playlist_free(menu->playlist);
+      content_playlist_free(menu->playlist);
 
    menu->playlist = content_playlist_init(menu->db_playlist_file, 1000);
 
