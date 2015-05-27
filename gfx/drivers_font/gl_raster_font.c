@@ -172,7 +172,7 @@ static void gl_raster_font_draw_vertices(gl_t *gl, const gl_coords_t *coords)
    glDrawArrays(GL_TRIANGLES, 0, coords->vertices);
 }
 
-static void gl_raster_font_render_message(
+static void gl_raster_font_render_line(
       gl_raster_t *font, const char *msg, GLfloat scale,
       const GLfloat color[4], GLfloat pos_x, GLfloat pos_y,
       unsigned text_align)
@@ -260,6 +260,41 @@ static void gl_raster_font_render_message(
       msg          += msg_len;
       msg_len       = min(msg_len_full, MAX_MSG_LEN_CHUNK);
    }
+}
+
+//TODO Support scale
+//TODO Line height
+//TODO Adapt this to all drivers
+static void gl_raster_font_render_message(
+      gl_raster_t *font, const char *msg, GLfloat scale,
+      const GLfloat color[4], GLfloat pos_x, GLfloat pos_y,
+      unsigned text_align)
+{
+    //If the font height is not supported just draw like as usual
+    if (!font->font_driver->get_line_height)
+    {
+        gl_raster_font_render_line(font, msg, scale, color, pos_x, pos_y, text_align);
+        return;
+    }
+    
+    char* copy = strdup(msg);
+    
+    char* next_line = strtok(copy, "\n");
+    int lines = 0;
+    
+    float line_height = scale * 1/(float)font->font_driver->get_line_height(font->font_data);
+    
+    while (next_line != NULL) 
+    {
+        //Draw the line
+        gl_raster_font_render_line(font, next_line, scale, color, pos_x, pos_y - (float)lines*line_height, text_align);
+        
+        //Continue to split
+        next_line = strtok(NULL, "\n");
+        lines++;
+    }
+    
+    free(copy);
 }
 
 static void gl_raster_font_setup_viewport(gl_raster_t *font, bool full_screen)

@@ -226,6 +226,15 @@ static const char *font_renderer_ft_get_default_font(void)
    return NULL;
 }
 
+static int font_renderer_ft_get_line_height(void* data)
+{
+    ft_font_renderer_t *handle = (ft_font_renderer_t*)data;
+    if (!handle)
+      return 0;
+      
+    return handle->face->size->metrics->height;
+}
+
 font_renderer_driver_t freetype_font_renderer = {
    font_renderer_ft_init,
    font_renderer_ft_get_atlas,
@@ -233,4 +242,5 @@ font_renderer_driver_t freetype_font_renderer = {
    font_renderer_ft_free,
    font_renderer_ft_get_default_font,
    "freetype",
+   NULL, /*get_line_height*/
 };

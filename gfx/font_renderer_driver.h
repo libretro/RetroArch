@@ -94,6 +94,8 @@ typedef struct font_renderer_driver
    const char *(*get_default_font)(void);
 
    const char *ident;
+   
+   int (*get_line_height)(void* data);
 } font_renderer_driver_t;
 
 extern font_renderer_driver_t freetype_font_renderer;
