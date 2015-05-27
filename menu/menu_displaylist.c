@@ -1148,7 +1148,6 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
       menu_list_push(info->list,
             "No information available.", "",
             0, 0);
-#endif
 
    content_playlist_free(playlist);
 
@@ -1158,6 +1157,9 @@ error:
    content_playlist_free(playlist);
 
    return -1;
+#else
+   return 0;
+#endif
 }
 
 static int menu_database_parse_query(file_list_t *list, const char *path,
