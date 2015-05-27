@@ -162,15 +162,6 @@ static int database_info_list_iterate_found_match(
 
    playlist = content_playlist_init(db_playlist_path, 1000);
 
-#if 0
-   RARCH_LOG("Found match in database !\n");
-
-   RARCH_LOG("Path: %s\n", db_path);
-   RARCH_LOG("Playlist Path: %s\n", db_playlist_path);
-   RARCH_LOG("Entry Path: %s\n", entry_path);
-   RARCH_LOG("Playlist not NULL: %d\n", playlist != NULL);
-   RARCH_LOG("ZIP entry: %s\n", zip_name);
-#endif
 
    snprintf(db_crc, sizeof(db_crc), "%s|crc", db_info_entry->crc32);
 
@@ -180,6 +171,18 @@ static int database_info_list_iterate_found_match(
       strlcat(entry_path_str, "#", sizeof(entry_path_str));
       strlcat(entry_path_str, zip_name, sizeof(entry_path_str));
    }
+
+#if 0
+   RARCH_LOG("Found match in database !\n");
+
+   RARCH_LOG("Path: %s\n", db_path);
+   RARCH_LOG("CRC : %s\n", db_crc);
+   RARCH_LOG("Playlist Path: %s\n", db_playlist_path);
+   RARCH_LOG("Entry Path: %s\n", entry_path);
+   RARCH_LOG("Playlist not NULL: %d\n", playlist != NULL);
+   RARCH_LOG("ZIP entry: %s\n", zip_name);
+   RARCH_LOG("entry path str: %s\n", entry_path_str);
+#endif
 
    content_playlist_push(playlist, entry_path_str, db_info_entry->name, "DETECT", "DETECT", db_crc);
 
@@ -229,7 +232,7 @@ static int database_info_iterate_crc_lookup(
 #endif
 
          if (rarch_strcasestr(entry_state_crc, db_info_entry->crc32))
-            return database_info_list_iterate_found_match(db_state, db, zip_entry);
+            database_info_list_iterate_found_match(db_state, db, zip_entry);
       }
    }
 
