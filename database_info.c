@@ -231,10 +231,13 @@ static int database_cursor_open(libretrodb_t *db,
    if ((libretrodb_cursor_open(db, cur, q)) != 0)
       goto error;
 
+   if (q)
+      libretrodb_query_free(q);
+
    return 0;
 
 error:
-   if (query)
+   if (q)
       libretrodb_query_free(q);
    query = NULL;
    libretrodb_close(db);
