@@ -32,26 +32,12 @@ static void puts_i64(int64_t dec)
     register int i;
 
     decimal = (dec < 0) ? (uint64_t)-dec : (uint64_t)+dec;
-    digits[ 0] = (decimal / 1000000000000000000) % 10;
-    digits[ 1] = (decimal /  100000000000000000) % 10;
-    digits[ 2] = (decimal /   10000000000000000) % 10;
-    digits[ 3] = (decimal /    1000000000000000) % 10;
-    digits[ 4] = (decimal /     100000000000000) % 10;
-    digits[ 5] = (decimal /      10000000000000) % 10;
-    digits[ 6] = (decimal /       1000000000000) % 10;
-    digits[ 7] = (decimal /        100000000000) % 10;
-    digits[ 8] = (decimal /         10000000000) % 10;
-    digits[ 9] = (decimal /          1000000000) % 10;
-    digits[10] = (decimal /           100000000) % 10;
-    digits[11] = (decimal /            10000000) % 10;
-    digits[12] = (decimal /             1000000) % 10;
-    digits[13] = (decimal /              100000) % 10;
-    digits[14] = (decimal /               10000) % 10;
-    digits[15] = (decimal /                1000) % 10;
-    digits[16] = (decimal /                 100) % 10;
-    digits[17] = (decimal /                  10) % 10;
-    digits[18] = (decimal /                   1) % 10;
     digits[19] = '\0';
+    for (i = sizeof(digits) - 2; i >= 0; i--)
+    {
+        digits[i] = decimal % 10;
+        decimal /= 10;
+    }
 
     for (i = 0; i < sizeof(digits) - 1; i++)
         digits[i] += '0';
@@ -66,30 +52,15 @@ static void puts_i64(int64_t dec)
 
 static void puts_u64(uint64_t decimal)
 {
-    char digits[20 + 1]; /* max i64:  18,446,744,073,709,551,616 */
+    char digits[20 + 1]; /* max u64:  18,446,744,073,709,551,616 */
     register int i;
 
-    digits[ 0] = (decimal / 10000000000000000000) % 10;
-    digits[ 1] = (decimal /  1000000000000000000) % 10;
-    digits[ 2] = (decimal /   100000000000000000) % 10;
-    digits[ 3] = (decimal /    10000000000000000) % 10;
-    digits[ 4] = (decimal /     1000000000000000) % 10;
-    digits[ 5] = (decimal /      100000000000000) % 10;
-    digits[ 6] = (decimal /       10000000000000) % 10;
-    digits[ 7] = (decimal /        1000000000000) % 10;
-    digits[ 8] = (decimal /         100000000000) % 10;
-    digits[ 9] = (decimal /          10000000000) % 10;
-    digits[10] = (decimal /           1000000000) % 10;
-    digits[11] = (decimal /            100000000) % 10;
-    digits[12] = (decimal /             10000000) % 10;
-    digits[13] = (decimal /              1000000) % 10;
-    digits[14] = (decimal /               100000) % 10;
-    digits[15] = (decimal /                10000) % 10;
-    digits[16] = (decimal /                 1000) % 10;
-    digits[17] = (decimal /                  100) % 10;
-    digits[18] = (decimal /                   10) % 10;
-    digits[19] = (decimal /                    1) % 10;
     digits[20] = '\0';
+    for (i = sizeof(digits) - 2; i >= 0; i--)
+    {
+        digits[i] = decimal % 10;
+        decimal /= 10;
+    }
 
     for (i = 0; i < sizeof(digits) - 1; i++)
         digits[i] += '0';
