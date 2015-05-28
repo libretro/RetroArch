@@ -46,7 +46,12 @@ static int database_info_iterate_start
 (database_info_handle_t *db, const char *name)
 {
    char msg[PATH_MAX_LENGTH];
-   snprintf(msg, sizeof(msg), "%zu/%zu: Scanning %s...\n",
+   snprintf(msg, sizeof(msg),
+#ifdef _WIN32
+	   "%Iu/%Iu: Scanning %s...\n",
+#else
+	   "%zu/%zu: Scanning %s...\n",
+#endif
          db->list_ptr, db->list->size, name);
 
    if (msg[0] != '\0')
