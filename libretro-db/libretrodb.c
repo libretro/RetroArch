@@ -141,6 +141,9 @@ static void libretrodb_write_index_header(int fd, libretrodb_index_t * idx)
 
 void libretrodb_close(libretrodb_t *db)
 {
+   if (!db)
+      return;
+
 	close(db->fd);
 	db->fd = -1;
 }
