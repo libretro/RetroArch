@@ -201,7 +201,9 @@ static int database_info_list_iterate_next(
 {
    db_state->list_index++;
    db_state->entry_index = 0;
+
    database_info_list_free(db_state->info);
+   db_state->info        = NULL;
 
    return 1;
 }
