@@ -210,6 +210,8 @@ static int database_cursor_iterate(libretrodb_cursor_t *cur,
          db_info->md5 = bin_to_hex_alloc((uint8_t*)val->binary.buff, val->binary.len);
    }
 
+   rmsgpack_dom_value_free(&item);
+
    return 0;
 }
 
