@@ -5405,6 +5405,7 @@ static bool setting_append_list_menu_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
    CONFIG_BOOL(
          settings->menu.navigation.wraparound.vertical_enable,
@@ -5417,6 +5418,7 @@ static bool setting_append_list_menu_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
    END_SUB_GROUP(list, list_info);
 
@@ -5472,6 +5474,7 @@ static bool setting_append_list_menu_options(
          general_write_handler,
          general_read_handler);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
    CONFIG_HEX(
          settings->menu.entry_hover_color,
@@ -5483,6 +5486,7 @@ static bool setting_append_list_menu_options(
          general_write_handler,
          general_read_handler);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
    CONFIG_HEX(
          settings->menu.title_color,
@@ -5494,6 +5498,7 @@ static bool setting_append_list_menu_options(
          general_write_handler,
          general_read_handler);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
    END_SUB_GROUP(list, list_info);
 
