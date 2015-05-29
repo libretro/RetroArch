@@ -2114,7 +2114,7 @@ int setting_get_description(const char *label, char *msg,
             "for the first time.\n"
             " \n"
             "This is only updated in config if\n"
-            "'Config Save On Exit' is set to true.\n");
+            "'Save Configuration on Exit' is enabled.\n");
    }
    else if (!strcmp(label, "config_save_on_exit"))
    {
@@ -2523,8 +2523,8 @@ int setting_get_description(const char *label, char *msg,
             "end of RetroArch's lifetime.\n"
             " \n"
             "RetroArch will automatically load any savestate\n"
-            "with this path on startup if 'Savestate Auto\n"
-            "Load' is set.");
+            "with this path on startup if 'Auto Load State\n"
+            "is enabled.");
    }
    else if (!strcmp(label, "shader_apply_changes"))
    {
@@ -3496,7 +3496,7 @@ static bool setting_append_list_driver_options(
    CONFIG_STRING_OPTIONS(
          settings->input.joypad_driver,
          "input_joypad_driver",
-         "Input Device Driver",
+         "Joypad Driver",
          config_get_default_joypad(),
          config_get_joypad_driver_options(),
          group_info.name,
@@ -3762,7 +3762,7 @@ static bool setting_append_list_general_options(
 
    CONFIG_BOOL(settings->config_save_on_exit,
          "config_save_on_exit",
-         "Configuration Save On Exit",
+         "Save Configuration on Exit",
          config_save_on_exit,
          "OFF",
          "ON",
@@ -3826,6 +3826,7 @@ static bool setting_append_list_general_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
 #ifdef HAVE_THREADS
    CONFIG_UINT(
@@ -4200,7 +4201,7 @@ static bool setting_append_list_video_options(
    CONFIG_BOOL(
          settings->video.aspect_ratio_auto,
          "video_aspect_ratio_auto",
-         "Use Auto Aspect Ratio",
+         "Auto Aspect Ratio",
          aspect_ratio_auto,
          "OFF",
          "ON",
@@ -4336,10 +4337,10 @@ static bool setting_append_list_video_options(
    CONFIG_BOOL(
          settings->video.smooth,
          "video_smooth",
-         "Use Bilinear Filtering",
+         "Bilinear Filtering",
          video_smooth,
-         "Point filtering",
-         "Bilinear filtering",
+         "OFF",
+         "ON",
          group_info.name,
          subgroup_info.name,
          general_write_handler,
@@ -5369,7 +5370,7 @@ static bool setting_append_list_menu_options(
    CONFIG_BOOL(
          settings->menu.mouse.enable,
          "menu_mouse_enable",
-         "Mouse Enable",
+         "Mouse Support",
          false,
          "OFF",
          "ON",
@@ -5381,7 +5382,7 @@ static bool setting_append_list_menu_options(
    CONFIG_BOOL(
          settings->menu.pointer.enable,
          "menu_pointer_enable",
-         "Touch Enable",
+         "Touch Support",
          pointer_enable,
          "OFF",
          "ON",
@@ -5602,7 +5603,7 @@ static bool setting_append_list_ui_options(
    CONFIG_BOOL(
          settings->video.disable_composition,
          "video_disable_composition",
-         "Window Compositing Disable Hint",
+         "Disable Desktop Composition",
          disable_composition,
          "OFF",
          "ON",
@@ -5616,7 +5617,7 @@ static bool setting_append_list_ui_options(
    CONFIG_BOOL(
          settings->pause_nonactive,
          "pause_nonactive",
-         "Window Unfocus Pause Hint",
+         "Pause on Focus Loss",
          pause_nonactive,
          "OFF",
          "ON",
@@ -5636,11 +5637,12 @@ static bool setting_append_list_ui_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
    CONFIG_BOOL(
          settings->ui.menubar_enable,
          "ui_menubar_enable",
-         "Menubar Enable Hint",
+         "Menubar (Windows)",
          true,
          "OFF",
          "ON",
@@ -5652,7 +5654,7 @@ static bool setting_append_list_ui_options(
    CONFIG_BOOL(
          settings->ui.suspend_screensaver_enable,
          "suspend_screensaver_enable",
-         "Suspend Screensaver Enable Hint",
+         "Suspend Screensaver",
          true,
          "OFF",
          "ON",
