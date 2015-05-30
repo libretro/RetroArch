@@ -1,0 +1,61 @@
+Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: RetroArch
+Upstream-Contact: Daniel De Matteis (Squarepusher aka twinaphex) <libretro@gmail.com>
+Source: https://github.com/libretro/RetroArch.git
+Comment: This package was debianized by
+ Hunter Kaller (hizzlekizzle) <hunter_kaller@yahoo.com> on Mon, 23 Apr 2012 13:24:59 -0500.
+
+
+Files: *
+Copyright: 2010-2015 The RetroArch Team
+               Hans-Kristian Arntzen (Themaister) (main code) <maister@archlinux.us>
+               Daniel De Matteis (Squarepusher aka twinaphex) (maintainer) <libretro@gmail.com>
+               others, see `/usr/share/doc/retroarch/AUTHORS'
+License: GPL-3+
+
+Files: libretro.h
+Copyright: 2010-2015 The RetroArch Team
+License: Expat
+
+Files: debian/*
+Copyright: 2012-2015 Hunter Kaller (hizzlekizzle) <hunter_kaller@yahoo.com>
+           2014-2015 Sergio Benjamim (sergio-br2) <sergio_br2@yahoo.com.br>
+License: GPL-3+
+
+
+License: Expat
+    Permission is hereby granted, free of charge, to any person obtaining a copy
+    of this software and associated documentation files (the "Software"), to deal
+    in the Software without restriction, including without limitation the rights
+    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+    copies of the Software, and to permit persons to whom the Software is
+    furnished to do so, subject to the following conditions:
+ .
+    The above copyright notice and this permission notice shall be included in
+    all copies or substantial portions of the Software.
+ .
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+    THE SOFTWARE.
+
+License: GPL-3+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+ .
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+ .
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ .
+    On Debian systems, the full text of the GNU General Public
+    License version 3 can be found in the file
+    `/usr/share/common-licenses/GPL-3'.

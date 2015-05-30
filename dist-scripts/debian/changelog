@@ -1,10 +1,10 @@
-retroarch (1.0.0.3-0ubuntu1) UNRELEASED; urgency=low
+retroarch (1.0.0.3-1) UNRELEASED; urgency=low
 
   * New version release (Beta)
 
  -- Sérgio Benjamim <sergio_br2@yahoo.com.br>  Mon, 27 Oct 2014 13:17:00 -0300
 
-retroarch (1.0.0.2-0ubuntu12) UNRELEASED; urgency=low
+retroarch (1.0.0.2-12) UNRELEASED; urgency=low
 
   * Improve debian packaging
   * Added DSP and video filters to the package
@@ -13,7 +13,7 @@ retroarch (1.0.0.2-0ubuntu12) UNRELEASED; urgency=low
 
  -- Sérgio Benjamim <sergio_br2@yahoo.com.br>  Sun, 17 Aug 2014 23:50:00 -0300
 
-retroarch (1.0.0.2-0ubuntu11) UNRELEASED; urgency=low
+retroarch (1.0.0.2-11) UNRELEASED; urgency=low
 
   * Debian folder from hunterk PPA to upstream
   * Updated /debian:
@@ -27,7 +27,7 @@ retroarch (1.0.0.2-0ubuntu11) UNRELEASED; urgency=low
 
  -- Sérgio Benjamim <sergio_br2@yahoo.com.br>  Fri, 11 Jul 2014 13:33:00 -0300
 
-retroarch (1.0.0.2-0ubuntu10) UNRELEASED; urgency=low
+retroarch (1.0.0.2-10) UNRELEASED; urgency=low
 
   * Update icon (finally) and use SVG instead of PNG.
   * Updated to latest git. Includes recent shader changes.
