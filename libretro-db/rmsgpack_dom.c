@@ -25,6 +25,52 @@ static struct rmsgpack_dom_value *dom_reader_state_pop(
 	return v;
 }
 
+static void puts_i64(int64_t dec)
+{
+    signed char digits[19 + 1]; /* max i64:  9,223,372,036,854,775,807 */
+    uint64_t decimal;
+    register int i;
+
+    decimal = (dec < 0) ? (uint64_t)-dec : (uint64_t)+dec;
+    digits[19] = '\0';
+    for (i = sizeof(digits) - 2; i >= 0; i--)
+    {
+        digits[i] = decimal % 10;
+        decimal /= 10;
+    }
+
+    for (i = 0; i < sizeof(digits) - 1; i++)
+        digits[i] += '0';
+    for (i = 0; i < sizeof(digits) - 2; i++)
+        if (digits[i] != '0')
+            break; /* Don't print leading zeros to the console. */
+
+    if (dec < 0)
+        putchar('-');
+    fputs((char *)&digits[i], stdout);
+}
+
+static void puts_u64(uint64_t decimal)
+{
+    char digits[20 + 1]; /* max u64:  18,446,744,073,709,551,616 */
+    register int i;
+
+    digits[20] = '\0';
+    for (i = sizeof(digits) - 2; i >= 0; i--)
+    {
+        digits[i] = decimal % 10;
+        decimal /= 10;
+    }
+
+    for (i = 0; i < sizeof(digits) - 1; i++)
+        digits[i] += '0';
+    for (i = 0; i < sizeof(digits) - 2; i++)
+        if (digits[i] != '0')
+            break; /* Don't print leading zeros to the console. */
+
+    fputs(&digits[i], stdout);
+}
+
 static int dom_reader_state_push(struct dom_reader_state *s,
       struct rmsgpack_dom_value *v)
 {
@@ -295,18 +341,10 @@ void rmsgpack_dom_value_print(struct rmsgpack_dom_value *obj)
             printf("false");
          break;
       case RDT_INT:
-#ifdef _WIN32
-         printf("%I64d", (signed long long)obj->int_);
-#else
-         printf("%lld", (signed long long)obj->int_);
-#endif
+         puts_i64(obj -> int_);
          break;
       case RDT_UINT:
-#ifdef _WIN32
-         printf("%I64u", (unsigned long long)obj->uint_);
-#else
-         printf("%llu",  (unsigned long long)obj->uint_);
-#endif
+         puts_u64(obj -> uint_);
          break;
       case RDT_STRING:
          printf("\"%s\"", obj->string.buff);

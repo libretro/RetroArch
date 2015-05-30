@@ -141,6 +141,9 @@ static void libretrodb_write_index_header(int fd, libretrodb_index_t * idx)
 
 void libretrodb_close(libretrodb_t *db)
 {
+   if (!db)
+      return;
+
 	close(db->fd);
 	db->fd = -1;
 }
@@ -150,7 +153,11 @@ int libretrodb_open(const char *path, libretrodb_t *db)
    libretrodb_header_t header;
    libretrodb_metadata_t md;
    int rv;
+#ifdef _WIN32
+   int fd = open(path, O_RDWR | O_BINARY);
+#else
    int fd = open(path, O_RDWR);
+#endif
 
    if (fd == -1)
       return -errno;

@@ -210,6 +210,8 @@ static int database_cursor_iterate(libretrodb_cursor_t *cur,
          db_info->md5 = bin_to_hex_alloc((uint8_t*)val->binary.buff, val->binary.len);
    }
 
+   rmsgpack_dom_value_free(&item);
+
    return 0;
 }
 
@@ -227,11 +229,23 @@ static int database_cursor_open(libretrodb_t *db,
       strlen(query), &error);
     
    if (error)
-      return -1;
+      goto error;
    if ((libretrodb_cursor_open(db, cur, q)) != 0)
-      return -1;
+      goto error;
+
+   if (q)
+      libretrodb_query_free(q);
 
    return 0;
+
+error:
+   if (q)
+      libretrodb_query_free(q);
+   query = NULL;
+   libretrodb_close(db);
+   db    = NULL;
+
+   return -1;
 }
 
 static int database_cursor_close(libretrodb_t *db, libretrodb_cursor_t *cur)

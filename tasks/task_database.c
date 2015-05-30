@@ -46,7 +46,12 @@ static int database_info_iterate_start
 (database_info_handle_t *db, const char *name)
 {
    char msg[PATH_MAX_LENGTH];
-   snprintf(msg, sizeof(msg), "%zu/%zu: Scanning %s...\n",
+   snprintf(msg, sizeof(msg),
+#ifdef _WIN32
+	   "%Iu/%Iu: Scanning %s...\n",
+#else
+	   "%zu/%zu: Scanning %s...\n",
+#endif
          db->list_ptr, db->list->size, name);
 
    if (msg[0] != '\0')
@@ -122,6 +127,8 @@ static int database_info_list_iterate_new(database_state_handle_t *db_state)
    const char *new_database = db_state->list->elems[db_state->list_index].data;
    RARCH_LOG("Check database [%d/%d] : %s\n", (unsigned)db_state->list_index, 
          (unsigned)db_state->list->size, new_database);
+   if (db_state->info)
+      database_info_list_free(db_state->info);
    db_state->info = database_info_list_new(new_database, NULL);
    return 0;
 }
@@ -199,7 +206,9 @@ static int database_info_list_iterate_next(
 {
    db_state->list_index++;
    db_state->entry_index = 0;
+
    database_info_list_free(db_state->info);
+   db_state->info        = NULL;
 
    return 1;
 }
