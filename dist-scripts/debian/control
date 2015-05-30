@@ -2,6 +2,7 @@ Source: retroarch
 Section: otherosfs
 Priority: extra
 Maintainer: Hunter Kaller (hizzlekizzle) <hunter_kaller@yahoo.com>
+Uploaders: Sergio Benjamim (sergio-br2) <sergio_br2@yahoo.com.br>
 Build-Depends:	debhelper (>= 9),
 				pkg-config,
 				libc6-dev (>= 2.13),
@@ -17,14 +18,15 @@ Build-Depends:	debhelper (>= 9),
 				libxxf86vm-dev,
 				libxinerama-dev,
 				libudev-dev,
+				libusb-1.0-0-dev,
 				libasound2-dev,
 				libxv-dev,
 				libopenal-dev,
+				libjack-jackd2-dev,
 				libfreetype6-dev,
 				libgbm-dev,
 				libdrm-dev,
 				libegl1-mesa-dev,
-				libopenvg1-mesa-dev,
 				python3-dev,
 				zlib1g-dev,
 				nvidia-cg-dev [!armhf]
@@ -41,7 +43,7 @@ Depends:		${shlibs:Depends},
 				python3,
 				nvidia-cg-toolkit [!armhf]
 Replaces: ssnes
-Suggests: retroarch-joypad-autoconfig, libretro-common-shaders, retroarch-assets, libretro-database
+Suggests: retroarch-joypad-autoconfig, libretro-common-shaders, libretro-common-overlays, retroarch-assets
 Description: Simple frontend for the libretro library
  RetroArch is an open source, multi-platform frontend for the libretro API. 
  It can be used as a modular multi emulator system, game engine, media player 
