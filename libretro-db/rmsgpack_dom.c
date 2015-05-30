@@ -378,7 +378,7 @@ void rmsgpack_dom_value_print(struct rmsgpack_dom_value *obj)
          printf("]");
    }
 }
-int rmsgpack_dom_write(int fd, const struct rmsgpack_dom_value *obj)
+int rmsgpack_dom_write(FILE *fp, const struct rmsgpack_dom_value *obj)
 {
    unsigned i;
    int rv = 0;
@@ -387,40 +387,40 @@ int rmsgpack_dom_write(int fd, const struct rmsgpack_dom_value *obj)
    switch (obj->type)
    {
       case RDT_NULL:
-         return rmsgpack_write_nil(fd);
+         return rmsgpack_write_nil(fp);
       case RDT_BOOL:
-         return rmsgpack_write_bool(fd, obj->bool_);
+         return rmsgpack_write_bool(fp, obj->bool_);
       case RDT_INT:
-         return rmsgpack_write_int(fd, obj->int_);
+         return rmsgpack_write_int(fp, obj->int_);
       case RDT_UINT:
-         return rmsgpack_write_uint(fd, obj->uint_);
+         return rmsgpack_write_uint(fp, obj->uint_);
       case RDT_STRING:
-         return rmsgpack_write_string(fd, obj->string.buff, obj->string.len);
+         return rmsgpack_write_string(fp, obj->string.buff, obj->string.len);
       case RDT_BINARY:
-         return rmsgpack_write_bin(fd, obj->binary.buff, obj->binary.len);
+         return rmsgpack_write_bin(fp, obj->binary.buff, obj->binary.len);
       case RDT_MAP:
-         if ((rv = rmsgpack_write_map_header(fd, obj->map.len)) < 0)
+         if ((rv = rmsgpack_write_map_header(fp, obj->map.len)) < 0)
             return rv;
          written += rv;
 
          for (i = 0; i < obj->map.len; i++)
          {
-            if ((rv = rmsgpack_dom_write(fd, &obj->map.items[i].key)) < 0)
+            if ((rv = rmsgpack_dom_write(fp, &obj->map.items[i].key)) < 0)
                return rv;
             written += rv;
-            if ((rv = rmsgpack_dom_write(fd, &obj->map.items[i].value)) < 0)
+            if ((rv = rmsgpack_dom_write(fp, &obj->map.items[i].value)) < 0)
                return rv;
             written += rv;
          }
          break;
       case RDT_ARRAY:
-         if ((rv = rmsgpack_write_array_header(fd, obj->array.len)) < 0)
+         if ((rv = rmsgpack_write_array_header(fp, obj->array.len)) < 0)
             return rv;
          written += rv;
 
          for (i = 0; i < obj->array.len; i++)
          {
-            if ((rv = rmsgpack_dom_write(fd, &obj->array.items[i])) < 0)
+            if ((rv = rmsgpack_dom_write(fp, &obj->array.items[i])) < 0)
                return rv;
             written += rv;
          }
@@ -428,7 +428,7 @@ int rmsgpack_dom_write(int fd, const struct rmsgpack_dom_value *obj)
    return written;
 }
 
-int rmsgpack_dom_read(int fd, struct rmsgpack_dom_value *out)
+int rmsgpack_dom_read(FILE *fp, struct rmsgpack_dom_value *out)
 {
    struct dom_reader_state s;
    int rv = 0;
@@ -436,7 +436,7 @@ int rmsgpack_dom_read(int fd, struct rmsgpack_dom_value *out)
    s.i        = 0;
    s.stack[0] = out;
 
-   rv = rmsgpack_read(fd, &dom_reader_callbacks, &s);
+   rv = rmsgpack_read(fp, &dom_reader_callbacks, &s);
 
    if (rv < 0)
       rmsgpack_dom_value_free(out);
@@ -444,7 +444,7 @@ int rmsgpack_dom_read(int fd, struct rmsgpack_dom_value *out)
    return rv;
 }
 
-int rmsgpack_dom_read_into(int fd, ...)
+int rmsgpack_dom_read_into(FILE *fp, ...)
 {
    va_list ap;
    struct rmsgpack_dom_value map;
@@ -459,9 +459,9 @@ int rmsgpack_dom_read_into(int fd, ...)
    uint64_t min_len;
    int value_type = 0;
 
-   va_start(ap, fd);
+   va_start(ap, fp);
 
-   rv = rmsgpack_dom_read(fd, &map);
+   rv = rmsgpack_dom_read(fp, &map);
 
    (void)value_type;
 
