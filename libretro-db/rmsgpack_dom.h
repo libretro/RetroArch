@@ -1,6 +1,7 @@
 #ifndef __RARCHDB_MSGPACK_DOM_H__
 #define __RARCHDB_MSGPACK_DOM_H__
 
+#include <stdio.h>
 #include <stdint.h>
 
 #ifdef __cplusplus
@@ -61,15 +62,15 @@ struct rmsgpack_dom_value * rmsgpack_dom_value_map_value(
 );
 
 int rmsgpack_dom_read(
-        int fd,
+        FILE *fp,
         struct rmsgpack_dom_value * out
 );
 int rmsgpack_dom_write(
-        int fd,
+        FILE *fp,
         const struct rmsgpack_dom_value * obj
 );
 
-int rmsgpack_dom_read_into(int fd, ...);
+int rmsgpack_dom_read_into(FILE *fp, ...);
 
 #ifdef __cplusplus
 }
