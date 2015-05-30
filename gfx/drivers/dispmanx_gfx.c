@@ -598,7 +598,7 @@ static uint64_t dispmanx_gfx_get_frame_count(void *data)
 }
 
 static const video_poke_interface_t dispmanx_poke_interface = {
-   dispmanx_get_frame_count,
+   dispmanx_gfx_get_frame_count,
    NULL, /* set_video_mode */
    NULL, /* set_filtering */
    NULL, /* get_video_output_size */
