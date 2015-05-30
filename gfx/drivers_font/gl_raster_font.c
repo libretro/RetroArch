@@ -262,15 +262,12 @@ static void gl_raster_font_render_line(
    }
 }
 
-//TODO Support scale
-//TODO Line height
-//TODO Adapt this to all drivers
 static void gl_raster_font_render_message(
       gl_raster_t *font, const char *msg, GLfloat scale,
       const GLfloat color[4], GLfloat pos_x, GLfloat pos_y,
       unsigned text_align)
 {
-    //If the font height is not supported just draw like as usual
+    //If the font height is not supported just draw as usual
     if (!font->font_driver->get_line_height)
     {
         gl_raster_font_render_line(font, msg, scale, color, pos_x, pos_y, text_align);

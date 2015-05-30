@@ -232,7 +232,7 @@ static int font_renderer_ft_get_line_height(void* data)
     if (!handle)
       return 0;
       
-    return handle->face->size->metrics->height;
+    return handle->face->size->metrics.height/64;
 }
 
 font_renderer_driver_t freetype_font_renderer = {
@@ -242,5 +242,5 @@ font_renderer_driver_t freetype_font_renderer = {
    font_renderer_ft_free,
    font_renderer_ft_get_default_font,
    "freetype",
-   NULL, /*get_line_height*/
+   font_renderer_ft_get_line_height,
 };
