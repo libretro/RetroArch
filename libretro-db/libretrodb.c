@@ -159,11 +159,7 @@ int libretrodb_open(const char *path, libretrodb_t *db)
    libretrodb_header_t header;
    libretrodb_metadata_t md;
    int rv;
-#ifdef _WIN32
    FILE *fp = fopen(path, "rb");
-#else
-   FILE *fp = fopen(path, "r");
-#endif
 
    if (fp == NULL)
       return -errno;
