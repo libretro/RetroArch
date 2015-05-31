@@ -399,7 +399,7 @@ static int menu_input_set_bind_mode_common(rarch_setting_t  *setting,
          info.directory_ptr = nav->selection_ptr;
          strlcpy(info.label, "custom_bind", sizeof(info.label));
 
-         menu_displaylist_push_list(&info, DISPLAYLIST_SELECT);
+         menu_displaylist_push_list(&info, DISPLAYLIST_INFO);
          break;
       case MENU_INPUT_BIND_ALL:
          menu->binds.target = &settings->input.binds
@@ -412,7 +412,7 @@ static int menu_input_set_bind_mode_common(rarch_setting_t  *setting,
          info.directory_ptr = nav->selection_ptr;
          strlcpy(info.label, "custom_bind_all", sizeof(info.label));
 
-         menu_displaylist_push_list(&info, DISPLAYLIST_SELECT);
+         menu_displaylist_push_list(&info, DISPLAYLIST_INFO);
          break;
    }
    return 0;

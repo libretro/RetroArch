@@ -343,7 +343,7 @@ ifeq ($(HAVE_MENU_COMMON), 1)
 			 menu/menu_entries_cbs_ok.o \
 			 menu/menu_entries_cbs_cancel.o \
 			 menu/menu_entries_cbs_start.o \
-			 menu/menu_entries_cbs_select.o \
+			 menu/menu_entries_cbs_info.o \
 			 menu/menu_entries_cbs_refresh.o \
 			 menu/menu_entries_cbs_left.o \
 			 menu/menu_entries_cbs_right.o \

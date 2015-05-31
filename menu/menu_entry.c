@@ -495,8 +495,8 @@ int menu_entry_action(menu_entry_t *entry, unsigned i, enum menu_action action)
             ret = cbs->action_right(entry->type, entry->label, false);
          break;
       case MENU_ACTION_SELECT:
-         if (cbs && cbs->action_select)
-            ret = cbs->action_select(entry->type, entry->label);
+         if (cbs && cbs->action_info)
+            ret = cbs->action_info(entry->type, entry->label);
          break;
 
       case MENU_ACTION_REFRESH:

@@ -953,7 +953,7 @@ static int action_ok_compressed_archive_push(const char *path,
    strlcpy(info.path, path, sizeof(info.path));
    strlcpy(info.label, "load_open_zip", sizeof(info.label));
 
-   return menu_displaylist_push_list(&info, DISPLAYLIST_SELECT);
+   return menu_displaylist_push_list(&info, DISPLAYLIST_INFO);
 }
 
 static int action_ok_directory_push(const char *path,

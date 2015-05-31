@@ -351,7 +351,7 @@ static int action_iterate_menu_viewport(char *s, size_t len, const char *label, 
             info.type          = MENU_SETTINGS_CUSTOM_VIEWPORT;
             info.directory_ptr = menu->navigation.selection_ptr;
 
-            menu_displaylist_push_list(&info, DISPLAYLIST_SELECT);
+            menu_displaylist_push_list(&info, DISPLAYLIST_INFO);
          }
          break;
 
@@ -366,7 +366,7 @@ static int action_iterate_menu_viewport(char *s, size_t len, const char *label, 
             info.type          = 0;
             info.directory_ptr = menu->navigation.selection_ptr;
 
-            menu_displaylist_push_list(&info, DISPLAYLIST_SELECT);
+            menu_displaylist_push_list(&info, DISPLAYLIST_INFO);
          }
          break;
 

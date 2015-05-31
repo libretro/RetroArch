@@ -16,7 +16,7 @@
 #include "menu.h"
 #include "menu_entries_cbs.h"
 
-static int action_select_default(unsigned type, const char *label)
+static int action_info_default(unsigned type, const char *label)
 {
    menu_displaylist_info_t info = {0};
    menu_handle_t *menu    = menu_driver_get_ptr();
@@ -26,15 +26,15 @@ static int action_select_default(unsigned type, const char *label)
    strlcpy(info.label, "info_screen", sizeof(info.label));
    info.directory_ptr = menu->navigation.selection_ptr;
 
-   return menu_displaylist_push_list(&info, DISPLAYLIST_SELECT);
+   return menu_displaylist_push_list(&info, DISPLAYLIST_HELP);
 }
 
-void menu_entries_cbs_init_bind_select(menu_file_list_cbs_t *cbs,
+void menu_entries_cbs_init_bind_info(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx,
       const char *elem0, const char *elem1)
 {
    if (!cbs)
       return;
 
-   cbs->action_select = action_select_default;
+   cbs->action_info = action_info_default;
 }
