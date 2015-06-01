@@ -111,7 +111,7 @@ static void RunActionSheet(const char* title, const struct string_list* items,
     result = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleValue1
                                     reuseIdentifier:cell_id];
 
-  menu_entry_get_label(self.i, label, sizeof(label));
+  menu_entry_get_path(self.i, label, sizeof(label));
   menu_entry_get_value(self.i, buffer, sizeof(buffer));
   
   result.selectionStyle = UITableViewCellSelectionStyleNone;
@@ -150,7 +150,7 @@ static void RunActionSheet(const char* title, const struct string_list* items,
       result.accessoryView = [UISwitch new];
    }
 
-   menu_entry_get_label(self.i, label, sizeof(label));
+   menu_entry_get_path(self.i, label, sizeof(label));
    
    result.textLabel.text = BOXSTRING(label);
    [(id)result.accessoryView removeTarget:nil
@@ -199,7 +199,7 @@ static void RunActionSheet(const char* title, const struct string_list* items,
    char label[PATH_MAX_LENGTH];
    RAMenuItemEnum __weak* weakSelf = self;
 
-   menu_entry_get_label(self.i, label, sizeof(label));
+   menu_entry_get_path(self.i, label, sizeof(label));
    items = menu_entry_enum_values(self.i);
 
    RunActionSheet(label, items, self.parentTable,
@@ -228,7 +228,7 @@ static void RunActionSheet(const char* title, const struct string_list* items,
 {
    char label[PATH_MAX_LENGTH];
 
-   menu_entry_get_label(self.i, label, sizeof(label));
+   menu_entry_get_path(self.i, label, sizeof(label));
 
    self.alert = [[UIAlertView alloc]
    initWithTitle:BOXSTRING("RetroArch")
@@ -453,7 +453,7 @@ replacementString:(NSString *)string
    UIAlertView *alertView;
    UITextField *field;
 
-   menu_entry_get_label(self.i, label, sizeof(label));
+   menu_entry_get_path(self.i, label, sizeof(label));
 
    desc = BOXSTRING(label);
     
