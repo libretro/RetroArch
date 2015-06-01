@@ -564,13 +564,13 @@ void patch_content(uint8_t **buf, ssize_t *size)
 {
    global_t *global = global_get_ptr();
 
-   if (global->ups_pref + global->bps_pref + global->ips_pref > 1)
+   if (global->ips_pref + global->bps_pref + global->ups_pref > 1)
    {
       RARCH_WARN("Several patches are explicitly defined, ignoring all ...\n");
       return;
    }
 
-   if (!try_ups_patch(buf, size) && !try_bps_patch(buf, size) && !try_ips_patch(buf, size))
+   if (!try_ips_patch(buf, size) && !try_bps_patch(buf, size) && !try_ups_patch(buf, size))
    {
       RARCH_WARN("Did not find a valid content patch.\n");
    }
