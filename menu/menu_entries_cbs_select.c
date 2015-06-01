@@ -68,6 +68,7 @@ void menu_entries_cbs_init_bind_select(menu_file_list_cbs_t *cbs,
 
    switch (type)
    {
+      case MENU_FILE_PATH:
       case MENU_FILE_DIRECTORY:
       case MENU_FILE_USE_DIRECTORY:
          cbs->action_select = action_select_directory;
