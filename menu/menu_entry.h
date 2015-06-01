@@ -51,7 +51,7 @@ size_t menu_entries_get_start(void);
 
 size_t menu_entries_get_end(void);
 
-void menu_entries_get_title(char *title, size_t title_len);
+int menu_entries_get_title(char *title, size_t title_len);
 
 uint32_t menu_entries_show_back(void);
 

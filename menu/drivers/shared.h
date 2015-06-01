@@ -18,10 +18,6 @@
 
 #include <time.h>
 
-#include <string/string_list.h>
-#include <string/stdstring.h>
-#include <file/file_path.h>
-
 #include "../../settings.h"
 
 #include "../menu_display.h"
@@ -117,21 +113,6 @@ static INLINE void gl_menu_frame_background(
    gl->coords.color = gl->white_color_ptr;
 }
 #endif
-
-static INLINE void replace_chars(char *str, char c1, char c2)
-{
-   char *pos;
-   while((pos = strchr(str, c1)))
-      *pos = c2;
-}
-
-static INLINE void sanitize_to_string(char *title, const char *label, size_t sizeof_title)
-{
-   char new_label[PATH_MAX_LENGTH];
-   strlcpy(new_label, label, sizeof(new_label));
-   strlcpy(title, string_to_upper(new_label), sizeof_title);
-   replace_chars(title, '_', ' ');
-}
 
 static INLINE void disp_timedate_set_label(char *label, size_t label_size,
       unsigned time_mode)

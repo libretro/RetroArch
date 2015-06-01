@@ -204,4 +204,5 @@ void menu_entries_cbs_init(void *data,
    menu_entries_cbs_init_bind_refresh(cbs, path, label, type, idx, elem0, elem1);
    menu_entries_cbs_init_bind_iterate(cbs, path, label, type, idx, elem0, elem1);
    menu_entries_cbs_init_bind_get_string_representation(cbs, path, label, type, idx, elem0, elem1);
+   menu_entries_cbs_init_bind_title(cbs, path, label, type, idx, elem0, elem1);
 }
