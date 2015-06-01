@@ -731,8 +731,7 @@ static int menu_input_mouse_frame(
 }
 
 static int menu_input_mouse_post_iterate(uint64_t *input_mouse,
-      menu_file_list_cbs_t *cbs,
-      menu_entry_t *entry, unsigned action)
+      menu_file_list_cbs_t *cbs, unsigned action)
 {
    driver_t      *driver  = driver_get_ptr();
    settings_t *settings   = config_get_ptr();
@@ -932,7 +931,7 @@ void menu_input_post_iterate(int *ret, unsigned action)
    menu_entry_get(&entry, selected, NULL, false);
 
    if (settings->menu.mouse.enable)
-      *ret  = menu_input_mouse_post_iterate  (&menu->input.mouse, cbs, &entry, action);
+      *ret  = menu_input_mouse_post_iterate  (&menu->input.mouse, cbs, action);
 
    *ret = menu_input_mouse_frame(cbs, &entry, menu->input.mouse);
 
