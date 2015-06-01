@@ -55,7 +55,7 @@ int menu_entries_get_title(char *title, size_t title_len);
 
 uint32_t menu_entries_show_back(void);
 
-int menu_entries_select_back(void);
+int menu_entry_go_back(void);
 
 void menu_entries_get_core_title(char *title_msg, size_t title_msg_len);
 

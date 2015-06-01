@@ -81,7 +81,7 @@ int menu_entries_get_title(char *title, size_t title_len)
 uint32_t menu_entries_show_back(void)
 {
    menu_list_t *menu_list    = menu_list_get_ptr();
-   
+
    if (!menu_list)
       return false;
 
@@ -89,21 +89,21 @@ uint32_t menu_entries_show_back(void)
 }
 
 /* Clicks the back button */
-int menu_entries_select_back(void)
+int menu_entry_go_back(void)
 {
-  menu_list_t *menu_list = menu_list_get_ptr();
-  if (!menu_list)
-    return -1;
-  
-  menu_setting_apply_deferred();
-  menu_list_pop_stack(menu_list);
-    
-  if (menu_needs_refresh())
+   menu_list_t *menu_list = menu_list_get_ptr();
+   if (!menu_list)
+      return -1;
+
+   menu_setting_apply_deferred();
+   menu_list_pop_stack(menu_list);
+
+   if (menu_needs_refresh())
       menu_do_refresh(MENU_ACTION_CANCEL);
 
-  rarch_main_data_iterate();
-  
-  return 0;
+   rarch_main_data_iterate();
+
+   return 0;
 }
 
 // Sets title_msg to the name of the current core (shown at the top of the UI)

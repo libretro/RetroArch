@@ -22,7 +22,7 @@
 static int action_cancel_pop_default(const char *path,
       const char *label, unsigned type, size_t idx)
 {
-   return menu_entries_select_back();
+   return menu_entry_go_back();
 }
 
 void menu_entries_cbs_init_bind_cancel(menu_file_list_cbs_t *cbs,

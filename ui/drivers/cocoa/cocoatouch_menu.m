@@ -745,7 +745,7 @@ didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 
 - (void)menuBack
 {
-  menu_entries_select_back();
+  menu_entry_go_back();
 }
 
 @end
