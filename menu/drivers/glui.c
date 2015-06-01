@@ -293,13 +293,11 @@ static void glui_render_menu_list(glui_handle_t *glui,
    for (i = 0; i < end; i++)
    {
       unsigned y;
-      menu_entry_t entry;
       char entry_label[PATH_MAX_LENGTH], entry_value[PATH_MAX_LENGTH];
       char message[PATH_MAX_LENGTH],
            entry_title_buf[PATH_MAX_LENGTH], type_str_buf[PATH_MAX_LENGTH];
       bool selected             = false;
 
-      menu_entry_get(&entry, i, NULL, true);
       selected = menu_entry_is_currently_selected(i);
       menu_entry_get_value(i, entry_value, sizeof(entry_value));
       menu_entry_get_label(i, entry_label, sizeof(entry_label));

@@ -441,14 +441,11 @@ static void rgui_render(void)
 
    for (; i < end; i++, y += FONT_HEIGHT_STRIDE)
    {
-      menu_entry_t entry;
       char entry_label[PATH_MAX_LENGTH], entry_value[PATH_MAX_LENGTH];
       char message[PATH_MAX_LENGTH], 
            entry_title_buf[PATH_MAX_LENGTH], type_str_buf[PATH_MAX_LENGTH];
-      bool selected = false;
-
-      menu_entry_get(&entry, i, NULL, true);
-      selected = menu_entry_is_currently_selected(i);
+      unsigned entry_spacing = menu_entry_get_spacing(i);
+      bool entry_selected = menu_entry_is_currently_selected(i);
 
       if (i > (menu->navigation.selection_ptr + 100))
          continue;
@@ -456,21 +453,21 @@ static void rgui_render(void)
       menu_entry_get_value(i, entry_value, sizeof(entry_value));
       menu_entry_get_label(i, entry_label, sizeof(entry_label));
 
-      menu_animation_ticker_line(entry_title_buf, RGUI_TERM_WIDTH - (entry.spacing + 1 + 2),
-            frame_count / RGUI_TERM_START_X, entry_label, selected);
-      menu_animation_ticker_line(type_str_buf, entry.spacing,
+      menu_animation_ticker_line(entry_title_buf, RGUI_TERM_WIDTH - (entry_spacing + 1 + 2),
+            frame_count / RGUI_TERM_START_X, entry_label, entry_selected);
+      menu_animation_ticker_line(type_str_buf, entry_spacing,
             frame_count / RGUI_TERM_START_X,
-            entry_value, selected);
+            entry_value, entry_selected);
 
       snprintf(message, sizeof(message), "%c %-*.*s %-*s",
-            selected ? '>' : ' ',
-            RGUI_TERM_WIDTH - (entry.spacing + 1 + 2),
-            RGUI_TERM_WIDTH - (entry.spacing + 1 + 2),
+            entry_selected ? '>' : ' ',
+            RGUI_TERM_WIDTH - (entry_spacing + 1 + 2),
+            RGUI_TERM_WIDTH - (entry_spacing + 1 + 2),
             entry_title_buf,
-            entry.spacing,
+            entry_spacing,
             type_str_buf);
 
-      blit_line(menu, x, y, message, selected ? hover_color : normal_color);
+      blit_line(menu, x, y, message, entry_selected ? hover_color : normal_color);
    }
 
 #ifdef GEKKO

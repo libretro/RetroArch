@@ -201,6 +201,14 @@ void menu_entry_get_label(uint32_t i, char *label, size_t sizeof_label)
    strlcpy(label, entry.path, sizeof_label);
 }
 
+unsigned menu_entry_get_spacing(uint32_t i)
+{
+   menu_entry_t entry;
+   menu_entry_get(&entry, i, NULL, true);
+
+   return entry.spacing;
+}
+
 uint32_t menu_entry_get_bool_value(uint32_t i)
 {
    rarch_setting_t *setting = menu_entry_get_setting(i);

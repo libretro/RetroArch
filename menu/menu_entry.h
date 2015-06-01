@@ -65,6 +65,8 @@ enum menu_entry_type menu_entry_get_type(uint32_t i);
 
 void menu_entry_get_label(uint32_t i, char *label, size_t sizeof_label);
 
+unsigned menu_entry_get_spacing(uint32_t i);
+
 uint32_t menu_entry_get_bool_value(uint32_t i);
 
 void menu_entry_set_bool_value(uint32_t i, uint32_t new_val);
