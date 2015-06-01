@@ -583,8 +583,6 @@ static void ui_companion_cocoatouch_notify_list_pushed(void *data,
 
     RetroArch_iOS *ap   = (RetroArch_iOS *)apple_platform;
 
-   RARCH_LOG("Gets here.\n");
-
     if (ap)
       [ap mainMenuRefresh];
 }

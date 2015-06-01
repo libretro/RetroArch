@@ -206,7 +206,6 @@ static void frontend_xdk_get_environment_settings(int *argc, char *argv[],
    static char path[PATH_MAX_LENGTH];
    *path = '\0';
 #if defined(_XBOX1)
-   RARCH_LOG("Gets here top.\n");
    LAUNCH_DATA ptr;
    DWORD launch_type;
 

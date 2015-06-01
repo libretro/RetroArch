@@ -327,8 +327,6 @@ static void poll_iteration(void)
    unsigned sender_tag = (unsigned)[sender tag];
    global_t *global = global_get_ptr();
    
-   RARCH_LOG("Gets here, sender tag is: %d\n", sender_tag);
-
    switch (sender_tag)
    {
       case 1:
