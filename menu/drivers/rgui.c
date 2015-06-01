@@ -442,6 +442,7 @@ static void rgui_render(void)
    for (; i < end; i++, y += FONT_HEIGHT_STRIDE)
    {
       menu_entry_t entry;
+      char entry_value[PATH_MAX_LENGTH];
       char message[PATH_MAX_LENGTH], 
            entry_title_buf[PATH_MAX_LENGTH], type_str_buf[PATH_MAX_LENGTH];
       bool selected = false;
@@ -452,11 +453,13 @@ static void rgui_render(void)
       if (i > (menu->navigation.selection_ptr + 100))
          continue;
 
+      menu_entry_get_value(i, entry_value, sizeof(entry_value));
+
       menu_animation_ticker_line(entry_title_buf, RGUI_TERM_WIDTH - (entry.spacing + 1 + 2),
             frame_count / RGUI_TERM_START_X, entry.path, selected);
       menu_animation_ticker_line(type_str_buf, entry.spacing,
             frame_count / RGUI_TERM_START_X,
-            entry.value, selected);
+            entry_value, selected);
 
       snprintf(message, sizeof(message), "%c %-*.*s %-*s",
             selected ? '>' : ' ',

@@ -981,6 +981,7 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
    for (i = 0; i < end; i++)
    {
       menu_entry_t entry;
+      char entry_value[PATH_MAX_LENGTH];
       float icon_x, icon_y;
       char name[PATH_MAX_LENGTH], value[PATH_MAX_LENGTH];
       GLuint texture_switch = 0;
@@ -1041,22 +1042,24 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
             xmb->margins.screen.top + node->y + xmb->margins.label.top, 
             1, node->label_alpha, TEXT_ALIGN_LEFT);
 
+      menu_entry_get_value(i, entry_value, sizeof(entry_value));
+
       menu_animation_ticker_line(value, 35,
-            frame_count / 20, entry.value,
+            frame_count / 20, entry_value,
             (i == current));
 
-      if((     strcmp(entry.value, "...")
-            && strcmp(entry.value, "(CORE)")
-            && strcmp(entry.value, "(RDB)")
-            && strcmp(entry.value, "(CURSOR)")
-            && strcmp(entry.value, "(FILE)")
-            && strcmp(entry.value, "(DIR)")
-            && strcmp(entry.value, "(COMP)")
-            && strcmp(entry.value, "ON")
-            && strcmp(entry.value, "OFF"))
-            || ((!strcmp(entry.value, "ON")
+      if((     strcmp(entry_value, "...")
+            && strcmp(entry_value, "(CORE)")
+            && strcmp(entry_value, "(RDB)")
+            && strcmp(entry_value, "(CURSOR)")
+            && strcmp(entry_value, "(FILE)")
+            && strcmp(entry_value, "(DIR)")
+            && strcmp(entry_value, "(COMP)")
+            && strcmp(entry_value, "ON")
+            && strcmp(entry_value, "OFF"))
+            || ((!strcmp(entry_value, "ON")
             && !xmb->textures.list[XMB_TEXTURE_SWITCH_ON].id)
-            || (!strcmp(entry.value, "OFF")
+            || (!strcmp(entry_value, "OFF")
             && !xmb->textures.list[XMB_TEXTURE_SWITCH_OFF].id)))
          xmb_draw_text(menu, xmb, value,
                node->x + xmb->margins.screen.left + xmb->icon.spacing.horizontal + 
@@ -1071,10 +1074,10 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
 
       xmb_draw_icon(gl, xmb, icon, icon_x, icon_y, node->alpha, 0, node->zoom);
 
-      if (!strcmp(entry.value, "ON") && xmb->textures.list[XMB_TEXTURE_SWITCH_ON].id)
+      if (!strcmp(entry_value, "ON") && xmb->textures.list[XMB_TEXTURE_SWITCH_ON].id)
          texture_switch = xmb->textures.list[XMB_TEXTURE_SWITCH_ON].id;
 
-      if (!strcmp(entry.value, "OFF") && xmb->textures.list[XMB_TEXTURE_SWITCH_OFF].id)
+      if (!strcmp(entry_value, "OFF") && xmb->textures.list[XMB_TEXTURE_SWITCH_OFF].id)
          texture_switch = xmb->textures.list[XMB_TEXTURE_SWITCH_OFF].id;
 
       if (texture_switch != 0)

@@ -567,12 +567,14 @@ static void rmenu_xui_render(void)
 	for (i = 0; i < end; i++)
    {
       menu_entry_t entry;
+      char entry_value[PATH_MAX_LENGTH];
       wchar_t msg_left[PATH_MAX_LENGTH], msg_right[PATH_MAX_LENGTH];
 
       menu_entry_get(&entry, i, NULL, true);
+      menu_entry_get_value(i, entry_value, sizeof(entry_value));
 
       mbstowcs(msg_left,  entry.path,  sizeof(msg_left)  / sizeof(wchar_t));
-      mbstowcs(msg_right, entry.value, sizeof(msg_right) / sizeof(wchar_t));
+      mbstowcs(msg_right, entry_value, sizeof(msg_right) / sizeof(wchar_t));
       rmenu_xui_set_list_text(i, msg_left, msg_right);
    }
 	XuiListSetCurSelVisible(m_menulist, menu->navigation.selection_ptr);

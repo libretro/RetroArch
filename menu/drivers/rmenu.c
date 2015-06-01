@@ -190,17 +190,19 @@ static void rmenu_render(void)
    for (i = begin; i < end; i++, j++)
    {
       menu_entry_t entry;
+      char entry_value[PATH_MAX_LENGTH];
       char message[PATH_MAX_LENGTH],
            entry_title_buf[PATH_MAX_LENGTH], type_str_buf[PATH_MAX_LENGTH];
       bool selected = false;
 
       menu_entry_get(&entry, i, NULL, true);
       selected = menu_entry_is_currently_selected(&entry);
+      menu_entry_get_value(i, entry_value, sizeof(entry_value));
 
       menu_animation_ticker_line(entry_title_buf, RMENU_TERM_WIDTH - (entry.spacing + 1 + 2),
             frame_count / 15, entry.path, selected);
       menu_animation_ticker_line(type_str_buf, entry.spacing,
-            frame_count / 15, entry.value, selected);
+            frame_count / 15, entry_value, selected);
 
       snprintf(message, sizeof(message), "%c %s",
             selected ? '>' : ' ', entry_title_buf);

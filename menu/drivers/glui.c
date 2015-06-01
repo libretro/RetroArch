@@ -294,17 +294,19 @@ static void glui_render_menu_list(glui_handle_t *glui,
    {
       unsigned y;
       menu_entry_t entry;
+      char entry_value[PATH_MAX_LENGTH];
       char message[PATH_MAX_LENGTH],
            entry_title_buf[PATH_MAX_LENGTH], type_str_buf[PATH_MAX_LENGTH];
       bool selected             = false;
 
       menu_entry_get(&entry, i, NULL, true);
       selected = menu_entry_is_currently_selected(&entry);
+      menu_entry_get_value(i, entry_value, sizeof(entry_value));
 
       menu_animation_ticker_line(entry_title_buf, glui->ticker_limit,
             frame_count / 100, entry.path, selected);
       menu_animation_ticker_line(type_str_buf, glui->ticker_limit,
-            frame_count / 100, entry.value, selected);
+            frame_count / 100, entry_value, selected);
 
       strlcpy(message, entry_title_buf, sizeof(message));
 
