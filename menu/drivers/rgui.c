@@ -437,9 +437,9 @@ static void rgui_render(void)
 
    x = RGUI_TERM_START_X;
    y = RGUI_TERM_START_Y;
-   i = 0;
+   i = menu_entries_get_start();
 
-   for (i = menu_entries_get_start(); i < end; i++, y += FONT_HEIGHT_STRIDE)
+   for (; i < end; i++, y += FONT_HEIGHT_STRIDE)
    {
       menu_entry_t entry;
       char message[PATH_MAX_LENGTH], 
