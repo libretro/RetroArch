@@ -392,8 +392,6 @@ int menu_entry_get_current_id(bool use_representation)
 int menu_entry_select(uint32_t i)
 {
    menu_entry_t entry;
-   menu_list_t    *menu_list = menu_list_get_ptr();
-
    menu_entry_get(&entry, i, NULL, false);
 
    return menu_entry_action(&entry, i, MENU_ACTION_SELECT);
