@@ -981,7 +981,7 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
    for (i = 0; i < end; i++)
    {
       menu_entry_t entry;
-      char entry_value[PATH_MAX_LENGTH];
+      char entry_label[PATH_MAX_LENGTH], entry_value[PATH_MAX_LENGTH];
       float icon_x, icon_y;
       char name[PATH_MAX_LENGTH], value[PATH_MAX_LENGTH];
       GLuint texture_switch = 0;
@@ -1004,9 +1004,10 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
          continue;
 
       menu_entry_get(&entry, i, list, true);
+      menu_entry_get_label(i, entry_label, sizeof(entry_label));
 
       if (entry.type == MENU_FILE_CONTENTLIST_ENTRY)
-         strlcpy(entry.path, path_basename(entry.path), sizeof(entry.path));
+         strlcpy(entry_label, path_basename(entry_label), sizeof(entry_label));
 
       icon = xmb_icon_get_type(xmb, core_node, entry.type);
 
@@ -1031,9 +1032,8 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
       else if (!strcmp(entry.label, "resume_content"))
          icon = xmb->textures.list[XMB_TEXTURE_RESUME].id;
 
-
       menu_animation_ticker_line(name, 35,
-            frame_count / 20, entry.path,
+            frame_count / 20, entry_label,
             (i == current));
 
       xmb_draw_text(menu, xmb, name,
