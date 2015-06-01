@@ -393,8 +393,6 @@ int menu_entry_select(uint32_t i)
 {
    menu_entry_t entry;
    menu_list_t    *menu_list = menu_list_get_ptr();
-   rarch_setting_t *setting  = menu_setting_find(
-         menu_list->selection_buf->list[i].label);
 
    menu_entry_get(&entry, i, NULL, false);
 
