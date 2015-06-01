@@ -572,6 +572,6 @@ void patch_content(uint8_t **buf, ssize_t *size)
 
    if (!try_ips_patch(buf, size) && !try_bps_patch(buf, size) && !try_ups_patch(buf, size))
    {
-      RARCH_WARN("Did not find a valid content patch.\n");
+      RARCH_LOG("Did not find a valid content patch.\n");
    }
 }
