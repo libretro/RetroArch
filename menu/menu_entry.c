@@ -127,7 +127,7 @@ void menu_entries_get_core_title(char *title_msg, size_t title_msg_len)
          core_name, core_version);
 }
 
-rarch_setting_t *menu_entry_get_setting(uint32_t i)
+static rarch_setting_t *menu_entry_get_setting(uint32_t i)
 {
    const char *path = NULL, *entry_label = NULL;
    unsigned type = 0;

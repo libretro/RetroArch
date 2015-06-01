@@ -59,8 +59,6 @@ int menu_entry_go_back(void);
 
 void menu_entries_get_core_title(char *title_msg, size_t title_msg_len);
 
-rarch_setting_t *menu_entry_get_setting(uint32_t i);
-
 enum menu_entry_type menu_entry_get_type(uint32_t i);
 
 void menu_entry_get_path(uint32_t i, char  *s, size_t len);
