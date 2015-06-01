@@ -201,12 +201,28 @@ void menu_entry_get_path(uint32_t i, char *s, size_t len)
    strlcpy(s, entry.path, len);
 }
 
+void menu_entry_get_label(uint32_t i, char *s, size_t len)
+{
+   menu_entry_t entry;
+   menu_entry_get(&entry, i, NULL, true);
+
+   strlcpy(s, entry.label, len);
+}
+
 unsigned menu_entry_get_spacing(uint32_t i)
 {
    menu_entry_t entry;
    menu_entry_get(&entry, i, NULL, true);
 
    return entry.spacing;
+}
+
+unsigned menu_entry_get_type_new(uint32_t i)
+{
+   menu_entry_t entry;
+   menu_entry_get(&entry, i, NULL, true);
+
+   return entry.type;
 }
 
 uint32_t menu_entry_get_bool_value(uint32_t i)

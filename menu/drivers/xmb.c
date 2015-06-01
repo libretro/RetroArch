@@ -980,8 +980,9 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
 
    for (i = 0; i < end; i++)
    {
-      menu_entry_t entry;
+      unsigned entry_type;
       char entry_path[PATH_MAX_LENGTH], entry_value[PATH_MAX_LENGTH];
+      char entry_label[PATH_MAX_LENGTH];
       float icon_x, icon_y;
       char name[PATH_MAX_LENGTH], value[PATH_MAX_LENGTH];
       GLuint texture_switch = 0;
@@ -1003,33 +1004,35 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
             icon_y > height + xmb->icon.size)
          continue;
 
-      menu_entry_get(&entry, i, list, true);
+      menu_entry_get_label(i, entry_label, sizeof(entry_label));
       menu_entry_get_path(i, entry_path, sizeof(entry_path));
 
-      if (entry.type == MENU_FILE_CONTENTLIST_ENTRY)
+      entry_type = menu_entry_get_type_new(i);
+
+      if (entry_type == MENU_FILE_CONTENTLIST_ENTRY)
          strlcpy(entry_path, path_basename(entry_path), sizeof(entry_path));
 
-      icon = xmb_icon_get_type(xmb, core_node, entry.type);
+      icon = xmb_icon_get_type(xmb, core_node, entry_type);
 
-      if (!strcmp(entry.label, "core_options"))
+      if (!strcmp(entry_label, "core_options"))
          icon = xmb->textures.list[XMB_TEXTURE_CORE_OPTIONS].id;
-      else if (!strcmp(entry.label, "core_information"))
+      else if (!strcmp(entry_label, "core_information"))
          icon = xmb->textures.list[XMB_TEXTURE_CORE_INFO].id;
-      else if (!strcmp(entry.label, "core_input_remapping_options"))
+      else if (!strcmp(entry_label, "core_input_remapping_options"))
          icon = xmb->textures.list[XMB_TEXTURE_INPUT_REMAPPING_OPTIONS].id;
-      else if (!strcmp(entry.label, "core_cheat_options"))
+      else if (!strcmp(entry_label, "core_cheat_options"))
          icon = xmb->textures.list[XMB_TEXTURE_CHEAT_OPTIONS].id;
-      else if (!strcmp(entry.label, "core_disk_options"))
+      else if (!strcmp(entry_label, "core_disk_options"))
          icon = xmb->textures.list[XMB_TEXTURE_DISK_OPTIONS].id;
-      else if (!strcmp(entry.label, "savestate"))
+      else if (!strcmp(entry_label, "savestate"))
          icon = xmb->textures.list[XMB_TEXTURE_SAVESTATE].id;
-      else if (!strcmp(entry.label, "loadstate"))
+      else if (!strcmp(entry_label, "loadstate"))
          icon = xmb->textures.list[XMB_TEXTURE_LOADSTATE].id;
-      else if (!strcmp(entry.label, "take_screenshot"))
+      else if (!strcmp(entry_label, "take_screenshot"))
          icon = xmb->textures.list[XMB_TEXTURE_SCREENSHOT].id;
-      else if (!strcmp(entry.label, "restart_content"))
+      else if (!strcmp(entry_label, "restart_content"))
          icon = xmb->textures.list[XMB_TEXTURE_RELOAD].id;
-      else if (!strcmp(entry.label, "resume_content"))
+      else if (!strcmp(entry_label, "resume_content"))
          icon = xmb->textures.list[XMB_TEXTURE_RESUME].id;
 
       menu_animation_ticker_line(name, 35,
