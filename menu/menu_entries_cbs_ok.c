@@ -37,7 +37,9 @@ char core_updater_path[PATH_MAX_LENGTH];
 static int menu_action_setting_set_current_string_path(
       rarch_setting_t *setting, const char *dir, const char *path)
 {
-   fill_pathname_join(setting->value.string, dir, path, setting->size);
+   char s[PATH_MAX_LENGTH];
+   fill_pathname_join(s, dir, path, sizeof(s));
+   setting_set_with_string_representation(setting, s);
    return menu_setting_generic(setting);
 }
 
