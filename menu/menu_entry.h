@@ -95,7 +95,7 @@ uint32_t menu_entry_pathdir_for_directory(uint32_t i);
 
 void menu_entry_pathdir_get_value(uint32_t i, char *s, size_t len);
 
-void menu_entry_pathdir_set_value(uint32_t i, const char *s);
+int menu_entry_pathdir_set_value(uint32_t i, const char *s);
 
 void menu_entry_pathdir_extensions(uint32_t i, char *s, size_t len);
 

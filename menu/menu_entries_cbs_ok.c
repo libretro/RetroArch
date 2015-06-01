@@ -18,6 +18,7 @@
 #include "menu_display.h"
 #include "menu_entries_cbs.h"
 #include "menu_setting.h"
+#include "menu_entry.h"
 #include "menu_shader.h"
 #include "menu_navigation.h"
 
@@ -786,29 +787,7 @@ static int action_ok_remap_file_save_game(const char *path,
 static int action_ok_path_use_directory(const char *path,
       const char *label, unsigned type, size_t idx)
 {
-   const char *menu_label   = NULL;
-   const char *menu_path    = NULL;
-   rarch_setting_t *setting = NULL;
-   menu_handle_t *menu = menu_driver_get_ptr();
-   if (!menu)
-      return -1;
-
-   menu_list_get_last_stack(menu->menu_list,
-         &menu_path, &menu_label, NULL);
-
-   setting = menu_setting_find(menu_label);
-
-   if (!setting)
-      return -1;
-
-   if (setting->type != ST_DIR)
-      return -1;
-
-   strlcpy(setting->value.string, menu_path, setting->size);
-   menu_setting_generic(setting);
-   menu_list_pop_stack_by_needle(menu->menu_list, setting->name);
-
-   return 0;
+   return menu_entry_pathdir_set_value(0, NULL);
 }
 
 static int action_ok_core_deferred_set(const char *path,

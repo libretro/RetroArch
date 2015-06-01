@@ -301,10 +301,32 @@ void menu_entry_pathdir_get_value(uint32_t i, char *s, size_t len)
    strlcpy(s, entry.value, len);
 }
 
-void menu_entry_pathdir_set_value(uint32_t i, const char *s)
+int menu_entry_pathdir_set_value(uint32_t i, const char *s)
 {
-   rarch_setting_t *setting = menu_entry_get_setting(i);
-   setting_set_with_string_representation(setting, s);
+   const char *menu_label   = NULL;
+   const char *menu_path    = NULL;
+   rarch_setting_t *setting = NULL;
+   menu_list_t *menu_list   = menu_list_get_ptr();
+
+   menu_list_get_last_stack(menu_list,
+         &menu_path, &menu_label, NULL);
+
+   setting = menu_setting_find(menu_label);
+
+   if (!setting)
+      return -1;
+
+   if (setting->type != ST_DIR)
+      return -1;
+
+   (void)s;
+
+   strlcpy(setting->value.string, menu_path, setting->size);
+   menu_setting_generic(setting);
+
+   menu_list_pop_stack_by_needle(menu_list, setting->name);
+
+   return 0;
 }
 
 void menu_entry_pathdir_extensions(uint32_t i, char *s, size_t len)
