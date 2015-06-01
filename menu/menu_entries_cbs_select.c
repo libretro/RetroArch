@@ -27,7 +27,6 @@ static int action_select_default(const char *path, const char *label, unsigned t
    menu_entry_t entry;
    enum menu_action action   = MENU_ACTION_NOOP;
    menu_file_list_cbs_t *cbs = NULL;
-   menu_navigation_t *nav    = menu_navigation_get_ptr();
    menu_list_t    *menu_list = menu_list_get_ptr();
    rarch_setting_t *setting  = menu_setting_find(
          menu_list->selection_buf->list[idx].label);
@@ -39,7 +38,6 @@ static int action_select_default(const char *path, const char *label, unsigned t
    if (setting_is_of_path_type(setting))
       return 0;
 
-   nav->selection_ptr = idx;
    if ((cbs && cbs->action_ok) || setting_is_of_general_type(setting))
        action = MENU_ACTION_OK;
    else
