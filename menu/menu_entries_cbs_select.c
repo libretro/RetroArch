@@ -35,14 +35,9 @@ static int action_select_default(const char *path, const char *label, unsigned t
 
    cbs = menu_list_get_actiondata_at_offset(menu_list->selection_buf, idx);
 
-   if (setting_is_of_path_type(setting))
-      return 0;
-
    if ((cbs && cbs->action_ok) || setting_is_of_general_type(setting))
        action = MENU_ACTION_OK;
-   else
-   {
-      if (cbs && cbs->action_start)
+   else { if (cbs && cbs->action_start)
          action = MENU_ACTION_START;
       if (cbs && cbs->action_right)
          action = MENU_ACTION_RIGHT;
@@ -56,6 +51,12 @@ static int action_select_default(const char *path, const char *label, unsigned t
    return ret;
 }
 
+static int action_select_directory(const char *path, const char *label, unsigned type,
+      size_t idx)
+{
+   return 0;
+}
+
 void menu_entries_cbs_init_bind_select(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx,
       const char *elem0, const char *elem1)
@@ -64,4 +65,12 @@ void menu_entries_cbs_init_bind_select(menu_file_list_cbs_t *cbs,
       return;
 
    cbs->action_select = action_select_default;
+
+   switch (type)
+   {
+      case MENU_FILE_DIRECTORY:
+      case MENU_FILE_USE_DIRECTORY:
+         cbs->action_select = action_select_directory;
+         break;
+   }
 }
