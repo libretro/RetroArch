@@ -296,26 +296,24 @@ static void glui_render_menu_list(glui_handle_t *glui,
       char entry_path[PATH_MAX_LENGTH], entry_value[PATH_MAX_LENGTH];
       char message[PATH_MAX_LENGTH],
            entry_title_buf[PATH_MAX_LENGTH], type_str_buf[PATH_MAX_LENGTH];
-      bool selected             = false;
-
-      selected = menu_entry_is_currently_selected(i);
+      bool entry_selected = menu_entry_is_currently_selected(i);
       menu_entry_get_value(i, entry_value, sizeof(entry_value));
       menu_entry_get_path(i, entry_path, sizeof(entry_path));
 
       menu_animation_ticker_line(entry_title_buf, glui->ticker_limit,
-            frame_count / 100, entry_path, selected);
+            frame_count / 100, entry_path, entry_selected);
       menu_animation_ticker_line(type_str_buf, glui->ticker_limit,
-            frame_count / 100, entry_value, selected);
+            frame_count / 100, entry_value, entry_selected);
 
       strlcpy(message, entry_title_buf, sizeof(message));
 
       y = menu->header_height - menu->scroll_y + (glui->line_height * i);
 
       glui_blit_line(glui->margin, y, message,
-            selected ? hover_color : normal_color, TEXT_ALIGN_LEFT);
+            entry_selected ? hover_color : normal_color, TEXT_ALIGN_LEFT);
 
       glui_blit_line(width - glui->margin, y, type_str_buf,
-            selected ? hover_color : normal_color, TEXT_ALIGN_RIGHT);
+            entry_selected ? hover_color : normal_color, TEXT_ALIGN_RIGHT);
    }
 }
 
