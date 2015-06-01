@@ -566,11 +566,9 @@ static void rmenu_xui_render(void)
 	end = menu_entries_get_end();
 	for (i = 0; i < end; i++)
    {
-      menu_entry_t entry;
       char entry_path[PATH_MAX_LENGTH], entry_value[PATH_MAX_LENGTH];
       wchar_t msg_left[PATH_MAX_LENGTH], msg_right[PATH_MAX_LENGTH];
 
-      menu_entry_get(&entry, i, NULL, true);
       menu_entry_get_value(i, entry_value, sizeof(entry_value));
       menu_entry_get_path(i, entry_path, sizeof(entry_path));
 
