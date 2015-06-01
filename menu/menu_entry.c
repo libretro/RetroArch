@@ -129,7 +129,6 @@ void menu_entries_get_core_title(char *title_msg, size_t title_msg_len)
 
 rarch_setting_t *menu_entry_get_setting(uint32_t i)
 {
-   rarch_setting_t *setting;
    const char *path = NULL, *entry_label = NULL;
    unsigned type = 0;
    const char *dir           = NULL;
@@ -142,10 +141,8 @@ rarch_setting_t *menu_entry_get_setting(uint32_t i)
    menu_list_get_at_offset(menu_list->selection_buf, i, &path,
          &entry_label, &type);
 
-   setting = menu_setting_find(
+   return menu_setting_find(
          menu_list->selection_buf->list[i].label);
-
-   return setting;
 }
 
 enum menu_entry_type menu_entry_get_type(uint32_t i)
