@@ -332,8 +332,9 @@ int menu_entry_pathdir_set_value(uint32_t i, const char *s)
 void menu_entry_pathdir_extensions(uint32_t i, char *s, size_t len)
 {
    rarch_setting_t *setting = menu_entry_get_setting(i);
-   if (setting)
-      strlcpy(s, setting->values, len);
+   const char *extensions   = setting ? setting->values : NULL;
+   if (setting && extensions)
+      strlcpy(s, extensions, len);
 }
 
 void menu_entry_reset(uint32_t i)
