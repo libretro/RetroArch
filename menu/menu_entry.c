@@ -368,12 +368,12 @@ void menu_entry_get(menu_entry_t *entry, size_t i,
       strlcpy(entry->label, entry_label, sizeof(entry->label));
 }
 
-bool menu_entry_is_currently_selected(menu_entry_t *entry)
+bool menu_entry_is_currently_selected(unsigned id)
 {
    menu_navigation_t *nav = menu_navigation_get_ptr();
-   if (!entry || !nav)
+   if (!nav)
       return false;
-   return (entry->id == nav->selection_ptr);
+   return (id == nav->selection_ptr);
 }
 
 int menu_entry_get_current_id(bool use_representation)
@@ -387,7 +387,7 @@ int menu_entry_get_current_id(bool use_representation)
       menu_entry_t entry;
       menu_entry_get(&entry, i, NULL, use_representation);
 
-      if (menu_entry_is_currently_selected(&entry))
+      if (menu_entry_is_currently_selected(entry.id))
          return i;
    }
 

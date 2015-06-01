@@ -300,7 +300,7 @@ static void glui_render_menu_list(glui_handle_t *glui,
       bool selected             = false;
 
       menu_entry_get(&entry, i, NULL, true);
-      selected = menu_entry_is_currently_selected(&entry);
+      selected = menu_entry_is_currently_selected(i);
       menu_entry_get_value(i, entry_value, sizeof(entry_value));
       menu_entry_get_label(i, entry_label, sizeof(entry_label));
 

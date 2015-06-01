@@ -448,7 +448,7 @@ static void rgui_render(void)
       bool selected = false;
 
       menu_entry_get(&entry, i, NULL, true);
-      selected = menu_entry_is_currently_selected(&entry);
+      selected = menu_entry_is_currently_selected(i);
 
       if (i > (menu->navigation.selection_ptr + 100))
          continue;
