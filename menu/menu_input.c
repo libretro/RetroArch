@@ -1018,7 +1018,7 @@ unsigned menu_input_frame(retro_input_t input, retro_input_t trigger_input)
    else if (trigger_input & (1ULL << settings->menu_default_btn))
       ret = MENU_ACTION_START;
    else if (trigger_input & (1ULL << settings->menu_info_btn))
-      ret = MENU_ACTION_SELECT;
+      ret = MENU_ACTION_INFO;
    else if (trigger_input & (1ULL << RARCH_MENU_TOGGLE))
       ret = MENU_ACTION_TOGGLE;
    else

@@ -494,7 +494,7 @@ int menu_entry_action(menu_entry_t *entry, unsigned i, enum menu_action action)
          if (cbs && cbs->action_right)
             ret = cbs->action_right(entry->type, entry->label, false);
          break;
-      case MENU_ACTION_SELECT:
+      case MENU_ACTION_INFO:
          if (cbs && cbs->action_info)
             ret = cbs->action_info(entry->type, entry->label);
          break;
