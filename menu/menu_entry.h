@@ -63,7 +63,7 @@ rarch_setting_t *menu_entry_get_setting(uint32_t i);
 
 enum menu_entry_type menu_entry_get_type(uint32_t i);
 
-void menu_entry_get_label(uint32_t i, char *label, size_t sizeof_label);
+void menu_entry_get_path(uint32_t i, char *label, size_t sizeof_label);
 
 unsigned menu_entry_get_spacing(uint32_t i);
 

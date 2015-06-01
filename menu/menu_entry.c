@@ -193,12 +193,12 @@ enum menu_entry_type menu_entry_get_type(uint32_t i)
       return MENU_ENTRY_ACTION;
 }
 
-void menu_entry_get_label(uint32_t i, char *label, size_t sizeof_label)
+void menu_entry_get_path(uint32_t i, char *s, size_t len)
 {
    menu_entry_t entry;
    menu_entry_get(&entry, i, NULL, true);
 
-   strlcpy(label, entry.path, sizeof_label);
+   strlcpy(s, entry.path, len);
 }
 
 unsigned menu_entry_get_spacing(uint32_t i)

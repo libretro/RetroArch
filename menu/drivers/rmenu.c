@@ -189,17 +189,17 @@ static void rmenu_render(void)
 
    for (i = begin; i < end; i++, j++)
    {
-      char entry_label[PATH_MAX_LENGTH], entry_value[PATH_MAX_LENGTH];
+      char entry_path[PATH_MAX_LENGTH], entry_value[PATH_MAX_LENGTH];
       char message[PATH_MAX_LENGTH],
            entry_title_buf[PATH_MAX_LENGTH], type_str_buf[PATH_MAX_LENGTH];
       unsigned entry_spacing = menu_entry_get_spacing(i);
       bool entry_selected = menu_entry_is_currently_selected(i);
 
       menu_entry_get_value(i, entry_value, sizeof(entry_value));
-      menu_entry_get_label(i, entry_label, sizeof(entry_label));
+      menu_entry_get_path(i, entry_path, sizeof(entry_path));
 
       menu_animation_ticker_line(entry_title_buf, RMENU_TERM_WIDTH - (entry_spacing + 1 + 2),
-            frame_count / 15, entry_label, entry_selected);
+            frame_count / 15, entry_path, entry_selected);
       menu_animation_ticker_line(type_str_buf, entry_spacing,
             frame_count / 15, entry_value, entry_selected);
 
