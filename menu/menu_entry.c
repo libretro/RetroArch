@@ -391,39 +391,14 @@ int menu_entry_get_current_id(bool use_representation)
 // cores and updating the currently displayed menu
 int menu_entry_select(uint32_t i)
 {
-   int ret = 0;
    menu_entry_t entry;
-   enum menu_action action   = MENU_ACTION_NOOP;
-   menu_file_list_cbs_t *cbs = NULL;
-   menu_navigation_t *nav    = menu_navigation_get_ptr();
    menu_list_t    *menu_list = menu_list_get_ptr();
    rarch_setting_t *setting  = menu_setting_find(
          menu_list->selection_buf->list[i].label);
 
    menu_entry_get(&entry, i, NULL, false);
 
-   cbs = menu_list_get_actiondata_at_offset(menu_list->selection_buf, i);
-
-   if (setting_is_of_path_type(setting))
-      return 0;
-
-   nav->selection_ptr = i;
-   if ((cbs && cbs->action_ok) || setting_is_of_general_type(setting))
-       action = MENU_ACTION_OK;
-   else
-   {
-      if (cbs && cbs->action_start)
-         action = MENU_ACTION_START;
-      if (cbs && cbs->action_right)
-         action = MENU_ACTION_RIGHT;
-   }
-    
-   if (action != MENU_ACTION_NOOP)
-       ret = menu_entry_action(&entry, i, action);
-
-   rarch_main_data_iterate();
-    
-   return ret;
+   return menu_entry_action(&entry, i, MENU_ACTION_SELECT);
 }
 
 int menu_entry_iterate(unsigned action)
@@ -497,6 +472,10 @@ int menu_entry_action(menu_entry_t *entry, unsigned i, enum menu_action action)
       case MENU_ACTION_INFO:
          if (cbs && cbs->action_info)
             ret = cbs->action_info(entry->type, entry->label);
+         break;
+      case MENU_ACTION_SELECT:
+         if (cbs && cbs->action_select)
+            ret = cbs->action_select(entry->path, entry->label, entry->type, i);
          break;
 
       case MENU_ACTION_REFRESH:
