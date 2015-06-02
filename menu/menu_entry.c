@@ -23,14 +23,19 @@
 #include "../runloop_data.h"
 #include "drivers/shared.h"
 
-// This file provides an abstraction of the currently displayed
-// menu. It is organized into event-system where the UI companion
-// calls this functions and RetroArch responds by changing the global
-// state (including arranging for these functions to return different
-// values). Its only interaction back to the UI is to arrange for
-// notify_list_loaded on the UI companion.
+/* This file provides an abstraction of the currently displayed
+ * menu.
+ *
+ * It is organized into event-system where the UI companion
+ * calls this functions and RetroArch responds by changing the global
+ * state (including arranging for these functions to return different
+ * values).
+ *
+ * Its only interaction back to the UI is to arrange for
+ * notify_list_loaded on the UI companion.
+ */
 
-// Returns the starting index of the menu entry list
+/* Returns the starting index of the menu entry list. */
 size_t menu_entries_get_start(void)
 {
    menu_handle_t *menu       = menu_driver_get_ptr();
@@ -41,7 +46,7 @@ size_t menu_entries_get_start(void)
    return menu->begin;
 }
 
-// Returns the last index + 1 of the menu entry list
+/* Returns the last index (+1) of the menu entry list. */
 size_t menu_entries_get_end(void)
 {
    menu_list_t *menu_list    = menu_list_get_ptr();
@@ -53,8 +58,8 @@ size_t menu_entries_get_end(void)
 }
 
 
-// Sets title to what the name of the current menu should be
-int menu_entries_get_title(char *title, size_t title_len)
+/* Sets title to what the name of the current menu should be. */
+int menu_entries_get_title(char *s, size_t len)
 {
    const char *path          = NULL;
    const char *label         = NULL;
@@ -72,13 +77,13 @@ int menu_entries_get_title(char *title, size_t title_len)
    (void)cbs;
 
    if (cbs && cbs->action_get_title)
-      return cbs->action_get_title(path, label, menu_type, title, title_len);
+      return cbs->action_get_title(path, label, menu_type, s, len);
    return 0;
 }
 
-// Returns true if a Back button should be shown (i.e. we are at least
-// one level deep in the menu hierarchy)
-uint32_t menu_entries_show_back(void)
+/* Returns true if a Back button should be shown (i.e. we are at least
+ * one level deep in the menu hierarchy). */
+bool menu_entries_show_back(void)
 {
    menu_list_t *menu_list    = menu_list_get_ptr();
 
@@ -106,8 +111,9 @@ int menu_entry_go_back(void)
    return 0;
 }
 
-// Sets title_msg to the name of the current core (shown at the top of the UI)
-void menu_entries_get_core_title(char *title_msg, size_t title_msg_len)
+/* Sets 's' to the name of the current core 
+ * (shown at the top of the UI). */
+void menu_entries_get_core_title(char *s, size_t len)
 {
    global_t *global          = global_get_ptr();
    const char *core_name     = global->menu.info.library_name;
@@ -123,7 +129,7 @@ void menu_entries_get_core_title(char *title_msg, size_t title_msg_len)
    if (!core_version)
       core_version = "";
 
-   snprintf(title_msg, title_msg_len, "%s - %s %s", PACKAGE_VERSION,
+   snprintf(s, len, "%s - %s %s", PACKAGE_VERSION,
          core_name, core_version);
 }
 

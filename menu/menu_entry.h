@@ -17,6 +17,7 @@
 #define MENU_ENTRY_H__
 
 #include <stdint.h>
+#include <boolean.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -53,7 +54,7 @@ size_t menu_entries_get_end(void);
 
 int menu_entries_get_title(char *title, size_t title_len);
 
-uint32_t menu_entries_show_back(void);
+bool menu_entries_show_back(void);
 
 int menu_entry_go_back(void);
 
