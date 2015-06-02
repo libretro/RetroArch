@@ -3177,7 +3177,7 @@ static void general_write_handler(void *data)
          strlcpy(info.label, "help", sizeof(info.label));
 
          menu_displaylist_push_list(&info, DISPLAYLIST_GENERIC);
-         *setting->value.boolean = false;
+         setting_set_with_string_representation(setting, "false");
       }
    }
    else if (!strcmp(setting->name, "video_smooth"))
@@ -3189,7 +3189,7 @@ static void general_write_handler(void *data)
       if (*setting->value.boolean && global->console.screen.pal_enable)
          rarch_cmd = EVENT_CMD_REINIT;
       else
-         *setting->value.boolean = false;
+         setting_set_with_string_representation(setting, "false");
    }
    else if (!strcmp(setting->name, "video_rotation"))
    {
