@@ -87,7 +87,8 @@ enum setting_list_flags
    SL_FLAG_ARCHIVE_OPTIONS       =  (1 << 20),
    SL_FLAG_PATCH_OPTIONS         =  (1 << 21),
    SL_FLAG_RECORDING_OPTIONS     =  (1 << 21),
-   SL_FLAG_ALL                   =  (1 << 22),
+   SL_FLAG_FRAME_THROTTLE_OPTIONS=  (1 << 22),
+   SL_FLAG_ALL                   =  (1 << 23),
 };
 
 #define SL_FLAG_ALL_SETTINGS (SL_FLAG_ALL - SL_FLAG_MAIN_MENU)

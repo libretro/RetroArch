@@ -3849,7 +3849,23 @@ static bool setting_append_list_general_options(
 
    END_SUB_GROUP(list, list_info);
 
-   START_SUB_GROUP(list, list_info, "Frame throttling", group_info.name, subgroup_info);
+   END_GROUP(list, list_info);
+
+   return true;
+}
+
+static bool setting_append_list_frame_throttling_options(
+      rarch_setting_t **list,
+      rarch_setting_info_t *list_info)
+{
+   rarch_setting_group_info_t group_info;
+   rarch_setting_group_info_t subgroup_info;
+   settings_t *settings = config_get_ptr();
+   global_t   *global   = global_get_ptr();
+
+   START_GROUP(group_info, "Frame Throttle Settings");
+
+   START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
 
    CONFIG_BOOL(
          settings->fastforward_ratio_throttle_enable,
@@ -6560,6 +6576,12 @@ rarch_setting_t *setting_new(unsigned mask)
    if (mask & SL_FLAG_RECORDING_OPTIONS)
    {
       if (!setting_append_list_recording_options(&list, list_info))
+         goto error;
+   }
+
+   if (mask & SL_FLAG_FRAME_THROTTLE_OPTIONS)
+   {
+      if (!setting_append_list_frame_throttling_options(&list, list_info))
          goto error;
    }
 
