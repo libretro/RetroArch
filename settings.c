@@ -3349,6 +3349,7 @@ static bool setting_append_list_main_menu_options(
          "Management",
          group_info.name,
          subgroup_info.name);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
    CONFIG_ACTION(
          "options",
