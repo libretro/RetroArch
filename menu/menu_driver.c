@@ -182,10 +182,13 @@ const menu_ctx_driver_t *menu_ctx_driver_get_ptr(void)
    return driver->menu_ctx;
 }
 
-static void menu_driver_list_delete_common(file_list_t *list, size_t idx,
-      size_t list_size)
+void  menu_driver_list_delete(file_list_t *list, size_t idx, size_t list_size)
 {
    menu_file_list_cbs_t *cbs = NULL;
+   const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
+
+   if (driver->list_delete)
+      driver->list_delete(list, idx, list_size);
 
    if (!list)
       return;
@@ -204,15 +207,6 @@ static void menu_driver_list_delete_common(file_list_t *list, size_t idx,
       free(list->list[idx].actiondata);
    }
    list->list[idx].actiondata = NULL;
-}
-
-void  menu_driver_list_delete(file_list_t *list, size_t i, size_t list_size)
-{
-   const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
-
-   if (driver->list_delete)
-      driver->list_delete(list, i, list_size);
-   menu_driver_list_delete_common(list, i, list_size);
 }
 
 void  menu_driver_list_clear(file_list_t *list)
@@ -239,12 +233,16 @@ void  menu_driver_list_set_selection(file_list_t *list)
       driver->list_set_selection(list);
 }
 
-static void menu_driver_list_insert_common(file_list_t *list,
-      const char *path, const char *label,
-      unsigned type, size_t idx)
+void  menu_driver_list_insert(file_list_t *list, const char *path,
+      const char *label, unsigned type, size_t idx)
 {
+   const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
+
    if (!list)
       return;
+
+   if (driver->list_insert)
+      driver->list_insert(list, path, label, idx);
 
    list->list[idx].actiondata = (menu_file_list_cbs_t*)
       calloc(1, sizeof(menu_file_list_cbs_t));
@@ -256,17 +254,6 @@ static void menu_driver_list_insert_common(file_list_t *list,
    }
 
    menu_entries_cbs_init(list, path, label, type, idx);
-}
-
-void  menu_driver_list_insert(file_list_t *list, const char *path,
-      const char *label, unsigned type, size_t list_size)
-{
-   const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
-
-   if (driver->list_insert)
-      driver->list_insert(list, path, label, list_size);
-
-   menu_driver_list_insert_common(list, path, label, type, list_size);
 }
 
 void menu_driver_list_cache(bool state, unsigned action)
