@@ -44,7 +44,7 @@ typedef void *GLeglImageOES;
 #if !defined(GL_OES_fixed_point) && !defined(HAVE_OPENGLES2)
 typedef GLint GLfixed;
 #endif
-#if !defined(OS_TARGET_IPHONE) && !defined(MAC_OS_X_VERSION_10_7)
+#if defined(__MACH__) && !defined(OS_TARGET_IPHONE) && !defined(MAC_OS_X_VERSION_10_7)
 typedef long long int GLint64;
 typedef unsigned long long int GLuint64;
 typedef unsigned long long int GLuint64EXT;
