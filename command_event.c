@@ -840,58 +840,51 @@ static bool event_save_core_config(void)
 /**
  * event_save_state
  * @path            : Path to state.
- * @msg             : Message.
- * @sizeof_msg      : Size of @msg.
+ * @s               : Message.
+ * @len             : Size of @s.
  *
  * Saves a state with path being @path.
  **/
 static void event_save_state(const char *path,
-      char *msg, size_t sizeof_msg)
+      char *s, size_t len)
 {
    settings_t *settings = config_get_ptr();
 
    if (!save_state(path))
    {
-      snprintf(msg, sizeof_msg,
-            "Failed to save state to \"%s\".", path);
+      snprintf(s, len, "Failed to save state to \"%s\".", path);
       return;
    }
 
    if (settings->state_slot < 0)
-      snprintf(msg, sizeof_msg,
-            "Saved state to slot #-1 (auto).");
+      snprintf(s, len, "Saved state to slot #-1 (auto).");
    else
-      snprintf(msg, sizeof_msg,
-            "Saved state to slot #%d.", settings->state_slot);
+      snprintf(s, len, "Saved state to slot #%d.", settings->state_slot);
 }
 
 /**
  * event_load_state
  * @path            : Path to state.
- * @msg             : Message.
- * @sizeof_msg      : Size of @msg.
+ * @s               : Message.
+ * @len             : Size of @s.
  *
  * Loads a state with path being @path.
  **/
-static void event_load_state(const char *path,
-      char *msg, size_t sizeof_msg)
+static void event_load_state(const char *path, char *s, size_t len)
 {
    settings_t *settings = config_get_ptr();
 
    if (!load_state(path))
    {
-      snprintf(msg, sizeof_msg,
-            "Failed to load state from \"%s\".", path);
+      snprintf(s, len, "Failed to load state from \"%s\".", path);
       return;
 
    }
 
    if (settings->state_slot < 0)
-      snprintf(msg, sizeof_msg,
-            "Loaded state from slot #-1 (auto).");
+      snprintf(s, len, "Loaded state from slot #-1 (auto).");
    else
-      snprintf(msg, sizeof_msg,
-            "Loaded state from slot #%d.", settings->state_slot);
+      snprintf(s, len, "Loaded state from slot #%d.", settings->state_slot);
 }
 
 static void event_main_state(unsigned cmd)

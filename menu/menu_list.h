@@ -39,7 +39,7 @@ typedef struct menu_file_list_cbs
    int (*action_select)(const char *path, const char *label, unsigned type,
          size_t idx);
    int (*action_get_title)(const char *path, const char *label,
-         unsigned type, char *title, size_t sizeof_title);
+         unsigned type, char *s, size_t len);
    int (*action_ok)(const char *path, const char *label, unsigned type,
          size_t idx);
    int (*action_cancel)(const char *path, const char *label, unsigned type,

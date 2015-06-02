@@ -425,12 +425,12 @@ static int system_property_get_density(char *value)
    return length;
 }
 
-static void dpi_get_density(char *name, size_t sizeof_name)
+static void dpi_get_density(char *s, size_t len)
 {
-   system_property_get("ro.sf.lcd_density", name);
+   system_property_get("ro.sf.lcd_density", s);
 
-   if (name[0] == '\0')
-      system_property_get_density(name);
+   if (s[0] == '\0')
+      system_property_get_density(s);
 }
 
 static bool android_gfx_ctx_get_metrics(void *data,

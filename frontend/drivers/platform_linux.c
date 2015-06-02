@@ -410,7 +410,7 @@ enum frontend_architecture frontend_linux_get_architecture(void)
    return FRONTEND_ARCH_NONE;
 }
 
-static void frontend_linux_get_os(char *name, size_t sizeof_name, int *major, int *minor)
+static void frontend_linux_get_os(char *s, size_t len, int *major, int *minor)
 {
    unsigned krel;
    struct utsname buffer;
@@ -419,7 +419,7 @@ static void frontend_linux_get_os(char *name, size_t sizeof_name, int *major, in
       return;
 
    sscanf(buffer.release, "%u.%u.%u", major, minor, &krel);
-   strlcpy(name, "Linux", sizeof_name);
+   strlcpy(s, "Linux", len);
 }
 
 const frontend_ctx_driver_t frontend_ctx_linux = {

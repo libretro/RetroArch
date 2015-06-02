@@ -80,7 +80,7 @@ static void find_first_libretro_core(char *first_file,
    dir_list_free(list);
 }
 
-static void find_and_set_first_file(char *path, size_t sizeof_path,
+static void find_and_set_first_file(char *s, size_t len,
       const char *ext)
 {
    /* Last fallback - we'll need to start the first executable file 
@@ -93,14 +93,14 @@ static void find_and_set_first_file(char *path, size_t sizeof_path,
 
    if (first_file[0] != '\0')
    {
-      fill_pathname_join(path, g_defaults.core_dir, first_file, sizeof_path);
-      RARCH_LOG("libretro_path now set to: %s.\n", path);
+      fill_pathname_join(s, g_defaults.core_dir, first_file, len);
+      RARCH_LOG("libretro_path now set to: %s.\n", s);
    }
    else
       RARCH_ERR("Failed last fallback - RetroArch Salamander will exit.\n");
 }
 
-static void salamander_init(char *libretro_path, size_t sizeof_libretro_path)
+static void salamander_init(char *s, size_t len)
 {
    /* normal executable loading path */
    bool config_file_exists = false;
@@ -117,7 +117,7 @@ static void salamander_init(char *libretro_path, size_t sizeof_libretro_path)
       {
          config_get_array(conf, "libretro_path", tmp_str, sizeof(tmp_str));
          config_file_free(conf);
-         strlcpy(libretro_path, tmp_str, sizeof_libretro_path);
+         strlcpy(s, tmp_str, len);
       }
 #ifdef GEKKO
       else /* stupid libfat bug or something; sometimes it says the file is there when it doesn't */
@@ -125,10 +125,10 @@ static void salamander_init(char *libretro_path, size_t sizeof_libretro_path)
 #endif
    }
 
-   if (!config_file_exists || !strcmp(libretro_path, ""))
-      find_and_set_first_file(libretro_path, sizeof_libretro_path, EXT_EXECUTABLES);
+   if (!config_file_exists || !strcmp(s, ""))
+      find_and_set_first_file(s, len, EXT_EXECUTABLES);
    else
-      RARCH_LOG("Start [%s] found in retroarch.cfg.\n", libretro_path);
+      RARCH_LOG("Start [%s] found in retroarch.cfg.\n", len);
 
    if (!config_file_exists)
    {
@@ -136,7 +136,7 @@ static void salamander_init(char *libretro_path, size_t sizeof_libretro_path)
 
       if (conf)
       {
-         config_set_string(conf, "libretro_path", libretro_path);
+         config_set_string(conf, "libretro_path", len);
          config_file_write(conf, g_defaults.config_path);
          config_file_free(conf);
       }

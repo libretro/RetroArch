@@ -1361,19 +1361,19 @@ void rarch_playlist_load_content(void *data, unsigned idx)
  * @dir                  : Directory. Gets joined with @path.
  * @path                 : Path. Gets joined with @dir.
  * @menu_label           : Label identifier of menu setting.
- * @deferred_path        : Deferred core path. Will be filled in
+ * @s                    : Deferred core path. Will be filled in
  *                         by function.
- * @sizeof_deferred_path : Size of @deferred_path.
+ * @len                  : Size of @s.
  *
  * Gets deferred core.
  *
  * Returns: 0 if there are multiple deferred cores and a 
  * selection needs to be made from a list, otherwise
- * returns -1 and fills in @deferred_path with path to core.
+ * returns -1 and fills in @s with path to core.
  **/
 int rarch_defer_core(core_info_list_t *core_info, const char *dir,
       const char *path, const char *menu_label,
-      char *deferred_path, size_t sizeof_deferred_path)
+      char *s, size_t len)
 {
    char new_core_path[PATH_MAX_LENGTH];
    const core_info_t *info = NULL;
@@ -1381,20 +1381,20 @@ int rarch_defer_core(core_info_list_t *core_info, const char *dir,
    settings_t *settings    = config_get_ptr();
    global_t   *global      = global_get_ptr();
 
-   fill_pathname_join(deferred_path, dir, path, sizeof_deferred_path);
+   fill_pathname_join(s, dir, path, len);
 
 #ifdef HAVE_COMPRESSION
    if (path_is_compressed_file(dir))
    {
       /* In case of a compressed archive, we have to join with a hash */
       /* We are going to write at the position of dir: */
-      rarch_assert(strlen(dir) < strlen(deferred_path));
-      deferred_path[strlen(dir)] = '#';
+      rarch_assert(strlen(dir) < strlen(s));
+      s[strlen(dir)] = '#';
    }
 #endif
 
    if (core_info)
-      core_info_list_get_supported_cores(core_info, deferred_path, &info,
+      core_info_list_get_supported_cores(core_info, s, &info,
             &supported);
 
    if (!strcmp(menu_label, "load_content"))
@@ -1415,7 +1415,7 @@ int rarch_defer_core(core_info_list_t *core_info, const char *dir,
    if (supported != 1)
       return 0;
 
-   strlcpy(global->fullpath, deferred_path, sizeof(global->fullpath));
+   strlcpy(global->fullpath, s, sizeof(global->fullpath));
 
    if (path_file_exists(new_core_path))
       strlcpy(settings->libretro, new_core_path,

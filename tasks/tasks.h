@@ -60,7 +60,7 @@ void rarch_main_data_overlay_iterate(bool is_thread, void *data);
 void rarch_main_data_nbio_iterate(bool is_thread,
    void *runloop);
     
-void data_runloop_osd_msg(const char *msg, size_t sizeof_msg);
+void data_runloop_osd_msg(const char *s, size_t len);
 
 #ifdef __cplusplus
 }

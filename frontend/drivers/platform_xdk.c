@@ -305,8 +305,7 @@ static void frontend_xdk_set_fork(bool exit, bool start_game)
    exitspawn_start_game = start_game;
 }
 
-static void frontend_xdk_exitspawn(char *core_path,
-      size_t sizeof_core_path)
+static void frontend_xdk_exitspawn(char *s, size_t len)
 {
    bool should_load_game = false;
 #ifndef IS_SALAMANDER
@@ -315,7 +314,7 @@ static void frontend_xdk_exitspawn(char *core_path,
    if (!exit_spawn)
       return;
 #endif
-   frontend_xdk_exec(core_path, should_load_game);
+   frontend_xdk_exec(s, should_load_game);
 }
 
 static void frontend_xdk_exec(const char *path, bool should_load_game)

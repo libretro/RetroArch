@@ -71,13 +71,12 @@ void setting_set_with_string_representation(
 /**
  * setting_get_string_representation:
  * @setting            : pointer to setting
- * @buf                : buffer to write contents of string representation to.
- * @sizeof_buf         : size of the buffer (@buf)
+ * @s                  : buffer to write contents of string representation to.
+ * @len                : size of the buffer (@s)
  *
  * Get a setting value's string representation.
  **/
-void setting_get_string_representation(void *data,
-      char* buf, size_t sizeof_buf);
+void setting_get_string_representation(void *data, char *s, size_t len);
 
 /**
  * setting_action_setting:
@@ -299,17 +298,16 @@ rarch_setting_t setting_string_setting_options(enum setting_type type,
 /**
  * setting_get_description:
  * @label              : identifier label of setting
- * @msg                : output message 
- * @sizeof_msg         : size of @msg
+ * @s                  : output message 
+ * @len                : size of @s
  *
- * Writes a 'Help' description message to @msg if there is
+ * Writes a 'Help' description message to @s if there is
  * one available based on the identifier label of the setting
  * (@label).
  *
  * Returns: 0 (always for now). TODO: make it handle -1 as well.
  **/
-int setting_get_description(const char *label, char *msg,
-      size_t msg_sizeof);
+int setting_get_description(const char *label, char *s, size_t len);
 
 #ifdef HAVE_MENU
 /**

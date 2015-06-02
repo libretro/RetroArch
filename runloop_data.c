@@ -369,7 +369,7 @@ void rarch_main_data_msg_queue_push(unsigned type,
    msg_queue_push(queue, new_msg, prio, duration);
 }
 
-void data_runloop_osd_msg(const char *msg, size_t sizeof_msg)
+void data_runloop_osd_msg(const char *msg, size_t len)
 {
-   strlcpy(data_runloop_msg, msg, sizeof_msg);
+   strlcpy(data_runloop_msg, msg, len);
 }

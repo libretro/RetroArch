@@ -57,7 +57,7 @@ typedef struct frontend_ctx_driver
    environment_get_t environment_get;
    void (*init)(void *data);
    void (*deinit)(void *data);
-   void (*exitspawn)(char *core_path, size_t sizeof_core_path);
+   void (*exitspawn)(char *s, size_t len);
 
    process_args_t process_args;
    void (*exec)(const char *, bool);

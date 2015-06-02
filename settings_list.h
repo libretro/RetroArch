@@ -102,7 +102,7 @@ typedef int  (*action_start_handler_t         )(void *data);
 typedef int  (*action_iterate_handler_t       )(unsigned action);
 typedef int  (*action_cancel_handler_t        )(void *data, unsigned action);
 typedef int  (*action_ok_handler_t            )(void *data, unsigned action);
-typedef void (*get_string_representation_t    )(void *data, char *buf, size_t sizeof_buf);
+typedef void (*get_string_representation_t    )(void *data, char *s, size_t len);
 
 typedef struct rarch_setting_info
 {

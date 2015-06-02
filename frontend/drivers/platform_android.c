@@ -354,9 +354,9 @@ int system_property_get(const char *name, char *value)
    return length;
 }
 
-static void frontend_android_get_name(char *name, size_t sizeof_name)
+static void frontend_android_get_name(char *s, size_t len)
 {
-   int len = system_property_get("ro.product.model", name);
+   int len = system_property_get("ro.product.model", s);
    (void)len;
 }
 
@@ -386,13 +386,13 @@ static void frontend_android_get_version(int32_t *major, int32_t *minor, int32_t
    }
 }
 
-static void frontend_android_get_os(char *name, size_t sizeof_name, int *major, int *minor)
+static void frontend_android_get_os(char *s, size_t len, int *major, int *minor)
 {
    int rel;
 
    frontend_android_get_version(major, minor, &rel);
 
-   strlcpy(name, "Android", sizeof_name);
+   strlcpy(s, "Android", len);
 }
 
 static void frontend_android_get_version_sdk(int32_t *sdk)

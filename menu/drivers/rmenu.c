@@ -238,18 +238,18 @@ static void rmenu_set_texture(void)
    menu_texture_inited = true;
 }
 
-static void rmenu_wallpaper_set_defaults(char *menu_bg, size_t sizeof_menu_bg)
+static void rmenu_wallpaper_set_defaults(char *s, size_t len)
 {
    settings_t *settings = config_get_ptr();
 
-   fill_pathname_join(menu_bg, settings->assets_directory,
-         "rmenu", sizeof_menu_bg);
+   fill_pathname_join(s, settings->assets_directory,
+         "rmenu", len);
 #ifdef _XBOX1
-   fill_pathname_join(menu_bg, menu_bg, "sd", sizeof_menu_bg);
+   fill_pathname_join(s, s, "sd", len);
 #else
-   fill_pathname_join(menu_bg, menu_bg, "hd", sizeof_menu_bg);
+   fill_pathname_join(s, s, "hd", len);
 #endif
-   fill_pathname_join(menu_bg, menu_bg, "main_menu.png", sizeof_menu_bg);
+   fill_pathname_join(s, s, "main_menu.png", len);
 }
 
 static void rmenu_context_reset(void)

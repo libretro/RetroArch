@@ -97,7 +97,7 @@ static void gfx_set_dwm(void)
 }
 #endif
 
-static void frontend_win32_get_os(char *name, size_t sizeof_name, int *major, int *minor)
+static void frontend_win32_get_os(char *s, size_t len, int *major, int *minor)
 {
 	uint32_t version = GetVersion();
 
@@ -110,16 +110,16 @@ static void frontend_win32_get_os(char *name, size_t sizeof_name, int *major, in
          switch (*minor)
          {
             case 3:
-               strlcpy(name, "Windows 8.1", sizeof_name);
+               strlcpy(s, "Windows 8.1", len);
                break;
             case 2:
-               strlcpy(name, "Windows 8", sizeof_name);
+               strlcpy(s, "Windows 8", len);
                break;
             case 1:
-               strlcpy(name, "Windows 7/2008 R2", sizeof_name);
+               strlcpy(s, "Windows 7/2008 R2", len);
                break;
             case 0:
-               strlcpy(name, "Windows Vista/2008", sizeof_name);
+               strlcpy(s, "Windows Vista/2008", len);
                break;
             default:
                break;
@@ -129,13 +129,13 @@ static void frontend_win32_get_os(char *name, size_t sizeof_name, int *major, in
          switch (*minor)
          {
             case 2:
-               strlcpy(name, "Windows 2003", sizeof_name);
+               strlcpy(s, "Windows 2003", len);
                break;
             case 1:
-               strlcpy(name, "Windows XP", sizeof_name);
+               strlcpy(s, "Windows XP", len);
                break;
             case 0:
-               strlcpy(name, "Windows 2000", sizeof_name);
+               strlcpy(s, "Windows 2000", len);
                break;
          }
          break;
@@ -143,13 +143,13 @@ static void frontend_win32_get_os(char *name, size_t sizeof_name, int *major, in
          switch (*minor)
          {
             case 0:
-               strlcpy(name, "Windows NT 4.0", sizeof_name);
+               strlcpy(s, "Windows NT 4.0", len);
                break;
             case 90:
-               strlcpy(name, "Windows ME", sizeof_name);
+               strlcpy(s, "Windows ME", len);
                break;
             case 10:
-               strlcpy(name, "Windows 98", sizeof_name);
+               strlcpy(s, "Windows 98", len);
                break;
          }
          break;

@@ -131,7 +131,7 @@ static NSSearchPathDomainMask NSConvertDomainFlagsCF(unsigned flags)
 
 static void CFSearchPathForDirectoriesInDomains(unsigned flags,
       unsigned domain_mask, unsigned expand_tilde,
-      char *buf, size_t sizeof_buf)
+      char *s, size_t len)
 {
    CFTypeRef array_val = (CFTypeRef)CFBridgingRetainCompat(
          NSSearchPathForDirectoriesInDomains(NSConvertFlagsCF(flags),
@@ -142,19 +142,19 @@ static void CFSearchPathForDirectoriesInDomains(unsigned flags,
    if (!path || !array)
       return;
 
-   CFStringGetCString(path, buf, sizeof_buf, kCFStringEncodingUTF8);
+   CFStringGetCString(path, s, len, kCFStringEncodingUTF8);
    CFRelease(path);
    CFRelease(array);
 }
 
-static void CFTemporaryDirectory(char *buf, size_t sizeof_buf)
+static void CFTemporaryDirectory(char *s, size_t len)
 {
 #if __has_feature(objc_arc)
    CFStringRef path = (__bridge_retained CFStringRef)NSTemporaryDirectory();
 #else
    CFStringRef path = (CFStringRef)NSTemporaryDirectory();
 #endif
-   CFStringGetCString(path, buf, sizeof_buf, kCFStringEncodingUTF8);
+   CFStringGetCString(path, s, len, kCFStringEncodingUTF8);
 }
 
 #if defined(IOS)
@@ -266,7 +266,7 @@ static void checkps(CFDictionaryRef dict, bool * have_ac, bool * have_battery,
 }
 #endif
 
-static void frontend_darwin_get_name(char *name, size_t sizeof_name)
+static void frontend_darwin_get_name(char *s, size_t len)
 {
 #if defined(IOS)
    struct utsname buffer;
@@ -274,25 +274,25 @@ static void frontend_darwin_get_name(char *name, size_t sizeof_name)
    if (uname(&buffer) != 0)
       return;
 
-   strlcpy(name, buffer.machine, sizeof_name);
+   strlcpy(s, buffer.machine, len);
 #elif defined(OSX)
    size_t length = 0;
-   sysctlbyname("hw.model", name, &length, NULL, 0);
+   sysctlbyname("hw.model", s, &length, NULL, 0);
 #endif
 }
 
-static void frontend_darwin_get_os(char *name, size_t sizeof_name, int *major, int *minor)
+static void frontend_darwin_get_os(char *s, size_t len, int *major, int *minor)
 {
-   (void)name;
-   (void)sizeof_name;
+   (void)s;
+   (void)len;
    (void)major;
    (void)minor;
 
 #if defined(IOS)
    get_ios_version(major, minor);
-   strlcpy(name, "iOS", sizeof_name);
+   strlcpy(s, "iOS", len);
 #elif defined(OSX)
-   strlcpy(name, "OSX", sizeof_name);
+   strlcpy(s, "OSX", len);
 #endif
 }
 

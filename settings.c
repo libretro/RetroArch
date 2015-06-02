@@ -233,20 +233,19 @@ void setting_set_with_string_representation(rarch_setting_t* setting,
 /**
  * setting_get_string_representation:
  * @setting            : pointer to setting
- * @type_str           : buffer to write contents of string representation to.
- * @sizeof_type_str    : size of the buffer (@type_str)
+ * @s                  : buffer to write contents of string representation to.
+ * @len                : size of the buffer (@s)
  *
  * Get a setting value's string representation.
  **/
-void setting_get_string_representation(void *data,
-      char *type_str, size_t sizeof_type_str)
+void setting_get_string_representation(void *data, char *s, size_t len)
 {
    rarch_setting_t* setting = (rarch_setting_t*)data;
-   if (!setting || !type_str || !sizeof_type_str)
+   if (!setting || !s)
       return;
 
    if (setting->get_string_representation)
-      setting->get_string_representation(setting, type_str, sizeof_type_str);
+      setting->get_string_representation(setting, s, len);
 }
 
 /**
@@ -1065,67 +1064,67 @@ static int setting_string_action_ok_allow_input(void *data,
 /**
  * setting_get_string_representation_st_bool:
  * @setting            : pointer to setting
- * @type_str           : string for the type to be represented on-screen as
+ * @s                  : string for the type to be represented on-screen as
  *                       a label.
- * @type_str_size      : size of @type_str
+ * @len                : size of @s
  *
  * Set a settings' label value. The setting is of type ST_BOOL.
  **/
 static void setting_get_string_representation_st_bool(void *data,
-      char *type_str, size_t type_str_size)
+      char *s, size_t len)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
 
    if (setting)
-      strlcpy(type_str, *setting->value.boolean ? setting->boolean.on_label :
-            setting->boolean.off_label, type_str_size);
+      strlcpy(s, *setting->value.boolean ? setting->boolean.on_label :
+            setting->boolean.off_label, len);
 }
 
 static void setting_get_string_representation_st_action(void *data,
-      char *type_str, size_t type_str_size)
+      char *s, size_t len)
 {
-   strlcpy(type_str, "...", type_str_size);
+   strlcpy(s, "...", len);
 }
 
 static void setting_get_string_representation_st_group(void *data,
-      char *type_str, size_t type_str_size)
+      char *s, size_t len)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
 
    if (setting)
-      strlcpy(type_str, "...", type_str_size);
+      strlcpy(s, "...", len);
 }
 
 static void setting_get_string_representation_st_sub_group(void *data,
-      char *type_str, size_t type_str_size)
+      char *s, size_t len)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
 
    if (setting)
-      strlcpy(type_str, "...", type_str_size);
+      strlcpy(s, "...", len);
 }
 
 /**
  * setting_get_string_representation_st_float:
  * @setting            : pointer to setting
- * @type_str           : string for the type to be represented on-screen as
+ * @s                  : string for the type to be represented on-screen as
  *                       a label.
- * @type_str_size      : size of @type_str
+ * @len                : size of @s
  *
  * Set a settings' label value. The setting is of type ST_FLOAT.
  **/
 static void setting_get_string_representation_st_float(void *data,
-      char *type_str, size_t type_str_size)
+      char *s, size_t len)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
 
    if (setting)
-      snprintf(type_str, type_str_size, setting->rounding_fraction,
+      snprintf(s, len, setting->rounding_fraction,
             *setting->value.fraction);
 }
 
 static void setting_get_string_representation_st_float_video_refresh_rate_auto(void *data,
-      char *type_str, size_t type_str_size)
+      char *s, size_t len)
 {
    double video_refresh_rate = 0.0;
    double deviation = 0.0;
@@ -1136,7 +1135,7 @@ static void setting_get_string_representation_st_float_video_refresh_rate_auto(v
 
    if (video_monitor_fps_statistics(&video_refresh_rate, &deviation, &sample_points))
    {
-      snprintf(type_str, type_str_size, "%.3f Hz (%.1f%% dev, %u samples)",
+      snprintf(s, len, "%.3f Hz (%.1f%% dev, %u samples)",
             video_refresh_rate, 100.0 * deviation, sample_points);
 #ifdef HAVE_MENU
       {
@@ -1148,41 +1147,41 @@ static void setting_get_string_representation_st_float_video_refresh_rate_auto(v
 #endif
    }
    else
-      strlcpy(type_str, "N/A", type_str_size);
+      strlcpy(s, "N/A", len);
 }
 
 static void setting_get_string_representation_st_dir(void *data,
-      char *type_str, size_t type_str_size)
+      char *s, size_t len)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
 
    if (setting)
-      strlcpy(type_str,
+      strlcpy(s,
             *setting->value.string ?
             setting->value.string : setting->dir.empty_path,
-            type_str_size);
+            len);
 }
 
 static void setting_get_string_representation_st_path(void *data,
-      char *type_str, size_t type_str_size)
+      char *s, size_t len)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
 
    if (setting)
-      strlcpy(type_str, path_basename(setting->value.string), type_str_size);
+      strlcpy(s, path_basename(setting->value.string), len);
 }
 
 static void setting_get_string_representation_st_string(void *data,
-      char *type_str, size_t type_str_size)
+      char *s, size_t len)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
 
    if (setting)
-      strlcpy(type_str, setting->value.string, type_str_size);
+      strlcpy(s, setting->value.string, len);
 }
 
 static void setting_get_string_representation_st_bind(void *data,
-      char *type_str, size_t type_str_size)
+      char *s, size_t len)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
    const struct retro_keybind* keybind = NULL;
@@ -1194,53 +1193,53 @@ static void setting_get_string_representation_st_bind(void *data,
    keybind   = (const struct retro_keybind*)setting->value.keybind;
    auto_bind = (const struct retro_keybind*)input_get_auto_bind(setting->index_offset, keybind->id);
 
-   input_get_bind_string(type_str, keybind, auto_bind, type_str_size);
+   input_get_bind_string(s, keybind, auto_bind, len);
 }
 
 static void setting_get_string_representation_int(void *data,
-      char *type_str, size_t type_str_size)
+      char *s, size_t len)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
 
    if (setting)
-      snprintf(type_str, type_str_size, "%d", *setting->value.integer);
+      snprintf(s, len, "%d", *setting->value.integer);
 }
 
 static void setting_get_string_representation_uint_video_monitor_index(void *data,
-      char *type_str, size_t type_str_size)
+      char *s, size_t len)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
    if (!setting)
       return;
 
    if (*setting->value.unsigned_integer)
-      snprintf(type_str, type_str_size, "%u",
+      snprintf(s, len, "%u",
             *setting->value.unsigned_integer);
    else
-      strlcpy(type_str, "0 (Auto)", type_str_size);
+      strlcpy(s, "0 (Auto)", len);
 }
 
 static void setting_get_string_representation_uint_video_rotation(void *data,
-      char *type_str, size_t type_str_size)
+      char *s, size_t len)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
    if (setting)
-      strlcpy(type_str, rotation_lut[*setting->value.unsigned_integer],
-            type_str_size);
+      strlcpy(s, rotation_lut[*setting->value.unsigned_integer],
+            len);
 }
 
 static void setting_get_string_representation_uint_aspect_ratio_index(void *data,
-      char *type_str, size_t type_str_size)
+      char *s, size_t len)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
    if (setting)
-      strlcpy(type_str,
+      strlcpy(s,
             aspectratio_lut[*setting->value.unsigned_integer].name,
-            type_str_size);
+            len);
 }
 
 static void setting_get_string_representation_uint_libretro_device(void *data,
-      char *type_str, size_t type_str_size)
+      char *s, size_t len)
 {
    const struct retro_controller_description *desc = NULL;
    const char *name = NULL;
@@ -1282,11 +1281,11 @@ static void setting_get_string_representation_uint_libretro_device(void *data,
       }
    }
 
-   strlcpy(type_str, name, type_str_size);
+   strlcpy(s, name, len);
 }
 
 static void setting_get_string_representation_uint_archive_mode(void *data,
-      char *type_str, size_t type_str_size)
+      char *s, size_t len)
 {
    const char *name = "Unknown";
    settings_t      *settings = config_get_ptr();
@@ -1306,11 +1305,11 @@ static void setting_get_string_representation_uint_archive_mode(void *data,
          break;
    }
 
-   strlcpy(type_str, name, type_str_size);
+   strlcpy(s, name, len);
 }
 
 static void setting_get_string_representation_uint_analog_dpad_mode(void *data,
-      char *type_str, size_t type_str_size)
+      char *s, size_t len)
 {
    static const char *modes[] = {
       "None",
@@ -1324,27 +1323,27 @@ static void setting_get_string_representation_uint_analog_dpad_mode(void *data,
 
    (void)data;
 
-   strlcpy(type_str, modes[settings->input.analog_dpad_mode
+   strlcpy(s, modes[settings->input.analog_dpad_mode
          [setting->index_offset] % ANALOG_DPAD_LAST],
-         type_str_size);
+         len);
 }
 
 static void setting_get_string_representation_uint_autosave_interval(void *data,
-      char *type_str, size_t type_str_size)
+      char *s, size_t len)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
    if (!setting)
       return;
 
    if (*setting->value.unsigned_integer)
-      snprintf(type_str, type_str_size, "%u seconds",
+      snprintf(s, len, "%u seconds",
             *setting->value.unsigned_integer);
    else
-      strlcpy(type_str, "OFF", type_str_size);
+      strlcpy(s, "OFF", len);
 }
 
 static void setting_get_string_representation_uint_user_language(void *data,
-      char *type_str, size_t type_str_size)
+      char *s, size_t len)
 {
    static const char *modes[] = {
       "English",
@@ -1365,11 +1364,11 @@ static void setting_get_string_representation_uint_user_language(void *data,
    if (!setting)
       return;
 
-   strlcpy(type_str, modes[settings->user_language], type_str_size);
+   strlcpy(s, modes[settings->user_language], len);
 }
 
 static void setting_get_string_representation_uint_libretro_log_level(void *data,
-      char *type_str, size_t type_str_size)
+      char *s, size_t len)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
    if (!setting)
@@ -1381,25 +1380,25 @@ static void setting_get_string_representation_uint_libretro_log_level(void *data
       "3 (Error)"
    };
 
-   strlcpy(type_str, modes[*setting->value.unsigned_integer],
-         type_str_size);
+   strlcpy(s, modes[*setting->value.unsigned_integer],
+         len);
 }
 
 static void setting_get_string_representation_uint(void *data,
-      char *type_str, size_t type_str_size)
+      char *s, size_t len)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
    if (setting)
-      snprintf(type_str, type_str_size, "%u",
+      snprintf(s, len, "%u",
             *setting->value.unsigned_integer);
 }
 
 static void setting_get_string_representation_hex(void *data,
-      char *type_str, size_t type_str_size)
+      char *s, size_t len)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
    if (setting)
-      snprintf(type_str, type_str_size, "%08x",
+      snprintf(s, len, "%08x",
             *setting->value.unsigned_integer);
 }
 
@@ -1871,24 +1870,24 @@ rarch_setting_t setting_string_setting_options(enum setting_type type,
 /**
  * setting_get_description:
  * @label              : identifier label of setting
- * @msg                : output message 
- * @sizeof_msg         : size of @msg
+ * @s                  : output message 
+ * @len                : size of @s
  *
- * Writes a 'Help' description message to @msg if there is
+ * Writes a 'Help' description message to @s if there is
  * one available based on the identifier label of the setting
  * (@label).
  *
  * Returns: 0 (always for now). TODO: make it handle -1 as well.
  **/
-int setting_get_description(const char *label, char *msg,
-      size_t sizeof_msg)
+int setting_get_description(const char *label, char *s,
+      size_t len)
 {
    settings_t      *settings = config_get_ptr();
 
    if (!strcmp(label, "input_driver"))
    {
       if (!strcmp(settings->input.driver, "udev"))
-         snprintf(msg, sizeof_msg,
+         snprintf(s, len,
                " -- udev Input driver. \n"
                " \n"
                "This driver can run without X. \n"
@@ -1907,7 +1906,7 @@ int setting_get_description(const char *label, char *msg,
                "rule which makes these accessible to non-root."
                );
       else if (!strcmp(settings->input.driver, "linuxraw"))
-         snprintf(msg, sizeof_msg,
+         snprintf(s, len,
                " -- linuxraw Input driver. \n"
                " \n"
                "This driver requires an active TTY. Keyboard \n"
@@ -1917,7 +1916,7 @@ int setting_get_description(const char *label, char *msg,
                "This driver uses the older joystick API \n"
                "(/dev/input/js*).");
       else
-         snprintf(msg, sizeof_msg,
+         snprintf(s, len,
                " -- Input driver.\n"
                " \n"
                "Depending on video driver, it might \n"
@@ -1926,7 +1925,7 @@ int setting_get_description(const char *label, char *msg,
    }
    else if (!strcmp(label, "load_content"))
    {
-      snprintf(msg, sizeof_msg,
+      snprintf(s, len,
             " -- Load Content. \n"
             "Browse for content. \n"
             " \n"
@@ -1947,7 +1946,7 @@ int setting_get_description(const char *label, char *msg,
    }
    else if (!strcmp(label, "core_list"))
    {
-      snprintf(msg, sizeof_msg,
+      snprintf(s, len,
             " -- Core Selection. \n"
             " \n"
             "Browse for a libretro core \n"
@@ -1962,7 +1961,7 @@ int setting_get_description(const char *label, char *msg,
    }
    else if (!strcmp(label, "history_list"))
    {
-      snprintf(msg, sizeof_msg,
+      snprintf(s, len,
             " -- Loading content from history. \n"
             " \n"
             "As content is loaded, content and libretro \n"
@@ -1978,16 +1977,16 @@ int setting_get_description(const char *label, char *msg,
    else if (!strcmp(label, "audio_resampler_driver"))
    {
       if (!strcmp(settings->audio.resampler, "sinc"))
-         snprintf(msg, sizeof_msg,
+         snprintf(s, len,
                " -- Windowed SINC implementation.");
       else if (!strcmp(settings->audio.resampler, "CC"))
-         snprintf(msg, sizeof_msg,
+         snprintf(s, len,
                " -- Convoluted Cosine implementation.");
    }
    else if (!strcmp(label, "video_driver"))
    {
       if (!strcmp(settings->video.driver, "gl"))
-         snprintf(msg, sizeof_msg,
+         snprintf(s, len,
                " -- OpenGL Video driver. \n"
                " \n"
                "This driver allows libretro GL cores to  \n"
@@ -1999,7 +1998,7 @@ int setting_get_description(const char *label, char *msg,
                "dependent on your graphics card's \n"
                "underlying GL driver).");
       else if (!strcmp(settings->video.driver, "sdl2"))
-         snprintf(msg, sizeof_msg,
+         snprintf(s, len,
                " -- SDL 2 Video driver.\n"
                " \n"
                "This is an SDL 2 software-rendered video \n"
@@ -2009,7 +2008,7 @@ int setting_get_description(const char *label, char *msg,
                "core implementations is dependent \n"
                "on your platform SDL implementation.");
       else if (!strcmp(settings->video.driver, "sdl"))
-         snprintf(msg, sizeof_msg,
+         snprintf(s, len,
                " -- SDL Video driver.\n"
                " \n"
                "This is an SDL 1.2 software-rendered video \n"
@@ -2018,14 +2017,14 @@ int setting_get_description(const char *label, char *msg,
                "Performance is considered to be suboptimal. \n"
                "Consider using it only as a last resort.");
       else if (!strcmp(settings->video.driver, "d3d"))
-         snprintf(msg, sizeof_msg,
+         snprintf(s, len,
                " -- Direct3D Video driver. \n"
                " \n"
                "Performance for software-rendered cores \n"
                "is dependent on your graphic card's \n"
                "underlying D3D driver).");
       else if (!strcmp(settings->video.driver, "exynos"))
-         snprintf(msg, sizeof_msg,
+         snprintf(s, len,
                " -- Exynos-G2D Video Driver. \n"
                " \n"
                "This is a low-level Exynos video driver. \n"
@@ -2035,18 +2034,18 @@ int setting_get_description(const char *label, char *msg,
                "Performance for software rendered cores \n"
                "should be optimal.");
       else if (!strcmp(settings->video.driver, "sunxi"))
-         snprintf(msg, sizeof_msg,
+         snprintf(s, len,
                " -- Sunxi-G2D Video Driver. \n"
                " \n"
                "This is a low-level Sunxi video driver. \n"
                "Uses the G2D block in Allwinner SoCs.");
       else
-         snprintf(msg, sizeof_msg,
+         snprintf(s, len,
                " -- Current Video driver.");
    }
    else if (!strcmp(label, "audio_dsp_plugin"))
    {
-      snprintf(msg, sizeof_msg,
+      snprintf(s, len,
             " -- Audio DSP plugin.\n"
             " Processes audio before it's sent to \n"
             "the driver."
@@ -2054,7 +2053,7 @@ int setting_get_description(const char *label, char *msg,
    }
    else if (!strcmp(label, "libretro_dir_path"))
    {
-      snprintf(msg, sizeof_msg,
+      snprintf(s, len,
             " -- Core Directory. \n"
             " \n"
             "A directory for where to search for \n"
@@ -2062,13 +2061,13 @@ int setting_get_description(const char *label, char *msg,
    }
    else if (!strcmp(label, "video_disable_composition"))
    {
-      snprintf(msg, sizeof_msg,
+      snprintf(s, len,
             "-- Forcibly disable composition.\n"
             "Only valid on Windows Vista/7 for now.");
    }
    else if (!strcmp(label, "libretro_log_level"))
    {
-      snprintf(msg, sizeof_msg,
+      snprintf(s, len,
             "-- Sets log level for libretro cores \n"
             "(GET_LOG_INTERFACE). \n"
             " \n"
@@ -2087,19 +2086,19 @@ int setting_get_description(const char *label, char *msg,
    }
    else if (!strcmp(label, "log_verbosity"))
    {
-      snprintf(msg, sizeof_msg,
+      snprintf(s, len,
             "-- Enable or disable verbosity level \n"
             "of frontend.");
    }
    else if (!strcmp(label, "perfcnt_enable"))
    {
-      snprintf(msg, sizeof_msg,
+      snprintf(s, len,
             "-- Enable or disable frontend \n"
             "performance counters.");
    }
    else if (!strcmp(label, "system_directory"))
    {
-      snprintf(msg, sizeof_msg,
+      snprintf(s, len,
             "-- System Directory. \n"
             " \n"
             "Sets the 'system' directory.\n"
@@ -2109,7 +2108,7 @@ int setting_get_description(const char *label, char *msg,
    }
    else if (!strcmp(label, "rgui_show_start_screen"))
    {
-      snprintf(msg, sizeof_msg,
+      snprintf(s, len,
             " -- Show startup screen in menu.\n"
             "Is automatically set to false when seen\n"
             "for the first time.\n"
@@ -2119,7 +2118,7 @@ int setting_get_description(const char *label, char *msg,
    }
    else if (!strcmp(label, "config_save_on_exit"))
    {
-      snprintf(msg, sizeof_msg,
+      snprintf(s, len,
             " -- Flushes config to disk on exit.\n"
             "Useful for menu as settings can be\n"
             "modified. Overwrites the config.\n"
@@ -2142,13 +2141,13 @@ int setting_get_description(const char *label, char *msg,
    }
    else if (!strcmp(label, "core_specific_config"))
    {
-      snprintf(msg, sizeof_msg,
+      snprintf(s, len,
             " -- Load up a specific config file \n"
             "based on the core being used.\n");
    }
    else if (!strcmp(label, "video_scale"))
    {
-      snprintf(msg, sizeof_msg,
+      snprintf(s, len,
             " -- Fullscreen resolution.\n"
             " \n"
             "Resolution of 0 uses the \n"
@@ -2156,12 +2155,12 @@ int setting_get_description(const char *label, char *msg,
    }
    else if (!strcmp(label, "video_vsync"))
    {
-      snprintf(msg, sizeof_msg,
+      snprintf(s, len,
             " -- Video V-Sync.\n");
    }
    else if (!strcmp(label, "video_hard_sync"))
    {
-      snprintf(msg, sizeof_msg,
+      snprintf(s, len,
             " -- Attempts to hard-synchronize \n"
             "CPU and GPU.\n"
             " \n"
@@ -2170,7 +2169,7 @@ int setting_get_description(const char *label, char *msg,
    }
    else if (!strcmp(label, "video_hard_sync_frames"))
    {
-      snprintf(msg, sizeof_msg,
+      snprintf(s, len,
             " -- Sets how many frames CPU can \n"
             "run ahead of GPU when using 'GPU \n"
             "Hard Sync'.\n"
@@ -2183,7 +2182,7 @@ int setting_get_description(const char *label, char *msg,
    }
    else if (!strcmp(label, "video_frame_delay"))
    {
-      snprintf(msg, sizeof_msg,
+      snprintf(s, len,
             " -- Sets how many milliseconds to delay\n"
             "after VSync before running the core.\n"
             "\n"
@@ -2194,7 +2193,7 @@ int setting_get_description(const char *label, char *msg,
    }
    else if (!strcmp(label, "audio_rate_control_delta"))
    {
-      snprintf(msg, sizeof_msg,
+      snprintf(s, len,
             " -- Audio rate control.\n"
             " \n"
             "Setting this to 0 disables rate control.\n"
@@ -2209,7 +2208,7 @@ int setting_get_description(const char *label, char *msg,
    }
    else if (!strcmp(label, "audio_max_timing_skew"))
    {
-      snprintf(msg, sizeof_msg,
+      snprintf(s, len,
             " -- Maximum audio timing skew.\n"
             " \n"
             "Defines the maximum change in input rate.\n"
@@ -2224,10 +2223,10 @@ int setting_get_description(const char *label, char *msg,
    else if (!strcmp(label, "video_filter"))
    {
 #ifdef HAVE_FILTERS_BUILTIN
-      snprintf(msg, sizeof_msg,
+      snprintf(s, len,
             " -- CPU-based video filter.");
 #else
-      snprintf(msg, sizeof_msg,
+      snprintf(s, len,
             " -- CPU-based video filter.\n"
             " \n"
             "Path to a dynamic library.");
@@ -2235,11 +2234,11 @@ int setting_get_description(const char *label, char *msg,
    }
    else if (!strcmp(label, "video_fullscreen"))
    {
-      snprintf(msg, sizeof_msg, " -- Toggles fullscreen.");
+      snprintf(s, len, " -- Toggles fullscreen.");
    }
    else if (!strcmp(label, "audio_device"))
    {
-      snprintf(msg, sizeof_msg,
+      snprintf(s, len,
             " -- Override the default audio device \n"
             "the audio driver uses.\n"
             "This is driver dependent. E.g.\n"
@@ -2265,7 +2264,7 @@ int setting_get_description(const char *label, char *msg,
    }
    else if (!strcmp(label, "video_black_frame_insertion"))
    {
-      snprintf(msg, sizeof_msg,
+      snprintf(s, len,
             " -- Inserts a black frame inbetween \n"
             "frames.\n"
             " \n"
@@ -2279,7 +2278,7 @@ int setting_get_description(const char *label, char *msg,
    }
    else if (!strcmp(label, "video_threaded"))
    {
-      snprintf(msg, sizeof_msg,
+      snprintf(s, len,
             " -- Use threaded video driver.\n"
             " \n"
             "Using this might improve performance at \n"
@@ -2288,7 +2287,7 @@ int setting_get_description(const char *label, char *msg,
    }
    else if (!strcmp(label, "video_scale_integer"))
    {
-      snprintf(msg, sizeof_msg,
+      snprintf(s, len,
             " -- Only scales video in integer \n"
             "steps.\n"
             " \n"
@@ -2300,7 +2299,7 @@ int setting_get_description(const char *label, char *msg,
    }
    else if (!strcmp(label, "video_crop_overscan"))
    {
-      snprintf(msg, sizeof_msg,
+      snprintf(s, len,
             " -- Forces cropping of overscanned \n"
             "frames.\n"
             " \n"
@@ -2309,7 +2308,7 @@ int setting_get_description(const char *label, char *msg,
    }
    else if (!strcmp(label, "video_monitor_index"))
    {
-      snprintf(msg, sizeof_msg,
+      snprintf(s, len,
             " -- Which monitor to prefer.\n"
             " \n"
             "0 (default) means no particular monitor \n"
@@ -2319,7 +2318,7 @@ int setting_get_description(const char *label, char *msg,
    }
    else if (!strcmp(label, "video_rotation"))
    {
-      snprintf(msg, sizeof_msg,
+      snprintf(s, len,
             " -- Forces a certain rotation \n"
             "of the screen.\n"
             " \n"
@@ -2329,7 +2328,7 @@ int setting_get_description(const char *label, char *msg,
    }
    else if (!strcmp(label, "audio_volume"))
    {
-      snprintf(msg, sizeof_msg,
+      snprintf(s, len,
             " -- Audio volume, expressed in dB.\n"
             " \n"
             " 0 dB is normal volume. No gain will be applied.\n"
@@ -2338,7 +2337,7 @@ int setting_get_description(const char *label, char *msg,
    }
    else if (!strcmp(label, "block_sram_overwrite"))
    {
-      snprintf(msg, sizeof_msg,
+      snprintf(s, len,
             " -- Block SRAM from being overwritten \n"
             "when loading save states.\n"
             " \n"
@@ -2346,7 +2345,7 @@ int setting_get_description(const char *label, char *msg,
    }
    else if (!strcmp(label, "fastforward_ratio"))
    {
-      snprintf(msg, sizeof_msg,
+      snprintf(s, len,
             " -- Fastforward ratio."
             " \n"
             "The maximum rate at which content will\n"
@@ -2362,19 +2361,19 @@ int setting_get_description(const char *label, char *msg,
    }
    else if (!strcmp(label, "pause_nonactive"))
    {
-      snprintf(msg, sizeof_msg,
+      snprintf(s, len,
             " -- Pause gameplay when window focus \n"
             "is lost.");
    }
    else if (!strcmp(label, "video_gpu_screenshot"))
    {
-      snprintf(msg, sizeof_msg,
+      snprintf(s, len,
             " -- Screenshots output of GPU shaded \n"
             "material if available.");
    }
    else if (!strcmp(label, "autosave_interval"))
    {
-      snprintf(msg, sizeof_msg,
+      snprintf(s, len,
             " -- Autosaves the non-volatile SRAM \n"
             "at a regular interval.\n"
             " \n"
@@ -2386,7 +2385,7 @@ int setting_get_description(const char *label, char *msg,
    }
    else if (!strcmp(label, "screenshot_directory"))
    {
-      snprintf(msg, sizeof_msg,
+      snprintf(s, len,
             " -- Screenshot Directory. \n"
             " \n"
             "Directory to dump screenshots to."
@@ -2394,7 +2393,7 @@ int setting_get_description(const char *label, char *msg,
    }
    else if (!strcmp(label, "video_swap_interval"))
    {
-      snprintf(msg, sizeof_msg,
+      snprintf(s, len,
             " -- VSync Swap Interval.\n"
             " \n"
             "Uses a custom swap interval for VSync. Set this \n"
@@ -2402,7 +2401,7 @@ int setting_get_description(const char *label, char *msg,
    }
    else if (!strcmp(label, "video_refresh_rate_auto"))
    {
-      snprintf(msg, sizeof_msg,
+      snprintf(s, len,
             " -- Refresh Rate Auto.\n"
             " \n"
             "The accurate refresh rate of our monitor (Hz).\n"
@@ -2423,7 +2422,7 @@ int setting_get_description(const char *label, char *msg,
    }
    else if (!strcmp(label, "savefile_directory"))
    {
-      snprintf(msg, sizeof_msg,
+      snprintf(s, len,
             " -- Savefile Directory. \n"
             " \n"
             "Save all save files (*.srm) to this \n"
@@ -2435,7 +2434,7 @@ int setting_get_description(const char *label, char *msg,
    }
    else if (!strcmp(label, "savestate_directory"))
    {
-      snprintf(msg, sizeof_msg,
+      snprintf(s, len,
             " -- Savestate Directory. \n"
             " \n"
             "Save all save states (*.state) to this \n"
@@ -2446,7 +2445,7 @@ int setting_get_description(const char *label, char *msg,
    }
    else if (!strcmp(label, "assets_directory"))
    {
-      snprintf(msg, sizeof_msg,
+      snprintf(s, len,
             " -- Assets Directory. \n"
             " \n"
             " This location is queried by default when \n"
@@ -2455,7 +2454,7 @@ int setting_get_description(const char *label, char *msg,
    }
    else if (!strcmp(label, "slowmotion_ratio"))
    {
-      snprintf(msg, sizeof_msg,
+      snprintf(s, len,
             " -- Slowmotion ratio."
             " \n"
             "When slowmotion, content will slow\n"
@@ -2463,7 +2462,7 @@ int setting_get_description(const char *label, char *msg,
    }
    else if (!strcmp(label, "input_axis_threshold"))
    {
-      snprintf(msg, sizeof_msg,
+      snprintf(s, len,
             " -- Defines axis threshold.\n"
             " \n"
             "How far an axis must be tilted to result\n"
@@ -2472,7 +2471,7 @@ int setting_get_description(const char *label, char *msg,
    }
    else if (!strcmp(label, "input_turbo_period"))
    {
-      snprintf(msg, sizeof_msg, 
+      snprintf(s, len, 
             " -- Turbo period.\n"
             " \n"
             "Describes speed of which turbo-enabled\n"
@@ -2481,7 +2480,7 @@ int setting_get_description(const char *label, char *msg,
    }
    else if (!strcmp(label, "rewind_granularity"))
    {
-      snprintf(msg, sizeof_msg,
+      snprintf(s, len,
             " -- Rewind granularity.\n"
             " \n"
             " When rewinding defined number of \n"
@@ -2491,7 +2490,7 @@ int setting_get_description(const char *label, char *msg,
    }
    else if (!strcmp(label, "rewind_enable"))
    {
-      snprintf(msg, sizeof_msg,
+      snprintf(s, len,
             " -- Enable rewinding.\n"
             " \n"
             "This will take a performance hit, \n"
@@ -2499,7 +2498,7 @@ int setting_get_description(const char *label, char *msg,
    }
    else if (!strcmp(label, "input_autodetect_enable"))
    {
-      snprintf(msg, sizeof_msg,
+      snprintf(s, len,
             " -- Enable input auto-detection.\n"
             " \n"
             "Will attempt to auto-configure \n"
@@ -2507,19 +2506,19 @@ int setting_get_description(const char *label, char *msg,
    }
    else if (!strcmp(label, "camera_allow"))
    {
-      snprintf(msg, sizeof_msg,
+      snprintf(s, len,
             " -- Allow or disallow camera access by \n"
             "cores.");
    }
    else if (!strcmp(label, "location_allow"))
    {
-      snprintf(msg, sizeof_msg,
+      snprintf(s, len,
             " -- Allow or disallow location services \n"
             "access by cores.");
    }
    else if (!strcmp(label, "savestate_auto_save"))
    {
-      snprintf(msg, sizeof_msg,
+      snprintf(s, len,
             " -- Automatically saves a savestate at the \n"
             "end of RetroArch's lifetime.\n"
             " \n"
@@ -2529,7 +2528,7 @@ int setting_get_description(const char *label, char *msg,
    }
    else if (!strcmp(label, "shader_apply_changes"))
    {
-      snprintf(msg, sizeof_msg,
+      snprintf(s, len,
             " -- Apply Shader Changes. \n"
             " \n"
             "After changing shader settings, use this to \n"
@@ -2549,7 +2548,7 @@ int setting_get_description(const char *label, char *msg,
    }
    else if (!strcmp(label, "video_shader_preset")) 
    {
-      snprintf(msg, sizeof_msg,
+      snprintf(s, len,
             " -- Load Shader Preset. \n"
             " \n"
             " Load a "
@@ -2579,7 +2578,7 @@ int setting_get_description(const char *label, char *msg,
    }
    else if (!strcmp(label, "video_shader_num_passes")) 
    {
-      snprintf(msg, sizeof_msg,
+      snprintf(s, len,
             " -- Shader Passes. \n"
             " \n"
             "RetroArch allows you to mix and match various \n"
@@ -2595,7 +2594,7 @@ int setting_get_description(const char *label, char *msg,
    }
    else if (!strcmp(label, "video_shader_parameters"))
    {
-      snprintf(msg, sizeof_msg,
+      snprintf(s, len,
             "-- Shader Parameters. \n"
             " \n"
             "Modifies current shader directly. Will not be \n"
@@ -2603,7 +2602,7 @@ int setting_get_description(const char *label, char *msg,
    }
    else if (!strcmp(label, "video_shader_preset_parameters"))
    {
-      snprintf(msg, sizeof_msg,
+      snprintf(s, len,
             "-- Shader Preset Parameters. \n"
             " \n"
             "Modifies shader preset currently in menu."
@@ -2611,7 +2610,7 @@ int setting_get_description(const char *label, char *msg,
    }
    else if (!strcmp(label, "video_shader_pass"))
    {
-      snprintf(msg, sizeof_msg,
+      snprintf(s, len,
             " -- Path to shader. \n"
             " \n"
             "All shaders must be of the same \n"
@@ -2624,7 +2623,7 @@ int setting_get_description(const char *label, char *msg,
    }
    else if (!strcmp(label, "video_shader_filter_pass"))
    {
-      snprintf(msg, sizeof_msg,
+      snprintf(s, len,
             " -- Hardware filter for this pass. \n"
             " \n"
             "If 'Don't Care' is set, 'Default \n"
@@ -2633,7 +2632,7 @@ int setting_get_description(const char *label, char *msg,
    }
    else if (!strcmp(label, "video_shader_scale_pass"))
    {
-      snprintf(msg, sizeof_msg,
+      snprintf(s, len,
             " -- Scale for this pass. \n"
             " \n"
             "The scale factor accumulates, i.e. 2x \n"
@@ -2657,7 +2656,7 @@ int setting_get_description(const char *label, char *msg,
          !strcmp(label, "l_y_plus")  ||
          !strcmp(label, "l_y_minus")
          )
-      snprintf(msg, sizeof_msg,
+      snprintf(s, len,
             " -- Axis for analog stick (DualShock-esque).\n"
             " \n"
             "Bound as usual, however, if a real analog \n"
@@ -2666,7 +2665,7 @@ int setting_get_description(const char *label, char *msg,
             "Positive X axis is right. \n"
             "Positive Y axis is down.");
    else if (!strcmp(label, "turbo"))
-      snprintf(msg, sizeof_msg,
+      snprintf(s, len,
             " -- Turbo enable.\n"
             " \n"
             "Holding the turbo while pressing another \n"
@@ -2677,7 +2676,7 @@ int setting_get_description(const char *label, char *msg,
             "The modulation stops when the button \n"
             "itself (not turbo button) is released.");
    else if (!strcmp(label, "exit_emulator"))
-      snprintf(msg, sizeof_msg,
+      snprintf(s, len,
             " -- Key to exit RetroArch cleanly."
 #if !defined(RARCH_MOBILE) && !defined(RARCH_CONSOLE)
             "\nKilling it in any hard way (SIGKILL, \n"
@@ -2688,19 +2687,19 @@ int setting_get_description(const char *label, char *msg,
 #endif
             );
    else if (!strcmp(label, "rewind"))
-      snprintf(msg, sizeof_msg,
+      snprintf(s, len,
             " -- Hold button down to rewind.\n"
             " \n"
             "Rewind must be enabled.");
    else if (!strcmp(label, "load_state"))
-      snprintf(msg, sizeof_msg,
+      snprintf(s, len,
             " -- Loads state.");
    else if (!strcmp(label, "save_state"))
-      snprintf(msg, sizeof_msg,
+      snprintf(s, len,
             " -- Saves state.");
    else if (!strcmp(label, "state_slot_increase") ||
          !strcmp(label, "state_slot_decrease"))
-      snprintf(msg, sizeof_msg,
+      snprintf(s, len,
             " -- State slots.\n"
             " \n"
             " With slot set to 0, save state name is *.state \n"
@@ -2708,13 +2707,13 @@ int setting_get_description(const char *label, char *msg,
             "When slot is != 0, path will be (path)(d), \n"
             "where (d) is slot number.");
    else if (!strcmp(label, "netplay_flip_players"))
-      snprintf(msg, sizeof_msg,
+      snprintf(s, len,
             " -- Netplay flip users.");
    else if (!strcmp(label, "frame_advance"))
-      snprintf(msg, sizeof_msg,
+      snprintf(s, len,
             " -- Frame advance when content is paused.");
    else if (!strcmp(label, "enable_hotkey"))
-      snprintf(msg, sizeof_msg,
+      snprintf(s, len,
             " -- Enable other hotkeys.\n"
             " \n"
             " If this hotkey is bound to either keyboard, \n"
@@ -2727,69 +2726,69 @@ int setting_get_description(const char *label, char *msg,
             "the keyboard, where it is not desirable that \n"
             "hotkeys get in the way.");
    else if (!strcmp(label, "slowmotion"))
-      snprintf(msg, sizeof_msg,
+      snprintf(s, len,
             " -- Hold for slowmotion.");
    else if (!strcmp(label, "movie_record_toggle"))
-      snprintf(msg, sizeof_msg,
+      snprintf(s, len,
             " -- Toggle between recording and not.");
    else if (!strcmp(label, "pause_toggle"))
-      snprintf(msg, sizeof_msg,
+      snprintf(s, len,
             " -- Toggle between paused and non-paused state.");
    else if (!strcmp(label, "hold_fast_forward"))
-      snprintf(msg, sizeof_msg,
+      snprintf(s, len,
             " -- Hold for fast-forward. Releasing button \n"
             "disables fast-forward.");
    else if (!strcmp(label, "shader_next"))
-      snprintf(msg, sizeof_msg,
+      snprintf(s, len,
             " -- Applies next shader in directory.");
    else if (!strcmp(label, "reset"))
-      snprintf(msg, sizeof_msg,
+      snprintf(s, len,
             " -- Reset the content.\n");
    else if (!strcmp(label, "cheat_index_plus"))
-      snprintf(msg, sizeof_msg,
+      snprintf(s, len,
             " -- Increment cheat index.\n");
    else if (!strcmp(label, "cheat_index_minus"))
-      snprintf(msg, sizeof_msg,
+      snprintf(s, len,
             " -- Decrement cheat index.\n");
    else if (!strcmp(label, "cheat_toggle"))
-      snprintf(msg, sizeof_msg,
+      snprintf(s, len,
             " -- Toggle cheat index.\n");
    else if (!strcmp(label, "shader_prev"))
-      snprintf(msg, sizeof_msg,
+      snprintf(s, len,
             " -- Applies previous shader in directory.");
    else if (!strcmp(label, "audio_mute"))
-      snprintf(msg, sizeof_msg,
+      snprintf(s, len,
             " -- Mute/unmute audio.");
    else if (!strcmp(label, "osk_enable"))
-      snprintf(msg, sizeof_msg,
+      snprintf(s, len,
             " -- Enable/disable on-screen keyboard.");            
    else if (!strcmp(label, "screenshot"))
-      snprintf(msg, sizeof_msg,
+      snprintf(s, len,
             " -- Take screenshot.");
    else if (!strcmp(label, "volume_up"))
-      snprintf(msg, sizeof_msg,
+      snprintf(s, len,
             " -- Increases audio volume.");
    else if (!strcmp(label, "volume_down"))
-      snprintf(msg, sizeof_msg,
+      snprintf(s, len,
             " -- Decreases audio volume.");
    else if (!strcmp(label, "overlay_next"))
-      snprintf(msg, sizeof_msg,
+      snprintf(s, len,
             " -- Toggles to next overlay.\n"
             " \n"
             "Wraps around.");
    else if (!strcmp(label, "disk_eject_toggle"))
-      snprintf(msg, sizeof_msg,
+      snprintf(s, len,
             " -- Toggles eject for disks.\n"
             " \n"
             "Used for multiple-disk content.");
    else if (!strcmp(label, "disk_next"))
-      snprintf(msg, sizeof_msg,
+      snprintf(s, len,
             " -- Cycles through disk images. Use after \n"
             "ejecting. \n"
             " \n"
             " Complete by toggling eject again.");
    else if (!strcmp(label, "grab_mouse_toggle"))
-      snprintf(msg, sizeof_msg,
+      snprintf(s, len,
             " -- Toggles mouse grab.\n"
             " \n"
             "When mouse is grabbed, RetroArch hides the \n"
@@ -2797,32 +2796,32 @@ int setting_get_description(const char *label, char *msg,
             "the window to allow relative mouse input to \n"
             "work better.");
    else if (!strcmp(label, "menu_toggle"))
-      snprintf(msg, sizeof_msg,
+      snprintf(s, len,
             " -- Toggles menu.");
    else if (!strcmp(label, "input_bind_device_id"))
-      snprintf(msg, sizeof_msg,
+      snprintf(s, len,
             " -- Input Device. \n"
             " \n"
             "Picks which gamepad to use for user N. \n"
             "The name of the pad is available."
             );
    else if (!strcmp(label, "input_bind_device_type"))
-      snprintf(msg, sizeof_msg,
+      snprintf(s, len,
             " -- Input Device Type. \n"
             " \n"
             "Picks which device type to use. This is \n"
             "relevant for the libretro core itself."
             );
    else
-      snprintf(msg, sizeof_msg,
+      snprintf(s, len,
             "-- No info on this item is available. --\n");
 
    return 0;
 }
 
 #ifdef HAVE_MENU
-static void get_string_representation_bind_device(void * data, char *type_str,
-      size_t type_str_size)
+static void get_string_representation_bind_device(void * data, char *s,
+      size_t len)
 {
    unsigned map = 0;
    rarch_setting_t *setting  = (rarch_setting_t*)data;
@@ -2838,32 +2837,32 @@ static void get_string_representation_bind_device(void * data, char *type_str,
       const char *device_name = settings->input.device_names[map];
 
       if (*device_name)
-         strlcpy(type_str, device_name, type_str_size);
+         strlcpy(s, device_name, len);
       else
-         snprintf(type_str, type_str_size,
+         snprintf(s, len,
                "N/A (port #%u)", map);
    }
    else
-      strlcpy(type_str, "Disabled", type_str_size);
+      strlcpy(s, "Disabled", len);
 }
 
 
-static void get_string_representation_savestate(void * data, char *type_str,
-      size_t type_str_size)
+static void get_string_representation_savestate(void * data, char *s,
+      size_t len)
 {
    settings_t      *settings = config_get_ptr();
 
-   snprintf(type_str, type_str_size, "%d", settings->state_slot);
+   snprintf(s, len, "%d", settings->state_slot);
    if (settings->state_slot == -1)
-      strlcat(type_str, " (Auto)", type_str_size);
+      strlcat(s, " (Auto)", len);
 }
 
 /**
  * setting_get_label:
  * @list               : File list on which to perform the search
- * @type_str           : String for the type to be represented on-screen as
+ * @s                  : String for the type to be represented on-screen as
  *                       a label.
- * @type_str_size      : Size of @type_str
+ * @len                : Size of @s
  * @w                  : Width of the string (for text label representation
  *                       purposes in the menu display driver).
  * @type               : Identifier of setting.
@@ -2873,8 +2872,8 @@ static void get_string_representation_savestate(void * data, char *type_str,
  *
  * Get associated label of a setting.
  **/
-void setting_get_label(file_list_t *list, char *type_str,
-      size_t type_str_size, unsigned *w, unsigned type, 
+void setting_get_label(file_list_t *list, char *s,
+      size_t len, unsigned *w, unsigned type, 
       const char *menu_label, const char *label, unsigned idx)
 {
    rarch_setting_t *setting_data = NULL;
@@ -2892,7 +2891,7 @@ void setting_get_label(file_list_t *list, char *type_str,
    setting = setting_find_setting(setting_data, list->list[idx].label);
 
    if (setting)
-      setting_get_string_representation(setting, type_str, type_str_size);
+      setting_get_string_representation(setting, s, len);
 }
 #endif
 

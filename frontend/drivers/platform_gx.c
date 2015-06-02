@@ -314,7 +314,7 @@ static void frontend_gx_init(void *data)
 
 static void frontend_gx_exec(const char *path, bool should_load_game);
 
-static void frontend_gx_exitspawn(char *core_path, size_t sizeof_core_path)
+static void frontend_gx_exitspawn(char *s, size_t len)
 {
    bool should_load_game = false;
 #if defined(IS_SALAMANDER)
@@ -326,15 +326,15 @@ static void frontend_gx_exitspawn(char *core_path, size_t sizeof_core_path)
    if (!exit_spawn)
       return;
 
-   frontend_gx_exec(core_path, should_load_game);
+   frontend_gx_exec(s, should_load_game);
 
    /* FIXME/TODO - hack
     * direct loading failed (out of memory), try to jump to Salamander,
     * then load the correct core */
-   fill_pathname_join(core_path, g_defaults.core_dir,
-         "boot.dol", sizeof_core_path);
+   fill_pathname_join(s, g_defaults.core_dir,
+         "boot.dol", len);
 #endif
-   frontend_gx_exec(core_path, should_load_game);
+   frontend_gx_exec(s, should_load_game);
 }
 
 static void frontend_gx_process_args(int *argc, char *argv[])
