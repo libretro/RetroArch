@@ -119,6 +119,7 @@ typedef struct nbio_handle
    unsigned status;
 } nbio_handle_t;
 
+#ifdef HAVE_LIBRETRODB
 typedef struct database_state_handle
 {
    database_info_list_t *info;
@@ -137,6 +138,7 @@ typedef struct db_handle
    msg_queue_t *msg_queue;
    unsigned status;
 } db_handle_t;
+#endif
 
 typedef struct data_runloop
 {
