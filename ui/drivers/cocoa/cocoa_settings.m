@@ -20,7 +20,7 @@
 #include <retro_miscellaneous.h>
 
 #include "cocoa_common.h"
-#include "../../../settings.h"
+#include "../../../menu/menu_setting.h"
 #include "../../../input/drivers/cocoa_input.h"
 
 #include "../../../driver.h"

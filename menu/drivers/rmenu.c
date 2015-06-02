@@ -24,13 +24,13 @@
 #include "../menu_driver.h"
 #include "../menu_entry.h"
 #include "../menu_input.h"
+#include "../menu_setting.h"
 #include "../menu.h"
 #include "../../general.h"
 #include "../../config.def.h"
 #include <compat/posix_string.h>
 #include "../../performance.h"
 
-#include "../../settings.h"
 #include "../../screenshot.h"
 #include "../../gfx/drivers_font_renderer/bitmap.h"
 

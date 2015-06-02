@@ -31,10 +31,10 @@
 #include "../menu_entry.h"
 #include "../menu_list.h"
 #include "../menu_input.h"
+#include "../menu_setting.h"
 
 #include "../../gfx/video_context_driver.h"
 
-#include "../../settings.h"
 #include "../../general.h"
 
 #include "../../gfx/d3d/d3d.h"
