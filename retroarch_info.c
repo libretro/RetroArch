@@ -13,9 +13,11 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <compat/strl.h>
 #include <retro_miscellaneous.h>
 
 #include "performance.h"
+#include "playlist.h"
 #include "retroarch.h"
 
 int rarch_info_get_capabilities(enum rarch_capabilities type, char *s, size_t len)

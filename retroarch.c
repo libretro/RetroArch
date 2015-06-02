@@ -1331,13 +1331,16 @@ void rarch_main_deinit(void)
  *
  * Initializes core and loads content based on playlist entry.
  **/
-void rarch_playlist_load_content(content_playlist_t *playlist,
-      unsigned idx)
+void rarch_playlist_load_content(void *data, unsigned idx)
 {
    const char *path      = NULL;
    const char *core_path = NULL;
+   content_playlist_t *playlist = (content_playlist_t*)data;
    menu_handle_t *menu   = menu_driver_get_ptr();
    settings_t  *settings = config_get_ptr();
+
+   if (!playlist)
+      return;
 
    content_playlist_get_index(playlist,
          idx, &path, NULL, &core_path, NULL, NULL);

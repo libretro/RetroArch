@@ -14,18 +14,23 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdlib.h>
+
+#include <retro_miscellaneous.h>
+
+#include <compat/posix_string.h>
+
+#include <file/file_path.h>
+#include <file/config_file_userdata.h>
+#include <file/dir_list.h>
+
 #include "../performance.h"
 
 #include "audio_dsp_filter.h"
 #include "../dynamic.h"
-#include <file/config_file_userdata.h>
 #include "audio_filters/dspfilter.h"
-#include <file/file_path.h>
 #include "../file_ext.h"
-#include <file/dir_list.h>
-#include <compat/posix_string.h>
 
-#include <stdlib.h>
 
 struct rarch_dsp_plug
 {
@@ -202,7 +207,7 @@ static bool append_plugs(rarch_dsp_filter_t *dsp, struct string_list *list)
          return false;
       }
 
-      RARCH_LOG("[DSP]: Found plug: %s (%s).\n", impl->ident, impl->short_ident);
+      /* Found plug. */
       
       dsp->plugs = new_plugs;
       dsp->plugs[dsp->num_plugs].lib = lib;
@@ -228,11 +233,8 @@ rarch_dsp_filter_t *rarch_dsp_filter_new(
       return NULL;
 
    dsp->conf = config_file_new(filter_config);
-   if (!dsp->conf)
-   {
-      RARCH_ERR("[DSP]: Did not find config: %s\n", filter_config);
+   if (!dsp->conf)   /* Did not find config. */
       goto error;
-   }
 
 #if !defined(HAVE_FILTERS_BUILTIN) && defined(HAVE_DYLIB)
    fill_pathname_basedir(basedir, filter_config, sizeof(basedir));

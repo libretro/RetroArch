@@ -20,9 +20,6 @@
 #include <string.h>
 #include <assert.h>
 #include <stddef.h>
-#include "../../performance.h"
-#include <retro_miscellaneous.h>
-#include <gfx/scaler/scaler.h>
 #include <stdlib.h>
 #include <fcntl.h>
 #include <unistd.h>
@@ -32,10 +29,17 @@
 #include <sys/time.h>
 #include <sys/mman.h>
 #include <sys/ioctl.h>
-#include <compat/strl.h>
 
 #include <asm/types.h>
 #include <linux/videodev2.h>
+
+#include <retro_miscellaneous.h>
+#include <gfx/scaler/scaler.h>
+
+#include <compat/strl.h>
+
+#include "../../general.h"
+#include "../../performance.h"
 
 struct buffer
 {

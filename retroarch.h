@@ -18,6 +18,8 @@
 #define __RETROARCH_H
 
 #include <boolean.h>
+#include <retro_miscellaneous.h>
+
 #include "core_info.h"
 #include "command_event.h"
 
@@ -121,8 +123,7 @@ bool rarch_replace_config(const char *path);
  *
  * Initializes core and loads content based on playlist entry.
  **/
-void rarch_playlist_load_content(content_playlist_t *playlist,
-      unsigned index);
+void rarch_playlist_load_content(void *data, unsigned index);
 
 /**
  * rarch_defer_core:

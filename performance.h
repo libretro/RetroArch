@@ -17,8 +17,11 @@
 #ifndef _RARCH_PERF_H
 #define _RARCH_PERF_H
 
-#include "general.h"
+#include <stdint.h>
+
 #include <retro_inline.h>
+
+#include "libretro.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -49,7 +52,6 @@ extern const struct retro_perf_counter *perf_counters_rarch[MAX_COUNTERS];
 extern const struct retro_perf_counter *perf_counters_libretro[MAX_COUNTERS];
 extern unsigned perf_ptr_rarch;
 extern unsigned perf_ptr_libretro;
-
 
 /**
  * rarch_get_perf_counter:
@@ -86,15 +88,7 @@ void retro_perf_log(void);
  *
  * Start performance counter. 
  **/
-static INLINE void rarch_perf_start(struct retro_perf_counter *perf)
-{
-   global_t *global = global_get_ptr();
-   if (!global->perfcnt_enable || !perf)
-      return;
-
-   perf->call_cnt++;
-   perf->start = rarch_get_perf_counter();
-}
+void rarch_perf_start(struct retro_perf_counter *perf);
 
 /**
  * rarch_perf_stop:
@@ -102,14 +96,7 @@ static INLINE void rarch_perf_start(struct retro_perf_counter *perf)
  *
  * Stop performance counter. 
  **/
-static INLINE void rarch_perf_stop(struct retro_perf_counter *perf)
-{
-   global_t *global = global_get_ptr();
-   if (!global->perfcnt_enable || !perf)
-      return;
-
-   perf->total += rarch_get_perf_counter() - perf->start;
-}
+void rarch_perf_stop(struct retro_perf_counter *perf);
 
 /**
  * rarch_get_cpu_features:

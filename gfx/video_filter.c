@@ -21,6 +21,7 @@
 #include <file/file_path.h>
 #include "../file_ext.h"
 #include <file/dir_list.h>
+#include "../general.h"
 #include "../performance.h"
 #include <stdlib.h>
 

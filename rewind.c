@@ -24,6 +24,7 @@
 #include <retro_inline.h>
 #include "intl/intl.h"
 #include "dynamic.h"
+#include "general.h"
 
 #ifndef UINT16_MAX
 #define UINT16_MAX 0xffff

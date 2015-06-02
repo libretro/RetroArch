@@ -20,6 +20,7 @@
 #include <formats/image.h>
 #include <formats/rpng.h>
 #include <queues/message_queue.h>
+#include <retro_miscellaneous.h>
 #ifdef HAVE_THREADS
 #include <rthreads/rthreads.h>
 #endif

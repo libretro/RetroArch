@@ -532,3 +532,22 @@ uint64_t rarch_get_cpu_features(void)
 
    return cpu;
 }
+
+void rarch_perf_start(struct retro_perf_counter *perf)
+{
+   global_t *global = global_get_ptr();
+   if (!global->perfcnt_enable || !perf)
+      return;
+
+   perf->call_cnt++;
+   perf->start = rarch_get_perf_counter();
+}
+
+void rarch_perf_stop(struct retro_perf_counter *perf)
+{
+   global_t *global = global_get_ptr();
+   if (!global->perfcnt_enable || !perf)
+      return;
+
+   perf->total += rarch_get_perf_counter() - perf->start;
+}

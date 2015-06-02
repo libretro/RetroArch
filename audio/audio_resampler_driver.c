@@ -152,15 +152,6 @@ static const rarch_resampler_t *find_resampler_driver(const char *ident)
    if (i >= 0)
       return resampler_drivers[i];
 
-#ifdef RARCH_INTERNAL
-   RARCH_ERR("Couldn't find any resampler driver named \"%s\"\n", ident);
-   RARCH_LOG_OUTPUT("Available resampler drivers are:\n");
-   for (d = 0; resampler_drivers[d]; d++)
-      RARCH_LOG_OUTPUT("\t%s\n", resampler_drivers[d]->ident);
-
-   RARCH_WARN("Going to default to first resampler driver ...\n");
-#endif
-
    return resampler_drivers[0];
 }
 

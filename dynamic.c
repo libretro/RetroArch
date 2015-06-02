@@ -32,6 +32,8 @@
 #include "dynamic_dummy.h"
 #include "retroarch.h"
 #include "runloop.h"
+#include "configuration.h"
+#include "general.h"
 
 #include "input/input_sensor.h"
 
