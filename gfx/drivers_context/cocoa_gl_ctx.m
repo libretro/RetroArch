@@ -14,7 +14,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <CoreGraphics/CGGeometry.h>
+#include <ApplicationServices/ApplicationServices.h>
 #if defined(HAVE_COCOA)
 #include <OpenGL/CGLTypes.h>
 #include <OpenGL/OpenGL.h>

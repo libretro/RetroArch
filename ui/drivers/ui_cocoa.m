@@ -142,19 +142,13 @@ void apple_rarch_exited(void)
 static int waiting_argc;
 static char** waiting_argv;
 
-@interface RetroArch_OSX()
-@property (nonatomic, retain) NSWindowController* settingsWindow;
-@end
-
 @implementation RetroArch_OSX
 
 @synthesize window = _window;
-@synthesize settingsWindow = _settingsWindow;
 
 - (void)dealloc
 {
    [_window release];
-   [_settingsWindow release];
    [super dealloc];
 }
 
@@ -173,8 +167,6 @@ static char** waiting_argv;
    [[self.window contentView] addSubview:[CocoaView get]];
    [self.window makeFirstResponder:[CocoaView get]];
 
-   self.settingsWindow = [[[NSWindowController alloc] initWithWindowNibName:BOXSTRING("Settings")] autorelease];
-   
    if (rarch_main(waiting_argc, waiting_argv, NULL))
       apple_rarch_exited();
 
@@ -318,7 +310,6 @@ static void poll_iteration(void)
 
 - (IBAction)showPreferences:(id)sender
 {
-   [NSApp runModalForWindow:[self.settingsWindow window]];
 }
 
 - (IBAction)basicEvent:(id)sender

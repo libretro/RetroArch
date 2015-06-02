@@ -101,7 +101,6 @@ void get_ios_version(int *major, int *minor);
 @interface RetroArch_OSX : NSObject
 {
    NSWindow* _window;
-   NSWindowController* _settingsWindow;
 }
 
 @property (nonatomic, retain) NSWindow IBOutlet* window;
