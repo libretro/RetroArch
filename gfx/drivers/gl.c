@@ -59,6 +59,14 @@
 
 #include "../video_shader_driver.h"
 
+#ifndef GL_SYNC_GPU_COMMANDS_COMPLETE
+#define GL_SYNC_GPU_COMMANDS_COMPLETE     0x9117
+#endif
+
+#ifndef GL_SYNC_FLUSH_COMMANDS_BIT
+#define GL_SYNC_FLUSH_COMMANDS_BIT        0x00000001
+#endif
+
 /* Used for the last pass when rendering to the back buffer. */
 static const GLfloat vertexes_flipped[] = {
    0, 1,
