@@ -43,14 +43,6 @@ int menu_setting_set(unsigned type, const char *label,
 rarch_setting_t *menu_setting_find(const char *label);
 
 /**
- * setting_reset_setting:
- * @setting            : pointer to setting
- *
- * Reset a setting's value to its defaults.
- **/
-void setting_reset_setting(rarch_setting_t* setting);
-
-/**
  * setting_reset:
  * @settings           : pointer to settings
  *

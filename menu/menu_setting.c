@@ -290,7 +290,7 @@ void menu_setting_apply_deferred(void)
  *
  * Reset a setting's value to its defaults.
  **/
-void setting_reset_setting(rarch_setting_t* setting)
+static void setting_reset_setting(rarch_setting_t* setting)
 {
    if (!setting)
       return;
