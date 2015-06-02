@@ -538,7 +538,7 @@ static int setting_bool_action_start_default(void *data)
    if (!setting)
       return -1;
 
-   *setting->value.boolean = setting->default_value.boolean;
+   setting_reset_setting(setting);
 
    return 0;
 }
@@ -574,7 +574,7 @@ static int setting_uint_action_start_default(void *data)
    if (!setting)
       return -1;
 
-   *setting->value.unsigned_integer = setting->default_value.unsigned_integer;
+   setting_reset_setting(setting);
 
    return 0;
 }
@@ -590,7 +590,7 @@ static int setting_action_start_libretro_device_type(void *data)
    if (!setting)
       return -1;
 
-   *setting->value.unsigned_integer = setting->default_value.unsigned_integer;
+   setting_reset_setting(setting);
 
    port = setting->index_offset;
 
@@ -641,7 +641,7 @@ static int setting_fraction_action_start_default(
    if (!setting)
       return -1;
 
-   *setting->value.fraction = setting->default_value.fraction;
+   setting_reset_setting(setting);
 
    return 0;
 }
@@ -653,7 +653,7 @@ static int setting_uint_action_start_linefeed(void *data)
    if (!setting)
       return -1;
 
-   *setting->value.unsigned_integer = setting->default_value.unsigned_integer;
+   setting_reset_setting(setting);
 
    return 0;
 }
