@@ -155,7 +155,7 @@
 			attributes = {
 				LastUpgradeCheck = 0500;
 			};
-			buildConfigurationList = 96355CD81788E6E00010DBFA /* Build configuration list for PBXProject "RetroArch_OSX" */;
+			buildConfigurationList = 96355CD81788E6E00010DBFA /* Build configuration list for PBXProject "RetroArch" */;
 			compatibilityVersion = "Xcode 2.4";
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -388,7 +388,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		96355CD81788E6E00010DBFA /* Build configuration list for PBXProject "RetroArch_OSX" */ = {
+		96355CD81788E6E00010DBFA /* Build configuration list for PBXProject "RetroArch" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				96355CD91788E6E00010DBFA /* Debug */,

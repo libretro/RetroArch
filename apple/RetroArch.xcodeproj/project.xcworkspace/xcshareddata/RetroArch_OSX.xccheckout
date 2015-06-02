@@ -7,7 +7,7 @@
 	<key>IDESourceControlProjectIdentifier</key>
 	<string>6707FA08-D738-4E96-838A-767375E3B767</string>
 	<key>IDESourceControlProjectName</key>
-	<string>RetroArch_OSX</string>
+	<string>RetroArch</string>
 	<key>IDESourceControlProjectOriginsDictionary</key>
 	<dict>
 		<key>66A80EF91DB414BA5E941825F216CCE8F40CCCF2</key>
@@ -26,7 +26,7 @@
 		<string>https://github.com/libretro/common-overlays.git</string>
 	</dict>
 	<key>IDESourceControlProjectPath</key>
-	<string>apple/RetroArch_OSX.xcodeproj</string>
+	<string>apple/RetroArch.xcodeproj</string>
 	<key>IDESourceControlProjectRelativeInstallPathDictionary</key>
 	<dict>
 		<key>66A80EF91DB414BA5E941825F216CCE8F40CCCF2</key>

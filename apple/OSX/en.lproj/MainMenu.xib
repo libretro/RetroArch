@@ -662,7 +662,7 @@
 				<string key="NSMaxSize">{3.40282e+38, 3.40282e+38}</string>
 			</object>
 			<object class="NSCustomObject" id="976324537">
-				<string key="NSClassName">RetroArch_OSX</string>
+				<string key="NSClassName">RetroArch</string>
 			</object>
 			<object class="NSWindowTemplate" id="361653618">
 				<int key="NSWindowStyleMask">31</int>
@@ -1980,7 +1980,7 @@
 		</object>
 		<object class="IBClassDescriber" key="IBDocument.Classes"/>
 		<int key="IBDocument.localizationMode">0</int>
-		<string key="IBDocument.LastKnownRelativeProjectPath">../RetroArch_OSX.xcodeproj</string>
+		<string key="IBDocument.LastKnownRelativeProjectPath">../RetroArch.xcodeproj</string>
 		<int key="IBDocument.defaultPropertyAccessControl">3</int>
 	</data>
 </archive>
