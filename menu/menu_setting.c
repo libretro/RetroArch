@@ -543,17 +543,6 @@ static int setting_generic_action_start_default(void *data)
    return 0;
 }
 
-static int setting_string_dir_action_start_default(void *data)
-{
-   rarch_setting_t *setting = (rarch_setting_t*)data;
-
-   if (!setting)
-      return -1;
-
-   *setting->value.string = '\0';
-
-   return 0;
-}
 
 static int setting_action_start_analog_dpad_mode(void *data)
 {
@@ -622,7 +611,7 @@ static int setting_action_start_video_refresh_rate_auto(
    return 0;
 }
 
-static int setting_string_action_start_allow_input(void *data)
+static int setting_string_action_start_generic(void *data)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
 
@@ -2024,12 +2013,12 @@ rarch_setting_t setting_string_setting(enum setting_type type,
    switch (type)
    {
       case ST_DIR:
-         result.action_start           = setting_string_dir_action_start_default;
+         result.action_start           = setting_string_action_start_generic;
          result.browser_selection_type = ST_DIR;
          result.get_string_representation = &setting_get_string_representation_st_dir;
          break;
       case ST_PATH:
-         result.action_start           = setting_string_dir_action_start_default;
+         result.action_start           = setting_string_action_start_generic;
          result.browser_selection_type = ST_PATH;
          result.get_string_representation = &setting_get_string_representation_st_path;
          break;
@@ -3392,7 +3381,7 @@ static void setting_add_special_callbacks(
             (*list)[idx].action_cancel = NULL;
             break;
          case ST_STRING:
-            (*list)[idx].action_start  = setting_string_action_start_allow_input;
+            (*list)[idx].action_start  = setting_string_action_start_generic;
             (*list)[idx].action_ok     = setting_string_action_ok_allow_input;
             (*list)[idx].action_cancel = NULL;
             break;
