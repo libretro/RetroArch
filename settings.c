@@ -374,8 +374,6 @@ static int setting_action_start_libretro_device_type(void *data)
       }
    }
 
-   current_device = settings->input.libretro_device[port];
-
    current_device = RETRO_DEVICE_JOYPAD;
 
    settings->input.libretro_device[port] = current_device;
