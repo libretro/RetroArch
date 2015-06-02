@@ -21,7 +21,7 @@
 
 #include "../../core_info.h"
 #include "../../playlist.h"
-#include "../../settings.h"
+#include "../../menu/menu_setting.h"
 #include "../../menu/menu.h"
 
 #if defined(HAVE_COCOATOUCH)

@@ -25,7 +25,7 @@
 #include "cocoa/cocoa_common.h"
 #include "../ui_companion_driver.h"
 #include "../../input/drivers/cocoa_input.h"
-#include "../../settings.h"
+#include "../../menu/menu_setting.h"
 
 #ifdef HAVE_MFI
 #include "../../input/drivers_hid/mfi_hid.h"
