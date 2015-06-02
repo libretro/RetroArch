@@ -181,7 +181,7 @@ static int menu_action_handle_setting(rarch_setting_t *setting,
    return -1;
 }
 
-rarch_setting_t *menu_setting_get_ptr(void)
+static rarch_setting_t *menu_setting_get_ptr(void)
 {
    menu_handle_t *menu = menu_driver_get_ptr();
 

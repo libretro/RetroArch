@@ -42,9 +42,6 @@ int menu_setting_set(unsigned type, const char *label,
 
 rarch_setting_t *menu_setting_find(const char *label);
 
-rarch_setting_t *menu_setting_get_ptr(void);
-
-
 /**
  * setting_reset_setting:
  * @setting            : pointer to setting
