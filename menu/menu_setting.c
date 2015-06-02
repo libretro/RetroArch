@@ -531,7 +531,7 @@ static int setting_action_start_bind_device(void *data)
    return 0;
 }
 
-static int setting_bool_action_start_default(void *data)
+static int setting_generic_action_start_default(void *data)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
 
@@ -567,17 +567,6 @@ static int setting_action_start_analog_dpad_mode(void *data)
    return 0;
 }
 
-static int setting_uint_action_start_default(void *data)
-{
-   rarch_setting_t *setting = (rarch_setting_t*)data;
-
-   if (!setting)
-      return -1;
-
-   setting_reset_setting(setting);
-
-   return 0;
-}
 
 static int setting_action_start_libretro_device_type(void *data)
 {
@@ -629,31 +618,6 @@ static int setting_action_start_video_refresh_rate_auto(
       void *data)
 {
    video_monitor_reset();
-
-   return 0;
-}
-
-static int setting_fraction_action_start_default(
-      void *data)
-{
-   rarch_setting_t *setting = (rarch_setting_t*)data;
-
-   if (!setting)
-      return -1;
-
-   setting_reset_setting(setting);
-
-   return 0;
-}
-
-static int setting_uint_action_start_linefeed(void *data)
-{
-   rarch_setting_t *setting = (rarch_setting_t*)data;
-
-   if (!setting)
-      return -1;
-
-   setting_reset_setting(setting);
 
    return 0;
 }
@@ -1777,7 +1741,7 @@ rarch_setting_t setting_float_setting(const char* name,
    result.value.fraction          = target;
    result.original_value.fraction = *target;
    result.default_value.fraction  = default_value;
-   result.action_start            = setting_fraction_action_start_default;
+   result.action_start            = setting_generic_action_start_default;
    result.action_toggle           = setting_fraction_action_toggle_default;
    result.action_ok               = setting_fraction_action_ok_default;
    result.action_cancel           = NULL;
@@ -1829,7 +1793,7 @@ rarch_setting_t setting_bool_setting(const char* name,
    result.boolean.off_label      = off;
    result.boolean.on_label       = on;
 
-   result.action_start           = setting_bool_action_start_default;
+   result.action_start           = setting_generic_action_start_default;
    result.action_toggle          = setting_bool_action_toggle_default;
    result.action_ok              = setting_bool_action_ok_default;
    result.action_cancel          = NULL;
@@ -1916,7 +1880,7 @@ rarch_setting_t setting_uint_setting(const char* name,
    result.value.unsigned_integer          = target;
    result.original_value.unsigned_integer = *target;
    result.default_value.unsigned_integer  = default_value;
-   result.action_start                    = setting_uint_action_start_default;
+   result.action_start                    = setting_generic_action_start_default;
    result.action_toggle                   = setting_uint_action_toggle_default;
    result.action_ok                       = setting_uint_action_ok_default;
    result.action_cancel                   = NULL;
@@ -1961,7 +1925,7 @@ rarch_setting_t setting_hex_setting(const char* name,
    result.value.unsigned_integer          = target;
    result.original_value.unsigned_integer = *target;
    result.default_value.unsigned_integer  = default_value;
-   result.action_start                    = setting_uint_action_start_default;
+   result.action_start                    = setting_generic_action_start_default;
    result.action_toggle                   = NULL;
    result.action_ok                       = setting_uint_action_ok_default;
    result.action_cancel                   = NULL;
@@ -3418,12 +3382,12 @@ static void setting_add_special_callbacks(
       switch ((*list)[idx].type)
       {
          case ST_UINT:
-            (*list)[idx].action_start  = setting_uint_action_start_linefeed;
+            (*list)[idx].action_start  = setting_generic_action_start_default;
             (*list)[idx].action_ok     = setting_uint_action_ok_linefeed;
             (*list)[idx].action_cancel = NULL;
             break;
          case ST_HEX:
-            (*list)[idx].action_start  = setting_uint_action_start_linefeed;
+            (*list)[idx].action_start  = setting_generic_action_start_default;
             (*list)[idx].action_ok     = setting_hex_action_ok_linefeed;
             (*list)[idx].action_cancel = NULL;
             break;
