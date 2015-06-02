@@ -448,10 +448,13 @@ int menu_entry_get_current_id(bool use_representation)
    return -1;
 }
 
-// Performs whatever actions are associated with menu entry 'i'. This
-// is the most important function because it does all the work
-// associated with clicking on things in the UI. This includes loading
-// cores and updating the currently displayed menu
+/* Performs whatever actions are associated with menu entry 'i'.
+ *
+ * This is the most important function because it does all the work
+ * associated with clicking on things in the UI.
+ *
+ * This includes loading cores and updating the 
+ * currently displayed menu. */
 int menu_entry_select(uint32_t i)
 {
    menu_entry_t entry;
