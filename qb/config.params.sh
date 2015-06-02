@@ -1,3 +1,4 @@
+HAVE_LIBRETRODB=yes     # Disable libretrodb
 HAVE_RGUI=yes           # Disable RGUI
 HAVE_GLUI=no            # Enable GLUI menu
 HAVE_XMB=no             # Enable XMB menu
