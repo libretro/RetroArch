@@ -3660,6 +3660,17 @@ static bool setting_append_list_configuration_options(
 
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
 
+   CONFIG_BOOL(settings->config_save_on_exit,
+         "config_save_on_exit",
+         "Save Configuration on Exit",
+         config_save_on_exit,
+         "OFF",
+         "ON",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+
    CONFIG_BOOL(
          settings->core_specific_config,
          "core_specific_config",
@@ -3698,32 +3709,6 @@ static bool setting_append_list_configuration_options(
 
    END_SUB_GROUP(list, list_info);
 
-   START_SUB_GROUP(list, list_info, "Performance Counters", group_info.name, subgroup_info);
-
-   CONFIG_BOOL(global->perfcnt_enable,
-         "perfcnt_enable",
-         "Performance Counters",
-         false,
-         "OFF",
-         "ON",
-         group_info.name,
-         subgroup_info.name,
-         general_write_handler,
-         general_read_handler);
-   settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
-
-   CONFIG_BOOL(settings->config_save_on_exit,
-         "config_save_on_exit",
-         "Save Configuration on Exit",
-         config_save_on_exit,
-         "OFF",
-         "ON",
-         group_info.name,
-         subgroup_info.name,
-         general_write_handler,
-         general_read_handler);
-
-   END_SUB_GROUP(list, list_info);
 
    END_GROUP(list, list_info);
 
@@ -3880,6 +3865,23 @@ static bool setting_append_list_logging_options(
    (*list)[list_info->index - 1].get_string_representation = 
       &setting_get_string_representation_uint_libretro_log_level;
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
+
+   END_SUB_GROUP(list, list_info);
+
+   START_SUB_GROUP(list, list_info, "Performance Counters", group_info.name, subgroup_info);
+
+   CONFIG_BOOL(global->perfcnt_enable,
+         "perfcnt_enable",
+         "Performance Counters",
+         false,
+         "OFF",
+         "ON",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
+
 
    END_SUB_GROUP(list, list_info);
 
