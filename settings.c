@@ -73,8 +73,7 @@ void setting_reset_setting(rarch_setting_t* setting)
          if (setting->default_value.string)
          {
             if (setting->type == ST_STRING)
-               strlcpy(setting->value.string, setting->default_value.string,
-                     setting->size);
+               setting_set_with_string_representation(setting, setting->default_value.string);
             else
                fill_pathname_expand_special(setting->value.string,
                      setting->default_value.string, setting->size);
@@ -798,7 +797,7 @@ static int core_list_action_toggle(void *data, unsigned action, bool wraparound)
     * later on. I need to be able to add something to call when a
     * cancel happens.
     */
-   strlcpy(setting->value.string, settings->libretro_directory, setting->size);
+   setting_set_with_string_representation(setting, settings->libretro_directory);
 
    return 0;
 }
@@ -833,7 +832,7 @@ static int load_content_action_toggle(void *data, unsigned action,
    if (!setting)
       return -1;
 
-   strlcpy(setting->value.string, settings->menu_content_directory, setting->size);
+   setting_set_with_string_representation(setting, settings->menu_content_directory);
 
    if (global->menu.info.valid_extensions)
       setting->values = global->menu.info.valid_extensions;
