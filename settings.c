@@ -3696,30 +3696,6 @@ static bool setting_append_list_general_options(
          general_write_handler,
          general_read_handler);
 
-   CONFIG_BOOL(
-         settings->sort_savefiles_enable,
-         "sort_savefiles_enable",
-         "Sort Saves In Folders",
-         default_sort_savefiles_enable,
-         "OFF",
-         "ON",
-         group_info.name,
-         subgroup_info.name,
-         general_write_handler,
-         general_read_handler);
-
-   CONFIG_BOOL(
-         settings->sort_savestates_enable,
-         "sort_savestates_enable",
-         "Sort Saves States In Folders",
-         default_sort_savestates_enable,
-         "OFF",
-         "ON",
-         group_info.name,
-         subgroup_info.name,
-         general_write_handler,
-         general_read_handler);
-
    END_SUB_GROUP(list, list_info);
 
    START_SUB_GROUP(list, list_info, "Performance Counters", group_info.name, subgroup_info);
@@ -3750,6 +3726,30 @@ static bool setting_append_list_general_options(
    END_SUB_GROUP(list, list_info);
 
    START_SUB_GROUP(list, list_info, "Saving", group_info.name, subgroup_info);
+
+   CONFIG_BOOL(
+         settings->sort_savefiles_enable,
+         "sort_savefiles_enable",
+         "Sort Saves In Folders",
+         default_sort_savefiles_enable,
+         "OFF",
+         "ON",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+
+   CONFIG_BOOL(
+         settings->sort_savestates_enable,
+         "sort_savestates_enable",
+         "Sort Saves States In Folders",
+         default_sort_savestates_enable,
+         "OFF",
+         "ON",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
 
    CONFIG_BOOL(
          settings->block_sram_overwrite,
