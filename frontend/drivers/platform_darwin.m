@@ -98,6 +98,10 @@ typedef enum
 #endif
 #endif
 
+#ifndef NS_INLINE
+#define NS_INLINE inline
+#endif
+
 NS_INLINE CF_RETURNS_RETAINED CFTypeRef CFBridgingRetainCompat(id X)
 {
 #if __has_feature(objc_arc)
