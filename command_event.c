@@ -664,8 +664,10 @@ static bool event_init_core(void)
    settings_t *settings = config_get_ptr();
 
    /* per-core saves: save the original path */
-   strlcpy(orig_savefile_dir,global->savefile_dir,sizeof(orig_savefile_dir));
-   strlcpy(orig_savestate_dir,global->savestate_dir,sizeof(orig_savestate_dir));
+   if(orig_savefile_dir[0] == '\0')
+      strlcpy(orig_savefile_dir,global->savefile_dir,sizeof(orig_savefile_dir));
+   if(orig_savestate_dir[0] == '\0')
+      strlcpy(orig_savestate_dir,global->savestate_dir,sizeof(orig_savestate_dir));
 
    /* auto overrides: apply overrides */
    if(settings->auto_overrides_enable)
