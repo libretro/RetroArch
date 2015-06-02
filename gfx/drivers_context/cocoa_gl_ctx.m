@@ -14,7 +14,11 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#if TARGET_OS_IPHONE
+#include <CoreGraphics/CoreGraphics.h>
+#else
 #include <ApplicationServices/ApplicationServices.h>
+#endif
 #if defined(HAVE_COCOA)
 #include <OpenGL/CGLTypes.h>
 #include <OpenGL/OpenGL.h>
