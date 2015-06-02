@@ -67,7 +67,7 @@ enum setting_list_flags
    SL_FLAG_MAIN_MENU             =  (1 << 0),
    SL_FLAG_DRIVER_OPTIONS        =  (1 << 1),
    SL_FLAG_CORE_OPTIONS          =  (1 << 2),
-   SL_FLAG_GENERAL_OPTIONS       =  (1 << 3),
+   SL_FLAG_CONFIGURATION_OPTIONS =  (1 << 3),
    SL_FLAG_REWIND_OPTIONS        =  (1 << 4),
    SL_FLAG_VIDEO_OPTIONS         =  (1 << 5),
    SL_FLAG_SHADER_OPTIONS        =  (1 << 6),

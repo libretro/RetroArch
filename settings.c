@@ -3647,7 +3647,7 @@ static bool setting_append_list_core_options(
    return true;
 }
 
-static bool setting_append_list_general_options(
+static bool setting_append_list_configuration_options(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info)
 {
@@ -3656,7 +3656,7 @@ static bool setting_append_list_general_options(
    settings_t *settings = config_get_ptr();
    global_t   *global   = global_get_ptr();
 
-   START_GROUP(group_info, "General Settings");
+   START_GROUP(group_info, "Configuration Settings");
 
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
 
@@ -6589,9 +6589,9 @@ rarch_setting_t *setting_new(unsigned mask)
          goto error;
    }
 
-   if (mask & SL_FLAG_GENERAL_OPTIONS)
+   if (mask & SL_FLAG_CONFIGURATION_OPTIONS)
    {
-      if (!setting_append_list_general_options(&list, list_info))
+      if (!setting_append_list_configuration_options(&list, list_info))
          goto error;
    }
 
