@@ -18,7 +18,7 @@
    Based on http://fernlightning.com/doku.php?id=randd:xopengl.
  */
 
-#include <CoreGraphics/CoreGraphics.h>
+#include <ApplicationServices/ApplicationServices.h>
 
 #include <OpenGL/CGLTypes.h>
 #include <OpenGL/CGLCurrent.h>
