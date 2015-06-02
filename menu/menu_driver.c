@@ -197,13 +197,7 @@ void  menu_driver_list_delete(file_list_t *list, size_t idx, size_t list_size)
 
    if (cbs)
    {
-      cbs->action_start         = NULL;
-      cbs->action_ok            = NULL;
-      cbs->action_cancel        = NULL;
-      cbs->action_left          = NULL;
-      cbs->action_right         = NULL;
-      cbs->action_deferred_push = NULL;
-      cbs->action_scan          = NULL;
+      memset(cbs, 0, sizeof(*cbs));
       free(list->list[idx].actiondata);
    }
    list->list[idx].actiondata = NULL;
