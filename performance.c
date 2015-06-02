@@ -247,7 +247,7 @@ retro_time_t rarch_get_time_usec(void)
 #elif defined(GEKKO)
    return ticks_to_microsecs(gettime());
 #elif defined(_POSIX_MONOTONIC_CLOCK) || defined(__QNX__) || defined(ANDROID) || defined(__MACH__)
-   struct timespec tv;
+   struct timespec tv = {0};
    if (clock_gettime(CLOCK_MONOTONIC, &tv) < 0)
       return 0;
    return tv.tv_sec * INT64_C(1000000) + (tv.tv_nsec + 500) / 1000;
