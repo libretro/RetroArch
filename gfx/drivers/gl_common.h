@@ -41,7 +41,9 @@
 
 
 #if (!defined(HAVE_OPENGLES) || defined(HAVE_OPENGLES3))
+#ifdef GL_PIXEL_PACK_BUFFER
 #define HAVE_GL_ASYNC_READBACK
+#endif
 #endif
 
 #if defined(HAVE_PSGL)
