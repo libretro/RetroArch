@@ -21,7 +21,7 @@
 #include <stdlib.h>
 #include <boolean.h>
 
-#include "command_event.h"
+#include "../command_event.h"
 
 #ifdef __cplusplus
 extern "C" {
