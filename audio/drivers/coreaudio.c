@@ -128,7 +128,13 @@ static OSStatus audio_write_cb(void *userdata,
    return noErr;
 }
 
-#ifndef TARGET_OS_IPHONE
+#if TARGET_OS_IPHONE
+static void coreaudio_interrupt_listener(void *data, UInt32 interrupt_state)
+{
+    (void)data;
+    g_interrupted = (interrupt_state == kAudioSessionBeginInterruption);
+}
+#else
 static void choose_output_device(coreaudio_t *dev, const char* device)
 {
    unsigned i;
@@ -174,12 +180,6 @@ static void choose_output_device(coreaudio_t *dev, const char* device)
 
 done:
    free(devices);
-}
-#else
-static void coreaudio_interrupt_listener(void *data, UInt32 interrupt_state)
-{
-   (void)data;
-   g_interrupted = (interrupt_state == kAudioSessionBeginInterruption);
 }
 #endif
 
