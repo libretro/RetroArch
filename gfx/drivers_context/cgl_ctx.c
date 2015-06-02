@@ -232,11 +232,8 @@ static CGLContextObj gfx_ctx_cgl_init_create(void)
    };
 
    CGLChoosePixelFormat(attributes, &pix, &num);
-   printf("pix %p num: %d\n", pix, num);
    CGLCreateContext(pix, NULL, &glCtx);
    CGLDestroyPixelFormat(pix);
-
-   printf("glCtx: %p\n", glCtx);
 
    CGLSetParameter(glCtx, kCGLCPSwapInterval, &params);
 
