@@ -3615,6 +3615,19 @@ static bool setting_append_list_core_options(
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
 
    CONFIG_BOOL(
+         settings->video.shared_context,
+         "video_shared_context",
+         "HW Shared Context Enable",
+         false,
+         "OFF",
+         "ON",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
+
+   CONFIG_BOOL(
          settings->load_dummy_on_core_shutdown,
          "dummy_on_core_shutdown",
          "Dummy On Core Shutdown",
@@ -4123,18 +4136,6 @@ static bool setting_append_list_video_options(
          general_write_handler,
          general_read_handler);
 
-   CONFIG_BOOL(
-         settings->video.shared_context,
-         "video_shared_context",
-         "HW Shared Context Enable",
-         false,
-         "OFF",
-         "ON",
-         group_info.name,
-         subgroup_info.name,
-         general_write_handler,
-         general_read_handler);
-   settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
    END_SUB_GROUP(list, list_info);
    START_SUB_GROUP(list, list_info, "Monitor", group_info.name, subgroup_info);
