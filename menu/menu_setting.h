@@ -325,7 +325,6 @@ rarch_setting_t setting_string_setting_options(enum setting_type type,
  **/
 int setting_get_description(const char *label, char *s, size_t len);
 
-#ifdef HAVE_MENU
 /**
  * setting_get_label:
  * @list               : File list on which to perform the search
@@ -344,7 +343,6 @@ int setting_get_description(const char *label, char *s, size_t len);
 void setting_get_label(file_list_t *list, char *s,
       size_t len, unsigned *w, unsigned type, 
       const char *menu_label, const char *label, unsigned idx);
-#endif
 
 /**
  * setting_new:

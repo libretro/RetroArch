@@ -1382,14 +1382,12 @@ static void setting_get_string_representation_st_float_video_refresh_rate_auto(v
    {
       snprintf(s, len, "%.3f Hz (%.1f%% dev, %u samples)",
             video_refresh_rate, 100.0 * deviation, sample_points);
-#ifdef HAVE_MENU
       {
          menu_handle_t *menu = menu_driver_get_ptr();
 
          if (menu)
             menu->label.is_updated = true;
       }
-#endif
    }
    else
       strlcpy(s, "N/A", len);
@@ -3064,7 +3062,6 @@ int setting_get_description(const char *label, char *s,
    return 0;
 }
 
-#ifdef HAVE_MENU
 static void get_string_representation_bind_device(void * data, char *s,
       size_t len)
 {
@@ -3138,7 +3135,6 @@ void setting_get_label(file_list_t *list, char *s,
    if (setting)
       setting_get_string_representation(setting, s, len);
 }
-#endif
 
 static void general_read_handler(void *data)
 {
@@ -3211,14 +3207,12 @@ static void general_write_handler(void *data)
 
       if (*setting->value.boolean)
       {
-#ifdef HAVE_MENU
          info.list          = menu->menu_list->menu_stack;
          info.type          = 0; 
          info.directory_ptr = 0;
          strlcpy(info.label, "help", sizeof(info.label));
 
          menu_displaylist_push_list(&info, DISPLAYLIST_GENERIC);
-#endif
          *setting->value.boolean = false;
       }
    }
@@ -3811,7 +3805,6 @@ static bool setting_append_list_driver_options(
          NULL);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
 
-#ifdef HAVE_MENU
    CONFIG_STRING_OPTIONS(
          settings->menu.driver,
          "menu_driver",
@@ -3823,7 +3816,6 @@ static bool setting_append_list_driver_options(
          NULL,
          NULL);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
-#endif
 
    CONFIG_STRING_OPTIONS(
          settings->record.driver,
@@ -5645,7 +5637,6 @@ static bool setting_append_list_menu_options(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info)
 {
-#ifdef HAVE_MENU
    rarch_setting_group_info_t group_info;
    rarch_setting_group_info_t subgroup_info;
    settings_t *settings = config_get_ptr();
@@ -5896,7 +5887,6 @@ static bool setting_append_list_menu_options(
    END_SUB_GROUP(list, list_info);
 
    END_GROUP(list, list_info);
-#endif
 
    return true;
 }
@@ -6403,7 +6393,6 @@ static bool setting_append_list_directory_options(
          list_info,
          SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR | SD_FLAG_BROWSER_ACTION);
 
-#ifdef HAVE_MENU
    CONFIG_DIR(
          settings->menu_content_directory,
          "rgui_browser_directory",
@@ -6435,7 +6424,6 @@ static bool setting_append_list_directory_options(
          list_info,
          SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR | SD_FLAG_BROWSER_ACTION);
 
-#endif
 
    CONFIG_DIR(
          settings->libretro_directory,
