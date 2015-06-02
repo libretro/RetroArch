@@ -289,9 +289,11 @@ void menu_entry_pathdir_selected(uint32_t i)
       setting->action_toggle( setting, MENU_ACTION_RIGHT, false);
 }
 
-uint32_t menu_entry_pathdir_allow_empty(uint32_t i)
+bool menu_entry_pathdir_allow_empty(uint32_t i)
 {
    rarch_setting_t *setting = menu_entry_get_setting(i);
+   if (!setting)
+      return false;
    return setting->flags & SD_FLAG_ALLOW_EMPTY;
 }
 

@@ -88,7 +88,7 @@ void menu_entry_bind_joyaxis_set(uint32_t i, int32_t value);
 
 void menu_entry_pathdir_selected(uint32_t i);
 
-uint32_t menu_entry_pathdir_allow_empty(uint32_t i);
+bool menu_entry_pathdir_allow_empty(uint32_t i);
 
 uint32_t menu_entry_pathdir_for_directory(uint32_t i);
 
