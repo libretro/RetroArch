@@ -220,9 +220,9 @@ static void rgui_render_background(void)
       return;
 
    size_t pitch_in_pixels = menu->frame_buf.pitch >> 1;
-   size_t size = menu->frame_buf.pitch * 4;
-   uint16_t *src = menu->frame_buf.data + pitch_in_pixels * menu->frame_buf.height;
-   uint16_t *dst = menu->frame_buf.data;
+   size_t size            = menu->frame_buf.pitch * 4;
+   uint16_t *src          = menu->frame_buf.data + pitch_in_pixels * menu->frame_buf.height;
+   uint16_t *dst          = menu->frame_buf.data;
 
    while (dst < src)
    {
@@ -248,8 +248,8 @@ static void rgui_render_messagebox(const char *message)
    unsigned width, glyphs_width, height;
    uint16_t color;
    struct string_list *list = NULL;
-   menu_handle_t *menu  = menu_driver_get_ptr();
-   settings_t *settings = config_get_ptr();
+   menu_handle_t *menu      = menu_driver_get_ptr();
+   settings_t *settings     = config_get_ptr();
 
    if (!menu)
       return;
@@ -282,8 +282,8 @@ static void rgui_render_messagebox(const char *message)
          msglen = RGUI_TERM_WIDTH;
       }
 
-      line_width = msglen * FONT_WIDTH_STRIDE - 1 + 6 + 10;
-      width = max(width, line_width);
+      line_width   = msglen * FONT_WIDTH_STRIDE - 1 + 6 + 10;
+      width        = max(width, line_width);
       glyphs_width = max(glyphs_width, msglen);
    }
 
@@ -306,8 +306,8 @@ static void rgui_render_messagebox(const char *message)
    for (i = 0; i < list->size; i++)
    {
       const char *msg = list->elems[i].data;
-      int offset_x = FONT_WIDTH_STRIDE * (glyphs_width - strlen(msg)) / 2;
-      int offset_y = FONT_HEIGHT_STRIDE * i;
+      int offset_x    = FONT_WIDTH_STRIDE * (glyphs_width - strlen(msg)) / 2;
+      int offset_y    = FONT_HEIGHT_STRIDE * i;
       blit_line(menu, x + 8 + offset_x, y + 8 + offset_y, msg, color);
    }
 
@@ -364,7 +364,7 @@ static void rgui_render(void)
       if (menu->pointer.dragging)
       {
          menu->scroll_y += menu->pointer.dy;
-         menu->begin = -menu->scroll_y / 11 + 2;
+         menu->begin     = -menu->scroll_y / 11 + 2;
          if (menu->scroll_y > 0)
             menu->scroll_y = 0;
       }
@@ -404,7 +404,7 @@ static void rgui_render(void)
    menu_animation_ticker_line(title_buf, RGUI_TERM_WIDTH - 10,
          frame_count / RGUI_TERM_START_X, title, true);
 
-   hover_color = HOVER_COLOR(settings);
+   hover_color  = HOVER_COLOR(settings);
    normal_color = NORMAL_COLOR(settings);
 
    if (menu_entries_show_back())
@@ -445,7 +445,7 @@ static void rgui_render(void)
       char message[PATH_MAX_LENGTH], 
            entry_title_buf[PATH_MAX_LENGTH], type_str_buf[PATH_MAX_LENGTH];
       unsigned entry_spacing = menu_entry_get_spacing(i);
-      bool entry_selected = menu_entry_is_currently_selected(i);
+      bool entry_selected    = menu_entry_is_currently_selected(i);
 
       if (i > (menu->navigation.selection_ptr + 100))
          continue;
@@ -578,7 +578,7 @@ static void rgui_navigation_clear(bool pending_push)
    if (!menu)
       return;
 
-   menu->begin = 0;
+   menu->begin    = 0;
    menu->scroll_y = 0;
 }
 
