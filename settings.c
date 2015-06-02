@@ -3664,7 +3664,6 @@ static bool setting_append_list_configuration_options(
    rarch_setting_group_info_t group_info;
    rarch_setting_group_info_t subgroup_info;
    settings_t *settings = config_get_ptr();
-   global_t   *global   = global_get_ptr();
 
    START_GROUP(group_info, "Configuration Settings");
 
@@ -3732,7 +3731,6 @@ static bool setting_append_list_saving_options(
    rarch_setting_group_info_t group_info;
    rarch_setting_group_info_t subgroup_info;
    settings_t *settings = config_get_ptr();
-   global_t   *global   = global_get_ptr();
 
    START_GROUP(group_info, "Saving Settings");
 
@@ -3907,7 +3905,6 @@ static bool setting_append_list_frame_throttling_options(
    rarch_setting_group_info_t group_info;
    rarch_setting_group_info_t subgroup_info;
    settings_t *settings = config_get_ptr();
-   global_t   *global   = global_get_ptr();
 
    START_GROUP(group_info, "Frame Throttle Settings");
 
@@ -3963,7 +3960,6 @@ static bool setting_append_list_rewind_options(
    rarch_setting_group_info_t group_info;
    rarch_setting_group_info_t subgroup_info;
    settings_t *settings = config_get_ptr();
-   global_t   *global   = global_get_ptr();
 
    START_GROUP(group_info, "Rewind Settings");
 

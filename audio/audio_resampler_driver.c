@@ -146,7 +146,6 @@ done:
  **/
 static const rarch_resampler_t *find_resampler_driver(const char *ident)
 {
-   unsigned d;
    int i = find_resampler_driver_index(ident);
 
    if (i >= 0)
