@@ -416,8 +416,8 @@ int libretrodb_create_index(libretrodb_t *db,
 	struct rmsgpack_dom_value item;
 	struct rmsgpack_dom_value * field;
 	struct bintree tree;
-	libretrodb_cursor_t cur;
 	uint64_t idx_header_offset;
+	libretrodb_cursor_t cur = {0};
 	void * buff = NULL;
 	uint64_t * buff_u64 = NULL;
 	uint8_t field_size = 0;
