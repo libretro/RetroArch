@@ -46,8 +46,6 @@ size_t strlcat(char *dest, const char *source, size_t size);
 
 #endif
 
-char *rarch_strcasestr(const char *s, const char *find);
-
 #ifdef __cplusplus
 }
 #endif

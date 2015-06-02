@@ -13,6 +13,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <compat/strcasestr.h>
 #include <compat/strl.h>
 
 #include "../dir_list_special.h"
@@ -240,7 +241,7 @@ static int database_info_iterate_crc_lookup(
                entry_state_crc, db_info_entry->crc32, db_info_entry->name);
 #endif
 
-         if (rarch_strcasestr(entry_state_crc, db_info_entry->crc32))
+         if (strcasestr(entry_state_crc, db_info_entry->crc32))
             database_info_list_iterate_found_match(db_state, db, zip_entry);
       }
    }
