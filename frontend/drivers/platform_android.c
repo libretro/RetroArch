@@ -356,8 +356,7 @@ int system_property_get(const char *name, char *value)
 
 static void frontend_android_get_name(char *s, size_t len)
 {
-   int len = system_property_get("ro.product.model", s);
-   (void)len;
+   system_property_get("ro.product.model", s);
 }
 
 static void frontend_android_get_version(int32_t *major, int32_t *minor, int32_t *rel)
