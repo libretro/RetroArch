@@ -32,7 +32,6 @@
 #include "../git_version.h"
 
 #include "../performance.h"
-#include "../settings.h"
 
 #ifdef HAVE_NETWORKING
 extern char *core_buf;

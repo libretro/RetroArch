@@ -25,7 +25,6 @@
 #include "menu_navigation.h"
 
 #include "../retroarch.h"
-#include "../settings.h"
 
 #include "../input/input_autodetect.h"
 

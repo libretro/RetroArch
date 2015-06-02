@@ -21,10 +21,9 @@
 
 #include "menu.h"
 #include "menu_shader.h"
+#include "menu_setting.h"
 #include "../configuration.h"
 #include "../runloop.h"
-#include "../settings.h"
-
 /**
  * menu_shader_manager_init:
  *

@@ -18,7 +18,7 @@
 
 #include <time.h>
 
-#include "../../settings.h"
+#include "../menu_setting.h"
 
 #include "../menu_display.h"
 #include "../menu_entries_cbs.h"

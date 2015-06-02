@@ -20,7 +20,6 @@
 #include "menu_setting.h"
 
 #include "../file_ext.h"
-#include "../settings.h"
 
 #include "../gfx/video_shader_driver.h"
 

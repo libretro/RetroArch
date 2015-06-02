@@ -19,7 +19,6 @@
 #include "menu_navigation.h"
 #include "menu_setting.h"
 #include "menu_input.h"
-#include "../settings.h"
 #include "../runloop_data.h"
 #include "drivers/shared.h"
 

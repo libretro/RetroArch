@@ -14,7 +14,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "settings_list.h"
+#include "menu_settings_list.h"
 
 void settings_info_list_free(rarch_setting_info_t *list_info)
 {

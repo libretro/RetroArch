@@ -124,8 +124,6 @@ OBJ += frontend/frontend.o \
 		location/location_driver.o \
 		driver.o \
 		configuration.o \
-		settings_list.o \
-		settings.o \
 		libretro-common/dynamic/dylib.o \
 		dynamic.o \
 		dynamic_dummy.o \
@@ -341,6 +339,7 @@ ifeq ($(HAVE_MENU_COMMON), 1)
 			 menu/menu_entry.o \
 			 menu/menu_navigation.o  \
 			 menu/menu_setting.o \
+			 menu/menu_settings_list.o \
 			 menu/menu_shader.o \
 			 menu/menu_entries_cbs_ok.o \
 			 menu/menu_entries_cbs_cancel.o \

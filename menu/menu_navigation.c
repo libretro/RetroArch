@@ -27,6 +27,8 @@
 #include "menu_driver.h"
 #include "menu_setting.h"
 
+#include "../configuration.h"
+
 menu_navigation_t *menu_navigation_get_ptr(void)
 {
    menu_handle_t *menu  = menu_driver_get_ptr();

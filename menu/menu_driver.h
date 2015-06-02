@@ -27,7 +27,7 @@
 #include "menu_list.h"
 #include "menu_navigation.h"
 #include "menu_database.h"
-#include "../settings_list.h"
+#include "menu_settings_list.h"
 #include "../../libretro.h"
 
 #ifdef __cplusplus

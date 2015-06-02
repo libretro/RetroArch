@@ -21,7 +21,7 @@
 #include <retro_miscellaneous.h>
 #include <file/file_list.h>
 
-#include "../settings.h"
+#include "menu_setting.h"
 
 #ifdef __cplusplus
 extern "C" {

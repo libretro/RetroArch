@@ -20,7 +20,6 @@
 #include "menu_setting.h"
 
 #include "../performance.h"
-#include "../settings.h"
 #include "../intl/intl.h"
 
 const char axis_labels[4][128] = {
