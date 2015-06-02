@@ -231,7 +231,11 @@ uint32_t menu_entry_get_bool_value(uint32_t i)
 void menu_entry_set_bool_value(uint32_t i, uint32_t new_val)
 {
    rarch_setting_t *setting = menu_entry_get_setting(i);
-   *setting->value.boolean = new_val;
+
+   if (new_val == 0)
+      setting_set_with_string_representation(setting, "false");
+   else
+      setting_set_with_string_representation(setting, "true");
 }
 
 struct string_list *menu_entry_enum_values(uint32_t i)
@@ -317,8 +321,8 @@ int menu_entry_pathdir_set_value(uint32_t i, const char *s)
       return -1;
 
    (void)s;
+   setting_set_with_string_representation(setting, menu_path);
 
-   strlcpy(setting->value.string, menu_path, setting->size);
    menu_setting_generic(setting);
 
    menu_list_pop_stack_by_needle(menu_list, setting->name);

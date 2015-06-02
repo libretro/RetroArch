@@ -203,6 +203,12 @@ void setting_set_with_string_representation(rarch_setting_t* setting,
       case ST_ACTION:
          strlcpy(setting->value.string, value, setting->size);
          break;
+      case ST_BOOL:
+         if (!strcmp(value, "true"))
+            *setting->value.boolean = true;
+         else if (!strcmp(value, "false"))
+            *setting->value.boolean = false;
+         break;
 
          /* TODO */
       case ST_HEX:
@@ -216,8 +222,6 @@ void setting_set_with_string_representation(rarch_setting_t* setting,
       case ST_END_SUB_GROUP:
          break;
       case ST_NONE:
-         break;
-      case ST_BOOL:
          break;
       case ST_BIND:
          break;
