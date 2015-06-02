@@ -89,7 +89,8 @@ enum setting_list_flags
    SL_FLAG_RECORDING_OPTIONS     =  (1 << 21),
    SL_FLAG_FRAME_THROTTLE_OPTIONS=  (1 << 22),
    SL_FLAG_LOGGING_OPTIONS       =  (1 << 23),
-   SL_FLAG_ALL                   =  (1 << 24),
+   SL_FLAG_SAVING_OPTIONS        =  (1 << 24),
+   SL_FLAG_ALL                   =  (1 << 25),
 };
 
 #define SL_FLAG_ALL_SETTINGS (SL_FLAG_ALL - SL_FLAG_MAIN_MENU)
