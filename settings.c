@@ -3660,7 +3660,6 @@ static bool setting_append_list_general_options(
 
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
 
-
    CONFIG_BOOL(
          settings->core_specific_config,
          "core_specific_config",
@@ -3779,46 +3778,6 @@ static bool setting_append_list_general_options(
 
    END_SUB_GROUP(list, list_info);
 
-   START_SUB_GROUP(list, list_info, "Frame rewinding", group_info.name, subgroup_info);
-
-   CONFIG_BOOL(
-         settings->rewind_enable,
-         "rewind_enable",
-         "Rewind",
-         rewind_enable,
-         "OFF",
-         "ON",
-         group_info.name,
-         subgroup_info.name,
-         general_write_handler,
-         general_read_handler);
-   settings_list_current_add_cmd(list, list_info, EVENT_CMD_REWIND_TOGGLE);
-   settings_data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
-#if 0
-   CONFIG_SIZE(
-         settings->rewind_buffer_size,
-         "rewind_buffer_size",
-         "Rewind Buffer Size",
-         rewind_buffer_size,
-         group_info.name,
-         subgroup_info.name,
-         general_write_handler,
-         general_read_handler)
-#endif
-      CONFIG_UINT(
-            settings->rewind_granularity,
-            "rewind_granularity",
-            "Rewind Granularity",
-            rewind_granularity,
-            group_info.name,
-            subgroup_info.name,
-            general_write_handler,
-            general_read_handler);
-   settings_list_current_add_range(list, list_info, 1, 32768, 1, true, false);
-   settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
-
-   END_SUB_GROUP(list, list_info);
-
    START_SUB_GROUP(list, list_info, "Saving", group_info.name, subgroup_info);
 
    CONFIG_BOOL(
@@ -3927,6 +3886,63 @@ static bool setting_append_list_general_options(
          general_write_handler,
          general_read_handler);
    settings_list_current_add_range(list, list_info, 1, 10, 1.0, true, true);
+
+   END_SUB_GROUP(list, list_info);
+
+   END_GROUP(list, list_info);
+
+   return true;
+}
+
+static bool setting_append_list_rewind_options(
+      rarch_setting_t **list,
+      rarch_setting_info_t *list_info)
+{
+   rarch_setting_group_info_t group_info;
+   rarch_setting_group_info_t subgroup_info;
+   settings_t *settings = config_get_ptr();
+   global_t   *global   = global_get_ptr();
+
+   START_GROUP(group_info, "Rewind Settings");
+
+   START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
+
+
+   CONFIG_BOOL(
+         settings->rewind_enable,
+         "rewind_enable",
+         "Rewind",
+         rewind_enable,
+         "OFF",
+         "ON",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+   settings_list_current_add_cmd(list, list_info, EVENT_CMD_REWIND_TOGGLE);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
+#if 0
+   CONFIG_SIZE(
+         settings->rewind_buffer_size,
+         "rewind_buffer_size",
+         "Rewind Buffer Size",
+         rewind_buffer_size,
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler)
+#endif
+      CONFIG_UINT(
+            settings->rewind_granularity,
+            "rewind_granularity",
+            "Rewind Granularity",
+            rewind_granularity,
+            group_info.name,
+            subgroup_info.name,
+            general_write_handler,
+            general_read_handler);
+   settings_list_current_add_range(list, list_info, 1, 32768, 1, true, false);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
    END_SUB_GROUP(list, list_info);
 
@@ -6526,6 +6542,12 @@ rarch_setting_t *setting_new(unsigned mask)
    if (mask & SL_FLAG_GENERAL_OPTIONS)
    {
       if (!setting_append_list_general_options(&list, list_info))
+         goto error;
+   }
+
+   if (mask & SL_FLAG_REWIND_OPTIONS)
+   {
+      if (!setting_append_list_rewind_options(&list, list_info))
          goto error;
    }
 
