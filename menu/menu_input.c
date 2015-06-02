@@ -91,7 +91,7 @@ void menu_input_st_uint_callback(void *userdata, const char *str)
    {
       rarch_setting_t *current_setting = NULL;
       if ((current_setting = menu_setting_find(menu->keyboard.label_setting)))
-         *current_setting->value.unsigned_integer = strtoul(str, NULL, 0);
+         setting_set_with_string_representation(current_setting, str);
    }
 
    menu_input_key_end_line();
