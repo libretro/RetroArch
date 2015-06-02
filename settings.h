@@ -313,9 +313,9 @@ int setting_get_description(const char *label, char *s, size_t len);
 /**
  * setting_get_label:
  * @list               : File list on which to perform the search
- * @type_str           : String for the type to be represented on-screen as
+ * @s                  : String for the type to be represented on-screen as
  *                       a label.
- * @type_str_size      : Size of @type_str
+ * @len                : Size of @s.
  * @w                  : Width of the string (for text label representation
  *                       purposes in the menu display driver).
  * @type               : Identifier of setting.
@@ -325,8 +325,8 @@ int setting_get_description(const char *label, char *s, size_t len);
  *
  * Get associated label of a setting.
  **/
-void setting_get_label(file_list_t *list, char *type_str,
-      size_t type_str_size, unsigned *w, unsigned type, 
+void setting_get_label(file_list_t *list, char *s,
+      size_t len, unsigned *w, unsigned type, 
       const char *menu_label, const char *label, unsigned idx);
 #endif
 

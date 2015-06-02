@@ -57,8 +57,7 @@ typedef struct menu_file_list_cbs
    int (*action_down)(unsigned type, const char *label);
    void (*action_get_representation)(file_list_t* list,
          unsigned *w, unsigned type, unsigned i,
-         const char *label,
-         char *type_str, size_t type_str_size,
+         const char *label, char *s, size_t len,
          const char *entry_label,
          const char *path,
          char *path_buf, size_t path_buf_size);
