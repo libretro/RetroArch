@@ -376,7 +376,11 @@ static bool cocoagl_gfx_ctx_get_metrics(void *data, enum display_metric_types ty
     float   display_height        = display_pixel_size.height;
     float   physical_width        = display_physical_size.width;
     float   physical_height       = display_physical_size.height;
+#if MAC_OS_X_VERSION_10_6
     float   scale                 = screen.backingScaleFactor;
+#else
+	float   scale                 = 1.0f;
+#endif
     float   dpi                   = (display_width/ physical_width) * 25.4f * scale;
 #elif defined(HAVE_COCOATOUCH)
     float   scale                 = cocoagl_gfx_ctx_get_native_scale();
