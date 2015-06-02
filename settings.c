@@ -3436,7 +3436,7 @@ static bool setting_append_list_main_menu_options(
 
    CONFIG_ACTION(
          "configurations",
-         "Configurations",
+         "Configuration Files",
          group_info.name,
          subgroup_info.name);
 
