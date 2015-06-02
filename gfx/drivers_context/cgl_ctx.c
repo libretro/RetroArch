@@ -253,6 +253,8 @@ static CGSSurfaceID attach_gl_context_to_window(CGLContextObj glCtx,
     printf("cid:%d wid:%d\n", cid, wid);
  
     /* determine window size */
+    /* FIXME/TODO - CGWindowListCopyWindowInfo was introduced on OSX 10.5, 
+     * find alternative for lower versions. */
     wins = CGWindowListCopyWindowInfo(kCGWindowListOptionIncludingWindow, wid); /* expect one result only */
     win = CFArrayGetValueAtIndex(wins, 0);
     bnd = CFDictionaryGetValue(win, kCGWindowBounds);
