@@ -26,6 +26,7 @@
 #include <OpenGL/gl.h>
 
 #include <stdio.h>
+#include <stdint.h>
 #include <stdlib.h>
 
 #include "../../driver.h"
@@ -38,11 +39,13 @@ typedef int CGSConnectionID;
 typedef int CGSWindowID;
 typedef int CGSSurfaceID;
 
+typedef uint32_t _CGWindowID;
+
 /* Undocumented CGS */
 extern CGSConnectionID CGSMainConnectionID(void);
-extern CGError CGSAddSurface(CGSConnectionID cid, CGWindowID wid, CGSSurfaceID *sid);
-extern CGError CGSSetSurfaceBounds(CGSConnectionID cid, CGWindowID wid, CGSSurfaceID sid, CGRect rect);
-extern CGError CGSOrderSurface(CGSConnectionID cid, CGWindowID wid, CGSSurfaceID sid, int a, int b);
+extern CGError CGSAddSurface(CGSConnectionID cid, _CGWindowID wid, CGSSurfaceID *sid);
+extern CGError CGSSetSurfaceBounds(CGSConnectionID cid, _CGWindowID wid, CGSSurfaceID sid, CGRect rect);
+extern CGError CGSOrderSurface(CGSConnectionID cid, _CGWindowID wid, CGSSurfaceID sid, int a, int b);
 
 /* Undocumented CGL */
 extern CGLError CGLSetSurface(CGLContextObj gl, CGSConnectionID cid, CGSWindowID wid, CGSSurfaceID sid);
