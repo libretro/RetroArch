@@ -6551,13 +6551,13 @@ rarch_setting_t *setting_new(unsigned mask)
          goto error;
    }
 
-   if (mask & SL_FLAG_GENERAL_OPTIONS)
+   if (mask & SL_FLAG_VIDEO_OPTIONS)
    {
       if (!setting_append_list_video_options(&list, list_info))
          goto error;
    }
 
-   if (mask & SL_FLAG_GENERAL_OPTIONS)
+   if (mask & SL_FLAG_RECORDING_OPTIONS)
    {
       if (!setting_append_list_recording_options(&list, list_info))
          goto error;

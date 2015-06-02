@@ -86,6 +86,7 @@ enum setting_list_flags
    SL_FLAG_PLAYLIST_OPTIONS      =  (1 << 19),
    SL_FLAG_ARCHIVE_OPTIONS       =  (1 << 20),
    SL_FLAG_PATCH_OPTIONS         =  (1 << 21),
+   SL_FLAG_RECORDING_OPTIONS     =  (1 << 21),
    SL_FLAG_ALL                   =  (1 << 22),
 };
 
