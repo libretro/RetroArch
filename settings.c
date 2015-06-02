@@ -3615,6 +3615,19 @@ static bool setting_append_list_core_options(
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
 
    CONFIG_BOOL(
+         settings->load_dummy_on_core_shutdown,
+         "dummy_on_core_shutdown",
+         "Dummy On Core Shutdown",
+         load_dummy_on_core_shutdown,
+         "OFF",
+         "ON",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
+
+   CONFIG_BOOL(
          settings->core.set_supports_no_game_enable,
          "core_set_supports_no_game_enable",
          "Supports No Content Enable",
@@ -3647,18 +3660,6 @@ static bool setting_append_list_general_options(
 
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
 
-   CONFIG_BOOL(
-         settings->load_dummy_on_core_shutdown,
-         "dummy_on_core_shutdown",
-         "Dummy On Core Shutdown",
-         load_dummy_on_core_shutdown,
-         "OFF",
-         "ON",
-         group_info.name,
-         subgroup_info.name,
-         general_write_handler,
-         general_read_handler);
-   settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
    CONFIG_BOOL(
          settings->core_specific_config,
