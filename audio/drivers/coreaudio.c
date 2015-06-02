@@ -251,7 +251,7 @@ static void *coreaudio_init(const char *device,
 #endif
       goto error;
 
-#ifndef TARGET_OS_IPHONE
+#if !TARGET_OS_IPHONE
    if (device)
       choose_output_device(dev, device);
 #endif
