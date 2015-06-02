@@ -65,7 +65,7 @@ void setting_reset_setting(rarch_setting_t* setting)
          *setting->value.fraction         = setting->default_value.fraction;
          break;
       case ST_BIND:
-         setting_set_with_string_representation(setting, setting->default_value.keybind);
+         *setting->value.keybind          = *setting->default_value.keybind;
          break;
       case ST_STRING:
       case ST_PATH:
@@ -73,7 +73,8 @@ void setting_reset_setting(rarch_setting_t* setting)
          if (setting->default_value.string)
          {
             if (setting->type == ST_STRING)
-               setting_set_with_string_representation(setting, setting->default_value.string);
+               strlcpy(setting->value.string, setting->default_value.string,
+                     setting->size);
             else
                fill_pathname_expand_special(setting->value.string,
                      setting->default_value.string, setting->size);
@@ -200,7 +201,8 @@ void setting_set_with_string_representation(rarch_setting_t* setting,
       case ST_DIR:
       case ST_STRING:
       case ST_ACTION:
-      case ST_BIND:
+         strlcpy(setting->value.string, value, setting->size);
+         break;
       case ST_BOOL:
          if (!strcmp(value, "true"))
             *setting->value.boolean = true;
@@ -220,6 +222,8 @@ void setting_set_with_string_representation(rarch_setting_t* setting,
       case ST_END_SUB_GROUP:
          break;
       case ST_NONE:
+         break;
+      case ST_BIND:
          break;
    }
 
