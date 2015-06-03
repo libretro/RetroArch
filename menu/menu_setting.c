@@ -1008,12 +1008,6 @@ static int core_list_action_toggle(void *data, unsigned action, bool wraparound)
 
    return 0;
 }
-
-static void core_list_change_handler(void *data)
-{
-   (void)data;
-   event_command(EVENT_CMD_LOAD_CORE);
-}
 #endif
 
 /**
@@ -3350,25 +3344,6 @@ static void settings_data_list_current_add_flags(
    setting_add_special_callbacks(list, list_info, values);
 }
 
-
-/**
- * load_content_change_handler:
- * @data               : pointer to setting
- *
- * Function callback for 'Load Content' action's 'Change Handler'
- * function pointer.
- **/
-static void load_content_change_handler(void *data)
-{
-   (void)data;
-
-   /* This does not appear to be robust enough because sometimes I get
-    * crashes. I think it is because LOAD_CORE has not yet run. I'm not
-    * sure the best way to test for that.
-    */
-   event_command(EVENT_CMD_LOAD_CONTENT);
-}
-
 static void overlay_enable_toggle_change_handler(void *data)
 {
    rarch_setting_t *setting = (rarch_setting_t *)data;
@@ -3408,7 +3383,7 @@ static bool setting_append_list_main_menu_options(
    // needs to get the directory to browse into. It's not quite like
    // get_string_representation, but it is close.
    (*list)[list_info->index - 1].action_toggle = core_list_action_toggle;
-   (*list)[list_info->index - 1].change_handler = core_list_change_handler;
+   settings_list_current_add_cmd(list, list_info, EVENT_CMD_LOAD_CORE);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_BROWSER_ACTION);
 #endif
 
@@ -3456,7 +3431,7 @@ static bool setting_append_list_main_menu_options(
    (*list)[list_info->index - 1].size = sizeof(global->fullpath);
    (*list)[list_info->index - 1].value.string = global->fullpath;
    (*list)[list_info->index - 1].action_toggle = load_content_action_toggle;
-   (*list)[list_info->index - 1].change_handler = load_content_change_handler;
+   settings_list_current_add_cmd(list, list_info, EVENT_CMD_LOAD_CONTENT);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_BROWSER_ACTION);
 
    {
