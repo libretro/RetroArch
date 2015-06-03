@@ -337,18 +337,6 @@ static void setting_reset_setting(rarch_setting_t* setting)
 /**
  * setting_reset:
  * @settings           : pointer to settings
- *
- * Reset all settings to their default values.
- **/
-void setting_reset(rarch_setting_t* settings)
-{
-   for (; settings->type != ST_NONE; settings++)
-      setting_reset_setting(settings);
-}
-
-/**
- * setting_reset:
- * @settings           : pointer to settings
  * @name               : name of setting to search for
  *
  * Search for a setting with a specified name (@name).
