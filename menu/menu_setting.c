@@ -3257,11 +3257,9 @@ static void setting_add_special_callbacks(
       switch ((*list)[idx].type)
       {
          case ST_UINT:
-            (*list)[idx].action_start  = setting_generic_action_start_default;
             (*list)[idx].action_cancel = NULL;
             break;
          case ST_HEX:
-            (*list)[idx].action_start  = setting_generic_action_start_default;
             (*list)[idx].action_cancel = NULL;
             break;
          case ST_STRING:
