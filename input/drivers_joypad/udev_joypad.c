@@ -64,7 +64,7 @@ struct udev_joypad
    uint16_t strength[2];
    uint16_t configured_strength[2];
 
-   char *ident;
+   char ident[PATH_MAX_LENGTH];
    char *path;
    int32_t vid;
    int32_t pid;
@@ -217,9 +217,11 @@ static int udev_add_pad(struct udev_device *dev, unsigned p, int fd, const char 
    autoconfig_params_t params           = {{0}};
    settings_t *settings                 = config_get_ptr();
 
-   if (ioctl(fd, EVIOCGNAME(sizeof(settings->input.device_names[0])), pad->ident) < 0)
+   strlcpy(pad->ident, settings->input.device_names[p], sizeof(pad->ident));
+
+   if (ioctl(fd, EVIOCGNAME(sizeof(pad->ident)), pad->ident) < 0)
    {
-      RARCH_LOG("[udev]: Failed to get pad name.\n");
+      RARCH_LOG("[udev]: Failed to get pad name: %s.\n", pad->ident);
       return -1;
    }
 
@@ -364,7 +366,7 @@ static void udev_free_pad(unsigned pad, bool hotplug)
 
    free(udev_pads[pad].path);
    if (udev_pads[pad].ident)
-      *udev_pads[pad].ident = '\0';
+      udev_pads[pad].ident[0] = '\0';
 
    memset(&udev_pads[pad], 0, sizeof(udev_pads[pad]));
 
@@ -519,10 +521,7 @@ static bool udev_joypad_init(void *data)
    (void)data;
 
    for (i = 0; i < MAX_USERS; i++)
-   {
       udev_pads[i].fd = -1;
-      udev_pads[i].ident = settings->input.device_names[i];
-   }
 
    g_udev = udev_new();
    if (!g_udev)
