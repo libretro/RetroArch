@@ -96,7 +96,6 @@ int menu_setting_generic(rarch_setting_t *setting)
 
 static int setting_handler(rarch_setting_t *setting, unsigned action)
 {
-   int ret = -1;
    if (!setting)
       return -1;
 
@@ -105,43 +104,28 @@ static int setting_handler(rarch_setting_t *setting, unsigned action)
       case MENU_ACTION_UP:
       case MENU_ACTION_DOWN:
          if (setting->action_up_or_down)
-         {
-            setting->action_up_or_down(setting, action);
-            ret = 0;
-         }
+            return setting->action_up_or_down(setting, action);
          break;
       case MENU_ACTION_LEFT:
       case MENU_ACTION_RIGHT:
          if (setting->action_toggle)
-         {
-            setting->action_toggle(setting, action, true);
-            ret = 0;
-         }
+            return setting->action_toggle(setting, action, true);
          break;
       case MENU_ACTION_OK:
          if (setting->action_ok)
-         {
-            setting->action_ok(setting, action);
-            ret = 0;
-         }
+            return setting->action_ok(setting, action);
          break;
       case MENU_ACTION_CANCEL:
          if (setting->action_cancel)
-         {
-            setting->action_cancel(setting, action);
-            ret = 0;
-         }
+            return setting->action_cancel(setting, action);
          break;
       case MENU_ACTION_START:
          if (setting->action_start)
-         {
-            setting->action_start(setting);
-            ret = 0;
-         }
+            return setting->action_start(setting);
          break;
    }
 
-   return ret;
+   return -1;
 }
 
 int menu_setting_handler(rarch_setting_t *setting, unsigned action)
