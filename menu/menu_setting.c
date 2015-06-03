@@ -357,10 +357,9 @@ int menu_setting_set(unsigned type, const char *label,
 
 void menu_setting_apply_deferred(void)
 {
-   menu_handle_t   *menu    = menu_driver_get_ptr();
-   rarch_setting_t *setting = menu ? menu->list_settings : NULL;
+   rarch_setting_t *setting = menu_setting_get_ptr();
     
-   if (!menu || !setting)
+   if (!setting)
       return;
     
    for (; setting->type != ST_NONE; setting++)
@@ -3030,16 +3029,10 @@ void setting_get_label(file_list_t *list, char *s,
       size_t len, unsigned *w, unsigned type, 
       const char *menu_label, const char *label, unsigned idx)
 {
-   rarch_setting_t *setting_data = NULL;
    rarch_setting_t *setting      = NULL;
-   menu_handle_t *menu = menu_driver_get_ptr();
+   rarch_setting_t *setting_data = menu_setting_get_ptr();
 
-   if (!menu || !label)
-      return;
-
-   setting_data = (rarch_setting_t*)menu->list_settings;
-
-   if (!setting_data)
+   if (!setting_data || !label)
       return;
 
    setting = setting_find_setting(setting_data, list->list[idx].label);
