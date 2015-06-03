@@ -4874,6 +4874,7 @@ static bool setting_append_list_audio_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
    CONFIG_BOOL(
          settings->audio.mute_enable,
@@ -4933,7 +4934,6 @@ static bool setting_append_list_audio_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
-   settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
    CONFIG_UINT(
          settings->audio.latency,
@@ -4946,7 +4946,7 @@ static bool setting_append_list_audio_options(
          general_write_handler,
          general_read_handler);
    settings_list_current_add_range(list, list_info, 1, 256, 1.0, true, true);
-   settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_DEFERRED|SD_FLAG_ADVANCED);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_DEFERRED);
 
    CONFIG_FLOAT(
          settings->audio.rate_control_delta,
