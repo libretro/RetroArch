@@ -1103,16 +1103,10 @@ static int setting_action_ok_bind_defaults(void *data, unsigned action)
 
 static int setting_bool_action_ok_exit(void *data, unsigned action)
 {
-   rarch_setting_t *setting = (rarch_setting_t*)data;
-
-   if (!setting)
+   if (setting_generic_action_ok_default(data, 0) != 0)
       return -1;
 
-   if (setting->cmd_trigger.idx != EVENT_CMD_NONE)
-   {
-      event_command(setting->cmd_trigger.idx);
-      event_command(EVENT_CMD_RESUME);
-   }
+   event_command(EVENT_CMD_RESUME);
 
    return 0;
 }
