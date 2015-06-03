@@ -275,7 +275,7 @@ static bool add_device(udev_input_t *udev,
    struct stat st;
    struct input_device **tmp;
    struct input_device *device = NULL;
-   struct epoll_event event = {0};
+   struct epoll_event event    = {0};
 
    if (stat(devnode, &st) < 0)
       return false;
@@ -607,8 +607,8 @@ static void udev_input_free(void *data)
 
 static bool open_devices(udev_input_t *udev, const char *type, device_handle_cb cb)
 {
-   struct udev_list_entry *devs;
-   struct udev_list_entry *item;
+   struct udev_list_entry     *devs = NULL;
+   struct udev_list_entry     *item = NULL;
    struct udev_enumerate *enumerate = udev_enumerate_new(udev->udev);
 
    if (!enumerate)
@@ -663,9 +663,9 @@ static void restore_terminal_signal(int sig)
 
 static void disable_terminal_input(void)
 {
-   struct sigaction sa;
+   struct sigaction sa = {0};
 
-   // Avoid accidentally typing stuff
+   /* Avoid accidentally typing stuff. */
    if (!isatty(0) || oldkbmd != 0xffff)
       return;
 
@@ -689,16 +689,15 @@ static void disable_terminal_input(void)
       return;
    }
 
-   memset(&sa, 0, sizeof(sa));
    sa.sa_handler = restore_terminal_signal;
    sa.sa_flags = SA_RESTART | SA_RESETHAND;
    sigemptyset(&sa.sa_mask);
 
    // Trap some fatal signals.
    sigaction(SIGABRT, &sa, NULL);
-   sigaction(SIGBUS, &sa, NULL);
-   sigaction(SIGFPE, &sa, NULL);
-   sigaction(SIGILL, &sa, NULL);
+   sigaction(SIGBUS,  &sa, NULL);
+   sigaction(SIGFPE,  &sa, NULL);
+   sigaction(SIGILL,  &sa, NULL);
    sigaction(SIGQUIT, &sa, NULL);
    sigaction(SIGSEGV, &sa, NULL);
 
