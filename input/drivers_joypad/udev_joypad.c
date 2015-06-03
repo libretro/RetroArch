@@ -455,7 +455,6 @@ static void udev_check_device(struct udev_device *dev, const char *path, bool ho
 
    if (udev_add_pad(dev, pad, fd, path))
    {
-#ifndef IS_JOYCONFIG
       if (hotplugged)
       {
          char msg[512];
@@ -463,9 +462,6 @@ static void udev_check_device(struct udev_device *dev, const char *path, bool ho
          rarch_main_msg_queue_push(msg, 0, 60, false);
          RARCH_LOG("[udev]: %s\n", msg);
       }
-#else
-      (void)hotplugged;
-#endif
    }
    else
    {
@@ -482,12 +478,10 @@ static void udev_joypad_remove_device(const char *path)
    {
       if (udev_pads[i].path && !strcmp(udev_pads[i].path, path))
       {
-#ifndef IS_JOYCONFIG
          char msg[512];
          snprintf(msg, sizeof(msg), "Device #%u (%s) disconnected.", i, udev_pads[i].ident);
          rarch_main_msg_queue_push(msg, 0, 60, false);
          RARCH_LOG("[udev]: %s\n", msg);
-#endif
          udev_free_pad(i, true);
          break;
       }
