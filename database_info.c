@@ -31,97 +31,101 @@
 
 #include <stdint.h>
 
-static inline uint32_t djb2(const char *str)
+static INLINE uint32_t djb2(const char *str)
 {
    const unsigned char *aux = (const unsigned char*)str;
-   uint32_t hash = 5381;
+   uint32_t            hash = 5381;
 
    while ( *aux )
-   {
       hash = ( hash << 5 ) + hash + *aux++;
-   }
 
    return hash;
 }
 
-int database_info_build_query(
-      char *query, size_t len, const char *label, const char *path)
+int database_info_build_query(char *s, size_t len,
+      const char *label, const char *path)
 {
+   uint32_t value  = 0;
    bool add_quotes = true;
 
-   strlcpy(query, "{'", len);
+   strlcpy(s, "{'", len);
 
-   switch (djb2(label))
+   value = djb2(label);
+
+   switch (value)
    {
-   case 0x1c310956U: /* displaylist_parse_database_entry */
-      strlcat(query, "name", len);
-      break;
-   case 0x125e594dU: /* deferred_cursor_manager_list_rdb_entry_publisher */
-      strlcat(query, "publisher", len);
-      break;
-   case 0xcbd89be5U: /* deferred_cursor_manager_list_rdb_entry_developer */
-      strlcat(query, "developer", len);
-      break;
-   case 0x4ebaa767U: /* deferred_cursor_manager_list_rdb_entry_origin */
-      strlcat(query, "origin", len);
-      break;
-   case 0x77f9eff2U: /* deferred_cursor_manager_list_rdb_entry_franchise */
-      strlcat(query, "franchise", len);
-      break;
-   case 0x68eba20fU: /* deferred_cursor_manager_list_rdb_entry_esrb_rating */
-      strlcat(query, "esrb_rating", len);
-      break;
-   case 0x0a8e67f0U: /* deferred_cursor_manager_list_rdb_entry_bbfc_rating */
-      strlcat(query, "bbfc_rating", len);
-      break;
-   case 0x8bf6ab18U: /* deferred_cursor_manager_list_rdb_entry_elspa_rating */
-      strlcat(query, "elspa_rating", len);
-      break;
-   case 0x5fc77328U: /* deferred_cursor_manager_list_rdb_entry_pegi_rating */
-      strlcat(query, "pegi_rating", len);
-      break;
-   case 0x9866bda3U: /* deferred_cursor_manager_list_rdb_entry_enhancement_hw */
-      strlcat(query, "enhancement_hw", len);
-      break;
-   case 0x24f6172cU: /* deferred_cursor_manager_list_rdb_entry_cero_rating */
-      strlcat(query, "cero_rating", len);
-      break;
-   case 0x1c7f8a43U: /* deferred_cursor_manager_list_rdb_entry_edge_magazine_rating */
-      strlcat(query, "edge_rating", len);
-      add_quotes = false;
-      break;
-   case 0xaaeebde7U: /* deferred_cursor_manager_list_rdb_entry_edge_magazine_issue */
-      strlcat(query, "edge_issue", len);
-      add_quotes = false;
-      break;
-   case 0xbf7ff5e7U: /* deferred_cursor_manager_list_rdb_entry_famitsu_magazine_rating */
-      strlcat(query, "famitsu_rating", len);
-      add_quotes = false;
-      break;
-   case 0x2b36ce66U: /* deferred_cursor_manager_list_rdb_entry_releasemonth */
-      strlcat(query, "releasemonth", len);
-      add_quotes = false;
-      break;
-   case 0x9c7c6e91U: /* deferred_cursor_manager_list_rdb_entry_releaseyear */
-      strlcat(query, "releaseyear", len);
-      add_quotes = false;
-      break;
-   case 0xbfcba816U: /* deferred_cursor_manager_list_rdb_entry_max_users */
-      strlcat(query, "users", len);
-      add_quotes = false;
-      break;
+      case 0x1c310956U: /* displaylist_parse_database_entry */
+         strlcat(s, "name", len);
+         break;
+      case 0x125e594dU: /* deferred_cursor_manager_list_rdb_entry_publisher */
+         strlcat(s, "publisher", len);
+         break;
+      case 0xcbd89be5U: /* deferred_cursor_manager_list_rdb_entry_developer */
+         strlcat(s, "developer", len);
+         break;
+      case 0x4ebaa767U: /* deferred_cursor_manager_list_rdb_entry_origin */
+         strlcat(s, "origin", len);
+         break;
+      case 0x77f9eff2U: /* deferred_cursor_manager_list_rdb_entry_franchise */
+         strlcat(s, "franchise", len);
+         break;
+      case 0x68eba20fU: /* deferred_cursor_manager_list_rdb_entry_esrb_rating */
+         strlcat(s, "esrb_rating", len);
+         break;
+      case 0x0a8e67f0U: /* deferred_cursor_manager_list_rdb_entry_bbfc_rating */
+         strlcat(s, "bbfc_rating", len);
+         break;
+      case 0x8bf6ab18U: /* deferred_cursor_manager_list_rdb_entry_elspa_rating */
+         strlcat(s, "elspa_rating", len);
+         break;
+      case 0x5fc77328U: /* deferred_cursor_manager_list_rdb_entry_pegi_rating */
+         strlcat(s, "pegi_rating", len);
+         break;
+      case 0x9866bda3U: /* deferred_cursor_manager_list_rdb_entry_enhancement_hw */
+         strlcat(s, "enhancement_hw", len);
+         break;
+      case 0x24f6172cU: /* deferred_cursor_manager_list_rdb_entry_cero_rating */
+         strlcat(s, "cero_rating", len);
+         break;
+      case 0x1c7f8a43U: /* deferred_cursor_manager_list_rdb_entry_edge_magazine_rating */
+         strlcat(s, "edge_rating", len);
+         add_quotes = false;
+         break;
+      case 0xaaeebde7U: /* deferred_cursor_manager_list_rdb_entry_edge_magazine_issue */
+         strlcat(s, "edge_issue", len);
+         add_quotes = false;
+         break;
+      case 0xbf7ff5e7U: /* deferred_cursor_manager_list_rdb_entry_famitsu_magazine_rating */
+         strlcat(s, "famitsu_rating", len);
+         add_quotes = false;
+         break;
+      case 0x2b36ce66U: /* deferred_cursor_manager_list_rdb_entry_releasemonth */
+         strlcat(s, "releasemonth", len);
+         add_quotes = false;
+         break;
+      case 0x9c7c6e91U: /* deferred_cursor_manager_list_rdb_entry_releaseyear */
+         strlcat(s, "releaseyear", len);
+         add_quotes = false;
+         break;
+      case 0xbfcba816U: /* deferred_cursor_manager_list_rdb_entry_max_users */
+         strlcat(s, "users", len);
+         add_quotes = false;
+         break;
+      default:
+         RARCH_LOG("Unknown value: %d\n", value);
+         break;
    }
 
-   strlcat(query, "':", len);
+   strlcat(s, "':", len);
    if (add_quotes)
-      strlcat(query, "\"", len);
-   strlcat(query, path, len);
+      strlcat(s, "\"", len);
+   strlcat(s, path, len);
    if (add_quotes)
-      strlcat(query, "\"", len);
-   strlcat(query, "}", len);
+      strlcat(s, "\"", len);
+   strlcat(s, "}", len);
 
 #if 0
-   RARCH_LOG("query: %s\n", query);
+   RARCH_LOG("query: %s\n", s);
 #endif
    return 0;
 }
@@ -156,86 +160,92 @@ static int database_cursor_iterate(libretrodb_cursor_t *cur,
 
    for (i = 0; i < item.map.len; i++)
    {
+      uint32_t                 value = 0;
       struct rmsgpack_dom_value *key = &item.map.items[i].key;
       struct rmsgpack_dom_value *val = &item.map.items[i].value;
 
       if (!key || !val)
          continue;
 
-      switch (djb2(key->string.buff))
+      value = djb2(key->string.buff);
+
+      switch (value)
       {
-      case 0x7c9b0c46U: /* name */
-         db_info->name = strdup(val->string.buff);
-         break;
-      case 0x91b0c789U: /* description */
-         db_info->description = strdup(val->string.buff);
-         break;
-      case 0x5e099013U: /* publisher */
-         db_info->publisher = strdup(val->string.buff);
-         break;
-      case 0x1783d2abU: /* developer */
-         db_info->developer = strdup(val->string.buff);
-         break;
-      case 0x1315e3edU: /* origin */
-         db_info->origin = strdup(val->string.buff);
-         break;
-      case 0xc3a526b8U: /* franchise */
-         db_info->franchise = strdup(val->string.buff);
-         break;
-      case 0xede26836U: /* bbfc_rating */
-         db_info->bbfc_rating = strdup(val->string.buff);
-         break;
-      case 0x4c3fa255U: /* esrb_rating */
-         db_info->esrb_rating = strdup(val->string.buff);
-         break;
-      case 0xd9cab41eU: /* elspa_rating */
-         db_info->elspa_rating = strdup(val->string.buff);
-         break;
-      case 0x084a1772U: /* cero_rating */
-         db_info->cero_rating = strdup(val->string.buff);
-         break;
-      case 0x431b736eU: /* pegi_rating */
-         db_info->pegi_rating = strdup(val->string.buff);
-         break;
-      case 0xab612029U: /* enhancement_hw */
-         db_info->enhancement_hw = strdup(val->string.buff);
-         break;
-      case 0xd3573eabU: /* edge_magazine_review */
-         db_info->edge_magazine_review = strdup(val->string.buff);
-         break;
-      case 0xd30dc4feU: /* edge_magazine_rating */
-         db_info->edge_magazine_rating = val->uint_;
-         break;
-      case 0xa0f30d42U: /* edge_magazine_issue */
-         db_info->edge_magazine_issue = val->uint_;
-         break;
-      case 0x0a50ca62U: /* famitsu_magazine_rating */
-         db_info->famitsu_magazine_rating = val->uint_;
-         break;
-      case 0x1084ff77U: /* max_users */
-         db_info->max_users = val->uint_;
-         break;
-      case 0x790ad76cU: /* releasemonth */
-         db_info->releasemonth = val->uint_;
-         break;
-      case 0x7fd06ed7U: /* releaseyear */
-         db_info->releaseyear = val->uint_;
-         break;
-      case 0x1a4dc3ecU: /* rumble_supported */
-         db_info->rumble_supported = val->uint_;
-         break;
-      case 0xf220fc17U: /* analog_supported */
-         db_info->analog_supported = val->uint_;
-         break;
-      case 0x0b88671dU: /* crc32 */
-         db_info->crc32 = bin_to_hex_alloc((uint8_t*)val->binary.buff, val->binary.len);
-         break;
-      case 0x7c9de632U: /* sha1 */
-         db_info->sha1 = bin_to_hex_alloc((uint8_t*)val->binary.buff, val->binary.len);
-         break;
-      case 0x0b888fabU: /* md5 */
-         db_info->md5 = bin_to_hex_alloc((uint8_t*)val->binary.buff, val->binary.len);
-         break;
+         case 0x7c9b0c46U: /* name */
+            db_info->name = strdup(val->string.buff);
+            break;
+         case 0x91b0c789U: /* description */
+            db_info->description = strdup(val->string.buff);
+            break;
+         case 0x5e099013U: /* publisher */
+            db_info->publisher = strdup(val->string.buff);
+            break;
+         case 0x1783d2abU: /* developer */
+            db_info->developer = strdup(val->string.buff);
+            break;
+         case 0x1315e3edU: /* origin */
+            db_info->origin = strdup(val->string.buff);
+            break;
+         case 0xc3a526b8U: /* franchise */
+            db_info->franchise = strdup(val->string.buff);
+            break;
+         case 0xede26836U: /* bbfc_rating */
+            db_info->bbfc_rating = strdup(val->string.buff);
+            break;
+         case 0x4c3fa255U: /* esrb_rating */
+            db_info->esrb_rating = strdup(val->string.buff);
+            break;
+         case 0xd9cab41eU: /* elspa_rating */
+            db_info->elspa_rating = strdup(val->string.buff);
+            break;
+         case 0x084a1772U: /* cero_rating */
+            db_info->cero_rating = strdup(val->string.buff);
+            break;
+         case 0x431b736eU: /* pegi_rating */
+            db_info->pegi_rating = strdup(val->string.buff);
+            break;
+         case 0xab612029U: /* enhancement_hw */
+            db_info->enhancement_hw = strdup(val->string.buff);
+            break;
+         case 0xd3573eabU: /* edge_magazine_review */
+            db_info->edge_magazine_review = strdup(val->string.buff);
+            break;
+         case 0xd30dc4feU: /* edge_magazine_rating */
+            db_info->edge_magazine_rating = val->uint_;
+            break;
+         case 0xa0f30d42U: /* edge_magazine_issue */
+            db_info->edge_magazine_issue = val->uint_;
+            break;
+         case 0x0a50ca62U: /* famitsu_magazine_rating */
+            db_info->famitsu_magazine_rating = val->uint_;
+            break;
+         case 0x1084ff77U: /* max_users */
+            db_info->max_users = val->uint_;
+            break;
+         case 0x790ad76cU: /* releasemonth */
+            db_info->releasemonth = val->uint_;
+            break;
+         case 0x7fd06ed7U: /* releaseyear */
+            db_info->releaseyear = val->uint_;
+            break;
+         case 0x1a4dc3ecU: /* rumble_supported */
+            db_info->rumble_supported = val->uint_;
+            break;
+         case 0xf220fc17U: /* analog_supported */
+            db_info->analog_supported = val->uint_;
+            break;
+         case 0x0b88671dU: /* crc32 */
+            db_info->crc32 = bin_to_hex_alloc((uint8_t*)val->binary.buff, val->binary.len);
+            break;
+         case 0x7c9de632U: /* sha1 */
+            db_info->sha1 = bin_to_hex_alloc((uint8_t*)val->binary.buff, val->binary.len);
+            break;
+         case 0x0b888fabU: /* md5 */
+            db_info->md5 = bin_to_hex_alloc((uint8_t*)val->binary.buff, val->binary.len);
+            break;
+         default:
+            RARCH_LOG("Unknown value: %d\n", value);
+            break;
       }
    }
 
@@ -285,9 +295,11 @@ static int database_cursor_close(libretrodb_t *db, libretrodb_cursor_t *cur)
    return 0;
 }
 
-database_info_handle_t *database_info_init(const char *dir, enum database_type type)
+database_info_handle_t *database_info_init(const char *dir,
+      enum database_type type)
 {
-   database_info_handle_t     *db  = (database_info_handle_t*)calloc(1, sizeof(*db));
+   database_info_handle_t     *db  = (database_info_handle_t*)
+      calloc(1, sizeof(*db));
 
    if (!db)
       return NULL;
@@ -318,11 +330,12 @@ void database_info_free(database_info_handle_t *db)
 }
 
 
-database_info_list_t *database_info_list_new(const char *rdb_path, const char *query)
+database_info_list_t *database_info_list_new(
+      const char *rdb_path, const char *query)
 {
-   int ret = 0;
    libretrodb_t db;
    libretrodb_cursor_t cur;
+   int ret                                  = 0;
    unsigned k                               = 0;
    database_info_t *database_info           = NULL;
    database_info_list_t *database_info_list = NULL;
@@ -330,7 +343,9 @@ database_info_list_t *database_info_list_new(const char *rdb_path, const char *q
    if ((database_cursor_open(&db, &cur, rdb_path, query) != 0))
       return NULL;
 
-   database_info_list = (database_info_list_t*)calloc(1, sizeof(*database_info_list));
+   database_info_list = (database_info_list_t*)
+      calloc(1, sizeof(*database_info_list));
+
    if (!database_info_list)
       goto end;
 
@@ -342,7 +357,8 @@ database_info_list_t *database_info_list_new(const char *rdb_path, const char *q
       if (ret == 0)
       {
          database_info_t *db_ptr = NULL;
-         database_info = (database_info_t*)realloc(database_info, (k+1) * sizeof(database_info_t));
+         database_info = (database_info_t*)
+            realloc(database_info, (k+1) * sizeof(database_info_t));
 
          if (!database_info)
          {
