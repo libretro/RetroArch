@@ -418,7 +418,7 @@ static int read_buff(FILE *fp, size_t size, char **pbuff, uint64_t *len)
 }
 
 static int read_map(FILE *fp, uint32_t len,
-        struct rmsgpack_read_callbacks *callbacks, void *data)
+      struct rmsgpack_read_callbacks *callbacks, void *data)
 {
    int rv;
    unsigned i;

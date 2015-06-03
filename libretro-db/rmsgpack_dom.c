@@ -13,72 +13,72 @@
 
 struct dom_reader_state
 {
-	int i;
-	struct rmsgpack_dom_value *stack[MAX_DEPTH];
+   int i;
+   struct rmsgpack_dom_value *stack[MAX_DEPTH];
 };
 
 static struct rmsgpack_dom_value *dom_reader_state_pop(
       struct dom_reader_state *s)
 {
-	struct rmsgpack_dom_value *v = s->stack[s->i];
-	s->i--;
-	return v;
+   struct rmsgpack_dom_value *v = s->stack[s->i];
+   s->i--;
+   return v;
 }
 
 static void puts_i64(int64_t dec)
 {
-    signed char digits[19 + 1]; /* max i64:  9,223,372,036,854,775,807 */
-    int i;
-    uint64_t decimal = (dec < 0) ? (uint64_t)-dec : (uint64_t)+dec;
-    
-    digits[19] = '\0';
-    
-    for (i = sizeof(digits) - 2; i >= 0; i--)
-    {
-        digits[i] = decimal % 10;
-        decimal /= 10;
-    }
+   signed char digits[19 + 1]; /* max i64:  9,223,372,036,854,775,807 */
+   int i;
+   uint64_t decimal = (dec < 0) ? (uint64_t)-dec : (uint64_t)+dec;
 
-    for (i = 0; i < sizeof(digits) - 1; i++)
-        digits[i] += '0';
-    for (i = 0; i < sizeof(digits) - 2; i++)
-        if (digits[i] != '0')
-            break; /* Don't print leading zeros to the console. */
+   digits[19] = '\0';
 
-    if (dec < 0)
-        putchar('-');
-    fputs((char *)&digits[i], stdout);
+   for (i = sizeof(digits) - 2; i >= 0; i--)
+   {
+      digits[i] = decimal % 10;
+      decimal /= 10;
+   }
+
+   for (i = 0; i < sizeof(digits) - 1; i++)
+      digits[i] += '0';
+   for (i = 0; i < sizeof(digits) - 2; i++)
+      if (digits[i] != '0')
+         break; /* Don't print leading zeros to the console. */
+
+   if (dec < 0)
+      putchar('-');
+   fputs((char *)&digits[i], stdout);
 }
 
 static void puts_u64(uint64_t decimal)
 {
-    char digits[20 + 1]; /* max u64:  18,446,744,073,709,551,616 */
-    int i;
+   char digits[20 + 1]; /* max u64:  18,446,744,073,709,551,616 */
+   int i;
 
-    digits[20] = '\0';
-    for (i = sizeof(digits) - 2; i >= 0; i--)
-    {
-        digits[i] = decimal % 10;
-        decimal /= 10;
-    }
+   digits[20] = '\0';
+   for (i = sizeof(digits) - 2; i >= 0; i--)
+   {
+      digits[i] = decimal % 10;
+      decimal /= 10;
+   }
 
-    for (i = 0; i < sizeof(digits) - 1; i++)
-        digits[i] += '0';
-    for (i = 0; i < sizeof(digits) - 2; i++)
-        if (digits[i] != '0')
-            break; /* Don't print leading zeros to the console. */
+   for (i = 0; i < sizeof(digits) - 1; i++)
+      digits[i] += '0';
+   for (i = 0; i < sizeof(digits) - 2; i++)
+      if (digits[i] != '0')
+         break; /* Don't print leading zeros to the console. */
 
-    fputs(&digits[i], stdout);
+   fputs(&digits[i], stdout);
 }
 
 static int dom_reader_state_push(struct dom_reader_state *s,
       struct rmsgpack_dom_value *v)
 {
-	if ((s->i + 1) == MAX_DEPTH)
-		return -ENOMEM;
-	s->i++;
-	s->stack[s->i] = v;
-	return 0;
+   if ((s->i + 1) == MAX_DEPTH)
+      return -ENOMEM;
+   s->i++;
+   s->stack[s->i] = v;
+   return 0;
 }
 
 static int dom_read_nil(void *data)
@@ -140,7 +140,7 @@ static int dom_read_bin(void *value, uint32_t len, void *data)
    struct dom_reader_state *dom_state = (struct dom_reader_state *)data;
    struct rmsgpack_dom_value *v =
       (struct rmsgpack_dom_value*)dom_reader_state_pop(dom_state);
-   
+
    v->type = RDT_BINARY;
    v->binary.len = len;
    v->binary.buff = (char *)value;
@@ -179,40 +179,40 @@ static int dom_read_map_start(uint32_t len, void *data)
 
 static int dom_read_array_start(uint32_t len, void *data)
 {
-	unsigned i;
-	struct dom_reader_state *dom_state = (struct dom_reader_state *)data;
-	struct rmsgpack_dom_value *v       = dom_reader_state_pop(dom_state);
-	struct rmsgpack_dom_value *items   = NULL;
+   unsigned i;
+   struct dom_reader_state *dom_state = (struct dom_reader_state *)data;
+   struct rmsgpack_dom_value *v       = dom_reader_state_pop(dom_state);
+   struct rmsgpack_dom_value *items   = NULL;
 
-	v->type        = RDT_ARRAY;
-	v->array.len   = len;
-	v->array.items = NULL;
+   v->type        = RDT_ARRAY;
+   v->array.len   = len;
+   v->array.items = NULL;
 
-	items          = (struct rmsgpack_dom_value *)calloc(len, sizeof(struct rmsgpack_dom_pair));
+   items          = (struct rmsgpack_dom_value *)calloc(len, sizeof(struct rmsgpack_dom_pair));
 
-	if (!items)
-		return -ENOMEM;
+   if (!items)
+      return -ENOMEM;
 
-	v->array.items = items;
+   v->array.items = items;
 
-	for (i = 0; i < len; i++)
+   for (i = 0; i < len; i++)
    {
       if (dom_reader_state_push(dom_state, &items[i]) < 0)
          return -ENOMEM;
    }
 
-	return 0;
+   return 0;
 }
 
 static struct rmsgpack_read_callbacks dom_reader_callbacks = {
-	dom_read_nil,
-	dom_read_bool,
-	dom_read_int,
-	dom_read_uint,
-	dom_read_string,
-	dom_read_bin,
-	dom_read_map_start,
-	dom_read_array_start
+   dom_read_nil,
+   dom_read_bool,
+   dom_read_int,
+   dom_read_uint,
+   dom_read_string,
+   dom_read_bin,
+   dom_read_map_start,
+   dom_read_array_start
 };
 
 void rmsgpack_dom_value_free(struct rmsgpack_dom_value *v)
@@ -268,7 +268,7 @@ struct rmsgpack_dom_value *rmsgpack_dom_value_map_value(
 int rmsgpack_dom_value_cmp(
       const struct rmsgpack_dom_value *a,
       const struct rmsgpack_dom_value *b
-)
+      )
 {
    int rv;
    unsigned i;
