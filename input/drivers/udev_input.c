@@ -273,8 +273,8 @@ static bool add_device(udev_input_t *udev,
 {
    int fd;
    struct input_device **tmp;
-   struct stat st              = {0};
    struct input_device *device = NULL;
+   struct stat st              = {0};
    struct epoll_event event    = {0};
 
    if (stat(devnode, &st) < 0)
@@ -337,14 +337,14 @@ static void udev_input_remove_device(udev_input_t *udev, const char *devnode)
 
    for (i = 0; i < udev->num_devices; i++)
    {
-      if (!strcmp(devnode, udev->devices[i]->devnode))
-      {
-         close(udev->devices[i]->fd);
-         free(udev->devices[i]);
-         memmove(udev->devices + i, udev->devices + i + 1,
-               (udev->num_devices - (i + 1)) * sizeof(*udev->devices));
-         udev->num_devices--;
-      }
+      if (strcmp(devnode, udev->devices[i]->devnode) != 0)
+         continue;
+
+      close(udev->devices[i]->fd);
+      free(udev->devices[i]);
+      memmove(udev->devices + i, udev->devices + i + 1,
+            (udev->num_devices - (i + 1)) * sizeof(*udev->devices));
+      udev->num_devices--;
    }
 }
 

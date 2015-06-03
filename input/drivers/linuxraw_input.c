@@ -14,20 +14,19 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../driver.h"
-
 #include <sys/ioctl.h>
 #include <linux/input.h>
 #include <linux/kd.h>
 #include <termios.h>
-#include <unistd.h>
 #include <signal.h>
+
 #include "../../general.h"
+
 #include "../input_keymaps.h"
 #include "../input_common.h"
 #include "../input_joypad.h"
 
-static long oldKbmd = 0xffff;
+static long oldKbmd                = 0xffff;
 static bool linuxraw_stdin_claimed = false;
 static struct termios oldTerm, newTerm;
 
@@ -80,11 +79,11 @@ static void *linuxraw_input_init(void)
    if (oldKbmd == 0xffff)
    {
       tcgetattr(0, &oldTerm);
-      newTerm = oldTerm;
-      newTerm.c_lflag &= ~(ECHO | ICANON | ISIG);
-      newTerm.c_iflag &= ~(ISTRIP | IGNCR | ICRNL | INLCR | IXOFF | IXON);
-      newTerm.c_cc[VMIN] = 0;
-      newTerm.c_cc[VTIME] = 0;
+      newTerm              = oldTerm;
+      newTerm.c_lflag     &= ~(ECHO | ICANON | ISIG);
+      newTerm.c_iflag     &= ~(ISTRIP | IGNCR | ICRNL | INLCR | IXOFF | IXON);
+      newTerm.c_cc[VMIN]   = 0;
+      newTerm.c_cc[VTIME]  = 0;
 
       if (ioctl(0, KDGKBMODE, &oldKbmd) != 0)
       {
@@ -109,9 +108,9 @@ static void *linuxraw_input_init(void)
    /* Trap some standard termination codes so we 
     * can restore the keyboard before we lose control. */
    sigaction(SIGABRT, &sa, NULL);
-   sigaction(SIGBUS, &sa, NULL);
-   sigaction(SIGFPE, &sa, NULL);
-   sigaction(SIGILL, &sa, NULL);
+   sigaction(SIGBUS,  &sa, NULL);
+   sigaction(SIGFPE,  &sa, NULL);
+   sigaction(SIGILL,  &sa, NULL);
    sigaction(SIGQUIT, &sa, NULL);
    sigaction(SIGSEGV, &sa, NULL);
 
