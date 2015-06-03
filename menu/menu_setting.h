@@ -206,38 +206,7 @@ typedef struct rarch_setting
 }  rarch_setting_t;
 
 
-bool settings_list_append(rarch_setting_t **list,
-      rarch_setting_info_t *list_info, rarch_setting_t value);
-
-void settings_list_current_add_flags(
-      rarch_setting_t **list,
-      rarch_setting_info_t *list_info,
-      unsigned values);
-
-void settings_list_current_add_bind_type(
-      rarch_setting_t **list,
-      rarch_setting_info_t *list_info,
-      unsigned type);
-
-void settings_list_current_add_range(
-      rarch_setting_t **list,
-      rarch_setting_info_t *list_info,
-      float min, float max, float step,
-      bool enforce_minrange_enable, bool enforce_maxrange_enable);
-
-void settings_list_current_add_values(
-      rarch_setting_t **list,
-      rarch_setting_info_t *list_info,
-      const char *values);
-
-void settings_list_current_add_cmd(
-      rarch_setting_t **list,
-      rarch_setting_info_t *list_info,
-      enum event_command values);
-
 void settings_list_free(rarch_setting_t *list);
-
-rarch_setting_t *settings_list_new(unsigned size);
 
 void menu_setting_apply_deferred(void);
 

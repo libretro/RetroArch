@@ -44,7 +44,7 @@ static void settings_info_list_free(rarch_setting_info_t *list_info)
    list_info = NULL;
 }
 
-bool settings_list_append(rarch_setting_t **list,
+static bool settings_list_append(rarch_setting_t **list,
       rarch_setting_info_t *list_info, rarch_setting_t value)
 {
    if (!list || !*list || !list_info)
@@ -68,7 +68,7 @@ static void null_write_handler(void *data)
    (void)data;
 }
 
-void settings_list_current_add_bind_type(
+static void settings_list_current_add_bind_type(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info,
       unsigned type)
@@ -77,7 +77,7 @@ void settings_list_current_add_bind_type(
    (*list)[idx].bind_type = type;
 }
 
-void settings_list_current_add_flags(
+static void settings_list_current_add_flags(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info,
       unsigned values)
@@ -92,7 +92,7 @@ void settings_list_current_add_flags(
    }
 }
 
-void settings_list_current_add_range(
+static void settings_list_current_add_range(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info,
       float min, float max, float step,
@@ -109,7 +109,7 @@ void settings_list_current_add_range(
    settings_list_current_add_flags(list, list_info, SD_FLAG_HAS_RANGE);
 }
 
-void settings_list_current_add_values(
+static void settings_list_current_add_values(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info,
       const char *values)
@@ -118,7 +118,7 @@ void settings_list_current_add_values(
    (*list)[idx].values = values;
 }
 
-void settings_list_current_add_cmd(
+static void settings_list_current_add_cmd(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info,
       enum event_command values)
@@ -133,7 +133,7 @@ void settings_list_free(rarch_setting_t *list)
       free(list);
 }
 
-rarch_setting_t *settings_list_new(unsigned size)
+static rarch_setting_t *settings_list_new(unsigned size)
 {
    rarch_setting_t *list = (rarch_setting_t*)calloc(size, sizeof(*list));
    if (!list)
