@@ -663,7 +663,7 @@ static void restore_terminal_signal(int sig)
 
 static void disable_terminal_input(void)
 {
-   struct sigaction sa = {0};
+   struct sigaction sa = {{0}};
 
    /* Avoid accidentally typing stuff. */
    if (!isatty(0) || oldkbmd != 0xffff)
