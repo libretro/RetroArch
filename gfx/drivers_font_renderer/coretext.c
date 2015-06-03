@@ -293,4 +293,5 @@ font_renderer_driver_t coretext_font_renderer = {
   font_renderer_ct_free,
   font_renderer_ct_get_default_font,
   "coretext",
+  NULL, /*get_line_height*/
 };
