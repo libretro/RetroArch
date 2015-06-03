@@ -177,7 +177,7 @@ static int udev_find_vacant_pad(void)
 
 static int udev_open_joystick(const char *path)
 {
-   unsigned long evbit[NBITS(EV_MAX)] = {0};
+   unsigned long evbit[NBITS(EV_MAX)]   = {0};
    unsigned long keybit[NBITS(KEY_MAX)] = {0};
    unsigned long absbit[NBITS(ABS_MAX)] = {0};
    int fd = open(path, O_RDWR | O_NONBLOCK);
@@ -206,12 +206,13 @@ static bool udev_add_pad(struct udev_device *dev, unsigned p, int fd, const char
    int i;
    const char *buf;
    struct stat st;
+   unsigned buttons                     = 0;
+   unsigned axes                        = 0;
    struct udev_device *parent           = NULL;
    struct udev_joypad *pad              = (struct udev_joypad*)&udev_pads[p];
    unsigned long keybit[NBITS(KEY_MAX)] = {0};
    unsigned long absbit[NBITS(ABS_MAX)] = {0};
    unsigned long ffbit[NBITS(FF_MAX)]   = {0};
-   unsigned buttons = 0, axes = 0;
    autoconfig_params_t params           = {{0}};
    settings_t *settings                 = config_get_ptr();
 
