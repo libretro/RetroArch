@@ -206,14 +206,14 @@ static bool udev_add_pad(struct udev_device *dev, unsigned p, int fd, const char
    int i;
    const char *buf;
    struct stat st;
-   struct udev_device *parent;
-   struct udev_joypad *pad = (struct udev_joypad*)&udev_pads[p];
+   struct udev_device *parent           = NULL;
+   struct udev_joypad *pad              = (struct udev_joypad*)&udev_pads[p];
    unsigned long keybit[NBITS(KEY_MAX)] = {0};
    unsigned long absbit[NBITS(ABS_MAX)] = {0};
    unsigned long ffbit[NBITS(FF_MAX)]   = {0};
    unsigned buttons = 0, axes = 0;
-   settings_t *settings = config_get_ptr();
-   autoconfig_params_t params = {{0}};
+   autoconfig_params_t params           = {{0}};
+   settings_t *settings                 = config_get_ptr();
 
    if (ioctl(fd, EVIOCGNAME(sizeof(settings->input.device_names[0])), pad->ident) < 0)
    {
@@ -237,7 +237,6 @@ static bool udev_add_pad(struct udev_device *dev, unsigned p, int fd, const char
 
    if (fstat(fd, &st) < 0)
       return false;
-
 
    if ((ioctl(fd, EVIOCGBIT(EV_KEY, sizeof(keybit)), keybit) < 0) ||
             (ioctl(fd, EVIOCGBIT(EV_ABS, sizeof(absbit)), absbit) < 0))
@@ -276,8 +275,8 @@ static bool udev_add_pad(struct udev_device *dev, unsigned p, int fd, const char
    }
 
    pad->device = st.st_rdev;
-   pad->fd = fd;
-   pad->path = strdup(path);
+   pad->fd     = fd;
+   pad->path   = strdup(path);
 
    if (*pad->ident)
    {
