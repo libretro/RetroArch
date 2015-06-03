@@ -235,7 +235,6 @@ int menu_action_handle_setting(rarch_setting_t *setting,
       unsigned type, unsigned action, bool wraparound)
 {
    menu_displaylist_info_t info = {0};
-   menu_handle_t *menu = menu_driver_get_ptr();
 
    if (!setting)
       return -1;
@@ -245,6 +244,8 @@ int menu_action_handle_setting(rarch_setting_t *setting,
       case ST_PATH:
          if (action == MENU_ACTION_OK)
          {
+            menu_handle_t *menu = menu_driver_get_ptr();
+
             info.list          = menu->menu_list->menu_stack;
             info.type          = type;
             info.directory_ptr = menu->navigation.selection_ptr;
