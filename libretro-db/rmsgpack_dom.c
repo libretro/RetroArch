@@ -28,11 +28,11 @@ static struct rmsgpack_dom_value *dom_reader_state_pop(
 static void puts_i64(int64_t dec)
 {
     signed char digits[19 + 1]; /* max i64:  9,223,372,036,854,775,807 */
-    uint64_t decimal;
-    register int i;
-
-    decimal = (dec < 0) ? (uint64_t)-dec : (uint64_t)+dec;
+    int i;
+    uint64_t decimal = (dec < 0) ? (uint64_t)-dec : (uint64_t)+dec;
+    
     digits[19] = '\0';
+    
     for (i = sizeof(digits) - 2; i >= 0; i--)
     {
         digits[i] = decimal % 10;
@@ -53,7 +53,7 @@ static void puts_i64(int64_t dec)
 static void puts_u64(uint64_t decimal)
 {
     char digits[20 + 1]; /* max u64:  18,446,744,073,709,551,616 */
-    register int i;
+    int i;
 
     digits[20] = '\0';
     for (i = sizeof(digits) - 2; i >= 0; i--)
@@ -184,11 +184,11 @@ static int dom_read_array_start(uint32_t len, void *data)
 	struct rmsgpack_dom_value *v       = dom_reader_state_pop(dom_state);
 	struct rmsgpack_dom_value *items   = NULL;
 
-	v->type = RDT_ARRAY;
-	v->array.len = len;
+	v->type        = RDT_ARRAY;
+	v->array.len   = len;
 	v->array.items = NULL;
 
-	items = (struct rmsgpack_dom_value *)calloc(len, sizeof(struct rmsgpack_dom_pair));
+	items          = (struct rmsgpack_dom_value *)calloc(len, sizeof(struct rmsgpack_dom_pair));
 
 	if (!items)
 		return -ENOMEM;
@@ -284,11 +284,11 @@ int rmsgpack_dom_value_cmp(
       case RDT_NULL:
          return 0;
       case RDT_BOOL:
-         return a->bool_ == b->bool_ ? 0 : 1;
+         return (a->bool_ == b->bool_) ? 0 : 1;
       case RDT_INT:
-         return a->int_ == b->int_ ? 0 : 1;
+         return (a->int_ == b->int_) ? 0 : 1;
       case RDT_UINT:
-         return a->uint_ == b->uint_ ? 0 : 1;
+         return (a->uint_ == b->uint_) ? 0 : 1;
       case RDT_STRING:
          if (a->string.len != b->string.len)
             return 1;
@@ -381,7 +381,7 @@ void rmsgpack_dom_value_print(struct rmsgpack_dom_value *obj)
 int rmsgpack_dom_write(FILE *fp, const struct rmsgpack_dom_value *obj)
 {
    unsigned i;
-   int rv = 0;
+   int rv      = 0;
    int written = 0;
 
    switch (obj->type)
@@ -430,10 +430,9 @@ int rmsgpack_dom_write(FILE *fp, const struct rmsgpack_dom_value *obj)
 
 int rmsgpack_dom_read(FILE *fp, struct rmsgpack_dom_value *out)
 {
-   struct dom_reader_state s;
-   int rv = 0;
+   struct dom_reader_state s = {0};
+   int rv                    = 0;
 
-   s.i        = 0;
    s.stack[0] = out;
 
    rv = rmsgpack_read(fp, &dom_reader_callbacks, &s);

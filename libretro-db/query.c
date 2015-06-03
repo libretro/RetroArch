@@ -185,9 +185,9 @@ static struct buffer parse_argument(struct buffer buff, struct argument *arg,
 static struct rmsgpack_dom_value is_true(struct rmsgpack_dom_value input,
         unsigned argc, const struct argument *argv)
 {
-   struct rmsgpack_dom_value res;
+   struct rmsgpack_dom_value res = {0};
 
-   res.type = RDT_BOOL;
+   res.type  = RDT_BOOL;
    res.bool_ = 0;
 
    if (argc > 0 || input.type != RDT_BOOL)
@@ -201,8 +201,8 @@ static struct rmsgpack_dom_value is_true(struct rmsgpack_dom_value input,
 static struct rmsgpack_dom_value equals(struct rmsgpack_dom_value input,
         unsigned argc, const struct argument * argv)
 {
-   struct rmsgpack_dom_value res;
    struct argument arg;
+   struct rmsgpack_dom_value res = {0};
 
    res.type = RDT_BOOL;
 
@@ -230,8 +230,8 @@ static struct rmsgpack_dom_value equals(struct rmsgpack_dom_value input,
 static struct rmsgpack_dom_value operator_or(struct rmsgpack_dom_value input,
         unsigned argc, const struct argument * argv)
 {
-   struct rmsgpack_dom_value res;
    unsigned i;
+   struct rmsgpack_dom_value res = {0};
 
    res.type = RDT_BOOL;
    res.bool_ = 0;
@@ -258,8 +258,8 @@ static struct rmsgpack_dom_value operator_or(struct rmsgpack_dom_value input,
 static struct rmsgpack_dom_value between(struct rmsgpack_dom_value input,
       unsigned argc, const struct argument * argv)
 {
-   struct rmsgpack_dom_value res;
-   unsigned i = 0;
+    struct rmsgpack_dom_value res = {0};
+   unsigned i                     = 0;
 
    res.type = RDT_BOOL;
    res.bool_ = 0;
@@ -291,8 +291,8 @@ static struct rmsgpack_dom_value between(struct rmsgpack_dom_value input,
 static struct rmsgpack_dom_value operator_and(struct rmsgpack_dom_value input,
       unsigned argc, const struct argument * argv)
 {
-   struct rmsgpack_dom_value res;
    unsigned i;
+   struct rmsgpack_dom_value res = {0};
 
    res.type = RDT_BOOL;
    res.bool_ = 0;
@@ -320,8 +320,8 @@ static struct rmsgpack_dom_value operator_and(struct rmsgpack_dom_value input,
 static struct rmsgpack_dom_value q_glob(struct rmsgpack_dom_value input,
       unsigned argc, const struct argument * argv)
 {
-   struct rmsgpack_dom_value res;
    unsigned i = 0;
+   struct rmsgpack_dom_value res = {0};
 
    res.type = RDT_BOOL;
    res.bool_ = 0;
@@ -346,9 +346,9 @@ static struct rmsgpack_dom_value all_map(struct rmsgpack_dom_value input,
       unsigned argc, const struct argument *argv)
 {
    unsigned i;
-   struct rmsgpack_dom_value res;
    struct argument arg;
    struct rmsgpack_dom_value nil_value;
+   struct rmsgpack_dom_value res = {0};
    struct rmsgpack_dom_value *value = NULL;
 
    nil_value.type = RDT_NULL;
@@ -405,8 +405,6 @@ struct registered_func registered_functions[100] = {
 
 static struct buffer chomp(struct buffer buff)
 {
-   off_t i = 0;
-   (void)i;
    for (; buff.offset < buff.len && isspace(buff.data[buff.offset]); buff.offset++);
    return buff;
 }
@@ -616,7 +614,7 @@ static struct buffer parse_method_call(struct buffer buff,
    unsigned i;
    struct argument args[MAX_ARGS];
    unsigned argi = 0;
-   struct registered_func * rf = registered_functions;
+   struct registered_func *rf = registered_functions;
 
    invocation->func = NULL;
 
@@ -845,7 +843,7 @@ static struct buffer parse_argument(struct buffer buff,
 void libretrodb_query_free(void *q)
 {
 	unsigned i;
-	struct query * real_q = (struct query*)q;
+	struct query *real_q = (struct query*)q;
 
 	real_q->ref_count--;
 	if (real_q->ref_count > 0)
@@ -859,12 +857,10 @@ void *libretrodb_query_compile(libretrodb_t *db,
       const char *query, size_t buff_len, const char **error)
 {
    struct buffer buff;
-   struct query *q = (struct query*)malloc(sizeof(struct query));
+   struct query *q = (struct query*)calloc(1, sizeof(*q));
 
    if (!q)
       goto clean;
-
-   memset(q, 0, sizeof(struct query));
 
    q->ref_count = 1;
    buff.data    = query;

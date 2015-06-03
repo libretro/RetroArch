@@ -49,8 +49,7 @@ static int libretrodb_write_metadata(FILE *fp, libretrodb_metadata_t *md)
 static int validate_document(const struct rmsgpack_dom_value * doc)
 {
    unsigned i;
-   struct rmsgpack_dom_value key;
-   struct rmsgpack_dom_value value;
+   struct rmsgpack_dom_value key, value;
    int rv = 0;
 
    if (doc->type != RDT_MAP)
@@ -58,7 +57,7 @@ static int validate_document(const struct rmsgpack_dom_value * doc)
 
    for (i = 0; i < doc->map.len; i++)
    {
-      key = doc->map.items[i].key;
+      key   = doc->map.items[i].key;
       value = doc->map.items[i].value;
 
       if (key.type != RDT_STRING)
@@ -156,9 +155,9 @@ void libretrodb_close(libretrodb_t *db)
 
 int libretrodb_open(const char *path, libretrodb_t *db)
 {
+   int rv;
    libretrodb_header_t header;
    libretrodb_metadata_t md;
-   int rv;
    FILE *fp = fopen(path, "rb");
 
    if (fp == NULL)
@@ -188,9 +187,9 @@ int libretrodb_open(const char *path, libretrodb_t *db)
       goto error;
    }
 
-   db->count = md.count;
+   db->count              = md.count;
    db->first_index_offset = flseek(fp, 0, SEEK_CUR);
-   db->fp = fp;
+   db->fp                 = fp;
    return 0;
 error:
    fclose(fp);
@@ -250,22 +249,22 @@ int libretrodb_find_entry(libretrodb_t *db, const char *index_name,
 {
    libretrodb_index_t idx;
    int rv;
-   void * buff;
    uint64_t offset;
+   void *buff = NULL;
    ssize_t bufflen, nread = 0;
 
    if (libretrodb_find_index(db, index_name, &idx) < 0)
       return -1;
 
    bufflen = idx.next;
-   buff = malloc(bufflen);
+   buff    = malloc(bufflen);
 
    if (!buff)
       return -ENOMEM;
 
    while (nread < bufflen)
    {
-      void * buff_ = (uint64_t *)buff + nread;
+      void *buff_ = (uint64_t *)buff + nread;
       rv = fread(buff_, 1, bufflen - nread, db->fp);
 
       if (rv <= 0)
@@ -282,12 +281,7 @@ int libretrodb_find_entry(libretrodb_t *db, const char *index_name,
    if (rv == 0)
       flseek(db->fp, offset, SEEK_SET);
 
-   rv = rmsgpack_dom_read(db->fp, out);
-
-   if (rv < 0)
-      return rv;
-
-   return rv;
+   return rmsgpack_dom_read(db->fp, out);
 }
 
 /**
@@ -346,15 +340,15 @@ void libretrodb_cursor_close(libretrodb_cursor_t *cursor)
       return;
 
 	fclose(cursor->fp);
+    
+    if (cursor->query)
+        libretrodb_query_free(cursor->query);
+    
 	cursor->is_valid = 0;
-	cursor->fp = NULL;
-	cursor->eof = 1;
-	cursor->db = NULL;
-
-	if (cursor->query)
-		libretrodb_query_free(cursor->query);
-
-	cursor->query = NULL;
+	cursor->fp       = NULL;
+	cursor->eof      = 1;
+	cursor->db       = NULL;
+	cursor->query    = NULL;
 }
 
 /**
@@ -370,19 +364,17 @@ void libretrodb_cursor_close(libretrodb_cursor_t *cursor)
 int libretrodb_cursor_open(libretrodb_t *db, libretrodb_cursor_t *cursor,
       libretrodb_query_t *q)
 {
-#ifdef _WIN32
    cursor->fp = fopen(db->path, "rb");
-#else
-   cursor->fp = fopen(db->path, "r");
-#endif
 
    if (cursor->fp == NULL)
       return -errno;
 
-   cursor->db = db;
+   cursor->db       = db;
    cursor->is_valid = 1;
+    
    libretrodb_cursor_reset(cursor);
-   cursor->query = q;
+    
+   cursor->query    = q;
 
    if (q)
       libretrodb_query_inc_ref(q);
@@ -392,18 +384,18 @@ int libretrodb_cursor_open(libretrodb_t *db, libretrodb_cursor_t *cursor,
 
 static int node_iter(void * value, void * ctx)
 {
-	struct node_iter_ctx *nictx = (struct node_iter_ctx*)ctx;
-  size_t size = nictx->idx->key_size + sizeof(uint64_t);
+   struct node_iter_ctx *nictx = (struct node_iter_ctx*)ctx;
+   size_t size = nictx->idx->key_size + sizeof(uint64_t);
 
-	if (fwrite(value, 1, size, nictx->db->fp) == size)
-		return 0;
+   if (fwrite(value, 1, size, nictx->db->fp) == size)
+      return 0;
 
-	return -1;
+   return -1;
 }
 
 static uint64_t libretrodb_tell(libretrodb_t *db)
 {
-	return ftello(db->fp);
+   return ftello(db->fp);
 }
 
 int libretrodb_create_index(libretrodb_t *db,
@@ -414,14 +406,14 @@ int libretrodb_create_index(libretrodb_t *db,
 	struct rmsgpack_dom_value key;
 	libretrodb_index_t idx;
 	struct rmsgpack_dom_value item;
-	struct rmsgpack_dom_value * field;
+	struct rmsgpack_dom_value *field;
 	struct bintree tree;
 	uint64_t idx_header_offset;
 	libretrodb_cursor_t cur = {0};
-	void * buff = NULL;
-	uint64_t * buff_u64 = NULL;
+	void *buff         = NULL;
+	uint64_t *buff_u64 = NULL;
 	uint8_t field_size = 0;
-	uint64_t item_loc = libretrodb_tell(db);
+	uint64_t item_loc  = libretrodb_tell(db);
 
 	bintree_new(&tree, node_compare, &field_size);
 
@@ -431,11 +423,11 @@ int libretrodb_create_index(libretrodb_t *db,
 		goto clean;
 	}
 
-	key.type = RDT_STRING;
-	key.string.len = strlen(field_name);
+	key.type        = RDT_STRING;
+	key.string.len  = strlen(field_name);
 
 	/* We know we aren't going to change it */
-	key.string.buff = (char *) field_name;
+	key.string.buff = (char*)field_name;
 
 	while (libretrodb_cursor_read_item(&cur, &item) == 0)
    {
@@ -512,11 +504,11 @@ int libretrodb_create_index(libretrodb_t *db,
 
 	idx.name[49] = '\0';
 	idx.key_size = field_size;
-	idx.next = db->count * (field_size + sizeof(uint64_t));
+	idx.next     = db->count * (field_size + sizeof(uint64_t));
 	libretrodb_write_index_header(db->fp, &idx);
 
-	nictx.db = db;
-	nictx.idx = &idx;
+	nictx.db     = db;
+	nictx.idx    = &idx;
 	bintree_iterate(&tree, node_iter, &nictx);
 	bintree_free(&tree);
 clean:
