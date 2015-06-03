@@ -244,11 +244,10 @@ static bool udev_set_rumble(unsigned i, enum retro_rumble_effect effect, uint16_
    /* It seems that we can update strength with EVIOCSFF atomically. */
    if ((!!strength) != (!!old_strength))
    {
-      struct input_event play;
+      struct input_event play = {{0}};
 
-      memset(&play, 0, sizeof(play));
-      play.type = EV_FF;
-      play.code = pad->effects[effect];
+      play.type  = EV_FF;
+      play.code  = pad->effects[effect];
       play.value = !!strength;
 
       if (write(pad->fd, &play, sizeof(play)) < (ssize_t)sizeof(play))
@@ -320,6 +319,7 @@ static void udev_free_pad(unsigned pad, bool hotplug)
    free(udev_pads[pad].path);
    if (udev_pads[pad].ident)
       *udev_pads[pad].ident = '\0';
+
    memset(&udev_pads[pad], 0, sizeof(udev_pads[pad]));
 
    udev_pads[pad].fd    = -1;
