@@ -339,6 +339,7 @@ ifeq ($(HAVE_MENU_COMMON), 1)
 			 menu/menu_entry.o \
 			 menu/menu_navigation.o  \
 			 menu/menu_setting.o \
+			 menu/menu_settings_list.o \
 			 menu/menu_shader.o \
 			 menu/menu_entries_cbs_ok.o \
 			 menu/menu_entries_cbs_cancel.o \

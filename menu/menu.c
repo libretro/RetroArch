@@ -202,8 +202,7 @@ static void menu_free_list(menu_handle_t *menu)
    if (!menu)
       return;
 
-   if (menu->list_settings)
-      free(menu->list_settings);
+   settings_list_free(menu->list_settings);
    menu_list_free(menu->menu_list);
    menu->menu_list     = NULL;
    menu->list_settings = NULL;

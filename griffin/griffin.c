@@ -714,6 +714,7 @@ MENU
 #include "../menu/menu.c"
 #include "../menu/menu_entry.c"
 #include "../menu/menu_setting.c"
+#include "../menu/menu_settings_list.c"
 #include "../menu/menu_list.c"
 #include "../menu/menu_entries_cbs_ok.c"
 #include "../menu/menu_entries_cbs_cancel.c"
