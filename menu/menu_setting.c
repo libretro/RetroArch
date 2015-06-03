@@ -1451,12 +1451,10 @@ static void setting_get_string_representation_uint_user_language(void *data,
       "Chinese (Traditional)",
       "Chinese (Simplified)"
    };
-   rarch_setting_t *setting  = (rarch_setting_t*)data;
    settings_t      *settings = config_get_ptr();
-   if (!setting)
-      return;
 
-   strlcpy(s, modes[settings->user_language], len);
+   if (settings)
+      strlcpy(s, modes[settings->user_language], len);
 }
 
 static void setting_get_string_representation_uint_libretro_log_level(void *data,
@@ -2971,7 +2969,7 @@ void setting_get_label(file_list_t *list, char *s,
    rarch_setting_t *setting      = NULL;
    menu_handle_t *menu = menu_driver_get_ptr();
 
-   if (!menu || !menu->menu_list || !label)
+   if (!menu || !label)
       return;
 
    setting_data = (rarch_setting_t*)menu->list_settings;
