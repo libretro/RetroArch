@@ -36,12 +36,12 @@ static void menu_action_setting_disp_set_label_cheat_num_passes(
       char *s, size_t len,
       const char *entry_label,
       const char *path,
-      char *path_buf, size_t path_buf_size)
+      char *s2, size_t len2)
 {
    global_t *global = global_get_ptr();
 
    *w = 19;
-   strlcpy(path_buf, path, path_buf_size);
+   strlcpy(s2, path, len2);
    snprintf(s, len, "%u", global->cheat->buf_size);
 }
 
@@ -52,12 +52,12 @@ static void menu_action_setting_disp_set_label_remap_file_load(
       char *s, size_t len,
       const char *entry_label,
       const char *path,
-      char *path_buf, size_t path_buf_size)
+      char *s2, size_t len2)
 {
    settings_t *settings = config_get_ptr();
 
    *w = 19;
-   strlcpy(path_buf, path, path_buf_size);
+   strlcpy(s2, path, len2);
    fill_pathname_base(s, settings->input.remapping_path,
          len);
 }
@@ -69,12 +69,12 @@ static void menu_action_setting_disp_set_label_configurations(
       char *s, size_t len,
       const char *entry_label,
       const char *path,
-      char *path_buf, size_t path_buf_size)
+      char *s2, size_t len2)
 {
    global_t *global = global_get_ptr();
 
    *w = 19;
-   strlcpy(path_buf, path, path_buf_size);
+   strlcpy(s2, path, len2);
    if (*global->config_path)
       fill_pathname_base(s, global->config_path,
             len);
@@ -89,7 +89,7 @@ static void menu_action_setting_disp_set_label_shader_filter_pass(
       char *s, size_t len,
       const char *entry_label,
       const char *path,
-      char *path_buf, size_t path_buf_size)
+      char *s2, size_t len2)
 {
    unsigned pass = 0;
    static const char *modes[] = {
@@ -107,7 +107,7 @@ static void menu_action_setting_disp_set_label_shader_filter_pass(
 
    *s = '\0';
    *w = 19;
-   strlcpy(path_buf, path, path_buf_size);
+   strlcpy(s2, path, len2);
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
    if (!menu->shader)
@@ -127,13 +127,13 @@ static void menu_action_setting_disp_set_label_filter(
       char *s, size_t len,
       const char *entry_label,
       const char *path,
-      char *path_buf, size_t path_buf_size)
+      char *s2, size_t len2)
 {
    settings_t *settings = config_get_ptr();
 
    *s = '\0';
    *w = 19;
-   strlcpy(path_buf, path, path_buf_size);
+   strlcpy(s2, path, len2);
    strlcpy(s, "N/A", len);
 
    if (*settings->video.softfilter_plugin)
@@ -148,7 +148,7 @@ static void menu_action_setting_disp_set_label_shader_num_passes(
       char *s, size_t len,
       const char *entry_label,
       const char *path,
-      char *path_buf, size_t path_buf_size)
+      char *s2, size_t len2)
 {
    menu_handle_t *menu    = menu_driver_get_ptr();
    if (!menu)
@@ -158,7 +158,7 @@ static void menu_action_setting_disp_set_label_shader_num_passes(
 
    *s = '\0';
    *w = 19;
-   strlcpy(path_buf, path, path_buf_size);
+   strlcpy(s2, path, len2);
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
    snprintf(s, len, "%u", menu->shader->passes);
 #endif
@@ -171,7 +171,7 @@ static void menu_action_setting_disp_set_label_shader_pass(
       char *s, size_t len,
       const char *entry_label,
       const char *path,
-      char *path_buf, size_t path_buf_size)
+      char *s2, size_t len2)
 {
    unsigned pass = (type - MENU_SETTINGS_SHADER_PASS_0);
    menu_handle_t *menu    = menu_driver_get_ptr();
@@ -183,7 +183,7 @@ static void menu_action_setting_disp_set_label_shader_pass(
 
    *s = '\0';
    *w = 19;
-   strlcpy(path_buf, path, path_buf_size);
+   strlcpy(s2, path, len2);
    strlcpy(s, "N/A", len);
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
@@ -201,7 +201,7 @@ static void menu_action_setting_disp_set_label_shader_default_filter(
       char *s, size_t len,
       const char *entry_label,
       const char *path,
-      char *path_buf, size_t path_buf_size)
+      char *s2, size_t len2)
 {
    settings_t *settings = config_get_ptr();
 
@@ -218,7 +218,7 @@ static void menu_action_setting_disp_set_label_shader_parameter(
       char *s, size_t len,
       const char *entry_label,
       const char *path,
-      char *path_buf, size_t path_buf_size)
+      char *s2, size_t len2)
 {
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
    const struct video_shader_parameter *param = NULL;
@@ -233,7 +233,7 @@ static void menu_action_setting_disp_set_label_shader_parameter(
 
    *s = '\0';
    *w = 19;
-   strlcpy(path_buf, path, path_buf_size);
+   strlcpy(s2, path, len2);
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
    shader = video_shader_driver_get_current_shader();
@@ -258,7 +258,7 @@ static void menu_action_setting_disp_set_label_shader_preset_parameter(
       char *s, size_t len,
       const char *entry_label,
       const char *path,
-      char *path_buf, size_t path_buf_size)
+      char *s2, size_t len2)
 {
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
    const struct video_shader_parameter *param = NULL;
@@ -271,7 +271,7 @@ static void menu_action_setting_disp_set_label_shader_preset_parameter(
 
    *s = '\0';
    *w = 19;
-   strlcpy(path_buf, path, path_buf_size);
+   strlcpy(s2, path, len2);
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
    if (!menu->shader)
@@ -294,7 +294,7 @@ static void menu_action_setting_disp_set_label_shader_scale_pass(
       char *s, size_t len,
       const char *entry_label,
       const char *path,
-      char *path_buf, size_t path_buf_size)
+      char *s2, size_t len2)
 {
    unsigned pass = 0;
    unsigned scale_value = 0;
@@ -304,7 +304,7 @@ static void menu_action_setting_disp_set_label_shader_scale_pass(
 
    *s = '\0';
    *w = 19;
-   strlcpy(path_buf, path, path_buf_size);
+   strlcpy(s2, path, len2);
 
    (void)pass;
    (void)scale_value;
@@ -331,14 +331,14 @@ static void menu_action_setting_disp_set_label_menu_file_core(
       char *s, size_t len,
       const char *entry_label,
       const char *path,
-      char *path_buf, size_t path_buf_size)
+      char *s2, size_t len2)
 {
    const char *alt = NULL;
    strlcpy(s, "(CORE)", len);
    menu_list_get_alt_at_offset(list, i, &alt);
    *w = strlen(s);
    if (alt)
-      strlcpy(path_buf, alt, path_buf_size);
+      strlcpy(s2, alt, len2);
 }
 
 static void menu_action_setting_disp_set_label_input_desc(
@@ -348,7 +348,7 @@ static void menu_action_setting_disp_set_label_input_desc(
       char *s, size_t len,
       const char *entry_label,
       const char *path,
-      char *path_buf, size_t path_buf_size)
+      char *s2, size_t len2)
 {
    settings_t *settings = config_get_ptr();
    unsigned inp_desc_index_offset = type - MENU_SETTINGS_INPUT_DESC_BEGIN;
@@ -367,7 +367,7 @@ static void menu_action_setting_disp_set_label_input_desc(
             axis_labels[remap_id]);
 
    *w = 19;
-   strlcpy(path_buf, path, path_buf_size);
+   strlcpy(s2, path, len2);
 }
 
 static void menu_action_setting_disp_set_label_cheat(
@@ -377,7 +377,7 @@ static void menu_action_setting_disp_set_label_cheat(
       char *s, size_t len,
       const char *entry_label,
       const char *path,
-      char *path_buf, size_t path_buf_size)
+      char *s2, size_t len2)
 {
    global_t *global     = global_get_ptr();
    unsigned cheat_index = type - MENU_SETTINGS_CHEAT_BEGIN;
@@ -389,7 +389,7 @@ static void menu_action_setting_disp_set_label_cheat(
             global->cheat->cheats[cheat_index].state ? "ON" : "OFF"
             );
    *w = 19;
-   strlcpy(path_buf, path, path_buf_size);
+   strlcpy(s2, path, len2);
 }
 
 static void menu_action_setting_disp_set_label_perf_counters_common(
@@ -420,7 +420,7 @@ static void menu_action_setting_disp_set_label_perf_counters(
       char *s, size_t len,
       const char *entry_label,
       const char *path,
-      char *path_buf, size_t path_buf_size)
+      char *s2, size_t len2)
 {
    menu_handle_t *menu = menu_driver_get_ptr();
    const struct retro_perf_counter **counters =
@@ -429,7 +429,7 @@ static void menu_action_setting_disp_set_label_perf_counters(
 
    *s = '\0';
    *w = 19;
-   strlcpy(path_buf, path, path_buf_size);
+   strlcpy(s2, path, len2);
 
    menu_action_setting_disp_set_label_perf_counters_common(
          counters, offset, s, len);
@@ -444,7 +444,7 @@ static void menu_action_setting_disp_set_label_libretro_perf_counters(
       char *s, size_t len,
       const char *entry_label,
       const char *path,
-      char *path_buf, size_t path_buf_size)
+      char *s2, size_t len2)
 {
    menu_handle_t *menu = menu_driver_get_ptr();
    const struct retro_perf_counter **counters =
@@ -453,7 +453,7 @@ static void menu_action_setting_disp_set_label_libretro_perf_counters(
 
    *s = '\0';
    *w = 19;
-   strlcpy(path_buf, path, path_buf_size);
+   strlcpy(s2, path, len2);
 
    menu_action_setting_disp_set_label_perf_counters_common(
          counters, offset, s, len);
@@ -468,11 +468,11 @@ static void menu_action_setting_disp_set_label_menu_more(
       char *s, size_t len,
       const char *entry_label,
       const char *path,
-      char *path_buf, size_t path_buf_size)
+      char *s2, size_t len2)
 {
    strlcpy(s, "...", len);
    *w = 19;
-   strlcpy(path_buf, path, path_buf_size);
+   strlcpy(s2, path, len2);
 }
 
 
@@ -483,7 +483,7 @@ static void menu_action_setting_disp_set_label_menu_disk_index(
       char *s, size_t len,
       const char *entry_label,
       const char *path,
-      char *path_buf, size_t path_buf_size)
+      char *s2, size_t len2)
 {
    unsigned images = 0, current = 0;
    global_t *global     = global_get_ptr();
@@ -493,7 +493,7 @@ static void menu_action_setting_disp_set_label_menu_disk_index(
 
    *w = 19;
    *s = '\0';
-   strlcpy(path_buf, path, path_buf_size);
+   strlcpy(s2, path, len2);
    if (!control)
       return;
 
@@ -513,7 +513,7 @@ static void menu_action_setting_disp_set_label_menu_video_resolution(
       char *s, size_t len,
       const char *entry_label,
       const char *path,
-      char *path_buf, size_t path_buf_size)
+      char *s2, size_t len2)
 {
    unsigned width = 0, height = 0;
 
@@ -523,7 +523,7 @@ static void menu_action_setting_disp_set_label_menu_video_resolution(
    (void)width;
    (void)height;
 
-   strlcpy(path_buf, path, path_buf_size);
+   strlcpy(s2, path, len2);
 
    if (video_driver_get_video_output_size(&width, &height))
       snprintf(s, len, "%ux%u", width, height);
@@ -534,7 +534,7 @@ static void menu_action_setting_disp_set_label_menu_video_resolution(
 static void menu_action_setting_generic_disp_set_label(
       unsigned *w, char *s, size_t len,
       const char *path, const char *label,
-      char *path_buf, size_t path_buf_size)
+      char *s2, size_t len2)
 {
    *s = '\0';
 
@@ -542,7 +542,7 @@ static void menu_action_setting_generic_disp_set_label(
       strlcpy(s, label, len);
    *w = strlen(s);
 
-   strlcpy(path_buf, path, path_buf_size);
+   strlcpy(s2, path, len2);
 }
 
 static void menu_action_setting_disp_set_label_menu_file_plain(
@@ -552,10 +552,10 @@ static void menu_action_setting_disp_set_label_menu_file_plain(
       char *s, size_t len,
       const char *entry_label,
       const char *path,
-      char *path_buf, size_t path_buf_size)
+      char *s2, size_t len2)
 {
    menu_action_setting_generic_disp_set_label(w, s, len,
-         path, "(FILE)", path_buf, path_buf_size);
+         path, "(FILE)", s2, len2);
 }
 
 static void menu_action_setting_disp_set_label_menu_file_image(
@@ -565,10 +565,10 @@ static void menu_action_setting_disp_set_label_menu_file_image(
       char *s, size_t len,
       const char *entry_label,
       const char *path,
-      char *path_buf, size_t path_buf_size)
+      char *s2, size_t len2)
 {
    menu_action_setting_generic_disp_set_label(w, s, len,
-         path, "(IMG)", path_buf, path_buf_size);
+         path, "(IMG)", s2, len2);
 }
 
 static void menu_action_setting_disp_set_label_menu_file_use_directory(
@@ -578,10 +578,10 @@ static void menu_action_setting_disp_set_label_menu_file_use_directory(
       char *s, size_t len,
       const char *entry_label,
       const char *path,
-      char *path_buf, size_t path_buf_size)
+      char *s2, size_t len2)
 {
    menu_action_setting_generic_disp_set_label(w, s, len,
-         path, NULL, path_buf, path_buf_size);
+         path, NULL, s2, len2);
 }
 
 static void menu_action_setting_disp_set_label_menu_file_directory(
@@ -591,10 +591,10 @@ static void menu_action_setting_disp_set_label_menu_file_directory(
       char *s, size_t len,
       const char *entry_label,
       const char *path,
-      char *path_buf, size_t path_buf_size)
+      char *s2, size_t len2)
 {
    menu_action_setting_generic_disp_set_label(w, s, len,
-         path, "(DIR)", path_buf, path_buf_size);
+         path, "(DIR)", s2, len2);
 }
 
 static void menu_action_setting_disp_set_label_menu_file_carchive(
@@ -604,10 +604,10 @@ static void menu_action_setting_disp_set_label_menu_file_carchive(
       char *s, size_t len,
       const char *entry_label,
       const char *path,
-      char *path_buf, size_t path_buf_size)
+      char *s2, size_t len2)
 {
    menu_action_setting_generic_disp_set_label(w, s, len,
-         path, "(COMP)", path_buf, path_buf_size);
+         path, "(COMP)", s2, len2);
 }
 
 static void menu_action_setting_disp_set_label_menu_file_shader(
@@ -617,10 +617,10 @@ static void menu_action_setting_disp_set_label_menu_file_shader(
       char *s, size_t len,
       const char *entry_label,
       const char *path,
-      char *path_buf, size_t path_buf_size)
+      char *s2, size_t len2)
 {
    menu_action_setting_generic_disp_set_label(w, s, len,
-         path, "(SHADER)", path_buf, path_buf_size);
+         path, "(SHADER)", s2, len2);
 }
 
 static void menu_action_setting_disp_set_label_menu_file_shader_preset(
@@ -630,10 +630,10 @@ static void menu_action_setting_disp_set_label_menu_file_shader_preset(
       char *s, size_t len,
       const char *entry_label,
       const char *path,
-      char *path_buf, size_t path_buf_size)
+      char *s2, size_t len2)
 {
    menu_action_setting_generic_disp_set_label(w, s, len,
-         path, "(PRESET)", path_buf, path_buf_size);
+         path, "(PRESET)", s2, len2);
 }
 
 static void menu_action_setting_disp_set_label_menu_file_in_carchive(
@@ -643,10 +643,10 @@ static void menu_action_setting_disp_set_label_menu_file_in_carchive(
       char *s, size_t len,
       const char *entry_label,
       const char *path,
-      char *path_buf, size_t path_buf_size)
+      char *s2, size_t len2)
 {
    menu_action_setting_generic_disp_set_label(w, s, len,
-         path, "(CFILE)", path_buf, path_buf_size);
+         path, "(CFILE)", s2, len2);
 }
 
 static void menu_action_setting_disp_set_label_menu_file_overlay(
@@ -656,10 +656,10 @@ static void menu_action_setting_disp_set_label_menu_file_overlay(
       char *s, size_t len,
       const char *entry_label,
       const char *path,
-      char *path_buf, size_t path_buf_size)
+      char *s2, size_t len2)
 {
    menu_action_setting_generic_disp_set_label(w, s, len,
-         path, "(OVERLAY)", path_buf, path_buf_size);
+         path, "(OVERLAY)", s2, len2);
 }
 
 static void menu_action_setting_disp_set_label_menu_file_config(
@@ -669,10 +669,10 @@ static void menu_action_setting_disp_set_label_menu_file_config(
       char *s, size_t len,
       const char *entry_label,
       const char *path,
-      char *path_buf, size_t path_buf_size)
+      char *s2, size_t len2)
 {
    menu_action_setting_generic_disp_set_label(w, s, len,
-         path, "(CONFIG)", path_buf, path_buf_size);
+         path, "(CONFIG)", s2, len2);
 }
 
 static void menu_action_setting_disp_set_label_menu_file_font(
@@ -682,10 +682,10 @@ static void menu_action_setting_disp_set_label_menu_file_font(
       char *s, size_t len,
       const char *entry_label,
       const char *path,
-      char *path_buf, size_t path_buf_size)
+      char *s2, size_t len2)
 {
    menu_action_setting_generic_disp_set_label(w, s, len,
-         path, "(FONT)", path_buf, path_buf_size);
+         path, "(FONT)", s2, len2);
 }
 
 static void menu_action_setting_disp_set_label_menu_file_filter(
@@ -695,10 +695,10 @@ static void menu_action_setting_disp_set_label_menu_file_filter(
       char *s, size_t len,
       const char *entry_label,
       const char *path,
-      char *path_buf, size_t path_buf_size)
+      char *s2, size_t len2)
 {
    menu_action_setting_generic_disp_set_label(w, s, len,
-         path, "(FILTER)", path_buf, path_buf_size);
+         path, "(FILTER)", s2, len2);
 }
 
 static void menu_action_setting_disp_set_label_menu_file_url(
@@ -708,10 +708,10 @@ static void menu_action_setting_disp_set_label_menu_file_url(
       char *s, size_t len,
       const char *entry_label,
       const char *path,
-      char *path_buf, size_t path_buf_size)
+      char *s2, size_t len2)
 {
    menu_action_setting_generic_disp_set_label(w, s, len,
-         path, "(URL)", path_buf, path_buf_size);
+         path, "(URL)", s2, len2);
 }
 
 static void menu_action_setting_disp_set_label_menu_file_rdb(
@@ -721,10 +721,10 @@ static void menu_action_setting_disp_set_label_menu_file_rdb(
       char *s, size_t len,
       const char *entry_label,
       const char *path,
-      char *path_buf, size_t path_buf_size)
+      char *s2, size_t len2)
 {
    menu_action_setting_generic_disp_set_label(w, s, len,
-         path, "(RDB)", path_buf, path_buf_size);
+         path, "(RDB)", s2, len2);
 }
 
 static void menu_action_setting_disp_set_label_menu_file_cursor(
@@ -734,10 +734,10 @@ static void menu_action_setting_disp_set_label_menu_file_cursor(
       char *s, size_t len,
       const char *entry_label,
       const char *path,
-      char *path_buf, size_t path_buf_size)
+      char *s2, size_t len2)
 {
    menu_action_setting_generic_disp_set_label(w, s, len,
-         path, "(CURSOR)", path_buf, path_buf_size);
+         path, "(CURSOR)", s2, len2);
 }
 
 static void menu_action_setting_disp_set_label_menu_file_cheat(
@@ -747,10 +747,10 @@ static void menu_action_setting_disp_set_label_menu_file_cheat(
       char *s, size_t len,
       const char *entry_label,
       const char *path,
-      char *path_buf, size_t path_buf_size)
+      char *s2, size_t len2)
 {
    menu_action_setting_generic_disp_set_label(w, s, len,
-         path, "(CHEAT)", path_buf, path_buf_size);
+         path, "(CHEAT)", s2, len2);
 }
 
 static void menu_action_setting_disp_set_label(file_list_t* list,
@@ -759,7 +759,7 @@ static void menu_action_setting_disp_set_label(file_list_t* list,
       char *s, size_t len,
       const char *entry_label,
       const char *path,
-      char *path_buf, size_t path_buf_size)
+      char *s2, size_t len2)
 {
    global_t *global     = global_get_ptr();
 
@@ -782,7 +782,7 @@ static void menu_action_setting_disp_set_label(file_list_t* list,
       setting_get_label(list, s,
             len, w, type, label, entry_label, i);
 
-   strlcpy(path_buf, path, path_buf_size);
+   strlcpy(s2, path, len2);
 }
 
 void menu_entries_cbs_init_bind_get_string_representation(menu_file_list_cbs_t *cbs,
