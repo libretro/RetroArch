@@ -314,9 +314,6 @@ static int udev_find_vacant_pad(void)
 
 static void udev_free_pad(unsigned pad, bool hotplug)
 {
-   settings_t *settings = config_get_ptr();
-   autoconfig_params_t params = {{0}};
-
    if (udev_pads[pad].fd >= 0)
       close(udev_pads[pad].fd);
 
@@ -326,15 +323,6 @@ static void udev_free_pad(unsigned pad, bool hotplug)
    memset(&udev_pads[pad], 0, sizeof(udev_pads[pad]));
 
    udev_pads[pad].fd    = -1;
-   udev_pads[pad].ident = settings->input.device_names[pad];
-
-   /* Avoid autoconfig spam if we're reiniting driver. */
-   /* TODO - implement VID/PID? */
-   if (hotplug)
-   {
-      params.idx = pad;
-      input_config_autoconfigure_joypad(&params);
-   }
 }
 
 static bool udev_add_pad(struct udev_device *dev, unsigned p, int fd, const char *path)
