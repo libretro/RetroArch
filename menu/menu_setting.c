@@ -37,24 +37,11 @@
 
 #endif
 
-void settings_info_list_free(rarch_setting_info_t *list_info)
+static void settings_info_list_free(rarch_setting_info_t *list_info)
 {
    if (list_info)
       free(list_info);
    list_info = NULL;
-}
-
-rarch_setting_info_t *settings_info_list_new(void)
-{
-   rarch_setting_info_t *list_info = (rarch_setting_info_t*)
-      calloc(1, sizeof(*list_info));
-
-   if (!list_info)
-      return NULL;
-
-   list_info->size  = 32;
-
-   return list_info;
 }
 
 bool settings_list_append(rarch_setting_t **list,
@@ -6690,10 +6677,13 @@ rarch_setting_t *setting_new(unsigned mask)
    rarch_setting_t terminator      = { ST_NONE };
    rarch_setting_t* list           = NULL;
    rarch_setting_t* resized_list   = NULL;
-   rarch_setting_info_t *list_info = settings_info_list_new();
+   rarch_setting_info_t *list_info = (rarch_setting_info_t*)
+      calloc(1, sizeof(*list_info));
+
    if (!list_info)
       return NULL;
 
+   list_info->size  = 32;
    list = settings_list_new(list_info->size);
    if (!list)
       goto error;

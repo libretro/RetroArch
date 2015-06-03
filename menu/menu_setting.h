@@ -235,11 +235,7 @@ void settings_list_current_add_cmd(
       rarch_setting_info_t *list_info,
       enum event_command values);
 
-void settings_info_list_free(rarch_setting_info_t *list_info);
-
 void settings_list_free(rarch_setting_t *list);
-
-rarch_setting_info_t *settings_info_list_new(void);
 
 rarch_setting_t *settings_list_new(unsigned size);
 
