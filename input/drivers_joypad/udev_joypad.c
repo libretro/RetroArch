@@ -359,13 +359,15 @@ static void udev_check_device(struct udev_device *dev, const char *path, bool ho
    }
 }
 
-static void udev_free_pad(unsigned pad, bool hotplug)
+static void udev_free_pad(unsigned pad)
 {
    if (udev_pads[pad].fd >= 0)
       close(udev_pads[pad].fd);
 
-   free(udev_pads[pad].path);
-   if (udev_pads[pad].ident)
+   if (udev_pads[pad].path)
+      free(udev_pads[pad].path);
+   udev_pads[pad].path = NULL;
+   if (udev_pads[pad].ident[0] != '\0')
       udev_pads[pad].ident[0] = '\0';
 
    memset(&udev_pads[pad], 0, sizeof(udev_pads[pad]));
@@ -382,7 +384,7 @@ static void udev_joypad_remove_device(const char *path)
       if (udev_pads[i].path && !strcmp(udev_pads[i].path, path))
       {
          input_config_autoconfigure_disconnect(i, udev_pads[i].ident);
-         udev_free_pad(i, true);
+         udev_free_pad(i);
          break;
       }
    }
@@ -393,7 +395,7 @@ static void udev_joypad_destroy(void)
    unsigned i;
 
    for (i = 0; i < MAX_USERS; i++)
-      udev_free_pad(i, false);
+      udev_free_pad(i);
 
    if (g_udev_mon)
       udev_monitor_unref(g_udev_mon);
