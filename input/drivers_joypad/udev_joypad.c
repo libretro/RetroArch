@@ -154,8 +154,10 @@ static bool udev_hotplug_available(void)
 
    if (!g_udev_mon)
       return false;
-   fds.fd = udev_monitor_get_fd(g_udev_mon);
+
+   fds.fd     = udev_monitor_get_fd(g_udev_mon);
    fds.events = POLLIN;
+
    return (poll(&fds, 1, 0) == 1) && (fds.revents & POLLIN);
 }
 
@@ -397,8 +399,8 @@ static void udev_joypad_handle_hotplug(void)
    if (!dev)
       return;
 
-   const char *val = udev_device_get_property_value(dev, "ID_INPUT_JOYSTICK");
-   const char *action = udev_device_get_action(dev);
+   const char *val     = udev_device_get_property_value(dev, "ID_INPUT_JOYSTICK");
+   const char *action  = udev_device_get_action(dev);
    const char *devnode = udev_device_get_devnode(dev);
 
    if (!val || strcmp(val, "1") || !devnode)
@@ -439,11 +441,10 @@ static bool udev_set_rumble(unsigned i, enum retro_rumble_effect effect, uint16_
    if (strength && strength != pad->configured_strength[effect])
    {
       /* Create new or update old playing state. */
-      struct ff_effect e;
+      struct ff_effect e = {0};
 
-      memset(&e, 0, sizeof(e));
       e.type = FF_RUMBLE;
-      e.id = old_effect;
+      e.id   = old_effect;
 
       switch (effect)
       {
@@ -463,8 +464,8 @@ static bool udev_set_rumble(unsigned i, enum retro_rumble_effect effect, uint16_
          return false;
       }
 
-      pad->effects[effect] = e.id;
-      pad->has_set_ff[effect] = true;
+      pad->effects[effect]             = e.id;
+      pad->has_set_ff[effect]          = true;
       pad->configured_strength[effect] = strength;
    }
    pad->strength[effect] = strength;
@@ -498,7 +499,6 @@ static void udev_joypad_poll(void)
    for (i = 0; i < MAX_USERS; i++)
       udev_poll_pad(&udev_pads[i], i);
 }
-
 
 static bool udev_joypad_init(void *data)
 {
@@ -537,9 +537,9 @@ static bool udev_joypad_init(void *data)
 
    for (item = devs; item; item = udev_list_entry_get_next(item))
    {
-      const char *name = udev_list_entry_get_name(item);
-      struct udev_device *dev = udev_device_new_from_syspath(g_udev, name);
-      const char *devnode = udev_device_get_devnode(dev);
+      const char         *name = udev_list_entry_get_name(item);
+      struct udev_device  *dev = udev_device_new_from_syspath(g_udev, name);
+      const char      *devnode = udev_device_get_devnode(dev);
 
       if (devnode)
          udev_check_device(dev, devnode, false);
