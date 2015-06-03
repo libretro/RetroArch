@@ -159,116 +159,14 @@ static bool udev_hotplug_available(void)
    return (poll(&fds, 1, 0) == 1) && (fds.revents & POLLIN);
 }
 
-static void udev_check_device(struct udev_device *dev, const char *path, bool hotplugged);
-
-static void udev_joypad_remove_device(const char *path);
-
-static void udev_joypad_handle_hotplug(void)
-{
-   struct udev_device *dev = udev_monitor_receive_device(g_udev_mon);
-   if (!dev)
-      return;
-
-   const char *val = udev_device_get_property_value(dev, "ID_INPUT_JOYSTICK");
-   const char *action = udev_device_get_action(dev);
-   const char *devnode = udev_device_get_devnode(dev);
-
-   if (!val || strcmp(val, "1") || !devnode)
-      goto end;
-
-   if (!strcmp(action, "add"))
-   {
-      RARCH_LOG("[udev]: Hotplug add: %s.\n", devnode);
-      udev_check_device(dev, devnode, true);
-   }
-   else if (!strcmp(action, "remove"))
-   {
-      RARCH_LOG("[udev]: Hotplug remove: %s.\n", devnode);
-      udev_joypad_remove_device(devnode);
-   }
-
-end:
-   udev_device_unref(dev);
-}
-
-static bool udev_set_rumble(unsigned i, enum retro_rumble_effect effect, uint16_t strength)
-{
-   int old_effect;
-   uint16_t old_strength;
-   struct udev_joypad *pad = (struct udev_joypad*)&udev_pads[i];
-
-   if (pad->fd < 0)
-      return false;
-   if (pad->num_effects < 2)
-      return false;
-
-   old_strength = pad->strength[effect];
-   if (old_strength == strength)
-      return true;
-
-   old_effect = pad->has_set_ff[effect] ? pad->effects[effect] : -1;
-
-   if (strength && strength != pad->configured_strength[effect])
-   {
-      /* Create new or update old playing state. */
-      struct ff_effect e;
-
-      memset(&e, 0, sizeof(e));
-      e.type = FF_RUMBLE;
-      e.id = old_effect;
-
-      switch (effect)
-      {
-         case RETRO_RUMBLE_STRONG:
-            e.u.rumble.strong_magnitude = strength;
-            break;
-         case RETRO_RUMBLE_WEAK:
-            e.u.rumble.weak_magnitude = strength;
-            break;
-         default:
-            return false;
-      }
-
-      if (ioctl(pad->fd, EVIOCSFF, &e) < 0)
-      {
-         RARCH_ERR("Failed to set rumble effect on pad #%u.\n", i);
-         return false;
-      }
-
-      pad->effects[effect] = e.id;
-      pad->has_set_ff[effect] = true;
-      pad->configured_strength[effect] = strength;
-   }
-   pad->strength[effect] = strength;
-
-   /* It seems that we can update strength with EVIOCSFF atomically. */
-   if ((!!strength) != (!!old_strength))
-   {
-      struct input_event play = {{0}};
-
-      play.type  = EV_FF;
-      play.code  = pad->effects[effect];
-      play.value = !!strength;
-
-      if (write(pad->fd, &play, sizeof(play)) < (ssize_t)sizeof(play))
-      {
-         RARCH_ERR("[udev]: Failed to play rumble effect #%u on pad #%u.\n",
-               effect, i);
-         return false;
-      }
-   }
-
-   return true;
-}
-
-static void udev_joypad_poll(void)
+static int udev_find_vacant_pad(void)
 {
    unsigned i;
-   while (udev_hotplug_available())
-      udev_joypad_handle_hotplug();
 
    for (i = 0; i < MAX_USERS; i++)
-      udev_poll_pad(&udev_pads[i], i);
+      if (udev_pads[i].fd < 0)
+         return i;
+   return -1;
 }
 
 #define test_bit(nr, addr) \
@@ -299,30 +197,6 @@ static int udev_open_joystick(const char *path)
 error:
    close(fd);
    return -1;
-}
-
-static int udev_find_vacant_pad(void)
-{
-   unsigned i;
-
-   for (i = 0; i < MAX_USERS; i++)
-      if (udev_pads[i].fd < 0)
-         return i;
-   return -1;
-}
-
-static void udev_free_pad(unsigned pad, bool hotplug)
-{
-   if (udev_pads[pad].fd >= 0)
-      close(udev_pads[pad].fd);
-
-   free(udev_pads[pad].path);
-   if (udev_pads[pad].ident)
-      *udev_pads[pad].ident = '\0';
-
-   memset(&udev_pads[pad], 0, sizeof(udev_pads[pad]));
-
-   udev_pads[pad].fd    = -1;
 }
 
 static bool udev_add_pad(struct udev_device *dev, unsigned p, int fd, const char *path)
@@ -470,6 +344,20 @@ static void udev_check_device(struct udev_device *dev, const char *path, bool ho
    }
 }
 
+static void udev_free_pad(unsigned pad, bool hotplug)
+{
+   if (udev_pads[pad].fd >= 0)
+      close(udev_pads[pad].fd);
+
+   free(udev_pads[pad].path);
+   if (udev_pads[pad].ident)
+      *udev_pads[pad].ident = '\0';
+
+   memset(&udev_pads[pad], 0, sizeof(udev_pads[pad]));
+
+   udev_pads[pad].fd    = -1;
+}
+
 static void udev_joypad_remove_device(const char *path)
 {
    unsigned i;
@@ -502,6 +390,115 @@ static void udev_joypad_destroy(void)
       udev_unref(g_udev);
    g_udev = NULL;
 }
+
+static void udev_joypad_handle_hotplug(void)
+{
+   struct udev_device *dev = udev_monitor_receive_device(g_udev_mon);
+   if (!dev)
+      return;
+
+   const char *val = udev_device_get_property_value(dev, "ID_INPUT_JOYSTICK");
+   const char *action = udev_device_get_action(dev);
+   const char *devnode = udev_device_get_devnode(dev);
+
+   if (!val || strcmp(val, "1") || !devnode)
+      goto end;
+
+   if (!strcmp(action, "add"))
+   {
+      RARCH_LOG("[udev]: Hotplug add: %s.\n", devnode);
+      udev_check_device(dev, devnode, true);
+   }
+   else if (!strcmp(action, "remove"))
+   {
+      RARCH_LOG("[udev]: Hotplug remove: %s.\n", devnode);
+      udev_joypad_remove_device(devnode);
+   }
+
+end:
+   udev_device_unref(dev);
+}
+
+static bool udev_set_rumble(unsigned i, enum retro_rumble_effect effect, uint16_t strength)
+{
+   int old_effect;
+   uint16_t old_strength;
+   struct udev_joypad *pad = (struct udev_joypad*)&udev_pads[i];
+
+   if (pad->fd < 0)
+      return false;
+   if (pad->num_effects < 2)
+      return false;
+
+   old_strength = pad->strength[effect];
+   if (old_strength == strength)
+      return true;
+
+   old_effect = pad->has_set_ff[effect] ? pad->effects[effect] : -1;
+
+   if (strength && strength != pad->configured_strength[effect])
+   {
+      /* Create new or update old playing state. */
+      struct ff_effect e;
+
+      memset(&e, 0, sizeof(e));
+      e.type = FF_RUMBLE;
+      e.id = old_effect;
+
+      switch (effect)
+      {
+         case RETRO_RUMBLE_STRONG:
+            e.u.rumble.strong_magnitude = strength;
+            break;
+         case RETRO_RUMBLE_WEAK:
+            e.u.rumble.weak_magnitude = strength;
+            break;
+         default:
+            return false;
+      }
+
+      if (ioctl(pad->fd, EVIOCSFF, &e) < 0)
+      {
+         RARCH_ERR("Failed to set rumble effect on pad #%u.\n", i);
+         return false;
+      }
+
+      pad->effects[effect] = e.id;
+      pad->has_set_ff[effect] = true;
+      pad->configured_strength[effect] = strength;
+   }
+   pad->strength[effect] = strength;
+
+   /* It seems that we can update strength with EVIOCSFF atomically. */
+   if ((!!strength) != (!!old_strength))
+   {
+      struct input_event play = {{0}};
+
+      play.type  = EV_FF;
+      play.code  = pad->effects[effect];
+      play.value = !!strength;
+
+      if (write(pad->fd, &play, sizeof(play)) < (ssize_t)sizeof(play))
+      {
+         RARCH_ERR("[udev]: Failed to play rumble effect #%u on pad #%u.\n",
+               effect, i);
+         return false;
+      }
+   }
+
+   return true;
+}
+
+static void udev_joypad_poll(void)
+{
+   unsigned i;
+   while (udev_hotplug_available())
+      udev_joypad_handle_hotplug();
+
+   for (i = 0; i < MAX_USERS; i++)
+      udev_poll_pad(&udev_pads[i], i);
+}
+
 
 static bool udev_joypad_init(void *data)
 {
