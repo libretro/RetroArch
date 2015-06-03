@@ -43,6 +43,10 @@
 #define NUM_AXES 32
 #define NUM_HATS 4
 
+#define test_bit(nr, addr) \
+   (((1UL << ((nr) % (sizeof(long) * CHAR_BIT))) & ((addr)[(nr) / (sizeof(long) * CHAR_BIT)])) != 0)
+#define NBITS(x) ((((x) - 1) / (sizeof(long) * CHAR_BIT)) + 1)
+
 struct udev_joypad
 {
    int fd;
@@ -171,9 +175,6 @@ static int udev_find_vacant_pad(void)
    return -1;
 }
 
-#define test_bit(nr, addr) \
-   (((1UL << ((nr) % (sizeof(long) * CHAR_BIT))) & ((addr)[(nr) / (sizeof(long) * CHAR_BIT)])) != 0)
-#define NBITS(x) ((((x) - 1) / (sizeof(long) * CHAR_BIT)) + 1)
 
 static int udev_open_joystick(const char *path)
 {
