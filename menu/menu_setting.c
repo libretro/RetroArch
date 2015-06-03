@@ -128,14 +128,7 @@ static int setting_handler(rarch_setting_t *setting, unsigned action)
    return -1;
 }
 
-int menu_setting_handler(rarch_setting_t *setting, unsigned action)
-{
-   if (setting_handler(setting, action) == 0)
-      return menu_setting_generic(setting);
-   return -1;
-}
-
-static int menu_action_handle_setting(rarch_setting_t *setting,
+int menu_action_handle_setting(rarch_setting_t *setting,
       unsigned type, unsigned action, bool wraparound)
 {
    menu_displaylist_info_t info = {0};
@@ -167,7 +160,9 @@ static int menu_action_handle_setting(rarch_setting_t *setting,
       case ST_DIR:
       case ST_BIND:
       case ST_ACTION:
-         return menu_setting_handler(setting, action);
+         if (setting_handler(setting, action) == 0)
+            return menu_setting_generic(setting);
+         break;
       default:
          break;
    }

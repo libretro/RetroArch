@@ -35,8 +35,6 @@ int menu_setting_set_flags(rarch_setting_t *setting);
 
 int menu_setting_generic(rarch_setting_t *setting);
 
-int menu_setting_handler(rarch_setting_t *setting, unsigned action);
-
 int menu_setting_set(unsigned type, const char *label,
       unsigned action, bool wraparound);
 
@@ -351,6 +349,9 @@ bool setting_is_of_general_type(rarch_setting_t *setting);
 bool setting_is_of_numeric_type(rarch_setting_t *setting);
 
 bool setting_is_of_enum_type(rarch_setting_t *setting);
+
+int menu_action_handle_setting(rarch_setting_t *setting,
+      unsigned type, unsigned action, bool wraparound);
 
 #ifdef __cplusplus
 }

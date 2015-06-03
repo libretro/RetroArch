@@ -244,12 +244,14 @@ static int action_right_shader_filter_default(unsigned type, const char *label,
       bool wraparound)
 {
 #ifdef HAVE_SHADER_MANAGER
-   unsigned action = MENU_ACTION_RIGHT;
    rarch_setting_t *setting = menu_setting_find("video_smooth");
-   if (setting)
-      menu_setting_handler(setting, action);
-#endif
+   if (!setting)
+      return -1;
+   return menu_action_handle_setting(setting, setting->type, MENU_ACTION_RIGHT,
+         wraparound);
+#else
    return 0;
+#endif
 }
 
 static int action_right_cheat_num_passes(unsigned type, const char *label,

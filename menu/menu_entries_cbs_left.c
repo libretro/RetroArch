@@ -242,11 +242,13 @@ static int action_left_shader_filter_default(unsigned type, const char *label,
 {
 #ifdef HAVE_SHADER_MANAGER
    rarch_setting_t *setting = menu_setting_find("video_smooth");
-   unsigned action = MENU_ACTION_LEFT;
-   if (setting)
-      menu_setting_handler(setting, action);
-#endif
+   if (!setting)
+      return -1;
+   return menu_action_handle_setting(setting,
+         setting->type, MENU_ACTION_LEFT, wraparound);
+#else
    return 0;
+#endif
 }
 
 static int action_left_cheat_num_passes(unsigned type, const char *label,
