@@ -63,13 +63,23 @@ int menu_setting_set_flags(rarch_setting_t *setting)
    return 0;
 }
 
-int menu_setting_generic(rarch_setting_t *setting)
+static int setting_generic_action_ok_default(void *data, unsigned action)
 {
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+
    if (!setting)
       return -1;
 
    if (setting->cmd_trigger.idx != EVENT_CMD_NONE)
       setting->cmd_trigger.triggered = true;
+
+   return 0;
+}
+
+int menu_setting_generic(rarch_setting_t *setting)
+{
+   if (setting_generic_action_ok_default(setting, 0) != 0)
+      return -1;
 
    if (setting->change_handler)
       setting->change_handler(setting);
@@ -1116,36 +1126,6 @@ static int setting_bool_action_ok_exit(void *data, unsigned action)
 }
 
 
-
-static int setting_bool_action_ok_default(void *data, unsigned action)
-{
-   rarch_setting_t *setting = (rarch_setting_t*)data;
-
-   if (!setting)
-      return -1;
-
-   if (setting->cmd_trigger.idx != EVENT_CMD_NONE)
-      setting->cmd_trigger.triggered = true;
-
-   return 0;
-}
-
-
-
-static int setting_uint_action_ok_default(void *data, unsigned action)
-{
-   rarch_setting_t *setting = (rarch_setting_t*)data;
-
-   if (!setting)
-      return -1;
-
-   if (setting->cmd_trigger.idx != EVENT_CMD_NONE)
-      setting->cmd_trigger.triggered = true;
-
-   return 0;
-}
-
-
 static int setting_action_ok_video_refresh_rate_auto(
       void *data, unsigned action)
 {
@@ -1164,27 +1144,11 @@ static int setting_action_ok_video_refresh_rate_auto(
       event_command(EVENT_CMD_VIDEO_SET_BLOCKING_STATE);
    }
 
-   if (setting->cmd_trigger.idx != EVENT_CMD_NONE)
-      setting->cmd_trigger.triggered = true;
-
-   return 0;
-}
-
-
-static int setting_fraction_action_ok_default(
-      void *data, unsigned action)
-{
-   rarch_setting_t *setting = (rarch_setting_t*)data;
-
-   if (!setting)
+   if (setting_generic_action_ok_default(setting, 0) != 0)
       return -1;
 
-   if (setting->cmd_trigger.idx != EVENT_CMD_NONE)
-      setting->cmd_trigger.triggered = true;
-
    return 0;
 }
-
 
 static int setting_uint_action_ok_linefeed(void *data, unsigned action)
 {
@@ -1732,7 +1696,7 @@ rarch_setting_t setting_float_setting(const char* name,
    result.default_value.fraction  = default_value;
    result.action_start            = setting_generic_action_start_default;
    result.action_toggle           = setting_fraction_action_toggle_default;
-   result.action_ok               = setting_fraction_action_ok_default;
+   result.action_ok               = setting_generic_action_ok_default;
    result.action_cancel           = NULL;
 
    result.get_string_representation       = &setting_get_string_representation_st_float;
@@ -1784,7 +1748,7 @@ rarch_setting_t setting_bool_setting(const char* name,
 
    result.action_start           = setting_generic_action_start_default;
    result.action_toggle          = setting_bool_action_toggle_default;
-   result.action_ok              = setting_bool_action_ok_default;
+   result.action_ok              = setting_generic_action_ok_default;
    result.action_cancel          = NULL;
 
    result.get_string_representation       = &setting_get_string_representation_st_bool;
@@ -1871,7 +1835,7 @@ rarch_setting_t setting_uint_setting(const char* name,
    result.default_value.unsigned_integer  = default_value;
    result.action_start                    = setting_generic_action_start_default;
    result.action_toggle                   = setting_uint_action_toggle_default;
-   result.action_ok                       = setting_uint_action_ok_default;
+   result.action_ok                       = setting_generic_action_ok_default;
    result.action_cancel                   = NULL;
    result.get_string_representation       = &setting_get_string_representation_uint;
 
@@ -1916,7 +1880,7 @@ rarch_setting_t setting_hex_setting(const char* name,
    result.default_value.unsigned_integer  = default_value;
    result.action_start                    = setting_generic_action_start_default;
    result.action_toggle                   = NULL;
-   result.action_ok                       = setting_uint_action_ok_default;
+   result.action_ok                       = setting_generic_action_ok_default;
    result.action_cancel                   = NULL;
    result.get_string_representation       = &setting_get_string_representation_hex;
 
