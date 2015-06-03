@@ -13,14 +13,9 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../input_common.h"
-#include "../input_joypad.h"
-#include "../input_keymaps.h"
-#include "../../general.h"
-#include <file/file_path.h>
-#include <unistd.h>
 #include <stdint.h>
 #include <string.h>
+
 #include <limits.h>
 #include <errno.h>
 #include <sys/types.h>
@@ -35,16 +30,23 @@
 #include <termios.h>
 #include <signal.h>
 
+#include <file/file_path.h>
+
+#include "../input_joypad.h"
+#include "../input_keymaps.h"
+#include "../../general.h"
+
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
 #endif
 
-/* Need libxkbcommon to translate raw evdev events to characters
- * which can be passed to keyboard callback in a sensible way. */
-
 #ifdef HAVE_XKBCOMMON
+/* We need libxkbcommon to translate raw evdev events to characters
+ * which can be passed to keyboard callback in a sensible way. */
 #include <xkbcommon/xkbcommon.h>
+
 #define MOD_MAP_SIZE 5
+
 #endif
 
 typedef struct udev_input udev_input_t;
@@ -141,12 +143,11 @@ static void udev_handle_touchpad(udev_input_t *udev,
          {
             case ABS_X:
             {
-               int x = event->value - dev->state.touchpad.info_x.minimum;
-               int range = dev->state.touchpad.info_x.maximum - 
+               int x        = event->value - dev->state.touchpad.info_x.minimum;
+               int range    = dev->state.touchpad.info_x.maximum - 
                   dev->state.touchpad.info_x.minimum;
                float x_norm = (float)x / range;
-
-               float rel_x = x_norm - dev->state.touchpad.x;
+               float rel_x  = x_norm - dev->state.touchpad.x;
 
                if (dev->state.touchpad.touch)
                   udev->mouse_x += (int16_t)
@@ -160,12 +161,11 @@ static void udev_handle_touchpad(udev_input_t *udev,
 
             case ABS_Y:
             {
-               int y = event->value - dev->state.touchpad.info_y.minimum;
-               int range = dev->state.touchpad.info_y.maximum - 
+               int y        = event->value - dev->state.touchpad.info_y.minimum;
+               int range    = dev->state.touchpad.info_y.maximum - 
                   dev->state.touchpad.info_y.minimum;
                float y_norm = (float)y / range;
-
-               float rel_y = y_norm - dev->state.touchpad.y;
+               float rel_y  = y_norm - dev->state.touchpad.y;
 
                if (dev->state.touchpad.touch)
                   udev->mouse_y += (int16_t)roundf(dev->state.touchpad.mod_y * rel_y);
@@ -262,7 +262,7 @@ static bool udev_input_hotplug_available(udev_input_t *udev)
    if (!udev || !udev->monitor)
       return false;
 
-   fds.fd = udev_monitor_get_fd(udev->monitor);
+   fds.fd     = udev_monitor_get_fd(udev->monitor);
    fds.events = POLLIN;
 
    return (poll(&fds, 1, 0) == 1) && (fds.revents & POLLIN);
@@ -272,8 +272,8 @@ static bool add_device(udev_input_t *udev,
       const char *devnode, device_handle_cb cb)
 {
    int fd;
-   struct stat st;
    struct input_device **tmp;
+   struct stat st              = {0};
    struct input_device *device = NULL;
    struct epoll_event event    = {0};
 
@@ -291,8 +291,8 @@ static bool add_device(udev_input_t *udev,
       return false;
    }
 
-   device->fd = fd;
-   device->dev = st.st_dev;
+   device->fd        = fd;
+   device->dev       = st.st_dev;
    device->handle_cb = cb;
 
    strlcpy(device->devnode, devnode, sizeof(device->devnode));
@@ -320,7 +320,7 @@ static bool add_device(udev_input_t *udev,
    tmp[udev->num_devices++] = device;
    udev->devices = tmp;
 
-   event.events = EPOLLIN;
+   event.events   = EPOLLIN;
    event.data.ptr = device;
 
    /* Shouldn't happen, but just check it. */
@@ -363,15 +363,15 @@ static void udev_input_handle_hotplug(udev_input_t *udev)
    if (!dev)
       return;
 
-   val_keyboard = udev_device_get_property_value(dev, "ID_INPUT_KEYBOARD");
-   val_mouse = udev_device_get_property_value(dev, "ID_INPUT_MOUSE");
-   val_touchpad = udev_device_get_property_value(dev, "ID_INPUT_TOUCHPAD");
-   action = udev_device_get_action(dev);
-   devnode = udev_device_get_devnode(dev);
+   val_keyboard  = udev_device_get_property_value(dev, "ID_INPUT_KEYBOARD");
+   val_mouse     = udev_device_get_property_value(dev, "ID_INPUT_MOUSE");
+   val_touchpad  = udev_device_get_property_value(dev, "ID_INPUT_TOUCHPAD");
+   action        = udev_device_get_action(dev);
+   devnode       = udev_device_get_devnode(dev);
 
-   is_keyboard = val_keyboard && !strcmp(val_keyboard, "1") && devnode;
-   is_mouse = val_mouse && !strcmp(val_mouse, "1") && devnode;
-   is_touchpad = val_touchpad && !strcmp(val_touchpad, "1") && devnode;
+   is_keyboard   = val_keyboard && !strcmp(val_keyboard, "1") && devnode;
+   is_mouse      = val_mouse && !strcmp(val_mouse, "1") && devnode;
+   is_touchpad   = val_touchpad && !strcmp(val_touchpad, "1") && devnode;
 
    if (!is_keyboard && !is_mouse && !is_touchpad)
       goto end;
@@ -413,8 +413,8 @@ static void udev_input_poll(void *data)
    struct epoll_event events[32];
    udev_input_t *udev = (udev_input_t*)data;
 
-   udev->mouse_x = udev->mouse_y = 0;
-   udev->mouse_wu = udev->mouse_wd = 0;
+   udev->mouse_x   = udev->mouse_y   = 0;
+   udev->mouse_wu  = udev->mouse_wd  = 0;
    udev->mouse_whu = udev->mouse_whd = 0;
 
    while (udev_input_hotplug_available(udev))
@@ -556,7 +556,7 @@ static int16_t udev_input_state(void *data, const struct retro_keybind **binds,
 
 static bool udev_input_bind_button_pressed(void *data, int key)
 {
-   udev_input_t *udev = (udev_input_t*)data;
+   udev_input_t *udev   = (udev_input_t*)data;
    settings_t *settings = config_get_ptr();
 
    return udev_input_is_pressed(udev, settings->input.binds[0], key) ||
