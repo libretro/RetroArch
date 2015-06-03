@@ -31,7 +31,6 @@ rarch_setting_info_t *settings_info_list_new(void)
    if (!list_info)
       return NULL;
 
-   list_info->index = 0;
    list_info->size  = 32;
 
    return list_info;
