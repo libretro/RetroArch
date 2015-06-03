@@ -6063,13 +6063,14 @@ static bool setting_append_list_netplay_options(
          general_read_handler);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
     
-   CONFIG_INT(
+   CONFIG_UINT(
          settings->network_cmd_port,
          "network_cmd_port",
          "Network Command Port",
          network_cmd_port,
          group_info.name,
          subgroup_info.name,
+         NULL,
          NULL);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
     
