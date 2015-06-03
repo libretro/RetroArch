@@ -1242,28 +1242,11 @@ static void setting_get_string_representation_st_bool(void *data,
             setting->boolean.off_label, len);
 }
 
-static void setting_get_string_representation_st_action(void *data,
+static void setting_get_string_representation_default(void *data,
       char *s, size_t len)
 {
+   (void)data;
    strlcpy(s, "...", len);
-}
-
-static void setting_get_string_representation_st_group(void *data,
-      char *s, size_t len)
-{
-   rarch_setting_t *setting = (rarch_setting_t*)data;
-
-   if (setting)
-      strlcpy(s, "...", len);
-}
-
-static void setting_get_string_representation_st_sub_group(void *data,
-      char *s, size_t len)
-{
-   rarch_setting_t *setting = (rarch_setting_t*)data;
-
-   if (setting)
-      strlcpy(s, "...", len);
 }
 
 /**
@@ -1594,7 +1577,7 @@ rarch_setting_t setting_action_setting(const char* name,
    result.change_handler            = NULL;
    result.deferred_handler          = NULL;
    result.read_handler              = NULL;
-   result.get_string_representation = &setting_get_string_representation_st_action;
+   result.get_string_representation = &setting_get_string_representation_default;
    result.action_start              = NULL;
    result.action_iterate            = NULL;
    result.action_toggle             = NULL;
@@ -1623,7 +1606,7 @@ rarch_setting_t setting_group_setting(enum setting_type type, const char* name)
    result.name              = name;
    result.short_description = name;
 
-   result.get_string_representation       = &setting_get_string_representation_st_group;
+   result.get_string_representation       = &setting_get_string_representation_default;
 
    return result;
 }
@@ -1651,7 +1634,7 @@ rarch_setting_t setting_subgroup_setting(enum setting_type type,
    result.short_description = name;
    result.group             = parent_name;
 
-   result.get_string_representation       = &setting_get_string_representation_st_sub_group;
+   result.get_string_representation       = &setting_get_string_representation_default;
 
    return result;
 }
