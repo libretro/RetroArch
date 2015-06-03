@@ -697,13 +697,11 @@ success:
 static struct buffer parse_table(struct buffer buff,
       struct invocation *invocation, const char **error)
 {
-   struct argument args[MAX_ARGS];
    unsigned i;
    const char *ident_name;
    size_t ident_len;
+   struct argument args[MAX_ARGS] = {{0}};
    unsigned argi = 0;
-
-   memset(args, 0, sizeof(struct argument) * MAX_ARGS);
 
    buff = chomp(buff);
    buff = expect_char(buff, '{', error);
@@ -837,8 +835,6 @@ static struct buffer parse_argument(struct buffer buff,
    }
    return buff;
 }
-
-
 
 void libretrodb_query_free(void *q)
 {
