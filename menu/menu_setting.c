@@ -533,7 +533,6 @@ static int setting_action_start_analog_dpad_mode(void *data)
    return 0;
 }
 
-
 static int setting_action_start_libretro_device_type(void *data)
 {
    unsigned current_device, i, devices[128], types = 0, port = 0;
@@ -542,10 +541,8 @@ static int setting_action_start_libretro_device_type(void *data)
    settings_t      *settings = config_get_ptr();
    global_t        *global   = global_get_ptr();
 
-   if (!setting)
+   if (setting_generic_action_start_default(setting) != 0)
       return -1;
-
-   setting_reset_setting(setting);
 
    port = setting->index_offset;
 
@@ -661,16 +658,15 @@ static int setting_action_toggle_analog_dpad_mode(void *data,
 
    switch (action)
    {
-      case MENU_ACTION_RIGHT:
-         settings->input.analog_dpad_mode[port] =
-            (settings->input.analog_dpad_mode[port] + 1)
-            % ANALOG_DPAD_LAST;
-         break;
-
       case MENU_ACTION_LEFT:
          settings->input.analog_dpad_mode[port] =
             (settings->input.analog_dpad_mode
              [port] + ANALOG_DPAD_LAST - 1) % ANALOG_DPAD_LAST;
+         break;
+      case MENU_ACTION_RIGHT:
+         settings->input.analog_dpad_mode[port] =
+            (settings->input.analog_dpad_mode[port] + 1)
+            % ANALOG_DPAD_LAST;
          break;
    }
 
@@ -746,7 +742,6 @@ static int setting_action_toggle_libretro_device_type(
          settings->input.libretro_device[port] = current_device;
          pretro_set_controller_port_device(port, current_device);
          break;
-
       case MENU_ACTION_RIGHT:
          current_device = devices
             [(current_idx + 1) % types];
