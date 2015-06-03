@@ -130,19 +130,24 @@ int menu_entries_common_is_settings_entry(const char *label)
 {
    return (
     !strcmp(label, "Driver Settings") ||
-    !strcmp(label, "General Settings") ||
+    !strcmp(label, "Core Settings") ||
+    !strcmp(label, "Configuration Settings") ||
+    !strcmp(label, "Logging Settings") ||
+    !strcmp(label, "Saving Settings") ||
+    !strcmp(label, "Rewind Settings") ||
     !strcmp(label, "Video Settings") ||
     !strcmp(label, "Recording Settings") ||
+    !strcmp(label, "Frame Throttle Settings") ||
     !strcmp(label, "Shader Settings") ||
     !strcmp(label, "Font Settings") ||
     !strcmp(label, "Audio Settings") ||
     !strcmp(label, "Input Settings") ||
     !strcmp(label, "Overlay Settings") ||
+    !strcmp(label, "Onscreen Keyboard Overlay Settings") ||
     !strcmp(label, "Menu Settings") ||
     !strcmp(label, "UI Settings") ||
     !strcmp(label, "Patch Settings") ||
     !strcmp(label, "Playlist Settings") ||
-    !strcmp(label, "Onscreen Keyboard Overlay Settings") ||
     !strcmp(label, "Core Updater Settings") ||
     !strcmp(label, "Network Settings") ||
     !strcmp(label, "Archive Settings") ||
