@@ -6062,7 +6062,7 @@ static bool setting_append_list_netplay_options(
          general_write_handler,
          general_read_handler);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
-#if 0
+    
    CONFIG_INT(
          settings->network_cmd_port,
          "network_cmd_port",
@@ -6072,7 +6072,7 @@ static bool setting_append_list_netplay_options(
          subgroup_info.name,
          NULL);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
-#endif
+    
    CONFIG_BOOL(
          settings->stdin_cmd_enable,
          "stdin_cmd_enable",
