@@ -1215,10 +1215,8 @@ static int menu_displaylist_parse_settings(menu_handle_t *menu,
    rarch_setting_t *setting = NULL;
    settings_t *settings     = config_get_ptr();
 
-   if (menu && menu->list_settings)
-      settings_list_free(menu->list_settings);
+   setting_realloc(menu->list_settings, setting_flags);
 
-   menu->list_settings      = setting_new(setting_flags);
    setting                  = menu_setting_find(info->label);
 
    if (!setting)
@@ -1268,8 +1266,7 @@ static int menu_displaylist_parse_settings_in_subgroup(menu_displaylist_info_t *
       }
    }
 
-   settings_list_free(menu->list_settings);
-   menu->list_settings = setting_new(SL_FLAG_ALL_SETTINGS);
+   setting_realloc(menu->list_settings, SL_FLAG_ALL_SETTINGS);
 
    info->setting = menu_setting_find(elem0);
 
@@ -1846,8 +1843,7 @@ static int menu_displaylist_parse(menu_displaylist_info_t *info,
          *need_push    = true;
          break;
       case DISPLAYLIST_SETTINGS_ALL:
-         settings_list_free(menu->list_settings);
-         menu->list_settings = setting_new(SL_FLAG_ALL_SETTINGS);
+         setting_realloc(menu->list_settings, SL_FLAG_ALL_SETTINGS);
 
          setting = menu_setting_find("Driver Settings");
 

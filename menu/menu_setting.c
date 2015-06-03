@@ -18,7 +18,6 @@
 
 #include "menu.h"
 #include "menu_setting.h"
-#include "menu_settings_list.h"
 
 #include "../driver.h"
 #include "../gfx/video_monitor.h"
@@ -3205,6 +3204,25 @@ static void general_write_handler(void *data)
       event_command(rarch_cmd);
 }
 
+static bool settings_list_append(rarch_setting_t **list,
+      rarch_setting_info_t *list_info, rarch_setting_t value)
+{
+   if (!list || !*list || !list_info)
+      return false;
+
+   if (list_info->index == list_info->size)
+   {
+      list_info->size *= 2;
+      *list = (rarch_setting_t*)
+         realloc(*list, sizeof(rarch_setting_t) * list_info->size);
+      if (!*list)
+         return false;
+   }
+
+   (*list)[list_info->index++] = value;
+   return true;
+}
+
 #define START_GROUP(group_info, NAME) \
 { \
    group_info.name = NAME; \
@@ -3322,6 +3340,26 @@ static void setting_add_special_callbacks(
       (*list)[idx].action_toggle = setting_string_action_toggle_driver;
 }
 
+static void null_write_handler(void *data)
+{
+   (void)data;
+}
+
+static void settings_list_current_add_flags(
+      rarch_setting_t **list,
+      rarch_setting_info_t *list_info,
+      unsigned values)
+{
+   unsigned idx = list_info->index - 1;
+   (*list)[idx].flags |= values;
+
+   if (values & SD_FLAG_IS_DEFERRED)
+   {
+      (*list)[idx].deferred_handler = (*list)[idx].change_handler;
+      (*list)[idx].change_handler = null_write_handler;
+   }
+}
+
 static void settings_data_list_current_add_flags(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info,
@@ -3345,6 +3383,52 @@ static void overlay_enable_toggle_change_handler(void *data)
       event_command(EVENT_CMD_OVERLAY_INIT);
    else
       event_command(EVENT_CMD_OVERLAY_DEINIT);
+}
+
+
+static void settings_list_current_add_bind_type(
+      rarch_setting_t **list,
+      rarch_setting_info_t *list_info,
+      unsigned type)
+{
+   unsigned idx = list_info->index - 1;
+   (*list)[idx].bind_type = type;
+}
+
+
+static void settings_list_current_add_range(
+      rarch_setting_t **list,
+      rarch_setting_info_t *list_info,
+      float min, float max, float step,
+      bool enforce_minrange_enable, bool enforce_maxrange_enable)
+{
+   unsigned idx = list_info->index - 1;
+
+   (*list)[idx].min               = min;
+   (*list)[idx].step              = step;
+   (*list)[idx].max               = max;
+   (*list)[idx].enforce_minrange  = enforce_minrange_enable;
+   (*list)[idx].enforce_maxrange  = enforce_maxrange_enable;
+
+   settings_list_current_add_flags(list, list_info, SD_FLAG_HAS_RANGE);
+}
+
+static void settings_list_current_add_values(
+      rarch_setting_t **list,
+      rarch_setting_info_t *list_info,
+      const char *values)
+{
+   unsigned idx = list_info->index - 1;
+   (*list)[idx].values = values;
+}
+
+static void settings_list_current_add_cmd(
+      rarch_setting_t **list,
+      rarch_setting_info_t *list_info,
+      enum event_command values)
+{
+   unsigned idx = list_info->index - 1;
+   (*list)[idx].cmd_trigger.idx = values;
 }
 
 static bool setting_append_list_main_menu_options(
@@ -6636,6 +6720,40 @@ static bool setting_append_list_privacy_options(
    return true;
 }
 
+static rarch_setting_info_t *settings_info_list_new(void)
+{
+   rarch_setting_info_t *list_info = (rarch_setting_info_t*)
+      calloc(1, sizeof(*list_info));
+
+   if (!list_info)
+      return NULL;
+
+   list_info->size  = 32;
+
+   return list_info;
+}
+
+static void settings_info_list_free(rarch_setting_info_t *list_info)
+{
+   if (list_info)
+      free(list_info);
+   list_info = NULL;
+}
+
+static rarch_setting_t *settings_list_new(unsigned size)
+{
+   rarch_setting_t *list = (rarch_setting_t*)calloc(size, sizeof(*list));
+   if (!list)
+      return NULL;
+
+   return list;
+}
+
+static void settings_list_free(rarch_setting_t *list)
+{
+   if (list)
+      free(list);
+}
 
 /**
  * setting_new:
@@ -6646,7 +6764,7 @@ static bool setting_append_list_privacy_options(
  * Returns: settings list composed of all requested
  * settings on success, otherwise NULL.
  **/
-rarch_setting_t *setting_new(unsigned mask)
+static rarch_setting_t *setting_new(unsigned mask)
 {
    rarch_setting_t terminator      = { ST_NONE };
    rarch_setting_t* list           = NULL;
@@ -6831,6 +6949,14 @@ error:
    settings_list_free(list);
 
    return NULL;
+}
+
+void setting_realloc(rarch_setting_t *setting, unsigned mask)
+{
+   if (setting)
+      settings_list_free(setting);
+
+   setting = setting_new(mask);
 }
 
 bool setting_is_of_path_type(rarch_setting_t *setting)
