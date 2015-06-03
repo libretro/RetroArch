@@ -60,7 +60,7 @@ rarch_setting_t* setting_find_setting(rarch_setting_t* settings,
  * Set a settings' value with a string. It is assumed
  * that the string has been properly formatted.
  **/
-void setting_set_with_string_representation(
+int setting_set_with_string_representation(
       rarch_setting_t* setting, const char* value);
 
 /**

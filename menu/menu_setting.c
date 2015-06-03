@@ -380,11 +380,11 @@ rarch_setting_t* setting_find_setting(rarch_setting_t* settings,
  * Set a settings' value with a string. It is assumed
  * that the string has been properly formatted.
  **/
-void setting_set_with_string_representation(rarch_setting_t* setting,
+int setting_set_with_string_representation(rarch_setting_t* setting,
       const char* value)
 {
    if (!setting || !value)
-      return;
+      return -1;
 
    switch (setting->type)
    {
@@ -450,6 +450,8 @@ void setting_set_with_string_representation(rarch_setting_t* setting,
 
    if (setting->change_handler)
       setting->change_handler(setting);
+
+   return 0;
 }
 
 /**
@@ -958,17 +960,12 @@ static int core_list_action_toggle(void *data, unsigned action, bool wraparound)
    rarch_setting_t *setting = (rarch_setting_t *)data;
    settings_t      *settings = config_get_ptr();
 
-   if (!setting)
-      return -1;
-
    /* If the user CANCELs the browse, then settings->libretro is now
     * set to a directory, which is very bad and will cause a crash
     * later on. I need to be able to add something to call when a
     * cancel happens.
     */
-   setting_set_with_string_representation(setting, settings->libretro_directory);
-
-   return 0;
+   return setting_set_with_string_representation(setting, settings->libretro_directory);
 }
 #endif
 
@@ -990,10 +987,8 @@ static int load_content_action_toggle(void *data, unsigned action,
    settings_t      *settings = config_get_ptr();
    global_t        *global   = global_get_ptr();
 
-   if (!setting)
+   if (setting_set_with_string_representation(setting, settings->menu_content_directory) != 0)
       return -1;
-
-   setting_set_with_string_representation(setting, settings->menu_content_directory);
 
    if (global->menu.info.valid_extensions)
       setting->values = global->menu.info.valid_extensions;
