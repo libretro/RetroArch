@@ -1202,10 +1202,6 @@ static int setting_string_action_ok_allow_input(void *data,
 }
 
 /**
- ******* ACTION CANCEL CALLBACK FUNCTIONS *******
-**/
-
-/**
  ******* SET LABEL CALLBACK FUNCTIONS *******
 **/
 
