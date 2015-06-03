@@ -522,3 +522,14 @@ error:
       close(fd);
    return -1;
 }
+
+uint32_t djb2_calculate(const char *str)
+{
+   const unsigned char *aux = (const unsigned char*)str;
+   uint32_t            hash = 5381;
+
+   while ( *aux )
+      hash = ( hash << 5 ) + hash + *aux++;
+
+   return hash;
+}

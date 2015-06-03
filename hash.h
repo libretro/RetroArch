@@ -76,5 +76,7 @@ typedef struct SHA1Context
 
 int sha1_calculate(const char *path, char *result);
 
+uint32_t djb2_calculate(const char *str);
+
 #endif
 

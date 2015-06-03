@@ -31,17 +31,6 @@
 
 #include <stdint.h>
 
-static INLINE uint32_t djb2(const char *str)
-{
-   const unsigned char *aux = (const unsigned char*)str;
-   uint32_t            hash = 5381;
-
-   while ( *aux )
-      hash = ( hash << 5 ) + hash + *aux++;
-
-   return hash;
-}
-
 #define DB_QUERY_ENTRY                          0x1c310956U
 #define DB_QUERY_ENTRY_PUBLISHER                0x125e594dU
 #define DB_QUERY_ENTRY_DEVELOPER                0xcbd89be5U
@@ -68,7 +57,7 @@ int database_info_build_query(char *s, size_t len,
 
    strlcpy(s, "{'", len);
 
-   value = djb2(label);
+   value = djb2_calculate(label);
 
    switch (value)
    {
@@ -210,7 +199,7 @@ static int database_cursor_iterate(libretrodb_cursor_t *cur,
       if (!key || !val)
          continue;
 
-      value = djb2(key->string.buff);
+      value = djb2_calculate(key->string.buff);
 
       switch (value)
       {
