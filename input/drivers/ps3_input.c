@@ -161,7 +161,7 @@ static void* ps3_input_init(void)
    if (!ps3)
       return NULL;
 
-   ps3->joypad = input_joypad_init_driver(settings->input.joypad_driver);
+   ps3->joypad = input_joypad_init_driver(settings->input.joypad_driver, ps3);
 
    if (ps3->joypad)
       ps3->joypad->init();

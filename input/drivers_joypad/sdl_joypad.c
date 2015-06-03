@@ -227,9 +227,11 @@ static void sdl_joypad_destroy(void)
    memset(sdl_pads, 0, sizeof(sdl_pads));
 }
 
-static bool sdl_joypad_init(void)
+static bool sdl_joypad_init(void *data)
 {
    unsigned i, num_sticks;
+
+   (void)data;
 
    if (SDL_WasInit(0) == 0)
    {

@@ -80,7 +80,7 @@ static void *xdk_input_init(void)
    if (!xdk)
       return NULL;
 
-   xdk->joypad = input_joypad_init_driver(settings->input.joypad_driver);
+   xdk->joypad = input_joypad_init_driver(settings->input.joypad_driver, xdk);
 
    return xdk;
 }

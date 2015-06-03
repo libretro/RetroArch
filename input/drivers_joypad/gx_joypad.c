@@ -558,12 +558,14 @@ static void gx_joypad_poll(void)
       *lifecycle_state |= (1ULL << RARCH_MENU_TOGGLE);
 }
 
-static bool gx_joypad_init(void)
+static bool gx_joypad_init(void *data)
 {
    SYS_SetResetCallback(reset_cb);
 #ifdef HW_RVL
    SYS_SetPowerCallback(power_callback);
 #endif
+
+   (void)data;
 
    PAD_Init();
 #ifdef HW_RVL

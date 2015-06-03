@@ -51,9 +51,11 @@ static void ctr_joypad_autodetect_add(unsigned autoconf_pad)
    input_config_autoconfigure_joypad(&params);
 }
 
-static bool ctr_joypad_init(void)
+static bool ctr_joypad_init(void *data)
 {
    ctr_joypad_autodetect_add(0);
+
+   (void)data;
 
    return true;
 }

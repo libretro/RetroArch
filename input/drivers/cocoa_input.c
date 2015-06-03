@@ -238,7 +238,7 @@ static void *cocoa_input_init(void)
     
    input_keymaps_init_keyboard_lut(rarch_key_map_apple_hid);
 
-   apple->joypad = input_joypad_init_driver(settings->input.joypad_driver);
+   apple->joypad = input_joypad_init_driver(settings->input.joypad_driver, apple);
     
    return apple;
 }

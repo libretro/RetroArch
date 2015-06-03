@@ -55,7 +55,7 @@ static void xdk_joypad_autodetect_add(unsigned autoconf_pad)
    input_config_autoconfigure_joypad(&params);
 }
 
-static bool xdk_joypad_init(void)
+static bool xdk_joypad_init(void *data)
 {
 #ifdef _XBOX1
    XInitDevices(0, NULL);
@@ -65,6 +65,7 @@ static bool xdk_joypad_init(void)
       xdk_joypad_autodetect_add(autoconf_pad);
 #endif
 
+   (void)data;
 
    return true;
 }

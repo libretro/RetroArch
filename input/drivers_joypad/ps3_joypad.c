@@ -53,8 +53,10 @@ static void ps3_joypad_autodetect_add(unsigned autoconf_pad)
    input_config_autoconfigure_joypad(&params);
 }
 
-static bool ps3_joypad_init(void)
+static bool ps3_joypad_init(void *data)
 {
+   (void)data;
+
    cellPadInit(MAX_PADS);
 
    return true;

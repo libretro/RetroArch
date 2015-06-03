@@ -22,11 +22,13 @@ static const char *android_joypad_name(unsigned pad)
    return settings ? settings->input.device_names[pad] : NULL;
 }
 
-static bool android_joypad_init(void)
+static bool android_joypad_init(void *data)
 {
    unsigned autoconf_pad;
    settings_t *settings       = config_get_ptr();
    autoconfig_params_t params = {{0}};
+
+   (void)data;
 
    for (autoconf_pad = 0; autoconf_pad < MAX_USERS; autoconf_pad++)
    {

@@ -165,7 +165,7 @@ static void *dinput_init(void)
    }
 
    input_keymaps_init_keyboard_lut(rarch_key_map_dinput);
-   di->joypad = input_joypad_init_driver(settings->input.joypad_driver);
+   di->joypad = input_joypad_init_driver(settings->input.joypad_driver, di);
 
    return di;
 }
@@ -576,7 +576,7 @@ bool dinput_handle_message(void *dinput, UINT message, WPARAM wParam, LPARAM lPa
       {
          if (di->joypad)
             di->joypad->destroy();
-         di->joypad = input_joypad_init_driver(settings->input.joypad_driver);
+         di->joypad = input_joypad_init_driver(settings->input.joypad_driver, di);
          break;
       }
       case WM_MOUSEWHEEL:

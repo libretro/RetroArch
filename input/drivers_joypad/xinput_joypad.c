@@ -150,12 +150,14 @@ const char *xinput_joypad_name(unsigned pad)
    return XBOX_CONTROLLER_NAMES[xuser];
 }
 
-static bool xinput_joypad_init(void)
+static bool xinput_joypad_init(void *data)
 {
    unsigned i, autoconf_pad;
    XINPUT_STATE dummy_state;
    const char *version = "1.4";
    settings_t *settings = config_get_ptr();
+
+   (void)data;
 
    g_xinput_dll = NULL;
 

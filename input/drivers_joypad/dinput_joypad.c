@@ -240,9 +240,11 @@ enum_iteration_done:
    return DIENUM_CONTINUE; 
 }
 
-static bool dinput_joypad_init(void)
+static bool dinput_joypad_init(void *data)
 {
    unsigned i;
+
+   (void)data;
 
    if (!dinput_init_context())
       return false;

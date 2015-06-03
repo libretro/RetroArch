@@ -74,7 +74,7 @@ static void* ctr_input_initialize(void)
    if (!ctr)
       return NULL;
 
-   ctr->joypad = input_joypad_init_driver(settings->input.joypad_driver);
+   ctr->joypad = input_joypad_init_driver(settings->input.joypad_driver, ctr);
 
    return ctr;
 }

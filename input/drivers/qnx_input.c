@@ -646,7 +646,7 @@ static void *qnx_input_init(void)
    }
 
    qnx->joypad = input_joypad_init_driver(
-         settings->input.joypad_driver);
+         settings->input.joypad_driver, qnx);
 
    for (i = 0; i < MAX_PADS; ++i)
    {

@@ -75,7 +75,7 @@ static void *gx_input_init(void)
    if (!gx)
       return NULL;
 
-   gx->joypad = input_joypad_init_driver(settings->input.joypad_driver);
+   gx->joypad = input_joypad_init_driver(settings->input.joypad_driver, gx);
 
    return gx;
 }

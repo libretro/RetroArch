@@ -116,7 +116,8 @@ static void *linuxraw_input_init(void)
 
    atexit(linuxraw_reset_kbmd);
 
-   linuxraw->joypad = input_joypad_init_driver(settings->input.joypad_driver);
+   linuxraw->joypad = input_joypad_init_driver(
+         settings->input.joypad_driver, linuxraw);
    input_keymaps_init_keyboard_lut(rarch_key_map_linux);
 
    /* We need to disable use of stdin command interface if 

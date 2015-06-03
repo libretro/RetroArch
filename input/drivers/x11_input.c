@@ -64,7 +64,7 @@ static void *x_input_init(void)
    x11->display = (Display*)driver->video_display;
    x11->win     = (Window)driver->video_window;
 
-   x11->joypad = input_joypad_init_driver(settings->input.joypad_driver);
+   x11->joypad = input_joypad_init_driver(settings->input.joypad_driver, x11);
    input_keymaps_init_keyboard_lut(rarch_key_map_x11);
 
    return x11;

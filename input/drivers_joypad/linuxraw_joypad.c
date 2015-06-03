@@ -217,7 +217,7 @@ static void linuxraw_joypad_setup_notify(void)
    inotify_add_watch(g_notify, "/dev/input", IN_DELETE | IN_CREATE | IN_ATTRIB);
 }
 
-static bool linuxraw_joypad_init(void)
+static bool linuxraw_joypad_init(void *data)
 {
    unsigned i;
    settings_t *settings = config_get_ptr();
@@ -225,6 +225,8 @@ static bool linuxraw_joypad_init(void)
    g_epoll              = epoll_create(MAX_USERS + 1);
    if (g_epoll < 0)
       return false;
+
+   (void)data;
 
    for (i = 0; i < MAX_USERS; i++)
    {

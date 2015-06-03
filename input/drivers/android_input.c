@@ -438,7 +438,7 @@ static void *android_input_init(void)
       return NULL;
 
    android->pads_connected = 0;
-   android->joypad = input_joypad_init_driver(settings->input.joypad_driver);
+   android->joypad = input_joypad_init_driver(settings->input.joypad_driver, android);
 
    frontend_android_get_version_sdk(&sdk);
 

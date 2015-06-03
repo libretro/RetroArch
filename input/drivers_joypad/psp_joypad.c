@@ -40,8 +40,10 @@ static void psp_joypad_autodetect_add(unsigned autoconf_pad)
    input_config_autoconfigure_joypad(&params);
 }
 
-static bool psp_joypad_init(void)
+static bool psp_joypad_init(void *data)
 {
+   (void)data;
+
    psp_joypad_autodetect_add(0);
 
    return true;

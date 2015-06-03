@@ -31,7 +31,7 @@ enum retro_rumble_effect;
 
 struct rarch_joypad_driver
 {
-   bool (*init)(void);
+   bool (*init)(void *data);
    bool (*query_pad)(unsigned);
    void (*destroy)(void);
    bool (*button)(unsigned, uint16_t);
@@ -98,7 +98,7 @@ const char* config_get_joypad_driver_options(void);
  *
  * Returns: joypad driver if found, otherwise NULL.
  **/
-const input_device_driver_t *input_joypad_init_driver(const char *ident);
+const input_device_driver_t *input_joypad_init_driver(const char *ident, void *data);
 
 /**
  * input_joypad_init_first:
@@ -107,7 +107,7 @@ const input_device_driver_t *input_joypad_init_driver(const char *ident);
  *
  * Returns: joypad driver if found, otherwise NULL.
  **/
-const input_device_driver_t *input_joypad_init_first(void);
+const input_device_driver_t *input_joypad_init_first(void *data);
 
 #ifdef __cplusplus
 }

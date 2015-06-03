@@ -124,7 +124,7 @@ static void get_binds(config_file_t *conf, config_file_t *auto_conf,
       int player, int joypad)
 {
    int i, timeout_cnt;
-   const input_device_driver_t *driver = input_joypad_init_driver(g_driver);
+   const input_device_driver_t *driver = input_joypad_init_driver(g_driver, NULL);
    if (!driver)
    {
       fprintf(stderr, "Cannot find any valid input driver.\n");

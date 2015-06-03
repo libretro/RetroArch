@@ -223,7 +223,7 @@ static void parport_free_pad(struct parport_joypad *pad)
    pad->fd = -1;
 }
 
-static bool parport_joypad_init(void)
+static bool parport_joypad_init(void *data)
 {
    unsigned i, j;
    bool found_enabled_button;
@@ -232,6 +232,8 @@ static bool parport_joypad_init(void)
    char pin[3 + 1];
    settings_t *settings       = config_get_ptr();
    autoconfig_params_t params = {{0}};
+
+   (void)data;
 
    memset(buf, 0, PARPORT_NUM_BUTTONS * 3 + 1);
 

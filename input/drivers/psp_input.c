@@ -87,7 +87,8 @@ static void* psp_input_initialize(void)
    if (!psp)
       return NULL;
    
-   psp->joypad = input_joypad_init_driver(settings->input.joypad_driver);   
+   psp->joypad = input_joypad_init_driver(
+         settings->input.joypad_driver, psp);
 
    return psp;
 }

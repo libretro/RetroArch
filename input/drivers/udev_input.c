@@ -816,7 +816,7 @@ static void *udev_input_init(void)
    if (!udev->num_devices)
       RARCH_WARN("[udev]: Couldn't open any keyboard, mouse or touchpad. Are permissions set correctly for /dev/input/event*?\n");
 
-   udev->joypad = input_joypad_init_driver(settings->input.joypad_driver);
+   udev->joypad = input_joypad_init_driver(settings->input.joypad_driver, udev);
    input_keymaps_init_keyboard_lut(rarch_key_map_linux);
 
    disable_terminal_input();
