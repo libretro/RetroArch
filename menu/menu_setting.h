@@ -217,19 +217,15 @@ int menu_setting_generic(rarch_setting_t *setting);
 int menu_setting_set(unsigned type, const char *label,
       unsigned action, bool wraparound);
 
-rarch_setting_t *menu_setting_find(const char *label);
-
 /**
- * setting_find_setting:
- * @settings           : pointer to settings
+ * menu_setting_find:
  * @name               : name of setting to search for
  *
  * Search for a setting with a specified name (@name).
  *
  * Returns: pointer to setting if found, NULL otherwise.
  **/
-rarch_setting_t* setting_find_setting(rarch_setting_t* settings,
-      const char* name);
+rarch_setting_t *menu_setting_find(const char *label);
 
 /**
  * setting_set_with_string_representation:
