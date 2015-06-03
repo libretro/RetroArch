@@ -1592,7 +1592,7 @@ static void setting_get_string_representation_hex(void *data,
  *
  * Returns: setting of type ST_ACTION.
  **/
-rarch_setting_t setting_action_setting(const char* name,
+static rarch_setting_t setting_action_setting(const char* name,
       const char* short_description,
       const char *group, const char *subgroup)
 {
@@ -1626,7 +1626,7 @@ rarch_setting_t setting_action_setting(const char* name,
  *
  * Returns: setting of type ST_GROUP.
  **/
-rarch_setting_t setting_group_setting(enum setting_type type, const char* name)
+static rarch_setting_t setting_group_setting(enum setting_type type, const char* name)
 {
    rarch_setting_t result = {0};
 
@@ -1649,7 +1649,7 @@ rarch_setting_t setting_group_setting(enum setting_type type, const char* name)
  *
  * Returns: setting of type ST_SUBGROUP.
  **/
-rarch_setting_t setting_subgroup_setting(enum setting_type type,
+static rarch_setting_t setting_subgroup_setting(enum setting_type type,
       const char* name, const char *parent_name)
 {
    rarch_setting_t result = {0};
@@ -1681,7 +1681,7 @@ rarch_setting_t setting_subgroup_setting(enum setting_type type,
  *
  * Returns: setting of type ST_FLOAT.
  **/
-rarch_setting_t setting_float_setting(const char* name,
+static rarch_setting_t setting_float_setting(const char* name,
       const char* short_description, float* target, float default_value,
       const char *rounding, const char *group, const char *subgroup,
       change_handler_t change_handler, change_handler_t read_handler)
@@ -1728,7 +1728,7 @@ rarch_setting_t setting_float_setting(const char* name,
  *
  * Returns: setting of type ST_BOOL.
  **/
-rarch_setting_t setting_bool_setting(const char* name,
+static rarch_setting_t setting_bool_setting(const char* name,
       const char* short_description, bool* target, bool default_value,
       const char *off, const char *on,
       const char *group, const char *subgroup,
@@ -1775,7 +1775,7 @@ rarch_setting_t setting_bool_setting(const char* name,
  *
  * Returns: setting of type ST_INT.
  **/
-rarch_setting_t setting_int_setting(const char* name,
+static rarch_setting_t setting_int_setting(const char* name,
       const char* short_description, int* target, int default_value,
       const char *group, const char *subgroup, change_handler_t change_handler,
       change_handler_t read_handler)
@@ -1815,7 +1815,7 @@ rarch_setting_t setting_int_setting(const char* name,
  *
  * Returns: setting of type ST_UINT.
  **/
-rarch_setting_t setting_uint_setting(const char* name,
+static rarch_setting_t setting_uint_setting(const char* name,
       const char* short_description, unsigned int* target,
       unsigned int default_value, const char *group, const char *subgroup,
       change_handler_t change_handler, change_handler_t read_handler)
@@ -1858,7 +1858,7 @@ rarch_setting_t setting_uint_setting(const char* name,
  *
  * Returns: setting of type ST_HEX.
  **/
-rarch_setting_t setting_hex_setting(const char* name,
+static rarch_setting_t setting_hex_setting(const char* name,
       const char* short_description, unsigned int* target,
       unsigned int default_value, const char *group, const char *subgroup,
       change_handler_t change_handler, change_handler_t read_handler)
@@ -1901,7 +1901,7 @@ rarch_setting_t setting_hex_setting(const char* name,
  *
  * Returns: setting of type ST_BIND.
  **/
-rarch_setting_t setting_bind_setting(const char* name,
+static rarch_setting_t setting_bind_setting(const char* name,
       const char* short_description, struct retro_keybind* target,
       uint32_t idx, uint32_t idx_offset,
       const struct retro_keybind* default_value,
@@ -2007,12 +2007,12 @@ rarch_setting_t setting_string_setting(enum setting_type type,
  *
  * Returns: string option list setting.
  **/
-rarch_setting_t setting_string_setting_options(enum setting_type type,
- const char* name, const char* short_description, char* target,
- unsigned size, const char* default_value,
- const char *empty, const char *values,
- const char *group, const char *subgroup,
- change_handler_t change_handler, change_handler_t read_handler)
+static rarch_setting_t setting_string_setting_options(enum setting_type type,
+      const char* name, const char* short_description, char* target,
+      unsigned size, const char* default_value,
+      const char *empty, const char *values,
+      const char *group, const char *subgroup,
+      change_handler_t change_handler, change_handler_t read_handler)
 {
   rarch_setting_t result = setting_string_setting(type, name,
         short_description, target, size, default_value, empty, group,
