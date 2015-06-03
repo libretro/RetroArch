@@ -206,7 +206,7 @@ typedef struct rarch_setting
 }  rarch_setting_t;
 
 
-void settings_list_free(rarch_setting_t *list);
+void menu_settings_list_free(rarch_setting_t *list);
 
 void menu_setting_apply_deferred(void);
 
@@ -290,15 +290,15 @@ void setting_get_label(file_list_t *list, char *s,
  * Returns: settings list composed of all requested
  * settings on success, otherwise NULL.
  **/
-rarch_setting_t* setting_new(unsigned mask);
+rarch_setting_t* menu_setting_new(unsigned mask);
 
-bool setting_is_of_path_type(rarch_setting_t *setting);
+bool menu_setting_is_of_path_type(rarch_setting_t *setting);
 
-bool setting_is_of_general_type(rarch_setting_t *setting);
+bool menu_setting_is_of_general_type(rarch_setting_t *setting);
 
-bool setting_is_of_numeric_type(rarch_setting_t *setting);
+bool menu_setting_is_of_numeric_type(rarch_setting_t *setting);
 
-bool setting_is_of_enum_type(rarch_setting_t *setting);
+bool menu_setting_is_of_enum_type(rarch_setting_t *setting);
 
 int menu_action_handle_setting(rarch_setting_t *setting,
       unsigned type, unsigned action, bool wraparound);

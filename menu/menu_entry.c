@@ -169,13 +169,13 @@ enum menu_entry_type menu_entry_get_type(uint32_t i)
 
    // XXX Really a special kind of ST_ACTION, but this should be
    // changed
-   if (setting_is_of_path_type(setting))
+   if (menu_setting_is_of_path_type(setting))
       return MENU_ENTRY_PATH;
    else if (setting && setting->type == ST_BOOL )
       return MENU_ENTRY_BOOL;
    else if (setting && setting->type == ST_BIND )
       return MENU_ENTRY_BIND;
-   else if (setting_is_of_enum_type(setting))
+   else if (menu_setting_is_of_enum_type(setting))
       return MENU_ENTRY_ENUM;
    else if (setting && setting->type == ST_INT )
       return MENU_ENTRY_INT;
@@ -280,7 +280,7 @@ void menu_entry_bind_joyaxis_set(uint32_t i, int32_t value)
 void menu_entry_pathdir_selected(uint32_t i)
 {
    rarch_setting_t *setting = menu_entry_get_setting(i);
-   if (setting_is_of_path_type(setting))
+   if (menu_setting_is_of_path_type(setting))
       setting->action_toggle( setting, MENU_ACTION_RIGHT, false);
 }
 

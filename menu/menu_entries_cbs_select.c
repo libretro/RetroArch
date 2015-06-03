@@ -35,7 +35,7 @@ static int action_select_default(const char *path, const char *label, unsigned t
 
    cbs = menu_list_get_actiondata_at_offset(menu_list->selection_buf, idx);
 
-   if ((cbs && cbs->action_ok) || setting_is_of_general_type(setting))
+   if ((cbs && cbs->action_ok) || menu_setting_is_of_general_type(setting))
        action = MENU_ACTION_OK;
    else { if (cbs && cbs->action_start)
          action = MENU_ACTION_START;
