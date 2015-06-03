@@ -201,8 +201,9 @@ error:
    return -1;
 }
 
-static bool udev_add_pad(struct udev_device *dev, unsigned p, int fd, const char *path)
+static int udev_add_pad(struct udev_device *dev, unsigned p, int fd, const char *path)
 {
+   int ret = 0;
    int i;
    const char *buf;
    struct stat st;
@@ -219,7 +220,7 @@ static bool udev_add_pad(struct udev_device *dev, unsigned p, int fd, const char
    if (ioctl(fd, EVIOCGNAME(sizeof(settings->input.device_names[0])), pad->ident) < 0)
    {
       RARCH_LOG("[udev]: Failed to get pad name.\n");
-      return false;
+      return -1;
    }
 
    /* Don't worry about unref'ing the parent. */
@@ -237,11 +238,11 @@ static bool udev_add_pad(struct udev_device *dev, unsigned p, int fd, const char
              pad->ident, pad->vid, pad->pid, p);
 
    if (fstat(fd, &st) < 0)
-      return false;
+      return -1;
 
    if ((ioctl(fd, EVIOCGBIT(EV_KEY, sizeof(keybit)), keybit) < 0) ||
             (ioctl(fd, EVIOCGBIT(EV_ABS, sizeof(absbit)), absbit) < 0))
-      return false;
+      return -1;
 
    /* Go through all possible keycodes, check if they are used,
     * and map them to button/axes/hat indices.
@@ -287,6 +288,8 @@ static bool udev_add_pad(struct udev_device *dev, unsigned p, int fd, const char
       params.pid = pad->pid;
       strlcpy(params.driver, udev_joypad.ident, sizeof(params.driver));
       input_config_autoconfigure_joypad(&params);
+
+      ret = 1;
    }
 
    /* Check for rumble features. */
@@ -300,11 +303,12 @@ static bool udev_add_pad(struct udev_device *dev, unsigned p, int fd, const char
          RARCH_LOG("[udev]: Pad #%u (%s) supports %d force feedback effects.\n", p, path, pad->num_effects);
    }
 
-   return true;
+   return ret;
 }
 
 static void udev_check_device(struct udev_device *dev, const char *path, bool hotplugged)
 {
+   int ret;
    int pad, fd;
    unsigned i;
    struct stat st;
@@ -329,11 +333,28 @@ static void udev_check_device(struct udev_device *dev, const char *path, bool ho
    if (fd < 0)
       return;
 
-   if (udev_add_pad(dev, pad, fd, path))
-      return;
+   ret = udev_add_pad(dev, pad, fd, path);
 
-   RARCH_ERR("[udev]: Failed to add pad: %s.\n", path);
-   close(fd);
+   switch (ret)
+   {
+      case -1:
+         RARCH_ERR("[udev]: Failed to add pad: %s.\n", path);
+         close(fd);
+         break;
+      case 1:
+         /* Pad was autoconfigured. */
+         break;
+      case 0:
+      default:
+         if (hotplugged)
+         {
+            char msg[PATH_MAX_LENGTH];
+            snprintf(msg, sizeof(msg), "Device #%u (%s) connected.", pad, path);
+            rarch_main_msg_queue_push(msg, 0, 60, false);
+            RARCH_LOG("[udev]: %s\n", msg);
+         }
+         break;
+   }
 }
 
 static void udev_free_pad(unsigned pad, bool hotplug)
