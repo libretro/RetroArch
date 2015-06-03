@@ -516,3 +516,7 @@ bool video_driver_read_viewport(uint8_t *buffer)
 {
    return false;
 }
+
+void input_config_autoconfigure_disconnect(unsigned id, const char *msg)
+{
+}

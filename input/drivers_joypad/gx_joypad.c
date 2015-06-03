@@ -138,7 +138,7 @@ int change_cb(int result, void *usrdata)
 
 void removal_cb(void *usrdata)
 {
-   RARCH_LOG("Device %d disconnected\n", (int)usrdata);
+   input_config_autoconfigure_disconnect((int)usrdata, gx_joypad.ident);
 }
 #endif
 

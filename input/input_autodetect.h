@@ -34,6 +34,8 @@ const struct retro_keybind *input_get_auto_bind(unsigned port,
 
 void input_config_autoconfigure_joypad(autoconfig_params_t *params);
 
+void input_config_autoconfigure_disconnect(unsigned i, const char *ident);
+
 extern const char* const input_builtin_autoconfs[];
 
 #endif

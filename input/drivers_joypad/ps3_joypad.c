@@ -137,13 +137,7 @@ static void ps3_joypad_poll(void)
       {
          if ( (pad_info.port_status[port] & CELL_PAD_STATUS_CONNECTED) == 0 )
          {
-            char msg[512];
-
-            snprintf(msg, sizeof(msg),
-                  "Device #%u (%s) disconnected.", port, ps3_joypad.ident);
-            rarch_main_msg_queue_push(msg, 0, 60, false);
-            RARCH_LOG("%s\n", msg);
-
+            input_config_autoconfigure_disconnect(port, ps3_joypad.ident);
             pads_connected[port] = 0;
          }
          else if ((pad_info.port_status[port] & CELL_PAD_STATUS_CONNECTED) > 0 )

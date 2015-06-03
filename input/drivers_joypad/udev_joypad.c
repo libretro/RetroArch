@@ -368,10 +368,7 @@ static void udev_joypad_remove_device(const char *path)
    {
       if (udev_pads[i].path && !strcmp(udev_pads[i].path, path))
       {
-         char msg[512];
-         snprintf(msg, sizeof(msg), "Device #%u (%s) disconnected.", i, udev_pads[i].ident);
-         rarch_main_msg_queue_push(msg, 0, 60, false);
-         RARCH_LOG("[udev]: %s\n", msg);
+         input_config_autoconfigure_disconnect(i, udev_pads[i].ident);
          udev_free_pad(i, true);
          break;
       }

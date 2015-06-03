@@ -202,14 +202,14 @@ static void sdl_pad_disconnect(unsigned id)
    if (sdl_pads[id].controller)
    {
       SDL_GameControllerClose(sdl_pads[id].controller);
-      RARCH_LOG("[SDL]: Device #%u disconnected.\n", id);
+      input_config_autoconfigure_disconnect(id, sdl_joypad.ident);
    }
    else
 #endif
    if (sdl_pads[id].joypad)
    {
       SDL_JoystickClose(sdl_pads[id].joypad);
-      RARCH_LOG("[SDL]: Device #%u disconnected.\n", id);
+      input_config_autoconfigure_disconnect(id, sdl_joypad.ident);
    }
 
    settings->input.device_names[id][0] = '\0';

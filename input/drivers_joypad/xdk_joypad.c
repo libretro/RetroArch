@@ -165,10 +165,7 @@ static void xdk_joypad_poll(void)
          gamepads[port] = 0;
          pad_state[port] = 0;
 
-         char msg[512];
-         snprintf(msg, sizeof(msg), "Device #%u (%s) disconnected.", port, xdk_joypad.ident);
-         rarch_main_msg_queue_push(msg, 0, 60, false);
-         RARCH_LOG("%s\n", msg);
+         input_config_autoconfigure_disconnect(port, xdk_joypad.ident);
       }
 
       /* handle inserted devices. */

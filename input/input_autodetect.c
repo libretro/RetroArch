@@ -258,3 +258,11 @@ const struct retro_keybind *input_get_auto_bind(unsigned port, unsigned id)
       return &settings->input.autoconf_binds[joy_idx][id];
    return NULL;
 }
+
+void input_config_autoconfigure_disconnect(unsigned i, const char *ident)
+{
+   char msg[PATH_MAX_LENGTH];
+   snprintf(msg, sizeof(msg), "Device #%u (%s) disconnected.", i, ident);
+   rarch_main_msg_queue_push(msg, 0, 60, false);
+   RARCH_LOG("%s\n", msg);
+}

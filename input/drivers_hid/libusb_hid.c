@@ -321,13 +321,10 @@ static int remove_adapter(void *data, struct libusb_device *dev)
    {
       if (adapter->next->device == dev)
       {
-         char msg[PATH_MAX_LENGTH];
          struct libusb_adapter *new_next = NULL;
+         const char *name = (const char*)adapter->next->name;
 
-         fprintf(stderr, "Device 0x%p disconnected.\n", adapter->next->device);
-         snprintf(msg, sizeof(msg), "Device #%u (%s) disconnected.",
-               adapter->slot, adapter->next->name);
-         rarch_main_msg_queue_push(msg, 0, 60, false);
+         input_config_autoconfigure_disconnect(adapter->slot, name);
 
          adapter->next->quitting = true;
          sthread_join(adapter->next->thread);

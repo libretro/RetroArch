@@ -148,15 +148,9 @@ static void handle_plugged_pad(void)
          {
             if (linuxraw_pads[idx].fd >= 0)
             {
-
                if (g_hotplug)
-               {
-                  char msg[512];
-                  snprintf(msg, sizeof(msg), "Device #%u (%s) disconnected.", idx, linuxraw_pads[idx].ident);
-                  rarch_main_msg_queue_push(msg, 0, 60, false);
-               }
+                  input_config_autoconfigure_disconnect(idx, linuxraw_pads[idx].ident);
 
-               RARCH_LOG("[Device]: Device %s disconnected.\n", linuxraw_pads[idx].ident);
                close(linuxraw_pads[idx].fd);
                linuxraw_pads[idx].buttons = 0;
                memset(linuxraw_pads[idx].axes, 0, sizeof(linuxraw_pads[idx].axes));

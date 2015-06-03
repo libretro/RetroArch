@@ -217,11 +217,7 @@ static void iohidmanager_hid_device_remove(void *data, IOReturn result, void* se
 
    if (adapter && (adapter->slot < MAX_USERS))
    {
-      char msg[PATH_MAX_LENGTH];
-
-      snprintf(msg, sizeof(msg), "Device #%u (%s) disconnected.",
-            adapter->slot, adapter->name);
-      rarch_main_msg_queue_push(msg, 0, 60, false);
+      input_config_autoconfigure_disconnect(adapter->slot, adapter->name);
 
       apple->buttons[adapter->slot] = 0;
       memset(apple->axes[adapter->slot], 0, sizeof(apple->axes));
