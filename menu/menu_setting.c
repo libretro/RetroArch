@@ -1103,28 +1103,31 @@ static int setting_action_ok_video_refresh_rate_auto(
    return 0;
 }
 
-static int setting_uint_action_ok_linefeed(void *data, unsigned action)
+static int setting_generic_action_ok_linefeed(void *data, unsigned action)
 {
+   input_keyboard_line_complete_t cb = NULL;
    rarch_setting_t *setting = (rarch_setting_t*)data;
 
    if (!setting)
       return -1;
 
+   switch (setting->type)
+   {
+      case ST_UINT:
+         cb = menu_input_st_uint_callback;
+         break;
+      case ST_HEX:
+         cb = menu_input_st_hex_callback;
+         break;
+      case ST_STRING:
+         cb = menu_input_st_string_callback;
+         break;
+      default:
+         break;
+   }
+
    menu_input_key_start_line(setting->short_description,
-         setting->name, 0, 0, menu_input_st_uint_callback);
-
-   return 0;
-}
-
-static int setting_hex_action_ok_linefeed(void *data, unsigned action)
-{
-   rarch_setting_t *setting = (rarch_setting_t*)data;
-
-   if (!setting)
-      return -1;
-
-   menu_input_key_start_line(setting->short_description,
-         setting->name, 0, 0, menu_input_st_hex_callback);
+         setting->name, 0, 0, cb);
 
    return 0;
 }
@@ -1154,19 +1157,6 @@ static int setting_bind_action_ok(void *data, unsigned action)
    return 0;
 }
 
-static int setting_string_action_ok_allow_input(void *data,
-      unsigned action)
-{
-   rarch_setting_t *setting = (rarch_setting_t*)data;
-
-   if (!setting)
-      return -1;
-
-   menu_input_key_start_line(setting->short_description,
-         setting->name, 0, 0, menu_input_st_string_callback);
-
-   return 0;
-}
 
 /**
  ******* SET LABEL CALLBACK FUNCTIONS *******
@@ -3262,21 +3252,20 @@ static void setting_add_special_callbacks(
 
    if (values & SD_FLAG_ALLOW_INPUT)
    {
+      (*list)[idx].action_ok     = setting_generic_action_ok_linefeed;
+
       switch ((*list)[idx].type)
       {
          case ST_UINT:
             (*list)[idx].action_start  = setting_generic_action_start_default;
-            (*list)[idx].action_ok     = setting_uint_action_ok_linefeed;
             (*list)[idx].action_cancel = NULL;
             break;
          case ST_HEX:
             (*list)[idx].action_start  = setting_generic_action_start_default;
-            (*list)[idx].action_ok     = setting_hex_action_ok_linefeed;
             (*list)[idx].action_cancel = NULL;
             break;
          case ST_STRING:
             (*list)[idx].action_start  = setting_string_action_start_generic;
-            (*list)[idx].action_ok     = setting_string_action_ok_allow_input;
             (*list)[idx].action_cancel = NULL;
             break;
          default:
