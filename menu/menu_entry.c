@@ -191,8 +191,8 @@ enum menu_entry_type menu_entry_get_type(uint32_t i)
       return MENU_ENTRY_STRING;
    else if (setting && setting->type == ST_HEX )
       return MENU_ENTRY_HEX;
-   else
-      return MENU_ENTRY_ACTION;
+
+   return MENU_ENTRY_ACTION;
 }
 
 void menu_entry_get_path(uint32_t i, char *s, size_t len)
