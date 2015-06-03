@@ -93,14 +93,12 @@ static bool linuxraw_joypad_init_pad(const char *path, struct linuxraw_joypad *p
       {
          RARCH_LOG("[Device]: Found pad: %s on %s.\n", pad->ident, path);
 
-#ifndef IS_JOYCONFIG
          if (g_hotplug)
          {
             char msg[512];
             snprintf(msg, sizeof(msg), "Device #%u (%s) connected.", (unsigned)(pad - linuxraw_pads), pad->ident);
             rarch_main_msg_queue_push(msg, 0, 60, false);
          }
-#endif
       }
 
       else
@@ -151,14 +149,12 @@ static void handle_plugged_pad(void)
             if (linuxraw_pads[idx].fd >= 0)
             {
 
-#ifndef IS_JOYCONFIG
                if (g_hotplug)
                {
                   char msg[512];
                   snprintf(msg, sizeof(msg), "Device #%u (%s) disconnected.", idx, linuxraw_pads[idx].ident);
                   rarch_main_msg_queue_push(msg, 0, 60, false);
                }
-#endif
 
                RARCH_LOG("[Device]: Device %s disconnected.\n", linuxraw_pads[idx].ident);
                close(linuxraw_pads[idx].fd);
