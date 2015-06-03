@@ -42,6 +42,24 @@ static INLINE uint32_t djb2(const char *str)
    return hash;
 }
 
+#define DB_QUERY_ENTRY                          0x1c310956U
+#define DB_QUERY_ENTRY_PUBLISHER                0x125e594dU
+#define DB_QUERY_ENTRY_DEVELOPER                0xcbd89be5U
+#define DB_QUERY_ENTRY_ORIGIN                   0x4ebaa767U
+#define DB_QUERY_ENTRY_FRANCHISE                0x77f9eff2U
+#define DB_QUERY_ENTRY_RATING                   0x68eba20fU
+#define DB_QUERY_ENTRY_BBFC_RATING              0x0a8e67f0U
+#define DB_QUERY_ENTRY_ELSPA_RATING             0x8bf6ab18U
+#define DB_QUERY_ENTRY_PEGI_RATING              0x5fc77328U
+#define DB_QUERY_ENTRY_CERO_RATING              0x24f6172cU
+#define DB_QUERY_ENTRY_ENHANCEMENT_HW           0x9866bda3U
+#define DB_QUERY_ENTRY_EDGE_MAGAZINE_RATING     0x1c7f8a43U
+#define DB_QUERY_ENTRY_EDGE_MAGAZINE_ISSUE      0xaaeebde7U
+#define DB_QUERY_ENTRY_FAMITSU_MAGAZINE_RATING  0xbf7ff5e7U
+#define DB_QUERY_ENTRY_RELEASEDATE_MONTH        0x2b36ce66U
+#define DB_QUERY_ENTRY_RELEASEDATE_YEAR         0x9c7c6e91U
+#define DB_QUERY_ENTRY_MAX_USERS                0xbfcba816U
+
 int database_info_build_query(char *s, size_t len,
       const char *label, const char *path)
 {
@@ -54,60 +72,60 @@ int database_info_build_query(char *s, size_t len,
 
    switch (value)
    {
-      case 0x1c310956U: /* displaylist_parse_database_entry */
+      case DB_QUERY_ENTRY:
          strlcat(s, "name", len);
          break;
-      case 0x125e594dU: /* deferred_cursor_manager_list_rdb_entry_publisher */
+      case DB_QUERY_ENTRY_PUBLISHER:
          strlcat(s, "publisher", len);
          break;
-      case 0xcbd89be5U: /* deferred_cursor_manager_list_rdb_entry_developer */
+      case DB_QUERY_ENTRY_DEVELOPER:
          strlcat(s, "developer", len);
          break;
-      case 0x4ebaa767U: /* deferred_cursor_manager_list_rdb_entry_origin */
+      case DB_QUERY_ENTRY_ORIGIN:
          strlcat(s, "origin", len);
          break;
-      case 0x77f9eff2U: /* deferred_cursor_manager_list_rdb_entry_franchise */
+      case DB_QUERY_ENTRY_FRANCHISE:
          strlcat(s, "franchise", len);
          break;
-      case 0x68eba20fU: /* deferred_cursor_manager_list_rdb_entry_esrb_rating */
+      case DB_QUERY_ENTRY_RATING:
          strlcat(s, "esrb_rating", len);
          break;
-      case 0x0a8e67f0U: /* deferred_cursor_manager_list_rdb_entry_bbfc_rating */
+      case DB_QUERY_ENTRY_BBFC_RATING:
          strlcat(s, "bbfc_rating", len);
          break;
-      case 0x8bf6ab18U: /* deferred_cursor_manager_list_rdb_entry_elspa_rating */
+      case DB_QUERY_ENTRY_ELSPA_RATING:
          strlcat(s, "elspa_rating", len);
          break;
-      case 0x5fc77328U: /* deferred_cursor_manager_list_rdb_entry_pegi_rating */
+      case DB_QUERY_ENTRY_PEGI_RATING:
          strlcat(s, "pegi_rating", len);
          break;
-      case 0x9866bda3U: /* deferred_cursor_manager_list_rdb_entry_enhancement_hw */
-         strlcat(s, "enhancement_hw", len);
-         break;
-      case 0x24f6172cU: /* deferred_cursor_manager_list_rdb_entry_cero_rating */
+      case DB_QUERY_ENTRY_CERO_RATING:
          strlcat(s, "cero_rating", len);
          break;
-      case 0x1c7f8a43U: /* deferred_cursor_manager_list_rdb_entry_edge_magazine_rating */
+      case DB_QUERY_ENTRY_ENHANCEMENT_HW:
+         strlcat(s, "enhancement_hw", len);
+         break;
+      case DB_QUERY_ENTRY_EDGE_MAGAZINE_RATING:
          strlcat(s, "edge_rating", len);
          add_quotes = false;
          break;
-      case 0xaaeebde7U: /* deferred_cursor_manager_list_rdb_entry_edge_magazine_issue */
+      case DB_QUERY_ENTRY_EDGE_MAGAZINE_ISSUE:
          strlcat(s, "edge_issue", len);
          add_quotes = false;
          break;
-      case 0xbf7ff5e7U: /* deferred_cursor_manager_list_rdb_entry_famitsu_magazine_rating */
+      case DB_QUERY_ENTRY_FAMITSU_MAGAZINE_RATING:
          strlcat(s, "famitsu_rating", len);
          add_quotes = false;
          break;
-      case 0x2b36ce66U: /* deferred_cursor_manager_list_rdb_entry_releasemonth */
+      case DB_QUERY_ENTRY_RELEASEDATE_MONTH:
          strlcat(s, "releasemonth", len);
          add_quotes = false;
          break;
-      case 0x9c7c6e91U: /* deferred_cursor_manager_list_rdb_entry_releaseyear */
+      case DB_QUERY_ENTRY_RELEASEDATE_YEAR:
          strlcat(s, "releaseyear", len);
          add_quotes = false;
          break;
-      case 0xbfcba816U: /* deferred_cursor_manager_list_rdb_entry_max_users */
+      case DB_QUERY_ENTRY_MAX_USERS:
          strlcat(s, "users", len);
          add_quotes = false;
          break;
@@ -143,6 +161,31 @@ static char *bin_to_hex_alloc(const uint8_t *data, size_t len)
    return ret;
 }
 
+#define DB_CURSOR_NAME                    0x7c9b0c46U
+#define DB_CURSOR_DESCRIPTION             0x91b0c789U
+#define DB_CURSOR_PUBLISHER               0x5e099013U
+#define DB_CURSOR_DEVELOPER               0x1783d2abU
+#define DB_CURSOR_ORIGIN                  0x1315e3edU
+#define DB_CURSOR_FRANCHISE               0xc3a526b8U
+#define DB_CURSOR_BBFC_RATING             0xede26836U
+#define DB_CURSOR_ESRB_RATING             0x4c3fa255U
+#define DB_CURSOR_ELSPA_RATING            0xd9cab41eU
+#define DB_CURSOR_CERO_RATING             0x084a1772U
+#define DB_CURSOR_PEGI_RATING             0x431b736eU
+#define DB_CURSOR_CHECKSUM_CRC32          0x0b88671dU
+#define DB_CURSOR_CHECKSUM_SHA1           0x7c9de632U
+#define DB_CURSOR_CHECKSUM_MD5            0x0b888fabU
+#define DB_CURSOR_ENHANCEMENT_HW          0xab612029U
+#define DB_CURSOR_EDGE_MAGAZINE_REVIEW    0xd3573eabU
+#define DB_CURSOR_EDGE_MAGAZINE_RATING    0xd30dc4feU
+#define DB_CURSOR_EDGE_MAGAZINE_ISSUE     0xa0f30d42U
+#define DB_CURSOR_FAMITSU_MAGAZINE_RATING 0x0a50ca62U
+#define DB_CURSOR_MAX_USERS               0x1084ff77U
+#define DB_CURSOR_RELEASEDATE_MONTH       0x790ad76cU
+#define DB_CURSOR_RELEASEDATE_YEAR        0x7fd06ed7U
+#define DB_CURSOR_RUMBLE_SUPPORTED        0x1a4dc3ecU
+#define DB_CURSOR_ANALOG_SUPPORTED        0xf220fc17U
+
 static int database_cursor_iterate(libretrodb_cursor_t *cur,
       database_info_t *db_info)
 {
@@ -171,76 +214,76 @@ static int database_cursor_iterate(libretrodb_cursor_t *cur,
 
       switch (value)
       {
-         case 0x7c9b0c46U: /* name */
+         case DB_CURSOR_NAME:
             db_info->name = strdup(val->string.buff);
             break;
-         case 0x91b0c789U: /* description */
+         case DB_CURSOR_DESCRIPTION:
             db_info->description = strdup(val->string.buff);
             break;
-         case 0x5e099013U: /* publisher */
+         case DB_CURSOR_PUBLISHER:
             db_info->publisher = strdup(val->string.buff);
             break;
-         case 0x1783d2abU: /* developer */
+         case DB_CURSOR_DEVELOPER:
             db_info->developer = strdup(val->string.buff);
             break;
-         case 0x1315e3edU: /* origin */
+         case DB_CURSOR_ORIGIN:
             db_info->origin = strdup(val->string.buff);
             break;
-         case 0xc3a526b8U: /* franchise */
+         case DB_CURSOR_FRANCHISE:
             db_info->franchise = strdup(val->string.buff);
             break;
-         case 0xede26836U: /* bbfc_rating */
+         case DB_CURSOR_BBFC_RATING:
             db_info->bbfc_rating = strdup(val->string.buff);
             break;
-         case 0x4c3fa255U: /* esrb_rating */
+         case DB_CURSOR_ESRB_RATING:
             db_info->esrb_rating = strdup(val->string.buff);
             break;
-         case 0xd9cab41eU: /* elspa_rating */
+         case DB_CURSOR_ELSPA_RATING:
             db_info->elspa_rating = strdup(val->string.buff);
             break;
-         case 0x084a1772U: /* cero_rating */
+         case DB_CURSOR_CERO_RATING:
             db_info->cero_rating = strdup(val->string.buff);
             break;
-         case 0x431b736eU: /* pegi_rating */
+         case DB_CURSOR_PEGI_RATING:
             db_info->pegi_rating = strdup(val->string.buff);
             break;
-         case 0xab612029U: /* enhancement_hw */
+         case DB_CURSOR_ENHANCEMENT_HW:
             db_info->enhancement_hw = strdup(val->string.buff);
             break;
-         case 0xd3573eabU: /* edge_magazine_review */
+         case DB_CURSOR_EDGE_MAGAZINE_REVIEW:
             db_info->edge_magazine_review = strdup(val->string.buff);
             break;
-         case 0xd30dc4feU: /* edge_magazine_rating */
+         case DB_CURSOR_EDGE_MAGAZINE_RATING:
             db_info->edge_magazine_rating = val->uint_;
             break;
-         case 0xa0f30d42U: /* edge_magazine_issue */
+         case DB_CURSOR_EDGE_MAGAZINE_ISSUE:
             db_info->edge_magazine_issue = val->uint_;
             break;
-         case 0x0a50ca62U: /* famitsu_magazine_rating */
+         case DB_CURSOR_FAMITSU_MAGAZINE_RATING:
             db_info->famitsu_magazine_rating = val->uint_;
             break;
-         case 0x1084ff77U: /* max_users */
+         case DB_CURSOR_MAX_USERS:
             db_info->max_users = val->uint_;
             break;
-         case 0x790ad76cU: /* releasemonth */
+         case DB_CURSOR_RELEASEDATE_MONTH:
             db_info->releasemonth = val->uint_;
             break;
-         case 0x7fd06ed7U: /* releaseyear */
+         case DB_CURSOR_RELEASEDATE_YEAR:
             db_info->releaseyear = val->uint_;
             break;
-         case 0x1a4dc3ecU: /* rumble_supported */
+         case DB_CURSOR_RUMBLE_SUPPORTED:
             db_info->rumble_supported = val->uint_;
             break;
-         case 0xf220fc17U: /* analog_supported */
+         case DB_CURSOR_ANALOG_SUPPORTED:
             db_info->analog_supported = val->uint_;
             break;
-         case 0x0b88671dU: /* crc32 */
+         case DB_CURSOR_CHECKSUM_CRC32:
             db_info->crc32 = bin_to_hex_alloc((uint8_t*)val->binary.buff, val->binary.len);
             break;
-         case 0x7c9de632U: /* sha1 */
+         case DB_CURSOR_CHECKSUM_SHA1:
             db_info->sha1 = bin_to_hex_alloc((uint8_t*)val->binary.buff, val->binary.len);
             break;
-         case 0x0b888fabU: /* md5 */
+         case DB_CURSOR_CHECKSUM_MD5:
             db_info->md5 = bin_to_hex_alloc((uint8_t*)val->binary.buff, val->binary.len);
             break;
          default:
