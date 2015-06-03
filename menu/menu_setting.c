@@ -18,7 +18,6 @@
 
 #include "menu.h"
 #include "menu_setting.h"
-#include "menu_settings_list.h"
 
 #include "../driver.h"
 #include "../gfx/video_monitor.h"
@@ -37,6 +36,124 @@
 #endif
 
 #endif
+
+void settings_info_list_free(rarch_setting_info_t *list_info)
+{
+   if (list_info)
+      free(list_info);
+   list_info = NULL;
+}
+
+rarch_setting_info_t *settings_info_list_new(void)
+{
+   rarch_setting_info_t *list_info = (rarch_setting_info_t*)
+      calloc(1, sizeof(*list_info));
+
+   if (!list_info)
+      return NULL;
+
+   list_info->size  = 32;
+
+   return list_info;
+}
+
+bool settings_list_append(rarch_setting_t **list,
+      rarch_setting_info_t *list_info, rarch_setting_t value)
+{
+   if (!list || !*list || !list_info)
+      return false;
+
+   if (list_info->index == list_info->size)
+   {
+      list_info->size *= 2;
+      *list = (rarch_setting_t*)
+         realloc(*list, sizeof(rarch_setting_t) * list_info->size);
+      if (!*list)
+         return false;
+   }
+
+   (*list)[list_info->index++] = value;
+   return true;
+}
+
+static void null_write_handler(void *data)
+{
+   (void)data;
+}
+
+void settings_list_current_add_bind_type(
+      rarch_setting_t **list,
+      rarch_setting_info_t *list_info,
+      unsigned type)
+{
+   unsigned idx = list_info->index - 1;
+   (*list)[idx].bind_type = type;
+}
+
+void settings_list_current_add_flags(
+      rarch_setting_t **list,
+      rarch_setting_info_t *list_info,
+      unsigned values)
+{
+   unsigned idx = list_info->index - 1;
+   (*list)[idx].flags |= values;
+
+   if (values & SD_FLAG_IS_DEFERRED)
+   {
+      (*list)[idx].deferred_handler = (*list)[idx].change_handler;
+      (*list)[idx].change_handler = null_write_handler;
+   }
+}
+
+void settings_list_current_add_range(
+      rarch_setting_t **list,
+      rarch_setting_info_t *list_info,
+      float min, float max, float step,
+      bool enforce_minrange_enable, bool enforce_maxrange_enable)
+{
+   unsigned idx = list_info->index - 1;
+
+   (*list)[idx].min               = min;
+   (*list)[idx].step              = step;
+   (*list)[idx].max               = max;
+   (*list)[idx].enforce_minrange  = enforce_minrange_enable;
+   (*list)[idx].enforce_maxrange  = enforce_maxrange_enable;
+
+   settings_list_current_add_flags(list, list_info, SD_FLAG_HAS_RANGE);
+}
+
+void settings_list_current_add_values(
+      rarch_setting_t **list,
+      rarch_setting_info_t *list_info,
+      const char *values)
+{
+   unsigned idx = list_info->index - 1;
+   (*list)[idx].values = values;
+}
+
+void settings_list_current_add_cmd(
+      rarch_setting_t **list,
+      rarch_setting_info_t *list_info,
+      enum event_command values)
+{
+   unsigned idx = list_info->index - 1;
+   (*list)[idx].cmd_trigger.idx = values;
+}
+
+void settings_list_free(rarch_setting_t *list)
+{
+   if (list)
+      free(list);
+}
+
+rarch_setting_t *settings_list_new(unsigned size)
+{
+   rarch_setting_t *list = (rarch_setting_t*)calloc(size, sizeof(*list));
+   if (!list)
+      return NULL;
+
+   return list;
+}
 
 int menu_setting_set_flags(rarch_setting_t *setting)
 {
