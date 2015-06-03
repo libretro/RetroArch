@@ -1011,10 +1011,8 @@ static int core_list_action_toggle(void *data, unsigned action, bool wraparound)
 
 static void core_list_change_handler(void *data)
 {
-  rarch_setting_t *setting = (rarch_setting_t *)data;
-  (void)setting;
-
-  event_command(EVENT_CMD_LOAD_CORE);
+   (void)data;
+   event_command(EVENT_CMD_LOAD_CORE);
 }
 #endif
 
@@ -3362,10 +3360,7 @@ static void settings_data_list_current_add_flags(
  **/
 static void load_content_change_handler(void *data)
 {
-   rarch_setting_t *setting = (rarch_setting_t *)data;
-
-   if (!setting)
-      return;
+   (void)data;
 
    /* This does not appear to be robust enough because sometimes I get
     * crashes. I think it is because LOAD_CORE has not yet run. I'm not
