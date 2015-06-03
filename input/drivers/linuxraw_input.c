@@ -57,10 +57,10 @@ static void linuxraw_exit_gracefully(int sig)
 
 static void *linuxraw_input_init(void)
 {
-   struct sigaction sa;
-   linuxraw_input_t *linuxraw = NULL;
-   driver_t *driver     = driver_get_ptr();
-   settings_t *settings = config_get_ptr();
+   struct sigaction sa         = {{0}};
+   linuxraw_input_t *linuxraw  = NULL;
+   driver_t *driver            = driver_get_ptr();
+   settings_t *settings        = config_get_ptr();
 
    /* Only work on terminals. */
    if (!isatty(0))
