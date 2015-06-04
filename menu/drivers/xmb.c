@@ -696,9 +696,29 @@ static void xmb_list_switch_new(xmb_handle_t *xmb,
    unsigned i;
    size_t end          = 0;
    menu_handle_t *menu = menu_driver_get_ptr();
+   settings_t *settings = config_get_ptr();
 
    if (!menu)
       return;
+
+   if (settings->menu.dynamic_wallpaper_enable)
+   {
+      char path[PATH_MAX_LENGTH];
+
+      char *tmp = string_replace_substring(xmb->title_name, "/", " ");
+
+      if (tmp)
+      {
+         fill_pathname_join(path, settings->dynamic_wallpapers_directory, tmp, sizeof(path));
+         free(tmp);
+      }
+
+      strlcat(path, ".png", sizeof(path));
+
+      if (path_file_exists(path))
+         rarch_main_data_msg_queue_push(DATA_TYPE_IMAGE, path,
+               "cb_menu_wallpaper", 0, 1, true);
+   }
 
    end = file_list_get_size(list);
 

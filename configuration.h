@@ -111,6 +111,7 @@ typedef struct settings
       bool pause_libretro;
       bool timedate_enable;
       bool core_enable;
+      bool dynamic_wallpaper_enable;
       bool throttle;
       char wallpaper[PATH_MAX_LENGTH];
 
@@ -311,6 +312,7 @@ typedef struct settings
 
    char core_assets_directory[PATH_MAX_LENGTH];
    char assets_directory[PATH_MAX_LENGTH];
+   char dynamic_wallpapers_directory[PATH_MAX_LENGTH];
    char menu_config_directory[PATH_MAX_LENGTH];
 #if defined(HAVE_MENU)
    char menu_content_directory[PATH_MAX_LENGTH];

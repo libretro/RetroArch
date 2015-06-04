@@ -2606,6 +2606,15 @@ int setting_get_description(const char *label, char *s,
             "menu interfaces try to look for loadable \n"
             "assets, etc.");
    }
+   else if (!strcmp(label, "dynamic_wallpapers_directory"))
+   {
+      snprintf(s, len,
+            " -- Dynamic Wallpapers Directory. \n"
+            " \n"
+            " The place to store wallpapers that will \n"
+            "be loaded dynamically by the menu depending \n"
+            "on context.");
+   }
    else if (!strcmp(label, "slowmotion_ratio"))
    {
       snprintf(s, len,
@@ -5537,6 +5546,18 @@ static bool setting_append_list_menu_options(
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_EMPTY);
 
    CONFIG_BOOL(
+         settings->menu.dynamic_wallpaper_enable,
+         "menu_dynamic_wallpaper_enable",
+         "Dynamic Wallpaper",
+         true,
+         "OFF",
+         "ON",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+
+   CONFIG_BOOL(
          settings->menu.pause_libretro,
          "menu_pause_libretro",
          "Pause Libretro",
@@ -6263,6 +6284,21 @@ static bool setting_append_list_directory_options(
          settings->assets_directory,
          "assets_directory",
          "Assets Directory",
+         "",
+         "<default>",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+   settings_data_list_current_add_flags(
+         list,
+         list_info,
+         SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR | SD_FLAG_BROWSER_ACTION);
+
+   CONFIG_DIR(
+         settings->dynamic_wallpapers_directory,
+         "dynamic_wallpapers_directory",
+         "Dynamic Wallpapers Directory",
          "",
          "<default>",
          group_info.name,
