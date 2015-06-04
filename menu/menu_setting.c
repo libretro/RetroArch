@@ -5103,7 +5103,7 @@ static bool setting_append_list_input_options(
    CONFIG_BOOL(
          settings->input.autoconfig_descriptor_label_show,
          "autoconfig_descriptor_label_show",
-         "Show Autoconfig Descriptor Labels",
+         "Display Autoconfig Descriptor Labels",
          true,
          "OFF",
          "ON",
@@ -5115,7 +5115,7 @@ static bool setting_append_list_input_options(
    CONFIG_BOOL(
          settings->input.input_descriptor_label_show,
          "input_descriptor_label_show",
-         "Show Core Input Descriptor Labels",
+         "Display Core Input Descriptor Labels",
          input_descriptor_label_show,
          "OFF",
          "ON",
@@ -5736,7 +5736,7 @@ static bool setting_append_list_menu_options(
    CONFIG_BOOL(
          settings->menu.timedate_enable,
          "menu_timedate_enable",
-         "Show time / date",
+         "Display time / date",
          true,
          "OFF",
          "ON",
@@ -5748,7 +5748,7 @@ static bool setting_append_list_menu_options(
    CONFIG_BOOL(
          settings->menu.core_enable,
          "menu_core_enable",
-         "Show core name",
+         "Display core name",
          true,
          "OFF",
          "ON",
