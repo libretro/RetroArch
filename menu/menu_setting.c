@@ -4337,7 +4337,7 @@ static bool setting_append_list_video_options(
    CONFIG_FLOAT(
          settings->video.refresh_rate,
          "video_refresh_rate_auto",
-         "Estimated Monitor FPS",
+         "Estimated Monitor Framerate",
          refresh_rate,
          "%.3f Hz",
          group_info.name,
