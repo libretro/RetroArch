@@ -5560,7 +5560,7 @@ static bool setting_append_list_menu_options(
    CONFIG_BOOL(
          settings->menu.pause_libretro,
          "menu_pause_libretro",
-         "Pause Libretro",
+         "Pause when menu activated",
          true,
          "OFF",
          "ON",
