@@ -14,6 +14,8 @@
  */
 
 #include <file/file_path.h>
+#include <rhash.h>
+
 #include "menu.h"
 #include "menu_entries_cbs.h"
 #include "menu_shader.h"
@@ -789,6 +791,7 @@ void menu_entries_cbs_init_bind_get_string_representation(menu_file_list_cbs_t *
       const char *path, const char *label, unsigned type, size_t idx,
       const char *elem0, const char *elem1)
 {
+   uint32_t hash = djb2_calculate(label);
    if (!cbs)
       return;
 
@@ -819,7 +822,7 @@ void menu_entries_cbs_init_bind_get_string_representation(menu_file_list_cbs_t *
    else if (!strcmp(label, "cheat_num_passes"))
       cbs->action_get_representation =
          menu_action_setting_disp_set_label_cheat_num_passes;
-   else if (!strcmp(label, "remap_file_load"))
+   else if (hash == MENU_LABEL_REMAP_FILE_LOAD)
       cbs->action_get_representation =
          menu_action_setting_disp_set_label_remap_file_load;
    else if (!strcmp(label, "video_shader_filter_pass"))
@@ -831,16 +834,16 @@ void menu_entries_cbs_init_bind_get_string_representation(menu_file_list_cbs_t *
    else if (!strcmp(label, "video_shader_num_passes"))
       cbs->action_get_representation =
          menu_action_setting_disp_set_label_shader_num_passes;
-   else if (!strcmp(label, "video_shader_pass"))
+   else if (hash == MENU_LABEL_VIDEO_SHADER_PASS)
       cbs->action_get_representation =
          menu_action_setting_disp_set_label_shader_pass;
    else if (!strcmp(label, "video_shader_default_filter"))
       cbs->action_get_representation =
          menu_action_setting_disp_set_label_shader_default_filter;
-   else if (!strcmp(label, "video_filter"))
+   else if (hash == MENU_LABEL_VIDEO_FILTER)
       cbs->action_get_representation =
          menu_action_setting_disp_set_label_filter;
-   else if (!strcmp(label, "configurations"))
+   else if (hash == MENU_LABEL_CONFIGURATIONS)
       cbs->action_get_representation =
          menu_action_setting_disp_set_label_configurations;
    else
