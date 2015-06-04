@@ -2273,7 +2273,7 @@ int setting_get_description(const char *label, char *s,
    else if (!strcmp(label, "config_save_on_exit"))
    {
       snprintf(s, len,
-            " -- Flushes config to disk on exit.\n"
+            " -- Saves config to disk on exit.\n"
             "Useful for menu as settings can be\n"
             "modified. Overwrites the config.\n"
             " \n"
