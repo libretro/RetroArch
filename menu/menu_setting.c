@@ -4894,7 +4894,7 @@ static bool setting_append_list_audio_options(
    CONFIG_FLOAT(
          settings->audio.volume,
          "audio_volume",
-         "Volume Level",
+         "Audio Volume Level (dB)",
          audio_volume,
          "%.1f",
          group_info.name,
