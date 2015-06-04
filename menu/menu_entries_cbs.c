@@ -241,7 +241,6 @@ int menu_entries_common_is_settings_entry(const char *label)
       str = "Privacy Settings";
       break;
    default:
-      RARCH_LOG("unknown hash: %d\n", hash);
       return 0;
    }
    
