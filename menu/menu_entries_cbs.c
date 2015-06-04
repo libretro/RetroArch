@@ -139,7 +139,7 @@ int menu_entries_common_is_settings_entry(const char *label)
     !strcmp(label, "Recording Settings") ||
     !strcmp(label, "Frame Throttle Settings") ||
     !strcmp(label, "Shader Settings") ||
-    !strcmp(label, "Font Settings") ||
+    !strcmp(label, "Onscreen Display Settings") ||
     !strcmp(label, "Audio Settings") ||
     !strcmp(label, "Input Settings") ||
     !strcmp(label, "Input Hotkey Settings") ||

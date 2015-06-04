@@ -4782,13 +4782,27 @@ static bool setting_append_list_font_options(
    rarch_setting_group_info_t subgroup_info;
    settings_t *settings = config_get_ptr();
 
-   START_GROUP(group_info, "Font Settings");
+   START_GROUP(group_info, "Onscreen Display Settings");
    START_SUB_GROUP(list, list_info, "Messages", group_info.name, subgroup_info);
+
+#ifndef RARCH_CONSOLE
+   CONFIG_BOOL(
+         settings->video.font_enable,
+         "video_font_enable",
+         "Display OSD Message",
+         font_enable,
+         "OFF",
+         "ON",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+#endif
 
    CONFIG_PATH(
          settings->video.font_path,
          "video_font_path",
-         "Font Path",
+         "OSD Message Font",
          "",
          group_info.name,
          subgroup_info.name,
@@ -4799,7 +4813,7 @@ static bool setting_append_list_font_options(
    CONFIG_FLOAT(
          settings->video.font_size,
          "video_font_size",
-         "OSD Font Size",
+         "OSD Message Size",
          font_size,
          "%.1f",
          group_info.name,
@@ -4808,24 +4822,10 @@ static bool setting_append_list_font_options(
          general_read_handler);
    menu_settings_list_current_add_range(list, list_info, 1.00, 100.00, 1.0, true, true);
 
-#ifndef RARCH_CONSOLE
-   CONFIG_BOOL(
-         settings->video.font_enable,
-         "video_font_enable",
-         "OSD Font Enable",
-         font_enable,
-         "OFF",
-         "ON",
-         group_info.name,
-         subgroup_info.name,
-         general_write_handler,
-         general_read_handler);
-#endif
-
    CONFIG_FLOAT(
          settings->video.msg_pos_x,
          "video_message_pos_x",
-         "Message X Position",
+         "OSD Message X Position",
          message_pos_offset_x,
          "%.3f",
          group_info.name,
@@ -4837,7 +4837,7 @@ static bool setting_append_list_font_options(
    CONFIG_FLOAT(
          settings->video.msg_pos_y,
          "video_message_pos_y",
-         "Message Y Position",
+         "OSD Message Y Position",
          message_pos_offset_y,
          "%.3f",
          group_info.name,
@@ -5428,7 +5428,7 @@ static bool setting_append_list_overlay_options(
    CONFIG_BOOL(
          settings->input.overlay_enable,
          "input_overlay_enable",
-         "Overlay Enable",
+         "Display Overlay",
          true,
          "OFF",
          "ON",
@@ -5502,7 +5502,7 @@ static bool setting_append_list_osk_overlay_options(
    CONFIG_BOOL(
          settings->osk.enable,
          "input_osk_overlay_enable",
-         "OSK Overlay Enable",
+         "Display Onscreen Keyboard Overlay",
          true,
          "OFF",
          "ON",
