@@ -23,22 +23,12 @@
 #include "menu_entry.h"
 #include "menu_shader.h"
 #include "menu_navigation.h"
+#include "menu_entries_cbs.h"
 
 #include "../retroarch.h"
 #include "../runloop_data.h"
 
 #include "../input/input_remapping.h"
-
-#define MENU_LABEL_CUSTOM_BIND_ALL                    0x79ac14f4U
-#define MENU_LABEL_SAVESTATE                          0x3a4849b5U
-#define MENU_LABEL_LOADSTATE                          0xa39eb286U
-#define MENU_LABEL_RESUME_CONTENT                     0xd9f088b0U
-#define MENU_LABEL_RESTART_CONTENT                    0x1ea2e224U
-#define MENU_LABEL_TAKE_SCREENSHOT                    0x6786e867U
-#define MENU_LABEL_FILE_LOAD_OR_RESUME                0x952941f4U
-#define MENU_LABEL_CORE_LIST                          0xa8c3bfc9U
-#define MENU_LABEL_DISK_IMAGE_APPEND                  0x5af7d709U
-#define MENU_LABEL_CONFIGURATIONS                     0x3e930a50U
 
 /* FIXME - Global variables, refactor */
 unsigned rdb_entry_start_game_selection_ptr;
