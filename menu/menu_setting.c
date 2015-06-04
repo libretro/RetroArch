@@ -2256,7 +2256,7 @@ int setting_get_description(const char *label, char *s,
             "-- System Directory. \n"
             " \n"
             "Sets the 'system' directory.\n"
-            "Implementations can query for this\n"
+            "Cores can query for this\n"
             "directory to load BIOSes, \n"
             "system-specific configs, etc.");
    }
