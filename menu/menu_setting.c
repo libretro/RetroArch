@@ -3902,7 +3902,7 @@ static bool setting_append_list_saving_options(
    CONFIG_UINT(
          settings->autosave_interval,
          "autosave_interval",
-         "SRAM Periodic Autosave",
+         "SRAM Autosave Interval",
          autosave_interval,
          group_info.name,
          subgroup_info.name,
