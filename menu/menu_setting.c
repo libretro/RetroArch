@@ -5084,13 +5084,14 @@ static bool setting_append_list_input_hotkey_options(
    return true;
 }
 
+
 static bool setting_append_list_input_options(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info)
 {
    rarch_setting_group_info_t group_info;
    rarch_setting_group_info_t subgroup_info;
-   unsigned i, user;
+   unsigned user;
    settings_t *settings = config_get_ptr();
    global_t   *global   = global_get_ptr();
 
@@ -5337,75 +5338,6 @@ static bool setting_append_list_input_options(
 
    END_SUB_GROUP(list, list_info);
 
-   for (user = 0; user < settings->input.max_users; user++)
-   {
-      /* This constants matches the string length.
-       * Keep it up to date or you'll get some really obvious bugs.
-       * 2 is the length of '99'; we don't need more users than that.
-       */
-      static char buffer[MAX_USERS][7+2+1];
-      const struct retro_keybind* const defaults =
-         (user == 0) ? retro_keybinds_1 : retro_keybinds_rest;
-
-      snprintf(buffer[user], sizeof(buffer[user]), "User %u", user + 1);
-
-      START_SUB_GROUP(
-            list,
-            list_info,
-            buffer[user],
-            group_info.name,
-            subgroup_info);
-
-      for (i = 0; i < RARCH_BIND_LIST_END; i ++)
-      {
-         char label[PATH_MAX_LENGTH];
-         char name[PATH_MAX_LENGTH];
-         bool do_add = true;
-         const struct input_bind_map* keybind = 
-            (const struct input_bind_map*)&input_config_bind_map[i];
-
-         if (!keybind || keybind->meta)
-            continue;
-
-         if (
-               settings->input.input_descriptor_label_show
-               && (i < RARCH_FIRST_META_KEY)
-               && (global->has_set_input_descriptors)
-               && (i != RARCH_TURBO_ENABLE)
-               )
-         {
-            if (global->system.input_desc_btn[user][i])
-               snprintf(label, sizeof(label), "%s %s", buffer[user],
-                     global->system.input_desc_btn[user][i]);
-            else
-            {
-               snprintf(label, sizeof(label), "%s %s", buffer[user], "N/A");
-
-               if (settings->input.input_descriptor_hide_unbound)
-                  do_add = false;
-            }
-         }
-         else
-            snprintf(label, sizeof(label), "%s %s", buffer[user], keybind->desc);
-
-         snprintf(name, sizeof(name), "p%u_%s", user + 1, keybind->base);
-
-         if (do_add)
-         {
-            CONFIG_BIND(
-                  settings->input.binds[user][i],
-                  user + 1,
-                  user,
-                  strdup(name), /* TODO: Find a way to fix these memleaks. */
-                  strdup(label),
-                  &defaults[i],
-                  group_info.name,
-                  subgroup_info.name);
-            menu_settings_list_current_add_bind_type(list, list_info, i + MENU_SETTINGS_BIND_BEGIN);
-         }
-      }
-      END_SUB_GROUP(list, list_info);
-   }
 
    END_GROUP(list, list_info);
 
@@ -6701,6 +6633,92 @@ static bool setting_append_list_privacy_options(
    return true;
 }
 
+static bool setting_append_list_input_player_options(
+      rarch_setting_t **list,
+      rarch_setting_info_t *list_info,
+      unsigned user)
+{
+   rarch_setting_group_info_t group_info;
+   rarch_setting_group_info_t subgroup_info;
+   unsigned i;
+   settings_t *settings = config_get_ptr();
+   global_t   *global   = global_get_ptr();
+
+   /* This constants matches the string length.
+    * Keep it up to date or you'll get some really obvious bugs.
+    * 2 is the length of '99'; we don't need more users than that.
+    */
+   static char buffer[MAX_USERS][7+2+1];
+   static char group_lbl[MAX_USERS][PATH_MAX_LENGTH];
+   const struct retro_keybind* const defaults =
+      (user == 0) ? retro_keybinds_1 : retro_keybinds_rest;
+
+   snprintf(buffer[user], sizeof(buffer[user]), "User %u", user + 1);
+
+   snprintf(group_lbl[user], sizeof(group_lbl[user]), "Input %s Binds", buffer[user]);
+
+   START_GROUP(group_info, group_lbl[user]);
+
+   START_SUB_GROUP(
+         list,
+         list_info,
+         buffer[user],
+         group_info.name,
+         subgroup_info);
+
+   for (i = 0; i < RARCH_BIND_LIST_END; i ++)
+   {
+      char label[PATH_MAX_LENGTH];
+      char name[PATH_MAX_LENGTH];
+      bool do_add = true;
+      const struct input_bind_map* keybind = 
+         (const struct input_bind_map*)&input_config_bind_map[i];
+
+      if (!keybind || keybind->meta)
+         continue;
+
+      if (
+            settings->input.input_descriptor_label_show
+            && (i < RARCH_FIRST_META_KEY)
+            && (global->has_set_input_descriptors)
+            && (i != RARCH_TURBO_ENABLE)
+         )
+      {
+         if (global->system.input_desc_btn[user][i])
+            snprintf(label, sizeof(label), "%s %s", buffer[user],
+                  global->system.input_desc_btn[user][i]);
+         else
+         {
+            snprintf(label, sizeof(label), "%s %s", buffer[user], "N/A");
+
+            if (settings->input.input_descriptor_hide_unbound)
+               do_add = false;
+         }
+      }
+      else
+         snprintf(label, sizeof(label), "%s %s", buffer[user], keybind->desc);
+
+      snprintf(name, sizeof(name), "p%u_%s", user + 1, keybind->base);
+
+      if (do_add)
+      {
+         CONFIG_BIND(
+               settings->input.binds[user][i],
+               user + 1,
+               user,
+               strdup(name), /* TODO: Find a way to fix these memleaks. */
+               strdup(label),
+               &defaults[i],
+               group_info.name,
+               subgroup_info.name);
+         menu_settings_list_current_add_bind_type(list, list_info, i + MENU_SETTINGS_BIND_BEGIN);
+      }
+   }
+   END_SUB_GROUP(list, list_info);
+   END_GROUP(list, list_info);
+
+   return true;
+}
 
 /**
  * menu_setting_new:
@@ -6775,6 +6793,32 @@ rarch_setting_t *menu_setting_new(unsigned mask)
          goto error;
    }
 
+   if (mask & SL_FLAG_AUDIO_OPTIONS)
+   {
+      if (!setting_append_list_audio_options(&list, list_info))
+         goto error;
+   }
+
+   if (mask & SL_FLAG_INPUT_OPTIONS)
+   {
+      unsigned user;
+      settings_t      *settings = config_get_ptr();
+
+      if (!setting_append_list_input_options(&list, list_info))
+         goto error;
+
+      for (user = 0; user < settings->input.max_users; user++)
+         setting_append_list_input_player_options(&list, list_info, user);
+   }
+
+
+    
+   if (mask & SL_FLAG_INPUT_HOTKEY_OPTIONS)
+   {
+      if (!setting_append_list_input_hotkey_options(&list, list_info))
+         goto error;
+   }
+
    if (mask & SL_FLAG_RECORDING_OPTIONS)
    {
       if (!setting_append_list_recording_options(&list, list_info))
@@ -6793,24 +6837,6 @@ rarch_setting_t *menu_setting_new(unsigned mask)
          goto error;
    }
 
-   if (mask & SL_FLAG_AUDIO_OPTIONS)
-   {
-      if (!setting_append_list_audio_options(&list, list_info))
-         goto error;
-   }
-
-   if (mask & SL_FLAG_INPUT_OPTIONS)
-   {
-      if (!setting_append_list_input_options(&list, list_info))
-         goto error;
-   }
-    
-   if (mask & SL_FLAG_INPUT_HOTKEY_OPTIONS)
-   {
-      if (!setting_append_list_input_hotkey_options(&list, list_info))
-         goto error;
-   }
-
    if (mask & SL_FLAG_OVERLAY_OPTIONS)
    {
       if (!setting_append_list_overlay_options(&list, list_info))
@@ -6822,6 +6848,8 @@ rarch_setting_t *menu_setting_new(unsigned mask)
       if (!setting_append_list_osk_overlay_options(&list, list_info))
          goto error;
    }
+
+
 
    if (mask & SL_FLAG_MENU_OPTIONS)
    {

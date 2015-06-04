@@ -215,7 +215,10 @@ static int database_cursor_iterate(libretrodb_cursor_t *cur,
       return -1;
 
    if (item.type != RDT_MAP)
+   {
+      rmsgpack_dom_value_free(&item);
       return 1;
+   }
 
    db_info->analog_supported       = -1;
    db_info->rumble_supported       = -1;
