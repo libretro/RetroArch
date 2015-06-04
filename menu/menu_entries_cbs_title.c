@@ -101,9 +101,10 @@
 #define MENU_LABEL_RECORDING_SETTINGS                                          0x1a80b313U
 #define MENU_LABEL_FRAME_THROTTLE_SETTINGS                                     0x573b8837U
 #define MENU_LABEL_SHADER_SETTINGS                                             0xd6657e8dU
-#define MENU_LABEL_FONT_SETTINGS                                               0x1bc2266dU
+#define MENU_LABEL_FONT_SETTINGS                                               0x67571029U
 #define MENU_LABEL_AUDIO_SETTINGS                                              0x8f74c888U
 #define MENU_LABEL_INPUT_SETTINGS                                              0xddd30846U
+#define MENU_LABEL_INPUT_HOTKEY_SETTINGS                                       0xa4fee31aU
 #define MENU_LABEL_OVERLAY_SETTINGS                                            0x34377f98U
 #define MENU_LABEL_ONSCREEN_KEYBOARD_OVERLAY_SETTINGS                          0xa6de9ba6U
 #define MENU_LABEL_MENU_SETTINGS                                               0x61e4544bU
@@ -504,7 +505,7 @@ static int action_get_title_default(const char *path, const char *label,
          goto is_settings_entry;
       break;
    case MENU_LABEL_FONT_SETTINGS:
-      if (!strcmp(label, "Font Settings"))
+      if (!strcmp(label, "Onscreen Display Settings"))
          goto is_settings_entry;
       break;
    case MENU_LABEL_AUDIO_SETTINGS:
@@ -513,6 +514,10 @@ static int action_get_title_default(const char *path, const char *label,
       break;
    case MENU_LABEL_INPUT_SETTINGS:
       if (!strcmp(label, "Input Settings"))
+         goto is_settings_entry;
+      break;
+   case MENU_LABEL_INPUT_HOTKEY_SETTINGS:
+      if (!strcmp(label, "Input Hotkey Settings"))
          goto is_settings_entry;
       break;
    case MENU_LABEL_OVERLAY_SETTINGS:
