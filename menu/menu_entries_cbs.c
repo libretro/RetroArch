@@ -142,6 +142,7 @@ int menu_entries_common_is_settings_entry(const char *label)
     !strcmp(label, "Font Settings") ||
     !strcmp(label, "Audio Settings") ||
     !strcmp(label, "Input Settings") ||
+    !strcmp(label, "Input Hotkey Settings") ||
     !strcmp(label, "Overlay Settings") ||
     !strcmp(label, "Onscreen Keyboard Overlay Settings") ||
     !strcmp(label, "Menu Settings") ||

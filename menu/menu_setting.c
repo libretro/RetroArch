@@ -5052,6 +5052,38 @@ static bool setting_append_list_audio_options(
    return true;
 }
 
+static bool setting_append_list_input_hotkey_options(
+      rarch_setting_t **list,
+      rarch_setting_info_t *list_info)
+{
+   rarch_setting_group_info_t group_info;
+   rarch_setting_group_info_t subgroup_info;
+   unsigned i;
+   settings_t *settings = config_get_ptr();
+
+   START_GROUP(group_info, "Input Hotkey Settings");
+   START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
+
+   for (i = 0; i < RARCH_BIND_LIST_END; i ++)
+   {
+      const struct input_bind_map* keybind = (const struct input_bind_map*)
+         &input_config_bind_map[i];
+
+      if (!keybind || !keybind->meta)
+         continue;
+
+      CONFIG_BIND(settings->input.binds[0][i], 0, 0,
+            keybind->base, keybind->desc, &retro_keybinds_1[i],
+            group_info.name, subgroup_info.name);
+      menu_settings_list_current_add_bind_type(list, list_info, i + MENU_SETTINGS_BIND_BEGIN);
+   }
+
+   END_SUB_GROUP(list, list_info);
+   END_GROUP(list, list_info);
+
+   return true;
+}
+
 static bool setting_append_list_input_options(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info)
@@ -5303,30 +5335,6 @@ static bool setting_append_list_input_options(
          general_read_handler);
    menu_settings_list_current_add_range(list, list_info, 1, 0, 1, true, false);
 
-   END_SUB_GROUP(list, list_info);
-
-   /* The second argument to config bind is 1 
-    * based for users and 0 only for meta keys. */
-   START_SUB_GROUP(
-         list,
-         list_info,
-         "Meta Keys",
-         group_info.name,
-         subgroup_info);
-
-   for (i = 0; i < RARCH_BIND_LIST_END; i ++)
-   {
-      const struct input_bind_map* keybind = (const struct input_bind_map*)
-         &input_config_bind_map[i];
-
-      if (!keybind || !keybind->meta)
-         continue;
-
-      CONFIG_BIND(settings->input.binds[0][i], 0, 0,
-            keybind->base, keybind->desc, &retro_keybinds_1[i],
-            group_info.name, subgroup_info.name);
-      menu_settings_list_current_add_bind_type(list, list_info, i + MENU_SETTINGS_BIND_BEGIN);
-   }
    END_SUB_GROUP(list, list_info);
 
    for (user = 0; user < settings->input.max_users; user++)
@@ -6794,6 +6802,12 @@ rarch_setting_t *menu_setting_new(unsigned mask)
    if (mask & SL_FLAG_INPUT_OPTIONS)
    {
       if (!setting_append_list_input_options(&list, list_info))
+         goto error;
+   }
+    
+   if (mask & SL_FLAG_INPUT_HOTKEY_OPTIONS)
+   {
+      if (!setting_append_list_input_hotkey_options(&list, list_info))
          goto error;
    }
 
