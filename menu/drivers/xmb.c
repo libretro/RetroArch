@@ -696,9 +696,29 @@ static void xmb_list_switch_new(xmb_handle_t *xmb,
    unsigned i;
    size_t end          = 0;
    menu_handle_t *menu = menu_driver_get_ptr();
+   settings_t *settings = config_get_ptr();
 
    if (!menu)
       return;
+
+   if (settings->menu.dynamic_wallpaper_enable)
+   {
+      char path[PATH_MAX_LENGTH];
+
+      char *tmp = string_replace_substring(xmb->title_name, "/", " ");
+
+      if (tmp)
+      {
+         fill_pathname_join(path, settings->dynamic_wallpapers_directory, tmp, sizeof(path));
+         free(tmp);
+      }
+
+      strlcat(path, ".png", sizeof(path));
+
+      if (path_file_exists(path))
+         rarch_main_data_msg_queue_push(DATA_TYPE_IMAGE, path,
+               "cb_menu_wallpaper", 0, 1, true);
+   }
 
    end = file_list_get_size(list);
 
@@ -1500,7 +1520,6 @@ static bool xmb_load_image(void *data, menu_image_type_t type)
 static void xmb_context_reset(void)
 {
    unsigned i, k;
-   char bgpath[PATH_MAX_LENGTH];
    char mediapath[PATH_MAX_LENGTH], themepath[PATH_MAX_LENGTH],
         iconpath[PATH_MAX_LENGTH],  fontpath[PATH_MAX_LENGTH],
         core_id[PATH_MAX_LENGTH],   texturepath[PATH_MAX_LENGTH],
@@ -1525,11 +1544,6 @@ static void xmb_context_reset(void)
    xmb = (xmb_handle_t*)menu->userdata;
    if (!xmb)
       return;
-
-   fill_pathname_join(bgpath, settings->assets_directory,
-         "xmb", sizeof(bgpath));
-
-   fill_pathname_join(bgpath, bgpath, "bg.png", sizeof(bgpath));
 
    fill_pathname_join(mediapath, settings->assets_directory,
          "lakka", sizeof(mediapath));
@@ -1610,15 +1624,14 @@ static void xmb_context_reset(void)
    {
       char path[PATH_MAX_LENGTH];
 
-      fill_pathname_join(path, iconpath,
-            "bg.png", sizeof(path));
+      fill_pathname_join(path, iconpath, "bg.png", sizeof(path));
 
       if (*settings->menu.wallpaper)
-         strlcpy(path, settings->menu.wallpaper,
-               sizeof(path));
+         strlcpy(path, settings->menu.wallpaper, sizeof(path));
 
       if ( path_file_exists(path))
-         rarch_main_data_msg_queue_push(DATA_TYPE_IMAGE, path, "cb_menu_wallpaper", 0, 1, true);
+         rarch_main_data_msg_queue_push(DATA_TYPE_IMAGE, path,
+               "cb_menu_wallpaper", 0, 1, true);
    }
 
    xmb->settings_node.icon  = xmb->textures.list[XMB_TEXTURE_SETTINGS].id;
