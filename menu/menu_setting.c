@@ -3988,7 +3988,7 @@ static bool setting_append_list_logging_options(
 
    CONFIG_UINT(settings->libretro_log_level,
          "libretro_log_level",
-         "Libretro Logging Level",
+         "Core Logging Level",
          libretro_log_level,
          group_info.name,
          subgroup_info.name,
