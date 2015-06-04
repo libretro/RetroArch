@@ -4245,7 +4245,7 @@ static bool setting_append_list_video_options(
 
    CONFIG_BOOL(settings->fps_show,
          "fps_show",
-         "Show Framerate",
+         "Display Framerate",
          fps_show,
          "OFF",
          "ON",
