@@ -22,6 +22,7 @@
 #include <limits.h>
 
 #include "../menu.h"
+#include "../menu_driver.h"
 #include "../menu_entry.h"
 #include "../menu_display.h"
 #include "../../runloop_data.h"
@@ -556,7 +557,7 @@ static void glui_context_destroy(void)
    glui_context_bg_destroy(glui);
 }
 
-static bool glui_load_wallpaper(void *data)
+static bool glui_load_image(void *data, menu_image_type_t type)
 {
    glui_handle_t *glui = NULL;
    menu_handle_t *menu = menu_driver_get_ptr();
@@ -565,12 +566,21 @@ static bool glui_load_wallpaper(void *data)
       return false;
    
    glui = (glui_handle_t*)menu->userdata;
-   
-   glui_context_bg_destroy(glui);
 
-   glui->textures.bg.id   = video_texture_load(data,
-         TEXTURE_BACKEND_OPENGL, TEXTURE_FILTER_MIPMAP_LINEAR);
-   glui_allocate_white_texture(glui);
+   switch (type)
+   {
+      case MENU_IMAGE_NONE:
+         break;
+      case MENU_IMAGE_WALLPAPER:
+         glui_context_bg_destroy(glui);
+
+         glui->textures.bg.id   = video_texture_load(data,
+               TEXTURE_BACKEND_OPENGL, TEXTURE_FILTER_MIPMAP_LINEAR);
+         glui_allocate_white_texture(glui);
+         break;
+      case MENU_IMAGE_BOXART:
+         break;
+   }
 
    return true;
 }
@@ -687,7 +697,7 @@ menu_ctx_driver_t menu_ctx_glui = {
    NULL,
    NULL,
    NULL,
-   glui_load_wallpaper,
+   glui_load_image,
    "glui",
    NULL,
 };

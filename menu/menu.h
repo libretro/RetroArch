@@ -61,7 +61,7 @@ extern "C" {
 
 typedef enum
 {
-   MENU_FILE_NONE,
+   MENU_FILE_NONE = 0,
    MENU_FILE_PLAIN,
    MENU_FILE_DIRECTORY,
    MENU_FILE_PATH,

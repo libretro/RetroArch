@@ -21,6 +21,7 @@
 #include <limits.h>
 
 #include "../menu.h"
+#include "../menu_driver.h"
 #include "../menu_entry.h"
 #include "../menu_animation.h"
 #include "../menu_display.h"
@@ -1467,7 +1468,7 @@ static void xmb_context_bg_destroy(xmb_handle_t *xmb)
       glDeleteTextures(1, &xmb->textures.bg.id);
 }
 
-static bool xmb_load_wallpaper(void *data)
+static bool xmb_load_image(void *data, menu_image_type_t type)
 {
    xmb_handle_t *xmb = NULL;
    menu_handle_t *menu = menu_driver_get_ptr();
@@ -1477,16 +1478,21 @@ static bool xmb_load_wallpaper(void *data)
    
    xmb = (xmb_handle_t*)menu->userdata;
 
-   if (!xmb)
-      return false;
-   if (!data)
+   if (!xmb || !data)
       return false;
 
-   xmb_context_bg_destroy(xmb);
-
-   xmb->textures.bg.id   = video_texture_load(data,
-         TEXTURE_BACKEND_OPENGL, TEXTURE_FILTER_MIPMAP_LINEAR);
-
+   switch (type)
+   {
+      case MENU_IMAGE_NONE:
+         break;
+      case MENU_IMAGE_WALLPAPER:
+         xmb_context_bg_destroy(xmb);
+         xmb->textures.bg.id   = video_texture_load(data,
+               TEXTURE_BACKEND_OPENGL, TEXTURE_FILTER_MIPMAP_LINEAR);
+         break;
+      case MENU_IMAGE_BOXART:
+         break;
+   }
 
    return true;
 }
@@ -1949,7 +1955,7 @@ menu_ctx_driver_t menu_ctx_xmb = {
    NULL,
    xmb_list_cache,
    NULL,
-   xmb_load_wallpaper,
+   xmb_load_image,
    "xmb",
    NULL,
 };

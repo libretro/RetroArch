@@ -365,12 +365,12 @@ void menu_driver_populate_entries(const char *path, const char *label,
       driver->populate_entries(path, label, k);
 }
 
-bool menu_driver_load_background(void *data)
+bool menu_driver_load_image(void *data, menu_image_type_t type)
 {
    const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
 
-   if (driver->load_background)
-      return driver->load_background(data);
+   if (driver->load_image)
+      return driver->load_image(data, type);
 
    return false;
 }

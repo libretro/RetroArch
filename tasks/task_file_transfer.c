@@ -59,7 +59,7 @@ static int cb_image_menu_wallpaper_upload(void *data, size_t len)
    if (cb_image_menu_upload_generic(nbio) != 0)
       return -1;
 
-   menu_driver_load_background(&nbio->image.ti);
+   menu_driver_load_image(&nbio->image.ti, MENU_IMAGE_WALLPAPER);
 
    texture_image_free(&nbio->image.ti);
 
@@ -73,7 +73,7 @@ static int cb_image_menu_boxart_upload(void *data, size_t len)
    if (cb_image_menu_upload_generic(nbio) != 0)
       return -1;
 
-   menu_driver_load_background(&nbio->image.ti);
+   menu_driver_load_image(&nbio->image.ti, MENU_IMAGE_BOXART);
 
    texture_image_free(&nbio->image.ti);
 

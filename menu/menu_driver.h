@@ -43,6 +43,13 @@ extern "C" {
 #define MAX_USERS 16
 #endif
 
+typedef enum
+{
+   MENU_IMAGE_NONE = 0,
+   MENU_IMAGE_WALLPAPER,
+   MENU_IMAGE_BOXART,
+} menu_image_type_t;
+
 struct menu_bind_state_port
 {
    bool buttons[MENU_MAX_BUTTONS];
@@ -249,7 +256,7 @@ typedef struct menu_ctx_driver
    void  (*list_clear)(file_list_t *list);
    void  (*list_cache)(bool, unsigned);
    void  (*list_set_selection)(file_list_t *list);
-   bool  (*load_background)(void *data);
+   bool  (*load_image)(void *data, menu_image_type_t type);
    const char *ident;
    bool  (*perform_action)(void* data, unsigned action);
 } menu_ctx_driver_t;
@@ -323,7 +330,7 @@ void menu_driver_render_messagebox(const char *msg);
 void menu_driver_populate_entries(const char *path, const char *label,
          unsigned k);
 
-bool menu_driver_load_background(void *data);
+bool menu_driver_load_image(void *data, menu_image_type_t type);
 
 void  menu_driver_navigation_descend_alphabet(size_t *);
 
