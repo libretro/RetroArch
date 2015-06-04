@@ -148,7 +148,7 @@ int database_info_build_query(char *s, size_t len,
          }
          break;
       default:
-         RARCH_LOG("Unknown label: %d\n", value);
+         RARCH_LOG("Unknown label: %s\n", label);
          break;
    }
 
