@@ -112,7 +112,7 @@ OBJ += frontend/frontend.o \
 		libretro-common/file//nbio/nbio_stdio.o \
 		libretro-common/file/file_path.o \
 		file_path_special.o \
-		hash.o \
+		libretro-common/hash/rhash.o \
 		audio/audio_driver.o \
 		input/input_driver.o \
 		input/input_hid_driver.o \

@@ -26,7 +26,7 @@
 #include "../runloop.h"
 #include "../file_ops.h"
 
-#include "../hash.h"
+#include <rhash.h>
 
 #define MENU_LABEL_DRIVER_SETTINGS                    0x81cd2d62U
 #define MENU_LABEL_CORE_SETTINGS                      0x06795dffU

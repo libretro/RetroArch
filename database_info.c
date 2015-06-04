@@ -18,9 +18,9 @@
 #include "file_ext.h"
 #include "dir_list_special.h"
 #include <file/file_extract.h>
+#include <rhash.h>
 
 #include "database_info.h"
-#include "hash.h"
 #include "file_ops.h"
 #include "general.h"
 #include "runloop.h"
