@@ -14,6 +14,8 @@
  */
 
 #include <file/file_path.h>
+#include <rhash.h>
+
 #include "menu.h"
 #include "menu_display.h"
 #include "menu_entries_cbs.h"
@@ -26,6 +28,17 @@
 #include "../runloop_data.h"
 
 #include "../input/input_remapping.h"
+
+#define MENU_LABEL_CUSTOM_BIND_ALL                    0x79ac14f4U
+#define MENU_LABEL_SAVESTATE                          0x3a4849b5U
+#define MENU_LABEL_LOADSTATE                          0xa39eb286U
+#define MENU_LABEL_RESUME_CONTENT                     0xd9f088b0U
+#define MENU_LABEL_RESTART_CONTENT                    0x1ea2e224U
+#define MENU_LABEL_TAKE_SCREENSHOT                    0x6786e867U
+#define MENU_LABEL_FILE_LOAD_OR_RESUME                0x952941f4U
+#define MENU_LABEL_CORE_LIST                          0xa8c3bfc9U
+#define MENU_LABEL_DISK_IMAGE_APPEND                  0x5af7d709U
+#define MENU_LABEL_CONFIGURATIONS                     0x3e930a50U
 
 /* FIXME - Global variables, refactor */
 unsigned rdb_entry_start_game_selection_ptr;
@@ -1426,6 +1439,7 @@ void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
 {
    rarch_setting_t *setting = menu_setting_find(label);
    menu_handle_t *menu    = menu_driver_get_ptr();
+   uint32_t hash = djb2_calculate(label);
 
    if (!cbs)
       return;
@@ -1444,7 +1458,7 @@ void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
       return;
    }
 
-   if (!strcmp(label, "custom_bind_all"))
+   if (hash == MENU_LABEL_CUSTOM_BIND_ALL)
       cbs->action_ok = action_ok_lookup_setting;
    else if (type == MENU_SETTINGS_CUSTOM_BIND_KEYBOARD ||
          type == MENU_SETTINGS_CUSTOM_BIND)
@@ -1458,17 +1472,17 @@ void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
    else if (type >= MENU_SETTINGS_CHEAT_BEGIN
          && type <= MENU_SETTINGS_CHEAT_END)
       cbs->action_ok = action_ok_cheat;
-   else if (!strcmp(label, "savestate"))
+   else if (hash == MENU_LABEL_SAVESTATE)
       cbs->action_ok = action_ok_save_state;
-   else if (!strcmp(label, "loadstate"))
+   else if (hash == MENU_LABEL_LOADSTATE)
       cbs->action_ok = action_ok_load_state;
-   else if (!strcmp(label, "resume_content"))
+   else if (hash == MENU_LABEL_RESUME_CONTENT)
       cbs->action_ok = action_ok_resume_content;
-   else if (!strcmp(label, "restart_content"))
+   else if (hash == MENU_LABEL_RESTART_CONTENT)
       cbs->action_ok = action_ok_restart_content;
-   else if (!strcmp(label, "take_screenshot"))
+   else if (hash == MENU_LABEL_TAKE_SCREENSHOT)
       cbs->action_ok = action_ok_screenshot;
-   else if (!strcmp(label, "file_load_or_resume"))
+   else if (hash == MENU_LABEL_FILE_LOAD_OR_RESUME)
       cbs->action_ok = action_ok_file_load_or_resume;
    else if (!strcmp(label, "quit_retroarch"))
       cbs->action_ok = action_ok_quit;
@@ -1543,11 +1557,11 @@ void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
       cbs->action_ok = action_ok_remap_file_save_game;
    else if (!strcmp(label, "content_collection_list"))
       cbs->action_ok = action_ok_content_collection_list;
-   else if (!strcmp(label, "core_list"))
+   else if (hash == MENU_LABEL_CORE_LIST)
       cbs->action_ok = action_ok_core_list;
-   else if (!strcmp(label, "disk_image_append"))
+   else if (hash == MENU_LABEL_DISK_IMAGE_APPEND)
       cbs->action_ok = action_ok_disk_image_append_list;
-   else if (!strcmp(label, "configurations"))
+   else if (hash == MENU_LABEL_CONFIGURATIONS)
       cbs->action_ok = action_ok_configurations_list;
    else
    switch (type)
