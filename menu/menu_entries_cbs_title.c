@@ -20,7 +20,7 @@
 #include "menu.h"
 #include "menu_entries_cbs.h"
 
-#include "hash.h"
+#include "../hash.h"
 
 #define MENU_LABEL_DEFERRED_DATABASE_MANAGER_LIST                              0x7c0b704fU
 #define MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST                                0x45446638U
