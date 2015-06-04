@@ -240,7 +240,7 @@ static bool xinput_joypad_init(void *data)
 
    /* We're going to have to be buddies with dinput if we want to be able
     * to use XInput and non-XInput controllers together. */
-   if (!dinput_joypad.init())
+   if (!dinput_joypad.init(data))
    {
       g_xinput_block_pads = false;
       return false;
