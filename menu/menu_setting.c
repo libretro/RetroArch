@@ -6775,24 +6775,6 @@ rarch_setting_t *menu_setting_new(unsigned mask)
          goto error;
    }
 
-   if (mask & SL_FLAG_RECORDING_OPTIONS)
-   {
-      if (!setting_append_list_recording_options(&list, list_info))
-         goto error;
-   }
-
-   if (mask & SL_FLAG_FRAME_THROTTLE_OPTIONS)
-   {
-      if (!setting_append_list_frame_throttling_options(&list, list_info))
-         goto error;
-   }
-
-   if (mask & SL_FLAG_FONT_OPTIONS)
-   {
-      if (!setting_append_list_font_options(&list, list_info))
-         goto error;
-   }
-
    if (mask & SL_FLAG_AUDIO_OPTIONS)
    {
       if (!setting_append_list_audio_options(&list, list_info))
@@ -6811,6 +6793,24 @@ rarch_setting_t *menu_setting_new(unsigned mask)
          goto error;
    }
 
+   if (mask & SL_FLAG_RECORDING_OPTIONS)
+   {
+      if (!setting_append_list_recording_options(&list, list_info))
+         goto error;
+   }
+
+   if (mask & SL_FLAG_FRAME_THROTTLE_OPTIONS)
+   {
+      if (!setting_append_list_frame_throttling_options(&list, list_info))
+         goto error;
+   }
+
+   if (mask & SL_FLAG_FONT_OPTIONS)
+   {
+      if (!setting_append_list_font_options(&list, list_info))
+         goto error;
+   }
+
    if (mask & SL_FLAG_OVERLAY_OPTIONS)
    {
       if (!setting_append_list_overlay_options(&list, list_info))
@@ -6822,6 +6822,8 @@ rarch_setting_t *menu_setting_new(unsigned mask)
       if (!setting_append_list_osk_overlay_options(&list, list_info))
          goto error;
    }
+
+
 
    if (mask & SL_FLAG_MENU_OPTIONS)
    {
