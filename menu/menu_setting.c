@@ -5820,7 +5820,7 @@ static bool setting_append_list_ui_options(
    CONFIG_BOOL(
          settings->pause_nonactive,
          "pause_nonactive",
-         "Pause on Focus Loss",
+         "Don't run in background",
          pause_nonactive,
          "OFF",
          "ON",
