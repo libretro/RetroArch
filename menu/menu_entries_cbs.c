@@ -26,6 +26,35 @@
 #include "../runloop.h"
 #include "../file_ops.h"
 
+#include "hash.h"
+
+#define MENU_LABEL_DRIVER_SETTINGS                    0x81cd2d62U
+#define MENU_LABEL_CORE_SETTINGS                      0x06795dffU
+#define MENU_LABEL_CONFIGURATION_SETTINGS             0x5a1558ceU
+#define MENU_LABEL_LOGGING_SETTINGS                   0x902c003dU
+#define MENU_LABEL_SAVING_SETTINGS                    0x32fea87eU
+#define MENU_LABEL_REWIND_SETTINGS                    0xbff7775fU
+#define MENU_LABEL_VIDEO_SETTINGS                     0x9dd23badU
+#define MENU_LABEL_RECORDING_SETTINGS                 0x1a80b313U
+#define MENU_LABEL_FRAME_THROTTLE_SETTINGS            0x573b8837U
+#define MENU_LABEL_SHADER_SETTINGS                    0xd6657e8dU
+#define MENU_LABEL_ONSCREEN_DISPLAY_SETTINGS          0x67571029U
+#define MENU_LABEL_AUDIO_SETTINGS                     0x8f74c888U
+#define MENU_LABEL_INPUT_SETTINGS                     0xddd30846U
+#define MENU_LABEL_INPUT_HOTKEY_SETTINGS              0xa4fee31aU
+#define MENU_LABEL_OVERLAY_SETTINGS                   0x34377f98U
+#define MENU_LABEL_ONSCREEN_KEYBOARD_OVERLAY_SETTINGS 0xa6de9ba6U
+#define MENU_LABEL_MENU_SETTINGS                      0x61e4544bU
+#define MENU_LABEL_UI_SETTINGS                        0xf8da6ef4U
+#define MENU_LABEL_PATCH_SETTINGS                     0xa78b0986U
+#define MENU_LABEL_PLAYLIST_SETTINGS                  0x4d276288U
+#define MENU_LABEL_CORE_UPDATER_SETTINGS              0x124ad454U
+#define MENU_LABEL_NETWORK_SETTINGS                   0x8b50d180U
+#define MENU_LABEL_ARCHIVE_SETTINGS                   0x78e85398U
+#define MENU_LABEL_USER_SETTINGS                      0xcdc9a8f5U
+#define MENU_LABEL_DIRECTORY_SETTINGS                 0xb817bd2bU
+#define MENU_LABEL_PRIVACY_SETTINGS                   0xce106254U
+
 void menu_entries_common_load_content(bool persist)
 {
    menu_handle_t *menu = menu_driver_get_ptr();
@@ -128,33 +157,94 @@ int cb_core_updater_download(void *data, size_t len)
 
 int menu_entries_common_is_settings_entry(const char *label)
 {
-   return (
-    !strcmp(label, "Driver Settings") ||
-    !strcmp(label, "Core Settings") ||
-    !strcmp(label, "Configuration Settings") ||
-    !strcmp(label, "Logging Settings") ||
-    !strcmp(label, "Saving Settings") ||
-    !strcmp(label, "Rewind Settings") ||
-    !strcmp(label, "Video Settings") ||
-    !strcmp(label, "Recording Settings") ||
-    !strcmp(label, "Frame Throttle Settings") ||
-    !strcmp(label, "Shader Settings") ||
-    !strcmp(label, "Font Settings") ||
-    !strcmp(label, "Audio Settings") ||
-    !strcmp(label, "Input Settings") ||
-    !strcmp(label, "Input Hotkey Settings") ||
-    !strcmp(label, "Overlay Settings") ||
-    !strcmp(label, "Onscreen Keyboard Overlay Settings") ||
-    !strcmp(label, "Menu Settings") ||
-    !strcmp(label, "UI Settings") ||
-    !strcmp(label, "Patch Settings") ||
-    !strcmp(label, "Playlist Settings") ||
-    !strcmp(label, "Core Updater Settings") ||
-    !strcmp(label, "Network Settings") ||
-    !strcmp(label, "Archive Settings") ||
-    !strcmp(label, "User Settings") ||
-    !strcmp(label, "Directory Settings") ||
-    !strcmp(label, "Privacy Settings"));
+   uint32_t    hash = djb2_calculate(label);
+   const char* str  = NULL;
+   
+   switch (hash)
+   {
+   case MENU_LABEL_DRIVER_SETTINGS:
+      str = "Driver Settings";
+      break;
+   case MENU_LABEL_CORE_SETTINGS:
+      str = "Core Settings";
+      break;
+   case MENU_LABEL_CONFIGURATION_SETTINGS:
+      str = "Configuration Settings";
+      break;
+   case MENU_LABEL_LOGGING_SETTINGS:
+      str = "Logging Settings";
+      break;
+   case MENU_LABEL_SAVING_SETTINGS:
+      str = "Saving Settings";
+      break;
+   case MENU_LABEL_REWIND_SETTINGS:
+      str = "Rewind Settings";
+      break;
+   case MENU_LABEL_VIDEO_SETTINGS:
+      str = "Video Settings";
+      break;
+   case MENU_LABEL_RECORDING_SETTINGS:
+      str = "Recording Settings";
+      break;
+   case MENU_LABEL_FRAME_THROTTLE_SETTINGS:
+      str = "Frame Throttle Settings";
+      break;
+   case MENU_LABEL_SHADER_SETTINGS:
+      str = "Shader Settings";
+      break;
+   case MENU_LABEL_ONSCREEN_DISPLAY_SETTINGS:
+      str = "Onscreen Display Settings";
+      break;
+   case MENU_LABEL_AUDIO_SETTINGS:
+      str = "Audio Settings";
+      break;
+   case MENU_LABEL_INPUT_SETTINGS:
+      str = "Input Settings";
+      break;
+   case MENU_LABEL_INPUT_HOTKEY_SETTINGS:
+      str = "Input Hotkey Settings";
+      break;
+   case MENU_LABEL_OVERLAY_SETTINGS:
+      str = "Overlay Settings";
+      break;
+   case MENU_LABEL_ONSCREEN_KEYBOARD_OVERLAY_SETTINGS:
+      str = "Onscreen Keyboard Overlay Settings";
+      break;
+   case MENU_LABEL_MENU_SETTINGS:
+      str = "Menu Settings";
+      break;
+   case MENU_LABEL_UI_SETTINGS:
+      str = "UI Settings";
+      break;
+   case MENU_LABEL_PATCH_SETTINGS:
+      str = "Patch Settings";
+      break;
+   case MENU_LABEL_PLAYLIST_SETTINGS:
+      str = "Playlist Settings";
+      break;
+   case MENU_LABEL_CORE_UPDATER_SETTINGS:
+      str = "Core Updater Settings";
+      break;
+   case MENU_LABEL_NETWORK_SETTINGS:
+      str = "Network Settings";
+      break;
+   case MENU_LABEL_ARCHIVE_SETTINGS:
+      str = "Archive Settings";
+      break;
+   case MENU_LABEL_USER_SETTINGS:
+      str = "User Settings";
+      break;
+   case MENU_LABEL_DIRECTORY_SETTINGS:
+      str = "Directory Settings";
+      break;
+   case MENU_LABEL_PRIVACY_SETTINGS:
+      str = "Privacy Settings";
+      break;
+   default:
+      return 0;
+   }
+   
+   return !strcmp(label, str);
 }
 
 void menu_entries_cbs_init(void *data,

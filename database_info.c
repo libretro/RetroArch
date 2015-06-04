@@ -62,64 +62,93 @@ int database_info_build_query(char *s, size_t len,
    switch (value)
    {
       case DB_QUERY_ENTRY:
-         strlcat(s, "name", len);
+         if (!strcmp(label, "name"))
+            strlcat(s, "name", len);
          break;
       case DB_QUERY_ENTRY_PUBLISHER:
-         strlcat(s, "publisher", len);
+         if (!strcmp(label, "publisher"))
+            strlcat(s, "publisher", len);
          break;
       case DB_QUERY_ENTRY_DEVELOPER:
-         strlcat(s, "developer", len);
+         if (!strcmp(label, "developer"))
+            strlcat(s, "developer", len);
          break;
       case DB_QUERY_ENTRY_ORIGIN:
-         strlcat(s, "origin", len);
+         if (!strcmp(label, "origin"))
+            strlcat(s, "origin", len);
          break;
       case DB_QUERY_ENTRY_FRANCHISE:
-         strlcat(s, "franchise", len);
+         if (!strcmp(label, "franchise"))
+            strlcat(s, "franchise", len);
          break;
       case DB_QUERY_ENTRY_RATING:
-         strlcat(s, "esrb_rating", len);
+         if (!strcmp(label, "esrb_rating"))
+            strlcat(s, "esrb_rating", len);
          break;
       case DB_QUERY_ENTRY_BBFC_RATING:
-         strlcat(s, "bbfc_rating", len);
+         if (!strcmp(label, "bbfc_rating"))
+            strlcat(s, "bbfc_rating", len);
          break;
       case DB_QUERY_ENTRY_ELSPA_RATING:
-         strlcat(s, "elspa_rating", len);
+         if (!strcmp(label, "elspa_rating"))
+            strlcat(s, "elspa_rating", len);
          break;
       case DB_QUERY_ENTRY_PEGI_RATING:
-         strlcat(s, "pegi_rating", len);
+         if (!strcmp(label, "pegi_rating"))
+            strlcat(s, "pegi_rating", len);
          break;
       case DB_QUERY_ENTRY_CERO_RATING:
-         strlcat(s, "cero_rating", len);
+         if (!strcmp(label, "cero_rating"))
+            strlcat(s, "cero_rating", len);
          break;
       case DB_QUERY_ENTRY_ENHANCEMENT_HW:
-         strlcat(s, "enhancement_hw", len);
+         if (!strcmp(label, "enhancement_hw"))
+            strlcat(s, "enhancement_hw", len);
          break;
       case DB_QUERY_ENTRY_EDGE_MAGAZINE_RATING:
-         strlcat(s, "edge_rating", len);
-         add_quotes = false;
+         if (!strcmp(label, "edge_rating"))
+         {
+            strlcat(s, "edge_rating", len);
+            add_quotes = false;
+         }
          break;
       case DB_QUERY_ENTRY_EDGE_MAGAZINE_ISSUE:
-         strlcat(s, "edge_issue", len);
-         add_quotes = false;
+         if (!strcmp(label, "edge_issue"))
+         {
+            strlcat(s, "edge_issue", len);
+            add_quotes = false;
+         }
          break;
       case DB_QUERY_ENTRY_FAMITSU_MAGAZINE_RATING:
-         strlcat(s, "famitsu_rating", len);
-         add_quotes = false;
+         if (!strcmp(label, "famitsu_rating"))
+         {
+            strlcat(s, "famitsu_rating", len);
+            add_quotes = false;
+         }
          break;
       case DB_QUERY_ENTRY_RELEASEDATE_MONTH:
-         strlcat(s, "releasemonth", len);
-         add_quotes = false;
+         if (!strcmp(label, "releasemonth"))
+         {
+            strlcat(s, "releasemonth", len);
+            add_quotes = false;
+         }
          break;
       case DB_QUERY_ENTRY_RELEASEDATE_YEAR:
-         strlcat(s, "releaseyear", len);
-         add_quotes = false;
+         if (!strcmp(label, "releaseyear"))
+         {
+            strlcat(s, "releaseyear", len);
+            add_quotes = false;
+         }
          break;
       case DB_QUERY_ENTRY_MAX_USERS:
-         strlcat(s, "users", len);
-         add_quotes = false;
+         if (!strcmp(label, "users"))
+         {
+            strlcat(s, "users", len);
+            add_quotes = false;
+         }
          break;
       default:
-         RARCH_LOG("Unknown value: %d\n", value);
+         RARCH_LOG("Unknown label: %d\n", value);
          break;
    }
 
