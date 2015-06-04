@@ -20,11 +20,15 @@
 #include <string.h>
 #include <limits.h>
 
+#include <rhash.h>
+
 #include "../menu.h"
 #include "../menu_driver.h"
 #include "../menu_entry.h"
 #include "../menu_animation.h"
 #include "../menu_display.h"
+
+#include "../menu_entries_cbs.h"
 
 #include <file/file_path.h>
 #include "../../gfx/video_thread_wrapper.h"
@@ -1008,6 +1012,7 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
       GLuint         icon   = 0;
       xmb_node_t *   node   = (xmb_node_t*)file_list_get_userdata_at_offset(list, i);
       menu_handle_t *menu   = menu_driver_get_ptr();
+      uint32_t      hash    = 0;
 
       if (!node)
          continue;
@@ -1025,14 +1030,16 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
 
       menu_entry_get(&entry, i, list, true);
 
+      hash = djb2_calculate(entry.label);
+
       if (entry.type == MENU_FILE_CONTENTLIST_ENTRY)
          strlcpy(entry.path, path_basename(entry.path), sizeof(entry.path));
 
       icon = xmb_icon_get_type(xmb, core_node, entry.type);
 
-      if (!strcmp(entry.label, "core_options"))
+      if (hash == MENU_LABEL_CORE_OPTIONS)
          icon = xmb->textures.list[XMB_TEXTURE_CORE_OPTIONS].id;
-      else if (!strcmp(entry.label, "core_information"))
+      else if (hash == MENU_LABEL_CORE_INFORMATION)
          icon = xmb->textures.list[XMB_TEXTURE_CORE_INFO].id;
       else if (!strcmp(entry.label, "core_input_remapping_options"))
          icon = xmb->textures.list[XMB_TEXTURE_INPUT_REMAPPING_OPTIONS].id;
