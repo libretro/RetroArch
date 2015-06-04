@@ -4941,7 +4941,7 @@ static bool setting_append_list_audio_options(
    CONFIG_UINT(
          settings->audio.latency,
          "audio_latency",
-         "Audio Latency",
+         "Audio Latency (ms)",
          g_defaults.settings.out_latency ? 
          g_defaults.settings.out_latency : out_latency,
          group_info.name,
@@ -5025,7 +5025,7 @@ static bool setting_append_list_audio_options(
    CONFIG_UINT(
          settings->audio.out_rate,
          "audio_out_rate",
-         "Audio Output Rate",
+         "Audio Output Rate (KHz)",
          out_rate,
          group_info.name,
          subgroup_info.name,
