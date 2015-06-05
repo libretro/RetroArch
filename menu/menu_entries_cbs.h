@@ -50,12 +50,14 @@ extern "C" {
 #define MENU_VALUE_HORIZONTAL_MENU                                             0x35761704U
 #define MENU_VALUE_MAIN_MENU                                                   0x1625971fU   
 
+#define MENU_LABEL_CONTENT_ACTIONS                                             0xa0d76970U
 #define MENU_LABEL_DETECT_CORE_LIST                                            0xaa07c341U
 #define MENU_LABEL_LOAD_CONTENT                                                0x5745de1fU
 #define MENU_LABEL_CORE_UPDATER_LIST                                           0x0372767dU
 #define MENU_LABEL_RECORD_CONFIG                                               0x11c3daf9U
 #define MENU_LABEL_UNLOAD_CORE                                                 0x4b622170U
 #define MENU_LABEL_QUIT_RETROARCH                                              0x84b0bc71U
+#define MENU_LABEL_DEFERRED_VIDEO_FILTER                                       0x966ad201U
 #define MENU_LABEL_DEFERRED_CORE_LIST_SET                                      0xa6d5fdb4U
 #define MENU_LABEL_DEFERRED_DATABASE_MANAGER_LIST                              0x7c0b704fU
 #define MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST                                0x45446638U
@@ -65,6 +67,8 @@ extern "C" {
 #define MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_FRANCHISE            0x77f9eff2U
 #define MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_EDGE_MAGAZINE_RATING 0x1c7f8a43U
 #define MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_EDGE_MAGAZINE_ISSUE  0xaaeebde7U
+#define MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_FAMITSU_MAGAZINE_RATING 0xbf7ff5e7U
+#define MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_ENHANCEMENT_HW       0x9866bda3U
 #define MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_RELEASEMONTH         0x2b36ce66U
 #define MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_RELEASEYEAR          0x9c7c6e91U
 #define MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_ESRB_RATING          0x68eba20fU
@@ -106,8 +110,11 @@ extern "C" {
 #define MENU_LABEL_CUSTOM_VIEWPORT_2                                           0x76c30170U
 #define MENU_LABEL_HELP                                                        0x7c97d2eeU
 #define MENU_LABEL_INPUT_OVERLAY                                               0x24e24796U
+#define MENU_LABEL_INPUT_OSK_OVERLAY                                           0x11f1c582U
 #define MENU_LABEL_VIDEO_FONT_PATH                                             0xd0de729eU
 #define MENU_LABEL_VIDEO_FILTER                                                0x1c0eb741U
+#define MENU_LABEL_MENU_WALLPAPER                                              0x3b84de01U
+#define MENU_LABEL_CONTENT_HISTORY_PATH                                        0x6f22fb9dU
 #define MENU_LABEL_AUDIO_DSP_PLUGIN                                            0x4a69572bU
 #define MENU_LABEL_RGUI_BROWSER_DIRECTORY                                      0xa86cba73U
 #define MENU_LABEL_PLAYLIST_DIRECTORY                                          0x6361820bU

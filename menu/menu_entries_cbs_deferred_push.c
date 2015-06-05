@@ -476,7 +476,11 @@ void menu_entries_cbs_init_bind_deferred_push(menu_file_list_cbs_t *cbs,
    }
 
    if (strstr(label, "deferred_rdb_entry_detail"))
+   {
       cbs->action_deferred_push = deferred_push_rdb_entry_detail;
+      return;
+   }
+
 #ifdef HAVE_NETWORKING
    else if (hash == MENU_LABEL_DEFERRED_CORE_UPDATER_LIST)
       cbs->action_deferred_push = deferred_push_core_updater_list;
@@ -491,9 +495,9 @@ void menu_entries_cbs_init_bind_deferred_push(menu_file_list_cbs_t *cbs,
       cbs->action_deferred_push = deferred_push_cheat_file_load;
    else if (hash == MENU_LABEL_REMAP_FILE_LOAD)
       cbs->action_deferred_push = deferred_push_remap_file_load;
-   else if (!strcmp(label, "record_config"))
+   else if (hash == MENU_LABEL_RECORD_CONFIG)
       cbs->action_deferred_push = deferred_push_record_configfile;
-   else if (!strcmp(label, "content_actions"))
+   else if (hash == MENU_LABEL_CONTENT_ACTIONS)
       cbs->action_deferred_push = deferred_push_content_actions;
    else if (hash == MENU_LABEL_SHADER_OPTIONS)
       cbs->action_deferred_push = deferred_push_shader_options;
@@ -508,33 +512,33 @@ void menu_entries_cbs_init_bind_deferred_push(menu_file_list_cbs_t *cbs,
    else if (type == MENU_FILE_PLAYLIST_COLLECTION)
       cbs->action_deferred_push = deferred_push_rdb_collection;
    else if ((hash == MENU_LABEL_DEFERRED_CORE_LIST) ||
-         !strcmp(label, "deferred_core_list_set"))
+         (hash == MENU_LABEL_DEFERRED_CORE_LIST_SET))
       cbs->action_deferred_push = deferred_push_core_list_deferred;
-   else if (!strcmp(label, "deferred_video_filter"))
+   else if (hash == MENU_LABEL_DEFERRED_VIDEO_FILTER)
       cbs->action_deferred_push = deferred_push_video_filter;
-   else if (!strcmp(label, "deferred_database_manager_list"))
+   else if (hash == MENU_LABEL_DEFERRED_DATABASE_MANAGER_LIST)
       cbs->action_deferred_push = deferred_push_database_manager_list_deferred;
-   else if (!strcmp(label, "deferred_cursor_manager_list"))
+   else if (hash == MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST)
       cbs->action_deferred_push = deferred_push_cursor_manager_list_deferred;
    else if (
-         !strcmp(label, "deferred_cursor_manager_list_rdb_entry_publisher") ||
-         !strcmp(label, "deferred_cursor_manager_list_rdb_entry_developer") ||
-         !strcmp(label, "deferred_cursor_manager_list_rdb_entry_origin") ||
-         !strcmp(label, "deferred_cursor_manager_list_rdb_entry_franchise") ||
-         !strcmp(label, "deferred_cursor_manager_list_rdb_entry_enhancement_hw") ||
-         !strcmp(label, "deferred_cursor_manager_list_rdb_entry_esrb_rating") ||
-         !strcmp(label, "deferred_cursor_manager_list_rdb_entry_bbfc_rating") ||
-         !strcmp(label, "deferred_cursor_manager_list_rdb_entry_elspa_rating") ||
-         !strcmp(label, "deferred_cursor_manager_list_rdb_entry_pegi_rating") ||
-         !strcmp(label, "deferred_cursor_manager_list_rdb_entry_cero_rating") ||
-         !strcmp(label, "deferred_cursor_manager_list_rdb_entry_edge_magazine_rating") ||
-         !strcmp(label, "deferred_cursor_manager_list_rdb_entry_edge_magazine_issue") ||
-         !strcmp(label, "deferred_cursor_manager_list_rdb_entry_famitsu_magazine_rating") ||
-         !strcmp(label, "deferred_cursor_manager_list_rdb_entry_max_users") ||
-         !strcmp(label, "deferred_cursor_manager_list_rdb_entry_releasemonth") ||
-         !strcmp(label, "deferred_cursor_manager_list_rdb_entry_releaseyear")
+         (hash == MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_PUBLISHER)               ||
+         (hash == MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_DEVELOPER)               ||
+         (hash == MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_ORIGIN)                  ||
+         (hash == MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_FRANCHISE)               ||
+         (hash == MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_ENHANCEMENT_HW)          ||
+         (hash == MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_ESRB_RATING)             ||
+         (hash == MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_BBFC_RATING)             ||
+         (hash == MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_ELSPA_RATING)            ||
+         (hash == MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_PEGI_RATING)             ||
+         (hash == MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_CERO_RATING)             ||
+         (hash == MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_EDGE_MAGAZINE_RATING)    ||
+         (hash == MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_EDGE_MAGAZINE_ISSUE)     ||
+         (hash == MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_FAMITSU_MAGAZINE_RATING) ||
+         (hash == MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_MAX_USERS)               ||
+         (hash == MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_RELEASEMONTH)            ||
+         (hash == MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_RELEASEYEAR)
          )
-      cbs->action_deferred_push = deferred_push_cursor_manager_list_deferred_query_subsearch;
+         cbs->action_deferred_push = deferred_push_cursor_manager_list_deferred_query_subsearch;
    else if (hash == MENU_LABEL_CORE_INFORMATION)
       cbs->action_deferred_push = deferred_push_core_information;
    else if (hash == MENU_LABEL_SYSTEM_INFORMATION)
@@ -561,7 +565,7 @@ void menu_entries_cbs_init_bind_deferred_push(menu_file_list_cbs_t *cbs,
       cbs->action_deferred_push = deferred_push_disk_options;
    else if (hash == MENU_LABEL_CORE_LIST)
       cbs->action_deferred_push = deferred_push_core_list;
-   else if (!strcmp(label, "content_collection_list"))
+   else if (hash == MENU_LABEL_CONTENT_COLLECTION_LIST)
       cbs->action_deferred_push = deferred_push_content_collection_list;
    else if (hash == MENU_LABEL_CONFIGURATIONS)
       cbs->action_deferred_push = deferred_push_configurations;
@@ -571,18 +575,18 @@ void menu_entries_cbs_init_bind_deferred_push(menu_file_list_cbs_t *cbs,
       cbs->action_deferred_push = deferred_push_video_shader_pass;
    else if (hash == MENU_LABEL_VIDEO_FILTER)
       cbs->action_deferred_push = deferred_push_video_filter;
-   else if (!strcmp(label, "menu_wallpaper"))
+   else if (hash == MENU_LABEL_MENU_WALLPAPER)
       cbs->action_deferred_push = deferred_push_images;
    else if (hash == MENU_LABEL_AUDIO_DSP_PLUGIN)
       cbs->action_deferred_push = deferred_push_audio_dsp_plugin;
    else if (hash == MENU_LABEL_INPUT_OVERLAY)
       cbs->action_deferred_push = deferred_push_input_overlay;
-   else if (!strcmp(label, "input_osk_overlay"))
+   else if (hash == MENU_LABEL_INPUT_OSK_OVERLAY)
       cbs->action_deferred_push = deferred_push_input_osk_overlay;
    else if (hash == MENU_LABEL_VIDEO_FONT_PATH)
       cbs->action_deferred_push = deferred_push_video_font_path;
-   else if (!strcmp(label, "content_history_path"))
+   else if (hash == MENU_LABEL_CONTENT_HISTORY_PATH)
       cbs->action_deferred_push = deferred_push_content_history_path;
-   else if (!strcmp(label, "detect_core_list"))
+   else if (hash == MENU_LABEL_DETECT_CORE_LIST)
       cbs->action_deferred_push = deferred_push_detect_core_list;
 }
