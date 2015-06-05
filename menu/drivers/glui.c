@@ -61,6 +61,7 @@ static void glui_blit_line(float x, float y,
 {
    unsigned width, height;
    glui_handle_t *glui = NULL;
+   struct font_params params = {0};
    menu_handle_t *menu = menu_driver_get_ptr();
 
    if (!menu)
@@ -69,8 +70,6 @@ static void glui_blit_line(float x, float y,
    video_driver_get_size(&width, &height);
 
    glui = (glui_handle_t*)menu->userdata;
-
-   struct font_params params = {0};
 
    params.x           = x / width;
    params.y           = 1.0f - (y + glui->line_height/2 + menu->font.size/3) 
@@ -186,8 +185,8 @@ static void glui_render_messagebox(const char *message)
    uint32_t normal_color;
    int x, y;
    struct string_list *list = NULL;
-   menu_handle_t *menu  = menu_driver_get_ptr();
-   settings_t *settings = config_get_ptr();
+   menu_handle_t *menu      = menu_driver_get_ptr();
+   settings_t *settings     = config_get_ptr();
 
    if (!menu || !menu->userdata)
       return;
