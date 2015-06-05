@@ -1525,9 +1525,9 @@ void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
          !strcmp(label, "detect_core_list")
          )
       cbs->action_ok = action_ok_push_content_list;
-   else if (!strcmp(label, "history_list") ||
-         !strcmp(label, "cursor_manager_list") ||
-         !strcmp(label, "database_manager_list") ||
+   else if ((hash == MENU_LABEL_HISTORY_LIST) ||
+         (hash == MENU_LABEL_CURSOR_MANAGER_LIST) ||
+         (hash == MENU_LABEL_DATABASE_MANAGER_LIST) ||
          (setting && setting->browser_selection_type == ST_DIR)
          )
       cbs->action_ok = action_ok_push_generic_list;
