@@ -1013,6 +1013,10 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
       xmb_node_t *   node    = (xmb_node_t*)file_list_get_userdata_at_offset(list, i);
       menu_handle_t *menu    = menu_driver_get_ptr();
       uint32_t hash_label    = 0;
+      uint32_t hash_value    = 0;
+      bool val1_enable       = false;
+      bool val2_enable       = false;
+      bool val3_enable       = false;
 
       if (!node)
          continue;
@@ -1031,6 +1035,7 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
       menu_entry_get(&entry, i, list, true);
 
       hash_label = djb2_calculate(entry.label);
+      hash_value = djb2_calculate(entry.value);
 
       if (entry.type == MENU_FILE_CONTENTLIST_ENTRY)
          strlcpy(entry.path, path_basename(entry.path), sizeof(entry.path));
@@ -1086,19 +1091,22 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
             frame_count / 20, entry.value,
             (i == current));
 
-      if((     strcmp(entry.value, "...")
-            && strcmp(entry.value, "(CORE)")
-            && strcmp(entry.value, "(RDB)")
-            && strcmp(entry.value, "(CURSOR)")
-            && strcmp(entry.value, "(FILE)")
-            && strcmp(entry.value, "(DIR)")
-            && strcmp(entry.value, "(COMP)")
-            && strcmp(entry.value, "ON")
-            && strcmp(entry.value, "OFF"))
-            || ((!strcmp(entry.value, "ON")
-            && !xmb->textures.list[XMB_TEXTURE_SWITCH_ON].id)
-            || (!strcmp(entry.value, "OFF")
-            && !xmb->textures.list[XMB_TEXTURE_SWITCH_OFF].id)))
+      val1_enable = (
+               (hash_value != MENU_VALUE_MORE)
+            && (hash_value != MENU_VALUE_CORE)
+            && (hash_value != MENU_VALUE_RDB)
+            && (hash_value != MENU_VALUE_CURSOR)
+            && (hash_value != MENU_VALUE_FILE)
+            && (hash_value != MENU_VALUE_DIR)
+            && (hash_value != MENU_VALUE_COMP)
+            && (hash_value != MENU_VALUE_ON)
+            && (hash_value != MENU_VALUE_OFF)
+         );
+
+      val2_enable = ((hash_value == MENU_VALUE_ON)  && !xmb->textures.list[XMB_TEXTURE_SWITCH_ON].id);
+      val3_enable = ((hash_value == MENU_VALUE_OFF) && !xmb->textures.list[XMB_TEXTURE_SWITCH_OFF].id);
+
+      if(val1_enable || val2_enable || val3_enable)
          xmb_draw_text(menu, xmb, value,
                node->x + xmb->margins.screen.left + xmb->icon.spacing.horizontal + 
                xmb->margins.label.left + xmb->margins.setting.left, 
@@ -1107,16 +1115,21 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
                node->label_alpha,
                TEXT_ALIGN_LEFT);
 
-
       xmb_draw_icon_begin(gl);
 
       xmb_draw_icon(gl, xmb, icon, icon_x, icon_y, node->alpha, 0, node->zoom);
 
-      if (!strcmp(entry.value, "ON") && xmb->textures.list[XMB_TEXTURE_SWITCH_ON].id)
-         texture_switch = xmb->textures.list[XMB_TEXTURE_SWITCH_ON].id;
-
-      if (!strcmp(entry.value, "OFF") && xmb->textures.list[XMB_TEXTURE_SWITCH_OFF].id)
-         texture_switch = xmb->textures.list[XMB_TEXTURE_SWITCH_OFF].id;
+      switch (hash_value)
+      {
+         case MENU_VALUE_ON:
+            if (xmb->textures.list[XMB_TEXTURE_SWITCH_ON].id)
+               texture_switch = xmb->textures.list[XMB_TEXTURE_SWITCH_ON].id;
+            break;
+         case MENU_VALUE_OFF:
+            if (xmb->textures.list[XMB_TEXTURE_SWITCH_OFF].id)
+               texture_switch = xmb->textures.list[XMB_TEXTURE_SWITCH_OFF].id;
+            break;
+      }
 
       if (texture_switch != 0)
          xmb_draw_icon_predone(gl, xmb, &mymat,
