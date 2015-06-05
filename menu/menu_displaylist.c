@@ -1341,67 +1341,61 @@ static void menu_displaylist_push_horizontal_menu_list_content(
    string_list_free(str_list);
 }
 
-static int menu_displaylist_push_horizontal_menu_list_cores(
-      file_list_t *list, core_info_t *info,
-      const char *path, bool push_databases_enable)
+static int menu_displaylist_parse_horizontal_list(menu_displaylist_info_t *_info)
 {
-   size_t i;
-   settings_t *settings     = config_get_ptr();
-
-   if (!info->supports_no_game)
-      menu_displaylist_push_horizontal_menu_list_content(list, info, path);
-   else
-      menu_list_push(list, info->display_name, "content_actions",
-            MENU_FILE_CONTENTLIST_ENTRY, 0);
-
-   if (!push_databases_enable)
-      return 0;
-   if (!info->databases_list)
-      return 0;
-
-   for (i = 0; i < info->databases_list->size; i++)
-   {
-      char db_path[PATH_MAX_LENGTH];
-      struct string_list *str_list = (struct string_list*)info->databases_list;
-
-      if (!str_list)
-         continue;
-
-      fill_pathname_join(db_path, settings->content_database,
-            str_list->elems[i].data, sizeof(db_path));
-      strlcat(db_path, ".rdb", sizeof(db_path));
-
-      if (!path_file_exists(db_path))
-         continue;
-
-      menu_list_push(list, path_basename(db_path), "core_database",
-            MENU_FILE_RDB, 0);
-   }
-
-   return 0;
-}
-
-
-static int menu_displaylist_parse_horizontal_list(menu_displaylist_info_t *info)
-{
-   core_info_t      *core_info = NULL;
+   const char            *path = NULL;
+   core_info_t            *info = NULL;
    global_t            *global = global_get_ptr();
    core_info_list_t *info_list = (core_info_list_t*)global->core_info;
+   file_list_t           *list = info_list ? _info->list : NULL;
    menu_handle_t        *menu  = menu_driver_get_ptr();
    settings_t *settings        = config_get_ptr();
 
    if (!info_list)
       return -1;
 
-   core_info = (core_info_t*)&info_list->list[menu->categories.selection_ptr - 1];
+   info = (core_info_t*)&info_list->list[menu->categories.selection_ptr - 1];
 
-   if (!core_info)
+   if (!info)
       return -1;
 
-   strlcpy(settings->libretro, core_info->path, sizeof(settings->libretro));
+   strlcpy(settings->libretro, info->path, sizeof(settings->libretro));
 
-   menu_displaylist_push_horizontal_menu_list_cores(info->list,
-         core_info, settings->core_assets_directory, true);
+   path = settings->core_assets_directory;
+   list = _info->list;
+
+   {
+      size_t i;
+      settings_t *settings     = config_get_ptr();
+
+      if (!info->supports_no_game)
+         menu_displaylist_push_horizontal_menu_list_content(list, info, path);
+      else
+         menu_list_push(list, info->display_name, "content_actions",
+               MENU_FILE_CONTENTLIST_ENTRY, 0);
+
+      if (!info->databases_list)
+         return 0;
+
+      for (i = 0; i < info->databases_list->size; i++)
+      {
+         char db_path[PATH_MAX_LENGTH];
+         struct string_list *str_list = (struct string_list*)info->databases_list;
+
+         if (!str_list)
+            continue;
+
+         fill_pathname_join(db_path, settings->content_database,
+               str_list->elems[i].data, sizeof(db_path));
+         strlcat(db_path, ".rdb", sizeof(db_path));
+
+         if (!path_file_exists(db_path))
+            continue;
+
+         menu_list_push(list, path_basename(db_path), "core_database",
+               MENU_FILE_RDB, 0);
+      }
+   }
 
    return 0;
 }
