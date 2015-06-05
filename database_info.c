@@ -49,6 +49,31 @@
 #define DB_QUERY_ENTRY_RELEASEDATE_YEAR         0x9c7c6e91U
 #define DB_QUERY_ENTRY_MAX_USERS                0xbfcba816U
 
+#define DB_CURSOR_NAME                          0x7c9b0c46U
+#define DB_CURSOR_DESCRIPTION                   0x91b0c789U
+#define DB_CURSOR_PUBLISHER                     0x5e099013U
+#define DB_CURSOR_DEVELOPER                     0x1783d2abU
+#define DB_CURSOR_ORIGIN                        0x1315e3edU
+#define DB_CURSOR_FRANCHISE                     0xc3a526b8U
+#define DB_CURSOR_BBFC_RATING                   0xede26836U
+#define DB_CURSOR_ESRB_RATING                   0x4c3fa255U
+#define DB_CURSOR_ELSPA_RATING                  0xd9cab41eU
+#define DB_CURSOR_CERO_RATING                   0x084a1772U
+#define DB_CURSOR_PEGI_RATING                   0x431b736eU
+#define DB_CURSOR_CHECKSUM_CRC32                0x0b88671dU
+#define DB_CURSOR_CHECKSUM_SHA1                 0x7c9de632U
+#define DB_CURSOR_CHECKSUM_MD5                  0x0b888fabU
+#define DB_CURSOR_ENHANCEMENT_HW                0xab612029U
+#define DB_CURSOR_EDGE_MAGAZINE_REVIEW          0xd3573eabU
+#define DB_CURSOR_EDGE_MAGAZINE_RATING          0xd30dc4feU
+#define DB_CURSOR_EDGE_MAGAZINE_ISSUE           0xa0f30d42U
+#define DB_CURSOR_FAMITSU_MAGAZINE_RATING       0x0a50ca62U
+#define DB_CURSOR_MAX_USERS                     0x1084ff77U
+#define DB_CURSOR_RELEASEDATE_MONTH             0x790ad76cU
+#define DB_CURSOR_RELEASEDATE_YEAR              0x7fd06ed7U
+#define DB_CURSOR_RUMBLE_SUPPORTED              0x1a4dc3ecU
+#define DB_CURSOR_ANALOG_SUPPORTED              0xf220fc17U
+
 int database_info_build_query(char *s, size_t len,
       const char *label, const char *path)
 {
@@ -62,90 +87,61 @@ int database_info_build_query(char *s, size_t len,
    switch (value)
    {
       case DB_QUERY_ENTRY:
-         if (!strcmp(label, "displaylist_parse_database_entry"))
-            strlcat(s, "name", len);
+         strlcat(s, "name", len);
          break;
       case DB_QUERY_ENTRY_PUBLISHER:
-         if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_publisher"))
-            strlcat(s, "publisher", len);
+         strlcat(s, "publisher", len);
          break;
       case DB_QUERY_ENTRY_DEVELOPER:
-         if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_developer"))
-            strlcat(s, "developer", len);
+         strlcat(s, "developer", len);
          break;
       case DB_QUERY_ENTRY_ORIGIN:
-         if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_origin"))
-            strlcat(s, "origin", len);
+         strlcat(s, "origin", len);
          break;
       case DB_QUERY_ENTRY_FRANCHISE:
-         if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_franchise"))
-            strlcat(s, "franchise", len);
+         strlcat(s, "franchise", len);
          break;
       case DB_QUERY_ENTRY_RATING:
-         if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_esrb_rating"))
-            strlcat(s, "esrb_rating", len);
+         strlcat(s, "esrb_rating", len);
          break;
       case DB_QUERY_ENTRY_BBFC_RATING:
-         if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_bbfc_rating"))
-            strlcat(s, "bbfc_rating", len);
+         strlcat(s, "bbfc_rating", len);
          break;
       case DB_QUERY_ENTRY_ELSPA_RATING:
-         if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_elspa_rating"))
-            strlcat(s, "elspa_rating", len);
+         strlcat(s, "elspa_rating", len);
          break;
       case DB_QUERY_ENTRY_PEGI_RATING:
-         if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_pegi_rating"))
-            strlcat(s, "pegi_rating", len);
+         strlcat(s, "pegi_rating", len);
          break;
       case DB_QUERY_ENTRY_CERO_RATING:
-         if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_cero_rating"))
-            strlcat(s, "cero_rating", len);
+         strlcat(s, "cero_rating", len);
          break;
       case DB_QUERY_ENTRY_ENHANCEMENT_HW:
-         if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_enhancement_hw"))
-            strlcat(s, "enhancement_hw", len);
+         strlcat(s, "enhancement_hw", len);
          break;
       case DB_QUERY_ENTRY_EDGE_MAGAZINE_RATING:
-         if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_edge_magazine_rating"))
-         {
-            strlcat(s, "edge_rating", len);
-            add_quotes = false;
-         }
+         strlcat(s, "edge_rating", len);
+         add_quotes = false;
          break;
       case DB_QUERY_ENTRY_EDGE_MAGAZINE_ISSUE:
-         if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_edge_magazine_issue"))
-         {
-            strlcat(s, "edge_issue", len);
-            add_quotes = false;
-         }
+         strlcat(s, "edge_issue", len);
+         add_quotes = false;
          break;
       case DB_QUERY_ENTRY_FAMITSU_MAGAZINE_RATING:
-         if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_famitsu_magazine_rating"))
-         {
-            strlcat(s, "famitsu_rating", len);
-            add_quotes = false;
-         }
+         strlcat(s, "famitsu_rating", len);
+         add_quotes = false;
          break;
       case DB_QUERY_ENTRY_RELEASEDATE_MONTH:
-         if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_releasemonth"))
-         {
-            strlcat(s, "releasemonth", len);
-            add_quotes = false;
-         }
+         strlcat(s, "releasemonth", len);
+         add_quotes = false;
          break;
       case DB_QUERY_ENTRY_RELEASEDATE_YEAR:
-         if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_releaseyear"))
-         {
-            strlcat(s, "releaseyear", len);
-            add_quotes = false;
-         }
+         strlcat(s, "releaseyear", len);
+         add_quotes = false;
          break;
       case DB_QUERY_ENTRY_MAX_USERS:
-         if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_max_users"))
-         {
-            strlcat(s, "users", len);
-            add_quotes = false;
-         }
+         strlcat(s, "users", len);
+         add_quotes = false;
          break;
       default:
          RARCH_LOG("Unknown label: %s\n", label);
@@ -179,30 +175,6 @@ static char *bin_to_hex_alloc(const uint8_t *data, size_t len)
    return ret;
 }
 
-#define DB_CURSOR_NAME                    0x7c9b0c46U
-#define DB_CURSOR_DESCRIPTION             0x91b0c789U
-#define DB_CURSOR_PUBLISHER               0x5e099013U
-#define DB_CURSOR_DEVELOPER               0x1783d2abU
-#define DB_CURSOR_ORIGIN                  0x1315e3edU
-#define DB_CURSOR_FRANCHISE               0xc3a526b8U
-#define DB_CURSOR_BBFC_RATING             0xede26836U
-#define DB_CURSOR_ESRB_RATING             0x4c3fa255U
-#define DB_CURSOR_ELSPA_RATING            0xd9cab41eU
-#define DB_CURSOR_CERO_RATING             0x084a1772U
-#define DB_CURSOR_PEGI_RATING             0x431b736eU
-#define DB_CURSOR_CHECKSUM_CRC32          0x0b88671dU
-#define DB_CURSOR_CHECKSUM_SHA1           0x7c9de632U
-#define DB_CURSOR_CHECKSUM_MD5            0x0b888fabU
-#define DB_CURSOR_ENHANCEMENT_HW          0xab612029U
-#define DB_CURSOR_EDGE_MAGAZINE_REVIEW    0xd3573eabU
-#define DB_CURSOR_EDGE_MAGAZINE_RATING    0xd30dc4feU
-#define DB_CURSOR_EDGE_MAGAZINE_ISSUE     0xa0f30d42U
-#define DB_CURSOR_FAMITSU_MAGAZINE_RATING 0x0a50ca62U
-#define DB_CURSOR_MAX_USERS               0x1084ff77U
-#define DB_CURSOR_RELEASEDATE_MONTH       0x790ad76cU
-#define DB_CURSOR_RELEASEDATE_YEAR        0x7fd06ed7U
-#define DB_CURSOR_RUMBLE_SUPPORTED        0x1a4dc3ecU
-#define DB_CURSOR_ANALOG_SUPPORTED        0xf220fc17U
 
 static int database_cursor_iterate(libretrodb_cursor_t *cur,
       database_info_t *db_info)
@@ -238,100 +210,76 @@ static int database_cursor_iterate(libretrodb_cursor_t *cur,
       switch (value)
       {
          case DB_CURSOR_NAME:
-            if (!strcmp(str, "name"))
-               db_info->name = strdup(val->string.buff);
+            db_info->name = strdup(val->string.buff);
             break;
          case DB_CURSOR_DESCRIPTION:
-            if (!strcmp(str, "description"))
-               db_info->description = strdup(val->string.buff);
+            db_info->description = strdup(val->string.buff);
             break;
          case DB_CURSOR_PUBLISHER:
-            if (!strcmp(str, "publisher"))
-               db_info->publisher = strdup(val->string.buff);
+            db_info->publisher = strdup(val->string.buff);
             break;
          case DB_CURSOR_DEVELOPER:
-            if (!strcmp(str, "developer"))
-               db_info->developer = strdup(val->string.buff);
+            db_info->developer = strdup(val->string.buff);
             break;
          case DB_CURSOR_ORIGIN:
-            if (!strcmp(str, "origin"))
-               db_info->origin = strdup(val->string.buff);
+            db_info->origin = strdup(val->string.buff);
             break;
          case DB_CURSOR_FRANCHISE:
-            if (!strcmp(str, "franchise"))
-               db_info->franchise = strdup(val->string.buff);
+            db_info->franchise = strdup(val->string.buff);
             break;
          case DB_CURSOR_BBFC_RATING:
-            if (!strcmp(str, "bbfc_rating"))
-               db_info->bbfc_rating = strdup(val->string.buff);
+            db_info->bbfc_rating = strdup(val->string.buff);
             break;
          case DB_CURSOR_ESRB_RATING:
-            if (!strcmp(str, "esrb_rating"))
-               db_info->esrb_rating = strdup(val->string.buff);
+            db_info->esrb_rating = strdup(val->string.buff);
             break;
          case DB_CURSOR_ELSPA_RATING:
-            if (!strcmp(str, "elspa_rating"))
-               db_info->elspa_rating = strdup(val->string.buff);
+            db_info->elspa_rating = strdup(val->string.buff);
             break;
          case DB_CURSOR_CERO_RATING:
-            if (!strcmp(str, "cero_rating"))
-               db_info->cero_rating = strdup(val->string.buff);
+            db_info->cero_rating = strdup(val->string.buff);
             break;
          case DB_CURSOR_PEGI_RATING:
-            if (!strcmp(str, "pegi_rating"))
-               db_info->pegi_rating = strdup(val->string.buff);
+            db_info->pegi_rating = strdup(val->string.buff);
             break;
          case DB_CURSOR_ENHANCEMENT_HW:
-            if (!strcmp(str, "enhancement_hw"))
-               db_info->enhancement_hw = strdup(val->string.buff);
+            db_info->enhancement_hw = strdup(val->string.buff);
             break;
          case DB_CURSOR_EDGE_MAGAZINE_REVIEW:
-            if (!strcmp(str, "edge_review"))
-               db_info->edge_magazine_review = strdup(val->string.buff);
+            db_info->edge_magazine_review = strdup(val->string.buff);
             break;
          case DB_CURSOR_EDGE_MAGAZINE_RATING:
-            if (!strcmp(str, "edge_rating"))
-               db_info->edge_magazine_rating = val->uint_;
+            db_info->edge_magazine_rating = val->uint_;
             break;
          case DB_CURSOR_EDGE_MAGAZINE_ISSUE:
-            if (!strcmp(str, "edge_issue"))
-               db_info->edge_magazine_issue = val->uint_;
+            db_info->edge_magazine_issue = val->uint_;
             break;
          case DB_CURSOR_FAMITSU_MAGAZINE_RATING:
-            if (!strcmp(str, "famitsu_rating"))
-               db_info->famitsu_magazine_rating = val->uint_;
+            db_info->famitsu_magazine_rating = val->uint_;
             break;
          case DB_CURSOR_MAX_USERS:
-            if (!strcmp(str, "users"))
-               db_info->max_users = val->uint_;
+            db_info->max_users = val->uint_;
             break;
          case DB_CURSOR_RELEASEDATE_MONTH:
-            if (!strcmp(str, "releasemonth"))
-               db_info->releasemonth = val->uint_;
+            db_info->releasemonth = val->uint_;
             break;
          case DB_CURSOR_RELEASEDATE_YEAR:
-            if (!strcmp(str, "releaseyear"))
-               db_info->releaseyear = val->uint_;
+            db_info->releaseyear = val->uint_;
             break;
          case DB_CURSOR_RUMBLE_SUPPORTED:
-            if (!strcmp(str, "rumble"))
-               db_info->rumble_supported = val->uint_;
+            db_info->rumble_supported = val->uint_;
             break;
          case DB_CURSOR_ANALOG_SUPPORTED:
-            if (!strcmp(str, "analog"))
-               db_info->analog_supported = val->uint_;
+            db_info->analog_supported = val->uint_;
             break;
          case DB_CURSOR_CHECKSUM_CRC32:
-            if (!strcmp(str, "crc"))
-               db_info->crc32 = bin_to_hex_alloc((uint8_t*)val->binary.buff, val->binary.len);
+            db_info->crc32 = bin_to_hex_alloc((uint8_t*)val->binary.buff, val->binary.len);
             break;
          case DB_CURSOR_CHECKSUM_SHA1:
-            if (!strcmp(str, "sha1"))
-               db_info->sha1 = bin_to_hex_alloc((uint8_t*)val->binary.buff, val->binary.len);
+            db_info->sha1 = bin_to_hex_alloc((uint8_t*)val->binary.buff, val->binary.len);
             break;
          case DB_CURSOR_CHECKSUM_MD5:
-            if (!strcmp(str, "md5"))
-               db_info->md5 = bin_to_hex_alloc((uint8_t*)val->binary.buff, val->binary.len);
+            db_info->md5 = bin_to_hex_alloc((uint8_t*)val->binary.buff, val->binary.len);
             break;
          default:
             RARCH_LOG("Unknown value: %d\n", value);
