@@ -2548,6 +2548,60 @@ static int setting_get_description_compare_label(uint32_t label_hash,
                "If Force Aspect is not set, X/Y will be \n"
                "integer scaled independently.");
          break;
+      case MENU_LABEL_AUDIO_VOLUME:
+         snprintf(s, len,
+               " -- Audio volume, expressed in dB.\n"
+               " \n"
+               " 0 dB is normal volume. No gain will be applied.\n"
+               "Gain can be controlled in runtime with Input\n"
+               "Volume Up / Input Volume Down.");
+         break;
+      case MENU_LABEL_AUDIO_RATE_CONTROL_DELTA:
+         snprintf(s, len,
+               " -- Audio rate control.\n"
+               " \n"
+               "Setting this to 0 disables rate control.\n"
+               "Any other value controls audio rate control \n"
+               "delta.\n"
+               " \n"
+               "Defines how much input rate can be adjusted \n"
+               "dynamically.\n"
+               " \n"
+               " Input rate is defined as: \n"
+               " input rate * (1.0 +/- (rate control delta))");
+         break;
+      case MENU_LABEL_AUDIO_MAX_TIMING_SKEW:
+         snprintf(s, len,
+               " -- Maximum audio timing skew.\n"
+               " \n"
+               "Defines the maximum change in input rate.\n"
+               "You may want to increase this to enable\n"
+               "very large changes in timing, for example\n"
+               "running PAL cores on NTSC displays, at the\n"
+               "cost of inaccurate audio pitch.\n"
+               " \n"
+               " Input rate is defined as: \n"
+               " input rate * (1.0 +/- (max timing skew))");
+         break;
+      case MENU_LABEL_OVERLAY_NEXT:
+         snprintf(s, len,
+               " -- Toggles to next overlay.\n"
+               " \n"
+               "Wraps around.");
+         break;
+      case MENU_LABEL_LOG_VERBOSITY:
+         snprintf(s, len,
+               "-- Enable or disable verbosity level \n"
+               "of frontend.");
+         break;
+      case MENU_LABEL_VOLUME_UP:
+         snprintf(s, len,
+               " -- Increases audio volume.");
+         break;
+      case MENU_LABEL_VOLUME_DOWN:
+         snprintf(s, len,
+               " -- Decreases audio volume.");
+         break;
       default:
          return -1;
    }
@@ -2581,12 +2635,6 @@ int setting_get_description(const char *label, char *s,
       snprintf(s, len,
             "-- Forcibly disable composition.\n"
             "Only valid on Windows Vista/7 for now.");
-   }
-   else if (!strcmp(label, "log_verbosity"))
-   {
-      snprintf(s, len,
-            "-- Enable or disable verbosity level \n"
-            "of frontend.");
    }
    else if (!strcmp(label, "perfcnt_enable"))
    {
@@ -2658,35 +2706,6 @@ int setting_get_description(const char *label, char *s,
             " \n"
             "Maximum is 15.");
    }
-   else if (!strcmp(label, "audio_rate_control_delta"))
-   {
-      snprintf(s, len,
-            " -- Audio rate control.\n"
-            " \n"
-            "Setting this to 0 disables rate control.\n"
-            "Any other value controls audio rate control \n"
-            "delta.\n"
-            " \n"
-            "Defines how much input rate can be adjusted \n"
-            "dynamically.\n"
-            " \n"
-            " Input rate is defined as: \n"
-            " input rate * (1.0 +/- (rate control delta))");
-   }
-   else if (!strcmp(label, "audio_max_timing_skew"))
-   {
-      snprintf(s, len,
-            " -- Maximum audio timing skew.\n"
-            " \n"
-            "Defines the maximum change in input rate.\n"
-            "You may want to increase this to enable\n"
-            "very large changes in timing, for example\n"
-            "running PAL cores on NTSC displays, at the\n"
-            "cost of inaccurate audio pitch.\n"
-            " \n"
-            " Input rate is defined as: \n"
-            " input rate * (1.0 +/- (max timing skew))");
-   }
    else if (!strcmp(label, "video_fullscreen"))
    {
       snprintf(s, len, " -- Toggles fullscreen.");
@@ -2713,15 +2732,6 @@ int setting_get_description(const char *label, char *s,
             "Using this might improve performance at \n"
             "possible cost of latency and more video \n"
             "stuttering.");
-   }
-   else if (!strcmp(label, "audio_volume"))
-   {
-      snprintf(s, len,
-            " -- Audio volume, expressed in dB.\n"
-            " \n"
-            " 0 dB is normal volume. No gain will be applied.\n"
-            "Gain can be controlled in runtime with Input\n"
-            "Volume Up / Input Volume Down.");
    }
    else if (!strcmp(label, "block_sram_overwrite"))
    {
@@ -2959,17 +2969,6 @@ int setting_get_description(const char *label, char *s,
    else if (!strcmp(label, "screenshot"))
       snprintf(s, len,
             " -- Take screenshot.");
-   else if (!strcmp(label, "volume_up"))
-      snprintf(s, len,
-            " -- Increases audio volume.");
-   else if (!strcmp(label, "volume_down"))
-      snprintf(s, len,
-            " -- Decreases audio volume.");
-   else if (!strcmp(label, "overlay_next"))
-      snprintf(s, len,
-            " -- Toggles to next overlay.\n"
-            " \n"
-            "Wraps around.");
    else
       snprintf(s, len,
             "-- No info on this item is available. --\n");

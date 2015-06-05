@@ -20,8 +20,11 @@
 extern "C" {
 #endif
 
-#define MENU_LABEL_LOG_VERBOSITY                                               0x6648c96dU
+#define MENU_LABEL_VOLUME_UP                                                   0xa66e9681U
+#define MENU_LABEL_VOLUME_DOWN                                                 0xfc64f3d4U
 
+#define MENU_LABEL_LOG_VERBOSITY                                               0x6648c96dU
+#define MENU_LABEL_OVERLAY_NEXT                                                0x7a459145U
 #define MENU_LABEL_AUDIO_VOLUME                                                0x502173aeU
 #define MENU_LABEL_AUDIO_LATENCY                                               0x32695386U
 
