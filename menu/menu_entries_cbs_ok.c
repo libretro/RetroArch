@@ -1423,146 +1423,148 @@ static int is_rdb_entry(const char *label)
          );
 }
 
-void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
-      const char *path, const char *label, unsigned type, size_t idx,
-      const char *elem0, const char *elem1, const char *menu_label)
+static int menu_entries_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
+      uint32_t hash)
 {
-   rarch_setting_t *setting = menu_setting_find(label);
-   menu_handle_t *menu      = menu_driver_get_ptr();
-   uint32_t hash            = djb2_calculate(label);
-   uint32_t menu_label_hash = djb2_calculate(menu_label);
-
-   if (!cbs)
-      return;
-   if (!menu)
-      return;
-
-#if 0
-   RARCH_LOG("path: %s, label: %s, elem0 : %s, elem1: %s\n", path, label, elem0, elem1);
-#endif
-
-   cbs->action_ok = action_ok_lookup_setting;
-
-   if (elem0[0] != '\0' && is_rdb_entry(elem0))
+   switch (hash)
    {
-      cbs->action_ok = action_ok_rdb_entry_submenu;
-      return;
+      case MENU_LABEL_CUSTOM_BIND_ALL:
+         cbs->action_ok = action_ok_lookup_setting;
+         break;
+      case MENU_LABEL_SAVESTATE:
+         cbs->action_ok = action_ok_save_state;
+         break;
+      case MENU_LABEL_LOADSTATE:
+         cbs->action_ok = action_ok_load_state;
+         break;
+      case MENU_LABEL_RESUME_CONTENT:
+         cbs->action_ok = action_ok_resume_content;
+         break;
+      case MENU_LABEL_RESTART_CONTENT:
+         cbs->action_ok = action_ok_restart_content;
+         break;
+      case MENU_LABEL_TAKE_SCREENSHOT:
+         cbs->action_ok = action_ok_screenshot;
+         break;
+      case MENU_LABEL_FILE_LOAD_OR_RESUME:
+         cbs->action_ok = action_ok_file_load_or_resume;
+         break;
+      case MENU_LABEL_QUIT_RETROARCH:
+         cbs->action_ok = action_ok_quit;
+         break;
+      case MENU_LABEL_UNLOAD_CORE:
+         cbs->action_ok = action_ok_unload_core;
+         break;
+      case MENU_LABEL_SAVE_NEW_CONFIG:
+         cbs->action_ok = action_ok_save_new_config;
+         break;
+      case MENU_LABEL_HELP:
+         cbs->action_ok = action_ok_help;
+         break;
+      case MENU_LABEL_VIDEO_SHADER_PASS:
+         cbs->action_ok = action_ok_shader_pass;
+         break;
+      case MENU_LABEL_VIDEO_SHADER_PRESET:
+         cbs->action_ok = action_ok_shader_preset;
+         break;
+      case MENU_LABEL_CHEAT_FILE_LOAD:
+         cbs->action_ok = action_ok_cheat_file;
+         break;
+      case MENU_LABEL_AUDIO_DSP_PLUGIN:
+         cbs->action_ok = action_ok_audio_dsp_plugin;
+         break;
+      case MENU_LABEL_VIDEO_FILTER:
+         cbs->action_ok = action_ok_video_filter;
+         break;
+      case MENU_LABEL_REMAP_FILE_LOAD:
+         cbs->action_ok = action_ok_remap_file;
+         break;
+      case MENU_LABEL_RECORD_CONFIG:
+         cbs->action_ok = action_ok_record_configfile;
+         break;
+      case MENU_LABEL_CORE_UPDATER_LIST:
+         cbs->action_ok = action_ok_core_updater_list;
+         break;
+      case MENU_LABEL_VIDEO_SHADER_PARAMETERS:
+      case MENU_LABEL_VIDEO_SHADER_PRESET_PARAMETERS:
+         cbs->action_ok = action_ok_shader_parameters;
+         break;
+      case MENU_LABEL_SHADER_OPTIONS:
+      case MENU_LABEL_VIDEO_OPTIONS:
+      case MENU_VALUE_INPUT_SETTINGS:
+      case MENU_LABEL_CORE_OPTIONS:
+      case MENU_LABEL_CORE_CHEAT_OPTIONS:
+      case MENU_LABEL_CORE_INPUT_REMAPPING_OPTIONS:
+      case MENU_LABEL_CORE_INFORMATION:
+      case MENU_LABEL_SYSTEM_INFORMATION:
+      case MENU_LABEL_DISK_OPTIONS:
+      case MENU_LABEL_SETTINGS:
+      case MENU_LABEL_PERFORMANCE_COUNTERS:
+      case MENU_LABEL_FRONTEND_COUNTERS:
+      case MENU_LABEL_CORE_COUNTERS:
+      case MENU_LABEL_MANAGEMENT:
+      case MENU_LABEL_OPTIONS:
+         cbs->action_ok = action_ok_push_default;
+         break;
+      case MENU_LABEL_LOAD_CONTENT:
+      case MENU_LABEL_DETECT_CORE_LIST:
+         cbs->action_ok = action_ok_push_content_list;
+         break;
+      case MENU_LABEL_HISTORY_LIST:
+      case MENU_LABEL_CURSOR_MANAGER_LIST:
+      case MENU_LABEL_DATABASE_MANAGER_LIST:
+         cbs->action_ok = action_ok_push_generic_list;
+         break;
+      case MENU_LABEL_SHADER_APPLY_CHANGES:
+         cbs->action_ok = action_ok_shader_apply_changes;
+         break;
+      case MENU_LABEL_CHEAT_APPLY_CHANGES:
+         cbs->action_ok = action_ok_cheat_apply_changes;
+         break;
+      case MENU_LABEL_VIDEO_SHADER_PRESET_SAVE_AS:
+         cbs->action_ok = action_ok_shader_preset_save_as;
+         break;
+      case MENU_LABEL_CHEAT_FILE_SAVE_AS:
+         cbs->action_ok = action_ok_cheat_file_save_as;
+         break;
+      case MENU_LABEL_REMAP_FILE_SAVE_AS:
+         cbs->action_ok = action_ok_remap_file_save_as;
+         break;
+      case MENU_LABEL_REMAP_FILE_SAVE_CORE:
+         cbs->action_ok = action_ok_remap_file_save_core;
+         break;
+      case MENU_LABEL_REMAP_FILE_SAVE_GAME:
+         cbs->action_ok = action_ok_remap_file_save_game;
+         break;
+      case MENU_LABEL_CONTENT_COLLECTION_LIST:
+         cbs->action_ok = action_ok_content_collection_list;
+         break;
+      case MENU_LABEL_CORE_LIST:
+         cbs->action_ok = action_ok_core_list;
+         break;
+      case MENU_LABEL_DISK_IMAGE_APPEND:
+         cbs->action_ok = action_ok_disk_image_append_list;
+         break;
+      case MENU_LABEL_CONFIGURATIONS:
+         cbs->action_ok = action_ok_configurations_list;
+         break;
+      default:
+         return -1;
    }
 
-   if (setting && setting->browser_selection_type == ST_DIR)
-      cbs->action_ok = action_ok_push_generic_list;
-   else if (hash == MENU_LABEL_CUSTOM_BIND_ALL)
-      cbs->action_ok = action_ok_lookup_setting;
-   else if (type == MENU_SETTINGS_CUSTOM_BIND_KEYBOARD ||
-         type == MENU_SETTINGS_CUSTOM_BIND)
-      cbs->action_ok = action_ok_lookup_setting;
-   else if (type >= MENU_SETTINGS_SHADER_PARAMETER_0
-         && type <= MENU_SETTINGS_SHADER_PARAMETER_LAST)
-      cbs->action_ok = NULL;
-   else if (type >= MENU_SETTINGS_SHADER_PRESET_PARAMETER_0
-         && type <= MENU_SETTINGS_SHADER_PRESET_PARAMETER_LAST)
-      cbs->action_ok = NULL;
-   else if (type >= MENU_SETTINGS_CHEAT_BEGIN
-         && type <= MENU_SETTINGS_CHEAT_END)
-      cbs->action_ok = action_ok_cheat;
-   else if (hash == MENU_LABEL_SAVESTATE)
-      cbs->action_ok = action_ok_save_state;
-   else if (hash == MENU_LABEL_LOADSTATE)
-      cbs->action_ok = action_ok_load_state;
-   else if (hash == MENU_LABEL_RESUME_CONTENT)
-      cbs->action_ok = action_ok_resume_content;
-   else if (hash == MENU_LABEL_RESTART_CONTENT)
-      cbs->action_ok = action_ok_restart_content;
-   else if (hash == MENU_LABEL_TAKE_SCREENSHOT)
-      cbs->action_ok = action_ok_screenshot;
-   else if (hash == MENU_LABEL_FILE_LOAD_OR_RESUME)
-      cbs->action_ok = action_ok_file_load_or_resume;
-   else if (hash == MENU_LABEL_QUIT_RETROARCH)
-      cbs->action_ok = action_ok_quit;
-   else if (hash == MENU_LABEL_UNLOAD_CORE)
-      cbs->action_ok = action_ok_unload_core;
-   else if (hash == MENU_LABEL_SAVE_NEW_CONFIG)
-      cbs->action_ok = action_ok_save_new_config;
-   else if (hash == MENU_LABEL_HELP)
-      cbs->action_ok = action_ok_help;
-   else if (hash == MENU_LABEL_VIDEO_SHADER_PASS)
-      cbs->action_ok = action_ok_shader_pass;
-   else if (hash == MENU_LABEL_VIDEO_SHADER_PRESET)
-      cbs->action_ok = action_ok_shader_preset;
-   else if (hash == MENU_LABEL_CHEAT_FILE_LOAD)
-      cbs->action_ok = action_ok_cheat_file;
-   else if (hash == MENU_LABEL_AUDIO_DSP_PLUGIN)
-      cbs->action_ok = action_ok_audio_dsp_plugin;
-   else if (hash == MENU_LABEL_VIDEO_FILTER)
-      cbs->action_ok = action_ok_video_filter;
-   else if (hash == MENU_LABEL_REMAP_FILE_LOAD)
-      cbs->action_ok = action_ok_remap_file;
-   else if (hash == MENU_LABEL_RECORD_CONFIG)
-      cbs->action_ok = action_ok_record_configfile;
-   else if (hash == MENU_LABEL_CORE_UPDATER_LIST)
-      cbs->action_ok = action_ok_core_updater_list;
-   else if ((hash == MENU_LABEL_VIDEO_SHADER_PARAMETERS) ||
-         (hash == MENU_LABEL_VIDEO_SHADER_PRESET_PARAMETERS)
-         )
-      cbs->action_ok = action_ok_shader_parameters;
-   else if (
-         (hash == MENU_LABEL_SHADER_OPTIONS) ||
-         (hash == MENU_LABEL_VIDEO_OPTIONS)  ||
-         (hash == MENU_VALUE_INPUT_SETTINGS)    ||
-         (hash == MENU_LABEL_CORE_OPTIONS)   ||
-         (hash == MENU_LABEL_CORE_CHEAT_OPTIONS) ||
-         (hash == MENU_LABEL_CORE_INPUT_REMAPPING_OPTIONS) ||
-         (hash == MENU_LABEL_CORE_INFORMATION) ||
-         (hash == MENU_LABEL_SYSTEM_INFORMATION) ||
-         (hash == MENU_LABEL_DISK_OPTIONS) ||
-         (hash == MENU_LABEL_SETTINGS) ||
-         (hash == MENU_LABEL_PERFORMANCE_COUNTERS) ||
-         (hash == MENU_LABEL_FRONTEND_COUNTERS) ||
-         (hash == MENU_LABEL_CORE_COUNTERS) ||
-         (hash == MENU_LABEL_MANAGEMENT) ||
-         (hash == MENU_LABEL_OPTIONS)
-         )
-      cbs->action_ok = action_ok_push_default;
-   else if (
-         (hash == MENU_LABEL_LOAD_CONTENT) ||
-         (hash == MENU_LABEL_DETECT_CORE_LIST)
-         )
-      cbs->action_ok = action_ok_push_content_list;
-   else if ((hash == MENU_LABEL_HISTORY_LIST) ||
-         (hash == MENU_LABEL_CURSOR_MANAGER_LIST) ||
-         (hash == MENU_LABEL_DATABASE_MANAGER_LIST)
-         )
-      cbs->action_ok = action_ok_push_generic_list;
-   else if (hash == MENU_LABEL_SHADER_APPLY_CHANGES)
-      cbs->action_ok = action_ok_shader_apply_changes;
-   else if (hash == MENU_LABEL_CHEAT_APPLY_CHANGES)
-      cbs->action_ok = action_ok_cheat_apply_changes;
-   else if (hash == MENU_LABEL_VIDEO_SHADER_PRESET_SAVE_AS)
-      cbs->action_ok = action_ok_shader_preset_save_as;
-   else if (hash == MENU_LABEL_CHEAT_FILE_SAVE_AS)
-      cbs->action_ok = action_ok_cheat_file_save_as;
-   else if (hash == MENU_LABEL_REMAP_FILE_SAVE_AS)
-      cbs->action_ok = action_ok_remap_file_save_as;
-   else if (hash == MENU_LABEL_REMAP_FILE_SAVE_CORE)
-      cbs->action_ok = action_ok_remap_file_save_core;
-   else if (hash == MENU_LABEL_REMAP_FILE_SAVE_GAME)
-      cbs->action_ok = action_ok_remap_file_save_game;
-   else if (hash == MENU_LABEL_CONTENT_COLLECTION_LIST)
-      cbs->action_ok = action_ok_content_collection_list;
-   else if (hash == MENU_LABEL_CORE_LIST)
-      cbs->action_ok = action_ok_core_list;
-   else if (hash == MENU_LABEL_DISK_IMAGE_APPEND)
-      cbs->action_ok = action_ok_disk_image_append_list;
-   else if (hash == MENU_LABEL_CONFIGURATIONS)
-      cbs->action_ok = action_ok_configurations_list;
-   else
+   return 0;
+}
+
+static int menu_entries_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
+      uint32_t hash, uint32_t menu_label_hash, unsigned type)
+{
    switch (type)
    {
       case MENU_SETTINGS_VIDEO_RESOLUTION:
          cbs->action_ok = action_ok_video_resolution;
          break;
       case MENU_FILE_PLAYLIST_ENTRY:
-            cbs->action_ok = action_ok_playlist_entry;
+         cbs->action_ok = action_ok_playlist_entry;
          break;
       case MENU_FILE_PLAYLIST_COLLECTION:
          cbs->action_ok = action_ok_playlist_collection;
@@ -1687,6 +1689,59 @@ void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
          cbs->action_ok = action_ok_disk_cycle_tray_status;
          break;
       default:
-         break;
+         return -1;
    }
+
+   return 0;
+}
+
+void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
+      const char *path, const char *label, unsigned type, size_t idx,
+      const char *elem0, const char *elem1, const char *menu_label)
+{
+   rarch_setting_t *setting = menu_setting_find(label);
+   menu_handle_t *menu      = menu_driver_get_ptr();
+   uint32_t hash            = djb2_calculate(label);
+   uint32_t menu_label_hash = djb2_calculate(menu_label);
+
+   if (!cbs)
+      return;
+   if (!menu)
+      return;
+
+#if 0
+   RARCH_LOG("path: %s, label: %s, elem0 : %s, elem1: %s\n", path, label, elem0, elem1);
+#endif
+
+   cbs->action_ok = action_ok_lookup_setting;
+
+   if (elem0[0] != '\0' && is_rdb_entry(elem0))
+   {
+      cbs->action_ok = action_ok_rdb_entry_submenu;
+      return;
+   }
+
+   if (setting && setting->browser_selection_type == ST_DIR)
+   {
+      cbs->action_ok = action_ok_push_generic_list;
+      return;
+
+   }
+
+   if (type == MENU_SETTINGS_CUSTOM_BIND_KEYBOARD ||
+         type == MENU_SETTINGS_CUSTOM_BIND)
+      cbs->action_ok = action_ok_lookup_setting;
+   else if (type >= MENU_SETTINGS_SHADER_PARAMETER_0
+         && type <= MENU_SETTINGS_SHADER_PARAMETER_LAST)
+      cbs->action_ok = NULL;
+   else if (type >= MENU_SETTINGS_SHADER_PRESET_PARAMETER_0
+         && type <= MENU_SETTINGS_SHADER_PRESET_PARAMETER_LAST)
+      cbs->action_ok = NULL;
+   else if (type >= MENU_SETTINGS_CHEAT_BEGIN
+         && type <= MENU_SETTINGS_CHEAT_END)
+      cbs->action_ok = action_ok_cheat;
+   else if (menu_entries_cbs_init_bind_ok_compare_label(cbs, hash) == 0)
+      return;
+
+   menu_entries_cbs_init_bind_ok_compare_type(cbs, hash, menu_label_hash, type);
 }
