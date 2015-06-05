@@ -2025,45 +2025,54 @@ static rarch_setting_t setting_string_setting_options(enum setting_type type,
 static int setting_get_description_compare_label(uint32_t label_hash,
       settings_t *settings, char *s, size_t len)
 {
+   uint32_t driver_hash = 0;
+
    switch (label_hash)
    {
       case MENU_LABEL_INPUT_DRIVER:
-         if (!strcmp(settings->input.driver, "udev"))
-            snprintf(s, len,
-                  " -- udev Input driver. \n"
-                  " \n"
-                  "This driver can run without X. \n"
-                  " \n"
-                  "It uses the recent evdev joypad API \n"
-                  "for joystick support. It supports \n"
-                  "hotplugging and force feedback (if \n"
-                  "supported by device). \n"
-                  " \n"
-                  "The driver reads evdev events for keyboard \n"
-                  "support. It also supports keyboard callback, \n"
-                  "mice and touchpads. \n"
-                  " \n"
-                  "By default in most distros, /dev/input nodes \n"
-                  "are root-only (mode 600). You can set up a udev \n"
-                  "rule which makes these accessible to non-root."
-                  );
-         else if (!strcmp(settings->input.driver, "linuxraw"))
-            snprintf(s, len,
-                  " -- linuxraw Input driver. \n"
-                  " \n"
-                  "This driver requires an active TTY. Keyboard \n"
-                  "events are read directly from the TTY which \n"
-                  "makes it simpler, but not as flexible as udev. \n" "Mice, etc, are not supported at all. \n"
-                  " \n"
-                  "This driver uses the older joystick API \n"
-                  "(/dev/input/js*).");
-         else
-            snprintf(s, len,
-                  " -- Input driver.\n"
-                  " \n"
-                  "Depending on video driver, it might \n"
-                  "force a different input driver.");
+         driver_hash = djb2_calculate(settings->input.driver);
 
+         switch (driver_hash)
+         {
+            case MENU_LABEL_INPUT_DRIVER_UDEV:
+               snprintf(s, len,
+                     " -- udev Input driver. \n"
+                     " \n"
+                     "This driver can run without X. \n"
+                     " \n"
+                     "It uses the recent evdev joypad API \n"
+                     "for joystick support. It supports \n"
+                     "hotplugging and force feedback (if \n"
+                     "supported by device). \n"
+                     " \n"
+                     "The driver reads evdev events for keyboard \n"
+                     "support. It also supports keyboard callback, \n"
+                     "mice and touchpads. \n"
+                     " \n"
+                     "By default in most distros, /dev/input nodes \n"
+                     "are root-only (mode 600). You can set up a udev \n"
+                     "rule which makes these accessible to non-root."
+                     );
+               break;
+            case MENU_LABEL_INPUT_DRIVER_LINUXRAW:
+               snprintf(s, len,
+                     " -- linuxraw Input driver. \n"
+                     " \n"
+                     "This driver requires an active TTY. Keyboard \n"
+                     "events are read directly from the TTY which \n"
+                     "makes it simpler, but not as flexible as udev. \n" "Mice, etc, are not supported at all. \n"
+                     " \n"
+                     "This driver uses the older joystick API \n"
+                     "(/dev/input/js*).");
+               break;
+            default:
+               snprintf(s, len,
+                     " -- Input driver.\n"
+                     " \n"
+                     "Depending on video driver, it might \n"
+                     "force a different input driver.");
+               break;
+         }
          break;
       case MENU_LABEL_LOAD_CONTENT:
          snprintf(s, len,
@@ -2114,63 +2123,75 @@ static int setting_get_description_compare_label(uint32_t label_hash,
                );
          break;
       case MENU_LABEL_VIDEO_DRIVER:
-         if (!strcmp(settings->video.driver, "gl"))
-            snprintf(s, len,
-                  " -- OpenGL Video driver. \n"
-                  " \n"
-                  "This driver allows libretro GL cores to  \n"
-                  "be used in addition to software-rendered \n"
-                  "core implementations.\n"
-                  " \n"
-                  "Performance for software-rendered and \n"
-                  "libretro GL core implementations is \n"
-                  "dependent on your graphics card's \n"
-                  "underlying GL driver).");
-         else if (!strcmp(settings->video.driver, "sdl2"))
-            snprintf(s, len,
-                  " -- SDL 2 Video driver.\n"
-                  " \n"
-                  "This is an SDL 2 software-rendered video \n"
-                  "driver.\n"
-                  " \n"
-                  "Performance for software-rendered libretro \n"
-                  "core implementations is dependent \n"
-                  "on your platform SDL implementation.");
-         else if (!strcmp(settings->video.driver, "sdl"))
-            snprintf(s, len,
-                  " -- SDL Video driver.\n"
-                  " \n"
-                  "This is an SDL 1.2 software-rendered video \n"
-                  "driver.\n"
-                  " \n"
-                  "Performance is considered to be suboptimal. \n"
-                  "Consider using it only as a last resort.");
-         else if (!strcmp(settings->video.driver, "d3d"))
-            snprintf(s, len,
-                  " -- Direct3D Video driver. \n"
-                  " \n"
-                  "Performance for software-rendered cores \n"
-                  "is dependent on your graphic card's \n"
-                  "underlying D3D driver).");
-         else if (!strcmp(settings->video.driver, "exynos"))
-            snprintf(s, len,
-                  " -- Exynos-G2D Video Driver. \n"
-                  " \n"
-                  "This is a low-level Exynos video driver. \n"
-                  "Uses the G2D block in Samsung Exynos SoC \n"
-                  "for blit operations. \n"
-                  " \n"
-                  "Performance for software rendered cores \n"
-                  "should be optimal.");
-         else if (!strcmp(settings->video.driver, "sunxi"))
-            snprintf(s, len,
-                  " -- Sunxi-G2D Video Driver. \n"
-                  " \n"
-                  "This is a low-level Sunxi video driver. \n"
-                  "Uses the G2D block in Allwinner SoCs.");
-         else
-            snprintf(s, len,
-                  " -- Current Video driver.");
+         driver_hash = djb2_calculate(settings->video.driver);
+
+         switch (driver_hash)
+         {
+            case MENU_LABEL_VIDEO_DRIVER_GL:
+               snprintf(s, len,
+                     " -- OpenGL Video driver. \n"
+                     " \n"
+                     "This driver allows libretro GL cores to  \n"
+                     "be used in addition to software-rendered \n"
+                     "core implementations.\n"
+                     " \n"
+                     "Performance for software-rendered and \n"
+                     "libretro GL core implementations is \n"
+                     "dependent on your graphics card's \n"
+                     "underlying GL driver).");
+               break;
+            case MENU_LABEL_VIDEO_DRIVER_SDL2:
+               snprintf(s, len,
+                     " -- SDL 2 Video driver.\n"
+                     " \n"
+                     "This is an SDL 2 software-rendered video \n"
+                     "driver.\n"
+                     " \n"
+                     "Performance for software-rendered libretro \n"
+                     "core implementations is dependent \n"
+                     "on your platform SDL implementation.");
+               break;
+            case MENU_LABEL_VIDEO_DRIVER_SDL1:
+               snprintf(s, len,
+                     " -- SDL Video driver.\n"
+                     " \n"
+                     "This is an SDL 1.2 software-rendered video \n"
+                     "driver.\n"
+                     " \n"
+                     "Performance is considered to be suboptimal. \n"
+                     "Consider using it only as a last resort.");
+               break;
+            case MENU_LABEL_VIDEO_DRIVER_D3D:
+               snprintf(s, len,
+                     " -- Direct3D Video driver. \n"
+                     " \n"
+                     "Performance for software-rendered cores \n"
+                     "is dependent on your graphic card's \n"
+                     "underlying D3D driver).");
+               break;
+            case MENU_LABEL_VIDEO_DRIVER_EXYNOS:
+               snprintf(s, len,
+                     " -- Exynos-G2D Video Driver. \n"
+                     " \n"
+                     "This is a low-level Exynos video driver. \n"
+                     "Uses the G2D block in Samsung Exynos SoC \n"
+                     "for blit operations. \n"
+                     " \n"
+                     "Performance for software rendered cores \n"
+                     "should be optimal.");
+               break;
+            case MENU_LABEL_VIDEO_DRIVER_SUNXI:
+               snprintf(s, len,
+                     " -- Sunxi-G2D Video Driver. \n"
+                     " \n"
+                     "This is a low-level Sunxi video driver. \n"
+                     "Uses the G2D block in Allwinner SoCs.");
+               break;
+            default:
+               snprintf(s, len,
+                     " -- Current Video driver.");
+               break;
+         }
          break;
       case MENU_LABEL_AUDIO_DSP_PLUGIN:
          snprintf(s, len,
@@ -2180,12 +2201,19 @@ static int setting_get_description_compare_label(uint32_t label_hash,
                );
          break;
       case MENU_LABEL_AUDIO_RESAMPLER_DRIVER:
-         if (!strcmp(settings->audio.resampler, "sinc"))
-            snprintf(s, len,
-                  " -- Windowed SINC implementation.");
-         else if (!strcmp(settings->audio.resampler, "CC"))
-            snprintf(s, len,
-                  " -- Convoluted Cosine implementation.");
+         driver_hash = djb2_calculate(settings->audio.resampler);
+
+         switch (driver_hash)
+         {
+            case MENU_LABEL_AUDIO_RESAMPLER_DRIVER_SINC:
+               snprintf(s, len,
+                     " -- Windowed SINC implementation.");
+               break;
+            case MENU_LABEL_AUDIO_RESAMPLER_DRIVER_CC:
+               snprintf(s, len,
+                     " -- Convoluted Cosine implementation.");
+               break;
+         }
          break;
       case MENU_LABEL_VIDEO_SHADER_PRESET:
          snprintf(s, len,
@@ -2746,6 +2774,95 @@ static int setting_get_description_compare_label(uint32_t label_hash,
                "Uses a custom swap interval for VSync. Set this \n"
                "to effectively halve monitor refresh rate.");
          break;
+      case MENU_LABEL_SAVEFILE_DIRECTORY:
+         snprintf(s, len,
+               " -- Savefile Directory. \n"
+               " \n"
+               "Save all save files (*.srm) to this \n"
+               "directory. This includes related files like \n"
+               ".bsv, .rt, .psrm, etc...\n"
+               " \n"
+               "This will be overridden by explicit command line\n"
+               "options.");
+         break;
+      case MENU_LABEL_SAVESTATE_DIRECTORY:
+         snprintf(s, len,
+               " -- Savestate Directory. \n"
+               " \n"
+               "Save all save states (*.state) to this \n"
+               "directory.\n"
+               " \n"
+               "This will be overridden by explicit command line\n"
+               "options.");
+         break;
+      case MENU_LABEL_ASSETS_DIRECTORY:
+         snprintf(s, len,
+               " -- Assets Directory. \n"
+               " \n"
+               " This location is queried by default when \n"
+               "menu interfaces try to look for loadable \n"
+               "assets, etc.");
+         break;
+      case MENU_LABEL_DYNAMIC_WALLPAPERS_DIRECTORY:
+         snprintf(s, len,
+               " -- Dynamic Wallpapers Directory. \n"
+               " \n"
+               " The place to store wallpapers that will \n"
+               "be loaded dynamically by the menu depending \n"
+               "on context.");
+         break;
+      case MENU_LABEL_SLOWMOTION_RATIO:
+         snprintf(s, len,
+               " -- Slowmotion ratio."
+               " \n"
+               "When slowmotion, content will slow\n"
+               "down by factor.");
+         break;
+      case MENU_LABEL_INPUT_AXIS_THRESHOLD:
+         snprintf(s, len,
+               " -- Defines axis threshold.\n"
+               " \n"
+               "How far an axis must be tilted to result\n"
+               "in a button press.\n"
+               " Possible values are [0.0, 1.0].");
+         break;
+      case MENU_LABEL_INPUT_TURBO_PERIOD:
+         snprintf(s, len, 
+               " -- Turbo period.\n"
+               " \n"
+               "Describes speed of which turbo-enabled\n"
+               "buttons toggle."
+               );
+         break;
+      case MENU_LABEL_INPUT_AUTODETECT_ENABLE:
+         snprintf(s, len,
+               " -- Enable input auto-detection.\n"
+               " \n"
+               "Will attempt to auto-configure \n"
+               "joypads, Plug-and-Play style.");
+         break;
+      case MENU_LABEL_CAMERA_ALLOW:
+         snprintf(s, len,
+               " -- Allow or disallow camera access by \n"
+               "cores.");
+         break;
+      case MENU_LABEL_LOCATION_ALLOW:
+         snprintf(s, len,
+               " -- Allow or disallow location services \n"
+               "access by cores.");
+         break;
+      case MENU_LABEL_TURBO:
+         snprintf(s, len,
+               " -- Turbo enable.\n"
+               " \n"
+               "Holding the turbo while pressing another \n"
+               "button will let the button enter a turbo \n"
+               "mode where the button state is modulated \n"
+               "with a periodic signal. \n"
+               " \n"
+               "The modulation stops when the button \n"
+               "itself (not turbo button) is released.");
+         break;
       default:
          return -1;
    }
@@ -2774,94 +2891,7 @@ int setting_get_description(const char *label, char *s,
    if (setting_get_description_compare_label(label_hash, settings, s, len) == 0)
       return 0;
 
-   if (!strcmp(label, "savefile_directory"))
-   {
-      snprintf(s, len,
-            " -- Savefile Directory. \n"
-            " \n"
-            "Save all save files (*.srm) to this \n"
-            "directory. This includes related files like \n"
-            ".bsv, .rt, .psrm, etc...\n"
-            " \n"
-            "This will be overridden by explicit command line\n"
-            "options.");
-   }
-   else if (!strcmp(label, "savestate_directory"))
-   {
-      snprintf(s, len,
-            " -- Savestate Directory. \n"
-            " \n"
-            "Save all save states (*.state) to this \n"
-            "directory.\n"
-            " \n"
-            "This will be overridden by explicit command line\n"
-            "options.");
-   }
-   else if (!strcmp(label, "assets_directory"))
-   {
-      snprintf(s, len,
-            " -- Assets Directory. \n"
-            " \n"
-            " This location is queried by default when \n"
-            "menu interfaces try to look for loadable \n"
-            "assets, etc.");
-   }
-   else if (!strcmp(label, "dynamic_wallpapers_directory"))
-   {
-      snprintf(s, len,
-            " -- Dynamic Wallpapers Directory. \n"
-            " \n"
-            " The place to store wallpapers that will \n"
-            "be loaded dynamically by the menu depending \n"
-            "on context.");
-   }
-   else if (!strcmp(label, "slowmotion_ratio"))
-   {
-      snprintf(s, len,
-            " -- Slowmotion ratio."
-            " \n"
-            "When slowmotion, content will slow\n"
-            "down by factor.");
-   }
-   else if (!strcmp(label, "input_axis_threshold"))
-   {
-      snprintf(s, len,
-            " -- Defines axis threshold.\n"
-            " \n"
-            "How far an axis must be tilted to result\n"
-            "in a button press.\n"
-            " Possible values are [0.0, 1.0].");
-   }
-   else if (!strcmp(label, "input_turbo_period"))
-   {
-      snprintf(s, len, 
-            " -- Turbo period.\n"
-            " \n"
-            "Describes speed of which turbo-enabled\n"
-            "buttons toggle."
-            );
-   }
-   else if (!strcmp(label, "input_autodetect_enable"))
-   {
-      snprintf(s, len,
-            " -- Enable input auto-detection.\n"
-            " \n"
-            "Will attempt to auto-configure \n"
-            "joypads, Plug-and-Play style.");
-   }
-   else if (!strcmp(label, "camera_allow"))
-   {
-      snprintf(s, len,
-            " -- Allow or disallow camera access by \n"
-            "cores.");
-   }
-   else if (!strcmp(label, "location_allow"))
-   {
-      snprintf(s, len,
-            " -- Allow or disallow location services \n"
-            "access by cores.");
-   }
-   else if (
+   if (
          !strcmp(label, "l_x_plus")  ||
          !strcmp(label, "l_x_minus") ||
          !strcmp(label, "l_y_plus")  ||
@@ -2875,17 +2905,6 @@ int setting_get_description(const char *label, char *s,
             " \n"
             "Positive X axis is right. \n"
             "Positive Y axis is down.");
-   else if (!strcmp(label, "turbo"))
-      snprintf(s, len,
-            " -- Turbo enable.\n"
-            " \n"
-            "Holding the turbo while pressing another \n"
-            "button will let the button enter a turbo \n"
-            "mode where the button state is modulated \n"
-            "with a periodic signal. \n"
-            " \n"
-            "The modulation stops when the button \n"
-            "itself (not turbo button) is released.");
    else if (!strcmp(label, "exit_emulator"))
       snprintf(s, len,
             " -- Key to exit RetroArch cleanly."

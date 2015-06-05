@@ -95,8 +95,38 @@ extern "C" {
 #define MENU_LABEL_CONFIG_SAVE_ON_EXIT                                         0x79b590feU
 
 #define MENU_LABEL_INPUT_DRIVER                                                0x4c087840U
+#define MENU_LABEL_INPUT_DRIVER_LINUXRAW                                       0xc33c6b9fU
+#define MENU_LABEL_INPUT_DRIVER_UDEV                                           0x7c9eeeb9U
+
 #define MENU_LABEL_VIDEO_DRIVER                                                0x1805a5e7U
+#define MENU_LABEL_VIDEO_DRIVER_GL                                             0x005977f8U
+#define MENU_LABEL_VIDEO_DRIVER_SDL2                                           0x7c9dd69aU
+#define MENU_LABEL_VIDEO_DRIVER_SDL1                                           0x0b88a968U
+#define MENU_LABEL_VIDEO_DRIVER_D3D                                            0x0b886340U
+#define MENU_LABEL_VIDEO_DRIVER_EXYNOS                                         0xfc37c54bU
+#define MENU_LABEL_VIDEO_DRIVER_SUNXI                                          0x10620e3cU
+
 #define MENU_LABEL_AUDIO_RESAMPLER_DRIVER                                      0xedcba9ecU
+#define MENU_LABEL_AUDIO_RESAMPLER_DRIVER_SINC                                 0x7c9dec52U
+#define MENU_LABEL_AUDIO_RESAMPLER_DRIVER_CC                                   0x0059732bU
+
+#define MENU_LABEL_SAVEFILE_DIRECTORY                                          0x92773488U
+#define MENU_LABEL_SAVESTATE_DIRECTORY                                         0x90551289U
+#define MENU_LABEL_ASSETS_DIRECTORY                                            0xde1ae8ecU
+#define MENU_LABEL_DYNAMIC_WALLPAPERS_DIRECTORY                                0x62f975b8U
+
+#define MENU_LABEL_SLOWMOTION_RATIO                                            0x626b3ffeU
+#define MENU_LABEL_INPUT_AXIS_THRESHOLD                                        0xe95c2095U
+#define MENU_LABEL_INPUT_TURBO_PERIOD                                          0xf7a97482U
+#define MENU_LABEL_INPUT_AUTODETECT_ENABLE                                     0xb1e07facU
+
+#define MENU_LABEL_CAMERA_ALLOW                                                0xc14d302cU
+#define MENU_LABEL_LOCATION_ALLOW                                              0xf089275cU
+
+#define MENU_LABEL_TURBO                                                       0x107434f1U
+
+
+
 
 #define MENU_LABEL_RDB_ENTRY_PUBLISHER                                         0x4d7bcdfbU
 #define MENU_LABEL_RDB_ENTRY_DEVELOPER                                         0x06f61093U
