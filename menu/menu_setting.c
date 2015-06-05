@@ -2085,6 +2085,34 @@ static int setting_get_description_compare_label(uint32_t label_hash,
                "content is loaded."
                );
          break;
+      case MENU_LABEL_CORE_LIST:
+         snprintf(s, len,
+               " -- Core Selection. \n"
+               " \n"
+               "Browse for a libretro core \n"
+               "implementation. Where the browser \n"
+               "starts depends on your Core Directory \n"
+               "path. If blank, it will start in root. \n"
+               " \n"
+               "If Core Directory is a directory, the menu \n"
+               "will use that as top folder. If Core \n"
+               "Directory is a full path, it will start \n"
+               "in the folder where the file is.");
+         break;
+      case MENU_LABEL_HISTORY_LIST:
+         snprintf(s, len,
+               " -- Loading content from history. \n"
+               " \n"
+               "As content is loaded, content and libretro \n"
+               "core combinations are saved to history. \n"
+               " \n"
+               "The history is saved to a file in the same \n"
+               "directory as the RetroArch config file. If \n"
+               "no config file was loaded in startup, history \n"
+               "will not be saved or loaded, and will not exist \n"
+               "in the main menu."
+               );
+         break;
       default:
          return -1;
    }
@@ -2113,36 +2141,6 @@ int setting_get_description(const char *label, char *s,
    if (setting_get_description_compare_label(label_hash, settings, s, len) == 0)
       return 0;
 
-   if (!strcmp(label, "core_list"))
-   {
-      snprintf(s, len,
-            " -- Core Selection. \n"
-            " \n"
-            "Browse for a libretro core \n"
-            "implementation. Where the browser \n"
-            "starts depends on your Core Directory \n"
-            "path. If blank, it will start in root. \n"
-            " \n"
-            "If Core Directory is a directory, the menu \n"
-            "will use that as top folder. If Core \n"
-            "Directory is a full path, it will start \n"
-            "in the folder where the file is.");
-   }
-   else if (!strcmp(label, "history_list"))
-   {
-      snprintf(s, len,
-            " -- Loading content from history. \n"
-            " \n"
-            "As content is loaded, content and libretro \n"
-            "core combinations are saved to history. \n"
-            " \n"
-            "The history is saved to a file in the same \n"
-            "directory as the RetroArch config file. If \n"
-            "no config file was loaded in startup, history \n"
-            "will not be saved or loaded, and will not exist \n"
-            "in the main menu."
-            );
-   }
    else if (!strcmp(label, "audio_resampler_driver"))
    {
       if (!strcmp(settings->audio.resampler, "sinc"))
