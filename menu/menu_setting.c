@@ -214,9 +214,12 @@ static int setting_handler(rarch_setting_t *setting, unsigned action)
             return setting->action_down(setting, action);
          break;
       case MENU_ACTION_LEFT:
+         if (setting->action_left)
+            return setting->action_left(setting, action, true);
+         break;
       case MENU_ACTION_RIGHT:
-         if (setting->action_toggle)
-            return setting->action_toggle(setting, action, true);
+         if (setting->action_right)
+            return setting->action_right(setting, action, true);
          break;
       case MENU_ACTION_OK:
          if (setting->action_ok)
@@ -743,18 +746,7 @@ static int setting_bind_action_start(void *data)
  ******* ACTION TOGGLE CALLBACK FUNCTIONS *******
 **/
 
-/**
- * setting_action_toggle_analog_dpad_mode
- * @data               : pointer to setting
- * @action             : toggle action value. Can be either one of :
- *                       MENU_ACTION_RIGHT | MENU_ACTION_LEFT
- *
- * Function callback for 'Analog D-Pad Mode' action's 'Action Toggle'
- * function pointer.
- *
- * Returns: 0 on success, -1 on error.
- **/
-static int setting_action_toggle_analog_dpad_mode(void *data,
+static int setting_action_left_analog_dpad_mode(void *data,
       unsigned action, bool wraparound)
 {
    unsigned port = 0;
@@ -766,35 +758,33 @@ static int setting_action_toggle_analog_dpad_mode(void *data,
 
    port = setting->index_offset;
 
-   switch (action)
-   {
-      case MENU_ACTION_LEFT:
-         settings->input.analog_dpad_mode[port] =
-            (settings->input.analog_dpad_mode
-             [port] + ANALOG_DPAD_LAST - 1) % ANALOG_DPAD_LAST;
-         break;
-      case MENU_ACTION_RIGHT:
-         settings->input.analog_dpad_mode[port] =
-            (settings->input.analog_dpad_mode[port] + 1)
-            % ANALOG_DPAD_LAST;
-         break;
-   }
+   settings->input.analog_dpad_mode[port] =
+      (settings->input.analog_dpad_mode
+       [port] + ANALOG_DPAD_LAST - 1) % ANALOG_DPAD_LAST;
 
    return 0;
 }
 
-/**
- * setting_action_toggle_libretro_device_type
- * @data               : pointer to setting
- * @action             : toggle action value. Can be either one of :
- *                       MENU_ACTION_RIGHT | MENU_ACTION_LEFT
- *
- * Function callback for 'Libretro Device Type' action's 'Action Toggle'
- * function pointer.
- *
- * Returns: 0 on success, -1 on error.
- **/
-static int setting_action_toggle_libretro_device_type(
+static int setting_action_right_analog_dpad_mode(void *data,
+      unsigned action, bool wraparound)
+{
+   unsigned port = 0;
+   rarch_setting_t *setting  = (rarch_setting_t*)data;
+   settings_t      *settings = config_get_ptr();
+
+   if (!setting)
+      return -1;
+
+   port = setting->index_offset;
+
+   settings->input.analog_dpad_mode[port] =
+      (settings->input.analog_dpad_mode[port] + 1)
+      % ANALOG_DPAD_LAST;
+
+   return 0;
+}
+
+static int setting_action_left_libretro_device_type(
       void *data, unsigned action, bool wraparound)
 {
    unsigned current_device, current_idx, i, devices[128],
@@ -843,39 +833,74 @@ static int setting_action_toggle_libretro_device_type(
       }
    }
 
-   switch (action)
-   {
-      case MENU_ACTION_LEFT:
-         current_device = devices
-            [(current_idx + types - 1) % types];
+   current_device = devices
+      [(current_idx + types - 1) % types];
 
-         settings->input.libretro_device[port] = current_device;
-         pretro_set_controller_port_device(port, current_device);
-         break;
-      case MENU_ACTION_RIGHT:
-         current_device = devices
-            [(current_idx + 1) % types];
-
-         settings->input.libretro_device[port] = current_device;
-         pretro_set_controller_port_device(port, current_device);
-         break;
-   }
+   settings->input.libretro_device[port] = current_device;
+   pretro_set_controller_port_device(port, current_device);
 
    return 0;
 }
 
-/**
- * setting_action_toggle_savestates
- * @data               : pointer to setting
- * @action             : toggle action value. Can be either one of :
- *                       MENU_ACTION_RIGHT | MENU_ACTION_LEFT
- *
- * Function callback for 'SaveStates' action's 'Action Toggle'
- * function pointer.
- *
- * Returns: 0 on success, -1 on error.
- **/
-static int setting_action_toggle_savestates(
+static int setting_action_right_libretro_device_type(
+      void *data, unsigned action, bool wraparound)
+{
+   unsigned current_device, current_idx, i, devices[128],
+            types = 0, port = 0;
+   const struct retro_controller_info *desc = NULL;
+   rarch_setting_t *setting  = (rarch_setting_t*)data;
+   settings_t      *settings = config_get_ptr();
+   global_t          *global = global_get_ptr();
+
+   if (!setting)
+      return -1;
+
+   port = setting->index_offset;
+
+   devices[types++] = RETRO_DEVICE_NONE;
+   devices[types++] = RETRO_DEVICE_JOYPAD;
+
+   /* Only push RETRO_DEVICE_ANALOG as default if we use an 
+    * older core which doesn't use SET_CONTROLLER_INFO. */
+   if (!global->system.num_ports)
+      devices[types++] = RETRO_DEVICE_ANALOG;
+
+   if (port < global->system.num_ports)
+      desc = &global->system.ports[port];
+
+   if (desc)
+   {
+      for (i = 0; i < desc->num_types; i++)
+      {
+         unsigned id = desc->types[i].id;
+         if (types < ARRAY_SIZE(devices) &&
+               id != RETRO_DEVICE_NONE &&
+               id != RETRO_DEVICE_JOYPAD)
+            devices[types++] = id;
+      }
+   }
+
+   current_device = settings->input.libretro_device[port];
+   current_idx = 0;
+   for (i = 0; i < types; i++)
+   {
+      if (current_device == devices[i])
+      {
+         current_idx = i;
+         break;
+      }
+   }
+
+   current_device = devices
+      [(current_idx + 1) % types];
+
+   settings->input.libretro_device[port] = current_device;
+   pretro_set_controller_port_device(port, current_device);
+
+   return 0;
+}
+
+static int setting_action_left_savestates(
       void *data, unsigned action, bool wraparound)
 {
    rarch_setting_t *setting  = (rarch_setting_t*)data;
@@ -884,33 +909,28 @@ static int setting_action_toggle_savestates(
    if (!setting)
       return -1;
 
-   switch (action)
-   {
-      case MENU_ACTION_LEFT:
-         /* Slot -1 is (auto) slot. */
-         if (settings->state_slot >= 0)
-            settings->state_slot--;
-         break;
-      case MENU_ACTION_RIGHT:
-         settings->state_slot++;
-         break;
-   }
+   /* Slot -1 is (auto) slot. */
+   if (settings->state_slot >= 0)
+      settings->state_slot--;
 
    return 0;
 }
 
-/**
- * setting_action_toggle_bind_device
- * @data               : pointer to setting
- * @action             : toggle action value. Can be either one of :
- *                       MENU_ACTION_RIGHT | MENU_ACTION_LEFT
- *
- * Function callback for 'Bind Device' action's 'Action Toggle'
- * function pointer.
- *
- * Returns: 0 on success, -1 on error.
- **/
-static int setting_action_toggle_bind_device(void *data,
+static int setting_action_right_savestates(
+      void *data, unsigned action, bool wraparound)
+{
+   rarch_setting_t *setting  = (rarch_setting_t*)data;
+   settings_t      *settings = config_get_ptr();
+
+   if (!setting)
+      return -1;
+
+   settings->state_slot++;
+
+   return 0;
+}
+
+static int setting_action_left_bind_device(void *data,
       unsigned action, bool wraparound)
 {
    unsigned *p = NULL;
@@ -922,19 +942,28 @@ static int setting_action_toggle_bind_device(void *data,
 
    p = &settings->input.joypad_map[setting->index_offset];
 
-   switch (action)
-   {
-      case MENU_ACTION_LEFT:
-         if ((*p) >= settings->input.max_users)
-            *p = settings->input.max_users - 1;
-         else if ((*p) > 0)
-            (*p)--;
-         break;
-      case MENU_ACTION_RIGHT:
-         if (*p < settings->input.max_users)
-            (*p)++;
-         break;
-   }
+   if ((*p) >= settings->input.max_users)
+      *p = settings->input.max_users - 1;
+   else if ((*p) > 0)
+      (*p)--;
+
+   return 0;
+}
+
+static int setting_action_right_bind_device(void *data,
+      unsigned action, bool wraparound)
+{
+   unsigned *p = NULL;
+   rarch_setting_t *setting  = (rarch_setting_t*)data;
+   settings_t      *settings = config_get_ptr();
+
+   if (!setting)
+      return -1;
+
+   p = &settings->input.joypad_map[setting->index_offset];
+
+   if (*p < settings->input.max_users)
+      (*p)++;
 
    return 0;
 }
@@ -947,18 +976,12 @@ static int setting_bool_action_toggle_default(void *data,
    if (!setting)
       return -1;
 
-   switch (action)
-   {
-      case MENU_ACTION_LEFT:
-      case MENU_ACTION_RIGHT:
-         *setting->value.boolean = !(*setting->value.boolean);
-         break;
-   }
+   *setting->value.boolean = !(*setting->value.boolean);
 
    return 0;
 }
 
-static int setting_uint_action_toggle_default(void *data,
+static int setting_uint_action_left_default(void *data,
       unsigned action, bool wraparound)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
@@ -966,36 +989,40 @@ static int setting_uint_action_toggle_default(void *data,
    if (!setting)
       return -1;
 
-   switch (action)
+   if (*setting->value.unsigned_integer != setting->min)
+      *setting->value.unsigned_integer =
+         *setting->value.unsigned_integer - setting->step;
+
+   if (setting->enforce_minrange)
    {
-      case MENU_ACTION_LEFT:
-         if (*setting->value.unsigned_integer != setting->min)
-            *setting->value.unsigned_integer =
-               *setting->value.unsigned_integer - setting->step;
-
-         if (setting->enforce_minrange)
-         {
-            if (*setting->value.unsigned_integer < setting->min)
-               *setting->value.unsigned_integer = setting->min;
-         }
-         break;
-
-      case MENU_ACTION_RIGHT:
-         *setting->value.unsigned_integer =
-            *setting->value.unsigned_integer + setting->step;
-
-         if (setting->enforce_maxrange)
-         {
-            if (*setting->value.unsigned_integer > setting->max)
-               *setting->value.unsigned_integer = setting->max;
-         }
-         break;
+      if (*setting->value.unsigned_integer < setting->min)
+         *setting->value.unsigned_integer = setting->min;
    }
 
    return 0;
 }
 
-static int setting_fraction_action_toggle_default(
+static int setting_uint_action_right_default(void *data,
+      unsigned action, bool wraparound)
+{
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+
+   if (!setting)
+      return -1;
+
+   *setting->value.unsigned_integer =
+      *setting->value.unsigned_integer + setting->step;
+
+   if (setting->enforce_maxrange)
+   {
+      if (*setting->value.unsigned_integer > setting->max)
+         *setting->value.unsigned_integer = setting->max;
+   }
+
+   return 0;
+}
+
+static int setting_fraction_action_left_default(
       void *data, unsigned action, bool wraparound)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
@@ -1003,35 +1030,39 @@ static int setting_fraction_action_toggle_default(
    if (!setting)
       return -1;
 
-   switch (action)
+   *setting->value.fraction =
+      *setting->value.fraction - setting->step;
+
+   if (setting->enforce_minrange)
    {
-      case MENU_ACTION_LEFT:
-         *setting->value.fraction =
-            *setting->value.fraction - setting->step;
-
-         if (setting->enforce_minrange)
-         {
-            if (*setting->value.fraction < setting->min)
-               *setting->value.fraction = setting->min;
-         }
-         break;
-
-      case MENU_ACTION_RIGHT:
-         *setting->value.fraction = 
-            *setting->value.fraction + setting->step;
-
-         if (setting->enforce_maxrange)
-         {
-            if (*setting->value.fraction > setting->max)
-               *setting->value.fraction = setting->max;
-         }
-         break;
+      if (*setting->value.fraction < setting->min)
+         *setting->value.fraction = setting->min;
    }
 
    return 0;
 }
 
-static int setting_string_action_toggle_driver(void *data,
+static int setting_fraction_action_right_default(
+      void *data, unsigned action, bool wraparound)
+{
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+
+   if (!setting)
+      return -1;
+
+   *setting->value.fraction = 
+      *setting->value.fraction + setting->step;
+
+   if (setting->enforce_maxrange)
+   {
+      if (*setting->value.fraction > setting->max)
+         *setting->value.fraction = setting->max;
+   }
+
+   return 0;
+}
+
+static int setting_string_action_left_driver(void *data,
       unsigned action, bool wraparound)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
@@ -1039,24 +1070,29 @@ static int setting_string_action_toggle_driver(void *data,
    if (!setting)
       return -1;
 
-   switch (action)
+   if (!find_prev_driver(setting->name, setting->value.string, setting->size))
    {
-      case MENU_ACTION_LEFT:
-         if (!find_prev_driver(setting->name, setting->value.string, setting->size))
-         {
 #if 0
-            if (wraparound)
-               find_last_driver(setting->name, setting->value.string, setting->size);
+      if (wraparound)
+         find_last_driver(setting->name, setting->value.string, setting->size);
 #endif
-         }
-         break;
-      case MENU_ACTION_RIGHT:
-         if (!find_next_driver(setting->name, setting->value.string, setting->size))
-         {
-            if (wraparound)
-               find_first_driver(setting->name, setting->value.string, setting->size);
-         }
-         break;
+   }
+
+   return 0;
+}
+
+static int setting_string_action_right_driver(void *data,
+      unsigned action, bool wraparound)
+{
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+
+   if (!setting)
+      return -1;
+
+   if (!find_next_driver(setting->name, setting->value.string, setting->size))
+   {
+      if (wraparound)
+         find_first_driver(setting->name, setting->value.string, setting->size);
    }
 
    return 0;
@@ -1613,7 +1649,8 @@ static rarch_setting_t setting_action_setting(const char* name,
    result.get_string_representation = &setting_get_string_representation_default;
    result.action_start              = NULL;
    result.action_iterate            = NULL;
-   result.action_toggle             = NULL;
+   result.action_left               = NULL;
+   result.action_right              = NULL;
    result.action_ok                 = setting_action_action_ok;
    result.action_cancel             = NULL;
 
@@ -1705,7 +1742,8 @@ static rarch_setting_t setting_float_setting(const char* name,
    result.original_value.fraction = *target;
    result.default_value.fraction  = default_value;
    result.action_start            = setting_generic_action_start_default;
-   result.action_toggle           = setting_fraction_action_toggle_default;
+   result.action_left             = setting_fraction_action_left_default;
+   result.action_right            = setting_fraction_action_right_default;
    result.action_ok               = setting_generic_action_ok_default;
    result.action_cancel           = NULL;
 
@@ -1755,7 +1793,8 @@ static rarch_setting_t setting_bool_setting(const char* name,
    result.boolean.on_label       = on;
 
    result.action_start           = setting_generic_action_start_default;
-   result.action_toggle          = setting_bool_action_toggle_default;
+   result.action_left            = setting_bool_action_toggle_default;
+   result.action_right           = setting_bool_action_toggle_default;
    result.action_ok              = setting_generic_action_ok_default;
    result.action_cancel          = NULL;
 
@@ -1838,7 +1877,8 @@ static rarch_setting_t setting_uint_setting(const char* name,
    result.original_value.unsigned_integer = *target;
    result.default_value.unsigned_integer  = default_value;
    result.action_start                    = setting_generic_action_start_default;
-   result.action_toggle                   = setting_uint_action_toggle_default;
+   result.action_left                     = setting_uint_action_left_default;
+   result.action_right                    = setting_uint_action_right_default;
    result.action_ok                       = setting_generic_action_ok_default;
    result.action_cancel                   = NULL;
    result.get_string_representation       = &setting_get_string_representation_uint;
@@ -1881,7 +1921,8 @@ static rarch_setting_t setting_hex_setting(const char* name,
    result.original_value.unsigned_integer = *target;
    result.default_value.unsigned_integer  = default_value;
    result.action_start                    = setting_generic_action_start_default;
-   result.action_toggle                   = NULL;
+   result.action_left                     = NULL;
+   result.action_right                    = NULL;
    result.action_ok                       = setting_generic_action_ok_default;
    result.action_cancel                   = NULL;
    result.get_string_representation       = &setting_get_string_representation_hex;
@@ -3382,7 +3423,10 @@ static void setting_add_special_callbacks(
       }
    }
    else if (values & SD_FLAG_IS_DRIVER)
-      (*list)[idx].action_toggle = setting_string_action_toggle_driver;
+   {
+      (*list)[idx].action_left  = setting_string_action_left_driver;
+      (*list)[idx].action_right = setting_string_action_right_driver;
+   }
 }
 
 static void settings_data_list_current_add_flags(
@@ -3435,7 +3479,8 @@ static bool setting_append_list_main_menu_options(
    // to put this callback. It should be called whenever the browser
    // needs to get the directory to browse into. It's not quite like
    // get_string_representation, but it is close.
-   (*list)[list_info->index - 1].action_toggle = core_list_action_toggle;
+   (*list)[list_info->index - 1].action_left  = core_list_action_toggle;
+   (*list)[list_info->index - 1].action_right = core_list_action_toggle;
    menu_settings_list_current_add_cmd(list, list_info, EVENT_CMD_LOAD_CORE);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_BROWSER_ACTION);
 #endif
@@ -3483,7 +3528,8 @@ static bool setting_append_list_main_menu_options(
          subgroup_info.name);
    (*list)[list_info->index - 1].size = sizeof(global->fullpath);
    (*list)[list_info->index - 1].value.string = global->fullpath;
-   (*list)[list_info->index - 1].action_toggle = load_content_action_toggle;
+   (*list)[list_info->index - 1].action_left   = load_content_action_toggle;
+   (*list)[list_info->index - 1].action_right  = load_content_action_toggle;
    menu_settings_list_current_add_cmd(list, list_info, EVENT_CMD_LOAD_CONTENT);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_BROWSER_ACTION);
 
@@ -3547,7 +3593,8 @@ static bool setting_append_list_main_menu_options(
             "Save State",
             group_info.name,
             subgroup_info.name);
-      (*list)[list_info->index - 1].action_toggle = &setting_action_toggle_savestates;
+      (*list)[list_info->index - 1].action_left   = &setting_action_left_savestates;
+      (*list)[list_info->index - 1].action_right  = &setting_action_right_savestates;
       (*list)[list_info->index - 1].action_start  = &setting_action_start_savestates;
       (*list)[list_info->index - 1].action_ok     = &setting_bool_action_ok_exit;
       (*list)[list_info->index - 1].get_string_representation = &get_string_representation_savestate;
@@ -3558,7 +3605,8 @@ static bool setting_append_list_main_menu_options(
             "Load State",
             group_info.name,
             subgroup_info.name);
-      (*list)[list_info->index - 1].action_toggle = &setting_action_toggle_savestates;
+      (*list)[list_info->index - 1].action_left   = &setting_action_left_savestates;
+      (*list)[list_info->index - 1].action_right  = &setting_action_left_savestates;
       (*list)[list_info->index - 1].action_start  = &setting_action_start_savestates;
       (*list)[list_info->index - 1].action_ok     = &setting_bool_action_ok_exit;
       (*list)[list_info->index - 1].get_string_representation = &get_string_representation_savestate;
@@ -5276,7 +5324,8 @@ static bool setting_append_list_input_options(
             general_read_handler);
       (*list)[list_info->index - 1].index = user + 1;
       (*list)[list_info->index - 1].index_offset = user;
-      (*list)[list_info->index - 1].action_toggle = &setting_action_toggle_libretro_device_type;
+      (*list)[list_info->index - 1].action_left  = &setting_action_left_libretro_device_type;
+      (*list)[list_info->index - 1].action_right = &setting_action_right_libretro_device_type;
       (*list)[list_info->index - 1].action_start = &setting_action_start_libretro_device_type;
       (*list)[list_info->index - 1].get_string_representation = 
          &setting_get_string_representation_uint_libretro_device;
@@ -5292,7 +5341,8 @@ static bool setting_append_list_input_options(
             general_read_handler);
       (*list)[list_info->index - 1].index = user + 1;
       (*list)[list_info->index - 1].index_offset = user;
-      (*list)[list_info->index - 1].action_toggle = &setting_action_toggle_analog_dpad_mode;
+      (*list)[list_info->index - 1].action_left   = &setting_action_left_analog_dpad_mode;
+      (*list)[list_info->index - 1].action_right  = &setting_action_right_analog_dpad_mode;
       (*list)[list_info->index - 1].action_start = &setting_action_start_analog_dpad_mode;
       (*list)[list_info->index - 1].get_string_representation = 
          &setting_get_string_representation_uint_analog_dpad_mode;
@@ -5305,7 +5355,8 @@ static bool setting_append_list_input_options(
       (*list)[list_info->index - 1].index = user + 1;
       (*list)[list_info->index - 1].index_offset = user;
       (*list)[list_info->index - 1].action_start  = &setting_action_start_bind_device;
-      (*list)[list_info->index - 1].action_toggle = &setting_action_toggle_bind_device;
+      (*list)[list_info->index - 1].action_left   = &setting_action_left_bind_device;
+      (*list)[list_info->index - 1].action_right  = &setting_action_right_bind_device;
       (*list)[list_info->index - 1].get_string_representation = &get_string_representation_bind_device;
 
       CONFIG_ACTION(
@@ -6975,7 +7026,7 @@ bool menu_setting_is_of_path_type(rarch_setting_t *setting)
          setting &&
          setting->type == ST_ACTION &&
          (setting->flags & SD_FLAG_BROWSER_ACTION) &&
-         setting->action_toggle &&
+         (setting->action_right || setting->action_left) &&
          setting->change_handler)
       return true;
    return false;
