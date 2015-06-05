@@ -14,7 +14,6 @@
  */
 
 #include <file/file_path.h>
-#include <rhash.h>
 
 #include "menu.h"
 #include "menu_displaylist.h"
@@ -453,10 +452,10 @@ static int deferred_push_default(menu_displaylist_info_t *info)
 
 void menu_entries_cbs_init_bind_deferred_push(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx,
-      const char *elem0, const char *elem1)
+      const char *elem0, const char *elem1,
+      uint32_t label_hash, uint32_t menu_label_hash)
 {
    settings_t *settings   = config_get_ptr();
-   uint32_t hash          = djb2_calculate(label);
 
    if (!cbs)
       return;
@@ -487,7 +486,7 @@ void menu_entries_cbs_init_bind_deferred_push(menu_file_list_cbs_t *cbs,
       cbs->action_deferred_push = deferred_push_rdb_collection;
    else
    {
-      switch (hash)
+      switch (label_hash)
       {
          case MENU_LABEL_DEFERRED_CORE_UPDATER_LIST:
 #ifdef HAVE_NETWORKING

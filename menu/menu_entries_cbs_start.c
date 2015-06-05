@@ -13,8 +13,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <rhash.h>
-
 #include "menu.h"
 #include "menu_entries_cbs.h"
 #include "menu_setting.h"
@@ -301,16 +299,15 @@ int menu_entries_cbs_init_bind_start_compare_label(menu_file_list_cbs_t *cbs,
 
 void menu_entries_cbs_init_bind_start(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx,
-      const char *elem0, const char *elem1)
+      const char *elem0, const char *elem1,
+      uint32_t label_hash, uint32_t menu_label_hash)
 {
-   uint32_t hash = djb2_calculate(label);
-
    if (!cbs)
       return;
 
    cbs->action_start = action_start_lookup_setting;
    
-   if (menu_entries_cbs_init_bind_start_compare_label(cbs, hash) == 0)
+   if (menu_entries_cbs_init_bind_start_compare_label(cbs, label_hash) == 0)
       return;
 
    if (type >= MENU_SETTINGS_SHADER_PARAMETER_0

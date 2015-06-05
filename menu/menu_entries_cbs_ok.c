@@ -14,7 +14,6 @@
  */
 
 #include <file/file_path.h>
-#include <rhash.h>
 
 #include "menu.h"
 #include "menu_display.h"
@@ -1401,9 +1400,9 @@ static int action_ok_video_resolution(const char *path,
    return 0;
 }
 
-static int is_rdb_entry(uint32_t hash)
+static int is_rdb_entry(uint32_t label_hash)
 {
-   switch (hash)
+   switch (label_hash)
    {
       case MENU_LABEL_RDB_ENTRY_PUBLISHER:
       case MENU_LABEL_RDB_ENTRY_DEVELOPER:
@@ -1562,7 +1561,7 @@ static int menu_entries_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs
 }
 
 static int menu_entries_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
-      uint32_t hash, uint32_t menu_label_hash, unsigned type)
+      uint32_t label_hash, uint32_t menu_label_hash, unsigned type)
 {
    switch (type)
    {
@@ -1609,7 +1608,7 @@ static int menu_entries_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
          cbs->action_ok = action_ok_compressed_archive_push;
          break;
       case MENU_FILE_CORE:
-         if (hash == MENU_LABEL_DEFERRED_CORE_LIST)
+         if (label_hash == MENU_LABEL_DEFERRED_CORE_LIST)
             cbs->action_ok = action_ok_core_load_deferred;
          else
          {
@@ -1703,16 +1702,13 @@ static int menu_entries_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
 
 void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx,
-      const char *elem0, const char *elem1, const char *menu_label)
+      const char *elem0, const char *elem1, const char *menu_label,
+      uint32_t label_hash, uint32_t menu_label_hash)
 {
    rarch_setting_t *setting = menu_setting_find(label);
    menu_handle_t *menu      = menu_driver_get_ptr();
-   uint32_t hash            = djb2_calculate(label);
-   uint32_t menu_label_hash = djb2_calculate(menu_label);
 
-   if (!cbs)
-      return;
-   if (!menu)
+   if (!cbs || !menu)
       return;
 
 #if 0
@@ -1721,7 +1717,7 @@ void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
 
    cbs->action_ok = action_ok_lookup_setting;
 
-   if (elem0[0] != '\0' && (is_rdb_entry(hash) == 0))
+   if (elem0[0] != '\0' && (is_rdb_entry(label_hash) == 0))
    {
       cbs->action_ok = action_ok_rdb_entry_submenu;
       return;
@@ -1746,8 +1742,8 @@ void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
    else if (type >= MENU_SETTINGS_CHEAT_BEGIN
          && type <= MENU_SETTINGS_CHEAT_END)
       cbs->action_ok = action_ok_cheat;
-   else if (menu_entries_cbs_init_bind_ok_compare_label(cbs, hash) == 0)
+   else if (menu_entries_cbs_init_bind_ok_compare_label(cbs, label_hash) == 0)
       return;
 
-   menu_entries_cbs_init_bind_ok_compare_type(cbs, hash, menu_label_hash, type);
+   menu_entries_cbs_init_bind_ok_compare_type(cbs, label_hash, menu_label_hash, type);
 }

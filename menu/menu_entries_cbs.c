@@ -14,6 +14,8 @@
  */
 
 #include <file/file_path.h>
+#include <rhash.h>
+
 #include "menu.h"
 #include "menu_entries_cbs.h"
 #include "menu_setting.h"
@@ -231,6 +233,7 @@ void menu_entries_cbs_init(void *data,
    menu_file_list_cbs_t *cbs    = NULL;
    file_list_t *list            = (file_list_t*)data;
    menu_handle_t *menu          = menu_driver_get_ptr();
+   uint32_t label_hash = 0, menu_label_hash = 0;
    if (!menu)
       return;
 
@@ -259,20 +262,23 @@ void menu_entries_cbs_init(void *data,
       str_list = NULL;
    }
 
-   menu_entries_cbs_init_bind_ok(cbs, path, label, type, idx, elem0, elem1, menu_label);
-   menu_entries_cbs_init_bind_cancel(cbs, path, label, type, idx, elem0, elem1);
-   menu_entries_cbs_init_bind_scan(cbs, path, label, type, idx, elem0, elem1);
-   menu_entries_cbs_init_bind_start(cbs, path, label, type, idx, elem0, elem1);
-   menu_entries_cbs_init_bind_select(cbs, path, label, type, idx, elem0, elem1);
-   menu_entries_cbs_init_bind_info(cbs, path, label, type, idx, elem0, elem1);
-   menu_entries_cbs_init_bind_content_list_switch(cbs, path, label, type, idx, elem0, elem1);
-   menu_entries_cbs_init_bind_up(cbs, path, label, type, idx, elem0, elem1);
-   menu_entries_cbs_init_bind_down(cbs, path, label, type, idx, elem0, elem1);
-   menu_entries_cbs_init_bind_left(cbs, path, label, type, idx, elem0, elem1, menu_label);
-   menu_entries_cbs_init_bind_right(cbs, path, label, type, idx, elem0, elem1, menu_label);
-   menu_entries_cbs_init_bind_deferred_push(cbs, path, label, type, idx, elem0, elem1);
-   menu_entries_cbs_init_bind_refresh(cbs, path, label, type, idx, elem0, elem1);
-   menu_entries_cbs_init_bind_iterate(cbs, path, label, type, idx, elem0, elem1);
-   menu_entries_cbs_init_bind_get_string_representation(cbs, path, label, type, idx, elem0, elem1);
-   menu_entries_cbs_init_bind_title(cbs, path, label, type, idx, elem0, elem1);
+   label_hash      = djb2_calculate(label);
+   menu_label_hash = djb2_calculate(menu_label);
+
+   menu_entries_cbs_init_bind_ok(cbs, path, label, type, idx, elem0, elem1, menu_label, label_hash, menu_label_hash);
+   menu_entries_cbs_init_bind_cancel(cbs, path, label, type, idx, elem0, elem1, label_hash, menu_label_hash);
+   menu_entries_cbs_init_bind_scan(cbs, path, label, type, idx, elem0, elem1, label_hash, menu_label_hash);
+   menu_entries_cbs_init_bind_start(cbs, path, label, type, idx, elem0, elem1, label_hash, menu_label_hash);
+   menu_entries_cbs_init_bind_select(cbs, path, label, type, idx, elem0, elem1, label_hash, menu_label_hash);
+   menu_entries_cbs_init_bind_info(cbs, path, label, type, idx, elem0, elem1, label_hash, menu_label_hash);
+   menu_entries_cbs_init_bind_content_list_switch(cbs, path, label, type, idx, elem0, elem1, label_hash, menu_label_hash);
+   menu_entries_cbs_init_bind_up(cbs, path, label, type, idx, elem0, elem1, label_hash, menu_label_hash);
+   menu_entries_cbs_init_bind_down(cbs, path, label, type, idx, elem0, elem1, label_hash, menu_label_hash);
+   menu_entries_cbs_init_bind_left(cbs, path, label, type, idx, elem0, elem1, menu_label, label_hash, menu_label_hash);
+   menu_entries_cbs_init_bind_right(cbs, path, label, type, idx, elem0, elem1, menu_label, label_hash, menu_label_hash);
+   menu_entries_cbs_init_bind_deferred_push(cbs, path, label, type, idx, elem0, elem1, label_hash, menu_label_hash);
+   menu_entries_cbs_init_bind_refresh(cbs, path, label, type, idx, elem0, elem1, label_hash, menu_label_hash);
+   menu_entries_cbs_init_bind_iterate(cbs, path, label, type, idx, elem0, elem1, label_hash, menu_label_hash);
+   menu_entries_cbs_init_bind_get_string_representation(cbs, path, label, type, idx, elem0, elem1, label_hash, menu_label_hash);
+   menu_entries_cbs_init_bind_title(cbs, path, label, type, idx, elem0, elem1, label_hash, menu_label_hash);
 }

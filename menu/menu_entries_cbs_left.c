@@ -14,7 +14,6 @@
  */
 
 #include <file/file_path.h>
-#include <rhash.h>
 
 #include "menu.h"
 #include "menu_entries_cbs.h"
@@ -352,11 +351,10 @@ static int bind_left_generic(unsigned type, const char *label,
 
 void menu_entries_cbs_init_bind_left(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx,
-      const char *elem0, const char *elem1, const char *menu_label)
+      const char *elem0, const char *elem1, const char *menu_label,
+      uint32_t label_hash, uint32_t menu_label_hash)
 {
    int i;
-   uint32_t            hash = djb2_calculate(label);
-   uint32_t menu_label_hash = djb2_calculate(menu_label);
 
    if (!cbs)
       return;
@@ -435,7 +433,7 @@ void menu_entries_cbs_init_bind_left(menu_file_list_cbs_t *cbs,
       cbs->action_left = core_setting_left;
    else
    {
-      switch (hash)
+      switch (label_hash)
       {
          case MENU_LABEL_SAVESTATE:
          case MENU_LABEL_LOADSTATE:

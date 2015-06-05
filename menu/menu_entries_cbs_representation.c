@@ -14,7 +14,6 @@
  */
 
 #include <file/file_path.h>
-#include <rhash.h>
 
 #include "menu.h"
 #include "menu_entries_cbs.h"
@@ -788,9 +787,9 @@ static void menu_action_setting_disp_set_label(file_list_t* list,
 }
 
 static int menu_entries_cbs_init_bind_get_string_representation_compare_label(
-      menu_file_list_cbs_t *cbs, uint32_t hash)
+      menu_file_list_cbs_t *cbs, uint32_t label_hash)
 {
-   switch (hash)
+   switch (label_hash)
    {
       case MENU_LABEL_CHEAT_NUM_PASSES:
          cbs->action_get_representation =
@@ -837,9 +836,9 @@ static int menu_entries_cbs_init_bind_get_string_representation_compare_label(
 
 void menu_entries_cbs_init_bind_get_string_representation(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx,
-      const char *elem0, const char *elem1)
+      const char *elem0, const char *elem1,
+      uint32_t label_hash, uint32_t menu_label_hash)
 {
-   uint32_t hash = djb2_calculate(label);
    if (!cbs)
       return;
 
@@ -867,7 +866,7 @@ void menu_entries_cbs_init_bind_get_string_representation(menu_file_list_cbs_t *
          && type <= MENU_SETTINGS_SHADER_PARAMETER_LAST)
       cbs->action_get_representation =
          menu_action_setting_disp_set_label_shader_parameter;
-   else if (menu_entries_cbs_init_bind_get_string_representation_compare_label(cbs, hash) == 0)
+   else if (menu_entries_cbs_init_bind_get_string_representation_compare_label(cbs, label_hash) == 0)
       return;
 
    switch (type)
