@@ -23,6 +23,16 @@
 extern "C" {
 #endif
 
+#define MENU_VALUE_INPUT_SETTINGS                                              0xddd30846U
+#define MENU_VALUE_HORIZONTAL_MENU                                             0x35761704U
+   
+#define MENU_LABEL_DETECT_CORE_LIST                                            0xaa07c341U
+#define MENU_LABEL_LOAD_CONTENT                                                0x5745de1fU
+#define MENU_LABEL_CORE_UPDATER_LIST                                           0x0372767dU
+#define MENU_LABEL_RECORD_CONFIG                                               0x11c3daf9U
+#define MENU_LABEL_UNLOAD_CORE                                                 0x4b622170U
+#define MENU_LABEL_QUIT_RETROARCH                                              0x84b0bc71U
+#define MENU_LABEL_DEFERRED_CORE_LIST_SET                                      0xa6d5fdb4U
 #define MENU_LABEL_DEFERRED_DATABASE_MANAGER_LIST                              0x7c0b704fU
 #define MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST                                0x45446638U
 #define MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_DEVELOPER            0xcbd89be5U
@@ -118,9 +128,10 @@ extern "C" {
 #define MENU_LABEL_USER_SETTINGS                                               0xcdc9a8f5U
 #define MENU_LABEL_DIRECTORY_SETTINGS                                          0xb817bd2bU
 #define MENU_LABEL_PRIVACY_SETTINGS                                            0xce106254U
-
+#define MENU_LABEL_SHADER_APPLY_CHANGES                                        0x4f7306b9U
+#define MENU_LABEL_SAVE_NEW_CONFIG                                             0xcce9ab72U
 #define MENU_LABEL_ONSCREEN_DISPLAY_SETTINGS                                   0x67571029U
-
+#define MENU_LABEL_CHEAT_APPLY_CHANGES                                         0xde88aa27U
 #define MENU_LABEL_CUSTOM_BIND_ALL                                             0x79ac14f4U
 #define MENU_LABEL_SAVESTATE                                                   0x3a4849b5U
 #define MENU_LABEL_LOADSTATE                                                   0xa39eb286U
@@ -128,9 +139,14 @@ extern "C" {
 #define MENU_LABEL_RESTART_CONTENT                                             0x1ea2e224U
 #define MENU_LABEL_TAKE_SCREENSHOT                                             0x6786e867U
 #define MENU_LABEL_FILE_LOAD_OR_RESUME                                         0x952941f4U
-#define MENU_LABEL_CORE_LIST                                                   0xa8c3bfc9U
 #define MENU_LABEL_DISK_IMAGE_APPEND                                           0x5af7d709U
 #define MENU_LABEL_CONFIGURATIONS                                              0x3e930a50U
+#define MENU_LABEL_CHEAT_FILE_SAVE_AS                                          0x1f58dccaU
+#define MENU_LABEL_REMAP_FILE_SAVE_AS                                          0xcebf7f3aU
+#define MENU_LABEL_VIDEO_SHADER_PRESET_SAVE_AS                                 0x3d6e5ce5U
+#define MENU_LABEL_REMAP_FILE_SAVE_CORE                                        0x7c9d4c8fU
+#define MENU_LABEL_REMAP_FILE_SAVE_GAME                                        0x7c9f41e0U
+#define MENU_LABEL_CONTENT_COLLECTION_LIST                                     0x0f8a9086U
 
 /* FIXME - Externs, refactor */
 extern size_t hack_shader_pass;

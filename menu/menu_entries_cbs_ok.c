@@ -1428,8 +1428,9 @@ void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
       const char *elem0, const char *elem1, const char *menu_label)
 {
    rarch_setting_t *setting = menu_setting_find(label);
-   menu_handle_t *menu    = menu_driver_get_ptr();
-   uint32_t hash = djb2_calculate(label);
+   menu_handle_t *menu      = menu_driver_get_ptr();
+   uint32_t hash            = djb2_calculate(label);
+   uint32_t menu_label_hash = djb2_calculate(menu_label);
 
    if (!cbs)
       return;
@@ -1448,7 +1449,9 @@ void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
       return;
    }
 
-   if (hash == MENU_LABEL_CUSTOM_BIND_ALL)
+   if (setting && setting->browser_selection_type == ST_DIR)
+      cbs->action_ok = action_ok_push_generic_list;
+   else if (hash == MENU_LABEL_CUSTOM_BIND_ALL)
       cbs->action_ok = action_ok_lookup_setting;
    else if (type == MENU_SETTINGS_CUSTOM_BIND_KEYBOARD ||
          type == MENU_SETTINGS_CUSTOM_BIND)
@@ -1474,11 +1477,11 @@ void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
       cbs->action_ok = action_ok_screenshot;
    else if (hash == MENU_LABEL_FILE_LOAD_OR_RESUME)
       cbs->action_ok = action_ok_file_load_or_resume;
-   else if (!strcmp(label, "quit_retroarch"))
+   else if (hash == MENU_LABEL_QUIT_RETROARCH)
       cbs->action_ok = action_ok_quit;
-   else if (!strcmp(label, "unload_core"))
+   else if (hash == MENU_LABEL_UNLOAD_CORE)
       cbs->action_ok = action_ok_unload_core;
-   else if (!strcmp(label, "save_new_config"))
+   else if (hash == MENU_LABEL_SAVE_NEW_CONFIG)
       cbs->action_ok = action_ok_save_new_config;
    else if (hash == MENU_LABEL_HELP)
       cbs->action_ok = action_ok_help;
@@ -1494,9 +1497,9 @@ void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
       cbs->action_ok = action_ok_video_filter;
    else if (hash == MENU_LABEL_REMAP_FILE_LOAD)
       cbs->action_ok = action_ok_remap_file;
-   else if (!strcmp(label, "record_config"))
+   else if (hash == MENU_LABEL_RECORD_CONFIG)
       cbs->action_ok = action_ok_record_configfile;
-   else if (!strcmp(label, "core_updater_list"))
+   else if (hash == MENU_LABEL_CORE_UPDATER_LIST)
       cbs->action_ok = action_ok_core_updater_list;
    else if ((hash == MENU_LABEL_VIDEO_SHADER_PARAMETERS) ||
          (hash == MENU_LABEL_VIDEO_SHADER_PRESET_PARAMETERS)
@@ -1505,7 +1508,7 @@ void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
    else if (
          (hash == MENU_LABEL_SHADER_OPTIONS) ||
          (hash == MENU_LABEL_VIDEO_OPTIONS)  ||
-         !strcmp(label, "Input Settings")    ||
+         (hash == MENU_VALUE_INPUT_SETTINGS)    ||
          (hash == MENU_LABEL_CORE_OPTIONS)   ||
          (hash == MENU_LABEL_CORE_CHEAT_OPTIONS) ||
          (hash == MENU_LABEL_CORE_INPUT_REMAPPING_OPTIONS) ||
@@ -1521,31 +1524,30 @@ void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
          )
       cbs->action_ok = action_ok_push_default;
    else if (
-         !strcmp(label, "load_content") ||
-         !strcmp(label, "detect_core_list")
+         (hash == MENU_LABEL_LOAD_CONTENT) ||
+         (hash == MENU_LABEL_DETECT_CORE_LIST)
          )
       cbs->action_ok = action_ok_push_content_list;
    else if ((hash == MENU_LABEL_HISTORY_LIST) ||
          (hash == MENU_LABEL_CURSOR_MANAGER_LIST) ||
-         (hash == MENU_LABEL_DATABASE_MANAGER_LIST) ||
-         (setting && setting->browser_selection_type == ST_DIR)
+         (hash == MENU_LABEL_DATABASE_MANAGER_LIST)
          )
       cbs->action_ok = action_ok_push_generic_list;
-   else if (!strcmp(label, "shader_apply_changes"))
+   else if (hash == MENU_LABEL_SHADER_APPLY_CHANGES)
       cbs->action_ok = action_ok_shader_apply_changes;
-   else if (!strcmp(label, "cheat_apply_changes"))
+   else if (hash == MENU_LABEL_CHEAT_APPLY_CHANGES)
       cbs->action_ok = action_ok_cheat_apply_changes;
-   else if (!strcmp(label, "video_shader_preset_save_as"))
+   else if (hash == MENU_LABEL_VIDEO_SHADER_PRESET_SAVE_AS)
       cbs->action_ok = action_ok_shader_preset_save_as;
-   else if (!strcmp(label, "cheat_file_save_as"))
+   else if (hash == MENU_LABEL_CHEAT_FILE_SAVE_AS)
       cbs->action_ok = action_ok_cheat_file_save_as;
-   else if (!strcmp(label, "remap_file_save_as"))
+   else if (hash == MENU_LABEL_REMAP_FILE_SAVE_AS)
       cbs->action_ok = action_ok_remap_file_save_as;
-   else if (!strcmp(label, "remap_file_save_core"))
+   else if (hash == MENU_LABEL_REMAP_FILE_SAVE_CORE)
       cbs->action_ok = action_ok_remap_file_save_core;
-   else if (!strcmp(label, "remap_file_save_game"))
+   else if (hash == MENU_LABEL_REMAP_FILE_SAVE_GAME)
       cbs->action_ok = action_ok_remap_file_save_game;
-   else if (!strcmp(label, "content_collection_list"))
+   else if (hash == MENU_LABEL_CONTENT_COLLECTION_LIST)
       cbs->action_ok = action_ok_content_collection_list;
    else if (hash == MENU_LABEL_CORE_LIST)
       cbs->action_ok = action_ok_core_list;
@@ -1601,14 +1603,21 @@ void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
       case MENU_FILE_CORE:
          if (hash == MENU_LABEL_DEFERRED_CORE_LIST)
             cbs->action_ok = action_ok_core_load_deferred;
-         else if (!strcmp(menu_label, "deferred_core_list_set"))
-            cbs->action_ok = action_ok_core_deferred_set;
-         else if (!strcmp(menu_label, "core_list"))
-            cbs->action_ok = action_ok_core_load;
-         else if (!strcmp(menu_label, "core_updater_list"))
-            cbs->action_ok = action_ok_core_download;
          else
-            return;
+         {
+            switch (menu_label_hash)
+            {
+               case MENU_LABEL_DEFERRED_CORE_LIST_SET:
+                  cbs->action_ok = action_ok_core_deferred_set;
+                  break;
+               case MENU_LABEL_CORE_LIST:
+                  cbs->action_ok = action_ok_core_load;
+                  break;
+               case MENU_LABEL_CORE_UPDATER_LIST:
+                  cbs->action_ok = action_ok_core_download;
+                  break;
+            }
+         }
          break;
       case MENU_FILE_DOWNLOAD_CORE:
          cbs->action_ok = action_ok_core_updater_download;
@@ -1616,22 +1625,30 @@ void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
       case MENU_FILE_DOWNLOAD_CORE_INFO:
          break;
       case MENU_FILE_RDB:
-         if (!strcmp(menu_label, "deferred_database_manager_list"))
-            cbs->action_ok = action_ok_database_manager_list_deferred;
-         else if (!strcmp(menu_label, "database_manager_list")
-               || !strcmp(menu_label, "Horizontal Menu"))
-            cbs->action_ok = action_ok_database_manager_list;
-         else
-            return;
+         switch (menu_label_hash)
+         {
+            case MENU_LABEL_DEFERRED_DATABASE_MANAGER_LIST:
+               cbs->action_ok = action_ok_database_manager_list_deferred;
+               break;
+            case MENU_LABEL_DATABASE_MANAGER_LIST:
+            case MENU_VALUE_HORIZONTAL_MENU:
+               cbs->action_ok = action_ok_database_manager_list;
+               break;
+         }
          break;
       case MENU_FILE_RDB_ENTRY:
          cbs->action_ok = action_ok_rdb_entry;
          break;
       case MENU_FILE_CURSOR:
-         if (!strcmp(menu_label, "deferred_database_manager_list"))
-            cbs->action_ok = action_ok_cursor_manager_list_deferred;
-         else if (!strcmp(menu_label, "cursor_manager_list"))
-            cbs->action_ok = action_ok_cursor_manager_list;
+         switch (menu_label_hash)
+         {
+            case MENU_LABEL_DEFERRED_DATABASE_MANAGER_LIST:
+               cbs->action_ok = action_ok_cursor_manager_list_deferred;
+               break;
+            case MENU_LABEL_CURSOR_MANAGER_LIST:
+               cbs->action_ok = action_ok_cursor_manager_list;
+               break;
+         }
          break;
       case MENU_FILE_FONT:
       case MENU_FILE_OVERLAY:
@@ -1645,12 +1662,18 @@ void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
       case MENU_FILE_IN_CARCHIVE:
 #endif
       case MENU_FILE_PLAIN:
-         if (!strcmp(menu_label, "detect_core_list"))
-            cbs->action_ok = action_ok_file_load_with_detect_core;
-         else if (!strcmp(menu_label, "disk_image_append"))
-            cbs->action_ok = action_ok_disk_image_append;
-         else
-            cbs->action_ok = action_ok_file_load;
+         switch (menu_label_hash)
+         {
+            case MENU_LABEL_DETECT_CORE_LIST:
+               cbs->action_ok = action_ok_file_load_with_detect_core;
+               break;
+            case MENU_LABEL_DISK_IMAGE_APPEND:
+               cbs->action_ok = action_ok_disk_image_append;
+               break;
+            default:
+               cbs->action_ok = action_ok_file_load;
+               break;
+         }
          break;
       case MENU_SETTINGS_CUSTOM_VIEWPORT:
          cbs->action_ok = action_ok_custom_viewport;
@@ -1664,6 +1687,6 @@ void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
          cbs->action_ok = action_ok_disk_cycle_tray_status;
          break;
       default:
-         return;
+         break;
    }
 }
