@@ -19,9 +19,31 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-   
-#define MENU_LABEL_SCREENSHOT_DIRECTORY                                        0x552612d7U
 
+#define MENU_LABEL_RESET                                                       0x10474288U
+#define MENU_LABEL_SLOWMOTION                                                  0x6a269ea0U
+#define MENU_LABEL_HOLD_FAST_FORWARD                                           0xebe2e4cdU
+#define MENU_LABEL_CHEAT_TOGGLE                                                0xe515e0cbU
+#define MENU_LABEL_PAUSE_TOGGLE                                                0x557634e4U
+#define MENU_LABEL_SAVE_STATE                                                  0x54a257f4U
+#define MENU_LABEL_LOAD_STATE                                                  0xe8c5dae5U
+#define MENU_LABEL_REWIND                                                      0x1931d5aeU
+#define MENU_LABEL_NETPLAY_FLIP_PLAYERS                                        0x801425abU
+#define MENU_LABEL_CHEAT_INDEX_MINUS                                           0x57f58b6cU
+#define MENU_LABEL_CHEAT_INDEX_PLUS                                            0x678542a4U
+#define MENU_LABEL_SCREENSHOT_DIRECTORY                                        0x552612d7U
+#define MENU_LABEL_SHADER_NEXT                                                 0x54d359baU
+#define MENU_LABEL_SHADER_PREV                                                 0x54d4a758U
+#define MENU_LABEL_FRAME_ADVANCE                                               0xd80302a1U
+#define MENU_LABEL_MOVIE_RECORD_TOGGLE                                         0xa2d2ff04U
+#define MENU_LABEL_L_X_PLUS                                                    0xd7370d4bU
+#define MENU_LABEL_L_X_MINUS                                                   0xbde0aaf3U
+#define MENU_LABEL_L_Y_PLUS                                                    0xd98c35ecU
+#define MENU_LABEL_L_Y_MINUS                                                   0x0adae7b4U
+#define MENU_LABEL_R_X_PLUS                                                    0x60c20a91U
+#define MENU_LABEL_R_X_MINUS                                                   0x78cb50f9U
+#define MENU_LABEL_R_Y_MINUS                                                   0xc5c58dbaU
+#define MENU_LABEL_R_Y_PLUS                                                    0x63173332U
 #define MENU_LABEL_VIDEO_SWAP_INTERVAL                                         0x5673ff9aU
 #define MENU_LABEL_VIDEO_GPU_SCREENSHOT                                        0xee2fcb44U
 #define MENU_LABEL_PAUSE_NONACTIVE                                             0x580bf549U

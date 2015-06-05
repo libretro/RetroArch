@@ -2864,24 +2864,104 @@ static int setting_get_description_compare_label(uint32_t label_hash,
                "itself (not turbo button) is released.");
          break;
       case MENU_LABEL_OSK_ENABLE:
-           snprintf(s, len,
+         snprintf(s, len,
                " -- Enable/disable on-screen keyboard.");
-           break;
+         break;
       case MENU_LABEL_AUDIO_MUTE:
-               snprintf(s, len,
-                        " -- Mute/unmute audio.");
-           break;
+         snprintf(s, len,
+               " -- Mute/unmute audio.");
+         break;
+      case MENU_LABEL_REWIND:
+         snprintf(s, len,
+               " -- Hold button down to rewind.\n"
+               " \n"
+               "Rewind must be enabled.");
+         break;
       case MENU_LABEL_EXIT_EMULATOR:
-	   snprintf(s, len,
-			   " -- Key to exit RetroArch cleanly."
+         snprintf(s, len,
+               " -- Key to exit RetroArch cleanly."
 #if !defined(RARCH_MOBILE) && !defined(RARCH_CONSOLE)
-			   "\nKilling it in any hard way (SIGKILL, \n"
-			   "etc) will terminate without saving\n"
-			   "RAM, etc. On Unix-likes,\n"
-			   "SIGINT/SIGTERM allows\n"
-			   "a clean deinitialization."
+               "\nKilling it in any hard way (SIGKILL, \n"
+               "etc) will terminate without saving\n"
+               "RAM, etc. On Unix-likes,\n"
+               "SIGINT/SIGTERM allows\n"
+               "a clean deinitialization."
 #endif
-		   );
+               );
+         break;
+      case MENU_LABEL_LOAD_STATE:
+         snprintf(s, len,
+               " -- Loads state.");
+         break;
+      case MENU_LABEL_SAVE_STATE:
+         snprintf(s, len,
+               " -- Saves state.");
+         break;
+      case MENU_LABEL_NETPLAY_FLIP_PLAYERS:
+         snprintf(s, len,
+               " -- Netplay flip users.");
+         break;
+      case MENU_LABEL_CHEAT_INDEX_PLUS:
+         snprintf(s, len,
+               " -- Increment cheat index.\n");
+         break;
+      case MENU_LABEL_CHEAT_INDEX_MINUS:
+         snprintf(s, len,
+               " -- Decrement cheat index.\n");
+         break;
+      case MENU_LABEL_SHADER_PREV:
+         snprintf(s, len,
+               " -- Applies previous shader in directory.");
+         break;
+      case MENU_LABEL_SHADER_NEXT:
+         snprintf(s, len,
+               " -- Applies next shader in directory.");
+         break;
+      case MENU_LABEL_RESET:
+         snprintf(s, len,
+               " -- Reset the content.\n");
+         break;
+      case MENU_LABEL_PAUSE_TOGGLE:
+         snprintf(s, len,
+               " -- Toggle between paused and non-paused state.");
+         break;
+      case MENU_LABEL_CHEAT_TOGGLE:
+         snprintf(s, len,
+               " -- Toggle cheat index.\n");
+         break;
+      case MENU_LABEL_HOLD_FAST_FORWARD:
+         snprintf(s, len,
+               " -- Hold for fast-forward. Releasing button \n"
+               "disables fast-forward.");
+         break;
+      case MENU_LABEL_SLOWMOTION:
+         snprintf(s, len,
+               " -- Hold for slowmotion.");
+         break;
+      case MENU_LABEL_FRAME_ADVANCE:
+         snprintf(s, len,
+               " -- Frame advance when content is paused.");
+         break;
+      case MENU_LABEL_MOVIE_RECORD_TOGGLE:
+         snprintf(s, len,
+               " -- Toggle between recording and not.");
+         break;
+      case MENU_LABEL_L_X_PLUS:
+      case MENU_LABEL_L_X_MINUS:
+      case MENU_LABEL_L_Y_PLUS:
+      case MENU_LABEL_L_Y_MINUS:
+      case MENU_LABEL_R_X_PLUS:
+      case MENU_LABEL_R_X_MINUS:
+      case MENU_LABEL_R_Y_PLUS:
+      case MENU_LABEL_R_Y_MINUS:
+         snprintf(s, len,
+               " -- Axis for analog stick (DualShock-esque).\n"
+               " \n"
+               "Bound as usual, however, if a real analog \n"
+               "axis is bound, it can be read as a true analog.\n"
+               " \n"
+               "Positive X axis is right. \n"
+               "Positive Y axis is down.");
          break;
       default:
          return -1;
@@ -2907,75 +2987,12 @@ int setting_get_description(const char *label, char *s,
 {
    settings_t      *settings = config_get_ptr();
    uint32_t label_hash       = djb2_calculate(label);
-   
+
    if (setting_get_description_compare_label(label_hash, settings, s, len) == 0)
       return 0;
 
-   if (
-         !strcmp(label, "l_x_plus")  ||
-         !strcmp(label, "l_x_minus") ||
-         !strcmp(label, "l_y_plus")  ||
-         !strcmp(label, "l_y_minus")
-         )
-      snprintf(s, len,
-            " -- Axis for analog stick (DualShock-esque).\n"
-            " \n"
-            "Bound as usual, however, if a real analog \n"
-            "axis is bound, it can be read as a true analog.\n"
-            " \n"
-            "Positive X axis is right. \n"
-            "Positive Y axis is down.");
-   else if (!strcmp(label, "rewind"))
-      snprintf(s, len,
-            " -- Hold button down to rewind.\n"
-            " \n"
-            "Rewind must be enabled.");
-   else if (!strcmp(label, "load_state"))
-      snprintf(s, len,
-            " -- Loads state.");
-   else if (!strcmp(label, "save_state"))
-      snprintf(s, len,
-            " -- Saves state.");
-   else if (!strcmp(label, "netplay_flip_players"))
-      snprintf(s, len,
-            " -- Netplay flip users.");
-   else if (!strcmp(label, "frame_advance"))
-      snprintf(s, len,
-            " -- Frame advance when content is paused.");
-   else if (!strcmp(label, "slowmotion"))
-      snprintf(s, len,
-            " -- Hold for slowmotion.");
-   else if (!strcmp(label, "movie_record_toggle"))
-      snprintf(s, len,
-            " -- Toggle between recording and not.");
-   else if (!strcmp(label, "pause_toggle"))
-      snprintf(s, len,
-            " -- Toggle between paused and non-paused state.");
-   else if (!strcmp(label, "hold_fast_forward"))
-      snprintf(s, len,
-            " -- Hold for fast-forward. Releasing button \n"
-            "disables fast-forward.");
-   else if (!strcmp(label, "shader_next"))
-      snprintf(s, len,
-            " -- Applies next shader in directory.");
-   else if (!strcmp(label, "reset"))
-      snprintf(s, len,
-            " -- Reset the content.\n");
-   else if (!strcmp(label, "cheat_index_plus"))
-      snprintf(s, len,
-            " -- Increment cheat index.\n");
-   else if (!strcmp(label, "cheat_index_minus"))
-      snprintf(s, len,
-            " -- Decrement cheat index.\n");
-   else if (!strcmp(label, "cheat_toggle"))
-      snprintf(s, len,
-            " -- Toggle cheat index.\n");
-   else if (!strcmp(label, "shader_prev"))
-      snprintf(s, len,
-            " -- Applies previous shader in directory.");
-   else
-      snprintf(s, len,
-            "-- No info on this item is available. --\n");
+   snprintf(s, len,
+         "-- No info on this item is available. --\n");
 
    return 0;
 }
