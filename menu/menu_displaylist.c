@@ -2076,7 +2076,7 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
    return ret;
 }
 
-static int menu_displaylist_deferred_push(menu_displaylist_info_t *info)
+static int menu_displaylist_deferred_push(menu_displaylist_info_t *info, uint32_t hash_label)
 {
    menu_file_list_cbs_t *cbs = NULL;
    menu_handle_t       *menu = menu_driver_get_ptr();
@@ -2084,14 +2084,13 @@ static int menu_displaylist_deferred_push(menu_displaylist_info_t *info)
    if (!info->list)
       return -1;
 
-   if (!strcmp(info->label, "Main Menu"))
+   switch (hash_label)
    {
-      info->flags = SL_FLAG_MAIN_MENU;
-      return menu_displaylist_push_list(info, DISPLAYLIST_MAIN_MENU);
-   }
-   else if (!strcmp(info->label, "Horizontal Menu"))
-   {
-      return menu_displaylist_push_list(info, DISPLAYLIST_HORIZONTAL);
+      case MENU_VALUE_MAIN_MENU:
+         info->flags = SL_FLAG_MAIN_MENU;
+         return menu_displaylist_push_list(info, DISPLAYLIST_MAIN_MENU);
+      case MENU_VALUE_HORIZONTAL_MENU:
+         return menu_displaylist_push_list(info, DISPLAYLIST_HORIZONTAL);
    }
 
    cbs = (menu_file_list_cbs_t*)
@@ -2110,6 +2109,7 @@ int menu_displaylist_push(file_list_t *list, file_list_t *menu_list)
    const char *label            = NULL;
    menu_handle_t *menu          = menu_driver_get_ptr();
    menu_displaylist_info_t info = {0};
+   uint32_t          hash_value = djb2_calculate(label);
 
    menu_list_get_last_stack(menu->menu_list, &path, &label, &type);
 
@@ -2119,7 +2119,7 @@ int menu_displaylist_push(file_list_t *list, file_list_t *menu_list)
    strlcpy(info.path, path, sizeof(info.path));
    strlcpy(info.label, label, sizeof(info.label));
 
-   return menu_displaylist_deferred_push(&info);
+   return menu_displaylist_deferred_push(&info, hash_value);
 }
 
 /**
