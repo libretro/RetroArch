@@ -1310,12 +1310,8 @@ static void menu_displaylist_push_horizontal_menu_list_content(
       file_list_t *list, core_info_t *info, const char* path)
 {
    unsigned j;
-   struct string_list *str_list = NULL;
-
-   if (!info)
-      return;
-
-   str_list = dir_list_new(path, info->supported_extensions, true);
+   struct string_list *str_list = 
+      dir_list_new(path, info->supported_extensions, true);
 
    if (!str_list)
       return;
