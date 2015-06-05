@@ -355,7 +355,8 @@ void menu_entries_cbs_init_bind_left(menu_file_list_cbs_t *cbs,
       const char *elem0, const char *elem1, const char *menu_label)
 {
    int i;
-   uint32_t hash = djb2_calculate(label);
+   uint32_t            hash = djb2_calculate(label);
+   uint32_t menu_label_hash = djb2_calculate(menu_label);
 
    if (!cbs)
       return;
@@ -396,11 +397,16 @@ void menu_entries_cbs_init_bind_left(menu_file_list_cbs_t *cbs,
       case MENU_FILE_CHEAT:
       case MENU_FILE_REMAP:
       case MENU_SETTING_GROUP:
-         if (!strcmp(menu_label, "Horizontal Menu")
-               || !strcmp(menu_label, "Main Menu"))
-            cbs->action_left = action_left_mainmenu;
-         else
-            cbs->action_left = action_left_scroll;
+         switch (menu_label_hash)
+         {
+            case MENU_VALUE_HORIZONTAL_MENU:
+            case MENU_VALUE_MAIN_MENU:
+               cbs->action_left = action_left_mainmenu;
+               break;
+            default:
+               cbs->action_left = action_left_scroll;
+               break;
+         }
          break;
       case MENU_SETTING_ACTION:
       case MENU_FILE_CONTENTLIST_ENTRY:
@@ -423,23 +429,23 @@ void menu_entries_cbs_init_bind_left(menu_file_list_cbs_t *cbs,
    else if (type >= MENU_SETTINGS_INPUT_DESC_BEGIN
          && type <= MENU_SETTINGS_INPUT_DESC_END)
       cbs->action_left = action_left_input_desc;
-   else if ((hash == MENU_LABEL_SAVESTATE) ||
-         (hash == MENU_LABEL_LOADSTATE))
-      cbs->action_left = action_left_save_state;
-   else if (!strcmp(label, "video_shader_scale_pass"))
-      cbs->action_left = action_left_shader_scale_pass;
-   else if (!strcmp(label, "video_shader_filter_pass"))
-      cbs->action_left = action_left_shader_filter_pass;
-   else if (!strcmp(label, "video_shader_default_filter"))
-      cbs->action_left = action_left_shader_filter_default;
-   else if (!strcmp(label, "video_shader_num_passes"))
-      cbs->action_left = action_left_shader_num_passes;
-   else if (!strcmp(label, "cheat_num_passes"))
-      cbs->action_left = action_left_cheat_num_passes;
    else if (type == MENU_SETTINGS_VIDEO_RESOLUTION)
       cbs->action_left = action_left_video_resolution;
    else if ((type >= MENU_SETTINGS_CORE_OPTION_START))
       cbs->action_left = core_setting_left;
+   else if ((hash == MENU_LABEL_SAVESTATE) ||
+         (hash == MENU_LABEL_LOADSTATE))
+      cbs->action_left = action_left_save_state;
+   else if (hash == MENU_LABEL_VIDEO_SHADER_SCALE_PASS)
+      cbs->action_left = action_left_shader_scale_pass;
+   else if (hash == MENU_LABEL_VIDEO_SHADER_FILTER_PASS)
+      cbs->action_left = action_left_shader_filter_pass;
+   else if (hash == MENU_LABEL_VIDEO_SHADER_DEFAULT_FILTER)
+      cbs->action_left = action_left_shader_filter_default;
+   else if (hash == MENU_LABEL_VIDEO_SHADER_NUM_PASSES)
+      cbs->action_left = action_left_shader_num_passes;
+   else if (hash == MENU_LABEL_CHEAT_NUM_PASSES)
+      cbs->action_left = action_left_cheat_num_passes;
 
    for (i = 0; i < MAX_USERS; i++)
    {

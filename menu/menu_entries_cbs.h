@@ -40,9 +40,16 @@ extern "C" {
 #define MENU_LABEL_RDB_ENTRY_RELEASE_YEAR                                      0x14c9c6bfU
 #define MENU_LABEL_RDB_ENTRY_MAX_USERS                                         0xfae91cc4U
 
+#define MENU_LABEL_VIDEO_SHADER_DEFAULT_FILTER                                 0x4468cb1bU
+#define MENU_LABEL_VIDEO_SHADER_FILTER_PASS                                    0x1906c38dU
+#define MENU_LABEL_VIDEO_SHADER_SCALE_PASS                                     0x18f7b82fU
+#define MENU_LABEL_VIDEO_SHADER_NUM_PASSES                                     0x79b2992fU
+#define MENU_LABEL_CHEAT_NUM_PASSES                                            0x1910eb87U
+
 #define MENU_VALUE_INPUT_SETTINGS                                              0xddd30846U
 #define MENU_VALUE_HORIZONTAL_MENU                                             0x35761704U
-   
+#define MENU_VALUE_MAIN_MENU                                                   0x1625971fU   
+
 #define MENU_LABEL_DETECT_CORE_LIST                                            0xaa07c341U
 #define MENU_LABEL_LOAD_CONTENT                                                0x5745de1fU
 #define MENU_LABEL_CORE_UPDATER_LIST                                           0x0372767dU
