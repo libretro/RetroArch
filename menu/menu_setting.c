@@ -2276,6 +2276,185 @@ static int setting_get_description_compare_label(uint32_t label_hash,
                "shaders."
                );
          break;
+      case MENU_LABEL_CONFIG_SAVE_ON_EXIT:
+         snprintf(s, len,
+               " -- Saves config to disk on exit.\n"
+               "Useful for menu as settings can be\n"
+               "modified. Overwrites the config.\n"
+               " \n"
+               "#include's and comments are not \n"
+               "preserved. \n"
+               " \n"
+               "By design, the config file is \n"
+               "considered immutable as it is \n"
+               "likely maintained by the user, \n"
+               "and should not be overwritten \n"
+               "behind the user's back."
+#if defined(RARCH_CONSOLE) || defined(RARCH_MOBILE)
+               "\nThis is not not the case on \n"
+               "consoles however, where \n"
+               "looking at the config file \n"
+               "manually isn't really an option."
+#endif
+               );
+         break;
+      case MENU_LABEL_VIDEO_SHADER_FILTER_PASS:
+         snprintf(s, len,
+               " -- Hardware filter for this pass. \n"
+               " \n"
+               "If 'Don't Care' is set, 'Default \n"
+               "Filter' will be used."
+               );
+         break;
+      case MENU_LABEL_AUTOSAVE_INTERVAL:
+         snprintf(s, len,
+               " -- Autosaves the non-volatile SRAM \n"
+               "at a regular interval.\n"
+               " \n"
+               "This is disabled by default unless set \n"
+               "otherwise. The interval is measured in \n"
+               "seconds. \n"
+               " \n"
+               "A value of 0 disables autosave.");
+         break;
+      case MENU_LABEL_INPUT_BIND_DEVICE_TYPE:
+         snprintf(s, len,
+               " -- Input Device Type. \n"
+               " \n"
+               "Picks which device type to use. This is \n"
+               "relevant for the libretro core itself."
+               );
+         break;
+      case MENU_LABEL_LIBRETRO_LOG_LEVEL:
+         snprintf(s, len,
+               "-- Sets log level for libretro cores \n"
+               "(GET_LOG_INTERFACE). \n"
+               " \n"
+               " If a log level issued by a libretro \n"
+               " core is below libretro_log level, it \n"
+               " is ignored.\n"
+               " \n"
+               " DEBUG logs are always ignored unless \n"
+               " verbose mode is activated (--verbose).\n"
+               " \n"
+               " DEBUG = 0\n"
+               " INFO  = 1\n"
+               " WARN  = 2\n"
+               " ERROR = 3"
+               );
+         break;
+      case MENU_LABEL_STATE_SLOT_INCREASE:
+      case MENU_LABEL_STATE_SLOT_DECREASE:
+         snprintf(s, len,
+               " -- State slots.\n"
+               " \n"
+               " With slot set to 0, save state name is *.state \n"
+               " (or whatever defined on commandline).\n"
+               "When slot is != 0, path will be (path)(d), \n"
+               "where (d) is slot number.");
+         break;
+      case MENU_LABEL_SHADER_APPLY_CHANGES:
+         snprintf(s, len,
+               " -- Apply Shader Changes. \n"
+               " \n"
+               "After changing shader settings, use this to \n"
+               "apply changes. \n"
+               " \n"
+               "Changing shader settings is a somewhat \n"
+               "expensive operation so it has to be \n"
+               "done explicitly. \n"
+               " \n"
+               "When you apply shaders, the menu shader \n"
+               "settings are saved to a temporary file (either \n"
+               "menu.cgp or menu.glslp) and loaded. The file \n"
+               "persists after RetroArch exits. The file is \n"
+               "saved to Shader Directory."
+               );
+         break;
+      case MENU_LABEL_INPUT_BIND_DEVICE_ID:
+         snprintf(s, len,
+               " -- Input Device. \n"
+               " \n"
+               "Picks which gamepad to use for user N. \n"
+               "The name of the pad is available."
+               );
+         break;
+      case MENU_LABEL_MENU_TOGGLE:
+         snprintf(s, len,
+               " -- Toggles menu.");
+         break;
+      case MENU_LABEL_GRAB_MOUSE_TOGGLE:
+         snprintf(s, len,
+               " -- Toggles mouse grab.\n"
+               " \n"
+               "When mouse is grabbed, RetroArch hides the \n"
+               "mouse, and keeps the mouse pointer inside \n"
+               "the window to allow relative mouse input to \n"
+               "work better.");
+         break;
+      case MENU_LABEL_DISK_NEXT:
+         snprintf(s, len,
+               " -- Cycles through disk images. Use after \n"
+               "ejecting. \n"
+               " \n"
+               " Complete by toggling eject again.");
+         break;
+      case MENU_LABEL_VIDEO_FILTER:
+#ifdef HAVE_FILTERS_BUILTIN
+         snprintf(s, len,
+               " -- CPU-based video filter.");
+#else
+         snprintf(s, len,
+               " -- CPU-based video filter.\n"
+               " \n"
+               "Path to a dynamic library.");
+#endif
+         break;
+      case MENU_LABEL_AUDIO_DEVICE:
+         snprintf(s, len,
+               " -- Override the default audio device \n"
+               "the audio driver uses.\n"
+               "This is driver dependent. E.g.\n"
+#ifdef HAVE_ALSA
+               " \n"
+               "ALSA wants a PCM device."
+#endif
+#ifdef HAVE_OSS
+               " \n"
+               "OSS wants a path (e.g. /dev/dsp)."
+#endif
+#ifdef HAVE_JACK
+               " \n"
+               "JACK wants portnames (e.g. system:playback1\n"
+               ",system:playback_2)."
+#endif
+#ifdef HAVE_RSOUND
+               " \n"
+               "RSound wants an IP address to an RSound \n"
+               "server."
+#endif
+               );
+         break;
+      case MENU_LABEL_DISK_EJECT_TOGGLE:
+         snprintf(s, len,
+               " -- Toggles eject for disks.\n"
+               " \n"
+               "Used for multiple-disk content.");
+         break;
+      case MENU_LABEL_ENABLE_HOTKEY:
+         snprintf(s, len,
+               " -- Enable other hotkeys.\n"
+               " \n"
+               " If this hotkey is bound to either keyboard, \n"
+               "joybutton or joyaxis, all other hotkeys will \n"
+               "be disabled unless this hotkey is also held \n"
+               "at the same time. \n"
+               " \n"
+               "This is useful for RETRO_KEYBOARD centric \n"
+               "implementations which query a large area of \n"
+               "the keyboard, where it is not desirable that \n"
+               "hotkeys get in the way.");
+         break;
       default:
          return -1;
    }
@@ -2318,25 +2497,6 @@ int setting_get_description(const char *label, char *s,
             "-- Forcibly disable composition.\n"
             "Only valid on Windows Vista/7 for now.");
    }
-   else if (!strcmp(label, "libretro_log_level"))
-   {
-      snprintf(s, len,
-            "-- Sets log level for libretro cores \n"
-            "(GET_LOG_INTERFACE). \n"
-            " \n"
-            " If a log level issued by a libretro \n"
-            " core is below libretro_log level, it \n"
-            " is ignored.\n"
-            " \n"
-            " DEBUG logs are always ignored unless \n"
-            " verbose mode is activated (--verbose).\n"
-            " \n"
-            " DEBUG = 0\n"
-            " INFO  = 1\n"
-            " WARN  = 2\n"
-            " ERROR = 3"
-            );
-   }
    else if (!strcmp(label, "log_verbosity"))
    {
       snprintf(s, len,
@@ -2368,29 +2528,6 @@ int setting_get_description(const char *label, char *s,
             " \n"
             "This is only updated in config if\n"
             "'Save Configuration on Exit' is enabled.\n");
-   }
-   else if (!strcmp(label, "config_save_on_exit"))
-   {
-      snprintf(s, len,
-            " -- Saves config to disk on exit.\n"
-            "Useful for menu as settings can be\n"
-            "modified. Overwrites the config.\n"
-            " \n"
-            "#include's and comments are not \n"
-            "preserved. \n"
-            " \n"
-            "By design, the config file is \n"
-            "considered immutable as it is \n"
-            "likely maintained by the user, \n"
-            "and should not be overwritten \n"
-            "behind the user's back."
-#if defined(RARCH_CONSOLE) || defined(RARCH_MOBILE)
-            "\nThis is not not the case on \n"
-            "consoles however, where \n"
-            "looking at the config file \n"
-            "manually isn't really an option."
-#endif
-            );
    }
    else if (!strcmp(label, "core_specific_config"))
    {
@@ -2473,47 +2610,9 @@ int setting_get_description(const char *label, char *s,
             " Input rate is defined as: \n"
             " input rate * (1.0 +/- (max timing skew))");
    }
-   else if (!strcmp(label, "video_filter"))
-   {
-#ifdef HAVE_FILTERS_BUILTIN
-      snprintf(s, len,
-            " -- CPU-based video filter.");
-#else
-      snprintf(s, len,
-            " -- CPU-based video filter.\n"
-            " \n"
-            "Path to a dynamic library.");
-#endif
-   }
    else if (!strcmp(label, "video_fullscreen"))
    {
       snprintf(s, len, " -- Toggles fullscreen.");
-   }
-   else if (!strcmp(label, "audio_device"))
-   {
-      snprintf(s, len,
-            " -- Override the default audio device \n"
-            "the audio driver uses.\n"
-            "This is driver dependent. E.g.\n"
-#ifdef HAVE_ALSA
-            " \n"
-            "ALSA wants a PCM device."
-#endif
-#ifdef HAVE_OSS
-            " \n"
-            "OSS wants a path (e.g. /dev/dsp)."
-#endif
-#ifdef HAVE_JACK
-            " \n"
-            "JACK wants portnames (e.g. system:playback1\n"
-            ",system:playback_2)."
-#endif
-#ifdef HAVE_RSOUND
-            " \n"
-            "RSound wants an IP address to an RSound \n"
-            "server."
-#endif
-            );
    }
    else if (!strcmp(label, "video_black_frame_insertion"))
    {
@@ -2623,18 +2722,6 @@ int setting_get_description(const char *label, char *s,
       snprintf(s, len,
             " -- Screenshots output of GPU shaded \n"
             "material if available.");
-   }
-   else if (!strcmp(label, "autosave_interval"))
-   {
-      snprintf(s, len,
-            " -- Autosaves the non-volatile SRAM \n"
-            "at a regular interval.\n"
-            " \n"
-            "This is disabled by default unless set \n"
-            "otherwise. The interval is measured in \n"
-            "seconds. \n"
-            " \n"
-            "A value of 0 disables autosave.");
    }
    else if (!strcmp(label, "screenshot_directory"))
    {
@@ -2788,35 +2875,6 @@ int setting_get_description(const char *label, char *s,
             "with this path on startup if 'Auto Load State\n"
             "is enabled.");
    }
-   else if (!strcmp(label, "shader_apply_changes"))
-   {
-      snprintf(s, len,
-            " -- Apply Shader Changes. \n"
-            " \n"
-            "After changing shader settings, use this to \n"
-            "apply changes. \n"
-            " \n"
-            "Changing shader settings is a somewhat \n"
-            "expensive operation so it has to be \n"
-            "done explicitly. \n"
-            " \n"
-            "When you apply shaders, the menu shader \n"
-            "settings are saved to a temporary file (either \n"
-            "menu.cgp or menu.glslp) and loaded. The file \n"
-            "persists after RetroArch exits. The file is \n"
-            "saved to Shader Directory."
-            );
-
-   }
-   else if (!strcmp(label, "video_shader_filter_pass"))
-   {
-      snprintf(s, len,
-            " -- Hardware filter for this pass. \n"
-            " \n"
-            "If 'Don't Care' is set, 'Default \n"
-            "Filter' will be used."
-            );
-   }
    else if (
          !strcmp(label, "l_x_plus")  ||
          !strcmp(label, "l_x_minus") ||
@@ -2864,34 +2922,12 @@ int setting_get_description(const char *label, char *s,
    else if (!strcmp(label, "save_state"))
       snprintf(s, len,
             " -- Saves state.");
-   else if (!strcmp(label, "state_slot_increase") ||
-         !strcmp(label, "state_slot_decrease"))
-      snprintf(s, len,
-            " -- State slots.\n"
-            " \n"
-            " With slot set to 0, save state name is *.state \n"
-            " (or whatever defined on commandline).\n"
-            "When slot is != 0, path will be (path)(d), \n"
-            "where (d) is slot number.");
    else if (!strcmp(label, "netplay_flip_players"))
       snprintf(s, len,
             " -- Netplay flip users.");
    else if (!strcmp(label, "frame_advance"))
       snprintf(s, len,
             " -- Frame advance when content is paused.");
-   else if (!strcmp(label, "enable_hotkey"))
-      snprintf(s, len,
-            " -- Enable other hotkeys.\n"
-            " \n"
-            " If this hotkey is bound to either keyboard, \n"
-            "joybutton or joyaxis, all other hotkeys will \n"
-            "be disabled unless this hotkey is also held \n"
-            "at the same time. \n"
-            " \n"
-            "This is useful for RETRO_KEYBOARD centric \n"
-            "implementations which query a large area of \n"
-            "the keyboard, where it is not desirable that \n"
-            "hotkeys get in the way.");
    else if (!strcmp(label, "slowmotion"))
       snprintf(s, len,
             " -- Hold for slowmotion.");
@@ -2943,42 +2979,6 @@ int setting_get_description(const char *label, char *s,
             " -- Toggles to next overlay.\n"
             " \n"
             "Wraps around.");
-   else if (!strcmp(label, "disk_eject_toggle"))
-      snprintf(s, len,
-            " -- Toggles eject for disks.\n"
-            " \n"
-            "Used for multiple-disk content.");
-   else if (!strcmp(label, "disk_next"))
-      snprintf(s, len,
-            " -- Cycles through disk images. Use after \n"
-            "ejecting. \n"
-            " \n"
-            " Complete by toggling eject again.");
-   else if (!strcmp(label, "grab_mouse_toggle"))
-      snprintf(s, len,
-            " -- Toggles mouse grab.\n"
-            " \n"
-            "When mouse is grabbed, RetroArch hides the \n"
-            "mouse, and keeps the mouse pointer inside \n"
-            "the window to allow relative mouse input to \n"
-            "work better.");
-   else if (!strcmp(label, "menu_toggle"))
-      snprintf(s, len,
-            " -- Toggles menu.");
-   else if (!strcmp(label, "input_bind_device_id"))
-      snprintf(s, len,
-            " -- Input Device. \n"
-            " \n"
-            "Picks which gamepad to use for user N. \n"
-            "The name of the pad is available."
-            );
-   else if (!strcmp(label, "input_bind_device_type"))
-      snprintf(s, len,
-            " -- Input Device Type. \n"
-            " \n"
-            "Picks which device type to use. This is \n"
-            "relevant for the libretro core itself."
-            );
    else
       snprintf(s, len,
             "-- No info on this item is available. --\n");

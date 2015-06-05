@@ -20,6 +20,24 @@
 extern "C" {
 #endif
 
+#define MENU_LABEL_AUDIO_DEVICE                                                0x2574eac6U
+
+#define MENU_LABEL_ENABLE_HOTKEY                                               0xc04037bfU
+#define MENU_LABEL_DISK_EJECT_TOGGLE                                           0x49633fbbU
+#define MENU_LABEL_DISK_NEXT                                                   0xeeaf6c6eU
+#define MENU_LABEL_GRAB_MOUSE_TOGGLE                                           0xb2869aaaU
+#define MENU_LABEL_MENU_TOGGLE                                                 0xfb22e3dbU
+#define MENU_LABEL_STATE_SLOT_DECREASE                                         0xe48b8082U
+#define MENU_LABEL_STATE_SLOT_INCREASE                                         0x36a0cbb0U
+
+#define MENU_LABEL_LIBRETRO_LOG_LEVEL                                          0x57971ac0U
+
+#define MENU_LABEL_INPUT_BIND_DEVICE_ID                                        0xd1ea94ecU
+#define MENU_LABEL_INPUT_BIND_DEVICE_TYPE                                      0xf6e9f041U
+
+#define MENU_LABEL_AUTOSAVE_INTERVAL                                           0xecc87351U
+#define MENU_LABEL_CONFIG_SAVE_ON_EXIT                                         0x79b590feU
+
 #define MENU_LABEL_INPUT_DRIVER                                                0x4c087840U
 #define MENU_LABEL_VIDEO_DRIVER                                                0x1805a5e7U
 #define MENU_LABEL_AUDIO_RESAMPLER_DRIVER                                      0xedcba9ecU
