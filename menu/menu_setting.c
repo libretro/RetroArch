@@ -2113,6 +2113,169 @@ static int setting_get_description_compare_label(uint32_t label_hash,
                "in the main menu."
                );
          break;
+      case MENU_LABEL_VIDEO_DRIVER:
+         if (!strcmp(settings->video.driver, "gl"))
+            snprintf(s, len,
+                  " -- OpenGL Video driver. \n"
+                  " \n"
+                  "This driver allows libretro GL cores to  \n"
+                  "be used in addition to software-rendered \n"
+                  "core implementations.\n"
+                  " \n"
+                  "Performance for software-rendered and \n"
+                  "libretro GL core implementations is \n"
+                  "dependent on your graphics card's \n"
+                  "underlying GL driver).");
+         else if (!strcmp(settings->video.driver, "sdl2"))
+            snprintf(s, len,
+                  " -- SDL 2 Video driver.\n"
+                  " \n"
+                  "This is an SDL 2 software-rendered video \n"
+                  "driver.\n"
+                  " \n"
+                  "Performance for software-rendered libretro \n"
+                  "core implementations is dependent \n"
+                  "on your platform SDL implementation.");
+         else if (!strcmp(settings->video.driver, "sdl"))
+            snprintf(s, len,
+                  " -- SDL Video driver.\n"
+                  " \n"
+                  "This is an SDL 1.2 software-rendered video \n"
+                  "driver.\n"
+                  " \n"
+                  "Performance is considered to be suboptimal. \n"
+                  "Consider using it only as a last resort.");
+         else if (!strcmp(settings->video.driver, "d3d"))
+            snprintf(s, len,
+                  " -- Direct3D Video driver. \n"
+                  " \n"
+                  "Performance for software-rendered cores \n"
+                  "is dependent on your graphic card's \n"
+                  "underlying D3D driver).");
+         else if (!strcmp(settings->video.driver, "exynos"))
+            snprintf(s, len,
+                  " -- Exynos-G2D Video Driver. \n"
+                  " \n"
+                  "This is a low-level Exynos video driver. \n"
+                  "Uses the G2D block in Samsung Exynos SoC \n"
+                  "for blit operations. \n"
+                  " \n"
+                  "Performance for software rendered cores \n"
+                  "should be optimal.");
+         else if (!strcmp(settings->video.driver, "sunxi"))
+            snprintf(s, len,
+                  " -- Sunxi-G2D Video Driver. \n"
+                  " \n"
+                  "This is a low-level Sunxi video driver. \n"
+                  "Uses the G2D block in Allwinner SoCs.");
+         else
+            snprintf(s, len,
+                  " -- Current Video driver.");
+         break;
+      case MENU_LABEL_AUDIO_DSP_PLUGIN:
+         snprintf(s, len,
+               " -- Audio DSP plugin.\n"
+               " Processes audio before it's sent to \n"
+               "the driver."
+               );
+         break;
+      case MENU_LABEL_AUDIO_RESAMPLER_DRIVER:
+         if (!strcmp(settings->audio.resampler, "sinc"))
+            snprintf(s, len,
+                  " -- Windowed SINC implementation.");
+         else if (!strcmp(settings->audio.resampler, "CC"))
+            snprintf(s, len,
+                  " -- Convoluted Cosine implementation.");
+         break;
+      case MENU_LABEL_VIDEO_SHADER_PRESET:
+         snprintf(s, len,
+               " -- Load Shader Preset. \n"
+               " \n"
+               " Load a "
+#ifdef HAVE_CG
+               "Cg"
+#endif
+#ifdef HAVE_GLSL
+#ifdef HAVE_CG
+               "/"
+#endif
+               "GLSL"
+#endif
+#ifdef HAVE_HLSL
+#if defined(HAVE_CG) || defined(HAVE_HLSL)
+               "/"
+#endif
+               "HLSL"
+#endif
+               " preset directly. \n"
+               "The menu shader menu is updated accordingly. \n"
+               " \n"
+               "If the CGP uses scaling methods which are not \n"
+               "simple, (i.e. source scaling, same scaling \n"
+               "factor for X/Y), the scaling factor displayed \n"
+               "in the menu might not be correct."
+               );
+         break;
+      case MENU_LABEL_VIDEO_SHADER_SCALE_PASS:
+         snprintf(s, len,
+               " -- Scale for this pass. \n"
+               " \n"
+               "The scale factor accumulates, i.e. 2x \n"
+               "for first pass and 2x for second pass \n"
+               "will give you a 4x total scale. \n"
+               " \n"
+               "If there is a scale factor for last \n"
+               "pass, the result is stretched to \n"
+               "screen with the filter specified in \n"
+               "'Default Filter'. \n"
+               " \n"
+               "If 'Don't Care' is set, either 1x \n"
+               "scale or stretch to fullscreen will \n"
+               "be used depending if it's not the last \n"
+               "pass or not."
+               );
+         break;
+      case MENU_LABEL_VIDEO_SHADER_NUM_PASSES:
+         snprintf(s, len,
+               " -- Shader Passes. \n"
+               " \n"
+               "RetroArch allows you to mix and match various \n"
+               "shaders with arbitrary shader passes, with \n"
+               "custom hardware filters and scale factors. \n"
+               " \n"
+               "This option specifies the number of shader \n"
+               "passes to use. If you set this to 0, and use \n"
+               "Apply Shader Changes, you use a 'blank' shader. \n"
+               " \n"
+               "The Default Filter option will affect the \n"
+               "stretching filter.");
+         break;
+      case MENU_LABEL_VIDEO_SHADER_PARAMETERS:
+         snprintf(s, len,
+               "-- Shader Parameters. \n"
+               " \n"
+               "Modifies current shader directly. Will not be \n"
+               "saved to CGP/GLSLP preset file.");
+         break;
+      case MENU_LABEL_VIDEO_SHADER_PRESET_PARAMETERS:
+         snprintf(s, len,
+               "-- Shader Preset Parameters. \n"
+               " \n"
+               "Modifies shader preset currently in menu."
+               );
+         break;
+      case MENU_LABEL_VIDEO_SHADER_PASS:
+         snprintf(s, len,
+               " -- Path to shader. \n"
+               " \n"
+               "All shaders must be of the same \n"
+               "type (i.e. CG, GLSL or HLSL). \n"
+               " \n"
+               "Set Shader Directory to set where \n"
+               "the browser starts to look for \n"
+               "shaders."
+               );
+         break;
       default:
          return -1;
    }
@@ -2141,84 +2304,7 @@ int setting_get_description(const char *label, char *s,
    if (setting_get_description_compare_label(label_hash, settings, s, len) == 0)
       return 0;
 
-   else if (!strcmp(label, "audio_resampler_driver"))
-   {
-      if (!strcmp(settings->audio.resampler, "sinc"))
-         snprintf(s, len,
-               " -- Windowed SINC implementation.");
-      else if (!strcmp(settings->audio.resampler, "CC"))
-         snprintf(s, len,
-               " -- Convoluted Cosine implementation.");
-   }
-   else if (!strcmp(label, "video_driver"))
-   {
-      if (!strcmp(settings->video.driver, "gl"))
-         snprintf(s, len,
-               " -- OpenGL Video driver. \n"
-               " \n"
-               "This driver allows libretro GL cores to  \n"
-               "be used in addition to software-rendered \n"
-               "core implementations.\n"
-               " \n"
-               "Performance for software-rendered and \n"
-               "libretro GL core implementations is \n"
-               "dependent on your graphics card's \n"
-               "underlying GL driver).");
-      else if (!strcmp(settings->video.driver, "sdl2"))
-         snprintf(s, len,
-               " -- SDL 2 Video driver.\n"
-               " \n"
-               "This is an SDL 2 software-rendered video \n"
-               "driver.\n"
-               " \n"
-               "Performance for software-rendered libretro \n"
-               "core implementations is dependent \n"
-               "on your platform SDL implementation.");
-      else if (!strcmp(settings->video.driver, "sdl"))
-         snprintf(s, len,
-               " -- SDL Video driver.\n"
-               " \n"
-               "This is an SDL 1.2 software-rendered video \n"
-               "driver.\n"
-               " \n"
-               "Performance is considered to be suboptimal. \n"
-               "Consider using it only as a last resort.");
-      else if (!strcmp(settings->video.driver, "d3d"))
-         snprintf(s, len,
-               " -- Direct3D Video driver. \n"
-               " \n"
-               "Performance for software-rendered cores \n"
-               "is dependent on your graphic card's \n"
-               "underlying D3D driver).");
-      else if (!strcmp(settings->video.driver, "exynos"))
-         snprintf(s, len,
-               " -- Exynos-G2D Video Driver. \n"
-               " \n"
-               "This is a low-level Exynos video driver. \n"
-               "Uses the G2D block in Samsung Exynos SoC \n"
-               "for blit operations. \n"
-               " \n"
-               "Performance for software rendered cores \n"
-               "should be optimal.");
-      else if (!strcmp(settings->video.driver, "sunxi"))
-         snprintf(s, len,
-               " -- Sunxi-G2D Video Driver. \n"
-               " \n"
-               "This is a low-level Sunxi video driver. \n"
-               "Uses the G2D block in Allwinner SoCs.");
-      else
-         snprintf(s, len,
-               " -- Current Video driver.");
-   }
-   else if (!strcmp(label, "audio_dsp_plugin"))
-   {
-      snprintf(s, len,
-            " -- Audio DSP plugin.\n"
-            " Processes audio before it's sent to \n"
-            "the driver."
-            );
-   }
-   else if (!strcmp(label, "libretro_dir_path"))
+   if (!strcmp(label, "libretro_dir_path"))
    {
       snprintf(s, len,
             " -- Core Directory. \n"
@@ -2722,81 +2808,6 @@ int setting_get_description(const char *label, char *s,
             );
 
    }
-   else if (!strcmp(label, "video_shader_preset")) 
-   {
-      snprintf(s, len,
-            " -- Load Shader Preset. \n"
-            " \n"
-            " Load a "
-#ifdef HAVE_CG
-            "Cg"
-#endif
-#ifdef HAVE_GLSL
-#ifdef HAVE_CG
-            "/"
-#endif
-            "GLSL"
-#endif
-#ifdef HAVE_HLSL
-#if defined(HAVE_CG) || defined(HAVE_HLSL)
-            "/"
-#endif
-            "HLSL"
-#endif
-            " preset directly. \n"
-            "The menu shader menu is updated accordingly. \n"
-            " \n"
-            "If the CGP uses scaling methods which are not \n"
-            "simple, (i.e. source scaling, same scaling \n"
-            "factor for X/Y), the scaling factor displayed \n"
-            "in the menu might not be correct."
-            );
-   }
-   else if (!strcmp(label, "video_shader_num_passes")) 
-   {
-      snprintf(s, len,
-            " -- Shader Passes. \n"
-            " \n"
-            "RetroArch allows you to mix and match various \n"
-            "shaders with arbitrary shader passes, with \n"
-            "custom hardware filters and scale factors. \n"
-            " \n"
-            "This option specifies the number of shader \n"
-            "passes to use. If you set this to 0, and use \n"
-            "Apply Shader Changes, you use a 'blank' shader. \n"
-            " \n"
-            "The Default Filter option will affect the \n"
-            "stretching filter.");
-   }
-   else if (!strcmp(label, "video_shader_parameters"))
-   {
-      snprintf(s, len,
-            "-- Shader Parameters. \n"
-            " \n"
-            "Modifies current shader directly. Will not be \n"
-            "saved to CGP/GLSLP preset file.");
-   }
-   else if (!strcmp(label, "video_shader_preset_parameters"))
-   {
-      snprintf(s, len,
-            "-- Shader Preset Parameters. \n"
-            " \n"
-            "Modifies shader preset currently in menu."
-            );
-   }
-   else if (!strcmp(label, "video_shader_pass"))
-   {
-      snprintf(s, len,
-            " -- Path to shader. \n"
-            " \n"
-            "All shaders must be of the same \n"
-            "type (i.e. CG, GLSL or HLSL). \n"
-            " \n"
-            "Set Shader Directory to set where \n"
-            "the browser starts to look for \n"
-            "shaders."
-            );
-   }
    else if (!strcmp(label, "video_shader_filter_pass"))
    {
       snprintf(s, len,
@@ -2804,26 +2815,6 @@ int setting_get_description(const char *label, char *s,
             " \n"
             "If 'Don't Care' is set, 'Default \n"
             "Filter' will be used."
-            );
-   }
-   else if (!strcmp(label, "video_shader_scale_pass"))
-   {
-      snprintf(s, len,
-            " -- Scale for this pass. \n"
-            " \n"
-            "The scale factor accumulates, i.e. 2x \n"
-            "for first pass and 2x for second pass \n"
-            "will give you a 4x total scale. \n"
-            " \n"
-            "If there is a scale factor for last \n"
-            "pass, the result is stretched to \n"
-            "screen with the filter specified in \n"
-            "'Default Filter'. \n"
-            " \n"
-            "If 'Don't Care' is set, either 1x \n"
-            "scale or stretch to fullscreen will \n"
-            "be used depending if it's not the last \n"
-            "pass or not."
             );
    }
    else if (

@@ -21,6 +21,8 @@ extern "C" {
 #endif
 
 #define MENU_LABEL_INPUT_DRIVER                                                0x4c087840U
+#define MENU_LABEL_VIDEO_DRIVER                                                0x1805a5e7U
+#define MENU_LABEL_AUDIO_RESAMPLER_DRIVER                                      0xedcba9ecU
 
 #define MENU_LABEL_RDB_ENTRY_PUBLISHER                                         0x4d7bcdfbU
 #define MENU_LABEL_RDB_ENTRY_DEVELOPER                                         0x06f61093U
