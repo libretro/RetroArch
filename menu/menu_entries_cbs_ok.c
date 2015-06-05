@@ -1401,26 +1401,32 @@ static int action_ok_video_resolution(const char *path,
    return 0;
 }
 
-static int is_rdb_entry(const char *label)
+static int is_rdb_entry(uint32_t hash)
 {
-   return (
-         !(strcmp(label, "rdb_entry_publisher")) ||
-         !(strcmp(label, "rdb_entry_developer")) ||
-         !(strcmp(label, "rdb_entry_origin")) ||
-         !(strcmp(label, "rdb_entry_franchise")) ||
-         !(strcmp(label, "rdb_entry_enhancement_hw")) ||
-         !(strcmp(label, "rdb_entry_esrb_rating")) ||
-         !(strcmp(label, "rdb_entry_bbfc_rating")) ||
-         !(strcmp(label, "rdb_entry_elspa_rating")) ||
-         !(strcmp(label, "rdb_entry_pegi_rating")) ||
-         !(strcmp(label, "rdb_entry_cero_rating")) ||
-         !(strcmp(label, "rdb_entry_edge_magazine_rating")) ||
-         !(strcmp(label, "rdb_entry_edge_magazine_issue")) ||
-         !(strcmp(label, "rdb_entry_famitsu_magazine_rating")) ||
-         !(strcmp(label, "rdb_entry_releasemonth")) ||
-         !(strcmp(label, "rdb_entry_releaseyear")) ||
-         !(strcmp(label, "rdb_entry_max_users"))
-         );
+   switch (hash)
+   {
+      case MENU_LABEL_RDB_ENTRY_PUBLISHER:
+      case MENU_LABEL_RDB_ENTRY_DEVELOPER:
+      case MENU_LABEL_RDB_ENTRY_ORIGIN:
+      case MENU_LABEL_RDB_ENTRY_FRANCHISE:
+      case MENU_LABEL_RDB_ENTRY_ENHANCEMENT_HW:
+      case MENU_LABEL_RDB_ENTRY_ESRB_RATING:
+      case MENU_LABEL_RDB_ENTRY_BBFC_RATING:
+      case MENU_LABEL_RDB_ENTRY_ELSPA_RATING:
+      case MENU_LABEL_RDB_ENTRY_PEGI_RATING:
+      case MENU_LABEL_RDB_ENTRY_CERO_RATING:
+      case MENU_LABEL_RDB_ENTRY_EDGE_MAGAZINE_RATING:
+      case MENU_LABEL_RDB_ENTRY_EDGE_MAGAZINE_ISSUE:
+      case MENU_LABEL_RDB_ENTRY_FAMITSU_MAGAZINE_RATING:
+      case MENU_LABEL_RDB_ENTRY_RELEASE_MONTH:
+      case MENU_LABEL_RDB_ENTRY_RELEASE_YEAR:
+      case MENU_LABEL_RDB_ENTRY_MAX_USERS:
+         break;
+      default:
+         return -1;
+   }
+
+   return 0;
 }
 
 static int menu_entries_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
@@ -1715,7 +1721,7 @@ void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
 
    cbs->action_ok = action_ok_lookup_setting;
 
-   if (elem0[0] != '\0' && is_rdb_entry(elem0))
+   if (elem0[0] != '\0' && (is_rdb_entry(hash) == 0))
    {
       cbs->action_ok = action_ok_rdb_entry_submenu;
       return;
