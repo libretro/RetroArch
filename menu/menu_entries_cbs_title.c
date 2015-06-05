@@ -78,435 +78,235 @@ static int action_get_title_default(const char *path, const char *label,
 
    switch (hash)
    {
-   case MENU_LABEL_DEFERRED_DATABASE_MANAGER_LIST:
-      if (!strcmp(label, "deferred_database_manager_list"))
+      case MENU_LABEL_DEFERRED_DATABASE_MANAGER_LIST:
          snprintf(s, len, "DATABASE SELECTION - %s", (elem0_path[0] != '\0') ? path_basename(elem0_path) : "");
-      break;
-   case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST:
-      if (!strcmp(label, "deferred_cursor_manager_list"))
+         break;
+      case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST:
          snprintf(s, len, "DATABASE CURSOR LIST - %s", (elem0_path[0] != '\0') ? path_basename(elem0_path) : "");
-      break;
-   case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_DEVELOPER:
-      if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_developer"))
+         break;
+      case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_DEVELOPER:
          snprintf(s, len, "DATABASE CURSOR LIST (FILTER: DEVELOPER - %s)", elem0_path);
-      break;
-   case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_PUBLISHER:
-      if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_publisher"))
+         break;
+      case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_PUBLISHER:
          snprintf(s, len, "DATABASE CURSOR LIST (FILTER: PUBLISHER - %s)", elem0_path);
-      break;
-   case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_ORIGIN:
-      if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_origin"))
+         break;
+      case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_ORIGIN:
          snprintf(s, len, "DATABASE CURSOR LIST (FILTER: ORIGIN - %s)", elem0_path);
-      break;
-   case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_FRANCHISE:
-      if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_franchise"))
+         break;
+      case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_FRANCHISE:
          snprintf(s, len, "DATABASE CURSOR LIST (FILTER: FRANCHISE - %s)", elem0_path);
-      break;
-   case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_EDGE_MAGAZINE_RATING:
-      if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_edge_magazine_rating"))
+         break;
+      case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_EDGE_MAGAZINE_RATING:
          snprintf(s, len, "DATABASE CURSOR LIST (FILTER: EDGE MAGAZINE RATING - %s)", elem0_path);
-      break;
-   case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_EDGE_MAGAZINE_ISSUE:
-      if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_edge_magazine_issue"))
+         break;
+      case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_EDGE_MAGAZINE_ISSUE:
          snprintf(s, len, "DATABASE CURSOR LIST (FILTER: EDGE MAGAZINE ISSUE - %s)", elem0_path);
-      break;
-   case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_RELEASEMONTH:
-      if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_releasemonth"))
+         break;
+      case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_RELEASEMONTH:
          snprintf(s, len, "DATABASE CURSOR LIST (FILTER: RELEASEDATE BY MONTH - %s)", elem0_path);
-      break;
-   case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_RELEASEYEAR:
-      if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_releaseyear"))
+         break;
+      case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_RELEASEYEAR:
          snprintf(s, len, "DATABASE CURSOR LIST (FILTER: RELEASEDATE BY YEAR - %s)", elem0_path);
-      break;
-   case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_ESRB_RATING:
-      if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_esrb_rating"))
+         break;
+      case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_ESRB_RATING:
          snprintf(s, len, "DATABASE CURSOR LIST (FILTER: ESRB RATING - %s)", elem0_path);
-      break;
-   case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_ELSPA_RATING:
-      if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_elspa_rating"))
+         break;
+      case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_ELSPA_RATING:
          snprintf(s, len, "DATABASE CURSOR LIST (FILTER: ELSPA RATING - %s)", elem0_path);
-      break;
-   case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_PEGI_RATING:
-      if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_pegi_rating"))
+         break;
+      case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_PEGI_RATING:
          snprintf(s, len, "DATABASE CURSOR LIST (FILTER: PEGI RATING - %s)", elem0_path);
-      break;
-   case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_CERO_RATING:
-      if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_cero_rating"))
+         break;
+      case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_CERO_RATING:
          snprintf(s, len, "DATABASE CURSOR LIST (FILTER: CERO RATING - %s)", elem0_path);
-      break;
-   case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_BBFC_RATING:
-      if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_bbfc_rating"))
+         break;
+      case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_BBFC_RATING:
          snprintf(s, len, "DATABASE CURSOR LIST (FILTER: BBFC RATING - %s)", elem0_path);
-      break;
-   case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_MAX_USERS:
-      if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_max_users"))
+         break;
+      case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_MAX_USERS:
          snprintf(s, len, "DATABASE CURSOR LIST (FILTER: MAX USERS - %s)", elem0_path);
-      break;
-   case MENU_LABEL_DEFERRED_RDB_ENTRY_DETAIL:
-      if (!strcmp(label, "deferred_rdb_entry_detail"))
+         break;
+      case MENU_LABEL_DEFERRED_RDB_ENTRY_DETAIL:
          snprintf(s, len, "DATABASE INFO: %s", elem1);
-      break;
-   case MENU_LABEL_DEFERRED_CORE_LIST:
-      if (!strcmp(label, "deferred_core_list"))
+         break;
+      case MENU_LABEL_DEFERRED_CORE_LIST:
          snprintf(s, len, "DETECTED CORES %s", path);
-      break;
-   case MENU_LABEL_CONFIGURATIONS:
-      if (!strcmp(label, "configurations"))
+         break;
+      case MENU_LABEL_CONFIGURATIONS:
          snprintf(s, len, "CONFIG %s", path);
-      break;
-   case MENU_LABEL_DISK_IMAGE_APPEND:
-      if (!strcmp(label, "disk_image_append"))
+         break;
+      case MENU_LABEL_DISK_IMAGE_APPEND:
          snprintf(s, len, "DISK APPEND %s", path);
-      break;
-   case MENU_LABEL_PERFORMANCE_COUNTERS:
-      if (!strcmp(label, "performance_counters"))
-      {
-      is_performance_counters:
+         break;
+      case MENU_LABEL_PERFORMANCE_COUNTERS:
+      case MENU_LABEL_CORE_LIST:
+      case MENU_LABEL_MANAGEMENT:
+      case MENU_LABEL_OPTIONS:
+      case MENU_LABEL_SETTINGS:
+      case MENU_LABEL_FRONTEND_COUNTERS:
+      case MENU_LABEL_CORE_COUNTERS:
+      case MENU_LABEL_HISTORY_LIST:
+      case MENU_LABEL_INFO_SCREEN:
+      case MENU_LABEL_SYSTEM_INFORMATION:
+      case MENU_LABEL_CORE_INFORMATION:
+      case MENU_LABEL_VIDEO_SHADER_PARAMETERS:
+      case MENU_LABEL_VIDEO_SHADER_PRESET_PARAMETERS:
+      case MENU_LABEL_DISK_OPTIONS:
+      case MENU_LABEL_CORE_OPTIONS:
+      case MENU_LABEL_SHADER_OPTIONS:
+      case MENU_LABEL_VIDEO_OPTIONS:
+      case MENU_LABEL_CORE_CHEAT_OPTIONS:
+      case MENU_LABEL_CORE_INPUT_REMAPPING_OPTIONS:
+      case MENU_LABEL_DATABASE_MANAGER_LIST:
+      case MENU_LABEL_CURSOR_MANAGER_LIST:
+      case MENU_LABEL_DEFERRED_CORE_UPDATER_LIST:
          sanitize_to_string(s, label, len);
-      }
-      break;
-   case MENU_LABEL_CORE_LIST:
-      if (!strcmp(label, "core_list"))
-         goto is_performance_counters;
-      break;
-   case MENU_LABEL_MANAGEMENT:
-      if (!strcmp(label, "management"))
-         goto is_performance_counters;
-      break;
-   case MENU_LABEL_OPTIONS:
-      if (!strcmp(label, "options"))
-         goto is_performance_counters;
-      break;
-   case MENU_LABEL_SETTINGS:
-      if (!strcmp(label, "settings"))
-         goto is_performance_counters;
-      break;
-   case MENU_LABEL_FRONTEND_COUNTERS:
-      if (!strcmp(label, "frontend_counters"))
-         goto is_performance_counters;
-      break;
-   case MENU_LABEL_CORE_COUNTERS:
-      if (!strcmp(label, "core_counters"))
-         goto is_performance_counters;
-      break;
-   case MENU_LABEL_HISTORY_LIST:
-      if (!strcmp(label, "history_list"))
-         goto is_performance_counters;
-      break;
-   case MENU_LABEL_INFO_SCREEN:
-      if (!strcmp(label, "info_screen"))
-         goto is_performance_counters;
-      break;
-   case MENU_LABEL_SYSTEM_INFORMATION:
-      if (!strcmp(label, "system_information"))
-         goto is_performance_counters;
-      break;
-   case MENU_LABEL_CORE_INFORMATION:
-      if (!strcmp(label, "core_information"))
-         goto is_performance_counters;
-      break;
-   case MENU_LABEL_VIDEO_SHADER_PARAMETERS:
-      if (!strcmp(label, "video_shader_parameters"))
-         goto is_performance_counters;
-      break;
-   case MENU_LABEL_VIDEO_SHADER_PRESET_PARAMETERS:
-      if (!strcmp(label, "video_shader_preset_parameters"))
-         goto is_performance_counters;
-      break;
-   case MENU_LABEL_DISK_OPTIONS:
-      if (!strcmp(label, "disk_options"))
-         goto is_performance_counters;
-      break;
-   case MENU_LABEL_CORE_OPTIONS:
-      if (!strcmp(label, "core_options"))
-         goto is_performance_counters;
-      break;
-   case MENU_LABEL_SHADER_OPTIONS:
-      if (!strcmp(label, "shader_options"))
-         goto is_performance_counters;
-      break;
-   case MENU_LABEL_VIDEO_OPTIONS:
-      if (!strcmp(label, "video_options"))
-         goto is_performance_counters;
-      break;
-   case MENU_LABEL_CORE_CHEAT_OPTIONS:
-      if (!strcmp(label, "core_cheat_options"))
-         goto is_performance_counters;
-      break;
-   case MENU_LABEL_CORE_INPUT_REMAPPING_OPTIONS:
-      if (!strcmp(label, "core_input_remapping_options"))
-         goto is_performance_counters;
-      break;
-   case MENU_LABEL_DATABASE_MANAGER_LIST:
-      if (!strcmp(label, "database_manager_list"))
-         goto is_performance_counters;
-      break;
-   case MENU_LABEL_CURSOR_MANAGER_LIST:
-      if (!strcmp(label, "cursor_manager_list"))
-         goto is_performance_counters;
-      break;
-   case MENU_LABEL_DEFERRED_CORE_UPDATER_LIST:
-      if (!strcmp(label, "deferred_core_updater_list"))
-         goto is_performance_counters;
-      break;
-   case MENU_LABEL_VIDEO_SHADER_PASS:
-      if (!strcmp(label, "video_shader_pass"))
+         break;
+      case MENU_LABEL_VIDEO_SHADER_PASS:
          snprintf(s, len, "SHADER %s", path);
-      break;
-   case MENU_LABEL_VIDEO_SHADER_PRESET:
-      if (!strcmp(label, "video_shader_preset"))
+         break;
+      case MENU_LABEL_VIDEO_SHADER_PRESET:
          snprintf(s, len, "SHADER PRESET %s", path);
-      break;
-   case MENU_LABEL_CHEAT_FILE_LOAD:
-      if (!strcmp(label, "cheat_file_load"))
+         break;
+      case MENU_LABEL_CHEAT_FILE_LOAD:
          snprintf(s, len, "CHEAT FILE %s", path);
-      break;
-   case MENU_LABEL_REMAP_FILE_LOAD:
-      if (!strcmp(label, "remap_file_load"))
+         break;
+      case MENU_LABEL_REMAP_FILE_LOAD:
          snprintf(s, len, "REMAP FILE %s", path);
-      break;
-   case MENU_LABEL_CUSTOM_VIEWPORT_2:
-      if (!strcmp(label, "custom_viewport_2"))
-      {
-      is_custom_viewport_2:
+         break;
+      case MENU_LABEL_CUSTOM_VIEWPORT_2:
+      case MENU_LABEL_HELP:
          snprintf(s, len, "MENU %s", path);
-      }
-      break;
-   case MENU_LABEL_HELP:
-      if (!strcmp(label, "help"))
-         goto is_custom_viewport_2;
-      break;
-   case MENU_LABEL_INPUT_OVERLAY:
-      if (!strcmp(label, "input_overlay"))
+         break;
+      case MENU_LABEL_INPUT_OVERLAY:
          snprintf(s, len, "OVERLAY %s", path);
-      break;
-   case MENU_LABEL_VIDEO_FONT_PATH:
-      if (!strcmp(label, "video_font_path"))
+         break;
+      case MENU_LABEL_VIDEO_FONT_PATH:
          snprintf(s, len, "FONT %s", path);
-      break;
-   case MENU_LABEL_VIDEO_FILTER:
-      if (!strcmp(label, "video_filter"))
+         break;
+      case MENU_LABEL_VIDEO_FILTER:
          snprintf(s, len, "FILTER %s", path);
-      break;
-   case MENU_LABEL_AUDIO_DSP_PLUGIN:
-      if (!strcmp(label, "audio_dsp_plugin"))
+         break;
+      case MENU_LABEL_AUDIO_DSP_PLUGIN:
          snprintf(s, len, "DSP FILTER %s", path);
-      break;
-   case MENU_LABEL_RGUI_BROWSER_DIRECTORY:
-      if (!strcmp(label, "rgui_browser_directory"))
+         break;
+      case MENU_LABEL_RGUI_BROWSER_DIRECTORY:
          snprintf(s, len, "BROWSER DIR %s", path);
-      break;
-   case MENU_LABEL_PLAYLIST_DIRECTORY:
-      if (!strcmp(label, "playlist_directory"))
+         break;
+      case MENU_LABEL_PLAYLIST_DIRECTORY:
          snprintf(s, len, "PLAYLIST DIR %s", path);
-      break;
-   case MENU_LABEL_CONTENT_DIRECTORY:
-      if (!strcmp(label, "content_directory"))
+         break;
+      case MENU_LABEL_CONTENT_DIRECTORY:
          snprintf(s, len, "CONTENT DIR %s", path);
-      break;
-   case MENU_LABEL_SCREENSHOT_DIRECTORY:
-      if (!strcmp(label, "screenshot_directory"))
+         break;
+      case MENU_LABEL_SCREENSHOT_DIRECTORY:
          snprintf(s, len, "SCREENSHOT DIR %s", path);
-      break;
-   case MENU_LABEL_VIDEO_SHADER_DIR:
-      if (!strcmp(label, "video_shader_dir"))
+         break;
+      case MENU_LABEL_VIDEO_SHADER_DIR:
          snprintf(s, len, "SHADER DIR %s", path);
-      break;
-   case MENU_LABEL_VIDEO_FILTER_DIR:
-      if (!strcmp(label, "video_filter_dir"))
+         break;
+      case MENU_LABEL_VIDEO_FILTER_DIR:
          snprintf(s, len, "FILTER DIR %s", path);
-      break;
-   case MENU_LABEL_AUDIO_FILTER_DIR:
-      if (!strcmp(label, "audio_filter_dir"))
+         break;
+      case MENU_LABEL_AUDIO_FILTER_DIR:
          snprintf(s, len, "DSP FILTER DIR %s", path);
-      break;
-   case MENU_LABEL_SAVESTATE_DIRECTORY:
-      if (!strcmp(label, "savestate_directory"))
+         break;
+      case MENU_LABEL_SAVESTATE_DIRECTORY:
          snprintf(s, len, "SAVESTATE DIR %s", path);
-      break;
-   case MENU_LABEL_LIBRETRO_DIR_PATH:
-      if (!strcmp(label, "libretro_dir_path"))
+         break;
+      case MENU_LABEL_LIBRETRO_DIR_PATH:
          snprintf(s, len, "LIBRETRO DIR %s", path);
-      break;
-   case MENU_LABEL_LIBRETRO_INFO_PATH:
-      if (!strcmp(label, "libretro_info_path"))
+         break;
+      case MENU_LABEL_LIBRETRO_INFO_PATH:
          snprintf(s, len, "LIBRETRO INFO DIR %s", path);
-      break;
-   case MENU_LABEL_RGUI_CONFIG_DIRECTORY:
-      if (!strcmp(label, "rgui_config_directory"))
+         break;
+      case MENU_LABEL_RGUI_CONFIG_DIRECTORY:
          snprintf(s, len, "CONFIG DIR %s", path);
-      break;
-   case MENU_LABEL_SAVEFILE_DIRECTORY:
-      if (!strcmp(label, "savefile_directory"))
+         break;
+      case MENU_LABEL_SAVEFILE_DIRECTORY:
          snprintf(s, len, "SAVEFILE DIR %s", path);
-      break;
-   case MENU_LABEL_OVERLAY_DIRECTORY:
-      if (!strcmp(label, "overlay_directory"))
+         break;
+      case MENU_LABEL_OVERLAY_DIRECTORY:
          snprintf(s, len, "OVERLAY DIR %s", path);
-      break;
-   case MENU_LABEL_SYSTEM_DIRECTORY:
-      if (!strcmp(label, "system_directory"))
+         break;
+      case MENU_LABEL_SYSTEM_DIRECTORY:
          snprintf(s, len, "SYSTEM DIR %s", path);
-      break;
-   case MENU_LABEL_ASSETS_DIRECTORY:
-      if (!strcmp(label, "assets_directory"))
+         break;
+      case MENU_LABEL_ASSETS_DIRECTORY:
          snprintf(s, len, "ASSETS DIR %s", path);
-      break;
-   case MENU_LABEL_EXTRACTION_DIRECTORY:
-      if (!strcmp(label, "extraction_directory"))
+         break;
+      case MENU_LABEL_EXTRACTION_DIRECTORY:
          snprintf(s, len, "EXTRACTION DIR %s", path);
-      break;
-   case MENU_LABEL_JOYPAD_AUTOCONFIG_DIR:
-      if (!strcmp(label, "joypad_autoconfig_dir"))
+         break;
+      case MENU_LABEL_JOYPAD_AUTOCONFIG_DIR:
          snprintf(s, len, "AUTOCONFIG DIR %s", path);
-      break;
-   case MENU_LABEL_DRIVER_SETTINGS:
-      if (!strcmp(label, "Driver Settings"))
-      {
-      is_settings_entry:
+         break;
+      case MENU_LABEL_DRIVER_SETTINGS:
+      case MENU_LABEL_CORE_SETTINGS:
+      case MENU_LABEL_CONFIGURATION_SETTINGS:
+      case MENU_LABEL_LOGGING_SETTINGS:
+      case MENU_LABEL_SAVING_SETTINGS:
+      case MENU_LABEL_REWIND_SETTINGS:
+      case MENU_LABEL_VIDEO_SETTINGS:
+      case MENU_LABEL_RECORDING_SETTINGS:
+      case MENU_LABEL_FRAME_THROTTLE_SETTINGS:
+      case MENU_LABEL_SHADER_SETTINGS:
+      case MENU_LABEL_FONT_SETTINGS:
+      case MENU_LABEL_AUDIO_SETTINGS:
+      case MENU_LABEL_INPUT_SETTINGS:
+      case MENU_LABEL_INPUT_HOTKEY_SETTINGS:
+      case MENU_LABEL_OVERLAY_SETTINGS:
+      case MENU_LABEL_ONSCREEN_KEYBOARD_OVERLAY_SETTINGS:
+      case MENU_LABEL_MENU_SETTINGS:
+      case MENU_LABEL_UI_SETTINGS:
+      case MENU_LABEL_PATCH_SETTINGS:
+      case MENU_LABEL_PLAYLIST_SETTINGS:
+      case MENU_LABEL_CORE_UPDATER_SETTINGS:
+      case MENU_LABEL_NETWORK_SETTINGS:
+      case MENU_LABEL_ARCHIVE_SETTINGS:
+      case MENU_LABEL_USER_SETTINGS:
+      case MENU_LABEL_DIRECTORY_SETTINGS:
+      case MENU_LABEL_PRIVACY_SETTINGS:
          strlcpy(s, string_to_upper(elem0), len);
          if (elem1[0] != '\0')
          {
             strlcat(s, " - ", len);
             strlcat(s, string_to_upper(elem1), len);
          }
-      }
-      break;
-   case MENU_LABEL_CORE_SETTINGS:
-      if (!strcmp(label, "Core Settings"))
-         goto is_settings_entry;
-      break;
-   case MENU_LABEL_CONFIGURATION_SETTINGS:
-      if (!strcmp(label, "Configuration Settings"))
-         goto is_settings_entry;
-      break;
-   case MENU_LABEL_LOGGING_SETTINGS:
-      if (!strcmp(label, "Logging Settings"))
-         goto is_settings_entry;
-      break;
-   case MENU_LABEL_SAVING_SETTINGS:
-      if (!strcmp(label, "Saving Settings"))
-         goto is_settings_entry;
-      break;
-   case MENU_LABEL_REWIND_SETTINGS:
-      if (!strcmp(label, "Rewind Settings"))
-         goto is_settings_entry;
-      break;
-   case MENU_LABEL_VIDEO_SETTINGS:
-      if (!strcmp(label, "Video Settings"))
-         goto is_settings_entry;
-      break;
-   case MENU_LABEL_RECORDING_SETTINGS:
-      if (!strcmp(label, "Recording Settings"))
-         goto is_settings_entry;
-      break;
-   case MENU_LABEL_FRAME_THROTTLE_SETTINGS:
-      if (!strcmp(label, "Frame Throttle Settings"))
-         goto is_settings_entry;
-      break;
-   case MENU_LABEL_SHADER_SETTINGS:
-      if (!strcmp(label, "Shader Settings"))
-         goto is_settings_entry;
-      break;
-   case MENU_LABEL_FONT_SETTINGS:
-      if (!strcmp(label, "Onscreen Display Settings"))
-         goto is_settings_entry;
-      break;
-   case MENU_LABEL_AUDIO_SETTINGS:
-      if (!strcmp(label, "Audio Settings"))
-         goto is_settings_entry;
-      break;
-   case MENU_LABEL_INPUT_SETTINGS:
-      if (!strcmp(label, "Input Settings"))
-         goto is_settings_entry;
-      break;
-   case MENU_LABEL_INPUT_HOTKEY_SETTINGS:
-      if (!strcmp(label, "Input Hotkey Settings"))
-         goto is_settings_entry;
-      break;
-   case MENU_LABEL_OVERLAY_SETTINGS:
-      if (!strcmp(label, "Overlay Settings"))
-         goto is_settings_entry;
-      break;
-   case MENU_LABEL_ONSCREEN_KEYBOARD_OVERLAY_SETTINGS:
-      if (!strcmp(label, "Onscreen Keyboard Overlay Settings"))
-         goto is_settings_entry;
-      break;
-   case MENU_LABEL_MENU_SETTINGS:
-      if (!strcmp(label, "Menu Settings"))
-         goto is_settings_entry;
-      break;
-   case MENU_LABEL_UI_SETTINGS:
-      if (!strcmp(label, "UI Settings"))
-         goto is_settings_entry;
-      break;
-   case MENU_LABEL_PATCH_SETTINGS:
-      if (!strcmp(label, "Patch Settings"))
-         goto is_settings_entry;
-      break;
-   case MENU_LABEL_PLAYLIST_SETTINGS:
-      if (!strcmp(label, "Playlist Settings"))
-         goto is_settings_entry;
-      break;
-   case MENU_LABEL_CORE_UPDATER_SETTINGS:
-      if (!strcmp(label, "Core Updater Settings"))
-         goto is_settings_entry;
-      break;
-   case MENU_LABEL_NETWORK_SETTINGS:
-      if (!strcmp(label, "Network Settings"))
-         goto is_settings_entry;
-      break;
-   case MENU_LABEL_ARCHIVE_SETTINGS:
-      if (!strcmp(label, "Archive Settings"))
-         goto is_settings_entry;
-      break;
-   case MENU_LABEL_USER_SETTINGS:
-      if (!strcmp(label, "User Settings"))
-         goto is_settings_entry;
-      break;
-   case MENU_LABEL_DIRECTORY_SETTINGS:
-      if (!strcmp(label, "Directory Settings"))
-         goto is_settings_entry;
-      break;
-   case MENU_LABEL_PRIVACY_SETTINGS:
-      if (!strcmp(label, "Privacy Settings"))
-         goto is_settings_entry;
-      break;
-   default:
-      if (menu_type == MENU_SETTINGS_CUSTOM_VIEWPORT ||
-          menu_type == MENU_SETTINGS)
-      {
-         goto is_custom_viewport_2;
-      }
-      else if (menu_type == MENU_SETTINGS_CUSTOM_BIND ||
+         break;
+      default:
+         if (menu_type == MENU_SETTINGS_CUSTOM_VIEWPORT ||
+               menu_type == MENU_SETTINGS)
+            snprintf(s, len, "MENU %s", path);
+         else if (menu_type == MENU_SETTINGS_CUSTOM_BIND ||
                menu_type == MENU_SETTINGS_CUSTOM_BIND_KEYBOARD)
-      {
-         strlcpy(s, "INPUT SETTINGS", len);
-         if (elem1[0] != '\0')
          {
-            strlcat(s, " - ", len);
-            strlcat(s, string_to_upper(elem1), len);
+            strlcpy(s, "INPUT SETTINGS", len);
+            if (elem1[0] != '\0')
+            {
+               strlcat(s, " - ", len);
+               strlcat(s, string_to_upper(elem1), len);
+            }
          }
-      }
-      else
-      {
-         driver_t *driver = driver_get_ptr();
-
-         if (driver->menu->defer_core)
-             snprintf(s, len, "CONTENT %s", path);
          else
          {
-            global_t *global      = global_get_ptr();
-            const char *core_name = global->menu.info.library_name;
+            driver_t *driver = driver_get_ptr();
 
-            if (!core_name)
-               core_name = global->system.info.library_name;
-            if (!core_name)
-               core_name = "No Core";
-            snprintf(s, len, "CONTENT (%s) %s", core_name, path);
+            if (driver->menu->defer_core)
+               snprintf(s, len, "CONTENT %s", path);
+            else
+            {
+               global_t *global      = global_get_ptr();
+               const char *core_name = global->menu.info.library_name;
+
+               if (!core_name)
+                  core_name = global->system.info.library_name;
+               if (!core_name)
+                  core_name = "No Core";
+               snprintf(s, len, "CONTENT (%s) %s", core_name, path);
+            }
          }
-      }
-      break;
+         break;
    }
    
    return 0;
