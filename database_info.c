@@ -283,7 +283,7 @@ static int database_cursor_iterate(libretrodb_cursor_t *cur,
             db_info->md5 = bin_to_hex_alloc((uint8_t*)val->binary.buff, val->binary.len);
             break;
          default:
-            RARCH_LOG("Unknown value: %d\n", value);
+            RARCH_LOG("Unknown key: %s\n", str);
             break;
       }
    }

@@ -29,6 +29,8 @@
 
 #include "../input/input_remapping.h"
 
+#include <rhash.h>
+
 /* FIXME - Global variables, refactor */
 unsigned rdb_entry_start_game_selection_ptr;
 size_t hack_shader_pass = 0;
