@@ -1008,11 +1008,11 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
       menu_entry_t entry;
       float icon_x, icon_y;
       char name[PATH_MAX_LENGTH], value[PATH_MAX_LENGTH];
-      GLuint texture_switch = 0;
-      GLuint         icon   = 0;
-      xmb_node_t *   node   = (xmb_node_t*)file_list_get_userdata_at_offset(list, i);
-      menu_handle_t *menu   = menu_driver_get_ptr();
-      uint32_t      hash    = 0;
+      GLuint texture_switch  = 0;
+      GLuint         icon    = 0;
+      xmb_node_t *   node    = (xmb_node_t*)file_list_get_userdata_at_offset(list, i);
+      menu_handle_t *menu    = menu_driver_get_ptr();
+      uint32_t hash_label    = 0;
 
       if (!node)
          continue;
@@ -1030,33 +1030,46 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
 
       menu_entry_get(&entry, i, list, true);
 
-      hash = djb2_calculate(entry.label);
+      hash_label = djb2_calculate(entry.label);
 
       if (entry.type == MENU_FILE_CONTENTLIST_ENTRY)
          strlcpy(entry.path, path_basename(entry.path), sizeof(entry.path));
 
       icon = xmb_icon_get_type(xmb, core_node, entry.type);
 
-      if (hash == MENU_LABEL_CORE_OPTIONS)
-         icon = xmb->textures.list[XMB_TEXTURE_CORE_OPTIONS].id;
-      else if (hash == MENU_LABEL_CORE_INFORMATION)
-         icon = xmb->textures.list[XMB_TEXTURE_CORE_INFO].id;
-      else if (!strcmp(entry.label, "core_input_remapping_options"))
-         icon = xmb->textures.list[XMB_TEXTURE_INPUT_REMAPPING_OPTIONS].id;
-      else if (!strcmp(entry.label, "core_cheat_options"))
-         icon = xmb->textures.list[XMB_TEXTURE_CHEAT_OPTIONS].id;
-      else if (!strcmp(entry.label, "core_disk_options"))
-         icon = xmb->textures.list[XMB_TEXTURE_DISK_OPTIONS].id;
-      else if (!strcmp(entry.label, "savestate"))
-         icon = xmb->textures.list[XMB_TEXTURE_SAVESTATE].id;
-      else if (!strcmp(entry.label, "loadstate"))
-         icon = xmb->textures.list[XMB_TEXTURE_LOADSTATE].id;
-      else if (!strcmp(entry.label, "take_screenshot"))
-         icon = xmb->textures.list[XMB_TEXTURE_SCREENSHOT].id;
-      else if (!strcmp(entry.label, "restart_content"))
-         icon = xmb->textures.list[XMB_TEXTURE_RELOAD].id;
-      else if (!strcmp(entry.label, "resume_content"))
-         icon = xmb->textures.list[XMB_TEXTURE_RESUME].id;
+      switch (hash_label)
+      {
+         case MENU_LABEL_CORE_OPTIONS:
+            icon = xmb->textures.list[XMB_TEXTURE_CORE_OPTIONS].id;
+            break;
+         case MENU_LABEL_CORE_INFORMATION:
+            icon = xmb->textures.list[XMB_TEXTURE_CORE_INFO].id;
+            break;
+         case MENU_LABEL_CORE_INPUT_REMAPPING_OPTIONS:
+            icon = xmb->textures.list[XMB_TEXTURE_INPUT_REMAPPING_OPTIONS].id;
+            break;
+         case MENU_LABEL_CORE_CHEAT_OPTIONS:
+            icon = xmb->textures.list[XMB_TEXTURE_CHEAT_OPTIONS].id;
+            break;
+         case MENU_LABEL_DISK_OPTIONS:
+            icon = xmb->textures.list[XMB_TEXTURE_DISK_OPTIONS].id;
+            break;
+         case MENU_LABEL_SAVESTATE:
+            icon = xmb->textures.list[XMB_TEXTURE_SAVESTATE].id;
+            break;
+         case MENU_LABEL_LOADSTATE:
+            icon = xmb->textures.list[XMB_TEXTURE_LOADSTATE].id;
+            break;
+         case MENU_LABEL_TAKE_SCREENSHOT:
+            icon = xmb->textures.list[XMB_TEXTURE_SCREENSHOT].id;
+            break;
+         case MENU_LABEL_RESTART_CONTENT:
+            icon = xmb->textures.list[XMB_TEXTURE_RELOAD].id;
+            break;
+         case MENU_LABEL_RESUME_CONTENT:
+            icon = xmb->textures.list[XMB_TEXTURE_RESUME].id;
+            break;
+      }
 
 
       menu_animation_ticker_line(name, 35,
