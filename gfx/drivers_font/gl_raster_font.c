@@ -173,13 +173,13 @@ static void gl_raster_font_draw_vertices(gl_t *gl, const gl_coords_t *coords)
 }
 
 static void gl_raster_font_render_line(
-      gl_raster_t *font, const char *msg, GLfloat scale,
-      const GLfloat color[4], GLfloat pos_x, GLfloat pos_y,
-      unsigned text_align)
+      gl_raster_t *font, const char *msg, unsigned msg_len_full,
+      GLfloat scale, const GLfloat color[4], GLfloat pos_x,
+      GLfloat pos_y, unsigned text_align)
 {
    int x, y, delta_x, delta_y;
    float inv_tex_size_x, inv_tex_size_y, inv_win_width, inv_win_height;
-   unsigned i, msg_len_full, msg_len;
+   unsigned i, msg_len;
    GLfloat font_tex_coords[2 * 6 * MAX_MSG_LEN_CHUNK];
    GLfloat font_vertex[2 * 6 * MAX_MSG_LEN_CHUNK]; 
    GLfloat font_color[4 * 6 * MAX_MSG_LEN_CHUNK];
@@ -190,7 +190,6 @@ static void gl_raster_font_render_line(
    if (!gl)
       return;
 
-   msg_len_full   = strlen(msg);
    msg_len        = min(msg_len_full, MAX_MSG_LEN_CHUNK);
 
    x              = roundf(pos_x * gl->vp.width);
@@ -270,28 +269,32 @@ static void gl_raster_font_render_message(
     //If the font height is not supported just draw as usual
     if (!font->font_driver->get_line_height)
     {
-        gl_raster_font_render_line(font, msg, scale, color, pos_x, pos_y, text_align);
+        gl_raster_font_render_line(font, msg, strlen(msg), scale, color, pos_x, pos_y, text_align);
         return;
     }
     
-    char* copy = strdup(msg);
-    
-    char* next_line = strtok(copy, "\n");
     int lines = 0;
-    
     float line_height = scale * 1/(float)font->font_driver->get_line_height(font->font_data);
     
-    while (next_line != NULL) 
+    for (;;)
     {
-        //Draw the line
-        gl_raster_font_render_line(font, next_line, scale, color, pos_x, pos_y - (float)lines*line_height, text_align);
+        const char *delim = strchr(msg, '\n');
         
-        //Continue to split
-        next_line = strtok(NULL, "\n");
-        lines++;
+        //Draw the line
+        if (delim)
+        {
+            unsigned msg_len = delim - msg;
+            gl_raster_font_render_line(font, msg, msg_len, scale, color, pos_x, pos_y - (float)lines*line_height, text_align);
+            msg += msg_len + 1;
+            lines++;
+        }
+        else
+        {
+            unsigned msg_len = strlen(msg);
+            gl_raster_font_render_line(font, msg, msg_len, scale, color, pos_x, pos_y - (float)lines*line_height, text_align);
+            break;
+        }
     }
-    
-    free(copy);
 }
 
 static void gl_raster_font_setup_viewport(gl_raster_t *font, bool full_screen)
