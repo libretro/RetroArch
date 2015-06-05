@@ -20,6 +20,38 @@
 extern "C" {
 #endif
 
+#define MENU_LABEL_LOG_VERBOSITY                                               0x6648c96dU
+
+#define MENU_LABEL_AUDIO_VOLUME                                                0x502173aeU
+#define MENU_LABEL_AUDIO_LATENCY                                               0x32695386U
+
+#define MENU_LABEL_NETPLAY_DELAY_FRAMES                                        0x86b2c48dU
+#define MENU_LABEL_NETPLAY_SPECTATOR_MODE_ENABLE                               0x6f9a9440U
+#define MENU_LABEL_NETPLAY_IP_ADDRESS                                          0xac9a53ffU
+#define MENU_LABEL_NETPLAY_MODE                                                0xc1cf6506U
+
+#define MENU_LABEL_PAL60_ENABLE                                                0x62bc416eU
+#define MENU_LABEL_SYSTEM_BGM_ENABLE                                           0x9287a1c5U
+
+#define MENU_LABEL_FASTFORWARD_RATIO                                           0x3a0c2706U
+#define MENU_LABEL_VIDEO_MONITOR_INDEX                                         0xb6fcdc9aU
+#define MENU_LABEL_VIDEO_REFRESH_RATE_AUTO                                     0x9addb6cdU
+#define MENU_LABEL_VIDEO_ROTATION                                              0x4ce6882bU
+#define MENU_LABEL_VIDEO_SCALE                                                 0x09835d63U
+#define MENU_LABEL_VIDEO_SMOOTH                                                0x3aabbb35U
+#define MENU_LABEL_VIDEO_CROP_OVERSCAN                                         0x861f7a2fU
+#define MENU_LABEL_VIDEO_SCALE_INTEGER                                         0x65c4b090U
+
+#define MENU_LABEL_AUDIO_RATE_CONTROL_DELTA                                    0xc8bde3cbU
+#define MENU_LABEL_AUDIO_MAX_TIMING_SKEW                                       0x4c96f75cU
+
+#define MENU_LABEL_INPUT_PLAYER1_JOYPAD_INDEX                                  0xfad6ab2fU
+#define MENU_LABEL_INPUT_PLAYER2_JOYPAD_INDEX                                  0x3616e4d0U
+#define MENU_LABEL_INPUT_PLAYER3_JOYPAD_INDEX                                  0x71571e71U
+#define MENU_LABEL_INPUT_PLAYER4_JOYPAD_INDEX                                  0xac975812U
+#define MENU_LABEL_INPUT_PLAYER5_JOYPAD_INDEX                                  0xe7d791b3U
+
+#define MENU_LABEL_LIBRETRO_DIR_PATH                                           0x1af1eb72U
 
 #define MENU_LABEL_AUDIO_DEVICE                                                0x2574eac6U
 
@@ -70,6 +102,9 @@ extern "C" {
 #define MENU_VALUE_INPUT_SETTINGS                                              0xddd30846U
 #define MENU_VALUE_HORIZONTAL_MENU                                             0x35761704U
 #define MENU_VALUE_MAIN_MENU                                                   0x1625971fU   
+
+#define MENU_VALUE_TRUE                                                        0x7c9e9fe5U
+#define MENU_VALUE_FALSE                                                       0x0f6bcef0U
 
 #define MENU_LABEL_CONTENT_ACTIONS                                             0xa0d76970U
 #define MENU_LABEL_DETECT_CORE_LIST                                            0xaa07c341U

@@ -2462,6 +2462,92 @@ static int setting_get_description_compare_label(uint32_t label_hash,
                "This will take a performance hit, \n"
                "so it is disabled by default.");
          break;
+      case MENU_LABEL_LIBRETRO_DIR_PATH:
+         snprintf(s, len,
+               " -- Core Directory. \n"
+               " \n"
+               "A directory for where to search for \n"
+               "libretro core implementations.");
+         break;
+      case MENU_LABEL_VIDEO_REFRESH_RATE_AUTO:
+         snprintf(s, len,
+               " -- Refresh Rate Auto.\n"
+               " \n"
+               "The accurate refresh rate of our monitor (Hz).\n"
+               "This is used to calculate audio input rate with \n"
+               "the formula: \n"
+               " \n"
+               "audio_input_rate = game input rate * display \n"
+               "refresh rate / game refresh rate\n"
+               " \n"
+               "If the implementation does not report any \n"
+               "values, NTSC defaults will be assumed for \n"
+               "compatibility.\n"
+               " \n"
+               "This value should stay close to 60Hz to avoid \n"
+               "large pitch changes. If your monitor does \n"
+               "not run at 60Hz, or something close to it, \n"
+               "disable VSync, and leave this at its default.");
+         break;
+      case MENU_LABEL_VIDEO_ROTATION:
+         snprintf(s, len,
+               " -- Forces a certain rotation \n"
+               "of the screen.\n"
+               " \n"
+               "The rotation is added to rotations which\n"
+               "the libretro core sets (see Video Allow\n"
+               "Rotate).");
+         break;
+      case MENU_LABEL_VIDEO_SCALE:
+         snprintf(s, len,
+               " -- Fullscreen resolution.\n"
+               " \n"
+               "Resolution of 0 uses the \n"
+               "resolution of the environment.\n");
+         break;
+      case MENU_LABEL_FASTFORWARD_RATIO:
+         snprintf(s, len,
+               " -- Fastforward ratio."
+               " \n"
+               "The maximum rate at which content will\n"
+               "be run when using fast forward.\n"
+               " \n"
+               " (E.g. 5.0 for 60 fps content => 300 fps \n"
+               "cap).\n"
+               " \n"
+               "RetroArch will go to sleep to ensure that \n"
+               "the maximum rate will not be exceeded.\n"
+               "Do not rely on this cap to be perfectly \n"
+               "accurate.");
+         break;
+      case MENU_LABEL_VIDEO_MONITOR_INDEX:
+         snprintf(s, len,
+               " -- Which monitor to prefer.\n"
+               " \n"
+               "0 (default) means no particular monitor \n"
+               "is preferred, 1 and up (1 being first \n"
+               "monitor), suggests RetroArch to use that \n"
+               "particular monitor.");
+         break;
+      case MENU_LABEL_VIDEO_CROP_OVERSCAN:
+         snprintf(s, len,
+               " -- Forces cropping of overscanned \n"
+               "frames.\n"
+               " \n"
+               "Exact behavior of this option is \n"
+               "core-implementation specific.");
+         break;
+      case MENU_LABEL_VIDEO_SCALE_INTEGER:
+         snprintf(s, len,
+               " -- Only scales video in integer \n"
+               "steps.\n"
+               " \n"
+               "The base size depends on system-reported \n"
+               "geometry and aspect ratio.\n"
+               " \n"
+               "If Force Aspect is not set, X/Y will be \n"
+               "integer scaled independently.");
+         break;
       default:
          return -1;
    }
@@ -2490,15 +2576,7 @@ int setting_get_description(const char *label, char *s,
    if (setting_get_description_compare_label(label_hash, settings, s, len) == 0)
       return 0;
 
-   if (!strcmp(label, "libretro_dir_path"))
-   {
-      snprintf(s, len,
-            " -- Core Directory. \n"
-            " \n"
-            "A directory for where to search for \n"
-            "libretro core implementations.");
-   }
-   else if (!strcmp(label, "video_disable_composition"))
+   if (!strcmp(label, "video_disable_composition"))
    {
       snprintf(s, len,
             "-- Forcibly disable composition.\n"
@@ -2541,14 +2619,6 @@ int setting_get_description(const char *label, char *s,
       snprintf(s, len,
             " -- Load up a specific config file \n"
             "based on the core being used.\n");
-   }
-   else if (!strcmp(label, "video_scale"))
-   {
-      snprintf(s, len,
-            " -- Fullscreen resolution.\n"
-            " \n"
-            "Resolution of 0 uses the \n"
-            "resolution of the environment.\n");
    }
    else if (!strcmp(label, "video_vsync"))
    {
@@ -2644,47 +2714,6 @@ int setting_get_description(const char *label, char *s,
             "possible cost of latency and more video \n"
             "stuttering.");
    }
-   else if (!strcmp(label, "video_scale_integer"))
-   {
-      snprintf(s, len,
-            " -- Only scales video in integer \n"
-            "steps.\n"
-            " \n"
-            "The base size depends on system-reported \n"
-            "geometry and aspect ratio.\n"
-            " \n"
-            "If Force Aspect is not set, X/Y will be \n"
-            "integer scaled independently.");
-   }
-   else if (!strcmp(label, "video_crop_overscan"))
-   {
-      snprintf(s, len,
-            " -- Forces cropping of overscanned \n"
-            "frames.\n"
-            " \n"
-            "Exact behavior of this option is \n"
-            "core-implementation specific.");
-   }
-   else if (!strcmp(label, "video_monitor_index"))
-   {
-      snprintf(s, len,
-            " -- Which monitor to prefer.\n"
-            " \n"
-            "0 (default) means no particular monitor \n"
-            "is preferred, 1 and up (1 being first \n"
-            "monitor), suggests RetroArch to use that \n"
-            "particular monitor.");
-   }
-   else if (!strcmp(label, "video_rotation"))
-   {
-      snprintf(s, len,
-            " -- Forces a certain rotation \n"
-            "of the screen.\n"
-            " \n"
-            "The rotation is added to rotations which\n"
-            "the libretro core sets (see Video Allow\n"
-            "Rotate).");
-   }
    else if (!strcmp(label, "audio_volume"))
    {
       snprintf(s, len,
@@ -2701,22 +2730,6 @@ int setting_get_description(const char *label, char *s,
             "when loading save states.\n"
             " \n"
             "Might potentially lead to buggy games.");
-   }
-   else if (!strcmp(label, "fastforward_ratio"))
-   {
-      snprintf(s, len,
-            " -- Fastforward ratio."
-            " \n"
-            "The maximum rate at which content will\n"
-            "be run when using fast forward.\n"
-            " \n"
-            " (E.g. 5.0 for 60 fps content => 300 fps \n"
-            "cap).\n"
-            " \n"
-            "RetroArch will go to sleep to ensure that \n"
-            "the maximum rate will not be exceeded.\n"
-            "Do not rely on this cap to be perfectly \n"
-            "accurate.");
    }
    else if (!strcmp(label, "pause_nonactive"))
    {
@@ -2745,27 +2758,6 @@ int setting_get_description(const char *label, char *s,
             " \n"
             "Uses a custom swap interval for VSync. Set this \n"
             "to effectively halve monitor refresh rate.");
-   }
-   else if (!strcmp(label, "video_refresh_rate_auto"))
-   {
-      snprintf(s, len,
-            " -- Refresh Rate Auto.\n"
-            " \n"
-            "The accurate refresh rate of our monitor (Hz).\n"
-            "This is used to calculate audio input rate with \n"
-            "the formula: \n"
-            " \n"
-            "audio_input_rate = game input rate * display \n"
-            "refresh rate / game refresh rate\n"
-            " \n"
-            "If the implementation does not report any \n"
-            "values, NTSC defaults will be assumed for \n"
-            "compatibility.\n"
-            " \n"
-            "This value should stay close to 60Hz to avoid \n"
-            "large pitch changes. If your monitor does \n"
-            "not run at 60Hz, or something close to it, \n"
-            "disable VSync, and leave this at its default.");
    }
    else if (!strcmp(label, "savefile_directory"))
    {
@@ -3057,38 +3049,48 @@ static void general_read_handler(void *data)
 {
    rarch_setting_t *setting  = (rarch_setting_t*)data;
    settings_t      *settings = config_get_ptr();
+   uint32_t hash             = setting ? djb2_calculate(setting->name) : 0;
 
    if (!setting)
       return;
 
-   if (!strcmp(setting->name, "audio_rate_control_delta"))
+   switch (hash)
    {
-      *setting->value.fraction = settings->audio.rate_control_delta;
-      if (*setting->value.fraction < 0.0005)
-      {
-         settings->audio.rate_control = false;
-         settings->audio.rate_control_delta = 0.0;
-      }
-      else
-      {
-         settings->audio.rate_control = true;
-         settings->audio.rate_control_delta = *setting->value.fraction;
-      }
+      case MENU_LABEL_AUDIO_RATE_CONTROL_DELTA:
+         *setting->value.fraction = settings->audio.rate_control_delta;
+         if (*setting->value.fraction < 0.0005)
+         {
+            settings->audio.rate_control = false;
+            settings->audio.rate_control_delta = 0.0;
+         }
+         else
+         {
+            settings->audio.rate_control = true;
+            settings->audio.rate_control_delta = *setting->value.fraction;
+         }
+         break;
+      case MENU_LABEL_AUDIO_MAX_TIMING_SKEW:
+         *setting->value.fraction = settings->audio.max_timing_skew;
+         break;
+      case MENU_LABEL_VIDEO_REFRESH_RATE_AUTO:
+         *setting->value.fraction = settings->video.refresh_rate;
+         break;
+      case MENU_LABEL_INPUT_PLAYER1_JOYPAD_INDEX:
+         *setting->value.integer = settings->input.joypad_map[0];
+         break;
+      case MENU_LABEL_INPUT_PLAYER2_JOYPAD_INDEX:
+         *setting->value.integer = settings->input.joypad_map[1];
+         break;
+      case MENU_LABEL_INPUT_PLAYER3_JOYPAD_INDEX:
+         *setting->value.integer = settings->input.joypad_map[2];
+         break;
+      case MENU_LABEL_INPUT_PLAYER4_JOYPAD_INDEX:
+         *setting->value.integer = settings->input.joypad_map[3];
+         break;
+      case MENU_LABEL_INPUT_PLAYER5_JOYPAD_INDEX:
+         *setting->value.integer = settings->input.joypad_map[4];
+         break;
    }
-   else if (!strcmp(setting->name, "audio_max_timing_skew"))
-      *setting->value.fraction = settings->audio.max_timing_skew;
-   else if (!strcmp(setting->name, "video_refresh_rate_auto"))
-      *setting->value.fraction = settings->video.refresh_rate;
-   else if (!strcmp(setting->name, "input_player1_joypad_index"))
-      *setting->value.integer = settings->input.joypad_map[0];
-   else if (!strcmp(setting->name, "input_player2_joypad_index"))
-      *setting->value.integer = settings->input.joypad_map[1];
-   else if (!strcmp(setting->name, "input_player3_joypad_index"))
-      *setting->value.integer = settings->input.joypad_map[2];
-   else if (!strcmp(setting->name, "input_player4_joypad_index"))
-      *setting->value.integer = settings->input.joypad_map[3];
-   else if (!strcmp(setting->name, "input_player5_joypad_index"))
-      *setting->value.integer = settings->input.joypad_map[4];
 }
 
 static void general_write_handler(void *data)
@@ -3099,6 +3101,8 @@ static void general_write_handler(void *data)
    settings_t *settings     = config_get_ptr();
    driver_t *driver         = driver_get_ptr();
    global_t *global         = global_get_ptr();
+   menu_list_t *menu_list   = menu_list_get_ptr();
+   uint32_t hash            = setting ? djb2_calculate(setting->name) : 0;
 
    if (!setting)
       return;
@@ -3115,125 +3119,129 @@ static void general_write_handler(void *data)
          rarch_cmd = setting->cmd_trigger.idx;
    }
 
-   if (!strcmp(setting->name, "help"))
+   switch (hash)
    {
-      menu_handle_t *menu = menu_driver_get_ptr();
+      case MENU_LABEL_HELP:
+         if (!menu_list)
+            return;
 
-      if (!menu || !menu->menu_list)
-         return;
+         if (*setting->value.boolean)
+         {
+            info.list          = menu_list->menu_stack;
+            info.type          = 0; 
+            info.directory_ptr = 0;
+            strlcpy(info.label, "help", sizeof(info.label));
 
-      if (*setting->value.boolean)
-      {
-         info.list          = menu->menu_list->menu_stack;
-         info.type          = 0; 
-         info.directory_ptr = 0;
-         strlcpy(info.label, "help", sizeof(info.label));
+            menu_displaylist_push_list(&info, DISPLAYLIST_GENERIC);
+            setting_set_with_string_representation(setting, "false");
+         }
+         break;
+      case MENU_LABEL_AUDIO_MAX_TIMING_SKEW:
+         settings->audio.max_timing_skew = *setting->value.fraction;
+         break;
+      case MENU_LABEL_AUDIO_RATE_CONTROL_DELTA:
+         if (*setting->value.fraction < 0.0005)
+         {
+            settings->audio.rate_control = false;
+            settings->audio.rate_control_delta = 0.0;
+         }
+         else
+         {
+            settings->audio.rate_control = true;
+            settings->audio.rate_control_delta = *setting->value.fraction;
+         }
+         break;
+      case MENU_LABEL_VIDEO_REFRESH_RATE_AUTO:
+         if (driver->video && driver->video_data)
+         {
+            driver_set_refresh_rate(*setting->value.fraction);
 
-         menu_displaylist_push_list(&info, DISPLAYLIST_GENERIC);
-         setting_set_with_string_representation(setting, "false");
-      }
-   }
-   else if (!strcmp(setting->name, "video_smooth"))
-   {
-      video_driver_set_filtering(1, settings->video.smooth);
-   }
-   else if (!strcmp(setting->name, "pal60_enable"))
-   {
-      if (*setting->value.boolean && global->console.screen.pal_enable)
-         rarch_cmd = EVENT_CMD_REINIT;
-      else
-         setting_set_with_string_representation(setting, "false");
-   }
-   else if (!strcmp(setting->name, "video_rotation"))
-   {
-      video_driver_set_rotation(
+            /* In case refresh rate update forced non-block video. */
+            rarch_cmd = EVENT_CMD_VIDEO_SET_BLOCKING_STATE;
+         }
+         break;
+      case MENU_LABEL_VIDEO_SCALE:
+         settings->video.scale = roundf(*setting->value.fraction);
+
+         if (!settings->video.fullscreen)
+            rarch_cmd = EVENT_CMD_REINIT;
+         break;
+      case MENU_LABEL_INPUT_PLAYER1_JOYPAD_INDEX:
+         settings->input.joypad_map[0] = *setting->value.integer;
+         break;
+      case MENU_LABEL_INPUT_PLAYER2_JOYPAD_INDEX:
+         settings->input.joypad_map[1] = *setting->value.integer;
+         break;
+      case MENU_LABEL_INPUT_PLAYER3_JOYPAD_INDEX:
+         settings->input.joypad_map[2] = *setting->value.integer;
+         break;
+      case MENU_LABEL_INPUT_PLAYER4_JOYPAD_INDEX:
+         settings->input.joypad_map[3] = *setting->value.integer;
+         break;
+      case MENU_LABEL_INPUT_PLAYER5_JOYPAD_INDEX:
+         settings->input.joypad_map[4] = *setting->value.integer;
+         break;
+      case MENU_LABEL_LOG_VERBOSITY:
+         global->verbosity         = *setting->value.boolean;
+         global->has_set_verbosity = *setting->value.boolean;
+         break;
+      case MENU_LABEL_VIDEO_SMOOTH:
+         video_driver_set_filtering(1, settings->video.smooth);
+         break;
+      case MENU_LABEL_VIDEO_ROTATION:
+         video_driver_set_rotation(
                (*setting->value.unsigned_integer +
                 global->system.rotation) % 4);
-   }
-   else if (!strcmp(setting->name, "system_bgm_enable"))
-   {
-      if (*setting->value.boolean)
-      {
+         break;
+      case MENU_LABEL_AUDIO_VOLUME:
+         audio_driver_set_volume_gain(db_to_gain(*setting->value.fraction));
+         break;
+      case MENU_LABEL_AUDIO_LATENCY:
+         rarch_cmd = EVENT_CMD_AUDIO_REINIT;
+         break;
+      case MENU_LABEL_PAL60_ENABLE:
+         if (*setting->value.boolean && global->console.screen.pal_enable)
+            rarch_cmd = EVENT_CMD_REINIT;
+         else
+            setting_set_with_string_representation(setting, "false");
+         break;
+      case MENU_LABEL_SYSTEM_BGM_ENABLE:
+         if (*setting->value.boolean)
+         {
 #if defined(__CELLOS_LV2__) && (CELL_SDK_VERSION > 0x340000)
-         cellSysutilEnableBgmPlayback();
+            cellSysutilEnableBgmPlayback();
 #endif         
-      }
-      else
-      {
+         }
+         else
+         {
 #if defined(__CELLOS_LV2__) && (CELL_SDK_VERSION > 0x340000)
-         cellSysutilDisableBgmPlayback();
+            cellSysutilDisableBgmPlayback();
 #endif
-      }
-   }
-   else if (!strcmp(setting->name, "audio_volume"))
-   {
-      audio_driver_set_volume_gain(db_to_gain(*setting->value.fraction));
-   }
-   else if (!strcmp(setting->name, "audio_latency"))
-      rarch_cmd = EVENT_CMD_AUDIO_REINIT;
-   else if (!strcmp(setting->name, "audio_rate_control_delta"))
-   {
-      if (*setting->value.fraction < 0.0005)
-      {
-         settings->audio.rate_control = false;
-         settings->audio.rate_control_delta = 0.0;
-      }
-      else
-      {
-         settings->audio.rate_control = true;
-         settings->audio.rate_control_delta = *setting->value.fraction;
-      }
-   }
-   else if (!strcmp(setting->name, "audio_max_timing_skew"))
-      settings->audio.max_timing_skew = *setting->value.fraction;
-   else if (!strcmp(setting->name, "video_refresh_rate_auto"))
-   {
-      if (driver->video && driver->video_data)
-      {
-         driver_set_refresh_rate(*setting->value.fraction);
-
-         /* In case refresh rate update forced non-block video. */
-         rarch_cmd = EVENT_CMD_VIDEO_SET_BLOCKING_STATE;
-      }
-   }
-   else if (!strcmp(setting->name, "video_scale"))
-   {
-      settings->video.scale = roundf(*setting->value.fraction);
-
-      if (!settings->video.fullscreen)
-         rarch_cmd = EVENT_CMD_REINIT;
-   }
-   else if (!strcmp(setting->name, "input_player1_joypad_index"))
-      settings->input.joypad_map[0] = *setting->value.integer;
-   else if (!strcmp(setting->name, "input_player2_joypad_index"))
-      settings->input.joypad_map[1] = *setting->value.integer;
-   else if (!strcmp(setting->name, "input_player3_joypad_index"))
-      settings->input.joypad_map[2] = *setting->value.integer;
-   else if (!strcmp(setting->name, "input_player4_joypad_index"))
-      settings->input.joypad_map[3] = *setting->value.integer;
-   else if (!strcmp(setting->name, "input_player5_joypad_index"))
-      settings->input.joypad_map[4] = *setting->value.integer;
+         }
+         break;
+      case MENU_LABEL_NETPLAY_IP_ADDRESS:
 #ifdef HAVE_NETPLAY
-   else if (!strcmp(setting->name, "netplay_ip_address"))
-      global->has_set_netplay_ip_address = (setting->value.string[0] != '\0');
-   else if (!strcmp(setting->name, "netplay_mode"))
-   {
-      if (!global->netplay_is_client)
-         *global->netplay_server = '\0';
-      global->has_set_netplay_mode = true;
-   }
-   else if (!strcmp(setting->name, "netplay_spectator_mode_enable"))
-   {
-      if (global->netplay_is_spectate)
-         *global->netplay_server = '\0';
-   }
-   else if (!strcmp(setting->name, "netplay_delay_frames"))
-      global->has_set_netplay_delay_frames = (global->netplay_sync_frames > 0);
+         global->has_set_netplay_ip_address = (setting->value.string[0] != '\0');
 #endif
-   else if (!strcmp(setting->name, "log_verbosity"))
-   {
-      global->verbosity         = *setting->value.boolean;
-      global->has_set_verbosity = *setting->value.boolean;
+         break;
+      case MENU_LABEL_NETPLAY_MODE:
+#ifdef HAVE_NETPLAY
+         if (!global->netplay_is_client)
+            *global->netplay_server = '\0';
+         global->has_set_netplay_mode = true;
+#endif
+         break;
+      case MENU_LABEL_NETPLAY_SPECTATOR_MODE_ENABLE:
+#ifdef HAVE_NETPLAY
+         if (global->netplay_is_spectate)
+            *global->netplay_server = '\0';
+#endif
+         break;
+      case MENU_LABEL_NETPLAY_DELAY_FRAMES:
+#ifdef HAVE_NETPLAY
+         global->has_set_netplay_delay_frames = (global->netplay_sync_frames > 0);
+#endif
+         break;
    }
 
    if (rarch_cmd || setting->cmd_trigger.triggered)
