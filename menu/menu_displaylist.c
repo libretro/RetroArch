@@ -19,6 +19,7 @@
 #include <file/file_path.h>
 #include <file/file_extract.h>
 #include <file/dir_list.h>
+#include <rhash.h>
 
 #include "menu.h"
 #include "menu_display.h"
@@ -1106,6 +1107,7 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
             bool match_found = false;
             struct string_list *tmp_str_list = string_split(
                   playlist->entries[j].crc32, "|");
+            uint32_t hash_value = 0;
 
             if (!tmp_str_list)
                continue;
@@ -1115,20 +1117,22 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
             if (tmp_str_list->size > 1)
                strlcpy(elem1, tmp_str_list->elems[1].data, sizeof(elem1));
 
-            if (!strcmp(elem1, "crc"))
+            hash_value = djb2_calculate(elem1);
+
+            switch (hash_value)
             {
-               if (!strcmp(db_info_entry->crc32, elem0))
-                  match_found = true;
-            }
-            else if (!strcmp(elem1, "sha1"))
-            {
-               if (!strcmp(db_info_entry->sha1, elem0))
-                  match_found = true;
-            }
-            else if (!strcmp(elem1, "md5"))
-            {
-               if (!strcmp(db_info_entry->md5, elem0))
-                  match_found = true;
+               case MENU_VALUE_CRC:
+                  if (!strcmp(db_info_entry->crc32, elem0))
+                     match_found = true;
+                  break;
+               case MENU_VALUE_SHA1:
+                  if (!strcmp(db_info_entry->sha1, elem0))
+                     match_found = true;
+                  break;
+               case MENU_VALUE_MD5:
+                  if (!strcmp(db_info_entry->md5, elem0))
+                     match_found = true;
+                  break;
             }
 
             string_list_free(tmp_str_list);

@@ -174,8 +174,10 @@ extern "C" {
 #define MENU_LABEL_VIDEO_SHADER_NUM_PASSES                                     0x79b2992fU
 #define MENU_LABEL_CHEAT_NUM_PASSES                                            0x1910eb87U
 
+#define MENU_VALUE_MD5                                                         0x0b888fabU
+#define MENU_VALUE_SHA1                                                        0x7c9de632U
+#define MENU_VALUE_CRC                                                         0x0b88671dU
 #define MENU_VALUE_MORE                                                        0x0b877cafU
-
 #define MENU_VALUE_INPUT_SETTINGS                                              0xddd30846U
 #define MENU_VALUE_HORIZONTAL_MENU                                             0x35761704U
 #define MENU_VALUE_MAIN_MENU                                                   0x1625971fU   
@@ -183,7 +185,6 @@ extern "C" {
 #define MENU_VALUE_OFF                                                         0x0b880c40U
 #define MENU_VALUE_TRUE                                                        0x7c9e9fe5U
 #define MENU_VALUE_FALSE                                                       0x0f6bcef0U
-
 #define MENU_VALUE_COMP                                                        0x6a166ba5U
 #define MENU_VALUE_CORE                                                        0x6a167f7fU
 #define MENU_VALUE_CURSOR                                                      0x57bba8b4U
