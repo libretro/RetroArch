@@ -37,9 +37,11 @@ ifneq ($(V),1)
    Q := @
 endif
 
-OPTIMIZE_FLAG = -O3 -ffast-math
 ifeq ($(DEBUG), 1)
-   OPTIMIZE_FLAG = -O0
+   OPTIMIZE_FLAG = -O0 -g
+   LDFLAGS += -g
+else
+   OPTIMIZE_FLAG = -O3 -ffast-math
 endif
 
 CFLAGS   += -Wall $(OPTIMIZE_FLAG) $(INCLUDE_DIRS) $(DEBUG_FLAG) -I.
