@@ -20,8 +20,10 @@
 extern "C" {
 #endif
 
+
 #define MENU_LABEL_AUDIO_DEVICE                                                0x2574eac6U
 
+#define MENU_LABEL_REWIND_ENABLE                                               0x9761e074U
 #define MENU_LABEL_ENABLE_HOTKEY                                               0xc04037bfU
 #define MENU_LABEL_DISK_EJECT_TOGGLE                                           0x49633fbbU
 #define MENU_LABEL_DISK_NEXT                                                   0xeeaf6c6eU

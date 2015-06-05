@@ -2455,6 +2455,13 @@ static int setting_get_description_compare_label(uint32_t label_hash,
                "the keyboard, where it is not desirable that \n"
                "hotkeys get in the way.");
          break;
+      case MENU_LABEL_REWIND_ENABLE:
+         snprintf(s, len,
+               " -- Enable rewinding.\n"
+               " \n"
+               "This will take a performance hit, \n"
+               "so it is disabled by default.");
+         break;
       default:
          return -1;
    }
@@ -2836,14 +2843,6 @@ int setting_get_description(const char *label, char *s,
             "frames, you can rewind several frames \n"
             "at a time, increasing the rewinding \n"
             "speed.");
-   }
-   else if (!strcmp(label, "rewind_enable"))
-   {
-      snprintf(s, len,
-            " -- Enable rewinding.\n"
-            " \n"
-            "This will take a performance hit, \n"
-            "so it is disabled by default.");
    }
    else if (!strcmp(label, "input_autodetect_enable"))
    {
