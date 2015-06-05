@@ -39,7 +39,6 @@ endif
 
 ifeq ($(DEBUG), 1)
    OPTIMIZE_FLAG = -O0 -g
-   LDFLAGS += -g
 else
    OPTIMIZE_FLAG = -O3 -ffast-math
 endif
