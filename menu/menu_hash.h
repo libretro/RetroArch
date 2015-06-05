@@ -20,18 +20,24 @@
 extern "C" {
 #endif
 
+#define MENU_LABEL_REWIND_GRANULARITY                                          0xe859cbdfU
+#define MENU_LABEL_VIDEO_THREADED                                              0x0626179cU
+#define MENU_LABEL_VIDEO_VSYNC                                                 0x09c2d34eU
+#define MENU_LABEL_VIDEO_HARD_SYNC                                             0xdcd623b6U
+#define MENU_LABEL_SAVESTATE_AUTO_SAVE                                         0xf6f4a05bU
+#define MENU_LABEL_SYSTEM_DIRECTORY                                            0x35a6fb9eU
+#define MENU_LABEL_VIDEO_DISABLE_COMPOSITION                                   0x5cbb6222U
 #define MENU_LABEL_VOLUME_UP                                                   0xa66e9681U
 #define MENU_LABEL_VOLUME_DOWN                                                 0xfc64f3d4U
-
 #define MENU_LABEL_LOG_VERBOSITY                                               0x6648c96dU
 #define MENU_LABEL_OVERLAY_NEXT                                                0x7a459145U
 #define MENU_LABEL_AUDIO_VOLUME                                                0x502173aeU
 #define MENU_LABEL_AUDIO_LATENCY                                               0x32695386U
-
 #define MENU_LABEL_NETPLAY_DELAY_FRAMES                                        0x86b2c48dU
 #define MENU_LABEL_NETPLAY_SPECTATOR_MODE_ENABLE                               0x6f9a9440U
 #define MENU_LABEL_NETPLAY_IP_ADDRESS                                          0xac9a53ffU
 #define MENU_LABEL_NETPLAY_MODE                                                0xc1cf6506U
+#define MENU_LABEL_PERFCNT_ENABLE                                              0x6823dbddU
 
 #define MENU_LABEL_PAL60_ENABLE                                                0x62bc416eU
 #define MENU_LABEL_SYSTEM_BGM_ENABLE                                           0x9287a1c5U

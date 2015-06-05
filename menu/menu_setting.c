@@ -2602,6 +2602,63 @@ static int setting_get_description_compare_label(uint32_t label_hash,
          snprintf(s, len,
                " -- Decreases audio volume.");
          break;
+      case MENU_LABEL_VIDEO_DISABLE_COMPOSITION:
+         snprintf(s, len,
+               "-- Forcibly disable composition.\n"
+               "Only valid on Windows Vista/7 for now.");
+         break;
+      case MENU_LABEL_PERFCNT_ENABLE:
+         snprintf(s, len,
+               "-- Enable or disable frontend \n"
+               "performance counters.");
+         break;
+      case MENU_LABEL_SYSTEM_DIRECTORY:
+         snprintf(s, len,
+               "-- System Directory. \n"
+               " \n"
+               "Sets the 'system' directory.\n"
+               "Cores can query for this\n"
+               "directory to load BIOSes, \n"
+               "system-specific configs, etc.");
+         break;
+      case MENU_LABEL_SAVESTATE_AUTO_SAVE:
+         snprintf(s, len,
+               " -- Automatically saves a savestate at the \n"
+               "end of RetroArch's lifetime.\n"
+               " \n"
+               "RetroArch will automatically load any savestate\n"
+               "with this path on startup if 'Auto Load State\n"
+               "is enabled.");
+         break;
+      case MENU_LABEL_VIDEO_THREADED:
+         snprintf(s, len,
+               " -- Use threaded video driver.\n"
+               " \n"
+               "Using this might improve performance at \n"
+               "possible cost of latency and more video \n"
+               "stuttering.");
+         break;
+      case MENU_LABEL_VIDEO_VSYNC:
+         snprintf(s, len,
+               " -- Video V-Sync.\n");
+         break;
+      case MENU_LABEL_VIDEO_HARD_SYNC:
+         snprintf(s, len,
+               " -- Attempts to hard-synchronize \n"
+               "CPU and GPU.\n"
+               " \n"
+               "Can reduce latency at cost of \n"
+               "performance.");
+         break;
+      case MENU_LABEL_REWIND_GRANULARITY:
+         snprintf(s, len,
+               " -- Rewind granularity.\n"
+               " \n"
+               " When rewinding defined number of \n"
+               "frames, you can rewind several frames \n"
+               "at a time, increasing the rewinding \n"
+               "speed.");
+         break;
       default:
          return -1;
    }
@@ -2630,29 +2687,7 @@ int setting_get_description(const char *label, char *s,
    if (setting_get_description_compare_label(label_hash, settings, s, len) == 0)
       return 0;
 
-   if (!strcmp(label, "video_disable_composition"))
-   {
-      snprintf(s, len,
-            "-- Forcibly disable composition.\n"
-            "Only valid on Windows Vista/7 for now.");
-   }
-   else if (!strcmp(label, "perfcnt_enable"))
-   {
-      snprintf(s, len,
-            "-- Enable or disable frontend \n"
-            "performance counters.");
-   }
-   else if (!strcmp(label, "system_directory"))
-   {
-      snprintf(s, len,
-            "-- System Directory. \n"
-            " \n"
-            "Sets the 'system' directory.\n"
-            "Cores can query for this\n"
-            "directory to load BIOSes, \n"
-            "system-specific configs, etc.");
-   }
-   else if (!strcmp(label, "rgui_show_start_screen"))
+   if (!strcmp(label, "rgui_show_start_screen"))
    {
       snprintf(s, len,
             " -- Show startup screen in menu.\n"
@@ -2667,20 +2702,6 @@ int setting_get_description(const char *label, char *s,
       snprintf(s, len,
             " -- Load up a specific config file \n"
             "based on the core being used.\n");
-   }
-   else if (!strcmp(label, "video_vsync"))
-   {
-      snprintf(s, len,
-            " -- Video V-Sync.\n");
-   }
-   else if (!strcmp(label, "video_hard_sync"))
-   {
-      snprintf(s, len,
-            " -- Attempts to hard-synchronize \n"
-            "CPU and GPU.\n"
-            " \n"
-            "Can reduce latency at cost of \n"
-            "performance.");
    }
    else if (!strcmp(label, "video_hard_sync_frames"))
    {
@@ -2723,15 +2744,6 @@ int setting_get_description(const char *label, char *s,
             "Video refresh rate should still be \n"
             "configured as if it is a 60 Hz monitor \n"
             "(divide refresh rate by 2).");
-   }
-   else if (!strcmp(label, "video_threaded"))
-   {
-      snprintf(s, len,
-            " -- Use threaded video driver.\n"
-            " \n"
-            "Using this might improve performance at \n"
-            "possible cost of latency and more video \n"
-            "stuttering.");
    }
    else if (!strcmp(label, "block_sram_overwrite"))
    {
@@ -2836,16 +2848,6 @@ int setting_get_description(const char *label, char *s,
             "buttons toggle."
             );
    }
-   else if (!strcmp(label, "rewind_granularity"))
-   {
-      snprintf(s, len,
-            " -- Rewind granularity.\n"
-            " \n"
-            " When rewinding defined number of \n"
-            "frames, you can rewind several frames \n"
-            "at a time, increasing the rewinding \n"
-            "speed.");
-   }
    else if (!strcmp(label, "input_autodetect_enable"))
    {
       snprintf(s, len,
@@ -2865,16 +2867,6 @@ int setting_get_description(const char *label, char *s,
       snprintf(s, len,
             " -- Allow or disallow location services \n"
             "access by cores.");
-   }
-   else if (!strcmp(label, "savestate_auto_save"))
-   {
-      snprintf(s, len,
-            " -- Automatically saves a savestate at the \n"
-            "end of RetroArch's lifetime.\n"
-            " \n"
-            "RetroArch will automatically load any savestate\n"
-            "with this path on startup if 'Auto Load State\n"
-            "is enabled.");
    }
    else if (
          !strcmp(label, "l_x_plus")  ||
