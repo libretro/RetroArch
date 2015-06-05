@@ -14,6 +14,8 @@
  */
 
 #include <file/file_path.h>
+#include <rhash.h>
+
 #include "menu.h"
 #include "menu_displaylist.h"
 #include "menu_entries_cbs.h"
@@ -454,6 +456,7 @@ void menu_entries_cbs_init_bind_deferred_push(menu_file_list_cbs_t *cbs,
       const char *elem0, const char *elem1)
 {
    settings_t *settings   = config_get_ptr();
+   uint32_t hash          = djb2_calculate(label);
 
    if (!cbs)
       return;
@@ -472,39 +475,39 @@ void menu_entries_cbs_init_bind_deferred_push(menu_file_list_cbs_t *cbs,
       }
    }
 
-   if (strstr(label, "deferred_rdb_entry_detail"))
+   if (hash == MENU_LABEL_DEFERRED_RDB_ENTRY_DETAIL)
       cbs->action_deferred_push = deferred_push_rdb_entry_detail;
 #ifdef HAVE_NETWORKING
-   else if (!strcmp(label, "deferred_core_updater_list"))
+   else if (hash == MENU_LABEL_DEFERRED_CORE_UPDATER_LIST)
       cbs->action_deferred_push = deferred_push_core_updater_list;
 #endif
-   else if (!strcmp(label, "history_list"))
+   else if (hash == MENU_LABEL_HISTORY_LIST)
       cbs->action_deferred_push = deferred_push_history_list;
-   else if (!strcmp(label, "database_manager_list"))
+   else if (hash == MENU_LABEL_DATABASE_MANAGER_LIST)
       cbs->action_deferred_push = deferred_push_database_manager_list;
-   else if (!strcmp(label, "cursor_manager_list"))
+   else if (hash == MENU_LABEL_CURSOR_MANAGER_LIST)
       cbs->action_deferred_push = deferred_push_cursor_manager_list;
-   else if (!strcmp(label, "cheat_file_load"))
+   else if (hash == MENU_LABEL_CHEAT_FILE_LOAD)
       cbs->action_deferred_push = deferred_push_cheat_file_load;
-   else if (!strcmp(label, "remap_file_load"))
+   else if (hash == MENU_LABEL_REMAP_FILE_LOAD)
       cbs->action_deferred_push = deferred_push_remap_file_load;
    else if (!strcmp(label, "record_config"))
       cbs->action_deferred_push = deferred_push_record_configfile;
    else if (!strcmp(label, "content_actions"))
       cbs->action_deferred_push = deferred_push_content_actions;
-   else if (!strcmp(label, "shader_options"))
+   else if (hash == MENU_LABEL_SHADER_OPTIONS)
       cbs->action_deferred_push = deferred_push_shader_options;
-   else if (!strcmp(label, "video_options"))
+   else if (hash == MENU_LABEL_VIDEO_OPTIONS)
       cbs->action_deferred_push = deferred_push_video_options;
    else if (!strcmp(label, "options"))
       cbs->action_deferred_push = deferred_push_options;
-   else if (!strcmp(label, "management"))
+   else if (hash == MENU_LABEL_MANAGEMENT)
       cbs->action_deferred_push = deferred_push_management_options;
    else if (type == MENU_SETTING_GROUP)
       cbs->action_deferred_push = deferred_push_category;
    else if (type == MENU_FILE_PLAYLIST_COLLECTION)
       cbs->action_deferred_push = deferred_push_rdb_collection;
-   else if (!strcmp(label, "deferred_core_list") ||
+   else if ((hash == MENU_LABEL_DEFERRED_CORE_LIST) ||
          !strcmp(label, "deferred_core_list_set"))
       cbs->action_deferred_push = deferred_push_core_list_deferred;
    else if (!strcmp(label, "deferred_video_filter"))
@@ -532,51 +535,51 @@ void menu_entries_cbs_init_bind_deferred_push(menu_file_list_cbs_t *cbs,
          !strcmp(label, "deferred_cursor_manager_list_rdb_entry_releaseyear")
          )
       cbs->action_deferred_push = deferred_push_cursor_manager_list_deferred_query_subsearch;
-   else if (!strcmp(label, "core_information"))
+   else if (hash == MENU_LABEL_CORE_INFORMATION)
       cbs->action_deferred_push = deferred_push_core_information;
-   else if (!strcmp(label, "system_information"))
+   else if (hash == MENU_LABEL_SYSTEM_INFORMATION)
       cbs->action_deferred_push = deferred_push_system_information;
-   else if (!strcmp(label, "performance_counters"))
+   else if (hash == MENU_LABEL_PERFORMANCE_COUNTERS)
       cbs->action_deferred_push = deferred_push_performance_counters;
-   else if (!strcmp(label, "core_counters"))
+   else if (hash == MENU_LABEL_CORE_COUNTERS)
       cbs->action_deferred_push = deferred_push_core_counters;
-   else if (!strcmp(label, "video_shader_preset_parameters"))
+   else if (hash == MENU_LABEL_VIDEO_SHADER_PRESET_PARAMETERS)
       cbs->action_deferred_push = deferred_push_video_shader_preset_parameters;
-   else if (!strcmp(label, "video_shader_parameters"))
+   else if (hash == MENU_LABEL_VIDEO_SHADER_PARAMETERS)
       cbs->action_deferred_push = deferred_push_video_shader_parameters;
    else if (!strcmp(label, "settings"))
       cbs->action_deferred_push = deferred_push_settings;
-   else if (!strcmp(label, "frontend_counters"))
+   else if (hash == MENU_LABEL_FRONTEND_COUNTERS)
       cbs->action_deferred_push = deferred_push_frontend_counters;
-   else if (!strcmp(label, "core_options"))
+   else if (hash == MENU_LABEL_CORE_OPTIONS)
       cbs->action_deferred_push = deferred_push_core_options;
-   else if (!strcmp(label, "core_cheat_options"))
+   else if (hash == MENU_LABEL_CORE_CHEAT_OPTIONS)
       cbs->action_deferred_push = deferred_push_core_cheat_options;
-   else if (!strcmp(label, "core_input_remapping_options"))
+   else if (hash == MENU_LABEL_CORE_INPUT_REMAPPING_OPTIONS)
       cbs->action_deferred_push = deferred_push_core_input_remapping_options;
-   else if (!strcmp(label, "disk_options"))
+   else if (hash == MENU_LABEL_DISK_OPTIONS)
       cbs->action_deferred_push = deferred_push_disk_options;
-   else if (!strcmp(label, "core_list"))
+   else if (hash == MENU_LABEL_CORE_LIST)
       cbs->action_deferred_push = deferred_push_core_list;
    else if (!strcmp(label, "content_collection_list"))
       cbs->action_deferred_push = deferred_push_content_collection_list;
-   else if (!strcmp(label, "configurations"))
+   else if (hash == MENU_LABEL_CONFIGURATIONS)
       cbs->action_deferred_push = deferred_push_configurations;
-   else if (!strcmp(label, "video_shader_preset"))
+   else if (hash == MENU_LABEL_VIDEO_SHADER_PRESET)
       cbs->action_deferred_push = deferred_push_video_shader_preset;
-   else if (!strcmp(label, "video_shader_pass"))
+   else if (hash == MENU_LABEL_VIDEO_SHADER_PASS)
       cbs->action_deferred_push = deferred_push_video_shader_pass;
-   else if (!strcmp(label, "video_filter"))
+   else if (hash == MENU_LABEL_VIDEO_FILTER)
       cbs->action_deferred_push = deferred_push_video_filter;
    else if (!strcmp(label, "menu_wallpaper"))
       cbs->action_deferred_push = deferred_push_images;
-   else if (!strcmp(label, "audio_dsp_plugin"))
+   else if (hash == MENU_LABEL_AUDIO_DSP_PLUGIN)
       cbs->action_deferred_push = deferred_push_audio_dsp_plugin;
-   else if (!strcmp(label, "input_overlay"))
+   else if (hash == MENU_LABEL_INPUT_OVERLAY)
       cbs->action_deferred_push = deferred_push_input_overlay;
    else if (!strcmp(label, "input_osk_overlay"))
       cbs->action_deferred_push = deferred_push_input_osk_overlay;
-   else if (!strcmp(label, "video_font_path"))
+   else if (hash == MENU_LABEL_VIDEO_FONT_PATH)
       cbs->action_deferred_push = deferred_push_video_font_path;
    else if (!strcmp(label, "content_history_path"))
       cbs->action_deferred_push = deferred_push_content_history_path;
