@@ -1480,26 +1480,26 @@ void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
       cbs->action_ok = action_ok_unload_core;
    else if (!strcmp(label, "save_new_config"))
       cbs->action_ok = action_ok_save_new_config;
-   else if (!strcmp(label, "help"))
+   else if (hash == MENU_LABEL_HELP)
       cbs->action_ok = action_ok_help;
-   else if (!strcmp(label, "video_shader_pass"))
+   else if (hash == MENU_LABEL_VIDEO_SHADER_PASS)
       cbs->action_ok = action_ok_shader_pass;
-   else if (!strcmp(label, "video_shader_preset"))
+   else if (hash == MENU_LABEL_VIDEO_SHADER_PRESET)
       cbs->action_ok = action_ok_shader_preset;
-   else if (!strcmp(label, "cheat_file_load"))
+   else if (hash == MENU_LABEL_CHEAT_FILE_LOAD)
       cbs->action_ok = action_ok_cheat_file;
-   else if (!strcmp(label, "audio_dsp_plugin"))
+   else if (hash == MENU_LABEL_AUDIO_DSP_PLUGIN)
       cbs->action_ok = action_ok_audio_dsp_plugin;
-   else if (!strcmp(label, "video_filter"))
+   else if (hash == MENU_LABEL_VIDEO_FILTER)
       cbs->action_ok = action_ok_video_filter;
-   else if (!strcmp(label, "remap_file_load"))
+   else if (hash == MENU_LABEL_REMAP_FILE_LOAD)
       cbs->action_ok = action_ok_remap_file;
    else if (!strcmp(label, "record_config"))
       cbs->action_ok = action_ok_record_configfile;
    else if (!strcmp(label, "core_updater_list"))
       cbs->action_ok = action_ok_core_updater_list;
-   else if (!strcmp(label, "video_shader_parameters") ||
-         !strcmp(label, "video_shader_preset_parameters")
+   else if ((hash == MENU_LABEL_VIDEO_SHADER_PARAMETERS) ||
+         (hash == MENU_LABEL_VIDEO_SHADER_PRESET_PARAMETERS)
          )
       cbs->action_ok = action_ok_shader_parameters;
    else if (
@@ -1599,7 +1599,7 @@ void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
          cbs->action_ok = action_ok_compressed_archive_push;
          break;
       case MENU_FILE_CORE:
-         if (!strcmp(menu_label, "deferred_core_list"))
+         if (hash == MENU_LABEL_DEFERRED_CORE_LIST)
             cbs->action_ok = action_ok_core_load_deferred;
          else if (!strcmp(menu_label, "deferred_core_list_set"))
             cbs->action_ok = action_ok_core_deferred_set;
