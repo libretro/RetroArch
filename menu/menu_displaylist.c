@@ -1688,31 +1688,35 @@ static int menu_displaylist_parse_generic(menu_displaylist_info_t *info, bool *n
 
    string_list_free(str_list);
 
-   if (hash_label == MENU_LABEL_CORE_LIST)
+   switch (hash_label)
    {
-      const char *dir = NULL;
-      menu_list_get_last_stack(menu->menu_list, &dir, NULL, NULL);
-      list_size = file_list_get_size(info->list);
+      case MENU_LABEL_CORE_LIST:
+         {
+            const char *dir = NULL;
+            menu_list_get_last_stack(menu->menu_list, &dir, NULL, NULL);
+            list_size = file_list_get_size(info->list);
 
-      for (i = 0; i < list_size; i++)
-      {
-         unsigned type = 0;
-         char core_path[PATH_MAX_LENGTH], display_name[PATH_MAX_LENGTH];
-         const char *path = NULL;
+            for (i = 0; i < list_size; i++)
+            {
+               unsigned type = 0;
+               char core_path[PATH_MAX_LENGTH], display_name[PATH_MAX_LENGTH];
+               const char *path = NULL;
 
-         menu_list_get_at_offset(info->list, i, &path, NULL, &type);
+               menu_list_get_at_offset(info->list, i, &path, NULL, &type);
 
-         if (type != MENU_FILE_CORE)
-            continue;
+               if (type != MENU_FILE_CORE)
+                  continue;
 
-         fill_pathname_join(core_path, dir, path, sizeof(core_path));
+               fill_pathname_join(core_path, dir, path, sizeof(core_path));
 
-         if (global->core_info &&
-               core_info_list_get_display_name(global->core_info,
-                  core_path, display_name, sizeof(display_name)))
-            menu_list_set_alt_at_offset(info->list, i, display_name);
-      }
-      *need_sort = true;
+               if (global->core_info &&
+                     core_info_list_get_display_name(global->core_info,
+                        core_path, display_name, sizeof(display_name)))
+                  menu_list_set_alt_at_offset(info->list, i, display_name);
+            }
+            *need_sort = true;
+         }
+         break;
    }
 
    return 0;
