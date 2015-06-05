@@ -14,6 +14,7 @@
  */
 
 #include <file/file_path.h>
+#include <rhash.h>
 
 #include "menu.h"
 #include "menu_entries_cbs.h"
@@ -763,15 +764,18 @@ static void menu_action_setting_disp_set_label(file_list_t* list,
       char *s2, size_t len2)
 {
    global_t *global     = global_get_ptr();
+   uint32_t hash_label  = djb2_calculate(label);
 
    *s = '\0';
    *w = 19;
 
-   if (!strcmp(label, "performance_counters"))
-      *w = strlen(label);
-
-   if (!strcmp(label, "history_list"))
-      *w = strlen(label);
+   switch (hash_label)
+   {
+      case MENU_LABEL_PERFORMANCE_COUNTERS:
+      case MENU_LABEL_HISTORY_LIST:
+         *w = strlen(label);
+         break;
+   }
 
    if (type >= MENU_SETTINGS_CORE_OPTION_START)
       strlcpy(
