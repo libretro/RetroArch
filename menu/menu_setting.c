@@ -206,9 +206,12 @@ static int setting_handler(rarch_setting_t *setting, unsigned action)
    switch (action)
    {
       case MENU_ACTION_UP:
+         if (setting->action_up)
+            return setting->action_up(setting, action);
+         break;
       case MENU_ACTION_DOWN:
-         if (setting->action_up_or_down)
-            return setting->action_up_or_down(setting, action);
+         if (setting->action_down)
+            return setting->action_down(setting, action);
          break;
       case MENU_ACTION_LEFT:
       case MENU_ACTION_RIGHT:
