@@ -2863,6 +2863,26 @@ static int setting_get_description_compare_label(uint32_t label_hash,
                "The modulation stops when the button \n"
                "itself (not turbo button) is released.");
          break;
+      case MENU_LABEL_OSK_ENABLE:
+           snprintf(s, len,
+               " -- Enable/disable on-screen keyboard.");
+           break;
+      case MENU_LABEL_AUDIO_MUTE:
+               snprintf(s, len,
+                        " -- Mute/unmute audio.");
+           break;
+      case MENU_LABEL_EXIT_EMULATOR:
+	   snprintf(s, len,
+			   " -- Key to exit RetroArch cleanly."
+#if !defined(RARCH_MOBILE) && !defined(RARCH_CONSOLE)
+			   "\nKilling it in any hard way (SIGKILL, \n"
+			   "etc) will terminate without saving\n"
+			   "RAM, etc. On Unix-likes,\n"
+			   "SIGINT/SIGTERM allows\n"
+			   "a clean deinitialization."
+#endif
+		   );
+         break;
       default:
          return -1;
    }
@@ -2905,17 +2925,6 @@ int setting_get_description(const char *label, char *s,
             " \n"
             "Positive X axis is right. \n"
             "Positive Y axis is down.");
-   else if (!strcmp(label, "exit_emulator"))
-      snprintf(s, len,
-            " -- Key to exit RetroArch cleanly."
-#if !defined(RARCH_MOBILE) && !defined(RARCH_CONSOLE)
-            "\nKilling it in any hard way (SIGKILL, \n"
-            "etc) will terminate without saving\n"
-            "RAM, etc. On Unix-likes,\n"
-            "SIGINT/SIGTERM allows\n"
-            "a clean deinitialization."
-#endif
-            );
    else if (!strcmp(label, "rewind"))
       snprintf(s, len,
             " -- Hold button down to rewind.\n"
@@ -2964,12 +2973,6 @@ int setting_get_description(const char *label, char *s,
    else if (!strcmp(label, "shader_prev"))
       snprintf(s, len,
             " -- Applies previous shader in directory.");
-   else if (!strcmp(label, "audio_mute"))
-      snprintf(s, len,
-            " -- Mute/unmute audio.");
-   else if (!strcmp(label, "osk_enable"))
-      snprintf(s, len,
-            " -- Enable/disable on-screen keyboard.");            
    else
       snprintf(s, len,
             "-- No info on this item is available. --\n");

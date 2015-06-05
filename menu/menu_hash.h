@@ -286,6 +286,9 @@ extern "C" {
 #define MENU_LABEL_REMAP_FILE_SAVE_CORE                                        0x7c9d4c8fU
 #define MENU_LABEL_REMAP_FILE_SAVE_GAME                                        0x7c9f41e0U
 #define MENU_LABEL_CONTENT_COLLECTION_LIST                                     0x0f8a9086U
+#define MENU_LABEL_OSK_ENABLE                                                  0x8e208498U
+#define MENU_LABEL_AUDIO_MUTE                                                  0xe0ca1151U
+#define MENU_LABEL_EXIT_EMULATOR                                               0x86d5d467U
 
 #ifdef __cplusplus
 }

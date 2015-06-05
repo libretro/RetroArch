@@ -492,7 +492,7 @@ static void MDTestSuite(void)
    MDFile ("foo");
 }
 
-void main (int argc, char *argv[])
+int main (int argc, char *argv[])
 {
    int i;
 
@@ -514,6 +514,8 @@ void main (int argc, char *argv[])
          else if (strcmp (argv[i], "-x") == 0)
             MDTestSuite ();
          else MDFile (argv[i]);
+
+  return 0;
 }
 
 /*
