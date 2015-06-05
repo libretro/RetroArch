@@ -2109,7 +2109,8 @@ int menu_displaylist_push(file_list_t *list, file_list_t *menu_list)
    const char *label            = NULL;
    menu_handle_t *menu          = menu_driver_get_ptr();
    menu_displaylist_info_t info = {0};
-   uint32_t          hash_value = djb2_calculate(label);
+   uint32_t          hash_value = 0;
+   
 
    menu_list_get_last_stack(menu->menu_list, &path, &label, &type);
 
@@ -2118,6 +2119,8 @@ int menu_displaylist_push(file_list_t *list, file_list_t *menu_list)
    info.type      = type;
    strlcpy(info.path, path, sizeof(info.path));
    strlcpy(info.label, label, sizeof(info.label));
+
+   hash_value     = djb2_calculate(label);
 
    return menu_displaylist_deferred_push(&info, hash_value);
 }

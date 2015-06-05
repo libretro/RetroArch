@@ -22,6 +22,9 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include <rhash.h>
+
 #include "menu_input.h"
 #include "menu.h"
 #include "menu_entry.h"
@@ -135,12 +138,20 @@ void menu_input_st_string_callback(void *userdata, const char *str)
       }
       else
       {
-         if (!strcmp(menu->keyboard.label_setting, "video_shader_preset_save_as"))
-            menu_shader_manager_save_preset(str, false);
-         else if (!strcmp(menu->keyboard.label_setting, "remap_file_save_as"))
-            input_remapping_save_file(str);
-         else if (!strcmp(menu->keyboard.label_setting, "cheat_file_save_as"))
-            cheat_manager_save(global->cheat, str);
+         uint32_t hash_label = djb2_calculate(menu->keyboard.label_setting);
+
+         switch (hash_label)
+         {
+            case MENU_LABEL_VIDEO_SHADER_PRESET_SAVE_AS:
+               menu_shader_manager_save_preset(str, false);
+               break;
+            case MENU_LABEL_REMAP_FILE_SAVE_AS:
+               input_remapping_save_file(str);
+               break;
+            case MENU_LABEL_CHEAT_FILE_SAVE_AS:
+               cheat_manager_save(global->cheat, str);
+               break;
+         }
       }
    }
 
