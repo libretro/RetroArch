@@ -134,92 +134,92 @@ int menu_entries_common_is_settings_entry(const char *label)
 {
    uint32_t    hash = djb2_calculate(label);
    const char* str  = NULL;
-   
+
    switch (hash)
    {
-   case MENU_LABEL_DRIVER_SETTINGS:
-      str = "Driver Settings";
-      break;
-   case MENU_LABEL_CORE_SETTINGS:
-      str = "Core Settings";
-      break;
-   case MENU_LABEL_CONFIGURATION_SETTINGS:
-      str = "Configuration Settings";
-      break;
-   case MENU_LABEL_LOGGING_SETTINGS:
-      str = "Logging Settings";
-      break;
-   case MENU_LABEL_SAVING_SETTINGS:
-      str = "Saving Settings";
-      break;
-   case MENU_LABEL_REWIND_SETTINGS:
-      str = "Rewind Settings";
-      break;
-   case MENU_LABEL_VIDEO_SETTINGS:
-      str = "Video Settings";
-      break;
-   case MENU_LABEL_RECORDING_SETTINGS:
-      str = "Recording Settings";
-      break;
-   case MENU_LABEL_FRAME_THROTTLE_SETTINGS:
-      str = "Frame Throttle Settings";
-      break;
-   case MENU_LABEL_SHADER_SETTINGS:
-      str = "Shader Settings";
-      break;
-   case MENU_LABEL_ONSCREEN_DISPLAY_SETTINGS:
-      str = "Onscreen Display Settings";
-      break;
-   case MENU_LABEL_AUDIO_SETTINGS:
-      str = "Audio Settings";
-      break;
-   case MENU_LABEL_INPUT_SETTINGS:
-      str = "Input Settings";
-      break;
-   case MENU_LABEL_INPUT_HOTKEY_SETTINGS:
-      str = "Input Hotkey Settings";
-      break;
-   case MENU_LABEL_OVERLAY_SETTINGS:
-      str = "Overlay Settings";
-      break;
-   case MENU_LABEL_ONSCREEN_KEYBOARD_OVERLAY_SETTINGS:
-      str = "Onscreen Keyboard Overlay Settings";
-      break;
-   case MENU_LABEL_MENU_SETTINGS:
-      str = "Menu Settings";
-      break;
-   case MENU_LABEL_UI_SETTINGS:
-      str = "UI Settings";
-      break;
-   case MENU_LABEL_PATCH_SETTINGS:
-      str = "Patch Settings";
-      break;
-   case MENU_LABEL_PLAYLIST_SETTINGS:
-      str = "Playlist Settings";
-      break;
-   case MENU_LABEL_CORE_UPDATER_SETTINGS:
-      str = "Core Updater Settings";
-      break;
-   case MENU_LABEL_NETWORK_SETTINGS:
-      str = "Network Settings";
-      break;
-   case MENU_LABEL_ARCHIVE_SETTINGS:
-      str = "Archive Settings";
-      break;
-   case MENU_LABEL_USER_SETTINGS:
-      str = "User Settings";
-      break;
-   case MENU_LABEL_DIRECTORY_SETTINGS:
-      str = "Directory Settings";
-      break;
-   case MENU_LABEL_PRIVACY_SETTINGS:
-      str = "Privacy Settings";
-      break;
-   default:
-      RARCH_LOG("unknown hash: %d\n", hash);
-      return 0;
+      case MENU_LABEL_DRIVER_SETTINGS:
+         str = "Driver Settings";
+         break;
+      case MENU_LABEL_CORE_SETTINGS:
+         str = "Core Settings";
+         break;
+      case MENU_LABEL_CONFIGURATION_SETTINGS:
+         str = "Configuration Settings";
+         break;
+      case MENU_LABEL_LOGGING_SETTINGS:
+         str = "Logging Settings";
+         break;
+      case MENU_LABEL_SAVING_SETTINGS:
+         str = "Saving Settings";
+         break;
+      case MENU_LABEL_REWIND_SETTINGS:
+         str = "Rewind Settings";
+         break;
+      case MENU_LABEL_VIDEO_SETTINGS:
+         str = "Video Settings";
+         break;
+      case MENU_LABEL_RECORDING_SETTINGS:
+         str = "Recording Settings";
+         break;
+      case MENU_LABEL_FRAME_THROTTLE_SETTINGS:
+         str = "Frame Throttle Settings";
+         break;
+      case MENU_LABEL_SHADER_SETTINGS:
+         str = "Shader Settings";
+         break;
+      case MENU_LABEL_ONSCREEN_DISPLAY_SETTINGS:
+         str = "Onscreen Display Settings";
+         break;
+      case MENU_LABEL_AUDIO_SETTINGS:
+         str = "Audio Settings";
+         break;
+      case MENU_LABEL_INPUT_SETTINGS:
+         str = "Input Settings";
+         break;
+      case MENU_LABEL_INPUT_HOTKEY_SETTINGS:
+         str = "Input Hotkey Settings";
+         break;
+      case MENU_LABEL_OVERLAY_SETTINGS:
+         str = "Overlay Settings";
+         break;
+      case MENU_LABEL_ONSCREEN_KEYBOARD_OVERLAY_SETTINGS:
+         str = "Onscreen Keyboard Overlay Settings";
+         break;
+      case MENU_LABEL_MENU_SETTINGS:
+         str = "Menu Settings";
+         break;
+      case MENU_LABEL_UI_SETTINGS:
+         str = "UI Settings";
+         break;
+      case MENU_LABEL_PATCH_SETTINGS:
+         str = "Patch Settings";
+         break;
+      case MENU_LABEL_PLAYLIST_SETTINGS:
+         str = "Playlist Settings";
+         break;
+      case MENU_LABEL_CORE_UPDATER_SETTINGS:
+         str = "Core Updater Settings";
+         break;
+      case MENU_LABEL_NETWORK_SETTINGS:
+         str = "Network Settings";
+         break;
+      case MENU_LABEL_ARCHIVE_SETTINGS:
+         str = "Archive Settings";
+         break;
+      case MENU_LABEL_USER_SETTINGS:
+         str = "User Settings";
+         break;
+      case MENU_LABEL_DIRECTORY_SETTINGS:
+         str = "Directory Settings";
+         break;
+      case MENU_LABEL_PRIVACY_SETTINGS:
+         str = "Privacy Settings";
+         break;
+      default:
+         RARCH_LOG("unknown hash: %d\n", hash);
+         return 0;
    }
-   
+
    return !strcmp(label, str);
 }
 

@@ -26,6 +26,7 @@
 #include "../../general.h"
 #include "../../runloop.h"
 #include "menu_input.h"
+#include "menu_hash.h"
 
 #if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
 #ifndef HAVE_SHADER_MANAGER

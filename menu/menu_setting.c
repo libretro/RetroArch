@@ -15,6 +15,7 @@
  */
 
 #include <file/file_path.h>
+#include <rhash.h>
 
 #include "menu.h"
 #include "menu_setting.h"
@@ -2021,6 +2022,76 @@ static rarch_setting_t setting_string_setting_options(enum setting_type type,
   return result;
 }
 
+static int setting_get_description_compare_label(uint32_t label_hash,
+      settings_t *settings, char *s, size_t len)
+{
+   switch (label_hash)
+   {
+      case MENU_LABEL_INPUT_DRIVER:
+         if (!strcmp(settings->input.driver, "udev"))
+            snprintf(s, len,
+                  " -- udev Input driver. \n"
+                  " \n"
+                  "This driver can run without X. \n"
+                  " \n"
+                  "It uses the recent evdev joypad API \n"
+                  "for joystick support. It supports \n"
+                  "hotplugging and force feedback (if \n"
+                  "supported by device). \n"
+                  " \n"
+                  "The driver reads evdev events for keyboard \n"
+                  "support. It also supports keyboard callback, \n"
+                  "mice and touchpads. \n"
+                  " \n"
+                  "By default in most distros, /dev/input nodes \n"
+                  "are root-only (mode 600). You can set up a udev \n"
+                  "rule which makes these accessible to non-root."
+                  );
+         else if (!strcmp(settings->input.driver, "linuxraw"))
+            snprintf(s, len,
+                  " -- linuxraw Input driver. \n"
+                  " \n"
+                  "This driver requires an active TTY. Keyboard \n"
+                  "events are read directly from the TTY which \n"
+                  "makes it simpler, but not as flexible as udev. \n" "Mice, etc, are not supported at all. \n"
+                  " \n"
+                  "This driver uses the older joystick API \n"
+                  "(/dev/input/js*).");
+         else
+            snprintf(s, len,
+                  " -- Input driver.\n"
+                  " \n"
+                  "Depending on video driver, it might \n"
+                  "force a different input driver.");
+
+         break;
+      case MENU_LABEL_LOAD_CONTENT:
+         snprintf(s, len,
+               " -- Load Content. \n"
+               "Browse for content. \n"
+               " \n"
+               "To load content, you need a \n"
+               "libretro core to use, and a \n"
+               "content file. \n"
+               " \n"
+               "To control where the menu starts \n"
+               " to browse for content, set  \n"
+               "Browser Directory. If not set,  \n"
+               "it will start in root. \n"
+               " \n"
+               "The browser will filter out \n"
+               "extensions for the last core set \n"
+               "in 'Core', and use that core when \n"
+               "content is loaded."
+               );
+         break;
+      default:
+         return -1;
+   }
+
+   return 0;
+}
+
 /**
  * setting_get_description:
  * @label              : identifier label of setting
@@ -2037,68 +2108,12 @@ int setting_get_description(const char *label, char *s,
       size_t len)
 {
    settings_t      *settings = config_get_ptr();
+   uint32_t label_hash       = djb2_calculate(label);
+   
+   if (setting_get_description_compare_label(label_hash, settings, s, len) == 0)
+      return 0;
 
-   if (!strcmp(label, "input_driver"))
-   {
-      if (!strcmp(settings->input.driver, "udev"))
-         snprintf(s, len,
-               " -- udev Input driver. \n"
-               " \n"
-               "This driver can run without X. \n"
-               " \n"
-               "It uses the recent evdev joypad API \n"
-               "for joystick support. It supports \n"
-               "hotplugging and force feedback (if \n"
-               "supported by device). \n"
-               " \n"
-               "The driver reads evdev events for keyboard \n"
-               "support. It also supports keyboard callback, \n"
-               "mice and touchpads. \n"
-               " \n"
-               "By default in most distros, /dev/input nodes \n"
-               "are root-only (mode 600). You can set up a udev \n"
-               "rule which makes these accessible to non-root."
-               );
-      else if (!strcmp(settings->input.driver, "linuxraw"))
-         snprintf(s, len,
-               " -- linuxraw Input driver. \n"
-               " \n"
-               "This driver requires an active TTY. Keyboard \n"
-               "events are read directly from the TTY which \n"
-               "makes it simpler, but not as flexible as udev. \n" "Mice, etc, are not supported at all. \n"
-               " \n"
-               "This driver uses the older joystick API \n"
-               "(/dev/input/js*).");
-      else
-         snprintf(s, len,
-               " -- Input driver.\n"
-               " \n"
-               "Depending on video driver, it might \n"
-               "force a different input driver.");
-
-   }
-   else if (!strcmp(label, "load_content"))
-   {
-      snprintf(s, len,
-            " -- Load Content. \n"
-            "Browse for content. \n"
-            " \n"
-            "To load content, you need a \n"
-            "libretro core to use, and a \n"
-            "content file. \n"
-            " \n"
-            "To control where the menu starts \n"
-            " to browse for content, set  \n"
-            "Browser Directory. If not set,  \n"
-            "it will start in root. \n"
-            " \n"
-            "The browser will filter out \n"
-            "extensions for the last core set \n"
-            "in 'Core', and use that core when \n"
-            "content is loaded."
-            );
-   }
-   else if (!strcmp(label, "core_list"))
+   if (!strcmp(label, "core_list"))
    {
       snprintf(s, len,
             " -- Core Selection. \n"
