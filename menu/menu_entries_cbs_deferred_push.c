@@ -475,7 +475,7 @@ void menu_entries_cbs_init_bind_deferred_push(menu_file_list_cbs_t *cbs,
       }
    }
 
-   if (hash == MENU_LABEL_DEFERRED_RDB_ENTRY_DETAIL)
+   if (strstr(label, "deferred_rdb_entry_detail"))
       cbs->action_deferred_push = deferred_push_rdb_entry_detail;
 #ifdef HAVE_NETWORKING
    else if (hash == MENU_LABEL_DEFERRED_CORE_UPDATER_LIST)

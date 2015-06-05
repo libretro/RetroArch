@@ -457,7 +457,7 @@ enum action_iterate_type
    ITERATE_TYPE_BIND,
 };
 
-enum action_iterate_type action_iterate_type(const char *label)
+static enum action_iterate_type action_iterate_type(const char *label)
 {
    if (!strcmp(label, "help"))
       return ITERATE_TYPE_HELP;
