@@ -1555,6 +1555,7 @@ static int menu_displaylist_parse_generic(menu_displaylist_info_t *info, bool *n
    menu_handle_t *menu          = menu_driver_get_ptr();
    global_t *global             = global_get_ptr();
    settings_t *settings         = config_get_ptr();
+   uint32_t hash_label          = djb2_calculate(info->label);
 
    (void)device;
 
@@ -1633,7 +1634,7 @@ static int menu_displaylist_parse_generic(menu_displaylist_info_t *info, bool *n
             break;
          case RARCH_PLAIN_FILE:
          default:
-            if (!strcmp(info->label, "detect_core_list"))
+            if (hash_label == MENU_LABEL_DETECT_CORE_LIST)
             {
                if (path_is_compressed_file(str_list->elems[i].data))
                {
@@ -1661,23 +1662,24 @@ static int menu_displaylist_parse_generic(menu_displaylist_info_t *info, bool *n
 
       /* Push type further down in the chain.
        * Needed for shader manager currently. */
-      if (!strcmp(info->label, "content_collection_list"))
+      switch (hash_label)
       {
-         file_type = MENU_FILE_PLAYLIST_COLLECTION;
-      }
-      else if (!strcmp(info->label, "core_list"))
-      {
+         case MENU_LABEL_CONTENT_COLLECTION_LIST:
+            file_type = MENU_FILE_PLAYLIST_COLLECTION;
+            break;
+         case MENU_LABEL_CORE_LIST:
 #ifdef HAVE_LIBRETRO_MANAGEMENT
 #ifdef RARCH_CONSOLE
-         if (is_dir || strcasecmp(path, SALAMANDER_FILE) == 0)
-            continue;
+            if (is_dir || strcasecmp(path, SALAMANDER_FILE) == 0)
+               continue;
 #endif
 #endif
-         /* Compressed cores are unsupported */
-         if (file_type == MENU_FILE_CARCHIVE)
-            continue;
+            /* Compressed cores are unsupported */
+            if (file_type == MENU_FILE_CARCHIVE)
+               continue;
 
-         file_type = is_dir ? MENU_FILE_DIRECTORY : MENU_FILE_CORE;
+            file_type = is_dir ? MENU_FILE_DIRECTORY : MENU_FILE_CORE;
+            break;
       }
 
       menu_list_push(info->list, path, label,
@@ -1686,7 +1688,7 @@ static int menu_displaylist_parse_generic(menu_displaylist_info_t *info, bool *n
 
    string_list_free(str_list);
 
-   if (!strcmp(info->label, "core_list"))
+   if (hash_label == MENU_LABEL_CORE_LIST)
    {
       const char *dir = NULL;
       menu_list_get_last_stack(menu->menu_list, &dir, NULL, NULL);
