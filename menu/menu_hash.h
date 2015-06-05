@@ -19,7 +19,20 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+   
+#define MENU_LABEL_SCREENSHOT_DIRECTORY                                        0x552612d7U
 
+#define MENU_LABEL_VIDEO_SWAP_INTERVAL                                         0x5673ff9aU
+#define MENU_LABEL_VIDEO_GPU_SCREENSHOT                                        0xee2fcb44U
+#define MENU_LABEL_PAUSE_NONACTIVE                                             0x580bf549U
+#define MENU_LABEL_BLOCK_SRAM_OVERWRITE                                        0xc4e88d08U
+#define MENU_LABEL_VIDEO_FULLSCREEN                                            0x9506dd4eU
+#define MENU_LABEL_CORE_SPECIFIC_CONFIG                                        0x3c9a55e8U
+#define MENU_LABEL_RGUI_SHOW_START_SCREEN                                      0x6b38f0e8U
+#define MENU_LABEL_VIDEO_BLACK_FRAME_INSERTION                                 0x53477f5cU
+#define MENU_LABEL_VIDEO_HARD_SYNC_FRAMES                                      0xce0ece13U
+#define MENU_LABEL_VIDEO_FRAME_DELAY                                           0xd4aa9df4U
+#define MENU_LABEL_SCREENSHOT                                                  0x9a37f083U
 #define MENU_LABEL_REWIND_GRANULARITY                                          0xe859cbdfU
 #define MENU_LABEL_VIDEO_THREADED                                              0x0626179cU
 #define MENU_LABEL_VIDEO_VSYNC                                                 0x09c2d34eU

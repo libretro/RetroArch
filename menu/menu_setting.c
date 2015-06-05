@@ -2659,6 +2659,93 @@ static int setting_get_description_compare_label(uint32_t label_hash,
                "at a time, increasing the rewinding \n"
                "speed.");
          break;
+      case MENU_LABEL_SCREENSHOT:
+         snprintf(s, len,
+               " -- Take screenshot.");
+         break;
+      case MENU_LABEL_VIDEO_FRAME_DELAY:
+         snprintf(s, len,
+               " -- Sets how many milliseconds to delay\n"
+               "after VSync before running the core.\n"
+               "\n"
+               "Can reduce latency at cost of\n"
+               "higher risk of stuttering.\n"
+               " \n"
+               "Maximum is 15.");
+         break;
+      case MENU_LABEL_VIDEO_HARD_SYNC_FRAMES:
+         snprintf(s, len,
+               " -- Sets how many frames CPU can \n"
+               "run ahead of GPU when using 'GPU \n"
+               "Hard Sync'.\n"
+               " \n"
+               "Maximum is 3.\n"
+               " \n"
+               " 0: Syncs to GPU immediately.\n"
+               " 1: Syncs to previous frame.\n"
+               " 2: Etc ...");
+         break;
+      case MENU_LABEL_VIDEO_BLACK_FRAME_INSERTION:
+         snprintf(s, len,
+               " -- Inserts a black frame inbetween \n"
+               "frames.\n"
+               " \n"
+               "Useful for 120 Hz monitors who want to \n"
+               "play 60 Hz material with eliminated \n"
+               "ghosting.\n"
+               " \n"
+               "Video refresh rate should still be \n"
+               "configured as if it is a 60 Hz monitor \n"
+               "(divide refresh rate by 2).");
+         break;
+      case MENU_LABEL_RGUI_SHOW_START_SCREEN:
+         snprintf(s, len,
+               " -- Show startup screen in menu.\n"
+               "Is automatically set to false when seen\n"
+               "for the first time.\n"
+               " \n"
+               "This is only updated in config if\n"
+               "'Save Configuration on Exit' is enabled.\n");
+         break;
+      case MENU_LABEL_CORE_SPECIFIC_CONFIG:
+         snprintf(s, len,
+               " -- Load up a specific config file \n"
+               "based on the core being used.\n");
+         break;
+      case MENU_LABEL_VIDEO_FULLSCREEN:
+         snprintf(s, len, " -- Toggles fullscreen.");
+         break;
+      case MENU_LABEL_BLOCK_SRAM_OVERWRITE:
+         snprintf(s, len,
+               " -- Block SRAM from being overwritten \n"
+               "when loading save states.\n"
+               " \n"
+               "Might potentially lead to buggy games.");
+         break;
+      case MENU_LABEL_PAUSE_NONACTIVE:
+         snprintf(s, len,
+               " -- Pause gameplay when window focus \n"
+               "is lost.");
+         break;
+      case MENU_LABEL_VIDEO_GPU_SCREENSHOT:
+         snprintf(s, len,
+               " -- Screenshots output of GPU shaded \n"
+               "material if available.");
+         break;
+      case MENU_LABEL_SCREENSHOT_DIRECTORY:
+         snprintf(s, len,
+               " -- Screenshot Directory. \n"
+               " \n"
+               "Directory to dump screenshots to."
+               );
+         break;
+      case MENU_LABEL_VIDEO_SWAP_INTERVAL:
+         snprintf(s, len,
+               " -- VSync Swap Interval.\n"
+               " \n"
+               "Uses a custom swap interval for VSync. Set this \n"
+               "to effectively halve monitor refresh rate.");
+         break;
       default:
          return -1;
    }
@@ -2687,101 +2774,7 @@ int setting_get_description(const char *label, char *s,
    if (setting_get_description_compare_label(label_hash, settings, s, len) == 0)
       return 0;
 
-   if (!strcmp(label, "rgui_show_start_screen"))
-   {
-      snprintf(s, len,
-            " -- Show startup screen in menu.\n"
-            "Is automatically set to false when seen\n"
-            "for the first time.\n"
-            " \n"
-            "This is only updated in config if\n"
-            "'Save Configuration on Exit' is enabled.\n");
-   }
-   else if (!strcmp(label, "core_specific_config"))
-   {
-      snprintf(s, len,
-            " -- Load up a specific config file \n"
-            "based on the core being used.\n");
-   }
-   else if (!strcmp(label, "video_hard_sync_frames"))
-   {
-      snprintf(s, len,
-            " -- Sets how many frames CPU can \n"
-            "run ahead of GPU when using 'GPU \n"
-            "Hard Sync'.\n"
-            " \n"
-            "Maximum is 3.\n"
-            " \n"
-            " 0: Syncs to GPU immediately.\n"
-            " 1: Syncs to previous frame.\n"
-            " 2: Etc ...");
-   }
-   else if (!strcmp(label, "video_frame_delay"))
-   {
-      snprintf(s, len,
-            " -- Sets how many milliseconds to delay\n"
-            "after VSync before running the core.\n"
-            "\n"
-            "Can reduce latency at cost of\n"
-            "higher risk of stuttering.\n"
-            " \n"
-            "Maximum is 15.");
-   }
-   else if (!strcmp(label, "video_fullscreen"))
-   {
-      snprintf(s, len, " -- Toggles fullscreen.");
-   }
-   else if (!strcmp(label, "video_black_frame_insertion"))
-   {
-      snprintf(s, len,
-            " -- Inserts a black frame inbetween \n"
-            "frames.\n"
-            " \n"
-            "Useful for 120 Hz monitors who want to \n"
-            "play 60 Hz material with eliminated \n"
-            "ghosting.\n"
-            " \n"
-            "Video refresh rate should still be \n"
-            "configured as if it is a 60 Hz monitor \n"
-            "(divide refresh rate by 2).");
-   }
-   else if (!strcmp(label, "block_sram_overwrite"))
-   {
-      snprintf(s, len,
-            " -- Block SRAM from being overwritten \n"
-            "when loading save states.\n"
-            " \n"
-            "Might potentially lead to buggy games.");
-   }
-   else if (!strcmp(label, "pause_nonactive"))
-   {
-      snprintf(s, len,
-            " -- Pause gameplay when window focus \n"
-            "is lost.");
-   }
-   else if (!strcmp(label, "video_gpu_screenshot"))
-   {
-      snprintf(s, len,
-            " -- Screenshots output of GPU shaded \n"
-            "material if available.");
-   }
-   else if (!strcmp(label, "screenshot_directory"))
-   {
-      snprintf(s, len,
-            " -- Screenshot Directory. \n"
-            " \n"
-            "Directory to dump screenshots to."
-            );
-   }
-   else if (!strcmp(label, "video_swap_interval"))
-   {
-      snprintf(s, len,
-            " -- VSync Swap Interval.\n"
-            " \n"
-            "Uses a custom swap interval for VSync. Set this \n"
-            "to effectively halve monitor refresh rate.");
-   }
-   else if (!strcmp(label, "savefile_directory"))
+   if (!strcmp(label, "savefile_directory"))
    {
       snprintf(s, len,
             " -- Savefile Directory. \n"
@@ -2958,9 +2951,6 @@ int setting_get_description(const char *label, char *s,
    else if (!strcmp(label, "osk_enable"))
       snprintf(s, len,
             " -- Enable/disable on-screen keyboard.");            
-   else if (!strcmp(label, "screenshot"))
-      snprintf(s, len,
-            " -- Take screenshot.");
    else
       snprintf(s, len,
             "-- No info on this item is available. --\n");
