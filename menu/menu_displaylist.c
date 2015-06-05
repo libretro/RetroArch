@@ -1343,6 +1343,7 @@ static void menu_displaylist_push_horizontal_menu_list_content(
 
 static int menu_displaylist_parse_horizontal_list(menu_displaylist_info_t *_info)
 {
+   size_t i;
    const char            *path = NULL;
    core_info_t            *info = NULL;
    global_t            *global = global_get_ptr();
@@ -1364,37 +1365,32 @@ static int menu_displaylist_parse_horizontal_list(menu_displaylist_info_t *_info
    path = settings->core_assets_directory;
    list = _info->list;
 
+   if (!info->supports_no_game)
+      menu_displaylist_push_horizontal_menu_list_content(list, info, path);
+   else
+      menu_list_push(list, info->display_name, "content_actions",
+            MENU_FILE_CONTENTLIST_ENTRY, 0);
+
+   if (!info->databases_list)
+      return 0;
+
+   for (i = 0; i < info->databases_list->size; i++)
    {
-      size_t i;
-      settings_t *settings     = config_get_ptr();
+      char db_path[PATH_MAX_LENGTH];
+      struct string_list *str_list = (struct string_list*)info->databases_list;
 
-      if (!info->supports_no_game)
-         menu_displaylist_push_horizontal_menu_list_content(list, info, path);
-      else
-         menu_list_push(list, info->display_name, "content_actions",
-               MENU_FILE_CONTENTLIST_ENTRY, 0);
+      if (!str_list)
+         continue;
 
-      if (!info->databases_list)
-         return 0;
+      fill_pathname_join(db_path, settings->content_database,
+            str_list->elems[i].data, sizeof(db_path));
+      strlcat(db_path, ".rdb", sizeof(db_path));
 
-      for (i = 0; i < info->databases_list->size; i++)
-      {
-         char db_path[PATH_MAX_LENGTH];
-         struct string_list *str_list = (struct string_list*)info->databases_list;
+      if (!path_file_exists(db_path))
+         continue;
 
-         if (!str_list)
-            continue;
-
-         fill_pathname_join(db_path, settings->content_database,
-               str_list->elems[i].data, sizeof(db_path));
-         strlcat(db_path, ".rdb", sizeof(db_path));
-
-         if (!path_file_exists(db_path))
-            continue;
-
-         menu_list_push(list, path_basename(db_path), "core_database",
-               MENU_FILE_RDB, 0);
-      }
+      menu_list_push(list, path_basename(db_path), "core_database",
+            MENU_FILE_RDB, 0);
    }
 
    return 0;
