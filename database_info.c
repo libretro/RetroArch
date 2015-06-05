@@ -15,10 +15,11 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "file_ext.h"
-#include "dir_list_special.h"
 #include <file/file_extract.h>
 #include <rhash.h>
+
+#include "file_ext.h"
+#include "dir_list_special.h"
 
 #include "database_info.h"
 #include "file_ops.h"

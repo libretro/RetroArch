@@ -14,6 +14,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <file/file_path.h>
+
 #include "menu.h"
 #include "menu_display.h"
 #include "menu_entry.h"
@@ -22,7 +24,6 @@
 #include "../frontend/frontend.h"
 #include "../../retroarch.h"
 #include "../../performance.h"
-#include <file/file_path.h>
 
 static void menu_environment_get(int *argc, char *argv[],
       void *args, void *params_data)
