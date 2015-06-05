@@ -499,7 +499,7 @@ void menu_entries_cbs_init_bind_deferred_push(menu_file_list_cbs_t *cbs,
       cbs->action_deferred_push = deferred_push_shader_options;
    else if (hash == MENU_LABEL_VIDEO_OPTIONS)
       cbs->action_deferred_push = deferred_push_video_options;
-   else if (!strcmp(label, "options"))
+   else if (hash == MENU_LABEL_OPTIONS)
       cbs->action_deferred_push = deferred_push_options;
    else if (hash == MENU_LABEL_MANAGEMENT)
       cbs->action_deferred_push = deferred_push_management_options;
@@ -547,7 +547,7 @@ void menu_entries_cbs_init_bind_deferred_push(menu_file_list_cbs_t *cbs,
       cbs->action_deferred_push = deferred_push_video_shader_preset_parameters;
    else if (hash == MENU_LABEL_VIDEO_SHADER_PARAMETERS)
       cbs->action_deferred_push = deferred_push_video_shader_parameters;
-   else if (!strcmp(label, "settings"))
+   else if (hash == MENU_LABEL_SETTINGS)
       cbs->action_deferred_push = deferred_push_settings;
    else if (hash == MENU_LABEL_FRONTEND_COUNTERS)
       cbs->action_deferred_push = deferred_push_frontend_counters;
