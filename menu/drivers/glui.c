@@ -297,7 +297,14 @@ static void glui_render_menu_list(glui_handle_t *glui,
       char entry_path[PATH_MAX_LENGTH], entry_value[PATH_MAX_LENGTH];
       char message[PATH_MAX_LENGTH],
            entry_title_buf[PATH_MAX_LENGTH], type_str_buf[PATH_MAX_LENGTH];
-      bool entry_selected = menu_entry_is_currently_selected(i);
+      bool entry_selected;
+
+      y = menu->header_height - menu->scroll_y + (glui->line_height * i);
+
+      if (y > height || y + glui->line_height < 0)
+         continue;
+
+      entry_selected = menu_entry_is_currently_selected(i);
       menu_entry_get_value(i, entry_value, sizeof(entry_value));
       menu_entry_get_path(i, entry_path, sizeof(entry_path));
 
@@ -307,8 +314,6 @@ static void glui_render_menu_list(glui_handle_t *glui,
             frame_count / 100, entry_value, entry_selected);
 
       strlcpy(message, entry_title_buf, sizeof(message));
-
-      y = menu->header_height - menu->scroll_y + (glui->line_height * i);
 
       glui_blit_line(glui->margin, y, message,
             entry_selected ? hover_color : normal_color, TEXT_ALIGN_LEFT);
