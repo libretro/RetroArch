@@ -14,11 +14,12 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "menu_animation.h"
 #include <math.h>
 #include <string.h>
 #include <compat/strl.h>
 #include <retro_miscellaneous.h>
+
+#include "menu_animation.h"
 #include "../runloop.h"
 
 /* from https://github.com/kikito/tween.lua/blob/master/tween.lua */

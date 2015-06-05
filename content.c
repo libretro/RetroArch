@@ -26,7 +26,7 @@
 #include "movie.h"
 #include "patch.h"
 #include "compat/strl.h"
-#include "hash.h"
+#include <rhash.h>
 #include <file/file_extract.h>
 
 #ifdef _WIN32

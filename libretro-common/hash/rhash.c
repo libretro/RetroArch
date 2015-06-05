@@ -1,17 +1,23 @@
-/*  RetroArch - A frontend for libretro.
- *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2010-2015 - Daniel De Matteis
- * 
- *  RetroArch is free software: you can redistribute it and/or modify it under the terms
- *  of the GNU General Public License as published by the Free Software Found-
- *  ation, either version 3 of the License, or (at your option) any later version.
+/* Copyright  (C) 2010-2015 The RetroArch team
  *
- *  RetroArch is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
- *  without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
- *  PURPOSE.  See the GNU General Public License for more details.
+ * ---------------------------------------------------------------------------------------
+ * The following license statement only applies to this file (rhash.c).
+ * ---------------------------------------------------------------------------------------
  *
- *  You should have received a copy of the GNU General Public License along with RetroArch.
- *  If not, see <http://www.gnu.org/licenses/>.
+ * Permission is hereby granted, free of charge,
+ * to any person obtaining a copy of this software and associated documentation files (the "Software"),
+ * to deal in the Software without restriction, including without limitation the rights to
+ * use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software,
+ * and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
 #include <string.h>
@@ -22,7 +28,7 @@
 #else
 #include <unistd.h>
 #endif
-#include "hash.h"
+#include <rhash.h>
 #include <retro_miscellaneous.h>
 #include <retro_endianness.h>
 
@@ -109,20 +115,23 @@ static void sha256_block(struct sha256_ctx *p)
    p->inlen = 0;
 }
 
-static void sha256_chunk(struct sha256_ctx *p, const uint8_t *s, unsigned len) 
+static void sha256_chunk(struct sha256_ctx *p,
+      const uint8_t *s, unsigned len) 
 {
    unsigned l;
+
    p->len += len;
 
    while (len) 
    {
-      l = 64 - p->inlen;
-      l = (len < l) ? len : l;
+      l         = 64 - p->inlen;
+      l         = (len < l) ? len : l;
 
       memcpy(p->in.u8 + p->inlen, s, l);
-      s += l;
+
+      s        += l;
       p->inlen += l;
-      len -= l;
+      len      -= l;
 
       if (p->inlen == 64) 
          sha256_block(p);
@@ -157,13 +166,13 @@ static void sha256_subhash(struct sha256_ctx *p, uint32_t *t)
 
 /** 
  * sha256_hash:
- * @out               : Output.
+ * @s                 : Output.
  * @in                : Input.
- * @size              : Size of @out.
+ * @size              : Size of @s.
  *
  * Hashes SHA256 and outputs a human readable string.
  **/
-void sha256_hash(char *out, const uint8_t *in, size_t size)
+void sha256_hash(char *s, const uint8_t *in, size_t size)
 {
    unsigned i;
    struct sha256_ctx sha;
@@ -180,7 +189,7 @@ void sha256_hash(char *out, const uint8_t *in, size_t size)
    sha256_subhash(&sha, shahash.u32);
 
    for (i = 0; i < 32; i++)
-      snprintf(out + 2 * i, 3, "%02x", (unsigned)shahash.u8[i]);
+      snprintf(s + 2 * i, 3, "%02x", (unsigned)shahash.u8[i]);
 }
 
 #ifndef HAVE_ZLIB
@@ -293,6 +302,9 @@ uint32_t crc32_calculate(const uint8_t *data, size_t length)
 
 static void SHA1Reset(SHA1Context *context)
 {
+   if (!context)
+      return;
+
    context->Length_Low             = 0;
    context->Length_High            = 0;
    context->Message_Block_Index    = 0;
@@ -341,37 +353,37 @@ static void SHA1ProcessMessageBlock(SHA1Context *context)
 
    for(t = 0; t < 20; t++)
    {
-      temp =  SHA1CircularShift(5,A) +
+      temp  =  SHA1CircularShift(5,A) +
          ((B & C) | ((~B) & D)) + E + W[t] + K[0];
       temp &= 0xFFFFFFFF;
-      E = D;
-      D = C;
-      C = SHA1CircularShift(30,B);
-      B = A;
-      A = temp;
+      E     = D;
+      D     = C;
+      C     = SHA1CircularShift(30,B);
+      B     = A;
+      A     = temp;
    }
 
    for(t = 20; t < 40; t++)
    {
-      temp = SHA1CircularShift(5,A) + (B ^ C ^ D) + E + W[t] + K[1];
+      temp  = SHA1CircularShift(5,A) + (B ^ C ^ D) + E + W[t] + K[1];
       temp &= 0xFFFFFFFF;
-      E = D;
-      D = C;
-      C = SHA1CircularShift(30,B);
-      B = A;
-      A = temp;
+      E     = D;
+      D     = C;
+      C     = SHA1CircularShift(30,B);
+      B     = A;
+      A     = temp;
    }
 
    for(t = 40; t < 60; t++)
    {
-      temp = SHA1CircularShift(5,A) +
+      temp  = SHA1CircularShift(5,A) +
          ((B & C) | (B & D) | (C & D)) + E + W[t] + K[2];
       temp &= 0xFFFFFFFF;
-      E = D;
-      D = C;
-      C = SHA1CircularShift(30,B);
-      B = A;
-      A = temp;
+      E     = D;
+      D     = C;
+      C     = SHA1CircularShift(30,B);
+      B     = A;
+      A     = temp;
    }
 
    for(t = 60; t < 80; t++)
@@ -401,6 +413,9 @@ static void SHA1ProcessMessageBlock(SHA1Context *context)
 
 static void SHA1PadMessage(SHA1Context *context)
 {
+   if (!context)
+      return;
+
    /*
     *  Check to see if the current message block is too small to hold
     *  the initial padding bits and length.  If so, we will pad the
@@ -447,9 +462,9 @@ static int SHA1Result(SHA1Context *context)
    return 1;
 }
 
-static void SHA1Input(     SHA1Context         *context,
-                    const unsigned char *message_array,
-                    unsigned            length)
+static void SHA1Input(SHA1Context *context,
+      const unsigned char *message_array,
+      unsigned length)
 {
    if (!length)
       return;

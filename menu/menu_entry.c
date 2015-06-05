@@ -281,7 +281,7 @@ void menu_entry_pathdir_selected(uint32_t i)
 {
    rarch_setting_t *setting = menu_entry_get_setting(i);
    if (menu_setting_is_of_path_type(setting))
-      setting->action_toggle( setting, MENU_ACTION_RIGHT, false);
+      setting->action_right( setting, MENU_ACTION_RIGHT, false);
 }
 
 bool menu_entry_pathdir_allow_empty(uint32_t i)

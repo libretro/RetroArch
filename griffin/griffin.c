@@ -81,7 +81,7 @@ CONFIG FILE
 CHEATS
 ============================================================ */
 #include "../cheats.c"
-#include "../hash.c"
+#include "../libretro-common/hash/rhash.c"
 
 /*============================================================
 UI COMMON CONTEXT

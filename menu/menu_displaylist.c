@@ -19,6 +19,7 @@
 #include <file/file_path.h>
 #include <file/file_extract.h>
 #include <file/dir_list.h>
+#include <rhash.h>
 
 #include "menu.h"
 #include "menu_display.h"
@@ -1106,6 +1107,7 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
             bool match_found = false;
             struct string_list *tmp_str_list = string_split(
                   playlist->entries[j].crc32, "|");
+            uint32_t hash_value = 0;
 
             if (!tmp_str_list)
                continue;
@@ -1115,20 +1117,22 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
             if (tmp_str_list->size > 1)
                strlcpy(elem1, tmp_str_list->elems[1].data, sizeof(elem1));
 
-            if (!strcmp(elem1, "crc"))
+            hash_value = djb2_calculate(elem1);
+
+            switch (hash_value)
             {
-               if (!strcmp(db_info_entry->crc32, elem0))
-                  match_found = true;
-            }
-            else if (!strcmp(elem1, "sha1"))
-            {
-               if (!strcmp(db_info_entry->sha1, elem0))
-                  match_found = true;
-            }
-            else if (!strcmp(elem1, "md5"))
-            {
-               if (!strcmp(db_info_entry->md5, elem0))
-                  match_found = true;
+               case MENU_VALUE_CRC:
+                  if (!strcmp(db_info_entry->crc32, elem0))
+                     match_found = true;
+                  break;
+               case MENU_VALUE_SHA1:
+                  if (!strcmp(db_info_entry->sha1, elem0))
+                     match_found = true;
+                  break;
+               case MENU_VALUE_MD5:
+                  if (!strcmp(db_info_entry->md5, elem0))
+                     match_found = true;
+                  break;
             }
 
             string_list_free(tmp_str_list);
@@ -1551,6 +1555,7 @@ static int menu_displaylist_parse_generic(menu_displaylist_info_t *info, bool *n
    menu_handle_t *menu          = menu_driver_get_ptr();
    global_t *global             = global_get_ptr();
    settings_t *settings         = config_get_ptr();
+   uint32_t hash_label          = djb2_calculate(info->label);
 
    (void)device;
 
@@ -1629,7 +1634,7 @@ static int menu_displaylist_parse_generic(menu_displaylist_info_t *info, bool *n
             break;
          case RARCH_PLAIN_FILE:
          default:
-            if (!strcmp(info->label, "detect_core_list"))
+            if (hash_label == MENU_LABEL_DETECT_CORE_LIST)
             {
                if (path_is_compressed_file(str_list->elems[i].data))
                {
@@ -1657,23 +1662,24 @@ static int menu_displaylist_parse_generic(menu_displaylist_info_t *info, bool *n
 
       /* Push type further down in the chain.
        * Needed for shader manager currently. */
-      if (!strcmp(info->label, "content_collection_list"))
+      switch (hash_label)
       {
-         file_type = MENU_FILE_PLAYLIST_COLLECTION;
-      }
-      else if (!strcmp(info->label, "core_list"))
-      {
+         case MENU_LABEL_CONTENT_COLLECTION_LIST:
+            file_type = MENU_FILE_PLAYLIST_COLLECTION;
+            break;
+         case MENU_LABEL_CORE_LIST:
 #ifdef HAVE_LIBRETRO_MANAGEMENT
 #ifdef RARCH_CONSOLE
-         if (is_dir || strcasecmp(path, SALAMANDER_FILE) == 0)
-            continue;
+            if (is_dir || strcasecmp(path, SALAMANDER_FILE) == 0)
+               continue;
 #endif
 #endif
-         /* Compressed cores are unsupported */
-         if (file_type == MENU_FILE_CARCHIVE)
-            continue;
+            /* Compressed cores are unsupported */
+            if (file_type == MENU_FILE_CARCHIVE)
+               continue;
 
-         file_type = is_dir ? MENU_FILE_DIRECTORY : MENU_FILE_CORE;
+            file_type = is_dir ? MENU_FILE_DIRECTORY : MENU_FILE_CORE;
+            break;
       }
 
       menu_list_push(info->list, path, label,
@@ -1682,7 +1688,7 @@ static int menu_displaylist_parse_generic(menu_displaylist_info_t *info, bool *n
 
    string_list_free(str_list);
 
-   if (!strcmp(info->label, "core_list"))
+   if (hash_label == MENU_LABEL_CORE_LIST)
    {
       const char *dir = NULL;
       menu_list_get_last_stack(menu->menu_list, &dir, NULL, NULL);
@@ -2070,7 +2076,7 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
    return ret;
 }
 
-static int menu_displaylist_deferred_push(menu_displaylist_info_t *info)
+static int menu_displaylist_deferred_push(menu_displaylist_info_t *info, uint32_t hash_label)
 {
    menu_file_list_cbs_t *cbs = NULL;
    menu_handle_t       *menu = menu_driver_get_ptr();
@@ -2078,14 +2084,13 @@ static int menu_displaylist_deferred_push(menu_displaylist_info_t *info)
    if (!info->list)
       return -1;
 
-   if (!strcmp(info->label, "Main Menu"))
+   switch (hash_label)
    {
-      info->flags = SL_FLAG_MAIN_MENU;
-      return menu_displaylist_push_list(info, DISPLAYLIST_MAIN_MENU);
-   }
-   else if (!strcmp(info->label, "Horizontal Menu"))
-   {
-      return menu_displaylist_push_list(info, DISPLAYLIST_HORIZONTAL);
+      case MENU_VALUE_MAIN_MENU:
+         info->flags = SL_FLAG_MAIN_MENU;
+         return menu_displaylist_push_list(info, DISPLAYLIST_MAIN_MENU);
+      case MENU_VALUE_HORIZONTAL_MENU:
+         return menu_displaylist_push_list(info, DISPLAYLIST_HORIZONTAL);
    }
 
    cbs = (menu_file_list_cbs_t*)
@@ -2104,6 +2109,8 @@ int menu_displaylist_push(file_list_t *list, file_list_t *menu_list)
    const char *label            = NULL;
    menu_handle_t *menu          = menu_driver_get_ptr();
    menu_displaylist_info_t info = {0};
+   uint32_t          hash_value = 0;
+   
 
    menu_list_get_last_stack(menu->menu_list, &path, &label, &type);
 
@@ -2113,7 +2120,9 @@ int menu_displaylist_push(file_list_t *list, file_list_t *menu_list)
    strlcpy(info.path, path, sizeof(info.path));
    strlcpy(info.label, label, sizeof(info.label));
 
-   return menu_displaylist_deferred_push(&info);
+   hash_value     = djb2_calculate(label);
+
+   return menu_displaylist_deferred_push(&info, hash_value);
 }
 
 /**

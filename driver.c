@@ -14,6 +14,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <rhash.h>
+
 #include "driver.h"
 #include "general.h"
 #include "retroarch.h"
@@ -60,6 +62,15 @@ driver_t *driver_get_ptr(void)
    return g_driver;
 }
 
+#define HASH_LOCATION_DRIVER           0x09189689U
+#define HASH_CAMERA_DRIVER             0xf25db959U
+#define HASH_MENU_DRIVER               0xd607fb05U
+#define HASH_INPUT_DRIVER              0x4c087840U
+#define HASH_INPUT_JOYPAD_DRIVER       0xab124146U
+#define HASH_VIDEO_DRIVER              0x1805a5e7U
+#define HASH_AUDIO_DRIVER              0x26594002U
+#define HASH_AUDIO_RESAMPLER_DRIVER    0xedcba9ecU
+#define HASH_RECORD_DRIVER             0x144cd2cfU
 /**
  * find_driver_nonempty:
  * @label              : string of driver type to be found.
@@ -77,62 +88,57 @@ static const void *find_driver_nonempty(const char *label, int i,
       char *s, size_t len)
 {
    const void *drv = NULL;
+   uint32_t hash   = djb2_calculate(label);
 
-   if (!strcmp(label, "camera_driver"))
+   switch (hash)
    {
-      drv = camera_driver_find_handle(i);
-      if (drv)
-         strlcpy(s, camera_driver_find_ident(i), len);
-   }
-   else if (!strcmp(label, "location_driver"))
-   {
-      drv = location_driver_find_handle(i);
-      if (drv)
-         strlcpy(s, location_driver_find_ident(i), len);
-   }
+      case HASH_CAMERA_DRIVER:
+         drv = camera_driver_find_handle(i);
+         if (drv)
+            strlcpy(s, camera_driver_find_ident(i), len);
+         break;
+      case HASH_LOCATION_DRIVER:
+         drv = location_driver_find_handle(i);
+         if (drv)
+            strlcpy(s, location_driver_find_ident(i), len);
+         break;
+      case HASH_MENU_DRIVER:
 #ifdef HAVE_MENU
-   else if (!strcmp(label, "menu_driver"))
-   {
-      drv = menu_driver_find_handle(i);
-      if (drv)
-         strlcpy(s, menu_driver_find_ident(i), len);
-   }
+         drv = menu_driver_find_handle(i);
+         if (drv)
+            strlcpy(s, menu_driver_find_ident(i), len);
 #endif
-   else if (!strcmp(label, "input_driver"))
-   {
-      drv = input_driver_find_handle(i);
-      if (drv)
-         strlcpy(s, input_driver_find_ident(i), len);
-   }
-   else if (!strcmp(label, "input_joypad_driver"))
-   {
-      drv = joypad_driver_find_handle(i);
-      if (drv)
-         strlcpy(s, joypad_driver_find_ident(i), len);
-   }
-   else if (!strcmp(label, "video_driver"))
-   {
-      drv = video_driver_find_handle(i);
-      if (drv)
-         strlcpy(s, video_driver_find_ident(i), len);
-   }
-   else if (!strcmp(label, "audio_driver"))
-   {
-      drv = audio_driver_find_handle(i);
-      if (drv)
-         strlcpy(s, audio_driver_find_ident(i), len);
-   }
-   else if (!strcmp(label, "record_driver"))
-   {
-      drv = record_driver_find_handle(i);
-      if (drv)
-         strlcpy(s, record_driver_find_ident(i), len);
-   }
-   else if (!strcmp(label, "audio_resampler_driver"))
-   {
-      drv = audio_resampler_driver_find_handle(i);
-      if (drv)
-         strlcpy(s, audio_resampler_driver_find_ident(i), len);
+         break;
+      case HASH_INPUT_DRIVER:
+         drv = input_driver_find_handle(i);
+         if (drv)
+            strlcpy(s, input_driver_find_ident(i), len);
+         break;
+      case HASH_INPUT_JOYPAD_DRIVER:
+         drv = joypad_driver_find_handle(i);
+         if (drv)
+            strlcpy(s, joypad_driver_find_ident(i), len);
+         break;
+      case HASH_VIDEO_DRIVER:
+         drv = video_driver_find_handle(i);
+         if (drv)
+            strlcpy(s, video_driver_find_ident(i), len);
+         break;
+      case HASH_AUDIO_DRIVER:
+         drv = audio_driver_find_handle(i);
+         if (drv)
+            strlcpy(s, audio_driver_find_ident(i), len);
+         break;
+      case HASH_RECORD_DRIVER:
+         drv = record_driver_find_handle(i);
+         if (drv)
+            strlcpy(s, record_driver_find_ident(i), len);
+         break;
+      case HASH_AUDIO_RESAMPLER_DRIVER:
+         drv = audio_resampler_driver_find_handle(i);
+         if (drv)
+            strlcpy(s, audio_resampler_driver_find_ident(i), len);
+         break;
    }
 
    return drv;

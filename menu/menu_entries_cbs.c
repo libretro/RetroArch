@@ -14,6 +14,8 @@
  */
 
 #include <file/file_path.h>
+#include <rhash.h>
+
 #include "menu.h"
 #include "menu_entries_cbs.h"
 #include "menu_setting.h"
@@ -26,34 +28,7 @@
 #include "../runloop.h"
 #include "../file_ops.h"
 
-#include "hash.h"
-
-#define MENU_LABEL_DRIVER_SETTINGS                    0x81cd2d62U
-#define MENU_LABEL_CORE_SETTINGS                      0x06795dffU
-#define MENU_LABEL_CONFIGURATION_SETTINGS             0x5a1558ceU
-#define MENU_LABEL_LOGGING_SETTINGS                   0x902c003dU
-#define MENU_LABEL_SAVING_SETTINGS                    0x32fea87eU
-#define MENU_LABEL_REWIND_SETTINGS                    0xbff7775fU
-#define MENU_LABEL_VIDEO_SETTINGS                     0x9dd23badU
-#define MENU_LABEL_RECORDING_SETTINGS                 0x1a80b313U
-#define MENU_LABEL_FRAME_THROTTLE_SETTINGS            0x573b8837U
-#define MENU_LABEL_SHADER_SETTINGS                    0xd6657e8dU
-#define MENU_LABEL_ONSCREEN_DISPLAY_SETTINGS          0x67571029U
-#define MENU_LABEL_AUDIO_SETTINGS                     0x8f74c888U
-#define MENU_LABEL_INPUT_SETTINGS                     0xddd30846U
-#define MENU_LABEL_INPUT_HOTKEY_SETTINGS              0xa4fee31aU
-#define MENU_LABEL_OVERLAY_SETTINGS                   0x34377f98U
-#define MENU_LABEL_ONSCREEN_KEYBOARD_OVERLAY_SETTINGS 0xa6de9ba6U
-#define MENU_LABEL_MENU_SETTINGS                      0x61e4544bU
-#define MENU_LABEL_UI_SETTINGS                        0xf8da6ef4U
-#define MENU_LABEL_PATCH_SETTINGS                     0xa78b0986U
-#define MENU_LABEL_PLAYLIST_SETTINGS                  0x4d276288U
-#define MENU_LABEL_CORE_UPDATER_SETTINGS              0x124ad454U
-#define MENU_LABEL_NETWORK_SETTINGS                   0x8b50d180U
-#define MENU_LABEL_ARCHIVE_SETTINGS                   0x78e85398U
-#define MENU_LABEL_USER_SETTINGS                      0xcdc9a8f5U
-#define MENU_LABEL_DIRECTORY_SETTINGS                 0xb817bd2bU
-#define MENU_LABEL_PRIVACY_SETTINGS                   0xce106254U
+#include <rhash.h>
 
 void menu_entries_common_load_content(bool persist)
 {
@@ -159,91 +134,92 @@ int menu_entries_common_is_settings_entry(const char *label)
 {
    uint32_t    hash = djb2_calculate(label);
    const char* str  = NULL;
-   
+
    switch (hash)
    {
-   case MENU_LABEL_DRIVER_SETTINGS:
-      str = "Driver Settings";
-      break;
-   case MENU_LABEL_CORE_SETTINGS:
-      str = "Core Settings";
-      break;
-   case MENU_LABEL_CONFIGURATION_SETTINGS:
-      str = "Configuration Settings";
-      break;
-   case MENU_LABEL_LOGGING_SETTINGS:
-      str = "Logging Settings";
-      break;
-   case MENU_LABEL_SAVING_SETTINGS:
-      str = "Saving Settings";
-      break;
-   case MENU_LABEL_REWIND_SETTINGS:
-      str = "Rewind Settings";
-      break;
-   case MENU_LABEL_VIDEO_SETTINGS:
-      str = "Video Settings";
-      break;
-   case MENU_LABEL_RECORDING_SETTINGS:
-      str = "Recording Settings";
-      break;
-   case MENU_LABEL_FRAME_THROTTLE_SETTINGS:
-      str = "Frame Throttle Settings";
-      break;
-   case MENU_LABEL_SHADER_SETTINGS:
-      str = "Shader Settings";
-      break;
-   case MENU_LABEL_ONSCREEN_DISPLAY_SETTINGS:
-      str = "Onscreen Display Settings";
-      break;
-   case MENU_LABEL_AUDIO_SETTINGS:
-      str = "Audio Settings";
-      break;
-   case MENU_LABEL_INPUT_SETTINGS:
-      str = "Input Settings";
-      break;
-   case MENU_LABEL_INPUT_HOTKEY_SETTINGS:
-      str = "Input Hotkey Settings";
-      break;
-   case MENU_LABEL_OVERLAY_SETTINGS:
-      str = "Overlay Settings";
-      break;
-   case MENU_LABEL_ONSCREEN_KEYBOARD_OVERLAY_SETTINGS:
-      str = "Onscreen Keyboard Overlay Settings";
-      break;
-   case MENU_LABEL_MENU_SETTINGS:
-      str = "Menu Settings";
-      break;
-   case MENU_LABEL_UI_SETTINGS:
-      str = "UI Settings";
-      break;
-   case MENU_LABEL_PATCH_SETTINGS:
-      str = "Patch Settings";
-      break;
-   case MENU_LABEL_PLAYLIST_SETTINGS:
-      str = "Playlist Settings";
-      break;
-   case MENU_LABEL_CORE_UPDATER_SETTINGS:
-      str = "Core Updater Settings";
-      break;
-   case MENU_LABEL_NETWORK_SETTINGS:
-      str = "Network Settings";
-      break;
-   case MENU_LABEL_ARCHIVE_SETTINGS:
-      str = "Archive Settings";
-      break;
-   case MENU_LABEL_USER_SETTINGS:
-      str = "User Settings";
-      break;
-   case MENU_LABEL_DIRECTORY_SETTINGS:
-      str = "Directory Settings";
-      break;
-   case MENU_LABEL_PRIVACY_SETTINGS:
-      str = "Privacy Settings";
-      break;
-   default:
-      return 0;
+      case MENU_LABEL_DRIVER_SETTINGS:
+         str = "Driver Settings";
+         break;
+      case MENU_LABEL_CORE_SETTINGS:
+         str = "Core Settings";
+         break;
+      case MENU_LABEL_CONFIGURATION_SETTINGS:
+         str = "Configuration Settings";
+         break;
+      case MENU_LABEL_LOGGING_SETTINGS:
+         str = "Logging Settings";
+         break;
+      case MENU_LABEL_SAVING_SETTINGS:
+         str = "Saving Settings";
+         break;
+      case MENU_LABEL_REWIND_SETTINGS:
+         str = "Rewind Settings";
+         break;
+      case MENU_LABEL_VIDEO_SETTINGS:
+         str = "Video Settings";
+         break;
+      case MENU_LABEL_RECORDING_SETTINGS:
+         str = "Recording Settings";
+         break;
+      case MENU_LABEL_FRAME_THROTTLE_SETTINGS:
+         str = "Frame Throttle Settings";
+         break;
+      case MENU_LABEL_SHADER_SETTINGS:
+         str = "Shader Settings";
+         break;
+      case MENU_LABEL_ONSCREEN_DISPLAY_SETTINGS:
+         str = "Onscreen Display Settings";
+         break;
+      case MENU_LABEL_AUDIO_SETTINGS:
+         str = "Audio Settings";
+         break;
+      case MENU_LABEL_INPUT_SETTINGS:
+         str = "Input Settings";
+         break;
+      case MENU_LABEL_INPUT_HOTKEY_SETTINGS:
+         str = "Input Hotkey Settings";
+         break;
+      case MENU_LABEL_OVERLAY_SETTINGS:
+         str = "Overlay Settings";
+         break;
+      case MENU_LABEL_ONSCREEN_KEYBOARD_OVERLAY_SETTINGS:
+         str = "Onscreen Keyboard Overlay Settings";
+         break;
+      case MENU_LABEL_MENU_SETTINGS:
+         str = "Menu Settings";
+         break;
+      case MENU_LABEL_UI_SETTINGS:
+         str = "UI Settings";
+         break;
+      case MENU_LABEL_PATCH_SETTINGS:
+         str = "Patch Settings";
+         break;
+      case MENU_LABEL_PLAYLIST_SETTINGS:
+         str = "Playlist Settings";
+         break;
+      case MENU_LABEL_CORE_UPDATER_SETTINGS:
+         str = "Core Updater Settings";
+         break;
+      case MENU_LABEL_NETWORK_SETTINGS:
+         str = "Network Settings";
+         break;
+      case MENU_LABEL_ARCHIVE_SETTINGS:
+         str = "Archive Settings";
+         break;
+      case MENU_LABEL_USER_SETTINGS:
+         str = "User Settings";
+         break;
+      case MENU_LABEL_DIRECTORY_SETTINGS:
+         str = "Directory Settings";
+         break;
+      case MENU_LABEL_PRIVACY_SETTINGS:
+         str = "Privacy Settings";
+         break;
+      default:
+         RARCH_LOG("unknown hash: %d\n", hash);
+         return 0;
    }
-   
+
    return !strcmp(label, str);
 }
 
@@ -257,6 +233,7 @@ void menu_entries_cbs_init(void *data,
    menu_file_list_cbs_t *cbs    = NULL;
    file_list_t *list            = (file_list_t*)data;
    menu_handle_t *menu          = menu_driver_get_ptr();
+   uint32_t label_hash = 0, menu_label_hash = 0;
    if (!menu)
       return;
 
@@ -285,20 +262,23 @@ void menu_entries_cbs_init(void *data,
       str_list = NULL;
    }
 
-   menu_entries_cbs_init_bind_ok(cbs, path, label, type, idx, elem0, elem1, menu_label);
-   menu_entries_cbs_init_bind_cancel(cbs, path, label, type, idx, elem0, elem1);
-   menu_entries_cbs_init_bind_scan(cbs, path, label, type, idx, elem0, elem1);
-   menu_entries_cbs_init_bind_start(cbs, path, label, type, idx, elem0, elem1);
-   menu_entries_cbs_init_bind_select(cbs, path, label, type, idx, elem0, elem1);
-   menu_entries_cbs_init_bind_info(cbs, path, label, type, idx, elem0, elem1);
-   menu_entries_cbs_init_bind_content_list_switch(cbs, path, label, type, idx, elem0, elem1);
-   menu_entries_cbs_init_bind_up(cbs, path, label, type, idx, elem0, elem1);
-   menu_entries_cbs_init_bind_down(cbs, path, label, type, idx, elem0, elem1);
-   menu_entries_cbs_init_bind_left(cbs, path, label, type, idx, elem0, elem1, menu_label);
-   menu_entries_cbs_init_bind_right(cbs, path, label, type, idx, elem0, elem1, menu_label);
-   menu_entries_cbs_init_bind_deferred_push(cbs, path, label, type, idx, elem0, elem1);
-   menu_entries_cbs_init_bind_refresh(cbs, path, label, type, idx, elem0, elem1);
-   menu_entries_cbs_init_bind_iterate(cbs, path, label, type, idx, elem0, elem1);
-   menu_entries_cbs_init_bind_get_string_representation(cbs, path, label, type, idx, elem0, elem1);
-   menu_entries_cbs_init_bind_title(cbs, path, label, type, idx, elem0, elem1);
+   label_hash      = djb2_calculate(label);
+   menu_label_hash = djb2_calculate(menu_label);
+
+   menu_entries_cbs_init_bind_ok(cbs, path, label, type, idx, elem0, elem1, menu_label, label_hash, menu_label_hash);
+   menu_entries_cbs_init_bind_cancel(cbs, path, label, type, idx, elem0, elem1, label_hash, menu_label_hash);
+   menu_entries_cbs_init_bind_scan(cbs, path, label, type, idx, elem0, elem1, label_hash, menu_label_hash);
+   menu_entries_cbs_init_bind_start(cbs, path, label, type, idx, elem0, elem1, label_hash, menu_label_hash);
+   menu_entries_cbs_init_bind_select(cbs, path, label, type, idx, elem0, elem1, label_hash, menu_label_hash);
+   menu_entries_cbs_init_bind_info(cbs, path, label, type, idx, elem0, elem1, label_hash, menu_label_hash);
+   menu_entries_cbs_init_bind_content_list_switch(cbs, path, label, type, idx, elem0, elem1, label_hash, menu_label_hash);
+   menu_entries_cbs_init_bind_up(cbs, path, label, type, idx, elem0, elem1, label_hash, menu_label_hash);
+   menu_entries_cbs_init_bind_down(cbs, path, label, type, idx, elem0, elem1, label_hash, menu_label_hash);
+   menu_entries_cbs_init_bind_left(cbs, path, label, type, idx, elem0, elem1, menu_label, label_hash, menu_label_hash);
+   menu_entries_cbs_init_bind_right(cbs, path, label, type, idx, elem0, elem1, menu_label, label_hash, menu_label_hash);
+   menu_entries_cbs_init_bind_deferred_push(cbs, path, label, type, idx, elem0, elem1, label_hash, menu_label_hash);
+   menu_entries_cbs_init_bind_refresh(cbs, path, label, type, idx, elem0, elem1, label_hash, menu_label_hash);
+   menu_entries_cbs_init_bind_iterate(cbs, path, label, type, idx, elem0, elem1, label_hash, menu_label_hash);
+   menu_entries_cbs_init_bind_get_string_representation(cbs, path, label, type, idx, elem0, elem1, label_hash, menu_label_hash);
+   menu_entries_cbs_init_bind_title(cbs, path, label, type, idx, elem0, elem1, label_hash, menu_label_hash);
 }

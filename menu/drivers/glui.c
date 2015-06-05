@@ -21,17 +21,18 @@
 #include <string.h>
 #include <limits.h>
 
+#include <compat/posix_string.h>
+#include <file/file_path.h>
+
 #include "../menu.h"
 #include "../menu_driver.h"
 #include "../menu_entry.h"
 #include "../menu_display.h"
 #include "../../runloop_data.h"
 
-#include <file/file_path.h>
 #include "../../gfx/video_thread_wrapper.h"
 #include "../../gfx/font_driver.h"
 #include "../../gfx/video_texture.h"
-#include <compat/posix_string.h>
 #include "../../retroarch_logger.h"
 
 #include "shared.h"
@@ -61,6 +62,7 @@ static void glui_blit_line(float x, float y,
 {
    unsigned width, height;
    glui_handle_t *glui = NULL;
+   struct font_params params = {0};
    menu_handle_t *menu = menu_driver_get_ptr();
 
    if (!menu)
@@ -69,8 +71,6 @@ static void glui_blit_line(float x, float y,
    video_driver_get_size(&width, &height);
 
    glui = (glui_handle_t*)menu->userdata;
-
-   struct font_params params = {0};
 
    params.x           = x / width;
    params.y           = 1.0f - (y + glui->line_height/2 + menu->font.size/3) 
@@ -186,8 +186,8 @@ static void glui_render_messagebox(const char *message)
    uint32_t normal_color;
    int x, y;
    struct string_list *list = NULL;
-   menu_handle_t *menu  = menu_driver_get_ptr();
-   settings_t *settings = config_get_ptr();
+   menu_handle_t *menu      = menu_driver_get_ptr();
+   settings_t *settings     = config_get_ptr();
 
    if (!menu || !menu->userdata)
       return;
@@ -297,7 +297,14 @@ static void glui_render_menu_list(glui_handle_t *glui,
       char entry_path[PATH_MAX_LENGTH], entry_value[PATH_MAX_LENGTH];
       char message[PATH_MAX_LENGTH],
            entry_title_buf[PATH_MAX_LENGTH], type_str_buf[PATH_MAX_LENGTH];
-      bool entry_selected = menu_entry_is_currently_selected(i);
+      bool entry_selected;
+
+      y = menu->header_height - menu->scroll_y + (glui->line_height * i);
+
+      if (y > height || y + glui->line_height < 0)
+         continue;
+
+      entry_selected = menu_entry_is_currently_selected(i);
       menu_entry_get_value(i, entry_value, sizeof(entry_value));
       menu_entry_get_path(i, entry_path, sizeof(entry_path));
 
@@ -307,8 +314,6 @@ static void glui_render_menu_list(glui_handle_t *glui,
             frame_count / 100, entry_value, entry_selected);
 
       strlcpy(message, entry_title_buf, sizeof(message));
-
-      y = menu->header_height - menu->scroll_y + (glui->line_height * i);
 
       glui_blit_line(glui->margin, y, message,
             entry_selected ? hover_color : normal_color, TEXT_ALIGN_LEFT);

@@ -14,6 +14,7 @@
  */
 
 #include <file/file_path.h>
+
 #include "menu.h"
 #include "menu_displaylist.h"
 #include "menu_entries_cbs.h"
@@ -451,7 +452,8 @@ static int deferred_push_default(menu_displaylist_info_t *info)
 
 void menu_entries_cbs_init_bind_deferred_push(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx,
-      const char *elem0, const char *elem1)
+      const char *elem0, const char *elem1,
+      uint32_t label_hash, uint32_t menu_label_hash)
 {
    settings_t *settings   = config_get_ptr();
 
@@ -473,113 +475,163 @@ void menu_entries_cbs_init_bind_deferred_push(menu_file_list_cbs_t *cbs,
    }
 
    if (strstr(label, "deferred_rdb_entry_detail"))
+   {
       cbs->action_deferred_push = deferred_push_rdb_entry_detail;
-#ifdef HAVE_NETWORKING
-   else if (!strcmp(label, "deferred_core_updater_list"))
-      cbs->action_deferred_push = deferred_push_core_updater_list;
-#endif
-   else if (!strcmp(label, "history_list"))
-      cbs->action_deferred_push = deferred_push_history_list;
-   else if (!strcmp(label, "database_manager_list"))
-      cbs->action_deferred_push = deferred_push_database_manager_list;
-   else if (!strcmp(label, "cursor_manager_list"))
-      cbs->action_deferred_push = deferred_push_cursor_manager_list;
-   else if (!strcmp(label, "cheat_file_load"))
-      cbs->action_deferred_push = deferred_push_cheat_file_load;
-   else if (!strcmp(label, "remap_file_load"))
-      cbs->action_deferred_push = deferred_push_remap_file_load;
-   else if (!strcmp(label, "record_config"))
-      cbs->action_deferred_push = deferred_push_record_configfile;
-   else if (!strcmp(label, "content_actions"))
-      cbs->action_deferred_push = deferred_push_content_actions;
-   else if (!strcmp(label, "shader_options"))
-      cbs->action_deferred_push = deferred_push_shader_options;
-   else if (!strcmp(label, "video_options"))
-      cbs->action_deferred_push = deferred_push_video_options;
-   else if (!strcmp(label, "options"))
-      cbs->action_deferred_push = deferred_push_options;
-   else if (!strcmp(label, "management"))
-      cbs->action_deferred_push = deferred_push_management_options;
-   else if (type == MENU_SETTING_GROUP)
+      return;
+   }
+
+   if (type == MENU_SETTING_GROUP)
       cbs->action_deferred_push = deferred_push_category;
    else if (type == MENU_FILE_PLAYLIST_COLLECTION)
       cbs->action_deferred_push = deferred_push_rdb_collection;
-   else if (!strcmp(label, "deferred_core_list") ||
-         !strcmp(label, "deferred_core_list_set"))
-      cbs->action_deferred_push = deferred_push_core_list_deferred;
-   else if (!strcmp(label, "deferred_video_filter"))
-      cbs->action_deferred_push = deferred_push_video_filter;
-   else if (!strcmp(label, "deferred_database_manager_list"))
-      cbs->action_deferred_push = deferred_push_database_manager_list_deferred;
-   else if (!strcmp(label, "deferred_cursor_manager_list"))
-      cbs->action_deferred_push = deferred_push_cursor_manager_list_deferred;
-   else if (
-         !strcmp(label, "deferred_cursor_manager_list_rdb_entry_publisher") ||
-         !strcmp(label, "deferred_cursor_manager_list_rdb_entry_developer") ||
-         !strcmp(label, "deferred_cursor_manager_list_rdb_entry_origin") ||
-         !strcmp(label, "deferred_cursor_manager_list_rdb_entry_franchise") ||
-         !strcmp(label, "deferred_cursor_manager_list_rdb_entry_enhancement_hw") ||
-         !strcmp(label, "deferred_cursor_manager_list_rdb_entry_esrb_rating") ||
-         !strcmp(label, "deferred_cursor_manager_list_rdb_entry_bbfc_rating") ||
-         !strcmp(label, "deferred_cursor_manager_list_rdb_entry_elspa_rating") ||
-         !strcmp(label, "deferred_cursor_manager_list_rdb_entry_pegi_rating") ||
-         !strcmp(label, "deferred_cursor_manager_list_rdb_entry_cero_rating") ||
-         !strcmp(label, "deferred_cursor_manager_list_rdb_entry_edge_magazine_rating") ||
-         !strcmp(label, "deferred_cursor_manager_list_rdb_entry_edge_magazine_issue") ||
-         !strcmp(label, "deferred_cursor_manager_list_rdb_entry_famitsu_magazine_rating") ||
-         !strcmp(label, "deferred_cursor_manager_list_rdb_entry_max_users") ||
-         !strcmp(label, "deferred_cursor_manager_list_rdb_entry_releasemonth") ||
-         !strcmp(label, "deferred_cursor_manager_list_rdb_entry_releaseyear")
-         )
-      cbs->action_deferred_push = deferred_push_cursor_manager_list_deferred_query_subsearch;
-   else if (!strcmp(label, "core_information"))
-      cbs->action_deferred_push = deferred_push_core_information;
-   else if (!strcmp(label, "system_information"))
-      cbs->action_deferred_push = deferred_push_system_information;
-   else if (!strcmp(label, "performance_counters"))
-      cbs->action_deferred_push = deferred_push_performance_counters;
-   else if (!strcmp(label, "core_counters"))
-      cbs->action_deferred_push = deferred_push_core_counters;
-   else if (!strcmp(label, "video_shader_preset_parameters"))
-      cbs->action_deferred_push = deferred_push_video_shader_preset_parameters;
-   else if (!strcmp(label, "video_shader_parameters"))
-      cbs->action_deferred_push = deferred_push_video_shader_parameters;
-   else if (!strcmp(label, "settings"))
-      cbs->action_deferred_push = deferred_push_settings;
-   else if (!strcmp(label, "frontend_counters"))
-      cbs->action_deferred_push = deferred_push_frontend_counters;
-   else if (!strcmp(label, "core_options"))
-      cbs->action_deferred_push = deferred_push_core_options;
-   else if (!strcmp(label, "core_cheat_options"))
-      cbs->action_deferred_push = deferred_push_core_cheat_options;
-   else if (!strcmp(label, "core_input_remapping_options"))
-      cbs->action_deferred_push = deferred_push_core_input_remapping_options;
-   else if (!strcmp(label, "disk_options"))
-      cbs->action_deferred_push = deferred_push_disk_options;
-   else if (!strcmp(label, "core_list"))
-      cbs->action_deferred_push = deferred_push_core_list;
-   else if (!strcmp(label, "content_collection_list"))
-      cbs->action_deferred_push = deferred_push_content_collection_list;
-   else if (!strcmp(label, "configurations"))
-      cbs->action_deferred_push = deferred_push_configurations;
-   else if (!strcmp(label, "video_shader_preset"))
-      cbs->action_deferred_push = deferred_push_video_shader_preset;
-   else if (!strcmp(label, "video_shader_pass"))
-      cbs->action_deferred_push = deferred_push_video_shader_pass;
-   else if (!strcmp(label, "video_filter"))
-      cbs->action_deferred_push = deferred_push_video_filter;
-   else if (!strcmp(label, "menu_wallpaper"))
-      cbs->action_deferred_push = deferred_push_images;
-   else if (!strcmp(label, "audio_dsp_plugin"))
-      cbs->action_deferred_push = deferred_push_audio_dsp_plugin;
-   else if (!strcmp(label, "input_overlay"))
-      cbs->action_deferred_push = deferred_push_input_overlay;
-   else if (!strcmp(label, "input_osk_overlay"))
-      cbs->action_deferred_push = deferred_push_input_osk_overlay;
-   else if (!strcmp(label, "video_font_path"))
-      cbs->action_deferred_push = deferred_push_video_font_path;
-   else if (!strcmp(label, "content_history_path"))
-      cbs->action_deferred_push = deferred_push_content_history_path;
-   else if (!strcmp(label, "detect_core_list"))
-      cbs->action_deferred_push = deferred_push_detect_core_list;
+   else
+   {
+      switch (label_hash)
+      {
+         case MENU_LABEL_DEFERRED_CORE_UPDATER_LIST:
+#ifdef HAVE_NETWORKING
+            cbs->action_deferred_push = deferred_push_core_updater_list;
+#endif
+            break;
+         case MENU_LABEL_HISTORY_LIST:
+            cbs->action_deferred_push = deferred_push_history_list;
+            break;
+         case MENU_LABEL_DATABASE_MANAGER_LIST:
+            cbs->action_deferred_push = deferred_push_database_manager_list;
+            break;
+         case MENU_LABEL_CURSOR_MANAGER_LIST:
+            cbs->action_deferred_push = deferred_push_cursor_manager_list;
+            break;
+         case MENU_LABEL_CHEAT_FILE_LOAD:
+            cbs->action_deferred_push = deferred_push_cheat_file_load;
+            break;
+         case MENU_LABEL_REMAP_FILE_LOAD:
+            cbs->action_deferred_push = deferred_push_remap_file_load;
+            break;
+         case MENU_LABEL_RECORD_CONFIG:
+            cbs->action_deferred_push = deferred_push_record_configfile;
+            break;
+         case MENU_LABEL_CONTENT_ACTIONS:
+            cbs->action_deferred_push = deferred_push_content_actions;
+            break;
+         case MENU_LABEL_SHADER_OPTIONS:
+            cbs->action_deferred_push = deferred_push_shader_options;
+            break;
+         case MENU_LABEL_VIDEO_OPTIONS:
+            cbs->action_deferred_push = deferred_push_video_options;
+            break;
+         case MENU_LABEL_OPTIONS:
+            cbs->action_deferred_push = deferred_push_options;
+            break;
+         case MENU_LABEL_MANAGEMENT:
+            cbs->action_deferred_push = deferred_push_management_options;
+            break;
+         case MENU_LABEL_DEFERRED_CORE_LIST:
+         case MENU_LABEL_DEFERRED_CORE_LIST_SET:
+            cbs->action_deferred_push = deferred_push_core_list_deferred;
+            break;
+         case MENU_LABEL_DEFERRED_VIDEO_FILTER:
+            cbs->action_deferred_push = deferred_push_video_filter;
+            break;
+         case MENU_LABEL_DEFERRED_DATABASE_MANAGER_LIST:
+            cbs->action_deferred_push = deferred_push_database_manager_list_deferred;
+            break;
+         case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST:
+            cbs->action_deferred_push = deferred_push_cursor_manager_list_deferred;
+            break;
+         case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_PUBLISHER:
+         case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_DEVELOPER:
+         case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_ORIGIN:
+         case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_FRANCHISE:
+         case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_ENHANCEMENT_HW:
+         case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_ESRB_RATING:
+         case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_BBFC_RATING:
+         case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_ELSPA_RATING:
+         case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_PEGI_RATING:
+         case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_CERO_RATING:
+         case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_EDGE_MAGAZINE_RATING:
+         case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_EDGE_MAGAZINE_ISSUE:
+         case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_FAMITSU_MAGAZINE_RATING:
+         case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_MAX_USERS:
+         case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_RELEASEMONTH:
+         case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_RELEASEYEAR:
+            cbs->action_deferred_push = deferred_push_cursor_manager_list_deferred_query_subsearch;
+            break;
+         case MENU_LABEL_CORE_INFORMATION:
+            cbs->action_deferred_push = deferred_push_core_information;
+            break;
+         case MENU_LABEL_SYSTEM_INFORMATION:
+            cbs->action_deferred_push = deferred_push_system_information;
+            break;
+         case MENU_LABEL_PERFORMANCE_COUNTERS:
+            cbs->action_deferred_push = deferred_push_performance_counters;
+            break;
+         case MENU_LABEL_CORE_COUNTERS:
+            cbs->action_deferred_push = deferred_push_core_counters;
+            break;
+         case MENU_LABEL_VIDEO_SHADER_PRESET_PARAMETERS:
+            cbs->action_deferred_push = deferred_push_video_shader_preset_parameters;
+            break;
+         case MENU_LABEL_VIDEO_SHADER_PARAMETERS:
+            cbs->action_deferred_push = deferred_push_video_shader_parameters;
+            break;
+         case MENU_LABEL_SETTINGS:
+            cbs->action_deferred_push = deferred_push_settings;
+            break;
+         case MENU_LABEL_FRONTEND_COUNTERS:
+            cbs->action_deferred_push = deferred_push_frontend_counters;
+            break;
+         case MENU_LABEL_CORE_OPTIONS:
+            cbs->action_deferred_push = deferred_push_core_options;
+            break;
+         case MENU_LABEL_CORE_CHEAT_OPTIONS:
+            cbs->action_deferred_push = deferred_push_core_cheat_options;
+            break;
+         case MENU_LABEL_CORE_INPUT_REMAPPING_OPTIONS:
+            cbs->action_deferred_push = deferred_push_core_input_remapping_options;
+            break;
+         case MENU_LABEL_DISK_OPTIONS:
+            cbs->action_deferred_push = deferred_push_disk_options;
+            break;
+         case MENU_LABEL_CORE_LIST:
+            cbs->action_deferred_push = deferred_push_core_list;
+            break;
+         case MENU_LABEL_CONTENT_COLLECTION_LIST:
+            cbs->action_deferred_push = deferred_push_content_collection_list;
+            break;
+         case MENU_LABEL_CONFIGURATIONS:
+            cbs->action_deferred_push = deferred_push_configurations;
+            break;
+         case MENU_LABEL_VIDEO_SHADER_PRESET:
+            cbs->action_deferred_push = deferred_push_video_shader_preset;
+            break;
+         case MENU_LABEL_VIDEO_SHADER_PASS:
+            cbs->action_deferred_push = deferred_push_video_shader_pass;
+            break;
+         case MENU_LABEL_VIDEO_FILTER:
+            cbs->action_deferred_push = deferred_push_video_filter;
+            break;
+         case MENU_LABEL_MENU_WALLPAPER:
+            cbs->action_deferred_push = deferred_push_images;
+            break;
+         case MENU_LABEL_AUDIO_DSP_PLUGIN:
+            cbs->action_deferred_push = deferred_push_audio_dsp_plugin;
+            break;
+         case MENU_LABEL_INPUT_OVERLAY:
+            cbs->action_deferred_push = deferred_push_input_overlay;
+            break;
+         case MENU_LABEL_INPUT_OSK_OVERLAY:
+            cbs->action_deferred_push = deferred_push_input_osk_overlay;
+            break;
+         case MENU_LABEL_VIDEO_FONT_PATH:
+            cbs->action_deferred_push = deferred_push_video_font_path;
+            break;
+         case MENU_LABEL_CONTENT_HISTORY_PATH:
+            cbs->action_deferred_push = deferred_push_content_history_path;
+            break;
+         case MENU_LABEL_DETECT_CORE_LIST:
+            cbs->action_deferred_push = deferred_push_detect_core_list;
+            break;
+      }
+   }
 }

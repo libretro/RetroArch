@@ -264,30 +264,53 @@ static int action_start_lookup_setting(unsigned type, const char *label)
    return ret;
 }
 
+int menu_entries_cbs_init_bind_start_compare_label(menu_file_list_cbs_t *cbs,
+      uint32_t hash)
+{
+   switch (hash)
+   {
+      case MENU_LABEL_REMAP_FILE_LOAD:
+         cbs->action_start = action_start_remap_file_load;
+         break;
+      case MENU_LABEL_VIDEO_FILTER:
+         cbs->action_start = action_start_video_filter_file_load;
+         break;
+      case MENU_LABEL_VIDEO_SHADER_PASS:
+         cbs->action_start = action_start_shader_pass;
+         break;
+      case MENU_LABEL_VIDEO_SHADER_SCALE_PASS:
+         cbs->action_start = action_start_shader_scale_pass;
+         break;
+      case MENU_LABEL_VIDEO_SHADER_FILTER_PASS:
+         cbs->action_start = action_start_shader_filter_pass;
+         break;
+      case MENU_LABEL_VIDEO_SHADER_NUM_PASSES:
+         cbs->action_start = action_start_shader_num_passes;
+         break;
+      case MENU_LABEL_CHEAT_NUM_PASSES:
+         cbs->action_start = action_start_cheat_num_passes;
+         break;
+      default:
+         return -1;
+   }
+
+   return 0;
+}
+
 void menu_entries_cbs_init_bind_start(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx,
-      const char *elem0, const char *elem1)
+      const char *elem0, const char *elem1,
+      uint32_t label_hash, uint32_t menu_label_hash)
 {
    if (!cbs)
       return;
 
    cbs->action_start = action_start_lookup_setting;
+   
+   if (menu_entries_cbs_init_bind_start_compare_label(cbs, label_hash) == 0)
+      return;
 
-   if (!strcmp(label, "remap_file_load"))
-      cbs->action_start = action_start_remap_file_load;
-   if (!strcmp(label, "video_filter"))
-      cbs->action_start = action_start_video_filter_file_load;
-   else if (!strcmp(label, "video_shader_pass"))
-      cbs->action_start = action_start_shader_pass;
-   else if (!strcmp(label, "video_shader_scale_pass"))
-      cbs->action_start = action_start_shader_scale_pass;
-   else if (!strcmp(label, "video_shader_filter_pass"))
-      cbs->action_start = action_start_shader_filter_pass;
-   else if (!strcmp(label, "video_shader_num_passes"))
-      cbs->action_start = action_start_shader_num_passes;
-   else if (!strcmp(label, "cheat_num_passes"))
-      cbs->action_start = action_start_cheat_num_passes;
-   else if (type >= MENU_SETTINGS_SHADER_PARAMETER_0
+   if (type >= MENU_SETTINGS_SHADER_PARAMETER_0
          && type <= MENU_SETTINGS_SHADER_PARAMETER_LAST)
       cbs->action_start = action_start_shader_action_parameter;
    else if (type >= MENU_SETTINGS_SHADER_PRESET_PARAMETER_0

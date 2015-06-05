@@ -36,7 +36,8 @@ static int action_bind_down_generic(unsigned type, const char *label)
 
 void menu_entries_cbs_init_bind_down(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx,
-      const char *elem0, const char *elem1)
+      const char *elem0, const char *elem1,
+      uint32_t label_hash, uint32_t menu_label_hash)
 {
    if (!cbs)
       return;

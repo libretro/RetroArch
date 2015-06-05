@@ -15,6 +15,7 @@
  */
 
 #include <file/file_path.h>
+#include <rhash.h>
 
 #include "menu.h"
 #include "menu_setting.h"
@@ -205,14 +206,20 @@ static int setting_handler(rarch_setting_t *setting, unsigned action)
    switch (action)
    {
       case MENU_ACTION_UP:
+         if (setting->action_up)
+            return setting->action_up(setting, action);
+         break;
       case MENU_ACTION_DOWN:
-         if (setting->action_up_or_down)
-            return setting->action_up_or_down(setting, action);
+         if (setting->action_down)
+            return setting->action_down(setting, action);
          break;
       case MENU_ACTION_LEFT:
+         if (setting->action_left)
+            return setting->action_left(setting, action, true);
+         break;
       case MENU_ACTION_RIGHT:
-         if (setting->action_toggle)
-            return setting->action_toggle(setting, action, true);
+         if (setting->action_right)
+            return setting->action_right(setting, action, true);
          break;
       case MENU_ACTION_OK:
          if (setting->action_ok)
@@ -739,18 +746,7 @@ static int setting_bind_action_start(void *data)
  ******* ACTION TOGGLE CALLBACK FUNCTIONS *******
 **/
 
-/**
- * setting_action_toggle_analog_dpad_mode
- * @data               : pointer to setting
- * @action             : toggle action value. Can be either one of :
- *                       MENU_ACTION_RIGHT | MENU_ACTION_LEFT
- *
- * Function callback for 'Analog D-Pad Mode' action's 'Action Toggle'
- * function pointer.
- *
- * Returns: 0 on success, -1 on error.
- **/
-static int setting_action_toggle_analog_dpad_mode(void *data,
+static int setting_action_left_analog_dpad_mode(void *data,
       unsigned action, bool wraparound)
 {
    unsigned port = 0;
@@ -762,35 +758,33 @@ static int setting_action_toggle_analog_dpad_mode(void *data,
 
    port = setting->index_offset;
 
-   switch (action)
-   {
-      case MENU_ACTION_LEFT:
-         settings->input.analog_dpad_mode[port] =
-            (settings->input.analog_dpad_mode
-             [port] + ANALOG_DPAD_LAST - 1) % ANALOG_DPAD_LAST;
-         break;
-      case MENU_ACTION_RIGHT:
-         settings->input.analog_dpad_mode[port] =
-            (settings->input.analog_dpad_mode[port] + 1)
-            % ANALOG_DPAD_LAST;
-         break;
-   }
+   settings->input.analog_dpad_mode[port] =
+      (settings->input.analog_dpad_mode
+       [port] + ANALOG_DPAD_LAST - 1) % ANALOG_DPAD_LAST;
 
    return 0;
 }
 
-/**
- * setting_action_toggle_libretro_device_type
- * @data               : pointer to setting
- * @action             : toggle action value. Can be either one of :
- *                       MENU_ACTION_RIGHT | MENU_ACTION_LEFT
- *
- * Function callback for 'Libretro Device Type' action's 'Action Toggle'
- * function pointer.
- *
- * Returns: 0 on success, -1 on error.
- **/
-static int setting_action_toggle_libretro_device_type(
+static int setting_action_right_analog_dpad_mode(void *data,
+      unsigned action, bool wraparound)
+{
+   unsigned port = 0;
+   rarch_setting_t *setting  = (rarch_setting_t*)data;
+   settings_t      *settings = config_get_ptr();
+
+   if (!setting)
+      return -1;
+
+   port = setting->index_offset;
+
+   settings->input.analog_dpad_mode[port] =
+      (settings->input.analog_dpad_mode[port] + 1)
+      % ANALOG_DPAD_LAST;
+
+   return 0;
+}
+
+static int setting_action_left_libretro_device_type(
       void *data, unsigned action, bool wraparound)
 {
    unsigned current_device, current_idx, i, devices[128],
@@ -839,39 +833,74 @@ static int setting_action_toggle_libretro_device_type(
       }
    }
 
-   switch (action)
-   {
-      case MENU_ACTION_LEFT:
-         current_device = devices
-            [(current_idx + types - 1) % types];
+   current_device = devices
+      [(current_idx + types - 1) % types];
 
-         settings->input.libretro_device[port] = current_device;
-         pretro_set_controller_port_device(port, current_device);
-         break;
-      case MENU_ACTION_RIGHT:
-         current_device = devices
-            [(current_idx + 1) % types];
-
-         settings->input.libretro_device[port] = current_device;
-         pretro_set_controller_port_device(port, current_device);
-         break;
-   }
+   settings->input.libretro_device[port] = current_device;
+   pretro_set_controller_port_device(port, current_device);
 
    return 0;
 }
 
-/**
- * setting_action_toggle_savestates
- * @data               : pointer to setting
- * @action             : toggle action value. Can be either one of :
- *                       MENU_ACTION_RIGHT | MENU_ACTION_LEFT
- *
- * Function callback for 'SaveStates' action's 'Action Toggle'
- * function pointer.
- *
- * Returns: 0 on success, -1 on error.
- **/
-static int setting_action_toggle_savestates(
+static int setting_action_right_libretro_device_type(
+      void *data, unsigned action, bool wraparound)
+{
+   unsigned current_device, current_idx, i, devices[128],
+            types = 0, port = 0;
+   const struct retro_controller_info *desc = NULL;
+   rarch_setting_t *setting  = (rarch_setting_t*)data;
+   settings_t      *settings = config_get_ptr();
+   global_t          *global = global_get_ptr();
+
+   if (!setting)
+      return -1;
+
+   port = setting->index_offset;
+
+   devices[types++] = RETRO_DEVICE_NONE;
+   devices[types++] = RETRO_DEVICE_JOYPAD;
+
+   /* Only push RETRO_DEVICE_ANALOG as default if we use an 
+    * older core which doesn't use SET_CONTROLLER_INFO. */
+   if (!global->system.num_ports)
+      devices[types++] = RETRO_DEVICE_ANALOG;
+
+   if (port < global->system.num_ports)
+      desc = &global->system.ports[port];
+
+   if (desc)
+   {
+      for (i = 0; i < desc->num_types; i++)
+      {
+         unsigned id = desc->types[i].id;
+         if (types < ARRAY_SIZE(devices) &&
+               id != RETRO_DEVICE_NONE &&
+               id != RETRO_DEVICE_JOYPAD)
+            devices[types++] = id;
+      }
+   }
+
+   current_device = settings->input.libretro_device[port];
+   current_idx = 0;
+   for (i = 0; i < types; i++)
+   {
+      if (current_device == devices[i])
+      {
+         current_idx = i;
+         break;
+      }
+   }
+
+   current_device = devices
+      [(current_idx + 1) % types];
+
+   settings->input.libretro_device[port] = current_device;
+   pretro_set_controller_port_device(port, current_device);
+
+   return 0;
+}
+
+static int setting_action_left_savestates(
       void *data, unsigned action, bool wraparound)
 {
    rarch_setting_t *setting  = (rarch_setting_t*)data;
@@ -880,33 +909,28 @@ static int setting_action_toggle_savestates(
    if (!setting)
       return -1;
 
-   switch (action)
-   {
-      case MENU_ACTION_LEFT:
-         /* Slot -1 is (auto) slot. */
-         if (settings->state_slot >= 0)
-            settings->state_slot--;
-         break;
-      case MENU_ACTION_RIGHT:
-         settings->state_slot++;
-         break;
-   }
+   /* Slot -1 is (auto) slot. */
+   if (settings->state_slot >= 0)
+      settings->state_slot--;
 
    return 0;
 }
 
-/**
- * setting_action_toggle_bind_device
- * @data               : pointer to setting
- * @action             : toggle action value. Can be either one of :
- *                       MENU_ACTION_RIGHT | MENU_ACTION_LEFT
- *
- * Function callback for 'Bind Device' action's 'Action Toggle'
- * function pointer.
- *
- * Returns: 0 on success, -1 on error.
- **/
-static int setting_action_toggle_bind_device(void *data,
+static int setting_action_right_savestates(
+      void *data, unsigned action, bool wraparound)
+{
+   rarch_setting_t *setting  = (rarch_setting_t*)data;
+   settings_t      *settings = config_get_ptr();
+
+   if (!setting)
+      return -1;
+
+   settings->state_slot++;
+
+   return 0;
+}
+
+static int setting_action_left_bind_device(void *data,
       unsigned action, bool wraparound)
 {
    unsigned *p = NULL;
@@ -918,19 +942,28 @@ static int setting_action_toggle_bind_device(void *data,
 
    p = &settings->input.joypad_map[setting->index_offset];
 
-   switch (action)
-   {
-      case MENU_ACTION_LEFT:
-         if ((*p) >= settings->input.max_users)
-            *p = settings->input.max_users - 1;
-         else if ((*p) > 0)
-            (*p)--;
-         break;
-      case MENU_ACTION_RIGHT:
-         if (*p < settings->input.max_users)
-            (*p)++;
-         break;
-   }
+   if ((*p) >= settings->input.max_users)
+      *p = settings->input.max_users - 1;
+   else if ((*p) > 0)
+      (*p)--;
+
+   return 0;
+}
+
+static int setting_action_right_bind_device(void *data,
+      unsigned action, bool wraparound)
+{
+   unsigned *p = NULL;
+   rarch_setting_t *setting  = (rarch_setting_t*)data;
+   settings_t      *settings = config_get_ptr();
+
+   if (!setting)
+      return -1;
+
+   p = &settings->input.joypad_map[setting->index_offset];
+
+   if (*p < settings->input.max_users)
+      (*p)++;
 
    return 0;
 }
@@ -943,18 +976,12 @@ static int setting_bool_action_toggle_default(void *data,
    if (!setting)
       return -1;
 
-   switch (action)
-   {
-      case MENU_ACTION_LEFT:
-      case MENU_ACTION_RIGHT:
-         *setting->value.boolean = !(*setting->value.boolean);
-         break;
-   }
+   *setting->value.boolean = !(*setting->value.boolean);
 
    return 0;
 }
 
-static int setting_uint_action_toggle_default(void *data,
+static int setting_uint_action_left_default(void *data,
       unsigned action, bool wraparound)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
@@ -962,36 +989,40 @@ static int setting_uint_action_toggle_default(void *data,
    if (!setting)
       return -1;
 
-   switch (action)
+   if (*setting->value.unsigned_integer != setting->min)
+      *setting->value.unsigned_integer =
+         *setting->value.unsigned_integer - setting->step;
+
+   if (setting->enforce_minrange)
    {
-      case MENU_ACTION_LEFT:
-         if (*setting->value.unsigned_integer != setting->min)
-            *setting->value.unsigned_integer =
-               *setting->value.unsigned_integer - setting->step;
-
-         if (setting->enforce_minrange)
-         {
-            if (*setting->value.unsigned_integer < setting->min)
-               *setting->value.unsigned_integer = setting->min;
-         }
-         break;
-
-      case MENU_ACTION_RIGHT:
-         *setting->value.unsigned_integer =
-            *setting->value.unsigned_integer + setting->step;
-
-         if (setting->enforce_maxrange)
-         {
-            if (*setting->value.unsigned_integer > setting->max)
-               *setting->value.unsigned_integer = setting->max;
-         }
-         break;
+      if (*setting->value.unsigned_integer < setting->min)
+         *setting->value.unsigned_integer = setting->min;
    }
 
    return 0;
 }
 
-static int setting_fraction_action_toggle_default(
+static int setting_uint_action_right_default(void *data,
+      unsigned action, bool wraparound)
+{
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+
+   if (!setting)
+      return -1;
+
+   *setting->value.unsigned_integer =
+      *setting->value.unsigned_integer + setting->step;
+
+   if (setting->enforce_maxrange)
+   {
+      if (*setting->value.unsigned_integer > setting->max)
+         *setting->value.unsigned_integer = setting->max;
+   }
+
+   return 0;
+}
+
+static int setting_fraction_action_left_default(
       void *data, unsigned action, bool wraparound)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
@@ -999,35 +1030,39 @@ static int setting_fraction_action_toggle_default(
    if (!setting)
       return -1;
 
-   switch (action)
+   *setting->value.fraction =
+      *setting->value.fraction - setting->step;
+
+   if (setting->enforce_minrange)
    {
-      case MENU_ACTION_LEFT:
-         *setting->value.fraction =
-            *setting->value.fraction - setting->step;
-
-         if (setting->enforce_minrange)
-         {
-            if (*setting->value.fraction < setting->min)
-               *setting->value.fraction = setting->min;
-         }
-         break;
-
-      case MENU_ACTION_RIGHT:
-         *setting->value.fraction = 
-            *setting->value.fraction + setting->step;
-
-         if (setting->enforce_maxrange)
-         {
-            if (*setting->value.fraction > setting->max)
-               *setting->value.fraction = setting->max;
-         }
-         break;
+      if (*setting->value.fraction < setting->min)
+         *setting->value.fraction = setting->min;
    }
 
    return 0;
 }
 
-static int setting_string_action_toggle_driver(void *data,
+static int setting_fraction_action_right_default(
+      void *data, unsigned action, bool wraparound)
+{
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+
+   if (!setting)
+      return -1;
+
+   *setting->value.fraction = 
+      *setting->value.fraction + setting->step;
+
+   if (setting->enforce_maxrange)
+   {
+      if (*setting->value.fraction > setting->max)
+         *setting->value.fraction = setting->max;
+   }
+
+   return 0;
+}
+
+static int setting_string_action_left_driver(void *data,
       unsigned action, bool wraparound)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
@@ -1035,24 +1070,29 @@ static int setting_string_action_toggle_driver(void *data,
    if (!setting)
       return -1;
 
-   switch (action)
+   if (!find_prev_driver(setting->name, setting->value.string, setting->size))
    {
-      case MENU_ACTION_LEFT:
-         if (!find_prev_driver(setting->name, setting->value.string, setting->size))
-         {
 #if 0
-            if (wraparound)
-               find_last_driver(setting->name, setting->value.string, setting->size);
+      if (wraparound)
+         find_last_driver(setting->name, setting->value.string, setting->size);
 #endif
-         }
-         break;
-      case MENU_ACTION_RIGHT:
-         if (!find_next_driver(setting->name, setting->value.string, setting->size))
-         {
-            if (wraparound)
-               find_first_driver(setting->name, setting->value.string, setting->size);
-         }
-         break;
+   }
+
+   return 0;
+}
+
+static int setting_string_action_right_driver(void *data,
+      unsigned action, bool wraparound)
+{
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+
+   if (!setting)
+      return -1;
+
+   if (!find_next_driver(setting->name, setting->value.string, setting->size))
+   {
+      if (wraparound)
+         find_first_driver(setting->name, setting->value.string, setting->size);
    }
 
    return 0;
@@ -1609,7 +1649,8 @@ static rarch_setting_t setting_action_setting(const char* name,
    result.get_string_representation = &setting_get_string_representation_default;
    result.action_start              = NULL;
    result.action_iterate            = NULL;
-   result.action_toggle             = NULL;
+   result.action_left               = NULL;
+   result.action_right              = NULL;
    result.action_ok                 = setting_action_action_ok;
    result.action_cancel             = NULL;
 
@@ -1701,7 +1742,8 @@ static rarch_setting_t setting_float_setting(const char* name,
    result.original_value.fraction = *target;
    result.default_value.fraction  = default_value;
    result.action_start            = setting_generic_action_start_default;
-   result.action_toggle           = setting_fraction_action_toggle_default;
+   result.action_left             = setting_fraction_action_left_default;
+   result.action_right            = setting_fraction_action_right_default;
    result.action_ok               = setting_generic_action_ok_default;
    result.action_cancel           = NULL;
 
@@ -1751,7 +1793,8 @@ static rarch_setting_t setting_bool_setting(const char* name,
    result.boolean.on_label       = on;
 
    result.action_start           = setting_generic_action_start_default;
-   result.action_toggle          = setting_bool_action_toggle_default;
+   result.action_left            = setting_bool_action_toggle_default;
+   result.action_right           = setting_bool_action_toggle_default;
    result.action_ok              = setting_generic_action_ok_default;
    result.action_cancel          = NULL;
 
@@ -1834,7 +1877,8 @@ static rarch_setting_t setting_uint_setting(const char* name,
    result.original_value.unsigned_integer = *target;
    result.default_value.unsigned_integer  = default_value;
    result.action_start                    = setting_generic_action_start_default;
-   result.action_toggle                   = setting_uint_action_toggle_default;
+   result.action_left                     = setting_uint_action_left_default;
+   result.action_right                    = setting_uint_action_right_default;
    result.action_ok                       = setting_generic_action_ok_default;
    result.action_cancel                   = NULL;
    result.get_string_representation       = &setting_get_string_representation_uint;
@@ -1877,7 +1921,8 @@ static rarch_setting_t setting_hex_setting(const char* name,
    result.original_value.unsigned_integer = *target;
    result.default_value.unsigned_integer  = default_value;
    result.action_start                    = setting_generic_action_start_default;
-   result.action_toggle                   = NULL;
+   result.action_left                     = NULL;
+   result.action_right                    = NULL;
    result.action_ok                       = setting_generic_action_ok_default;
    result.action_cancel                   = NULL;
    result.get_string_representation       = &setting_get_string_representation_hex;
@@ -2021,6 +2066,954 @@ static rarch_setting_t setting_string_setting_options(enum setting_type type,
   return result;
 }
 
+static int setting_get_description_compare_label(uint32_t label_hash,
+      settings_t *settings, char *s, size_t len)
+{
+   uint32_t driver_hash = 0;
+
+   switch (label_hash)
+   {
+      case MENU_LABEL_INPUT_DRIVER:
+         driver_hash = djb2_calculate(settings->input.driver);
+
+         switch (driver_hash)
+         {
+            case MENU_LABEL_INPUT_DRIVER_UDEV:
+               snprintf(s, len,
+                     " -- udev Input driver. \n"
+                     " \n"
+                     "This driver can run without X. \n"
+                     " \n"
+                     "It uses the recent evdev joypad API \n"
+                     "for joystick support. It supports \n"
+                     "hotplugging and force feedback (if \n"
+                     "supported by device). \n"
+                     " \n"
+                     "The driver reads evdev events for keyboard \n"
+                     "support. It also supports keyboard callback, \n"
+                     "mice and touchpads. \n"
+                     " \n"
+                     "By default in most distros, /dev/input nodes \n"
+                     "are root-only (mode 600). You can set up a udev \n"
+                     "rule which makes these accessible to non-root."
+                     );
+               break;
+            case MENU_LABEL_INPUT_DRIVER_LINUXRAW:
+               snprintf(s, len,
+                     " -- linuxraw Input driver. \n"
+                     " \n"
+                     "This driver requires an active TTY. Keyboard \n"
+                     "events are read directly from the TTY which \n"
+                     "makes it simpler, but not as flexible as udev. \n" "Mice, etc, are not supported at all. \n"
+                     " \n"
+                     "This driver uses the older joystick API \n"
+                     "(/dev/input/js*).");
+               break;
+            default:
+               snprintf(s, len,
+                     " -- Input driver.\n"
+                     " \n"
+                     "Depending on video driver, it might \n"
+                     "force a different input driver.");
+               break;
+         }
+         break;
+      case MENU_LABEL_LOAD_CONTENT:
+         snprintf(s, len,
+               " -- Load Content. \n"
+               "Browse for content. \n"
+               " \n"
+               "To load content, you need a \n"
+               "libretro core to use, and a \n"
+               "content file. \n"
+               " \n"
+               "To control where the menu starts \n"
+               " to browse for content, set  \n"
+               "Browser Directory. If not set,  \n"
+               "it will start in root. \n"
+               " \n"
+               "The browser will filter out \n"
+               "extensions for the last core set \n"
+               "in 'Core', and use that core when \n"
+               "content is loaded."
+               );
+         break;
+      case MENU_LABEL_CORE_LIST:
+         snprintf(s, len,
+               " -- Core Selection. \n"
+               " \n"
+               "Browse for a libretro core \n"
+               "implementation. Where the browser \n"
+               "starts depends on your Core Directory \n"
+               "path. If blank, it will start in root. \n"
+               " \n"
+               "If Core Directory is a directory, the menu \n"
+               "will use that as top folder. If Core \n"
+               "Directory is a full path, it will start \n"
+               "in the folder where the file is.");
+         break;
+      case MENU_LABEL_HISTORY_LIST:
+         snprintf(s, len,
+               " -- Loading content from history. \n"
+               " \n"
+               "As content is loaded, content and libretro \n"
+               "core combinations are saved to history. \n"
+               " \n"
+               "The history is saved to a file in the same \n"
+               "directory as the RetroArch config file. If \n"
+               "no config file was loaded in startup, history \n"
+               "will not be saved or loaded, and will not exist \n"
+               "in the main menu."
+               );
+         break;
+      case MENU_LABEL_VIDEO_DRIVER:
+         driver_hash = djb2_calculate(settings->video.driver);
+
+         switch (driver_hash)
+         {
+            case MENU_LABEL_VIDEO_DRIVER_GL:
+               snprintf(s, len,
+                     " -- OpenGL Video driver. \n"
+                     " \n"
+                     "This driver allows libretro GL cores to  \n"
+                     "be used in addition to software-rendered \n"
+                     "core implementations.\n"
+                     " \n"
+                     "Performance for software-rendered and \n"
+                     "libretro GL core implementations is \n"
+                     "dependent on your graphics card's \n"
+                     "underlying GL driver).");
+               break;
+            case MENU_LABEL_VIDEO_DRIVER_SDL2:
+               snprintf(s, len,
+                     " -- SDL 2 Video driver.\n"
+                     " \n"
+                     "This is an SDL 2 software-rendered video \n"
+                     "driver.\n"
+                     " \n"
+                     "Performance for software-rendered libretro \n"
+                     "core implementations is dependent \n"
+                     "on your platform SDL implementation.");
+               break;
+            case MENU_LABEL_VIDEO_DRIVER_SDL1:
+               snprintf(s, len,
+                     " -- SDL Video driver.\n"
+                     " \n"
+                     "This is an SDL 1.2 software-rendered video \n"
+                     "driver.\n"
+                     " \n"
+                     "Performance is considered to be suboptimal. \n"
+                     "Consider using it only as a last resort.");
+               break;
+            case MENU_LABEL_VIDEO_DRIVER_D3D:
+               snprintf(s, len,
+                     " -- Direct3D Video driver. \n"
+                     " \n"
+                     "Performance for software-rendered cores \n"
+                     "is dependent on your graphic card's \n"
+                     "underlying D3D driver).");
+               break;
+            case MENU_LABEL_VIDEO_DRIVER_EXYNOS:
+               snprintf(s, len,
+                     " -- Exynos-G2D Video Driver. \n"
+                     " \n"
+                     "This is a low-level Exynos video driver. \n"
+                     "Uses the G2D block in Samsung Exynos SoC \n"
+                     "for blit operations. \n"
+                     " \n"
+                     "Performance for software rendered cores \n"
+                     "should be optimal.");
+               break;
+            case MENU_LABEL_VIDEO_DRIVER_SUNXI:
+               snprintf(s, len,
+                     " -- Sunxi-G2D Video Driver. \n"
+                     " \n"
+                     "This is a low-level Sunxi video driver. \n"
+                     "Uses the G2D block in Allwinner SoCs.");
+               break;
+            default:
+               snprintf(s, len,
+                     " -- Current Video driver.");
+               break;
+         }
+         break;
+      case MENU_LABEL_AUDIO_DSP_PLUGIN:
+         snprintf(s, len,
+               " -- Audio DSP plugin.\n"
+               " Processes audio before it's sent to \n"
+               "the driver."
+               );
+         break;
+      case MENU_LABEL_AUDIO_RESAMPLER_DRIVER:
+         driver_hash = djb2_calculate(settings->audio.resampler);
+
+         switch (driver_hash)
+         {
+            case MENU_LABEL_AUDIO_RESAMPLER_DRIVER_SINC:
+               snprintf(s, len,
+                     " -- Windowed SINC implementation.");
+               break;
+            case MENU_LABEL_AUDIO_RESAMPLER_DRIVER_CC:
+               snprintf(s, len,
+                     " -- Convoluted Cosine implementation.");
+               break;
+         }
+         break;
+      case MENU_LABEL_VIDEO_SHADER_PRESET:
+         snprintf(s, len,
+               " -- Load Shader Preset. \n"
+               " \n"
+               " Load a "
+#ifdef HAVE_CG
+               "Cg"
+#endif
+#ifdef HAVE_GLSL
+#ifdef HAVE_CG
+               "/"
+#endif
+               "GLSL"
+#endif
+#ifdef HAVE_HLSL
+#if defined(HAVE_CG) || defined(HAVE_HLSL)
+               "/"
+#endif
+               "HLSL"
+#endif
+               " preset directly. \n"
+               "The menu shader menu is updated accordingly. \n"
+               " \n"
+               "If the CGP uses scaling methods which are not \n"
+               "simple, (i.e. source scaling, same scaling \n"
+               "factor for X/Y), the scaling factor displayed \n"
+               "in the menu might not be correct."
+               );
+         break;
+      case MENU_LABEL_VIDEO_SHADER_SCALE_PASS:
+         snprintf(s, len,
+               " -- Scale for this pass. \n"
+               " \n"
+               "The scale factor accumulates, i.e. 2x \n"
+               "for first pass and 2x for second pass \n"
+               "will give you a 4x total scale. \n"
+               " \n"
+               "If there is a scale factor for last \n"
+               "pass, the result is stretched to \n"
+               "screen with the filter specified in \n"
+               "'Default Filter'. \n"
+               " \n"
+               "If 'Don't Care' is set, either 1x \n"
+               "scale or stretch to fullscreen will \n"
+               "be used depending if it's not the last \n"
+               "pass or not."
+               );
+         break;
+      case MENU_LABEL_VIDEO_SHADER_NUM_PASSES:
+         snprintf(s, len,
+               " -- Shader Passes. \n"
+               " \n"
+               "RetroArch allows you to mix and match various \n"
+               "shaders with arbitrary shader passes, with \n"
+               "custom hardware filters and scale factors. \n"
+               " \n"
+               "This option specifies the number of shader \n"
+               "passes to use. If you set this to 0, and use \n"
+               "Apply Shader Changes, you use a 'blank' shader. \n"
+               " \n"
+               "The Default Filter option will affect the \n"
+               "stretching filter.");
+         break;
+      case MENU_LABEL_VIDEO_SHADER_PARAMETERS:
+         snprintf(s, len,
+               "-- Shader Parameters. \n"
+               " \n"
+               "Modifies current shader directly. Will not be \n"
+               "saved to CGP/GLSLP preset file.");
+         break;
+      case MENU_LABEL_VIDEO_SHADER_PRESET_PARAMETERS:
+         snprintf(s, len,
+               "-- Shader Preset Parameters. \n"
+               " \n"
+               "Modifies shader preset currently in menu."
+               );
+         break;
+      case MENU_LABEL_VIDEO_SHADER_PASS:
+         snprintf(s, len,
+               " -- Path to shader. \n"
+               " \n"
+               "All shaders must be of the same \n"
+               "type (i.e. CG, GLSL or HLSL). \n"
+               " \n"
+               "Set Shader Directory to set where \n"
+               "the browser starts to look for \n"
+               "shaders."
+               );
+         break;
+      case MENU_LABEL_CONFIG_SAVE_ON_EXIT:
+         snprintf(s, len,
+               " -- Saves config to disk on exit.\n"
+               "Useful for menu as settings can be\n"
+               "modified. Overwrites the config.\n"
+               " \n"
+               "#include's and comments are not \n"
+               "preserved. \n"
+               " \n"
+               "By design, the config file is \n"
+               "considered immutable as it is \n"
+               "likely maintained by the user, \n"
+               "and should not be overwritten \n"
+               "behind the user's back."
+#if defined(RARCH_CONSOLE) || defined(RARCH_MOBILE)
+               "\nThis is not not the case on \n"
+               "consoles however, where \n"
+               "looking at the config file \n"
+               "manually isn't really an option."
+#endif
+               );
+         break;
+      case MENU_LABEL_VIDEO_SHADER_FILTER_PASS:
+         snprintf(s, len,
+               " -- Hardware filter for this pass. \n"
+               " \n"
+               "If 'Don't Care' is set, 'Default \n"
+               "Filter' will be used."
+               );
+         break;
+      case MENU_LABEL_AUTOSAVE_INTERVAL:
+         snprintf(s, len,
+               " -- Autosaves the non-volatile SRAM \n"
+               "at a regular interval.\n"
+               " \n"
+               "This is disabled by default unless set \n"
+               "otherwise. The interval is measured in \n"
+               "seconds. \n"
+               " \n"
+               "A value of 0 disables autosave.");
+         break;
+      case MENU_LABEL_INPUT_BIND_DEVICE_TYPE:
+         snprintf(s, len,
+               " -- Input Device Type. \n"
+               " \n"
+               "Picks which device type to use. This is \n"
+               "relevant for the libretro core itself."
+               );
+         break;
+      case MENU_LABEL_LIBRETRO_LOG_LEVEL:
+         snprintf(s, len,
+               "-- Sets log level for libretro cores \n"
+               "(GET_LOG_INTERFACE). \n"
+               " \n"
+               " If a log level issued by a libretro \n"
+               " core is below libretro_log level, it \n"
+               " is ignored.\n"
+               " \n"
+               " DEBUG logs are always ignored unless \n"
+               " verbose mode is activated (--verbose).\n"
+               " \n"
+               " DEBUG = 0\n"
+               " INFO  = 1\n"
+               " WARN  = 2\n"
+               " ERROR = 3"
+               );
+         break;
+      case MENU_LABEL_STATE_SLOT_INCREASE:
+      case MENU_LABEL_STATE_SLOT_DECREASE:
+         snprintf(s, len,
+               " -- State slots.\n"
+               " \n"
+               " With slot set to 0, save state name is *.state \n"
+               " (or whatever defined on commandline).\n"
+               "When slot is != 0, path will be (path)(d), \n"
+               "where (d) is slot number.");
+         break;
+      case MENU_LABEL_SHADER_APPLY_CHANGES:
+         snprintf(s, len,
+               " -- Apply Shader Changes. \n"
+               " \n"
+               "After changing shader settings, use this to \n"
+               "apply changes. \n"
+               " \n"
+               "Changing shader settings is a somewhat \n"
+               "expensive operation so it has to be \n"
+               "done explicitly. \n"
+               " \n"
+               "When you apply shaders, the menu shader \n"
+               "settings are saved to a temporary file (either \n"
+               "menu.cgp or menu.glslp) and loaded. The file \n"
+               "persists after RetroArch exits. The file is \n"
+               "saved to Shader Directory."
+               );
+         break;
+      case MENU_LABEL_INPUT_BIND_DEVICE_ID:
+         snprintf(s, len,
+               " -- Input Device. \n"
+               " \n"
+               "Picks which gamepad to use for user N. \n"
+               "The name of the pad is available."
+               );
+         break;
+      case MENU_LABEL_MENU_TOGGLE:
+         snprintf(s, len,
+               " -- Toggles menu.");
+         break;
+      case MENU_LABEL_GRAB_MOUSE_TOGGLE:
+         snprintf(s, len,
+               " -- Toggles mouse grab.\n"
+               " \n"
+               "When mouse is grabbed, RetroArch hides the \n"
+               "mouse, and keeps the mouse pointer inside \n"
+               "the window to allow relative mouse input to \n"
+               "work better.");
+         break;
+      case MENU_LABEL_DISK_NEXT:
+         snprintf(s, len,
+               " -- Cycles through disk images. Use after \n"
+               "ejecting. \n"
+               " \n"
+               " Complete by toggling eject again.");
+         break;
+      case MENU_LABEL_VIDEO_FILTER:
+#ifdef HAVE_FILTERS_BUILTIN
+         snprintf(s, len,
+               " -- CPU-based video filter.");
+#else
+         snprintf(s, len,
+               " -- CPU-based video filter.\n"
+               " \n"
+               "Path to a dynamic library.");
+#endif
+         break;
+      case MENU_LABEL_AUDIO_DEVICE:
+         snprintf(s, len,
+               " -- Override the default audio device \n"
+               "the audio driver uses.\n"
+               "This is driver dependent. E.g.\n"
+#ifdef HAVE_ALSA
+               " \n"
+               "ALSA wants a PCM device."
+#endif
+#ifdef HAVE_OSS
+               " \n"
+               "OSS wants a path (e.g. /dev/dsp)."
+#endif
+#ifdef HAVE_JACK
+               " \n"
+               "JACK wants portnames (e.g. system:playback1\n"
+               ",system:playback_2)."
+#endif
+#ifdef HAVE_RSOUND
+               " \n"
+               "RSound wants an IP address to an RSound \n"
+               "server."
+#endif
+               );
+         break;
+      case MENU_LABEL_DISK_EJECT_TOGGLE:
+         snprintf(s, len,
+               " -- Toggles eject for disks.\n"
+               " \n"
+               "Used for multiple-disk content.");
+         break;
+      case MENU_LABEL_ENABLE_HOTKEY:
+         snprintf(s, len,
+               " -- Enable other hotkeys.\n"
+               " \n"
+               " If this hotkey is bound to either keyboard, \n"
+               "joybutton or joyaxis, all other hotkeys will \n"
+               "be disabled unless this hotkey is also held \n"
+               "at the same time. \n"
+               " \n"
+               "This is useful for RETRO_KEYBOARD centric \n"
+               "implementations which query a large area of \n"
+               "the keyboard, where it is not desirable that \n"
+               "hotkeys get in the way.");
+         break;
+      case MENU_LABEL_REWIND_ENABLE:
+         snprintf(s, len,
+               " -- Enable rewinding.\n"
+               " \n"
+               "This will take a performance hit, \n"
+               "so it is disabled by default.");
+         break;
+      case MENU_LABEL_LIBRETRO_DIR_PATH:
+         snprintf(s, len,
+               " -- Core Directory. \n"
+               " \n"
+               "A directory for where to search for \n"
+               "libretro core implementations.");
+         break;
+      case MENU_LABEL_VIDEO_REFRESH_RATE_AUTO:
+         snprintf(s, len,
+               " -- Refresh Rate Auto.\n"
+               " \n"
+               "The accurate refresh rate of our monitor (Hz).\n"
+               "This is used to calculate audio input rate with \n"
+               "the formula: \n"
+               " \n"
+               "audio_input_rate = game input rate * display \n"
+               "refresh rate / game refresh rate\n"
+               " \n"
+               "If the implementation does not report any \n"
+               "values, NTSC defaults will be assumed for \n"
+               "compatibility.\n"
+               " \n"
+               "This value should stay close to 60Hz to avoid \n"
+               "large pitch changes. If your monitor does \n"
+               "not run at 60Hz, or something close to it, \n"
+               "disable VSync, and leave this at its default.");
+         break;
+      case MENU_LABEL_VIDEO_ROTATION:
+         snprintf(s, len,
+               " -- Forces a certain rotation \n"
+               "of the screen.\n"
+               " \n"
+               "The rotation is added to rotations which\n"
+               "the libretro core sets (see Video Allow\n"
+               "Rotate).");
+         break;
+      case MENU_LABEL_VIDEO_SCALE:
+         snprintf(s, len,
+               " -- Fullscreen resolution.\n"
+               " \n"
+               "Resolution of 0 uses the \n"
+               "resolution of the environment.\n");
+         break;
+      case MENU_LABEL_FASTFORWARD_RATIO:
+         snprintf(s, len,
+               " -- Fastforward ratio."
+               " \n"
+               "The maximum rate at which content will\n"
+               "be run when using fast forward.\n"
+               " \n"
+               " (E.g. 5.0 for 60 fps content => 300 fps \n"
+               "cap).\n"
+               " \n"
+               "RetroArch will go to sleep to ensure that \n"
+               "the maximum rate will not be exceeded.\n"
+               "Do not rely on this cap to be perfectly \n"
+               "accurate.");
+         break;
+      case MENU_LABEL_VIDEO_MONITOR_INDEX:
+         snprintf(s, len,
+               " -- Which monitor to prefer.\n"
+               " \n"
+               "0 (default) means no particular monitor \n"
+               "is preferred, 1 and up (1 being first \n"
+               "monitor), suggests RetroArch to use that \n"
+               "particular monitor.");
+         break;
+      case MENU_LABEL_VIDEO_CROP_OVERSCAN:
+         snprintf(s, len,
+               " -- Forces cropping of overscanned \n"
+               "frames.\n"
+               " \n"
+               "Exact behavior of this option is \n"
+               "core-implementation specific.");
+         break;
+      case MENU_LABEL_VIDEO_SCALE_INTEGER:
+         snprintf(s, len,
+               " -- Only scales video in integer \n"
+               "steps.\n"
+               " \n"
+               "The base size depends on system-reported \n"
+               "geometry and aspect ratio.\n"
+               " \n"
+               "If Force Aspect is not set, X/Y will be \n"
+               "integer scaled independently.");
+         break;
+      case MENU_LABEL_AUDIO_VOLUME:
+         snprintf(s, len,
+               " -- Audio volume, expressed in dB.\n"
+               " \n"
+               " 0 dB is normal volume. No gain will be applied.\n"
+               "Gain can be controlled in runtime with Input\n"
+               "Volume Up / Input Volume Down.");
+         break;
+      case MENU_LABEL_AUDIO_RATE_CONTROL_DELTA:
+         snprintf(s, len,
+               " -- Audio rate control.\n"
+               " \n"
+               "Setting this to 0 disables rate control.\n"
+               "Any other value controls audio rate control \n"
+               "delta.\n"
+               " \n"
+               "Defines how much input rate can be adjusted \n"
+               "dynamically.\n"
+               " \n"
+               " Input rate is defined as: \n"
+               " input rate * (1.0 +/- (rate control delta))");
+         break;
+      case MENU_LABEL_AUDIO_MAX_TIMING_SKEW:
+         snprintf(s, len,
+               " -- Maximum audio timing skew.\n"
+               " \n"
+               "Defines the maximum change in input rate.\n"
+               "You may want to increase this to enable\n"
+               "very large changes in timing, for example\n"
+               "running PAL cores on NTSC displays, at the\n"
+               "cost of inaccurate audio pitch.\n"
+               " \n"
+               " Input rate is defined as: \n"
+               " input rate * (1.0 +/- (max timing skew))");
+         break;
+      case MENU_LABEL_OVERLAY_NEXT:
+         snprintf(s, len,
+               " -- Toggles to next overlay.\n"
+               " \n"
+               "Wraps around.");
+         break;
+      case MENU_LABEL_LOG_VERBOSITY:
+         snprintf(s, len,
+               "-- Enable or disable verbosity level \n"
+               "of frontend.");
+         break;
+      case MENU_LABEL_VOLUME_UP:
+         snprintf(s, len,
+               " -- Increases audio volume.");
+         break;
+      case MENU_LABEL_VOLUME_DOWN:
+         snprintf(s, len,
+               " -- Decreases audio volume.");
+         break;
+      case MENU_LABEL_VIDEO_DISABLE_COMPOSITION:
+         snprintf(s, len,
+               "-- Forcibly disable composition.\n"
+               "Only valid on Windows Vista/7 for now.");
+         break;
+      case MENU_LABEL_PERFCNT_ENABLE:
+         snprintf(s, len,
+               "-- Enable or disable frontend \n"
+               "performance counters.");
+         break;
+      case MENU_LABEL_SYSTEM_DIRECTORY:
+         snprintf(s, len,
+               "-- System Directory. \n"
+               " \n"
+               "Sets the 'system' directory.\n"
+               "Cores can query for this\n"
+               "directory to load BIOSes, \n"
+               "system-specific configs, etc.");
+         break;
+      case MENU_LABEL_SAVESTATE_AUTO_SAVE:
+         snprintf(s, len,
+               " -- Automatically saves a savestate at the \n"
+               "end of RetroArch's lifetime.\n"
+               " \n"
+               "RetroArch will automatically load any savestate\n"
+               "with this path on startup if 'Auto Load State\n"
+               "is enabled.");
+         break;
+      case MENU_LABEL_VIDEO_THREADED:
+         snprintf(s, len,
+               " -- Use threaded video driver.\n"
+               " \n"
+               "Using this might improve performance at \n"
+               "possible cost of latency and more video \n"
+               "stuttering.");
+         break;
+      case MENU_LABEL_VIDEO_VSYNC:
+         snprintf(s, len,
+               " -- Video V-Sync.\n");
+         break;
+      case MENU_LABEL_VIDEO_HARD_SYNC:
+         snprintf(s, len,
+               " -- Attempts to hard-synchronize \n"
+               "CPU and GPU.\n"
+               " \n"
+               "Can reduce latency at cost of \n"
+               "performance.");
+         break;
+      case MENU_LABEL_REWIND_GRANULARITY:
+         snprintf(s, len,
+               " -- Rewind granularity.\n"
+               " \n"
+               " When rewinding defined number of \n"
+               "frames, you can rewind several frames \n"
+               "at a time, increasing the rewinding \n"
+               "speed.");
+         break;
+      case MENU_LABEL_SCREENSHOT:
+         snprintf(s, len,
+               " -- Take screenshot.");
+         break;
+      case MENU_LABEL_VIDEO_FRAME_DELAY:
+         snprintf(s, len,
+               " -- Sets how many milliseconds to delay\n"
+               "after VSync before running the core.\n"
+               "\n"
+               "Can reduce latency at cost of\n"
+               "higher risk of stuttering.\n"
+               " \n"
+               "Maximum is 15.");
+         break;
+      case MENU_LABEL_VIDEO_HARD_SYNC_FRAMES:
+         snprintf(s, len,
+               " -- Sets how many frames CPU can \n"
+               "run ahead of GPU when using 'GPU \n"
+               "Hard Sync'.\n"
+               " \n"
+               "Maximum is 3.\n"
+               " \n"
+               " 0: Syncs to GPU immediately.\n"
+               " 1: Syncs to previous frame.\n"
+               " 2: Etc ...");
+         break;
+      case MENU_LABEL_VIDEO_BLACK_FRAME_INSERTION:
+         snprintf(s, len,
+               " -- Inserts a black frame inbetween \n"
+               "frames.\n"
+               " \n"
+               "Useful for 120 Hz monitors who want to \n"
+               "play 60 Hz material with eliminated \n"
+               "ghosting.\n"
+               " \n"
+               "Video refresh rate should still be \n"
+               "configured as if it is a 60 Hz monitor \n"
+               "(divide refresh rate by 2).");
+         break;
+      case MENU_LABEL_RGUI_SHOW_START_SCREEN:
+         snprintf(s, len,
+               " -- Show startup screen in menu.\n"
+               "Is automatically set to false when seen\n"
+               "for the first time.\n"
+               " \n"
+               "This is only updated in config if\n"
+               "'Save Configuration on Exit' is enabled.\n");
+         break;
+      case MENU_LABEL_CORE_SPECIFIC_CONFIG:
+         snprintf(s, len,
+               " -- Load up a specific config file \n"
+               "based on the core being used.\n");
+         break;
+      case MENU_LABEL_VIDEO_FULLSCREEN:
+         snprintf(s, len, " -- Toggles fullscreen.");
+         break;
+      case MENU_LABEL_BLOCK_SRAM_OVERWRITE:
+         snprintf(s, len,
+               " -- Block SRAM from being overwritten \n"
+               "when loading save states.\n"
+               " \n"
+               "Might potentially lead to buggy games.");
+         break;
+      case MENU_LABEL_PAUSE_NONACTIVE:
+         snprintf(s, len,
+               " -- Pause gameplay when window focus \n"
+               "is lost.");
+         break;
+      case MENU_LABEL_VIDEO_GPU_SCREENSHOT:
+         snprintf(s, len,
+               " -- Screenshots output of GPU shaded \n"
+               "material if available.");
+         break;
+      case MENU_LABEL_SCREENSHOT_DIRECTORY:
+         snprintf(s, len,
+               " -- Screenshot Directory. \n"
+               " \n"
+               "Directory to dump screenshots to."
+               );
+         break;
+      case MENU_LABEL_VIDEO_SWAP_INTERVAL:
+         snprintf(s, len,
+               " -- VSync Swap Interval.\n"
+               " \n"
+               "Uses a custom swap interval for VSync. Set this \n"
+               "to effectively halve monitor refresh rate.");
+         break;
+      case MENU_LABEL_SAVEFILE_DIRECTORY:
+         snprintf(s, len,
+               " -- Savefile Directory. \n"
+               " \n"
+               "Save all save files (*.srm) to this \n"
+               "directory. This includes related files like \n"
+               ".bsv, .rt, .psrm, etc...\n"
+               " \n"
+               "This will be overridden by explicit command line\n"
+               "options.");
+         break;
+      case MENU_LABEL_SAVESTATE_DIRECTORY:
+         snprintf(s, len,
+               " -- Savestate Directory. \n"
+               " \n"
+               "Save all save states (*.state) to this \n"
+               "directory.\n"
+               " \n"
+               "This will be overridden by explicit command line\n"
+               "options.");
+         break;
+      case MENU_LABEL_ASSETS_DIRECTORY:
+         snprintf(s, len,
+               " -- Assets Directory. \n"
+               " \n"
+               " This location is queried by default when \n"
+               "menu interfaces try to look for loadable \n"
+               "assets, etc.");
+         break;
+      case MENU_LABEL_DYNAMIC_WALLPAPERS_DIRECTORY:
+         snprintf(s, len,
+               " -- Dynamic Wallpapers Directory. \n"
+               " \n"
+               " The place to store wallpapers that will \n"
+               "be loaded dynamically by the menu depending \n"
+               "on context.");
+         break;
+      case MENU_LABEL_SLOWMOTION_RATIO:
+         snprintf(s, len,
+               " -- Slowmotion ratio."
+               " \n"
+               "When slowmotion, content will slow\n"
+               "down by factor.");
+         break;
+      case MENU_LABEL_INPUT_AXIS_THRESHOLD:
+         snprintf(s, len,
+               " -- Defines axis threshold.\n"
+               " \n"
+               "How far an axis must be tilted to result\n"
+               "in a button press.\n"
+               " Possible values are [0.0, 1.0].");
+         break;
+      case MENU_LABEL_INPUT_TURBO_PERIOD:
+         snprintf(s, len, 
+               " -- Turbo period.\n"
+               " \n"
+               "Describes speed of which turbo-enabled\n"
+               "buttons toggle."
+               );
+         break;
+      case MENU_LABEL_INPUT_AUTODETECT_ENABLE:
+         snprintf(s, len,
+               " -- Enable input auto-detection.\n"
+               " \n"
+               "Will attempt to auto-configure \n"
+               "joypads, Plug-and-Play style.");
+         break;
+      case MENU_LABEL_CAMERA_ALLOW:
+         snprintf(s, len,
+               " -- Allow or disallow camera access by \n"
+               "cores.");
+         break;
+      case MENU_LABEL_LOCATION_ALLOW:
+         snprintf(s, len,
+               " -- Allow or disallow location services \n"
+               "access by cores.");
+         break;
+      case MENU_LABEL_TURBO:
+         snprintf(s, len,
+               " -- Turbo enable.\n"
+               " \n"
+               "Holding the turbo while pressing another \n"
+               "button will let the button enter a turbo \n"
+               "mode where the button state is modulated \n"
+               "with a periodic signal. \n"
+               " \n"
+               "The modulation stops when the button \n"
+               "itself (not turbo button) is released.");
+         break;
+      case MENU_LABEL_OSK_ENABLE:
+         snprintf(s, len,
+               " -- Enable/disable on-screen keyboard.");
+         break;
+      case MENU_LABEL_AUDIO_MUTE:
+         snprintf(s, len,
+               " -- Mute/unmute audio.");
+         break;
+      case MENU_LABEL_REWIND:
+         snprintf(s, len,
+               " -- Hold button down to rewind.\n"
+               " \n"
+               "Rewind must be enabled.");
+         break;
+      case MENU_LABEL_EXIT_EMULATOR:
+         snprintf(s, len,
+               " -- Key to exit RetroArch cleanly."
+#if !defined(RARCH_MOBILE) && !defined(RARCH_CONSOLE)
+               "\nKilling it in any hard way (SIGKILL, \n"
+               "etc) will terminate without saving\n"
+               "RAM, etc. On Unix-likes,\n"
+               "SIGINT/SIGTERM allows\n"
+               "a clean deinitialization."
+#endif
+               );
+         break;
+      case MENU_LABEL_LOAD_STATE:
+         snprintf(s, len,
+               " -- Loads state.");
+         break;
+      case MENU_LABEL_SAVE_STATE:
+         snprintf(s, len,
+               " -- Saves state.");
+         break;
+      case MENU_LABEL_NETPLAY_FLIP_PLAYERS:
+         snprintf(s, len,
+               " -- Netplay flip users.");
+         break;
+      case MENU_LABEL_CHEAT_INDEX_PLUS:
+         snprintf(s, len,
+               " -- Increment cheat index.\n");
+         break;
+      case MENU_LABEL_CHEAT_INDEX_MINUS:
+         snprintf(s, len,
+               " -- Decrement cheat index.\n");
+         break;
+      case MENU_LABEL_SHADER_PREV:
+         snprintf(s, len,
+               " -- Applies previous shader in directory.");
+         break;
+      case MENU_LABEL_SHADER_NEXT:
+         snprintf(s, len,
+               " -- Applies next shader in directory.");
+         break;
+      case MENU_LABEL_RESET:
+         snprintf(s, len,
+               " -- Reset the content.\n");
+         break;
+      case MENU_LABEL_PAUSE_TOGGLE:
+         snprintf(s, len,
+               " -- Toggle between paused and non-paused state.");
+         break;
+      case MENU_LABEL_CHEAT_TOGGLE:
+         snprintf(s, len,
+               " -- Toggle cheat index.\n");
+         break;
+      case MENU_LABEL_HOLD_FAST_FORWARD:
+         snprintf(s, len,
+               " -- Hold for fast-forward. Releasing button \n"
+               "disables fast-forward.");
+         break;
+      case MENU_LABEL_SLOWMOTION:
+         snprintf(s, len,
+               " -- Hold for slowmotion.");
+         break;
+      case MENU_LABEL_FRAME_ADVANCE:
+         snprintf(s, len,
+               " -- Frame advance when content is paused.");
+         break;
+      case MENU_LABEL_MOVIE_RECORD_TOGGLE:
+         snprintf(s, len,
+               " -- Toggle between recording and not.");
+         break;
+      case MENU_LABEL_L_X_PLUS:
+      case MENU_LABEL_L_X_MINUS:
+      case MENU_LABEL_L_Y_PLUS:
+      case MENU_LABEL_L_Y_MINUS:
+      case MENU_LABEL_R_X_PLUS:
+      case MENU_LABEL_R_X_MINUS:
+      case MENU_LABEL_R_Y_PLUS:
+      case MENU_LABEL_R_Y_MINUS:
+         snprintf(s, len,
+               " -- Axis for analog stick (DualShock-esque).\n"
+               " \n"
+               "Bound as usual, however, if a real analog \n"
+               "axis is bound, it can be read as a true analog.\n"
+               " \n"
+               "Positive X axis is right. \n"
+               "Positive Y axis is down.");
+         break;
+      default:
+         return -1;
+   }
+
+   return 0;
+}
+
 /**
  * setting_get_description:
  * @label              : identifier label of setting
@@ -2037,947 +3030,13 @@ int setting_get_description(const char *label, char *s,
       size_t len)
 {
    settings_t      *settings = config_get_ptr();
+   uint32_t label_hash       = djb2_calculate(label);
 
-   if (!strcmp(label, "input_driver"))
-   {
-      if (!strcmp(settings->input.driver, "udev"))
-         snprintf(s, len,
-               " -- udev Input driver. \n"
-               " \n"
-               "This driver can run without X. \n"
-               " \n"
-               "It uses the recent evdev joypad API \n"
-               "for joystick support. It supports \n"
-               "hotplugging and force feedback (if \n"
-               "supported by device). \n"
-               " \n"
-               "The driver reads evdev events for keyboard \n"
-               "support. It also supports keyboard callback, \n"
-               "mice and touchpads. \n"
-               " \n"
-               "By default in most distros, /dev/input nodes \n"
-               "are root-only (mode 600). You can set up a udev \n"
-               "rule which makes these accessible to non-root."
-               );
-      else if (!strcmp(settings->input.driver, "linuxraw"))
-         snprintf(s, len,
-               " -- linuxraw Input driver. \n"
-               " \n"
-               "This driver requires an active TTY. Keyboard \n"
-               "events are read directly from the TTY which \n"
-               "makes it simpler, but not as flexible as udev. \n" "Mice, etc, are not supported at all. \n"
-               " \n"
-               "This driver uses the older joystick API \n"
-               "(/dev/input/js*).");
-      else
-         snprintf(s, len,
-               " -- Input driver.\n"
-               " \n"
-               "Depending on video driver, it might \n"
-               "force a different input driver.");
+   if (setting_get_description_compare_label(label_hash, settings, s, len) == 0)
+      return 0;
 
-   }
-   else if (!strcmp(label, "load_content"))
-   {
-      snprintf(s, len,
-            " -- Load Content. \n"
-            "Browse for content. \n"
-            " \n"
-            "To load content, you need a \n"
-            "libretro core to use, and a \n"
-            "content file. \n"
-            " \n"
-            "To control where the menu starts \n"
-            " to browse for content, set  \n"
-            "Browser Directory. If not set,  \n"
-            "it will start in root. \n"
-            " \n"
-            "The browser will filter out \n"
-            "extensions for the last core set \n"
-            "in 'Core', and use that core when \n"
-            "content is loaded."
-            );
-   }
-   else if (!strcmp(label, "core_list"))
-   {
-      snprintf(s, len,
-            " -- Core Selection. \n"
-            " \n"
-            "Browse for a libretro core \n"
-            "implementation. Where the browser \n"
-            "starts depends on your Core Directory \n"
-            "path. If blank, it will start in root. \n"
-            " \n"
-            "If Core Directory is a directory, the menu \n"
-            "will use that as top folder. If Core \n"
-            "Directory is a full path, it will start \n"
-            "in the folder where the file is.");
-   }
-   else if (!strcmp(label, "history_list"))
-   {
-      snprintf(s, len,
-            " -- Loading content from history. \n"
-            " \n"
-            "As content is loaded, content and libretro \n"
-            "core combinations are saved to history. \n"
-            " \n"
-            "The history is saved to a file in the same \n"
-            "directory as the RetroArch config file. If \n"
-            "no config file was loaded in startup, history \n"
-            "will not be saved or loaded, and will not exist \n"
-            "in the main menu."
-            );
-   }
-   else if (!strcmp(label, "audio_resampler_driver"))
-   {
-      if (!strcmp(settings->audio.resampler, "sinc"))
-         snprintf(s, len,
-               " -- Windowed SINC implementation.");
-      else if (!strcmp(settings->audio.resampler, "CC"))
-         snprintf(s, len,
-               " -- Convoluted Cosine implementation.");
-   }
-   else if (!strcmp(label, "video_driver"))
-   {
-      if (!strcmp(settings->video.driver, "gl"))
-         snprintf(s, len,
-               " -- OpenGL Video driver. \n"
-               " \n"
-               "This driver allows libretro GL cores to  \n"
-               "be used in addition to software-rendered \n"
-               "core implementations.\n"
-               " \n"
-               "Performance for software-rendered and \n"
-               "libretro GL core implementations is \n"
-               "dependent on your graphics card's \n"
-               "underlying GL driver).");
-      else if (!strcmp(settings->video.driver, "sdl2"))
-         snprintf(s, len,
-               " -- SDL 2 Video driver.\n"
-               " \n"
-               "This is an SDL 2 software-rendered video \n"
-               "driver.\n"
-               " \n"
-               "Performance for software-rendered libretro \n"
-               "core implementations is dependent \n"
-               "on your platform SDL implementation.");
-      else if (!strcmp(settings->video.driver, "sdl"))
-         snprintf(s, len,
-               " -- SDL Video driver.\n"
-               " \n"
-               "This is an SDL 1.2 software-rendered video \n"
-               "driver.\n"
-               " \n"
-               "Performance is considered to be suboptimal. \n"
-               "Consider using it only as a last resort.");
-      else if (!strcmp(settings->video.driver, "d3d"))
-         snprintf(s, len,
-               " -- Direct3D Video driver. \n"
-               " \n"
-               "Performance for software-rendered cores \n"
-               "is dependent on your graphic card's \n"
-               "underlying D3D driver).");
-      else if (!strcmp(settings->video.driver, "exynos"))
-         snprintf(s, len,
-               " -- Exynos-G2D Video Driver. \n"
-               " \n"
-               "This is a low-level Exynos video driver. \n"
-               "Uses the G2D block in Samsung Exynos SoC \n"
-               "for blit operations. \n"
-               " \n"
-               "Performance for software rendered cores \n"
-               "should be optimal.");
-      else if (!strcmp(settings->video.driver, "sunxi"))
-         snprintf(s, len,
-               " -- Sunxi-G2D Video Driver. \n"
-               " \n"
-               "This is a low-level Sunxi video driver. \n"
-               "Uses the G2D block in Allwinner SoCs.");
-      else
-         snprintf(s, len,
-               " -- Current Video driver.");
-   }
-   else if (!strcmp(label, "audio_dsp_plugin"))
-   {
-      snprintf(s, len,
-            " -- Audio DSP plugin.\n"
-            " Processes audio before it's sent to \n"
-            "the driver."
-            );
-   }
-   else if (!strcmp(label, "libretro_dir_path"))
-   {
-      snprintf(s, len,
-            " -- Core Directory. \n"
-            " \n"
-            "A directory for where to search for \n"
-            "libretro core implementations.");
-   }
-   else if (!strcmp(label, "video_disable_composition"))
-   {
-      snprintf(s, len,
-            "-- Forcibly disable composition.\n"
-            "Only valid on Windows Vista/7 for now.");
-   }
-   else if (!strcmp(label, "libretro_log_level"))
-   {
-      snprintf(s, len,
-            "-- Sets log level for libretro cores \n"
-            "(GET_LOG_INTERFACE). \n"
-            " \n"
-            " If a log level issued by a libretro \n"
-            " core is below libretro_log level, it \n"
-            " is ignored.\n"
-            " \n"
-            " DEBUG logs are always ignored unless \n"
-            " verbose mode is activated (--verbose).\n"
-            " \n"
-            " DEBUG = 0\n"
-            " INFO  = 1\n"
-            " WARN  = 2\n"
-            " ERROR = 3"
-            );
-   }
-   else if (!strcmp(label, "log_verbosity"))
-   {
-      snprintf(s, len,
-            "-- Enable or disable verbosity level \n"
-            "of frontend.");
-   }
-   else if (!strcmp(label, "perfcnt_enable"))
-   {
-      snprintf(s, len,
-            "-- Enable or disable frontend \n"
-            "performance counters.");
-   }
-   else if (!strcmp(label, "system_directory"))
-   {
-      snprintf(s, len,
-            "-- System Directory. \n"
-            " \n"
-            "Sets the 'system' directory.\n"
-            "Cores can query for this\n"
-            "directory to load BIOSes, \n"
-            "system-specific configs, etc.");
-   }
-   else if (!strcmp(label, "rgui_show_start_screen"))
-   {
-      snprintf(s, len,
-            " -- Show startup screen in menu.\n"
-            "Is automatically set to false when seen\n"
-            "for the first time.\n"
-            " \n"
-            "This is only updated in config if\n"
-            "'Save Configuration on Exit' is enabled.\n");
-   }
-   else if (!strcmp(label, "config_save_on_exit"))
-   {
-      snprintf(s, len,
-            " -- Saves config to disk on exit.\n"
-            "Useful for menu as settings can be\n"
-            "modified. Overwrites the config.\n"
-            " \n"
-            "#include's and comments are not \n"
-            "preserved. \n"
-            " \n"
-            "By design, the config file is \n"
-            "considered immutable as it is \n"
-            "likely maintained by the user, \n"
-            "and should not be overwritten \n"
-            "behind the user's back."
-#if defined(RARCH_CONSOLE) || defined(RARCH_MOBILE)
-            "\nThis is not not the case on \n"
-            "consoles however, where \n"
-            "looking at the config file \n"
-            "manually isn't really an option."
-#endif
-            );
-   }
-   else if (!strcmp(label, "core_specific_config"))
-   {
-      snprintf(s, len,
-            " -- Load up a specific config file \n"
-            "based on the core being used.\n");
-   }
-   else if (!strcmp(label, "video_scale"))
-   {
-      snprintf(s, len,
-            " -- Fullscreen resolution.\n"
-            " \n"
-            "Resolution of 0 uses the \n"
-            "resolution of the environment.\n");
-   }
-   else if (!strcmp(label, "video_vsync"))
-   {
-      snprintf(s, len,
-            " -- Video V-Sync.\n");
-   }
-   else if (!strcmp(label, "video_hard_sync"))
-   {
-      snprintf(s, len,
-            " -- Attempts to hard-synchronize \n"
-            "CPU and GPU.\n"
-            " \n"
-            "Can reduce latency at cost of \n"
-            "performance.");
-   }
-   else if (!strcmp(label, "video_hard_sync_frames"))
-   {
-      snprintf(s, len,
-            " -- Sets how many frames CPU can \n"
-            "run ahead of GPU when using 'GPU \n"
-            "Hard Sync'.\n"
-            " \n"
-            "Maximum is 3.\n"
-            " \n"
-            " 0: Syncs to GPU immediately.\n"
-            " 1: Syncs to previous frame.\n"
-            " 2: Etc ...");
-   }
-   else if (!strcmp(label, "video_frame_delay"))
-   {
-      snprintf(s, len,
-            " -- Sets how many milliseconds to delay\n"
-            "after VSync before running the core.\n"
-            "\n"
-            "Can reduce latency at cost of\n"
-            "higher risk of stuttering.\n"
-            " \n"
-            "Maximum is 15.");
-   }
-   else if (!strcmp(label, "audio_rate_control_delta"))
-   {
-      snprintf(s, len,
-            " -- Audio rate control.\n"
-            " \n"
-            "Setting this to 0 disables rate control.\n"
-            "Any other value controls audio rate control \n"
-            "delta.\n"
-            " \n"
-            "Defines how much input rate can be adjusted \n"
-            "dynamically.\n"
-            " \n"
-            " Input rate is defined as: \n"
-            " input rate * (1.0 +/- (rate control delta))");
-   }
-   else if (!strcmp(label, "audio_max_timing_skew"))
-   {
-      snprintf(s, len,
-            " -- Maximum audio timing skew.\n"
-            " \n"
-            "Defines the maximum change in input rate.\n"
-            "You may want to increase this to enable\n"
-            "very large changes in timing, for example\n"
-            "running PAL cores on NTSC displays, at the\n"
-            "cost of inaccurate audio pitch.\n"
-            " \n"
-            " Input rate is defined as: \n"
-            " input rate * (1.0 +/- (max timing skew))");
-   }
-   else if (!strcmp(label, "video_filter"))
-   {
-#ifdef HAVE_FILTERS_BUILTIN
-      snprintf(s, len,
-            " -- CPU-based video filter.");
-#else
-      snprintf(s, len,
-            " -- CPU-based video filter.\n"
-            " \n"
-            "Path to a dynamic library.");
-#endif
-   }
-   else if (!strcmp(label, "video_fullscreen"))
-   {
-      snprintf(s, len, " -- Toggles fullscreen.");
-   }
-   else if (!strcmp(label, "audio_device"))
-   {
-      snprintf(s, len,
-            " -- Override the default audio device \n"
-            "the audio driver uses.\n"
-            "This is driver dependent. E.g.\n"
-#ifdef HAVE_ALSA
-            " \n"
-            "ALSA wants a PCM device."
-#endif
-#ifdef HAVE_OSS
-            " \n"
-            "OSS wants a path (e.g. /dev/dsp)."
-#endif
-#ifdef HAVE_JACK
-            " \n"
-            "JACK wants portnames (e.g. system:playback1\n"
-            ",system:playback_2)."
-#endif
-#ifdef HAVE_RSOUND
-            " \n"
-            "RSound wants an IP address to an RSound \n"
-            "server."
-#endif
-            );
-   }
-   else if (!strcmp(label, "video_black_frame_insertion"))
-   {
-      snprintf(s, len,
-            " -- Inserts a black frame inbetween \n"
-            "frames.\n"
-            " \n"
-            "Useful for 120 Hz monitors who want to \n"
-            "play 60 Hz material with eliminated \n"
-            "ghosting.\n"
-            " \n"
-            "Video refresh rate should still be \n"
-            "configured as if it is a 60 Hz monitor \n"
-            "(divide refresh rate by 2).");
-   }
-   else if (!strcmp(label, "video_threaded"))
-   {
-      snprintf(s, len,
-            " -- Use threaded video driver.\n"
-            " \n"
-            "Using this might improve performance at \n"
-            "possible cost of latency and more video \n"
-            "stuttering.");
-   }
-   else if (!strcmp(label, "video_scale_integer"))
-   {
-      snprintf(s, len,
-            " -- Only scales video in integer \n"
-            "steps.\n"
-            " \n"
-            "The base size depends on system-reported \n"
-            "geometry and aspect ratio.\n"
-            " \n"
-            "If Force Aspect is not set, X/Y will be \n"
-            "integer scaled independently.");
-   }
-   else if (!strcmp(label, "video_crop_overscan"))
-   {
-      snprintf(s, len,
-            " -- Forces cropping of overscanned \n"
-            "frames.\n"
-            " \n"
-            "Exact behavior of this option is \n"
-            "core-implementation specific.");
-   }
-   else if (!strcmp(label, "video_monitor_index"))
-   {
-      snprintf(s, len,
-            " -- Which monitor to prefer.\n"
-            " \n"
-            "0 (default) means no particular monitor \n"
-            "is preferred, 1 and up (1 being first \n"
-            "monitor), suggests RetroArch to use that \n"
-            "particular monitor.");
-   }
-   else if (!strcmp(label, "video_rotation"))
-   {
-      snprintf(s, len,
-            " -- Forces a certain rotation \n"
-            "of the screen.\n"
-            " \n"
-            "The rotation is added to rotations which\n"
-            "the libretro core sets (see Video Allow\n"
-            "Rotate).");
-   }
-   else if (!strcmp(label, "audio_volume"))
-   {
-      snprintf(s, len,
-            " -- Audio volume, expressed in dB.\n"
-            " \n"
-            " 0 dB is normal volume. No gain will be applied.\n"
-            "Gain can be controlled in runtime with Input\n"
-            "Volume Up / Input Volume Down.");
-   }
-   else if (!strcmp(label, "block_sram_overwrite"))
-   {
-      snprintf(s, len,
-            " -- Block SRAM from being overwritten \n"
-            "when loading save states.\n"
-            " \n"
-            "Might potentially lead to buggy games.");
-   }
-   else if (!strcmp(label, "fastforward_ratio"))
-   {
-      snprintf(s, len,
-            " -- Fastforward ratio."
-            " \n"
-            "The maximum rate at which content will\n"
-            "be run when using fast forward.\n"
-            " \n"
-            " (E.g. 5.0 for 60 fps content => 300 fps \n"
-            "cap).\n"
-            " \n"
-            "RetroArch will go to sleep to ensure that \n"
-            "the maximum rate will not be exceeded.\n"
-            "Do not rely on this cap to be perfectly \n"
-            "accurate.");
-   }
-   else if (!strcmp(label, "pause_nonactive"))
-   {
-      snprintf(s, len,
-            " -- Pause gameplay when window focus \n"
-            "is lost.");
-   }
-   else if (!strcmp(label, "video_gpu_screenshot"))
-   {
-      snprintf(s, len,
-            " -- Screenshots output of GPU shaded \n"
-            "material if available.");
-   }
-   else if (!strcmp(label, "autosave_interval"))
-   {
-      snprintf(s, len,
-            " -- Autosaves the non-volatile SRAM \n"
-            "at a regular interval.\n"
-            " \n"
-            "This is disabled by default unless set \n"
-            "otherwise. The interval is measured in \n"
-            "seconds. \n"
-            " \n"
-            "A value of 0 disables autosave.");
-   }
-   else if (!strcmp(label, "screenshot_directory"))
-   {
-      snprintf(s, len,
-            " -- Screenshot Directory. \n"
-            " \n"
-            "Directory to dump screenshots to."
-            );
-   }
-   else if (!strcmp(label, "video_swap_interval"))
-   {
-      snprintf(s, len,
-            " -- VSync Swap Interval.\n"
-            " \n"
-            "Uses a custom swap interval for VSync. Set this \n"
-            "to effectively halve monitor refresh rate.");
-   }
-   else if (!strcmp(label, "video_refresh_rate_auto"))
-   {
-      snprintf(s, len,
-            " -- Refresh Rate Auto.\n"
-            " \n"
-            "The accurate refresh rate of our monitor (Hz).\n"
-            "This is used to calculate audio input rate with \n"
-            "the formula: \n"
-            " \n"
-            "audio_input_rate = game input rate * display \n"
-            "refresh rate / game refresh rate\n"
-            " \n"
-            "If the implementation does not report any \n"
-            "values, NTSC defaults will be assumed for \n"
-            "compatibility.\n"
-            " \n"
-            "This value should stay close to 60Hz to avoid \n"
-            "large pitch changes. If your monitor does \n"
-            "not run at 60Hz, or something close to it, \n"
-            "disable VSync, and leave this at its default.");
-   }
-   else if (!strcmp(label, "savefile_directory"))
-   {
-      snprintf(s, len,
-            " -- Savefile Directory. \n"
-            " \n"
-            "Save all save files (*.srm) to this \n"
-            "directory. This includes related files like \n"
-            ".bsv, .rt, .psrm, etc...\n"
-            " \n"
-            "This will be overridden by explicit command line\n"
-            "options.");
-   }
-   else if (!strcmp(label, "savestate_directory"))
-   {
-      snprintf(s, len,
-            " -- Savestate Directory. \n"
-            " \n"
-            "Save all save states (*.state) to this \n"
-            "directory.\n"
-            " \n"
-            "This will be overridden by explicit command line\n"
-            "options.");
-   }
-   else if (!strcmp(label, "assets_directory"))
-   {
-      snprintf(s, len,
-            " -- Assets Directory. \n"
-            " \n"
-            " This location is queried by default when \n"
-            "menu interfaces try to look for loadable \n"
-            "assets, etc.");
-   }
-   else if (!strcmp(label, "dynamic_wallpapers_directory"))
-   {
-      snprintf(s, len,
-            " -- Dynamic Wallpapers Directory. \n"
-            " \n"
-            " The place to store wallpapers that will \n"
-            "be loaded dynamically by the menu depending \n"
-            "on context.");
-   }
-   else if (!strcmp(label, "slowmotion_ratio"))
-   {
-      snprintf(s, len,
-            " -- Slowmotion ratio."
-            " \n"
-            "When slowmotion, content will slow\n"
-            "down by factor.");
-   }
-   else if (!strcmp(label, "input_axis_threshold"))
-   {
-      snprintf(s, len,
-            " -- Defines axis threshold.\n"
-            " \n"
-            "How far an axis must be tilted to result\n"
-            "in a button press.\n"
-            " Possible values are [0.0, 1.0].");
-   }
-   else if (!strcmp(label, "input_turbo_period"))
-   {
-      snprintf(s, len, 
-            " -- Turbo period.\n"
-            " \n"
-            "Describes speed of which turbo-enabled\n"
-            "buttons toggle."
-            );
-   }
-   else if (!strcmp(label, "rewind_granularity"))
-   {
-      snprintf(s, len,
-            " -- Rewind granularity.\n"
-            " \n"
-            " When rewinding defined number of \n"
-            "frames, you can rewind several frames \n"
-            "at a time, increasing the rewinding \n"
-            "speed.");
-   }
-   else if (!strcmp(label, "rewind_enable"))
-   {
-      snprintf(s, len,
-            " -- Enable rewinding.\n"
-            " \n"
-            "This will take a performance hit, \n"
-            "so it is disabled by default.");
-   }
-   else if (!strcmp(label, "input_autodetect_enable"))
-   {
-      snprintf(s, len,
-            " -- Enable input auto-detection.\n"
-            " \n"
-            "Will attempt to auto-configure \n"
-            "joypads, Plug-and-Play style.");
-   }
-   else if (!strcmp(label, "camera_allow"))
-   {
-      snprintf(s, len,
-            " -- Allow or disallow camera access by \n"
-            "cores.");
-   }
-   else if (!strcmp(label, "location_allow"))
-   {
-      snprintf(s, len,
-            " -- Allow or disallow location services \n"
-            "access by cores.");
-   }
-   else if (!strcmp(label, "savestate_auto_save"))
-   {
-      snprintf(s, len,
-            " -- Automatically saves a savestate at the \n"
-            "end of RetroArch's lifetime.\n"
-            " \n"
-            "RetroArch will automatically load any savestate\n"
-            "with this path on startup if 'Auto Load State\n"
-            "is enabled.");
-   }
-   else if (!strcmp(label, "shader_apply_changes"))
-   {
-      snprintf(s, len,
-            " -- Apply Shader Changes. \n"
-            " \n"
-            "After changing shader settings, use this to \n"
-            "apply changes. \n"
-            " \n"
-            "Changing shader settings is a somewhat \n"
-            "expensive operation so it has to be \n"
-            "done explicitly. \n"
-            " \n"
-            "When you apply shaders, the menu shader \n"
-            "settings are saved to a temporary file (either \n"
-            "menu.cgp or menu.glslp) and loaded. The file \n"
-            "persists after RetroArch exits. The file is \n"
-            "saved to Shader Directory."
-            );
-
-   }
-   else if (!strcmp(label, "video_shader_preset")) 
-   {
-      snprintf(s, len,
-            " -- Load Shader Preset. \n"
-            " \n"
-            " Load a "
-#ifdef HAVE_CG
-            "Cg"
-#endif
-#ifdef HAVE_GLSL
-#ifdef HAVE_CG
-            "/"
-#endif
-            "GLSL"
-#endif
-#ifdef HAVE_HLSL
-#if defined(HAVE_CG) || defined(HAVE_HLSL)
-            "/"
-#endif
-            "HLSL"
-#endif
-            " preset directly. \n"
-            "The menu shader menu is updated accordingly. \n"
-            " \n"
-            "If the CGP uses scaling methods which are not \n"
-            "simple, (i.e. source scaling, same scaling \n"
-            "factor for X/Y), the scaling factor displayed \n"
-            "in the menu might not be correct."
-            );
-   }
-   else if (!strcmp(label, "video_shader_num_passes")) 
-   {
-      snprintf(s, len,
-            " -- Shader Passes. \n"
-            " \n"
-            "RetroArch allows you to mix and match various \n"
-            "shaders with arbitrary shader passes, with \n"
-            "custom hardware filters and scale factors. \n"
-            " \n"
-            "This option specifies the number of shader \n"
-            "passes to use. If you set this to 0, and use \n"
-            "Apply Shader Changes, you use a 'blank' shader. \n"
-            " \n"
-            "The Default Filter option will affect the \n"
-            "stretching filter.");
-   }
-   else if (!strcmp(label, "video_shader_parameters"))
-   {
-      snprintf(s, len,
-            "-- Shader Parameters. \n"
-            " \n"
-            "Modifies current shader directly. Will not be \n"
-            "saved to CGP/GLSLP preset file.");
-   }
-   else if (!strcmp(label, "video_shader_preset_parameters"))
-   {
-      snprintf(s, len,
-            "-- Shader Preset Parameters. \n"
-            " \n"
-            "Modifies shader preset currently in menu."
-            );
-   }
-   else if (!strcmp(label, "video_shader_pass"))
-   {
-      snprintf(s, len,
-            " -- Path to shader. \n"
-            " \n"
-            "All shaders must be of the same \n"
-            "type (i.e. CG, GLSL or HLSL). \n"
-            " \n"
-            "Set Shader Directory to set where \n"
-            "the browser starts to look for \n"
-            "shaders."
-            );
-   }
-   else if (!strcmp(label, "video_shader_filter_pass"))
-   {
-      snprintf(s, len,
-            " -- Hardware filter for this pass. \n"
-            " \n"
-            "If 'Don't Care' is set, 'Default \n"
-            "Filter' will be used."
-            );
-   }
-   else if (!strcmp(label, "video_shader_scale_pass"))
-   {
-      snprintf(s, len,
-            " -- Scale for this pass. \n"
-            " \n"
-            "The scale factor accumulates, i.e. 2x \n"
-            "for first pass and 2x for second pass \n"
-            "will give you a 4x total scale. \n"
-            " \n"
-            "If there is a scale factor for last \n"
-            "pass, the result is stretched to \n"
-            "screen with the filter specified in \n"
-            "'Default Filter'. \n"
-            " \n"
-            "If 'Don't Care' is set, either 1x \n"
-            "scale or stretch to fullscreen will \n"
-            "be used depending if it's not the last \n"
-            "pass or not."
-            );
-   }
-   else if (
-         !strcmp(label, "l_x_plus")  ||
-         !strcmp(label, "l_x_minus") ||
-         !strcmp(label, "l_y_plus")  ||
-         !strcmp(label, "l_y_minus")
-         )
-      snprintf(s, len,
-            " -- Axis for analog stick (DualShock-esque).\n"
-            " \n"
-            "Bound as usual, however, if a real analog \n"
-            "axis is bound, it can be read as a true analog.\n"
-            " \n"
-            "Positive X axis is right. \n"
-            "Positive Y axis is down.");
-   else if (!strcmp(label, "turbo"))
-      snprintf(s, len,
-            " -- Turbo enable.\n"
-            " \n"
-            "Holding the turbo while pressing another \n"
-            "button will let the button enter a turbo \n"
-            "mode where the button state is modulated \n"
-            "with a periodic signal. \n"
-            " \n"
-            "The modulation stops when the button \n"
-            "itself (not turbo button) is released.");
-   else if (!strcmp(label, "exit_emulator"))
-      snprintf(s, len,
-            " -- Key to exit RetroArch cleanly."
-#if !defined(RARCH_MOBILE) && !defined(RARCH_CONSOLE)
-            "\nKilling it in any hard way (SIGKILL, \n"
-            "etc) will terminate without saving\n"
-            "RAM, etc. On Unix-likes,\n"
-            "SIGINT/SIGTERM allows\n"
-            "a clean deinitialization."
-#endif
-            );
-   else if (!strcmp(label, "rewind"))
-      snprintf(s, len,
-            " -- Hold button down to rewind.\n"
-            " \n"
-            "Rewind must be enabled.");
-   else if (!strcmp(label, "load_state"))
-      snprintf(s, len,
-            " -- Loads state.");
-   else if (!strcmp(label, "save_state"))
-      snprintf(s, len,
-            " -- Saves state.");
-   else if (!strcmp(label, "state_slot_increase") ||
-         !strcmp(label, "state_slot_decrease"))
-      snprintf(s, len,
-            " -- State slots.\n"
-            " \n"
-            " With slot set to 0, save state name is *.state \n"
-            " (or whatever defined on commandline).\n"
-            "When slot is != 0, path will be (path)(d), \n"
-            "where (d) is slot number.");
-   else if (!strcmp(label, "netplay_flip_players"))
-      snprintf(s, len,
-            " -- Netplay flip users.");
-   else if (!strcmp(label, "frame_advance"))
-      snprintf(s, len,
-            " -- Frame advance when content is paused.");
-   else if (!strcmp(label, "enable_hotkey"))
-      snprintf(s, len,
-            " -- Enable other hotkeys.\n"
-            " \n"
-            " If this hotkey is bound to either keyboard, \n"
-            "joybutton or joyaxis, all other hotkeys will \n"
-            "be disabled unless this hotkey is also held \n"
-            "at the same time. \n"
-            " \n"
-            "This is useful for RETRO_KEYBOARD centric \n"
-            "implementations which query a large area of \n"
-            "the keyboard, where it is not desirable that \n"
-            "hotkeys get in the way.");
-   else if (!strcmp(label, "slowmotion"))
-      snprintf(s, len,
-            " -- Hold for slowmotion.");
-   else if (!strcmp(label, "movie_record_toggle"))
-      snprintf(s, len,
-            " -- Toggle between recording and not.");
-   else if (!strcmp(label, "pause_toggle"))
-      snprintf(s, len,
-            " -- Toggle between paused and non-paused state.");
-   else if (!strcmp(label, "hold_fast_forward"))
-      snprintf(s, len,
-            " -- Hold for fast-forward. Releasing button \n"
-            "disables fast-forward.");
-   else if (!strcmp(label, "shader_next"))
-      snprintf(s, len,
-            " -- Applies next shader in directory.");
-   else if (!strcmp(label, "reset"))
-      snprintf(s, len,
-            " -- Reset the content.\n");
-   else if (!strcmp(label, "cheat_index_plus"))
-      snprintf(s, len,
-            " -- Increment cheat index.\n");
-   else if (!strcmp(label, "cheat_index_minus"))
-      snprintf(s, len,
-            " -- Decrement cheat index.\n");
-   else if (!strcmp(label, "cheat_toggle"))
-      snprintf(s, len,
-            " -- Toggle cheat index.\n");
-   else if (!strcmp(label, "shader_prev"))
-      snprintf(s, len,
-            " -- Applies previous shader in directory.");
-   else if (!strcmp(label, "audio_mute"))
-      snprintf(s, len,
-            " -- Mute/unmute audio.");
-   else if (!strcmp(label, "osk_enable"))
-      snprintf(s, len,
-            " -- Enable/disable on-screen keyboard.");            
-   else if (!strcmp(label, "screenshot"))
-      snprintf(s, len,
-            " -- Take screenshot.");
-   else if (!strcmp(label, "volume_up"))
-      snprintf(s, len,
-            " -- Increases audio volume.");
-   else if (!strcmp(label, "volume_down"))
-      snprintf(s, len,
-            " -- Decreases audio volume.");
-   else if (!strcmp(label, "overlay_next"))
-      snprintf(s, len,
-            " -- Toggles to next overlay.\n"
-            " \n"
-            "Wraps around.");
-   else if (!strcmp(label, "disk_eject_toggle"))
-      snprintf(s, len,
-            " -- Toggles eject for disks.\n"
-            " \n"
-            "Used for multiple-disk content.");
-   else if (!strcmp(label, "disk_next"))
-      snprintf(s, len,
-            " -- Cycles through disk images. Use after \n"
-            "ejecting. \n"
-            " \n"
-            " Complete by toggling eject again.");
-   else if (!strcmp(label, "grab_mouse_toggle"))
-      snprintf(s, len,
-            " -- Toggles mouse grab.\n"
-            " \n"
-            "When mouse is grabbed, RetroArch hides the \n"
-            "mouse, and keeps the mouse pointer inside \n"
-            "the window to allow relative mouse input to \n"
-            "work better.");
-   else if (!strcmp(label, "menu_toggle"))
-      snprintf(s, len,
-            " -- Toggles menu.");
-   else if (!strcmp(label, "input_bind_device_id"))
-      snprintf(s, len,
-            " -- Input Device. \n"
-            " \n"
-            "Picks which gamepad to use for user N. \n"
-            "The name of the pad is available."
-            );
-   else if (!strcmp(label, "input_bind_device_type"))
-      snprintf(s, len,
-            " -- Input Device Type. \n"
-            " \n"
-            "Picks which device type to use. This is \n"
-            "relevant for the libretro core itself."
-            );
-   else
-      snprintf(s, len,
-            "-- No info on this item is available. --\n");
+   snprintf(s, len,
+         "-- No info on this item is available. --\n");
 
    return 0;
 }
@@ -3054,38 +3113,48 @@ static void general_read_handler(void *data)
 {
    rarch_setting_t *setting  = (rarch_setting_t*)data;
    settings_t      *settings = config_get_ptr();
+   uint32_t hash             = setting ? djb2_calculate(setting->name) : 0;
 
    if (!setting)
       return;
 
-   if (!strcmp(setting->name, "audio_rate_control_delta"))
+   switch (hash)
    {
-      *setting->value.fraction = settings->audio.rate_control_delta;
-      if (*setting->value.fraction < 0.0005)
-      {
-         settings->audio.rate_control = false;
-         settings->audio.rate_control_delta = 0.0;
-      }
-      else
-      {
-         settings->audio.rate_control = true;
-         settings->audio.rate_control_delta = *setting->value.fraction;
-      }
+      case MENU_LABEL_AUDIO_RATE_CONTROL_DELTA:
+         *setting->value.fraction = settings->audio.rate_control_delta;
+         if (*setting->value.fraction < 0.0005)
+         {
+            settings->audio.rate_control = false;
+            settings->audio.rate_control_delta = 0.0;
+         }
+         else
+         {
+            settings->audio.rate_control = true;
+            settings->audio.rate_control_delta = *setting->value.fraction;
+         }
+         break;
+      case MENU_LABEL_AUDIO_MAX_TIMING_SKEW:
+         *setting->value.fraction = settings->audio.max_timing_skew;
+         break;
+      case MENU_LABEL_VIDEO_REFRESH_RATE_AUTO:
+         *setting->value.fraction = settings->video.refresh_rate;
+         break;
+      case MENU_LABEL_INPUT_PLAYER1_JOYPAD_INDEX:
+         *setting->value.integer = settings->input.joypad_map[0];
+         break;
+      case MENU_LABEL_INPUT_PLAYER2_JOYPAD_INDEX:
+         *setting->value.integer = settings->input.joypad_map[1];
+         break;
+      case MENU_LABEL_INPUT_PLAYER3_JOYPAD_INDEX:
+         *setting->value.integer = settings->input.joypad_map[2];
+         break;
+      case MENU_LABEL_INPUT_PLAYER4_JOYPAD_INDEX:
+         *setting->value.integer = settings->input.joypad_map[3];
+         break;
+      case MENU_LABEL_INPUT_PLAYER5_JOYPAD_INDEX:
+         *setting->value.integer = settings->input.joypad_map[4];
+         break;
    }
-   else if (!strcmp(setting->name, "audio_max_timing_skew"))
-      *setting->value.fraction = settings->audio.max_timing_skew;
-   else if (!strcmp(setting->name, "video_refresh_rate_auto"))
-      *setting->value.fraction = settings->video.refresh_rate;
-   else if (!strcmp(setting->name, "input_player1_joypad_index"))
-      *setting->value.integer = settings->input.joypad_map[0];
-   else if (!strcmp(setting->name, "input_player2_joypad_index"))
-      *setting->value.integer = settings->input.joypad_map[1];
-   else if (!strcmp(setting->name, "input_player3_joypad_index"))
-      *setting->value.integer = settings->input.joypad_map[2];
-   else if (!strcmp(setting->name, "input_player4_joypad_index"))
-      *setting->value.integer = settings->input.joypad_map[3];
-   else if (!strcmp(setting->name, "input_player5_joypad_index"))
-      *setting->value.integer = settings->input.joypad_map[4];
 }
 
 static void general_write_handler(void *data)
@@ -3096,6 +3165,8 @@ static void general_write_handler(void *data)
    settings_t *settings     = config_get_ptr();
    driver_t *driver         = driver_get_ptr();
    global_t *global         = global_get_ptr();
+   menu_list_t *menu_list   = menu_list_get_ptr();
+   uint32_t hash            = setting ? djb2_calculate(setting->name) : 0;
 
    if (!setting)
       return;
@@ -3112,125 +3183,129 @@ static void general_write_handler(void *data)
          rarch_cmd = setting->cmd_trigger.idx;
    }
 
-   if (!strcmp(setting->name, "help"))
+   switch (hash)
    {
-      menu_handle_t *menu = menu_driver_get_ptr();
+      case MENU_LABEL_HELP:
+         if (!menu_list)
+            return;
 
-      if (!menu || !menu->menu_list)
-         return;
+         if (*setting->value.boolean)
+         {
+            info.list          = menu_list->menu_stack;
+            info.type          = 0; 
+            info.directory_ptr = 0;
+            strlcpy(info.label, "help", sizeof(info.label));
 
-      if (*setting->value.boolean)
-      {
-         info.list          = menu->menu_list->menu_stack;
-         info.type          = 0; 
-         info.directory_ptr = 0;
-         strlcpy(info.label, "help", sizeof(info.label));
+            menu_displaylist_push_list(&info, DISPLAYLIST_GENERIC);
+            setting_set_with_string_representation(setting, "false");
+         }
+         break;
+      case MENU_LABEL_AUDIO_MAX_TIMING_SKEW:
+         settings->audio.max_timing_skew = *setting->value.fraction;
+         break;
+      case MENU_LABEL_AUDIO_RATE_CONTROL_DELTA:
+         if (*setting->value.fraction < 0.0005)
+         {
+            settings->audio.rate_control = false;
+            settings->audio.rate_control_delta = 0.0;
+         }
+         else
+         {
+            settings->audio.rate_control = true;
+            settings->audio.rate_control_delta = *setting->value.fraction;
+         }
+         break;
+      case MENU_LABEL_VIDEO_REFRESH_RATE_AUTO:
+         if (driver->video && driver->video_data)
+         {
+            driver_set_refresh_rate(*setting->value.fraction);
 
-         menu_displaylist_push_list(&info, DISPLAYLIST_GENERIC);
-         setting_set_with_string_representation(setting, "false");
-      }
-   }
-   else if (!strcmp(setting->name, "video_smooth"))
-   {
-      video_driver_set_filtering(1, settings->video.smooth);
-   }
-   else if (!strcmp(setting->name, "pal60_enable"))
-   {
-      if (*setting->value.boolean && global->console.screen.pal_enable)
-         rarch_cmd = EVENT_CMD_REINIT;
-      else
-         setting_set_with_string_representation(setting, "false");
-   }
-   else if (!strcmp(setting->name, "video_rotation"))
-   {
-      video_driver_set_rotation(
+            /* In case refresh rate update forced non-block video. */
+            rarch_cmd = EVENT_CMD_VIDEO_SET_BLOCKING_STATE;
+         }
+         break;
+      case MENU_LABEL_VIDEO_SCALE:
+         settings->video.scale = roundf(*setting->value.fraction);
+
+         if (!settings->video.fullscreen)
+            rarch_cmd = EVENT_CMD_REINIT;
+         break;
+      case MENU_LABEL_INPUT_PLAYER1_JOYPAD_INDEX:
+         settings->input.joypad_map[0] = *setting->value.integer;
+         break;
+      case MENU_LABEL_INPUT_PLAYER2_JOYPAD_INDEX:
+         settings->input.joypad_map[1] = *setting->value.integer;
+         break;
+      case MENU_LABEL_INPUT_PLAYER3_JOYPAD_INDEX:
+         settings->input.joypad_map[2] = *setting->value.integer;
+         break;
+      case MENU_LABEL_INPUT_PLAYER4_JOYPAD_INDEX:
+         settings->input.joypad_map[3] = *setting->value.integer;
+         break;
+      case MENU_LABEL_INPUT_PLAYER5_JOYPAD_INDEX:
+         settings->input.joypad_map[4] = *setting->value.integer;
+         break;
+      case MENU_LABEL_LOG_VERBOSITY:
+         global->verbosity         = *setting->value.boolean;
+         global->has_set_verbosity = *setting->value.boolean;
+         break;
+      case MENU_LABEL_VIDEO_SMOOTH:
+         video_driver_set_filtering(1, settings->video.smooth);
+         break;
+      case MENU_LABEL_VIDEO_ROTATION:
+         video_driver_set_rotation(
                (*setting->value.unsigned_integer +
                 global->system.rotation) % 4);
-   }
-   else if (!strcmp(setting->name, "system_bgm_enable"))
-   {
-      if (*setting->value.boolean)
-      {
+         break;
+      case MENU_LABEL_AUDIO_VOLUME:
+         audio_driver_set_volume_gain(db_to_gain(*setting->value.fraction));
+         break;
+      case MENU_LABEL_AUDIO_LATENCY:
+         rarch_cmd = EVENT_CMD_AUDIO_REINIT;
+         break;
+      case MENU_LABEL_PAL60_ENABLE:
+         if (*setting->value.boolean && global->console.screen.pal_enable)
+            rarch_cmd = EVENT_CMD_REINIT;
+         else
+            setting_set_with_string_representation(setting, "false");
+         break;
+      case MENU_LABEL_SYSTEM_BGM_ENABLE:
+         if (*setting->value.boolean)
+         {
 #if defined(__CELLOS_LV2__) && (CELL_SDK_VERSION > 0x340000)
-         cellSysutilEnableBgmPlayback();
+            cellSysutilEnableBgmPlayback();
 #endif         
-      }
-      else
-      {
+         }
+         else
+         {
 #if defined(__CELLOS_LV2__) && (CELL_SDK_VERSION > 0x340000)
-         cellSysutilDisableBgmPlayback();
+            cellSysutilDisableBgmPlayback();
 #endif
-      }
-   }
-   else if (!strcmp(setting->name, "audio_volume"))
-   {
-      audio_driver_set_volume_gain(db_to_gain(*setting->value.fraction));
-   }
-   else if (!strcmp(setting->name, "audio_latency"))
-      rarch_cmd = EVENT_CMD_AUDIO_REINIT;
-   else if (!strcmp(setting->name, "audio_rate_control_delta"))
-   {
-      if (*setting->value.fraction < 0.0005)
-      {
-         settings->audio.rate_control = false;
-         settings->audio.rate_control_delta = 0.0;
-      }
-      else
-      {
-         settings->audio.rate_control = true;
-         settings->audio.rate_control_delta = *setting->value.fraction;
-      }
-   }
-   else if (!strcmp(setting->name, "audio_max_timing_skew"))
-      settings->audio.max_timing_skew = *setting->value.fraction;
-   else if (!strcmp(setting->name, "video_refresh_rate_auto"))
-   {
-      if (driver->video && driver->video_data)
-      {
-         driver_set_refresh_rate(*setting->value.fraction);
-
-         /* In case refresh rate update forced non-block video. */
-         rarch_cmd = EVENT_CMD_VIDEO_SET_BLOCKING_STATE;
-      }
-   }
-   else if (!strcmp(setting->name, "video_scale"))
-   {
-      settings->video.scale = roundf(*setting->value.fraction);
-
-      if (!settings->video.fullscreen)
-         rarch_cmd = EVENT_CMD_REINIT;
-   }
-   else if (!strcmp(setting->name, "input_player1_joypad_index"))
-      settings->input.joypad_map[0] = *setting->value.integer;
-   else if (!strcmp(setting->name, "input_player2_joypad_index"))
-      settings->input.joypad_map[1] = *setting->value.integer;
-   else if (!strcmp(setting->name, "input_player3_joypad_index"))
-      settings->input.joypad_map[2] = *setting->value.integer;
-   else if (!strcmp(setting->name, "input_player4_joypad_index"))
-      settings->input.joypad_map[3] = *setting->value.integer;
-   else if (!strcmp(setting->name, "input_player5_joypad_index"))
-      settings->input.joypad_map[4] = *setting->value.integer;
+         }
+         break;
+      case MENU_LABEL_NETPLAY_IP_ADDRESS:
 #ifdef HAVE_NETPLAY
-   else if (!strcmp(setting->name, "netplay_ip_address"))
-      global->has_set_netplay_ip_address = (setting->value.string[0] != '\0');
-   else if (!strcmp(setting->name, "netplay_mode"))
-   {
-      if (!global->netplay_is_client)
-         *global->netplay_server = '\0';
-      global->has_set_netplay_mode = true;
-   }
-   else if (!strcmp(setting->name, "netplay_spectator_mode_enable"))
-   {
-      if (global->netplay_is_spectate)
-         *global->netplay_server = '\0';
-   }
-   else if (!strcmp(setting->name, "netplay_delay_frames"))
-      global->has_set_netplay_delay_frames = (global->netplay_sync_frames > 0);
+         global->has_set_netplay_ip_address = (setting->value.string[0] != '\0');
 #endif
-   else if (!strcmp(setting->name, "log_verbosity"))
-   {
-      global->verbosity         = *setting->value.boolean;
-      global->has_set_verbosity = *setting->value.boolean;
+         break;
+      case MENU_LABEL_NETPLAY_MODE:
+#ifdef HAVE_NETPLAY
+         if (!global->netplay_is_client)
+            *global->netplay_server = '\0';
+         global->has_set_netplay_mode = true;
+#endif
+         break;
+      case MENU_LABEL_NETPLAY_SPECTATOR_MODE_ENABLE:
+#ifdef HAVE_NETPLAY
+         if (global->netplay_is_spectate)
+            *global->netplay_server = '\0';
+#endif
+         break;
+      case MENU_LABEL_NETPLAY_DELAY_FRAMES:
+#ifdef HAVE_NETPLAY
+         global->has_set_netplay_delay_frames = (global->netplay_sync_frames > 0);
+#endif
+         break;
    }
 
    if (rarch_cmd || setting->cmd_trigger.triggered)
@@ -3348,7 +3423,10 @@ static void setting_add_special_callbacks(
       }
    }
    else if (values & SD_FLAG_IS_DRIVER)
-      (*list)[idx].action_toggle = setting_string_action_toggle_driver;
+   {
+      (*list)[idx].action_left  = setting_string_action_left_driver;
+      (*list)[idx].action_right = setting_string_action_right_driver;
+   }
 }
 
 static void settings_data_list_current_add_flags(
@@ -3401,7 +3479,8 @@ static bool setting_append_list_main_menu_options(
    // to put this callback. It should be called whenever the browser
    // needs to get the directory to browse into. It's not quite like
    // get_string_representation, but it is close.
-   (*list)[list_info->index - 1].action_toggle = core_list_action_toggle;
+   (*list)[list_info->index - 1].action_left  = core_list_action_toggle;
+   (*list)[list_info->index - 1].action_right = core_list_action_toggle;
    menu_settings_list_current_add_cmd(list, list_info, EVENT_CMD_LOAD_CORE);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_BROWSER_ACTION);
 #endif
@@ -3449,7 +3528,8 @@ static bool setting_append_list_main_menu_options(
          subgroup_info.name);
    (*list)[list_info->index - 1].size = sizeof(global->fullpath);
    (*list)[list_info->index - 1].value.string = global->fullpath;
-   (*list)[list_info->index - 1].action_toggle = load_content_action_toggle;
+   (*list)[list_info->index - 1].action_left   = load_content_action_toggle;
+   (*list)[list_info->index - 1].action_right  = load_content_action_toggle;
    menu_settings_list_current_add_cmd(list, list_info, EVENT_CMD_LOAD_CONTENT);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_BROWSER_ACTION);
 
@@ -3513,7 +3593,8 @@ static bool setting_append_list_main_menu_options(
             "Save State",
             group_info.name,
             subgroup_info.name);
-      (*list)[list_info->index - 1].action_toggle = &setting_action_toggle_savestates;
+      (*list)[list_info->index - 1].action_left   = &setting_action_left_savestates;
+      (*list)[list_info->index - 1].action_right  = &setting_action_right_savestates;
       (*list)[list_info->index - 1].action_start  = &setting_action_start_savestates;
       (*list)[list_info->index - 1].action_ok     = &setting_bool_action_ok_exit;
       (*list)[list_info->index - 1].get_string_representation = &get_string_representation_savestate;
@@ -3524,7 +3605,8 @@ static bool setting_append_list_main_menu_options(
             "Load State",
             group_info.name,
             subgroup_info.name);
-      (*list)[list_info->index - 1].action_toggle = &setting_action_toggle_savestates;
+      (*list)[list_info->index - 1].action_left   = &setting_action_left_savestates;
+      (*list)[list_info->index - 1].action_right  = &setting_action_left_savestates;
       (*list)[list_info->index - 1].action_start  = &setting_action_start_savestates;
       (*list)[list_info->index - 1].action_ok     = &setting_bool_action_ok_exit;
       (*list)[list_info->index - 1].get_string_representation = &get_string_representation_savestate;
@@ -5242,7 +5324,8 @@ static bool setting_append_list_input_options(
             general_read_handler);
       (*list)[list_info->index - 1].index = user + 1;
       (*list)[list_info->index - 1].index_offset = user;
-      (*list)[list_info->index - 1].action_toggle = &setting_action_toggle_libretro_device_type;
+      (*list)[list_info->index - 1].action_left  = &setting_action_left_libretro_device_type;
+      (*list)[list_info->index - 1].action_right = &setting_action_right_libretro_device_type;
       (*list)[list_info->index - 1].action_start = &setting_action_start_libretro_device_type;
       (*list)[list_info->index - 1].get_string_representation = 
          &setting_get_string_representation_uint_libretro_device;
@@ -5258,7 +5341,8 @@ static bool setting_append_list_input_options(
             general_read_handler);
       (*list)[list_info->index - 1].index = user + 1;
       (*list)[list_info->index - 1].index_offset = user;
-      (*list)[list_info->index - 1].action_toggle = &setting_action_toggle_analog_dpad_mode;
+      (*list)[list_info->index - 1].action_left   = &setting_action_left_analog_dpad_mode;
+      (*list)[list_info->index - 1].action_right  = &setting_action_right_analog_dpad_mode;
       (*list)[list_info->index - 1].action_start = &setting_action_start_analog_dpad_mode;
       (*list)[list_info->index - 1].get_string_representation = 
          &setting_get_string_representation_uint_analog_dpad_mode;
@@ -5271,7 +5355,8 @@ static bool setting_append_list_input_options(
       (*list)[list_info->index - 1].index = user + 1;
       (*list)[list_info->index - 1].index_offset = user;
       (*list)[list_info->index - 1].action_start  = &setting_action_start_bind_device;
-      (*list)[list_info->index - 1].action_toggle = &setting_action_toggle_bind_device;
+      (*list)[list_info->index - 1].action_left   = &setting_action_left_bind_device;
+      (*list)[list_info->index - 1].action_right  = &setting_action_right_bind_device;
       (*list)[list_info->index - 1].get_string_representation = &get_string_representation_bind_device;
 
       CONFIG_ACTION(
@@ -6941,7 +7026,7 @@ bool menu_setting_is_of_path_type(rarch_setting_t *setting)
          setting &&
          setting->type == ST_ACTION &&
          (setting->flags & SD_FLAG_BROWSER_ACTION) &&
-         setting->action_toggle &&
+         (setting->action_right || setting->action_left) &&
          setting->change_handler)
       return true;
    return false;
