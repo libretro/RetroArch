@@ -20,6 +20,9 @@
 #include <string.h>
 #include <limits.h>
 
+#include <file/file_path.h>
+#include <compat/posix_string.h>
+#include <string/stdstring.h>
 #include <rhash.h>
 
 #include "../menu.h"
@@ -30,12 +33,9 @@
 
 #include "../menu_entries_cbs.h"
 
-#include <file/file_path.h>
 #include "../../gfx/video_thread_wrapper.h"
 #include "../../gfx/font_driver.h"
 #include "../../gfx/video_texture.h"
-#include <compat/posix_string.h>
-#include <string/stdstring.h>
 
 #include "../../runloop_data.h"
 

@@ -21,6 +21,8 @@
 #include <string.h>
 #include <limits.h>
 
+#include <compat/posix_string.h>
+
 #include "../menu_driver.h"
 #include "../menu_entry.h"
 #include "../menu_input.h"
@@ -28,7 +30,6 @@
 #include "../menu.h"
 #include "../../general.h"
 #include "../../config.def.h"
-#include <compat/posix_string.h>
 #include "../../performance.h"
 
 #include "../../screenshot.h"
