@@ -1503,21 +1503,21 @@ void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
          )
       cbs->action_ok = action_ok_shader_parameters;
    else if (
-         !strcmp(label, "shader_options") ||
-         !strcmp(label, "video_options") ||
-         !strcmp(label, "Input Settings") ||
-         !strcmp(label, "core_options") ||
-         !strcmp(label, "core_cheat_options") ||
-         !strcmp(label, "core_input_remapping_options") ||
-         !strcmp(label, "core_information") ||
-         !strcmp(label, "system_information") ||
-         !strcmp(label, "disk_options") ||
-         !strcmp(label, "settings") ||
-         !strcmp(label, "performance_counters") ||
-         !strcmp(label, "frontend_counters") ||
-         !strcmp(label, "core_counters") ||
-         !strcmp(label, "management") ||
-         !strcmp(label, "options")
+         (hash == MENU_LABEL_SHADER_OPTIONS) ||
+         (hash == MENU_LABEL_VIDEO_OPTIONS)  ||
+         !strcmp(label, "Input Settings")    ||
+         (hash == MENU_LABEL_CORE_OPTIONS)   ||
+         (hash == MENU_LABEL_CORE_CHEAT_OPTIONS) ||
+         (hash == MENU_LABEL_CORE_INPUT_REMAPPING_OPTIONS) ||
+         (hash == MENU_LABEL_CORE_INFORMATION) ||
+         (hash == MENU_LABEL_SYSTEM_INFORMATION) ||
+         (hash == MENU_LABEL_DISK_OPTIONS) ||
+         (hash == MENU_LABEL_SETTINGS) ||
+         (hash == MENU_LABEL_PERFORMANCE_COUNTERS) ||
+         (hash == MENU_LABEL_FRONTEND_COUNTERS) ||
+         (hash == MENU_LABEL_CORE_COUNTERS) ||
+         (hash == MENU_LABEL_MANAGEMENT) ||
+         (hash == MENU_LABEL_OPTIONS)
          )
       cbs->action_ok = action_ok_push_default;
    else if (
