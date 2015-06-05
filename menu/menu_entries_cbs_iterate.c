@@ -14,7 +14,9 @@
  */
 
 #include <file/file_path.h>
+#include <rhash.h>
 #include <retro_inline.h>
+
 #include "menu.h"
 #include "menu_display.h"
 #include "menu_entry.h"
@@ -263,7 +265,7 @@ static int action_iterate_load_open_zip(const char *label, char *s, size_t len, 
    return 0;
 }
 
-static int action_iterate_menu_viewport(char *s, size_t len, const char *label, unsigned action)
+static int action_iterate_menu_viewport(char *s, size_t len, const char *label, unsigned action, uint32_t hash)
 {
    int stride_x = 1, stride_y = 1;
    menu_displaylist_info_t info     = {0};
@@ -344,7 +346,7 @@ static int action_iterate_menu_viewport(char *s, size_t len, const char *label, 
       case MENU_ACTION_CANCEL:
          menu_list_pop_stack(menu_list);
 
-         if (!strcmp(label, "custom_viewport_2"))
+         if (hash == MENU_LABEL_CUSTOM_VIEWPORT_2)
          {
             info.list          = menu_list->menu_stack;
             info.type          = MENU_SETTINGS_CUSTOM_VIEWPORT;
@@ -424,7 +426,7 @@ static int action_iterate_menu_viewport(char *s, size_t len, const char *label, 
    {
       if (type == MENU_SETTINGS_CUSTOM_VIEWPORT)
          base_msg = "Set Upper-Left Corner";
-      else if (!strcmp(label, "custom_viewport_2"))
+      else if (hash == MENU_LABEL_CUSTOM_VIEWPORT_2)
          base_msg = "Set Bottom-Right Corner";
 
       snprintf(s, len, "%s (%d, %d : %4ux%4u)",
@@ -457,27 +459,27 @@ enum action_iterate_type
    ITERATE_TYPE_BIND,
 };
 
-static enum action_iterate_type action_iterate_type(const char *label)
+static enum action_iterate_type action_iterate_type(uint32_t hash)
 {
-   if (!strcmp(label, "help"))
-      return ITERATE_TYPE_HELP;
-   else if (!strcmp(label, "info_screen"))
-      return ITERATE_TYPE_INFO;
-   else if (!strcmp(label, "load_open_zip"))
-      return ITERATE_TYPE_ZIP;
-   else if (!strcmp(label, "message"))
-      return ITERATE_TYPE_MESSAGE;
-   else if (
-         !strcmp(label, "custom_viewport_1") ||
-         !strcmp(label, "custom_viewport_2")
-         )
-      return ITERATE_TYPE_VIEWPORT;
-   else if (
-         !strcmp(label, "custom_bind") ||
-         !strcmp(label, "custom_bind_all") ||
-         !strcmp(label, "custom_bind_defaults")
-         )
-      return ITERATE_TYPE_BIND;
+   switch (hash)
+   {
+      case MENU_LABEL_HELP:
+         return ITERATE_TYPE_HELP;
+      case MENU_LABEL_INFO_SCREEN:
+         return ITERATE_TYPE_INFO;
+      case MENU_LABEL_LOAD_OPEN_ZIP:
+         return ITERATE_TYPE_ZIP;
+      case MENU_LABEL_MESSAGE:
+         return ITERATE_TYPE_MESSAGE;
+      case MENU_LABEL_CUSTOM_VIEWPORT_1:
+      case MENU_LABEL_CUSTOM_VIEWPORT_2:
+         return ITERATE_TYPE_VIEWPORT;
+      case MENU_LABEL_CUSTOM_BIND:
+      case MENU_LABEL_CUSTOM_BIND_ALL:
+      case MENU_LABEL_CUSTOM_BIND_DEFAULTS:
+         return ITERATE_TYPE_BIND;
+   }
+
    return ITERATE_TYPE_DEFAULT;
 }
 
@@ -495,10 +497,11 @@ static int action_iterate_main(const char *label, unsigned action)
    int ret                   = 0;
    menu_handle_t *menu       = menu_driver_get_ptr();
    menu_list_t *menu_list    = menu_list_get_ptr();
+   uint32_t hash             = djb2_calculate(label);
    if (!menu || !menu_list)
       return 0;
    
-   iterate_type              = action_iterate_type(label);
+   iterate_type              = action_iterate_type(hash);
 
    switch (iterate_type)
    {
@@ -514,7 +517,7 @@ static int action_iterate_main(const char *label, unsigned action)
             menu_list_pop_stack(menu_list);
          break;
       case ITERATE_TYPE_VIEWPORT:
-         ret = action_iterate_menu_viewport(msg, sizeof(msg), label, action);
+         ret = action_iterate_menu_viewport(msg, sizeof(msg), label, action, hash);
          break;
       case ITERATE_TYPE_INFO:
          ret = action_iterate_info(msg, sizeof(msg), label);

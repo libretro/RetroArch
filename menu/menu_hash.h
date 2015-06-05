@@ -248,6 +248,10 @@ extern "C" {
 #define MENU_LABEL_VIDEO_SHADER_PRESET                                         0xc5d3bae4U
 #define MENU_LABEL_CHEAT_FILE_LOAD                                             0x57336148U
 #define MENU_LABEL_REMAP_FILE_LOAD                                             0x9c2799b8U
+#define MENU_LABEL_MESSAGE                                                     0xbe463eeaU
+#define MENU_LABEL_INFO_SCREEN                                                 0xd97853d0U
+#define MENU_LABEL_LOAD_OPEN_ZIP                                               0x8aa3c068U
+#define MENU_LABEL_CUSTOM_VIEWPORT_1                                           0x76c3016fU
 #define MENU_LABEL_CUSTOM_VIEWPORT_2                                           0x76c30170U
 #define MENU_LABEL_HELP                                                        0x7c97d2eeU
 #define MENU_LABEL_INPUT_OVERLAY                                               0x24e24796U
@@ -304,7 +308,9 @@ extern "C" {
 #define MENU_LABEL_SAVE_NEW_CONFIG                                             0xcce9ab72U
 #define MENU_LABEL_ONSCREEN_DISPLAY_SETTINGS                                   0x67571029U
 #define MENU_LABEL_CHEAT_APPLY_CHANGES                                         0xde88aa27U
+#define MENU_LABEL_CUSTOM_BIND                                                 0x1e84b3fcU
 #define MENU_LABEL_CUSTOM_BIND_ALL                                             0x79ac14f4U
+#define MENU_LABEL_CUSTOM_BIND_DEFAULTS                                        0xe88f7b13U
 #define MENU_LABEL_SAVESTATE                                                   0x3a4849b5U
 #define MENU_LABEL_LOADSTATE                                                   0xa39eb286U
 #define MENU_LABEL_RESUME_CONTENT                                              0xd9f088b0U
