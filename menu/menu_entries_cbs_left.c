@@ -14,6 +14,8 @@
  */
 
 #include <file/file_path.h>
+#include <rhash.h>
+
 #include "menu.h"
 #include "menu_entries_cbs.h"
 #include "menu_setting.h"
@@ -353,6 +355,7 @@ void menu_entries_cbs_init_bind_left(menu_file_list_cbs_t *cbs,
       const char *elem0, const char *elem1, const char *menu_label)
 {
    int i;
+   uint32_t hash = djb2_calculate(label);
 
    if (!cbs)
       return;
@@ -420,8 +423,8 @@ void menu_entries_cbs_init_bind_left(menu_file_list_cbs_t *cbs,
    else if (type >= MENU_SETTINGS_INPUT_DESC_BEGIN
          && type <= MENU_SETTINGS_INPUT_DESC_END)
       cbs->action_left = action_left_input_desc;
-   else if (!strcmp(label, "savestate") ||
-         !strcmp(label, "loadstate"))
+   else if ((hash == MENU_LABEL_SAVESTATE) ||
+         (hash == MENU_LABEL_LOADSTATE))
       cbs->action_left = action_left_save_state;
    else if (!strcmp(label, "video_shader_scale_pass"))
       cbs->action_left = action_left_shader_scale_pass;
