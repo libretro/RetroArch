@@ -1707,9 +1707,11 @@ void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
 {
    rarch_setting_t *setting = menu_setting_find(label);
    menu_handle_t *menu      = menu_driver_get_ptr();
+   uint32_t elem0_hash      = djb2_calculate(elem0);
 
    if (!cbs || !menu)
       return;
+
 
 #if 0
    RARCH_LOG("path: %s, label: %s, elem0 : %s, elem1: %s\n", path, label, elem0, elem1);
@@ -1717,7 +1719,7 @@ void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
 
    cbs->action_ok = action_ok_lookup_setting;
 
-   if (elem0[0] != '\0' && (is_rdb_entry(label_hash) == 0))
+   if (elem0[0] != '\0' && (is_rdb_entry(elem0_hash) == 0))
    {
       cbs->action_ok = action_ok_rdb_entry_submenu;
       return;
