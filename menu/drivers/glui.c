@@ -634,12 +634,7 @@ static void glui_navigation_set_last(void)
    glui_navigation_set(true);
 }
 
-static void glui_navigation_descend_alphabet(size_t *unused)
-{
-   glui_navigation_set(true);
-}
-
-static void glui_navigation_ascend_alphabet(size_t *unused)
+static void glui_navigation_alphabet(size_t *unused)
 {
    glui_navigation_set(true);
 }
@@ -693,8 +688,8 @@ menu_ctx_driver_t menu_ctx_glui = {
    NULL,
    glui_navigation_set,
    glui_navigation_set_last,
-   glui_navigation_descend_alphabet,
-   glui_navigation_ascend_alphabet,
+   glui_navigation_alphabet,
+   glui_navigation_alphabet,
    NULL,
    NULL,
    NULL,
