@@ -916,7 +916,7 @@ static void xmb_populate_entries(const char *path,
       xmb_list_open(xmb);
 }
 
-static GLuint xmb_icon_get_type(xmb_handle_t *xmb,
+static GLuint xmb_icon_get_id(xmb_handle_t *xmb,
       xmb_node_t *core_node, unsigned type)
 {
    switch(type)
@@ -1036,7 +1036,7 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
       if (entry.type == MENU_FILE_CONTENTLIST_ENTRY)
          strlcpy(entry.path, path_basename(entry.path), sizeof(entry.path));
 
-      icon = xmb_icon_get_type(xmb, core_node, entry.type);
+      icon = xmb_icon_get_id(xmb, core_node, entry.type);
 
       switch (hash_label)
       {
@@ -1326,19 +1326,21 @@ static void xmb_frame(void)
       if (i > 0)
          node = xmb_get_userdata_from_core(xmb, info, i - 1);
 
-      if (node)
-      {
-         xmb_draw_icon_begin(gl);
-         xmb_draw_icon(gl, xmb, node->icon, 
-               xmb->x + xmb->categories.x_pos + 
-               xmb->margins.screen.left + 
-               xmb->icon.spacing.horizontal * (i + 1) - xmb->icon.size / 2.0,
-               xmb->margins.screen.top + xmb->icon.size / 2.0, 
-               node->alpha, 
-               0, 
-               node->zoom);
-         xmb_draw_icon_end();
-      }
+      if (!node)
+         continue;
+
+      xmb_draw_icon_begin(gl);
+
+      xmb_draw_icon(gl, xmb, node->icon, 
+      xmb->x + xmb->categories.x_pos + 
+      xmb->margins.screen.left + 
+      xmb->icon.spacing.horizontal * (i + 1) - xmb->icon.size / 2.0,
+      xmb->margins.screen.top + xmb->icon.size / 2.0, 
+      node->alpha, 
+      0, 
+      node->zoom);
+
+      xmb_draw_icon_end();
    }
 
    menu_display_font_flush_block(menu, font_driver);
