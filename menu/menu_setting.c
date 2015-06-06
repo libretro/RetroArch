@@ -3458,8 +3458,8 @@ static bool setting_append_list_main_menu_options(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info)
 {
-   rarch_setting_group_info_t group_info;
-   rarch_setting_group_info_t subgroup_info;
+   rarch_setting_group_info_t group_info    = {0};
+   rarch_setting_group_info_t subgroup_info = {0};
    driver_t *driver     = driver_get_ptr();
    settings_t *settings = config_get_ptr();
    global_t *global     = global_get_ptr();
@@ -3684,8 +3684,8 @@ static bool setting_append_list_driver_options(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info)
 {
-   rarch_setting_group_info_t group_info;
-   rarch_setting_group_info_t subgroup_info;
+   rarch_setting_group_info_t group_info    = {0};
+   rarch_setting_group_info_t subgroup_info = {0};
    settings_t *settings = config_get_ptr();
    
    START_GROUP(group_info, "Driver Settings");
@@ -3810,8 +3810,8 @@ static bool setting_append_list_core_options(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info)
 {
-   rarch_setting_group_info_t group_info;
-   rarch_setting_group_info_t subgroup_info;
+   rarch_setting_group_info_t group_info    = {0};
+   rarch_setting_group_info_t subgroup_info = {0};
    settings_t *settings = config_get_ptr();
 
    START_GROUP(group_info, "Core Settings");
@@ -3868,8 +3868,8 @@ static bool setting_append_list_configuration_options(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info)
 {
-   rarch_setting_group_info_t group_info;
-   rarch_setting_group_info_t subgroup_info;
+   rarch_setting_group_info_t group_info    = {0};
+   rarch_setting_group_info_t subgroup_info = {0};
    settings_t *settings = config_get_ptr();
 
    START_GROUP(group_info, "Configuration Settings");
@@ -3935,8 +3935,8 @@ static bool setting_append_list_saving_options(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info)
 {
-   rarch_setting_group_info_t group_info;
-   rarch_setting_group_info_t subgroup_info;
+   rarch_setting_group_info_t group_info    = {0};
+   rarch_setting_group_info_t subgroup_info = {0};
    settings_t *settings = config_get_ptr();
 
    START_GROUP(group_info, "Saving Settings");
@@ -4045,8 +4045,8 @@ static bool setting_append_list_logging_options(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info)
 {
-   rarch_setting_group_info_t group_info;
-   rarch_setting_group_info_t subgroup_info;
+   rarch_setting_group_info_t group_info    = {0};
+   rarch_setting_group_info_t subgroup_info = {0};
    settings_t *settings = config_get_ptr();
    global_t   *global   = global_get_ptr();
 
@@ -4109,8 +4109,8 @@ static bool setting_append_list_frame_throttling_options(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info)
 {
-   rarch_setting_group_info_t group_info;
-   rarch_setting_group_info_t subgroup_info;
+   rarch_setting_group_info_t group_info    = {0};
+   rarch_setting_group_info_t subgroup_info = {0};
    settings_t *settings = config_get_ptr();
 
    START_GROUP(group_info, "Frame Throttle Settings");
@@ -4164,8 +4164,8 @@ static bool setting_append_list_rewind_options(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info)
 {
-   rarch_setting_group_info_t group_info;
-   rarch_setting_group_info_t subgroup_info;
+   rarch_setting_group_info_t group_info    = {0};
+   rarch_setting_group_info_t subgroup_info = {0};
    settings_t *settings = config_get_ptr();
 
    START_GROUP(group_info, "Rewind Settings");
@@ -4220,8 +4220,8 @@ static bool setting_append_list_recording_options(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info)
 {
-   rarch_setting_group_info_t group_info;
-   rarch_setting_group_info_t subgroup_info;
+   rarch_setting_group_info_t group_info    = {0};
+   rarch_setting_group_info_t subgroup_info = {0};
    settings_t *settings = config_get_ptr();
    global_t   *global   = global_get_ptr();
 
@@ -4314,8 +4314,8 @@ static bool setting_append_list_video_options(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info)
 {
-   rarch_setting_group_info_t group_info;
-   rarch_setting_group_info_t subgroup_info;
+   rarch_setting_group_info_t group_info    = {0};
+   rarch_setting_group_info_t subgroup_info = {0};
    global_t *global     = global_get_ptr();
    settings_t *settings = config_get_ptr();
    video_viewport_t *custom_vp = video_viewport_get_custom();
@@ -4860,8 +4860,8 @@ static bool setting_append_list_font_options(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info)
 {
-   rarch_setting_group_info_t group_info;
-   rarch_setting_group_info_t subgroup_info;
+   rarch_setting_group_info_t group_info    = {0};
+   rarch_setting_group_info_t subgroup_info = {0};
    settings_t *settings = config_get_ptr();
 
    START_GROUP(group_info, "Onscreen Display Settings");
@@ -4938,8 +4938,8 @@ static bool setting_append_list_audio_options(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info)
 {
-   rarch_setting_group_info_t group_info;
-   rarch_setting_group_info_t subgroup_info;
+   rarch_setting_group_info_t group_info    = {0};
+   rarch_setting_group_info_t subgroup_info = {0};
    settings_t *settings = config_get_ptr();
    global_t   *global   = global_get_ptr();
 
@@ -5138,9 +5138,9 @@ static bool setting_append_list_input_hotkey_options(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info)
 {
-   rarch_setting_group_info_t group_info;
-   rarch_setting_group_info_t subgroup_info;
    unsigned i;
+   rarch_setting_group_info_t group_info    = {0};
+   rarch_setting_group_info_t subgroup_info = {0};
    settings_t *settings = config_get_ptr();
 
    START_GROUP(group_info, "Input Hotkey Settings");
@@ -5171,9 +5171,9 @@ static bool setting_append_list_input_options(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info)
 {
-   rarch_setting_group_info_t group_info;
-   rarch_setting_group_info_t subgroup_info;
    unsigned user;
+   rarch_setting_group_info_t group_info    = {0};
+   rarch_setting_group_info_t subgroup_info = {0};
    settings_t *settings = config_get_ptr();
    global_t   *global   = global_get_ptr();
 
@@ -5434,8 +5434,8 @@ static bool setting_append_list_overlay_options(
       rarch_setting_info_t *list_info)
 {
 #ifdef HAVE_OVERLAY
-   rarch_setting_group_info_t group_info;
-   rarch_setting_group_info_t subgroup_info;
+   rarch_setting_group_info_t group_info    = {0};
+   rarch_setting_group_info_t subgroup_info = {0};
    settings_t *settings = config_get_ptr();
    global_t   *global   = global_get_ptr();
 
@@ -5508,8 +5508,8 @@ static bool setting_append_list_osk_overlay_options(
       rarch_setting_info_t *list_info)
 {
 #ifdef HAVE_OVERLAY
-   rarch_setting_group_info_t group_info;
-   rarch_setting_group_info_t subgroup_info;
+   rarch_setting_group_info_t group_info    = {0};
+   rarch_setting_group_info_t subgroup_info = {0};
    settings_t *settings = config_get_ptr();
    global_t   *global   = global_get_ptr();
 
@@ -5551,8 +5551,8 @@ static bool setting_append_list_menu_options(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info)
 {
-   rarch_setting_group_info_t group_info;
-   rarch_setting_group_info_t subgroup_info;
+   rarch_setting_group_info_t group_info    = {0};
+   rarch_setting_group_info_t subgroup_info = {0};
    settings_t *settings = config_get_ptr();
 
    START_GROUP(group_info, "Menu Settings");
@@ -5821,8 +5821,8 @@ static bool setting_append_list_ui_options(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info)
 {
-   rarch_setting_group_info_t group_info;
-   rarch_setting_group_info_t subgroup_info;
+   rarch_setting_group_info_t group_info    = {0};
+   rarch_setting_group_info_t subgroup_info = {0};
    settings_t *settings = config_get_ptr();
 
    START_GROUP(group_info, "UI Settings");
@@ -5902,8 +5902,8 @@ static bool setting_append_list_archive_options(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info)
 {
-   rarch_setting_group_info_t group_info;
-   rarch_setting_group_info_t subgroup_info;
+   rarch_setting_group_info_t group_info    = {0};
+   rarch_setting_group_info_t subgroup_info = {0};
    settings_t *settings = config_get_ptr();
 
    START_GROUP(group_info, "Archive Settings");
@@ -5933,8 +5933,8 @@ static bool setting_append_list_core_updater_options(
       rarch_setting_info_t *list_info)
 {
 #ifdef HAVE_NETWORKING
-   rarch_setting_group_info_t group_info;
-   rarch_setting_group_info_t subgroup_info;
+   rarch_setting_group_info_t group_info    = {0};
+   rarch_setting_group_info_t subgroup_info = {0};
    settings_t *settings = config_get_ptr();
 
    START_GROUP(group_info, "Core Updater Settings");
@@ -5987,8 +5987,8 @@ static bool setting_append_list_netplay_options(
       rarch_setting_info_t *list_info)
 {
 #ifdef HAVE_NETPLAY
-   rarch_setting_group_info_t group_info;
-   rarch_setting_group_info_t subgroup_info;
+   rarch_setting_group_info_t group_info    = {0};
+   rarch_setting_group_info_t subgroup_info = {0};
    settings_t *settings = config_get_ptr();
    global_t   *global   = global_get_ptr();
 
@@ -6139,8 +6139,8 @@ static bool setting_append_list_patch_options(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info)
 {
-   rarch_setting_group_info_t group_info;
-   rarch_setting_group_info_t subgroup_info;
+   rarch_setting_group_info_t group_info    = {0};
+   rarch_setting_group_info_t subgroup_info = {0};
 
    START_GROUP(group_info, "Patch Settings");
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
@@ -6192,8 +6192,8 @@ static bool setting_append_list_playlist_options(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info)
 {
-   rarch_setting_group_info_t group_info;
-   rarch_setting_group_info_t subgroup_info;
+   rarch_setting_group_info_t group_info    = {0};
+   rarch_setting_group_info_t subgroup_info = {0};
    settings_t *settings = config_get_ptr();
 
    START_GROUP(group_info, "Playlist Settings");
@@ -6232,8 +6232,8 @@ static bool setting_append_list_user_options(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info)
 {
-   rarch_setting_group_info_t group_info;
-   rarch_setting_group_info_t subgroup_info;
+   rarch_setting_group_info_t group_info    = {0};
+   rarch_setting_group_info_t subgroup_info = {0};
    settings_t *settings = config_get_ptr();
 
    START_GROUP(group_info, "User Settings");
@@ -6281,8 +6281,8 @@ static bool setting_append_list_directory_options(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info)
 {
-   rarch_setting_group_info_t group_info;
-   rarch_setting_group_info_t subgroup_info;
+   rarch_setting_group_info_t group_info    = {0};
+   rarch_setting_group_info_t subgroup_info = {0};
    settings_t *settings = config_get_ptr();
    global_t *global     = global_get_ptr();
 
@@ -6682,12 +6682,13 @@ static bool setting_append_list_privacy_options(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info)
 {
-   rarch_setting_group_info_t group_info;
-   rarch_setting_group_info_t subgroup_info;
+   rarch_setting_group_info_t group_info    = {0};
+   rarch_setting_group_info_t subgroup_info = {0};
    settings_t *settings = config_get_ptr();
 
    START_GROUP(group_info, "Privacy Settings");
-   START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
+   START_SUB_GROUP(list, list_info, "State",
+         group_info.name, subgroup_info);
 
    CONFIG_BOOL(
          settings->camera.allow,
@@ -6723,24 +6724,24 @@ static bool setting_append_list_input_player_options(
       rarch_setting_info_t *list_info,
       unsigned user)
 {
-   rarch_setting_group_info_t group_info;
-   rarch_setting_group_info_t subgroup_info;
-   unsigned i;
-   settings_t *settings = config_get_ptr();
-   global_t   *global   = global_get_ptr();
-
    /* This constants matches the string length.
     * Keep it up to date or you'll get some really obvious bugs.
     * 2 is the length of '99'; we don't need more users than that.
     */
    static char buffer[MAX_USERS][7+2+1];
    static char group_lbl[MAX_USERS][PATH_MAX_LENGTH];
+   unsigned i;
+   rarch_setting_group_info_t group_info    = {0};
+   rarch_setting_group_info_t subgroup_info = {0};
+   settings_t *settings = config_get_ptr();
+   global_t   *global   = global_get_ptr();
    const struct retro_keybind* const defaults =
       (user == 0) ? retro_keybinds_1 : retro_keybinds_rest;
 
-   snprintf(buffer[user], sizeof(buffer[user]), "User %u", user + 1);
-
-   snprintf(group_lbl[user], sizeof(group_lbl[user]), "Input %s Binds", buffer[user]);
+   snprintf(buffer[user],    sizeof(buffer[user]),
+         "User %u", user + 1);
+   snprintf(group_lbl[user], sizeof(group_lbl[user]),
+         "Input %s Binds", buffer[user]);
 
    START_GROUP(group_info, group_lbl[user]);
 
