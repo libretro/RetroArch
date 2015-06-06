@@ -943,7 +943,7 @@ static int setting_action_left_bind_device(void *data, bool wraparound)
 
 static int setting_action_right_bind_device(void *data, bool wraparound)
 {
-   unsigned *p = NULL;
+   unsigned               *p = NULL;
    rarch_setting_t *setting  = (rarch_setting_t*)data;
    settings_t      *settings = config_get_ptr();
 

@@ -171,26 +171,42 @@ enum menu_entry_type menu_entry_get_type(uint32_t i)
    // changed
    if (menu_setting_is_of_path_type(setting))
       return MENU_ENTRY_PATH;
-   else if (setting && setting->type == ST_BOOL )
-      return MENU_ENTRY_BOOL;
-   else if (setting && setting->type == ST_BIND )
-      return MENU_ENTRY_BIND;
-   else if (menu_setting_is_of_enum_type(setting))
+
+   if (menu_setting_is_of_enum_type(setting))
       return MENU_ENTRY_ENUM;
-   else if (setting && setting->type == ST_INT )
-      return MENU_ENTRY_INT;
-   else if (setting && setting->type == ST_UINT )
-      return MENU_ENTRY_UINT;
-   else if (setting && setting->type == ST_FLOAT )
-      return MENU_ENTRY_FLOAT;
-   else if (setting && setting->type == ST_PATH )
-      return MENU_ENTRY_PATH;
-   else if (setting && setting->type == ST_DIR )
-      return MENU_ENTRY_DIR;
-   else if (setting && setting->type == ST_STRING )
-      return MENU_ENTRY_STRING;
-   else if (setting && setting->type == ST_HEX )
-      return MENU_ENTRY_HEX;
+
+   if (setting)
+   {
+      switch (setting->type)
+      {
+         case ST_BOOL:
+            return MENU_ENTRY_BOOL;
+         case ST_BIND:
+            return MENU_ENTRY_BIND;
+         case ST_INT:
+            return MENU_ENTRY_INT;
+         case ST_UINT:
+            return MENU_ENTRY_UINT;
+         case ST_FLOAT:
+            return MENU_ENTRY_FLOAT;
+         case ST_PATH:
+            return MENU_ENTRY_PATH;
+         case ST_DIR:
+            return MENU_ENTRY_DIR;
+         case ST_STRING:
+            return MENU_ENTRY_STRING;
+         case ST_HEX:
+            return MENU_ENTRY_HEX;
+           
+         case ST_NONE:
+         case ST_ACTION:
+         case ST_GROUP:
+         case ST_SUB_GROUP:
+         case ST_END_GROUP:
+         case ST_END_SUB_GROUP:
+            break;
+      }
+   }
 
    return MENU_ENTRY_ACTION;
 }
