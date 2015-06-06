@@ -5128,7 +5128,7 @@ static bool setting_append_list_input_hotkey_options(
    rarch_setting_group_info_t subgroup_info = {0};
    settings_t *settings = config_get_ptr();
 
-   START_GROUP(group_info, "Input Hotkey Settings");
+   START_GROUP(group_info, "Input Hotkey Binds");
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
 
    for (i = 0; i < RARCH_BIND_LIST_END; i ++)
