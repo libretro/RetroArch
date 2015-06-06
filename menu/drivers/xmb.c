@@ -556,9 +556,10 @@ static void xmb_list_open_new(xmb_handle_t *xmb,
 
       node->x = xmb->icon.size * dir * 2;
       node->y = xmb_item_y(xmb, i, current);
+      node->zoom = xmb->categories.passive.zoom;
 
       if (i == current)
-         node->zoom = 1;
+         node->zoom = xmb->categories.active.zoom;
    }
    for (i = 0; i < file_list_get_size(list); i++)
    {
