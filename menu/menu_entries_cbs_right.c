@@ -324,7 +324,7 @@ static int action_right_video_resolution(unsigned type, const char *label,
    return 0;
 }
 
-static int core_setting_right(unsigned type, const char *label,
+int core_setting_right(unsigned type, const char *label,
       bool wraparound)
 {
    unsigned idx     = type - MENU_SETTINGS_CORE_OPTION_START;

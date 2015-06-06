@@ -57,6 +57,12 @@ static int action_select_directory(const char *path, const char *label, unsigned
    return 0;
 }
 
+static int action_select_core_setting(const char *path, const char *label, unsigned type,
+      size_t idx)
+{
+   return core_setting_right(type, label, true);
+}
+
 void menu_entries_cbs_init_bind_select(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx,
       const char *elem0, const char *elem1,
@@ -67,12 +73,17 @@ void menu_entries_cbs_init_bind_select(menu_file_list_cbs_t *cbs,
 
    cbs->action_select = action_select_default;
 
-   switch (type)
+   if ((type >= MENU_SETTINGS_CORE_OPTION_START))
+      cbs->action_select = action_select_core_setting;
+   else
    {
-      case MENU_FILE_PATH:
-      case MENU_FILE_DIRECTORY:
-      case MENU_FILE_USE_DIRECTORY:
-         cbs->action_select = action_select_directory;
-         break;
+      switch (type)
+      {
+         case MENU_FILE_PATH:
+         case MENU_FILE_DIRECTORY:
+         case MENU_FILE_USE_DIRECTORY:
+            cbs->action_select = action_select_directory;
+            break;
+      }
    }
 }

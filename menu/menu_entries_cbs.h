@@ -31,6 +31,12 @@ extern size_t hack_shader_pass;
 extern char core_updater_path[PATH_MAX_LENGTH];
 #endif
 
+/* Function callbacks */
+
+int core_setting_right(unsigned type, const char *label,
+      bool wraparound);
+/* End of function callbacks */
+
 void menu_entries_common_load_content(bool persist);
 
 int menu_entries_common_is_settings_entry(const char *label);
