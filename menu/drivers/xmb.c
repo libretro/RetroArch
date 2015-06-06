@@ -1639,45 +1639,16 @@ static void xmb_context_reset_horizontal_list(xmb_handle_t *xmb,
    }
 }
 
-static void xmb_context_reset(void)
+static void xmb_context_reset_textures(xmb_handle_t *xmb, const char *iconpath)
 {
-   unsigned k;
-   char mediapath[PATH_MAX_LENGTH], themepath[PATH_MAX_LENGTH],
-        iconpath[PATH_MAX_LENGTH],  fontpath[PATH_MAX_LENGTH];
+   unsigned i;
 
-   struct texture_image ti     = {0};
-   gl_t *gl                    = NULL;
-   xmb_handle_t *xmb           = NULL;
-   menu_handle_t *menu         = menu_driver_get_ptr();
-   settings_t *settings        = config_get_ptr();
-
-   if (!menu)
-      return;
-
-   gl = (gl_t*)video_driver_get_ptr(NULL);
-   if (!gl)
-      return;
-
-   xmb = (xmb_handle_t*)menu->userdata;
-   if (!xmb)
-      return;
-
-   fill_pathname_join(mediapath, settings->assets_directory,
-         "lakka", sizeof(mediapath));
-   fill_pathname_join(themepath, mediapath, XMB_THEME, sizeof(themepath));
-   fill_pathname_join(iconpath, themepath, xmb->icon.dir, sizeof(iconpath));
-   fill_pathname_slash(iconpath, sizeof(iconpath));
-
-   fill_pathname_join(fontpath, themepath, "font.ttf", sizeof(fontpath));
-
-   if (!menu_display_init_main_font(menu, fontpath, menu->font.size))
-      RARCH_WARN("Failed to load font.");
-
-   for (k = 0; k < XMB_TEXTURE_LAST; k++)
+   for (i = 0; i < XMB_TEXTURE_LAST; i++)
    {
+      struct texture_image ti     = {0};
       char path[PATH_MAX_LENGTH];
 
-      switch(k)
+      switch(i)
       {
          case XMB_TEXTURE_SETTINGS:
             fill_pathname_join(path, iconpath, "settings.png",   sizeof(path));
@@ -1761,11 +1732,46 @@ static void xmb_context_reset(void)
 
       texture_image_load(&ti, path);
 
-      xmb->textures.list[k].id   = video_texture_load(&ti,
+      xmb->textures.list[i].id   = video_texture_load(&ti,
             TEXTURE_BACKEND_OPENGL, TEXTURE_FILTER_MIPMAP_LINEAR);
 
       texture_image_free(&ti);
    }
+}
+
+static void xmb_context_reset(void)
+{
+   char mediapath[PATH_MAX_LENGTH], themepath[PATH_MAX_LENGTH],
+        iconpath[PATH_MAX_LENGTH],  fontpath[PATH_MAX_LENGTH];
+
+   gl_t *gl                    = NULL;
+   xmb_handle_t *xmb           = NULL;
+   menu_handle_t *menu         = menu_driver_get_ptr();
+   settings_t *settings        = config_get_ptr();
+
+   if (!menu)
+      return;
+
+   gl = (gl_t*)video_driver_get_ptr(NULL);
+   if (!gl)
+      return;
+
+   xmb = (xmb_handle_t*)menu->userdata;
+   if (!xmb)
+      return;
+
+   fill_pathname_join(mediapath, settings->assets_directory,
+         "lakka", sizeof(mediapath));
+   fill_pathname_join(themepath, mediapath, XMB_THEME, sizeof(themepath));
+   fill_pathname_join(iconpath, themepath, xmb->icon.dir, sizeof(iconpath));
+   fill_pathname_slash(iconpath, sizeof(iconpath));
+
+   fill_pathname_join(fontpath, themepath, "font.ttf", sizeof(fontpath));
+
+   if (!menu_display_init_main_font(menu, fontpath, menu->font.size))
+      RARCH_WARN("Failed to load font.");
+
+   xmb_context_reset_textures(xmb, iconpath);
 
    {
       char path[PATH_MAX_LENGTH];
