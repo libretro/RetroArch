@@ -1637,6 +1637,9 @@ static int menu_displaylist_parse_generic(menu_displaylist_info_t *info, bool *n
       switch (hash_label)
       {
          case MENU_LABEL_CONTENT_COLLECTION_LIST:
+            if (is_dir)
+                continue;
+              
             file_type = MENU_FILE_PLAYLIST_COLLECTION;
             break;
          case MENU_LABEL_CORE_LIST:
