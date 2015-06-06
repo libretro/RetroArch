@@ -5424,7 +5424,7 @@ static bool setting_append_list_overlay_options(
    settings_t *settings = config_get_ptr();
    global_t   *global   = global_get_ptr();
 
-   START_GROUP(group_info, "Overlay Settings");
+   START_GROUP(group_info, "Onscreen Overlay Settings");
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
 
    CONFIG_BOOL(
