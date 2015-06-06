@@ -45,7 +45,6 @@ void file_list_push(file_list_t *list,
    list->list[list->size].label         = NULL;
    list->list[list->size].path          = NULL;
    list->list[list->size].alt           = NULL;
-   list->list[list->size].alt2          = NULL;
    list->list[list->size].type          = type;
    list->list[list->size].directory_ptr = directory_ptr;
 
@@ -112,10 +111,6 @@ void file_list_free(file_list_t *list)
       if (list->list[i].alt)
          free(list->list[i].alt);
       list->list[i].alt = NULL;
-
-      if (list->list[i].alt2)
-         free(list->list[i].alt2);
-      list->list[i].alt2 = NULL;
    }
    if (list->list)
       free(list->list);
@@ -144,10 +139,6 @@ void file_list_clear(file_list_t *list)
       if (list->list[i].alt)
          free(list->list[i].alt);
       list->list[i].alt = NULL;
-
-      if (list->list[i].alt2)
-         free(list->list[i].alt2);
-      list->list[i].alt2 = NULL;
    }
 
    list->size = 0;
@@ -174,7 +165,6 @@ void file_list_copy(file_list_t *list, file_list_t *list_old)
       list_old->list[i].path          = NULL;
       list_old->list[i].label         = NULL;
       list_old->list[i].alt           = NULL;
-      list_old->list[i].alt2          = NULL;
       list_old->list[i].type          = list->list[i].type;
       list_old->list[i].directory_ptr = list->list[i].directory_ptr;
       list_old->list[i].userdata      = list->list[i].userdata;
@@ -186,8 +176,6 @@ void file_list_copy(file_list_t *list, file_list_t *list_old)
          list_old->list[i].label      = strdup(list->list[i].label);
       if (list->list[i].alt)
          list_old->list[i].alt        = strdup(list->list[i].alt);
-      if (list->list[i].alt2)
-         list_old->list[i].alt2       = strdup(list->list[i].alt2);
    }
 }
 
@@ -200,7 +188,6 @@ void file_list_set_label_at_offset(file_list_t *list, size_t idx,
    if (list->list[idx].label)
       free(list->list[idx].label);
    list->list[idx].alt      = NULL;
-   list->list[idx].alt2      = NULL;
 
    if (label)
       list->list[idx].label = strdup(label);
@@ -229,31 +216,6 @@ void file_list_set_alt_at_offset(file_list_t *list, size_t idx,
 
    if (alt)
       list->list[idx].alt   = strdup(alt);
-}
-
-void file_list_set_alt2_at_offset(file_list_t *list, size_t idx,
-      const char *alt)
-{
-   if (!list)
-      return;
-
-   if (list->list[idx].alt2)
-      free(list->list[idx].alt2);
-   list->list[idx].alt2      = NULL;
-
-   if (alt)
-      list->list[idx].alt2   = strdup(alt);
-}
-
-void file_list_get_alt2_at_offset(const file_list_t *list, size_t idx,
-      const char **alt)
-{
-   if (!list)
-      return;
-
-   if (alt)
-      *alt = list->list[idx].alt2 ?
-         list->list[idx].alt2 : list->list[idx].path;
 }
 
 void file_list_get_alt_at_offset(const file_list_t *list, size_t idx,
