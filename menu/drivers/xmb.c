@@ -1743,6 +1743,21 @@ static void xmb_context_reset_textures(xmb_handle_t *xmb, const char *iconpath)
    xmb->settings_node.zoom  = xmb->categories.active.zoom;
 }
 
+static void xmb_context_reset_background(const char *iconpath)
+{
+   char path[PATH_MAX_LENGTH];
+   settings_t *settings        = config_get_ptr();
+
+   fill_pathname_join(path, iconpath, "bg.png", sizeof(path));
+
+   if (*settings->menu.wallpaper)
+      strlcpy(path, settings->menu.wallpaper, sizeof(path));
+
+   if (path_file_exists(path))
+      rarch_main_data_msg_queue_push(DATA_TYPE_IMAGE, path,
+         "cb_menu_wallpaper", 0, 1, true);
+}
+
 static void xmb_context_reset(void)
 {
    char mediapath[PATH_MAX_LENGTH], themepath[PATH_MAX_LENGTH],
@@ -1776,20 +1791,7 @@ static void xmb_context_reset(void)
       RARCH_WARN("Failed to load font.");
 
    xmb_context_reset_textures(xmb, iconpath);
-
-   {
-      char path[PATH_MAX_LENGTH];
-
-      fill_pathname_join(path, iconpath, "bg.png", sizeof(path));
-
-      if (*settings->menu.wallpaper)
-         strlcpy(path, settings->menu.wallpaper, sizeof(path));
-
-      if ( path_file_exists(path))
-         rarch_main_data_msg_queue_push(DATA_TYPE_IMAGE, path,
-               "cb_menu_wallpaper", 0, 1, true);
-   }
-
+   xmb_context_reset_background(iconpath);
    xmb_context_reset_horizontal_list(xmb, themepath);
 }
 
