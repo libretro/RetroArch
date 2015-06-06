@@ -308,8 +308,6 @@ static rarch_setting_t *menu_setting_get_ptr(void)
 static rarch_setting_t* setting_find_setting(
       rarch_setting_t* settings, const char* name)
 {
-   bool found = false;
-
    if (!settings || !name)
       return NULL;
 
@@ -317,21 +315,18 @@ static rarch_setting_t* setting_find_setting(
    {
       if (settings->type <= ST_GROUP && !strcmp(settings->name, name))
       {
-         found = true;
-         break;
+         if (settings->short_description && settings->short_description[0] == '\0')
+            return NULL;
+
+         if (settings->read_handler)
+            settings->read_handler(settings);
+
+         return settings;
       }
    }
 
-   if (!found)
-      return NULL;
+   return NULL;
 
-   if (settings->short_description && settings->short_description[0] == '\0')
-      return NULL;
-
-   if (settings->read_handler)
-      settings->read_handler(settings);
-
-   return settings;
 }
 
 rarch_setting_t *menu_setting_find(const char *label)
