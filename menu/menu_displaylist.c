@@ -1708,64 +1708,89 @@ static int menu_displaylist_parse_generic(menu_displaylist_info_t *info, bool *n
    return 0;
 }
 
-static int menu_displaylist_parse(menu_displaylist_info_t *info,
-      unsigned type, bool *need_sort, bool *need_refresh,
-      bool *need_push)
+int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
 {
-   int ret = 0;
    size_t i, list_size;
-   rarch_setting_t *setting     = NULL;
-   settings_t *settings         = config_get_ptr();
-   menu_handle_t *menu          = menu_driver_get_ptr();
-   global_t *global             = global_get_ptr();
-
-   menu_list_clear(info->list);
+   int ret                  = 0;
+   bool need_sort           = false;
+   bool need_refresh        = false;
+   bool need_push           = false;
+   rarch_setting_t *setting = NULL;
+   menu_handle_t    *menu   = menu_driver_get_ptr();
+   global_t       *global   = global_get_ptr();
+   settings_t   *settings   = config_get_ptr();
 
    switch (type)
    {
+      case DISPLAYLIST_NONE:
+         break;
+      case DISPLAYLIST_INFO:
+         menu_list_push(info->list, info->path, info->label, info->type, info->directory_ptr);
+         break;
+      case DISPLAYLIST_GENERIC:
+         menu_driver_list_cache(false, 0);
+
+         menu_list_push(info->list, info->path, info->label, info->type, info->directory_ptr);
+         menu_navigation_clear(&menu->navigation, true);
+         menu_set_refresh();
+         break;
+      case DISPLAYLIST_HELP:
+         menu_list_push(info->list, info->path, info->label, info->type, info->directory_ptr);
+         menu->push_start_screen = false;
+         menu_display_fb_set_dirty();
+         break;
       case DISPLAYLIST_MAIN_MENU:
       case DISPLAYLIST_SETTINGS:
+         menu_list_clear(info->list);
          ret = menu_displaylist_parse_settings(menu, info, info->flags);
-         *need_push    = true;
+         need_push    = true;
          break;
       case DISPLAYLIST_SETTINGS_SUBGROUP:
+         menu_list_clear(info->list);
          ret = menu_displaylist_parse_settings_in_subgroup(info);
-         *need_push    = true;
+         need_push    = true;
          break;
       case DISPLAYLIST_HORIZONTAL:
+         menu_list_clear(info->list);
          ret = menu_displaylist_parse_horizontal_list(info);
 
-         *need_refresh = true;
-         *need_push    = true;
+         need_refresh = true;
+         need_push    = true;
          break;
       case DISPLAYLIST_OPTIONS:
+         menu_list_clear(info->list);
          ret = menu_displaylist_parse_options(info);
 
-         *need_push    = true;
+         need_push    = true;
          break;
       case DISPLAYLIST_HORIZONTAL_CONTENT_ACTIONS:
+         menu_list_clear(info->list);
          ret = menu_displaylist_parse_horizontal_content_actions(info);
-         *need_refresh = true;
-         *need_push    = true;
+         need_refresh = true;
+         need_push    = true;
          break;
       case DISPLAYLIST_OPTIONS_CHEATS:
+         menu_list_clear(info->list);
          ret = menu_displaylist_parse_options_cheats(info);
 
-         *need_push    = true;
+         need_push    = true;
          break;
       case DISPLAYLIST_OPTIONS_MANAGEMENT:
+         menu_list_clear(info->list);
          ret = menu_displaylist_parse_options_management(info);
 
-         *need_push    = true;
+         need_push    = true;
          break;
       case DISPLAYLIST_OPTIONS_REMAPPINGS:
+         menu_list_clear(info->list);
          ret = menu_displaylist_parse_options_remappings(info);
 
-         *need_push    = true;
+         need_push    = true;
          break;
       case DISPLAYLIST_SHADER_PARAMETERS:
       case DISPLAYLIST_SHADER_PARAMETERS_PRESET:
 #ifdef HAVE_SHADER_MANAGER
+         menu_list_clear(info->list);
          {
             struct video_shader *shader = video_shader_driver_get_current_shader();
             if (!shader)
@@ -1776,11 +1801,12 @@ static int menu_displaylist_parse(menu_displaylist_info_t *info,
                   ? MENU_SETTINGS_SHADER_PARAMETER_0 : MENU_SETTINGS_SHADER_PRESET_PARAMETER_0
                   );
 
-            *need_push = true;
+            need_push = true;
          }
 #endif
          break;
       case DISPLAYLIST_OPTIONS_VIDEO:
+         menu_list_clear(info->list);
 #if defined(GEKKO) || defined(__CELLOS_LV2__)
          menu_list_push(info->list, "Screen Resolution", "",
                MENU_SETTINGS_VIDEO_RESOLUTION, 0);
@@ -1792,56 +1818,64 @@ static int menu_displaylist_parse(menu_displaylist_info_t *info,
                0, 0);
 #endif
 
-         *need_push    = true;
+         need_push    = true;
          break;
       case DISPLAYLIST_PERFCOUNTERS_CORE:
       case DISPLAYLIST_PERFCOUNTERS_FRONTEND:
+         menu_list_clear(info->list);
          ret = menu_displaylist_push_perfcounter_generic(info,
-              (type == DISPLAYLIST_PERFCOUNTERS_CORE) ?
-              perf_counters_libretro : perf_counters_rarch,
-              (type == DISPLAYLIST_PERFCOUNTERS_CORE) ?
-              perf_ptr_libretro : perf_ptr_rarch ,
-              (type == DISPLAYLIST_PERFCOUNTERS_CORE) ?
-              MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_BEGIN : MENU_SETTINGS_PERF_COUNTERS_BEGIN);
+               (type == DISPLAYLIST_PERFCOUNTERS_CORE) ?
+               perf_counters_libretro : perf_counters_rarch,
+               (type == DISPLAYLIST_PERFCOUNTERS_CORE) ?
+               perf_ptr_libretro : perf_ptr_rarch ,
+               (type == DISPLAYLIST_PERFCOUNTERS_CORE) ?
+               MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_BEGIN : MENU_SETTINGS_PERF_COUNTERS_BEGIN);
 
-         *need_refresh = false;
-         *need_push    = true;
+         need_refresh = false;
+         need_push    = true;
          break;
       case DISPLAYLIST_DATABASE_ENTRY:
+         menu_list_clear(info->list);
          ret = menu_displaylist_parse_database_entry(info);
 
-         *need_push    = true;
+         need_push    = true;
          break;
       case DISPLAYLIST_DATABASE_QUERY:
+         menu_list_clear(info->list);
          ret = menu_database_parse_query(info->list, info->path, (info->path_c[0] == '\0') ? NULL : info->path_c);
          strlcpy(info->path, info->path_b, sizeof(info->path));
 
-         *need_sort    = true;
-         *need_refresh = true;
-         *need_push    = true;
+         need_sort    = true;
+         need_refresh = true;
+         need_push    = true;
          break;
       case DISPLAYLIST_OPTIONS_SHADERS:
+         menu_list_clear(info->list);
          ret = menu_displaylist_parse_shader_options(info);
 
-         *need_push    = true;
+         need_push    = true;
          break;
       case DISPLAYLIST_CORES_UPDATER:
+         menu_list_clear(info->list);
 #ifdef HAVE_NETWORKING
+         menu_list_clear(info->list);
          print_buf_lines(info->list, core_buf, core_len, MENU_FILE_DOWNLOAD_CORE);
-         *need_push    = true;
-         *need_refresh = true;
+         need_push    = true;
+         need_refresh = true;
 #endif
          break;
       case DISPLAYLIST_PERFCOUNTER_SELECTION:
+         menu_list_clear(info->list);
          menu_list_push(info->list, "Frontend Counters", "frontend_counters",
                MENU_SETTING_ACTION, 0);
          menu_list_push(info->list, "Core Counters", "core_counters",
                MENU_SETTING_ACTION, 0);
 
-         *need_refresh = true;
-         *need_push    = true;
+         need_refresh = true;
+         need_push    = true;
          break;
       case DISPLAYLIST_SETTINGS_ALL:
+         menu_list_clear(info->list);
          menu_settings_list_free(menu->list_settings);
          menu->list_settings = menu_setting_new(SL_FLAG_ALL_SETTINGS);
 
@@ -1883,10 +1917,11 @@ static int menu_displaylist_parse(menu_displaylist_info_t *info,
             }
          }
 
-         *need_push    = true;
+         need_push    = true;
          break;
       case DISPLAYLIST_PLAYLIST_COLLECTION:
       case DISPLAYLIST_HISTORY:
+         menu_list_clear(info->list);
          {
             char path_playlist[PATH_MAX_LENGTH];
             content_playlist_t *playlist = NULL;
@@ -1918,12 +1953,13 @@ static int menu_displaylist_parse(menu_displaylist_info_t *info,
 
             if (ret == 0)
             {
-               *need_refresh = true;
-               *need_push    = true;
+               need_refresh = true;
+               need_push    = true;
             }
          }
          break;
       case DISPLAYLIST_OPTIONS_DISK:
+         menu_list_clear(info->list);
          menu_list_push(info->list, "Disk Index", "disk_idx",
                MENU_SETTINGS_CORE_DISK_OPTIONS_DISK_INDEX, 0);
          menu_list_push(info->list, "Disk Cycle Tray Status", "disk_cycle_tray_status",
@@ -1931,16 +1967,18 @@ static int menu_displaylist_parse(menu_displaylist_info_t *info,
          menu_list_push(info->list, "Disk Image Append", "disk_image_append",
                MENU_SETTINGS_CORE_DISK_OPTIONS_DISK_IMAGE_APPEND, 0);
 
-         *need_push    = true;
+         need_push    = true;
          break;
       case DISPLAYLIST_SYSTEM_INFO:
+         menu_list_clear(info->list);
          menu_displaylist_parse_system_info(info);
-         *need_push    = true;
+         need_push    = true;
          break;
       case DISPLAYLIST_CORES_ALL:
-         *need_sort    = true;
-         *need_refresh = true;
-         *need_push    = true;
+         menu_list_clear(info->list);
+         need_sort    = true;
+         need_refresh = true;
+         need_push    = true;
 
          {
             const core_info_t *core_info = NULL;
@@ -1965,10 +2003,12 @@ static int menu_displaylist_parse(menu_displaylist_info_t *info,
          }
          break;
       case DISPLAYLIST_CORE_INFO:
+         menu_list_clear(info->list);
          menu_displaylist_parse_core_info(info);
-         *need_push = true;
+         need_push = true;
          break;
       case DISPLAYLIST_CORE_OPTIONS:
+         menu_list_clear(info->list);
          if (global->system.core_options)
          {
             size_t opts = core_option_size(global->system.core_options);
@@ -1981,7 +2021,7 @@ static int menu_displaylist_parse(menu_displaylist_info_t *info,
          else
             menu_list_push(info->list, "No options available.", "",
                   MENU_SETTINGS_CORE_OPTION_NONE, 0);
-         *need_push = true;
+         need_push = true;
          break;
       case DISPLAYLIST_DEFAULT:
       case DISPLAYLIST_CORES:
@@ -2001,50 +2041,14 @@ static int menu_displaylist_parse(menu_displaylist_info_t *info,
       case DISPLAYLIST_RECORD_CONFIG_FILES:
       case DISPLAYLIST_CONFIG_FILES:
       case DISPLAYLIST_CONTENT_HISTORY:
-         if (menu_displaylist_parse_generic(info, need_sort) == 0)
+         menu_list_clear(info->list);
+         if (menu_displaylist_parse_generic(info, &need_sort) == 0)
          {
-            *need_refresh = true;
-            *need_push    = true;
+            need_refresh = true;
+            need_push    = true;
          }
          break;
    }
-
-   return ret;
-}
-
-int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
-{
-   int ret = 0;
-   bool need_sort    = false;
-   bool need_refresh = false;
-   bool need_push    = false;
-   menu_handle_t    *menu = menu_driver_get_ptr();
-
-   switch (type)
-   {
-      case DISPLAYLIST_NONE:
-         break;
-      case DISPLAYLIST_INFO:
-         menu_list_push(info->list, info->path, info->label, info->type, info->directory_ptr);
-         break;
-      case DISPLAYLIST_GENERIC:
-         menu_driver_list_cache(false, 0);
-
-         menu_list_push(info->list, info->path, info->label, info->type, info->directory_ptr);
-         menu_navigation_clear(&menu->navigation, true);
-         menu_set_refresh();
-         break;
-      case DISPLAYLIST_HELP:
-         menu_list_push(info->list, info->path, info->label, info->type, info->directory_ptr);
-         menu->push_start_screen = false;
-         menu_display_fb_set_dirty();
-         break;
-      default:
-         ret = menu_displaylist_parse(info, type,
-               &need_sort, &need_refresh, &need_push);
-         break;
-   }
-
 
    if (need_sort)
       file_list_sort_on_alt(info->list);
