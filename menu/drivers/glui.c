@@ -293,15 +293,14 @@ static void glui_render_menu_list(glui_handle_t *glui,
 
    for (i = 0; i < end; i++)
    {
-      unsigned y;
       char entry_path[PATH_MAX_LENGTH], entry_value[PATH_MAX_LENGTH];
       char message[PATH_MAX_LENGTH],
            entry_title_buf[PATH_MAX_LENGTH], type_str_buf[PATH_MAX_LENGTH];
       bool entry_selected;
+      unsigned y = menu->header_height - menu->scroll_y + (glui->line_height * i);
+      int max_visible_entries = ((y + glui->line_height));
 
-      y = menu->header_height - menu->scroll_y + (glui->line_height * i);
-
-      if (y > height || ((y + glui->line_height) < 0))
+      if (y > height || (max_visible_entries < 0))
          continue;
 
       entry_selected = menu_entry_is_currently_selected(i);
