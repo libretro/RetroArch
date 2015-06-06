@@ -126,88 +126,88 @@ typedef struct rarch_setting_group_info
 
 typedef struct rarch_setting
 {
-   enum setting_type type;
+   enum setting_type    type;
 
-   const char *name;
-   uint32_t size;
+   uint32_t             size;
    
-   const char* short_description;
-   const char* group;
-   const char* subgroup;
+   const char           *name;
+   const char           *short_description;
+   const char           *group;
+   const char           *subgroup;
+   const char           *values;
 
-   uint32_t index;
-   uint32_t index_offset;
+   uint32_t             index;
+   uint32_t             index_offset;
 
-   double min;
-   double max;
+   double               min;
+   double               max;
    
-   const char* values;
-   uint64_t flags;
+   uint64_t             flags;
    
-   change_handler_t change_handler;
-   change_handler_t deferred_handler;
-   change_handler_t read_handler;
-   action_start_handler_t action_start;
-   action_iterate_handler_t action_iterate;
-   action_left_handler_t action_left;
-   action_right_handler_t action_right;
-   action_up_handler_t action_up;
-   action_down_handler_t action_down;
-   action_cancel_handler_t action_cancel;
-   action_ok_handler_t action_ok;
-   get_string_representation_t get_string_representation;
+   change_handler_t              change_handler;
+   change_handler_t              deferred_handler;
+   change_handler_t              read_handler;
+   action_start_handler_t        action_start;
+   action_iterate_handler_t      action_iterate;
+   action_left_handler_t         action_left;
+   action_right_handler_t        action_right;
+   action_up_handler_t           action_up;
+   action_down_handler_t         action_down;
+   action_cancel_handler_t       action_cancel;
+   action_ok_handler_t           action_ok;
+   get_string_representation_t   get_string_representation;
 
    union
    {
-      bool boolean;
-      int integer;
-      unsigned int unsigned_integer;
-      float fraction;
-      const char* string;
-      const struct retro_keybind* keybind;
+      bool                       boolean;
+      int                        integer;
+      unsigned int               unsigned_integer;
+      float                      fraction;
+      const char                 *string;
+      const struct retro_keybind *keybind;
    } default_value;
    
    union
    {
-      bool* boolean;
-      int* integer;
-      unsigned int* unsigned_integer;
-      float* fraction;
-      char* string;
-      struct retro_keybind* keybind;
+      bool                 *boolean;
+      int                  *integer;
+      unsigned int         *unsigned_integer;
+      float                *fraction;
+      char                 *string;
+      struct retro_keybind *keybind;
    } value;
 
    union
    {
-      bool boolean;
-      int integer;
-      unsigned int unsigned_integer;
-      float fraction;
+      bool           boolean;
+      int            integer;
+      unsigned int   unsigned_integer;
+      float          fraction;
    } original_value;
 
    struct
    {
-      const char *empty_path;
+      const char     *empty_path;
    } dir;
 
    struct
    {
-      enum event_command idx;
-      bool triggered;
+      enum           event_command idx;
+      bool           triggered;
    } cmd_trigger;
 
    struct
    {
-      const char *off_label;
-      const char *on_label;
+      const char     *off_label;
+      const char     *on_label;
    } boolean;
 
-   unsigned bind_type;
-   unsigned browser_selection_type;
-   float step;
-   const char *rounding_fraction;
-   bool enforce_minrange;
-   bool enforce_maxrange;
+   unsigned          bind_type;
+   unsigned          browser_selection_type;
+   float             step;
+   const char        *rounding_fraction;
+   bool              enforce_minrange;
+   bool              enforce_maxrange;
 }  rarch_setting_t;
 
 
@@ -241,7 +241,7 @@ rarch_setting_t *menu_setting_find(const char *label);
  * that the string has been properly formatted.
  **/
 int setting_set_with_string_representation(
-      rarch_setting_t* setting, const char* value);
+      rarch_setting_t* setting, const char *value);
 
 /**
  * setting_get_string_representation:
