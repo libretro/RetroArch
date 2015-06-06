@@ -1089,11 +1089,15 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
          case MENU_VALUE_DIR:
             break;
          case MENU_VALUE_ON:
-            if (!xmb->textures.list[XMB_TEXTURE_SWITCH_ON].id)
+            if (xmb->textures.list[XMB_TEXTURE_SWITCH_ON].id)
+               texture_switch = xmb->textures.list[XMB_TEXTURE_SWITCH_ON].id;
+            else
                do_draw_text = true;
             break;
          case MENU_VALUE_OFF:
-            if (!xmb->textures.list[XMB_TEXTURE_SWITCH_OFF].id)
+            if (xmb->textures.list[XMB_TEXTURE_SWITCH_OFF].id)
+               texture_switch = xmb->textures.list[XMB_TEXTURE_SWITCH_OFF].id;
+            else
                do_draw_text = true;
             break;
          default:
@@ -1129,17 +1133,6 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
 
       xmb_draw_icon(gl, xmb, icon, icon_x, icon_y, node->alpha, 0, node->zoom);
 
-      switch (hash_value)
-      {
-         case MENU_VALUE_ON:
-            if (xmb->textures.list[XMB_TEXTURE_SWITCH_ON].id)
-               texture_switch = xmb->textures.list[XMB_TEXTURE_SWITCH_ON].id;
-            break;
-         case MENU_VALUE_OFF:
-            if (xmb->textures.list[XMB_TEXTURE_SWITCH_OFF].id)
-               texture_switch = xmb->textures.list[XMB_TEXTURE_SWITCH_OFF].id;
-            break;
-      }
 
       if (texture_switch != 0)
          xmb_draw_icon_predone(gl, xmb, &mymat,
