@@ -1558,15 +1558,12 @@ static void xmb_context_reset(void)
 {
    unsigned i, k;
    char mediapath[PATH_MAX_LENGTH], themepath[PATH_MAX_LENGTH],
-        iconpath[PATH_MAX_LENGTH],  fontpath[PATH_MAX_LENGTH],
-        core_id[PATH_MAX_LENGTH],   texturepath[PATH_MAX_LENGTH],
-        content_texturepath[PATH_MAX_LENGTH];
+        iconpath[PATH_MAX_LENGTH],  fontpath[PATH_MAX_LENGTH];
 
    struct texture_image ti     = {0};
    core_info_list_t* info_list = NULL;
    gl_t *gl                    = NULL;
    xmb_handle_t *xmb           = NULL;
-   xmb_node_t *node            = NULL;
    menu_handle_t *menu         = menu_driver_get_ptr();
    settings_t *settings        = config_get_ptr();
    global_t   *global          = global_get_ptr();
@@ -1682,9 +1679,12 @@ static void xmb_context_reset(void)
 
    for (i = 1; i < menu->categories.size; i++)
    {
+      char core_id[PATH_MAX_LENGTH];
+      char texturepath[PATH_MAX_LENGTH], content_texturepath[PATH_MAX_LENGTH];
       core_info_t *info           = NULL;
-      struct texture_image ti = {0};
-      node = xmb_get_userdata_from_core(xmb, info, i - 1);
+      struct texture_image ti     = {0};
+      xmb_node_t *node            = xmb_get_userdata_from_core(
+         xmb, info, i - 1);
 
       if (!node)
       {
@@ -1731,7 +1731,6 @@ static void xmb_context_reset(void)
             TEXTURE_BACKEND_OPENGL, TEXTURE_FILTER_MIPMAP_LINEAR);
 
       texture_image_free(&ti);
-
       texture_image_load(&ti, content_texturepath);
 
       node->content_icon = video_texture_load(&ti,

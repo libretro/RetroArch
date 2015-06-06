@@ -301,7 +301,7 @@ static void glui_render_menu_list(glui_handle_t *glui,
 
       y = menu->header_height - menu->scroll_y + (glui->line_height * i);
 
-      if (y > height || y + glui->line_height < 0)
+      if (y > height || ((y + glui->line_height) < 0))
          continue;
 
       entry_selected = menu_entry_is_currently_selected(i);
