@@ -43,7 +43,7 @@ static int menu_action_setting_set_current_string_path(
    char s[PATH_MAX_LENGTH];
    fill_pathname_join(s, dir, path, sizeof(s));
    setting_set_with_string_representation(setting, s);
-   return menu_setting_generic(setting);
+   return menu_setting_generic(setting, false);
 }
 
 static int action_ok_file_load_with_detect_core(const char *path,

@@ -167,12 +167,14 @@ int menu_setting_set_flags(rarch_setting_t *setting)
    return 0;
 }
 
-static int setting_generic_action_ok_default(void *data)
+static int setting_generic_action_ok_default(void *data, bool wraparound)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
 
    if (!setting)
       return -1;
+
+   (void)wraparound;
 
    if (setting->cmd_trigger.idx != EVENT_CMD_NONE)
       setting->cmd_trigger.triggered = true;
@@ -180,9 +182,9 @@ static int setting_generic_action_ok_default(void *data)
    return 0;
 }
 
-int menu_setting_generic(rarch_setting_t *setting)
+int menu_setting_generic(rarch_setting_t *setting, bool wraparound)
 {
-   if (setting_generic_action_ok_default(setting) != 0)
+   if (setting_generic_action_ok_default(setting, wraparound) != 0)
       return -1;
 
    if (setting->change_handler)
@@ -215,15 +217,19 @@ static int setting_handler(rarch_setting_t *setting, unsigned action)
          break;
       case MENU_ACTION_LEFT:
          if (setting->action_left)
-            return setting->action_left(setting, true);
+            return setting->action_left(setting, false);
          break;
       case MENU_ACTION_RIGHT:
          if (setting->action_right)
-            return setting->action_right(setting, true);
+            return setting->action_right(setting, false);
+         break;
+      case MENU_ACTION_SELECT:
+         if (setting->action_select)
+            return setting->action_select(setting, true);
          break;
       case MENU_ACTION_OK:
          if (setting->action_ok)
-            return setting->action_ok(setting);
+            return setting->action_ok(setting, false);
          break;
       case MENU_ACTION_CANCEL:
          if (setting->action_cancel)
@@ -272,7 +278,7 @@ int menu_action_handle_setting(rarch_setting_t *setting,
       case ST_BIND:
       case ST_ACTION:
          if (setting_handler(setting, action) == 0)
-            return menu_setting_generic(setting);
+            return menu_setting_generic(setting, wraparound);
          break;
       default:
          break;
@@ -1138,9 +1144,11 @@ static int load_content_action_toggle(void *data, bool wraparound)
  ******* ACTION OK CALLBACK FUNCTIONS *******
 **/
 
-static int setting_action_ok_bind_all(void *data)
+static int setting_action_ok_bind_all(void *data, bool wraparound)
 {
    global_t      *global     = global_get_ptr();
+
+   (void)wraparound;
 
    if (!global)
       return -1;
@@ -1153,7 +1161,7 @@ static int setting_action_ok_bind_all(void *data)
    return 0;
 }
 
-static int setting_action_ok_bind_defaults(void *data)
+static int setting_action_ok_bind_defaults(void *data, bool wraparound)
 {
    unsigned i;
    struct retro_keybind *target = NULL;
@@ -1162,6 +1170,8 @@ static int setting_action_ok_bind_defaults(void *data)
    menu_handle_t *menu       = menu_driver_get_ptr();
    settings_t    *settings   = config_get_ptr();
    global_t      *global     = global_get_ptr();
+
+   (void)wraparound;
 
    if (!menu)
       return -1;
@@ -1194,9 +1204,9 @@ static int setting_action_ok_bind_defaults(void *data)
    return 0;
 }
 
-static int setting_bool_action_ok_exit(void *data)
+static int setting_bool_action_ok_exit(void *data, bool wraparound)
 {
-   if (setting_generic_action_ok_default(data) != 0)
+   if (setting_generic_action_ok_default(data, wraparound) != 0)
       return -1;
 
    event_command(EVENT_CMD_RESUME);
@@ -1205,7 +1215,7 @@ static int setting_bool_action_ok_exit(void *data)
 }
 
 
-static int setting_action_ok_video_refresh_rate_auto(void *data)
+static int setting_action_ok_video_refresh_rate_auto(void *data, bool wraparound)
 {
    double video_refresh_rate = 0.0;
    double deviation          = 0.0;
@@ -1223,19 +1233,21 @@ static int setting_action_ok_video_refresh_rate_auto(void *data)
       event_command(EVENT_CMD_VIDEO_SET_BLOCKING_STATE);
    }
 
-   if (setting_generic_action_ok_default(setting) != 0)
+   if (setting_generic_action_ok_default(setting, wraparound) != 0)
       return -1;
 
    return 0;
 }
 
-static int setting_generic_action_ok_linefeed(void *data)
+static int setting_generic_action_ok_linefeed(void *data, bool wraparound)
 {
    input_keyboard_line_complete_t cb = NULL;
    rarch_setting_t *setting = (rarch_setting_t*)data;
 
    if (!setting)
       return -1;
+
+   (void)wraparound;
 
    switch (setting->type)
    {
@@ -1258,12 +1270,14 @@ static int setting_generic_action_ok_linefeed(void *data)
    return 0;
 }
 
-static int setting_action_action_ok(void *data)
+static int setting_action_action_ok(void *data, bool wraparound)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
 
    if (!setting)
       return -1;
+
+   (void)wraparound;
 
    if (setting->cmd_trigger.idx != EVENT_CMD_NONE)
       event_command(setting->cmd_trigger.idx);
@@ -1271,9 +1285,10 @@ static int setting_action_action_ok(void *data)
    return 0;
 }
 
-static int setting_bind_action_ok(void *data)
+static int setting_bind_action_ok(void *data, bool wraparound)
 {
    global_t      *global     = global_get_ptr();
+   (void)wraparound;
 
    if (global->menu.bind_mode_keyboard)
       menu_input_set_keyboard_bind_mode(data, MENU_INPUT_BIND_SINGLE);
@@ -1641,6 +1656,7 @@ static rarch_setting_t setting_action_setting(const char* name,
    result.action_left               = NULL;
    result.action_right              = NULL;
    result.action_ok                 = setting_action_action_ok;
+   result.action_select             = setting_action_action_ok;
    result.action_cancel             = NULL;
 
    return result;
@@ -1734,6 +1750,7 @@ static rarch_setting_t setting_float_setting(const char* name,
    result.action_left             = setting_fraction_action_left_default;
    result.action_right            = setting_fraction_action_right_default;
    result.action_ok               = setting_generic_action_ok_default;
+   result.action_select           = setting_generic_action_ok_default;
    result.action_cancel           = NULL;
 
    result.get_string_representation       = &setting_get_string_representation_st_float;
@@ -1785,6 +1802,7 @@ static rarch_setting_t setting_bool_setting(const char* name,
    result.action_left            = setting_bool_action_toggle_default;
    result.action_right           = setting_bool_action_toggle_default;
    result.action_ok              = setting_generic_action_ok_default;
+   result.action_select          = setting_generic_action_ok_default;
    result.action_cancel          = NULL;
 
    result.get_string_representation       = &setting_get_string_representation_st_bool;
@@ -1869,6 +1887,7 @@ static rarch_setting_t setting_uint_setting(const char* name,
    result.action_left                     = setting_uint_action_left_default;
    result.action_right                    = setting_uint_action_right_default;
    result.action_ok                       = setting_generic_action_ok_default;
+   result.action_select                   = setting_generic_action_ok_default;
    result.action_cancel                   = NULL;
    result.get_string_representation       = &setting_get_string_representation_uint;
 
@@ -1913,6 +1932,7 @@ static rarch_setting_t setting_hex_setting(const char* name,
    result.action_left                     = NULL;
    result.action_right                    = NULL;
    result.action_ok                       = setting_generic_action_ok_default;
+   result.action_select                   = setting_generic_action_ok_default;
    result.action_cancel                   = NULL;
    result.get_string_representation       = &setting_get_string_representation_hex;
 
@@ -1955,6 +1975,7 @@ static rarch_setting_t setting_bind_setting(const char* name,
    result.index_offset          = idx_offset;
    result.action_start          = setting_bind_action_start;
    result.action_ok             = setting_bind_action_ok;
+   result.action_select         = setting_bind_action_ok;
    result.action_cancel         = NULL;
    result.get_string_representation       = &setting_get_string_representation_st_bind;
 
@@ -3394,6 +3415,7 @@ static void setting_add_special_callbacks(
    if (values & SD_FLAG_ALLOW_INPUT)
    {
       (*list)[idx].action_ok     = setting_generic_action_ok_linefeed;
+      (*list)[idx].action_select = setting_generic_action_ok_linefeed;
 
       switch ((*list)[idx].type)
       {
@@ -3582,6 +3604,7 @@ static bool setting_append_list_main_menu_options(
       (*list)[list_info->index - 1].action_right  = &setting_action_right_savestates;
       (*list)[list_info->index - 1].action_start  = &setting_action_start_savestates;
       (*list)[list_info->index - 1].action_ok     = &setting_bool_action_ok_exit;
+      (*list)[list_info->index - 1].action_select = &setting_bool_action_ok_exit;
       (*list)[list_info->index - 1].get_string_representation = &get_string_representation_savestate;
       menu_settings_list_current_add_cmd  (list, list_info, EVENT_CMD_SAVE_STATE);
 
@@ -3594,6 +3617,7 @@ static bool setting_append_list_main_menu_options(
       (*list)[list_info->index - 1].action_right  = &setting_action_left_savestates;
       (*list)[list_info->index - 1].action_start  = &setting_action_start_savestates;
       (*list)[list_info->index - 1].action_ok     = &setting_bool_action_ok_exit;
+      (*list)[list_info->index - 1].action_select = &setting_bool_action_ok_exit;
       (*list)[list_info->index - 1].get_string_representation = &get_string_representation_savestate;
       menu_settings_list_current_add_cmd  (list, list_info, EVENT_CMD_LOAD_STATE);
 
@@ -3611,6 +3635,7 @@ static bool setting_append_list_main_menu_options(
             subgroup_info.name);
       menu_settings_list_current_add_cmd  (list, list_info, EVENT_CMD_RESUME);
       (*list)[list_info->index - 1].action_ok     = &setting_bool_action_ok_exit;
+      (*list)[list_info->index - 1].action_select = &setting_bool_action_ok_exit;
 
       CONFIG_ACTION(
             "restart_content",
@@ -3618,7 +3643,8 @@ static bool setting_append_list_main_menu_options(
             group_info.name,
             subgroup_info.name);
       menu_settings_list_current_add_cmd(list, list_info, EVENT_CMD_RESET);
-      (*list)[list_info->index - 1].action_ok = &setting_bool_action_ok_exit;
+      (*list)[list_info->index - 1].action_ok = 
+      (*list)[list_info->index - 1].action_select = &setting_bool_action_ok_exit;
    }
 #ifndef HAVE_DYNAMIC
    CONFIG_ACTION(
@@ -4411,10 +4437,9 @@ static bool setting_append_list_video_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
-   (*list)[list_info->index - 1].action_start = 
-      &setting_action_start_video_refresh_rate_auto;
-   (*list)[list_info->index - 1].action_ok = 
-      &setting_action_ok_video_refresh_rate_auto;
+   (*list)[list_info->index - 1].action_start  = &setting_action_start_video_refresh_rate_auto;
+   (*list)[list_info->index - 1].action_ok     = &setting_action_ok_video_refresh_rate_auto;
+   (*list)[list_info->index - 1].action_select = &setting_action_ok_video_refresh_rate_auto;
    (*list)[list_info->index - 1].get_string_representation = 
       &setting_get_string_representation_st_float_video_refresh_rate_auto;
 
@@ -5309,9 +5334,10 @@ static bool setting_append_list_input_options(
             general_read_handler);
       (*list)[list_info->index - 1].index = user + 1;
       (*list)[list_info->index - 1].index_offset = user;
-      (*list)[list_info->index - 1].action_left  = &setting_action_left_libretro_device_type;
-      (*list)[list_info->index - 1].action_right = &setting_action_right_libretro_device_type;
-      (*list)[list_info->index - 1].action_start = &setting_action_start_libretro_device_type;
+      (*list)[list_info->index - 1].action_left   = &setting_action_left_libretro_device_type;
+      (*list)[list_info->index - 1].action_right  = &setting_action_right_libretro_device_type;
+      (*list)[list_info->index - 1].action_select = &setting_action_right_libretro_device_type;
+      (*list)[list_info->index - 1].action_start  = &setting_action_start_libretro_device_type;
       (*list)[list_info->index - 1].get_string_representation = 
          &setting_get_string_representation_uint_libretro_device;
 
@@ -5328,6 +5354,7 @@ static bool setting_append_list_input_options(
       (*list)[list_info->index - 1].index_offset = user;
       (*list)[list_info->index - 1].action_left   = &setting_action_left_analog_dpad_mode;
       (*list)[list_info->index - 1].action_right  = &setting_action_right_analog_dpad_mode;
+      (*list)[list_info->index - 1].action_select = &setting_action_right_analog_dpad_mode;
       (*list)[list_info->index - 1].action_start = &setting_action_start_analog_dpad_mode;
       (*list)[list_info->index - 1].get_string_representation = 
          &setting_get_string_representation_uint_analog_dpad_mode;
@@ -5342,6 +5369,7 @@ static bool setting_append_list_input_options(
       (*list)[list_info->index - 1].action_start  = &setting_action_start_bind_device;
       (*list)[list_info->index - 1].action_left   = &setting_action_left_bind_device;
       (*list)[list_info->index - 1].action_right  = &setting_action_right_bind_device;
+      (*list)[list_info->index - 1].action_select = &setting_action_right_bind_device;
       (*list)[list_info->index - 1].get_string_representation = &get_string_representation_bind_device;
 
       CONFIG_ACTION(
@@ -7012,7 +7040,7 @@ bool menu_setting_is_of_path_type(rarch_setting_t *setting)
          setting &&
          setting->type == ST_ACTION &&
          (setting->flags & SD_FLAG_BROWSER_ACTION) &&
-         (setting->action_right || setting->action_left) &&
+         (setting->action_right || setting->action_left || setting->action_select) &&
          setting->change_handler)
       return true;
    return false;

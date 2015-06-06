@@ -326,7 +326,7 @@ int menu_entry_pathdir_set_value(uint32_t i, const char *s)
    (void)s;
    setting_set_with_string_representation(setting, menu_path);
 
-   menu_setting_generic(setting);
+   menu_setting_generic(setting, false);
 
    menu_list_pop_stack_by_needle(menu_list, setting->name);
 

@@ -110,7 +110,8 @@ typedef int  (*action_down_handler_t          )(void *data);
 typedef int  (*action_start_handler_t         )(void *data);
 typedef int  (*action_iterate_handler_t       )(unsigned action);
 typedef int  (*action_cancel_handler_t        )(void *data);
-typedef int  (*action_ok_handler_t            )(void *data);
+typedef int  (*action_ok_handler_t            )(void *data, bool wraparound);
+typedef int  (*action_select_handler_t        )(void *data, bool wraparound);
 typedef void (*get_string_representation_t    )(void *data, char *s, size_t len);
 
 typedef struct rarch_setting_info
@@ -155,6 +156,7 @@ typedef struct rarch_setting
    action_down_handler_t         action_down;
    action_cancel_handler_t       action_cancel;
    action_ok_handler_t           action_ok;
+   action_select_handler_t       action_select;
    get_string_representation_t   get_string_representation;
 
    union
@@ -217,7 +219,7 @@ void menu_setting_apply_deferred(void);
 
 int menu_setting_set_flags(rarch_setting_t *setting);
 
-int menu_setting_generic(rarch_setting_t *setting);
+int menu_setting_generic(rarch_setting_t *setting, bool wraparound);
 
 int menu_setting_set(unsigned type, const char *label,
       unsigned action, bool wraparound);

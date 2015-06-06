@@ -134,7 +134,7 @@ void menu_input_st_string_callback(void *userdata, const char *str)
       if ((current_setting = menu_setting_find(menu->keyboard.label_setting)))
       {
          setting_set_with_string_representation(current_setting, str);
-         menu_setting_generic(current_setting);
+         menu_setting_generic(current_setting, false);
       }
       else
       {
