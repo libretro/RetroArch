@@ -1809,12 +1809,7 @@ static void xmb_navigation_set(bool scroll)
    xmb_selection_pointer_changed();
 }
 
-static void xmb_navigation_descend_alphabet(size_t *unused)
-{
-   xmb_selection_pointer_changed();
-}
-
-static void xmb_navigation_ascend_alphabet(size_t *unused)
+static void xmb_navigation_alphabet(size_t *unused)
 {
    xmb_selection_pointer_changed();
 }
@@ -2029,8 +2024,8 @@ menu_ctx_driver_t menu_ctx_xmb = {
    xmb_navigation_pointer_changed,
    xmb_navigation_set,
    xmb_navigation_pointer_changed,
-   xmb_navigation_descend_alphabet,
-   xmb_navigation_ascend_alphabet,
+   xmb_navigation_alphabet,
+   xmb_navigation_alphabet,
    xmb_list_insert,
    xmb_list_delete,
    NULL,
