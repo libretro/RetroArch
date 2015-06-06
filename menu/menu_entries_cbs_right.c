@@ -66,7 +66,7 @@ static int shader_action_parameter_preset_right(unsigned type, const char *label
    return 0;
 }
 
-static int action_right_cheat(unsigned type, const char *label,
+int action_right_cheat(unsigned type, const char *label,
       bool wraparound)
 {
    global_t *global       = global_get_ptr();
@@ -82,7 +82,7 @@ static int action_right_cheat(unsigned type, const char *label,
    return 0;
 }
 
-static int action_right_input_desc(unsigned type, const char *label,
+int action_right_input_desc(unsigned type, const char *label,
       bool wraparound)
 {
    unsigned inp_desc_index_offset = type - MENU_SETTINGS_INPUT_DESC_BEGIN;

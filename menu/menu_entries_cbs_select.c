@@ -63,6 +63,18 @@ static int action_select_core_setting(const char *path, const char *label, unsig
    return core_setting_right(type, label, true);
 }
 
+static int action_select_cheat(const char *path, const char *label, unsigned type,
+      size_t idx)
+{
+   return action_right_cheat(type, label, true);
+}
+
+static int action_select_input_desc(const char *path, const char *label, unsigned type,
+      size_t idx)
+{
+   return action_right_input_desc(type, label, true);
+}
+
 void menu_entries_cbs_init_bind_select(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx,
       const char *elem0, const char *elem1,
@@ -73,7 +85,13 @@ void menu_entries_cbs_init_bind_select(menu_file_list_cbs_t *cbs,
 
    cbs->action_select = action_select_default;
 
-   if ((type >= MENU_SETTINGS_CORE_OPTION_START))
+   if (type >= MENU_SETTINGS_CHEAT_BEGIN
+         && type <= MENU_SETTINGS_CHEAT_END)
+      cbs->action_select = action_select_cheat;
+   else if (type >= MENU_SETTINGS_INPUT_DESC_BEGIN
+         && type <= MENU_SETTINGS_INPUT_DESC_END)
+      cbs->action_select = action_select_input_desc;
+   else if ((type >= MENU_SETTINGS_CORE_OPTION_START))
       cbs->action_select = action_select_core_setting;
    else
    {

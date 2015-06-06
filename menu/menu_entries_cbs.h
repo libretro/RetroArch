@@ -35,6 +35,12 @@ extern char core_updater_path[PATH_MAX_LENGTH];
 
 int core_setting_right(unsigned type, const char *label,
       bool wraparound);
+
+int action_right_input_desc(unsigned type, const char *label,
+      bool wraparound);
+
+int action_right_cheat(unsigned type, const char *label,
+      bool wraparound);
 /* End of function callbacks */
 
 void menu_entries_common_load_content(bool persist);
