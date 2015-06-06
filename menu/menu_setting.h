@@ -103,14 +103,14 @@ enum setting_list_flags
 #define SL_FLAG_ALL_SETTINGS (SL_FLAG_ALL - SL_FLAG_MAIN_MENU)
 
 typedef void (*change_handler_t               )(void *data);
-typedef int  (*action_left_handler_t          )(void *data, unsigned action, bool wraparound);
-typedef int  (*action_right_handler_t         )(void *data, unsigned action, bool wraparound);
-typedef int  (*action_up_handler_t            )(void *data, unsigned action);
-typedef int  (*action_down_handler_t          )(void *data, unsigned action);
+typedef int  (*action_left_handler_t          )(void *data, bool wraparound);
+typedef int  (*action_right_handler_t         )(void *data, bool wraparound);
+typedef int  (*action_up_handler_t            )(void *data);
+typedef int  (*action_down_handler_t          )(void *data);
 typedef int  (*action_start_handler_t         )(void *data);
 typedef int  (*action_iterate_handler_t       )(unsigned action);
-typedef int  (*action_cancel_handler_t        )(void *data, unsigned action);
-typedef int  (*action_ok_handler_t            )(void *data, unsigned action);
+typedef int  (*action_cancel_handler_t        )(void *data);
+typedef int  (*action_ok_handler_t            )(void *data);
 typedef void (*get_string_representation_t    )(void *data, char *s, size_t len);
 
 typedef struct rarch_setting_info

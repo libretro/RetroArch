@@ -167,7 +167,7 @@ int menu_setting_set_flags(rarch_setting_t *setting)
    return 0;
 }
 
-static int setting_generic_action_ok_default(void *data, unsigned action)
+static int setting_generic_action_ok_default(void *data)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
 
@@ -182,7 +182,7 @@ static int setting_generic_action_ok_default(void *data, unsigned action)
 
 int menu_setting_generic(rarch_setting_t *setting)
 {
-   if (setting_generic_action_ok_default(setting, 0) != 0)
+   if (setting_generic_action_ok_default(setting) != 0)
       return -1;
 
    if (setting->change_handler)
@@ -207,27 +207,27 @@ static int setting_handler(rarch_setting_t *setting, unsigned action)
    {
       case MENU_ACTION_UP:
          if (setting->action_up)
-            return setting->action_up(setting, action);
+            return setting->action_up(setting);
          break;
       case MENU_ACTION_DOWN:
          if (setting->action_down)
-            return setting->action_down(setting, action);
+            return setting->action_down(setting);
          break;
       case MENU_ACTION_LEFT:
          if (setting->action_left)
-            return setting->action_left(setting, action, true);
+            return setting->action_left(setting, true);
          break;
       case MENU_ACTION_RIGHT:
          if (setting->action_right)
-            return setting->action_right(setting, action, true);
+            return setting->action_right(setting, true);
          break;
       case MENU_ACTION_OK:
          if (setting->action_ok)
-            return setting->action_ok(setting, action);
+            return setting->action_ok(setting);
          break;
       case MENU_ACTION_CANCEL:
          if (setting->action_cancel)
-            return setting->action_cancel(setting, action);
+            return setting->action_cancel(setting);
          break;
       case MENU_ACTION_START:
          if (setting->action_start)
@@ -746,8 +746,7 @@ static int setting_bind_action_start(void *data)
  ******* ACTION TOGGLE CALLBACK FUNCTIONS *******
 **/
 
-static int setting_action_left_analog_dpad_mode(void *data,
-      unsigned action, bool wraparound)
+static int setting_action_left_analog_dpad_mode(void *data, bool wraparound)
 {
    unsigned port = 0;
    rarch_setting_t *setting  = (rarch_setting_t*)data;
@@ -765,8 +764,7 @@ static int setting_action_left_analog_dpad_mode(void *data,
    return 0;
 }
 
-static int setting_action_right_analog_dpad_mode(void *data,
-      unsigned action, bool wraparound)
+static int setting_action_right_analog_dpad_mode(void *data, bool wraparound)
 {
    unsigned port = 0;
    rarch_setting_t *setting  = (rarch_setting_t*)data;
@@ -785,7 +783,7 @@ static int setting_action_right_analog_dpad_mode(void *data,
 }
 
 static int setting_action_left_libretro_device_type(
-      void *data, unsigned action, bool wraparound)
+      void *data, bool wraparound)
 {
    unsigned current_device, current_idx, i, devices[128],
             types = 0, port = 0;
@@ -843,7 +841,7 @@ static int setting_action_left_libretro_device_type(
 }
 
 static int setting_action_right_libretro_device_type(
-      void *data, unsigned action, bool wraparound)
+      void *data, bool wraparound)
 {
    unsigned current_device, current_idx, i, devices[128],
             types = 0, port = 0;
@@ -901,7 +899,7 @@ static int setting_action_right_libretro_device_type(
 }
 
 static int setting_action_left_savestates(
-      void *data, unsigned action, bool wraparound)
+      void *data, bool wraparound)
 {
    rarch_setting_t *setting  = (rarch_setting_t*)data;
    settings_t      *settings = config_get_ptr();
@@ -917,7 +915,7 @@ static int setting_action_left_savestates(
 }
 
 static int setting_action_right_savestates(
-      void *data, unsigned action, bool wraparound)
+      void *data, bool wraparound)
 {
    rarch_setting_t *setting  = (rarch_setting_t*)data;
    settings_t      *settings = config_get_ptr();
@@ -930,8 +928,7 @@ static int setting_action_right_savestates(
    return 0;
 }
 
-static int setting_action_left_bind_device(void *data,
-      unsigned action, bool wraparound)
+static int setting_action_left_bind_device(void *data, bool wraparound)
 {
    unsigned               *p = NULL;
    rarch_setting_t *setting  = (rarch_setting_t*)data;
@@ -950,8 +947,7 @@ static int setting_action_left_bind_device(void *data,
    return 0;
 }
 
-static int setting_action_right_bind_device(void *data,
-      unsigned action, bool wraparound)
+static int setting_action_right_bind_device(void *data, bool wraparound)
 {
    unsigned *p = NULL;
    rarch_setting_t *setting  = (rarch_setting_t*)data;
@@ -968,8 +964,7 @@ static int setting_action_right_bind_device(void *data,
    return 0;
 }
 
-static int setting_bool_action_toggle_default(void *data,
-      unsigned action, bool wraparound)
+static int setting_bool_action_toggle_default(void *data, bool wraparound)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
 
@@ -981,8 +976,7 @@ static int setting_bool_action_toggle_default(void *data,
    return 0;
 }
 
-static int setting_uint_action_left_default(void *data,
-      unsigned action, bool wraparound)
+static int setting_uint_action_left_default(void *data, bool wraparound)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
 
@@ -1002,8 +996,7 @@ static int setting_uint_action_left_default(void *data,
    return 0;
 }
 
-static int setting_uint_action_right_default(void *data,
-      unsigned action, bool wraparound)
+static int setting_uint_action_right_default(void *data, bool wraparound)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
 
@@ -1023,7 +1016,7 @@ static int setting_uint_action_right_default(void *data,
 }
 
 static int setting_fraction_action_left_default(
-      void *data, unsigned action, bool wraparound)
+      void *data, bool wraparound)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
 
@@ -1043,7 +1036,7 @@ static int setting_fraction_action_left_default(
 }
 
 static int setting_fraction_action_right_default(
-      void *data, unsigned action, bool wraparound)
+      void *data, bool wraparound)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
 
@@ -1063,7 +1056,7 @@ static int setting_fraction_action_right_default(
 }
 
 static int setting_string_action_left_driver(void *data,
-      unsigned action, bool wraparound)
+      bool wraparound)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
 
@@ -1082,7 +1075,7 @@ static int setting_string_action_left_driver(void *data,
 }
 
 static int setting_string_action_right_driver(void *data,
-      unsigned action, bool wraparound)
+      bool wraparound)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
 
@@ -1099,7 +1092,7 @@ static int setting_string_action_right_driver(void *data,
 }
 
 #if defined(HAVE_DYNAMIC) || defined(HAVE_LIBRETRO_MANAGEMENT)
-static int core_list_action_toggle(void *data, unsigned action, bool wraparound)
+static int core_list_action_toggle(void *data, bool wraparound)
 {
    rarch_setting_t *setting  = (rarch_setting_t *)data;
    settings_t      *settings = config_get_ptr();
@@ -1124,8 +1117,7 @@ static int core_list_action_toggle(void *data, unsigned action, bool wraparound)
  *
  * Returns: 0 on success, -1 on error.
  **/
-static int load_content_action_toggle(void *data, unsigned action,
-      bool wraparound)
+static int load_content_action_toggle(void *data, bool wraparound)
 {
    rarch_setting_t *setting  = (rarch_setting_t *)data;
    settings_t      *settings = config_get_ptr();
@@ -1146,7 +1138,7 @@ static int load_content_action_toggle(void *data, unsigned action,
  ******* ACTION OK CALLBACK FUNCTIONS *******
 **/
 
-static int setting_action_ok_bind_all(void *data, unsigned action)
+static int setting_action_ok_bind_all(void *data)
 {
    global_t      *global     = global_get_ptr();
 
@@ -1161,7 +1153,7 @@ static int setting_action_ok_bind_all(void *data, unsigned action)
    return 0;
 }
 
-static int setting_action_ok_bind_defaults(void *data, unsigned action)
+static int setting_action_ok_bind_defaults(void *data)
 {
    unsigned i;
    struct retro_keybind *target = NULL;
@@ -1202,9 +1194,9 @@ static int setting_action_ok_bind_defaults(void *data, unsigned action)
    return 0;
 }
 
-static int setting_bool_action_ok_exit(void *data, unsigned action)
+static int setting_bool_action_ok_exit(void *data)
 {
-   if (setting_generic_action_ok_default(data, 0) != 0)
+   if (setting_generic_action_ok_default(data) != 0)
       return -1;
 
    event_command(EVENT_CMD_RESUME);
@@ -1213,8 +1205,7 @@ static int setting_bool_action_ok_exit(void *data, unsigned action)
 }
 
 
-static int setting_action_ok_video_refresh_rate_auto(
-      void *data, unsigned action)
+static int setting_action_ok_video_refresh_rate_auto(void *data)
 {
    double video_refresh_rate = 0.0;
    double deviation          = 0.0;
@@ -1232,13 +1223,13 @@ static int setting_action_ok_video_refresh_rate_auto(
       event_command(EVENT_CMD_VIDEO_SET_BLOCKING_STATE);
    }
 
-   if (setting_generic_action_ok_default(setting, 0) != 0)
+   if (setting_generic_action_ok_default(setting) != 0)
       return -1;
 
    return 0;
 }
 
-static int setting_generic_action_ok_linefeed(void *data, unsigned action)
+static int setting_generic_action_ok_linefeed(void *data)
 {
    input_keyboard_line_complete_t cb = NULL;
    rarch_setting_t *setting = (rarch_setting_t*)data;
@@ -1267,7 +1258,7 @@ static int setting_generic_action_ok_linefeed(void *data, unsigned action)
    return 0;
 }
 
-static int setting_action_action_ok(void *data, unsigned action)
+static int setting_action_action_ok(void *data)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
 
@@ -1280,7 +1271,7 @@ static int setting_action_action_ok(void *data, unsigned action)
    return 0;
 }
 
-static int setting_bind_action_ok(void *data, unsigned action)
+static int setting_bind_action_ok(void *data)
 {
    global_t      *global     = global_get_ptr();
 
