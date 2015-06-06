@@ -3520,9 +3520,10 @@ static bool setting_append_list_main_menu_options(
          group_info.name,
          subgroup_info.name);
    (*list)[list_info->index - 1].size = sizeof(global->fullpath);
-   (*list)[list_info->index - 1].value.string = global->fullpath;
-   (*list)[list_info->index - 1].action_left   = load_content_action_toggle;
-   (*list)[list_info->index - 1].action_right  = load_content_action_toggle;
+   (*list)[list_info->index - 1].value.string   = global->fullpath;
+   (*list)[list_info->index - 1].action_left    = load_content_action_toggle;
+   (*list)[list_info->index - 1].action_right   = load_content_action_toggle;
+   (*list)[list_info->index - 1].action_select  = load_content_action_toggle;
    menu_settings_list_current_add_cmd(list, list_info, EVENT_CMD_LOAD_CONTENT);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_BROWSER_ACTION);
 
