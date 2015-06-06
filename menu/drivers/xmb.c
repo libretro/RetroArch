@@ -1006,7 +1006,7 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
    {
       float icon_x, icon_y;
       char name[PATH_MAX_LENGTH], value[PATH_MAX_LENGTH];
-      menu_entry_t entry     = {0};
+      menu_entry_t entry     = {{0}};
       GLuint texture_switch  = 0;
       GLuint         icon    = 0;
       xmb_node_t *   node    = (xmb_node_t*)file_list_get_userdata_at_offset(list, i);
@@ -1554,19 +1554,101 @@ static bool xmb_load_image(void *data, menu_image_type_t type)
    return true;
 }
 
+static void xmb_context_reset_horizontal_list(xmb_handle_t *xmb,
+   const char *themepath)
+{
+   char iconpath[PATH_MAX_LENGTH];
+   unsigned i;
+   global_t   *global          = global_get_ptr();
+   menu_handle_t *menu         = menu_driver_get_ptr();
+   core_info_list_t *info_list = global ? 
+      (core_info_list_t*)global->core_info : NULL;
+
+   if (!info_list)
+      return;
+
+   for (i = 1; i < menu->categories.size; i++)
+   {
+      char core_id[PATH_MAX_LENGTH];
+      char texturepath[PATH_MAX_LENGTH], content_texturepath[PATH_MAX_LENGTH];
+      core_info_t *info           = NULL;
+      struct texture_image ti     = {0};
+      xmb_node_t *node            = xmb_get_userdata_from_core(
+         xmb, info, i - 1);
+
+      if (!node)
+      {
+         node = xmb_node_allocate_userdata(xmb, info, i - 1);
+         if (!node)
+            continue;
+      }
+
+      fill_pathname_join(iconpath, themepath, xmb->icon.dir, sizeof(iconpath));
+      fill_pathname_slash(iconpath, sizeof(iconpath));
+
+      info = (core_info_t*)&info_list->list[i-1];
+
+      if (!info)
+         continue;
+
+      if (info->systemname)
+      {
+         char *tmp = string_replace_substring(info->systemname, "/", " ");
+
+         if (tmp)
+         {
+            strlcpy(core_id, tmp, sizeof(core_id));
+            free(tmp);
+         }
+      }
+      else
+         strlcpy(core_id, "default", sizeof(core_id));
+
+      strlcpy(texturepath, iconpath, sizeof(texturepath));
+      strlcat(texturepath, core_id, sizeof(texturepath));
+      strlcat(texturepath, ".png", sizeof(texturepath));
+
+      strlcpy(content_texturepath, iconpath, sizeof(content_texturepath));
+      strlcat(content_texturepath, core_id, sizeof(content_texturepath));
+      strlcat(content_texturepath, "-content.png", sizeof(content_texturepath));
+
+      node->alpha        = 0;
+      node->zoom         = xmb->categories.passive.zoom;
+
+      texture_image_load(&ti, texturepath);
+
+      node->icon         = video_texture_load(&ti,
+            TEXTURE_BACKEND_OPENGL, TEXTURE_FILTER_MIPMAP_LINEAR);
+
+      texture_image_free(&ti);
+      texture_image_load(&ti, content_texturepath);
+
+      node->content_icon = video_texture_load(&ti,
+            TEXTURE_BACKEND_OPENGL, TEXTURE_FILTER_MIPMAP_LINEAR);
+
+      texture_image_free(&ti);
+
+      if (i == xmb->categories.active.idx)
+      {
+         node->alpha = xmb->categories.active.alpha;
+         node->zoom  = xmb->categories.active.zoom;
+      }
+      else if (xmb->depth <= 1)
+         node->alpha = xmb->categories.passive.alpha;
+   }
+}
+
 static void xmb_context_reset(void)
 {
-   unsigned i, k;
+   unsigned k;
    char mediapath[PATH_MAX_LENGTH], themepath[PATH_MAX_LENGTH],
         iconpath[PATH_MAX_LENGTH],  fontpath[PATH_MAX_LENGTH];
 
    struct texture_image ti     = {0};
-   core_info_list_t* info_list = NULL;
    gl_t *gl                    = NULL;
    xmb_handle_t *xmb           = NULL;
    menu_handle_t *menu         = menu_driver_get_ptr();
    settings_t *settings        = config_get_ptr();
-   global_t   *global          = global_get_ptr();
 
    if (!menu)
       return;
@@ -1672,80 +1754,7 @@ static void xmb_context_reset(void)
    xmb->settings_node.alpha = xmb->categories.active.alpha;
    xmb->settings_node.zoom  = xmb->categories.active.zoom;
 
-   info_list = global ? (core_info_list_t*)global->core_info : NULL;
-
-   if (!info_list)
-      return;
-
-   for (i = 1; i < menu->categories.size; i++)
-   {
-      char core_id[PATH_MAX_LENGTH];
-      char texturepath[PATH_MAX_LENGTH], content_texturepath[PATH_MAX_LENGTH];
-      core_info_t *info           = NULL;
-      struct texture_image ti     = {0};
-      xmb_node_t *node            = xmb_get_userdata_from_core(
-         xmb, info, i - 1);
-
-      if (!node)
-      {
-         node = xmb_node_allocate_userdata(xmb, info, i - 1);
-         if (!node)
-            continue;
-      }
-
-      fill_pathname_join(iconpath, themepath, xmb->icon.dir, sizeof(iconpath));
-      fill_pathname_slash(iconpath, sizeof(iconpath));
-
-      info = (core_info_t*)&info_list->list[i-1];
-
-      if (!info)
-         continue;
-
-      if (info->systemname)
-      {
-         char *tmp = string_replace_substring(info->systemname, "/", " ");
-
-         if (tmp)
-         {
-            strlcpy(core_id, tmp, sizeof(core_id));
-            free(tmp);
-         }
-      }
-      else
-         strlcpy(core_id, "default", sizeof(core_id));
-
-      strlcpy(texturepath, iconpath, sizeof(texturepath));
-      strlcat(texturepath, core_id, sizeof(texturepath));
-      strlcat(texturepath, ".png", sizeof(texturepath));
-
-      strlcpy(content_texturepath, iconpath, sizeof(content_texturepath));
-      strlcat(content_texturepath, core_id, sizeof(content_texturepath));
-      strlcat(content_texturepath, "-content.png", sizeof(content_texturepath));
-
-      node->alpha        = 0;
-      node->zoom         = xmb->categories.passive.zoom;
-
-      texture_image_load(&ti, texturepath);
-
-      node->icon         = video_texture_load(&ti,
-            TEXTURE_BACKEND_OPENGL, TEXTURE_FILTER_MIPMAP_LINEAR);
-
-      texture_image_free(&ti);
-      texture_image_load(&ti, content_texturepath);
-
-      node->content_icon = video_texture_load(&ti,
-            TEXTURE_BACKEND_OPENGL, TEXTURE_FILTER_MIPMAP_LINEAR);
-
-      texture_image_free(&ti);
-
-      if (i == xmb->categories.active.idx)
-      {
-         node->alpha = xmb->categories.active.alpha;
-         node->zoom  = xmb->categories.active.zoom;
-      }
-      else if (xmb->depth <= 1)
-         node->alpha = xmb->categories.passive.alpha;
-   }
+   xmb_context_reset_horizontal_list(xmb, themepath);
 }
 
 static void xmb_navigation_clear(bool pending_push)
