@@ -228,6 +228,15 @@ static int action_get_title_default(const char *path, const char *label,
       case MENU_LABEL_CURSOR_DIRECTORY:
          snprintf(s, len, "CURSOR DIR %s", path);
          break;
+      case MENU_LABEL_RECORDING_CONFIG_DIRECTORY:
+         snprintf(s, len, "RECORDING CONFIG DIR %s", path);
+         break;
+      case MENU_LABEL_RECORDING_OUTPUT_DIRECTORY:
+         snprintf(s, len, "RECORDING OUTPUT DIR %s", path);
+         break;
+      case MENU_LABEL_OSK_OVERLAY_DIRECTORY:
+         snprintf(s, len, "OSK OVERLAY DIR %s", path);
+         break;
       case MENU_LABEL_CHEAT_DATABASE_PATH:
          snprintf(s, len, "CHEAT DIR %s", path);
          break;

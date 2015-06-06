@@ -257,6 +257,9 @@ extern "C" {
 #define MENU_LABEL_INPUT_OSK_OVERLAY                                           0x11f1c582U
 #define MENU_LABEL_CHEAT_DATABASE_PATH                                         0x01388b8aU
 #define MENU_LABEL_CURSOR_DIRECTORY                                            0xdee8d377U
+#define MENU_LABEL_OSK_OVERLAY_DIRECTORY                                       0xcce86287U
+#define MENU_LABEL_RECORDING_OUTPUT_DIRECTORY                                  0x30bece06U
+#define MENU_LABEL_RECORDING_CONFIG_DIRECTORY                                  0x3c3f274bU
 #define MENU_LABEL_VIDEO_FONT_PATH                                             0xd0de729eU
 #define MENU_LABEL_VIDEO_FILTER                                                0x1c0eb741U
 #define MENU_LABEL_MENU_WALLPAPER                                              0x3b84de01U
