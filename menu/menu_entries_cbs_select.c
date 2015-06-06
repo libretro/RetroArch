@@ -24,27 +24,11 @@ static int action_select_default(const char *path, const char *label, unsigned t
       size_t idx)
 {
    int ret = 0;
-   menu_entry_t entry;
-   enum menu_action action   = MENU_ACTION_NOOP;
-   menu_file_list_cbs_t *cbs = NULL;
-   menu_list_t    *menu_list = menu_list_get_ptr();
-   rarch_setting_t *setting  = menu_setting_find(
-         menu_list->selection_buf->list[idx].label);
+   menu_entry_t entry = {{0}};
 
    menu_entry_get(&entry, idx, NULL, false);
 
-   cbs = menu_list_get_actiondata_at_offset(menu_list->selection_buf, idx);
-
-   if ((cbs && cbs->action_ok) || menu_setting_is_of_general_type(setting))
-       action = MENU_ACTION_OK;
-   else { if (cbs && cbs->action_start)
-         action = MENU_ACTION_START;
-      if (cbs && cbs->action_right)
-         action = MENU_ACTION_RIGHT;
-   }
-    
-   if (action != MENU_ACTION_NOOP)
-       ret = menu_entry_action(&entry, idx, action);
+   ret = menu_entry_action(&entry, idx, MENU_ACTION_SELECT);
 
    rarch_main_data_iterate();
     
