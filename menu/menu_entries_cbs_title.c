@@ -185,6 +185,9 @@ static int action_get_title_default(const char *path, const char *label,
       case MENU_LABEL_REMAP_FILE_LOAD:
          snprintf(s, len, "REMAP FILE %s", path);
          break;
+      case MENU_LABEL_CONTENT_COLLECTION_LIST:
+         snprintf(s, len, "CONTENT COLLECTION LIST");
+         break;
       case MENU_LABEL_CUSTOM_VIEWPORT_2:
       case MENU_LABEL_HELP:
          snprintf(s, len, "MENU %s", path);
