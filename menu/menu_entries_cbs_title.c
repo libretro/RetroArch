@@ -74,6 +74,17 @@ static int action_get_title_default(const char *path, const char *label,
    RARCH_LOG("label %s, elem0 %s, elem1 %s\n", label, elem0, elem1);
 #endif
 
+   if (menu_entries_common_is_settings_entry(label) == 1)
+   {
+      strlcpy(s, string_to_upper(elem0), len);
+      if (elem1[0] != '\0')
+      {
+         strlcat(s, " - ", len);
+         strlcat(s, string_to_upper(elem1), len);
+      }
+      return 0;
+   }
+    
    hash = djb2_calculate(label);
 
    switch (hash)
@@ -240,39 +251,6 @@ static int action_get_title_default(const char *path, const char *label,
          break;
       case MENU_LABEL_JOYPAD_AUTOCONFIG_DIR:
          snprintf(s, len, "AUTOCONFIG DIR %s", path);
-         break;
-      case MENU_LABEL_DRIVER_SETTINGS:
-      case MENU_LABEL_CORE_SETTINGS:
-      case MENU_LABEL_CONFIGURATION_SETTINGS:
-      case MENU_LABEL_LOGGING_SETTINGS:
-      case MENU_LABEL_SAVING_SETTINGS:
-      case MENU_LABEL_REWIND_SETTINGS:
-      case MENU_LABEL_VIDEO_SETTINGS:
-      case MENU_LABEL_RECORDING_SETTINGS:
-      case MENU_LABEL_FRAME_THROTTLE_SETTINGS:
-      case MENU_LABEL_SHADER_SETTINGS:
-      case MENU_LABEL_FONT_SETTINGS:
-      case MENU_LABEL_AUDIO_SETTINGS:
-      case MENU_LABEL_INPUT_SETTINGS:
-      case MENU_LABEL_INPUT_HOTKEY_SETTINGS:
-      case MENU_LABEL_OVERLAY_SETTINGS:
-      case MENU_LABEL_ONSCREEN_KEYBOARD_OVERLAY_SETTINGS:
-      case MENU_LABEL_MENU_SETTINGS:
-      case MENU_LABEL_UI_SETTINGS:
-      case MENU_LABEL_PATCH_SETTINGS:
-      case MENU_LABEL_PLAYLIST_SETTINGS:
-      case MENU_LABEL_CORE_UPDATER_SETTINGS:
-      case MENU_LABEL_NETWORK_SETTINGS:
-      case MENU_LABEL_ARCHIVE_SETTINGS:
-      case MENU_LABEL_USER_SETTINGS:
-      case MENU_LABEL_DIRECTORY_SETTINGS:
-      case MENU_LABEL_PRIVACY_SETTINGS:
-         strlcpy(s, string_to_upper(elem0), len);
-         if (elem1[0] != '\0')
-         {
-            strlcat(s, " - ", len);
-            strlcat(s, string_to_upper(elem1), len);
-         }
          break;
       default:
          if (menu_type == MENU_SETTINGS_CUSTOM_VIEWPORT ||
