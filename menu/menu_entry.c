@@ -197,7 +197,7 @@ enum menu_entry_type menu_entry_get_type(uint32_t i)
 
 void menu_entry_get_path(uint32_t i, char *s, size_t len)
 {
-   menu_entry_t entry;
+   menu_entry_t entry = {0};
    menu_entry_get(&entry, i, NULL, true);
 
    strlcpy(s, entry.path, len);
@@ -205,7 +205,7 @@ void menu_entry_get_path(uint32_t i, char *s, size_t len)
 
 void menu_entry_get_label(uint32_t i, char *s, size_t len)
 {
-   menu_entry_t entry;
+   menu_entry_t entry = {0};
    menu_entry_get(&entry, i, NULL, true);
 
    strlcpy(s, entry.label, len);
@@ -213,7 +213,7 @@ void menu_entry_get_label(uint32_t i, char *s, size_t len)
 
 unsigned menu_entry_get_spacing(uint32_t i)
 {
-   menu_entry_t entry;
+   menu_entry_t entry = {0};
    menu_entry_get(&entry, i, NULL, true);
 
    return entry.spacing;
@@ -221,7 +221,7 @@ unsigned menu_entry_get_spacing(uint32_t i)
 
 unsigned menu_entry_get_type_new(uint32_t i)
 {
-   menu_entry_t entry;
+   menu_entry_t entry = {0};
    menu_entry_get(&entry, i, NULL, true);
 
    return entry.type;
@@ -300,7 +300,7 @@ uint32_t menu_entry_pathdir_for_directory(uint32_t i)
 
 void menu_entry_pathdir_get_value(uint32_t i, char *s, size_t len)
 {
-   menu_entry_t entry;
+   menu_entry_t entry = {0};
    menu_entry_get(&entry, i, NULL, true);
    strlcpy(s, entry.value, len);
 }
@@ -343,7 +343,7 @@ void menu_entry_pathdir_extensions(uint32_t i, char *s, size_t len)
 
 void menu_entry_reset(uint32_t i)
 {
-   menu_entry_t entry;
+   menu_entry_t entry = {0};
    menu_entry_get(&entry, i, NULL, true);
 
    menu_entry_action(&entry, i, MENU_ACTION_START);
@@ -351,7 +351,7 @@ void menu_entry_reset(uint32_t i)
 
 void menu_entry_get_value(uint32_t i, char *s, size_t len)
 {
-   menu_entry_t entry;
+   menu_entry_t entry = {0};
    menu_entry_get(&entry, i, NULL, true);
    strlcpy(s, entry.value, len);
 }
@@ -435,7 +435,7 @@ int menu_entry_get_current_id(bool use_representation)
 
    for (i = 0; i < end; i++)
    {
-      menu_entry_t entry;
+      menu_entry_t entry = {0};
       menu_entry_get(&entry, i, NULL, use_representation);
 
       if (menu_entry_is_currently_selected(entry.id))
@@ -454,7 +454,7 @@ int menu_entry_get_current_id(bool use_representation)
  * currently displayed menu. */
 int menu_entry_select(uint32_t i)
 {
-   menu_entry_t entry;
+   menu_entry_t     entry = {0};
    menu_navigation_t *nav = menu_navigation_get_ptr();
     
    nav->selection_ptr = i;
