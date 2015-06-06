@@ -297,7 +297,7 @@ static rarch_setting_t *menu_setting_get_ptr(void)
 }
 
 /**
- * setting_reset:
+ * menu_setting_find:
  * @settings           : pointer to settings
  * @name               : name of setting to search for
  *
