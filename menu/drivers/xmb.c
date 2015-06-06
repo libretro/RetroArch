@@ -1799,22 +1799,12 @@ static void xmb_navigation_clear(bool pending_push)
       xmb_selection_pointer_changed();
 }
 
-static void xmb_navigation_decrement(void)
-{
-   xmb_selection_pointer_changed();
-}
-
-static void xmb_navigation_increment(void)
+static void xmb_navigation_pointer_changed(void)
 {
    xmb_selection_pointer_changed();
 }
 
 static void xmb_navigation_set(bool scroll)
-{
-   xmb_selection_pointer_changed();
-}
-
-static void xmb_navigation_set_last(void)
 {
    xmb_selection_pointer_changed();
 }
@@ -2035,10 +2025,10 @@ menu_ctx_driver_t menu_ctx_xmb = {
    xmb_populate_entries,
    xmb_toggle,
    xmb_navigation_clear,
-   xmb_navigation_decrement,
-   xmb_navigation_increment,
+   xmb_navigation_pointer_changed,
+   xmb_navigation_pointer_changed,
    xmb_navigation_set,
-   xmb_navigation_set_last,
+   xmb_navigation_pointer_changed,
    xmb_navigation_descend_alphabet,
    xmb_navigation_ascend_alphabet,
    xmb_list_insert,
