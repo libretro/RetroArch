@@ -635,9 +635,7 @@ static xmb_node_t* xmb_get_userdata_from_core(xmb_handle_t *xmb,
    global_t *global            = global_get_ptr();
    core_info_list_t *info_list = global ? (core_info_list_t*)global->core_info : NULL;
 
-   if (!info_list)
-      return NULL;
-   if (!info_list->count)
+   if (!info_list || !info_list->count)
       return NULL;
    rarch_assert(i >= 0);
    rarch_assert(i <= info_list->count);
