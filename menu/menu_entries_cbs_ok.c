@@ -14,6 +14,7 @@
  */
 
 #include <file/file_path.h>
+#include <rhash.h>
 
 #include "menu.h"
 #include "menu_display.h"
@@ -28,8 +29,6 @@
 #include "../runloop_data.h"
 
 #include "../input/input_remapping.h"
-
-#include <rhash.h>
 
 /* FIXME - Global variables, refactor */
 unsigned rdb_entry_start_game_selection_ptr;
@@ -56,6 +55,7 @@ static int action_ok_file_load_with_detect_core(const char *path,
    menu_handle_t *menu      = menu_driver_get_ptr();
    settings_t *settings     = config_get_ptr();
    global_t *global         = global_get_ptr();
+   uint32_t hash_label      = djb2_calculate(label);
 
    if (!menu)
       return -1;
@@ -69,23 +69,21 @@ static int action_ok_file_load_with_detect_core(const char *path,
 
    if (ret == -1)
    {
-
-      if (!strcmp(label, "collection"))
+      switch (hash_label)
       {
-         info.list          = menu->menu_list->menu_stack;
-         info.type          = 0;
-         info.directory_ptr = idx;
-         rdb_entry_start_game_selection_ptr = idx;
-         strlcpy(info.path, settings->libretro_directory, sizeof(info.path));
-         strlcpy(info.label, "deferred_core_list_set", sizeof(info.label));
+         case MENU_LABEL_COLLECTION:
+            info.list          = menu->menu_list->menu_stack;
+            info.type          = 0;
+            info.directory_ptr = idx;
+            rdb_entry_start_game_selection_ptr = idx;
+            strlcpy(info.path, settings->libretro_directory, sizeof(info.path));
+            strlcpy(info.label, "deferred_core_list_set", sizeof(info.label));
 
-         return menu_displaylist_push_list(&info, DISPLAYLIST_GENERIC);
-      }
-      else
-      {
-         event_command(EVENT_CMD_LOAD_CORE);
-         menu_entries_common_load_content(false);
-         return -1;
+            return menu_displaylist_push_list(&info, DISPLAYLIST_GENERIC);
+         default:
+            event_command(EVENT_CMD_LOAD_CORE);
+            menu_entries_common_load_content(false);
+            return -1;
       }
    }
 
@@ -95,13 +93,17 @@ static int action_ok_file_load_with_detect_core(const char *path,
       info.type          = 0;
       info.directory_ptr = idx;
       strlcpy(info.path, settings->libretro_directory, sizeof(info.path));
-      if (!strcmp(label, "collection"))
+
+      switch (hash_label)
       {
-         rdb_entry_start_game_selection_ptr = idx;
-         strlcpy(info.label, "deferred_core_list_set", sizeof(info.label));
+         case MENU_LABEL_COLLECTION:
+            rdb_entry_start_game_selection_ptr = idx;
+            strlcpy(info.label, "deferred_core_list_set", sizeof(info.label));
+            break;
+         default:
+            strlcpy(info.label, "deferred_core_list", sizeof(info.label));
+            break;
       }
-      else
-         strlcpy(info.label, "deferred_core_list", sizeof(info.label));
 
       ret = menu_displaylist_push_list(&info, DISPLAYLIST_GENERIC);
    }
@@ -118,28 +120,36 @@ static int action_ok_playlist_entry(const char *path,
    const char *core_name   = NULL;
    size_t selection_ptr = 0;
    content_playlist_t *playlist = g_defaults.history;
-   menu_handle_t *menu = menu_driver_get_ptr();
+   menu_handle_t *menu          = menu_driver_get_ptr();
+   uint32_t hash_label          = djb2_calculate(label);
+
    if (!menu)
       return -1;
 
-   if (!strcmp(label, "collection") ||
-         !strcmp(label, "rdb_entry_start_game"))
+   switch (hash_label)
    {
-      if (!menu->playlist)
-      {
-         menu->playlist = content_playlist_init(menu->db_playlist_file, 1000);
-
+      case MENU_LABEL_COLLECTION:
+      case MENU_LABEL_RDB_ENTRY_START_CONTENT:
          if (!menu->playlist)
-            return -1;
-      }
+         {
+            menu->playlist = content_playlist_init(menu->db_playlist_file, 1000);
 
-      playlist = menu->playlist;
+            if (!menu->playlist)
+               return -1;
+         }
+
+         playlist = menu->playlist;
+         break;
    }
 
    selection_ptr = menu->navigation.selection_ptr;
 
-   if (!strcmp(label, "rdb_entry_start_game"))
-      selection_ptr = rdb_entry_start_game_selection_ptr;
+   switch (hash_label)
+   {
+      case MENU_LABEL_RDB_ENTRY_START_CONTENT:
+         selection_ptr = rdb_entry_start_game_selection_ptr;
+         break;
+   }
 
    content_playlist_get_index(playlist, selection_ptr,
          &entry_path, &entry_label, &core_path, &core_name, NULL); 

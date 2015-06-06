@@ -148,9 +148,7 @@ extern "C" {
 
 #define MENU_LABEL_TURBO                                                       0x107434f1U
 
-
-
-
+#define MENU_LABEL_RDB_ENTRY_START_CONTENT                                     0x95025a55U
 #define MENU_LABEL_RDB_ENTRY_PUBLISHER                                         0x4d7bcdfbU
 #define MENU_LABEL_RDB_ENTRY_DEVELOPER                                         0x06f61093U
 #define MENU_LABEL_RDB_ENTRY_ORIGIN                                            0xb176aad5U
@@ -329,6 +327,7 @@ extern "C" {
 #define MENU_LABEL_OSK_ENABLE                                                  0x8e208498U
 #define MENU_LABEL_AUDIO_MUTE                                                  0xe0ca1151U
 #define MENU_LABEL_EXIT_EMULATOR                                               0x86d5d467U
+#define MENU_LABEL_COLLECTION                                                  0x5fea5991U
 
 #ifdef __cplusplus
 }
