@@ -225,6 +225,12 @@ static int action_get_title_default(const char *path, const char *label,
       case MENU_LABEL_AUDIO_FILTER_DIR:
          snprintf(s, len, "DSP FILTER DIR %s", path);
          break;
+      case MENU_LABEL_CURSOR_DIRECTORY:
+         snprintf(s, len, "CURSOR DIR %s", path);
+         break;
+      case MENU_LABEL_CHEAT_DATABASE_PATH:
+         snprintf(s, len, "CHEAT DIR %s", path);
+         break;
       case MENU_LABEL_INPUT_REMAPPING_DIRECTORY:
          snprintf(s, len, "INPUT REMAPPING DIR %s", path);
          break;
