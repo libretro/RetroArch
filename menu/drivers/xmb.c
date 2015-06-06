@@ -1072,21 +1072,6 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
             break;
       }
 
-
-      menu_animation_ticker_line(name, 35,
-            frame_count / 20, entry.path,
-            (i == current));
-
-      xmb_draw_text(menu, xmb, name,
-            node->x + xmb->margins.screen.left + 
-            xmb->icon.spacing.horizontal + xmb->margins.label.left, 
-            xmb->margins.screen.top + node->y + xmb->margins.label.top, 
-            1, node->label_alpha, TEXT_ALIGN_LEFT);
-
-      menu_animation_ticker_line(value, 35,
-            frame_count / 20, entry.value,
-            (i == current));
-
       switch (hash_value)
       {
          case MENU_VALUE_COMP:
@@ -1115,6 +1100,21 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
             do_draw_text = true;
             break;
       }
+
+      menu_animation_ticker_line(name, 35,
+            frame_count / 20, entry.path,
+            (i == current));
+
+      xmb_draw_text(menu, xmb, name,
+            node->x + xmb->margins.screen.left + 
+            xmb->icon.spacing.horizontal + xmb->margins.label.left, 
+            xmb->margins.screen.top + node->y + xmb->margins.label.top, 
+            1, node->label_alpha, TEXT_ALIGN_LEFT);
+
+      menu_animation_ticker_line(value, 35,
+            frame_count / 20, entry.value,
+            (i == current));
+
 
       if (do_draw_text)
          xmb_draw_text(menu, xmb, value,
