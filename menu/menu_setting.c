@@ -3108,12 +3108,10 @@ void setting_get_label(file_list_t *list, char *s,
       const char *menu_label, const char *label, unsigned idx)
 {
    rarch_setting_t *setting      = NULL;
-   rarch_setting_t *setting_data = menu_setting_get_ptr();
-
-   if (!setting_data || !label)
+   if (!label)
       return;
 
-   setting = setting_find_setting(setting_data, list->list[idx].label);
+   setting = menu_setting_find(list->list[idx].label);
 
    if (setting)
       setting_get_string_representation(setting, s, len);
