@@ -33,8 +33,6 @@
 
 #include "../menu_entries_cbs.h"
 
-#include "../../gfx/video_thread_wrapper.h"
-#include "../../gfx/font_driver.h"
 #include "../../gfx/video_texture.h"
 
 #include "../../runloop_data.h"
@@ -1005,9 +1003,9 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
 
    for (i = 0; i < end; i++)
    {
-      menu_entry_t entry;
       float icon_x, icon_y;
       char name[PATH_MAX_LENGTH], value[PATH_MAX_LENGTH];
+      menu_entry_t entry     = {0};
       GLuint texture_switch  = 0;
       GLuint         icon    = 0;
       xmb_node_t *   node    = (xmb_node_t*)file_list_get_userdata_at_offset(list, i);
