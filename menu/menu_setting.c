@@ -253,9 +253,9 @@ int menu_action_handle_setting(rarch_setting_t *setting,
          {
             menu_handle_t *menu = menu_driver_get_ptr();
 
-            info.list          = menu->menu_list->menu_stack;
-            info.type          = type;
-            info.directory_ptr = menu->navigation.selection_ptr;
+            info.list           = menu->menu_list->menu_stack;
+            info.type           = type;
+            info.directory_ptr  = menu->navigation.selection_ptr;
             strlcpy(info.path, setting->default_value.string, sizeof(info.path));
             strlcpy(info.label, setting->name, sizeof(info.label));
 
@@ -598,7 +598,7 @@ void setting_get_string_representation(void *data, char *s, size_t len)
  **/
 static int setting_action_start_savestates(void *data)
 {
-   rarch_setting_t *setting = (rarch_setting_t*)data;
+   rarch_setting_t *setting  = (rarch_setting_t*)data;
    settings_t      *settings = config_get_ptr();
 
    if (!setting)
@@ -611,7 +611,7 @@ static int setting_action_start_savestates(void *data)
 
 static int setting_action_start_bind_device(void *data)
 {
-   rarch_setting_t *setting = (rarch_setting_t*)data;
+   rarch_setting_t *setting  = (rarch_setting_t*)data;
    settings_t      *settings = config_get_ptr();
 
    if (!setting)
@@ -712,10 +712,10 @@ static int setting_string_action_start_generic(void *data)
 
 static int setting_bind_action_start(void *data)
 {
-   struct retro_keybind *keybind = NULL;
-   rarch_setting_t *setting = (rarch_setting_t*)data;
+   struct retro_keybind *keybind   = NULL;
+   rarch_setting_t *setting        = (rarch_setting_t*)data;
    struct retro_keybind *def_binds = (struct retro_keybind *)retro_keybinds_1;
-   global_t *global = global_get_ptr();
+   global_t                *global = global_get_ptr();
 
    if (!setting)
       return -1;
@@ -823,14 +823,14 @@ static int setting_action_left_libretro_device_type(
    }
 
    current_device = settings->input.libretro_device[port];
-   current_idx = 0;
+   current_idx    = 0;
    for (i = 0; i < types; i++)
    {
-      if (current_device == devices[i])
-      {
-         current_idx = i;
-         break;
-      }
+      if (current_device != devices[i])
+         continue;
+
+      current_idx = i;
+      break;
    }
 
    current_device = devices
@@ -881,14 +881,14 @@ static int setting_action_right_libretro_device_type(
    }
 
    current_device = settings->input.libretro_device[port];
-   current_idx = 0;
+   current_idx    = 0;
    for (i = 0; i < types; i++)
    {
-      if (current_device == devices[i])
-      {
-         current_idx = i;
-         break;
-      }
+      if (current_device != devices[i])
+         continue;
+
+      current_idx = i;
+      break;
    }
 
    current_device = devices
@@ -933,7 +933,7 @@ static int setting_action_right_savestates(
 static int setting_action_left_bind_device(void *data,
       unsigned action, bool wraparound)
 {
-   unsigned *p = NULL;
+   unsigned               *p = NULL;
    rarch_setting_t *setting  = (rarch_setting_t*)data;
    settings_t      *settings = config_get_ptr();
 
@@ -1101,7 +1101,7 @@ static int setting_string_action_right_driver(void *data,
 #if defined(HAVE_DYNAMIC) || defined(HAVE_LIBRETRO_MANAGEMENT)
 static int core_list_action_toggle(void *data, unsigned action, bool wraparound)
 {
-   rarch_setting_t *setting = (rarch_setting_t *)data;
+   rarch_setting_t *setting  = (rarch_setting_t *)data;
    settings_t      *settings = config_get_ptr();
 
    /* If the user CANCELs the browse, then settings->libretro is now
@@ -1216,9 +1216,10 @@ static int setting_bool_action_ok_exit(void *data, unsigned action)
 static int setting_action_ok_video_refresh_rate_auto(
       void *data, unsigned action)
 {
-   double video_refresh_rate, deviation = 0.0;
-   unsigned sample_points = 0;
-   rarch_setting_t *setting = (rarch_setting_t*)data;
+   double video_refresh_rate = 0.0;
+   double deviation          = 0.0;
+   unsigned sample_points    = 0;
+   rarch_setting_t *setting  = (rarch_setting_t*)data;
 
    if (!setting)
       return -1;
@@ -1345,9 +1346,9 @@ static void setting_get_string_representation_st_float_video_refresh_rate_auto(v
       char *s, size_t len)
 {
    double video_refresh_rate = 0.0;
-   double deviation = 0.0;
-   unsigned sample_points = 0;
-   rarch_setting_t *setting = (rarch_setting_t*)data;
+   double deviation          = 0.0;
+   unsigned sample_points    = 0;
+   rarch_setting_t *setting  = (rarch_setting_t*)data;
    if (!setting)
       return;
 
@@ -1399,15 +1400,16 @@ static void setting_get_string_representation_st_string(void *data,
 static void setting_get_string_representation_st_bind(void *data,
       char *s, size_t len)
 {
-   rarch_setting_t *setting = (rarch_setting_t*)data;
-   const struct retro_keybind* keybind = NULL;
-   const struct retro_keybind* auto_bind =  NULL;
+   rarch_setting_t *setting              = (rarch_setting_t*)data;
+   const struct retro_keybind* keybind   = NULL;
+   const struct retro_keybind* auto_bind = NULL;
 
    if (!setting)
       return;
    
    keybind   = (const struct retro_keybind*)setting->value.keybind;
-   auto_bind = (const struct retro_keybind*)input_get_auto_bind(setting->index_offset, keybind->id);
+   auto_bind = (const struct retro_keybind*)
+      input_get_auto_bind(setting->index_offset, keybind->id);
 
    input_get_bind_string(s, keybind, auto_bind, len);
 }
@@ -1534,14 +1536,11 @@ static void setting_get_string_representation_uint_analog_dpad_mode(void *data,
    };
    rarch_setting_t *setting  = (rarch_setting_t*)data;
    settings_t      *settings = config_get_ptr();
-   if (!setting)
-      return;
 
-   (void)data;
-
-   strlcpy(s, modes[settings->input.analog_dpad_mode
-         [setting->index_offset] % ANALOG_DPAD_LAST],
-         len);
+   if (setting)
+      strlcpy(s, modes[settings->input.analog_dpad_mode
+            [setting->index_offset] % ANALOG_DPAD_LAST],
+            len);
 }
 
 static void setting_get_string_representation_uint_autosave_interval(void *data,
@@ -1584,18 +1583,17 @@ static void setting_get_string_representation_uint_user_language(void *data,
 static void setting_get_string_representation_uint_libretro_log_level(void *data,
       char *s, size_t len)
 {
-   rarch_setting_t *setting = (rarch_setting_t*)data;
-   if (!setting)
-      return;
    static const char *modes[] = {
       "0 (Debug)",
       "1 (Info)",
       "2 (Warning)",
       "3 (Error)"
    };
+   rarch_setting_t *setting = (rarch_setting_t*)data;
 
-   strlcpy(s, modes[*setting->value.unsigned_integer],
-         len);
+   if (setting)
+      strlcpy(s, modes[*setting->value.unsigned_integer],
+            len);
 }
 
 static void setting_get_string_representation_uint(void *data,
