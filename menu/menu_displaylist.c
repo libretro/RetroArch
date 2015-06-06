@@ -2070,41 +2070,15 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
    return ret;
 }
 
-static int menu_displaylist_deferred_push(menu_displaylist_info_t *info, uint32_t hash_label)
-{
-   menu_file_list_cbs_t *cbs = NULL;
-   menu_handle_t       *menu = menu_driver_get_ptr();
-
-   if (!info->list)
-      return -1;
-
-   switch (hash_label)
-   {
-      case MENU_VALUE_MAIN_MENU:
-         info->flags = SL_FLAG_MAIN_MENU;
-         return menu_displaylist_push_list(info, DISPLAYLIST_MAIN_MENU);
-      case MENU_VALUE_HORIZONTAL_MENU:
-         return menu_displaylist_push_list(info, DISPLAYLIST_HORIZONTAL);
-   }
-
-   cbs = (menu_file_list_cbs_t*)
-      menu_list_get_last_stack_actiondata(menu->menu_list);
-
-   if (cbs->action_deferred_push)
-      return cbs->action_deferred_push(info);
-
-   return 0;
-}
-
 int menu_displaylist_push(file_list_t *list, file_list_t *menu_list)
 {
+   menu_file_list_cbs_t *cbs    = NULL;
    unsigned type                = 0;
    const char *path             = NULL;
    const char *label            = NULL;
    menu_handle_t *menu          = menu_driver_get_ptr();
    menu_displaylist_info_t info = {0};
-   uint32_t          hash_value = 0;
-   
+   uint32_t          hash_label = 0;
 
    menu_list_get_last_stack(menu->menu_list, &path, &label, &type);
 
@@ -2114,9 +2088,27 @@ int menu_displaylist_push(file_list_t *list, file_list_t *menu_list)
    strlcpy(info.path, path, sizeof(info.path));
    strlcpy(info.label, label, sizeof(info.label));
 
-   hash_value     = djb2_calculate(label);
+   hash_label     = djb2_calculate(label);
 
-   return menu_displaylist_deferred_push(&info, hash_value);
+   if (!info.list)
+      return -1;
+
+   switch (hash_label)
+   {
+      case MENU_VALUE_MAIN_MENU:
+         info.flags = SL_FLAG_MAIN_MENU;
+         return menu_displaylist_push_list(&info, DISPLAYLIST_MAIN_MENU);
+      case MENU_VALUE_HORIZONTAL_MENU:
+         return menu_displaylist_push_list(&info, DISPLAYLIST_HORIZONTAL);
+   }
+
+   cbs = (menu_file_list_cbs_t*)
+      menu_list_get_last_stack_actiondata(menu->menu_list);
+
+   if (cbs->action_deferred_push)
+      return cbs->action_deferred_push(&info);
+
+   return 0;
 }
 
 /**
