@@ -1737,6 +1737,10 @@ static void xmb_context_reset_textures(xmb_handle_t *xmb, const char *iconpath)
 
       texture_image_free(&ti);
    }
+
+   xmb->settings_node.icon  = xmb->textures.list[XMB_TEXTURE_SETTINGS].id;
+   xmb->settings_node.alpha = xmb->categories.active.alpha;
+   xmb->settings_node.zoom  = xmb->categories.active.zoom;
 }
 
 static void xmb_context_reset(void)
@@ -1785,10 +1789,6 @@ static void xmb_context_reset(void)
          rarch_main_data_msg_queue_push(DATA_TYPE_IMAGE, path,
                "cb_menu_wallpaper", 0, 1, true);
    }
-
-   xmb->settings_node.icon  = xmb->textures.list[XMB_TEXTURE_SETTINGS].id;
-   xmb->settings_node.alpha = xmb->categories.active.alpha;
-   xmb->settings_node.zoom  = xmb->categories.active.zoom;
 
    xmb_context_reset_horizontal_list(xmb, themepath);
 }
