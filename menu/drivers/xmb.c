@@ -1184,14 +1184,14 @@ static void xmb_draw_cursor(gl_t *gl, xmb_handle_t *xmb, float x, float y)
 static void xmb_render(void)
 {
    unsigned i, current, end;
+   xmb_handle_t    *xmb = NULL;
    settings_t *settings = config_get_ptr();
+   menu_handle_t *menu  = menu_driver_get_ptr();
 
-
-   menu_handle_t *menu = menu_driver_get_ptr();
    if (!menu)
       return;
 
-   xmb_handle_t *xmb = (xmb_handle_t*)menu->userdata;
+   xmb = (xmb_handle_t*)menu->userdata;
 
    if (!xmb)
       return;
@@ -1474,11 +1474,11 @@ static void *xmb_init(void)
    xmb->margins.label.top       = menu->font.size/3.0;
    xmb->margins.setting.left    = 600.0 * scale_factor;
 
-   menu->categories.size      = 1;
-   menu->header_height = xmb->icon.size;
+   menu->categories.size        = 1;
+   menu->header_height          = xmb->icon.size;
 
    if (global->core_info)
-      menu->categories.size   = global->core_info->count + 1;
+      menu->categories.size     = global->core_info->count + 1;
 
    return menu;
 
