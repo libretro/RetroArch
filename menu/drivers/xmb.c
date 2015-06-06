@@ -1590,6 +1590,8 @@ static void xmb_context_reset_horizontal_list(xmb_handle_t *xmb,
 
       if (!info)
          continue;
+       
+      strlcpy(core_id, "default", sizeof(core_id));
 
       if (info->systemname)
       {
@@ -1601,8 +1603,6 @@ static void xmb_context_reset_horizontal_list(xmb_handle_t *xmb,
             free(tmp);
          }
       }
-      else
-         strlcpy(core_id, "default", sizeof(core_id));
 
       strlcpy(texturepath, iconpath, sizeof(texturepath));
       strlcat(texturepath, core_id, sizeof(texturepath));
