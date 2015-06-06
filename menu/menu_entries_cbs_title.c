@@ -220,19 +220,31 @@ static int action_get_title_default(const char *path, const char *label,
          snprintf(s, len, "SHADER DIR %s", path);
          break;
       case MENU_LABEL_VIDEO_FILTER_DIR:
-         snprintf(s, len, "FILTER DIR %s", path);
+         snprintf(s, len, "VIDEO FILTER DIR %s", path);
          break;
       case MENU_LABEL_AUDIO_FILTER_DIR:
          snprintf(s, len, "DSP FILTER DIR %s", path);
          break;
+      case MENU_LABEL_INPUT_REMAPPING_DIRECTORY:
+         snprintf(s, len, "INPUT REMAPPING DIR %s", path);
+         break;
+      case MENU_LABEL_CONTENT_DATABASE_DIRECTORY:
+         snprintf(s, len, "DATABASE DIR %s", path);
+         break;
       case MENU_LABEL_SAVESTATE_DIRECTORY:
          snprintf(s, len, "SAVESTATE DIR %s", path);
          break;
+      case MENU_LABEL_DYNAMIC_WALLPAPERS_DIRECTORY:
+         snprintf(s, len, "DYNAMIC WALLPAPERS DIR %s", path);
+         break;
+      case MENU_LABEL_CORE_ASSETS_DIRECTORY:
+         snprintf(s, len, "CORE ASSETS DIR %s", path);
+         break;
       case MENU_LABEL_LIBRETRO_DIR_PATH:
-         snprintf(s, len, "LIBRETRO DIR %s", path);
+         snprintf(s, len, "CORE DIR %s", path);
          break;
       case MENU_LABEL_LIBRETRO_INFO_PATH:
-         snprintf(s, len, "LIBRETRO INFO DIR %s", path);
+         snprintf(s, len, "CORE INFO DIR %s", path);
          break;
       case MENU_LABEL_RGUI_CONFIG_DIRECTORY:
          snprintf(s, len, "CONFIG DIR %s", path);

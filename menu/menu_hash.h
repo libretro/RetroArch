@@ -261,9 +261,12 @@ extern "C" {
 #define MENU_LABEL_CONTENT_HISTORY_PATH                                        0x6f22fb9dU
 #define MENU_LABEL_AUDIO_DSP_PLUGIN                                            0x4a69572bU
 #define MENU_LABEL_RGUI_BROWSER_DIRECTORY                                      0xa86cba73U
+#define MENU_LABEL_CONTENT_DATABASE_DIRECTORY                                  0xccdcaacaU
 #define MENU_LABEL_PLAYLIST_DIRECTORY                                          0x6361820bU
+#define MENU_LABEL_CORE_ASSETS_DIRECTORY                                       0x319b6c96U
 #define MENU_LABEL_CONTENT_DIRECTORY                                           0x7738dc14U
 #define MENU_LABEL_SCREENSHOT_DIRECTORY                                        0x552612d7U
+#define MENU_LABEL_INPUT_REMAPPING_DIRECTORY                                   0xe81058adU
 #define MENU_LABEL_VIDEO_SHADER_DIR                                            0x30f53b10U
 #define MENU_LABEL_VIDEO_FILTER_DIR                                            0x67603f1fU
 #define MENU_LABEL_AUDIO_FILTER_DIR                                            0x4bd96ebaU
