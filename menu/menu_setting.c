@@ -305,15 +305,18 @@ static rarch_setting_t *menu_setting_get_ptr(void)
  *
  * Returns: pointer to setting if found, NULL otherwise.
  **/
-static rarch_setting_t* setting_find_setting(
-      rarch_setting_t* settings, const char* name)
+rarch_setting_t *menu_setting_find(const char *label)
 {
-   if (!settings || !name)
+   rarch_setting_t *settings = menu_setting_get_ptr();
+
+   if (!settings)
+      return NULL;
+   if (!label)
       return NULL;
 
    for (; settings->type != ST_NONE; settings++)
    {
-      if (settings->type <= ST_GROUP && !strcmp(settings->name, name))
+      if (settings->type <= ST_GROUP && !strcmp(settings->name, label))
       {
          if (settings->short_description && settings->short_description[0] == '\0')
             return NULL;
@@ -326,16 +329,6 @@ static rarch_setting_t* setting_find_setting(
    }
 
    return NULL;
-
-}
-
-rarch_setting_t *menu_setting_find(const char *label)
-{
-   rarch_setting_t *settings = menu_setting_get_ptr();
-
-   if (!settings)
-      return NULL;
-   return setting_find_setting(settings, label);
 }
 
 int menu_setting_set(unsigned type, const char *label,
