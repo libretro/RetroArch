@@ -1286,13 +1286,8 @@ static int menu_displaylist_parse_settings_in_subgroup(menu_displaylist_info_t *
    info->setting++;
 
    for (; info->setting->type != ST_END_SUB_GROUP; info->setting++)
-   {
-      char group_label[PATH_MAX_LENGTH];
-
-      strlcpy(group_label, info->setting->name, sizeof(group_label));
       menu_list_push(info->list, info->setting->short_description,
-            group_label, menu_setting_set_flags(info->setting), 0);
-   }
+            info->setting->name, menu_setting_set_flags(info->setting), 0);
 
    return 0;
 }
