@@ -3458,7 +3458,6 @@ static bool setting_append_list_main_menu_options(
 {
    rarch_setting_group_info_t group_info    = {0};
    rarch_setting_group_info_t subgroup_info = {0};
-   driver_t *driver     = driver_get_ptr();
    settings_t *settings = config_get_ptr();
    global_t *global     = global_get_ptr();
 
@@ -3507,10 +3506,7 @@ static bool setting_append_list_main_menu_options(
             group_info.name,
             subgroup_info.name);
    }
-   if (
-         driver->menu 
-         && global->core_info 
-         && core_info_list_num_info_files(global->core_info))
+   if (global->core_info && core_info_list_num_info_files(global->core_info))
    {
       CONFIG_ACTION(
             "detect_core_list",
