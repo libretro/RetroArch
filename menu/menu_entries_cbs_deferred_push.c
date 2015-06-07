@@ -450,7 +450,18 @@ static int deferred_push_default(menu_displaylist_info_t *info)
    return menu_displaylist_push_list(info, DISPLAYLIST_DEFAULT);
 }
 
-int menu_entries_cbs_init_bind_deferred_push_compare_type(menu_file_list_cbs_t *cbs, unsigned type,
+static int menu_entries_cbs_init_bind_deferred_push_compare_label(menu_file_list_cbs_t *cbs, 
+      const char *label, uint32_t label_hash)
+{
+   if (strstr(label, "deferred_rdb_entry_detail"))
+      cbs->action_deferred_push = deferred_push_rdb_entry_detail;
+   else
+      return -1;
+
+   return 0;
+}
+
+static int menu_entries_cbs_init_bind_deferred_push_compare_type(menu_file_list_cbs_t *cbs, unsigned type,
       uint32_t label_hash)
 {
    if (type == MENU_SETTING_GROUP)
@@ -637,11 +648,8 @@ void menu_entries_cbs_init_bind_deferred_push(menu_file_list_cbs_t *cbs,
       }
    }
 
-   if (strstr(label, "deferred_rdb_entry_detail"))
-   {
-      cbs->action_deferred_push = deferred_push_rdb_entry_detail;
+   if (menu_entries_cbs_init_bind_deferred_push_compare_label(cbs, label, label_hash) == 0)
       return;
-   }
 
    menu_entries_cbs_init_bind_deferred_push_compare_type(cbs, type, label_hash);
 }
