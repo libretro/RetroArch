@@ -197,6 +197,10 @@ static void menu_entries_cbs_init_log(int ret,
    switch (ret)
    {
       case 0:
+#ifdef DEBUG_LOG
+         RARCH_WARN("Found %s bind (label: [%s], elem0: [%s], elem1: [%s], type: [%d]).\n",
+               bind_label, label, elem0, elem1, type);
+#endif
          break;
       default:
 #ifdef DEBUG_LOG
