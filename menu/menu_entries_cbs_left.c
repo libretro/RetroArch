@@ -343,88 +343,11 @@ static int bind_left_generic(unsigned type, const char *label,
    return menu_setting_set(type, label, action, wraparound);
 }
 
-void menu_entries_cbs_init_bind_left(menu_file_list_cbs_t *cbs,
-      const char *path, const char *label, unsigned type, size_t idx,
-      const char *elem0, const char *elem1, const char *menu_label,
-      uint32_t label_hash, uint32_t menu_label_hash)
+static int menu_entries_cbs_init_bind_left_compare_label(menu_file_list_cbs_t *cbs,
+      const char *label, uint32_t label_hash)
 {
-   int i;
-
-   if (!cbs)
-      return;
-
-   if (label)
-   {
-      if (menu_entries_common_is_settings_entry(elem0))
-      {
-         cbs->action_left = action_left_scroll;
-         return;
-      }
-   }
-
-   cbs->action_left = bind_left_generic;
-
-   switch (type)
-   {
-      case MENU_SETTINGS_CORE_DISK_OPTIONS_DISK_INDEX:
-         cbs->action_left = disk_options_disk_idx_left;
-         break;
-      case MENU_FILE_PLAIN:
-      case MENU_FILE_DIRECTORY:
-      case MENU_FILE_CARCHIVE:
-      case MENU_FILE_CORE:
-      case MENU_FILE_RDB:
-      case MENU_FILE_RDB_ENTRY:
-      case MENU_FILE_CURSOR:
-      case MENU_FILE_SHADER:
-      case MENU_FILE_SHADER_PRESET:
-      case MENU_FILE_IMAGE:
-      case MENU_FILE_OVERLAY:
-      case MENU_FILE_VIDEOFILTER:
-      case MENU_FILE_AUDIOFILTER:
-      case MENU_FILE_CONFIG:
-      case MENU_FILE_USE_DIRECTORY:
-      case MENU_FILE_PLAYLIST_ENTRY:
-      case MENU_FILE_DOWNLOAD_CORE:
-      case MENU_FILE_CHEAT:
-      case MENU_FILE_REMAP:
-      case MENU_SETTING_GROUP:
-         switch (menu_label_hash)
-         {
-            case MENU_VALUE_HORIZONTAL_MENU:
-            case MENU_VALUE_MAIN_MENU:
-               cbs->action_left = action_left_mainmenu;
-               break;
-            default:
-               cbs->action_left = action_left_scroll;
-               break;
-         }
-         break;
-      case MENU_SETTING_ACTION:
-      case MENU_FILE_CONTENTLIST_ENTRY:
-         cbs->action_left = action_left_mainmenu;
-         break;
-   }
-
    if (strstr(label, "rdb_entry"))
       cbs->action_left = action_left_scroll;
-
-   else if (type >= MENU_SETTINGS_SHADER_PARAMETER_0
-         && type <= MENU_SETTINGS_SHADER_PARAMETER_LAST)
-      cbs->action_left = shader_action_parameter_left;
-   else if (type >= MENU_SETTINGS_SHADER_PRESET_PARAMETER_0
-         && type <= MENU_SETTINGS_SHADER_PRESET_PARAMETER_LAST)
-      cbs->action_left = shader_action_parameter_preset_left;
-   else if (type >= MENU_SETTINGS_CHEAT_BEGIN
-         && type <= MENU_SETTINGS_CHEAT_END)
-      cbs->action_left = action_left_cheat;
-   else if (type >= MENU_SETTINGS_INPUT_DESC_BEGIN
-         && type <= MENU_SETTINGS_INPUT_DESC_END)
-      cbs->action_left = action_left_input_desc;
-   else if (type == MENU_SETTINGS_VIDEO_RESOLUTION)
-      cbs->action_left = action_left_video_resolution;
-   else if ((type >= MENU_SETTINGS_CORE_OPTION_START))
-      cbs->action_left = core_setting_left;
    else
    {
       switch (label_hash)
@@ -448,8 +371,103 @@ void menu_entries_cbs_init_bind_left(menu_file_list_cbs_t *cbs,
          case MENU_LABEL_CHEAT_NUM_PASSES:
             cbs->action_left = action_left_cheat_num_passes;
             break;
+         default:
+            return -1;
       }
    }
+
+   return 0;
+}
+
+static int menu_entries_cbs_init_bind_left_compare_type(menu_file_list_cbs_t *cbs,
+      unsigned type, uint32_t menu_label_hash)
+{
+   if (type >= MENU_SETTINGS_SHADER_PARAMETER_0
+         && type <= MENU_SETTINGS_SHADER_PARAMETER_LAST)
+      cbs->action_left = shader_action_parameter_left;
+   else if (type >= MENU_SETTINGS_SHADER_PRESET_PARAMETER_0
+         && type <= MENU_SETTINGS_SHADER_PRESET_PARAMETER_LAST)
+      cbs->action_left = shader_action_parameter_preset_left;
+   else if (type >= MENU_SETTINGS_CHEAT_BEGIN
+         && type <= MENU_SETTINGS_CHEAT_END)
+      cbs->action_left = action_left_cheat;
+   else if (type >= MENU_SETTINGS_INPUT_DESC_BEGIN
+         && type <= MENU_SETTINGS_INPUT_DESC_END)
+      cbs->action_left = action_left_input_desc;
+   else if (type == MENU_SETTINGS_VIDEO_RESOLUTION)
+      cbs->action_left = action_left_video_resolution;
+   else if ((type >= MENU_SETTINGS_CORE_OPTION_START))
+      cbs->action_left = core_setting_left;
+   else
+   {
+      switch (type)
+      {
+         case MENU_SETTINGS_CORE_DISK_OPTIONS_DISK_INDEX:
+            cbs->action_left = disk_options_disk_idx_left;
+            break;
+         case MENU_FILE_PLAIN:
+         case MENU_FILE_DIRECTORY:
+         case MENU_FILE_CARCHIVE:
+         case MENU_FILE_CORE:
+         case MENU_FILE_RDB:
+         case MENU_FILE_RDB_ENTRY:
+         case MENU_FILE_CURSOR:
+         case MENU_FILE_SHADER:
+         case MENU_FILE_SHADER_PRESET:
+         case MENU_FILE_IMAGE:
+         case MENU_FILE_OVERLAY:
+         case MENU_FILE_VIDEOFILTER:
+         case MENU_FILE_AUDIOFILTER:
+         case MENU_FILE_CONFIG:
+         case MENU_FILE_USE_DIRECTORY:
+         case MENU_FILE_PLAYLIST_ENTRY:
+         case MENU_FILE_DOWNLOAD_CORE:
+         case MENU_FILE_CHEAT:
+         case MENU_FILE_REMAP:
+         case MENU_SETTING_GROUP:
+            switch (menu_label_hash)
+            {
+               case MENU_VALUE_HORIZONTAL_MENU:
+               case MENU_VALUE_MAIN_MENU:
+                  cbs->action_left = action_left_mainmenu;
+                  break;
+               default:
+                  cbs->action_left = action_left_scroll;
+                  break;
+            }
+            break;
+         case MENU_SETTING_ACTION:
+         case MENU_FILE_CONTENTLIST_ENTRY:
+            cbs->action_left = action_left_mainmenu;
+            break;
+         default:
+            return -1;
+      }
+   }
+
+   return 0;
+}
+
+void menu_entries_cbs_init_bind_left(menu_file_list_cbs_t *cbs,
+      const char *path, const char *label, unsigned type, size_t idx,
+      const char *elem0, const char *elem1, const char *menu_label,
+      uint32_t label_hash, uint32_t menu_label_hash)
+{
+   int i;
+
+   if (!cbs)
+      return;
+
+   if (label)
+   {
+      if (menu_entries_common_is_settings_entry(elem0))
+      {
+         cbs->action_left = action_left_scroll;
+         return;
+      }
+   }
+
+   cbs->action_left = bind_left_generic;
 
    for (i = 0; i < MAX_USERS; i++)
    {
@@ -459,4 +477,10 @@ void menu_entries_cbs_init_bind_left(menu_file_list_cbs_t *cbs,
       if (!strcmp(label, label_setting))
          cbs->action_left = bind_left_generic;
    }
+
+
+   if (menu_entries_cbs_init_bind_left_compare_label(cbs, label, label_hash) == 0)
+      return;
+
+   menu_entries_cbs_init_bind_left_compare_type(cbs, type, menu_label_hash);
 }
