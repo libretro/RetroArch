@@ -1625,7 +1625,8 @@ static void setting_get_string_representation_hex(void *data,
  **/
 static rarch_setting_t setting_action_setting(const char* name,
       const char* short_description,
-      const char *group, const char *subgroup)
+      const char *group, const char *subgroup,
+      const char *parent_group)
 {
    rarch_setting_t result;
    memset(&result, 0, sizeof(result));
@@ -1634,6 +1635,7 @@ static rarch_setting_t setting_action_setting(const char* name,
    result.name                      = name;
 
    result.short_description         = short_description;
+   result.parent_group              = parent_group;
    result.group                     = group;
    result.subgroup                  = subgroup;
    result.change_handler            = NULL;
@@ -1660,11 +1662,13 @@ static rarch_setting_t setting_action_setting(const char* name,
  *
  * Returns: setting of type ST_GROUP.
  **/
-static rarch_setting_t setting_group_setting(enum setting_type type, const char* name)
+static rarch_setting_t setting_group_setting(enum setting_type type, const char* name,
+      const char *parent_group)
 {
    rarch_setting_t result;
    memset(&result, 0, sizeof(result));
 
+   result.parent_group      = parent_group;
    result.type              = type;
    result.name              = name;
    result.short_description = name;
@@ -1685,7 +1689,7 @@ static rarch_setting_t setting_group_setting(enum setting_type type, const char*
  * Returns: setting of type ST_SUBGROUP.
  **/
 static rarch_setting_t setting_subgroup_setting(enum setting_type type,
-      const char* name, const char *parent_name)
+      const char* name, const char *parent_name, const char *parent_group)
 {
    rarch_setting_t result;
    memset(&result, 0, sizeof(result));
@@ -1695,6 +1699,7 @@ static rarch_setting_t setting_subgroup_setting(enum setting_type type,
 
    result.short_description = name;
    result.group             = parent_name;
+   result.parent_group      = parent_group;
 
    result.get_string_representation       = &setting_get_string_representation_default;
 
@@ -1720,6 +1725,7 @@ static rarch_setting_t setting_subgroup_setting(enum setting_type type,
 static rarch_setting_t setting_float_setting(const char* name,
       const char* short_description, float* target, float default_value,
       const char *rounding, const char *group, const char *subgroup,
+      const char *parent_group,
       change_handler_t change_handler, change_handler_t read_handler)
 {
    rarch_setting_t result;
@@ -1731,6 +1737,7 @@ static rarch_setting_t setting_float_setting(const char* name,
    result.short_description       = short_description;
    result.group                   = group;
    result.subgroup                = subgroup;
+   result.parent_group            = parent_group;
 
    result.rounding_fraction       = rounding;
    result.change_handler          = change_handler;
@@ -1770,7 +1777,7 @@ static rarch_setting_t setting_float_setting(const char* name,
 static rarch_setting_t setting_bool_setting(const char* name,
       const char* short_description, bool* target, bool default_value,
       const char *off, const char *on,
-      const char *group, const char *subgroup,
+      const char *group, const char *subgroup, const char *parent_group,
       change_handler_t change_handler, change_handler_t read_handler)
 {
    rarch_setting_t result;
@@ -1782,6 +1789,7 @@ static rarch_setting_t setting_bool_setting(const char* name,
    result.short_description      = short_description;
    result.group                  = group;
    result.subgroup               = subgroup;
+   result.parent_group           = parent_group;
 
    result.change_handler         = change_handler;
    result.read_handler           = read_handler;
@@ -1819,7 +1827,8 @@ static rarch_setting_t setting_bool_setting(const char* name,
  **/
 static rarch_setting_t setting_int_setting(const char* name,
       const char* short_description, int* target, int default_value,
-      const char *group, const char *subgroup, change_handler_t change_handler,
+      const char *group, const char *subgroup, const char *parent_group,
+      change_handler_t change_handler,
       change_handler_t read_handler)
 {
    rarch_setting_t result;
@@ -1831,6 +1840,7 @@ static rarch_setting_t setting_int_setting(const char* name,
    result.short_description      = short_description;
    result.group                  = group;
    result.subgroup               = subgroup;
+   result.parent_group           = parent_group;
 
    result.change_handler         = change_handler;
    result.read_handler           = read_handler;
@@ -1860,7 +1870,8 @@ static rarch_setting_t setting_int_setting(const char* name,
  **/
 static rarch_setting_t setting_uint_setting(const char* name,
       const char* short_description, unsigned int* target,
-      unsigned int default_value, const char *group, const char *subgroup,
+      unsigned int default_value,
+      const char *group, const char *subgroup, const char *parent_group,
       change_handler_t change_handler, change_handler_t read_handler)
 {
    rarch_setting_t result;
@@ -1872,6 +1883,7 @@ static rarch_setting_t setting_uint_setting(const char* name,
    result.short_description               = short_description;
    result.group                           = group;
    result.subgroup                        = subgroup;
+   result.parent_group                    = parent_group;
 
    result.change_handler                  = change_handler;
    result.read_handler                    = read_handler;
@@ -1906,7 +1918,8 @@ static rarch_setting_t setting_uint_setting(const char* name,
  **/
 static rarch_setting_t setting_hex_setting(const char* name,
       const char* short_description, unsigned int* target,
-      unsigned int default_value, const char *group, const char *subgroup,
+      unsigned int default_value,
+      const char *group, const char *subgroup, const char *parent_group,
       change_handler_t change_handler, change_handler_t read_handler)
 {
    rarch_setting_t result;
@@ -1918,6 +1931,7 @@ static rarch_setting_t setting_hex_setting(const char* name,
    result.short_description               = short_description;
    result.group                           = group;
    result.subgroup                        = subgroup;
+   result.parent_group                    = parent_group;
 
    result.change_handler                  = change_handler;
    result.read_handler                    = read_handler;
@@ -1954,7 +1968,7 @@ static rarch_setting_t setting_bind_setting(const char* name,
       const char* short_description, struct retro_keybind* target,
       uint32_t idx, uint32_t idx_offset,
       const struct retro_keybind* default_value,
-      const char *group, const char *subgroup)
+      const char *group, const char *subgroup, const char *parent_group)
 {
    rarch_setting_t result;
    memset(&result, 0, sizeof(result));
@@ -1965,6 +1979,7 @@ static rarch_setting_t setting_bind_setting(const char* name,
    result.short_description     = short_description;
    result.group                 = group;
    result.subgroup              = subgroup;
+   result.parent_group          = parent_group;
 
    result.value.keybind         = target;
    result.default_value.keybind = default_value;
@@ -2000,7 +2015,8 @@ static rarch_setting_t setting_bind_setting(const char* name,
 rarch_setting_t setting_string_setting(enum setting_type type,
       const char* name, const char* short_description, char* target,
       unsigned size, const char* default_value, const char *empty,
-      const char *group, const char *subgroup, change_handler_t change_handler,
+      const char *group, const char *subgroup, const char *parent_group,
+      change_handler_t change_handler,
       change_handler_t read_handler)
 {
    rarch_setting_t result;
@@ -2012,6 +2028,7 @@ rarch_setting_t setting_string_setting(enum setting_type type,
    result.short_description    = short_description;
    result.group                = group;
    result.subgroup             = subgroup;
+   result.parent_group         = parent_group;
 
    result.dir.empty_path       = empty;
    result.change_handler       = change_handler;
@@ -2063,13 +2080,14 @@ static rarch_setting_t setting_string_setting_options(enum setting_type type,
       const char* name, const char* short_description, char* target,
       unsigned size, const char* default_value,
       const char *empty, const char *values,
-      const char *group, const char *subgroup,
+      const char *group, const char *subgroup, const char *parent_group,
       change_handler_t change_handler, change_handler_t read_handler)
 {
   rarch_setting_t result = setting_string_setting(type, name,
         short_description, target, size, default_value, empty, group,
-        subgroup, change_handler, read_handler);
+        subgroup, parent_group, change_handler, read_handler);
 
+  result.parent_group    = parent_group;
   result.values          = values;
   return result;
 }
@@ -3318,81 +3336,81 @@ static void general_write_handler(void *data)
       event_command(rarch_cmd);
 }
 
-#define START_GROUP(group_info, NAME) \
+#define START_GROUP(group_info, NAME, parent_group) \
 { \
    group_info.name = NAME; \
-   if (!(menu_settings_list_append(list, list_info, setting_group_setting (ST_GROUP, NAME)))) return false; \
+   if (!(menu_settings_list_append(list, list_info, setting_group_setting (ST_GROUP, NAME, parent_group)))) return false; \
 }
 
-#define END_GROUP(list, list_info) \
+#define END_GROUP(list, list_info, parent_group) \
 { \
-   if (!(menu_settings_list_append(list, list_info, setting_group_setting (ST_END_GROUP, 0)))) return false; \
+   if (!(menu_settings_list_append(list, list_info, setting_group_setting (ST_END_GROUP, 0, parent_group)))) return false; \
 }
 
-#define START_SUB_GROUP(list, list_info, NAME, group_info, subgroup_info) \
+#define START_SUB_GROUP(list, list_info, NAME, group_info, subgroup_info, parent_group) \
 { \
    subgroup_info.name = NAME; \
-   if (!(menu_settings_list_append(list, list_info, setting_subgroup_setting (ST_SUB_GROUP, NAME, group_info)))) return false; \
+   if (!(menu_settings_list_append(list, list_info, setting_subgroup_setting (ST_SUB_GROUP, NAME, group_info, parent_group)))) return false; \
 }
 
-#define END_SUB_GROUP(list, list_info) \
+#define END_SUB_GROUP(list, list_info, parent_group) \
 { \
-   if (!(menu_settings_list_append(list, list_info, setting_group_setting (ST_END_SUB_GROUP, 0)))) return false; \
+   if (!(menu_settings_list_append(list, list_info, setting_group_setting (ST_END_SUB_GROUP, 0, parent_group)))) return false; \
 }
 
-#define CONFIG_ACTION(NAME, SHORT, group_info, subgroup_info) \
+#define CONFIG_ACTION(NAME, SHORT, group_info, subgroup_info, parent_group) \
 { \
-   if (!menu_settings_list_append(list, list_info, setting_action_setting  (NAME, SHORT, group_info, subgroup_info))) return false; \
+   if (!menu_settings_list_append(list, list_info, setting_action_setting  (NAME, SHORT, group_info, subgroup_info, parent_group))) return false; \
 }
 
-#define CONFIG_BOOL(TARGET, NAME, SHORT, DEF, OFF, ON, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER) \
+#define CONFIG_BOOL(TARGET, NAME, SHORT, DEF, OFF, ON, group_info, subgroup_info, parent_group, CHANGE_HANDLER, READ_HANDLER) \
 { \
-   if (!menu_settings_list_append(list, list_info, setting_bool_setting  (NAME, SHORT, &TARGET, DEF, OFF, ON, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER)))return false; \
+   if (!menu_settings_list_append(list, list_info, setting_bool_setting  (NAME, SHORT, &TARGET, DEF, OFF, ON, group_info, subgroup_info, parent_group, CHANGE_HANDLER, READ_HANDLER)))return false; \
 }
 
-#define CONFIG_INT(TARGET, NAME, SHORT, DEF, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER) \
+#define CONFIG_INT(TARGET, NAME, SHORT, DEF, group_info, subgroup_info, parent_group, CHANGE_HANDLER, READ_HANDLER) \
 { \
-   if (!(menu_settings_list_append(list, list_info, setting_int_setting   (NAME, SHORT, &TARGET, DEF, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER)))) return false; \
+   if (!(menu_settings_list_append(list, list_info, setting_int_setting   (NAME, SHORT, &TARGET, DEF, group_info, subgroup_info, parent_group, CHANGE_HANDLER, READ_HANDLER)))) return false; \
 }
 
-#define CONFIG_UINT(TARGET, NAME, SHORT, DEF, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER) \
+#define CONFIG_UINT(TARGET, NAME, SHORT, DEF, group_info, subgroup_info, parent_group, CHANGE_HANDLER, READ_HANDLER) \
 { \
-   if (!(menu_settings_list_append(list, list_info, setting_uint_setting  (NAME, SHORT, &TARGET, DEF, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER)))) return false; \
+   if (!(menu_settings_list_append(list, list_info, setting_uint_setting  (NAME, SHORT, &TARGET, DEF, group_info, subgroup_info, parent_group, CHANGE_HANDLER, READ_HANDLER)))) return false; \
 }
 
-#define CONFIG_FLOAT(TARGET, NAME, SHORT, DEF, ROUNDING, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER) \
+#define CONFIG_FLOAT(TARGET, NAME, SHORT, DEF, ROUNDING, group_info, subgroup_info, parent_group, CHANGE_HANDLER, READ_HANDLER) \
 { \
-   if (!(menu_settings_list_append(list, list_info, setting_float_setting (NAME, SHORT, &TARGET, DEF, ROUNDING, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER)))) return false; \
+   if (!(menu_settings_list_append(list, list_info, setting_float_setting (NAME, SHORT, &TARGET, DEF, ROUNDING, group_info, subgroup_info, parent_group, CHANGE_HANDLER, READ_HANDLER)))) return false; \
 }
 
-#define CONFIG_PATH(TARGET, NAME, SHORT, DEF, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER) \
+#define CONFIG_PATH(TARGET, NAME, SHORT, DEF, group_info, subgroup_info, parent_group, CHANGE_HANDLER, READ_HANDLER) \
 { \
-   if (!(menu_settings_list_append(list, list_info, setting_string_setting(ST_PATH, NAME, SHORT, TARGET, sizeof(TARGET), DEF, "", group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER)))) return false; \
+   if (!(menu_settings_list_append(list, list_info, setting_string_setting(ST_PATH, NAME, SHORT, TARGET, sizeof(TARGET), DEF, "", group_info, subgroup_info, parent_group, CHANGE_HANDLER, READ_HANDLER)))) return false; \
 }
 
-#define CONFIG_DIR(TARGET, NAME, SHORT, DEF, EMPTY, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER) \
+#define CONFIG_DIR(TARGET, NAME, SHORT, DEF, EMPTY, group_info, subgroup_info, parent_group, CHANGE_HANDLER, READ_HANDLER) \
 { \
-   if (!(menu_settings_list_append(list, list_info, setting_string_setting(ST_DIR, NAME, SHORT, TARGET, sizeof(TARGET), DEF, EMPTY, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER)))) return false; \
+   if (!(menu_settings_list_append(list, list_info, setting_string_setting(ST_DIR, NAME, SHORT, TARGET, sizeof(TARGET), DEF, EMPTY, group_info, subgroup_info, parent_group, CHANGE_HANDLER, READ_HANDLER)))) return false; \
 }
 
-#define CONFIG_STRING(TARGET, NAME, SHORT, DEF, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER) \
+#define CONFIG_STRING(TARGET, NAME, SHORT, DEF, group_info, subgroup_info, parent_group, CHANGE_HANDLER, READ_HANDLER) \
 { \
-   if (!(menu_settings_list_append(list, list_info, setting_string_setting(ST_STRING, NAME, SHORT, TARGET, sizeof(TARGET), DEF, "", group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER)))) return false; \
+   if (!(menu_settings_list_append(list, list_info, setting_string_setting(ST_STRING, NAME, SHORT, TARGET, sizeof(TARGET), DEF, "", group_info, subgroup_info, parent_group, CHANGE_HANDLER, READ_HANDLER)))) return false; \
 }
 
-#define CONFIG_STRING_OPTIONS(TARGET, NAME, SHORT, DEF, OPTS, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER) \
+#define CONFIG_STRING_OPTIONS(TARGET, NAME, SHORT, DEF, OPTS, group_info, subgroup_info, parent_group, CHANGE_HANDLER, READ_HANDLER) \
 { \
-  if (!(menu_settings_list_append(list, list_info, setting_string_setting_options(ST_STRING, NAME, SHORT, TARGET, sizeof(TARGET), DEF, "", OPTS, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER)))) return false; \
+  if (!(menu_settings_list_append(list, list_info, setting_string_setting_options(ST_STRING, NAME, SHORT, TARGET, sizeof(TARGET), DEF, "", OPTS, group_info, subgroup_info, parent_group, CHANGE_HANDLER, READ_HANDLER)))) return false; \
 }
 
-#define CONFIG_HEX(TARGET, NAME, SHORT, DEF, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER) \
+#define CONFIG_HEX(TARGET, NAME, SHORT, DEF, group_info, subgroup_info, parent_group, CHANGE_HANDLER, READ_HANDLER) \
 { \
-   if (!(menu_settings_list_append(list, list_info, setting_hex_setting(NAME, SHORT, &TARGET, DEF, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER)))) return false; \
+   if (!(menu_settings_list_append(list, list_info, setting_hex_setting(NAME, SHORT, &TARGET, DEF, group_info, subgroup_info, parent_group, CHANGE_HANDLER, READ_HANDLER)))) return false; \
 }
 
-#define CONFIG_BIND(TARGET, PLAYER, PLAYER_OFFSET, NAME, SHORT, DEF, group_info, subgroup_info) \
+#define CONFIG_BIND(TARGET, PLAYER, PLAYER_OFFSET, NAME, SHORT, DEF, group_info, subgroup_info, parent_group) \
 { \
-   if (!(menu_settings_list_append(list, list_info, setting_bind_setting  (NAME, SHORT, &TARGET, PLAYER, PLAYER_OFFSET, DEF, group_info, subgroup_info)))) return false; \
+   if (!(menu_settings_list_append(list, list_info, setting_bind_setting  (NAME, SHORT, &TARGET, PLAYER, PLAYER_OFFSET, DEF, group_info, subgroup_info, parent_group)))) return false; \
 }
 
 #ifdef GEKKO
@@ -3463,21 +3481,23 @@ static void overlay_enable_toggle_change_handler(void *data)
 
 static bool setting_append_list_main_menu_options(
       rarch_setting_t **list,
-      rarch_setting_info_t *list_info)
+      rarch_setting_info_t *list_info,
+      const char *parent_group)
 {
    rarch_setting_group_info_t group_info    = {0};
    rarch_setting_group_info_t subgroup_info = {0};
    settings_t *settings = config_get_ptr();
    global_t *global     = global_get_ptr();
 
-   START_GROUP(group_info, "Main Menu");
-   START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
+   START_GROUP(group_info, "Main Menu", parent_group);
+   START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info, parent_group);
 #if defined(HAVE_DYNAMIC) || defined(HAVE_LIBRETRO_MANAGEMENT)
    CONFIG_ACTION(
          "core_list",
          "Core Selection",
          group_info.name,
-         subgroup_info.name);
+         subgroup_info.name,
+         parent_group);
    (*list)[list_info->index - 1].size = sizeof(settings->libretro);
    (*list)[list_info->index - 1].value.string = settings->libretro;
    (*list)[list_info->index - 1].values = EXT_EXECUTABLES;
@@ -3496,7 +3516,8 @@ static bool setting_append_list_main_menu_options(
          "core_updater_list",
          "Core Updater",
          group_info.name,
-         subgroup_info.name);
+         subgroup_info.name,
+         parent_group);
 #endif
 
 #ifdef HAVE_LIBRETRODB
@@ -3504,7 +3525,8 @@ static bool setting_append_list_main_menu_options(
          "content_collection_list",
          "Load Content (Collection)",
          group_info.name,
-         subgroup_info.name);
+         subgroup_info.name,
+         parent_group);
 #endif
 
    if (settings->history_list_enable)
@@ -3513,7 +3535,8 @@ static bool setting_append_list_main_menu_options(
             "history_list",
             "Load Content (History)",
             group_info.name,
-            subgroup_info.name);
+            subgroup_info.name,
+            parent_group);
    }
    if (global->core_info && core_info_list_num_info_files(global->core_info))
    {
@@ -3521,14 +3544,16 @@ static bool setting_append_list_main_menu_options(
             "detect_core_list",
             "Load Content (Detect Core)",
             group_info.name,
-            subgroup_info.name);
+            subgroup_info.name,
+            parent_group);
       settings_data_list_current_add_flags(list, list_info, SD_FLAG_BROWSER_ACTION);
    }
    CONFIG_ACTION(
          "load_content",
          "Load Content",
          group_info.name,
-         subgroup_info.name);
+         subgroup_info.name,
+         parent_group);
    (*list)[list_info->index - 1].size = sizeof(global->fullpath);
    (*list)[list_info->index - 1].value.string   = global->fullpath;
    (*list)[list_info->index - 1].action_left    = load_content_action_toggle;
@@ -3546,7 +3571,8 @@ static bool setting_append_list_main_menu_options(
                "unload_core",
                "Unload Core",
                group_info.name,
-               subgroup_info.name);
+               subgroup_info.name,
+               parent_group);
       menu_settings_list_current_add_cmd(list, list_info, EVENT_CMD_UNLOAD_CORE);
    }
 
@@ -3554,32 +3580,37 @@ static bool setting_append_list_main_menu_options(
          "core_information",
          "Core Information",
          group_info.name,
-         subgroup_info.name);
+         subgroup_info.name,
+         parent_group);
 
    CONFIG_ACTION(
          "management",
          "Management",
          group_info.name,
-         subgroup_info.name);
+         subgroup_info.name,
+         parent_group);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
    CONFIG_ACTION(
          "options",
          "Options",
          group_info.name,
-         subgroup_info.name);
+         subgroup_info.name,
+         parent_group);
 
    CONFIG_ACTION(
          "settings",
          "Settings",
          group_info.name,
-         subgroup_info.name);
+         subgroup_info.name,
+         parent_group);
 
    CONFIG_ACTION(
          "system_information",
          "System Information",
          group_info.name,
-         subgroup_info.name);
+         subgroup_info.name,
+         parent_group);
 
    if (global->perfcnt_enable)
    {
@@ -3587,7 +3618,8 @@ static bool setting_append_list_main_menu_options(
             "performance_counters",
             "Performance Counters",
             group_info.name,
-            subgroup_info.name);
+            subgroup_info.name,
+            parent_group);
       settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
    }
    if (global->main_is_init && !global->libretro_dummy)
@@ -3596,7 +3628,8 @@ static bool setting_append_list_main_menu_options(
             "savestate",
             "Save State",
             group_info.name,
-            subgroup_info.name);
+            subgroup_info.name,
+            parent_group);
       (*list)[list_info->index - 1].action_left   = &setting_action_left_savestates;
       (*list)[list_info->index - 1].action_right  = &setting_action_right_savestates;
       (*list)[list_info->index - 1].action_start  = &setting_action_start_savestates;
@@ -3609,7 +3642,8 @@ static bool setting_append_list_main_menu_options(
             "loadstate",
             "Load State",
             group_info.name,
-            subgroup_info.name);
+            subgroup_info.name,
+            parent_group);
       (*list)[list_info->index - 1].action_left   = &setting_action_left_savestates;
       (*list)[list_info->index - 1].action_right  = &setting_action_left_savestates;
       (*list)[list_info->index - 1].action_start  = &setting_action_start_savestates;
@@ -3622,14 +3656,16 @@ static bool setting_append_list_main_menu_options(
             "take_screenshot",
             "Take Screenshot",
             group_info.name,
-            subgroup_info.name);
+            subgroup_info.name,
+            parent_group);
       menu_settings_list_current_add_cmd  (list, list_info, EVENT_CMD_TAKE_SCREENSHOT);
 
       CONFIG_ACTION(
             "resume_content",
             "Resume Content",
             group_info.name,
-            subgroup_info.name);
+            subgroup_info.name,
+            parent_group);
       menu_settings_list_current_add_cmd  (list, list_info, EVENT_CMD_RESUME);
       (*list)[list_info->index - 1].action_ok     = &setting_bool_action_ok_exit;
       (*list)[list_info->index - 1].action_select = &setting_bool_action_ok_exit;
@@ -3638,7 +3674,8 @@ static bool setting_append_list_main_menu_options(
             "restart_content",
             "Restart Content",
             group_info.name,
-            subgroup_info.name);
+            subgroup_info.name,
+            parent_group);
       menu_settings_list_current_add_cmd(list, list_info, EVENT_CMD_RESET);
       (*list)[list_info->index - 1].action_ok = 
       (*list)[list_info->index - 1].action_select = &setting_bool_action_ok_exit;
@@ -3648,7 +3685,8 @@ static bool setting_append_list_main_menu_options(
          "restart_retroarch",
          "Restart RetroArch",
          group_info.name,
-         subgroup_info.name);
+         subgroup_info.name,
+         parent_group);
    menu_settings_list_current_add_cmd(list, list_info, EVENT_CMD_RESTART_RETROARCH);
 #endif
 
@@ -3656,21 +3694,23 @@ static bool setting_append_list_main_menu_options(
          "configurations",
          "Configuration Files",
          group_info.name,
-         subgroup_info.name);
+         subgroup_info.name,
+         parent_group);
 
    CONFIG_ACTION(
          "save_new_config",
          "Save New Config",
          group_info.name,
-         subgroup_info.name);
+         subgroup_info.name,
+         parent_group);
    menu_settings_list_current_add_cmd(list, list_info, EVENT_CMD_MENU_SAVE_CONFIG);
 
    CONFIG_ACTION(
          "help",
          "Help",
          group_info.name,
-         subgroup_info.name);
-
+         subgroup_info.name,
+         parent_group);
 
 #if !defined(IOS)
    /* Apple rejects iOS apps that lets you forcibly quit an application. */
@@ -3678,27 +3718,29 @@ static bool setting_append_list_main_menu_options(
          "quit_retroarch",
          "Quit RetroArch",
          group_info.name,
-         subgroup_info.name);
+         subgroup_info.name,
+         parent_group);
    menu_settings_list_current_add_cmd(list, list_info, EVENT_CMD_QUIT_RETROARCH);
 #endif
 
-   END_SUB_GROUP(list, list_info);
-   END_GROUP(list, list_info);
+   END_SUB_GROUP(list, list_info, parent_group);
+   END_GROUP(list, list_info, parent_group);
 
    return true;
 }
 
 static bool setting_append_list_driver_options(
       rarch_setting_t **list,
-      rarch_setting_info_t *list_info)
+      rarch_setting_info_t *list_info,
+      const char *parent_group)
 {
    rarch_setting_group_info_t group_info    = {0};
    rarch_setting_group_info_t subgroup_info = {0};
    settings_t *settings = config_get_ptr();
    
-   START_GROUP(group_info, "Driver Settings");
-
-   START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
+   START_GROUP(group_info, "Driver Settings", parent_group);
+   START_SUB_GROUP(list, list_info, "State", group_info.name,
+         subgroup_info, parent_group);
    
    CONFIG_STRING_OPTIONS(
          settings->input.driver,
@@ -3708,6 +3750,7 @@ static bool setting_append_list_driver_options(
          config_get_input_driver_options(),
          group_info.name,
          subgroup_info.name,
+         parent_group,
          NULL,
          NULL);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
@@ -3720,6 +3763,7 @@ static bool setting_append_list_driver_options(
          config_get_joypad_driver_options(),
          group_info.name,
          subgroup_info.name,
+         parent_group,
          NULL,
          NULL);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
@@ -3732,6 +3776,7 @@ static bool setting_append_list_driver_options(
          config_get_video_driver_options(),
          group_info.name,
          subgroup_info.name,
+         parent_group,
          NULL,
          NULL);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
@@ -3744,6 +3789,7 @@ static bool setting_append_list_driver_options(
          config_get_audio_driver_options(),
          group_info.name,
          subgroup_info.name,
+         parent_group,
          NULL,
          NULL);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
@@ -3756,6 +3802,7 @@ static bool setting_append_list_driver_options(
          config_get_audio_resampler_driver_options(),
          group_info.name,
          subgroup_info.name,
+         parent_group,
          NULL,
          NULL);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
@@ -3768,6 +3815,7 @@ static bool setting_append_list_driver_options(
          config_get_camera_driver_options(),
          group_info.name,
          subgroup_info.name,
+         parent_group,
          NULL,
          NULL);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
@@ -3780,6 +3828,7 @@ static bool setting_append_list_driver_options(
          config_get_location_driver_options(),
          group_info.name,
          subgroup_info.name,
+         parent_group,
          NULL,
          NULL);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
@@ -3792,6 +3841,7 @@ static bool setting_append_list_driver_options(
          config_get_menu_driver_options(),
          group_info.name,
          subgroup_info.name,
+         parent_group,
          NULL,
          NULL);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
@@ -3804,27 +3854,30 @@ static bool setting_append_list_driver_options(
          config_get_record_driver_options(),
          group_info.name,
          subgroup_info.name,
+         parent_group,
          NULL,
          NULL);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
 
-   END_SUB_GROUP(list, list_info);
-   END_GROUP(list, list_info);
+   END_SUB_GROUP(list, list_info, parent_group);
+   END_GROUP(list, list_info, parent_group);
 
    return true;
 }
 
 static bool setting_append_list_core_options(
       rarch_setting_t **list,
-      rarch_setting_info_t *list_info)
+      rarch_setting_info_t *list_info,
+      const char *parent_group)
 {
    rarch_setting_group_info_t group_info    = {0};
    rarch_setting_group_info_t subgroup_info = {0};
    settings_t *settings = config_get_ptr();
 
-   START_GROUP(group_info, "Core Settings");
+   START_GROUP(group_info, "Core Settings", parent_group);
 
-   START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
+   START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info,
+         parent_group);
 
    CONFIG_BOOL(
          settings->video.shared_context,
@@ -3835,6 +3888,7 @@ static bool setting_append_list_core_options(
          "ON",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
@@ -3848,6 +3902,7 @@ static bool setting_append_list_core_options(
          "ON",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
@@ -3861,28 +3916,30 @@ static bool setting_append_list_core_options(
          "ON",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
-   END_SUB_GROUP(list, list_info);
-
-   END_GROUP(list, list_info);
+   END_SUB_GROUP(list, list_info, parent_group);
+   END_GROUP(list, list_info, parent_group);
 
    return true;
 }
 
 static bool setting_append_list_configuration_options(
       rarch_setting_t **list,
-      rarch_setting_info_t *list_info)
+      rarch_setting_info_t *list_info,
+      const char *parent_group)
 {
    rarch_setting_group_info_t group_info    = {0};
    rarch_setting_group_info_t subgroup_info = {0};
    settings_t *settings = config_get_ptr();
 
-   START_GROUP(group_info, "Configuration Settings");
+   START_GROUP(group_info, "Configuration Settings", parent_group);
 
-   START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
+   START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info,
+         parent_group);
 
    CONFIG_BOOL(settings->config_save_on_exit,
          "config_save_on_exit",
@@ -3892,6 +3949,7 @@ static bool setting_append_list_configuration_options(
          "ON",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
 
@@ -3904,6 +3962,7 @@ static bool setting_append_list_configuration_options(
          "ON",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
 
@@ -3916,6 +3975,7 @@ static bool setting_append_list_configuration_options(
          "ON",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
 
@@ -3928,28 +3988,29 @@ static bool setting_append_list_configuration_options(
          "ON",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
 
-   END_SUB_GROUP(list, list_info);
-
-
-   END_GROUP(list, list_info);
+   END_SUB_GROUP(list, list_info, parent_group);
+   END_GROUP(list, list_info, parent_group);
 
    return true;
 }
 
 static bool setting_append_list_saving_options(
       rarch_setting_t **list,
-      rarch_setting_info_t *list_info)
+      rarch_setting_info_t *list_info,
+      const char *parent_group)
 {
    rarch_setting_group_info_t group_info    = {0};
    rarch_setting_group_info_t subgroup_info = {0};
    settings_t *settings = config_get_ptr();
 
-   START_GROUP(group_info, "Saving Settings");
+   START_GROUP(group_info, "Saving Settings", parent_group);
 
-   START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
+   START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info,
+         parent_group);
 
    CONFIG_BOOL(
          settings->sort_savefiles_enable,
@@ -3960,6 +4021,7 @@ static bool setting_append_list_saving_options(
          "ON",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
 
@@ -3972,6 +4034,7 @@ static bool setting_append_list_saving_options(
          "ON",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
 
@@ -3984,6 +4047,7 @@ static bool setting_append_list_saving_options(
          "ON",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
@@ -3996,6 +4060,7 @@ static bool setting_append_list_saving_options(
          autosave_interval,
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
    menu_settings_list_current_add_cmd(list, list_info, EVENT_CMD_AUTOSAVE_INIT);
@@ -4014,6 +4079,7 @@ static bool setting_append_list_saving_options(
          "ON",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
 
@@ -4026,8 +4092,9 @@ static bool setting_append_list_saving_options(
          "ON",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
-            general_read_handler);
+         general_read_handler);
 
    CONFIG_BOOL(
          settings->savestate_auto_load,
@@ -4038,29 +4105,30 @@ static bool setting_append_list_saving_options(
          "ON",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
 
-
-   END_SUB_GROUP(list, list_info);
-
-   END_GROUP(list, list_info);
+   END_SUB_GROUP(list, list_info, parent_group);
+   END_GROUP(list, list_info, parent_group);
 
    return true;
 }
 
 static bool setting_append_list_logging_options(
       rarch_setting_t **list,
-      rarch_setting_info_t *list_info)
+      rarch_setting_info_t *list_info,
+      const char *parent_group)
 {
    rarch_setting_group_info_t group_info    = {0};
    rarch_setting_group_info_t subgroup_info = {0};
    settings_t *settings = config_get_ptr();
    global_t   *global   = global_get_ptr();
 
-   START_GROUP(group_info, "Logging Settings");
+   START_GROUP(group_info, "Logging Settings", parent_group);
 
-   START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
+   START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info,
+         parent_group);
 
    CONFIG_BOOL(
          global->verbosity,
@@ -4071,6 +4139,7 @@ static bool setting_append_list_logging_options(
          "ON",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
@@ -4082,6 +4151,7 @@ static bool setting_append_list_logging_options(
          libretro_log_level,
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
    menu_settings_list_current_add_range(list, list_info, 0, 3, 1.0, true, true);
@@ -4089,9 +4159,10 @@ static bool setting_append_list_logging_options(
       &setting_get_string_representation_uint_libretro_log_level;
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
-   END_SUB_GROUP(list, list_info);
+   END_SUB_GROUP(list, list_info, parent_group);
 
-   START_SUB_GROUP(list, list_info, "Performance Counters", group_info.name, subgroup_info);
+   START_SUB_GROUP(list, list_info, "Performance Counters", group_info.name, subgroup_info,
+         parent_group);
 
    CONFIG_BOOL(global->perfcnt_enable,
          "perfcnt_enable",
@@ -4101,29 +4172,29 @@ static bool setting_append_list_logging_options(
          "ON",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
-
-   END_SUB_GROUP(list, list_info);
-
-   END_GROUP(list, list_info);
+   END_SUB_GROUP(list, list_info, parent_group);
+   END_GROUP(list, list_info, parent_group);
 
    return true;
 }
 
 static bool setting_append_list_frame_throttling_options(
       rarch_setting_t **list,
-      rarch_setting_info_t *list_info)
+      rarch_setting_info_t *list_info,
+      const char *parent_group)
 {
    rarch_setting_group_info_t group_info    = {0};
    rarch_setting_group_info_t subgroup_info = {0};
    settings_t *settings = config_get_ptr();
 
-   START_GROUP(group_info, "Frame Throttle Settings");
+   START_GROUP(group_info, "Frame Throttle Settings", parent_group);
 
-   START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
+   START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info, parent_group);
 
    CONFIG_BOOL(
          settings->fastforward_ratio_throttle_enable,
@@ -4134,6 +4205,7 @@ static bool setting_append_list_frame_throttling_options(
          "ON",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
 
@@ -4145,6 +4217,7 @@ static bool setting_append_list_frame_throttling_options(
          "%.1fx",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
    menu_settings_list_current_add_range(list, list_info, 1, 10, 0.1, true, true);
@@ -4157,28 +4230,28 @@ static bool setting_append_list_frame_throttling_options(
          "%.1fx",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
    menu_settings_list_current_add_range(list, list_info, 1, 10, 1.0, true, true);
 
-   END_SUB_GROUP(list, list_info);
-
-   END_GROUP(list, list_info);
+   END_SUB_GROUP(list, list_info, parent_group);
+   END_GROUP(list, list_info, parent_group);
 
    return true;
 }
 
 static bool setting_append_list_rewind_options(
       rarch_setting_t **list,
-      rarch_setting_info_t *list_info)
+      rarch_setting_info_t *list_info, const char *parent_group)
 {
    rarch_setting_group_info_t group_info    = {0};
    rarch_setting_group_info_t subgroup_info = {0};
    settings_t *settings = config_get_ptr();
 
-   START_GROUP(group_info, "Rewind Settings");
+   START_GROUP(group_info, "Rewind Settings", parent_group);
 
-   START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
+   START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info, parent_group);
 
 
    CONFIG_BOOL(
@@ -4190,6 +4263,7 @@ static bool setting_append_list_rewind_options(
          "ON",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
    menu_settings_list_current_add_cmd(list, list_info, EVENT_CMD_REWIND_TOGGLE);
@@ -4202,6 +4276,7 @@ static bool setting_append_list_rewind_options(
          rewind_buffer_size,
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler)
 #endif
@@ -4212,30 +4287,30 @@ static bool setting_append_list_rewind_options(
             rewind_granularity,
             group_info.name,
             subgroup_info.name,
+            parent_group,
             general_write_handler,
             general_read_handler);
    menu_settings_list_current_add_range(list, list_info, 1, 32768, 1, true, false);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
-   END_SUB_GROUP(list, list_info);
-
-   END_GROUP(list, list_info);
+   END_SUB_GROUP(list, list_info, parent_group);
+   END_GROUP(list, list_info, parent_group);
 
    return true;
 }
 
 static bool setting_append_list_recording_options(
       rarch_setting_t **list,
-      rarch_setting_info_t *list_info)
+      rarch_setting_info_t *list_info, const char *parent_group)
 {
    rarch_setting_group_info_t group_info    = {0};
    rarch_setting_group_info_t subgroup_info = {0};
    settings_t *settings = config_get_ptr();
    global_t   *global   = global_get_ptr();
 
-   START_GROUP(group_info, "Recording Settings");
+   START_GROUP(group_info, "Recording Settings", parent_group);
 
-   START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
+   START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info, parent_group);
 
    CONFIG_BOOL(
          global->record.enable,
@@ -4246,6 +4321,7 @@ static bool setting_append_list_recording_options(
          "ON",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
 
@@ -4256,6 +4332,7 @@ static bool setting_append_list_recording_options(
          "",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
    menu_settings_list_current_add_values(list, list_info, "cfg");
@@ -4268,6 +4345,7 @@ static bool setting_append_list_recording_options(
          "",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
@@ -4281,12 +4359,13 @@ static bool setting_append_list_recording_options(
          "ON",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
 
-   END_SUB_GROUP(list, list_info);
+   END_SUB_GROUP(list, list_info, parent_group);
 
-   START_SUB_GROUP(list, list_info, "Miscellaneous", group_info.name, subgroup_info);
+   START_SUB_GROUP(list, list_info, "Miscellaneous", group_info.name, subgroup_info, parent_group);
 
    CONFIG_BOOL(
          settings->video.post_filter_record,
@@ -4297,6 +4376,7 @@ static bool setting_append_list_recording_options(
          "ON",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
 
@@ -4309,18 +4389,20 @@ static bool setting_append_list_recording_options(
          "ON",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
 
-   END_SUB_GROUP(list, list_info);
-   END_GROUP(list, list_info);
+   END_SUB_GROUP(list, list_info, parent_group);
+   END_GROUP(list, list_info, parent_group);
 
    return true;
 }
 
 static bool setting_append_list_video_options(
       rarch_setting_t **list,
-      rarch_setting_info_t *list_info)
+      rarch_setting_info_t *list_info,
+      const char *parent_group)
 {
    rarch_setting_group_info_t group_info    = {0};
    rarch_setting_group_info_t subgroup_info = {0};
@@ -4330,8 +4412,8 @@ static bool setting_append_list_video_options(
     
    (void)global;
 
-   START_GROUP(group_info, "Video Settings");
-   START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
+   START_GROUP(group_info, "Video Settings", parent_group);
+   START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info, parent_group);
 
    CONFIG_BOOL(settings->fps_show,
          "fps_show",
@@ -4341,12 +4423,13 @@ static bool setting_append_list_video_options(
          "ON",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
 
 
-   END_SUB_GROUP(list, list_info);
-   START_SUB_GROUP(list, list_info, "Monitor", group_info.name, subgroup_info);
+   END_SUB_GROUP(list, list_info, parent_group);
+   START_SUB_GROUP(list, list_info, "Monitor", group_info.name, subgroup_info, parent_group);
 
    CONFIG_UINT(
          settings->video.monitor_index,
@@ -4355,6 +4438,7 @@ static bool setting_append_list_video_options(
          monitor_index,
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
    menu_settings_list_current_add_cmd(list, list_info, EVENT_CMD_REINIT);
@@ -4373,6 +4457,7 @@ static bool setting_append_list_video_options(
          "ON",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
    menu_settings_list_current_add_cmd(list, list_info, EVENT_CMD_REINIT);
@@ -4387,6 +4472,7 @@ static bool setting_append_list_video_options(
          "ON",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
 
@@ -4397,6 +4483,7 @@ static bool setting_append_list_video_options(
          fullscreen_x,
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
@@ -4408,6 +4495,7 @@ static bool setting_append_list_video_options(
          fullscreen_y,
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
@@ -4420,6 +4508,7 @@ static bool setting_append_list_video_options(
          "%.3f Hz",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
    menu_settings_list_current_add_range(list, list_info, 0, 0, 0.001, true, false);
@@ -4432,6 +4521,7 @@ static bool setting_append_list_video_options(
          "%.3f Hz",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
    (*list)[list_info->index - 1].action_start  = &setting_action_start_video_refresh_rate_auto;
@@ -4449,14 +4539,14 @@ static bool setting_append_list_video_options(
          "ON",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
    menu_settings_list_current_add_cmd(list, list_info, EVENT_CMD_REINIT);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO|SD_FLAG_ADVANCED);
 
-   END_SUB_GROUP(list, list_info);
-
-   START_SUB_GROUP(list, list_info, "Aspect", group_info.name, subgroup_info);
+   END_SUB_GROUP(list, list_info, parent_group);
+   START_SUB_GROUP(list, list_info, "Aspect", group_info.name, subgroup_info, parent_group);
    CONFIG_BOOL(
          settings->video.force_aspect,
          "video_force_aspect",
@@ -4466,6 +4556,7 @@ static bool setting_append_list_video_options(
          "ON",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
 
@@ -4477,6 +4568,7 @@ static bool setting_append_list_video_options(
          "%.2f",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
 
@@ -4489,6 +4581,7 @@ static bool setting_append_list_video_options(
          "ON",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
 
@@ -4499,6 +4592,7 @@ static bool setting_append_list_video_options(
          aspect_ratio_idx,
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
    menu_settings_list_current_add_cmd(
@@ -4517,9 +4611,8 @@ static bool setting_append_list_video_options(
    (*list)[list_info->index - 1].get_string_representation = 
       &setting_get_string_representation_uint_aspect_ratio_index;
 
-   END_SUB_GROUP(list, list_info);
-
-   START_SUB_GROUP(list, list_info, "Scaling", group_info.name, subgroup_info);
+   END_SUB_GROUP(list, list_info, parent_group);
+   START_SUB_GROUP(list, list_info, "Scaling", group_info.name, subgroup_info, parent_group);
 
 #if !defined(RARCH_CONSOLE) && !defined(RARCH_MOBILE)
    CONFIG_FLOAT(
@@ -4530,6 +4623,7 @@ static bool setting_append_list_video_options(
          "%.1fx",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
    menu_settings_list_current_add_range(list, list_info, 1.0, 10.0, 1.0, true, true);
@@ -4544,6 +4638,7 @@ static bool setting_append_list_video_options(
          "ON",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
 
@@ -4554,6 +4649,7 @@ static bool setting_append_list_video_options(
          0,
          group_info.name,
          subgroup_info.name,
+         parent_group,
          NULL,
          NULL);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
@@ -4565,6 +4661,7 @@ static bool setting_append_list_video_options(
          0,
          group_info.name,
          subgroup_info.name,
+         parent_group,
          NULL,
          NULL);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
@@ -4576,6 +4673,7 @@ static bool setting_append_list_video_options(
          0,
          group_info.name,
          subgroup_info.name,
+         parent_group,
          NULL,
          NULL);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
@@ -4587,6 +4685,7 @@ static bool setting_append_list_video_options(
          0,
          group_info.name,
          subgroup_info.name,
+         parent_group,
          NULL,
          NULL);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
@@ -4599,6 +4698,7 @@ static bool setting_append_list_video_options(
          video_viwidth,
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
    menu_settings_list_current_add_range(list, list_info, 640, 720, 2, true, true);
@@ -4612,6 +4712,7 @@ static bool setting_append_list_video_options(
          "ON",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
 #endif
@@ -4625,6 +4726,7 @@ static bool setting_append_list_video_options(
          "ON",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
 
@@ -4638,6 +4740,7 @@ static bool setting_append_list_video_options(
          "ON",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
 #endif
@@ -4649,6 +4752,7 @@ static bool setting_append_list_video_options(
          0,
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
    menu_settings_list_current_add_range(list, list_info, 0, 3, 1, true, true);
@@ -4664,6 +4768,7 @@ static bool setting_append_list_video_options(
          0,
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
    menu_settings_list_current_add_cmd(
@@ -4681,14 +4786,14 @@ static bool setting_append_list_video_options(
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO|SD_FLAG_ADVANCED);
 
 #endif
-   END_SUB_GROUP(list, list_info);
-
+   END_SUB_GROUP(list, list_info, parent_group);
    START_SUB_GROUP(
          list,
          list_info,
          "Synchronization",
          group_info.name,
-         subgroup_info);
+         subgroup_info,
+         parent_group);
 
 #if defined(HAVE_THREADS) && !defined(RARCH_CONSOLE)
    CONFIG_BOOL(
@@ -4700,6 +4805,7 @@ static bool setting_append_list_video_options(
          "ON",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
    menu_settings_list_current_add_cmd(list, list_info, EVENT_CMD_REINIT);
@@ -4715,6 +4821,7 @@ static bool setting_append_list_video_options(
          "ON",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
 
@@ -4725,6 +4832,7 @@ static bool setting_append_list_video_options(
          swap_interval,
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
    menu_settings_list_current_add_cmd(list, list_info, EVENT_CMD_VIDEO_SET_BLOCKING_STATE);
@@ -4740,6 +4848,7 @@ static bool setting_append_list_video_options(
          "ON",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
 
@@ -4750,6 +4859,7 @@ static bool setting_append_list_video_options(
          hard_sync_frames,
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
    menu_settings_list_current_add_range(list, list_info, 0, 3, 1, true, true);
@@ -4762,6 +4872,7 @@ static bool setting_append_list_video_options(
          frame_delay,
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
    menu_settings_list_current_add_range(list, list_info, 0, 15, 1, true, true);
@@ -4777,17 +4888,18 @@ static bool setting_append_list_video_options(
          "ON",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
 #endif
-   END_SUB_GROUP(list, list_info);
-
+   END_SUB_GROUP(list, list_info, parent_group);
    START_SUB_GROUP(
          list,
          list_info,
          "Miscellaneous",
          group_info.name,
-         subgroup_info);
+         subgroup_info,
+         parent_group);
 
    CONFIG_BOOL(
          settings->video.gpu_screenshot,
@@ -4798,6 +4910,7 @@ static bool setting_append_list_video_options(
          "ON",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
@@ -4811,6 +4924,7 @@ static bool setting_append_list_video_options(
          "ON",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
@@ -4824,6 +4938,7 @@ static bool setting_append_list_video_options(
          "ON",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
 
@@ -4837,6 +4952,7 @@ static bool setting_append_list_video_options(
          "ON",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
    menu_settings_list_current_add_cmd(
@@ -4853,26 +4969,28 @@ static bool setting_append_list_video_options(
          0,
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
    menu_settings_list_current_add_range(list, list_info, 0, 5, 1, true, true);
 #endif
-   END_SUB_GROUP(list, list_info);
-   END_GROUP(list, list_info);
+   END_SUB_GROUP(list, list_info, parent_group);
+   END_GROUP(list, list_info, parent_group);
 
    return true;
 }
 
 static bool setting_append_list_font_options(
       rarch_setting_t **list,
-      rarch_setting_info_t *list_info)
+      rarch_setting_info_t *list_info,
+      const char *parent_group)
 {
    rarch_setting_group_info_t group_info    = {0};
    rarch_setting_group_info_t subgroup_info = {0};
    settings_t *settings = config_get_ptr();
 
-   START_GROUP(group_info, "Onscreen Display Settings");
-   START_SUB_GROUP(list, list_info, "Messages", group_info.name, subgroup_info);
+   START_GROUP(group_info, "Onscreen Display Settings", parent_group);
+   START_SUB_GROUP(list, list_info, "Messages", group_info.name, subgroup_info, parent_group);
 
 #ifndef RARCH_CONSOLE
    CONFIG_BOOL(
@@ -4884,6 +5002,7 @@ static bool setting_append_list_font_options(
          "ON",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
 #endif
@@ -4895,6 +5014,7 @@ static bool setting_append_list_font_options(
          "",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_EMPTY);
@@ -4907,6 +5027,7 @@ static bool setting_append_list_font_options(
          "%.1f",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
    menu_settings_list_current_add_range(list, list_info, 1.00, 100.00, 1.0, true, true);
@@ -4919,6 +5040,7 @@ static bool setting_append_list_font_options(
          "%.3f",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
    menu_settings_list_current_add_range(list, list_info, 0, 1, 0.01, true, true);
@@ -4931,27 +5053,29 @@ static bool setting_append_list_font_options(
          "%.3f",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
    menu_settings_list_current_add_range(list, list_info, 0, 1, 0.01, true, true);
 
-   END_SUB_GROUP(list, list_info);
-   END_GROUP(list, list_info);
+   END_SUB_GROUP(list, list_info, parent_group);
+   END_GROUP(list, list_info, parent_group);
 
    return true;
 }
 
 static bool setting_append_list_audio_options(
       rarch_setting_t **list,
-      rarch_setting_info_t *list_info)
+      rarch_setting_info_t *list_info,
+      const char *parent_group)
 {
    rarch_setting_group_info_t group_info    = {0};
    rarch_setting_group_info_t subgroup_info = {0};
    settings_t *settings = config_get_ptr();
    global_t   *global   = global_get_ptr();
 
-   START_GROUP(group_info, "Audio Settings");
-   START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
+   START_GROUP(group_info, "Audio Settings", parent_group);
+   START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info, parent_group);
 
    (void)global;
 
@@ -4964,6 +5088,7 @@ static bool setting_append_list_audio_options(
          "ON",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
@@ -4977,6 +5102,7 @@ static bool setting_append_list_audio_options(
          "ON",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
 
@@ -4988,6 +5114,7 @@ static bool setting_append_list_audio_options(
          "%.1f",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
    menu_settings_list_current_add_range(list, list_info, -80, 12, 1.0, true, true);
@@ -5002,18 +5129,20 @@ static bool setting_append_list_audio_options(
          "ON",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
 #endif
 
-   END_SUB_GROUP(list, list_info);
+   END_SUB_GROUP(list, list_info, parent_group);
 
    START_SUB_GROUP(
          list,
          list_info,
          "Synchronization",
          group_info.name,
-         subgroup_info);
+         subgroup_info,
+         parent_group);
 
    CONFIG_BOOL(
          settings->audio.sync,
@@ -5024,6 +5153,7 @@ static bool setting_append_list_audio_options(
          "ON",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
 
@@ -5035,6 +5165,7 @@ static bool setting_append_list_audio_options(
          g_defaults.settings.out_latency : out_latency,
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
    menu_settings_list_current_add_range(list, list_info, 1, 256, 1.0, true, true);
@@ -5048,6 +5179,7 @@ static bool setting_append_list_audio_options(
          "%.3f",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
    menu_settings_list_current_add_range(
@@ -5068,6 +5200,7 @@ static bool setting_append_list_audio_options(
          "%.2f",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
    menu_settings_list_current_add_range(
@@ -5087,18 +5220,20 @@ static bool setting_append_list_audio_options(
          0,
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
-   END_SUB_GROUP(list, list_info);
+   END_SUB_GROUP(list, list_info, parent_group);
 
    START_SUB_GROUP(
          list,
          list_info,
          "Miscellaneous",
          group_info.name,
-         subgroup_info);
+         subgroup_info,
+         parent_group);
 
    CONFIG_STRING(
          settings->audio.device,
@@ -5107,6 +5242,7 @@ static bool setting_append_list_audio_options(
          "",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT | SD_FLAG_ADVANCED);
@@ -5118,6 +5254,7 @@ static bool setting_append_list_audio_options(
          out_rate,
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
@@ -5129,29 +5266,32 @@ static bool setting_append_list_audio_options(
          settings->audio.filter_dir,
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
    menu_settings_list_current_add_values(list, list_info, "dsp");
    menu_settings_list_current_add_cmd(list, list_info, EVENT_CMD_DSP_FILTER_INIT);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_EMPTY);
 
-   END_SUB_GROUP(list, list_info);
-   END_GROUP(list, list_info);
+   END_SUB_GROUP(list, list_info, parent_group);
+   END_GROUP(list, list_info, parent_group);
 
    return true;
 }
 
 static bool setting_append_list_input_hotkey_options(
       rarch_setting_t **list,
-      rarch_setting_info_t *list_info)
+      rarch_setting_info_t *list_info,
+      const char *parent_group)
 {
    unsigned i;
    rarch_setting_group_info_t group_info    = {0};
    rarch_setting_group_info_t subgroup_info = {0};
    settings_t *settings = config_get_ptr();
 
-   START_GROUP(group_info, "Input Hotkey Binds");
-   START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
+   START_GROUP(group_info, "Input Hotkey Binds", parent_group);
+   START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info,
+         parent_group);
 
    for (i = 0; i < RARCH_BIND_LIST_END; i ++)
    {
@@ -5163,12 +5303,12 @@ static bool setting_append_list_input_hotkey_options(
 
       CONFIG_BIND(settings->input.binds[0][i], 0, 0,
             keybind->base, keybind->desc, &retro_keybinds_1[i],
-            group_info.name, subgroup_info.name);
+            group_info.name, subgroup_info.name, parent_group);
       menu_settings_list_current_add_bind_type(list, list_info, i + MENU_SETTINGS_BIND_BEGIN);
    }
 
-   END_SUB_GROUP(list, list_info);
-   END_GROUP(list, list_info);
+   END_SUB_GROUP(list, list_info, parent_group);
+   END_GROUP(list, list_info, parent_group);
 
    return true;
 }
@@ -5176,7 +5316,8 @@ static bool setting_append_list_input_hotkey_options(
 
 static bool setting_append_list_input_options(
       rarch_setting_t **list,
-      rarch_setting_info_t *list_info)
+      rarch_setting_info_t *list_info,
+      const char *parent_group)
 {
    unsigned user;
    rarch_setting_group_info_t group_info    = {0};
@@ -5184,8 +5325,8 @@ static bool setting_append_list_input_options(
    settings_t *settings = config_get_ptr();
    global_t   *global   = global_get_ptr();
 
-   START_GROUP(group_info, "Input Settings");
-   START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
+   START_GROUP(group_info, "Input Settings", parent_group);
+   START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info, parent_group);
 
    CONFIG_UINT(
          settings->input.max_users,
@@ -5194,6 +5335,7 @@ static bool setting_append_list_input_options(
          MAX_USERS,
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
    menu_settings_list_current_add_range(list, list_info, 1, MAX_USERS, 1, true, true);
@@ -5207,6 +5349,7 @@ static bool setting_append_list_input_options(
          "ON",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
 
@@ -5219,6 +5362,7 @@ static bool setting_append_list_input_options(
          "ON",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
 
@@ -5231,6 +5375,7 @@ static bool setting_append_list_input_options(
          "ON",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
 
@@ -5243,6 +5388,7 @@ static bool setting_append_list_input_options(
          "ON",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
 
@@ -5255,17 +5401,19 @@ static bool setting_append_list_input_options(
          "ON",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
 
-   END_SUB_GROUP(list, list_info);
+   END_SUB_GROUP(list, list_info, parent_group);
 
    START_SUB_GROUP(
          list,
          list_info,
          "Input Device Mapping",
          group_info.name,
-         subgroup_info);
+         subgroup_info,
+         parent_group);
 
    CONFIG_BOOL(
          global->menu.bind_mode_keyboard,
@@ -5276,6 +5424,7 @@ static bool setting_append_list_input_options(
          "RetroKeyboard",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
 
@@ -5327,6 +5476,7 @@ static bool setting_append_list_input_options(
             user,
             group_info.name,
             subgroup_info.name,
+            parent_group,
             general_write_handler,
             general_read_handler);
       (*list)[list_info->index - 1].index = user + 1;
@@ -5345,6 +5495,7 @@ static bool setting_append_list_input_options(
             user,
             group_info.name,
             subgroup_info.name,
+            parent_group,
             general_write_handler,
             general_read_handler);
       (*list)[list_info->index - 1].index = user + 1;
@@ -5360,7 +5511,8 @@ static bool setting_append_list_input_options(
             key[user],
             label[user],
             group_info.name,
-            subgroup_info.name);
+            subgroup_info.name,
+            parent_group);
       (*list)[list_info->index - 1].index = user + 1;
       (*list)[list_info->index - 1].index_offset = user;
       (*list)[list_info->index - 1].action_start  = &setting_action_start_bind_device;
@@ -5373,7 +5525,8 @@ static bool setting_append_list_input_options(
             key_bind_all[user],
             label_bind_all[user],
             group_info.name,
-            subgroup_info.name);
+            subgroup_info.name,
+            parent_group);
       (*list)[list_info->index - 1].index          = user + 1;
       (*list)[list_info->index - 1].index_offset   = user;
       (*list)[list_info->index - 1].action_ok      = &setting_action_ok_bind_all;
@@ -5383,7 +5536,8 @@ static bool setting_append_list_input_options(
             key_bind_defaults[user],
             label_bind_defaults[user],
             group_info.name,
-            subgroup_info.name);
+            subgroup_info.name,
+            parent_group);
       (*list)[list_info->index - 1].index          = user + 1;
       (*list)[list_info->index - 1].index_offset   = user;
       (*list)[list_info->index - 1].action_ok      = &setting_action_ok_bind_defaults;
@@ -5395,7 +5549,8 @@ static bool setting_append_list_input_options(
          list_info,
          "Turbo/Deadzone",
          group_info.name,
-         subgroup_info);
+         subgroup_info,
+         parent_group);
 
    CONFIG_FLOAT(
          settings->input.axis_threshold,
@@ -5405,6 +5560,7 @@ static bool setting_append_list_input_options(
          "%.3f",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
    menu_settings_list_current_add_range(list, list_info, 0, 1.00, 0.001, true, true);
@@ -5416,6 +5572,7 @@ static bool setting_append_list_input_options(
          turbo_period,
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
    menu_settings_list_current_add_range(list, list_info, 1, 0, 1, true, false);
@@ -5427,21 +5584,21 @@ static bool setting_append_list_input_options(
          turbo_duty_cycle,
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
    menu_settings_list_current_add_range(list, list_info, 1, 0, 1, true, false);
 
-   END_SUB_GROUP(list, list_info);
-
-
-   END_GROUP(list, list_info);
+   END_SUB_GROUP(list, list_info, parent_group);
+   END_GROUP(list, list_info, parent_group);
 
    return true;
 }
 
 static bool setting_append_list_overlay_options(
       rarch_setting_t **list,
-      rarch_setting_info_t *list_info)
+      rarch_setting_info_t *list_info,
+      const char *parent_group)
 {
 #ifdef HAVE_OVERLAY
    rarch_setting_group_info_t group_info    = {0};
@@ -5449,8 +5606,8 @@ static bool setting_append_list_overlay_options(
    settings_t *settings = config_get_ptr();
    global_t   *global   = global_get_ptr();
 
-   START_GROUP(group_info, "Onscreen Overlay Settings");
-   START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
+   START_GROUP(group_info, "Onscreen Overlay Settings", parent_group);
+   START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info, parent_group);
 
    CONFIG_BOOL(
          settings->input.overlay_enable,
@@ -5461,6 +5618,7 @@ static bool setting_append_list_overlay_options(
          "ON",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
    (*list)[list_info->index - 1].change_handler = overlay_enable_toggle_change_handler;
@@ -5472,6 +5630,7 @@ static bool setting_append_list_overlay_options(
          global->overlay_dir,
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
    menu_settings_list_current_add_values(list, list_info, "cfg");
@@ -5486,6 +5645,7 @@ static bool setting_append_list_overlay_options(
          "%.2f",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
    menu_settings_list_current_add_cmd(list, list_info, EVENT_CMD_OVERLAY_SET_ALPHA_MOD);
@@ -5500,14 +5660,15 @@ static bool setting_append_list_overlay_options(
          "%.2f",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
    menu_settings_list_current_add_cmd(list, list_info, EVENT_CMD_OVERLAY_SET_SCALE_FACTOR);
    menu_settings_list_current_add_range(list, list_info, 0, 2, 0.01, true, true);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
 
-   END_SUB_GROUP(list, list_info);
-   END_GROUP(list, list_info);
+   END_SUB_GROUP(list, list_info, parent_group);
+   END_GROUP(list, list_info, parent_group);
 #endif
 
    return true;
@@ -5515,7 +5676,8 @@ static bool setting_append_list_overlay_options(
 
 static bool setting_append_list_osk_overlay_options(
       rarch_setting_t **list,
-      rarch_setting_info_t *list_info)
+      rarch_setting_info_t *list_info,
+      const char *parent_group)
 {
 #ifdef HAVE_OVERLAY
    rarch_setting_group_info_t group_info    = {0};
@@ -5523,8 +5685,8 @@ static bool setting_append_list_osk_overlay_options(
    settings_t *settings = config_get_ptr();
    global_t   *global   = global_get_ptr();
 
-   START_GROUP(group_info, "Onscreen Keyboard Overlay Settings");
-   START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
+   START_GROUP(group_info, "Onscreen Keyboard Overlay Settings", parent_group);
+   START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info, parent_group);
 
    CONFIG_BOOL(
          settings->osk.enable,
@@ -5535,6 +5697,7 @@ static bool setting_append_list_osk_overlay_options(
          "ON",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
 
@@ -5545,13 +5708,14 @@ static bool setting_append_list_osk_overlay_options(
          global->osk_overlay_dir,
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
    menu_settings_list_current_add_values(list, list_info, "cfg");
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_EMPTY);
 
-   END_SUB_GROUP(list, list_info);
-   END_GROUP(list, list_info);
+   END_SUB_GROUP(list, list_info, parent_group);
+   END_GROUP(list, list_info, parent_group);
 #endif
 
    return true;
@@ -5559,14 +5723,15 @@ static bool setting_append_list_osk_overlay_options(
 
 static bool setting_append_list_menu_options(
       rarch_setting_t **list,
-      rarch_setting_info_t *list_info)
+      rarch_setting_info_t *list_info,
+      const char *parent_group)
 {
    rarch_setting_group_info_t group_info    = {0};
    rarch_setting_group_info_t subgroup_info = {0};
    settings_t *settings = config_get_ptr();
 
-   START_GROUP(group_info, "Menu Settings");
-   START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
+   START_GROUP(group_info, "Menu Settings", parent_group);
+   START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info, parent_group);
 
    CONFIG_PATH(
          settings->menu.wallpaper,
@@ -5575,6 +5740,7 @@ static bool setting_append_list_menu_options(
          "",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
    menu_settings_list_current_add_values(list, list_info, "png");
@@ -5589,6 +5755,7 @@ static bool setting_append_list_menu_options(
          "ON",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
 
@@ -5601,6 +5768,7 @@ static bool setting_append_list_menu_options(
          "ON",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
    menu_settings_list_current_add_cmd(list, list_info, EVENT_CMD_MENU_PAUSE_LIBRETRO);
@@ -5615,6 +5783,7 @@ static bool setting_append_list_menu_options(
          "ON",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
 
@@ -5627,12 +5796,13 @@ static bool setting_append_list_menu_options(
          "ON",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
 
-   END_SUB_GROUP(list, list_info);
+   END_SUB_GROUP(list, list_info, parent_group);
 
-   START_SUB_GROUP(list, list_info, "Navigation", group_info.name, subgroup_info);
+   START_SUB_GROUP(list, list_info, "Navigation", group_info.name, subgroup_info, parent_group);
 
    CONFIG_BOOL(
          settings->menu.navigation.wraparound.horizontal_enable,
@@ -5643,6 +5813,7 @@ static bool setting_append_list_menu_options(
          "ON",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
@@ -5656,13 +5827,13 @@ static bool setting_append_list_menu_options(
          "ON",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
-   END_SUB_GROUP(list, list_info);
-
-   START_SUB_GROUP(list, list_info, "Settings View", group_info.name, subgroup_info);
+   END_SUB_GROUP(list, list_info, parent_group);
+   START_SUB_GROUP(list, list_info, "Settings View", group_info.name, subgroup_info, parent_group);
 
    CONFIG_BOOL(
          settings->menu.collapse_subgroups_enable,
@@ -5673,6 +5844,7 @@ static bool setting_append_list_menu_options(
          "ON",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
@@ -5686,6 +5858,7 @@ static bool setting_append_list_menu_options(
          "ON",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
 
@@ -5699,6 +5872,7 @@ static bool setting_append_list_menu_options(
          "ON",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
 #endif
@@ -5711,6 +5885,7 @@ static bool setting_append_list_menu_options(
          menu_entry_normal_color,
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
@@ -5723,6 +5898,7 @@ static bool setting_append_list_menu_options(
          menu_entry_hover_color,
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
@@ -5735,14 +5911,14 @@ static bool setting_append_list_menu_options(
          menu_title_color,
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
-   END_SUB_GROUP(list, list_info);
-
-   START_SUB_GROUP(list, list_info, "Browser", group_info.name, subgroup_info);
+   END_SUB_GROUP(list, list_info, parent_group);
+   START_SUB_GROUP(list, list_info, "Browser", group_info.name, subgroup_info, parent_group);
 
    CONFIG_BOOL(
          settings->menu.navigation.browser.filter.supported_extensions_enable,
@@ -5753,6 +5929,7 @@ static bool setting_append_list_menu_options(
          "ON",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
 
@@ -5765,6 +5942,7 @@ static bool setting_append_list_menu_options(
          "ON",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
 
@@ -5777,6 +5955,7 @@ static bool setting_append_list_menu_options(
          "ON",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
 
@@ -5789,13 +5968,13 @@ static bool setting_append_list_menu_options(
          "ON",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
 
 
-   END_SUB_GROUP(list, list_info);
-
-   START_SUB_GROUP(list, list_info, "Display", group_info.name, subgroup_info);
+   END_SUB_GROUP(list, list_info, parent_group);
+   START_SUB_GROUP(list, list_info, "Display", group_info.name, subgroup_info, parent_group);
 
    CONFIG_BOOL(
          settings->menu.dpi.override_enable,
@@ -5806,6 +5985,7 @@ static bool setting_append_list_menu_options(
          "ON",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
 
@@ -5816,27 +5996,28 @@ static bool setting_append_list_menu_options(
          menu_dpi_override_value,
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
    menu_settings_list_current_add_range(list, list_info, 72, 999, 1, true, true);
 
-   END_SUB_GROUP(list, list_info);
-
-   END_GROUP(list, list_info);
+   END_SUB_GROUP(list, list_info, parent_group);
+   END_GROUP(list, list_info, parent_group);
 
    return true;
 }
 
 static bool setting_append_list_ui_options(
       rarch_setting_t **list,
-      rarch_setting_info_t *list_info)
+      rarch_setting_info_t *list_info,
+      const char *parent_group)
 {
    rarch_setting_group_info_t group_info    = {0};
    rarch_setting_group_info_t subgroup_info = {0};
    settings_t *settings = config_get_ptr();
 
-   START_GROUP(group_info, "UI Settings");
-   START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
+   START_GROUP(group_info, "UI Settings", parent_group);
+   START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info, parent_group);
 
    CONFIG_BOOL(
          settings->video.disable_composition,
@@ -5847,6 +6028,7 @@ static bool setting_append_list_ui_options(
          "ON",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
    menu_settings_list_current_add_cmd(list, list_info, EVENT_CMD_REINIT);
@@ -5861,6 +6043,7 @@ static bool setting_append_list_ui_options(
          "ON",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
    
@@ -5873,6 +6056,7 @@ static bool setting_append_list_ui_options(
          "ON",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
@@ -5886,6 +6070,7 @@ static bool setting_append_list_ui_options(
          "ON",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
 
@@ -5898,26 +6083,27 @@ static bool setting_append_list_ui_options(
          "ON",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
 
-   END_SUB_GROUP(list, list_info);
-
-   END_GROUP(list, list_info);
+   END_SUB_GROUP(list, list_info, parent_group);
+   END_GROUP(list, list_info, parent_group);
 
    return true;
 }
 
 static bool setting_append_list_archive_options(
       rarch_setting_t **list,
-      rarch_setting_info_t *list_info)
+      rarch_setting_info_t *list_info,
+      const char *parent_group)
 {
    rarch_setting_group_info_t group_info    = {0};
    rarch_setting_group_info_t subgroup_info = {0};
    settings_t *settings = config_get_ptr();
 
-   START_GROUP(group_info, "Archive Settings");
-   START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
+   START_GROUP(group_info, "Archive Settings", parent_group);
+   START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info, parent_group);
 
    CONFIG_UINT(
          settings->archive.mode,
@@ -5926,30 +6112,31 @@ static bool setting_append_list_archive_options(
          0,
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
    menu_settings_list_current_add_range(list, list_info, 0, 2, 1, true, true);
    (*list)[list_info->index - 1].get_string_representation = 
       &setting_get_string_representation_uint_archive_mode;
 
-   END_SUB_GROUP(list, list_info);
-   END_GROUP(list, list_info);
+   END_SUB_GROUP(list, list_info, parent_group);
+   END_GROUP(list, list_info, parent_group);
 
    return true;
 }
 
 static bool setting_append_list_core_updater_options(
       rarch_setting_t **list,
-      rarch_setting_info_t *list_info)
+      rarch_setting_info_t *list_info,
+      const char *parent_group)
 {
 #ifdef HAVE_NETWORKING
    rarch_setting_group_info_t group_info    = {0};
    rarch_setting_group_info_t subgroup_info = {0};
    settings_t *settings = config_get_ptr();
 
-   START_GROUP(group_info, "Core Updater Settings");
-
-   START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
+   START_GROUP(group_info, "Core Updater Settings", parent_group);
+   START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info, parent_group);
 
    CONFIG_STRING(
          settings->network.buildbot_url,
@@ -5958,6 +6145,7 @@ static bool setting_append_list_core_updater_options(
          buildbot_server_url, 
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
@@ -5969,6 +6157,7 @@ static bool setting_append_list_core_updater_options(
          buildbot_assets_server_url, 
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
@@ -5982,11 +6171,12 @@ static bool setting_append_list_core_updater_options(
          "ON",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
 
-   END_SUB_GROUP(list, list_info);
-   END_GROUP(list, list_info);
+   END_SUB_GROUP(list, list_info, parent_group);
+   END_GROUP(list, list_info, parent_group);
 #endif
 
    return true;
@@ -5994,7 +6184,8 @@ static bool setting_append_list_core_updater_options(
 
 static bool setting_append_list_netplay_options(
       rarch_setting_t **list,
-      rarch_setting_info_t *list_info)
+      rarch_setting_info_t *list_info,
+      const char *parent_group)
 {
 #ifdef HAVE_NETPLAY
    rarch_setting_group_info_t group_info    = {0};
@@ -6002,9 +6193,9 @@ static bool setting_append_list_netplay_options(
    settings_t *settings = config_get_ptr();
    global_t   *global   = global_get_ptr();
 
-   START_GROUP(group_info, "Network Settings");
+   START_GROUP(group_info, "Network Settings", parent_group);
 
-   START_SUB_GROUP(list, list_info, "Netplay", group_info.name, subgroup_info);
+   START_SUB_GROUP(list, list_info, "Netplay", group_info.name, subgroup_info, parent_group);
 
    CONFIG_BOOL(
          global->netplay_enable,
@@ -6015,6 +6206,7 @@ static bool setting_append_list_netplay_options(
          "ON",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
 
@@ -6027,6 +6219,7 @@ static bool setting_append_list_netplay_options(
          "ON",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
 
@@ -6037,6 +6230,7 @@ static bool setting_append_list_netplay_options(
          "",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
@@ -6050,6 +6244,7 @@ static bool setting_append_list_netplay_options(
          "ON",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
 
@@ -6062,6 +6257,7 @@ static bool setting_append_list_netplay_options(
          "ON",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
    
@@ -6072,6 +6268,7 @@ static bool setting_append_list_netplay_options(
          0,
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
    menu_settings_list_current_add_range(list, list_info, 0, 10, 1, true, false);
@@ -6084,19 +6281,21 @@ static bool setting_append_list_netplay_options(
          RARCH_DEFAULT_PORT,
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
    menu_settings_list_current_add_range(list, list_info, 1, 99999, 1, true, true);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
 
-   END_SUB_GROUP(list, list_info);
+   END_SUB_GROUP(list, list_info, parent_group);
 
    START_SUB_GROUP(
          list,
          list_info,
          "Miscellaneous",
          group_info.name,
-         subgroup_info);
+         subgroup_info,
+         parent_group);
 
 
 #if defined(HAVE_NETWORK_CMD)
@@ -6109,6 +6308,7 @@ static bool setting_append_list_netplay_options(
          "ON",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
@@ -6120,6 +6320,7 @@ static bool setting_append_list_netplay_options(
          network_cmd_port,
          group_info.name,
          subgroup_info.name,
+         parent_group,
          NULL,
          NULL);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
@@ -6133,12 +6334,13 @@ static bool setting_append_list_netplay_options(
          "ON",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 #endif
-   END_SUB_GROUP(list, list_info);
-   END_GROUP(list, list_info);
+   END_SUB_GROUP(list, list_info, parent_group);
+   END_GROUP(list, list_info, parent_group);
 #endif
 
    return true;
@@ -6147,12 +6349,13 @@ static bool setting_append_list_netplay_options(
 #if 0
 static bool setting_append_list_patch_options(
       rarch_setting_t **list,
-      rarch_setting_info_t *list_info)
+      rarch_setting_info_t *list_info,
+      const char *parent_group)
 {
    rarch_setting_group_info_t group_info    = {0};
    rarch_setting_group_info_t subgroup_info = {0};
 
-   START_GROUP(group_info, "Patch Settings");
+   START_GROUP(group_info, "Patch Settings", parent_group);
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
 
    CONFIG_BOOL(
@@ -6191,8 +6394,8 @@ static bool setting_append_list_patch_options(
          general_write_handler,
          general_read_handler);
 
-   END_SUB_GROUP(list, list_info);
-   END_GROUP(list, list_info);
+   END_SUB_GROUP(list, list_info, parent_group);
+   END_GROUP(list, list_info, parent_group);
 
    return true;
 }
@@ -6200,14 +6403,15 @@ static bool setting_append_list_patch_options(
 
 static bool setting_append_list_playlist_options(
       rarch_setting_t **list,
-      rarch_setting_info_t *list_info)
+      rarch_setting_info_t *list_info,
+      const char *parent_group)
 {
    rarch_setting_group_info_t group_info    = {0};
    rarch_setting_group_info_t subgroup_info = {0};
    settings_t *settings = config_get_ptr();
 
-   START_GROUP(group_info, "Playlist Settings");
-   START_SUB_GROUP(list, list_info, "History", group_info.name, subgroup_info);
+   START_GROUP(group_info, "Playlist Settings", parent_group);
+   START_SUB_GROUP(list, list_info, "History", group_info.name, subgroup_info, parent_group);
 
    CONFIG_BOOL(
          settings->history_list_enable,
@@ -6218,6 +6422,7 @@ static bool setting_append_list_playlist_options(
          "ON",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
 
@@ -6228,26 +6433,28 @@ static bool setting_append_list_playlist_options(
          default_content_history_size,
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
    menu_settings_list_current_add_range(list, list_info, 0, 0, 1.0, true, false);
 
-   END_SUB_GROUP(list, list_info);
-   END_GROUP(list, list_info);
+   END_SUB_GROUP(list, list_info, parent_group);
+   END_GROUP(list, list_info, parent_group);
 
    return true;
 }
 
 static bool setting_append_list_user_options(
       rarch_setting_t **list,
-      rarch_setting_info_t *list_info)
+      rarch_setting_info_t *list_info,
+      const char *parent_group)
 {
    rarch_setting_group_info_t group_info    = {0};
    rarch_setting_group_info_t subgroup_info = {0};
    settings_t *settings = config_get_ptr();
 
-   START_GROUP(group_info, "User Settings");
-   START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
+   START_GROUP(group_info, "User Settings", parent_group);
+   START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info, parent_group);
 
    CONFIG_STRING(
          settings->username,
@@ -6256,6 +6463,7 @@ static bool setting_append_list_user_options(
          "",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
@@ -6267,6 +6475,7 @@ static bool setting_append_list_user_options(
          def_user_language,
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
    menu_settings_list_current_add_range(
@@ -6281,24 +6490,25 @@ static bool setting_append_list_user_options(
    (*list)[list_info->index - 1].get_string_representation = 
       &setting_get_string_representation_uint_user_language;
 
-   END_SUB_GROUP(list, list_info);
-   END_GROUP(list, list_info);
+   END_SUB_GROUP(list, list_info, parent_group);
+   END_GROUP(list, list_info, parent_group);
 
    return true;
 }
 
 static bool setting_append_list_directory_options(
       rarch_setting_t **list,
-      rarch_setting_info_t *list_info)
+      rarch_setting_info_t *list_info,
+      const char *parent_group)
 {
    rarch_setting_group_info_t group_info    = {0};
    rarch_setting_group_info_t subgroup_info = {0};
    settings_t *settings = config_get_ptr();
    global_t *global     = global_get_ptr();
 
-   START_GROUP(group_info, "Directory Settings");
+   START_GROUP(group_info, "Directory Settings", parent_group);
 
-   START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
+   START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info, parent_group);
 
    CONFIG_DIR(
          settings->core_assets_directory,
@@ -6308,6 +6518,7 @@ static bool setting_append_list_directory_options(
          "<default>",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
    settings_data_list_current_add_flags(
@@ -6323,6 +6534,7 @@ static bool setting_append_list_directory_options(
          "<default>",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
    settings_data_list_current_add_flags(
@@ -6338,6 +6550,7 @@ static bool setting_append_list_directory_options(
          "<default>",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
    settings_data_list_current_add_flags(
@@ -6353,6 +6566,7 @@ static bool setting_append_list_directory_options(
          "<default>",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
    settings_data_list_current_add_flags(
@@ -6369,6 +6583,7 @@ static bool setting_append_list_directory_options(
          "<default>",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
    settings_data_list_current_add_flags(
@@ -6385,6 +6600,7 @@ static bool setting_append_list_directory_options(
          "<None>",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
    menu_settings_list_current_add_cmd(list, list_info, EVENT_CMD_CORE_INFO_INIT);
@@ -6401,6 +6617,7 @@ static bool setting_append_list_directory_options(
          "<None>",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
    menu_settings_list_current_add_cmd(list, list_info, EVENT_CMD_CORE_INFO_INIT);
@@ -6418,6 +6635,7 @@ static bool setting_append_list_directory_options(
          "<None>",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
    settings_data_list_current_add_flags(
@@ -6433,6 +6651,7 @@ static bool setting_append_list_directory_options(
          "<None>",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
    settings_data_list_current_add_flags(
@@ -6449,6 +6668,7 @@ static bool setting_append_list_directory_options(
          "<None>",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
    settings_data_list_current_add_flags(
@@ -6464,6 +6684,7 @@ static bool setting_append_list_directory_options(
          "<default>",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
    settings_data_list_current_add_flags(
@@ -6479,6 +6700,7 @@ static bool setting_append_list_directory_options(
          "<default>",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
    settings_data_list_current_add_flags(
@@ -6494,6 +6716,7 @@ static bool setting_append_list_directory_options(
          "<default>",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
    settings_data_list_current_add_flags(
@@ -6509,6 +6732,7 @@ static bool setting_append_list_directory_options(
          "<default>",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
    settings_data_list_current_add_flags(
@@ -6524,6 +6748,7 @@ static bool setting_append_list_directory_options(
          "<default>",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
    settings_data_list_current_add_flags(
@@ -6540,6 +6765,7 @@ static bool setting_append_list_directory_options(
          "<default>",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
    settings_data_list_current_add_flags(
@@ -6555,6 +6781,7 @@ static bool setting_append_list_directory_options(
          "<default>",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
    settings_data_list_current_add_flags(
@@ -6571,6 +6798,7 @@ static bool setting_append_list_directory_options(
          "<Content dir>",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
    settings_data_list_current_add_flags(
@@ -6586,6 +6814,7 @@ static bool setting_append_list_directory_options(
          "<default>",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
    settings_data_list_current_add_flags(
@@ -6601,6 +6830,7 @@ static bool setting_append_list_directory_options(
          "<None>",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
    settings_data_list_current_add_flags(
@@ -6616,6 +6846,7 @@ static bool setting_append_list_directory_options(
          "<default>",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
    settings_data_list_current_add_flags(
@@ -6631,6 +6862,7 @@ static bool setting_append_list_directory_options(
          "<Content dir>",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
    settings_data_list_current_add_flags(
@@ -6646,6 +6878,7 @@ static bool setting_append_list_directory_options(
          "<Content dir>",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
    settings_data_list_current_add_flags(
@@ -6661,6 +6894,7 @@ static bool setting_append_list_directory_options(
          "<Content dir>",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
    settings_data_list_current_add_flags(
@@ -6676,29 +6910,32 @@ static bool setting_append_list_directory_options(
          "<None>",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
    settings_data_list_current_add_flags(
          list,
          list_info,
          SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR | SD_FLAG_BROWSER_ACTION);
-   END_SUB_GROUP(list, list_info);
-   END_GROUP(list, list_info);
+
+   END_SUB_GROUP(list, list_info, parent_group);
+   END_GROUP(list, list_info, parent_group);
 
    return true;
 }
 
 static bool setting_append_list_privacy_options(
       rarch_setting_t **list,
-      rarch_setting_info_t *list_info)
+      rarch_setting_info_t *list_info,
+      const char *parent_group)
 {
    rarch_setting_group_info_t group_info    = {0};
    rarch_setting_group_info_t subgroup_info = {0};
    settings_t *settings = config_get_ptr();
 
-   START_GROUP(group_info, "Privacy Settings");
+   START_GROUP(group_info, "Privacy Settings", parent_group);
    START_SUB_GROUP(list, list_info, "State",
-         group_info.name, subgroup_info);
+         group_info.name, subgroup_info, parent_group);
 
    CONFIG_BOOL(
          settings->camera.allow,
@@ -6709,6 +6946,7 @@ static bool setting_append_list_privacy_options(
          "ON",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
 
@@ -6721,10 +6959,12 @@ static bool setting_append_list_privacy_options(
          "ON",
          group_info.name,
          subgroup_info.name,
+         parent_group,
          general_write_handler,
          general_read_handler);
-   END_SUB_GROUP(list, list_info);
-   END_GROUP(list, list_info);
+
+   END_SUB_GROUP(list, list_info, parent_group);
+   END_GROUP(list, list_info, parent_group);
 
    return true;
 }
@@ -6732,6 +6972,7 @@ static bool setting_append_list_privacy_options(
 static bool setting_append_list_input_player_options(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info,
+      const char *parent_group,
       unsigned user)
 {
    /* This constants matches the string length.
@@ -6753,14 +6994,15 @@ static bool setting_append_list_input_player_options(
    snprintf(group_lbl[user], sizeof(group_lbl[user]),
          "Input %s Binds", buffer[user]);
 
-   START_GROUP(group_info, group_lbl[user]);
+   START_GROUP(group_info, group_lbl[user], parent_group);
 
    START_SUB_GROUP(
          list,
          list_info,
          buffer[user],
          group_info.name,
-         subgroup_info);
+         subgroup_info,
+         parent_group);
 
    for (i = 0; i < RARCH_BIND_LIST_END; i ++)
    {
@@ -6806,12 +7048,14 @@ static bool setting_append_list_input_player_options(
                strdup(label),
                &defaults[i],
                group_info.name,
-               subgroup_info.name);
+               subgroup_info.name,
+               parent_group);
          menu_settings_list_current_add_bind_type(list, list_info, i + MENU_SETTINGS_BIND_BEGIN);
       }
    }
-   END_SUB_GROUP(list, list_info);
-   END_GROUP(list, list_info);
+
+   END_SUB_GROUP(list, list_info, parent_group);
+   END_GROUP(list, list_info, parent_group);
 
    return true;
 }
@@ -6843,55 +7087,55 @@ rarch_setting_t *menu_setting_new(unsigned mask)
 
    if (mask & SL_FLAG_MAIN_MENU)
    {
-      if (!setting_append_list_main_menu_options(&list, list_info))
+      if (!setting_append_list_main_menu_options(&list, list_info, "Main Menu"))
          goto error;
    }
 
    if (mask & SL_FLAG_DRIVER_OPTIONS)
    {
-      if (!setting_append_list_driver_options(&list, list_info))
+      if (!setting_append_list_driver_options(&list, list_info, "Settings"))
          goto error;
    }
 
    if (mask & SL_FLAG_CORE_OPTIONS)
    {
-      if (!setting_append_list_core_options(&list, list_info))
+      if (!setting_append_list_core_options(&list, list_info, "Settings"))
          goto error;
    }
 
    if (mask & SL_FLAG_CONFIGURATION_OPTIONS)
    {
-      if (!setting_append_list_configuration_options(&list, list_info))
+      if (!setting_append_list_configuration_options(&list, list_info, "Settings"))
          goto error;
    }
 
    if (mask & SL_FLAG_LOGGING_OPTIONS)
    {
-      if (!setting_append_list_logging_options(&list, list_info))
+      if (!setting_append_list_logging_options(&list, list_info, "Settings"))
          goto error;
    }
    
    if (mask & SL_FLAG_SAVING_OPTIONS)
    {
-      if (!setting_append_list_saving_options(&list, list_info))
+      if (!setting_append_list_saving_options(&list, list_info, "Settings"))
          goto error;
    }
 
    if (mask & SL_FLAG_REWIND_OPTIONS)
    {
-      if (!setting_append_list_rewind_options(&list, list_info))
+      if (!setting_append_list_rewind_options(&list, list_info, "Settings"))
          goto error;
    }
 
    if (mask & SL_FLAG_VIDEO_OPTIONS)
    {
-      if (!setting_append_list_video_options(&list, list_info))
+      if (!setting_append_list_video_options(&list, list_info, "Settings"))
          goto error;
    }
 
    if (mask & SL_FLAG_AUDIO_OPTIONS)
    {
-      if (!setting_append_list_audio_options(&list, list_info))
+      if (!setting_append_list_audio_options(&list, list_info, "Settings"))
          goto error;
    }
 
@@ -6900,112 +7144,110 @@ rarch_setting_t *menu_setting_new(unsigned mask)
       unsigned user;
       settings_t      *settings = config_get_ptr();
 
-      if (!setting_append_list_input_options(&list, list_info))
+      if (!setting_append_list_input_options(&list, list_info, "Settings"))
          goto error;
 
       for (user = 0; user < settings->input.max_users; user++)
-         setting_append_list_input_player_options(&list, list_info, user);
+         setting_append_list_input_player_options(&list, list_info, "Settings", user);
    }
 
 
     
    if (mask & SL_FLAG_INPUT_HOTKEY_OPTIONS)
    {
-      if (!setting_append_list_input_hotkey_options(&list, list_info))
+      if (!setting_append_list_input_hotkey_options(&list, list_info, "Settings"))
          goto error;
    }
 
    if (mask & SL_FLAG_RECORDING_OPTIONS)
    {
-      if (!setting_append_list_recording_options(&list, list_info))
+      if (!setting_append_list_recording_options(&list, list_info, "Settings"))
          goto error;
    }
 
    if (mask & SL_FLAG_FRAME_THROTTLE_OPTIONS)
    {
-      if (!setting_append_list_frame_throttling_options(&list, list_info))
+      if (!setting_append_list_frame_throttling_options(&list, list_info, "Settings"))
          goto error;
    }
 
    if (mask & SL_FLAG_FONT_OPTIONS)
    {
-      if (!setting_append_list_font_options(&list, list_info))
+      if (!setting_append_list_font_options(&list, list_info, "Settings"))
          goto error;
    }
 
    if (mask & SL_FLAG_OVERLAY_OPTIONS)
    {
-      if (!setting_append_list_overlay_options(&list, list_info))
+      if (!setting_append_list_overlay_options(&list, list_info, "Settings"))
          goto error;
    }
    
    if (mask & SL_FLAG_OSK_OVERLAY_OPTIONS)
    {
-      if (!setting_append_list_osk_overlay_options(&list, list_info))
+      if (!setting_append_list_osk_overlay_options(&list, list_info, "Settings"))
          goto error;
    }
 
-
-
    if (mask & SL_FLAG_MENU_OPTIONS)
    {
-      if (!setting_append_list_menu_options(&list, list_info))
+      if (!setting_append_list_menu_options(&list, list_info, "Settings"))
          goto error;
    }
 
    if (mask & SL_FLAG_UI_OPTIONS)
    {
-      if (!setting_append_list_ui_options(&list, list_info))
+      if (!setting_append_list_ui_options(&list, list_info, "Settings"))
          goto error;
    }
 
 #if 0
    if (mask & SL_FLAG_PATCH_OPTIONS)
    {
-      if (!setting_append_list_patch_options(&list, list_info))
+      if (!setting_append_list_patch_options(&list, list_info, "Settings"))
          goto error;
    }
 #endif
 
    if (mask & SL_FLAG_PLAYLIST_OPTIONS)
    {
-      if (!setting_append_list_playlist_options(&list, list_info))
+      if (!setting_append_list_playlist_options(&list, list_info, "Settings"))
          goto error;
    }
 
    if (mask & SL_FLAG_CORE_UPDATER_OPTIONS)
    {
-      if (!setting_append_list_core_updater_options(&list, list_info))
+      if (!setting_append_list_core_updater_options(&list, list_info, "Settings"))
          goto error;
    }
 
    if (mask & SL_FLAG_NETPLAY_OPTIONS)
    {
-      if (!setting_append_list_netplay_options(&list, list_info))
+      if (!setting_append_list_netplay_options(&list, list_info, "Settings"))
          goto error;
    }
 
    if (mask & SL_FLAG_ARCHIVE_OPTIONS)
    {
-      if (!setting_append_list_archive_options(&list, list_info))
+      if (!setting_append_list_archive_options(&list, list_info, "Settings"))
          goto error;
    }
 
    if (mask & SL_FLAG_USER_OPTIONS)
    {
-      if (!setting_append_list_user_options(&list, list_info))
+      if (!setting_append_list_user_options(&list, list_info, "Settings"))
          goto error;
    }
 
    if (mask & SL_FLAG_DIRECTORY_OPTIONS)
    {
-      if (!setting_append_list_directory_options(&list, list_info))
+      if (!setting_append_list_directory_options(&list, list_info, "Settings"))
          goto error;
    }
 
    if (mask & SL_FLAG_PRIVACY_OPTIONS)
    {
-      if (!setting_append_list_privacy_options(&list, list_info))
+      if (!setting_append_list_privacy_options(&list, list_info, "Settings"))
          goto error;
    }
 
