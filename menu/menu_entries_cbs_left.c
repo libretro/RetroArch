@@ -144,14 +144,9 @@ static int action_left_mainmenu(unsigned type, const char *label,
 
    if (list_size == 1)
    {
-      if (!strcmp(driver->menu_ctx->ident, "xmb"))
-      {
-         menu->navigation.selection_ptr = 0;
-         if (menu->categories.selection_ptr != 0)
-         {
-            push_list = 1;
-         }
-      }
+      menu->navigation.selection_ptr = 0;
+      if (menu->categories.selection_ptr != 0)
+         push_list = 1;
    }
    else
       push_list = 2;
