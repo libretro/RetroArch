@@ -297,19 +297,9 @@ int menu_entries_cbs_init_bind_start_compare_label(menu_file_list_cbs_t *cbs,
    return 0;
 }
 
-void menu_entries_cbs_init_bind_start(menu_file_list_cbs_t *cbs,
-      const char *path, const char *label, unsigned type, size_t idx,
-      const char *elem0, const char *elem1,
-      uint32_t label_hash, uint32_t menu_label_hash)
+static int menu_entries_cbs_init_bind_start_compare_type(menu_file_list_cbs_t *cbs,
+      unsigned type)
 {
-   if (!cbs)
-      return;
-
-   cbs->action_start = action_start_lookup_setting;
-   
-   if (menu_entries_cbs_init_bind_start_compare_label(cbs, label_hash) == 0)
-      return;
-
    if (type >= MENU_SETTINGS_SHADER_PARAMETER_0
          && type <= MENU_SETTINGS_SHADER_PARAMETER_LAST)
       cbs->action_start = action_start_shader_action_parameter;
@@ -327,4 +317,24 @@ void menu_entries_cbs_init_bind_start(menu_file_list_cbs_t *cbs,
       cbs->action_start = action_start_performance_counters_frontend;
    else if ((type >= MENU_SETTINGS_CORE_OPTION_START))
       cbs->action_start = action_start_core_setting;
+   else
+      return -1;
+
+   return 0;
+}
+
+void menu_entries_cbs_init_bind_start(menu_file_list_cbs_t *cbs,
+      const char *path, const char *label, unsigned type, size_t idx,
+      const char *elem0, const char *elem1,
+      uint32_t label_hash, uint32_t menu_label_hash)
+{
+   if (!cbs)
+      return;
+
+   cbs->action_start = action_start_lookup_setting;
+   
+   if (menu_entries_cbs_init_bind_start_compare_label(cbs, label_hash) == 0)
+      return;
+
+   menu_entries_cbs_init_bind_start_compare_type(cbs, type);
 }

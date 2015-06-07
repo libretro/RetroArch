@@ -40,6 +40,21 @@ static int action_scan_directory(const char *path,
    return 0;
 }
 
+static int menu_entries_cbs_init_bind_scan_compare_type(menu_file_list_cbs_t *cbs,
+      unsigned type)
+{
+   switch (type)
+   {
+      case MENU_FILE_DIRECTORY:
+         cbs->action_scan = action_scan_directory;
+         break;
+      default:
+         return -1;
+   }
+
+   return 0;
+}
+
 void menu_entries_cbs_init_bind_scan(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx,
       const char *elem0, const char *elem1,
@@ -50,10 +65,6 @@ void menu_entries_cbs_init_bind_scan(menu_file_list_cbs_t *cbs,
 
    cbs->action_scan = NULL;
 
-   switch (type)
-   {
-      case MENU_FILE_DIRECTORY:
-         cbs->action_scan = action_scan_directory;
-         break;
-   }
+   menu_entries_cbs_init_bind_scan_compare_type(cbs, type);
+
 }
