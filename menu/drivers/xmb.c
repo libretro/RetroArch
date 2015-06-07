@@ -634,18 +634,13 @@ static xmb_node_t *xmb_node_allocate_userdata(xmb_handle_t *xmb,
    if (!info)
       return NULL;
 
-   info->userdata = (xmb_node_t*)calloc(1, sizeof(xmb_node_t));
+   node = (xmb_node_t*)calloc(1, sizeof(xmb_node_t));
 
-   if (!info->userdata)
+   if (!node)
    {
       RARCH_ERR("XMB node could not be allocated.\n");
       return NULL;
    }
-
-   node = (xmb_node_t*)info->userdata;
-
-   if (!node)
-      return NULL;
 
    node->alpha = xmb->categories.passive.alpha;
    node->zoom  = xmb->categories.passive.zoom;
@@ -655,6 +650,8 @@ static xmb_node_t *xmb_node_allocate_userdata(xmb_handle_t *xmb,
       node->alpha = xmb->categories.active.alpha;
       node->zoom  = xmb->categories.active.zoom;
    }
+
+   info->userdata = node;
 
    return node;
 }
