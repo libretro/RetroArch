@@ -656,8 +656,8 @@ static xmb_node_t *xmb_node_allocate_userdata(xmb_handle_t *xmb,
    return node;
 }
 
-static xmb_node_t* xmb_get_userdata_from_core(xmb_handle_t *xmb,
-      core_info_t *info, unsigned i)
+static xmb_node_t* xmb_get_userdata_from_horizontal_list(
+      xmb_handle_t *xmb, core_info_t *info, unsigned i)
 {
    info = xmb_node_get_core_info(info, i);
 
@@ -796,7 +796,7 @@ static void xmb_list_switch_horizontal_list(xmb_handle_t *xmb, menu_handle_t *me
       xmb_node_t *node            = &xmb->settings_node;
 
       if (j > 0)
-         node = xmb_get_userdata_from_core(xmb, info, j - 1);
+         node = xmb_get_userdata_from_horizontal_list(xmb, info, j - 1);
 
       if (!node)
          continue;
@@ -856,7 +856,7 @@ static void xmb_list_open_horizontal_list(xmb_handle_t *xmb, menu_handle_t *menu
       xmb_node_t *node  = &xmb->settings_node;
 
       if (j > 0)
-         node = xmb_get_userdata_from_core(xmb, info, j - 1);
+         node = xmb_get_userdata_from_horizontal_list(xmb, info, j - 1);
 
       if (!node)
          continue;
@@ -1019,7 +1019,7 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
    file_list_get_last(stack, NULL, &label, NULL);
 
    if (cat_selection_ptr)
-      core_node = xmb_get_userdata_from_core(xmb, info, cat_selection_ptr - 1);
+      core_node = xmb_get_userdata_from_horizontal_list(xmb, info, cat_selection_ptr - 1);
 
    end = file_list_get_size(list);
 
@@ -1267,7 +1267,7 @@ static void xmb_frame_horizontal_list(xmb_handle_t *xmb, menu_handle_t *menu, gl
       xmb_node_t *node = &xmb->settings_node;
 
       if (i > 0)
-         node = xmb_get_userdata_from_core(xmb, info, i - 1);
+         node = xmb_get_userdata_from_horizontal_list(xmb, info, i - 1);
 
       if (!node)
          continue;
@@ -1634,7 +1634,7 @@ static void xmb_context_reset_horizontal_list(xmb_handle_t *xmb,
       char texturepath[PATH_MAX_LENGTH], content_texturepath[PATH_MAX_LENGTH];
       core_info_t *info           = NULL;
       struct texture_image ti     = {0};
-      xmb_node_t *node            = xmb_get_userdata_from_core(
+      xmb_node_t *node            = xmb_get_userdata_from_horizontal_list(
             xmb, info, i - 1);
 
       if (!node)
@@ -1998,7 +1998,7 @@ static void xmb_context_destroy_horizontal_list(xmb_handle_t *xmb,
    for (i = 1; i < list_size; i++)
    {
       core_info_t *info           = NULL;
-      xmb_node_t *node = xmb_get_userdata_from_core(xmb, info, i - 1);
+      xmb_node_t *node = xmb_get_userdata_from_horizontal_list(xmb, info, i - 1);
 
       if (!node)
          continue;
@@ -2041,7 +2041,7 @@ static void xmb_toggle_horizontal_list(xmb_handle_t *xmb, menu_handle_t *menu)
       xmb_node_t *node = &xmb->settings_node;
 
       if (i > 0)
-         node = xmb_get_userdata_from_core(xmb, info, i - 1);
+         node = xmb_get_userdata_from_horizontal_list(xmb, info, i - 1);
 
       if (!node)
          continue;
