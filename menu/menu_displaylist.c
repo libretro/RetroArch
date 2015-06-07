@@ -1965,6 +1965,7 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          need_push    = true;
          break;
       case DISPLAYLIST_CORES_SUPPORTED:
+      case DISPLAYLIST_CORES_COLLECTION_SUPPORTED:
          menu_list_clear(info->list);
          need_sort    = true;
          need_refresh = true;
@@ -1985,8 +1986,12 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
 
             for (i = 0; i < list_size; i++)
             {
-               menu_list_push(info->list, core_info[i].path, "",
-                     MENU_FILE_CORE, 0);
+               if (type == DISPLAYLIST_CORES_COLLECTION_SUPPORTED)
+                  menu_list_push(info->list, core_info[i].path, "",
+                        MENU_FILE_CORE, 0);
+               else
+                  menu_list_push(info->list, core_info[i].path, "detect_core_list_ok",
+                        MENU_FILE_CORE, 0);
                menu_list_set_alt_at_offset(info->list, i,
                      core_info[i].display_name);
             }

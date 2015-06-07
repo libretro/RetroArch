@@ -31,6 +31,7 @@
 #include "../input/input_remapping.h"
 
 /* FIXME - Global variables, refactor */
+static char detect_content_path[PATH_MAX_LENGTH];
 unsigned rdb_entry_start_game_selection_ptr;
 size_t hack_shader_pass = 0;
 #ifdef HAVE_NETWORKING
@@ -60,12 +61,16 @@ static int action_ok_file_load_with_detect_core(const char *path,
    if (!menu)
       return -1;
 
+
    menu_list_get_last_stack(menu->menu_list,
          &menu_path, NULL, NULL);
 
    ret = rarch_defer_core(global->core_info,
          menu_path, path, label, menu->deferred_path,
          sizeof(menu->deferred_path));
+
+   fill_pathname_join(detect_content_path, menu_path, path,
+         sizeof(detect_content_path));
 
    if (ret == -1)
    {
@@ -109,6 +114,24 @@ static int action_ok_file_load_with_detect_core(const char *path,
    }
 
    return ret;
+}
+
+static int action_ok_file_load_detect_core(const char *path,
+      const char *label, unsigned type, size_t idx)
+{
+   menu_handle_t *menu      = menu_driver_get_ptr();
+   settings_t *settings     = config_get_ptr();
+   global_t *global         = global_get_ptr();
+
+   if (!menu)
+      return -1;
+
+   strlcpy(global->fullpath, detect_content_path, sizeof(global->fullpath));
+   strlcpy(settings->libretro, path, sizeof(settings->libretro));
+   event_command(EVENT_CMD_LOAD_CORE);
+   menu_entries_common_load_content(false);
+
+   return -1;
 }
 
 static int action_ok_playlist_entry(const char *path,
@@ -1541,6 +1564,9 @@ static int menu_entries_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs
       case MENU_LABEL_LOAD_CONTENT:
       case MENU_LABEL_DETECT_CORE_LIST:
          cbs->action_ok = action_ok_push_content_list;
+         break;
+      case MENU_LABEL_DETECT_CORE_LIST_OK:
+         cbs->action_ok = action_ok_file_load_detect_core;
          break;
       case MENU_LABEL_HISTORY_LIST:
       case MENU_LABEL_CURSOR_MANAGER_LIST:

@@ -192,6 +192,7 @@ extern "C" {
 
 #define MENU_LABEL_CONTENT_ACTIONS                                             0xa0d76970U
 #define MENU_LABEL_DETECT_CORE_LIST                                            0xaa07c341U
+#define MENU_LABEL_DETECT_CORE_LIST_OK                                         0xabba2a7aU
 #define MENU_LABEL_LOAD_CONTENT                                                0x5745de1fU
 #define MENU_LABEL_CORE_UPDATER_LIST                                           0x0372767dU
 #define MENU_LABEL_RECORD_CONFIG                                               0x11c3daf9U

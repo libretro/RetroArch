@@ -63,6 +63,11 @@ static int deferred_push_core_list_deferred(menu_displaylist_info_t *info)
    return menu_displaylist_push_list(info, DISPLAYLIST_CORES_SUPPORTED);
 }
 
+static int deferred_push_core_collection_list_deferred(menu_displaylist_info_t *info)
+{
+   return menu_displaylist_push_list(info, DISPLAYLIST_CORES_COLLECTION_SUPPORTED);
+}
+
 static int deferred_push_database_manager_list_deferred(menu_displaylist_info_t *info)
 {
    strlcpy(info->path_b,    info->path, sizeof(info->path_b));
@@ -511,8 +516,10 @@ static int menu_entries_cbs_init_bind_deferred_push_compare_type(menu_file_list_
             cbs->action_deferred_push = deferred_push_management_options;
             break;
          case MENU_LABEL_DEFERRED_CORE_LIST:
-         case MENU_LABEL_DEFERRED_CORE_LIST_SET:
             cbs->action_deferred_push = deferred_push_core_list_deferred;
+            break;
+         case MENU_LABEL_DEFERRED_CORE_LIST_SET:
+            cbs->action_deferred_push = deferred_push_core_collection_list_deferred;
             break;
          case MENU_LABEL_DEFERRED_VIDEO_FILTER:
             cbs->action_deferred_push = deferred_push_video_filter;
