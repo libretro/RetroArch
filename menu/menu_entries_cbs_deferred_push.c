@@ -461,19 +461,6 @@ static int menu_entries_cbs_init_bind_deferred_push_compare_label(menu_file_list
    if (strstr(label, "deferred_rdb_entry_detail"))
       cbs->action_deferred_push = deferred_push_rdb_entry_detail;
    else
-      return -1;
-
-   return 0;
-}
-
-static int menu_entries_cbs_init_bind_deferred_push_compare_type(menu_file_list_cbs_t *cbs, unsigned type,
-      uint32_t label_hash)
-{
-   if (type == MENU_SETTING_GROUP)
-      cbs->action_deferred_push = deferred_push_category;
-   else if (type == MENU_FILE_PLAYLIST_COLLECTION)
-      cbs->action_deferred_push = deferred_push_rdb_collection;
-   else
    {
       switch (label_hash)
       {
@@ -627,6 +614,19 @@ static int menu_entries_cbs_init_bind_deferred_push_compare_type(menu_file_list_
             return -1;
       }
    }
+
+   return 0;
+}
+
+static int menu_entries_cbs_init_bind_deferred_push_compare_type(menu_file_list_cbs_t *cbs, unsigned type,
+      uint32_t label_hash)
+{
+   if (type == MENU_SETTING_GROUP)
+      cbs->action_deferred_push = deferred_push_category;
+   else if (type == MENU_FILE_PLAYLIST_COLLECTION)
+      cbs->action_deferred_push = deferred_push_rdb_collection;
+   else
+      return -1;
 
    return 0;
 }
