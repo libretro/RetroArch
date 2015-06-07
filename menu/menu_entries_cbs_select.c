@@ -103,15 +103,18 @@ static int menu_entries_cbs_init_bind_select_compare_type(
    return 0;
 }
 
-void menu_entries_cbs_init_bind_select(menu_file_list_cbs_t *cbs,
+int menu_entries_cbs_init_bind_select(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx,
       const char *elem0, const char *elem1,
       uint32_t label_hash, uint32_t menu_label_hash)
 {
    if (!cbs)
-      return;
+      return -1;
 
    cbs->action_select = action_select_default;
 
-   menu_entries_cbs_init_bind_select_compare_type(cbs, type);
+   if (menu_entries_cbs_init_bind_select_compare_type(cbs, type) == 0)
+      return 0;
+
+   return -1;
 }

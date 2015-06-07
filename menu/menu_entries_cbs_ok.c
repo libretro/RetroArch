@@ -1742,24 +1742,21 @@ static int menu_entries_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
    return 0;
 }
 
-void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
+int menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx,
       const char *elem0, const char *elem1, const char *menu_label,
       uint32_t label_hash, uint32_t menu_label_hash)
 {
-   menu_handle_t *menu      = menu_driver_get_ptr();
-
-   if (!cbs || !menu)
-      return;
-
-#if 0
-   RARCH_LOG("path: %s, label: %s, elem0 : %s, elem1: %s\n", path, label, elem0, elem1);
-#endif
+   if (!cbs)
+      return -1;
 
    cbs->action_ok = action_ok_lookup_setting;
 
    if (menu_entries_cbs_init_bind_ok_compare_label(cbs, label, label_hash, elem0) == 0)
-      return;
+      return 0;
 
-   menu_entries_cbs_init_bind_ok_compare_type(cbs, label_hash, menu_label_hash, type);
+   if (menu_entries_cbs_init_bind_ok_compare_type(cbs, label_hash, menu_label_hash, type) == 0)
+      return 0;
+
+   return -1;
 }

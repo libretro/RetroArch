@@ -25,13 +25,15 @@ static int action_cancel_pop_default(const char *path,
    return menu_entry_go_back();
 }
 
-void menu_entries_cbs_init_bind_cancel(menu_file_list_cbs_t *cbs,
+int menu_entries_cbs_init_bind_cancel(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx,
       const char *elem0, const char *elem1,
       uint32_t label_hash, uint32_t menu_label_hash)
 {
    if (!cbs)
-      return;
+      return -1;
 
    cbs->action_cancel = action_cancel_pop_default;
+
+   return -1;
 }

@@ -624,7 +624,7 @@ static int menu_entries_cbs_init_bind_deferred_push_compare_type(menu_file_list_
    return 0;
 }
 
-void menu_entries_cbs_init_bind_deferred_push(menu_file_list_cbs_t *cbs,
+int menu_entries_cbs_init_bind_deferred_push(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx,
       const char *elem0, const char *elem1,
       uint32_t label_hash, uint32_t menu_label_hash)
@@ -632,7 +632,7 @@ void menu_entries_cbs_init_bind_deferred_push(menu_file_list_cbs_t *cbs,
    settings_t *settings   = config_get_ptr();
 
    if (!cbs)
-      return;
+      return -1;
 
    cbs->action_deferred_push = deferred_push_default;
 
@@ -643,13 +643,16 @@ void menu_entries_cbs_init_bind_deferred_push(menu_file_list_cbs_t *cbs,
          if (!settings->menu.collapse_subgroups_enable)
          {
             cbs->action_deferred_push = deferred_push_settings_subgroup;
-            return;
+            return 0;
          }
       }
    }
 
    if (menu_entries_cbs_init_bind_deferred_push_compare_label(cbs, label, label_hash) == 0)
-      return;
+      return 0;
 
-   menu_entries_cbs_init_bind_deferred_push_compare_type(cbs, type, label_hash);
+   if (menu_entries_cbs_init_bind_deferred_push_compare_type(cbs, type, label_hash) == 0)
+      return 0;
+
+   return -1;
 }

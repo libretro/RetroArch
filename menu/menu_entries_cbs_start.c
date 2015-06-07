@@ -323,18 +323,21 @@ static int menu_entries_cbs_init_bind_start_compare_type(menu_file_list_cbs_t *c
    return 0;
 }
 
-void menu_entries_cbs_init_bind_start(menu_file_list_cbs_t *cbs,
+int menu_entries_cbs_init_bind_start(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx,
       const char *elem0, const char *elem1,
       uint32_t label_hash, uint32_t menu_label_hash)
 {
    if (!cbs)
-      return;
+      return -1;
 
    cbs->action_start = action_start_lookup_setting;
    
    if (menu_entries_cbs_init_bind_start_compare_label(cbs, label_hash) == 0)
-      return;
+      return 0;
 
-   menu_entries_cbs_init_bind_start_compare_type(cbs, type);
+   if (menu_entries_cbs_init_bind_start_compare_type(cbs, type) == 0)
+      return 0;
+
+   return -1;
 }

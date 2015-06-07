@@ -320,13 +320,15 @@ static int action_get_title_default(const char *path, const char *label,
    return 0;
 }
 
-void menu_entries_cbs_init_bind_title(menu_file_list_cbs_t *cbs,
+int menu_entries_cbs_init_bind_title(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx,
       const char *elem0, const char *elem1,
       uint32_t label_hash, uint32_t menu_label_hash)
 {
    if (!cbs)
-      return;
+      return -1;
 
    cbs->action_get_title = action_get_title_default;
+
+   return -1;
 }

@@ -22,11 +22,15 @@ static int action_refresh_default(file_list_t *list, file_list_t *menu_list)
    return menu_displaylist_push(list, menu_list);
 }
 
-void menu_entries_cbs_init_bind_refresh(menu_file_list_cbs_t *cbs,
+int menu_entries_cbs_init_bind_refresh(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx,
       const char *elem0, const char *elem1,
       uint32_t label_hash, uint32_t menu_label_hash)
 {
-   if (cbs)
-      cbs->action_refresh = action_refresh_default;
+   if (!cbs)
+      return -1;
+
+   cbs->action_refresh = action_refresh_default;
+
+   return -1;
 }

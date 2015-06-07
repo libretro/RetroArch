@@ -462,27 +462,30 @@ static int menu_entries_cbs_init_bind_left_compare_type(menu_file_list_cbs_t *cb
    return 0;
 }
 
-void menu_entries_cbs_init_bind_left(menu_file_list_cbs_t *cbs,
+int menu_entries_cbs_init_bind_left(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx,
       const char *elem0, const char *elem1, const char *menu_label,
       uint32_t label_hash, uint32_t menu_label_hash)
 {
    if (!cbs)
-      return;
+      return -1;
 
    if (label)
    {
       if (menu_entries_common_is_settings_entry(elem0))
       {
          cbs->action_left = action_left_scroll;
-         return;
+         return 0;
       }
    }
 
    cbs->action_left = bind_left_generic;
 
    if (menu_entries_cbs_init_bind_left_compare_label(cbs, label, label_hash) == 0)
-      return;
+      return 0;
 
-   menu_entries_cbs_init_bind_left_compare_type(cbs, type, menu_label_hash);
+   if (menu_entries_cbs_init_bind_left_compare_type(cbs, type, menu_label_hash) == 0)
+      return 0;
+
+   return -1;
 }

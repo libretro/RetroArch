@@ -579,13 +579,15 @@ static int action_iterate_main(const char *label, unsigned action)
    return ret;
 }
 
-void menu_entries_cbs_init_bind_iterate(menu_file_list_cbs_t *cbs,
+int menu_entries_cbs_init_bind_iterate(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx,
       const char *elem0, const char *elem1,
       uint32_t label_hash, uint32_t menu_label_hash)
 {
    if (!cbs)
-      return;
+      return -1;
 
    cbs->action_iterate = action_iterate_main;
+
+   return -1;
 }
