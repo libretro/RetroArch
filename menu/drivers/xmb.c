@@ -570,6 +570,7 @@ static void xmb_list_open_new(xmb_handle_t *xmb,
 
    for (i = 0; i < end; i++)
    {
+      float ia;
       xmb_node_t *node = (xmb_node_t*)
          file_list_get_userdata_at_offset(list, i);
 
@@ -588,15 +589,6 @@ static void xmb_list_open_new(xmb_handle_t *xmb,
 
       if (i == current)
          node->zoom = xmb->categories.active.zoom;
-   }
-
-   for (i = 0; i < end; i++)
-   {
-      float ia;
-      xmb_node_t *node = (xmb_node_t*)file_list_get_userdata_at_offset(list, i);
-
-      if (!node)
-         continue;
 
       ia    = xmb->item.passive.alpha;
       if (i == current)
