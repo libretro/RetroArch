@@ -168,7 +168,7 @@ static int action_right_mainmenu(unsigned type, const char *label,
    switch (push_list)
    {
       case 1:
-         menu_driver_list_cache(true, action);
+         menu_driver_list_cache(MENU_LIST_HORIZONTAL, action);
 
          if (cbs && cbs->action_content_list_switch)
             return cbs->action_content_list_switch(

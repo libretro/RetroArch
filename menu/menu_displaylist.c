@@ -1717,7 +1717,7 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          menu_list_push(info->list, info->path, info->label, info->type, info->directory_ptr);
          break;
       case DISPLAYLIST_GENERIC:
-         menu_driver_list_cache(false, 0);
+         menu_driver_list_cache(MENU_LIST_PLAIN, 0);
 
          menu_list_push(info->list, info->path, info->label, info->type, info->directory_ptr);
          menu_navigation_clear(&menu->navigation, true);

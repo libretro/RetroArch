@@ -254,7 +254,7 @@ typedef struct menu_ctx_driver
    void  (*list_insert)(file_list_t *list, const char *, const char *, size_t);
    void  (*list_delete)(file_list_t *list, size_t, size_t);
    void  (*list_clear)(file_list_t *list);
-   void  (*list_cache)(bool, unsigned);
+   void  (*list_cache)(menu_list_type_t, unsigned);
    void  (*list_set_selection)(file_list_t *list);
    bool  (*load_image)(void *data, menu_image_type_t type);
    const char *ident;
@@ -336,7 +336,7 @@ void  menu_driver_navigation_descend_alphabet(size_t *);
 
 void  menu_driver_navigation_ascend_alphabet(size_t *);
 
-void menu_driver_list_cache(bool state, unsigned action);
+void menu_driver_list_cache(menu_list_type_t type, unsigned action);
 
 void  menu_driver_list_delete(file_list_t *list, size_t i, size_t list_size);
 

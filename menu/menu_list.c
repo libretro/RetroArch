@@ -278,7 +278,7 @@ void menu_list_pop_stack(menu_list_t *list)
    if (file_list_get_size(list->menu_stack) <= 1)
       return;
 
-   menu_driver_list_cache(false, 0);
+   menu_driver_list_cache(MENU_LIST_PLAIN, 0);
 
    menu_list_pop(list->menu_stack, &menu->navigation.selection_ptr);
    menu_set_refresh();

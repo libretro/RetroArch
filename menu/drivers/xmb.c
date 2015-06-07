@@ -1870,7 +1870,7 @@ static void xmb_list_delete(file_list_t *list,
    list->list[idx].userdata = NULL;
 }
 
-static void xmb_list_cache(bool horizontal, unsigned action)
+static void xmb_list_cache(menu_list_type_t type, unsigned action)
 {
    size_t stack_size;
    xmb_handle_t *xmb   = NULL;
@@ -1888,40 +1888,44 @@ static void xmb_list_cache(bool horizontal, unsigned action)
    file_list_copy(menu->menu_list->menu_stack, xmb->menu_stack_old);
    xmb->selection_ptr_old = menu->navigation.selection_ptr;
 
-   if(!horizontal)
-      return;
-
-   xmb->categories.selection_ptr_old = menu->categories.selection_ptr;
-
-   switch (action)
+   switch (type)
    {
-      case MENU_ACTION_LEFT:
-         menu->categories.selection_ptr--;
+      case MENU_LIST_PLAIN:
          break;
-      default:
-         menu->categories.selection_ptr++;
+      case MENU_LIST_HORIZONTAL:
+         xmb->categories.selection_ptr_old = menu->categories.selection_ptr;
+
+         switch (action)
+         {
+            case MENU_ACTION_LEFT:
+               menu->categories.selection_ptr--;
+               break;
+            default:
+               menu->categories.selection_ptr++;
+               break;
+         }
+
+         stack_size = menu->menu_list->menu_stack->size;
+
+         if (menu->menu_list->menu_stack->list[stack_size - 1].label)
+            free(menu->menu_list->menu_stack->list[stack_size - 1].label);
+         menu->menu_list->menu_stack->list[stack_size - 1].label = NULL;
+
+         if (menu->categories.selection_ptr == 0)
+         {
+            menu->menu_list->menu_stack->list[stack_size - 1].label = 
+               strdup("Main Menu");
+            menu->menu_list->menu_stack->list[stack_size - 1].type = 
+               MENU_SETTINGS;
+         }
+         else
+         {
+            menu->menu_list->menu_stack->list[stack_size - 1].label = 
+               strdup("Horizontal Menu");
+            menu->menu_list->menu_stack->list[stack_size - 1].type = 
+               MENU_SETTING_HORIZONTAL_MENU;
+         }
          break;
-   }
-
-   stack_size = menu->menu_list->menu_stack->size;
-
-   if (menu->menu_list->menu_stack->list[stack_size - 1].label)
-      free(menu->menu_list->menu_stack->list[stack_size - 1].label);
-   menu->menu_list->menu_stack->list[stack_size - 1].label = NULL;
-
-   if (menu->categories.selection_ptr == 0)
-   {
-      menu->menu_list->menu_stack->list[stack_size - 1].label = 
-         strdup("Main Menu");
-      menu->menu_list->menu_stack->list[stack_size - 1].type = 
-         MENU_SETTINGS;
-   }
-   else
-   {
-      menu->menu_list->menu_stack->list[stack_size - 1].label = 
-         strdup("Horizontal Menu");
-      menu->menu_list->menu_stack->list[stack_size - 1].type = 
-         MENU_SETTING_HORIZONTAL_MENU;
    }
 }
 

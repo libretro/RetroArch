@@ -251,12 +251,12 @@ void  menu_driver_list_insert(file_list_t *list, const char *path,
    menu_entries_cbs_init(list, path, label, type, idx);
 }
 
-void menu_driver_list_cache(bool state, unsigned action)
+void menu_driver_list_cache(menu_list_type_t type, unsigned action)
 {
    const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
 
    if (driver->list_cache)
-      driver->list_cache(state, action);
+      driver->list_cache(type, action);
 }
 
 void menu_driver_navigation_increment(void)

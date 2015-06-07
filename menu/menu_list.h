@@ -32,6 +32,12 @@ typedef struct menu_list
    file_list_t *selection_buf;
 } menu_list_t;
 
+typedef enum
+{
+   MENU_LIST_PLAIN = 0,
+   MENU_LIST_HORIZONTAL,
+} menu_list_type_t;
+
 typedef struct menu_file_list_cbs
 {
    int (*action_iterate)(const char *label, unsigned action);
