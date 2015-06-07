@@ -1964,7 +1964,7 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          menu_displaylist_parse_system_info(info);
          need_push    = true;
          break;
-      case DISPLAYLIST_CORES_ALL:
+      case DISPLAYLIST_CORES_SUPPORTED:
          menu_list_clear(info->list);
          need_sort    = true;
          need_refresh = true;

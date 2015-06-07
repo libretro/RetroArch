@@ -60,7 +60,7 @@ static int deferred_push_rdb_entry_detail(menu_displaylist_info_t *info)
 
 static int deferred_push_core_list_deferred(menu_displaylist_info_t *info)
 {
-   return menu_displaylist_push_list(info, DISPLAYLIST_CORES_ALL);
+   return menu_displaylist_push_list(info, DISPLAYLIST_CORES_SUPPORTED);
 }
 
 static int deferred_push_database_manager_list_deferred(menu_displaylist_info_t *info)
