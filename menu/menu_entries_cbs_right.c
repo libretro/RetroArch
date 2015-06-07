@@ -416,9 +416,18 @@ static int menu_entries_cbs_init_bind_right_compare_type(menu_file_list_cbs_t *c
 }
 
 static int menu_entries_cbs_init_bind_right_compare_label(menu_file_list_cbs_t *cbs,
-      const char *label, uint32_t label_hash, uint32_t menu_label_hash)
+      const char *label, uint32_t label_hash, uint32_t menu_label_hash, const char *elem0)
 {
    unsigned i;
+
+   if (label)
+   {
+      if (menu_entries_common_is_settings_entry(elem0))
+      {
+         cbs->action_right = action_right_scroll;
+         return 0;
+      }
+   }
 
    for (i = 0; i < MAX_USERS; i++)
    {
@@ -473,18 +482,9 @@ int menu_entries_cbs_init_bind_right(menu_file_list_cbs_t *cbs,
    if (!cbs)
       return -1;
 
-   if (label)
-   {
-      if (menu_entries_common_is_settings_entry(elem0))
-      {
-         cbs->action_right = action_right_scroll;
-         return 0;
-      }
-   }
-
    cbs->action_right = bind_right_generic;
 
-   if (menu_entries_cbs_init_bind_right_compare_label(cbs, label, label_hash, menu_label_hash) == 0)
+   if (menu_entries_cbs_init_bind_right_compare_label(cbs, label, label_hash, menu_label_hash, elem0) == 0)
       return 0;
 
    if (menu_entries_cbs_init_bind_right_compare_type(cbs, type, menu_label_hash) == 0)

@@ -344,9 +344,18 @@ static int bind_left_generic(unsigned type, const char *label,
 }
 
 static int menu_entries_cbs_init_bind_left_compare_label(menu_file_list_cbs_t *cbs,
-      const char *label, uint32_t label_hash)
+      const char *label, uint32_t label_hash, const char *elem0)
 {
    unsigned i;
+
+   if (label)
+   {
+      if (menu_entries_common_is_settings_entry(elem0))
+      {
+         cbs->action_left = action_left_scroll;
+         return 0;
+      }
+   }
 
    for (i = 0; i < MAX_USERS; i++)
    {
@@ -470,18 +479,9 @@ int menu_entries_cbs_init_bind_left(menu_file_list_cbs_t *cbs,
    if (!cbs)
       return -1;
 
-   if (label)
-   {
-      if (menu_entries_common_is_settings_entry(elem0))
-      {
-         cbs->action_left = action_left_scroll;
-         return 0;
-      }
-   }
-
    cbs->action_left = bind_left_generic;
 
-   if (menu_entries_cbs_init_bind_left_compare_label(cbs, label, label_hash) == 0)
+   if (menu_entries_cbs_init_bind_left_compare_label(cbs, label, label_hash, elem0) == 0)
       return 0;
 
    if (menu_entries_cbs_init_bind_left_compare_type(cbs, type, menu_label_hash) == 0)
