@@ -33,6 +33,7 @@
 
 #include "../menu_entries_cbs.h"
 
+#include "../../file_ext.h"
 #include "../../gfx/video_texture.h"
 
 #include "../../runloop_data.h"
@@ -97,6 +98,7 @@ typedef struct xmb_handle
 {
    file_list_t *menu_stack_old;
    file_list_t *selection_buf_old;
+   file_list_t *core_list;
    size_t selection_ptr_old;
    int depth;
    int old_depth;
@@ -1374,6 +1376,28 @@ static void xmb_frame(void)
    menu_display_unset_viewport();
 }
 
+static void xmb_init_core_list(menu_handle_t *menu, xmb_handle_t *xmb)
+{
+   menu_displaylist_info_t info = {0};
+   settings_t *settings        = config_get_ptr();
+
+   xmb->core_list     = (file_list_t*)calloc(1, sizeof(file_list_t));
+
+   if (!xmb->core_list)
+      return;
+
+   info.list         = xmb->core_list;
+   info.menu_list    = NULL;
+   info.type         = 0;
+   info.type_default = MENU_FILE_PLAIN;
+   strlcpy(info.path, settings->libretro_directory, sizeof(info.path));
+   strlcpy(info.exts, EXT_EXECUTABLES, sizeof(info.exts));
+
+   menu_displaylist_push_list(&info, DISPLAYLIST_CORES);
+
+   menu->categories.size     = file_list_get_size(xmb->core_list);
+}
+
 static void *xmb_init(void)
 {
    unsigned width, height;
@@ -1475,18 +1499,23 @@ static void *xmb_init(void)
    menu->categories.size        = 1;
    menu->header_height          = xmb->icon.size;
 
-   if (global->core_info)
-      menu->categories.size     = global->core_info->count + 1;
+   xmb_init_core_list(menu, xmb);
+
 
    return menu;
 
 error:
    if (menu)
       free(menu);
-   if (xmb && xmb->menu_stack_old)
-      free(xmb->menu_stack_old);
-   if (xmb && xmb->selection_buf_old)
-      free(xmb->selection_buf_old);
+   if (xmb)
+   {
+      if (xmb->menu_stack_old)
+         free(xmb->menu_stack_old);
+      if (xmb->selection_buf_old)
+         free(xmb->selection_buf_old);
+      if (xmb->core_list)
+         free(xmb->core_list);
+   }
    return NULL;
 }
 
@@ -1507,6 +1536,7 @@ static void xmb_free(void *data)
 
       free(xmb->menu_stack_old);
       free(xmb->selection_buf_old);
+      free(xmb->core_list);
 
       gl_coord_array_free(&xmb->raster_block.carr);
 

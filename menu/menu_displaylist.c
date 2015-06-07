@@ -1657,6 +1657,7 @@ static int menu_displaylist_parse_generic(menu_displaylist_info_t *info, bool *n
             break;
       }
 
+      RARCH_LOG("path: %s, label: %s\n", path, label);
       menu_list_push(info->list, path, label,
             file_type, 0);
    }
