@@ -350,7 +350,7 @@ static int menu_entries_cbs_init_bind_left_compare_label(menu_file_list_cbs_t *c
 
    if (label)
    {
-      if (menu_entries_common_is_settings_entry(elem0))
+      if (menu_entries_common_is_settings_entry(label_hash))
       {
          cbs->action_left = action_left_scroll;
          return 0;

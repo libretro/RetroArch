@@ -422,7 +422,7 @@ static int menu_entries_cbs_init_bind_right_compare_label(menu_file_list_cbs_t *
 
    if (label)
    {
-      if (menu_entries_common_is_settings_entry(elem0))
+      if (menu_entries_common_is_settings_entry(label_hash))
       {
          cbs->action_right = action_right_scroll;
          return 0;

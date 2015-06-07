@@ -70,11 +70,13 @@ static int action_get_title_default(const char *path, const char *label,
       string_list_free(list_path);
    }
 
+   hash = djb2_calculate(label);
+
 #if 0
    RARCH_LOG("label %s, elem0 %s, elem1 %s\n", label, elem0, elem1);
 #endif
 
-   if (menu_entries_common_is_settings_entry(label) == 1)
+   if (menu_entries_common_is_settings_entry(hash) == 1)
    {
       strlcpy(s, string_to_upper(elem0), len);
       if (elem1[0] != '\0')
@@ -84,8 +86,6 @@ static int action_get_title_default(const char *path, const char *label,
       }
       return 0;
    }
-    
-   hash = djb2_calculate(label);
 
    switch (hash)
    {

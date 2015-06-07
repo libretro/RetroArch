@@ -130,11 +130,9 @@ int cb_core_updater_download(void *data, size_t len)
 }
 #endif
 
-int menu_entries_common_is_settings_entry(const char *label)
+int menu_entries_common_is_settings_entry(uint32_t label_hash)
 {
-   uint32_t    hash = djb2_calculate(label);
-
-   switch (hash)
+   switch (label_hash)
    {
       case MENU_LABEL_DRIVER_SETTINGS:
       case MENU_LABEL_CORE_SETTINGS:

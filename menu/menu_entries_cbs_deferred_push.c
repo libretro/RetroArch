@@ -645,7 +645,7 @@ int menu_entries_cbs_init_bind_deferred_push(menu_file_list_cbs_t *cbs,
 
    if ((strlen(elem1) != 0) && !!strcmp(elem0, elem1))
    {
-      if (menu_entries_common_is_settings_entry(elem0))
+      if (menu_entries_common_is_settings_entry(label_hash))
       {
          if (!settings->menu.collapse_subgroups_enable)
          {
