@@ -151,7 +151,6 @@ static int action_right_mainmenu(unsigned type, const char *label,
 
    if (file_list_get_size(menu_list->menu_stack) == 1)
    {
-
       if (!strcmp(driver->menu_ctx->ident, "xmb"))
       {
          menu->navigation.selection_ptr = 0;

@@ -259,6 +259,16 @@ void menu_driver_list_cache(menu_list_type_t type, unsigned action)
       driver->list_cache(type, action);
 }
 
+size_t menu_driver_list_get_size(menu_list_type_t type)
+{
+   menu_handle_t *menu             = menu_driver_get_ptr();
+   const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
+
+   if (driver->list_get_size)
+      return driver->list_get_size(menu, type);
+   return 0;
+}
+
 void menu_driver_navigation_increment(void)
 {
    const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();

@@ -2118,6 +2118,7 @@ menu_ctx_driver_t menu_ctx_xmb = {
    xmb_list_delete,
    NULL,
    xmb_list_cache,
+   xmb_list_get_size,
    NULL,
    xmb_load_image,
    "xmb",
