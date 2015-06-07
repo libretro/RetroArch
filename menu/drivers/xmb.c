@@ -769,19 +769,9 @@ static void xmb_set_title(xmb_handle_t *xmb)
    }
 }
 
-static void xmb_list_switch(xmb_handle_t *xmb)
+static void xmb_list_switch_horizontal_list(xmb_handle_t *xmb, menu_handle_t *menu)
 {
    unsigned j;
-   int dir = -1;
-   menu_handle_t *menu = menu_driver_get_ptr();
-
-   if (!menu)
-      return;
-
-   if (menu->categories.selection_ptr > xmb->categories.selection_ptr_old)
-      dir = 1;
-
-   xmb->categories.active.idx += dir;
 
    for (j = 0; j < menu->categories.size; j++)
    {
@@ -807,6 +797,22 @@ static void xmb_list_switch(xmb_handle_t *xmb)
       menu_animation_push(menu->animation,
             XMB_DELAY, iz, &node->zoom, EASING_IN_OUT_QUAD, NULL);
    }
+}
+
+static void xmb_list_switch(xmb_handle_t *xmb)
+{
+   int dir = -1;
+   menu_handle_t *menu = menu_driver_get_ptr();
+
+   if (!menu)
+      return;
+
+   if (menu->categories.selection_ptr > xmb->categories.selection_ptr_old)
+      dir = 1;
+
+   xmb->categories.active.idx += dir;
+
+   xmb_list_switch_horizontal_list(xmb, menu);
 
    menu_animation_push(menu->animation, XMB_DELAY,
          xmb->icon.spacing.horizontal * -(float)menu->categories.selection_ptr,
@@ -823,21 +829,9 @@ static void xmb_list_switch(xmb_handle_t *xmb)
    xmb->categories.active.idx_old = menu->categories.selection_ptr;
 }
 
-static void xmb_list_open(xmb_handle_t *xmb)
+static void xmb_list_open_horizontal_list(xmb_handle_t *xmb, menu_handle_t *menu)
 {
    unsigned j;
-   int dir             = 0;
-   menu_handle_t *menu = menu_driver_get_ptr();
-
-   if (!menu)
-      return;
-
-   xmb->depth = file_list_get_size(menu->menu_list->menu_stack);
-
-   if (xmb->depth > xmb->old_depth)
-      dir = 1;
-   else if (xmb->depth < xmb->old_depth)
-      dir = -1;
 
    for (j = 0; j < menu->categories.size; j++)
    {
@@ -859,6 +853,24 @@ static void xmb_list_open(xmb_handle_t *xmb)
       menu_animation_push(menu->animation, XMB_DELAY, ia,
             &node->alpha, EASING_IN_OUT_QUAD, NULL);
    }
+}
+
+static void xmb_list_open(xmb_handle_t *xmb)
+{
+   int dir             = 0;
+   menu_handle_t *menu = menu_driver_get_ptr();
+
+   if (!menu)
+      return;
+
+   xmb->depth = file_list_get_size(menu->menu_list->menu_stack);
+
+   if (xmb->depth > xmb->old_depth)
+      dir = 1;
+   else if (xmb->depth < xmb->old_depth)
+      dir = -1;
+
+   xmb_list_open_horizontal_list(xmb, menu);
 
    xmb_list_open_old(xmb, xmb->selection_buf_old,
          dir, xmb->selection_ptr_old);
@@ -1228,10 +1240,40 @@ static void xmb_render(void)
    menu->label.is_updated    = false;
 }
 
+static void xmb_frame_horizontal_list(xmb_handle_t *xmb, menu_handle_t *menu, gl_t *gl)
+{
+   unsigned i;
+
+   for (i = 0; i < menu->categories.size; i++)
+   {
+      core_info_t *info           = NULL;
+      xmb_node_t *node = &xmb->settings_node;
+
+      if (i > 0)
+         node = xmb_get_userdata_from_core(xmb, info, i - 1);
+
+      if (!node)
+         continue;
+
+      xmb_draw_icon_begin(gl);
+
+      xmb_draw_icon(gl, xmb, node->icon, 
+            xmb->x + xmb->categories.x_pos + 
+            xmb->margins.screen.left + 
+            xmb->icon.spacing.horizontal * (i + 1) - xmb->icon.size / 2.0,
+            xmb->margins.screen.top + xmb->icon.size / 2.0, 
+            node->alpha, 
+            0, 
+            node->zoom);
+
+      xmb_draw_icon_end();
+   }
+}
+
 static void xmb_frame(void)
 {
    math_matrix_4x4 mymat, mrot, mscal;
-   unsigned i, depth;
+   unsigned depth;
    unsigned width, height;
    char msg[PATH_MAX_LENGTH];
    char title_msg[PATH_MAX_LENGTH], timedate[PATH_MAX_LENGTH];
@@ -1318,30 +1360,7 @@ static void xmb_frame(void)
          * xmb->item.active.factor,
          xmb->textures.arrow.alpha, 0, 1);
 
-   for (i = 0; i < menu->categories.size; i++)
-   {
-      core_info_t *info           = NULL;
-      xmb_node_t *node = &xmb->settings_node;
-
-      if (i > 0)
-         node = xmb_get_userdata_from_core(xmb, info, i - 1);
-
-      if (!node)
-         continue;
-
-      xmb_draw_icon_begin(gl);
-
-      xmb_draw_icon(gl, xmb, node->icon, 
-            xmb->x + xmb->categories.x_pos + 
-            xmb->margins.screen.left + 
-            xmb->icon.spacing.horizontal * (i + 1) - xmb->icon.size / 2.0,
-            xmb->margins.screen.top + xmb->icon.size / 2.0, 
-            node->alpha, 
-            0, 
-            node->zoom);
-
-      xmb_draw_icon_end();
-   }
+   xmb_frame_horizontal_list(xmb, menu, gl);
 
    menu_display_font_flush_block(menu, font_driver);
 
@@ -1959,6 +1978,24 @@ static void xmb_list_cache(menu_list_type_t type, unsigned action)
    }
 }
 
+static void xmb_context_destroy_horizontal_list(xmb_handle_t *xmb,
+      menu_handle_t *menu)
+{
+   unsigned i;
+
+   for (i = 1; i < menu->categories.size; i++)
+   {
+      core_info_t *info           = NULL;
+      xmb_node_t *node = xmb_get_userdata_from_core(xmb, info, i - 1);
+
+      if (!node)
+         continue;
+
+      glDeleteTextures(1, &node->icon);
+      glDeleteTextures(1, &node->content_icon);
+   }
+}
+
 static void xmb_context_destroy(void)
 {
    unsigned i;
@@ -1976,24 +2013,41 @@ static void xmb_context_destroy(void)
    for (i = 0; i < XMB_TEXTURE_LAST; i++)
       glDeleteTextures(1, &xmb->textures.list[i].id);
 
-   for (i = 1; i < menu->categories.size; i++)
-   {
-      core_info_t *info           = NULL;
-      xmb_node_t *node = xmb_get_userdata_from_core(xmb, info, i - 1);
-
-      if (!node)
-         continue;
-
-      glDeleteTextures(1, &node->icon);
-      glDeleteTextures(1, &node->content_icon);
-   }
+   xmb_context_destroy_horizontal_list(xmb, menu);
 
    menu_display_free_main_font(menu);
 }
 
-static void xmb_toggle(bool menu_on)
+static void xmb_toggle_horizontal_list(xmb_handle_t *xmb, menu_handle_t *menu)
 {
    unsigned i;
+
+   for (i = 0; i < menu->categories.size; i++)
+   {
+      core_info_t *info           = NULL;
+      xmb_node_t *node = &xmb->settings_node;
+
+      if (i > 0)
+         node = xmb_get_userdata_from_core(xmb, info, i - 1);
+
+      if (!node)
+         continue;
+
+      node->alpha = 0;
+      node->zoom  = xmb->categories.passive.zoom;
+
+      if (i == xmb->categories.active.idx)
+      {
+         node->alpha = xmb->categories.active.alpha;
+         node->zoom  = xmb->categories.active.zoom;
+      }
+      else if (xmb->depth <= 1)
+         node->alpha = xmb->categories.passive.alpha;
+   }
+}
+
+static void xmb_toggle(bool menu_on)
+{
    xmb_handle_t *xmb   = NULL;
    menu_handle_t *menu = menu_driver_get_ptr();
 
@@ -2018,28 +2072,7 @@ static void xmb_toggle(bool menu_on)
 
    xmb->prevent_populate = !menu_needs_refresh();
 
-   for (i = 0; i < menu->categories.size; i++)
-   {
-      core_info_t *info           = NULL;
-      xmb_node_t *node = &xmb->settings_node;
-
-      if (i > 0)
-         node = xmb_get_userdata_from_core(xmb, info, i - 1);
-
-      if (!node)
-         continue;
-
-      node->alpha = 0;
-      node->zoom  = xmb->categories.passive.zoom;
-
-      if (i == xmb->categories.active.idx)
-      {
-         node->alpha = xmb->categories.active.alpha;
-         node->zoom  = xmb->categories.active.zoom;
-      }
-      else if (xmb->depth <= 1)
-         node->alpha = xmb->categories.passive.alpha;
-   }
+   xmb_toggle_horizontal_list(xmb, menu);
 }
 
 menu_ctx_driver_t menu_ctx_xmb = {
