@@ -138,10 +138,11 @@ static int action_left_mainmenu(unsigned type, const char *label,
    menu_list_t    *menu_list = menu_list_get_ptr();
    menu_handle_t       *menu = menu_driver_get_ptr();
    unsigned           action = MENU_ACTION_LEFT;
+   size_t          list_size = menu_driver_list_get_size(MENU_LIST_PLAIN);
    if (!menu)
       return -1;
 
-   if (file_list_get_size(menu_list->menu_stack) == 1)
+   if (list_size == 1)
    {
       if (!strcmp(driver->menu_ctx->ident, "xmb"))
       {
