@@ -1665,12 +1665,10 @@ static void xmb_context_reset_horizontal_list(xmb_handle_t *xmb,
          }
       }
 
-      strlcpy(texturepath, iconpath, sizeof(texturepath));
-      strlcat(texturepath, core_id, sizeof(texturepath));
+      fill_pathname_join(texturepath, iconpath, core_id, sizeof(texturepath));
       strlcat(texturepath, ".png", sizeof(texturepath));
 
-      strlcpy(content_texturepath, iconpath, sizeof(content_texturepath));
-      strlcat(content_texturepath, core_id, sizeof(content_texturepath));
+      fill_pathname_join(content_texturepath, iconpath, core_id, sizeof(content_texturepath));
       strlcat(content_texturepath, "-content.png", sizeof(content_texturepath));
 
       node->alpha        = 0;
