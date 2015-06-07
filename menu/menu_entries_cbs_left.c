@@ -134,7 +134,6 @@ static int action_left_mainmenu(unsigned type, const char *label,
 {
    menu_file_list_cbs_t *cbs = NULL;
    unsigned        push_list = 0;
-   driver_t          *driver = driver_get_ptr();
    menu_list_t    *menu_list = menu_list_get_ptr();
    menu_handle_t       *menu = menu_driver_get_ptr();
    unsigned           action = MENU_ACTION_LEFT;
