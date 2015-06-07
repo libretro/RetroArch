@@ -1425,7 +1425,6 @@ static void *xmb_init(void)
    xmb_handle_t *xmb                  = NULL;
    const video_driver_t *video_driver = NULL;
    float scale_factor                 = 1;
-   global_t *global                   = global_get_ptr();
    gl_t *gl                           = (gl_t*)
       video_driver_get_ptr(&video_driver);
 
