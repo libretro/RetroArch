@@ -113,7 +113,6 @@ typedef struct
    struct
    {
       size_t selection_ptr;
-      size_t size;
    } categories;
 
    bool need_refresh;
