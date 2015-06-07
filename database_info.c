@@ -50,6 +50,7 @@
 #define DB_QUERY_ENTRY_RELEASEDATE_YEAR         0x9c7c6e91U
 #define DB_QUERY_ENTRY_MAX_USERS                0xbfcba816U
 
+#define DB_CURSOR_ROM_NAME                      0x16bbcf13U
 #define DB_CURSOR_NAME                          0x7c9b0c46U
 #define DB_CURSOR_DESCRIPTION                   0x91b0c789U
 #define DB_CURSOR_PUBLISHER                     0x5e099013U
@@ -74,6 +75,8 @@
 #define DB_CURSOR_RELEASEDATE_YEAR              0x7fd06ed7U
 #define DB_CURSOR_RUMBLE_SUPPORTED              0x1a4dc3ecU
 #define DB_CURSOR_ANALOG_SUPPORTED              0xf220fc17U
+#define DB_CURSOR_SIZE                          0x7c9dede0U
+#define DB_CURSOR_SERIAL                        0x1b843ec5U
 
 int database_info_build_query(char *s, size_t len,
       const char *label, const char *path)
@@ -210,6 +213,12 @@ static int database_cursor_iterate(libretrodb_cursor_t *cur,
 
       switch (value)
       {
+         case DB_CURSOR_SERIAL:
+            db_info->serial = strdup(val->string.buff);
+            break;
+         case DB_CURSOR_ROM_NAME:
+            db_info->rom_name = strdup(val->string.buff);
+            break;
          case DB_CURSOR_NAME:
             db_info->name = strdup(val->string.buff);
             break;
@@ -272,6 +281,9 @@ static int database_cursor_iterate(libretrodb_cursor_t *cur,
             break;
          case DB_CURSOR_ANALOG_SUPPORTED:
             db_info->analog_supported = val->uint_;
+            break;
+         case DB_CURSOR_SIZE:
+            db_info->size = val->uint_;
             break;
          case DB_CURSOR_CHECKSUM_CRC32:
             db_info->crc32 = bin_to_hex_alloc((uint8_t*)val->binary.buff, val->binary.len);
@@ -442,6 +454,10 @@ void database_info_list_free(database_info_list_t *database_info_list)
 
       if (info->name)
          free(info->name);
+      if (info->rom_name)
+         free(info->rom_name);
+      if (info->serial)
+         free(info->serial);
       if (info->description)
          free(info->description);
       if (info->publisher)

@@ -61,6 +61,8 @@ typedef struct
 typedef struct
 {
    char *name;
+   char *rom_name;
+   char *serial;
    char *description;
    char *publisher;
    char *developer;
@@ -76,6 +78,7 @@ typedef struct
    char *crc32;
    char *sha1;
    char *md5;
+   unsigned size;
    unsigned famitsu_magazine_rating;
    unsigned edge_magazine_rating;
    unsigned edge_magazine_issue;
