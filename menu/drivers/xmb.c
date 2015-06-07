@@ -772,8 +772,9 @@ static void xmb_set_title(xmb_handle_t *xmb)
 static void xmb_list_switch_horizontal_list(xmb_handle_t *xmb, menu_handle_t *menu)
 {
    unsigned j;
+   size_t list_size = file_list_get_size(xmb->core_list);
 
-   for (j = 0; j < menu->categories.size; j++)
+   for (j = 0; j < list_size; j++)
    {
       core_info_t *info           = NULL;
       float ia                    = xmb->categories.passive.alpha;
@@ -832,8 +833,9 @@ static void xmb_list_switch(xmb_handle_t *xmb)
 static void xmb_list_open_horizontal_list(xmb_handle_t *xmb, menu_handle_t *menu)
 {
    unsigned j;
+   size_t list_size = file_list_get_size(xmb->core_list);
 
-   for (j = 0; j < menu->categories.size; j++)
+   for (j = 0; j < list_size; j++)
    {
       core_info_t *info = NULL;
       float ia          = 0;
@@ -1243,8 +1245,9 @@ static void xmb_render(void)
 static void xmb_frame_horizontal_list(xmb_handle_t *xmb, menu_handle_t *menu, gl_t *gl)
 {
    unsigned i;
+   size_t list_size = file_list_get_size(xmb->core_list);
 
-   for (i = 0; i < menu->categories.size; i++)
+   for (i = 0; i < list_size; i++)
    {
       core_info_t *info           = NULL;
       xmb_node_t *node = &xmb->settings_node;
@@ -1413,8 +1416,6 @@ static void xmb_init_core_list(menu_handle_t *menu, xmb_handle_t *xmb)
    strlcpy(info.exts, EXT_EXECUTABLES, sizeof(info.exts));
 
    menu_displaylist_push_list(&info, DISPLAYLIST_CORES);
-
-   menu->categories.size     = file_list_get_size(xmb->core_list);
 }
 
 static void *xmb_init(void)
@@ -1515,7 +1516,6 @@ static void *xmb_init(void)
    xmb->margins.label.top       = menu->font.size/3.0;
    xmb->margins.setting.left    = 600.0 * scale_factor;
 
-   menu->categories.size        = 1;
    menu->header_height          = xmb->icon.size;
 
    xmb_init_core_list(menu, xmb);
@@ -1608,14 +1608,14 @@ static void xmb_context_reset_horizontal_list(xmb_handle_t *xmb,
    char iconpath[PATH_MAX_LENGTH];
    unsigned i;
    global_t   *global          = global_get_ptr();
-   menu_handle_t *menu         = menu_driver_get_ptr();
    core_info_list_t *info_list = global ? 
       (core_info_list_t*)global->core_info : NULL;
+   size_t list_size            = file_list_get_size(xmb->core_list);
 
    if (!info_list)
       return;
 
-   for (i = 1; i < menu->categories.size; i++)
+   for (i = 1; i < list_size; i++)
    {
       char core_id[PATH_MAX_LENGTH];
       char texturepath[PATH_MAX_LENGTH], content_texturepath[PATH_MAX_LENGTH];
@@ -1982,8 +1982,9 @@ static void xmb_context_destroy_horizontal_list(xmb_handle_t *xmb,
       menu_handle_t *menu)
 {
    unsigned i;
+   size_t list_size = file_list_get_size(xmb->core_list);
 
-   for (i = 1; i < menu->categories.size; i++)
+   for (i = 1; i < list_size; i++)
    {
       core_info_t *info           = NULL;
       xmb_node_t *node = xmb_get_userdata_from_core(xmb, info, i - 1);
@@ -2021,8 +2022,9 @@ static void xmb_context_destroy(void)
 static void xmb_toggle_horizontal_list(xmb_handle_t *xmb, menu_handle_t *menu)
 {
    unsigned i;
+   size_t list_size = file_list_get_size(xmb->core_list);
 
-   for (i = 0; i < menu->categories.size; i++)
+   for (i = 0; i < list_size; i++)
    {
       core_info_t *info           = NULL;
       xmb_node_t *node = &xmb->settings_node;
