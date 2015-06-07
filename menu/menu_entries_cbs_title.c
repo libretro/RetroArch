@@ -45,6 +45,7 @@ static int action_get_title_default(const char *path, const char *label,
    char elem0_path[PATH_MAX_LENGTH], elem1_path[PATH_MAX_LENGTH];
    struct string_list *list_label = string_split(label, "|");
    struct string_list *list_path  = string_split(path, "|");
+   driver_t               *driver = driver_get_ptr();
 
    *elem0 = *elem1 = *elem0_path = *elem1_path = 0;
 
@@ -283,36 +284,36 @@ static int action_get_title_default(const char *path, const char *label,
          snprintf(s, len, "AUTOCONFIG DIR %s", path);
          break;
       default:
-         if (menu_type == MENU_SETTINGS_CUSTOM_VIEWPORT ||
-               menu_type == MENU_SETTINGS)
-            snprintf(s, len, "MENU %s", path);
-         else if (menu_type == MENU_SETTINGS_CUSTOM_BIND ||
-               menu_type == MENU_SETTINGS_CUSTOM_BIND_KEYBOARD)
+         switch (menu_type)
          {
-            strlcpy(s, "INPUT SETTINGS", len);
-            if (elem1[0] != '\0')
-            {
-               strlcat(s, " - ", len);
-               strlcat(s, string_to_upper(elem1), len);
-            }
-         }
-         else
-         {
-            driver_t *driver = driver_get_ptr();
+            case MENU_SETTINGS_CUSTOM_VIEWPORT:
+            case MENU_SETTINGS:
+               snprintf(s, len, "MENU %s", path);
+               break;
+            case MENU_SETTINGS_CUSTOM_BIND:
+            case MENU_SETTINGS_CUSTOM_BIND_KEYBOARD:
+               strlcpy(s, "INPUT SETTINGS", len);
+               if (elem1[0] != '\0')
+               {
+                  strlcat(s, " - ", len);
+                  strlcat(s, string_to_upper(elem1), len);
+               }
+               break;
+            default:
+               if (driver->menu->defer_core)
+                  snprintf(s, len, "CONTENT %s", path);
+               else
+               {
+                  global_t *global      = global_get_ptr();
+                  const char *core_name = global->menu.info.library_name;
 
-            if (driver->menu->defer_core)
-               snprintf(s, len, "CONTENT %s", path);
-            else
-            {
-               global_t *global      = global_get_ptr();
-               const char *core_name = global->menu.info.library_name;
-
-               if (!core_name)
-                  core_name = global->system.info.library_name;
-               if (!core_name)
-                  core_name = "No Core";
-               snprintf(s, len, "CONTENT (%s) %s", core_name, path);
-            }
+                  if (!core_name)
+                     core_name = global->system.info.library_name;
+                  if (!core_name)
+                     core_name = "No Core";
+                  snprintf(s, len, "CONTENT (%s) %s", core_name, path);
+               }
+               break;
          }
          break;
    }
