@@ -707,7 +707,7 @@ static struct buffer parse_table(struct buffer buff,
    unsigned i;
    const char *ident_name;
    size_t ident_len;
-   struct argument args[MAX_ARGS] = {{0}};
+   struct argument args[MAX_ARGS];
    unsigned argi = 0;
 
    buff = chomp(buff);
