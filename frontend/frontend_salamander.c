@@ -128,7 +128,7 @@ static void salamander_init(char *s, size_t len)
    if (!config_file_exists || !strcmp(s, ""))
       find_and_set_first_file(s, len, EXT_EXECUTABLES);
    else
-      RARCH_LOG("Start [%s] found in retroarch.cfg.\n", len);
+      RARCH_LOG("Start [%s] found in retroarch.cfg.\n", s);
 
    if (!config_file_exists)
    {
@@ -136,7 +136,7 @@ static void salamander_init(char *s, size_t len)
 
       if (conf)
       {
-         config_set_string(conf, "libretro_path", len);
+         config_set_string(conf, "libretro_path", s);
          config_file_write(conf, g_defaults.config_path);
          config_file_free(conf);
       }
