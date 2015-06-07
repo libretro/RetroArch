@@ -418,6 +418,20 @@ static int menu_entries_cbs_init_bind_right_compare_type(menu_file_list_cbs_t *c
 static int menu_entries_cbs_init_bind_right_compare_label(menu_file_list_cbs_t *cbs,
       const char *label, uint32_t label_hash, uint32_t menu_label_hash)
 {
+   unsigned i;
+
+   for (i = 0; i < MAX_USERS; i++)
+   {
+      char label_setting[PATH_MAX_LENGTH];
+      snprintf(label_setting, sizeof(label_setting), "input_player%d_joypad_index", i + 1);
+
+      if (!strcmp(label, label_setting))
+      {
+         cbs->action_right = bind_right_generic;
+         return 0;
+      }
+   }
+
    if (strstr(label, "rdb_entry"))
       cbs->action_right = action_right_scroll;
    else
@@ -456,8 +470,6 @@ void menu_entries_cbs_init_bind_right(menu_file_list_cbs_t *cbs,
       const char *elem0, const char *elem1, const char *menu_label,
       uint32_t label_hash, uint32_t menu_label_hash)
 {
-   int i;
-
    if (!cbs)
       return;
 
@@ -471,15 +483,6 @@ void menu_entries_cbs_init_bind_right(menu_file_list_cbs_t *cbs,
    }
 
    cbs->action_right = bind_right_generic;
-
-   for (i = 0; i < MAX_USERS; i++)
-   {
-      char label_setting[PATH_MAX_LENGTH];
-      snprintf(label_setting, sizeof(label_setting), "input_player%d_joypad_index", i + 1);
-
-      if (!strcmp(label, label_setting))
-         cbs->action_right = bind_right_generic;
-   }
 
    if (menu_entries_cbs_init_bind_right_compare_label(cbs, label, label_hash, menu_label_hash) == 0)
       return;
