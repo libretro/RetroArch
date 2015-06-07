@@ -231,6 +231,25 @@ static const GLfloat rmb_tex_coord[] = {
    1, 0,
 };
 
+static size_t xmb_list_get_size(void *data, menu_list_type_t type)
+{
+    size_t list_size    = 0;
+    menu_handle_t *menu = (menu_handle_t*)data;
+    xmb_handle_t *xmb   = menu ? (xmb_handle_t*)menu->userdata : NULL;
+    
+    switch (type)
+    {
+        case MENU_LIST_PLAIN:
+            break;
+        case MENU_LIST_HORIZONTAL:
+            if (xmb && xmb->core_list)
+                list_size = file_list_get_size(xmb->core_list);
+            break;
+    }
+    
+    return list_size;
+}
+
 static float xmb_item_y(xmb_handle_t *xmb, int i, size_t current)
 {
    float iy = xmb->icon.spacing.vertical;
@@ -772,7 +791,7 @@ static void xmb_set_title(xmb_handle_t *xmb)
 static void xmb_list_switch_horizontal_list(xmb_handle_t *xmb, menu_handle_t *menu)
 {
    unsigned j;
-   size_t list_size = file_list_get_size(xmb->core_list);
+   size_t list_size = xmb_list_get_size(menu, MENU_LIST_HORIZONTAL);
 
    for (j = 0; j < list_size; j++)
    {
@@ -833,7 +852,7 @@ static void xmb_list_switch(xmb_handle_t *xmb)
 static void xmb_list_open_horizontal_list(xmb_handle_t *xmb, menu_handle_t *menu)
 {
    unsigned j;
-   size_t list_size = file_list_get_size(xmb->core_list);
+   size_t list_size = xmb_list_get_size(menu, MENU_LIST_HORIZONTAL);
 
    for (j = 0; j < list_size; j++)
    {
@@ -1245,7 +1264,7 @@ static void xmb_render(void)
 static void xmb_frame_horizontal_list(xmb_handle_t *xmb, menu_handle_t *menu, gl_t *gl)
 {
    unsigned i;
-   size_t list_size = file_list_get_size(xmb->core_list);
+   size_t list_size = xmb_list_get_size(menu, MENU_LIST_HORIZONTAL);
 
    for (i = 0; i < list_size; i++)
    {
@@ -1981,7 +2000,7 @@ static void xmb_context_destroy_horizontal_list(xmb_handle_t *xmb,
       menu_handle_t *menu)
 {
    unsigned i;
-   size_t list_size = file_list_get_size(xmb->core_list);
+   size_t list_size = xmb_list_get_size(menu, MENU_LIST_HORIZONTAL);
 
    for (i = 1; i < list_size; i++)
    {
@@ -2021,7 +2040,7 @@ static void xmb_context_destroy(void)
 static void xmb_toggle_horizontal_list(xmb_handle_t *xmb, menu_handle_t *menu)
 {
    unsigned i;
-   size_t list_size = file_list_get_size(xmb->core_list);
+   size_t list_size = xmb_list_get_size(menu, MENU_LIST_HORIZONTAL);
 
    for (i = 0; i < list_size; i++)
    {
