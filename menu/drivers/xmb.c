@@ -240,6 +240,8 @@ static size_t xmb_list_get_size(void *data, menu_list_type_t type)
     switch (type)
     {
         case MENU_LIST_PLAIN:
+            if (menu && menu->menu_list)
+               file_list_get_size(menu->menu_list->menu_stack);
             break;
         case MENU_LIST_HORIZONTAL:
             if (xmb && xmb->core_list)
@@ -884,7 +886,7 @@ static void xmb_list_open(xmb_handle_t *xmb)
    if (!menu)
       return;
 
-   xmb->depth = file_list_get_size(menu->menu_list->menu_stack);
+   xmb->depth = xmb_list_get_size(menu, MENU_LIST_PLAIN);
 
    if (xmb->depth > xmb->old_depth)
       dir = 1;
@@ -1347,7 +1349,7 @@ static void xmb_frame(void)
             height - xmb->margins.title.bottom, 1, 1, TEXT_ALIGN_LEFT);
    }
 
-   depth = file_list_get_size(menu->menu_list->menu_stack);
+   depth = xmb_list_get_size(menu, MENU_LIST_PLAIN);
 
    xmb_draw_items(xmb, gl,
          xmb->selection_buf_old,
@@ -1621,14 +1623,14 @@ static bool xmb_load_image(void *data, menu_image_type_t type)
 }
 
 static void xmb_context_reset_horizontal_list(xmb_handle_t *xmb,
-      const char *themepath)
+      menu_handle_t *menu, const char *themepath)
 {
    char iconpath[PATH_MAX_LENGTH];
    unsigned i;
    global_t   *global          = global_get_ptr();
    core_info_list_t *info_list = global ? 
       (core_info_list_t*)global->core_info : NULL;
-   size_t list_size            = file_list_get_size(xmb->core_list);
+   size_t list_size            = xmb_list_get_size(menu, MENU_LIST_HORIZONTAL);
 
    if (!info_list)
       return;
@@ -1857,7 +1859,7 @@ static void xmb_context_reset(void)
 
    xmb_context_reset_textures(xmb, iconpath);
    xmb_context_reset_background(iconpath);
-   xmb_context_reset_horizontal_list(xmb, themepath);
+   xmb_context_reset_horizontal_list(xmb, menu, themepath);
 }
 
 static void xmb_navigation_clear(bool pending_push)
@@ -2079,7 +2081,7 @@ static void xmb_toggle(bool menu_on)
    if (!xmb)
       return;
 
-   xmb->depth = file_list_get_size(menu->menu_list->menu_stack);
+   xmb->depth = xmb_list_get_size(menu, MENU_LIST_PLAIN);
 
    if (!menu_on)
    {
