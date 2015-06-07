@@ -584,6 +584,8 @@ void menu_entries_cbs_init_bind_iterate(menu_file_list_cbs_t *cbs,
       const char *elem0, const char *elem1,
       uint32_t label_hash, uint32_t menu_label_hash)
 {
-   if (cbs)
-      cbs->action_iterate = action_iterate_main;
+   if (!cbs)
+      return;
+
+   cbs->action_iterate = action_iterate_main;
 }

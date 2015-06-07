@@ -1441,8 +1441,23 @@ static int is_rdb_entry(uint32_t label_hash)
 }
 
 static int menu_entries_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
-      uint32_t hash)
+      const char *label, uint32_t hash, const char *elem0)
 {
+   rarch_setting_t *setting = menu_setting_find(label);
+   uint32_t elem0_hash      = djb2_calculate(elem0);
+
+   if (elem0[0] != '\0' && (is_rdb_entry(elem0_hash) == 0))
+   {
+      cbs->action_ok = action_ok_rdb_entry_submenu;
+      return 0;
+   }
+
+   if (setting && setting->browser_selection_type == ST_DIR)
+   {
+      cbs->action_ok = action_ok_push_generic_list;
+      return 0;
+   }
+
    switch (hash)
    {
       case MENU_LABEL_CUSTOM_BIND_ALL:
@@ -1732,13 +1747,10 @@ void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
       const char *elem0, const char *elem1, const char *menu_label,
       uint32_t label_hash, uint32_t menu_label_hash)
 {
-   rarch_setting_t *setting = menu_setting_find(label);
    menu_handle_t *menu      = menu_driver_get_ptr();
-   uint32_t elem0_hash      = djb2_calculate(elem0);
 
    if (!cbs || !menu)
       return;
-
 
 #if 0
    RARCH_LOG("path: %s, label: %s, elem0 : %s, elem1: %s\n", path, label, elem0, elem1);
@@ -1746,20 +1758,7 @@ void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
 
    cbs->action_ok = action_ok_lookup_setting;
 
-   if (elem0[0] != '\0' && (is_rdb_entry(elem0_hash) == 0))
-   {
-      cbs->action_ok = action_ok_rdb_entry_submenu;
-      return;
-   }
-
-   if (setting && setting->browser_selection_type == ST_DIR)
-   {
-      cbs->action_ok = action_ok_push_generic_list;
-      return;
-
-   }
-
-   if (menu_entries_cbs_init_bind_ok_compare_label(cbs, label_hash) == 0)
+   if (menu_entries_cbs_init_bind_ok_compare_label(cbs, label, label_hash, elem0) == 0)
       return;
 
    menu_entries_cbs_init_bind_ok_compare_type(cbs, label_hash, menu_label_hash, type);
