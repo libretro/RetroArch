@@ -1575,138 +1575,153 @@ static int menu_entries_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs
 static int menu_entries_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
       uint32_t label_hash, uint32_t menu_label_hash, unsigned type)
 {
-   switch (type)
+   if (type == MENU_SETTINGS_CUSTOM_BIND_KEYBOARD ||
+         type == MENU_SETTINGS_CUSTOM_BIND)
+      cbs->action_ok = action_ok_lookup_setting;
+   else if (type >= MENU_SETTINGS_SHADER_PARAMETER_0
+         && type <= MENU_SETTINGS_SHADER_PARAMETER_LAST)
+      cbs->action_ok = NULL;
+   else if (type >= MENU_SETTINGS_SHADER_PRESET_PARAMETER_0
+         && type <= MENU_SETTINGS_SHADER_PRESET_PARAMETER_LAST)
+      cbs->action_ok = NULL;
+   else if (type >= MENU_SETTINGS_CHEAT_BEGIN
+         && type <= MENU_SETTINGS_CHEAT_END)
+      cbs->action_ok = action_ok_cheat;
+   else
    {
-      case MENU_SETTINGS_VIDEO_RESOLUTION:
-         cbs->action_ok = action_ok_video_resolution;
-         break;
-      case MENU_FILE_PLAYLIST_ENTRY:
-         cbs->action_ok = action_ok_playlist_entry;
-         break;
-      case MENU_FILE_PLAYLIST_COLLECTION:
-         cbs->action_ok = action_ok_playlist_collection;
-         break;
-      case MENU_FILE_CONTENTLIST_ENTRY:
-         cbs->action_ok = action_ok_push_generic_list;
-         break;
-      case MENU_FILE_CHEAT:
-         cbs->action_ok = action_ok_cheat_file_load;
-         break;
-      case MENU_FILE_RECORD_CONFIG:
-         cbs->action_ok = action_ok_record_configfile_load;
-         break;
-      case MENU_FILE_REMAP:
-         cbs->action_ok = action_ok_remap_file_load;
-         break;
-      case MENU_FILE_SHADER_PRESET:
-         cbs->action_ok = action_ok_shader_preset_load;
-         break;
-      case MENU_FILE_SHADER:
-         cbs->action_ok = action_ok_shader_pass_load;
-         break;
-      case MENU_FILE_IMAGE:
-         cbs->action_ok = action_ok_menu_wallpaper_load;
-         break;
-      case MENU_FILE_USE_DIRECTORY:
-         cbs->action_ok = action_ok_path_use_directory;
-         break;
-      case MENU_FILE_CONFIG:
-         cbs->action_ok = action_ok_config_load;
-         break;
-      case MENU_FILE_DIRECTORY:
-         cbs->action_ok = action_ok_directory_push;
-         break;
-      case MENU_FILE_CARCHIVE:
-         cbs->action_ok = action_ok_compressed_archive_push;
-         break;
-      case MENU_FILE_CORE:
-         if (label_hash == MENU_LABEL_DEFERRED_CORE_LIST)
-            cbs->action_ok = action_ok_core_load_deferred;
-         else
-         {
+      switch (type)
+      {
+         case MENU_SETTINGS_VIDEO_RESOLUTION:
+            cbs->action_ok = action_ok_video_resolution;
+            break;
+         case MENU_FILE_PLAYLIST_ENTRY:
+            cbs->action_ok = action_ok_playlist_entry;
+            break;
+         case MENU_FILE_PLAYLIST_COLLECTION:
+            cbs->action_ok = action_ok_playlist_collection;
+            break;
+         case MENU_FILE_CONTENTLIST_ENTRY:
+            cbs->action_ok = action_ok_push_generic_list;
+            break;
+         case MENU_FILE_CHEAT:
+            cbs->action_ok = action_ok_cheat_file_load;
+            break;
+         case MENU_FILE_RECORD_CONFIG:
+            cbs->action_ok = action_ok_record_configfile_load;
+            break;
+         case MENU_FILE_REMAP:
+            cbs->action_ok = action_ok_remap_file_load;
+            break;
+         case MENU_FILE_SHADER_PRESET:
+            cbs->action_ok = action_ok_shader_preset_load;
+            break;
+         case MENU_FILE_SHADER:
+            cbs->action_ok = action_ok_shader_pass_load;
+            break;
+         case MENU_FILE_IMAGE:
+            cbs->action_ok = action_ok_menu_wallpaper_load;
+            break;
+         case MENU_FILE_USE_DIRECTORY:
+            cbs->action_ok = action_ok_path_use_directory;
+            break;
+         case MENU_FILE_CONFIG:
+            cbs->action_ok = action_ok_config_load;
+            break;
+         case MENU_FILE_DIRECTORY:
+            cbs->action_ok = action_ok_directory_push;
+            break;
+         case MENU_FILE_CARCHIVE:
+            cbs->action_ok = action_ok_compressed_archive_push;
+            break;
+         case MENU_FILE_CORE:
+            if (label_hash == MENU_LABEL_DEFERRED_CORE_LIST)
+               cbs->action_ok = action_ok_core_load_deferred;
+            else
+            {
+               switch (menu_label_hash)
+               {
+                  case MENU_LABEL_DEFERRED_CORE_LIST_SET:
+                     cbs->action_ok = action_ok_core_deferred_set;
+                     break;
+                  case MENU_LABEL_CORE_LIST:
+                     cbs->action_ok = action_ok_core_load;
+                     break;
+                  case MENU_LABEL_CORE_UPDATER_LIST:
+                     cbs->action_ok = action_ok_core_download;
+                     break;
+               }
+            }
+            break;
+         case MENU_FILE_DOWNLOAD_CORE:
+            cbs->action_ok = action_ok_core_updater_download;
+            break;
+         case MENU_FILE_DOWNLOAD_CORE_INFO:
+            break;
+         case MENU_FILE_RDB:
             switch (menu_label_hash)
             {
-               case MENU_LABEL_DEFERRED_CORE_LIST_SET:
-                  cbs->action_ok = action_ok_core_deferred_set;
+               case MENU_LABEL_DEFERRED_DATABASE_MANAGER_LIST:
+                  cbs->action_ok = action_ok_database_manager_list_deferred;
                   break;
-               case MENU_LABEL_CORE_LIST:
-                  cbs->action_ok = action_ok_core_load;
-                  break;
-               case MENU_LABEL_CORE_UPDATER_LIST:
-                  cbs->action_ok = action_ok_core_download;
+               case MENU_LABEL_DATABASE_MANAGER_LIST:
+               case MENU_VALUE_HORIZONTAL_MENU:
+                  cbs->action_ok = action_ok_database_manager_list;
                   break;
             }
-         }
-         break;
-      case MENU_FILE_DOWNLOAD_CORE:
-         cbs->action_ok = action_ok_core_updater_download;
-         break;
-      case MENU_FILE_DOWNLOAD_CORE_INFO:
-         break;
-      case MENU_FILE_RDB:
-         switch (menu_label_hash)
-         {
-            case MENU_LABEL_DEFERRED_DATABASE_MANAGER_LIST:
-               cbs->action_ok = action_ok_database_manager_list_deferred;
-               break;
-            case MENU_LABEL_DATABASE_MANAGER_LIST:
-            case MENU_VALUE_HORIZONTAL_MENU:
-               cbs->action_ok = action_ok_database_manager_list;
-               break;
-         }
-         break;
-      case MENU_FILE_RDB_ENTRY:
-         cbs->action_ok = action_ok_rdb_entry;
-         break;
-      case MENU_FILE_CURSOR:
-         switch (menu_label_hash)
-         {
-            case MENU_LABEL_DEFERRED_DATABASE_MANAGER_LIST:
-               cbs->action_ok = action_ok_cursor_manager_list_deferred;
-               break;
-            case MENU_LABEL_CURSOR_MANAGER_LIST:
-               cbs->action_ok = action_ok_cursor_manager_list;
-               break;
-         }
-         break;
-      case MENU_FILE_FONT:
-      case MENU_FILE_OVERLAY:
-      case MENU_FILE_AUDIOFILTER:
-         cbs->action_ok = action_ok_set_path;
-         break;
-      case MENU_FILE_VIDEOFILTER:
-         cbs->action_ok = action_ok_video_filter_file_load;
-         break;
+            break;
+         case MENU_FILE_RDB_ENTRY:
+            cbs->action_ok = action_ok_rdb_entry;
+            break;
+         case MENU_FILE_CURSOR:
+            switch (menu_label_hash)
+            {
+               case MENU_LABEL_DEFERRED_DATABASE_MANAGER_LIST:
+                  cbs->action_ok = action_ok_cursor_manager_list_deferred;
+                  break;
+               case MENU_LABEL_CURSOR_MANAGER_LIST:
+                  cbs->action_ok = action_ok_cursor_manager_list;
+                  break;
+            }
+            break;
+         case MENU_FILE_FONT:
+         case MENU_FILE_OVERLAY:
+         case MENU_FILE_AUDIOFILTER:
+            cbs->action_ok = action_ok_set_path;
+            break;
+         case MENU_FILE_VIDEOFILTER:
+            cbs->action_ok = action_ok_video_filter_file_load;
+            break;
 #ifdef HAVE_COMPRESSION
-      case MENU_FILE_IN_CARCHIVE:
+         case MENU_FILE_IN_CARCHIVE:
 #endif
-      case MENU_FILE_PLAIN:
-         switch (menu_label_hash)
-         {
-            case MENU_LABEL_DETECT_CORE_LIST:
-               cbs->action_ok = action_ok_file_load_with_detect_core;
-               break;
-            case MENU_LABEL_DISK_IMAGE_APPEND:
-               cbs->action_ok = action_ok_disk_image_append;
-               break;
-            default:
-               cbs->action_ok = action_ok_file_load;
-               break;
-         }
-         break;
-      case MENU_SETTINGS_CUSTOM_VIEWPORT:
-         cbs->action_ok = action_ok_custom_viewport;
-         break;
-      case MENU_SETTINGS:
-      case MENU_SETTING_GROUP:
-      case MENU_SETTING_SUBGROUP:
-         cbs->action_ok = action_ok_push_default;
-         break;
-      case MENU_SETTINGS_CORE_DISK_OPTIONS_DISK_CYCLE_TRAY_STATUS:
-         cbs->action_ok = action_ok_disk_cycle_tray_status;
-         break;
-      default:
-         return -1;
+         case MENU_FILE_PLAIN:
+            switch (menu_label_hash)
+            {
+               case MENU_LABEL_DETECT_CORE_LIST:
+                  cbs->action_ok = action_ok_file_load_with_detect_core;
+                  break;
+               case MENU_LABEL_DISK_IMAGE_APPEND:
+                  cbs->action_ok = action_ok_disk_image_append;
+                  break;
+               default:
+                  cbs->action_ok = action_ok_file_load;
+                  break;
+            }
+            break;
+         case MENU_SETTINGS_CUSTOM_VIEWPORT:
+            cbs->action_ok = action_ok_custom_viewport;
+            break;
+         case MENU_SETTINGS:
+         case MENU_SETTING_GROUP:
+         case MENU_SETTING_SUBGROUP:
+            cbs->action_ok = action_ok_push_default;
+            break;
+         case MENU_SETTINGS_CORE_DISK_OPTIONS_DISK_CYCLE_TRAY_STATUS:
+            cbs->action_ok = action_ok_disk_cycle_tray_status;
+            break;
+         default:
+            return -1;
+      }
    }
 
    return 0;
@@ -1744,19 +1759,7 @@ void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
 
    }
 
-   if (type == MENU_SETTINGS_CUSTOM_BIND_KEYBOARD ||
-         type == MENU_SETTINGS_CUSTOM_BIND)
-      cbs->action_ok = action_ok_lookup_setting;
-   else if (type >= MENU_SETTINGS_SHADER_PARAMETER_0
-         && type <= MENU_SETTINGS_SHADER_PARAMETER_LAST)
-      cbs->action_ok = NULL;
-   else if (type >= MENU_SETTINGS_SHADER_PRESET_PARAMETER_0
-         && type <= MENU_SETTINGS_SHADER_PRESET_PARAMETER_LAST)
-      cbs->action_ok = NULL;
-   else if (type >= MENU_SETTINGS_CHEAT_BEGIN
-         && type <= MENU_SETTINGS_CHEAT_END)
-      cbs->action_ok = action_ok_cheat;
-   else if (menu_entries_cbs_init_bind_ok_compare_label(cbs, label_hash) == 0)
+   if (menu_entries_cbs_init_bind_ok_compare_label(cbs, label_hash) == 0)
       return;
 
    menu_entries_cbs_init_bind_ok_compare_type(cbs, label_hash, menu_label_hash, type);
