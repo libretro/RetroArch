@@ -611,14 +611,13 @@ static xmb_node_t *xmb_node_allocate_userdata(xmb_handle_t *xmb,
    xmb_node_t *node            = NULL;
    global_t *global            = global_get_ptr();
    core_info_list_t *info_list = global ? (core_info_list_t*)global->core_info : NULL;
+   size_t            list_size = info_list ? info_list->count : 0;
 
-   if (!info_list)
-      return NULL;
-   if (!info_list->count)
+   if (!info_list || list_size == 0)
       return NULL;
    rarch_assert(i >= 0);
-   rarch_assert(i <= info_list->count);
-   if (i >= info_list->count)
+   rarch_assert(i <= list_size);
+   if (i >= list_size)
       return NULL;
 
    info = (core_info_t*)&info_list->list[i];
@@ -656,12 +655,13 @@ static xmb_node_t* xmb_get_userdata_from_core(xmb_handle_t *xmb,
 {
    global_t *global            = global_get_ptr();
    core_info_list_t *info_list = global ? (core_info_list_t*)global->core_info : NULL;
+   size_t            list_size = info_list ? info_list->count : 0;
 
-   if (!info_list || !info_list->count)
+   if (!info_list || list_size == 0)
       return NULL;
    rarch_assert(i >= 0);
-   rarch_assert(i <= info_list->count);
-   if (i >= info_list->count)
+   rarch_assert(i <= list_size);
+   if (i >= list_size)
       return NULL;
 
    info = (core_info_t*)&info_list->list[i];
