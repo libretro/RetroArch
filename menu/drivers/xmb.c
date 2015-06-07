@@ -525,12 +525,15 @@ static void xmb_list_open_old(xmb_handle_t *xmb,
       file_list_t *list, int dir, size_t current)
 {
    unsigned i;
+   size_t          end = 0;
    menu_handle_t *menu = menu_driver_get_ptr();
 
    if (!menu)
       return;
 
-   for (i = 0; i < file_list_get_size(list); i++)
+   end = file_list_get_size(list);
+
+   for (i = 0; i < end; i++)
    {
       float ia = 0;
       xmb_node_t *node = (xmb_node_t*)file_list_get_userdata_at_offset(list, i);
@@ -557,12 +560,15 @@ static void xmb_list_open_new(xmb_handle_t *xmb,
       file_list_t *list, int dir, size_t current)
 {
    unsigned i;
+   size_t          end = 0;
    menu_handle_t *menu = menu_driver_get_ptr();
 
    if (!menu)
       return;
 
-   for (i = 0; i < file_list_get_size(list); i++)
+   end = file_list_get_size(list);
+
+   for (i = 0; i < end; i++)
    {
       xmb_node_t *node = (xmb_node_t*)
          file_list_get_userdata_at_offset(list, i);
@@ -583,7 +589,8 @@ static void xmb_list_open_new(xmb_handle_t *xmb,
       if (i == current)
          node->zoom = xmb->categories.active.zoom;
    }
-   for (i = 0; i < file_list_get_size(list); i++)
+
+   for (i = 0; i < end; i++)
    {
       float ia;
       xmb_node_t *node = (xmb_node_t*)file_list_get_userdata_at_offset(list, i);
