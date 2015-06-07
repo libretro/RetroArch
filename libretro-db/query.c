@@ -185,7 +185,8 @@ static struct buffer parse_argument(struct buffer buff, struct argument *arg,
 static struct rmsgpack_dom_value is_true(struct rmsgpack_dom_value input,
       unsigned argc, const struct argument *argv)
 {
-   struct rmsgpack_dom_value res = {0};
+   struct rmsgpack_dom_value res;
+   memset(&res, 0, sizeof(res));
 
    res.type  = RDT_BOOL;
    res.bool_ = 0;
@@ -202,7 +203,8 @@ static struct rmsgpack_dom_value equals(struct rmsgpack_dom_value input,
       unsigned argc, const struct argument * argv)
 {
    struct argument arg;
-   struct rmsgpack_dom_value res = {0};
+   struct rmsgpack_dom_value res;
+   memset(&res, 0, sizeof(res));
 
    res.type = RDT_BOOL;
 
@@ -231,7 +233,8 @@ static struct rmsgpack_dom_value operator_or(struct rmsgpack_dom_value input,
       unsigned argc, const struct argument * argv)
 {
    unsigned i;
-   struct rmsgpack_dom_value res = {0};
+   struct rmsgpack_dom_value res;
+   memset(&res, 0, sizeof(res));
 
    res.type = RDT_BOOL;
    res.bool_ = 0;
@@ -258,8 +261,9 @@ static struct rmsgpack_dom_value operator_or(struct rmsgpack_dom_value input,
 static struct rmsgpack_dom_value between(struct rmsgpack_dom_value input,
       unsigned argc, const struct argument * argv)
 {
-   struct rmsgpack_dom_value res = {0};
+   struct rmsgpack_dom_value res;
    unsigned i                     = 0;
+   memset(&res, 0, sizeof(res));
 
    res.type = RDT_BOOL;
    res.bool_ = 0;
@@ -292,7 +296,8 @@ static struct rmsgpack_dom_value operator_and(struct rmsgpack_dom_value input,
       unsigned argc, const struct argument * argv)
 {
    unsigned i;
-   struct rmsgpack_dom_value res = {0};
+   struct rmsgpack_dom_value res;
+   memset(&res, 0, sizeof(res));
 
    res.type = RDT_BOOL;
    res.bool_ = 0;
@@ -320,8 +325,9 @@ static struct rmsgpack_dom_value operator_and(struct rmsgpack_dom_value input,
 static struct rmsgpack_dom_value q_glob(struct rmsgpack_dom_value input,
       unsigned argc, const struct argument * argv)
 {
+   struct rmsgpack_dom_value res;
    unsigned i = 0;
-   struct rmsgpack_dom_value res = {0};
+   memset(&res, 0, sizeof(res));
 
    res.type = RDT_BOOL;
    res.bool_ = 0;
@@ -347,9 +353,10 @@ static struct rmsgpack_dom_value all_map(struct rmsgpack_dom_value input,
 {
    unsigned i;
    struct argument arg;
+   struct rmsgpack_dom_value res;
    struct rmsgpack_dom_value nil_value;
-   struct rmsgpack_dom_value res = {0};
    struct rmsgpack_dom_value *value = NULL;
+   memset(&res, 0, sizeof(res));
 
    nil_value.type = RDT_NULL;
    res.type       = RDT_BOOL;
