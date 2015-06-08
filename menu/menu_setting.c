@@ -3629,7 +3629,7 @@ static bool setting_append_list_main_menu_options(
             "Save State",
             group_info.name,
             subgroup_info.name,
-            parent_group);
+            "N/A");
       (*list)[list_info->index - 1].action_left   = &setting_action_left_savestates;
       (*list)[list_info->index - 1].action_right  = &setting_action_right_savestates;
       (*list)[list_info->index - 1].action_start  = &setting_action_start_savestates;
@@ -3643,7 +3643,7 @@ static bool setting_append_list_main_menu_options(
             "Load State",
             group_info.name,
             subgroup_info.name,
-            parent_group);
+            "N/A");
       (*list)[list_info->index - 1].action_left   = &setting_action_left_savestates;
       (*list)[list_info->index - 1].action_right  = &setting_action_left_savestates;
       (*list)[list_info->index - 1].action_start  = &setting_action_start_savestates;
@@ -3739,6 +3739,9 @@ static bool setting_append_list_driver_options(
    settings_t *settings = config_get_ptr();
    
    START_GROUP(group_info, "Driver Settings", parent_group);
+
+   parent_group = "Settings";
+
    START_SUB_GROUP(list, list_info, "State", group_info.name,
          subgroup_info, parent_group);
    
@@ -3876,6 +3879,8 @@ static bool setting_append_list_core_options(
 
    START_GROUP(group_info, "Core Settings", parent_group);
 
+   parent_group = "Settings";
+
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info,
          parent_group);
 
@@ -3937,6 +3942,8 @@ static bool setting_append_list_configuration_options(
    settings_t *settings = config_get_ptr();
 
    START_GROUP(group_info, "Configuration Settings", parent_group);
+
+   parent_group = "Settings";
 
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info,
          parent_group);
@@ -4008,6 +4015,8 @@ static bool setting_append_list_saving_options(
    settings_t *settings = config_get_ptr();
 
    START_GROUP(group_info, "Saving Settings", parent_group);
+
+   parent_group = "Settings";
 
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info,
          parent_group);
@@ -4127,6 +4136,8 @@ static bool setting_append_list_logging_options(
 
    START_GROUP(group_info, "Logging Settings", parent_group);
 
+   parent_group = "Settings";
+
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info,
          parent_group);
 
@@ -4194,6 +4205,8 @@ static bool setting_append_list_frame_throttling_options(
 
    START_GROUP(group_info, "Frame Throttle Settings", parent_group);
 
+   parent_group = "Settings";
+
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info, parent_group);
 
    CONFIG_BOOL(
@@ -4250,6 +4263,8 @@ static bool setting_append_list_rewind_options(
    settings_t *settings = config_get_ptr();
 
    START_GROUP(group_info, "Rewind Settings", parent_group);
+
+   parent_group = "Settings";
 
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info, parent_group);
 
@@ -4309,6 +4324,8 @@ static bool setting_append_list_recording_options(
    global_t   *global   = global_get_ptr();
 
    START_GROUP(group_info, "Recording Settings", parent_group);
+
+   parent_group = "Settings";
 
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info, parent_group);
 
@@ -4413,6 +4430,9 @@ static bool setting_append_list_video_options(
    (void)global;
 
    START_GROUP(group_info, "Video Settings", parent_group);
+
+   parent_group = "Settings";
+
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info, parent_group);
 
    CONFIG_BOOL(settings->fps_show,
@@ -4990,6 +5010,9 @@ static bool setting_append_list_font_options(
    settings_t *settings = config_get_ptr();
 
    START_GROUP(group_info, "Onscreen Display Settings", parent_group);
+
+   parent_group = "Settings";
+
    START_SUB_GROUP(list, list_info, "Messages", group_info.name, subgroup_info, parent_group);
 
 #ifndef RARCH_CONSOLE
@@ -5075,6 +5098,9 @@ static bool setting_append_list_audio_options(
    global_t   *global   = global_get_ptr();
 
    START_GROUP(group_info, "Audio Settings", parent_group);
+
+   parent_group = "Settings";
+
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info, parent_group);
 
    (void)global;
@@ -5135,6 +5161,8 @@ static bool setting_append_list_audio_options(
 #endif
 
    END_SUB_GROUP(list, list_info, parent_group);
+
+   parent_group = "Settings";
 
    START_SUB_GROUP(
          list,
@@ -5227,6 +5255,8 @@ static bool setting_append_list_audio_options(
 
    END_SUB_GROUP(list, list_info, parent_group);
 
+   parent_group = "Settings";
+
    START_SUB_GROUP(
          list,
          list_info,
@@ -5290,6 +5320,9 @@ static bool setting_append_list_input_hotkey_options(
    settings_t *settings = config_get_ptr();
 
    START_GROUP(group_info, "Input Hotkey Binds", parent_group);
+
+   parent_group = "Settings";
+
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info,
          parent_group);
 
@@ -5326,6 +5359,9 @@ static bool setting_append_list_input_options(
    global_t   *global   = global_get_ptr();
 
    START_GROUP(group_info, "Input Settings", parent_group);
+
+   parent_group = "Settings";
+
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info, parent_group);
 
    CONFIG_UINT(
@@ -5607,6 +5643,9 @@ static bool setting_append_list_overlay_options(
    global_t   *global   = global_get_ptr();
 
    START_GROUP(group_info, "Onscreen Overlay Settings", parent_group);
+
+   parent_group = "Settings";
+
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info, parent_group);
 
    CONFIG_BOOL(
@@ -5686,6 +5725,9 @@ static bool setting_append_list_osk_overlay_options(
    global_t   *global   = global_get_ptr();
 
    START_GROUP(group_info, "Onscreen Keyboard Overlay Settings", parent_group);
+
+   parent_group = "Settings";
+
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info, parent_group);
 
    CONFIG_BOOL(
@@ -5731,6 +5773,9 @@ static bool setting_append_list_menu_options(
    settings_t *settings = config_get_ptr();
 
    START_GROUP(group_info, "Menu Settings", parent_group);
+   
+   parent_group = "Settings";
+
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info, parent_group);
 
    CONFIG_PATH(
@@ -6017,6 +6062,9 @@ static bool setting_append_list_ui_options(
    settings_t *settings = config_get_ptr();
 
    START_GROUP(group_info, "UI Settings", parent_group);
+
+   parent_group = "Settings";
+
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info, parent_group);
 
    CONFIG_BOOL(
@@ -6103,6 +6151,9 @@ static bool setting_append_list_archive_options(
    settings_t *settings = config_get_ptr();
 
    START_GROUP(group_info, "Archive Settings", parent_group);
+
+   parent_group = "Settings";
+
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info, parent_group);
 
    CONFIG_UINT(
@@ -6194,6 +6245,8 @@ static bool setting_append_list_netplay_options(
    global_t   *global   = global_get_ptr();
 
    START_GROUP(group_info, "Network Settings", parent_group);
+
+   parent_group = "Settings";
 
    START_SUB_GROUP(list, list_info, "Netplay", group_info.name, subgroup_info, parent_group);
 
@@ -6356,6 +6409,9 @@ static bool setting_append_list_patch_options(
    rarch_setting_group_info_t subgroup_info = {0};
 
    START_GROUP(group_info, "Patch Settings", parent_group);
+
+   parent_group = "Settings";
+
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
 
    CONFIG_BOOL(
@@ -6411,6 +6467,9 @@ static bool setting_append_list_playlist_options(
    settings_t *settings = config_get_ptr();
 
    START_GROUP(group_info, "Playlist Settings", parent_group);
+
+   parent_group = "Settings";
+
    START_SUB_GROUP(list, list_info, "History", group_info.name, subgroup_info, parent_group);
 
    CONFIG_BOOL(
@@ -6454,6 +6513,9 @@ static bool setting_append_list_user_options(
    settings_t *settings = config_get_ptr();
 
    START_GROUP(group_info, "User Settings", parent_group);
+
+   parent_group = "Settings";
+
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info, parent_group);
 
    CONFIG_STRING(
@@ -6507,6 +6569,8 @@ static bool setting_append_list_directory_options(
    global_t *global     = global_get_ptr();
 
    START_GROUP(group_info, "Directory Settings", parent_group);
+
+   parent_group = "Settings";
 
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info, parent_group);
 
@@ -6934,6 +6998,9 @@ static bool setting_append_list_privacy_options(
    settings_t *settings = config_get_ptr();
 
    START_GROUP(group_info, "Privacy Settings", parent_group);
+
+   parent_group = "Settings";
+
    START_SUB_GROUP(list, list_info, "State",
          group_info.name, subgroup_info, parent_group);
 
@@ -6995,6 +7062,8 @@ static bool setting_append_list_input_player_options(
          "Input %s Binds", buffer[user]);
 
    START_GROUP(group_info, group_lbl[user], parent_group);
+
+   parent_group = "Settings";
 
    START_SUB_GROUP(
          list,
@@ -7093,49 +7162,49 @@ rarch_setting_t *menu_setting_new(unsigned mask)
 
    if (mask & SL_FLAG_DRIVER_OPTIONS)
    {
-      if (!setting_append_list_driver_options(&list, list_info, "Settings"))
+      if (!setting_append_list_driver_options(&list, list_info, "Main Menu"))
          goto error;
    }
 
    if (mask & SL_FLAG_CORE_OPTIONS)
    {
-      if (!setting_append_list_core_options(&list, list_info, "Settings"))
+      if (!setting_append_list_core_options(&list, list_info, "Main Menu"))
          goto error;
    }
 
    if (mask & SL_FLAG_CONFIGURATION_OPTIONS)
    {
-      if (!setting_append_list_configuration_options(&list, list_info, "Settings"))
+      if (!setting_append_list_configuration_options(&list, list_info, "Main Menu"))
          goto error;
    }
 
    if (mask & SL_FLAG_LOGGING_OPTIONS)
    {
-      if (!setting_append_list_logging_options(&list, list_info, "Settings"))
+      if (!setting_append_list_logging_options(&list, list_info, "Main Menu"))
          goto error;
    }
    
    if (mask & SL_FLAG_SAVING_OPTIONS)
    {
-      if (!setting_append_list_saving_options(&list, list_info, "Settings"))
+      if (!setting_append_list_saving_options(&list, list_info, "Main Menu"))
          goto error;
    }
 
    if (mask & SL_FLAG_REWIND_OPTIONS)
    {
-      if (!setting_append_list_rewind_options(&list, list_info, "Settings"))
+      if (!setting_append_list_rewind_options(&list, list_info, "Main Menu"))
          goto error;
    }
 
    if (mask & SL_FLAG_VIDEO_OPTIONS)
    {
-      if (!setting_append_list_video_options(&list, list_info, "Settings"))
+      if (!setting_append_list_video_options(&list, list_info, "Main Menu"))
          goto error;
    }
 
    if (mask & SL_FLAG_AUDIO_OPTIONS)
    {
-      if (!setting_append_list_audio_options(&list, list_info, "Settings"))
+      if (!setting_append_list_audio_options(&list, list_info, "Main Menu"))
          goto error;
    }
 
@@ -7144,110 +7213,110 @@ rarch_setting_t *menu_setting_new(unsigned mask)
       unsigned user;
       settings_t      *settings = config_get_ptr();
 
-      if (!setting_append_list_input_options(&list, list_info, "Settings"))
+      if (!setting_append_list_input_options(&list, list_info, "Main Menu"))
          goto error;
 
       for (user = 0; user < settings->input.max_users; user++)
-         setting_append_list_input_player_options(&list, list_info, "Settings", user);
+         setting_append_list_input_player_options(&list, list_info, "Main Menu", user);
    }
 
 
     
    if (mask & SL_FLAG_INPUT_HOTKEY_OPTIONS)
    {
-      if (!setting_append_list_input_hotkey_options(&list, list_info, "Settings"))
+      if (!setting_append_list_input_hotkey_options(&list, list_info, "Main Menu"))
          goto error;
    }
 
    if (mask & SL_FLAG_RECORDING_OPTIONS)
    {
-      if (!setting_append_list_recording_options(&list, list_info, "Settings"))
+      if (!setting_append_list_recording_options(&list, list_info, "Main Menu"))
          goto error;
    }
 
    if (mask & SL_FLAG_FRAME_THROTTLE_OPTIONS)
    {
-      if (!setting_append_list_frame_throttling_options(&list, list_info, "Settings"))
+      if (!setting_append_list_frame_throttling_options(&list, list_info, "Main Menu"))
          goto error;
    }
 
    if (mask & SL_FLAG_FONT_OPTIONS)
    {
-      if (!setting_append_list_font_options(&list, list_info, "Settings"))
+      if (!setting_append_list_font_options(&list, list_info, "Main Menu"))
          goto error;
    }
 
    if (mask & SL_FLAG_OVERLAY_OPTIONS)
    {
-      if (!setting_append_list_overlay_options(&list, list_info, "Settings"))
+      if (!setting_append_list_overlay_options(&list, list_info, "Main Menu"))
          goto error;
    }
    
    if (mask & SL_FLAG_OSK_OVERLAY_OPTIONS)
    {
-      if (!setting_append_list_osk_overlay_options(&list, list_info, "Settings"))
+      if (!setting_append_list_osk_overlay_options(&list, list_info, "Main Menu"))
          goto error;
    }
 
    if (mask & SL_FLAG_MENU_OPTIONS)
    {
-      if (!setting_append_list_menu_options(&list, list_info, "Settings"))
+      if (!setting_append_list_menu_options(&list, list_info, "Main Menu"))
          goto error;
    }
 
    if (mask & SL_FLAG_UI_OPTIONS)
    {
-      if (!setting_append_list_ui_options(&list, list_info, "Settings"))
+      if (!setting_append_list_ui_options(&list, list_info, "Main Menu"))
          goto error;
    }
 
 #if 0
    if (mask & SL_FLAG_PATCH_OPTIONS)
    {
-      if (!setting_append_list_patch_options(&list, list_info, "Settings"))
+      if (!setting_append_list_patch_options(&list, list_info, "Main Menu"))
          goto error;
    }
 #endif
 
    if (mask & SL_FLAG_PLAYLIST_OPTIONS)
    {
-      if (!setting_append_list_playlist_options(&list, list_info, "Settings"))
+      if (!setting_append_list_playlist_options(&list, list_info, "Main Menu"))
          goto error;
    }
 
    if (mask & SL_FLAG_CORE_UPDATER_OPTIONS)
    {
-      if (!setting_append_list_core_updater_options(&list, list_info, "Settings"))
+      if (!setting_append_list_core_updater_options(&list, list_info, "Main Menu"))
          goto error;
    }
 
    if (mask & SL_FLAG_NETPLAY_OPTIONS)
    {
-      if (!setting_append_list_netplay_options(&list, list_info, "Settings"))
+      if (!setting_append_list_netplay_options(&list, list_info, "Main Menu"))
          goto error;
    }
 
    if (mask & SL_FLAG_ARCHIVE_OPTIONS)
    {
-      if (!setting_append_list_archive_options(&list, list_info, "Settings"))
+      if (!setting_append_list_archive_options(&list, list_info, "Main Menu"))
          goto error;
    }
 
    if (mask & SL_FLAG_USER_OPTIONS)
    {
-      if (!setting_append_list_user_options(&list, list_info, "Settings"))
+      if (!setting_append_list_user_options(&list, list_info, "Main Menu"))
          goto error;
    }
 
    if (mask & SL_FLAG_DIRECTORY_OPTIONS)
    {
-      if (!setting_append_list_directory_options(&list, list_info, "Settings"))
+      if (!setting_append_list_directory_options(&list, list_info, "Main Menu"))
          goto error;
    }
 
    if (mask & SL_FLAG_PRIVACY_OPTIONS)
    {
-      if (!setting_append_list_privacy_options(&list, list_info, "Settings"))
+      if (!setting_append_list_privacy_options(&list, list_info, "Main Menu"))
          goto error;
    }
 

@@ -347,10 +347,11 @@ static int menu_entries_cbs_init_bind_left_compare_label(menu_file_list_cbs_t *c
       const char *label, uint32_t label_hash, const char *elem0)
 {
    unsigned i;
+   rarch_setting_t *setting = menu_setting_find(label);
 
-   if (label)
+   if (setting)
    {
-      if (menu_entries_common_is_settings_entry(label_hash))
+      if (!strcmp(setting->parent_group, "Main Menu") && setting->type == ST_GROUP)
       {
          cbs->action_left = action_left_scroll;
          return 0;

@@ -46,6 +46,7 @@ static int action_get_title_default(const char *path, const char *label,
    struct string_list *list_label = string_split(label, "|");
    struct string_list *list_path  = string_split(path, "|");
    driver_t               *driver = driver_get_ptr();
+   rarch_setting_t *setting = NULL;
 
    *elem0 = *elem1 = *elem0_path = *elem1_path = 0;
 
@@ -77,15 +78,20 @@ static int action_get_title_default(const char *path, const char *label,
    RARCH_LOG("label %s, elem0 %s, elem1 %s\n", label, elem0, elem1);
 #endif
 
-   if (menu_entries_common_is_settings_entry(hash) == 1)
+   setting = menu_setting_find(label);
+
+   if (setting)
    {
-      strlcpy(s, string_to_upper(elem0), len);
-      if (elem1[0] != '\0')
+      if (!strcmp(setting->parent_group, "Main Menu") && setting->type == ST_GROUP)
       {
-         strlcat(s, " - ", len);
-         strlcat(s, string_to_upper(elem1), len);
+         strlcpy(s, string_to_upper(elem0), len);
+         if (elem1[0] != '\0')
+         {
+            strlcat(s, " - ", len);
+            strlcat(s, string_to_upper(elem1), len);
+         }
+         return 0;
       }
-      return 0;
    }
 
    switch (hash)
