@@ -775,7 +775,6 @@ static void xmb_set_title(xmb_handle_t *xmb)
       menu_entries_get_title(xmb->title_name, sizeof(xmb->title_name));
    else
    {
-      global_t *global            = global_get_ptr();
       struct item_file *item      = (struct item_file*)&xmb->horizontal_list->list[menu->categories.selection_ptr - 1];
 
       if (!item)
@@ -1416,7 +1415,6 @@ static void xmb_frame(void)
 
 static void xmb_init_horizontal_list(menu_handle_t *menu, xmb_handle_t *xmb)
 {
-   unsigned i;
    menu_displaylist_info_t info = {0};
    settings_t *settings        = config_get_ptr();
 
@@ -1436,6 +1434,7 @@ static void xmb_init_horizontal_list(menu_handle_t *menu, xmb_handle_t *xmb)
    menu_displaylist_push_list(&info, DISPLAYLIST_DATABASE_PLAYLISTS);
 
 #if 0
+   unsigned i;
    unsigned end = file_list_get_size(xmb->horizontal_list);
 
    for (i = 0; i < end; i++)

@@ -118,9 +118,7 @@ static int action_ok_file_load_with_detect_core_carchive(
       const char *path,
       const char *label, unsigned type, size_t idx)
 {
-   int ret;
    menu_displaylist_info_t info = {0};
-   const char *menu_path    = NULL;
    uint32_t hash_label      = djb2_calculate(label);
 
    strlcat(detect_content_path, "#", sizeof(detect_content_path));
@@ -132,9 +130,7 @@ static int action_ok_file_load_with_detect_core_carchive(
 static int action_ok_file_load_with_detect_core(const char *path,
       const char *label, unsigned type, size_t idx)
 {
-   int ret;
    menu_displaylist_info_t info = {0};
-   const char *menu_path    = NULL;
    uint32_t hash_label      = djb2_calculate(label);
 
    return rarch_defer_core_wrapper(&info, idx, path, hash_label, false);

@@ -1331,7 +1331,6 @@ static int menu_displaylist_parse_horizontal_list(menu_displaylist_info_t *info)
    char db_path[PATH_MAX_LENGTH];
    char path_playlist[PATH_MAX_LENGTH];
    char lpl_basename[PATH_MAX_LENGTH];
-   size_t i;
    content_playlist_t *playlist = NULL;
    settings_t      *settings    = config_get_ptr();
    menu_handle_t        *menu   = menu_driver_get_ptr();
