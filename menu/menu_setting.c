@@ -1408,6 +1408,7 @@ static void setting_get_string_representation_st_bind(void *data,
    input_get_bind_string(s, keybind, auto_bind, len);
 }
 
+#if 0
 static void setting_get_string_representation_int(void *data,
       char *s, size_t len)
 {
@@ -1416,6 +1417,7 @@ static void setting_get_string_representation_int(void *data,
    if (setting)
       snprintf(s, len, "%d", *setting->value.integer);
 }
+#endif
 
 static void setting_get_string_representation_uint_video_monitor_index(void *data,
       char *s, size_t len)
@@ -1825,6 +1827,7 @@ static rarch_setting_t setting_bool_setting(const char* name,
  *
  * Returns: setting of type ST_INT.
  **/
+#if 0
 static rarch_setting_t setting_int_setting(const char* name,
       const char* short_description, int* target, int default_value,
       const char *group, const char *subgroup, const char *parent_group,
@@ -1852,6 +1855,7 @@ static rarch_setting_t setting_int_setting(const char* name,
 
    return result;
 }
+#endif
 
 /**
  * setting_uint_setting:
@@ -4496,30 +4500,6 @@ static bool setting_append_list_video_options(
          general_write_handler,
          general_read_handler);
 
-   CONFIG_UINT(
-         settings->video.fullscreen_x,
-         "video_fullscreen_x",
-         "Fullscreen Width",
-         fullscreen_x,
-         group_info.name,
-         subgroup_info.name,
-         parent_group,
-         general_write_handler,
-         general_read_handler);
-   settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
-
-   CONFIG_UINT(
-         settings->video.fullscreen_y,
-         "video_fullscreen_y",
-         "Fullscreen Height",
-         fullscreen_y,
-         group_info.name,
-         subgroup_info.name,
-         parent_group,
-         general_write_handler,
-         general_read_handler);
-   settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
-
    CONFIG_FLOAT(
          settings->video.refresh_rate,
          "video_refresh_rate",
@@ -4661,54 +4641,6 @@ static bool setting_append_list_video_options(
          parent_group,
          general_write_handler,
          general_read_handler);
-
-   CONFIG_INT(
-         custom_vp->x,
-         "custom_viewport_x",
-         "Custom Viewport X",
-         0,
-         group_info.name,
-         subgroup_info.name,
-         parent_group,
-         NULL,
-         NULL);
-   settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
-   
-   CONFIG_INT(
-         custom_vp->y,
-         "custom_viewport_y",
-         "Custom Viewport Y",
-         0,
-         group_info.name,
-         subgroup_info.name,
-         parent_group,
-         NULL,
-         NULL);
-   settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
-
-   CONFIG_UINT(
-         custom_vp->width,
-         "custom_viewport_width",
-         "Custom Viewport Width",
-         0,
-         group_info.name,
-         subgroup_info.name,
-         parent_group,
-         NULL,
-         NULL);
-   settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
-
-   CONFIG_UINT(
-         custom_vp->height,
-         "custom_viewport_height",
-         "Custom Viewport Height",
-         0,
-         group_info.name,
-         subgroup_info.name,
-         parent_group,
-         NULL,
-         NULL);
-   settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
 #ifdef GEKKO
    CONFIG_UINT(
