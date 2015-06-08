@@ -473,24 +473,10 @@ static int action_get_title_extraction_directory(const char *path, const char *l
    return 0;
 }
 
-int menu_entries_cbs_init_bind_title(menu_file_list_cbs_t *cbs,
-      const char *path, const char *label, unsigned type, size_t idx,
-      const char *elem0, const char *elem1,
-      uint32_t label_hash, uint32_t menu_label_hash)
+static int menu_entries_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
+      const char *label, uint32_t label_hash, const char *elem1)
 {
-   driver_t               *driver = driver_get_ptr();
-   rarch_setting_t *setting = NULL;
-
-   if (!cbs)
-      return -1;
-
-   cbs->action_get_title = action_get_title_default;
-
-#if 0
-   RARCH_LOG("label %s, elem0 %s, elem1 %s\n", label, elem0, elem1);
-#endif
-
-   setting = menu_setting_find(label);
+   rarch_setting_t *setting = menu_setting_find(label);
 
    if (setting)
    {
@@ -656,7 +642,31 @@ int menu_entries_cbs_init_bind_title(menu_file_list_cbs_t *cbs,
       case MENU_LABEL_DEFERRED_CORE_UPDATER_LIST:
          cbs->action_get_title = action_get_title_action_generic;
          break;
+      default:
+         return -1;
    }
+
+   return 0;
+}
+
+int menu_entries_cbs_init_bind_title(menu_file_list_cbs_t *cbs,
+      const char *path, const char *label, unsigned type, size_t idx,
+      const char *elem0, const char *elem1,
+      uint32_t label_hash, uint32_t menu_label_hash)
+{
+   driver_t               *driver = driver_get_ptr();
+
+   if (!cbs)
+      return -1;
+
+   cbs->action_get_title = action_get_title_default;
+
+#if 0
+   RARCH_LOG("label %s, elem0 %s, elem1 %s\n", label, elem0, elem1);
+#endif
+
+   if (menu_entries_cbs_init_bind_title_compare_label(cbs, label, label_hash, elem1) == 0)
+      return 0;
 
    return -1;
 }
