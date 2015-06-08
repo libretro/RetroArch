@@ -2094,6 +2094,14 @@ static void xmb_toggle(bool menu_on)
    xmb_toggle_horizontal_list(xmb, menu);
 }
 
+static int xmb_list_bind_init(menu_file_list_cbs_t *cbs,
+      const char *path, const char *label, unsigned type, size_t idx,
+      const char *elem0, const char *elem1,
+      uint32_t label_hash, uint32_t menu_label_hash)
+{
+   return 0;
+}
+
 menu_ctx_driver_t menu_ctx_xmb = {
    NULL,
    xmb_render_messagebox_internal,
@@ -2118,6 +2126,7 @@ menu_ctx_driver_t menu_ctx_xmb = {
    xmb_list_cache,
    xmb_list_get_size,
    NULL,
+   xmb_list_bind_init,
    xmb_load_image,
    "xmb",
    NULL,

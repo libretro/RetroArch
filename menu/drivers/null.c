@@ -24,30 +24,31 @@
 #include "../../general.h"
 
 menu_ctx_driver_t menu_ctx_null = {
-  NULL, // set_texture
-  NULL, // render_messagebox
-  NULL, // render
-  NULL, // frame
-  NULL, // init
-  NULL, // free
-  NULL, // context_reset
-  NULL, // context_destroy
-  NULL, // populate_entries
-  NULL, // toggle
-  NULL, // navigation_clear
-  NULL, // navigation_decrement
-  NULL, // navigation_increment
-  NULL, // navigation_set
-  NULL, // navigation_set_last
-  NULL, // navigation_descend_alphabet
-  NULL, // navigation_ascend_alphabet
-  NULL, // list_insert
-  NULL, // list_delete
-  NULL, // list_clear
-  NULL, // list_cache
-  NULL, // list_get_size
-  NULL, // list_set_selection
-  NULL,
+  NULL,  // set_texture
+  NULL,  // render_messagebox
+  NULL,  // render
+  NULL,  // frame
+  NULL,  // init
+  NULL,  // free
+  NULL,  // context_reset
+  NULL,  // context_destroy
+  NULL,  // populate_entries
+  NULL,  // toggle
+  NULL,  // navigation_clear
+  NULL,  // navigation_decrement
+  NULL,  // navigation_increment
+  NULL,  // navigation_set
+  NULL,  // navigation_set_last
+  NULL,  // navigation_descend_alphabet
+  NULL,  // navigation_ascend_alphabet
+  NULL,  // list_insert
+  NULL,  // list_delete
+  NULL,  // list_clear
+  NULL,  // list_cache
+  NULL,  // list_get_size
+  NULL,  // list_set_selection
+  NULL,  // bind_init
+  NULL,  // load_image
   "null",
   NULL,
 };
