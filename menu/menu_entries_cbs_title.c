@@ -276,8 +276,19 @@ static int action_get_title_default(const char *path, const char *label,
 {
    char elem1[PATH_MAX_LENGTH];
    driver_t               *driver = driver_get_ptr();
+   struct string_list *list_label = string_split(label, "|");
 
    *elem1 = 0;
+
+   if (list_label)
+   {
+      if (list_label->size > 0)
+      {
+         if (list_label->size > 1)
+            strlcpy(elem1, list_label->elems[1].data, sizeof(elem1));
+      }
+      string_list_free(list_label);
+   }
 
 #if 0
    RARCH_LOG("label %s, elem0 %s, elem1 %s\n", label, elem0, elem1);
