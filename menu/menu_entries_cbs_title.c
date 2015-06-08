@@ -37,6 +37,104 @@ static INLINE void sanitize_to_string(char *s, const char *label, size_t len)
    replace_chars(s, '_', ' ');
 }
 
+static int action_get_title_disk_image_append(const char *path, const char *label, 
+      unsigned menu_type, char *s, size_t len)
+{
+   snprintf(s, len, "DISK APPEND %s", path);
+   return 0;
+}
+
+static int action_get_title_cheat_file_load(const char *path, const char *label, 
+      unsigned menu_type, char *s, size_t len)
+{
+   snprintf(s, len, "CHEAT FILE %s", path);
+   return 0;
+}
+
+static int action_get_title_remap_file_load(const char *path, const char *label, 
+      unsigned menu_type, char *s, size_t len)
+{
+   snprintf(s, len, "REMAP FILE %s", path);
+   return 0;
+}
+
+static int action_get_title_help(const char *path, const char *label, 
+      unsigned menu_type, char *s, size_t len)
+{
+   strlcpy(s, "HELP", len);
+   return 0;
+}
+
+static int action_get_title_overlay(const char *path, const char *label, 
+      unsigned menu_type, char *s, size_t len)
+{
+   snprintf(s, len, "OVERLAY %s", path);
+   return 0;
+}
+
+static int action_get_title_video_filter(const char *path, const char *label, 
+      unsigned menu_type, char *s, size_t len)
+{
+   snprintf(s, len, "VIDEO FILTER %s", path);
+   return 0;
+}
+
+static int action_get_title_cheat_directory(const char *path, const char *label, 
+      unsigned menu_type, char *s, size_t len)
+{
+   snprintf(s, len, "CHEAT DIR %s", path);
+   return 0;
+}
+
+static int action_get_title_core_directory(const char *path, const char *label, 
+      unsigned menu_type, char *s, size_t len)
+{
+   snprintf(s, len, "CORE DIR %s", path);
+   return 0;
+}
+
+static int action_get_title_core_info_directory(const char *path, const char *label, 
+      unsigned menu_type, char *s, size_t len)
+{
+   snprintf(s, len, "CORE INFO DIR %s", path);
+   return 0;
+}
+
+static int action_get_title_audio_filter(const char *path, const char *label, 
+      unsigned menu_type, char *s, size_t len)
+{
+   snprintf(s, len, "AUDIO FILTER %s", path);
+   return 0;
+}
+
+static int action_get_title_font_path(const char *path, const char *label, 
+      unsigned menu_type, char *s, size_t len)
+{
+   snprintf(s, len, "FONT %s", path);
+   return 0;
+}
+
+static int action_get_title_custom_viewport(const char *path, const char *label, 
+      unsigned menu_type, char *s, size_t len)
+{
+   strlcpy(s, "CUSTOM VIEWPORT", len);
+   return 0;
+}
+
+static int action_get_title_content_collection_list(const char *path, const char *label, 
+      unsigned menu_type, char *s, size_t len)
+{
+   snprintf(s, len, "CONTENT COLLECTION LIST");
+   return 0;
+}
+
+static int action_get_title_video_shader_preset(const char *path, const char *label, 
+      unsigned menu_type, char *s, size_t len)
+{
+   snprintf(s, len, "SHADER PRESET %s", path);
+   return 0;
+}
+
 static int action_get_title_generic(char *s, size_t len, const char *path,
       const char *text)
 {
@@ -176,95 +274,45 @@ static int action_get_title_deferred_core_list(const char *path, const char *lab
 static int action_get_title_default(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   uint32_t label_hash = 0;
    char elem1[PATH_MAX_LENGTH];
    driver_t               *driver = driver_get_ptr();
 
    *elem1 = 0;
 
-   label_hash = djb2_calculate(label);
-
 #if 0
    RARCH_LOG("label %s, elem0 %s, elem1 %s\n", label, elem0, elem1);
 #endif
 
-   switch (label_hash)
+   switch (menu_type)
    {
-      case MENU_LABEL_DISK_IMAGE_APPEND:
-         snprintf(s, len, "DISK APPEND %s", path);
-         break;
-      case MENU_LABEL_VIDEO_SHADER_PRESET:
-         snprintf(s, len, "SHADER PRESET %s", path);
-         break;
-      case MENU_LABEL_CHEAT_FILE_LOAD:
-         snprintf(s, len, "CHEAT FILE %s", path);
-         break;
-      case MENU_LABEL_REMAP_FILE_LOAD:
-         snprintf(s, len, "REMAP FILE %s", path);
-         break;
-      case MENU_LABEL_CONTENT_COLLECTION_LIST:
-         snprintf(s, len, "CONTENT COLLECTION LIST");
-         break;
-      case MENU_LABEL_CUSTOM_VIEWPORT_2:
+      case MENU_SETTINGS_CUSTOM_VIEWPORT:
          strlcpy(s, "CUSTOM VIEWPORT", len);
          break;
-      case MENU_LABEL_HELP:
-         strlcpy(s, "HELP", len);
+      case MENU_SETTINGS:
+         snprintf(s, len, "MENU %s", path);
          break;
-      case MENU_LABEL_INPUT_OVERLAY:
-         snprintf(s, len, "OVERLAY %s", path);
-         break;
-      case MENU_LABEL_VIDEO_FONT_PATH:
-         snprintf(s, len, "FONT %s", path);
-         break;
-      case MENU_LABEL_VIDEO_FILTER:
-         snprintf(s, len, "FILTER %s", path);
-         break;
-      case MENU_LABEL_AUDIO_DSP_PLUGIN:
-         snprintf(s, len, "DSP FILTER %s", path);
-         break;
-      case MENU_LABEL_CHEAT_DATABASE_PATH:
-         snprintf(s, len, "CHEAT DIR %s", path);
-         break;
-      case MENU_LABEL_LIBRETRO_DIR_PATH:
-         snprintf(s, len, "CORE DIR %s", path);
-         break;
-      case MENU_LABEL_LIBRETRO_INFO_PATH:
-         snprintf(s, len, "CORE INFO DIR %s", path);
+      case MENU_SETTINGS_CUSTOM_BIND:
+      case MENU_SETTINGS_CUSTOM_BIND_KEYBOARD:
+         strlcpy(s, "INPUT SETTINGS", len);
+         if (elem1[0] != '\0')
+         {
+            strlcat(s, " - ", len);
+            strlcat(s, string_to_upper(elem1), len);
+         }
          break;
       default:
-         switch (menu_type)
+         if (driver->menu->defer_core)
+            snprintf(s, len, "CONTENT %s", path);
+         else
          {
-            case MENU_SETTINGS_CUSTOM_VIEWPORT:
-               strlcpy(s, "CUSTOM VIEWPORT", len);
-               break;
-            case MENU_SETTINGS:
-               snprintf(s, len, "MENU %s", path);
-               break;
-            case MENU_SETTINGS_CUSTOM_BIND:
-            case MENU_SETTINGS_CUSTOM_BIND_KEYBOARD:
-               strlcpy(s, "INPUT SETTINGS", len);
-               if (elem1[0] != '\0')
-               {
-                  strlcat(s, " - ", len);
-                  strlcat(s, string_to_upper(elem1), len);
-               }
-               break;
-            default:
-               if (driver->menu->defer_core)
-                  snprintf(s, len, "CONTENT %s", path);
-               else
-               {
-                  global_t *global      = global_get_ptr();
-                  const char *core_name = global->menu.info.library_name;
+            global_t *global      = global_get_ptr();
+            const char *core_name = global->menu.info.library_name;
 
-                  if (!core_name)
-                     core_name = global->system.info.library_name;
-                  if (!core_name)
-                     core_name = "No Core";
-                  snprintf(s, len, "CONTENT (%s) %s", core_name, path);
-               }
-               break;
+            if (!core_name)
+               core_name = global->system.info.library_name;
+            if (!core_name)
+               core_name = "No Core";
+            snprintf(s, len, "CONTENT (%s) %s", core_name, path);
          }
          break;
    }
@@ -641,6 +689,48 @@ static int menu_entries_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *
       case MENU_LABEL_CURSOR_MANAGER_LIST:
       case MENU_LABEL_DEFERRED_CORE_UPDATER_LIST:
          cbs->action_get_title = action_get_title_action_generic;
+         break;
+      case MENU_LABEL_DISK_IMAGE_APPEND:
+         cbs->action_get_title = action_get_title_disk_image_append;
+         break;
+      case MENU_LABEL_VIDEO_SHADER_PRESET:
+         cbs->action_get_title = action_get_title_video_shader_preset;
+         break;
+      case MENU_LABEL_CHEAT_FILE_LOAD:
+         cbs->action_get_title = action_get_title_cheat_file_load;
+         break;
+      case MENU_LABEL_REMAP_FILE_LOAD:
+         cbs->action_get_title = action_get_title_remap_file_load;
+         break;
+      case MENU_LABEL_CONTENT_COLLECTION_LIST:
+         cbs->action_get_title = action_get_title_content_collection_list;
+         break;
+      case MENU_LABEL_CUSTOM_VIEWPORT_2:
+         cbs->action_get_title = action_get_title_custom_viewport;
+         break;
+      case MENU_LABEL_HELP:
+         cbs->action_get_title = action_get_title_help;
+         break;
+      case MENU_LABEL_INPUT_OVERLAY:
+         cbs->action_get_title = action_get_title_overlay;
+         break;
+      case MENU_LABEL_VIDEO_FONT_PATH:
+         cbs->action_get_title = action_get_title_font_path;
+         break;
+      case MENU_LABEL_VIDEO_FILTER:
+         cbs->action_get_title = action_get_title_video_filter;
+         break;
+      case MENU_LABEL_AUDIO_DSP_PLUGIN:
+         cbs->action_get_title = action_get_title_audio_filter;
+         break;
+      case MENU_LABEL_CHEAT_DATABASE_PATH:
+         cbs->action_get_title = action_get_title_cheat_directory;
+         break;
+      case MENU_LABEL_LIBRETRO_DIR_PATH:
+         cbs->action_get_title = action_get_title_core_directory;
+         break;
+      case MENU_LABEL_LIBRETRO_INFO_PATH:
+         cbs->action_get_title = action_get_title_core_info_directory;
          break;
       default:
          return -1;
