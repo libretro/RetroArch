@@ -37,6 +37,42 @@ static INLINE void sanitize_to_string(char *s, const char *label, size_t len)
    replace_chars(s, '_', ' ');
 }
 
+static int action_get_title_generic(char *s, size_t len, const char *path,
+      const char *text)
+{
+   char elem0_path[PATH_MAX_LENGTH], elem1_path[PATH_MAX_LENGTH];
+   struct string_list *list_path  = string_split(path, "|");
+
+   *elem0_path = *elem1_path = 0;
+
+   if (list_path)
+   {
+      if (list_path->size > 0)
+      {
+         strlcpy(elem0_path, list_path->elems[0].data, sizeof(elem0_path));
+         if (list_path->size > 1)
+            strlcpy(elem1_path, list_path->elems[1].data, sizeof(elem1_path));
+      }
+      string_list_free(list_path);
+   }
+   snprintf(s, len, "%s - %s", text,
+         (elem0_path[0] != '\0') ? path_basename(elem0_path) : "");
+
+   return 0;
+}
+
+static int action_get_title_deferred_database_manager_list(const char *path, const char *label, 
+      unsigned menu_type, char *s, size_t len)
+{
+   return action_get_title_generic(s, len, path, "DATABASE SELECTION");
+}
+
+static int action_get_title_deferred_cursor_manager_list(const char *path, const char *label, 
+      unsigned menu_type, char *s, size_t len)
+{
+   return action_get_title_generic(s, len, path, "DATABASE CURSOR LIST");
+}
+
 static int action_get_title_default(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
@@ -79,12 +115,6 @@ static int action_get_title_default(const char *path, const char *label,
 
    switch (label_hash)
    {
-      case MENU_LABEL_DEFERRED_DATABASE_MANAGER_LIST:
-         snprintf(s, len, "DATABASE SELECTION - %s", (elem0_path[0] != '\0') ? path_basename(elem0_path) : "");
-         break;
-      case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST:
-         snprintf(s, len, "DATABASE CURSOR LIST - %s", (elem0_path[0] != '\0') ? path_basename(elem0_path) : "");
-         break;
       case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_DEVELOPER:
          snprintf(s, len, "DATABASE CURSOR LIST (FILTER: DEVELOPER - %s)", elem0_path);
          break;
@@ -363,6 +393,16 @@ int menu_entries_cbs_init_bind_title(menu_file_list_cbs_t *cbs,
          cbs->action_get_title = action_get_title_group_settings;
          return 0;
       }
+   }
+
+   switch (label_hash)
+   {
+      case MENU_LABEL_DEFERRED_DATABASE_MANAGER_LIST:
+         cbs->action_get_title = action_get_title_deferred_database_manager_list;
+         break;
+      case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST:
+         cbs->action_get_title = action_get_title_deferred_cursor_manager_list;
+         break;
    }
 
    return -1;
