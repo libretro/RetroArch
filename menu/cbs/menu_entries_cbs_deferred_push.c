@@ -17,8 +17,6 @@
 
 #include "../menu.h"
 #include "../menu_displaylist.h"
-#include "../menu_entries.h"
-#include "../menu_setting.h"
 
 #include "../../file_ext.h"
 

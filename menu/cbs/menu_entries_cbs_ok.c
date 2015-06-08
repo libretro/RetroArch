@@ -18,7 +18,6 @@
 
 #include "../menu.h"
 #include "../menu_display.h"
-#include "../menu_entries.h"
 #include "../menu_setting.h"
 #include "../menu_entry.h"
 #include "../menu_shader.h"

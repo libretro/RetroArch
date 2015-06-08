@@ -14,7 +14,6 @@
  */
 
 #include "../menu.h"
-#include "../menu_entries.h"
 
 static int action_info_default(unsigned type, const char *label)
 {

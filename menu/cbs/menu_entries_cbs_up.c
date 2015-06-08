@@ -15,21 +15,21 @@
 
 #include "../menu.h"
 #include "../menu_navigation.h"
-#include "../menu_entries.h"
 
 static int action_bind_up_generic(unsigned type, const char *label)
 {
    unsigned scroll_speed  = 0;
    menu_handle_t *menu    = menu_driver_get_ptr();
+   menu_navigation_t *nav = menu_navigation_get_ptr();
    if (!menu)
       return -1;
 
-   scroll_speed = (max(menu->navigation.scroll.acceleration, 2) - 2) / 4 + 1;
+   scroll_speed = (max(nav->scroll.acceleration, 2) - 2) / 4 + 1;
 
    if (menu_list_get_size(menu->menu_list) <= 0)
       return 0;
 
-   menu_navigation_decrement(&menu->navigation, scroll_speed);
+   menu_navigation_decrement(nav, scroll_speed);
 
    return 0;
 }

@@ -19,7 +19,6 @@
 #include "../menu.h"
 #include "../menu_entries.h"
 #include "../menu_shader.h"
-#include "../menu_setting.h"
 
 #include "../../performance.h"
 #include "../../intl/intl.h"
