@@ -98,7 +98,7 @@ typedef struct xmb_handle
 {
    file_list_t *menu_stack_old;
    file_list_t *selection_buf_old;
-   file_list_t *core_list;
+   file_list_t *horizontal_list;
    size_t selection_ptr_old;
    int depth;
    int old_depth;
@@ -244,8 +244,8 @@ static size_t xmb_list_get_size(void *data, menu_list_type_t type)
                list_size  = file_list_get_size(menu->menu_list->menu_stack);
             break;
         case MENU_LIST_HORIZONTAL:
-            if (xmb && xmb->core_list)
-                list_size = file_list_get_size(xmb->core_list);
+            if (xmb && xmb->horizontal_list)
+                list_size = file_list_get_size(xmb->horizontal_list);
             break;
     }
     
@@ -1417,17 +1417,17 @@ static void xmb_frame(void)
    menu_display_unset_viewport();
 }
 
-static void xmb_init_core_list(menu_handle_t *menu, xmb_handle_t *xmb)
+static void xmb_init_horizontal_list(menu_handle_t *menu, xmb_handle_t *xmb)
 {
    menu_displaylist_info_t info = {0};
    settings_t *settings        = config_get_ptr();
 
-   xmb->core_list     = (file_list_t*)calloc(1, sizeof(file_list_t));
+   xmb->horizontal_list     = (file_list_t*)calloc(1, sizeof(file_list_t));
 
-   if (!xmb->core_list)
+   if (!xmb->horizontal_list)
       return;
 
-   info.list         = xmb->core_list;
+   info.list         = xmb->horizontal_list;
    info.menu_list    = NULL;
    info.type         = 0;
    info.type_default = MENU_FILE_PLAIN;
@@ -1536,7 +1536,7 @@ static void *xmb_init(void)
 
    menu->header_height          = xmb->icon.size;
 
-   xmb_init_core_list(menu, xmb);
+   xmb_init_horizontal_list(menu, xmb);
 
 
    return menu;
@@ -1550,8 +1550,8 @@ error:
          free(xmb->menu_stack_old);
       if (xmb->selection_buf_old)
          free(xmb->selection_buf_old);
-      if (xmb->core_list)
-         free(xmb->core_list);
+      if (xmb->horizontal_list)
+         free(xmb->horizontal_list);
    }
    return NULL;
 }
@@ -1573,7 +1573,7 @@ static void xmb_free(void *data)
 
       free(xmb->menu_stack_old);
       free(xmb->selection_buf_old);
-      free(xmb->core_list);
+      free(xmb->horizontal_list);
 
       gl_coord_array_free(&xmb->raster_block.carr);
 
