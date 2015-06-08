@@ -96,6 +96,8 @@ const char *path_get_extension(const char *path)
 char *path_remove_extension(char *path)
 {
    char *last = (char*)strrchr(path_basename(path), '.');
+   if (!last)
+      return NULL;
    if (*last)
       *last = '\0';
    return last;
