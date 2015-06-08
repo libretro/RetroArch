@@ -84,12 +84,13 @@ static int action_ok_file_load_with_detect_core(const char *path,
                rdb_entry_start_game_selection_ptr = idx;
                strlcpy(info.path, settings->libretro_directory, sizeof(info.path));
                strlcpy(info.label, "deferred_core_list_set", sizeof(info.label));
-
-               return menu_displaylist_push_list(&info, DISPLAYLIST_GENERIC);
+               ret = menu_displaylist_push_list(&info, DISPLAYLIST_GENERIC);
+               break;
             default:
                event_command(EVENT_CMD_LOAD_CORE);
                menu_common_load_content(false);
-               return -1;
+               ret = -1;
+               break;
          }
          break;
       case 0:
