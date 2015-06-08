@@ -182,8 +182,10 @@ static int action_get_title_default(const char *path, const char *label,
          snprintf(s, len, "CONTENT COLLECTION LIST");
          break;
       case MENU_LABEL_CUSTOM_VIEWPORT_2:
+         strlcpy(s, "CUSTOM VIEWPORT", len);
+         break;
       case MENU_LABEL_HELP:
-         snprintf(s, len, "MENU %s", path);
+         strlcpy(s, "HELP", len);
          break;
       case MENU_LABEL_INPUT_OVERLAY:
          snprintf(s, len, "OVERLAY %s", path);
@@ -279,6 +281,8 @@ static int action_get_title_default(const char *path, const char *label,
          switch (menu_type)
          {
             case MENU_SETTINGS_CUSTOM_VIEWPORT:
+               strlcpy(s, "CUSTOM VIEWPORT", len);
+               break;
             case MENU_SETTINGS:
                snprintf(s, len, "MENU %s", path);
                break;
