@@ -28,10 +28,11 @@ struct node_iter_ctx
 
 static struct rmsgpack_dom_value sentinal;
 
-static inline off_t flseek(FILE *fp, long offset, int whence)
+static inline off_t flseek(FILE *fp, int offset, int whence)
 {
-   fseek(fp, offset, whence);
-   return ftell(fp);
+   if (fseek(fp, offset, whence) != 0)
+      return (off_t)-1;
+   return (off_t)ftell(fp);
 }
 
 static int libretrodb_read_metadata(FILE *fp, libretrodb_metadata_t *md)
@@ -395,7 +396,7 @@ static int node_iter(void * value, void * ctx)
 
 static uint64_t libretrodb_tell(libretrodb_t *db)
 {
-   return ftell(db->fp);
+   return (uint64_t)ftell(db->fp);
 }
 
 int libretrodb_create_index(libretrodb_t *db,
