@@ -492,6 +492,20 @@ static int action_get_title_extraction_directory(const char *path, const char *l
    return 0;
 }
 
+static int action_get_title_menu(const char *path, const char *label, 
+      unsigned menu_type, char *s, size_t len)
+{
+   snprintf(s, len, "MENU %s", path);
+   return 0;
+}
+
+static int action_get_title_input_settings(const char *path, const char *label, 
+      unsigned menu_type, char *s, size_t len)
+{
+   strlcpy(s, "INPUT SETTINGS", len);
+   return 0;
+}
+
 static int menu_entries_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
       const char *label, uint32_t label_hash, const char *elem1)
 {
@@ -704,20 +718,6 @@ static int menu_entries_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *
          return -1;
    }
 
-   return 0;
-}
-
-static int action_get_title_menu(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   snprintf(s, len, "MENU %s", path);
-   return 0;
-}
-
-static int action_get_title_input_settings(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   strlcpy(s, "INPUT SETTINGS", len);
    return 0;
 }
 
