@@ -419,8 +419,8 @@ void menu_entry_get(menu_entry_t *entry, size_t i,
 
    cbs = menu_list_get_actiondata_at_offset(list, i);
 
-   if (cbs && cbs->action_get_representation && use_representation)
-      cbs->action_get_representation(list,
+   if (cbs && cbs->action_get_value && use_representation)
+      cbs->action_get_value(list,
             &entry->spacing, entry->type, i, label,
             entry->value,  sizeof(entry->value), 
             entry_label, path,

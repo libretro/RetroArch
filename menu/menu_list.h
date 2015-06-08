@@ -61,7 +61,7 @@ typedef struct menu_file_list_cbs
    int (*action_refresh)(file_list_t *list, file_list_t *menu_list);
    int (*action_up)(unsigned type, const char *label);
    int (*action_down)(unsigned type, const char *label);
-   void (*action_get_representation)(file_list_t* list,
+   void (*action_get_value)(file_list_t* list,
          unsigned *w, unsigned type, unsigned i,
          const char *label, char *s, size_t len,
          const char *entry_label,

@@ -796,39 +796,39 @@ static int menu_entries_cbs_init_bind_get_string_representation_compare_label(
    switch (label_hash)
    {
       case MENU_LABEL_CHEAT_NUM_PASSES:
-         cbs->action_get_representation =
+         cbs->action_get_value =
             menu_action_setting_disp_set_label_cheat_num_passes;
          break;
       case MENU_LABEL_REMAP_FILE_LOAD:
-         cbs->action_get_representation =
+         cbs->action_get_value =
             menu_action_setting_disp_set_label_remap_file_load;
          break;
       case MENU_LABEL_VIDEO_SHADER_FILTER_PASS:
-         cbs->action_get_representation =
+         cbs->action_get_value =
             menu_action_setting_disp_set_label_shader_filter_pass;
          break;
       case MENU_LABEL_VIDEO_SHADER_SCALE_PASS:
-         cbs->action_get_representation =
+         cbs->action_get_value =
             menu_action_setting_disp_set_label_shader_scale_pass;
          break;
       case MENU_LABEL_VIDEO_SHADER_NUM_PASSES:
-         cbs->action_get_representation =
+         cbs->action_get_value =
             menu_action_setting_disp_set_label_shader_num_passes;
          break;
       case MENU_LABEL_VIDEO_SHADER_PASS:
-         cbs->action_get_representation =
+         cbs->action_get_value =
             menu_action_setting_disp_set_label_shader_pass;
          break;
       case MENU_LABEL_VIDEO_SHADER_DEFAULT_FILTER:
-         cbs->action_get_representation =
+         cbs->action_get_value =
             menu_action_setting_disp_set_label_shader_default_filter;
          break;
       case MENU_LABEL_VIDEO_FILTER:
-         cbs->action_get_representation =
+         cbs->action_get_value =
             menu_action_setting_disp_set_label_filter;
          break;
       case MENU_LABEL_CONFIGURATIONS:
-         cbs->action_get_representation =
+         cbs->action_get_value =
             menu_action_setting_disp_set_label_configurations;
          break;
       default:
@@ -843,118 +843,118 @@ static int menu_entries_cbs_init_bind_get_string_representation_compare_type(
 {
    if (type >= MENU_SETTINGS_INPUT_DESC_BEGIN
          && type <= MENU_SETTINGS_INPUT_DESC_END)
-      cbs->action_get_representation =
+      cbs->action_get_value =
          menu_action_setting_disp_set_label_input_desc;
    else if (type >= MENU_SETTINGS_CHEAT_BEGIN
          && type <= MENU_SETTINGS_CHEAT_END)
-      cbs->action_get_representation =
+      cbs->action_get_value =
          menu_action_setting_disp_set_label_cheat;
    else if (type >= MENU_SETTINGS_PERF_COUNTERS_BEGIN
          && type <= MENU_SETTINGS_PERF_COUNTERS_END)
-      cbs->action_get_representation =
+      cbs->action_get_value =
          menu_action_setting_disp_set_label_perf_counters;
    else if (type >= MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_BEGIN
          && type <= MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_END)
-      cbs->action_get_representation =
+      cbs->action_get_value =
          menu_action_setting_disp_set_label_libretro_perf_counters;
    else if (type >= MENU_SETTINGS_SHADER_PRESET_PARAMETER_0
          && type <= MENU_SETTINGS_SHADER_PRESET_PARAMETER_LAST)
-      cbs->action_get_representation =
+      cbs->action_get_value =
          menu_action_setting_disp_set_label_shader_preset_parameter;
    else if (type >= MENU_SETTINGS_SHADER_PARAMETER_0
          && type <= MENU_SETTINGS_SHADER_PARAMETER_LAST)
-      cbs->action_get_representation =
+      cbs->action_get_value =
          menu_action_setting_disp_set_label_shader_parameter;
    else
    {
       switch (type)
       {
          case MENU_FILE_CORE:
-            cbs->action_get_representation =
+            cbs->action_get_value =
                menu_action_setting_disp_set_label_menu_file_core;
             break;
          case MENU_FILE_PLAIN:
-            cbs->action_get_representation =
+            cbs->action_get_value =
                menu_action_setting_disp_set_label_menu_file_plain;
             break;
          case MENU_FILE_IMAGE:
-            cbs->action_get_representation =
+            cbs->action_get_value =
                menu_action_setting_disp_set_label_menu_file_image;
             break;
          case MENU_FILE_USE_DIRECTORY:
-            cbs->action_get_representation =
+            cbs->action_get_value =
                menu_action_setting_disp_set_label_menu_file_use_directory;
             break;
          case MENU_FILE_DIRECTORY:
-            cbs->action_get_representation =
+            cbs->action_get_value =
                menu_action_setting_disp_set_label_menu_file_directory;
             break;
          case MENU_FILE_CARCHIVE:
-            cbs->action_get_representation =
+            cbs->action_get_value =
                menu_action_setting_disp_set_label_menu_file_carchive;
             break;
          case MENU_FILE_OVERLAY:
-            cbs->action_get_representation =
+            cbs->action_get_value =
                menu_action_setting_disp_set_label_menu_file_overlay;
             break;
          case MENU_FILE_FONT:
-            cbs->action_get_representation =
+            cbs->action_get_value =
                menu_action_setting_disp_set_label_menu_file_font;
             break;
          case MENU_FILE_SHADER:
-            cbs->action_get_representation =
+            cbs->action_get_value =
                menu_action_setting_disp_set_label_menu_file_shader;
             break;
          case MENU_FILE_SHADER_PRESET:
-            cbs->action_get_representation =
+            cbs->action_get_value =
                menu_action_setting_disp_set_label_menu_file_shader_preset;
             break;
          case MENU_FILE_CONFIG:
-            cbs->action_get_representation =
+            cbs->action_get_value =
                menu_action_setting_disp_set_label_menu_file_config;
             break;
          case MENU_FILE_IN_CARCHIVE:
-            cbs->action_get_representation =
+            cbs->action_get_value =
                menu_action_setting_disp_set_label_menu_file_in_carchive;
             break;
          case MENU_FILE_VIDEOFILTER:
          case MENU_FILE_AUDIOFILTER:
-            cbs->action_get_representation =
+            cbs->action_get_value =
                menu_action_setting_disp_set_label_menu_file_filter;
             break;
          case MENU_FILE_DOWNLOAD_CORE:
-            cbs->action_get_representation =
+            cbs->action_get_value =
                menu_action_setting_disp_set_label_menu_file_url;
             break;
          case MENU_FILE_RDB:
-            cbs->action_get_representation =
+            cbs->action_get_value =
                menu_action_setting_disp_set_label_menu_file_rdb;
             break;
          case MENU_FILE_CURSOR:
-            cbs->action_get_representation =
+            cbs->action_get_value =
                menu_action_setting_disp_set_label_menu_file_cursor;
             break;
          case MENU_FILE_CHEAT:
-            cbs->action_get_representation =
+            cbs->action_get_value =
                menu_action_setting_disp_set_label_menu_file_cheat;
             break;
          case MENU_SETTING_SUBGROUP:
          case MENU_SETTINGS_CUSTOM_VIEWPORT:
          case MENU_SETTINGS_CUSTOM_BIND_ALL:
          case MENU_SETTINGS_CUSTOM_BIND_DEFAULT_ALL:
-            cbs->action_get_representation =
+            cbs->action_get_value =
                menu_action_setting_disp_set_label_menu_more;
             break;
          case MENU_SETTINGS_CORE_DISK_OPTIONS_DISK_INDEX:
-            cbs->action_get_representation =
+            cbs->action_get_value =
                menu_action_setting_disp_set_label_menu_disk_index;
             break;
          case MENU_SETTINGS_VIDEO_RESOLUTION:
-            cbs->action_get_representation =
+            cbs->action_get_value =
                menu_action_setting_disp_set_label_menu_video_resolution;
             break;
          default:
-            cbs->action_get_representation = menu_action_setting_disp_set_label;
+            cbs->action_get_value = menu_action_setting_disp_set_label;
             break;
       }
    }

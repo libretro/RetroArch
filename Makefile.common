@@ -350,7 +350,7 @@ ifeq ($(HAVE_MENU_COMMON), 1)
 			 menu/menu_entries_cbs_right.o \
 			 menu/menu_entries_cbs_deferred_push.o \
 			 menu/menu_entries_cbs_scan.o \
-			 menu/menu_entries_cbs_representation.o \
+			 menu/menu_entries_cbs_get_value.o \
 			 menu/menu_entries_cbs_iterate.o \
 			 menu/menu_entries_cbs_title.o \
 			 menu/menu_entries_cbs_up.o \
