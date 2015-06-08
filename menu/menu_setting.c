@@ -4560,18 +4560,6 @@ static bool setting_append_list_video_options(
          general_write_handler,
          general_read_handler);
 
-   CONFIG_FLOAT(
-         settings->video.aspect_ratio,
-         "video_aspect_ratio",
-         "Aspect Ratio",
-         aspect_ratio,
-         "%.2f",
-         group_info.name,
-         subgroup_info.name,
-         parent_group,
-         general_write_handler,
-         general_read_handler);
-
    CONFIG_BOOL(
          settings->video.aspect_ratio_auto,
          "video_aspect_ratio_auto",
