@@ -274,60 +274,22 @@ static int action_get_title_deferred_core_list(const char *path, const char *lab
 static int action_get_title_default(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   char elem1[PATH_MAX_LENGTH];
    driver_t               *driver = driver_get_ptr();
-   struct string_list *list_label = string_split(label, "|");
-
-   *elem1 = 0;
-
-   if (list_label)
+   if (driver->menu->defer_core)
+      snprintf(s, len, "CONTENT %s", path);
+   else
    {
-      if (list_label->size > 0)
-      {
-         if (list_label->size > 1)
-            strlcpy(elem1, list_label->elems[1].data, sizeof(elem1));
-      }
-      string_list_free(list_label);
+      global_t *global      = global_get_ptr();
+      const char *core_name = global->menu.info.library_name;
+
+      if (!core_name)
+         core_name = global->system.info.library_name;
+      if (!core_name)
+         core_name = "No Core";
+      snprintf(s, len, "CONTENT (%s) %s", core_name, path);
    }
 
-#if 0
-   RARCH_LOG("label %s, elem0 %s, elem1 %s\n", label, elem0, elem1);
-#endif
 
-   switch (menu_type)
-   {
-      case MENU_SETTINGS_CUSTOM_VIEWPORT:
-         strlcpy(s, "CUSTOM VIEWPORT", len);
-         break;
-      case MENU_SETTINGS:
-         snprintf(s, len, "MENU %s", path);
-         break;
-      case MENU_SETTINGS_CUSTOM_BIND:
-      case MENU_SETTINGS_CUSTOM_BIND_KEYBOARD:
-         strlcpy(s, "INPUT SETTINGS", len);
-         if (elem1[0] != '\0')
-         {
-            strlcat(s, " - ", len);
-            strlcat(s, string_to_upper(elem1), len);
-         }
-         break;
-      default:
-         if (driver->menu->defer_core)
-            snprintf(s, len, "CONTENT %s", path);
-         else
-         {
-            global_t *global      = global_get_ptr();
-            const char *core_name = global->menu.info.library_name;
-
-            if (!core_name)
-               core_name = global->system.info.library_name;
-            if (!core_name)
-               core_name = "No Core";
-            snprintf(s, len, "CONTENT (%s) %s", core_name, path);
-         }
-         break;
-   }
-   
    return 0;
 }
 
@@ -747,6 +709,42 @@ static int menu_entries_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *
    return 0;
 }
 
+static int action_get_title_menu(const char *path, const char *label, 
+      unsigned menu_type, char *s, size_t len)
+{
+   snprintf(s, len, "MENU %s", path);
+   return 0;
+}
+
+static int action_get_title_input_settings(const char *path, const char *label, 
+      unsigned menu_type, char *s, size_t len)
+{
+   strlcpy(s, "INPUT SETTINGS", len);
+   return 0;
+}
+
+static int menu_entries_cbs_init_bind_title_compare_type(menu_file_list_cbs_t *cbs,
+      unsigned type)
+{
+   switch (type)
+   {
+      case MENU_SETTINGS_CUSTOM_VIEWPORT:
+         cbs->action_get_title = action_get_title_custom_viewport;
+         break;
+      case MENU_SETTINGS:
+         cbs->action_get_title = action_get_title_menu;
+         break;
+      case MENU_SETTINGS_CUSTOM_BIND:
+      case MENU_SETTINGS_CUSTOM_BIND_KEYBOARD:
+         cbs->action_get_title = action_get_title_input_settings;
+         break;
+      default:
+         return -1;
+   }
+
+   return 0;
+}
+
 int menu_entries_cbs_init_bind_title(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx,
       const char *elem0, const char *elem1,
@@ -759,11 +757,10 @@ int menu_entries_cbs_init_bind_title(menu_file_list_cbs_t *cbs,
 
    cbs->action_get_title = action_get_title_default;
 
-#if 0
-   RARCH_LOG("label %s, elem0 %s, elem1 %s\n", label, elem0, elem1);
-#endif
-
    if (menu_entries_cbs_init_bind_title_compare_label(cbs, label, label_hash, elem1) == 0)
+      return 0;
+
+   if (menu_entries_cbs_init_bind_title_compare_type(cbs, type) == 0)
       return 0;
 
    return -1;
