@@ -265,11 +265,6 @@ static int deferred_push_history_list(menu_displaylist_info_t *info)
    return menu_displaylist_push_list(info, DISPLAYLIST_HISTORY);
 }
 
-static int deferred_push_content_actions(menu_displaylist_info_t *info)
-{
-   return menu_displaylist_push_list(info, DISPLAYLIST_HORIZONTAL_CONTENT_ACTIONS);
-}
-
 int deferred_push_content_list(void *data, void *userdata, const char *path,
       const char *label, unsigned type)
 {
@@ -484,9 +479,6 @@ static int menu_entries_cbs_init_bind_deferred_push_compare_label(menu_file_list
             break;
          case MENU_LABEL_RECORD_CONFIG:
             cbs->action_deferred_push = deferred_push_record_configfile;
-            break;
-         case MENU_LABEL_CONTENT_ACTIONS:
-            cbs->action_deferred_push = deferred_push_content_actions;
             break;
          case MENU_LABEL_SHADER_OPTIONS:
             cbs->action_deferred_push = deferred_push_shader_options;

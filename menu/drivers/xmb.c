@@ -2094,12 +2094,35 @@ static void xmb_toggle(bool menu_on)
    xmb_toggle_horizontal_list(xmb, menu);
 }
 
+static int deferred_push_content_actions(menu_displaylist_info_t *info)
+{
+   return menu_displaylist_push_list(info, DISPLAYLIST_HORIZONTAL_CONTENT_ACTIONS);
+}
+
+static int xmb_list_bind_init_compare_label(menu_file_list_cbs_t *cbs,
+      uint32_t label_hash)
+{
+   switch (label_hash)
+   {
+      case MENU_LABEL_CONTENT_ACTIONS:
+         cbs->action_deferred_push = deferred_push_content_actions;
+         break;
+      default:
+         return -1;
+   }
+
+   return 0;
+}
+
 static int xmb_list_bind_init(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx,
       const char *elem0, const char *elem1,
       uint32_t label_hash, uint32_t menu_label_hash)
 {
-   return 0;
+   if (xmb_list_bind_init_compare_label(cbs, label_hash) == 0)
+      return 0;
+
+   return -1;
 }
 
 menu_ctx_driver_t menu_ctx_xmb = {
