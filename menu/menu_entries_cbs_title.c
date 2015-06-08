@@ -73,39 +73,114 @@ static int action_get_title_deferred_cursor_manager_list(const char *path, const
    return action_get_title_generic(s, len, path, "DATABASE CURSOR LIST");
 }
 
+static int action_get_title_list_rdb_entry_developer(const char *path, const char *label, 
+      unsigned menu_type, char *s, size_t len)
+{
+   return action_get_title_generic(s, len, path, "DATABASE CURSOR LIST - FILTER: DEVELOPER ");
+}
+
+static int action_get_title_list_rdb_entry_publisher(const char *path, const char *label, 
+      unsigned menu_type, char *s, size_t len)
+{
+   return action_get_title_generic(s, len, path, "DATABASE CURSOR LIST - FILTER: PUBLISHER ");
+}
+
+static int action_get_title_list_rdb_entry_origin(const char *path, const char *label, 
+      unsigned menu_type, char *s, size_t len)
+{
+   return action_get_title_generic(s, len, path, "DATABASE CURSOR LIST - FILTER: ORIGIN ");
+}
+
+static int action_get_title_list_rdb_entry_franchise(const char *path, const char *label, 
+      unsigned menu_type, char *s, size_t len)
+{
+   return action_get_title_generic(s, len, path, "DATABASE CURSOR LIST - FILTER: FRANCHISE ");
+}
+
+static int action_get_title_list_rdb_entry_edge_magazine_rating(const char *path, const char *label, 
+      unsigned menu_type, char *s, size_t len)
+{
+   return action_get_title_generic(s, len, path, "DATABASE CURSOR LIST - FILTER: EDGE MAGAZINE RATING ");
+}
+
+static int action_get_title_list_rdb_entry_edge_magazine_issue(const char *path, const char *label, 
+      unsigned menu_type, char *s, size_t len)
+{
+   return action_get_title_generic(s, len, path, "DATABASE CURSOR LIST - FILTER: EDGE MAGAZINE ISSUE ");
+}
+
+static int action_get_title_list_rdb_entry_releasedate_by_month(const char *path, const char *label, 
+      unsigned menu_type, char *s, size_t len)
+{
+   return action_get_title_generic(s, len, path, "DATABASE CURSOR LIST - FILTER: RELEASEDATE BY MONTH ");
+}
+
+static int action_get_title_list_rdb_entry_releasedate_by_year(const char *path, const char *label, 
+      unsigned menu_type, char *s, size_t len)
+{
+   return action_get_title_generic(s, len, path, "DATABASE CURSOR LIST - FILTER: RELEASEDATE BY YEAR ");
+}
+
+static int action_get_title_list_rdb_entry_esrb_rating(const char *path, const char *label, 
+      unsigned menu_type, char *s, size_t len)
+{
+   return action_get_title_generic(s, len, path, "DATABASE CURSOR LIST - FILTER: ESRB RATING ");
+}
+
+static int action_get_title_list_rdb_entry_database_info(const char *path, const char *label, 
+      unsigned menu_type, char *s, size_t len)
+{
+#if 0
+   snprintf(s, len, "DATABASE INFO: %s", elem1);
+#endif
+   return action_get_title_generic(s, len, path, "DATABASE INFO ");
+}
+
+static int action_get_title_list_rdb_entry_elspa_rating(const char *path, const char *label, 
+      unsigned menu_type, char *s, size_t len)
+{
+   return action_get_title_generic(s, len, path, "DATABASE CURSOR LIST - FILTER: ELSPA RATING ");
+}
+
+static int action_get_title_list_rdb_entry_pegi_rating(const char *path, const char *label, 
+      unsigned menu_type, char *s, size_t len)
+{
+   return action_get_title_generic(s, len, path, "DATABASE CURSOR LIST - FILTER: PEGI RATING ");
+}
+
+static int action_get_title_list_rdb_entry_cero_rating(const char *path, const char *label, 
+      unsigned menu_type, char *s, size_t len)
+{
+   return action_get_title_generic(s, len, path, "DATABASE CURSOR LIST - FILTER: CERO RATING ");
+}
+
+static int action_get_title_list_rdb_entry_bbfc_rating(const char *path, const char *label, 
+      unsigned menu_type, char *s, size_t len)
+{
+   return action_get_title_generic(s, len, path, "DATABASE CURSOR LIST - FILTER: BBFC RATING ");
+}
+
+static int action_get_title_list_rdb_entry_max_users(const char *path, const char *label, 
+      unsigned menu_type, char *s, size_t len)
+{
+   return action_get_title_generic(s, len, path, "DATABASE CURSOR LIST - FILTER: MAX USERS ");
+}
+
+static int action_get_title_deferred_core_list(const char *path, const char *label, 
+      unsigned menu_type, char *s, size_t len)
+{
+   snprintf(s, len, "DETECTED CORES %s", path);
+   return 0;
+}
+
 static int action_get_title_default(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
    uint32_t label_hash = 0;
-   char elem0[PATH_MAX_LENGTH], elem1[PATH_MAX_LENGTH];
-   char elem0_path[PATH_MAX_LENGTH], elem1_path[PATH_MAX_LENGTH];
-   struct string_list *list_label = string_split(label, "|");
-   struct string_list *list_path  = string_split(path, "|");
+   char elem1[PATH_MAX_LENGTH];
    driver_t               *driver = driver_get_ptr();
 
-   *elem0 = *elem1 = *elem0_path = *elem1_path = 0;
-
-   if (list_label)
-   {
-      if (list_label->size > 0)
-      {
-         strlcpy(elem0, list_label->elems[0].data, sizeof(elem0));
-         if (list_label->size > 1)
-            strlcpy(elem1, list_label->elems[1].data, sizeof(elem1));
-      }
-      string_list_free(list_label);
-   }
-
-   if (list_path)
-   {
-      if (list_path->size > 0)
-      {
-         strlcpy(elem0_path, list_path->elems[0].data, sizeof(elem0_path));
-         if (list_path->size > 1)
-            strlcpy(elem1_path, list_path->elems[1].data, sizeof(elem1_path));
-      }
-      string_list_free(list_path);
-   }
+   *elem1 = 0;
 
    label_hash = djb2_calculate(label);
 
@@ -115,54 +190,6 @@ static int action_get_title_default(const char *path, const char *label,
 
    switch (label_hash)
    {
-      case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_DEVELOPER:
-         snprintf(s, len, "DATABASE CURSOR LIST (FILTER: DEVELOPER - %s)", elem0_path);
-         break;
-      case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_PUBLISHER:
-         snprintf(s, len, "DATABASE CURSOR LIST (FILTER: PUBLISHER - %s)", elem0_path);
-         break;
-      case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_ORIGIN:
-         snprintf(s, len, "DATABASE CURSOR LIST (FILTER: ORIGIN - %s)", elem0_path);
-         break;
-      case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_FRANCHISE:
-         snprintf(s, len, "DATABASE CURSOR LIST (FILTER: FRANCHISE - %s)", elem0_path);
-         break;
-      case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_EDGE_MAGAZINE_RATING:
-         snprintf(s, len, "DATABASE CURSOR LIST (FILTER: EDGE MAGAZINE RATING - %s)", elem0_path);
-         break;
-      case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_EDGE_MAGAZINE_ISSUE:
-         snprintf(s, len, "DATABASE CURSOR LIST (FILTER: EDGE MAGAZINE ISSUE - %s)", elem0_path);
-         break;
-      case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_RELEASEMONTH:
-         snprintf(s, len, "DATABASE CURSOR LIST (FILTER: RELEASEDATE BY MONTH - %s)", elem0_path);
-         break;
-      case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_RELEASEYEAR:
-         snprintf(s, len, "DATABASE CURSOR LIST (FILTER: RELEASEDATE BY YEAR - %s)", elem0_path);
-         break;
-      case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_ESRB_RATING:
-         snprintf(s, len, "DATABASE CURSOR LIST (FILTER: ESRB RATING - %s)", elem0_path);
-         break;
-      case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_ELSPA_RATING:
-         snprintf(s, len, "DATABASE CURSOR LIST (FILTER: ELSPA RATING - %s)", elem0_path);
-         break;
-      case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_PEGI_RATING:
-         snprintf(s, len, "DATABASE CURSOR LIST (FILTER: PEGI RATING - %s)", elem0_path);
-         break;
-      case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_CERO_RATING:
-         snprintf(s, len, "DATABASE CURSOR LIST (FILTER: CERO RATING - %s)", elem0_path);
-         break;
-      case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_BBFC_RATING:
-         snprintf(s, len, "DATABASE CURSOR LIST (FILTER: BBFC RATING - %s)", elem0_path);
-         break;
-      case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_MAX_USERS:
-         snprintf(s, len, "DATABASE CURSOR LIST (FILTER: MAX USERS - %s)", elem0_path);
-         break;
-      case MENU_LABEL_DEFERRED_RDB_ENTRY_DETAIL:
-         snprintf(s, len, "DATABASE INFO: %s", elem1);
-         break;
-      case MENU_LABEL_DEFERRED_CORE_LIST:
-         snprintf(s, len, "DETECTED CORES %s", path);
-         break;
       case MENU_LABEL_CONFIGURATIONS:
          snprintf(s, len, "CONFIG %s", path);
          break;
@@ -388,6 +415,54 @@ int menu_entries_cbs_init_bind_title(menu_file_list_cbs_t *cbs,
          break;
       case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST:
          cbs->action_get_title = action_get_title_deferred_cursor_manager_list;
+         break;
+      case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_DEVELOPER:
+         cbs->action_get_title = action_get_title_list_rdb_entry_developer;
+         break;
+      case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_PUBLISHER:
+         cbs->action_get_title = action_get_title_list_rdb_entry_publisher;
+         break;
+      case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_ORIGIN:
+         cbs->action_get_title = action_get_title_list_rdb_entry_origin;
+         break;
+      case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_FRANCHISE:
+         cbs->action_get_title = action_get_title_list_rdb_entry_franchise;
+         break;
+      case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_EDGE_MAGAZINE_RATING:
+         cbs->action_get_title = action_get_title_list_rdb_entry_edge_magazine_rating;
+         break;
+      case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_EDGE_MAGAZINE_ISSUE:
+         cbs->action_get_title = action_get_title_list_rdb_entry_edge_magazine_issue;
+         break;
+      case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_RELEASEMONTH:
+         cbs->action_get_title = action_get_title_list_rdb_entry_releasedate_by_month;
+         break;
+      case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_RELEASEYEAR:
+         cbs->action_get_title = action_get_title_list_rdb_entry_releasedate_by_year;
+         break;
+      case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_ESRB_RATING:
+         cbs->action_get_title = action_get_title_list_rdb_entry_esrb_rating;
+         break;
+      case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_ELSPA_RATING:
+         cbs->action_get_title = action_get_title_list_rdb_entry_elspa_rating;
+         break;
+      case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_PEGI_RATING:
+         cbs->action_get_title = action_get_title_list_rdb_entry_pegi_rating;
+         break;
+      case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_CERO_RATING:
+         cbs->action_get_title = action_get_title_list_rdb_entry_cero_rating;
+         break;
+      case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_BBFC_RATING:
+         cbs->action_get_title = action_get_title_list_rdb_entry_bbfc_rating;
+         break;
+      case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_MAX_USERS:
+         cbs->action_get_title = action_get_title_list_rdb_entry_max_users;
+         break;
+      case MENU_LABEL_DEFERRED_RDB_ENTRY_DETAIL:
+         cbs->action_get_title = action_get_title_list_rdb_entry_database_info;
+         break;
+      case MENU_LABEL_DEFERRED_CORE_LIST:
+         cbs->action_get_title = action_get_title_deferred_core_list;
          break;
       case MENU_LABEL_PERFORMANCE_COUNTERS:
       case MENU_LABEL_CORE_LIST:
