@@ -269,6 +269,16 @@ size_t menu_driver_list_get_size(menu_list_type_t type)
    return 0;
 }
 
+void *menu_driver_list_get_entry(menu_list_type_t type, unsigned i)
+{
+   menu_handle_t *menu             = menu_driver_get_ptr();
+   const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
+
+   if (driver && driver->list_get_entry)
+      return driver->list_get_entry(menu, type, i);
+   return NULL;
+}
+
 void menu_driver_navigation_increment(void)
 {
    const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();

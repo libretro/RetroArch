@@ -252,6 +252,32 @@ static size_t xmb_list_get_size(void *data, menu_list_type_t type)
     return list_size;
 }
 
+static void *xmb_list_get_entry(void *data, menu_list_type_t type, unsigned i)
+{
+    size_t list_size    = 0;
+    menu_handle_t *menu = (menu_handle_t*)data;
+    xmb_handle_t *xmb   = menu ? (xmb_handle_t*)menu->userdata : NULL;
+    void *ptr           = NULL;
+    
+    switch (type)
+    {
+        case MENU_LIST_PLAIN:
+            if (menu && menu->menu_list)
+               list_size  = file_list_get_size(menu->menu_list->menu_stack);
+            if (i < list_size)
+               ptr = (void*)&menu->menu_list->menu_stack->list[i];
+            break;
+        case MENU_LIST_HORIZONTAL:
+            if (xmb && xmb->horizontal_list)
+                list_size = file_list_get_size(xmb->horizontal_list);
+            if (i < list_size)
+               ptr = (void*)&xmb->horizontal_list->list[i];
+            break;
+    }
+    
+    return ptr;
+}
+
 static float xmb_item_y(xmb_handle_t *xmb, int i, size_t current)
 {
    float iy = xmb->icon.spacing.vertical;
@@ -2129,6 +2155,7 @@ menu_ctx_driver_t menu_ctx_xmb = {
    NULL,
    xmb_list_cache,
    xmb_list_get_size,
+   xmb_list_get_entry,
    NULL,
    xmb_list_bind_init,
    xmb_load_image,

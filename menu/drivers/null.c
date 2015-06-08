@@ -46,6 +46,7 @@ menu_ctx_driver_t menu_ctx_null = {
   NULL,  // list_clear
   NULL,  // list_cache
   NULL,  // list_get_size
+  NULL,  // list_get_entry
   NULL,  // list_set_selection
   NULL,  // bind_init
   NULL,  // load_image

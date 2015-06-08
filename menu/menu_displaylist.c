@@ -1292,6 +1292,7 @@ static int menu_displaylist_parse_settings_in_subgroup(menu_displaylist_info_t *
    return 0;
 }
 
+#if 0
 static void menu_displaylist_push_horizontal_menu_list_content(
       file_list_t *list, core_info_t *info, const char* path)
 {
@@ -1322,58 +1323,36 @@ static void menu_displaylist_push_horizontal_menu_list_content(
 
    string_list_free(str_list);
 }
+#endif
 
-static int menu_displaylist_parse_horizontal_list(menu_displaylist_info_t *_info)
+static int menu_displaylist_parse_horizontal_list(menu_displaylist_info_t *info)
 {
+   char db_path[PATH_MAX_LENGTH];
+   char rpl_basename[PATH_MAX_LENGTH];
    size_t i;
-   const char            *path = NULL;
-   core_info_t            *info = NULL;
-   global_t            *global = global_get_ptr();
-   core_info_list_t *info_list = (core_info_list_t*)global->core_info;
-   file_list_t           *list = info_list ? _info->list : NULL;
+   settings_t      *settings   = config_get_ptr();
    menu_handle_t        *menu  = menu_driver_get_ptr();
-   settings_t *settings        = config_get_ptr();
+   struct item_file *item = (struct item_file*)menu_driver_list_get_entry(MENU_LIST_HORIZONTAL,
+         menu->categories.selection_ptr - 1);
 
-   if (!info_list)
+   if (!item)
       return -1;
 
-   info = (core_info_t*)&info_list->list[menu->categories.selection_ptr - 1];
+#if 0
+   menu_list_push(list, info->display_name, "content_actions",
+         MENU_FILE_CONTENTLIST_ENTRY, 0);
+#endif
 
-   if (!info)
-      return -1;
+   strlcpy(rpl_basename, item->path, sizeof(rpl_basename));
+   path_remove_extension(rpl_basename);
 
-   strlcpy(settings->libretro, info->path, sizeof(settings->libretro));
+   fill_pathname_join(db_path, settings->content_database,
+         rpl_basename, sizeof(db_path));
+   strlcat(db_path, ".rdb", sizeof(db_path));
 
-   path = settings->core_assets_directory;
-   list = _info->list;
-
-   if (!info->supports_no_game)
-      menu_displaylist_push_horizontal_menu_list_content(list, info, path);
-   else
-      menu_list_push(list, info->display_name, "content_actions",
-            MENU_FILE_CONTENTLIST_ENTRY, 0);
-
-   if (!info->databases_list)
-      return 0;
-
-   for (i = 0; i < info->databases_list->size; i++)
-   {
-      char db_path[PATH_MAX_LENGTH];
-      struct string_list *str_list = (struct string_list*)info->databases_list;
-
-      if (!str_list)
-         continue;
-
-      fill_pathname_join(db_path, settings->content_database,
-            str_list->elems[i].data, sizeof(db_path));
-      strlcat(db_path, ".rdb", sizeof(db_path));
-
-      if (!path_file_exists(db_path))
-         continue;
-
-      menu_list_push(list, path_basename(db_path), "core_database",
+   if (path_file_exists(db_path))
+      menu_list_push(info->list, path_basename(db_path), "core_database",
             MENU_FILE_RDB, 0);
-   }
 
    return 0;
 }
