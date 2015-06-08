@@ -1133,8 +1133,11 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
                continue;
 
             rdb_entry_start_game_selection_ptr = j;
-            menu_list_push(info->list, "Start Content", "rdb_entry_start_content",
-                  MENU_FILE_PLAYLIST_ENTRY, 0);
+
+            if (((strcmp(playlist->entries[j].core_name, "DETECT")) != 0) &&
+                     ((strcmp(playlist->entries[j].core_path, "DETECT") != 0)))
+               menu_list_push(info->list, "Start Content", "rdb_entry_start_content",
+                     MENU_FILE_PLAYLIST_ENTRY, 0);
          }
       }
    }
