@@ -25,7 +25,6 @@
 
 #include "menu_navigation.h"
 #include "menu_driver.h"
-#include "menu_setting.h"
 
 #include "../configuration.h"
 

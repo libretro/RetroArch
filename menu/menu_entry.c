@@ -20,7 +20,6 @@
 #include "menu_setting.h"
 #include "menu_input.h"
 #include "../runloop_data.h"
-#include "drivers/shared.h"
 
 /* This file provides an abstraction of the currently displayed
  * menu.
