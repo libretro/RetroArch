@@ -1333,7 +1333,7 @@ static void xmb_frame(void)
 
    if (settings->menu.timedate_enable)
    {
-      disp_timedate_set_label(timedate, sizeof(timedate), 0);
+      menu_display_timedate(timedate, sizeof(timedate), 0);
 
       xmb_draw_text(menu, xmb, timedate,
             width - xmb->margins.title.left - xmb->icon.size / 4, 

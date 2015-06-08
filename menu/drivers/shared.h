@@ -16,8 +16,6 @@
 #ifndef _DISP_SHARED_H
 #define _DISP_SHARED_H
 
-#include <time.h>
-
 #include "../menu_setting.h"
 
 #include "../menu_display.h"
@@ -114,26 +112,4 @@ static INLINE void gl_menu_frame_background(
 }
 #endif
 
-static INLINE void disp_timedate_set_label(char *label, size_t label_size,
-      unsigned time_mode)
-{
-   time_t time_;
-   time(&time_);
-
-   switch (time_mode)
-   {
-      case 0: /* Date and time */
-         strftime(label, label_size, "%Y-%m-%d %H:%M:%S", localtime(&time_));
-         break;
-      case 1: /* Date */
-         strftime(label, label_size, "%Y-%m-%d", localtime(&time_));
-         break;
-      case 2: /* Time */
-         strftime(label, label_size, "%H:%M:%S", localtime(&time_));
-         break;
-      case 3: /* Time (hours-minutes) */
-         strftime(label, label_size, "%H:%M", localtime(&time_));
-         break;
-   }
-}
 #endif

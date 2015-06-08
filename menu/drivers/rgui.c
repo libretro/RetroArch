@@ -428,7 +428,7 @@ static void rgui_render(void)
 
    if (settings->menu.timedate_enable)
    {
-      disp_timedate_set_label(timedate, sizeof(timedate), 3);
+      menu_display_timedate(timedate, sizeof(timedate), 3);
 
       blit_line(menu,
             RGUI_TERM_WIDTH * FONT_WIDTH_STRIDE - RGUI_TERM_START_X,

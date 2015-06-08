@@ -411,7 +411,7 @@ static void glui_frame(void)
 
    if (settings->menu.timedate_enable)
    {
-      disp_timedate_set_label(timedate, sizeof(timedate), 0);
+      menu_display_timedate(timedate, sizeof(timedate), 0);
       glui_blit_line(width - glui->margin,
             height - glui->line_height, timedate, hover_color,
             TEXT_ALIGN_RIGHT);

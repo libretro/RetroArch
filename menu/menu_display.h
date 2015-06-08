@@ -60,6 +60,8 @@ void menu_display_set_viewport(void);
 
 void menu_display_unset_viewport(void);
 
+void menu_display_timedate(char *s, size_t len, unsigned time_mode);
+
 #ifdef __cplusplus
 }
 #endif

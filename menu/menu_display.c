@@ -13,6 +13,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <time.h>
+
 #include "menu.h"
 #include "menu_display.h"
 #include "menu_animation.h"
@@ -235,4 +237,26 @@ void menu_display_unset_viewport(void)
 
    video_driver_set_viewport(width,
          height, false, true);
+}
+
+void menu_display_timedate(char *s, size_t len, unsigned time_mode)
+{
+   time_t time_;
+   time(&time_);
+
+   switch (time_mode)
+   {
+      case 0: /* Date and time */
+         strftime(s, len, "%Y-%m-%d %H:%M:%S", localtime(&time_));
+         break;
+      case 1: /* Date */
+         strftime(s, len, "%Y-%m-%d", localtime(&time_));
+         break;
+      case 2: /* Time */
+         strftime(s, len, "%H:%M:%S", localtime(&time_));
+         break;
+      case 3: /* Time (hours-minutes) */
+         strftime(s, len, "%H:%M", localtime(&time_));
+         break;
+   }
 }
