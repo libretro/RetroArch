@@ -17,8 +17,6 @@
 #include <string/stdstring.h>
 #include <file/file_path.h>
 
-#include <rhash.h>
-
 #include "menu.h"
 #include "menu_entries_cbs.h"
 
