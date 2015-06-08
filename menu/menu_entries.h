@@ -126,7 +126,7 @@ int menu_entries_cbs_init_bind_title(menu_file_list_cbs_t *cbs,
 int deferred_push_content_list(void *data, void *userdata,
       const char *path, const char *label, unsigned type);
 
-void menu_entries_cbs_init(void *data,
+void menu_entries_init(void *data,
       const char *path, const char *label,
       unsigned type, size_t idx);
 

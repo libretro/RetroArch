@@ -14,7 +14,7 @@
  */
 
 #include "../menu.h"
-#include "../menu_entries_cbs.h"
+#include "../menu_entries.h"
 
 int menu_entries_cbs_init_bind_content_list_switch(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx,

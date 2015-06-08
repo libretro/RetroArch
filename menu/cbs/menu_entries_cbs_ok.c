@@ -18,12 +18,11 @@
 
 #include "../menu.h"
 #include "../menu_display.h"
-#include "../menu_entries_cbs.h"
+#include "../menu_entries.h"
 #include "../menu_setting.h"
 #include "../menu_entry.h"
 #include "../menu_shader.h"
 #include "../menu_navigation.h"
-#include "../menu_entries_cbs.h"
 
 #include "../../retroarch.h"
 #include "../../runloop_data.h"

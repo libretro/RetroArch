@@ -15,7 +15,7 @@
 
 #include "../menu.h"
 #include "../menu_entry.h"
-#include "../menu_entries_cbs.h"
+#include "../menu_entries.h"
 #include "../menu_setting.h"
 
 #include "../../runloop_data.h"

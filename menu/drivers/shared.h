@@ -21,7 +21,7 @@
 #include "../menu_setting.h"
 
 #include "../menu_display.h"
-#include "../menu_entries_cbs.h"
+#include "../menu_entries.h"
 
 #ifdef HAVE_OPENGL
 #include "../../gfx/drivers/gl_common.h"

@@ -31,7 +31,7 @@
 #include "../menu_animation.h"
 #include "../menu_display.h"
 
-#include "../menu_entries_cbs.h"
+#include "../menu_entries.h"
 
 #include "../../file_ext.h"
 #include "../../gfx/video_texture.h"

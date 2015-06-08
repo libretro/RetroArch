@@ -15,7 +15,7 @@
 
 #include "../menu.h"
 #include "../menu_navigation.h"
-#include "../menu_entries_cbs.h"
+#include "../menu_entries.h"
 
 static int action_bind_down_generic(unsigned type, const char *label)
 {

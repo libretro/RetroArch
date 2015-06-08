@@ -16,13 +16,13 @@
 #include <rhash.h>
 
 #include "menu.h"
-#include "menu_entries_cbs.h"
+#include "menu_entries.h"
 
 #if 0
 #define DEBUG_LOG
 #endif
 
-static void menu_entries_cbs_init_log(int ret,
+static void menu_entries_init_log(int ret,
       const char *bind_label, const char *label, const char *elem0, const char *elem1,
       unsigned type)
 {
@@ -43,7 +43,7 @@ static void menu_entries_cbs_init_log(int ret,
    }
 }
 
-void menu_entries_cbs_init(void *data,
+void menu_entries_init(void *data,
       const char *path, const char *label,
       unsigned type, size_t idx)
 {
@@ -88,65 +88,65 @@ void menu_entries_cbs_init(void *data,
 
    ret = menu_entries_cbs_init_bind_ok(cbs, path, label, type, idx, elem0, elem1, menu_label, label_hash, menu_label_hash);
 
-   menu_entries_cbs_init_log(ret, "OK", label, elem0, elem1, type);
+   menu_entries_init_log(ret, "OK", label, elem0, elem1, type);
 
    ret = menu_entries_cbs_init_bind_cancel(cbs, path, label, type, idx, elem0, elem1, label_hash, menu_label_hash);
 
-   menu_entries_cbs_init_log(ret, "CANCEL", label, elem0, elem1, type);
+   menu_entries_init_log(ret, "CANCEL", label, elem0, elem1, type);
 
    ret = menu_entries_cbs_init_bind_scan(cbs, path, label, type, idx, elem0, elem1, label_hash, menu_label_hash);
 
-   menu_entries_cbs_init_log(ret, "SCAN", label, elem0, elem1, type);
+   menu_entries_init_log(ret, "SCAN", label, elem0, elem1, type);
 
    ret = menu_entries_cbs_init_bind_start(cbs, path, label, type, idx, elem0, elem1, label_hash, menu_label_hash);
 
-   menu_entries_cbs_init_log(ret, "START", label, elem0, elem1, type);
+   menu_entries_init_log(ret, "START", label, elem0, elem1, type);
 
    ret = menu_entries_cbs_init_bind_select(cbs, path, label, type, idx, elem0, elem1, label_hash, menu_label_hash);
 
-   menu_entries_cbs_init_log(ret, "SELECT", label, elem0, elem1, type);
+   menu_entries_init_log(ret, "SELECT", label, elem0, elem1, type);
 
    ret = menu_entries_cbs_init_bind_info(cbs, path, label, type, idx, elem0, elem1, label_hash, menu_label_hash);
 
-   menu_entries_cbs_init_log(ret, "INFO", label, elem0, elem1, type);
+   menu_entries_init_log(ret, "INFO", label, elem0, elem1, type);
 
    ret = menu_entries_cbs_init_bind_content_list_switch(cbs, path, label, type, idx, elem0, elem1, label_hash, menu_label_hash);
 
-   menu_entries_cbs_init_log(ret, "CONTENT SWITCH", label, elem0, elem1, type);
+   menu_entries_init_log(ret, "CONTENT SWITCH", label, elem0, elem1, type);
 
    ret = menu_entries_cbs_init_bind_up(cbs, path, label, type, idx, elem0, elem1, label_hash, menu_label_hash);
 
-   menu_entries_cbs_init_log(ret, "UP", label, elem0, elem1, type);
+   menu_entries_init_log(ret, "UP", label, elem0, elem1, type);
 
    ret = menu_entries_cbs_init_bind_down(cbs, path, label, type, idx, elem0, elem1, label_hash, menu_label_hash);
 
-   menu_entries_cbs_init_log(ret, "DOWN", label, elem0, elem1, type);
+   menu_entries_init_log(ret, "DOWN", label, elem0, elem1, type);
 
    ret = menu_entries_cbs_init_bind_left(cbs, path, label, type, idx, elem0, elem1, menu_label, label_hash, menu_label_hash);
 
-   menu_entries_cbs_init_log(ret, "LEFT", label, elem0, elem1, type);
+   menu_entries_init_log(ret, "LEFT", label, elem0, elem1, type);
 
    ret = menu_entries_cbs_init_bind_right(cbs, path, label, type, idx, elem0, elem1, menu_label, label_hash, menu_label_hash);
 
-   menu_entries_cbs_init_log(ret, "RIGHT", label, elem0, elem1, type);
+   menu_entries_init_log(ret, "RIGHT", label, elem0, elem1, type);
 
    ret = menu_entries_cbs_init_bind_deferred_push(cbs, path, label, type, idx, elem0, elem1, label_hash, menu_label_hash);
 
-   menu_entries_cbs_init_log(ret, "DEFERRED PUSH", label, elem0, elem1, type);
+   menu_entries_init_log(ret, "DEFERRED PUSH", label, elem0, elem1, type);
 
    ret = menu_entries_cbs_init_bind_refresh(cbs, path, label, type, idx, elem0, elem1, label_hash, menu_label_hash);
 
-   menu_entries_cbs_init_log(ret, "REFRESH", label, elem0, elem1, type);
+   menu_entries_init_log(ret, "REFRESH", label, elem0, elem1, type);
 
    ret = menu_entries_cbs_init_bind_iterate(cbs, path, label, type, idx, elem0, elem1, label_hash, menu_label_hash);
 
-   menu_entries_cbs_init_log(ret, "ITERATE", label, elem0, elem1, type);
+   menu_entries_init_log(ret, "ITERATE", label, elem0, elem1, type);
 
    ret = menu_entries_cbs_init_bind_get_string_representation(cbs, path, label, type, idx, elem0, elem1, label_hash, menu_label_hash);
 
-   menu_entries_cbs_init_log(ret, "REPRESENTATION", label, elem0, elem1, type);
+   menu_entries_init_log(ret, "REPRESENTATION", label, elem0, elem1, type);
 
    ret = menu_entries_cbs_init_bind_title(cbs, path, label, type, idx, elem0, elem1, label_hash, menu_label_hash);
 
-   menu_entries_cbs_init_log(ret, "TITLE", label, elem0, elem1, type);
+   menu_entries_init_log(ret, "TITLE", label, elem0, elem1, type);
 }

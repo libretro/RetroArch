@@ -18,7 +18,7 @@
 #include <file/file_path.h>
 
 #include "../menu.h"
-#include "../menu_entries_cbs.h"
+#include "../menu_entries.h"
 
 static INLINE void replace_chars(char *str, char c1, char c2)
 {

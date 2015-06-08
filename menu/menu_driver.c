@@ -19,7 +19,7 @@
 
 #include "menu_driver.h"
 #include "menu.h"
-#include "menu_entries_cbs.h"
+#include "menu_entries.h"
 #include "menu_displaylist.h"
 #include "../driver.h"
 #include "../general.h"
@@ -248,7 +248,7 @@ void  menu_driver_list_insert(file_list_t *list, const char *path,
       return;
    }
 
-   menu_entries_cbs_init(list, path, label, type, idx);
+   menu_entries_init(list, path, label, type, idx);
 }
 
 void menu_driver_list_cache(menu_list_type_t type, unsigned action)
