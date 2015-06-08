@@ -169,33 +169,6 @@ static int action_get_title_default(const char *path, const char *label,
       case MENU_LABEL_DISK_IMAGE_APPEND:
          snprintf(s, len, "DISK APPEND %s", path);
          break;
-      case MENU_LABEL_PERFORMANCE_COUNTERS:
-      case MENU_LABEL_CORE_LIST:
-      case MENU_LABEL_MANAGEMENT:
-      case MENU_LABEL_OPTIONS:
-      case MENU_LABEL_SETTINGS:
-      case MENU_LABEL_FRONTEND_COUNTERS:
-      case MENU_LABEL_CORE_COUNTERS:
-      case MENU_LABEL_HISTORY_LIST:
-      case MENU_LABEL_INFO_SCREEN:
-      case MENU_LABEL_SYSTEM_INFORMATION:
-      case MENU_LABEL_CORE_INFORMATION:
-      case MENU_LABEL_VIDEO_SHADER_PARAMETERS:
-      case MENU_LABEL_VIDEO_SHADER_PRESET_PARAMETERS:
-      case MENU_LABEL_DISK_OPTIONS:
-      case MENU_LABEL_CORE_OPTIONS:
-      case MENU_LABEL_SHADER_OPTIONS:
-      case MENU_LABEL_VIDEO_OPTIONS:
-      case MENU_LABEL_CORE_CHEAT_OPTIONS:
-      case MENU_LABEL_CORE_INPUT_REMAPPING_OPTIONS:
-      case MENU_LABEL_DATABASE_MANAGER_LIST:
-      case MENU_LABEL_CURSOR_MANAGER_LIST:
-      case MENU_LABEL_DEFERRED_CORE_UPDATER_LIST:
-         sanitize_to_string(s, label, len);
-         break;
-      case MENU_LABEL_VIDEO_SHADER_PASS:
-         snprintf(s, len, "SHADER %s", path);
-         break;
       case MENU_LABEL_VIDEO_SHADER_PRESET:
          snprintf(s, len, "SHADER PRESET %s", path);
          break;
@@ -366,6 +339,13 @@ static int action_get_title_group_settings(const char *path, const char *label,
    return 0;
 }
 
+static int action_get_title_action_generic(const char *path, const char *label, 
+      unsigned menu_type, char *s, size_t len)
+{
+   sanitize_to_string(s, label, len);
+   return 0;
+}
+
 int menu_entries_cbs_init_bind_title(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx,
       const char *elem0, const char *elem1,
@@ -385,13 +365,15 @@ int menu_entries_cbs_init_bind_title(menu_file_list_cbs_t *cbs,
 
    setting = menu_setting_find(label);
 
-   (void)setting;
    if (setting)
    {
       if (!strcmp(setting->parent_group, "Main Menu") && setting->type == ST_GROUP)
       {
-         cbs->action_get_title = action_get_title_group_settings;
-         return 0;
+         if (elem1[0] != '\0')
+         {
+            cbs->action_get_title = action_get_title_group_settings;
+            return 0;
+         }
       }
    }
 
@@ -402,6 +384,30 @@ int menu_entries_cbs_init_bind_title(menu_file_list_cbs_t *cbs,
          break;
       case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST:
          cbs->action_get_title = action_get_title_deferred_cursor_manager_list;
+         break;
+      case MENU_LABEL_PERFORMANCE_COUNTERS:
+      case MENU_LABEL_CORE_LIST:
+      case MENU_LABEL_MANAGEMENT:
+      case MENU_LABEL_OPTIONS:
+      case MENU_LABEL_SETTINGS:
+      case MENU_LABEL_FRONTEND_COUNTERS:
+      case MENU_LABEL_CORE_COUNTERS:
+      case MENU_LABEL_HISTORY_LIST:
+      case MENU_LABEL_INFO_SCREEN:
+      case MENU_LABEL_SYSTEM_INFORMATION:
+      case MENU_LABEL_CORE_INFORMATION:
+      case MENU_LABEL_VIDEO_SHADER_PARAMETERS:
+      case MENU_LABEL_VIDEO_SHADER_PRESET_PARAMETERS:
+      case MENU_LABEL_DISK_OPTIONS:
+      case MENU_LABEL_CORE_OPTIONS:
+      case MENU_LABEL_SHADER_OPTIONS:
+      case MENU_LABEL_VIDEO_OPTIONS:
+      case MENU_LABEL_CORE_CHEAT_OPTIONS:
+      case MENU_LABEL_CORE_INPUT_REMAPPING_OPTIONS:
+      case MENU_LABEL_DATABASE_MANAGER_LIST:
+      case MENU_LABEL_CURSOR_MANAGER_LIST:
+      case MENU_LABEL_DEFERRED_CORE_UPDATER_LIST:
+         cbs->action_get_title = action_get_title_action_generic;
          break;
    }
 
