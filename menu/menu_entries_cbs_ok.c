@@ -72,45 +72,45 @@ static int action_ok_file_load_with_detect_core(const char *path,
    fill_pathname_join(detect_content_path, menu_path, path,
          sizeof(detect_content_path));
 
-   if (ret == -1)
+   switch (ret)
    {
-      switch (hash_label)
-      {
-         case MENU_LABEL_COLLECTION:
-            info.list          = menu->menu_list->menu_stack;
-            info.type          = 0;
-            info.directory_ptr = idx;
-            rdb_entry_start_game_selection_ptr = idx;
-            strlcpy(info.path, settings->libretro_directory, sizeof(info.path));
-            strlcpy(info.label, "deferred_core_list_set", sizeof(info.label));
+      case -1:
+         switch (hash_label)
+         {
+            case MENU_LABEL_COLLECTION:
+               info.list          = menu->menu_list->menu_stack;
+               info.type          = 0;
+               info.directory_ptr = idx;
+               rdb_entry_start_game_selection_ptr = idx;
+               strlcpy(info.path, settings->libretro_directory, sizeof(info.path));
+               strlcpy(info.label, "deferred_core_list_set", sizeof(info.label));
 
-            return menu_displaylist_push_list(&info, DISPLAYLIST_GENERIC);
-         default:
-            event_command(EVENT_CMD_LOAD_CORE);
-            menu_common_load_content(false);
-            return -1;
-      }
-   }
+               return menu_displaylist_push_list(&info, DISPLAYLIST_GENERIC);
+            default:
+               event_command(EVENT_CMD_LOAD_CORE);
+               menu_common_load_content(false);
+               return -1;
+         }
+         break;
+      case 0:
+         info.list          = menu->menu_list->menu_stack;
+         info.type          = 0;
+         info.directory_ptr = idx;
+         strlcpy(info.path, settings->libretro_directory, sizeof(info.path));
 
-   if (ret == 0)
-   {
-      info.list          = menu->menu_list->menu_stack;
-      info.type          = 0;
-      info.directory_ptr = idx;
-      strlcpy(info.path, settings->libretro_directory, sizeof(info.path));
+         switch (hash_label)
+         {
+            case MENU_LABEL_COLLECTION:
+               rdb_entry_start_game_selection_ptr = idx;
+               strlcpy(info.label, "deferred_core_list_set", sizeof(info.label));
+               break;
+            default:
+               strlcpy(info.label, "deferred_core_list", sizeof(info.label));
+               break;
+         }
 
-      switch (hash_label)
-      {
-         case MENU_LABEL_COLLECTION:
-            rdb_entry_start_game_selection_ptr = idx;
-            strlcpy(info.label, "deferred_core_list_set", sizeof(info.label));
-            break;
-         default:
-            strlcpy(info.label, "deferred_core_list", sizeof(info.label));
-            break;
-      }
-
-      ret = menu_displaylist_push_list(&info, DISPLAYLIST_GENERIC);
+         ret = menu_displaylist_push_list(&info, DISPLAYLIST_GENERIC);
+         break;
    }
 
    return ret;
