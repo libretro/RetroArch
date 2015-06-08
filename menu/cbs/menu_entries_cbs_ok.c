@@ -45,7 +45,8 @@ static int menu_action_setting_set_current_string_path(
 }
 
 static int rarch_defer_core_wrapper(menu_displaylist_info_t *info,
-      size_t idx, const char *path, uint32_t hash_label)
+      size_t idx, const char *path, uint32_t hash_label,
+      bool is_carchive)
 {
    const char *menu_path    = NULL;
    const char *menu_label    = NULL;
@@ -64,8 +65,9 @@ static int rarch_defer_core_wrapper(menu_displaylist_info_t *info,
          menu_path, path, menu_label, menu->deferred_path,
          sizeof(menu->deferred_path));
 
-   fill_pathname_join(detect_content_path, menu_path, path,
-         sizeof(detect_content_path));
+   if (!is_carchive)
+      fill_pathname_join(detect_content_path, menu_path, path,
+            sizeof(detect_content_path));
 
    switch (ret)
    {
@@ -112,6 +114,21 @@ static int rarch_defer_core_wrapper(menu_displaylist_info_t *info,
    return ret;
 }
 
+static int action_ok_file_load_with_detect_core_carchive(
+      const char *path,
+      const char *label, unsigned type, size_t idx)
+{
+   int ret;
+   menu_displaylist_info_t info = {0};
+   const char *menu_path    = NULL;
+   uint32_t hash_label      = djb2_calculate(label);
+
+   strlcat(detect_content_path, "#", sizeof(detect_content_path));
+   strlcat(detect_content_path, path, sizeof(detect_content_path));
+
+   return rarch_defer_core_wrapper(&info, idx, path, hash_label, true);
+}
+
 static int action_ok_file_load_with_detect_core(const char *path,
       const char *label, unsigned type, size_t idx)
 {
@@ -120,7 +137,7 @@ static int action_ok_file_load_with_detect_core(const char *path,
    const char *menu_path    = NULL;
    uint32_t hash_label      = djb2_calculate(label);
 
-   return rarch_defer_core_wrapper(&info, idx, path, hash_label);
+   return rarch_defer_core_wrapper(&info, idx, path, hash_label, false);
 }
 
 static int action_ok_file_load_detect_core(const char *path,
@@ -1746,7 +1763,12 @@ static int menu_entries_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             switch (menu_label_hash)
             {
                case MENU_LABEL_DETECT_CORE_LIST:
-                  cbs->action_ok = action_ok_file_load_with_detect_core;
+#ifdef HAVE_COMPRESSION
+                  if (type == MENU_FILE_IN_CARCHIVE)
+                     cbs->action_ok = action_ok_file_load_with_detect_core_carchive;
+                  else
+#endif
+                     cbs->action_ok = action_ok_file_load_with_detect_core;
                   break;
                case MENU_LABEL_DISK_IMAGE_APPEND:
                   cbs->action_ok = action_ok_disk_image_append;
