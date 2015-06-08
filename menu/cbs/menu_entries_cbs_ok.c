@@ -212,7 +212,6 @@ static int action_ok_playlist_entry(const char *path,
 
    rarch_playlist_load_content(playlist, selection_ptr);
 
-   menu_list_flush_stack(menu->menu_list, NULL, MENU_SETTINGS);
    return -1;
 }
 
