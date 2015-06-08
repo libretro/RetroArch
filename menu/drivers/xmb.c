@@ -1429,6 +1429,7 @@ static void xmb_init_horizontal_list(menu_handle_t *menu, xmb_handle_t *xmb)
    info.menu_list    = NULL;
    info.type         = 0;
    info.type_default = MENU_FILE_PLAIN;
+   strlcpy(info.label, "content_collection_list", sizeof(info.label));
    strlcpy(info.path, settings->playlist_directory, sizeof(info.path));
    strlcpy(info.exts, "rpl", sizeof(info.exts));
 
