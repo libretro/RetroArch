@@ -15,14 +15,14 @@
 
 #include <file/file_path.h>
 
-#include "menu.h"
-#include "menu_displaylist.h"
-#include "menu_entries_cbs.h"
-#include "menu_setting.h"
+#include "../menu.h"
+#include "../menu_displaylist.h"
+#include "../menu_entries_cbs.h"
+#include "../menu_setting.h"
 
-#include "../file_ext.h"
+#include "../../file_ext.h"
 
-#include "../gfx/video_shader_driver.h"
+#include "../../gfx/video_shader_driver.h"
 
 static int deferred_push_core_information(menu_displaylist_info_t *info)
 {

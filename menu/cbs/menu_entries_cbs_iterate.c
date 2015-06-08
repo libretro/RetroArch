@@ -17,18 +17,17 @@
 #include <rhash.h>
 #include <retro_inline.h>
 
-#include "menu.h"
-#include "menu_display.h"
-#include "menu_entry.h"
-#include "menu_entries_cbs.h"
-#include "menu_setting.h"
-#include "menu_input.h"
-#include "menu_shader.h"
-#include "menu_navigation.h"
+#include "../menu.h"
+#include "../menu_display.h"
+#include "../menu_entry.h"
+#include "../menu_entries_cbs.h"
+#include "../menu_setting.h"
+#include "../menu_input.h"
+#include "../menu_shader.h"
+#include "../menu_navigation.h"
 
-#include "../retroarch.h"
-
-#include "../input/input_autodetect.h"
+#include "../../retroarch.h"
+#include "../../input/input_autodetect.h"
 
 static int archive_open(void)
 {

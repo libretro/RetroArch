@@ -13,49 +13,28 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <file/file_path.h>
-#include "menu.h"
-#include "menu_entries_cbs.h"
-#include "menu_entry.h"
-#include "menu_setting.h"
+#include "../menu.h"
+#include "../menu_navigation.h"
+#include "../menu_entries_cbs.h"
 
-#include "../runloop_data.h"
-
-static int action_scan_directory(const char *path,
-      const char *label, unsigned type, size_t idx)
+static int action_bind_up_generic(unsigned type, const char *label)
 {
-   char fullpath[PATH_MAX_LENGTH];
-   const char *menu_label = NULL;
-   const char *menu_path  = NULL;
+   unsigned scroll_speed  = 0;
    menu_handle_t *menu    = menu_driver_get_ptr();
    if (!menu)
       return -1;
 
-   menu_list_get_last_stack(menu->menu_list,
-         &menu_path, &menu_label, NULL);
+   scroll_speed = (max(menu->navigation.scroll.acceleration, 2) - 2) / 4 + 1;
 
-   fill_pathname_join(fullpath, menu_path, path, sizeof(fullpath));
+   if (menu_list_get_size(menu->menu_list) <= 0)
+      return 0;
 
-   rarch_main_data_msg_queue_push(DATA_TYPE_DB, fullpath, "cb_db_scan", 0, 1, true);
-   return 0;
-}
-
-static int menu_entries_cbs_init_bind_scan_compare_type(menu_file_list_cbs_t *cbs,
-      unsigned type)
-{
-   switch (type)
-   {
-      case MENU_FILE_DIRECTORY:
-         cbs->action_scan = action_scan_directory;
-         break;
-      default:
-         return -1;
-   }
+   menu_navigation_decrement(&menu->navigation, scroll_speed);
 
    return 0;
 }
 
-int menu_entries_cbs_init_bind_scan(menu_file_list_cbs_t *cbs,
+int menu_entries_cbs_init_bind_up(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx,
       const char *elem0, const char *elem1,
       uint32_t label_hash, uint32_t menu_label_hash)
@@ -63,9 +42,7 @@ int menu_entries_cbs_init_bind_scan(menu_file_list_cbs_t *cbs,
    if (!cbs)
       return -1;
 
-   cbs->action_scan = NULL;
-
-   menu_entries_cbs_init_bind_scan_compare_type(cbs, type);
+   cbs->action_up = action_bind_up_generic;
 
    return -1;
 }

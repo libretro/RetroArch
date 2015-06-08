@@ -13,15 +13,15 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "menu.h"
-#include "menu_entries_cbs.h"
-#include "menu_setting.h"
-#include "menu_shader.h"
+#include "../menu.h"
+#include "../menu_entries_cbs.h"
+#include "../menu_setting.h"
+#include "../menu_shader.h"
 
-#include "../retroarch.h"
-#include "../performance.h"
+#include "../../retroarch.h"
+#include "../../performance.h"
 
-#include "../input/input_remapping.h"
+#include "../../input/input_remapping.h"
 
 static int action_start_remap_file_load(unsigned type, const char *label)
 {

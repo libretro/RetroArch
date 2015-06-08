@@ -13,12 +13,12 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "menu.h"
-#include "menu_entry.h"
-#include "menu_entries_cbs.h"
-#include "menu_setting.h"
+#include "../menu.h"
+#include "../menu_entry.h"
+#include "../menu_entries_cbs.h"
+#include "../menu_setting.h"
 
-#include "../runloop_data.h"
+#include "../../runloop_data.h"
 
 static int action_select_default(const char *path, const char *label, unsigned type,
       size_t idx)
