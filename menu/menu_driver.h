@@ -26,12 +26,12 @@
 #include "menu_displaylist.h"
 #include "menu_list.h"
 #include "menu_navigation.h"
-#ifdef HAVE_LIBRETRODB
-#include "../libretro-db/libretrodb.h"
-#endif
-#include "../database_info.h"
 #include "menu_setting.h"
 #include "../../libretro.h"
+
+#ifdef HAVE_LIBRETRODB
+#include "../database_info.h"
+#endif
 
 #ifdef __cplusplus
 extern "C" {
