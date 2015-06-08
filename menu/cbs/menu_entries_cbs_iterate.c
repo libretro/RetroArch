@@ -71,7 +71,6 @@ static int archive_load(void)
    const char *menu_path  = NULL;
    const char *menu_label = NULL;
    const char* path       = NULL;
-   unsigned int type      = 0;
    menu_handle_t *menu    = menu_driver_get_ptr();
    settings_t *settings   = config_get_ptr();
    global_t      *global  = global_get_ptr();
@@ -89,7 +88,7 @@ static int archive_load(void)
       return 0;
 
    menu_list_get_at_offset(menu->menu_list->selection_buf,
-         selected, &path, NULL, &type);
+         selected, &path, NULL, NULL);
 
    ret = rarch_defer_core(global->core_info, menu_path, path, menu_label,
          menu->deferred_path, sizeof(menu->deferred_path));

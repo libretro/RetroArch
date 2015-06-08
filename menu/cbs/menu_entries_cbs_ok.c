@@ -44,26 +44,24 @@ static int menu_action_setting_set_current_string_path(
    return menu_setting_generic(setting, false);
 }
 
-static int action_ok_file_load_with_detect_core(const char *path,
-      const char *label, unsigned type, size_t idx)
+static int rarch_defer_core_wrapper(menu_displaylist_info_t *info,
+      size_t idx, const char *path, uint32_t hash_label)
 {
-   int ret;
-   menu_displaylist_info_t info = {0};
    const char *menu_path    = NULL;
+   const char *menu_label    = NULL;
+   int ret                  = 0;
    menu_handle_t *menu      = menu_driver_get_ptr();
    settings_t *settings     = config_get_ptr();
    global_t *global         = global_get_ptr();
-   uint32_t hash_label      = djb2_calculate(label);
 
    if (!menu)
       return -1;
 
-
    menu_list_get_last_stack(menu->menu_list,
-         &menu_path, NULL, NULL);
+         &menu_path, &menu_label, NULL);
 
    ret = rarch_defer_core(global->core_info,
-         menu_path, path, label, menu->deferred_path,
+         menu_path, path, menu_label, menu->deferred_path,
          sizeof(menu->deferred_path));
 
    fill_pathname_join(detect_content_path, menu_path, path,
@@ -75,13 +73,13 @@ static int action_ok_file_load_with_detect_core(const char *path,
          switch (hash_label)
          {
             case MENU_LABEL_COLLECTION:
-               info.list          = menu->menu_list->menu_stack;
-               info.type          = 0;
-               info.directory_ptr = idx;
+               info->list          = menu->menu_list->menu_stack;
+               info->type          = 0;
+               info->directory_ptr = idx;
                rdb_entry_start_game_selection_ptr = idx;
-               strlcpy(info.path, settings->libretro_directory, sizeof(info.path));
-               strlcpy(info.label, "deferred_core_list_set", sizeof(info.label));
-               ret = menu_displaylist_push_list(&info, DISPLAYLIST_GENERIC);
+               strlcpy(info->path, settings->libretro_directory, sizeof(info->path));
+               strlcpy(info->label, "deferred_core_list_set", sizeof(info->label));
+               ret = menu_displaylist_push_list(info, DISPLAYLIST_GENERIC);
                break;
             default:
                event_command(EVENT_CMD_LOAD_CORE);
@@ -91,27 +89,38 @@ static int action_ok_file_load_with_detect_core(const char *path,
          }
          break;
       case 0:
-         info.list          = menu->menu_list->menu_stack;
-         info.type          = 0;
-         info.directory_ptr = idx;
-         strlcpy(info.path, settings->libretro_directory, sizeof(info.path));
+         info->list          = menu->menu_list->menu_stack;
+         info->type          = 0;
+         info->directory_ptr = idx;
+         strlcpy(info->path, settings->libretro_directory, sizeof(info->path));
 
          switch (hash_label)
          {
             case MENU_LABEL_COLLECTION:
                rdb_entry_start_game_selection_ptr = idx;
-               strlcpy(info.label, "deferred_core_list_set", sizeof(info.label));
+               strlcpy(info->label, "deferred_core_list_set", sizeof(info->label));
                break;
             default:
-               strlcpy(info.label, "deferred_core_list", sizeof(info.label));
+               strlcpy(info->label, "deferred_core_list", sizeof(info->label));
                break;
          }
 
-         ret = menu_displaylist_push_list(&info, DISPLAYLIST_GENERIC);
+         ret = menu_displaylist_push_list(info, DISPLAYLIST_GENERIC);
          break;
    }
 
    return ret;
+}
+
+static int action_ok_file_load_with_detect_core(const char *path,
+      const char *label, unsigned type, size_t idx)
+{
+   int ret;
+   menu_displaylist_info_t info = {0};
+   const char *menu_path    = NULL;
+   uint32_t hash_label      = djb2_calculate(label);
+
+   return rarch_defer_core_wrapper(&info, idx, path, hash_label);
 }
 
 static int action_ok_file_load_detect_core(const char *path,
