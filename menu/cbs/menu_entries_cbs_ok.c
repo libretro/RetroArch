@@ -199,7 +199,7 @@ static int action_ok_playlist_entry(const char *path,
    }
 
    content_playlist_get_index(playlist, selection_ptr,
-         &entry_path, &entry_label, &core_path, &core_name, NULL); 
+         &entry_path, &entry_label, &core_path, &core_name, NULL, NULL); 
 
 #if 0
    RARCH_LOG("path: %s, label: %s, core path: %s, core name: %s, idx: %d\n", entry_path, entry_label,
@@ -872,7 +872,8 @@ static int action_ok_core_deferred_set(const char *path,
    content_playlist_update(menu->playlist, idx,
          menu->playlist->entries[idx].path, menu->playlist->entries[idx].label,
          path , core_display_name,
-         menu->playlist->entries[idx].crc32);
+         menu->playlist->entries[idx].crc32,
+         menu->playlist->entries[idx].db_name);
 
    content_playlist_free(menu->playlist);
    menu->playlist = NULL;

@@ -1607,13 +1607,13 @@ static bool config_load_file(const char *path, bool set_defaults)
       {
          fill_pathname_join(settings->content_history_path,
                settings->content_history_directory,
-               "content_history.rpl",
+               "content_history.lpl",
                sizeof(settings->content_history_path));
       }
       else
       {
          fill_pathname_resolve_relative(settings->content_history_path,
-               global->config_path, "content_history.rpl",
+               global->config_path, "content_history.lpl",
                sizeof(settings->content_history_path));
       }
    }

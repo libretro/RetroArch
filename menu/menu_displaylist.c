@@ -715,6 +715,7 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
       char fill_buf[PATH_MAX_LENGTH];
       char path_copy[PATH_MAX_LENGTH];
       const char *core_name = NULL;
+      const char *db_name   = NULL;
       const char *path      = NULL;
       const char *label     = NULL;
       const char *crc32     = NULL;
@@ -724,7 +725,7 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
       path = path_copy;
 
       content_playlist_get_index(playlist, i,
-            &path, &label, NULL, &core_name, &crc32);
+            &path, &label, NULL, &core_name, &crc32, &db_name);
       strlcpy(fill_buf, core_name, sizeof(fill_buf));
 
       if (path)
@@ -914,7 +915,7 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
 
    strlcpy(path_base, path_basename(info->path), sizeof(path_base));
    path_remove_extension(path_base);
-   strlcat(path_base, ".rpl", sizeof(path_base));
+   strlcat(path_base, ".lpl", sizeof(path_base));
 
    fill_pathname_join(path_playlist, settings->playlist_directory, path_base,
          sizeof(path_playlist));
@@ -1329,7 +1330,7 @@ static int menu_displaylist_parse_horizontal_list(menu_displaylist_info_t *info)
 {
    char db_path[PATH_MAX_LENGTH];
    char path_playlist[PATH_MAX_LENGTH];
-   char rpl_basename[PATH_MAX_LENGTH];
+   char lpl_basename[PATH_MAX_LENGTH];
    size_t i;
    content_playlist_t *playlist = NULL;
    settings_t      *settings    = config_get_ptr();
@@ -1345,12 +1346,12 @@ static int menu_displaylist_parse_horizontal_list(menu_displaylist_info_t *info)
          MENU_FILE_CONTENTLIST_ENTRY, 0);
 #endif
 
-   strlcpy(rpl_basename, item->path, sizeof(rpl_basename));
-   path_remove_extension(rpl_basename);
+   strlcpy(lpl_basename, item->path, sizeof(lpl_basename));
+   path_remove_extension(lpl_basename);
 
 #ifdef HAVE_LIBRETRODB
    fill_pathname_join(db_path, settings->content_database,
-         rpl_basename, sizeof(db_path));
+         lpl_basename, sizeof(db_path));
    strlcat(db_path, ".rdb", sizeof(db_path));
 
    if (path_file_exists(db_path))

@@ -189,6 +189,7 @@ static void history_playlist_push(content_playlist_t *playlist,
             NULL,
             core_path,
             info->library_name,
+            NULL,
             NULL);
 }
 

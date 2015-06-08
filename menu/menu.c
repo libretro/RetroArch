@@ -73,6 +73,7 @@ static void menu_push_to_history_playlist(void)
          NULL,
          settings->libretro,
          global->menu.info.library_name,
+         NULL,
          NULL);
 }
 

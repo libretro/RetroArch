@@ -160,9 +160,6 @@ int database_info_build_query(char *s, size_t len,
       strlcat(s, "\"", len);
    strlcat(s, "}", len);
 
-#if 0
-   RARCH_LOG("query: %s\n", s);
-#endif
    return 0;
 }
 

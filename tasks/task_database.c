@@ -164,7 +164,7 @@ static int database_info_list_iterate_found_match(
 
    path_remove_extension(db_playlist_base_str);
 
-   strlcat(db_playlist_base_str, ".rpl", sizeof(db_playlist_base_str));
+   strlcat(db_playlist_base_str, ".lpl", sizeof(db_playlist_base_str));
    fill_pathname_join(db_playlist_path, settings->playlist_directory,
          db_playlist_base_str, sizeof(db_playlist_path));
 
@@ -192,7 +192,7 @@ static int database_info_list_iterate_found_match(
    RARCH_LOG("entry path str: %s\n", entry_path_str);
 #endif
 
-   content_playlist_push(playlist, entry_path_str, db_info_entry->name, "DETECT", "DETECT", db_crc);
+   content_playlist_push(playlist, entry_path_str, db_info_entry->name, "DETECT", "DETECT", db_crc, db_playlist_base_str);
 
    content_playlist_write_file(playlist);
    content_playlist_free(playlist);

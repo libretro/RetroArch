@@ -38,7 +38,8 @@ void content_playlist_get_index(content_playlist_t *playlist,
       size_t idx,
       const char **path, const char **label,
       const char **core_path, const char **core_name,
-      const char **crc32)
+      const char **crc32,
+      const char **db_name)
 {
    if (!playlist)
       return;
@@ -51,6 +52,8 @@ void content_playlist_get_index(content_playlist_t *playlist,
       *core_path = playlist->entries[idx].core_path;
    if (core_name)
       *core_name = playlist->entries[idx].core_name;
+   if (db_name)
+      *db_name = playlist->entries[idx].db_name;
    if (crc32)
       *crc32     = playlist->entries[idx].crc32;
 }
@@ -59,7 +62,8 @@ void content_playlist_get_index_by_path(content_playlist_t *playlist,
       const char *search_path,
       char **path, char **label,
       char **core_path, char **core_name,
-      char **crc32)
+      char **crc32,
+      char **db_name)
 {
    size_t i;
    if (!playlist)
@@ -78,6 +82,8 @@ void content_playlist_get_index_by_path(content_playlist_t *playlist,
          *core_path = playlist->entries[i].core_path;
       if (core_name)
          *core_name = playlist->entries[i].core_name;
+      if (db_name)
+         *db_name   = playlist->entries[i].db_name;
       if (crc32)
          *crc32     = playlist->entries[i].crc32;
       break;
@@ -112,6 +118,10 @@ static void content_playlist_free_entry(content_playlist_entry_t *entry)
       free(entry->core_name);
    entry->core_name = NULL;
 
+   if (entry->db_name)
+      free(entry->db_name);
+   entry->core_name = NULL;
+
    if (entry->crc32)
       free(entry->crc32);
    entry->crc32 = NULL;
@@ -122,7 +132,8 @@ static void content_playlist_free_entry(content_playlist_entry_t *entry)
 void content_playlist_update(content_playlist_t *playlist, size_t idx,
       const char *path, const char *label,
       const char *core_path, const char *core_name,
-      const char *crc32)
+      const char *crc32,
+      const char *db_name)
 {
    content_playlist_entry_t *entry = NULL;
    if (!playlist)
@@ -135,11 +146,12 @@ void content_playlist_update(content_playlist_t *playlist, size_t idx,
    if (!entry)
       return;
 
-   entry->path      = path ?  strdup(path) : entry->path;
-   entry->label     = label ? strdup(label) : entry->label;
+   entry->path      = path ?  strdup(path)          : entry->path;
+   entry->label     = label ? strdup(label)         : entry->label;
    entry->core_path = core_path ? strdup(core_path) : entry->core_path;
    entry->core_name = core_name ? strdup(core_name) : entry->core_name;
-   entry->crc32     = crc32 ? strdup(crc32) : entry->crc32;
+   entry->db_name   = db_name ? strdup(db_name)     : entry->db_name;
+   entry->crc32     = crc32 ? strdup(crc32)         : entry->crc32;
 }
 
 /**
@@ -154,7 +166,8 @@ void content_playlist_update(content_playlist_t *playlist, size_t idx,
 void content_playlist_push(content_playlist_t *playlist,
       const char *path, const char *label,
       const char *core_path, const char *core_name,
-      const char *crc32)
+      const char *crc32,
+      const char *db_name)
 {
    size_t i;
 
@@ -212,6 +225,7 @@ void content_playlist_push(content_playlist_t *playlist,
    playlist->entries[0].label     = label ? strdup(label) : NULL;
    playlist->entries[0].core_path = core_path ? strdup(core_path) : NULL;
    playlist->entries[0].core_name = core_name ? strdup(core_name) : NULL;
+   playlist->entries[0].db_name   = db_name ? strdup(db_name) : NULL;
    playlist->entries[0].crc32     = crc32 ? strdup(crc32) : NULL;
    playlist->size++;
 }
@@ -230,12 +244,14 @@ void content_playlist_write_file(content_playlist_t *playlist)
       return;
 
    for (i = 0; i < playlist->size; i++)
-      fprintf(file, "%s\n%s\n%s\n%s\n%s\n",
+      fprintf(file, "%s\n%s\n%s\n%s\n%s\n%s\n",
             playlist->entries[i].path  ? playlist->entries[i].path : "",
             playlist->entries[i].label ? playlist->entries[i].label : "",
             playlist->entries[i].core_path,
             playlist->entries[i].core_name,
-            playlist->entries[i].crc32 ? playlist->entries[i].crc32 : "");
+            playlist->entries[i].crc32 ? playlist->entries[i].crc32 : "",
+            playlist->entries[i].db_name ? playlist->entries[i].db_name : ""
+            );
 
    fclose(file);
 }
@@ -296,7 +312,7 @@ size_t content_playlist_size(content_playlist_t *playlist)
 }
 
 #ifndef PLAYLIST_ENTRIES
-#define PLAYLIST_ENTRIES 5
+#define PLAYLIST_ENTRIES 6
 #endif
 
 static bool content_playlist_read_file(
@@ -334,13 +350,15 @@ static bool content_playlist_read_file(
          continue;
 
       if (*buf[0])
-         entry->path   = strdup(buf[0]);
+         entry->path      = strdup(buf[0]);
       if (*buf[1])
-         entry->label  = strdup(buf[1]);
-      entry->core_path = strdup(buf[2]);
-      entry->core_name = strdup(buf[3]);
+         entry->label     = strdup(buf[1]);
+      entry->core_path    = strdup(buf[2]);
+      entry->core_name    = strdup(buf[3]);
       if (*buf[4])
          entry->crc32     = strdup(buf[4]);
+      if (*buf[5])
+         entry->db_name   = strdup(buf[5]);
       playlist->size++;
    }
 

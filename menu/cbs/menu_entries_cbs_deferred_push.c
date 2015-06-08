@@ -299,7 +299,7 @@ static int deferred_push_cursor_manager_list(menu_displaylist_info_t *info)
 static int deferred_push_content_collection_list(menu_displaylist_info_t *info)
 {
    info->type_default = MENU_FILE_PLAIN;
-   strlcpy(info->exts, "rpl", sizeof(info->exts));
+   strlcpy(info->exts, "lpl", sizeof(info->exts));
 
    return menu_displaylist_push_list(info, DISPLAYLIST_DATABASE_PLAYLISTS);
 }
@@ -411,7 +411,7 @@ static int deferred_push_video_font_path(menu_displaylist_info_t *info)
 static int deferred_push_content_history_path(menu_displaylist_info_t *info)
 {
    info->type_default = MENU_FILE_PLAIN;
-   strlcpy(info->exts, "rpl", sizeof(info->exts));
+   strlcpy(info->exts, "lpl", sizeof(info->exts));
 
    return menu_displaylist_push_list(info, DISPLAYLIST_CONTENT_HISTORY);
 }
