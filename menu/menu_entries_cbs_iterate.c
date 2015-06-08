@@ -100,7 +100,7 @@ static int archive_load(void)
    {
       case -1:
          event_command(EVENT_CMD_LOAD_CORE);
-         menu_entries_common_load_content(false);
+         menu_common_load_content(false);
          break;
       case 0:
          info.list          = menu->menu_list->menu_stack;

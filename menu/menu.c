@@ -50,7 +50,7 @@ static void menu_environment_get(int *argc, char *argv[],
    wrap_args->touched       = true;
 }
 
-static void push_to_history_playlist(void)
+static void menu_push_to_history_playlist(void)
 {
    settings_t *settings = config_get_ptr();
    global_t *global     = global_get_ptr();
@@ -118,12 +118,24 @@ bool menu_load_content(void)
    event_command(EVENT_CMD_HISTORY_INIT);
 
    if (*global->fullpath || (menu && menu->load_no_content))
-      push_to_history_playlist();
+      menu_push_to_history_playlist();
 
    event_command(EVENT_CMD_VIDEO_SET_ASPECT_RATIO);
    event_command(EVENT_CMD_RESUME);
 
    return true;
+}
+
+void menu_common_load_content(bool persist)
+{
+   menu_handle_t *menu = menu_driver_get_ptr();
+   if (!menu)
+      return;
+
+   event_command(persist ? EVENT_CMD_LOAD_CONTENT_PERSIST : EVENT_CMD_LOAD_CONTENT);
+
+   menu_list_flush_stack(menu->menu_list, NULL, MENU_SETTINGS);
+   menu->msg_force = true;
 }
 
 /**

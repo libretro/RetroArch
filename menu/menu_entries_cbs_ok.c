@@ -87,7 +87,7 @@ static int action_ok_file_load_with_detect_core(const char *path,
             return menu_displaylist_push_list(&info, DISPLAYLIST_GENERIC);
          default:
             event_command(EVENT_CMD_LOAD_CORE);
-            menu_entries_common_load_content(false);
+            menu_common_load_content(false);
             return -1;
       }
    }
@@ -129,7 +129,7 @@ static int action_ok_file_load_detect_core(const char *path,
    strlcpy(global->fullpath, detect_content_path, sizeof(global->fullpath));
    strlcpy(settings->libretro, path, sizeof(settings->libretro));
    event_command(EVENT_CMD_LOAD_CORE);
-   menu_entries_common_load_content(false);
+   menu_common_load_content(false);
 
    return -1;
 }
@@ -874,7 +874,7 @@ static int action_ok_core_load_deferred(const char *path,
    strlcpy(global->fullpath, menu->deferred_path,
          sizeof(global->fullpath));
 
-   menu_entries_common_load_content(false);
+   menu_common_load_content(false);
 
    return -1;
 }
@@ -939,7 +939,7 @@ static int action_ok_core_load(const char *path,
    {
       *global->fullpath = '\0';
 
-      menu_entries_common_load_content(false);
+      menu_common_load_content(false);
       return -1;
    }
 
@@ -1131,7 +1131,7 @@ static int action_ok_file_load(const char *path,
          fill_pathname_join(global->fullpath, menu_path, path,
                sizeof(global->fullpath));
 
-      menu_entries_common_load_content(true);
+      menu_common_load_content(true);
 
       return -1;
    }

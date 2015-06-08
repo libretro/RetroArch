@@ -188,6 +188,8 @@ void menu_free(menu_handle_t *menu);
  **/
 bool menu_load_content(void);
 
+void menu_common_load_content(bool persist);
+
 void menu_update_system_info(menu_handle_t *menu, bool *load_no_content);
 
 int menu_do_refresh(unsigned action);
