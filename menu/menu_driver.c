@@ -333,6 +333,21 @@ void menu_driver_frame(void)
       driver->frame();
 }
 
+int menu_driver_bind_init(menu_file_list_cbs_t *cbs,
+      const char *path, const char *label, unsigned type, size_t idx,
+      const char *elem0, const char *elem1,
+      uint32_t label_hash, uint32_t menu_label_hash)
+{
+   int ret = 0;
+   const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
+
+   if (driver && driver->bind_init)
+      ret = driver->bind_init(cbs, path, label, type, idx, elem0, elem1,
+            label_hash, menu_label_hash);
+
+   return ret;
+}
+
 void menu_driver_free(menu_handle_t *menu)
 {
    const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();

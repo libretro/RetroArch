@@ -259,7 +259,7 @@ typedef struct menu_ctx_driver
    void  (*list_cache)(menu_list_type_t, unsigned);
    size_t(*list_get_size)(void *data, menu_list_type_t);
    void  (*list_set_selection)(file_list_t *list);
-   int   (*menu_entries_cbs_init_bind)(menu_file_list_cbs_t *cbs,
+   int   (*bind_init)(menu_file_list_cbs_t *cbs,
          const char *path, const char *label, unsigned type, size_t idx,
          const char *elem0, const char *elem1,
          uint32_t label_hash, uint32_t menu_label_hash);
@@ -365,6 +365,11 @@ bool menu_driver_alive(void);
 void menu_driver_set_alive(void);
 
 void menu_driver_unset_alive(void);
+
+int menu_driver_bind_init(menu_file_list_cbs_t *cbs,
+      const char *path, const char *label, unsigned type, size_t idx,
+      const char *elem0, const char *elem1,
+      uint32_t label_hash, uint32_t menu_label_hash);
 
 /* HACK */
 extern unsigned int rdb_entry_start_game_selection_ptr;

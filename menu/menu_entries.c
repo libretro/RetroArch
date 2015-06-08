@@ -149,4 +149,6 @@ void menu_entries_init(void *data,
    ret = menu_entries_cbs_init_bind_title(cbs, path, label, type, idx, elem0, elem1, label_hash, menu_label_hash);
 
    menu_entries_init_log(ret, "TITLE", label, elem0, elem1, type);
+
+   ret = menu_driver_bind_init(cbs, path, label, type, idx, elem0, elem1, label_hash, menu_label_hash);
 }
