@@ -606,31 +606,10 @@ static void xmb_list_open_new(xmb_handle_t *xmb,
    xmb->old_depth = xmb->depth;
 }
 
-core_info_t *xmb_node_get_core_info(core_info_t *info, unsigned i)
-{
-   global_t *global            = global_get_ptr();
-   core_info_list_t *info_list = global ? (core_info_list_t*)global->core_info : NULL;
-   size_t            list_size = info_list ? info_list->count : 0;
-
-   if (!info_list || list_size == 0)
-      return NULL;
-   rarch_assert(i >= 0);
-   rarch_assert(i <= list_size);
-   if (i >= list_size)
-      return NULL;
-
-   info = (core_info_t*)&info_list->list[i];
-
-   if (!info)
-      return NULL;
-   return info;
-}
-
-static xmb_node_t *xmb_node_allocate_userdata(xmb_handle_t *xmb,
-      core_info_t *info, unsigned i)
+static xmb_node_t *xmb_node_allocate_userdata(xmb_handle_t *xmb, unsigned i)
 {
    xmb_node_t *node            = NULL;
-   info = xmb_node_get_core_info(info, i);
+   struct item_file *info      = (struct item_file*)&xmb->horizontal_list->list[i];
 
    if (!info)
       return NULL;
@@ -652,18 +631,18 @@ static xmb_node_t *xmb_node_allocate_userdata(xmb_handle_t *xmb,
       node->zoom  = xmb->categories.active.zoom;
    }
 
-   info->userdata = node;
+   info->actiondata = node;
 
    return node;
 }
 
 static xmb_node_t* xmb_get_userdata_from_horizontal_list(
-      xmb_handle_t *xmb, core_info_t *info, unsigned i)
+      xmb_handle_t *xmb, unsigned i)
 {
-   info = xmb_node_get_core_info(info, i);
+   struct item_file *info = (struct item_file*)&xmb->horizontal_list->list[i];
 
    if (info)
-      return (xmb_node_t*)info->userdata;
+      return (xmb_node_t*)info->actiondata;
 
    return NULL;
 }
@@ -770,17 +749,13 @@ static void xmb_set_title(xmb_handle_t *xmb)
       menu_entries_get_title(xmb->title_name, sizeof(xmb->title_name));
    else
    {
-      core_info_t *info           = NULL;
       global_t *global            = global_get_ptr();
-      core_info_list_t *info_list = global ? (core_info_list_t*)global->core_info : NULL;
+      struct item_file *item      = (struct item_file*)&xmb->horizontal_list->list[menu->categories.selection_ptr - 1];
 
-      if (!info_list)
+      if (!item)
          return;
 
-      info = (core_info_t*)&info_list->list[menu->categories.selection_ptr - 1];
-
-      if (info)
-         strlcpy(xmb->title_name, info->display_name, sizeof(xmb->title_name));
+      strlcpy(xmb->title_name, item->path, sizeof(xmb->title_name));
    }
 }
 
@@ -791,13 +766,12 @@ static void xmb_list_switch_horizontal_list(xmb_handle_t *xmb, menu_handle_t *me
 
    for (j = 0; j < list_size; j++)
    {
-      core_info_t *info           = NULL;
       float ia                    = xmb->categories.passive.alpha;
       float iz                    = xmb->categories.passive.zoom;
       xmb_node_t *node            = &xmb->settings_node;
 
       if (j > 0)
-         node = xmb_get_userdata_from_horizontal_list(xmb, info, j - 1);
+         node = xmb_get_userdata_from_horizontal_list(xmb, j - 1);
 
       if (!node)
          continue;
@@ -853,12 +827,11 @@ static void xmb_list_open_horizontal_list(xmb_handle_t *xmb, menu_handle_t *menu
 
    for (j = 0; j < list_size; j++)
    {
-      core_info_t *info = NULL;
       float ia          = 0;
       xmb_node_t *node  = &xmb->settings_node;
 
       if (j > 0)
-         node = xmb_get_userdata_from_horizontal_list(xmb, info, j - 1);
+         node = xmb_get_userdata_from_horizontal_list(xmb, j - 1);
 
       if (!node)
          continue;
@@ -1008,7 +981,6 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
    unsigned i;
    unsigned width, height;
    math_matrix_4x4 mymat, mrot, mscal;
-   core_info_t *info     = NULL;
    const char *label     = NULL;
    xmb_node_t *core_node = NULL;
    size_t end            = 0;
@@ -1022,7 +994,7 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
    file_list_get_last(stack, NULL, &label, NULL);
 
    if (cat_selection_ptr)
-      core_node = xmb_get_userdata_from_horizontal_list(xmb, info, cat_selection_ptr - 1);
+      core_node = xmb_get_userdata_from_horizontal_list(xmb, cat_selection_ptr - 1);
 
    end = file_list_get_size(list);
 
@@ -1267,11 +1239,10 @@ static void xmb_frame_horizontal_list(xmb_handle_t *xmb, menu_handle_t *menu, gl
 
    for (i = 0; i < list_size; i++)
    {
-      core_info_t *info           = NULL;
       xmb_node_t *node = &xmb->settings_node;
 
       if (i > 0)
-         node = xmb_get_userdata_from_horizontal_list(xmb, info, i - 1);
+         node = xmb_get_userdata_from_horizontal_list(xmb, i - 1);
 
       if (!node)
          continue;
@@ -1419,6 +1390,7 @@ static void xmb_frame(void)
 
 static void xmb_init_horizontal_list(menu_handle_t *menu, xmb_handle_t *xmb)
 {
+   unsigned i;
    menu_displaylist_info_t info = {0};
    settings_t *settings        = config_get_ptr();
 
@@ -1431,10 +1403,20 @@ static void xmb_init_horizontal_list(menu_handle_t *menu, xmb_handle_t *xmb)
    info.menu_list    = NULL;
    info.type         = 0;
    info.type_default = MENU_FILE_PLAIN;
-   strlcpy(info.path, settings->libretro_directory, sizeof(info.path));
-   strlcpy(info.exts, EXT_EXECUTABLES, sizeof(info.exts));
+   strlcpy(info.path, settings->playlist_directory, sizeof(info.path));
+   strlcpy(info.exts, "rpl", sizeof(info.exts));
 
-   menu_displaylist_push_list(&info, DISPLAYLIST_CORES);
+   menu_displaylist_push_list(&info, DISPLAYLIST_DATABASE_PLAYLISTS);
+
+#if 0
+   unsigned end = file_list_get_size(xmb->horizontal_list);
+
+   for (i = 0; i < end; i++)
+   {
+      struct item_file *item = (struct item_file*)&xmb->horizontal_list->list[i];
+      RARCH_LOG("list[%d] : [label] %s, [path] %s\n", i, item->label, item->path);
+   }
+#endif
 }
 
 static void *xmb_init(void)
@@ -1637,14 +1619,13 @@ static void xmb_context_reset_horizontal_list(xmb_handle_t *xmb,
    {
       char core_id[PATH_MAX_LENGTH];
       char texturepath[PATH_MAX_LENGTH], content_texturepath[PATH_MAX_LENGTH];
-      core_info_t *info           = NULL;
       struct texture_image ti     = {0};
       xmb_node_t *node            = xmb_get_userdata_from_horizontal_list(
-            xmb, info, i - 1);
+            xmb, i - 1);
 
       if (!node)
       {
-         node = xmb_node_allocate_userdata(xmb, info, i - 1);
+         node = xmb_node_allocate_userdata(xmb, i - 1);
          if (!node)
             continue;
       }
@@ -1652,7 +1633,8 @@ static void xmb_context_reset_horizontal_list(xmb_handle_t *xmb,
       fill_pathname_join(iconpath, themepath, xmb->icon.dir, sizeof(iconpath));
       fill_pathname_slash(iconpath, sizeof(iconpath));
 
-      info = (core_info_t*)&info_list->list[i-1];
+      /* TODO/FIXME */
+#if 0
 
       if (!info)
          continue;
@@ -1691,6 +1673,7 @@ static void xmb_context_reset_horizontal_list(xmb_handle_t *xmb,
             TEXTURE_BACKEND_OPENGL, TEXTURE_FILTER_MIPMAP_LINEAR);
 
       texture_image_free(&ti);
+#endif
 
       if (i == xmb->categories.active.idx)
       {
@@ -2003,8 +1986,7 @@ static void xmb_context_destroy_horizontal_list(xmb_handle_t *xmb,
 
    for (i = 1; i < list_size; i++)
    {
-      core_info_t *info           = NULL;
-      xmb_node_t *node = xmb_get_userdata_from_horizontal_list(xmb, info, i - 1);
+      xmb_node_t *node = xmb_get_userdata_from_horizontal_list(xmb, i - 1);
 
       if (!node)
          continue;
@@ -2043,11 +2025,10 @@ static void xmb_toggle_horizontal_list(xmb_handle_t *xmb, menu_handle_t *menu)
 
    for (i = 0; i < list_size; i++)
    {
-      core_info_t *info           = NULL;
       xmb_node_t *node = &xmb->settings_node;
 
       if (i > 0)
-         node = xmb_get_userdata_from_horizontal_list(xmb, info, i - 1);
+         node = xmb_get_userdata_from_horizontal_list(xmb, i - 1);
 
       if (!node)
          continue;
