@@ -748,8 +748,6 @@ int menu_entries_cbs_init_bind_title(menu_file_list_cbs_t *cbs,
       const char *elem0, const char *elem1,
       uint32_t label_hash, uint32_t menu_label_hash)
 {
-   driver_t               *driver = driver_get_ptr();
-
    if (!cbs)
       return -1;
 

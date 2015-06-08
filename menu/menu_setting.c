@@ -4429,7 +4429,6 @@ static bool setting_append_list_video_options(
    rarch_setting_group_info_t subgroup_info = {0};
    global_t *global     = global_get_ptr();
    settings_t *settings = config_get_ptr();
-   video_viewport_t *custom_vp = video_viewport_get_custom();
     
    (void)global;
 
