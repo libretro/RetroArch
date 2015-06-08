@@ -477,8 +477,9 @@ end:
 static void xmb_selection_pointer_changed(void)
 {
    unsigned i, current, end;
-   xmb_handle_t *xmb   = NULL;
-   menu_handle_t *menu = menu_driver_get_ptr();
+   xmb_handle_t    *xmb   = NULL;
+   menu_handle_t    *menu = menu_driver_get_ptr();
+   menu_list_t *menu_list = menu_list_get_ptr();
 
    if (!menu)
       return;
@@ -497,7 +498,7 @@ static void xmb_selection_pointer_changed(void)
       float ia = xmb->item.passive.alpha;
       float iz = xmb->item.passive.zoom;
       xmb_node_t *node = (xmb_node_t*)file_list_get_userdata_at_offset(
-            menu->menu_list->selection_buf, i);
+            menu_list->selection_buf, i);
 
       if (!node)
          continue;
@@ -817,7 +818,8 @@ static void xmb_list_switch_horizontal_list(xmb_handle_t *xmb, menu_handle_t *me
 static void xmb_list_switch(xmb_handle_t *xmb)
 {
    int dir = -1;
-   menu_handle_t *menu = menu_driver_get_ptr();
+   menu_handle_t    *menu = menu_driver_get_ptr();
+   menu_list_t *menu_list = menu_list_get_ptr();
 
    if (!menu)
       return;
@@ -839,7 +841,7 @@ static void xmb_list_switch(xmb_handle_t *xmb)
 
    xmb_list_switch_old(xmb, xmb->selection_buf_old,
          dir, xmb->selection_ptr_old);
-   xmb_list_switch_new(xmb, menu->menu_list->selection_buf,
+   xmb_list_switch_new(xmb, menu_list->selection_buf,
          dir, menu->navigation.selection_ptr);
    xmb->categories.active.idx_old = menu->categories.selection_ptr;
 }
@@ -873,8 +875,9 @@ static void xmb_list_open_horizontal_list(xmb_handle_t *xmb, menu_handle_t *menu
 
 static void xmb_list_open(xmb_handle_t *xmb)
 {
-   int dir             = 0;
-   menu_handle_t *menu = menu_driver_get_ptr();
+   int                dir = 0;
+   menu_handle_t    *menu = menu_driver_get_ptr();
+   menu_list_t *menu_list = menu_list_get_ptr();
 
    if (!menu)
       return;
@@ -890,7 +893,7 @@ static void xmb_list_open(xmb_handle_t *xmb)
 
    xmb_list_open_old(xmb, xmb->selection_buf_old,
          dir, xmb->selection_ptr_old);
-   xmb_list_open_new(xmb, menu->menu_list->selection_buf,
+   xmb_list_open_new(xmb, menu_list->selection_buf,
          dir, menu->navigation.selection_ptr);
 
    switch (xmb->depth)
@@ -1212,9 +1215,10 @@ static void xmb_draw_cursor(gl_t *gl, xmb_handle_t *xmb, float x, float y)
 static void xmb_render(void)
 {
    unsigned i, current, end;
-   xmb_handle_t    *xmb = NULL;
-   settings_t *settings = config_get_ptr();
-   menu_handle_t *menu  = menu_driver_get_ptr();
+   xmb_handle_t      *xmb = NULL;
+   settings_t   *settings = config_get_ptr();
+   menu_handle_t    *menu = menu_driver_get_ptr();
+   menu_list_t *menu_list = menu_list_get_ptr();
 
    if (!menu)
       return;
@@ -1227,7 +1231,7 @@ static void xmb_render(void)
    menu_animation_update(menu->animation, menu->dt / IDEAL_DT);
 
    current = menu->navigation.selection_ptr;
-   end     = menu_list_get_size(menu->menu_list);
+   end     = menu_list_get_size(menu_list);
 
    if (settings->menu.pointer.enable)
    {
@@ -1298,8 +1302,9 @@ static void xmb_frame(void)
    xmb_handle_t *xmb = NULL;
    gl_t *gl = NULL;
    const struct font_renderer *font_driver = NULL;
-   menu_handle_t *menu  = menu_driver_get_ptr();
-   settings_t *settings = config_get_ptr();
+   menu_handle_t   *menu  = menu_driver_get_ptr();
+   menu_list_t *menu_list = menu_list_get_ptr();
+   settings_t   *settings = config_get_ptr();
 
    if (!menu)
       return;
@@ -1352,8 +1357,8 @@ static void xmb_frame(void)
          xmb->categories.selection_ptr_old);
 
    xmb_draw_items(xmb, gl,
-         menu->menu_list->selection_buf,
-         menu->menu_list->menu_stack,
+         menu_list->selection_buf,
+         menu_list->menu_stack,
          menu->navigation.selection_ptr,
          menu->categories.selection_ptr);
 
@@ -1933,8 +1938,9 @@ static void xmb_list_delete(file_list_t *list,
 static void xmb_list_cache(menu_list_type_t type, unsigned action)
 {
    size_t stack_size;
-   xmb_handle_t *xmb   = NULL;
-   menu_handle_t *menu = menu_driver_get_ptr();
+   xmb_handle_t      *xmb = NULL;
+   menu_handle_t    *menu = menu_driver_get_ptr();
+   menu_list_t *menu_list = menu_list_get_ptr();
 
    if (!menu)
       return;
@@ -1944,8 +1950,8 @@ static void xmb_list_cache(menu_list_type_t type, unsigned action)
    if (!xmb)
       return;
 
-   file_list_copy(menu->menu_list->selection_buf, xmb->selection_buf_old);
-   file_list_copy(menu->menu_list->menu_stack, xmb->menu_stack_old);
+   file_list_copy(menu_list->selection_buf, xmb->selection_buf_old);
+   file_list_copy(menu_list->menu_stack, xmb->menu_stack_old);
    xmb->selection_ptr_old = menu->navigation.selection_ptr;
 
    switch (type)
@@ -1965,24 +1971,24 @@ static void xmb_list_cache(menu_list_type_t type, unsigned action)
                break;
          }
 
-         stack_size = menu->menu_list->menu_stack->size;
+         stack_size = menu_list->menu_stack->size;
 
-         if (menu->menu_list->menu_stack->list[stack_size - 1].label)
-            free(menu->menu_list->menu_stack->list[stack_size - 1].label);
-         menu->menu_list->menu_stack->list[stack_size - 1].label = NULL;
+         if (menu_list->menu_stack->list[stack_size - 1].label)
+            free(menu_list->menu_stack->list[stack_size - 1].label);
+         menu_list->menu_stack->list[stack_size - 1].label = NULL;
 
          if (menu->categories.selection_ptr == 0)
          {
-            menu->menu_list->menu_stack->list[stack_size - 1].label = 
+            menu_list->menu_stack->list[stack_size - 1].label = 
                strdup("Main Menu");
-            menu->menu_list->menu_stack->list[stack_size - 1].type = 
+            menu_list->menu_stack->list[stack_size - 1].type = 
                MENU_SETTINGS;
          }
          else
          {
-            menu->menu_list->menu_stack->list[stack_size - 1].label = 
+            menu_list->menu_stack->list[stack_size - 1].label = 
                strdup("Horizontal Menu");
-            menu->menu_list->menu_stack->list[stack_size - 1].type = 
+            menu_list->menu_stack->list[stack_size - 1].type = 
                MENU_SETTING_HORIZONTAL_MENU;
          }
          break;

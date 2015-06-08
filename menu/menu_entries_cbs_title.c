@@ -40,7 +40,7 @@ static INLINE void sanitize_to_string(char *s, const char *label, size_t len)
 static int action_get_title_default(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   uint32_t hash = 0;
+   uint32_t label_hash = 0;
    char elem0[PATH_MAX_LENGTH], elem1[PATH_MAX_LENGTH];
    char elem0_path[PATH_MAX_LENGTH], elem1_path[PATH_MAX_LENGTH];
    struct string_list *list_label = string_split(label, "|");
@@ -72,7 +72,7 @@ static int action_get_title_default(const char *path, const char *label,
       string_list_free(list_path);
    }
 
-   hash = djb2_calculate(label);
+   label_hash = djb2_calculate(label);
 
 #if 0
    RARCH_LOG("label %s, elem0 %s, elem1 %s\n", label, elem0, elem1);
@@ -94,7 +94,7 @@ static int action_get_title_default(const char *path, const char *label,
       }
    }
 
-   switch (hash)
+   switch (label_hash)
    {
       case MENU_LABEL_DEFERRED_DATABASE_MANAGER_LIST:
          snprintf(s, len, "DATABASE SELECTION - %s", (elem0_path[0] != '\0') ? path_basename(elem0_path) : "");
