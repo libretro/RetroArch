@@ -13,22 +13,10 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <file/file_path.h>
 #include <rhash.h>
 
 #include "menu.h"
 #include "menu_entries_cbs.h"
-#include "menu_setting.h"
-#include "menu_input.h"
-#include "menu_navigation.h"
-
-#include <file/file_extract.h>
-#include "../config.def.h"
-#include "../retroarch.h"
-#include "../runloop.h"
-#include "../file_ops.h"
-
-#include <rhash.h>
 
 #if 0
 #define DEBUG_LOG
