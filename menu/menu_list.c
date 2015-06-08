@@ -108,12 +108,19 @@ static void menu_list_build_scroll_indices(file_list_t *list)
       if ((current_is_dir && !is_dir) || (first > current))
          nav->scroll.indices.list[nav->scroll.indices.size++] = i;
 
-      current = first;
+      current        = first;
       current_is_dir = is_dir;
    }
 
    nav->scroll.indices.list[nav->scroll.indices.size++] = 
       list->size - 1;
+}
+
+size_t menu_list_get_size(menu_list_t *list)
+{
+   if (!list)
+      return 0;
+   return file_list_get_size(list->selection_buf);
 }
 
 /**
@@ -125,6 +132,7 @@ static void menu_list_build_scroll_indices(file_list_t *list)
  **/
 void menu_list_refresh(file_list_t *list)
 {
+   size_t list_size;
    menu_navigation_t *nav   = menu_navigation_get_ptr();
    menu_list_t   *menu_list = menu_list_get_ptr();
    if (!nav || !menu_list || !list)
@@ -134,11 +142,11 @@ void menu_list_refresh(file_list_t *list)
 
    menu_list_build_scroll_indices(list);
 
-   if (nav->selection_ptr >= menu_list_get_size(menu_list)
-         && menu_list_get_size(menu_list))
-      menu_navigation_set(nav,
-            menu_list_get_size(menu_list) - 1, true);
-   else if (!menu_list_get_size(menu_list))
+   list_size = menu_list_get_size(menu_list);
+
+   if ((nav->selection_ptr >= list_size) && list_size)
+      menu_navigation_set(nav, list_size - 1, true);
+   else if (!list_size)
       menu_navigation_clear(nav, true);
 }
 
@@ -203,12 +211,6 @@ void menu_list_get_at_offset(const file_list_t *list, size_t idx,
    file_list_get_at_offset(list, idx, path, label, file_type);
 }
 
-size_t menu_list_get_size(menu_list_t *list)
-{
-   if (!list)
-      return 0;
-   return file_list_get_size(list->selection_buf);
-}
 
 void menu_list_get_last(const file_list_t *list,
       const char **path, const char **label,
