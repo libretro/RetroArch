@@ -28,6 +28,8 @@
 #include "../../retroarch.h"
 #include "../../input/input_autodetect.h"
 
+extern char detect_content_path[PATH_MAX_LENGTH];
+
 static int archive_open(void)
 {
    char cat_path[PATH_MAX_LENGTH];
@@ -92,6 +94,9 @@ static int archive_load(void)
 
    ret = rarch_defer_core(global->core_info, menu_path, path, menu_label,
          menu->deferred_path, sizeof(menu->deferred_path));
+
+   fill_pathname_join(detect_content_path, menu_path, path,
+         sizeof(detect_content_path));
 
    switch (ret)
    {

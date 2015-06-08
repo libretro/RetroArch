@@ -28,7 +28,7 @@
 #include "../../input/input_remapping.h"
 
 /* FIXME - Global variables, refactor */
-static char detect_content_path[PATH_MAX_LENGTH];
+char detect_content_path[PATH_MAX_LENGTH];
 unsigned rdb_entry_start_game_selection_ptr;
 size_t hack_shader_pass = 0;
 #ifdef HAVE_NETWORKING
