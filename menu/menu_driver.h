@@ -26,7 +26,10 @@
 #include "menu_displaylist.h"
 #include "menu_list.h"
 #include "menu_navigation.h"
-#include "menu_database.h"
+#ifdef HAVE_LIBRETRODB
+#include "../libretro-db/libretrodb.h"
+#endif
+#include "../database_info.h"
 #include "menu_setting.h"
 #include "../../libretro.h"
 
@@ -358,6 +361,9 @@ bool menu_driver_alive(void);
 void menu_driver_set_alive(void);
 
 void menu_driver_unset_alive(void);
+
+/* HACK */
+extern unsigned int rdb_entry_start_game_selection_ptr;
 
 #ifdef __cplusplus
 }
