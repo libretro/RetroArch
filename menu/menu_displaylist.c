@@ -705,7 +705,7 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
 
    if (list_size <= 0)
    {
-      menu_list_push(info->list, "No playlist available.", "",
+      menu_list_push(info->list, "No playlist entries available.", "",
             MENU_SETTINGS_CORE_OPTION_NONE, 0);
       return 0;
    }
@@ -1328,12 +1328,14 @@ static void menu_displaylist_push_horizontal_menu_list_content(
 static int menu_displaylist_parse_horizontal_list(menu_displaylist_info_t *info)
 {
    char db_path[PATH_MAX_LENGTH];
+   char path_playlist[PATH_MAX_LENGTH];
    char rpl_basename[PATH_MAX_LENGTH];
    size_t i;
-   settings_t      *settings   = config_get_ptr();
-   menu_handle_t        *menu  = menu_driver_get_ptr();
-   struct item_file *item = (struct item_file*)menu_driver_list_get_entry(MENU_LIST_HORIZONTAL,
-         menu->categories.selection_ptr - 1);
+   content_playlist_t *playlist = NULL;
+   settings_t      *settings    = config_get_ptr();
+   menu_handle_t        *menu   = menu_driver_get_ptr();
+   struct item_file *item       = (struct item_file*)
+      menu_driver_list_get_entry(MENU_LIST_HORIZONTAL, menu->categories.selection_ptr - 1);
 
    if (!item)
       return -1;
@@ -1355,6 +1357,20 @@ static int menu_displaylist_parse_horizontal_list(menu_displaylist_info_t *info)
       menu_list_push(info->list, path_basename(db_path), "core_database",
             MENU_FILE_RDB, 0);
 #endif
+
+   if (menu->playlist)
+      content_playlist_free(menu->playlist);
+
+   fill_pathname_join(path_playlist,
+         settings->playlist_directory, item->path,
+         sizeof(path_playlist));
+   menu->playlist  = content_playlist_init(path_playlist,
+         999);
+   strlcpy(menu->db_playlist_file, path_playlist, sizeof(menu->db_playlist_file));
+   strlcpy(path_playlist, "collection", sizeof(path_playlist));
+   playlist = menu->playlist;
+
+   menu_displaylist_parse_playlist(info, playlist, path_playlist);
 
    return 0;
 }
