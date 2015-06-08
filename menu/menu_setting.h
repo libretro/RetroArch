@@ -135,6 +135,7 @@ typedef struct rarch_setting
    const char           *short_description;
    const char           *group;
    const char           *subgroup;
+   const char           *parent_group;
    const char           *values;
 
    uint32_t             index;

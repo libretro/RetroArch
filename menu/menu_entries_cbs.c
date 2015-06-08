@@ -130,62 +130,6 @@ int cb_core_updater_download(void *data, size_t len)
 }
 #endif
 
-int menu_entries_common_is_settings_entry(const char *label)
-{
-   uint32_t    hash = djb2_calculate(label);
-
-   switch (hash)
-   {
-      case MENU_LABEL_DRIVER_SETTINGS:
-      case MENU_LABEL_CORE_SETTINGS:
-      case MENU_LABEL_CONFIGURATION_SETTINGS:
-      case MENU_LABEL_LOGGING_SETTINGS:
-      case MENU_LABEL_SAVING_SETTINGS:
-      case MENU_LABEL_REWIND_SETTINGS:
-      case MENU_LABEL_VIDEO_SETTINGS:
-      case MENU_LABEL_RECORDING_SETTINGS:
-      case MENU_LABEL_FRAME_THROTTLE_SETTINGS:
-      case MENU_LABEL_SHADER_SETTINGS:
-      case MENU_LABEL_ONSCREEN_DISPLAY_SETTINGS:
-      case MENU_LABEL_AUDIO_SETTINGS:
-      case MENU_LABEL_INPUT_SETTINGS:
-      case MENU_LABEL_INPUT_USER_1_BINDS:
-      case MENU_LABEL_INPUT_USER_2_BINDS:
-      case MENU_LABEL_INPUT_USER_3_BINDS:
-      case MENU_LABEL_INPUT_USER_4_BINDS:
-      case MENU_LABEL_INPUT_USER_5_BINDS:
-      case MENU_LABEL_INPUT_USER_6_BINDS:
-      case MENU_LABEL_INPUT_USER_7_BINDS:
-      case MENU_LABEL_INPUT_USER_8_BINDS:
-      case MENU_LABEL_INPUT_USER_9_BINDS:
-      case MENU_LABEL_INPUT_USER_10_BINDS:
-      case MENU_LABEL_INPUT_USER_11_BINDS:
-      case MENU_LABEL_INPUT_USER_12_BINDS:
-      case MENU_LABEL_INPUT_USER_13_BINDS:
-      case MENU_LABEL_INPUT_USER_14_BINDS:
-      case MENU_LABEL_INPUT_USER_15_BINDS:
-      case MENU_LABEL_INPUT_USER_16_BINDS:
-      case MENU_LABEL_INPUT_HOTKEY_SETTINGS:
-      case MENU_LABEL_OVERLAY_SETTINGS:
-      case MENU_LABEL_ONSCREEN_KEYBOARD_OVERLAY_SETTINGS:
-      case MENU_LABEL_MENU_SETTINGS:
-      case MENU_LABEL_UI_SETTINGS:
-      case MENU_LABEL_PATCH_SETTINGS:
-      case MENU_LABEL_PLAYLIST_SETTINGS:
-      case MENU_LABEL_CORE_UPDATER_SETTINGS:
-      case MENU_LABEL_NETWORK_SETTINGS:
-      case MENU_LABEL_ARCHIVE_SETTINGS:
-      case MENU_LABEL_USER_SETTINGS:
-      case MENU_LABEL_DIRECTORY_SETTINGS:
-      case MENU_LABEL_PRIVACY_SETTINGS:
-         break;
-      default:
-         return 0;
-   }
-
-   return 1;
-}
-
 #if 0
 #define DEBUG_LOG
 #endif

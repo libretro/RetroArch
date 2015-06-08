@@ -157,6 +157,10 @@ ifeq ($(HAVE_LIBSICKSAXIS), 1)
 CFLAGS		+= -DHAVE_LIBSICKSAXIS
 endif
 
+ifeq ($(HAVE_LIBRETRODB), 1)
+CFLAGS		+= -DHAVE_LIBRETRODB
+endif
+
 ifeq ($(HAVE_RPNG), 1)
 CFLAGS      += -DWANT_RPNG
 endif
