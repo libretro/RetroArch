@@ -541,11 +541,8 @@ static int menu_entries_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *
    {
       if (!strcmp(setting->parent_group, "Main Menu") && setting->type == ST_GROUP)
       {
-         if (elem1[0] != '\0')
-         {
-            cbs->action_get_title = action_get_title_group_settings;
-            return 0;
-         }
+         cbs->action_get_title = action_get_title_group_settings;
+         return 0;
       }
    }
 
