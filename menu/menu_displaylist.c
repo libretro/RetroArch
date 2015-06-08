@@ -1907,34 +1907,38 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          need_push    = true;
          break;
       case DISPLAYLIST_PLAYLIST_COLLECTION:
-      case DISPLAYLIST_HISTORY:
          menu_list_clear(info->list);
          {
             char path_playlist[PATH_MAX_LENGTH];
             content_playlist_t *playlist = NULL;
 
-            switch (type)
-            {
-               case DISPLAYLIST_HISTORY:
-                  playlist = g_defaults.history;
-                  strlcpy(path_playlist, "history", sizeof(path_playlist));
-                  break;
-               case DISPLAYLIST_PLAYLIST_COLLECTION:
-                  if (menu->playlist)
-                     content_playlist_free(menu->playlist);
+            if (menu->playlist)
+               content_playlist_free(menu->playlist);
 
-                  fill_pathname_join(path_playlist,
-                        settings->playlist_directory, info->path,
-                        sizeof(path_playlist));
-                  menu->playlist  = content_playlist_init(path_playlist,
-                        999);
-                  strlcpy(menu->db_playlist_file, path_playlist, sizeof(menu->db_playlist_file));
-                  strlcpy(path_playlist, "collection", sizeof(path_playlist));
-                  playlist = menu->playlist;
-                  break;
-               default:
-                  break;
+            fill_pathname_join(path_playlist,
+                  settings->playlist_directory, info->path,
+                  sizeof(path_playlist));
+            menu->playlist  = content_playlist_init(path_playlist,
+                  999);
+            strlcpy(menu->db_playlist_file, path_playlist, sizeof(menu->db_playlist_file));
+            strlcpy(path_playlist, "collection", sizeof(path_playlist));
+            playlist = menu->playlist;
+
+            ret = menu_displaylist_parse_playlist(info, playlist, path_playlist);
+
+            if (ret == 0)
+            {
+               need_refresh = true;
+               need_push    = true;
             }
+         }
+         break;
+      case DISPLAYLIST_HISTORY:
+         menu_list_clear(info->list);
+         {
+            char path_playlist[PATH_MAX_LENGTH];
+            content_playlist_t *playlist = g_defaults.history;
+            strlcpy(path_playlist, "history", sizeof(path_playlist));
 
             ret = menu_displaylist_parse_playlist(info, playlist, path_playlist);
 
