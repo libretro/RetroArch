@@ -57,6 +57,9 @@ static int archive_open(void)
 
    fill_pathname_join(cat_path, menu_path, path, sizeof(cat_path));
 
+   fill_pathname_join(detect_content_path, menu_path, path,
+         sizeof(detect_content_path));
+
    info.list          = menu_list->menu_stack;
    info.type          = type;
    info.directory_ptr = nav->selection_ptr;
