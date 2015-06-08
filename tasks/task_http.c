@@ -18,12 +18,98 @@
 #include <queues/message_queue.h>
 #include <string/string_list.h>
 #include <compat/strl.h>
+#include <file/file_path.h>
 
+#include "../file_ops.h"
+#include "../general.h"
 #include "../runloop_data.h"
 #include "tasks.h"
 
-int cb_core_updater_download(void *data_, size_t len);
+extern char core_updater_path[PATH_MAX_LENGTH];
+
 int cb_core_updater_list(void *data_, size_t len);
+
+#ifdef HAVE_ZLIB
+static int zlib_extract_core_callback(const char *name, const char *valid_exts,
+      const uint8_t *cdata, unsigned cmode, uint32_t csize, uint32_t size,
+      uint32_t crc32, void *userdata)
+{
+   char path[PATH_MAX_LENGTH];
+
+   /* Make directory */
+   fill_pathname_join(path, (const char*)userdata, name, sizeof(path));
+   path_basedir(path);
+
+   if (!path_mkdir(path))
+   {
+      RARCH_ERR("Failed to create directory: %s.\n", path);
+      return 0;
+   }
+
+   /* Ignore directories. */
+   if (name[strlen(name) - 1] == '/' || name[strlen(name) - 1] == '\\')
+      return 1;
+
+   fill_pathname_join(path, (const char*)userdata, name, sizeof(path));
+
+   RARCH_LOG("path is: %s, CRC32: 0x%x\n", path, crc32);
+
+   if (!zlib_perform_mode(path, valid_exts,
+            cdata, cmode, csize, size, crc32, userdata))
+   {
+      if (cmode == 0)
+      {
+         RARCH_ERR("Failed to write file: %s.\n", path);
+         return 0;
+      }
+      goto error;
+   }
+
+   return 1;
+
+error:
+   RARCH_ERR("Failed to deflate to: %s.\n", path);
+   return 0;
+}
+#endif
+
+static int cb_core_updater_download(void *data, size_t len)
+{
+   const char* file_ext = NULL;
+   char output_path[PATH_MAX_LENGTH], msg[PATH_MAX_LENGTH];
+   settings_t *settings = config_get_ptr();
+
+   if (!data)
+      return -1;
+
+   fill_pathname_join(output_path, settings->libretro_directory,
+         core_updater_path, sizeof(output_path));
+
+   if (!write_file(output_path, data, len))
+      return -1;
+   
+   snprintf(msg, sizeof(msg), "Download complete: %s.",
+         core_updater_path);
+
+   rarch_main_msg_queue_push(msg, 1, 90, true);
+
+#ifdef HAVE_ZLIB
+   file_ext = path_get_extension(output_path);
+
+   if (!settings->network.buildbot_auto_extract_archive)
+      return 0;
+
+   if (!strcasecmp(file_ext,"zip"))
+   {
+      if (!zlib_parse_file(output_path, NULL, zlib_extract_core_callback,
+
+               (void*)settings->libretro_directory))
+         RARCH_LOG("Could not process ZIP file.\n");
+   }
+#endif
+
+   return 0;
+}
 
 static int rarch_main_data_http_con_iterate_transfer(http_handle_t *http)
 {
