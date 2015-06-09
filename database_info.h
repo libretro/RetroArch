@@ -104,6 +104,9 @@ void database_info_list_free(database_info_list_t *list);
 database_info_handle_t *database_info_dir_init(const char *dir,
       enum database_type type);
 
+database_info_handle_t *database_info_file_init(const char *path,
+      enum database_type type);
+
 void database_info_free(database_info_handle_t *handle);
 
 int database_info_build_query(

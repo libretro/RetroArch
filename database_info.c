@@ -369,6 +369,35 @@ error:
    return NULL;
 }
 
+database_info_handle_t *database_info_file_init(const char *path,
+      enum database_type type)
+{
+   union string_list_elem_attr attr = {0};
+   database_info_handle_t      *db  = (database_info_handle_t*)
+      calloc(1, sizeof(*db));
+
+   if (!db)
+      return NULL;
+
+   db->list           = string_list_new();
+
+   if (!db->list)
+      goto error;
+
+   string_list_append(db->list, path, attr);
+
+   db->list_ptr       = 0;
+   db->status         = DATABASE_STATUS_ITERATE;
+   db->type           = type;
+
+   return db;
+
+error:
+   if (db)
+      free(db);
+   return NULL;
+}
+
 void database_info_free(database_info_handle_t *db)
 {
    if (!db)
