@@ -945,10 +945,13 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
    for (i = 0; i < db_info->count; i++)
    {
       char tmp[PATH_MAX_LENGTH];
+      char crc_str[20] = {0};
       database_info_t *db_info_entry = &db_info->list[i];
 
       if (!db_info_entry)
          continue;
+
+      snprintf(crc_str, sizeof(crc_str), "%08X", db_info_entry->crc32);
 
       if (playlist)
       {
@@ -973,7 +976,7 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
             switch (hash_value)
             {
                case MENU_VALUE_CRC:
-                  if (!strcmp(db_info_entry->crc32, elem0))
+                  if (!strcmp(crc_str, elem0))
                      match_found = true;
                   break;
                case MENU_VALUE_SHA1:
@@ -1147,7 +1150,7 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
       if (db_info_entry->crc32)
       {
          if (create_string_list_rdb_entry_string("CRC32 Checksum",
-                  "rdb_entry_crc32", db_info_entry->crc32,
+                  "rdb_entry_crc32", crc_str,
                   info->path, info->list) == -1)
             goto error;
       }
@@ -1165,7 +1168,6 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
                   info->path, info->list) == -1)
             goto error;
       }
-
    }
 
    if (db_info->count < 1)

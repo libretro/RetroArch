@@ -75,7 +75,7 @@ typedef struct
    char *pegi_rating;
    char *cero_rating;
    char *enhancement_hw;
-   char *crc32;
+   uint32_t crc32;
    char *sha1;
    char *md5;
    unsigned size;

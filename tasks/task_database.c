@@ -177,7 +177,7 @@ static int database_info_list_iterate_found_match(
    playlist = content_playlist_init(db_playlist_path, 1000);
 
 
-   snprintf(db_crc, sizeof(db_crc), "%s|crc", db_info_entry->crc32);
+   snprintf(db_crc, sizeof(db_crc), "%08X|crc", db_info_entry->crc32);
 
    strlcpy(entry_path_str, entry_path, sizeof(entry_path_str));
    if (zip_name && zip_name[0] != '\0')
@@ -236,18 +236,13 @@ static int database_info_iterate_crc_lookup(
    {
       database_info_t *db_info_entry = &db_state->info->list[db_state->entry_index];
 
-      if (db_info_entry && db_info_entry->crc32 && db_info_entry->crc32[0] != '\0')
+      if (db_info_entry && db_info_entry->crc32)
       {
-         char entry_state_crc[PATH_MAX_LENGTH];
-         /* Check if the CRC matches with the current entry. */
-         snprintf(entry_state_crc, sizeof(entry_state_crc), "%x", db_state->crc);
-
 #if 0
-         RARCH_LOG("CRC32: 0x%s , entry CRC32: 0x%s (%s).\n",
-               entry_state_crc, db_info_entry->crc32, db_info_entry->name);
+         RARCH_LOG("CRC32: 0x%08X , entry CRC32: 0x%08X (%s).\n",
+                   db_state->crc, db_info_entry->crc32, db_info_entry->name);
 #endif
-
-         if (strcasestr(entry_state_crc, db_info_entry->crc32))
+         if (db_state->crc == db_info_entry->crc32)
             database_info_list_iterate_found_match(db_state, db, zip_entry);
       }
    }
