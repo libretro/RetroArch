@@ -37,7 +37,9 @@ static int zlib_compare_crc32(const char *name, const char *valid_exts,
 
    strlcpy(db_state->zip_name, name, sizeof(db_state->zip_name));
 
+#if 0
    RARCH_LOG("Going to compare CRC 0x%x for %s\n", crc32, name);
+#endif
 
    return 1;
 }
@@ -58,7 +60,9 @@ static int database_info_iterate_start
    if (msg[0] != '\0')
       rarch_main_msg_queue_push(msg, 1, 180, true);
 
+#if 0
    RARCH_LOG("msg: %s\n", msg);
+#endif
 
    db->status = DATABASE_STATUS_ITERATE;
 
@@ -126,8 +130,10 @@ static int database_info_iterate_next(database_info_handle_t *db)
 static int database_info_list_iterate_new(database_state_handle_t *db_state)
 {
    const char *new_database = db_state->list->elems[db_state->list_index].data;
+#if 0
    RARCH_LOG("Check database [%d/%d] : %s\n", (unsigned)db_state->list_index, 
          (unsigned)db_state->list->size, new_database);
+#endif
    if (db_state->info)
       database_info_list_free(db_state->info);
    db_state->info = database_info_list_new(new_database, NULL);
