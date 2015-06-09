@@ -918,7 +918,7 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
    content_playlist_t *playlist  = NULL;
    database_info_list_t *db_info = NULL;
    char path_playlist[PATH_MAX_LENGTH], path_base[PATH_MAX_LENGTH];
-   unsigned i, j;
+   unsigned i, j, k;
    menu_handle_t *menu           = menu_driver_get_ptr();
    settings_t *settings          = config_get_ptr();
    if (!menu)
@@ -950,6 +950,55 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
       if (!db_info_entry)
          continue;
 
+      if (playlist)
+      {
+         for (j = 0; j < playlist->size; j++)
+         {
+            char elem0[PATH_MAX_LENGTH], elem1[PATH_MAX_LENGTH];
+            bool match_found = false;
+            struct string_list *tmp_str_list = string_split(
+                  playlist->entries[j].crc32, "|");
+            uint32_t hash_value = 0;
+
+            if (!tmp_str_list)
+               continue;
+
+            if (tmp_str_list->size > 0)
+               strlcpy(elem0, tmp_str_list->elems[0].data, sizeof(elem0));
+            if (tmp_str_list->size > 1)
+               strlcpy(elem1, tmp_str_list->elems[1].data, sizeof(elem1));
+
+            hash_value = djb2_calculate(elem1);
+
+            switch (hash_value)
+            {
+               case MENU_VALUE_CRC:
+                  if (!strcmp(db_info_entry->crc32, elem0))
+                     match_found = true;
+                  break;
+               case MENU_VALUE_SHA1:
+                  if (!strcmp(db_info_entry->sha1, elem0))
+                     match_found = true;
+                  break;
+               case MENU_VALUE_MD5:
+                  if (!strcmp(db_info_entry->md5, elem0))
+                     match_found = true;
+                  break;
+            }
+
+            string_list_free(tmp_str_list);
+
+            if (!match_found)
+               continue;
+
+            rdb_entry_start_game_selection_ptr = j;
+
+            if (((strcmp(playlist->entries[j].core_name, "DETECT")) != 0) &&
+                     ((strcmp(playlist->entries[j].core_path, "DETECT") != 0)))
+               menu_list_push(info->list, "Start Content", "rdb_entry_start_content",
+                     MENU_FILE_PLAYLIST_ENTRY, 0);
+         }
+      }
 
       if (db_info_entry->name)
       {
@@ -969,12 +1018,22 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
                   db_info_entry->publisher, info->path, info->list) == -1)
             goto error;
       }
+
+
       if (db_info_entry->developer)
       {
-         if (create_string_list_rdb_entry_string("Developer", "rdb_entry_developer",
-                  db_info_entry->developer, info->path, info->list) == -1)
-            goto error;
+         for (k = 0; k < db_info_entry->developer->size; k++)
+         {
+            if (db_info_entry->developer->elems[k].data)
+            {
+               if (create_string_list_rdb_entry_string("Developer", "rdb_entry_developer",
+                        db_info_entry->developer->elems[k].data,
+                        info->path, info->list) == -1)
+                  goto error;
+            }
+         }
       }
+
       if (db_info_entry->origin)
       {
          if (create_string_list_rdb_entry_string("Origin", "rdb_entry_origin",
@@ -1107,55 +1166,6 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
             goto error;
       }
 
-      if (playlist)
-      {
-         for (j = 0; j < playlist->size; j++)
-         {
-            char elem0[PATH_MAX_LENGTH], elem1[PATH_MAX_LENGTH];
-            bool match_found = false;
-            struct string_list *tmp_str_list = string_split(
-                  playlist->entries[j].crc32, "|");
-            uint32_t hash_value = 0;
-
-            if (!tmp_str_list)
-               continue;
-
-            if (tmp_str_list->size > 0)
-               strlcpy(elem0, tmp_str_list->elems[0].data, sizeof(elem0));
-            if (tmp_str_list->size > 1)
-               strlcpy(elem1, tmp_str_list->elems[1].data, sizeof(elem1));
-
-            hash_value = djb2_calculate(elem1);
-
-            switch (hash_value)
-            {
-               case MENU_VALUE_CRC:
-                  if (!strcmp(db_info_entry->crc32, elem0))
-                     match_found = true;
-                  break;
-               case MENU_VALUE_SHA1:
-                  if (!strcmp(db_info_entry->sha1, elem0))
-                     match_found = true;
-                  break;
-               case MENU_VALUE_MD5:
-                  if (!strcmp(db_info_entry->md5, elem0))
-                     match_found = true;
-                  break;
-            }
-
-            string_list_free(tmp_str_list);
-
-            if (!match_found)
-               continue;
-
-            rdb_entry_start_game_selection_ptr = j;
-
-            if (((strcmp(playlist->entries[j].core_name, "DETECT")) != 0) &&
-                     ((strcmp(playlist->entries[j].core_path, "DETECT") != 0)))
-               menu_list_push(info->list, "Start Content", "rdb_entry_start_content",
-                     MENU_FILE_PLAYLIST_ENTRY, 0);
-         }
-      }
    }
 
    if (db_info->count < 1)

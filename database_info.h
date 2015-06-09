@@ -65,7 +65,7 @@ typedef struct
    char *serial;
    char *description;
    char *publisher;
-   char *developer;
+   struct string_list *developer;
    char *origin;
    char *franchise;
    char *edge_magazine_review;
