@@ -299,7 +299,7 @@ typedef struct driver
    const video_poke_interface_t *video_poke;
 
    /* Last message given to the video driver */
-   const char *current_msg;
+   char current_msg[PATH_MAX_LENGTH];
 } driver_t;
 
 /**

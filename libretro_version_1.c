@@ -114,7 +114,10 @@ static void video_frame(const void *data, unsigned width,
 
    msg                = rarch_main_msg_queue_pull();
 
-   driver->current_msg = msg;
+   *driver->current_msg = 0;
+
+   if (msg)
+      strlcpy(driver->current_msg, msg, sizeof(driver->current_msg));
 
    if (video_driver_frame_filter(data, width, height, pitch,
             &output_width, &output_height, &output_pitch))
@@ -125,7 +128,7 @@ static void video_frame(const void *data, unsigned width,
       pitch  = output_pitch;
    }
 
-   if (!video_driver_frame(data, width, height, pitch, msg))
+   if (!video_driver_frame(data, width, height, pitch, driver->current_msg))
       driver->video_active = false;
 }
 
