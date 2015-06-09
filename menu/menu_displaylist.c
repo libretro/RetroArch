@@ -1361,10 +1361,7 @@ static int menu_displaylist_parse_horizontal_list(menu_displaylist_info_t *info)
    if (!item)
       return -1;
 
-#if 0
-   menu_list_push(list, info->display_name, "content_actions",
-         MENU_FILE_CONTENTLIST_ENTRY, 0);
-#endif
+   (void)db_path;
 
    strlcpy(lpl_basename, item->path, sizeof(lpl_basename));
    path_remove_extension(lpl_basename);
