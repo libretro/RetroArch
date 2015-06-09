@@ -1245,7 +1245,10 @@ bool event_command(enum event_command cmd)
          break;
       case EVENT_CMD_HISTORY_DEINIT:
          if (g_defaults.history)
+         {
+            content_playlist_write_file(g_defaults.history);
             content_playlist_free(g_defaults.history);
+         }
          g_defaults.history = NULL;
          break;
       case EVENT_CMD_HISTORY_INIT:
