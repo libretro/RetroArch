@@ -20,6 +20,25 @@
 
 #include "../../runloop_data.h"
 
+static int action_scan_file(const char *path,
+      const char *label, unsigned type, size_t idx)
+{
+   char fullpath[PATH_MAX_LENGTH];
+   const char *menu_label = NULL;
+   const char *menu_path  = NULL;
+   menu_handle_t *menu    = menu_driver_get_ptr();
+   if (!menu)
+      return -1;
+
+   menu_list_get_last_stack(menu->menu_list,
+         &menu_path, &menu_label, NULL);
+
+   fill_pathname_join(fullpath, menu_path, path, sizeof(fullpath));
+
+   rarch_main_data_msg_queue_push(DATA_TYPE_DB, fullpath, "cb_db_scan_file", 0, 1, true);
+   return 0;
+}
+
 static int action_scan_directory(const char *path,
       const char *label, unsigned type, size_t idx)
 {
@@ -48,7 +67,8 @@ static int menu_entries_cbs_init_bind_scan_compare_type(menu_file_list_cbs_t *cb
          cbs->action_scan = action_scan_directory;
          break;
       default:
-         return -1;
+         cbs->action_scan = action_scan_file;
+         break;
    }
 
    return 0;
