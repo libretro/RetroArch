@@ -1630,7 +1630,6 @@ static void xmb_context_reset_horizontal_list(xmb_handle_t *xmb,
       menu_handle_t *menu, const char *themepath)
 {
    unsigned i;
-   global_t   *global          = global_get_ptr();
    size_t list_size            = xmb_list_get_size(menu, MENU_LIST_HORIZONTAL);
 
    for (i = 1; i < list_size; i++)
