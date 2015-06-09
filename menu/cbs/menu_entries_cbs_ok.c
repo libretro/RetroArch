@@ -875,7 +875,7 @@ static int action_ok_core_deferred_set(const char *path,
    content_playlist_free(menu->playlist);
    menu->playlist = NULL;
 
-   menu_list_flush_stack(menu->menu_list, NULL, MENU_SETTINGS);
+   menu_list_pop_stack(menu->menu_list);
 
    return -1;
 }
