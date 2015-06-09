@@ -952,7 +952,7 @@ static int action_ok_core_load(const char *path,
    fill_pathname_join(settings->libretro, menu_path, path,
          sizeof(settings->libretro));
    event_command(EVENT_CMD_LOAD_CORE);
-   menu_list_flush_stack(menu->menu_list, NULL, MENU_SETTINGS);
+   menu_list_pop_stack(menu->menu_list);
 #if defined(HAVE_DYNAMIC)
    /* No content needed for this core, load core immediately. */
 
