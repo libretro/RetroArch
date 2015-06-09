@@ -1319,7 +1319,7 @@ static void menu_displaylist_push_horizontal_menu_list_content(
       file_list_t *list, core_info_t *info, const char* path)
 {
    unsigned j;
-   struct string_list *str_list = 
+   struct string_list *str_list =
       dir_list_new(path, info->supported_extensions, true);
 
    if (!str_list)
@@ -1529,7 +1529,7 @@ static int menu_displaylist_parse_options_remappings(menu_displaylist_info_t *in
                "User %u %s : ", user, description);
          menu_list_push(info->list, desc_label, "",
                MENU_SETTINGS_INPUT_DESC_BEGIN +
-               (p * RARCH_FIRST_META_KEY) +  retro_id, 0);
+               (p * (RARCH_FIRST_CUSTOM_BIND + 4)) +  retro_id, 0);
       }
    }
 
@@ -1657,7 +1657,7 @@ static int menu_displaylist_parse_generic(menu_displaylist_info_t *info, bool *n
          case MENU_LABEL_CONTENT_COLLECTION_LIST:
             if (is_dir)
                 continue;
-              
+
             file_type = MENU_FILE_PLAYLIST_COLLECTION;
             break;
          case MENU_LABEL_CORE_LIST:

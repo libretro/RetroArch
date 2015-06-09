@@ -143,7 +143,7 @@ typedef enum
    MENU_SETTINGS_CHEAT_BEGIN,
    MENU_SETTINGS_CHEAT_END = MENU_SETTINGS_CHEAT_BEGIN + (MAX_CHEAT_COUNTERS - 1),
    MENU_SETTINGS_INPUT_DESC_BEGIN,
-   MENU_SETTINGS_INPUT_DESC_END = MENU_SETTINGS_INPUT_DESC_BEGIN + (MAX_USERS * RARCH_CUSTOM_BIND_LIST_END),
+   MENU_SETTINGS_INPUT_DESC_END = MENU_SETTINGS_INPUT_DESC_BEGIN + (MAX_USERS * (RARCH_FIRST_CUSTOM_BIND + 4)),
 } menu_settings_t;
 
 /**
@@ -165,7 +165,7 @@ void *menu_init(const void *data);
  *
  * Runs RetroArch menu for one frame.
  *
- * Returns: 0 on success, -1 if we need to quit out of the loop. 
+ * Returns: 0 on success, -1 if we need to quit out of the loop.
  **/
 int menu_iterate(retro_input_t input,
       retro_input_t old_input, retro_input_t trigger_input);
