@@ -1648,6 +1648,7 @@ static void xmb_context_reset_horizontal_list(xmb_handle_t *xmb,
       struct texture_image ti     = {0};
       xmb_node_t *node            = xmb_get_userdata_from_horizontal_list(
             xmb, i - 1);
+      struct item_file *info      = NULL;
 
       if (!node)
       {
@@ -1656,27 +1657,16 @@ static void xmb_context_reset_horizontal_list(xmb_handle_t *xmb,
             continue;
       }
 
-      fill_pathname_join(iconpath, themepath, xmb->icon.dir, sizeof(iconpath));
-      fill_pathname_slash(iconpath, sizeof(iconpath));
-
-      /* TODO/FIXME */
-#if 0
+      info = (struct item_file*)&xmb->horizontal_list->list[i];
 
       if (!info)
          continue;
 
-      strlcpy(core_id, "default", sizeof(core_id));
+      strlcpy(core_id, info->path, sizeof(core_id));
+      path_remove_extension(core_id);
 
-      if (info->systemname)
-      {
-         char *tmp = string_replace_substring(info->systemname, "/", " ");
-
-         if (tmp)
-         {
-            strlcpy(core_id, tmp, sizeof(core_id));
-            free(tmp);
-         }
-      }
+      fill_pathname_join(iconpath, themepath, xmb->icon.dir, sizeof(iconpath));
+      fill_pathname_slash(iconpath, sizeof(iconpath));
 
       fill_pathname_join(texturepath, iconpath, core_id, sizeof(texturepath));
       strlcat(texturepath, ".png", sizeof(texturepath));
@@ -1699,7 +1689,6 @@ static void xmb_context_reset_horizontal_list(xmb_handle_t *xmb,
             TEXTURE_BACKEND_OPENGL, TEXTURE_FILTER_MIPMAP_LINEAR);
 
       texture_image_free(&ti);
-#endif
 
       if (i == xmb->categories.active.idx)
       {
