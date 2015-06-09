@@ -693,7 +693,7 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
 }
 
 static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
-      content_playlist_t *playlist, const char *path_playlist)
+      content_playlist_t *playlist, const char *path_playlist, bool is_history)
 {
    unsigned i;
    size_t list_size = 0;
@@ -751,7 +751,7 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
          }
       }
 
-      if (core_detected && db_name[0] != '\0')
+      if (!is_history && core_detected && db_name[0] != '\0')
       {
          char db_path[PATH_MAX_LENGTH];
 
@@ -1391,7 +1391,7 @@ static int menu_displaylist_parse_horizontal_list(menu_displaylist_info_t *info)
    strlcpy(path_playlist, "collection", sizeof(path_playlist));
    playlist = menu->playlist;
 
-   menu_displaylist_parse_playlist(info, playlist, path_playlist);
+   menu_displaylist_parse_playlist(info, playlist, path_playlist, false);
 
    return 0;
 }
@@ -1945,7 +1945,7 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
             strlcpy(path_playlist, "collection", sizeof(path_playlist));
             playlist = menu->playlist;
 
-            ret = menu_displaylist_parse_playlist(info, playlist, path_playlist);
+            ret = menu_displaylist_parse_playlist(info, playlist, path_playlist, false);
 
             if (ret == 0)
             {
@@ -1961,7 +1961,7 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
             content_playlist_t *playlist = g_defaults.history;
             strlcpy(path_playlist, "history", sizeof(path_playlist));
 
-            ret = menu_displaylist_parse_playlist(info, playlist, path_playlist);
+            ret = menu_displaylist_parse_playlist(info, playlist, path_playlist, true);
 
             if (ret == 0)
             {
