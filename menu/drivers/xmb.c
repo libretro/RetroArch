@@ -1839,7 +1839,7 @@ static void xmb_context_reset(void)
       return;
 
    fill_pathname_join(mediapath, settings->assets_directory,
-         "lakka", sizeof(mediapath));
+         "xmb", sizeof(mediapath));
    fill_pathname_join(themepath, mediapath, XMB_THEME, sizeof(themepath));
    fill_pathname_join(iconpath, themepath, xmb->icon.dir, sizeof(iconpath));
    fill_pathname_slash(iconpath, sizeof(iconpath));
