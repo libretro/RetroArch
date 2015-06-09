@@ -286,7 +286,7 @@ static int database_cursor_iterate(libretrodb_cursor_t *cur,
             db_info->size = val->uint_;
             break;
          case DB_CURSOR_CHECKSUM_CRC32:
-            db_info->crc32 = bin_to_hex_alloc((uint8_t*)val->binary.buff, val->binary.len);
+            db_info->crc32 = swap_if_little32(*(uint32_t*)val->binary.buff);
             break;
          case DB_CURSOR_CHECKSUM_SHA1:
             db_info->sha1 = bin_to_hex_alloc((uint8_t*)val->binary.buff, val->binary.len);
@@ -512,8 +512,6 @@ void database_info_list_free(database_info_list_t *database_info_list)
          free(info->esrb_rating);
       if (info->bbfc_rating)
          free(info->bbfc_rating);
-      if (info->crc32)
-         free(info->crc32);
       if (info->sha1)
          free(info->sha1);
       if (info->md5)
