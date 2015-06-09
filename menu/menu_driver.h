@@ -27,7 +27,8 @@
 #include "menu_list.h"
 #include "menu_navigation.h"
 #include "menu_setting.h"
-#include "../../libretro.h"
+#include "../libretro.h"
+#include "../playlist.h"
 
 #ifdef HAVE_LIBRETRODB
 #include "../database_info.h"
