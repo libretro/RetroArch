@@ -272,9 +272,13 @@ void content_playlist_free(content_playlist_t *playlist)
    if (playlist->conf_path)
       free(playlist->conf_path);
 
+   playlist->conf_path = NULL;
+
    for (i = 0; i < playlist->cap; i++)
       content_playlist_free_entry(&playlist->entries[i]);
+
    free(playlist->entries);
+   playlist->entries = NULL;
 
    free(playlist);
 }
