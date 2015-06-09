@@ -270,8 +270,7 @@ void content_playlist_free(content_playlist_t *playlist)
       return;
 
    if (playlist->conf_path)
-      content_playlist_write_file(playlist);
-   free(playlist->conf_path);
+      free(playlist->conf_path);
 
    for (i = 0; i < playlist->cap; i++)
       content_playlist_free_entry(&playlist->entries[i]);
