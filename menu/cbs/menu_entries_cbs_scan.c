@@ -35,7 +35,7 @@ static int action_scan_directory(const char *path,
 
    fill_pathname_join(fullpath, menu_path, path, sizeof(fullpath));
 
-   rarch_main_data_msg_queue_push(DATA_TYPE_DB, fullpath, "cb_db_scan", 0, 1, true);
+   rarch_main_data_msg_queue_push(DATA_TYPE_DB, fullpath, "cb_db_scan_folder", 0, 1, true);
    return 0;
 }
 
