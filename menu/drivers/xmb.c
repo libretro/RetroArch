@@ -1524,7 +1524,7 @@ static void *xmb_init(void)
    else if (width >=  320)
       scale_factor              = 0.25;
 
-   strlcpy(xmb->icon.dir, "256", sizeof(xmb->icon.dir));
+   strlcpy(xmb->icon.dir, "png", sizeof(xmb->icon.dir));
 
    xmb->icon.size               = 128.0 * scale_factor;
    xmb->cursor.size             = 48.0;
@@ -1629,19 +1629,13 @@ static bool xmb_load_image(void *data, menu_image_type_t type)
 static void xmb_context_reset_horizontal_list(xmb_handle_t *xmb,
       menu_handle_t *menu, const char *themepath)
 {
-   char iconpath[PATH_MAX_LENGTH];
    unsigned i;
    global_t   *global          = global_get_ptr();
-   core_info_list_t *info_list = global ? 
-      (core_info_list_t*)global->core_info : NULL;
    size_t list_size            = xmb_list_get_size(menu, MENU_LIST_HORIZONTAL);
-
-   if (!info_list)
-      return;
 
    for (i = 1; i < list_size; i++)
    {
-      char core_id[PATH_MAX_LENGTH];
+      char iconpath[PATH_MAX_LENGTH], sysname[PATH_MAX_LENGTH];
       char texturepath[PATH_MAX_LENGTH], content_texturepath[PATH_MAX_LENGTH];
       struct texture_image ti     = {0};
       xmb_node_t *node            = xmb_get_userdata_from_horizontal_list(
@@ -1660,16 +1654,16 @@ static void xmb_context_reset_horizontal_list(xmb_handle_t *xmb,
       if (!info)
          continue;
 
-      strlcpy(core_id, info->path, sizeof(core_id));
-      path_remove_extension(core_id);
+      strlcpy(sysname, info->path, sizeof(sysname));
+      path_remove_extension(sysname);
 
       fill_pathname_join(iconpath, themepath, xmb->icon.dir, sizeof(iconpath));
       fill_pathname_slash(iconpath, sizeof(iconpath));
 
-      fill_pathname_join(texturepath, iconpath, core_id, sizeof(texturepath));
+      fill_pathname_join(texturepath, iconpath, sysname, sizeof(texturepath));
       strlcat(texturepath, ".png", sizeof(texturepath));
 
-      fill_pathname_join(content_texturepath, iconpath, core_id, sizeof(content_texturepath));
+      fill_pathname_join(content_texturepath, iconpath, sysname, sizeof(content_texturepath));
       strlcat(content_texturepath, "-content.png", sizeof(content_texturepath));
 
       node->alpha        = 0;
