@@ -871,6 +871,7 @@ static int action_ok_core_deferred_set(const char *path,
          menu->playlist->entries[idx].crc32,
          menu->playlist->entries[idx].db_name);
 
+   content_playlist_write_file(menu->playlist);
    content_playlist_free(menu->playlist);
    menu->playlist = NULL;
 
