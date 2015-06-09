@@ -697,6 +697,7 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
 {
    unsigned i;
    size_t list_size = 0;
+   settings_t *settings          = config_get_ptr();
 
    if (!playlist)
       return -1;
@@ -714,6 +715,7 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
    {
       char fill_buf[PATH_MAX_LENGTH];
       char path_copy[PATH_MAX_LENGTH];
+      bool core_detected    = false;
       const char *core_name = NULL;
       const char *db_name   = NULL;
       const char *path      = NULL;
@@ -744,12 +746,26 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
                char tmp[PATH_MAX_LENGTH];
                snprintf(tmp, sizeof(tmp), " (%s)", core_name);
                strlcat(fill_buf, tmp, sizeof(fill_buf));
+               core_detected = true;
             }
          }
       }
 
-      menu_list_push(info->list, fill_buf, path_playlist,
-            MENU_FILE_PLAYLIST_ENTRY, i);
+      if (core_detected && db_name[0] != '\0')
+      {
+         char db_path[PATH_MAX_LENGTH];
+
+         fill_pathname_join(db_path, settings->content_database,
+               db_name, sizeof(db_path));
+         path_remove_extension(db_path);
+         strlcat(db_path, ".rdb", sizeof(db_path));
+
+         menu_list_push(info->list, label,
+               db_path, MENU_FILE_RDB_ENTRY, 0);
+      }
+      else
+         menu_list_push(info->list, fill_buf, path_playlist,
+               MENU_FILE_PLAYLIST_ENTRY, i);
    }
 
    return 0;
@@ -1173,8 +1189,10 @@ static int menu_database_parse_query(file_list_t *list, const char *path,
    for (i = 0; i < db_list->count; i++)
    {
       if (db_list->list[i].name && db_list->list[i].name[0] != '\0')
+      {
          menu_list_push(list, db_list->list[i].name,
                path, MENU_FILE_RDB_ENTRY, 0);
+      }
    }
 
    database_info_list_free(db_list);
