@@ -343,7 +343,7 @@ static int database_cursor_close(libretrodb_t *db, libretrodb_cursor_t *cur)
    return 0;
 }
 
-database_info_handle_t *database_info_init(const char *dir,
+database_info_handle_t *database_info_dir_init(const char *dir,
       enum database_type type)
 {
    database_info_handle_t     *db  = (database_info_handle_t*)
@@ -376,7 +376,6 @@ void database_info_free(database_info_handle_t *db)
 
    string_list_free(db->list);
 }
-
 
 database_info_list_t *database_info_list_new(
       const char *rdb_path, const char *query)

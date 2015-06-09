@@ -330,7 +330,7 @@ static int database_info_poll(db_handle_t *db)
    if (str_list->size > 1)
       strlcpy(elem1, str_list->elems[1].data, sizeof(elem1));
 
-   db->handle = database_info_init(elem0, DATABASE_TYPE_ITERATE);
+   db->handle = database_info_dir_init(elem0, DATABASE_TYPE_ITERATE);
 
    string_list_free(str_list);
 

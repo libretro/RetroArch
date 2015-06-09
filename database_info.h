@@ -101,10 +101,10 @@ database_info_list_t *database_info_list_new(const char *rdb_path,
 
 void database_info_list_free(database_info_list_t *list);
 
-database_info_handle_t *database_info_init(const char *dir,
+database_info_handle_t *database_info_dir_init(const char *dir,
       enum database_type type);
 
-void database_info_free(database_info_handle_t *dbl);
+void database_info_free(database_info_handle_t *handle);
 
 int database_info_build_query(
       char *query, size_t len, const char *label, const char *path);
