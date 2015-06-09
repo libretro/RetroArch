@@ -955,8 +955,6 @@ static GLuint xmb_icon_get_id(xmb_handle_t *xmb,
       case MENU_FILE_PLAIN:
          return xmb->textures.list[XMB_TEXTURE_FILE].id;
       case MENU_FILE_PLAYLIST_ENTRY:
-         return xmb->textures.list[XMB_TEXTURE_FILE].id;
-      case MENU_FILE_CONTENTLIST_ENTRY:
          if (core_node)
             return core_node->content_icon;
          return xmb->textures.list[XMB_TEXTURE_FILE].id;
@@ -1657,7 +1655,7 @@ static void xmb_context_reset_horizontal_list(xmb_handle_t *xmb,
             continue;
       }
 
-      info = (struct item_file*)&xmb->horizontal_list->list[i];
+      info = (struct item_file*)&xmb->horizontal_list->list[i - 1];
 
       if (!info)
          continue;
