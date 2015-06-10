@@ -1379,6 +1379,7 @@ static int menu_displaylist_parse_horizontal_list(menu_displaylist_info_t *info)
    path_remove_extension(lpl_basename);
 
 #ifdef HAVE_LIBRETRODB
+#if 0
    fill_pathname_join(db_path, settings->content_database,
          lpl_basename, sizeof(db_path));
    strlcat(db_path, ".rdb", sizeof(db_path));
@@ -1386,6 +1387,7 @@ static int menu_displaylist_parse_horizontal_list(menu_displaylist_info_t *info)
    if (path_file_exists(db_path))
       menu_list_push(info->list, path_basename(db_path), "core_database",
             MENU_FILE_RDB, 0);
+#endif
 #endif
 
    if (menu->playlist)
