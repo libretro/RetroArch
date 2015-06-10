@@ -850,7 +850,7 @@ static void xmb_list_open_horizontal_list(xmb_handle_t *xmb, menu_handle_t *menu
    unsigned j;
    size_t list_size = xmb_list_get_size(menu, MENU_LIST_HORIZONTAL);
 
-   for (j = 0; j < list_size; j++)
+   for (j = 0; j <= list_size; j++)
    {
       float ia          = 0;
       xmb_node_t *node  = &xmb->settings_node;
@@ -1260,7 +1260,7 @@ static void xmb_frame_horizontal_list(xmb_handle_t *xmb, menu_handle_t *menu, gl
    unsigned i;
    size_t list_size = xmb_list_get_size(menu, MENU_LIST_HORIZONTAL);
 
-   for (i = 0; i < list_size; i++)
+   for (i = 0; i <= list_size; i++)
    {
       xmb_node_t *node = &xmb->settings_node;
 
@@ -1425,6 +1425,7 @@ static void xmb_init_horizontal_list(menu_handle_t *menu, xmb_handle_t *xmb)
    info.menu_list    = NULL;
    info.type         = 0;
    info.type_default = MENU_FILE_PLAIN;
+   info.flags        = SL_FLAG_ALLOW_EMPTY_LIST;
    strlcpy(info.label, "content_collection_list", sizeof(info.label));
    strlcpy(info.path, settings->playlist_directory, sizeof(info.path));
    strlcpy(info.exts, "lpl", sizeof(info.exts));
@@ -1632,23 +1633,23 @@ static void xmb_context_reset_horizontal_list(xmb_handle_t *xmb,
    unsigned i;
    size_t list_size            = xmb_list_get_size(menu, MENU_LIST_HORIZONTAL);
 
-   for (i = 1; i < list_size; i++)
+   for (i = 0; i < list_size; i++)
    {
       char iconpath[PATH_MAX_LENGTH], sysname[PATH_MAX_LENGTH];
       char texturepath[PATH_MAX_LENGTH], content_texturepath[PATH_MAX_LENGTH];
       struct texture_image ti     = {0};
       xmb_node_t *node            = xmb_get_userdata_from_horizontal_list(
-            xmb, i - 1);
+            xmb, i);
       struct item_file *info      = NULL;
 
       if (!node)
       {
-         node = xmb_node_allocate_userdata(xmb, i - 1);
+         node = xmb_node_allocate_userdata(xmb, i);
          if (!node)
             continue;
       }
 
-      info = (struct item_file*)&xmb->horizontal_list->list[i - 1];
+      info = (struct item_file*)&xmb->horizontal_list->list[i];
 
       if (!info)
          continue;
@@ -1926,7 +1927,7 @@ static void xmb_list_delete(file_list_t *list,
 
 static void xmb_list_cache(menu_list_type_t type, unsigned action)
 {
-   size_t stack_size;
+   size_t stack_size, list_size;
    xmb_handle_t      *xmb = NULL;
    menu_handle_t    *menu = menu_driver_get_ptr();
    menu_list_t *menu_list = menu_list_get_ptr();
@@ -1960,6 +1961,13 @@ static void xmb_list_cache(menu_list_type_t type, unsigned action)
                break;
          }
 
+         list_size = xmb_list_get_size(menu, MENU_LIST_HORIZONTAL);
+         if (menu->categories.selection_ptr > list_size)
+         {
+            menu->categories.selection_ptr = list_size;
+            return;
+         }
+
          stack_size = menu_list->menu_stack->size;
 
          if (menu_list->menu_stack->list[stack_size - 1].label)
@@ -1990,9 +1998,9 @@ static void xmb_context_destroy_horizontal_list(xmb_handle_t *xmb,
    unsigned i;
    size_t list_size = xmb_list_get_size(menu, MENU_LIST_HORIZONTAL);
 
-   for (i = 1; i < list_size; i++)
+   for (i = 0; i < list_size; i++)
    {
-      xmb_node_t *node = xmb_get_userdata_from_horizontal_list(xmb, i - 1);
+      xmb_node_t *node = xmb_get_userdata_from_horizontal_list(xmb, i);
 
       if (!node)
          continue;
@@ -2029,7 +2037,7 @@ static void xmb_toggle_horizontal_list(xmb_handle_t *xmb, menu_handle_t *menu)
    unsigned i;
    size_t list_size = xmb_list_get_size(menu, MENU_LIST_HORIZONTAL);
 
-   for (i = 0; i < list_size; i++)
+   for (i = 0; i <= list_size; i++)
    {
       xmb_node_t *node = &xmb->settings_node;
 

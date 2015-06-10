@@ -1602,14 +1602,18 @@ static int menu_displaylist_parse_generic(menu_displaylist_info_t *info, bool *n
 
    dir_list_sort(str_list, true);
 
-
    list_size = str_list->size;
 
    if (list_size <= 0)
    {
-      menu_list_push(info->list,
-            "No items.", "", 0, 0);
+      if (!(info->flags & SL_FLAG_ALLOW_EMPTY_LIST))
+      {
+         menu_list_push(info->list,
+               "No items.", "", 0, 0);
+      }
+
       string_list_free(str_list);
+
       return 0;
    }
 
