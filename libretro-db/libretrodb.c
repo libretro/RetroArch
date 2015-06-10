@@ -323,7 +323,10 @@ retry:
    if (cursor->query)
    {
       if (!libretrodb_query_filter(cursor->query, out))
+      {
+         rmsgpack_dom_value_free(out);
          goto retry;
+      }
    }
 
    return 0;
