@@ -270,9 +270,8 @@ static void *xmb_list_get_entry(void *data, menu_list_type_t type, unsigned i)
         case MENU_LIST_HORIZONTAL:
             if (xmb && xmb->horizontal_list)
                 list_size = file_list_get_size(xmb->horizontal_list);
-
-            if (i < list_size+1)
-               ptr = (void*)&xmb->horizontal_list->list[i-1];
+            if (i < list_size)
+               ptr = (void*)&xmb->horizontal_list->list[i];
             break;
     }
     
@@ -790,7 +789,7 @@ static void xmb_list_switch_horizontal_list(xmb_handle_t *xmb, menu_handle_t *me
    unsigned j;
    size_t list_size = xmb_list_get_size(menu, MENU_LIST_HORIZONTAL);
 
-   for (j = 0; j < list_size + 1; j++)
+   for (j = 0; j < list_size; j++)
    {
       float ia                    = xmb->categories.passive.alpha;
       float iz                    = xmb->categories.passive.zoom;
@@ -851,7 +850,7 @@ static void xmb_list_open_horizontal_list(xmb_handle_t *xmb, menu_handle_t *menu
    unsigned j;
    size_t list_size = xmb_list_get_size(menu, MENU_LIST_HORIZONTAL);
 
-   for (j = 0; j < list_size + 1; j++)
+   for (j = 0; j < list_size; j++)
    {
       float ia          = 0;
       xmb_node_t *node  = &xmb->settings_node;
@@ -1261,7 +1260,7 @@ static void xmb_frame_horizontal_list(xmb_handle_t *xmb, menu_handle_t *menu, gl
    unsigned i;
    size_t list_size = xmb_list_get_size(menu, MENU_LIST_HORIZONTAL);
 
-   for (i = 0; i < list_size + 1; i++)
+   for (i = 0; i < list_size; i++)
    {
       xmb_node_t *node = &xmb->settings_node;
 
@@ -1633,23 +1632,23 @@ static void xmb_context_reset_horizontal_list(xmb_handle_t *xmb,
    unsigned i;
    size_t list_size            = xmb_list_get_size(menu, MENU_LIST_HORIZONTAL);
 
-   for (i = 0; i < list_size; i++)
+   for (i = 1; i < list_size; i++)
    {
       char iconpath[PATH_MAX_LENGTH], sysname[PATH_MAX_LENGTH];
       char texturepath[PATH_MAX_LENGTH], content_texturepath[PATH_MAX_LENGTH];
       struct texture_image ti     = {0};
       xmb_node_t *node            = xmb_get_userdata_from_horizontal_list(
-            xmb, i);
+            xmb, i - 1);
       struct item_file *info      = NULL;
 
       if (!node)
       {
-         node = xmb_node_allocate_userdata(xmb, i);
+         node = xmb_node_allocate_userdata(xmb, i - 1);
          if (!node)
             continue;
       }
 
-      info = (struct item_file*)&xmb->horizontal_list->list[i];
+      info = (struct item_file*)&xmb->horizontal_list->list[i - 1];
 
       if (!info)
          continue;
@@ -1991,9 +1990,9 @@ static void xmb_context_destroy_horizontal_list(xmb_handle_t *xmb,
    unsigned i;
    size_t list_size = xmb_list_get_size(menu, MENU_LIST_HORIZONTAL);
 
-   for (i = 0; i < list_size; i++)
+   for (i = 1; i < list_size; i++)
    {
-      xmb_node_t *node = xmb_get_userdata_from_horizontal_list(xmb, i);
+      xmb_node_t *node = xmb_get_userdata_from_horizontal_list(xmb, i - 1);
 
       if (!node)
          continue;
@@ -2030,7 +2029,7 @@ static void xmb_toggle_horizontal_list(xmb_handle_t *xmb, menu_handle_t *menu)
    unsigned i;
    size_t list_size = xmb_list_get_size(menu, MENU_LIST_HORIZONTAL);
 
-   for (i = 0; i < list_size + 1; i++)
+   for (i = 0; i < list_size; i++)
    {
       xmb_node_t *node = &xmb->settings_node;
 
