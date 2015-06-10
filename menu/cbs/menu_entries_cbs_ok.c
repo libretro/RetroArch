@@ -45,7 +45,7 @@ static int menu_action_setting_set_current_string_path(
 }
 
 static int rarch_defer_core_wrapper(menu_displaylist_info_t *info,
-      size_t idx, const char *path, uint32_t hash_label,
+      size_t idx, size_t entry_idx, const char *path, uint32_t hash_label,
       bool is_carchive)
 {
    const char *menu_path    = NULL;
@@ -116,7 +116,7 @@ static int rarch_defer_core_wrapper(menu_displaylist_info_t *info,
 
 static int action_ok_file_load_with_detect_core_carchive(
       const char *path,
-      const char *label, unsigned type, size_t idx)
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    menu_displaylist_info_t info = {0};
    uint32_t hash_label      = djb2_calculate(label);
@@ -124,20 +124,20 @@ static int action_ok_file_load_with_detect_core_carchive(
    strlcat(detect_content_path, "#", sizeof(detect_content_path));
    strlcat(detect_content_path, path, sizeof(detect_content_path));
 
-   return rarch_defer_core_wrapper(&info, idx, path, hash_label, true);
+   return rarch_defer_core_wrapper(&info, idx, entry_idx, path, hash_label, true);
 }
 
 static int action_ok_file_load_with_detect_core(const char *path,
-      const char *label, unsigned type, size_t idx)
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    menu_displaylist_info_t info = {0};
    uint32_t hash_label      = djb2_calculate(label);
 
-   return rarch_defer_core_wrapper(&info, idx, path, hash_label, false);
+   return rarch_defer_core_wrapper(&info, idx, entry_idx, path, hash_label, false);
 }
 
 static int action_ok_file_load_detect_core(const char *path,
-      const char *label, unsigned type, size_t idx)
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    menu_handle_t *menu      = menu_driver_get_ptr();
    settings_t *settings     = config_get_ptr();
@@ -155,13 +155,14 @@ static int action_ok_file_load_detect_core(const char *path,
 }
 
 static int action_ok_playlist_entry(const char *path,
-      const char *label, unsigned type, size_t idx)
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   const char *entry_path  = NULL;
-   const char *entry_label = NULL;
-   const char *core_path   = NULL;
-   const char *core_name   = NULL;
-   size_t selection_ptr = 0;
+   const char *entry_path       = NULL;
+   const char *entry_label      = NULL;
+   const char *core_path        = NULL;
+   const char *core_name        = NULL;
+   size_t selection_ptr         = 0;
+   size_t playlist_entry_idx    = 0;
    content_playlist_t *playlist = g_defaults.history;
    menu_handle_t *menu          = menu_driver_get_ptr();
    uint32_t hash_label          = djb2_calculate(label);
@@ -185,7 +186,7 @@ static int action_ok_playlist_entry(const char *path,
          break;
    }
 
-   selection_ptr = menu->navigation.selection_ptr;
+   selection_ptr = entry_idx;
 
    switch (hash_label)
    {
@@ -204,7 +205,7 @@ static int action_ok_playlist_entry(const char *path,
 
    if (core_path && core_path[0] != '\0' && core_name &&
          core_name[0] != '\0' && !strcmp(core_path, "DETECT") && !strcmp(core_name, "DETECT"))
-      return action_ok_file_load_with_detect_core(entry_path, label, type, selection_ptr);
+      return action_ok_file_load_with_detect_core(entry_path, label, type, selection_ptr, entry_idx);
 
    rarch_playlist_load_content(playlist, selection_ptr);
 
@@ -214,7 +215,7 @@ static int action_ok_playlist_entry(const char *path,
 
 
 static int action_ok_cheat_apply_changes(const char *path,
-      const char *label, unsigned type, size_t idx)
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    global_t *global       = global_get_ptr();
    cheat_manager_t *cheat = global->cheat;
@@ -229,7 +230,7 @@ static int action_ok_cheat_apply_changes(const char *path,
 
 
 static int action_ok_shader_pass_load(const char *path,
-      const char *label, unsigned type, size_t idx)
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    const char *menu_path = NULL;
    menu_handle_t *menu = menu_driver_get_ptr();
@@ -260,7 +261,7 @@ extern size_t hack_shader_pass;
 #endif
 
 static int action_ok_shader_pass(const char *path,
-      const char *label, unsigned type, size_t idx)
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    menu_displaylist_info_t info = {0};
    hack_shader_pass      = type - MENU_SETTINGS_SHADER_PASS_0;
@@ -279,7 +280,7 @@ static int action_ok_shader_pass(const char *path,
 }
 
 static int action_ok_shader_parameters(const char *path,
-      const char *label, unsigned type, size_t idx)
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    menu_displaylist_info_t info = {0};
    menu_handle_t *menu = menu_driver_get_ptr();
@@ -295,7 +296,7 @@ static int action_ok_shader_parameters(const char *path,
 }
 
 static int action_ok_push_generic_list(const char *path,
-      const char *label, unsigned type, size_t idx)
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    menu_displaylist_info_t info = {0};
    menu_handle_t *menu = menu_driver_get_ptr();
@@ -315,7 +316,7 @@ static int action_ok_push_generic_list(const char *path,
 }
 
 static int action_ok_push_default(const char *path,
-      const char *label, unsigned type, size_t idx)
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    menu_displaylist_info_t info = {0};
    menu_handle_t *menu = menu_driver_get_ptr();
@@ -332,7 +333,7 @@ static int action_ok_push_default(const char *path,
 }
 
 static int action_ok_shader_preset(const char *path,
-      const char *label, unsigned type, size_t idx)
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    menu_displaylist_info_t info = {0};
    menu_handle_t *menu   = menu_driver_get_ptr();
@@ -351,7 +352,7 @@ static int action_ok_shader_preset(const char *path,
 }
 
 static int action_ok_push_content_list(const char *path,
-      const char *label, unsigned type, size_t idx)
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    menu_displaylist_info_t info = {0};
    menu_handle_t *menu   = menu_driver_get_ptr();
@@ -370,7 +371,7 @@ static int action_ok_push_content_list(const char *path,
 }
 
 static int action_ok_disk_image_append_list(const char *path,
-      const char *label, unsigned type, size_t idx)
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    menu_displaylist_info_t info = {0};
    menu_handle_t *menu      = menu_driver_get_ptr();
@@ -389,7 +390,7 @@ static int action_ok_disk_image_append_list(const char *path,
 }
 
 static int action_ok_configurations_list(const char *path,
-      const char *label, unsigned type, size_t idx)
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    menu_displaylist_info_t info = {0};
    settings_t *settings     = config_get_ptr();
@@ -411,7 +412,7 @@ static int action_ok_configurations_list(const char *path,
 }
 
 static int action_ok_cheat_file(const char *path,
-      const char *label, unsigned type, size_t idx)
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    menu_displaylist_info_t info = {0};
    menu_handle_t *menu      = menu_driver_get_ptr();
@@ -429,7 +430,7 @@ static int action_ok_cheat_file(const char *path,
 }
 
 static int action_ok_audio_dsp_plugin(const char *path,
-      const char *label, unsigned type, size_t idx)
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    menu_displaylist_info_t info = {0};
    menu_handle_t *menu      = menu_driver_get_ptr();
@@ -447,7 +448,7 @@ static int action_ok_audio_dsp_plugin(const char *path,
 }
 
 static int action_ok_video_filter(const char *path,
-      const char *label, unsigned type, size_t idx)
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    menu_displaylist_info_t info = {0};
    menu_handle_t *menu      = menu_driver_get_ptr();
@@ -465,7 +466,7 @@ static int action_ok_video_filter(const char *path,
 }
 
 static int action_ok_core_updater_list(const char *path,
-      const char *label, unsigned type, size_t idx)
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    char url_path[PATH_MAX_LENGTH];
    menu_displaylist_info_t info = {0};
@@ -501,7 +502,7 @@ static int action_ok_core_updater_list(const char *path,
    return menu_displaylist_push_list(&info, DISPLAYLIST_GENERIC);
 } 
 static int action_ok_remap_file(const char *path,
-      const char *label, unsigned type, size_t idx)
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    menu_displaylist_info_t info = {0};
    menu_handle_t *menu      = menu_driver_get_ptr();
@@ -520,7 +521,7 @@ static int action_ok_remap_file(const char *path,
 }
 
 static int action_ok_record_configfile(const char *path,
-      const char *label, unsigned type, size_t idx)
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    menu_displaylist_info_t info = {0};
    menu_handle_t *menu      = menu_driver_get_ptr();
@@ -539,7 +540,7 @@ static int action_ok_record_configfile(const char *path,
 }
 
 static int action_ok_playlist_collection(const char *path,
-      const char *label, unsigned type, size_t idx)
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    menu_handle_t *menu      = menu_driver_get_ptr();
    menu_displaylist_info_t info = {0};
@@ -557,7 +558,7 @@ static int action_ok_playlist_collection(const char *path,
 }
 
 static int action_ok_content_collection_list(const char *path,
-      const char *label, unsigned type, size_t idx)
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    menu_displaylist_info_t info = {0};
    menu_handle_t *menu      = menu_driver_get_ptr();
@@ -576,7 +577,7 @@ static int action_ok_content_collection_list(const char *path,
 }
 
 static int action_ok_core_list(const char *path,
-      const char *label, unsigned type, size_t idx)
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    menu_displaylist_info_t info = {0};
    menu_handle_t *menu      = menu_driver_get_ptr();
@@ -595,7 +596,7 @@ static int action_ok_core_list(const char *path,
 }
 
 static int action_ok_record_configfile_load(const char *path,
-      const char *label, unsigned type, size_t idx)
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    const char *menu_path = NULL;
    global_t     *global = global_get_ptr();
@@ -613,7 +614,7 @@ static int action_ok_record_configfile_load(const char *path,
 }
 
 static int action_ok_remap_file_load(const char *path,
-      const char *label, unsigned type, size_t idx)
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    const char *menu_path = NULL;
    char remap_path[PATH_MAX_LENGTH];
@@ -636,7 +637,7 @@ static int action_ok_remap_file_load(const char *path,
 }
 
 static int action_ok_video_filter_file_load(const char *path,
-      const char *label, unsigned type, size_t idx)
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    char filter_path[PATH_MAX_LENGTH];
    const char *menu_path    = NULL;
@@ -665,7 +666,7 @@ static int action_ok_video_filter_file_load(const char *path,
 }
 
 static int action_ok_cheat_file_load(const char *path,
-      const char *label, unsigned type, size_t idx)
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    const char *menu_path = NULL;
    char cheat_path[PATH_MAX_LENGTH];
@@ -695,7 +696,7 @@ static int action_ok_cheat_file_load(const char *path,
 }
 
 static int action_ok_menu_wallpaper_load(const char *path,
-      const char *label, unsigned type, size_t idx)
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    char wallpaper_path[PATH_MAX_LENGTH];
    const char *menu_label   = NULL;
@@ -730,7 +731,7 @@ static int action_ok_menu_wallpaper_load(const char *path,
 }
 
 static int action_ok_shader_preset_load(const char *path,
-      const char *label, unsigned type, size_t idx)
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    const char *menu_path = NULL;
    char shader_path[PATH_MAX_LENGTH];
@@ -756,7 +757,7 @@ static int action_ok_shader_preset_load(const char *path,
 }
 
 static int action_ok_cheat(const char *path,
-      const char *label, unsigned type, size_t idx)
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    menu_input_key_start_line("Input Cheat",
          label, type, idx, menu_input_st_cheat_callback);
@@ -764,7 +765,7 @@ static int action_ok_cheat(const char *path,
 }
 
 static int action_ok_shader_preset_save_as(const char *path,
-      const char *label, unsigned type, size_t idx)
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    menu_input_key_start_line("Preset Filename",
          label, type, idx, menu_input_st_string_callback);
@@ -772,7 +773,7 @@ static int action_ok_shader_preset_save_as(const char *path,
 }
 
 static int action_ok_cheat_file_save_as(const char *path,
-      const char *label, unsigned type, size_t idx)
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    menu_input_key_start_line("Cheat Filename",
          label, type, idx, menu_input_st_string_callback);
@@ -780,7 +781,7 @@ static int action_ok_cheat_file_save_as(const char *path,
 }
 
 static int action_ok_remap_file_save_as(const char *path,
-      const char *label, unsigned type, size_t idx)
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    menu_input_key_start_line("Remapping Filename",
          label, type, idx, menu_input_st_string_callback);
@@ -788,7 +789,7 @@ static int action_ok_remap_file_save_as(const char *path,
 }
 
 static int action_ok_remap_file_save_core(const char *path,
-      const char *label, unsigned type, size_t idx)
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    global_t *global = global_get_ptr();
    settings_t *settings = config_get_ptr();
@@ -814,7 +815,7 @@ static int action_ok_remap_file_save_core(const char *path,
 }
 
 static int action_ok_remap_file_save_game(const char *path,
-      const char *label, unsigned type, size_t idx)
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    global_t *global = global_get_ptr();
    settings_t *settings = config_get_ptr();
@@ -843,13 +844,13 @@ static int action_ok_remap_file_save_game(const char *path,
 }
 
 static int action_ok_path_use_directory(const char *path,
-      const char *label, unsigned type, size_t idx)
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    return menu_entry_pathdir_set_value(0, NULL);
 }
 
 static int action_ok_core_deferred_set(const char *path,
-      const char *label, unsigned type, size_t idx)
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    char core_display_name[PATH_MAX_LENGTH];
    menu_handle_t *menu = menu_driver_get_ptr();
@@ -881,7 +882,7 @@ static int action_ok_core_deferred_set(const char *path,
 }
 
 static int action_ok_core_load_deferred(const char *path,
-      const char *label, unsigned type, size_t idx)
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    menu_handle_t *menu      = menu_driver_get_ptr();
    settings_t *settings     = config_get_ptr();
@@ -901,13 +902,13 @@ static int action_ok_core_load_deferred(const char *path,
 }
 
 static int action_ok_database_manager_list_deferred(const char *path,
-      const char *label, unsigned type, size_t idx)
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    return 0;
 }
 
 static int action_ok_rdb_entry(const char *path,
-      const char *label, unsigned type, size_t idx)
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    char tmp[PATH_MAX_LENGTH];
    menu_displaylist_info_t info = {0};
@@ -928,13 +929,13 @@ static int action_ok_rdb_entry(const char *path,
 }
 
 static int action_ok_cursor_manager_list_deferred(const char *path,
-      const char *label, unsigned type, size_t idx)
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    return 0;
 }
 
 static int action_ok_core_load(const char *path,
-      const char *label, unsigned type, size_t idx)
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    const char *menu_path    = NULL;
    menu_handle_t *menu      = menu_driver_get_ptr();
@@ -974,13 +975,13 @@ static int action_ok_core_load(const char *path,
 }
 
 static int action_ok_core_download(const char *path,
-      const char *label, unsigned type, size_t idx)
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    return 0;
 }
 
 static int action_ok_compressed_archive_push(const char *path,
-      const char *label, unsigned type, size_t idx)
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    menu_displaylist_info_t info = {0};
    menu_list_t *menu_list = menu_list_get_ptr();
@@ -996,7 +997,7 @@ static int action_ok_compressed_archive_push(const char *path,
 }
 
 static int action_ok_directory_push(const char *path,
-      const char *label, unsigned type, size_t idx)
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    menu_displaylist_info_t info = {0};
    const char *menu_path  = NULL;
@@ -1024,7 +1025,7 @@ static int action_ok_directory_push(const char *path,
 }
 
 static int action_ok_database_manager_list(const char *path,
-      const char *label, unsigned type, size_t idx)
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    char rdb_path[PATH_MAX_LENGTH];
    menu_displaylist_info_t info = {0};
@@ -1051,7 +1052,7 @@ static int action_ok_database_manager_list(const char *path,
 }
 
 static int action_ok_cursor_manager_list(const char *path,
-      const char *label, unsigned type, size_t idx)
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    char cursor_path[PATH_MAX_LENGTH];
    menu_displaylist_info_t info = {0};
@@ -1074,7 +1075,7 @@ static int action_ok_cursor_manager_list(const char *path,
 }
 
 static int action_ok_config_load(const char *path,
-      const char *label, unsigned type, size_t idx)
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    const char *menu_path  = NULL;
    char config[PATH_MAX_LENGTH];
@@ -1099,7 +1100,7 @@ static int action_ok_config_load(const char *path,
 }
 
 static int action_ok_disk_image_append(const char *path,
-      const char *label, unsigned type, size_t idx)
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    char image[PATH_MAX_LENGTH];
    const char *menu_path    = NULL;
@@ -1122,7 +1123,7 @@ static int action_ok_disk_image_append(const char *path,
 
 
 static int action_ok_file_load(const char *path,
-      const char *label, unsigned type, size_t idx)
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    const char *menu_label   = NULL;
    const char *menu_path    = NULL;
@@ -1161,7 +1162,7 @@ static int action_ok_file_load(const char *path,
 }
 
 static int action_ok_set_path(const char *path,
-      const char *label, unsigned type, size_t idx)
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    const char *menu_path    = NULL;
    const char *menu_label   = NULL;
@@ -1186,7 +1187,7 @@ static int action_ok_set_path(const char *path,
 }
 
 static int action_ok_custom_viewport(const char *path,
-      const char *label, unsigned type, size_t idx)
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    menu_displaylist_info_t info = {0};
    int ret                  = 0;
@@ -1224,7 +1225,7 @@ static int generic_action_ok_command(enum event_command cmd)
 }
 
 static int action_ok_load_state(const char *path,
-      const char *label, unsigned type, size_t idx)
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    if (generic_action_ok_command(EVENT_CMD_LOAD_STATE) == -1)
       return -1;
@@ -1233,7 +1234,7 @@ static int action_ok_load_state(const char *path,
 
 
 static int action_ok_save_state(const char *path,
-      const char *label, unsigned type, size_t idx)
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    if (generic_action_ok_command(EVENT_CMD_SAVE_STATE) == -1)
       return -1;
@@ -1241,7 +1242,7 @@ static int action_ok_save_state(const char *path,
 }
 
 static int action_ok_core_updater_download(const char *path,
-      const char *label, unsigned type, size_t idx)
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
 #ifdef HAVE_NETWORKING
    char core_path[PATH_MAX_LENGTH], msg[PATH_MAX_LENGTH];
@@ -1262,49 +1263,49 @@ static int action_ok_core_updater_download(const char *path,
 }
 
 static int action_ok_disk_cycle_tray_status(const char *path,
-      const char *label, unsigned type, size_t idx)
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    return generic_action_ok_command(EVENT_CMD_DISK_EJECT_TOGGLE);
 }
 
 static int action_ok_unload_core(const char *path,
-      const char *label, unsigned type, size_t idx)
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    return generic_action_ok_command(EVENT_CMD_UNLOAD_CORE);
 }
 
 static int action_ok_quit(const char *path,
-      const char *label, unsigned type, size_t idx)
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    return generic_action_ok_command(EVENT_CMD_QUIT);
 }
 
 static int action_ok_save_new_config(const char *path,
-      const char *label, unsigned type, size_t idx)
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    return generic_action_ok_command(EVENT_CMD_MENU_SAVE_CONFIG);
 }
 
 static int action_ok_resume_content(const char *path,
-      const char *label, unsigned type, size_t idx)
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    return generic_action_ok_command(EVENT_CMD_RESUME);
 }
 
 static int action_ok_restart_content(const char *path,
-      const char *label, unsigned type, size_t idx)
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    return generic_action_ok_command(EVENT_CMD_RESET);
 }
 
 static int action_ok_screenshot(const char *path,
-      const char *label, unsigned type, size_t idx)
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    return generic_action_ok_command(EVENT_CMD_TAKE_SCREENSHOT);
 }
 
 static int action_ok_file_load_or_resume(const char *path,
-      const char *label, unsigned type, size_t idx)
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    menu_handle_t *menu   = menu_driver_get_ptr();
    global_t      *global = global_get_ptr();
@@ -1325,19 +1326,19 @@ static int action_ok_file_load_or_resume(const char *path,
 }
 
 static int action_ok_shader_apply_changes(const char *path,
-      const char *label, unsigned type, size_t idx)
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    return generic_action_ok_command(EVENT_CMD_SHADERS_APPLY_CHANGES);
 }
 
 static int action_ok_lookup_setting(const char *path,
-      const char *label, unsigned type, size_t idx)
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    return menu_setting_set(type, label, MENU_ACTION_OK, false);
 }
 
 static int action_ok_rdb_entry_submenu(const char *path,
-      const char *label, unsigned type, size_t idx)
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    int ret;
    union string_list_elem_attr attr;
@@ -1409,7 +1410,7 @@ static int action_ok_rdb_entry_submenu(const char *path,
 }
 
 static int action_ok_help(const char *path,
-      const char *label, unsigned type, size_t idx)
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    menu_displaylist_info_t info = {0};
    menu_handle_t *menu = menu_driver_get_ptr();
@@ -1424,7 +1425,7 @@ static int action_ok_help(const char *path,
 }
 
 static int action_ok_video_resolution(const char *path,
-      const char *label, unsigned type, size_t idx)
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    unsigned width = 0, height = 0;
    global_t *global = global_get_ptr();

@@ -761,11 +761,11 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
          strlcat(db_path, ".rdb", sizeof(db_path));
 
          menu_list_push(info->list, label,
-               db_path, MENU_FILE_RDB_ENTRY, 0, 0);
+               db_path, MENU_FILE_RDB_ENTRY, 0, i);
       }
       else
          menu_list_push(info->list, fill_buf, path_playlist,
-               MENU_FILE_PLAYLIST_ENTRY, i, 0);
+               MENU_FILE_PLAYLIST_ENTRY, 0, i);
    }
 
    return 0;
