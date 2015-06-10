@@ -1927,7 +1927,7 @@ static void xmb_list_delete(file_list_t *list,
 
 static void xmb_list_cache(menu_list_type_t type, unsigned action)
 {
-   size_t stack_size;
+   size_t stack_size, list_size;
    xmb_handle_t      *xmb = NULL;
    menu_handle_t    *menu = menu_driver_get_ptr();
    menu_list_t *menu_list = menu_list_get_ptr();
@@ -1959,6 +1959,13 @@ static void xmb_list_cache(menu_list_type_t type, unsigned action)
             default:
                menu->categories.selection_ptr++;
                break;
+         }
+
+         list_size = xmb_list_get_size(menu, MENU_LIST_HORIZONTAL);
+         if (menu->categories.selection_ptr > list_size)
+         {
+            menu->categories.selection_ptr = list_size;
+            return;
          }
 
          stack_size = menu_list->menu_stack->size;
