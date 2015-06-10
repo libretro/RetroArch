@@ -516,10 +516,12 @@ static struct buffer parse_string(struct buffer buff,
 
    if (!*error)
    {
-      size_t nmemb = is_binstr ? (value->string.len + 1) / 2 : (value->string.len + 1);
+      size_t count;
       value->type = is_binstr ? RDT_BINARY : RDT_STRING;
       value->string.len = (buff.data + buff.offset) - str_start - 1;
-      value->string.buff = (char*)calloc(nmemb, sizeof(char));
+
+      count = is_binstr ? (value->string.len + 1) / 2 : (value->string.len + 1);
+      value->string.buff = (char*)calloc(count, sizeof(char));
 
       if (!value->string.buff)
          raise_enomem(error);
@@ -889,6 +891,7 @@ void libretrodb_query_free(void *q)
 
    free(real_q->root.argv);
    real_q->root.argv = NULL;
+   real_q->root.argc = 0;
    free(real_q);
 }
 
