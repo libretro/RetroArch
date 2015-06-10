@@ -66,6 +66,7 @@ static int menu_entries_cbs_init_bind_scan_compare_type(menu_file_list_cbs_t *cb
       case MENU_FILE_DIRECTORY:
          cbs->action_scan = action_scan_directory;
          break;
+      case MENU_FILE_CARCHIVE:
       case MENU_FILE_PLAIN:
          cbs->action_scan = action_scan_file;
          break;
