@@ -98,6 +98,7 @@ enum setting_list_flags
    SL_FLAG_LOGGING_OPTIONS       =  (1 << 25),
    SL_FLAG_SAVING_OPTIONS        =  (1 << 26),
    SL_FLAG_ALL                   =  (1 << 27),
+   SL_FLAG_ALLOW_EMPTY_LIST      =  (1 << 28)
 };
 
 #define SL_FLAG_ALL_SETTINGS (SL_FLAG_ALL - SL_FLAG_MAIN_MENU)
