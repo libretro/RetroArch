@@ -850,7 +850,7 @@ static void xmb_list_open_horizontal_list(xmb_handle_t *xmb, menu_handle_t *menu
    unsigned j;
    size_t list_size = xmb_list_get_size(menu, MENU_LIST_HORIZONTAL);
 
-   for (j = 0; j < list_size; j++)
+   for (j = 0; j <= list_size; j++)
    {
       float ia          = 0;
       xmb_node_t *node  = &xmb->settings_node;
