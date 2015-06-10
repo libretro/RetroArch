@@ -59,7 +59,7 @@ static int rarch_defer_core_wrapper(menu_displaylist_info_t *info,
       return -1;
 
    menu_list_get_last_stack(menu->menu_list,
-         &menu_path, &menu_label, NULL);
+         &menu_path, &menu_label, NULL, NULL);
 
    ret = rarch_defer_core(global->core_info,
          menu_path, path, menu_label, menu->deferred_path,
@@ -240,7 +240,7 @@ static int action_ok_shader_pass_load(const char *path,
 
 #ifdef HAVE_SHADER_MANAGER
    menu_list_get_last_stack(menu->menu_list, &menu_path, NULL,
-         NULL);
+         NULL, NULL);
 
    fill_pathname_join(menu->shader->pass[hack_shader_pass].source.path,
          menu_path, path,
@@ -604,7 +604,7 @@ static int action_ok_record_configfile_load(const char *path,
       return -1;
 
    menu_list_get_last_stack(menu->menu_list, &menu_path, NULL,
-         NULL);
+         NULL, NULL);
 
    fill_pathname_join(global->record.config, menu_path, path, sizeof(global->record.config));
 
@@ -625,7 +625,7 @@ static int action_ok_remap_file_load(const char *path,
    (void)menu_path;
 
    menu_list_get_last_stack(menu->menu_list, &menu_path, NULL,
-         NULL);
+         NULL, NULL);
 
    fill_pathname_join(remap_path, menu_path, path, sizeof(remap_path));
    input_remapping_load_file(remap_path);
@@ -650,7 +650,7 @@ static int action_ok_video_filter_file_load(const char *path,
    (void)menu_path;
 
    menu_list_get_last_stack(menu->menu_list, &menu_path, NULL,
-         NULL);
+         NULL, NULL);
 
    fill_pathname_join(filter_path, menu_path, path, sizeof(filter_path));
 
@@ -677,7 +677,7 @@ static int action_ok_cheat_file_load(const char *path,
    (void)cheat_path;
    (void)menu_path;
    menu_list_get_last_stack(menu->menu_list, &menu_path, NULL,
-         NULL);
+         NULL, NULL);
 
    fill_pathname_join(cheat_path, menu_path, path, sizeof(cheat_path));
 
@@ -707,7 +707,7 @@ static int action_ok_menu_wallpaper_load(const char *path,
       return -1;
 
    menu_list_get_last_stack(menu->menu_list, &menu_path, &menu_label,
-         NULL);
+         NULL, NULL);
 
    setting = menu_setting_find(menu_label);
 
@@ -742,7 +742,7 @@ static int action_ok_shader_preset_load(const char *path,
    (void)menu_path;
 #ifdef HAVE_SHADER_MANAGER
    menu_list_get_last_stack(menu->menu_list, &menu_path, NULL,
-         NULL);
+         NULL, NULL);
 
    fill_pathname_join(shader_path, menu_path, path, sizeof(shader_path));
    menu_shader_manager_set_preset(menu->shader,
@@ -947,7 +947,7 @@ static int action_ok_core_load(const char *path,
    (void)global;
 
    menu_list_get_last_stack(menu->menu_list,
-         &menu_path, NULL, NULL);
+         &menu_path, NULL, NULL, NULL);
 
    fill_pathname_join(settings->libretro, menu_path, path,
          sizeof(settings->libretro));
@@ -1010,7 +1010,7 @@ static int action_ok_directory_push(const char *path,
       return -1;
 
    menu_list_get_last_stack(menu->menu_list,
-         &menu_path, &menu_label, NULL);
+         &menu_path, &menu_label, NULL, NULL);
 
    fill_pathname_join(cat_path, menu_path, path, sizeof(cat_path));
 
@@ -1084,7 +1084,7 @@ static int action_ok_config_load(const char *path,
       return -1;
 
    menu_list_get_last_stack(menu->menu_list,
-         &menu_path, NULL, NULL);
+         &menu_path, NULL, NULL, NULL);
 
    fill_pathname_join(config, menu_path, path, sizeof(config));
    menu_list_flush_stack(menu->menu_list, NULL, MENU_SETTINGS);
@@ -1109,7 +1109,7 @@ static int action_ok_disk_image_append(const char *path,
       return -1;
 
    menu_list_get_last_stack(menu->menu_list,
-         &menu_path, NULL, NULL);
+         &menu_path, NULL, NULL, NULL);
 
    fill_pathname_join(image, menu_path, path, sizeof(image));
    event_disk_control_append_image(image);
@@ -1134,7 +1134,7 @@ static int action_ok_file_load(const char *path,
       return -1;
 
    menu_list_get_last(menu->menu_list->menu_stack,
-         &menu_path, &menu_label, NULL);
+         &menu_path, &menu_label, NULL, NULL);
 
    setting = menu_setting_find(menu_label);
 
@@ -1172,7 +1172,7 @@ static int action_ok_set_path(const char *path,
       return -1;
 
    menu_list_get_last_stack(menu->menu_list,
-         &menu_path, &menu_label, NULL);
+         &menu_path, &menu_label, NULL, NULL);
 
    setting = menu_setting_find(menu_label);
 

@@ -28,7 +28,8 @@
 
 void file_list_push(file_list_t *list,
       const char *path, const char *label,
-      unsigned type, size_t directory_ptr)
+      unsigned type, size_t directory_ptr,
+      size_t entry_idx)
 {
    if (list->size >= list->capacity)
    {
@@ -47,6 +48,7 @@ void file_list_push(file_list_t *list,
    list->list[list->size].alt           = NULL;
    list->list[list->size].type          = type;
    list->list[list->size].directory_ptr = directory_ptr;
+   list->list[list->size].entry_idx     = entry_idx;
 
    if (label)
       list->list[list->size].label      = strdup(label);
@@ -61,6 +63,15 @@ size_t file_list_get_size(const file_list_t *list)
    if (!list)
       return 0;
    return list->size;
+}
+
+size_t file_list_get_entry_index(const file_list_t *list)
+{
+   size_t size = 0;
+   if (!list)
+      return 0;
+   size = file_list_get_size(list);
+   return list->list[size].entry_idx;
 }
 
 size_t file_list_get_directory_ptr(const file_list_t *list)
@@ -167,6 +178,7 @@ void file_list_copy(file_list_t *list, file_list_t *list_old)
       list_old->list[i].alt           = NULL;
       list_old->list[i].type          = list->list[i].type;
       list_old->list[i].directory_ptr = list->list[i].directory_ptr;
+      list_old->list[i].entry_idx     = list->list[i].entry_idx;
       list_old->list[i].userdata      = list->list[i].userdata;
       list_old->list[i].actiondata    = list->list[i].actiondata;
 
@@ -282,7 +294,8 @@ void *file_list_get_last_actiondata(const file_list_t *list)
 }
 
 void file_list_get_at_offset(const file_list_t *list, size_t idx,
-      const char **path, const char **label, unsigned *file_type)
+      const char **path, const char **label, unsigned *file_type,
+      size_t *entry_idx)
 {
    if (!list)
       return;
@@ -293,17 +306,19 @@ void file_list_get_at_offset(const file_list_t *list, size_t idx,
       *label     = list->list[idx].label;
    if (file_type)
       *file_type = list->list[idx].type;
+   if (entry_idx)
+      *entry_idx = list->list[idx].entry_idx;
 }
 
 void file_list_get_last(const file_list_t *list,
       const char **path, const char **label,
-      unsigned *file_type)
+      unsigned *file_type, size_t *entry_idx)
 {
    if (!list)
       return;
 
    if (list->size)
-      file_list_get_at_offset(list, list->size - 1, path, label, file_type);
+      file_list_get_at_offset(list, list->size - 1, path, label, file_type, entry_idx);
 }
 
 bool file_list_search(const file_list_t *list, const char *needle, size_t *idx)

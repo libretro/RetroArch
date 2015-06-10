@@ -31,7 +31,7 @@ static int action_scan_file(const char *path,
       return -1;
 
    menu_list_get_last_stack(menu->menu_list,
-         &menu_path, &menu_label, NULL);
+         &menu_path, &menu_label, NULL, NULL);
 
    fill_pathname_join(fullpath, menu_path, path, sizeof(fullpath));
 
@@ -50,7 +50,7 @@ static int action_scan_directory(const char *path,
       return -1;
 
    menu_list_get_last_stack(menu->menu_list,
-         &menu_path, &menu_label, NULL);
+         &menu_path, &menu_label, NULL, NULL);
 
    fill_pathname_join(fullpath, menu_path, path, sizeof(fullpath));
 

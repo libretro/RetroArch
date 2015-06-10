@@ -70,7 +70,7 @@ int menu_entries_get_title(char *s, size_t len)
 
    cbs = (menu_file_list_cbs_t*)menu_list_get_last_stack_actiondata(menu_list);
 
-   menu_list_get_last_stack(menu_list, &path, &label, &menu_type);
+   menu_list_get_last_stack(menu_list, &path, &label, &menu_type, NULL);
 
    (void)cbs;
 
@@ -140,10 +140,11 @@ static rarch_setting_t *menu_entry_get_setting(uint32_t i)
    menu_list_t *menu_list    = menu_list_get_ptr();
    unsigned menu_type        = 0;
 
-   menu_list_get_last_stack(menu_list, &dir, &label, &menu_type);
+   menu_list_get_last_stack(menu_list, &dir,
+         &label, &menu_type, NULL);
 
    menu_list_get_at_offset(menu_list->selection_buf, i, &path,
-         &entry_label, &type);
+         &entry_label, &type, NULL);
 
    return menu_setting_find(
          menu_list->selection_buf->list[i].label);
@@ -159,10 +160,11 @@ enum menu_entry_type menu_entry_get_type(uint32_t i)
    menu_list_t *menu_list    = menu_list_get_ptr();
    unsigned menu_type        = 0;
 
-   menu_list_get_last_stack(menu_list, &dir, &label, &menu_type);
+   menu_list_get_last_stack(menu_list, &dir,
+         &label, &menu_type, NULL);
 
    menu_list_get_at_offset(menu_list->selection_buf, i, &path,
-         &entry_label, &type);
+         &entry_label, &type, NULL);
 
    setting = menu_entry_get_setting(i);
 
@@ -328,7 +330,7 @@ int menu_entry_pathdir_set_value(uint32_t i, const char *s)
    menu_list_t *menu_list   = menu_list_get_ptr();
 
    menu_list_get_last_stack(menu_list,
-         &menu_path, &menu_label, NULL);
+         &menu_path, &menu_label, NULL, NULL);
 
    setting = menu_setting_find(menu_label);
 
@@ -408,14 +410,15 @@ void menu_entry_get(menu_entry_t *entry, size_t i,
    if (!menu_list)
       return;
 
-   menu_list_get_last_stack(menu_list, NULL, &label, NULL);
+   menu_list_get_last_stack(menu_list, NULL, &label, NULL, NULL);
    
    list = userdata ? (file_list_t*)userdata : menu_list->selection_buf;
 
    if (!list)
       return;
 
-   menu_list_get_at_offset(list, i, &path, &entry_label, &entry->type);
+   menu_list_get_at_offset(list, i, &path, &entry_label, &entry->type,
+         NULL);
 
    cbs = menu_list_get_actiondata_at_offset(list, i);
 
@@ -492,7 +495,7 @@ int menu_entry_iterate(unsigned action)
 
    cbs = (menu_file_list_cbs_t*)menu_list_get_last_stack_actiondata(menu_list);
 
-   menu_list_get_last_stack(menu_list, NULL, &label, NULL);
+   menu_list_get_last_stack(menu_list, NULL, &label, NULL, NULL);
 
    if (cbs && cbs->action_iterate)
       return cbs->action_iterate(label, action);

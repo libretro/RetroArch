@@ -38,6 +38,7 @@ static int archive_open(void)
    const char *menu_label = NULL;
    const char* path       = NULL;
    unsigned int type      = 0;
+   size_t entry_idx       = 0;
    menu_navigation_t *nav = menu_navigation_get_ptr();
    menu_list_t *menu_list = menu_list_get_ptr();
 
@@ -47,13 +48,13 @@ static int archive_open(void)
    menu_list_pop_stack(menu_list);
 
    menu_list_get_last_stack(menu_list,
-         &menu_path, &menu_label, NULL);
+         &menu_path, &menu_label, NULL, NULL);
 
    if (menu_list_get_size(menu_list) == 0)
       return 0;
 
    menu_list_get_at_offset(menu_list->selection_buf,
-         nav->selection_ptr, &path, NULL, &type);
+         nav->selection_ptr, &path, NULL, &type, &entry_idx);
 
    fill_pathname_join(cat_path, menu_path, path, sizeof(cat_path));
 
@@ -76,6 +77,7 @@ static int archive_load(void)
    const char *menu_path  = NULL;
    const char *menu_label = NULL;
    const char* path       = NULL;
+   size_t entry_idx       = 0;
    menu_handle_t *menu    = menu_driver_get_ptr();
    settings_t *settings   = config_get_ptr();
    global_t      *global  = global_get_ptr();
@@ -87,13 +89,13 @@ static int archive_load(void)
    menu_list_pop_stack(menu->menu_list);
 
    menu_list_get_last_stack(menu->menu_list,
-         &menu_path, &menu_label, NULL);
+         &menu_path, &menu_label, NULL, NULL);
 
    if (menu_list_get_size(menu->menu_list) == 0)
       return 0;
 
    menu_list_get_at_offset(menu->menu_list->selection_buf,
-         selected, &path, NULL, NULL);
+         selected, &path, NULL, NULL, &entry_idx);
 
    ret = rarch_defer_core(global->core_info, menu_path, path, menu_label,
          menu->deferred_path, sizeof(menu->deferred_path));
@@ -240,7 +242,7 @@ static int action_iterate_info(char *s, size_t len, const char *label)
    else
    {
       const char *lbl = NULL;
-      menu_list_get_at_offset(list, selection, NULL, &lbl, &info_type);
+      menu_list_get_at_offset(list, selection, NULL, &lbl, &info_type, NULL);
 
       if (lbl)
          strlcpy(needle, lbl, sizeof(needle));
@@ -286,7 +288,7 @@ static int action_iterate_menu_viewport(char *s, size_t len, const char *label, 
    if (!menu)
       return -1;
 
-   menu_list_get_last_stack(menu_list, NULL, NULL, &type);
+   menu_list_get_last_stack(menu_list, NULL, NULL, &type, NULL);
 
    geom = (struct retro_game_geometry*)&av_info->geometry;
 
@@ -407,7 +409,7 @@ static int action_iterate_menu_viewport(char *s, size_t len, const char *label, 
          break;
    }
 
-   menu_list_get_last_stack(menu_list, NULL, &label, &type);
+   menu_list_get_last_stack(menu_list, NULL, &label, &type, NULL);
 
    menu_driver_render();
 

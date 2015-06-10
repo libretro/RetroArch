@@ -65,7 +65,7 @@ void menu_entries_init(void *data,
       return;
 
    menu_list_get_last_stack(menu->menu_list,
-         NULL, &menu_label, NULL);
+         NULL, &menu_label, NULL, NULL);
 
    if (label)
       str_list = string_split(label, "|");

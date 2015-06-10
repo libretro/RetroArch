@@ -86,7 +86,8 @@ void menu_list_pop_stack_by_needle(menu_list_t *list,
       const char *needle);
 
 void menu_list_get_at_offset(const file_list_t *list, size_t idx,
-      const char **path, const char **label, unsigned *file_type);
+      const char **path, const char **label, unsigned *file_type,
+      size_t *entry_idx);
 
 menu_file_list_cbs_t *menu_list_get_actiondata_at_offset(const file_list_t *list, size_t idx);
 
@@ -98,17 +99,18 @@ void *menu_list_get_last_stack_actiondata(const menu_list_t *list);
 
 void menu_list_get_last(const file_list_t *list,
       const char **path, const char **label,
-      unsigned *file_type);
+      unsigned *file_type, size_t *entry_idx);
 
 void menu_list_get_last_stack(const menu_list_t *list,
       const char **path, const char **label,
-      unsigned *file_type);
+      unsigned *file_type, size_t *entry_idx);
 
 void menu_list_clear(file_list_t *list);
 
 void menu_list_push(file_list_t *list,
       const char *path, const char *label,
-      unsigned type, size_t directory_ptr);
+      unsigned type, size_t directory_ptr,
+      size_t entry_idx);
 
 void menu_list_get_alt_at_offset(const file_list_t *list, size_t idx,
       const char **alt);

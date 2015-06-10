@@ -36,6 +36,7 @@ struct item_file
    char *alt;
    unsigned type;
    size_t directory_ptr;
+   size_t entry_idx;
    void *userdata;
    void *actiondata;
 };
@@ -58,7 +59,8 @@ void *file_list_get_actiondata_at_offset(const file_list_t *list,
 void file_list_free(file_list_t *list);
 
 void file_list_push(file_list_t *userdata, const char *path,
-      const char *label, unsigned type, size_t current_directory_ptr);
+      const char *label, unsigned type, size_t current_directory_ptr,
+      size_t entry_index);
 
 void file_list_pop(file_list_t *list, size_t *directory_ptr);
 
@@ -68,17 +70,19 @@ void file_list_copy(file_list_t *list, file_list_t *list_old);
 
 void file_list_get_last(const file_list_t *list,
       const char **path, const char **label,
-      unsigned *type);
+      unsigned *type, size_t *entry_idx);
 
 void *file_list_get_last_actiondata(const file_list_t *list);
 
 size_t file_list_get_size(const file_list_t *list);
 
+size_t file_list_get_entry_index(const file_list_t *list);
+
 size_t file_list_get_directory_ptr(const file_list_t *list);
 
 void file_list_get_at_offset(const file_list_t *list, size_t index,
       const char **path, const char **label,
-      unsigned *type);
+      unsigned *type, size_t *entry_idx);
 
 void file_list_set_label_at_offset(file_list_t *list, size_t index,
       const char *label);

@@ -1014,7 +1014,7 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
 
    video_driver_get_size(&width, &height);
 
-   file_list_get_last(stack, NULL, &label, NULL);
+   file_list_get_last(stack, NULL, &label, NULL, NULL);
 
    if (cat_selection_ptr)
       core_node = xmb_get_userdata_from_horizontal_list(xmb, cat_selection_ptr - 1);
