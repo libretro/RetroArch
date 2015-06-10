@@ -1776,6 +1776,7 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          menu_list_clear(info->list);
          ret = menu_displaylist_parse_horizontal_list(info);
 
+         need_sort    = true;
          need_refresh = true;
          need_push    = true;
          break;
@@ -1964,6 +1965,7 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
 
             if (ret == 0)
             {
+               need_sort    = true;
                need_refresh = true;
                need_push    = true;
             }
