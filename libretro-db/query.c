@@ -483,6 +483,7 @@ static struct buffer parse_string(struct buffer buff,
    const char * str_start;
    char terminator = '\0';
    char c          = '\0';
+   int  is_binstr  = 0;
 
    (void)c;
 
@@ -490,6 +491,12 @@ static struct buffer parse_string(struct buffer buff,
 
    if (*error)
       return buff;
+
+   if (terminator == 'b')
+   {
+      is_binstr = 1;
+      buff = get_char(buff, &terminator, error);
+   }
 
    if (terminator != '"' && terminator != '\'')
    {
@@ -509,18 +516,42 @@ static struct buffer parse_string(struct buffer buff,
 
    if (!*error)
    {
-      value->type = RDT_STRING;
+      size_t nmemb = is_binstr ? (value->string.len + 1) / 2 : (value->string.len + 1);
+      value->type = is_binstr ? RDT_BINARY : RDT_STRING;
       value->string.len = (buff.data + buff.offset) - str_start - 1;
-      value->string.buff = (char*)calloc(value->string.len + 1, sizeof(char));
+      value->string.buff = (char*)calloc(nmemb, sizeof(char));
 
       if (!value->string.buff)
          raise_enomem(error);
+      else if (is_binstr)
+      {
+         unsigned i, j;
+         const char *tok = str_start;
+
+         j = 0;
+         for (i = 0; i < value->string.len; i += 2)
+         {
+            uint8_t hi, lo;
+            char hic = tok[i];
+            char loc = tok[i + 1];
+
+            if (hic <= '9')
+               hi = hic - '0';
+            else
+               hi = (hic - 'A') + 10;
+
+            if (loc <= '9')
+               lo = loc - '0';
+            else
+               lo = (loc - 'A') + 10;
+
+            value->string.buff[j++] = hi * 16 + lo;
+         }
+
+         value->string.len = j;
+      }
       else
-         memcpy(
-               value->string.buff,
-               str_start,
-               value->string.len
-               );
+         memcpy(value->string.buff, str_start, value->string.len);
    }
    return buff;
 }
@@ -568,7 +599,7 @@ static struct buffer parse_value(struct buffer buff,
       value->type = RDT_BOOL;
       value->bool_ = 0;
    }
-   else if (peek(buff, "\"") || peek(buff, "'"))
+   else if (peek(buff, "b") || peek(buff, "\"") || peek(buff, "'"))
       buff = parse_string(buff, value, error);
    else if (isdigit(buff.data[buff.offset]))
       buff = parse_integer(buff, value, error);
@@ -824,6 +855,7 @@ static struct buffer parse_argument(struct buffer buff,
             peek(buff, "nil")
             || peek(buff, "true")
             || peek(buff, "false")
+            || peek(buff, "b\"") || peek(buff, "b'") /* bin string prefix*/
             )
       )
    {
