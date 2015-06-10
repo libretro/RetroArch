@@ -127,7 +127,7 @@ static int database_info_iterate_next(database_info_handle_t *db)
    return -1;
 }
 
-static int database_info_list_iterate_new(database_state_handle_t *db_state)
+static int database_info_list_iterate_new(database_state_handle_t *db_state, const char *query)
 {
    const char *new_database = db_state->list->elems[db_state->list_index].data;
 #if 0
@@ -136,7 +136,7 @@ static int database_info_list_iterate_new(database_state_handle_t *db_state)
 #endif
    if (db_state->info)
       database_info_list_free(db_state->info);
-   db_state->info = database_info_list_new(new_database, NULL);
+   db_state->info = database_info_list_new(new_database, query);
    return 0;
 }
 
@@ -230,7 +230,12 @@ static int database_info_iterate_crc_lookup(
       return database_info_list_iterate_end_no_match(db_state);
 
    if (db_state->entry_index == 0)
-      database_info_list_iterate_new(db_state);
+   {
+      char query[50];
+      snprintf(query, sizeof(query), "{crc: b\"%08X\"}", swap_if_big32(db_state->crc));
+
+      database_info_list_iterate_new(db_state, query);
+   }
 
    if (db_state->info)
    {
