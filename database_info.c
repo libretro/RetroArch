@@ -226,10 +226,7 @@ static int database_cursor_iterate(libretrodb_cursor_t *cur,
             db_info->publisher = strdup(val->string.buff);
             break;
          case DB_CURSOR_DEVELOPER:
-            {
-               db_info->developer = string_list_new();
-               db_info->developer = string_split(val->string.buff, "|");
-            }
+            db_info->developer = string_split(val->string.buff, "|");
             break;
          case DB_CURSOR_ORIGIN:
             db_info->origin = strdup(val->string.buff);
