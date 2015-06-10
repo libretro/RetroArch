@@ -418,7 +418,7 @@ void menu_entry_get(menu_entry_t *entry, size_t i,
       return;
 
    menu_list_get_at_offset(list, i, &path, &entry_label, &entry->type,
-         NULL);
+         &entry->entry_idx);
 
    cbs = menu_list_get_actiondata_at_offset(list, i);
 
@@ -429,7 +429,7 @@ void menu_entry_get(menu_entry_t *entry, size_t i,
             entry_label, path,
             entry->path, sizeof(entry->path));
 
-   entry->id         = i;
+   entry->idx         = i;
 
    if (path && !use_representation)
       strlcpy(entry->path,  path,        sizeof(entry->path));
@@ -456,7 +456,7 @@ int menu_entry_get_current_id(bool use_representation)
       menu_entry_t entry = {{0}};
       menu_entry_get(&entry, i, NULL, use_representation);
 
-      if (menu_entry_is_currently_selected(entry.id))
+      if (menu_entry_is_currently_selected(entry.idx))
          return i;
    }
 

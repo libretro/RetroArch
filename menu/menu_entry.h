@@ -43,7 +43,8 @@ typedef struct menu_entry
    char  path[PATH_MAX_LENGTH];
    char label[PATH_MAX_LENGTH];
    char value[PATH_MAX_LENGTH];
-   unsigned id;
+   size_t entry_idx;
+   unsigned idx;
    unsigned type;
    unsigned spacing;
 } menu_entry_t;
