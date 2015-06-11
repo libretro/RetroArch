@@ -1873,9 +1873,9 @@ static void xmb_navigation_alphabet(size_t *unused)
 static void xmb_list_insert(file_list_t *list,
       const char *path, const char *unused, size_t list_size)
 {
-   int current = 0, i = list_size;
-   xmb_node_t *node = NULL;
-   xmb_handle_t *xmb = NULL;
+   int current = 0, i  = list_size;
+   xmb_node_t *node    = NULL;
+   xmb_handle_t *xmb   = NULL;
    menu_handle_t *menu = menu_driver_get_ptr();
 
    if (!menu)
@@ -1886,18 +1886,13 @@ static void xmb_list_insert(file_list_t *list,
    if (!list || !xmb)
       return;
 
-   list->list[i].userdata = (xmb_node_t*)calloc(1, sizeof(xmb_node_t));
+   node = (xmb_node_t*)calloc(1, sizeof(xmb_node_t));
 
-   if (!list->list[i].userdata)
+   if (!node)
    {
       RARCH_ERR("XMB node could not be allocated.\n");
       return;
    }
-
-   node = (xmb_node_t*)list->list[i].userdata;
-
-   if (!node)
-      return;
 
    current           = menu->navigation.selection_ptr;
 
@@ -1913,6 +1908,10 @@ static void xmb_list_insert(file_list_t *list,
       node->label_alpha = xmb->item.active.alpha;
       node->zoom        = xmb->item.active.zoom;
    }
+
+   if (list->list[i].userdata)
+      free(list->list[i].userdata);
+   list->list[i].userdata = (xmb_node_t*)node;
 }
 
 static void xmb_list_delete(file_list_t *list,
