@@ -97,6 +97,10 @@ void file_list_get_label_at_offset(const file_list_t *list, size_t index,
 void file_list_set_alt_at_offset(file_list_t *list, size_t index,
       const char *alt);
 
+void file_list_set_userdata(const file_list_t *list, size_t idx, void *ptr);
+
+void file_list_set_actiondata(const file_list_t *list, size_t idx, void *ptr);
+
 void file_list_get_alt_at_offset(const file_list_t *list, size_t index,
       const char **alt);
 

@@ -635,13 +635,7 @@ static void xmb_list_open_new(xmb_handle_t *xmb,
 
 static xmb_node_t *xmb_node_allocate_userdata(xmb_handle_t *xmb, unsigned i)
 {
-   xmb_node_t *node            = NULL;
-   struct item_file *info      = (struct item_file*)&xmb->horizontal_list->list[i];
-
-   if (!info)
-      return NULL;
-
-   node = (xmb_node_t*)calloc(1, sizeof(xmb_node_t));
+   xmb_node_t *node = (xmb_node_t*)calloc(1, sizeof(xmb_node_t));
 
    if (!node)
    {
@@ -658,7 +652,7 @@ static xmb_node_t *xmb_node_allocate_userdata(xmb_handle_t *xmb, unsigned i)
       node->zoom  = xmb->categories.active.zoom;
    }
 
-   info->actiondata = node;
+   file_list_set_actiondata(xmb->horizontal_list, i, node);
 
    return node;
 }
@@ -1920,7 +1914,7 @@ static void xmb_list_insert(file_list_t *list,
       node->zoom        = xmb->item.active.zoom;
    }
 
-   list->list[i].userdata = (xmb_node_t*)node;
+   file_list_set_userdata(list, i, node);
 }
 
 static void xmb_list_delete(file_list_t *list,

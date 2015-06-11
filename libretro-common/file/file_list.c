@@ -182,8 +182,9 @@ void file_list_copy(file_list_t *list, file_list_t *list_old)
       list_old->list[i].type          = list->list[i].type;
       list_old->list[i].directory_ptr = list->list[i].directory_ptr;
       list_old->list[i].entry_idx     = list->list[i].entry_idx;
-      list_old->list[i].userdata      = list->list[i].userdata;
-      list_old->list[i].actiondata    = list->list[i].actiondata;
+
+      file_list_set_actiondata(list_old, i, list->list[i].actiondata);
+      file_list_set_userdata  (list_old, i, list->list[i].userdata);
 
       if (list->list[i].path)
          list_old->list[i].path       = strdup(list->list[i].path);
@@ -280,6 +281,20 @@ void *file_list_get_userdata_at_offset(const file_list_t *list, size_t idx)
    if (!list)
       return NULL;
    return list->list[idx].userdata;
+}
+
+void file_list_set_userdata(const file_list_t *list, size_t idx, void *ptr)
+{
+   if (!list || !ptr)
+      return;
+   list->list[idx].userdata = ptr;
+}
+
+void file_list_set_actiondata(const file_list_t *list, size_t idx, void *ptr)
+{
+   if (!list || !ptr)
+      return;
+   list->list[idx].actiondata = ptr;
 }
 
 void *file_list_get_actiondata_at_offset(const file_list_t *list, size_t idx)
