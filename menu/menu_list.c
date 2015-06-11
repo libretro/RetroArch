@@ -40,7 +40,7 @@ menu_list_t *menu_list_get_ptr(void)
  *
  * Returns: true (1) if entry is a directory, otherwise false (0).
  **/
-static INLINE bool menu_list_elem_is_dir(file_list_t *list,
+static bool menu_list_elem_is_dir(file_list_t *list,
       unsigned offset)
 {
    const char *path  = NULL;
@@ -62,7 +62,7 @@ static INLINE bool menu_list_elem_is_dir(file_list_t *list,
  *
  * Returns: first character of element in file list.
  **/
-static INLINE int menu_list_elem_get_first_char(
+static int menu_list_elem_get_first_char(
       file_list_t *list, unsigned offset)
 {
    int ret;
