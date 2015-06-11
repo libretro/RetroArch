@@ -48,10 +48,6 @@ size_t menu_entries_get_start(void)
 size_t menu_entries_get_end(void)
 {
    menu_list_t *menu_list    = menu_list_get_ptr();
-   
-   if (!menu_list)
-      return 0;
-
    return menu_list_get_size(menu_list);
 }
 
