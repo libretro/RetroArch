@@ -254,18 +254,19 @@ static size_t xmb_list_get_size(void *data, menu_list_type_t type)
 
 static void *xmb_list_get_entry(void *data, menu_list_type_t type, unsigned i)
 {
-    size_t list_size    = 0;
-    menu_handle_t *menu = (menu_handle_t*)data;
-    xmb_handle_t *xmb   = menu ? (xmb_handle_t*)menu->userdata : NULL;
-    void *ptr           = NULL;
+    size_t list_size       = 0;
+    menu_handle_t *menu    = (menu_handle_t*)data;
+    xmb_handle_t *xmb      = menu ? (xmb_handle_t*)menu->userdata : NULL;
+    menu_list_t *menu_list = menu_list_get_ptr();
+    void *ptr              = NULL;
     
     switch (type)
     {
         case MENU_LIST_PLAIN:
-            if (menu && menu->menu_list)
-               list_size  = menu_list_get_stack_size(menu->menu_list);
+            if (menu_list)
+               list_size  = menu_list_get_stack_size(menu_list);
             if (i < list_size)
-               ptr = (void*)&menu->menu_list->menu_stack->list[i];
+               ptr = (void*)&menu_list->menu_stack->list[i];
             break;
         case MENU_LIST_HORIZONTAL:
             if (xmb && xmb->horizontal_list)
