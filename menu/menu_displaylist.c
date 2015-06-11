@@ -1386,7 +1386,7 @@ static int menu_displaylist_parse_horizontal_list(menu_displaylist_info_t *info)
 
    if (path_file_exists(db_path))
       menu_list_push(info->list, path_basename(db_path), "core_database",
-            MENU_FILE_RDB, 0);
+            MENU_FILE_RDB, 0, 0);
 #endif
 #endif
 
