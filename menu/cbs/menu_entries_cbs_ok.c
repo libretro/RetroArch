@@ -162,7 +162,6 @@ static int action_ok_playlist_entry(const char *path,
    const char *core_path        = NULL;
    const char *core_name        = NULL;
    size_t selection_ptr         = 0;
-   size_t playlist_entry_idx    = 0;
    content_playlist_t *playlist = g_defaults.history;
    menu_handle_t *menu          = menu_driver_get_ptr();
    uint32_t hash_label          = djb2_calculate(label);
