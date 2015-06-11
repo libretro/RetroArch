@@ -1909,8 +1909,6 @@ static void xmb_list_insert(file_list_t *list,
       node->zoom        = xmb->item.active.zoom;
    }
 
-   if (list->list[i].userdata)
-      free(list->list[i].userdata);
    list->list[i].userdata = (xmb_node_t*)node;
 }
 
