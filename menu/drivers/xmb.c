@@ -652,6 +652,7 @@ static xmb_node_t *xmb_node_allocate_userdata(xmb_handle_t *xmb, unsigned i)
       node->zoom  = xmb->categories.active.zoom;
    }
 
+   file_list_free_actiondata(xmb->horizontal_list, i);
    file_list_set_actiondata(xmb->horizontal_list, i, node);
 
    return node;
