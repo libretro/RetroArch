@@ -212,7 +212,6 @@ void menu_list_get_at_offset(const file_list_t *list, size_t idx,
    file_list_get_at_offset(list, idx, path, label, file_type, entry_idx);
 }
 
-
 void menu_list_get_last(const file_list_t *list,
       const char **path, const char **label,
       unsigned *file_type, size_t *entry_idx)
@@ -225,8 +224,7 @@ void menu_list_get_last_stack(const menu_list_t *list,
       const char **path, const char **label,
       unsigned *file_type, size_t *entry_idx)
 {
-   if (list)
-      file_list_get_last(list->menu_stack, path, label, file_type, entry_idx);
+   menu_list_get_last(list->menu_stack, path, label, file_type, entry_idx);
 }
 
 menu_file_list_cbs_t *menu_list_get_actiondata_at_offset(const file_list_t *list, size_t idx)
@@ -264,12 +262,12 @@ void menu_list_flush_stack(menu_list_t *list,
       return;
 
    menu_set_refresh();
-   file_list_get_last(list->menu_stack, &path, &label, &type, &entry_idx);
+   menu_list_get_last(list->menu_stack, &path, &label, &type, &entry_idx);
 
    while (menu_list_flush_stack_type(needle, label, type, final_type) != 0)
    {
       menu_list_pop(list->menu_stack, &menu->navigation.selection_ptr);
-      file_list_get_last(list->menu_stack, &path, &label, &type, &entry_idx);
+      menu_list_get_last(list->menu_stack, &path, &label, &type, &entry_idx);
    }
 }
 
@@ -279,7 +277,7 @@ void menu_list_pop_stack(menu_list_t *list)
    if (!menu || !list)
       return;
 
-   if (file_list_get_size(list->menu_stack) <= 1)
+   if (menu_list_get_stack_size(list) <= 1)
       return;
 
    menu_driver_list_cache(MENU_LIST_PLAIN, 0);
@@ -301,12 +299,12 @@ void menu_list_pop_stack_by_needle(menu_list_t *list,
       return;
 
    menu_set_refresh();
-   file_list_get_last(list->menu_stack, &path, &label, &type, &entry_idx);
+   menu_list_get_last(list->menu_stack, &path, &label, &type, &entry_idx);
 
    while (strcmp(needle, label) == 0)
    {
       menu_list_pop(list->menu_stack, &menu->navigation.selection_ptr);
-      file_list_get_last(list->menu_stack, &path, &label, &type, &entry_idx);
+      menu_list_get_last(list->menu_stack, &path, &label, &type, &entry_idx);
    }
 }
 
