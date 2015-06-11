@@ -731,7 +731,8 @@ static void xmb_list_switch_new(xmb_handle_t *xmb,
 
       if (tmp)
       {
-         fill_pathname_noext(path, settings->dynamic_wallpapers_directory, tmp, sizeof(path));
+         fill_pathname_join(path, settings->dynamic_wallpapers_directory, tmp, sizeof(path));
+         path_remove_extension(path);
          free(tmp);
       }
 
