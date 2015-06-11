@@ -856,10 +856,7 @@ static int action_ok_core_deferred_set(const char *path,
    if (!menu)
       return -1;
 
-   if (menu->playlist)
-      content_playlist_free(menu->playlist);
-
-   menu->playlist = content_playlist_init(menu->db_playlist_file, 1000);
+   rarch_assert(menu->playlist != NULL);
 
    core_info_get_name(path, core_display_name, sizeof(core_display_name));
 
@@ -872,8 +869,6 @@ static int action_ok_core_deferred_set(const char *path,
          menu->playlist->entries[idx].db_name);
 
    content_playlist_write_file(menu->playlist);
-   content_playlist_free(menu->playlist);
-   menu->playlist = NULL;
 
    menu_list_pop_stack(menu->menu_list);
 
