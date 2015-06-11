@@ -1421,17 +1421,6 @@ static void xmb_init_horizontal_list(menu_handle_t *menu, xmb_handle_t *xmb)
    strlcpy(info.exts, "lpl", sizeof(info.exts));
 
    menu_displaylist_push_list(&info, DISPLAYLIST_DATABASE_PLAYLISTS);
-
-#if 0
-   unsigned i;
-   unsigned end = file_list_get_size(xmb->horizontal_list);
-
-   for (i = 0; i < end; i++)
-   {
-      struct item_file *item = (struct item_file*)&xmb->horizontal_list->list[i];
-      RARCH_LOG("list[%d] : [label] %s, [path] %s\n", i, item->label, item->path);
-   }
-#endif
 }
 
 static void *xmb_init(void)
@@ -1639,9 +1628,9 @@ static void xmb_context_reset_horizontal_list(xmb_handle_t *xmb,
       char iconpath[PATH_MAX_LENGTH], sysname[PATH_MAX_LENGTH];
       char texturepath[PATH_MAX_LENGTH], content_texturepath[PATH_MAX_LENGTH];
       struct texture_image ti     = {0};
+      struct item_file *info      = NULL;
       xmb_node_t *node            = xmb_get_userdata_from_horizontal_list(
             xmb, i);
-      struct item_file *info      = NULL;
 
       if (!node)
       {
