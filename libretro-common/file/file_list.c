@@ -46,6 +46,8 @@ void file_list_push(file_list_t *list,
    list->list[list->size].label         = NULL;
    list->list[list->size].path          = NULL;
    list->list[list->size].alt           = NULL;
+   list->list[list->size].userdata      = NULL;
+   list->list[list->size].actiondata    = NULL;
    list->list[list->size].type          = type;
    list->list[list->size].directory_ptr = directory_ptr;
    list->list[list->size].entry_idx     = entry_idx;
