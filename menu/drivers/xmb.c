@@ -727,12 +727,11 @@ static void xmb_list_switch_new(xmb_handle_t *xmb,
    if (settings->menu.dynamic_wallpaper_enable)
    {
       char path[PATH_MAX_LENGTH];
-
       char *tmp = string_replace_substring(xmb->title_name, "/", " ");
 
       if (tmp)
       {
-         fill_pathname_join(path, settings->dynamic_wallpapers_directory, tmp, sizeof(path));
+         fill_pathname_noext(path, settings->dynamic_wallpapers_directory, tmp, sizeof(path));
          free(tmp);
       }
 
