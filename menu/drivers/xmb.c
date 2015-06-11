@@ -1552,14 +1552,18 @@ static void *xmb_init(void)
 error:
    if (menu)
       free(menu);
+
    if (xmb)
    {
       if (xmb->menu_stack_old)
          free(xmb->menu_stack_old);
+      xmb->menu_stack_old = NULL;
       if (xmb->selection_buf_old)
          free(xmb->selection_buf_old);
+      xmb->selection_buf_old = NULL;
       if (xmb->horizontal_list)
          free(xmb->horizontal_list);
+      xmb->horizontal_list = NULL;
    }
    return NULL;
 }
@@ -1579,13 +1583,20 @@ static void xmb_free(void *data)
       if (!xmb)
          return;
 
-      free(xmb->menu_stack_old);
-      free(xmb->selection_buf_old);
-      free(xmb->horizontal_list);
+      if (xmb->menu_stack_old)
+         free(xmb->menu_stack_old);
+      xmb->menu_stack_old = NULL;
+      if (xmb->selection_buf_old)
+         free(xmb->selection_buf_old);
+      xmb->selection_buf_old = NULL;
+      if (xmb->horizontal_list)
+         free(xmb->horizontal_list);
+      xmb->horizontal_list = NULL;
 
       gl_coord_array_free(&xmb->raster_block.carr);
 
-      free(menu->userdata);
+      if (menu->userdata)
+         free(menu->userdata);
       menu->userdata = NULL;
    }
 

@@ -527,6 +527,7 @@ static void glui_free(void *data)
 
    if (menu->userdata)
       free(menu->userdata);
+   menu->userdata = NULL;
 }
 
 static void glui_context_bg_destroy(glui_handle_t *glui)
