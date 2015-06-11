@@ -1915,12 +1915,7 @@ static void xmb_list_insert(file_list_t *list,
 static void xmb_list_delete(file_list_t *list,
       size_t idx, size_t list_size)
 {
-   if (!list)
-      return;
-
-   if (list->list[idx].userdata)
-      free(list->list[idx].userdata);
-   list->list[idx].userdata = NULL;
+   file_list_free_userdata(list, idx);
 }
 
 static void xmb_list_cache(menu_list_type_t type, unsigned action)
