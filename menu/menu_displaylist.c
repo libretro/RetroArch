@@ -1359,6 +1359,12 @@ static void menu_displaylist_push_horizontal_menu_list_content(
 }
 #endif
 
+static int menu_displaylist_sort_playlist(const content_playlist_entry_t *a,
+      const content_playlist_entry_t *b)
+{
+   return strcasecmp(a->label, b->label);
+}
+
 static int menu_displaylist_parse_horizontal_list(menu_displaylist_info_t *info)
 {
    char db_path[PATH_MAX_LENGTH];
@@ -1401,6 +1407,8 @@ static int menu_displaylist_parse_horizontal_list(menu_displaylist_info_t *info)
    strlcpy(menu->db_playlist_file, path_playlist, sizeof(menu->db_playlist_file));
    strlcpy(path_playlist, "collection", sizeof(path_playlist));
    playlist = menu->playlist;
+
+   content_playlist_qsort(playlist, menu_displaylist_sort_playlist);
 
    menu_displaylist_parse_playlist(info, playlist, path_playlist, false);
 
