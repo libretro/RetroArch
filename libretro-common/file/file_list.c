@@ -111,6 +111,9 @@ void file_list_free(file_list_t *list)
 
    for (i = 0; i < list->size; i++)
    {
+      file_list_free_userdata(list, i);
+      file_list_free_actiondata(list, i);
+       
       if (list->list[i].path)
          free(list->list[i].path);
       list->list[i].path = NULL;
@@ -284,6 +287,24 @@ void *file_list_get_actiondata_at_offset(const file_list_t *list, size_t idx)
    if (!list)
       return NULL;
    return list->list[idx].actiondata;
+}
+
+void file_list_free_actiondata(const file_list_t *list, size_t idx)
+{
+   if (!list)
+      return;
+   if (list->list[idx].actiondata)
+       free(list->list[idx].actiondata);
+   list->list[idx].actiondata = NULL;
+}
+
+void file_list_free_userdata(const file_list_t *list, size_t idx)
+{
+   if (!list)
+      return;
+   if (list->list[idx].userdata)
+       free(list->list[idx].userdata);
+   list->list[idx].userdata = NULL;
 }
 
 void *file_list_get_last_actiondata(const file_list_t *list)
