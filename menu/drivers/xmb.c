@@ -660,12 +660,7 @@ static xmb_node_t *xmb_node_allocate_userdata(xmb_handle_t *xmb, unsigned i)
 static xmb_node_t* xmb_get_userdata_from_horizontal_list(
       xmb_handle_t *xmb, unsigned i)
 {
-   struct item_file *info = (struct item_file*)&xmb->horizontal_list->list[i];
-
-   if (info)
-      return (xmb_node_t*)info->actiondata;
-
-   return NULL;
+   return (xmb_node_t*)file_list_get_actiondata_at_offset(xmb->horizontal_list, i);
 }
 
 static void xmb_push_animations(xmb_node_t *node, float ia, float ix)
