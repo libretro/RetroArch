@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=1.0
+Name=RetroArch
+Type=Application
+Comment=Multi-Engine Platform
+Icon=retroarch
+Exec=retroarch
+Terminal=false
+StartupNotify=false
+Categories=Game;Emulator;
