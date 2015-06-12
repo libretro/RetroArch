@@ -587,7 +587,7 @@ static void rgui_navigation_clear(bool pending_push)
 
 static void rgui_navigation_set(bool scroll)
 {
-   menu_handle_t *menu = menu_driver_get_ptr();
+   menu_handle_t *menu    = menu_driver_get_ptr();
    menu_navigation_t *nav = menu_navigation_get_ptr();
    if (!menu)
       return;

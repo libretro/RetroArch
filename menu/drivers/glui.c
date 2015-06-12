@@ -368,7 +368,6 @@ static void glui_frame(void)
 
    menu_display_font_bind_block(menu, font_driver, &glui->list_block);
 
-
    glui_render_menu_list(glui, menu, normal_color, hover_color);
 
    menu_display_font_flush_block(menu, font_driver);
@@ -593,8 +592,9 @@ static float glui_get_scroll(void)
 {
    int half;
    unsigned width, height;
-   glui_handle_t *glui = NULL;
-   menu_handle_t *menu = menu_driver_get_ptr();
+   glui_handle_t *glui    = NULL;
+   menu_handle_t *menu    = menu_driver_get_ptr();
+   menu_navigation_t *nav = menu_navigation_get_ptr();
 
    if (!menu || !menu->userdata)
       return 0;
@@ -604,9 +604,9 @@ static float glui_get_scroll(void)
    glui = (glui_handle_t*)menu->userdata;
    half = (height / glui->line_height) / 2;
 
-   if (menu->navigation.selection_ptr < half)
+   if (nav->selection_ptr < half)
       return 0;
-   return ((menu->navigation.selection_ptr + 2 - half) * glui->line_height);
+   return ((nav->selection_ptr + 2 - half) * glui->line_height);
 }
 
 static void glui_navigation_set(bool scroll)
