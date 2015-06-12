@@ -267,140 +267,181 @@ void menu_animation_free(animation_t *animation)
    free(animation);
 }
 
+static struct tween *menu_animation_get_free_slot(animation_t *animation)
+{
+   struct tween *slot = NULL;
+   unsigned i;
+
+   for (i = 0; i < animation->size; ++i)
+   {
+      if (!animation->list[i].alive)
+      {
+         slot = &animation->list[i];
+         memset(slot, 0, sizeof(*slot));
+         break;
+      }
+   }
+
+   if (!slot)
+   {
+      if (animation->size >= animation->capacity)
+      {
+         animation->capacity++;
+         animation->list = (struct tween*)realloc(animation->list,
+               animation->capacity * sizeof(struct tween));
+      }
+
+      slot = &animation->list[animation->size++];
+   }
+
+   return slot;
+}
+
+void menu_animation_kill_by_subject(animation_t *animation, size_t count, const void *subjects)
+{
+   unsigned i, j;
+   float **sub = (float**)subjects;
+
+   for (i = 0; i < animation->size; ++i)
+   {
+      for (j = 0; j < count; ++j)
+      {
+         if (animation->list[i].subject == sub[j])
+         {
+            animation->list[i].alive   = 0;
+            animation->list[i].subject = NULL;
+         }
+      }
+   }
+}
+
 bool menu_animation_push(animation_t *animation,
       float duration, float target_value, float* subject,
       enum animation_easing_type easing_enum, tween_cb cb)
 {
-   if (animation->size >= animation->capacity)
-   {
-      animation->capacity++;
-      animation->list = (struct tween*)realloc(animation->list,
-            animation->capacity * sizeof(struct tween));
-   }
+   struct tween *slot = menu_animation_get_free_slot(animation);
 
-   animation->list[animation->size].alive         = 1;
-   animation->list[animation->size].duration      = duration;
-   animation->list[animation->size].running_since = 0;
-   animation->list[animation->size].initial_value = *subject;
-   animation->list[animation->size].target_value  = target_value;
-   animation->list[animation->size].subject       = subject;
-   animation->list[animation->size].cb            = cb;
+   slot->alive         = 1;
+   slot->duration      = duration;
+   slot->running_since = 0;
+   slot->initial_value = *subject;
+   slot->target_value  = target_value;
+   slot->subject       = subject;
+   slot->cb            = cb;
 
    switch (easing_enum)
    {
       case EASING_LINEAR:
-         animation->list[animation->size].easing        = &easing_linear;
+         slot->easing        = &easing_linear;
          break;
          /* Quad */
       case EASING_IN_QUAD:
-         animation->list[animation->size].easing        = &easing_in_quad;
+         slot->easing        = &easing_in_quad;
          break;
       case EASING_OUT_QUAD:
-         animation->list[animation->size].easing        = &easing_out_quad;
+         slot->easing        = &easing_out_quad;
          break;
       case EASING_IN_OUT_QUAD:
-         animation->list[animation->size].easing        = &easing_in_out_quad;
+         slot->easing        = &easing_in_out_quad;
          break;
       case EASING_OUT_IN_QUAD:
-         animation->list[animation->size].easing        = &easing_out_in_quad;
+         slot->easing        = &easing_out_in_quad;
          break;
          /* Cubic */
       case EASING_IN_CUBIC:
-         animation->list[animation->size].easing        = &easing_in_cubic;
+         slot->easing        = &easing_in_cubic;
          break;
       case EASING_OUT_CUBIC:
-         animation->list[animation->size].easing        = &easing_out_cubic;
+         slot->easing        = &easing_out_cubic;
          break;
       case EASING_IN_OUT_CUBIC:
-         animation->list[animation->size].easing        = &easing_in_out_cubic;
+         slot->easing        = &easing_in_out_cubic;
          break;
       case EASING_OUT_IN_CUBIC:
-         animation->list[animation->size].easing        = &easing_out_in_cubic;
+         slot->easing        = &easing_out_in_cubic;
          break;
          /* Quart */
       case EASING_IN_QUART:
-         animation->list[animation->size].easing        = &easing_in_quart;
+         slot->easing        = &easing_in_quart;
          break;
       case EASING_OUT_QUART:
-         animation->list[animation->size].easing        = &easing_out_quart;
+         slot->easing        = &easing_out_quart;
          break;
       case EASING_IN_OUT_QUART:
-         animation->list[animation->size].easing        = &easing_in_out_quart;
+         slot->easing        = &easing_in_out_quart;
          break;
       case EASING_OUT_IN_QUART:
-         animation->list[animation->size].easing        = &easing_out_in_quart;
+         slot->easing        = &easing_out_in_quart;
          break;
          /* Quint */
       case EASING_IN_QUINT:
-         animation->list[animation->size].easing        = &easing_in_quint;
+         slot->easing        = &easing_in_quint;
          break;
       case EASING_OUT_QUINT:
-         animation->list[animation->size].easing        = &easing_out_quint;
+         slot->easing        = &easing_out_quint;
          break;
       case EASING_IN_OUT_QUINT:
-         animation->list[animation->size].easing        = &easing_in_out_quint;
+         slot->easing        = &easing_in_out_quint;
          break;
       case EASING_OUT_IN_QUINT:
-         animation->list[animation->size].easing        = &easing_out_in_quint;
+         slot->easing        = &easing_out_in_quint;
          break;
          /* Sine */
       case EASING_IN_SINE:
-         animation->list[animation->size].easing        = &easing_in_sine;
+         slot->easing        = &easing_in_sine;
          break;
       case EASING_OUT_SINE:
-         animation->list[animation->size].easing        = &easing_out_sine;
+         slot->easing        = &easing_out_sine;
          break;
       case EASING_IN_OUT_SINE:
-         animation->list[animation->size].easing        = &easing_in_out_sine;
+         slot->easing        = &easing_in_out_sine;
          break;
       case EASING_OUT_IN_SINE:
-         animation->list[animation->size].easing        = &easing_out_in_sine;
+         slot->easing        = &easing_out_in_sine;
          break;
          /* Expo */
       case EASING_IN_EXPO:
-         animation->list[animation->size].easing        = &easing_in_expo;
+         slot->easing        = &easing_in_expo;
          break;
       case EASING_OUT_EXPO:
-         animation->list[animation->size].easing        = &easing_out_expo;
+         slot->easing        = &easing_out_expo;
          break;
       case EASING_IN_OUT_EXPO:
-         animation->list[animation->size].easing        = &easing_in_out_expo;
+         slot->easing        = &easing_in_out_expo;
          break;
       case EASING_OUT_IN_EXPO:
-         animation->list[animation->size].easing        = &easing_out_in_expo;
+         slot->easing        = &easing_out_in_expo;
          break;
          /* Circ */
       case EASING_IN_CIRC:
-         animation->list[animation->size].easing        = &easing_in_circ;
+         slot->easing        = &easing_in_circ;
          break;
       case EASING_OUT_CIRC:
-         animation->list[animation->size].easing        = &easing_out_circ;
+         slot->easing        = &easing_out_circ;
          break;
       case EASING_IN_OUT_CIRC:
-         animation->list[animation->size].easing        = &easing_in_out_circ;
+         slot->easing        = &easing_in_out_circ;
          break;
       case EASING_OUT_IN_CIRC:
-         animation->list[animation->size].easing        = &easing_out_in_circ;
+         slot->easing        = &easing_out_in_circ;
          break;
          /* Bounce */
       case EASING_IN_BOUNCE:
-         animation->list[animation->size].easing        = &easing_in_bounce;
+         slot->easing        = &easing_in_bounce;
          break;
       case EASING_OUT_BOUNCE:
-         animation->list[animation->size].easing        = &easing_out_bounce;
+         slot->easing        = &easing_out_bounce;
          break;
       case EASING_IN_OUT_BOUNCE:
-         animation->list[animation->size].easing        = &easing_in_out_bounce;
+         slot->easing        = &easing_in_out_bounce;
          break;
       case EASING_OUT_IN_BOUNCE:
-         animation->list[animation->size].easing        = &easing_out_in_bounce;
+         slot->easing        = &easing_out_in_bounce;
          break;
       default:
-         animation->list[animation->size].easing        = NULL;
+         slot->easing        = NULL;
          break;
    }
-
-   animation->size++;
 
    return true;
 }
@@ -410,8 +451,12 @@ static int menu_animation_iterate(struct tween *tween, float dt,
 {
    if (!tween)
       return -1;
-   if (tween->running_since >= tween->duration)
+   if (tween->running_since >= tween->duration || !tween->alive)
+   {
+      tween->alive = 0;
+      tween->subject = NULL;
       return -1;
+   }
 
    tween->running_since += dt;
 
