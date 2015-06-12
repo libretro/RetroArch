@@ -229,8 +229,10 @@ static void get_binds(config_file_t *conf, config_file_t *auto_conf,
          {
             if (new_poll.buttons[j] && !old_poll.buttons[j])
             {
+               char key[64] = {0};
+
                fprintf(stderr, "\tJoybutton pressed: %d\n", j);
-               char key[64];
+
                snprintf(key, sizeof(key), "%s_%s_btn",
                      input_config_get_prefix(player_index,
                         input_config_bind_map[i].meta),
@@ -280,15 +282,16 @@ static void get_binds(config_file_t *conf, config_file_t *auto_conf,
 
             if (abs(value) > 20000)
             {
+               char buf[8]  = {0};
+               char key[64] = {0};
+
                last_axis = j;
                fprintf(stderr, "\tJoyaxis moved: Axis %d, Value %d\n",
                      j, value);
 
-               char buf[8];
                snprintf(buf, sizeof(buf),
                      value > 0 ? "+%d" : "-%d", j);
 
-               char key[64];
                snprintf(key, sizeof(key), "%s_%s_axis",
                      input_config_get_prefix(player_index,
                         input_config_bind_map[i].meta),
@@ -325,11 +328,12 @@ static void get_binds(config_file_t *conf, config_file_t *auto_conf,
 
             if (quark)
             {
+               char buf[16] = {0};
+               char key[64] = {0};
+
                fprintf(stderr, "\tJoyhat moved: Hat %d, direction %s\n", j, quark);
-               char buf[16];
                snprintf(buf, sizeof(buf), "h%d%s", j, quark);
 
-               char key[64];
                snprintf(key, sizeof(key), "%s_%s_btn",
                      input_config_get_prefix(player_index,
                         input_config_bind_map[i].meta),

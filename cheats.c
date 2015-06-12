@@ -59,10 +59,10 @@ bool cheat_manager_save(cheat_manager_t *handle, const char *path)
 {
    bool ret;
    unsigned i;
-   char buf[PATH_MAX_LENGTH];
-   char cheats_file[PATH_MAX_LENGTH];
-   config_file_t *conf = NULL;
-   settings_t *settings = config_get_ptr();
+   config_file_t *conf               = NULL;
+   char buf[PATH_MAX_LENGTH]         = {0};
+   char cheats_file[PATH_MAX_LENGTH] = {0};
+   settings_t              *settings = config_get_ptr();
 
    fill_pathname_join(buf, settings->cheat_database,
          path, sizeof(buf));
@@ -87,7 +87,10 @@ bool cheat_manager_save(cheat_manager_t *handle, const char *path)
 
    for (i = 0; i < handle->size; i++)
    {
-      char key[64], desc_key[256], code_key[256], enable_key[256];
+      char key[64]         = {0};
+      char desc_key[256]   = {0};
+      char code_key[256]   = {0};
+      char enable_key[256] = {0};
 
       snprintf(key, sizeof(key), "cheat%u", i);
       snprintf(desc_key, sizeof(desc_key), "cheat%u_desc", i);
@@ -129,9 +132,12 @@ cheat_manager_t *cheat_manager_load(const char *path)
 
    for (i = 0; i < cheats; i++)
    {
-      char key[64], desc_key[256], code_key[256], enable_key[256];
-      char *tmp = NULL;
-      bool tmp_bool = false;
+      char key[64]         = {0};
+      char desc_key[256]   = {0};
+      char code_key[256]   = {0};
+      char enable_key[256] = {0};
+      char *tmp            = NULL;
+      bool tmp_bool        = false;
 
       snprintf(key, sizeof(key), "cheat%u", i);
       snprintf(desc_key, sizeof(desc_key), "cheat%u_desc", i);
@@ -162,8 +168,9 @@ cheat_manager_t *cheat_manager_new(unsigned size)
    if (!handle)
       return NULL;
 
-   handle->buf_size = handle->size = size;
-   handle->cheats = (struct item_cheat*)
+   handle->buf_size = size;
+   handle->size     = size;
+   handle->cheats   = (struct item_cheat*)
       calloc(handle->buf_size, sizeof(struct item_cheat));
 
    if (!handle->cheats)
@@ -240,7 +247,7 @@ void cheat_manager_free(cheat_manager_t *handle)
 
 void cheat_manager_update(cheat_manager_t *handle, unsigned handle_idx)
 {
-   char msg[256];
+   char msg[256] = {0};
 
    if (!handle)
       return;
