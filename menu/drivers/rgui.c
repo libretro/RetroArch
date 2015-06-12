@@ -442,11 +442,13 @@ static void rgui_render(void)
 
    for (; i < end; i++, y += FONT_HEIGHT_STRIDE)
    {
-      char entry_path[PATH_MAX_LENGTH], entry_value[PATH_MAX_LENGTH];
-      char message[PATH_MAX_LENGTH], 
-           entry_title_buf[PATH_MAX_LENGTH], type_str_buf[PATH_MAX_LENGTH];
-      unsigned entry_spacing = menu_entry_get_spacing(i);
-      bool entry_selected    = menu_entry_is_currently_selected(i);
+      char entry_path[PATH_MAX_LENGTH]      = {0};
+      char entry_value[PATH_MAX_LENGTH]     = {0};
+      char message[PATH_MAX_LENGTH]         = {0}; 
+      char entry_title_buf[PATH_MAX_LENGTH] = {0};
+      char type_str_buf[PATH_MAX_LENGTH]    = {0};
+      unsigned entry_spacing                = menu_entry_get_spacing(i);
+      bool entry_selected                   = menu_entry_is_currently_selected(i);
 
       if (i > (menu->navigation.selection_ptr + 100))
          continue;
@@ -586,6 +588,7 @@ static void rgui_navigation_clear(bool pending_push)
 static void rgui_navigation_set(bool scroll)
 {
    menu_handle_t *menu = menu_driver_get_ptr();
+   menu_navigation_t *nav = menu_navigation_get_ptr();
    if (!menu)
       return;
    size_t end = menu_entries_get_end();
@@ -593,12 +596,12 @@ static void rgui_navigation_set(bool scroll)
    if (!scroll)
       return;
 
-   if (menu->navigation.selection_ptr < RGUI_TERM_HEIGHT/2)
+   if (nav->selection_ptr < RGUI_TERM_HEIGHT/2)
       menu->begin = 0;
-   else if (menu->navigation.selection_ptr >= RGUI_TERM_HEIGHT/2
-         && menu->navigation.selection_ptr < (end - RGUI_TERM_HEIGHT/2))
-      menu->begin = menu->navigation.selection_ptr - RGUI_TERM_HEIGHT/2;
-   else if (menu->navigation.selection_ptr >= (end - RGUI_TERM_HEIGHT/2))
+   else if (nav->selection_ptr >= RGUI_TERM_HEIGHT/2
+         && nav->selection_ptr < (end - RGUI_TERM_HEIGHT/2))
+      menu->begin = nav->selection_ptr - RGUI_TERM_HEIGHT/2;
+   else if (nav->selection_ptr >= (end - RGUI_TERM_HEIGHT/2))
       menu->begin = end - RGUI_TERM_HEIGHT;
 }
 
