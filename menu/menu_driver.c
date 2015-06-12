@@ -194,14 +194,13 @@ void  menu_driver_list_delete(file_list_t *list, size_t idx, size_t list_size)
    if (!list)
       return;
 
-   cbs = (menu_file_list_cbs_t*)list->list[idx].actiondata;
+   cbs = (menu_file_list_cbs_t*)file_list_get_actiondata_at_offset(list, idx);
 
    if (cbs)
    {
       memset(cbs, 0, sizeof(*cbs));
-      free(list->list[idx].actiondata);
    }
-   list->list[idx].actiondata = NULL;
+   file_list_free_actiondata(list, idx);
 }
 
 void  menu_driver_list_clear(file_list_t *list)
@@ -231,6 +230,7 @@ void  menu_driver_list_set_selection(file_list_t *list)
 void  menu_driver_list_insert(file_list_t *list, const char *path,
       const char *label, unsigned type, size_t idx)
 {
+   menu_file_list_cbs_t *cbs       = NULL;
    const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
 
    if (!list)
@@ -240,14 +240,16 @@ void  menu_driver_list_insert(file_list_t *list, const char *path,
       driver->list_insert(list, path, label, idx);
 
    file_list_free_actiondata(list, idx);
-   list->list[idx].actiondata = (menu_file_list_cbs_t*)
+   cbs = (menu_file_list_cbs_t*)
       calloc(1, sizeof(menu_file_list_cbs_t));
 
-   if (!list->list[idx].actiondata)
+   if (!cbs)
    {
       RARCH_ERR("Action data could not be allocated.\n");
       return;
    }
+
+   file_list_set_actiondata(list, idx, cbs);
 
    menu_entries_init(list, path, label, type, idx);
 }
