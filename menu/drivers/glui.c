@@ -423,8 +423,9 @@ static void glui_frame(void)
 
    if (menu->keyboard.display)
    {
-      char msg[PATH_MAX_LENGTH];
-      const char *str = *menu->keyboard.buffer;
+      char msg[PATH_MAX_LENGTH] = {0};
+      const char           *str = *menu->keyboard.buffer;
+
       if (!str)
          str = "";
       glui_render_quad(gl, 0, 0, width, height, 0, 0, 0, 0.75);

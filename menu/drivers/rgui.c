@@ -327,17 +327,19 @@ static void rgui_blit_cursor(menu_handle_t *menu)
 
 static void rgui_render(void)
 {
-   size_t i, end;
-   int bottom;
-   char title[256], title_buf[256], title_msg[64];
-   char timedate[PATH_MAX_LENGTH];
    unsigned x, y;
    uint16_t hover_color, normal_color;
-   menu_handle_t *menu      = menu_driver_get_ptr();
-   runloop_t *runloop       = rarch_main_get_ptr();
-   driver_t *driver         = driver_get_ptr();
-   settings_t *settings     = config_get_ptr();
-   uint64_t frame_count     = video_driver_get_frame_count();
+   size_t i, end;
+   int bottom;
+   char title[256]                = {0};
+   char title_buf[256]            = {0};
+   char title_msg[64]             = {0};
+   char timedate[PATH_MAX_LENGTH] = {0};
+   menu_handle_t *menu            = menu_driver_get_ptr();
+   runloop_t *runloop             = rarch_main_get_ptr();
+   driver_t *driver               = driver_get_ptr();
+   settings_t *settings           = config_get_ptr();
+   uint64_t frame_count           = video_driver_get_frame_count();
 
    (void)driver;
 
@@ -489,8 +491,9 @@ static void rgui_render(void)
 
    if (menu->keyboard.display)
    {
-      char msg[PATH_MAX_LENGTH];
-      const char *str = *menu->keyboard.buffer;
+      char msg[PATH_MAX_LENGTH] = {0};
+      const char           *str = *menu->keyboard.buffer;
+
       if (!str)
          str = "";
       snprintf(msg, sizeof(msg), "%s\n%s", menu->keyboard.label, str);

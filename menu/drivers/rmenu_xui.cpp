@@ -158,7 +158,8 @@ HRESULT CRetroArchMain::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
 
    if (XuiHandleIsValid(m_menutitlebottom))
    {
-	   char str[PATH_MAX_LENGTH];
+	   char str[PATH_MAX_LENGTH] = {0};
+
 	   snprintf(str, sizeof(str), "%s - %s", PACKAGE_VERSION, global->title_buf);
 	   mbstowcs(strw_buffer, str, sizeof(strw_buffer) / sizeof(wchar_t));
 	   XuiTextElementSetText(m_menutitlebottom, strw_buffer);
@@ -379,9 +380,9 @@ static void xui_render_message(const char *msg)
 
    for (i = 0; i < list->size; i++, j++)
    {
-      char *msg = (char*)list->elems[i].data;
-      unsigned msglen = strlen(msg);
-      float msg_width = d3d->resolution_hd_enable ? 160 : 100;
+      char *msg        = (char*)list->elems[i].data;
+      unsigned msglen  = strlen(msg);
+      float msg_width  = d3d->resolution_hd_enable ? 160 : 100;
       float msg_height = 120;
       float msg_offset = 32;
 
@@ -531,7 +532,7 @@ static void rmenu_xui_set_list_text(int index, const wchar_t* leftText,
 static void rmenu_xui_render(void)
 {
 	size_t end, i;
-	char title[PATH_MAX_LENGTH];
+	char title[PATH_MAX_LENGTH] = {0};
 	const char *dir = NULL, *label = NULL;
 	unsigned menu_type = 0;
    menu_handle_t *menu  = menu_driver_get_ptr();
@@ -568,8 +569,10 @@ static void rmenu_xui_render(void)
 	end = menu_entries_get_end();
 	for (i = 0; i < end; i++)
    {
-      char entry_path[PATH_MAX_LENGTH], entry_value[PATH_MAX_LENGTH];
-      wchar_t msg_left[PATH_MAX_LENGTH], msg_right[PATH_MAX_LENGTH];
+      char entry_path[PATH_MAX_LENGTH]  = {0};
+      char entry_value[PATH_MAX_LENGTH] = {0};
+      char msg_right[PATH_MAX_LENGTH]   = {0};
+      wchar_t msg_left[PATH_MAX_LENGTH] = {0};
 
       menu_entry_get_value(i, entry_value, sizeof(entry_value));
       menu_entry_get_path(i, entry_path, sizeof(entry_path));
@@ -582,8 +585,9 @@ static void rmenu_xui_render(void)
 
 	if (menu->keyboard.display)
 	{
-		char msg[1024];
+		char msg[1024]  = {0};
 		const char *str = *menu->keyboard.buffer;
+
 		if (!str)
 			str = "";
 		snprintf(msg, sizeof(msg), "%s\n%s", menu->keyboard.label, str);
@@ -629,7 +633,7 @@ static void rmenu_xui_navigation_alphabet(size_t *ptr_out)
 static void rmenu_xui_list_insert(file_list_t *list,
       const char *path, const char *, size_t list_size)
 {
-   wchar_t buf[PATH_MAX_LENGTH];
+   wchar_t buf[PATH_MAX_LENGTH] = {0};
 
    XuiListInsertItems(m_menulist, list_size, 1);
    mbstowcs(buf, path, sizeof(buf) / sizeof(wchar_t));

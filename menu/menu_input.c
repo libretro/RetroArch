@@ -509,13 +509,13 @@ static int menu_input_bind_iterate_keyboard(int64_t current, int timeout)
 int menu_input_bind_iterate(void)
 {
    int64_t current;
-   char msg[PATH_MAX_LENGTH];
    struct menu_bind_state binds;
-   int timeout = 0;
-   menu_handle_t *menu = menu_driver_get_ptr();
-   driver_t *driver = driver_get_ptr();
-   global_t *global = global_get_ptr();
-   bool bind_mode_kb = global ? global->menu.bind_mode_keyboard : false;
+   char msg[PATH_MAX_LENGTH]    = {0};
+   int timeout                  = 0;
+   menu_handle_t *menu          = menu_driver_get_ptr();
+   driver_t *driver             = driver_get_ptr();
+   global_t *global             = global_get_ptr();
+   bool bind_mode_kb            = global ? global->menu.bind_mode_keyboard : false;
 
    if (!menu)
       return 1;

@@ -54,8 +54,9 @@ int menu_entry_go_back(void)
 
 static rarch_setting_t *menu_entry_get_setting(uint32_t i)
 {
-   const char *path = NULL, *entry_label = NULL;
-   unsigned type = 0;
+   unsigned             type = 0;
+   const char          *path = NULL;
+   const char   *entry_label = NULL;
    const char *dir           = NULL;
    const char *label         = NULL;
    menu_list_t *menu_list    = menu_list_get_ptr();
@@ -73,7 +74,7 @@ static rarch_setting_t *menu_entry_get_setting(uint32_t i)
 
 enum menu_entry_type menu_entry_get_type(uint32_t i)
 {
-   rarch_setting_t *setting;
+   rarch_setting_t *setting  = NULL;
    const char *path = NULL, *entry_label = NULL;
    unsigned type = 0;
    const char *dir           = NULL;
