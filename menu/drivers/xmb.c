@@ -1902,7 +1902,7 @@ static void xmb_list_insert(file_list_t *list,
    file_list_set_userdata(list, i, node);
 }
 
-static void xmb_list_delete(file_list_t *list,
+static void xmb_list_free(file_list_t *list,
       size_t idx, size_t list_size)
 {
    file_list_free_userdata(list, idx);
@@ -2122,7 +2122,7 @@ menu_ctx_driver_t menu_ctx_xmb = {
    xmb_navigation_alphabet,
    xmb_navigation_alphabet,
    xmb_list_insert,
-   xmb_list_delete,
+   xmb_list_free,
    NULL,
    xmb_list_cache,
    xmb_list_get_size,

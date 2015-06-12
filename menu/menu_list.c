@@ -162,7 +162,7 @@ static void menu_list_destroy(file_list_t *list)
       goto end;
 
    for (i = 0; i < list->size; i++)
-      menu_driver_list_delete(list, i, list->size);
+      menu_driver_list_free(list, i, list->size);
 
 end:
    if (list)
@@ -315,7 +315,7 @@ void menu_list_pop(file_list_t *list, size_t *directory_ptr)
       goto end;
 
    if (list->size != 0)
-      menu_driver_list_delete(list, list->size - 1, list->size - 1);
+      menu_driver_list_free(list, list->size - 1, list->size - 1);
 
 end:
    file_list_pop(list, directory_ptr);

@@ -183,23 +183,13 @@ const menu_ctx_driver_t *menu_ctx_driver_get_ptr(void)
    return driver->menu_ctx;
 }
 
-void  menu_driver_list_delete(file_list_t *list, size_t idx, size_t list_size)
+void  menu_driver_list_free(file_list_t *list, size_t idx, size_t list_size)
 {
-   menu_file_list_cbs_t *cbs = NULL;
    const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
 
-   if (driver->list_delete)
-      driver->list_delete(list, idx, list_size);
+   if (driver->list_free)
+      driver->list_free(list, idx, list_size);
 
-   if (!list)
-      return;
-
-   cbs = (menu_file_list_cbs_t*)file_list_get_actiondata_at_offset(list, idx);
-
-   if (cbs)
-   {
-      memset(cbs, 0, sizeof(*cbs));
-   }
    file_list_free_actiondata(list, idx);
 }
 

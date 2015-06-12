@@ -634,7 +634,7 @@ static void rmenu_xui_list_insert(file_list_t *list,
    XuiListSetText(m_menulist, list_size, buf);
 }
 
-static void rmenu_xui_list_delete(file_list_t *list, size_t idx,
+static void rmenu_xui_list_free(file_list_t *list, size_t idx,
       size_t list_size)
 {
    int x = XuiListGetItemCount( m_menulist );
@@ -677,7 +677,7 @@ menu_ctx_driver_t menu_ctx_rmenu_xui = {
    rmenu_xui_navigation_alphabet,
    rmenu_xui_navigation_alphabet,
    rmenu_xui_list_insert,
-   rmenu_xui_list_delete,
+   rmenu_xui_list_free,
    rmenu_xui_list_clear,
    NULL,
    NULL,
