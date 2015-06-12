@@ -191,12 +191,7 @@ menu_list_t *menu_list_new(void)
    return list;
 
 error:
-   if (list->menu_stack)
-      free(list->menu_stack);
-   list->menu_stack = NULL;
-   if (list->selection_buf)
-      free(list->selection_buf);
-   list->selection_buf = NULL;
+   menu_list_free(list);
    free(list);
    return NULL;
 }
