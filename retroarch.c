@@ -1131,6 +1131,7 @@ int rarch_main_init(int argc, char *argv[])
       return sjlj_ret;
    }
    global->error_in_init = true;
+   global->log_file = stderr;
    parse_input(argc, argv);
 
    if (global->verbosity)
