@@ -194,18 +194,19 @@ menu_list_t *menu_list_new(void)
    list->selection_buf = (file_list_t*)calloc(1, sizeof(file_list_t));
 
    if (!list->menu_stack || !list->selection_buf)
-   {
-      if (list->menu_stack)
-         free(list->menu_stack);
-      list->menu_stack = NULL;
-      if (list->selection_buf)
-         free(list->selection_buf);
-      list->selection_buf = NULL;
-      free(list);
-      return NULL;
-   }
+      goto error;
 
    return list;
+
+error:
+   if (list->menu_stack)
+      free(list->menu_stack);
+   list->menu_stack = NULL;
+   if (list->selection_buf)
+      free(list->selection_buf);
+   list->selection_buf = NULL;
+   free(list);
+   return NULL;
 }
 
 size_t menu_list_get_stack_size(menu_list_t *list)
