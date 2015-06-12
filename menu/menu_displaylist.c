@@ -1630,9 +1630,9 @@ static int menu_displaylist_parse_generic(menu_displaylist_info_t *info, bool *n
    for (i = 0; i < list_size; i++)
    {
       bool is_dir;
-      const char *path = NULL;
-      char label[PATH_MAX_LENGTH];
-      menu_file_type_t file_type = MENU_FILE_NONE;
+      const char *path            = NULL;
+      char label[PATH_MAX_LENGTH] = {0};
+      menu_file_type_t file_type  = MENU_FILE_NONE;
 
       switch (str_list->elems[i].attr.i)
       {
