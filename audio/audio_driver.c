@@ -230,7 +230,7 @@ const char* config_get_audio_driver_options(void)
 {
    union string_list_elem_attr attr;
    unsigned i;
-   char *options = NULL;
+   char *options   = NULL;
    int options_len = 0;
    struct string_list *options_l = string_list_new();
 
@@ -242,6 +242,7 @@ const char* config_get_audio_driver_options(void)
    for (i = 0; audio_driver_find_handle(i); i++)
    {
       const char *opt = audio_driver_find_ident(i);
+
       options_len += strlen(opt) + 1;
       string_list_append(options_l, opt, attr);
    }

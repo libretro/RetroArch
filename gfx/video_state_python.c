@@ -235,6 +235,7 @@ static char *dupe_newline(const char *str)
 {
    unsigned size;
    char *ret = NULL;
+
    if (!str)
       return NULL;
 
@@ -253,9 +254,11 @@ static char *dupe_newline(const char *str)
 static char *align_program(const char *program)
 {
    size_t prog_size;
-   char *new_prog = NULL, *save = NULL, *line;
+   char *new_prog      = NULL;
+   char *save          = NULL;
+   char *line          = NULL;
    unsigned skip_chars = 0;
-   char *prog = strdup(program);
+   char *prog          = strdup(program);
    if (!prog)
       return NULL;
 
@@ -391,7 +394,7 @@ float py_state_get(py_state_t *handle, const char *id,
 {
    unsigned i;
    float retval;
-   PyObject *ret = NULL;
+   PyObject        *ret = NULL;
    settings_t *settings = config_get_ptr();
 
    for (i = 0; i < MAX_USERS; i++)

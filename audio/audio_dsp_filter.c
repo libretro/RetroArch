@@ -95,8 +95,9 @@ static bool create_filter_graph(rarch_dsp_filter_t *dsp, float sample_rate)
 
    for (i = 0; i < filters; i++)
    {
-      char key[64], name[64];
       struct config_file_userdata userdata;
+      char key[64]                         = {0};
+      char name[64]                        = {0};
       struct dspfilter_info info = { sample_rate };
 
       snprintf(key, sizeof(key), "filter%u", i);
@@ -222,9 +223,9 @@ static bool append_plugs(rarch_dsp_filter_t *dsp, struct string_list *list)
 rarch_dsp_filter_t *rarch_dsp_filter_new(
       const char *filter_config, float sample_rate)
 {
-   char basedir[PATH_MAX_LENGTH];
-   struct string_list *plugs = NULL;
-   rarch_dsp_filter_t *dsp = NULL;
+   char basedir[PATH_MAX_LENGTH] = {0};
+   struct string_list *plugs     = NULL;
+   rarch_dsp_filter_t *dsp       = NULL;
 
    (void)basedir;
    

@@ -26,11 +26,11 @@
 static void x11_hide_mouse(Display *dpy, Window win)
 {
    static char bm_no_data[] = {0, 0, 0, 0, 0, 0, 0, 0};
-
    Cursor no_ptr;
    Pixmap bm_no;
    XColor black, dummy;
    Colormap colormap = DefaultColormap(dpy, DefaultScreen(dpy));
+
    if (!XAllocNamedColor(dpy, colormap, "black", &black, &dummy))
       return;
 
@@ -124,7 +124,7 @@ void x11_set_window_attr(Display *dpy, Window win)
 void x11_suspend_screensaver(Window wnd)
 {
    int ret;
-   char cmd[64];
+   char cmd[64] = {0};
 
    RARCH_LOG("Suspending screensaver (X11).\n");
 
