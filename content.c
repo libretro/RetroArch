@@ -94,8 +94,9 @@ static bool read_content_file(unsigned i, const char *path, void **buf,
 static void dump_to_file_desperate(const void *data,
       size_t size, unsigned type)
 {
-   char path[PATH_MAX_LENGTH], timebuf[PATH_MAX_LENGTH];
    time_t time_;
+   char path[PATH_MAX_LENGTH]    = {0};
+   char timebuf[PATH_MAX_LENGTH] = {0};
 #if defined(_WIN32) && !defined(_XBOX)
    const char *base = getenv("APPDATA");
 #elif defined(__CELLOS_LV2__) || defined(_XBOX)
@@ -142,8 +143,8 @@ struct sram_block
  **/
 bool save_state(const char *path)
 {
-   bool ret = false;
-   void *data = NULL;
+   bool ret    = false;
+   void *data  = NULL;
    size_t size = pretro_serialize_size();
 
    RARCH_LOG("Saving state: \"%s\".\n", path);
@@ -356,12 +357,13 @@ static bool load_content_need_fullpath(
       bool need_fullpath, const char *path)
 {
 #ifdef HAVE_COMPRESSION
-   char new_path[PATH_MAX_LENGTH], new_basedir[PATH_MAX_LENGTH];
    ssize_t len;
    union string_list_elem_attr attributes;
-   bool ret             = false;
-   settings_t *settings = config_get_ptr();
-   global_t   *global   = global_get_ptr();
+   char new_path[PATH_MAX_LENGTH]    = {0};
+   char new_basedir[PATH_MAX_LENGTH] = {0};
+   bool ret                          = false;
+   settings_t *settings              = config_get_ptr();
+   global_t   *global                = global_get_ptr();
 
    if (global->system.info.block_extract)
       return true;
@@ -601,7 +603,7 @@ bool init_content_file(void)
 
       if (ext && !strcasecmp(ext, "zip"))
       {
-         char temporary_content[PATH_MAX_LENGTH];
+         char temporary_content[PATH_MAX_LENGTH] = {0};
 
          strlcpy(temporary_content, content->elems[i].data,
                sizeof(temporary_content));

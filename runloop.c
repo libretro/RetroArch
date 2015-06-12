@@ -123,8 +123,8 @@ static void check_fast_forward_button(bool fastforward_pressed,
  **/
 static void check_stateslots(bool pressed_increase, bool pressed_decrease)
 {
-   char msg[PATH_MAX_LENGTH];
-   settings_t *settings     = config_get_ptr();
+   char msg[PATH_MAX_LENGTH] = {0};
+   settings_t *settings      = config_get_ptr();
 
    /* Save state slots */
    if (pressed_increase)
@@ -243,7 +243,8 @@ static void check_slowmotion(bool slowmotion_pressed)
 
 static bool check_movie_init(void)
 {
-   char path[PATH_MAX_LENGTH], msg[PATH_MAX_LENGTH];
+   char path[PATH_MAX_LENGTH]   = {0};
+   char msg[PATH_MAX_LENGTH]    = {0};
    bool ret                     = true;
    settings_t *settings         = config_get_ptr();
    global_t *global             = global_get_ptr();
@@ -353,8 +354,9 @@ static bool check_movie(void)
  **/
 static void check_shader_dir(bool pressed_next, bool pressed_prev)
 {
-   char msg[PATH_MAX_LENGTH];
-   const char *shader = NULL, *ext = NULL;
+   char msg[PATH_MAX_LENGTH]   = {0};
+   const char *shader          = NULL;
+   const char *ext             = NULL;
    enum rarch_shader_type type = RARCH_SHADER_NONE;
    global_t *global            = global_get_ptr();
 

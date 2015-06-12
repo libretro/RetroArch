@@ -575,8 +575,8 @@ static void log_connection(const struct sockaddr_storage *their_addr,
       const struct sockaddr_in *v4;
       const struct sockaddr_in6 *v6;
    } u;
-   const char *str = NULL;
-   char buf_v4[INET_ADDRSTRLEN] = {0};
+   const char *str               = NULL;
+   char buf_v4[INET_ADDRSTRLEN]  = {0};
    char buf_v6[INET6_ADDRSTRLEN] = {0};
 
    u.storage = their_addr;
@@ -610,7 +610,7 @@ static void log_connection(const struct sockaddr_storage *their_addr,
 
    if (str)
    {
-      char msg[512];
+      char msg[512] = {0};
       snprintf(msg, sizeof(msg), "Got connection from: \"%s (%s)\" (#%u)",
             nick, str, slot);
       rarch_main_msg_queue_push(msg, 1, 180, false);
@@ -679,10 +679,10 @@ end:
 static bool init_tcp_socket(netplay_t *netplay, const char *server,
       uint16_t port, bool spectate)
 {
-   char port_buf[16];
-   bool ret = false;
+   char port_buf[16]               = {0};
+   bool ret                        = false;
    const struct addrinfo *tmp_info = NULL;
-   struct addrinfo hints, *res = NULL;
+   struct addrinfo hints, *res     = NULL;
 
    memset(&hints, 0, sizeof(hints));
 
@@ -734,8 +734,8 @@ static bool init_tcp_socket(netplay_t *netplay, const char *server,
 static bool init_udp_socket(netplay_t *netplay, const char *server,
       uint16_t port)
 {
-   char port_buf[16];
-   struct addrinfo hints;
+   char port_buf[16]     = {0};
+   struct addrinfo hints = {0};
 
    memset(&hints, 0, sizeof(hints));
 #if defined(_WIN32) || defined(HAVE_SOCKET_LEGACY)

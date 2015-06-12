@@ -96,7 +96,7 @@ void fill_pathname_expand_special(char *out_path,
             )
    {
       size_t src_size;
-      char application_dir[PATH_MAX_LENGTH];
+      char application_dir[PATH_MAX_LENGTH] = {0};
 
       fill_pathname_application_path(application_dir, sizeof(application_dir));
       path_basedir(application_dir);
@@ -119,8 +119,8 @@ void fill_pathname_abbreviate_special(char *out_path,
 {
 #if !defined(RARCH_CONSOLE)
    unsigned i;
-   char application_dir[PATH_MAX_LENGTH];
-   const char *home = getenv("HOME");
+   char application_dir[PATH_MAX_LENGTH] = {0};
+   const char                      *home = getenv("HOME");
 
    fill_pathname_application_path(application_dir, sizeof(application_dir));
    path_basedir(application_dir);
@@ -199,7 +199,7 @@ void fill_pathname_application_path(char *buf, size_t size)
 #else
    *buf = '\0';
    pid_t pid = getpid(); 
-   char link_path[PATH_MAX_LENGTH];
+   char link_path[PATH_MAX_LENGTH] = {0};
    /* Linux, BSD and Solaris paths. Not standardized. */
    static const char *exts[] = { "exe", "file", "path/a.out" };
    for (i = 0; i < ARRAY_SIZE(exts); i++)

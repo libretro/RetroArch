@@ -410,8 +410,9 @@ uint64_t rarch_get_cpu_features(void)
    const unsigned MAX_FEATURES = \
          sizeof(" MMX MMXEXT SSE SSE2 SSE3 SSSE3 SS4 SSE4.2 AES AVX AVX2 NEON VMX VMX128 VFPU PS");
    char buf[MAX_FEATURES];
-   memset(buf, 0, MAX_FEATURES);
 
+   memset(buf, 0, MAX_FEATURES);
+   
    (void)flags;
 
 #if defined(CPU_X86)

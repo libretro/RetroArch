@@ -117,7 +117,7 @@ static void print_features(void)
  **/
 static void print_help(void)
 {
-   char str[PATH_MAX_LENGTH];
+   char str[PATH_MAX_LENGTH] = {0};
 
    puts("===================================================================");
 #ifdef HAVE_GIT_VERSION
@@ -840,8 +840,8 @@ static void rarch_init_savefile_paths(void)
    }
    else
    {
-      char savefile_name_rtc[PATH_MAX_LENGTH];
       union string_list_elem_attr attr;
+      char savefile_name_rtc[PATH_MAX_LENGTH] = {0};
 
       attr.i = RETRO_MEMORY_SAVE_RAM;
       string_list_append(global->savefiles, global->savefile_name, attr);
@@ -1333,11 +1333,11 @@ void rarch_main_deinit(void)
  **/
 void rarch_playlist_load_content(void *data, unsigned idx)
 {
-   const char *path      = NULL;
-   const char *core_path = NULL;
+   const char *path             = NULL;
+   const char *core_path        = NULL;
    content_playlist_t *playlist = (content_playlist_t*)data;
-   menu_handle_t *menu   = menu_driver_get_ptr();
-   settings_t  *settings = config_get_ptr();
+   menu_handle_t *menu          = menu_driver_get_ptr();
+   settings_t  *settings        = config_get_ptr();
 
    if (!playlist)
       return;
@@ -1375,11 +1375,11 @@ int rarch_defer_core(core_info_list_t *core_info, const char *dir,
       const char *path, const char *menu_label,
       char *s, size_t len)
 {
-   char new_core_path[PATH_MAX_LENGTH];
-   const core_info_t *info = NULL;
-   size_t supported        = 0;
-   settings_t *settings    = config_get_ptr();
-   global_t   *global      = global_get_ptr();
+   char new_core_path[PATH_MAX_LENGTH] = {0};
+   const core_info_t *info             = NULL;
+   size_t supported                    = 0;
+   settings_t *settings                = config_get_ptr();
+   global_t   *global                  = global_get_ptr();
 
    fill_pathname_join(s, dir, path, len);
 

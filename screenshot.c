@@ -177,13 +177,13 @@ end:
 
 static bool take_screenshot_viewport(void)
 {
-   char screenshot_path[PATH_MAX_LENGTH];
-   const char *screenshot_dir = NULL;
-   uint8_t *buffer = NULL;
-   bool retval = false;
-   struct video_viewport vp = {0};
-   settings_t *settings = config_get_ptr();
-   global_t *global     = global_get_ptr();
+   char screenshot_path[PATH_MAX_LENGTH] = {0};
+   const char *screenshot_dir            = NULL;
+   uint8_t *buffer                       = NULL;
+   bool retval                           = false;
+   struct video_viewport vp              = {0};
+   settings_t *settings                  = config_get_ptr();
+   global_t *global                      = global_get_ptr();
 
    video_driver_viewport_info(&vp);
 
@@ -222,11 +222,11 @@ static bool take_screenshot_raw(void)
 {
    unsigned width, height;
    size_t pitch;
-   char screenshot_path[PATH_MAX_LENGTH];
-   global_t *global           = global_get_ptr();
-   const void *data = NULL;
-   settings_t *settings       = config_get_ptr();
-   const char *screenshot_dir = NULL;
+   char screenshot_path[PATH_MAX_LENGTH] = {0};
+   const void *data                      = NULL;
+   const char *screenshot_dir            = NULL;
+   global_t *global                      = global_get_ptr();
+   settings_t *settings                  = config_get_ptr();
 
    video_driver_cached_frame_get(data, &width, &height, &pitch);
    
@@ -254,9 +254,9 @@ static bool take_screenshot_raw(void)
  **/
 bool take_screenshot(void)
 {
-   bool viewport_read = false;
-   bool ret = true;
-   const char *msg = NULL;
+   bool viewport_read   = false;
+   bool ret             = true;
+   const char *msg      = NULL;
    runloop_t *runloop   = rarch_main_get_ptr();
    driver_t *driver     = driver_get_ptr();
    settings_t *settings = config_get_ptr();
@@ -343,13 +343,13 @@ bool take_screenshot(void)
 bool screenshot_dump(const char *folder, const void *frame,
       unsigned width, unsigned height, int pitch, bool bgr24)
 {
-   char filename[PATH_MAX_LENGTH];
-   char shotname[PATH_MAX_LENGTH];
-   struct scaler_ctx scaler = {0};
-   FILE *file          = NULL;
-   uint8_t *out_buffer = NULL;
-   bool ret            = false;
-   driver_t *driver    = driver_get_ptr();
+   char filename[PATH_MAX_LENGTH] = {0};
+   char shotname[PATH_MAX_LENGTH] = {0};
+   struct scaler_ctx scaler       = {0};
+   FILE *file                     = NULL;
+   uint8_t *out_buffer            = NULL;
+   bool ret                       = false;
+   driver_t *driver               = driver_get_ptr();
 
    (void)file;
    (void)out_buffer;

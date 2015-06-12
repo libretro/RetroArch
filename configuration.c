@@ -835,10 +835,11 @@ static void config_set_defaults(void)
  **/
 static config_file_t *open_default_config_file(void)
 {
-   char conf_path[PATH_MAX_LENGTH], app_path[PATH_MAX_LENGTH];
-   config_file_t *conf = NULL;
-   bool saved = false;
-   global_t *global = global_get_ptr();
+   char conf_path[PATH_MAX_LENGTH] = {0};
+   char app_path[PATH_MAX_LENGTH]  = {0};
+   config_file_t *conf             = NULL;
+   bool saved                      = false;
+   global_t *global                = global_get_ptr();
 
    (void)conf_path;
    (void)app_path;
@@ -961,9 +962,9 @@ static config_file_t *open_default_config_file(void)
    {
       if (home || xdg)
       {
-         /* Try to create a new config file. */
+         char basedir[PATH_MAX_LENGTH] = {0};
 
-         char basedir[PATH_MAX_LENGTH];
+         /* Try to create a new config file. */
 
          /* XDG_CONFIG_HOME falls back to $HOME/.config. */
          if (xdg)
@@ -982,7 +983,8 @@ static config_file_t *open_default_config_file(void)
 
          if (path_mkdir(basedir))
          {
-            char skeleton_conf[PATH_MAX_LENGTH];
+            char skeleton_conf[PATH_MAX_LENGTH] = {0};
+
             fill_pathname_join(skeleton_conf, GLOBAL_CONFIG_DIR,
                   "retroarch.cfg", sizeof(skeleton_conf));
             conf = config_file_new(skeleton_conf);
@@ -1138,15 +1140,17 @@ static void config_file_dump_all(config_file_t *conf)
 static bool config_load_file(const char *path, bool set_defaults)
 {
    unsigned i;
-   char *save, tmp_str[PATH_MAX_LENGTH];
-   char tmp_append_path[PATH_MAX_LENGTH]; /* Don't destroy append_config_path. */
-   const char *extra_path;
+   char *save                            = NULL;
+   const char *extra_path                = NULL;
+   char tmp_str[PATH_MAX_LENGTH]         = {0};
+   char tmp_append_path[PATH_MAX_LENGTH] = {0}; /* Don't destroy append_config_path. */
    int vp_width = 0, vp_height = 0, vp_x = 0, vp_y = 0; 
-   unsigned msg_color = 0;
-   config_file_t *conf = NULL;
-   settings_t *settings = config_get_ptr();
-   global_t   *global   = global_get_ptr();
-   video_viewport_t *custom_vp = (video_viewport_t*)video_viewport_get_custom();
+   unsigned msg_color                    = 0;
+   config_file_t *conf                   = NULL;
+   settings_t *settings                  = config_get_ptr();
+   global_t   *global                    = global_get_ptr();
+   video_viewport_t *custom_vp           = (video_viewport_t*)
+      video_viewport_get_custom();
 
    if (path)
    {
@@ -1346,7 +1350,7 @@ static bool config_load_file(const char *path, bool set_defaults)
 
    for (i = 0; i < MAX_USERS; i++)
    {
-      char buf[64];
+      char buf[64] = {0};
       snprintf(buf, sizeof(buf), "input_player%u_joypad_index", i + 1);
       CONFIG_GET_INT_BASE(conf, settings, input.joypad_map[i], buf);
 
@@ -1686,12 +1690,12 @@ static void config_load_core_specific(void)
 
    if (settings->core_specific_config)
    {
+      char tmp[PATH_MAX_LENGTH] = {0};
 
-	  /* Toggle has_save_path to false so it resets */
-	  global->has_set_save_path = false;
-	  global->has_set_state_path = false;
+      /* Toggle has_save_path to false so it resets */
+      global->has_set_save_path = false;
+      global->has_set_state_path = false;
 
-      char tmp[PATH_MAX_LENGTH];
       strlcpy(tmp, settings->libretro, sizeof(tmp));
       RARCH_LOG("Loading core-specific config from: %s.\n",
             global->core_specific_config_path);
@@ -1706,9 +1710,9 @@ static void config_load_core_specific(void)
       /* This must be true for core specific configs. */
       settings->core_specific_config = true;
 
-	  /* Reset save paths */
-	  global->has_set_save_path = true;
-	  global->has_set_state_path = true;
+      /* Reset save paths */
+      global->has_set_save_path = true;
+      global->has_set_state_path = true;
    }
 }
 
@@ -1730,14 +1734,15 @@ static void config_load_core_specific(void)
  */
 bool config_load_override(void)
 {
-   char config_directory[PATH_MAX_LENGTH],   /* path to the directory containing retroarch.cfg (prefix)    */
-        core_path[PATH_MAX_LENGTH],          /* final path for core-specific configuration (prefix+suffix) */
-        game_path[PATH_MAX_LENGTH];          /* final path for game-specific configuration (prefix+suffix) */
-   config_file_t *new_conf;
-   const char *core_name, *game_name;        /* suffix                                                     */
-   bool should_append   = false;
-   global_t *global     = global_get_ptr();
-   settings_t *settings = config_get_ptr();
+   char config_directory[PATH_MAX_LENGTH] = {0}; /* path to the directory containing retroarch.cfg (prefix)    */
+   char core_path[PATH_MAX_LENGTH]        = {0}; /* final path for core-specific configuration (prefix+suffix) */
+   char game_path[PATH_MAX_LENGTH]        = {0}; /* final path for game-specific configuration (prefix+suffix) */
+   config_file_t *new_conf                = NULL;
+   const char *core_name                  = NULL;
+   const char *game_name                  = NULL;
+   bool should_append                     = false;
+   global_t *global                       = global_get_ptr();
+   settings_t *settings                   = config_get_ptr();
 
    /* Early return in case a library isn't loaded */
    if (!global->system.info.library_name || !strcmp(global->system.info.library_name,"No Core"))
@@ -1822,7 +1827,7 @@ bool config_load_override(void)
    /* Re-load the configuration with any overrides that might have been found */
    if (should_append)
    {
-      char buf[PATH_MAX_LENGTH];
+      char buf[PATH_MAX_LENGTH] = {0};
 
       if (settings->core_specific_config)
       {
@@ -1912,13 +1917,14 @@ bool config_load_override(void)
  */
 bool config_load_remap(void)
 {
-   config_file_t *new_conf;
-   char remap_directory[PATH_MAX_LENGTH],    /* path to the directory containing retroarch.cfg (prefix)    */
-        core_path[PATH_MAX_LENGTH],          /* final path for core-specific configuration (prefix+suffix) */
-        game_path[PATH_MAX_LENGTH];          /* final path for game-specific configuration (prefix+suffix) */
-   const char *core_name, *game_name;        /* suffix                                                     */
-   global_t *global = global_get_ptr();      /* global pointer                                             */
-   settings_t *settings = config_get_ptr();  /* config pointer                                             */
+   config_file_t *new_conf                 = NULL;
+   const char *core_name                   = NULL;
+   const char *game_name                   = NULL;
+   char remap_directory[PATH_MAX_LENGTH]   = {0};    /* path to the directory containing retroarch.cfg (prefix)    */
+   char core_path[PATH_MAX_LENGTH]         = {0};    /* final path for core-specific configuration (prefix+suffix) */
+   char game_path[PATH_MAX_LENGTH]         = {0};    /* final path for game-specific configuration (prefix+suffix) */
+   global_t *global                        = global_get_ptr();
+   settings_t *settings                    = config_get_ptr();
 
    /* Early return in case a library isn't loaded or remapping is disabled */
    if (!global->system.info.library_name || !strcmp(global->system.info.library_name,"No Core"))
@@ -2040,7 +2046,8 @@ static bool config_read_keybinds(const char *path)
 static void save_keybind_key(config_file_t *conf, const char *prefix,
       const char *base, const struct retro_keybind *bind)
 {
-   char key[64], btn[64];
+   char key[64] = {0};
+   char btn[64] = {0};
 
    snprintf(key, sizeof(key), "%s_%s", prefix, base);
    input_keymaps_translate_rk_to_str(bind->key, btn, sizeof(btn));
@@ -2050,9 +2057,9 @@ static void save_keybind_key(config_file_t *conf, const char *prefix,
 static void save_keybind_hat(config_file_t *conf, const char *key,
       const struct retro_keybind *bind)
 {
-   char config[16];
-   unsigned hat = GET_HAT(bind->joykey);
-   const char *dir = NULL;
+   char config[16]  = {0};
+   unsigned hat     = GET_HAT(bind->joykey);
+   const char *dir  = NULL;
 
    switch (GET_HAT_DIR(bind->joykey))
    {
@@ -2083,7 +2090,8 @@ static void save_keybind_hat(config_file_t *conf, const char *key,
 static void save_keybind_joykey(config_file_t *conf, const char *prefix,
       const char *base, const struct retro_keybind *bind)
 {
-   char key[64];
+   char key[64] = {0};
+
    snprintf(key, sizeof(key), "%s_%s_btn", prefix, base);
 
    if (bind->joykey == NO_BTN)
@@ -2097,9 +2105,10 @@ static void save_keybind_joykey(config_file_t *conf, const char *prefix,
 static void save_keybind_axis(config_file_t *conf, const char *prefix,
       const char *base, const struct retro_keybind *bind)
 {
-   char key[64], config[16];
-   unsigned axis = 0;
-   char dir = '\0';
+   char key[64]    = {0};
+   char config[16] = {0};
+   unsigned axis   = 0;
+   char dir        = '\0';
 
    snprintf(key, sizeof(key), "%s_%s_axis", prefix, base);
 
@@ -2207,8 +2216,8 @@ void config_load(void)
  **/
 bool config_save_keybinds_file(const char *path)
 {
-   unsigned i = 0;
-   bool ret = false;
+   unsigned          i = 0;
+   bool            ret = false;
    config_file_t *conf = config_file_new(path);
 
    if (!conf)
@@ -2237,8 +2246,8 @@ bool config_save_keybinds_file(const char *path)
  **/
 bool config_save_file(const char *path)
 {
-   unsigned i = 0;
-   bool ret = false;
+   unsigned i           = 0;
+   bool ret             = false;
    config_file_t *conf  = config_file_new(path);
    settings_t *settings = config_get_ptr();
    global_t   *global   = global_get_ptr();
@@ -2544,7 +2553,7 @@ bool config_save_file(const char *path)
          settings->input.keyboard_layout);
    for (i = 0; i < MAX_USERS; i++)
    {
-      char cfg[64];
+      char cfg[64] = {0};
 
       snprintf(cfg, sizeof(cfg), "input_device_p%u", i + 1);
       config_set_int(conf, cfg, settings->input.device[i]);

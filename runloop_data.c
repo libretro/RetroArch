@@ -326,9 +326,9 @@ void rarch_main_data_msg_queue_push(unsigned type,
       const char *msg, const char *msg2,
       unsigned prio, unsigned duration, bool flush)
 {
-   char new_msg[PATH_MAX_LENGTH];
-   msg_queue_t *queue = NULL;
-   data_runloop_t *runloop = rarch_main_data_get_ptr();
+   char new_msg[PATH_MAX_LENGTH] = {0};
+   msg_queue_t *queue            = NULL;
+   data_runloop_t *runloop       = rarch_main_data_get_ptr();
 
    switch(type)
    {

@@ -153,13 +153,13 @@ error:
 int read_compressed_file(const char * path, void **buf,
       const char* optional_filename, ssize_t *length)
 {
-   const char* file_ext;
-   char archive_path[PATH_MAX_LENGTH], *archive_found = NULL;
+   const char* file_ext               = NULL;
+   char *archive_found                = NULL;
+   char archive_path[PATH_MAX_LENGTH] = {0};
 
    if (optional_filename)
    {
-      /* Safety check.
-       * If optional_filename and optional_filename 
+      /* Safety check.  * If optional_filename and optional_filename 
        * exists, we simply return 0,
        * hoping that optional_filename is the 
        * same as requested.

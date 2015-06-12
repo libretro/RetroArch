@@ -390,7 +390,7 @@ static void load_symbols(bool is_dummy)
 void libretro_get_current_core_pathname(char *name, size_t size)
 {
    size_t i;
-   const char *id = NULL;
+   const char                *id = NULL;
    struct retro_system_info info = {0};
 
    if (size == 0)
@@ -596,18 +596,19 @@ bool rarch_environment_cb(unsigned cmd, void *data)
             core_option_free(global->system.core_options);
          }
 
-         const struct retro_variable *vars = 
-            (const struct retro_variable*)data;
-
-         const char *options_path = settings->core_options_path;
-         char buf[PATH_MAX_LENGTH];
-         if (!*options_path && *global->config_path)
          {
-            fill_pathname_resolve_relative(buf, global->config_path,
-                  "retroarch-core-options.cfg", sizeof(buf));
-            options_path = buf;
+            const struct retro_variable *vars = (const struct retro_variable*)data;
+            char buf[PATH_MAX_LENGTH]         = {0};
+            const char *options_path          = settings->core_options_path;
+
+            if (!*options_path && *global->config_path)
+            {
+               fill_pathname_resolve_relative(buf, global->config_path,
+                     "retroarch-core-options.cfg", sizeof(buf));
+               options_path = buf;
+            }
+            global->system.core_options = core_option_new(options_path, vars);
          }
-         global->system.core_options = core_option_new(options_path, vars);
 
          break;
       }

@@ -321,11 +321,11 @@ size_t content_playlist_size(content_playlist_t *playlist)
 static bool content_playlist_read_file(
       content_playlist_t *playlist, const char *path)
 {
-   char buf[PLAYLIST_ENTRIES][1024];
    unsigned i;
-   content_playlist_entry_t *entry = NULL;
-   char *last = NULL;
-   FILE *file = fopen(path, "r");
+   char buf[PLAYLIST_ENTRIES][1024] = {0};
+   content_playlist_entry_t *entry  = NULL;
+   char *last                       = NULL;
+   FILE *file                       = fopen(path, "r");
 
    /* If playlist file does not exist,
     * create an empty playlist instead.
