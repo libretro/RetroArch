@@ -34,7 +34,7 @@ static int zlib_extract_core_callback(const char *name, const char *valid_exts,
       const uint8_t *cdata, unsigned cmode, uint32_t csize, uint32_t size,
       uint32_t crc32, void *userdata)
 {
-   char path[PATH_MAX_LENGTH];
+   char path[PATH_MAX_LENGTH] = {0};
 
    /* Make directory */
    fill_pathname_join(path, (const char*)userdata, name, sizeof(path));
@@ -75,9 +75,10 @@ error:
 
 static int cb_core_updater_download(void *data, size_t len)
 {
-   const char* file_ext = NULL;
-   char output_path[PATH_MAX_LENGTH], msg[PATH_MAX_LENGTH];
-   settings_t *settings = config_get_ptr();
+   const char             *file_ext  = NULL;
+   char output_path[PATH_MAX_LENGTH] = {0};
+   char msg[PATH_MAX_LENGTH]         = {0};
+   settings_t              *settings = config_get_ptr();
 
    if (!data)
       return -1;
@@ -192,7 +193,7 @@ static int cb_http_conn_default(void *data_, size_t len)
  **/
 static int rarch_main_data_http_iterate_poll(http_handle_t *http)
 {
-   char elem0[PATH_MAX_LENGTH];
+   char elem0[PATH_MAX_LENGTH]  = {0};
    struct string_list *str_list = NULL;
    const char *url              = msg_queue_pull(http->msg_queue);
 
@@ -250,7 +251,7 @@ static int rarch_main_data_http_iterate_transfer(void *data)
         
         if (percent > 0)
         {
-            char tmp[PATH_MAX_LENGTH];
+            char tmp[PATH_MAX_LENGTH] = {0};
             snprintf(tmp, sizeof(tmp), "Download progress: %d%%", percent);
             data_runloop_osd_msg(tmp, sizeof(tmp));
         }

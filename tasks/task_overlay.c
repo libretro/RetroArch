@@ -23,7 +23,7 @@
 void rarch_main_data_overlay_image_upload_iterate(bool is_thread, void *data)
 {
    data_runloop_t *runloop = (data_runloop_t*)data;
-   driver_t *driver = driver_get_ptr();
+   driver_t        *driver = driver_get_ptr();
 
    if (rarch_main_is_idle())
       return;

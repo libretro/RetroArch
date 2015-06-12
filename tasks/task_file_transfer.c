@@ -385,7 +385,8 @@ static int cb_nbio_image_menu_boxart(void *data, size_t len)
 
 static int rarch_main_data_nbio_iterate_poll(nbio_handle_t *nbio)
 {
-   char elem0[PATH_MAX_LENGTH], elem1[PATH_MAX_LENGTH];
+   char elem0[PATH_MAX_LENGTH]  = {0};
+   char elem1[PATH_MAX_LENGTH]  = {0};
    struct nbio_t* handle        = NULL;
    struct string_list *str_list = NULL;
    const char *path             = NULL;
@@ -472,9 +473,7 @@ static int rarch_main_data_nbio_iterate_transfer(nbio_handle_t *nbio)
 
 static int rarch_main_data_nbio_iterate_parse_free(nbio_handle_t *nbio)
 {
-   if (!nbio)
-      return -1;
-   if (!nbio->is_finished)
+   if (!nbio || !nbio->is_finished)
       return -1;
 
    nbio_free(nbio->handle);

@@ -48,7 +48,8 @@ static int zlib_compare_crc32(const char *name, const char *valid_exts,
 static int database_info_iterate_start
 (database_info_handle_t *db, const char *name)
 {
-   char msg[PATH_MAX_LENGTH];
+   char msg[PATH_MAX_LENGTH] = {0};
+
    snprintf(msg, sizeof(msg),
 #ifdef _WIN32
 	   "%Iu/%Iu: Scanning %s...\n",
@@ -73,7 +74,7 @@ static int database_info_iterate_playlist(
       database_state_handle_t *db_state,
       database_info_handle_t *db, const char *name)
 {
-   char parent_dir[PATH_MAX_LENGTH];
+   char parent_dir[PATH_MAX_LENGTH] = {0};
 
    path_parent_dir(parent_dir);
 
@@ -153,10 +154,10 @@ static int database_info_list_iterate_found_match(
       const char *zip_name
       )
 {
-   char db_crc[PATH_MAX_LENGTH];
-   char db_playlist_path[PATH_MAX_LENGTH];
-   char  db_playlist_base_str[PATH_MAX_LENGTH];
-   char entry_path_str[PATH_MAX_LENGTH];
+   char db_crc[PATH_MAX_LENGTH]                = {0};
+   char db_playlist_path[PATH_MAX_LENGTH]      = {0};
+   char  db_playlist_base_str[PATH_MAX_LENGTH] = {0};
+   char entry_path_str[PATH_MAX_LENGTH]        = {0};
    const char *db_playlist_base = NULL;
    content_playlist_t *playlist = NULL;
    settings_t *settings = config_get_ptr();
@@ -231,7 +232,7 @@ static int database_info_iterate_crc_lookup(
 
    if (db_state->entry_index == 0)
    {
-      char query[50];
+      char query[50] = {0};
       snprintf(query, sizeof(query), "{crc: b\"%08X\"}", swap_if_big32(db_state->crc));
 
       database_info_list_iterate_new(db_state, query);
@@ -319,7 +320,8 @@ static int database_info_iterate(database_state_handle_t *state, database_info_h
 
 static int database_info_poll(db_handle_t *db)
 {
-   char elem0[PATH_MAX_LENGTH], elem1[PATH_MAX_LENGTH];
+   char elem0[PATH_MAX_LENGTH]  = {0};
+   char elem1[PATH_MAX_LENGTH]  = {0};
    struct string_list *str_list = NULL;
    const char *path = msg_queue_pull(db->msg_queue);
 
