@@ -7045,8 +7045,21 @@ static bool setting_append_list_input_player_options(
 
 void menu_setting_free(rarch_setting_t *list)
 {
-   if (list)
-      free(list);
+   if (!list)
+      return;
+
+   rarch_setting_t *setting = list;
+
+   for (; setting->type != ST_NONE; setting++)
+   {
+      if (setting->flags & SD_FLAG_IS_DRIVER)
+      {
+         if (setting->values)
+            free((void*)setting->values);
+      }
+   }
+
+   free(list);
 }
 
 /**
