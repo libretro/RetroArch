@@ -78,8 +78,8 @@ bool menu_entries_show_back(void)
 void menu_entries_get_core_title(char *s, size_t len)
 {
    global_t *global          = global_get_ptr();
-   const char *core_name     = global->menu.info.library_name;
-   const char *core_version  = global->menu.info.library_version;
+   const char *core_name     = global ? global->menu.info.library_name    : NULL;
+   const char *core_version  = global ? global->menu.info.library_version : NULL;
 
    if (!core_name)
       core_name = global->system.info.library_name;
