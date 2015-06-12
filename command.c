@@ -56,9 +56,10 @@ struct rarch_cmd
 #if defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)
 static bool cmd_init_network(rarch_cmd_t *handle, uint16_t port)
 {
-   char port_buf[16];
-   struct addrinfo hints, *res = NULL;
-   int yes = 1;
+   struct addrinfo hints = {0};
+   char port_buf[16]     = {0};
+   struct addrinfo *res  = NULL;
+   int yes               = 1;
 
    if (!network_init())
       return false;
@@ -66,7 +67,6 @@ static bool cmd_init_network(rarch_cmd_t *handle, uint16_t port)
    RARCH_LOG("Bringing up command interface on port %hu.\n",
          (unsigned short)port);
 
-   memset(&hints, 0, sizeof(hints));
 #if defined(_WIN32) || defined(HAVE_SOCKET_LEGACY)
    hints.ai_family   = AF_INET;
 #else
@@ -217,9 +217,9 @@ static const struct cmd_map map[] = {
 
 static bool cmd_set_shader(const char *arg)
 {
-   char msg[PATH_MAX_LENGTH];
+   char msg[PATH_MAX_LENGTH]   = {0};
    enum rarch_shader_type type = RARCH_SHADER_NONE;
-   const char *ext = path_get_extension(arg);
+   const char             *ext = path_get_extension(arg);
 
    if (strcmp(ext, "glsl") == 0 || strcmp(ext, "glslp") == 0)
       type = RARCH_SHADER_GLSL;
@@ -522,13 +522,13 @@ void rarch_cmd_poll(rarch_cmd_t *handle)
 static bool send_udp_packet(const char *host,
       uint16_t port, const char *msg)
 {
-   char port_buf[16];
-   struct addrinfo hints, *res = NULL;
+   char port_buf[16]           = {0};
+   struct addrinfo hints       = {0};
+   struct addrinfo *res        = NULL;
    const struct addrinfo *tmp  = NULL;
-   int fd = -1;
-   bool ret = true;
+   int fd                      = -1;
+   bool ret                    = true;
 
-   memset(&hints, 0, sizeof(hints));
 #if defined(_WIN32) || defined(HAVE_SOCKET_LEGACY)
    hints.ai_family   = AF_INET;
 #else
@@ -603,7 +603,7 @@ bool network_cmd_send(const char *cmd_)
    const char *port_   = NULL;
    global_t *global    = global_get_ptr();
    bool old_verbose    = global->verbosity;
-   uint16_t port = DEFAULT_NETWORK_CMD_PORT;
+   uint16_t port       = DEFAULT_NETWORK_CMD_PORT;
 
    if (!network_init())
       return false;

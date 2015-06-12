@@ -887,10 +887,10 @@ static bool get_nickname(netplay_t *netplay, int fd)
 static bool send_info(netplay_t *netplay)
 {
    unsigned sram_size;
-   char msg[512];
-   void *sram = NULL;
-   uint32_t header[3];
-   global_t *global = global_get_ptr();
+   char msg[512]      = {0};
+   void *sram         = NULL;
+   uint32_t header[3] = {0};
+   global_t *global   = global_get_ptr();
    
    header[0] = htonl(global->content_crc);
    header[1] = htonl(implementation_magic_value());
@@ -1057,11 +1057,11 @@ static bool bsv_parse_header(const uint32_t *header, uint32_t magic)
 
 static bool get_info_spectate(netplay_t *netplay)
 {
-   void *buf;
    size_t save_state_size, size;
-   uint32_t header[4];
-   char msg[512];
-   bool ret = true;
+   void *buf          = NULL;
+   uint32_t header[4] = {0};
+   char msg[512]      = {0};
+   bool ret           = true;
 
    if (!send_nickname(netplay, netplay->fd))
    {
@@ -1587,7 +1587,7 @@ static void netplay_post_frame_spectate(netplay_t *netplay)
 
    for (i = 0; i < MAX_SPECTATORS; i++)
    {
-      char msg[PATH_MAX_LENGTH];
+      char msg[PATH_MAX_LENGTH] = {0};
 
       if (netplay->spectate_fds[i] == -1)
          continue;

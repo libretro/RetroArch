@@ -182,7 +182,7 @@ static int database_cursor_iterate(libretrodb_cursor_t *cur,
 {
    unsigned i;
    struct rmsgpack_dom_value item;
-   const char* str;
+   const char* str                = NULL;
 
    if (libretrodb_cursor_read_item(cur, &item) != 0)
       return -1;
