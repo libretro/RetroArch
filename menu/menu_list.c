@@ -339,13 +339,8 @@ end:
 
 void menu_list_clear(file_list_t *list)
 {
-   driver_t *driver = driver_get_ptr();
-   if (!driver->menu_ctx)
-      goto end;
-
    menu_driver_list_clear(list);
 
-end:
    if (list)
       file_list_clear(list);
 }
