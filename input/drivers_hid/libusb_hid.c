@@ -498,7 +498,10 @@ static void *libusb_hid_init(void)
    if (!libusb_has_capability(LIBUSB_CAP_HAS_HOTPLUG))
       goto error;
 
-   hid->slots = (joypad_connection_t*)pad_connection_init(MAX_USERS);
+   hid->slots = pad_connection_init(MAX_USERS);
+
+   if (!hid->slots)
+      goto error;
 
    count = libusb_get_device_list(NULL, &devices);
 

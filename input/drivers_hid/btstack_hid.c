@@ -833,7 +833,10 @@ static void *btstack_hid_init(void)
    if (!hid)
       goto error;
 
-   hid->slots = (joypad_connection_t*)pad_connection_init(MAX_USERS);
+   hid->slots = pad_connection_init(MAX_USERS);
+
+   if (!hid->slots)
+      goto error;
 
    return hid;
 

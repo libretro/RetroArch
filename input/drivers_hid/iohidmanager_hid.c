@@ -425,8 +425,10 @@ static void *iohidmanager_hid_init(void)
    if (iohidmanager_hid_manager_set_device_matching(hid_apple) == -1)
       goto error;
 
-   hid_apple->slots = (joypad_connection_t*)pad_connection_init(MAX_USERS);
+   hid_apple->slots = pad_connection_init(MAX_USERS);
 
+   if (!hid_apple->slots)
+      goto error;
 
    return hid_apple;
 

@@ -35,7 +35,7 @@ int pad_connection_find_vacant_pad(joypad_connection_t *joyconn)
    return -1;
 }
 
-void *pad_connection_init(unsigned pads)
+joypad_connection_t *pad_connection_init(unsigned pads)
 {
    int i;
    joypad_connection_t *joyconn = (joypad_connection_t*)
