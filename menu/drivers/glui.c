@@ -337,11 +337,11 @@ static void glui_frame(void)
    menu_handle_t *menu                     = menu_driver_get_ptr();
    settings_t *settings                    = config_get_ptr();
    uint64_t frame_count                    = video_driver_get_frame_count();
-   const uint32_t normal_color  = FONT_COLOR_ARGB_TO_RGBA(
+   const uint32_t normal_color             = FONT_COLOR_ARGB_TO_RGBA(
          settings->menu.entry_normal_color);
-   const uint32_t hover_color   = FONT_COLOR_ARGB_TO_RGBA(
+   const uint32_t hover_color              = FONT_COLOR_ARGB_TO_RGBA(
          settings->menu.entry_hover_color);
-   const uint32_t title_color   = FONT_COLOR_ARGB_TO_RGBA(
+   const uint32_t title_color              = FONT_COLOR_ARGB_TO_RGBA(
          settings->menu.title_color);
 
    if (!menu || !menu->userdata)
