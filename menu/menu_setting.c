@@ -3407,6 +3407,7 @@ static void general_write_handler(void *data)
    if (!(menu_settings_list_append(list, list_info, setting_hex_setting(NAME, SHORT, &TARGET, DEF, group_info, subgroup_info, parent_group, CHANGE_HANDLER, READ_HANDLER)))) return false; \
 }
 
+/* Please strdup() NAME and SHORT */
 #define CONFIG_BIND(TARGET, PLAYER, PLAYER_OFFSET, NAME, SHORT, DEF, group_info, subgroup_info, parent_group) \
 { \
    if (!(menu_settings_list_append(list, list_info, setting_bind_setting  (NAME, SHORT, &TARGET, PLAYER, PLAYER_OFFSET, DEF, group_info, subgroup_info, parent_group)))) return false; \
@@ -5249,7 +5250,7 @@ static bool setting_append_list_input_hotkey_options(
          continue;
 
       CONFIG_BIND(settings->input.binds[0][i], 0, 0,
-            keybind->base, keybind->desc, &retro_keybinds_1[i],
+            strdup(keybind->base), strdup(keybind->desc), &retro_keybinds_1[i],
             group_info.name, subgroup_info.name, parent_group);
       menu_settings_list_current_add_bind_type(list, list_info, i + MENU_SETTINGS_BIND_BEGIN);
    }
@@ -7056,6 +7057,12 @@ void menu_setting_free(rarch_setting_t *list)
       {
          if (setting->values)
             free((void*)setting->values);
+      }
+
+      if (setting->type == ST_BIND)
+      {
+         free((void*)setting->name);
+         free((void*)setting->short_description);
       }
    }
 
