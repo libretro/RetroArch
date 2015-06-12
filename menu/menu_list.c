@@ -176,6 +176,10 @@ void menu_list_free(menu_list_t *menu_list)
 
    menu_list_free_list(menu_list->menu_stack);
    menu_list_free_list(menu_list->selection_buf);
+
+   menu_list->menu_stack    = NULL;
+   menu_list->selection_buf = NULL;
+
    free(menu_list);
 }
 
@@ -191,6 +195,12 @@ menu_list_t *menu_list_new(void)
 
    if (!list->menu_stack || !list->selection_buf)
    {
+      if (list->menu_stack)
+         free(list->menu_stack);
+      list->menu_stack = NULL;
+      if (list->selection_buf)
+         free(list->selection_buf);
+      list->selection_buf = NULL;
       free(list);
       return NULL;
    }
