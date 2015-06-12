@@ -332,7 +332,7 @@ static int cb_nbio_generic(nbio_handle_t *nbio, size_t *len)
 
    if (!ptr)
    {
-      free(nbio->image.handle);
+      rpng_nbio_load_image_free(nbio->image.handle);
       nbio->image.handle = NULL;
       nbio->image.cb     = NULL;
 
