@@ -49,17 +49,8 @@ typedef struct menu_entry
    unsigned spacing;
 } menu_entry_t;
 
-size_t menu_entries_get_start(void);
-
-size_t menu_entries_get_end(void);
-
-int menu_entries_get_title(char *title, size_t title_len);
-
-bool menu_entries_show_back(void);
 
 int menu_entry_go_back(void);
-
-void menu_entries_get_core_title(char *title_msg, size_t title_msg_len);
 
 enum menu_entry_type menu_entry_get_type(uint32_t i);
 
@@ -124,6 +115,16 @@ int menu_entry_select(uint32_t i);
 
 int menu_entry_action(menu_entry_t *entry,
                       unsigned i, enum menu_action action);
+
+size_t menu_entries_get_start(void);
+
+size_t menu_entries_get_end(void);
+
+int menu_entries_get_title(char *title, size_t title_len);
+
+bool menu_entries_show_back(void);
+
+void menu_entries_get_core_title(char *title_msg, size_t title_msg_len);
 
 #ifdef __cplusplus
 }

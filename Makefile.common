@@ -337,6 +337,7 @@ ifeq ($(HAVE_MENU_COMMON), 1)
    OBJ += menu/menu_input.o \
 			 menu/menu.o \
 			 menu/menu_entry.o \
+			 menu/menu_entries.o \
 			 menu/menu_navigation.o  \
 			 menu/menu_setting.o \
 			 menu/menu_shader.o \
