@@ -1569,7 +1569,7 @@ static void xmb_free(void *data)
          free(xmb->menu_stack_old);
       xmb->menu_stack_old = NULL;
       if (xmb->selection_buf_old)
-         free(xmb->selection_buf_old);
+         file_list_free(xmb->selection_buf_old);
       xmb->selection_buf_old = NULL;
       if (xmb->horizontal_list)
          file_list_free(xmb->horizontal_list);
