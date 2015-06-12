@@ -322,7 +322,7 @@ static bool content_playlist_read_file(
       content_playlist_t *playlist, const char *path)
 {
    unsigned i;
-   char buf[PLAYLIST_ENTRIES][1024] = {0};
+   char buf[PLAYLIST_ENTRIES][1024] = {{0}};
    content_playlist_entry_t *entry  = NULL;
    char *last                       = NULL;
    FILE *file                       = fopen(path, "r");

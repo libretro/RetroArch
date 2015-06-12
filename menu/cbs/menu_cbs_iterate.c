@@ -165,7 +165,7 @@ static int action_iterate_help(char *s, size_t len, const char *label)
       RETRO_DEVICE_ID_JOYPAD_X,
       RETRO_DEVICE_ID_JOYPAD_Y,
    };
-   char desc[ARRAY_SIZE(binds)][64] = {0};
+   char desc[ARRAY_SIZE(binds)][64] = {{0}};
    menu_handle_t *menu              = menu_driver_get_ptr();
    settings_t *settings             = config_get_ptr();
 
