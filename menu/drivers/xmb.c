@@ -1905,7 +1905,6 @@ static void xmb_list_insert(file_list_t *list,
 static void xmb_list_free(file_list_t *list,
       size_t idx, size_t list_size)
 {
-   file_list_free_userdata(list, idx);
 }
 
 static void xmb_list_cache(menu_list_type_t type, unsigned action)

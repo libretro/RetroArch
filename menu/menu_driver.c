@@ -190,6 +190,7 @@ void  menu_driver_list_free(file_list_t *list, size_t idx, size_t list_size)
    if (driver->list_free)
       driver->list_free(list, idx, list_size);
 
+   file_list_free_userdata  (list, idx);
    file_list_free_actiondata(list, idx);
 }
 
