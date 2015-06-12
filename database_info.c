@@ -98,11 +98,22 @@ static void database_info_build_query_add_colon(char *s, size_t len)
    strlcat(s, "':", len);
 }
 
+static void database_info_build_query_add_glob_open(char *s, size_t len)
+{
+   strlcat(s, "glob('*", len);
+}
+
+static void database_info_build_query_add_glob_close(char *s, size_t len)
+{
+   strlcat(s, "*')", len);
+}
+
 int database_info_build_query(char *s, size_t len,
       const char *label, const char *path)
 {
    uint32_t value  = 0;
    bool add_quotes = true;
+   bool add_glob   = false;
 
    database_info_build_query_add_bracket_open(s, len);
 
@@ -118,6 +129,8 @@ int database_info_build_query(char *s, size_t len,
          break;
       case DB_QUERY_ENTRY_DEVELOPER:
          strlcat(s, "developer", len);
+         add_glob = true;
+         add_quotes = false;
          break;
       case DB_QUERY_ENTRY_ORIGIN:
          strlcat(s, "origin", len);
@@ -173,12 +186,20 @@ int database_info_build_query(char *s, size_t len,
    }
 
    database_info_build_query_add_colon(s, len);
+   if (add_glob)
+      database_info_build_query_add_glob_open(s, len);
    if (add_quotes)
       database_info_build_query_add_quote(s, len);
    strlcat(s, path, len);
+   if (add_glob)
+      database_info_build_query_add_glob_close(s, len);
    if (add_quotes)
       database_info_build_query_add_quote(s, len);
    database_info_build_query_add_bracket_close(s, len);
+
+#if 0
+   RARCH_LOG("query: %s\n", s);
+#endif
 
    return 0;
 }
