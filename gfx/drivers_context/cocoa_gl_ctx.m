@@ -388,7 +388,7 @@ static bool cocoagl_gfx_ctx_get_metrics(void *data, enum display_metric_types ty
 #else
 	float   scale                 = 1.0f;
 #endif
-    float   dpi                   = (display_width/ physical_width) * 25.4f * scale * 3.0f;
+    float   dpi                   = (display_width/ physical_width) * 25.4f * scale;
 #elif defined(HAVE_COCOATOUCH)
     float   scale                 = cocoagl_gfx_ctx_get_native_scale();
     CGRect  screen_rect           = [[UIScreen mainScreen] bounds];
