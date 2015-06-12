@@ -153,18 +153,10 @@ void menu_list_refresh(file_list_t *list)
 static void menu_list_free_list(file_list_t *list)
 {
    unsigned i;
-   driver_t *driver = driver_get_ptr();
-
-   if (!list)
-      return;
-
-   if (!driver->menu_ctx)
-      goto end;
 
    for (i = 0; i < list->size; i++)
       menu_driver_list_free(list, i, list->size);
 
-end:
    if (list)
       file_list_free(list);
 }
@@ -321,18 +313,10 @@ void menu_list_pop_stack_by_needle(menu_list_t *list,
 
 void menu_list_pop(file_list_t *list, size_t *directory_ptr)
 {
-   driver_t *driver = driver_get_ptr();
-   if (!driver->menu_ctx)
-      goto end;
-
    if (list->size != 0)
       menu_driver_list_free(list, list->size - 1, list->size - 1);
 
-end:
    file_list_pop(list, directory_ptr);
-
-   if (!driver->menu_ctx)
-      return;
 
    menu_driver_list_set_selection(list);
 }
