@@ -88,8 +88,10 @@ static bool parse_variable(core_option_manager_t *opt, size_t idx,
       const struct retro_variable *var)
 {
    size_t i;
-   const char *val_start;
-   char *value, *desc_end, *config_val = NULL;
+   const char *val_start      = NULL;
+   char *value                = NULL;
+   char *desc_end             = NULL;
+   char *config_val           = NULL;
    struct core_option *option = (struct core_option*)&opt->opts[idx];
 
    if (!option)
@@ -149,9 +151,10 @@ core_option_manager_t *core_option_new(const char *conf_path,
       const struct retro_variable *vars)
 {
    const struct retro_variable *var;
-   size_t size = 0;
-   core_option_manager_t *opt = (core_option_manager_t*)
+   size_t size                      = 0;
+   core_option_manager_t *opt       = (core_option_manager_t*)
       calloc(1, sizeof(*opt));
+
    if (!opt)
       return NULL;
 
@@ -173,8 +176,8 @@ core_option_manager_t *core_option_new(const char *conf_path,
       goto error;
 
    opt->size = size;
+   size      = 0;
 
-   size = 0;
    for (var = vars; var->key && var->value; size++, var++)
    {
       if (!parse_variable(opt, size, var))
