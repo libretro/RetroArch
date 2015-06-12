@@ -87,24 +87,6 @@ bool menu_entries_show_back(void)
    return (menu_list_get_stack_size(menu_list) > 1);
 }
 
-/* Clicks the back button */
-int menu_entry_go_back(void)
-{
-   menu_list_t *menu_list = menu_list_get_ptr();
-   if (!menu_list)
-      return -1;
-
-   menu_setting_apply_deferred();
-   menu_list_pop_stack(menu_list);
-
-   if (menu_needs_refresh())
-      menu_do_refresh(MENU_ACTION_CANCEL);
-
-   rarch_main_data_iterate();
-
-   return 0;
-}
-
 /* Sets 's' to the name of the current core 
  * (shown at the top of the UI). */
 void menu_entries_get_core_title(char *s, size_t len)
@@ -126,6 +108,25 @@ void menu_entries_get_core_title(char *s, size_t len)
    snprintf(s, len, "%s - %s %s", PACKAGE_VERSION,
          core_name, core_version);
 }
+
+/* Clicks the back button */
+int menu_entry_go_back(void)
+{
+   menu_list_t *menu_list = menu_list_get_ptr();
+   if (!menu_list)
+      return -1;
+
+   menu_setting_apply_deferred();
+   menu_list_pop_stack(menu_list);
+
+   if (menu_needs_refresh())
+      menu_do_refresh(MENU_ACTION_CANCEL);
+
+   rarch_main_data_iterate();
+
+   return 0;
+}
+
 
 static rarch_setting_t *menu_entry_get_setting(uint32_t i)
 {
