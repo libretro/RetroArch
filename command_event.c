@@ -1550,7 +1550,7 @@ bool event_command(enum event_command cmd)
          if (!global)
             break;
 
-         if (global->log_file)
+         if (global->log_file && global->log_file != stderr)
             fclose(global->log_file);
          global->log_file = NULL;
          break;

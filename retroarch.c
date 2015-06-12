@@ -53,9 +53,29 @@
 #endif
 #endif
 
+/* Descriptive names for options without short variant. Please keep the name in
+   sync with the option name. Order does not matter. */
+enum {
+   RA_OPT_MENU,
+   RA_OPT_PORT,
+   RA_OPT_SPECTATE,
+   RA_OPT_NICK,
+   RA_OPT_COMMAND,
+   RA_OPT_APPENDCONFIG,
+   RA_OPT_BPS,
+   RA_OPT_IPS,
+   RA_OPT_NO_PATCH,
+   RA_OPT_RECORDCONFIG,
+   RA_OPT_SIZE,
+   RA_OPT_FEATURES,
+   RA_OPT_VERSION,
+   RA_OPT_EOF_EXIT,
+   RA_OPT_LOG_FILE,
+};
+
 #include "config.features.h"
 
-#define _PSUPP(var, name, desc) printf("\t%s:\n\t\t%s: %s\n", name, desc, _##var##_supp ? "yes" : "no")
+#define _PSUPP(var, name, desc) printf("  %s:\n\t\t%s: %s\n", name, desc, _##var##_supp ? "yes" : "no")
 static void print_features(void)
 {
    puts("");
@@ -110,16 +130,10 @@ static void print_features(void)
 }
 #undef _PSUPP
 
-/**
- * print_help:
- *
- * Prints help message explaining RetroArch's commandline switches.
- **/
-static void print_help(void)
+static void print_version(void)
 {
    char str[PATH_MAX_LENGTH] = {0};
 
-   puts("===================================================================");
 #ifdef HAVE_GIT_VERSION
    printf(RETRO_FRONTEND ": Frontend for libretro -- v" PACKAGE_VERSION " -- %s --\n", rarch_git_version);
 #else
@@ -128,63 +142,86 @@ static void print_help(void)
    rarch_info_get_capabilities(RARCH_CAPABILITIES_COMPILER, str, sizeof(str));
    fprintf(stdout, "%s", str);
    fprintf(stdout, "Built: %s\n", __DATE__);
+}
+
+/**
+ * print_help:
+ *
+ * Prints help message explaining RetroArch's commandline switches.
+ **/
+static void print_help(const char *arg0)
+{
    puts("===================================================================");
-   puts("Usage: retroarch [content file] [options...]");
-   puts("\t-h/--help: Show this help message.");
-   puts("\t--menu: Do not require content or libretro core to be loaded, starts directly in menu.");
-   puts("\t\tIf no arguments are passed to " RETRO_FRONTEND ", it is equivalent to using --menu as only argument.");
-   puts("\t--features: Prints available features compiled into " RETRO_FRONTEND ".");
-   puts("\t-s/--save: Path for save file (*.srm).");
-   puts("\t-f/--fullscreen: Start " RETRO_FRONTEND " in fullscreen regardless of config settings.");
-   puts("\t-S/--savestate: Path to use for save states. If not selected, *.state will be assumed.");
-   puts("\t-c/--config: Path for config file." RARCH_DEFAULT_CONF_PATH_STR);
-   puts("\t--appendconfig: Extra config files are loaded in, and take priority over config selected in -c (or default).");
-   puts("\t\tMultiple configs are delimited by '|'.");
+   print_version();
+   puts("===================================================================");
+
+   printf("Usage: %s [OPTIONS]... [FILE]\n", arg0);
+
+   puts("  -h, --help            Show this help message.");
+   puts("  -v, --verbose         Verbose logging.");
+   puts("      --log-file=FILE   Log " RETRO_FRONTEND " messages to FILE.");
+   puts("      --version         Show " RETRO_FRONTEND " version.");
+   puts("      --features        Prints available features compiled into " RETRO_FRONTEND ".");
+   puts("      --menu            Do not require content or libretro core to be loaded,\n"
+        "                        starts directly in menu. If no arguments are passed to\n"
+        "                        " RETRO_FRONTEND ", it is equivalent to using --menu as only argument.");
+   puts("  -s, --save=PATH       Path for save files (*.srm).");
+   puts("  -S, --savestate=PATH  Path for the save state files (*.state).");
+   puts("  -f, --fullscreen      Start " RETRO_FRONTEND " in fullscreen regardless of config settings.");
+   puts("  -c, --config=FILE     Path for config file." RARCH_DEFAULT_CONF_PATH_STR);
+   puts("      --appendconfig=FILE\n"
+        "                        Extra config files are loaded in, and take priority over\n"
+        "                        config selected in -c (or default). Multiple configs are\n"
+        "                        delimited by '|'.");
 #ifdef HAVE_DYNAMIC
-   puts("\t-L/--libretro: Path to libretro implementation. Overrides any config setting.");
+   puts("  -L, --libretro=FILE   Path to libretro implementation. Overrides any config setting.");
 #endif
-   puts("\t--subsystem: Use a subsystem of the libretro core. Multiple content files are loaded as multiple arguments.");
-   puts("\t\tIf a content file is skipped, use a blank (\"\") command line argument");
-   puts("\t\tContent must be loaded in an order which depends on the particular subsystem used.");
-   puts("\t\tSee verbose log output to learn how a particular subsystem wants content to be loaded.");
+   puts("      --subsystem=NAME  Use a subsystem of the libretro core. Multiple content\n"
+        "                        files are loaded as multiple arguments. If a content\n"
+        "                        file is skipped, use a blank (\"\") command line argument.\n"
+        "                        Content must be loaded in an order which depends on the\n"
+        "                        particular subsystem used. See verbose log output to learn\n"
+        "                        how a particular subsystem wants content to be loaded.\n");
 
-   printf("\t-N/--nodevice: Disconnects controller device connected to port (1 to %d).\n", MAX_USERS);
-   printf("\t-A/--dualanalog: Connect a DualAnalog controller to port (1 to %d).\n", MAX_USERS);
-   printf("\t-d/--device: Connect a generic device into port of the device (1 to %d).\n", MAX_USERS);
-   puts("\t\tFormat is port:ID, where ID is an unsigned number corresponding to the particular device.\n");
+   printf("  -N, --nodevice=PORT\n"
+          "                        Disconnects controller device connected to PORT (1 to %d).\n", MAX_USERS);
+   printf("  -A, --dualanalog=PORT\n"
+          "                        Connect a DualAnalog controller to PORT (1 to %d).\n", MAX_USERS);
+   printf("  -d, --device=PORT:ID\n"
+          "                        Connect a generic device into PORT of the device (1 to %d).\n", MAX_USERS);
+   puts("                        Format is PORT:ID, where ID is a number corresponding to the particular device.");
 
-   puts("\t-P/--bsvplay: Playback a BSV movie file.");
-   puts("\t-R/--bsvrecord: Start recording a BSV movie file from the beginning.");
-   puts("\t--eof-exit: Exit upon reaching the end of the BSV movie file.");
-   puts("\t-M/--sram-mode: Takes an argument telling how SRAM should be handled in the session.");
-   puts("\t\t{no,}load-{no,}save describes if SRAM should be loaded, and if SRAM should be saved.");
-   puts("\t\tDo note that noload-save implies that save files will be deleted and overwritten.");
+   puts("  -P, --bsvplay=FILE    Playback a BSV movie file.");
+   puts("  -R, --bsvrecord=FILE  Start recording a BSV movie file from the beginning.");
+   puts("      --eof-exit        Exit upon reaching the end of the BSV movie file.");
+   puts("  -M, --sram-mode=MODE  SRAM handling mode. MODE can be 'noload-nosave',\n"
+        "                        'noload-save', 'load-nosave' or 'load-save'.\n"
+        "                        Note: 'noload-save' implies that save files *WILL BE OVERWRITTEN*.");
 
 #ifdef HAVE_NETPLAY
-   puts("\t-H/--host: Host netplay as user 1.");
-   puts("\t-C/--connect: Connect to netplay as user 2.");
-   puts("\t--port: Port used to netplay. Default is 55435.");
-   puts("\t-F/--frames: Sync frames when using netplay.");
-   puts("\t--spectate: Netplay will become spectating mode.");
-   puts("\t\tHost can live stream the game content to users that connect.");
-   puts("\t\tHowever, the client will not be able to play. Multiple clients can connect to the host.");
+   puts("  -H, --host            Host netplay as user 1.");
+   puts("  -C, --connect=HOST    Connect to netplay server as user 2.");
+   puts("      --port=PORT       Port used to netplay. Default is 55435.");
+   puts("  -F, --frames=NUMBER   Sync frames when using netplay.");
+   puts("      --spectate        Connect to netplay server as spectator.");
 #endif
-   puts("\t--nick: Picks a username (for use with netplay). Not mandatory.");
+   puts("      --nick=NICK       Picks a username (for use with netplay). Not mandatory.");
 #if defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)
-   puts("\t--command: Sends a command over UDP to an already running " RETRO_FRONTEND " process.");
-   puts("\t\tAvailable commands are listed if command is invalid.");
+   puts("      --command         Sends a command over UDP to an already running " RETRO_FRONTEND " process.");
+   puts("      Available commands are listed if command is invalid.");
 #endif
 
-   puts("\t-r/--record: Path to record video file.\n\t\tUsing .mkv extension is recommended.");
-   puts("\t--recordconfig: Path to settings used during recording.");
-   puts("\t--size: Overrides output video size when recording (format: WIDTHxHEIGHT).");
-   puts("\t-v/--verbose: Verbose logging.");
-   puts("\t-U/--ups: Specifies path for UPS patch that will be applied to content.");
-   puts("\t--bps: Specifies path for BPS patch that will be applied to content.");
-   puts("\t--ips: Specifies path for IPS patch that will be applied to content.");
-   puts("\t--no-patch: Disables all forms of content patching.");
-   puts("\t-D/--detach: Detach " RETRO_FRONTEND " from the running console. Not relevant for all platforms.");
-   puts("\t--max-frames: Runs for the specified number of frames, then exits.\n");
+   puts("  -r, --record=FILE     Path to record video file.\n        Using .mkv extension is recommended.");
+   puts("      --recordconfig    Path to settings used during recording.");
+   puts("      --size=WIDTHxHEIGHT\n"
+        "                        Overrides output video size when recording.");
+   puts("  -U, --ups=FILE        Specifies path for UPS patch that will be applied to content.");
+   puts("      --bps=FILE        Specifies path for BPS patch that will be applied to content.");
+   puts("      --ips=FILE        Specifies path for IPS patch that will be applied to content.");
+   puts("      --no-patch        Disables all forms of content patching.");
+   puts("  -D, --detach          Detach " RETRO_FRONTEND " from the running console. Not relevant for all platforms.");
+   puts("      --max-frames=NUMBER\n"
+        "                        Runs for the specified number of frames, then exits.\n");
 }
 
 static void set_basename(const char *path)
@@ -362,7 +399,11 @@ static void parse_input(int argc, char *argv[])
    global_t  *global  = global_get_ptr();
 
    global->libretro_no_content           = false;
+#ifdef HAVE_DYNAMIC
+   global->libretro_dummy                = true;
+#else
    global->libretro_dummy                = false;
+#endif
    global->has_set_save_path             = false;
    global->has_set_state_path            = false;
    global->has_set_libretro              = false;
@@ -389,12 +430,6 @@ static void parse_input(int argc, char *argv[])
 
    global->overrides_active              = false;
 
-   if (argc < 2)
-   {
-      global->libretro_dummy             = true;
-      return;
-   }
-
    /* Make sure we can call parse_input several times ... */
    optind = 0;
 
@@ -402,45 +437,49 @@ static void parse_input(int argc, char *argv[])
 
    const struct option opts[] = {
 #ifdef HAVE_DYNAMIC
-      { "libretro", 1, NULL, 'L' },
+      { "libretro",     1, NULL, 'L' },
 #endif
-      { "menu", 0, &val, 'M' },
-      { "help", 0, NULL, 'h' },
-      { "save", 1, NULL, 's' },
-      { "fullscreen", 0, NULL, 'f' },
-      { "record", 1, NULL, 'r' },
+      { "menu",         0, &val, RA_OPT_MENU },
+      { "help",         0, NULL, 'h' },
+      { "save",         1, NULL, 's' },
+      { "fullscreen",   0, NULL, 'f' },
+      { "record",       1, NULL, 'r' },
       { "recordconfig", 1, &val, 'R' },
-      { "size", 1, &val, 's' },
-      { "verbose", 0, NULL, 'v' },
-      { "config", 1, NULL, 'c' },
+      { "size",         1, &val, RA_OPT_SIZE },
+      { "verbose",      0, NULL, 'v' },
+      { "config",       1, NULL, 'c' },
       { "appendconfig", 1, &val, 'C' },
-      { "nodevice", 1, NULL, 'N' },
-      { "dualanalog", 1, NULL, 'A' },
-      { "device", 1, NULL, 'd' },
-      { "savestate", 1, NULL, 'S' },
-      { "bsvplay", 1, NULL, 'P' },
-      { "bsvrecord", 1, NULL, 'R' },
-      { "sram-mode", 1, NULL, 'M' },
+      { "nodevice",     1, NULL, 'N' },
+      { "dualanalog",   1, NULL, 'A' },
+      { "device",       1, NULL, 'd' },
+      { "savestate",    1, NULL, 'S' },
+      { "bsvplay",      1, NULL, 'P' },
+      { "bsvrecord",    1, NULL, 'R' },
+      { "sram-mode",    1, NULL, 'M' },
 #ifdef HAVE_NETPLAY
-      { "host", 0, NULL, 'H' },
-      { "connect", 1, NULL, 'C' },
-      { "frames", 1, NULL, 'F' },
-      { "port", 1, &val, 'p' },
-      { "spectate", 0, &val, 'S' },
+      { "host",         0, NULL, 'H' },
+      { "connect",      1, NULL, 'C' },
+      { "frames",       1, NULL, 'F' },
+      { "port",         1, &val, RA_OPT_PORT },
+      { "spectate",     0, &val, RA_OPT_SPECTATE },
 #endif
-      { "nick", 1, &val, 'N' },
+      { "nick",         1, &val, 'N' },
 #if defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)
-      { "command", 1, &val, 'c' },
+      { "command",      1, &val, RA_OPT_COMMAND },
 #endif
-      { "ups", 1, NULL, 'U' },
-      { "bps", 1, &val, 'B' },
-      { "ips", 1, &val, 'I' },
-      { "no-patch", 0, &val, 'n' },
-      { "detach", 0, NULL, 'D' },
-      { "features", 0, &val, 'f' },
-      { "subsystem", 1, NULL, 'Z' },
-      { "max-frames", 1, NULL, 'm' },
-      { "eof-exit", 0, &val, 'e' },
+      { "ups",          1, NULL, 'U' },
+      { "bps",          1, &val, RA_OPT_BPS },
+      { "ips",          1, &val, RA_OPT_IPS },
+      { "no-patch",     0, &val, RA_OPT_NO_PATCH },
+      { "detach",       0, NULL, 'D' },
+      { "features",     0, &val, RA_OPT_FEATURES },
+      { "subsystem",    1, NULL, 'Z' },
+      { "max-frames",   1, NULL, 'm' },
+      { "eof-exit",     0, &val, RA_OPT_EOF_EXIT },
+      { "version",      0, &val, RA_OPT_VERSION },
+#ifdef HAVE_FILE_LOGGER
+      { "log-file",     1, &val, RA_OPT_LOG_FILE },
+#endif
       { NULL, 0, NULL, 0 }
    };
 
@@ -476,7 +515,7 @@ static void parse_input(int argc, char *argv[])
       switch (c)
       {
          case 'h':
-            print_help();
+            print_help(argv[0]);
             exit(0);
 
          case 'Z':
@@ -500,7 +539,7 @@ static void parse_input(int argc, char *argv[])
             if (port < 1 || port > MAX_USERS)
             {
                RARCH_ERR("Connect device to a valid port.\n");
-               print_help();
+               print_help(argv[0]);
                rarch_fail(1, "parse_input()");
             }
             settings->input.libretro_device[port - 1] = id;
@@ -513,7 +552,7 @@ static void parse_input(int argc, char *argv[])
             if (port < 1 || port > MAX_USERS)
             {
                RARCH_ERR("Connect dualanalog to a valid port.\n");
-               print_help();
+               print_help(argv[0]);
                rarch_fail(1, "parse_input()");
             }
             settings->input.libretro_device[port - 1] = RETRO_DEVICE_ANALOG;
@@ -546,7 +585,7 @@ static void parse_input(int argc, char *argv[])
             if (port < 1 || port > MAX_USERS)
             {
                RARCH_ERR("Disconnect device from a valid port.\n");
-               print_help();
+               print_help(argv[0]);
                rarch_fail(1, "parse_input()");
             }
             settings->input.libretro_device[port - 1] = RETRO_DEVICE_NONE;
@@ -581,6 +620,7 @@ static void parse_input(int argc, char *argv[])
                      sizeof(settings->libretro));
                global->has_set_libretro = true;
             }
+            global->libretro_dummy = false;
             break;
 #endif
          case 'P':
@@ -604,7 +644,7 @@ static void parse_input(int argc, char *argv[])
             else if (strcmp(optarg, "load-save") != 0)
             {
                RARCH_ERR("Invalid argument in --sram-mode.\n");
-               print_help();
+               print_help(argv[0]);
                rarch_fail(1, "parse_input()");
             }
             break;
@@ -646,33 +686,33 @@ static void parse_input(int argc, char *argv[])
             runloop->frames.video.max = strtoul(optarg, NULL, 10);
             break;
 
-         case 0:
+         case 0: /* options without short variant */
             switch (val)
             {
-               case 'M':
+               case RA_OPT_MENU:
                   global->libretro_dummy = true;
                   break;
 
 #ifdef HAVE_NETPLAY
-               case 'p':
+               case RA_OPT_PORT:
                   global->has_set_netplay_ip_port = true;
                   global->netplay_port = strtoul(optarg, NULL, 0);
                   break;
 
-               case 'S':
+               case RA_OPT_SPECTATE:
                   global->has_set_netplay_mode = true;
                   global->netplay_is_spectate = true;
                   break;
 
 #endif
-               case 'N':
+               case RA_OPT_NICK:
                   global->has_set_username = true;
                   strlcpy(settings->username, optarg,
                         sizeof(settings->username));
                   break;
 
 #if defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)
-               case 'c':
+               case RA_OPT_COMMAND:
                   if (network_cmd_send(optarg))
                      exit(0);
                   else
@@ -680,60 +720,69 @@ static void parse_input(int argc, char *argv[])
                   break;
 #endif
 
-               case 'C':
+               case RA_OPT_APPENDCONFIG:
                   strlcpy(global->append_config_path, optarg,
                         sizeof(global->append_config_path));
                   break;
 
-               case 'B':
+               case RA_OPT_BPS:
                   strlcpy(global->bps_name, optarg,
                         sizeof(global->bps_name));
                   global->bps_pref = true;
                   global->has_set_bps_pref = true;
                   break;
 
-               case 'I':
+               case RA_OPT_IPS:
                   strlcpy(global->ips_name, optarg,
                         sizeof(global->ips_name));
                   global->ips_pref = true;
                   global->has_set_ips_pref = true;
                   break;
 
-               case 'n':
+               case RA_OPT_NO_PATCH:
                   global->block_patch = true;
                   break;
 
-               case 's':
+               case RA_OPT_SIZE:
                {
                   if (sscanf(optarg, "%ux%u", &global->record.width,
                            &global->record.height) != 2)
                   {
                      RARCH_ERR("Wrong format for --size.\n");
-                     print_help();
+                     print_help(argv[0]);
                      rarch_fail(1, "parse_input()");
                   }
                   break;
                }
 
-               case 'R':
+               case RA_OPT_RECORDCONFIG:
                   strlcpy(global->record.config, optarg,
                         sizeof(global->record.config));
                   break;
-               case 'f':
+               case RA_OPT_FEATURES:
                   print_features();
                   exit(0);
 
-               case 'e':
+               case RA_OPT_EOF_EXIT:
                   global->bsv.eof_exit = true;
                   break;
 
+               case RA_OPT_VERSION:
+                  print_version();
+                  exit(0);
+
+#ifdef HAVE_FILE_LOGGER
+               case RA_OPT_LOG_FILE:
+                  global->log_file = fopen(optarg, "wb");
+                  break;
+#endif
                default:
                   break;
             }
             break;
 
          case '?':
-            print_help();
+            print_help(argv[0]);
             rarch_fail(1, "parse_input()");
 
          default:
@@ -951,8 +1000,8 @@ void rarch_main_new(void)
 void rarch_main_free(void)
 {
    event_command(EVENT_CMD_MSG_QUEUE_DEINIT);
-   event_command(EVENT_CMD_LOG_FILE_DEINIT);
    event_command(EVENT_CMD_DRIVERS_DEINIT);
+   event_command(EVENT_CMD_LOG_FILE_DEINIT);
 
    rarch_main_state_free();
    rarch_main_global_free();
@@ -1081,6 +1130,7 @@ int rarch_main_init(int argc, char *argv[])
       return sjlj_ret;
    }
    global->error_in_init = true;
+   global->log_file = stderr;
    parse_input(argc, argv);
 
    if (global->verbosity)
@@ -1153,6 +1203,10 @@ error:
 void rarch_main_init_wrap(const struct rarch_main_wrap *args,
       int *argc, char **argv)
 {
+#ifdef HAVE_FILE_LOGGER
+   int i;
+#endif
+
    *argc = 0;
    argv[(*argc)++] = strdup("retroarch");
 

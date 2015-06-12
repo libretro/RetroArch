@@ -14,6 +14,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#define IS_JOYCONFIG
+
 #include "retroarch-joyconfig.c"
 
 #include "../libretro-common/dynamic/dylib.c"
