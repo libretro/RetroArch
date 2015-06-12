@@ -134,7 +134,6 @@ static void print_version(void)
 {
    char str[PATH_MAX_LENGTH] = {0};
 
-   puts("===================================================================");
 #ifdef HAVE_GIT_VERSION
    printf(RETRO_FRONTEND ": Frontend for libretro -- v" PACKAGE_VERSION " -- %s --\n", rarch_git_version);
 #else
@@ -143,7 +142,6 @@ static void print_version(void)
    rarch_info_get_capabilities(RARCH_CAPABILITIES_COMPILER, str, sizeof(str));
    fprintf(stdout, "%s", str);
    fprintf(stdout, "Built: %s\n", __DATE__);
-   puts("===================================================================");
 }
 
 /**
@@ -153,7 +151,10 @@ static void print_version(void)
  **/
 static void print_help(const char *arg0)
 {
+   puts("===================================================================");
    print_version();
+   puts("===================================================================");
+
    printf("Usage: %s [OPTIONS]... [FILE]\n", arg0);
 
    puts("  -h, --help            Show this help message.");
