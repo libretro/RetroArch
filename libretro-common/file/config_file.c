@@ -52,9 +52,9 @@ static char *getaline(FILE *file)
 {
    char* newline = (char*)malloc(9);
    char* newline_tmp = NULL;
-   size_t cur_size = 8;
-   size_t idx = 0;
-   int in = getc(file);
+   size_t cur_size   = 8;
+   size_t idx        = 0;
+   int in            = getc(file);
 
    if (!newline)
       return NULL;
@@ -84,7 +84,8 @@ static char *getaline(FILE *file)
 
 static char *extract_value(char *line, bool is_value)
 {
-   char *save = NULL, *tok = NULL;
+   char *save = NULL;
+   char *tok  = NULL;
 
    if (is_value)
    {
@@ -187,9 +188,10 @@ static void add_include_list(config_file_t *conf, const char *path)
 
 static void add_sub_conf(config_file_t *conf, char *line)
 {
-   char real_path[PATH_MAX_LENGTH];
-   config_file_t *sub_conf = NULL;
-   char *path = extract_value(line, false);
+   char real_path[PATH_MAX_LENGTH] = {0};
+   config_file_t         *sub_conf = NULL;
+   char                      *path = extract_value(line, false);
+
    if (!path)
       return;
 
@@ -268,11 +270,11 @@ static char *strip_comment(char *str)
 static bool parse_line(config_file_t *conf,
       struct config_entry_list *list, char *line)
 {
-   char* comment = NULL;
-   char* key = (char*)malloc(9);
-   char* key_tmp = NULL;
+   char *comment   = NULL;
+   char *key       = (char*)malloc(9);
+   char *key_tmp   = NULL;
    size_t cur_size = 8;
-   size_t idx = 0;
+   size_t idx      = 0;
 
    if (!key)
       return false;
@@ -780,7 +782,7 @@ void config_set_path(config_file_t *conf, const char *entry, const char *val)
 #if defined(RARCH_CONSOLE)
    config_set_string(conf, entry, val);
 #else
-   char buf[PATH_MAX_LENGTH];
+   char buf[PATH_MAX_LENGTH] = {0};
    fill_pathname_abbreviate_special(buf, val, sizeof(buf));
    config_set_string(conf, entry, buf);
 #endif
@@ -788,7 +790,7 @@ void config_set_path(config_file_t *conf, const char *entry, const char *val)
 
 void config_set_double(config_file_t *conf, const char *key, double val)
 {
-   char buf[128];
+   char buf[128] = {0};
 #ifdef __cplusplus
    snprintf(buf, sizeof(buf), "%f", (float)val);
 #else
@@ -799,28 +801,28 @@ void config_set_double(config_file_t *conf, const char *key, double val)
 
 void config_set_float(config_file_t *conf, const char *key, float val)
 {
-   char buf[128];
+   char buf[128] = {0};
    snprintf(buf, sizeof(buf), "%f", val);
    config_set_string(conf, key, buf);
 }
 
 void config_set_int(config_file_t *conf, const char *key, int val)
 {
-   char buf[128];
+   char buf[128] = {0};
    snprintf(buf, sizeof(buf), "%d", val);
    config_set_string(conf, key, buf);
 }
 
 void config_set_hex(config_file_t *conf, const char *key, unsigned val)
 {
-   char buf[128];
+   char buf[128] = {0};
    snprintf(buf, sizeof(buf), "%x", val);
    config_set_string(conf, key, buf);
 }
 
 void config_set_uint64(config_file_t *conf, const char *key, uint64_t val)
 {
-   char buf[128];
+   char buf[128] = {0};
 #ifdef _WIN32
    snprintf(buf, sizeof(buf), "%I64u", val);
 #else
@@ -831,7 +833,7 @@ void config_set_uint64(config_file_t *conf, const char *key, uint64_t val)
 
 void config_set_char(config_file_t *conf, const char *key, char val)
 {
-   char buf[2];
+   char buf[2] = {0};
    snprintf(buf, sizeof(buf), "%c", val);
    config_set_string(conf, key, buf);
 }
@@ -899,6 +901,7 @@ bool config_get_entry_list_head(config_file_t *conf,
       struct config_file_entry *entry)
 {
    const struct config_entry_list *head = conf->entries;
+
    if (!head)
       return false;
 
@@ -911,6 +914,7 @@ bool config_get_entry_list_head(config_file_t *conf,
 bool config_get_entry_list_next(struct config_file_entry *entry)
 {
    const struct config_entry_list *next = entry->next;
+
    if (!next)
       return false;
 

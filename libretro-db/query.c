@@ -480,10 +480,10 @@ static struct buffer get_char(struct buffer buff, char * c,
 static struct buffer parse_string(struct buffer buff,
       struct rmsgpack_dom_value *value, const char **error)
 {
-   const char * str_start;
-   char terminator = '\0';
-   char c          = '\0';
-   int  is_binstr  = 0;
+   const char * str_start = NULL;
+   char terminator        = '\0';
+   char c                 = '\0';
+   int  is_binstr         = 0;
 
    (void)c;
 
@@ -649,11 +649,11 @@ clean:
 static struct buffer parse_method_call(struct buffer buff,
       struct invocation *invocation, const char **error)
 {
-   const char *func_name;
    size_t func_name_len;
    unsigned i;
    struct argument args[MAX_ARGS];
    unsigned argi = 0;
+   const char *func_name = NULL;
    struct registered_func *rf = registered_functions;
 
    invocation->func = NULL;
@@ -738,9 +738,9 @@ static struct buffer parse_table(struct buffer buff,
       struct invocation *invocation, const char **error)
 {
    unsigned i;
-   const char *ident_name;
    size_t ident_len;
    struct argument args[MAX_ARGS];
+   const char *ident_name = NULL;
    unsigned argi = 0;
 
    buff = chomp(buff);

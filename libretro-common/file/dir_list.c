@@ -204,8 +204,6 @@ static int parse_dir_entry(const char *name, char *file_path,
 struct string_list *dir_list_new(const char *dir,
       const char *ext, bool include_dirs)
 {
-   char path_buf[PATH_MAX_LENGTH];
-   struct string_list *ext_list, *list;
 #ifdef _WIN32
    WIN32_FIND_DATA ffd;
    HANDLE hFind = INVALID_HANDLE_VALUE;
@@ -213,8 +211,10 @@ struct string_list *dir_list_new(const char *dir,
    DIR *directory = NULL;
    const struct dirent *entry = NULL;
 #endif
+   char path_buf[PATH_MAX_LENGTH] = {0};
+   struct string_list *ext_list   = NULL;
+   struct string_list *list       = NULL;
 
-   ext_list = NULL;
    (void)path_buf;
 
    if (!(list = string_list_new()))
@@ -232,11 +232,11 @@ struct string_list *dir_list_new(const char *dir,
 
    do
    {
-      int ret = 0;
-      char file_path[PATH_MAX_LENGTH];
-      const char *name        = ffd.cFileName;
-      const char *file_ext    = path_get_extension(name);
-      bool is_dir             = ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY;
+      int ret                         = 0;
+      char file_path[PATH_MAX_LENGTH] = {0};
+      const char *name                = ffd.cFileName;
+      const char *file_ext            = path_get_extension(name);
+      bool is_dir                     = ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY;
 
       fill_pathname_join(file_path, dir, name, sizeof(file_path));
 
@@ -264,11 +264,11 @@ error:
 
    while ((entry = readdir(directory)))
    {
-      int ret = 0;
-      char file_path[PATH_MAX_LENGTH];
-      const char *name     = entry->d_name;
-      const char *file_ext = path_get_extension(name);
-      bool is_dir = false;
+      int ret                         = 0;
+      char file_path[PATH_MAX_LENGTH] = {0};
+      const char *name                = entry->d_name;
+      const char *file_ext            = path_get_extension(name);
+      bool is_dir                     = false;
 
       fill_pathname_join(file_path, dir, name, sizeof(file_path));
 

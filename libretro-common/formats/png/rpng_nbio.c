@@ -233,7 +233,7 @@ void rpng_nbio_load_image_free(struct rpng_t *rpng)
 bool rpng_nbio_load_image_argb_start(struct rpng_t *rpng)
 {
    unsigned i;
-   char header[8];
+   char header[8] = {0};
 
    if (!rpng)
       return false;

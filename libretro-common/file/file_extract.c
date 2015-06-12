@@ -688,7 +688,7 @@ static int zip_extract_cb(const char *name, const char *valid_exts,
 
    if (ext && string_list_find_elem(data->ext, ext))
    {
-      char new_path[PATH_MAX_LENGTH];
+      char new_path[PATH_MAX_LENGTH] = {0};
 
       if (data->extraction_directory)
          fill_pathname_join(new_path, data->extraction_directory,

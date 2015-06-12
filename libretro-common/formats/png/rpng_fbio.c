@@ -221,10 +221,10 @@ bool rpng_load_image_argb(const char *path, uint32_t **data,
 {
    long pos, file_len;
    FILE *file;
-   char header[8];
+   char header[8]     = {0};
    struct rpng_t rpng = {{0}};
-   bool ret      = true;
-   int retval = 0;
+   bool ret           = true;
+   int retval         = 0;
 
    *data   = NULL;
    *width  = 0;

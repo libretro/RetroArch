@@ -212,8 +212,8 @@ bool path_file_exists(const char *path)
 void fill_pathname(char *out_path, const char *in_path,
       const char *replace, size_t size)
 {
-   char tmp_path[PATH_MAX_LENGTH];
-   char *tok;
+   char tmp_path[PATH_MAX_LENGTH] = {0};
+   char *tok                      = NULL;
 
    rarch_assert(strlcpy(tmp_path, in_path,
             sizeof(tmp_path)) < sizeof(tmp_path));
@@ -302,6 +302,7 @@ void fill_pathname_dir(char *in_dir, const char *in_basename,
       const char *replace, size_t size)
 {
    const char *base = NULL;
+
    fill_pathname_slash(in_dir, size);
    base = path_basename(in_basename);
    rarch_assert(strlcat(in_dir, base, size) < size);
@@ -318,7 +319,10 @@ void fill_pathname_dir(char *in_dir, const char *in_basename,
  **/
 void fill_pathname_base(char *out, const char *in_path, size_t size)
 {
-   const char *ptr = find_last_slash(in_path);
+   const char *ptr_bak = NULL;
+   const char     *ptr = find_last_slash(in_path);
+
+   (void)ptr_bak;
 
    if (ptr)
       ptr++;
@@ -332,9 +336,8 @@ void fill_pathname_base(char *out, const char *in_path, size_t size)
     *   /path/to/archive.7z#folder/mygame.img
     *   basename would be mygame.img in both cases
     */
-
-   const char *ptr_bak = ptr;
-   ptr = strchr(ptr_bak,'#');
+   ptr_bak = ptr;
+   ptr     = strchr(ptr_bak,'#');
    if (ptr)
       ptr++;
    else
@@ -453,11 +456,15 @@ void path_parent_dir(char *path)
  **/
 const char *path_basename(const char *path)
 {
+   const char *last_hash = NULL;
    const char *last = find_last_slash(path);
+
+   (void)last_hash;
 
 #ifdef HAVE_COMPRESSION
    /* We cut either at the last hash or the last slash; whichever comes last */
-   const char *last_hash = strchr(path,'#');
+   last_hash = strchr(path,'#');
+
    if (last_hash > last)
       return last_hash + 1;
 #endif
@@ -497,7 +504,8 @@ bool path_is_absolute(const char *path)
 void path_resolve_realpath(char *buf, size_t size)
 {
 #ifndef RARCH_CONSOLE
-   char tmp[PATH_MAX_LENGTH];
+   char tmp[PATH_MAX_LENGTH] = {0};
+
    strlcpy(tmp, buf, sizeof(tmp));
 
 #ifdef _WIN32
@@ -558,8 +566,8 @@ bool path_mkdir(const char *dir)
 {
    const char *target = NULL;
    /* Use heap. Real chance of stack overflow if we recurse too hard. */
-   char *basedir = strdup(dir);
-   bool ret = true;
+   char     *basedir = strdup(dir);
+   bool          ret = true;
 
    if (!basedir)
       return false;
@@ -682,7 +690,9 @@ void fill_pathname_join_delim(char *out_path, const char *dir,
 void fill_short_pathname_representation(char* out_rep,
       const char *in_path, size_t size)
 {
-   char path_short[PATH_MAX_LENGTH], *last_hash = NULL;
+   char path_short[PATH_MAX_LENGTH] = {0};
+   char *last_hash                  = NULL;
+
    fill_pathname(path_short, path_basename(in_path), "",
             sizeof(path_short));
 

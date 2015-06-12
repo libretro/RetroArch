@@ -27,9 +27,9 @@ static struct rmsgpack_dom_value *dom_reader_state_pop(
 
 static void puts_i64(int64_t dec)
 {
-   signed char digits[19 + 1]; /* max i64:  9,223,372,036,854,775,807 */
    int i;
-   uint64_t decimal = (dec < 0) ? (uint64_t)-dec : (uint64_t)+dec;
+   signed char digits[19 + 1] = {0}; /* max i64:  9,223,372,036,854,775,807 */
+   uint64_t decimal           = (dec < 0) ? (uint64_t)-dec : (uint64_t)+dec;
 
    digits[19] = '\0';
 
@@ -52,10 +52,9 @@ static void puts_i64(int64_t dec)
 
 static void puts_u64(uint64_t decimal)
 {
-   char digits[20 + 1]; /* max u64:  18,446,744,073,709,551,616 */
    int i;
+   char digits[20 + 1] = {0}; /* max u64:  18,446,744,073,709,551,616 */
 
-   digits[20] = '\0';
    for (i = sizeof(digits) - 2; i >= 0; i--)
    {
       digits[i] = decimal % 10;
@@ -446,17 +445,17 @@ int rmsgpack_dom_read(FILE *fp, struct rmsgpack_dom_value *out)
 int rmsgpack_dom_read_into(FILE *fp, ...)
 {
    va_list ap;
-   struct rmsgpack_dom_value map;
    int rv;
-   const char *key_name;
+   struct rmsgpack_dom_value map;
    struct rmsgpack_dom_value key;
    struct rmsgpack_dom_value *value;
    int64_t *int_value;
    uint64_t *uint_value;
    int *bool_value;
-   char *buff_value;
    uint64_t min_len;
-   int value_type = 0;
+   char *buff_value                 = NULL;
+   const char *key_name             = NULL;
+   int value_type                   = 0;
 
    va_start(ap, fp);
 
