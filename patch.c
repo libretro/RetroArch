@@ -463,7 +463,6 @@ static bool apply_patch_content(uint8_t **buf,
    if (patch_size < 0)
       return false;
 
-
    if (!path_file_exists(patch_path))
       return false;
 

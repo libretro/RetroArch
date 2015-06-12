@@ -173,7 +173,7 @@ static void event_init_movie(void)
    }
    else if (global->bsv.movie_start_recording)
    {
-      char msg[PATH_MAX_LENGTH];
+      char msg[PATH_MAX_LENGTH] = {0};
       snprintf(msg, sizeof(msg), "Starting movie record to \"%s\".",
             global->bsv.movie_start_path);
 
@@ -203,11 +203,11 @@ static void event_init_movie(void)
  **/
 static void event_disk_control_set_eject(bool new_state, bool print_log)
 {
-   char msg[PATH_MAX_LENGTH];
-   global_t *global = global_get_ptr();
+   char msg[PATH_MAX_LENGTH] = {0};
+   global_t *global          = global_get_ptr();
+   bool error                = false;
    const struct retro_disk_control_callback *control = 
       (const struct retro_disk_control_callback*)&global->system.disk_control;
-   bool error = false;
 
    if (!control->get_num_images)
       return;
@@ -245,8 +245,8 @@ static void event_disk_control_set_eject(bool new_state, bool print_log)
  **/
 void event_disk_control_append_image(const char *path)
 {
-   char msg[PATH_MAX_LENGTH];
    unsigned new_idx;
+   char msg[PATH_MAX_LENGTH]   = {0};
    struct retro_game_info info = {0};
    global_t *global = global_get_ptr();
    const struct retro_disk_control_callback *control = 
@@ -306,9 +306,9 @@ static void event_check_disk_eject(
  **/
 static void event_disk_control_set_index(unsigned idx)
 {
-   char msg[PATH_MAX_LENGTH];
    unsigned num_disks;
-   global_t *global = global_get_ptr();
+   char msg[PATH_MAX_LENGTH] = {0};
+   global_t *global          = global_get_ptr();
    const struct retro_disk_control_callback *control = 
       (const struct retro_disk_control_callback*)&global->system.disk_control;
    bool error = false;
@@ -405,8 +405,8 @@ static void event_check_disk_next(
  **/
 static void event_set_volume(float gain)
 {
-   char msg[PATH_MAX_LENGTH];
-   settings_t *settings    = config_get_ptr();
+   char msg[PATH_MAX_LENGTH] = {0};
+   settings_t *settings      = config_get_ptr();
 
    settings->audio.volume += gain;
    settings->audio.volume  = max(settings->audio.volume, -80.0f);
@@ -481,7 +481,7 @@ static void event_init_controllers(void)
 
 static void event_deinit_core(bool reinit)
 {
-   global_t *global = global_get_ptr();
+   global_t *global     = global_get_ptr();
    settings_t *settings = config_get_ptr();
 
    pretro_unload_game();
@@ -544,8 +544,8 @@ static bool event_load_save_files(void)
 static void event_load_auto_state(void)
 {
    bool ret;
-   char msg[PATH_MAX_LENGTH];
-   char savestate_name_auto[PATH_MAX_LENGTH];
+   char msg[PATH_MAX_LENGTH]                 = {0};
+   char savestate_name_auto[PATH_MAX_LENGTH] = {0};
    settings_t *settings = config_get_ptr();
    global_t   *global   = global_get_ptr();
 
@@ -575,12 +575,13 @@ static void event_load_auto_state(void)
 
 static void event_set_savestate_auto_index(void)
 {
-   char state_dir[PATH_MAX_LENGTH], state_base[PATH_MAX_LENGTH];
    size_t i;
-   struct string_list *dir_list = NULL;
-   unsigned max_idx             = 0;
-   settings_t *settings         = config_get_ptr();
-   global_t   *global           = global_get_ptr();
+   char state_dir[PATH_MAX_LENGTH]  = {0};
+   char state_base[PATH_MAX_LENGTH] = {0};
+   struct string_list *dir_list     = NULL;
+   unsigned max_idx                 = 0;
+   settings_t *settings             = config_get_ptr();
+   global_t   *global               = global_get_ptr();
 
    if (!settings->savestate_auto_index)
       return;
@@ -603,9 +604,9 @@ static void event_set_savestate_auto_index(void)
    for (i = 0; i < dir_list->size; i++)
    {
       unsigned idx;
-      char elem_base[PATH_MAX_LENGTH];
-      const char *end      = NULL;
-      const char *dir_elem = dir_list->elems[i].data;
+      char elem_base[PATH_MAX_LENGTH] = {0};
+      const char *end                 = NULL;
+      const char *dir_elem            = dir_list->elems[i].data;
 
       fill_pathname_base(elem_base, dir_elem, sizeof(elem_base));
 
@@ -706,7 +707,7 @@ static bool event_init_core(void)
 static bool event_save_auto_state(void)
 {
    bool ret;
-   char savestate_name_auto[PATH_MAX_LENGTH];
+   char savestate_name_auto[PATH_MAX_LENGTH] = {0};
    settings_t *settings = config_get_ptr();
    global_t   *global   = global_get_ptr();
 
@@ -744,13 +745,15 @@ static void event_init_remapping(void)
  **/
 static bool event_save_core_config(void)
 {
-   char config_dir[PATH_MAX_LENGTH], config_name[PATH_MAX_LENGTH],
-        config_path[PATH_MAX_LENGTH], msg[PATH_MAX_LENGTH];
-   bool ret             = false;
-   bool found_path      = false;
-   bool overrides_active = false;
-   settings_t *settings = config_get_ptr();
-   global_t   *global   = global_get_ptr();
+   char config_dir[PATH_MAX_LENGTH]  = {0};
+   char config_name[PATH_MAX_LENGTH] = {0};
+   char config_path[PATH_MAX_LENGTH] = {0};
+   char msg[PATH_MAX_LENGTH]         = {0};
+   bool ret                          = false;
+   bool found_path                   = false;
+   bool overrides_active             = false;
+   settings_t *settings              = config_get_ptr();
+   global_t   *global                = global_get_ptr();
 
    *config_dir = '\0';
 
@@ -776,7 +779,7 @@ static bool event_save_core_config(void)
       /* In case of collision, find an alternative name. */
       for (i = 0; i < 16; i++)
       {
-         char tmp[64];
+         char tmp[64] = {0};
 
          fill_pathname_base(config_name, settings->libretro,
                sizeof(config_name));
@@ -889,9 +892,10 @@ static void event_load_state(const char *path, char *s, size_t len)
 
 static void event_main_state(unsigned cmd)
 {
-   char path[PATH_MAX_LENGTH], msg[PATH_MAX_LENGTH];
-   global_t *global     = global_get_ptr();
-   settings_t *settings = config_get_ptr();
+   char path[PATH_MAX_LENGTH] = {0};
+   char msg[PATH_MAX_LENGTH]  = {0};
+   global_t *global           = global_get_ptr();
+   settings_t *settings       = config_get_ptr();
 
    if (settings->state_slot > 0)
       snprintf(path, sizeof(path), "%s%d",

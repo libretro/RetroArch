@@ -191,9 +191,9 @@ void state_manager_free(state_manager_t *state)
 bool state_manager_pop(state_manager_t *state, const void **data)
 {
    size_t start;
-   uint8_t *out;
-   uint16_t *out16;
-   const uint8_t *compressed = NULL;
+   uint8_t *out                 = NULL;
+   uint16_t *out16              = NULL;
+   const uint8_t *compressed    = NULL;
    const uint16_t *compressed16 = NULL;
 
    *data = NULL;
