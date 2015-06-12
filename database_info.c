@@ -78,13 +78,33 @@
 #define DB_CURSOR_SIZE                          0x7c9dede0U
 #define DB_CURSOR_SERIAL                        0x1b843ec5U
 
+static void database_info_build_query_add_quote(char *s, size_t len)
+{
+   strlcat(s, "\"", len);
+}
+
+static void database_info_build_query_add_bracket_open(char *s, size_t len)
+{
+   strlcat(s, "{'", len);
+}
+
+static void database_info_build_query_add_bracket_close(char *s, size_t len)
+{
+   strlcat(s, "}", len);
+}
+
+static void database_info_build_query_add_colon(char *s, size_t len)
+{
+   strlcat(s, "':", len);
+}
+
 int database_info_build_query(char *s, size_t len,
       const char *label, const char *path)
 {
    uint32_t value  = 0;
    bool add_quotes = true;
 
-   strlcpy(s, "{'", len);
+   database_info_build_query_add_bracket_open(s, len);
 
    value = djb2_calculate(label);
 
@@ -152,13 +172,13 @@ int database_info_build_query(char *s, size_t len,
          break;
    }
 
-   strlcat(s, "':", len);
+   database_info_build_query_add_colon(s, len);
    if (add_quotes)
-      strlcat(s, "\"", len);
+      database_info_build_query_add_quote(s, len);
    strlcat(s, path, len);
    if (add_quotes)
-      strlcat(s, "\"", len);
-   strlcat(s, "}", len);
+      database_info_build_query_add_quote(s, len);
+   database_info_build_query_add_bracket_close(s, len);
 
    return 0;
 }
