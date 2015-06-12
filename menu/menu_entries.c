@@ -61,7 +61,9 @@ void menu_entries_init(void *data,
    if (!list)
       return;
 
-   if (!(cbs = (menu_file_list_cbs_t*)list->list[idx].actiondata))
+   cbs = (menu_file_list_cbs_t*)menu_list_get_actiondata_at_offset(list, idx);
+
+   if (!cbs)
       return;
 
    menu_list_get_last_stack(menu->menu_list,
