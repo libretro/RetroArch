@@ -80,8 +80,8 @@ const char* config_get_record_driver_options(void)
 {
    union string_list_elem_attr attr;
    unsigned i;
-   char *options = NULL;
-   int options_len = 0;
+   char                 *options = NULL;
+   int               options_len = 0;
    struct string_list *options_l = string_list_new();
 
    attr.i = 0;
@@ -92,6 +92,7 @@ const char* config_get_record_driver_options(void)
    for (i = 0; record_driver_find_handle(i); i++)
    {
       const char *opt = record_driver_find_ident(i);
+
       options_len += strlen(opt) + 1;
       string_list_append(options_l, opt, attr);
    }
@@ -117,14 +118,14 @@ void find_record_driver(void)
 {
    driver_t *driver     = driver_get_ptr();
    settings_t *settings = config_get_ptr();
-
-   int i = find_driver_index("record_driver", settings->record.driver);
+   int                i = find_driver_index("record_driver", settings->record.driver);
 
    if (i >= 0)
       driver->recording = (const record_driver_t*)audio_driver_find_handle(i);
    else
    {
       unsigned d;
+
       RARCH_ERR("Couldn't find any audio driver named \"%s\"\n",
             settings->audio.driver);
       RARCH_LOG_OUTPUT("Available audio drivers are:\n");
@@ -286,11 +287,11 @@ bool recording_deinit(void)
  **/
 bool recording_init(void)
 {
-   char recording_file[PATH_MAX_LENGTH];
-   struct ffemu_params params = {0};
-   global_t *global = global_get_ptr();
-   driver_t *driver     = driver_get_ptr();
-   settings_t *settings = config_get_ptr();
+   char recording_file[PATH_MAX_LENGTH] = {0};
+   struct ffemu_params params           = {0};
+   global_t *global                     = global_get_ptr();
+   driver_t *driver                     = driver_get_ptr();
+   settings_t *settings                 = config_get_ptr();
    struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
    const struct retro_hw_render_callback *hw_render = 
       (const struct retro_hw_render_callback*)video_driver_callback();
