@@ -399,11 +399,7 @@ static void parse_input(int argc, char *argv[])
    global_t  *global  = global_get_ptr();
 
    global->libretro_no_content           = false;
-#ifdef HAVE_DYNAMIC
-   global->libretro_dummy                = true;
-#else
    global->libretro_dummy                = false;
-#endif
    global->has_set_save_path             = false;
    global->has_set_state_path            = false;
    global->has_set_libretro              = false;
@@ -429,6 +425,12 @@ static void parse_input(int argc, char *argv[])
    *global->subsystem                    = '\0';
 
    global->overrides_active              = false;
+
+   if (argc < 2)
+   {
+      global->libretro_dummy             = true;
+      return;
+   }
 
    /* Make sure we can call parse_input several times ... */
    optind = 0;
@@ -620,7 +622,6 @@ static void parse_input(int argc, char *argv[])
                      sizeof(settings->libretro));
                global->has_set_libretro = true;
             }
-            global->libretro_dummy = false;
             break;
 #endif
          case 'P':
