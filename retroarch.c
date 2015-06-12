@@ -53,6 +53,26 @@
 #endif
 #endif
 
+/* Descriptive names for options without short variant. Please keep the name in
+   sync with the option name. Order does not matter. */
+enum {
+   RA_OPT_MENU,
+   RA_OPT_PORT,
+   RA_OPT_SPECTATE,
+   RA_OPT_NICK,
+   RA_OPT_COMMAND,
+   RA_OPT_APPENDCONFIG,
+   RA_OPT_BPS,
+   RA_OPT_IPS,
+   RA_OPT_NO_PATCH,
+   RA_OPT_RECORDCONFIG,
+   RA_OPT_SIZE,
+   RA_OPT_FEATURES,
+   RA_OPT_VERSION,
+   RA_OPT_EOF_EXIT,
+   RA_OPT_LOG_FILE,
+};
+
 #include "config.features.h"
 
 #define _PSUPP(var, name, desc) printf("  %s:\n\t\t%s: %s\n", name, desc, _##var##_supp ? "yes" : "no")
@@ -420,13 +440,13 @@ static void parse_input(int argc, char *argv[])
 #ifdef HAVE_DYNAMIC
       { "libretro",     1, NULL, 'L' },
 #endif
-      { "menu",         0, &val, 'M' },
+      { "menu",         0, &val, RA_OPT_MENU },
       { "help",         0, NULL, 'h' },
       { "save",         1, NULL, 's' },
       { "fullscreen",   0, NULL, 'f' },
       { "record",       1, NULL, 'r' },
       { "recordconfig", 1, &val, 'R' },
-      { "size",         1, &val, 's' },
+      { "size",         1, &val, RA_OPT_SIZE },
       { "verbose",      0, NULL, 'v' },
       { "config",       1, NULL, 'c' },
       { "appendconfig", 1, &val, 'C' },
@@ -441,25 +461,25 @@ static void parse_input(int argc, char *argv[])
       { "host",         0, NULL, 'H' },
       { "connect",      1, NULL, 'C' },
       { "frames",       1, NULL, 'F' },
-      { "port",         1, &val, 'p' },
-      { "spectate",     0, &val, 'S' },
+      { "port",         1, &val, RA_OPT_PORT },
+      { "spectate",     0, &val, RA_OPT_SPECTATE },
 #endif
       { "nick",         1, &val, 'N' },
 #if defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)
-      { "command",      1, &val, 'c' },
+      { "command",      1, &val, RA_OPT_COMMAND },
 #endif
       { "ups",          1, NULL, 'U' },
-      { "bps",          1, &val, 'B' },
-      { "ips",          1, &val, 'I' },
-      { "no-patch",     0, &val, 'n' },
+      { "bps",          1, &val, RA_OPT_BPS },
+      { "ips",          1, &val, RA_OPT_IPS },
+      { "no-patch",     0, &val, RA_OPT_NO_PATCH },
       { "detach",       0, NULL, 'D' },
-      { "features",     0, &val, 'f' },
+      { "features",     0, &val, RA_OPT_FEATURES },
       { "subsystem",    1, NULL, 'Z' },
       { "max-frames",   1, NULL, 'm' },
-      { "eof-exit",     0, &val, 'e' },
-      { "version",      0, &val, 'V' },
+      { "eof-exit",     0, &val, RA_OPT_EOF_EXIT },
+      { "version",      0, &val, RA_OPT_VERSION },
 #ifdef HAVE_FILE_LOGGER
-      { "log-file",     1, &val, 'L' },
+      { "log-file",     1, &val, RA_OPT_LOG_FILE },
 #endif
       { NULL, 0, NULL, 0 }
    };
@@ -669,30 +689,30 @@ static void parse_input(int argc, char *argv[])
          case 0: /* options without short variant */
             switch (val)
             {
-               case 'M':
+               case RA_OPT_MENU:
                   global->libretro_dummy = true;
                   break;
 
 #ifdef HAVE_NETPLAY
-               case 'p':
+               case RA_OPT_PORT:
                   global->has_set_netplay_ip_port = true;
                   global->netplay_port = strtoul(optarg, NULL, 0);
                   break;
 
-               case 'S':
+               case RA_OPT_SPECTATE:
                   global->has_set_netplay_mode = true;
                   global->netplay_is_spectate = true;
                   break;
 
 #endif
-               case 'N':
+               case RA_OPT_NICK:
                   global->has_set_username = true;
                   strlcpy(settings->username, optarg,
                         sizeof(settings->username));
                   break;
 
 #if defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)
-               case 'c':
+               case RA_OPT_COMMAND:
                   if (network_cmd_send(optarg))
                      exit(0);
                   else
@@ -700,30 +720,30 @@ static void parse_input(int argc, char *argv[])
                   break;
 #endif
 
-               case 'C':
+               case RA_OPT_APPENDCONFIG:
                   strlcpy(global->append_config_path, optarg,
                         sizeof(global->append_config_path));
                   break;
 
-               case 'B':
+               case RA_OPT_BPS:
                   strlcpy(global->bps_name, optarg,
                         sizeof(global->bps_name));
                   global->bps_pref = true;
                   global->has_set_bps_pref = true;
                   break;
 
-               case 'I':
+               case RA_OPT_IPS:
                   strlcpy(global->ips_name, optarg,
                         sizeof(global->ips_name));
                   global->ips_pref = true;
                   global->has_set_ips_pref = true;
                   break;
 
-               case 'n':
+               case RA_OPT_NO_PATCH:
                   global->block_patch = true;
                   break;
 
-               case 's':
+               case RA_OPT_SIZE:
                {
                   if (sscanf(optarg, "%ux%u", &global->record.width,
                            &global->record.height) != 2)
@@ -735,28 +755,27 @@ static void parse_input(int argc, char *argv[])
                   break;
                }
 
-               case 'R':
+               case RA_OPT_RECORDCONFIG:
                   strlcpy(global->record.config, optarg,
                         sizeof(global->record.config));
                   break;
-               case 'f':
+               case RA_OPT_FEATURES:
                   print_features();
                   exit(0);
 
-               case 'e':
+               case RA_OPT_EOF_EXIT:
                   global->bsv.eof_exit = true;
                   break;
 
-               case 'V':
+               case RA_OPT_VERSION:
                   print_version();
                   exit(0);
 
 #ifdef HAVE_FILE_LOGGER
-               case 'L':
+               case RA_OPT_LOG_FILE:
                   global->log_file = fopen(optarg, "wb");
                   break;
 #endif
-
                default:
                   break;
             }
