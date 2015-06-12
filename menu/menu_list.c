@@ -192,7 +192,6 @@ menu_list_t *menu_list_new(void)
 
 error:
    menu_list_free(list);
-   free(list);
    return NULL;
 }
 
