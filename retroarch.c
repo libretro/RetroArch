@@ -55,7 +55,7 @@
 
 #include "config.features.h"
 
-#define _PSUPP(var, name, desc) printf("\t%s:\n\t\t%s: %s\n", name, desc, _##var##_supp ? "yes" : "no")
+#define _PSUPP(var, name, desc) printf("  %s:\n\t\t%s: %s\n", name, desc, _##var##_supp ? "yes" : "no")
 static void print_features(void)
 {
    puts("");
@@ -130,61 +130,61 @@ static void print_help(const char *arg0)
    fprintf(stdout, "Built: %s\n", __DATE__);
    puts("===================================================================");
    printf("Usage: %s [OPTIONS]... [FILE]\n", arg0);
-   puts("\t-h/--help: Show this help message.");
-   puts("\t--menu: Do not require content or libretro core to be loaded, starts directly in menu.");
-   puts("\t\tIf no arguments are passed to " RETRO_FRONTEND ", it is equivalent to using --menu as only argument.");
-   puts("\t--features: Prints available features compiled into " RETRO_FRONTEND ".");
-   puts("\t-s/--save: Path for save file (*.srm).");
-   puts("\t-f/--fullscreen: Start " RETRO_FRONTEND " in fullscreen regardless of config settings.");
-   puts("\t-S/--savestate: Path to use for save states. If not selected, *.state will be assumed.");
-   puts("\t-c/--config: Path for config file." RARCH_DEFAULT_CONF_PATH_STR);
-   puts("\t--appendconfig: Extra config files are loaded in, and take priority over config selected in -c (or default).");
-   puts("\t\tMultiple configs are delimited by '|'.");
+   puts("  -h/--help: Show this help message.");
+   puts("  --menu: Do not require content or libretro core to be loaded, starts directly in menu.");
+   puts("  \tIf no arguments are passed to " RETRO_FRONTEND ", it is equivalent to using --menu as only argument.");
+   puts("  --features: Prints available features compiled into " RETRO_FRONTEND ".");
+   puts("  -s/--save: Path for save file (*.srm).");
+   puts("  -f/--fullscreen: Start " RETRO_FRONTEND " in fullscreen regardless of config settings.");
+   puts("  -S/--savestate: Path to use for save states. If not selected, *.state will be assumed.");
+   puts("  -c/--config: Path for config file." RARCH_DEFAULT_CONF_PATH_STR);
+   puts("  --appendconfig: Extra config files are loaded in, and take priority over config selected in -c (or default).");
+   puts("  \tMultiple configs are delimited by '|'.");
 #ifdef HAVE_DYNAMIC
-   puts("\t-L/--libretro: Path to libretro implementation. Overrides any config setting.");
+   puts("  -L/--libretro: Path to libretro implementation. Overrides any config setting.");
 #endif
-   puts("\t--subsystem: Use a subsystem of the libretro core. Multiple content files are loaded as multiple arguments.");
-   puts("\t\tIf a content file is skipped, use a blank (\"\") command line argument");
-   puts("\t\tContent must be loaded in an order which depends on the particular subsystem used.");
-   puts("\t\tSee verbose log output to learn how a particular subsystem wants content to be loaded.");
+   puts("  --subsystem: Use a subsystem of the libretro core. Multiple content files are loaded as multiple arguments.");
+   puts("  \tIf a content file is skipped, use a blank (\"\") command line argument");
+   puts("  \tContent must be loaded in an order which depends on the particular subsystem used.");
+   puts("  \tSee verbose log output to learn how a particular subsystem wants content to be loaded.");
 
-   printf("\t-N/--nodevice: Disconnects controller device connected to port (1 to %d).\n", MAX_USERS);
-   printf("\t-A/--dualanalog: Connect a DualAnalog controller to port (1 to %d).\n", MAX_USERS);
-   printf("\t-d/--device: Connect a generic device into port of the device (1 to %d).\n", MAX_USERS);
-   puts("\t\tFormat is port:ID, where ID is an unsigned number corresponding to the particular device.\n");
+   printf("  -N/--nodevice: Disconnects controller device connected to port (1 to %d).\n", MAX_USERS);
+   printf("  -A/--dualanalog: Connect a DualAnalog controller to port (1 to %d).\n", MAX_USERS);
+   printf("  -d/--device: Connect a generic device into port of the device (1 to %d).\n", MAX_USERS);
+   puts("  \tFormat is port:ID, where ID is an unsigned number corresponding to the particular device.\n");
 
-   puts("\t-P/--bsvplay: Playback a BSV movie file.");
-   puts("\t-R/--bsvrecord: Start recording a BSV movie file from the beginning.");
-   puts("\t--eof-exit: Exit upon reaching the end of the BSV movie file.");
-   puts("\t-M/--sram-mode: Takes an argument telling how SRAM should be handled in the session.");
-   puts("\t\t{no,}load-{no,}save describes if SRAM should be loaded, and if SRAM should be saved.");
-   puts("\t\tDo note that noload-save implies that save files will be deleted and overwritten.");
+   puts("  -P/--bsvplay: Playback a BSV movie file.");
+   puts("  -R/--bsvrecord: Start recording a BSV movie file from the beginning.");
+   puts("  --eof-exit: Exit upon reaching the end of the BSV movie file.");
+   puts("  -M/--sram-mode: Takes an argument telling how SRAM should be handled in the session.");
+   puts("  \t{no,}load-{no,}save describes if SRAM should be loaded, and if SRAM should be saved.");
+   puts("  \tDo note that noload-save implies that save files will be deleted and overwritten.");
 
 #ifdef HAVE_NETPLAY
-   puts("\t-H/--host: Host netplay as user 1.");
-   puts("\t-C/--connect: Connect to netplay as user 2.");
-   puts("\t--port: Port used to netplay. Default is 55435.");
-   puts("\t-F/--frames: Sync frames when using netplay.");
-   puts("\t--spectate: Netplay will become spectating mode.");
-   puts("\t\tHost can live stream the game content to users that connect.");
-   puts("\t\tHowever, the client will not be able to play. Multiple clients can connect to the host.");
+   puts("  -H/--host: Host netplay as user 1.");
+   puts("  -C/--connect: Connect to netplay as user 2.");
+   puts("  --port: Port used to netplay. Default is 55435.");
+   puts("  -F/--frames: Sync frames when using netplay.");
+   puts("  --spectate: Netplay will become spectating mode.");
+   puts("  \tHost can live stream the game content to users that connect.");
+   puts("  \tHowever, the client will not be able to play. Multiple clients can connect to the host.");
 #endif
-   puts("\t--nick: Picks a username (for use with netplay). Not mandatory.");
+   puts("  --nick: Picks a username (for use with netplay). Not mandatory.");
 #if defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)
-   puts("\t--command: Sends a command over UDP to an already running " RETRO_FRONTEND " process.");
-   puts("\t\tAvailable commands are listed if command is invalid.");
+   puts("  --command: Sends a command over UDP to an already running " RETRO_FRONTEND " process.");
+   puts("  \tAvailable commands are listed if command is invalid.");
 #endif
 
-   puts("\t-r/--record: Path to record video file.\n\t\tUsing .mkv extension is recommended.");
-   puts("\t--recordconfig: Path to settings used during recording.");
-   puts("\t--size: Overrides output video size when recording (format: WIDTHxHEIGHT).");
-   puts("\t-v/--verbose: Verbose logging.");
-   puts("\t-U/--ups: Specifies path for UPS patch that will be applied to content.");
-   puts("\t--bps: Specifies path for BPS patch that will be applied to content.");
-   puts("\t--ips: Specifies path for IPS patch that will be applied to content.");
-   puts("\t--no-patch: Disables all forms of content patching.");
-   puts("\t-D/--detach: Detach " RETRO_FRONTEND " from the running console. Not relevant for all platforms.");
-   puts("\t--max-frames: Runs for the specified number of frames, then exits.\n");
+   puts("  -r/--record: Path to record video file.\n\t\tUsing .mkv extension is recommended.");
+   puts("  --recordconfig: Path to settings used during recording.");
+   puts("  --size: Overrides output video size when recording (format: WIDTHxHEIGHT).");
+   puts("  -v/--verbose: Verbose logging.");
+   puts("  -U/--ups: Specifies path for UPS patch that will be applied to content.");
+   puts("  --bps: Specifies path for BPS patch that will be applied to content.");
+   puts("  --ips: Specifies path for IPS patch that will be applied to content.");
+   puts("  --no-patch: Disables all forms of content patching.");
+   puts("  -D/--detach: Detach " RETRO_FRONTEND " from the running console. Not relevant for all platforms.");
+   puts("  --max-frames: Runs for the specified number of frames, then exits.\n");
 }
 
 static void set_basename(const char *path)
