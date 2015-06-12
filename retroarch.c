@@ -166,8 +166,8 @@ static void print_help(const char *arg0)
         "                        starts directly in menu. If no arguments are passed to\n"
         "                        " RETRO_FRONTEND ", it is equivalent to using --menu as only argument.");
    puts("  -s, --save=FILE       Path for save file (*.srm).");
+   puts("  -S, --savestate=FILE  Path for the save state file (*.state).");
    puts("  -f, --fullscreen      Start " RETRO_FRONTEND " in fullscreen regardless of config settings.");
-   puts("  -S, --savestate=FILE  Path to use for save states. If not selected, *.state will be assumed.");
    puts("  -c, --config=FILE     Path for config file." RARCH_DEFAULT_CONF_PATH_STR);
    puts("      --appendconfig=FILE\n"
         "                        Extra config files are loaded in, and take priority over\n"
