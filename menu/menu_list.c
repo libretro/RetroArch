@@ -224,6 +224,13 @@ void menu_list_get_last_stack(const menu_list_t *list,
    menu_list_get_last(list->menu_stack, path, label, file_type, entry_idx);
 }
 
+void *menu_list_get_userdata_at_offset(const file_list_t *list, size_t idx)
+{
+   if (!list)
+      return NULL;
+   return (menu_file_list_cbs_t*)file_list_get_userdata_at_offset(list, idx);
+}
+
 menu_file_list_cbs_t *menu_list_get_actiondata_at_offset(const file_list_t *list, size_t idx)
 {
    if (!list)
