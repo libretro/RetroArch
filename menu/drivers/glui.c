@@ -61,9 +61,9 @@ static void glui_blit_line(float x, float y,
       const char *message, uint32_t color, enum text_alignment text_align)
 {
    unsigned width, height;
-   glui_handle_t *glui = NULL;
+   glui_handle_t *glui       = NULL;
    struct font_params params = {0};
-   menu_handle_t *menu = menu_driver_get_ptr();
+   menu_handle_t *menu       = menu_driver_get_ptr();
 
    if (!menu)
       return;
@@ -280,9 +280,9 @@ static void glui_render_menu_list(glui_handle_t *glui,
       uint32_t hover_color)
 {
    unsigned width, height;
-   size_t i = 0;
-   uint64_t frame_count = video_driver_get_frame_count();
-   size_t          end  = menu_entries_get_end();
+   size_t i               = 0;
+   uint64_t frame_count   = video_driver_get_frame_count();
+   size_t          end    = menu_entries_get_end();
 
    if (!menu_display_update_pending())
       return;
@@ -293,10 +293,12 @@ static void glui_render_menu_list(glui_handle_t *glui,
 
    for (i = 0; i < end; i++)
    {
-      char entry_path[PATH_MAX_LENGTH], entry_value[PATH_MAX_LENGTH];
-      char message[PATH_MAX_LENGTH],
-           entry_title_buf[PATH_MAX_LENGTH], type_str_buf[PATH_MAX_LENGTH];
       bool entry_selected;
+      char entry_path[PATH_MAX_LENGTH]      = {0};
+      char entry_value[PATH_MAX_LENGTH]     = {0};
+      char message[PATH_MAX_LENGTH]         = {0};
+      char entry_title_buf[PATH_MAX_LENGTH] = {0};
+      char type_str_buf[PATH_MAX_LENGTH]    = {0};
       int y = menu->header_height - menu->scroll_y + (glui->line_height * i);
 
       if (y > height || ((y + (int)glui->line_height) < 0))
@@ -324,21 +326,23 @@ static void glui_render_menu_list(glui_handle_t *glui,
 static void glui_frame(void)
 {
    unsigned width, height;
-   char title[PATH_MAX_LENGTH],     title_buf[PATH_MAX_LENGTH], 
-        title_msg[PATH_MAX_LENGTH], timedate[PATH_MAX_LENGTH];
-   gl_t *gl                     = NULL;
-   glui_handle_t *glui          = NULL;
+   char title[PATH_MAX_LENGTH]             = {0};
+   char title_buf[PATH_MAX_LENGTH]         = {0}; 
+   char title_msg[PATH_MAX_LENGTH]         = {0};
+   char timedate[PATH_MAX_LENGTH]          = {0};
+   gl_t *gl                                = NULL;
+   glui_handle_t *glui                     = NULL;
    const struct font_renderer *font_driver = NULL;
-   driver_t *driver             = driver_get_ptr();
-   menu_handle_t *menu          = menu_driver_get_ptr();
-   settings_t *settings         = config_get_ptr();
+   driver_t *driver                        = driver_get_ptr();
+   menu_handle_t *menu                     = menu_driver_get_ptr();
+   settings_t *settings                    = config_get_ptr();
+   uint64_t frame_count                    = video_driver_get_frame_count();
    const uint32_t normal_color  = FONT_COLOR_ARGB_TO_RGBA(
          settings->menu.entry_normal_color);
    const uint32_t hover_color   = FONT_COLOR_ARGB_TO_RGBA(
          settings->menu.entry_hover_color);
    const uint32_t title_color   = FONT_COLOR_ARGB_TO_RGBA(
          settings->menu.title_color);
-   uint64_t frame_count         = video_driver_get_frame_count();
 
    if (!menu || !menu->userdata)
       return;
@@ -360,7 +364,8 @@ static void glui_frame(void)
 
    menu_display_set_viewport();
 
-   gl_menu_frame_background(menu, settings, gl, glui->textures.bg.id, 0.75f, 0.75f, false);
+   gl_menu_frame_background(menu, settings,
+         gl, glui->textures.bg.id, 0.75f, 0.75f, false);
 
    menu_entries_get_title(title, sizeof(title));
 
@@ -444,8 +449,8 @@ static void glui_frame(void)
 
 static void glui_allocate_white_texture(glui_handle_t *glui)
 {
-   static const uint8_t white_data[] = { 0xff, 0xff, 0xff, 0xff };
    struct texture_image ti;
+   static const uint8_t white_data[] = { 0xff, 0xff, 0xff, 0xff };
 
    ti.width  = 1;
    ti.height = 1;
