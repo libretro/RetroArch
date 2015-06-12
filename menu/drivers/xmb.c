@@ -716,7 +716,7 @@ static void xmb_list_switch_new(xmb_handle_t *xmb,
 
    if (settings->menu.dynamic_wallpaper_enable)
    {
-      char path[PATH_MAX_LENGTH];
+      char path[PATH_MAX_LENGTH] = {0};
       char *tmp = string_replace_substring(xmb->title_name, "/", " ");
 
       if (tmp)
@@ -1021,15 +1021,16 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
    for (i = 0; i < end; i++)
    {
       float icon_x, icon_y;
-      char name[PATH_MAX_LENGTH], value[PATH_MAX_LENGTH];
-      menu_entry_t entry     = {{0}};
-      GLuint texture_switch  = 0;
-      GLuint         icon    = 0;
-      xmb_node_t *   node    = (xmb_node_t*)menu_list_get_userdata_at_offset(list, i);
-      menu_handle_t *menu    = menu_driver_get_ptr();
-      uint32_t hash_label    = 0;
-      uint32_t hash_value    = 0;
-      bool do_draw_text      = false;
+      char name[PATH_MAX_LENGTH]  = {0};
+      char value[PATH_MAX_LENGTH] = {0};
+      menu_entry_t entry          = {{0}};
+      GLuint texture_switch       = 0;
+      GLuint         icon         = 0;
+      xmb_node_t *   node         = (xmb_node_t*)menu_list_get_userdata_at_offset(list, i);
+      menu_handle_t *menu         = menu_driver_get_ptr();
+      uint32_t hash_label         = 0;
+      uint32_t hash_value         = 0;
+      bool do_draw_text           = false;
 
       if (!node)
          continue;
@@ -1281,15 +1282,16 @@ static void xmb_frame(void)
    math_matrix_4x4 mymat, mrot, mscal;
    unsigned depth;
    unsigned width, height;
-   char msg[PATH_MAX_LENGTH];
-   char title_msg[PATH_MAX_LENGTH], timedate[PATH_MAX_LENGTH];
-   bool render_background = false;
-   xmb_handle_t *xmb = NULL;
-   gl_t *gl = NULL;
+   char msg[PATH_MAX_LENGTH]               = {0};
+   char title_msg[PATH_MAX_LENGTH]         = {0};
+   char timedate[PATH_MAX_LENGTH]          = {0};
+   bool render_background                  = false;
+   xmb_handle_t *xmb                       = NULL;
+   gl_t *gl                                = NULL;
    const struct font_renderer *font_driver = NULL;
-   menu_handle_t   *menu  = menu_driver_get_ptr();
-   menu_list_t *menu_list = menu_list_get_ptr();
-   settings_t   *settings = config_get_ptr();
+   menu_handle_t   *menu                   = menu_driver_get_ptr();
+   menu_list_t *menu_list                  = menu_list_get_ptr();
+   settings_t   *settings                  = config_get_ptr();
 
    if (!menu)
       return;
@@ -1310,7 +1312,8 @@ static void xmb_frame(void)
 
    xmb->raster_block.carr.coords.vertices = 0;
 
-   gl_menu_frame_background(menu, settings, gl, xmb->textures.bg.id, xmb->alpha, 0.75f, false);
+   gl_menu_frame_background(menu, settings,
+         gl, xmb->textures.bg.id, xmb->alpha, 0.75f, false);
 
    xmb_draw_text(menu, xmb,
          xmb->title_name, xmb->margins.title.left,
@@ -1405,7 +1408,7 @@ static void xmb_frame(void)
 static void xmb_init_horizontal_list(menu_handle_t *menu, xmb_handle_t *xmb)
 {
    menu_displaylist_info_t info = {0};
-   settings_t *settings        = config_get_ptr();
+   settings_t *settings         = config_get_ptr();
 
    xmb->horizontal_list     = (file_list_t*)calloc(1, sizeof(file_list_t));
 
@@ -1549,9 +1552,9 @@ error:
 
 static void xmb_free(void *data)
 {
-   xmb_handle_t *xmb = NULL;
-   menu_handle_t *menu = (menu_handle_t*)data;
-   driver_t *driver    = driver_get_ptr();
+   xmb_handle_t *xmb                       = NULL;
+   menu_handle_t *menu                     = (menu_handle_t*)data;
+   driver_t *driver                        = driver_get_ptr();
    const struct font_renderer *font_driver = 
       (const struct font_renderer*)driver->font_osd_driver;
 
@@ -1591,7 +1594,7 @@ static void xmb_context_bg_destroy(xmb_handle_t *xmb)
 
 static bool xmb_load_image(void *data, menu_image_type_t type)
 {
-   xmb_handle_t *xmb = NULL;
+   xmb_handle_t *xmb   = NULL;
    menu_handle_t *menu = menu_driver_get_ptr();
 
    if (!menu)
@@ -1626,12 +1629,13 @@ static void xmb_context_reset_horizontal_list(xmb_handle_t *xmb,
 
    for (i = 0; i < list_size; i++)
    {
-      char iconpath[PATH_MAX_LENGTH], sysname[PATH_MAX_LENGTH];
-      char texturepath[PATH_MAX_LENGTH], content_texturepath[PATH_MAX_LENGTH];
-      struct texture_image ti     = {0};
-      struct item_file *info      = NULL;
-      xmb_node_t *node            = xmb_get_userdata_from_horizontal_list(
-            xmb, i);
+      char iconpath[PATH_MAX_LENGTH]            = {0};
+      char sysname[PATH_MAX_LENGTH]             = {0};
+      char texturepath[PATH_MAX_LENGTH]         = {0};
+      char content_texturepath[PATH_MAX_LENGTH] = {0};
+      struct texture_image ti                   = {0};
+      struct item_file *info                    = NULL;
+      xmb_node_t *node                          = xmb_get_userdata_from_horizontal_list(xmb, i);
 
       if (!node)
       {
@@ -1690,7 +1694,7 @@ static void xmb_context_reset_textures(xmb_handle_t *xmb, const char *iconpath)
    for (i = 0; i < XMB_TEXTURE_LAST; i++)
    {
       struct texture_image ti     = {0};
-      char path[PATH_MAX_LENGTH];
+      char path[PATH_MAX_LENGTH]  = {0};
 
       switch(i)
       {
@@ -1789,7 +1793,7 @@ static void xmb_context_reset_textures(xmb_handle_t *xmb, const char *iconpath)
 
 static void xmb_context_reset_background(const char *iconpath)
 {
-   char path[PATH_MAX_LENGTH];
+   char path[PATH_MAX_LENGTH]  = {0};
    settings_t *settings        = config_get_ptr();
 
    fill_pathname_join(path, iconpath, "bg.png", sizeof(path));
@@ -1804,13 +1808,14 @@ static void xmb_context_reset_background(const char *iconpath)
 
 static void xmb_context_reset(void)
 {
-   char mediapath[PATH_MAX_LENGTH], themepath[PATH_MAX_LENGTH],
-        iconpath[PATH_MAX_LENGTH],  fontpath[PATH_MAX_LENGTH];
-
-   gl_t *gl                    = NULL;
-   xmb_handle_t *xmb           = NULL;
-   menu_handle_t *menu         = menu_driver_get_ptr();
-   settings_t *settings        = config_get_ptr();
+   char mediapath[PATH_MAX_LENGTH] = {0};
+   char themepath[PATH_MAX_LENGTH] = {0};
+   char iconpath[PATH_MAX_LENGTH]  = {0};
+   char fontpath[PATH_MAX_LENGTH]  = {0};
+   gl_t *gl                        = NULL;
+   xmb_handle_t *xmb               = NULL;
+   menu_handle_t *menu             = menu_driver_get_ptr();
+   settings_t *settings            = config_get_ptr();
 
    if (!menu)
       return;
@@ -1863,7 +1868,8 @@ static void xmb_navigation_alphabet(size_t *unused)
 static void xmb_list_insert(file_list_t *list,
       const char *path, const char *unused, size_t list_size)
 {
-   int current = 0, i  = list_size;
+   int current         = 0;
+   int i               = list_size;
    xmb_node_t *node    = NULL;
    xmb_handle_t *xmb   = NULL;
    menu_handle_t *menu = menu_driver_get_ptr();
