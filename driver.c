@@ -157,8 +157,8 @@ static const void *find_driver_nonempty(const char *label, int i,
 int find_driver_index(const char * label, const char *drv)
 {
    unsigned i;
-   char str[PATH_MAX_LENGTH];
-   const void *obj = NULL;
+   char str[PATH_MAX_LENGTH] = {0};
+   const void           *obj = NULL;
 
    for (i = 0; (obj = (const void*)
             find_driver_nonempty(label, i, str, sizeof(str))) != NULL; i++)
@@ -326,6 +326,7 @@ bool driver_update_system_av_info(const struct retro_system_av_info *info)
    if (driver->recording_data)
    {
       static const char *msg = "Restarting recording due to driver reinit.";
+
       rarch_main_msg_queue_push(msg, 2, 180, false);
       RARCH_WARN("%s\n", msg);
       event_command(EVENT_CMD_RECORD_DEINIT);
