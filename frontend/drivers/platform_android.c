@@ -317,10 +317,10 @@ void ANativeActivity_onCreate(ANativeActivity* activity,
 int system_property_get(const char *name, char *value)
 {
    FILE *pipe;
-   int length = 0;
-   char buffer[PATH_MAX_LENGTH];
-   char cmd[PATH_MAX_LENGTH];
-   char *curpos = NULL;
+   int length                   = 0;
+   char buffer[PATH_MAX_LENGTH] = {0};
+   char cmd[PATH_MAX_LENGTH]    = {0};
+   char *curpos                 = NULL;
 
    snprintf(cmd, sizeof(cmd), "getprop %s", name);
 
@@ -361,7 +361,7 @@ static void frontend_android_get_name(char *s, size_t len)
 
 static void frontend_android_get_version(int32_t *major, int32_t *minor, int32_t *rel)
 {
-   char os_version_str[PROP_VALUE_MAX];
+   char os_version_str[PROP_VALUE_MAX] = {0};
    system_property_get("ro.build.version.release", os_version_str);
 
    *major  = 0;
@@ -396,7 +396,7 @@ static void frontend_android_get_os(char *s, size_t len, int *major, int *minor)
 
 static void frontend_android_get_version_sdk(int32_t *sdk)
 {
-  char os_version_str[PROP_VALUE_MAX];
+  char os_version_str[PROP_VALUE_MAX] = {0};
   system_property_get("ro.build.version.sdk", os_version_str);
 
   *sdk = 0;
@@ -440,12 +440,13 @@ static void frontend_android_get_environment_settings(int *argc,
       char *argv[], void *data, void *params_data)
 {
    int32_t major, minor, rel;
-   char device_model[PROP_VALUE_MAX], device_id[PROP_VALUE_MAX];
-
-   JNIEnv *env;
-   jobject obj = NULL;
-   jstring jstr = NULL;
-   struct android_app* android_app = (struct android_app*)data;
+   char device_model[PROP_VALUE_MAX] = {0};
+   char device_id[PROP_VALUE_MAX]    = {0};
+   struct rarch_main_wrap      *args = NULL;
+   JNIEnv                       *env = NULL;
+   jobject                       obj = NULL;
+   jstring                      jstr = NULL;
+   struct android_app   *android_app = (struct android_app*)data;
 
    if (!android_app)
       return;
@@ -454,7 +455,8 @@ static void frontend_android_get_environment_settings(int *argc,
    if (!env)
       return;
 
-   struct rarch_main_wrap *args = (struct rarch_main_wrap*)params_data;
+   args = (struct rarch_main_wrap*)params_data;
+
    if (args)
    {
       args->touched    = true;
@@ -478,8 +480,9 @@ static void frontend_android_get_environment_settings(int *argc,
 
    if (android_app->getStringExtra && jstr)
    {
-      static char config_path[PATH_MAX_LENGTH];
+      static char config_path[PATH_MAX_LENGTH] = {0};
       const char *argv = NULL;
+
       *config_path = '\0';
 
       argv = (*env)->GetStringUTFChars(env, jstr, 0);
@@ -500,6 +503,7 @@ static void frontend_android_get_environment_settings(int *argc,
    if (android_app->getStringExtra && jstr)
    {
       const char *argv = (*env)->GetStringUTFChars(env, jstr, 0);
+
       strlcpy(android_app->current_ime, argv,
             sizeof(android_app->current_ime));
       (*env)->ReleaseStringUTFChars(env, jstr, argv);
@@ -514,6 +518,7 @@ static void frontend_android_get_environment_settings(int *argc,
    {
       const char *argv = (*env)->GetStringUTFChars(env, jstr, 0);
       bool used = (strcmp(argv, "false") == 0) ? false : true;
+
       (*env)->ReleaseStringUTFChars(env, jstr, argv);
 
       RARCH_LOG("USED: [%s].\n", used ? "true" : "false");
@@ -644,7 +649,7 @@ static void frontend_android_get_environment_settings(int *argc,
 
 static void frontend_android_deinit(void *data)
 {
-   JNIEnv *env;
+   JNIEnv                     *env = NULL;
    struct android_app *android_app = (struct android_app*)data;
 
    if (!android_app)
@@ -677,10 +682,10 @@ bool android_run_events(void *data);
 
 static void frontend_android_init(void *data)
 {
-   JNIEnv *env;
-   ALooper *looper;
-   jclass class = NULL;
-   jobject obj = NULL;
+   JNIEnv                     *env = NULL;
+   ALooper                 *looper = NULL;
+   jclass                    class = NULL;
+   jobject                     obj = NULL;
    struct android_app* android_app = (struct android_app*)data;
 
    if (!android_app)
@@ -732,7 +737,7 @@ static void frontend_android_init(void *data)
 
 static int frontend_android_get_rating(void)
 {
-   char device_model[PROP_VALUE_MAX];
+   char device_model[PROP_VALUE_MAX] = {0};
    frontend_android_get_name(device_model, sizeof(device_model));
 
    RARCH_LOG("ro.product.model: (%s).\n", device_model);
@@ -748,7 +753,7 @@ static int frontend_android_get_rating(void)
 
 static enum frontend_architecture frontend_android_get_architecture(void)
 {
-   char abi[PROP_VALUE_MAX];
+   char abi[PROP_VALUE_MAX] = {0};
    system_property_get("ro.product.cpu.abi", abi);
 
    if (!strcmp(abi, "armeabi-v7a"))

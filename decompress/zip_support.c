@@ -70,7 +70,7 @@ int read_zip_file(const char *archive_path,
    {
       /* Get info about current file. */
       unz_file_info file_info;
-      char filename[PATH_MAX_LENGTH];
+      char filename[PATH_MAX_LENGTH] = {0};
       char last_char = ' ';
 
       if (unzGetCurrentFileInfo(
@@ -105,7 +105,7 @@ int read_zip_file(const char *archive_path,
 
          if (optional_outfile != 0)
          {
-            char read_buffer[RARCH_ZIP_SUPPORT_BUFFER_SIZE_MAX];
+            char read_buffer[RARCH_ZIP_SUPPORT_BUFFER_SIZE_MAX] = {0};
             FILE* outsink = fopen(optional_outfile,"wb");
 
             if (outsink == NULL)
