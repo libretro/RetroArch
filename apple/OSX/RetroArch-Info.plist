@@ -43,5 +43,7 @@
 	<string>MainMenu</string>
 	<key>NSPrincipalClass</key>
 	<string>RApplication</string>
+	<key>NSHighResolutionCapable</key>
+	<true/>
 </dict>
 </plist>

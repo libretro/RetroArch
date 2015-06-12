@@ -151,6 +151,7 @@ static bool cocoagl_gfx_ctx_init(void *data)
     
 #if defined(HAVE_COCOA)
     CocoaView *g_view = (CocoaView*)nsview_get_ptr();
+	[g_view setWantsBestResolutionOpenGLSurface:YES];
     NSOpenGLPixelFormatAttribute attributes [] = {
         NSOpenGLPFAColorSize, 24,
         NSOpenGLPFADoubleBuffer,
@@ -337,8 +338,10 @@ static void cocoagl_gfx_ctx_get_video_size(void *data, unsigned* width, unsigned
 	
 #if defined(HAVE_COCOA)
    CocoaView *g_view = (CocoaView*)nsview_get_ptr();
-   CGRect cgrect = NSRectToCGRect([g_view frame]);
-   size = CGRectMake(0, 0, CGRectGetWidth(cgrect), CGRectGetHeight(cgrect));
+   NSRect backingBounds = [g_view convertRectToBacking:[g_view bounds]];
+   GLsizei backingPixelWidth = (GLsizei)(backingBounds.size.width),
+		   backingPixelHeight = (GLsizei)(backingBounds.size.height);
+   size = CGRectMake(0, 0, backingPixelWidth, backingPixelHeight);
 #else
    size = g_view.bounds;
 #endif
