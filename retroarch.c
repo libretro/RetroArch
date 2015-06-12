@@ -981,8 +981,8 @@ void rarch_main_new(void)
 void rarch_main_free(void)
 {
    event_command(EVENT_CMD_MSG_QUEUE_DEINIT);
-   event_command(EVENT_CMD_LOG_FILE_DEINIT);
    event_command(EVENT_CMD_DRIVERS_DEINIT);
+   event_command(EVENT_CMD_LOG_FILE_DEINIT);
 
    rarch_main_state_free();
    rarch_main_global_free();
