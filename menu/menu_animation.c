@@ -297,6 +297,24 @@ static struct tween *menu_animation_get_free_slot(animation_t *animation)
    return slot;
 }
 
+void menu_animation_kill_by_subject(animation_t *animation, size_t count, const void *subjects)
+{
+   unsigned i, j;
+   float **sub = (float**)subjects;
+
+   for (i = 0; i < animation->size; ++i)
+   {
+      for (j = 0; j < count; ++j)
+      {
+         if (animation->list[i].subject == sub[j])
+         {
+            animation->list[i].alive   = 0;
+            animation->list[i].subject = NULL;
+         }
+      }
+   }
+}
+
 bool menu_animation_push(animation_t *animation,
       float duration, float target_value, float* subject,
       enum animation_easing_type easing_enum, tween_cb cb)
@@ -433,8 +451,12 @@ static int menu_animation_iterate(struct tween *tween, float dt,
 {
    if (!tween)
       return -1;
-   if (tween->running_since >= tween->duration)
+   if (tween->running_since >= tween->duration || !tween->alive)
+   {
+      tween->alive = 0;
+      tween->subject = NULL;
       return -1;
+   }
 
    tween->running_since += dt;
 

@@ -96,6 +96,8 @@ enum animation_easing_type
 
 void menu_animation_free(animation_t *animation);
 
+void menu_animation_kill_by_subject(animation_t *animation, size_t count, const void *subjects);
+
 bool menu_animation_push(animation_t *animation, float duration,
       float target_value, float* subject,
       enum animation_easing_type easing_enum, tween_cb cb);
