@@ -110,12 +110,7 @@ static void print_features(void)
 }
 #undef _PSUPP
 
-/**
- * print_help:
- *
- * Prints help message explaining RetroArch's commandline switches.
- **/
-static void print_help(const char *arg0)
+static void print_version(void)
 {
    char str[PATH_MAX_LENGTH] = {0};
 
@@ -129,13 +124,26 @@ static void print_help(const char *arg0)
    fprintf(stdout, "%s", str);
    fprintf(stdout, "Built: %s\n", __DATE__);
    puts("===================================================================");
+}
+
+/**
+ * print_help:
+ *
+ * Prints help message explaining RetroArch's commandline switches.
+ **/
+static void print_help(const char *arg0)
+{
+   print_version();
    printf("Usage: %s [OPTIONS]... [FILE]\n", arg0);
 
    puts("  -h, --help            Show this help message.");
+   puts("  -v, --verbose         Verbose logging.");
+   puts("      --log-file=FILE   Log " RETRO_FRONTEND " messages to FILE.");
+   puts("      --version         Show " RETRO_FRONTEND " version.");
+   puts("      --features        Prints available features compiled into " RETRO_FRONTEND ".");
    puts("      --menu            Do not require content or libretro core to be loaded,\n"
         "                        starts directly in menu. If no arguments are passed to\n"
         "                        " RETRO_FRONTEND ", it is equivalent to using --menu as only argument.");
-   puts("      --features        Prints available features compiled into " RETRO_FRONTEND ".");
    puts("  -s, --save=FILE       Path for save file (*.srm).");
    puts("  -f, --fullscreen      Start " RETRO_FRONTEND " in fullscreen regardless of config settings.");
    puts("  -S, --savestate=FILE  Path to use for save states. If not selected, *.state will be assumed.");
@@ -186,7 +194,6 @@ static void print_help(const char *arg0)
    puts("      --recordconfig    Path to settings used during recording.");
    puts("      --size=WIDTHxHEIGHT\n"
         "                        Overrides output video size when recording.");
-   puts("  -v, --verbose         Verbose logging.");
    puts("  -U, --ups=FILE        Specifies path for UPS patch that will be applied to content.");
    puts("      --bps=FILE        Specifies path for BPS patch that will be applied to content.");
    puts("      --ips=FILE        Specifies path for IPS patch that will be applied to content.");
