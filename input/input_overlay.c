@@ -166,15 +166,16 @@ static bool input_overlay_load_desc_image(input_overlay_t *ol,
       struct overlay *input_overlay,
       unsigned ol_idx, unsigned desc_idx)
 {
-   char overlay_desc_image_key[64], image_path[PATH_MAX_LENGTH];
-
+   char overlay_desc_image_key[64]  = {0};
+   char image_path[PATH_MAX_LENGTH] = {0};
+ 
    snprintf(overlay_desc_image_key, sizeof(overlay_desc_image_key),
          "overlay%u_desc%u_overlay", ol_idx, desc_idx);
 
    if (config_get_path(ol->conf, overlay_desc_image_key,
             image_path, sizeof(image_path)))
    {
-      char path[PATH_MAX_LENGTH];
+      char path[PATH_MAX_LENGTH] = {0};
       fill_pathname_resolve_relative(path, ol->overlay_path,
             image_path, sizeof(path));
 
@@ -194,15 +195,19 @@ static bool input_overlay_load_desc(input_overlay_t *ol,
       unsigned width, unsigned height,
       bool normalized, float alpha_mod, float range_mod)
 {
-   bool ret = true, by_pixel;
-   char overlay_desc_key[64], conf_key[64],
-        overlay_desc_normalized_key[64];
-   char overlay[256], *save, *key;
    float width_mod, height_mod;
-   struct string_list *list = NULL;
-   const char *x            = NULL;
-   const char *y            = NULL;
-   const char *box          = NULL;
+   bool ret                             = true;
+   bool by_pixel                        = false;
+   char overlay_desc_key[64]            = {0};
+   char conf_key[64]                    = {0};
+   char overlay_desc_normalized_key[64] = {0};
+   char overlay[256]                    = {0};
+   char *save                           = NULL;
+   char *key                            = NULL;
+   struct string_list *list             = NULL;
+   const char *x                        = NULL;
+   const char *y                        = NULL;
+   const char *box                      = NULL;
 
    snprintf(overlay_desc_key, sizeof(overlay_desc_key),
          "overlay%u_desc%u", ol_idx, desc_idx);
@@ -258,7 +263,8 @@ static bool input_overlay_load_desc(input_overlay_t *ol,
    }
    else
    {
-      const char *tmp;
+      const char *tmp = NULL;
+
       desc->type = OVERLAY_TYPE_BUTTONS;
       for (tmp = strtok_r(key, "|", &save); tmp; tmp = strtok_r(NULL, "|", &save))
       {
@@ -268,7 +274,8 @@ static bool input_overlay_load_desc(input_overlay_t *ol,
 
       if (desc->key_mask & (UINT64_C(1) << RARCH_OVERLAY_NEXT))
       {
-         char overlay_target_key[64];
+         char overlay_target_key[64] = {0};
+
          snprintf(overlay_target_key, sizeof(overlay_target_key),
                "overlay%u_desc%u_next_target", ol_idx, desc_idx);
          config_get_array(ol->conf, overlay_target_key,
@@ -303,6 +310,8 @@ static bool input_overlay_load_desc(input_overlay_t *ol,
          desc->type == OVERLAY_TYPE_ANALOG_LEFT ||
          desc->type == OVERLAY_TYPE_ANALOG_RIGHT)
    {
+      char overlay_analog_saturate_key[64] = {0};
+
       if (desc->hitbox != OVERLAY_HITBOX_RADIAL)
       {
          RARCH_ERR("[Overlay]: Analog hitbox type must be \"radial\".\n");
@@ -310,7 +319,6 @@ static bool input_overlay_load_desc(input_overlay_t *ol,
          goto end;
       }
 
-      char overlay_analog_saturate_key[64];
       snprintf(overlay_analog_saturate_key, sizeof(overlay_analog_saturate_key),
             "overlay%u_desc%u_saturate_pct", ol_idx, desc_idx);
       if (!config_get_float(ol->conf, overlay_analog_saturate_key,
@@ -572,10 +580,10 @@ bool input_overlay_load_overlays(input_overlay_t *ol)
 
    for (i = 0; i < ol->pos_increment; i++, ol->pos++)
    {
-      char conf_key[64];
-      char overlay_full_screen_key[64];
-      struct overlay *overlay = NULL;
-      bool to_cont            = ol->pos < ol->size;
+      char conf_key[64]                = {0};
+      char overlay_full_screen_key[64] = {0};
+      struct overlay          *overlay = NULL;
+      bool                     to_cont = ol->pos < ol->size;
       
       if (!to_cont)
       {
@@ -647,7 +655,7 @@ bool input_overlay_load_overlays(input_overlay_t *ol)
 
       if (overlay->config.paths.path[0] != '\0')
       {
-         char overlay_resolved_path[PATH_MAX_LENGTH];
+         char overlay_resolved_path[PATH_MAX_LENGTH] = {0};
 
          fill_pathname_resolve_relative(overlay_resolved_path, ol->overlay_path,
                overlay->config.paths.path, sizeof(overlay_resolved_path));

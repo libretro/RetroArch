@@ -50,10 +50,12 @@ static void input_autoconfigure_joypad_conf(config_file_t *conf,
 static int input_try_autoconfigure_joypad_from_conf(config_file_t *conf,
       autoconfig_params_t *params, unsigned *match)
 {
-   char ident[PATH_MAX_LENGTH], ident_idx[PATH_MAX_LENGTH];
-   char input_driver[PATH_MAX_LENGTH];
-   int input_vid = 0, input_pid = 0;
-   int ret = 0;
+   char ident[PATH_MAX_LENGTH]        = {0};
+   char ident_idx[PATH_MAX_LENGTH]    = {0};
+   char input_driver[PATH_MAX_LENGTH] = {0};
+   int                      input_vid = 0;
+   int                      input_pid = 0;
+   int                            ret = 0;
 
    if (!conf)
       return false;
@@ -114,8 +116,8 @@ static void input_autoconfigure_joypad_add(
       config_file_t *conf,
       autoconfig_params_t *params)
 {
-   char msg[PATH_MAX_LENGTH];
-   settings_t *settings = config_get_ptr();
+   char msg[PATH_MAX_LENGTH] = {0};
+   settings_t      *settings = config_get_ptr();
 
    /* This will be the case if input driver is reinitialized.
     * No reason to spam autoconfigure messages every time. */
@@ -261,7 +263,7 @@ const struct retro_keybind *input_get_auto_bind(unsigned port, unsigned id)
 
 void input_config_autoconfigure_disconnect(unsigned i, const char *ident)
 {
-   char msg[PATH_MAX_LENGTH];
+   char msg[PATH_MAX_LENGTH] = {0};
    snprintf(msg, sizeof(msg), "Device #%u (%s) disconnected.", i, ident);
    rarch_main_msg_queue_push(msg, 0, 60, false);
    RARCH_LOG("%s\n", msg);
