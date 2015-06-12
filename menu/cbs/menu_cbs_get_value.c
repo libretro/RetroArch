@@ -17,7 +17,7 @@
 #include <rhash.h>
 
 #include "../menu.h"
-#include "../menu_entries.h"
+#include "../menu_cbs.h"
 #include "../menu_shader.h"
 
 #include "../../performance.h"
@@ -789,7 +789,7 @@ static void menu_action_setting_disp_set_label(file_list_t* list,
    strlcpy(s2, path, len2);
 }
 
-static int menu_entries_cbs_init_bind_get_string_representation_compare_label(
+static int menu_cbs_init_bind_get_string_representation_compare_label(
       menu_file_list_cbs_t *cbs, uint32_t label_hash)
 {
    switch (label_hash)
@@ -837,7 +837,7 @@ static int menu_entries_cbs_init_bind_get_string_representation_compare_label(
    return 0;
 }
 
-static int menu_entries_cbs_init_bind_get_string_representation_compare_type(
+static int menu_cbs_init_bind_get_string_representation_compare_type(
       menu_file_list_cbs_t *cbs, unsigned type)
 {
    if (type >= MENU_SETTINGS_INPUT_DESC_BEGIN
@@ -961,7 +961,7 @@ static int menu_entries_cbs_init_bind_get_string_representation_compare_type(
    return 0;
 }
 
-int menu_entries_cbs_init_bind_get_string_representation(menu_file_list_cbs_t *cbs,
+int menu_cbs_init_bind_get_string_representation(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx,
       const char *elem0, const char *elem1,
       uint32_t label_hash, uint32_t menu_label_hash)
@@ -969,10 +969,10 @@ int menu_entries_cbs_init_bind_get_string_representation(menu_file_list_cbs_t *c
    if (!cbs)
       return -1;
 
-   if (menu_entries_cbs_init_bind_get_string_representation_compare_label(cbs, label_hash) == 0)
+   if (menu_cbs_init_bind_get_string_representation_compare_label(cbs, label_hash) == 0)
       return 0;
 
-   if (menu_entries_cbs_init_bind_get_string_representation_compare_type(cbs, type) == 0)
+   if (menu_cbs_init_bind_get_string_representation_compare_type(cbs, type) == 0)
       return 0;
 
    return -1;

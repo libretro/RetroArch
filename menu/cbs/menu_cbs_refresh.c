@@ -13,17 +13,15 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <file/file_path.h>
 #include "../menu.h"
-#include "../menu_entry.h"
+#include "../menu_displaylist.h"
 
-static int action_cancel_pop_default(const char *path,
-      const char *label, unsigned type, size_t idx)
+static int action_refresh_default(file_list_t *list, file_list_t *menu_list)
 {
-   return menu_entry_go_back();
+   return menu_displaylist_push(list, menu_list);
 }
 
-int menu_entries_cbs_init_bind_cancel(menu_file_list_cbs_t *cbs,
+int menu_cbs_init_bind_refresh(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx,
       const char *elem0, const char *elem1,
       uint32_t label_hash, uint32_t menu_label_hash)
@@ -31,7 +29,16 @@ int menu_entries_cbs_init_bind_cancel(menu_file_list_cbs_t *cbs,
    if (!cbs)
       return -1;
 
-   cbs->action_cancel = action_cancel_pop_default;
+   switch (label_hash)
+   {
+      case MENU_VALUE_MAIN_MENU:
+         cbs->action_refresh = NULL;
+         break;
+      default:
+         cbs->action_refresh = action_refresh_default;
+         break;
+   }
+
 
    return -1;
 }

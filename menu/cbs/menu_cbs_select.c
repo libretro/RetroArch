@@ -15,7 +15,7 @@
 
 #include "../menu.h"
 #include "../menu_entry.h"
-#include "../menu_entries.h"
+#include "../menu_cbs.h"
 #include "../menu_setting.h"
 
 #include "../../runloop_data.h"
@@ -75,7 +75,7 @@ static int action_select_input_desc(const char *path, const char *label, unsigne
    return action_right_input_desc(type, label, true);
 }
 
-static int menu_entries_cbs_init_bind_select_compare_type(
+static int menu_cbs_init_bind_select_compare_type(
       menu_file_list_cbs_t *cbs, unsigned type)
 {
    if (type >= MENU_SETTINGS_CHEAT_BEGIN
@@ -103,7 +103,7 @@ static int menu_entries_cbs_init_bind_select_compare_type(
    return 0;
 }
 
-int menu_entries_cbs_init_bind_select(menu_file_list_cbs_t *cbs,
+int menu_cbs_init_bind_select(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx,
       const char *elem0, const char *elem1,
       uint32_t label_hash, uint32_t menu_label_hash)
@@ -113,7 +113,7 @@ int menu_entries_cbs_init_bind_select(menu_file_list_cbs_t *cbs,
 
    cbs->action_select = action_select_default;
 
-   if (menu_entries_cbs_init_bind_select_compare_type(cbs, type) == 0)
+   if (menu_cbs_init_bind_select_compare_type(cbs, type) == 0)
       return 0;
 
    return -1;

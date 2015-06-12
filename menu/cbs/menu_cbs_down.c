@@ -15,7 +15,7 @@
 
 #include "../menu.h"
 #include "../menu_navigation.h"
-#include "../menu_entries.h"
+#include "../menu_cbs.h"
 
 static int action_bind_down_generic(unsigned type, const char *label)
 {
@@ -35,7 +35,7 @@ static int action_bind_down_generic(unsigned type, const char *label)
    return 0;
 }
 
-int menu_entries_cbs_init_bind_down(menu_file_list_cbs_t *cbs,
+int menu_cbs_init_bind_down(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx,
       const char *elem0, const char *elem1,
       uint32_t label_hash, uint32_t menu_label_hash)

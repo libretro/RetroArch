@@ -13,8 +13,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef MENU_ENTRIES_CBS_H__
-#define MENU_ENTRIES_CBS_H__
+#ifndef MENU_CBS_H__
+#define MENU_CBS_H__
 
 #include <stdlib.h>
 #include <boolean.h>
@@ -43,82 +43,82 @@ int action_right_cheat(unsigned type, const char *label,
       bool wraparound);
 /* End of function callbacks */
 
-int menu_entries_cbs_init_bind_left(menu_file_list_cbs_t *cbs,
+int menu_cbs_init_bind_left(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx,
       const char *elem0, const char *elem1, const char *menu_label,
       uint32_t label_hash, uint32_t menu_label_hash);
 
-int menu_entries_cbs_init_bind_right(menu_file_list_cbs_t *cbs,
+int menu_cbs_init_bind_right(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx,
       const char *elem0, const char *elem1, const char *menu_label,
       uint32_t label_hash, uint32_t menu_label_hash);
 
-int menu_entries_cbs_init_bind_refresh(menu_file_list_cbs_t *cbs,
+int menu_cbs_init_bind_refresh(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx,
       const char *elem0, const char *elem1,
       uint32_t label_hash, uint32_t menu_label_hash);
 
-int menu_entries_cbs_init_bind_get_string_representation(menu_file_list_cbs_t *cbs,
+int menu_cbs_init_bind_get_string_representation(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx,
       const char *elem0, const char *elem1,
       uint32_t label_hash, uint32_t menu_label_hash);
 
-int menu_entries_cbs_init_bind_up(menu_file_list_cbs_t *cbs,
+int menu_cbs_init_bind_up(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx,
       const char *elem0, const char *elem1,
       uint32_t label_hash, uint32_t menu_label_hash);
 
-int menu_entries_cbs_init_bind_down(menu_file_list_cbs_t *cbs,
+int menu_cbs_init_bind_down(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx,
       const char *elem0, const char *elem1,
       uint32_t label_hash, uint32_t menu_label_hash);
 
-int menu_entries_cbs_init_bind_info(menu_file_list_cbs_t *cbs,
+int menu_cbs_init_bind_info(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx,
       const char *elem0, const char *elem1,
       uint32_t label_hash, uint32_t menu_label_hash);
 
-int menu_entries_cbs_init_bind_start(menu_file_list_cbs_t *cbs,
+int menu_cbs_init_bind_start(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx,
       const char *elem0, const char *elem1,
       uint32_t label_hash, uint32_t menu_label_hash);
 
-int menu_entries_cbs_init_bind_content_list_switch(menu_file_list_cbs_t *cbs,
+int menu_cbs_init_bind_content_list_switch(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx,
       const char *elem0, const char *elem1,
       uint32_t label_hash, uint32_t menu_label_hash);
 
-int menu_entries_cbs_init_bind_cancel(menu_file_list_cbs_t *cbs,
+int menu_cbs_init_bind_cancel(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx,
       const char *elem0, const char *elem1,
       uint32_t label_hash, uint32_t menu_label_hash);
 
-int menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
+int menu_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx,
       const char *elem0, const char *elem1, const char *menu_label,
       uint32_t label_hash, uint32_t menu_label_hash);
 
-int menu_entries_cbs_init_bind_iterate(menu_file_list_cbs_t *cbs,
+int menu_cbs_init_bind_iterate(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx,
       const char *elem0, const char *elem1,
       uint32_t label_hash, uint32_t menu_label_hash);
 
-int menu_entries_cbs_init_bind_deferred_push(menu_file_list_cbs_t *cbs,
+int menu_cbs_init_bind_deferred_push(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx,
       const char *elem0, const char *elem1,
       uint32_t label_hash, uint32_t menu_label_hash);
 
-int menu_entries_cbs_init_bind_select(menu_file_list_cbs_t *cbs,
+int menu_cbs_init_bind_select(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx,
       const char *elem0, const char *elem1,
       uint32_t label_hash, uint32_t menu_label_hash);
 
-int menu_entries_cbs_init_bind_scan(menu_file_list_cbs_t *cbs,
+int menu_cbs_init_bind_scan(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx,
       const char *elem0, const char *elem1,
       uint32_t label_hash, uint32_t menu_label_hash);
 
-int menu_entries_cbs_init_bind_title(menu_file_list_cbs_t *cbs,
+int menu_cbs_init_bind_title(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx,
       const char *elem0, const char *elem1,
       uint32_t label_hash, uint32_t menu_label_hash);
@@ -126,7 +126,7 @@ int menu_entries_cbs_init_bind_title(menu_file_list_cbs_t *cbs,
 int deferred_push_content_list(void *data, void *userdata,
       const char *path, const char *label, unsigned type);
 
-void menu_entries_init(void *data,
+void menu_cbs_init(void *data,
       const char *path, const char *label,
       unsigned type, size_t idx);
 

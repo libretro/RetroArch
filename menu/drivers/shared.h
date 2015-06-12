@@ -19,7 +19,7 @@
 #include "../menu_setting.h"
 
 #include "../menu_display.h"
-#include "../menu_entries.h"
+#include "../menu_cbs.h"
 
 #ifdef HAVE_OPENGL
 #include "../../gfx/drivers/gl_common.h"

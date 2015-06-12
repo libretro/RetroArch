@@ -1479,7 +1479,7 @@ static int is_rdb_entry(uint32_t label_hash)
    return 0;
 }
 
-static int menu_entries_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
+static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
       const char *label, uint32_t hash, const char *elem0)
 {
    rarch_setting_t *setting = menu_setting_find(label);
@@ -1629,7 +1629,7 @@ static int menu_entries_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs
    return 0;
 }
 
-static int menu_entries_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
+static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
       uint32_t label_hash, uint32_t menu_label_hash, unsigned type)
 {
    if (type == MENU_SETTINGS_CUSTOM_BIND_KEYBOARD ||
@@ -1789,7 +1789,7 @@ static int menu_entries_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
    return 0;
 }
 
-int menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
+int menu_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx,
       const char *elem0, const char *elem1, const char *menu_label,
       uint32_t label_hash, uint32_t menu_label_hash)
@@ -1799,10 +1799,10 @@ int menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
 
    cbs->action_ok = action_ok_lookup_setting;
 
-   if (menu_entries_cbs_init_bind_ok_compare_label(cbs, label, label_hash, elem0) == 0)
+   if (menu_cbs_init_bind_ok_compare_label(cbs, label, label_hash, elem0) == 0)
       return 0;
 
-   if (menu_entries_cbs_init_bind_ok_compare_type(cbs, label_hash, menu_label_hash, type) == 0)
+   if (menu_cbs_init_bind_ok_compare_type(cbs, label_hash, menu_label_hash, type) == 0)
       return 0;
 
    return -1;

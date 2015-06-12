@@ -58,7 +58,7 @@ static int action_scan_directory(const char *path,
    return 0;
 }
 
-static int menu_entries_cbs_init_bind_scan_compare_type(menu_file_list_cbs_t *cbs,
+static int menu_cbs_init_bind_scan_compare_type(menu_file_list_cbs_t *cbs,
       unsigned type)
 {
    switch (type)
@@ -77,7 +77,7 @@ static int menu_entries_cbs_init_bind_scan_compare_type(menu_file_list_cbs_t *cb
    return 0;
 }
 
-int menu_entries_cbs_init_bind_scan(menu_file_list_cbs_t *cbs,
+int menu_cbs_init_bind_scan(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx,
       const char *elem0, const char *elem1,
       uint32_t label_hash, uint32_t menu_label_hash)
@@ -87,7 +87,7 @@ int menu_entries_cbs_init_bind_scan(menu_file_list_cbs_t *cbs,
 
    cbs->action_scan = NULL;
 
-   menu_entries_cbs_init_bind_scan_compare_type(cbs, type);
+   menu_cbs_init_bind_scan_compare_type(cbs, type);
 
    return -1;
 }
