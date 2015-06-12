@@ -226,12 +226,12 @@ static void parport_free_pad(struct parport_joypad *pad)
 static bool parport_joypad_init(void *data)
 {
    unsigned i, j;
-   bool found_enabled_button;
-   bool found_disabled_button;
-   char buf[PARPORT_NUM_BUTTONS * 3 + 1];
-   char pin[3 + 1];
-   settings_t *settings       = config_get_ptr();
-   autoconfig_params_t params = {{0}};
+   bool found_enabled_button             = false;
+   bool found_disabled_button            = false;
+   char buf[PARPORT_NUM_BUTTONS * 3 + 1] = {0};
+   char pin[3 + 1]                       = {0};
+   settings_t *settings                  = config_get_ptr();
+   autoconfig_params_t params            = {{0}};
 
    (void)data;
 
@@ -239,7 +239,7 @@ static bool parport_joypad_init(void *data)
 
    for (i = 0; i < MAX_USERS; i++)
    {
-      char path[PATH_MAX_LENGTH];
+      char path[PATH_MAX_LENGTH] = {0};
       struct parport_joypad *pad = &parport_pads[i];
 
       pad->fd    = -1;
@@ -309,7 +309,7 @@ static bool parport_joypad_init(void *data)
 static void parport_joypad_destroy(void)
 {
    unsigned i;
-   struct parport_joypad *pad;
+   struct parport_joypad *pad = NULL;
 
    for (i = 0; i < MAX_USERS; i++)
    {

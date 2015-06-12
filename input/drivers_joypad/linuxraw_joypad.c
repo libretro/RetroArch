@@ -95,7 +95,8 @@ static bool linuxraw_joypad_init_pad(const char *path, struct linuxraw_joypad *p
 
          if (g_hotplug)
          {
-            char msg[512];
+            char msg[512] = {0};
+
             snprintf(msg, sizeof(msg), "Device #%u (%s) connected.", (unsigned)(pad - linuxraw_pads), pad->ident);
             rarch_main_msg_queue_push(msg, 0, 60, false);
          }
@@ -166,7 +167,7 @@ static void handle_plugged_pad(void)
          else if (event->mask & (IN_CREATE | IN_ATTRIB))
          {
             bool ret;
-            char path[PATH_MAX_LENGTH];
+            char path[PATH_MAX_LENGTH] = {0};
 
             snprintf(path, sizeof(path), "/dev/input/%s", event->name);
             ret = linuxraw_joypad_init_pad(path, &linuxraw_pads[idx]);
@@ -224,7 +225,7 @@ static bool linuxraw_joypad_init(void *data)
 
    for (i = 0; i < MAX_USERS; i++)
    {
-      char path[PATH_MAX_LENGTH];
+      char path[PATH_MAX_LENGTH]  = {0};
       autoconfig_params_t params  = {{0}};
       struct linuxraw_joypad *pad = (struct linuxraw_joypad*)&linuxraw_pads[i];
 

@@ -139,9 +139,9 @@ static bool guid_is_xinput_device(const GUID* product_guid)
    for (i = 0; i < num_raw_devs; i++)
    {
       RID_DEVICE_INFO rdi;
-      char devName[128];
-      UINT rdiSize = sizeof(rdi);
-      UINT nameSize = sizeof(devName);
+      char devName[128]   = {0};
+      UINT rdiSize        = sizeof(rdi);
+      UINT nameSize       = sizeof(devName);
 
       rdi.cbSize = sizeof (rdi);
 

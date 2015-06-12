@@ -166,7 +166,7 @@ static void qnx_process_gamepad_event(
 static void qnx_input_autodetect_gamepad(qnx_input_t *qnx,
       qnx_input_device_t* controller, int port)
 {
-   char name_buf[256];
+   char name_buf[256]   = {0};
    settings_t *settings = config_get_ptr();
 
    if (!qnx)

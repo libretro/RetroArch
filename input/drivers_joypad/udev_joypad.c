@@ -204,10 +204,10 @@ error:
 
 static int udev_add_pad(struct udev_device *dev, unsigned p, int fd, const char *path)
 {
-   int ret = 0;
    int i;
-   const char *buf;
    struct stat st;
+   int ret                              = 0;
+   const char *buf                      = NULL;
    unsigned buttons                     = 0;
    unsigned axes                        = 0;
    struct udev_device *parent           = NULL;
@@ -351,7 +351,8 @@ static void udev_check_device(struct udev_device *dev, const char *path, bool ho
       default:
          if (hotplugged)
          {
-            char msg[PATH_MAX_LENGTH];
+            char msg[PATH_MAX_LENGTH] = {0};
+
             snprintf(msg, sizeof(msg), "Device #%u (%s) connected.", pad, path);
             rarch_main_msg_queue_push(msg, 0, 60, false);
             RARCH_LOG("[udev]: %s\n", msg);

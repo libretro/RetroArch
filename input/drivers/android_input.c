@@ -165,7 +165,7 @@ static bool android_input_lookup_name_prekitkat(char *buf,
    jmethodID method, getName;
    jobject device, name;
    const char *str = NULL;
-   JNIEnv *env = (JNIEnv*)jni_thread_getenv();
+   JNIEnv     *env = (JNIEnv*)jni_thread_getenv();
 
    if (!env)
       goto error;
@@ -225,7 +225,7 @@ static bool android_input_lookup_name(char *buf,
    jmethodID method, getName, getVendorId, getProductId;
    jobject device, name;
    const char *str = NULL;
-   JNIEnv *env = (JNIEnv*)jni_thread_getenv();
+   JNIEnv     *env = (JNIEnv*)jni_thread_getenv();
 
    if (!env)
       goto error;
@@ -566,11 +566,12 @@ static void handle_hotplug(android_input_t *android,
       struct android_app *android_app, unsigned *port, unsigned id,
       int source)
 {
-   char device_name[256], name_buf[256];
+   char device_name[256]        = {0};
+   char name_buf[256]           = {0};
+   autoconfig_params_t params   = {{0}};
    name_buf[0] = device_name[0] = 0;
-   int vendorId = 0, productId = 0;
-   autoconfig_params_t params = {{0}};
-   settings_t *settings = config_get_ptr();
+   int vendorId = 0, productId  = 0;
+   settings_t         *settings = config_get_ptr();
 
    if (!settings->input.autodetect_enable)
       return;
