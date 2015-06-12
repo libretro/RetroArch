@@ -60,7 +60,12 @@ struct nbio_t* nbio_open(const char * filename, unsigned mode)
 
 error:
    if (handle)
+   {
+      if (handle->data)
+         free(handle->data);
+      handle->data = NULL;
       free(handle);
+   }
    handle = NULL;
    fclose(f);
    return NULL;
