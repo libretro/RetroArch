@@ -150,7 +150,7 @@ void menu_list_refresh(file_list_t *list)
       menu_navigation_clear(nav, true);
 }
 
-static void menu_list_destroy(file_list_t *list)
+static void menu_list_free_list(file_list_t *list)
 {
    unsigned i;
    driver_t *driver = driver_get_ptr();
@@ -174,8 +174,8 @@ void menu_list_free(menu_list_t *menu_list)
    if (!menu_list)
       return;
 
-   menu_list_destroy(menu_list->menu_stack);
-   menu_list_destroy(menu_list->selection_buf);
+   menu_list_free_list(menu_list->menu_stack);
+   menu_list_free_list(menu_list->selection_buf);
    free(menu_list);
 }
 
