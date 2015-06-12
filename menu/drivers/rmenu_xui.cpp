@@ -171,13 +171,13 @@ HRESULT XuiTextureLoader(IXuiDevice *pDevice, LPCWSTR szFileName,
       XUIImageInfo *pImageInfo, IDirect3DTexture9 **ppTex)
 {
    D3DXIMAGE_INFO pSrc;
-   CONST BYTE  *pbTextureData = 0;
-   UINT         cbTextureData = 0;
-   HXUIRESOURCE hResource = 0;
-   BOOL         bIsMemoryResource = FALSE;
-   IDirect3DDevice9 * d3dDevice = NULL;
-   HRESULT      hr = XuiResourceOpenNoLoc(szFileName, &hResource,
-         &bIsMemoryResource);
+   CONST BYTE  *pbTextureData      = 0;
+   UINT         cbTextureData      = 0;
+   HXUIRESOURCE hResource          = 0;
+   BOOL         bIsMemoryResource  = FALSE;
+   IDirect3DDevice9 * d3dDevice    = NULL;
+   HRESULT      hr                 = 
+      XuiResourceOpenNoLoc(szFileName, &hResource, &bIsMemoryResource);
 
    if (FAILED(hr))
       return hr; 
@@ -202,7 +202,8 @@ HRESULT XuiTextureLoader(IXuiDevice *pDevice, LPCWSTR szFileName,
          goto cleanup;
       }
 
-      hr = XuiResourceRead(hResource, (BYTE*)pbTextureData, cbTextureData, &cbTextureData);
+      hr = XuiResourceRead(hResource,
+            (BYTE*)pbTextureData, cbTextureData, &cbTextureData);
       if (FAILED(hr))
          goto cleanup;
 
@@ -263,13 +264,14 @@ cleanup:
 static void* rmenu_xui_init(void)
 {
    HRESULT hr;
-   D3DPRESENT_PARAMETERS d3dpp;
-   d3d_video_t *d3d;
-   video_info_t video_info = {0};
+   d3d_video_t *d3d            = NULL;
+   D3DPRESENT_PARAMETERS d3dpp = {0};
+   video_info_t video_info     = {0};
    TypefaceDescriptor typeface = {0};
-   settings_t *settings = config_get_ptr();
-   driver_t   *driver   = driver_get_ptr();
-   menu_handle_t *menu  = (menu_handle_t*)calloc(1, sizeof(*menu));
+   settings_t *settings        = config_get_ptr();
+   driver_t   *driver          = driver_get_ptr();
+   menu_handle_t *menu         = (menu_handle_t*)
+      calloc(1, sizeof(*menu));
 
    if (!menu)
       return NULL;
@@ -357,12 +359,12 @@ static void rmenu_xui_free(void *data)
 
 static void xui_render_message(const char *msg)
 {
-   struct font_params font_parms;
-   size_t i = 0;
-   size_t j = 0;
-   struct string_list *list = NULL;
-   driver_t *driver = driver_get_ptr();
-   d3d_video_t *d3d = (d3d_video_t*)driver->video_data;
+   struct font_params font_parms = {0};
+   size_t i                      = 0;
+   size_t j                      = 0;
+   struct string_list *list      = NULL;
+   driver_t *driver              = driver_get_ptr();
+   d3d_video_t *d3d              = (d3d_video_t*)driver->video_data;
 
    if (!d3d)
       return;

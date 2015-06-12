@@ -123,13 +123,15 @@ end:
 static void rmenu_render(void)
 {
    size_t begin, end, i, j;
-   struct font_params font_parms;
-   char title[256], title_buf[256];
-   char title_msg[64];
-   menu_handle_t *menu      = menu_driver_get_ptr();
-   global_t    *global      = global_get_ptr();
-   uint64_t frame_count     = video_driver_get_frame_count();
-   size_t  entries_end      = menu_entries_get_end();
+   struct font_params font_parms = {0};
+   char title[256]               = {0};
+   char title_buf[256]           = {0};
+   char title_msg[64]            = {0};
+   menu_handle_t *menu           = menu_driver_get_ptr();
+   menu_navigation_t *nav        = menu_navigation_get_ptr();
+   global_t    *global           = global_get_ptr();
+   uint64_t frame_count          = video_driver_get_frame_count();
+   size_t  entries_end           = menu_entries_get_end();
 
    if (!menu)
       return;
@@ -151,10 +153,10 @@ static void rmenu_render(void)
    if (!menu->menu_list->selection_buf)
       return;
 
-   begin = (menu->navigation.selection_ptr >= (ENTRIES_HEIGHT / 2)) ? 
-      (menu->navigation.selection_ptr - (ENTRIES_HEIGHT / 2)) : 0;
-   end   = ((menu->navigation.selection_ptr + ENTRIES_HEIGHT) <= entries_end)
-      ? menu->navigation.selection_ptr + ENTRIES_HEIGHT : entries_end;
+   begin = (nav->selection_ptr >= (ENTRIES_HEIGHT / 2)) ? 
+      (nav->selection_ptr - (ENTRIES_HEIGHT / 2)) : 0;
+   end   = ((nav->selection_ptr + ENTRIES_HEIGHT) <= entries_end)
+      ? nav->selection_ptr + ENTRIES_HEIGHT : entries_end;
 
    if (entries_end <= ENTRIES_HEIGHT)
       begin = 0;
@@ -190,11 +192,13 @@ static void rmenu_render(void)
 
    for (i = begin; i < end; i++, j++)
    {
-      char entry_path[PATH_MAX_LENGTH], entry_value[PATH_MAX_LENGTH];
-      char message[PATH_MAX_LENGTH],
-           entry_title_buf[PATH_MAX_LENGTH], type_str_buf[PATH_MAX_LENGTH];
-      unsigned entry_spacing = menu_entry_get_spacing(i);
-      bool entry_selected = menu_entry_is_currently_selected(i);
+      char entry_path[PATH_MAX_LENGTH]      = {0};
+      char entry_value[PATH_MAX_LENGTH]     = {0};
+      char message[PATH_MAX_LENGTH]         = {0};
+      char entry_title_buf[PATH_MAX_LENGTH] = {0};
+      char type_str_buf[PATH_MAX_LENGTH]    = {0};
+      unsigned entry_spacing                = menu_entry_get_spacing(i);
+      bool entry_selected                   = menu_entry_is_currently_selected(i);
 
       menu_entry_get_value(i, entry_value, sizeof(entry_value));
       menu_entry_get_path(i, entry_path, sizeof(entry_path));
