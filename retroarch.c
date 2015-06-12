@@ -165,8 +165,8 @@ static void print_help(const char *arg0)
    puts("      --menu            Do not require content or libretro core to be loaded,\n"
         "                        starts directly in menu. If no arguments are passed to\n"
         "                        " RETRO_FRONTEND ", it is equivalent to using --menu as only argument.");
-   puts("  -s, --save=FILE       Path for save file (*.srm).");
-   puts("  -S, --savestate=FILE  Path for the save state file (*.state).");
+   puts("  -s, --save=PATH       Path for save files (*.srm).");
+   puts("  -S, --savestate=PATH  Path for the save state files (*.state).");
    puts("  -f, --fullscreen      Start " RETRO_FRONTEND " in fullscreen regardless of config settings.");
    puts("  -c, --config=FILE     Path for config file." RARCH_DEFAULT_CONF_PATH_STR);
    puts("      --appendconfig=FILE\n"
