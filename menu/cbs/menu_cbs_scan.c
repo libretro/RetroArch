@@ -23,10 +23,10 @@
 static int action_scan_file(const char *path,
       const char *label, unsigned type, size_t idx)
 {
-   char fullpath[PATH_MAX_LENGTH];
-   const char *menu_label = NULL;
-   const char *menu_path  = NULL;
-   menu_handle_t *menu    = menu_driver_get_ptr();
+   char fullpath[PATH_MAX_LENGTH] = {0};
+   const char *menu_label         = NULL;
+   const char *menu_path          = NULL;
+   menu_handle_t *menu            = menu_driver_get_ptr();
    if (!menu)
       return -1;
 
@@ -42,10 +42,10 @@ static int action_scan_file(const char *path,
 static int action_scan_directory(const char *path,
       const char *label, unsigned type, size_t idx)
 {
-   char fullpath[PATH_MAX_LENGTH];
-   const char *menu_label = NULL;
-   const char *menu_path  = NULL;
-   menu_handle_t *menu    = menu_driver_get_ptr();
+   char fullpath[PATH_MAX_LENGTH] = {0};
+   const char *menu_label         = NULL;
+   const char *menu_path          = NULL;
+   menu_handle_t *menu            = menu_driver_get_ptr();
    if (!menu)
       return -1;
 

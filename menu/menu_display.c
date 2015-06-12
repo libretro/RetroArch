@@ -203,23 +203,23 @@ void menu_display_free_main_font(menu_handle_t *menu)
 bool menu_display_init_main_font(menu_handle_t *menu,
       const char *font_path, float font_size)
 {
+   bool      ret;
    driver_t *driver = driver_get_ptr();
    void     *video  = video_driver_get_ptr(NULL);
-   bool      result;
 
    if (menu->font.buf)
       menu_display_free_main_font(menu);
 
-   result = menu_display_font_init_first(
+   ret = menu_display_font_init_first(
          (const void**)&driver->font_osd_driver, &menu->font.buf, video,
          font_path, font_size);
 
-   if (result)
+   if (ret)
       menu->font.size = font_size;
    else
       menu->font.buf = NULL;
 
-   return result;
+   return ret;
 }
 
 void menu_display_set_viewport(void)

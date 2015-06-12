@@ -32,15 +32,15 @@ extern char detect_content_path[PATH_MAX_LENGTH];
 
 static int archive_open(void)
 {
-   char cat_path[PATH_MAX_LENGTH];
-   menu_displaylist_info_t info = {0};
-   const char *menu_path  = NULL;
-   const char *menu_label = NULL;
-   const char* path       = NULL;
-   unsigned int type      = 0;
-   size_t entry_idx       = 0;
-   menu_navigation_t *nav = menu_navigation_get_ptr();
-   menu_list_t *menu_list = menu_list_get_ptr();
+   char cat_path[PATH_MAX_LENGTH] = {0};
+   menu_displaylist_info_t info   = {0};
+   const char *menu_path          = NULL;
+   const char *menu_label         = NULL;
+   const char* path               = NULL;
+   unsigned int type              = 0;
+   size_t entry_idx               = 0;
+   menu_navigation_t *nav         = menu_navigation_get_ptr();
+   menu_list_t *menu_list         = menu_list_get_ptr();
 
    if (!menu_list || !nav)
       return -1;
@@ -165,9 +165,9 @@ static int action_iterate_help(char *s, size_t len, const char *label)
       RETRO_DEVICE_ID_JOYPAD_X,
       RETRO_DEVICE_ID_JOYPAD_Y,
    };
-   char desc[ARRAY_SIZE(binds)][64];
-   menu_handle_t *menu    = menu_driver_get_ptr();
-   settings_t *settings   = config_get_ptr();
+   char desc[ARRAY_SIZE(binds)][64] = {0};
+   menu_handle_t *menu              = menu_driver_get_ptr();
+   settings_t *settings             = config_get_ptr();
 
    if (!menu)
       return 0;
@@ -216,7 +216,7 @@ static int action_iterate_help(char *s, size_t len, const char *label)
 static int action_iterate_info(char *s, size_t len, const char *label)
 {
    int ret = 0;
-   char needle[PATH_MAX_LENGTH];
+   char needle[PATH_MAX_LENGTH]     = {0};
    unsigned info_type               = 0;
    rarch_setting_t *current_setting = NULL;
    file_list_t *list                = NULL;
@@ -492,10 +492,10 @@ static enum action_iterate_type action_iterate_type(uint32_t hash)
 
 static int action_iterate_main(const char *label, unsigned action)
 {
-   static bool did_messagebox = false;
-   char msg[PATH_MAX_LENGTH];
-   enum action_iterate_type iterate_type;
    menu_entry_t entry;
+   static bool did_messagebox = false;
+   char msg[PATH_MAX_LENGTH]      = {0};
+   enum action_iterate_type iterate_type;
    size_t selected, *pop_selected = false;
    bool do_messagebox        = false;
    bool do_pop_stack         = false;

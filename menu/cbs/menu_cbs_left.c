@@ -360,7 +360,7 @@ static int menu_cbs_init_bind_left_compare_label(menu_file_list_cbs_t *cbs,
 
    for (i = 0; i < MAX_USERS; i++)
    {
-      char label_setting[PATH_MAX_LENGTH];
+      char label_setting[PATH_MAX_LENGTH] = {0};
       snprintf(label_setting, sizeof(label_setting), "input_player%d_joypad_index", i + 1);
 
       if (!strcmp(label, label_setting))

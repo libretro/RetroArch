@@ -38,7 +38,7 @@ char core_updater_path[PATH_MAX_LENGTH];
 static int menu_action_setting_set_current_string_path(
       rarch_setting_t *setting, const char *dir, const char *path)
 {
-   char s[PATH_MAX_LENGTH];
+   char s[PATH_MAX_LENGTH] = {0};
    fill_pathname_join(s, dir, path, sizeof(s));
    setting_set_with_string_representation(setting, s);
    return menu_setting_generic(setting, false);
@@ -450,8 +450,8 @@ static int action_ok_video_filter(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    menu_displaylist_info_t info = {0};
-   menu_handle_t *menu      = menu_driver_get_ptr();
-   settings_t *settings     = config_get_ptr();
+   menu_handle_t *menu          = menu_driver_get_ptr();
+   settings_t *settings         = config_get_ptr();
    if (!menu)
       return -1;
 
@@ -467,11 +467,11 @@ static int action_ok_video_filter(const char *path,
 static int action_ok_core_updater_list(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   char url_path[PATH_MAX_LENGTH];
-   menu_displaylist_info_t info = {0};
-   driver_t *driver         = driver_get_ptr();
-   menu_handle_t *menu      = menu_driver_get_ptr();
-   settings_t *settings     = config_get_ptr();
+   char url_path[PATH_MAX_LENGTH] = {0};
+   menu_displaylist_info_t info   = {0};
+   driver_t *driver               = driver_get_ptr();
+   menu_handle_t *menu            = menu_driver_get_ptr();
+   settings_t *settings           = config_get_ptr();
    if (!menu)
       return -1;
 
@@ -504,8 +504,8 @@ static int action_ok_remap_file(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    menu_displaylist_info_t info = {0};
-   menu_handle_t *menu      = menu_driver_get_ptr();
-   settings_t *settings     = config_get_ptr();
+   menu_handle_t *menu          = menu_driver_get_ptr();
+   settings_t *settings         = config_get_ptr();
 
    if (!menu)
       return -1;
@@ -523,8 +523,8 @@ static int action_ok_record_configfile(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    menu_displaylist_info_t info = {0};
-   menu_handle_t *menu      = menu_driver_get_ptr();
-   global_t   *global       = global_get_ptr();
+   menu_handle_t *menu          = menu_driver_get_ptr();
+   global_t   *global           = global_get_ptr();
 
    if (!menu)
       return -1;
@@ -615,9 +615,9 @@ static int action_ok_record_configfile_load(const char *path,
 static int action_ok_remap_file_load(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   const char *menu_path = NULL;
-   char remap_path[PATH_MAX_LENGTH];
-   menu_handle_t *menu = menu_driver_get_ptr();
+   const char            *menu_path = NULL;
+   char remap_path[PATH_MAX_LENGTH] = {0};
+   menu_handle_t              *menu = menu_driver_get_ptr();
    if (!menu)
       return -1;
 
@@ -638,10 +638,10 @@ static int action_ok_remap_file_load(const char *path,
 static int action_ok_video_filter_file_load(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   char filter_path[PATH_MAX_LENGTH];
-   const char *menu_path    = NULL;
-   menu_handle_t *menu      = menu_driver_get_ptr();
-   settings_t *settings     = config_get_ptr();
+   const char             *menu_path = NULL;
+   char filter_path[PATH_MAX_LENGTH] = {0};
+   menu_handle_t               *menu = menu_driver_get_ptr();
+   settings_t              *settings = config_get_ptr();
 
    if (!menu)
       return -1;
@@ -667,10 +667,10 @@ static int action_ok_video_filter_file_load(const char *path,
 static int action_ok_cheat_file_load(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   const char *menu_path = NULL;
-   char cheat_path[PATH_MAX_LENGTH];
-   menu_handle_t *menu    = menu_driver_get_ptr();
-   global_t *global       = global_get_ptr();
+   const char            *menu_path = NULL;
+   char cheat_path[PATH_MAX_LENGTH] = {0};
+   menu_handle_t              *menu = menu_driver_get_ptr();
+   global_t                 *global = global_get_ptr();
    if (!menu)
       return -1;
 
@@ -697,12 +697,12 @@ static int action_ok_cheat_file_load(const char *path,
 static int action_ok_menu_wallpaper_load(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   char wallpaper_path[PATH_MAX_LENGTH];
-   const char *menu_label   = NULL;
-   const char *menu_path    = NULL;
-   rarch_setting_t *setting = NULL;
-   menu_handle_t *menu      = menu_driver_get_ptr();
-   settings_t *settings     = config_get_ptr();
+   char wallpaper_path[PATH_MAX_LENGTH] = {0};
+   const char *menu_label               = NULL;
+   const char *menu_path                = NULL;
+   rarch_setting_t *setting             = NULL;
+   menu_handle_t *menu                  = menu_driver_get_ptr();
+   settings_t *settings                 = config_get_ptr();
    if (!menu)
       return -1;
 
@@ -732,9 +732,9 @@ static int action_ok_menu_wallpaper_load(const char *path,
 static int action_ok_shader_preset_load(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   const char *menu_path = NULL;
-   char shader_path[PATH_MAX_LENGTH];
-   menu_handle_t *menu = menu_driver_get_ptr();
+   const char             *menu_path = NULL;
+   char shader_path[PATH_MAX_LENGTH] = {0};
+   menu_handle_t               *menu = menu_driver_get_ptr();
    if (!menu)
       return -1;
 
@@ -790,14 +790,13 @@ static int action_ok_remap_file_save_as(const char *path,
 static int action_ok_remap_file_save_core(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   global_t *global = global_get_ptr();
-   settings_t *settings = config_get_ptr();
+   char directory[PATH_MAX_LENGTH]   = {0};
+   char file[PATH_MAX_LENGTH]        = {0};
+   const char *core_name             = NULL;
+   global_t *global                  = global_get_ptr();
+   settings_t *settings              = config_get_ptr();
 
-   const char *core_name;
    core_name = global->system.info.library_name;
-
-   char directory[PATH_MAX_LENGTH];
-   char file[PATH_MAX_LENGTH];
 
    fill_pathname_join(directory,settings->input_remapping_directory,core_name,PATH_MAX_LENGTH);
    fill_pathname_join(file,core_name,core_name,PATH_MAX_LENGTH);
@@ -816,17 +815,15 @@ static int action_ok_remap_file_save_core(const char *path,
 static int action_ok_remap_file_save_game(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   global_t *global = global_get_ptr();
-   settings_t *settings = config_get_ptr();
+   const char *core_name           = NULL;
+   const char *game_name           = NULL;
+   char directory[PATH_MAX_LENGTH] = {0};
+   char file[PATH_MAX_LENGTH]      = {0};
+   global_t *global                = global_get_ptr();
+   settings_t *settings            = config_get_ptr();
 
-   const char *core_name;
    core_name = global->system.info.library_name;
-
-   const char *game_name;
    game_name = path_basename(global->basename);
-
-   char directory[PATH_MAX_LENGTH];
-   char file[PATH_MAX_LENGTH];
 
    fill_pathname_join(directory,settings->input_remapping_directory,core_name,PATH_MAX_LENGTH);
    fill_pathname_join(file,core_name,game_name,PATH_MAX_LENGTH);
@@ -851,7 +848,7 @@ static int action_ok_path_use_directory(const char *path,
 static int action_ok_core_deferred_set(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   char core_display_name[PATH_MAX_LENGTH];
+   char core_display_name[PATH_MAX_LENGTH] = {0};
    menu_handle_t *menu = menu_driver_get_ptr();
    if (!menu)
       return -1;
@@ -904,7 +901,7 @@ static int action_ok_database_manager_list_deferred(const char *path,
 static int action_ok_rdb_entry(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   char tmp[PATH_MAX_LENGTH];
+   char tmp[PATH_MAX_LENGTH]    = {0};
    menu_displaylist_info_t info = {0};
    menu_handle_t *menu = menu_driver_get_ptr();
    if (!menu)
@@ -993,10 +990,10 @@ static int action_ok_compressed_archive_push(const char *path,
 static int action_ok_directory_push(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   menu_displaylist_info_t info = {0};
-   const char *menu_path  = NULL;
-   const char *menu_label = NULL;
-   char cat_path[PATH_MAX_LENGTH];
+   menu_displaylist_info_t info   = {0};
+   const char *menu_path          = NULL;
+   const char *menu_label         = NULL;
+   char cat_path[PATH_MAX_LENGTH] = {0};
    menu_handle_t *menu = menu_driver_get_ptr();
    if (!menu)
       return -1;
@@ -1021,10 +1018,10 @@ static int action_ok_directory_push(const char *path,
 static int action_ok_database_manager_list(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   char rdb_path[PATH_MAX_LENGTH];
-   menu_displaylist_info_t info = {0};
-   menu_handle_t *menu      = menu_driver_get_ptr();
-   settings_t *settings     = config_get_ptr();
+   char rdb_path[PATH_MAX_LENGTH] = {0};
+   menu_displaylist_info_t info   = {0};
+   menu_handle_t           *menu  = menu_driver_get_ptr();
+   settings_t          *settings  = config_get_ptr();
 
    if (!menu)
       return -1;
@@ -1048,10 +1045,10 @@ static int action_ok_database_manager_list(const char *path,
 static int action_ok_cursor_manager_list(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   char cursor_path[PATH_MAX_LENGTH];
-   menu_displaylist_info_t info = {0};
-   menu_handle_t *menu      = menu_driver_get_ptr();
-   settings_t *settings     = config_get_ptr();
+   char cursor_path[PATH_MAX_LENGTH] = {0};
+   menu_displaylist_info_t      info = {0};
+   menu_handle_t               *menu = menu_driver_get_ptr();
+   settings_t              *settings = config_get_ptr();
 
    if (!menu)
       return -1;
@@ -1071,9 +1068,9 @@ static int action_ok_cursor_manager_list(const char *path,
 static int action_ok_config_load(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   const char *menu_path  = NULL;
-   char config[PATH_MAX_LENGTH];
-   menu_handle_t *menu = menu_driver_get_ptr();
+   const char *menu_path        = NULL;
+   char config[PATH_MAX_LENGTH] = {0};
+   menu_handle_t           *menu = menu_driver_get_ptr();
 
    if (!menu)
       return -1;
@@ -1096,9 +1093,9 @@ static int action_ok_config_load(const char *path,
 static int action_ok_disk_image_append(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   char image[PATH_MAX_LENGTH];
-   const char *menu_path    = NULL;
-   menu_handle_t *menu = menu_driver_get_ptr();
+   char image[PATH_MAX_LENGTH] = {0};
+   const char *menu_path       = NULL;
+   menu_handle_t *menu         = menu_driver_get_ptr();
 
    if (!menu)
       return -1;
@@ -1239,8 +1236,9 @@ static int action_ok_core_updater_download(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
 #ifdef HAVE_NETWORKING
-   char core_path[PATH_MAX_LENGTH], msg[PATH_MAX_LENGTH];
-   settings_t *settings  = config_get_ptr();
+   char core_path[PATH_MAX_LENGTH] = {0};
+   char msg[PATH_MAX_LENGTH]       = {0};
+   settings_t *settings            = config_get_ptr();
 
    fill_pathname_join(core_path, settings->network.buildbot_url,
          path, sizeof(core_path));
@@ -1336,13 +1334,13 @@ static int action_ok_rdb_entry_submenu(const char *path,
 {
    int ret;
    union string_list_elem_attr attr;
-   char new_label[PATH_MAX_LENGTH];
-   menu_displaylist_info_t info = {0};
-   char *rdb = NULL;
-   int len = 0;
-   struct string_list *str_list  = NULL;
-   struct string_list *str_list2 = NULL;
-   menu_handle_t *menu = menu_driver_get_ptr();
+   char new_label[PATH_MAX_LENGTH] = {0};
+   menu_displaylist_info_t info    = {0};
+   char *rdb                       = NULL;
+   int len                         = 0;
+   struct string_list *str_list    = NULL;
+   struct string_list *str_list2   = NULL;
+   menu_handle_t *menu             = menu_driver_get_ptr();
 
    if (!menu)
       return -1;

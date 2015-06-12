@@ -23,8 +23,8 @@
 static int action_select_default(const char *path, const char *label, unsigned type,
       size_t idx)
 {
-   int ret = 0;
    menu_entry_t entry;
+   int ret                   = 0;
    enum menu_action action   = MENU_ACTION_NOOP;
    menu_file_list_cbs_t *cbs = NULL;
    menu_list_t    *menu_list = menu_list_get_ptr();

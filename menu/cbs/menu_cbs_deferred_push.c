@@ -76,10 +76,11 @@ static int deferred_push_database_manager_list_deferred(menu_displaylist_info_t 
 
 static int deferred_push_cursor_manager_list_deferred(menu_displaylist_info_t *info)
 {
-   char *query = NULL, *rdb = NULL;
-   char rdb_path[PATH_MAX_LENGTH];
-   settings_t *settings   = config_get_ptr();
-   config_file_t *conf    = config_file_new(info->path);
+   char *query                    = NULL;
+   char *rdb                      = NULL;
+   char rdb_path[PATH_MAX_LENGTH] = {0};
+   settings_t *settings           = config_get_ptr();
+   config_file_t *conf            = config_file_new(info->path);
 
    if (!conf || !settings)
       return -1;
@@ -113,7 +114,7 @@ static int deferred_push_cursor_manager_list_deferred_query_subsearch(menu_displ
 {
 #ifdef HAVE_LIBRETRODB
    int ret;
-   char query[PATH_MAX_LENGTH];
+   char query[PATH_MAX_LENGTH]   = {0};
    struct string_list *str_list  = string_split(info->path, "|"); 
 
    database_info_build_query(query, sizeof(query), info->label, str_list->elems[0].data);
@@ -229,7 +230,7 @@ size_t core_len;
 
 int cb_core_updater_list(void *data_, size_t len)
 {
-   char *data = (char*)data_;
+   char             *data = (char*)data_;
    menu_handle_t *menu    = menu_driver_get_ptr();
    if (!menu)
       return -1;

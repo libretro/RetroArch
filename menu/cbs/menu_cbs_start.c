@@ -27,6 +27,9 @@ static int action_start_remap_file_load(unsigned type, const char *label)
 {
    settings_t *settings = config_get_ptr();
 
+   if (!settings)
+      return -1;
+
    settings->input.remapping_path[0] = '\0';
    input_remapping_set_defaults();
    return 0;
@@ -35,6 +38,9 @@ static int action_start_remap_file_load(unsigned type, const char *label)
 static int action_start_video_filter_file_load(unsigned type, const char *label)
 {
    settings_t *settings = config_get_ptr();
+
+   if (!settings)
+      return -1;
 
    settings->video.softfilter_plugin[0] = '\0';
    event_command(EVENT_CMD_REINIT);
@@ -60,7 +66,7 @@ static int action_start_performance_counters_core(unsigned type, const char *lab
 
 static int action_start_input_desc(unsigned type, const char *label)
 {
-   settings_t *settings = config_get_ptr();
+   settings_t           *settings = config_get_ptr();
    unsigned inp_desc_index_offset = type - MENU_SETTINGS_INPUT_DESC_BEGIN;
    unsigned inp_desc_user         = inp_desc_index_offset / (RARCH_FIRST_CUSTOM_BIND + 4);
    unsigned inp_desc_button_index_offset = inp_desc_index_offset - (inp_desc_user * (RARCH_FIRST_CUSTOM_BIND + 4));
@@ -259,9 +265,7 @@ static int action_start_core_setting(unsigned type,
 
 static int action_start_lookup_setting(unsigned type, const char *label)
 {
-   int ret = menu_setting_set(type, label, MENU_ACTION_START, false);
-
-   return ret;
+   return menu_setting_set(type, label, MENU_ACTION_START, false);
 }
 
 int menu_cbs_init_bind_start_compare_label(menu_file_list_cbs_t *cbs,
