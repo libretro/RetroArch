@@ -25,6 +25,7 @@
 
 #include <retro_inline.h>
 #include <stdint.h>
+#include <stdlib.h>
 
 #if defined(__llvm__) || (defined(__GNUC__) && (__GNUC__ * 100 + __GNUC_MINOR__) >= 403)
 #define SWAP16 __builtin_bswap16
