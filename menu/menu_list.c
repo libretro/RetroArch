@@ -49,7 +49,7 @@ static bool menu_list_elem_is_dir(file_list_t *list,
 
    menu_list_get_at_offset(list, offset, &path, &label, &type, NULL);
 
-   return type != MENU_FILE_PLAIN;
+   return type == MENU_FILE_DIRECTORY;
 }
 
 /**
