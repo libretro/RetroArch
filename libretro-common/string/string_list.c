@@ -108,7 +108,8 @@ struct string_list *string_list_new(void)
 bool string_list_append(struct string_list *list, const char *elem,
       union string_list_elem_attr attr)
 {
-   char *data_dup;
+   char *data_dup = NULL;
+
    if (list->size >= list->cap &&
          !string_list_capacity(list, list->cap * 2))
       return false;
@@ -250,7 +251,7 @@ bool string_list_find_elem_prefix(const struct string_list *list,
       const char *prefix, const char *elem)
 {
    size_t i;
-   char prefixed[PATH_MAX_LENGTH];
+   char prefixed[PATH_MAX_LENGTH] = {0};
 
    if (!list)
       return false;

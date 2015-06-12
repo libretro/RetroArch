@@ -58,19 +58,19 @@ struct http_connection_t
    char *domain;
    char *location;
    char *urlcopy;
-   char* scan;
+   char *scan;
    int port;
 };
 
 
-static int net_http_new_socket(const char * domain, int port)
+static int net_http_new_socket(const char *domain, int port)
 {
-   char portstr[16];
    int fd;
 #ifndef _WIN32
    struct timeval timeout;
 #endif
    struct addrinfo hints, *addr = NULL;
+   char portstr[16] = {0};
 
    snprintf(portstr, sizeof(portstr), "%i", port);
 
@@ -276,7 +276,7 @@ struct http_t *net_http_new(struct http_connection_t *conn)
 
    if (conn->port != 80)
    {
-      char portstr[16];
+      char portstr[16] = {0};
 
       snprintf(portstr, sizeof(portstr), ":%i", conn->port);
       net_http_send_str(fd, &error, portstr);

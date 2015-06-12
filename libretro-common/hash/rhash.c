@@ -501,7 +501,7 @@ static void SHA1Input(SHA1Context *context,
 
 int sha1_calculate(const char *path, char *result)
 {
-   unsigned char buff[4096];
+   unsigned char buff[4096] = {0};
    SHA1Context sha;
    int rv = 1;
    int fd = open(path, O_RDONLY);

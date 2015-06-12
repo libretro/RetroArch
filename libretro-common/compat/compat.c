@@ -77,7 +77,8 @@ static int parse_short(const char *optstring, char * const *argv)
 {
    bool extra_opt, takes_arg, embedded_arg;
    const char *opt = NULL;
-   char arg = argv[0][1];
+   char        arg = argv[0][1];
+
    if (arg == ':')
       return '?';
 
@@ -161,8 +162,9 @@ static int parse_long(const struct option *longopts, char * const *argv)
 
 static void shuffle_block(char **begin, char **last, char **end)
 {
-   ptrdiff_t len = last - begin;
+   ptrdiff_t    len = last - begin;
    const char **tmp = (const char**)calloc(len, sizeof(const char*));
+
    rarch_assert(tmp);
 
    memcpy(tmp, begin, len * sizeof(const char*));
@@ -176,6 +178,7 @@ int getopt_long(int argc, char *argv[],
       const char *optstring, const struct option *longopts, int *longindex)
 {
    int short_index, long_index;
+
    (void)longindex;
 
    if (optind == 0)
@@ -222,6 +225,7 @@ int getopt_long(int argc, char *argv[],
 static int casencmp(const char *a, const char *b, size_t n)
 {
    size_t i;
+
    for (i = 0; i < n; i++)
    {
       int a_lower = tolower(a[i]);
@@ -275,6 +279,7 @@ size_t strlcpy(char *dest, const char *source, size_t size)
 size_t strlcat(char *dest, const char *source, size_t size)
 {
    size_t len = strlen(dest);
+
    dest += len;
 
    if (len > size)
@@ -306,6 +311,7 @@ int rarch_strcasecmp__(const char *a, const char *b)
    {
       int a_ = tolower(*a);
       int b_ = tolower(*b);
+
       if (a_ != b_)
          return a_ - b_;
 
@@ -319,7 +325,7 @@ int rarch_strcasecmp__(const char *a, const char *b)
 char *rarch_strdup__(const char *orig)
 {
    size_t len = strlen(orig) + 1;
-   char *ret = (char*)malloc(len);
+   char *ret  = (char*)malloc(len);
    if (!ret)
       return NULL;
 

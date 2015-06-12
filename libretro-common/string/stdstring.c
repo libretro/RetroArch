@@ -46,10 +46,10 @@ char *string_to_upper(char *s)
 
 char *string_replace_substring(const char *in, const char *pattern, const char *replacement)
 {
-   char *needle = NULL;
-   char *newstr = NULL;
-   char *head   = NULL;
-   size_t pattern_len = 0;
+   char *needle           = NULL;
+   char *newstr           = NULL;
+   char *head             = NULL;
+   size_t pattern_len     = 0;
    size_t replacement_len = 0;
 
    /* if either pattern or replacement is NULL,
@@ -57,18 +57,19 @@ char *string_replace_substring(const char *in, const char *pattern, const char *
    if (!pattern || !replacement)
       return strdup(in);
 
-   pattern_len = strlen(pattern);
+   pattern_len     = strlen(pattern);
    replacement_len = strlen(replacement);
 
-   newstr = strdup(in);
-   head   = newstr;
+   newstr          = strdup(in);
+   head            = newstr;
 
    while ((needle = strstr(head, pattern)))
    {
-      char* oldstr = newstr;
+      char      *oldstr = newstr;
       size_t oldstr_len = strlen(oldstr);
 
       newstr = (char*)malloc(oldstr_len - pattern_len + replacement_len + 1);
+
       if (!newstr)
       {
          /* Failed to allocate memory,
