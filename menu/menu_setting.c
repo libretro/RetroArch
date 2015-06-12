@@ -127,11 +127,6 @@ static void menu_settings_list_current_add_cmd(
    (*list)[idx].cmd_trigger.idx = values;
 }
 
-void menu_settings_list_free(rarch_setting_t *list)
-{
-   if (list)
-      free(list);
-}
 
 static rarch_setting_t *menu_setting_list_new(unsigned size)
 {
@@ -7048,6 +7043,12 @@ static bool setting_append_list_input_player_options(
    return true;
 }
 
+void menu_setting_free(rarch_setting_t *list)
+{
+   if (list)
+      free(list);
+}
+
 /**
  * menu_setting_new:
  * @mask               : Bitmask of settings to include.
@@ -7256,7 +7257,7 @@ rarch_setting_t *menu_setting_new(unsigned mask)
 error:
    RARCH_ERR("Allocation failed.\n");
    menu_settings_info_list_free(list_info);
-   menu_settings_list_free(list);
+   menu_setting_free(list);
 
    return NULL;
 }

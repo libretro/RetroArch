@@ -215,7 +215,6 @@ typedef struct rarch_setting
 }  rarch_setting_t;
 
 
-void menu_settings_list_free(rarch_setting_t *list);
 
 void menu_setting_apply_deferred(void);
 
@@ -289,6 +288,8 @@ int setting_get_description(const char *label, char *s, size_t len);
 void setting_get_label(file_list_t *list, char *s,
       size_t len, unsigned *w, unsigned type, 
       const char *menu_label, const char *label, unsigned idx);
+
+void menu_setting_free(rarch_setting_t *list);;
 
 /**
  * setting_new:
