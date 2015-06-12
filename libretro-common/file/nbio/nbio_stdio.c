@@ -199,4 +199,8 @@ void nbio_free(struct nbio_t* handle)
    }
    fclose(handle->f);
    free(handle->data);
+
+   handle->f    = NULL;
+   handle->data = NULL;
+   free(handle);
 }
