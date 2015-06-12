@@ -95,8 +95,8 @@ static void frontend_ps3_get_environment_settings(int *argc, char *argv[],
    unsigned int get_type;
    unsigned int get_attributes;
    CellGameContentSize size;
-   char dirName[CELL_GAME_DIRNAME_SIZE];
-   char contentInfoPath[PATH_MAX_LENGTH];
+   char dirName[CELL_GAME_DIRNAME_SIZE]  = {0};
+   char contentInfoPath[PATH_MAX_LENGTH] = {0};
 
 #ifdef HAVE_MULTIMAN
    /* not launched from external launcher, set default path */
@@ -355,20 +355,24 @@ static void frontend_ps3_exitspawn(char *core_path, size_t core_path_size)
 
 static void frontend_ps3_exec(const char *path, bool should_load_game)
 {
+   char spawn_data[256] = {0};
+   unsigned i;
+
    (void)should_load_game;
-   char spawn_data[256];
+
 #ifndef IS_SALAMANDER
-   global_t *global = global_get_ptr();
+   global_t      *global = global_get_ptr();
    bool original_verbose = global->verbosity;
+   char game_path[256]   = {0};
+
    global->verbosity = true;
 
-   char game_path[256];
    game_path[0] = '\0';
 #endif
 
    RARCH_LOG("Attempt to load executable: [%s].\n", path);
 
-   for(unsigned int i = 0; i < sizeof(spawn_data); ++i)
+   for(i = 0; i < sizeof(spawn_data); ++i)
       spawn_data[i] = i & 0xff;
 
    SceNpDrmKey * k_licensee = NULL;

@@ -303,10 +303,11 @@ static void frontend_darwin_get_os(char *s, size_t len, int *major, int *minor)
 static void frontend_darwin_get_environment_settings(int *argc, char *argv[],
       void *args, void *params_data)
 {
-   char temp_dir[PATH_MAX_LENGTH];
-   char bundle_path_buf[PATH_MAX_LENGTH], home_dir_buf[PATH_MAX_LENGTH];
    CFURLRef bundle_url;
    CFStringRef bundle_path;
+   char temp_dir[PATH_MAX_LENGTH]        = {0};
+   char bundle_path_buf[PATH_MAX_LENGTH] = {0};
+   char home_dir_buf[PATH_MAX_LENGTH]    = {0};
    CFBundleRef bundle = CFBundleGetMainBundle();
 
    (void)temp_dir;
@@ -380,7 +381,7 @@ static void frontend_darwin_load_content(void)
 
 static int frontend_darwin_get_rating(void)
 {
-   char model[PATH_MAX_LENGTH];
+   char model[PATH_MAX_LENGTH] = {0};
 
    frontend_darwin_get_name(model, sizeof(model));
 

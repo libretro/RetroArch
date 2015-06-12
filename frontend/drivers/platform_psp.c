@@ -187,9 +187,8 @@ static void frontend_psp_init(void *data)
 static void frontend_psp_exec(const char *path, bool should_load_game)
 {
 #if defined(HAVE_KERNEL_PRX) || defined(IS_SALAMANDER)
-
-   char argp[512];
-   SceSize args = 0;
+   char argp[512] = {0};
+   SceSize   args = 0;
 
    argp[0] = '\0';
    strlcpy(argp, eboot_path, sizeof(argp));

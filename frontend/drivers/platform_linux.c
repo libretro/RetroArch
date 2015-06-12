@@ -102,18 +102,18 @@ static void
 check_proc_acpi_battery(const char * node, bool * have_battery,
       bool * charging, int *seconds, int *percent)
 {
-   const char *base = proc_acpi_battery_path;
-   char info[1024];
-   char state[1024];
-   char *ptr = NULL;
-   char *key = NULL;
-   char *val = NULL;
-   bool charge = false;
-   bool choose = false;
-   int maximum = -1;
-   int remaining = -1;
-   int secs = -1;
-   int pct = -1;
+   const char *base  = proc_acpi_battery_path;
+   char info[1024]   = {0};
+   char state[1024]  = {0};
+   char         *ptr = NULL;
+   char         *key = NULL;
+   char         *val = NULL;
+   bool       charge = false;
+   bool       choose = false;
+   int       maximum = -1;
+   int     remaining = -1;
+   int          secs = -1;
+   int           pct = -1;
 
    if (!load_acpi_file(base, node, "state", state, sizeof (state)))
       return;
@@ -121,6 +121,7 @@ check_proc_acpi_battery(const char * node, bool * have_battery,
       return;
 
    ptr = &state[0];
+
    while (make_proc_acpi_key_val(&ptr, &key, &val))
    {
       if (!strcmp(key, "present"))
@@ -138,8 +139,9 @@ check_proc_acpi_battery(const char * node, bool * have_battery,
       }
       else if (!strcmp(key, "remaining capacity"))
       {
-         char *endptr = NULL;
+         char  *endptr = NULL;
          const int cvt = (int) strtol(val, &endptr, 10);
+
          if (*endptr == ' ')
             remaining = cvt;
       }
@@ -150,8 +152,9 @@ check_proc_acpi_battery(const char * node, bool * have_battery,
    {
       if (!strcmp(key, "design capacity"))
       {
-         char *endptr = NULL;
+         char  *endptr = NULL;
          const int cvt = (int) strtol(val, &endptr, 10);
+
          if (*endptr == ' ')
             maximum = cvt;
       }
@@ -194,10 +197,10 @@ static void
 check_proc_acpi_ac_adapter(const char * node, bool *have_ac)
 {
     const char *base = proc_acpi_ac_adapter_path;
-    char state[256];
-    char *ptr = NULL;
-    char *key = NULL;
-    char *val = NULL;
+    char  state[256] = {0};
+    char        *ptr = NULL;
+    char        *key = NULL;
+    char        *val = NULL;
 
     if (!load_acpi_file(base, node, "state", state, sizeof (state)))
         return;
@@ -246,16 +249,16 @@ static bool int_string(char *str, int *val)
 bool frontend_linux_powerstate_check_apm(enum frontend_powerstate *state,
       int *seconds, int *percent)
 {
-   int ac_status = 0;
-   int battery_status = 0;
-   int battery_flag = 0;
-   int battery_percent = 0;
-   int battery_time = 0;
-   const int fd = open(proc_apm_path, O_RDONLY);
-   char buf[128];
-   char *ptr = &buf[0];
-   char *str = NULL;
    ssize_t br;
+   int ac_status       = 0;
+   int battery_status  = 0;
+   int battery_flag    = 0;
+   int battery_percent = 0;
+   int battery_time    = 0;
+   const int fd        = open(proc_apm_path, O_RDONLY);
+   char buf[128]       = {0};
+   char *ptr           = &buf[0];
+   char *str           = NULL;
 
    if (fd == -1)
       return false;       /* can't use this interface. */
@@ -331,10 +334,10 @@ bool frontend_linux_powerstate_check_acpi(enum frontend_powerstate *state,
       int *seconds, int *percent)
 {
    struct dirent *dent = NULL;
-   DIR *dirp = NULL;
-   bool have_battery = false;
-   bool have_ac = false;
-   bool charging = false;
+   DIR *dirp           = NULL;
+   bool have_battery   = false;
+   bool have_ac        = false;
+   bool charging       = false;
 
    *state = FRONTEND_POWERSTATE_NONE;
 
@@ -357,6 +360,7 @@ bool frontend_linux_powerstate_check_acpi(enum frontend_powerstate *state,
    while ((dent = readdir(dirp)) != NULL)
    {
       const char *node = dent->d_name;
+
       check_proc_acpi_ac_adapter(node, &have_ac);
    }
    closedir(dirp);
