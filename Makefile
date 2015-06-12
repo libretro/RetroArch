@@ -1,3 +1,5 @@
+HAVE_FILE_LOGGER=1
+
 include config.mk
 
 TARGET = retroarch

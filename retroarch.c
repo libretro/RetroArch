@@ -457,6 +457,10 @@ static void parse_input(int argc, char *argv[])
       { "subsystem",    1, NULL, 'Z' },
       { "max-frames",   1, NULL, 'm' },
       { "eof-exit",     0, &val, 'e' },
+      { "version",      0, &val, 'V' },
+#ifdef HAVE_FILE_LOGGER
+      { "log-file",     1, &val, 'L' },
+#endif
       { NULL, 0, NULL, 0 }
    };
 
@@ -662,7 +666,7 @@ static void parse_input(int argc, char *argv[])
             runloop->frames.video.max = strtoul(optarg, NULL, 10);
             break;
 
-         case 0:
+         case 0: /* options without short variant */
             switch (val)
             {
                case 'M':
@@ -742,6 +746,16 @@ static void parse_input(int argc, char *argv[])
                case 'e':
                   global->bsv.eof_exit = true;
                   break;
+
+               case 'V':
+                  print_version();
+                  exit(0);
+
+#ifdef HAVE_FILE_LOGGER
+               case 'L':
+                  global->log_file = fopen(optarg, "wb");
+                  break;
+#endif
 
                default:
                   break;
@@ -1169,6 +1183,10 @@ error:
 void rarch_main_init_wrap(const struct rarch_main_wrap *args,
       int *argc, char **argv)
 {
+#ifdef HAVE_FILE_LOGGER
+   int i;
+#endif
+
    *argc = 0;
    argv[(*argc)++] = strdup("retroarch");
 

@@ -20,7 +20,8 @@
 #include <stdarg.h>
 #include <stdio.h>
 
-#if defined(HAVE_FILE_LOGGER) && defined(RARCH_INTERNAL)
+#if defined(HAVE_FILE_LOGGER) && defined(RARCH_INTERNAL) && !defined(IS_JOYCONFIG)
+FILE *rarch_main_log_file(void);
 #define LOG_FILE (rarch_main_log_file())
 #else
 #define LOG_FILE (stderr)
