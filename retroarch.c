@@ -115,7 +115,7 @@ static void print_features(void)
  *
  * Prints help message explaining RetroArch's commandline switches.
  **/
-static void print_help(void)
+static void print_help(const char *arg0)
 {
    char str[PATH_MAX_LENGTH] = {0};
 
@@ -129,7 +129,7 @@ static void print_help(void)
    fprintf(stdout, "%s", str);
    fprintf(stdout, "Built: %s\n", __DATE__);
    puts("===================================================================");
-   puts("Usage: retroarch [content file] [options...]");
+   printf("Usage: %s [OPTIONS]... [FILE]\n", arg0);
    puts("\t-h/--help: Show this help message.");
    puts("\t--menu: Do not require content or libretro core to be loaded, starts directly in menu.");
    puts("\t\tIf no arguments are passed to " RETRO_FRONTEND ", it is equivalent to using --menu as only argument.");
@@ -476,7 +476,7 @@ static void parse_input(int argc, char *argv[])
       switch (c)
       {
          case 'h':
-            print_help();
+            print_help(argv[0]);
             exit(0);
 
          case 'Z':
@@ -500,7 +500,7 @@ static void parse_input(int argc, char *argv[])
             if (port < 1 || port > MAX_USERS)
             {
                RARCH_ERR("Connect device to a valid port.\n");
-               print_help();
+               print_help(argv[0]);
                rarch_fail(1, "parse_input()");
             }
             settings->input.libretro_device[port - 1] = id;
@@ -513,7 +513,7 @@ static void parse_input(int argc, char *argv[])
             if (port < 1 || port > MAX_USERS)
             {
                RARCH_ERR("Connect dualanalog to a valid port.\n");
-               print_help();
+               print_help(argv[0]);
                rarch_fail(1, "parse_input()");
             }
             settings->input.libretro_device[port - 1] = RETRO_DEVICE_ANALOG;
@@ -546,7 +546,7 @@ static void parse_input(int argc, char *argv[])
             if (port < 1 || port > MAX_USERS)
             {
                RARCH_ERR("Disconnect device from a valid port.\n");
-               print_help();
+               print_help(argv[0]);
                rarch_fail(1, "parse_input()");
             }
             settings->input.libretro_device[port - 1] = RETRO_DEVICE_NONE;
@@ -604,7 +604,7 @@ static void parse_input(int argc, char *argv[])
             else if (strcmp(optarg, "load-save") != 0)
             {
                RARCH_ERR("Invalid argument in --sram-mode.\n");
-               print_help();
+               print_help(argv[0]);
                rarch_fail(1, "parse_input()");
             }
             break;
@@ -709,7 +709,7 @@ static void parse_input(int argc, char *argv[])
                            &global->record.height) != 2)
                   {
                      RARCH_ERR("Wrong format for --size.\n");
-                     print_help();
+                     print_help(argv[0]);
                      rarch_fail(1, "parse_input()");
                   }
                   break;
@@ -733,7 +733,7 @@ static void parse_input(int argc, char *argv[])
             break;
 
          case '?':
-            print_help();
+            print_help(argv[0]);
             rarch_fail(1, "parse_input()");
 
          default:
