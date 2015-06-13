@@ -1625,8 +1625,7 @@ static rarch_setting_t setting_action_setting(const char* name,
       const char *group, const char *subgroup,
       const char *parent_group)
 {
-   rarch_setting_t result;
-   memset(&result, 0, sizeof(result));
+   rarch_setting_t result = {0};
 
    result.type                      = ST_ACTION;
    result.name                      = name;
@@ -1662,8 +1661,7 @@ static rarch_setting_t setting_action_setting(const char* name,
 static rarch_setting_t setting_group_setting(enum setting_type type, const char* name,
       const char *parent_group)
 {
-   rarch_setting_t result;
-   memset(&result, 0, sizeof(result));
+   rarch_setting_t result   = {0};
 
    result.parent_group      = parent_group;
    result.type              = type;
@@ -1688,8 +1686,7 @@ static rarch_setting_t setting_group_setting(enum setting_type type, const char*
 static rarch_setting_t setting_subgroup_setting(enum setting_type type,
       const char* name, const char *parent_name, const char *parent_group)
 {
-   rarch_setting_t result;
-   memset(&result, 0, sizeof(result));
+   rarch_setting_t result   = {0};
 
    result.type              = type;
    result.name              = name;
@@ -1725,8 +1722,7 @@ static rarch_setting_t setting_float_setting(const char* name,
       const char *parent_group,
       change_handler_t change_handler, change_handler_t read_handler)
 {
-   rarch_setting_t result;
-   memset(&result, 0, sizeof(result));
+   rarch_setting_t result         = {0};
 
    result.type                    = ST_FLOAT;
    result.name                    = name;
@@ -1777,8 +1773,7 @@ static rarch_setting_t setting_bool_setting(const char* name,
       const char *group, const char *subgroup, const char *parent_group,
       change_handler_t change_handler, change_handler_t read_handler)
 {
-   rarch_setting_t result;
-   memset(&result, 0, sizeof(result));
+   rarch_setting_t result        = {0};
 
    result.type                   = ST_BOOL;
    result.name                   = name;
@@ -1829,8 +1824,7 @@ static rarch_setting_t setting_int_setting(const char* name,
       change_handler_t change_handler,
       change_handler_t read_handler)
 {
-   rarch_setting_t result;
-   memset(&result, 0, sizeof(result));
+   rarch_setting_t result        = {0};
 
    result.type                   = ST_INT;
    result.name                   = name;
@@ -1873,8 +1867,7 @@ static rarch_setting_t setting_uint_setting(const char* name,
       const char *group, const char *subgroup, const char *parent_group,
       change_handler_t change_handler, change_handler_t read_handler)
 {
-   rarch_setting_t result;
-   memset(&result, 0, sizeof(result));
+   rarch_setting_t result                 = {0};
 
    result.type                            = ST_UINT;
    result.name                            = name;
@@ -1921,8 +1914,7 @@ static rarch_setting_t setting_hex_setting(const char* name,
       const char *group, const char *subgroup, const char *parent_group,
       change_handler_t change_handler, change_handler_t read_handler)
 {
-   rarch_setting_t result;
-   memset(&result, 0, sizeof(result));
+   rarch_setting_t result                 = {0};
 
    result.type                            = ST_HEX;
    result.name                            = name;
@@ -1969,8 +1961,7 @@ static rarch_setting_t setting_bind_setting(const char* name,
       const struct retro_keybind* default_value,
       const char *group, const char *subgroup, const char *parent_group)
 {
-   rarch_setting_t result;
-   memset(&result, 0, sizeof(result));
+   rarch_setting_t result       = {0};
 
    result.type                  = ST_BIND;
    result.name                  = name;
@@ -2018,8 +2009,7 @@ rarch_setting_t setting_string_setting(enum setting_type type,
       change_handler_t change_handler,
       change_handler_t read_handler)
 {
-   rarch_setting_t result;
-   memset(&result, 0, sizeof(result));
+   rarch_setting_t result      = {0};
 
    result.type                 = type;
    result.name                 = name;
