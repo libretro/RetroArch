@@ -472,16 +472,16 @@ bool menu_animation_update(menu_animation_t *anim, float dt)
 
 /**
  * menu_animation_ticker_line:
- * @buf                      : buffer to write new message line to.
+ * @s                        : buffer to write new message line to.
  * @len                      : length of buffer @input.
  * @idx                      : Index. Will be used for ticker logic.
  * @str                      : Input string.
  * @selected                 : Is the item currently selected in the menu?
  *
  * Take the contents of @str and apply a ticker effect to it,
- * and write the results in @buf.
+ * and write the results in @s.
  **/
-void menu_animation_ticker_line(char *buf, size_t len, uint64_t idx,
+void menu_animation_ticker_line(char *s, size_t len, uint64_t idx,
       const char *str, bool selected)
 {
    unsigned ticker_period, phase, phase_left_stop;
@@ -492,14 +492,14 @@ void menu_animation_ticker_line(char *buf, size_t len, uint64_t idx,
 
    if (str_len <= len)
    {
-      strlcpy(buf, str, len + 1);
+      strlcpy(s, str, len + 1);
       return;
    }
 
    if (!selected)
    {
-      strlcpy(buf, str, len + 1 - 3);
-      strlcat(buf, "...", len + 1);
+      strlcpy(s, str, len + 1 - 3);
+      strlcat(s, "...", len + 1);
       return;
    }
 
@@ -521,13 +521,13 @@ void menu_animation_ticker_line(char *buf, size_t len, uint64_t idx,
     * Progress to left].
     */
    if (phase < phase_left_stop)
-      strlcpy(buf, str, len + 1);
+      strlcpy(s, str, len + 1);
    else if (phase < phase_left_moving)
-      strlcpy(buf, str + left_offset, len + 1);
+      strlcpy(s, str + left_offset, len + 1);
    else if (phase < phase_right_stop)
-      strlcpy(buf, str + str_len - len, len + 1);
+      strlcpy(s, str + str_len - len, len + 1);
    else
-      strlcpy(buf, str + right_offset, len + 1);
+      strlcpy(s, str + right_offset, len + 1);
 
    anim->is_active = true;
 }
