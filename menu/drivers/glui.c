@@ -225,6 +225,7 @@ static void glui_render(void)
    glui_handle_t *glui                = NULL;
    menu_framebuf_t *frame_buf         = menu_display_fb_get_ptr();
    menu_handle_t *menu                = menu_driver_get_ptr();
+   menu_input_t *menu_input           = menu_input_get_ptr();
    settings_t *settings               = config_get_ptr();
 
    if (!menu || !menu->userdata)
@@ -244,24 +245,24 @@ static void glui_render(void)
 
    if (settings->menu.pointer.enable)
    {
-      menu->pointer.ptr =
-            (menu->pointer.y - glui->line_height + menu->scroll_y - 16)
+      menu_input->pointer.ptr =
+            (menu_input->pointer.y - glui->line_height + menu->scroll_y - 16)
             / glui->line_height;
 
-      if (menu->pointer.dragging)
-         menu->scroll_y -= menu->pointer.dy;
+      if (menu_input->pointer.dragging)
+         menu->scroll_y -= menu_input->pointer.dy;
    }
 
    if (settings->menu.mouse.enable)
    {
-      if (menu->mouse.scrolldown)
+      if (menu_input->mouse.scrolldown)
          menu->scroll_y += 10;
 
-      if (menu->mouse.scrollup)
+      if (menu_input->mouse.scrollup)
          menu->scroll_y -= 10;
 
-      menu->mouse.ptr =
-            (menu->mouse.y - glui->line_height + menu->scroll_y - 16)
+      menu_input->mouse.ptr =
+            (menu_input->mouse.y - glui->line_height + menu->scroll_y - 16)
             / glui->line_height;
    }
 
@@ -341,6 +342,7 @@ static void glui_frame(void)
    menu_handle_t *menu                     = menu_driver_get_ptr();
    menu_navigation_t *nav                  = menu_navigation_get_ptr();
    settings_t *settings                    = config_get_ptr();
+   menu_input_t *menu_input                = menu_input_get_ptr();
    uint64_t frame_count                    = video_driver_get_frame_count();
    const uint32_t normal_color             = FONT_COLOR_ARGB_TO_RGBA(
          settings->menu.entry_normal_color);
@@ -426,15 +428,15 @@ static void glui_frame(void)
             TEXT_ALIGN_RIGHT);
    }
 
-   if (menu->keyboard.display)
+   if (menu_input->keyboard.display)
    {
       char msg[PATH_MAX_LENGTH] = {0};
-      const char           *str = *menu->keyboard.buffer;
+      const char           *str = *menu_input->keyboard.buffer;
 
       if (!str)
          str = "";
       glui_render_quad(gl, 0, 0, width, height, 0, 0, 0, 0.75);
-      snprintf(msg, sizeof(msg), "%s\n%s", menu->keyboard.label, str);
+      snprintf(msg, sizeof(msg), "%s\n%s", menu_input->keyboard.label, str);
       glui_render_messagebox(msg);
    }
 
@@ -446,7 +448,7 @@ static void glui_frame(void)
    }
 
    if (settings->menu.mouse.enable)
-      glui_draw_cursor(gl, menu->mouse.x, menu->mouse.y);
+      glui_draw_cursor(gl, menu_input->mouse.x, menu_input->mouse.y);
 
    gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
 

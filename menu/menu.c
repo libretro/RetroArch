@@ -294,15 +294,16 @@ int menu_iterate(retro_input_t input,
       retro_input_t old_input, retro_input_t trigger_input)
 {
    static retro_time_t last_clock_update = 0;
-   int32_t ret          = 0;
-   unsigned action      = 0;
-   runloop_t *runloop   = rarch_main_get_ptr();
-   menu_handle_t *menu  = menu_driver_get_ptr();
-   settings_t *settings = config_get_ptr();
+   int32_t ret              = 0;
+   unsigned action          = 0;
+   runloop_t *runloop       = rarch_main_get_ptr();
+   menu_handle_t *menu      = menu_driver_get_ptr();
+   menu_input_t *menu_input = menu_input_get_ptr();
+   settings_t *settings     = config_get_ptr();
 
-   menu->input.joypad   = menu_input_frame(input, trigger_input);
-   menu->cur_time       = rarch_get_time_usec();
-   menu->dt             = menu->cur_time - menu->old_time;
+   menu_input->joypad.state = menu_input_frame(input, trigger_input);
+   menu->cur_time           = rarch_get_time_usec();
+   menu->dt                 = menu->cur_time - menu->old_time;
 
    if (menu->dt >= IDEAL_DT * 4)
       menu->dt = IDEAL_DT * 4;
@@ -316,7 +317,7 @@ int menu_iterate(retro_input_t input,
       last_clock_update = menu->cur_time;
    }
 
-   action = menu->input.joypad;
+   action = menu_input->joypad.state;
 
    ret = menu_entry_iterate(action);
 

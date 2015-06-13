@@ -325,8 +325,10 @@ end:
 
 static void rgui_blit_cursor(menu_handle_t *menu)
 {
-   int16_t x = menu->mouse.x;
-   int16_t y = menu->mouse.y;
+   menu_input_t *menu_input = menu_input_get_ptr();
+
+   int16_t x = menu_input->mouse.x;
+   int16_t y = menu_input->mouse.y;
 
    color_rect(menu, x, y - 5, 1, 11, 0xFFFF);
    color_rect(menu, x - 5, y, 11, 1, 0xFFFF);
@@ -348,6 +350,7 @@ static void rgui_render(void)
    runloop_t *runloop             = rarch_main_get_ptr();
    driver_t *driver               = driver_get_ptr();
    settings_t *settings           = config_get_ptr();
+   menu_input_t *menu_input       = menu_input_get_ptr();
    uint64_t frame_count           = video_driver_get_frame_count();
 
    (void)driver;
@@ -371,11 +374,11 @@ static void rgui_render(void)
 
    if (settings->menu.pointer.enable)
    {
-      menu->pointer.ptr = menu->pointer.y / 11 - 2 + menu->begin;
+      menu_input->pointer.ptr = menu_input->pointer.y / 11 - 2 + menu->begin;
 
-      if (menu->pointer.dragging)
+      if (menu_input->pointer.dragging)
       {
-         menu->scroll_y += menu->pointer.dy;
+         menu->scroll_y += menu_input->pointer.dy;
          menu->begin     = -menu->scroll_y / 11 + 2;
          if (menu->scroll_y > 0)
             menu->scroll_y = 0;
@@ -384,14 +387,14 @@ static void rgui_render(void)
    
    if (settings->menu.mouse.enable)
    {
-      if (menu->mouse.scrolldown && menu->begin
-            < menu_entries_get_end() - RGUI_TERM_HEIGHT)
+      if (menu_input->mouse.scrolldown 
+            && menu->begin < menu_entries_get_end() - RGUI_TERM_HEIGHT)
          menu->begin++;
 
-      if (menu->mouse.scrollup && menu->begin > 0)
+      if (menu_input->mouse.scrollup && menu->begin > 0)
          menu->begin--;
 
-      menu->mouse.ptr = menu->mouse.y / 11 - 2 + menu->begin;
+      menu_input->mouse.ptr = menu_input->mouse.y / 11 - 2 + menu->begin;
    }
 
    /* Do not scroll if all items are visible. */
@@ -498,14 +501,14 @@ static void rgui_render(void)
    rgui_render_messagebox( message_queue);
 #endif
 
-   if (menu->keyboard.display)
+   if (menu_input->keyboard.display)
    {
       char msg[PATH_MAX_LENGTH] = {0};
-      const char           *str = *menu->keyboard.buffer;
+      const char           *str = *menu_input->keyboard.buffer;
 
       if (!str)
          str = "";
-      snprintf(msg, sizeof(msg), "%s\n%s", menu->keyboard.label, str);
+      snprintf(msg, sizeof(msg), "%s\n%s", menu_input->keyboard.label, str);
       rgui_render_messagebox(msg);
    }
 

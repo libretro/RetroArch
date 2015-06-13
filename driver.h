@@ -32,13 +32,16 @@
 #include "gfx/font_renderer_driver.h"
 #include "audio/audio_driver.h"
 
-#include "menu/menu_driver.h"
 #include "camera/camera_driver.h"
 #include "location/location_driver.h"
 #include "audio/audio_resampler_driver.h"
 #include "record/record_driver.h"
 
 #include "libretro_version_1.h"
+
+#ifdef HAVE_MENU
+#include "menu/menu_driver.h"
+#endif
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"

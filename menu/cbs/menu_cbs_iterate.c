@@ -29,6 +29,7 @@
 
 #include "../../general.h"
 #include "../../retroarch.h"
+#include "../../input/input_common.h"
 #include "../../input/input_autodetect.h"
 
 extern char detect_content_path[PATH_MAX_LENGTH];

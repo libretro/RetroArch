@@ -1210,11 +1210,12 @@ static void xmb_draw_cursor(gl_t *gl, xmb_handle_t *xmb, float x, float y)
 static void xmb_render(void)
 {
    unsigned i, current, end;
-   xmb_handle_t      *xmb = NULL;
-   settings_t   *settings = config_get_ptr();
-   menu_handle_t    *menu = menu_driver_get_ptr();
-   menu_navigation_t *nav = menu_navigation_get_ptr();
-   menu_list_t *menu_list = menu_list_get_ptr();
+   xmb_handle_t      *xmb   = NULL;
+   settings_t   *settings   = config_get_ptr();
+   menu_handle_t    *menu   = menu_driver_get_ptr();
+   menu_input_t *menu_input = menu_input_get_ptr();
+   menu_navigation_t *nav   = menu_navigation_get_ptr();
+   menu_list_t *menu_list   = menu_list_get_ptr();
 
    if (!menu)
       return;
@@ -1235,9 +1236,9 @@ static void xmb_render(void)
       {
          float item_y = xmb->margins.screen.top + xmb_item_y(xmb, i, current);
 
-         if (menu->pointer.y > item_y 
-               && menu->pointer.y < item_y + xmb->icon.size)
-            menu->pointer.ptr = i;
+         if (menu_input->pointer.y > item_y 
+               && menu_input->pointer.y < item_y + xmb->icon.size)
+            menu_input->pointer.ptr = i;
       }
    }
 
@@ -1247,8 +1248,8 @@ static void xmb_render(void)
       {
          float item_y = xmb->margins.screen.top + xmb_item_y(xmb, i, current);
 
-         if (menu->mouse.y > item_y && menu->mouse.y < item_y + xmb->icon.size)
-            menu->mouse.ptr = i;
+         if (menu_input->mouse.y > item_y && menu_input->mouse.y < item_y + xmb->icon.size)
+            menu_input->mouse.ptr = i;
       }
    }
 
@@ -1299,6 +1300,7 @@ static void xmb_frame(void)
    gl_t *gl                                = NULL;
    const struct font_renderer *font_driver = NULL;
    menu_handle_t   *menu                   = menu_driver_get_ptr();
+   menu_input_t *menu_input                = menu_input_get_ptr();
    menu_navigation_t *nav                  = menu_navigation_get_ptr();
    menu_list_t *menu_list                  = menu_list_get_ptr();
    settings_t   *settings                  = config_get_ptr();
@@ -1384,14 +1386,14 @@ static void xmb_frame(void)
 
    menu_display_font_flush_block(menu, font_driver);
 
-   if (menu->keyboard.display)
+   if (menu_input->keyboard.display)
    {
-      const char *str = *menu->keyboard.buffer;
+      const char *str = *menu_input->keyboard.buffer;
 
       if (!str)
          str = "";
       snprintf(msg, sizeof(msg), "%s\n%s",
-            menu->keyboard.label, str);
+            menu_input->keyboard.label, str);
       render_background = true;
    }
 
@@ -1410,7 +1412,7 @@ static void xmb_frame(void)
    }
 
    if (settings->menu.mouse.enable)
-      xmb_draw_cursor(gl, xmb, menu->mouse.x, menu->mouse.y);
+      xmb_draw_cursor(gl, xmb, menu_input->mouse.x, menu_input->mouse.y);
 
    menu_display_unset_viewport();
 }

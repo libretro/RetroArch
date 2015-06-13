@@ -25,6 +25,7 @@
 #include "menu_animation.h"
 #include "menu_displaylist.h"
 #include "menu_list.h"
+#include "menu_input.h"
 #include "menu_navigation.h"
 #include "menu_setting.h"
 #include "../libretro.h"
@@ -34,50 +35,12 @@
 extern "C" {
 #endif
 
-#define MENU_MAX_BUTTONS 219
-
-#define MENU_MAX_AXES 32
-#define MENU_MAX_HATS 4
-
-#ifndef MAX_USERS
-#define MAX_USERS 16
-#endif
-
 typedef enum
 {
    MENU_IMAGE_NONE = 0,
    MENU_IMAGE_WALLPAPER,
    MENU_IMAGE_BOXART,
 } menu_image_type_t;
-
-struct menu_bind_state_port
-{
-   bool buttons[MENU_MAX_BUTTONS];
-   int16_t axes[MENU_MAX_AXES];
-   uint16_t hats[MENU_MAX_HATS];
-};
-
-struct menu_bind_axis_state
-{
-   /* Default axis state. */
-   int16_t rested_axes[MENU_MAX_AXES];
-   /* Locked axis state. If we configured an axis,
-    * avoid having the same axis state trigger something again right away. */
-   int16_t locked_axes[MENU_MAX_AXES];
-};
-
-struct menu_bind_state
-{
-   struct retro_keybind *target;
-   /* For keyboard binding. */
-   int64_t timeout_end;
-   unsigned begin;
-   unsigned last;
-   unsigned user;
-   struct menu_bind_state_port state[MAX_USERS];
-   struct menu_bind_axis_state axis_state[MAX_USERS];
-   bool skip;
-};
 
 typedef struct menu_framebuf
 {
@@ -150,56 +113,7 @@ typedef struct
 
    struct video_shader *shader;
 
-   struct menu_bind_state binds;
-
-   struct
-   {
-      int16_t dx;
-      int16_t dy;
-      int16_t x;
-      int16_t y;
-      int16_t screen_x;
-      int16_t screen_y;
-      bool    left;
-      bool    right;
-      bool    oldleft;
-      bool    oldright;
-      bool    wheelup;
-      bool    wheeldown;
-      bool    hwheelup;
-      bool    hwheeldown;
-      bool    scrollup;
-      bool    scrolldown;
-      unsigned ptr;
-   } mouse;
-
-   struct
-   {
-      int16_t x;
-      int16_t y;
-      int16_t dx;
-      int16_t dy;
-      int16_t old_x;
-      int16_t old_y;
-      int16_t start_x;
-      int16_t start_y;
-      bool pressed[2];
-      bool oldpressed[2];
-      bool dragging;
-      bool back;
-      bool oldback;
-      unsigned ptr;
-   } pointer;
-
-   struct
-   {
-      const char **buffer;
-      const char *label;
-      const char *label_setting;
-      bool display;
-      unsigned type;
-      unsigned idx;
-   } keyboard;
+   menu_input_t input;
 
    struct
    {
@@ -211,11 +125,6 @@ typedef struct
       bool active;
    } action;
 
-   struct
-   {
-      unsigned joypad;
-      uint64_t mouse;
-   } input;
 
    rarch_setting_t *list_settings;
    animation_t *animation;
