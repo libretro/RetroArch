@@ -20,8 +20,6 @@
 #include <stddef.h>
 #include <file/file_list.h>
 
-#include "menu_displaylist.h"
-
 #ifdef __cplusplus
 extern "C" {
 #endif

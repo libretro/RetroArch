@@ -15,6 +15,7 @@
  */
 
 #include <file/file_path.h>
+#include <file/config_file.h>
 #include <rhash.h>
 
 #include "menu.h"

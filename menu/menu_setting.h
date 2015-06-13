@@ -22,8 +22,6 @@
 #include <boolean.h>
 
 #include <file/file_list.h>
-#include <file/config_file.h>
-#include <retro_miscellaneous.h>
 
 #include "../command_event.h"
 
