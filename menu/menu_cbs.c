@@ -47,14 +47,16 @@ void menu_cbs_init(void *data,
       const char *path, const char *label,
       unsigned type, size_t idx)
 {
-   char elem0[PATH_MAX_LENGTH], elem1[PATH_MAX_LENGTH];
-   int ret                      = 0;
+   char elem0[PATH_MAX_LENGTH]  = {0};
+   char elem1[PATH_MAX_LENGTH]  = {0};
    struct string_list *str_list = NULL;
    const char *menu_label       = NULL;
    menu_file_list_cbs_t *cbs    = NULL;
    file_list_t *list            = (file_list_t*)data;
    menu_handle_t *menu          = menu_driver_get_ptr();
-   uint32_t label_hash = 0, menu_label_hash = 0;
+   int ret                      = 0;
+   uint32_t label_hash          = 0;
+   uint32_t menu_label_hash     = 0;
    if (!menu)
       return;
 
