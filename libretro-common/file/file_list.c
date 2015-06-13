@@ -160,40 +160,51 @@ void file_list_clear(file_list_t *list)
    list->size = 0;
 }
 
-void file_list_copy(file_list_t *list, file_list_t *list_old)
+void file_list_copy(const file_list_t *src, file_list_t *dst)
 {
-   size_t i;
+   struct item_file *item;
 
-   if (!list)
+   if (!src || !dst)
       return;
 
-   list_old->size = list->size;
-   list_old->capacity = list->capacity;
-
-   list_old->list = (struct item_file*)realloc(list_old->list,
-            list_old->capacity * sizeof(struct item_file));
-
-   if (!list_old->list)
-      return;
-
-   for (i = 0; i < list->size; i++)
+   if (dst->list)
    {
-      list_old->list[i].path          = NULL;
-      list_old->list[i].label         = NULL;
-      list_old->list[i].alt           = NULL;
-      list_old->list[i].type          = list->list[i].type;
-      list_old->list[i].directory_ptr = list->list[i].directory_ptr;
-      list_old->list[i].entry_idx     = list->list[i].entry_idx;
+      for (item = dst->list; item < &dst->list[dst->size]; ++item)
+      {
+         if (item->path)
+            free(item->path);
 
-      file_list_set_actiondata(list_old, i, list->list[i].actiondata);
-      file_list_set_userdata  (list_old, i, list->list[i].userdata);
+         if (item->label)
+            free(item->label);
 
-      if (list->list[i].path)
-         list_old->list[i].path       = strdup(list->list[i].path);
-      if (list->list[i].label)
-         list_old->list[i].label      = strdup(list->list[i].label);
-      if (list->list[i].alt)
-         list_old->list[i].alt        = strdup(list->list[i].alt);
+         if (item->alt)
+            free(item->alt);
+      }
+
+      free(dst->list);
+   }
+
+   dst->size     = 0;
+   dst->capacity = 0;
+   dst->list     = (struct item_file*)malloc(src->size * sizeof(struct item_file));
+
+   if (!dst->list)
+      return;
+
+   dst->size = dst->capacity = src->size;
+
+   memcpy(dst->list, src->list, dst->size * sizeof(struct item_file));
+
+   for (item = dst->list; item < &dst->list[dst->size]; ++item)
+   {
+      if (item->path)
+         item->path = strdup(item->path);
+
+      if (item->label)
+         item->label = strdup(item->label);
+
+      if (item->alt)
+         item->alt = strdup(item->alt);
    }
 }
 
