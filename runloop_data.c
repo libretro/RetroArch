@@ -24,6 +24,7 @@
 
 #ifdef HAVE_MENU
 #include "menu/menu.h"
+#include "menu/menu_input.h"
 #endif
 
 enum

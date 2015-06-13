@@ -18,6 +18,8 @@
 
 #include <file/file_path.h>
 #include <retro_inline.h>
+
+#include "configuration.h"
 #include "dynamic.h"
 #include "performance.h"
 #include "retroarch_logger.h"
@@ -25,7 +27,9 @@
 #include "retroarch.h"
 #include "runloop.h"
 #include "runloop_data.h"
+
 #include "input/keyboard_line.h"
+#include "input/input_common.h"
 
 #ifdef HAVE_MENU
 #include "menu/menu.h"

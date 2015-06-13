@@ -13,6 +13,9 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <compat/strl.h>
+#include <string/string_list.h>
+
 #include "menu.h"
 #include "menu_display.h"
 #include "menu_entry.h"

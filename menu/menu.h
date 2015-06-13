@@ -23,15 +23,17 @@
 #include <string.h>
 #include <ctype.h>
 #include <boolean.h>
-#include "../../general.h"
-#include "../../runloop.h"
-#include "menu_input.h"
-#include "menu_hash.h"
+
+#include "../driver.h"
 
 #if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
 #ifndef HAVE_SHADER_MANAGER
 #define HAVE_SHADER_MANAGER
 #endif
+#endif
+
+#ifndef GFX_MAX_PARAMETERS
+#define GFX_MAX_PARAMETERS 64
 #endif
 
 #ifndef GFX_MAX_SHADERS

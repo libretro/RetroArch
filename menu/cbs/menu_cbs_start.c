@@ -15,9 +15,12 @@
 
 #include "../menu.h"
 #include "../menu_cbs.h"
+#include "../menu_input.h"
 #include "../menu_setting.h"
 #include "../menu_shader.h"
+#include "../menu_hash.h"
 
+#include "../../general.h"
 #include "../../retroarch.h"
 #include "../../performance.h"
 

@@ -22,16 +22,17 @@
 #include <rhash.h>
 
 #include "menu.h"
+#include "menu_hash.h"
 #include "menu_display.h"
 #include "menu_displaylist.h"
 #include "menu_navigation.h"
 #include "menu_setting.h"
 
+#include "../general.h"
+#include "../retroarch.h"
 #include "../gfx/video_shader_driver.h"
 #include "../config.features.h"
-#include "../retroarch.h"
 #include "../git_version.h"
-
 #include "../performance.h"
 
 #ifdef HAVE_NETWORKING

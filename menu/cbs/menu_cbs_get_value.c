@@ -20,6 +20,7 @@
 #include "../menu_cbs.h"
 #include "../menu_shader.h"
 
+#include "../../general.h"
 #include "../../performance.h"
 #include "../../intl/intl.h"
 

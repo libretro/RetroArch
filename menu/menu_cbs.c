@@ -13,6 +13,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <compat/strl.h>
+#include <string/string_list.h>
 #include <rhash.h>
 
 #include "menu.h"

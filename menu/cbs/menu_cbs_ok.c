@@ -22,7 +22,9 @@
 #include "../menu_entry.h"
 #include "../menu_shader.h"
 #include "../menu_navigation.h"
+#include "../menu_hash.h"
 
+#include "../../general.h"
 #include "../../retroarch.h"
 #include "../../runloop_data.h"
 #include "../../input/input_remapping.h"

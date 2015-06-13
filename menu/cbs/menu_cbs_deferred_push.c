@@ -16,10 +16,11 @@
 #include <file/file_path.h>
 
 #include "../menu.h"
+#include "../menu_hash.h"
 #include "../menu_displaylist.h"
 
+#include "../../general.h"
 #include "../../file_ext.h"
-
 #include "../../gfx/video_shader_driver.h"
 
 static int deferred_push_core_information(menu_displaylist_info_t *info)

@@ -13,18 +13,21 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <compat/strl.h>
 #include <file/file_path.h>
 #include <rhash.h>
 #include <retro_inline.h>
 
 #include "../menu.h"
 #include "../menu_display.h"
+#include "../menu_hash.h"
 #include "../menu_entry.h"
 #include "../menu_setting.h"
 #include "../menu_input.h"
 #include "../menu_shader.h"
 #include "../menu_navigation.h"
 
+#include "../../general.h"
 #include "../../retroarch.h"
 #include "../../input/input_autodetect.h"
 

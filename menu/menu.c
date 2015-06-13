@@ -20,7 +20,9 @@
 #include "menu_display.h"
 #include "menu_entry.h"
 #include "menu_shader.h"
+
 #include "../dynamic.h"
+#include "../general.h"
 #include "../frontend/frontend.h"
 #include "../../retroarch.h"
 #include "../../performance.h"

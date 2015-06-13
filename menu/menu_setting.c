@@ -19,9 +19,12 @@
 #include <rhash.h>
 
 #include "menu.h"
+#include "menu_input.h"
 #include "menu_setting.h"
+#include "menu_hash.h"
 
 #include "../driver.h"
+#include "../general.h"
 #include "../gfx/video_monitor.h"
 #include "../dynamic.h"
 #include "../input/input_autodetect.h"

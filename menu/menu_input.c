@@ -32,6 +32,9 @@
 #include "menu_setting.h"
 #include "menu_shader.h"
 #include "menu_navigation.h"
+#include "menu_hash.h"
+
+#include "./general.h"
 #include "../cheats.h"
 #include "../performance.h"
 #include "../input/input_joypad.h"

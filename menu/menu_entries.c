@@ -19,7 +19,8 @@
 #include "menu_navigation.h"
 #include "menu_setting.h"
 #include "menu_input.h"
-#include "../runloop_data.h"
+
+#include "../general.h"
 
 /* Returns the starting index of the menu entry list. */
 size_t menu_entries_get_start(void)

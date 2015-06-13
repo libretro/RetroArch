@@ -13,7 +13,10 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <compat/strl.h>
+
 #include "../menu.h"
+#include "../menu_hash.h"
 
 static int action_info_default(unsigned type, const char *label)
 {

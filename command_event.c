@@ -13,7 +13,11 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <compat/strl.h>
+
 #include "command_event.h"
+
+#include "general.h"
 #include "performance.h"
 #include "runloop_data.h"
 #include "runloop.h"
@@ -24,6 +28,7 @@
 #include "retroarch.h"
 #include "dir_list_special.h"
 
+#include "configuration.h"
 #include "input/input_remapping.h"
 
 #ifdef HAVE_MENU

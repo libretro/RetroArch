@@ -19,6 +19,8 @@
 #include <stdint.h>
 #include <boolean.h>
 
+#include "menu_input.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
