@@ -1870,22 +1870,6 @@ static void xmb_navigation_alphabet(size_t *unused)
    xmb_selection_pointer_changed();
 }
 
-static void xmb_node_kill_animation(menu_handle_t *menu, xmb_node_t *node)
-{
-   float *subjects[5];
-
-   if (!node)
-      return;
-
-   subjects[0] = &node->alpha;
-   subjects[1] = &node->label_alpha;
-   subjects[2] = &node->zoom;
-   subjects[3] = &node->x;
-   subjects[4] = &node->y;
-
-   menu_animation_kill_by_subject(menu->animation, 5, subjects);
-}
-
 static void xmb_list_insert(file_list_t *list,
       const char *path, const char *unused, size_t list_size)
 {
@@ -1932,18 +1916,6 @@ static void xmb_list_insert(file_list_t *list,
 static void xmb_list_free(file_list_t *list,
       size_t idx, size_t list_size)
 {
-   menu_handle_t *menu = menu_driver_get_ptr();
-   xmb_node_t    *node;
-
-   if (!list || !menu)
-      return;
-
-   node = (xmb_node_t*)menu_list_get_userdata_at_offset(list, idx);
-
-   if (node)
-      xmb_node_kill_animation(menu, node);
-
-   file_list_free_userdata(list, idx);
 }
 
 static void xmb_list_cache(menu_list_type_t type, unsigned action)
