@@ -131,6 +131,7 @@ typedef struct rarch_setting
    uint32_t             size;
    
    const char           *name;
+   uint32_t             name_hash;
    const char           *short_description;
    const char           *group;
    const char           *subgroup;
