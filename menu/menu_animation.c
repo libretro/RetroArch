@@ -452,11 +452,7 @@ static int menu_animation_iterate(struct tween *tween, float dt,
    if (!tween)
       return -1;
    if (tween->running_since >= tween->duration || !tween->alive)
-   {
-      tween->alive = 0;
-      tween->subject = NULL;
       return -1;
-   }
 
    tween->running_since += dt;
 
@@ -470,6 +466,7 @@ static int menu_animation_iterate(struct tween *tween, float dt,
    if (tween->running_since >= tween->duration)
    {
       *tween->subject = tween->target_value;
+      tween->alive    = 0;
 
       if (tween->cb)
          tween->cb();
