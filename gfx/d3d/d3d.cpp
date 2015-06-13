@@ -293,8 +293,8 @@ static bool d3d_initialize(d3d_video_t *d3d, const video_info_t *info)
       {
          /* Try to recreate the device completely. */
 #ifndef _XBOX
-         HRESULT res = d3d->dev->TestCooperativeLevel();
-         const char *err;
+         HRESULT res     = d3d->dev->TestCooperativeLevel();
+         const char *err = NULL;
          switch (res)
          {
             case D3DERR_DEVICELOST:
@@ -638,8 +638,8 @@ static bool d3d_construct(d3d_video_t *d3d,
 
 #ifndef _XBOX
 #ifdef HAVE_WINDOW
-   char buffer[128];
    unsigned win_width, win_height;
+   char buffer[128] = {0};
    RECT rect = {0};
 
    video_driver_get_size(&win_width, &win_height);

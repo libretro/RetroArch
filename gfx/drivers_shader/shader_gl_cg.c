@@ -772,7 +772,7 @@ static void set_program_base_attrib(cg_shader_data_t *cg, unsigned i)
 static void set_pass_attrib(struct cg_program *program, struct cg_fbo_params *fbo,
       const char *attr)
 {
-   char attr_buf[64];
+   char attr_buf[64] = {0};
 
    snprintf(attr_buf, sizeof(attr_buf), "%s.texture", attr);
    if (!fbo->tex)
@@ -831,7 +831,7 @@ static void set_program_attributes(cg_shader_data_t *cg, unsigned i)
 
    if (i > 1)
    {
-      char pass_str[64];
+      char pass_str[64] = {0};
 
       snprintf(pass_str, sizeof(pass_str), "PASSPREV%u", i);
       set_pass_attrib(&cg->prg[i], &cg->prg[i].orig, pass_str);
@@ -839,8 +839,10 @@ static void set_program_attributes(cg_shader_data_t *cg, unsigned i)
 
    for (j = 0; j < PREV_TEXTURES; j++)
    {
-      char attr_buf_tex[64], attr_buf_vid_size[64];
-      char attr_buf_tex_size[64], attr_buf_coord[64];
+      char attr_buf_tex[64]      = {0};
+      char attr_buf_vid_size[64] = {0};
+      char attr_buf_tex_size[64] = {0};
+      char attr_buf_coord[64]    = {0};
       static const char *prev_names[PREV_TEXTURES] = {
          "PREV",
          "PREV1",
@@ -877,7 +879,8 @@ static void set_program_attributes(cg_shader_data_t *cg, unsigned i)
 
    for (j = 0; j + 1 < i; j++)
    {
-      char pass_str[64];
+      char pass_str[64] = {0};
+
       snprintf(pass_str, sizeof(pass_str), "PASS%u", j + 1);
       set_pass_attrib(&cg->prg[i], &cg->prg[i].fbo[j], pass_str);
       snprintf(pass_str, sizeof(pass_str), "PASSPREV%u", i - (j + 1));

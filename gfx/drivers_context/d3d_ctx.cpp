@@ -132,7 +132,8 @@ static void gfx_ctx_d3d_swap_buffers(void *data)
 
 static void gfx_ctx_d3d_update_title(void *data)
 {
-   char buf[128], buffer_fps[128];
+   char buf[128]        = {0};
+   char buffer_fps[128] = {0};
    d3d_video_t *d3d     = (d3d_video_t*)data;
    settings_t *settings = config_get_ptr();
 
@@ -147,8 +148,9 @@ static void gfx_ctx_d3d_update_title(void *data)
    if (settings->fps_show)
    {
 #ifdef _XBOX
-      char mem[128];
       MEMORYSTATUS stat;
+      char mem[128] = {0};
+
       GlobalMemoryStatus(&stat);
       snprintf(mem, sizeof(mem), "|| MEM: %.2f/%.2fMB",
             stat.dwAvailPhys/(1024.0f*1024.0f), stat.dwTotalPhys/(1024.0f*1024.0f));

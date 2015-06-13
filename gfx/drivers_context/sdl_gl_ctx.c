@@ -281,7 +281,8 @@ static void sdl_ctx_get_video_size(void *data,
 
 static void sdl_ctx_update_window_title(void *data)
 {
-   char buf[128], buf_fps[128];
+   char buf[128]           = {0};
+   char buf_fps[128]       = {0};
    driver_t *driver        = driver_get_ptr();
    settings_t *settings    = config_get_ptr();
    gfx_ctx_sdl_data_t *sdl = (gfx_ctx_sdl_data_t*)driver->video_context_data;

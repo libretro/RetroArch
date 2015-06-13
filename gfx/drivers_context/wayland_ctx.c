@@ -337,7 +337,8 @@ static void gfx_ctx_wl_set_resize(void *data, unsigned width, unsigned height)
 
 static void gfx_ctx_wl_update_window_title(void *data)
 {
-   char buf[128], buf_fps[128];
+   char buf[128]              = {0};
+   char buf_fps[128]          = {0};
    driver_t *driver           = driver_get_ptr();
    settings_t *settings       = config_get_ptr();
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)

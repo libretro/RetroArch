@@ -307,7 +307,8 @@ static void gfx_ctx_drm_egl_set_resize(void *data,
 
 static void gfx_ctx_drm_egl_update_window_title(void *data)
 {
-   char buf[128], buf_fps[128];
+   char buf[128]        = {0};
+   char buf_fps[128]    = {0};
    settings_t *settings = config_get_ptr();
 
    video_monitor_get_fps(buf, sizeof(buf),
@@ -427,12 +428,12 @@ static void gfx_ctx_drm_egl_destroy_resources(gfx_ctx_drm_egl_data_t *drm)
 
 static bool gfx_ctx_drm_egl_init(void *data)
 {
-   const char *gpu;
    int i;
    unsigned monitor_index;
-   unsigned gpu_index = 0;
+   unsigned gpu_index                   = 0;
+   const char *gpu                      = NULL;
    struct string_list *gpu_descriptors  = NULL;
-   settings_t *settings = config_get_ptr();
+   settings_t *settings                 = config_get_ptr();
    unsigned monitor = max(settings->video.monitor_index, 1);
 
    gfx_ctx_drm_egl_data_t *drm = (gfx_ctx_drm_egl_data_t*)calloc(1, sizeof(gfx_ctx_drm_egl_data_t));

@@ -281,7 +281,8 @@ static void android_gfx_ctx_set_resize(void *data,
 
 static void android_gfx_ctx_update_window_title(void *data)
 {
-   char buf[128], buf_fps[128];
+   char buf[128]        = {0};
+   char buf_fps[128]    = {0};
    settings_t *settings = config_get_ptr();
 
    video_monitor_get_fps(buf, sizeof(buf),
@@ -389,9 +390,9 @@ static int system_property_get_density(char *value)
 {
    FILE *pipe;
    int length = 0;
-   char buffer[PATH_MAX_LENGTH];
-   char cmd[PATH_MAX_LENGTH];
-   char *curpos = NULL;
+   char buffer[PATH_MAX_LENGTH] = {0};
+   char cmd[PATH_MAX_LENGTH]    = {0};
+   char *curpos                 = NULL;
 
    snprintf(cmd, sizeof(cmd), "wm density");
 
@@ -437,7 +438,7 @@ static bool android_gfx_ctx_get_metrics(void *data,
 	enum display_metric_types type, float *value)
 {
    int dpi;
-   char density[PROP_VALUE_MAX];
+   char density[PROP_VALUE_MAX] = {0};
    dpi_get_density(density, sizeof(density));
 
    switch (type)

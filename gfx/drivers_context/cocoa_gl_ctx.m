@@ -357,7 +357,8 @@ static void cocoagl_gfx_ctx_get_video_size(void *data, unsigned* width, unsigned
 
 static void cocoagl_gfx_ctx_update_window_title(void *data)
 {
-   static char buf[128], buf_fps[128];
+   static char buf[128] = {0};
+   static char buf_fps[128] = {0};
    bool got_text = video_monitor_get_fps(buf, sizeof(buf),
          buf_fps, sizeof(buf_fps));
    settings_t *settings = config_get_ptr();

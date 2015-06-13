@@ -225,8 +225,8 @@ static GLint get_uniform(glsl_shader_data_t *glsl,
       GLuint prog, const char *base)
 {
    unsigned i;
-   char buf[64];
    GLint loc;
+   char buf[64] = {0};
 
    snprintf(buf, sizeof(buf), "%s%s", glsl->glsl_shader->prefix, base);
    loc = glGetUniformLocation(prog, buf);
@@ -248,8 +248,8 @@ static GLint get_attrib(glsl_shader_data_t *glsl,
       GLuint prog, const char *base)
 {
    unsigned i;
-   char buf[64];
    GLint loc;
+   char buf[64] = {0};
 
    snprintf(buf, sizeof(buf), "%s%s", glsl->glsl_shader->prefix, base);
    loc = glGetUniformLocation(prog, buf);
@@ -269,7 +269,7 @@ static GLint get_attrib(glsl_shader_data_t *glsl,
 
 static void print_shader_log(GLuint obj)
 {
-   char *info_log;
+   char *info_log = NULL;
    GLint max_len, info_len = 0;
 
    glGetShaderiv(obj, GL_INFO_LOG_LENGTH, &max_len);
@@ -291,7 +291,7 @@ static void print_shader_log(GLuint obj)
 
 static void print_linker_log(GLuint obj)
 {
-   char *info_log;
+   char *info_log = NULL;
    GLint max_len, info_len = 0;
 
    glGetProgramiv(obj, GL_INFO_LOG_LENGTH, &max_len);
@@ -554,8 +554,10 @@ static void find_uniforms_frame(glsl_shader_data_t *glsl,
       GLuint prog,
       struct shader_uniforms_frame *frame, const char *base)
 {
-   char texture[64], texture_size[64];
-   char input_size[64], tex_coord[64];
+   char texture[64]      = {0};
+   char texture_size[64] = {0};
+   char input_size[64]   = {0};
+   char tex_coord[64]    = {0};
 
    snprintf(texture, sizeof(texture), "%s%s", base, "Texture");
    snprintf(texture_size, sizeof(texture_size), "%s%s", base, "TextureSize");
@@ -576,8 +578,8 @@ static void find_uniforms(glsl_shader_data_t *glsl,
       unsigned pass, GLuint prog,
       struct shader_uniforms *uni)
 {
-   char frame_base[64];
    unsigned i;
+   char frame_base[64] = {0};
 
    glUseProgram(prog);
 
@@ -713,7 +715,7 @@ static bool gl_glsl_init(void *data, const char *path)
    glsl_shader_data_t *glsl   = NULL;
    const char *stock_vertex   = NULL;
    const char *stock_fragment = NULL;
-   driver_t *driver = driver_get_ptr();
+   driver_t *driver           = driver_get_ptr();
 
    (void)data;
 
@@ -837,7 +839,8 @@ static bool gl_glsl_init(void *data, const char *path)
    {
       if (*glsl->glsl_shader->pass[i].alias)
       {
-         char define[128];
+         char define[128] = {0};
+
          snprintf(define, sizeof(define), "#define %s_ALIAS\n",
                glsl->glsl_shader->pass[i].alias);
          strlcat(glsl->glsl_alias_define, define, sizeof(glsl->glsl_alias_define));
