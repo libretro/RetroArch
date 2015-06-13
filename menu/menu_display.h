@@ -18,8 +18,6 @@
 
 #include "menu_driver.h"
 #include "menu_list.h"
-#include "../gfx/video_thread_wrapper.h"
-#include "../gfx/font_renderer_driver.h"
 
 #ifdef __cplusplus
 extern "C" {

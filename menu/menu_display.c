@@ -22,6 +22,7 @@
 #include "../../retroarch.h"
 #include "../../config.def.h"
 #include "../gfx/video_context_driver.h"
+#include "../gfx/video_thread_wrapper.h"
 #include "menu_list.h"
 
 menu_framebuf_t *menu_display_fb_get_ptr(void)
@@ -31,7 +32,6 @@ menu_framebuf_t *menu_display_fb_get_ptr(void)
       return NULL;
    return &menu->frame_buf;
 }
-
 
 static bool menu_display_fb_in_use(menu_framebuf_t *frame_buf)
 {
@@ -163,7 +163,7 @@ bool menu_display_font_init_first(const void **font_driver,
    {
       driver_t *driver    = driver_get_ptr();
       thread_video_t *thr = (thread_video_t*)driver->video_data;
-      thread_packet_t pkt;
+      thread_packet_t pkt = {0};
 
       if (!thr)
          return false;
