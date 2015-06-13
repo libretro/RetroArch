@@ -30,8 +30,7 @@ typedef void  (*tween_cb) (void);
 
 struct tween
 {
-   struct tween *next;
-
+   int    alive;
    float  duration;
    float  running_since;
    float  initial_value;
@@ -43,10 +42,10 @@ struct tween
 
 typedef struct animation
 {
-   struct tween *alive;
-   struct tween *dead;
+   struct tween *list;
 
-   size_t allocated;
+   size_t capacity;
+   size_t size;
 } animation_t;
 
 enum animation_easing_type

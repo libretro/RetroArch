@@ -252,53 +252,47 @@ static float easing_out_in_bounce(float t, float b, float c, float d)
 
 void menu_animation_free(animation_t *animation)
 {
-   struct tween *t, *tnext;
+   size_t i;
 
    if (!animation)
       return;
 
-   for (t = animation->alive; t; t = tnext)
+   for (i = 0; i < animation->size; i++)
    {
-      tnext = t->next;
-      free(t);
+      if (animation->list[i].subject)
+         animation->list[i].subject = NULL;
    }
 
-   for (t = animation->dead; t; t = tnext)
-   {
-      tnext = t->next;
-      free(t);
-   }
-
-   animation->alive = NULL;
-   animation->dead  = NULL;
-   animation->allocated = 0;
-
+   free(animation->list);
    free(animation);
 }
 
-static struct tween *menu_animation_get_slot(animation_t *animation)
+static struct tween *menu_animation_get_free_slot(animation_t *animation)
 {
    struct tween *slot = NULL;
+   unsigned i;
 
-   if (!animation->dead)
+   for (i = 0; i < animation->size; ++i)
    {
-      size_t count = ((animation->allocated + 1) * 2) - animation->allocated;
-      unsigned i;
-
-      for (i = 0; i < count; ++i)
+      if (!animation->list[i].alive)
       {
-         slot = calloc(1, sizeof(struct tween));
-         slot->next = animation->dead;
-         animation->dead = slot;
+         slot = &animation->list[i];
+         memset(slot, 0, sizeof(*slot));
+         break;
       }
-
-      animation->allocated += count;
    }
 
-   slot = animation->dead;
-   animation->dead = slot->next;
-   slot->next = animation->alive;
-   animation->alive = slot;
+   if (!slot)
+   {
+      if (animation->size >= animation->capacity)
+      {
+         animation->capacity++;
+         animation->list = (struct tween*)realloc(animation->list,
+               animation->capacity * sizeof(struct tween));
+      }
+
+      slot = &animation->list[animation->size++];
+   }
 
    return slot;
 }
@@ -308,30 +302,16 @@ void menu_animation_kill_by_subject(animation_t *animation, size_t count, const 
    unsigned i, j;
    float **sub = (float**)subjects;
 
-   struct tween *t, *tnext, *tprev = NULL;
-   for (t = animation->alive; t; t = tnext)
+   for (i = 0; i < animation->size; ++i)
    {
-      bool killed = false;
-      tnext = t->next;
-
       for (j = 0; j < count; ++j)
       {
-         if (t->subject == sub[j])
+         if (animation->list[i].subject == sub[j])
          {
-            if (tprev)
-               tprev->next = tnext;
-            else
-               animation->alive = tnext;
-
-            tnext = t->next;
-            t->next = animation->dead;
-            animation->dead = t;
-            killed = true;
+            animation->list[i].alive   = 0;
+            animation->list[i].subject = NULL;
          }
       }
-
-      if (!killed)
-         tprev = t;
    }
 }
 
@@ -339,8 +319,9 @@ bool menu_animation_push(animation_t *animation,
       float duration, float target_value, float* subject,
       enum animation_easing_type easing_enum, tween_cb cb)
 {
-   struct tween *slot = menu_animation_get_slot(animation);
+   struct tween *slot = menu_animation_get_free_slot(animation);
 
+   slot->alive         = 1;
    slot->duration      = duration;
    slot->running_since = 0;
    slot->initial_value = *subject;
@@ -466,15 +447,12 @@ bool menu_animation_push(animation_t *animation,
 }
 
 static int menu_animation_iterate(struct tween *tween, float dt,
-      unsigned *active_tweens, bool *dead)
+      unsigned *active_tweens)
 {
    if (!tween)
       return -1;
-   if (tween->running_since >= tween->duration)
-   {
-      *dead = true;
+   if (tween->running_since >= tween->duration || !tween->alive)
       return -1;
-   }
 
    tween->running_since += dt;
 
@@ -485,11 +463,10 @@ static int menu_animation_iterate(struct tween *tween, float dt,
             tween->target_value - tween->initial_value,
             tween->duration);
 
-   *dead = false;
    if (tween->running_since >= tween->duration)
    {
       *tween->subject = tween->target_value;
-      *dead = true;
+      tween->alive    = 0;
 
       if (tween->cb)
          tween->cb();
@@ -507,35 +484,14 @@ bool menu_animation_update(animation_t *animation, float dt)
    unsigned active_tweens = 0;
    menu_handle_t *menu = menu_driver_get_ptr();
 
-   struct tween *t, *tnext, *tprev = NULL;
+   for(i = 0; i < animation->size; i++)
+      menu_animation_iterate(&animation->list[i], dt, &active_tweens);
 
-   unsigned active = 0;
-   for (t = animation->alive; t; t = tnext)
+   if (!active_tweens)
    {
-      bool dead = false;
-      tnext = t->next;
-
-      menu_animation_iterate(t, dt, &active_tweens, &dead);
-
-      if (dead)
-      {
-         if (tprev)
-            tprev->next = tnext;
-         else
-            animation->alive = tnext;
-
-         t->next = animation->dead;
-         animation->dead = t;
-      }
-      else
-      {
-         tprev = t;
-         active++;
-      }
-   }
-
-   if (!animation->alive)
+      animation->size = 0;
       return false;
+   }
 
    menu->animation_is_active = true;
 
