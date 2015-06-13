@@ -734,7 +734,6 @@ static int menu_input_mouse_frame(
       menu_file_list_cbs_t *cbs, menu_entry_t *entry,
       uint64_t input_mouse)
 {
-   menu_handle_t *menu      = menu_driver_get_ptr();
    menu_input_t *menu_input = menu_input_get_ptr();
    menu_list_t *menu_list   = menu_list_get_ptr();
    menu_navigation_t *nav   = menu_navigation_get_ptr();
@@ -858,7 +857,6 @@ static int menu_input_mouse_post_iterate(uint64_t *input_mouse,
 static int pointer_tap(menu_file_list_cbs_t *cbs,
       menu_entry_t *entry, unsigned action)
 {
-   menu_handle_t *menu      = menu_driver_get_ptr();
    menu_input_t *menu_input = menu_input_get_ptr();
    menu_list_t   *menu_list = menu_list_get_ptr();
    menu_navigation_t *nav   = menu_navigation_get_ptr();
@@ -960,7 +958,6 @@ static int menu_input_pointer_post_iterate(menu_file_list_cbs_t *cbs,
 void menu_input_post_iterate(int *ret, unsigned action)
 {
    menu_entry_t entry        = {{0}};
-   menu_handle_t *menu       = menu_driver_get_ptr();
    menu_input_t *menu_input  = menu_input_get_ptr();
    menu_list_t *menu_list    = menu_list_get_ptr();
    settings_t *settings      = config_get_ptr();
