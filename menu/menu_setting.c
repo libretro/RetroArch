@@ -63,6 +63,8 @@ static bool menu_settings_list_append(rarch_setting_t **list,
          return false;
    }
 
+   value.name_hash = value.name ? djb2_calculate(value.name) : 0;
+
    (*list)[list_info->index++] = value;
    return true;
 }
@@ -308,16 +310,23 @@ static rarch_setting_t *menu_setting_get_ptr(void)
 rarch_setting_t *menu_setting_find(const char *label)
 {
    rarch_setting_t *settings = menu_setting_get_ptr();
+   uint32_t needle = 0;
 
    if (!settings)
       return NULL;
    if (!label)
       return NULL;
 
+   needle = djb2_calculate(label);
+
    for (; settings->type != ST_NONE; settings++)
    {
-      if (settings->type <= ST_GROUP && !strcmp(settings->name, label))
+      if (settings->type <= ST_GROUP && needle == settings->name_hash)
       {
+         /* make sure this isn't a collision */
+         if (strcmp(label, settings->name) != 0)
+            continue;
+
          if (settings->short_description && settings->short_description[0] == '\0')
             return NULL;
 
