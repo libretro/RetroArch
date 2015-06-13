@@ -451,13 +451,10 @@ static int menu_animation_iterate(
    return 0;
 }
 
-bool menu_animation_update(
-      menu_animation_t *anim,
-      float dt)
+bool menu_animation_update(menu_animation_t *anim, float dt)
 {
    unsigned i;
    unsigned active_tweens = 0;
-   menu_handle_t    *menu = menu_driver_get_ptr();
 
    for(i = 0; i < anim->size; i++)
       menu_animation_iterate(&anim->list[i], dt, &active_tweens);
@@ -491,7 +488,6 @@ void menu_animation_ticker_line(char *buf, size_t len, uint64_t idx,
    unsigned phase_left_moving, phase_right_stop;
    unsigned left_offset, right_offset;
    size_t         str_len = strlen(str);
-   menu_handle_t    *menu = menu_driver_get_ptr();
    menu_animation_t *anim = menu_animation_get_ptr();
 
    if (str_len <= len)
