@@ -611,6 +611,7 @@ static void log_connection(const struct sockaddr_storage *their_addr,
    if (str)
    {
       char msg[512] = {0};
+
       snprintf(msg, sizeof(msg), "Got connection from: \"%s (%s)\" (#%u)",
             nick, str, slot);
       rarch_main_msg_queue_push(msg, 1, 180, false);

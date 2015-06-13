@@ -850,7 +850,8 @@ static void rarch_init_savefile_paths(void)
          for (j = 0; j < info->roms[i].num_memory; j++)
          {
             union string_list_elem_attr attr;
-            char path[PATH_MAX_LENGTH], ext[32];
+            char path[PATH_MAX_LENGTH] = {0};
+            char ext[32] = {0};
             const struct retro_subsystem_memory_info *mem =
                (const struct retro_subsystem_memory_info*)
                &info->roms[i].memory[j];
