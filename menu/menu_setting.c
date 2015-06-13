@@ -3585,7 +3585,7 @@ static bool setting_append_list_main_menu_options(
 
    CONFIG_ACTION(
          "management",
-         "Management",
+         "Advanced Management",
          group_info.name,
          subgroup_info.name,
          parent_group);
