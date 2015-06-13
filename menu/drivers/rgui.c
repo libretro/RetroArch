@@ -216,14 +216,17 @@ static bool rguidisp_init_font(menu_handle_t *menu)
 
 static void rgui_render_background(void)
 {
+   size_t pitch_in_pixels, size;
+   uint16_t      *src  = NULL;
+   uint16_t      *dst  = NULL;
    menu_handle_t *menu = menu_driver_get_ptr();
    if (!menu)
       return;
 
-   size_t pitch_in_pixels = menu->frame_buf.pitch >> 1;
-   size_t size            = menu->frame_buf.pitch * 4;
-   uint16_t *src          = menu->frame_buf.data + pitch_in_pixels * menu->frame_buf.height;
-   uint16_t *dst          = menu->frame_buf.data;
+   pitch_in_pixels = menu->frame_buf.pitch >> 1;
+   size            = menu->frame_buf.pitch * 4;
+   src             = menu->frame_buf.data + pitch_in_pixels * menu->frame_buf.height;
+   dst             = menu->frame_buf.data;
 
    while (dst < src)
    {
