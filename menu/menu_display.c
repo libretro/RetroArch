@@ -148,7 +148,7 @@ bool menu_display_font_init_first(const void **font_driver,
       if (!thr)
          return false;
 
-      pkt.type = CMD_FONT_INIT;
+      pkt.type                       = CMD_FONT_INIT;
       pkt.data.font_init.method      = font_init_first;
       pkt.data.font_init.font_driver = (const void**)font_driver;
       pkt.data.font_init.font_handle = font_handle;
@@ -225,16 +225,16 @@ bool menu_display_init_main_font(menu_handle_t *menu,
 void menu_display_set_viewport(void)
 {
    unsigned width, height;
-   video_driver_get_size(&width, &height);
 
+   video_driver_get_size(&width, &height);
    video_driver_set_viewport(width, height, true, false);
 }
 
 void menu_display_unset_viewport(void)
 {
    unsigned width, height;
-   video_driver_get_size(&width, &height);
 
+   video_driver_get_size(&width, &height);
    video_driver_set_viewport(width,
          height, false, true);
 }

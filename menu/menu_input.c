@@ -315,7 +315,7 @@ static bool menu_input_poll_find_trigger_pad(struct menu_bind_state *state,
 
    for (h = 0; h < MENU_MAX_HATS; h++)
    {
-      uint16_t trigged = n->hats[h] & (~o->hats[h]);
+      uint16_t      trigged = n->hats[h] & (~o->hats[h]);
       uint16_t sane_trigger = 0;
 
       if (trigged & HAT_UP_MASK)
@@ -381,9 +381,9 @@ static int menu_input_set_bind_mode_common(rarch_setting_t  *setting,
 {
    menu_displaylist_info_t info  = {0};
    struct retro_keybind *keybind = NULL;
-   settings_t *settings      = config_get_ptr();
-   menu_handle_t       *menu = menu_driver_get_ptr();
-   menu_navigation_t   *nav  = menu_navigation_get_ptr();
+   settings_t     *settings      = config_get_ptr();
+   menu_handle_t           *menu = menu_driver_get_ptr();
+   menu_navigation_t       *nav  = menu_navigation_get_ptr();
 
    if (!setting)
       return -1;
@@ -401,10 +401,10 @@ static int menu_input_set_bind_mode_common(rarch_setting_t  *setting,
          menu->binds.begin  = setting->bind_type;
          menu->binds.last   = setting->bind_type;
          menu->binds.target = keybind;
-         menu->binds.user = setting->index_offset;
+         menu->binds.user   = setting->index_offset;
 
-         info.list = menu->menu_list->menu_stack;
-         info.type = MENU_SETTINGS_CUSTOM_BIND_KEYBOARD;
+         info.list          = menu->menu_list->menu_stack;
+         info.type          = MENU_SETTINGS_CUSTOM_BIND_KEYBOARD;
          info.directory_ptr = nav->selection_ptr;
          strlcpy(info.label, "custom_bind", sizeof(info.label));
 
@@ -413,11 +413,11 @@ static int menu_input_set_bind_mode_common(rarch_setting_t  *setting,
       case MENU_INPUT_BIND_ALL:
          menu->binds.target = &settings->input.binds
             [setting->index_offset][0];
-         menu->binds.begin = MENU_SETTINGS_BIND_BEGIN;
-         menu->binds.last = MENU_SETTINGS_BIND_LAST;
+         menu->binds.begin  = MENU_SETTINGS_BIND_BEGIN;
+         menu->binds.last   = MENU_SETTINGS_BIND_LAST;
 
-         info.list = menu->menu_list->menu_stack;
-         info.type = MENU_SETTINGS_CUSTOM_BIND_KEYBOARD;
+         info.list          = menu->menu_list->menu_stack;
+         info.type          = MENU_SETTINGS_CUSTOM_BIND_KEYBOARD;
          info.directory_ptr = nav->selection_ptr;
          strlcpy(info.label, "custom_bind_all", sizeof(info.label));
 
@@ -431,7 +431,7 @@ static int menu_input_set_timeout(void)
 {
    menu_handle_t       *menu = menu_driver_get_ptr();
 
-   menu->binds.timeout_end = rarch_get_time_usec() +
+   menu->binds.timeout_end   = rarch_get_time_usec() +
       MENU_KEYBOARD_BIND_TIMEOUT_SECONDS * 1000000;
    input_keyboard_wait_keys(menu,
          menu_input_custom_bind_keyboard_cb);
@@ -570,11 +570,11 @@ int menu_input_bind_iterate(void)
 
 static int menu_input_mouse(unsigned *action)
 {
+   video_viewport_t vp;
    const struct retro_keybind *binds[MAX_USERS];
    driver_t *driver          = driver_get_ptr();
    menu_handle_t *menu       = menu_driver_get_ptr();
    settings_t *settings      = config_get_ptr();
-   video_viewport_t vp;
 
    if (!menu)
       return -1;
@@ -666,10 +666,10 @@ static int menu_input_mouse(unsigned *action)
 static int menu_input_pointer(unsigned *action)
 {
    int pointer_device, pointer_x, pointer_y;
-   const struct retro_keybind *binds[MAX_USERS];
+   const struct retro_keybind *binds[MAX_USERS] = {NULL};
    menu_handle_t *menu       = menu_driver_get_ptr();
    settings_t *settings      = config_get_ptr();
-   driver_t *driver     = driver_get_ptr();
+   driver_t *driver          = driver_get_ptr();
 
    if (!menu)
       return -1;
@@ -834,7 +834,7 @@ static int menu_input_mouse_post_iterate(uint64_t *input_mouse,
 static int pointer_tap(menu_file_list_cbs_t *cbs,
       menu_entry_t *entry, unsigned action)
 {
-   menu_handle_t *menu = menu_driver_get_ptr();
+   menu_handle_t *menu      = menu_driver_get_ptr();
    menu_list_t   *menu_list = menu_list_get_ptr();
    menu_navigation_t *nav   = menu_navigation_get_ptr();
    rarch_setting_t *setting =
@@ -857,7 +857,7 @@ static int pointer_tap(menu_file_list_cbs_t *cbs,
 static int menu_input_pointer_post_iterate(menu_file_list_cbs_t *cbs,
       menu_entry_t *entry, unsigned action)
 {
-   int ret = 0;
+   int ret              = 0;
    menu_handle_t *menu  = menu_driver_get_ptr();
    driver_t *driver     = driver_get_ptr();
    settings_t *settings = config_get_ptr();
@@ -934,7 +934,7 @@ static int menu_input_pointer_post_iterate(menu_file_list_cbs_t *cbs,
 
 void menu_input_post_iterate(int *ret, unsigned action)
 {
-   menu_entry_t entry;
+   menu_entry_t entry        = {{0}};
    menu_handle_t *menu       = menu_driver_get_ptr();
    menu_list_t *menu_list    = menu_list_get_ptr();
    settings_t *settings      = config_get_ptr();
@@ -955,9 +955,9 @@ void menu_input_post_iterate(int *ret, unsigned action)
 
 unsigned menu_input_frame(retro_input_t input, retro_input_t trigger_input)
 {
-   unsigned ret = 0;
-   static bool initial_held = true;
-   static bool first_held = false;
+   unsigned ret                            = 0;
+   static bool initial_held                = true;
+   static bool first_held                  = false;
    static const retro_input_t input_repeat =
       (1ULL << RETRO_DEVICE_ID_JOYPAD_UP)
       | (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN)
