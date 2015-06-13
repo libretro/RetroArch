@@ -109,8 +109,9 @@ static void menu_display_fb_free(menu_framebuf_t *frame_buf)
    frame_buf->data = NULL;
 }
 
-void menu_display_free(menu_handle_t *menu)
+void menu_display_free(void *data)
 {
+   menu_handle_t *menu = (menu_handle_t*)data;
    if (!menu)
       return;
 
@@ -120,8 +121,9 @@ void menu_display_free(menu_handle_t *menu)
    menu_display_fb_free(&menu->frame_buf);
 }
 
-bool menu_display_init(menu_handle_t *menu)
+bool menu_display_init(void *data)
 {
+   menu_handle_t *menu = (menu_handle_t*)data;
    if (!menu)
       return false;
 
@@ -186,9 +188,10 @@ bool menu_display_font_init_first(const void **font_driver,
          font_path, font_size, FONT_DRIVER_RENDER_OPENGL_API);
 }
 
-bool menu_display_font_bind_block(menu_handle_t *menu,
+bool menu_display_font_bind_block(void *data,
       const struct font_renderer *font_driver, void *userdata)
 {
+   menu_handle_t *menu = (menu_handle_t*)data;
    if (!font_driver || !font_driver->bind_block)
       return false;
 
@@ -197,9 +200,10 @@ bool menu_display_font_bind_block(menu_handle_t *menu,
    return true;
 }
 
-bool menu_display_font_flush_block(menu_handle_t *menu,
+bool menu_display_font_flush_block(void *data,
       const struct font_renderer *font_driver)
 {
+   menu_handle_t *menu = (menu_handle_t*)data;
    if (!font_driver || !font_driver->flush)
       return false;
 
@@ -209,8 +213,9 @@ bool menu_display_font_flush_block(menu_handle_t *menu,
          font_driver, NULL);
 }
 
-void menu_display_free_main_font(menu_handle_t *menu)
+void menu_display_free_main_font(void *data)
 {
+   menu_handle_t *menu = (menu_handle_t*)data;
    driver_t *driver = driver_get_ptr();
     
    if (menu->font.buf)
@@ -220,12 +225,13 @@ void menu_display_free_main_font(menu_handle_t *menu)
    }
 }
 
-bool menu_display_init_main_font(menu_handle_t *menu,
+bool menu_display_init_main_font(void *data,
       const char *font_path, float font_size)
 {
    bool      ret;
-   driver_t *driver = driver_get_ptr();
-   void     *video  = video_driver_get_ptr(NULL);
+   menu_handle_t *menu = (menu_handle_t*)data;
+   driver_t    *driver = driver_get_ptr();
+   void        *video  = video_driver_get_ptr(NULL);
 
    if (menu->font.buf)
       menu_display_free_main_font(menu);

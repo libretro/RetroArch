@@ -16,11 +16,24 @@
 #ifndef __MENU_DISPLAY_H__
 #define __MENU_DISPLAY_H__
 
-#include "menu_driver.h"
+#include <stdint.h>
+#include <stdlib.h>
+#include <boolean.h>
+
+#include "../gfx/font_renderer_driver.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+typedef struct menu_framebuf
+{
+   uint16_t *data;
+   unsigned width;
+   unsigned height;
+   size_t pitch;
+   bool dirty;
+} menu_framebuf_t;
 
 menu_framebuf_t *menu_display_fb_get_ptr(void);
 
@@ -30,9 +43,9 @@ void menu_display_fb_set_dirty(void);
 
 void menu_display_fb_unset_dirty(void);
 
-void menu_display_free(menu_handle_t *menu);
+void menu_display_free(void *data);
 
-bool menu_display_init(menu_handle_t *menu);
+bool menu_display_init(void *data);
 
 bool menu_display_update_pending(void);
 
@@ -42,16 +55,16 @@ bool menu_display_font_init_first(const void **font_driver,
       void **font_handle, void *video_data, const char *font_path,
       float font_size);
 
-bool menu_display_font_bind_block(menu_handle_t *menu,
+bool menu_display_font_bind_block(void *data,
       const struct font_renderer *font_driver, void *userdata);
 
-bool menu_display_font_flush_block(menu_handle_t *menu,
+bool menu_display_font_flush_block(void *data,
       const struct font_renderer *font_driver);
 
-bool menu_display_init_main_font(menu_handle_t *menu,
+bool menu_display_init_main_font(void *data,
       const char *font_path, float font_size);
 
-void menu_display_free_main_font(menu_handle_t *menu);
+void menu_display_free_main_font(void *data);
 
 void menu_display_set_viewport(void);
 

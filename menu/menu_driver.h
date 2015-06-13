@@ -23,6 +23,7 @@
 #include <retro_miscellaneous.h>
 #include <queues/message_queue.h>
 #include "menu_animation.h"
+#include "menu_display.h"
 #include "menu_displaylist.h"
 #include "menu_list.h"
 #include "menu_input.h"
@@ -41,15 +42,6 @@ typedef enum
    MENU_IMAGE_WALLPAPER,
    MENU_IMAGE_BOXART,
 } menu_image_type_t;
-
-typedef struct menu_framebuf
-{
-   uint16_t *data;
-   unsigned width;
-   unsigned height;
-   size_t pitch;
-   bool dirty;
-} menu_framebuf_t;
 
 typedef struct
 {
