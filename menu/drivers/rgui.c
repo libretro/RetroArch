@@ -296,17 +296,17 @@ static void rgui_render_messagebox(const char *message)
    }
 
    height = FONT_HEIGHT_STRIDE * list->size + 6 + 10;
-   x      = (menu->frame_buf.width - width) / 2;
-   y      = (menu->frame_buf.height - height) / 2;
+   x      = (frame_buf->width - width) / 2;
+   y      = (frame_buf->height - height) / 2;
 
-   fill_rect(&menu->frame_buf, x + 5, y + 5, width - 10,
+   fill_rect(frame_buf, x + 5, y + 5, width - 10,
          height - 10, gray_filler);
-   fill_rect(&menu->frame_buf, x, y, width - 5, 5, green_filler);
-   fill_rect(&menu->frame_buf, x + width - 5, y, 5,
+   fill_rect(frame_buf, x, y, width - 5, 5, green_filler);
+   fill_rect(frame_buf, x + width - 5, y, 5,
          height - 5, green_filler);
-   fill_rect(&menu->frame_buf, x + 5, y + height - 5,
+   fill_rect(frame_buf, x + 5, y + height - 5,
          width - 5, 5, green_filler);
-   fill_rect(&menu->frame_buf, x, y + 5, 5,
+   fill_rect(frame_buf, x, y + 5, 5,
          height - 5, green_filler);
 
    color = NORMAL_COLOR(settings);
@@ -515,23 +515,26 @@ static void rgui_render(void)
 
 static void *rgui_init(void)
 {
-   bool ret = false;
-   menu_handle_t *menu = (menu_handle_t*)calloc(1, sizeof(*menu));
+   bool                   ret = false;
+   menu_framebuf_t *frame_buf = NULL;
+   menu_handle_t        *menu = (menu_handle_t*)calloc(1, sizeof(*menu));
 
    if (!menu)
       return NULL;
 
-   /* 4 extra lines to cache  the checked background */
-   menu->frame_buf.data = (uint16_t*)calloc(400 * (240 + 4), sizeof(uint16_t));
+   frame_buf                  = &menu->frame_buf;
 
-   if (!menu->frame_buf.data)
+   /* 4 extra lines to cache  the checked background */
+   frame_buf->data = (uint16_t*)calloc(400 * (240 + 4), sizeof(uint16_t));
+
+   if (!frame_buf->data)
       goto error;
 
-   menu->frame_buf.width           = 320;
-   menu->frame_buf.height          = 240;
-   menu->header_height             = FONT_HEIGHT_STRIDE * 2;
-   menu->begin                     = 0;
-   menu->frame_buf.pitch           = menu->frame_buf.width * sizeof(uint16_t);
+   frame_buf->width           = 320;
+   frame_buf->height          = 240;
+   menu->header_height        = FONT_HEIGHT_STRIDE * 2;
+   menu->begin                = 0;
+   frame_buf->pitch           = frame_buf->width * sizeof(uint16_t);
 
    ret = rguidisp_init_font(menu);
 
@@ -541,18 +544,20 @@ static void *rgui_init(void)
       goto error;
    }
 
-   fill_rect(&menu->frame_buf, 0, menu->frame_buf.height,
-         menu->frame_buf.width, 4, gray_filler);
+   fill_rect(frame_buf, 0, frame_buf->height,
+         frame_buf->width, 4, gray_filler);
 
    return menu;
 
 error:
    if (menu)
    {
-      if (menu->frame_buf.data)
-         free(menu->frame_buf.data);
+      if (frame_buf->data)
+         free(frame_buf->data);
+      frame_buf->data = NULL;
       if (menu->userdata)
          free(menu->userdata);
+      menu->userdata = NULL;
       free(menu);
    }
    return NULL;
