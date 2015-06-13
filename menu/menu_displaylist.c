@@ -28,6 +28,10 @@
 #include "menu_navigation.h"
 #include "menu_setting.h"
 
+#ifdef HAVE_LIBRETRODB
+#include "../database_info.h"
+#endif
+
 #include "../general.h"
 #include "../retroarch.h"
 #include "../gfx/video_shader_driver.h"

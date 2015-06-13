@@ -19,6 +19,10 @@
 #include "../menu_hash.h"
 #include "../menu_displaylist.h"
 
+#ifdef HAVE_LIBRETRODB
+#include "../../database_info.h"
+#endif
+
 #include "../../general.h"
 #include "../../file_ext.h"
 #include "../../gfx/video_shader_driver.h"

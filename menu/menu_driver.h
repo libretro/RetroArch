@@ -30,10 +30,6 @@
 #include "../libretro.h"
 #include "../playlist.h"
 
-#ifdef HAVE_LIBRETRODB
-#include "../database_info.h"
-#endif
-
 #ifdef __cplusplus
 extern "C" {
 #endif
