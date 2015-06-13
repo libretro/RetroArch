@@ -504,15 +504,15 @@ void menu_animation_ticker_line(char *s, size_t len, uint64_t idx,
    }
 
    /* Wrap long strings in options with some kind of ticker line. */
-   ticker_period = 2 * (str_len - len) + 4;
-   phase = idx % ticker_period;
+   ticker_period     = 2 * (str_len - len) + 4;
+   phase             = idx % ticker_period;
 
-   phase_left_stop = 2;
+   phase_left_stop   = 2;
    phase_left_moving = phase_left_stop + (str_len - len);
-   phase_right_stop = phase_left_moving + 2;
+   phase_right_stop  = phase_left_moving + 2;
 
-   left_offset = phase - phase_left_stop;
-   right_offset = (str_len - len) - (phase - phase_right_stop);
+   left_offset       = phase - phase_left_stop;
+   right_offset      = (str_len - len) - (phase - phase_right_stop);
 
    /* Ticker period:
     * [Wait at left (2 ticks),
