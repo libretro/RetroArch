@@ -995,12 +995,16 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
    unsigned i;
    unsigned width, height;
    math_matrix_4x4 mymat, mrot, mscal;
-   const char *label     = NULL;
-   xmb_node_t *core_node = NULL;
-   size_t end            = 0;
-   uint64_t frame_count  = video_driver_get_frame_count();
+   const char *label           = NULL;
+   xmb_node_t *core_node       = NULL;
+   size_t end                  = 0;
+   uint64_t frame_count        = video_driver_get_frame_count();
+   char name[PATH_MAX_LENGTH]  = {0};
+   char value[PATH_MAX_LENGTH] = {0};
+   menu_entry_t entry          = {{0}};
+   menu_handle_t *menu         = menu_driver_get_ptr();
 
-   if (!list || !list->size)
+   if (!list || !list->size || !menu)
       return;
 
    video_driver_get_size(&width, &height);
@@ -1021,16 +1025,17 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
    for (i = 0; i < end; i++)
    {
       float icon_x, icon_y;
-      char name[PATH_MAX_LENGTH]  = {0};
-      char value[PATH_MAX_LENGTH] = {0};
-      menu_entry_t entry          = {{0}};
+
       GLuint texture_switch       = 0;
       GLuint         icon         = 0;
       xmb_node_t *   node         = (xmb_node_t*)menu_list_get_userdata_at_offset(list, i);
-      menu_handle_t *menu         = menu_driver_get_ptr();
       uint32_t hash_label         = 0;
       uint32_t hash_value         = 0;
       bool do_draw_text           = false;
+
+      *name = *value = 0;
+      *entry.path = *entry.label = *entry.value = 0;
+      entry.idx = entry.spacing = entry.type = 0;
 
       if (!node)
          continue;
