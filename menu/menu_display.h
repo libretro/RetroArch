@@ -17,7 +17,6 @@
 #define __MENU_DISPLAY_H__
 
 #include "menu_driver.h"
-#include "menu_list.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -49,9 +48,9 @@ bool menu_display_font_bind_block(menu_handle_t *menu,
 bool menu_display_font_flush_block(menu_handle_t *menu,
       const struct font_renderer *font_driver);
 
-/** Shortcuts to handle menu->font.buf */
 bool menu_display_init_main_font(menu_handle_t *menu,
       const char *font_path, float font_size);
+
 void menu_display_free_main_font(menu_handle_t *menu);
 
 void menu_display_set_viewport(void);
