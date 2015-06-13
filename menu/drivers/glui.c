@@ -340,6 +340,7 @@ static void glui_frame(void)
    const struct font_renderer *font_driver = NULL;
    driver_t *driver                        = driver_get_ptr();
    menu_handle_t *menu                     = menu_driver_get_ptr();
+   menu_animation_t *anim                  = menu_animation_get_ptr();
    menu_navigation_t *nav                  = menu_navigation_get_ptr();
    settings_t *settings                    = config_get_ptr();
    menu_input_t *menu_input                = menu_input_get_ptr();
@@ -389,7 +390,7 @@ static void glui_frame(void)
          nav->selection_ptr,
          width, glui->line_height, 1, 1, 1, 0.1);
 
-   menu->animation_is_active = true;
+   anim->is_active = true;
    menu->label.is_updated    = false;
 
    glui_render_quad(gl, 0, 0, width,

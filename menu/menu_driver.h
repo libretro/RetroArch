@@ -119,8 +119,7 @@ typedef struct
 
 
    rarch_setting_t *list_settings;
-   animation_t *animation;
-   bool animation_is_active;
+   menu_animation_t *animation;
 
    content_playlist_t *playlist;
    char db_playlist_file[PATH_MAX_LENGTH];

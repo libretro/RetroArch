@@ -1213,6 +1213,7 @@ static void xmb_render(void)
    xmb_handle_t      *xmb   = NULL;
    settings_t   *settings   = config_get_ptr();
    menu_handle_t    *menu   = menu_driver_get_ptr();
+   menu_animation_t *anim   = menu_animation_get_ptr();
    menu_input_t *menu_input = menu_input_get_ptr();
    menu_navigation_t *nav   = menu_navigation_get_ptr();
    menu_list_t *menu_list   = menu_list_get_ptr();
@@ -1253,7 +1254,7 @@ static void xmb_render(void)
       }
    }
 
-   menu->animation_is_active = false;
+   anim->is_active = false;
    menu->label.is_updated    = false;
 }
 

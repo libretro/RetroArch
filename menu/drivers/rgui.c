@@ -26,6 +26,7 @@
 #include <retro_inline.h>
 
 #include "../menu.h"
+#include "../menu_animation.h"
 #include "../menu_entry.h"
 #include "../menu_display.h"
 
@@ -351,6 +352,7 @@ static void rgui_render(void)
    driver_t *driver               = driver_get_ptr();
    settings_t *settings           = config_get_ptr();
    menu_input_t *menu_input       = menu_input_get_ptr();
+   menu_animation_t *anim         = menu_animation_get_ptr();
    uint64_t frame_count           = video_driver_get_frame_count();
 
    (void)driver;
@@ -369,7 +371,7 @@ static void rgui_render(void)
 
    /* ensures the framebuffer will be rendered on the screen */
    menu_display_fb_set_dirty();
-   menu->animation_is_active = false;
+   anim->is_active           = false;
    menu->label.is_updated    = false;
 
    if (settings->menu.pointer.enable)

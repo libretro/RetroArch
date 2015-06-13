@@ -597,6 +597,7 @@ static int menu_input_mouse(unsigned *action)
    const struct retro_keybind *binds[MAX_USERS];
    driver_t *driver          = driver_get_ptr();
    menu_handle_t *menu       = menu_driver_get_ptr();
+   menu_animation_t *anim    = menu_animation_get_ptr();
    menu_input_t *menu_input  = menu_input_get_ptr();
    menu_framebuf_t *frame_buf= menu_display_fb_get_ptr();
    settings_t *settings      = config_get_ptr();
@@ -677,7 +678,7 @@ static int menu_input_mouse(unsigned *action)
          menu_input->mouse.scrollup      ||
          menu_input->mouse.scrolldown
       )
-      menu->animation_is_active = true;
+      anim->is_active = true;
 
    return 0;
 }
@@ -688,6 +689,7 @@ static int menu_input_pointer(unsigned *action)
    const struct retro_keybind *binds[MAX_USERS] = {NULL};
    menu_handle_t *menu       = menu_driver_get_ptr();
    menu_input_t *menu_input  = menu_input_get_ptr();
+   menu_animation_t *anim    = menu_animation_get_ptr();
    menu_framebuf_t *frame_buf= menu_display_fb_get_ptr();
    settings_t *settings      = config_get_ptr();
    driver_t *driver          = driver_get_ptr();
@@ -725,7 +727,7 @@ static int menu_input_pointer(unsigned *action)
          (menu_input->pointer.dy != 0)     ||
          (menu_input->pointer.dx != 0)
       )
-     menu->animation_is_active = true;
+      anim->is_active = true;
 
    return 0;
 }

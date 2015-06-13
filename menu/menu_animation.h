@@ -40,15 +40,16 @@ struct tween
    tween_cb cb;
 };
 
-typedef struct animation
+typedef struct menu_animation
 {
    struct tween *list;
 
    size_t capacity;
    size_t size;
-} animation_t;
+   bool is_active;
+} menu_animation_t;
 
-enum animation_easing_type
+enum menu_animation_easing_type
 {
    /* Linear */
    EASING_LINEAR    = 0,
@@ -94,15 +95,23 @@ enum animation_easing_type
    EASING_OUT_IN_BOUNCE,
 };
 
-void menu_animation_free(animation_t *animation);
+void menu_animation_free(
+      menu_animation_t *animation);
 
-void menu_animation_kill_by_subject(animation_t *animation, size_t count, const void *subjects);
+void menu_animation_kill_by_subject(
+      menu_animation_t *animation,
+      size_t count,
+      const void *subjects);
 
-bool menu_animation_push(animation_t *animation, float duration,
+bool menu_animation_push(
+      menu_animation_t *animation,
+      float duration,
       float target_value, float* subject,
-      enum animation_easing_type easing_enum, tween_cb cb);
+      enum menu_animation_easing_type easing_enum, tween_cb cb);
 
-bool menu_animation_update(animation_t *animation, float dt);
+bool menu_animation_update(
+      menu_animation_t *animation,
+      float dt);
 
 /**
  * menu_animation_ticker_line:
@@ -117,6 +126,8 @@ bool menu_animation_update(animation_t *animation, float dt);
  **/
 void menu_animation_ticker_line(char *buf, size_t len, uint64_t tick,
       const char *str, bool selected);
+
+menu_animation_t *menu_animation_get_ptr(void);
 
 #ifdef __cplusplus
 }
