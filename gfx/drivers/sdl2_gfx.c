@@ -92,7 +92,7 @@ static void sdl2_init_font(sdl2_video_t *vid, const char *font_path,
 {
    int i, r, g, b;
    SDL_Color colors[256];
-   SDL_Surface *tmp;
+   SDL_Surface *tmp = NULL;
    SDL_Palette *pal = NULL;
    const struct font_atlas *atlas = NULL;
    settings_t *settings = config_get_ptr();
@@ -479,9 +479,9 @@ static void check_window(sdl2_video_t *vid)
 static bool sdl2_gfx_frame(void *data, const void *frame, unsigned width,
                            unsigned height, unsigned pitch, const char *msg)
 {
-   char buf[128];
+   char buf[128]     = {0};
    sdl2_video_t *vid = (sdl2_video_t*)data;
-   driver_t *driver = driver_get_ptr();
+   driver_t *driver  = driver_get_ptr();
 
    if (vid->should_resize)
       sdl_refresh_viewport(vid);

@@ -348,7 +348,7 @@ static void sdl_gfx_check_window(sdl_video_t *vid)
 static bool sdl_gfx_frame(void *data, const void *frame, unsigned width,
       unsigned height, unsigned pitch, const char *msg)
 {
-   char buf[128];
+   char buf[128]    = {0};
    sdl_video_t *vid = (sdl_video_t*)data;
 
    if (!frame)

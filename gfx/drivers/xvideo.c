@@ -408,7 +408,8 @@ static void *xv_init(const video_info_t *video,
       const input_driver_t **input, void **input_data)
 {
    unsigned i;
-   char buf[128], buf_fps[128];
+   char buf[128]                          = {0};
+   char buf_fps[128]                      = {0};
    struct sigaction sa                    = {{0}};
    XSetWindowAttributes attributes        = {0};
    XVisualInfo visualtemplate             = {0};
@@ -764,9 +765,9 @@ static void xv_render_msg(xv_t *xv, const char *msg,
 static bool xv_frame(void *data, const void *frame, unsigned width,
       unsigned height, unsigned pitch, const char *msg)
 {
-   char buf[128];
    XWindowAttributes target;
-   xv_t *xv = (xv_t*)data;
+   char buf[128]             = {0};
+   xv_t *xv                  = (xv_t*)data;
 
    if (!frame)
       return true;

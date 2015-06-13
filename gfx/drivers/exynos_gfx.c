@@ -181,11 +181,11 @@ static INLINE unsigned align_common(unsigned i, unsigned j)
 /* Find the index of a compatible DRM device. */
 static int exynos_get_device_index(void)
 {
-   char buf[32];
    int fd;
    drmVersionPtr ver;
-   int index = 0;
-   bool found = false;
+   char buf[32]       = {0};
+   int index          = 0;
+   bool found         = false;
 
    while (!found)
    {
@@ -584,16 +584,16 @@ static void exynos_g2d_free(struct exynos_data *pdata)
 
 static int exynos_open(struct exynos_data *pdata)
 {
-   char buf[32];
    unsigned i;
-   int fd = -1;
+   int fd                                 = -1;
+   char buf[32]                           = {0};
    struct exynos_drm *drm                 = NULL;
    struct exynos_fliphandler *fliphandler = NULL;
    settings_t *settings                   = config_get_ptr();
    int devidx                             = exynos_get_device_index();
 
    if (pdata)
-      pdata->fd                              = -1;
+      pdata->fd                           = -1;
 
    if (devidx != -1)
       snprintf(buf, sizeof(buf), "/dev/dri/card%d", devidx);
@@ -1439,7 +1439,8 @@ static bool exynos_gfx_frame(void *data, const void *frame, unsigned width,
 
    if (settings->fps_show)
    {
-      char buffer[128], buffer_fps[128];
+      char buffer[128]     = {0};
+      char buffer_fps[128] = {0};
       video_monitor_get_fps(buffer, sizeof(buffer),
             settings->fps_show ? buffer_fps : NULL, sizeof(buffer_fps));
       rarch_main_msg_queue_push(buffer_fps, 1, 1, false);

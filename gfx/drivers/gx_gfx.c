@@ -981,7 +981,7 @@ static void gx_blit_line(unsigned x, unsigned y, const char *message)
          for (unsigned i = 0; i < FONT_WIDTH; i++)
          {
             GXColor c;
-            uint8_t rem = 1 << ((i + j * FONT_WIDTH) & 7);
+            uint8_t     rem = 1 << ((i + j * FONT_WIDTH) & 7);
             unsigned offset = (i + j * FONT_WIDTH) >> 3;
             bool col = (bitmap_bin[FONT_OFFSET((unsigned char) *message) + offset] & rem);
 
@@ -1029,11 +1029,12 @@ static bool gx_frame(void *data, const void *frame,
       unsigned width, unsigned height, unsigned pitch,
       const char *msg)
 {
-   char fps_txt[128], fps_text_buf[128];
-   gx_video_t *gx = (gx_video_t*)data;
+   char fps_txt[128]         = {0};
+   char fps_text_buf[128]   = {0};
+   gx_video_t *gx           = (gx_video_t*)data;
    struct __gx_regdef *__gx = (struct __gx_regdef*)__gxregs;
-   u8 clear_efb = GX_FALSE;
-   settings_t *settings = config_get_ptr();
+   u8 clear_efb             = GX_FALSE;
+   settings_t *settings     = config_get_ptr();
 
    RARCH_PERFORMANCE_INIT(gx_frame);
    RARCH_PERFORMANCE_START(gx_frame);
@@ -1124,9 +1125,12 @@ static bool gx_frame(void *data, const void *frame,
 
    if (settings->fps_show)
    {
-      char mem1_txt[128];
-      unsigned x = 15;
-      unsigned y = 35;
+      char mem1_txt[128] = {0};
+      char mem2_txt[128] = {0};
+      unsigned x         = 15;
+      unsigned y         = 35;
+
+      (void)mem2_txt;
 
       gx_blit_line(x, y, fps_text_buf);
       y += FONT_HEIGHT * (gx->double_strike ? 1 : 2);
@@ -1135,7 +1139,6 @@ static bool gx_frame(void *data, const void *frame,
       gx_blit_line(x, y, mem1_txt);
 #ifdef HW_RVL
       y += FONT_HEIGHT * (gx->double_strike ? 1 : 2);
-      char mem2_txt[128];
       snprintf(mem2_txt, sizeof(mem2_txt), "MEM2: %8d / %8d",
             gx_mem2_used(), gx_mem2_total());
       gx_blit_line(x, y, mem2_txt);

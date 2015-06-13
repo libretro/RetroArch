@@ -213,10 +213,10 @@ static bool gl_check_fbo_proc(gl_t *gl)
 static bool gl_shader_init(gl_t *gl)
 {
    enum rarch_shader_type type;
-   bool ret = false;
+   bool ret                        = false;
    const shader_backend_t *backend = NULL;
-   settings_t *settings = config_get_ptr();
-   const char *shader_path = (settings->video.shader_enable && *settings->video.shader_path) ?
+   settings_t *settings            = config_get_ptr();
+   const char *shader_path         = (settings->video.shader_enable && *settings->video.shader_path) ?
       settings->video.shader_path : NULL;
 
 
@@ -2142,8 +2142,9 @@ static void DEBUG_CALLBACK_TYPE gl_debug_cb(GLenum source, GLenum type,
       GLuint id, GLenum severity, GLsizei length,
       const GLchar *message, void *userParam)
 {
-   const char *src, *typestr;
-   gl_t *gl = (gl_t*)userParam; /* Useful for debugger. */
+   const char      *src = NULL;
+   const char **typestr = NULL;
+   gl_t             *gl = (gl_t*)userParam; /* Useful for debugger. */
 
    (void)gl;
    (void)id;

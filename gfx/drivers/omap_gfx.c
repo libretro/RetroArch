@@ -85,9 +85,9 @@ typedef struct omapfb_data
 
 static const char *omapfb_get_fb_device(void)
 {
-   static char fbname[12];
-   settings_t *settings = config_get_ptr();
-   const int fbidx = settings->video.monitor_index;
+   static char fbname[12] = {0};
+   settings_t   *settings = config_get_ptr();
+   const int        fbidx = settings->video.monitor_index;
 
    if (fbidx == 0)
       return "/dev/fb0";
@@ -173,7 +173,9 @@ static int omapfb_detect_screen(omapfb_data_t *pdata)
    int w, h;
    FILE *f;
    int fb_id, overlay_id = -1, display_id = -1;
-   char buff[64], manager_name[64], display_name[64];
+   char buff[64]         = {0};
+   char manager_name[64] = {0};
+   char display_name[64] = {0};
 
    /* Find out the native screen resolution, which is needed to 
     * properly center the scaled image data. */
