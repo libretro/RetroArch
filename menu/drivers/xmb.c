@@ -1443,6 +1443,7 @@ static void *xmb_init(void)
    menu_handle_t *menu                = NULL;
    xmb_handle_t *xmb                  = NULL;
    const video_driver_t *video_driver = NULL;
+   menu_framebuf_t *frame_buf         = NULL;
    float scale_factor                 = 1;
    gl_t *gl                           = (gl_t*)
       video_driver_get_ptr(&video_driver);
@@ -1457,6 +1458,8 @@ static void *xmb_init(void)
 
    if (!menu)
       goto error;
+
+   frame_buf = &menu->frame_buf;
 
    video_driver_get_size(&width, &height);
 
@@ -1502,8 +1505,12 @@ static void *xmb_init(void)
    xmb->item.active.factor      = 3.0;
    xmb->under_offset.item       = 5.0;
 
-   menu->frame_buf.width  = width;
-   menu->frame_buf.height = height;
+   /* TODO/FIXME - we don't use framebuffer at all
+    * for XMB, we should refactor this dependency
+    * away. */
+
+   frame_buf->width  = width;
+   frame_buf->height = height;
 
    if (width >= 3840)
       scale_factor              = 2.0;

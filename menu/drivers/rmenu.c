@@ -227,7 +227,8 @@ static void rmenu_render(void)
 
 static void rmenu_set_texture(void)
 {
-   menu_handle_t *menu   = menu_driver_get_ptr();
+   menu_handle_t      *menu   = menu_driver_get_ptr();
+   menu_framebuf_t *frame_buf = menu_display_fb_get_ptr();
 
    if (!menu)
       return;
@@ -239,7 +240,7 @@ static void rmenu_set_texture(void)
       return;
 
    video_driver_set_texture_frame(menu_texture->pixels, true,
-         menu->frame_buf.width, menu->frame_buf.height, 1.0f);
+         frame_buf->width, frame_buf->height, 1.0f);
    menu_texture_inited = true;
 }
 
@@ -259,9 +260,10 @@ static void rmenu_wallpaper_set_defaults(char *s, size_t len)
 
 static void rmenu_context_reset(void)
 {
-   char menu_bg[PATH_MAX_LENGTH];
-   menu_handle_t *menu  = menu_driver_get_ptr();
-   settings_t *settings = config_get_ptr();
+   char menu_bg[PATH_MAX_LENGTH] = {0};
+   menu_handle_t *menu           = menu_driver_get_ptr();
+   menu_framebuf_t *frame_buf    = menu_display_fb_get_ptr();
+   settings_t *settings          = config_get_ptr();
 
    if (!menu)
       return;
@@ -273,8 +275,8 @@ static void rmenu_context_reset(void)
 
    if (path_file_exists(menu_bg))
       texture_image_load(menu_texture, menu_bg);
-   menu->frame_buf.width = menu_texture->width;
-   menu->frame_buf.height = menu_texture->height;
+   frame_buf->width = menu_texture->width;
+   frame_buf->height = menu_texture->height;
 
    menu_texture_inited = false;
 }

@@ -222,9 +222,10 @@ static void glui_render(void)
 {
    int bottom;
    unsigned width, height;
-   glui_handle_t *glui = NULL;
-   menu_handle_t *menu  = menu_driver_get_ptr();
-   settings_t *settings = config_get_ptr();
+   glui_handle_t *glui                = NULL;
+   menu_framebuf_t *frame_buf         = menu_display_fb_get_ptr();
+   menu_handle_t *menu                = menu_driver_get_ptr();
+   settings_t *settings               = config_get_ptr();
 
    if (!menu || !menu->userdata)
       return;
@@ -235,8 +236,11 @@ static void glui_render(void)
 
    menu_animation_update(menu->animation, menu->dt / IDEAL_DT);
 
-   menu->frame_buf.width  = width;
-   menu->frame_buf.height = height;
+   /* TODO/FIXME - we don't use framebuffer at all
+    * for GLUI, we should refactor this dependency
+    * away. */
+   frame_buf->width  = width;
+   frame_buf->height = height;
 
    if (settings->menu.pointer.enable)
    {
