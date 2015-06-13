@@ -25,9 +25,9 @@
 extern "C" {
 #endif
 
-void menu_display_fb(void);
+menu_framebuf_t *menu_display_fb_get_ptr(void);
 
-bool menu_display_fb_in_use(void);
+void menu_display_fb(void);
 
 void menu_display_fb_set_dirty(void);
 

@@ -89,6 +89,7 @@ typedef struct menu_framebuf
    unsigned width;
    unsigned height;
    size_t pitch;
+   bool dirty;
 } menu_framebuf_t;
 
 typedef struct
@@ -139,7 +140,6 @@ typedef struct
    char default_cgp[PATH_MAX_LENGTH];
 
    menu_framebuf_t frame_buf;
-
 
    struct
    {
@@ -209,11 +209,6 @@ typedef struct
    {
       bool is_updated;
    } label;
-
-   struct
-   {
-      bool dirty;
-   } framebuf;
 
    struct
    {

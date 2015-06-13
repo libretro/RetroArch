@@ -24,32 +24,35 @@
 #include "../gfx/video_context_driver.h"
 #include "menu_list.h"
 
-bool menu_display_fb_in_use(void)
+menu_framebuf_t *menu_display_fb_get_ptr(void)
 {
    menu_handle_t *menu = menu_driver_get_ptr();
    if (!menu)
+      return NULL;
+   return &menu->frame_buf;
+}
+
+static bool menu_display_fb_in_use(menu_framebuf_t *frame_buf)
+{
+   if (!frame_buf)
       return false;
-   return menu->frame_buf.data != NULL;
+   return (frame_buf->data != NULL);
 }
 
 void menu_display_fb_set_dirty(void)
 {
-   menu_handle_t *menu = menu_driver_get_ptr();
-   if (!menu)
+   menu_framebuf_t *frame_buf = menu_display_fb_get_ptr();
+   if (!menu_display_fb_in_use(frame_buf))
       return;
-   if (!menu_display_fb_in_use())
-      return;
-   menu->framebuf.dirty = true;
+   frame_buf->dirty = true;
 }
 
 void menu_display_fb_unset_dirty(void)
 {
-   menu_handle_t *menu = menu_driver_get_ptr();
-   if (!menu)
+   menu_framebuf_t *frame_buf = menu_display_fb_get_ptr();
+   if (!menu_display_fb_in_use(frame_buf))
       return;
-   if (!menu_display_fb_in_use())
-      return;
-   menu->framebuf.dirty = false;
+   frame_buf->dirty = false;
 }
 
 /**
@@ -82,10 +85,14 @@ void menu_display_fb(void)
 
 bool menu_display_update_pending(void)
 {
-   menu_handle_t *menu = menu_driver_get_ptr();
+   menu_handle_t        *menu = menu_driver_get_ptr();
+   menu_framebuf_t *frame_buf = menu_display_fb_get_ptr();
+
    if (menu)
    {
-      if (menu->animation_is_active || menu->label.is_updated || menu->framebuf.dirty)
+      if (menu->animation_is_active || menu->label.is_updated)
+         return true;
+      if (frame_buf && frame_buf->dirty)
          return true;
    }
    return false;

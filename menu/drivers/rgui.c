@@ -33,10 +33,10 @@
 
 #include "shared.h"
 
-#define RGUI_TERM_START_X        (menu->frame_buf.width / 21)
-#define RGUI_TERM_START_Y        (menu->frame_buf.height / 9)
-#define RGUI_TERM_WIDTH          (((menu->frame_buf.width - RGUI_TERM_START_X - RGUI_TERM_START_X) / (FONT_WIDTH_STRIDE)))
-#define RGUI_TERM_HEIGHT         (((menu->frame_buf.height - RGUI_TERM_START_Y - RGUI_TERM_START_X) / (FONT_HEIGHT_STRIDE)) - 1)
+#define RGUI_TERM_START_X        (frame_buf->width / 21)
+#define RGUI_TERM_START_Y        (frame_buf->height / 9)
+#define RGUI_TERM_WIDTH          (((frame_buf->width - RGUI_TERM_START_X - RGUI_TERM_START_X) / (FONT_WIDTH_STRIDE)))
+#define RGUI_TERM_HEIGHT         (((frame_buf->height - RGUI_TERM_START_Y - RGUI_TERM_START_X) / (FONT_HEIGHT_STRIDE)) - 1)
 
 #if defined(GEKKO)|| defined(PSP)
 #define HOVER_COLOR(settings)    ((3 << 0) | (10 << 4) | (3 << 8) | (7 << 12))
@@ -132,20 +132,22 @@ static void color_rect(menu_handle_t *menu,
       uint16_t color)
 {
    unsigned i, j;
+   menu_framebuf_t *frame_buf = menu_display_fb_get_ptr();
 
-   if (!menu->frame_buf.data)
+   if (!frame_buf || !frame_buf->data)
       return;
 
    for (j = y; j < y + height; j++)
       for (i = x; i < x + width; i++)
-         if (i < menu->frame_buf.width && j < menu->frame_buf.height)
-            menu->frame_buf.data[j * (menu->frame_buf.pitch >> 1) + i] = color;
+         if (i < frame_buf->width && j < frame_buf->height)
+            frame_buf->data[j * (frame_buf->pitch >> 1) + i] = color;
 }
 
 static void blit_line(menu_handle_t *menu, int x, int y,
       const char *message, uint16_t color)
 {
    unsigned i, j;
+   menu_framebuf_t *frame_buf = menu_display_fb_get_ptr();
 
    while (*message)
    {
@@ -161,8 +163,8 @@ static void blit_line(menu_handle_t *menu, int x, int y,
             if (!col)
                continue;
 
-            menu->frame_buf.data[(y + j) *
-               (menu->frame_buf.pitch >> 1) + (x + i)] = color;
+            frame_buf->data[(y + j) *
+               (frame_buf->pitch >> 1) + (x + i)] = color;
          }
       }
 
@@ -217,16 +219,17 @@ static bool rguidisp_init_font(menu_handle_t *menu)
 static void rgui_render_background(void)
 {
    size_t pitch_in_pixels, size;
-   uint16_t      *src  = NULL;
-   uint16_t      *dst  = NULL;
-   menu_handle_t *menu = menu_driver_get_ptr();
+   uint16_t             *src  = NULL;
+   uint16_t             *dst  = NULL;
+   menu_handle_t        *menu = menu_driver_get_ptr();
+   menu_framebuf_t *frame_buf = menu_display_fb_get_ptr();
    if (!menu)
       return;
 
-   pitch_in_pixels = menu->frame_buf.pitch >> 1;
-   size            = menu->frame_buf.pitch * 4;
-   src             = menu->frame_buf.data + pitch_in_pixels * menu->frame_buf.height;
-   dst             = menu->frame_buf.data;
+   pitch_in_pixels = frame_buf->pitch >> 1;
+   size            = frame_buf->pitch * 4;
+   src             = frame_buf->data + pitch_in_pixels * frame_buf->height;
+   dst             = frame_buf->data;
 
    while (dst < src)
    {
@@ -234,14 +237,14 @@ static void rgui_render_background(void)
       dst += pitch_in_pixels * 4;
    }
 
-   fill_rect(&menu->frame_buf, 5, 5, menu->frame_buf.width - 10, 5, green_filler);
-   fill_rect(&menu->frame_buf, 5, menu->frame_buf.height - 10,
-         menu->frame_buf.width - 10, 5,
+   fill_rect(frame_buf, 5, 5, frame_buf->width - 10, 5, green_filler);
+   fill_rect(frame_buf, 5, frame_buf->height - 10,
+         frame_buf->width - 10, 5,
          green_filler);
 
-   fill_rect(&menu->frame_buf, 5, 5, 5, menu->frame_buf.height - 10, green_filler);
-   fill_rect(&menu->frame_buf, menu->frame_buf.width - 10, 5, 5,
-         menu->frame_buf.height - 10,
+   fill_rect(frame_buf, 5, 5, 5, frame_buf->height - 10, green_filler);
+   fill_rect(frame_buf, frame_buf->width - 10, 5, 5,
+         frame_buf->height - 10,
          green_filler);
 }
 
@@ -251,9 +254,10 @@ static void rgui_render_messagebox(const char *message)
    int x, y;
    unsigned width, glyphs_width, height;
    uint16_t color;
-   struct string_list *list = NULL;
-   menu_handle_t *menu      = menu_driver_get_ptr();
-   settings_t *settings     = config_get_ptr();
+   struct string_list *list   = NULL;
+   menu_handle_t *menu        = menu_driver_get_ptr();
+   menu_framebuf_t *frame_buf = menu_display_fb_get_ptr();
+   settings_t *settings       = config_get_ptr();
 
    if (!menu)
       return;
@@ -339,6 +343,7 @@ static void rgui_render(void)
    char title_msg[64]             = {0};
    char timedate[PATH_MAX_LENGTH] = {0};
    menu_handle_t *menu            = menu_driver_get_ptr();
+   menu_framebuf_t *frame_buf     = menu_display_fb_get_ptr();
    menu_navigation_t *nav         = menu_navigation_get_ptr();
    runloop_t *runloop             = rarch_main_get_ptr();
    driver_t *driver               = driver_get_ptr();
@@ -571,6 +576,7 @@ static void rgui_free(void *data)
 static void rgui_set_texture(void)
 {
    menu_handle_t *menu = menu_driver_get_ptr();
+   menu_framebuf_t *frame_buf = menu_display_fb_get_ptr();
 
    if (!menu)
       return;
@@ -578,8 +584,11 @@ static void rgui_set_texture(void)
    menu_display_fb_unset_dirty();
 
    video_driver_set_texture_frame(
-         menu->frame_buf.data, false,
-         menu->frame_buf.width, menu->frame_buf.height, 1.0f);
+         frame_buf->data,
+         false,
+         frame_buf->width,
+         frame_buf->height,
+         1.0f);
 }
 
 static void rgui_navigation_clear(bool pending_push)
@@ -594,11 +603,14 @@ static void rgui_navigation_clear(bool pending_push)
 
 static void rgui_navigation_set(bool scroll)
 {
-   menu_handle_t *menu    = menu_driver_get_ptr();
-   menu_navigation_t *nav = menu_navigation_get_ptr();
+   size_t end;
+   menu_handle_t *menu            = menu_driver_get_ptr();
+   menu_framebuf_t *frame_buf     = menu_display_fb_get_ptr();
+   menu_navigation_t *nav         = menu_navigation_get_ptr();
    if (!menu)
       return;
-   size_t end = menu_entries_get_end();
+
+   end = menu_entries_get_end();
 
    if (!scroll)
       return;
