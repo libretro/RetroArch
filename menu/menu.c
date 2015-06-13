@@ -232,7 +232,8 @@ static void menu_free_list(menu_handle_t *menu)
  **/
 void menu_free(menu_handle_t *menu)
 {
-   global_t *global    = global_get_ptr();
+   global_t        *global    = global_get_ptr();
+   menu_framebuf_t *frame_buf = menu_display_fb_get_ptr();
 
    if (!menu)
       return;
@@ -260,10 +261,6 @@ void menu_free(menu_handle_t *menu)
    menu->msg_queue = NULL;
 
    menu_display_free(menu);
-
-   if (menu->frame_buf.data)
-      free(menu->frame_buf.data);
-   menu->frame_buf.data = NULL;
 
    menu_list_free(menu->menu_list);
    menu->menu_list = NULL;

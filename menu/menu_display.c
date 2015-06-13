@@ -32,6 +32,7 @@ menu_framebuf_t *menu_display_fb_get_ptr(void)
    return &menu->frame_buf;
 }
 
+
 static bool menu_display_fb_in_use(menu_framebuf_t *frame_buf)
 {
    if (!frame_buf)
@@ -98,6 +99,16 @@ bool menu_display_update_pending(void)
    return false;
 }
 
+static void menu_display_fb_free(menu_framebuf_t *frame_buf)
+{
+   if (!frame_buf)
+      return;
+
+   if (frame_buf->data)
+      free(frame_buf->data);
+   frame_buf->data = NULL;
+}
+
 void menu_display_free(menu_handle_t *menu)
 {
    if (!menu)
@@ -105,6 +116,8 @@ void menu_display_free(menu_handle_t *menu)
 
    menu_animation_free(menu->animation);
    menu->animation = NULL;
+
+   menu_display_fb_free(&menu->frame_buf);
 }
 
 bool menu_display_init(menu_handle_t *menu)

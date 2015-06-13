@@ -27,6 +27,7 @@
 
 #include "menu_input.h"
 #include "menu.h"
+#include "menu_display.h"
 #include "menu_entry.h"
 #include "menu_setting.h"
 #include "menu_shader.h"
@@ -574,6 +575,7 @@ static int menu_input_mouse(unsigned *action)
    const struct retro_keybind *binds[MAX_USERS];
    driver_t *driver          = driver_get_ptr();
    menu_handle_t *menu       = menu_driver_get_ptr();
+   menu_framebuf_t *frame_buf= menu_display_fb_get_ptr();
    settings_t *settings      = config_get_ptr();
 
    if (!menu)
@@ -639,20 +641,20 @@ static int menu_input_mouse(unsigned *action)
    menu->mouse.screen_x += menu->mouse.dx;
    menu->mouse.screen_y += menu->mouse.dy;
 
-   menu->mouse.x         = ((int)menu->mouse.screen_x * (int)menu->frame_buf.width) / (int)vp.width;
-   menu->mouse.y         = ((int)menu->mouse.screen_y * (int)menu->frame_buf.height) / (int)vp.height;
+   menu->mouse.x         = ((int)menu->mouse.screen_x * (int)frame_buf->width) / (int)vp.width;
+   menu->mouse.y         = ((int)menu->mouse.screen_y * (int)frame_buf->height) / (int)vp.height;
 
    if (menu->mouse.x < 5)
       menu->mouse.x       = 5;
    if (menu->mouse.y < 5)
       menu->mouse.y       = 5;
-   if (menu->mouse.x > (int)menu->frame_buf.width - 5)
-      menu->mouse.x       = menu->frame_buf.width - 5;
-   if (menu->mouse.y > (int)menu->frame_buf.height - 5)
-      menu->mouse.y       = menu->frame_buf.height - 5;
+   if (menu->mouse.x > (int)frame_buf->width - 5)
+      menu->mouse.x       = frame_buf->width - 5;
+   if (menu->mouse.y > (int)frame_buf->height - 5)
+      menu->mouse.y       = frame_buf->height - 5;
 
    menu->mouse.scrollup   = (menu->mouse.y == 5);
-   menu->mouse.scrolldown = (menu->mouse.y == (int)menu->frame_buf.height - 5);
+   menu->mouse.scrolldown = (menu->mouse.y == (int)frame_buf->height - 5);
 
    if (menu->mouse.dx != 0 || menu->mouse.dy !=0 || menu->mouse.left
       || menu->mouse.wheelup || menu->mouse.wheeldown
@@ -668,6 +670,7 @@ static int menu_input_pointer(unsigned *action)
    int pointer_device, pointer_x, pointer_y;
    const struct retro_keybind *binds[MAX_USERS] = {NULL};
    menu_handle_t *menu       = menu_driver_get_ptr();
+   menu_framebuf_t *frame_buf= menu_display_fb_get_ptr();
    settings_t *settings      = config_get_ptr();
    driver_t *driver          = driver_get_ptr();
 
@@ -693,8 +696,8 @@ static int menu_input_pointer(unsigned *action)
    pointer_x = input_driver_state(binds, 0, pointer_device, 0, RETRO_DEVICE_ID_POINTER_X);
    pointer_y = input_driver_state(binds, 0, pointer_device, 0, RETRO_DEVICE_ID_POINTER_Y);
 
-   menu->pointer.x = ((pointer_x + 0x7fff) * (int)menu->frame_buf.width) / 0xFFFF;
-   menu->pointer.y = ((pointer_y + 0x7fff) * (int)menu->frame_buf.height) / 0xFFFF;
+   menu->pointer.x = ((pointer_x + 0x7fff) * (int)frame_buf->width) / 0xFFFF;
+   menu->pointer.y = ((pointer_y + 0x7fff) * (int)frame_buf->height) / 0xFFFF;
 
    if (menu->pointer.pressed[0] || menu->pointer.oldpressed[0]
      || menu->pointer.back || menu->pointer.dragging
