@@ -506,6 +506,7 @@ static void xmb_selection_pointer_changed(void)
    unsigned i, current, end;
    xmb_handle_t    *xmb   = NULL;
    menu_handle_t    *menu = menu_driver_get_ptr();
+   menu_navigation_t *nav = menu_navigation_get_ptr();
    menu_list_t *menu_list = menu_list_get_ptr();
 
    if (!menu)
@@ -516,7 +517,7 @@ static void xmb_selection_pointer_changed(void)
    if (!xmb)
       return;
 
-   current = menu->navigation.selection_ptr;
+   current = nav->selection_ptr;
    end     = menu_entries_get_end();
 
    for (i = 0; i < end; i++)
@@ -809,6 +810,7 @@ static void xmb_list_switch(xmb_handle_t *xmb)
 {
    int dir = -1;
    menu_handle_t    *menu = menu_driver_get_ptr();
+   menu_navigation_t *nav = menu_navigation_get_ptr();
    menu_list_t *menu_list = menu_list_get_ptr();
 
    if (!menu)
@@ -832,7 +834,7 @@ static void xmb_list_switch(xmb_handle_t *xmb)
    xmb_list_switch_old(xmb, xmb->selection_buf_old,
          dir, xmb->selection_ptr_old);
    xmb_list_switch_new(xmb, menu_list->selection_buf,
-         dir, menu->navigation.selection_ptr);
+         dir, nav->selection_ptr);
    xmb->categories.active.idx_old = menu->categories.selection_ptr;
 }
 
@@ -866,6 +868,7 @@ static void xmb_list_open(xmb_handle_t *xmb)
 {
    int                dir = 0;
    menu_handle_t    *menu = menu_driver_get_ptr();
+   menu_navigation_t *nav = menu_navigation_get_ptr();
    menu_list_t *menu_list = menu_list_get_ptr();
 
    if (!menu)
@@ -883,7 +886,7 @@ static void xmb_list_open(xmb_handle_t *xmb)
    xmb_list_open_old(xmb, xmb->selection_buf_old,
          dir, xmb->selection_ptr_old);
    xmb_list_open_new(xmb, menu_list->selection_buf,
-         dir, menu->navigation.selection_ptr);
+         dir, nav->selection_ptr);
 
    switch (xmb->depth)
    {
@@ -1210,6 +1213,7 @@ static void xmb_render(void)
    xmb_handle_t      *xmb = NULL;
    settings_t   *settings = config_get_ptr();
    menu_handle_t    *menu = menu_driver_get_ptr();
+   menu_navigation_t *nav = menu_navigation_get_ptr();
    menu_list_t *menu_list = menu_list_get_ptr();
 
    if (!menu)
@@ -1222,7 +1226,7 @@ static void xmb_render(void)
 
    menu_animation_update(menu->animation, menu->dt / IDEAL_DT);
 
-   current = menu->navigation.selection_ptr;
+   current = nav->selection_ptr;
    end     = menu_list_get_size(menu_list);
 
    if (settings->menu.pointer.enable)
@@ -1295,6 +1299,7 @@ static void xmb_frame(void)
    gl_t *gl                                = NULL;
    const struct font_renderer *font_driver = NULL;
    menu_handle_t   *menu                   = menu_driver_get_ptr();
+   menu_navigation_t *nav                  = menu_navigation_get_ptr();
    menu_list_t *menu_list                  = menu_list_get_ptr();
    settings_t   *settings                  = config_get_ptr();
 
@@ -1352,7 +1357,7 @@ static void xmb_frame(void)
    xmb_draw_items(xmb, gl,
          menu_list->selection_buf,
          menu_list->menu_stack,
-         menu->navigation.selection_ptr,
+         nav->selection_ptr,
          menu->categories.selection_ptr);
 
    matrix_4x4_rotate_z(&mrot, 0 /* rotation */);
@@ -1873,11 +1878,12 @@ static void xmb_navigation_alphabet(size_t *unused)
 static void xmb_list_insert(file_list_t *list,
       const char *path, const char *unused, size_t list_size)
 {
-   int current         = 0;
-   int i               = list_size;
-   xmb_node_t *node    = NULL;
-   xmb_handle_t *xmb   = NULL;
-   menu_handle_t *menu = menu_driver_get_ptr();
+   int current            = 0;
+   int i                  = list_size;
+   xmb_node_t *node       = NULL;
+   xmb_handle_t *xmb      = NULL;
+   menu_handle_t *menu    = menu_driver_get_ptr();
+   menu_navigation_t *nav = menu_navigation_get_ptr();
 
    if (!menu)
       return;
@@ -1895,7 +1901,7 @@ static void xmb_list_insert(file_list_t *list,
       return;
    }
 
-   current           = menu->navigation.selection_ptr;
+   current           = nav->selection_ptr;
 
    node->alpha       = xmb->item.passive.alpha;
    node->zoom        = xmb->item.passive.zoom;
@@ -1924,6 +1930,7 @@ static void xmb_list_cache(menu_list_type_t type, unsigned action)
    xmb_handle_t      *xmb = NULL;
    menu_handle_t    *menu = menu_driver_get_ptr();
    menu_list_t *menu_list = menu_list_get_ptr();
+   menu_navigation_t *nav = menu_navigation_get_ptr();
 
    if (!menu)
       return;
@@ -1935,7 +1942,7 @@ static void xmb_list_cache(menu_list_type_t type, unsigned action)
 
    file_list_copy(menu_list->selection_buf, xmb->selection_buf_old);
    file_list_copy(menu_list->menu_stack, xmb->menu_stack_old);
-   xmb->selection_ptr_old = menu->navigation.selection_ptr;
+   xmb->selection_ptr_old = nav->selection_ptr;
 
    switch (type)
    {

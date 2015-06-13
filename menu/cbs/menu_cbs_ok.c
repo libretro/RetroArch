@@ -1068,9 +1068,10 @@ static int action_ok_cursor_manager_list(const char *path,
 static int action_ok_config_load(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   const char *menu_path        = NULL;
-   char config[PATH_MAX_LENGTH] = {0};
+   const char *menu_path         = NULL;
+   char config[PATH_MAX_LENGTH]  = {0};
    menu_handle_t           *menu = menu_driver_get_ptr();
+   menu_navigation_t        *nav = menu_navigation_get_ptr();
 
    if (!menu)
       return -1;
@@ -1083,7 +1084,7 @@ static int action_ok_config_load(const char *path,
    menu->msg_force = true;
    if (rarch_replace_config(config))
    {
-      menu_navigation_clear(&menu->navigation, false);
+      menu_navigation_clear(nav, false);
       return -1;
    }
 

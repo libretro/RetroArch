@@ -143,6 +143,7 @@ static int action_right_mainmenu(unsigned type, const char *label,
    unsigned        push_list = 0;
    menu_list_t    *menu_list = menu_list_get_ptr();
    menu_handle_t       *menu = menu_driver_get_ptr();
+   menu_navigation_t    *nav = menu_navigation_get_ptr();
    unsigned           action = MENU_ACTION_RIGHT;
    size_t          list_size = menu_driver_list_get_size(MENU_LIST_PLAIN);
    if (!menu)
@@ -150,7 +151,7 @@ static int action_right_mainmenu(unsigned type, const char *label,
 
    if (list_size == 1)
    {
-      menu->navigation.selection_ptr = 0;
+      nav->selection_ptr = 0;
       if (menu->categories.selection_ptr != (menu_driver_list_get_size(MENU_LIST_HORIZONTAL)))
          push_list = 1;
    }
@@ -158,7 +159,7 @@ static int action_right_mainmenu(unsigned type, const char *label,
       push_list = 2;
 
    cbs = menu_list_get_actiondata_at_offset(menu_list->selection_buf,
-         menu->navigation.selection_ptr);
+         nav->selection_ptr);
 
    switch (push_list)
    {

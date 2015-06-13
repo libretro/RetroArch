@@ -257,11 +257,12 @@ static int menu_list_flush_stack_type(
 void menu_list_flush_stack(menu_list_t *list,
       const char *needle, unsigned final_type)
 {
-   const char *path    = NULL;
-   const char *label   = NULL;
-   unsigned type       = 0;
-   size_t entry_idx    = 0;
-   menu_handle_t *menu = menu_driver_get_ptr();
+   const char *path       = NULL;
+   const char *label      = NULL;
+   unsigned type          = 0;
+   size_t entry_idx       = 0;
+   menu_handle_t *menu    = menu_driver_get_ptr();
+   menu_navigation_t *nav = menu_navigation_get_ptr();
    if (!menu || !list)
       return;
 
@@ -270,14 +271,15 @@ void menu_list_flush_stack(menu_list_t *list,
 
    while (menu_list_flush_stack_type(needle, label, type, final_type) != 0)
    {
-      menu_list_pop(list->menu_stack, &menu->navigation.selection_ptr);
+      menu_list_pop(list->menu_stack, &nav->selection_ptr);
       menu_list_get_last(list->menu_stack, &path, &label, &type, &entry_idx);
    }
 }
 
 void menu_list_pop_stack(menu_list_t *list)
 {
-   menu_handle_t *menu = menu_driver_get_ptr();
+   menu_handle_t *menu    = menu_driver_get_ptr();
+   menu_navigation_t *nav = menu_navigation_get_ptr();
    if (!menu || !list)
       return;
 
@@ -286,18 +288,19 @@ void menu_list_pop_stack(menu_list_t *list)
 
    menu_driver_list_cache(MENU_LIST_PLAIN, 0);
 
-   menu_list_pop(list->menu_stack, &menu->navigation.selection_ptr);
+   menu_list_pop(list->menu_stack, &nav->selection_ptr);
    menu_set_refresh();
 }
 
 void menu_list_pop_stack_by_needle(menu_list_t *list,
       const char *needle)
 {
-   const char *path    = NULL;
-   const char *label   = NULL;
-   unsigned type       = 0;
-   size_t entry_idx    = 0;
-   menu_handle_t *menu = menu_driver_get_ptr();
+   const char *path       = NULL;
+   const char *label      = NULL;
+   unsigned type          = 0;
+   size_t entry_idx       = 0;
+   menu_handle_t *menu    = menu_driver_get_ptr();
+   menu_navigation_t *nav = menu_navigation_get_ptr();
 
    if (!menu || !list)
       return;
@@ -307,7 +310,7 @@ void menu_list_pop_stack_by_needle(menu_list_t *list,
 
    while (strcmp(needle, label) == 0)
    {
-      menu_list_pop(list->menu_stack, &menu->navigation.selection_ptr);
+      menu_list_pop(list->menu_stack, &nav->selection_ptr);
       menu_list_get_last(list->menu_stack, &path, &label, &type, &entry_idx);
    }
 }

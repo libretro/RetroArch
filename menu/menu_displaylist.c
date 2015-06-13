@@ -1742,6 +1742,7 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
    bool need_push           = false;
    rarch_setting_t *setting = NULL;
    menu_handle_t    *menu   = menu_driver_get_ptr();
+   menu_navigation_t *nav   = menu_navigation_get_ptr();
    global_t       *global   = global_get_ptr();
    settings_t   *settings   = config_get_ptr();
 
@@ -1756,7 +1757,7 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          menu_driver_list_cache(MENU_LIST_PLAIN, 0);
 
          menu_list_push(info->list, info->path, info->label, info->type, info->directory_ptr, 0);
-         menu_navigation_clear(&menu->navigation, true);
+         menu_navigation_clear(nav, true);
          menu_set_refresh();
          break;
       case DISPLAYLIST_HELP:

@@ -533,10 +533,12 @@ static void rmenu_xui_render(void)
 {
 	size_t end, i;
 	char title[PATH_MAX_LENGTH] = {0};
-	const char *dir = NULL, *label = NULL;
-	unsigned menu_type = 0;
-   menu_handle_t *menu  = menu_driver_get_ptr();
-   uint64_t frame_count = video_driver_get_frame_count();
+	const char *dir             = NULL;
+   const char *label           = NULL;
+	unsigned menu_type          = 0;
+   menu_handle_t *menu         = menu_driver_get_ptr();
+   menu_navigation_t *nav      = menu_navigation_get_ptr();
+   uint64_t frame_count        = video_driver_get_frame_count();
 
    if (!menu)
       return;
@@ -581,7 +583,7 @@ static void rmenu_xui_render(void)
       mbstowcs(msg_right, entry_value, sizeof(msg_right) / sizeof(wchar_t));
       rmenu_xui_set_list_text(i, msg_left, msg_right);
    }
-	XuiListSetCurSelVisible(m_menulist, menu->navigation.selection_ptr);
+	XuiListSetCurSelVisible(m_menulist, nav->selection_ptr);
 
 	if (menu->keyboard.display)
 	{
@@ -598,7 +600,8 @@ static void rmenu_xui_render(void)
 static void rmenu_xui_populate_entries(const char *path,
       const char *label, unsigned i)
 {
-   menu_handle_t *menu = menu_driver_get_ptr();
+   menu_handle_t *menu         = menu_driver_get_ptr();
+   menu_navigation_t *nav      = menu_navigation_get_ptr();
 
    if (!menu)
       return;
@@ -606,23 +609,25 @@ static void rmenu_xui_populate_entries(const char *path,
    (void)label;
    (void)path;
 
-   XuiListSetCurSelVisible(m_menulist, menu->navigation.selection_ptr);
+   XuiListSetCurSelVisible(m_menulist, nav->selection_ptr);
 }
 
 static void rmenu_xui_navigation_clear(bool pending_push)
 {
-   menu_handle_t *menu = menu_driver_get_ptr();
+   menu_handle_t *menu         = menu_driver_get_ptr();
+   menu_navigation_t *nav      = menu_navigation_get_ptr();
 
    if (menu)
-      XuiListSetCurSelVisible(m_menulist, menu->navigation.selection_ptr);
+      XuiListSetCurSelVisible(m_menulist, nav->selection_ptr);
 }
 
 static void rmenu_xui_navigation_set_visible(void)
 {
-   menu_handle_t *menu = menu_driver_get_ptr();
+   menu_handle_t *menu         = menu_driver_get_ptr();
+   menu_navigation_t *nav      = menu_navigation_get_ptr();
 
    if (menu)
-      XuiListSetCurSelVisible(m_menulist, menu->navigation.selection_ptr);
+      XuiListSetCurSelVisible(m_menulist, nav->selection_ptr);
 }
 
 static void rmenu_xui_navigation_alphabet(size_t *ptr_out)

@@ -281,6 +281,7 @@ static int action_iterate_menu_viewport(char *s, size_t len, const char *label, 
    unsigned type                    = 0;
    video_viewport_t *custom         = video_viewport_get_custom();
    menu_handle_t *menu              = menu_driver_get_ptr();
+   menu_navigation_t *nav           = menu_navigation_get_ptr();
    menu_list_t *menu_list           = menu_list_get_ptr();
    settings_t *settings             = config_get_ptr();
    struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
@@ -357,7 +358,7 @@ static int action_iterate_menu_viewport(char *s, size_t len, const char *label, 
          {
             info.list          = menu_list->menu_stack;
             info.type          = MENU_SETTINGS_CUSTOM_VIEWPORT;
-            info.directory_ptr = menu->navigation.selection_ptr;
+            info.directory_ptr = nav->selection_ptr;
 
             menu_displaylist_push_list(&info, DISPLAYLIST_INFO);
          }
@@ -372,7 +373,7 @@ static int action_iterate_menu_viewport(char *s, size_t len, const char *label, 
             info.list          = menu_list->menu_stack;
             strlcpy(info.label, "custom_viewport_2", sizeof(info.label));
             info.type          = 0;
-            info.directory_ptr = menu->navigation.selection_ptr;
+            info.directory_ptr = nav->selection_ptr;
 
             menu_displaylist_push_list(&info, DISPLAYLIST_INFO);
          }
@@ -503,6 +504,7 @@ static int action_iterate_main(const char *label, unsigned action)
    bool do_render            = false;
    int ret                   = 0;
    menu_handle_t *menu       = menu_driver_get_ptr();
+   menu_navigation_t *nav    = menu_navigation_get_ptr();
    menu_list_t *menu_list    = menu_list_get_ptr();
    uint32_t hash             = djb2_calculate(label);
    if (!menu || !menu_list)
@@ -528,7 +530,7 @@ static int action_iterate_main(const char *label, unsigned action)
          break;
       case ITERATE_TYPE_INFO:
          ret = action_iterate_info(msg, sizeof(msg), label);
-         pop_selected    = &menu->navigation.selection_ptr;
+         pop_selected    = &nav->selection_ptr;
          do_messagebox   = true;
          do_pop_stack    = true;
          do_post_iterate = true;
@@ -538,7 +540,7 @@ static int action_iterate_main(const char *label, unsigned action)
          break;
       case ITERATE_TYPE_MESSAGE:
          strlcpy(msg, menu->message_contents, sizeof(msg));
-         pop_selected    = &menu->navigation.selection_ptr;
+         pop_selected    = &nav->selection_ptr;
          do_messagebox   = true;
          do_pop_stack    = true;
          break;

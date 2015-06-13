@@ -18,12 +18,15 @@
 static int action_info_default(unsigned type, const char *label)
 {
    menu_displaylist_info_t info = {0};
-   menu_handle_t *menu    = menu_driver_get_ptr();
+   menu_handle_t *menu          = menu_driver_get_ptr();
+   menu_navigation_t *nav       = menu_navigation_get_ptr();
+
    if (!menu)
       return 0;
-   info.list = menu->menu_list->menu_stack;
+
+   info.list          = menu->menu_list->menu_stack;
+   info.directory_ptr = nav->selection_ptr;
    strlcpy(info.label, "info_screen", sizeof(info.label));
-   info.directory_ptr = menu->navigation.selection_ptr;
 
    return menu_displaylist_push_list(&info, DISPLAYLIST_HELP);
 }

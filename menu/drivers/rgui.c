@@ -336,6 +336,7 @@ static void rgui_render(void)
    char title_msg[64]             = {0};
    char timedate[PATH_MAX_LENGTH] = {0};
    menu_handle_t *menu            = menu_driver_get_ptr();
+   menu_navigation_t *nav         = menu_navigation_get_ptr();
    runloop_t *runloop             = rarch_main_get_ptr();
    driver_t *driver               = driver_get_ptr();
    settings_t *settings           = config_get_ptr();
@@ -452,7 +453,7 @@ static void rgui_render(void)
       unsigned entry_spacing                = menu_entry_get_spacing(i);
       bool entry_selected                   = menu_entry_is_currently_selected(i);
 
-      if (i > (menu->navigation.selection_ptr + 100))
+      if (i > (nav->selection_ptr + 100))
          continue;
 
       menu_entry_get_value(i, entry_value, sizeof(entry_value));

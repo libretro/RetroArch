@@ -242,7 +242,8 @@ static int setting_handler(rarch_setting_t *setting, unsigned action)
 int menu_action_handle_setting(rarch_setting_t *setting,
       unsigned type, unsigned action, bool wraparound)
 {
-   menu_displaylist_info_t info = {0};
+   menu_displaylist_info_t  info = {0};
+   menu_navigation_t        *nav = menu_navigation_get_ptr();
 
    if (!setting)
       return -1;
@@ -252,11 +253,11 @@ int menu_action_handle_setting(rarch_setting_t *setting,
       case ST_PATH:
          if (action == MENU_ACTION_OK)
          {
-            menu_handle_t *menu = menu_driver_get_ptr();
+            menu_list_t   *menu_list = menu_list_get_ptr();
 
-            info.list           = menu->menu_list->menu_stack;
+            info.list           = menu_list->menu_stack;
             info.type           = type;
-            info.directory_ptr  = menu->navigation.selection_ptr;
+            info.directory_ptr  = nav->selection_ptr;
             strlcpy(info.path, setting->default_value.string, sizeof(info.path));
             strlcpy(info.label, setting->name, sizeof(info.label));
 
@@ -332,13 +333,15 @@ int menu_setting_set(unsigned type, const char *label,
    int ret                  = 0;
    rarch_setting_t *setting = NULL;
    menu_handle_t      *menu = menu_driver_get_ptr();
+   menu_navigation_t   *nav = menu_navigation_get_ptr();
+   menu_list_t   *menu_list = menu_list_get_ptr();
 
    if (!menu)
       return 0;
    
    setting = menu_setting_find(
-         menu->menu_list->selection_buf->list
-         [menu->navigation.selection_ptr].label);
+         menu_list->selection_buf->list
+         [nav->selection_ptr].label);
 
    if (!setting)
       return 0;

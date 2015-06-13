@@ -335,6 +335,7 @@ static void glui_frame(void)
    const struct font_renderer *font_driver = NULL;
    driver_t *driver                        = driver_get_ptr();
    menu_handle_t *menu                     = menu_driver_get_ptr();
+   menu_navigation_t *nav                  = menu_navigation_get_ptr();
    settings_t *settings                    = config_get_ptr();
    uint64_t frame_count                    = video_driver_get_frame_count();
    const uint32_t normal_color             = FONT_COLOR_ARGB_TO_RGBA(
@@ -379,7 +380,7 @@ static void glui_frame(void)
 
    glui_render_quad(gl, 0,
          menu->header_height - menu->scroll_y + glui->line_height *
-         menu->navigation.selection_ptr,
+         nav->selection_ptr,
          width, glui->line_height, 1, 1, 1, 0.1);
 
    menu->animation_is_active = true;
