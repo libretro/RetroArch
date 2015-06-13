@@ -233,7 +233,6 @@ static void menu_free_list(menu_handle_t *menu)
 void menu_free(menu_handle_t *menu)
 {
    global_t        *global    = global_get_ptr();
-   menu_framebuf_t *frame_buf = menu_display_fb_get_ptr();
 
    if (!menu)
       return;

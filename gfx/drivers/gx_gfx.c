@@ -19,6 +19,7 @@
 #include "../../general.h"
 #include "../drivers_font_renderer/bitmap.h"
 #include "../../menu/menu_driver.h"
+#include "../../menu/menu_display.h"
 #include "../video_viewport.h"
 #include "../video_monitor.h"
 
@@ -234,9 +235,9 @@ static void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines,
    bool progressive;
    unsigned modetype, level, viHeightMultiplier, viWidth, tvmode,
             max_width, max_height, i;
-   gx_video_t *gx       = (gx_video_t*)data;
-   menu_handle_t *menu  = menu_driver_get_ptr();
-   settings_t *settings = config_get_ptr();
+   gx_video_t *gx             = (gx_video_t*)data;
+   menu_framebuf_t *frame_buf = menu_display_fb_get_ptr();
+   settings_t *settings       = config_get_ptr();
 
    (void)level;
 
@@ -393,18 +394,18 @@ static void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines,
          gx_mode.efbHeight, (gx_mode.viTVMode & 3) == VI_INTERLACE 
          ? "interlaced" : "progressive");
 
-   if (menu)
+   if (frame_buf)
    {
-      menu->frame_buf.height = gx_mode.efbHeight / (gx->double_strike ? 1 : 2);
-      menu->frame_buf.height &= ~3;
-      if (menu->frame_buf.height > 240)
-         menu->frame_buf.height = 240;
+      frame_buf->height = gx_mode.efbHeight / (gx->double_strike ? 1 : 2);
+      frame_buf->height &= ~3;
+      if (frame_buf->height > 240)
+         frame_buf->height = 240;
 
-      menu->frame_buf.width = gx_mode.fbWidth / (gx_mode.fbWidth < 400 ? 1 : 2);
-      menu->frame_buf.width &= ~3;
-      if (menu->frame_buf.width > 400)
-         menu->frame_buf.width = 400;
-      menu->frame_buf.pitch = menu->frame_buf.width * 2;
+      frame_buf->width = gx_mode.fbWidth / (gx_mode.fbWidth < 400 ? 1 : 2);
+      frame_buf->width &= ~3;
+      if (frame_buf->width > 400)
+         frame_buf->width = 400;
+      frame_buf->pitch = frame_buf->width * 2;
    }
 
    if (tvmode == VI_PAL)
@@ -474,12 +475,13 @@ static void setup_video_mode(void *data)
 static void init_texture(void *data, unsigned width, unsigned height)
 {
    unsigned g_filter, menu_w, menu_h;
-   struct __gx_regdef *__gx = (struct __gx_regdef*)__gxregs;
-   gx_video_t *gx = (gx_video_t*)data;
-   struct __gx_texobj *fb_ptr = (struct __gx_texobj*)&g_tex.obj;
+   struct __gx_regdef *__gx     = (struct __gx_regdef*)__gxregs;
+   gx_video_t *gx               = (gx_video_t*)data;
+   struct __gx_texobj *fb_ptr   = (struct __gx_texobj*)&g_tex.obj;
    struct __gx_texobj *menu_ptr = (struct __gx_texobj*)&menu_tex.obj;
-   menu_handle_t *menu  = menu_driver_get_ptr();
-   settings_t *settings = config_get_ptr();
+   menu_handle_t *menu          = menu_driver_get_ptr();
+   menu_framebuf_t *frame_buf   = menu_display_fb_get_ptr();
+   settings_t *settings         = config_get_ptr();
 
    width &= ~3;
    height &= ~3;
@@ -489,8 +491,8 @@ static void init_texture(void *data, unsigned width, unsigned height)
 
    if (menu)
    {
-      menu_w = menu->frame_buf.width;
-      menu_h = menu->frame_buf.height;
+      menu_w = frame_buf->width;
+      menu_h = frame_buf->height;
    }
 
    __GX_InitTexObj(fb_ptr, g_tex.data, width, height,
@@ -1086,17 +1088,17 @@ static bool gx_frame(void *data, const void *frame,
 
    if (gx->menu_texture_enable && gx->menu_data)
    {
-      menu_handle_t *menu = menu_driver_get_ptr();
+      menu_framebuf_t *frame_buf   = menu_display_fb_get_ptr();
 
-      if (menu)
+      if (frame_buf)
       {
          convert_texture16(gx->menu_data, menu_tex.data,
-               menu->frame_buf.width,
-               menu->frame_buf.height,
-               menu->frame_buf.pitch);
+               frame_buf->width,
+               frame_buf->height,
+               frame_buf->pitch);
          DCFlushRange(menu_tex.data,
-               menu->frame_buf.width * 
-               menu->frame_buf.pitch);
+               frame_buf->width * 
+               frame_buf->pitch);
       }
    }
 
