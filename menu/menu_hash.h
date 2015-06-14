@@ -189,6 +189,7 @@ extern "C" {
 #define MENU_VALUE_FILE                                                        0x6a496536U
 #define MENU_VALUE_RDB                                                         0x0b00f54eU
 #define MENU_VALUE_DIR                                                         0x0af95f55U
+#define MENU_VALUE_NO_CORE                                                     0x7d5472cbU
 
 #define MENU_LABEL_CONTENT_ACTIONS                                             0xa0d76970U
 #define MENU_LABEL_DETECT_CORE_LIST                                            0xaa07c341U

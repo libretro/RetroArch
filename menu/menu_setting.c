@@ -500,6 +500,7 @@ static void setting_reset_setting(rarch_setting_t* setting)
 int setting_set_with_string_representation(rarch_setting_t* setting,
       const char* value)
 {
+   uint32_t value_hash;
    if (!setting || !value)
       return -1;
 
@@ -542,10 +543,17 @@ int setting_set_with_string_representation(rarch_setting_t* setting,
          strlcpy(setting->value.string, value, setting->size);
          break;
       case ST_BOOL:
-         if (!strcmp(value, "true"))
-            *setting->value.boolean = true;
-         else if (!strcmp(value, "false"))
-            *setting->value.boolean = false;
+         value_hash = djb2_calculate(value);
+
+         switch (value_hash)
+         {
+            case MENU_VALUE_TRUE:
+               *setting->value.boolean = true;
+               break;
+            case MENU_VALUE_FALSE:
+               *setting->value.boolean = false;
+               break;
+         }
          break;
 
          /* TODO */
@@ -3573,8 +3581,9 @@ static bool setting_append_list_main_menu_options(
    {
       struct retro_system_info *info = (struct retro_system_info*)
          global ? &global->system.info : NULL;
+      uint32_t info_library_name_hash = info ? djb2_calculate(info->library_name) : 0;
 
-      if (info && strcmp(info->library_name, "No Core") != 0)
+      if (info && (info_library_name_hash == MENU_VALUE_NO_CORE))
          CONFIG_ACTION(
                "unload_core",
                "Unload Core",
