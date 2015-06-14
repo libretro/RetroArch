@@ -20,7 +20,9 @@
 #include <retro_miscellaneous.h>
 
 #include "menu_animation.h"
+#include "../configuration.h"
 #include "../runloop.h"
+#include "../performance.h"
 
 menu_animation_t *menu_animation_get_ptr(void)
 {
@@ -530,4 +532,25 @@ void menu_animation_ticker_line(char *s, size_t len, uint64_t idx,
       strlcpy(s, str + right_offset, len + 1);
 
    anim->is_active = true;
+}
+
+void menu_animation_update_time(menu_animation_t *anim)
+{
+   static retro_time_t last_clock_update = 0;
+   settings_t *settings = config_get_ptr();
+
+   anim->cur_time   = rarch_get_time_usec();
+   anim->delta_time = anim->cur_time - anim->old_time;
+
+   if (anim->delta_time >= IDEAL_DT * 4)
+      anim->delta_time = IDEAL_DT * 4;
+   if (anim->delta_time <= IDEAL_DT / 4)
+      anim->delta_time = IDEAL_DT / 4;
+   anim->old_time      = anim->cur_time;
+
+   if (anim->cur_time - last_clock_update > 1000000 && settings->menu.timedate_enable)
+   {
+      anim->label.is_updated = true;
+      last_clock_update = anim->cur_time;
+   }
 }

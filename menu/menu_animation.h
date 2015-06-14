@@ -22,6 +22,10 @@
 #include <boolean.h>
 #include "../libretro.h"
 
+#ifndef IDEAL_DT
+#define IDEAL_DT (1.0 / 60.0 * 1000000.0)
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -53,6 +57,11 @@ typedef struct menu_animation
    float delta_time;
    retro_time_t cur_time;
    retro_time_t old_time;
+
+   struct
+   {
+      bool is_updated;
+   } label;
 } menu_animation_t;
 
 enum menu_animation_easing_type
@@ -134,6 +143,8 @@ void menu_animation_ticker_line(char *buf, size_t len, uint64_t tick,
       const char *str, bool selected);
 
 menu_animation_t *menu_animation_get_ptr(void);
+
+void menu_animation_update_time(menu_animation_t *anim);
 
 #ifdef __cplusplus
 }

@@ -1270,7 +1270,7 @@ static void xmb_render(void)
    }
 
    anim->is_active = false;
-   menu->label.is_updated    = false;
+   anim->label.is_updated    = false;
 }
 
 static void xmb_frame_horizontal_list(xmb_handle_t *xmb, menu_handle_t *menu, gl_t *gl)

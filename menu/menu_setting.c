@@ -1371,10 +1371,10 @@ static void setting_get_string_representation_st_float_video_refresh_rate_auto(v
       snprintf(s, len, "%.3f Hz (%.1f%% dev, %u samples)",
             video_refresh_rate, 100.0 * deviation, sample_points);
       {
-         menu_handle_t *menu = menu_driver_get_ptr();
+         menu_animation_t *anim = menu_animation_get_ptr();
 
-         if (menu)
-            menu->label.is_updated = true;
+         if (anim)
+            anim->label.is_updated = true;
       }
    }
    else

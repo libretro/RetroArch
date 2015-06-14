@@ -424,7 +424,7 @@ static void menu_action_setting_disp_set_label_perf_counters(
       const char *path,
       char *s2, size_t len2)
 {
-   menu_handle_t *menu = menu_driver_get_ptr();
+   menu_animation_t *anim = menu_animation_get_ptr();
    const struct retro_perf_counter **counters =
       (const struct retro_perf_counter **)perf_counters_rarch;
    unsigned offset = type - MENU_SETTINGS_PERF_COUNTERS_BEGIN;
@@ -436,7 +436,7 @@ static void menu_action_setting_disp_set_label_perf_counters(
    menu_action_setting_disp_set_label_perf_counters_common(
          counters, offset, s, len);
 
-   menu->label.is_updated = true;
+   anim->label.is_updated = true;
 }
 
 static void menu_action_setting_disp_set_label_libretro_perf_counters(
@@ -448,7 +448,7 @@ static void menu_action_setting_disp_set_label_libretro_perf_counters(
       const char *path,
       char *s2, size_t len2)
 {
-   menu_handle_t *menu = menu_driver_get_ptr();
+   menu_animation_t *anim = menu_animation_get_ptr();
    const struct retro_perf_counter **counters =
       (const struct retro_perf_counter **)perf_counters_libretro;
    unsigned offset = type - MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_BEGIN;
@@ -460,7 +460,7 @@ static void menu_action_setting_disp_set_label_libretro_perf_counters(
    menu_action_setting_disp_set_label_perf_counters_common(
          counters, offset, s, len);
 
-   menu->label.is_updated = true;
+   anim->label.is_updated = true;
 }
 
 static void menu_action_setting_disp_set_label_menu_more(

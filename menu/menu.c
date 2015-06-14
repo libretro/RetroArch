@@ -24,8 +24,8 @@
 #include "../dynamic.h"
 #include "../general.h"
 #include "../frontend/frontend.h"
-#include "../../retroarch.h"
-#include "../../performance.h"
+#include "../retroarch.h"
+#include "../performance.h"
 
 static void menu_environment_get(int *argc, char *argv[],
       void *args, void *params_data)
@@ -294,7 +294,6 @@ void menu_free(menu_handle_t *menu)
 int menu_iterate(retro_input_t input,
       retro_input_t old_input, retro_input_t trigger_input)
 {
-   static retro_time_t last_clock_update = 0;
    int32_t ret              = 0;
    unsigned action          = 0;
    runloop_t *runloop       = rarch_main_get_ptr();
@@ -303,20 +302,8 @@ int menu_iterate(retro_input_t input,
    settings_t *settings     = config_get_ptr();
 
    menu_input->joypad.state    = menu_input_frame(input, trigger_input);
-   menu->animation->cur_time   = rarch_get_time_usec();
-   menu->animation->delta_time = menu->animation->cur_time - menu->animation->old_time;
 
-   if (menu->animation->delta_time >= IDEAL_DT * 4)
-      menu->animation->delta_time = IDEAL_DT * 4;
-   if (menu->animation->delta_time <= IDEAL_DT / 4)
-      menu->animation->delta_time = IDEAL_DT / 4;
-   menu->animation->old_time = menu->animation->cur_time;
-
-   if (menu->animation->cur_time - last_clock_update > 1000000 && settings->menu.timedate_enable)
-   {
-      menu->label.is_updated = true;
-      last_clock_update = menu->animation->cur_time;
-   }
+   menu_animation_update_time(menu->animation);
 
    action = menu_input->joypad.state;
 

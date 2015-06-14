@@ -373,7 +373,7 @@ static void rgui_render(void)
    /* ensures the framebuffer will be rendered on the screen */
    menu_display_fb_set_dirty();
    anim->is_active           = false;
-   menu->label.is_updated    = false;
+   anim->label.is_updated    = false;
 
    if (settings->menu.pointer.enable)
    {

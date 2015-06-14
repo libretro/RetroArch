@@ -398,7 +398,7 @@ static void glui_frame(void)
          width, glui->line_height, 1, 1, 1, 0.1);
 
    anim->is_active = true;
-   menu->label.is_updated    = false;
+   anim->label.is_updated    = false;
 
    glui_render_quad(gl, 0, 0, width,
          disp->header_height, 0.2, 0.2, 0.2, 1);

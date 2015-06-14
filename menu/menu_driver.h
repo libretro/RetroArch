@@ -94,11 +94,6 @@ typedef struct
 
    struct
    {
-      bool is_updated;
-   } label;
-
-   struct
-   {
       bool active;
    } action;
 
