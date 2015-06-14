@@ -530,7 +530,7 @@ static struct config_entry_list *config_get_entry(const config_file_t *conf,
       const char *key, struct config_entry_list **prev)
 {
    struct config_entry_list *entry;
-   struct config_entry_lsit *previous;
+   struct config_entry_list *previous = NULL;
 
    uint32_t hash = djb2_calculate(key);
 
@@ -545,7 +545,7 @@ static struct config_entry_list *config_get_entry(const config_file_t *conf,
       previous = entry;
    }
 
-   if (*prev)
+   if (prev)
       *prev = previous;
 
    return NULL;
@@ -712,34 +712,28 @@ bool config_get_bool(config_file_t *conf, const char *key, bool *in)
 
 void config_set_string(config_file_t *conf, const char *key, const char *val)
 {
-   struct config_entry_list *elem = NULL;
-   struct config_entry_list *list = conf->entries;
-   struct config_entry_list *last = list;
-   while (list)
-   {
-      if (!list->readonly && (strcmp(key, list->key) == 0))
-      {
-         free(list->value);
-         list->value = strdup(val);
-         return;
-      }
+   struct config_entry_list *last  = conf->entries;
+   struct config_entry_list *entry = config_get_entry(conf, key, &last);
 
-      last = list;
-      list = list->next;
+   if (entry && !entry->readonly)
+   {
+      free(entry->value);
+      entry->value = strdup(val);
+      return;
    }
 
-   elem = (struct config_entry_list*)calloc(1, sizeof(*elem));
+   entry = (struct config_entry_list*)calloc(1, sizeof(*entry));
 
-   if (!elem)
+   if (!entry)
       return;
 
-   elem->key = strdup(key);
-   elem->value = strdup(val);
+   entry->key   = strdup(key);
+   entry->value = strdup(val);
 
    if (last)
-      last->next = elem;
+      last->next = entry;
    else
-      conf->entries = elem;
+      conf->entries = entry;
 }
 
 void config_set_path(config_file_t *conf, const char *entry, const char *val)
