@@ -749,13 +749,13 @@ static void set_program_base_attrib(cg_shader_data_t *cg, unsigned i)
 
       RARCH_LOG("CG: Found semantic \"%s\" in prog #%u.\n", semantic, i);
 
-      if (strcmp(semantic, "TEXCOORD") == 0 || strcmp(semantic, "TEXCOORD0") == 0)
+      if (!strcmp(semantic, "TEXCOORD") || !strcmp(semantic, "TEXCOORD0"))
          cg->prg[i].tex = param;
-      else if (strcmp(semantic, "COLOR") == 0 || strcmp(semantic, "COLOR0") == 0)
+      else if (!strcmp(semantic, "COLOR") || !strcmp(semantic, "COLOR0"))
          cg->prg[i].color = param;
-      else if (strcmp(semantic, "POSITION") == 0)
+      else if (!strcmp(semantic, "POSITION"))
          cg->prg[i].vertex = param;
-      else if (strcmp(semantic, "TEXCOORD1") == 0)
+      else if (!strcmp(semantic, "TEXCOORD1"))
          cg->prg[i].lut_tex = param;
    }
 
@@ -944,7 +944,7 @@ static bool gl_cg_init(void *data, const char *path)
 
    memset(cg->cg_alias_define, 0, sizeof(cg->cg_alias_define));
 
-   if (path && strcmp(path_get_extension(path), "cgp") == 0)
+   if (path && !strcmp(path_get_extension(path), "cgp"))
    {
       if (!load_preset(cg, path))
          goto error;

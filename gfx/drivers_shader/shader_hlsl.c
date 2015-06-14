@@ -361,7 +361,7 @@ static bool hlsl_init(void *data, const char *path)
    if (!hlsl)
 	   return false;
 
-   if (path && strcmp(path_get_extension(path), ".cgp") == 0)
+   if (path && !strcmp(path_get_extension(path), ".cgp"))
    {
       if (!load_preset(hlsl, d3d, path))
          goto error;

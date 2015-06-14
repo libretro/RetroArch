@@ -539,7 +539,7 @@ static struct config_entry_list *config_get_entry(const config_file_t *conf,
 
    for (entry = conf->entries; entry; entry = entry->next)
    {
-      if (hash == entry->key_hash && strcmp(key, entry->key) == 0)
+      if (hash == entry->key_hash && !strcmp(key, entry->key))
          return entry;
 
       previous = entry;
@@ -848,7 +848,7 @@ bool config_entry_exists(config_file_t *conf, const char *entry)
 
    while (list)
    {
-      if (strcmp(entry, list->key) == 0)
+      if (!strcmp(entry, list->key))
          return true;
       list = list->next;
    }

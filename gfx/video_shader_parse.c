@@ -904,9 +904,9 @@ enum rarch_shader_type video_shader_parse_type(const char *path,
 
    ext = path_get_extension(path);
 
-   if (strcmp(ext, "cg") == 0 || strcmp(ext, "cgp") == 0)
+   if (!strcmp(ext, "cg") || !strcmp(ext, "cgp"))
       return RARCH_SHADER_CG;
-   else if (strcmp(ext, "glslp") == 0 || strcmp(ext, "glsl") == 0)
+   else if (!strcmp(ext, "glslp") || !strcmp(ext, "glsl"))
       return RARCH_SHADER_GLSL;
 
    return fallback;

@@ -377,7 +377,7 @@ int main(int argc, char *argv[])
    int i;
    for (i = 0; i < argc; i ++)
    {
-      if (strcmp(argv[i], "--") == 0)
+      if (!strcmp(argv[i], "--"))
       {
          waiting_argc = argc - i;
          waiting_argv = argv + i;

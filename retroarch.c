@@ -660,14 +660,14 @@ static void parse_input(int argc, char *argv[])
             break;
 
          case 'M':
-            if (strcmp(optarg, "noload-nosave") == 0)
+            if (!strcmp(optarg, "noload-nosave"))
             {
                global->sram_load_disable = true;
                global->sram_save_disable = true;
             }
-            else if (strcmp(optarg, "noload-save") == 0)
+            else if (!strcmp(optarg, "noload-save"))
                global->sram_load_disable = true;
-            else if (strcmp(optarg, "load-nosave") == 0)
+            else if (!strcmp(optarg, "load-nosave"))
                global->sram_save_disable = true;
             else if (strcmp(optarg, "load-save") != 0)
             {

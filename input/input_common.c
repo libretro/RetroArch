@@ -279,7 +279,7 @@ void input_config_parse_joy_button(config_file_t *conf, const char *prefix,
    if (config_get_array(conf, key, tmp, sizeof(tmp)))
    {
       btn = tmp;
-      if (strcmp(btn, "nul") == 0)
+      if (!strcmp(btn, "nul"))
          bind->joykey = NO_BTN;
       else
       {
@@ -307,7 +307,7 @@ void input_config_parse_joy_axis(config_file_t *conf, const char *prefix,
 
    if (config_get_array(conf, key, tmp, sizeof(tmp)))
    {
-      if (strcmp(tmp, "nul") == 0)
+      if (!strcmp(tmp, "nul"))
          bind->joyaxis = AXIS_NONE;
       else if (strlen(tmp) >= 2 && (*tmp == '+' || *tmp == '-'))
       {
