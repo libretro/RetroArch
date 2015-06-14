@@ -60,7 +60,6 @@ typedef struct
    } delay;
 
    size_t begin;
-   unsigned header_height;
    float scroll_y;
 
    menu_list_t *menu_list;
@@ -90,16 +89,7 @@ typedef struct
    char default_glslp[PATH_MAX_LENGTH];
    char default_cgp[PATH_MAX_LENGTH];
 
-   menu_framebuf_t frame_buf;
-
-   struct
-   {
-      void *buf;
-      int size;
-
-      const uint8_t *framebuf;
-      bool alloc_framebuf;
-   } font;
+   menu_display_t display;
 
    bool load_no_content;
 

@@ -435,7 +435,7 @@ static void xmb_draw_text(menu_handle_t *menu,
    params.full_screen = true;
    params.text_align  = text_align;
 
-   video_driver_set_osd_msg(str, &params, menu->font.buf);
+   video_driver_set_osd_msg(str, &params, menu->display.font.buf);
 }
 
 static void xmb_render_messagebox_internal(const char *message)
@@ -486,16 +486,22 @@ static void xmb_frame_messagebox(const char *message)
    if (list->elems == 0)
       goto end;
 
-   x = width  / 2 - strlen(list->elems[0].data) * menu->font.size / 4;
-   y = height / 2 - list->size * menu->font.size / 2;
+   x = width  / 2 - strlen(list->elems[0].data) * menu->display.font.size / 4;
+   y = height / 2 - list->size * menu->display.font.size / 2;
 
    for (i = 0; i < list->size; i++)
    {
       const char *msg = list->elems[i].data;
 
       if (msg)
-         xmb_draw_text(menu, xmb, msg, x,
-               y + i * menu->font.size, 1, 1, TEXT_ALIGN_LEFT);
+         xmb_draw_text(menu,
+               xmb,
+               msg,
+               x,
+               y + i * menu->display.font.size,
+               1,
+               1,
+               TEXT_ALIGN_LEFT);
    }
 
 end:
@@ -1467,7 +1473,7 @@ static void *xmb_init(void)
    if (!menu)
       goto error;
 
-   frame_buf = &menu->frame_buf;
+   frame_buf = &menu->display.frame_buf;
 
    video_driver_get_size(&width, &height);
 
@@ -1537,19 +1543,19 @@ static void *xmb_init(void)
 
    xmb->icon.size               = 128.0 * scale_factor;
    xmb->cursor.size             = 48.0;
-   menu->font.size              = 32.0 * scale_factor;
+   menu->display.font.size      = 32.0 * scale_factor;
    xmb->icon.spacing.horizontal = 200.0 * scale_factor;
    xmb->icon.spacing.vertical   = 64.0 * scale_factor;
    xmb->margins.screen.left     = 336.0 * scale_factor;
    xmb->margins.screen.top      = (256+32) * scale_factor;
    xmb->margins.title.left      = 60 * scale_factor;
-   xmb->margins.title.top       = 60 * scale_factor + menu->font.size/3;
-   xmb->margins.title.bottom    = 60 * scale_factor - menu->font.size/3;
+   xmb->margins.title.top       = 60 * scale_factor + menu->display.font.size/3;
+   xmb->margins.title.bottom    = 60 * scale_factor - menu->display.font.size/3;
    xmb->margins.label.left      = 85.0 * scale_factor;
-   xmb->margins.label.top       = menu->font.size/3.0;
+   xmb->margins.label.top       = menu->display.font.size / 3.0;
    xmb->margins.setting.left    = 600.0 * scale_factor;
 
-   menu->header_height          = xmb->icon.size;
+   menu->display.header_height  = xmb->icon.size;
 
    xmb_init_horizontal_list(menu, xmb);
 
@@ -1869,7 +1875,7 @@ static void xmb_context_reset(void)
 
    fill_pathname_join(fontpath, themepath, "font.ttf", sizeof(fontpath));
 
-   if (!menu_display_init_main_font(menu, fontpath, menu->font.size))
+   if (!menu_display_init_main_font(menu, fontpath, menu->display.font.size))
       RARCH_WARN("Failed to load font.");
 
    xmb_context_reset_textures(xmb, iconpath);

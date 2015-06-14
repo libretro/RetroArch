@@ -25,12 +25,20 @@
 #include "../gfx/video_thread_wrapper.h"
 #include "menu_list.h"
 
-menu_framebuf_t *menu_display_fb_get_ptr(void)
+menu_display_t *menu_display_get_ptr(void)
 {
    menu_handle_t *menu = menu_driver_get_ptr();
    if (!menu)
       return NULL;
-   return &menu->frame_buf;
+   return &menu->display;
+}
+
+menu_framebuf_t *menu_display_fb_get_ptr(void)
+{
+   menu_display_t *disp = menu_display_get_ptr();
+   if (!disp)
+      return NULL;
+   return &disp->frame_buf;
 }
 
 static bool menu_display_fb_in_use(menu_framebuf_t *frame_buf)
@@ -119,7 +127,7 @@ void menu_display_free(void *data)
    menu_animation_free(menu->animation);
    menu->animation = NULL;
 
-   menu_display_fb_free(&menu->frame_buf);
+   menu_display_fb_free(&menu->display.frame_buf);
 }
 
 bool menu_display_init(void *data)
@@ -197,7 +205,7 @@ bool menu_display_font_bind_block(void *data,
    if (!font_driver || !font_driver->bind_block)
       return false;
 
-   font_driver->bind_block(menu->font.buf, userdata);
+   font_driver->bind_block(menu->display.font.buf, userdata);
 
    return true;
 }
@@ -209,7 +217,7 @@ bool menu_display_font_flush_block(void *data,
    if (!font_driver || !font_driver->flush)
       return false;
 
-   font_driver->flush(menu->font.buf);
+   font_driver->flush(menu->display.font.buf);
 
    return menu_display_font_bind_block(menu,
          font_driver, NULL);
@@ -220,10 +228,10 @@ void menu_display_free_main_font(void *data)
    menu_handle_t *menu = (menu_handle_t*)data;
    driver_t *driver = driver_get_ptr();
     
-   if (menu->font.buf)
+   if (menu->display.font.buf)
    {
-      driver->font_osd_driver->free(menu->font.buf);
-      menu->font.buf = NULL;
+      driver->font_osd_driver->free(menu->display.font.buf);
+      menu->display.font.buf = NULL;
    }
 }
 
@@ -235,17 +243,17 @@ bool menu_display_init_main_font(void *data,
    driver_t    *driver = driver_get_ptr();
    void        *video  = video_driver_get_ptr(NULL);
 
-   if (menu->font.buf)
+   if (menu->display.font.buf)
       menu_display_free_main_font(menu);
 
    ret = menu_display_font_init_first(
-         (const void**)&driver->font_osd_driver, &menu->font.buf, video,
+         (const void**)&driver->font_osd_driver, &menu->display.font.buf, video,
          font_path, font_size);
 
    if (ret)
-      menu->font.size = font_size;
+      menu->display.font.size = font_size;
    else
-      menu->font.buf = NULL;
+      menu->display.font.buf = NULL;
 
    return ret;
 }

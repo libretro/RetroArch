@@ -149,6 +149,7 @@ static void blit_line(menu_handle_t *menu, int x, int y,
 {
    unsigned i, j;
    menu_framebuf_t *frame_buf = menu_display_fb_get_ptr();
+   menu_display_t  *disp      = menu_display_get_ptr();
 
    while (*message)
    {
@@ -158,7 +159,7 @@ static void blit_line(menu_handle_t *menu, int x, int y,
          {
             uint8_t rem = 1 << ((i + j * FONT_WIDTH) & 7);
             int offset  = (i + j * FONT_WIDTH) >> 3;
-            bool col    = (menu->font.framebuf[FONT_OFFSET
+            bool col    = (disp->font.framebuf[FONT_OFFSET
                   ((unsigned char)*message) + offset] & rem);
 
             if (!col)
@@ -185,7 +186,7 @@ static bool init_font(menu_handle_t *menu, const uint8_t *font_bmp_buf)
       return false;
    }
 
-   menu->font.alloc_framebuf = true;
+   menu->display.font.alloc_framebuf = true;
    for (i = 0; i < 256; i++)
    {
       unsigned y = i / 16;
@@ -194,7 +195,7 @@ static bool init_font(menu_handle_t *menu, const uint8_t *font_bmp_buf)
             font_bmp_buf + 54 + 3 * (256 * (255 - 16 * y) + 16 * x));
    }
 
-   menu->font.framebuf = font;
+   menu->display.font.framebuf = font;
    return true;
 }
 
@@ -212,7 +213,7 @@ static bool rguidisp_init_font(menu_handle_t *menu)
    if (!font_bin_buf)
       return false;
 
-   menu->font.framebuf = font_bin_buf;
+   menu->display.font.framebuf = font_bin_buf;
 
    return true;
 }
@@ -527,7 +528,7 @@ static void *rgui_init(void)
    if (!menu)
       return NULL;
 
-   frame_buf                  = &menu->frame_buf;
+   frame_buf                  = &menu->display.frame_buf;
 
    /* 4 extra lines to cache  the checked background */
    frame_buf->data = (uint16_t*)calloc(400 * (240 + 4), sizeof(uint16_t));
@@ -535,11 +536,11 @@ static void *rgui_init(void)
    if (!frame_buf->data)
       goto error;
 
-   frame_buf->width           = 320;
-   frame_buf->height          = 240;
-   menu->header_height        = FONT_HEIGHT_STRIDE * 2;
-   menu->begin                = 0;
-   frame_buf->pitch           = frame_buf->width * sizeof(uint16_t);
+   frame_buf->width                   = 320;
+   frame_buf->height                  = 240;
+   menu->display.header_height        = FONT_HEIGHT_STRIDE * 2;
+   menu->begin                        = 0;
+   frame_buf->pitch                   = frame_buf->width * sizeof(uint16_t);
 
    ret = rguidisp_init_font(menu);
 
@@ -570,17 +571,19 @@ error:
 
 static void rgui_free(void *data)
 {
-   menu_handle_t *menu = (menu_handle_t*)data;
+   menu_handle_t  *menu = (menu_handle_t*)data;
+   menu_display_t *disp = menu ? &menu->display : NULL;
 
-   if (!menu)
+   if (!menu || !disp)
       return;
 
    if (menu->userdata)
       free(menu->userdata);
    menu->userdata = NULL;
 
-   if (menu->font.alloc_framebuf)
-      free((uint8_t*)menu->font.framebuf);
+   if (disp->font.alloc_framebuf)
+      free((uint8_t*)disp->font.framebuf);
+   disp->font.alloc_framebuf = NULL;
 }
 
 static void rgui_set_texture(void)

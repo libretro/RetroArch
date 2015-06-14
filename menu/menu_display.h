@@ -35,6 +35,24 @@ typedef struct menu_framebuf
    bool dirty;
 } menu_framebuf_t;
 
+typedef struct menu_display
+{
+   menu_framebuf_t frame_buf;
+
+   struct
+   {
+      void *buf;
+      int size;
+
+      const uint8_t *framebuf;
+      bool alloc_framebuf;
+   } font;
+
+   unsigned header_height;
+} menu_display_t;
+
+menu_display_t  *menu_display_get_ptr(void);
+
 menu_framebuf_t *menu_display_fb_get_ptr(void);
 
 void menu_display_fb(void);

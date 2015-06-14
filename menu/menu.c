@@ -221,9 +221,9 @@ static void menu_free_list(menu_handle_t *menu)
       return;
 
    menu_setting_free(menu->list_settings);
-   menu_list_free(menu->menu_list);
-
    menu->list_settings = NULL;
+
+   menu_list_free(menu->menu_list);
    menu->menu_list     = NULL;
 }
 
