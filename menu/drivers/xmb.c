@@ -1013,9 +1013,6 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
    xmb_node_t *core_node       = NULL;
    size_t end                  = 0;
    uint64_t frame_count        = video_driver_get_frame_count();
-   char name[PATH_MAX_LENGTH]  = {0};
-   char value[PATH_MAX_LENGTH] = {0};
-   menu_entry_t entry          = {{0}};
    menu_handle_t *menu         = menu_driver_get_ptr();
 
    if (!list || !list->size || !menu)
@@ -1038,6 +1035,9 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
 
    for (i = 0; i < end; i++)
    {
+      char name[PATH_MAX_LENGTH];
+      char value[PATH_MAX_LENGTH];
+      menu_entry_t entry;
       float icon_x, icon_y;
 
       GLuint texture_switch       = 0;
@@ -1304,9 +1304,9 @@ static void xmb_frame(void)
    math_matrix_4x4 mymat, mrot, mscal;
    unsigned depth;
    unsigned width, height;
-   char msg[PATH_MAX_LENGTH]               = {0};
-   char title_msg[PATH_MAX_LENGTH]         = {0};
-   char timedate[PATH_MAX_LENGTH]          = {0};
+   char msg[PATH_MAX_LENGTH];
+   char title_msg[PATH_MAX_LENGTH];
+   char timedate[PATH_MAX_LENGTH];
    bool render_background                  = false;
    xmb_handle_t *xmb                       = NULL;
    gl_t *gl                                = NULL;
@@ -1329,6 +1329,10 @@ static void xmb_frame(void)
 
    if (!gl)
       return;
+
+   msg[0]       = '\0';
+   title_msg[0] = '\0';
+   timedate[0]  = '\0';
 
    video_driver_get_size(&width, &height);
 
