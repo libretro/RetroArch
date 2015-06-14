@@ -27,7 +27,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#if defined(__llvm__) || (defined(__GNUC__) && (__GNUC__ * 100 + __GNUC_MINOR__) >= 403)
+#if defined(__llvm__) || (defined(__GNUC__) && (__GNUC__ * 100 + __GNUC_MINOR__) >= 408)
 #define SWAP16 __builtin_bswap16
 #define SWAP32 __builtin_bswap32
 #elif defined(_MSC_VER)
