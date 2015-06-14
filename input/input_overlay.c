@@ -15,16 +15,25 @@
  */
 
 #include <stdlib.h>
+#include <stddef.h>
 #include <string.h>
-#include "input_overlay.h"
-#include "../driver.h"
+#include <math.h>
+
 #include <compat/posix_string.h>
-#include "input_common.h"
 #include <file/file_path.h>
 #include <string/string_list.h>
 #include <clamping.h>
-#include <stddef.h>
-#include <math.h>
+#include <rhash.h>
+
+#include "input_overlay.h"
+#include "../driver.h"
+#include "input_common.h"
+
+#define BOX_RADIAL       0x18df06d2U
+#define BOX_RECT         0x7c9d4d93U
+
+#define KEY_ANALOG_LEFT  0x56b92e81U
+#define KEY_ANALOG_RIGHT 0x2e4dc654U
 
 /**
  * input_overlay_scale:
@@ -196,6 +205,7 @@ static bool input_overlay_load_desc(input_overlay_t *ol,
       bool normalized, float alpha_mod, float range_mod)
 {
    float width_mod, height_mod;
+   uint32_t box_hash, key_hash;
    bool ret                             = true;
    bool by_pixel                        = false;
    char overlay_desc_key[64]            = {0};
@@ -245,42 +255,52 @@ static bool input_overlay_load_desc(input_overlay_t *ol,
       return false;
    }
 
+   key = list->elems[0].data;
    x   = list->elems[1].data;
    y   = list->elems[2].data;
    box = list->elems[3].data;
 
-   key = list->elems[0].data;
+   box_hash = djb2_calculate(box);
+   key_hash = djb2_calculate(key);
+
    desc->key_mask = 0;
 
-   if (!strcmp(key, "analog_left"))
-      desc->type = OVERLAY_TYPE_ANALOG_LEFT;
-   else if (!strcmp(key, "analog_right"))
-      desc->type = OVERLAY_TYPE_ANALOG_RIGHT;
-   else if (strstr(key, "retrok_") == key)
+   switch (key_hash)
    {
-      desc->type = OVERLAY_TYPE_KEYBOARD;
-      desc->key_mask = input_translate_str_to_rk(key + 7);
-   }
-   else
-   {
-      const char *tmp = NULL;
+      case KEY_ANALOG_LEFT:
+         desc->type = OVERLAY_TYPE_ANALOG_LEFT;
+         break;
+      case KEY_ANALOG_RIGHT:
+         desc->type = OVERLAY_TYPE_ANALOG_RIGHT;
+         break;
+      default:
+         if (strstr(key, "retrok_") == key)
+         {
+            desc->type = OVERLAY_TYPE_KEYBOARD;
+            desc->key_mask = input_translate_str_to_rk(key + 7);
+         }
+         else
+         {
+            const char *tmp = NULL;
 
-      desc->type = OVERLAY_TYPE_BUTTONS;
-      for (tmp = strtok_r(key, "|", &save); tmp; tmp = strtok_r(NULL, "|", &save))
-      {
-         if (strcmp(tmp, "nul") != 0)
-            desc->key_mask |= UINT64_C(1) << input_translate_str_to_bind_id(tmp);
-      }
+            desc->type = OVERLAY_TYPE_BUTTONS;
+            for (tmp = strtok_r(key, "|", &save); tmp; tmp = strtok_r(NULL, "|", &save))
+            {
+               if (strcmp(tmp, "nul") != 0)
+                  desc->key_mask |= UINT64_C(1) << input_translate_str_to_bind_id(tmp);
+            }
 
-      if (desc->key_mask & (UINT64_C(1) << RARCH_OVERLAY_NEXT))
-      {
-         char overlay_target_key[64] = {0};
+            if (desc->key_mask & (UINT64_C(1) << RARCH_OVERLAY_NEXT))
+            {
+               char overlay_target_key[64] = {0};
 
-         snprintf(overlay_target_key, sizeof(overlay_target_key),
-               "overlay%u_desc%u_next_target", ol_idx, desc_idx);
-         config_get_array(ol->conf, overlay_target_key,
-               desc->next_index_name, sizeof(desc->next_index_name));
-      }
+               snprintf(overlay_target_key, sizeof(overlay_target_key),
+                     "overlay%u_desc%u_next_target", ol_idx, desc_idx);
+               config_get_array(ol->conf, overlay_target_key,
+                     desc->next_index_name, sizeof(desc->next_index_name));
+            }
+         }
+         break;
    }
 
    width_mod  = 1.0f;
@@ -295,35 +315,45 @@ static bool input_overlay_load_desc(input_overlay_t *ol,
    desc->x = (float)strtod(x, NULL) * width_mod;
    desc->y = (float)strtod(y, NULL) * height_mod;
 
-   if (!strcmp(box, "radial"))
-      desc->hitbox = OVERLAY_HITBOX_RADIAL;
-   else if (!strcmp(box, "rect"))
-      desc->hitbox = OVERLAY_HITBOX_RECT;
-   else
+   switch (box_hash)
    {
-      RARCH_ERR("[Overlay]: Hitbox type (%s) is invalid. Use \"radial\" or \"rect\".\n", box);
-      ret = false;
-      goto end;
-   }
-
-   if (
-         desc->type == OVERLAY_TYPE_ANALOG_LEFT ||
-         desc->type == OVERLAY_TYPE_ANALOG_RIGHT)
-   {
-      char overlay_analog_saturate_key[64] = {0};
-
-      if (desc->hitbox != OVERLAY_HITBOX_RADIAL)
-      {
-         RARCH_ERR("[Overlay]: Analog hitbox type must be \"radial\".\n");
+      case BOX_RADIAL:
+         desc->hitbox = OVERLAY_HITBOX_RADIAL;
+         break;
+      case BOX_RECT:
+         desc->hitbox = OVERLAY_HITBOX_RECT;
+         break;
+      default:
+         RARCH_ERR("[Overlay]: Hitbox type (%s) is invalid. Use \"radial\" or \"rect\".\n", box);
          ret = false;
          goto end;
-      }
+   }
 
-      snprintf(overlay_analog_saturate_key, sizeof(overlay_analog_saturate_key),
-            "overlay%u_desc%u_saturate_pct", ol_idx, desc_idx);
-      if (!config_get_float(ol->conf, overlay_analog_saturate_key,
-               &desc->analog_saturate_pct))
-         desc->analog_saturate_pct = 1.0f;
+   switch (desc->type)
+   {
+      case OVERLAY_TYPE_ANALOG_LEFT:
+      case OVERLAY_TYPE_ANALOG_RIGHT:
+         {
+            char overlay_analog_saturate_key[64] = {0};
+
+            if (desc->hitbox != OVERLAY_HITBOX_RADIAL)
+            {
+               RARCH_ERR("[Overlay]: Analog hitbox type must be \"radial\".\n");
+               ret = false;
+               goto end;
+            }
+
+            snprintf(overlay_analog_saturate_key, sizeof(overlay_analog_saturate_key),
+                  "overlay%u_desc%u_saturate_pct", ol_idx, desc_idx);
+            if (!config_get_float(ol->conf, overlay_analog_saturate_key,
+                     &desc->analog_saturate_pct))
+               desc->analog_saturate_pct = 1.0f;
+         }
+         break;
+      default:
+         /* OVERLAY_TYPE_BUTTONS  - unhandled */
+         /* OVERLAY_TYPE_KEYBOARD - unhandled */
+         break;
    }
 
    desc->range_x = (float)strtod(list->elems[4].data, NULL) * width_mod;
