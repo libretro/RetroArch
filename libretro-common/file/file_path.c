@@ -21,14 +21,12 @@
  */
 
 #include <file/file_path.h>
+
 #include <stdlib.h>
 #include <boolean.h>
 #include <string.h>
 #include <time.h>
 #include <errno.h>
-#include <compat/strl.h>
-#include <compat/posix_string.h>
-#include <retro_miscellaneous.h>
 
 #ifdef __HAIKU__
 #include <kernel/image.h>
@@ -37,6 +35,12 @@
 #if (defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)) || defined(__QNX__) || defined(PSP)
 #include <unistd.h> /* stat() is defined here */
 #endif
+
+#include <compat/strl.h>
+#include <compat/posix_string.h>
+#include <retro_miscellaneous.h>
+
+#include <rhash.h>
 
 #if defined(__CELLOS_LV2__)
 
@@ -122,6 +126,9 @@ bool path_contains_compressed_file(const char *path)
    return (strchr(path,'#') != NULL);
 }
 
+#define FILE_EXT_7Z     0x005971d6U
+#define FILE_EXT_ZIP    0x0b88c7d8U
+
 /**
  * path_is_compressed_file:
  * @path               : path
@@ -133,15 +140,20 @@ bool path_contains_compressed_file(const char *path)
 bool path_is_compressed_file(const char* path)
 {
 #ifdef HAVE_COMPRESSION
-   const char* file_ext = path_get_extension(path);
+   const char* file_ext   = path_get_extension(path);
+   uint32_t file_ext_hash = djb2_calculate(file_ext);
+
+   switch (file_ext_hash)
+   {
 #ifdef HAVE_7ZIP
-   if (strcmp(file_ext,"7z") == 0)
-      return true;
+      case FILE_EXT_7Z:
+         return true;
 #endif
 #ifdef HAVE_ZLIB
-   if (strcmp(file_ext,"zip") == 0)
-      return true;
+      case FILE_EXT_ZIP:
+         return true;
 #endif
+   }
 
 #endif
    return false;

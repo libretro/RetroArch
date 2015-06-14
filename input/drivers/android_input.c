@@ -555,7 +555,7 @@ static int android_input_get_id_index_from_name(android_input_t *android,
    int i;
    for (i = 0; i < android->pads_connected; i++)
    {
-      if (strcmp(name, android->pad_states[i].name) == 0)
+      if (!strcmp(name, android->pad_states[i].name))
          return i;
    }
 
