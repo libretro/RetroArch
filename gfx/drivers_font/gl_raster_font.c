@@ -266,35 +266,38 @@ static void gl_raster_font_render_message(
       const GLfloat color[4], GLfloat pos_x, GLfloat pos_y,
       unsigned text_align)
 {
-    //If the font height is not supported just draw as usual
-    if (!font->font_driver->get_line_height)
-    {
-        gl_raster_font_render_line(font, msg, strlen(msg), scale, color, pos_x, pos_y, text_align);
-        return;
-    }
-    
-    int lines = 0;
-    float line_height = scale * 1/(float)font->font_driver->get_line_height(font->font_data);
-    
-    for (;;)
-    {
-        const char *delim = strchr(msg, '\n');
-        
-        //Draw the line
-        if (delim)
-        {
-            unsigned msg_len = delim - msg;
-            gl_raster_font_render_line(font, msg, msg_len, scale, color, pos_x, pos_y - (float)lines*line_height, text_align);
-            msg += msg_len + 1;
-            lines++;
-        }
-        else
-        {
-            unsigned msg_len = strlen(msg);
-            gl_raster_font_render_line(font, msg, msg_len, scale, color, pos_x, pos_y - (float)lines*line_height, text_align);
-            break;
-        }
-    }
+   if (!msg || !*msg || !font->gl)
+      return;
+
+   //If the font height is not supported just draw as usual
+   if (!font->font_driver->get_line_height)
+   {
+      gl_raster_font_render_line(font, msg, strlen(msg), scale, color, pos_x, pos_y, text_align);
+      return;
+   }
+
+   int lines = 0;
+   float line_height = scale * 1/(float)font->font_driver->get_line_height(font->font_data);
+
+   for (;;)
+   {
+      const char *delim = strchr(msg, '\n');
+
+      //Draw the line
+      if (delim)
+      {
+         unsigned msg_len = delim - msg;
+         gl_raster_font_render_line(font, msg, msg_len, scale, color, pos_x, pos_y - (float)lines*line_height, text_align);
+         msg += msg_len + 1;
+         lines++;
+      }
+      else
+      {
+         unsigned msg_len = strlen(msg);
+         gl_raster_font_render_line(font, msg, msg_len, scale, color, pos_x, pos_y - (float)lines*line_height, text_align);
+         break;
+      }
+   }
 }
 
 static void gl_raster_font_setup_viewport(gl_raster_t *font, bool full_screen)
