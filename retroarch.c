@@ -477,7 +477,7 @@ static void parse_input(int argc, char *argv[])
       { "size",         1, &val, RA_OPT_SIZE },
       { "verbose",      0, NULL, 'v' },
       { "config",       1, NULL, 'c' },
-      { "appendconfig", 1, &val, 'C' },
+      { "appendconfig", 1, &val, RA_OPT_APPENDCONFIG },
       { "nodevice",     1, NULL, 'N' },
       { "dualanalog",   1, NULL, 'A' },
       { "device",       1, NULL, 'd' },
