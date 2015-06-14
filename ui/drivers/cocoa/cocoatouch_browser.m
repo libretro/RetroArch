@@ -440,6 +440,7 @@ static void file_action(enum file_action action, NSString* source, NSString* tar
 /* Called by the action sheet created in (void)fileAction: */
 - (void)actionSheet:(UIActionSheet*)actionSheet clickedButtonAtIndex:(NSInteger)buttonIndex
 {
+   uint32_t action_str_hash;
    int major, minor;
    NSString* target       = self.selectedItem.path;
    NSString* action       = [actionSheet buttonTitleAtIndex:buttonIndex];
