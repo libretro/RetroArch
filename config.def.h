@@ -419,8 +419,7 @@ static unsigned swap_interval = 1;
 static const bool video_threaded = false;
 
 #ifdef HAVE_THREADS
-/* unstable for now when used in conjunction with threaded video */
-static const bool threaded_data_runloop_enable = false;
+static const bool threaded_data_runloop_enable = true;
 #else
 static const bool threaded_data_runloop_enable = false;
 #endif
