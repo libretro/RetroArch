@@ -296,29 +296,29 @@ void menu_list_pop_stack(menu_list_t *list)
 void menu_list_pop_stack_by_needle(menu_list_t *list,
       const char *needle)
 {
-   uint32_t label_hash;
+   uint32_t needle_hash, label_hash;
    const char *path       = NULL;
    const char *label      = NULL;
    unsigned type          = 0;
    size_t entry_idx       = 0;
    menu_handle_t *menu    = menu_driver_get_ptr();
    menu_navigation_t *nav = menu_navigation_get_ptr();
-   uint32_t needle_hash   = djb2_calculate(needle);
 
    if (!menu || !list)
       return;
 
    menu_set_refresh();
    menu_list_get_last(list->menu_stack, &path, &label, &type, &entry_idx);
-
+   needle_hash            = djb2_calculate(needle);
    label_hash             = djb2_calculate(label);
 
-   (void)label_hash;
 
-   while (!strcmp(needle, label))
+   while (needle_hash == label_hash)
    {
       menu_list_pop(list->menu_stack, &nav->selection_ptr);
       menu_list_get_last(list->menu_stack, &path, &label, &type, &entry_idx);
+      label_hash             = djb2_calculate(label);
+      needle_hash            = djb2_calculate(needle);
    }
 }
 
