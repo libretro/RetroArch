@@ -3583,7 +3583,7 @@ static bool setting_append_list_main_menu_options(
          global ? &global->system.info : NULL;
       uint32_t info_library_name_hash = info ? djb2_calculate(info->library_name) : 0;
 
-      if (info && (info_library_name_hash == MENU_VALUE_NO_CORE))
+      if (info && (info_library_name_hash != MENU_VALUE_NO_CORE))
          CONFIG_ACTION(
                "unload_core",
                "Unload Core",
