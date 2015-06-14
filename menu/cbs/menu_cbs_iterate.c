@@ -82,23 +82,23 @@ static int archive_load(void)
    const char *menu_label = NULL;
    const char* path       = NULL;
    size_t entry_idx       = 0;
-   menu_handle_t *menu    = menu_driver_get_ptr();
    settings_t *settings   = config_get_ptr();
    global_t      *global  = global_get_ptr();
    size_t selected        = menu_navigation_get_current_selection();
+   menu_handle_t *menu    = menu_driver_get_ptr();
+   menu_list_t *menu_list = menu_list_get_ptr();
 
-   if (!menu)
+   if (!menu || !menu_list)
       return -1;
 
-   menu_list_pop_stack(menu->menu_list);
+   menu_list_pop_stack(menu_list);
 
-   menu_list_get_last_stack(menu->menu_list,
-         &menu_path, &menu_label, NULL, NULL);
+   menu_list_get_last_stack(menu_list, &menu_path, &menu_label, NULL, NULL);
 
-   if (menu_list_get_size(menu->menu_list) == 0)
+   if (menu_list_get_size(menu_list) == 0)
       return 0;
 
-   menu_list_get_at_offset(menu->menu_list->selection_buf,
+   menu_list_get_at_offset(menu_list->selection_buf,
          selected, &path, NULL, NULL, &entry_idx);
 
    ret = rarch_defer_core(global->core_info, menu_path, path, menu_label,
@@ -114,7 +114,7 @@ static int archive_load(void)
          menu_common_load_content(false);
          break;
       case 0:
-         info.list          = menu->menu_list->menu_stack;
+         info.list          = menu_list->menu_stack;
          info.type          = 0;
          info.directory_ptr = selected;
          strlcpy(info.path, settings->libretro_directory, sizeof(info.path));

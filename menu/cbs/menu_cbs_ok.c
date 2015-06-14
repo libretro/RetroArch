@@ -54,13 +54,14 @@ static int rarch_defer_core_wrapper(menu_displaylist_info_t *info,
    const char *menu_label    = NULL;
    int ret                  = 0;
    menu_handle_t *menu      = menu_driver_get_ptr();
+   menu_list_t *menu_list   = menu_list_get_ptr();
    settings_t *settings     = config_get_ptr();
    global_t *global         = global_get_ptr();
 
    if (!menu)
       return -1;
 
-   menu_list_get_last_stack(menu->menu_list,
+   menu_list_get_last_stack(menu_list,
          &menu_path, &menu_label, NULL, NULL);
 
    ret = rarch_defer_core(global->core_info,
@@ -77,7 +78,7 @@ static int rarch_defer_core_wrapper(menu_displaylist_info_t *info,
          switch (hash_label)
          {
             case MENU_LABEL_COLLECTION:
-               info->list          = menu->menu_list->menu_stack;
+               info->list          = menu_list->menu_stack;
                info->type          = 0;
                info->directory_ptr = idx;
                rdb_entry_start_game_selection_ptr = idx;
@@ -93,7 +94,7 @@ static int rarch_defer_core_wrapper(menu_displaylist_info_t *info,
          }
          break;
       case 0:
-         info->list          = menu->menu_list->menu_stack;
+         info->list          = menu_list->menu_stack;
          info->type          = 0;
          info->directory_ptr = idx;
          strlcpy(info->path, settings->libretro_directory, sizeof(info->path));
@@ -235,13 +236,15 @@ static int action_ok_shader_pass_load(const char *path,
 {
    const char *menu_path = NULL;
    menu_handle_t *menu = menu_driver_get_ptr();
-   if (!menu)
+   menu_list_t *menu_list   = menu_list_get_ptr();
+   if (!menu || !menu_list)
       return -1;
 
    (void)menu_path;
+   (void)menu_list;
 
 #ifdef HAVE_SHADER_MANAGER
-   menu_list_get_last_stack(menu->menu_list, &menu_path, NULL,
+   menu_list_get_last_stack(menu_list, &menu_path, NULL,
          NULL, NULL);
 
    fill_pathname_join(menu->shader->pass[hack_shader_pass].source.path,
@@ -250,7 +253,7 @@ static int action_ok_shader_pass_load(const char *path,
 
    /* This will reset any changed parameters. */
    video_shader_resolve_parameters(NULL, menu->shader);
-   menu_list_flush_stack(menu->menu_list, "shader_options", 0);
+   menu_list_flush_stack(menu_list, "shader_options", 0);
    return 0;
 #else
    return -1;
@@ -265,13 +268,14 @@ static int action_ok_shader_pass(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    menu_displaylist_info_t info = {0};
-   hack_shader_pass      = type - MENU_SETTINGS_SHADER_PASS_0;
-   menu_handle_t *menu   = menu_driver_get_ptr();
-   settings_t *settings  = config_get_ptr();
-   if (!menu)
+   hack_shader_pass             = type - MENU_SETTINGS_SHADER_PASS_0;
+   menu_handle_t *menu          = menu_driver_get_ptr();
+   menu_list_t *menu_list       = menu_list_get_ptr();
+   settings_t *settings         = config_get_ptr();
+   if (!menu || !menu_list)
       return -1;
 
-   info.list          = menu->menu_list->menu_stack;
+   info.list          = menu_list->menu_stack;
    info.type          = type;
    info.directory_ptr = idx;
    strlcpy(info.path, settings->video.shader_dir, sizeof(info.path));
@@ -284,11 +288,13 @@ static int action_ok_shader_parameters(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    menu_displaylist_info_t info = {0};
-   menu_handle_t *menu = menu_driver_get_ptr();
-   if (!menu)
+   menu_handle_t *menu          = menu_driver_get_ptr();
+   menu_list_t *menu_list       = menu_list_get_ptr();
+
+   if (!menu || !menu_list)
       return -1;
 
-   info.list          = menu->menu_list->menu_stack;
+   info.list          = menu_list->menu_stack;
    info.type          = MENU_SETTING_ACTION;
    info.directory_ptr = idx;
    strlcpy(info.label, label, sizeof(info.label));
@@ -300,15 +306,17 @@ static int action_ok_push_generic_list(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    menu_displaylist_info_t info = {0};
-   menu_handle_t *menu = menu_driver_get_ptr();
-   if (!menu)
+   menu_handle_t          *menu = menu_driver_get_ptr();
+   menu_list_t       *menu_list = menu_list_get_ptr();
+
+   if (!menu || !menu_list)
       return -1;
 
    if (path)
       strlcpy(menu->deferred_path, path,
             sizeof(menu->deferred_path));
 
-   info.list          = menu->menu_list->menu_stack;
+   info.list          = menu_list->menu_stack;
    info.type          = type;
    info.directory_ptr = idx;
    strlcpy(info.label, label, sizeof(info.label));
@@ -320,11 +328,13 @@ static int action_ok_push_default(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    menu_displaylist_info_t info = {0};
-   menu_handle_t *menu = menu_driver_get_ptr();
-   if (!menu)
+   menu_handle_t          *menu = menu_driver_get_ptr();
+   menu_list_t       *menu_list = menu_list_get_ptr();
+
+   if (!menu || !menu_list)
       return -1;
 
-   info.list          = menu->menu_list->menu_stack;
+   info.list          = menu_list->menu_stack;
    info.type          = type;
    info.directory_ptr = idx;
    strlcpy(info.path, label, sizeof(info.path));
@@ -337,13 +347,14 @@ static int action_ok_shader_preset(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    menu_displaylist_info_t info = {0};
-   menu_handle_t *menu   = menu_driver_get_ptr();
-   settings_t *settings  = config_get_ptr();
+   menu_handle_t *menu          = menu_driver_get_ptr();
+   settings_t *settings         = config_get_ptr();
+   menu_list_t       *menu_list = menu_list_get_ptr();
 
    if (!menu)
       return -1;
 
-   info.list          = menu->menu_list->menu_stack;
+   info.list          = menu_list->menu_stack;
    info.type          = type;
    info.directory_ptr = idx;
    strlcpy(info.path, settings->video.shader_dir, sizeof(info.path));
@@ -356,13 +367,14 @@ static int action_ok_push_content_list(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    menu_displaylist_info_t info = {0};
-   menu_handle_t *menu   = menu_driver_get_ptr();
-   settings_t *settings  = config_get_ptr();
+   menu_handle_t *menu          = menu_driver_get_ptr();
+   settings_t *settings         = config_get_ptr();
+   menu_list_t       *menu_list = menu_list_get_ptr();
 
    if (!menu)
       return -1;
 
-   info.list          = menu->menu_list->menu_stack;
+   info.list          = menu_list->menu_stack;
    info.type          = MENU_FILE_DIRECTORY;
    info.directory_ptr = idx;
    strlcpy(info.path, settings->menu_content_directory, sizeof(info.path));
@@ -375,13 +387,14 @@ static int action_ok_disk_image_append_list(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    menu_displaylist_info_t info = {0};
-   menu_handle_t *menu      = menu_driver_get_ptr();
-   settings_t *settings     = config_get_ptr();
+   menu_handle_t *menu          = menu_driver_get_ptr();
+   settings_t *settings         = config_get_ptr();
+   menu_list_t       *menu_list = menu_list_get_ptr();
 
    if (!menu)
       return -1;
 
-   info.list          = menu->menu_list->menu_stack;
+   info.list          = menu_list->menu_stack;
    info.type          = type;
    info.directory_ptr = idx;
    strlcpy(info.path, settings->menu_content_directory, sizeof(info.path));
@@ -394,13 +407,14 @@ static int action_ok_configurations_list(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    menu_displaylist_info_t info = {0};
-   settings_t *settings     = config_get_ptr();
-   menu_handle_t *menu      = menu_driver_get_ptr();
-   const char *dir          = settings->menu_config_directory;
-   if (!menu)
+   settings_t *settings         = config_get_ptr();
+   menu_handle_t *menu          = menu_driver_get_ptr();
+   const char *dir              = settings->menu_config_directory;
+   menu_list_t       *menu_list = menu_list_get_ptr();
+   if (!menu || !menu_list)
       return -1;
 
-   info.list          = menu->menu_list->menu_stack;
+   info.list          = menu_list->menu_stack;
    info.type          = type;
    info.directory_ptr = idx;
    if (dir)
@@ -416,12 +430,13 @@ static int action_ok_cheat_file(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    menu_displaylist_info_t info = {0};
-   menu_handle_t *menu      = menu_driver_get_ptr();
-   settings_t *settings     = config_get_ptr();
+   menu_handle_t *menu          = menu_driver_get_ptr();
+   menu_list_t       *menu_list = menu_list_get_ptr();
+   settings_t *settings         = config_get_ptr();
    if (!menu)
       return -1;
 
-   info.list          = menu->menu_list->menu_stack;
+   info.list          = menu_list->menu_stack;
    info.type          = type;
    info.directory_ptr = idx;
    strlcpy(info.path, settings->cheat_database, sizeof(info.path));
@@ -434,12 +449,13 @@ static int action_ok_audio_dsp_plugin(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    menu_displaylist_info_t info = {0};
-   menu_handle_t *menu      = menu_driver_get_ptr();
-   settings_t *settings     = config_get_ptr();
+   menu_handle_t *menu          = menu_driver_get_ptr();
+   menu_list_t       *menu_list = menu_list_get_ptr();
+   settings_t *settings         = config_get_ptr();
    if (!menu)
       return -1;
 
-   info.list          = menu->menu_list->menu_stack;
+   info.list          = menu_list->menu_stack;
    info.type          = 0;
    info.directory_ptr = idx;
    strlcpy(info.path, settings->audio.filter_dir, sizeof(info.path));
@@ -452,12 +468,14 @@ static int action_ok_video_filter(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    menu_displaylist_info_t info = {0};
-   menu_handle_t *menu          = menu_driver_get_ptr();
    settings_t *settings         = config_get_ptr();
-   if (!menu)
+   menu_handle_t *menu          = menu_driver_get_ptr();
+   menu_list_t     *menu_list   = menu_list_get_ptr();
+
+   if (!menu || !menu_list)
       return -1;
 
-   info.list          = menu->menu_list->menu_stack;
+   info.list          = menu_list->menu_stack;
    info.type          = 0;
    info.directory_ptr = idx;
    strlcpy(info.path, settings->video.filter_dir, sizeof(info.path));
@@ -473,6 +491,7 @@ static int action_ok_core_updater_list(const char *path,
    menu_displaylist_info_t info   = {0};
    driver_t *driver               = driver_get_ptr();
    menu_handle_t *menu            = menu_driver_get_ptr();
+   menu_list_t       *menu_list   = menu_list_get_ptr();
    settings_t *settings           = config_get_ptr();
    if (!menu)
       return -1;
@@ -494,7 +513,7 @@ static int action_ok_core_updater_list(const char *path,
          true);
 #endif
 
-   info.list          = menu->menu_list->menu_stack;
+   info.list          = menu_list->menu_stack;
    info.type          = type;
    info.directory_ptr = idx;
    strlcpy(info.path, path, sizeof(info.path));
@@ -505,14 +524,15 @@ static int action_ok_core_updater_list(const char *path,
 static int action_ok_remap_file(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   menu_displaylist_info_t info = {0};
-   menu_handle_t *menu          = menu_driver_get_ptr();
-   settings_t *settings         = config_get_ptr();
+   menu_displaylist_info_t info   = {0};
+   menu_handle_t *menu            = menu_driver_get_ptr();
+   menu_list_t       *menu_list   = menu_list_get_ptr();
+   settings_t *settings           = config_get_ptr();
 
-   if (!menu)
+   if (!menu || !menu_list)
       return -1;
 
-   info.list          = menu->menu_list->menu_stack;
+   info.list          = menu_list->menu_stack;
    info.type          = type;
    info.directory_ptr = idx;
    strlcpy(info.path, settings->input_remapping_directory, sizeof(info.path));
@@ -524,14 +544,15 @@ static int action_ok_remap_file(const char *path,
 static int action_ok_record_configfile(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   menu_displaylist_info_t info = {0};
-   menu_handle_t *menu          = menu_driver_get_ptr();
-   global_t   *global           = global_get_ptr();
+   menu_displaylist_info_t info   = {0};
+   menu_handle_t *menu            = menu_driver_get_ptr();
+   menu_list_t       *menu_list   = menu_list_get_ptr();
+   global_t   *global             = global_get_ptr();
 
-   if (!menu)
+   if (!menu || !menu_list)
       return -1;
 
-   info.list          = menu->menu_list->menu_stack;
+   info.list          = menu_list->menu_stack;
    info.type          = type;
    info.directory_ptr = idx;
    strlcpy(info.path, global->record.config_dir, sizeof(info.path));
@@ -543,13 +564,14 @@ static int action_ok_record_configfile(const char *path,
 static int action_ok_playlist_collection(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   menu_handle_t *menu      = menu_driver_get_ptr();
-   menu_displaylist_info_t info = {0};
+   menu_displaylist_info_t info   = {0};
+   menu_handle_t *menu            = menu_driver_get_ptr();
+   menu_list_t       *menu_list   = menu_list_get_ptr();
 
-   if (!menu)
+   if (!menu || !menu_list)
       return -1;
 
-   info.list          = menu->menu_list->menu_stack;
+   info.list          = menu_list->menu_stack;
    info.type          = type;
    info.directory_ptr = idx;
    strlcpy(info.path, path, sizeof(info.path));
@@ -561,14 +583,15 @@ static int action_ok_playlist_collection(const char *path,
 static int action_ok_content_collection_list(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   menu_displaylist_info_t info = {0};
-   menu_handle_t *menu      = menu_driver_get_ptr();
-   settings_t *settings     = config_get_ptr();
+   menu_displaylist_info_t   info = {0};
+   menu_handle_t       *menu      = menu_driver_get_ptr();
+   menu_list_t       *menu_list   = menu_list_get_ptr();
+   settings_t       *settings     = config_get_ptr();
 
-   if (!menu)
+   if (!menu || !menu_list)
       return -1;
 
-   info.list          = menu->menu_list->menu_stack;
+   info.list          = menu_list->menu_stack;
    info.type          = type;
    info.directory_ptr = idx;
    strlcpy(info.path, settings->playlist_directory, sizeof(info.path));
@@ -580,14 +603,15 @@ static int action_ok_content_collection_list(const char *path,
 static int action_ok_core_list(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   menu_displaylist_info_t info = {0};
-   menu_handle_t *menu      = menu_driver_get_ptr();
-   settings_t *settings     = config_get_ptr();
+   menu_displaylist_info_t info   = {0};
+   menu_handle_t *menu            = menu_driver_get_ptr();
+   menu_list_t       *menu_list   = menu_list_get_ptr();
+   settings_t *settings           = config_get_ptr();
 
-   if (!menu)
+   if (!menu || !menu_list)
       return -1;
 
-   info.list          = menu->menu_list->menu_stack;
+   info.list          = menu_list->menu_stack;
    info.type          = type;
    info.directory_ptr = idx;
    strlcpy(info.path, settings->libretro_directory, sizeof(info.path));
@@ -599,18 +623,20 @@ static int action_ok_core_list(const char *path,
 static int action_ok_record_configfile_load(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   const char *menu_path = NULL;
-   global_t     *global = global_get_ptr();
-   menu_handle_t *menu  = menu_driver_get_ptr();
-   if (!menu || !global)
+   const char          *menu_path = NULL;
+   global_t               *global = global_get_ptr();
+   menu_handle_t           *menu  = menu_driver_get_ptr();
+   menu_list_t       *menu_list   = menu_list_get_ptr();
+
+   if (!menu || !global || !menu_list)
       return -1;
 
-   menu_list_get_last_stack(menu->menu_list, &menu_path, NULL,
+   menu_list_get_last_stack(menu_list, &menu_path, NULL,
          NULL, NULL);
 
    fill_pathname_join(global->record.config, menu_path, path, sizeof(global->record.config));
 
-   menu_list_flush_stack(menu->menu_list, "Recording Settings", 0);
+   menu_list_flush_stack(menu_list, "Recording Settings", 0);
    return 0;
 }
 
@@ -620,19 +646,20 @@ static int action_ok_remap_file_load(const char *path,
    const char            *menu_path = NULL;
    char remap_path[PATH_MAX_LENGTH] = {0};
    menu_handle_t              *menu = menu_driver_get_ptr();
-   if (!menu)
+   menu_list_t       *menu_list     = menu_list_get_ptr();
+   if (!menu || !menu_list)
       return -1;
 
    (void)remap_path;
    (void)menu_path;
 
-   menu_list_get_last_stack(menu->menu_list, &menu_path, NULL,
+   menu_list_get_last_stack(menu_list, &menu_path, NULL,
          NULL, NULL);
 
    fill_pathname_join(remap_path, menu_path, path, sizeof(remap_path));
    input_remapping_load_file(remap_path);
 
-   menu_list_flush_stack(menu->menu_list, "core_input_remapping_options", 0);
+   menu_list_flush_stack(menu_list, "core_input_remapping_options", 0);
 
    return 0;
 }
@@ -643,6 +670,7 @@ static int action_ok_video_filter_file_load(const char *path,
    const char             *menu_path = NULL;
    char filter_path[PATH_MAX_LENGTH] = {0};
    menu_handle_t               *menu = menu_driver_get_ptr();
+   menu_list_t       *menu_list      = menu_list_get_ptr();
    settings_t              *settings = config_get_ptr();
 
    if (!menu)
@@ -651,7 +679,7 @@ static int action_ok_video_filter_file_load(const char *path,
    (void)filter_path;
    (void)menu_path;
 
-   menu_list_get_last_stack(menu->menu_list, &menu_path, NULL,
+   menu_list_get_last_stack(menu_list, &menu_path, NULL,
          NULL, NULL);
 
    fill_pathname_join(filter_path, menu_path, path, sizeof(filter_path));
@@ -661,7 +689,7 @@ static int action_ok_video_filter_file_load(const char *path,
 
    event_command(EVENT_CMD_REINIT);
 
-   menu_list_flush_stack(menu->menu_list, "video_options", 0);
+   menu_list_flush_stack(menu_list, "video_options", 0);
 
    return 0;
 }
@@ -672,13 +700,14 @@ static int action_ok_cheat_file_load(const char *path,
    const char            *menu_path = NULL;
    char cheat_path[PATH_MAX_LENGTH] = {0};
    menu_handle_t              *menu = menu_driver_get_ptr();
+   menu_list_t       *menu_list     = menu_list_get_ptr();
    global_t                 *global = global_get_ptr();
    if (!menu)
       return -1;
 
    (void)cheat_path;
    (void)menu_path;
-   menu_list_get_last_stack(menu->menu_list, &menu_path, NULL,
+   menu_list_get_last_stack(menu_list, &menu_path, NULL,
          NULL, NULL);
 
    fill_pathname_join(cheat_path, menu_path, path, sizeof(cheat_path));
@@ -691,7 +720,7 @@ static int action_ok_cheat_file_load(const char *path,
    if (!global->cheat)
       return -1;
 
-   menu_list_flush_stack(menu->menu_list, "core_cheat_options", 0);
+   menu_list_flush_stack(menu_list, "core_cheat_options", 0);
 
    return 0;
 }
@@ -704,11 +733,13 @@ static int action_ok_menu_wallpaper_load(const char *path,
    const char *menu_path                = NULL;
    rarch_setting_t *setting             = NULL;
    menu_handle_t *menu                  = menu_driver_get_ptr();
+   menu_list_t       *menu_list         = menu_list_get_ptr();
    settings_t *settings                 = config_get_ptr();
-   if (!menu)
+
+   if (!menu || !menu_list)
       return -1;
 
-   menu_list_get_last_stack(menu->menu_list, &menu_path, &menu_label,
+   menu_list_get_last_stack(menu_list, &menu_path, &menu_label,
          NULL, NULL);
 
    setting = menu_setting_find(menu_label);
@@ -726,7 +757,7 @@ static int action_ok_menu_wallpaper_load(const char *path,
             true);
    }
 
-   menu_list_pop_stack_by_needle(menu->menu_list, setting->name);
+   menu_list_pop_stack_by_needle(menu_list, setting->name);
 
    return 0;
 }
@@ -737,20 +768,23 @@ static int action_ok_shader_preset_load(const char *path,
    const char             *menu_path = NULL;
    char shader_path[PATH_MAX_LENGTH] = {0};
    menu_handle_t               *menu = menu_driver_get_ptr();
-   if (!menu)
+   menu_list_t       *menu_list      = menu_list_get_ptr();
+   if (!menu || !menu_list)
       return -1;
 
    (void)shader_path;
    (void)menu_path;
+   (void)menu_list;
+
 #ifdef HAVE_SHADER_MANAGER
-   menu_list_get_last_stack(menu->menu_list, &menu_path, NULL,
+   menu_list_get_last_stack(menu_list, &menu_path, NULL,
          NULL, NULL);
 
    fill_pathname_join(shader_path, menu_path, path, sizeof(shader_path));
    menu_shader_manager_set_preset(menu->shader,
          video_shader_parse_type(shader_path, RARCH_SHADER_NONE),
          shader_path);
-   menu_list_flush_stack(menu->menu_list, "shader_options", 0);
+   menu_list_flush_stack(menu_list, "shader_options", 0);
    return 0;
 #else
    return -1;
@@ -851,8 +885,9 @@ static int action_ok_core_deferred_set(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    char core_display_name[PATH_MAX_LENGTH] = {0};
-   menu_handle_t *menu = menu_driver_get_ptr();
-   if (!menu)
+   menu_handle_t                     *menu = menu_driver_get_ptr();
+   menu_list_t                  *menu_list = menu_list_get_ptr();
+   if (!menu || !menu_list)
       return -1;
 
    rarch_assert(menu->playlist != NULL);
@@ -869,7 +904,7 @@ static int action_ok_core_deferred_set(const char *path,
 
    content_playlist_write_file(menu->playlist);
 
-   menu_list_pop_stack(menu->menu_list);
+   menu_list_pop_stack(menu_list);
 
    return -1;
 }
@@ -903,16 +938,17 @@ static int action_ok_database_manager_list_deferred(const char *path,
 static int action_ok_rdb_entry(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   char tmp[PATH_MAX_LENGTH]    = {0};
-   menu_displaylist_info_t info = {0};
-   menu_handle_t *menu = menu_driver_get_ptr();
-   if (!menu)
+   char tmp[PATH_MAX_LENGTH]               = {0};
+   menu_displaylist_info_t            info = {0};
+   menu_handle_t                     *menu = menu_driver_get_ptr();
+   menu_list_t                  *menu_list = menu_list_get_ptr();
+   if (!menu || !menu_list)
       return -1;
 
    strlcpy(tmp, "deferred_rdb_entry_detail|", sizeof(tmp));
    strlcat(tmp, path, sizeof(tmp));
 
-   info.list          = menu->menu_list->menu_stack;
+   info.list          = menu_list->menu_stack;
    info.type          = 0;
    info.directory_ptr = idx;
    strlcpy(info.path, label, sizeof(info.path));
@@ -932,21 +968,22 @@ static int action_ok_core_load(const char *path,
 {
    const char *menu_path    = NULL;
    menu_handle_t *menu      = menu_driver_get_ptr();
+   menu_list_t   *menu_list = menu_list_get_ptr();
    settings_t *settings     = config_get_ptr();
    global_t *global         = global_get_ptr();
 
-   if (!menu)
+   if (!menu || !menu_list)
       return -1;
 
    (void)global;
 
-   menu_list_get_last_stack(menu->menu_list,
+   menu_list_get_last_stack(menu_list,
          &menu_path, NULL, NULL, NULL);
 
    fill_pathname_join(settings->libretro, menu_path, path,
          sizeof(settings->libretro));
    event_command(EVENT_CMD_LOAD_CORE);
-   menu_list_pop_stack(menu->menu_list);
+   menu_list_pop_stack(menu_list);
 #if defined(HAVE_DYNAMIC)
    /* No content needed for this core, load core immediately. */
 
@@ -996,19 +1033,17 @@ static int action_ok_directory_push(const char *path,
    const char *menu_path          = NULL;
    const char *menu_label         = NULL;
    char cat_path[PATH_MAX_LENGTH] = {0};
-   menu_handle_t *menu = menu_driver_get_ptr();
-   if (!menu)
+   menu_handle_t            *menu = menu_driver_get_ptr();
+   menu_list_t         *menu_list = menu_list_get_ptr();
+   if (!menu || !menu_list || !path)
       return -1;
 
-   if (!path)
-      return -1;
-
-   menu_list_get_last_stack(menu->menu_list,
+   menu_list_get_last_stack(menu_list,
          &menu_path, &menu_label, NULL, NULL);
 
    fill_pathname_join(cat_path, menu_path, path, sizeof(cat_path));
 
-   info.list          = menu->menu_list->menu_stack;
+   info.list          = menu_list->menu_stack;
    info.type          = type;
    info.directory_ptr = idx;
    strlcpy(info.path, cat_path, sizeof(info.path));
@@ -1023,19 +1058,16 @@ static int action_ok_database_manager_list(const char *path,
    char rdb_path[PATH_MAX_LENGTH] = {0};
    menu_displaylist_info_t info   = {0};
    menu_handle_t           *menu  = menu_driver_get_ptr();
+   menu_list_t         *menu_list = menu_list_get_ptr();
    settings_t          *settings  = config_get_ptr();
 
-   if (!menu)
-      return -1;
-   if (!path)
-      return -1;
-   if (!label)
+   if (!menu || !menu_list || !path || !label)
       return -1;
 
    fill_pathname_join(rdb_path, settings->content_database,
          path, sizeof(rdb_path));
 
-   info.list          = menu->menu_list->menu_stack;
+   info.list          = menu_list->menu_stack;
    info.type          = 0;
    info.directory_ptr = idx;
    strlcpy(info.path, rdb_path, sizeof(info.path));
@@ -1049,16 +1081,17 @@ static int action_ok_cursor_manager_list(const char *path,
 {
    char cursor_path[PATH_MAX_LENGTH] = {0};
    menu_displaylist_info_t      info = {0};
-   menu_handle_t               *menu = menu_driver_get_ptr();
    settings_t              *settings = config_get_ptr();
+   menu_handle_t               *menu = menu_driver_get_ptr();
+   menu_list_t            *menu_list = menu_list_get_ptr();
 
-   if (!menu)
+   if (!menu || !menu_list)
       return -1;
 
    fill_pathname_join(cursor_path, settings->cursor_directory,
          path, sizeof(cursor_path));
 
-   info.list          = menu->menu_list->menu_stack;
+   info.list          = menu_list->menu_stack;
    info.type          = 0;
    info.directory_ptr = idx;
    strlcpy(info.path, cursor_path, sizeof(info.path));
@@ -1072,17 +1105,17 @@ static int action_ok_config_load(const char *path,
 {
    const char *menu_path         = NULL;
    char config[PATH_MAX_LENGTH]  = {0};
-   menu_handle_t           *menu = menu_driver_get_ptr();
    menu_navigation_t        *nav = menu_navigation_get_ptr();
+   menu_handle_t           *menu = menu_driver_get_ptr();
+   menu_list_t        *menu_list = menu_list_get_ptr();
 
-   if (!menu)
+   if (!menu || !menu_list)
       return -1;
 
-   menu_list_get_last_stack(menu->menu_list,
-         &menu_path, NULL, NULL, NULL);
+   menu_list_get_last_stack(menu_list, &menu_path, NULL, NULL, NULL);
 
    fill_pathname_join(config, menu_path, path, sizeof(config));
-   menu_list_flush_stack(menu->menu_list, NULL, MENU_SETTINGS);
+   menu_list_flush_stack(menu_list, NULL, MENU_SETTINGS);
    menu->msg_force = true;
    if (rarch_replace_config(config))
    {
@@ -1099,19 +1132,19 @@ static int action_ok_disk_image_append(const char *path,
    char image[PATH_MAX_LENGTH] = {0};
    const char *menu_path       = NULL;
    menu_handle_t *menu         = menu_driver_get_ptr();
+   menu_list_t      *menu_list = menu_list_get_ptr();
 
-   if (!menu)
+   if (!menu || !menu_list)
       return -1;
 
-   menu_list_get_last_stack(menu->menu_list,
-         &menu_path, NULL, NULL, NULL);
+   menu_list_get_last_stack(menu_list, &menu_path, NULL, NULL, NULL);
 
    fill_pathname_join(image, menu_path, path, sizeof(image));
    event_disk_control_append_image(image);
 
    event_command(EVENT_CMD_RESUME);
 
-   menu_list_flush_stack(menu->menu_list, NULL, MENU_SETTINGS);
+   menu_list_flush_stack(menu_list, NULL, MENU_SETTINGS);
    return -1;
 }
 
@@ -1122,13 +1155,14 @@ static int action_ok_file_load(const char *path,
    const char *menu_label   = NULL;
    const char *menu_path    = NULL;
    rarch_setting_t *setting = NULL;
-   menu_handle_t *menu      = menu_driver_get_ptr();
    global_t *global         = global_get_ptr();
+   menu_handle_t *menu      = menu_driver_get_ptr();
+   menu_list_t   *menu_list = menu_list_get_ptr();
 
-   if (!menu)
+   if (!menu || !menu_list)
       return -1;
 
-   menu_list_get_last(menu->menu_list->menu_stack,
+   menu_list_get_last(menu_list->menu_stack,
          &menu_path, &menu_label, NULL, NULL);
 
    setting = menu_setting_find(menu_label);
@@ -1136,7 +1170,7 @@ static int action_ok_file_load(const char *path,
    if (setting && setting->type == ST_PATH)
    {
       menu_action_setting_set_current_string_path(setting, menu_path, path);
-      menu_list_pop_stack_by_needle(menu->menu_list, setting->name);
+      menu_list_pop_stack_by_needle(menu_list, setting->name);
    }
    else
    {
@@ -1161,12 +1195,13 @@ static int action_ok_set_path(const char *path,
    const char *menu_path    = NULL;
    const char *menu_label   = NULL;
    rarch_setting_t *setting = NULL;
-   menu_handle_t *menu = menu_driver_get_ptr();
+   menu_handle_t      *menu = menu_driver_get_ptr();
+   menu_list_t   *menu_list = menu_list_get_ptr();
 
-   if (!menu)
+   if (!menu || !menu_list)
       return -1;
 
-   menu_list_get_last_stack(menu->menu_list,
+   menu_list_get_last_stack(menu_list,
          &menu_path, &menu_label, NULL, NULL);
 
    setting = menu_setting_find(menu_label);
@@ -1175,7 +1210,7 @@ static int action_ok_set_path(const char *path,
       return -1;
 
    menu_action_setting_set_current_string_path(setting, menu_path, path);
-   menu_list_pop_stack_by_needle(menu->menu_list, setting->name);
+   menu_list_pop_stack_by_needle(menu_list, setting->name);
 
    return 0;
 }
@@ -1186,13 +1221,14 @@ static int action_ok_custom_viewport(const char *path,
    menu_displaylist_info_t info = {0};
    int ret                  = 0;
    video_viewport_t *custom = video_viewport_get_custom();
-   menu_handle_t *menu      = menu_driver_get_ptr();
    settings_t *settings     = config_get_ptr();
+   menu_handle_t *menu      = menu_driver_get_ptr();
+   menu_list_t   *menu_list = menu_list_get_ptr();
 
-   if (!menu)
+   if (!menu || !menu_list)
       return -1;
 
-   info.list          = menu->menu_list->menu_stack;
+   info.list          = menu_list->menu_stack;
    info.type          = MENU_SETTINGS_CUSTOM_VIEWPORT;
    info.directory_ptr = idx;
    strlcpy(info.label, "custom_viewport_1", sizeof(info.label));
@@ -1344,11 +1380,9 @@ static int action_ok_rdb_entry_submenu(const char *path,
    struct string_list *str_list    = NULL;
    struct string_list *str_list2   = NULL;
    menu_handle_t *menu             = menu_driver_get_ptr();
+   menu_list_t          *menu_list = menu_list_get_ptr();
 
-   if (!menu)
-      return -1;
-
-   if (!label)
+   if (!menu || !menu_list || !label)
       return -1;
 
    str_list = string_split(label, "|");
@@ -1390,7 +1424,7 @@ static int action_ok_rdb_entry_submenu(const char *path,
    strlcpy(new_label, "deferred_cursor_manager_list_", sizeof(new_label));
    strlcat(new_label, str_list->elems[0].data, sizeof(new_label));
 
-   info.list          = menu->menu_list->menu_stack;
+   info.list          = menu_list->menu_stack;
    info.type          = 0;
    info.directory_ptr = idx;
    strlcpy(info.path, rdb, sizeof(info.path));

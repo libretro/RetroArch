@@ -132,13 +132,14 @@ bool menu_load_content(void)
 
 void menu_common_load_content(bool persist)
 {
-   menu_handle_t *menu = menu_driver_get_ptr();
-   if (!menu)
+   menu_handle_t    *menu = menu_driver_get_ptr();
+   menu_list_t *menu_list = menu_list_get_ptr();
+   if (!menu || !menu_list)
       return;
 
    event_command(persist ? EVENT_CMD_LOAD_CONTENT_PERSIST : EVENT_CMD_LOAD_CONTENT);
 
-   menu_list_flush_stack(menu->menu_list, NULL, MENU_SETTINGS);
+   menu_list_flush_stack(menu_list, NULL, MENU_SETTINGS);
    menu->msg_force = true;
 }
 

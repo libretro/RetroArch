@@ -27,11 +27,11 @@ static int action_scan_file(const char *path,
    const char *menu_label         = NULL;
    const char *menu_path          = NULL;
    menu_handle_t *menu            = menu_driver_get_ptr();
-   if (!menu)
+   menu_list_t *menu_list         = menu_list_get_ptr();
+   if (!menu || !menu_list)
       return -1;
 
-   menu_list_get_last_stack(menu->menu_list,
-         &menu_path, &menu_label, NULL, NULL);
+   menu_list_get_last_stack(menu_list, &menu_path, &menu_label, NULL, NULL);
 
    fill_pathname_join(fullpath, menu_path, path, sizeof(fullpath));
 
@@ -46,11 +46,11 @@ static int action_scan_directory(const char *path,
    const char *menu_label         = NULL;
    const char *menu_path          = NULL;
    menu_handle_t *menu            = menu_driver_get_ptr();
-   if (!menu)
+   menu_list_t *menu_list         = menu_list_get_ptr();
+   if (!menu || !menu_list)
       return -1;
 
-   menu_list_get_last_stack(menu->menu_list,
-         &menu_path, &menu_label, NULL, NULL);
+   menu_list_get_last_stack(menu_list, &menu_path, &menu_label, NULL, NULL);
 
    fill_pathname_join(fullpath, menu_path, path, sizeof(fullpath));
 

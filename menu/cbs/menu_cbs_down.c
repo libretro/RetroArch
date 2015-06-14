@@ -20,14 +20,15 @@
 static int action_bind_down_generic(unsigned type, const char *label)
 {
    unsigned scroll_speed  = 0;
-   menu_handle_t *menu    = menu_driver_get_ptr();
    menu_navigation_t *nav = menu_navigation_get_ptr();
-   if (!menu || !nav)
+   menu_handle_t *menu    = menu_driver_get_ptr();
+   menu_list_t *menu_list = menu_list_get_ptr();
+   if (!menu || !menu_list || !nav)
       return -1;
 
    scroll_speed = (max(nav->scroll.acceleration, 2) - 2) / 4 + 1;
 
-   if (menu_list_get_size(menu->menu_list) <= 0)
+   if (menu_list_get_size(menu_list) <= 0)
       return 0;
 
    menu_navigation_increment(nav, scroll_speed);

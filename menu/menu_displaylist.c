@@ -1559,6 +1559,7 @@ static int menu_displaylist_parse_generic(menu_displaylist_info_t *info, bool *n
    struct string_list *str_list = NULL;
    int                   device = 0;
    menu_handle_t *menu          = menu_driver_get_ptr();
+   menu_list_t *menu_list       = menu_list_get_ptr();
    global_t *global             = global_get_ptr();
    settings_t *settings         = config_get_ptr();
    uint32_t hash_label          = djb2_calculate(info->label);
@@ -1707,7 +1708,7 @@ static int menu_displaylist_parse_generic(menu_displaylist_info_t *info, bool *n
          {
             const char *dir = NULL;
 
-            menu_list_get_last_stack(menu->menu_list, &dir, NULL, NULL, NULL);
+            menu_list_get_last_stack(menu_list, &dir, NULL, NULL, NULL);
 
             list_size = file_list_get_size(info->list);
 
@@ -2120,12 +2121,12 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
 int menu_displaylist_push(file_list_t *list, file_list_t *menu_list)
 {
    menu_file_list_cbs_t *cbs    = NULL;
-   unsigned type                = 0;
    const char *path             = NULL;
    const char *label            = NULL;
-   menu_handle_t *menu          = menu_driver_get_ptr();
-   menu_displaylist_info_t info = {0};
    uint32_t          hash_label = 0;
+   unsigned type                = 0;
+   menu_displaylist_info_t info = {0};
+   menu_handle_t *menu          = menu_driver_get_ptr();
 
    menu_list_get_last_stack(menu->menu_list, &path, &label, &type, NULL);
 

@@ -54,15 +54,13 @@ void menu_cbs_init(void *data,
    struct string_list *str_list = NULL;
    const char *menu_label       = NULL;
    menu_file_list_cbs_t *cbs    = NULL;
-   file_list_t *list            = (file_list_t*)data;
-   menu_handle_t *menu          = menu_driver_get_ptr();
    int ret                      = 0;
    uint32_t label_hash          = 0;
    uint32_t menu_label_hash     = 0;
-   if (!menu)
-      return;
-
-   if (!list)
+   file_list_t *list            = (file_list_t*)data;
+   menu_handle_t *menu          = menu_driver_get_ptr();
+   menu_list_t *menu_list       = menu_list_get_ptr();
+   if (!menu || !menu_list || !list)
       return;
 
    cbs = (menu_file_list_cbs_t*)menu_list_get_actiondata_at_offset(list, idx);
@@ -70,8 +68,7 @@ void menu_cbs_init(void *data,
    if (!cbs)
       return;
 
-   menu_list_get_last_stack(menu->menu_list,
-         NULL, &menu_label, NULL, NULL);
+   menu_list_get_last_stack(menu_list, NULL, &menu_label, NULL, NULL);
 
    if (label)
       str_list = string_split(label, "|");

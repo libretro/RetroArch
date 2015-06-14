@@ -233,15 +233,16 @@ static const GLfloat rmb_tex_coord[] = {
 
 static size_t xmb_list_get_size(void *data, menu_list_type_t type)
 {
-    size_t list_size    = 0;
-    menu_handle_t *menu = (menu_handle_t*)data;
-    xmb_handle_t *xmb   = menu ? (xmb_handle_t*)menu->userdata : NULL;
+    size_t list_size       = 0;
+    menu_handle_t *menu    = (menu_handle_t*)data;
+    menu_list_t *menu_list = menu ? menu->menu_list : NULL;
+    xmb_handle_t *xmb      = menu ? (xmb_handle_t*)menu->userdata : NULL;
     
     switch (type)
     {
         case MENU_LIST_PLAIN:
-            if (menu && menu->menu_list)
-               list_size  = menu_list_get_stack_size(menu->menu_list);
+            if (menu_list)
+               list_size  = menu_list_get_stack_size(menu_list);
             break;
         case MENU_LIST_HORIZONTAL:
             if (xmb && xmb->horizontal_list)

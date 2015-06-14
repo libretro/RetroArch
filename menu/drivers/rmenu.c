@@ -128,6 +128,7 @@ static void rmenu_render(void)
    char title_buf[256]           = {0};
    char title_msg[64]            = {0};
    menu_handle_t *menu           = menu_driver_get_ptr();
+   menu_list_t *menu_list        = menu_list_get_ptr();
    menu_navigation_t *nav        = menu_navigation_get_ptr();
    global_t    *global           = global_get_ptr();
    uint64_t frame_count          = video_driver_get_frame_count();
@@ -150,7 +151,7 @@ static void rmenu_render(void)
    menu->animation_is_active = false;
    menu->label.is_updated    = false;
 
-   if (!menu->menu_list->selection_buf)
+   if (!menu_list->selection_buf)
       return;
 
    begin = (nav->selection_ptr >= (ENTRIES_HEIGHT / 2)) ? 

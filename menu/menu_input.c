@@ -403,6 +403,7 @@ static int menu_input_set_bind_mode_common(rarch_setting_t  *setting,
    struct retro_keybind *keybind = NULL;
    settings_t     *settings      = config_get_ptr();
    menu_handle_t           *menu = menu_driver_get_ptr();
+   menu_list_t        *menu_list = menu_list_get_ptr();
    menu_input_t      *menu_input = menu_input_get_ptr();
    menu_navigation_t       *nav  = menu_navigation_get_ptr();
 
@@ -424,7 +425,7 @@ static int menu_input_set_bind_mode_common(rarch_setting_t  *setting,
          menu_input->binds.target = keybind;
          menu_input->binds.user   = setting->index_offset;
 
-         info.list          = menu->menu_list->menu_stack;
+         info.list          = menu_list->menu_stack;
          info.type          = MENU_SETTINGS_CUSTOM_BIND_KEYBOARD;
          info.directory_ptr = nav->selection_ptr;
          strlcpy(info.label, "custom_bind", sizeof(info.label));
@@ -437,7 +438,7 @@ static int menu_input_set_bind_mode_common(rarch_setting_t  *setting,
          menu_input->binds.begin  = MENU_SETTINGS_BIND_BEGIN;
          menu_input->binds.last   = MENU_SETTINGS_BIND_LAST;
 
-         info.list          = menu->menu_list->menu_stack;
+         info.list          = menu_list->menu_stack;
          info.type          = MENU_SETTINGS_CUSTOM_BIND_KEYBOARD;
          info.directory_ptr = nav->selection_ptr;
          strlcpy(info.label, "custom_bind_all", sizeof(info.label));
@@ -884,6 +885,7 @@ static int menu_input_pointer_post_iterate(menu_file_list_cbs_t *cbs,
 {
    int ret                  = 0;
    menu_handle_t *menu      = menu_driver_get_ptr();
+   menu_list_t *menu_list   = menu_list_get_ptr();
    menu_input_t *menu_input = menu_input_get_ptr();
    driver_t *driver         = driver_get_ptr();
    settings_t *settings     = config_get_ptr();
@@ -925,8 +927,8 @@ static int menu_input_pointer_post_iterate(menu_file_list_cbs_t *cbs,
          if (!menu_input->pointer.dragging)
          {
             if (menu_input->pointer.start_y < menu->header_height)
-               menu_list_pop_stack(menu->menu_list);
-            else if (menu_input->pointer.ptr <= menu_list_get_size(menu->menu_list)-1)
+               menu_list_pop_stack(menu_list);
+            else if (menu_input->pointer.ptr <= menu_list_get_size(menu_list)-1)
             {
                menu_input->pointer.oldpressed[0] = false;
                ret = pointer_tap(cbs, entry, action);
@@ -949,7 +951,7 @@ static int menu_input_pointer_post_iterate(menu_file_list_cbs_t *cbs,
       if (!menu_input->pointer.oldback)
       {
          menu_input->pointer.oldback = true;
-         menu_list_pop_stack(menu->menu_list);
+         menu_list_pop_stack(menu_list);
       }
    }
    menu_input->pointer.oldback = menu_input->pointer.back;

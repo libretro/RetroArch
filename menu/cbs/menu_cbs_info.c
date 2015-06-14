@@ -21,13 +21,14 @@
 static int action_info_default(unsigned type, const char *label)
 {
    menu_displaylist_info_t info = {0};
-   menu_handle_t *menu          = menu_driver_get_ptr();
    menu_navigation_t *nav       = menu_navigation_get_ptr();
+   menu_handle_t *menu          = menu_driver_get_ptr();
+   menu_list_t *menu_list       = menu_list_get_ptr();
 
-   if (!menu)
+   if (!menu || !menu_list)
       return 0;
 
-   info.list          = menu->menu_list->menu_stack;
+   info.list          = menu_list->menu_stack;
    info.directory_ptr = nav->selection_ptr;
    strlcpy(info.label, "info_screen", sizeof(info.label));
 
