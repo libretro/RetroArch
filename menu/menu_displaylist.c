@@ -713,6 +713,7 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
 
    for (i = 0; i < list_size; i++)
    {
+      uint32_t core_name_hash;
       char fill_buf[PATH_MAX_LENGTH]  = {0};
       char path_copy[PATH_MAX_LENGTH] = {0};
       bool core_detected              = false;
@@ -730,6 +731,8 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
             &path, &label, NULL, &core_name, &crc32, &db_name);
       strlcpy(fill_buf, core_name, sizeof(fill_buf));
 
+      core_name_hash = core_name ? djb2_calculate(core_name) : 0;
+
       if (path)
       {
          char path_short[PATH_MAX_LENGTH] = {0};
@@ -741,7 +744,7 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
 
          if (core_name && core_name[0] != '\0')
          {
-            if (strcmp(core_name, "DETECT") != 0)
+            if (core_name_hash != MENU_VALUE_DETECT)
             {
                char tmp[PATH_MAX_LENGTH] = {0};
                snprintf(tmp, sizeof(tmp), " (%s)", core_name);
@@ -958,6 +961,7 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
       {
          for (j = 0; j < playlist->size; j++)
          {
+            uint32_t core_name_hash, core_path_hash;
             char elem0[PATH_MAX_LENGTH]      = {0};
             char elem1[PATH_MAX_LENGTH]      = {0};
             bool match_found                 = false;
@@ -998,8 +1002,13 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
 
             rdb_entry_start_game_selection_ptr = j;
 
-            if (((strcmp(playlist->entries[j].core_name, "DETECT")) != 0) &&
-                     ((strcmp(playlist->entries[j].core_path, "DETECT") != 0)))
+            core_name_hash = djb2_calculate(playlist->entries[j].core_name);
+            core_path_hash = djb2_calculate(playlist->entries[j].core_path);
+
+            if (
+                  (core_name_hash != MENU_VALUE_DETECT) &&
+                  (core_path_hash != MENU_VALUE_DETECT)
+               )
                menu_list_push(info->list, "Start Content", "rdb_entry_start_content",
                      MENU_FILE_PLAYLIST_ENTRY, 0, 0);
          }
