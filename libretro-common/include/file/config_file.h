@@ -40,6 +40,8 @@ struct config_entry_list
    bool readonly;
    char *key;
    char *value;
+   uint32_t key_hash;
+
    struct config_entry_list *next;
 };
 

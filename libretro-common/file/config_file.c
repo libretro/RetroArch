@@ -32,6 +32,7 @@
 #include <file/file_path.h>
 #include <retro_miscellaneous.h>
 #include <string/string_list.h>
+#include <rhash.h>
 
 #if !defined(_WIN32) && !defined(__CELLOS_LV2__) && !defined(_XBOX)
 #include <sys/param.h> /* PATH_MAX */
@@ -327,6 +328,7 @@ static bool parse_line(config_file_t *conf,
    }
    key[idx] = '\0';
    list->key = key;
+   list->key_hash = djb2_calculate(key);
 
    list->value = extract_value(line, true);
    if (!list->value)
@@ -526,12 +528,13 @@ void config_file_free(config_file_t *conf)
 
 static const struct config_entry_list *config_get_entry_for_read(config_file_t *conf, const char *key)
 {
-   struct config_entry_list *list;
+   struct config_entry_list *entry;
+   uint32_t hash = djb2_calculate(key);
 
-   for (list = conf->entries; list; list = list->next)
+   for (entry = conf->entries; entry; entry = entry->next)
    {
-      if (strcmp(key, list->key) == 0)
-         return list;
+      if (hash == entry->key_hash && strcmp(key, entry->key) == 0)
+         return entry;
    }
 
    return NULL;

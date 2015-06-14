@@ -49,6 +49,7 @@
 #include "../libretro-common/queues/fifo_buffer.c"
 #include "../libretro-common/file/config_file.c"
 #include "../libretro-common/file/file_path.c"
+#include "../libretro-common/hash/rhash.c"
 #include "../file_path_special.c"
 #include "../libretro-common/string/string_list.c"
 #include "../libretro-common/compat/compat.c"
