@@ -43,11 +43,9 @@ menu_list_t *menu_list_get_ptr(void)
 static bool menu_list_elem_is_dir(file_list_t *list,
       unsigned offset)
 {
-   const char *path  = NULL;
-   const char *label = NULL;
    unsigned type     = 0;
 
-   menu_list_get_at_offset(list, offset, &path, &label, &type, NULL);
+   menu_list_get_at_offset(list, offset, NULL, NULL, &type, NULL);
 
    return type == MENU_FILE_DIRECTORY;
 }
