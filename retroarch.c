@@ -310,7 +310,9 @@ void set_paths_redirect(const char *path)
 {
    global_t                *global   = global_get_ptr();
    settings_t              *settings = config_get_ptr();
-   uint32_t global_library_name_hash = global ? djb2_calculate(global->system.info.library_name) : 0;
+   uint32_t global_library_name_hash = ((global && global->system.info.library_name &&
+            (global->system.info.library_name[0] != '\0'))
+         ? djb2_calculate(global->system.info.library_name) : 0);
 
    if(
          global_library_name_hash != 0 &&
