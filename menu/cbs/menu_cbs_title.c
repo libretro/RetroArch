@@ -17,6 +17,8 @@
 #include <string/stdstring.h>
 #include <file/file_path.h>
 
+#include <rhash.h>
+
 #include "../menu.h"
 #include "../menu_hash.h"
 
@@ -519,7 +521,9 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
 
    if (setting)
    {
-      if (!strcmp(setting->parent_group, "Main Menu") && setting->type == ST_GROUP)
+      uint32_t parent_group_hash = djb2_calculate(setting->parent_group);
+
+      if ((parent_group_hash == MENU_VALUE_MAIN_MENU) && setting->type == ST_GROUP)
       {
          cbs->action_get_title = action_get_title_group_settings;
          return 0;
