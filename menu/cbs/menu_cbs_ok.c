@@ -160,6 +160,7 @@ static int action_ok_file_load_detect_core(const char *path,
 static int action_ok_playlist_entry(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
+   uint32_t core_name_hash, core_path_hash;
    const char *entry_path       = NULL;
    const char *entry_label      = NULL;
    const char *core_path        = NULL;
@@ -205,8 +206,13 @@ static int action_ok_playlist_entry(const char *path,
          core_path, core_name, selection_ptr);
 #endif
 
-   if (core_path && core_path[0] != '\0' && core_name &&
-         core_name[0] != '\0' && !strcmp(core_path, "DETECT") && !strcmp(core_name, "DETECT"))
+   core_path_hash = core_path ? djb2_calculate(core_path) : 0;
+   core_name_hash = core_name ? djb2_calculate(core_name) : 0;
+
+   if (
+         (core_path_hash == MENU_VALUE_DETECT) &&
+         (core_name_hash == MENU_VALUE_DETECT)
+      )
       return action_ok_file_load_with_detect_core(entry_path, label, type, selection_ptr, entry_idx);
 
    rarch_playlist_load_content(playlist, selection_ptr);
