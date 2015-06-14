@@ -14,6 +14,7 @@
  */
 
 #include <file/file_path.h>
+#include <rhash.h>
 
 #include "../menu.h"
 #include "../menu_hash.h"
@@ -354,7 +355,9 @@ static int menu_cbs_init_bind_left_compare_label(menu_file_list_cbs_t *cbs,
 
    if (setting)
    {
-      if (!strcmp(setting->parent_group, "Main Menu") && setting->type == ST_GROUP)
+      uint32_t parent_group_hash = djb2_calculate(setting->parent_group);
+
+      if ((parent_group_hash == MENU_VALUE_MAIN_MENU) && (setting->type == ST_GROUP))
       {
          cbs->action_left = action_left_scroll;
          return 0;
@@ -363,14 +366,18 @@ static int menu_cbs_init_bind_left_compare_label(menu_file_list_cbs_t *cbs,
 
    for (i = 0; i < MAX_USERS; i++)
    {
+      uint32_t label_setting_hash;
       char label_setting[PATH_MAX_LENGTH] = {0};
+
       snprintf(label_setting, sizeof(label_setting), "input_player%d_joypad_index", i + 1);
 
-      if (!strcmp(label, label_setting))
-      {
-         cbs->action_left = bind_left_generic;
-         return 0;
-      }
+      label_setting_hash = djb2_calculate(label_setting);
+
+      if (label_hash != label_setting_hash)
+         continue;
+
+      cbs->action_left = bind_left_generic;
+      return 0;
    }
 
    if (strstr(label, "rdb_entry"))

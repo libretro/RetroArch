@@ -312,7 +312,6 @@ void menu_list_pop_stack_by_needle(menu_list_t *list,
    needle_hash            = djb2_calculate(needle);
    label_hash             = djb2_calculate(label);
 
-
    while (needle_hash == label_hash)
    {
       menu_list_pop(list->menu_stack, &nav->selection_ptr);
