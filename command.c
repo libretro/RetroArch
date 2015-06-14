@@ -14,19 +14,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "command.h"
 
-#include <net/net_compat.h>
-#if defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)
-#include "netplay.h"
-#endif
-
-#include "general.h"
-#include "runloop.h"
-#include "compat/strl.h"
-#include "compat/posix_string.h"
-#include <file/file_path.h>
-#include <retro_miscellaneous.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -34,6 +22,23 @@
 #include <fcntl.h>
 #include <unistd.h>
 #endif
+
+#include <compat/strl.h>
+#include <compat/posix_string.h>
+#include <file/file_path.h>
+#include <retro_miscellaneous.h>
+#include <rhash.h>
+
+#include <net/net_compat.h>
+
+#if defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)
+#include "netplay.h"
+#endif
+
+#include "command.h"
+
+#include "general.h"
+#include "runloop.h"
 
 #define DEFAULT_NETWORK_CMD_PORT 55355
 #define STDIN_BUF_SIZE 4096
@@ -215,19 +220,31 @@ static const struct cmd_map map[] = {
    { "MENU_B",                 RETRO_DEVICE_ID_JOYPAD_B },
 };
 
+#define COMMAND_EXT_GLSL      0x7c976537U
+#define COMMAND_EXT_GLSLP     0x0f840c87U
+#define COMMAND_EXT_CG        0x0059776fU
+#define COMMAND_EXT_CGP       0x0b8865bfU
+
 static bool cmd_set_shader(const char *arg)
 {
    char msg[PATH_MAX_LENGTH]   = {0};
    enum rarch_shader_type type = RARCH_SHADER_NONE;
    const char             *ext = path_get_extension(arg);
+   uint32_t ext_hash           = djb2_calculate(ext);
 
-   if (strcmp(ext, "glsl") == 0 || strcmp(ext, "glslp") == 0)
-      type = RARCH_SHADER_GLSL;
-   else if (strcmp(ext, "cg") == 0 || strcmp(ext, "cgp") == 0)
-      type = RARCH_SHADER_CG;
-
-   if (type == RARCH_SHADER_NONE)
-      return false;
+   switch (ext_hash)
+   {
+      case COMMAND_EXT_GLSL:
+      case COMMAND_EXT_GLSLP:
+         type = RARCH_SHADER_GLSL;
+         break;
+      case COMMAND_EXT_CG:
+      case COMMAND_EXT_CGP:
+         type = RARCH_SHADER_CG;
+         break;
+      default:
+         return false;
+   }
 
    snprintf(msg, sizeof(msg), "Shader: \"%s\"", arg);
    rarch_main_msg_queue_push(msg, 1, 120, true);
@@ -247,7 +264,7 @@ static bool command_get_arg(const char *tok,
 
    for (i = 0; i < ARRAY_SIZE(map); i++)
    {
-      if (strcmp(tok, map[i].str) == 0)
+      if (!strcmp(tok, map[i].str))
       {
          if (arg)
             *arg = NULL;
