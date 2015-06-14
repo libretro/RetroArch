@@ -402,7 +402,6 @@ static int menu_input_set_bind_mode_common(rarch_setting_t  *setting,
    menu_displaylist_info_t info  = {0};
    struct retro_keybind *keybind = NULL;
    settings_t     *settings      = config_get_ptr();
-   menu_handle_t           *menu = menu_driver_get_ptr();
    menu_list_t        *menu_list = menu_list_get_ptr();
    menu_input_t      *menu_input = menu_input_get_ptr();
    menu_navigation_t       *nav  = menu_navigation_get_ptr();
