@@ -19,6 +19,8 @@
 #include <file/file_path.h>
 #include <retro_inline.h>
 
+#include <rhash.h>
+
 #include "configuration.h"
 #include "dynamic.h"
 #include "performance.h"
@@ -345,6 +347,11 @@ static bool check_movie(void)
    return check_movie_record();
 }
 
+#define SHADER_EXT_GLSL      0x7c976537U
+#define SHADER_EXT_GLSLP     0x0f840c87U
+#define SHADER_EXT_CG        0x0059776fU
+#define SHADER_EXT_CGP       0x0b8865bfU
+
 /**
  * check_shader_dir:
  * @pressed_next         : was next shader key pressed?
@@ -358,6 +365,7 @@ static bool check_movie(void)
  **/
 static void check_shader_dir(bool pressed_next, bool pressed_prev)
 {
+   uint32_t ext_hash;
    char msg[PATH_MAX_LENGTH]   = {0};
    const char *shader          = NULL;
    const char *ext             = NULL;
@@ -382,15 +390,24 @@ static void check_shader_dir(bool pressed_next, bool pressed_prev)
    else
       return;
 
-   shader = global->shader_dir.list->elems[global->shader_dir.ptr].data;
-   ext    = path_get_extension(shader);
+   ext      = path_get_extension(shader);
+   ext_hash = djb2_calculate(ext);
+   shader   = global ? 
+      global->shader_dir.list->elems[global->shader_dir.ptr].data : NULL;
 
-   if (strcmp(ext, "glsl") == 0 || strcmp(ext, "glslp") == 0)
-      type = RARCH_SHADER_GLSL;
-   else if (strcmp(ext, "cg") == 0 || strcmp(ext, "cgp") == 0)
-      type = RARCH_SHADER_CG;
-   else
-      return;
+   switch (ext_hash)
+   {
+      case SHADER_EXT_GLSL:
+      case SHADER_EXT_GLSLP:
+         type = RARCH_SHADER_GLSL;
+         break;
+      case SHADER_EXT_CG:
+      case SHADER_EXT_CGP:
+         type = RARCH_SHADER_CG;
+         break;
+      default:
+         return;
+   }
 
    snprintf(msg, sizeof(msg), "Shader #%u: \"%s\".",
          (unsigned)global->shader_dir.ptr, shader);
