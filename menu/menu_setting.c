@@ -322,7 +322,7 @@ rarch_setting_t *menu_setting_find(const char *label)
 
    for (; settings->type != ST_NONE; settings++)
    {
-      if (settings->type <= ST_GROUP && needle == settings->name_hash)
+      if (needle == settings->name_hash && settings->type <= ST_GROUP)
       {
          /* make sure this isn't a collision */
          if (strcmp(label, settings->name) != 0)
