@@ -16,12 +16,14 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include "video_shader_parse.h"
 #include <compat/posix_string.h>
 #include <compat/msvc.h>
 #include <compat/strl.h>
 #include <file/file_path.h>
+#include <rhash.h>
+
 #include "../general.h"
+#include "video_shader_parse.h"
 
 /**
  * wrap_mode_to_str:
@@ -48,6 +50,11 @@ static const char *wrap_mode_to_str(enum gfx_wrap_type type)
    }
 }
 
+#define WRAP_MODE_CLAMP_TO_BORDER      0x3676ed11U
+#define WRAP_MODE_CLAMP_TO_EDGE        0x9427a608U
+#define WRAP_MODE_REPEAT               0x192dec66U
+#define WRAP_MODE_MIRRORED_REPEAT      0x117ac9a9U
+
 /** 
  * wrap_str_to_mode:
  * @type              : Wrap type in human-readable string format.
@@ -58,19 +65,28 @@ static const char *wrap_mode_to_str(enum gfx_wrap_type type)
  **/
 static enum gfx_wrap_type wrap_str_to_mode(const char *wrap_mode)
 {
-   if (strcmp(wrap_mode, "clamp_to_border") == 0)
-      return RARCH_WRAP_BORDER;
-   else if (strcmp(wrap_mode, "clamp_to_edge") == 0)
-      return RARCH_WRAP_EDGE;
-   else if (strcmp(wrap_mode, "repeat") == 0)
-      return RARCH_WRAP_REPEAT;
-   else if (strcmp(wrap_mode, "mirrored_repeat") == 0)
-      return RARCH_WRAP_MIRRORED_REPEAT;
+   uint32_t wrap_mode_hash = djb2_calculate(wrap_mode);
+
+   switch (wrap_mode_hash)
+   {
+      case WRAP_MODE_CLAMP_TO_BORDER:
+         return RARCH_WRAP_BORDER;
+      case WRAP_MODE_CLAMP_TO_EDGE:
+         return RARCH_WRAP_EDGE;
+      case WRAP_MODE_REPEAT:
+         return RARCH_WRAP_REPEAT;
+      case WRAP_MODE_MIRRORED_REPEAT:
+         return RARCH_WRAP_MIRRORED_REPEAT;
+   }
 
    RARCH_WARN("Invalid wrapping type %s. Valid ones are: clamp_to_border (default), clamp_to_edge, repeat and mirrored_repeat. Falling back to default.\n",
          wrap_mode);
    return RARCH_WRAP_DEFAULT;
 }
+
+#define SCALE_TYPE_SOURCE        0x1c3aff76U
+#define SCALE_TYPE_VIEWPORT      0xe8f01225U
+#define SCALE_TYPE_ABSOLUTE      0x8cc74f64U
 
 /** 
  * video_shader_parse_pass:
@@ -164,39 +180,51 @@ static bool video_shader_parse_pass(config_file_t *conf, struct video_shader_pas
       strlcpy(scale_type_y, scale_type, sizeof(scale_type_y));
    }
 
-   scale->valid = true;
-   scale->type_x = RARCH_SCALE_INPUT;
-   scale->type_y = RARCH_SCALE_INPUT;
+   scale->valid   = true;
+   scale->type_x  = RARCH_SCALE_INPUT;
+   scale->type_y  = RARCH_SCALE_INPUT;
    scale->scale_x = 1.0;
    scale->scale_y = 1.0;
 
    if (*scale_type_x)
    {
-      if (strcmp(scale_type_x, "source") == 0)
-         scale->type_x = RARCH_SCALE_INPUT;
-      else if (strcmp(scale_type_x, "viewport") == 0)
-         scale->type_x = RARCH_SCALE_VIEWPORT;
-      else if (strcmp(scale_type_x, "absolute") == 0)
-         scale->type_x = RARCH_SCALE_ABSOLUTE;
-      else
+      uint32_t scale_type_x_hash = djb2_calculate(scale_type_x);
+
+      switch (scale_type_x_hash)
       {
-         RARCH_ERR("Invalid attribute.\n");
-         return false;
+         case SCALE_TYPE_SOURCE:
+            scale->type_x = RARCH_SCALE_INPUT;
+            break;
+         case SCALE_TYPE_VIEWPORT:
+            scale->type_x = RARCH_SCALE_VIEWPORT;
+            break;
+         case SCALE_TYPE_ABSOLUTE:
+            scale->type_x = RARCH_SCALE_ABSOLUTE;
+            break;
+         default:
+            RARCH_ERR("Invalid attribute.\n");
+            return false;
       }
    }
 
    if (*scale_type_y)
    {
-      if (strcmp(scale_type_y, "source") == 0)
-         scale->type_y = RARCH_SCALE_INPUT;
-      else if (strcmp(scale_type_y, "viewport") == 0)
-         scale->type_y = RARCH_SCALE_VIEWPORT;
-      else if (strcmp(scale_type_y, "absolute") == 0)
-         scale->type_y = RARCH_SCALE_ABSOLUTE;
-      else
+      uint32_t scale_type_y_hash = djb2_calculate(scale_type_y);
+
+      switch (scale_type_y_hash)
       {
-         RARCH_ERR("Invalid attribute.\n");
-         return false;
+         case SCALE_TYPE_SOURCE:
+            scale->type_y = RARCH_SCALE_INPUT;
+            break;
+         case SCALE_TYPE_VIEWPORT:
+            scale->type_y = RARCH_SCALE_VIEWPORT;
+            break;
+         case SCALE_TYPE_ABSOLUTE:
+            scale->type_y = RARCH_SCALE_ABSOLUTE;
+            break;
+         default:
+            RARCH_ERR("Invalid attribute.\n");
+            return false;
       }
    }
 
@@ -425,6 +453,13 @@ bool video_shader_resolve_parameters(config_file_t *conf,
    return true;
 }
 
+#define SEMANTIC_CAPTURE              0xb2f5d639U
+#define SEMANTIC_CAPTURE_PREVIOUS     0x64d6d495U
+#define SEMANTIC_TRANSITION           0x96486f70U
+#define SEMANTIC_TRANSITION_PREVIOUS  0x536abbacU
+#define SEMANTIC_TRANSITION_COUNT     0x3ef2af78U
+#define SEMANTIC_PYTHON               0x15efc547U
+
 /** 
  * video_shader_parse_imports:
  * @conf              : Preset file to read from.
@@ -448,6 +483,7 @@ static bool video_shader_parse_imports(config_file_t *conf,
          id && shader->variables < GFX_MAX_VARIABLES;
          shader->variables++, id = strtok_r(NULL, ";", &save))
    {
+      uint32_t semantic_hash;
       char semantic_buf[64]   = {0};
       char wram_buf[64]       = {0};
       char input_slot_buf[64] = {0};
@@ -475,23 +511,33 @@ static bool video_shader_parse_imports(config_file_t *conf,
          return false;
       }
 
-      if (strcmp(semantic, "capture") == 0)
-         var->type = RARCH_STATE_CAPTURE;
-      else if (strcmp(semantic, "transition") == 0)
-         var->type = RARCH_STATE_TRANSITION;
-      else if (strcmp(semantic, "transition_count") == 0)
-         var->type = RARCH_STATE_TRANSITION_COUNT;
-      else if (strcmp(semantic, "capture_previous") == 0)
-         var->type = RARCH_STATE_CAPTURE_PREV;
-      else if (strcmp(semantic, "transition_previous") == 0)
-         var->type = RARCH_STATE_TRANSITION_PREV;
-      else if (strcmp(semantic, "python") == 0)
-         var->type = RARCH_STATE_PYTHON;
-      else
+      semantic_hash = djb2_calculate(semantic);
+
+      switch (semantic_hash)
       {
-         RARCH_ERR("Invalid semantic.\n");
-         return false;
+         case SEMANTIC_CAPTURE:
+            var->type = RARCH_STATE_CAPTURE;
+            break;
+         case SEMANTIC_TRANSITION:
+            var->type = RARCH_STATE_TRANSITION;
+            break;
+         case SEMANTIC_TRANSITION_COUNT:
+            var->type = RARCH_STATE_TRANSITION_COUNT;
+            break;
+         case SEMANTIC_CAPTURE_PREVIOUS:
+            var->type = RARCH_STATE_CAPTURE_PREV;
+            break;
+         case SEMANTIC_TRANSITION_PREVIOUS:
+            var->type = RARCH_STATE_TRANSITION_PREV;
+            break;
+         case SEMANTIC_PYTHON:
+            var->type = RARCH_STATE_PYTHON;
+            break;
+         default:
+            RARCH_ERR("Invalid semantic.\n");
+            return false;
       }
+
 
       if (var->type != RARCH_STATE_PYTHON)
       {
