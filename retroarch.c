@@ -21,28 +21,6 @@
 #include <ctype.h>
 #include <errno.h>
 #include <boolean.h>
-#include "libretro_version_1.h"
-#include "dynamic.h"
-#include "configuration.h"
-#include <file/file_path.h>
-#include "general.h"
-#include "retroarch.h"
-#include "runloop_data.h"
-#include <compat/strl.h>
-#include "performance.h"
-#include "cheats.h"
-#include <compat/getopt.h>
-#include <compat/posix_string.h>
-
-#include "git_version.h"
-#include "intl/intl.h"
-
-#ifdef HAVE_MENU
-#include "menu/menu.h"
-#include "menu/menu_setting.h"
-#include "menu/menu_shader.h"
-#include "menu/menu_input.h"
-#endif
 
 #ifdef _WIN32
 #ifdef _XBOX
@@ -51,6 +29,33 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #endif
+#endif
+
+#include <compat/strl.h>
+#include <compat/getopt.h>
+#include <compat/posix_string.h>
+#include <file/file_path.h>
+
+#include <rhash.h>
+
+#include "libretro_version_1.h"
+#include "dynamic.h"
+#include "configuration.h"
+#include "general.h"
+#include "retroarch.h"
+#include "runloop_data.h"
+#include "performance.h"
+#include "cheats.h"
+
+#include "git_version.h"
+#include "intl/intl.h"
+
+#ifdef HAVE_MENU
+#include "menu/menu.h"
+#include "menu/menu_hash.h"
+#include "menu/menu_setting.h"
+#include "menu/menu_shader.h"
+#include "menu/menu_input.h"
 #endif
 
 /* Descriptive names for options without short variant. Please keep the name in
@@ -303,31 +308,51 @@ static void set_special_paths(char **argv, unsigned num_content)
 
 void set_paths_redirect(const char *path)
 {
-   global_t   *global   = global_get_ptr();
-   settings_t *settings = config_get_ptr();
+   global_t                *global   = global_get_ptr();
+   settings_t              *settings = config_get_ptr();
+   uint32_t global_library_name_hash = global ? djb2_calculate(global->system.info.library_name) : 0;
 
-   /* per-core saves: append the library_name to the save location */
-   if(global->system.info.library_name && strcmp(global->system.info.library_name,"No Core") && settings->sort_savefiles_enable)
+   if(
+         global_library_name_hash != 0 &&
+         (global_library_name_hash != MENU_VALUE_NO_CORE))
    {
-      strlcpy(orig_savefile_dir,global->savefile_dir,sizeof(global->savefile_dir));
-      fill_pathname_dir(global->savefile_dir,global->savefile_dir,global->system.info.library_name,sizeof(global->savefile_dir));
+      /* per-core saves: append the library_name to the save location */
+      if (settings->sort_savefiles_enable)
+      {
+         strlcpy(orig_savefile_dir,global->savefile_dir,sizeof(global->savefile_dir));
+         fill_pathname_dir(
+               global->savefile_dir,
+               global->savefile_dir,
+               global->system.info.library_name,
+               sizeof(global->savefile_dir));
 
-      // if path doesn't exist try to create it, if everything fails revert to the original path
-      if(!path_is_directory(global->savefile_dir))
-         if(!path_mkdir(global->savefile_dir))
-            strlcpy(global->savefile_dir,orig_savefile_dir,sizeof(global->savefile_dir));
-   }
+         // if path doesn't exist try to create it, if everything fails revert to the original path
+         if(!path_is_directory(global->savefile_dir))
+            if(!path_mkdir(global->savefile_dir))
+               strlcpy(global->savefile_dir,
+                     orig_savefile_dir,
+                     sizeof(global->savefile_dir));
+      }
 
-   /* per-core states: append the library_name to the save location */
-   if (global->system.info.library_name && strcmp(global->system.info.library_name,"No Core") && settings->sort_savestates_enable)
-   {
-      strlcpy(orig_savestate_dir,global->savestate_dir,sizeof(global->savestate_dir));
-      fill_pathname_dir(global->savestate_dir,global->savestate_dir,global->system.info.library_name,sizeof(global->savestate_dir));
+      /* per-core states: append the library_name to the save location */
+      if (settings->sort_savestates_enable)
+      {
+         strlcpy(orig_savestate_dir,
+               global->savestate_dir,
+               sizeof(global->savestate_dir));
+         fill_pathname_dir(global->savestate_dir,
+               global->savestate_dir,
+               global->system.info.library_name,
+               sizeof(global->savestate_dir));
 
-      // if path doesn't exist try to create it, if everything fails revert to the original path
-      if(!path_is_directory(global->savestate_dir))
-         if(!path_mkdir(global->savestate_dir))
-            strlcpy(global->savestate_dir,orig_savestate_dir,sizeof(global->savestate_dir));
+         /* If path doesn't exist, try to create it.
+          * If everything fails, revert to the original path. */
+         if(!path_is_directory(global->savestate_dir))
+            if(!path_mkdir(global->savestate_dir))
+               strlcpy(global->savestate_dir,
+                     orig_savestate_dir,
+                     sizeof(global->savestate_dir));
+      }
    }
 
    if(path_is_directory(global->savefile_dir))
@@ -1436,6 +1461,7 @@ int rarch_defer_core(core_info_list_t *core_info, const char *dir,
    size_t supported                    = 0;
    settings_t *settings                = config_get_ptr();
    global_t   *global                  = global_get_ptr();
+   uint32_t menu_label_hash            = djb2_calculate(menu_label);
 
    fill_pathname_join(s, dir, path, len);
 
@@ -1453,7 +1479,7 @@ int rarch_defer_core(core_info_list_t *core_info, const char *dir,
       core_info_list_get_supported_cores(core_info, s, &info,
             &supported);
 
-   if (!strcmp(menu_label, "load_content"))
+   if (menu_label_hash == MENU_LABEL_LOAD_CONTENT)
    {
       info = (const core_info_t*)&global->core_info_current;
 
