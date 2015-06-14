@@ -15,13 +15,17 @@
 
 #include <string.h>
 
+#include <compat/strl.h>
 #include <retro_miscellaneous.h>
 #include <queues/message_queue.h>
 #include <string/string_list.h>
-#include <compat/strl.h>
+#include <rhash.h>
 
 #include "../runloop_data.h"
 #include "tasks.h"
+
+#define CB_MENU_WALLPAPER     0xb476e505U
+#define CB_MENU_BOXART        0x68b307cdU
 
 #ifdef HAVE_MENU
 #include "../menu/menu_driver.h"
@@ -386,7 +390,7 @@ static int cb_nbio_image_menu_boxart(void *data, size_t len)
 static int rarch_main_data_nbio_iterate_poll(nbio_handle_t *nbio)
 {
    char elem0[PATH_MAX_LENGTH]  = {0};
-   char elem1[PATH_MAX_LENGTH]  = {0};
+   uint32_t cb_type_hash        = 0;
    struct nbio_t* handle        = NULL;
    struct string_list *str_list = NULL;
    const char *path             = NULL;
@@ -411,7 +415,7 @@ static int rarch_main_data_nbio_iterate_poll(nbio_handle_t *nbio)
    if (str_list->size > 0)
       strlcpy(elem0, str_list->elems[0].data, sizeof(elem0));
    if (str_list->size > 1)
-      strlcpy(elem1, str_list->elems[1].data, sizeof(elem1));
+      cb_type_hash = djb2_calculate(str_list->elems[1].data);
 
    handle = nbio_open(elem0, NBIO_READ);
 
@@ -425,13 +429,15 @@ static int rarch_main_data_nbio_iterate_poll(nbio_handle_t *nbio)
    nbio->is_finished = false;
    nbio->cb          = &cb_nbio_default;
 
-   if (elem1[0] != '\0')
+   switch (cb_type_hash)
    {
 #if defined(HAVE_MENU) && defined(HAVE_RPNG)
-      if (!strcmp(elem1, "cb_menu_wallpaper"))
+      case CB_MENU_WALLPAPER:
          nbio->cb = &cb_nbio_image_menu_wallpaper;
-      else if (!strcmp(elem1, "cb_menu_boxart"))
+         break;
+      case CB_MENU_BOXART:
          nbio->cb = &cb_nbio_image_menu_boxart;
+         break;
 #endif
    }
 

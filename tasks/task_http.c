@@ -19,11 +19,15 @@
 #include <string/string_list.h>
 #include <compat/strl.h>
 #include <file/file_path.h>
+#include <rhash.h>
 
 #include "../file_ops.h"
 #include "../general.h"
 #include "../runloop_data.h"
 #include "tasks.h"
+
+#define CB_CORE_UPDATER_DOWNLOAD 0x7412da7dU
+#define CB_CORE_UPDATER_LIST     0x32fd4f01U
 
 extern char core_updater_path[PATH_MAX_LENGTH];
 
@@ -150,6 +154,7 @@ static int rarch_main_data_http_iterate_transfer_parse(http_handle_t *http)
    return 0;
 }
 
+
 static int cb_http_conn_default(void *data_, size_t len)
 {
    http_handle_t *http = (http_handle_t*)data_;
@@ -169,10 +174,17 @@ static int cb_http_conn_default(void *data_, size_t len)
 
    if (http->connection.elem1[0] != '\0')
    {
-      if (!strcmp(http->connection.elem1, "cb_core_updater_download"))
-         http->cb = &cb_core_updater_download;
-      if (!strcmp(http->connection.elem1, "cb_core_updater_list"))
-         http->cb = &cb_core_updater_list;
+      uint32_t label_hash = djb2_calculate(http->connection.elem1);
+
+      switch (label_hash)
+      {
+         case CB_CORE_UPDATER_DOWNLOAD:
+            http->cb = &cb_core_updater_download;
+            break;
+         case CB_CORE_UPDATER_LIST:
+            http->cb = &cb_core_updater_list;
+            break;
+      }
    }
 
    return 0;

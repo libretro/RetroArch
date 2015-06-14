@@ -28,6 +28,8 @@
 #define CB_DB_SCAN_FILE    0x70ce56d2U
 #define CB_DB_SCAN_FOLDER  0xde2bef8eU
 
+#define HASH_EXTENSION_ZIP 0x0b88c7d8U
+
 #ifdef HAVE_LIBRETRODB
 
 #ifdef HAVE_ZLIB
@@ -78,35 +80,40 @@ static int database_info_iterate_playlist(
       database_state_handle_t *db_state,
       database_info_handle_t *db, const char *name)
 {
+   uint32_t extension_hash          = 0;
    char parent_dir[PATH_MAX_LENGTH] = {0};
 
    path_parent_dir(parent_dir);
 
-   if (!strcmp(path_get_extension(name), "zip"))
+   extension_hash = djb2_calculate(path_get_extension(name));
+
+   switch (extension_hash)
    {
+      case HASH_EXTENSION_ZIP:
 #ifdef HAVE_ZLIB
-      db->type = DATABASE_TYPE_ITERATE_ZIP;
-      memset(&db->state, 0, sizeof(zlib_transfer_t));
-      db_state->zip_name[0] = '\0';
-      db->state.type = ZLIB_TRANSFER_INIT;
+         db->type = DATABASE_TYPE_ITERATE_ZIP;
+         memset(&db->state, 0, sizeof(zlib_transfer_t));
+         db_state->zip_name[0] = '\0';
+         db->state.type = ZLIB_TRANSFER_INIT;
 
-      return 1;
+         return 1;
 #endif
-   }
-   else
-   {
-      ssize_t ret;
-      int read_from            = read_file(name, (void**)&db_state->buf, &ret);
+      default:
+         {
+            ssize_t ret;
+            int read_from            = read_file(name, (void**)&db_state->buf, &ret);
 
-      if (read_from != 1 || ret <= 0)
-         return 0;
+            if (read_from != 1 || ret <= 0)
+               return 0;
 
 
 #ifdef HAVE_ZLIB
-      db_state->crc = zlib_crc32_calculate(db_state->buf, ret);
+            db_state->crc = zlib_crc32_calculate(db_state->buf, ret);
 #endif
-      db->type = DATABASE_TYPE_CRC_LOOKUP;
-      return 1;
+            db->type = DATABASE_TYPE_CRC_LOOKUP;
+            return 1;
+         }
+         break;
    }
 
    return 0;
