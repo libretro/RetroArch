@@ -17,6 +17,7 @@
 #include <string.h>
 
 #include <retro_inline.h>
+#include <rhash.h>
 
 #include "../driver.h"
 #include "menu.h"
@@ -244,11 +245,11 @@ void *menu_list_get_last_stack_actiondata(const menu_list_t *list)
 }
 
 static int menu_list_flush_stack_type(
-      const char *needle, const char *label,
+      uint32_t needle_hash, uint32_t label_hash,
       unsigned type, unsigned final_type)
 {
-   if (needle)
-      return strcmp(needle, label);
+   if (needle_hash != 0)
+      return ((needle_hash == label_hash) ? 0 : 1);
    return type != final_type;
 }
 
@@ -261,13 +262,15 @@ void menu_list_flush_stack(menu_list_t *list,
    size_t entry_idx       = 0;
    menu_handle_t *menu    = menu_driver_get_ptr();
    menu_navigation_t *nav = menu_navigation_get_ptr();
+   uint32_t needle_hash   = needle ? djb2_calculate(needle) : 0;
+   uint32_t label_hash    = label  ? djb2_calculate(label)  : 0;
    if (!menu || !list)
       return;
 
    menu_set_refresh();
    menu_list_get_last(list->menu_stack, &path, &label, &type, &entry_idx);
 
-   while (menu_list_flush_stack_type(needle, label, type, final_type) != 0)
+   while (menu_list_flush_stack_type(needle_hash, label_hash, type, final_type) != 0)
    {
       menu_list_pop(list->menu_stack, &nav->selection_ptr);
       menu_list_get_last(list->menu_stack, &path, &label, &type, &entry_idx);
@@ -293,12 +296,14 @@ void menu_list_pop_stack(menu_list_t *list)
 void menu_list_pop_stack_by_needle(menu_list_t *list,
       const char *needle)
 {
+   uint32_t label_hash;
    const char *path       = NULL;
    const char *label      = NULL;
    unsigned type          = 0;
    size_t entry_idx       = 0;
    menu_handle_t *menu    = menu_driver_get_ptr();
    menu_navigation_t *nav = menu_navigation_get_ptr();
+   uint32_t needle_hash   = djb2_calculate(needle);
 
    if (!menu || !list)
       return;
@@ -306,7 +311,11 @@ void menu_list_pop_stack_by_needle(menu_list_t *list,
    menu_set_refresh();
    menu_list_get_last(list->menu_stack, &path, &label, &type, &entry_idx);
 
-   while (strcmp(needle, label) == 0)
+   label_hash             = djb2_calculate(label);
+
+   (void)label_hash;
+
+   while (!strcmp(needle, label))
    {
       menu_list_pop(list->menu_stack, &nav->selection_ptr);
       menu_list_get_last(list->menu_stack, &path, &label, &type, &entry_idx);
