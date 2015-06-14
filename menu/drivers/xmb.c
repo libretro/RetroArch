@@ -709,8 +709,8 @@ static void xmb_list_switch_new(xmb_handle_t *xmb,
       file_list_t *list, int dir, size_t current)
 {
    unsigned i;
-   size_t end          = 0;
-   menu_handle_t *menu = menu_driver_get_ptr();
+   size_t end           = 0;
+   menu_handle_t *menu  = menu_driver_get_ptr();
    settings_t *settings = config_get_ptr();
 
    if (!menu)
@@ -768,12 +768,16 @@ static void xmb_set_title(xmb_handle_t *xmb)
       menu_entries_get_title(xmb->title_name, sizeof(xmb->title_name));
    else
    {
-      struct item_file *item      = (struct item_file*)&xmb->horizontal_list->list[menu->categories.selection_ptr - 1];
+      const char *path = NULL;
+      file_list_get_at_offset(
+            xmb->horizontal_list,
+            menu->categories.selection_ptr - 1,
+            &path, NULL, NULL, NULL);
 
-      if (!item)
+      if (!path)
          return;
 
-      strlcpy(xmb->title_name, item->path, sizeof(xmb->title_name));
+      strlcpy(xmb->title_name, path, sizeof(xmb->title_name));
    }
 }
 
@@ -1662,7 +1666,7 @@ static void xmb_context_reset_horizontal_list(xmb_handle_t *xmb,
       char texturepath[PATH_MAX_LENGTH]         = {0};
       char content_texturepath[PATH_MAX_LENGTH] = {0};
       struct texture_image ti                   = {0};
-      struct item_file *info                    = NULL;
+      const char *path                          = NULL;
       xmb_node_t *node                          = xmb_get_userdata_from_horizontal_list(xmb, i);
 
       if (!node)
@@ -1672,12 +1676,13 @@ static void xmb_context_reset_horizontal_list(xmb_handle_t *xmb,
             continue;
       }
 
-      info = (struct item_file*)&xmb->horizontal_list->list[i];
+      file_list_get_at_offset(xmb->horizontal_list, i,
+            &path, NULL, NULL, NULL);
 
-      if (!info)
+      if (!path)
          continue;
 
-      strlcpy(sysname, info->path, sizeof(sysname));
+      strlcpy(sysname, path, sizeof(sysname));
       path_remove_extension(sysname);
 
       fill_pathname_join(iconpath, themepath, xmb->icon.dir, sizeof(iconpath));
