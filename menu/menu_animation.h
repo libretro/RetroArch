@@ -20,6 +20,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <boolean.h>
+#include "../libretro.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -47,6 +48,11 @@ typedef struct menu_animation
    size_t capacity;
    size_t size;
    bool is_active;
+
+   /* Delta timing */
+   float delta_time;
+   retro_time_t cur_time;
+   retro_time_t old_time;
 } menu_animation_t;
 
 enum menu_animation_easing_type

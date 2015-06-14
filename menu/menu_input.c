@@ -1032,7 +1032,7 @@ unsigned menu_input_frame(retro_input_t input, retro_input_t trigger_input)
       nav->scroll.acceleration = 0;
    }
 
-   menu->delay.count += menu->dt / IDEAL_DT;
+   menu->delay.count += menu->animation->delta_time / IDEAL_DT;
 
    if (driver->block_input)
       trigger_input = 0;

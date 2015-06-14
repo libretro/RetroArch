@@ -302,20 +302,20 @@ int menu_iterate(retro_input_t input,
    menu_input_t *menu_input = menu_input_get_ptr();
    settings_t *settings     = config_get_ptr();
 
-   menu_input->joypad.state = menu_input_frame(input, trigger_input);
-   menu->cur_time           = rarch_get_time_usec();
-   menu->dt                 = menu->cur_time - menu->old_time;
+   menu_input->joypad.state    = menu_input_frame(input, trigger_input);
+   menu->animation->cur_time   = rarch_get_time_usec();
+   menu->animation->delta_time = menu->animation->cur_time - menu->animation->old_time;
 
-   if (menu->dt >= IDEAL_DT * 4)
-      menu->dt = IDEAL_DT * 4;
-   if (menu->dt <= IDEAL_DT / 4)
-      menu->dt = IDEAL_DT / 4;
-   menu->old_time = menu->cur_time;
+   if (menu->animation->delta_time >= IDEAL_DT * 4)
+      menu->animation->delta_time = IDEAL_DT * 4;
+   if (menu->animation->delta_time <= IDEAL_DT / 4)
+      menu->animation->delta_time = IDEAL_DT / 4;
+   menu->animation->old_time = menu->animation->cur_time;
 
-   if (menu->cur_time - last_clock_update > 1000000 && settings->menu.timedate_enable)
+   if (menu->animation->cur_time - last_clock_update > 1000000 && settings->menu.timedate_enable)
    {
       menu->label.is_updated = true;
-      last_clock_update = menu->cur_time;
+      last_clock_update = menu->animation->cur_time;
    }
 
    action = menu_input->joypad.state;

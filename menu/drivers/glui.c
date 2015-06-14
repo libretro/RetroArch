@@ -239,7 +239,8 @@ static void glui_render(void)
 
    glui = (glui_handle_t*)menu->userdata;
 
-   menu_animation_update(menu->animation, menu->dt / IDEAL_DT);
+   menu_animation_update(menu->animation,
+         menu->animation->delta_time / IDEAL_DT);
 
    /* TODO/FIXME - we don't use framebuffer at all
     * for GLUI, we should refactor this dependency

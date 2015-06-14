@@ -47,11 +47,6 @@ typedef struct
 {
    void *userdata;
 
-   /* Delta timing */
-   float dt;
-   retro_time_t cur_time;
-   retro_time_t old_time;
-
    /* Used for key repeat */
    struct
    {

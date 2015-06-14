@@ -1241,7 +1241,7 @@ static void xmb_render(void)
    if (!xmb)
       return;
 
-   menu_animation_update(menu->animation, menu->dt / IDEAL_DT);
+   menu_animation_update(menu->animation, menu->animation->delta_time / IDEAL_DT);
 
    current = nav->selection_ptr;
    end     = menu_list_get_size(menu_list);
