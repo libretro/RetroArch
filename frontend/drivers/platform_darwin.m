@@ -15,25 +15,19 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <CoreFoundation/CoreFoundation.h>
-#include <CoreFoundation/CFArray.h>
-#include <retro_miscellaneous.h>
-#include <file/file_path.h>
-
-#ifdef __OBJC__
-#include <Foundation/NSPathUtilities.h>
-#endif
-
-#include "../frontend_driver.h"
-#include "../../ui/ui_companion_driver.h"
-#include "../../general.h"
-
 #include <stdint.h>
 #include <boolean.h>
 #include <stddef.h>
 #include <string.h>
 
 #include <sys/utsname.h>
+
+#include <CoreFoundation/CoreFoundation.h>
+#include <CoreFoundation/CFArray.h>
+
+#ifdef __OBJC__
+#include <Foundation/NSPathUtilities.h>
+#endif
 
 #if defined(OSX)
 #include <Carbon/Carbon.h>
@@ -44,6 +38,14 @@
 #elif defined(IOS)
 #include <UIKit/UIDevice.h>
 #endif
+
+#include <retro_miscellaneous.h>
+#include <file/file_path.h>
+#include <rhash.h>
+
+#include "../frontend_driver.h"
+#include "../../ui/ui_companion_driver.h"
+#include "../../general.h"
 
 typedef enum
 {
@@ -525,20 +527,32 @@ end:
    return ret;
 }
 
+#define DARWIN_ARCH_X86_64     0x23dea434U
+#define DARWIN_ARCH_X86        0x0b88b8cbU
+#define DARWIN_ARCH_POWER_MAC  0xba3772d8U
+
 static enum frontend_architecture frontend_darwin_get_architecture(void)
 {
    struct utsname buffer;
+   uint32_t buffer_hash;
 
    if (uname(&buffer) != 0)
       return FRONTEND_ARCH_NONE;
+   
+   (void)buffer_hash;
 
 #ifdef OSX
-   if (!strcmp(buffer.machine, "x86_64"))
-      return FRONTEND_ARCH_X86_64;
-   if (!strcmp(buffer.machine, "x86"))
-      return FRONTEND_ARCH_X86;
-   if (!strcmp(buffer.machine, "Power Macintosh"))
-      return FRONTEND_ARCH_PPC;
+   buffer_hash = djb2_calculate(buffer.machine);
+
+   switch (buffer_hash)
+   {
+      case DARWIN_ARCH_X86_64
+         return FRONTEND_ARCH_X86_64;
+      case DARWIN_ARCH_X86:
+        return FRONTEND_ARCH_X86;
+      case DARWIN_ARCH_POWER_MAC:
+        return FRONTEND_ARCH_PPC;
+   }
 #endif
 
    return FRONTEND_ARCH_NONE;
