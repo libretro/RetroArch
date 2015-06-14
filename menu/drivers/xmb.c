@@ -1035,6 +1035,7 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
 
    for (i = 0; i < end; i++)
    {
+      const float half_size = xmb->icon.size / 2.0f;
       char name[PATH_MAX_LENGTH];
       char value[PATH_MAX_LENGTH];
       menu_entry_t entry;
@@ -1054,15 +1055,18 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
       if (!node)
          continue;
 
-      icon_x = node->x + xmb->margins.screen.left + 
-         xmb->icon.spacing.horizontal - xmb->icon.size / 2.0;
-      icon_y = xmb->margins.screen.top + node->y + xmb->icon.size / 2.0;
+      icon_y = xmb->margins.screen.top + node->y + half_size;
 
-      if (
-            icon_x < -xmb->icon.size / 2 || 
-            icon_x > width ||
-            icon_y < xmb->icon.size / 2 ||
-            icon_y > height + xmb->icon.size)
+      if (icon_y < half_size)
+         continue;
+
+      if (icon_y > height + xmb->icon.size)
+         break;
+
+      icon_x = node->x + xmb->margins.screen.left +
+         xmb->icon.spacing.horizontal - half_size;
+
+      if (icon_x < -half_size || icon_x > width)
          continue;
 
       menu_entry_get(&entry, i, list, true);
