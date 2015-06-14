@@ -2143,7 +2143,7 @@ int menu_displaylist_push(file_list_t *list, file_list_t *menu_list)
    switch (hash_label)
    {
       case MENU_VALUE_MAIN_MENU:
-         info.flags = SL_FLAG_MAIN_MENU;
+         info.flags = SL_FLAG_MAIN_MENU | SL_FLAG_MAIN_MENU_SETTINGS;
          return menu_displaylist_push_list(&info, DISPLAYLIST_MAIN_MENU);
       case MENU_VALUE_HORIZONTAL_MENU:
          return menu_displaylist_push_list(&info, DISPLAYLIST_HORIZONTAL);
@@ -2177,7 +2177,7 @@ bool menu_displaylist_init(void *data)
 
    info.list  = menu_list->selection_buf;
    info.type  = MENU_SETTINGS;
-   info.flags = SL_FLAG_MAIN_MENU;
+   info.flags = SL_FLAG_MAIN_MENU | SL_FLAG_MAIN_MENU_SETTINGS;
    strlcpy(info.label, "Main Menu", sizeof(info.label));
 
    menu_list_push(menu_list->menu_stack,

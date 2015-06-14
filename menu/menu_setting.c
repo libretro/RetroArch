@@ -3489,7 +3489,8 @@ static void overlay_enable_toggle_change_handler(void *data)
 static bool setting_append_list_main_menu_options(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info,
-      const char *parent_group)
+      const char *parent_group,
+      unsigned mask)
 {
    rarch_setting_group_info_t group_info    = {0};
    rarch_setting_group_info_t subgroup_info = {0};
@@ -3605,12 +3606,15 @@ static bool setting_append_list_main_menu_options(
          subgroup_info.name,
          parent_group);
 
-   CONFIG_ACTION(
-         "settings",
-         "Settings",
-         group_info.name,
-         subgroup_info.name,
-         parent_group);
+   if (mask & SL_FLAG_MAIN_MENU_SETTINGS)
+   {
+      CONFIG_ACTION(
+            "settings",
+            "Settings",
+            group_info.name,
+            subgroup_info.name,
+            parent_group);
+   }
 
    CONFIG_ACTION(
          "system_information",
@@ -7103,7 +7107,7 @@ rarch_setting_t *menu_setting_new(unsigned mask)
 
    if (mask & SL_FLAG_MAIN_MENU)
    {
-      if (!setting_append_list_main_menu_options(&list, list_info, "Main Menu"))
+      if (!setting_append_list_main_menu_options(&list, list_info, "Main Menu", mask))
          goto error;
    }
 
