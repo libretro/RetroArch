@@ -546,7 +546,7 @@ static enum frontend_architecture frontend_darwin_get_architecture(void)
 
    switch (buffer_hash)
    {
-      case DARWIN_ARCH_X86_64
+      case DARWIN_ARCH_X86_64:
          return FRONTEND_ARCH_X86_64;
       case DARWIN_ARCH_X86:
         return FRONTEND_ARCH_X86;
