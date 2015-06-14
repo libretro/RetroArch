@@ -526,23 +526,34 @@ void config_file_free(config_file_t *conf)
    free(conf);
 }
 
-static const struct config_entry_list *config_get_entry_for_read(config_file_t *conf, const char *key)
+static struct config_entry_list *config_get_entry(const config_file_t *conf,
+      const char *key, struct config_entry_list **prev)
 {
    struct config_entry_list *entry;
+   struct config_entry_lsit *previous;
+
    uint32_t hash = djb2_calculate(key);
+
+   if (prev)
+      previous = *prev;
 
    for (entry = conf->entries; entry; entry = entry->next)
    {
       if (hash == entry->key_hash && strcmp(key, entry->key) == 0)
          return entry;
+
+      previous = entry;
    }
+
+   if (*prev)
+      *prev = previous;
 
    return NULL;
 }
 
 bool config_get_double(config_file_t *conf, const char *key, double *in)
 {
-   const struct config_entry_list *entry = config_get_entry_for_read(conf, key);
+   const struct config_entry_list *entry = config_get_entry(conf, key, NULL);
 
    if (entry)
       *in = strtod(entry->value, NULL);
@@ -552,7 +563,7 @@ bool config_get_double(config_file_t *conf, const char *key, double *in)
 
 bool config_get_float(config_file_t *conf, const char *key, float *in)
 {
-   const struct config_entry_list *entry = config_get_entry_for_read(conf, key);
+   const struct config_entry_list *entry = config_get_entry(conf, key, NULL);
 
    if (entry)
    {
@@ -565,7 +576,7 @@ bool config_get_float(config_file_t *conf, const char *key, float *in)
 
 bool config_get_int(config_file_t *conf, const char *key, int *in)
 {
-   const struct config_entry_list *entry = config_get_entry_for_read(conf, key);
+   const struct config_entry_list *entry = config_get_entry(conf, key, NULL);
    errno = 0;
 
    if (entry)
@@ -581,7 +592,7 @@ bool config_get_int(config_file_t *conf, const char *key, int *in)
 
 bool config_get_uint64(config_file_t *conf, const char *key, uint64_t *in)
 {
-   const struct config_entry_list *entry = config_get_entry_for_read(conf, key);
+   const struct config_entry_list *entry = config_get_entry(conf, key, NULL);
    errno = 0;
 
    if (entry)
@@ -597,7 +608,7 @@ bool config_get_uint64(config_file_t *conf, const char *key, uint64_t *in)
 
 bool config_get_uint(config_file_t *conf, const char *key, unsigned *in)
 {
-   const struct config_entry_list *entry = config_get_entry_for_read(conf, key);
+   const struct config_entry_list *entry = config_get_entry(conf, key, NULL);
    errno = 0;
 
    if (entry)
@@ -613,7 +624,7 @@ bool config_get_uint(config_file_t *conf, const char *key, unsigned *in)
 
 bool config_get_hex(config_file_t *conf, const char *key, unsigned *in)
 {
-   const struct config_entry_list *entry = config_get_entry_for_read(conf, key);
+   const struct config_entry_list *entry = config_get_entry(conf, key, NULL);
    errno = 0;
 
    if (entry)
@@ -629,7 +640,7 @@ bool config_get_hex(config_file_t *conf, const char *key, unsigned *in)
 
 bool config_get_char(config_file_t *conf, const char *key, char *in)
 {
-   const struct config_entry_list *entry = config_get_entry_for_read(conf, key);
+   const struct config_entry_list *entry = config_get_entry(conf, key, NULL);
 
    if (entry)
    {
@@ -644,7 +655,7 @@ bool config_get_char(config_file_t *conf, const char *key, char *in)
 
 bool config_get_string(config_file_t *conf, const char *key, char **str)
 {
-   const struct config_entry_list *entry = config_get_entry_for_read(conf, key);
+   const struct config_entry_list *entry = config_get_entry(conf, key, NULL);
 
    if (entry)
       *str = strdup(entry->value);
@@ -655,7 +666,7 @@ bool config_get_string(config_file_t *conf, const char *key, char **str)
 bool config_get_array(config_file_t *conf, const char *key,
       char *buf, size_t size)
 {
-   const struct config_entry_list *entry = config_get_entry_for_read(conf, key);
+   const struct config_entry_list *entry = config_get_entry(conf, key, NULL);
 
    if (entry)
       return strlcpy(buf, entry->value, size) < size;
@@ -669,7 +680,7 @@ bool config_get_path(config_file_t *conf, const char *key,
 #if defined(RARCH_CONSOLE)
    return config_get_array(conf, key, buf, size);
 #else
-   const struct config_entry_list *entry = config_get_entry_for_read(conf, key);
+   const struct config_entry_list *entry = config_get_entry(conf, key, NULL);
 
    if (entry)
       fill_pathname_expand_special(buf, entry->value, size);
@@ -680,7 +691,7 @@ bool config_get_path(config_file_t *conf, const char *key,
 
 bool config_get_bool(config_file_t *conf, const char *key, bool *in)
 {
-   const struct config_entry_list *entry = config_get_entry_for_read(conf, key);
+   const struct config_entry_list *entry = config_get_entry(conf, key, NULL);
 
    if (entry)
    {
