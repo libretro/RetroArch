@@ -440,8 +440,9 @@ static int menu_cbs_init_bind_right_compare_label(menu_file_list_cbs_t *cbs,
    for (i = 0; i < MAX_USERS; i++)
    {
       uint32_t label_setting_hash;
-      char label_setting[PATH_MAX_LENGTH] = {0};
+      char label_setting[PATH_MAX_LENGTH];
 
+      label_setting[0] = '\0';
       snprintf(label_setting, sizeof(label_setting), "input_player%d_joypad_index", i + 1);
 
       label_setting_hash = djb2_calculate(label_setting);

@@ -1013,9 +1013,6 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
    xmb_node_t *core_node       = NULL;
    size_t end                  = 0;
    uint64_t frame_count        = video_driver_get_frame_count();
-   char name[PATH_MAX_LENGTH]  = {0};
-   char value[PATH_MAX_LENGTH] = {0};
-   menu_entry_t entry          = {{0}};
    menu_handle_t *menu         = menu_driver_get_ptr();
 
    if (!list || !list->size || !menu)
@@ -1038,6 +1035,10 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
 
    for (i = 0; i < end; i++)
    {
+      const float half_size = xmb->icon.size / 2.0f;
+      char name[PATH_MAX_LENGTH];
+      char value[PATH_MAX_LENGTH];
+      menu_entry_t entry;
       float icon_x, icon_y;
 
       GLuint texture_switch       = 0;
@@ -1054,15 +1055,18 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
       if (!node)
          continue;
 
-      icon_x = node->x + xmb->margins.screen.left + 
-         xmb->icon.spacing.horizontal - xmb->icon.size / 2.0;
-      icon_y = xmb->margins.screen.top + node->y + xmb->icon.size / 2.0;
+      icon_y = xmb->margins.screen.top + node->y + half_size;
 
-      if (
-            icon_x < -xmb->icon.size / 2 || 
-            icon_x > width ||
-            icon_y < xmb->icon.size / 2 ||
-            icon_y > height + xmb->icon.size)
+      if (icon_y < half_size)
+         continue;
+
+      if (icon_y > height + xmb->icon.size)
+         break;
+
+      icon_x = node->x + xmb->margins.screen.left +
+         xmb->icon.spacing.horizontal - half_size;
+
+      if (icon_x < -half_size || icon_x > width)
          continue;
 
       menu_entry_get(&entry, i, list, true);
@@ -1304,9 +1308,9 @@ static void xmb_frame(void)
    math_matrix_4x4 mymat, mrot, mscal;
    unsigned depth;
    unsigned width, height;
-   char msg[PATH_MAX_LENGTH]               = {0};
-   char title_msg[PATH_MAX_LENGTH]         = {0};
-   char timedate[PATH_MAX_LENGTH]          = {0};
+   char msg[PATH_MAX_LENGTH];
+   char title_msg[PATH_MAX_LENGTH];
+   char timedate[PATH_MAX_LENGTH];
    bool render_background                  = false;
    xmb_handle_t *xmb                       = NULL;
    gl_t *gl                                = NULL;
@@ -1329,6 +1333,10 @@ static void xmb_frame(void)
 
    if (!gl)
       return;
+
+   msg[0]       = '\0';
+   title_msg[0] = '\0';
+   timedate[0]  = '\0';
 
    video_driver_get_size(&width, &height);
 

@@ -49,8 +49,8 @@ void menu_cbs_init(void *data,
       const char *path, const char *label,
       unsigned type, size_t idx)
 {
-   char elem0[PATH_MAX_LENGTH]  = {0};
-   char elem1[PATH_MAX_LENGTH]  = {0};
+   char elem0[PATH_MAX_LENGTH];
+   char elem1[PATH_MAX_LENGTH];
    struct string_list *str_list = NULL;
    const char *menu_label       = NULL;
    menu_file_list_cbs_t *cbs    = NULL;
@@ -67,6 +67,9 @@ void menu_cbs_init(void *data,
 
    if (!cbs)
       return;
+
+   elem0[0] = '\0';
+   elem1[0] = '\0';
 
    menu_list_get_last_stack(menu_list, NULL, &menu_label, NULL, NULL);
 
