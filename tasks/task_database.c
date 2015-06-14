@@ -16,6 +16,8 @@
 #include <compat/strcasestr.h>
 #include <compat/strl.h>
 
+#include <rhash.h>
+
 #include "../dir_list_special.h"
 #include "../file_ops.h"
 
@@ -23,6 +25,8 @@
 #include "../runloop_data.h"
 #include "tasks.h"
 
+#define CB_DB_SCAN_FILE    0x70ce56d2U
+#define CB_DB_SCAN_FOLDER  0xde2bef8eU
 
 #ifdef HAVE_LIBRETRODB
 
@@ -320,8 +324,8 @@ static int database_info_iterate(database_state_handle_t *state, database_info_h
 
 static int database_info_poll(db_handle_t *db)
 {
+   uint32_t cb_type_hash        = 0;
    char elem0[PATH_MAX_LENGTH]  = {0};
-   char elem1[PATH_MAX_LENGTH]  = {0};
    struct string_list *str_list = NULL;
    const char *path = msg_queue_pull(db->msg_queue);
 
@@ -336,12 +340,17 @@ static int database_info_poll(db_handle_t *db)
    if (str_list->size > 0)
       strlcpy(elem0, str_list->elems[0].data, sizeof(elem0));
    if (str_list->size > 1)
-      strlcpy(elem1, str_list->elems[1].data, sizeof(elem1));
+      cb_type_hash = djb2_calculate(str_list->elems[1].data);
 
-   if (!strcmp(elem1, "cb_db_scan_file"))
-      db->handle = database_info_file_init(elem0, DATABASE_TYPE_ITERATE);
-   else if (!strcmp(elem1, "cb_db_scan_folder"))
-      db->handle = database_info_dir_init(elem0, DATABASE_TYPE_ITERATE);
+   switch (cb_type_hash)
+   {
+      case CB_DB_SCAN_FILE:
+         db->handle = database_info_file_init(elem0, DATABASE_TYPE_ITERATE);
+         break;
+      case CB_DB_SCAN_FOLDER:
+         db->handle = database_info_dir_init(elem0, DATABASE_TYPE_ITERATE);
+         break;
+   }
 
    string_list_free(str_list);
 
