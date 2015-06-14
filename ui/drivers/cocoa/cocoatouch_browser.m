@@ -18,6 +18,7 @@
 #include <file/dir_list.h>
 #include <file/file_path.h>
 #include <retro_miscellaneous.h>
+#include <rhash.h>
 
 #include "cocoa_common.h"
 #include "../../../content.h"
@@ -429,6 +430,13 @@ static void file_action(enum file_action action, NSString* source, NSString* tar
    }
 }
 
+#define FILEBROWSER_ACTION_UNZIP    0x0e3f899bU
+#define FILEBROWSER_ACTION_MOVE     0x7c89307cU
+#define FILEBROWSER_ACTION_RENAME   0xce87affdU
+#define FILEBROWSER_ACTION_AIRDROP  0x8c6cdb56U
+#define FILEBROWSER_ACTION_DELETE   0xadde7058U
+#define FILEBROWSER_ACTION_CANCEL   0xab41f40bU
+
 /* Called by the action sheet created in (void)fileAction: */
 - (void)actionSheet:(UIActionSheet*)actionSheet clickedButtonAtIndex:(NSInteger)buttonIndex
 {
@@ -438,50 +446,62 @@ static void file_action(enum file_action action, NSString* source, NSString* tar
    const char *action_str = action.UTF8String;
     
    get_ios_version(&major, &minor);
+
+   action_str_hash = djb2_calculate(action_str);
     
    (void)major;
    (void)minor;
-   
-   if (!strcmp(action_str, "Unzip"))
-   {
-      UIAlertView* alertView              = [[UIAlertView alloc] initWithTitle:BOXSTRING("Enter target directory") message:@"" delegate:self
-                                                             cancelButtonTitle:BOXSTRING("Cancel") otherButtonTitles:BOXSTRING("OK"), nil];
-      alertView.alertViewStyle            = UIAlertViewStylePlainTextInput;
-      alertView.tag                       = FA_UNZIP;
-      [alertView textFieldAtIndex:0].text = [[target lastPathComponent] stringByDeletingPathExtension];
-      [alertView show];
-   }
-   else if (!strcmp(action_str, "Move"))
-      [self.navigationController pushViewController:[[RAFoldersList alloc] initWithFilePath:target] animated:YES];
-   else if (!strcmp(action_str, "Rename"))
-   {
-      UIAlertView* alertView              = [[UIAlertView alloc] 
-         initWithTitle:BOXSTRING("Enter new name") message:@"" 
-              delegate:self cancelButtonTitle:BOXSTRING("Cancel") otherButtonTitles:BOXSTRING("OK"), nil];
-      alertView.alertViewStyle            = UIAlertViewStylePlainTextInput;
-      alertView.tag                       = FA_MOVE;
-      [alertView textFieldAtIndex:0].text = target.lastPathComponent;
-      [alertView show];
-   }
-#ifdef __IPHONE_7_0
-   else if (!strcmp(action_str, "AirDrop") && (major >= 7))
-   {
-      /* TODO: ZIP if not already zipped. */
-      NSURL                    *url = [NSURL fileURLWithPath:self.selectedItem.path isDirectory:self.selectedItem.isDirectory];
-      NSArray                *items = [NSArray arrayWithObject:url];
-      UIActivityViewController* avc = [[UIActivityViewController alloc] initWithActivityItems:items applicationActivities:nil];
 
-      [self presentViewController:avc animated:YES completion:nil];
-   }
-#endif
-   else if (!strcmp(action_str, "Delete"))
+   switch (action_str_hash)
    {
-      UIAlertView         *alertView = [[UIAlertView alloc] initWithTitle:BOXSTRING("Really delete?") message:@"" delegate:self cancelButtonTitle:BOXSTRING("Cancel") otherButtonTitles:BOXSTRING("OK"), nil];
-      alertView.tag                  = FA_DELETE;
-      [alertView show];
+      case FILEBROWSER_ACTION_UNZIP:
+         {
+            UIAlertView* alertView              = [[UIAlertView alloc] initWithTitle:BOXSTRING("Enter target directory") message:@"" delegate:self
+                                                                   cancelButtonTitle:BOXSTRING("Cancel") otherButtonTitles:BOXSTRING("OK"), nil];
+            alertView.alertViewStyle            = UIAlertViewStylePlainTextInput;
+            alertView.tag                       = FA_UNZIP;
+            [alertView textFieldAtIndex:0].text = [[target lastPathComponent] stringByDeletingPathExtension];
+            [alertView show];
+         }
+         break;
+      case FILEBROWSER_ACTION_MOVE:
+         [self.navigationController pushViewController:[[RAFoldersList alloc] initWithFilePath:target] animated:YES];
+         break;
+      case FILEBROWSER_ACTION_RENAME:
+         {
+            UIAlertView* alertView              = [[UIAlertView alloc] 
+               initWithTitle:BOXSTRING("Enter new name") message:@"" 
+                    delegate:self cancelButtonTitle:BOXSTRING("Cancel") otherButtonTitles:BOXSTRING("OK"), nil];
+            alertView.alertViewStyle            = UIAlertViewStylePlainTextInput;
+            alertView.tag                       = FA_MOVE;
+            [alertView textFieldAtIndex:0].text = target.lastPathComponent;
+            [alertView show];
+         }
+         break;
+      case FILEBROWSER_ACTION_AIRDROP:
+#ifdef __IPHONE_7_0
+         if ((major >= 7))
+         {
+            /* TODO: ZIP if not already zipped. */
+            NSURL                    *url = [NSURL fileURLWithPath:self.selectedItem.path isDirectory:self.selectedItem.isDirectory];
+            NSArray                *items = [NSArray arrayWithObject:url];
+            UIActivityViewController* avc = [[UIActivityViewController alloc] initWithActivityItems:items applicationActivities:nil];
+
+            [self presentViewController:avc animated:YES completion:nil];
+         }
+#endif
+         break;
+      case FILEBROWSER_ACTION_DELETE:
+         {
+            UIAlertView         *alertView = [[UIAlertView alloc] initWithTitle:BOXSTRING("Really delete?") message:@"" delegate:self cancelButtonTitle:BOXSTRING("Cancel") otherButtonTitles:BOXSTRING("OK"), nil];
+            alertView.tag                  = FA_DELETE;
+            [alertView show];
+         }
+         break;
+      case FILEBROWSER_ACTION_CANCEL:
+         apple_display_alert("Action not supported.", "Action Failed");
+         break;
    }
-   else if (!strcmp(action_str, "Cancel")) /* Zip */
-      apple_display_alert("Action not supported.", "Action Failed");
 }
 
 /* Called by various alert views created in this class, 
