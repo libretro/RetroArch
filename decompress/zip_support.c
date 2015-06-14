@@ -19,10 +19,11 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <sys/types.h>
-
 #include <string.h>
+
 #include <retro_miscellaneous.h>
 #include <file/file_path.h>
+
 #include "zip_support.h"
 
 #include "../deps/zlib/unzip.h"
@@ -92,7 +93,7 @@ int read_zip_file(const char *archive_path,
       {
          /* We skip directories */
       }
-      else if (!strcmp(filename,relative_path))
+      else if (!strcmp(filename, relative_path))
       {
          /* We found the correct file in the zip, 
           * now extract it to *buf. */
@@ -103,7 +104,24 @@ int read_zip_file(const char *archive_path,
             goto error;
          }
 
-         if (optional_outfile != 0)
+         if (optional_outfile == 0)
+         {
+            /* Allocate outbuffer */
+            *buf       = malloc(file_info.uncompressed_size + 1 );
+            bytes_read = unzReadCurrentFile(zipfile, *buf, file_info.uncompressed_size);
+
+            if (bytes_read != (ssize_t)file_info.uncompressed_size)
+            {
+               RARCH_ERR(
+                     "Tried to read %d bytes, but only got %d of file %s in ZIP %s.\n",
+                     (unsigned int) file_info.uncompressed_size, (int)bytes_read,
+                     relative_path, archive_path);
+               free(*buf);
+               goto close;
+            }
+            ((char*)(*buf))[file_info.uncompressed_size] = '\0';
+         }
+         else
          {
             char read_buffer[RARCH_ZIP_SUPPORT_BUFFER_SIZE_MAX] = {0};
             FILE* outsink = fopen(optional_outfile,"wb");
@@ -134,23 +152,6 @@ int read_zip_file(const char *archive_path,
             } while(bytes_read > 0);
 
             fclose(outsink);
-         }
-         else
-         {
-            /* Allocate outbuffer */
-            *buf       = malloc(file_info.uncompressed_size + 1 );
-            bytes_read = unzReadCurrentFile(zipfile, *buf, file_info.uncompressed_size);
-
-            if (bytes_read != (ssize_t)file_info.uncompressed_size)
-            {
-               RARCH_ERR(
-                     "Tried to read %d bytes, but only got %d of file %s in ZIP %s.\n",
-                     (unsigned int) file_info.uncompressed_size, (int)bytes_read,
-                     relative_path, archive_path);
-               free(*buf);
-               goto close;
-            }
-            ((char*)(*buf))[file_info.uncompressed_size] = '\0';
          }
          finished_reading = true;
       }

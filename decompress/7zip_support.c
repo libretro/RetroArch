@@ -100,8 +100,7 @@ static Bool Utf16_To_Utf8(uint8_t *dest, size_t *destLen,
             dest[destPos] = (char)(0x80 
                   + ((value >> (6 * numAdds)) & 0x3F));
          destPos++;
-      }
-      while (numAdds != 0);
+      }while (numAdds != 0);
    }
    *destLen = destPos;
    return False;
@@ -261,7 +260,7 @@ int read_7zip_file(
          SzArEx_GetFileNameUtf16(&db, i, temp);
          res = ConvertUtf16toCharString(temp,infile);
 
-         if (strcmp(infile,relative_path) == 0)
+         if (!strcmp(infile, relative_path))
          {
             /* C LZMA SDK does not support chunked extraction - see here:
              * sourceforge.net/p/sevenzip/discussion/45798/thread/6fb59aaf/
@@ -409,7 +408,8 @@ struct string_list *compressed_7zip_file_list_new(const char *path,
          {
             free(temp);
             tempSize = len;
-            temp = (uint16_t *)malloc(tempSize * sizeof(temp[0]));
+            temp     = (uint16_t *)malloc(tempSize * sizeof(temp[0]));
+
             if (temp == 0)
             {
                res = SZ_ERROR_MEM;
