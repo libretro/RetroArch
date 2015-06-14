@@ -524,178 +524,140 @@ void config_file_free(config_file_t *conf)
    free(conf);
 }
 
-bool config_get_double(config_file_t *conf, const char *key, double *in)
+static const struct config_entry_list *config_get_entry_for_read(config_file_t *conf, const char *key)
 {
-   struct config_entry_list *list = conf->entries;
+   struct config_entry_list *list;
 
-   while (list)
+   for (list = conf->entries; list; list = list->next)
    {
       if (strcmp(key, list->key) == 0)
-      {
-         *in = strtod(list->value, NULL);
-         return true;
-      }
-      list = list->next;
+         return list;
    }
-   return false;
+
+   return NULL;
+}
+
+bool config_get_double(config_file_t *conf, const char *key, double *in)
+{
+   const struct config_entry_list *entry = config_get_entry_for_read(conf, key);
+
+   if (entry)
+      *in = strtod(entry->value, NULL);
+
+   return entry != NULL;
 }
 
 bool config_get_float(config_file_t *conf, const char *key, float *in)
 {
-   struct config_entry_list *list = conf->entries;
+   const struct config_entry_list *entry = config_get_entry_for_read(conf, key);
 
-   while (list)
+   if (entry)
    {
-      if (strcmp(key, list->key) == 0)
-      {
-         /* strtof() is C99/POSIX. Just use the more portable kind. */
-         *in = (float)strtod(list->value, NULL);
-         return true;
-      }
-      list = list->next;
+      /* strtof() is C99/POSIX. Just use the more portable kind. */
+      *in = (float)strtod(entry->value, NULL);
    }
-   return false;
+
+   return entry != NULL;
 }
 
 bool config_get_int(config_file_t *conf, const char *key, int *in)
 {
-   struct config_entry_list *list = conf->entries;
+   const struct config_entry_list *entry = config_get_entry_for_read(conf, key);
+   errno = 0;
 
-   while (list)
+   if (entry)
    {
-      if (strcmp(key, list->key) == 0)
-      {
-         int val;
-         errno = 0;
-         val = strtol(list->value, NULL, 0);
-         if (errno == 0)
-         {
-            *in = val;
-            return true;
-         }
-         return false;
-      }
-      list = list->next;
+      int val = strtol(entry->value, NULL, 0);
+
+      if (errno == 0)
+         *in = val;
    }
-   return false;
+
+   return entry != NULL && errno == 0;
 }
 
 bool config_get_uint64(config_file_t *conf, const char *key, uint64_t *in)
 {
-   struct config_entry_list *list = conf->entries;
+   const struct config_entry_list *entry = config_get_entry_for_read(conf, key);
+   errno = 0;
 
-   while (list)
+   if (entry)
    {
-      if (strcmp(key, list->key) == 0)
-      {
-         uint64_t val;
-         errno = 0;
-         val = strtoull(list->value, NULL, 0);
-         if (errno == 0)
-         {
-            *in = val;
-            return true;
-         }
-         return false;
-      }
-      list = list->next;
+      uint64_t val = strtoull(entry->value, NULL, 0);
+
+      if (errno == 0)
+         *in = val;
    }
-   return false;
+
+   return entry != NULL && errno == 0;
 }
 
 bool config_get_uint(config_file_t *conf, const char *key, unsigned *in)
 {
-   struct config_entry_list *list = conf->entries;
+   const struct config_entry_list *entry = config_get_entry_for_read(conf, key);
+   errno = 0;
 
-   while (list != NULL)
+   if (entry)
    {
-      if (strcmp(key, list->key) == 0)
-      {
-         unsigned val;
-         errno = 0;
-         val = strtoul(list->value, NULL, 0);
-         if (errno == 0)
-         {
-            *in = val;
-            return true;
-         }
-         return false;
-      }
-      list = list->next;
+      unsigned val = strtoul(entry->value, NULL, 0);
+
+      if (errno == 0)
+         *in = val;
    }
 
-   return false;
+   return entry != NULL && errno == 0;
 }
 
 bool config_get_hex(config_file_t *conf, const char *key, unsigned *in)
 {
-   struct config_entry_list *list = conf->entries;
+   const struct config_entry_list *entry = config_get_entry_for_read(conf, key);
+   errno = 0;
 
-   while (list)
+   if (entry)
    {
-      if (strcmp(key, list->key) == 0)
-      {
-         unsigned val;
-         errno = 0;
-         val = strtoul(list->value, NULL, 16);
-         if (errno == 0)
-         {
-            *in = val;
-            return true;
-         }
-         return false;
-      }
-      list = list->next;
+      unsigned val = strtoul(entry->value, NULL, 16);
+
+      if (errno == 0)
+         *in = val;
    }
-   return false;
+
+   return entry != NULL && errno == 0;
 }
 
 bool config_get_char(config_file_t *conf, const char *key, char *in)
 {
-   struct config_entry_list *list = conf->entries;
+   const struct config_entry_list *entry = config_get_entry_for_read(conf, key);
 
-   while (list)
+   if (entry)
    {
-      if (strcmp(key, list->key) == 0)
-      {
-         if (list->value[0] && list->value[1])
-            return false;
-         *in = *list->value;
-         return true;
-      }
-      list = list->next;
+      if (entry->value[0] && entry->value[1])
+         return false;
+
+      *in = *entry->value;
    }
-   return false;
+
+   return entry != NULL;
 }
 
 bool config_get_string(config_file_t *conf, const char *key, char **str)
 {
-   struct config_entry_list *list = conf->entries;
+   const struct config_entry_list *entry = config_get_entry_for_read(conf, key);
 
-   while (list)
-   {
-      if (strcmp(key, list->key) == 0)
-      {
-         *str = strdup(list->value);
-         return true;
-      }
-      list = list->next;
-   }
-   return false;
+   if (entry)
+      *str = strdup(entry->value);
+
+   return entry != NULL;
 }
 
 bool config_get_array(config_file_t *conf, const char *key,
       char *buf, size_t size)
 {
-   struct config_entry_list *list = conf->entries;
+   const struct config_entry_list *entry = config_get_entry_for_read(conf, key);
 
-   while (list)
-   {
-      if (strcmp(key, list->key) == 0)
-         return strlcpy(buf, list->value, size) < size;
-      list = list->next;
-   }
-   return false;
+   if (entry)
+      return strlcpy(buf, entry->value, size) < size;
+
+   return entry != NULL;
 }
 
 bool config_get_path(config_file_t *conf, const char *key,
@@ -704,45 +666,34 @@ bool config_get_path(config_file_t *conf, const char *key,
 #if defined(RARCH_CONSOLE)
    return config_get_array(conf, key, buf, size);
 #else
-   struct config_entry_list *list = conf->entries;
+   const struct config_entry_list *entry = config_get_entry_for_read(conf, key);
 
-   while (list)
-   {
-      if (strcmp(key, list->key) == 0)
-      {
-         fill_pathname_expand_special(buf, list->value, size);
-         return true;
-      }
-      list = list->next;
-   }
-   return false;
+   if (entry)
+      fill_pathname_expand_special(buf, entry->value, size);
+
+   return entry != NULL;
 #endif
 }
 
 bool config_get_bool(config_file_t *conf, const char *key, bool *in)
 {
-   struct config_entry_list *list = conf->entries;
+   const struct config_entry_list *entry = config_get_entry_for_read(conf, key);
 
-   while (list)
+   if (entry)
    {
-      if (strcmp(key, list->key) == 0)
-      {
-         if (strcasecmp(list->value, "true") == 0)
-            *in = true;
-         else if (strcasecmp(list->value, "1") == 0)
-            *in = true;
-         else if (strcasecmp(list->value, "false") == 0)
-            *in = false;
-         else if (strcasecmp(list->value, "0") == 0)
-            *in = false;
-         else
-            return false;
-
-         return true;
-      }
-      list = list->next;
+      if (strcasecmp(entry->value, "true") == 0)
+         *in = true;
+      else if (strcasecmp(entry->value, "1") == 0)
+         *in = true;
+      else if (strcasecmp(entry->value, "false") == 0)
+         *in = false;
+      else if (strcasecmp(entry->value, "0") == 0)
+         *in = false;
+      else
+         return false;
    }
-   return false;
+
+   return entry != NULL;
 }
 
 void config_set_string(config_file_t *conf, const char *key, const char *val)
