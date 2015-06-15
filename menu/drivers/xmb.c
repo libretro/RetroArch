@@ -1957,9 +1957,8 @@ static void xmb_list_free(file_list_t *list,
 
 static void xmb_list_clear(file_list_t *list)
 {
-   menu_handle_t *menu = menu_driver_get_ptr();
+   menu_display_t *disp = menu_display_get_ptr();
    size_t size, i;
-
 
    size = list->size;
    for (i = 0; i < size; ++i)
@@ -1976,7 +1975,7 @@ static void xmb_list_clear(file_list_t *list)
       subjects[3] = &node->x;
       subjects[4] = &node->y;
 
-      menu_animation_kill_by_subject(menu->display.animation, 5, subjects);
+      menu_animation_kill_by_subject(disp->animation, 5, subjects);
 
       file_list_free_userdata(list, i);
    }
