@@ -20,9 +20,8 @@ static int action_bind_up_generic(unsigned type, const char *label)
 {
    unsigned scroll_speed  = 0;
    menu_navigation_t *nav = menu_navigation_get_ptr();
-   menu_handle_t *menu    = menu_driver_get_ptr();
    menu_list_t *menu_list = menu_list_get_ptr();
-   if (!menu || !menu_list)
+   if (!menu_list)
       return -1;
 
    scroll_speed = (max(nav->scroll.acceleration, 2) - 2) / 4 + 1;

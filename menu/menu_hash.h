@@ -179,6 +179,7 @@ extern "C" {
 #define MENU_VALUE_HORIZONTAL_MENU                                             0x35761704U
 #define MENU_VALUE_MAIN_MENU                                                   0x1625971fU   
 #define MENU_VALUE_SETTINGS                                                    0x8aca3ff6U
+#define MENU_VALUE_RECORDING_SETTINGS                                          0x1a80b313U
 #define MENU_VALUE_INPUT_SETTINGS                                              0xddd30846U
 #define MENU_VALUE_ON                                                          0x005974c2U
 #define MENU_VALUE_OFF                                                         0x0b880c40U

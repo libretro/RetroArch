@@ -22,6 +22,8 @@ const char *menu_hash_to_str(uint32_t hash)
 {
    switch (hash)
    {
+      case MENU_VALUE_RECORDING_SETTINGS:
+         return "Recording Settings";
       case MENU_VALUE_MAIN_MENU:
          return "Main Menu";
       case MENU_VALUE_SETTINGS:
