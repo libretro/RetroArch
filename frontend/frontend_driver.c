@@ -107,7 +107,6 @@ const frontend_ctx_driver_t *frontend_get_ptr(void)
       return NULL;
    return driver->frontend_ctx;
 }
-#endif
 
 int frontend_driver_parse_drive_list(void *data)
 {
@@ -117,3 +116,5 @@ int frontend_driver_parse_drive_list(void *data)
       return -1;
    return frontend->parse_drive_list(data);
 }
+#endif
+
