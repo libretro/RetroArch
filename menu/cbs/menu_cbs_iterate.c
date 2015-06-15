@@ -541,7 +541,10 @@ static int action_iterate_main(const char *label, unsigned action)
          do_pop_stack    = true;
          break;
       case ITERATE_TYPE_DEFAULT:
-         selected           = menu_navigation_get_current_selection();
+         selected = menu_navigation_get_current_selection();
+         /* FIXME: selected > selection_buf->list->size, i don't know why. */
+         selected = max(min(selected, menu_list_get_size(menu_list)-1), 0);
+
          menu_entry_get(&entry,    selected, NULL, false);
          ret = menu_entry_action(&entry, selected, (enum menu_action)action);
 

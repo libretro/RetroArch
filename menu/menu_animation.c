@@ -278,6 +278,29 @@ void menu_animation_free(menu_animation_t *anim)
    free(anim);
 }
 
+void menu_animation_kill_by_subject(menu_animation_t *animation, size_t count, const void *subjects)
+{
+   unsigned i, j, killed = 0;
+   float **sub = (float**)subjects;
+
+   for (i = 0; i < animation->size; ++i)
+   {
+      if (!animation->list[i].alive)
+         continue;
+
+      for (j = 0; j < count; ++j)
+      {
+         if (animation->list[i].subject == sub[j])
+         {
+            animation->list[i].alive   = 0;
+            animation->list[i].subject = NULL;
+            killed++;
+            break;
+         }
+      }
+   }
+}
+
 bool menu_animation_push(
       menu_animation_t *anim,
       float duration,

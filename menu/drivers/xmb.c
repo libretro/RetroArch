@@ -1602,13 +1602,7 @@ static void xmb_free(void *data)
          return;
 
       if (xmb->menu_stack_old)
-      {
-         /* list nodes are owned by menu->menu_list->menu_stack */
-         if (xmb->menu_stack_old->list)
-            free(xmb->menu_stack_old->list);
-
-         free(xmb->menu_stack_old);
-      }
+         file_list_free(xmb->menu_stack_old);
       xmb->menu_stack_old = NULL;
 
       if (xmb->selection_buf_old)
@@ -1927,7 +1921,10 @@ static void xmb_list_insert(file_list_t *list,
    if (!list || !xmb)
       return;
 
-   node = (xmb_node_t*)calloc(1, sizeof(xmb_node_t));
+   node = (xmb_node_t*)file_list_get_userdata_at_offset(list, i);
+
+   if (!node)
+      node = (xmb_node_t*)calloc(1, sizeof(xmb_node_t));
 
    if (!node)
    {
@@ -1958,6 +1955,67 @@ static void xmb_list_free(file_list_t *list,
 {
 }
 
+static void xmb_list_clear(file_list_t *list)
+{
+   menu_display_t *disp = menu_display_get_ptr();
+   size_t size, i;
+
+   size = list->size;
+   for (i = 0; i < size; ++i)
+   {
+      float *subjects[5];
+      xmb_node_t *node = (xmb_node_t*)file_list_get_userdata_at_offset(list, i);
+
+      if (!node)
+         return;
+
+      subjects[0] = &node->alpha;
+      subjects[1] = &node->label_alpha;
+      subjects[2] = &node->zoom;
+      subjects[3] = &node->x;
+      subjects[4] = &node->y;
+
+      menu_animation_kill_by_subject(disp->animation, 5, subjects);
+
+      file_list_free_userdata(list, i);
+   }
+}
+
+static void xmb_list_deep_copy(menu_handle_t *menu, const file_list_t *src, file_list_t *dst)
+{
+   size_t size, i;
+
+   size = dst->size;
+   for (i = 0; i < size; ++i)
+   {
+      file_list_free_userdata(dst, i);
+      file_list_free_actiondata(dst, i); /* this one was allocated by us */
+   }
+
+   file_list_copy(src, dst);
+
+   size = dst->size;
+   for (i = 0; i < size; ++i)
+   {
+      void *src_udata = file_list_get_userdata_at_offset(src, i);
+      void *src_adata = file_list_get_actiondata_at_offset(src, i);
+
+      if (src_udata)
+      {
+         void *data = calloc(sizeof(xmb_node_t), 1);
+         memcpy(data, src_udata, sizeof(xmb_node_t));
+         file_list_set_userdata(dst, i, data);
+      }
+
+      if (src_adata)
+      {
+         void *data = calloc(sizeof(menu_file_list_cbs_t), 1);
+         memcpy(data, src_adata, sizeof(menu_file_list_cbs_t));
+         file_list_set_actiondata(dst, i, data);
+      }
+   }
+}
+
 static void xmb_list_cache(menu_list_type_t type, unsigned action)
 {
    size_t stack_size, list_size;
@@ -1974,8 +2032,8 @@ static void xmb_list_cache(menu_list_type_t type, unsigned action)
    if (!xmb)
       return;
 
-   file_list_copy(menu_list->selection_buf, xmb->selection_buf_old);
-   file_list_copy(menu_list->menu_stack, xmb->menu_stack_old);
+   xmb_list_deep_copy(menu, menu_list->selection_buf, xmb->selection_buf_old);
+   xmb_list_deep_copy(menu, menu_list->menu_stack, xmb->menu_stack_old);
    xmb->selection_ptr_old = nav->selection_ptr;
 
    switch (type)
@@ -2175,7 +2233,7 @@ menu_ctx_driver_t menu_ctx_xmb = {
    xmb_navigation_alphabet,
    xmb_list_insert,
    xmb_list_free,
-   NULL,
+   xmb_list_clear,
    xmb_list_cache,
    xmb_list_get_selection,
    xmb_list_get_size,
