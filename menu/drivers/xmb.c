@@ -1967,7 +1967,7 @@ static void xmb_list_clear(file_list_t *list)
       xmb_node_t *node = (xmb_node_t*)file_list_get_userdata_at_offset(list, i);
 
       if (!node)
-         return;
+         continue;
 
       subjects[0] = &node->alpha;
       subjects[1] = &node->label_alpha;
@@ -1988,6 +1988,20 @@ static void xmb_list_deep_copy(menu_handle_t *menu, const file_list_t *src, file
    size = dst->size;
    for (i = 0; i < size; ++i)
    {
+      float *subjects[5];
+      xmb_node_t *node = (xmb_node_t*)file_list_get_userdata_at_offset(dst, i);
+
+      if (node)
+      {
+         subjects[0] = &node->alpha;
+         subjects[1] = &node->label_alpha;
+         subjects[2] = &node->zoom;
+         subjects[3] = &node->x;
+         subjects[4] = &node->y;
+
+         menu_animation_kill_by_subject(menu->display.animation, 5, subjects);
+      }
+
       file_list_free_userdata(dst, i);
       file_list_free_actiondata(dst, i); /* this one was allocated by us */
    }
