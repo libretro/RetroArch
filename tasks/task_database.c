@@ -111,12 +111,11 @@ static int database_info_iterate_playlist(
             db_state->crc = zlib_crc32_calculate(db_state->buf, ret);
 #endif
             db->type = DATABASE_TYPE_CRC_LOOKUP;
-            return 1;
          }
          break;
    }
 
-   return 0;
+   return 1;
 }
 
 static int database_info_list_iterate_end_no_match(database_state_handle_t *db_state)
