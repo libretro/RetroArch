@@ -609,14 +609,8 @@ static void xmb_list_open_new(xmb_handle_t *xmb,
       file_list_t *list, int dir, size_t current)
 {
    unsigned i;
-   size_t          end  = 0;
-   menu_handle_t *menu  = menu_driver_get_ptr();
    menu_display_t *disp = menu_display_get_ptr();
-
-   if (!menu)
-      return;
-
-   end = file_list_get_size(list);
+   size_t           end = file_list_get_size(list);
 
    for (i = 0; i < end; i++)
    {
@@ -704,13 +698,7 @@ static void xmb_list_switch_old(xmb_handle_t *xmb,
       file_list_t *list, int dir, size_t current)
 {
    unsigned i;
-   size_t end          = 0;
-   menu_handle_t *menu = menu_driver_get_ptr();
-
-   if (!menu)
-      return;
-
-   end = file_list_get_size(list);
+   size_t end = file_list_get_size(list);
 
    for (i = 0; i < end; i++)
    {
@@ -730,11 +718,7 @@ static void xmb_list_switch_new(xmb_handle_t *xmb,
 {
    unsigned i;
    size_t end           = 0;
-   menu_handle_t *menu  = menu_driver_get_ptr();
    settings_t *settings = config_get_ptr();
-
-   if (!menu)
-      return;
 
    if (settings->menu.dynamic_wallpaper_enable)
    {
@@ -1198,7 +1182,6 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
 
       xmb_draw_icon_end();
    }
-
 }
 
 
@@ -1285,7 +1268,8 @@ static void xmb_render(void)
    anim->label.is_updated    = false;
 }
 
-static void xmb_frame_horizontal_list(xmb_handle_t *xmb, menu_handle_t *menu, gl_t *gl)
+static void xmb_frame_horizontal_list(xmb_handle_t *xmb,
+      menu_handle_t *menu, gl_t *gl)
 {
    unsigned i;
    size_t list_size = xmb_list_get_size(menu, MENU_LIST_HORIZONTAL);
@@ -1439,7 +1423,8 @@ static void xmb_frame(void)
 
    if (render_background)
    {
-      gl_menu_frame_background(menu, settings, gl, xmb->textures.bg.id, xmb->alpha, 0.75f, true);
+      gl_menu_frame_background(menu, settings, gl,
+            xmb->textures.bg.id, xmb->alpha, 0.75f, true);
       xmb_frame_messagebox(msg);
    }
 
