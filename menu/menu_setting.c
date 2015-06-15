@@ -2180,7 +2180,7 @@ static int setting_get_description_compare_label(uint32_t label_hash,
          break;
       case MENU_LABEL_CORE_LIST:
          snprintf(s, len,
-               " -- Core Selection. \n"
+               " -- Load Core. \n"
                " \n"
                "Browse for a libretro core \n"
                "implementation. Where the browser \n"
@@ -3507,10 +3507,11 @@ static bool setting_append_list_main_menu_options(
 
    START_GROUP(group_info, "Main Menu", parent_group);
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info, parent_group);
+
 #if defined(HAVE_DYNAMIC) || defined(HAVE_LIBRETRO_MANAGEMENT)
    CONFIG_ACTION(
          "core_list",
-         "Core Selection",
+         "Load Core",
          group_info.name,
          subgroup_info.name,
          parent_group);
@@ -3525,15 +3526,21 @@ static bool setting_append_list_main_menu_options(
    (*list)[list_info->index - 1].action_right = core_list_action_toggle;
    menu_settings_list_current_add_cmd(list, list_info, EVENT_CMD_LOAD_CORE);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_BROWSER_ACTION);
-#endif
 
-#ifdef HAVE_NETWORKING
-   CONFIG_ACTION(
-         "core_updater_list",
-         "Core Updater",
-         group_info.name,
-         subgroup_info.name,
-         parent_group);
+   {
+      struct retro_system_info *info = (struct retro_system_info*)
+         global ? &global->system.info : NULL;
+      uint32_t info_library_name_hash = info ? djb2_calculate(info->library_name) : 0;
+
+      if (info && (info_library_name_hash != MENU_VALUE_NO_CORE))
+         CONFIG_ACTION(
+               "unload_core",
+               "Unload Core",
+               group_info.name,
+               subgroup_info.name,
+               parent_group);
+      menu_settings_list_current_add_cmd(list, list_info, EVENT_CMD_UNLOAD_CORE);
+   }
 #endif
 
 #ifdef HAVE_LIBRETRODB
@@ -3578,21 +3585,6 @@ static bool setting_append_list_main_menu_options(
    menu_settings_list_current_add_cmd(list, list_info, EVENT_CMD_LOAD_CONTENT);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_BROWSER_ACTION);
 
-   {
-      struct retro_system_info *info = (struct retro_system_info*)
-         global ? &global->system.info : NULL;
-      uint32_t info_library_name_hash = info ? djb2_calculate(info->library_name) : 0;
-
-      if (info && (info_library_name_hash != MENU_VALUE_NO_CORE))
-         CONFIG_ACTION(
-               "unload_core",
-               "Unload Core",
-               group_info.name,
-               subgroup_info.name,
-               parent_group);
-      menu_settings_list_current_add_cmd(list, list_info, EVENT_CMD_UNLOAD_CORE);
-   }
-
    CONFIG_ACTION(
          "core_information",
          "Core Information",
@@ -3631,6 +3623,15 @@ static bool setting_append_list_main_menu_options(
          group_info.name,
          subgroup_info.name,
          parent_group);
+
+#ifdef HAVE_NETWORKING
+   CONFIG_ACTION(
+         "core_updater_list",
+         "Core Updater",
+         group_info.name,
+         subgroup_info.name,
+         parent_group);
+#endif
 
    if (global->perfcnt_enable)
    {
