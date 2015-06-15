@@ -1011,11 +1011,11 @@ unsigned menu_input_frame(retro_input_t input, retro_input_t trigger_input)
       if (!first_held)
       {
          first_held = true;
-         menu->delay.timer = initial_held ? 12 : 6;
-         menu->delay.count = 0;
+         menu->input.delay.timer = initial_held ? 12 : 6;
+         menu->input.delay.count = 0;
       }
 
-      if (menu->delay.count >= menu->delay.timer)
+      if (menu->input.delay.count >= menu->input.delay.timer)
       {
          first_held = false;
          trigger_input |= input & input_repeat;
@@ -1032,7 +1032,7 @@ unsigned menu_input_frame(retro_input_t input, retro_input_t trigger_input)
       nav->scroll.acceleration = 0;
    }
 
-   menu->delay.count += menu->animation->delta_time / IDEAL_DT;
+   menu->input.delay.count += menu->animation->delta_time / IDEAL_DT;
 
    if (driver->block_input)
       trigger_input = 0;
@@ -1070,13 +1070,9 @@ unsigned menu_input_frame(retro_input_t input, retro_input_t trigger_input)
 
    if (settings->menu.pointer.enable)
       menu_input_pointer(&ret);
-      
+
    if (trigger_input && menu_ctx_driver_get_ptr()->perform_action && menu_ctx_driver_get_ptr()->perform_action(menu->userdata, ret))
-   {
       return MENU_ACTION_NOOP;
-   }
-   else
-   {
-      return ret;
-   }
+
+   return ret;
 }

@@ -46,13 +46,6 @@ typedef struct
 {
    void *userdata;
 
-   /* Used for key repeat */
-   struct
-   {
-      float timer;
-      float count;
-   } delay;
-
    size_t begin;
    float scroll_y;
 

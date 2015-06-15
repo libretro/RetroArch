@@ -168,6 +168,13 @@ typedef struct menu_input
       unsigned type;
       unsigned idx;
    } keyboard;
+
+   /* Used for key repeat */
+   struct
+   {
+      float timer;
+      float count;
+   } delay;
 } menu_input_t;
 
 void menu_input_key_event(bool down, unsigned keycode, uint32_t character,
