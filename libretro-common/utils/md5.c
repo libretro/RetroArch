@@ -509,9 +509,9 @@ int main (int argc, char *argv[])
       for (i = 1; i < argc; i++)
          if (argv[i][0] == '-' && argv[i][1] == 's')
             MDString (argv[i] + 2);
-         else if (strcmp (argv[i], "-t") == 0)
+         else if (!strcmp (argv[i], "-t"))
             MDTimeTrial ();
-         else if (strcmp (argv[i], "-x") == 0)
+         else if (!strcmp (argv[i], "-x"))
             MDTestSuite ();
          else MDFile (argv[i]);
 

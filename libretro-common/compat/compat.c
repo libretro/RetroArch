@@ -129,7 +129,7 @@ static int parse_long(const struct option *longopts, char * const *argv)
    const struct option *opt = NULL;
    for (indice = 0; longopts[indice].name; indice++)
    {
-      if (strcmp(longopts[indice].name, &argv[0][2]) == 0)
+      if (!strcmp(longopts[indice].name, &argv[0][2]))
       {
          opt = &longopts[indice];
          break;

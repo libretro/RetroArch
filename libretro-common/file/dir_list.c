@@ -163,7 +163,7 @@ static int parse_dir_entry(const char *name, char *file_path,
    if (!include_dirs && is_dir)
       return 1;
 
-   if (strcmp(name, ".") == 0 || strcmp(name, "..") == 0)
+   if (!strcmp(name, ".") || !strcmp(name, ".."))
       return 1;
 
    if (!is_compressed_file && !is_dir && ext_list && !supported_by_core)
