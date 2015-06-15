@@ -92,12 +92,6 @@ typedef struct
 
    menu_input_t input;
 
-   struct
-   {
-      bool active;
-   } action;
-
-
    rarch_setting_t *list_settings;
    menu_animation_t *animation;
 
