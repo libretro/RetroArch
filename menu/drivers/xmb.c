@@ -1028,7 +1028,12 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
    matrix_4x4_scale(&mscal, 1 /* scale_factor */, 1 /* scale_factor */, 1);
    matrix_4x4_multiply(&mymat, &mscal, &mymat);
 
-   for (i = 0; i < end; i++)
+   i = menu->begin;
+
+   if (list == xmb->selection_buf_old)
+      i = 0;
+
+   for (; i < end; i++)
    {
       const float half_size = xmb->icon.size / 2.0f;
       char name[PATH_MAX_LENGTH];
@@ -1218,7 +1223,7 @@ static void xmb_draw_cursor(gl_t *gl, xmb_handle_t *xmb, float x, float y)
 
 static void xmb_render(void)
 {
-   unsigned i, current, end;
+   unsigned i, current, end, height = 0;
    xmb_handle_t      *xmb   = NULL;
    settings_t   *settings   = config_get_ptr();
    menu_handle_t    *menu   = menu_driver_get_ptr();
@@ -1238,31 +1243,41 @@ static void xmb_render(void)
 
    menu_animation_update(disp->animation, disp->animation->delta_time / IDEAL_DT);
 
+   video_driver_get_size(NULL, &height);
+
    current = nav->selection_ptr;
    end     = menu_list_get_size(menu_list);
 
-   if (settings->menu.pointer.enable)
+   menu->begin = 0;
+   for (i = 0; i < end; i++)
    {
-      for (i = 0; i < end; i++)
-      {
-         float item_y = xmb->margins.screen.top + xmb_item_y(xmb, i, current);
+      float item_y1 = xmb->margins.screen.top + xmb_item_y(xmb, i, current);
+      float item_y2 = item_y1 + xmb->icon.size;
 
-         if (menu_input->pointer.y > item_y 
-               && menu_input->pointer.y < item_y + xmb->icon.size)
-            menu_input->pointer.ptr = i;
+      if (item_y2 < 0)
+      {
+         menu->begin++;
+         continue;
       }
-   }
 
-   if (settings->menu.mouse.enable)
-   {
-      for (i = 0; i < end; i++)
+      if (item_y1 > height)
+         continue;
+
+      if (settings->menu.pointer.enable)
       {
-         float item_y = xmb->margins.screen.top + xmb_item_y(xmb, i, current);
+        if (menu_input->pointer.y > item_y1 && menu_input->pointer.y < item_y2)
+           menu_input->pointer.ptr = i;
+      }
 
-         if (menu_input->mouse.y > item_y && menu_input->mouse.y < item_y + xmb->icon.size)
+      if (settings->menu.mouse.enable)
+      {
+         if (menu_input->mouse.y > item_y1 && menu_input->mouse.y < item_y2)
             menu_input->mouse.ptr = i;
       }
    }
+
+   if (menu->begin > 5)
+      menu->begin -= 5;
 
    anim->is_active = false;
    anim->label.is_updated    = false;
