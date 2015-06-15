@@ -77,7 +77,6 @@ typedef struct
    menu_input_t input;
 
    rarch_setting_t *list_settings;
-   menu_animation_t *animation;
 
    content_playlist_t *playlist;
    char db_playlist_file[PATH_MAX_LENGTH];

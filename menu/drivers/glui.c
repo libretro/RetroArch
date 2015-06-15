@@ -239,8 +239,8 @@ static void glui_render(void)
 
    glui = (glui_handle_t*)menu->userdata;
 
-   menu_animation_update(menu->animation,
-         menu->animation->delta_time / IDEAL_DT);
+   menu_animation_update(disp->animation,
+         disp->animation->delta_time / IDEAL_DT);
 
    /* TODO/FIXME - we don't use framebuffer at all
     * for GLUI, we should refactor this dependency
@@ -635,12 +635,13 @@ static float glui_get_scroll(void)
 
 static void glui_navigation_set(bool scroll)
 {
+   menu_display_t *disp = menu_display_get_ptr();
    menu_handle_t *menu = menu_driver_get_ptr();
 
-   if (!menu || !scroll)
+   if (!menu || !disp || !scroll)
       return;
 
-   menu_animation_push(menu->animation, 10, glui_get_scroll(),
+   menu_animation_push(disp->animation, 10, glui_get_scroll(),
          &menu->scroll_y, EASING_IN_OUT_QUAD, NULL);
 }
 

@@ -22,6 +22,7 @@
 
 #include <queues/message_queue.h>
 
+#include "menu_animation.h"
 #include "../gfx/font_renderer_driver.h"
 
 #ifdef __cplusplus
@@ -42,6 +43,7 @@ typedef struct menu_display
    bool msg_force;
 
    menu_framebuf_t frame_buf;
+   menu_animation_t *animation;
 
    struct
    {

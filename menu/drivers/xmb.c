@@ -513,6 +513,7 @@ static void xmb_selection_pointer_changed(void)
    unsigned i, current, end;
    xmb_handle_t    *xmb   = NULL;
    menu_handle_t    *menu = menu_driver_get_ptr();
+   menu_display_t   *disp = menu_display_get_ptr();
    menu_navigation_t *nav = menu_navigation_get_ptr();
    menu_list_t *menu_list = menu_list_get_ptr();
 
@@ -546,13 +547,13 @@ static void xmb_selection_pointer_changed(void)
          iz = xmb->item.active.zoom;
       }
 
-      menu_animation_push(menu->animation,
+      menu_animation_push(disp->animation,
             XMB_DELAY, ia, &node->alpha, EASING_IN_OUT_QUAD, NULL);
-      menu_animation_push(menu->animation,
+      menu_animation_push(disp->animation,
             XMB_DELAY, ia, &node->label_alpha, EASING_IN_OUT_QUAD, NULL);
-      menu_animation_push(menu->animation,
+      menu_animation_push(disp->animation,
             XMB_DELAY, iz, &node->zoom,  EASING_IN_OUT_QUAD, NULL);
-      menu_animation_push(menu->animation,
+      menu_animation_push(disp->animation,
             XMB_DELAY, iy, &node->y,     EASING_IN_OUT_QUAD, NULL);
    }
 }
@@ -561,10 +562,10 @@ static void xmb_list_open_old(xmb_handle_t *xmb,
       file_list_t *list, int dir, size_t current)
 {
    unsigned i;
-   size_t          end = 0;
-   menu_handle_t *menu = menu_driver_get_ptr();
+   size_t           end = 0;
+   menu_display_t *disp = menu_display_get_ptr();
 
-   if (!menu)
+   if (!disp)
       return;
 
    end = file_list_get_size(list);
@@ -582,11 +583,11 @@ static void xmb_list_open_old(xmb_handle_t *xmb,
       if (dir == -1)
          ia = 0;
 
-      menu_animation_push(menu->animation,
+      menu_animation_push(disp->animation,
             XMB_DELAY, ia, &node->alpha, EASING_IN_OUT_QUAD, NULL);
-      menu_animation_push(menu->animation,
+      menu_animation_push(disp->animation,
             XMB_DELAY, 0, &node->label_alpha, EASING_IN_OUT_QUAD, NULL);
-      menu_animation_push(menu->animation,
+      menu_animation_push(disp->animation,
             XMB_DELAY, xmb->icon.size * dir * -2, &node->x,
             EASING_IN_OUT_QUAD, NULL);
    }
@@ -596,8 +597,9 @@ static void xmb_list_open_new(xmb_handle_t *xmb,
       file_list_t *list, int dir, size_t current)
 {
    unsigned i;
-   size_t          end = 0;
-   menu_handle_t *menu = menu_driver_get_ptr();
+   size_t          end  = 0;
+   menu_handle_t *menu  = menu_driver_get_ptr();
+   menu_display_t *disp = menu_display_get_ptr();
 
    if (!menu)
       return;
@@ -630,11 +632,11 @@ static void xmb_list_open_new(xmb_handle_t *xmb,
       if (i == current)
          ia = xmb->item.active.alpha;
 
-      menu_animation_push(menu->animation,
+      menu_animation_push(disp->animation,
             XMB_DELAY, ia, &node->alpha,  EASING_IN_OUT_QUAD, NULL);
-      menu_animation_push(menu->animation,
+      menu_animation_push(disp->animation,
             XMB_DELAY, ia, &node->label_alpha,  EASING_IN_OUT_QUAD, NULL);
-      menu_animation_push(menu->animation,
+      menu_animation_push(disp->animation,
             XMB_DELAY, 0, &node->x, EASING_IN_OUT_QUAD, NULL);
    }
 
@@ -674,15 +676,15 @@ static xmb_node_t* xmb_get_userdata_from_horizontal_list(
 
 static void xmb_push_animations(xmb_node_t *node, float ia, float ix)
 {
-   menu_handle_t *menu = menu_driver_get_ptr();
-   if (!menu)
+   menu_display_t *disp = menu_display_get_ptr();
+   if (!disp)
       return;
 
-   menu_animation_push(menu->animation,
+   menu_animation_push(disp->animation,
          XMB_DELAY, ia, &node->alpha,  EASING_IN_OUT_QUAD, NULL);
-   menu_animation_push(menu->animation,
+   menu_animation_push(disp->animation,
          XMB_DELAY, ia, &node->label_alpha,  EASING_IN_OUT_QUAD, NULL);
-   menu_animation_push(menu->animation,
+   menu_animation_push(disp->animation,
          XMB_DELAY, ix, &node->x, EASING_IN_OUT_QUAD, NULL);
 }
 
@@ -810,9 +812,9 @@ static void xmb_list_switch_horizontal_list(xmb_handle_t *xmb, menu_handle_t *me
          iz = xmb->categories.active.zoom;
       }
 
-      menu_animation_push(menu->animation,
+      menu_animation_push(menu->display.animation,
             XMB_DELAY, ia, &node->alpha, EASING_IN_OUT_QUAD, NULL);
-      menu_animation_push(menu->animation,
+      menu_animation_push(menu->display.animation,
             XMB_DELAY, iz, &node->zoom, EASING_IN_OUT_QUAD, NULL);
    }
 }
@@ -821,6 +823,7 @@ static void xmb_list_switch(xmb_handle_t *xmb)
 {
    int dir = -1;
    menu_handle_t    *menu = menu_driver_get_ptr();
+   menu_display_t   *disp = menu_display_get_ptr();
    menu_navigation_t *nav = menu_navigation_get_ptr();
    menu_list_t *menu_list = menu_list_get_ptr();
 
@@ -834,7 +837,7 @@ static void xmb_list_switch(xmb_handle_t *xmb)
 
    xmb_list_switch_horizontal_list(xmb, menu);
 
-   menu_animation_push(menu->animation, XMB_DELAY,
+   menu_animation_push(disp->animation, XMB_DELAY,
          xmb->icon.spacing.horizontal * -(float)menu->categories.selection_ptr,
          &xmb->categories.x_pos, EASING_IN_OUT_QUAD, NULL);
 
@@ -870,7 +873,7 @@ static void xmb_list_open_horizontal_list(xmb_handle_t *xmb, menu_handle_t *menu
       else if (xmb->depth <= 1)
          ia = xmb->categories.passive.alpha;
 
-      menu_animation_push(menu->animation, XMB_DELAY, ia,
+      menu_animation_push(menu->display.animation, XMB_DELAY, ia,
             &node->alpha, EASING_IN_OUT_QUAD, NULL);
    }
 }
@@ -879,6 +882,7 @@ static void xmb_list_open(xmb_handle_t *xmb)
 {
    int                dir = 0;
    menu_handle_t    *menu = menu_driver_get_ptr();
+   menu_display_t   *disp = menu_display_get_ptr();
    menu_navigation_t *nav = menu_navigation_get_ptr();
    menu_list_t *menu_list = menu_list_get_ptr();
 
@@ -902,18 +906,18 @@ static void xmb_list_open(xmb_handle_t *xmb)
    switch (xmb->depth)
    {
       case 1:
-         menu_animation_push(menu->animation,
+         menu_animation_push(disp->animation,
                XMB_DELAY, xmb->icon.size * -(xmb->depth*2-2),
                &xmb->x, EASING_IN_OUT_QUAD, NULL);
-         menu_animation_push(menu->animation,
+         menu_animation_push(disp->animation,
                XMB_DELAY, 0, &xmb->textures.arrow.alpha,
                EASING_IN_OUT_QUAD, NULL);
          break;
       case 2:
-         menu_animation_push(menu->animation,
+         menu_animation_push(disp->animation,
                XMB_DELAY, xmb->icon.size * -(xmb->depth*2-2),
                &xmb->x, EASING_IN_OUT_QUAD, NULL);
-         menu_animation_push(menu->animation,
+         menu_animation_push(disp->animation,
                XMB_DELAY, 1, &xmb->textures.arrow.alpha,
                EASING_IN_OUT_QUAD, NULL);
          break;
@@ -1228,6 +1232,7 @@ static void xmb_render(void)
    xmb_handle_t      *xmb   = NULL;
    settings_t   *settings   = config_get_ptr();
    menu_handle_t    *menu   = menu_driver_get_ptr();
+   menu_display_t   *disp   = menu_display_get_ptr();
    menu_animation_t *anim   = menu_animation_get_ptr();
    menu_input_t *menu_input = menu_input_get_ptr();
    menu_navigation_t *nav   = menu_navigation_get_ptr();
@@ -1241,7 +1246,7 @@ static void xmb_render(void)
    if (!xmb)
       return;
 
-   menu_animation_update(menu->animation, menu->animation->delta_time / IDEAL_DT);
+   menu_animation_update(disp->animation, disp->animation->delta_time / IDEAL_DT);
 
    current = nav->selection_ptr;
    end     = menu_list_get_size(menu_list);
@@ -2099,8 +2104,9 @@ static void xmb_toggle_horizontal_list(xmb_handle_t *xmb, menu_handle_t *menu)
 
 static void xmb_toggle(bool menu_on)
 {
-   xmb_handle_t *xmb   = NULL;
-   menu_handle_t *menu = menu_driver_get_ptr();
+   xmb_handle_t *xmb    = NULL;
+   menu_handle_t *menu  = menu_driver_get_ptr();
+   menu_display_t *disp = menu_display_get_ptr();
 
    if (!menu)
       return;
@@ -2118,7 +2124,7 @@ static void xmb_toggle(bool menu_on)
       return;
    }
 
-   menu_animation_push(menu->animation, XMB_DELAY, 1.0f,
+   menu_animation_push(disp->animation, XMB_DELAY, 1.0f,
          &xmb->alpha, EASING_IN_OUT_QUAD, NULL);
 
    xmb->prevent_populate = !menu_needs_refresh();

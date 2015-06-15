@@ -118,15 +118,15 @@ void menu_display_free(void *data)
 {
    menu_handle_t *menu  = (menu_handle_t*)data;
    menu_display_t *disp = menu ? &menu->display : NULL;
-   if (!menu || !disp)
+   if (!disp)
       return;
 
    if (disp->msg_queue)
       msg_queue_free(disp->msg_queue);
    disp->msg_queue = NULL;
 
-   menu_animation_free(menu->animation);
-   menu->animation = NULL;
+   menu_animation_free(disp->animation);
+   disp->animation = NULL;
 
    menu_display_fb_free(&disp->frame_buf);
 }
@@ -137,10 +137,10 @@ bool menu_display_init(void *data)
    if (!menu)
       return false;
 
-   menu->animation = (menu_animation_t*)calloc
+   menu->display.animation = (menu_animation_t*)calloc
       (1, sizeof(menu_animation_t));
 
-   if (!menu->animation)
+   if (!menu->display.animation)
       return false;
 
    return true;

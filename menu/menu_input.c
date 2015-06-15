@@ -995,6 +995,7 @@ unsigned menu_input_frame(retro_input_t input, retro_input_t trigger_input)
       | (1ULL << RETRO_DEVICE_ID_JOYPAD_R);
    menu_navigation_t *nav      = menu_navigation_get_ptr();
    menu_handle_t *menu         = menu_driver_get_ptr();
+   menu_display_t *disp        = menu_display_get_ptr();
    menu_input_t *menu_input    = menu_input_get_ptr();
    driver_t *driver            = driver_get_ptr();
    settings_t *settings        = config_get_ptr();
@@ -1033,7 +1034,7 @@ unsigned menu_input_frame(retro_input_t input, retro_input_t trigger_input)
       nav->scroll.acceleration = 0;
    }
 
-   menu_input->delay.count += menu->animation->delta_time / IDEAL_DT;
+   menu_input->delay.count += disp->animation->delta_time / IDEAL_DT;
 
    if (driver->block_input)
       trigger_input = 0;

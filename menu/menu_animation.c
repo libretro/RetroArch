@@ -19,6 +19,7 @@
 #include <compat/strl.h>
 #include <retro_miscellaneous.h>
 
+#include "menu_display.h"
 #include "menu_animation.h"
 #include "../configuration.h"
 #include "../runloop.h"
@@ -26,10 +27,10 @@
 
 menu_animation_t *menu_animation_get_ptr(void)
 {
-   menu_handle_t *menu = menu_driver_get_ptr();
-   if (!menu)
+   menu_display_t *disp = menu_display_get_ptr();
+   if (!disp)
       return NULL;
-   return menu->animation;
+   return disp->animation;
 }
 
 /* from https://github.com/kikito/tween.lua/blob/master/tween.lua */
