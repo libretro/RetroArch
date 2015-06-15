@@ -2014,7 +2014,7 @@ static void xmb_list_cache(menu_list_type_t type, unsigned action)
          if (menu->categories.selection_ptr == 0)
          {
             menu_list->menu_stack->list[stack_size - 1].label = 
-               strdup("Main Menu");
+               strdup(menu_hash_to_str(MENU_VALUE_MAIN_MENU));
             menu_list->menu_stack->list[stack_size - 1].type = 
                MENU_SETTINGS;
          }
