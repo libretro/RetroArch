@@ -28,6 +28,24 @@ const char *menu_hash_to_str(uint32_t hash)
          return "Main Menu";
       case MENU_VALUE_SETTINGS:
          return "Settings";
+      case MENU_LABEL_QUIT_RETROARCH:
+         return "Quit RetroArch";
+      case MENU_LABEL_HELP:
+         return "Help";
+      case MENU_LABEL_SAVE_NEW_CONFIG:
+         return "Save New Config";
+      case MENU_LABEL_RESTART_CONTENT:
+         return "Restart Content";
+      case MENU_LABEL_TAKE_SCREENSHOT:
+         return "Take Screenshot";
+      case MENU_LABEL_CORE_UPDATER_LIST:
+         return "Core Updater";
+      case MENU_LABEL_SYSTEM_INFORMATION:
+         return "System Information";
+      case MENU_LABEL_OPTIONS:
+         return "Options";
+      case MENU_LABEL_CORE_INFORMATION:
+         return "Core Information";
    }
 
    return "null";

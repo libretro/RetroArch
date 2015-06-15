@@ -3584,7 +3584,7 @@ static bool setting_append_list_main_menu_options(
 
    CONFIG_ACTION(
          "core_information",
-         "Core Information",
+         menu_hash_to_str(MENU_LABEL_CORE_INFORMATION),
          group_info.name,
          subgroup_info.name,
          parent_group);
@@ -3599,7 +3599,7 @@ static bool setting_append_list_main_menu_options(
 
    CONFIG_ACTION(
          "options",
-         "Options",
+         menu_hash_to_str(MENU_LABEL_OPTIONS),
          group_info.name,
          subgroup_info.name,
          parent_group);
@@ -3616,7 +3616,7 @@ static bool setting_append_list_main_menu_options(
 
    CONFIG_ACTION(
          "system_information",
-         "System Information",
+         menu_hash_to_str(MENU_LABEL_SYSTEM_INFORMATION),
          group_info.name,
          subgroup_info.name,
          parent_group);
@@ -3624,7 +3624,7 @@ static bool setting_append_list_main_menu_options(
 #ifdef HAVE_NETWORKING
    CONFIG_ACTION(
          "core_updater_list",
-         "Core Updater",
+         menu_hash_to_str(MENU_LABEL_CORE_UPDATER_LIST),
          group_info.name,
          subgroup_info.name,
          parent_group);
@@ -3672,7 +3672,7 @@ static bool setting_append_list_main_menu_options(
 
       CONFIG_ACTION(
             "take_screenshot",
-            "Take Screenshot",
+            menu_hash_to_str(MENU_LABEL_TAKE_SCREENSHOT),
             group_info.name,
             subgroup_info.name,
             parent_group);
@@ -3690,7 +3690,7 @@ static bool setting_append_list_main_menu_options(
 
       CONFIG_ACTION(
             "restart_content",
-            "Restart Content",
+            menu_hash_to_str(MENU_LABEL_RESTART_CONTENT),
             group_info.name,
             subgroup_info.name,
             parent_group);
@@ -3717,7 +3717,7 @@ static bool setting_append_list_main_menu_options(
 
    CONFIG_ACTION(
          "save_new_config",
-         "Save New Config",
+         menu_hash_to_str(MENU_LABEL_SAVE_NEW_CONFIG),
          group_info.name,
          subgroup_info.name,
          parent_group);
@@ -3725,7 +3725,7 @@ static bool setting_append_list_main_menu_options(
 
    CONFIG_ACTION(
          "help",
-         "Help",
+         menu_hash_to_str(MENU_LABEL_HELP),
          group_info.name,
          subgroup_info.name,
          parent_group);
@@ -3734,7 +3734,7 @@ static bool setting_append_list_main_menu_options(
    /* Apple rejects iOS apps that lets you forcibly quit an application. */
    CONFIG_ACTION(
          "quit_retroarch",
-         "Quit RetroArch",
+         menu_hash_to_str(MENU_LABEL_QUIT_RETROARCH),
          group_info.name,
          subgroup_info.name,
          parent_group);
