@@ -3612,7 +3612,7 @@ static bool setting_append_list_main_menu_options(
    {
       CONFIG_ACTION(
             "settings",
-            "Settings",
+            menu_hash_to_str(MENU_VALUE_SETTINGS),
             group_info.name,
             subgroup_info.name,
             parent_group);
@@ -3762,7 +3762,7 @@ static bool setting_append_list_driver_options(
    
    START_GROUP(group_info, "Driver Settings", parent_group);
 
-   parent_group = "Settings";
+   parent_group = menu_hash_to_str(MENU_VALUE_SETTINGS);
 
    START_SUB_GROUP(list, list_info, "State", group_info.name,
          subgroup_info, parent_group);
@@ -3902,7 +3902,7 @@ static bool setting_append_list_core_options(
    START_GROUP(group_info, "Core Settings", parent_group);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
-   parent_group = "Settings";
+   parent_group = menu_hash_to_str(MENU_VALUE_SETTINGS);
 
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info,
          parent_group);
@@ -3966,7 +3966,7 @@ static bool setting_append_list_configuration_options(
 
    START_GROUP(group_info, "Configuration Settings", parent_group);
 
-   parent_group = "Settings";
+   parent_group = menu_hash_to_str(MENU_VALUE_SETTINGS);
 
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info,
          parent_group);
@@ -4039,7 +4039,7 @@ static bool setting_append_list_saving_options(
 
    START_GROUP(group_info, "Saving Settings", parent_group);
 
-   parent_group = "Settings";
+   parent_group = menu_hash_to_str(MENU_VALUE_SETTINGS);
 
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info,
          parent_group);
@@ -4160,7 +4160,7 @@ static bool setting_append_list_logging_options(
    START_GROUP(group_info, "Logging Settings", parent_group);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
-   parent_group = "Settings";
+   parent_group = menu_hash_to_str(MENU_VALUE_SETTINGS);
 
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info,
          parent_group);
@@ -4229,7 +4229,7 @@ static bool setting_append_list_frame_throttling_options(
 
    START_GROUP(group_info, "Frame Throttle Settings", parent_group);
 
-   parent_group = "Settings";
+   parent_group = menu_hash_to_str(MENU_VALUE_SETTINGS);
 
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info, parent_group);
 
@@ -4288,7 +4288,7 @@ static bool setting_append_list_rewind_options(
 
    START_GROUP(group_info, "Rewind Settings", parent_group);
 
-   parent_group = "Settings";
+   parent_group = menu_hash_to_str(MENU_VALUE_SETTINGS);
 
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info, parent_group);
 
@@ -4349,7 +4349,7 @@ static bool setting_append_list_recording_options(
 
    START_GROUP(group_info, "Recording Settings", parent_group);
 
-   parent_group = "Settings";
+   parent_group = menu_hash_to_str(MENU_VALUE_SETTINGS);
 
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info, parent_group);
 
@@ -4454,7 +4454,7 @@ static bool setting_append_list_video_options(
 
    START_GROUP(group_info, "Video Settings", parent_group);
 
-   parent_group = "Settings";
+   parent_group = menu_hash_to_str(MENU_VALUE_SETTINGS);
 
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info, parent_group);
 
@@ -4950,7 +4950,7 @@ static bool setting_append_list_font_options(
 
    START_GROUP(group_info, "Onscreen Display Settings", parent_group);
 
-   parent_group = "Settings";
+   parent_group = menu_hash_to_str(MENU_VALUE_SETTINGS);
 
    START_SUB_GROUP(list, list_info, "Messages", group_info.name, subgroup_info, parent_group);
 
@@ -5038,7 +5038,7 @@ static bool setting_append_list_audio_options(
 
    START_GROUP(group_info, "Audio Settings", parent_group);
 
-   parent_group = "Settings";
+   parent_group = menu_hash_to_str(MENU_VALUE_SETTINGS);
 
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info, parent_group);
 
@@ -5101,7 +5101,7 @@ static bool setting_append_list_audio_options(
 
    END_SUB_GROUP(list, list_info, parent_group);
 
-   parent_group = "Settings";
+   parent_group = menu_hash_to_str(MENU_VALUE_SETTINGS);
 
    START_SUB_GROUP(
          list,
@@ -5194,7 +5194,7 @@ static bool setting_append_list_audio_options(
 
    END_SUB_GROUP(list, list_info, parent_group);
 
-   parent_group = "Settings";
+   parent_group = menu_hash_to_str(MENU_VALUE_SETTINGS);
 
    START_SUB_GROUP(
          list,
@@ -5260,7 +5260,7 @@ static bool setting_append_list_input_hotkey_options(
 
    START_GROUP(group_info, "Input Hotkey Binds", parent_group);
 
-   parent_group = "Settings";
+   parent_group = menu_hash_to_str(MENU_VALUE_SETTINGS);
 
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info,
          parent_group);
@@ -5299,7 +5299,7 @@ static bool setting_append_list_input_options(
 
    START_GROUP(group_info, "Input Settings", parent_group);
 
-   parent_group = "Settings";
+   parent_group = menu_hash_to_str(MENU_VALUE_SETTINGS);
 
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info, parent_group);
 
@@ -5583,7 +5583,7 @@ static bool setting_append_list_overlay_options(
 
    START_GROUP(group_info, "Onscreen Overlay Settings", parent_group);
 
-   parent_group = "Settings";
+   parent_group = menu_hash_to_str(MENU_VALUE_SETTINGS);
 
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info, parent_group);
 
@@ -5665,7 +5665,7 @@ static bool setting_append_list_osk_overlay_options(
 
    START_GROUP(group_info, "Onscreen Keyboard Overlay Settings", parent_group);
 
-   parent_group = "Settings";
+   parent_group = menu_hash_to_str(MENU_VALUE_SETTINGS);
 
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info, parent_group);
 
@@ -5713,7 +5713,7 @@ static bool setting_append_list_menu_options(
 
    START_GROUP(group_info, "Menu Settings", parent_group);
    
-   parent_group = "Settings";
+   parent_group = menu_hash_to_str(MENU_VALUE_SETTINGS);
 
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info, parent_group);
 
@@ -6003,7 +6003,7 @@ static bool setting_append_list_ui_options(
 
    START_GROUP(group_info, "UI Settings", parent_group);
 
-   parent_group = "Settings";
+   parent_group = menu_hash_to_str(MENU_VALUE_SETTINGS);
 
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info, parent_group);
 
@@ -6092,7 +6092,7 @@ static bool setting_append_list_archive_options(
 
    START_GROUP(group_info, "Archive Settings", parent_group);
 
-   parent_group = "Settings";
+   parent_group = menu_hash_to_str(MENU_VALUE_SETTINGS);
 
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info, parent_group);
 
@@ -6186,7 +6186,7 @@ static bool setting_append_list_netplay_options(
 
    START_GROUP(group_info, "Network Settings", parent_group);
 
-   parent_group = "Settings";
+   parent_group = menu_hash_to_str(MENU_VALUE_SETTINGS);
 
    START_SUB_GROUP(list, list_info, "Netplay", group_info.name, subgroup_info, parent_group);
 
@@ -6350,7 +6350,7 @@ static bool setting_append_list_patch_options(
 
    START_GROUP(group_info, "Patch Settings", parent_group);
 
-   parent_group = "Settings";
+   parent_group = menu_hash_to_str(MENU_VALUE_SETTINGS);
 
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
 
@@ -6409,7 +6409,7 @@ static bool setting_append_list_playlist_options(
    START_GROUP(group_info, "Playlist Settings", parent_group);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
-   parent_group = "Settings";
+   parent_group = menu_hash_to_str(MENU_VALUE_SETTINGS);
 
    START_SUB_GROUP(list, list_info, "History", group_info.name, subgroup_info, parent_group);
 
@@ -6455,7 +6455,7 @@ static bool setting_append_list_user_options(
 
    START_GROUP(group_info, "User Settings", parent_group);
 
-   parent_group = "Settings";
+   parent_group = menu_hash_to_str(MENU_VALUE_SETTINGS);
 
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info, parent_group);
 
@@ -6511,7 +6511,7 @@ static bool setting_append_list_directory_options(
 
    START_GROUP(group_info, "Directory Settings", parent_group);
 
-   parent_group = "Settings";
+   parent_group = menu_hash_to_str(MENU_VALUE_SETTINGS);
 
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info, parent_group);
 
@@ -6940,7 +6940,7 @@ static bool setting_append_list_privacy_options(
 
    START_GROUP(group_info, "Privacy Settings", parent_group);
 
-   parent_group = "Settings";
+   parent_group = menu_hash_to_str(MENU_VALUE_SETTINGS);
 
    START_SUB_GROUP(list, list_info, "State",
          group_info.name, subgroup_info, parent_group);
@@ -7004,7 +7004,7 @@ static bool setting_append_list_input_player_options(
 
    START_GROUP(group_info, group_lbl[user], parent_group);
 
-   parent_group = "Settings";
+   parent_group = menu_hash_to_str(MENU_VALUE_SETTINGS);
 
    START_SUB_GROUP(
          list,
