@@ -63,7 +63,7 @@ static bool read_content_file(unsigned i, const char *path, void **buf,
    if (!read_file(path, (void**) &ret_buf, length))
       return false;
 
-   if (*length <= 0)
+   if (*length < 0)
       return false;
 
    if (i != 0)
