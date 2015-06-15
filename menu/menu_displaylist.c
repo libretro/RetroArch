@@ -1826,7 +1826,7 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
             menu_setting_free(menu->list_settings);
          menu->list_settings = menu_setting_new(SL_FLAG_ALL_SETTINGS);
 
-         setting = menu_setting_find("Driver Settings");
+         setting = menu_setting_find(menu_hash_to_str(MENU_LABEL_DRIVER_SETTINGS));
 
          if (settings->menu.collapse_subgroups_enable)
          {
