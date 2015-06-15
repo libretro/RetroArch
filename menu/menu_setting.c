@@ -6405,6 +6405,7 @@ static bool setting_append_list_playlist_options(
    settings_t *settings = config_get_ptr();
 
    START_GROUP(group_info, "Playlist Settings", parent_group);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
    parent_group = "Settings";
 
