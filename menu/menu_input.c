@@ -993,12 +993,13 @@ unsigned menu_input_frame(retro_input_t input, retro_input_t trigger_input)
       | (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT)
       | (1ULL << RETRO_DEVICE_ID_JOYPAD_L)
       | (1ULL << RETRO_DEVICE_ID_JOYPAD_R);
-   menu_navigation_t *nav = menu_navigation_get_ptr();
-   menu_handle_t *menu    = menu_driver_get_ptr();
-   driver_t *driver       = driver_get_ptr();
-   settings_t *settings   = config_get_ptr();
+   menu_navigation_t *nav      = menu_navigation_get_ptr();
+   menu_handle_t *menu         = menu_driver_get_ptr();
+   menu_input_t *menu_input    = menu_input_get_ptr();
+   driver_t *driver            = driver_get_ptr();
+   settings_t *settings        = config_get_ptr();
 
-   if (!menu || !driver || !nav)
+   if (!menu || !driver || !nav || !menu_input)
       return 0;
 
    driver->retro_ctx.poll_cb();
@@ -1011,11 +1012,11 @@ unsigned menu_input_frame(retro_input_t input, retro_input_t trigger_input)
       if (!first_held)
       {
          first_held = true;
-         menu->input.delay.timer = initial_held ? 12 : 6;
-         menu->input.delay.count = 0;
+         menu_input->delay.timer = initial_held ? 12 : 6;
+         menu_input->delay.count = 0;
       }
 
-      if (menu->input.delay.count >= menu->input.delay.timer)
+      if (menu_input->delay.count >= menu_input->delay.timer)
       {
          first_held = false;
          trigger_input |= input & input_repeat;
@@ -1032,7 +1033,7 @@ unsigned menu_input_frame(retro_input_t input, retro_input_t trigger_input)
       nav->scroll.acceleration = 0;
    }
 
-   menu->input.delay.count += menu->animation->delta_time / IDEAL_DT;
+   menu_input->delay.count += menu->animation->delta_time / IDEAL_DT;
 
    if (driver->block_input)
       trigger_input = 0;
@@ -1071,7 +1072,9 @@ unsigned menu_input_frame(retro_input_t input, retro_input_t trigger_input)
    if (settings->menu.pointer.enable)
       menu_input_pointer(&ret);
 
-   if (trigger_input && menu_ctx_driver_get_ptr()->perform_action && menu_ctx_driver_get_ptr()->perform_action(menu->userdata, ret))
+   if (trigger_input &&
+         menu_ctx_driver_get_ptr()->perform_action &&
+         menu_ctx_driver_get_ptr()->perform_action(menu->userdata, ret))
       return MENU_ACTION_NOOP;
 
    return ret;
