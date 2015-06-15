@@ -218,10 +218,15 @@ void menu_shader_manager_save_preset(
       /* Append extension automatically as appropriate. */
       if (!strstr(basename, ".cgp") && !strstr(basename, ".glslp"))
       {
-         if (type == RARCH_SHADER_GLSL)
-            strlcat(buffer, ".glslp", sizeof(buffer));
-         else if (type == RARCH_SHADER_CG)
-            strlcat(buffer, ".cgp", sizeof(buffer));
+         switch (type)
+         {
+            case RARCH_SHADER_GLSL:
+               strlcat(buffer, ".glslp", sizeof(buffer));
+               break;
+            case RARCH_SHADER_CG:
+               strlcat(buffer, ".cgp", sizeof(buffer));
+               break;
+         }
       }
    }
    else
