@@ -129,11 +129,6 @@ static int archive_load(void)
 
 static int load_or_open_zip_iterate(char *s, size_t len, unsigned action)
 {
-   menu_handle_t *menu = menu_driver_get_ptr();
-
-   if (!menu)
-      return -1;
-
    snprintf(s, len, "Opening compressed file\n"
          " \n"
 
@@ -170,11 +165,7 @@ static int action_iterate_help(char *s, size_t len, const char *label)
       RETRO_DEVICE_ID_JOYPAD_Y,
    };
    char desc[ARRAY_SIZE(binds)][64] = {{0}};
-   menu_handle_t *menu              = menu_driver_get_ptr();
    settings_t *settings             = config_get_ptr();
-
-   if (!menu)
-      return 0;
 
    menu_driver_render();
 
@@ -224,10 +215,9 @@ static int action_iterate_info(char *s, size_t len, const char *label)
    unsigned info_type               = 0;
    rarch_setting_t *current_setting = NULL;
    file_list_t *list                = NULL;
-   menu_handle_t *menu              = menu_driver_get_ptr();
    menu_list_t *menu_list           = menu_list_get_ptr();
    size_t selection                 = menu_navigation_get_current_selection();
-   if (!menu)
+   if (!menu_list)
       return 0;
 
    list = (file_list_t*)menu_list->selection_buf;
@@ -284,14 +274,13 @@ static int action_iterate_menu_viewport(char *s, size_t len, const char *label, 
    const char *base_msg             = NULL;
    unsigned type                    = 0;
    video_viewport_t *custom         = video_viewport_get_custom();
-   menu_handle_t *menu              = menu_driver_get_ptr();
    menu_display_t *disp             = menu_display_get_ptr();
    menu_navigation_t *nav           = menu_navigation_get_ptr();
    menu_list_t *menu_list           = menu_list_get_ptr();
    settings_t *settings             = config_get_ptr();
    struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
 
-   if (!menu)
+   if (!menu_list)
       return -1;
 
    menu_list_get_last_stack(menu_list, NULL, NULL, &type, NULL);
