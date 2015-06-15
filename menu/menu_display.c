@@ -202,11 +202,11 @@ bool menu_display_font_init_first(const void **font_driver,
 bool menu_display_font_bind_block(void *data,
       const struct font_renderer *font_driver, void *userdata)
 {
-   menu_handle_t *menu = (menu_handle_t*)data;
-   if (!font_driver || !font_driver->bind_block)
+   menu_display_t *disp = menu_display_get_ptr();
+   if (!disp || !font_driver || !font_driver->bind_block)
       return false;
 
-   font_driver->bind_block(menu->display.font.buf, userdata);
+   font_driver->bind_block(disp->font.buf, userdata);
 
    return true;
 }
@@ -226,13 +226,13 @@ bool menu_display_font_flush_block(void *data,
 
 void menu_display_free_main_font(void *data)
 {
-   menu_handle_t *menu = (menu_handle_t*)data;
-   driver_t *driver = driver_get_ptr();
+   driver_t     *driver = driver_get_ptr();
+   menu_display_t *disp = menu_display_get_ptr();
     
-   if (menu->display.font.buf)
+   if (disp && disp->font.buf)
    {
-      driver->font_osd_driver->free(menu->display.font.buf);
-      menu->display.font.buf = NULL;
+      driver->font_osd_driver->free(disp->font.buf);
+      disp->font.buf = NULL;
    }
 }
 
@@ -240,21 +240,25 @@ bool menu_display_init_main_font(void *data,
       const char *font_path, float font_size)
 {
    bool      ret;
-   menu_handle_t *menu = (menu_handle_t*)data;
-   driver_t    *driver = driver_get_ptr();
-   void        *video  = video_driver_get_ptr(NULL);
+   menu_handle_t *menu  = (menu_handle_t*)data;
+   driver_t    *driver  = driver_get_ptr();
+   void        *video   = video_driver_get_ptr(NULL);
+   menu_display_t *disp = menu ? &menu->display : NULL;
 
-   if (menu->display.font.buf)
+   if (!disp)
+      return false;
+
+   if (disp->font.buf)
       menu_display_free_main_font(menu);
 
    ret = menu_display_font_init_first(
-         (const void**)&driver->font_osd_driver, &menu->display.font.buf, video,
+         (const void**)&driver->font_osd_driver, &disp->font.buf, video,
          font_path, font_size);
 
    if (ret)
-      menu->display.font.size = font_size;
+      disp->font.size = font_size;
    else
-      menu->display.font.buf = NULL;
+      disp->font.buf = NULL;
 
    return ret;
 }

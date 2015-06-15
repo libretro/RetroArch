@@ -58,9 +58,8 @@ void menu_cbs_init(void *data,
    uint32_t label_hash          = 0;
    uint32_t menu_label_hash     = 0;
    file_list_t *list            = (file_list_t*)data;
-   menu_handle_t *menu          = menu_driver_get_ptr();
    menu_list_t *menu_list       = menu_list_get_ptr();
-   if (!menu || !menu_list || !list)
+   if (!menu_list || !list)
       return;
 
    cbs = (menu_file_list_cbs_t*)menu_list_get_actiondata_at_offset(list, idx);

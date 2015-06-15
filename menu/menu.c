@@ -134,9 +134,8 @@ bool menu_load_content(void)
 void menu_common_load_content(bool persist)
 {
    menu_display_t *disp   = menu_display_get_ptr();
-   menu_handle_t    *menu = menu_driver_get_ptr();
    menu_list_t *menu_list = menu_list_get_ptr();
-   if (!menu || !menu_list)
+   if (!menu_list)
       return;
 
    event_command(persist ? EVENT_CMD_LOAD_CONTENT_PERSIST : EVENT_CMD_LOAD_CONTENT);
