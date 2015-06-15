@@ -517,7 +517,7 @@ static void frontend_android_get_environment_settings(int *argc,
    if (android_app->getStringExtra && jstr)
    {
       const char *argv = (*env)->GetStringUTFChars(env, jstr, 0);
-      bool used = (strcmp(argv, "false") == 0) ? false : true;
+      bool used = (!strcmp(argv, "false")) ? false : true;
 
       (*env)->ReleaseStringUTFChars(env, jstr, argv);
 

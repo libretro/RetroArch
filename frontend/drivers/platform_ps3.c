@@ -102,7 +102,7 @@ static void frontend_ps3_get_environment_settings(int *argc, char *argv[],
    /* not launched from external launcher, set default path */
    // second param is multiMAN SELF file
    if(path_file_exists(argv[2]) && *argc > 1
-         && (strcmp(argv[2], EMULATOR_CONTENT_DIR) == 0))
+         && (!strcmp(argv[2], EMULATOR_CONTENT_DIR)))
    {
       multiman_detected = true;
       RARCH_LOG("Started from multiMAN, auto-game start enabled.\n");
