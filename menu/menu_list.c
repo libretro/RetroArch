@@ -245,11 +245,11 @@ void *menu_list_get_last_stack_actiondata(const menu_list_t *list)
 }
 
 static int menu_list_flush_stack_type(
-      uint32_t needle_hash, uint32_t label_hash,
+      const char *needle, const char *label,
       unsigned type, unsigned final_type)
 {
-   if (needle_hash != 0)
-      return ((needle_hash == label_hash) ? 0 : 1);
+   if (needle)
+      return strcmp(needle, label);
    return type != final_type;
 }
 
@@ -270,7 +270,7 @@ void menu_list_flush_stack(menu_list_t *list,
    menu_set_refresh();
    menu_list_get_last(list->menu_stack, &path, &label, &type, &entry_idx);
 
-   while (menu_list_flush_stack_type(needle_hash, label_hash, type, final_type) != 0)
+   while (menu_list_flush_stack_type(needle, label, type, final_type) != 0)
    {
       menu_list_pop(list->menu_stack, &nav->selection_ptr);
       menu_list_get_last(list->menu_stack, &path, &label, &type, &entry_idx);

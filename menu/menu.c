@@ -300,9 +300,9 @@ int menu_iterate(retro_input_t input,
    menu_handle_t *menu      = menu_driver_get_ptr();
    menu_input_t *menu_input = menu_input_get_ptr();
 
-   menu_input->joypad.state    = menu_input_frame(input, trigger_input);
-
    menu_animation_update_time(menu->animation);
+
+   menu_input->joypad.state    = menu_input_frame(input, trigger_input);
 
    action = menu_input->joypad.state;
 
