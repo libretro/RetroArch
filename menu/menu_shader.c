@@ -346,3 +346,12 @@ void menu_shader_manager_apply_changes(void)
    menu_shader_manager_set_preset(NULL, shader_type, NULL);
 #endif
 }
+
+void menu_shader_free(menu_handle_t *menu)
+{
+#ifdef HAVE_SHADER_MANAGER
+   if (menu->shader)
+      free(menu->shader);
+   menu->shader = NULL;
+#endif
+}

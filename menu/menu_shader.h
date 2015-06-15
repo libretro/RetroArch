@@ -70,6 +70,8 @@ unsigned menu_shader_manager_get_type(
  **/
 void menu_shader_manager_apply_changes(void);
 
+void menu_shader_free(menu_handle_t *menu);
+
 #ifdef __cplusplus
 }
 #endif

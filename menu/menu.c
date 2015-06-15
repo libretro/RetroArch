@@ -251,11 +251,7 @@ void menu_free(menu_handle_t *menu)
       content_playlist_free(menu->playlist);
    menu->playlist = NULL;
   
-#ifdef HAVE_SHADER_MANAGER
-   if (menu->shader)
-      free(menu->shader);
-   menu->shader = NULL;
-#endif
+   menu_shader_free(menu);
 
    menu_driver_free(menu);
 
