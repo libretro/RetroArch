@@ -5618,7 +5618,7 @@ static bool setting_append_list_overlay_options(
    CONFIG_PATH(
          settings->input.overlay,
          "input_overlay",
-         "Overlay Preset",
+         menu_hash_to_str(MENU_LABEL_OVERLAY_PRESET),
          global->overlay_dir,
          group_info.name,
          subgroup_info.name,
@@ -5632,7 +5632,7 @@ static bool setting_append_list_overlay_options(
    CONFIG_FLOAT(
          settings->input.overlay_opacity,
          "input_overlay_opacity",
-         "Overlay Opacity",
+         menu_hash_to_str(MENU_LABEL_OVERLAY_OPACITY),
          0.7f,
          "%.2f",
          group_info.name,
@@ -5647,7 +5647,7 @@ static bool setting_append_list_overlay_options(
    CONFIG_FLOAT(
          settings->input.overlay_scale,
          "input_overlay_scale",
-         "Overlay Scale",
+         menu_hash_to_str(MENU_LABEL_OVERLAY_SCALE),
          1.0f,
          "%.2f",
          group_info.name,
@@ -5666,7 +5666,7 @@ static bool setting_append_list_overlay_options(
    CONFIG_PATH(
          settings->osk.overlay,
          "input_osk_overlay",
-         "Keyboard Overlay Preset",
+         menu_hash_to_str(MENU_LABEL_KEYBOARD_OVERLAY_PRESET),
          global->osk_overlay_dir,
          group_info.name,
          subgroup_info.name,
@@ -5701,7 +5701,7 @@ static bool setting_append_list_menu_options(
    CONFIG_PATH(
          settings->menu.wallpaper,
          "menu_wallpaper",
-         "Menu Wallpaper",
+         menu_hash_to_str(MENU_LABEL_VALUE_MENU_WALLPAPER),
          "",
          group_info.name,
          subgroup_info.name,
@@ -5714,7 +5714,7 @@ static bool setting_append_list_menu_options(
    CONFIG_BOOL(
          settings->menu.dynamic_wallpaper_enable,
          "menu_dynamic_wallpaper_enable",
-         "Dynamic Wallpaper",
+         menu_hash_to_str(MENU_LABEL_VALUE_DYNAMIC_WALLPAPER),
          true,
          "OFF",
          "ON",

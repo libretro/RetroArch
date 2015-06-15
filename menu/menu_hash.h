@@ -74,7 +74,13 @@ extern "C" {
 #define MENU_LABEL_NETPLAY_IP_ADDRESS                                          0xac9a53ffU
 #define MENU_LABEL_NETPLAY_MODE                                                0xc1cf6506U
 #define MENU_LABEL_PERFCNT_ENABLE                                              0x6823dbddU
+#define MENU_LABEL_OVERLAY_SCALE                                               0x4237794fU
+#define MENU_LABEL_KEYBOARD_OVERLAY_PRESET                                     0x7bc03f8bU
+#define MENU_LABEL_OVERLAY_PRESET                                              0x8338e89aU
+#define MENU_LABEL_OVERLAY_OPACITY                                             0x98605740U
 
+#define MENU_LABEL_VALUE_MENU_WALLPAPER                                        0x4555d2a2U
+#define MENU_LABEL_VALUE_DYNAMIC_WALLPAPER                                     0x66928c32U
 #define MENU_LABEL_PAL60_ENABLE                                                0x62bc416eU
 #define MENU_LABEL_SYSTEM_BGM_ENABLE                                           0x9287a1c5U
 

@@ -62,6 +62,18 @@ const char *menu_hash_to_str(uint32_t hash)
          return "Resume Content";
       case MENU_LABEL_DRIVER_SETTINGS:
          return "Driver Settings";
+      case MENU_LABEL_OVERLAY_SCALE:
+         return "Overlay Scale";
+      case MENU_LABEL_OVERLAY_PRESET:
+         return "Overlay Preset";
+      case MENU_LABEL_KEYBOARD_OVERLAY_PRESET:
+         return "Keyboard Overlay Preset";
+      case MENU_LABEL_OVERLAY_OPACITY:
+         return "Overlay Opacity";
+      case MENU_LABEL_VALUE_MENU_WALLPAPER:
+         return "Menu Wallpaper";
+      case MENU_LABEL_VALUE_DYNAMIC_WALLPAPER:
+         return "Dynamic Wallpaper";
    }
 
    return "null";
