@@ -262,8 +262,6 @@ void menu_list_flush_stack(menu_list_t *list,
    size_t entry_idx       = 0;
    menu_handle_t *menu    = menu_driver_get_ptr();
    menu_navigation_t *nav = menu_navigation_get_ptr();
-   uint32_t needle_hash   = needle ? djb2_calculate(needle) : 0;
-   uint32_t label_hash    = label  ? djb2_calculate(label)  : 0;
    if (!menu || !list)
       return;
 
