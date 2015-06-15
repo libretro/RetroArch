@@ -101,103 +101,6 @@ static void menu_displaylist_push_perfcounter(
                counters[i]->ident, "", id + i, 0, 0);
 }
 
-/**
- * menu_displaylist_parse_drive_list:
- * @list                     : File list handle.
- *
- * Generates default directory drive list.
- * Platform-specific.
- *
- **/
-static void menu_displaylist_parse_drive_list(file_list_t *list)
-{
-   size_t i = 0;
-
-   (void)i;
-
-#if defined(GEKKO)
-#ifdef HW_RVL
-   menu_list_push(list,
-         "sd:/", "", MENU_FILE_DIRECTORY, 0, 0);
-   menu_list_push(list,
-         "usb:/", "", MENU_FILE_DIRECTORY, 0, 0);
-#endif
-   menu_list_push(list,
-         "carda:/", "", MENU_FILE_DIRECTORY, 0, 0);
-   menu_list_push(list,
-         "cardb:/", "", MENU_FILE_DIRECTORY, 0, 0);
-#elif defined(_XBOX1)
-   menu_list_push(list,
-         "C:", "", MENU_FILE_DIRECTORY, 0, 0);
-   menu_list_push(list,
-         "D:", "", MENU_FILE_DIRECTORY, 0, 0);
-   menu_list_push(list,
-         "E:", "", MENU_FILE_DIRECTORY, 0, 0);
-   menu_list_push(list,
-         "F:", "", MENU_FILE_DIRECTORY, 0, 0);
-   menu_list_push(list,
-         "G:", "", MENU_FILE_DIRECTORY, 0, 0);
-#elif defined(_XBOX360)
-   menu_list_push(list,
-         "game:", "", MENU_FILE_DIRECTORY, 0, 0);
-#elif defined(_WIN32)
-   unsigned drives = GetLogicalDrives();
-   char    drive[] = " :\\";
-   for (i = 0; i < 32; i++)
-   {
-      drive[0] = 'A' + i;
-      if (drives & (1 << i))
-         menu_list_push(list,
-               drive, "", MENU_FILE_DIRECTORY, 0, 0);
-   }
-#elif defined(__CELLOS_LV2__)
-   menu_list_push(list,
-         "/app_home/",   "", MENU_FILE_DIRECTORY, 0, 0);
-   menu_list_push(list,
-         "/dev_hdd0/",   "", MENU_FILE_DIRECTORY, 0, 0);
-   menu_list_push(list,
-         "/dev_hdd1/",   "", MENU_FILE_DIRECTORY, 0, 0);
-   menu_list_push(list,
-         "/host_root/",  "", MENU_FILE_DIRECTORY, 0, 0);
-   menu_list_push(list,
-         "/dev_usb000/", "", MENU_FILE_DIRECTORY, 0, 0);
-   menu_list_push(list,
-         "/dev_usb001/", "", MENU_FILE_DIRECTORY, 0, 0);
-   menu_list_push(list,
-         "/dev_usb002/", "", MENU_FILE_DIRECTORY, 0, 0);
-   menu_list_push(list,
-         "/dev_usb003/", "", MENU_FILE_DIRECTORY, 0, 0);
-   menu_list_push(list,
-         "/dev_usb004/", "", MENU_FILE_DIRECTORY, 0, 0);
-   menu_list_push(list,
-         "/dev_usb005/", "", MENU_FILE_DIRECTORY, 0, 0);
-   menu_list_push(list,
-         "/dev_usb006/", "", MENU_FILE_DIRECTORY, 0, 0);
-#elif defined(PSP)
-   menu_list_push(list,
-         "ms0:/", "", MENU_FILE_DIRECTORY, 0, 0);
-   menu_list_push(list,
-         "ef0:/", "", MENU_FILE_DIRECTORY, 0, 0);
-   menu_list_push(list,
-         "host0:/", "", MENU_FILE_DIRECTORY, 0, 0);
-#elif defined(_3DS)
-   menu_list_push(list,
-         "sdmc:/", "", MENU_FILE_DIRECTORY, 0, 0);
-#elif defined(IOS)
-   menu_list_push(list,
-         "/var/mobile/Documents/", "", MENU_FILE_DIRECTORY, 0, 0);
-   menu_list_push(list,
-         "/var/mobile/", "", MENU_FILE_DIRECTORY, 0, 0);
-   menu_list_push(list,
-         g_defaults.core_dir, "", MENU_FILE_DIRECTORY, 0, 0);
-   menu_list_push(list, "/", "",
-         MENU_FILE_DIRECTORY, 0, 0);
-#else
-   menu_list_push(list, "/", "",
-         MENU_FILE_DIRECTORY, 0, 0);
-#endif
-}
-
 static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
 {
    unsigned i;
@@ -1575,7 +1478,9 @@ static int menu_displaylist_parse_generic(menu_displaylist_info_t *info, bool *n
 
    if (!*info->path)
    {
-      menu_displaylist_parse_drive_list(info->list);
+      if (frontend_driver_parse_drive_list(info->list) != 0)
+         menu_list_push(info->list, "/", "",
+               MENU_FILE_DIRECTORY, 0, 0);
       return 0;
    }
 

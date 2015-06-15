@@ -794,5 +794,6 @@ const frontend_ctx_driver_t frontend_ctx_android = {
    NULL,                         /* load_content */
    frontend_android_get_architecture,
    NULL,                         /* get_powerstate */
+   NULL,                         /* parse_drive_list */
    "android",
 };

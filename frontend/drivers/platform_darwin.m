@@ -558,6 +558,27 @@ static enum frontend_architecture frontend_darwin_get_architecture(void)
    return FRONTEND_ARCH_NONE;
 }
 
+static int frontend_darwin_parse_drive_list(void *data)
+{
+   int ret = -1;
+#if TARGET_OS_IPHONE
+   file_list_t *list = (file_list_t*)data;
+
+   menu_list_push(list,
+         "/var/mobile/Documents/", "", MENU_FILE_DIRECTORY, 0, 0);
+   menu_list_push(list,
+         "/var/mobile/", "", MENU_FILE_DIRECTORY, 0, 0);
+   menu_list_push(list,
+         g_defaults.core_dir, "", MENU_FILE_DIRECTORY, 0, 0);
+   menu_list_push(list, "/", "",
+         MENU_FILE_DIRECTORY, 0, 0);
+
+   ret = 0;
+#endif
+
+   return ret;
+}
+
 const frontend_ctx_driver_t frontend_ctx_darwin = {
    frontend_darwin_get_environment_settings,
    NULL,                         /* init */
@@ -573,5 +594,6 @@ const frontend_ctx_driver_t frontend_ctx_darwin = {
    frontend_darwin_load_content,
    frontend_darwin_get_architecture,
    frontend_darwin_get_powerstate,
+   frontend_darwin_parse_drive_list,
    "darwin",
 };

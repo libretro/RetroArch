@@ -16,10 +16,14 @@
 
 #include <sys/process.h>
 
+#include <file/file_path.h>
+#ifndef IS_SALAMANDER
+#include <file/file_list.h>
+#endif
+
 #include "../../ps3/sdk_defines.h"
 
 #include "../../general.h"
-#include <file/file_path.h>
 
 #define EMULATOR_CONTENT_DIR "SSNE10000"
 
@@ -448,6 +452,38 @@ enum frontend_architecture frontend_ps3_get_architecture(void)
    return FRONTEND_ARCH_PPC;
 }
 
+static int frontend_ps3_parse_drive_list(void *data)
+{
+#ifndef IS_SALAMANDER
+   file_list_t *list = (file_list_t*)data;
+
+   menu_list_push(list,
+         "/app_home/",   "", MENU_FILE_DIRECTORY, 0, 0);
+   menu_list_push(list,
+         "/dev_hdd0/",   "", MENU_FILE_DIRECTORY, 0, 0);
+   menu_list_push(list,
+         "/dev_hdd1/",   "", MENU_FILE_DIRECTORY, 0, 0);
+   menu_list_push(list,
+         "/host_root/",  "", MENU_FILE_DIRECTORY, 0, 0);
+   menu_list_push(list,
+         "/dev_usb000/", "", MENU_FILE_DIRECTORY, 0, 0);
+   menu_list_push(list,
+         "/dev_usb001/", "", MENU_FILE_DIRECTORY, 0, 0);
+   menu_list_push(list,
+         "/dev_usb002/", "", MENU_FILE_DIRECTORY, 0, 0);
+   menu_list_push(list,
+         "/dev_usb003/", "", MENU_FILE_DIRECTORY, 0, 0);
+   menu_list_push(list,
+         "/dev_usb004/", "", MENU_FILE_DIRECTORY, 0, 0);
+   menu_list_push(list,
+         "/dev_usb005/", "", MENU_FILE_DIRECTORY, 0, 0);
+   menu_list_push(list,
+         "/dev_usb006/", "", MENU_FILE_DIRECTORY, 0, 0);
+#endif
+
+   return 0;
+}
+
 const frontend_ctx_driver_t frontend_ctx_ps3 = {
    frontend_ps3_get_environment_settings,
    frontend_ps3_init,
@@ -463,5 +499,6 @@ const frontend_ctx_driver_t frontend_ctx_ps3 = {
    NULL,                         /* load_content */
    frontend_ps3_get_architecture,
    NULL,                         /* get_powerstate */
+   frontend_ps3_parse_drive_list,
    "ps3",
 };

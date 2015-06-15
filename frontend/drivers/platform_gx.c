@@ -15,20 +15,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <boolean.h>
-#include "../../driver.h"
-#include "../../general.h"
-#include "../../libretro_private.h"
-#include "../../gfx/drivers/gx_sdk_defines.h"
-
-#include <file/file_path.h>
-
-#if defined(HW_RVL) && !defined(IS_SALAMANDER)
-#include "../../wii/mem2_manager.h"
-#include <ogc/mutex.h>
-#include <ogc/cond.h>
-#endif
-
 #include <stdlib.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -40,6 +26,24 @@
 #endif
 #include <unistd.h>
 #include <dirent.h>
+
+#if defined(HW_RVL) && !defined(IS_SALAMANDER)
+#include <ogc/mutex.h>
+#include <ogc/cond.h>
+#include "../../wii/mem2_manager.h"
+#endif
+
+#include <boolean.h>
+
+#include <file/file_path.h>
+#ifndef IS_SALAMANDER
+#include <file/file_list.h>
+#endif
+
+#include "../../driver.h"
+#include "../../general.h"
+#include "../../libretro_private.h"
+#include "../../gfx/drivers/gx_sdk_defines.h"
 
 #ifdef HW_RVL
 #include <ogc/ios.h>
@@ -381,6 +385,25 @@ static enum frontend_architecture frontend_gx_get_architecture(void)
    return FRONTEND_ARCH_PPC;
 }
 
+static int frontend_gx_parse_drive_list(void *data)
+{
+#ifndef IS_SALAMANDER
+   file_list_t *list = (file_list_t*)data;
+#ifdef HW_RVL
+   menu_list_push(list,
+         "sd:/", "", MENU_FILE_DIRECTORY, 0, 0);
+   menu_list_push(list,
+         "usb:/", "", MENU_FILE_DIRECTORY, 0, 0);
+#endif
+   menu_list_push(list,
+         "carda:/", "", MENU_FILE_DIRECTORY, 0, 0);
+   menu_list_push(list,
+         "cardb:/", "", MENU_FILE_DIRECTORY, 0, 0);
+#endif
+
+   return 0;
+}
+
 const frontend_ctx_driver_t frontend_ctx_gx = {
    frontend_gx_get_environment_settings,
    frontend_gx_init,
@@ -396,5 +419,6 @@ const frontend_ctx_driver_t frontend_ctx_gx = {
    NULL,                            /* load_content */
    frontend_gx_get_architecture,
    NULL,                            /* get_powerstate */
+   frontend_gx_parse_drive_list,
    "gx",
 };

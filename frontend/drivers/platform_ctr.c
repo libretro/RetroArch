@@ -21,10 +21,16 @@
 #include <string.h>
 
 #include <file/file_path.h>
+#ifndef IS_SALAMANDER
+#include <file/file_list.h>
+#endif
+
 #include "../../general.h"
 
 #ifdef IS_SALAMANDER
 #include "../../file_ext.h"
+#else
+#include "../../menu/menu_list.h"
 #endif
 
 
@@ -200,6 +206,21 @@ enum frontend_architecture frontend_ctr_get_architecture(void)
    return FRONTEND_ARCH_ARM;
 }
 
+static int frontend_ctr_parse_drive_list(void *data)
+{
+   file_list_t *list = (file_list_t*)data;
+
+#ifndef IS_SALAMANDER
+   if (!list)
+      return -1;
+
+   menu_list_push(list,
+         "sdmc:/", "", MENU_FILE_DIRECTORY, 0, 0);
+#endif
+
+   return 0;
+}
+
 const frontend_ctx_driver_t frontend_ctx_ctr = {
    frontend_ctr_get_environment_settings,
    frontend_ctr_init,
@@ -215,5 +236,6 @@ const frontend_ctx_driver_t frontend_ctx_ctr = {
    NULL,                         /* load_content */
    frontend_ctr_get_architecture,
    NULL,                         /* get_powerstate */
+   frontend_ctr_parse_drive_list,
    "ctr",
 };

@@ -14,18 +14,20 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <xtl.h>
-
-#include <stddef.h>
 #include <stdint.h>
+#include <stddef.h>
 
-#include "platform_xdk.h"
-
+#include <xtl.h>
 #include <xbdm.h>
 
-#include "../../general.h"
 #include <file/file_path.h>
+#ifndef IS_SALAMANDER
+#include <file/file_list.h>
+#endif
 #include <retro_miscellaneous.h>
+
+#include "platform_xdk.h"
+#include "../../general.h"
 
 static bool exit_spawn;
 static bool exitspawn_start_game;
@@ -380,6 +382,31 @@ enum frontend_architecture frontend_xdk_get_architecture(void)
 #endif
 }
 
+static int frontend_xdk_parse_drive_list(void *data)
+{
+#ifndef IS_SALAMANDER
+   file_list_t *list = (file_list_t*)data;
+
+#if defined(_XBOX1)
+   menu_list_push(list,
+         "C:", "", MENU_FILE_DIRECTORY, 0, 0);
+   menu_list_push(list,
+         "D:", "", MENU_FILE_DIRECTORY, 0, 0);
+   menu_list_push(list,
+         "E:", "", MENU_FILE_DIRECTORY, 0, 0);
+   menu_list_push(list,
+         "F:", "", MENU_FILE_DIRECTORY, 0, 0);
+   menu_list_push(list,
+         "G:", "", MENU_FILE_DIRECTORY, 0, 0);
+#elif defined(_XBOX360)
+   menu_list_push(list,
+         "game:", "", MENU_FILE_DIRECTORY, 0, 0);
+#endif
+#endif
+
+   return 0;
+}
+
 const frontend_ctx_driver_t frontend_ctx_xdk = {
    frontend_xdk_get_environment_settings,
    frontend_xdk_init,
@@ -395,5 +422,6 @@ const frontend_ctx_driver_t frontend_ctx_xdk = {
    NULL,                         /* load_content */
    frontend_xdk_get_architecture,
    NULL,                         /* get_powerstate */
+   frontend_xdk_parse_drive_list,
    "xdk",
 };

@@ -69,6 +69,7 @@ typedef struct frontend_ctx_driver
    void (*content_loaded)(void);
    enum frontend_architecture (*get_architecture)(void);
    enum frontend_powerstate (*get_powerstate)(int *seconds, int *percent);
+   int  (*parse_drive_list)(void*);
 
    const char *ident;
 
@@ -107,6 +108,8 @@ const frontend_ctx_driver_t *frontend_get_ptr(void);
  * Returns: pointer to first suitable driver, otherwise NULL. 
  **/
 const frontend_ctx_driver_t *frontend_ctx_init_first(void);
+
+int frontend_driver_parse_drive_list(void *data);
 
 #ifdef __cplusplus
 }
