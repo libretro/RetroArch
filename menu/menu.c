@@ -275,6 +275,7 @@ void menu_free(menu_handle_t *menu)
 
    if (global->core_info_current)
       free(global->core_info_current);
+   global->core_info_current = NULL;
 
    menu_driver_unset_alive();
 
