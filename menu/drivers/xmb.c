@@ -1028,7 +1028,7 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
    matrix_4x4_scale(&mscal, 1 /* scale_factor */, 1 /* scale_factor */, 1);
    matrix_4x4_multiply(&mymat, &mscal, &mymat);
 
-   i = menu->begin;
+   i = menu_entries_get_start();
 
    if (list == xmb->selection_buf_old)
       i = 0;
@@ -1248,7 +1248,8 @@ static void xmb_render(void)
    current = nav->selection_ptr;
    end     = menu_list_get_size(menu_list);
 
-   menu->begin = 0;
+   menu_entries_set_start(0);
+
    for (i = 0; i < end; i++)
    {
       float item_y1 = xmb->margins.screen.top + xmb_item_y(xmb, i, current);
@@ -1256,7 +1257,7 @@ static void xmb_render(void)
 
       if (item_y2 < 0)
       {
-         menu->begin++;
+         menu_entries_set_start(menu_entries_get_start() + 1);
          continue;
       }
 
@@ -1276,8 +1277,8 @@ static void xmb_render(void)
       }
    }
 
-   if (menu->begin > 5)
-      menu->begin -= 5;
+   if (menu_entries_get_start() > 5)
+      menu_entries_set_start(menu_entries_get_start() - 5);
 
    anim->is_active = false;
    anim->label.is_updated    = false;

@@ -22,6 +22,17 @@
 
 #include "../general.h"
 
+/* Sets the starting index of the menu entry list. */
+void menu_entries_set_start(size_t i)
+{
+   menu_handle_t *menu       = menu_driver_get_ptr();
+   
+   if (!menu)
+     return;
+
+   menu->begin = i;
+}
+
 /* Returns the starting index of the menu entry list. */
 size_t menu_entries_get_start(void)
 {

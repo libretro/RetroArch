@@ -302,7 +302,7 @@ static void glui_render_menu_list(glui_handle_t *glui,
 
    glui->list_block.carr.coords.vertices = 0;
 
-   for (i = menu->begin; i < end; i++)
+   for (i = menu_entries_get_start(); i < end; i++)
    {
       bool entry_selected;
       char entry_path[PATH_MAX_LENGTH];
@@ -667,14 +667,14 @@ static void glui_navigation_set(bool scroll)
       end       = menu_entries_get_end();
 
       if (nav->selection_ptr < num_lines / 2 || end <= num_lines)
-         menu->begin = 0;
+         menu_entries_set_start(0);
       else if (nav->selection_ptr < (end - num_lines / 2))
-         menu->begin = nav->selection_ptr - num_lines / 2;
+         menu_entries_set_start(nav->selection_ptr - num_lines / 2);
       else
-         menu->begin = end - num_lines;
+         menu_entries_set_start(end - num_lines);
 
-      if (menu->begin > 5)
-         menu->begin -= 5;
+      if (menu_entries_get_start() > 5)
+         menu_entries_set_start(menu_entries_get_start() - 5);
    }
 
    menu_animation_push(disp->animation, 10, scroll_pos,
@@ -687,7 +687,7 @@ static void glui_navigation_clear(bool pending_push)
    if (!menu)
       return;
 
-   menu->begin         = 0;
+   menu_entries_set_start(0);
    menu->scroll_y      = 0;
 }
 

@@ -383,12 +383,12 @@ static void rgui_render(void)
 
    if (settings->menu.pointer.enable)
    {
-      menu_input->pointer.ptr = menu_input->pointer.y / 11 - 2 + menu->begin;
+      menu_input->pointer.ptr = menu_input->pointer.y / 11 - 2 + menu_entries_get_start();
 
       if (menu_input->pointer.dragging)
       {
          menu->scroll_y += menu_input->pointer.dy;
-         menu->begin     = -menu->scroll_y / 11 + 2;
+         menu_entries_set_start(-menu->scroll_y / 11 + 2);
          if (menu->scroll_y > 0)
             menu->scroll_y = 0;
       }
@@ -397,25 +397,25 @@ static void rgui_render(void)
    if (settings->menu.mouse.enable)
    {
       if (menu_input->mouse.scrolldown 
-            && menu->begin < menu_entries_get_end() - RGUI_TERM_HEIGHT)
-         menu->begin++;
+            && (menu_entries_get_start() < menu_entries_get_end() - RGUI_TERM_HEIGHT))
+         menu_entries_set_start(menu_entries_get_start() + 1);
 
-      if (menu_input->mouse.scrollup && menu->begin > 0)
-         menu->begin--;
+      if (menu_input->mouse.scrollup && (menu_entries_get_start() > 0))
+         menu_entries_set_start(menu_entries_get_start() - 1);
 
-      menu_input->mouse.ptr = menu_input->mouse.y / 11 - 2 + menu->begin;
+      menu_input->mouse.ptr = menu_input->mouse.y / 11 - 2 + menu_entries_get_start();
    }
 
    /* Do not scroll if all items are visible. */
    if (menu_entries_get_end() <= RGUI_TERM_HEIGHT)
-      menu->begin = 0;
+      menu_entries_set_start(0);;
 
    bottom = menu_entries_get_end() - RGUI_TERM_HEIGHT;
-   if (menu->begin > bottom)
-      menu->begin = bottom;
+   if (menu_entries_get_start() > bottom)
+      menu_entries_set_start(bottom);
 
-   end = (menu->begin + RGUI_TERM_HEIGHT <= menu_entries_get_end()) ?
-      menu->begin + RGUI_TERM_HEIGHT : menu_entries_get_end();
+   end = ((menu_entries_get_start() + RGUI_TERM_HEIGHT) <= (menu_entries_get_end())) ?
+      menu_entries_get_start() + RGUI_TERM_HEIGHT : menu_entries_get_end();
 
    rgui_render_background();
 
@@ -551,8 +551,9 @@ static void *rgui_init(void)
    frame_buf->width                   = 320;
    frame_buf->height                  = 240;
    menu->display.header_height        = FONT_HEIGHT_STRIDE * 2;
-   menu->begin                        = 0;
    frame_buf->pitch                   = frame_buf->width * sizeof(uint16_t);
+
+   menu_entries_set_start(0);
 
    ret = rguidisp_init_font(menu);
 
@@ -622,7 +623,7 @@ static void rgui_navigation_clear(bool pending_push)
    if (!menu)
       return;
 
-   menu->begin    = 0;
+   menu_entries_set_start(0);
    menu->scroll_y = 0;
 }
 
@@ -641,12 +642,12 @@ static void rgui_navigation_set(bool scroll)
       return;
 
    if (nav->selection_ptr < RGUI_TERM_HEIGHT/2)
-      menu->begin = 0;
+      menu_entries_set_start(0);
    else if (nav->selection_ptr >= RGUI_TERM_HEIGHT/2
          && nav->selection_ptr < (end - RGUI_TERM_HEIGHT/2))
-      menu->begin = nav->selection_ptr - RGUI_TERM_HEIGHT/2;
+      menu_entries_set_start(nav->selection_ptr - RGUI_TERM_HEIGHT/2);
    else if (nav->selection_ptr >= (end - RGUI_TERM_HEIGHT/2))
-      menu->begin = end - RGUI_TERM_HEIGHT;
+      menu_entries_set_start(end - RGUI_TERM_HEIGHT);
 }
 
 static void rgui_navigation_set_last(void)

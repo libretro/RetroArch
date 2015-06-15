@@ -503,7 +503,7 @@ static void menu_action_setting_disp_set_label_menu_disk_index(
    current = control->get_image_index();
 
    if (current >= images)
-      strlcpy(s, "No Disk", len);
+      strlcpy(s, menu_hash_to_str(MENU_VALUE_NO_DISK), len);
    else
       snprintf(s, len, "%u", current + 1);
 }

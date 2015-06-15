@@ -118,6 +118,8 @@ int menu_entry_select(uint32_t i);
 int menu_entry_action(menu_entry_t *entry,
                       unsigned i, enum menu_action action);
 
+void menu_entries_set_start(size_t i);
+
 size_t menu_entries_get_start(void);
 
 size_t menu_entries_get_end(void);

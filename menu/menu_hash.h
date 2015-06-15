@@ -178,6 +178,8 @@ extern "C" {
 #define MENU_LABEL_VIDEO_SHADER_NUM_PASSES                                     0x79b2992fU
 #define MENU_LABEL_CHEAT_NUM_PASSES                                            0x1910eb87U
 
+#define MENU_VALUE_NO_DISK                                                     0x7d54e5cdU
+
 #define MENU_VALUE_MD5                                                         0x0b888fabU
 #define MENU_VALUE_SHA1                                                        0x7c9de632U
 #define MENU_VALUE_CRC                                                         0x0b88671dU
