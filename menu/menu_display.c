@@ -174,9 +174,9 @@ bool menu_display_font_init_first(const void **font_driver,
 
    if (settings->video.threaded && !hw_render->context_type)
    {
+      thread_packet_t pkt;
       driver_t *driver    = driver_get_ptr();
       thread_video_t *thr = (thread_video_t*)driver->video_data;
-      thread_packet_t pkt = {0};
 
       if (!thr)
          return false;
