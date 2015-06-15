@@ -3756,7 +3756,7 @@ static bool setting_append_list_driver_options(
    rarch_setting_group_info_t subgroup_info = {0};
    settings_t *settings = config_get_ptr();
    
-   START_GROUP(group_info, "Driver Settings", parent_group);
+   START_GROUP(group_info, menu_hash_to_str(MENU_LABEL_DRIVER_SETTINGS), parent_group);
 
    parent_group = menu_hash_to_str(MENU_VALUE_SETTINGS);
 

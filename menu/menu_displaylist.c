@@ -1984,7 +1984,7 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
                      MENU_SETTINGS_CORE_OPTION_START + i, 0, 0);
          }
          else
-            menu_list_push(info->list, "No options available.", "",
+            menu_list_push(info->list, "No core options available.", "",
                   MENU_SETTINGS_CORE_OPTION_NONE, 0, 0);
          need_push = true;
          break;

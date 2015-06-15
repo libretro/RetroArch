@@ -60,6 +60,8 @@ const char *menu_hash_to_str(uint32_t hash)
          return "Load State";
       case MENU_LABEL_RESUME_CONTENT:
          return "Resume Content";
+      case MENU_LABEL_DRIVER_SETTINGS:
+         return "Driver Settings";
    }
 
    return "null";
