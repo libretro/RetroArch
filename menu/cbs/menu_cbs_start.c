@@ -219,9 +219,6 @@ static int action_start_cheat_num_passes(unsigned type, const char *label)
 {
    global_t *global       = global_get_ptr();
    cheat_manager_t *cheat = global->cheat;
-   menu_handle_t *menu    = menu_driver_get_ptr();
-   if (!menu)
-      return -1;
 
    if (!cheat)
       return -1;
