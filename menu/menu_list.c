@@ -260,9 +260,8 @@ void menu_list_flush_stack(menu_list_t *list,
    const char *label      = NULL;
    unsigned type          = 0;
    size_t entry_idx       = 0;
-   menu_handle_t *menu    = menu_driver_get_ptr();
    menu_navigation_t *nav = menu_navigation_get_ptr();
-   if (!menu || !list)
+   if (!list)
       return;
 
    menu_set_refresh();
@@ -277,9 +276,8 @@ void menu_list_flush_stack(menu_list_t *list,
 
 void menu_list_pop_stack(menu_list_t *list)
 {
-   menu_handle_t *menu    = menu_driver_get_ptr();
    menu_navigation_t *nav = menu_navigation_get_ptr();
-   if (!menu || !list)
+   if (!list)
       return;
 
    if (menu_list_get_stack_size(list) <= 1)
@@ -299,10 +297,9 @@ void menu_list_pop_stack_by_needle(menu_list_t *list,
    const char *label      = NULL;
    unsigned type          = 0;
    size_t entry_idx       = 0;
-   menu_handle_t *menu    = menu_driver_get_ptr();
    menu_navigation_t *nav = menu_navigation_get_ptr();
 
-   if (!menu || !list)
+   if (!list)
       return;
 
    menu_set_refresh();
