@@ -34,8 +34,10 @@
 #include <compat/strl.h>
 #include <compat/posix_string.h>
 #include <file/config_file.h>
-#include "../../dynamic.h"
 #include <file/file_path.h>
+#include <rhash.h>
+
+#include "../../dynamic.h"
 
 #include "../video_state_tracker.h"
 
@@ -733,11 +735,19 @@ static bool load_preset(cg_shader_data_t *cg, const char *path)
    return true;
 }
 
+#define SEMANTIC_TEXCOORD     0x92ee91cdU
+#define SEMANTIC_TEXCOORD0    0xf0c0cb9dU
+#define SEMANTIC_TEXCOORD1    0xf0c0cb9eU
+#define SEMANTIC_COLOR        0x0ce809a4U
+#define SEMANTIC_COLOR0       0xa9e93e54U
+#define SEMANTIC_POSITION     0xd87309baU
+
 static void set_program_base_attrib(cg_shader_data_t *cg, unsigned i)
 {
    CGparameter param = cgGetFirstParameter(cg->prg[i].vprg, CG_PROGRAM);
    for (; param; param = cgGetNextParameter(param))
    {
+      uint32_t semantic_hash;
       const char *semantic = NULL;
       if (cgGetParameterDirection(param) != CG_IN 
             || cgGetParameterVariability(param) != CG_VARYING)
@@ -749,14 +759,25 @@ static void set_program_base_attrib(cg_shader_data_t *cg, unsigned i)
 
       RARCH_LOG("CG: Found semantic \"%s\" in prog #%u.\n", semantic, i);
 
-      if (!strcmp(semantic, "TEXCOORD") || !strcmp(semantic, "TEXCOORD0"))
-         cg->prg[i].tex = param;
-      else if (!strcmp(semantic, "COLOR") || !strcmp(semantic, "COLOR0"))
-         cg->prg[i].color = param;
-      else if (!strcmp(semantic, "POSITION"))
-         cg->prg[i].vertex = param;
-      else if (!strcmp(semantic, "TEXCOORD1"))
-         cg->prg[i].lut_tex = param;
+      semantic_hash = djb2_calculate(semantic);
+
+      switch (semantic_hash)
+      {
+         case SEMANTIC_TEXCOORD:
+         case SEMANTIC_TEXCOORD0:
+            cg->prg[i].tex     = param;
+            break;
+         case SEMANTIC_COLOR:
+         case SEMANTIC_COLOR0:
+            cg->prg[i].color   = param;
+            break;
+         case SEMANTIC_POSITION:
+            cg->prg[i].vertex  = param;
+            break;
+         case SEMANTIC_TEXCOORD1:
+            cg->prg[i].lut_tex = param;
+            break;
+      }
    }
 
    if (!cg->prg[i].tex)
