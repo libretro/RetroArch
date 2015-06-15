@@ -537,14 +537,18 @@ static void rmenu_xui_render(void)
    const char *label           = NULL;
 	unsigned menu_type          = 0;
    menu_handle_t *menu         = menu_driver_get_ptr();
+   menu_display_t *disp        = menu_display_get_ptr();
    menu_framebuf_t *frame_buf  = menu_display_fb_get_ptr();
    menu_navigation_t *nav      = menu_navigation_get_ptr();
    uint64_t frame_count        = video_driver_get_frame_count();
 
    if (!menu)
       return;
-	if (menu_needs_refresh() && 
-		menu_driver_alive() && !menu->msg_force)
+   if (
+         menu_needs_refresh() && 
+         menu_driver_alive() &&
+         !disp->msg_force
+      )
 		return;
 
    menu_display_fb_unset_dirty();

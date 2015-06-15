@@ -90,12 +90,13 @@ static void menu_push_to_history_playlist(void)
 bool menu_load_content(void)
 {
    menu_handle_t *menu  = menu_driver_get_ptr();
+   menu_display_t *disp = menu_display_get_ptr();
    driver_t *driver     = driver_get_ptr();
    global_t *global     = global_get_ptr();
 
    /* redraw menu frame */
-   if (menu)
-      menu->msg_force = true;
+   if (disp)
+      disp->msg_force = true;
 
    menu_entry_iterate(MENU_ACTION_NOOP);
 
@@ -111,8 +112,8 @@ bool menu_load_content(void)
       snprintf(msg, sizeof(msg), "Failed to load %s.\n", name);
       rarch_main_msg_queue_push(msg, 1, 90, false);
 
-      if (menu)
-         menu->msg_force = true;
+      if (disp)
+         disp->msg_force = true;
 
       return false;
    }
@@ -132,6 +133,7 @@ bool menu_load_content(void)
 
 void menu_common_load_content(bool persist)
 {
+   menu_display_t *disp   = menu_display_get_ptr();
    menu_handle_t    *menu = menu_driver_get_ptr();
    menu_list_t *menu_list = menu_list_get_ptr();
    if (!menu || !menu_list)
@@ -140,7 +142,7 @@ void menu_common_load_content(bool persist)
    event_command(persist ? EVENT_CMD_LOAD_CONTENT_PERSIST : EVENT_CMD_LOAD_CONTENT);
 
    menu_list_flush_stack(menu_list, NULL, MENU_SETTINGS);
-   menu->msg_force = true;
+   disp->msg_force = true;
 }
 
 /**

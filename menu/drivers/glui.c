@@ -369,10 +369,12 @@ static void glui_frame(void)
 
    glui = (glui_handle_t*)menu->userdata;
 
-   if (menu_needs_refresh()
+   if (
+         menu_needs_refresh()
          && menu_driver_alive() 
-         && !menu->msg_force
-         && !glui->box_message[0])
+         && !disp->msg_force
+         && !glui->box_message[0]
+      )
       return;
 
    video_driver_get_size(&width, &height);
@@ -394,10 +396,9 @@ static void glui_frame(void)
 
    glui_render_quad(gl, 0,
          disp->header_height - menu->scroll_y + glui->line_height *
-         nav->selection_ptr,
-         width, glui->line_height, 1, 1, 1, 0.1);
+         nav->selection_ptr, width, glui->line_height, 1, 1, 1, 0.1);
 
-   anim->is_active = true;
+   anim->is_active           = true;
    anim->label.is_updated    = false;
 
    glui_render_quad(gl, 0, 0, width,

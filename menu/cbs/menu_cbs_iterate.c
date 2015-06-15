@@ -285,6 +285,7 @@ static int action_iterate_menu_viewport(char *s, size_t len, const char *label, 
    unsigned type                    = 0;
    video_viewport_t *custom         = video_viewport_get_custom();
    menu_handle_t *menu              = menu_driver_get_ptr();
+   menu_display_t *disp             = menu_display_get_ptr();
    menu_navigation_t *nav           = menu_navigation_get_ptr();
    menu_list_t *menu_list           = menu_list_get_ptr();
    settings_t *settings             = config_get_ptr();
@@ -407,7 +408,8 @@ static int action_iterate_menu_viewport(char *s, size_t len, const char *label, 
          break;
 
       case MENU_ACTION_MESSAGE:
-         menu->msg_force = true;
+         if (disp)
+            disp->msg_force = true;
          break;
 
       default:

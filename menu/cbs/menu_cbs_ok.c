@@ -1113,6 +1113,7 @@ static int action_ok_config_load(const char *path,
    char config[PATH_MAX_LENGTH]  = {0};
    menu_navigation_t        *nav = menu_navigation_get_ptr();
    menu_handle_t           *menu = menu_driver_get_ptr();
+   menu_display_t          *disp = menu_display_get_ptr();
    menu_list_t        *menu_list = menu_list_get_ptr();
 
    if (!menu || !menu_list)
@@ -1122,7 +1123,9 @@ static int action_ok_config_load(const char *path,
 
    fill_pathname_join(config, menu_path, path, sizeof(config));
    menu_list_flush_stack(menu_list, NULL, MENU_SETTINGS);
-   menu->msg_force = true;
+
+   disp->msg_force = true;
+
    if (rarch_replace_config(config))
    {
       menu_navigation_clear(nav, false);

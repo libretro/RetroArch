@@ -128,6 +128,7 @@ static void rmenu_render(void)
    char title_buf[256]           = {0};
    char title_msg[64]            = {0};
    menu_handle_t *menu           = menu_driver_get_ptr();
+   menu_display_t *disp          = menu_display_get_ptr();
    menu_animation_t *anim        = menu_animation_get_ptr();
    menu_list_t *menu_list        = menu_list_get_ptr();
    menu_navigation_t *nav        = menu_navigation_get_ptr();
@@ -145,7 +146,7 @@ static void rmenu_render(void)
    }
 
    if (menu_needs_refresh() && menu_driver_alive() 
-         && !menu->msg_force)
+         && !disp->msg_force)
       return;
 
    menu_display_fb_unset_dirty();
