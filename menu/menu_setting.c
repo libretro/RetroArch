@@ -5599,6 +5599,19 @@ static bool setting_append_list_overlay_options(
          general_read_handler);
    (*list)[list_info->index - 1].change_handler = overlay_enable_toggle_change_handler;
 
+   CONFIG_BOOL(
+         settings->osk.enable,
+         "input_osk_overlay_enable",
+         "Display Keyboard Overlay",
+         true,
+         "OFF",
+         "ON",
+         group_info.name,
+         subgroup_info.name,
+         parent_group,
+         general_write_handler,
+         general_read_handler);
+
    CONFIG_PATH(
          settings->input.overlay,
          "input_overlay",
@@ -5644,46 +5657,13 @@ static bool setting_append_list_overlay_options(
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
 
    END_SUB_GROUP(list, list_info, parent_group);
-   END_GROUP(list, list_info, parent_group);
-#endif
 
-   return true;
-}
-
-static bool setting_append_list_osk_overlay_options(
-      rarch_setting_t **list,
-      rarch_setting_info_t *list_info,
-      const char *parent_group)
-{
-#ifdef HAVE_OVERLAY
-   rarch_setting_group_info_t group_info    = {0};
-   rarch_setting_group_info_t subgroup_info = {0};
-   settings_t *settings = config_get_ptr();
-   global_t   *global   = global_get_ptr();
-
-   START_GROUP(group_info, "Onscreen Keyboard Overlay Settings", parent_group);
-
-   parent_group = menu_hash_to_str(MENU_VALUE_SETTINGS);
-
-   START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info, parent_group);
-
-   CONFIG_BOOL(
-         settings->osk.enable,
-         "input_osk_overlay_enable",
-         "Display Onscreen Keyboard Overlay",
-         true,
-         "OFF",
-         "ON",
-         group_info.name,
-         subgroup_info.name,
-         parent_group,
-         general_write_handler,
-         general_read_handler);
+   START_SUB_GROUP(list, list_info, "Onscreen Keyboard Overlay", group_info.name, subgroup_info, parent_group);
 
    CONFIG_PATH(
          settings->osk.overlay,
          "input_osk_overlay",
-         "OSK Overlay Preset",
+         "Keyboard Overlay Preset",
          global->osk_overlay_dir,
          group_info.name,
          subgroup_info.name,
@@ -7217,12 +7197,6 @@ rarch_setting_t *menu_setting_new(unsigned mask)
          goto error;
    }
    
-   if (mask & SL_FLAG_OSK_OVERLAY_OPTIONS)
-   {
-      if (!setting_append_list_osk_overlay_options(&list, list_info, root))
-         goto error;
-   }
-
    if (mask & SL_FLAG_MENU_OPTIONS)
    {
       if (!setting_append_list_menu_options(&list, list_info, root))
