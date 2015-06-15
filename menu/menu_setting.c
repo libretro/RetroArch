@@ -3898,6 +3898,7 @@ static bool setting_append_list_core_options(
    settings_t *settings = config_get_ptr();
 
    START_GROUP(group_info, "Core Settings", parent_group);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
    parent_group = "Settings";
 
@@ -4155,6 +4156,7 @@ static bool setting_append_list_logging_options(
    global_t   *global   = global_get_ptr();
 
    START_GROUP(group_info, "Logging Settings", parent_group);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
    parent_group = "Settings";
 

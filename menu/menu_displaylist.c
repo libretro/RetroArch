@@ -1267,13 +1267,18 @@ static int menu_displaylist_parse_settings(menu_handle_t *menu,
 
    for (; setting->type != ST_END_GROUP; setting++)
    {
-      if (
-            setting->type == ST_GROUP
-            || setting->type == ST_SUB_GROUP
-            || setting->type == ST_END_SUB_GROUP
-            || (setting->flags & SD_FLAG_ADVANCED &&
-               !settings->menu.show_advanced_settings)
-         )
+      switch (setting->type)
+      {
+         case ST_GROUP:
+         case ST_SUB_GROUP:
+         case ST_END_SUB_GROUP:
+            continue;
+         default:
+            break;
+      }
+
+      if (setting->flags & SD_FLAG_ADVANCED &&
+            !settings->menu.show_advanced_settings)
          continue;
 
       menu_list_push(info->list, setting->short_description,
@@ -1923,8 +1928,13 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
             for (; setting->type != ST_NONE; setting++)
             {
                if (setting->type == ST_GROUP)
+               {
+                  if (setting->flags & SD_FLAG_ADVANCED &&
+                        !settings->menu.show_advanced_settings)
+                     continue;
                   menu_list_push(info->list, setting->short_description,
                         setting->name, menu_setting_set_flags(setting), 0, 0);
+               }
             }
          }
          else
