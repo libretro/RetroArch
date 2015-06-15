@@ -302,18 +302,24 @@ static void glui_render_menu_list(glui_handle_t *glui,
 
    glui->list_block.carr.coords.vertices = 0;
 
-   for (i = 0; i < end; i++)
+   for (i = menu->begin; i < end; i++)
    {
       bool entry_selected;
-      char entry_path[PATH_MAX_LENGTH]      = {0};
-      char entry_value[PATH_MAX_LENGTH]     = {0};
-      char message[PATH_MAX_LENGTH]         = {0};
-      char entry_title_buf[PATH_MAX_LENGTH] = {0};
-      char type_str_buf[PATH_MAX_LENGTH]    = {0};
+      char entry_path[PATH_MAX_LENGTH];
+      char entry_value[PATH_MAX_LENGTH];
+      char message[PATH_MAX_LENGTH];
+      char entry_title_buf[PATH_MAX_LENGTH];
+      char type_str_buf[PATH_MAX_LENGTH];
       int y = disp->header_height - menu->scroll_y + (glui->line_height * i);
 
       if (y > height || ((y + (int)glui->line_height) < 0))
          continue;
+
+      entry_path[0]      = '\0';
+      entry_value[0]     = '\0';
+      message[0]         = '\0';
+      entry_title_buf[0] = '\0';
+      type_str_buf[0]    = '\0';
 
       entry_selected = menu_entry_is_currently_selected(i);
       menu_entry_get_value(i, entry_value, sizeof(entry_value));
@@ -337,10 +343,10 @@ static void glui_render_menu_list(glui_handle_t *glui,
 static void glui_frame(void)
 {
    unsigned width, height;
-   char title[PATH_MAX_LENGTH]             = {0};
-   char title_buf[PATH_MAX_LENGTH]         = {0}; 
-   char title_msg[PATH_MAX_LENGTH]         = {0};
-   char timedate[PATH_MAX_LENGTH]          = {0};
+   char title[PATH_MAX_LENGTH];
+   char title_buf[PATH_MAX_LENGTH];
+   char title_msg[PATH_MAX_LENGTH];
+   char timedate[PATH_MAX_LENGTH];
    gl_t *gl                                = NULL;
    glui_handle_t *glui                     = NULL;
    const struct font_renderer *font_driver = NULL;
@@ -376,6 +382,11 @@ static void glui_frame(void)
          && !glui->box_message[0]
       )
       return;
+
+   title[0]     = '\0';
+   title_buf[0] = '\0';
+   title_msg[0] = '\0';
+   timedate[0]  = '\0';
 
    video_driver_get_size(&width, &height);
 
@@ -441,8 +452,9 @@ static void glui_frame(void)
 
    if (menu_input->keyboard.display)
    {
-      char msg[PATH_MAX_LENGTH] = {0};
+      char msg[PATH_MAX_LENGTH];
       const char           *str = *menu_input->keyboard.buffer;
+      msg[0] = '\0';
 
       if (!str)
          str = "";
@@ -636,12 +648,36 @@ static float glui_get_scroll(void)
 static void glui_navigation_set(bool scroll)
 {
    menu_display_t *disp = menu_display_get_ptr();
-   menu_handle_t *menu = menu_driver_get_ptr();
+   menu_handle_t *menu  = menu_driver_get_ptr();
+   float scroll_pos = 0;
 
    if (!menu || !disp || !scroll)
       return;
 
-   menu_animation_push(disp->animation, 10, glui_get_scroll(),
+   scroll_pos = glui_get_scroll();
+
+   if (menu->userdata)
+   {
+      unsigned height = 0, num_lines = 0, end = 0;
+      glui_handle_t *glui    = (glui_handle_t*)menu->userdata;
+      menu_navigation_t *nav = menu_navigation_get_ptr();
+
+      video_driver_get_size(NULL, &height);
+      num_lines = height / glui->line_height;
+      end       = menu_entries_get_end();
+
+      if (nav->selection_ptr < num_lines / 2 || end <= num_lines)
+         menu->begin = 0;
+      else if (nav->selection_ptr < (end - num_lines / 2))
+         menu->begin = nav->selection_ptr - num_lines / 2;
+      else
+         menu->begin = end - num_lines;
+
+      if (menu->begin > 5)
+         menu->begin -= 5;
+   }
+
+   menu_animation_push(disp->animation, 10, scroll_pos,
          &menu->scroll_y, EASING_IN_OUT_QUAD, NULL);
 }
 
