@@ -116,8 +116,8 @@ static int action_left_scroll(unsigned type, const char *label,
       bool wraparound)
 {
    unsigned scroll_speed = 0, fast_scroll_speed = 0;
-   menu_list_t *menu_list = menu_list_get_ptr();
    menu_navigation_t *nav = menu_navigation_get_ptr();
+   menu_list_t *menu_list = menu_list_get_ptr();
    if (!nav || !menu_list)
       return -1;
 
@@ -256,9 +256,6 @@ static int action_left_cheat_num_passes(unsigned type, const char *label,
    unsigned new_size = 0;
    global_t *global       = global_get_ptr();
    cheat_manager_t *cheat = global->cheat;
-   menu_handle_t *menu    = menu_driver_get_ptr();
-   if (!menu)
-      return -1;
 
    if (!cheat)
       return -1;

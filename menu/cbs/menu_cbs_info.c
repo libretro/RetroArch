@@ -22,10 +22,9 @@ static int action_info_default(unsigned type, const char *label)
 {
    menu_displaylist_info_t info = {0};
    menu_navigation_t *nav       = menu_navigation_get_ptr();
-   menu_handle_t *menu          = menu_driver_get_ptr();
    menu_list_t *menu_list       = menu_list_get_ptr();
 
-   if (!menu || !menu_list)
+   if (!menu_list)
       return 0;
 
    info.list          = menu_list->menu_stack;

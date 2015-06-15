@@ -145,13 +145,11 @@ static int action_right_mainmenu(unsigned type, const char *label,
 {
    menu_file_list_cbs_t *cbs = NULL;
    unsigned        push_list = 0;
-   menu_list_t    *menu_list = menu_list_get_ptr();
    menu_handle_t       *menu = menu_driver_get_ptr();
+   menu_list_t    *menu_list = menu_list_get_ptr();
    menu_navigation_t    *nav = menu_navigation_get_ptr();
    unsigned           action = MENU_ACTION_RIGHT;
    size_t          list_size = menu_driver_list_get_size(MENU_LIST_PLAIN);
-   if (!menu)
-      return -1;
 
    if (list_size == 1)
    {
@@ -261,9 +259,6 @@ static int action_right_cheat_num_passes(unsigned type, const char *label,
    unsigned new_size = 0;
    global_t *global       = global_get_ptr();
    cheat_manager_t *cheat = global->cheat;
-   menu_handle_t *menu    = menu_driver_get_ptr();
-   if (!menu)
-      return -1;
 
    if (!cheat)
       return -1;
