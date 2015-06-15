@@ -346,13 +346,9 @@ int menu_setting_set(unsigned type, const char *label,
 {
    int ret                  = 0;
    rarch_setting_t *setting = NULL;
-   menu_handle_t      *menu = menu_driver_get_ptr();
    menu_navigation_t   *nav = menu_navigation_get_ptr();
    menu_list_t   *menu_list = menu_list_get_ptr();
 
-   if (!menu)
-      return 0;
-   
    setting = menu_setting_find(
          menu_list->selection_buf->list
          [nav->selection_ptr].label);

@@ -98,10 +98,9 @@ static void menu_input_search_callback(void *userdata, const char *str)
 
 void menu_input_st_uint_callback(void *userdata, const char *str)
 {
-   menu_handle_t      *menu = menu_driver_get_ptr();
    menu_input_t *menu_input = menu_input_get_ptr();
 
-   if (!menu || !menu_input)
+   if (!menu_input)
       return;
 
    if (str && *str)
@@ -116,10 +115,9 @@ void menu_input_st_uint_callback(void *userdata, const char *str)
 
 void menu_input_st_hex_callback(void *userdata, const char *str)
 {
-   menu_handle_t *menu      = menu_driver_get_ptr();
    menu_input_t *menu_input = menu_input_get_ptr();
 
-   if (!menu || !menu_input)
+   if (!menu_input)
       return;
 
    if (str && *str)
@@ -137,10 +135,9 @@ void menu_input_st_hex_callback(void *userdata, const char *str)
 
 void menu_input_st_string_callback(void *userdata, const char *str)
 {
-   menu_handle_t      *menu = menu_driver_get_ptr();
    menu_input_t *menu_input = menu_input_get_ptr();
 
-   if (!menu || !menu_input)
+   if (!menu_input)
       return;
 
    if (str && *str)
@@ -534,14 +531,10 @@ int menu_input_bind_iterate(void)
    struct menu_bind_state binds;
    char msg[PATH_MAX_LENGTH]    = {0};
    int timeout                  = 0;
-   menu_handle_t *menu          = menu_driver_get_ptr();
    menu_input_t *menu_input     = menu_input_get_ptr();
    driver_t *driver             = driver_get_ptr();
    global_t *global             = global_get_ptr();
    bool bind_mode_kb            = global ? global->menu.bind_mode_keyboard : false;
-
-   if (!menu)
-      return 1;
 
    menu_driver_render();
 
@@ -596,14 +589,10 @@ static int menu_input_mouse(unsigned *action)
    video_viewport_t vp;
    const struct retro_keybind *binds[MAX_USERS];
    driver_t *driver          = driver_get_ptr();
-   menu_handle_t *menu       = menu_driver_get_ptr();
    menu_animation_t *anim    = menu_animation_get_ptr();
    menu_input_t *menu_input  = menu_input_get_ptr();
    menu_framebuf_t *frame_buf= menu_display_fb_get_ptr();
    settings_t *settings      = config_get_ptr();
-
-   if (!menu)
-      return -1;
 
    if (!settings->menu.mouse.enable
 #ifdef HAVE_OVERLAY
@@ -687,15 +676,11 @@ static int menu_input_pointer(unsigned *action)
 {
    int pointer_device, pointer_x, pointer_y;
    const struct retro_keybind *binds[MAX_USERS] = {NULL};
-   menu_handle_t *menu       = menu_driver_get_ptr();
    menu_input_t *menu_input  = menu_input_get_ptr();
    menu_animation_t *anim    = menu_animation_get_ptr();
    menu_framebuf_t *frame_buf= menu_display_fb_get_ptr();
    settings_t *settings      = config_get_ptr();
    driver_t *driver          = driver_get_ptr();
-
-   if (!menu)
-      return -1;
 
    if (!settings->menu.pointer.enable)
    {
@@ -769,16 +754,12 @@ static int menu_input_mouse_post_iterate(uint64_t *input_mouse,
 {
    driver_t      *driver    = driver_get_ptr();
    settings_t *settings     = config_get_ptr();
-   menu_handle_t *menu      = menu_driver_get_ptr();
    menu_display_t *disp     = menu_display_get_ptr();
    menu_input_t *menu_input = menu_input_get_ptr();
    menu_list_t *menu_list   = menu_list_get_ptr();
    menu_navigation_t *nav   = menu_navigation_get_ptr();
 
    *input_mouse = MOUSE_ACTION_NONE;
-
-   if (!menu)
-      return -1;
 
    if (!settings->menu.mouse.enable
 #ifdef HAVE_OVERLAY
@@ -884,14 +865,13 @@ static int menu_input_pointer_post_iterate(menu_file_list_cbs_t *cbs,
       menu_entry_t *entry, unsigned action)
 {
    int ret                  = 0;
-   menu_handle_t *menu      = menu_driver_get_ptr();
    menu_display_t *disp     = menu_display_get_ptr();
    menu_list_t *menu_list   = menu_list_get_ptr();
    menu_input_t *menu_input = menu_input_get_ptr();
    driver_t *driver         = driver_get_ptr();
    settings_t *settings     = config_get_ptr();
 
-   if (!menu || !menu_input)
+   if (!menu_input)
       return -1;
 
    if (!settings->menu.pointer.enable
