@@ -3530,6 +3530,7 @@ static bool setting_append_list_main_menu_options(
       uint32_t info_library_name_hash = info ? djb2_calculate(info->library_name) : 0;
 
       if (info && (info_library_name_hash != MENU_VALUE_NO_CORE))
+      {
          CONFIG_ACTION(
                "unload_core",
                menu_hash_to_str(MENU_LABEL_UNLOAD_CORE),
@@ -3537,8 +3538,16 @@ static bool setting_append_list_main_menu_options(
                subgroup_info.name,
                parent_group);
       menu_settings_list_current_add_cmd(list, list_info, EVENT_CMD_UNLOAD_CORE);
+
+      CONFIG_ACTION(
+            "core_information",
+            menu_hash_to_str(MENU_LABEL_CORE_INFORMATION),
+            group_info.name,
+            subgroup_info.name,
+            parent_group); }
    }
 #endif
+
 
 #ifdef HAVE_LIBRETRODB
    CONFIG_ACTION(
@@ -3581,13 +3590,6 @@ static bool setting_append_list_main_menu_options(
    (*list)[list_info->index - 1].action_select  = load_content_action_toggle;
    menu_settings_list_current_add_cmd(list, list_info, EVENT_CMD_LOAD_CONTENT);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_BROWSER_ACTION);
-
-   CONFIG_ACTION(
-         "core_information",
-         menu_hash_to_str(MENU_LABEL_CORE_INFORMATION),
-         group_info.name,
-         subgroup_info.name,
-         parent_group);
 
    CONFIG_ACTION(
          "management",
