@@ -299,7 +299,6 @@ int menu_iterate(retro_input_t input,
    runloop_t *runloop       = rarch_main_get_ptr();
    menu_handle_t *menu      = menu_driver_get_ptr();
    menu_input_t *menu_input = menu_input_get_ptr();
-   settings_t *settings     = config_get_ptr();
 
    menu_input->joypad.state    = menu_input_frame(input, trigger_input);
 

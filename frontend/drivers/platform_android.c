@@ -21,6 +21,8 @@
 #include <string.h>
 #include <sys/resource.h>
 
+#include <rhash.h>
+
 #include "platform_android.h"
 
 #include "../frontend.h"
@@ -483,8 +485,6 @@ static void frontend_android_get_environment_settings(int *argc,
       static char config_path[PATH_MAX_LENGTH] = {0};
       const char *argv = NULL;
 
-      *config_path = '\0';
-
       argv = (*env)->GetStringUTFChars(env, jstr, 0);
 
       if (argv && *argv)
@@ -751,19 +751,30 @@ static int frontend_android_get_rating(void)
    return -1;
 }
 
+#define ANDROID_ARCH_ARMV7    0x26257a91U
+#define ANDROID_ARCH_ARM      0x406a3516U
+#define ANDROID_ARCH_MIPS     0x7c9aa25eU
+#define ANDROID_ARCH_X86      0x0b88b8cbU
+
 static enum frontend_architecture frontend_android_get_architecture(void)
 {
+   uint32_t abi_hash;
    char abi[PROP_VALUE_MAX] = {0};
    system_property_get("ro.product.cpu.abi", abi);
 
-   if (!strcmp(abi, "armeabi-v7a"))
-      return FRONTEND_ARCH_ARM;
-   if (!strcmp(abi, "armeabi"))
-      return FRONTEND_ARCH_ARM;
-   if (!strcmp(abi, "mips"))
-      return FRONTEND_ARCH_MIPS;
-   if (!strcmp(abi, "x86"))
-      return FRONTEND_ARCH_X86;
+   abi_hash = djb2_calculate(abi);
+
+   switch (abi_hash)
+   {
+      case ANDROID_ARCH_ARMV7:
+         return FRONTEND_ARCH_ARM;
+      case ANDROID_ARCH_ARM:
+         return FRONTEND_ARCH_ARM;
+      case ANDROID_ARCH_MIPS:
+         return FRONTEND_ARCH_MIPS;
+      case ANDROID_ARCH_X86:
+         return FRONTEND_ARCH_X86;
+   }
 
    return FRONTEND_ARCH_NONE;
 }
