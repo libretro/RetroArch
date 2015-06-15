@@ -20,6 +20,8 @@
 #include <stdlib.h>
 #include <boolean.h>
 
+#include <queues/message_queue.h>
+
 #include "../gfx/font_renderer_driver.h"
 
 #ifdef __cplusplus
@@ -49,6 +51,14 @@ typedef struct menu_display
    } font;
 
    unsigned header_height;
+
+   /* This buffer can be used to display generic OK messages to the user.
+    * Fill it and call
+    * menu_list_push(driver->menu->menu_stack, "", "message", 0, 0);
+    */
+   char message_contents[PATH_MAX_LENGTH];
+
+   msg_queue_t *msg_queue;
 } menu_display_t;
 
 menu_display_t  *menu_display_get_ptr(void);

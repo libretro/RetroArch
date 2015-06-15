@@ -116,14 +116,19 @@ static void menu_display_fb_free(menu_framebuf_t *frame_buf)
 
 void menu_display_free(void *data)
 {
-   menu_handle_t *menu = (menu_handle_t*)data;
-   if (!menu)
+   menu_handle_t *menu  = (menu_handle_t*)data;
+   menu_display_t *disp = menu ? &menu->display : NULL;
+   if (!menu || !disp)
       return;
+
+   if (disp->msg_queue)
+      msg_queue_free(disp->msg_queue);
+   disp->msg_queue = NULL;
 
    menu_animation_free(menu->animation);
    menu->animation = NULL;
 
-   menu_display_fb_free(&menu->display.frame_buf);
+   menu_display_fb_free(&disp->frame_buf);
 }
 
 bool menu_display_init(void *data)

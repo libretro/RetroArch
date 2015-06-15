@@ -21,7 +21,6 @@
 #include <stdint.h>
 #include <boolean.h>
 #include <retro_miscellaneous.h>
-#include <queues/message_queue.h>
 #include "menu_animation.h"
 #include "menu_display.h"
 #include "menu_displaylist.h"
@@ -73,21 +72,14 @@ typedef struct
    bool defer_core;
    char deferred_path[PATH_MAX_LENGTH];
 
-   /* This buffer can be used to display generic OK messages to the user.
-    * Fill it and call
-    * menu_list_push(driver->menu->menu_stack, "", "message", 0, 0);
-    */
-   char message_contents[PATH_MAX_LENGTH];
-
-   msg_queue_t *msg_queue;
-
-   char default_glslp[PATH_MAX_LENGTH];
-   char default_cgp[PATH_MAX_LENGTH];
-
+   /* Menu display */
    menu_display_t display;
 
    bool load_no_content;
 
+   /* Menu shader */
+   char default_glslp[PATH_MAX_LENGTH];
+   char default_cgp[PATH_MAX_LENGTH];
    struct video_shader *shader;
 
    menu_input_t input;

@@ -509,6 +509,7 @@ static int action_iterate_main(const char *label, unsigned action)
    int ret                   = 0;
    menu_handle_t *menu       = menu_driver_get_ptr();
    menu_navigation_t *nav    = menu_navigation_get_ptr();
+   menu_display_t *disp      = menu_display_get_ptr();
    menu_list_t *menu_list    = menu_list_get_ptr();
    uint32_t hash             = djb2_calculate(label);
    if (!menu || !menu_list)
@@ -543,7 +544,7 @@ static int action_iterate_main(const char *label, unsigned action)
          ret = action_iterate_load_open_zip(label, msg, sizeof(msg), action);
          break;
       case ITERATE_TYPE_MESSAGE:
-         strlcpy(msg, menu->message_contents, sizeof(msg));
+         strlcpy(msg, disp->message_contents, sizeof(msg));
          pop_selected    = &nav->selection_ptr;
          do_messagebox   = true;
          do_pop_stack    = true;
