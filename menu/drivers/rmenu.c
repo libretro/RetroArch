@@ -151,7 +151,7 @@ static void rmenu_render(void)
 
    menu_display_fb_unset_dirty();
    anim->is_active           = false;
-   menu->label.is_updated    = false;
+   anim->label.is_updated    = false;
 
    if (!menu_list->selection_buf)
       return;

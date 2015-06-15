@@ -537,6 +537,7 @@ static void rmenu_xui_render(void)
    const char *label           = NULL;
 	unsigned menu_type          = 0;
    menu_handle_t *menu         = menu_driver_get_ptr();
+   menu_animation_t *anim      = menu_animation_get_ptr();
    menu_display_t *disp        = menu_display_get_ptr();
    menu_framebuf_t *frame_buf  = menu_display_fb_get_ptr();
    menu_navigation_t *nav      = menu_navigation_get_ptr();
@@ -552,8 +553,8 @@ static void rmenu_xui_render(void)
 		return;
 
    menu_display_fb_unset_dirty();
-   menu->animation_is_active = false;
-   menu->label.is_updated    = false;
+   anim->is_active = false;
+   anim->label.is_updated    = false;
 
 	rmenu_xui_render_background();
 
