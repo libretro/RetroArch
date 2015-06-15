@@ -3508,7 +3508,7 @@ static bool setting_append_list_main_menu_options(
 #if defined(HAVE_DYNAMIC) || defined(HAVE_LIBRETRO_MANAGEMENT)
    CONFIG_ACTION(
          "core_list",
-         "Load Core",
+         menu_hash_to_str(MENU_LABEL_CORE_LIST),
          group_info.name,
          subgroup_info.name,
          parent_group);
@@ -3532,7 +3532,7 @@ static bool setting_append_list_main_menu_options(
       if (info && (info_library_name_hash != MENU_VALUE_NO_CORE))
          CONFIG_ACTION(
                "unload_core",
-               "Unload Core",
+               menu_hash_to_str(MENU_LABEL_UNLOAD_CORE),
                group_info.name,
                subgroup_info.name,
                parent_group);
@@ -3591,7 +3591,7 @@ static bool setting_append_list_main_menu_options(
 
    CONFIG_ACTION(
          "management",
-         "Advanced Management",
+         menu_hash_to_str(MENU_LABEL_MANAGEMENT),
          group_info.name,
          subgroup_info.name,
          parent_group);
@@ -3634,7 +3634,7 @@ static bool setting_append_list_main_menu_options(
    {
       CONFIG_ACTION(
             "performance_counters",
-            "Performance Counters",
+            menu_hash_to_str(MENU_LABEL_PERFORMANCE_COUNTERS),
             group_info.name,
             subgroup_info.name,
             parent_group);
@@ -3644,7 +3644,7 @@ static bool setting_append_list_main_menu_options(
    {
       CONFIG_ACTION(
             "savestate",
-            "Save State",
+            menu_hash_to_str(MENU_LABEL_SAVE_STATE),
             group_info.name,
             subgroup_info.name,
             "N/A");
@@ -3658,7 +3658,7 @@ static bool setting_append_list_main_menu_options(
 
       CONFIG_ACTION(
             "loadstate",
-            "Load State",
+            menu_hash_to_str(MENU_LABEL_LOAD_STATE),
             group_info.name,
             subgroup_info.name,
             "N/A");
@@ -3680,7 +3680,7 @@ static bool setting_append_list_main_menu_options(
 
       CONFIG_ACTION(
             "resume_content",
-            "Resume Content",
+            menu_hash_to_str(MENU_LABEL_RESUME_CONTENT),
             group_info.name,
             subgroup_info.name,
             parent_group);

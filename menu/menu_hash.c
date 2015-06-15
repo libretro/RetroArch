@@ -46,6 +46,20 @@ const char *menu_hash_to_str(uint32_t hash)
          return "Options";
       case MENU_LABEL_CORE_INFORMATION:
          return "Core Information";
+      case MENU_LABEL_CORE_LIST:
+         return "Load Core";
+      case MENU_LABEL_UNLOAD_CORE:
+         return "Unload Core";
+      case MENU_LABEL_MANAGEMENT:
+         return "Advanced Management";
+      case MENU_LABEL_PERFORMANCE_COUNTERS:
+         return "Performance Counters";
+      case MENU_LABEL_SAVE_STATE:
+         return "Save State";
+      case MENU_LABEL_LOAD_STATE:
+         return "Load State";
+      case MENU_LABEL_RESUME_CONTENT:
+         return "Resume Content";
    }
 
    return "null";
