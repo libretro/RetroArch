@@ -218,6 +218,16 @@ void  menu_driver_list_set_selection(file_list_t *list)
       driver->list_set_selection(list);
 }
 
+size_t  menu_driver_list_get_selection(void)
+{
+   const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
+   menu_handle_t *menu             = menu_driver_get_ptr();
+
+   if (driver->list_get_selection)
+      return driver->list_get_selection(menu);
+   return 0;
+}
+
 void  menu_driver_list_insert(file_list_t *list, const char *path,
       const char *label, unsigned type, size_t idx)
 {

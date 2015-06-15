@@ -193,6 +193,7 @@ typedef struct xmb_handle
 
       float x_pos;
       size_t selection_ptr_old;
+      size_t selection_ptr;
    } categories;
 
    struct
@@ -230,6 +231,17 @@ static const GLfloat rmb_tex_coord[] = {
    0, 0,
    1, 0,
 };
+
+static size_t xmb_list_get_selection(void *data)
+{
+    menu_handle_t *menu    = (menu_handle_t*)data;
+    xmb_handle_t *xmb      = menu ? (xmb_handle_t*)menu->userdata : NULL;
+    
+    if (!xmb)
+       return 0;
+
+    return xmb->categories.selection_ptr;
+}
 
 static size_t xmb_list_get_size(void *data, menu_list_type_t type)
 {
@@ -767,19 +779,14 @@ static void xmb_list_switch_new(xmb_handle_t *xmb,
 
 static void xmb_set_title(xmb_handle_t *xmb)
 {
-   menu_handle_t *menu = menu_driver_get_ptr();
-
-   if (!menu)
-      return;
-
-   if (menu->categories.selection_ptr == 0)
+   if (xmb->categories.selection_ptr == 0)
       menu_entries_get_title(xmb->title_name, sizeof(xmb->title_name));
    else
    {
       const char *path = NULL;
       file_list_get_at_offset(
             xmb->horizontal_list,
-            menu->categories.selection_ptr - 1,
+            xmb->categories.selection_ptr - 1,
             &path, NULL, NULL, NULL);
 
       if (!path)
@@ -830,7 +837,7 @@ static void xmb_list_switch(xmb_handle_t *xmb)
    if (!menu)
       return;
 
-   if (menu->categories.selection_ptr > xmb->categories.selection_ptr_old)
+   if (xmb->categories.selection_ptr > xmb->categories.selection_ptr_old)
       dir = 1;
 
    xmb->categories.active.idx += dir;
@@ -838,18 +845,18 @@ static void xmb_list_switch(xmb_handle_t *xmb)
    xmb_list_switch_horizontal_list(xmb, menu);
 
    menu_animation_push(disp->animation, XMB_DELAY,
-         xmb->icon.spacing.horizontal * -(float)menu->categories.selection_ptr,
+         xmb->icon.spacing.horizontal * -(float)xmb->categories.selection_ptr,
          &xmb->categories.x_pos, EASING_IN_OUT_QUAD, NULL);
 
    dir = -1;
-   if (menu->categories.selection_ptr > xmb->categories.selection_ptr_old)
+   if (xmb->categories.selection_ptr > xmb->categories.selection_ptr_old)
       dir = 1;
 
    xmb_list_switch_old(xmb, xmb->selection_buf_old,
          dir, xmb->selection_ptr_old);
    xmb_list_switch_new(xmb, menu_list->selection_buf,
          dir, nav->selection_ptr);
-   xmb->categories.active.idx_old = menu->categories.selection_ptr;
+   xmb->categories.active.idx_old = xmb->categories.selection_ptr;
 }
 
 static void xmb_list_open_horizontal_list(xmb_handle_t *xmb, menu_handle_t *menu)
@@ -948,7 +955,7 @@ static void xmb_populate_entries(const char *path,
 
    xmb_set_title(xmb);
 
-   if (menu->categories.selection_ptr != xmb->categories.active.idx_old)
+   if (xmb->categories.selection_ptr != xmb->categories.active.idx_old)
       xmb_list_switch(xmb);
    else
       xmb_list_open(xmb);
@@ -1378,14 +1385,14 @@ static void xmb_frame(void)
          xmb->selection_buf_old,
          xmb->menu_stack_old,
          xmb->selection_ptr_old,
-         depth > 1 ? menu->categories.selection_ptr :
+         depth > 1 ? xmb->categories.selection_ptr :
          xmb->categories.selection_ptr_old);
 
    xmb_draw_items(xmb, gl,
          menu_list->selection_buf,
          menu_list->menu_stack,
          nav->selection_ptr,
-         menu->categories.selection_ptr);
+         xmb->categories.selection_ptr);
 
    matrix_4x4_rotate_z(&mrot, 0 /* rotation */);
    matrix_4x4_multiply(&mymat, &mrot, &gl->mvp_no_rot);
@@ -1991,22 +1998,22 @@ static void xmb_list_cache(menu_list_type_t type, unsigned action)
       case MENU_LIST_PLAIN:
          break;
       case MENU_LIST_HORIZONTAL:
-         xmb->categories.selection_ptr_old = menu->categories.selection_ptr;
+         xmb->categories.selection_ptr_old = xmb->categories.selection_ptr;
 
          switch (action)
          {
             case MENU_ACTION_LEFT:
-               menu->categories.selection_ptr--;
+               xmb->categories.selection_ptr--;
                break;
             default:
-               menu->categories.selection_ptr++;
+               xmb->categories.selection_ptr++;
                break;
          }
 
          list_size = xmb_list_get_size(menu, MENU_LIST_HORIZONTAL);
-         if (menu->categories.selection_ptr > list_size)
+         if (xmb->categories.selection_ptr > list_size)
          {
-            menu->categories.selection_ptr = list_size;
+            xmb->categories.selection_ptr = list_size;
             return;
          }
 
@@ -2016,7 +2023,7 @@ static void xmb_list_cache(menu_list_type_t type, unsigned action)
             free(menu_list->menu_stack->list[stack_size - 1].label);
          menu_list->menu_stack->list[stack_size - 1].label = NULL;
 
-         if (menu->categories.selection_ptr == 0)
+         if (xmb->categories.selection_ptr == 0)
          {
             menu_list->menu_stack->list[stack_size - 1].label = 
                strdup(menu_hash_to_str(MENU_VALUE_MAIN_MENU));
@@ -2185,6 +2192,7 @@ menu_ctx_driver_t menu_ctx_xmb = {
    xmb_list_free,
    NULL,
    xmb_list_cache,
+   xmb_list_get_selection,
    xmb_list_get_size,
    xmb_list_get_entry,
    NULL,

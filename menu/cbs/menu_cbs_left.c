@@ -148,7 +148,7 @@ static int action_left_mainmenu(unsigned type, const char *label,
    if (list_size == 1)
    {
       nav->selection_ptr = 0;
-      if (menu->categories.selection_ptr != 0)
+      if (menu_driver_list_get_selection() != 0)
          push_list = 1;
    }
    else
