@@ -710,8 +710,9 @@ PLAYLISTS
 MENU
 ============================================================ */
 #ifdef HAVE_MENU
-#include "../menu/menu_input.c"
 #include "../menu/menu.c"
+#include "../menu/menu_hash.c"
+#include "../menu/menu_input.c"
 #include "../menu/menu_entry.c"
 #include "../menu/menu_entries.c"
 #include "../menu/menu_setting.c"
