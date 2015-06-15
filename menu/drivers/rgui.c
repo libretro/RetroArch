@@ -342,10 +342,10 @@ static void rgui_render(void)
    uint16_t hover_color, normal_color;
    size_t i, end;
    int bottom;
-   char title[256]                = {0};
-   char title_buf[256]            = {0};
-   char title_msg[64]             = {0};
-   char timedate[PATH_MAX_LENGTH] = {0};
+   char title[256];
+   char title_buf[256];
+   char title_msg[64];
+   char timedate[PATH_MAX_LENGTH];
    menu_handle_t *menu            = menu_driver_get_ptr();
    menu_input_t *menu_input       = menu_input_get_ptr();
    menu_display_t *disp           = menu_display_get_ptr();
@@ -356,6 +356,11 @@ static void rgui_render(void)
    settings_t *settings           = config_get_ptr();
    menu_animation_t *anim         = menu_animation_get_ptr();
    uint64_t frame_count           = video_driver_get_frame_count();
+
+   title[0]     = '\0';
+   title_buf[0] = '\0';
+   title_msg[0] = '\0';
+   timedate[0]  = '\0';
 
    (void)driver;
 
@@ -460,16 +465,22 @@ static void rgui_render(void)
 
    for (; i < end; i++, y += FONT_HEIGHT_STRIDE)
    {
-      char entry_path[PATH_MAX_LENGTH]      = {0};
-      char entry_value[PATH_MAX_LENGTH]     = {0};
-      char message[PATH_MAX_LENGTH]         = {0}; 
-      char entry_title_buf[PATH_MAX_LENGTH] = {0};
-      char type_str_buf[PATH_MAX_LENGTH]    = {0};
+      char entry_path[PATH_MAX_LENGTH];
+      char entry_value[PATH_MAX_LENGTH];
+      char message[PATH_MAX_LENGTH];
+      char entry_title_buf[PATH_MAX_LENGTH];
+      char type_str_buf[PATH_MAX_LENGTH];
       unsigned entry_spacing                = menu_entry_get_spacing(i);
       bool entry_selected                   = menu_entry_is_currently_selected(i);
 
       if (i > (nav->selection_ptr + 100))
          continue;
+
+      entry_path[0]      = '\0';
+      entry_value[0]     = '\0';
+      message[0]         = '\0';
+      entry_title_buf[0] = '\0';
+      type_str_buf[0]    = '\0';
 
       menu_entry_get_value(i, entry_value, sizeof(entry_value));
       menu_entry_get_path(i, entry_path, sizeof(entry_path));
