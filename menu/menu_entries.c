@@ -120,16 +120,15 @@ void menu_entries_get_core_title(char *s, size_t len)
 
 static bool menu_entries_get_nonblocking_refresh(void)
 {
-   menu_handle_t *menu  = menu_driver_get_ptr();
-   if (!menu)
+   menu_entries_t *entries = menu_entries_get_ptr();
+   if (!entries)
       return false;
-   return menu->nonblocking_refresh;
+   return entries->nonblocking_refresh;
 }
 
 int menu_entries_refresh(unsigned action)
 {
-   menu_handle_t *menu  = menu_driver_get_ptr();
-   if (!menu || menu_entries_get_nonblocking_refresh())
+   if (menu_entries_get_nonblocking_refresh())
       return -1;
    if (!menu_entries_needs_refresh())
       return -1;
@@ -138,40 +137,40 @@ int menu_entries_refresh(unsigned action)
 
 bool menu_entries_needs_refresh(void)
 {
-   menu_handle_t *menu  = menu_driver_get_ptr();
-   if (!menu)
+   menu_entries_t *entries = menu_entries_get_ptr();
+   if (!entries)
       return false;
-   return menu->need_refresh;
+   return entries->need_refresh;
 }
 
 void menu_entries_set_nonblocking_refresh(void)
 {
-   menu_handle_t *menu  = menu_driver_get_ptr();
-   if (!menu)
+   menu_entries_t *entries = menu_entries_get_ptr();
+   if (!entries)
       return;
-   menu->nonblocking_refresh = true;
+   entries->nonblocking_refresh = true;
 }
 
 void menu_entries_unset_nonblocking_refresh(void)
 {
-   menu_handle_t *menu  = menu_driver_get_ptr();
-   if (!menu)
+   menu_entries_t *entries = menu_entries_get_ptr();
+   if (!entries)
       return;
-   menu->nonblocking_refresh = false;
+   entries->nonblocking_refresh = false;
 }
 
 void menu_entries_set_refresh(void)
 {
-   menu_handle_t *menu  = menu_driver_get_ptr();
-   if (!menu)
+   menu_entries_t *entries = menu_entries_get_ptr();
+   if (!entries)
       return;
-   menu->need_refresh = true;
+   entries->need_refresh = true;
 }
 
 void menu_entries_unset_refresh(void)
 {
-   menu_handle_t *menu  = menu_driver_get_ptr();
-   if (!menu)
+   menu_entries_t *entries = menu_entries_get_ptr();
+   if (!entries)
       return;
-   menu->need_refresh = false;
+   entries->need_refresh = false;
 }

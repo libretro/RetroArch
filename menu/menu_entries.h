@@ -29,6 +29,10 @@ extern "C" {
 
 typedef struct menu_entries
 {
+   /* Flagged when menu entries need to be refreshed */
+   bool need_refresh;
+   bool nonblocking_refresh;
+
    size_t begin;
    menu_list_t *menu_list;
    rarch_setting_t *list_settings;

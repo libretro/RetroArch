@@ -49,8 +49,6 @@ typedef struct
 
    float scroll_y;
 
-   bool need_refresh;
-   bool nonblocking_refresh;
    bool push_start_screen;
 
    bool defer_core;
@@ -70,7 +68,6 @@ typedef struct
    struct video_shader *shader;
 
    menu_input_t input;
-
 
    content_playlist_t *playlist;
    char db_playlist_file[PATH_MAX_LENGTH];
