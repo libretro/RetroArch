@@ -246,6 +246,7 @@ if [ "$HAVE_OPENGL" != 'no' ] && [ "$HAVE_GLES" != 'yes' ]; then
    else
       # On some distros, -lCg doesn't link against -lstdc++ it seems ...
       check_lib_cxx CG -lCg cgCreateContext
+      check_lib OPENGL -lGL
       [ "$HAVE_CG" = 'yes' ] && CG_LIBS='-lCg -lCgGL'
    fi
 
