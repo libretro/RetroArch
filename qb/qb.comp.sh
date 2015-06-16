@@ -80,7 +80,7 @@ fi
 rm -f "$TEMP_CXX" "$TEMP_EXE"
 
 cxx_status='does not work'
-if [ "$cxx_works" == '1' ]; then
+if [ "$cxx_works" = '1' ]; then
 	cxx_status='works'
 elif [ -z $CXX ]; then
 	cxx_status='not found'
@@ -88,7 +88,7 @@ fi
 
 echo "Checking for suitable working C++ compiler ... $CXX $cxx_status"
 
-if [ "$cxx_works" == '0' ] && [ "$USE_LANG_CXX" = 'yes' ]; then
+if [ "$cxx_works" = '0' ] && [ "$USE_LANG_CXX" = 'yes' ]; then
 	echo "Error: Cannot proceed without a working C++ compiler."
 	exit 1
 fi
