@@ -58,8 +58,8 @@ size_t menu_entries_get_start(void)
 /* Returns the last index (+1) of the menu entry list. */
 size_t menu_entries_get_end(void)
 {
-   menu_list_t *menu_list    = menu_list_get_ptr();
-   return menu_list_get_size(menu_list);
+   menu_entries_t *entries = menu_entries_get_ptr();
+   return menu_list_get_size(entries->menu_list);
 }
 
 
@@ -70,14 +70,14 @@ int menu_entries_get_title(char *s, size_t len)
    const char *label         = NULL;
    unsigned menu_type        = 0;
    menu_file_list_cbs_t *cbs = NULL;
-   menu_list_t *menu_list    = menu_list_get_ptr();
+   menu_entries_t *entries = menu_entries_get_ptr();
    
-   if (!menu_list)
+   if (!entries->menu_list)
       return -1;
 
-   cbs = (menu_file_list_cbs_t*)menu_list_get_last_stack_actiondata(menu_list);
+   cbs = (menu_file_list_cbs_t*)menu_list_get_last_stack_actiondata(entries->menu_list);
 
-   menu_list_get_last_stack(menu_list, &path, &label, &menu_type, NULL);
+   menu_list_get_last_stack(entries->menu_list, &path, &label, &menu_type, NULL);
 
    if (cbs && cbs->action_get_title)
       return cbs->action_get_title(path, label, menu_type, s, len);
@@ -88,12 +88,12 @@ int menu_entries_get_title(char *s, size_t len)
  * one level deep in the menu hierarchy). */
 bool menu_entries_show_back(void)
 {
-   menu_list_t *menu_list    = menu_list_get_ptr();
+   menu_entries_t *entries = menu_entries_get_ptr();
 
-   if (!menu_list)
+   if (!entries->menu_list)
       return false;
 
-   return (menu_list_get_stack_size(menu_list) > 1);
+   return (menu_list_get_stack_size(entries->menu_list) > 1);
 }
 
 /* Sets 's' to the name of the current core 
