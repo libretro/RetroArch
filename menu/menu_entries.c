@@ -36,23 +36,23 @@ menu_entries_t *menu_entries_get_ptr(void)
 /* Sets the starting index of the menu entry list. */
 void menu_entries_set_start(size_t i)
 {
-   menu_handle_t *menu       = menu_driver_get_ptr();
+   menu_entries_t *entries   = menu_entries_get_ptr();
    
-   if (!menu)
+   if (!entries)
      return;
 
-   menu->begin = i;
+   entries->begin = i;
 }
 
 /* Returns the starting index of the menu entry list. */
 size_t menu_entries_get_start(void)
 {
-   menu_handle_t *menu       = menu_driver_get_ptr();
+   menu_entries_t *entries   = menu_entries_get_ptr();
    
-   if (!menu)
+   if (!entries)
      return 0;
 
-   return menu->begin;
+   return entries->begin;
 }
 
 /* Returns the last index (+1) of the menu entry list. */

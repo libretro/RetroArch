@@ -47,7 +47,6 @@ typedef struct
 {
    void *userdata;
 
-   size_t begin;
    float scroll_y;
 
    bool need_refresh;

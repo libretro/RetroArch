@@ -29,6 +29,7 @@ extern "C" {
 
 typedef struct menu_entries
 {
+   size_t begin;
    menu_list_t *menu_list;
    rarch_setting_t *list_settings;
    menu_navigation_t navigation;
