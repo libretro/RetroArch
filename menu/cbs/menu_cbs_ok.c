@@ -490,9 +490,9 @@ static int action_ok_core_updater_list(const char *path,
    if (!menu_list)
       return -1;
 
-   driver->menu->nonblocking_refresh = true;
-
    (void)url_path;
+
+   menu_entries_set_nonblocking_refresh();
 
    if (settings->network.buildbot_url[0] == '\0')
       return -1;

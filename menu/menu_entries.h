@@ -57,6 +57,10 @@ void menu_entries_set_refresh(void);
 
 void menu_entries_unset_refresh(void);
 
+void menu_entries_set_nonblocking_refresh(void);
+
+void menu_entries_unset_nonblocking_refresh(void);
+
 #ifdef __cplusplus
 }
 #endif

@@ -118,10 +118,18 @@ void menu_entries_get_core_title(char *s, size_t len)
          core_name, core_version);
 }
 
+static bool menu_entries_get_nonblocking_refresh(void)
+{
+   menu_handle_t *menu  = menu_driver_get_ptr();
+   if (!menu)
+      return false;
+   return menu->nonblocking_refresh;
+}
+
 int menu_entries_refresh(unsigned action)
 {
    menu_handle_t *menu  = menu_driver_get_ptr();
-   if (!menu || menu->nonblocking_refresh)
+   if (!menu || menu_entries_get_nonblocking_refresh())
       return -1;
    if (!menu_entries_needs_refresh())
       return -1;
@@ -134,6 +142,22 @@ bool menu_entries_needs_refresh(void)
    if (!menu)
       return false;
    return menu->need_refresh;
+}
+
+void menu_entries_set_nonblocking_refresh(void)
+{
+   menu_handle_t *menu  = menu_driver_get_ptr();
+   if (!menu)
+      return;
+   menu->nonblocking_refresh = true;
+}
+
+void menu_entries_unset_nonblocking_refresh(void)
+{
+   menu_handle_t *menu  = menu_driver_get_ptr();
+   if (!menu)
+      return;
+   menu->nonblocking_refresh = false;
 }
 
 void menu_entries_set_refresh(void)
