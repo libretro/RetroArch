@@ -264,7 +264,7 @@ void menu_list_flush_stack(menu_list_t *list,
    if (!list)
       return;
 
-   menu_set_refresh();
+   menu_entries_set_refresh();
    menu_list_get_last(list->menu_stack, &path, &label, &type, &entry_idx);
 
    while (menu_list_flush_stack_type(needle, label, type, final_type) != 0)
@@ -286,7 +286,7 @@ void menu_list_pop_stack(menu_list_t *list)
    menu_driver_list_cache(MENU_LIST_PLAIN, 0);
 
    menu_list_pop(list->menu_stack, &nav->selection_ptr);
-   menu_set_refresh();
+   menu_entries_set_refresh();
 }
 
 void menu_list_pop_stack_by_needle(menu_list_t *list,
@@ -302,7 +302,7 @@ void menu_list_pop_stack_by_needle(menu_list_t *list,
    if (!list)
       return;
 
-   menu_set_refresh();
+   menu_entries_set_refresh();
    menu_list_get_last(list->menu_stack, &path, &label, &type, &entry_idx);
    needle_hash            = djb2_calculate(needle);
    label_hash             = djb2_calculate(label);

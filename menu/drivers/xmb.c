@@ -2208,7 +2208,7 @@ static void xmb_toggle(bool menu_on)
    menu_animation_push(disp->animation, XMB_DELAY, 1.0f,
          &xmb->alpha, EASING_IN_OUT_QUAD, NULL);
 
-   xmb->prevent_populate = !menu_needs_refresh();
+   xmb->prevent_populate = !menu_entries_needs_refresh();
 
    xmb_toggle_horizontal_list(xmb, menu);
 }

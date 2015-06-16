@@ -546,7 +546,7 @@ static void rmenu_xui_render(void)
    if (!menu)
       return;
    if (
-         menu_needs_refresh() && 
+         menu_entries_needs_refresh() && 
          menu_driver_alive() &&
          !disp->msg_force
       )

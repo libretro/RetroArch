@@ -323,37 +323,3 @@ int menu_iterate(retro_input_t input,
 
    return 0;
 }
-
-int menu_do_refresh(unsigned action)
-{
-   menu_handle_t *menu  = menu_driver_get_ptr();
-   if (!menu || menu->nonblocking_refresh)
-      return -1;
-   if (!menu_needs_refresh())
-      return -1;
-   return menu_entry_iterate(MENU_ACTION_REFRESH);
-}
-
-bool menu_needs_refresh(void)
-{
-   menu_handle_t *menu  = menu_driver_get_ptr();
-   if (!menu)
-      return false;
-   return menu->need_refresh;
-}
-
-void menu_set_refresh(void)
-{
-   menu_handle_t *menu  = menu_driver_get_ptr();
-   if (!menu)
-      return;
-   menu->need_refresh = true;
-}
-
-void menu_unset_refresh(void)
-{
-   menu_handle_t *menu  = menu_driver_get_ptr();
-   if (!menu)
-      return;
-   menu->need_refresh = false;
-}

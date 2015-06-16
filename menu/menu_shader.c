@@ -175,7 +175,7 @@ void menu_shader_manager_set_preset(struct video_shader *shader,
    }
    config_file_free(conf);
 
-   menu_set_refresh();
+   menu_entries_set_refresh();
 #endif
 }
 

@@ -46,8 +46,8 @@ int menu_entry_go_back(void)
    menu_setting_apply_deferred();
    menu_list_pop_stack(menu_list);
 
-   if (menu_needs_refresh())
-      menu_do_refresh(MENU_ACTION_CANCEL);
+   if (menu_entries_needs_refresh())
+      menu_entries_refresh(MENU_ACTION_CANCEL);
 
    rarch_main_data_iterate();
 
@@ -416,7 +416,7 @@ int menu_entry_iterate(unsigned action)
    if (!menu_list)
       return -1;
 
-   if (action != MENU_ACTION_NOOP || menu_needs_refresh() || menu_display_update_pending())
+   if (action != MENU_ACTION_NOOP || menu_entries_needs_refresh() || menu_display_update_pending())
       menu_display_fb_set_dirty();
 
    cbs = (menu_file_list_cbs_t*)menu_list_get_last_stack_actiondata(menu_list);
@@ -488,7 +488,7 @@ int menu_entry_action(menu_entry_t *entry, unsigned i, enum menu_action action)
          if (cbs && cbs->action_refresh)
          {
             ret = cbs->action_refresh(menu_list->selection_buf, menu_list->menu_stack);
-            menu_unset_refresh();
+            menu_entries_unset_refresh();
          }
          break;
 

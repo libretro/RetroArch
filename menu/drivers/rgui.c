@@ -367,7 +367,7 @@ static void rgui_render(void)
    if (!menu)
       return;
 
-   if (menu_needs_refresh() && menu_driver_alive() && !disp->msg_force)
+   if (menu_entries_needs_refresh() && menu_driver_alive() && !disp->msg_force)
       return;
 
    if (runloop->is_idle)

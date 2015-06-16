@@ -262,10 +262,8 @@ static int action_left_cheat_num_passes(unsigned type, const char *label,
 
    if (cheat->size)
       new_size = cheat->size - 1;
-   menu_set_refresh();
-
-   if (menu_needs_refresh())
-      cheat_manager_realloc(cheat, new_size);
+   menu_entries_set_refresh();
+   cheat_manager_realloc(cheat, new_size);
 
    return 0;
 }
@@ -285,10 +283,8 @@ static int action_left_shader_num_passes(unsigned type, const char *label,
 
    if (shader->passes)
       shader->passes--;
-   menu_set_refresh();
-
-   if (menu_needs_refresh())
-      video_shader_resolve_parameters(NULL, menu->shader);
+   menu_entries_set_refresh();
+   video_shader_resolve_parameters(NULL, menu->shader);
 
 #endif
    return 0;

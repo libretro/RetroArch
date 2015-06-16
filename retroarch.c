@@ -53,6 +53,7 @@
 #ifdef HAVE_MENU
 #include "menu/menu.h"
 #include "menu/menu_hash.h"
+#include "menu/menu_entries.h"
 #include "menu/menu_setting.h"
 #include "menu/menu_shader.h"
 #include "menu/menu_input.h"
@@ -1323,7 +1324,7 @@ void rarch_main_set_state(unsigned cmd)
                global->system.frame_time_last = 0;
             }
 
-            menu_set_refresh();
+            menu_entries_set_refresh();
             menu_driver_set_alive();
          }
 #endif

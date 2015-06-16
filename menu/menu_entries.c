@@ -117,3 +117,37 @@ void menu_entries_get_core_title(char *s, size_t len)
    snprintf(s, len, "%s - %s %s", PACKAGE_VERSION,
          core_name, core_version);
 }
+
+int menu_entries_refresh(unsigned action)
+{
+   menu_handle_t *menu  = menu_driver_get_ptr();
+   if (!menu || menu->nonblocking_refresh)
+      return -1;
+   if (!menu_entries_needs_refresh())
+      return -1;
+   return menu_entry_iterate(MENU_ACTION_REFRESH);
+}
+
+bool menu_entries_needs_refresh(void)
+{
+   menu_handle_t *menu  = menu_driver_get_ptr();
+   if (!menu)
+      return false;
+   return menu->need_refresh;
+}
+
+void menu_entries_set_refresh(void)
+{
+   menu_handle_t *menu  = menu_driver_get_ptr();
+   if (!menu)
+      return;
+   menu->need_refresh = true;
+}
+
+void menu_entries_unset_refresh(void)
+{
+   menu_handle_t *menu  = menu_driver_get_ptr();
+   if (!menu)
+      return;
+   menu->need_refresh = false;
+}

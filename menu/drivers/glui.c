@@ -376,7 +376,7 @@ static void glui_frame(void)
    glui = (glui_handle_t*)menu->userdata;
 
    if (
-         menu_needs_refresh()
+         menu_entries_needs_refresh()
          && menu_driver_alive() 
          && !disp->msg_force
          && !glui->box_message[0]

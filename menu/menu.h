@@ -190,14 +190,6 @@ void menu_common_load_content(bool persist);
 
 void menu_update_system_info(menu_handle_t *menu, bool *load_no_content);
 
-int menu_do_refresh(unsigned action);
-
-bool menu_needs_refresh(void);
-
-void menu_set_refresh(void);
-
-void menu_unset_refresh(void);
-
 #ifdef __cplusplus
 }
 #endif

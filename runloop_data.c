@@ -24,6 +24,7 @@
 
 #ifdef HAVE_MENU
 #include "menu/menu.h"
+#include "menu/menu_entries.h"
 #include "menu/menu_input.h"
 #endif
 
@@ -271,7 +272,7 @@ void rarch_main_data_iterate(void)
    }
 
 #ifdef HAVE_MENU
-   menu_do_refresh(MENU_ACTION_REFRESH);
+   menu_entries_refresh(MENU_ACTION_REFRESH);
 #endif
 
 #ifdef HAVE_THREADS
