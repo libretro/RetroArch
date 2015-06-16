@@ -20,7 +20,18 @@
 #include "menu_setting.h"
 #include "menu_input.h"
 
+#include "menu_entries.h"
+
 #include "../general.h"
+
+menu_entries_t *menu_entries_get_ptr(void)
+{
+   menu_handle_t *menu = menu_driver_get_ptr();
+   if (!menu)
+      return NULL;
+
+   return &menu->entries;
+}
 
 /* Sets the starting index of the menu entry list. */
 void menu_entries_set_start(size_t i)

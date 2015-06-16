@@ -1152,16 +1152,25 @@ static int deferred_push_video_shader_parameters_common(
 }
 #endif
 
+static void menu_displaylist_realloc_settings(menu_entries_t *entries, unsigned flags)
+{
+   if (!entries)
+      return;
+
+   if (entries->list_settings)
+      menu_setting_free(entries->list_settings);
+
+   entries->list_settings      = menu_setting_new(flags);
+}
+
 static int menu_displaylist_parse_settings(menu_handle_t *menu,
       menu_displaylist_info_t *info, unsigned setting_flags)
 {
    rarch_setting_t *setting = NULL;
    settings_t *settings     = config_get_ptr();
 
-   if (menu && menu->list_settings)
-      menu_setting_free(menu->list_settings);
+   menu_displaylist_realloc_settings(&menu->entries, setting_flags);
 
-   menu->list_settings      = menu_setting_new(setting_flags);
    setting                  = menu_setting_find(info->label);
 
    if (!setting)
@@ -1217,9 +1226,7 @@ static int menu_displaylist_parse_settings_in_subgroup(menu_displaylist_info_t *
       }
    }
 
-   if (menu->list_settings)
-      menu_setting_free(menu->list_settings);
-   menu->list_settings = menu_setting_new(SL_FLAG_ALL_SETTINGS);
+   menu_displaylist_realloc_settings(&menu->entries, SL_FLAG_ALL_SETTINGS);
 
    info->setting = menu_setting_find(elem0);
 
@@ -1822,9 +1829,7 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          break;
       case DISPLAYLIST_SETTINGS_ALL:
          menu_list_clear(info->list);
-         if (menu->list_settings)
-            menu_setting_free(menu->list_settings);
-         menu->list_settings = menu_setting_new(SL_FLAG_ALL_SETTINGS);
+         menu_displaylist_realloc_settings(&menu->entries, SL_FLAG_ALL_SETTINGS);
 
          setting = menu_setting_find(menu_hash_to_str(MENU_LABEL_DRIVER_SETTINGS));
 
@@ -2043,9 +2048,9 @@ int menu_displaylist_push(file_list_t *list, file_list_t *menu_list)
    uint32_t          hash_label = 0;
    unsigned type                = 0;
    menu_displaylist_info_t info = {0};
-   menu_handle_t *menu          = menu_driver_get_ptr();
+   menu_entries_t *entries      = menu_entries_get_ptr();
 
-   menu_list_get_last_stack(menu->menu_list, &path, &label, &type, NULL);
+   menu_list_get_last_stack(entries->menu_list, &path, &label, &type, NULL);
 
    info.list      = list;
    info.menu_list = menu_list;
@@ -2068,7 +2073,7 @@ int menu_displaylist_push(file_list_t *list, file_list_t *menu_list)
    }
 
    cbs = (menu_file_list_cbs_t*)
-      menu_list_get_last_stack_actiondata(menu->menu_list);
+      menu_list_get_last_stack_actiondata(entries->menu_list);
 
    if (cbs->action_deferred_push)
       return cbs->action_deferred_push(&info);

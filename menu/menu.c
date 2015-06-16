@@ -144,6 +144,14 @@ void menu_common_load_content(bool persist)
    disp->msg_force = true;
 }
 
+static int menu_init_entries(menu_entries_t *entries)
+{
+   if (!(entries->menu_list = (menu_list_t*)menu_list_new()))
+      return -1;
+
+   return 0;
+}
+
 /**
  * menu_init:
  * @data                     : Menu context handle.
@@ -169,7 +177,7 @@ void *menu_init(const void *data)
    strlcpy(settings->menu.driver, menu_ctx->ident,
          sizeof(settings->menu.driver));
 
-   if (!(menu->menu_list = (menu_list_t*)menu_list_new()))
+   if (menu_init_entries(&menu->entries) != 0)
       goto error;
 
    global->core_info_current = (core_info_t*)calloc(1, sizeof(core_info_t));
@@ -199,9 +207,9 @@ void *menu_init(const void *data)
 
    return menu;
 error:
-   if (menu->menu_list)
-      menu_list_free(menu->menu_list);
-   menu->menu_list = NULL;
+   if (menu->entries.menu_list)
+      menu_list_free(menu->entries.menu_list);
+   menu->entries.menu_list = NULL;
    if (global->core_info_current)
       free(global->core_info_current);
    global->core_info_current = NULL;
@@ -220,16 +228,16 @@ error:
  *
  * Frees menu lists.
  **/
-static void menu_free_list(menu_handle_t *menu)
+static void menu_free_list(menu_entries_t *entries)
 {
-   if (!menu)
+   if (!entries)
       return;
 
-   menu_setting_free(menu->list_settings);
-   menu->list_settings = NULL;
+   menu_setting_free(entries->list_settings);
+   entries->list_settings = NULL;
 
-   menu_list_free(menu->menu_list);
-   menu->menu_list     = NULL;
+   menu_list_free(entries->menu_list);
+   entries->menu_list     = NULL;
 }
 
 /**
@@ -246,7 +254,6 @@ void menu_free(menu_handle_t *menu)
    if (!menu || !disp)
       return;
 
-   menu_free_list(menu);
 
    if (menu->playlist)
       content_playlist_free(menu->playlist);
@@ -262,8 +269,7 @@ void menu_free(menu_handle_t *menu)
 
    menu_display_free(menu);
 
-   menu_list_free(menu->menu_list);
-   menu->menu_list = NULL;
+   menu_free_list(&menu->entries);
 
    event_command(EVENT_CMD_HISTORY_DEINIT);
 

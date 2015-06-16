@@ -292,11 +292,11 @@ int menu_action_handle_setting(rarch_setting_t *setting,
 
 static rarch_setting_t *menu_setting_get_ptr(void)
 {
-   menu_handle_t *menu = menu_driver_get_ptr();
+   menu_entries_t *entries = menu_entries_get_ptr();
 
-   if (!menu)
+   if (!entries)
       return NULL;
-   return menu->list_settings;
+   return entries->list_settings;
 }
 
 /**

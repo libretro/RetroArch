@@ -24,6 +24,7 @@
 #include "menu_animation.h"
 #include "menu_display.h"
 #include "menu_displaylist.h"
+#include "menu_entries.h"
 #include "menu_list.h"
 #include "menu_input.h"
 #include "menu_navigation.h"
@@ -49,9 +50,6 @@ typedef struct
    size_t begin;
    float scroll_y;
 
-   menu_list_t *menu_list;
-   menu_navigation_t navigation;
-
    bool need_refresh;
    bool nonblocking_refresh;
    bool push_start_screen;
@@ -62,6 +60,9 @@ typedef struct
    /* Menu display */
    menu_display_t display;
 
+   /* Menu entries */
+   menu_entries_t entries;
+
    bool load_no_content;
 
    /* Menu shader */
@@ -71,7 +72,6 @@ typedef struct
 
    menu_input_t input;
 
-   rarch_setting_t *list_settings;
 
    content_playlist_t *playlist;
    char db_playlist_file[PATH_MAX_LENGTH];
