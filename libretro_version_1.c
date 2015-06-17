@@ -94,13 +94,13 @@ static void video_frame(const void *data, unsigned width,
    if (!driver->video_active)
       return;
 
-   video_driver_cached_frame_set(data, width, height, pitch);
-
    if (video_frame_scale(data, width, height, pitch))
    {
       data                        = driver->scaler_out;
       pitch                       = driver->scaler.out_stride;
    }
+
+   video_driver_cached_frame_set(data, width, height, pitch);
 
    /* Slightly messy code,
     * but we really need to do processing before blocking on VSync
