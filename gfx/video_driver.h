@@ -386,7 +386,7 @@ void video_driver_cached_frame_set(const void *data, unsigned width,
 
 void video_driver_cached_frame_set_ptr(const void *data);
 
-void video_driver_cached_frame_get(const void *data, unsigned *width,
+void video_driver_cached_frame_get(const void **data, unsigned *width,
       unsigned *height, size_t *pitch);
 
 bool video_driver_cached_frame_has_valid_fb(void);

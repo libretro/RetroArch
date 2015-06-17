@@ -228,7 +228,7 @@ static bool take_screenshot_raw(void)
    global_t *global                      = global_get_ptr();
    settings_t *settings                  = config_get_ptr();
 
-   video_driver_cached_frame_get(data, &width, &height, &pitch);
+   video_driver_cached_frame_get(&data, &width, &height, &pitch);
    
    screenshot_dir = settings->screenshot_directory;
 
@@ -292,7 +292,7 @@ bool take_screenshot(void)
       size_t old_pitch;
       const void* old_data = NULL;
       
-      video_driver_cached_frame_get(old_data, &old_width, &old_height,
+      video_driver_cached_frame_get(&old_data, &old_width, &old_height,
             &old_pitch);
       
       void* frame_data = video_driver_read_frame_raw(
