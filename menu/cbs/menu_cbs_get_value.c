@@ -14,11 +14,11 @@
  */
 
 #include <file/file_path.h>
-#include <rhash.h>
 
 #include "../menu.h"
 #include "../menu_cbs.h"
 #include "../menu_shader.h"
+#include "../menu_hash.h"
 
 #include "../../general.h"
 #include "../../performance.h"
@@ -764,7 +764,7 @@ static void menu_action_setting_disp_set_label(file_list_t* list,
       char *s2, size_t len2)
 {
    global_t *global     = global_get_ptr();
-   uint32_t hash_label  = djb2_calculate(label);
+   uint32_t hash_label  = menu_hash_calculate(label);
 
    *s = '\0';
    *w = 19;

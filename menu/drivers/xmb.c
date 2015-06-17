@@ -24,13 +24,13 @@
 #include <compat/posix_string.h>
 #include <string/stdstring.h>
 #include <string/string_list.h>
-#include <rhash.h>
 
 #include "../menu.h"
 #include "../menu_driver.h"
 #include "../menu_entry.h"
 #include "../menu_animation.h"
 #include "../menu_display.h"
+#include "../menu_hash.h"
 
 #include "../menu_cbs.h"
 
@@ -1073,8 +1073,8 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
 
       menu_entry_get(&entry, i, list, true);
 
-      hash_label = djb2_calculate(entry.label);
-      hash_value = djb2_calculate(entry.value);
+      hash_label = menu_hash_calculate(entry.label);
+      hash_value = menu_hash_calculate(entry.value);
 
       if (entry.type == MENU_FILE_CONTENTLIST_ENTRY)
          strlcpy(entry.path, path_basename(entry.path), sizeof(entry.path));

@@ -23,8 +23,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <rhash.h>
-
 #include "menu_input.h"
 #include "menu.h"
 #include "menu_display.h"
@@ -152,7 +150,7 @@ void menu_input_st_string_callback(void *userdata, const char *str)
       }
       else
       {
-         uint32_t hash_label = djb2_calculate(menu_input->keyboard.label_setting);
+         uint32_t hash_label = menu_hash_calculate(menu_input->keyboard.label_setting);
 
          switch (hash_label)
          {

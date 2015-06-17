@@ -15,9 +15,9 @@
 
 #include <compat/strl.h>
 #include <string/string_list.h>
-#include <rhash.h>
 
 #include "menu.h"
+#include "menu_hash.h"
 #include "menu_cbs.h"
 
 #if 0
@@ -88,8 +88,8 @@ void menu_cbs_init(void *data,
       str_list = NULL;
    }
 
-   label_hash      = djb2_calculate(label);
-   menu_label_hash = djb2_calculate(menu_label);
+   label_hash      = menu_hash_calculate(label);
+   menu_label_hash = menu_hash_calculate(menu_label);
 
    ret = menu_cbs_init_bind_ok(cbs, path, label, type, idx, elem0, elem1, menu_label, label_hash, menu_label_hash);
 

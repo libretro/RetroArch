@@ -16,7 +16,6 @@
 
 #include <file/file_path.h>
 #include <file/config_file.h>
-#include <rhash.h>
 
 #include "menu.h"
 #include "menu_input.h"
@@ -64,7 +63,7 @@ static bool menu_settings_list_append(rarch_setting_t **list,
          return false;
    }
 
-   value.name_hash = value.name ? djb2_calculate(value.name) : 0;
+   value.name_hash = value.name ? menu_hash_calculate(value.name) : 0;
 
    (*list)[list_info->index++] = value;
    return true;
@@ -318,7 +317,7 @@ rarch_setting_t *menu_setting_find(const char *label)
    if (!label)
       return NULL;
 
-   needle = djb2_calculate(label);
+   needle = menu_hash_calculate(label);
 
    for (; settings->type != ST_NONE; settings++)
    {
@@ -539,7 +538,7 @@ int setting_set_with_string_representation(rarch_setting_t* setting,
          strlcpy(setting->value.string, value, setting->size);
          break;
       case ST_BOOL:
-         value_hash = djb2_calculate(value);
+         value_hash = menu_hash_calculate(value);
 
          switch (value_hash)
          {
@@ -2110,7 +2109,7 @@ static int setting_get_description_compare_label(uint32_t label_hash,
    switch (label_hash)
    {
       case MENU_LABEL_INPUT_DRIVER:
-         driver_hash = djb2_calculate(settings->input.driver);
+         driver_hash = menu_hash_calculate(settings->input.driver);
 
          switch (driver_hash)
          {
@@ -2203,7 +2202,7 @@ static int setting_get_description_compare_label(uint32_t label_hash,
                );
          break;
       case MENU_LABEL_VIDEO_DRIVER:
-         driver_hash = djb2_calculate(settings->video.driver);
+         driver_hash = menu_hash_calculate(settings->video.driver);
 
          switch (driver_hash)
          {
@@ -2281,7 +2280,7 @@ static int setting_get_description_compare_label(uint32_t label_hash,
                );
          break;
       case MENU_LABEL_AUDIO_RESAMPLER_DRIVER:
-         driver_hash = djb2_calculate(settings->audio.resampler);
+         driver_hash = menu_hash_calculate(settings->audio.resampler);
 
          switch (driver_hash)
          {
@@ -3066,7 +3065,7 @@ int setting_get_description(const char *label, char *s,
       size_t len)
 {
    settings_t      *settings = config_get_ptr();
-   uint32_t label_hash       = djb2_calculate(label);
+   uint32_t label_hash       = menu_hash_calculate(label);
 
    if (setting_get_description_compare_label(label_hash, settings, s, len) == 0)
       return 0;
@@ -3147,7 +3146,7 @@ static void general_read_handler(void *data)
 {
    rarch_setting_t *setting  = (rarch_setting_t*)data;
    settings_t      *settings = config_get_ptr();
-   uint32_t hash             = setting ? djb2_calculate(setting->name) : 0;
+   uint32_t hash             = setting ? menu_hash_calculate(setting->name) : 0;
 
    if (!setting)
       return;
@@ -3200,7 +3199,7 @@ static void general_write_handler(void *data)
    driver_t *driver         = driver_get_ptr();
    global_t *global         = global_get_ptr();
    menu_list_t *menu_list   = menu_list_get_ptr();
-   uint32_t hash            = setting ? djb2_calculate(setting->name) : 0;
+   uint32_t hash            = setting ? menu_hash_calculate(setting->name) : 0;
 
    if (!setting)
       return;
@@ -3527,7 +3526,7 @@ static bool setting_append_list_main_menu_options(
    {
       struct retro_system_info *info = (struct retro_system_info*)
          global ? &global->system.info : NULL;
-      uint32_t info_library_name_hash = info ? djb2_calculate(info->library_name) : 0;
+      uint32_t info_library_name_hash = info ? menu_hash_calculate(info->library_name) : 0;
 
       if (info && (info_library_name_hash != MENU_VALUE_NO_CORE))
       {

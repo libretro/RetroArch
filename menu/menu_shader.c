@@ -18,7 +18,6 @@
 
 #include <compat/strl.h>
 #include <file/file_path.h>
-#include <rhash.h>
 
 #include "menu.h"
 #include "menu_hash.h"
@@ -74,7 +73,7 @@ void menu_shader_manager_init(menu_handle_t *menu)
    }
 
    ext = path_get_extension(settings->video.shader_path);
-   ext_hash = djb2_calculate(ext);
+   ext_hash = menu_hash_calculate(ext);
 
    switch (ext_hash)
    {

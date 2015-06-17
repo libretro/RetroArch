@@ -15,7 +15,6 @@
 
 #include <compat/strl.h>
 #include <file/file_path.h>
-#include <rhash.h>
 #include <retro_inline.h>
 
 #include "../menu.h"
@@ -502,7 +501,7 @@ static int action_iterate_main(const char *label, unsigned action)
    menu_navigation_t *nav    = menu_navigation_get_ptr();
    menu_display_t *disp      = menu_display_get_ptr();
    menu_list_t *menu_list    = menu_list_get_ptr();
-   uint32_t hash             = djb2_calculate(label);
+   uint32_t hash             = menu_hash_calculate(label);
    if (!menu || !menu_list)
       return 0;
    

@@ -19,7 +19,6 @@
 #include <file/file_path.h>
 #include <file/file_extract.h>
 #include <file/dir_list.h>
-#include <rhash.h>
 
 #include "menu.h"
 #include "menu_hash.h"
@@ -634,7 +633,7 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
             &path, &label, NULL, &core_name, &crc32, &db_name);
       strlcpy(fill_buf, core_name, sizeof(fill_buf));
 
-      core_name_hash = core_name ? djb2_calculate(core_name) : 0;
+      core_name_hash = core_name ? menu_hash_calculate(core_name) : 0;
 
       if (path)
       {
@@ -880,7 +879,7 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
             if (tmp_str_list->size > 1)
                strlcpy(elem1, tmp_str_list->elems[1].data, sizeof(elem1));
 
-            hash_value = djb2_calculate(elem1);
+            hash_value = menu_hash_calculate(elem1);
 
             switch (hash_value)
             {
@@ -905,8 +904,8 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
 
             rdb_entry_start_game_selection_ptr = j;
 
-            core_name_hash = djb2_calculate(playlist->entries[j].core_name);
-            core_path_hash = djb2_calculate(playlist->entries[j].core_path);
+            core_name_hash = menu_hash_calculate(playlist->entries[j].core_name);
+            core_path_hash = menu_hash_calculate(playlist->entries[j].core_path);
 
             if (
                   (core_name_hash != MENU_VALUE_DETECT) &&
@@ -1479,7 +1478,7 @@ static int menu_displaylist_parse_generic(menu_displaylist_info_t *info, bool *n
    menu_list_t *menu_list       = menu_list_get_ptr();
    global_t *global             = global_get_ptr();
    settings_t *settings         = config_get_ptr();
-   uint32_t hash_label          = djb2_calculate(info->label);
+   uint32_t hash_label          = menu_hash_calculate(info->label);
 
    (void)device;
 
@@ -2058,7 +2057,7 @@ int menu_displaylist_push(file_list_t *list, file_list_t *menu_list)
    strlcpy(info.path, path, sizeof(info.path));
    strlcpy(info.label, label, sizeof(info.label));
 
-   hash_label     = djb2_calculate(label);
+   hash_label     = menu_hash_calculate(label);
 
    if (!info.list)
       return -1;

@@ -14,7 +14,6 @@
  */
 
 #include <file/file_path.h>
-#include <rhash.h>
 
 #include "../menu.h"
 #include "../menu_display.h"
@@ -122,7 +121,7 @@ static int action_ok_file_load_with_detect_core_carchive(
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    menu_displaylist_info_t info = {0};
-   uint32_t hash_label      = djb2_calculate(label);
+   uint32_t hash_label      = menu_hash_calculate(label);
 
    strlcat(detect_content_path, "#", sizeof(detect_content_path));
    strlcat(detect_content_path, path, sizeof(detect_content_path));
@@ -134,7 +133,7 @@ static int action_ok_file_load_with_detect_core(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    menu_displaylist_info_t info = {0};
-   uint32_t hash_label      = djb2_calculate(label);
+   uint32_t hash_label      = menu_hash_calculate(label);
 
    return rarch_defer_core_wrapper(&info, idx, entry_idx, path, hash_label, false);
 }
@@ -164,7 +163,7 @@ static int action_ok_playlist_entry(const char *path,
    size_t selection_ptr         = 0;
    content_playlist_t *playlist = g_defaults.history;
    menu_handle_t *menu          = menu_driver_get_ptr();
-   uint32_t hash_label          = djb2_calculate(label);
+   uint32_t hash_label          = menu_hash_calculate(label);
 
    if (!menu)
       return -1;
@@ -202,8 +201,8 @@ static int action_ok_playlist_entry(const char *path,
          core_path, core_name, selection_ptr);
 #endif
 
-   core_path_hash = core_path ? djb2_calculate(core_path) : 0;
-   core_name_hash = core_name ? djb2_calculate(core_name) : 0;
+   core_path_hash = core_path ? menu_hash_calculate(core_path) : 0;
+   core_name_hash = core_name ? menu_hash_calculate(core_name) : 0;
 
    if (
          (core_path_hash == MENU_VALUE_DETECT) &&
@@ -1490,7 +1489,7 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
       const char *label, uint32_t hash, const char *elem0)
 {
    rarch_setting_t *setting = menu_setting_find(label);
-   uint32_t elem0_hash      = djb2_calculate(elem0);
+   uint32_t elem0_hash      = menu_hash_calculate(elem0);
 
    if (elem0[0] != '\0' && (is_rdb_entry(elem0_hash) == 0))
    {

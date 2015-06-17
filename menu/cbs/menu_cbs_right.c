@@ -14,7 +14,6 @@
  */
 
 #include <file/file_path.h>
-#include <rhash.h>
 
 #include "../menu.h"
 #include "../menu_hash.h"
@@ -418,7 +417,7 @@ static int menu_cbs_init_bind_right_compare_label(menu_file_list_cbs_t *cbs,
 
    if (setting)
    {
-      uint32_t parent_group_hash = djb2_calculate(setting->parent_group);
+      uint32_t parent_group_hash = menu_hash_calculate(setting->parent_group);
 
       if ((parent_group_hash == MENU_LABEL_SETTINGS) && (setting->type == ST_GROUP))
       {
@@ -435,7 +434,7 @@ static int menu_cbs_init_bind_right_compare_label(menu_file_list_cbs_t *cbs,
       label_setting[0] = '\0';
       snprintf(label_setting, sizeof(label_setting), "input_player%d_joypad_index", i + 1);
 
-      label_setting_hash = djb2_calculate(label_setting);
+      label_setting_hash = menu_hash_calculate(label_setting);
 
       if (label_hash != label_setting_hash)
          continue;

@@ -372,6 +372,8 @@ extern "C" {
 
 const char *menu_hash_to_str(uint32_t hash);
 
+uint32_t menu_hash_calculate(const char *s);
+
 #ifdef __cplusplus
 }
 #endif

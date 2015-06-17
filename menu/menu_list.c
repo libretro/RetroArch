@@ -17,10 +17,10 @@
 #include <string.h>
 
 #include <retro_inline.h>
-#include <rhash.h>
 
 #include "../driver.h"
 #include "menu.h"
+#include "menu_hash.h"
 #include "menu_list.h"
 #include "menu_navigation.h"
 
@@ -304,15 +304,15 @@ void menu_list_pop_stack_by_needle(menu_list_t *list,
 
    menu_entries_set_refresh();
    menu_list_get_last(list->menu_stack, &path, &label, &type, &entry_idx);
-   needle_hash            = djb2_calculate(needle);
-   label_hash             = djb2_calculate(label);
+   needle_hash            = menu_hash_calculate(needle);
+   label_hash             = menu_hash_calculate(label);
 
    while (needle_hash == label_hash)
    {
       menu_list_pop(list->menu_stack, &nav->selection_ptr);
       menu_list_get_last(list->menu_stack, &path, &label, &type, &entry_idx);
-      label_hash             = djb2_calculate(label);
-      needle_hash            = djb2_calculate(needle);
+      label_hash             = menu_hash_calculate(label);
+      needle_hash            = menu_hash_calculate(needle);
    }
 }
 

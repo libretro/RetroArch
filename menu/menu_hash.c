@@ -15,6 +15,7 @@
  */
 
 #include <stdint.h>
+#include <rhash.h>
 
 #include "menu_hash.h"
 
@@ -77,4 +78,9 @@ const char *menu_hash_to_str(uint32_t hash)
    }
 
    return "null";
+}
+
+uint32_t menu_hash_calculate(const char *s)
+{
+   return djb2_calculate(s);
 }
