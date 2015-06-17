@@ -926,11 +926,11 @@ void video_driver_cached_frame_set(const void *data, unsigned width,
    video_state.frame_cache.pitch  = pitch;
 }
 
-void video_driver_cached_frame_get(const void *data, unsigned *width,
+void video_driver_cached_frame_get(const void **data, unsigned *width,
       unsigned *height, size_t *pitch)
 {
    if (data)
-      data    = video_state.frame_cache.data;
+      *data    = video_state.frame_cache.data;
    if (width)
       *width  = video_state.frame_cache.width;
    if (height)
