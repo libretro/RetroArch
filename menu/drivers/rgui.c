@@ -32,6 +32,7 @@
 #include "../menu_display.h"
 
 #include "../../configuration.h"
+#include "../../runloop.h"
 #include "../../gfx/drivers_font_renderer/bitmap.h"
 
 #include "shared.h"
