@@ -25,6 +25,7 @@
 
 #include "../frontend_driver.h"
 #include "../../general.h"
+#include "../../menu/menu.h"
 
 #if defined(_WIN32)
 /* We only load this library once, so we let it be 
