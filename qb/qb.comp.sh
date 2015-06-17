@@ -24,7 +24,7 @@ rm -f "$TEMP_C" "$TEMP_EXE"
 cc_status='does not work'
 if [ "$cc_works" == '1' ]; then
 	cc_status='works'
-elif [ -z $CC ]; then
+elif [ -z "$CC" ]; then
 	cc_status='not found'
 fi
 
@@ -55,7 +55,7 @@ rm -f "$TEMP_CXX" "$TEMP_EXE"
 cxx_status='does not work'
 if [ "$cxx_works" = '1' ]; then
 	cxx_status='works'
-elif [ -z $CXX ]; then
+elif [ -z "$CXX" ]; then
 	cxx_status='not found'
 fi
 
