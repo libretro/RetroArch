@@ -21,6 +21,7 @@
 #include <string.h>
 #include <limits.h>
 
+#include <string/string_list.h>
 #include <compat/posix_string.h>
 #include <file/file_path.h>
 #include <retro_inline.h>
@@ -30,6 +31,7 @@
 #include "../menu_entry.h"
 #include "../menu_display.h"
 
+#include "../../configuration.h"
 #include "../../gfx/drivers_font_renderer/bitmap.h"
 
 #include "shared.h"
