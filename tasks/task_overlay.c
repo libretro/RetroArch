@@ -89,7 +89,7 @@ void rarch_main_data_overlay_iterate(bool is_thread, void *data)
          break;
    }
 
-end:
+end: ;
 #ifdef HAVE_THREADS
    if (is_thread)
       slock_unlock(runloop->overlay_lock);
