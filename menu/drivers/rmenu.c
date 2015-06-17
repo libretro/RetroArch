@@ -22,6 +22,7 @@
 #include <limits.h>
 
 #include <compat/posix_string.h>
+#include <string/string_list.h>
 
 #include "../menu_driver.h"
 #include "../menu_entry.h"

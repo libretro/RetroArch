@@ -23,6 +23,7 @@
 #include <file/file_path.h>
 #include <compat/posix_string.h>
 #include <string/stdstring.h>
+#include <string/string_list.h>
 #include <rhash.h>
 
 #include "../menu.h"
