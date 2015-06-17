@@ -22,7 +22,7 @@ fi
 rm -f "$TEMP_C" "$TEMP_EXE"
 
 cc_status='does not work'
-if [ "$cc_works" == '1' ]; then
+if [ "$cc_works" = '1' ]; then
 	cc_status='works'
 elif [ -z "$CC" ]; then
 	cc_status='not found'
@@ -30,7 +30,7 @@ fi
 
 echo "Checking for suitable working C compiler ... $CC $cc_status"
 
-if [ "$cc_works" == '0' ] && [ "$USE_LANG_C" = 'yes' ]; then
+if [ "$cc_works" = '0' ] && [ "$USE_LANG_C" = 'yes' ]; then
 	echo "Error: Cannot proceed without a working C compiler."
 	exit 1
 fi
