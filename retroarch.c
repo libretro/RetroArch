@@ -72,11 +72,13 @@ enum {
    RA_OPT_IPS,
    RA_OPT_NO_PATCH,
    RA_OPT_RECORDCONFIG,
+   RA_OPT_SUBSYSTEM,
    RA_OPT_SIZE,
    RA_OPT_FEATURES,
    RA_OPT_VERSION,
    RA_OPT_EOF_EXIT,
    RA_OPT_LOG_FILE,
+   RA_OPT_MAX_FRAMES
 };
 
 #include "config.features.h"
@@ -474,7 +476,7 @@ static void parse_input(int argc, char *argv[])
       { "save",         1, NULL, 's' },
       { "fullscreen",   0, NULL, 'f' },
       { "record",       1, NULL, 'r' },
-      { "recordconfig", 1, &val, 'R' },
+      { "recordconfig", 1, &val, RA_OPT_RECORDCONFIG },
       { "size",         1, &val, RA_OPT_SIZE },
       { "verbose",      0, NULL, 'v' },
       { "config",       1, NULL, 'c' },
@@ -493,7 +495,7 @@ static void parse_input(int argc, char *argv[])
       { "port",         1, &val, RA_OPT_PORT },
       { "spectate",     0, &val, RA_OPT_SPECTATE },
 #endif
-      { "nick",         1, &val, 'N' },
+      { "nick",         1, &val, RA_OPT_NICK },
 #if defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)
       { "command",      1, &val, RA_OPT_COMMAND },
 #endif
@@ -503,8 +505,8 @@ static void parse_input(int argc, char *argv[])
       { "no-patch",     0, &val, RA_OPT_NO_PATCH },
       { "detach",       0, NULL, 'D' },
       { "features",     0, &val, RA_OPT_FEATURES },
-      { "subsystem",    1, NULL, 'Z' },
-      { "max-frames",   1, NULL, 'm' },
+      { "subsystem",    1, &val, RA_OPT_SUBSYSTEM },
+      { "max-frames",   1, &val, RA_OPT_MAX_FRAMES },
       { "eof-exit",     0, &val, RA_OPT_EOF_EXIT },
       { "version",      0, &val, RA_OPT_VERSION },
 #ifdef HAVE_FILE_LOGGER
@@ -547,10 +549,6 @@ static void parse_input(int argc, char *argv[])
          case 'h':
             print_help(argv[0]);
             exit(0);
-
-         case 'Z':
-            strlcpy(global->subsystem, optarg, sizeof(global->subsystem));
-            break;
 
          case 'd':
          {
@@ -711,10 +709,6 @@ static void parse_input(int argc, char *argv[])
 #endif
             break;
 
-         case 'm':
-            runloop->frames.video.max = strtoul(optarg, NULL, 10);
-            break;
-
          case 0: /* options without short variant */
             switch (val)
             {
@@ -788,6 +782,15 @@ static void parse_input(int argc, char *argv[])
                   strlcpy(global->record.config, optarg,
                         sizeof(global->record.config));
                   break;
+
+               case RA_OPT_MAX_FRAMES:
+                  runloop->frames.video.max = strtoul(optarg, NULL, 10);
+                  break;
+
+               case RA_OPT_SUBSYSTEM:
+                  strlcpy(global->subsystem, optarg, sizeof(global->subsystem));
+                  break;
+
                case RA_OPT_FEATURES:
                   print_features();
                   exit(0);
