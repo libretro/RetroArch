@@ -1340,23 +1340,34 @@ static int menu_displaylist_parse_options(menu_displaylist_info_t *info)
    global_t *global            = global_get_ptr();
 
    menu_list_push(info->list,
-         menu_hash_to_str(MENU_LABEL_VALUE_CORE_OPTIONS), "core_options",
+         menu_hash_to_str(MENU_LABEL_VALUE_CORE_OPTIONS),
+         menu_hash_to_str(MENU_LABEL_CORE_OPTIONS),
          MENU_SETTING_ACTION, 0, 0);
    if (global->main_is_init)
    {
       if (global->has_set_input_descriptors)
-         menu_list_push(info->list, "Core Input Remapping Options", "core_input_remapping_options",
+         menu_list_push(info->list,
+               menu_hash_to_str(MENU_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS),
+               menu_hash_to_str(MENU_LABEL_CORE_INPUT_REMAPPING_OPTIONS),
                MENU_SETTING_ACTION, 0, 0);
-      menu_list_push(info->list, "Core Cheat Options", "core_cheat_options",
+      menu_list_push(info->list,
+            menu_hash_to_str(MENU_LABEL_VALUE_CORE_CHEAT_OPTIONS),
+            menu_hash_to_str(MENU_LABEL_CORE_CHEAT_OPTIONS),
             MENU_SETTING_ACTION, 0, 0);
       if (!global->libretro_dummy && global->system.disk_control.get_num_images)
-         menu_list_push(info->list, "Core Disk Options", "disk_options",
+         menu_list_push(info->list,
+               menu_hash_to_str(MENU_LABEL_VALUE_DISK_OPTIONS),
+               menu_hash_to_str(MENU_LABEL_DISK_OPTIONS),
                MENU_SETTING_ACTION, 0, 0);
    }
-   menu_list_push(info->list, "Video Options", "video_options",
+   menu_list_push(info->list,
+         menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_OPTIONS),
+         menu_hash_to_str(MENU_LABEL_VIDEO_OPTIONS),
          MENU_SETTING_ACTION, 0, 0);
 #ifdef HAVE_SHADER_MANAGER
-   menu_list_push(info->list, "Shader Options", "shader_options",
+   menu_list_push(info->list,
+         "Shader Options",
+         "shader_options",
          MENU_SETTING_ACTION, 0, 0);
 #endif
 
@@ -1427,9 +1438,11 @@ static int menu_displaylist_parse_options_cheats(menu_displaylist_info_t *info)
 static int menu_displaylist_parse_options_management(menu_displaylist_info_t *info)
 {
 #ifdef HAVE_LIBRETRODB
-   menu_list_push(info->list, menu_hash_to_str(MENU_LABEL_VALUE_DATABASE_MANAGER), "database_manager_list",
+   menu_list_push(info->list, menu_hash_to_str(MENU_LABEL_VALUE_DATABASE_MANAGER),
+         menu_hash_to_str(MENU_LABEL_DATABASE_MANAGER_LIST),
          MENU_SETTING_ACTION, 0, 0);
-   menu_list_push(info->list, menu_hash_to_str(MENU_LABEL_VALUE_CURSOR_MANAGER), "cursor_manager_list",
+   menu_list_push(info->list, menu_hash_to_str(MENU_LABEL_VALUE_CURSOR_MANAGER),
+         menu_hash_to_str(MENU_LABEL_CURSOR_MANAGER_LIST),
          MENU_SETTING_ACTION, 0, 0);
 #endif
    return 0;
@@ -1831,10 +1844,12 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
       case DISPLAYLIST_PERFCOUNTER_SELECTION:
          menu_list_clear(info->list);
          menu_list_push(info->list,
-               menu_hash_to_str(MENU_LABEL_VALUE_FRONTEND_COUNTERS), "frontend_counters",
+               menu_hash_to_str(MENU_LABEL_VALUE_FRONTEND_COUNTERS),
+               menu_hash_to_str(MENU_LABEL_FRONTEND_COUNTERS),
                MENU_SETTING_ACTION, 0, 0);
          menu_list_push(info->list,
-               menu_hash_to_str(MENU_LABEL_VALUE_CORE_COUNTERS), "core_counters",
+               menu_hash_to_str(MENU_LABEL_VALUE_CORE_COUNTERS),
+               menu_hash_to_str(MENU_LABEL_CORE_COUNTERS),
                MENU_SETTING_ACTION, 0, 0);
 
          need_refresh = true;
@@ -1939,13 +1954,16 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
       case DISPLAYLIST_OPTIONS_DISK:
          menu_list_clear(info->list);
          menu_list_push(info->list,
-               menu_hash_to_str(MENU_LABEL_VALUE_DISK_INDEX), "disk_idx",
+               menu_hash_to_str(MENU_LABEL_VALUE_DISK_INDEX),
+               menu_hash_to_str(MENU_LABEL_DISK_INDEX),
                MENU_SETTINGS_CORE_DISK_OPTIONS_DISK_INDEX, 0, 0);
          menu_list_push(info->list, 
-               menu_hash_to_str(MENU_LABEL_VALUE_DISK_CYCLE_TRAY_STATUS), "disk_cycle_tray_status",
+               menu_hash_to_str(MENU_LABEL_VALUE_DISK_CYCLE_TRAY_STATUS),
+               menu_hash_to_str(MENU_LABEL_DISK_CYCLE_TRAY_STATUS),
                MENU_SETTINGS_CORE_DISK_OPTIONS_DISK_CYCLE_TRAY_STATUS, 0, 0);
          menu_list_push(info->list,
-               menu_hash_to_str(MENU_LABEL_VALUE_DISK_IMAGE_APPEND), "disk_image_append",
+               menu_hash_to_str(MENU_LABEL_VALUE_DISK_IMAGE_APPEND),
+               menu_hash_to_str(MENU_LABEL_DISK_IMAGE_APPEND),
                MENU_SETTINGS_CORE_DISK_OPTIONS_DISK_IMAGE_APPEND, 0, 0);
 
          need_push    = true;
@@ -1982,7 +2000,8 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
                   menu_list_push(info->list, core_info[i].path, "",
                         MENU_FILE_CORE, 0, 0);
                else
-                  menu_list_push(info->list, core_info[i].path, "detect_core_list_ok",
+                  menu_list_push(info->list, core_info[i].path,
+                        menu_hash_to_str(MENU_LABEL_DETECT_CORE_LIST_OK),
                         MENU_FILE_CORE, 0, 0);
                menu_list_set_alt_at_offset(info->list, i,
                      core_info[i].display_name);

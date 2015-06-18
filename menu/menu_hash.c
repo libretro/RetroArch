@@ -23,6 +23,28 @@ const char *menu_hash_to_str(uint32_t hash)
 {
    switch (hash)
    {
+      case MENU_LABEL_VALUE_DISK_OPTIONS:
+         return "Core Disk Options";
+      case MENU_LABEL_VALUE_CORE_OPTIONS:
+         return "Core Options";
+      case MENU_LABEL_VALUE_CORE_CHEAT_OPTIONS:
+         return "Core Cheat Options";
+      case MENU_LABEL_CORE_CHEAT_OPTIONS:
+         return "core_cheat_options";
+      case MENU_LABEL_CORE_OPTIONS:
+         return "core_options";
+      case MENU_LABEL_DATABASE_MANAGER_LIST:
+         return "database_manager_list";
+      case MENU_LABEL_CURSOR_MANAGER_LIST:
+         return "cursor_manager_list";
+      case MENU_LABEL_FRONTEND_COUNTERS:
+         return "frontend_counters";
+      case MENU_LABEL_CORE_COUNTERS:
+         return "core_counters";
+      case MENU_LABEL_DISK_CYCLE_TRAY_STATUS:
+         return "disk_cycle_tray_status";
+      case MENU_LABEL_DISK_IMAGE_APPEND:
+         return "disk_image_append";
       case MENU_LABEL_DEFERRED_CORE_LIST:
          return "deferred_core_list";
       case MENU_LABEL_DEFERRED_CORE_LIST_SET:
@@ -109,6 +131,14 @@ const char *menu_hash_to_str(uint32_t hash)
          return "Dynamic Wallpaper";
       case MENU_LABEL_VALUE_BOXART:
          return "Display Boxart";
+      case MENU_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS:
+         return "Core Input Remapping Options";
+      case MENU_LABEL_VIDEO_OPTIONS:
+         return "video_options";
+      case MENU_LABEL_VALUE_VIDEO_OPTIONS:
+         return "Video Options";
+      default:
+         break;
    }
 
    return "null";
