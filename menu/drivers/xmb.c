@@ -571,7 +571,7 @@ static void xmb_update_boxart(xmb_handle_t *xmb, unsigned i)
    if (path_file_exists(path))
       rarch_main_data_msg_queue_push(DATA_TYPE_IMAGE, path,
             "cb_menu_boxart", 0, 1, true);
-   else
+   else if (xmb->depth == 1)
       xmb->boxart = 0;
 }
 
