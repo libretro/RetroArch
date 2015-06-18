@@ -3539,8 +3539,8 @@ static bool setting_append_list_main_menu_options(
       menu_settings_list_current_add_cmd(list, list_info, EVENT_CMD_UNLOAD_CORE);
 
       CONFIG_ACTION(
-            "core_information",
             menu_hash_to_str(MENU_LABEL_CORE_INFORMATION),
+            menu_hash_to_str(MENU_LABEL_VALUE_CORE_INFORMATION),
             group_info.name,
             subgroup_info.name,
             parent_group); }
@@ -3672,8 +3672,8 @@ static bool setting_append_list_main_menu_options(
       menu_settings_list_current_add_cmd  (list, list_info, EVENT_CMD_LOAD_STATE);
 
       CONFIG_ACTION(
-            "take_screenshot",
             menu_hash_to_str(MENU_LABEL_TAKE_SCREENSHOT),
+            menu_hash_to_str(MENU_LABEL_VALUE_TAKE_SCREENSHOT),
             group_info.name,
             subgroup_info.name,
             parent_group);

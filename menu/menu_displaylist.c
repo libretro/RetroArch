@@ -914,7 +914,9 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
                   (core_name_hash != MENU_VALUE_DETECT) &&
                   (core_path_hash != MENU_VALUE_DETECT)
                )
-               menu_list_push(info->list, "Start Content", "rdb_entry_start_content",
+               menu_list_push(info->list,
+                     menu_hash_to_str(MENU_LABEL_VALUE_RDB_ENTRY_START_CONTENT),
+                     menu_hash_to_str(MENU_LABEL_RDB_ENTRY_START_CONTENT),
                      MENU_FILE_PLAYLIST_ENTRY, 0, 0);
          }
       }
@@ -1093,7 +1095,8 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
 
    if (db_info->count < 1)
       menu_list_push(info->list,
-            "No information available.", "",
+            menu_hash_to_str(MENU_LABEL_VALUE_NO_PLAYLIST_ENTRIES_AVAILABLE),
+            "",
             0, 0, 0);
 
    content_playlist_free(playlist);
@@ -1122,10 +1125,8 @@ static int menu_database_parse_query(file_list_t *list, const char *path,
    for (i = 0; i < db_list->count; i++)
    {
       if (db_list->list[i].name && db_list->list[i].name[0] != '\0')
-      {
          menu_list_push(list, db_list->list[i].name,
                path, MENU_FILE_RDB_ENTRY, 0, 0);
-      }
    }
 
    database_info_list_free(db_list);
@@ -1151,10 +1152,8 @@ static int deferred_push_video_shader_parameters_common(
    }
 
    for (i = 0; i < list_size; i++)
-   {
       menu_list_push(info->list, shader->parameters[i].desc,
             info->label, base_parameter + i, 0, 0);
-   }
 
    return 0;
 }
@@ -1392,10 +1391,11 @@ static int menu_displaylist_parse_horizontal_content_actions(menu_displaylist_in
       menu_list_push(info->list, menu_hash_to_str(MENU_LABEL_LOAD_STATE),
             "loadstate", MENU_SETTING_ACTION_LOADSTATE, 0, 0);
       menu_list_push(info->list, menu_hash_to_str(MENU_LABEL_VALUE_CORE_INFORMATION),
-            "core_information", MENU_SETTING_ACTION_CORE_INFORMATION, 0, 0);
+            menu_hash_to_str(MENU_LABEL_CORE_INFORMATION), MENU_SETTING_ACTION_CORE_INFORMATION, 0, 0);
       menu_list_push(info->list, menu_hash_to_str(MENU_LABEL_VALUE_OPTIONS),
             "options", MENU_SETTING_ACTION_CORE_OPTIONS, 0, 0);
-      menu_list_push(info->list, "Take Screenshot", "take_screenshot",
+      menu_list_push(info->list, menu_hash_to_str(MENU_LABEL_VALUE_TAKE_SCREENSHOT),
+            menu_hash_to_str(MENU_LABEL_TAKE_SCREENSHOT),
             MENU_SETTING_ACTION_SCREENSHOT, 0, 0);
       menu_list_push(info->list, "Reset", "restart_content",
             MENU_SETTING_ACTION_RESET, 0, 0);

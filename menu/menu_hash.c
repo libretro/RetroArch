@@ -23,6 +23,10 @@ const char *menu_hash_to_str(uint32_t hash)
 {
    switch (hash)
    {
+      case MENU_LABEL_VALUE_RDB_ENTRY_START_CONTENT:
+         return "Start Content";
+      case MENU_LABEL_RDB_ENTRY_START_CONTENT:
+         return "rdb_entry_start_content";
       case MENU_LABEL_CUSTOM_BIND:
          return "custom_bind";
       case MENU_LABEL_CUSTOM_BIND_ALL:
@@ -55,6 +59,8 @@ const char *menu_hash_to_str(uint32_t hash)
          return "deferred_core_list_set";
       case MENU_LABEL_VALUE_OPTIONS:
          return "Options";
+      case MENU_LABEL_VALUE_TAKE_SCREENSHOT:
+         return "Take Screenshot";
       case MENU_LABEL_VALUE_RESUME:
          return "Resume";
       case MENU_LABEL_VALUE_SAVE_STATE:
@@ -69,14 +75,14 @@ const char *menu_hash_to_str(uint32_t hash)
          return "Disk Image Append";
       case MENU_LABEL_VALUE_DISK_CYCLE_TRAY_STATUS:
          return "Disk Cycle Tray Status";
+      case MENU_LABEL_VALUE_NO_PLAYLIST_ENTRIES_AVAILABLE:
+         return "No playlist entries available.";
       case MENU_LABEL_VALUE_NO_CORE_INFORMATION_AVAILABLE:
          return "No core information available.";
       case MENU_LABEL_VALUE_NO_CORE_OPTIONS_AVAILABLE:
          return "No core options available.";
       case MENU_LABEL_VALUE_NO_CORES_AVAILABLE:
          return "No cores available.";
-      case MENU_LABEL_VALUE_CORE_INFORMATION:
-         return "Core Information";
       case MENU_LABEL_VALUE_DATABASE_MANAGER:
          return "Database Manager";
       case MENU_LABEL_VALUE_CURSOR_MANAGER:
@@ -96,7 +102,7 @@ const char *menu_hash_to_str(uint32_t hash)
       case MENU_LABEL_RESTART_CONTENT:
          return "Restart Content";
       case MENU_LABEL_TAKE_SCREENSHOT:
-         return "Take Screenshot";
+         return "take_screenshot";
       case MENU_LABEL_CORE_UPDATER_LIST:
          return "Core Updater";
       case MENU_LABEL_SYSTEM_INFORMATION:
@@ -104,6 +110,8 @@ const char *menu_hash_to_str(uint32_t hash)
       case MENU_LABEL_OPTIONS:
          return "Options";
       case MENU_LABEL_CORE_INFORMATION:
+         return "core_information";
+      case MENU_LABEL_VALUE_CORE_INFORMATION:
          return "Core Information";
       case MENU_LABEL_CORE_LIST:
          return "Load Core";
