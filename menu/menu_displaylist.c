@@ -657,9 +657,18 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
          }
       }
 
-      if (!is_history)
+      if (!is_history && core_detected && db_name[0] != '\0')
+      {
+         char db_path[PATH_MAX_LENGTH] = {0};
+
+         fill_pathname_join(db_path, settings->content_database,
+               db_name, sizeof(db_path));
+         path_remove_extension(db_path);
+         strlcat(db_path, ".rdb", sizeof(db_path));
+
          menu_list_push(info->list, label,
-               path, MENU_FILE_RPL_ENTRY, 0, i);
+               db_path, MENU_FILE_RDB_ENTRY, 0, i);
+      }
       else
          menu_list_push(info->list, fill_buf, path_playlist,
                MENU_FILE_PLAYLIST_ENTRY, 0, i);
@@ -1377,7 +1386,7 @@ static int menu_displaylist_parse_horizontal_content_actions(menu_displaylist_in
          !strcmp(menu->deferred_path, global->fullpath))
    {
       menu_list_push(info->list, menu_hash_to_str(MENU_LABEL_RESUME_CONTENT),
-            "resume_content", MENU_SETTING_ACTION_RUN, 0, 0);
+            "file_load_or_resume", MENU_SETTING_ACTION_RUN, 0, 0);
       menu_list_push(info->list, menu_hash_to_str(MENU_LABEL_SAVE_STATE),
             "savestate", MENU_SETTING_ACTION_SAVESTATE, 0, 0);
       menu_list_push(info->list, menu_hash_to_str(MENU_LABEL_LOAD_STATE),
@@ -1392,11 +1401,7 @@ static int menu_displaylist_parse_horizontal_content_actions(menu_displaylist_in
             MENU_SETTING_ACTION_RESET, 0, 0);
    }
    else
-   {
-      // TODO Here, push a list of cores instead of run
-      // but display Run if the core is detected in the playlist
-      menu_list_push(info->list, "Run", "", MENU_SETTING_ACTION_RUN, 0, 0);
-   }
+      menu_list_push(info->list, "Run", "file_load_or_resume", MENU_SETTING_ACTION_RUN, 0, 0);
 
    return 0;
 }
