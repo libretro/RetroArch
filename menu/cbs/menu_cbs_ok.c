@@ -257,7 +257,8 @@ static int action_ok_shader_pass_load(const char *path,
 
    /* This will reset any changed parameters. */
    video_shader_resolve_parameters(NULL, menu->shader);
-   menu_list_flush_stack(menu_list, "shader_options", 0);
+   menu_list_flush_stack(menu_list,
+         menu_hash_to_str(MENU_LABEL_SHADER_OPTIONS), 0);
    return 0;
 #else
    return -1;
