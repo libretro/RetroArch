@@ -199,7 +199,7 @@ static void dispmanx_surface_free(void *data, struct dispmanx_surface *surface)
    surface->setup = false;
 }
 
-static bool dispmanx_surface_setup(void *data, int width, int height, int pitch, float aspect,
+static void dispmanx_surface_setup(void *data, int width, int height, int pitch, float aspect,
    struct dispmanx_surface *surface)
 {
    struct dispmanx_video *_dispvars = data;
@@ -258,8 +258,6 @@ static bool dispmanx_surface_setup(void *data, int width, int height, int pitch,
    vc_dispmanx_update_submit_sync(_dispvars->update);		
 
    surface->setup = true;
-
-   return true;
 }
 
 static void dispmanx_surface_init(void *data, 
@@ -271,7 +269,6 @@ static void dispmanx_surface_init(void *data,
    struct dispmanx_surface *surface)
 {
    struct dispmanx_video *_dispvars = data;
-   int i;
    
    /* Setup surface parameters */
    surface->numpages = numpages;
