@@ -57,8 +57,6 @@ const char *menu_hash_to_str(uint32_t hash)
          return "deferred_core_list";
       case MENU_LABEL_DEFERRED_CORE_LIST_SET:
          return "deferred_core_list_set";
-      case MENU_LABEL_VALUE_OPTIONS:
-         return "Options";
       case MENU_LABEL_VALUE_TAKE_SCREENSHOT:
          return "Take Screenshot";
       case MENU_LABEL_VALUE_RESUME:
@@ -91,7 +89,9 @@ const char *menu_hash_to_str(uint32_t hash)
          return "Recording Settings";
       case MENU_VALUE_MAIN_MENU:
          return "Main Menu";
-      case MENU_VALUE_SETTINGS:
+      case MENU_LABEL_SETTINGS:
+         return "settings";
+      case MENU_LABEL_VALUE_SETTINGS:
          return "Settings";
       case MENU_LABEL_QUIT_RETROARCH:
          return "Quit RetroArch";
@@ -100,14 +100,20 @@ const char *menu_hash_to_str(uint32_t hash)
       case MENU_LABEL_SAVE_NEW_CONFIG:
          return "Save New Config";
       case MENU_LABEL_RESTART_CONTENT:
+         return "restart_content";
+      case MENU_LABEL_VALUE_RESTART_CONTENT:
          return "Restart Content";
       case MENU_LABEL_TAKE_SCREENSHOT:
          return "take_screenshot";
       case MENU_LABEL_CORE_UPDATER_LIST:
          return "Core Updater";
       case MENU_LABEL_SYSTEM_INFORMATION:
+         return "system_information";
+      case MENU_LABEL_VALUE_SYSTEM_INFORMATION:
          return "System Information";
       case MENU_LABEL_OPTIONS:
+         return "options";
+      case MENU_LABEL_VALUE_OPTIONS:
          return "Options";
       case MENU_LABEL_CORE_INFORMATION:
          return "core_information";
@@ -125,8 +131,10 @@ const char *menu_hash_to_str(uint32_t hash)
          return "Save State";
       case MENU_LABEL_LOAD_STATE:
          return "Load State";
-      case MENU_LABEL_RESUME_CONTENT:
+      case MENU_LABEL_VALUE_RESUME_CONTENT:
          return "Resume Content";
+      case MENU_LABEL_RESUME_CONTENT:
+         return "resume_content";
       case MENU_LABEL_DRIVER_SETTINGS:
          return "Driver Settings";
       case MENU_LABEL_OVERLAY_SCALE:

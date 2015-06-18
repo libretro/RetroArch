@@ -199,7 +199,8 @@ extern "C" {
 #define MENU_VALUE_MORE                                                        0x0b877cafU
 #define MENU_VALUE_HORIZONTAL_MENU                                             0x35761704U
 #define MENU_VALUE_MAIN_MENU                                                   0x1625971fU   
-#define MENU_VALUE_SETTINGS                                                    0x8aca3ff6U
+#define MENU_LABEL_SETTINGS                                                    0x1304dc16U
+#define MENU_LABEL_VALUE_SETTINGS                                              0x8aca3ff6U
 #define MENU_VALUE_RECORDING_SETTINGS                                          0x1a80b313U
 #define MENU_VALUE_INPUT_SETTINGS                                              0xddd30846U
 #define MENU_VALUE_ON                                                          0x005974c2U
@@ -265,6 +266,7 @@ extern "C" {
 #define MENU_LABEL_HISTORY_LIST                                                0x60d82032U
 #define MENU_LABEL_INFO_SCREEN                                                 0xd97853d0U
 #define MENU_LABEL_SYSTEM_INFORMATION                                          0x206ebf0fU
+#define MENU_LABEL_VALUE_SYSTEM_INFORMATION                                    0xa62fd7f0U
 #define MENU_LABEL_CORE_INFORMATION                                            0xb638e0d3U
 #define MENU_LABEL_VALUE_CORE_INFORMATION                                      0x781981b4U
 #define MENU_LABEL_VIDEO_SHADER_PARAMETERS                                     0x9895c3e5U
@@ -383,8 +385,10 @@ extern "C" {
 #define MENU_LABEL_SAVESTATE                                                   0x3a4849b5U
 #define MENU_LABEL_LOADSTATE                                                   0xa39eb286U
 #define MENU_LABEL_RESUME_CONTENT                                              0xd9f088b0U
+#define MENU_LABEL_VALUE_RESUME_CONTENT                                        0xae6e5911U
 #define MENU_LABEL_VALUE_RESUME                                                0xce8ac2f6U
 #define MENU_LABEL_RESTART_CONTENT                                             0x1ea2e224U
+#define MENU_LABEL_VALUE_RESTART_CONTENT                                       0xf23a2e85U
 #define MENU_LABEL_TAKE_SCREENSHOT                                             0x6786e867U
 #define MENU_LABEL_VALUE_TAKE_SCREENSHOT                                       0xab767128U
 #define MENU_LABEL_FILE_LOAD_OR_RESUME                                         0x952941f4U
