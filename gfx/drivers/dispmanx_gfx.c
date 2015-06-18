@@ -32,9 +32,9 @@
  * core and other for menu, each one backed by a dispmanx 
  * element and a set of buffers (resources in dispmanx terms). */
 enum dispmanx_surface_type {
-   MAIN_SURFACE,
+   MAIN_SURFACE,   /* Always first surface */
    MENU_SURFACE,
-   BACK_SURFACE
+   BACK_SURFACE    /* Always last surface */
 }; 
 
 struct dispmanx_page
@@ -78,6 +78,9 @@ struct dispmanx_surface
 
    /* External aspect for scaling */
    float aspect;
+
+   /* Has the surface been setup already? */
+   bool setup;
 };
 
 struct dispmanx_video
@@ -110,8 +113,6 @@ struct dispmanx_video
 
    /* Menu */
    bool menu_active;
-
-   unsigned int numsurfaces;
 };
 
 /* If no free page is available when called, wait for a page flip. */
@@ -178,28 +179,40 @@ static void dispmanx_vsync_callback(DISPMANX_UPDATE_HANDLE_T u, void *data)
    slock_unlock(page->dispvars->pending_mutex);
 }
 
-static void dispmanx_surface_free_resources(void *data, struct dispmanx_surface *surface)
+static void dispmanx_surface_free(void *data, struct dispmanx_surface *surface)
 {
    int i;	
    struct dispmanx_video *_dispvars = data;
    
-   _dispvars->update = vc_dispmanx_update_start(0);
-   
    for (i = 0; i < surface->numpages; i++) { 
-      if (surface->pages[i].resource != 0){ 
-         vc_dispmanx_resource_delete(surface->pages[i].resource);
-      }
+      vc_dispmanx_resource_delete(surface->pages[i].resource);
+      surface->pages[i].used = false;   
+      slock_free(surface->pages[i].page_used_mutex); 
    }
    
+   free(surface->pages);
+   
+   _dispvars->update = vc_dispmanx_update_start(0);
    vc_dispmanx_element_remove(_dispvars->update, surface->element);
    vc_dispmanx_update_submit_sync(_dispvars->update);		
+
+   surface->setup = false;
 }
 
-static bool dispmanx_surface_setup(void *data, int width, int height, int pitch, float aspect,
+static void dispmanx_surface_setup(void *data, int width, int height, int pitch, float aspect,
    struct dispmanx_surface *surface)
 {
    struct dispmanx_video *_dispvars = data;
    int i, dst_width, dst_height, dst_xpos, dst_ypos;
+
+   /* Allocate memory for all the pages in each surface
+    * and initialize variables inside each page's struct. */
+   surface->pages = calloc(surface->numpages, sizeof(struct dispmanx_page));
+   for (i = 0; i < surface->numpages; i++) {
+      surface->pages[i].used = false;   
+      surface->pages[i].dispvars = _dispvars;   
+      surface->pages[i].page_used_mutex = slock_new(); 
+   }
 
    /* Internal frame dimensions. Pitch is total pitch including info 
     * between scanlines */
@@ -244,7 +257,7 @@ static bool dispmanx_surface_setup(void *data, int width, int height, int pitch,
 
    vc_dispmanx_update_submit_sync(_dispvars->update);		
 
-   return true;
+   surface->setup = true;
 }
 
 static void dispmanx_surface_init(void *data, 
@@ -256,7 +269,6 @@ static void dispmanx_surface_init(void *data,
    struct dispmanx_surface *surface)
 {
    struct dispmanx_video *_dispvars = data;
-   int i;
    
    /* Setup surface parameters */
    surface->numpages = numpages;
@@ -275,14 +287,9 @@ static void dispmanx_surface_init(void *data,
    surface->alpha.opacity = alpha;
    surface->alpha.mask = 0;
 
-   /* Allocate memory for all the pages in each surface
-    * and initialize variables inside each page's struct. */
-   surface->pages = calloc(surface->numpages, sizeof(struct dispmanx_surface));
-   for (i = 0; i < surface->numpages; i++) {
-      surface->pages[i].used = false;   
-      surface->pages[i].dispvars = _dispvars;   
-      surface->pages[i].page_used_mutex = slock_new(); 
-   }
+   /* This will be true when we have allocated mem for the pages and 
+    * created their element, resources, etc.. */
+   surface->setup = false;
 }
 
 static void dispmanx_surface_update(void *data, const void *frame, struct dispmanx_surface *surface)
@@ -351,8 +358,6 @@ static void *dispmanx_gfx_init(const video_info_t *video,
    graphics_get_display_size(_dispvars->display, &_dispvars->dispmanx_width, &_dispvars->dispmanx_height);
 
    /* Setup surface parameters */
-   _dispvars->numsurfaces = 3;
-
    _dispvars->vc_image_ptr     = 0;
    _dispvars->pageflip_pending = 0;	
    _dispvars->current_page     = NULL;
@@ -389,8 +394,9 @@ static bool dispmanx_gfx_frame(void *data, const void *frame, unsigned width,
       /* Sanity check. */
       if (width == 0 || height == 0)
          return true;
+      if (_dispvars->surfaces[MAIN_SURFACE].setup) 
+         dispmanx_surface_free(_dispvars, &_dispvars->surfaces[MAIN_SURFACE]);
       
-      dispmanx_surface_free_resources(_dispvars, &_dispvars->surfaces[MAIN_SURFACE]);
       float aspect = video_driver_get_aspect_ratio();
       /* Reconfiguring internal dimensions of the main surface is needed. */
       dispmanx_surface_setup(_dispvars, width, height, pitch, aspect, &_dispvars->surfaces[MAIN_SURFACE]);
@@ -414,7 +420,7 @@ static void dispmanx_set_texture_enable(void *data, bool state, bool full_screen
    
    /* If it was active but it's not anymore... */
    if (!state && _dispvars->menu_active) {
-      dispmanx_surface_free_resources(_dispvars, &_dispvars->surfaces[MENU_SURFACE]);
+      dispmanx_surface_free(_dispvars, &_dispvars->surfaces[MENU_SURFACE]);
       /* This is needed so we enter thru surface_setup on 
        * set_texture_frame() next time menu is active. */
       _dispvars->surfaces[MENU_SURFACE].width = 0;
@@ -541,11 +547,11 @@ static void dispmanx_set_aspect_ratio (void *data, unsigned aspect_ratio_idx)
    float aspect = aspectratio_lut[aspect_ratio_idx].value;
 
    surface = &_dispvars->surfaces[MAIN_SURFACE];
-   dispmanx_surface_free_resources(_dispvars, surface);
+   dispmanx_surface_free(_dispvars, surface);
    dispmanx_surface_setup(_dispvars, surface->width, surface->height, surface->pitch, aspect, surface);
   
    surface = &_dispvars->surfaces[MENU_SURFACE];
-   dispmanx_surface_free_resources(_dispvars, surface);
+   dispmanx_surface_free(_dispvars, surface);
    dispmanx_surface_setup(_dispvars, surface->width, surface->height, surface->pitch, aspect, surface);
 }
 
@@ -575,27 +581,16 @@ static void dispmanx_gfx_get_poke_interface(void *data,
    *iface = &dispmanx_poke_interface;
 }
 
-static void dispmanx_surface_free_pages (struct dispmanx_surface *surface)
-{
-   int i;
-   for (i = 0; i < surface->numpages; i++) {
-      surface->pages[i].used = false;   
-      slock_free(surface->pages[i].page_used_mutex); 
-   }
-   free(surface->pages);
-}
-
 static void dispmanx_gfx_free(void *data)
 {
    struct dispmanx_video *_dispvars = data;
+   int i;
 
-   dispmanx_surface_free_resources(_dispvars, &_dispvars->surfaces[MENU_SURFACE]);
-   dispmanx_surface_free_resources(_dispvars, &_dispvars->surfaces[MAIN_SURFACE]);
-   dispmanx_surface_free_resources(_dispvars, &_dispvars->surfaces[BACK_SURFACE]);
-
-   dispmanx_surface_free_pages(&_dispvars->surfaces[MAIN_SURFACE]);
-   dispmanx_surface_free_pages(&_dispvars->surfaces[MENU_SURFACE]);
-   dispmanx_surface_free_pages(&_dispvars->surfaces[BACK_SURFACE]);
+   for (i = MAIN_SURFACE; i <= BACK_SURFACE; i++) {
+      if (_dispvars->surfaces[i].setup) {
+         dispmanx_surface_free(_dispvars, &_dispvars->surfaces[i]);
+      }
+   }
 
    /* Close display and deinitialize. */
    vc_dispmanx_display_close(_dispvars->display);
