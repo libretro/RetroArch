@@ -23,6 +23,34 @@ const char *menu_hash_to_str(uint32_t hash)
 {
    switch (hash)
    {
+      case MENU_LABEL_VALUE_OPTIONS:
+         return "Options";
+      case MENU_LABEL_VALUE_RESUME:
+         return "Resume";
+      case MENU_LABEL_VALUE_SAVE_STATE:
+         return "Save State";
+      case MENU_LABEL_VALUE_DISK_INDEX:
+         return "Disk Index";
+      case MENU_LABEL_VALUE_FRONTEND_COUNTERS:
+         return "Frontend Counters";
+      case MENU_LABEL_VALUE_CORE_COUNTERS:
+         return "Core Counters";
+      case MENU_LABEL_VALUE_DISK_IMAGE_APPEND:
+         return "Disk Image Append";
+      case MENU_LABEL_VALUE_DISK_CYCLE_TRAY_STATUS:
+         return "Disk Cycle Tray Status";
+      case MENU_LABEL_VALUE_NO_CORE_INFORMATION_AVAILABLE:
+         return "No core information available.";
+      case MENU_LABEL_VALUE_NO_CORE_OPTIONS_AVAILABLE:
+         return "No core options available.";
+      case MENU_LABEL_VALUE_NO_CORES_AVAILABLE:
+         return "No cores available.";
+      case MENU_LABEL_VALUE_CORE_INFORMATION:
+         return "Core Information";
+      case MENU_LABEL_VALUE_DATABASE_MANAGER:
+         return "Database Manager";
+      case MENU_LABEL_VALUE_CURSOR_MANAGER:
+         return "Cursor Manager";
       case MENU_VALUE_RECORDING_SETTINGS:
          return "Recording Settings";
       case MENU_VALUE_MAIN_MENU:

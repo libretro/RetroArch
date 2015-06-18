@@ -111,8 +111,8 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
    if (!core_info || !core_info->data)
    {
       menu_list_push(info->list,
-            "No information available.", "",
-            0, 0, 0);
+            menu_hash_to_str(MENU_LABEL_VALUE_NO_CORE_INFORMATION_AVAILABLE),
+            "", 0, 0, 0);
       return 0;
    }
 
@@ -1371,11 +1371,11 @@ static int menu_displaylist_parse_horizontal_content_actions(menu_displaylist_in
    if (global->main_is_init && !global->libretro_dummy &&
          !strcmp(menu->deferred_path, global->fullpath))
    {
-      menu_list_push(info->list, "Resume", "file_load_or_resume", MENU_SETTING_ACTION_RUN, 0, 0);
-      menu_list_push(info->list, "Save State", "savestate", MENU_SETTING_ACTION_SAVESTATE, 0, 0);
-      menu_list_push(info->list, "Load State", "loadstate", MENU_SETTING_ACTION_LOADSTATE, 0, 0);
-      menu_list_push(info->list, "Core Information", "core_information", MENU_SETTING_ACTION_CORE_INFORMATION, 0, 0);
-      menu_list_push(info->list, "Options", "options", MENU_SETTING_ACTION_CORE_OPTIONS, 0, 0);
+      menu_list_push(info->list, menu_hash_to_str(MENU_LABEL_RESUME_CONTENT), "file_load_or_resume", MENU_SETTING_ACTION_RUN, 0, 0);
+      menu_list_push(info->list, menu_hash_to_str(MENU_LABEL_SAVE_STATE), "savestate", MENU_SETTING_ACTION_SAVESTATE, 0, 0);
+      menu_list_push(info->list, menu_hash_to_str(MENU_LABEL_LOAD_STATE), "loadstate", MENU_SETTING_ACTION_LOADSTATE, 0, 0);
+      menu_list_push(info->list, menu_hash_to_str(MENU_LABEL_VALUE_CORE_INFORMATION), "core_information", MENU_SETTING_ACTION_CORE_INFORMATION, 0, 0);
+      menu_list_push(info->list, menu_hash_to_str(MENU_LABEL_VALUE_OPTIONS), "options", MENU_SETTING_ACTION_CORE_OPTIONS, 0, 0);
       menu_list_push(info->list, "Take Screenshot", "take_screenshot", MENU_SETTING_ACTION_SCREENSHOT, 0, 0);
       menu_list_push(info->list, "Reset", "restart_content", MENU_SETTING_ACTION_RESET, 0, 0);
    }
@@ -1425,9 +1425,9 @@ static int menu_displaylist_parse_options_cheats(menu_displaylist_info_t *info)
 static int menu_displaylist_parse_options_management(menu_displaylist_info_t *info)
 {
 #ifdef HAVE_LIBRETRODB
-   menu_list_push(info->list, "Database Manager", "database_manager_list",
+   menu_list_push(info->list, menu_hash_to_str(MENU_LABEL_VALUE_DATABASE_MANAGER), "database_manager_list",
          MENU_SETTING_ACTION, 0, 0);
-   menu_list_push(info->list, "Cursor Manager", "cursor_manager_list",
+   menu_list_push(info->list, menu_hash_to_str(MENU_LABEL_VALUE_CURSOR_MANAGER), "cursor_manager_list",
          MENU_SETTING_ACTION, 0, 0);
 #endif
    return 0;
@@ -1787,7 +1787,8 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
                (type == DISPLAYLIST_PERFCOUNTERS_CORE) ?
                perf_ptr_libretro : perf_ptr_rarch ,
                (type == DISPLAYLIST_PERFCOUNTERS_CORE) ?
-               MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_BEGIN : MENU_SETTINGS_PERF_COUNTERS_BEGIN);
+               MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_BEGIN : 
+               MENU_SETTINGS_PERF_COUNTERS_BEGIN);
          ret = 0;
 
          need_refresh = false;
@@ -1801,7 +1802,8 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          break;
       case DISPLAYLIST_DATABASE_QUERY:
          menu_list_clear(info->list);
-         ret = menu_database_parse_query(info->list, info->path, (info->path_c[0] == '\0') ? NULL : info->path_c);
+         ret = menu_database_parse_query(info->list,
+               info->path, (info->path_c[0] == '\0') ? NULL : info->path_c);
          strlcpy(info->path, info->path_b, sizeof(info->path));
 
          need_sort    = true;
@@ -1825,9 +1827,11 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          break;
       case DISPLAYLIST_PERFCOUNTER_SELECTION:
          menu_list_clear(info->list);
-         menu_list_push(info->list, "Frontend Counters", "frontend_counters",
+         menu_list_push(info->list,
+               menu_hash_to_str(MENU_LABEL_VALUE_FRONTEND_COUNTERS), "frontend_counters",
                MENU_SETTING_ACTION, 0, 0);
-         menu_list_push(info->list, "Core Counters", "core_counters",
+         menu_list_push(info->list,
+               menu_hash_to_str(MENU_LABEL_VALUE_CORE_COUNTERS), "core_counters",
                MENU_SETTING_ACTION, 0, 0);
 
          need_refresh = true;
@@ -1931,11 +1935,14 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          break;
       case DISPLAYLIST_OPTIONS_DISK:
          menu_list_clear(info->list);
-         menu_list_push(info->list, "Disk Index", "disk_idx",
+         menu_list_push(info->list,
+               menu_hash_to_str(MENU_LABEL_VALUE_DISK_INDEX), "disk_idx",
                MENU_SETTINGS_CORE_DISK_OPTIONS_DISK_INDEX, 0, 0);
-         menu_list_push(info->list, "Disk Cycle Tray Status", "disk_cycle_tray_status",
+         menu_list_push(info->list, 
+               menu_hash_to_str(MENU_LABEL_VALUE_DISK_CYCLE_TRAY_STATUS), "disk_cycle_tray_status",
                MENU_SETTINGS_CORE_DISK_OPTIONS_DISK_CYCLE_TRAY_STATUS, 0, 0);
-         menu_list_push(info->list, "Disk Image Append", "disk_image_append",
+         menu_list_push(info->list,
+               menu_hash_to_str(MENU_LABEL_VALUE_DISK_IMAGE_APPEND), "disk_image_append",
                MENU_SETTINGS_CORE_DISK_OPTIONS_DISK_IMAGE_APPEND, 0, 0);
 
          need_push    = true;
@@ -1960,7 +1967,8 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
             if (list_size <= 0)
             {
                menu_list_push(info->list,
-                     "No cores available.", "",
+                     menu_hash_to_str(MENU_LABEL_VALUE_NO_CORES_AVAILABLE),
+                     "",
                      0, 0, 0);
                return 0;
             }
@@ -1995,7 +2003,8 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
                      MENU_SETTINGS_CORE_OPTION_START + i, 0, 0);
          }
          else
-            menu_list_push(info->list, "No core options available.", "",
+            menu_list_push(info->list,
+                  menu_hash_to_str(MENU_LABEL_VALUE_NO_CORE_OPTIONS_AVAILABLE), "",
                   MENU_SETTINGS_CORE_OPTION_NONE, 0, 0);
          need_push = true;
          break;
