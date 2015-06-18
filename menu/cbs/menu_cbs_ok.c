@@ -938,6 +938,31 @@ static int action_ok_rdb_entry(const char *path,
    return menu_displaylist_push_list(&info, DISPLAYLIST_GENERIC);
 }
 
+static int action_ok_rpl_entry(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   menu_handle_t *menu      = menu_driver_get_ptr();
+   char tmp[PATH_MAX_LENGTH]               = {0};
+   menu_displaylist_info_t            info = {0};
+   menu_list_t                  *menu_list = menu_list_get_ptr();
+   if (!menu_list)
+      return -1;
+
+   strlcpy(menu->deferred_path, label, sizeof(menu->deferred_path));
+
+   strlcpy(tmp, "deferred_rpl_entry_actions|", sizeof(tmp));
+   strlcat(tmp, path, sizeof(tmp));
+
+   info.list          = menu_list->menu_stack;
+   info.type          = 0;
+   info.directory_ptr = idx;
+
+   strlcpy(info.path, label, sizeof(info.path));
+   strlcpy(info.label, tmp, sizeof(info.label));
+
+   return menu_displaylist_push_list(&info, DISPLAYLIST_GENERIC);
+}
+
 static int action_ok_cursor_manager_list_deferred(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -1312,27 +1337,6 @@ static int action_ok_screenshot(const char *path,
    return generic_action_ok_command(EVENT_CMD_TAKE_SCREENSHOT);
 }
 
-static int action_ok_file_load_or_resume(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   menu_handle_t *menu   = menu_driver_get_ptr();
-   global_t      *global = global_get_ptr();
-
-   if (!menu)
-      return -1;
-
-   if (!strcmp(menu->deferred_path, global->fullpath))
-      return generic_action_ok_command(EVENT_CMD_RESUME);
-   else
-   {
-      strlcpy(global->fullpath,
-            menu->deferred_path, sizeof(global->fullpath));
-      event_command(EVENT_CMD_LOAD_CORE);
-      rarch_main_set_state(RARCH_ACTION_STATE_LOAD_CONTENT);
-      return -1;
-   }
-}
-
 static int action_ok_shader_apply_changes(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -1526,9 +1530,6 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          break;
       case MENU_LABEL_TAKE_SCREENSHOT:
          cbs->action_ok = action_ok_screenshot;
-         break;
-      case MENU_LABEL_FILE_LOAD_OR_RESUME:
-         cbs->action_ok = action_ok_file_load_or_resume;
          break;
       case MENU_LABEL_QUIT_RETROARCH:
          cbs->action_ok = action_ok_quit;
@@ -1738,6 +1739,9 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             break;
          case MENU_FILE_RDB_ENTRY:
             cbs->action_ok = action_ok_rdb_entry;
+            break;
+         case MENU_FILE_RPL_ENTRY:
+            cbs->action_ok = action_ok_rpl_entry;
             break;
          case MENU_FILE_CURSOR:
             switch (menu_label_hash)

@@ -985,6 +985,8 @@ static GLuint xmb_icon_get_id(xmb_handle_t *xmb,
          return xmb->textures.list[XMB_TEXTURE_FOLDER].id;
       case MENU_FILE_PLAIN:
          return xmb->textures.list[XMB_TEXTURE_FILE].id;
+      case MENU_FILE_RPL_ENTRY:
+      case MENU_FILE_RDB_ENTRY:
       case MENU_FILE_PLAYLIST_ENTRY:
          if (xmb->boxart && active && node && node->zoom == 1)
             return xmb->boxart;
