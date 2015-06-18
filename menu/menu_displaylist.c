@@ -619,7 +619,6 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
       uint32_t core_name_hash;
       char fill_buf[PATH_MAX_LENGTH]  = {0};
       char path_copy[PATH_MAX_LENGTH] = {0};
-      bool core_detected              = false;
       const char *core_name           = NULL;
       const char *db_name             = NULL;
       const char *path                = NULL;
@@ -652,7 +651,6 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
                char tmp[PATH_MAX_LENGTH] = {0};
                snprintf(tmp, sizeof(tmp), " (%s)", core_name);
                strlcat(fill_buf, tmp, sizeof(fill_buf));
-               core_detected = true;
             }
          }
       }
@@ -1314,6 +1312,7 @@ static int menu_displaylist_parse_horizontal_list(menu_displaylist_info_t *info)
    fill_pathname_join(path_playlist,
          settings->playlist_directory, item->path,
          sizeof(path_playlist));
+
    menu->playlist  = content_playlist_init(path_playlist,
          999);
    strlcpy(menu->db_playlist_file, path_playlist, sizeof(menu->db_playlist_file));
@@ -1370,6 +1369,7 @@ static int menu_displaylist_parse_horizontal_content_actions(menu_displaylist_in
 {
    menu_handle_t *menu    = menu_driver_get_ptr();
    global_t *global       = global_get_ptr();
+   settings_t *settings   = config_get_ptr();
    if (!menu)
       return -1;
 
@@ -1393,9 +1393,22 @@ static int menu_displaylist_parse_horizontal_content_actions(menu_displaylist_in
    }
    else
    {
-      // TODO Here, push a list of cores instead of run
-      // but display Run if the core is detected in the playlist
-      menu_list_push(info->list, "Run", "", MENU_SETTING_ACTION_RUN, 0, 0);
+      unsigned idx = 0; // TODO get this value dynamically
+      const char *core_name           = NULL;
+      const char *core_path           = NULL;
+
+      content_playlist_get_index(menu->playlist, idx,
+            NULL, NULL, &core_path, &core_name, NULL, NULL);
+
+      if (!strcmp(core_name, "DETECT"))
+      {
+         menu_list_push(info->list, "TODO: Core selection", "", MENU_SETTING_ACTION_RUN, 0, 0);
+      }
+      else
+      {
+         strlcpy(settings->libretro, core_path, sizeof(settings->libretro));
+         menu_list_push(info->list, "Run", "start_content", MENU_SETTING_ACTION_RUN, 0, 0);
+      }
    }
 
    return 0;
