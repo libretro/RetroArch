@@ -27,8 +27,10 @@ extern "C" {
 #define MENU_LABEL_CHEAT_TOGGLE                                                0xe515e0cbU
 #define MENU_LABEL_PAUSE_TOGGLE                                                0x557634e4U
 
+#define MENU_LABEL_VALUE_SHADER_OPTIONS                                        0xf3fb0028U
 #define MENU_LABEL_VALUE_USE_THIS_DIRECTORY                                    0xc5fc9ed9U
 #define MENU_LABEL_VALUE_CORE_OPTIONS                                          0x1477b95aU
+#define MENU_LABEL_VALUE_NO_SHADER_PARAMETERS                                  0x8ccc809bU
 #define MENU_LABEL_VALUE_NO_CORE_INFORMATION_AVAILABLE                         0x2a11fe80U
 #define MENU_LABEL_VALUE_NO_CORES_AVAILABLE                                    0xe16bfd0dU
 #define MENU_LABEL_VALUE_NO_PLAYLIST_ENTRIES_AVAILABLE                         0xea82695dU

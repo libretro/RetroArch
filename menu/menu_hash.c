@@ -137,6 +137,12 @@ const char *menu_hash_to_str(uint32_t hash)
          return "video_options";
       case MENU_LABEL_VALUE_VIDEO_OPTIONS:
          return "Video Options";
+      case MENU_LABEL_VALUE_SHADER_OPTIONS:
+         return "Shader Options";
+      case MENU_LABEL_SHADER_OPTIONS:
+         return "shader_options";
+      case MENU_LABEL_VALUE_NO_SHADER_PARAMETERS:
+         return "No shader parameters.";
       default:
          break;
    }

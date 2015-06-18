@@ -1145,7 +1145,8 @@ static int deferred_push_video_shader_parameters_common(
    if (list_size <= 0)
    {
       menu_list_push(info->list,
-            "No shader parameters.", "", 0, 0, 0);
+            menu_hash_to_str(MENU_LABEL_VALUE_NO_SHADER_PARAMETERS),
+            "", 0, 0, 0);
       return 0;
    }
 
@@ -1366,8 +1367,8 @@ static int menu_displaylist_parse_options(menu_displaylist_info_t *info)
          MENU_SETTING_ACTION, 0, 0);
 #ifdef HAVE_SHADER_MANAGER
    menu_list_push(info->list,
-         "Shader Options",
-         "shader_options",
+         menu_hash_to_str(MENU_LABEL_VALUE_SHADER_OPTIONS),
+         menu_hash_to_str(MENU_LABEL_SHADER_OPTIONS),
          MENU_SETTING_ACTION, 0, 0);
 #endif
 
@@ -1384,13 +1385,20 @@ static int menu_displaylist_parse_horizontal_content_actions(menu_displaylist_in
    if (global->main_is_init && !global->libretro_dummy &&
          !strcmp(menu->deferred_path, global->fullpath))
    {
-      menu_list_push(info->list, menu_hash_to_str(MENU_LABEL_RESUME_CONTENT), "file_load_or_resume", MENU_SETTING_ACTION_RUN, 0, 0);
-      menu_list_push(info->list, menu_hash_to_str(MENU_LABEL_SAVE_STATE), "savestate", MENU_SETTING_ACTION_SAVESTATE, 0, 0);
-      menu_list_push(info->list, menu_hash_to_str(MENU_LABEL_LOAD_STATE), "loadstate", MENU_SETTING_ACTION_LOADSTATE, 0, 0);
-      menu_list_push(info->list, menu_hash_to_str(MENU_LABEL_VALUE_CORE_INFORMATION), "core_information", MENU_SETTING_ACTION_CORE_INFORMATION, 0, 0);
-      menu_list_push(info->list, menu_hash_to_str(MENU_LABEL_VALUE_OPTIONS), "options", MENU_SETTING_ACTION_CORE_OPTIONS, 0, 0);
-      menu_list_push(info->list, "Take Screenshot", "take_screenshot", MENU_SETTING_ACTION_SCREENSHOT, 0, 0);
-      menu_list_push(info->list, "Reset", "restart_content", MENU_SETTING_ACTION_RESET, 0, 0);
+      menu_list_push(info->list, menu_hash_to_str(MENU_LABEL_RESUME_CONTENT),
+            "file_load_or_resume", MENU_SETTING_ACTION_RUN, 0, 0);
+      menu_list_push(info->list, menu_hash_to_str(MENU_LABEL_SAVE_STATE),
+            "savestate", MENU_SETTING_ACTION_SAVESTATE, 0, 0);
+      menu_list_push(info->list, menu_hash_to_str(MENU_LABEL_LOAD_STATE),
+            "loadstate", MENU_SETTING_ACTION_LOADSTATE, 0, 0);
+      menu_list_push(info->list, menu_hash_to_str(MENU_LABEL_VALUE_CORE_INFORMATION),
+            "core_information", MENU_SETTING_ACTION_CORE_INFORMATION, 0, 0);
+      menu_list_push(info->list, menu_hash_to_str(MENU_LABEL_VALUE_OPTIONS),
+            "options", MENU_SETTING_ACTION_CORE_OPTIONS, 0, 0);
+      menu_list_push(info->list, "Take Screenshot", "take_screenshot",
+            MENU_SETTING_ACTION_SCREENSHOT, 0, 0);
+      menu_list_push(info->list, "Reset", "restart_content",
+            MENU_SETTING_ACTION_RESET, 0, 0);
    }
    else
       menu_list_push(info->list, "Run", "file_load_or_resume", MENU_SETTING_ACTION_RUN, 0, 0);
