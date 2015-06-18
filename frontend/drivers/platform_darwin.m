@@ -47,6 +47,10 @@
 #include "../../ui/ui_companion_driver.h"
 #include "../../general.h"
 
+#ifdef HAVE_MENU
+#include "../../menu/menu.h"
+#endif
+
 typedef enum
 {
    CFApplicationDirectory           = 1,   /* Supported applications (Applications) */
@@ -562,6 +566,7 @@ static int frontend_darwin_parse_drive_list(void *data)
 {
    int ret = -1;
 #if TARGET_OS_IPHONE
+#ifdef HAVE_MENU
    file_list_t *list = (file_list_t*)data;
 
    menu_list_push(list,
@@ -574,6 +579,7 @@ static int frontend_darwin_parse_drive_list(void *data)
          MENU_FILE_DIRECTORY, 0, 0);
 
    ret = 0;
+#endif
 #endif
 
    return ret;
