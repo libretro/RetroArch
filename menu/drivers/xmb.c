@@ -418,6 +418,38 @@ static void xmb_draw_icon_predone(gl_t *gl, xmb_handle_t *xmb,
    menu_gl_draw_frame(gl->shader, &coords, mymat, false, texture);
 }
 
+static void xmb_draw_boxart(gl_t *gl, xmb_handle_t *xmb)
+{
+   struct gl_coords coords;
+   unsigned width, height;
+   math_matrix_4x4 mymat, mrot, mscal;
+
+   video_driver_get_size(&width, &height);
+
+   GLfloat color[] = {
+      1.0f, 1.0f, 1.0f, xmb->alpha,
+      1.0f, 1.0f, 1.0f, xmb->alpha,
+      1.0f, 1.0f, 1.0f, xmb->alpha,
+      1.0f, 1.0f, 1.0f, xmb->alpha,
+   };
+
+   glViewport(width - 256, 0, 256, 256);
+
+   coords.vertices      = 4;
+   coords.vertex        = rmb_vertex;
+   coords.tex_coord     = rmb_tex_coord;
+   coords.lut_tex_coord = rmb_tex_coord;
+   coords.color         = color;
+
+   matrix_4x4_rotate_z(&mrot, 0);
+   matrix_4x4_multiply(&mymat, &mrot, &gl->mvp_no_rot);
+
+   matrix_4x4_scale(&mscal, 1, 1, 1);
+   matrix_4x4_multiply(&mymat, &mscal, &mymat);
+
+   menu_gl_draw_frame(gl->shader, &coords, &mymat, false, xmb->boxart);
+}
+
 static void xmb_draw_text(menu_handle_t *menu,
       xmb_handle_t *xmb,
       const char *str, float x,
@@ -539,7 +571,7 @@ static void xmb_update_boxart(xmb_handle_t *xmb, unsigned i)
    if (path_file_exists(path))
       rarch_main_data_msg_queue_push(DATA_TYPE_IMAGE, path,
             "cb_menu_boxart", 0, 1, true);
-   else
+   else if (xmb->depth == 1)
       xmb->boxart = 0;
 }
 
@@ -986,8 +1018,6 @@ static GLuint xmb_icon_get_id(xmb_handle_t *xmb,
       case MENU_FILE_PLAIN:
          return xmb->textures.list[XMB_TEXTURE_FILE].id;
       case MENU_FILE_PLAYLIST_ENTRY:
-         if (xmb->boxart && active && node && node->zoom == 1)
-            return xmb->boxart;
          if (core_node)
             return core_node->content_icon;
          return xmb->textures.list[XMB_TEXTURE_FILE].id;
@@ -1434,6 +1464,9 @@ static void xmb_frame(void)
    matrix_4x4_multiply(&mymat, &mscal, &mymat);
 
    xmb_draw_icon_begin(gl);
+
+   if (settings->menu.boxart_enable && xmb->boxart)
+      xmb_draw_boxart(gl, xmb);
 
    if (settings->menu.timedate_enable)
       xmb_draw_icon_predone(gl, xmb, &mymat, xmb->textures.list[XMB_TEXTURE_CLOCK].id,
