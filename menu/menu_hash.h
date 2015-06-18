@@ -81,6 +81,7 @@ extern "C" {
 
 #define MENU_LABEL_VALUE_MENU_WALLPAPER                                        0x4555d2a2U
 #define MENU_LABEL_VALUE_DYNAMIC_WALLPAPER                                     0x66928c32U
+#define MENU_LABEL_VALUE_BOXART                                                0x716441ebU
 #define MENU_LABEL_PAL60_ENABLE                                                0x62bc416eU
 #define MENU_LABEL_SYSTEM_BGM_ENABLE                                           0x9287a1c5U
 
@@ -143,6 +144,7 @@ extern "C" {
 #define MENU_LABEL_SAVESTATE_DIRECTORY                                         0x90551289U
 #define MENU_LABEL_ASSETS_DIRECTORY                                            0xde1ae8ecU
 #define MENU_LABEL_DYNAMIC_WALLPAPERS_DIRECTORY                                0x62f975b8U
+#define MENU_LABEL_BOXARTS_DIRECTORY                                           0x9e2bdbddU
 
 #define MENU_LABEL_SLOWMOTION_RATIO                                            0x626b3ffeU
 #define MENU_LABEL_INPUT_AXIS_THRESHOLD                                        0xe95c2095U

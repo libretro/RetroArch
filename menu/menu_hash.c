@@ -75,6 +75,8 @@ const char *menu_hash_to_str(uint32_t hash)
          return "Menu Wallpaper";
       case MENU_LABEL_VALUE_DYNAMIC_WALLPAPER:
          return "Dynamic Wallpaper";
+      case MENU_LABEL_VALUE_BOXART:
+         return "Display Boxart";
    }
 
    return "null";
