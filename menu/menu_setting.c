@@ -5724,6 +5724,19 @@ static bool setting_append_list_menu_options(
          general_read_handler);
 
    CONFIG_BOOL(
+         settings->menu.boxart_enable,
+         "menu_boxart_enable",
+         menu_hash_to_str(MENU_LABEL_VALUE_BOXART),
+         true,
+         "OFF",
+         "ON",
+         group_info.name,
+         subgroup_info.name,
+         parent_group,
+         general_write_handler,
+         general_read_handler);
+
+   CONFIG_BOOL(
          settings->menu.pause_libretro,
          "menu_pause_libretro",
          "Pause when menu activated",
@@ -6531,6 +6544,22 @@ static bool setting_append_list_directory_options(
          settings->dynamic_wallpapers_directory,
          "dynamic_wallpapers_directory",
          "Dynamic Wallpapers Directory",
+         "",
+         "<default>",
+         group_info.name,
+         subgroup_info.name,
+         parent_group,
+         general_write_handler,
+         general_read_handler);
+   settings_data_list_current_add_flags(
+         list,
+         list_info,
+         SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR | SD_FLAG_BROWSER_ACTION);
+
+   CONFIG_DIR(
+         settings->boxarts_directory,
+         "boxarts_directory",
+         "Boxarts Directory",
          "",
          "<default>",
          group_info.name,

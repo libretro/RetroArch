@@ -549,6 +549,7 @@ static void config_set_defaults(void)
    settings->menu.timedate_enable              = true;
    settings->menu.core_enable                  = true;
    settings->menu.dynamic_wallpaper_enable     = false;
+   settings->menu.boxart_enable                = false;
    *settings->menu.wallpaper                   = '\0';
    settings->menu.collapse_subgroups_enable    = collapse_subgroups_enable;
    settings->menu.show_advanced_settings       = show_advanced_settings;
@@ -674,6 +675,7 @@ static void config_set_defaults(void)
    *settings->core_assets_directory = '\0';
    *settings->assets_directory = '\0';
    *settings->dynamic_wallpapers_directory = '\0';
+   *settings->boxarts_directory = '\0';
    *settings->playlist_directory = '\0';
    *settings->video.shader_path = '\0';
    *settings->video.shader_dir = '\0';
@@ -1216,6 +1218,7 @@ static bool config_load_file(const char *path, bool set_defaults)
    CONFIG_GET_BOOL_BASE(conf, settings, menu.timedate_enable,   "menu_timedate_enable");
    CONFIG_GET_BOOL_BASE(conf, settings, menu.core_enable,   "menu_core_enable");
    CONFIG_GET_BOOL_BASE(conf, settings, menu.dynamic_wallpaper_enable,   "menu_dynamic_wallpaper_enable");
+   CONFIG_GET_BOOL_BASE(conf, settings, menu.boxart_enable,   "menu_boxart_enable");
    CONFIG_GET_BOOL_BASE(conf, settings, menu.navigation.wraparound.horizontal_enable, "menu_navigation_wraparound_horizontal_enable");
    CONFIG_GET_BOOL_BASE(conf, settings, menu.navigation.wraparound.vertical_enable,   "menu_navigation_wraparound_vertical_enable");
    CONFIG_GET_BOOL_BASE(conf, settings, menu.navigation.browser.filter.supported_extensions_enable,   "menu_navigation_browser_filter_supported_extensions_enable");
@@ -1450,6 +1453,7 @@ static bool config_load_file(const char *path, bool set_defaults)
    config_get_path(conf, "core_assets_directory", settings->core_assets_directory, sizeof(settings->core_assets_directory));
    config_get_path(conf, "assets_directory", settings->assets_directory, sizeof(settings->assets_directory));
    config_get_path(conf, "dynamic_wallpapers_directory", settings->dynamic_wallpapers_directory, sizeof(settings->dynamic_wallpapers_directory));
+   config_get_path(conf, "boxarts_directory", settings->boxarts_directory, sizeof(settings->boxarts_directory));
    config_get_path(conf, "playlist_directory", settings->playlist_directory, sizeof(settings->playlist_directory));
    if (!strcmp(settings->core_assets_directory, "default"))
       *settings->core_assets_directory = '\0';
@@ -1457,6 +1461,8 @@ static bool config_load_file(const char *path, bool set_defaults)
       *settings->assets_directory = '\0';
    if (!strcmp(settings->dynamic_wallpapers_directory, "default"))
       *settings->dynamic_wallpapers_directory = '\0';
+   if (!strcmp(settings->boxarts_directory, "default"))
+      *settings->boxarts_directory = '\0';
    if (!strcmp(settings->playlist_directory, "default"))
       *settings->playlist_directory = '\0';
 #ifdef HAVE_MENU
@@ -2341,6 +2347,7 @@ bool config_save_file(const char *path)
    config_set_bool(conf,"menu_timedate_enable", settings->menu.timedate_enable);
    config_set_bool(conf,"menu_core_enable", settings->menu.core_enable);
    config_set_bool(conf,"menu_dynamic_wallpaper_enable", settings->menu.dynamic_wallpaper_enable);
+   config_set_bool(conf,"menu_boxart_enable", settings->menu.boxart_enable);
    config_set_path(conf, "menu_wallpaper", settings->menu.wallpaper);
 #endif
    config_set_bool(conf,  "video_vsync", settings->video.vsync);
@@ -2427,9 +2434,9 @@ bool config_save_file(const char *path)
    config_set_path(conf, "dynamic_wallpapers_directory",
          *settings->dynamic_wallpapers_directory ?
          settings->dynamic_wallpapers_directory : "default");
-   config_set_path(conf, "dynamic_wallpapers_directory",
-         *settings->dynamic_wallpapers_directory ?
-         settings->dynamic_wallpapers_directory : "default");
+   config_set_path(conf, "boxarts_directory",
+         *settings->boxarts_directory ?
+         settings->boxarts_directory : "default");
    config_set_path(conf, "playlist_directory",
          *settings->playlist_directory ?
          settings->playlist_directory : "default");
