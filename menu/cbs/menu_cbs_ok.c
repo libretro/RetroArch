@@ -82,7 +82,8 @@ static int rarch_defer_core_wrapper(menu_displaylist_info_t *info,
                info->directory_ptr = idx;
                rdb_entry_start_game_selection_ptr = idx;
                strlcpy(info->path, settings->libretro_directory, sizeof(info->path));
-               strlcpy(info->label, "deferred_core_list_set", sizeof(info->label));
+               strlcpy(info->label,
+                     menu_hash_to_str(MENU_LABEL_DEFERRED_CORE_LIST_SET), sizeof(info->label));
                ret = menu_displaylist_push_list(info, DISPLAYLIST_GENERIC);
                break;
             default:
@@ -102,10 +103,12 @@ static int rarch_defer_core_wrapper(menu_displaylist_info_t *info,
          {
             case MENU_LABEL_COLLECTION:
                rdb_entry_start_game_selection_ptr = idx;
-               strlcpy(info->label, "deferred_core_list_set", sizeof(info->label));
+               strlcpy(info->label,
+                     menu_hash_to_str(MENU_LABEL_DEFERRED_CORE_LIST_SET), sizeof(info->label));
                break;
             default:
-               strlcpy(info->label, "deferred_core_list", sizeof(info->label));
+               strlcpy(info->label,
+                     menu_hash_to_str(MENU_LABEL_DEFERRED_CORE_LIST), sizeof(info->label));
                break;
          }
 

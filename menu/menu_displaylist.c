@@ -608,7 +608,8 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
 
    if (list_size <= 0)
    {
-      menu_list_push(info->list, "No playlist entries available.", "",
+      menu_list_push(info->list,
+            menu_hash_to_str(MENU_LABEL_VALUE_NO_PLAYLIST_ENTRIES_AVAILABLE), "",
             MENU_SETTINGS_CORE_OPTION_NONE, 0, 0);
       return 0;
    }
@@ -1338,7 +1339,8 @@ static int menu_displaylist_parse_options(menu_displaylist_info_t *info)
 {
    global_t *global            = global_get_ptr();
 
-   menu_list_push(info->list, "Core Options", "core_options",
+   menu_list_push(info->list,
+         menu_hash_to_str(MENU_LABEL_VALUE_CORE_OPTIONS), "core_options",
          MENU_SETTING_ACTION, 0, 0);
    if (global->main_is_init)
    {
@@ -1520,7 +1522,8 @@ static int menu_displaylist_parse_generic(menu_displaylist_info_t *info, bool *n
             ? info->exts : NULL, true);
 
    if (push_dir)
-      menu_list_push(info->list, "<Use this directory>", "",
+      menu_list_push(info->list,
+            menu_hash_to_str(MENU_LABEL_VALUE_USE_THIS_DIRECTORY), "",
             MENU_FILE_USE_DIRECTORY, 0 ,0);
 
    if (!str_list)

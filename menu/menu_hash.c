@@ -23,6 +23,10 @@ const char *menu_hash_to_str(uint32_t hash)
 {
    switch (hash)
    {
+      case MENU_LABEL_DEFERRED_CORE_LIST:
+         return "deferred_core_list";
+      case MENU_LABEL_DEFERRED_CORE_LIST_SET:
+         return "deferred_core_list_set";
       case MENU_LABEL_VALUE_OPTIONS:
          return "Options";
       case MENU_LABEL_VALUE_RESUME:
