@@ -853,6 +853,8 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
       char tmp[PATH_MAX_LENGTH]      = {0};
       char crc_str[20]               = {0};
       database_info_t *db_info_entry = &db_info->list[i];
+      settings_t *settings           = config_get_ptr();
+      bool show_advanced_settings    = settings ? settings->menu.show_advanced_settings : false;
 
       if (!db_info_entry)
          continue;
@@ -1060,6 +1062,9 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
       menu_list_push(info->list, tmp, "rdb_entry_rumble",
             0, 0, 0);
 
+      if (!show_advanced_settings)
+         continue;
+
       if (db_info_entry->crc32)
       {
          if (create_string_list_rdb_entry_string("CRC32 Checksum",
@@ -1067,6 +1072,7 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
                   info->path, info->list) == -1)
             goto error;
       }
+
       if (db_info_entry->sha1)
       {
          if (create_string_list_rdb_entry_string("SHA1 Checksum",
@@ -1074,6 +1080,7 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
                   info->path, info->list) == -1)
             goto error;
       }
+
       if (db_info_entry->md5)
       {
          if (create_string_list_rdb_entry_string("MD5 Checksum",
