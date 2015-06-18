@@ -7,4 +7,5 @@ Icon=retroarch
 Exec=retroarch
 Terminal=false
 StartupNotify=false
+Keywords=frontend;engine;emulator;multi;xmb;libretro;
 Categories=Game;Emulator;
