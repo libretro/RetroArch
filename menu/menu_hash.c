@@ -23,6 +23,10 @@ const char *menu_hash_to_str(uint32_t hash)
 {
    switch (hash)
    {
+      case MENU_LABEL_CUSTOM_BIND:
+         return "custom_bind";
+      case MENU_LABEL_CUSTOM_BIND_ALL:
+         return "custom_bind_all";
       case MENU_LABEL_VALUE_DISK_OPTIONS:
          return "Core Disk Options";
       case MENU_LABEL_VALUE_CORE_OPTIONS:

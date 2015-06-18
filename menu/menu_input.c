@@ -422,7 +422,8 @@ static int menu_input_set_bind_mode_common(rarch_setting_t  *setting,
          info.list          = menu_list->menu_stack;
          info.type          = MENU_SETTINGS_CUSTOM_BIND_KEYBOARD;
          info.directory_ptr = nav->selection_ptr;
-         strlcpy(info.label, "custom_bind", sizeof(info.label));
+         strlcpy(info.label,
+               menu_hash_to_str(MENU_LABEL_CUSTOM_BIND), sizeof(info.label));
 
          menu_displaylist_push_list(&info, DISPLAYLIST_INFO);
          break;
@@ -435,7 +436,9 @@ static int menu_input_set_bind_mode_common(rarch_setting_t  *setting,
          info.list          = menu_list->menu_stack;
          info.type          = MENU_SETTINGS_CUSTOM_BIND_KEYBOARD;
          info.directory_ptr = nav->selection_ptr;
-         strlcpy(info.label, "custom_bind_all", sizeof(info.label));
+         strlcpy(info.label,
+               menu_hash_to_str(MENU_LABEL_CUSTOM_BIND_ALL),
+               sizeof(info.label));
 
          menu_displaylist_push_list(&info, DISPLAYLIST_INFO);
          break;
