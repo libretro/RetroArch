@@ -1384,20 +1384,33 @@ static int menu_displaylist_parse_horizontal_content_actions(menu_displaylist_in
    if (global->main_is_init && !global->libretro_dummy &&
          !strcmp(menu->deferred_path, global->fullpath))
    {
-      menu_list_push(info->list, menu_hash_to_str(MENU_LABEL_RESUME_CONTENT),
-            "file_load_or_resume", MENU_SETTING_ACTION_RUN, 0, 0);
-      menu_list_push(info->list, menu_hash_to_str(MENU_LABEL_SAVE_STATE),
-            "savestate", MENU_SETTING_ACTION_SAVESTATE, 0, 0);
-      menu_list_push(info->list, menu_hash_to_str(MENU_LABEL_LOAD_STATE),
-            "loadstate", MENU_SETTING_ACTION_LOADSTATE, 0, 0);
-      menu_list_push(info->list, menu_hash_to_str(MENU_LABEL_VALUE_CORE_INFORMATION),
-            menu_hash_to_str(MENU_LABEL_CORE_INFORMATION), MENU_SETTING_ACTION_CORE_INFORMATION, 0, 0);
-      menu_list_push(info->list, menu_hash_to_str(MENU_LABEL_VALUE_OPTIONS),
-            "options", MENU_SETTING_ACTION_CORE_OPTIONS, 0, 0);
-      menu_list_push(info->list, menu_hash_to_str(MENU_LABEL_VALUE_TAKE_SCREENSHOT),
+      menu_list_push(info->list,
+            menu_hash_to_str(MENU_LABEL_RESUME_CONTENT),
+            "file_load_or_resume",
+            MENU_SETTING_ACTION_RUN, 0, 0);
+      menu_list_push(info->list,
+            menu_hash_to_str(MENU_LABEL_VALUE_SAVE_STATE),
+            menu_hash_to_str(MENU_LABEL_SAVE_STATE),
+            MENU_SETTING_ACTION_SAVESTATE, 0, 0);
+      menu_list_push(info->list,
+            menu_hash_to_str(MENU_LABEL_VALUE_LOAD_STATE),
+            menu_hash_to_str(MENU_LABEL_LOAD_STATE),
+            MENU_SETTING_ACTION_LOADSTATE, 0, 0);
+      menu_list_push(info->list,
+            menu_hash_to_str(MENU_LABEL_VALUE_CORE_INFORMATION),
+            menu_hash_to_str(MENU_LABEL_CORE_INFORMATION),
+            MENU_SETTING_ACTION_CORE_INFORMATION, 0, 0);
+      menu_list_push(info->list,
+            menu_hash_to_str(MENU_LABEL_VALUE_OPTIONS),
+            menu_hash_to_str(MENU_LABEL_OPTIONS),
+            MENU_SETTING_ACTION_CORE_OPTIONS, 0, 0);
+      menu_list_push(info->list,
+            menu_hash_to_str(MENU_LABEL_VALUE_TAKE_SCREENSHOT),
             menu_hash_to_str(MENU_LABEL_TAKE_SCREENSHOT),
             MENU_SETTING_ACTION_SCREENSHOT, 0, 0);
-      menu_list_push(info->list, "Reset", "restart_content",
+      menu_list_push(info->list,
+            menu_hash_to_str(MENU_LABEL_VALUE_RESTART_CONTENT),
+            menu_hash_to_str(MENU_LABEL_RESTART_CONTENT),
             MENU_SETTING_ACTION_RESET, 0, 0);
    }
    else
@@ -1550,8 +1563,8 @@ static int menu_displaylist_parse_generic(menu_displaylist_info_t *info, bool *n
    if (!str_list)
    {
       const char *str = path_is_compressed
-         ? "Unable to read compressed file."
-         : "Directory not found.";
+         ? menu_hash_to_str(MENU_LABEL_VALUE_UNABLE_TO_READ_COMPRESSED_FILE)
+         : menu_hash_to_str(MENU_LABEL_VALUE_DIRECTORY_NOT_FOUND);
 
       menu_list_push(info->list, str, "", 0, 0, 0);
       return 0;
@@ -1566,7 +1579,8 @@ static int menu_displaylist_parse_generic(menu_displaylist_info_t *info, bool *n
       if (!(info->flags & SL_FLAG_ALLOW_EMPTY_LIST))
       {
          menu_list_push(info->list,
-               "No items.", "", 0, 0, 0);
+               menu_hash_to_str(MENU_LABEL_VALUE_NO_ITEMS),
+               "", 0, 0, 0);
       }
 
       string_list_free(str_list);
@@ -1796,7 +1810,9 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          menu_list_push(info->list, "Custom Ratio", "",
                MENU_SETTINGS_CUSTOM_VIEWPORT, 0, 0);
 #ifndef HAVE_FILTERS_BUILTIN
-         menu_list_push(info->list, "Video Filter", "video_filter",
+         menu_list_push(info->list,
+               menu_hash_to_str(MENU_LABEL_VIDEO_FILTER),
+               menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_FILTER),
                0, 0, 0);
 #endif
 

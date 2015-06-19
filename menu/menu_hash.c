@@ -26,6 +26,8 @@ static const char *menu_hash_to_str_dutch(uint32_t hash)
 {
    switch (hash)
    {
+      case MENU_LABEL_VALUE_CORE_INFORMATION:
+         return "Core Informatie";
       case MENU_LABEL_CORE_LIST:
          return "Laad Core";
       case MENU_LABEL_VALUE_SETTINGS:
@@ -41,7 +43,7 @@ static const char *menu_hash_to_str_dutch(uint32_t hash)
    return "null";
 }
 
-static const char *menu_hash_to_str_fallback(uint32_t hash)
+static const char *menu_hash_to_str_english(uint32_t hash)
 {
    switch (hash)
    {
@@ -83,8 +85,6 @@ static const char *menu_hash_to_str_fallback(uint32_t hash)
          return "Take Screenshot";
       case MENU_LABEL_VALUE_RESUME:
          return "Resume";
-      case MENU_LABEL_VALUE_SAVE_STATE:
-         return "Save State";
       case MENU_LABEL_VALUE_DISK_INDEX:
          return "Disk Index";
       case MENU_LABEL_VALUE_FRONTEND_COUNTERS:
@@ -141,6 +141,10 @@ static const char *menu_hash_to_str_fallback(uint32_t hash)
          return "core_information";
       case MENU_LABEL_VALUE_CORE_INFORMATION:
          return "Core Information";
+      case MENU_LABEL_VALUE_DIRECTORY_NOT_FOUND:
+         return "Directory not found.";
+      case MENU_LABEL_VALUE_NO_ITEMS:
+         return "No items.";
       case MENU_LABEL_CORE_LIST:
          return "Load Core";
       case MENU_LABEL_UNLOAD_CORE:
@@ -150,8 +154,12 @@ static const char *menu_hash_to_str_fallback(uint32_t hash)
       case MENU_LABEL_PERFORMANCE_COUNTERS:
          return "Performance Counters";
       case MENU_LABEL_SAVE_STATE:
+         return "savestate";
+      case MENU_LABEL_VALUE_SAVE_STATE:
          return "Save State";
       case MENU_LABEL_LOAD_STATE:
+         return "loadstate";
+      case MENU_LABEL_VALUE_LOAD_STATE:
          return "Load State";
       case MENU_LABEL_VALUE_RESUME_CONTENT:
          return "Resume Content";
@@ -159,6 +167,8 @@ static const char *menu_hash_to_str_fallback(uint32_t hash)
          return "resume_content";
       case MENU_LABEL_DRIVER_SETTINGS:
          return "Driver Settings";
+      case MENU_LABEL_VALUE_UNABLE_TO_READ_COMPRESSED_FILE:
+         return "Unable to read compressed file.";
       case MENU_LABEL_OVERLAY_SCALE:
          return "input_overlay_scale";
       case MENU_LABEL_VALUE_OVERLAY_SCALE:
@@ -221,7 +231,7 @@ const char *menu_hash_to_str(uint32_t hash)
    if (ret && strcmp(ret, "null") != 0)
       return ret;
 
-   return menu_hash_to_str_fallback(hash);
+   return menu_hash_to_str_english(hash);
 }
 
 uint32_t menu_hash_calculate(const char *s)

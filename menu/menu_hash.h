@@ -27,6 +27,9 @@ extern "C" {
 #define MENU_LABEL_CHEAT_TOGGLE                                                0xe515e0cbU
 #define MENU_LABEL_PAUSE_TOGGLE                                                0x557634e4U
 
+#define MENU_LABEL_VALUE_DIRECTORY_NOT_FOUND                                   0xcdf3c0d5U
+#define MENU_LABEL_VALUE_NO_ITEMS                                              0x7d33e412U
+
 #define MENU_LABEL_VALUE_SHADER_OPTIONS                                        0xf3fb0028U
 #define MENU_LABEL_VALUE_USE_THIS_DIRECTORY                                    0xc5fc9ed9U
 #define MENU_LABEL_VALUE_CORE_OPTIONS                                          0x1477b95aU
@@ -35,6 +38,7 @@ extern "C" {
 #define MENU_LABEL_VALUE_NO_CORES_AVAILABLE                                    0xe16bfd0dU
 #define MENU_LABEL_VALUE_NO_PLAYLIST_ENTRIES_AVAILABLE                         0xea82695dU
 #define MENU_LABEL_SAVE_STATE                                                  0x54a257f4U
+#define MENU_LABEL_VALUE_LOAD_STATE                                            0xd23ba706U
 #define MENU_LABEL_VALUE_SAVE_STATE                                            0x3e182415U
 #define MENU_LABEL_LOAD_STATE                                                  0xe8c5dae5U
 #define MENU_LABEL_REWIND                                                      0x1931d5aeU
@@ -314,6 +318,7 @@ extern "C" {
 #define MENU_LABEL_RECORDING_CONFIG_DIRECTORY                                  0x3c3f274bU
 #define MENU_LABEL_VIDEO_FONT_PATH                                             0xd0de729eU
 #define MENU_LABEL_VIDEO_FILTER                                                0x1c0eb741U
+#define MENU_LABEL_VALUE_VIDEO_FILTER                                          0xc1690382U
 #define MENU_LABEL_MENU_WALLPAPER                                              0x3b84de01U
 #define MENU_LABEL_CONTENT_HISTORY_PATH                                        0x6f22fb9dU
 #define MENU_LABEL_AUDIO_DSP_PLUGIN                                            0x4a69572bU
@@ -404,6 +409,7 @@ extern "C" {
 #define MENU_LABEL_REMAP_FILE_SAVE_CORE                                        0x7c9d4c8fU
 #define MENU_LABEL_REMAP_FILE_SAVE_GAME                                        0x7c9f41e0U
 #define MENU_LABEL_CONTENT_COLLECTION_LIST                                     0x0f8a9086U
+#define MENU_LABEL_VALUE_UNABLE_TO_READ_COMPRESSED_FILE                        0xbae7be3eU
 #define MENU_LABEL_OSK_ENABLE                                                  0x8e208498U
 #define MENU_LABEL_AUDIO_MUTE                                                  0xe0ca1151U
 #define MENU_LABEL_EXIT_EMULATOR                                               0x86d5d467U
