@@ -390,13 +390,15 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
    }
 #endif
 
-   snprintf(feat_str, sizeof(feat_str),
-         "LibretroDB support: %s", _libretrodb_supp ? "true" : "false");
+   strlcpy(feat_str, "LibretroDB support", sizeof(feat_str));
+   strlcat(feat_str, ": ", sizeof(feat_str));
+   strlcat(feat_str, _libretrodb_supp ? "true" : "false", sizeof(feat_str));
    menu_list_push(info->list, feat_str, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
-   snprintf(feat_str, sizeof(feat_str),
-         "Overlay support: %s", _overlay_supp ? "true" : "false");
+   strlcpy(feat_str, "Overlay support", sizeof(feat_str));
+   strlcat(feat_str, ": ", sizeof(feat_str));
+   strlcat(feat_str, _overlay_supp ? "true" : "false", sizeof(feat_str));
    menu_list_push(info->list, feat_str, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
