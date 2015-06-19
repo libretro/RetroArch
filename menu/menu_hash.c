@@ -47,6 +47,10 @@ static const char *menu_hash_to_str_english(uint32_t hash)
 {
    switch (hash)
    {
+      case MENU_LABEL_CUSTOM_RATIO:
+         return "custom_ratio";
+      case MENU_LABEL_VALUE_CUSTOM_RATIO:
+         return "Custom Ratio";
       case MENU_LABEL_VALUE_USE_THIS_DIRECTORY:
          return "<Use this directory>";
       case MENU_LABEL_USE_THIS_DIRECTORY:
