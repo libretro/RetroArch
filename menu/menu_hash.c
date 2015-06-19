@@ -59,6 +59,8 @@ static const char *menu_hash_to_str_english(uint32_t hash)
          return "custom_bind";
       case MENU_LABEL_CUSTOM_BIND_ALL:
          return "custom_bind_all";
+      case MENU_LABEL_DISK_OPTIONS:
+         return "core_disk_options";
       case MENU_LABEL_VALUE_DISK_OPTIONS:
          return "Core Disk Options";
       case MENU_LABEL_VALUE_CORE_OPTIONS:
@@ -242,7 +244,6 @@ static const char *menu_hash_to_str_english(uint32_t hash)
       case MENU_LABEL_VALUE_STARTING_DOWNLOAD:
          return "Starting download: ";
       default:
-         RARCH_LOG("Unhandled: %u\n", hash);
          break;
    }
 

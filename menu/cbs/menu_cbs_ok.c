@@ -651,7 +651,8 @@ static int action_ok_remap_file_load(const char *path,
    fill_pathname_join(remap_path, menu_path, path, sizeof(remap_path));
    input_remapping_load_file(remap_path);
 
-   menu_list_flush_stack(menu_list, "core_input_remapping_options", 0);
+   menu_list_flush_stack(menu_list,
+         menu_hash_to_str(MENU_LABEL_CORE_INPUT_REMAPPING_OPTIONS), 0);
 
    return 0;
 }
@@ -677,7 +678,7 @@ static int action_ok_video_filter_file_load(const char *path,
 
    event_command(EVENT_CMD_REINIT);
 
-   menu_list_flush_stack(menu_list, "video_options", 0);
+   menu_list_flush_stack(menu_list, menu_hash_to_str(MENU_LABEL_VIDEO_OPTIONS), 0);
 
    return 0;
 }
@@ -705,7 +706,8 @@ static int action_ok_cheat_file_load(const char *path,
    if (!global->cheat)
       return -1;
 
-   menu_list_flush_stack(menu_list, "core_cheat_options", 0);
+   menu_list_flush_stack(menu_list,
+         menu_hash_to_str(MENU_LABEL_CORE_CHEAT_OPTIONS), 0);
 
    return 0;
 }
@@ -768,7 +770,8 @@ static int action_ok_shader_preset_load(const char *path,
    menu_shader_manager_set_preset(menu->shader,
          video_shader_parse_type(shader_path, RARCH_SHADER_NONE),
          shader_path);
-   menu_list_flush_stack(menu_list, "shader_options", 0);
+   menu_list_flush_stack(menu_list,
+         menu_hash_to_str(MENU_LABEL_SHADER_OPTIONS), 0);
    return 0;
 #else
    return -1;
@@ -928,7 +931,8 @@ static int action_ok_rdb_entry(const char *path,
    if (!menu_list)
       return -1;
 
-   strlcpy(tmp, "deferred_rdb_entry_detail|", sizeof(tmp));
+   strlcpy(tmp, "deferred_rdb_entry_detail", sizeof(tmp));
+   strlcat(tmp, "|",  sizeof(tmp));
    strlcat(tmp, path, sizeof(tmp));
 
    info.list          = menu_list->menu_stack;
