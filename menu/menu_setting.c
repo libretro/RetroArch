@@ -4474,8 +4474,8 @@ static bool setting_append_list_video_options(
 
    CONFIG_UINT(
          settings->video.monitor_index,
-         "video_monitor_index",
-         "Monitor Index",
+         menu_hash_to_str(MENU_LABEL_VIDEO_MONITOR_INDEX),
+         menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_MONITOR_INDEX),
          monitor_index,
          group_info.name,
          subgroup_info.name,

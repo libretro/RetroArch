@@ -117,6 +117,7 @@ extern "C" {
 
 #define MENU_LABEL_FASTFORWARD_RATIO                                           0x3a0c2706U
 #define MENU_LABEL_VIDEO_MONITOR_INDEX                                         0xb6fcdc9aU
+#define MENU_LABEL_VALUE_VIDEO_MONITOR_INDEX                                   0x4cabbfe5U
 #define MENU_LABEL_VIDEO_REFRESH_RATE_AUTO                                     0x9addb6cdU
 #define MENU_LABEL_VIDEO_ROTATION                                              0x4ce6882bU
 #define MENU_LABEL_VIDEO_SCALE                                                 0x09835d63U

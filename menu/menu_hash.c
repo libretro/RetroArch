@@ -193,6 +193,10 @@ static const char *menu_hash_to_str_english(uint32_t hash)
 {
    switch (hash)
    {
+      case MENU_LABEL_VIDEO_MONITOR_INDEX:
+         return "video_monitor_index";
+      case MENU_LABEL_VALUE_VIDEO_MONITOR_INDEX:
+         return "Monitor Index";
       case MENU_LABEL_VIDEO_FRAME_DELAY:
          return "video_frame_delay";
       case MENU_LABEL_VALUE_VIDEO_FRAME_DELAY:
