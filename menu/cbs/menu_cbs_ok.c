@@ -1266,7 +1266,10 @@ static int action_ok_core_updater_download(const char *path,
          path, sizeof(core_path));
 
    strlcpy(core_updater_path, path, sizeof(core_updater_path));
-   snprintf(msg, sizeof(msg), "Starting download: %s.", path);
+   snprintf(msg, sizeof(msg),
+         "%s %s.",
+         menu_hash_to_str(MENU_LABEL_VALUE_STARTING_DOWNLOAD),
+            path);
 
    rarch_main_msg_queue_push(msg, 1, 90, true);
 

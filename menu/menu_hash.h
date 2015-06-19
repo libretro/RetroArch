@@ -242,6 +242,7 @@ extern "C" {
 #define MENU_LABEL_VALUE_QUIT_RETROARCH                                        0x8e7024f2U
 #define MENU_LABEL_DEFERRED_VIDEO_FILTER                                       0x966ad201U
 #define MENU_LABEL_DEFERRED_CORE_LIST_SET                                      0xa6d5fdb4U
+#define MENU_LABEL_VALUE_STARTING_DOWNLOAD                                     0x42e10f03U
 #define MENU_LABEL_DEFERRED_DATABASE_MANAGER_LIST                              0x7c0b704fU
 #define MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST                                0x45446638U
 #define MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_DEVELOPER            0xcbd89be5U
