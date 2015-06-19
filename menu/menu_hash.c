@@ -211,6 +211,8 @@ static const char *menu_hash_to_str_english(uint32_t hash)
          return "Dynamic Wallpaper";
       case MENU_LABEL_VALUE_BOXART:
          return "Display Boxart";
+      case MENU_LABEL_CORE_INPUT_REMAPPING_OPTIONS:
+         return "core_input_remapping_options";
       case MENU_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS:
          return "Core Input Remapping Options";
       case MENU_LABEL_VIDEO_OPTIONS:
