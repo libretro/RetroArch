@@ -22,6 +22,17 @@
 
 #include "../configuration.h"
 
+static const char *menu_hash_to_str_german(uint32_t hash)
+{
+   switch (hash)
+   {
+      default:
+         break;
+   }
+
+   return "null";
+}
+
 static const char *menu_hash_to_str_french(uint32_t hash)
 {
    switch (hash)
@@ -491,6 +502,9 @@ const char *menu_hash_to_str(uint32_t hash)
    {
       case RETRO_LANGUAGE_FRENCH:
          ret = menu_hash_to_str_french(hash);
+         break;
+      case RETRO_LANGUAGE_GERMAN:
+         ret = menu_hash_to_str_german(hash);
          break;
       case RETRO_LANGUAGE_DUTCH:
          ret = menu_hash_to_str_dutch(hash);
