@@ -1607,7 +1607,7 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
       case MENU_LABEL_DETECT_CORE_LIST_OK:
          cbs->action_ok = action_ok_file_load_detect_core;
          break;
-      case MENU_LABEL_HISTORY_LIST:
+      case MENU_LABEL_LOAD_CONTENT_HISTORY:
       case MENU_LABEL_CURSOR_MANAGER_LIST:
       case MENU_LABEL_DATABASE_MANAGER_LIST:
          cbs->action_ok = action_ok_push_generic_list;

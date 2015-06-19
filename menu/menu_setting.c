@@ -2187,7 +2187,7 @@ static int setting_get_description_compare_label(uint32_t label_hash,
                "Directory is a full path, it will start \n"
                "in the folder where the file is.");
          break;
-      case MENU_LABEL_HISTORY_LIST:
+      case MENU_LABEL_LOAD_CONTENT_HISTORY:
          snprintf(s, len,
                " -- Loading content from history. \n"
                " \n"
@@ -3561,8 +3561,8 @@ static bool setting_append_list_main_menu_options(
    if (settings->history_list_enable)
    {
       CONFIG_ACTION(
-            "history_list",
-            "Load Content (History)",
+            menu_hash_to_str(MENU_LABEL_LOAD_CONTENT_HISTORY),
+            menu_hash_to_str(MENU_LABEL_VALUE_LOAD_CONTENT_HISTORY),
             group_info.name,
             subgroup_info.name,
             parent_group);
@@ -3570,8 +3570,8 @@ static bool setting_append_list_main_menu_options(
    if (global->core_info && core_info_list_num_info_files(global->core_info))
    {
       CONFIG_ACTION(
-            "detect_core_list",
-            "Load Content (Detect Core)",
+            menu_hash_to_str(MENU_LABEL_DETECT_CORE_LIST),
+            menu_hash_to_str(MENU_LABEL_VALUE_DETECT_CORE_LIST),
             group_info.name,
             subgroup_info.name,
             parent_group);
@@ -4457,8 +4457,8 @@ static bool setting_append_list_video_options(
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info, parent_group);
 
    CONFIG_BOOL(settings->fps_show,
-         "fps_show",
-         "Display Framerate",
+         menu_hash_to_str(MENU_LABEL_FPS_SHOW),
+         menu_hash_to_str(MENU_LABEL_VALUE_FPS_SHOW),
          fps_show,
          menu_hash_to_str(MENU_VALUE_OFF),
          menu_hash_to_str(MENU_VALUE_ON),
@@ -5044,8 +5044,8 @@ static bool setting_append_list_audio_options(
 
    CONFIG_BOOL(
          settings->audio.enable,
-         "audio_enable",
-         "Audio Enable",
+         menu_hash_to_str(MENU_LABEL_AUDIO_ENABLE),
+         menu_hash_to_str(MENU_LABEL_VALUE_AUDIO_ENABLE),
          audio_enable,
          menu_hash_to_str(MENU_VALUE_OFF),
          menu_hash_to_str(MENU_VALUE_ON),

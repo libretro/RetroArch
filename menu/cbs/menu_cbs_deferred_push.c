@@ -468,7 +468,7 @@ static int menu_cbs_init_bind_deferred_push_compare_label(menu_file_list_cbs_t *
             cbs->action_deferred_push = deferred_push_core_updater_list;
 #endif
             break;
-         case MENU_LABEL_HISTORY_LIST:
+         case MENU_LABEL_LOAD_CONTENT_HISTORY:
             cbs->action_deferred_push = deferred_push_history_list;
             break;
          case MENU_LABEL_DATABASE_MANAGER_LIST:

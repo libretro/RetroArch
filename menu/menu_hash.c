@@ -193,6 +193,22 @@ static const char *menu_hash_to_str_english(uint32_t hash)
 {
    switch (hash)
    {
+      case MENU_LABEL_DETECT_CORE_LIST:
+         return "detect_core_list";
+      case MENU_LABEL_VALUE_DETECT_CORE_LIST:
+         return "Load Content (Detect Core)";
+      case MENU_LABEL_LOAD_CONTENT_HISTORY:
+         return "history_list";
+      case MENU_LABEL_VALUE_LOAD_CONTENT_HISTORY:
+         return "Load Content (History)";
+      case MENU_LABEL_AUDIO_ENABLE:
+         return "audio_enable";
+      case MENU_LABEL_VALUE_AUDIO_ENABLE:
+         return "Audio Enable";
+      case MENU_LABEL_FPS_SHOW:
+         return "fps_show";
+      case MENU_LABEL_VALUE_FPS_SHOW:
+         return "Display Framerate";
       case MENU_LABEL_AUDIO_MUTE:
          return "audio_mute_enable";
       case MENU_LABEL_VALUE_AUDIO_MUTE:

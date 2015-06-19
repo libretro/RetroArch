@@ -46,10 +46,14 @@ extern "C" {
 #define MENU_LABEL_NETPLAY_FLIP_PLAYERS                                        0x801425abU
 #define MENU_LABEL_CHEAT_INDEX_MINUS                                           0x57f58b6cU
 #define MENU_LABEL_CHEAT_INDEX_PLUS                                            0x678542a4U
+#define MENU_LABEL_AUDIO_ENABLE                                                0x28614f5dU
+#define MENU_LABEL_VALUE_AUDIO_ENABLE                                          0xcdbb9b9eU
 #define MENU_LABEL_SCREENSHOT_DIRECTORY                                        0x552612d7U
 #define MENU_LABEL_SHADER_NEXT                                                 0x54d359baU
 #define MENU_LABEL_SHADER_PREV                                                 0x54d4a758U
 #define MENU_LABEL_FRAME_ADVANCE                                               0xd80302a1U
+#define MENU_LABEL_FPS_SHOW                                                    0x5ea1e10eU
+#define MENU_LABEL_VALUE_FPS_SHOW                                              0x92588792U
 #define MENU_LABEL_MOVIE_RECORD_TOGGLE                                         0xa2d2ff04U
 #define MENU_LABEL_L_X_PLUS                                                    0xd7370d4bU
 #define MENU_LABEL_L_X_MINUS                                                   0xbde0aaf3U
@@ -246,6 +250,7 @@ extern "C" {
 
 #define MENU_LABEL_CONTENT_ACTIONS                                             0xa0d76970U
 #define MENU_LABEL_DETECT_CORE_LIST                                            0xaa07c341U
+#define MENU_LABEL_VALUE_DETECT_CORE_LIST                                      0x69f11813U
 #define MENU_LABEL_DETECT_CORE_LIST_OK                                         0xabba2a7aU
 #define MENU_LABEL_LOAD_CONTENT                                                0x5745de1fU
 #define MENU_LABEL_VALUE_LOAD_CONTENT                                          0x755f3680U
@@ -294,7 +299,8 @@ extern "C" {
 #define MENU_LABEL_VALUE_FRONTEND_COUNTERS                                     0x5752bcf8U
 #define MENU_LABEL_VALUE_CORE_COUNTERS                                         0x4610e861U
 #define MENU_LABEL_CORE_COUNTERS                                               0x64cc83e0U
-#define MENU_LABEL_HISTORY_LIST                                                0x60d82032U
+#define MENU_LABEL_LOAD_CONTENT_HISTORY                                        0x60d82032U
+#define MENU_LABEL_VALUE_LOAD_CONTENT_HISTORY                                  0x03531ac3U
 #define MENU_LABEL_INFO_SCREEN                                                 0xd97853d0U
 #define MENU_LABEL_SYSTEM_INFORMATION                                          0x206ebf0fU
 #define MENU_LABEL_VALUE_SYSTEM_INFORMATION                                    0xa62fd7f0U
