@@ -14,6 +14,7 @@
  */
 
 #include "menu.h"
+#include "menu_hash.h"
 #include "menu_display.h"
 #include "menu_entry.h"
 #include "menu_navigation.h"
@@ -107,7 +108,7 @@ void menu_entries_get_core_title(char *s, size_t len)
    if (!core_name)
       core_name = global->system.info.library_name;
    if (!core_name)
-      core_name = "No Core";
+      core_name = menu_hash_to_str(MENU_VALUE_NO_CORE);
 
    if (!core_version)
       core_version = global->system.info.library_version;

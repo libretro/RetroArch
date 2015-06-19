@@ -79,6 +79,8 @@ static const char *menu_hash_to_str_english(uint32_t hash)
          return "cursor_manager_list";
       case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST:
          return "deferred_cursor_manager_list";
+      case MENU_LABEL_DEFERRED_RDB_ENTRY_DETAIL:
+         return "deferred_rdb_entry_detail";
       case MENU_LABEL_FRONTEND_COUNTERS:
          return "frontend_counters";
       case MENU_LABEL_CORE_COUNTERS:
@@ -115,6 +117,8 @@ static const char *menu_hash_to_str_english(uint32_t hash)
          return "No core options available.";
       case MENU_LABEL_VALUE_NO_CORES_AVAILABLE:
          return "No cores available.";
+      case MENU_VALUE_NO_CORE:
+         return "No Core";
       case MENU_LABEL_VALUE_DATABASE_MANAGER:
          return "Database Manager";
       case MENU_LABEL_VALUE_CURSOR_MANAGER:

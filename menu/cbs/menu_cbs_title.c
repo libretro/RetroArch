@@ -286,7 +286,7 @@ static int action_get_title_default(const char *path, const char *label,
       if (!core_name)
          core_name = global->system.info.library_name;
       if (!core_name)
-         core_name = "No Core";
+         core_name = menu_hash_to_str(MENU_VALUE_NO_CORE);
       snprintf(s, len, "CONTENT (%s) %s", core_name, path);
    }
 

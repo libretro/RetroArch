@@ -457,7 +457,7 @@ static int deferred_push_default(menu_displaylist_info_t *info)
 static int menu_cbs_init_bind_deferred_push_compare_label(menu_file_list_cbs_t *cbs, 
       const char *label, uint32_t label_hash)
 {
-   if (strstr(label, "deferred_rdb_entry_detail"))
+   if (strstr(label, menu_hash_to_str(MENU_LABEL_DEFERRED_RDB_ENTRY_DETAIL)))
       cbs->action_deferred_push = deferred_push_rdb_entry_detail;
    else
    {
