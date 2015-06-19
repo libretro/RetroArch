@@ -3531,8 +3531,8 @@ static bool setting_append_list_main_menu_options(
       if (info && (info_library_name_hash != MENU_VALUE_NO_CORE))
       {
          CONFIG_ACTION(
-               "unload_core",
                menu_hash_to_str(MENU_LABEL_UNLOAD_CORE),
+               menu_hash_to_str(MENU_LABEL_VALUE_UNLOAD_CORE),
                group_info.name,
                subgroup_info.name,
                parent_group);
@@ -3624,8 +3624,8 @@ static bool setting_append_list_main_menu_options(
 
 #ifdef HAVE_NETWORKING
    CONFIG_ACTION(
-         "core_updater_list",
          menu_hash_to_str(MENU_LABEL_CORE_UPDATER_LIST),
+         menu_hash_to_str(MENU_LABEL_VALUE_CORE_UPDATER_LIST),
          group_info.name,
          subgroup_info.name,
          parent_group);

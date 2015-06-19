@@ -1573,7 +1573,7 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
       case MENU_LABEL_RECORD_CONFIG:
          cbs->action_ok = action_ok_record_configfile;
          break;
-      case MENU_LABEL_CORE_UPDATER_LIST:
+      case MENU_LABEL_VALUE_CORE_UPDATER_LIST:
          cbs->action_ok = action_ok_core_updater_list;
          break;
       case MENU_LABEL_VIDEO_SHADER_PARAMETERS:

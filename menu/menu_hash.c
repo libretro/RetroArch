@@ -81,6 +81,8 @@ static const char *menu_hash_to_str_english(uint32_t hash)
          return "frontend_counters";
       case MENU_LABEL_CORE_COUNTERS:
          return "core_counters";
+      case MENU_LABEL_VALUE_CORE_COUNTERS:
+         return "Core Counters";
       case MENU_LABEL_DISK_CYCLE_TRAY_STATUS:
          return "disk_cycle_tray_status";
       case MENU_LABEL_DISK_IMAGE_APPEND:
@@ -99,8 +101,6 @@ static const char *menu_hash_to_str_english(uint32_t hash)
          return "Disk Index";
       case MENU_LABEL_VALUE_FRONTEND_COUNTERS:
          return "Frontend Counters";
-      case MENU_LABEL_VALUE_CORE_COUNTERS:
-         return "Core Counters";
       case MENU_LABEL_VALUE_DISK_IMAGE_APPEND:
          return "Disk Image Append";
       case MENU_LABEL_VALUE_DISK_CYCLE_TRAY_STATUS:
@@ -144,6 +144,8 @@ static const char *menu_hash_to_str_english(uint32_t hash)
       case MENU_LABEL_TAKE_SCREENSHOT:
          return "take_screenshot";
       case MENU_LABEL_CORE_UPDATER_LIST:
+         return "core_updater_list";
+      case MENU_LABEL_VALUE_CORE_UPDATER_LIST:
          return "Core Updater";
       case MENU_LABEL_SYSTEM_INFORMATION:
          return "system_information";
@@ -164,6 +166,8 @@ static const char *menu_hash_to_str_english(uint32_t hash)
       case MENU_LABEL_CORE_LIST:
          return "Load Core";
       case MENU_LABEL_UNLOAD_CORE:
+         return "unload_core";
+      case MENU_LABEL_VALUE_UNLOAD_CORE:
          return "Unload Core";
       case MENU_LABEL_MANAGEMENT:
          return "Advanced Management";

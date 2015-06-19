@@ -233,9 +233,11 @@ extern "C" {
 #define MENU_LABEL_DETECT_CORE_LIST                                            0xaa07c341U
 #define MENU_LABEL_DETECT_CORE_LIST_OK                                         0xabba2a7aU
 #define MENU_LABEL_LOAD_CONTENT                                                0x5745de1fU
-#define MENU_LABEL_CORE_UPDATER_LIST                                           0x0372767dU
+#define MENU_LABEL_VALUE_CORE_UPDATER_LIST                                     0x0372767dU
+#define MENU_LABEL_CORE_UPDATER_LIST                                           0xe12f4ee3U
 #define MENU_LABEL_RECORD_CONFIG                                               0x11c3daf9U
 #define MENU_LABEL_UNLOAD_CORE                                                 0x4b622170U
+#define MENU_LABEL_VALUE_UNLOAD_CORE                                           0x9b45e571U
 #define MENU_LABEL_QUIT_RETROARCH                                              0x84b0bc71U
 #define MENU_LABEL_VALUE_QUIT_RETROARCH                                        0x8e7024f2U
 #define MENU_LABEL_DEFERRED_VIDEO_FILTER                                       0x966ad201U
