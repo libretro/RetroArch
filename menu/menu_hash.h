@@ -73,6 +73,8 @@ extern "C" {
 #define MENU_LABEL_REWIND_GRANULARITY                                          0xe859cbdfU
 #define MENU_LABEL_VALUE_REWIND_GRANULARITY                                    0x6e1ae4c0U
 #define MENU_LABEL_VIDEO_THREADED                                              0x0626179cU
+#define MENU_LABEL_AUDIO_SYNC                                                  0xe0cd6bd3U
+#define MENU_LABEL_VALUE_AUDIO_SYNC                                            0xcbeb903bU
 #define MENU_LABEL_VIDEO_VSYNC                                                 0x09c2d34eU
 #define MENU_LABEL_VIDEO_HARD_SYNC                                             0xdcd623b6U
 #define MENU_LABEL_SAVESTATE_AUTO_SAVE                                         0xf6f4a05bU
@@ -83,6 +85,7 @@ extern "C" {
 #define MENU_LABEL_LOG_VERBOSITY                                               0x6648c96dU
 #define MENU_LABEL_OVERLAY_NEXT                                                0x7a459145U
 #define MENU_LABEL_AUDIO_VOLUME                                                0x502173aeU
+#define MENU_LABEL_VALUE_AUDIO_VOLUME                                          0x0fa6ccfeU
 #define MENU_LABEL_AUDIO_LATENCY                                               0x32695386U
 #define MENU_LABEL_VALUE_AUDIO_LATENCY                                         0x89900e38U
 #define MENU_LABEL_NETPLAY_DELAY_FRAMES                                        0x86b2c48dU
@@ -104,6 +107,7 @@ extern "C" {
 #define MENU_LABEL_DYNAMIC_WALLPAPER                                           0xf011ccabU
 #define MENU_LABEL_VALUE_DYNAMIC_WALLPAPER                                     0x66928c32U
 #define MENU_LABEL_VALUE_BOXART                                                0x716441ebU
+#define MENU_LABEL_BOXART                                                      0xa269b0afU
 #define MENU_LABEL_PAL60_ENABLE                                                0x62bc416eU
 #define MENU_LABEL_SYSTEM_BGM_ENABLE                                           0x9287a1c5U
 
@@ -117,6 +121,7 @@ extern "C" {
 #define MENU_LABEL_VIDEO_SCALE_INTEGER                                         0x65c4b090U
 
 #define MENU_LABEL_AUDIO_RATE_CONTROL_DELTA                                    0xc8bde3cbU
+#define MENU_LABEL_VALUE_AUDIO_RATE_CONTROL_DELTA                              0x8d242b0eU
 #define MENU_LABEL_AUDIO_MAX_TIMING_SKEW                                       0x4c96f75cU
 
 #define MENU_LABEL_INPUT_PLAYER1_JOYPAD_INDEX                                  0xfad6ab2fU
@@ -440,6 +445,7 @@ extern "C" {
 #define MENU_LABEL_VALUE_UNABLE_TO_READ_COMPRESSED_FILE                        0xbae7be3eU
 #define MENU_LABEL_OSK_ENABLE                                                  0x8e208498U
 #define MENU_LABEL_AUDIO_MUTE                                                  0xe0ca1151U
+#define MENU_LABEL_VALUE_AUDIO_MUTE                                            0x5af25952U
 #define MENU_LABEL_EXIT_EMULATOR                                               0x86d5d467U
 #define MENU_LABEL_COLLECTION                                                  0x5fea5991U
 

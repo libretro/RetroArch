@@ -193,8 +193,24 @@ static const char *menu_hash_to_str_english(uint32_t hash)
 {
    switch (hash)
    {
+      case MENU_LABEL_AUDIO_MUTE:
+         return "audio_mute_enable";
+      case MENU_LABEL_VALUE_AUDIO_MUTE:
+         return "Audio Mute";
       case MENU_LABEL_VIDEO_SHADER_PASS:
          return "video_shader_pass";
+      case MENU_LABEL_AUDIO_VOLUME:
+         return "audio_volume";
+      case MENU_LABEL_VALUE_AUDIO_VOLUME:
+         return "Audio Volume Level (dB)";
+      case MENU_LABEL_AUDIO_SYNC:
+         return "audio_sync";
+      case MENU_LABEL_VALUE_AUDIO_SYNC:
+         return "Audio Sync Enable";
+      case MENU_LABEL_AUDIO_RATE_CONTROL_DELTA:
+         return "audio_rate_control_delta";
+      case MENU_LABEL_VALUE_AUDIO_RATE_CONTROL_DELTA:
+         return "Audio Rate Control Delta";
       case MENU_LABEL_VIDEO_SHADER_FILTER_PASS:
          return "video_shader_filter_pass";
       case MENU_LABEL_VIDEO_SHADER_SCALE_PASS:
@@ -447,6 +463,8 @@ static const char *menu_hash_to_str_english(uint32_t hash)
          return "menu_dynamic_wallpaper_enable";
       case MENU_LABEL_VALUE_DYNAMIC_WALLPAPER:
          return "Dynamic Wallpaper";
+      case MENU_LABEL_BOXART:
+         return "menu_boxart_enable";
       case MENU_LABEL_VALUE_BOXART:
          return "Display Boxart";
       case MENU_LABEL_CORE_INPUT_REMAPPING_OPTIONS:

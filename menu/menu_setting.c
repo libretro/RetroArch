@@ -5058,8 +5058,8 @@ static bool setting_append_list_audio_options(
 
    CONFIG_BOOL(
          settings->audio.mute_enable,
-         "audio_mute_enable",
-         "Audio Mute",
+         menu_hash_to_str(MENU_LABEL_AUDIO_MUTE),
+         menu_hash_to_str(MENU_LABEL_VALUE_AUDIO_MUTE),
          false,
          menu_hash_to_str(MENU_VALUE_OFF),
          menu_hash_to_str(MENU_VALUE_ON),
@@ -5071,8 +5071,8 @@ static bool setting_append_list_audio_options(
 
    CONFIG_FLOAT(
          settings->audio.volume,
-         "audio_volume",
-         "Audio Volume Level (dB)",
+         menu_hash_to_str(MENU_LABEL_AUDIO_VOLUME),
+         menu_hash_to_str(MENU_LABEL_VALUE_AUDIO_VOLUME),
          audio_volume,
          "%.1f",
          group_info.name,
@@ -5111,8 +5111,8 @@ static bool setting_append_list_audio_options(
 
    CONFIG_BOOL(
          settings->audio.sync,
-         "audio_sync",
-         "Audio Sync Enable",
+         menu_hash_to_str(MENU_LABEL_AUDIO_SYNC),
+         menu_hash_to_str(MENU_LABEL_VALUE_AUDIO_SYNC),
          audio_sync,
          menu_hash_to_str(MENU_VALUE_OFF),
          menu_hash_to_str(MENU_VALUE_ON),
@@ -5138,8 +5138,8 @@ static bool setting_append_list_audio_options(
 
    CONFIG_FLOAT(
          settings->audio.rate_control_delta,
-         "audio_rate_control_delta",
-         "Audio Rate Control Delta",
+         menu_hash_to_str(MENU_LABEL_AUDIO_RATE_CONTROL_DELTA),
+         menu_hash_to_str(MENU_LABEL_VALUE_AUDIO_RATE_CONTROL_DELTA),
          rate_control_delta,
          "%.3f",
          group_info.name,
@@ -5726,7 +5726,7 @@ static bool setting_append_list_menu_options(
 
    CONFIG_BOOL(
          settings->menu.boxart_enable,
-         "menu_boxart_enable",
+         menu_hash_to_str(MENU_LABEL_BOXART),
          menu_hash_to_str(MENU_LABEL_VALUE_BOXART),
          true,
          menu_hash_to_str(MENU_VALUE_OFF),
