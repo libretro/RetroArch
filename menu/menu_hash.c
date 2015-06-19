@@ -257,6 +257,12 @@ static const char *menu_hash_to_str_english(uint32_t hash)
          return "audio_dsp_plugin";
       case MENU_LABEL_VALUE_STARTING_DOWNLOAD:
          return "Starting download: ";
+      case MENU_VALUE_SECONDS:
+         return "seconds";
+      case MENU_VALUE_OFF:
+         return "OFF";
+      case MENU_VALUE_ON:
+         return "ON";
       default:
          break;
    }

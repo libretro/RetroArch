@@ -427,6 +427,8 @@ extern "C" {
 #define MENU_LABEL_EXIT_EMULATOR                                               0x86d5d467U
 #define MENU_LABEL_COLLECTION                                                  0x5fea5991U
 
+#define MENU_VALUE_SECONDS                                                     0x8b0028d4U
+
 const char *menu_hash_to_str(uint32_t hash);
 
 uint32_t menu_hash_calculate(const char *s);
