@@ -3577,8 +3577,8 @@ static bool setting_append_list_main_menu_options(
       settings_data_list_current_add_flags(list, list_info, SD_FLAG_BROWSER_ACTION);
    }
    CONFIG_ACTION(
-         "load_content",
-         "Load Content",
+         menu_hash_to_str(MENU_LABEL_LOAD_CONTENT),
+         menu_hash_to_str(MENU_LABEL_VALUE_LOAD_CONTENT),
          group_info.name,
          subgroup_info.name,
          parent_group);
@@ -3591,8 +3591,8 @@ static bool setting_append_list_main_menu_options(
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_BROWSER_ACTION);
 
    CONFIG_ACTION(
-         "management",
          menu_hash_to_str(MENU_LABEL_MANAGEMENT),
+         menu_hash_to_str(MENU_LABEL_VALUE_MANAGEMENT),
          group_info.name,
          subgroup_info.name,
          parent_group);

@@ -175,11 +175,17 @@ static const char *menu_hash_to_str_english(uint32_t hash)
          return "No items.";
       case MENU_LABEL_CORE_LIST:
          return "Load Core";
+      case MENU_LABEL_LOAD_CONTENT:
+         return "load_content";
+      case MENU_LABEL_VALUE_LOAD_CONTENT:
+         return "Load Content";
       case MENU_LABEL_UNLOAD_CORE:
          return "unload_core";
       case MENU_LABEL_VALUE_UNLOAD_CORE:
          return "Unload Core";
       case MENU_LABEL_MANAGEMENT:
+         return "advanced_management";
+      case MENU_LABEL_VALUE_MANAGEMENT:
          return "Advanced Management";
       case MENU_LABEL_PERFORMANCE_COUNTERS:
          return "performance_counters";
