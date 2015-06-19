@@ -15,11 +15,33 @@
  */
 
 #include <stdint.h>
+#include <string.h>
 #include <rhash.h>
 
 #include "menu_hash.h"
 
-const char *menu_hash_to_str(uint32_t hash)
+#include "../configuration.h"
+
+static const char *menu_hash_to_str_dutch(uint32_t hash)
+{
+   switch (hash)
+   {
+      case MENU_LABEL_CORE_LIST:
+         return "Laad Core";
+      case MENU_LABEL_VALUE_SETTINGS:
+         return "Instellingen";
+      case MENU_LABEL_VALUE_OPTIONS:
+         return "Opties";
+      case MENU_LABEL_VALUE_SYSTEM_INFORMATION:
+         return "Systeem Informatie";
+      default:
+         break;
+   }
+
+   return "null";
+}
+
+static const char *menu_hash_to_str_fallback(uint32_t hash)
 {
    switch (hash)
    {
@@ -178,6 +200,28 @@ const char *menu_hash_to_str(uint32_t hash)
    }
 
    return "null";
+}
+
+const char *menu_hash_to_str(uint32_t hash)
+{
+   const char *ret = NULL;
+   settings_t *settings = config_get_ptr();
+
+   if (!settings)
+      return "null";
+
+   switch (settings->user_language)
+   {
+      case RETRO_LANGUAGE_DUTCH:
+         ret = menu_hash_to_str_dutch(hash);
+      default:
+         break;
+   }
+
+   if (ret && strcmp(ret, "null") != 0)
+      return ret;
+
+   return menu_hash_to_str_fallback(hash);
 }
 
 uint32_t menu_hash_calculate(const char *s)
