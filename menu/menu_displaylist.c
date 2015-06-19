@@ -700,8 +700,10 @@ static int menu_displaylist_parse_shader_options(menu_displaylist_info_t *info)
    menu_list_push(info->list, "Parameters (Current)",
          "video_shader_parameters", MENU_SETTING_ACTION, 0, 0);
    menu_list_push(info->list, "Parameters (Menu)",
-         "video_shader_preset_parameters", MENU_SETTING_ACTION, 0, 0);
-   menu_list_push(info->list, "Shader Passes", "video_shader_num_passes",
+         "video_shader_preset_parameters",
+         MENU_SETTING_ACTION, 0, 0);
+   menu_list_push(info->list, "Shader Passes",
+         menu_hash_to_str(MENU_LABEL_VIDEO_SHADER_NUM_PASSES),
          0, 0, 0);
 
    for (i = 0; i < shader->passes; i++)
@@ -709,15 +711,18 @@ static int menu_displaylist_parse_shader_options(menu_displaylist_info_t *info)
       char buf[64] = {0};
 
       snprintf(buf, sizeof(buf), "Shader #%u", i);
-      menu_list_push(info->list, buf, "video_shader_pass",
+      menu_list_push(info->list, buf,
+            menu_hash_to_str(MENU_LABEL_VIDEO_SHADER_PASS),
             MENU_SETTINGS_SHADER_PASS_0 + i, 0, 0);
 
       snprintf(buf, sizeof(buf), "Shader #%u Filter", i);
-      menu_list_push(info->list, buf, "video_shader_filter_pass",
+      menu_list_push(info->list, buf,
+            menu_hash_to_str(MENU_LABEL_VIDEO_SHADER_FILTER_PASS),
             MENU_SETTINGS_SHADER_PASS_FILTER_0 + i, 0, 0);
 
       snprintf(buf, sizeof(buf), "Shader #%u Scale", i);
-      menu_list_push(info->list, buf, "video_shader_scale_pass",
+      menu_list_push(info->list, buf,
+            menu_hash_to_str(MENU_LABEL_VIDEO_SHADER_SCALE_PASS),
             MENU_SETTINGS_SHADER_PASS_SCALE_0 + i, 0, 0);
    }
 

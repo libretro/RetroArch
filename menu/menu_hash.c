@@ -182,6 +182,14 @@ static const char *menu_hash_to_str_english(uint32_t hash)
 {
    switch (hash)
    {
+      case MENU_LABEL_VIDEO_SHADER_PASS:
+         return "video_shader_pass";
+      case MENU_LABEL_VIDEO_SHADER_FILTER_PASS:
+         return "video_shader_filter_pass";
+      case MENU_LABEL_VIDEO_SHADER_SCALE_PASS:
+         return "video_shader_scale_pass";
+      case MENU_LABEL_VIDEO_SHADER_NUM_PASSES:
+         return "video_shader_num_passes";
       case MENU_LABEL_RDB_ENTRY_DESCRIPTION:
          return "rdb_entry_description";
       case MENU_LABEL_RDB_ENTRY_ORIGIN:
