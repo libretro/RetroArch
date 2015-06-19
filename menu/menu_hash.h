@@ -83,6 +83,7 @@ extern "C" {
 #define MENU_LABEL_OVERLAY_NEXT                                                0x7a459145U
 #define MENU_LABEL_AUDIO_VOLUME                                                0x502173aeU
 #define MENU_LABEL_AUDIO_LATENCY                                               0x32695386U
+#define MENU_LABEL_VALUE_AUDIO_LATENCY                                         0x89900e38U
 #define MENU_LABEL_NETPLAY_DELAY_FRAMES                                        0x86b2c48dU
 #define MENU_LABEL_NETPLAY_SPECTATOR_MODE_ENABLE                               0x6f9a9440U
 #define MENU_LABEL_NETPLAY_IP_ADDRESS                                          0xac9a53ffU
@@ -92,7 +93,8 @@ extern "C" {
 #define MENU_LABEL_VALUE_OVERLAY_SCALE                                         0x4237794fU
 #define MENU_LABEL_KEYBOARD_OVERLAY_PRESET                                     0x11f1c582U
 #define MENU_LABEL_VALUE_KEYBOARD_OVERLAY_PRESET                               0x7bc03f8bU
-#define MENU_LABEL_OVERLAY_PRESET                                              0x8338e89aU
+#define MENU_LABEL_OVERLAY_PRESET                                              0x24e24796U
+#define MENU_LABEL_VALUE_OVERLAY_PRESET                                        0x8338e89aU
 #define MENU_LABEL_OVERLAY_OPACITY                                             0xc466fbaeU
 #define MENU_LABEL_VALUE_OVERLAY_OPACITY                                       0x98605740U
 

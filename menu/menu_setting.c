@@ -5124,8 +5124,8 @@ static bool setting_append_list_audio_options(
 
    CONFIG_UINT(
          settings->audio.latency,
-         "audio_latency",
-         "Audio Latency (ms)",
+         menu_hash_to_str(MENU_LABEL_AUDIO_LATENCY),
+         menu_hash_to_str(MENU_LABEL_VALUE_AUDIO_LATENCY),
          g_defaults.settings.out_latency ? 
          g_defaults.settings.out_latency : out_latency,
          group_info.name,
@@ -5617,8 +5617,8 @@ static bool setting_append_list_overlay_options(
 
    CONFIG_PATH(
          settings->input.overlay,
-         "input_overlay",
          menu_hash_to_str(MENU_LABEL_OVERLAY_PRESET),
+         menu_hash_to_str(MENU_LABEL_VALUE_OVERLAY_PRESET),
          global->overlay_dir,
          group_info.name,
          subgroup_info.name,

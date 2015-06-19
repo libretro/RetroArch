@@ -219,12 +219,18 @@ static const char *menu_hash_to_str_english(uint32_t hash)
          return "input_overlay_scale";
       case MENU_LABEL_VALUE_OVERLAY_SCALE:
          return "Overlay Scale";
-      case MENU_LABEL_OVERLAY_PRESET:
+      case MENU_LABEL_VALUE_OVERLAY_PRESET:
          return "Overlay Preset";
+      case MENU_LABEL_OVERLAY_PRESET:
+         return "input_overlay";
       case MENU_LABEL_KEYBOARD_OVERLAY_PRESET:
          return "input_osk_overlay";
       case MENU_LABEL_AUDIO_DEVICE:
          return "audio_device";
+      case MENU_LABEL_AUDIO_LATENCY:
+         return "audio_latency";
+      case MENU_LABEL_VALUE_AUDIO_LATENCY:
+         return "Audio Latency (ms)";
       case MENU_LABEL_VALUE_AUDIO_DEVICE:
          return "Audio Device";
       case MENU_LABEL_VALUE_KEYBOARD_OVERLAY_PRESET:
