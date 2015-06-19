@@ -47,6 +47,14 @@ static const char *menu_hash_to_str_english(uint32_t hash)
 {
    switch (hash)
    {
+      case MENU_LABEL_REMAP_FILE_LOAD:
+         return "remap_file_load";
+      case MENU_LABEL_VALUE_REMAP_FILE_LOAD:
+         return "Load Remap File";
+      case MENU_LABEL_REMAP_FILE_SAVE_AS:
+         return "remap_file_save_as";
+      case MENU_LABEL_VALUE_REMAP_FILE_SAVE_AS:
+         return "Save Remap File As";
       case MENU_LABEL_CUSTOM_RATIO:
          return "custom_ratio";
       case MENU_LABEL_VALUE_CUSTOM_RATIO:

@@ -1475,10 +1475,14 @@ static int menu_displaylist_parse_options_remappings(menu_displaylist_info_t *in
    settings_t *settings   = config_get_ptr();
    global_t *global       = global_get_ptr();
 
-   menu_list_push(info->list, "Load Remap File", "remap_file_load",
+   menu_list_push(info->list,
+         menu_hash_to_str(MENU_LABEL_VALUE_REMAP_FILE_LOAD),
+         menu_hash_to_str(MENU_LABEL_REMAP_FILE_LOAD),
          MENU_SETTING_ACTION, 0, 0);
-   menu_list_push(info->list, "Save Remap File As",
-         "remap_file_save_as", MENU_SETTING_ACTION, 0, 0);
+   menu_list_push(info->list,
+         menu_hash_to_str(MENU_LABEL_VALUE_REMAP_FILE_SAVE_AS),
+         menu_hash_to_str(MENU_LABEL_REMAP_FILE_SAVE_AS),
+         MENU_SETTING_ACTION, 0, 0);
    menu_list_push(info->list, "Save Core Remap File",
          "remap_file_save_core", MENU_SETTING_ACTION, 0, 0);
    menu_list_push(info->list, "Save Game Remap File",

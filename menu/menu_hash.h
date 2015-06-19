@@ -313,6 +313,7 @@ extern "C" {
 #define MENU_LABEL_VIDEO_SHADER_PRESET                                         0xc5d3bae4U
 #define MENU_LABEL_CHEAT_FILE_LOAD                                             0x57336148U
 #define MENU_LABEL_REMAP_FILE_LOAD                                             0x9c2799b8U
+#define MENU_LABEL_VALUE_REMAP_FILE_LOAD                                       0xabdd415aU
 #define MENU_LABEL_MESSAGE                                                     0xbe463eeaU
 #define MENU_LABEL_INFO_SCREEN                                                 0xd97853d0U
 #define MENU_LABEL_LOAD_OPEN_ZIP                                               0x8aa3c068U
@@ -419,6 +420,7 @@ extern "C" {
 #define MENU_LABEL_DISK_IMAGE_APPEND                                           0x5af7d709U
 #define MENU_LABEL_CONFIGURATIONS                                              0x3e930a50U
 #define MENU_LABEL_CHEAT_FILE_SAVE_AS                                          0x1f58dccaU
+#define MENU_LABEL_VALUE_REMAP_FILE_SAVE_AS                                    0x3ce7a81dU
 #define MENU_LABEL_REMAP_FILE_SAVE_AS                                          0xcebf7f3aU
 #define MENU_LABEL_VIDEO_SHADER_PRESET_SAVE_AS                                 0x3d6e5ce5U
 #define MENU_LABEL_REMAP_FILE_SAVE_CORE                                        0x7c9d4c8fU
