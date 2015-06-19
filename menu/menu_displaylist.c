@@ -1434,13 +1434,21 @@ static int menu_displaylist_parse_options_cheats(menu_displaylist_info_t *info)
       cheat = global->cheat;
    }
 
-   menu_list_push(info->list, "Cheat File Load", "cheat_file_load",
+   menu_list_push(info->list,
+         menu_hash_to_str(MENU_LABEL_VALUE_CHEAT_FILE_LOAD),
+         menu_hash_to_str(MENU_LABEL_CHEAT_FILE_LOAD),
          MENU_SETTING_ACTION, 0, 0);
-   menu_list_push(info->list, "Cheat File Save As",
-         "cheat_file_save_as", MENU_SETTING_ACTION, 0, 0);
-   menu_list_push(info->list, "Cheat Passes", "cheat_num_passes",
+   menu_list_push(info->list,
+         menu_hash_to_str(MENU_LABEL_VALUE_CHEAT_FILE_SAVE_AS),
+         menu_hash_to_str(MENU_LABEL_CHEAT_FILE_SAVE_AS),
+         MENU_SETTING_ACTION, 0, 0);
+   menu_list_push(info->list,
+         "Cheat Passes",
+         "cheat_num_passes",
          0, 0, 0);
-   menu_list_push(info->list, "Apply Cheat Changes", "cheat_apply_changes",
+   menu_list_push(info->list,
+         "Apply Cheat Changes",
+         "cheat_apply_changes",
          MENU_SETTING_ACTION, 0, 0);
 
    for (i = 0; i < cheat->size; i++)

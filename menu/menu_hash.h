@@ -315,6 +315,7 @@ extern "C" {
 #define MENU_LABEL_VIDEO_SHADER_PASS                                           0x4fa31028U
 #define MENU_LABEL_VIDEO_SHADER_PRESET                                         0xc5d3bae4U
 #define MENU_LABEL_CHEAT_FILE_LOAD                                             0x57336148U
+#define MENU_LABEL_VALUE_CHEAT_FILE_LOAD                                       0x5b983e0aU
 #define MENU_LABEL_REMAP_FILE_LOAD                                             0x9c2799b8U
 #define MENU_LABEL_VALUE_REMAP_FILE_LOAD                                       0xabdd415aU
 #define MENU_LABEL_MESSAGE                                                     0xbe463eeaU
@@ -422,6 +423,7 @@ extern "C" {
 #define MENU_LABEL_FILE_LOAD_OR_RESUME                                         0x952941f4U
 #define MENU_LABEL_DISK_IMAGE_APPEND                                           0x5af7d709U
 #define MENU_LABEL_CONFIGURATIONS                                              0x3e930a50U
+#define MENU_LABEL_VALUE_CHEAT_FILE_SAVE_AS                                    0xf2498a2dU
 #define MENU_LABEL_CHEAT_FILE_SAVE_AS                                          0x1f58dccaU
 #define MENU_LABEL_VALUE_REMAP_FILE_SAVE_AS                                    0x3ce7a81dU
 #define MENU_LABEL_REMAP_FILE_SAVE_AS                                          0xcebf7f3aU

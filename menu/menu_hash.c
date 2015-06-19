@@ -106,6 +106,14 @@ static const char *menu_hash_to_str_english(uint32_t hash)
          return "cursor_manager_list";
       case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST:
          return "deferred_cursor_manager_list";
+      case MENU_LABEL_VALUE_CHEAT_FILE_LOAD:
+         return "Cheat File Load";
+      case MENU_LABEL_CHEAT_FILE_LOAD:
+         return "cheat_file_load";
+      case MENU_LABEL_CHEAT_FILE_SAVE_AS:
+         return "cheat_file_save_as";
+      case MENU_LABEL_VALUE_CHEAT_FILE_SAVE_AS:
+         return "Cheat File Save As";
       case MENU_LABEL_DEFERRED_RDB_ENTRY_DETAIL:
          return "deferred_rdb_entry_detail";
       case MENU_LABEL_FRONTEND_COUNTERS:
