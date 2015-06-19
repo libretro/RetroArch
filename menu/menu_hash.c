@@ -257,18 +257,32 @@ static const char *menu_hash_to_str_english(uint32_t hash)
          return "rdb_entry_name";
       case MENU_LABEL_RDB_ENTRY_EDGE_MAGAZINE_RATING:
          return "rdb_entry_edge_magazine_rating";
+      case MENU_LABEL_RDB_ENTRY_FAMITSU_MAGAZINE_RATING:
+         return "rdb_entry_famitsu_magazine_rating";
       case MENU_LABEL_RDB_ENTRY_EDGE_MAGAZINE_ISSUE:
          return "rdb_entry_edge_magazine_issue";
       case MENU_LABEL_RDB_ENTRY_RELEASE_MONTH:
          return "rdb_entry_releasemonth";
       case MENU_LABEL_RDB_ENTRY_RELEASE_YEAR:
          return "rdb_entry_releaseyear";
+      case MENU_LABEL_RDB_ENTRY_ENHANCEMENT_HW:
+         return "rdb_entry_enhancement_hw";
       case MENU_LABEL_RDB_ENTRY_SHA1:
          return "rdb_entry_sha1";
       case MENU_LABEL_RDB_ENTRY_CRC32:
          return "rdb_entry_crc32";
       case MENU_LABEL_RDB_ENTRY_MD5:
          return "rdb_entry_md5";
+      case MENU_LABEL_RDB_ENTRY_BBFC_RATING:
+         return "rdb_entry_bbfc_rating";
+      case MENU_LABEL_RDB_ENTRY_ESRB_RATING:
+         return "rdb_entry_esrb_rating";
+      case MENU_LABEL_RDB_ENTRY_ELSPA_RATING:
+         return "rdb_entry_elspa_rating";
+      case MENU_LABEL_RDB_ENTRY_PEGI_RATING:
+         return "rdb_entry_pegi_rating";
+      case MENU_LABEL_RDB_ENTRY_CERO_RATING:
+         return "rdb_entry_cero_rating";
       case MENU_LABEL_CONFIGURATIONS:
          return "configurations";
       case MENU_LABEL_VALUE_CONFIGURATIONS:

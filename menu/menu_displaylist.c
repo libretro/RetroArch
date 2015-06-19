@@ -1024,7 +1024,8 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
       if (db_info_entry->famitsu_magazine_rating)
       {
          if (create_string_list_rdb_entry_int("Famitsu Magazine Rating",
-                  "rdb_entry_famitsu_magazine_rating", db_info_entry->famitsu_magazine_rating,
+                  menu_hash_to_str(MENU_LABEL_RDB_ENTRY_FAMITSU_MAGAZINE_RATING),
+                  db_info_entry->famitsu_magazine_rating,
                   info->path, info->list) == -1)
             goto error;
       }
@@ -1069,37 +1070,43 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
       }
       if (db_info_entry->bbfc_rating)
       {
-         if (create_string_list_rdb_entry_string("BBFC Rating", "rdb_entry_bbfc_rating",
+         if (create_string_list_rdb_entry_string("BBFC Rating",
+                  menu_hash_to_str(MENU_LABEL_RDB_ENTRY_BBFC_RATING),
                   db_info_entry->bbfc_rating, info->path, info->list) == -1)
             goto error;
       }
       if (db_info_entry->esrb_rating)
       {
-         if (create_string_list_rdb_entry_string("ESRB Rating", "rdb_entry_esrb_rating",
+         if (create_string_list_rdb_entry_string("ESRB Rating",
+                  menu_hash_to_str(MENU_LABEL_RDB_ENTRY_ESRB_RATING),
                   db_info_entry->esrb_rating, info->path, info->list) == -1)
             goto error;
       }
       if (db_info_entry->elspa_rating)
       {
-         if (create_string_list_rdb_entry_string("ELSPA Rating", "rdb_entry_elspa_rating",
+         if (create_string_list_rdb_entry_string("ELSPA Rating",
+                  menu_hash_to_str(MENU_LABEL_RDB_ENTRY_ELSPA_RATING),
                   db_info_entry->elspa_rating, info->path, info->list) == -1)
             goto error;
       }
       if (db_info_entry->pegi_rating)
       {
-         if (create_string_list_rdb_entry_string("PEGI Rating", "rdb_entry_pegi_rating",
+         if (create_string_list_rdb_entry_string("PEGI Rating",
+                  menu_hash_to_str(MENU_LABEL_RDB_ENTRY_PEGI_RATING),
                   db_info_entry->pegi_rating, info->path, info->list) == -1)
             goto error;
       }
       if (db_info_entry->enhancement_hw)
       {
-         if (create_string_list_rdb_entry_string("Enhancement Hardware", "rdb_entry_enhancement_hw",
+         if (create_string_list_rdb_entry_string("Enhancement Hardware",
+                  menu_hash_to_str(MENU_LABEL_RDB_ENTRY_ENHANCEMENT_HW),
                   db_info_entry->enhancement_hw, info->path, info->list) == -1)
             goto error;
       }
       if (db_info_entry->cero_rating)
       {
-         if (create_string_list_rdb_entry_string("CERO Rating", "rdb_entry_cero_rating",
+         if (create_string_list_rdb_entry_string("CERO Rating",
+                  menu_hash_to_str(MENU_LABEL_RDB_ENTRY_CERO_RATING),
                   db_info_entry->cero_rating, info->path, info->list) == -1)
             goto error;
       }
