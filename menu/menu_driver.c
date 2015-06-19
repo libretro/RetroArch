@@ -155,16 +155,10 @@ void init_menu(void)
 
    find_menu_driver();
    if (!(driver->menu = (menu_handle_t*)menu_init(driver->menu_ctx)))
-   {
-      RARCH_ERR("Cannot initialize menu.\n");
       rarch_fail(1, "init_menu()");
-   }
 
    if (!(menu_displaylist_init(driver->menu)))
-   {
-      RARCH_ERR("Cannot initialize menu display list.\n");
       rarch_fail(1, "init_menu()");
-   }
 }
 
 menu_handle_t *menu_driver_get_ptr(void)
@@ -249,10 +243,7 @@ void  menu_driver_list_insert(file_list_t *list, const char *path,
       calloc(1, sizeof(menu_file_list_cbs_t));
 
    if (!cbs)
-   {
-      RARCH_ERR("Action data could not be allocated.\n");
       return;
-   }
 
    file_list_set_actiondata(list, idx, cbs);
    menu_cbs_init(list, path, label, type, idx);
