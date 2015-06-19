@@ -840,7 +840,7 @@ static int create_string_list_rdb_entry_int(const char *desc, const char *label,
 
    string_list_join_concat(output_label, str_len, str_list, "|");
 
-   snprintf(tmp, sizeof(tmp), "%s: %d", desc, actual_int);
+   snprintf(tmp, sizeof(tmp), "%s : %d", desc, actual_int);
    menu_list_push(list, tmp, output_label,
          0, 0, 0);
 
