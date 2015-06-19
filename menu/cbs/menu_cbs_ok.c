@@ -931,7 +931,7 @@ static int action_ok_rdb_entry(const char *path,
    if (!menu_list)
       return -1;
 
-   strlcpy(tmp, "deferred_rdb_entry_detail", sizeof(tmp));
+   strlcpy(tmp, menu_hash_to_str(MENU_LABEL_DEFERRED_RDB_ENTRY_DETAIL), sizeof(tmp));
    strlcat(tmp, "|",  sizeof(tmp));
    strlcat(tmp, path, sizeof(tmp));
 

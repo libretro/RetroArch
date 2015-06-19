@@ -388,7 +388,9 @@ static void menu_action_setting_disp_set_label_cheat(
       snprintf(s, len, "%s : (%s)",
             (global->cheat->cheats[cheat_index].code != NULL)
             ? global->cheat->cheats[cheat_index].code : "N/A",
-            global->cheat->cheats[cheat_index].state ? "ON" : "OFF"
+            global->cheat->cheats[cheat_index].state ? 
+            menu_hash_to_str(MENU_VALUE_ON) :
+            menu_hash_to_str(MENU_VALUE_OFF)
             );
    *w = 19;
    strlcpy(s2, path, len2);
