@@ -4319,8 +4319,8 @@ static bool setting_append_list_rewind_options(
 #endif
       CONFIG_UINT(
             settings->rewind_granularity,
-            "rewind_granularity",
-            "Rewind Granularity",
+            menu_hash_to_str(MENU_LABEL_REWIND_GRANULARITY),
+            menu_hash_to_str(MENU_LABEL_VALUE_REWIND_GRANULARITY),
             rewind_granularity,
             group_info.name,
             subgroup_info.name,

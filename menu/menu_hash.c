@@ -58,6 +58,10 @@ static const char *menu_hash_to_str_english(uint32_t hash)
 {
    switch (hash)
    {
+      case MENU_LABEL_REWIND_GRANULARITY:
+         return "rewind_granularity";
+      case MENU_LABEL_VALUE_REWIND_GRANULARITY:
+         return "Rewind Granularity";
       case MENU_LABEL_REMAP_FILE_LOAD:
          return "remap_file_load";
       case MENU_LABEL_VALUE_REMAP_FILE_LOAD:
