@@ -815,11 +815,9 @@ static int action_ok_remap_file_save_core(const char *path,
 {
    char directory[PATH_MAX_LENGTH]   = {0};
    char file[PATH_MAX_LENGTH]        = {0};
-   const char *core_name             = NULL;
    global_t *global                  = global_get_ptr();
    settings_t *settings              = config_get_ptr();
-
-   core_name = global->system.info.library_name;
+   const char *core_name             = global ? global->system.info.library_name : NULL;
 
    fill_pathname_join(directory,settings->input_remapping_directory,core_name,PATH_MAX_LENGTH);
    fill_pathname_join(file,core_name,core_name,PATH_MAX_LENGTH);
@@ -838,15 +836,12 @@ static int action_ok_remap_file_save_core(const char *path,
 static int action_ok_remap_file_save_game(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   const char *core_name           = NULL;
-   const char *game_name           = NULL;
    char directory[PATH_MAX_LENGTH] = {0};
    char file[PATH_MAX_LENGTH]      = {0};
    global_t *global                = global_get_ptr();
    settings_t *settings            = config_get_ptr();
-
-   core_name = global->system.info.library_name;
-   game_name = path_basename(global->basename);
+   const char *core_name           = global ? global->system.info.library_name : NULL;
+   const char *game_name           = global ? path_basename(global->basename)  : NULL;
 
    fill_pathname_join(directory,settings->input_remapping_directory,core_name,PATH_MAX_LENGTH);
    fill_pathname_join(file,core_name,game_name,PATH_MAX_LENGTH);
