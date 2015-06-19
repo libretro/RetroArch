@@ -1008,7 +1008,8 @@ static int action_ok_compressed_archive_push(const char *path,
    info.list          = menu_list->menu_stack;
    info.directory_ptr = idx;
    strlcpy(info.path, path, sizeof(info.path));
-   strlcpy(info.label, "load_open_zip", sizeof(info.label));
+   strlcpy(info.label,
+         menu_hash_to_str(MENU_LABEL_LOAD_OPEN_ZIP), sizeof(info.label));
 
    return menu_displaylist_push_list(&info, DISPLAYLIST_INFO);
 }

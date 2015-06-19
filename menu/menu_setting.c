@@ -3711,8 +3711,8 @@ static bool setting_append_list_main_menu_options(
 #endif
 
    CONFIG_ACTION(
-         "configurations",
-         "Configuration Files",
+         menu_hash_to_str(MENU_LABEL_CONFIGURATIONS),
+         menu_hash_to_str(MENU_LABEL_VALUE_CONFIGURATIONS),
          group_info.name,
          subgroup_info.name,
          parent_group);

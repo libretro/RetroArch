@@ -58,6 +58,12 @@ static const char *menu_hash_to_str_english(uint32_t hash)
 {
    switch (hash)
    {
+      case MENU_LABEL_CONFIGURATIONS:
+         return "configurations";
+      case MENU_LABEL_VALUE_CONFIGURATIONS:
+         return "Configuration Files";
+      case MENU_LABEL_LOAD_OPEN_ZIP:
+         return "load_open_zip";
       case MENU_LABEL_REWIND_GRANULARITY:
          return "rewind_granularity";
       case MENU_LABEL_VALUE_REWIND_GRANULARITY:
