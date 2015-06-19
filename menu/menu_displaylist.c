@@ -1520,12 +1520,12 @@ static int menu_displaylist_parse_options_cheats(menu_displaylist_info_t *info)
          menu_hash_to_str(MENU_LABEL_CHEAT_FILE_SAVE_AS),
          MENU_SETTING_ACTION, 0, 0);
    menu_list_push(info->list,
-         "Cheat Passes",
-         "cheat_num_passes",
+         menu_hash_to_str(MENU_LABEL_VALUE_CHEAT_NUM_PASSES),
+         menu_hash_to_str(MENU_LABEL_CHEAT_NUM_PASSES),
          0, 0, 0);
    menu_list_push(info->list,
-         "Apply Cheat Changes",
-         "cheat_apply_changes",
+         menu_hash_to_str(MENU_LABEL_VALUE_CHEAT_APPLY_CHANGES),
+         menu_hash_to_str(MENU_LABEL_CHEAT_APPLY_CHANGES),
          MENU_SETTING_ACTION, 0, 0);
 
    for (i = 0; i < cheat->size; i++)
@@ -1568,10 +1568,14 @@ static int menu_displaylist_parse_options_remappings(menu_displaylist_info_t *in
          menu_hash_to_str(MENU_LABEL_VALUE_REMAP_FILE_SAVE_AS),
          menu_hash_to_str(MENU_LABEL_REMAP_FILE_SAVE_AS),
          MENU_SETTING_ACTION, 0, 0);
-   menu_list_push(info->list, "Save Core Remap File",
-         "remap_file_save_core", MENU_SETTING_ACTION, 0, 0);
-   menu_list_push(info->list, "Save Game Remap File",
-         "remap_file_save_game", MENU_SETTING_ACTION, 0, 0);
+   menu_list_push(info->list,
+         menu_hash_to_str(MENU_LABEL_VALUE_REMAP_FILE_SAVE_CORE),
+         menu_hash_to_str(MENU_LABEL_REMAP_FILE_SAVE_CORE),
+         MENU_SETTING_ACTION, 0, 0);
+   menu_list_push(info->list,
+         menu_hash_to_str(MENU_LABEL_VALUE_REMAP_FILE_SAVE_GAME),
+         menu_hash_to_str(MENU_LABEL_REMAP_FILE_SAVE_GAME),
+         MENU_SETTING_ACTION, 0, 0);
 
    for (p = 0; p < settings->input.max_users; p++)
    {

@@ -220,6 +220,7 @@ extern "C" {
 #define MENU_LABEL_VIDEO_SHADER_SCALE_PASS                                     0x18f7b82fU
 #define MENU_LABEL_VALUE_VIDEO_SHADER_NUM_PASSES                               0xb354b30bU
 #define MENU_LABEL_VIDEO_SHADER_NUM_PASSES                                     0x79b2992fU
+#define MENU_LABEL_VALUE_CHEAT_NUM_PASSES                                      0x8024fa39U
 #define MENU_LABEL_CHEAT_NUM_PASSES                                            0x1910eb87U
 
 #define MENU_VALUE_NO_DISK                                                     0x7d54e5cdU
@@ -428,6 +429,7 @@ extern "C" {
 #define MENU_LABEL_SAVE_NEW_CONFIG                                             0xcce9ab72U
 #define MENU_LABEL_VALUE_SAVE_NEW_CONFIG                                       0xd49f2c94U
 #define MENU_LABEL_ONSCREEN_DISPLAY_SETTINGS                                   0x67571029U
+#define MENU_LABEL_VALUE_CHEAT_APPLY_CHANGES                                   0x7d5d3489U
 #define MENU_LABEL_CHEAT_APPLY_CHANGES                                         0xde88aa27U
 #define MENU_LABEL_CUSTOM_BIND                                                 0x1e84b3fcU
 #define MENU_LABEL_CUSTOM_BIND_ALL                                             0x79ac14f4U
@@ -451,6 +453,8 @@ extern "C" {
 #define MENU_LABEL_REMAP_FILE_SAVE_AS                                          0xcebf7f3aU
 #define MENU_LABEL_VIDEO_SHADER_PRESET_SAVE_AS                                 0x3d6e5ce5U
 #define MENU_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_AS                           0x405d77b2U
+#define MENU_LABEL_VALUE_REMAP_FILE_SAVE_CORE                                  0xd9891572U
+#define MENU_LABEL_VALUE_REMAP_FILE_SAVE_GAME                                  0x9c487623U
 #define MENU_LABEL_REMAP_FILE_SAVE_CORE                                        0x7c9d4c8fU
 #define MENU_LABEL_REMAP_FILE_SAVE_GAME                                        0x7c9f41e0U
 #define MENU_LABEL_CONTENT_COLLECTION_LIST                                     0x0f8a9086U

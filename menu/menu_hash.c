@@ -193,6 +193,22 @@ static const char *menu_hash_to_str_english(uint32_t hash)
 {
    switch (hash)
    {
+      case MENU_LABEL_VALUE_CHEAT_NUM_PASSES:
+         return "Cheat Passes";
+      case MENU_LABEL_CHEAT_APPLY_CHANGES:
+         return "cheat_apply_changes";
+      case MENU_LABEL_VALUE_REMAP_FILE_SAVE_CORE:
+         return "Save Core Remap File";
+      case MENU_LABEL_REMAP_FILE_SAVE_CORE:
+         return "remap_file_save_core";
+      case MENU_LABEL_VALUE_REMAP_FILE_SAVE_GAME:
+         return "Save Game Remap File";
+      case MENU_LABEL_REMAP_FILE_SAVE_GAME:
+         return "remap_file_save_game";
+      case MENU_LABEL_VALUE_CHEAT_APPLY_CHANGES:
+         return "Apply Cheat Changes";
+      case MENU_LABEL_CHEAT_NUM_PASSES:
+         return "cheat_num_passes";
       case MENU_LABEL_VALUE_SHADER_APPLY_CHANGES:
          return "Apply Shader Changes";
       case MENU_LABEL_SHADER_APPLY_CHANGES:
