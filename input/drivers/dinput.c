@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2015 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -211,7 +211,7 @@ static void dinput_poll(void *data)
       di->mouse_r  = mouse_state.rgbButtons[1];
       di->mouse_m  = mouse_state.rgbButtons[2];
 
-      /* No simple way to get absolute coordinates 
+      /* No simple way to get absolute coordinates
        * for RETRO_DEVICE_POINTER. Just use Win32 APIs. */
       POINT point = {0};
       GetCursorPos(&point);
@@ -243,7 +243,7 @@ static bool dinput_is_pressed(struct dinput_input *di,
    if (id >= RARCH_BIND_LIST_END)
       return false;
 
-   return dinput_keyboard_pressed(di, bind->key) || 
+   return (!di->blocked && dinput_keyboard_pressed(di, bind->key)) || 
       input_joypad_pressed(di->joypad, port, binds, id);
 }
 
@@ -293,9 +293,9 @@ static int16_t dinput_lightgun_state(struct dinput_input *di, unsigned id)
       case RETRO_DEVICE_ID_LIGHTGUN_TURBO:
          return di->mouse_r;
       case RETRO_DEVICE_ID_LIGHTGUN_START:
-         return di->mouse_m && di->mouse_r; 
+         return di->mouse_m && di->mouse_r;
       case RETRO_DEVICE_ID_LIGHTGUN_PAUSE:
-         return di->mouse_m && di->mouse_l; 
+         return di->mouse_m && di->mouse_l;
    }
 
    return 0;
@@ -535,11 +535,11 @@ bool dinput_handle_message(void *dinput, UINT message, WPARAM wParam, LPARAM lPa
 {
    struct dinput_input *di = (struct dinput_input *)dinput;
    settings_t *settings    = config_get_ptr();
-   /* WM_POINTERDOWN   : Arrives for each new touch event 
+   /* WM_POINTERDOWN   : Arrives for each new touch event
     *                    with a new ID - add to list.
-    * WM_POINTERUP     : Arrives once the pointer is no 
+    * WM_POINTERUP     : Arrives once the pointer is no
     *                    longer down - remove from list.
-    * WM_POINTERUPDATE : arrives for both pressed and 
+    * WM_POINTERUPDATE : arrives for both pressed and
     *                    hovering pointers - ignore hovering
    */
 
@@ -547,7 +547,7 @@ bool dinput_handle_message(void *dinput, UINT message, WPARAM wParam, LPARAM lPa
    {
       case WM_POINTERDOWN:
       {
-         struct pointer_status *new_pointer = 
+         struct pointer_status *new_pointer =
             (struct pointer_status *)malloc(sizeof(struct pointer_status));
 
          if (!new_pointer)

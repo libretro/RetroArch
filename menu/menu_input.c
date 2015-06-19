@@ -555,7 +555,7 @@ int menu_input_bind_iterate(void)
         menu_input->binds.begin - MENU_SETTINGS_BIND_BEGIN].desc);
 
    menu_driver_render_messagebox(msg);
-   
+
    if (bind_mode_kb)
       return menu_input_bind_iterate_keyboard(current, timeout);
 
@@ -658,7 +658,7 @@ static int menu_input_mouse(unsigned *action)
    menu_input->mouse.scrolldown = (menu_input->mouse.y == (int)frame_buf->height - 5);
 
    if (
-         (menu_input->mouse.dx != 0)     || 
+         (menu_input->mouse.dx != 0)     ||
          (menu_input->mouse.dy !=0)      ||
          menu_input->mouse.left          ||
          menu_input->mouse.wheelup       ||
@@ -1017,8 +1017,15 @@ unsigned menu_input_frame(retro_input_t input, retro_input_t trigger_input)
 
    menu_input->delay.count += disp->animation->delta_time / IDEAL_DT;
 
-   if (input_driver_keyboard_mapping_is_blocked())
+   if (menu_input->keyboard.display)
+   {
+      // send return key to close keyboard input window
+      if (trigger_input & (1ULL << settings->menu_cancel_btn))
+         input_keyboard_event(true, '\n', '\n', 0, RETRO_DEVICE_KEYBOARD);
+
       trigger_input = 0;
+   }
+
    if (trigger_input & (1ULL << RETRO_DEVICE_ID_JOYPAD_UP))
       ret = MENU_ACTION_UP;
    else if (trigger_input & (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN))
