@@ -212,8 +212,11 @@ extern "C" {
 #define MENU_LABEL_RDB_ENTRY_RELEASE_YEAR                                      0x14c9c6bfU
 #define MENU_LABEL_RDB_ENTRY_MAX_USERS                                         0xfae91cc4U
 #define MENU_LABEL_RDB_ENTRY_SHA1                                              0xc6cfd31aU
+#define MENU_LABEL_VALUE_RDB_ENTRY_SHA1                                        0x2d142625U
+#define MENU_LABEL_VALUE_RDB_ENTRY_MD5                                         0xf1ecb7deU
 #define MENU_LABEL_RDB_ENTRY_MD5                                               0xdf3c7f93U
 #define MENU_LABEL_RDB_ENTRY_CRC32                                             0x9fae330aU
+#define MENU_LABEL_VALUE_RDB_ENTRY_CRC32                                       0xc326ab15U
 
 #define MENU_LABEL_VIDEO_SHADER_DEFAULT_FILTER                                 0x4468cb1bU
 #define MENU_LABEL_VIDEO_SHADER_FILTER_PASS                                    0x1906c38dU

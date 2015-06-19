@@ -1142,7 +1142,8 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
 
       if (db_info_entry->crc32)
       {
-         if (create_string_list_rdb_entry_string("CRC32 Checksum",
+         if (create_string_list_rdb_entry_string(
+                  menu_hash_to_str(MENU_LABEL_VALUE_RDB_ENTRY_CRC32),
                   menu_hash_to_str(MENU_LABEL_RDB_ENTRY_CRC32),
                   crc_str,
                   info->path, info->list) == -1)
@@ -1151,7 +1152,8 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
 
       if (db_info_entry->sha1)
       {
-         if (create_string_list_rdb_entry_string("SHA1 Checksum",
+         if (create_string_list_rdb_entry_string(
+                  menu_hash_to_str(MENU_LABEL_VALUE_RDB_ENTRY_SHA1),
                   menu_hash_to_str(MENU_LABEL_RDB_ENTRY_SHA1),
                   db_info_entry->sha1,
                   info->path, info->list) == -1)
@@ -1160,7 +1162,8 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
 
       if (db_info_entry->md5)
       {
-         if (create_string_list_rdb_entry_string("MD5 Checksum",
+         if (create_string_list_rdb_entry_string(
+                  menu_hash_to_str(MENU_LABEL_VALUE_RDB_ENTRY_MD5),
                   menu_hash_to_str(MENU_LABEL_RDB_ENTRY_MD5),
                   db_info_entry->md5,
                   info->path, info->list) == -1)
