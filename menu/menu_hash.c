@@ -193,6 +193,10 @@ static const char *menu_hash_to_str_english(uint32_t hash)
 {
    switch (hash)
    {
+      case MENU_LABEL_VALUE_SHADER_APPLY_CHANGES:
+         return "Apply Shader Changes";
+      case MENU_LABEL_SHADER_APPLY_CHANGES:
+         return "shader_apply_changes";
       case MENU_LABEL_COLLECTION:
          return "collection";
       case MENU_LABEL_REWIND_ENABLE:
@@ -241,6 +245,8 @@ static const char *menu_hash_to_str_english(uint32_t hash)
          return "video_shader_filter_pass";
       case MENU_LABEL_VIDEO_SHADER_SCALE_PASS:
          return "video_shader_scale_pass";
+      case MENU_LABEL_VALUE_VIDEO_SHADER_NUM_PASSES:
+         return "Shader Passes";
       case MENU_LABEL_VIDEO_SHADER_NUM_PASSES:
          return "video_shader_num_passes";
       case MENU_LABEL_RDB_ENTRY_DESCRIPTION:
@@ -521,8 +527,20 @@ static const char *menu_hash_to_str_english(uint32_t hash)
          return "Shader Options";
       case MENU_LABEL_SHADER_OPTIONS:
          return "shader_options";
+      case MENU_LABEL_VIDEO_SHADER_PARAMETERS:
+         return "video_shader_parameters";
+      case MENU_LABEL_VIDEO_SHADER_PRESET_PARAMETERS:
+         return "video_shader_preset_parameters";
+      case MENU_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_AS:
+         return "Shader Preset Save As";
+      case MENU_LABEL_VIDEO_SHADER_PRESET_SAVE_AS:
+         return "video_shader_preset_save_as";
       case MENU_LABEL_VALUE_NO_SHADER_PARAMETERS:
          return "No shader parameters.";
+      case MENU_LABEL_VIDEO_SHADER_PRESET:
+         return "video_shader_preset";
+      case MENU_LABEL_VALUE_VIDEO_SHADER_PRESET:
+         return "Load Shader Preset";
       case MENU_LABEL_VIDEO_FILTER:
          return "video_filter";
       case MENU_LABEL_VALUE_VIDEO_FILTER:

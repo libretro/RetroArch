@@ -720,18 +720,28 @@ static int menu_displaylist_parse_shader_options(menu_displaylist_info_t *info)
    if (!shader)
       return -1;
 
-   menu_list_push(info->list, "Apply Shader Changes", "shader_apply_changes",
+   menu_list_push(info->list,
+         menu_hash_to_str(MENU_LABEL_VALUE_SHADER_APPLY_CHANGES),
+         menu_hash_to_str(MENU_LABEL_SHADER_APPLY_CHANGES),
          MENU_SETTING_ACTION, 0, 0);
-   menu_list_push(info->list, "Load Shader Preset", "video_shader_preset",
+   menu_list_push(info->list,
+         menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_SHADER_PRESET),
+         menu_hash_to_str(MENU_LABEL_VIDEO_SHADER_PRESET),
          MENU_FILE_PATH, 0, 0);
-   menu_list_push(info->list, "Shader Preset Save As",
-         "video_shader_preset_save_as", MENU_SETTING_ACTION, 0, 0);
-   menu_list_push(info->list, "Parameters (Current)",
-         "video_shader_parameters", MENU_SETTING_ACTION, 0, 0);
-   menu_list_push(info->list, "Parameters (Menu)",
-         "video_shader_preset_parameters",
+   menu_list_push(info->list,
+         menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_AS),
+         menu_hash_to_str(MENU_LABEL_VIDEO_SHADER_PRESET_SAVE_AS),
          MENU_SETTING_ACTION, 0, 0);
-   menu_list_push(info->list, "Shader Passes",
+   menu_list_push(info->list,
+         "Current Shader Parameters",
+         menu_hash_to_str(MENU_LABEL_VIDEO_SHADER_PARAMETERS),
+         MENU_SETTING_ACTION, 0, 0);
+   menu_list_push(info->list,
+         "Menu Shader Parameters (Menu)",
+         menu_hash_to_str(MENU_LABEL_VIDEO_SHADER_PRESET_PARAMETERS),
+         MENU_SETTING_ACTION, 0, 0);
+   menu_list_push(info->list,
+         menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_SHADER_NUM_PASSES),
          menu_hash_to_str(MENU_LABEL_VIDEO_SHADER_NUM_PASSES),
          0, 0, 0);
 

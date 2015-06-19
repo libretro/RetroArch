@@ -218,6 +218,7 @@ extern "C" {
 #define MENU_LABEL_VIDEO_SHADER_DEFAULT_FILTER                                 0x4468cb1bU
 #define MENU_LABEL_VIDEO_SHADER_FILTER_PASS                                    0x1906c38dU
 #define MENU_LABEL_VIDEO_SHADER_SCALE_PASS                                     0x18f7b82fU
+#define MENU_LABEL_VALUE_VIDEO_SHADER_NUM_PASSES                               0xb354b30bU
 #define MENU_LABEL_VIDEO_SHADER_NUM_PASSES                                     0x79b2992fU
 #define MENU_LABEL_CHEAT_NUM_PASSES                                            0x1910eb87U
 
@@ -331,6 +332,7 @@ extern "C" {
 #define MENU_LABEL_DATABASE_MANAGER_LIST                                       0x7f853d8fU
 #define MENU_LABEL_CURSOR_MANAGER_LIST                                         0xa969e378U
 #define MENU_LABEL_VIDEO_SHADER_PASS                                           0x4fa31028U
+#define MENU_LABEL_VALUE_VIDEO_SHADER_PRESET                                   0xd149336fU
 #define MENU_LABEL_VIDEO_SHADER_PRESET                                         0xc5d3bae4U
 #define MENU_LABEL_CHEAT_FILE_LOAD                                             0x57336148U
 #define MENU_LABEL_VALUE_CHEAT_FILE_LOAD                                       0x5b983e0aU
@@ -422,6 +424,7 @@ extern "C" {
 #define MENU_LABEL_DIRECTORY_SETTINGS                                          0xb817bd2bU
 #define MENU_LABEL_PRIVACY_SETTINGS                                            0xce106254U
 #define MENU_LABEL_SHADER_APPLY_CHANGES                                        0x4f7306b9U
+#define MENU_LABEL_VALUE_SHADER_APPLY_CHANGES                                  0x5ecf945bU
 #define MENU_LABEL_SAVE_NEW_CONFIG                                             0xcce9ab72U
 #define MENU_LABEL_VALUE_SAVE_NEW_CONFIG                                       0xd49f2c94U
 #define MENU_LABEL_ONSCREEN_DISPLAY_SETTINGS                                   0x67571029U
@@ -447,6 +450,7 @@ extern "C" {
 #define MENU_LABEL_VALUE_REMAP_FILE_SAVE_AS                                    0x3ce7a81dU
 #define MENU_LABEL_REMAP_FILE_SAVE_AS                                          0xcebf7f3aU
 #define MENU_LABEL_VIDEO_SHADER_PRESET_SAVE_AS                                 0x3d6e5ce5U
+#define MENU_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_AS                           0x405d77b2U
 #define MENU_LABEL_REMAP_FILE_SAVE_CORE                                        0x7c9d4c8fU
 #define MENU_LABEL_REMAP_FILE_SAVE_GAME                                        0x7c9f41e0U
 #define MENU_LABEL_CONTENT_COLLECTION_LIST                                     0x0f8a9086U
