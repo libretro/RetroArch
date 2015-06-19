@@ -205,7 +205,9 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
             global->core_info, core_info->path,
             settings->system_directory);
 
-      menu_list_push(info->list, "Firmware: ", "",
+      strlcpy(tmp, "Firmware", sizeof(tmp));
+      strlcat(tmp, ": ", sizeof(tmp));
+      menu_list_push(info->list, tmp, "",
             MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
       for (i = 0; i < core_info->firmware_count; i++)
       {
@@ -305,13 +307,15 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
       if (frontend->get_os)
       {
          frontend->get_os(tmp2, sizeof(tmp2), &major, &minor);
-         snprintf(tmp, sizeof(tmp), "Frontend OS: %s %d.%d",
+         snprintf(tmp, sizeof(tmp), "%s : %s %d.%d",
+               "Frontend OS",
                frontend->get_os ? tmp2 : "N/A", major, minor);
          menu_list_push(info->list, tmp, "",
                MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
       }
 
-      snprintf(tmp, sizeof(tmp), "RetroRating level: %d",
+      snprintf(tmp, sizeof(tmp), "%s : %d",
+            "RetroRating level",
             frontend->get_rating ? frontend->get_rating() : -1);
       menu_list_push(info->list, tmp, "",
             MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
@@ -366,8 +370,8 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
       float val = 0.0f;
       if (gfx_ctx_get_metrics(DISPLAY_METRIC_MM_WIDTH, &val))
       {
-         snprintf(tmp, sizeof(tmp), "Display metric width (mm): %.2f",
-               val);
+         snprintf(tmp, sizeof(tmp), "%s : %.2f",
+               "Display metric width (mm)", val);
          menu_list_push(info->list, tmp, "",
                MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
       }
@@ -402,13 +406,15 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
    menu_list_push(info->list, feat_str, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
-   snprintf(feat_str, sizeof(feat_str),
-         "Command interface support: %s", _command_supp ? "true" : "false");
+   strlcpy(feat_str, "Command interface support", sizeof(feat_str));
+   strlcat(feat_str, _command_supp ? "true" : "false", sizeof(feat_str));
    menu_list_push(info->list, feat_str, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    snprintf(feat_str, sizeof(feat_str),
-         "Network Command interface support: %s", _network_command_supp ? "true" : "false");
+         "%s : %s",
+         "Network Command interface support",
+         _network_command_supp ? "true" : "false");
    menu_list_push(info->list, feat_str, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
@@ -664,8 +670,9 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
 
          fill_short_pathname_representation(path_short, path,
                sizeof(path_short));
-         snprintf(fill_buf,sizeof(fill_buf),"%s",
-               (label && label[0] != '\0') ? label : path_short);
+         strlcpy(fill_buf, 
+               (label && label[0] != '\0') ? label : path_short,
+               sizeof(fill_buf));
 
          if (core_name && core_name[0] != '\0')
          {
@@ -785,7 +792,9 @@ static int create_string_list_rdb_entry_string(const char *desc, const char *lab
 
    string_list_join_concat(output_label, str_len, str_list, "|");
 
-   snprintf(tmp, sizeof(tmp), "%s: %s", desc, actual_string);
+   strlcpy(tmp, desc, sizeof(tmp));
+   strlcat(tmp, ": ", sizeof(tmp));
+   strlcat(tmp, actual_string, sizeof(tmp));
    menu_list_push(list, tmp, output_label, 0, 0, 0);
 
    if (output_label)
@@ -1095,14 +1104,16 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
             goto error;
       }
       snprintf(tmp, sizeof(tmp),
-            "Analog supported: %s",
+            "%s : %s",
+            "Analog supported",
             (db_info_entry->analog_supported == 1)  ? "true" :
             (db_info_entry->analog_supported == -1) ? "N/A"  : "false");
       menu_list_push(info->list, tmp,
             "rdb_entry_analog",
             0, 0, 0);
       snprintf(tmp, sizeof(tmp),
-            "Rumble supported: %s",
+            "%s : %s",
+            "Rumble supported",
             (db_info_entry->rumble_supported == 1)  ? "true" :
             (db_info_entry->rumble_supported == -1) ? "N/A"  :  "false");
       menu_list_push(info->list, tmp,
