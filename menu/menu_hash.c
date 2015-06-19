@@ -193,6 +193,8 @@ static const char *menu_hash_to_str_english(uint32_t hash)
 {
    switch (hash)
    {
+      case MENU_LABEL_REWIND_ENABLE:
+         return "rewind_enable";
       case MENU_LABEL_CONTENT_COLLECTION_LIST:
          return "content_collection_list";
       case MENU_LABEL_VALUE_CONTENT_COLLECTION_LIST:

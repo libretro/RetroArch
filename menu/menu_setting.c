@@ -4293,8 +4293,8 @@ static bool setting_append_list_rewind_options(
 
    CONFIG_BOOL(
          settings->rewind_enable,
-         "rewind_enable",
-         "Rewind",
+         menu_hash_to_str(MENU_LABEL_REWIND_ENABLE),
+         menu_hash_to_str(MENU_LABEL_VALUE_REWIND_ENABLE),
          rewind_enable,
          menu_hash_to_str(MENU_VALUE_OFF),
          menu_hash_to_str(MENU_VALUE_ON),
