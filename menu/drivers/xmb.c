@@ -107,6 +107,7 @@ typedef struct xmb_handle
    float x;
    float alpha;
    GLuint boxart;
+   float boxart_size;
 
    struct
    {
@@ -433,7 +434,12 @@ static void xmb_draw_boxart(gl_t *gl, xmb_handle_t *xmb)
       1.0f, 1.0f, 1.0f, xmb->alpha,
    };
 
-   glViewport(width - 256, 0, 256, 256);
+   float y = xmb->margins.screen.top + xmb->icon.size + xmb->boxart_size;
+
+   float x = xmb->margins.screen.left + xmb->icon.spacing.horizontal +
+         xmb->icon.spacing.horizontal*4 - xmb->icon.size / 4;
+
+   glViewport(x, height - y, xmb->boxart_size, xmb->boxart_size);
 
    coords.vertices      = 4;
    coords.vertex        = rmb_vertex;
@@ -1613,22 +1619,11 @@ static void *xmb_init(void)
    frame_buf->width  = width;
    frame_buf->height = height;
 
-   if (width >= 3840)
-      scale_factor              = 2.0;
-   else if (width >= 2560)
-      scale_factor              = 1.5;
-   else if (width >= 1920)
-      scale_factor              = 1.0;
-   else if (width >= 1280)
-      scale_factor              = 0.75;
-   else if (width >=  640)
-      scale_factor              = 0.5;
-   else if (width >=  320)
-      scale_factor              = 0.25;
+   scale_factor = width / 1920.0;
 
    strlcpy(xmb->icon.dir, "png", sizeof(xmb->icon.dir));
 
-   xmb->icon.size               = 128.0 * scale_factor;
+   xmb->boxart_size             = 460.0 * scale_factor;
    xmb->cursor.size             = 48.0;
    menu->display.font.size      = 32.0 * scale_factor;
    xmb->icon.spacing.horizontal = 200.0 * scale_factor;
@@ -1641,11 +1636,30 @@ static void *xmb_init(void)
    xmb->margins.label.left      = 85.0 * scale_factor;
    xmb->margins.label.top       = menu->display.font.size / 3.0;
    xmb->margins.setting.left    = 600.0 * scale_factor;
+   menu->display.header_height  = 128.0 * scale_factor;
 
-   menu->display.header_height  = xmb->icon.size;
+   if (width >= 3840)
+      scale_factor              = 2.0;
+   else if (width >= 2560)
+      scale_factor              = 1.5;
+   else if (width >= 1920)
+      scale_factor              = 1.0;
+   else if (width >= 1440)
+      scale_factor              = 0.75;
+   else if (width >=  960)
+      scale_factor              = 0.5;
+   else if (width >=  640)
+      scale_factor              = 0.375;
+   else if (width >=  480)
+      scale_factor              = 0.25;
+   else if (width >=  320)
+      scale_factor              = 0.1875;
+   else if (width >=  240)
+      scale_factor              = 0.125;
+
+   xmb->icon.size               = 128.0 * scale_factor;
 
    xmb_init_horizontal_list(menu, xmb);
-
 
    return menu;
 
