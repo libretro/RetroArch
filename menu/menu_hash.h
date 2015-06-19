@@ -182,6 +182,8 @@ extern "C" {
 #define MENU_LABEL_VALUE_NO_PLAYLIST_ENTRIES_AVAILABLE                         0xea82695dU
 #define MENU_LABEL_VALUE_RDB_ENTRY_START_CONTENT                               0x2cf73cceU
 #define MENU_LABEL_RDB_ENTRY_START_CONTENT                                     0x95025a55U
+#define MENU_LABEL_RDB_ENTRY_DESCRIPTION                                       0x26aa1f71U
+#define MENU_LABEL_RDB_ENTRY_NAME                                              0xc6ccf92eU
 #define MENU_LABEL_RDB_ENTRY_PUBLISHER                                         0x4d7bcdfbU
 #define MENU_LABEL_RDB_ENTRY_DEVELOPER                                         0x06f61093U
 #define MENU_LABEL_RDB_ENTRY_ORIGIN                                            0xb176aad5U
@@ -198,6 +200,9 @@ extern "C" {
 #define MENU_LABEL_RDB_ENTRY_RELEASE_MONTH                                     0xad2f2c54U
 #define MENU_LABEL_RDB_ENTRY_RELEASE_YEAR                                      0x14c9c6bfU
 #define MENU_LABEL_RDB_ENTRY_MAX_USERS                                         0xfae91cc4U
+#define MENU_LABEL_RDB_ENTRY_SHA1                                              0xc6cfd31aU
+#define MENU_LABEL_RDB_ENTRY_MD5                                               0xdf3c7f93U
+#define MENU_LABEL_RDB_ENTRY_CRC32                                             0x9fae330aU
 
 #define MENU_LABEL_VIDEO_SHADER_DEFAULT_FILTER                                 0x4468cb1bU
 #define MENU_LABEL_VIDEO_SHADER_FILTER_PASS                                    0x1906c38dU

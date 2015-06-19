@@ -182,6 +182,8 @@ static const char *menu_hash_to_str_english(uint32_t hash)
 {
    switch (hash)
    {
+      case MENU_LABEL_RDB_ENTRY_DESCRIPTION:
+         return "rdb_entry_description";
       case MENU_LABEL_RDB_ENTRY_ORIGIN:
          return "rdb_entry_origin";
       case MENU_LABEL_RDB_ENTRY_PUBLISHER:
@@ -192,6 +194,8 @@ static const char *menu_hash_to_str_english(uint32_t hash)
          return "rdb_entry_franchise";
       case MENU_LABEL_RDB_ENTRY_MAX_USERS:
          return "rdb_entry_max_users";
+      case MENU_LABEL_RDB_ENTRY_NAME:
+         return "rdb_entry_name";
       case MENU_LABEL_RDB_ENTRY_EDGE_MAGAZINE_RATING:
          return "rdb_entry_edge_magazine_rating";
       case MENU_LABEL_RDB_ENTRY_EDGE_MAGAZINE_ISSUE:
@@ -200,6 +204,12 @@ static const char *menu_hash_to_str_english(uint32_t hash)
          return "rdb_entry_releasemonth";
       case MENU_LABEL_RDB_ENTRY_RELEASE_YEAR:
          return "rdb_entry_releaseyear";
+      case MENU_LABEL_RDB_ENTRY_SHA1:
+         return "rdb_entry_sha1";
+      case MENU_LABEL_RDB_ENTRY_CRC32:
+         return "rdb_entry_crc32";
+      case MENU_LABEL_RDB_ENTRY_MD5:
+         return "rdb_entry_md5";
       case MENU_LABEL_CONFIGURATIONS:
          return "configurations";
       case MENU_LABEL_VALUE_CONFIGURATIONS:

@@ -924,13 +924,15 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
       if (db_info_entry->name)
       {
          snprintf(tmp, sizeof(tmp), "Name: %s", db_info_entry->name);
-         menu_list_push(info->list, tmp, "rdb_entry_name",
+         menu_list_push(info->list, tmp,
+               menu_hash_to_str(MENU_LABEL_RDB_ENTRY_NAME),
                0, 0, 0);
       }
       if (db_info_entry->description)
       {
          snprintf(tmp, sizeof(tmp), "Description: %s", db_info_entry->description);
-         menu_list_push(info->list, tmp, "rdb_entry_description",
+         menu_list_push(info->list, tmp,
+               menu_hash_to_str(MENU_LABEL_RDB_ENTRY_DESCRIPTION),
                0, 0, 0);
       }
       if (db_info_entry->publisher)
@@ -1065,13 +1067,15 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
             "Analog supported: %s",
             (db_info_entry->analog_supported == 1)  ? "true" :
             (db_info_entry->analog_supported == -1) ? "N/A"  : "false");
-      menu_list_push(info->list, tmp, "rdb_entry_analog",
+      menu_list_push(info->list, tmp,
+            "rdb_entry_analog",
             0, 0, 0);
       snprintf(tmp, sizeof(tmp),
             "Rumble supported: %s",
             (db_info_entry->rumble_supported == 1)  ? "true" :
             (db_info_entry->rumble_supported == -1) ? "N/A"  :  "false");
-      menu_list_push(info->list, tmp, "rdb_entry_rumble",
+      menu_list_push(info->list, tmp,
+            "rdb_entry_rumble",
             0, 0, 0);
 
       if (!show_advanced_settings)
@@ -1080,7 +1084,8 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
       if (db_info_entry->crc32)
       {
          if (create_string_list_rdb_entry_string("CRC32 Checksum",
-                  "rdb_entry_crc32", crc_str,
+                  menu_hash_to_str(MENU_LABEL_RDB_ENTRY_CRC32),
+                  crc_str,
                   info->path, info->list) == -1)
             goto error;
       }
@@ -1088,7 +1093,8 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
       if (db_info_entry->sha1)
       {
          if (create_string_list_rdb_entry_string("SHA1 Checksum",
-                  "rdb_entry_sha1", db_info_entry->sha1,
+                  menu_hash_to_str(MENU_LABEL_RDB_ENTRY_SHA1),
+                  db_info_entry->sha1,
                   info->path, info->list) == -1)
             goto error;
       }
@@ -1096,7 +1102,8 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
       if (db_info_entry->md5)
       {
          if (create_string_list_rdb_entry_string("MD5 Checksum",
-                  "rdb_entry_md5", db_info_entry->md5,
+                  menu_hash_to_str(MENU_LABEL_RDB_ENTRY_MD5),
+                  db_info_entry->md5,
                   info->path, info->list) == -1)
             goto error;
       }
