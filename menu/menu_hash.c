@@ -259,6 +259,8 @@ static const char *menu_hash_to_str_english(uint32_t hash)
          return "deferred_core_updater_list";
       case MENU_LABEL_AUDIO_DSP_PLUGIN:
          return "audio_dsp_plugin";
+      case MENU_LABEL_VALUE_AUDIO_DSP_PLUGIN:
+         return "Audio DSP Plugin";
       case MENU_LABEL_VALUE_STARTING_DOWNLOAD:
          return "Starting download: ";
       case MENU_VALUE_SECONDS:

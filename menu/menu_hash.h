@@ -335,6 +335,7 @@ extern "C" {
 #define MENU_LABEL_MENU_WALLPAPER                                              0x3b84de01U
 #define MENU_LABEL_CONTENT_HISTORY_PATH                                        0x6f22fb9dU
 #define MENU_LABEL_AUDIO_DSP_PLUGIN                                            0x4a69572bU
+#define MENU_LABEL_VALUE_AUDIO_DSP_PLUGIN                                      0x1c9f180dU
 #define MENU_LABEL_RGUI_BROWSER_DIRECTORY                                      0xa86cba73U
 #define MENU_LABEL_CONTENT_DATABASE_DIRECTORY                                  0x6b443f80U
 #define MENU_LABEL_PLAYLIST_DIRECTORY                                          0x6361820bU

@@ -5228,8 +5228,8 @@ static bool setting_append_list_audio_options(
 
    CONFIG_PATH(
          settings->audio.dsp_plugin,
-         "audio_dsp_plugin",
-         "DSP Plugin",
+         menu_hash_to_str(MENU_LABEL_AUDIO_DSP_PLUGIN),
+         menu_hash_to_str(MENU_LABEL_VALUE_AUDIO_DSP_PLUGIN),
          settings->audio.filter_dir,
          group_info.name,
          subgroup_info.name,
