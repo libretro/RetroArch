@@ -448,6 +448,7 @@ extern "C" {
 #define MENU_LABEL_REMAP_FILE_SAVE_CORE                                        0x7c9d4c8fU
 #define MENU_LABEL_REMAP_FILE_SAVE_GAME                                        0x7c9f41e0U
 #define MENU_LABEL_CONTENT_COLLECTION_LIST                                     0x0f8a9086U
+#define MENU_LABEL_VALUE_CONTENT_COLLECTION_LIST                               0x7c20a99dU
 #define MENU_LABEL_VALUE_UNABLE_TO_READ_COMPRESSED_FILE                        0xbae7be3eU
 #define MENU_LABEL_OSK_ENABLE                                                  0x8e208498U
 #define MENU_LABEL_AUDIO_MUTE                                                  0xe0ca1151U

@@ -3551,8 +3551,8 @@ static bool setting_append_list_main_menu_options(
 
 #ifdef HAVE_LIBRETRODB
    CONFIG_ACTION(
-         "content_collection_list",
-         "Load Content (Collection)",
+         menu_hash_to_str(MENU_LABEL_CONTENT_COLLECTION_LIST),
+         menu_hash_to_str(MENU_LABEL_VALUE_CONTENT_COLLECTION_LIST),
          group_info.name,
          subgroup_info.name,
          parent_group);
