@@ -458,7 +458,8 @@ static int action_ok_audio_dsp_plugin(const char *path,
    info.type          = 0;
    info.directory_ptr = idx;
    strlcpy(info.path, settings->audio.filter_dir, sizeof(info.path));
-   strlcpy(info.label, "audio_dsp_plugin", sizeof(info.label));
+   strlcpy(info.label,
+         menu_hash_to_str(MENU_LABEL_AUDIO_DSP_PLUGIN), sizeof(info.label));
 
    return menu_displaylist_push_list(&info, DISPLAYLIST_GENERIC);
 }
@@ -477,7 +478,8 @@ static int action_ok_video_filter(const char *path,
    info.type          = 0;
    info.directory_ptr = idx;
    strlcpy(info.path, settings->video.filter_dir, sizeof(info.path));
-   strlcpy(info.label, "deferred_video_filter", sizeof(info.label));
+   strlcpy(info.label,
+         menu_hash_to_str(MENU_LABEL_DEFERRED_VIDEO_FILTER), sizeof(info.label));
 
    return menu_displaylist_push_list(&info, DISPLAYLIST_GENERIC);
 }
@@ -513,7 +515,8 @@ static int action_ok_core_updater_list(const char *path,
    info.type          = type;
    info.directory_ptr = idx;
    strlcpy(info.path, path, sizeof(info.path));
-   strlcpy(info.label, "deferred_core_updater_list", sizeof(info.label));
+   strlcpy(info.label,
+         menu_hash_to_str(MENU_LABEL_DEFERRED_CORE_UPDATER_LIST), sizeof(info.label));
 
    return menu_displaylist_push_list(&info, DISPLAYLIST_GENERIC);
 } 
@@ -1049,7 +1052,9 @@ static int action_ok_database_manager_list(const char *path,
    info.type          = 0;
    info.directory_ptr = idx;
    strlcpy(info.path, rdb_path, sizeof(info.path));
-   strlcpy(info.label, "deferred_database_manager_list", sizeof(info.label));
+   strlcpy(info.label,
+         menu_hash_to_str(MENU_LABEL_DEFERRED_DATABASE_MANAGER_LIST),
+         sizeof(info.label));
 
    return menu_displaylist_push_list(&info, DISPLAYLIST_GENERIC);
 }
@@ -1072,7 +1077,9 @@ static int action_ok_cursor_manager_list(const char *path,
    info.type          = 0;
    info.directory_ptr = idx;
    strlcpy(info.path, cursor_path, sizeof(info.path));
-   strlcpy(info.label, "deferred_cursor_manager_list", sizeof(info.label));
+   strlcpy(info.label,
+         menu_hash_to_str(MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST),
+         sizeof(info.label));
 
    return menu_displaylist_push_list(&info, DISPLAYLIST_GENERIC);
 }
@@ -1396,7 +1403,9 @@ static int action_ok_rdb_entry_submenu(const char *path,
 
    string_list_join_concat(rdb, len, str_list2, "|");
 
-   strlcpy(new_label, "deferred_cursor_manager_list_", sizeof(new_label));
+   strlcpy(new_label, menu_hash_to_str(MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST),
+         sizeof(new_label));
+   strlcat(new_label, "_", sizeof(new_label));
    strlcat(new_label, str_list->elems[0].data, sizeof(new_label));
 
    info.list          = menu_list->menu_stack;
@@ -1422,7 +1431,9 @@ static int action_ok_help(const char *path,
       return -1;
 
    info.list = menu_list->menu_stack;
-   strlcpy(info.label, "help", sizeof(info.label));
+   strlcpy(info.label,
+         menu_hash_to_str(MENU_LABEL_HELP),
+         sizeof(info.label));
 
    return menu_displaylist_push_list(&info, DISPLAYLIST_HELP);
 }

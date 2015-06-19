@@ -71,8 +71,12 @@ static const char *menu_hash_to_str_english(uint32_t hash)
          return "core_options";
       case MENU_LABEL_DATABASE_MANAGER_LIST:
          return "database_manager_list";
+      case MENU_LABEL_DEFERRED_DATABASE_MANAGER_LIST:
+         return "deferred_database_manager_list";
       case MENU_LABEL_CURSOR_MANAGER_LIST:
          return "cursor_manager_list";
+      case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST:
+         return "deferred_cursor_manager_list";
       case MENU_LABEL_FRONTEND_COUNTERS:
          return "frontend_counters";
       case MENU_LABEL_CORE_COUNTERS:
@@ -121,8 +125,10 @@ static const char *menu_hash_to_str_english(uint32_t hash)
          return "Settings";
       case MENU_LABEL_QUIT_RETROARCH:
          return "Quit RetroArch";
-      case MENU_LABEL_HELP:
+      case MENU_LABEL_VALUE_HELP:
          return "Help";
+      case MENU_LABEL_HELP:
+         return "help";
       case MENU_LABEL_SAVE_NEW_CONFIG:
          return "Save New Config";
       case MENU_LABEL_RESTART_CONTENT:
@@ -209,6 +215,12 @@ static const char *menu_hash_to_str_english(uint32_t hash)
          return "shader_options";
       case MENU_LABEL_VALUE_NO_SHADER_PARAMETERS:
          return "No shader parameters.";
+      case MENU_LABEL_DEFERRED_VIDEO_FILTER:
+         return "deferred_video_filter";
+      case MENU_LABEL_DEFERRED_CORE_UPDATER_LIST:
+         return "deferred_core_updater_list";
+      case MENU_LABEL_AUDIO_DSP_PLUGIN:
+         return "audio_dsp_plugin";
       default:
          break;
    }
