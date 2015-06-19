@@ -223,6 +223,10 @@ static const char *menu_hash_to_str_english(uint32_t hash)
          return "shader_options";
       case MENU_LABEL_VALUE_NO_SHADER_PARAMETERS:
          return "No shader parameters.";
+      case MENU_LABEL_VIDEO_FILTER:
+         return "video_filter";
+      case MENU_LABEL_VALUE_VIDEO_FILTER:
+         return "Video Filter";
       case MENU_LABEL_DEFERRED_VIDEO_FILTER:
          return "deferred_video_filter";
       case MENU_LABEL_DEFERRED_CORE_UPDATER_LIST:
