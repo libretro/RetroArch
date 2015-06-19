@@ -6455,8 +6455,8 @@ static bool setting_append_list_user_options(
 
    CONFIG_STRING(
          settings->username,
-         "netplay_nickname",
-         "Username",
+         menu_hash_to_str(MENU_LABEL_NETPLAY_NICKNAME),
+         menu_hash_to_str(MENU_LABEL_VALUE_NETPLAY_NICKNAME),
          "",
          group_info.name,
          subgroup_info.name,
@@ -6467,8 +6467,8 @@ static bool setting_append_list_user_options(
 
    CONFIG_UINT(
          settings->user_language,
-         "user_language",
-         "Language",
+         menu_hash_to_str(MENU_LABEL_USER_LANGUAGE),
+         menu_hash_to_str(MENU_LABEL_VALUE_USER_LANGUAGE),
          def_user_language,
          group_info.name,
          subgroup_info.name,
@@ -6957,8 +6957,8 @@ static bool setting_append_list_privacy_options(
 
    CONFIG_BOOL(
          settings->camera.allow,
-         "camera_allow",
-         "Allow Camera",
+         menu_hash_to_str(MENU_LABEL_CAMERA_ALLOW),
+         menu_hash_to_str(MENU_LABEL_VALUE_CAMERA_ALLOW),
          false,
          menu_hash_to_str(MENU_VALUE_OFF),
          menu_hash_to_str(MENU_VALUE_ON),
@@ -6970,8 +6970,8 @@ static bool setting_append_list_privacy_options(
 
    CONFIG_BOOL(
          settings->location.allow,
-         "location_allow",
-         "Allow Location",
+         menu_hash_to_str(MENU_LABEL_LOCATION_ALLOW),
+         menu_hash_to_str(MENU_LABEL_VALUE_LOCATION_ALLOW),
          false,
          menu_hash_to_str(MENU_VALUE_OFF),
          menu_hash_to_str(MENU_VALUE_ON),

@@ -193,6 +193,22 @@ static const char *menu_hash_to_str_english(uint32_t hash)
 {
    switch (hash)
    {
+      case MENU_LABEL_NETPLAY_NICKNAME:
+         return "netplay_nickname";
+      case MENU_LABEL_VALUE_NETPLAY_NICKNAME:
+         return "Username";
+      case MENU_LABEL_USER_LANGUAGE:
+         return "user_language";
+      case MENU_LABEL_VALUE_USER_LANGUAGE:
+         return "Language";
+      case MENU_LABEL_CAMERA_ALLOW:
+         return "camera_allow";
+      case MENU_LABEL_VALUE_CAMERA_ALLOW:
+         return "Allow Camera";
+      case MENU_LABEL_LOCATION_ALLOW:
+         return "location_allow";
+      case MENU_LABEL_VALUE_LOCATION_ALLOW:
+         return "Allow Location";
       case MENU_LABEL_PAUSE_LIBRETRO:
          return "menu_pause_libretro";
       case MENU_LABEL_VALUE_PAUSE_LIBRETRO:

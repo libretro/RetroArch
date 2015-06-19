@@ -200,7 +200,9 @@ extern "C" {
 #define MENU_LABEL_INPUT_AUTODETECT_ENABLE                                     0xb1e07facU
 
 #define MENU_LABEL_CAMERA_ALLOW                                                0xc14d302cU
+#define MENU_LABEL_VALUE_CAMERA_ALLOW                                          0x553824adU
 #define MENU_LABEL_LOCATION_ALLOW                                              0xf089275cU
+#define MENU_LABEL_VALUE_LOCATION_ALLOW                                        0xf039239dU
 
 #define MENU_LABEL_TURBO                                                       0x107434f1U
 
@@ -490,6 +492,10 @@ extern "C" {
 #define MENU_LABEL_VALUE_AUDIO_MUTE                                            0x5af25952U
 #define MENU_LABEL_EXIT_EMULATOR                                               0x86d5d467U
 #define MENU_LABEL_COLLECTION                                                  0x5fea5991U
+#define MENU_LABEL_USER_LANGUAGE                                               0x33ebaa27U
+#define MENU_LABEL_VALUE_USER_LANGUAGE                                         0xd230a5a9U
+#define MENU_LABEL_NETPLAY_NICKNAME                                            0x52204787U
+#define MENU_LABEL_VALUE_NETPLAY_NICKNAME                                      0x75de3125U
 
 #define MENU_VALUE_SECONDS                                                     0x8b0028d4U
 
