@@ -17,6 +17,8 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#include <boolean.h>
+
 #if defined(SN_TARGET_PSP2)
 #include <sceerror.h>
 #include <kernel.h>
@@ -39,6 +41,7 @@
 
 typedef struct psp_input
 {
+   bool blocked;
    const input_device_driver_t *joypad;
 } psp_input_t;
 
@@ -135,6 +138,22 @@ static bool psp_input_set_rumble(void *data, unsigned port,
    return false;
 }
 
+static bool psp_input_keyboard_mapping_is_blocked(void *data)
+{
+   psp_input_t *psp = (psp_input_t*)data;
+   if (!psp)
+      return false;
+   return psp->blocked;
+}
+
+static void psp_input_keyboard_mapping_set_block(void *data, bool value)
+{
+   psp_input_t *psp = (psp_input_t*)data;
+   if (!psp)
+      return;
+   psp->blocked = value;
+}
+
 input_driver_t input_psp = {
    psp_input_initialize,
    psp_input_poll,
@@ -150,4 +169,6 @@ input_driver_t input_psp = {
    NULL,
    psp_input_set_rumble,
    psp_input_get_joypad_driver,
+   psp_input_keyboard_mapping_is_blocked,
+   psp_input_keyboard_mapping_set_block,
 };

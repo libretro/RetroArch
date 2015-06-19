@@ -14,14 +14,16 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdint.h>
+#include <stdlib.h>
+
+#include <boolean.h>
+
 #include "../../driver.h"
 
 #include "SDL.h"
 #include "../../gfx/video_context_driver.h"
-#include <boolean.h>
 #include "../../general.h"
-#include <stdint.h>
-#include <stdlib.h>
 #include "../../libretro.h"
 #include "../input_autodetect.h"
 #include "../input_common.h"
@@ -31,6 +33,7 @@
 
 typedef struct sdl_input
 {
+   bool blocked;
    const input_device_driver_t *joypad;
 
    int mouse_x, mouse_y;
@@ -380,6 +383,22 @@ static uint64_t sdl_get_capabilities(void *data)
    return caps;
 }
 
+static bool sdl_keyboard_mapping_is_blocked(void *data)
+{
+   sdl_input_t *sdl = (sdl_input_t*)data;
+   if (!sdl)
+      return false;
+   return sdl->blocked;
+}
+
+static void sdl_keyboard_mapping_set_block(void *data, bool value)
+{
+   sdl_input_t *sdl = (sdl_input_t*)data;
+   if (!sdl)
+      return;
+   sdl->blocked = value;
+}
+
 input_driver_t input_sdl = {
    sdl_input_init,
    sdl_input_poll,
@@ -398,4 +417,6 @@ input_driver_t input_sdl = {
    NULL,
    sdl_set_rumble,
    sdl_get_joypad_driver,
+   sdl_keyboard_mapping_is_blocked,
+   sdl_keyboard_mapping_set_block,
 };

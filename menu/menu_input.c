@@ -561,13 +561,13 @@ int menu_input_bind_iterate(void)
 
    binds = menu_input->binds;
 
-   driver->block_input = true;
+   input_driver_keyboard_mapping_set_block(true);
    menu_input_poll_bind_state(&binds);
 
    if ((binds.skip && !menu_input->binds.skip) ||
          menu_input_poll_find_trigger(&menu_input->binds, &binds))
    {
-      driver->block_input = false;
+      input_driver_keyboard_mapping_set_block(false);
 
       /* Avoid new binds triggering things right away. */
       driver->flushing_input = true;
@@ -1017,7 +1017,7 @@ unsigned menu_input_frame(retro_input_t input, retro_input_t trigger_input)
 
    menu_input->delay.count += disp->animation->delta_time / IDEAL_DT;
 
-   if (driver->block_input)
+   if (input_driver_keyboard_mapping_is_blocked())
       trigger_input = 0;
    if (trigger_input & (1ULL << RETRO_DEVICE_ID_JOYPAD_UP))
       ret = MENU_ACTION_UP;

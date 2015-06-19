@@ -18,6 +18,7 @@
 #define __COCOA_INPUT_H__
 
 #include <stdint.h>
+#include <boolean.h>
 #include "../../general.h"
 
 /* Input responder */
@@ -37,6 +38,7 @@ typedef struct
 
 typedef struct
 {
+   bool blocked;
    cocoa_touch_data_t touches[MAX_TOUCHES];
    uint32_t touch_count;
 

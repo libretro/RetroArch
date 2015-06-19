@@ -27,17 +27,19 @@
 
 #include <dinput.h>
 
-#include "../../general.h"
+#include <stdlib.h>
+#include <stddef.h>
+#include <string.h>
 #include <boolean.h>
+
+#include <windowsx.h>
+
+#include "../../general.h"
 #include "../input_autodetect.h"
 #include "../input_common.h"
 #include "../input_joypad.h"
 #include "../input_keymaps.h"
 #include "../../retroarch_logger.h"
-#include <stdlib.h>
-#include <stddef.h>
-#include <string.h>
-#include <windowsx.h>
 
 /* Keep track of which pad indexes are 360 controllers.
  * Not static, will be read in xinput_joypad.c
@@ -60,6 +62,7 @@ struct pointer_status
 
 struct dinput_input
 {
+   bool blocked;
    LPDIRECTINPUTDEVICE8 keyboard;
    LPDIRECTINPUTDEVICE8 mouse;
    const input_device_driver_t *joypad;
@@ -673,6 +676,22 @@ static uint64_t dinput_get_capabilities(void *data)
    return caps;
 }
 
+static bool dinput_keyboard_mapping_is_blocked(void *data)
+{
+   struct dinput_input *di = (struct dinput_input*)data;
+   if (!di)
+      return false;
+   return di->blocked;
+}
+
+static void dinput_keyboard_mapping_set_block(void *data, bool value)
+{
+   struct dinput_input *di = (struct dinput_input*)data;
+   if (!di)
+      return;
+   di->blocked = value;
+}
+
 input_driver_t input_dinput = {
    dinput_init,
    dinput_poll,
@@ -688,5 +707,6 @@ input_driver_t input_dinput = {
    NULL,
    dinput_set_rumble,
    dinput_get_joypad_driver,
+   dinput_keyboard_mapping_is_blocked,
+   dinput_keyboard_mapping_set_block,
 };
-

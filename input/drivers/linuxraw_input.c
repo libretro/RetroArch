@@ -14,12 +14,15 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <unistd.h>
+
 #include <sys/ioctl.h>
 #include <linux/input.h>
 #include <linux/kd.h>
 #include <termios.h>
 #include <signal.h>
-#include <unistd.h>
+
+#include <boolean.h>
 
 #include "../../general.h"
 
@@ -33,6 +36,7 @@ static struct termios oldTerm, newTerm;
 
 typedef struct linuxraw_input
 {
+   bool blocked;
    const input_device_driver_t *joypad;
    bool state[0x80];
 } linuxraw_input_t;
@@ -277,6 +281,22 @@ static void linuxraw_grab_mouse(void *data, bool state)
    (void)state;
 }
 
+static bool linuxraw_keyboard_mapping_is_blocked(void *data)
+{
+   linuxraw_input_t *linuxraw = (linuxraw_input_t*)data;
+   if (!linuxraw)
+      return false;
+   return linuxraw->blocked;
+}
+
+static void linuxraw_keyboard_mapping_set_block(void *data, bool value)
+{
+   linuxraw_input_t *linuxraw = (linuxraw_input_t*)data;
+   if (!linuxraw)
+      return false;
+   linuxraw->blocked = value;
+}
+
 input_driver_t input_linuxraw = {
    linuxraw_input_init,
    linuxraw_input_poll,
@@ -291,4 +311,6 @@ input_driver_t input_linuxraw = {
    linuxraw_grab_stdin,
    linuxraw_set_rumble,
    linuxraw_get_joypad_driver,
+   linuxraw_keyboard_mapping_is_blocked,
+   linuxraw_keyboard_mapping_set_block,
 };

@@ -199,6 +199,7 @@ bool input_driver_set_rumble_state(unsigned port,
    return false;
 }
 
+
 bool input_driver_key_pressed(int key)
 {
    driver_t            *driver = driver_get_ptr();
@@ -315,4 +316,24 @@ void input_driver_free(void)
 
    if (driver && driver->input)
       driver->input->free(driver->input_data);
+}
+
+bool input_driver_keyboard_mapping_is_blocked(void)
+{
+   driver_t *driver               = driver_get_ptr();
+   const input_driver_t *input = input_get_ptr(driver);
+
+   if (input->keyboard_mapping_is_blocked)
+      return driver->input->keyboard_mapping_is_blocked(
+            driver->input_data);
+   return false;
+}
+
+void input_driver_keyboard_mapping_set_block(bool value)
+{
+   driver_t *driver               = driver_get_ptr();
+   const input_driver_t *input = input_get_ptr(driver);
+
+   if (input->keyboard_mapping_set_block)
+      driver->input->keyboard_mapping_set_block(driver->input_data, value);
 }

@@ -80,6 +80,7 @@ typedef struct state_device
 
 typedef struct android_input
 {
+   bool blocked;
    unsigned pads_connected;
    state_device_t pad_states[MAX_PADS];
    uint8_t pad_state[MAX_PADS][(LAST_KEYCODE + 7) / 8];
@@ -1034,6 +1035,22 @@ static const input_device_driver_t *android_input_get_joypad_driver(void *data)
    return android->joypad;
 }
 
+static bool android_input_keyboard_mapping_is_blocked(void *data)
+{
+   android_input_t *android = (android_input_t*)data;
+   if (!android)
+      return false;
+   return android->blocked;
+}
+
+static void android_input_keyboard_mapping_set_block(void *data, bool value)
+{
+   android_input_t *android = (android_input_t*)data;
+   if (!android)
+      return;
+   android->blocked = value;
+}
+
 static void android_input_grab_mouse(void *data, bool state)
 {
    (void)data;
@@ -1066,4 +1083,6 @@ input_driver_t input_android = {
    NULL,
    android_input_set_rumble,
    android_input_get_joypad_driver,
+   android_input_keyboard_mapping_is_blocked,
+   android_input_keyboard_mapping_set_block,
 };

@@ -16,8 +16,11 @@
  */
 
 #include <stdint.h>
+#include <stdlib.h>
 #include <string.h>
 #include <math.h>
+
+#include <boolean.h>
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846264338327
@@ -25,7 +28,6 @@
 
 #include "../../driver.h"
 #include "../../libretro.h"
-#include <stdlib.h>
 
 #ifndef MAX_PADS
 #define MAX_PADS 4
@@ -33,6 +35,7 @@
 
 typedef struct gx_input
 {
+   bool blocked;
    const input_device_driver_t *joypad;
 } gx_input_t;
 
@@ -129,6 +132,22 @@ static bool gx_input_set_rumble(void *data, unsigned port,
    return false;
 }
 
+static bool gx_input_keyboard_mapping_is_blocked(void *data)
+{
+   gx_input_t *gx = (gx_input_t*)data;
+   if (!gx)
+      return false;
+   return gx->blocked;
+}
+
+static void ctr_input_keyboard_mapping_set_block(void *data, bool value)
+{
+   gx_input_t *gx = (gx_input_t*)data;
+   if (!gx)
+      return;
+   gx->blocked = value;
+}
+
 input_driver_t input_gx = {
    gx_input_init,
    gx_input_poll,
@@ -144,4 +163,6 @@ input_driver_t input_gx = {
    NULL,
    gx_input_set_rumble,
    gx_input_get_joypad_driver,
+   gx_input_keyboard_mapping_is_blocked,
+   gx_input_keyboard_mapping_set_block,
 };

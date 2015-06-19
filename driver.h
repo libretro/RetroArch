@@ -267,7 +267,6 @@ typedef struct driver
    rarch_cmd_t *command;
 #endif
    bool block_hotkey;
-   bool block_input;
    bool block_libretro_input;
    bool flushing_input;
    bool nonblock_state;

@@ -49,6 +49,8 @@ static const char *menu_hash_to_str_english(uint32_t hash)
    {
       case MENU_LABEL_VALUE_USE_THIS_DIRECTORY:
          return "<Use this directory>";
+      case MENU_LABEL_USE_THIS_DIRECTORY:
+         return "use_this_directory";
       case MENU_LABEL_VALUE_RDB_ENTRY_START_CONTENT:
          return "Start Content";
       case MENU_LABEL_RDB_ENTRY_START_CONTENT:

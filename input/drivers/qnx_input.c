@@ -15,12 +15,15 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../general.h"
-#include "../../driver.h"
 #include <screen/screen.h>
 #include <bps/event.h>
 #include <bps/navigator.h>
 #include <sys/keycodes.h>
+
+#include <boolean.h>
+
+#include "../../general.h"
+#include "../../driver.h"
 #include "../input_autodetect.h"
 
 #define MAX_PADS 8
@@ -33,6 +36,7 @@
 
 typedef struct
 {
+   bool blocked;
 #ifdef HAVE_BB10
    screen_device_t handle;
 #endif
@@ -839,6 +843,22 @@ static bool qnx_input_set_rumble(void *data, unsigned port,
    return false;
 }
 
+static bool qnx_input_keyboard_mapping_is_blocked(void *data)
+{
+   qnx_input_t *qnx = (qnx_input_t*)data;
+   if (!qnx)
+      return false;
+   return qnx->blocked;
+}
+
+static void qnx_input_keyboard_mapping_set_block(void *data, bool value)
+{
+   qnx_input_t *qnx = (qnx_input_t*)data;
+   if (!qnx)
+      return;
+   qnx->blocked = value;
+}
+
 input_driver_t input_qnx = {
    qnx_input_init,
    qnx_input_poll,
@@ -853,4 +873,6 @@ input_driver_t input_qnx = {
    NULL,
    qnx_input_set_rumble,
    qnx_input_get_joypad_driver,
+   qnx_input_keyboard_mapping_is_blocked,
+   qnx_input_keyboard_mapping_set_block,
 };

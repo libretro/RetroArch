@@ -13,16 +13,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../input_common.h"
-#include "../input_joypad.h"
-#include "../input_keymaps.h"
-
-#include "../../driver.h"
-
-#include "../../gfx/video_viewport.h"
-
-#include <boolean.h>
-#include "../../general.h"
 #include <stdint.h>
 #include <stdlib.h>
 
@@ -30,8 +20,19 @@
 #include <X11/Xutil.h>
 #include <X11/keysym.h>
 
+#include <boolean.h>
+
+#include "../input_common.h"
+#include "../input_joypad.h"
+#include "../input_keymaps.h"
+
+#include "../../driver.h"
+#include "../../gfx/video_viewport.h"
+#include "../../general.h"
+
 typedef struct x11_input
 {
+   bool blocked;
    const input_device_driver_t *joypad;
 
    Display *display;
@@ -385,6 +386,22 @@ static uint64_t x_input_get_capabilities(void *data)
    return caps;
 }
 
+static bool x_keyboard_mapping_is_blocked(void *data)
+{
+   x11_input_t *x11 = (x11_input_t*)data;
+   if (!x11)
+      return false;
+   return x11->blocked;
+}
+
+static void x_keyboard_mapping_set_block(void *data, bool value)
+{
+   x11_input_t *x11 = (x11_input_t*)data;
+   if (!x11)
+      return;
+   x11->blocked = value;
+}
+
 input_driver_t input_x = {
    x_input_init,
    x_input_poll,
@@ -399,4 +416,6 @@ input_driver_t input_x = {
    NULL,
    x_set_rumble,
    x_get_joypad_driver,
+   x_keyboard_mapping_is_blocked,
+   x_keyboard_mapping_set_block,
 };
