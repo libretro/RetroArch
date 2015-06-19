@@ -86,6 +86,7 @@ static int cb_image_menu_boxart_upload(void *data, size_t len)
 
 static int cb_image_menu_generic(nbio_handle_t *nbio)
 {
+   unsigned width, height;
    int retval;
    if (!nbio)
       return -1;
@@ -96,7 +97,10 @@ static int cb_image_menu_generic(nbio_handle_t *nbio)
       return -1;
 
    retval = rpng_nbio_load_image_argb_process(nbio->image.handle,
-         &nbio->image.ti.pixels, &nbio->image.ti.width, &nbio->image.ti.height);
+         &nbio->image.ti.pixels, &width, &height);
+
+   nbio->image.ti.width  = width;
+   nbio->image.ti.height = height;
 
    if (retval == IMAGE_PROCESS_ERROR || retval == IMAGE_PROCESS_ERROR_END)
       return -1;
@@ -185,7 +189,7 @@ error:
 
 static int rarch_main_data_image_iterate_process_transfer(nbio_handle_t *nbio)
 {
-   unsigned i;
+   unsigned i, width, height;
    int retval = 0;
 
    if (!nbio)
@@ -194,7 +198,10 @@ static int rarch_main_data_image_iterate_process_transfer(nbio_handle_t *nbio)
    for (i = 0; i < nbio->image.processing_pos_increment; i++)
    {
       retval = rpng_nbio_load_image_argb_process(nbio->image.handle,
-            &nbio->image.ti.pixels, &nbio->image.ti.width, &nbio->image.ti.height);
+            &nbio->image.ti.pixels, &width, &height);
+
+      nbio->image.ti.width  = width;
+      nbio->image.ti.height = height;
 
       if (retval != IMAGE_PROCESS_NEXT)
          break;
