@@ -91,6 +91,8 @@ static const char *menu_hash_to_str_english(uint32_t hash)
          return "deferred_core_list_set";
       case MENU_LABEL_VALUE_TAKE_SCREENSHOT:
          return "Take Screenshot";
+      case MENU_LABEL_INFO_SCREEN:
+         return "info_screen";
       case MENU_LABEL_VALUE_RESUME:
          return "Resume";
       case MENU_LABEL_VALUE_DISK_INDEX:
@@ -228,6 +230,7 @@ static const char *menu_hash_to_str_english(uint32_t hash)
       case MENU_LABEL_AUDIO_DSP_PLUGIN:
          return "audio_dsp_plugin";
       default:
+         RARCH_LOG("Unhandled: %u\n", hash);
          break;
    }
 

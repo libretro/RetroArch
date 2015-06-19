@@ -117,7 +117,8 @@ static int archive_load(void)
          info.type          = 0;
          info.directory_ptr = selected;
          strlcpy(info.path, settings->libretro_directory, sizeof(info.path));
-         strlcpy(info.label, "deferred_core_list", sizeof(info.label));
+         strlcpy(info.label,
+               menu_hash_to_str(MENU_LABEL_DEFERRED_CORE_LIST), sizeof(info.label));
 
          ret = menu_displaylist_push_list(&info, DISPLAYLIST_GENERIC);
          break;
@@ -426,10 +427,15 @@ static int action_iterate_menu_viewport(char *s, size_t len, const char *label, 
    }
    else
    {
-      if (type == MENU_SETTINGS_CUSTOM_VIEWPORT)
-         base_msg = "Set Upper-Left Corner";
-      else if (hash == MENU_LABEL_CUSTOM_VIEWPORT_2)
-         base_msg = "Set Bottom-Right Corner";
+      switch (type)
+      {
+         case MENU_SETTINGS_CUSTOM_VIEWPORT:
+            base_msg = "Set Upper-Left Corner";
+            break;
+         case MENU_LABEL_CUSTOM_VIEWPORT_2:
+            base_msg = "Set Bottom-Right Corner";
+            break;
+      }
 
       snprintf(s, len, "%s (%d, %d : %4ux%4u)",
             base_msg, custom->x, custom->y, custom->width, custom->height);
@@ -559,7 +565,9 @@ static int action_iterate_main(const char *label, unsigned action)
             menu_displaylist_info_t info = {0};
 
             info.list = menu_list->menu_stack;
-            strlcpy(info.label, "help", sizeof(info.label));
+            strlcpy(info.label,
+                  menu_hash_to_str(MENU_LABEL_HELP),
+                  sizeof(info.label));
 
             menu_displaylist_push_list(&info, DISPLAYLIST_HELP);
          }
