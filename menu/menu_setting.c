@@ -3634,8 +3634,8 @@ static bool setting_append_list_main_menu_options(
    if (global->perfcnt_enable)
    {
       CONFIG_ACTION(
-            "performance_counters",
             menu_hash_to_str(MENU_LABEL_PERFORMANCE_COUNTERS),
+            menu_hash_to_str(MENU_LABEL_VALUE_PERFORMANCE_COUNTERS),
             group_info.name,
             subgroup_info.name,
             parent_group);
@@ -3644,8 +3644,8 @@ static bool setting_append_list_main_menu_options(
    if (global->main_is_init && !global->libretro_dummy)
    {
       CONFIG_ACTION(
-            "savestate",
             menu_hash_to_str(MENU_LABEL_SAVE_STATE),
+            menu_hash_to_str(MENU_LABEL_VALUE_SAVE_STATE),
             group_info.name,
             subgroup_info.name,
             "N/A");
@@ -3658,8 +3658,8 @@ static bool setting_append_list_main_menu_options(
       menu_settings_list_current_add_cmd  (list, list_info, EVENT_CMD_SAVE_STATE);
 
       CONFIG_ACTION(
-            "loadstate",
             menu_hash_to_str(MENU_LABEL_LOAD_STATE),
+            menu_hash_to_str(MENU_LABEL_VALUE_LOAD_STATE),
             group_info.name,
             subgroup_info.name,
             "N/A");
@@ -3717,8 +3717,8 @@ static bool setting_append_list_main_menu_options(
          parent_group);
 
    CONFIG_ACTION(
-         "save_new_config",
          menu_hash_to_str(MENU_LABEL_SAVE_NEW_CONFIG),
+         menu_hash_to_str(MENU_LABEL_VALUE_SAVE_NEW_CONFIG),
          group_info.name,
          subgroup_info.name,
          parent_group);
@@ -3734,8 +3734,8 @@ static bool setting_append_list_main_menu_options(
 #if !defined(IOS)
    /* Apple rejects iOS apps that lets you forcibly quit an application. */
    CONFIG_ACTION(
-         "quit_retroarch",
          menu_hash_to_str(MENU_LABEL_QUIT_RETROARCH),
+         menu_hash_to_str(MENU_LABEL_VALUE_QUIT_RETROARCH),
          group_info.name,
          subgroup_info.name,
          parent_group);

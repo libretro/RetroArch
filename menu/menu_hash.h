@@ -237,6 +237,7 @@ extern "C" {
 #define MENU_LABEL_RECORD_CONFIG                                               0x11c3daf9U
 #define MENU_LABEL_UNLOAD_CORE                                                 0x4b622170U
 #define MENU_LABEL_QUIT_RETROARCH                                              0x84b0bc71U
+#define MENU_LABEL_VALUE_QUIT_RETROARCH                                        0x8e7024f2U
 #define MENU_LABEL_DEFERRED_VIDEO_FILTER                                       0x966ad201U
 #define MENU_LABEL_DEFERRED_CORE_LIST_SET                                      0xa6d5fdb4U
 #define MENU_LABEL_DEFERRED_DATABASE_MANAGER_LIST                              0x7c0b704fU
@@ -263,6 +264,7 @@ extern "C" {
 #define MENU_LABEL_CONFIGURATIONS                                              0x3e930a50U
 #define MENU_LABEL_DISK_IMAGE_APPEND                                           0x5af7d709U
 #define MENU_LABEL_PERFORMANCE_COUNTERS                                        0xd8ab5049U
+#define MENU_LABEL_VALUE_PERFORMANCE_COUNTERS                                  0x20eb18caU
 #define MENU_LABEL_CORE_LIST                                                   0xa8c3bfc9U
 #define MENU_LABEL_MANAGEMENT                                                  0xb8137ec2U
 #define MENU_LABEL_OPTIONS                                                     0x71f05091U
@@ -388,6 +390,7 @@ extern "C" {
 #define MENU_LABEL_PRIVACY_SETTINGS                                            0xce106254U
 #define MENU_LABEL_SHADER_APPLY_CHANGES                                        0x4f7306b9U
 #define MENU_LABEL_SAVE_NEW_CONFIG                                             0xcce9ab72U
+#define MENU_LABEL_VALUE_SAVE_NEW_CONFIG                                       0xd49f2c94U
 #define MENU_LABEL_ONSCREEN_DISPLAY_SETTINGS                                   0x67571029U
 #define MENU_LABEL_CHEAT_APPLY_CHANGES                                         0xde88aa27U
 #define MENU_LABEL_CUSTOM_BIND                                                 0x1e84b3fcU

@@ -124,12 +124,16 @@ static const char *menu_hash_to_str_english(uint32_t hash)
       case MENU_LABEL_VALUE_SETTINGS:
          return "Settings";
       case MENU_LABEL_QUIT_RETROARCH:
+         return "quit_retroarch";
+      case MENU_LABEL_VALUE_QUIT_RETROARCH:
          return "Quit RetroArch";
       case MENU_LABEL_VALUE_HELP:
          return "Help";
       case MENU_LABEL_HELP:
          return "help";
       case MENU_LABEL_SAVE_NEW_CONFIG:
+         return "save_new_config";
+      case MENU_LABEL_VALUE_SAVE_NEW_CONFIG:
          return "Save New Config";
       case MENU_LABEL_RESTART_CONTENT:
          return "restart_content";
@@ -162,6 +166,8 @@ static const char *menu_hash_to_str_english(uint32_t hash)
       case MENU_LABEL_MANAGEMENT:
          return "Advanced Management";
       case MENU_LABEL_PERFORMANCE_COUNTERS:
+         return "performance_counters";
+      case MENU_LABEL_VALUE_PERFORMANCE_COUNTERS:
          return "Performance Counters";
       case MENU_LABEL_SAVE_STATE:
          return "savestate";
