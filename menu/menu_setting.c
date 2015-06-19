@@ -5203,8 +5203,8 @@ static bool setting_append_list_audio_options(
 
    CONFIG_STRING(
          settings->audio.device,
-         "audio_device",
-         "Device",
+         menu_hash_to_str(MENU_LABEL_AUDIO_DEVICE),
+         menu_hash_to_str(MENU_LABEL_VALUE_AUDIO_DEVICE),
          "",
          group_info.name,
          subgroup_info.name,
@@ -5630,8 +5630,8 @@ static bool setting_append_list_overlay_options(
 
    CONFIG_FLOAT(
          settings->input.overlay_opacity,
-         "input_overlay_opacity",
          menu_hash_to_str(MENU_LABEL_OVERLAY_OPACITY),
+         menu_hash_to_str(MENU_LABEL_VALUE_OVERLAY_OPACITY),
          0.7f,
          "%.2f",
          group_info.name,
@@ -5645,8 +5645,8 @@ static bool setting_append_list_overlay_options(
 
    CONFIG_FLOAT(
          settings->input.overlay_scale,
-         "input_overlay_scale",
          menu_hash_to_str(MENU_LABEL_OVERLAY_SCALE),
+         menu_hash_to_str(MENU_LABEL_VALUE_OVERLAY_SCALE),
          1.0f,
          "%.2f",
          group_info.name,
@@ -5664,8 +5664,8 @@ static bool setting_append_list_overlay_options(
 
    CONFIG_PATH(
          settings->osk.overlay,
-         "input_osk_overlay",
          menu_hash_to_str(MENU_LABEL_KEYBOARD_OVERLAY_PRESET),
+         menu_hash_to_str(MENU_LABEL_VALUE_KEYBOARD_OVERLAY_PRESET),
          global->osk_overlay_dir,
          group_info.name,
          subgroup_info.name,

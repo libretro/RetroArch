@@ -83,10 +83,13 @@ extern "C" {
 #define MENU_LABEL_NETPLAY_IP_ADDRESS                                          0xac9a53ffU
 #define MENU_LABEL_NETPLAY_MODE                                                0xc1cf6506U
 #define MENU_LABEL_PERFCNT_ENABLE                                              0x6823dbddU
-#define MENU_LABEL_OVERLAY_SCALE                                               0x4237794fU
-#define MENU_LABEL_KEYBOARD_OVERLAY_PRESET                                     0x7bc03f8bU
+#define MENU_LABEL_OVERLAY_SCALE                                               0x2dce2a3dU
+#define MENU_LABEL_VALUE_OVERLAY_SCALE                                         0x4237794fU
+#define MENU_LABEL_KEYBOARD_OVERLAY_PRESET                                     0x11f1c582U
+#define MENU_LABEL_VALUE_KEYBOARD_OVERLAY_PRESET                               0x7bc03f8bU
 #define MENU_LABEL_OVERLAY_PRESET                                              0x8338e89aU
-#define MENU_LABEL_OVERLAY_OPACITY                                             0x98605740U
+#define MENU_LABEL_OVERLAY_OPACITY                                             0xc466fbaeU
+#define MENU_LABEL_VALUE_OVERLAY_OPACITY                                       0x98605740U
 
 #define MENU_LABEL_VALUE_MENU_WALLPAPER                                        0x4555d2a2U
 #define MENU_LABEL_VALUE_DYNAMIC_WALLPAPER                                     0x66928c32U
@@ -115,6 +118,7 @@ extern "C" {
 #define MENU_LABEL_LIBRETRO_DIR_PATH                                           0x1af1eb72U
 
 #define MENU_LABEL_AUDIO_DEVICE                                                0x2574eac6U
+#define MENU_LABEL_VALUE_AUDIO_DEVICE                                          0xcacf3707U
 
 #define MENU_LABEL_REWIND_ENABLE                                               0x9761e074U
 #define MENU_LABEL_ENABLE_HOTKEY                                               0xc04037bfU
