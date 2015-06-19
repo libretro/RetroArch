@@ -116,35 +116,43 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
       return 0;
    }
 
-   snprintf(tmp, sizeof(tmp), "Core name: %s",
-         core_info->core_name ? core_info->core_name : "");
+   strlcpy(tmp, "Core name", sizeof(tmp));
+   strlcat(tmp, ": ", sizeof(tmp));
+   if (core_info->core_name)
+      strlcat(tmp, core_info->core_name, sizeof(tmp));
+
    menu_list_push(info->list, tmp, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
-   snprintf(tmp, sizeof(tmp), "Core label: %s",
-         core_info->display_name ? core_info->display_name : "");
+   strlcpy(tmp, "Core label", sizeof(tmp));
+   strlcat(tmp, ": ", sizeof(tmp));
+   if (core_info->display_name)
+      strlcat(tmp, core_info->display_name, sizeof(tmp));
    menu_list_push(info->list, tmp, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    if (core_info->systemname)
    {
-      snprintf(tmp, sizeof(tmp), "System name: %s",
-            core_info->systemname);
+      strlcpy(tmp, "System name", sizeof(tmp));
+      strlcat(tmp, ": ", sizeof(tmp));
+      strlcat(tmp, core_info->systemname, sizeof(tmp));
       menu_list_push(info->list, tmp, "",
             MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
    }
 
    if (core_info->system_manufacturer)
    {
-      snprintf(tmp, sizeof(tmp), "System manufacturer: %s",
-            core_info->system_manufacturer);
+      strlcpy(tmp, "System manufacturer", sizeof(tmp));
+      strlcat(tmp, ": ", sizeof(tmp));
+      strlcat(tmp, core_info->system_manufacturer, sizeof(tmp));
       menu_list_push(info->list, tmp, "",
             MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
    }
 
    if (core_info->categories_list)
    {
-      strlcpy(tmp, "Categories: ", sizeof(tmp));
+      strlcpy(tmp, "Categories", sizeof(tmp));
+      strlcat(tmp, ": ", sizeof(tmp));
       string_list_join_concat(tmp, sizeof(tmp),
             core_info->categories_list, ", ");
       menu_list_push(info->list, tmp, "",
@@ -153,7 +161,8 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
 
    if (core_info->authors_list)
    {
-      strlcpy(tmp, "Authors: ", sizeof(tmp));
+      strlcpy(tmp, "Authors", sizeof(tmp));
+      strlcat(tmp, ": ", sizeof(tmp));
       string_list_join_concat(tmp, sizeof(tmp),
             core_info->authors_list, ", ");
       menu_list_push(info->list, tmp, "",
@@ -162,7 +171,8 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
 
    if (core_info->permissions_list)
    {
-      strlcpy(tmp, "Permissions: ", sizeof(tmp));
+      strlcpy(tmp, "Permissions", sizeof(tmp));
+      strlcat(tmp, ": ", sizeof(tmp));
       string_list_join_concat(tmp, sizeof(tmp),
             core_info->permissions_list, ", ");
       menu_list_push(info->list, tmp, "",
@@ -171,7 +181,8 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
 
    if (core_info->licenses_list)
    {
-      strlcpy(tmp, "License(s): ", sizeof(tmp));
+      strlcpy(tmp, "License(s)", sizeof(tmp));
+      strlcat(tmp, ": ", sizeof(tmp));
       string_list_join_concat(tmp, sizeof(tmp),
             core_info->licenses_list, ", ");
       menu_list_push(info->list, tmp, "",
@@ -180,7 +191,8 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
 
    if (core_info->supported_extensions_list)
    {
-      strlcpy(tmp, "Supported extensions: ", sizeof(tmp));
+      strlcpy(tmp, "Supported extensions", sizeof(tmp));
+      strlcat(tmp, ": ", sizeof(tmp));
       string_list_join_concat(tmp, sizeof(tmp),
             core_info->supported_extensions_list, ", ");
       menu_list_push(info->list, tmp, "",
@@ -218,14 +230,15 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
 
    if (core_info->notes)
    {
-      snprintf(tmp, sizeof(tmp), "Core notes: ");
+      strlcpy(tmp, "Core notes", sizeof(tmp));
+      strlcat(tmp, ": ", sizeof(tmp));
       menu_list_push(info->list, tmp, "",
             MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
       for (i = 0; i < core_info->note_list->size; i++)
       {
-         snprintf(tmp, sizeof(tmp), " %s",
-               core_info->note_list->elems[i].data);
+         strlcpy(tmp,
+               core_info->note_list->elems[i].data, sizeof(tmp));
          menu_list_push(info->list, tmp, "",
                MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
       }
