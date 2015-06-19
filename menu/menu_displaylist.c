@@ -1557,7 +1557,8 @@ static int menu_displaylist_parse_generic(menu_displaylist_info_t *info, bool *n
 
    if (push_dir)
       menu_list_push(info->list,
-            menu_hash_to_str(MENU_LABEL_VALUE_USE_THIS_DIRECTORY), "",
+            menu_hash_to_str(MENU_LABEL_VALUE_USE_THIS_DIRECTORY),
+            menu_hash_to_str(MENU_LABEL_USE_THIS_DIRECTORY),
             MENU_FILE_USE_DIRECTORY, 0 ,0);
 
    if (!str_list)
