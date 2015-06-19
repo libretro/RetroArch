@@ -255,14 +255,16 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
    const char *tmp_string                = NULL;
    const frontend_ctx_driver_t *frontend = frontend_get_ptr();
 
-   snprintf(tmp, sizeof(tmp), "Build date: %s", __DATE__);
+   snprintf(tmp, sizeof(tmp), "%s: %s", "Build date", __DATE__);
    menu_list_push(info->list, tmp, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    (void)tmp_string;
 
 #ifdef HAVE_GIT_VERSION
-   snprintf(tmp, sizeof(tmp), "Git version: %s", rarch_git_version);
+   strlcpy(tmp, "Git version", sizeof(tmp));
+   strlcat(tmp, ": ", sizeof(tmp));
+   strlcat(tmp, rarch_git_version, sizeof(tmp));
    menu_list_push(info->list, tmp, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 #endif
@@ -273,7 +275,8 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
    {
       char cpu_str[PATH_MAX_LENGTH] = {0};
 
-      snprintf(cpu_str, sizeof(cpu_str), "CPU Features: ");
+      strlcpy(cpu_str, "CPU Features", sizeof(cpu_str));
+      strlcat(cpu_str, ": ", sizeof(cpu_str));
 
       rarch_info_get_capabilities(RARCH_CAPABILITIES_CPU, cpu_str, sizeof(cpu_str));
       menu_list_push(info->list, cpu_str, "", MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
@@ -283,16 +286,18 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
    {
       int major = 0, minor = 0;
 
-      snprintf(tmp, sizeof(tmp), "Frontend identifier: %s",
-            frontend->ident);
+      strlcpy(tmp, "Frontend identifier", sizeof(tmp));
+      strlcat(tmp, ": ", sizeof(tmp));
+      strlcat(tmp, frontend->ident, sizeof(tmp));
       menu_list_push(info->list, tmp, "",
             MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
       if (frontend->get_name)
       {
          frontend->get_name(tmp2, sizeof(tmp2));
-         snprintf(tmp, sizeof(tmp), "Frontend name: %s",
-               frontend->get_name ? tmp2 : "N/A");
+         strlcpy(tmp, "Frontend name", sizeof(tmp));
+         strlcat(tmp, ": ", sizeof(tmp));
+         strlcat(tmp, frontend->get_name ? tmp2 : "N/A", sizeof(tmp));
          menu_list_push(info->list, tmp, "",
                MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
       }
@@ -340,8 +345,9 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
                break;
          }
 
-         snprintf(tmp, sizeof(tmp), "Power source : %s",
-               tmp2);
+         strlcpy(tmp, "Power source", sizeof(tmp));
+         strlcat(tmp, ": ", sizeof(tmp));
+         strlcat(tmp, tmp2, sizeof(tmp));
          menu_list_push(info->list, tmp, "",
                MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
       }
@@ -350,8 +356,9 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
 #if defined(HAVE_OPENGL) || defined(HAVE_GLES)
    tmp_string = gfx_ctx_get_ident();
 
-   snprintf(tmp, sizeof(tmp), "Video context driver: %s",
-         tmp_string ? tmp_string : "N/A");
+   strlcpy(tmp, "Video context driver", sizeof(tmp));
+   strlcat(tmp, ": ", sizeof(tmp));
+   strlcat(tmp, tmp_string ? tmp_string : "N/A", sizeof(tmp));
    menu_list_push(info->list, tmp, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
