@@ -193,6 +193,18 @@ static const char *menu_hash_to_str_english(uint32_t hash)
 {
    switch (hash)
    {
+      case MENU_LABEL_PAUSE_LIBRETRO:
+         return "menu_pause_libretro";
+      case MENU_LABEL_VALUE_PAUSE_LIBRETRO:
+         return "Pause when menu activated";
+      case MENU_LABEL_INPUT_OSK_OVERLAY_ENABLE:
+         return "input_osk_overlay_enable";
+      case MENU_LABEL_VALUE_INPUT_OSK_OVERLAY_ENABLE:
+         return "Display Keyboard Overlay";
+      case MENU_LABEL_INPUT_OVERLAY_ENABLE:
+         return "input_overlay_enable";
+      case MENU_LABEL_VALUE_INPUT_OVERLAY_ENABLE:
+         return "Display Overlay";
       case MENU_LABEL_VIDEO_MONITOR_INDEX:
          return "video_monitor_index";
       case MENU_LABEL_VALUE_VIDEO_MONITOR_INDEX:
@@ -227,6 +239,8 @@ static const char *menu_hash_to_str_english(uint32_t hash)
          return "input_autodetect_enable";
       case MENU_LABEL_AUDIO_OUTPUT_RATE:
          return "audio_output_rate";
+      case MENU_LABEL_VALUE_AUDIO_OUTPUT_RATE:
+         return "Audio Output Rate (KHz)";
       case MENU_LABEL_AUDIO_MAX_TIMING_SKEW:
          return "audio_max_timing_skew";
       case MENU_LABEL_VALUE_AUDIO_MAX_TIMING_SKEW:

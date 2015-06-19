@@ -26,6 +26,9 @@ extern "C" {
 #define MENU_LABEL_CHEAT_TOGGLE                                                0xe515e0cbU
 #define MENU_LABEL_PAUSE_TOGGLE                                                0x557634e4U
 
+#define MENU_LABEL_PAUSE_LIBRETRO                                              0xf954afb9U
+#define MENU_LABEL_VALUE_PAUSE_LIBRETRO                                        0x632ea57fU
+
 #define MENU_LABEL_VALUE_DIRECTORY_NOT_FOUND                                   0xcdf3c0d5U
 #define MENU_LABEL_VALUE_NO_ITEMS                                              0x7d33e412U
 
@@ -118,6 +121,10 @@ extern "C" {
 #define MENU_LABEL_FASTFORWARD_RATIO                                           0x3a0c2706U
 #define MENU_LABEL_VIDEO_MONITOR_INDEX                                         0xb6fcdc9aU
 #define MENU_LABEL_VALUE_VIDEO_MONITOR_INDEX                                   0x4cabbfe5U
+#define MENU_LABEL_INPUT_OVERLAY_ENABLE                                        0xc7b21d5cU
+#define MENU_LABEL_VALUE_INPUT_OVERLAY_ENABLE                                  0x95a716ddU
+#define MENU_LABEL_INPUT_OSK_OVERLAY_ENABLE                                    0x7f8339c8U
+#define MENU_LABEL_VALUE_INPUT_OSK_OVERLAY_ENABLE                              0x44e487aeU
 #define MENU_LABEL_VIDEO_REFRESH_RATE_AUTO                                     0x9addb6cdU
 #define MENU_LABEL_VIDEO_ROTATION                                              0x4ce6882bU
 #define MENU_LABEL_VIDEO_SCALE                                                 0x09835d63U

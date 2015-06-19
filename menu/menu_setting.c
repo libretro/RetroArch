@@ -5590,8 +5590,8 @@ static bool setting_append_list_overlay_options(
 
    CONFIG_BOOL(
          settings->input.overlay_enable,
-         "input_overlay_enable",
-         "Display Overlay",
+         menu_hash_to_str(MENU_LABEL_INPUT_OVERLAY_ENABLE),
+         menu_hash_to_str(MENU_LABEL_VALUE_INPUT_OVERLAY_ENABLE),
          true,
          menu_hash_to_str(MENU_VALUE_OFF),
          menu_hash_to_str(MENU_VALUE_ON),
@@ -5604,8 +5604,8 @@ static bool setting_append_list_overlay_options(
 
    CONFIG_BOOL(
          settings->osk.enable,
-         "input_osk_overlay_enable",
-         "Display Keyboard Overlay",
+         menu_hash_to_str(MENU_LABEL_INPUT_OSK_OVERLAY_ENABLE),
+         menu_hash_to_str(MENU_LABEL_VALUE_INPUT_OSK_OVERLAY_ENABLE),
          true,
          menu_hash_to_str(MENU_VALUE_OFF),
          menu_hash_to_str(MENU_VALUE_ON),
@@ -5739,8 +5739,8 @@ static bool setting_append_list_menu_options(
 
    CONFIG_BOOL(
          settings->menu.pause_libretro,
-         "menu_pause_libretro",
-         "Pause when menu activated",
+         menu_hash_to_str(MENU_LABEL_PAUSE_LIBRETRO),
+         menu_hash_to_str(MENU_LABEL_VALUE_PAUSE_LIBRETRO),
          true,
          menu_hash_to_str(MENU_VALUE_OFF),
          menu_hash_to_str(MENU_VALUE_ON),
