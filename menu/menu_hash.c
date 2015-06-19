@@ -193,6 +193,36 @@ static const char *menu_hash_to_str_english(uint32_t hash)
 {
    switch (hash)
    {
+      case MENU_LABEL_VALUE_INPUT_DUTY_CYCLE:
+         return "Duty Cycle";
+      case MENU_LABEL_INPUT_DUTY_CYCLE:
+         return "input_duty_cycle";
+      case MENU_LABEL_INPUT_TURBO_PERIOD:
+         return "input_turbo_period";
+      case MENU_LABEL_VALUE_INPUT_TURBO_PERIOD:
+         return "Turbo Period";
+      case MENU_LABEL_VALUE_INPUT_AXIS_THRESHOLD:
+         return "Input Axis Threshold";
+      case MENU_LABEL_INPUT_AXIS_THRESHOLD:
+         return "input_axis_threshold";
+      case MENU_LABEL_INPUT_REMAP_BINDS_ENABLE:
+         return "input_remap_binds_enable";
+      case MENU_LABEL_VALUE_INPUT_REMAP_BINDS_ENABLE:
+         return "Remap Binds Enable";
+      case MENU_LABEL_INPUT_MAX_USERS:
+         return "input_max_users";
+      case MENU_LABEL_VALUE_INPUT_MAX_USERS:
+         return "Max Users";
+      case MENU_LABEL_VALUE_INPUT_AUTODETECT_ENABLE:
+         return "Autoconfig Enable";
+      case MENU_LABEL_INPUT_AUTODETECT_ENABLE:
+         return "input_autodetect_enable";
+      case MENU_LABEL_AUDIO_OUTPUT_RATE:
+         return "audio_output_rate";
+      case MENU_LABEL_AUDIO_MAX_TIMING_SKEW:
+         return "audio_max_timing_skew";
+      case MENU_LABEL_VALUE_AUDIO_MAX_TIMING_SKEW:
+         return "Audio Maximum Timing Skew";
       case MENU_LABEL_VALUE_CHEAT_NUM_PASSES:
          return "Cheat Passes";
       case MENU_LABEL_CHEAT_APPLY_CHANGES:

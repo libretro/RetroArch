@@ -5159,8 +5159,8 @@ static bool setting_append_list_audio_options(
 
    CONFIG_FLOAT(
          settings->audio.max_timing_skew,
-         "audio_max_timing_skew",
-         "Audio Maximum Timing Skew",
+         menu_hash_to_str(MENU_LABEL_AUDIO_MAX_TIMING_SKEW),
+         menu_hash_to_str(MENU_LABEL_VALUE_AUDIO_MAX_TIMING_SKEW),
          max_timing_skew,
          "%.2f",
          group_info.name,
@@ -5216,8 +5216,8 @@ static bool setting_append_list_audio_options(
 
    CONFIG_UINT(
          settings->audio.out_rate,
-         "audio_out_rate",
-         "Audio Output Rate (KHz)",
+         menu_hash_to_str(MENU_LABEL_AUDIO_OUTPUT_RATE),
+         menu_hash_to_str(MENU_LABEL_VALUE_AUDIO_OUTPUT_RATE),
          out_rate,
          group_info.name,
          subgroup_info.name,
@@ -5303,8 +5303,8 @@ static bool setting_append_list_input_options(
 
    CONFIG_UINT(
          settings->input.max_users,
-         "input_max_users",
-         "Max Users",
+         menu_hash_to_str(MENU_LABEL_INPUT_MAX_USERS),
+         menu_hash_to_str(MENU_LABEL_VALUE_INPUT_MAX_USERS),
          MAX_USERS,
          group_info.name,
          subgroup_info.name,
@@ -5315,8 +5315,8 @@ static bool setting_append_list_input_options(
 
    CONFIG_BOOL(
          settings->input.remap_binds_enable,
-         "input_remap_binds_enable",
-         "Remap Binds Enable",
+         menu_hash_to_str(MENU_LABEL_INPUT_REMAP_BINDS_ENABLE),
+         menu_hash_to_str(MENU_LABEL_VALUE_INPUT_REMAP_BINDS_ENABLE),
          true,
          menu_hash_to_str(MENU_VALUE_OFF),
          menu_hash_to_str(MENU_VALUE_ON),
@@ -5328,8 +5328,8 @@ static bool setting_append_list_input_options(
 
    CONFIG_BOOL(
          settings->input.autodetect_enable,
-         "input_autodetect_enable",
-         "Autoconfig Enable",
+         menu_hash_to_str(MENU_LABEL_INPUT_AUTODETECT_ENABLE),
+         menu_hash_to_str(MENU_LABEL_VALUE_INPUT_AUTODETECT_ENABLE),
          input_autodetect_enable,
          menu_hash_to_str(MENU_VALUE_OFF),
          menu_hash_to_str(MENU_VALUE_ON),
@@ -5530,8 +5530,8 @@ static bool setting_append_list_input_options(
 
    CONFIG_FLOAT(
          settings->input.axis_threshold,
-         "input_axis_threshold",
-         "Input Axis Threshold",
+         menu_hash_to_str(MENU_LABEL_INPUT_AXIS_THRESHOLD),
+         menu_hash_to_str(MENU_LABEL_VALUE_INPUT_AXIS_THRESHOLD),
          axis_threshold,
          "%.3f",
          group_info.name,
@@ -5543,8 +5543,8 @@ static bool setting_append_list_input_options(
 
    CONFIG_UINT(
          settings->input.turbo_period,
-         "input_turbo_period",
-         "Turbo Period",
+         menu_hash_to_str(MENU_LABEL_INPUT_TURBO_PERIOD),
+         menu_hash_to_str(MENU_LABEL_VALUE_INPUT_TURBO_PERIOD),
          turbo_period,
          group_info.name,
          subgroup_info.name,
@@ -5555,8 +5555,8 @@ static bool setting_append_list_input_options(
 
    CONFIG_UINT(
          settings->input.turbo_duty_cycle,
-         "input_duty_cycle",
-         "Duty Cycle",
+         menu_hash_to_str(MENU_LABEL_INPUT_DUTY_CYCLE),
+         menu_hash_to_str(MENU_LABEL_VALUE_INPUT_DUTY_CYCLE),
          turbo_duty_cycle,
          group_info.name,
          subgroup_info.name,

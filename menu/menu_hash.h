@@ -126,6 +126,7 @@ extern "C" {
 #define MENU_LABEL_AUDIO_RATE_CONTROL_DELTA                                    0xc8bde3cbU
 #define MENU_LABEL_VALUE_AUDIO_RATE_CONTROL_DELTA                              0x8d242b0eU
 #define MENU_LABEL_AUDIO_MAX_TIMING_SKEW                                       0x4c96f75cU
+#define MENU_LABEL_VALUE_AUDIO_MAX_TIMING_SKEW                                 0x8e873f6eU
 
 #define MENU_LABEL_INPUT_PLAYER1_JOYPAD_INDEX                                  0xfad6ab2fU
 #define MENU_LABEL_INPUT_PLAYER2_JOYPAD_INDEX                                  0x3616e4d0U
@@ -179,8 +180,14 @@ extern "C" {
 #define MENU_LABEL_BOXARTS_DIRECTORY                                           0x9e2bdbddU
 
 #define MENU_LABEL_SLOWMOTION_RATIO                                            0x626b3ffeU
+#define MENU_LABEL_INPUT_MAX_USERS                                             0x2720206bU
+#define MENU_LABEL_VALUE_INPUT_MAX_USERS                                       0xe6b0aefdU
+#define MENU_LABEL_INPUT_REMAP_BINDS_ENABLE                                    0x536dcafeU
+#define MENU_LABEL_VALUE_INPUT_REMAP_BINDS_ENABLE                              0x731709f1U
 #define MENU_LABEL_INPUT_AXIS_THRESHOLD                                        0xe95c2095U
+#define MENU_LABEL_VALUE_INPUT_AXIS_THRESHOLD                                  0x3fb34697U
 #define MENU_LABEL_INPUT_TURBO_PERIOD                                          0xf7a97482U
+#define MENU_LABEL_VALUE_INPUT_TURBO_PERIOD                                    0x9207b594U
 #define MENU_LABEL_INPUT_AUTODETECT_ENABLE                                     0xb1e07facU
 
 #define MENU_LABEL_CAMERA_ALLOW                                                0xc14d302cU
@@ -319,6 +326,8 @@ extern "C" {
 #define MENU_LABEL_VALUE_DISK_OPTIONS                                          0xbee508e5U
 #define MENU_LABEL_CORE_OPTIONS                                                0xf65e60f9U
 #define MENU_LABEL_DISK_CYCLE_TRAY_STATUS                                      0x3035cdc1U
+#define MENU_LABEL_INPUT_DUTY_CYCLE                                            0xec787129U
+#define MENU_LABEL_VALUE_INPUT_DUTY_CYCLE                                      0x451cc9dbU
 #define MENU_LABEL_VALUE_DISK_CYCLE_TRAY_STATUS                                0xf44928c4U
 #define MENU_LABEL_VALUE_NO_CORE_OPTIONS_AVAILABLE                             0xd064cbe6U
 #define MENU_LABEL_VALUE_DISK_INDEX                                            0xadbce4a8U
@@ -355,6 +364,8 @@ extern "C" {
 #define MENU_LABEL_INPUT_OSK_OVERLAY                                           0x11f1c582U
 #define MENU_LABEL_CHEAT_DATABASE_PATH                                         0x01388b8aU
 #define MENU_LABEL_CURSOR_DIRECTORY                                            0xdee8d377U
+#define MENU_LABEL_AUDIO_OUTPUT_RATE                                           0x477b97b9U
+#define MENU_LABEL_VALUE_AUDIO_OUTPUT_RATE                                     0x5d4b0372U
 #define MENU_LABEL_OSK_OVERLAY_DIRECTORY                                       0xcce86287U
 #define MENU_LABEL_RECORDING_OUTPUT_DIRECTORY                                  0x30bece06U
 #define MENU_LABEL_RECORDING_CONFIG_DIRECTORY                                  0x3c3f274bU
@@ -385,6 +396,8 @@ extern "C" {
 #define MENU_LABEL_ASSETS_DIRECTORY                                            0xde1ae8ecU
 #define MENU_LABEL_EXTRACTION_DIRECTORY                                        0x33b55ffaU
 #define MENU_LABEL_JOYPAD_AUTOCONFIG_DIR                                       0x2f4822d8U
+#define MENU_LABEL_VALUE_INPUT_AUTODETECT_ENABLE                               0xf5209bdbU
+#define MENU_LABEL_INPUT_AUTODETECT_ENABLE                                     0xb1e07facU
 #define MENU_LABEL_DRIVER_SETTINGS                                             0x81cd2d62U
 #define MENU_LABEL_CORE_SETTINGS                                               0x06795dffU
 #define MENU_LABEL_CONFIGURATION_SETTINGS                                      0x5a1558ceU
