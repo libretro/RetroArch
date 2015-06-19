@@ -427,15 +427,10 @@ static int action_iterate_menu_viewport(char *s, size_t len, const char *label, 
    }
    else
    {
-      switch (type)
-      {
-         case MENU_SETTINGS_CUSTOM_VIEWPORT:
-            base_msg = "Set Upper-Left Corner";
-            break;
-         case MENU_LABEL_CUSTOM_VIEWPORT_2:
-            base_msg = "Set Bottom-Right Corner";
-            break;
-      }
+      if (type == MENU_SETTINGS_CUSTOM_VIEWPORT)
+         base_msg = "Set Upper-Left Corner";
+      else if (hash == MENU_LABEL_CUSTOM_VIEWPORT_2)
+         base_msg = "Set Bottom-Right Corner";
 
       snprintf(s, len, "%s (%d, %d : %4ux%4u)",
             base_msg, custom->x, custom->y, custom->width, custom->height);
