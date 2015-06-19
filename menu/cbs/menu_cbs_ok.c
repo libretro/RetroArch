@@ -1711,22 +1711,20 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             cbs->action_ok = action_ok_compressed_archive_push;
             break;
          case MENU_FILE_CORE:
-            if (label_hash == MENU_LABEL_DEFERRED_CORE_LIST)
-               cbs->action_ok = action_ok_core_load_deferred;
-            else
+            switch (menu_label_hash)
             {
-               switch (menu_label_hash)
-               {
-                  case MENU_LABEL_DEFERRED_CORE_LIST_SET:
-                     cbs->action_ok = action_ok_core_deferred_set;
-                     break;
-                  case MENU_LABEL_CORE_LIST:
-                     cbs->action_ok = action_ok_core_load;
-                     break;
-                  case MENU_LABEL_CORE_UPDATER_LIST:
-                     cbs->action_ok = action_ok_core_download;
-                     break;
-               }
+               case MENU_LABEL_DEFERRED_CORE_LIST:
+                  cbs->action_ok = action_ok_core_load_deferred;
+                  break;
+               case MENU_LABEL_DEFERRED_CORE_LIST_SET:
+                  cbs->action_ok = action_ok_core_deferred_set;
+                  break;
+               case MENU_LABEL_CORE_LIST:
+                  cbs->action_ok = action_ok_core_load;
+                  break;
+               case MENU_LABEL_CORE_UPDATER_LIST:
+                  cbs->action_ok = action_ok_core_download;
+                  break;
             }
             break;
          case MENU_FILE_DOWNLOAD_CORE:
