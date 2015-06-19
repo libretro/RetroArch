@@ -182,6 +182,24 @@ static const char *menu_hash_to_str_english(uint32_t hash)
 {
    switch (hash)
    {
+      case MENU_LABEL_RDB_ENTRY_ORIGIN:
+         return "rdb_entry_origin";
+      case MENU_LABEL_RDB_ENTRY_PUBLISHER:
+         return "rdb_entry_publisher";
+      case MENU_LABEL_RDB_ENTRY_DEVELOPER:
+         return "rdb_entry_developer";
+      case MENU_LABEL_RDB_ENTRY_FRANCHISE:
+         return "rdb_entry_franchise";
+      case MENU_LABEL_RDB_ENTRY_MAX_USERS:
+         return "rdb_entry_max_users";
+      case MENU_LABEL_RDB_ENTRY_EDGE_MAGAZINE_RATING:
+         return "rdb_entry_edge_magazine_rating";
+      case MENU_LABEL_RDB_ENTRY_EDGE_MAGAZINE_ISSUE:
+         return "rdb_entry_edge_magazine_issue";
+      case MENU_LABEL_RDB_ENTRY_RELEASE_MONTH:
+         return "rdb_entry_releasemonth";
+      case MENU_LABEL_RDB_ENTRY_RELEASE_YEAR:
+         return "rdb_entry_releaseyear";
       case MENU_LABEL_CONFIGURATIONS:
          return "configurations";
       case MENU_LABEL_VALUE_CONFIGURATIONS:

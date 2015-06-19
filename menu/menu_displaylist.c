@@ -935,7 +935,8 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
       }
       if (db_info_entry->publisher)
       {
-         if (create_string_list_rdb_entry_string("Publisher", "rdb_entry_publisher",
+         if (create_string_list_rdb_entry_string("Publisher",
+                  menu_hash_to_str(MENU_LABEL_RDB_ENTRY_PUBLISHER),
                   db_info_entry->publisher, info->path, info->list) == -1)
             goto error;
       }
@@ -947,7 +948,8 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
          {
             if (db_info_entry->developer->elems[k].data)
             {
-               if (create_string_list_rdb_entry_string("Developer", "rdb_entry_developer",
+               if (create_string_list_rdb_entry_string("Developer",
+                        menu_hash_to_str(MENU_LABEL_RDB_ENTRY_DEVELOPER),
                         db_info_entry->developer->elems[k].data,
                         info->path, info->list) == -1)
                   goto error;
@@ -957,20 +959,23 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
 
       if (db_info_entry->origin)
       {
-         if (create_string_list_rdb_entry_string("Origin", "rdb_entry_origin",
+         if (create_string_list_rdb_entry_string("Origin",
+                  menu_hash_to_str(MENU_LABEL_RDB_ENTRY_ORIGIN),
                   db_info_entry->origin, info->path, info->list) == -1)
             goto error;
       }
       if (db_info_entry->franchise)
       {
-         if (create_string_list_rdb_entry_string("Franchise", "rdb_entry_franchise",
+         if (create_string_list_rdb_entry_string("Franchise",
+                  menu_hash_to_str(MENU_LABEL_RDB_ENTRY_FRANCHISE),
                   db_info_entry->franchise, info->path, info->list) == -1)
             goto error;
       }
       if (db_info_entry->max_users)
       {
          if (create_string_list_rdb_entry_int("Max Users",
-                  "rdb_entry_max_users", db_info_entry->max_users,
+                  menu_hash_to_str(MENU_LABEL_RDB_ENTRY_MAX_USERS),
+                  db_info_entry->max_users,
                   info->path, info->list) == -1)
             goto error;
       }
@@ -990,21 +995,24 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
       if (db_info_entry->edge_magazine_rating)
       {
          if (create_string_list_rdb_entry_int("Edge Magazine Rating",
-                  "rdb_entry_edge_magazine_rating", db_info_entry->edge_magazine_rating,
+                  menu_hash_to_str(MENU_LABEL_RDB_ENTRY_EDGE_MAGAZINE_RATING),
+                  db_info_entry->edge_magazine_rating,
                   info->path, info->list) == -1)
             goto error;
       }
       if (db_info_entry->edge_magazine_issue)
       {
          if (create_string_list_rdb_entry_int("Edge Magazine Issue",
-                  "rdb_entry_edge_magazine_issue", db_info_entry->edge_magazine_issue,
+                  menu_hash_to_str(MENU_LABEL_RDB_ENTRY_EDGE_MAGAZINE_ISSUE),
+                  db_info_entry->edge_magazine_issue,
                   info->path, info->list) == -1)
             goto error;
       }
       if (db_info_entry->releasemonth)
       {
          if (create_string_list_rdb_entry_int("Releasedate Month",
-                  "rdb_entry_releasemonth", db_info_entry->releasemonth,
+                  menu_hash_to_str(MENU_LABEL_RDB_ENTRY_RELEASE_MONTH),
+                  db_info_entry->releasemonth,
                   info->path, info->list) == -1)
             goto error;
       }
@@ -1012,7 +1020,8 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
       if (db_info_entry->releaseyear)
       {
          if (create_string_list_rdb_entry_int("Releasedate Year",
-                  "rdb_entry_releaseyear", db_info_entry->releaseyear,
+                  menu_hash_to_str(MENU_LABEL_RDB_ENTRY_RELEASE_YEAR),
+                  db_info_entry->releaseyear,
                   info->path, info->list) == -1)
             goto error;
       }
