@@ -20,7 +20,6 @@
 extern "C" {
 #endif
 
-
 #define MENU_LABEL_RESET                                                       0x10474288U
 #define MENU_LABEL_SLOWMOTION                                                  0x6a269ea0U
 #define MENU_LABEL_HOLD_FAST_FORWARD                                           0xebe2e4cdU
@@ -191,6 +190,8 @@ extern "C" {
 
 #define MENU_LABEL_VALUE_NO_PLAYLIST_ENTRIES_AVAILABLE                         0xea82695dU
 #define MENU_LABEL_VALUE_RDB_ENTRY_START_CONTENT                               0x2cf73cceU
+#define MENU_LABEL_RDB_ENTRY_ANALOG                                            0x9081c2ffU
+#define MENU_LABEL_RDB_ENTRY_RUMBLE                                            0xb8ae8ad4U
 #define MENU_LABEL_RDB_ENTRY_START_CONTENT                                     0x95025a55U
 #define MENU_LABEL_RDB_ENTRY_DESCRIPTION                                       0x26aa1f71U
 #define MENU_LABEL_RDB_ENTRY_NAME                                              0xc6ccf92eU

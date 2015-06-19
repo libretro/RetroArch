@@ -1116,7 +1116,7 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
             (db_info_entry->analog_supported == 1)  ? "true" :
             (db_info_entry->analog_supported == -1) ? "N/A"  : "false");
       menu_list_push(info->list, tmp,
-            "rdb_entry_analog",
+            menu_hash_to_str(MENU_LABEL_RDB_ENTRY_ANALOG),
             0, 0, 0);
       snprintf(tmp, sizeof(tmp),
             "%s : %s",
@@ -1124,7 +1124,7 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
             (db_info_entry->rumble_supported == 1)  ? "true" :
             (db_info_entry->rumble_supported == -1) ? "N/A"  :  "false");
       menu_list_push(info->list, tmp,
-            "rdb_entry_rumble",
+            menu_hash_to_str(MENU_LABEL_RDB_ENTRY_RUMBLE),
             0, 0, 0);
 
       if (!show_advanced_settings)
@@ -1390,7 +1390,9 @@ static int menu_displaylist_parse_horizontal_list(menu_displaylist_info_t *info)
    menu->playlist  = content_playlist_init(path_playlist,
          999);
    strlcpy(menu->db_playlist_file, path_playlist, sizeof(menu->db_playlist_file));
-   strlcpy(path_playlist, "collection", sizeof(path_playlist));
+   strlcpy(path_playlist,
+         menu_hash_to_str(MENU_LABEL_COLLECTION),
+         sizeof(path_playlist));
    playlist = menu->playlist;
 
    content_playlist_qsort(playlist, menu_displaylist_sort_playlist);
@@ -2025,7 +2027,8 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
             menu->playlist  = content_playlist_init(path_playlist,
                   999);
             strlcpy(menu->db_playlist_file, path_playlist, sizeof(menu->db_playlist_file));
-            strlcpy(path_playlist, "collection", sizeof(path_playlist));
+            strlcpy(path_playlist,
+                  menu_hash_to_str(MENU_LABEL_COLLECTION), sizeof(path_playlist));
             playlist = menu->playlist;
 
             ret = menu_displaylist_parse_playlist(info, playlist, path_playlist, false);
