@@ -72,6 +72,7 @@ extern "C" {
 #define MENU_LABEL_VIDEO_BLACK_FRAME_INSERTION                                 0x53477f5cU
 #define MENU_LABEL_VIDEO_HARD_SYNC_FRAMES                                      0xce0ece13U
 #define MENU_LABEL_VIDEO_FRAME_DELAY                                           0xd4aa9df4U
+#define MENU_LABEL_VALUE_VIDEO_FRAME_DELAY                                     0x990d36bfU
 #define MENU_LABEL_SCREENSHOT                                                  0x9a37f083U
 #define MENU_LABEL_REWIND_GRANULARITY                                          0xe859cbdfU
 #define MENU_LABEL_VALUE_REWIND_GRANULARITY                                    0x6e1ae4c0U

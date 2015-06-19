@@ -193,6 +193,10 @@ static const char *menu_hash_to_str_english(uint32_t hash)
 {
    switch (hash)
    {
+      case MENU_LABEL_VIDEO_FRAME_DELAY:
+         return "video_frame_delay";
+      case MENU_LABEL_VALUE_VIDEO_FRAME_DELAY:
+         return "Frame Delay";
       case MENU_LABEL_VALUE_INPUT_DUTY_CYCLE:
          return "Duty Cycle";
       case MENU_LABEL_INPUT_DUTY_CYCLE:

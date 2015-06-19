@@ -4824,8 +4824,8 @@ static bool setting_append_list_video_options(
 
    CONFIG_UINT(
          settings->video.frame_delay,
-         "video_frame_delay",
-         "Frame Delay",
+         menu_hash_to_str(MENU_LABEL_VIDEO_FRAME_DELAY),
+         menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_FRAME_DELAY),
          frame_delay,
          group_info.name,
          subgroup_info.name,
