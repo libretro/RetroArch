@@ -941,14 +941,18 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
 
       if (db_info_entry->name)
       {
-         snprintf(tmp, sizeof(tmp), "Name: %s", db_info_entry->name);
+         strlcpy(tmp, "Name", sizeof(tmp));
+         strlcat(tmp, ": ", sizeof(tmp));
+         strlcat(tmp, db_info_entry->name, sizeof(tmp));
          menu_list_push(info->list, tmp,
                menu_hash_to_str(MENU_LABEL_RDB_ENTRY_NAME),
                0, 0, 0);
       }
       if (db_info_entry->description)
       {
-         snprintf(tmp, sizeof(tmp), "Description: %s", db_info_entry->description);
+         strlcpy(tmp, "Description", sizeof(tmp));
+         strlcat(tmp, ": ", sizeof(tmp));
+         strlcat(tmp, db_info_entry->description, sizeof(tmp));
          menu_list_push(info->list, tmp,
                menu_hash_to_str(MENU_LABEL_RDB_ENTRY_DESCRIPTION),
                0, 0, 0);
