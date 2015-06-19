@@ -5700,7 +5700,7 @@ static bool setting_append_list_menu_options(
 
    CONFIG_PATH(
          settings->menu.wallpaper,
-         "menu_wallpaper",
+         menu_hash_to_str(MENU_LABEL_MENU_WALLPAPER),
          menu_hash_to_str(MENU_LABEL_VALUE_MENU_WALLPAPER),
          "",
          group_info.name,
@@ -5713,7 +5713,7 @@ static bool setting_append_list_menu_options(
 
    CONFIG_BOOL(
          settings->menu.dynamic_wallpaper_enable,
-         "menu_dynamic_wallpaper_enable",
+         menu_hash_to_str(MENU_LABEL_DYNAMIC_WALLPAPER),
          menu_hash_to_str(MENU_LABEL_VALUE_DYNAMIC_WALLPAPER),
          true,
          menu_hash_to_str(MENU_VALUE_OFF),

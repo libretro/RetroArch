@@ -96,7 +96,9 @@ extern "C" {
 #define MENU_LABEL_OVERLAY_OPACITY                                             0xc466fbaeU
 #define MENU_LABEL_VALUE_OVERLAY_OPACITY                                       0x98605740U
 
+#define MENU_LABEL_MENU_WALLPAPER                                              0x3b84de01U
 #define MENU_LABEL_VALUE_MENU_WALLPAPER                                        0x4555d2a2U
+#define MENU_LABEL_DYNAMIC_WALLPAPER                                           0xf011ccabU
 #define MENU_LABEL_VALUE_DYNAMIC_WALLPAPER                                     0x66928c32U
 #define MENU_LABEL_VALUE_BOXART                                                0x716441ebU
 #define MENU_LABEL_PAL60_ENABLE                                                0x62bc416eU

@@ -225,8 +225,12 @@ static const char *menu_hash_to_str_english(uint32_t hash)
          return "input_overlay_opacity";
       case MENU_LABEL_VALUE_OVERLAY_OPACITY:
          return "Overlay Opacity";
+      case MENU_LABEL_MENU_WALLPAPER:
+         return "menu_wallpaper";
       case MENU_LABEL_VALUE_MENU_WALLPAPER:
          return "Menu Wallpaper";
+      case MENU_LABEL_DYNAMIC_WALLPAPER:
+         return "menu_dynamic_wallpaper_enable";
       case MENU_LABEL_VALUE_DYNAMIC_WALLPAPER:
          return "Dynamic Wallpaper";
       case MENU_LABEL_VALUE_BOXART:
