@@ -637,6 +637,8 @@ static const char *menu_hash_to_str_english(uint32_t hash)
          return "Rotation";
       case MENU_LABEL_VIDEO_GPU_SCREENSHOT:
          return "video_gpu_screenshot";
+      case MENU_LABEL_VALUE_VIDEO_GPU_SCREENSHOT:
+         return "GPU Screenshot Enable";
       case MENU_LABEL_VIDEO_CROP_OVERSCAN:
          return "video_crop_overscan";
       case MENU_LABEL_VALUE_VIDEO_CROP_OVERSCAN:
@@ -647,6 +649,8 @@ static const char *menu_hash_to_str_english(uint32_t hash)
          return "video_black_frame_insertion";
       case MENU_LABEL_VIDEO_HARD_SYNC_FRAMES:
          return "video_hard_sync_frames";
+      case MENU_LABEL_VALUE_VIDEO_HARD_SYNC_FRAMES:
+         return "Hard GPU Sync Frames";
       case MENU_LABEL_SORT_SAVEFILES_ENABLE:
          return "sort_savefiles_enable";
       case MENU_LABEL_VALUE_SORT_SAVEFILES_ENABLE:
