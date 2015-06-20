@@ -1024,6 +1024,7 @@ static GLuint xmb_icon_get_id(xmb_handle_t *xmb,
       case MENU_FILE_PLAIN:
          return xmb->textures.list[XMB_TEXTURE_FILE].id;
       case MENU_FILE_PLAYLIST_ENTRY:
+      case MENU_FILE_RDB_ENTRY:
          if (core_node)
             return core_node->content_icon;
          return xmb->textures.list[XMB_TEXTURE_FILE].id;
