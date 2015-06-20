@@ -26,8 +26,14 @@ extern "C" {
 #define MENU_LABEL_MOUSE_ENABLE                                                0x1240fa88U
 #define MENU_LABEL_VALUE_MOUSE_ENABLE                                          0xd5bf366bU
 
+#define MENU_LABEL_SHOW_ADVANCED_SETTINGS                                      0xbc6ac8dfU
+#define MENU_LABEL_VALUE_SHOW_ADVANCED_SETTINGS                                0x851ee46dU
+
 #define MENU_LABEL_POINTER_ENABLE                                              0xf051a7a0U
 #define MENU_LABEL_VALUE_POINTER_ENABLE                                        0x1e24b9e5U
+
+#define MENU_LABEL_COLLAPSE_SUBGROUPS_ENABLE                                   0x585ad75bU
+#define MENU_LABEL_VALUE_COLLAPSE_SUBGROUPS_ENABLE                             0xdb677262U
 
 #define MENU_LABEL_RESET                                                       0x10474288U
 #define MENU_LABEL_SLOWMOTION                                                  0x6a269ea0U
@@ -109,8 +115,12 @@ extern "C" {
 #define MENU_LABEL_REWIND_GRANULARITY                                          0xe859cbdfU
 #define MENU_LABEL_VALUE_REWIND_GRANULARITY                                    0x6e1ae4c0U
 #define MENU_LABEL_VALUE_VIDEO_ROTATION                                        0x9efcecf5U
+#define MENU_LABEL_THREADED_DATA_RUNLOOP_ENABLE                                0xdf5c6d33U
+#define MENU_LABEL_VALUE_THREADED_DATA_RUNLOOP_ENABLE                          0x04d8c10fU
 #define MENU_LABEL_VIDEO_THREADED                                              0x0626179cU
 #define MENU_LABEL_VALUE_VIDEO_THREADED                                        0xc7524afdU
+#define MENU_LABEL_ENTRY_NORMAL_COLOR                                          0x5154ffd1U
+#define MENU_LABEL_VALUE_ENTRY_NORMAL_COLOR                                    0xa989a754U
 #define MENU_LABEL_AUDIO_SYNC                                                  0xe0cd6bd3U
 #define MENU_LABEL_VALUE_AUDIO_SYNC                                            0xcbeb903bU
 #define MENU_LABEL_VIDEO_VSYNC                                                 0x09c2d34eU

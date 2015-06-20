@@ -5815,8 +5815,8 @@ static bool setting_append_list_menu_options(
 
    CONFIG_BOOL(
          settings->menu.collapse_subgroups_enable,
-         "menu_collapse_subgroups_enable",
-         "Collapse SubGroups",
+         menu_hash_to_str(MENU_LABEL_COLLAPSE_SUBGROUPS_ENABLE),
+         menu_hash_to_str(MENU_LABEL_VALUE_COLLAPSE_SUBGROUPS_ENABLE),
          collapse_subgroups_enable,
          menu_hash_to_str(MENU_VALUE_OFF),
          menu_hash_to_str(MENU_VALUE_ON),
@@ -5829,8 +5829,8 @@ static bool setting_append_list_menu_options(
 
    CONFIG_BOOL(
          settings->menu.show_advanced_settings,
-         "menu_show_advanced_settings",
-         "Show advanced settings",
+         menu_hash_to_str(MENU_LABEL_SHOW_ADVANCED_SETTINGS),
+         menu_hash_to_str(MENU_LABEL_VALUE_SHOW_ADVANCED_SETTINGS),
          show_advanced_settings,
          menu_hash_to_str(MENU_VALUE_OFF),
          menu_hash_to_str(MENU_VALUE_ON),
@@ -5843,8 +5843,8 @@ static bool setting_append_list_menu_options(
 #ifdef HAVE_THREADS
    CONFIG_BOOL(
          settings->menu.threaded_data_runloop_enable,
-         "threaded_data_runloop_enable",
-         "Threaded data runloop",
+         menu_hash_to_str(MENU_LABEL_THREADED_DATA_RUNLOOP_ENABLE),
+         menu_hash_to_str(MENU_LABEL_VALUE_THREADED_DATA_RUNLOOP_ENABLE),
          threaded_data_runloop_enable,
          menu_hash_to_str(MENU_VALUE_OFF),
          menu_hash_to_str(MENU_VALUE_ON),
@@ -5859,8 +5859,8 @@ static bool setting_append_list_menu_options(
    /* These colors are hints. The menu driver is not required to use them. */
    CONFIG_HEX(
          settings->menu.entry_normal_color,
-         "menu_entry_normal_color",
-         "Menu entry normal color",
+         menu_hash_to_str(MENU_LABEL_ENTRY_NORMAL_COLOR),
+         menu_hash_to_str(MENU_LABEL_VALUE_ENTRY_NORMAL_COLOR),
          menu_entry_normal_color,
          group_info.name,
          subgroup_info.name,

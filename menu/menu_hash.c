@@ -311,6 +311,22 @@ static const char *menu_hash_to_str_english(uint32_t hash)
 {
    switch (hash)
    {
+      case MENU_LABEL_THREADED_DATA_RUNLOOP_ENABLE:
+         return "threaded_data_runloop_enable";
+      case MENU_LABEL_VALUE_THREADED_DATA_RUNLOOP_ENABLE:
+         return "Threaded data runloop";
+      case MENU_LABEL_ENTRY_NORMAL_COLOR:
+         return "menu_entry_normal_color";
+      case MENU_LABEL_VALUE_ENTRY_NORMAL_COLOR:
+         return "Menu entry normal color";
+      case MENU_LABEL_SHOW_ADVANCED_SETTINGS:
+         return "menu_show_advanced_settings";
+      case MENU_LABEL_VALUE_SHOW_ADVANCED_SETTINGS:
+         return "Show Advanced Settings";
+      case MENU_LABEL_COLLAPSE_SUBGROUPS_ENABLE:
+         return "menu_collapse_subgroups_enable";
+      case MENU_LABEL_VALUE_COLLAPSE_SUBGROUPS_ENABLE:
+         return "Collapse Subgroups";
       case MENU_LABEL_MOUSE_ENABLE:
          return "menu_mouse_enable";
       case MENU_LABEL_VALUE_MOUSE_ENABLE:
