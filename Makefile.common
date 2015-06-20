@@ -797,7 +797,7 @@ endif
 # Record
 
 ifeq ($(HAVE_FFMPEG), 1)
-   OBJ += record/drivers/ffmpeg.o \
+   OBJ += record/drivers/record_ffmpeg.o \
 			 cores/ffmpeg_core.o
    LIBS += $(AVCODEC_LIBS) $(AVFORMAT_LIBS) $(AVUTIL_LIBS) $(SWSCALE_LIBS) $(SWRESAMPLE_LIBS) $(FFMPEG_LIBS)
    DEFINES += $(AVCODEC_CFLAGS) $(AVFORMAT_CFLAGS) $(AVUTIL_CFLAGS) $(SWSCALE_CFLAGS) $(SWRESAMPLE_CFLAGS)

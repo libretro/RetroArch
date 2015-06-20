@@ -548,10 +548,17 @@ DYNAMIC
 ============================================================ */
 #include "../libretro-common/dynamic/dylib.c"
 #include "../dynamic.c"
-#include "../cores/dynamic_dummy.c"
 #include "../gfx/video_filter.c"
 #include "../audio/audio_dsp_filter.c"
 
+/*============================================================
+CORES
+============================================================ */
+#ifdef HAVE_FFMPEG
+#include "../cores/ffmpeg_core.c"
+#endif
+
+#include "../cores/dynamic_dummy.c"
 
 /*============================================================
 FILE
@@ -658,12 +665,17 @@ RETROARCH
 #include "../runloop.c"
 #include "../runloop_data.c"
 
+
 /*============================================================
 RECORDING
 ============================================================ */
 #include "../movie.c"
 #include "../record/record_driver.c"
 #include "../record/drivers/record_null.c"
+
+#ifdef HAVE_FFMPEG
+#include "../record/drivers/record_ffmpeg.c"
+#endif
 
 /*============================================================
 THREAD
