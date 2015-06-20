@@ -390,6 +390,20 @@ extern "C" {
 #define MENU_VALUE_CGP                                                         0x0b8865bfU
 #define MENU_VALUE_GLSL                                                        0x7c976537U
 #define MENU_VALUE_CG                                                          0x0059776fU
+#define MENU_VALUE_RETROPAD                                                    0x9e6703e6U
+#define MENU_VALUE_RETROKEYBOARD                                               0x9d8b6ea2U
+
+#define MENU_LABEL_INPUT_DESCRIPTOR_LABEL_SHOW                                 0x7eefdf52U
+#define MENU_LABEL_VALUE_INPUT_DESCRIPTOR_LABEL_SHOW                           0x78d0ea06U
+
+#define MENU_LABEL_AUTOCONFIG_DESCRIPTOR_LABEL_SHOW                            0xde1d9571U
+#define MENU_LABEL_VALUE_AUTOCONFIG_DESCRIPTOR_LABEL_SHOW                      0x2748a1bcU
+
+#define MENU_LABEL_INPUT_DESCRIPTOR_HIDE_UNBOUND                               0x7051d870U
+#define MENU_LABEL_VALUE_INPUT_DESCRIPTOR_HIDE_UNBOUND                         0xc26ddec5U
+
+#define MENU_LABEL_INPUT_BIND_MODE                                             0x90281b55U
+#define MENU_LABEL_VALUE_INPUT_BIND_MODE                                       0xe06b25c7U
 
 #define MENU_LABEL_NETWORK_CMD_ENABLE                                          0xfdf03a08U
 #define MENU_LABEL_VALUE_NETWORK_CMD_ENABLE                                    0xb822b7a1U

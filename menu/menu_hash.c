@@ -37,6 +37,26 @@ static const char *menu_hash_to_str_french(uint32_t hash)
 {
    switch (hash)
    {
+      case MENU_LABEL_AUTOCONFIG_DESCRIPTOR_LABEL_SHOW:
+         return "autoconfig_descriptor_label_show";
+      case MENU_LABEL_VALUE_AUTOCONFIG_DESCRIPTOR_LABEL_SHOW:
+         return "Display Autoconfig Descriptor Labels";
+      case MENU_LABEL_INPUT_DESCRIPTOR_LABEL_SHOW:
+         return "input_descriptor_label_show";
+      case MENU_LABEL_VALUE_INPUT_DESCRIPTOR_LABEL_SHOW:
+         return "Display Core Input Descriptor Labels";
+      case MENU_LABEL_INPUT_DESCRIPTOR_HIDE_UNBOUND:
+         return "input_descriptor_hide_unbound";
+      case MENU_LABEL_VALUE_INPUT_DESCRIPTOR_HIDE_UNBOUND:
+         return "Hide Unbound Core Input Descriptors";
+      case MENU_VALUE_RETROPAD:
+         return "RetroPad";
+      case MENU_VALUE_RETROKEYBOARD:
+         return "RetroKeyboard";
+      case MENU_LABEL_INPUT_BIND_MODE:
+         return "input_bind_mode";
+      case MENU_LABEL_VALUE_INPUT_BIND_MODE:
+         return "Bind Mode";
       case MENU_LABEL_VALUE_VIDEO_SMOOTH:
          return "Filtre bilineaire (HW)";
       case MENU_LABEL_VALUE_VIDEO_GAMMA:

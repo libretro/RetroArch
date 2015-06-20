@@ -5341,8 +5341,8 @@ static bool setting_append_list_input_options(
 
    CONFIG_BOOL(
          settings->input.autoconfig_descriptor_label_show,
-         "autoconfig_descriptor_label_show",
-         "Display Autoconfig Descriptor Labels",
+         menu_hash_to_str(MENU_LABEL_AUTOCONFIG_DESCRIPTOR_LABEL_SHOW),
+         menu_hash_to_str(MENU_LABEL_VALUE_AUTOCONFIG_DESCRIPTOR_LABEL_SHOW),
          true,
          menu_hash_to_str(MENU_VALUE_OFF),
          menu_hash_to_str(MENU_VALUE_ON),
@@ -5355,8 +5355,8 @@ static bool setting_append_list_input_options(
 
    CONFIG_BOOL(
          settings->input.input_descriptor_label_show,
-         "input_descriptor_label_show",
-         "Display Core Input Descriptor Labels",
+         menu_hash_to_str(MENU_LABEL_INPUT_DESCRIPTOR_LABEL_SHOW),
+         menu_hash_to_str(MENU_LABEL_VALUE_INPUT_DESCRIPTOR_LABEL_SHOW),
          input_descriptor_label_show,
          menu_hash_to_str(MENU_VALUE_OFF),
          menu_hash_to_str(MENU_VALUE_ON),
@@ -5369,8 +5369,8 @@ static bool setting_append_list_input_options(
 
    CONFIG_BOOL(
          settings->input.input_descriptor_hide_unbound,
-         "input_descriptor_hide_unbound",
-         "Hide Unbound Core Input Descriptors",
+         menu_hash_to_str(MENU_LABEL_INPUT_DESCRIPTOR_HIDE_UNBOUND),
+         menu_hash_to_str(MENU_LABEL_VALUE_INPUT_DESCRIPTOR_HIDE_UNBOUND),
          input_descriptor_hide_unbound,
          menu_hash_to_str(MENU_VALUE_OFF),
          menu_hash_to_str(MENU_VALUE_ON),
@@ -5393,11 +5393,11 @@ static bool setting_append_list_input_options(
 
    CONFIG_BOOL(
          global->menu.bind_mode_keyboard,
-         "input_bind_mode",
-         "Bind Mode",
+         menu_hash_to_str(MENU_LABEL_INPUT_BIND_MODE),
+         menu_hash_to_str(MENU_LABEL_VALUE_INPUT_BIND_MODE),
          false,
-         "RetroPad",
-         "RetroKeyboard",
+         menu_hash_to_str(MENU_VALUE_RETROPAD),
+         menu_hash_to_str(MENU_VALUE_RETROKEYBOARD),
          group_info.name,
          subgroup_info.name,
          parent_group,
