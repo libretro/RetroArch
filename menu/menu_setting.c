@@ -3507,8 +3507,8 @@ static bool setting_append_list_main_menu_options(
 
 #if defined(HAVE_DYNAMIC) || defined(HAVE_LIBRETRO_MANAGEMENT)
    CONFIG_ACTION(
-         "core_list",
          menu_hash_to_str(MENU_LABEL_CORE_LIST),
+         menu_hash_to_str(MENU_LABEL_VALUE_CORE_LIST),
          group_info.name,
          subgroup_info.name,
          parent_group);
