@@ -5772,8 +5772,8 @@ static bool setting_append_list_menu_options(
 
    CONFIG_BOOL(
          settings->menu.navigation.wraparound.horizontal_enable,
-         "menu_navigation_wraparound_horizontal_enable",
-         "Navigation Wrap-Around Horizontal",
+         menu_hash_to_str(MENU_LABEL_NAVIGATION_WRAPAROUND_HORIZONTAL),
+         menu_hash_to_str(MENU_LABEL_VALUE_NAVIGATION_WRAPAROUND_HORIZONTAL),
          true,
          menu_hash_to_str(MENU_VALUE_OFF),
          menu_hash_to_str(MENU_VALUE_ON),
@@ -5786,8 +5786,8 @@ static bool setting_append_list_menu_options(
 
    CONFIG_BOOL(
          settings->menu.navigation.wraparound.vertical_enable,
-         "menu_navigation_wraparound_vertical_enable",
-         "Navigation Wrap-Around Vertical",
+         menu_hash_to_str(MENU_LABEL_NAVIGATION_WRAPAROUND_VERTICAL),
+         menu_hash_to_str(MENU_LABEL_VALUE_NAVIGATION_WRAPAROUND_VERTICAL),
          true,
          menu_hash_to_str(MENU_VALUE_OFF),
          menu_hash_to_str(MENU_VALUE_ON),
@@ -5889,8 +5889,8 @@ static bool setting_append_list_menu_options(
 
    CONFIG_BOOL(
          settings->menu.navigation.browser.filter.supported_extensions_enable,
-         "menu_navigation_browser_filter_supported_extensions_enable",
-         "Browser - Filter by supported extensions",
+         menu_hash_to_str(MENU_LABEL_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE),
+         menu_hash_to_str(MENU_LABEL_VALUE_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE),
          true,
          menu_hash_to_str(MENU_VALUE_OFF),
          menu_hash_to_str(MENU_VALUE_ON),
@@ -6126,8 +6126,8 @@ static bool setting_append_list_core_updater_options(
 
    CONFIG_STRING(
          settings->network.buildbot_url,
-         "core_updater_buildbot_url",
-         "Buildbot Core URL",
+         menu_hash_to_str(MENU_LABEL_CORE_UPDATER_BUILDBOT_URL),
+         menu_hash_to_str(MENU_LABEL_VALUE_CORE_UPDATER_BUILDBOT_URL),
          buildbot_server_url, 
          group_info.name,
          subgroup_info.name,
@@ -6138,8 +6138,8 @@ static bool setting_append_list_core_updater_options(
 
    CONFIG_STRING(
          settings->network.buildbot_assets_url,
-         "core_updater_buildbot_assets_url",
-         "Buildbot Assets URL",
+         menu_hash_to_str(MENU_LABEL_BUILDBOT_ASSETS_URL),
+         menu_hash_to_str(MENU_LABEL_VALUE_BUILDBOT_ASSETS_URL),
          buildbot_assets_server_url, 
          group_info.name,
          subgroup_info.name,
@@ -6150,8 +6150,8 @@ static bool setting_append_list_core_updater_options(
 
    CONFIG_BOOL(
          settings->network.buildbot_auto_extract_archive,
-         "core_updater_auto_extract_archive",
-         "Automatically extract downloaded archive",
+         menu_hash_to_str(MENU_LABEL_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE),
+         menu_hash_to_str(MENU_LABEL_VALUE_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE),
          true,
          menu_hash_to_str(MENU_VALUE_OFF),
          menu_hash_to_str(MENU_VALUE_ON),
