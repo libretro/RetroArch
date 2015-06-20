@@ -15,7 +15,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "libretro.h"
+#include "../libretro.h"
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>

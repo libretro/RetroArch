@@ -130,7 +130,7 @@ OBJ += frontend/frontend.o \
 		configuration.o \
 		libretro-common/dynamic/dylib.o \
 		dynamic.o \
-		dynamic_dummy.o \
+		cores/dynamic_dummy.o \
 		libretro-common/queues/message_queue.o \
 		rewind.o \
 		gfx/drivers_font_renderer/bitmapfont.o \

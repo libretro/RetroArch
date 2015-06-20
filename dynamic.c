@@ -29,7 +29,7 @@
 
 #include <boolean.h>
 #include "libretro_private.h"
-#include "dynamic_dummy.h"
+#include "cores/dynamic_dummy.h"
 #include "retroarch.h"
 #include "runloop.h"
 #include "configuration.h"

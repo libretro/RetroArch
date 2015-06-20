@@ -548,7 +548,7 @@ DYNAMIC
 ============================================================ */
 #include "../libretro-common/dynamic/dylib.c"
 #include "../dynamic.c"
-#include "../dynamic_dummy.c"
+#include "../cores/dynamic_dummy.c"
 #include "../gfx/video_filter.c"
 #include "../audio/audio_dsp_filter.c"
 
