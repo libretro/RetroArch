@@ -50,6 +50,10 @@ struct dispmanx_page
    /* This field will allow us to access the 
     * main _dispvars struct from the vsync CB function */
    struct dispmanx_video *dispvars;	
+
+   /* This field will allow us to access the 
+    * surface the page belongs to. */
+   struct dispmanx_surface *surface;
 };
 
 struct dispmanx_surface
@@ -57,6 +61,8 @@ struct dispmanx_surface
    /* main surface has 3 pages, menu surface has 1 */
    unsigned int numpages;
    struct dispmanx_page *pages;
+   /* the page that's currently on screen */
+   struct dispmanx_page *current_page;
    unsigned int bpp;   
 
    VC_RECT_T src_rect;
@@ -89,8 +95,6 @@ struct dispmanx_video
    DISPMANX_DISPLAY_HANDLE_T display;
    DISPMANX_UPDATE_HANDLE_T update;
    uint32_t vc_image_ptr;
-  
-   struct dispmanx_page *current_page;
 
    /* We abstract three "surfaces": main surface, menu surface and black back surface. */
    struct dispmanx_surface surfaces[3];
@@ -152,22 +156,23 @@ static struct dispmanx_page *dispmanx_get_free_page(void *data, struct dispmanx_
 static void dispmanx_vsync_callback(DISPMANX_UPDATE_HANDLE_T u, void *data)
 {
    struct dispmanx_page *page = data;
+   struct dispmanx_surface *surface = page->surface;
 
    /* Marking the page as free must be done before the signaling
     * so when update_main continues (it won't continue until we signal) 
     * we can chose this page as free */
-   if (page->dispvars->current_page) {
-      slock_lock(page->dispvars->current_page->page_used_mutex);
+   if (surface->current_page) {
+      slock_lock(surface->current_page->page_used_mutex);
 
       /* We mark as free the page that was visible until now */
-      page->dispvars->current_page->used = false;
+      surface->current_page->used = false;
 
-      slock_unlock(page->dispvars->current_page->page_used_mutex);
+      slock_unlock(surface->current_page->page_used_mutex);
    }
 
   /* The page on which we issued the flip that
    * caused this callback becomes the visible one */
-   page->dispvars->current_page = page;
+   surface->current_page = page;
 
    /* These two things must be isolated "atomically" to avoid getting 
     * a false positive in the pending_mutex test in update_main. */ 
@@ -211,8 +216,12 @@ static void dispmanx_surface_setup(void *data, int width, int height, int pitch,
    for (i = 0; i < surface->numpages; i++) {
       surface->pages[i].used = false;   
       surface->pages[i].dispvars = _dispvars;   
+      surface->pages[i].surface = surface;   
       surface->pages[i].page_used_mutex = slock_new(); 
    }
+
+   /* No page currently visible when we setup the surface. */
+   surface->current_page = NULL;
 
    /* Internal frame dimensions. Pitch is total pitch including info 
     * between scanlines */
@@ -360,7 +369,6 @@ static void *dispmanx_gfx_init(const video_info_t *video,
    /* Setup surface parameters */
    _dispvars->vc_image_ptr     = 0;
    _dispvars->pageflip_pending = 0;	
-   _dispvars->current_page     = NULL;
    _dispvars->menu_active      = false;
   
    /* Initialize the rest of the mutexes and conditions. */
