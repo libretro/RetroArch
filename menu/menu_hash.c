@@ -311,6 +311,50 @@ static const char *menu_hash_to_str_english(uint32_t hash)
 {
    switch (hash)
    {
+      case MENU_LABEL_MOUSE_ENABLE:
+         return "menu_mouse_enable";
+      case MENU_LABEL_VALUE_MOUSE_ENABLE:
+         return "Mouse Support";
+      case MENU_LABEL_POINTER_ENABLE:
+         return "menu_pointer_enable";
+      case MENU_LABEL_VALUE_POINTER_ENABLE:
+         return "Touch Support";
+      case MENU_LABEL_CORE_ENABLE:
+         return "menu_core_enable";
+      case MENU_LABEL_VALUE_CORE_ENABLE:
+         return "Display core name";
+      case MENU_LABEL_DPI_OVERRIDE_ENABLE:
+         return "dpi_override_enable";
+      case MENU_LABEL_VALUE_DPI_OVERRIDE_ENABLE:
+         return "DPI Override Enable";
+      case MENU_LABEL_DPI_OVERRIDE_VALUE:
+         return "dpi_override_value";
+      case MENU_LABEL_VALUE_DPI_OVERRIDE_VALUE:
+         return "DPI Override";
+      case MENU_LABEL_SUSPEND_SCREENSAVER_ENABLE:
+         return "suspend_screensaver_enable";
+      case MENU_LABEL_VALUE_SUSPEND_SCREENSAVER_ENABLE:
+         return "Suspend Screensaver";
+      case MENU_LABEL_VIDEO_DISABLE_COMPOSITION:
+         return "video_disable_composition";
+      case MENU_LABEL_VALUE_VIDEO_DISABLE_COMPOSITION:
+         return "Disable Desktop Composition";
+      case MENU_LABEL_PAUSE_NONACTIVE:
+         return "pause_nonactive";
+      case MENU_LABEL_VALUE_PAUSE_NONACTIVE:
+         return "Don't run in background";
+      case MENU_LABEL_UI_COMPANION_START_ON_BOOT:
+         return "ui_companion_start_on_boot";
+      case MENU_LABEL_VALUE_UI_COMPANION_START_ON_BOOT:
+         return "UI Companion Start On Boot";
+      case MENU_LABEL_UI_MENUBAR_ENABLE:
+         return "ui_menubar_enable";
+      case MENU_LABEL_VALUE_UI_MENUBAR_ENABLE:
+         return "Menubar (Hint)";
+      case MENU_LABEL_ARCHIVE_MODE:
+         return "archive_mode";
+      case MENU_LABEL_VALUE_ARCHIVE_MODE:
+         return "Archive Mode";
       case MENU_LABEL_NETWORK_CMD_ENABLE:
          return "network_cmd_enable";
       case MENU_LABEL_VALUE_NETWORK_CMD_ENABLE:

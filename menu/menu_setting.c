@@ -5754,8 +5754,8 @@ static bool setting_append_list_menu_options(
 
    CONFIG_BOOL(
          settings->menu.mouse.enable,
-         "menu_mouse_enable",
-         "Mouse Support",
+         menu_hash_to_str(MENU_LABEL_MOUSE_ENABLE),
+         menu_hash_to_str(MENU_LABEL_VALUE_MOUSE_ENABLE),
          false,
          menu_hash_to_str(MENU_VALUE_OFF),
          menu_hash_to_str(MENU_VALUE_ON),
@@ -5767,8 +5767,8 @@ static bool setting_append_list_menu_options(
 
    CONFIG_BOOL(
          settings->menu.pointer.enable,
-         "menu_pointer_enable",
-         "Touch Support",
+         menu_hash_to_str(MENU_LABEL_POINTER_ENABLE),
+         menu_hash_to_str(MENU_LABEL_VALUE_POINTER_ENABLE),
          pointer_enable,
          menu_hash_to_str(MENU_VALUE_OFF),
          menu_hash_to_str(MENU_VALUE_ON),
@@ -5940,8 +5940,8 @@ static bool setting_append_list_menu_options(
 
    CONFIG_BOOL(
          settings->menu.core_enable,
-         "menu_core_enable",
-         "Display core name",
+         menu_hash_to_str(MENU_LABEL_CORE_ENABLE),
+         menu_hash_to_str(MENU_LABEL_VALUE_CORE_ENABLE),
          true,
          menu_hash_to_str(MENU_VALUE_OFF),
          menu_hash_to_str(MENU_VALUE_ON),
@@ -5957,8 +5957,8 @@ static bool setting_append_list_menu_options(
 
    CONFIG_BOOL(
          settings->menu.dpi.override_enable,
-         "dpi_override_enable",
-         "DPI Override Enable",
+         menu_hash_to_str(MENU_LABEL_DPI_OVERRIDE_ENABLE),
+         menu_hash_to_str(MENU_LABEL_VALUE_DPI_OVERRIDE_ENABLE),
          menu_dpi_override_enable,
          menu_hash_to_str(MENU_VALUE_OFF),
          menu_hash_to_str(MENU_VALUE_ON),
@@ -5970,8 +5970,8 @@ static bool setting_append_list_menu_options(
 
    CONFIG_UINT(
          settings->menu.dpi.override_value,
-         "dpi_override_value",
-         "DPI Override",
+         menu_hash_to_str(MENU_LABEL_DPI_OVERRIDE_VALUE),
+         menu_hash_to_str(MENU_LABEL_VALUE_DPI_OVERRIDE_VALUE),
          menu_dpi_override_value,
          group_info.name,
          subgroup_info.name,
@@ -6003,8 +6003,8 @@ static bool setting_append_list_ui_options(
 
    CONFIG_BOOL(
          settings->video.disable_composition,
-         "video_disable_composition",
-         "Disable Desktop Composition",
+         menu_hash_to_str(MENU_LABEL_VIDEO_DISABLE_COMPOSITION),
+         menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_DISABLE_COMPOSITION),
          disable_composition,
          menu_hash_to_str(MENU_VALUE_OFF),
          menu_hash_to_str(MENU_VALUE_ON),
@@ -6018,8 +6018,8 @@ static bool setting_append_list_ui_options(
 
    CONFIG_BOOL(
          settings->pause_nonactive,
-         "pause_nonactive",
-         "Don't run in background",
+         menu_hash_to_str(MENU_LABEL_PAUSE_NONACTIVE),
+         menu_hash_to_str(MENU_LABEL_VALUE_PAUSE_NONACTIVE),
          pause_nonactive,
          menu_hash_to_str(MENU_VALUE_OFF),
          menu_hash_to_str(MENU_VALUE_ON),
@@ -6031,8 +6031,8 @@ static bool setting_append_list_ui_options(
    
    CONFIG_BOOL(
          settings->ui.companion_start_on_boot,
-         "ui_companion_start_on_boot",
-         "UI Companion Start on Boot",
+         menu_hash_to_str(MENU_LABEL_UI_COMPANION_START_ON_BOOT),
+         menu_hash_to_str(MENU_LABEL_VALUE_UI_COMPANION_START_ON_BOOT),
          true,
          menu_hash_to_str(MENU_VALUE_OFF),
          menu_hash_to_str(MENU_VALUE_ON),
@@ -6045,8 +6045,8 @@ static bool setting_append_list_ui_options(
 
    CONFIG_BOOL(
          settings->ui.menubar_enable,
-         "ui_menubar_enable",
-         "Menubar (Windows)",
+         menu_hash_to_str(MENU_LABEL_UI_MENUBAR_ENABLE),
+         menu_hash_to_str(MENU_LABEL_VALUE_UI_MENUBAR_ENABLE),
          true,
          menu_hash_to_str(MENU_VALUE_OFF),
          menu_hash_to_str(MENU_VALUE_ON),
@@ -6058,8 +6058,8 @@ static bool setting_append_list_ui_options(
 
    CONFIG_BOOL(
          settings->ui.suspend_screensaver_enable,
-         "suspend_screensaver_enable",
-         "Suspend Screensaver",
+         menu_hash_to_str(MENU_LABEL_SUSPEND_SCREENSAVER_ENABLE),
+         menu_hash_to_str(MENU_LABEL_VALUE_SUSPEND_SCREENSAVER_ENABLE),
          true,
          menu_hash_to_str(MENU_VALUE_OFF),
          menu_hash_to_str(MENU_VALUE_ON),
@@ -6092,8 +6092,8 @@ static bool setting_append_list_archive_options(
 
    CONFIG_UINT(
          settings->archive.mode,
-         "archive_mode",
-         "Archive Mode",
+         menu_hash_to_str(MENU_LABEL_ARCHIVE_MODE),
+         menu_hash_to_str(MENU_LABEL_VALUE_ARCHIVE_MODE),
          0,
          group_info.name,
          subgroup_info.name,

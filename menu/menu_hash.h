@@ -20,6 +20,15 @@
 extern "C" {
 #endif
 
+#define MENU_LABEL_CORE_ENABLE                                                 0x2f37fe48U
+#define MENU_LABEL_VALUE_CORE_ENABLE                                           0x751e2065U
+
+#define MENU_LABEL_MOUSE_ENABLE                                                0x1240fa88U
+#define MENU_LABEL_VALUE_MOUSE_ENABLE                                          0xd5bf366bU
+
+#define MENU_LABEL_POINTER_ENABLE                                              0xf051a7a0U
+#define MENU_LABEL_VALUE_POINTER_ENABLE                                        0x1e24b9e5U
+
 #define MENU_LABEL_RESET                                                       0x10474288U
 #define MENU_LABEL_SLOWMOTION                                                  0x6a269ea0U
 #define MENU_LABEL_HOLD_FAST_FORWARD                                           0xebe2e4cdU
@@ -32,6 +41,14 @@ extern "C" {
 #define MENU_LABEL_VALUE_DIRECTORY_NOT_FOUND                                   0xcdf3c0d5U
 #define MENU_LABEL_VALUE_NO_ITEMS                                              0x7d33e412U
 
+#define MENU_LABEL_UI_MENUBAR_ENABLE                                           0x1ddc5492U
+#define MENU_LABEL_VALUE_UI_MENUBAR_ENABLE                                     0x11927e13U
+
+#define MENU_LABEL_UI_COMPANION_START_ON_BOOT                                  0x36b23782U
+#define MENU_LABEL_VALUE_UI_COMPANION_START_ON_BOOT                            0x94796ba6U
+
+#define MENU_LABEL_ARCHIVE_MODE                                                0x7fac00cbU
+#define MENU_LABEL_VALUE_ARCHIVE_MODE                                          0x5cbac0ccU
 #define MENU_LABEL_VALUE_SHADER_OPTIONS                                        0xf3fb0028U
 #define MENU_LABEL_VALUE_USE_THIS_DIRECTORY                                    0xc5fc9ed9U
 #define MENU_LABEL_USE_THIS_DIRECTORY                                          0xc51d351dU
@@ -70,6 +87,7 @@ extern "C" {
 #define MENU_LABEL_VIDEO_GPU_SCREENSHOT                                        0xee2fcb44U
 #define MENU_LABEL_VALUE_VIDEO_GPU_SCREENSHOT                                  0x4af80c36U
 #define MENU_LABEL_PAUSE_NONACTIVE                                             0x580bf549U
+#define MENU_LABEL_VALUE_PAUSE_NONACTIVE                                       0xe985d38dU
 #define MENU_LABEL_BLOCK_SRAM_OVERWRITE                                        0xc4e88d08U
 #define MENU_LABEL_VALUE_BLOCK_SRAM_OVERWRITE                                  0x9b38260aU
 #define MENU_LABEL_VIDEO_FULLSCREEN                                            0x9506dd4eU
@@ -107,6 +125,13 @@ extern "C" {
 #define MENU_LABEL_VALUE_SAVESTATE_AUTO_LOAD                                   0x9b5ca25fU
 #define MENU_LABEL_SYSTEM_DIRECTORY                                            0x35a6fb9eU
 #define MENU_LABEL_VIDEO_DISABLE_COMPOSITION                                   0x5cbb6222U
+#define MENU_LABEL_VALUE_VIDEO_DISABLE_COMPOSITION                             0xa6200347U
+#define MENU_LABEL_SUSPEND_SCREENSAVER_ENABLE                                  0x459fcb0dU
+#define MENU_LABEL_VALUE_SUSPEND_SCREENSAVER_ENABLE                            0xf423ff48U
+#define MENU_LABEL_DPI_OVERRIDE_ENABLE                                         0xb4bf52c7U
+#define MENU_LABEL_VALUE_DPI_OVERRIDE_ENABLE                                   0xd535f449U
+#define MENU_LABEL_DPI_OVERRIDE_VALUE                                          0x543a3efdU
+#define MENU_LABEL_VALUE_DPI_OVERRIDE_VALUE                                    0x1462aba2U
 #define MENU_LABEL_VOLUME_UP                                                   0xa66e9681U
 #define MENU_LABEL_VOLUME_DOWN                                                 0xfc64f3d4U
 #define MENU_LABEL_LOG_VERBOSITY                                               0x6648c96dU
