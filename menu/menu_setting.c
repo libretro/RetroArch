@@ -3921,8 +3921,8 @@ static bool setting_append_list_core_options(
 
    CONFIG_BOOL(
          settings->load_dummy_on_core_shutdown,
-         "dummy_on_core_shutdown",
-         "Dummy On Core Shutdown",
+         menu_hash_to_str(MENU_LABEL_DUMMY_ON_CORE_SHUTDOWN),
+         menu_hash_to_str(MENU_LABEL_VALUE_DUMMY_ON_CORE_SHUTDOWN),
          load_dummy_on_core_shutdown,
          menu_hash_to_str(MENU_VALUE_OFF),
          menu_hash_to_str(MENU_VALUE_ON),
@@ -3935,8 +3935,8 @@ static bool setting_append_list_core_options(
 
    CONFIG_BOOL(
          settings->core.set_supports_no_game_enable,
-         "core_set_supports_no_game_enable",
-         "Supports No Content Enable",
+         menu_hash_to_str(MENU_LABEL_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE),
+         menu_hash_to_str(MENU_LABEL_VALUE_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE),
          true,
          menu_hash_to_str(MENU_VALUE_OFF),
          menu_hash_to_str(MENU_VALUE_ON),
@@ -3970,8 +3970,8 @@ static bool setting_append_list_configuration_options(
          parent_group);
 
    CONFIG_BOOL(settings->config_save_on_exit,
-         "config_save_on_exit",
-         "Save Configuration on Exit",
+         menu_hash_to_str(MENU_LABEL_CONFIG_SAVE_ON_EXIT),
+         menu_hash_to_str(MENU_LABEL_VALUE_CONFIG_SAVE_ON_EXIT),
          config_save_on_exit,
          menu_hash_to_str(MENU_VALUE_OFF),
          menu_hash_to_str(MENU_VALUE_ON),
@@ -3983,8 +3983,8 @@ static bool setting_append_list_configuration_options(
 
    CONFIG_BOOL(
          settings->core_specific_config,
-         "core_specific_config",
-         "Configuration Per-Core",
+         menu_hash_to_str(MENU_LABEL_CORE_SPECIFIC_CONFIG),
+         menu_hash_to_str(MENU_LABEL_VALUE_CORE_SPECIFIC_CONFIG),
          default_core_specific_config,
          menu_hash_to_str(MENU_VALUE_OFF),
          menu_hash_to_str(MENU_VALUE_ON),
@@ -3996,8 +3996,8 @@ static bool setting_append_list_configuration_options(
 
    CONFIG_BOOL(
          settings->auto_overrides_enable,
-         "auto_overrides_enable",
-         "Load Override Files Automatically",
+         menu_hash_to_str(MENU_LABEL_AUTO_OVERRIDES_ENABLE),
+         menu_hash_to_str(MENU_LABEL_VALUE_AUTO_OVERRIDES_ENABLE),
          default_auto_overrides_enable,
          menu_hash_to_str(MENU_VALUE_OFF),
          menu_hash_to_str(MENU_VALUE_ON),
@@ -4009,8 +4009,8 @@ static bool setting_append_list_configuration_options(
 
    CONFIG_BOOL(
          settings->auto_remaps_enable,
-         "auto_remaps_enable",
-         "Load Remap Files Automatically",
+         menu_hash_to_str(MENU_LABEL_AUTO_REMAPS_ENABLE),
+         menu_hash_to_str(MENU_LABEL_VALUE_AUTO_REMAPS_ENABLE),
          default_auto_remaps_enable,
          menu_hash_to_str(MENU_VALUE_OFF),
          menu_hash_to_str(MENU_VALUE_ON),
@@ -4233,8 +4233,8 @@ static bool setting_append_list_frame_throttling_options(
 
    CONFIG_BOOL(
          settings->fastforward_ratio_throttle_enable,
-         "fastforward_ratio_throttle_enable",
-         "Limit Maximum Run Speed",
+         menu_hash_to_str(MENU_LABEL_FRAME_THROTTLE_SETTINGS),
+         menu_hash_to_str(MENU_LABEL_VALUE_FRAME_THROTTLE_SETTINGS),
          fastforward_ratio_throttle_enable,
          menu_hash_to_str(MENU_VALUE_OFF),
          menu_hash_to_str(MENU_VALUE_ON),
@@ -4246,8 +4246,8 @@ static bool setting_append_list_frame_throttling_options(
 
    CONFIG_FLOAT(
          settings->fastforward_ratio,
-         "fastforward_ratio",
-         "Maximum Run Speed",
+         menu_hash_to_str(MENU_LABEL_FASTFORWARD_RATIO),
+         menu_hash_to_str(MENU_LABEL_VALUE_FASTFORWARD_RATIO),
          fastforward_ratio,
          "%.1fx",
          group_info.name,
@@ -4259,8 +4259,8 @@ static bool setting_append_list_frame_throttling_options(
 
    CONFIG_FLOAT(
          settings->slowmotion_ratio,
-         "slowmotion_ratio",
-         "Slow-Motion Ratio",
+         menu_hash_to_str(MENU_LABEL_SLOWMOTION_RATIO),
+         menu_hash_to_str(MENU_LABEL_VALUE_SLOWMOTION_RATIO),
          slowmotion_ratio,
          "%.1fx",
          group_info.name,
@@ -4532,8 +4532,8 @@ static bool setting_append_list_video_options(
 
    CONFIG_FLOAT(
          settings->video.refresh_rate,
-         "video_refresh_rate_auto",
-         "Estimated Monitor Framerate",
+         menu_hash_to_str(MENU_LABEL_VIDEO_REFRESH_RATE_AUTO),
+         menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO),
          refresh_rate,
          "%.3f Hz",
          group_info.name,

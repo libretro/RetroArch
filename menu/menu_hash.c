@@ -311,6 +311,46 @@ static const char *menu_hash_to_str_english(uint32_t hash)
 {
    switch (hash)
    {
+      case MENU_LABEL_VIDEO_REFRESH_RATE_AUTO:
+         return "video_refresh_rate_auto";
+      case MENU_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO:
+         return "Estimated Monitor Framerate";
+      case MENU_LABEL_DUMMY_ON_CORE_SHUTDOWN:
+         return "dummy_on_core_shutdown";
+      case MENU_LABEL_VALUE_DUMMY_ON_CORE_SHUTDOWN:
+         return "Dummy On Core Shutdown";
+      case MENU_LABEL_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE:
+         return "core_set_supports_no_content_enable";
+      case MENU_LABEL_VALUE_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE:
+         return "Don't automatically start a core";
+      case MENU_LABEL_FRAME_THROTTLE_SETTINGS:
+         return "fastforward_ratio_throttle_enable";
+      case MENU_LABEL_VALUE_FRAME_THROTTLE_SETTINGS:
+         return "Limit Maximum Run Speed";
+      case MENU_LABEL_FASTFORWARD_RATIO:
+         return "fastforward_ratio";
+      case MENU_LABEL_VALUE_FASTFORWARD_RATIO:
+         return "Maximum Run Speed";
+      case MENU_LABEL_AUTO_REMAPS_ENABLE:
+         return "auto_remaps_enable";
+      case MENU_LABEL_VALUE_AUTO_REMAPS_ENABLE:
+         return "Load Remap Files Automatically";
+      case MENU_LABEL_SLOWMOTION_RATIO:
+         return "slowmotion_ratio";
+      case MENU_LABEL_VALUE_SLOWMOTION_RATIO:
+         return "Slow-Motion Ratio";
+      case MENU_LABEL_CORE_SPECIFIC_CONFIG:
+         return "core_specific_config";
+      case MENU_LABEL_VALUE_CORE_SPECIFIC_CONFIG:
+         return "Configuration Per-Core";
+      case MENU_LABEL_AUTO_OVERRIDES_ENABLE:
+         return "auto_overrides_enable";
+      case MENU_LABEL_VALUE_AUTO_OVERRIDES_ENABLE:
+         return "Load Override Files Automatically";
+      case MENU_LABEL_CONFIG_SAVE_ON_EXIT:
+         return "config_save_on_exit";
+      case MENU_LABEL_VALUE_CONFIG_SAVE_ON_EXIT:
+         return "Save Configuration On Exit";
       case MENU_LABEL_VIDEO_SMOOTH:
          return "video_smooth";
       case MENU_LABEL_VALUE_VIDEO_SMOOTH:

@@ -75,6 +75,11 @@ extern "C" {
 #define MENU_LABEL_VIDEO_FULLSCREEN                                            0x9506dd4eU
 #define MENU_LABEL_VALUE_VIDEO_FULLSCREEN                                      0x232743caU
 #define MENU_LABEL_CORE_SPECIFIC_CONFIG                                        0x3c9a55e8U
+#define MENU_LABEL_VALUE_CORE_SPECIFIC_CONFIG                                  0x8b8bec5aU
+#define MENU_LABEL_AUTO_OVERRIDES_ENABLE                                       0x35ff91b6U
+#define MENU_LABEL_VALUE_AUTO_OVERRIDES_ENABLE                                 0xc21c3a11U
+#define MENU_LABEL_AUTO_REMAPS_ENABLE                                          0x98c8f98bU
+#define MENU_LABEL_VALUE_AUTO_REMAPS_ENABLE                                    0x390f9666U
 #define MENU_LABEL_RGUI_SHOW_START_SCREEN                                      0x6b38f0e8U
 #define MENU_LABEL_VIDEO_BLACK_FRAME_INSERTION                                 0x53477f5cU
 #define MENU_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION                           0xb823faa8U
@@ -140,6 +145,7 @@ extern "C" {
 #define MENU_LABEL_SYSTEM_BGM_ENABLE                                           0x9287a1c5U
 
 #define MENU_LABEL_FASTFORWARD_RATIO                                           0x3a0c2706U
+#define MENU_LABEL_VALUE_FASTFORWARD_RATIO                                     0x3c719749U
 #define MENU_LABEL_VIDEO_MONITOR_INDEX                                         0xb6fcdc9aU
 #define MENU_LABEL_VALUE_VIDEO_MONITOR_INDEX                                   0x4cabbfe5U
 #define MENU_LABEL_INPUT_OVERLAY_ENABLE                                        0xc7b21d5cU
@@ -147,6 +153,7 @@ extern "C" {
 #define MENU_LABEL_INPUT_OSK_OVERLAY_ENABLE                                    0x7f8339c8U
 #define MENU_LABEL_VALUE_INPUT_OSK_OVERLAY_ENABLE                              0x44e487aeU
 #define MENU_LABEL_VIDEO_REFRESH_RATE_AUTO                                     0x9addb6cdU
+#define MENU_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO                               0xaf24a804U
 #define MENU_LABEL_VIDEO_ROTATION                                              0x4ce6882bU
 #define MENU_LABEL_VIDEO_SCALE                                                 0x09835d63U
 #define MENU_LABEL_VALUE_VIDEO_SCALE                                           0x5cde89ceU
@@ -192,6 +199,7 @@ extern "C" {
 #define MENU_LABEL_AUTOSAVE_INTERVAL                                           0xecc87351U
 #define MENU_LABEL_VALUE_AUTOSAVE_INTERVAL                                     0x256f3981U
 #define MENU_LABEL_CONFIG_SAVE_ON_EXIT                                         0x79b590feU
+#define MENU_LABEL_VALUE_CONFIG_SAVE_ON_EXIT                                   0x4be88ae3U
 
 #define MENU_LABEL_INPUT_DRIVER                                                0x4c087840U
 #define MENU_LABEL_INPUT_DRIVER_LINUXRAW                                       0xc33c6b9fU
@@ -216,6 +224,7 @@ extern "C" {
 #define MENU_LABEL_BOXARTS_DIRECTORY                                           0x9e2bdbddU
 
 #define MENU_LABEL_SLOWMOTION_RATIO                                            0x626b3ffeU
+#define MENU_LABEL_VALUE_SLOWMOTION_RATIO                                      0x81c6f8ecU
 #define MENU_LABEL_INPUT_MAX_USERS                                             0x2720206bU
 #define MENU_LABEL_VALUE_INPUT_MAX_USERS                                       0xe6b0aefdU
 #define MENU_LABEL_INPUT_REMAP_BINDS_ENABLE                                    0x536dcafeU
@@ -317,7 +326,11 @@ extern "C" {
 #define MENU_LABEL_RECORD_CONFIG                                               0x11c3daf9U
 #define MENU_LABEL_VIDEO_SHARED_CONTEXT                                        0x7d7dad16U
 #define MENU_LABEL_VALUE_VIDEO_SHARED_CONTEXT                                  0x353d3287U
+#define MENU_LABEL_DUMMY_ON_CORE_SHUTDOWN                                      0x78579f70U
+#define MENU_LABEL_VALUE_DUMMY_ON_CORE_SHUTDOWN                                0xc50126d3U
 #define MENU_LABEL_UNLOAD_CORE                                                 0x4b622170U
+#define MENU_LABEL_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE                         0x593d2623U
+#define MENU_LABEL_VALUE_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE                   0x9614c0b2U
 #define MENU_LABEL_VALUE_UNLOAD_CORE                                           0x9b45e571U
 #define MENU_LABEL_QUIT_RETROARCH                                              0x84b0bc71U
 #define MENU_LABEL_VALUE_QUIT_RETROARCH                                        0x8e7024f2U
@@ -453,6 +466,7 @@ extern "C" {
 #define MENU_LABEL_VIDEO_SETTINGS                                              0x9dd23badU
 #define MENU_LABEL_RECORDING_SETTINGS                                          0x1a80b313U
 #define MENU_LABEL_FRAME_THROTTLE_SETTINGS                                     0x573b8837U
+#define MENU_LABEL_VALUE_FRAME_THROTTLE_SETTINGS                               0x936f04a8U
 #define MENU_LABEL_SHADER_SETTINGS                                             0xd6657e8dU
 #define MENU_LABEL_FONT_SETTINGS                                               0x67571029U
 #define MENU_LABEL_AUDIO_SETTINGS                                              0x8f74c888U
