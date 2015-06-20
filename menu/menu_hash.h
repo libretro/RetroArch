@@ -86,12 +86,17 @@ extern "C" {
 #define MENU_LABEL_VIDEO_VSYNC                                                 0x09c2d34eU
 #define MENU_LABEL_VIDEO_HARD_SYNC                                             0xdcd623b6U
 #define MENU_LABEL_SAVESTATE_AUTO_SAVE                                         0xf6f4a05bU
+#define MENU_LABEL_SAVESTATE_AUTO_LOAD                                         0xf6f1028cU
+#define MENU_LABEL_SAVESTATE_AUTO_INDEX                                        0xd4da8b84U
+#define MENU_LABEL_VALUE_SAVESTATE_AUTO_INDEX                                  0x29b65b06U
 #define MENU_LABEL_VALUE_SAVESTATE_AUTO_SAVE                                   0x07391f6eU
+#define MENU_LABEL_VALUE_SAVESTATE_AUTO_LOAD                                   0x9b5ca25fU
 #define MENU_LABEL_SYSTEM_DIRECTORY                                            0x35a6fb9eU
 #define MENU_LABEL_VIDEO_DISABLE_COMPOSITION                                   0x5cbb6222U
 #define MENU_LABEL_VOLUME_UP                                                   0xa66e9681U
 #define MENU_LABEL_VOLUME_DOWN                                                 0xfc64f3d4U
 #define MENU_LABEL_LOG_VERBOSITY                                               0x6648c96dU
+#define MENU_LABEL_VALUE_LOG_VERBOSITY                                         0x2f9f6013U
 #define MENU_LABEL_OVERLAY_NEXT                                                0x7a459145U
 #define MENU_LABEL_AUDIO_VOLUME                                                0x502173aeU
 #define MENU_LABEL_VALUE_AUDIO_VOLUME                                          0x0fa6ccfeU
@@ -99,9 +104,14 @@ extern "C" {
 #define MENU_LABEL_VALUE_AUDIO_LATENCY                                         0x89900e38U
 #define MENU_LABEL_NETPLAY_DELAY_FRAMES                                        0x86b2c48dU
 #define MENU_LABEL_NETPLAY_SPECTATOR_MODE_ENABLE                               0x6f9a9440U
+#define MENU_LABEL_SORT_SAVEFILES_ENABLE                                       0xed0d0df4U
+#define MENU_LABEL_VALUE_SORT_SAVEFILES_ENABLE                                 0x1a6db795U
+#define MENU_LABEL_SORT_SAVESTATES_ENABLE                                      0x66ff2495U
+#define MENU_LABEL_VALUE_SORT_SAVESTATES_ENABLE                                0x82c5e076U
 #define MENU_LABEL_NETPLAY_IP_ADDRESS                                          0xac9a53ffU
 #define MENU_LABEL_NETPLAY_MODE                                                0xc1cf6506U
 #define MENU_LABEL_PERFCNT_ENABLE                                              0x6823dbddU
+#define MENU_LABEL_VALUE_PERFCNT_ENABLE                                        0x20eb18caU
 #define MENU_LABEL_OVERLAY_SCALE                                               0x2dce2a3dU
 #define MENU_LABEL_VALUE_OVERLAY_SCALE                                         0x4237794fU
 #define MENU_LABEL_KEYBOARD_OVERLAY_PRESET                                     0x11f1c582U
@@ -161,6 +171,7 @@ extern "C" {
 #define MENU_LABEL_STATE_SLOT_INCREASE                                         0x36a0cbb0U
 
 #define MENU_LABEL_LIBRETRO_LOG_LEVEL                                          0x57971ac0U
+#define MENU_LABEL_VALUE_LIBRETRO_LOG_LEVEL                                    0x4455456dU
 
 #define MENU_LABEL_INPUT_BIND_DEVICE_ID                                        0xd1ea94ecU
 #define MENU_LABEL_INPUT_BIND_DEVICE_TYPE                                      0xf6e9f041U

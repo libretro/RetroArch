@@ -193,8 +193,36 @@ static const char *menu_hash_to_str_english(uint32_t hash)
 {
    switch (hash)
    {
+      case MENU_LABEL_SORT_SAVEFILES_ENABLE:
+         return "sort_savefiles_enable";
+      case MENU_LABEL_VALUE_SORT_SAVEFILES_ENABLE:
+         return "Sort Saves In Folders";
+      case MENU_LABEL_SORT_SAVESTATES_ENABLE:
+         return "sort_savestates_enable";
+      case MENU_LABEL_VALUE_SORT_SAVESTATES_ENABLE:
+         return "Sort Savestates In Folders";
+      case MENU_LABEL_PERFCNT_ENABLE:
+         return "perfcnt_enable";
+      case MENU_LABEL_VALUE_PERFCNT_ENABLE:
+         return "Performance Counters";
+      case MENU_LABEL_LIBRETRO_LOG_LEVEL:
+         return "libretro_log_level";
+      case MENU_LABEL_VALUE_LIBRETRO_LOG_LEVEL:
+         return "Core Logging Level";
+      case MENU_LABEL_LOG_VERBOSITY:
+         return "log_verbosity";
+      case MENU_LABEL_VALUE_LOG_VERBOSITY:
+         return "Logging Verbosity";
       case MENU_LABEL_SAVESTATE_AUTO_SAVE:
          return "savestate_auto_save";
+      case MENU_LABEL_SAVESTATE_AUTO_LOAD:
+         return "savestate_auto_load";
+      case MENU_LABEL_VALUE_SAVESTATE_AUTO_LOAD:
+         return "Auto Load State";
+      case MENU_LABEL_SAVESTATE_AUTO_INDEX:
+         return "savestate_auto_index";
+      case MENU_LABEL_VALUE_SAVESTATE_AUTO_INDEX:
+         return "Save State Auto Index";
       case MENU_LABEL_VALUE_SAVESTATE_AUTO_SAVE:
          return "Auto Save State";
       case MENU_LABEL_AUTOSAVE_INTERVAL:
@@ -565,8 +593,6 @@ static const char *menu_hash_to_str_english(uint32_t hash)
          return "Advanced Management";
       case MENU_LABEL_PERFORMANCE_COUNTERS:
          return "performance_counters";
-      case MENU_LABEL_VALUE_PERFORMANCE_COUNTERS:
-         return "Performance Counters";
       case MENU_LABEL_SAVE_STATE:
          return "savestate";
       case MENU_LABEL_VALUE_SAVE_STATE:

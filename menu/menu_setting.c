@@ -4044,8 +4044,8 @@ static bool setting_append_list_saving_options(
 
    CONFIG_BOOL(
          settings->sort_savefiles_enable,
-         "sort_savefiles_enable",
-         "Sort Saves In Folders",
+         menu_hash_to_str(MENU_LABEL_SORT_SAVEFILES_ENABLE),
+         menu_hash_to_str(MENU_LABEL_VALUE_SORT_SAVEFILES_ENABLE),
          default_sort_savefiles_enable,
          menu_hash_to_str(MENU_VALUE_OFF),
          menu_hash_to_str(MENU_VALUE_ON),
@@ -4057,8 +4057,8 @@ static bool setting_append_list_saving_options(
 
    CONFIG_BOOL(
          settings->sort_savestates_enable,
-         "sort_savestates_enable",
-         "Sort Saves States In Folders",
+         menu_hash_to_str(MENU_LABEL_SORT_SAVESTATES_ENABLE),
+         menu_hash_to_str(MENU_LABEL_VALUE_SORT_SAVESTATES_ENABLE),
          default_sort_savestates_enable,
          menu_hash_to_str(MENU_VALUE_OFF),
          menu_hash_to_str(MENU_VALUE_ON),
@@ -4102,8 +4102,8 @@ static bool setting_append_list_saving_options(
 
    CONFIG_BOOL(
          settings->savestate_auto_index,
-         "savestate_auto_index",
-         "Save State Auto Index",
+         menu_hash_to_str(MENU_LABEL_SAVESTATE_AUTO_INDEX),
+         menu_hash_to_str(MENU_LABEL_VALUE_SAVESTATE_AUTO_INDEX),
          savestate_auto_index,
          menu_hash_to_str(MENU_VALUE_OFF),
          menu_hash_to_str(MENU_VALUE_ON),
@@ -4128,8 +4128,8 @@ static bool setting_append_list_saving_options(
 
    CONFIG_BOOL(
          settings->savestate_auto_load,
-         "savestate_auto_load",
-         "Auto Load State",
+         menu_hash_to_str(MENU_LABEL_SAVESTATE_AUTO_LOAD),
+         menu_hash_to_str(MENU_LABEL_VALUE_SAVESTATE_AUTO_LOAD),
          savestate_auto_load,
          menu_hash_to_str(MENU_VALUE_OFF),
          menu_hash_to_str(MENU_VALUE_ON),
@@ -4165,8 +4165,8 @@ static bool setting_append_list_logging_options(
 
    CONFIG_BOOL(
          global->verbosity,
-         "log_verbosity",
-         "Logging Verbosity",
+         menu_hash_to_str(MENU_LABEL_LOG_VERBOSITY),
+         menu_hash_to_str(MENU_LABEL_VALUE_LOG_VERBOSITY),
          false,
          menu_hash_to_str(MENU_VALUE_OFF),
          menu_hash_to_str(MENU_VALUE_ON),
@@ -4179,8 +4179,8 @@ static bool setting_append_list_logging_options(
 
 
    CONFIG_UINT(settings->libretro_log_level,
-         "libretro_log_level",
-         "Core Logging Level",
+         menu_hash_to_str(MENU_LABEL_LIBRETRO_LOG_LEVEL),
+         menu_hash_to_str(MENU_LABEL_VALUE_LIBRETRO_LOG_LEVEL),
          libretro_log_level,
          group_info.name,
          subgroup_info.name,
@@ -4198,8 +4198,8 @@ static bool setting_append_list_logging_options(
          parent_group);
 
    CONFIG_BOOL(global->perfcnt_enable,
-         "perfcnt_enable",
-         "Performance Counters",
+         menu_hash_to_str(MENU_LABEL_PERFCNT_ENABLE),
+         menu_hash_to_str(MENU_LABEL_VALUE_PERFCNT_ENABLE),
          false,
          menu_hash_to_str(MENU_VALUE_OFF),
          menu_hash_to_str(MENU_VALUE_ON),
