@@ -105,6 +105,7 @@ extern "C" {
 #define MENU_LABEL_AUTO_REMAPS_ENABLE                                          0x98c8f98bU
 #define MENU_LABEL_VALUE_AUTO_REMAPS_ENABLE                                    0x390f9666U
 #define MENU_LABEL_RGUI_SHOW_START_SCREEN                                      0x6b38f0e8U
+#define MENU_LABEL_VALUE_RGUI_SHOW_START_SCREEN                                0x76784454U
 #define MENU_LABEL_VIDEO_BLACK_FRAME_INSERTION                                 0x53477f5cU
 #define MENU_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION                           0xb823faa8U
 #define MENU_LABEL_VIDEO_HARD_SYNC_FRAMES                                      0xce0ece13U
@@ -119,8 +120,15 @@ extern "C" {
 #define MENU_LABEL_VALUE_THREADED_DATA_RUNLOOP_ENABLE                          0x04d8c10fU
 #define MENU_LABEL_VIDEO_THREADED                                              0x0626179cU
 #define MENU_LABEL_VALUE_VIDEO_THREADED                                        0xc7524afdU
+
+#define MENU_LABEL_TITLE_COLOR                                                 0x10059879U
+#define MENU_LABEL_VALUE_TITLE_COLOR                                           0xea87e1dbU
+#define MENU_LABEL_TIMEDATE_ENABLE                                             0xd3adcbecU
+#define MENU_LABEL_VALUE_TIMEDATE_ENABLE                                       0x104bcdf7U
 #define MENU_LABEL_ENTRY_NORMAL_COLOR                                          0x5154ffd1U
 #define MENU_LABEL_VALUE_ENTRY_NORMAL_COLOR                                    0xa989a754U
+#define MENU_LABEL_ENTRY_HOVER_COLOR                                           0x4143cfccU
+#define MENU_LABEL_VALUE_ENTRY_HOVER_COLOR                                     0xb56f1b0fU
 #define MENU_LABEL_AUDIO_SYNC                                                  0xe0cd6bd3U
 #define MENU_LABEL_VALUE_AUDIO_SYNC                                            0xcbeb903bU
 #define MENU_LABEL_VIDEO_VSYNC                                                 0x09c2d34eU

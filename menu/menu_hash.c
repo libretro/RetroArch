@@ -311,6 +311,22 @@ static const char *menu_hash_to_str_english(uint32_t hash)
 {
    switch (hash)
    {
+      case MENU_LABEL_RGUI_SHOW_START_SCREEN:
+         return "rgui_show_start_screen";
+      case MENU_LABEL_VALUE_RGUI_SHOW_START_SCREEN:
+         return "Show Start Screen";
+      case MENU_LABEL_TITLE_COLOR:
+         return "menu_title_color";
+      case MENU_LABEL_VALUE_TITLE_COLOR:
+         return "Menu title color";
+      case MENU_LABEL_ENTRY_HOVER_COLOR:
+         return "menu_entry_hover_color";
+      case MENU_LABEL_VALUE_ENTRY_HOVER_COLOR:
+         return "Menu entry hover color";
+      case MENU_LABEL_TIMEDATE_ENABLE:
+         return "menu_timedate_enable";
+      case MENU_LABEL_VALUE_TIMEDATE_ENABLE:
+         return "Display time / date";
       case MENU_LABEL_THREADED_DATA_RUNLOOP_ENABLE:
          return "threaded_data_runloop_enable";
       case MENU_LABEL_VALUE_THREADED_DATA_RUNLOOP_ENABLE:

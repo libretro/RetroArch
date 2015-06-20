@@ -5724,18 +5724,6 @@ static bool setting_append_list_menu_options(
          general_write_handler,
          general_read_handler);
 
-   CONFIG_BOOL(
-         settings->menu.boxart_enable,
-         menu_hash_to_str(MENU_LABEL_BOXART),
-         menu_hash_to_str(MENU_LABEL_VALUE_BOXART),
-         true,
-         menu_hash_to_str(MENU_VALUE_OFF),
-         menu_hash_to_str(MENU_VALUE_ON),
-         group_info.name,
-         subgroup_info.name,
-         parent_group,
-         general_write_handler,
-         general_read_handler);
 
    CONFIG_BOOL(
          settings->menu.pause_libretro,
@@ -5872,8 +5860,8 @@ static bool setting_append_list_menu_options(
 
    CONFIG_HEX(
          settings->menu.entry_hover_color,
-         "menu_entry_hover_color",
-         "Menu entry hover color",
+         menu_hash_to_str(MENU_LABEL_ENTRY_HOVER_COLOR),
+         menu_hash_to_str(MENU_LABEL_VALUE_ENTRY_HOVER_COLOR),
          menu_entry_hover_color,
          group_info.name,
          subgroup_info.name,
@@ -5885,8 +5873,8 @@ static bool setting_append_list_menu_options(
 
    CONFIG_HEX(
          settings->menu.title_color,
-         "menu_title_color",
-         "Menu title color",
+         menu_hash_to_str(MENU_LABEL_TITLE_COLOR),
+         menu_hash_to_str(MENU_LABEL_VALUE_TITLE_COLOR),
          menu_title_color,
          group_info.name,
          subgroup_info.name,
@@ -5914,8 +5902,8 @@ static bool setting_append_list_menu_options(
 
    CONFIG_BOOL(
          settings->menu_show_start_screen,
-         "rgui_show_start_screen",
-         "Show Start Screen",
+         menu_hash_to_str(MENU_LABEL_RGUI_SHOW_START_SCREEN),
+         menu_hash_to_str(MENU_LABEL_VALUE_RGUI_SHOW_START_SCREEN),
          menu_show_start_screen,
          menu_hash_to_str(MENU_VALUE_OFF),
          menu_hash_to_str(MENU_VALUE_ON),
@@ -5926,9 +5914,22 @@ static bool setting_append_list_menu_options(
          general_read_handler);
 
    CONFIG_BOOL(
+         settings->menu.boxart_enable,
+         menu_hash_to_str(MENU_LABEL_BOXART),
+         menu_hash_to_str(MENU_LABEL_VALUE_BOXART),
+         true,
+         menu_hash_to_str(MENU_VALUE_OFF),
+         menu_hash_to_str(MENU_VALUE_ON),
+         group_info.name,
+         subgroup_info.name,
+         parent_group,
+         general_write_handler,
+         general_read_handler);
+
+   CONFIG_BOOL(
          settings->menu.timedate_enable,
-         "menu_timedate_enable",
-         "Display time / date",
+         menu_hash_to_str(MENU_LABEL_TIMEDATE_ENABLE),
+         menu_hash_to_str(MENU_LABEL_VALUE_TIMEDATE_ENABLE),
          true,
          menu_hash_to_str(MENU_VALUE_OFF),
          menu_hash_to_str(MENU_VALUE_ON),
