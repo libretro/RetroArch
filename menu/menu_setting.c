@@ -4676,8 +4676,8 @@ static bool setting_append_list_video_options(
 
    CONFIG_BOOL(
          settings->video.smooth,
-         "video_smooth",
-         "Bilinear Filtering",
+         menu_hash_to_str(MENU_LABEL_VIDEO_SMOOTH),
+         menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_SMOOTH),
          video_smooth,
          menu_hash_to_str(MENU_VALUE_OFF),
          menu_hash_to_str(MENU_VALUE_ON),
@@ -4704,8 +4704,8 @@ static bool setting_append_list_video_options(
 
    CONFIG_UINT(
          settings->video.rotation,
-         "video_rotation",
-         "Rotation",
+         menu_hash_to_str(MENU_LABEL_VIDEO_ROTATION),
+         menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_ROTATION),
          0,
          group_info.name,
          subgroup_info.name,
@@ -4720,8 +4720,8 @@ static bool setting_append_list_video_options(
 #if defined(HW_RVL) || defined(_XBOX360)
    CONFIG_UINT(
          global->console.screen.gamma_correction,
-         "video_gamma",
-         "Gamma",
+         menu_hash_to_str(MENU_LABEL_VIDEO_GAMMA),
+         menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_GAMMA),
          0,
          group_info.name,
          subgroup_info.name,
@@ -4755,8 +4755,8 @@ static bool setting_append_list_video_options(
 #if defined(HAVE_THREADS) && !defined(RARCH_CONSOLE)
    CONFIG_BOOL(
          settings->video.threaded,
-         "video_threaded",
-         "Threaded Video",
+         menu_hash_to_str(MENU_LABEL_VIDEO_THREADED),
+         menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_THREADED),
          video_threaded,
          menu_hash_to_str(MENU_VALUE_OFF),
          menu_hash_to_str(MENU_VALUE_ON),
@@ -4771,8 +4771,8 @@ static bool setting_append_list_video_options(
 
    CONFIG_BOOL(
          settings->video.vsync,
-         "video_vsync",
-         "VSync",
+         menu_hash_to_str(MENU_LABEL_VIDEO_VSYNC),
+         menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_VSYNC),
          vsync,
          menu_hash_to_str(MENU_VALUE_OFF),
          menu_hash_to_str(MENU_VALUE_ON),
@@ -4784,8 +4784,8 @@ static bool setting_append_list_video_options(
 
    CONFIG_UINT(
          settings->video.swap_interval,
-         "video_swap_interval",
-         "VSync Swap Interval",
+         menu_hash_to_str(MENU_LABEL_VIDEO_SWAP_INTERVAL),
+         menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_SWAP_INTERVAL),
          swap_interval,
          group_info.name,
          subgroup_info.name,
@@ -4798,8 +4798,8 @@ static bool setting_append_list_video_options(
 
    CONFIG_BOOL(
          settings->video.hard_sync,
-         "video_hard_sync",
-         "Hard GPU Sync",
+         menu_hash_to_str(MENU_LABEL_VIDEO_HARD_SYNC),
+         menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_HARD_SYNC),
          hard_sync,
          menu_hash_to_str(MENU_VALUE_OFF),
          menu_hash_to_str(MENU_VALUE_ON),
@@ -4860,8 +4860,8 @@ static bool setting_append_list_video_options(
 
    CONFIG_BOOL(
          settings->video.gpu_screenshot,
-         "video_gpu_screenshot",
-         "GPU Screenshot Enable",
+         menu_hash_to_str(MENU_LABEL_VIDEO_GPU_SCREENSHOT),
+         menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_GPU_SCREENSHOT),
          gpu_screenshot,
          menu_hash_to_str(MENU_VALUE_OFF),
          menu_hash_to_str(MENU_VALUE_ON),
@@ -4874,8 +4874,8 @@ static bool setting_append_list_video_options(
 
    CONFIG_BOOL(
          settings->video.allow_rotate,
-         "video_allow_rotate",
-         "Allow rotation",
+         menu_hash_to_str(MENU_LABEL_VIDEO_ALLOW_ROTATE),
+         menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_ALLOW_ROTATE),
          allow_rotate,
          menu_hash_to_str(MENU_VALUE_OFF),
          menu_hash_to_str(MENU_VALUE_ON),

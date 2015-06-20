@@ -66,7 +66,9 @@ extern "C" {
 #define MENU_LABEL_R_Y_MINUS                                                   0xc5c58dbaU
 #define MENU_LABEL_R_Y_PLUS                                                    0x63173332U
 #define MENU_LABEL_VIDEO_SWAP_INTERVAL                                         0x5673ff9aU
+#define MENU_LABEL_VALUE_VIDEO_SWAP_INTERVAL                                   0xe41b3878U
 #define MENU_LABEL_VIDEO_GPU_SCREENSHOT                                        0xee2fcb44U
+#define MENU_LABEL_VALUE_VIDEO_GPU_SCREENSHOT                                  0x4af80c36U
 #define MENU_LABEL_PAUSE_NONACTIVE                                             0x580bf549U
 #define MENU_LABEL_BLOCK_SRAM_OVERWRITE                                        0xc4e88d08U
 #define MENU_LABEL_VALUE_BLOCK_SRAM_OVERWRITE                                  0x9b38260aU
@@ -83,11 +85,15 @@ extern "C" {
 #define MENU_LABEL_SCREENSHOT                                                  0x9a37f083U
 #define MENU_LABEL_REWIND_GRANULARITY                                          0xe859cbdfU
 #define MENU_LABEL_VALUE_REWIND_GRANULARITY                                    0x6e1ae4c0U
+#define MENU_LABEL_VALUE_VIDEO_ROTATION                                        0x9efcecf5U
 #define MENU_LABEL_VIDEO_THREADED                                              0x0626179cU
+#define MENU_LABEL_VALUE_VIDEO_THREADED                                        0xc7524afdU
 #define MENU_LABEL_AUDIO_SYNC                                                  0xe0cd6bd3U
 #define MENU_LABEL_VALUE_AUDIO_SYNC                                            0xcbeb903bU
 #define MENU_LABEL_VIDEO_VSYNC                                                 0x09c2d34eU
+#define MENU_LABEL_VALUE_VIDEO_VSYNC                                           0xd69cd742U
 #define MENU_LABEL_VIDEO_HARD_SYNC                                             0xdcd623b6U
+#define MENU_LABEL_VALUE_VIDEO_HARD_SYNC                                       0x3012142dU
 #define MENU_LABEL_SAVESTATE_AUTO_SAVE                                         0xf6f4a05bU
 #define MENU_LABEL_SAVESTATE_AUTO_LOAD                                         0xf6f1028cU
 #define MENU_LABEL_SAVESTATE_AUTO_INDEX                                        0xd4da8b84U
@@ -145,6 +151,7 @@ extern "C" {
 #define MENU_LABEL_VIDEO_SCALE                                                 0x09835d63U
 #define MENU_LABEL_VALUE_VIDEO_SCALE                                           0x5cde89ceU
 #define MENU_LABEL_VIDEO_SMOOTH                                                0x3aabbb35U
+#define MENU_LABEL_VALUE_VIDEO_SMOOTH                                          0xeb0723aeU
 #define MENU_LABEL_VIDEO_CROP_OVERSCAN                                         0x861f7a2fU
 #define MENU_LABEL_VALUE_VIDEO_CROP_OVERSCAN                                   0xc0b575e2U
 #define MENU_LABEL_VIDEO_SCALE_INTEGER                                         0x65c4b090U
@@ -218,6 +225,12 @@ extern "C" {
 #define MENU_LABEL_INPUT_TURBO_PERIOD                                          0xf7a97482U
 #define MENU_LABEL_VALUE_INPUT_TURBO_PERIOD                                    0x9207b594U
 #define MENU_LABEL_INPUT_AUTODETECT_ENABLE                                     0xb1e07facU
+
+#define MENU_LABEL_VIDEO_GAMMA                                                 0x08a951beU
+#define MENU_LABEL_VALUE_VIDEO_GAMMA                                           0xc7da99dfU
+
+#define MENU_LABEL_VIDEO_ALLOW_ROTATE                                          0x2880f0e8U
+#define MENU_LABEL_VALUE_VIDEO_ALLOW_ROTATE                                    0x29a66fb4U
 
 #define MENU_LABEL_CAMERA_ALLOW                                                0xc14d302cU
 #define MENU_LABEL_VALUE_CAMERA_ALLOW                                          0x553824adU

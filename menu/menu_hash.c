@@ -193,6 +193,40 @@ static const char *menu_hash_to_str_english(uint32_t hash)
 {
    switch (hash)
    {
+      case MENU_LABEL_VIDEO_SMOOTH:
+         return "video_smooth";
+      case MENU_LABEL_VALUE_VIDEO_SMOOTH:
+         return "HW Bilinear Filtering";
+      case MENU_LABEL_VIDEO_GAMMA:
+         return "video_gamma";
+      case MENU_LABEL_VALUE_VIDEO_GAMMA:
+         return "Video Gamma";
+      case MENU_LABEL_VIDEO_ALLOW_ROTATE:
+         return "video_allow_rotate";
+      case MENU_LABEL_VALUE_VIDEO_ALLOW_ROTATE:
+         return "Allow rotation";
+      case MENU_LABEL_VIDEO_HARD_SYNC:
+         return "video_hard_sync";
+      case MENU_LABEL_VALUE_VIDEO_HARD_SYNC:
+         return "Hard GPU Sync";
+      case MENU_LABEL_VIDEO_SWAP_INTERVAL:
+         return "video_swap_interval";
+      case MENU_LABEL_VALUE_VIDEO_SWAP_INTERVAL:
+         return "VSync Swap Interval";
+      case MENU_LABEL_VIDEO_VSYNC:
+         return "video_vsync";
+      case MENU_LABEL_VALUE_VIDEO_VSYNC:
+         return "VSync";
+      case MENU_LABEL_VIDEO_THREADED:
+         return "video_threaded";
+      case MENU_LABEL_VALUE_VIDEO_THREADED:
+         return "Threaded Video";
+      case MENU_LABEL_VIDEO_ROTATION:
+         return "video_rotation";
+      case MENU_LABEL_VALUE_VIDEO_ROTATION:
+         return "Rotation";
+      case MENU_LABEL_VIDEO_GPU_SCREENSHOT:
+         return "video_gpu_screenshot";
       case MENU_LABEL_VIDEO_CROP_OVERSCAN:
          return "video_crop_overscan";
       case MENU_LABEL_VALUE_VIDEO_CROP_OVERSCAN:
