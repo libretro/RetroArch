@@ -311,6 +311,10 @@ static const char *menu_hash_to_str_english(uint32_t hash)
 {
    switch (hash)
    {
+      case MENU_LABEL_VIDEO_DRIVER:
+         return "video_driver";
+      case MENU_LABEL_VALUE_VIDEO_DRIVER:
+         return "Video Driver";
       case MENU_LABEL_RECORD_ENABLE:
          return "record_enable";
       case MENU_LABEL_VALUE_RECORD_ENABLE:
