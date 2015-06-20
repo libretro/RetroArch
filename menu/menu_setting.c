@@ -6187,8 +6187,8 @@ static bool setting_append_list_netplay_options(
 
    CONFIG_BOOL(
          global->netplay_enable,
-         "netplay_enable",
-         "Netplay Enable",
+         menu_hash_to_str(MENU_LABEL_NETPLAY_ENABLE),
+         menu_hash_to_str(MENU_LABEL_VALUE_NETPLAY_ENABLE),
          false,
          menu_hash_to_str(MENU_VALUE_OFF),
          menu_hash_to_str(MENU_VALUE_ON),
@@ -6200,8 +6200,8 @@ static bool setting_append_list_netplay_options(
 
    CONFIG_BOOL(
          settings->input.netplay_client_swap_input,
-         "netplay_client_swap_input",
-         "Swap Netplay Input",
+         menu_hash_to_str(MENU_LABEL_NETPLAY_CLIENT_SWAP_INPUT),
+         menu_hash_to_str(MENU_LABEL_VALUE_NETPLAY_CLIENT_SWAP_INPUT),
          netplay_client_swap_input,
          menu_hash_to_str(MENU_VALUE_OFF),
          menu_hash_to_str(MENU_VALUE_ON),
@@ -6213,8 +6213,8 @@ static bool setting_append_list_netplay_options(
 
    CONFIG_STRING(
          global->netplay_server,
-         "netplay_ip_address",
-         "IP Address",
+         menu_hash_to_str(MENU_LABEL_NETPLAY_IP_ADDRESS),
+         menu_hash_to_str(MENU_LABEL_VALUE_NETPLAY_IP_ADDRESS),
          "",
          group_info.name,
          subgroup_info.name,
@@ -6225,8 +6225,8 @@ static bool setting_append_list_netplay_options(
 
    CONFIG_BOOL(
          global->netplay_is_client,
-         "netplay_mode",
-         "Netplay Client Enable",
+         menu_hash_to_str(MENU_LABEL_NETPLAY_MODE),
+         menu_hash_to_str(MENU_LABEL_VALUE_NETPLAY_MODE),
          false,
          menu_hash_to_str(MENU_VALUE_OFF),
          menu_hash_to_str(MENU_VALUE_ON),
@@ -6238,8 +6238,8 @@ static bool setting_append_list_netplay_options(
 
    CONFIG_BOOL(
          global->netplay_is_spectate,
-         "netplay_spectator_mode_enable",
-         "Netplay Spectator Enable",
+         menu_hash_to_str(MENU_LABEL_NETPLAY_SPECTATOR_MODE_ENABLE),
+         menu_hash_to_str(MENU_LABEL_VALUE_NETPLAY_SPECTATOR_MODE_ENABLE),
          false,
          menu_hash_to_str(MENU_VALUE_OFF),
          menu_hash_to_str(MENU_VALUE_ON),
@@ -6251,8 +6251,8 @@ static bool setting_append_list_netplay_options(
    
    CONFIG_UINT(
          global->netplay_sync_frames,
-         "netplay_delay_frames",
-         "Netplay Delay Frames",
+         menu_hash_to_str(MENU_LABEL_NETPLAY_DELAY_FRAMES),
+         menu_hash_to_str(MENU_LABEL_VALUE_NETPLAY_DELAY_FRAMES),
          0,
          group_info.name,
          subgroup_info.name,
@@ -6264,8 +6264,8 @@ static bool setting_append_list_netplay_options(
 
    CONFIG_UINT(
          global->netplay_port,
-         "netplay_tcp_udp_port",
-         "Netplay TCP/UDP Port",
+         menu_hash_to_str(MENU_LABEL_NETPLAY_TCP_UDP_PORT),
+         menu_hash_to_str(MENU_LABEL_VALUE_NETPLAY_TCP_UDP_PORT),
          RARCH_DEFAULT_PORT,
          group_info.name,
          subgroup_info.name,

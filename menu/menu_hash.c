@@ -311,6 +311,34 @@ static const char *menu_hash_to_str_english(uint32_t hash)
 {
    switch (hash)
    {
+      case MENU_LABEL_NETPLAY_CLIENT_SWAP_INPUT:
+         return "netplay_client_swap_input";
+      case MENU_LABEL_VALUE_NETPLAY_CLIENT_SWAP_INPUT:
+         return "Swap Netplay Input";
+      case MENU_LABEL_NETPLAY_SPECTATOR_MODE_ENABLE:
+         return "netplay_spectator_mode_enable";
+      case MENU_LABEL_VALUE_NETPLAY_SPECTATOR_MODE_ENABLE:
+         return "Netplay Spectator Enable";
+      case MENU_LABEL_NETPLAY_IP_ADDRESS:
+         return "netplay_ip_address";
+      case MENU_LABEL_VALUE_NETPLAY_IP_ADDRESS:
+         return "IP Address";
+      case MENU_LABEL_NETPLAY_TCP_UDP_PORT:
+         return "netplay_tcp_udp_port";
+      case MENU_LABEL_VALUE_NETPLAY_TCP_UDP_PORT:
+         return "Netplay TCP/UDP Port";
+      case MENU_LABEL_NETPLAY_ENABLE:
+         return "netplay_enable";
+      case MENU_LABEL_VALUE_NETPLAY_ENABLE:
+         return "Netplay Enable";
+      case MENU_LABEL_NETPLAY_DELAY_FRAMES:
+         return "netplay_delay_frames";
+      case MENU_LABEL_VALUE_NETPLAY_DELAY_FRAMES:
+         return "Netplay Delay Frames";
+      case MENU_LABEL_NETPLAY_MODE:
+         return "netplay_mode";
+      case MENU_LABEL_VALUE_NETPLAY_MODE:
+         return "Netplay Client Enable";
       case MENU_LABEL_RGUI_SHOW_START_SCREEN:
          return "rgui_show_start_screen";
       case MENU_LABEL_VALUE_RGUI_SHOW_START_SCREEN:
