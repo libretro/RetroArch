@@ -254,11 +254,19 @@ extern "C" {
 #define MENU_LABEL_CONFIG_SAVE_ON_EXIT                                         0x79b590feU
 #define MENU_LABEL_VALUE_CONFIG_SAVE_ON_EXIT                                   0x4be88ae3U
 
+#define MENU_LABEL_AUDIO_DRIVER                                                0x26594002U
+#define MENU_LABEL_VALUE_AUDIO_DRIVER                                          0xcbb38c43U
+
+#define MENU_LABEL_JOYPAD_DRIVER                                               0xab124146U
+#define MENU_LABEL_VALUE_JOYPAD_DRIVER                                         0x18799878U
+
 #define MENU_LABEL_INPUT_DRIVER                                                0x4c087840U
+#define MENU_LABEL_VALUE_INPUT_DRIVER                                          0xf162c481U
 #define MENU_LABEL_INPUT_DRIVER_LINUXRAW                                       0xc33c6b9fU
 #define MENU_LABEL_INPUT_DRIVER_UDEV                                           0x7c9eeeb9U
 
 #define MENU_LABEL_VIDEO_DRIVER                                                0x1805a5e7U
+#define MENU_LABEL_VALUE_VIDEO_DRIVER                                          0xbd5ff228U
 #define MENU_LABEL_VIDEO_DRIVER_GL                                             0x005977f8U
 #define MENU_LABEL_VIDEO_DRIVER_SDL2                                           0x7c9dd69aU
 #define MENU_LABEL_VIDEO_DRIVER_SDL1                                           0x0b88a968U
@@ -266,7 +274,20 @@ extern "C" {
 #define MENU_LABEL_VIDEO_DRIVER_EXYNOS                                         0xfc37c54bU
 #define MENU_LABEL_VIDEO_DRIVER_SUNXI                                          0x10620e3cU
 
+#define MENU_LABEL_LOCATION_DRIVER                                             0x09189689U
+#define MENU_LABEL_VALUE_LOCATION_DRIVER                                       0x63f0d6caU
+
+#define MENU_LABEL_MENU_DRIVER                                                 0xd607fb05U
+#define MENU_LABEL_VALUE_MENU_DRIVER                                           0xee374b46U
+
+#define MENU_LABEL_CAMERA_DRIVER                                               0xf25db959U
+#define MENU_LABEL_VALUE_CAMERA_DRIVER                                         0xca42819aU
+
+#define MENU_LABEL_RECORD_DRIVER                                               0x144cd2cfU
+#define MENU_LABEL_VALUE_RECORD_DRIVER                                         0xec319b10U
+
 #define MENU_LABEL_AUDIO_RESAMPLER_DRIVER                                      0xedcba9ecU
+#define MENU_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER                                0xb1c4f3ceU
 #define MENU_LABEL_AUDIO_RESAMPLER_DRIVER_SINC                                 0x7c9dec52U
 #define MENU_LABEL_AUDIO_RESAMPLER_DRIVER_CC                                   0x0059732bU
 

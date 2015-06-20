@@ -1039,6 +1039,38 @@ static const char *menu_hash_to_str_english(uint32_t hash)
          return "resume_content";
       case MENU_LABEL_DRIVER_SETTINGS:
          return "Driver Settings";
+      case MENU_LABEL_INPUT_DRIVER:
+         return "input_driver";
+      case MENU_LABEL_VALUE_INPUT_DRIVER:
+         return "Input Driver";
+      case MENU_LABEL_AUDIO_DRIVER:
+         return "audio_driver";
+      case MENU_LABEL_VALUE_AUDIO_DRIVER:
+         return "Audio Driver";
+      case MENU_LABEL_JOYPAD_DRIVER:
+         return "input_joypad_driver";
+      case MENU_LABEL_VALUE_JOYPAD_DRIVER:
+         return "Joypad Driver";
+      case MENU_LABEL_AUDIO_RESAMPLER_DRIVER:
+         return "audio_resampler_driver";
+      case MENU_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER:
+         return "Audio Resampler Driver";
+      case MENU_LABEL_RECORD_DRIVER:
+         return "record_driver";
+      case MENU_LABEL_VALUE_RECORD_DRIVER:
+         return "Record Driver";
+      case MENU_LABEL_MENU_DRIVER:
+         return "menu_driver";
+      case MENU_LABEL_VALUE_MENU_DRIVER:
+         return "Menu Driver";
+      case MENU_LABEL_CAMERA_DRIVER:
+         return "camera_driver";
+      case MENU_LABEL_VALUE_CAMERA_DRIVER:
+         return "Camera Driver";
+      case MENU_LABEL_LOCATION_DRIVER:
+         return "location_driver";
+      case MENU_LABEL_VALUE_LOCATION_DRIVER:
+         return "Location Driver";
       case MENU_LABEL_VALUE_UNABLE_TO_READ_COMPRESSED_FILE:
          return "Unable to read compressed file.";
       case MENU_LABEL_OVERLAY_SCALE:

@@ -3767,8 +3767,8 @@ static bool setting_append_list_driver_options(
    
    CONFIG_STRING_OPTIONS(
          settings->input.driver,
-         "input_driver",
-         "Input Driver",
+         menu_hash_to_str(MENU_LABEL_INPUT_DRIVER),
+         menu_hash_to_str(MENU_LABEL_VALUE_INPUT_DRIVER),
          config_get_default_input(),
          config_get_input_driver_options(),
          group_info.name,
@@ -3780,8 +3780,8 @@ static bool setting_append_list_driver_options(
 
    CONFIG_STRING_OPTIONS(
          settings->input.joypad_driver,
-         "input_joypad_driver",
-         "Joypad Driver",
+         menu_hash_to_str(MENU_LABEL_JOYPAD_DRIVER),
+         menu_hash_to_str(MENU_LABEL_VALUE_JOYPAD_DRIVER),
          config_get_default_joypad(),
          config_get_joypad_driver_options(),
          group_info.name,
@@ -3793,8 +3793,8 @@ static bool setting_append_list_driver_options(
 
    CONFIG_STRING_OPTIONS(
          settings->video.driver,
-         "video_driver",
-         "Video Driver",
+         menu_hash_to_str(MENU_LABEL_VIDEO_DRIVER),
+         menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_DRIVER),
          config_get_default_video(),
          config_get_video_driver_options(),
          group_info.name,
@@ -3806,8 +3806,8 @@ static bool setting_append_list_driver_options(
 
    CONFIG_STRING_OPTIONS(
          settings->audio.driver,
-         "audio_driver",
-         "Audio Driver",
+         menu_hash_to_str(MENU_LABEL_AUDIO_DRIVER),
+         menu_hash_to_str(MENU_LABEL_VALUE_AUDIO_DRIVER),
          config_get_default_audio(),
          config_get_audio_driver_options(),
          group_info.name,
@@ -3819,8 +3819,8 @@ static bool setting_append_list_driver_options(
 
    CONFIG_STRING_OPTIONS(
          settings->audio.resampler,
-         "audio_resampler_driver",
-         "Audio Resampler Driver",
+         menu_hash_to_str(MENU_LABEL_AUDIO_RESAMPLER_DRIVER),
+         menu_hash_to_str(MENU_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER),
          config_get_default_audio_resampler(),
          config_get_audio_resampler_driver_options(),
          group_info.name,
@@ -3832,8 +3832,8 @@ static bool setting_append_list_driver_options(
 
    CONFIG_STRING_OPTIONS(
          settings->camera.driver,
-         "camera_driver",
-         "Camera Driver",
+         menu_hash_to_str(MENU_LABEL_CAMERA_DRIVER),
+         menu_hash_to_str(MENU_LABEL_VALUE_CAMERA_DRIVER),
          config_get_default_camera(),
          config_get_camera_driver_options(),
          group_info.name,
@@ -3845,8 +3845,8 @@ static bool setting_append_list_driver_options(
 
    CONFIG_STRING_OPTIONS(
          settings->location.driver,
-         "location_driver",
-         "Location Driver",
+         menu_hash_to_str(MENU_LABEL_LOCATION_DRIVER),
+         menu_hash_to_str(MENU_LABEL_VALUE_LOCATION_DRIVER),
          config_get_default_location(),
          config_get_location_driver_options(),
          group_info.name,
@@ -3858,8 +3858,8 @@ static bool setting_append_list_driver_options(
 
    CONFIG_STRING_OPTIONS(
          settings->menu.driver,
-         "menu_driver",
-         "Menu Driver",
+         menu_hash_to_str(MENU_LABEL_MENU_DRIVER),
+         menu_hash_to_str(MENU_LABEL_VALUE_MENU_DRIVER),
          config_get_default_menu(),
          config_get_menu_driver_options(),
          group_info.name,
@@ -3871,8 +3871,8 @@ static bool setting_append_list_driver_options(
 
    CONFIG_STRING_OPTIONS(
          settings->record.driver,
-         "record_driver",
-         "Record Driver",
+         menu_hash_to_str(MENU_LABEL_RECORD_DRIVER),
+         menu_hash_to_str(MENU_LABEL_VALUE_RECORD_DRIVER),
          config_get_default_record(),
          config_get_record_driver_options(),
          group_info.name,
