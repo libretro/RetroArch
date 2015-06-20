@@ -1815,7 +1815,7 @@ static void xmb_context_reset_horizontal_list(xmb_handle_t *xmb,
 
       texture_image_free(&ti);
 
-      if (i == xmb->categories.active.idx)
+      if (i == xmb->categories.active.idx - 1)
       {
          node->alpha = xmb->categories.active.alpha;
          node->zoom  = xmb->categories.active.zoom;
