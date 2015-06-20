@@ -44,6 +44,12 @@ fifo_buffer_t *fifo_new(size_t size)
    return buf;
 }
 
+void fifo_clear(fifo_buffer_t *buffer)
+{
+   buffer->first = 0;
+   buffer->end   = 0;
+}
+
 void fifo_free(fifo_buffer_t *buffer)
 {
    if (!buffer)

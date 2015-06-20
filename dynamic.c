@@ -29,7 +29,7 @@
 
 #include <boolean.h>
 #include "libretro_private.h"
-#include "cores/dynamic_dummy.h"
+#include "cores/internal_cores.h"
 #include "retroarch.h"
 #include "runloop.h"
 #include "configuration.h"
@@ -59,6 +59,10 @@ static dylib_t lib_handle;
 #endif
 
 #define SYM_DUMMY(x) p##x = libretro_dummy_##x
+
+#ifdef HAVE_FFMPEG
+#define SYM_FFMPEG(x) p##x = libretro_ffmpeg_##x
+#endif
 
 void (*pretro_init)(void);
 void (*pretro_deinit)(void);
@@ -400,6 +404,43 @@ static void load_symbols(enum rarch_core_type type)
          SYM_DUMMY(retro_get_memory_data);
          SYM_DUMMY(retro_get_memory_size);
          break;
+#ifdef HAVE_FFMPEG
+      case CORE_TYPE_FFMPEG:
+         SYM_FFMPEG(retro_init);
+         SYM_FFMPEG(retro_deinit);
+
+         SYM_FFMPEG(retro_api_version);
+         SYM_FFMPEG(retro_get_system_info);
+         SYM_FFMPEG(retro_get_system_av_info);
+
+         SYM_FFMPEG(retro_set_environment);
+         SYM_FFMPEG(retro_set_video_refresh);
+         SYM_FFMPEG(retro_set_audio_sample);
+         SYM_FFMPEG(retro_set_audio_sample_batch);
+         SYM_FFMPEG(retro_set_input_poll);
+         SYM_FFMPEG(retro_set_input_state);
+
+         SYM_FFMPEG(retro_set_controller_port_device);
+
+         SYM_FFMPEG(retro_reset);
+         SYM_FFMPEG(retro_run);
+
+         SYM_FFMPEG(retro_serialize_size);
+         SYM_FFMPEG(retro_serialize);
+         SYM_FFMPEG(retro_unserialize);
+
+         SYM_FFMPEG(retro_cheat_reset);
+         SYM_FFMPEG(retro_cheat_set);
+
+         SYM_FFMPEG(retro_load_game);
+         SYM_FFMPEG(retro_load_game_special);
+
+         SYM_FFMPEG(retro_unload_game);
+         SYM_FFMPEG(retro_get_region);
+         SYM_FFMPEG(retro_get_memory_data);
+         SYM_FFMPEG(retro_get_memory_size);
+         break;
+#endif
    }
 }
 

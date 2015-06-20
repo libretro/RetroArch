@@ -15,8 +15,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef DYNAMIC_DUMMY_H__
-#define DYNAMIC_DUMMY_H__
+#ifndef INTERNAL_CORES_H__
+#define INTERNAL_CORES_H__
 
 #include <boolean.h>
 #include "../libretro.h"
@@ -71,6 +71,61 @@ unsigned libretro_dummy_retro_get_region(void);
 void *libretro_dummy_retro_get_memory_data(unsigned id);
 
 size_t libretro_dummy_retro_get_memory_size(unsigned id);
+
+#ifdef HAVE_FFMPEG
+
+void libretro_ffmpeg_retro_init(void);
+
+void libretro_ffmpeg_retro_deinit(void);
+
+unsigned libretro_ffmpeg_retro_api_version(void);
+
+void libretro_ffmpeg_retro_get_system_info(struct retro_system_info *info);
+
+void libretro_ffmpeg_retro_get_system_av_info(struct retro_system_av_info *info);
+
+void libretro_ffmpeg_retro_set_environment(retro_environment_t cb);
+
+void libretro_ffmpeg_retro_set_video_refresh(retro_video_refresh_t cb);
+
+void libretro_ffmpeg_retro_set_audio_sample(retro_audio_sample_t cb);
+
+void libretro_ffmpeg_retro_set_audio_sample_batch(retro_audio_sample_batch_t cb);
+
+void libretro_ffmpeg_retro_set_input_poll(retro_input_poll_t cb);
+
+void libretro_ffmpeg_retro_set_input_state(retro_input_state_t cb);
+
+void libretro_ffmpeg_retro_set_controller_port_device(unsigned port, unsigned device);
+
+void libretro_ffmpeg_retro_reset(void);
+
+void libretro_ffmpeg_retro_run(void);
+
+size_t libretro_ffmpeg_retro_serialize_size(void);
+
+bool libretro_ffmpeg_retro_serialize(void *data, size_t size);
+
+bool libretro_ffmpeg_retro_unserialize(const void *data, size_t size);
+
+void libretro_ffmpeg_retro_cheat_reset(void);
+
+void libretro_ffmpeg_retro_cheat_set(unsigned index, bool enabled, const char *code);
+
+bool libretro_ffmpeg_retro_load_game(const struct retro_game_info *game);
+
+bool libretro_ffmpeg_retro_load_game_special(unsigned game_type,
+      const struct retro_game_info *info, size_t num_info);
+
+void libretro_ffmpeg_retro_unload_game(void);
+
+unsigned libretro_ffmpeg_retro_get_region(void);
+
+void *libretro_ffmpeg_retro_get_memory_data(unsigned id);
+
+size_t libretro_ffmpeg_retro_get_memory_size(unsigned id);
+
+#endif
 
 #endif
 
