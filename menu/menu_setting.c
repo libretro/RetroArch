@@ -4811,8 +4811,8 @@ static bool setting_append_list_video_options(
 
    CONFIG_UINT(
          settings->video.hard_sync_frames,
-         "video_hard_sync_frames",
-         "Hard GPU Sync Frames",
+         menu_hash_to_str(MENU_LABEL_VIDEO_HARD_SYNC_FRAMES),
+         menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_HARD_SYNC_FRAMES),
          hard_sync_frames,
          group_info.name,
          subgroup_info.name,
@@ -4838,8 +4838,8 @@ static bool setting_append_list_video_options(
 #if !defined(RARCH_MOBILE)
    CONFIG_BOOL(
          settings->video.black_frame_insertion,
-         "video_black_frame_insertion",
-         "Black Frame Insertion",
+         menu_hash_to_str(MENU_LABEL_VIDEO_BLACK_FRAME_INSERTION),
+         menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION),
          black_frame_insertion,
          menu_hash_to_str(MENU_VALUE_OFF),
          menu_hash_to_str(MENU_VALUE_ON),
@@ -4888,8 +4888,8 @@ static bool setting_append_list_video_options(
 
    CONFIG_BOOL(
          settings->video.crop_overscan,
-         "video_crop_overscan",
-         "Crop Overscan (reload)",
+         menu_hash_to_str(MENU_LABEL_VIDEO_CROP_OVERSCAN),
+         menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_CROP_OVERSCAN),
          crop_overscan,
          menu_hash_to_str(MENU_VALUE_OFF),
          menu_hash_to_str(MENU_VALUE_ON),

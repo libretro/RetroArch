@@ -193,6 +193,16 @@ static const char *menu_hash_to_str_english(uint32_t hash)
 {
    switch (hash)
    {
+      case MENU_LABEL_VIDEO_CROP_OVERSCAN:
+         return "video_crop_overscan";
+      case MENU_LABEL_VALUE_VIDEO_CROP_OVERSCAN:
+         return "Crop Overscan (Reload)";
+      case MENU_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION:
+         return "Black Frame Insertion";
+      case MENU_LABEL_VIDEO_BLACK_FRAME_INSERTION:
+         return "video_black_frame_insertion";
+      case MENU_LABEL_VIDEO_HARD_SYNC_FRAMES:
+         return "video_hard_sync_frames";
       case MENU_LABEL_SORT_SAVEFILES_ENABLE:
          return "sort_savefiles_enable";
       case MENU_LABEL_VALUE_SORT_SAVEFILES_ENABLE:
