@@ -5085,8 +5085,8 @@ static bool setting_append_list_audio_options(
 #ifdef __CELLOS_LV2__
    CONFIG_BOOL(
          global->console.sound.system_bgm_enable,
-         "system_bgm_enable",
-         "System BGM Enable",
+         menu_hash_to_str(MENU_LABEL_SYSTEM_BGM_ENABLE),
+         menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_BGM_ENABLE),
          false,
          menu_hash_to_str(MENU_VALUE_OFF),
          menu_hash_to_str(MENU_VALUE_ON),
@@ -5180,8 +5180,8 @@ static bool setting_append_list_audio_options(
 
    CONFIG_UINT(
          settings->audio.block_frames,
-         "audio_block_frames",
-         "Block Frames",
+         menu_hash_to_str(MENU_LABEL_AUDIO_BLOCK_FRAMES),
+         menu_hash_to_str(MENU_LABEL_VALUE_AUDIO_BLOCK_FRAMES),
          0,
          group_info.name,
          subgroup_info.name,
