@@ -311,6 +311,22 @@ static const char *menu_hash_to_str_english(uint32_t hash)
 {
    switch (hash)
    {
+      case MENU_LABEL_NETWORK_CMD_ENABLE:
+         return "network_cmd_enable";
+      case MENU_LABEL_VALUE_NETWORK_CMD_ENABLE:
+         return "Network Commands";
+      case MENU_LABEL_NETWORK_CMD_PORT:
+         return "network_cmd_port";
+      case MENU_LABEL_VALUE_NETWORK_CMD_PORT:
+         return "Network Command Port";
+      case MENU_LABEL_HISTORY_LIST_ENABLE:
+         return "history_list_enable";
+      case MENU_LABEL_VALUE_HISTORY_LIST_ENABLE:
+         return "History List Enable";
+      case MENU_LABEL_CONTENT_HISTORY_SIZE:
+         return "Content History Size";
+      case MENU_LABEL_VALUE_CONTENT_HISTORY_SIZE:
+         return "History List Size";
       case MENU_LABEL_VIDEO_REFRESH_RATE_AUTO:
          return "video_refresh_rate_auto";
       case MENU_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO:

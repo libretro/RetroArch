@@ -6288,8 +6288,8 @@ static bool setting_append_list_netplay_options(
 #if defined(HAVE_NETWORK_CMD)
    CONFIG_BOOL(
          settings->network_cmd_enable,
-         "network_cmd_enable",
-         "Network Commands",
+         menu_hash_to_str(MENU_LABEL_NETWORK_CMD_ENABLE),
+         menu_hash_to_str(MENU_LABEL_VALUE_NETWORK_CMD_ENABLE),
          network_cmd_enable,
          menu_hash_to_str(MENU_VALUE_OFF),
          menu_hash_to_str(MENU_VALUE_ON),
@@ -6302,8 +6302,8 @@ static bool setting_append_list_netplay_options(
     
    CONFIG_UINT(
          settings->network_cmd_port,
-         "network_cmd_port",
-         "Network Command Port",
+         menu_hash_to_str(MENU_LABEL_NETWORK_CMD_PORT),
+         menu_hash_to_str(MENU_LABEL_VALUE_NETWORK_CMD_PORT),
          network_cmd_port,
          group_info.name,
          subgroup_info.name,
@@ -6314,8 +6314,8 @@ static bool setting_append_list_netplay_options(
     
    CONFIG_BOOL(
          settings->stdin_cmd_enable,
-         "stdin_cmd_enable",
-         "stdin command",
+         menu_hash_to_str(MENU_LABEL_STDIN_CMD_ENABLE),
+         menu_hash_to_str(MENU_LABEL_VALUE_STDIN_CMD_ENABLE),
          stdin_cmd_enable,
          menu_hash_to_str(MENU_VALUE_OFF),
          menu_hash_to_str(MENU_VALUE_ON),
@@ -6409,8 +6409,8 @@ static bool setting_append_list_playlist_options(
 
    CONFIG_BOOL(
          settings->history_list_enable,
-         "history_list_enable",
-         "History List Enable",
+         menu_hash_to_str(MENU_LABEL_HISTORY_LIST_ENABLE),
+         menu_hash_to_str(MENU_LABEL_VALUE_HISTORY_LIST_ENABLE),
          true,
          menu_hash_to_str(MENU_VALUE_OFF),
          menu_hash_to_str(MENU_VALUE_ON),
@@ -6422,8 +6422,8 @@ static bool setting_append_list_playlist_options(
 
    CONFIG_UINT(
          settings->content_history_size,
-         "content_history_size",
-         "History List Size",
+         menu_hash_to_str(MENU_LABEL_CONTENT_HISTORY_SIZE),
+         menu_hash_to_str(MENU_LABEL_CONTENT_HISTORY_SIZE),
          default_content_history_size,
          group_info.name,
          subgroup_info.name,
