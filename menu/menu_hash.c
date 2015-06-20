@@ -311,6 +311,10 @@ static const char *menu_hash_to_str_english(uint32_t hash)
 {
    switch (hash)
    {
+      case MENU_LABEL_STDIN_CMD_ENABLE:
+         return "stdin_commands";
+      case MENU_LABEL_VALUE_STDIN_CMD_ENABLE:
+         return "stdin Commands";
       case MENU_LABEL_VIDEO_DRIVER:
          return "video_driver";
       case MENU_LABEL_VALUE_VIDEO_DRIVER:
