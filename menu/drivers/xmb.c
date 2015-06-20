@@ -1645,6 +1645,8 @@ static void *xmb_init(void)
    float scale_factor                 = 1;
    gl_t *gl                           = (gl_t*)
       video_driver_get_ptr(&video_driver);
+    
+   (void)scale_factor;
 
    if (video_driver != &video_gl || !gl)
    {
