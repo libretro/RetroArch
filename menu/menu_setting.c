@@ -6512,8 +6512,8 @@ static bool setting_append_list_directory_options(
 
    CONFIG_DIR(
          settings->core_assets_directory,
-         "core_assets_directory",
-         "Core Assets Directory",
+         menu_hash_to_str(MENU_LABEL_CORE_ASSETS_DIRECTORY),
+         menu_hash_to_str(MENU_LABEL_VALUE_CORE_ASSETS_DIRECTORY),
          "",
          "<default>",
          group_info.name,
@@ -6528,8 +6528,8 @@ static bool setting_append_list_directory_options(
 
    CONFIG_DIR(
          settings->assets_directory,
-         "assets_directory",
-         "Assets Directory",
+         menu_hash_to_str(MENU_LABEL_ASSETS_DIRECTORY),
+         menu_hash_to_str(MENU_LABEL_VALUE_ASSETS_DIRECTORY),
          "",
          "<default>",
          group_info.name,
@@ -6544,8 +6544,8 @@ static bool setting_append_list_directory_options(
 
    CONFIG_DIR(
          settings->dynamic_wallpapers_directory,
-         "dynamic_wallpapers_directory",
-         "Dynamic Wallpapers Directory",
+         menu_hash_to_str(MENU_LABEL_DYNAMIC_WALLPAPERS_DIRECTORY),
+         menu_hash_to_str(MENU_LABEL_VALUE_DYNAMIC_WALLPAPERS_DIRECTORY),
          "",
          "<default>",
          group_info.name,
@@ -6560,8 +6560,8 @@ static bool setting_append_list_directory_options(
 
    CONFIG_DIR(
          settings->boxarts_directory,
-         "boxarts_directory",
-         "Boxarts Directory",
+         menu_hash_to_str(MENU_LABEL_BOXARTS_DIRECTORY),
+         menu_hash_to_str(MENU_LABEL_VALUE_BOXARTS_DIRECTORY),
          "",
          "<default>",
          group_info.name,
@@ -6576,8 +6576,8 @@ static bool setting_append_list_directory_options(
 
    CONFIG_DIR(
          settings->menu_content_directory,
-         "rgui_browser_directory",
-         "Browser Directory",
+         menu_hash_to_str(MENU_LABEL_RGUI_BROWSER_DIRECTORY),
+         menu_hash_to_str(MENU_LABEL_VALUE_RGUI_BROWSER_DIRECTORY),
          "",
          "<default>",
          group_info.name,
@@ -6593,8 +6593,8 @@ static bool setting_append_list_directory_options(
 
    CONFIG_DIR(
          settings->menu_config_directory,
-         "rgui_config_directory",
-         "Config Directory",
+         menu_hash_to_str(MENU_LABEL_RGUI_CONFIG_DIRECTORY),
+         menu_hash_to_str(MENU_LABEL_VALUE_RGUI_CONFIG_DIRECTORY),
          "",
          "<default>",
          group_info.name,
@@ -6610,8 +6610,8 @@ static bool setting_append_list_directory_options(
 
    CONFIG_DIR(
          settings->libretro_directory,
-         "libretro_dir_path",
-         "Core Directory",
+         menu_hash_to_str(MENU_LABEL_LIBRETRO_DIR_PATH),
+         menu_hash_to_str(MENU_LABEL_VALUE_LIBRETRO_DIR_PATH),
          g_defaults.core_dir,
          "<None>",
          group_info.name,
@@ -6627,8 +6627,8 @@ static bool setting_append_list_directory_options(
 
    CONFIG_DIR(
          settings->libretro_info_path,
-         "libretro_info_path",
-         "Core Info Directory",
+         menu_hash_to_str(MENU_LABEL_LIBRETRO_INFO_PATH),
+         menu_hash_to_str(MENU_LABEL_VALUE_LIBRETRO_INFO_PATH),
          g_defaults.core_info_dir,
          "<None>",
          group_info.name,
@@ -6645,8 +6645,8 @@ static bool setting_append_list_directory_options(
 #ifdef HAVE_LIBRETRODB
    CONFIG_DIR(
          settings->content_database,
-         "content_database_path",
-         "Content Database Directory",
+         menu_hash_to_str(MENU_LABEL_CONTENT_DATABASE_DIRECTORY),
+         menu_hash_to_str(MENU_LABEL_VALUE_CONTENT_DATABASE_DIRECTORY),
          "",
          "<None>",
          group_info.name,
@@ -6661,8 +6661,8 @@ static bool setting_append_list_directory_options(
 
    CONFIG_DIR(
          settings->cursor_directory,
-         "cursor_directory",
-         "Cursor Directory",
+         menu_hash_to_str(MENU_LABEL_CURSOR_DIRECTORY),
+         menu_hash_to_str(MENU_LABEL_VALUE_CURSOR_DIRECTORY),
          "",
          "<None>",
          group_info.name,
@@ -6678,8 +6678,8 @@ static bool setting_append_list_directory_options(
 
    CONFIG_DIR(
          settings->cheat_database,
-         "cheat_database_path",
-         "Cheat Database Directory",
+         menu_hash_to_str(MENU_LABEL_CHEAT_DATABASE_PATH),
+         menu_hash_to_str(MENU_LABEL_VALUE_CHEAT_DATABASE_PATH),
          "",
          "<None>",
          group_info.name,
@@ -6694,8 +6694,8 @@ static bool setting_append_list_directory_options(
 
    CONFIG_DIR(
          settings->video.filter_dir,
-         "video_filter_dir",
-         "VideoFilter Directory",
+         menu_hash_to_str(MENU_LABEL_VIDEO_FILTER_DIR),
+         menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_FILTER_DIR),
          "",
          "<default>",
          group_info.name,
@@ -6710,8 +6710,8 @@ static bool setting_append_list_directory_options(
 
    CONFIG_DIR(
          settings->audio.filter_dir,
-         "audio_filter_dir",
-         "AudioFilter Directory",
+         menu_hash_to_str(MENU_LABEL_AUDIO_FILTER_DIR),
+         menu_hash_to_str(MENU_LABEL_VALUE_AUDIO_FILTER_DIR),
          "",
          "<default>",
          group_info.name,
@@ -6726,8 +6726,8 @@ static bool setting_append_list_directory_options(
 
    CONFIG_DIR(
          settings->video.shader_dir,
-         "video_shader_dir",
-         "Shader Directory",
+         menu_hash_to_str(MENU_LABEL_VIDEO_SHADER_DIR),
+         menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_SHADER_DIR),
          g_defaults.shader_dir,
          "<default>",
          group_info.name,
@@ -6775,8 +6775,8 @@ static bool setting_append_list_directory_options(
 #ifdef HAVE_OVERLAY
    CONFIG_DIR(
          global->overlay_dir,
-         "overlay_directory",
-         "Overlay Directory",
+         menu_hash_to_str(MENU_LABEL_OVERLAY_DIRECTORY),
+         menu_hash_to_str(MENU_LABEL_VALUE_OVERLAY_DIRECTORY),
          g_defaults.overlay_dir,
          "<default>",
          group_info.name,
@@ -6791,8 +6791,8 @@ static bool setting_append_list_directory_options(
 
    CONFIG_DIR(
          global->osk_overlay_dir,
-         "osk_overlay_directory",
-         "OSK Overlay Directory",
+         menu_hash_to_str(MENU_LABEL_OSK_OVERLAY_DIRECTORY),
+         menu_hash_to_str(MENU_LABEL_VALUE_OSK_OVERLAY_DIRECTORY),
          g_defaults.osk_overlay_dir,
          "<default>",
          group_info.name,
@@ -6904,8 +6904,8 @@ static bool setting_append_list_directory_options(
 
    CONFIG_DIR(
          settings->system_directory,
-         "system_directory",
-         "System Directory",
+         menu_hash_to_str(MENU_LABEL_SYSTEM_DIRECTORY),
+         menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_DIRECTORY),
          "",
          "<Content dir>",
          group_info.name,
@@ -6920,8 +6920,8 @@ static bool setting_append_list_directory_options(
 
    CONFIG_DIR(
          settings->extraction_directory,
-         "extraction_directory",
-         "Extraction Directory",
+         menu_hash_to_str(MENU_LABEL_EXTRACTION_DIRECTORY),
+         menu_hash_to_str(MENU_LABEL_VALUE_EXTRACTION_DIRECTORY),
          "",
          "<None>",
          group_info.name,

@@ -311,6 +311,78 @@ static const char *menu_hash_to_str_english(uint32_t hash)
 {
    switch (hash)
    {
+      case MENU_LABEL_CORE_ASSETS_DIRECTORY:
+         return "core_assets_directory";
+      case MENU_LABEL_VALUE_CORE_ASSETS_DIRECTORY:
+         return "Core Assets Directory";
+      case MENU_LABEL_ASSETS_DIRECTORY:
+         return "assets_directory";
+      case MENU_LABEL_VALUE_ASSETS_DIRECTORY:
+         return "Assets Directory";
+      case MENU_LABEL_DYNAMIC_WALLPAPERS_DIRECTORY:
+         return "dynamic_wallpapers_directory";
+      case MENU_LABEL_VALUE_DYNAMIC_WALLPAPERS_DIRECTORY:
+         return "Dynamic Wallpapers Directory";
+      case MENU_LABEL_BOXARTS_DIRECTORY:
+         return "boxarts_directory";
+      case MENU_LABEL_VALUE_BOXARTS_DIRECTORY:
+         return "Boxarts Directory";
+      case MENU_LABEL_RGUI_BROWSER_DIRECTORY:
+         return "rgui_browser_directory";
+      case MENU_LABEL_VALUE_RGUI_BROWSER_DIRECTORY:
+         return "Browser Directory";
+      case MENU_LABEL_RGUI_CONFIG_DIRECTORY:
+         return "rgui_config_directory";
+      case MENU_LABEL_VALUE_RGUI_CONFIG_DIRECTORY:
+         return "Config Directory";
+      case MENU_LABEL_LIBRETRO_INFO_PATH:
+         return "libretro_info_path";
+      case MENU_LABEL_VALUE_LIBRETRO_INFO_PATH:
+         return "Core Info Directory";
+      case MENU_LABEL_LIBRETRO_DIR_PATH:
+         return "libretro_dir_path";
+      case MENU_LABEL_VALUE_LIBRETRO_DIR_PATH:
+         return "Core Directory";
+      case MENU_LABEL_CURSOR_DIRECTORY:
+         return "cursor_directory";
+      case MENU_LABEL_VALUE_CURSOR_DIRECTORY:
+         return "Cursor Directory";
+      case MENU_LABEL_CONTENT_DATABASE_DIRECTORY:
+         return "content_database_path";
+      case MENU_LABEL_VALUE_CONTENT_DATABASE_DIRECTORY:
+         return "Content Database Directory";
+      case MENU_LABEL_SYSTEM_DIRECTORY:
+         return "system_directory";
+      case MENU_LABEL_VALUE_SYSTEM_DIRECTORY:
+         return "System Directory";
+      case MENU_LABEL_EXTRACTION_DIRECTORY:
+         return "extraction_directory";
+      case MENU_LABEL_CHEAT_DATABASE_PATH:
+         return "cheat_database_path";
+      case MENU_LABEL_VALUE_CHEAT_DATABASE_PATH:
+         return "Cheat File Directory";
+      case MENU_LABEL_VALUE_EXTRACTION_DIRECTORY:
+         return "Extraction Directory";
+      case MENU_LABEL_AUDIO_FILTER_DIR:
+         return "audio_filter_dir";
+      case MENU_LABEL_VALUE_AUDIO_FILTER_DIR:
+         return "Audio Filter Directory";
+      case MENU_LABEL_VIDEO_FILTER_DIR:
+         return "video_filter_dir";
+      case MENU_LABEL_VIDEO_SHADER_DIR:
+         return "video_shader_dir";
+      case MENU_LABEL_VALUE_VIDEO_SHADER_DIR:
+         return "Video Shader Directory";
+      case MENU_LABEL_VALUE_VIDEO_FILTER_DIR:
+         return "Video Filter Directory";
+      case MENU_LABEL_OVERLAY_DIRECTORY:
+         return "overlay_directory";
+      case MENU_LABEL_VALUE_OVERLAY_DIRECTORY:
+         return "Overlay Directory";
+      case MENU_LABEL_OSK_OVERLAY_DIRECTORY:
+         return "osk_overlay_directory";
+      case MENU_LABEL_VALUE_OSK_OVERLAY_DIRECTORY:
+         return "OSK Overlay Directory";
       case MENU_LABEL_NETPLAY_CLIENT_SWAP_INPUT:
          return "netplay_client_swap_input";
       case MENU_LABEL_VALUE_NETPLAY_CLIENT_SWAP_INPUT:
