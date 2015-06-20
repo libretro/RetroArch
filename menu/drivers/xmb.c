@@ -2048,10 +2048,10 @@ static void xmb_context_reset(void)
    fill_pathname_slash(iconpath, sizeof(iconpath));
 
    xmb_layout(menu, xmb);
+   xmb_font(menu);
    xmb_context_reset_textures(xmb, iconpath);
    xmb_context_reset_background(iconpath);
    xmb_context_reset_horizontal_list(xmb, menu, themepath);
-   xmb_font(menu);
 }
 
 static void xmb_navigation_clear(bool pending_push)
