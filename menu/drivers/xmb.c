@@ -1024,6 +1024,7 @@ static GLuint xmb_icon_get_id(xmb_handle_t *xmb,
       case MENU_FILE_PLAIN:
          return xmb->textures.list[XMB_TEXTURE_FILE].id;
       case MENU_FILE_PLAYLIST_ENTRY:
+      case MENU_FILE_RDB_ENTRY:
          if (core_node)
             return core_node->content_icon;
          return xmb->textures.list[XMB_TEXTURE_FILE].id;
@@ -1545,6 +1546,95 @@ static void xmb_init_horizontal_list(menu_handle_t *menu, xmb_handle_t *xmb)
    menu_displaylist_push_list(&info, DISPLAYLIST_DATABASE_PLAYLISTS);
 }
 
+static void xmb_font(menu_handle_t *menu)
+{
+   settings_t *settings = config_get_ptr();
+
+   char mediapath[PATH_MAX_LENGTH] = {0};
+   char themepath[PATH_MAX_LENGTH] = {0};
+   char fontpath[PATH_MAX_LENGTH]  = {0};
+
+   fill_pathname_join(mediapath, settings->assets_directory, "xmb", sizeof(mediapath));
+   fill_pathname_join(themepath, mediapath, XMB_THEME, sizeof(themepath));
+   fill_pathname_join(fontpath, themepath, "font.ttf", sizeof(fontpath));
+
+   if (!menu_display_init_main_font(menu, fontpath, menu->display.font.size))
+      RARCH_WARN("Failed to load font.");
+}
+
+static void xmb_layout(menu_handle_t *menu, xmb_handle_t *xmb)
+{
+   menu_navigation_t *nav = menu_navigation_get_ptr();
+   menu_list_t *menu_list = menu_list_get_ptr();
+   unsigned width, height, i, current, end;
+   float scale_factor;
+
+   video_driver_get_size(&width, &height);
+
+   scale_factor = width / 1920.0;
+
+   xmb->boxart_size             = 460.0 * scale_factor;
+   xmb->cursor.size             = 48.0;
+   menu->display.font.size      = 32.0 * scale_factor;
+   xmb->icon.spacing.horizontal = 200.0 * scale_factor;
+   xmb->icon.spacing.vertical   = 64.0 * scale_factor;
+   xmb->margins.screen.left     = 336.0 * scale_factor;
+   xmb->margins.screen.top      = (256+32) * scale_factor;
+   xmb->margins.title.left      = 60 * scale_factor;
+   xmb->margins.title.top       = 60 * scale_factor + menu->display.font.size/3;
+   xmb->margins.title.bottom    = 60 * scale_factor - menu->display.font.size/3;
+   xmb->margins.label.left      = 85.0 * scale_factor;
+   xmb->margins.label.top       = menu->display.font.size / 3.0;
+   xmb->margins.setting.left    = 600.0 * scale_factor;
+   menu->display.header_height  = 128.0 * scale_factor;
+
+   if (width >= 3840)
+      scale_factor              = 2.0;
+   else if (width >= 2560)
+      scale_factor              = 1.5;
+   else if (width >= 1920)
+      scale_factor              = 1.0;
+   else if (width >= 1440)
+      scale_factor              = 0.75;
+   else if (width >=  960)
+      scale_factor              = 0.5;
+   else if (width >=  640)
+      scale_factor              = 0.375;
+   else if (width >=  480)
+      scale_factor              = 0.25;
+   else if (width >=  320)
+      scale_factor              = 0.1875;
+   else if (width >=  240)
+      scale_factor              = 0.125;
+
+   xmb->icon.size               = 128.0 * scale_factor;
+
+   current = nav->selection_ptr;
+   end     = menu_entries_get_end();
+
+   for (i = 0; i < end; i++)
+   {
+      float ia = xmb->item.passive.alpha;
+      float iz = xmb->item.passive.zoom;
+      xmb_node_t *node = (xmb_node_t*)menu_list_get_userdata_at_offset(
+            menu_list->selection_buf, i);
+
+      if (!node)
+         continue;
+
+      if (i == current)
+      {
+         ia = xmb->item.active.alpha;
+         iz = xmb->item.active.zoom;
+      }
+
+      node->alpha       = ia;
+      node->label_alpha = ia;
+      node->zoom        = iz;
+      node->y           = xmb_item_y(xmb, i, current);
+   }
+}
+
 static void *xmb_init(void)
 {
    unsigned width, height;
@@ -1620,47 +1710,8 @@ static void *xmb_init(void)
    frame_buf->width  = width;
    frame_buf->height = height;
 
-   scale_factor = width / 1920.0;
-
-   strlcpy(xmb->icon.dir, "png", sizeof(xmb->icon.dir));
-
-   xmb->boxart_size             = 460.0 * scale_factor;
-   xmb->cursor.size             = 48.0;
-   menu->display.font.size      = 32.0 * scale_factor;
-   xmb->icon.spacing.horizontal = 200.0 * scale_factor;
-   xmb->icon.spacing.vertical   = 64.0 * scale_factor;
-   xmb->margins.screen.left     = 336.0 * scale_factor;
-   xmb->margins.screen.top      = (256+32) * scale_factor;
-   xmb->margins.title.left      = 60 * scale_factor;
-   xmb->margins.title.top       = 60 * scale_factor + menu->display.font.size/3;
-   xmb->margins.title.bottom    = 60 * scale_factor - menu->display.font.size/3;
-   xmb->margins.label.left      = 85.0 * scale_factor;
-   xmb->margins.label.top       = menu->display.font.size / 3.0;
-   xmb->margins.setting.left    = 600.0 * scale_factor;
-   menu->display.header_height  = 128.0 * scale_factor;
-
-   if (width >= 3840)
-      scale_factor              = 2.0;
-   else if (width >= 2560)
-      scale_factor              = 1.5;
-   else if (width >= 1920)
-      scale_factor              = 1.0;
-   else if (width >= 1440)
-      scale_factor              = 0.75;
-   else if (width >=  960)
-      scale_factor              = 0.5;
-   else if (width >=  640)
-      scale_factor              = 0.375;
-   else if (width >=  480)
-      scale_factor              = 0.25;
-   else if (width >=  320)
-      scale_factor              = 0.1875;
-   else if (width >=  240)
-      scale_factor              = 0.125;
-
-   xmb->icon.size               = 128.0 * scale_factor;
-
    xmb_init_horizontal_list(menu, xmb);
+   xmb_font(menu);
 
    return menu;
 
@@ -1757,11 +1808,42 @@ static bool xmb_load_image(void *data, menu_image_type_t type)
    return true;
 }
 
+static void xmb_toggle_horizontal_list(xmb_handle_t *xmb, menu_handle_t *menu)
+{
+   unsigned i;
+   size_t list_size = xmb_list_get_size(menu, MENU_LIST_HORIZONTAL);
+
+   for (i = 0; i <= list_size; i++)
+   {
+      xmb_node_t *node = &xmb->settings_node;
+
+      if (i > 0)
+         node = xmb_get_userdata_from_horizontal_list(xmb, i - 1);
+
+      if (!node)
+         continue;
+
+      node->alpha = 0;
+      node->zoom  = xmb->categories.passive.zoom;
+
+      if (i == xmb->categories.active.idx)
+      {
+         node->alpha = xmb->categories.active.alpha;
+         node->zoom  = xmb->categories.active.zoom;
+      }
+      else if (xmb->depth <= 1)
+         node->alpha = xmb->categories.passive.alpha;
+   }
+}
+
 static void xmb_context_reset_horizontal_list(xmb_handle_t *xmb,
       menu_handle_t *menu, const char *themepath)
 {
    unsigned i;
    size_t list_size            = xmb_list_get_size(menu, MENU_LIST_HORIZONTAL);
+
+   xmb->categories.x_pos = xmb->icon.spacing.horizontal *
+         -(float)xmb->categories.selection_ptr;
 
    for (i = 0; i < list_size; i++)
    {
@@ -1798,9 +1880,6 @@ static void xmb_context_reset_horizontal_list(xmb_handle_t *xmb,
       fill_pathname_join(content_texturepath, iconpath, sysname, sizeof(content_texturepath));
       strlcat(content_texturepath, "-content.png", sizeof(content_texturepath));
 
-      node->alpha        = 0;
-      node->zoom         = xmb->categories.passive.zoom;
-
       texture_image_load(&ti, texturepath);
 
       node->icon         = video_texture_load(&ti,
@@ -1814,13 +1893,7 @@ static void xmb_context_reset_horizontal_list(xmb_handle_t *xmb,
 
       texture_image_free(&ti);
 
-      if (i == xmb->categories.active.idx)
-      {
-         node->alpha = xmb->categories.active.alpha;
-         node->zoom  = xmb->categories.active.zoom;
-      }
-      else if (xmb->depth <= 1)
-         node->alpha = xmb->categories.passive.alpha;
+      xmb_toggle_horizontal_list(xmb, menu);
    }
 }
 
@@ -1948,7 +2021,6 @@ static void xmb_context_reset(void)
    char mediapath[PATH_MAX_LENGTH] = {0};
    char themepath[PATH_MAX_LENGTH] = {0};
    char iconpath[PATH_MAX_LENGTH]  = {0};
-   char fontpath[PATH_MAX_LENGTH]  = {0};
    gl_t *gl                        = NULL;
    xmb_handle_t *xmb               = NULL;
    menu_handle_t *menu             = menu_driver_get_ptr();
@@ -1965,20 +2037,19 @@ static void xmb_context_reset(void)
    if (!xmb)
       return;
 
+   strlcpy(xmb->icon.dir, "png", sizeof(xmb->icon.dir));
+
    fill_pathname_join(mediapath, settings->assets_directory,
          "xmb", sizeof(mediapath));
    fill_pathname_join(themepath, mediapath, XMB_THEME, sizeof(themepath));
    fill_pathname_join(iconpath, themepath, xmb->icon.dir, sizeof(iconpath));
    fill_pathname_slash(iconpath, sizeof(iconpath));
 
-   fill_pathname_join(fontpath, themepath, "font.ttf", sizeof(fontpath));
-
-   if (!menu_display_init_main_font(menu, fontpath, menu->display.font.size))
-      RARCH_WARN("Failed to load font.");
-
+   xmb_layout(menu, xmb);
    xmb_context_reset_textures(xmb, iconpath);
    xmb_context_reset_background(iconpath);
    xmb_context_reset_horizontal_list(xmb, menu, themepath);
+   xmb_font(menu);
 }
 
 static void xmb_navigation_clear(bool pending_push)
@@ -2235,34 +2306,6 @@ static void xmb_context_destroy(void)
    xmb_context_destroy_horizontal_list(xmb, menu);
 
    menu_display_free_main_font(menu);
-}
-
-static void xmb_toggle_horizontal_list(xmb_handle_t *xmb, menu_handle_t *menu)
-{
-   unsigned i;
-   size_t list_size = xmb_list_get_size(menu, MENU_LIST_HORIZONTAL);
-
-   for (i = 0; i <= list_size; i++)
-   {
-      xmb_node_t *node = &xmb->settings_node;
-
-      if (i > 0)
-         node = xmb_get_userdata_from_horizontal_list(xmb, i - 1);
-
-      if (!node)
-         continue;
-
-      node->alpha = 0;
-      node->zoom  = xmb->categories.passive.zoom;
-
-      if (i == xmb->categories.active.idx)
-      {
-         node->alpha = xmb->categories.active.alpha;
-         node->zoom  = xmb->categories.active.zoom;
-      }
-      else if (xmb->depth <= 1)
-         node->alpha = xmb->categories.passive.alpha;
-   }
 }
 
 static void xmb_toggle(bool menu_on)
