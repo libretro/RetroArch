@@ -201,8 +201,20 @@ static const char *menu_hash_to_str_english(uint32_t hash)
          return "sort_savestates_enable";
       case MENU_LABEL_VALUE_SORT_SAVESTATES_ENABLE:
          return "Sort Savestates In Folders";
+      case MENU_LABEL_VIDEO_FULLSCREEN:
+         return "video_fullscreen";
+      case MENU_LABEL_VALUE_VIDEO_FULLSCREEN:
+         return "Use Fullscreen Mode";
       case MENU_LABEL_PERFCNT_ENABLE:
          return "perfcnt_enable";
+      case MENU_LABEL_VIDEO_SCALE:
+         return "video_scale";
+      case MENU_LABEL_VALUE_VIDEO_SCALE:
+         return "Windowed Scale";
+      case MENU_LABEL_VIDEO_SCALE_INTEGER:
+         return "video_scale_integer";
+      case MENU_LABEL_VALUE_VIDEO_SCALE_INTEGER:
+         return "Integer Scale";
       case MENU_LABEL_VALUE_PERFCNT_ENABLE:
          return "Performance Counters";
       case MENU_LABEL_LIBRETRO_LOG_LEVEL:

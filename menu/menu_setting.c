@@ -4491,8 +4491,8 @@ static bool setting_append_list_video_options(
 #if !defined(RARCH_CONSOLE) && !defined(RARCH_MOBILE)
    CONFIG_BOOL(
          settings->video.fullscreen,
-         "video_fullscreen",
-         "Use Fullscreen mode",
+         menu_hash_to_str(MENU_LABEL_VIDEO_FULLSCREEN),
+         menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_FULLSCREEN),
          fullscreen,
          menu_hash_to_str(MENU_VALUE_OFF),
          menu_hash_to_str(MENU_VALUE_ON),
@@ -4622,8 +4622,8 @@ static bool setting_append_list_video_options(
 #if !defined(RARCH_CONSOLE) && !defined(RARCH_MOBILE)
    CONFIG_FLOAT(
          settings->video.scale,
-         "video_scale",
-         "Windowed Scale",
+         menu_hash_to_str(MENU_LABEL_VIDEO_SCALE),
+         menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_SCALE),
          scale,
          "%.1fx",
          group_info.name,
@@ -4636,8 +4636,8 @@ static bool setting_append_list_video_options(
 
    CONFIG_BOOL(
          settings->video.scale_integer,
-         "video_scale_integer",
-         "Integer Scale",
+         menu_hash_to_str(MENU_LABEL_VIDEO_SCALE_INTEGER),
+         menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_SCALE_INTEGER),
          scale_integer,
          menu_hash_to_str(MENU_VALUE_OFF),
          menu_hash_to_str(MENU_VALUE_ON),

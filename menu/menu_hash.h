@@ -71,6 +71,7 @@ extern "C" {
 #define MENU_LABEL_BLOCK_SRAM_OVERWRITE                                        0xc4e88d08U
 #define MENU_LABEL_VALUE_BLOCK_SRAM_OVERWRITE                                  0x9b38260aU
 #define MENU_LABEL_VIDEO_FULLSCREEN                                            0x9506dd4eU
+#define MENU_LABEL_VALUE_VIDEO_FULLSCREEN                                      0x232743caU
 #define MENU_LABEL_CORE_SPECIFIC_CONFIG                                        0x3c9a55e8U
 #define MENU_LABEL_RGUI_SHOW_START_SCREEN                                      0x6b38f0e8U
 #define MENU_LABEL_VIDEO_BLACK_FRAME_INSERTION                                 0x53477f5cU
@@ -140,9 +141,11 @@ extern "C" {
 #define MENU_LABEL_VIDEO_REFRESH_RATE_AUTO                                     0x9addb6cdU
 #define MENU_LABEL_VIDEO_ROTATION                                              0x4ce6882bU
 #define MENU_LABEL_VIDEO_SCALE                                                 0x09835d63U
+#define MENU_LABEL_VALUE_VIDEO_SCALE                                           0x5cde89ceU
 #define MENU_LABEL_VIDEO_SMOOTH                                                0x3aabbb35U
 #define MENU_LABEL_VIDEO_CROP_OVERSCAN                                         0x861f7a2fU
 #define MENU_LABEL_VIDEO_SCALE_INTEGER                                         0x65c4b090U
+#define MENU_LABEL_VALUE_VIDEO_SCALE_INTEGER                                   0xca090a9bU
 
 #define MENU_LABEL_AUDIO_RATE_CONTROL_DELTA                                    0xc8bde3cbU
 #define MENU_LABEL_VALUE_AUDIO_RATE_CONTROL_DELTA                              0x8d242b0eU
