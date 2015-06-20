@@ -3702,8 +3702,8 @@ static bool setting_append_list_main_menu_options(
    }
 #ifndef HAVE_DYNAMIC
    CONFIG_ACTION(
-         "restart_retroarch",
-         "Restart RetroArch",
+         menu_hash_to_str(MENU_LABEL_RESTART_RETROARCH),
+         menu_hash_to_str(MENU_LABEL_VALUE_RESTART_RETROARCH),
          group_info.name,
          subgroup_info.name,
          parent_group);
@@ -3907,8 +3907,8 @@ static bool setting_append_list_core_options(
 
    CONFIG_BOOL(
          settings->video.shared_context,
-         "video_shared_context",
-         "HW Shared Context Enable",
+         menu_hash_to_str(MENU_LABEL_VIDEO_SHARED_CONTEXT),
+         menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_SHARED_CONTEXT),
          false,
          menu_hash_to_str(MENU_VALUE_OFF),
          menu_hash_to_str(MENU_VALUE_ON),
@@ -4070,8 +4070,8 @@ static bool setting_append_list_saving_options(
 
    CONFIG_BOOL(
          settings->block_sram_overwrite,
-         "block_sram_overwrite",
-         "SRAM Block overwrite",
+         menu_hash_to_str(MENU_LABEL_BLOCK_SRAM_OVERWRITE),
+         menu_hash_to_str(MENU_LABEL_VALUE_BLOCK_SRAM_OVERWRITE),
          block_sram_overwrite,
          menu_hash_to_str(MENU_VALUE_OFF),
          menu_hash_to_str(MENU_VALUE_ON),
@@ -4085,8 +4085,8 @@ static bool setting_append_list_saving_options(
 #ifdef HAVE_THREADS
    CONFIG_UINT(
          settings->autosave_interval,
-         "autosave_interval",
-         "SRAM Autosave Interval",
+         menu_hash_to_str(MENU_LABEL_AUTOSAVE_INTERVAL),
+         menu_hash_to_str(MENU_LABEL_VALUE_AUTOSAVE_INTERVAL),
          autosave_interval,
          group_info.name,
          subgroup_info.name,
@@ -4115,8 +4115,8 @@ static bool setting_append_list_saving_options(
 
    CONFIG_BOOL(
          settings->savestate_auto_save,
-         "savestate_auto_save",
-         "Auto Save State",
+         menu_hash_to_str(MENU_LABEL_SAVESTATE_AUTO_SAVE),
+         menu_hash_to_str(MENU_LABEL_VALUE_SAVESTATE_AUTO_SAVE),
          savestate_auto_save,
          menu_hash_to_str(MENU_VALUE_OFF),
          menu_hash_to_str(MENU_VALUE_ON),

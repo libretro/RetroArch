@@ -69,6 +69,7 @@ extern "C" {
 #define MENU_LABEL_VIDEO_GPU_SCREENSHOT                                        0xee2fcb44U
 #define MENU_LABEL_PAUSE_NONACTIVE                                             0x580bf549U
 #define MENU_LABEL_BLOCK_SRAM_OVERWRITE                                        0xc4e88d08U
+#define MENU_LABEL_VALUE_BLOCK_SRAM_OVERWRITE                                  0x9b38260aU
 #define MENU_LABEL_VIDEO_FULLSCREEN                                            0x9506dd4eU
 #define MENU_LABEL_CORE_SPECIFIC_CONFIG                                        0x3c9a55e8U
 #define MENU_LABEL_RGUI_SHOW_START_SCREEN                                      0x6b38f0e8U
@@ -85,6 +86,7 @@ extern "C" {
 #define MENU_LABEL_VIDEO_VSYNC                                                 0x09c2d34eU
 #define MENU_LABEL_VIDEO_HARD_SYNC                                             0xdcd623b6U
 #define MENU_LABEL_SAVESTATE_AUTO_SAVE                                         0xf6f4a05bU
+#define MENU_LABEL_VALUE_SAVESTATE_AUTO_SAVE                                   0x07391f6eU
 #define MENU_LABEL_SYSTEM_DIRECTORY                                            0x35a6fb9eU
 #define MENU_LABEL_VIDEO_DISABLE_COMPOSITION                                   0x5cbb6222U
 #define MENU_LABEL_VOLUME_UP                                                   0xa66e9681U
@@ -164,6 +166,7 @@ extern "C" {
 #define MENU_LABEL_INPUT_BIND_DEVICE_TYPE                                      0xf6e9f041U
 
 #define MENU_LABEL_AUTOSAVE_INTERVAL                                           0xecc87351U
+#define MENU_LABEL_VALUE_AUTOSAVE_INTERVAL                                     0x256f3981U
 #define MENU_LABEL_CONFIG_SAVE_ON_EXIT                                         0x79b590feU
 
 #define MENU_LABEL_INPUT_DRIVER                                                0x4c087840U
@@ -282,6 +285,8 @@ extern "C" {
 #define MENU_LABEL_VALUE_CORE_UPDATER_LIST                                     0x0372767dU
 #define MENU_LABEL_CORE_UPDATER_LIST                                           0xe12f4ee3U
 #define MENU_LABEL_RECORD_CONFIG                                               0x11c3daf9U
+#define MENU_LABEL_VIDEO_SHARED_CONTEXT                                        0x7d7dad16U
+#define MENU_LABEL_VALUE_VIDEO_SHARED_CONTEXT                                  0x353d3287U
 #define MENU_LABEL_UNLOAD_CORE                                                 0x4b622170U
 #define MENU_LABEL_VALUE_UNLOAD_CORE                                           0x9b45e571U
 #define MENU_LABEL_QUIT_RETROARCH                                              0x84b0bc71U
@@ -467,6 +472,8 @@ extern "C" {
 #define MENU_LABEL_VALUE_RESUME_CONTENT                                        0xae6e5911U
 #define MENU_LABEL_VALUE_RESUME                                                0xce8ac2f6U
 #define MENU_LABEL_RESTART_CONTENT                                             0x1ea2e224U
+#define MENU_LABEL_RESTART_RETROARCH                                           0xb57d3d73U
+#define MENU_LABEL_VALUE_RESTART_RETROARCH                                     0xcc0799f4U
 #define MENU_LABEL_VALUE_RESTART_CONTENT                                       0xf23a2e85U
 #define MENU_LABEL_TAKE_SCREENSHOT                                             0x6786e867U
 #define MENU_LABEL_VALUE_TAKE_SCREENSHOT                                       0xab767128U

@@ -193,6 +193,26 @@ static const char *menu_hash_to_str_english(uint32_t hash)
 {
    switch (hash)
    {
+      case MENU_LABEL_SAVESTATE_AUTO_SAVE:
+         return "savestate_auto_save";
+      case MENU_LABEL_VALUE_SAVESTATE_AUTO_SAVE:
+         return "Auto Save State";
+      case MENU_LABEL_AUTOSAVE_INTERVAL:
+         return "autosave_interval";
+      case MENU_LABEL_VALUE_AUTOSAVE_INTERVAL:
+         return "SaveRAM Autosave Interval";
+      case MENU_LABEL_BLOCK_SRAM_OVERWRITE:
+         return "block_sram_overwrite";
+      case MENU_LABEL_VALUE_BLOCK_SRAM_OVERWRITE:
+         return "Don't overwrite SaveRAM on loading savestate";
+      case MENU_LABEL_VIDEO_SHARED_CONTEXT:
+         return "video_shared_context";
+      case MENU_LABEL_VALUE_VIDEO_SHARED_CONTEXT:
+         return "HW Shared Context Enable";
+      case MENU_LABEL_RESTART_RETROARCH:
+         return "restart_retroarch";
+      case MENU_LABEL_VALUE_RESTART_RETROARCH:
+         return "Restart RetroArch";
       case MENU_LABEL_NETPLAY_NICKNAME:
          return "netplay_nickname";
       case MENU_LABEL_VALUE_NETPLAY_NICKNAME:
