@@ -663,6 +663,24 @@ extern "C" {
 #define MENU_LABEL_NETPLAY_NICKNAME                                            0x52204787U
 #define MENU_LABEL_VALUE_NETPLAY_NICKNAME                                      0x75de3125U
 
+#define MENU_LABEL_VIDEO_GPU_RECORD                                            0xb6059a65U
+#define MENU_LABEL_VALUE_VIDEO_GPU_RECORD                                      0x2241deb7U
+
+#define MENU_LABEL_RECORD_USE_OUTPUT_DIRECTORY                                 0x8343eff4U
+#define MENU_LABEL_VALUE_RECORD_USE_OUTPUT_DIRECTORY                           0x8282ff38U
+
+#define MENU_LABEL_RECORD_CONFIG                                               0x11c3daf9U
+#define MENU_LABEL_VALUE_RECORD_CONFIG                                         0xe9a8a33aU
+
+#define MENU_LABEL_RECORD_PATH                                                 0x016d7afaU
+#define MENU_LABEL_VALUE_RECORD_PATH                                           0xeb15a0f1U
+
+#define MENU_LABEL_VIDEO_POST_FILTER_RECORD                                    0xa7b6e724U
+#define MENU_LABEL_VALUE_VIDEO_POST_FILTER_RECORD                              0x1362eaf7U
+
+#define MENU_LABEL_RECORD_ENABLE                                               0x1654e22aU
+#define MENU_LABEL_VALUE_RECORD_ENABLE                                         0xee39aa6bU
+
 #define MENU_VALUE_SECONDS                                                     0x8b0028d4U
 
 const char *menu_hash_to_str(uint32_t hash);

@@ -4353,8 +4353,8 @@ static bool setting_append_list_recording_options(
 
    CONFIG_BOOL(
          global->record.enable,
-         "record_enable",
-         "Record Enable",
+         menu_hash_to_str(MENU_LABEL_RECORD_ENABLE),
+         menu_hash_to_str(MENU_LABEL_VALUE_RECORD_ENABLE),
          false,
          menu_hash_to_str(MENU_VALUE_OFF),
          menu_hash_to_str(MENU_VALUE_ON),
@@ -4366,8 +4366,8 @@ static bool setting_append_list_recording_options(
 
    CONFIG_PATH(
          global->record.config,
-         "record_config",
-         "Record Config",
+         menu_hash_to_str(MENU_LABEL_RECORD_CONFIG),
+         menu_hash_to_str(MENU_LABEL_VALUE_RECORD_CONFIG),
          "",
          group_info.name,
          subgroup_info.name,
@@ -4379,8 +4379,8 @@ static bool setting_append_list_recording_options(
 
    CONFIG_STRING(
          global->record.path,
-         "record_path",
-         "Record Path",
+         menu_hash_to_str(MENU_LABEL_RECORD_PATH),
+         menu_hash_to_str(MENU_LABEL_VALUE_RECORD_PATH),
          "",
          group_info.name,
          subgroup_info.name,
@@ -4391,8 +4391,8 @@ static bool setting_append_list_recording_options(
 
    CONFIG_BOOL(
          global->record.use_output_dir,
-         "record_use_output_dir",
-         "Use output directory",
+         menu_hash_to_str(MENU_LABEL_RECORD_USE_OUTPUT_DIRECTORY),
+         menu_hash_to_str(MENU_LABEL_VALUE_RECORD_USE_OUTPUT_DIRECTORY),
          false,
          menu_hash_to_str(MENU_VALUE_OFF),
          menu_hash_to_str(MENU_VALUE_ON),
@@ -4408,8 +4408,8 @@ static bool setting_append_list_recording_options(
 
    CONFIG_BOOL(
          settings->video.post_filter_record,
-         "video_post_filter_record",
-         "Post filter record Enable",
+         menu_hash_to_str(MENU_LABEL_VIDEO_POST_FILTER_RECORD),
+         menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_POST_FILTER_RECORD),
          post_filter_record,
          menu_hash_to_str(MENU_VALUE_OFF),
          menu_hash_to_str(MENU_VALUE_ON),
@@ -4421,8 +4421,8 @@ static bool setting_append_list_recording_options(
 
    CONFIG_BOOL(
          settings->video.gpu_record,
-         "video_gpu_record",
-         "GPU Record Enable",
+         menu_hash_to_str(MENU_LABEL_VIDEO_GPU_RECORD),
+         menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_GPU_RECORD),
          gpu_record,
          menu_hash_to_str(MENU_VALUE_OFF),
          menu_hash_to_str(MENU_VALUE_ON),

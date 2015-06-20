@@ -311,6 +311,30 @@ static const char *menu_hash_to_str_english(uint32_t hash)
 {
    switch (hash)
    {
+      case MENU_LABEL_RECORD_ENABLE:
+         return "record_enable";
+      case MENU_LABEL_VALUE_RECORD_ENABLE:
+         return "Record Enable";
+      case MENU_LABEL_VIDEO_GPU_RECORD:
+         return "video_gpu_record";
+      case MENU_LABEL_VALUE_VIDEO_GPU_RECORD:
+         return "GPU Record Enable";
+      case MENU_LABEL_RECORD_PATH:
+         return "record_path";
+      case MENU_LABEL_VALUE_RECORD_PATH:
+         return "Record Path";
+      case MENU_LABEL_RECORD_USE_OUTPUT_DIRECTORY:
+         return "record_use_output_directory";
+      case MENU_LABEL_VALUE_RECORD_USE_OUTPUT_DIRECTORY:
+         return "Use Output Directory";
+      case MENU_LABEL_RECORD_CONFIG:
+         return "record_config";
+      case MENU_LABEL_VALUE_RECORD_CONFIG:
+         return "Record Config";
+      case MENU_LABEL_VIDEO_POST_FILTER_RECORD:
+         return "video_post_filter_record";
+      case MENU_LABEL_VALUE_VIDEO_POST_FILTER_RECORD:
+         return "Post filter record Enable";
       case MENU_LABEL_CORE_ASSETS_DIRECTORY:
          return "core_assets_directory";
       case MENU_LABEL_VALUE_CORE_ASSETS_DIRECTORY:
