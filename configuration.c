@@ -1667,12 +1667,12 @@ static void config_load_core_specific(void)
 
    *global->core_specific_config_path = '\0';
 
-   if (!*settings->libretro
-#ifdef HAVE_DYNAMIC
-      || global->libretro_dummy
-#endif
-      )
+   if (!*settings->libretro)
       return;
+#ifdef HAVE_DYNAMIC
+   if (global->core_type == CORE_TYPE_DUMMY)
+      return;
+#endif
 
 #ifdef HAVE_MENU
    if (*settings->menu_config_directory)

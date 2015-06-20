@@ -639,7 +639,7 @@ static bool event_init_content(void)
 
    /* No content to be loaded for dummy core,
     * just successfully exit. */
-   if (global->libretro_dummy) 
+   if (global->core_type == CORE_TYPE_DUMMY) 
       return true;
 
    if (!global->libretro_no_content)
@@ -697,7 +697,7 @@ static bool event_init_core(void)
    rarch_verify_api_version();
    pretro_init();
 
-   global->use_sram = !global->libretro_dummy &&
+   global->use_sram = (global->core_type == CORE_TYPE_PLAIN) &&
       !global->libretro_no_content;
 
    if (!event_init_content())
@@ -716,7 +716,8 @@ static bool event_save_auto_state(void)
    settings_t *settings = config_get_ptr();
    global_t   *global   = global_get_ptr();
 
-   if (!settings->savestate_auto_save || global->libretro_dummy ||
+   if (!settings->savestate_auto_save || 
+         (global->core_type == CORE_TYPE_DUMMY) ||
        global->libretro_no_content)
        return false;
 

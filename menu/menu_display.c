@@ -79,7 +79,7 @@ void menu_display_fb(void)
 
    if (!settings->menu.pause_libretro)
    {
-      if (global->main_is_init && !global->libretro_dummy)
+      if (global->main_is_init && (global->core_type != CORE_TYPE_DUMMY))
       {
          bool block_libretro_input = driver->block_libretro_input;
          driver->block_libretro_input = true;

@@ -172,7 +172,7 @@ static void history_playlist_push(content_playlist_t *playlist,
    char tmp[PATH_MAX_LENGTH] = {0};
    global_t        *global   = global_get_ptr();
 
-   if (!playlist || global->libretro_dummy || !info)
+   if (!playlist || (global->core_type == CORE_TYPE_DUMMY) || !info)
       return;
 
    /* Path can be relative here.

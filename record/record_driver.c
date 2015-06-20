@@ -299,7 +299,7 @@ bool recording_init(void)
    if (!global->record.enable)
       return false;
 
-   if (global->libretro_dummy)
+   if (global->core_type == CORE_TYPE_DUMMY)
    {
       RARCH_WARN(RETRO_LOG_INIT_RECORDING_SKIPPED);
       return false;

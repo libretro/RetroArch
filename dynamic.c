@@ -280,103 +280,126 @@ libretro_find_controller_description(
 
 /**
  * load_symbols:
- * @dummy                        : Load dummy symbols if true
+ * @type                        : Type of core to be loaded.
+ *                                If CORE_TYPE_DUMMY, will 
+ *                                load dummy symbols.
  *
  * Setup libretro callback symbols.
  **/
-static void load_symbols(bool is_dummy)
+static void load_symbols(enum rarch_core_type type)
 {
-   if (is_dummy)
+   settings_t *settings = config_get_ptr();
+
+   switch (type)
    {
-      SYM_DUMMY(retro_init);
-      SYM_DUMMY(retro_deinit);
-
-      SYM_DUMMY(retro_api_version);
-      SYM_DUMMY(retro_get_system_info);
-      SYM_DUMMY(retro_get_system_av_info);
-
-      SYM_DUMMY(retro_set_environment);
-      SYM_DUMMY(retro_set_video_refresh);
-      SYM_DUMMY(retro_set_audio_sample);
-      SYM_DUMMY(retro_set_audio_sample_batch);
-      SYM_DUMMY(retro_set_input_poll);
-      SYM_DUMMY(retro_set_input_state);
-
-      SYM_DUMMY(retro_set_controller_port_device);
-
-      SYM_DUMMY(retro_reset);
-      SYM_DUMMY(retro_run);
-
-      SYM_DUMMY(retro_serialize_size);
-      SYM_DUMMY(retro_serialize);
-      SYM_DUMMY(retro_unserialize);
-
-      SYM_DUMMY(retro_cheat_reset);
-      SYM_DUMMY(retro_cheat_set);
-
-      SYM_DUMMY(retro_load_game);
-      SYM_DUMMY(retro_load_game_special);
-
-      SYM_DUMMY(retro_unload_game);
-      SYM_DUMMY(retro_get_region);
-      SYM_DUMMY(retro_get_memory_data);
-      SYM_DUMMY(retro_get_memory_size);
-   }
-   else
-   {
+      case CORE_TYPE_PLAIN:
+         {
 #ifdef HAVE_DYNAMIC
-      settings_t *settings = config_get_ptr();
+            function_t sym       = dylib_proc(NULL, "retro_init");
 
-      /* Need to use absolute path for this setting. It can be 
-       * saved to content history, and a relative path would 
-       * break in that scenario. */
-      path_resolve_realpath(settings->libretro,
-            sizeof(settings->libretro));
+            if (sym)
+            {
+               /* Try to verify that -lretro was not linked in from other modules
+                * since loading it dynamically and with -l will fail hard. */
+               RARCH_ERR("Serious problem. RetroArch wants to load libretro dyamically, but it is already linked.\n");
+               RARCH_ERR("This could happen if other modules RetroArch depends on link against libretro directly.\n");
+               RARCH_ERR("Proceeding could cause a crash. Aborting ...\n");
+               rarch_fail(1, "init_libretro_sym()");
+            }
 
-      RARCH_LOG("Loading dynamic libretro from: \"%s\"\n",
-            settings->libretro);
-      lib_handle = dylib_load(settings->libretro);
-      if (!lib_handle)
-      {
-         RARCH_ERR("Failed to open dynamic library: \"%s\"\n",
-               settings->libretro);
-         rarch_fail(1, "load_dynamic()");
-      }
+            if (!*settings->libretro)
+            {
+               RARCH_ERR("RetroArch is built for dynamic libretro, but libretro_path is not set. Cannot continue.\n");
+               rarch_fail(1, "init_libretro_sym()");
+            }
+
+            /* Need to use absolute path for this setting. It can be 
+             * saved to content history, and a relative path would 
+             * break in that scenario. */
+            path_resolve_realpath(settings->libretro,
+                  sizeof(settings->libretro));
+
+            RARCH_LOG("Loading dynamic libretro from: \"%s\"\n",
+                  settings->libretro);
+            lib_handle = dylib_load(settings->libretro);
+            if (!lib_handle)
+            {
+               RARCH_ERR("Failed to open dynamic library: \"%s\"\n",
+                     settings->libretro);
+               rarch_fail(1, "load_dynamic()");
+            }
 #endif
+         }
 
-      SYM(retro_init);
-      SYM(retro_deinit);
+         SYM(retro_init);
+         SYM(retro_deinit);
 
-      SYM(retro_api_version);
-      SYM(retro_get_system_info);
-      SYM(retro_get_system_av_info);
+         SYM(retro_api_version);
+         SYM(retro_get_system_info);
+         SYM(retro_get_system_av_info);
 
-      SYM(retro_set_environment);
-      SYM(retro_set_video_refresh);
-      SYM(retro_set_audio_sample);
-      SYM(retro_set_audio_sample_batch);
-      SYM(retro_set_input_poll);
-      SYM(retro_set_input_state);
+         SYM(retro_set_environment);
+         SYM(retro_set_video_refresh);
+         SYM(retro_set_audio_sample);
+         SYM(retro_set_audio_sample_batch);
+         SYM(retro_set_input_poll);
+         SYM(retro_set_input_state);
 
-      SYM(retro_set_controller_port_device);
+         SYM(retro_set_controller_port_device);
 
-      SYM(retro_reset);
-      SYM(retro_run);
+         SYM(retro_reset);
+         SYM(retro_run);
 
-      SYM(retro_serialize_size);
-      SYM(retro_serialize);
-      SYM(retro_unserialize);
+         SYM(retro_serialize_size);
+         SYM(retro_serialize);
+         SYM(retro_unserialize);
 
-      SYM(retro_cheat_reset);
-      SYM(retro_cheat_set);
+         SYM(retro_cheat_reset);
+         SYM(retro_cheat_set);
 
-      SYM(retro_load_game);
-      SYM(retro_load_game_special);
+         SYM(retro_load_game);
+         SYM(retro_load_game_special);
 
-      SYM(retro_unload_game);
-      SYM(retro_get_region);
-      SYM(retro_get_memory_data);
-      SYM(retro_get_memory_size);
+         SYM(retro_unload_game);
+         SYM(retro_get_region);
+         SYM(retro_get_memory_data);
+         SYM(retro_get_memory_size);
+         break;
+      case CORE_TYPE_DUMMY:
+         SYM_DUMMY(retro_init);
+         SYM_DUMMY(retro_deinit);
+
+         SYM_DUMMY(retro_api_version);
+         SYM_DUMMY(retro_get_system_info);
+         SYM_DUMMY(retro_get_system_av_info);
+
+         SYM_DUMMY(retro_set_environment);
+         SYM_DUMMY(retro_set_video_refresh);
+         SYM_DUMMY(retro_set_audio_sample);
+         SYM_DUMMY(retro_set_audio_sample_batch);
+         SYM_DUMMY(retro_set_input_poll);
+         SYM_DUMMY(retro_set_input_state);
+
+         SYM_DUMMY(retro_set_controller_port_device);
+
+         SYM_DUMMY(retro_reset);
+         SYM_DUMMY(retro_run);
+
+         SYM_DUMMY(retro_serialize_size);
+         SYM_DUMMY(retro_serialize);
+         SYM_DUMMY(retro_unserialize);
+
+         SYM_DUMMY(retro_cheat_reset);
+         SYM_DUMMY(retro_cheat_set);
+
+         SYM_DUMMY(retro_load_game);
+         SYM_DUMMY(retro_load_game_special);
+
+         SYM_DUMMY(retro_unload_game);
+         SYM_DUMMY(retro_get_region);
+         SYM_DUMMY(retro_get_memory_data);
+         SYM_DUMMY(retro_get_memory_size);
+         break;
    }
 }
 
@@ -420,42 +443,21 @@ void libretro_get_current_core_pathname(char *name, size_t size)
 
 /**
  * init_libretro_sym:
- * @dummy                        : Load dummy symbols if true
+ * @type                        : Type of core to be loaded.
+ *                                If CORE_TYPE_DUMMY, will 
+ *                                load dummy symbols.
  *
  * Initializes libretro symbols and
  * setups environment callback functions.
  **/
-void init_libretro_sym(bool dummy)
+void init_libretro_sym(enum rarch_core_type type)
 {
    /* Guarantee that we can do "dirty" casting.
     * Every OS that this program supports should pass this. */
    rarch_assert(sizeof(void*) == sizeof(void (*)(void)));
 
-   if (!dummy)
-   {
-#ifdef HAVE_DYNAMIC
-      settings_t *settings = config_get_ptr();
-      function_t sym       = dylib_proc(NULL, "retro_init");
 
-      if (sym)
-      {
-         /* Try to verify that -lretro was not linked in from other modules
-          * since loading it dynamically and with -l will fail hard. */
-         RARCH_ERR("Serious problem. RetroArch wants to load libretro dyamically, but it is already linked.\n");
-         RARCH_ERR("This could happen if other modules RetroArch depends on link against libretro directly.\n");
-         RARCH_ERR("Proceeding could cause a crash. Aborting ...\n");
-         rarch_fail(1, "init_libretro_sym()");
-      }
-
-      if (!*settings->libretro)
-      {
-         RARCH_ERR("RetroArch is built for dynamic libretro, but libretro_path is not set. Cannot continue.\n");
-         rarch_fail(1, "init_libretro_sym()");
-      }
-#endif
-   }
-
-   load_symbols(dummy);
+   load_symbols(type);
 
    //move this to init_core, will need to be tested
    //pretro_set_environment(rarch_environment_cb);

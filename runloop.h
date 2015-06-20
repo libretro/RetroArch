@@ -26,6 +26,7 @@
 #include "autosave.h"
 #include "movie.h"
 #include "cheats.h"
+#include "dynamic.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -319,7 +320,7 @@ typedef struct global
    jmp_buf error_sjlj_context;
 
    bool libretro_no_content;
-   bool libretro_dummy;
+   enum rarch_core_type core_type;
 
    /* Config file associated with per-core configs. */
    char core_specific_config_path[PATH_MAX_LENGTH];

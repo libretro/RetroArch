@@ -100,7 +100,7 @@ static INLINE void gl_menu_frame_background(
    menu_display_set_viewport();
 
    if ((settings->menu.pause_libretro
-      || !global->main_is_init || global->libretro_dummy)
+      || !global->main_is_init || (global->core_type == CORE_TYPE_DUMMY))
       && !force_transparency
       && texture)
       coords.color = color;

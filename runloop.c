@@ -425,7 +425,7 @@ static void do_state_check_menu_toggle(void)
 
    if (menu_driver_alive())
    {
-      if (global->main_is_init && !global->libretro_dummy)
+      if (global->main_is_init && (global->core_type != CORE_TYPE_DUMMY))
          rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING_FINISHED);
       return;
    }
@@ -462,7 +462,7 @@ static int do_pre_state_checks(event_cmd_state_t *cmd)
       event_command(EVENT_CMD_GRAB_MOUSE_TOGGLE);
 
 #ifdef HAVE_MENU
-   if (cmd->menu_pressed || (global->libretro_dummy))
+   if (cmd->menu_pressed || (global->core_type == CORE_TYPE_DUMMY))
       do_state_check_menu_toggle();
 #endif
 

@@ -1434,7 +1434,7 @@ static int menu_displaylist_parse_options(menu_displaylist_info_t *info)
             menu_hash_to_str(MENU_LABEL_VALUE_CORE_CHEAT_OPTIONS),
             menu_hash_to_str(MENU_LABEL_CORE_CHEAT_OPTIONS),
             MENU_SETTING_ACTION, 0, 0);
-      if (!global->libretro_dummy && global->system.disk_control.get_num_images)
+      if ((global->core_type != CORE_TYPE_DUMMY) && global->system.disk_control.get_num_images)
          menu_list_push(info->list,
                menu_hash_to_str(MENU_LABEL_VALUE_DISK_OPTIONS),
                menu_hash_to_str(MENU_LABEL_DISK_OPTIONS),
@@ -1461,7 +1461,7 @@ static int menu_displaylist_parse_horizontal_content_actions(menu_displaylist_in
    if (!menu)
       return -1;
 
-   if (global->main_is_init && !global->libretro_dummy &&
+   if (global->main_is_init && (global->core_type != CORE_TYPE_DUMMY) &&
          !strcmp(menu->deferred_path, global->fullpath))
    {
       menu_list_push(info->list,

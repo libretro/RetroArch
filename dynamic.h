@@ -26,6 +26,12 @@
 
 #include <dynamic/dylib.h>
 
+enum rarch_core_type 
+{
+   CORE_TYPE_PLAIN = 0,
+   CORE_TYPE_DUMMY,
+};
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -168,12 +174,14 @@ extern size_t (*pretro_get_memory_size)(unsigned);
 
 /**
  * init_libretro_sym:
- * @dummy                        : Load dummy symbols if true
+ * @type                        : Type of core to be loaded.
+ *                                If CORE_TYPE_DUMMY, will 
+ *                                load dummy symbols.
  *
  * Initializes libretro symbols and
  * setups environment callback functions.
  **/
-void init_libretro_sym(bool dummy);
+void init_libretro_sym(enum rarch_core_type type);
 
 /**
  * uninit_libretro_sym:

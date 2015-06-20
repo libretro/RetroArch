@@ -429,7 +429,7 @@ static void parse_input(int argc, char *argv[])
    global_t  *global  = global_get_ptr();
 
    global->libretro_no_content           = false;
-   global->libretro_dummy                = false;
+   global->core_type                     = CORE_TYPE_PLAIN;
    global->has_set_save_path             = false;
    global->has_set_state_path            = false;
    global->has_set_libretro              = false;
@@ -458,7 +458,7 @@ static void parse_input(int argc, char *argv[])
 
    if (argc < 2)
    {
-      global->libretro_dummy             = true;
+      global->core_type                  = CORE_TYPE_DUMMY;
       return;
    }
 
@@ -713,7 +713,7 @@ static void parse_input(int argc, char *argv[])
             switch (val)
             {
                case RA_OPT_MENU:
-                  global->libretro_dummy = true;
+                  global->core_type                  = CORE_TYPE_DUMMY;
                   break;
 
 #ifdef HAVE_NETPLAY
@@ -823,7 +823,7 @@ static void parse_input(int argc, char *argv[])
       }
    }
 
-   if (global->libretro_dummy)
+   if (global->core_type == CORE_TYPE_DUMMY)
    {
       if (optind < argc)
       {
@@ -1184,7 +1184,7 @@ int rarch_main_init(int argc, char *argv[])
    validate_cpu_features();
    config_load();
 
-   init_libretro_sym(global->libretro_dummy);
+   init_libretro_sym(global->core_type);
    init_system_info();
 
    init_drivers_pre();
