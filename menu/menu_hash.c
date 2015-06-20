@@ -37,12 +37,132 @@ static const char *menu_hash_to_str_french(uint32_t hash)
 {
    switch (hash)
    {
+      case MENU_LABEL_VALUE_VIDEO_SMOOTH:
+         return "Filtre bilineaire (HW)";
+      case MENU_LABEL_VALUE_VIDEO_GAMMA:
+         return "Gamma";
+      case MENU_LABEL_VALUE_VIDEO_ALLOW_ROTATE:
+         return "Autoriser la rotation";
+      case MENU_LABEL_VALUE_VIDEO_HARD_SYNC:
+         return "Synchroniser le GPU au CPU";
+      case MENU_LABEL_VALUE_VIDEO_SWAP_INTERVAL:
+         return "Intervale de synchro verticale";
+      case MENU_LABEL_VALUE_VIDEO_VSYNC:
+         return "Synchronisation verticale";
+      case MENU_LABEL_VALUE_VIDEO_THREADED:
+         return "Threader l'affichage";
+      case MENU_LABEL_VALUE_VIDEO_ROTATION:
+         return "Rotation";
+      case MENU_LABEL_VALUE_VIDEO_CROP_OVERSCAN:
+         return "Tronquer l'overscan (Reload)";
+      case MENU_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION:
+         return "Inserer des images noires";
+      case MENU_LABEL_VALUE_SORT_SAVEFILES_ENABLE:
+         return "Classer les sauvegardes par dossier";
+      case MENU_LABEL_VALUE_SORT_SAVESTATES_ENABLE:
+         return "Classer les sauvegardes d'etat par dossier";
+      case MENU_LABEL_VALUE_VIDEO_FULLSCREEN:
+         return "Plein ecran";
+      case MENU_LABEL_VALUE_VIDEO_SCALE:
+         return "Zoom (en fenetre)";
+      case MENU_LABEL_VALUE_VIDEO_SCALE_INTEGER:
+         return "Aligner aux pixels de l'ecran";
+      case MENU_LABEL_VALUE_PERFCNT_ENABLE:
+         return "Compteurs de performance";
+      case MENU_LABEL_VALUE_LIBRETRO_LOG_LEVEL:
+         return "Niveau de log des cores";
+      case MENU_LABEL_VALUE_LOG_VERBOSITY:
+         return "Logs verbeux";
+      case MENU_LABEL_VALUE_SAVESTATE_AUTO_LOAD:
+         return "Auto Load State"; // TODO
+      case MENU_LABEL_VALUE_SAVESTATE_AUTO_INDEX:
+         return "Indice automatique de sauvegarde d'etat";
+      case MENU_LABEL_VALUE_SAVESTATE_AUTO_SAVE:
+         return "Sauvegarde automatique";
+      case MENU_LABEL_VALUE_AUTOSAVE_INTERVAL:
+         return "Intervale de sauvegarde SaveRAM";
+      case MENU_LABEL_VALUE_BLOCK_SRAM_OVERWRITE:
+         return "Ne pas ecraser la SaveRAM en chargeant l'etat";
+      case MENU_LABEL_VALUE_VIDEO_SHARED_CONTEXT:
+         return "Partager le contexte materiel";
+      case MENU_LABEL_VALUE_RESTART_RETROARCH:
+         return "Redemarrer RetroArch";
+      case MENU_LABEL_VALUE_NETPLAY_NICKNAME:
+         return "Nom d'utilisateur";
+      case MENU_LABEL_VALUE_USER_LANGUAGE:
+         return "Langue";
+      case MENU_LABEL_VALUE_CAMERA_ALLOW:
+         return "Autoriser la camera";
+      case MENU_LABEL_VALUE_LOCATION_ALLOW:
+         return "Autoriser la localisation";
+      case MENU_LABEL_VALUE_PAUSE_LIBRETRO:
+         return "Pause quand le menu est active";
+      case MENU_LABEL_VALUE_INPUT_OSK_OVERLAY_ENABLE:
+         return "Afficher l'Overlay Clavier";
+      case MENU_LABEL_VALUE_INPUT_OVERLAY_ENABLE:
+         return "Activer les Overlays";
+      case MENU_LABEL_VALUE_VIDEO_MONITOR_INDEX:
+         return "Ecran a utiliser";
+      case MENU_LABEL_VALUE_VIDEO_FRAME_DELAY:
+         return "Delai d'image";
+      case MENU_LABEL_VALUE_INPUT_DUTY_CYCLE:
+         return "Rapport de cycle";
+      case MENU_LABEL_VALUE_INPUT_TURBO_PERIOD:
+         return "Delai du turbo";
+      case MENU_LABEL_VALUE_INPUT_AXIS_THRESHOLD:
+         return "Seuil des axes";
+      case MENU_LABEL_VALUE_INPUT_REMAP_BINDS_ENABLE:
+         return "Autoriser le remapping des entrees";
+      case MENU_LABEL_VALUE_INPUT_MAX_USERS:
+         return "Nombre d'utilisateurs";
+      case MENU_LABEL_VALUE_INPUT_AUTODETECT_ENABLE:
+         return "Activer l'autoconfiguration";
+      case MENU_LABEL_VALUE_AUDIO_OUTPUT_RATE:
+         return "Frequence de sortie (KHz)";
+      case MENU_LABEL_VALUE_AUDIO_MAX_TIMING_SKEW:
+         return "Limite max de l'ajustement";
+      case MENU_LABEL_VALUE_CHEAT_NUM_PASSES:
+         return "Nombre d'etapes de triche";
+      case MENU_LABEL_VALUE_REMAP_FILE_SAVE_CORE:
+         return "Charger un fichier Remap de core";
+      case MENU_LABEL_VALUE_REMAP_FILE_SAVE_GAME:
+         return "Charger un fichier Remap de jeu";
+      case MENU_LABEL_VALUE_CHEAT_APPLY_CHANGES:
+         return "Appliquer les changements";
+      case MENU_LABEL_VALUE_SHADER_APPLY_CHANGES:
+         return "Appliquer les changements";
+      case MENU_LABEL_VALUE_REWIND_ENABLE:
+         return "Activer le rembobinage";
+      case MENU_LABEL_VALUE_CONTENT_COLLECTION_LIST:
+         return "Charger un contenu (Collections)";
+      case MENU_LABEL_VALUE_DETECT_CORE_LIST:
+         return "Charger un contenu (Detect core)";
+      case MENU_LABEL_VALUE_LOAD_CONTENT_HISTORY:
+         return "Charger un contenu (Historique)";
+      case MENU_LABEL_VALUE_AUDIO_ENABLE:
+         return "Activer le son";
+      case MENU_LABEL_VALUE_FPS_SHOW:
+         return "Afficher le FPS";
+      case MENU_LABEL_VALUE_AUDIO_MUTE:
+         return "Muet";
+      case MENU_LABEL_VALUE_AUDIO_VOLUME:
+         return "Volume sonnore (dB)";
+      case MENU_LABEL_VALUE_AUDIO_SYNC:
+         return "Synchroniser le son";
+      case MENU_LABEL_VALUE_AUDIO_RATE_CONTROL_DELTA:
+         return "Delta du taux de controle";
+      case MENU_LABEL_VALUE_VIDEO_SHADER_NUM_PASSES:
+         return "Nombre d'etapes de Shader";
+      case MENU_LABEL_VALUE_CONFIGURATIONS:
+         return "Fichiers de configuration";
+      case MENU_LABEL_VALUE_REWIND_GRANULARITY:
+         return "Precision du rembobinage";
       case MENU_LABEL_VALUE_REMAP_FILE_LOAD:
          return "Charger un fichier de Remap";
       case MENU_LABEL_VALUE_REMAP_FILE_SAVE_AS:
          return "Enregistrer un fichier de Remap sous";
       case MENU_LABEL_VALUE_CUSTOM_RATIO:
-         return "Ratio personnalise";
+         return "Forcer une resolution";
       case MENU_LABEL_VALUE_USE_THIS_DIRECTORY:
          return "<Choisir ce dossier>";
       case MENU_LABEL_VALUE_RDB_ENTRY_START_CONTENT:
@@ -50,7 +170,7 @@ static const char *menu_hash_to_str_french(uint32_t hash)
       case MENU_LABEL_VALUE_DISK_OPTIONS:
          return "Options de disques";
       case MENU_LABEL_VALUE_CORE_OPTIONS:
-         return "Options du Core";
+         return "Options du core";
       case MENU_LABEL_VALUE_CORE_CHEAT_OPTIONS:
          return "Options de triche";
       case MENU_LABEL_VALUE_TAKE_SCREENSHOT:
@@ -72,15 +192,15 @@ static const char *menu_hash_to_str_french(uint32_t hash)
       case MENU_LABEL_VALUE_NO_CORE_OPTIONS_AVAILABLE:
          return "Pas d'options disponibles.";
       case MENU_LABEL_VALUE_NO_CORES_AVAILABLE:
-         return "Aucun Core disponible.";
+         return "Aucun core disponible.";
       case MENU_VALUE_NO_CORE:
-         return "Aucun Core";
+         return "Aucun core";
       case MENU_LABEL_VALUE_DATABASE_MANAGER:
-         return "Gestion de base de donnee";
+         return "Base de donnees";
       case MENU_LABEL_VALUE_CURSOR_MANAGER:
-         return "Gestion de curseur";
+         return "Curseurs";
       case MENU_VALUE_RECORDING_SETTINGS:
-         return "Réglage de capture video";
+         return "Reglage de capture video";
       case MENU_VALUE_MAIN_MENU:
          return "Main Menu";
       case MENU_LABEL_VALUE_SETTINGS:
@@ -94,27 +214,25 @@ static const char *menu_hash_to_str_french(uint32_t hash)
       case MENU_LABEL_VALUE_RESTART_CONTENT:
          return "Redemarrer le contenu";
       case MENU_LABEL_VALUE_CORE_UPDATER_LIST:
-         return "Mise a jour des Cores";
+         return "Mise a jour des cores";
       case MENU_LABEL_VALUE_SYSTEM_INFORMATION:
          return "Informations du systeme";
       case MENU_LABEL_VALUE_OPTIONS:
          return "Options";
       case MENU_LABEL_VALUE_CORE_INFORMATION:
-         return "Informations sur le Core";
+         return "Informations sur le core";
       case MENU_LABEL_VALUE_DIRECTORY_NOT_FOUND:
          return "Dossier non trouve.";
       case MENU_LABEL_VALUE_NO_ITEMS:
          return "Pas d elements.";
       case MENU_LABEL_CORE_LIST:
-         return "Charger un Core";
+         return "Charger un core";
       case MENU_LABEL_VALUE_LOAD_CONTENT:
          return "Charger un contenu";
       case MENU_LABEL_VALUE_UNLOAD_CORE:
-         return "Unload Core";
+         return "Unload core";
       case MENU_LABEL_VALUE_MANAGEMENT:
          return "Gestion avancee";
-      case MENU_LABEL_VALUE_PERFORMANCE_COUNTERS:
-         return "Compteurs de performance";
       case MENU_LABEL_VALUE_SAVE_STATE:
          return "Sauvegarder un etat";
       case MENU_LABEL_VALUE_LOAD_STATE:
@@ -128,13 +246,13 @@ static const char *menu_hash_to_str_french(uint32_t hash)
       case MENU_LABEL_VALUE_OVERLAY_SCALE:
          return "Zoom de l'Overlay";
       case MENU_LABEL_VALUE_OVERLAY_PRESET:
-         return "Overlay Preset";
+         return "Prereglages d'Overlay";
       case MENU_LABEL_VALUE_AUDIO_LATENCY:
-         return "Audio Latency (ms)";
+         return "Latence audio (ms)";
       case MENU_LABEL_VALUE_AUDIO_DEVICE:
-         return "Audio Device";
+         return "Carte son";
       case MENU_LABEL_VALUE_KEYBOARD_OVERLAY_PRESET:
-         return "Prereglage d'Overlay Clavier";
+         return "Prereglages d'Overlay Clavier";
       case MENU_LABEL_VALUE_OVERLAY_OPACITY:
          return "Transparence de l'Overlay";
       case MENU_LABEL_VALUE_MENU_WALLPAPER:
@@ -144,7 +262,7 @@ static const char *menu_hash_to_str_french(uint32_t hash)
       case MENU_LABEL_VALUE_BOXART:
          return "Afficher les vignettes";
       case MENU_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS:
-         return "Core Input Remapping Options";
+         return "Options de remap d'entrees du core";
       case MENU_LABEL_VALUE_VIDEO_OPTIONS:
          return "Options video";
       case MENU_LABEL_VALUE_SHADER_OPTIONS:
@@ -154,9 +272,9 @@ static const char *menu_hash_to_str_french(uint32_t hash)
       case MENU_LABEL_VALUE_VIDEO_FILTER:
          return "Filtre video";
       case MENU_LABEL_VALUE_AUDIO_DSP_PLUGIN:
-         return "Audio DSP Plugin";
+         return "Module DSP";
       case MENU_LABEL_VALUE_STARTING_DOWNLOAD:
-         return "Telechargement de: ";
+         return "Telechargement de : ";
       case MENU_VALUE_OFF:
          return "OFF";
       case MENU_VALUE_ON:
