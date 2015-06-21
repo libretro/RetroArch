@@ -4955,8 +4955,8 @@ static bool setting_append_list_font_options(
 #ifndef RARCH_CONSOLE
    CONFIG_BOOL(
          settings->video.font_enable,
-         "video_font_enable",
-         "Display OSD Message",
+         menu_hash_to_str(MENU_LABEL_VIDEO_FONT_ENABLE),
+         menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_FONT_ENABLE),
          font_enable,
          menu_hash_to_str(MENU_VALUE_OFF),
          menu_hash_to_str(MENU_VALUE_ON),
@@ -4969,8 +4969,8 @@ static bool setting_append_list_font_options(
 
    CONFIG_PATH(
          settings->video.font_path,
-         "video_font_path",
-         "OSD Message Font",
+         menu_hash_to_str(MENU_LABEL_VIDEO_FONT_PATH),
+         menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_FONT_PATH),
          "",
          group_info.name,
          subgroup_info.name,
@@ -4981,8 +4981,8 @@ static bool setting_append_list_font_options(
 
    CONFIG_FLOAT(
          settings->video.font_size,
-         "video_font_size",
-         "OSD Message Size",
+         menu_hash_to_str(MENU_LABEL_VIDEO_FONT_SIZE),
+         menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_FONT_SIZE),
          font_size,
          "%.1f",
          group_info.name,
@@ -4994,8 +4994,8 @@ static bool setting_append_list_font_options(
 
    CONFIG_FLOAT(
          settings->video.msg_pos_x,
-         "video_message_pos_x",
-         "OSD Message X Position",
+         menu_hash_to_str(MENU_LABEL_VIDEO_MESSAGE_POS_X),
+         menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_MESSAGE_POS_X),
          message_pos_offset_x,
          "%.3f",
          group_info.name,
@@ -5007,8 +5007,8 @@ static bool setting_append_list_font_options(
 
    CONFIG_FLOAT(
          settings->video.msg_pos_y,
-         "video_message_pos_y",
-         "OSD Message Y Position",
+         menu_hash_to_str(MENU_LABEL_VIDEO_MESSAGE_POS_Y),
+         menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_MESSAGE_POS_Y),
          message_pos_offset_y,
          "%.3f",
          group_info.name,

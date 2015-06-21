@@ -339,6 +339,26 @@ static const char *menu_hash_to_str_english(uint32_t hash)
 {
    switch (hash)
    {
+      case MENU_LABEL_VIDEO_FONT_ENABLE:
+         return "video_font_enable";
+      case MENU_LABEL_VALUE_VIDEO_FONT_ENABLE:
+         return "Display OSD Message";
+      case MENU_LABEL_VIDEO_FONT_PATH:
+         return "video_font_path";
+      case MENU_LABEL_VALUE_VIDEO_FONT_PATH:
+         return "OSD Message Font";
+      case MENU_LABEL_VIDEO_FONT_SIZE:
+         return "video_font_size";
+      case MENU_LABEL_VALUE_VIDEO_FONT_SIZE:
+         return "OSD Message Size";
+      case MENU_LABEL_VIDEO_MESSAGE_POS_X:
+         return "video_message_pos_x";
+      case MENU_LABEL_VALUE_VIDEO_MESSAGE_POS_X:
+         return "OSD Message X Position";
+      case MENU_LABEL_VIDEO_MESSAGE_POS_Y:
+         return "video_message_pos_y";
+      case MENU_LABEL_VALUE_VIDEO_MESSAGE_POS_Y:
+         return "OSD Message Y Position";
       case MENU_VALUE_DIRECTORY_CONTENT:
          return "<Content dir>";
       case MENU_VALUE_UNKNOWN:

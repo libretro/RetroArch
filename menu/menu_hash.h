@@ -26,6 +26,17 @@ extern "C" {
 #define MENU_VALUE_DIRECTORY_DEFAULT                                           0xdcc3a2e4U
 #define MENU_VALUE_NOT_AVAILABLE                                               0x0b880503U
 
+#define MENU_LABEL_VIDEO_FONT_ENABLE                                           0x697d9b58U
+#define MENU_LABEL_VALUE_VIDEO_FONT_ENABLE                                     0x272a12a6U
+#define MENU_LABEL_VIDEO_FONT_PATH                                             0xd0de729eU
+#define MENU_LABEL_VALUE_VIDEO_FONT_PATH                                       0x025c4de7U
+#define MENU_LABEL_VIDEO_FONT_SIZE                                             0xd0e03a8cU
+#define MENU_LABEL_VALUE_VIDEO_FONT_SIZE                                       0x026356cbU
+#define MENU_LABEL_VIDEO_MESSAGE_POS_X                                         0xa133c368U
+#define MENU_LABEL_VALUE_VIDEO_MESSAGE_POS_X                                   0x4b1ac89dU
+#define MENU_LABEL_VIDEO_MESSAGE_POS_Y                                         0xa133c369U
+#define MENU_LABEL_VALUE_VIDEO_MESSAGE_POS_Y                                   0x4f2559beU
+
 #define MENU_LABEL_CORE_ENABLE                                                 0x2f37fe48U
 #define MENU_LABEL_VALUE_CORE_ENABLE                                           0x751e2065U
 
