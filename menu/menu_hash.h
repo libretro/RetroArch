@@ -20,6 +20,8 @@
 extern "C" {
 #endif
 
+#define MENU_VALUE_DIRECTORY_NONE                                              0x9996c10fU
+#define MENU_VALUE_DIRECTORY_DEFAULT                                           0xdcc3a2e4U
 #define MENU_VALUE_NOT_AVAILABLE                                               0x0b880503U
 
 #define MENU_LABEL_CORE_ENABLE                                                 0x2f37fe48U
