@@ -298,7 +298,9 @@ extern "C" {
 #define MENU_LABEL_AUDIO_RESAMPLER_DRIVER_CC                                   0x0059732bU
 
 #define MENU_LABEL_SAVEFILE_DIRECTORY                                          0x92773488U
+#define MENU_LABEL_VALUE_SAVEFILE_DIRECTORY                                    0x418b1929U
 #define MENU_LABEL_SAVESTATE_DIRECTORY                                         0x90551289U
+#define MENU_LABEL_VALUE_SAVESTATE_DIRECTORY                                   0xe6e0732aU
 #define MENU_LABEL_ASSETS_DIRECTORY                                            0xde1ae8ecU
 #define MENU_LABEL_DYNAMIC_WALLPAPERS_DIRECTORY                                0x62f975b8U
 #define MENU_LABEL_VALUE_DYNAMIC_WALLPAPERS_DIRECTORY                          0x0a3a407aU
@@ -555,7 +557,9 @@ extern "C" {
 #define MENU_LABEL_OSK_OVERLAY_DIRECTORY                                       0xcce86287U
 #define MENU_LABEL_VALUE_OSK_OVERLAY_DIRECTORY                                 0x8a4000a9U
 #define MENU_LABEL_RECORDING_OUTPUT_DIRECTORY                                  0x30bece06U
+#define MENU_LABEL_VALUE_RECORDING_OUTPUT_DIRECTORY                            0x93a44152U
 #define MENU_LABEL_RECORDING_CONFIG_DIRECTORY                                  0x3c3f274bU
+#define MENU_LABEL_VALUE_RECORDING_CONFIG_DIRECTORY                            0x1f7d918dU
 #define MENU_LABEL_VIDEO_FONT_PATH                                             0xd0de729eU
 #define MENU_LABEL_VIDEO_FILTER                                                0x1c0eb741U
 #define MENU_LABEL_VALUE_VIDEO_FILTER                                          0xc1690382U
@@ -570,11 +574,14 @@ extern "C" {
 #define MENU_LABEL_CONTENT_DATABASE_DIRECTORY                                  0x6b443f80U
 #define MENU_LABEL_VALUE_CONTENT_DATABASE_DIRECTORY                            0xccdcaacaU
 #define MENU_LABEL_PLAYLIST_DIRECTORY                                          0x6361820bU
+#define MENU_LABEL_VALUE_PLAYLIST_DIRECTORY                                    0x61223c36U
 #define MENU_LABEL_CORE_ASSETS_DIRECTORY                                       0x8ba5ee54U
 #define MENU_LABEL_VALUE_CORE_ASSETS_DIRECTORY                                 0x319b6c96U
 #define MENU_LABEL_CONTENT_DIRECTORY                                           0x7738dc14U
 #define MENU_LABEL_SCREENSHOT_DIRECTORY                                        0x552612d7U
+#define MENU_LABEL_VALUE_SCREENSHOT_DIRECTORY                                  0x42186f78U
 #define MENU_LABEL_INPUT_REMAPPING_DIRECTORY                                   0x5233c20bU
+#define MENU_LABEL_VALUE_INPUT_REMAPPING_DIRECTORY                             0xe81058adU
 #define MENU_LABEL_VIDEO_SHADER_DIR                                            0x30f53b10U
 #define MENU_LABEL_VALUE_VIDEO_SHADER_DIR                                      0xc3770351U
 #define MENU_LABEL_VIDEO_FILTER_DIR                                            0x67603f1fU
@@ -598,6 +605,7 @@ extern "C" {
 #define MENU_LABEL_EXTRACTION_DIRECTORY                                        0x33b55ffaU
 #define MENU_LABEL_VALUE_EXTRACTION_DIRECTORY                                  0x20a7bc9bU
 #define MENU_LABEL_JOYPAD_AUTOCONFIG_DIR                                       0x2f4822d8U
+#define MENU_LABEL_VALUE_JOYPAD_AUTOCONFIG_DIR                                 0x8bb1c2c9U
 #define MENU_LABEL_VALUE_INPUT_AUTODETECT_ENABLE                               0xf5209bdbU
 #define MENU_LABEL_INPUT_AUTODETECT_ENABLE                                     0xb1e07facU
 #define MENU_LABEL_DRIVER_SETTINGS                                             0x81cd2d62U

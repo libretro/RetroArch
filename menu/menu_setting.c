@@ -6742,8 +6742,8 @@ static bool setting_append_list_directory_options(
 
    CONFIG_DIR(
          global->record.output_dir,
-         "recording_output_directory",
-         "Recording Output Directory",
+         menu_hash_to_str(MENU_LABEL_RECORDING_OUTPUT_DIRECTORY),
+         menu_hash_to_str(MENU_LABEL_VALUE_RECORDING_OUTPUT_DIRECTORY),
          "",
          "<default>",
          group_info.name,
@@ -6758,8 +6758,8 @@ static bool setting_append_list_directory_options(
 
    CONFIG_DIR(
          global->record.config_dir,
-         "recording_config_directory",
-         "Recording Config Directory",
+         menu_hash_to_str(MENU_LABEL_RECORDING_CONFIG_DIRECTORY),
+         menu_hash_to_str(MENU_LABEL_VALUE_RECORDING_CONFIG_DIRECTORY),
          "",
          "<default>",
          group_info.name,
@@ -6808,8 +6808,8 @@ static bool setting_append_list_directory_options(
 
    CONFIG_DIR(
          settings->screenshot_directory,
-         "screenshot_directory",
-         "Screenshot Directory",
+         menu_hash_to_str(MENU_LABEL_SCREENSHOT_DIRECTORY),
+         menu_hash_to_str(MENU_LABEL_VALUE_SCREENSHOT_DIRECTORY),
          "",
          "<Content dir>",
          group_info.name,
@@ -6824,8 +6824,8 @@ static bool setting_append_list_directory_options(
 
    CONFIG_DIR(
          settings->input.autoconfig_dir,
-         "joypad_autoconfig_dir",
-         "Input Device Autoconfig Directory",
+         menu_hash_to_str(MENU_LABEL_JOYPAD_AUTOCONFIG_DIR),
+         menu_hash_to_str(MENU_LABEL_VALUE_JOYPAD_AUTOCONFIG_DIR),
          "",
          "<default>",
          group_info.name,
@@ -6840,8 +6840,8 @@ static bool setting_append_list_directory_options(
 
    CONFIG_DIR(
          settings->input_remapping_directory,
-         "input_remapping_directory",
-         "Input Remapping Directory",
+         menu_hash_to_str(MENU_LABEL_INPUT_REMAPPING_DIRECTORY),
+         menu_hash_to_str(MENU_LABEL_VALUE_INPUT_REMAPPING_DIRECTORY),
          "",
          "<None>",
          group_info.name,
@@ -6856,8 +6856,8 @@ static bool setting_append_list_directory_options(
 
    CONFIG_DIR(
          settings->playlist_directory,
-         "playlist_directory",
-         "Playlist Directory",
+         menu_hash_to_str(MENU_LABEL_PLAYLIST_DIRECTORY),
+         menu_hash_to_str(MENU_LABEL_VALUE_PLAYLIST_DIRECTORY),
          "",
          "<default>",
          group_info.name,
@@ -6872,8 +6872,8 @@ static bool setting_append_list_directory_options(
 
    CONFIG_DIR(
          global->savefile_dir,
-         "savefile_directory",
-         "Savefile Directory",
+         menu_hash_to_str(MENU_LABEL_SAVEFILE_DIRECTORY),
+         menu_hash_to_str(MENU_LABEL_VALUE_SAVEFILE_DIRECTORY),
          "",
          "<Content dir>",
          group_info.name,
@@ -6888,8 +6888,8 @@ static bool setting_append_list_directory_options(
 
    CONFIG_DIR(
          global->savestate_dir,
-         "savestate_directory",
-         "Savestate Directory",
+         menu_hash_to_str(MENU_LABEL_SAVESTATE_DIRECTORY),
+         menu_hash_to_str(MENU_LABEL_VALUE_SAVESTATE_DIRECTORY),
          "",
          "<Content dir>",
          group_info.name,

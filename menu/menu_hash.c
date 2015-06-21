@@ -339,6 +339,36 @@ static const char *menu_hash_to_str_english(uint32_t hash)
 {
    switch (hash)
    {
+      case MENU_LABEL_INPUT_REMAPPING_DIRECTORY:
+         return "input_remapping_directory";
+      case MENU_LABEL_VALUE_INPUT_REMAPPING_DIRECTORY:
+         return "Input Remapping Directory";
+      case MENU_LABEL_JOYPAD_AUTOCONFIG_DIR:
+         return "joypad_autoconfig_dir";
+      case MENU_LABEL_VALUE_JOYPAD_AUTOCONFIG_DIR:
+         return "Input Device Autoconfig Directory";
+      case MENU_LABEL_RECORDING_CONFIG_DIRECTORY:
+         return "recording_config_directory";
+      case MENU_LABEL_RECORDING_OUTPUT_DIRECTORY:
+         return "recording_output_directory";
+      case MENU_LABEL_VALUE_RECORDING_OUTPUT_DIRECTORY:
+         return "Recording Output Directory";
+      case MENU_LABEL_SCREENSHOT_DIRECTORY:
+         return "screenshot_directory";
+      case MENU_LABEL_VALUE_SCREENSHOT_DIRECTORY:
+         return "Screenshot Directory";
+      case MENU_LABEL_PLAYLIST_DIRECTORY:
+         return "playlist_directory";
+      case MENU_LABEL_VALUE_PLAYLIST_DIRECTORY:
+         return "Playlist Directory";
+      case MENU_LABEL_SAVEFILE_DIRECTORY:
+         return "savefile_directory";
+      case MENU_LABEL_VALUE_SAVEFILE_DIRECTORY:
+         return "Savefile Directory";
+      case MENU_LABEL_SAVESTATE_DIRECTORY:
+         return "savestate_directory";
+      case MENU_LABEL_VALUE_SAVESTATE_DIRECTORY:
+         return "Savestate Directory";
       case MENU_LABEL_STDIN_CMD_ENABLE:
          return "stdin_commands";
       case MENU_LABEL_VALUE_STDIN_CMD_ENABLE:
