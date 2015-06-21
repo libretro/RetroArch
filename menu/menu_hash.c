@@ -819,7 +819,7 @@ static const char *menu_hash_to_str_portuguese(uint32_t hash)
       case MENU_VALUE_RECORDING_SETTINGS:
          return "Configurações de Gravação";
       case MENU_VALUE_MAIN_MENU:
-         return "Menu Principal";
+         return "Main Menu";
       case MENU_LABEL_SETTINGS:
          return "settings";
       case MENU_LABEL_VALUE_SETTINGS:
