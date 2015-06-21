@@ -1258,6 +1258,7 @@ static void menu_displaylist_realloc_settings(menu_entries_t *entries, unsigned 
 static int menu_displaylist_parse_settings(menu_handle_t *menu,
       menu_displaylist_info_t *info, unsigned setting_flags)
 {
+   size_t             count = 0;
    rarch_setting_t *setting = NULL;
    settings_t *settings     = config_get_ptr();
 
@@ -1287,7 +1288,14 @@ static int menu_displaylist_parse_settings(menu_handle_t *menu,
 
       menu_list_push(info->list, setting->short_description,
             setting->name, menu_setting_set_flags(setting), 0, 0);
+      count++;
    }
+
+   if (count == 0)
+      menu_list_push(info->list,
+            menu_hash_to_str(MENU_LABEL_VALUE_NO_SETTINGS_FOUND),
+            menu_hash_to_str(MENU_LABEL_NO_SETTINGS_FOUND),
+            0, 0, 0);
 
    return 0;
 }
@@ -1327,8 +1335,6 @@ static int menu_displaylist_parse_settings_in_subgroup(menu_displaylist_info_t *
 
    while (1)
    {
-      if (!info->setting)
-         return -1;
       if (info->setting->type == ST_SUB_GROUP)
       {
          if ((strlen(info->setting->name) != 0) && !strcmp(info->setting->name, elem1))
@@ -1336,6 +1342,7 @@ static int menu_displaylist_parse_settings_in_subgroup(menu_displaylist_info_t *
       }
       info->setting++;
    }
+
 
    info->setting++;
 

@@ -29,6 +29,8 @@ extern "C" {
 #define MENU_VALUE_DIRECTORY_DEFAULT                                           0xdcc3a2e4U
 #define MENU_VALUE_NOT_AVAILABLE                                               0x0b880503U
 
+#define MENU_LABEL_NO_SETTINGS_FOUND                                           0xabf77040U
+#define MENU_LABEL_VALUE_NO_SETTINGS_FOUND                                     0xffcc5b5dU
 #define MENU_LABEL_VALUE_NO_PERFORMANCE_COUNTERS                               0xb4b52b95U
 
 #define MENU_LABEL_VIDEO_FONT_ENABLE                                           0x697d9b58U
