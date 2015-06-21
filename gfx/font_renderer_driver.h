@@ -71,7 +71,7 @@ typedef struct font_renderer
    void (*bind_block)(void *data, void *block);
    void (*flush)(void *data);
    
-   int (*get_message_width)(void *data, const char *msg, float scale);
+   int (*get_message_width)(void *data, const char *msg, unsigned msg_len_full, float scale);
 } font_renderer_t;
 
 extern font_renderer_t gl_raster_font;
