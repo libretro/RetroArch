@@ -216,10 +216,11 @@ static void menu_action_setting_disp_set_label_shader_default_filter(
 
    *s = '\0';
    *w = 19;
-   snprintf(s, len, "%s",
-         settings->video.smooth ?
-         menu_hash_to_str(MENU_VALUE_LINEAR) : 
-         menu_hash_to_str(MENU_VALUE_NEAREST));
+
+   if (settings->video.smooth)
+      strlcpy(s, menu_hash_to_str(MENU_VALUE_LINEAR), len); 
+   else
+      strlcpy(s, menu_hash_to_str(MENU_VALUE_NEAREST), len);
 }
 
 static void menu_action_setting_disp_set_label_shader_parameter(
@@ -371,11 +372,11 @@ static void menu_action_setting_disp_set_label_input_desc(
       [inp_desc_user][inp_desc_button_index_offset];
 
    if (inp_desc_button_index_offset < RARCH_FIRST_CUSTOM_BIND)
-      snprintf(s, len, "%s",
-            settings->input.binds[inp_desc_user][remap_id].desc);
+      strlcpy(s, 
+            settings->input.binds[inp_desc_user][remap_id].desc,
+            len);
    else
-      snprintf(s, len, "%s",
-            axis_labels[remap_id]);
+      strlcpy(s, axis_labels[remap_id], len);
 
    *w = 19;
    strlcpy(s2, path, len2);
@@ -396,7 +397,8 @@ static void menu_action_setting_disp_set_label_cheat(
    if (cheat_index < global->cheat->buf_size)
       snprintf(s, len, "%s : (%s)",
             (global->cheat->cheats[cheat_index].code != NULL)
-            ? global->cheat->cheats[cheat_index].code : "N/A",
+            ? global->cheat->cheats[cheat_index].code : 
+            menu_hash_to_str(MENU_VALUE_NOT_AVAILABLE),
             global->cheat->cheats[cheat_index].state ? 
             menu_hash_to_str(MENU_VALUE_ON) :
             menu_hash_to_str(MENU_VALUE_OFF)
