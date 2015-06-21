@@ -6956,31 +6956,37 @@ static bool setting_append_list_privacy_options(
    START_SUB_GROUP(list, list_info, "State",
          group_info.name, subgroup_info, parent_group);
 
-   CONFIG_BOOL(
-         settings->camera.allow,
-         menu_hash_to_str(MENU_LABEL_CAMERA_ALLOW),
-         menu_hash_to_str(MENU_LABEL_VALUE_CAMERA_ALLOW),
-         false,
-         menu_hash_to_str(MENU_VALUE_OFF),
-         menu_hash_to_str(MENU_VALUE_ON),
-         group_info.name,
-         subgroup_info.name,
-         parent_group,
-         general_write_handler,
-         general_read_handler);
+   if (strcmp(settings->record.driver, "null") != 0)
+   {
+      CONFIG_BOOL(
+            settings->camera.allow,
+            menu_hash_to_str(MENU_LABEL_CAMERA_ALLOW),
+            menu_hash_to_str(MENU_LABEL_VALUE_CAMERA_ALLOW),
+            false,
+            menu_hash_to_str(MENU_VALUE_OFF),
+            menu_hash_to_str(MENU_VALUE_ON),
+            group_info.name,
+            subgroup_info.name,
+            parent_group,
+            general_write_handler,
+            general_read_handler);
+   }
 
-   CONFIG_BOOL(
-         settings->location.allow,
-         menu_hash_to_str(MENU_LABEL_LOCATION_ALLOW),
-         menu_hash_to_str(MENU_LABEL_VALUE_LOCATION_ALLOW),
-         false,
-         menu_hash_to_str(MENU_VALUE_OFF),
-         menu_hash_to_str(MENU_VALUE_ON),
-         group_info.name,
-         subgroup_info.name,
-         parent_group,
-         general_write_handler,
-         general_read_handler);
+   if (strcmp(settings->location.driver, "null") != 0)
+   {
+      CONFIG_BOOL(
+            settings->location.allow,
+            menu_hash_to_str(MENU_LABEL_LOCATION_ALLOW),
+            menu_hash_to_str(MENU_LABEL_VALUE_LOCATION_ALLOW),
+            false,
+            menu_hash_to_str(MENU_VALUE_OFF),
+            menu_hash_to_str(MENU_VALUE_ON),
+            group_info.name,
+            subgroup_info.name,
+            parent_group,
+            general_write_handler,
+            general_read_handler);
+   }
 
    END_SUB_GROUP(list, list_info, parent_group);
    END_GROUP(list, list_info, parent_group);
