@@ -21,6 +21,8 @@ extern "C" {
 #endif
 
 #define MENU_VALUE_UNKNOWN                                                     0x9b3bb635U
+#define MENU_VALUE_CHEAT                                                       0x0cf62beaU
+#define MENU_VALUE_SHADER                                                      0xd10c0cfcU
 #define MENU_VALUE_DIRECTORY_CONTENT                                           0x89a45bd9U
 #define MENU_VALUE_DIRECTORY_NONE                                              0x9996c10fU
 #define MENU_VALUE_DIRECTORY_DEFAULT                                           0xdcc3a2e4U
@@ -143,6 +145,9 @@ extern "C" {
 #define MENU_LABEL_VALUE_THREADED_DATA_RUNLOOP_ENABLE                          0x04d8c10fU
 #define MENU_LABEL_VIDEO_THREADED                                              0x0626179cU
 #define MENU_LABEL_VALUE_VIDEO_THREADED                                        0xc7524afdU
+#define MENU_LABEL_VALUE_RUN                                                   0x0b881f3aU
+#define MENU_LABEL_SCREEN_RESOLUTION                                           0x5c9b3a58U
+#define MENU_LABEL_VALUE_SCREEN_RESOLUTION                                     0xae3c3b19U
 
 #define MENU_LABEL_TITLE_COLOR                                                 0x10059879U
 #define MENU_LABEL_VALUE_TITLE_COLOR                                           0xea87e1dbU
@@ -374,6 +379,7 @@ extern "C" {
 #define MENU_LABEL_RDB_ENTRY_CERO_RATING                                       0x9d436f5aU
 #define MENU_LABEL_RDB_ENTRY_EDGE_MAGAZINE_RATING                              0x9735f631U
 #define MENU_LABEL_RDB_ENTRY_EDGE_MAGAZINE_ISSUE                               0xd5706415U
+#define MENU_LABEL_RDB_ENTRY_EDGE_MAGAZINE_REVIEW                              0x977f6fdeU
 #define MENU_LABEL_RDB_ENTRY_FAMITSU_MAGAZINE_RATING                           0x01a50315U
 #define MENU_LABEL_RDB_ENTRY_RELEASE_MONTH                                     0xad2f2c54U
 #define MENU_LABEL_RDB_ENTRY_RELEASE_YEAR                                      0x14c9c6bfU
@@ -529,8 +535,10 @@ extern "C" {
 #define MENU_LABEL_VALUE_SYSTEM_INFORMATION                                    0xa62fd7f0U
 #define MENU_LABEL_CORE_INFORMATION                                            0xb638e0d3U
 #define MENU_LABEL_VALUE_CORE_INFORMATION                                      0x781981b4U
+#define MENU_LABEL_VALUE_VIDEO_SHADER_PARAMETERS                               0x5ace99b3U
 #define MENU_LABEL_VIDEO_SHADER_PARAMETERS                                     0x9895c3e5U
 #define MENU_LABEL_VIDEO_SHADER_PRESET_PARAMETERS                              0xd18158d7U
+#define MENU_LABEL_VALUE_VIDEO_SHADER_PRESET_PARAMETERS                        0x57f696abU
 #define MENU_LABEL_DISK_OPTIONS                                                0xc61ab5fbU
 #define MENU_LABEL_VALUE_DISK_OPTIONS                                          0xbee508e5U
 #define MENU_LABEL_CORE_OPTIONS                                                0xf65e60f9U

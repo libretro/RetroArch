@@ -372,6 +372,10 @@ static const char *menu_hash_to_str_english(uint32_t hash)
 {
    switch (hash)
    {
+      case MENU_VALUE_SHADER:
+         return "Shader";
+      case MENU_VALUE_CHEAT:
+         return "Cheat";
       case MENU_LABEL_VIDEO_FONT_ENABLE:
          return "video_font_enable";
       case MENU_LABEL_VALUE_VIDEO_FONT_ENABLE:
@@ -1006,6 +1010,8 @@ static const char *menu_hash_to_str_english(uint32_t hash)
          return "rdb_entry_name";
       case MENU_LABEL_RDB_ENTRY_EDGE_MAGAZINE_RATING:
          return "rdb_entry_edge_magazine_rating";
+      case MENU_LABEL_RDB_ENTRY_EDGE_MAGAZINE_REVIEW:
+         return "rdb_entry_edge_magazine_review";
       case MENU_LABEL_RDB_ENTRY_FAMITSU_MAGAZINE_RATING:
          return "rdb_entry_famitsu_magazine_rating";
       case MENU_LABEL_RDB_ENTRY_EDGE_MAGAZINE_ISSUE:
@@ -1326,8 +1332,12 @@ static const char *menu_hash_to_str_english(uint32_t hash)
          return "shader_options";
       case MENU_LABEL_VIDEO_SHADER_PARAMETERS:
          return "video_shader_parameters";
+      case MENU_LABEL_VALUE_VIDEO_SHADER_PARAMETERS:
+         return "Current Shader Parameters";
       case MENU_LABEL_VIDEO_SHADER_PRESET_PARAMETERS:
          return "video_shader_preset_parameters";
+      case MENU_LABEL_VALUE_VIDEO_SHADER_PRESET_PARAMETERS:
+         return "Menu Shader Parameters (Menu)";
       case MENU_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_AS:
          return "Shader Preset Save As";
       case MENU_LABEL_VIDEO_SHADER_PRESET_SAVE_AS:

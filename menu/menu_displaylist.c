@@ -734,11 +734,11 @@ static int menu_displaylist_parse_shader_options(menu_displaylist_info_t *info)
          menu_hash_to_str(MENU_LABEL_VIDEO_SHADER_PRESET_SAVE_AS),
          MENU_SETTING_ACTION, 0, 0);
    menu_list_push(info->list,
-         "Current Shader Parameters",
+         menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_SHADER_PARAMETERS),
          menu_hash_to_str(MENU_LABEL_VIDEO_SHADER_PARAMETERS),
          MENU_SETTING_ACTION, 0, 0);
    menu_list_push(info->list,
-         "Menu Shader Parameters (Menu)",
+         menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_SHADER_PRESET_PARAMETERS),
          menu_hash_to_str(MENU_LABEL_VIDEO_SHADER_PRESET_PARAMETERS),
          MENU_SETTING_ACTION, 0, 0);
    menu_list_push(info->list,
@@ -750,17 +750,17 @@ static int menu_displaylist_parse_shader_options(menu_displaylist_info_t *info)
    {
       char buf[64] = {0};
 
-      snprintf(buf, sizeof(buf), "Shader #%u", i);
+      snprintf(buf, sizeof(buf), "%s #%u", menu_hash_to_str(MENU_VALUE_SHADER), i);
       menu_list_push(info->list, buf,
             menu_hash_to_str(MENU_LABEL_VIDEO_SHADER_PASS),
             MENU_SETTINGS_SHADER_PASS_0 + i, 0, 0);
 
-      snprintf(buf, sizeof(buf), "Shader #%u Filter", i);
+      snprintf(buf, sizeof(buf), "%s #%u Filter", menu_hash_to_str(MENU_VALUE_SHADER), i);
       menu_list_push(info->list, buf,
             menu_hash_to_str(MENU_LABEL_VIDEO_SHADER_FILTER_PASS),
             MENU_SETTINGS_SHADER_PASS_FILTER_0 + i, 0, 0);
 
-      snprintf(buf, sizeof(buf), "Shader #%u Scale", i);
+      snprintf(buf, sizeof(buf), "%s #%u Scale", menu_hash_to_str(MENU_VALUE_SHADER), i);
       menu_list_push(info->list, buf,
             menu_hash_to_str(MENU_LABEL_VIDEO_SHADER_SCALE_PASS),
             MENU_SETTINGS_SHADER_PASS_SCALE_0 + i, 0, 0);
@@ -1042,7 +1042,8 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
       }
       if (db_info_entry->edge_magazine_review)
       {
-         if (create_string_list_rdb_entry_string("Edge Magazine Review", "rdb_entry_edge_magazine_review",
+         if (create_string_list_rdb_entry_string("Edge Magazine Review",
+                  menu_hash_to_str(MENU_LABEL_RDB_ENTRY_EDGE_MAGAZINE_REVIEW),
                   db_info_entry->edge_magazine_review, info->path, info->list) == -1)
             goto error;
       }
@@ -1495,7 +1496,11 @@ static int menu_displaylist_parse_horizontal_content_actions(menu_displaylist_in
             MENU_SETTING_ACTION_RESET, 0, 0);
    }
    else
-      menu_list_push(info->list, "Run", "file_load_or_resume", MENU_SETTING_ACTION_RUN, 0, 0);
+      menu_list_push(info->list,
+            menu_hash_to_str(MENU_LABEL_VALUE_RUN),
+            "file_load_or_resume",
+            MENU_SETTING_ACTION_RUN,
+            0, 0);
 
    return 0;
 }
@@ -1536,7 +1541,7 @@ static int menu_displaylist_parse_options_cheats(menu_displaylist_info_t *info)
    {
       char cheat_label[64] = {0};
 
-      snprintf(cheat_label, sizeof(cheat_label), "Cheat #%u: ", i);
+      snprintf(cheat_label, sizeof(cheat_label), "%s #%u: ", menu_hash_to_str(MENU_VALUE_CHEAT), i);
       if (cheat->cheats[i].desc)
          strlcat(cheat_label, cheat->cheats[i].desc, sizeof(cheat_label));
       menu_list_push(info->list, cheat_label, "", MENU_SETTINGS_CHEAT_BEGIN + i, 0, 0);
@@ -1902,7 +1907,9 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
       case DISPLAYLIST_OPTIONS_VIDEO:
          menu_list_clear(info->list);
 #if defined(GEKKO) || defined(__CELLOS_LV2__)
-         menu_list_push(info->list, "Screen Resolution", "",
+         menu_list_push(info->list,
+               menu_hash_to_str(MENU_LABEL_VALUE_SCREEN_RESOLUTION),
+               menu_hash_to_str(MENU_LABEL_SCREEN_RESOLUTION),
                MENU_SETTINGS_VIDEO_RESOLUTION, 0, 0);
 #endif
          menu_list_push(info->list,
