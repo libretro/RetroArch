@@ -1400,6 +1400,9 @@ static bool config_load_file(const char *path, bool set_defaults)
 
    CONFIG_GET_BOOL_BASE(conf, settings, location.allow, "location_allow");
    CONFIG_GET_STRING_BASE(conf, settings, video.driver, "video_driver");
+   CONFIG_GET_STRING_BASE(conf, settings, record.driver, "record_driver");
+   CONFIG_GET_STRING_BASE(conf, settings, camera.driver, "camera_driver");
+   CONFIG_GET_STRING_BASE(conf, settings, location.driver, "location_driver");
 #ifdef HAVE_MENU
    CONFIG_GET_STRING_BASE(conf, settings, menu.driver, "menu_driver");
 #endif
@@ -2330,9 +2333,12 @@ bool config_save_file(const char *path)
    config_set_float(conf, "video_refresh_rate", settings->video.refresh_rate);
    config_set_int(conf,   "video_monitor_index",
          settings->video.monitor_index);
-   config_set_int(conf,   "video_fullscreen_x", settings->video.fullscreen_x);
-   config_set_int(conf,   "video_fullscreen_y", settings->video.fullscreen_y);
-   config_set_string(conf,"video_driver", settings->video.driver);
+   config_set_int(conf,    "video_fullscreen_x", settings->video.fullscreen_x);
+   config_set_int(conf,    "video_fullscreen_y", settings->video.fullscreen_y);
+   config_set_string(conf, "video_driver", settings->video.driver);
+   config_set_string(conf, "record_driver", settings->record.driver);
+   config_set_string(conf, "camera_driver", settings->camera.driver);
+   config_set_string(conf, "location_driver", settings->location.driver);
 #ifdef HAVE_MENU
 #ifdef HAVE_THREADS
    config_set_bool(conf,"threaded_data_runloop_enable", settings->menu.threaded_data_runloop_enable);
