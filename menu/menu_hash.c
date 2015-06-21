@@ -359,6 +359,14 @@ static const char *menu_hash_to_str_english(uint32_t hash)
          return "video_message_pos_y";
       case MENU_LABEL_VALUE_VIDEO_MESSAGE_POS_Y:
          return "OSD Message Y Position";
+      case MENU_LABEL_VIDEO_SOFT_FILTER:
+         return "soft_filter";
+      case MENU_LABEL_VALUE_VIDEO_SOFT_FILTER:
+         return "Soft Filter Enable";
+      case MENU_LABEL_VIDEO_FILTER_FLICKER:
+         return "video_filter_flicker";
+      case MENU_LABEL_VALUE_VIDEO_FILTER_FLICKER:
+         return "Flicker filter";
       case MENU_VALUE_DIRECTORY_CONTENT:
          return "<Content dir>";
       case MENU_VALUE_UNKNOWN:

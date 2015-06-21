@@ -4902,8 +4902,8 @@ static bool setting_append_list_video_options(
 #if defined(_XBOX1) || defined(HW_RVL)
    CONFIG_BOOL(
          global->console.softfilter_enable,
-         "soft_filter",
-         "Soft Filter Enable",
+         menu_hash_to_str(MENU_LABEL_VIDEO_SOFT_FILTER),
+         menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_SOFT_FILTER),
          false,
          menu_hash_to_str(MENU_VALUE_OFF),
          menu_hash_to_str(MENU_VALUE_ON),
@@ -4921,8 +4921,8 @@ static bool setting_append_list_video_options(
 #ifdef _XBOX1
    CONFIG_UINT(
          settings->video.swap_interval,
-         "video_filter_flicker",
-         "Flicker filter",
+         menu_hash_to_str(MENU_LABEL_VIDEO_FILTER_FLICKER),
+         menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_FILTER_FLICKER),
          0,
          group_info.name,
          subgroup_info.name,

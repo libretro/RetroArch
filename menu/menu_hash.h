@@ -37,6 +37,12 @@ extern "C" {
 #define MENU_LABEL_VIDEO_MESSAGE_POS_Y                                         0xa133c369U
 #define MENU_LABEL_VALUE_VIDEO_MESSAGE_POS_Y                                   0x4f2559beU
 
+#define MENU_LABEL_VIDEO_FILTER_FLICKER                                        0x2e21eba0U
+#define MENU_LABEL_VALUE_VIDEO_FILTER_FLICKER                                  0x87c7226bU
+
+#define MENU_LABEL_VIDEO_SOFT_FILTER                                           0x92819a46U
+#define MENU_LABEL_VALUE_VIDEO_SOFT_FILTER                                     0xd035df8eU
+
 #define MENU_LABEL_CORE_ENABLE                                                 0x2f37fe48U
 #define MENU_LABEL_VALUE_CORE_ENABLE                                           0x751e2065U
 
