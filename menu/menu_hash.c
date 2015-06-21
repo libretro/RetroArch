@@ -1031,9 +1031,9 @@ static const char *menu_hash_to_str_portuguese(uint32_t hash)
       case MENU_VALUE_SECONDS:
          return "Segundos";
       case MENU_VALUE_OFF:
-         return "DESATIVADO";
+         return "OFF";
       case MENU_VALUE_ON:
-         return "ATIVADO";
+         return "ON";
       default:
          break;
    }
