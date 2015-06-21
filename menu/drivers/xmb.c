@@ -2262,7 +2262,7 @@ static void xmb_list_cache(menu_list_type_t type, unsigned action)
          else
          {
             menu_list->menu_stack->list[stack_size - 1].label = 
-               strdup("Horizontal Menu");
+               strdup(menu_hash_to_str(MENU_VALUE_HORIZONTAL_MENU));
             menu_list->menu_stack->list[stack_size - 1].type = 
                MENU_SETTING_HORIZONTAL_MENU;
          }

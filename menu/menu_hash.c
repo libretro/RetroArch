@@ -1572,6 +1572,8 @@ static const char *menu_hash_to_str_english(uint32_t hash)
 {
    switch (hash)
    {
+      case MENU_VALUE_HORIZONTAL_MENU:
+         return "Horizontal Menu";
       case MENU_LABEL_NO_SETTINGS_FOUND:
          return "menu_label_no_settings_found";
       case MENU_LABEL_VALUE_NO_SETTINGS_FOUND:
