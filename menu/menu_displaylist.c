@@ -1893,12 +1893,19 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          {
             struct video_shader *shader = video_shader_driver_get_current_shader();
             if (!shader)
-               return 0;
-
-            ret = deferred_push_video_shader_parameters_common(info, shader,
-                  (type == DISPLAYLIST_SHADER_PARAMETERS)
-                  ? MENU_SETTINGS_SHADER_PARAMETER_0 : MENU_SETTINGS_SHADER_PRESET_PARAMETER_0
-                  );
+            {
+               menu_list_push(info->list,
+                     menu_hash_to_str(MENU_LABEL_VALUE_NO_SHADER_PARAMETERS),
+                     "", 0, 0, 0);
+               ret = 0;
+            }
+            else
+            {
+               ret = deferred_push_video_shader_parameters_common(info, shader,
+                     (type == DISPLAYLIST_SHADER_PARAMETERS)
+                     ? MENU_SETTINGS_SHADER_PARAMETER_0 : MENU_SETTINGS_SHADER_PRESET_PARAMETER_0
+                     );
+            }
 
             need_push = true;
          }
