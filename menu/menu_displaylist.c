@@ -407,6 +407,7 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    strlcpy(feat_str, "Command interface support", sizeof(feat_str));
+   strlcat(feat_str, ": ", sizeof(feat_str));
    strlcat(feat_str, _command_supp ? "true" : "false", sizeof(feat_str));
    menu_list_push(info->list, feat_str, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
