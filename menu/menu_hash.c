@@ -916,7 +916,7 @@ static const char *menu_hash_to_str_portuguese(uint32_t hash)
          return "Retomar Conteúdo";
       case MENU_LABEL_RESUME_CONTENT:
          return "resume_content";
-      case MENU_LABEL_DRIVER_SETTINGS:
+      case MENU_LABEL_VALUE_DRIVER_SETTINGS:
          return "Configurações de Drivers";
       case MENU_LABEL_INPUT_DRIVER:
          return "input_driver";
