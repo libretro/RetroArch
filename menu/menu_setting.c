@@ -3758,7 +3758,7 @@ static bool setting_append_list_driver_options(
    rarch_setting_group_info_t subgroup_info = {0};
    settings_t *settings = config_get_ptr();
    
-   START_GROUP(group_info, menu_hash_to_str(MENU_LABEL_DRIVER_SETTINGS), parent_group);
+   START_GROUP(group_info, menu_hash_to_str(MENU_LABEL_VALUE_DRIVER_SETTINGS), parent_group);
 
    parent_group = menu_hash_to_str(MENU_LABEL_VALUE_SETTINGS);
 
@@ -3897,7 +3897,7 @@ static bool setting_append_list_core_options(
    rarch_setting_group_info_t subgroup_info = {0};
    settings_t *settings = config_get_ptr();
 
-   START_GROUP(group_info, "Core Settings", parent_group);
+   START_GROUP(group_info, menu_hash_to_str(MENU_LABEL_VALUE_CORE_SETTINGS), parent_group);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
    parent_group = menu_hash_to_str(MENU_LABEL_VALUE_SETTINGS);
@@ -3962,7 +3962,8 @@ static bool setting_append_list_configuration_options(
    rarch_setting_group_info_t subgroup_info = {0};
    settings_t *settings = config_get_ptr();
 
-   START_GROUP(group_info, "Configuration Settings", parent_group);
+   START_GROUP(group_info,
+         menu_hash_to_str(MENU_LABEL_VALUE_CONFIGURATION_SETTINGS), parent_group);
 
    parent_group = menu_hash_to_str(MENU_LABEL_VALUE_SETTINGS);
 
@@ -4035,7 +4036,7 @@ static bool setting_append_list_saving_options(
    rarch_setting_group_info_t subgroup_info = {0};
    settings_t *settings = config_get_ptr();
 
-   START_GROUP(group_info, "Saving Settings", parent_group);
+   START_GROUP(group_info, menu_hash_to_str(MENU_LABEL_VALUE_SAVING_SETTINGS), parent_group);
 
    parent_group = menu_hash_to_str(MENU_LABEL_VALUE_SETTINGS);
 
@@ -4155,7 +4156,7 @@ static bool setting_append_list_logging_options(
    settings_t *settings = config_get_ptr();
    global_t   *global   = global_get_ptr();
 
-   START_GROUP(group_info, "Logging Settings", parent_group);
+   START_GROUP(group_info, menu_hash_to_str(MENU_LABEL_VALUE_LOGGING_SETTINGS), parent_group);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
    parent_group = menu_hash_to_str(MENU_LABEL_VALUE_SETTINGS);
@@ -4284,7 +4285,7 @@ static bool setting_append_list_rewind_options(
    rarch_setting_group_info_t subgroup_info = {0};
    settings_t *settings = config_get_ptr();
 
-   START_GROUP(group_info, "Rewind Settings", parent_group);
+   START_GROUP(group_info, menu_hash_to_str(MENU_LABEL_VALUE_REWIND_SETTINGS), parent_group);
 
    parent_group = menu_hash_to_str(MENU_LABEL_VALUE_SETTINGS);
 
@@ -4450,7 +4451,7 @@ static bool setting_append_list_video_options(
     
    (void)global;
 
-   START_GROUP(group_info, "Video Settings", parent_group);
+   START_GROUP(group_info, menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_SETTINGS), parent_group);
 
    parent_group = menu_hash_to_str(MENU_LABEL_VALUE_SETTINGS);
 

@@ -272,7 +272,7 @@ static const char *menu_hash_to_str_french(uint32_t hash)
          return "Charger un etat";
       case MENU_LABEL_VALUE_RESUME_CONTENT:
          return "Reprendre";
-      case MENU_LABEL_DRIVER_SETTINGS:
+      case MENU_LABEL_VALUE_DRIVER_SETTINGS:
          return "Reglage des pilotes";
       case MENU_LABEL_VALUE_UNABLE_TO_READ_COMPRESSED_FILE:
          return "Impossible de lire l'archive.";
@@ -344,6 +344,20 @@ static const char *menu_hash_to_str_english(uint32_t hash)
 {
    switch (hash)
    {
+      case MENU_LABEL_VALUE_DRIVER_SETTINGS:
+         return "Driver Settings";
+      case MENU_LABEL_VALUE_CONFIGURATION_SETTINGS:
+         return "Configuration Settings";
+      case MENU_LABEL_VALUE_CORE_SETTINGS:
+         return "Core Settings";
+      case MENU_LABEL_VALUE_VIDEO_SETTINGS:
+         return "Video Settings";
+      case MENU_LABEL_VALUE_LOGGING_SETTINGS:
+         return "Logging Settings";
+      case MENU_LABEL_VALUE_SAVING_SETTINGS:
+         return "Saving Settings";
+      case MENU_LABEL_VALUE_REWIND_SETTINGS:
+         return "Rewind Settings";
       case MENU_LABEL_CUSTOM_VIEWPORT_1:
          return "custom_viewport_1";
       case MENU_LABEL_VALUE_CUSTOM_VIEWPORT_1:
@@ -1256,8 +1270,6 @@ static const char *menu_hash_to_str_english(uint32_t hash)
          return "Resume Content";
       case MENU_LABEL_RESUME_CONTENT:
          return "resume_content";
-      case MENU_LABEL_DRIVER_SETTINGS:
-         return "Driver Settings";
       case MENU_LABEL_INPUT_DRIVER:
          return "input_driver";
       case MENU_LABEL_VALUE_INPUT_DRIVER:
