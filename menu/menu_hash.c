@@ -1330,6 +1330,8 @@ static const char *menu_hash_to_str_english(uint32_t hash)
 {
    switch (hash)
    {
+      case MENU_LABEL_VALUE_NO_PERFORMANCE_COUNTERS:
+         return "No performance counters.";
       case MENU_LABEL_VALUE_DRIVER_SETTINGS:
          return "Driver Settings";
       case MENU_LABEL_VALUE_CONFIGURATION_SETTINGS:

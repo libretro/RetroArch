@@ -92,7 +92,12 @@ static void menu_displaylist_push_perfcounter(
 {
    unsigned i;
    if (!counters || num == 0)
+   {
+      menu_list_push(info->list,
+            menu_hash_to_str(MENU_LABEL_VALUE_NO_PERFORMANCE_COUNTERS),
+            "", 0, 0, 0);
       return;
+   }
 
    for (i = 0; i < num; i++)
       if (counters[i] && counters[i]->ident)
