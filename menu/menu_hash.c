@@ -376,6 +376,8 @@ static const char *menu_hash_to_str_english(uint32_t hash)
          return "Shader";
       case MENU_VALUE_CHEAT:
          return "Cheat";
+      case MENU_VALUE_USER:
+         return "User";
       case MENU_LABEL_VIDEO_FONT_ENABLE:
          return "video_font_enable";
       case MENU_LABEL_VALUE_VIDEO_FONT_ENABLE:

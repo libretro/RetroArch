@@ -21,6 +21,7 @@ extern "C" {
 #endif
 
 #define MENU_VALUE_UNKNOWN                                                     0x9b3bb635U
+#define MENU_VALUE_USER                                                        0x7c8da264U
 #define MENU_VALUE_CHEAT                                                       0x0cf62beaU
 #define MENU_VALUE_SHADER                                                      0xd10c0cfcU
 #define MENU_VALUE_DIRECTORY_CONTENT                                           0x89a45bd9U

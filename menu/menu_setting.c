@@ -5435,15 +5435,15 @@ static bool setting_append_list_input_options(
                "input_player%u_bind_defaults", user + 1);
 
       snprintf(label[user], sizeof(label[user]),
-               "User %u Device Index", user + 1);
+               "%s %u Device Index", menu_hash_to_str(MENU_VALUE_USER), user + 1);
       snprintf(label_type[user], sizeof(label_type[user]),
-               "User %u Device Type", user + 1);
+               "%s %u Device Type", menu_hash_to_str(MENU_VALUE_USER), user + 1);
       snprintf(label_analog[user], sizeof(label_analog[user]),
-               "User %u Analog To Digital Type", user + 1);
+               "%s %u Analog To Digital Type", menu_hash_to_str(MENU_VALUE_USER), user + 1);
       snprintf(label_bind_all[user], sizeof(label_bind_all[user]),
-               "User %u Bind All", user + 1);
+               "%s %u Bind All", menu_hash_to_str(MENU_VALUE_USER), user + 1);
       snprintf(label_bind_defaults[user], sizeof(label_bind_defaults[user]),
-               "User %u Bind Default All", user + 1);
+               "%s %u Bind Default All", menu_hash_to_str(MENU_VALUE_USER), user + 1);
 
       CONFIG_UINT(
             settings->input.libretro_device[user],
@@ -7009,7 +7009,7 @@ static bool setting_append_list_input_player_options(
       (user == 0) ? retro_keybinds_1 : retro_keybinds_rest;
 
    snprintf(buffer[user],    sizeof(buffer[user]),
-         "User %u", user + 1);
+         "%s %u", menu_hash_to_str(MENU_VALUE_USER), user + 1);
    snprintf(group_lbl[user], sizeof(group_lbl[user]),
          "Input %s Binds", buffer[user]);
 

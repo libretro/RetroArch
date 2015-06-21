@@ -1604,7 +1604,7 @@ static int menu_displaylist_parse_options_remappings(menu_displaylist_info_t *in
             continue;
 
          snprintf(desc_label, sizeof(desc_label),
-               "User %u %s : ", user, description);
+               "%s %u %s : ", menu_hash_to_str(MENU_VALUE_USER), user, description);
          menu_list_push(info->list, desc_label, "",
                MENU_SETTINGS_INPUT_DESC_BEGIN +
                (p * (RARCH_FIRST_CUSTOM_BIND + 4)) +  retro_id, 0, 0);
