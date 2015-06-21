@@ -1,4 +1,4 @@
-#include "../libretro.h"
+#include "../../libretro.h"
 #include <stdint.h>
 #include <string.h>
 #include <math.h>
@@ -8,7 +8,7 @@
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
 static struct retro_hw_render_callback hw_render;
 
-#include "../libretro-common/include/glsym/glsym.h"
+#include <glsym/glsym.h>
 
 #if defined(HAVE_PSGL)
 #define RARCH_GL_FRAMEBUFFER GL_FRAMEBUFFER_OES

@@ -24,8 +24,8 @@ else
    GLES_LIB := -lGLESv2
 endif
 
-LOCAL_SRC_FILES += $(addprefix ../,$(wildcard *.c) ../gfx/glsym/rglgen.c ../gfx/glsym/glsym_es2.c)
-LOCAL_CFLAGS += -O2 -Wall -std=gnu99 -ffast-math -DGLES -DHAVE_OPENGLES2
+LOCAL_SRC_FILES += $(addprefix ../,$(wildcard *.c) ../../../libretro-common/glsym/rglgen.c ../../../libretro-common/glsym/glsym_es2.c)
+LOCAL_CFLAGS += -O2 -Wall -std=gnu99 -ffast-math -DGLES -DHAVE_OPENGLES2 -I../../../libretro-common/include
 LOCAL_LDLIBS += $(GLES_LIB)
 
 include $(BUILD_SHARED_LIBRARY)
