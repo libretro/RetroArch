@@ -1373,7 +1373,7 @@ static void setting_get_string_representation_st_float_video_refresh_rate_auto(v
       }
    }
    else
-      strlcpy(s, "N/A", len);
+      strlcpy(s, menu_hash_to_str(MENU_VALUE_NOT_AVAILABLE), len);
 }
 
 static void setting_get_string_representation_st_dir(void *data,
@@ -3096,7 +3096,7 @@ static void get_string_representation_bind_device(void * data, char *s,
          strlcpy(s, device_name, len);
       else
          snprintf(s, len,
-               "N/A (port #%u)", map);
+               "%s (port #%u)", menu_hash_to_str(MENU_VALUE_NOT_AVAILABLE), map);
    }
    else
       strlcpy(s, "Disabled", len);
@@ -3649,7 +3649,7 @@ static bool setting_append_list_main_menu_options(
             menu_hash_to_str(MENU_LABEL_VALUE_SAVE_STATE),
             group_info.name,
             subgroup_info.name,
-            "N/A");
+            menu_hash_to_str(MENU_VALUE_NOT_AVAILABLE));
       (*list)[list_info->index - 1].action_left   = &setting_action_left_savestates;
       (*list)[list_info->index - 1].action_right  = &setting_action_right_savestates;
       (*list)[list_info->index - 1].action_start  = &setting_action_start_savestates;
@@ -3663,7 +3663,7 @@ static bool setting_append_list_main_menu_options(
             menu_hash_to_str(MENU_LABEL_VALUE_LOAD_STATE),
             group_info.name,
             subgroup_info.name,
-            "N/A");
+            menu_hash_to_str(MENU_VALUE_NOT_AVAILABLE));
       (*list)[list_info->index - 1].action_left   = &setting_action_left_savestates;
       (*list)[list_info->index - 1].action_right  = &setting_action_left_savestates;
       (*list)[list_info->index - 1].action_start  = &setting_action_start_savestates;
@@ -7048,7 +7048,7 @@ static bool setting_append_list_input_player_options(
                   global->system.input_desc_btn[user][i]);
          else
          {
-            snprintf(label, sizeof(label), "%s %s", buffer[user], "N/A");
+            snprintf(label, sizeof(label), "%s %s", buffer[user], menu_hash_to_str(MENU_VALUE_NOT_AVAILABLE));
 
             if (settings->input.input_descriptor_hide_unbound)
                do_add = false;
