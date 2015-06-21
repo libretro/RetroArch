@@ -349,6 +349,8 @@ static const char *menu_hash_to_str_english(uint32_t hash)
          return "Input Device Autoconfig Directory";
       case MENU_LABEL_RECORDING_CONFIG_DIRECTORY:
          return "recording_config_directory";
+      case MENU_LABEL_VALUE_RECORDING_CONFIG_DIRECTORY:
+         return "Recording Config Directory";
       case MENU_LABEL_RECORDING_OUTPUT_DIRECTORY:
          return "recording_output_directory";
       case MENU_LABEL_VALUE_RECORDING_OUTPUT_DIRECTORY:
