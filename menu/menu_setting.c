@@ -4506,8 +4506,8 @@ static bool setting_append_list_video_options(
 #endif
    CONFIG_BOOL(
          settings->video.windowed_fullscreen,
-         "video_windowed_fullscreen",
-         "Windowed Fullscreen Mode",
+         menu_hash_to_str(MENU_LABEL_VIDEO_WINDOWED_FULLSCREEN),
+         menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN),
          windowed_fullscreen,
          menu_hash_to_str(MENU_VALUE_OFF),
          menu_hash_to_str(MENU_VALUE_ON),
@@ -4519,8 +4519,8 @@ static bool setting_append_list_video_options(
 
    CONFIG_FLOAT(
          settings->video.refresh_rate,
-         "video_refresh_rate",
-         "Refresh Rate",
+         menu_hash_to_str(MENU_LABEL_VIDEO_REFRESH_RATE),
+         menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_REFRESH_RATE),
          refresh_rate,
          "%.3f Hz",
          group_info.name,
@@ -4549,8 +4549,8 @@ static bool setting_append_list_video_options(
 
    CONFIG_BOOL(
          settings->video.force_srgb_disable,
-         "video_force_srgb_disable",
-         "Force-disable sRGB FBO",
+         menu_hash_to_str(MENU_LABEL_VIDEO_FORCE_SRGB_DISABLE),
+         menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_FORCE_SRGB_DISABLE),
          false,
          menu_hash_to_str(MENU_VALUE_OFF),
          menu_hash_to_str(MENU_VALUE_ON),
@@ -4566,8 +4566,8 @@ static bool setting_append_list_video_options(
    START_SUB_GROUP(list, list_info, "Aspect", group_info.name, subgroup_info, parent_group);
    CONFIG_BOOL(
          settings->video.force_aspect,
-         "video_force_aspect",
-         "Force aspect ratio",
+         menu_hash_to_str(MENU_LABEL_VIDEO_FORCE_ASPECT),
+         menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_FORCE_ASPECT),
          force_aspect,
          menu_hash_to_str(MENU_VALUE_OFF),
          menu_hash_to_str(MENU_VALUE_ON),
@@ -4579,8 +4579,8 @@ static bool setting_append_list_video_options(
 
    CONFIG_BOOL(
          settings->video.aspect_ratio_auto,
-         "video_aspect_ratio_auto",
-         "Auto Aspect Ratio",
+         menu_hash_to_str(MENU_LABEL_VIDEO_ASPECT_RATIO_AUTO),
+         menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_ASPECT_RATIO_AUTO),
          aspect_ratio_auto,
          menu_hash_to_str(MENU_VALUE_OFF),
          menu_hash_to_str(MENU_VALUE_ON),
@@ -4592,8 +4592,8 @@ static bool setting_append_list_video_options(
 
    CONFIG_UINT(
          settings->video.aspect_ratio_idx,
-         "aspect_ratio_index",
-         "Aspect Ratio Index",
+         menu_hash_to_str(MENU_LABEL_VIDEO_ASPECT_RATIO_INDEX),
+         menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX),
          aspect_ratio_idx,
          group_info.name,
          subgroup_info.name,
@@ -4650,8 +4650,8 @@ static bool setting_append_list_video_options(
 #ifdef GEKKO
    CONFIG_UINT(
          settings->video.viwidth,
-         "video_viwidth",
-         "Set Screen Width",
+         menu_hash_to_str(MENU_LABEL_VIDEO_VI_WIDTH),
+         menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_VI_WIDTH),
          video_viwidth,
          group_info.name,
          subgroup_info.name,
@@ -4662,8 +4662,8 @@ static bool setting_append_list_video_options(
 
    CONFIG_BOOL(
          settings->video.vfilter,
-         "video_vfilter",
-         "Deflicker",
+         menu_hash_to_str(MENU_LABEL_VIDEO_VFILTER),
+         menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_VFILTER),
          video_vfilter,
          menu_hash_to_str(MENU_VALUE_OFF),
          menu_hash_to_str(MENU_VALUE_ON),
@@ -4690,8 +4690,8 @@ static bool setting_append_list_video_options(
 #if defined(__CELLOS_LV2__)
    CONFIG_BOOL(
          global->console.screen.pal60_enable,
-         "pal60_enable",
-         "Use PAL60 Mode",
+         menu_hash_to_str(MENU_LABEL_PAL60_ENABLE),
+         menu_hash_to_str(MENU_LABEL_VALUE_PAL60_ENABLE),
          false,
          menu_hash_to_str(MENU_VALUE_OFF),
          menu_hash_to_str(MENU_VALUE_ON),

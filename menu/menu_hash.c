@@ -643,6 +643,42 @@ static const char *menu_hash_to_str_english(uint32_t hash)
          return "video_crop_overscan";
       case MENU_LABEL_VALUE_VIDEO_CROP_OVERSCAN:
          return "Crop Overscan (Reload)";
+      case MENU_LABEL_VIDEO_ASPECT_RATIO_INDEX:
+         return "aspect_ratio_index";
+      case MENU_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX:
+         return "Aspect Ratio Index";
+      case MENU_LABEL_VIDEO_ASPECT_RATIO_AUTO:
+         return "video_aspect_ratio_auto";
+      case MENU_LABEL_VALUE_VIDEO_ASPECT_RATIO_AUTO:
+         return "Auto Aspect Ratio";
+      case MENU_LABEL_VIDEO_FORCE_ASPECT:
+         return "video_force_aspect";
+      case MENU_LABEL_VALUE_VIDEO_FORCE_ASPECT:
+         return "Force aspect ratio";
+      case MENU_LABEL_VIDEO_REFRESH_RATE: 
+         return "video_refresh_rate";
+      case MENU_LABEL_VALUE_VIDEO_REFRESH_RATE:
+         return "Refresh Rate";
+      case MENU_LABEL_VIDEO_FORCE_SRGB_DISABLE:
+         return "video_force_srgb_disable";
+      case MENU_LABEL_VALUE_VIDEO_FORCE_SRGB_DISABLE:
+         return "Force-disable sRGB FBO";
+      case MENU_LABEL_VIDEO_WINDOWED_FULLSCREEN:
+         return "video_windowed_fullscreen";
+      case MENU_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN:
+         return "Windowed Fullscreen Mode";
+      case MENU_LABEL_PAL60_ENABLE:
+         return "pal60_enable";
+      case MENU_LABEL_VALUE_PAL60_ENABLE:
+         return "Use PAL60 Mode";
+      case MENU_LABEL_VIDEO_VFILTER:
+         return "video_vfilter";
+      case MENU_LABEL_VALUE_VIDEO_VFILTER:
+         return "Deflicker";
+      case MENU_LABEL_VIDEO_VI_WIDTH:
+         return "video_vi_width";
+      case MENU_LABEL_VALUE_VIDEO_VI_WIDTH:
+         return "Set VI Screen Width";
       case MENU_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION:
          return "Black Frame Insertion";
       case MENU_LABEL_VIDEO_BLACK_FRAME_INSERTION:

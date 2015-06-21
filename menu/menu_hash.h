@@ -207,6 +207,12 @@ extern "C" {
 #define MENU_LABEL_VALUE_INPUT_OSK_OVERLAY_ENABLE                              0x44e487aeU
 #define MENU_LABEL_VIDEO_REFRESH_RATE_AUTO                                     0x9addb6cdU
 #define MENU_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO                               0xaf24a804U
+#define MENU_LABEL_VIDEO_REFRESH_RATE                                          0x56ccabf5U
+#define MENU_LABEL_VALUE_VIDEO_REFRESH_RATE                                    0xdf36d1e0U
+#define MENU_LABEL_VIDEO_WINDOWED_FULLSCREEN                                   0x6436d6f8U
+#define MENU_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN                             0x133c7afeU
+#define MENU_LABEL_VIDEO_FORCE_SRGB_DISABLE                                    0x0a7b68aaU
+#define MENU_LABEL_VALUE_VIDEO_FORCE_SRGB_DISABLE                              0xe5bfa9baU
 #define MENU_LABEL_VIDEO_ROTATION                                              0x4ce6882bU
 #define MENU_LABEL_VIDEO_SCALE                                                 0x09835d63U
 #define MENU_LABEL_VALUE_VIDEO_SCALE                                           0x5cde89ceU
@@ -553,6 +559,8 @@ extern "C" {
 #define MENU_LABEL_VIDEO_FONT_PATH                                             0xd0de729eU
 #define MENU_LABEL_VIDEO_FILTER                                                0x1c0eb741U
 #define MENU_LABEL_VALUE_VIDEO_FILTER                                          0xc1690382U
+#define MENU_LABEL_PAL60_ENABLE                                                0x62bc416eU
+#define MENU_LABEL_VALUE_PAL60_ENABLE                                          0x05a5bc9aU
 #define MENU_LABEL_MENU_WALLPAPER                                              0x3b84de01U
 #define MENU_LABEL_CONTENT_HISTORY_PATH                                        0x6f22fb9dU
 #define MENU_LABEL_AUDIO_DSP_PLUGIN                                            0x4a69572bU
@@ -682,6 +690,20 @@ extern "C" {
 #define MENU_LABEL_VALUE_USER_LANGUAGE                                         0xd230a5a9U
 #define MENU_LABEL_NETPLAY_NICKNAME                                            0x52204787U
 #define MENU_LABEL_VALUE_NETPLAY_NICKNAME                                      0x75de3125U
+#define MENU_LABEL_VIDEO_VI_WIDTH                                              0x6e4a6d3aU
+#define MENU_LABEL_VALUE_VIDEO_VI_WIDTH                                        0x03c07e50U
+
+#define MENU_LABEL_VIDEO_FORCE_ASPECT                                          0x8bbf9329U
+#define MENU_LABEL_VALUE_VIDEO_FORCE_ASPECT                                    0xa5590df3U
+
+#define MENU_LABEL_VIDEO_ASPECT_RATIO_AUTO                                     0xa7c31991U
+#define MENU_LABEL_VALUE_VIDEO_ASPECT_RATIO_AUTO                               0x40bd9f87U
+
+#define MENU_LABEL_VIDEO_ASPECT_RATIO_INDEX                                    0x3b01a19aU
+#define MENU_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX                              0x9ce00246U
+
+#define MENU_LABEL_VIDEO_VFILTER                                               0x664f8397U
+#define MENU_LABEL_VALUE_VIDEO_VFILTER                                         0xd58b0158U
 
 #define MENU_LABEL_VIDEO_GPU_RECORD                                            0xb6059a65U
 #define MENU_LABEL_VALUE_VIDEO_GPU_RECORD                                      0x2241deb7U
