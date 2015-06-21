@@ -172,8 +172,8 @@ void set_paths_redirect(const char *path);
 
 int rarch_info_get_capabilities(enum rarch_capabilities type, char *s, size_t len);
 
-char orig_savestate_dir[PATH_MAX_LENGTH];
-char orig_savefile_dir[PATH_MAX_LENGTH];
+extern char orig_savestate_dir[PATH_MAX_LENGTH];
+extern char orig_savefile_dir[PATH_MAX_LENGTH];
 
 #ifdef __cplusplus
 }

@@ -59,6 +59,9 @@
 #include "menu/menu_input.h"
 #endif
 
+char orig_savestate_dir[PATH_MAX_LENGTH];
+char orig_savefile_dir[PATH_MAX_LENGTH];
+
 /* Descriptive names for options without short variant. Please keep the name in
    sync with the option name. Order does not matter. */
 enum {
