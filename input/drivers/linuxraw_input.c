@@ -293,7 +293,7 @@ static void linuxraw_keyboard_mapping_set_block(void *data, bool value)
 {
    linuxraw_input_t *linuxraw = (linuxraw_input_t*)data;
    if (!linuxraw)
-      return false;
+      return;
    linuxraw->blocked = value;
 }
 
