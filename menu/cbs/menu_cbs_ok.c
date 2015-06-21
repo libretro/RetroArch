@@ -1214,7 +1214,7 @@ static int action_ok_custom_viewport(const char *path,
    info.list          = menu_list->menu_stack;
    info.type          = MENU_SETTINGS_CUSTOM_VIEWPORT;
    info.directory_ptr = idx;
-   strlcpy(info.label, "custom_viewport_1", sizeof(info.label));
+   strlcpy(info.label, menu_hash_to_str(MENU_LABEL_CUSTOM_VIEWPORT_1), sizeof(info.label));
 
    ret = menu_displaylist_push_list(&info, DISPLAYLIST_GENERIC);
 

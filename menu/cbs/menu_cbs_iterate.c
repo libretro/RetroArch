@@ -365,7 +365,9 @@ static int action_iterate_menu_viewport(char *s, size_t len, const char *label, 
                && !settings->video.scale_integer)
          {
             info.list          = menu_list->menu_stack;
-            strlcpy(info.label, "custom_viewport_2", sizeof(info.label));
+            strlcpy(info.label,
+                  menu_hash_to_str(MENU_LABEL_CUSTOM_VIEWPORT_2),
+                  sizeof(info.label));
             info.type          = 0;
             info.directory_ptr = nav->selection_ptr;
 
@@ -428,9 +430,9 @@ static int action_iterate_menu_viewport(char *s, size_t len, const char *label, 
    else
    {
       if (type == MENU_SETTINGS_CUSTOM_VIEWPORT)
-         base_msg = "Set Upper-Left Corner";
+         base_msg = menu_hash_to_str(MENU_LABEL_VALUE_CUSTOM_VIEWPORT_1);
       else if (hash == MENU_LABEL_CUSTOM_VIEWPORT_2)
-         base_msg = "Set Bottom-Right Corner";
+         base_msg = menu_hash_to_str(MENU_LABEL_VALUE_CUSTOM_VIEWPORT_2);
 
       snprintf(s, len, "%s (%d, %d : %4ux%4u)",
             base_msg, custom->x, custom->y, custom->width, custom->height);

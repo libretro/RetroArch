@@ -29,6 +29,7 @@ extern "C" {
 #define MENU_VALUE_DIRECTORY_DEFAULT                                           0xdcc3a2e4U
 #define MENU_VALUE_NOT_AVAILABLE                                               0x0b880503U
 
+
 #define MENU_LABEL_VIDEO_FONT_ENABLE                                           0x697d9b58U
 #define MENU_LABEL_VALUE_VIDEO_FONT_ENABLE                                     0x272a12a6U
 #define MENU_LABEL_VIDEO_FONT_PATH                                             0xd0de729eU
@@ -573,7 +574,9 @@ extern "C" {
 #define MENU_LABEL_INFO_SCREEN                                                 0xd97853d0U
 #define MENU_LABEL_LOAD_OPEN_ZIP                                               0x8aa3c068U
 #define MENU_LABEL_CUSTOM_VIEWPORT_1                                           0x76c3016fU
+#define MENU_LABEL_VALUE_CUSTOM_VIEWPORT_1                                     0xdeef977eU
 #define MENU_LABEL_CUSTOM_VIEWPORT_2                                           0x76c30170U
+#define MENU_LABEL_VALUE_CUSTOM_VIEWPORT_2                                     0x1d76c99aU
 #define MENU_LABEL_CUSTOM_RATIO                                                0xf038731eU
 #define MENU_LABEL_VALUE_CUSTOM_RATIO                                          0x3c94b73fU
 #define MENU_LABEL_HELP                                                        0x7c97d2eeU

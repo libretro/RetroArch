@@ -344,6 +344,14 @@ static const char *menu_hash_to_str_english(uint32_t hash)
 {
    switch (hash)
    {
+      case MENU_LABEL_CUSTOM_VIEWPORT_1:
+         return "custom_viewport_1";
+      case MENU_LABEL_VALUE_CUSTOM_VIEWPORT_1:
+         return "Set Upper-Left Corner";
+      case MENU_LABEL_CUSTOM_VIEWPORT_2:
+         return "custom_viewport_2";
+      case MENU_LABEL_VALUE_CUSTOM_VIEWPORT_2:
+         return "Set Bottom-Right Corner";
       case MENU_VALUE_SHADER:
          return "Shader";
       case MENU_VALUE_CHEAT:
