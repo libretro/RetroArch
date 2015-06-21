@@ -81,7 +81,7 @@ static void menu_action_setting_disp_set_label_configurations(
       fill_pathname_base(s, global->config_path,
             len);
    else
-      strlcpy(s, "<default>", len);
+      strlcpy(s, menu_hash_to_str(MENU_VALUE_DIRECTORY_DEFAULT), len);
 }
 
 static void menu_action_setting_disp_set_label_shader_filter_pass(
@@ -94,17 +94,11 @@ static void menu_action_setting_disp_set_label_shader_filter_pass(
       char *s2, size_t len2)
 {
    unsigned pass = 0;
-   static const char *modes[] = {
-      "Don't care",
-      "Linear",
-      "Nearest"
-   };
    menu_handle_t *menu    = menu_driver_get_ptr();
    if (!menu)
       return;
 
    (void)pass;
-   (void)modes;
    (void)menu;
 
    *s = '\0';
@@ -117,8 +111,21 @@ static void menu_action_setting_disp_set_label_shader_filter_pass(
 
   pass = (type - MENU_SETTINGS_SHADER_PASS_FILTER_0);
 
-  strlcpy(s, modes[menu->shader->pass[pass].filter],
-        len);
+  switch (menu->shader->pass[pass].filter)
+  {
+     case 0:
+        strlcpy(s, menu_hash_to_str(MENU_VALUE_DONT_CARE),
+              len);
+        break;
+     case 1:
+        strlcpy(s, menu_hash_to_str(MENU_VALUE_LINEAR),
+              len);
+        break;
+     case 2:
+        strlcpy(s, menu_hash_to_str(MENU_VALUE_NEAREST),
+              len);
+        break;
+  }
 #endif
 }
 
@@ -210,7 +217,9 @@ static void menu_action_setting_disp_set_label_shader_default_filter(
    *s = '\0';
    *w = 19;
    snprintf(s, len, "%s",
-         settings->video.smooth ? "Linear" : "Nearest");
+         settings->video.smooth ?
+         menu_hash_to_str(MENU_VALUE_LINEAR) : 
+         menu_hash_to_str(MENU_VALUE_NEAREST));
 }
 
 static void menu_action_setting_disp_set_label_shader_parameter(
@@ -320,7 +329,7 @@ static void menu_action_setting_disp_set_label_shader_scale_pass(
    scale_value = menu->shader->pass[pass].fbo.scale_x;
 
    if (!scale_value)
-      strlcpy(s, "Don't care", len);
+      strlcpy(s, menu_hash_to_str(MENU_VALUE_DONT_CARE), len);
    else
       snprintf(s, len, "%ux", scale_value);
 #endif

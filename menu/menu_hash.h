@@ -20,6 +20,9 @@
 extern "C" {
 #endif
 
+#define MENU_VALUE_DONT_CARE                                                   0x19da07bcU
+#define MENU_VALUE_LINEAR                                                      0xc0d12dc0U
+#define MENU_VALUE_NEAREST                                                     0x6ab2b0b7U
 #define MENU_VALUE_UNKNOWN                                                     0x9b3bb635U
 #define MENU_VALUE_USER                                                        0x7c8da264U
 #define MENU_VALUE_CHEAT                                                       0x0cf62beaU

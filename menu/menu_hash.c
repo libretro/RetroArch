@@ -1668,6 +1668,12 @@ static const char *menu_hash_to_str_english(uint32_t hash)
          return "<Content dir>";
       case MENU_VALUE_UNKNOWN:
          return "Unknown";
+      case MENU_VALUE_DONT_CARE:
+         return "Don't care";
+      case MENU_VALUE_LINEAR:
+         return "Linear";
+      case MENU_VALUE_NEAREST:
+         return "Nearest";
       case MENU_VALUE_DIRECTORY_DEFAULT:
          return "<Default>";
       case MENU_VALUE_DIRECTORY_NONE:
