@@ -46,7 +46,7 @@ enum runloop_data_type
 };
 
 #ifdef HAVE_NETWORKING
-enum
+enum http_status_enum
 {
    HTTP_STATUS_POLL = 0,
    HTTP_STATUS_CONNECTION_TRANSFER,
@@ -54,7 +54,7 @@ enum
    HTTP_STATUS_TRANSFER,
    HTTP_STATUS_TRANSFER_PARSE,
    HTTP_STATUS_TRANSFER_PARSE_FREE,
-} http_status_enum;
+};
 
 typedef struct http_handle
 {
