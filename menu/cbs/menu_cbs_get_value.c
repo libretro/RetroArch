@@ -136,7 +136,7 @@ static void menu_action_setting_disp_set_label_filter(
    *s = '\0';
    *w = 19;
    strlcpy(s2, path, len2);
-   strlcpy(s, "N/A", len);
+   strlcpy(s, menu_hash_to_str(MENU_VALUE_NOT_AVAILABLE), len);
 
    if (*settings->video.softfilter_plugin)
    strlcpy(s, path_basename(settings->video.softfilter_plugin),
@@ -186,7 +186,7 @@ static void menu_action_setting_disp_set_label_shader_pass(
    *s = '\0';
    *w = 19;
    strlcpy(s2, path, len2);
-   strlcpy(s, "N/A", len);
+   strlcpy(s, menu_hash_to_str(MENU_VALUE_NOT_AVAILABLE), len);
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
    if (*menu->shader->pass[pass].source.path)
@@ -532,7 +532,7 @@ static void menu_action_setting_disp_set_label_menu_video_resolution(
    if (video_driver_get_video_output_size(&width, &height))
       snprintf(s, len, "%ux%u", width, height);
    else
-      strlcpy(s, "N/A", len);
+      strlcpy(s, menu_hash_to_str(MENU_VALUE_NOT_AVAILABLE), len);
 }
 
 static void menu_action_setting_generic_disp_set_label(
