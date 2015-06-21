@@ -7208,8 +7208,13 @@ rarch_setting_t *menu_setting_new(unsigned mask)
 
    if (mask & SL_FLAG_RECORDING_OPTIONS)
    {
-      if (!setting_append_list_recording_options(&list, list_info, root))
-         goto error;
+      settings_t      *settings = config_get_ptr();
+
+      if (strcmp(settings->record.driver, "null") != 0)
+      {
+         if (!setting_append_list_recording_options(&list, list_info, root))
+            goto error;
+      }
    }
 
    if (mask & SL_FLAG_FRAME_THROTTLE_OPTIONS)
