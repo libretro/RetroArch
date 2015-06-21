@@ -70,34 +70,6 @@ static const char *menu_hash_to_str_french(uint32_t hash)
 {
    switch (hash)
    {
-      case MENU_LABEL_AUDIO_BLOCK_FRAMES:
-         return "audio_block_frames";
-      case MENU_LABEL_VALUE_AUDIO_BLOCK_FRAMES:
-         return "Block Frames";
-      case MENU_LABEL_SYSTEM_BGM_ENABLE:
-         return "system_bgm_enable";
-      case MENU_LABEL_VALUE_SYSTEM_BGM_ENABLE:
-         return "System BGM Enable";
-      case MENU_LABEL_AUTOCONFIG_DESCRIPTOR_LABEL_SHOW:
-         return "autoconfig_descriptor_label_show";
-      case MENU_LABEL_VALUE_AUTOCONFIG_DESCRIPTOR_LABEL_SHOW:
-         return "Display Autoconfig Descriptor Labels";
-      case MENU_LABEL_INPUT_DESCRIPTOR_LABEL_SHOW:
-         return "input_descriptor_label_show";
-      case MENU_LABEL_VALUE_INPUT_DESCRIPTOR_LABEL_SHOW:
-         return "Display Core Input Descriptor Labels";
-      case MENU_LABEL_INPUT_DESCRIPTOR_HIDE_UNBOUND:
-         return "input_descriptor_hide_unbound";
-      case MENU_LABEL_VALUE_INPUT_DESCRIPTOR_HIDE_UNBOUND:
-         return "Hide Unbound Core Input Descriptors";
-      case MENU_VALUE_RETROPAD:
-         return "RetroPad";
-      case MENU_VALUE_RETROKEYBOARD:
-         return "RetroKeyboard";
-      case MENU_LABEL_INPUT_BIND_MODE:
-         return "input_bind_mode";
-      case MENU_LABEL_VALUE_INPUT_BIND_MODE:
-         return "Bind Mode";
       case MENU_LABEL_VALUE_VIDEO_SMOOTH:
          return "Filtre bilineaire (HW)";
       case MENU_LABEL_VALUE_VIDEO_GAMMA:
@@ -378,6 +350,34 @@ static const char *menu_hash_to_str_english(uint32_t hash)
          return "Cheat";
       case MENU_VALUE_USER:
          return "User";
+      case MENU_LABEL_SYSTEM_BGM_ENABLE:
+         return "system_bgm_enable";
+      case MENU_LABEL_VALUE_SYSTEM_BGM_ENABLE:
+         return "System BGM Enable";
+      case MENU_VALUE_RETROPAD:
+         return "RetroPad";
+      case MENU_VALUE_RETROKEYBOARD:
+         return "RetroKeyboard";
+      case MENU_LABEL_AUDIO_BLOCK_FRAMES:
+         return "audio_block_frames";
+      case MENU_LABEL_VALUE_AUDIO_BLOCK_FRAMES:
+         return "Block Frames";
+      case MENU_LABEL_INPUT_BIND_MODE:
+         return "input_bind_mode";
+      case MENU_LABEL_VALUE_INPUT_BIND_MODE:
+         return "Bind Mode";
+      case MENU_LABEL_AUTOCONFIG_DESCRIPTOR_LABEL_SHOW:
+         return "autoconfig_descriptor_label_show";
+      case MENU_LABEL_VALUE_AUTOCONFIG_DESCRIPTOR_LABEL_SHOW:
+         return "Display Autoconfig Descriptor Labels";
+      case MENU_LABEL_INPUT_DESCRIPTOR_LABEL_SHOW:
+         return "input_descriptor_label_show";
+      case MENU_LABEL_VALUE_INPUT_DESCRIPTOR_LABEL_SHOW:
+         return "Display Core Input Descriptor Labels";
+      case MENU_LABEL_INPUT_DESCRIPTOR_HIDE_UNBOUND:
+         return "input_descriptor_hide_unbound";
+      case MENU_LABEL_VALUE_INPUT_DESCRIPTOR_HIDE_UNBOUND:
+         return "Hide Unbound Core Input Descriptors";
       case MENU_LABEL_VIDEO_FONT_ENABLE:
          return "video_font_enable";
       case MENU_LABEL_VALUE_VIDEO_FONT_ENABLE:
