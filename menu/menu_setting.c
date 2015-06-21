@@ -1505,7 +1505,7 @@ static void setting_get_string_representation_uint_libretro_device(void *data,
             name = "RetroPad w/ Analog";
             break;
          default:
-            name = "Unknown";
+            name = menu_hash_to_str(MENU_VALUE_UNKNOWN);
             break;
       }
    }
@@ -1516,7 +1516,7 @@ static void setting_get_string_representation_uint_libretro_device(void *data,
 static void setting_get_string_representation_uint_archive_mode(void *data,
       char *s, size_t len)
 {
-   const char *name = "Unknown";
+   const char          *name = menu_hash_to_str(MENU_VALUE_UNKNOWN);
    settings_t      *settings = config_get_ptr();
 
    (void)data;

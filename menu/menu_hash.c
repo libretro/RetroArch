@@ -339,6 +339,8 @@ static const char *menu_hash_to_str_english(uint32_t hash)
 {
    switch (hash)
    {
+      case MENU_VALUE_UNKNOWN:
+         return "Unknown";
       case MENU_VALUE_DIRECTORY_DEFAULT:
          return "<Default>";
       case MENU_VALUE_DIRECTORY_NONE:
