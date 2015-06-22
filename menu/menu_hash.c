@@ -229,8 +229,8 @@ static const char *menu_hash_to_str_german(uint32_t hash)
          return "Core Liste";
       case MENU_LABEL_VALUE_LOAD_CONTENT:
          return "Lade Content"; /* FIXME */
-      case MENU_LABEL_VALUE_UNLOAD_CORE:
-         return "Entlade Core";
+      case MENU_LABEL_VALUE_CLOSE_CONTENT:
+         return "Entlade Core"; /* FIXME */
       case MENU_LABEL_VALUE_MANAGEMENT:
          return "Management";
       case MENU_LABEL_VALUE_SAVE_STATE:
@@ -1136,10 +1136,10 @@ static const char *menu_hash_to_str_portuguese(uint32_t hash)
          return "load_content_default";
       case MENU_LABEL_VALUE_LOAD_CONTENT:
          return "Carregar Conteúdo"; /* FIXME */
-      case MENU_LABEL_UNLOAD_CORE:
+      case MENU_LABEL_CLOSE_CONTENT:
          return "unload_core";
-      case MENU_LABEL_VALUE_UNLOAD_CORE:
-         return "Descarregar Core";
+      case MENU_LABEL_VALUE_CLOSE_CONTENT:
+         return "Descarregar Core"; /* FIXME */
       case MENU_LABEL_MANAGEMENT:
          return "advanced_management";
       case MENU_LABEL_VALUE_MANAGEMENT:
@@ -1490,8 +1490,8 @@ static const char *menu_hash_to_str_french(uint32_t hash)
          return "Charger un core";
       case MENU_LABEL_VALUE_LOAD_CONTENT:
          return "Charger un contenu"; /* FIXME */
-      case MENU_LABEL_VALUE_UNLOAD_CORE:
-         return "Unload core";
+      case MENU_LABEL_VALUE_CLOSE_CONTENT:
+         return "Unload core"; /* FIXME */
       case MENU_LABEL_VALUE_MANAGEMENT:
          return "Gestion avancee";
       case MENU_LABEL_VALUE_SAVE_STATE:
@@ -2512,10 +2512,10 @@ static const char *menu_hash_to_str_english(uint32_t hash)
          return "load_content_default";
       case MENU_LABEL_VALUE_LOAD_CONTENT:
          return "Select File";
-      case MENU_LABEL_UNLOAD_CORE:
+      case MENU_LABEL_CLOSE_CONTENT:
          return "unload_core";
-      case MENU_LABEL_VALUE_UNLOAD_CORE:
-         return "Unload Core";
+      case MENU_LABEL_VALUE_CLOSE_CONTENT:
+         return "Close Content";
       case MENU_LABEL_MANAGEMENT:
          return "advanced_management";
       case MENU_LABEL_VALUE_MANAGEMENT:

@@ -1242,7 +1242,7 @@ static int action_ok_disk_cycle_tray_status(const char *path,
    return generic_action_ok_command(EVENT_CMD_DISK_EJECT_TOGGLE);
 }
 
-static int action_ok_unload_core(const char *path,
+static int action_ok_close_content(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    return generic_action_ok_command(EVENT_CMD_UNLOAD_CORE);
@@ -1503,8 +1503,8 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
       case MENU_LABEL_QUIT_RETROARCH:
          cbs->action_ok = action_ok_quit;
          break;
-      case MENU_LABEL_UNLOAD_CORE:
-         cbs->action_ok = action_ok_unload_core;
+      case MENU_LABEL_CLOSE_CONTENT:
+         cbs->action_ok = action_ok_close_content;
          break;
       case MENU_LABEL_SAVE_NEW_CONFIG:
          cbs->action_ok = action_ok_save_new_config;

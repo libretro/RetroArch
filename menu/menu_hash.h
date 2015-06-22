@@ -499,10 +499,10 @@ extern "C" {
 #define MENU_LABEL_VALUE_NAVIGATION_WRAPAROUND_VERTICAL                        0xfc3b3bdfU
 #define MENU_LABEL_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE       0xea48426bU
 #define MENU_LABEL_VALUE_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE 0x94af8500U
-#define MENU_LABEL_UNLOAD_CORE                                                 0x4b622170U
 #define MENU_LABEL_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE                         0x593d2623U
 #define MENU_LABEL_VALUE_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE                   0x9614c0b2U
-#define MENU_LABEL_VALUE_UNLOAD_CORE                                           0x9b45e571U
+#define MENU_LABEL_CLOSE_CONTENT                                               0x4b622170U
+#define MENU_LABEL_VALUE_CLOSE_CONTENT                                         0x2b3d9556U
 #define MENU_LABEL_QUIT_RETROARCH                                              0x84b0bc71U
 #define MENU_LABEL_VALUE_QUIT_RETROARCH                                        0x8e7024f2U
 #define MENU_LABEL_DEFERRED_VIDEO_FILTER                                       0x966ad201U

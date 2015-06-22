@@ -1450,6 +1450,11 @@ static int menu_displaylist_parse_load_content_settings(menu_displaylist_info_t 
             MENU_SETTING_ACTION_RUN, 0, 0);
 
       menu_list_push(info->list,
+            menu_hash_to_str(MENU_LABEL_VALUE_CLOSE_CONTENT),
+            menu_hash_to_str(MENU_LABEL_CLOSE_CONTENT),
+            MENU_SETTING_ACTION_RUN, 0, 0);
+
+      menu_list_push(info->list,
             menu_hash_to_str(MENU_LABEL_VALUE_TAKE_SCREENSHOT),
             menu_hash_to_str(MENU_LABEL_TAKE_SCREENSHOT),
             MENU_SETTING_ACTION_SCREENSHOT, 0, 0);
