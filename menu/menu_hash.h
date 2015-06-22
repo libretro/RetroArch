@@ -540,7 +540,7 @@ extern "C" {
 #define MENU_LABEL_VALUE_CORE_COUNTERS                                         0x4610e861U
 #define MENU_LABEL_CORE_COUNTERS                                               0x64cc83e0U
 #define MENU_LABEL_LOAD_CONTENT_HISTORY                                        0x60d82032U
-#define MENU_LABEL_VALUE_LOAD_CONTENT_HISTORY                                  0x03531ac3U
+#define MENU_LABEL_VALUE_LOAD_CONTENT_HISTORY                                  0x5b362286U
 #define MENU_LABEL_INFO_SCREEN                                                 0xd97853d0U
 #define MENU_LABEL_SYSTEM_INFORMATION                                          0x206ebf0fU
 #define MENU_LABEL_VALUE_SYSTEM_INFORMATION                                    0xa62fd7f0U
@@ -731,7 +731,7 @@ extern "C" {
 #define MENU_LABEL_REMAP_FILE_SAVE_CORE                                        0x7c9d4c8fU
 #define MENU_LABEL_REMAP_FILE_SAVE_GAME                                        0x7c9f41e0U
 #define MENU_LABEL_CONTENT_COLLECTION_LIST                                     0x0f8a9086U
-#define MENU_LABEL_VALUE_CONTENT_COLLECTION_LIST                               0x7c20a99dU
+#define MENU_LABEL_VALUE_CONTENT_COLLECTION_LIST                               0xdb177ea0U
 #define MENU_LABEL_VALUE_UNABLE_TO_READ_COMPRESSED_FILE                        0xbae7be3eU
 #define MENU_LABEL_OSK_ENABLE                                                  0x8e208498U
 #define MENU_LABEL_AUDIO_MUTE                                                  0xe0ca1151U

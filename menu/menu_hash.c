@@ -134,7 +134,7 @@ static const char *menu_hash_to_str_german(uint32_t hash)
       case MENU_LABEL_VALUE_REWIND_ENABLE:
          return "Aktiviere Rewind";
       case MENU_LABEL_VALUE_CONTENT_COLLECTION_LIST:
-         return "Lade Content (Kollektion)";
+         return "Lade Content (Kollektion)"; /* FIXME */
       case MENU_LABEL_VALUE_DETECT_CORE_LIST:
          return "Lade Content (Ermittle Core)";
       case MENU_LABEL_VALUE_LOAD_CONTENT_HISTORY:
@@ -865,7 +865,7 @@ static const char *menu_hash_to_str_portuguese(uint32_t hash)
       case MENU_LABEL_CONTENT_COLLECTION_LIST:
          return "content_collection_list";
       case MENU_LABEL_VALUE_CONTENT_COLLECTION_LIST:
-         return "Carregar Conteúdo (Coleção)";
+         return "Carregar Conteúdo (Coleção)"; /* FIXME */
       case MENU_LABEL_DETECT_CORE_LIST:
          return "detect_core_list";
       case MENU_LABEL_VALUE_DETECT_CORE_LIST:
@@ -1395,9 +1395,9 @@ static const char *menu_hash_to_str_french(uint32_t hash)
       case MENU_LABEL_VALUE_REWIND_ENABLE:
          return "Activer le rembobinage";
       case MENU_LABEL_VALUE_CONTENT_COLLECTION_LIST:
-         return "Charger un contenu (Collections)";
+         return "Charger un contenu (Collections)"; /* FIXME */
       case MENU_LABEL_VALUE_DETECT_CORE_LIST:
-         return "Charger un contenu (Detect core)";
+         return "Charger un contenu (Detect core)"; /* FIXME */
       case MENU_LABEL_VALUE_LOAD_CONTENT_HISTORY:
          return "Charger un contenu (Historique)";
       case MENU_LABEL_VALUE_AUDIO_ENABLE:
@@ -2225,7 +2225,7 @@ static const char *menu_hash_to_str_english(uint32_t hash)
       case MENU_LABEL_CONTENT_COLLECTION_LIST:
          return "content_collection_list";
       case MENU_LABEL_VALUE_CONTENT_COLLECTION_LIST:
-         return "Load Content (Collection)";
+         return "Load Content From Collection";
       case MENU_LABEL_DETECT_CORE_LIST:
          return "detect_core_list";
       case MENU_LABEL_VALUE_DETECT_CORE_LIST:
@@ -2233,7 +2233,7 @@ static const char *menu_hash_to_str_english(uint32_t hash)
       case MENU_LABEL_LOAD_CONTENT_HISTORY:
          return "history_list";
       case MENU_LABEL_VALUE_LOAD_CONTENT_HISTORY:
-         return "Load Content (History)";
+         return "Load Content From History";
       case MENU_LABEL_AUDIO_ENABLE:
          return "audio_enable";
       case MENU_LABEL_VALUE_AUDIO_ENABLE:
