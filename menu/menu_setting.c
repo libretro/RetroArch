@@ -5885,13 +5885,15 @@ static bool setting_append_list_menu_options(
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
    END_SUB_GROUP(list, list_info, parent_group);
-   START_SUB_GROUP(list, list_info, "Browser", group_info.name, subgroup_info, parent_group);
+
+
+   START_SUB_GROUP(list, list_info, "Display", group_info.name, subgroup_info, parent_group);
 
    CONFIG_BOOL(
-         settings->menu.navigation.browser.filter.supported_extensions_enable,
-         menu_hash_to_str(MENU_LABEL_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE),
-         menu_hash_to_str(MENU_LABEL_VALUE_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE),
-         true,
+         settings->menu.dpi.override_enable,
+         menu_hash_to_str(MENU_LABEL_DPI_OVERRIDE_ENABLE),
+         menu_hash_to_str(MENU_LABEL_VALUE_DPI_OVERRIDE_ENABLE),
+         menu_dpi_override_enable,
          menu_hash_to_str(MENU_VALUE_OFF),
          menu_hash_to_str(MENU_VALUE_ON),
          group_info.name,
@@ -5899,6 +5901,18 @@ static bool setting_append_list_menu_options(
          parent_group,
          general_write_handler,
          general_read_handler);
+
+   CONFIG_UINT(
+         settings->menu.dpi.override_value,
+         menu_hash_to_str(MENU_LABEL_DPI_OVERRIDE_VALUE),
+         menu_hash_to_str(MENU_LABEL_VALUE_DPI_OVERRIDE_VALUE),
+         menu_dpi_override_value,
+         group_info.name,
+         subgroup_info.name,
+         parent_group,
+         general_write_handler,
+         general_read_handler);
+   menu_settings_list_current_add_range(list, list_info, 72, 999, 1, true, true);
 
    CONFIG_BOOL(
          settings->menu_show_start_screen,
@@ -5951,35 +5965,6 @@ static bool setting_append_list_menu_options(
          parent_group,
          general_write_handler,
          general_read_handler);
-
-
-   END_SUB_GROUP(list, list_info, parent_group);
-   START_SUB_GROUP(list, list_info, "Display", group_info.name, subgroup_info, parent_group);
-
-   CONFIG_BOOL(
-         settings->menu.dpi.override_enable,
-         menu_hash_to_str(MENU_LABEL_DPI_OVERRIDE_ENABLE),
-         menu_hash_to_str(MENU_LABEL_VALUE_DPI_OVERRIDE_ENABLE),
-         menu_dpi_override_enable,
-         menu_hash_to_str(MENU_VALUE_OFF),
-         menu_hash_to_str(MENU_VALUE_ON),
-         group_info.name,
-         subgroup_info.name,
-         parent_group,
-         general_write_handler,
-         general_read_handler);
-
-   CONFIG_UINT(
-         settings->menu.dpi.override_value,
-         menu_hash_to_str(MENU_LABEL_DPI_OVERRIDE_VALUE),
-         menu_hash_to_str(MENU_LABEL_VALUE_DPI_OVERRIDE_VALUE),
-         menu_dpi_override_value,
-         group_info.name,
-         subgroup_info.name,
-         parent_group,
-         general_write_handler,
-         general_read_handler);
-   menu_settings_list_current_add_range(list, list_info, 72, 999, 1, true, true);
 
    END_SUB_GROUP(list, list_info, parent_group);
    END_GROUP(list, list_info, parent_group);
@@ -6076,7 +6061,7 @@ static bool setting_append_list_ui_options(
    return true;
 }
 
-static bool setting_append_list_archive_options(
+static bool setting_append_list_menu_file_browser_options(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info,
       const char *parent_group)
@@ -6085,11 +6070,24 @@ static bool setting_append_list_archive_options(
    rarch_setting_group_info_t subgroup_info = {0};
    settings_t *settings = config_get_ptr();
 
-   START_GROUP(group_info, "Archive Settings", parent_group);
+   START_GROUP(group_info, "Menu File Browser Settings", parent_group);
 
    parent_group = menu_hash_to_str(MENU_LABEL_VALUE_SETTINGS);
 
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info, parent_group);
+
+   CONFIG_BOOL(
+         settings->menu.navigation.browser.filter.supported_extensions_enable,
+         menu_hash_to_str(MENU_LABEL_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE),
+         menu_hash_to_str(MENU_LABEL_VALUE_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE),
+         true,
+         menu_hash_to_str(MENU_VALUE_OFF),
+         menu_hash_to_str(MENU_VALUE_ON),
+         group_info.name,
+         subgroup_info.name,
+         parent_group,
+         general_write_handler,
+         general_read_handler);
 
    CONFIG_UINT(
          settings->archive.mode,
@@ -7251,6 +7249,12 @@ rarch_setting_t *menu_setting_new(unsigned mask)
          goto error;
    }
 
+   if (mask & SL_FLAG_MENU_BROWSER_OPTIONS)
+   {
+      if (!setting_append_list_menu_file_browser_options(&list, list_info, root))
+         goto error;
+   }
+
    if (mask & SL_FLAG_UI_OPTIONS)
    {
       if (!setting_append_list_ui_options(&list, list_info, root))
@@ -7283,11 +7287,6 @@ rarch_setting_t *menu_setting_new(unsigned mask)
          goto error;
    }
 
-   if (mask & SL_FLAG_ARCHIVE_OPTIONS)
-   {
-      if (!setting_append_list_archive_options(&list, list_info, root))
-         goto error;
-   }
 
    if (mask & SL_FLAG_USER_OPTIONS)
    {

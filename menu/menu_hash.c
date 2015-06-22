@@ -2469,7 +2469,7 @@ static const char *menu_hash_to_str_english(uint32_t hash)
       case MENU_LABEL_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE:
          return "menu_navigation_browser_filter_supported_extensions_enable";
       case MENU_LABEL_VALUE_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE:
-         return "Browser - Filter by supported extensions";
+         return "Filter by supported extensions";
       case MENU_LABEL_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE:
          return "core_updater_auto_extract_archive";
       case MENU_LABEL_VALUE_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE:

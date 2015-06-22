@@ -89,7 +89,7 @@ enum setting_list_flags
    SL_FLAG_DIRECTORY_OPTIONS     =  (1 << 18),
    SL_FLAG_PRIVACY_OPTIONS       =  (1 << 19),
    SL_FLAG_PLAYLIST_OPTIONS      =  (1 << 20),
-   SL_FLAG_ARCHIVE_OPTIONS       =  (1 << 21),
+   SL_FLAG_MENU_BROWSER_OPTIONS  =  (1 << 21),
    SL_FLAG_PATCH_OPTIONS         =  (1 << 22),
    SL_FLAG_RECORDING_OPTIONS     =  (1 << 23),
    SL_FLAG_FRAME_THROTTLE_OPTIONS=  (1 << 24),
