@@ -908,8 +908,7 @@ static void event_main_state(unsigned cmd)
       snprintf(path, sizeof(path), "%s%d",
             global->savestate_name, settings->state_slot);
    else if (settings->state_slot < 0)
-      snprintf(path, sizeof(path), "%s.auto",
-            global->savestate_name);
+      fill_pathname_join_delim(path, global->savestate_name, "auto", '.', sizeof(path));
    else
       strlcpy(path, global->savestate_name, sizeof(path));
 

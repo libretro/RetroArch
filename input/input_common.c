@@ -20,6 +20,8 @@
 #include <stdlib.h>
 #include <ctype.h>
 
+#include <file/file_path.h>
+
 #include "../general.h"
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
@@ -169,7 +171,7 @@ void input_config_parse_key(config_file_t *conf,
 {
    char tmp[64] = {0};
    char key[64] = {0};
-   snprintf(key, sizeof(key), "%s_%s", prefix, btn);
+   fill_pathname_join_delim(key, prefix, btn, '_', sizeof(key));
 
    if (config_get_array(conf, key, tmp, sizeof(tmp)))
       bind->key = input_translate_str_to_rk(tmp);
@@ -268,13 +270,15 @@ static void parse_hat(struct retro_keybind *bind, const char *str)
 void input_config_parse_joy_button(config_file_t *conf, const char *prefix,
       const char *btn, struct retro_keybind *bind)
 {
+   char str[256]      = {0};
    char tmp[64]       = {0};
    char key[64]       = {0};
    char key_label[64] = {0};
    char *tmp_a        = NULL;
 
-   snprintf(key, sizeof(key), "%s_%s_btn", prefix, btn);
-   snprintf(key_label, sizeof(key_label), "%s_%s_btn_label", prefix, btn);
+   fill_pathname_join_delim(str, prefix, btn, '_', sizeof(str));
+   fill_pathname_join_delim(key, str, "btn", '_', sizeof(key));
+   fill_pathname_join_delim(key_label, str, "btn_label", '_', sizeof(key_label));
 
    if (config_get_array(conf, key, tmp, sizeof(tmp)))
    {
@@ -297,13 +301,15 @@ void input_config_parse_joy_button(config_file_t *conf, const char *prefix,
 void input_config_parse_joy_axis(config_file_t *conf, const char *prefix,
       const char *axis, struct retro_keybind *bind)
 {
+   char str[256]      = {0};
    char       tmp[64] = {0};
    char       key[64] = {0};
    char key_label[64] = {0};
    char        *tmp_a = NULL;
 
-   snprintf(key, sizeof(key), "%s_%s_axis", prefix, axis);
-   snprintf(key_label, sizeof(key_label), "%s_%s_axis_label", prefix, axis);
+   fill_pathname_join_delim(str, prefix, axis, '_', sizeof(str));
+   fill_pathname_join_delim(key, str, "axis", '_', sizeof(key));
+   fill_pathname_join_delim(key_label, str, "axis_label", '_', sizeof(key_label));
 
    if (config_get_array(conf, key, tmp, sizeof(tmp)))
    {
