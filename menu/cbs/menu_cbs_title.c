@@ -17,6 +17,8 @@
 #include <string/stdstring.h>
 #include <file/file_path.h>
 
+#include <compat/strl.h>
+
 #include "../menu.h"
 #include "../menu_hash.h"
 
@@ -41,21 +43,24 @@ static INLINE void sanitize_to_string(char *s, const char *label, size_t len)
 static int action_get_title_disk_image_append(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   snprintf(s, len, "DISK APPEND %s", path);
+   strlcpy(s, "DISK APPEND ", len);
+   strlcat(s, path, len);
    return 0;
 }
 
 static int action_get_title_cheat_file_load(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   snprintf(s, len, "CHEAT FILE %s", path);
+   strlcpy(s, "CHEAT FILE ", len);
+   strlcat(s, path, len);
    return 0;
 }
 
 static int action_get_title_remap_file_load(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   snprintf(s, len, "REMAP FILE %s", path);
+   strlcpy(s, "REMAP FILE ", len);
+   strlcat(s, path, len);
    return 0;
 }
 
@@ -69,49 +74,56 @@ static int action_get_title_help(const char *path, const char *label,
 static int action_get_title_overlay(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   snprintf(s, len, "OVERLAY %s", path);
+   strlcpy(s, "OVERLAY ", len);
+   strlcat(s, path, len);
    return 0;
 }
 
 static int action_get_title_video_filter(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   snprintf(s, len, "VIDEO FILTER %s", path);
+   strlcpy(s, "VIDEO FILTER ", len);
+   strlcat(s, path, len);
    return 0;
 }
 
 static int action_get_title_cheat_directory(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   snprintf(s, len, "CHEAT DIR %s", path);
+   strlcpy(s, "CHEAT DIR ", len);
+   strlcat(s, path, len);
    return 0;
 }
 
 static int action_get_title_core_directory(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   snprintf(s, len, "CORE DIR %s", path);
+   strlcpy(s, "CORE DIR ", len);
+   strlcat(s, path, len);
    return 0;
 }
 
 static int action_get_title_core_info_directory(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   snprintf(s, len, "CORE INFO DIR %s", path);
+   strlcpy(s, "CORE INFO DIR ", len);
+   strlcat(s, path, len);
    return 0;
 }
 
 static int action_get_title_audio_filter(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   snprintf(s, len, "AUDIO FILTER %s", path);
+   strlcpy(s, "AUDIO FILTER ", len);
+   strlcat(s, path, len);
    return 0;
 }
 
 static int action_get_title_font_path(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   snprintf(s, len, "FONT %s", path);
+   strlcpy(s, "FONT ", len);
+   strlcat(s, path, len);
    return 0;
 }
 
@@ -125,14 +137,15 @@ static int action_get_title_custom_viewport(const char *path, const char *label,
 static int action_get_title_content_collection_list(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   snprintf(s, len, "CONTENT COLLECTION LIST");
+   strlcpy(s, "CONTENT COLLECTION LIST", len);
    return 0;
 }
 
 static int action_get_title_video_shader_preset(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   snprintf(s, len, "SHADER PRESET %s", path);
+   strlcpy(s, "SHADER PRESET ", len);
+   strlcat(s, path, len);
    return 0;
 }
 
@@ -268,7 +281,8 @@ static int action_get_title_list_rdb_entry_max_users(const char *path, const cha
 static int action_get_title_deferred_core_list(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   snprintf(s, len, "DETECTED CORES %s", path);
+   strlcpy(s, "DETECTED CORES ", len);
+   strlcat(s, path, len);
    return 0;
 }
 
@@ -333,175 +347,200 @@ static int action_get_title_action_generic(const char *path, const char *label,
 static int action_get_title_configurations(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   snprintf(s, len, "CONFIG %s", path);
+   strlcpy(s, "CONFIG ", len);
+   strlcat(s, path, len);
    return 0;
 }
 
 static int action_get_title_content_database_directory(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   snprintf(s, len, "DATABASE DIR %s", path);
+   strlcpy(s, "DATABASE DIR ", len);
+   strlcat(s, path, len);
    return 0;
 }
 
 static int action_get_title_savestate_directory(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   snprintf(s, len, "SAVESTATE DIR %s", path);
+   strlcpy(s, "SAVESTATE DIR ", len);
+   strlcat(s, path, len);
    return 0;
 }
 
 static int action_get_title_dynamic_wallpapers_directory(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   snprintf(s, len, "DYNAMIC WALLPAPERS DIR %s", path);
+   strlcpy(s, "DYNAMIC WALLPAPERS DIR ", len);
+   strlcat(s, path, len);
    return 0;
 }
 
 static int action_get_title_core_assets_directory(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   snprintf(s, len, "CORE ASSETS DIR %s", path);
+   strlcpy(s, "CORE ASSETS DIR ", len);
+   strlcat(s, path, len);
    return 0;
 }
 
 static int action_get_title_config_directory(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   snprintf(s, len, "CONFIG DIR %s", path);
+   strlcpy(s, "CONFIG DIR ", len);
+   strlcat(s, path, len);
    return 0;
 }
 
 static int action_get_title_input_remapping_directory(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   snprintf(s, len, "INPUT REMAPPING DIR %s", path);
+   strlcpy(s, "INPUT REMAPPING DIR ", len);
+   strlcat(s, path, len);
    return 0;
 }
 
 static int action_get_title_autoconfig_directory(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   snprintf(s, len, "AUTOCONFIG DIR %s", path);
+   strlcpy(s, "AUTOCONFIG DIR ", len);
+   strlcat(s, path, len);
    return 0;
 }
 
 static int action_get_title_playlist_directory(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   snprintf(s, len, "PLAYLIST DIR %s", path);
+   strlcpy(s, "PLAYLIST DIR ", len);
+   strlcat(s, path, len);
    return 0;
 }
 
 static int action_get_title_browser_directory(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   snprintf(s, len, "BROWSER DIR %s", path);
+   strlcpy(s, "BROWSER DIR ", len);
+   strlcat(s, path, len);
    return 0;
 }
 
 static int action_get_title_content_directory(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   snprintf(s, len, "CONTENT DIR %s", path);
+   strlcpy(s, "CONTENT DIR ", len);
+   strlcat(s, path, len);
    return 0;
 }
 
 static int action_get_title_screenshot_directory(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   snprintf(s, len, "SCREENSHOT DIR %s", path);
+   strlcpy(s, "SCREENSHOT DIR ", len);
+   strlcat(s, path, len);
    return 0;
 }
 
 static int action_get_title_cursor_directory(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   snprintf(s, len, "CURSOR DIR %s", path);
+   strlcpy(s, "CURSOR DIR ", len);
+   strlcat(s, path, len);
    return 0;
 }
 
 static int action_get_title_onscreen_overlay_keyboard_directory(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   snprintf(s, len, "OSK OVERLAY DIR %s", path);
+   strlcpy(s, "RECORDING CONFIG DIR ", len);
+   strlcat(s, path, len);
    return 0;
 }
 
 static int action_get_title_recording_config_directory(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   snprintf(s, len, "RECORDING CONFIG DIR %s", path);
+   strlcpy(s, "RECORDING CONFIG DIR ", len);
+   strlcat(s, path, len);
    return 0;
 }
 
 static int action_get_title_recording_output_directory(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   snprintf(s, len, "RECORDING OUTPUT DIR %s", path);
+   strlcpy(s, "RECORDING OUTPUT DIR ", len);
+   strlcat(s, path, len);
    return 0;
 }
 
 static int action_get_title_video_shader_directory(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   snprintf(s, len, "SHADER DIR %s", path);
+   strlcpy(s, "SHADER DIR ", len);
+   strlcat(s, path, len);
    return 0;
 }
 
 static int action_get_title_audio_filter_directory(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   snprintf(s, len, "AUDIO FILTER DIR %s", path);
+   strlcpy(s, "AUDIO FILTER DIR ", len);
+   strlcat(s, path, len);
    return 0;
 }
 
 static int action_get_title_video_filter_directory(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   snprintf(s, len, "VIDEO FILTER DIR %s", path);
+   strlcpy(s, "VIDEO FILTER DIR ", len);
+   strlcat(s, path, len);
    return 0;
 }
 
 static int action_get_title_savefile_directory(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   snprintf(s, len, "SAVEFILE DIR %s", path);
+   strlcpy(s, "SAVEFILE DIR ", len);
+   strlcat(s, path, len);
    return 0;
 }
 
 static int action_get_title_overlay_directory(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   snprintf(s, len, "OVERLAY DIR %s", path);
+   strlcpy(s, "OVERLAY DIR ", len);
+   strlcat(s, path, len);
    return 0;
 }
 
 static int action_get_title_system_directory(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   snprintf(s, len, "SYSTEM DIR %s", path);
+   strlcpy(s, "SYSTEM DIR ", len);
+   strlcat(s, path, len);
    return 0;
 }
 
 static int action_get_title_assets_directory(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   snprintf(s, len, "ASSETS DIR %s", path);
+   strlcpy(s, "ASSETS DIR ", len);
+   strlcat(s, path, len);
    return 0;
 }
 
 static int action_get_title_extraction_directory(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   snprintf(s, len, "EXTRACTION DIR %s", path);
+   strlcpy(s, "EXTRACTION DIR ", len);
+   strlcat(s, path, len);
    return 0;
 }
 
 static int action_get_title_menu(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   snprintf(s, len, "MENU %s", path);
+   strlcpy(s, "MENU ", len);
+   strlcat(s, path, len);
    return 0;
 }
 
