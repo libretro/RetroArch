@@ -1935,12 +1935,6 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
                menu_hash_to_str(MENU_LABEL_VALUE_CUSTOM_RATIO),
                menu_hash_to_str(MENU_LABEL_CUSTOM_RATIO),
                MENU_SETTINGS_CUSTOM_VIEWPORT, 0, 0);
-#ifndef HAVE_FILTERS_BUILTIN
-         menu_list_push(info->list,
-               menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_FILTER),
-               menu_hash_to_str(MENU_LABEL_VIDEO_FILTER),
-               0, 0, 0);
-#endif
 
          need_push    = true;
          break;

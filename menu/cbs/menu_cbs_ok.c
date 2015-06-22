@@ -464,26 +464,6 @@ static int action_ok_audio_dsp_plugin(const char *path,
    return menu_displaylist_push_list(&info, DISPLAYLIST_GENERIC);
 }
 
-static int action_ok_video_filter(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   menu_displaylist_info_t info = {0};
-   settings_t *settings         = config_get_ptr();
-   menu_list_t     *menu_list   = menu_list_get_ptr();
-
-   if (!menu_list)
-      return -1;
-
-   info.list          = menu_list->menu_stack;
-   info.type          = 0;
-   info.directory_ptr = idx;
-   strlcpy(info.path, settings->video.filter_dir, sizeof(info.path));
-   strlcpy(info.label,
-         menu_hash_to_str(MENU_LABEL_DEFERRED_VIDEO_FILTER), sizeof(info.label));
-
-   return menu_displaylist_push_list(&info, DISPLAYLIST_GENERIC);
-}
-
 static int action_ok_core_updater_list(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -653,32 +633,6 @@ static int action_ok_remap_file_load(const char *path,
 
    menu_list_flush_stack(menu_list,
          menu_hash_to_str(MENU_LABEL_CORE_INPUT_REMAPPING_OPTIONS), 0);
-
-   return 0;
-}
-
-static int action_ok_video_filter_file_load(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   const char             *menu_path = NULL;
-   char filter_path[PATH_MAX_LENGTH] = {0};
-   menu_list_t       *menu_list      = menu_list_get_ptr();
-   settings_t              *settings = config_get_ptr();
-
-   (void)filter_path;
-   (void)menu_path;
-
-   menu_list_get_last_stack(menu_list, &menu_path, NULL,
-         NULL, NULL);
-
-   fill_pathname_join(filter_path, menu_path, path, sizeof(filter_path));
-
-   strlcpy(settings->video.softfilter_plugin, filter_path,
-         sizeof(settings->video.softfilter_plugin));
-
-   event_command(EVENT_CMD_REINIT);
-
-   menu_list_flush_stack(menu_list, menu_hash_to_str(MENU_LABEL_VIDEO_OPTIONS), 0);
 
    return 0;
 }
@@ -1188,12 +1142,16 @@ static int action_ok_set_path(const char *path,
    menu_list_get_last_stack(menu_list,
          &menu_path, &menu_label, NULL, NULL);
 
+   RARCH_LOG("menu_label: %s\n", menu_label);
+
    setting = menu_setting_find(menu_label);
 
    if (!setting)
       return -1;
 
    menu_action_setting_set_current_string_path(setting, menu_path, path);
+
+   RARCH_LOG("setting name: %s\n", setting->name);
    menu_list_pop_stack_by_needle(menu_list, setting->name);
 
    return 0;
@@ -1567,9 +1525,6 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
       case MENU_LABEL_AUDIO_DSP_PLUGIN:
          cbs->action_ok = action_ok_audio_dsp_plugin;
          break;
-      case MENU_LABEL_VIDEO_FILTER:
-         cbs->action_ok = action_ok_video_filter;
-         break;
       case MENU_LABEL_REMAP_FILE_LOAD:
          cbs->action_ok = action_ok_remap_file;
          break;
@@ -1764,10 +1719,8 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
          case MENU_FILE_FONT:
          case MENU_FILE_OVERLAY:
          case MENU_FILE_AUDIOFILTER:
-            cbs->action_ok = action_ok_set_path;
-            break;
          case MENU_FILE_VIDEOFILTER:
-            cbs->action_ok = action_ok_video_filter_file_load;
+            cbs->action_ok = action_ok_set_path;
             break;
 #ifdef HAVE_COMPRESSION
          case MENU_FILE_IN_CARCHIVE:
