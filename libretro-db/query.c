@@ -12,6 +12,7 @@
 
 #include "rmsgpack_dom.h"
 #include <compat/fnmatch.h>
+#include <compat/strl.h>
 
 #define MAX_ERROR_LEN 256
 #undef  MAX_ARGS
@@ -29,8 +30,8 @@ struct buffer
 /* Errors */
 static void raise_too_many_arguments(const char **error)
 {
-   snprintf(tmp_error_buff, MAX_ERROR_LEN,
-         "Too many arguments in function call.");
+   strlcpy(tmp_error_buff, 
+         "Too many arguments in function call.", sizeof(tmp_error_buff));
    *error = tmp_error_buff;
 }
 
@@ -73,7 +74,7 @@ static void raise_unexpected_eof(off_t where, const char ** error)
 
 static void raise_enomem(const char **error)
 {
-   snprintf(tmp_error_buff, MAX_ERROR_LEN, "Out of memory");
+   strlcpy(tmp_error_buff, "Out of memory", sizeof(tmp_error_buff));
    *error = tmp_error_buff;
 }
 
