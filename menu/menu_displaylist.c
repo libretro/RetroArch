@@ -1434,6 +1434,19 @@ static int menu_displaylist_parse_load_core_list(menu_displaylist_info_t *info)
    global_t *global            = global_get_ptr();
    settings_t *settings  = config_get_ptr();
 
+   if (global->core_info && core_info_list_num_info_files(global->core_info))
+   {
+      menu_list_push(info->list,
+            menu_hash_to_str(MENU_LABEL_VALUE_DETECT_CORE_LIST),
+            menu_hash_to_str(MENU_LABEL_DETECT_CORE_LIST),
+            MENU_SETTING_ACTION, 0, 0);
+   }
+
+   menu_list_push(info->list,
+         menu_hash_to_str(MENU_LABEL_VALUE_LOAD_CONTENT),
+         menu_hash_to_str(MENU_LABEL_LOAD_CONTENT),
+         MENU_SETTING_ACTION, 0, 0);
+
 #ifdef HAVE_LIBRETRODB
    menu_list_push(info->list,
          menu_hash_to_str(MENU_LABEL_VALUE_CONTENT_COLLECTION_LIST),
@@ -1448,19 +1461,6 @@ static int menu_displaylist_parse_load_core_list(menu_displaylist_info_t *info)
             menu_hash_to_str(MENU_LABEL_LOAD_CONTENT_HISTORY),
             MENU_SETTING_ACTION, 0, 0);
    }
-
-   if (global->core_info && core_info_list_num_info_files(global->core_info))
-   {
-      menu_list_push(info->list,
-            menu_hash_to_str(MENU_LABEL_VALUE_DETECT_CORE_LIST),
-            menu_hash_to_str(MENU_LABEL_DETECT_CORE_LIST),
-            MENU_SETTING_ACTION, 0, 0);
-   }
-
-   menu_list_push(info->list,
-         menu_hash_to_str(MENU_LABEL_VALUE_LOAD_CONTENT),
-         menu_hash_to_str(MENU_LABEL_LOAD_CONTENT),
-         MENU_SETTING_ACTION, 0, 0);
 
    return 0;
 }
