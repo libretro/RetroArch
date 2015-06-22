@@ -1365,7 +1365,7 @@ static void setting_get_string_representation_st_path(void *data,
    rarch_setting_t *setting = (rarch_setting_t*)data;
 
    if (setting)
-      strlcpy(s, path_basename(setting->value.string), len);
+      fill_short_pathname_representation(s, setting->value.string, len);
 }
 
 static void setting_get_string_representation_st_string(void *data,

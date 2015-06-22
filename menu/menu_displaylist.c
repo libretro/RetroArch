@@ -888,7 +888,8 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
    if (!(db_info = database_info_list_new(info->path, query)))
       goto error;
 
-   strlcpy(path_base, path_basename(info->path), sizeof(path_base));
+   fill_short_pathname_representation(path_base, info->path,
+         sizeof(path_base));
    path_remove_extension(path_base);
    strlcat(path_base, ".lpl", sizeof(path_base));
 

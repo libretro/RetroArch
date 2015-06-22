@@ -146,8 +146,8 @@ static void menu_action_setting_disp_set_label_filter(
    strlcpy(s, menu_hash_to_str(MENU_VALUE_NOT_AVAILABLE), len);
 
    if (*settings->video.softfilter_plugin)
-   strlcpy(s, path_basename(settings->video.softfilter_plugin),
-         len);
+      fill_short_pathname_representation(s,
+            settings->video.softfilter_plugin, len);
 }
 
 static void menu_action_setting_disp_set_label_shader_num_passes(

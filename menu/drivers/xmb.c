@@ -1145,7 +1145,8 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
       hash_value = menu_hash_calculate(entry.value);
 
       if (entry.type == MENU_FILE_CONTENTLIST_ENTRY)
-         strlcpy(entry.path, path_basename(entry.path), sizeof(entry.path));
+         fill_short_pathname_representation(entry.path, entry.path,
+               sizeof(entry.path));
 
       icon = xmb_icon_get_id(xmb, core_node, node, entry.type, (i == current));
 

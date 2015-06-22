@@ -168,16 +168,13 @@ static int database_info_list_iterate_found_match(
    char db_playlist_path[PATH_MAX_LENGTH]      = {0};
    char  db_playlist_base_str[PATH_MAX_LENGTH] = {0};
    char entry_path_str[PATH_MAX_LENGTH]        = {0};
-   const char *db_playlist_base = NULL;
    content_playlist_t *playlist = NULL;
    settings_t *settings = config_get_ptr();
    const char *db_path = db_state->list->elems[db_state->list_index].data;
    const char *entry_path = db ? db->list->elems[db->list_ptr].data : NULL;
    database_info_t *db_info_entry = &db_state->info->list[db_state->entry_index];
 
-   db_playlist_base = path_basename(db_path);
-
-   strlcpy(db_playlist_base_str, db_playlist_base, sizeof(db_playlist_base_str));
+   fill_short_pathname_representation(db_playlist_base_str, db_path, sizeof(db_playlist_base_str));
 
    path_remove_extension(db_playlist_base_str);
 
