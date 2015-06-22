@@ -458,15 +458,12 @@ static int menu_animation_iterate(
       float dt,
       unsigned *active_tweens)
 {
-   if (!tween || !tween->alive)
-      return -1;
-   if (tween->running_since >= tween->duration)
+   if (!tween->alive)
       return -1;
 
    tween->running_since += dt;
 
-   if (tween->easing)
-      *tween->subject = tween->easing(
+   *tween->subject = tween->easing(
             tween->running_since,
             tween->initial_value,
             tween->target_value - tween->initial_value,
