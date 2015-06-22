@@ -153,7 +153,7 @@ static const char *menu_hash_to_str_german(uint32_t hash)
          return "Audio Rate Control Delta";
       case MENU_LABEL_VALUE_VIDEO_SHADER_NUM_PASSES:
          return "Shader Durchgange";
-      case MENU_LABEL_VALUE_CONFIGURATIONS:
+      case MENU_LABEL_VALUE_CONFIGURATIONS: /* FIXME */
          return "Konfigurationsdatei";
       case MENU_LABEL_VALUE_REWIND_GRANULARITY:
          return "Rewind Granularitat";
@@ -954,7 +954,7 @@ static const char *menu_hash_to_str_portuguese(uint32_t hash)
          return "rdb_entry_analog";
       case MENU_LABEL_CONFIGURATIONS:
          return "configurations";
-      case MENU_LABEL_VALUE_CONFIGURATIONS:
+      case MENU_LABEL_VALUE_CONFIGURATIONS: /* FIXME */
          return "Arquivos de Configuração";
       case MENU_LABEL_LOAD_OPEN_ZIP:
          return "load_open_zip";
@@ -1414,7 +1414,7 @@ static const char *menu_hash_to_str_french(uint32_t hash)
          return "Delta du taux de controle";
       case MENU_LABEL_VALUE_VIDEO_SHADER_NUM_PASSES:
          return "Nombre d'etapes de Shader";
-      case MENU_LABEL_VALUE_CONFIGURATIONS:
+      case MENU_LABEL_VALUE_CONFIGURATIONS: /* FIXME */
          return "Fichiers de configuration";
       case MENU_LABEL_VALUE_REWIND_GRANULARITY:
          return "Precision du rembobinage";
@@ -2316,8 +2316,8 @@ static const char *menu_hash_to_str_english(uint32_t hash)
          return "rdb_entry_analog";
       case MENU_LABEL_CONFIGURATIONS:
          return "configurations";
-      case MENU_LABEL_VALUE_CONFIGURATIONS:
-         return "Configuration Files";
+      case MENU_LABEL_VALUE_CONFIGURATIONS: /* FIXME */
+         return "Load Configuration File";
       case MENU_LABEL_LOAD_OPEN_ZIP:
          return "load_open_zip";
       case MENU_LABEL_REWIND_GRANULARITY:

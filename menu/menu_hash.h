@@ -719,7 +719,7 @@ extern "C" {
 #define MENU_LABEL_FILE_LOAD_OR_RESUME                                         0x952941f4U
 #define MENU_LABEL_DISK_IMAGE_APPEND                                           0x5af7d709U
 #define MENU_LABEL_CONFIGURATIONS                                              0x3e930a50U
-#define MENU_LABEL_VALUE_CONFIGURATIONS                                        0x88eb27f0U
+#define MENU_LABEL_VALUE_CONFIGURATIONS                                        0xce036cfdU
 #define MENU_LABEL_VALUE_CHEAT_FILE_SAVE_AS                                    0xf2498a2dU
 #define MENU_LABEL_CHEAT_FILE_SAVE_AS                                          0x1f58dccaU
 #define MENU_LABEL_VALUE_REMAP_FILE_SAVE_AS                                    0x3ce7a81dU
