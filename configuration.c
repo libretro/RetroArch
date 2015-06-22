@@ -14,12 +14,14 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <ctype.h>
+
 #include <file/config_file.h>
+#include <file/file_path.h>
 #include <compat/strl.h>
 #include <compat/posix_string.h>
-#include <ctype.h>
+
 #include "config.def.h"
-#include <file/file_path.h>
 #include "input/input_common.h"
 #include "input/input_keymaps.h"
 #include "input/input_remapping.h"
@@ -2058,7 +2060,8 @@ static void save_keybind_key(config_file_t *conf, const char *prefix,
    char key[64] = {0};
    char btn[64] = {0};
 
-   snprintf(key, sizeof(key), "%s_%s", prefix, base);
+   fill_pathname_join_delim(key, prefix, base, '_', sizeof(key));
+
    input_keymaps_translate_rk_to_str(bind->key, btn, sizeof(btn));
    config_set_string(conf, key, btn);
 }
@@ -2101,7 +2104,8 @@ static void save_keybind_joykey(config_file_t *conf, const char *prefix,
 {
    char key[64] = {0};
 
-   snprintf(key, sizeof(key), "%s_%s_btn", prefix, base);
+   fill_pathname_join_delim(key, prefix, base, '_', sizeof(key));
+   strlcat(key, "_btn", sizeof(key));
 
    if (bind->joykey == NO_BTN)
       config_set_string(conf, key, "nul");
@@ -2119,7 +2123,8 @@ static void save_keybind_axis(config_file_t *conf, const char *prefix,
    unsigned axis   = 0;
    char dir        = '\0';
 
-   snprintf(key, sizeof(key), "%s_%s_axis", prefix, base);
+   fill_pathname_join_delim(key, prefix, base, '_', sizeof(key));
+   strlcat(key, "_axis", sizeof(key));
 
    if (bind->joyaxis == AXIS_NONE)
       config_set_string(conf, key, "nul");
