@@ -1429,6 +1429,42 @@ static int menu_displaylist_parse_horizontal_list(menu_displaylist_info_t *info)
    return 0;
 }
 
+static int menu_displaylist_parse_load_core_list(menu_displaylist_info_t *info)
+{
+   global_t *global            = global_get_ptr();
+   settings_t *settings  = config_get_ptr();
+
+#ifdef HAVE_LIBRETRODB
+   menu_list_push(info->list,
+         menu_hash_to_str(MENU_LABEL_VALUE_CONTENT_COLLECTION_LIST),
+         menu_hash_to_str(MENU_LABEL_CONTENT_COLLECTION_LIST),
+         MENU_SETTING_ACTION, 0, 0);
+#endif
+
+   if (settings->history_list_enable)
+   {
+      menu_list_push(info->list,
+            menu_hash_to_str(MENU_LABEL_VALUE_LOAD_CONTENT_HISTORY),
+            menu_hash_to_str(MENU_LABEL_LOAD_CONTENT_HISTORY),
+            MENU_SETTING_ACTION, 0, 0);
+   }
+
+   if (global->core_info && core_info_list_num_info_files(global->core_info))
+   {
+      menu_list_push(info->list,
+            menu_hash_to_str(MENU_LABEL_VALUE_DETECT_CORE_LIST),
+            menu_hash_to_str(MENU_LABEL_DETECT_CORE_LIST),
+            MENU_SETTING_ACTION, 0, 0);
+   }
+
+   menu_list_push(info->list,
+         menu_hash_to_str(MENU_LABEL_VALUE_LOAD_CONTENT),
+         menu_hash_to_str(MENU_LABEL_LOAD_CONTENT),
+         MENU_SETTING_ACTION, 0, 0);
+
+   return 0;
+}
+
 static int menu_displaylist_parse_options(menu_displaylist_info_t *info)
 {
    global_t *global            = global_get_ptr();
@@ -1866,6 +1902,12 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
 
          need_sort    = true;
          need_refresh = true;
+         need_push    = true;
+         break;
+      case DISPLAYLIST_LOAD_CONTENT_LIST:
+         menu_list_clear(info->list);
+         ret = menu_displaylist_parse_load_core_list(info);
+
          need_push    = true;
          break;
       case DISPLAYLIST_OPTIONS:

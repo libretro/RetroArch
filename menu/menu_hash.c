@@ -1572,6 +1572,10 @@ static const char *menu_hash_to_str_english(uint32_t hash)
 {
    switch (hash)
    {
+      case MENU_LABEL_LOAD_CONTENT_LIST:
+         return "load_content_list";
+      case MENU_LABEL_VALUE_LOAD_CONTENT_LIST:
+         return "Load Content";
       case MENU_VALUE_LOAD_ARCHIVE:
          return "Load Archive";
       case MENU_VALUE_OPEN_ARCHIVE:
@@ -2225,15 +2229,15 @@ static const char *menu_hash_to_str_english(uint32_t hash)
       case MENU_LABEL_CONTENT_COLLECTION_LIST:
          return "content_collection_list";
       case MENU_LABEL_VALUE_CONTENT_COLLECTION_LIST:
-         return "Load Content From Collection";
+         return "Select From Collection";
       case MENU_LABEL_DETECT_CORE_LIST:
          return "detect_core_list";
       case MENU_LABEL_VALUE_DETECT_CORE_LIST:
-         return "Load Content (Detect Core)";
+         return "Select From Browser + Detect Core";
       case MENU_LABEL_LOAD_CONTENT_HISTORY:
          return "history_list";
       case MENU_LABEL_VALUE_LOAD_CONTENT_HISTORY:
-         return "Load Content From History";
+         return "Select From History";
       case MENU_LABEL_AUDIO_ENABLE:
          return "audio_enable";
       case MENU_LABEL_VALUE_AUDIO_ENABLE:
@@ -2497,7 +2501,7 @@ static const char *menu_hash_to_str_english(uint32_t hash)
       case MENU_LABEL_LOAD_CONTENT:
          return "load_content";
       case MENU_LABEL_VALUE_LOAD_CONTENT:
-         return "Load Content";
+         return "Select From Browser";
       case MENU_LABEL_UNLOAD_CORE:
          return "unload_core";
       case MENU_LABEL_VALUE_UNLOAD_CORE:

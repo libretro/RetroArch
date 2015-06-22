@@ -1116,34 +1116,6 @@ static int core_list_action_toggle(void *data, bool wraparound)
 #endif
 
 /**
- * load_content_action_toggle:
- * @data               : pointer to setting
- * @action             : toggle action value. Can be either one of :
- *                       MENU_ACTION_RIGHT | MENU_ACTION_LEFT
- *
- * Function callback for 'Load Content' action's 'Action Toggle'
- * function pointer.
- *
- * Returns: 0 on success, -1 on error.
- **/
-static int load_content_action_toggle(void *data, bool wraparound)
-{
-   rarch_setting_t *setting  = (rarch_setting_t *)data;
-   settings_t      *settings = config_get_ptr();
-   global_t        *global   = global_get_ptr();
-
-   if (setting_set_with_string_representation(setting, settings->menu_content_directory) != 0)
-      return -1;
-
-   if (global->menu.info.valid_extensions)
-      setting->values = global->menu.info.valid_extensions;
-   else
-      setting->values = global->system.valid_extensions;
-
-   return 0;
-}
-
-/**
  ******* ACTION OK CALLBACK FUNCTIONS *******
 **/
 
@@ -3548,50 +3520,12 @@ static bool setting_append_list_main_menu_options(
    }
 #endif
 
-
-#ifdef HAVE_LIBRETRODB
    CONFIG_ACTION(
-         menu_hash_to_str(MENU_LABEL_CONTENT_COLLECTION_LIST),
-         menu_hash_to_str(MENU_LABEL_VALUE_CONTENT_COLLECTION_LIST),
+         menu_hash_to_str(MENU_LABEL_LOAD_CONTENT_LIST),
+         menu_hash_to_str(MENU_LABEL_VALUE_LOAD_CONTENT_LIST),
          group_info.name,
          subgroup_info.name,
          parent_group);
-#endif
-
-   if (settings->history_list_enable)
-   {
-      CONFIG_ACTION(
-            menu_hash_to_str(MENU_LABEL_LOAD_CONTENT_HISTORY),
-            menu_hash_to_str(MENU_LABEL_VALUE_LOAD_CONTENT_HISTORY),
-            group_info.name,
-            subgroup_info.name,
-            parent_group);
-   }
-
-   if (global->core_info && core_info_list_num_info_files(global->core_info))
-   {
-      CONFIG_ACTION(
-            menu_hash_to_str(MENU_LABEL_DETECT_CORE_LIST),
-            menu_hash_to_str(MENU_LABEL_VALUE_DETECT_CORE_LIST),
-            group_info.name,
-            subgroup_info.name,
-            parent_group);
-      settings_data_list_current_add_flags(list, list_info, SD_FLAG_BROWSER_ACTION);
-   }
-
-   CONFIG_ACTION(
-         menu_hash_to_str(MENU_LABEL_LOAD_CONTENT),
-         menu_hash_to_str(MENU_LABEL_VALUE_LOAD_CONTENT),
-         group_info.name,
-         subgroup_info.name,
-         parent_group);
-   (*list)[list_info->index - 1].size = sizeof(global->fullpath);
-   (*list)[list_info->index - 1].value.string   = global->fullpath;
-   (*list)[list_info->index - 1].action_left    = load_content_action_toggle;
-   (*list)[list_info->index - 1].action_right   = load_content_action_toggle;
-   (*list)[list_info->index - 1].action_select  = load_content_action_toggle;
-   menu_settings_list_current_add_cmd(list, list_info, EVENT_CMD_LOAD_CONTENT);
-   settings_data_list_current_add_flags(list, list_info, SD_FLAG_BROWSER_ACTION);
 
    CONFIG_ACTION(
          menu_hash_to_str(MENU_LABEL_MANAGEMENT),

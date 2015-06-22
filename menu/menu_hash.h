@@ -35,6 +35,9 @@ extern "C" {
 #define MENU_VALUE_OPEN_ARCHIVE                                                0x96da22b9U
 #define MENU_VALUE_ASK_ARCHIVE                                                 0x0b87d6a4U
 
+#define MENU_LABEL_LOAD_CONTENT_LIST                                           0xd2e4a83aU
+#define MENU_LABEL_VALUE_LOAD_CONTENT_LIST                                     0x55ff08eaU
+
 #define MENU_LABEL_NO_SETTINGS_FOUND                                           0xabf77040U
 #define MENU_LABEL_VALUE_NO_SETTINGS_FOUND                                     0xffcc5b5dU
 #define MENU_LABEL_VALUE_NO_PERFORMANCE_COUNTERS                               0xb4b52b95U

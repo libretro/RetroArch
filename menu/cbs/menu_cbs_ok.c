@@ -1553,6 +1553,7 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
       case MENU_LABEL_CORE_COUNTERS:
       case MENU_LABEL_MANAGEMENT:
       case MENU_LABEL_OPTIONS:
+      case MENU_LABEL_LOAD_CONTENT_LIST:
          cbs->action_ok = action_ok_push_default;
          break;
       case MENU_LABEL_LOAD_CONTENT:
