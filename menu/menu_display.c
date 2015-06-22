@@ -252,7 +252,8 @@ bool menu_display_init_main_font(void *data,
       menu_display_free_main_font(menu);
 
    ret = menu_display_font_init_first(
-         (const void**)&driver->font_osd_driver, &disp->font.buf, video,
+         (const void**)&driver->font_osd_driver,
+         &disp->font.buf, video,
          font_path, font_size);
 
    if (ret)

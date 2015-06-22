@@ -449,7 +449,7 @@ static int menu_input_set_bind_mode_common(rarch_setting_t  *setting,
 static int menu_input_set_timeout(void)
 {
    menu_handle_t       *menu = menu_driver_get_ptr();
-   menu_input_t *menu_input = menu_input_get_ptr();
+   menu_input_t  *menu_input = menu_input_get_ptr();
 
    menu_input->binds.timeout_end   = rarch_get_time_usec() +
       MENU_KEYBOARD_BIND_TIMEOUT_SECONDS * 1000000;
