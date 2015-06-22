@@ -1572,6 +1572,10 @@ static const char *menu_hash_to_str_english(uint32_t hash)
 {
    switch (hash)
    {
+      case MENU_LABEL_VALUE_RDB_ENTRY_CRC32:
+         return "CRC32";
+      case MENU_LABEL_VALUE_RDB_ENTRY_MD5:
+         return "MD5";
       case MENU_LABEL_LOAD_CONTENT_LIST:
          return "load_content";
       case MENU_LABEL_VALUE_LOAD_CONTENT_LIST:
@@ -2302,6 +2306,8 @@ static const char *menu_hash_to_str_english(uint32_t hash)
          return "rdb_entry_enhancement_hw";
       case MENU_LABEL_RDB_ENTRY_SHA1:
          return "rdb_entry_sha1";
+      case MENU_LABEL_VALUE_RDB_ENTRY_SHA1:
+         return "SHA1";
       case MENU_LABEL_RDB_ENTRY_CRC32:
          return "rdb_entry_crc32";
       case MENU_LABEL_RDB_ENTRY_MD5:
