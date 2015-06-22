@@ -7051,12 +7051,16 @@ static bool setting_append_list_input_player_options(
             && (i != RARCH_TURBO_ENABLE)
          )
       {
+         strlcpy(label, buffer[user], sizeof(label));
+         strlcat(label, " ", sizeof(label));
+
          if (global->system.input_desc_btn[user][i])
-            snprintf(label, sizeof(label), "%s %s", buffer[user],
-                  global->system.input_desc_btn[user][i]);
+            strlcat(label, 
+                  global->system.input_desc_btn[user][i], sizeof(label));
          else
          {
-            snprintf(label, sizeof(label), "%s %s", buffer[user], menu_hash_to_str(MENU_VALUE_NOT_AVAILABLE));
+            strlcat(label, menu_hash_to_str(MENU_VALUE_NOT_AVAILABLE),
+                  sizeof(label));
 
             if (settings->input.input_descriptor_hide_unbound)
                do_add = false;
