@@ -266,7 +266,8 @@ static int action_iterate_load_open_zip(const char *label, char *s, size_t len, 
    return 0;
 }
 
-static int action_iterate_menu_viewport(char *s, size_t len, const char *label, unsigned action, uint32_t hash)
+static int action_iterate_menu_viewport(char *s, size_t len,
+      const char *label, unsigned action, uint32_t hash)
 {
    int stride_x = 1, stride_y = 1;
    menu_displaylist_info_t info     = {0};
