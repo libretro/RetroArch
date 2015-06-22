@@ -3471,12 +3471,15 @@ static bool setting_append_list_main_menu_options(
          parent_group);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
-   CONFIG_ACTION(
-         menu_hash_to_str(MENU_LABEL_CONTENT_SETTINGS),
-         menu_hash_to_str(MENU_LABEL_VALUE_CONTENT_SETTINGS),
-         group_info.name,
-         subgroup_info.name,
-         parent_group);
+   if (global->main_is_init && (global->core_type != CORE_TYPE_DUMMY))
+   {
+      CONFIG_ACTION(
+            menu_hash_to_str(MENU_LABEL_CONTENT_SETTINGS),
+            menu_hash_to_str(MENU_LABEL_VALUE_CONTENT_SETTINGS),
+            group_info.name,
+            subgroup_info.name,
+            parent_group);
+   }
 
    CONFIG_ACTION(
          menu_hash_to_str(MENU_LABEL_OPTIONS),
