@@ -188,11 +188,10 @@ static int database_info_list_iterate_found_match(
    snprintf(db_crc, sizeof(db_crc), "%08X|crc", db_info_entry->crc32);
 
    strlcpy(entry_path_str, entry_path, sizeof(entry_path_str));
+
    if (zip_name && zip_name[0] != '\0')
-   {
-      strlcat(entry_path_str, "#", sizeof(entry_path_str));
-      strlcat(entry_path_str, zip_name, sizeof(entry_path_str));
-   }
+      fill_pathname_join_delim(entry_path_str, entry_path_str, zip_name,
+            '#', sizeof(entry_path_str));
 
 #if 0
    RARCH_LOG("Found match in database !\n");
