@@ -691,7 +691,7 @@ extern "C" {
 #define MENU_LABEL_INPUT_USER_15_BINDS                                         0xf1085acaU
 #define MENU_LABEL_INPUT_USER_16_BINDS                                         0x3e02978bU
 #define MENU_LABEL_DIRECTORY_SETTINGS                                          0xb817bd2bU
-#define MENU_LABEL_PRIVACY_SETTINGS                                            0xce106254U
+#define MENU_LABEL_VALUE_PRIVACY_SETTINGS                                      0xce106254U
 #define MENU_LABEL_SHADER_APPLY_CHANGES                                        0x4f7306b9U
 #define MENU_LABEL_VALUE_SHADER_APPLY_CHANGES                                  0x5ecf945bU
 #define MENU_LABEL_SAVE_NEW_CONFIG                                             0xcce9ab72U

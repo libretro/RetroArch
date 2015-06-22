@@ -6950,14 +6950,15 @@ static bool setting_append_list_privacy_options(
    rarch_setting_group_info_t subgroup_info = {0};
    settings_t *settings = config_get_ptr();
 
-   START_GROUP(group_info, "Privacy Settings", parent_group);
+   START_GROUP(group_info,
+         menu_hash_to_str(MENU_LABEL_VALUE_PRIVACY_SETTINGS), parent_group);
 
    parent_group = menu_hash_to_str(MENU_LABEL_VALUE_SETTINGS);
 
    START_SUB_GROUP(list, list_info, "State",
          group_info.name, subgroup_info, parent_group);
 
-   if (strcmp(settings->record.driver, "null") != 0)
+   if (strcmp(settings->camera.driver, "null") != 0)
    {
       CONFIG_BOOL(
             settings->camera.allow,
