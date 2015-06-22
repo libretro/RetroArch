@@ -1363,14 +1363,13 @@ static void setting_get_string_representation_st_float_video_refresh_rate_auto(v
 
    if (video_monitor_fps_statistics(&video_refresh_rate, &deviation, &sample_points))
    {
+      menu_animation_t *anim = menu_animation_get_ptr();
+
       snprintf(s, len, "%.3f Hz (%.1f%% dev, %u samples)",
             video_refresh_rate, 100.0 * deviation, sample_points);
-      {
-         menu_animation_t *anim = menu_animation_get_ptr();
 
-         if (anim)
-            anim->label.is_updated = true;
-      }
+      if (anim)
+         anim->label.is_updated = true;
    }
    else
       strlcpy(s, menu_hash_to_str(MENU_VALUE_NOT_AVAILABLE), len);
@@ -7044,6 +7043,8 @@ static bool setting_append_list_input_player_options(
       if (!keybind || keybind->meta)
          continue;
 
+      strlcpy(label, buffer[user], sizeof(label));
+      strlcat(label, " ", sizeof(label));
       if (
             settings->input.input_descriptor_label_show
             && (i < RARCH_FIRST_META_KEY)
@@ -7051,9 +7052,6 @@ static bool setting_append_list_input_player_options(
             && (i != RARCH_TURBO_ENABLE)
          )
       {
-         strlcpy(label, buffer[user], sizeof(label));
-         strlcat(label, " ", sizeof(label));
-
          if (global->system.input_desc_btn[user][i])
             strlcat(label, 
                   global->system.input_desc_btn[user][i], sizeof(label));
@@ -7067,7 +7065,7 @@ static bool setting_append_list_input_player_options(
          }
       }
       else
-         snprintf(label, sizeof(label), "%s %s", buffer[user], keybind->desc);
+         strlcat(label, keybind->desc, sizeof(label));
 
       snprintf(name, sizeof(name), "p%u_%s", user + 1, keybind->base);
 
