@@ -486,7 +486,7 @@ static void menu_action_setting_disp_set_label_menu_more(
       char *s2, size_t len2)
 {
    strlcpy(s, "...", len);
-   *w = 19;
+   *w = 16;
    strlcpy(s2, path, len2);
 }
 
@@ -843,6 +843,25 @@ static int menu_cbs_init_bind_get_string_representation_compare_label(
       case MENU_LABEL_CONFIGURATIONS:
          cbs->action_get_value =
             menu_action_setting_disp_set_label_configurations;
+         break;
+      case MENU_LABEL_CONTENT_COLLECTION_LIST:
+      case MENU_LABEL_LOAD_CONTENT_HISTORY:
+      case MENU_LABEL_DETECT_CORE_LIST:
+      case MENU_LABEL_LOAD_CONTENT:
+      case MENU_LABEL_CORE_OPTIONS:
+      case MENU_LABEL_CORE_CHEAT_OPTIONS:
+      case MENU_LABEL_VIDEO_OPTIONS:
+      case MENU_LABEL_SHADER_OPTIONS:
+      case MENU_LABEL_VIDEO_SHADER_PARAMETERS:
+      case MENU_LABEL_VIDEO_SHADER_PRESET_PARAMETERS:
+      case MENU_LABEL_VIDEO_SHADER_PRESET_SAVE_AS:
+      case MENU_LABEL_CHEAT_FILE_SAVE_AS:
+      case MENU_LABEL_FRONTEND_COUNTERS:
+      case MENU_LABEL_CORE_COUNTERS:
+      case MENU_LABEL_DATABASE_MANAGER_LIST:
+      case MENU_LABEL_CURSOR_MANAGER_LIST:
+         cbs->action_get_value =
+            menu_action_setting_disp_set_label_menu_more;
          break;
       default:
          return - 1;
