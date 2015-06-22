@@ -1927,7 +1927,7 @@ static const char *menu_hash_to_str_english(uint32_t hash)
       case MENU_LABEL_ARCHIVE_MODE:
          return "archive_mode";
       case MENU_LABEL_VALUE_ARCHIVE_MODE:
-         return "Archive Mode";
+         return "Archive File Assocation Action";
       case MENU_LABEL_NETWORK_CMD_ENABLE:
          return "network_cmd_enable";
       case MENU_LABEL_VALUE_NETWORK_CMD_ENABLE:

@@ -90,7 +90,7 @@ extern "C" {
 #define MENU_LABEL_VALUE_UI_COMPANION_START_ON_BOOT                            0x94796ba6U
 
 #define MENU_LABEL_ARCHIVE_MODE                                                0x7fac00cbU
-#define MENU_LABEL_VALUE_ARCHIVE_MODE                                          0x5cbac0ccU
+#define MENU_LABEL_VALUE_ARCHIVE_MODE                                          0xe4c4b559U
 #define MENU_LABEL_VALUE_SHADER_OPTIONS                                        0xf3fb0028U
 #define MENU_LABEL_VALUE_USE_THIS_DIRECTORY                                    0xc5fc9ed9U
 #define MENU_LABEL_USE_THIS_DIRECTORY                                          0xc51d351dU
