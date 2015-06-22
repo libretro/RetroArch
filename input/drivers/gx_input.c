@@ -140,7 +140,7 @@ static bool gx_input_keyboard_mapping_is_blocked(void *data)
    return gx->blocked;
 }
 
-static void ctr_input_keyboard_mapping_set_block(void *data, bool value)
+static void gx_input_keyboard_mapping_set_block(void *data, bool value)
 {
    gx_input_t *gx = (gx_input_t*)data;
    if (!gx)
