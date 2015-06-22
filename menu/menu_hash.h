@@ -31,6 +31,9 @@ extern "C" {
 #define MENU_VALUE_DIRECTORY_NONE                                              0x9996c10fU
 #define MENU_VALUE_DIRECTORY_DEFAULT                                           0xdcc3a2e4U
 #define MENU_VALUE_NOT_AVAILABLE                                               0x0b880503U
+#define MENU_VALUE_LOAD_ARCHIVE                                                0xe19ca6c7U
+#define MENU_VALUE_OPEN_ARCHIVE                                                0x96da22b9U
+#define MENU_VALUE_ASK_ARCHIVE                                                 0x0b87d6a4U
 
 #define MENU_LABEL_NO_SETTINGS_FOUND                                           0xabf77040U
 #define MENU_LABEL_VALUE_NO_SETTINGS_FOUND                                     0xffcc5b5dU

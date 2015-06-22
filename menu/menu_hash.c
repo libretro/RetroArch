@@ -1572,6 +1572,12 @@ static const char *menu_hash_to_str_english(uint32_t hash)
 {
    switch (hash)
    {
+      case MENU_VALUE_LOAD_ARCHIVE:
+         return "Load Archive";
+      case MENU_VALUE_OPEN_ARCHIVE:
+         return "Open Archive";
+      case MENU_VALUE_ASK_ARCHIVE:
+         return "Ask";
       case MENU_LABEL_VALUE_PRIVACY_SETTINGS:
          return "Privacy Settings";
       case MENU_VALUE_HORIZONTAL_MENU:

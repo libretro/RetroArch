@@ -1524,13 +1524,13 @@ static void setting_get_string_representation_uint_archive_mode(void *data,
    switch (settings->archive.mode)
    {
       case 0:
-         name = "Ask";
+         name = menu_hash_to_str(MENU_VALUE_ASK_ARCHIVE);
          break;
       case 1:
-         name = "Load Archive";
+         name = menu_hash_to_str(MENU_VALUE_LOAD_ARCHIVE);
          break;
       case 2:
-         name = "Open Archive";
+         name = menu_hash_to_str(MENU_VALUE_OPEN_ARCHIVE);
          break;
    }
 
