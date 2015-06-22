@@ -473,10 +473,10 @@ extern "C" {
 #define MENU_LABEL_VALUE_CONTENT_HISTORY_SIZE                                  0xda9c5a6eU
 #define MENU_LABEL_CONTENT_ACTIONS                                             0xa0d76970U
 #define MENU_LABEL_DETECT_CORE_LIST                                            0xaa07c341U
-#define MENU_LABEL_VALUE_DETECT_CORE_LIST                                      0x69f11813U
+#define MENU_LABEL_VALUE_DETECT_CORE_LIST                                      0x2a2ebd1aU
 #define MENU_LABEL_DETECT_CORE_LIST_OK                                         0xabba2a7aU
 #define MENU_LABEL_LOAD_CONTENT                                                0x828943c3U
-#define MENU_LABEL_VALUE_LOAD_CONTENT                                          0x755f3680U
+#define MENU_LABEL_VALUE_LOAD_CONTENT                                          0xf0e39e65U
 #define MENU_LABEL_VALUE_CORE_UPDATER_LIST                                     0x0372767dU
 #define MENU_LABEL_CORE_UPDATER_LIST                                           0xe12f4ee3U
 #define MENU_LABEL_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE                           0xa3d605f5U

@@ -136,7 +136,7 @@ static const char *menu_hash_to_str_german(uint32_t hash)
       case MENU_LABEL_VALUE_CONTENT_COLLECTION_LIST:
          return "Lade Content (Kollektion)"; /* FIXME */
       case MENU_LABEL_VALUE_DETECT_CORE_LIST:
-         return "Lade Content (Ermittle Core)";
+         return "Lade Content (Ermittle Core)"; /* FIXME */
       case MENU_LABEL_VALUE_LOAD_CONTENT_HISTORY:
          return "Lade Content (Historie)";
       case MENU_LABEL_VALUE_AUDIO_ENABLE:
@@ -228,7 +228,7 @@ static const char *menu_hash_to_str_german(uint32_t hash)
       case MENU_LABEL_CORE_LIST:
          return "Core Liste";
       case MENU_LABEL_VALUE_LOAD_CONTENT:
-         return "Lade Content";
+         return "Lade Content"; /* FIXME */
       case MENU_LABEL_VALUE_UNLOAD_CORE:
          return "Entlade Core";
       case MENU_LABEL_VALUE_MANAGEMENT:
@@ -869,7 +869,7 @@ static const char *menu_hash_to_str_portuguese(uint32_t hash)
       case MENU_LABEL_DETECT_CORE_LIST:
          return "detect_core_list";
       case MENU_LABEL_VALUE_DETECT_CORE_LIST:
-         return "Carregar Conteúdo (Detectar Core)";
+         return "Carregar Conteúdo (Detectar Core)"; /* FIXME */
       case MENU_LABEL_LOAD_CONTENT_HISTORY:
          return "history_list";
       case MENU_LABEL_VALUE_LOAD_CONTENT_HISTORY:
@@ -1135,7 +1135,7 @@ static const char *menu_hash_to_str_portuguese(uint32_t hash)
       case MENU_LABEL_LOAD_CONTENT:
          return "load_content_default";
       case MENU_LABEL_VALUE_LOAD_CONTENT:
-         return "Carregar Conteúdo";
+         return "Carregar Conteúdo"; /* FIXME */
       case MENU_LABEL_UNLOAD_CORE:
          return "unload_core";
       case MENU_LABEL_VALUE_UNLOAD_CORE:
@@ -1489,7 +1489,7 @@ static const char *menu_hash_to_str_french(uint32_t hash)
       case MENU_LABEL_CORE_LIST:
          return "Charger un core";
       case MENU_LABEL_VALUE_LOAD_CONTENT:
-         return "Charger un contenu";
+         return "Charger un contenu"; /* FIXME */
       case MENU_LABEL_VALUE_UNLOAD_CORE:
          return "Unload core";
       case MENU_LABEL_VALUE_MANAGEMENT:
@@ -2237,7 +2237,7 @@ static const char *menu_hash_to_str_english(uint32_t hash)
       case MENU_LABEL_DETECT_CORE_LIST:
          return "detect_core_list";
       case MENU_LABEL_VALUE_DETECT_CORE_LIST:
-         return "Select From Browser + Detect Core";
+         return "Select File And Detect Core";
       case MENU_LABEL_LOAD_CONTENT_HISTORY:
          return "history_list";
       case MENU_LABEL_VALUE_LOAD_CONTENT_HISTORY:
@@ -2507,7 +2507,7 @@ static const char *menu_hash_to_str_english(uint32_t hash)
       case MENU_LABEL_LOAD_CONTENT:
          return "load_content_default";
       case MENU_LABEL_VALUE_LOAD_CONTENT:
-         return "Select From Browser";
+         return "Select File";
       case MENU_LABEL_UNLOAD_CORE:
          return "unload_core";
       case MENU_LABEL_VALUE_UNLOAD_CORE:
