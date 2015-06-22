@@ -53,7 +53,7 @@ bool input_remapping_load_file(const char *path)
       {
          int key_remap = -1;
 
-         snprintf(key_ident[j], sizeof(key_ident[j]), "%s_%s", buf, key_strings[j]);
+         fill_pathname_join_delim(key_ident[j], buf, key_strings[j], '_', sizeof(key_ident[j]));
          if (config_get_int(conf, key_ident[j], &key_remap) && key_remap < RARCH_FIRST_CUSTOM_BIND)
             settings->input.remap_ids[i][j] = key_remap;
       }
@@ -114,7 +114,7 @@ bool input_remapping_save_file(const char *path)
 
       for (j = 0; j < RARCH_FIRST_CUSTOM_BIND + 4; j++)
       {
-         snprintf(key_ident[j], sizeof(key_ident[j]), "%s_%s", buf, key_strings[j]);
+         fill_pathname_join_delim(key_ident[j], buf, key_strings[j], '_', sizeof(key_ident[j]));
          config_set_int(conf, key_ident[j], settings->input.remap_ids[i][j]);
       }
    }
