@@ -204,7 +204,7 @@ static const char *menu_hash_to_str_german(uint32_t hash)
       case MENU_VALUE_MAIN_MENU:
          return "Main Menu"; // Don't change. Breaks everything.
       case MENU_LABEL_VALUE_SETTINGS:
-         return "Einstellungen";
+         return "Frontend Einstellungen";
       case MENU_LABEL_VALUE_QUIT_RETROARCH:
          return "RetroArch beenden";
       case MENU_LABEL_VALUE_HELP:
@@ -218,7 +218,7 @@ static const char *menu_hash_to_str_german(uint32_t hash)
       case MENU_LABEL_VALUE_SYSTEM_INFORMATION:
          return "Systeminformationen";
       case MENU_LABEL_VALUE_OPTIONS:
-         return "Optionen";
+         return "Optionen"; /* FIXME */
       case MENU_LABEL_VALUE_CORE_INFORMATION:
          return "Core Informationen";
       case MENU_LABEL_VALUE_DIRECTORY_NOT_FOUND:
@@ -1065,7 +1065,7 @@ static const char *menu_hash_to_str_portuguese(uint32_t hash)
       case MENU_LABEL_SETTINGS:
          return "settings";
       case MENU_LABEL_VALUE_SETTINGS:
-         return "Configurações";
+         return "Frontend Configurações";
       case MENU_LABEL_QUIT_RETROARCH:
          return "quit_retroarch";
       case MENU_LABEL_VALUE_QUIT_RETROARCH:
@@ -1119,7 +1119,7 @@ static const char *menu_hash_to_str_portuguese(uint32_t hash)
       case MENU_LABEL_OPTIONS:
          return "options";
       case MENU_LABEL_VALUE_OPTIONS:
-         return "Opções";
+         return "Opções"; /* FIXME */
       case MENU_LABEL_CORE_INFORMATION:
          return "core_information";
       case MENU_LABEL_VALUE_CORE_INFORMATION:
@@ -1465,7 +1465,7 @@ static const char *menu_hash_to_str_french(uint32_t hash)
       case MENU_VALUE_MAIN_MENU:
          return "Main Menu";
       case MENU_LABEL_VALUE_SETTINGS:
-         return "Reglages";
+         return "Frontend Reglages";
       case MENU_LABEL_VALUE_QUIT_RETROARCH:
          return "Quitter RetroArch";
       case MENU_LABEL_VALUE_HELP:
@@ -1479,7 +1479,7 @@ static const char *menu_hash_to_str_french(uint32_t hash)
       case MENU_LABEL_VALUE_SYSTEM_INFORMATION:
          return "Informations du systeme";
       case MENU_LABEL_VALUE_OPTIONS:
-         return "Options";
+         return "Core Settings"; /* FIXME */
       case MENU_LABEL_VALUE_CORE_INFORMATION:
          return "Informations sur le core";
       case MENU_LABEL_VALUE_DIRECTORY_NOT_FOUND:
@@ -1556,9 +1556,9 @@ static const char *menu_hash_to_str_dutch(uint32_t hash)
       case MENU_LABEL_CORE_LIST:
          return "Laad Core";
       case MENU_LABEL_VALUE_SETTINGS:
-         return "Instellingen";
+         return "Frontend Instellingen";
       case MENU_LABEL_VALUE_OPTIONS:
-         return "Opties";
+         return "Core Instellingen";
       case MENU_LABEL_VALUE_SYSTEM_INFORMATION:
          return "Systeem Informatie";
       default:
@@ -2427,7 +2427,7 @@ static const char *menu_hash_to_str_english(uint32_t hash)
       case MENU_LABEL_SETTINGS:
          return "settings";
       case MENU_LABEL_VALUE_SETTINGS:
-         return "Settings";
+         return "Frontend Settings";
       case MENU_LABEL_QUIT_RETROARCH:
          return "quit_retroarch";
       case MENU_LABEL_VALUE_QUIT_RETROARCH:
@@ -2481,7 +2481,7 @@ static const char *menu_hash_to_str_english(uint32_t hash)
       case MENU_LABEL_OPTIONS:
          return "options";
       case MENU_LABEL_VALUE_OPTIONS:
-         return "Options";
+         return "Core Settings";
       case MENU_LABEL_CORE_INFORMATION:
          return "core_information";
       case MENU_LABEL_VALUE_CORE_INFORMATION:

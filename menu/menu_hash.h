@@ -419,7 +419,7 @@ extern "C" {
 #define MENU_VALUE_HORIZONTAL_MENU                                             0x35761704U
 #define MENU_VALUE_MAIN_MENU                                                   0x1625971fU   
 #define MENU_LABEL_SETTINGS                                                    0x1304dc16U
-#define MENU_LABEL_VALUE_SETTINGS                                              0x8aca3ff6U
+#define MENU_LABEL_VALUE_SETTINGS                                              0x0f218560U
 #define MENU_VALUE_RECORDING_SETTINGS                                          0x1a80b313U
 #define MENU_VALUE_INPUT_SETTINGS                                              0xddd30846U
 #define MENU_VALUE_ON                                                          0x005974c2U
@@ -533,7 +533,7 @@ extern "C" {
 #define MENU_LABEL_MANAGEMENT                                                  0x096d05b7U
 #define MENU_LABEL_VALUE_MANAGEMENT                                            0x9afd7e78U
 #define MENU_LABEL_OPTIONS                                                     0x71f05091U
-#define MENU_LABEL_VALUE_OPTIONS                                               0xd2a8b871U
+#define MENU_LABEL_VALUE_OPTIONS                                               0x06795dffU
 #define MENU_LABEL_SETTINGS                                                    0x1304dc16U
 #define MENU_LABEL_FRONTEND_COUNTERS                                           0xe5696877U
 #define MENU_LABEL_VALUE_FRONTEND_COUNTERS                                     0x5752bcf8U
@@ -653,7 +653,7 @@ extern "C" {
 #define MENU_LABEL_VALUE_INPUT_AUTODETECT_ENABLE                               0xf5209bdbU
 #define MENU_LABEL_INPUT_AUTODETECT_ENABLE                                     0xb1e07facU
 #define MENU_LABEL_VALUE_DRIVER_SETTINGS                                       0x81cd2d62U
-#define MENU_LABEL_VALUE_CORE_SETTINGS                                         0x06795dffU
+#define MENU_LABEL_VALUE_CORE_SETTINGS                                         0xcddea047U
 #define MENU_LABEL_VALUE_CONFIGURATION_SETTINGS                                0x5a1558ceU
 #define MENU_LABEL_VALUE_LOGGING_SETTINGS                                      0x902c003dU
 #define MENU_LABEL_VALUE_SAVING_SETTINGS                                       0x32fea87eU
