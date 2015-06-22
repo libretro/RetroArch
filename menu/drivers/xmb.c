@@ -1348,7 +1348,7 @@ static void xmb_render(void)
       }
    }
 
-   if (menu_entries_get_start() > 5)
+   if (menu_entries_get_start() >= 5)
       menu_entries_set_start(menu_entries_get_start() - 5);
 
    anim->is_active = false;

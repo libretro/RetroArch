@@ -673,7 +673,7 @@ static void glui_navigation_set(bool scroll)
       else
          menu_entries_set_start(end - num_lines);
 
-      if (menu_entries_get_start() > 5)
+      if (menu_entries_get_start() >= 5)
          menu_entries_set_start(menu_entries_get_start() - 5);
    }
 
