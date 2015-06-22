@@ -230,11 +230,13 @@ void *menu_list_get_userdata_at_offset(const file_list_t *list, size_t idx)
    return (menu_file_list_cbs_t*)file_list_get_userdata_at_offset(list, idx);
 }
 
-menu_file_list_cbs_t *menu_list_get_actiondata_at_offset(const file_list_t *list, size_t idx)
+menu_file_list_cbs_t *menu_list_get_actiondata_at_offset(
+      const file_list_t *list, size_t idx)
 {
    if (!list)
       return NULL;
-   return (menu_file_list_cbs_t*)file_list_get_actiondata_at_offset(list, idx);
+   return (menu_file_list_cbs_t*)
+      file_list_get_actiondata_at_offset(list, idx);
 }
 
 void *menu_list_get_last_stack_actiondata(const menu_list_t *list)
@@ -265,12 +267,15 @@ void menu_list_flush_stack(menu_list_t *list,
       return;
 
    menu_entries_set_refresh();
-   menu_list_get_last(list->menu_stack, &path, &label, &type, &entry_idx);
+   menu_list_get_last(list->menu_stack,
+         &path, &label, &type, &entry_idx);
 
-   while (menu_list_flush_stack_type(needle, label, type, final_type) != 0)
+   while (menu_list_flush_stack_type(
+            needle, label, type, final_type) != 0)
    {
       menu_list_pop(list->menu_stack, &nav->selection_ptr);
-      menu_list_get_last(list->menu_stack, &path, &label, &type, &entry_idx);
+      menu_list_get_last(list->menu_stack,
+            &path, &label, &type, &entry_idx);
    }
 }
 
