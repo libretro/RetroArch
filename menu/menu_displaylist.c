@@ -2142,20 +2142,21 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
                      menu_hash_to_str(MENU_LABEL_VALUE_NO_CORES_AVAILABLE),
                      "",
                      0, 0, 0);
-               return 0;
             }
-
-            for (i = 0; i < list_size; i++)
+            else
             {
-               if (type == DISPLAYLIST_CORES_COLLECTION_SUPPORTED)
-                  menu_list_push(info->list, core_info[i].path, "",
-                        MENU_FILE_CORE, 0, 0);
-               else
-                  menu_list_push(info->list, core_info[i].path,
-                        menu_hash_to_str(MENU_LABEL_DETECT_CORE_LIST_OK),
-                        MENU_FILE_CORE, 0, 0);
-               menu_list_set_alt_at_offset(info->list, i,
-                     core_info[i].display_name);
+               for (i = 0; i < list_size; i++)
+               {
+                  if (type == DISPLAYLIST_CORES_COLLECTION_SUPPORTED)
+                     menu_list_push(info->list, core_info[i].path, "",
+                           MENU_FILE_CORE, 0, 0);
+                  else
+                     menu_list_push(info->list, core_info[i].path,
+                           menu_hash_to_str(MENU_LABEL_DETECT_CORE_LIST_OK),
+                           MENU_FILE_CORE, 0, 0);
+                  menu_list_set_alt_at_offset(info->list, i,
+                        core_info[i].display_name);
+               }
             }
          }
          break;
