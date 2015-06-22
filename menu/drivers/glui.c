@@ -271,6 +271,9 @@ static void glui_render(void)
             / glui->line_height;
    }
 
+   if (menu_entries_get_end() < height / glui->line_height)
+      menu_entries_set_start(0);
+
    if (menu->scroll_y < 0)
       menu->scroll_y = 0;
 
