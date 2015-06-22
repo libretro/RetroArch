@@ -113,7 +113,7 @@ struct cg_fbo_params
 };
 
 #define MAX_VARIABLES 64
-#define PREV_TEXTURES (MAX_TEXTURES - 1)
+#define PREV_TEXTURES (GFX_MAX_TEXTURES - 1)
 
 struct cg_program
 {

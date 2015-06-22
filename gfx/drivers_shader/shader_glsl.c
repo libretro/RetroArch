@@ -39,8 +39,7 @@
 #define BORDER_FUNC GL_CLAMP_TO_BORDER
 #endif
 
-#define PREV_TEXTURES (MAX_TEXTURES - 1)
-
+#define PREV_TEXTURES (GFX_MAX_TEXTURES - 1)
 
 /* Cache the VBO. */
 struct cache_vbo

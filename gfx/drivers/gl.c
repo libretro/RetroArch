@@ -981,7 +981,7 @@ static void gl_frame_fbo(gl_t *gl, uint64_t frame_count,
    const struct gl_fbo_rect *prev_rect;
    const struct gl_fbo_rect *rect;
    struct gl_tex_info *fbo_info;
-   struct gl_tex_info fbo_tex_info[MAX_SHADERS];
+   struct gl_tex_info fbo_tex_info[GFX_MAX_SHADERS];
    int i;
    GLfloat xamt, yamt;
    unsigned fbo_tex_info_cnt = 0;
