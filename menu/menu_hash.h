@@ -418,7 +418,6 @@ extern "C" {
 #define MENU_VALUE_MORE                                                        0x0b877cafU
 #define MENU_VALUE_HORIZONTAL_MENU                                             0x35761704U
 #define MENU_VALUE_MAIN_MENU                                                   0x1625971fU   
-#define MENU_LABEL_SETTINGS                                                    0x1304dc16U
 #define MENU_LABEL_VALUE_SETTINGS                                              0x0f218560U
 #define MENU_VALUE_RECORDING_SETTINGS                                          0x1a80b313U
 #define MENU_VALUE_INPUT_SETTINGS                                              0xddd30846U
@@ -532,9 +531,9 @@ extern "C" {
 #define MENU_LABEL_VALUE_CORE_LIST                                             0x0e17fd4eU
 #define MENU_LABEL_MANAGEMENT                                                  0x096d05b7U
 #define MENU_LABEL_VALUE_MANAGEMENT                                            0x9afd7e78U
-#define MENU_LABEL_OPTIONS                                                     0x71f05091U
+#define MENU_LABEL_OPTIONS                                                     0x2534f97eU
 #define MENU_LABEL_VALUE_OPTIONS                                               0x06795dffU
-#define MENU_LABEL_SETTINGS                                                    0x1304dc16U
+#define MENU_LABEL_SETTINGS                                                    0xa5d1de15U
 #define MENU_LABEL_FRONTEND_COUNTERS                                           0xe5696877U
 #define MENU_LABEL_VALUE_FRONTEND_COUNTERS                                     0x5752bcf8U
 #define MENU_LABEL_VALUE_CORE_COUNTERS                                         0x4610e861U

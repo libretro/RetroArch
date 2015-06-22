@@ -1063,7 +1063,7 @@ static const char *menu_hash_to_str_portuguese(uint32_t hash)
       case MENU_VALUE_MAIN_MENU:
          return "Main Menu";
       case MENU_LABEL_SETTINGS:
-         return "settings";
+         return "frontend_settings";
       case MENU_LABEL_VALUE_SETTINGS:
          return "Frontend Configurações";
       case MENU_LABEL_QUIT_RETROARCH:
@@ -2425,7 +2425,7 @@ static const char *menu_hash_to_str_english(uint32_t hash)
       case MENU_VALUE_MAIN_MENU:
          return "Main Menu";
       case MENU_LABEL_SETTINGS:
-         return "settings";
+         return "frontend_settings";
       case MENU_LABEL_VALUE_SETTINGS:
          return "Frontend Settings";
       case MENU_LABEL_QUIT_RETROARCH:
@@ -2479,7 +2479,7 @@ static const char *menu_hash_to_str_english(uint32_t hash)
       case MENU_LABEL_VALUE_SYSTEM_INFORMATION:
          return "System Information";
       case MENU_LABEL_OPTIONS:
-         return "options";
+         return "core_settings";
       case MENU_LABEL_VALUE_OPTIONS:
          return "Core Settings";
       case MENU_LABEL_CORE_INFORMATION:
