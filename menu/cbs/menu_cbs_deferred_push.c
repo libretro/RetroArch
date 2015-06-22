@@ -445,8 +445,8 @@ static int deferred_push_default(menu_displaylist_info_t *info)
    else if (global->menu.info.valid_extensions)
    {
       if (*global->menu.info.valid_extensions)
-         snprintf(info->exts, sizeof(info->exts), "%s",
-               global->menu.info.valid_extensions);
+         strlcpy(info->exts, global->menu.info.valid_extensions,
+               sizeof(info->exts));
    }
    else
       strlcpy(info->exts, global->system.valid_extensions, sizeof(info->exts));
