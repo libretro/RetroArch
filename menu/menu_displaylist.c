@@ -1513,9 +1513,15 @@ static int menu_displaylist_parse_options(menu_displaylist_info_t *info)
    global_t *global            = global_get_ptr();
 
    menu_list_push(info->list,
+         menu_hash_to_str(MENU_LABEL_VALUE_CORE_INFORMATION),
+         menu_hash_to_str(MENU_LABEL_CORE_INFORMATION),
+         MENU_SETTING_ACTION, 0, 0);
+
+   menu_list_push(info->list,
          menu_hash_to_str(MENU_LABEL_VALUE_CORE_OPTIONS),
          menu_hash_to_str(MENU_LABEL_CORE_OPTIONS),
          MENU_SETTING_ACTION, 0, 0);
+
    if (global->main_is_init)
    {
       if (global->has_set_input_descriptors)
