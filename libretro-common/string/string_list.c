@@ -256,7 +256,8 @@ bool string_list_find_elem_prefix(const struct string_list *list,
    if (!list)
       return false;
 
-   snprintf(prefixed, sizeof(prefixed), "%s%s", prefix, elem);
+   strlcpy(prefixed, prefix, sizeof(prefixed));
+   strlcat(prefixed, elem,   sizeof(prefixed));
 
    for (i = 0; i < list->size; i++)
    {
