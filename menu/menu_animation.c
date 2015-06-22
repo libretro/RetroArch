@@ -310,6 +310,137 @@ bool menu_animation_push(
       enum menu_animation_easing_type easing_enum,
       tween_cb cb)
 {
+   struct tween t;
+
+   if (!subject)
+      return false;
+
+   t.alive         = 1;
+   t.duration      = duration;
+   t.running_since = 0;
+   t.initial_value = *subject;
+   t.target_value  = target_value;
+   t.subject       = subject;
+   t.cb            = cb;
+
+   switch (easing_enum)
+   {
+      case EASING_LINEAR:
+         t.easing        = &easing_linear;
+         break;
+         /* Quad */
+      case EASING_IN_QUAD:
+         t.easing        = &easing_in_quad;
+         break;
+      case EASING_OUT_QUAD:
+         t.easing        = &easing_out_quad;
+         break;
+      case EASING_IN_OUT_QUAD:
+         t.easing        = &easing_in_out_quad;
+         break;
+      case EASING_OUT_IN_QUAD:
+         t.easing        = &easing_out_in_quad;
+         break;
+         /* Cubic */
+      case EASING_IN_CUBIC:
+         t.easing        = &easing_in_cubic;
+         break;
+      case EASING_OUT_CUBIC:
+         t.easing        = &easing_out_cubic;
+         break;
+      case EASING_IN_OUT_CUBIC:
+         t.easing        = &easing_in_out_cubic;
+         break;
+      case EASING_OUT_IN_CUBIC:
+         t.easing        = &easing_out_in_cubic;
+         break;
+         /* Quart */
+      case EASING_IN_QUART:
+         t.easing        = &easing_in_quart;
+         break;
+      case EASING_OUT_QUART:
+         t.easing        = &easing_out_quart;
+         break;
+      case EASING_IN_OUT_QUART:
+         t.easing        = &easing_in_out_quart;
+         break;
+      case EASING_OUT_IN_QUART:
+         t.easing        = &easing_out_in_quart;
+         break;
+         /* Quint */
+      case EASING_IN_QUINT:
+         t.easing        = &easing_in_quint;
+         break;
+      case EASING_OUT_QUINT:
+         t.easing        = &easing_out_quint;
+         break;
+      case EASING_IN_OUT_QUINT:
+         t.easing        = &easing_in_out_quint;
+         break;
+      case EASING_OUT_IN_QUINT:
+         t.easing        = &easing_out_in_quint;
+         break;
+         /* Sine */
+      case EASING_IN_SINE:
+         t.easing        = &easing_in_sine;
+         break;
+      case EASING_OUT_SINE:
+         t.easing        = &easing_out_sine;
+         break;
+      case EASING_IN_OUT_SINE:
+         t.easing        = &easing_in_out_sine;
+         break;
+      case EASING_OUT_IN_SINE:
+         t.easing        = &easing_out_in_sine;
+         break;
+         /* Expo */
+      case EASING_IN_EXPO:
+         t.easing        = &easing_in_expo;
+         break;
+      case EASING_OUT_EXPO:
+         t.easing        = &easing_out_expo;
+         break;
+      case EASING_IN_OUT_EXPO:
+         t.easing        = &easing_in_out_expo;
+         break;
+      case EASING_OUT_IN_EXPO:
+         t.easing        = &easing_out_in_expo;
+         break;
+         /* Circ */
+      case EASING_IN_CIRC:
+         t.easing        = &easing_in_circ;
+         break;
+      case EASING_OUT_CIRC:
+         t.easing        = &easing_out_circ;
+         break;
+      case EASING_IN_OUT_CIRC:
+         t.easing        = &easing_in_out_circ;
+         break;
+      case EASING_OUT_IN_CIRC:
+         t.easing        = &easing_out_in_circ;
+         break;
+         /* Bounce */
+      case EASING_IN_BOUNCE:
+         t.easing        = &easing_in_bounce;
+         break;
+      case EASING_OUT_BOUNCE:
+         t.easing        = &easing_out_bounce;
+         break;
+      case EASING_IN_OUT_BOUNCE:
+         t.easing        = &easing_in_out_bounce;
+         break;
+      case EASING_OUT_IN_BOUNCE:
+         t.easing        = &easing_out_in_bounce;
+         break;
+      default:
+         t.easing        = NULL;
+         break;
+   }
+
+   /* ignore born dead tweens */
+   if (!t.easing || t.duration == 0 || t.initial_value == t.target_value)
+      return false;
+
    if (anim->size >= anim->capacity)
    {
       anim->capacity++;
@@ -317,129 +448,7 @@ bool menu_animation_push(
             anim->capacity * sizeof(struct tween));
    }
 
-   anim->list[anim->size].alive         = 1;
-   anim->list[anim->size].duration      = duration;
-   anim->list[anim->size].running_since = 0;
-   anim->list[anim->size].initial_value = *subject;
-   anim->list[anim->size].target_value  = target_value;
-   anim->list[anim->size].subject       = subject;
-   anim->list[anim->size].cb            = cb;
-
-   switch (easing_enum)
-   {
-      case EASING_LINEAR:
-         anim->list[anim->size].easing        = &easing_linear;
-         break;
-         /* Quad */
-      case EASING_IN_QUAD:
-         anim->list[anim->size].easing        = &easing_in_quad;
-         break;
-      case EASING_OUT_QUAD:
-         anim->list[anim->size].easing        = &easing_out_quad;
-         break;
-      case EASING_IN_OUT_QUAD:
-         anim->list[anim->size].easing        = &easing_in_out_quad;
-         break;
-      case EASING_OUT_IN_QUAD:
-         anim->list[anim->size].easing        = &easing_out_in_quad;
-         break;
-         /* Cubic */
-      case EASING_IN_CUBIC:
-         anim->list[anim->size].easing        = &easing_in_cubic;
-         break;
-      case EASING_OUT_CUBIC:
-         anim->list[anim->size].easing        = &easing_out_cubic;
-         break;
-      case EASING_IN_OUT_CUBIC:
-         anim->list[anim->size].easing        = &easing_in_out_cubic;
-         break;
-      case EASING_OUT_IN_CUBIC:
-         anim->list[anim->size].easing        = &easing_out_in_cubic;
-         break;
-         /* Quart */
-      case EASING_IN_QUART:
-         anim->list[anim->size].easing        = &easing_in_quart;
-         break;
-      case EASING_OUT_QUART:
-         anim->list[anim->size].easing        = &easing_out_quart;
-         break;
-      case EASING_IN_OUT_QUART:
-         anim->list[anim->size].easing        = &easing_in_out_quart;
-         break;
-      case EASING_OUT_IN_QUART:
-         anim->list[anim->size].easing        = &easing_out_in_quart;
-         break;
-         /* Quint */
-      case EASING_IN_QUINT:
-         anim->list[anim->size].easing        = &easing_in_quint;
-         break;
-      case EASING_OUT_QUINT:
-         anim->list[anim->size].easing        = &easing_out_quint;
-         break;
-      case EASING_IN_OUT_QUINT:
-         anim->list[anim->size].easing        = &easing_in_out_quint;
-         break;
-      case EASING_OUT_IN_QUINT:
-         anim->list[anim->size].easing        = &easing_out_in_quint;
-         break;
-         /* Sine */
-      case EASING_IN_SINE:
-         anim->list[anim->size].easing        = &easing_in_sine;
-         break;
-      case EASING_OUT_SINE:
-         anim->list[anim->size].easing        = &easing_out_sine;
-         break;
-      case EASING_IN_OUT_SINE:
-         anim->list[anim->size].easing        = &easing_in_out_sine;
-         break;
-      case EASING_OUT_IN_SINE:
-         anim->list[anim->size].easing        = &easing_out_in_sine;
-         break;
-         /* Expo */
-      case EASING_IN_EXPO:
-         anim->list[anim->size].easing        = &easing_in_expo;
-         break;
-      case EASING_OUT_EXPO:
-         anim->list[anim->size].easing        = &easing_out_expo;
-         break;
-      case EASING_IN_OUT_EXPO:
-         anim->list[anim->size].easing        = &easing_in_out_expo;
-         break;
-      case EASING_OUT_IN_EXPO:
-         anim->list[anim->size].easing        = &easing_out_in_expo;
-         break;
-         /* Circ */
-      case EASING_IN_CIRC:
-         anim->list[anim->size].easing        = &easing_in_circ;
-         break;
-      case EASING_OUT_CIRC:
-         anim->list[anim->size].easing        = &easing_out_circ;
-         break;
-      case EASING_IN_OUT_CIRC:
-         anim->list[anim->size].easing        = &easing_in_out_circ;
-         break;
-      case EASING_OUT_IN_CIRC:
-         anim->list[anim->size].easing        = &easing_out_in_circ;
-         break;
-         /* Bounce */
-      case EASING_IN_BOUNCE:
-         anim->list[anim->size].easing        = &easing_in_bounce;
-         break;
-      case EASING_OUT_BOUNCE:
-         anim->list[anim->size].easing        = &easing_out_bounce;
-         break;
-      case EASING_IN_OUT_BOUNCE:
-         anim->list[anim->size].easing        = &easing_in_out_bounce;
-         break;
-      case EASING_OUT_IN_BOUNCE:
-         anim->list[anim->size].easing        = &easing_out_in_bounce;
-         break;
-      default:
-         anim->list[anim->size].easing        = NULL;
-         break;
-   }
-
-   anim->size++;
+   anim->list[anim->size++] = t;
 
    return true;
 }
