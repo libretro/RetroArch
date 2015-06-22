@@ -1430,10 +1430,52 @@ static int menu_displaylist_parse_horizontal_list(menu_displaylist_info_t *info)
    return 0;
 }
 
+static int menu_displaylist_parse_load_content_settings(menu_displaylist_info_t *info)
+{
+   menu_handle_t *menu    = menu_driver_get_ptr();
+   global_t *global       = global_get_ptr();
+   if (!menu)
+      return -1;
+
+   if (global->main_is_init && (global->core_type != CORE_TYPE_DUMMY))
+   {
+      menu_list_push(info->list,
+            menu_hash_to_str(MENU_LABEL_VALUE_RESUME_CONTENT),
+            menu_hash_to_str(MENU_LABEL_RESUME_CONTENT),
+            MENU_SETTING_ACTION_RUN, 0, 0);
+
+      menu_list_push(info->list,
+            menu_hash_to_str(MENU_LABEL_VALUE_RESTART_CONTENT),
+            menu_hash_to_str(MENU_LABEL_RESTART_CONTENT),
+            MENU_SETTING_ACTION_RUN, 0, 0);
+
+      menu_list_push(info->list,
+            menu_hash_to_str(MENU_LABEL_VALUE_TAKE_SCREENSHOT),
+            menu_hash_to_str(MENU_LABEL_TAKE_SCREENSHOT),
+            MENU_SETTING_ACTION_SCREENSHOT, 0, 0);
+
+      menu_list_push(info->list,
+            menu_hash_to_str(MENU_LABEL_VALUE_SAVE_STATE),
+            menu_hash_to_str(MENU_LABEL_SAVE_STATE),
+            MENU_SETTING_ACTION_SAVESTATE, 0, 0);
+
+      menu_list_push(info->list,
+            menu_hash_to_str(MENU_LABEL_VALUE_LOAD_STATE),
+            menu_hash_to_str(MENU_LABEL_LOAD_STATE),
+            MENU_SETTING_ACTION_LOADSTATE, 0, 0);
+   }
+   else
+      menu_list_push(info->list,
+            menu_hash_to_str(MENU_LABEL_VALUE_NO_ITEMS),
+            "", 0, 0, 0);
+
+   return 0;
+}
+
 static int menu_displaylist_parse_load_core_list(menu_displaylist_info_t *info)
 {
    global_t *global            = global_get_ptr();
-   settings_t *settings  = config_get_ptr();
+   settings_t *settings        = config_get_ptr();
 
    menu_list_push(info->list,
          menu_hash_to_str(MENU_LABEL_VALUE_LOAD_CONTENT),
@@ -1501,55 +1543,6 @@ static int menu_displaylist_parse_options(menu_displaylist_info_t *info)
          menu_hash_to_str(MENU_LABEL_SHADER_OPTIONS),
          MENU_SETTING_ACTION, 0, 0);
 #endif
-
-   return 0;
-}
-
-static int menu_displaylist_parse_horizontal_content_actions(menu_displaylist_info_t *info)
-{
-   menu_handle_t *menu    = menu_driver_get_ptr();
-   global_t *global       = global_get_ptr();
-   if (!menu)
-      return -1;
-
-   if (global->main_is_init && (global->core_type != CORE_TYPE_DUMMY) &&
-         !strcmp(menu->deferred_path, global->fullpath))
-   {
-      menu_list_push(info->list,
-            menu_hash_to_str(MENU_LABEL_RESUME_CONTENT),
-            "file_load_or_resume",
-            MENU_SETTING_ACTION_RUN, 0, 0);
-      menu_list_push(info->list,
-            menu_hash_to_str(MENU_LABEL_VALUE_SAVE_STATE),
-            menu_hash_to_str(MENU_LABEL_SAVE_STATE),
-            MENU_SETTING_ACTION_SAVESTATE, 0, 0);
-      menu_list_push(info->list,
-            menu_hash_to_str(MENU_LABEL_VALUE_LOAD_STATE),
-            menu_hash_to_str(MENU_LABEL_LOAD_STATE),
-            MENU_SETTING_ACTION_LOADSTATE, 0, 0);
-      menu_list_push(info->list,
-            menu_hash_to_str(MENU_LABEL_VALUE_CORE_INFORMATION),
-            menu_hash_to_str(MENU_LABEL_CORE_INFORMATION),
-            MENU_SETTING_ACTION_CORE_INFORMATION, 0, 0);
-      menu_list_push(info->list,
-            menu_hash_to_str(MENU_LABEL_VALUE_OPTIONS),
-            menu_hash_to_str(MENU_LABEL_OPTIONS),
-            MENU_SETTING_ACTION_CORE_OPTIONS, 0, 0);
-      menu_list_push(info->list,
-            menu_hash_to_str(MENU_LABEL_VALUE_TAKE_SCREENSHOT),
-            menu_hash_to_str(MENU_LABEL_TAKE_SCREENSHOT),
-            MENU_SETTING_ACTION_SCREENSHOT, 0, 0);
-      menu_list_push(info->list,
-            menu_hash_to_str(MENU_LABEL_VALUE_RESTART_CONTENT),
-            menu_hash_to_str(MENU_LABEL_RESTART_CONTENT),
-            MENU_SETTING_ACTION_RESET, 0, 0);
-   }
-   else
-      menu_list_push(info->list,
-            menu_hash_to_str(MENU_LABEL_VALUE_RUN),
-            "file_load_or_resume",
-            MENU_SETTING_ACTION_RUN,
-            0, 0);
 
    return 0;
 }
@@ -1905,6 +1898,14 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          need_refresh = true;
          need_push    = true;
          break;
+      case DISPLAYLIST_HORIZONTAL_CONTENT_ACTIONS:
+      case DISPLAYLIST_CONTENT_SETTINGS:
+         menu_list_clear(info->list);
+         ret = menu_displaylist_parse_load_content_settings(info);
+
+         need_refresh = true;
+         need_push    = true;
+         break;
       case DISPLAYLIST_LOAD_CONTENT_LIST:
          menu_list_clear(info->list);
          ret = menu_displaylist_parse_load_core_list(info);
@@ -1915,12 +1916,6 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          menu_list_clear(info->list);
          ret = menu_displaylist_parse_options(info);
 
-         need_push    = true;
-         break;
-      case DISPLAYLIST_HORIZONTAL_CONTENT_ACTIONS:
-         menu_list_clear(info->list);
-         ret = menu_displaylist_parse_horizontal_content_actions(info);
-         need_refresh = true;
          need_push    = true;
          break;
       case DISPLAYLIST_OPTIONS_CHEATS:

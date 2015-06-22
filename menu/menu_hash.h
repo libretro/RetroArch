@@ -35,6 +35,9 @@ extern "C" {
 #define MENU_VALUE_OPEN_ARCHIVE                                                0x96da22b9U
 #define MENU_VALUE_ASK_ARCHIVE                                                 0x0b87d6a4U
 
+#define MENU_LABEL_CONTENT_SETTINGS                                            0xf31dcaf0U
+#define MENU_LABEL_VALUE_CONTENT_SETTINGS                                      0x399ea371U
+
 #define MENU_LABEL_LOAD_CONTENT_LIST                                           0x5745de1fU
 #define MENU_LABEL_VALUE_LOAD_CONTENT_LIST                                     0x55ff08eaU
 
@@ -102,10 +105,10 @@ extern "C" {
 #define MENU_LABEL_VALUE_NO_CORE_INFORMATION_AVAILABLE                         0x2a11fe80U
 #define MENU_LABEL_VALUE_NO_CORES_AVAILABLE                                    0xe16bfd0dU
 #define MENU_LABEL_VALUE_NO_PLAYLIST_ENTRIES_AVAILABLE                         0xea82695dU
-#define MENU_LABEL_SAVE_STATE                                                  0x54a257f4U
+#define MENU_LABEL_SAVE_STATE                                                  0x3a4849b5U
 #define MENU_LABEL_VALUE_LOAD_STATE                                            0xd23ba706U
 #define MENU_LABEL_VALUE_SAVE_STATE                                            0x3e182415U
-#define MENU_LABEL_LOAD_STATE                                                  0xe8c5dae5U
+#define MENU_LABEL_LOAD_STATE                                                  0xa39eb286U
 #define MENU_LABEL_REWIND                                                      0x1931d5aeU
 #define MENU_LABEL_NETPLAY_FLIP_PLAYERS                                        0x801425abU
 #define MENU_LABEL_CHEAT_INDEX_MINUS                                           0x57f58b6cU

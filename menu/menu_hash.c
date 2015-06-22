@@ -1572,6 +1572,10 @@ static const char *menu_hash_to_str_english(uint32_t hash)
 {
    switch (hash)
    {
+      case MENU_LABEL_CONTENT_SETTINGS:
+         return "content_settings";
+      case MENU_LABEL_VALUE_CONTENT_SETTINGS:
+         return "Content Settings";
       case MENU_LABEL_VALUE_RDB_ENTRY_CRC32:
          return "CRC32";
       case MENU_LABEL_VALUE_RDB_ENTRY_MD5:

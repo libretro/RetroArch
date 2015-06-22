@@ -605,19 +605,6 @@ void setting_get_string_representation(void *data, char *s, size_t len)
  *
  * Returns: 0 on success, -1 on error.
  **/
-static int setting_action_start_savestates(void *data)
-{
-   rarch_setting_t *setting  = (rarch_setting_t*)data;
-   settings_t      *settings = config_get_ptr();
-
-   if (!setting)
-      return -1;
-
-   settings->state_slot = 0;
-
-   return 0;
-}
-
 static int setting_action_start_bind_device(void *data)
 {
    rarch_setting_t *setting  = (rarch_setting_t*)data;
@@ -907,36 +894,6 @@ static int setting_action_right_libretro_device_type(
    return 0;
 }
 
-static int setting_action_left_savestates(
-      void *data, bool wraparound)
-{
-   rarch_setting_t *setting  = (rarch_setting_t*)data;
-   settings_t      *settings = config_get_ptr();
-
-   if (!setting)
-      return -1;
-
-   /* Slot -1 is (auto) slot. */
-   if (settings->state_slot >= 0)
-      settings->state_slot--;
-
-   return 0;
-}
-
-static int setting_action_right_savestates(
-      void *data, bool wraparound)
-{
-   rarch_setting_t *setting  = (rarch_setting_t*)data;
-   settings_t      *settings = config_get_ptr();
-
-   if (!setting)
-      return -1;
-
-   settings->state_slot++;
-
-   return 0;
-}
-
 static int setting_action_left_bind_device(void *data, bool wraparound)
 {
    unsigned               *p = NULL;
@@ -1178,17 +1135,6 @@ static int setting_action_ok_bind_defaults(void *data, bool wraparound)
 
    return 0;
 }
-
-static int setting_bool_action_ok_exit(void *data, bool wraparound)
-{
-   if (setting_generic_action_ok_default(data, wraparound) != 0)
-      return -1;
-
-   event_command(EVENT_CMD_RESUME);
-
-   return 0;
-}
-
 
 static int setting_action_ok_video_refresh_rate_auto(void *data, bool wraparound)
 {
@@ -3074,16 +3020,6 @@ static void get_string_representation_bind_device(void * data, char *s,
 }
 
 
-static void get_string_representation_savestate(void * data, char *s,
-      size_t len)
-{
-   settings_t      *settings = config_get_ptr();
-
-   snprintf(s, len, "%d", settings->state_slot);
-   if (settings->state_slot == -1)
-      strlcat(s, " (Auto)", len);
-}
-
 /**
  * setting_get_label:
  * @list               : File list on which to perform the search
@@ -3536,6 +3472,13 @@ static bool setting_append_list_main_menu_options(
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
    CONFIG_ACTION(
+         menu_hash_to_str(MENU_LABEL_CONTENT_SETTINGS),
+         menu_hash_to_str(MENU_LABEL_VALUE_CONTENT_SETTINGS),
+         group_info.name,
+         subgroup_info.name,
+         parent_group);
+
+   CONFIG_ACTION(
          menu_hash_to_str(MENU_LABEL_OPTIONS),
          menu_hash_to_str(MENU_LABEL_VALUE_OPTIONS),
          group_info.name,
@@ -3579,64 +3522,6 @@ static bool setting_append_list_main_menu_options(
       settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
    }
 
-   if (global->main_is_init && (global->core_type != CORE_TYPE_DUMMY))
-   {
-      CONFIG_ACTION(
-            menu_hash_to_str(MENU_LABEL_SAVE_STATE),
-            menu_hash_to_str(MENU_LABEL_VALUE_SAVE_STATE),
-            group_info.name,
-            subgroup_info.name,
-            menu_hash_to_str(MENU_VALUE_NOT_AVAILABLE));
-      (*list)[list_info->index - 1].action_left   = &setting_action_left_savestates;
-      (*list)[list_info->index - 1].action_right  = &setting_action_right_savestates;
-      (*list)[list_info->index - 1].action_start  = &setting_action_start_savestates;
-      (*list)[list_info->index - 1].action_ok     = &setting_bool_action_ok_exit;
-      (*list)[list_info->index - 1].action_select = &setting_bool_action_ok_exit;
-      (*list)[list_info->index - 1].get_string_representation = &get_string_representation_savestate;
-      menu_settings_list_current_add_cmd  (list, list_info, EVENT_CMD_SAVE_STATE);
-
-      CONFIG_ACTION(
-            menu_hash_to_str(MENU_LABEL_LOAD_STATE),
-            menu_hash_to_str(MENU_LABEL_VALUE_LOAD_STATE),
-            group_info.name,
-            subgroup_info.name,
-            menu_hash_to_str(MENU_VALUE_NOT_AVAILABLE));
-      (*list)[list_info->index - 1].action_left   = &setting_action_left_savestates;
-      (*list)[list_info->index - 1].action_right  = &setting_action_left_savestates;
-      (*list)[list_info->index - 1].action_start  = &setting_action_start_savestates;
-      (*list)[list_info->index - 1].action_ok     = &setting_bool_action_ok_exit;
-      (*list)[list_info->index - 1].action_select = &setting_bool_action_ok_exit;
-      (*list)[list_info->index - 1].get_string_representation = &get_string_representation_savestate;
-      menu_settings_list_current_add_cmd  (list, list_info, EVENT_CMD_LOAD_STATE);
-
-      CONFIG_ACTION(
-            menu_hash_to_str(MENU_LABEL_TAKE_SCREENSHOT),
-            menu_hash_to_str(MENU_LABEL_VALUE_TAKE_SCREENSHOT),
-            group_info.name,
-            subgroup_info.name,
-            parent_group);
-      menu_settings_list_current_add_cmd  (list, list_info, EVENT_CMD_TAKE_SCREENSHOT);
-
-      CONFIG_ACTION(
-            menu_hash_to_str(MENU_LABEL_RESUME_CONTENT),
-            menu_hash_to_str(MENU_LABEL_VALUE_RESUME_CONTENT),
-            group_info.name,
-            subgroup_info.name,
-            parent_group);
-      menu_settings_list_current_add_cmd  (list, list_info, EVENT_CMD_RESUME);
-      (*list)[list_info->index - 1].action_ok     = &setting_bool_action_ok_exit;
-      (*list)[list_info->index - 1].action_select = &setting_bool_action_ok_exit;
-
-      CONFIG_ACTION(
-            menu_hash_to_str(MENU_LABEL_RESTART_CONTENT),
-            menu_hash_to_str(MENU_LABEL_VALUE_RESTART_CONTENT),
-            group_info.name,
-            subgroup_info.name,
-            parent_group);
-      menu_settings_list_current_add_cmd(list, list_info, EVENT_CMD_RESET);
-      (*list)[list_info->index - 1].action_ok = 
-      (*list)[list_info->index - 1].action_select = &setting_bool_action_ok_exit;
-   }
 #ifndef HAVE_DYNAMIC
    CONFIG_ACTION(
          menu_hash_to_str(MENU_LABEL_RESTART_RETROARCH),

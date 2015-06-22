@@ -490,6 +490,24 @@ static void menu_action_setting_disp_set_label_menu_more(
    strlcpy(s2, path, len2);
 }
 
+static void menu_action_setting_disp_set_label_state(
+      file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *s, size_t len,
+      const char *entry_label,
+      const char *path,
+      char *s2, size_t len2)
+{
+   settings_t *settings        = config_get_ptr();
+
+   strlcpy(s2, path, len2);
+   *w = 16;
+   snprintf(s, len, "%d", settings->state_slot);
+   if (settings->state_slot == -1)
+      strlcat(s, " (Auto)", len);
+}
+
 
 static void menu_action_setting_disp_set_label_menu_disk_index(
       file_list_t* list,
@@ -808,6 +826,11 @@ static int menu_cbs_init_bind_get_string_representation_compare_label(
 {
    switch (label_hash)
    {
+      case MENU_LABEL_SAVE_STATE:
+      case MENU_LABEL_LOAD_STATE:
+         cbs->action_get_value =
+            menu_action_setting_disp_set_label_state;
+         break;
       case MENU_LABEL_CHEAT_NUM_PASSES:
          cbs->action_get_value =
             menu_action_setting_disp_set_label_cheat_num_passes;
@@ -860,6 +883,9 @@ static int menu_cbs_init_bind_get_string_representation_compare_label(
       case MENU_LABEL_CORE_COUNTERS:
       case MENU_LABEL_DATABASE_MANAGER_LIST:
       case MENU_LABEL_CURSOR_MANAGER_LIST:
+      case MENU_LABEL_RESTART_CONTENT:
+      case MENU_LABEL_RESUME_CONTENT:
+      case MENU_LABEL_TAKE_SCREENSHOT:
          cbs->action_get_value =
             menu_action_setting_disp_set_label_menu_more;
          break;
