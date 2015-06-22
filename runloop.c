@@ -369,7 +369,7 @@ static void check_shader_dir(bool pressed_next, bool pressed_prev)
    enum rarch_shader_type type = RARCH_SHADER_NONE;
    global_t *global            = global_get_ptr();
 
-   if (!global->shader_dir.list)
+   if (!global || !global->shader_dir.list)
       return;
 
    if (pressed_next)
@@ -387,10 +387,9 @@ static void check_shader_dir(bool pressed_next, bool pressed_prev)
    else
       return;
 
+   shader   = global->shader_dir.list->elems[global->shader_dir.ptr].data;
    ext      = path_get_extension(shader);
    ext_hash = djb2_calculate(ext);
-   shader   = global ? 
-      global->shader_dir.list->elems[global->shader_dir.ptr].data : NULL;
 
    switch (ext_hash)
    {
