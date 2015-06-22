@@ -35,7 +35,7 @@ extern "C" {
 #define MENU_VALUE_OPEN_ARCHIVE                                                0x96da22b9U
 #define MENU_VALUE_ASK_ARCHIVE                                                 0x0b87d6a4U
 
-#define MENU_LABEL_LOAD_CONTENT_LIST                                           0xd2e4a83aU
+#define MENU_LABEL_LOAD_CONTENT_LIST                                           0x5745de1fU
 #define MENU_LABEL_VALUE_LOAD_CONTENT_LIST                                     0x55ff08eaU
 
 #define MENU_LABEL_NO_SETTINGS_FOUND                                           0xabf77040U
@@ -475,7 +475,7 @@ extern "C" {
 #define MENU_LABEL_DETECT_CORE_LIST                                            0xaa07c341U
 #define MENU_LABEL_VALUE_DETECT_CORE_LIST                                      0x69f11813U
 #define MENU_LABEL_DETECT_CORE_LIST_OK                                         0xabba2a7aU
-#define MENU_LABEL_LOAD_CONTENT                                                0x5745de1fU
+#define MENU_LABEL_LOAD_CONTENT                                                0x828943c3U
 #define MENU_LABEL_VALUE_LOAD_CONTENT                                          0x755f3680U
 #define MENU_LABEL_VALUE_CORE_UPDATER_LIST                                     0x0372767dU
 #define MENU_LABEL_CORE_UPDATER_LIST                                           0xe12f4ee3U

@@ -1133,7 +1133,7 @@ static const char *menu_hash_to_str_portuguese(uint32_t hash)
       case MENU_LABEL_CORE_LIST:
          return "core_list";
       case MENU_LABEL_LOAD_CONTENT:
-         return "load_content";
+         return "load_content_default";
       case MENU_LABEL_VALUE_LOAD_CONTENT:
          return "Carregar Conteúdo";
       case MENU_LABEL_UNLOAD_CORE:
@@ -1573,7 +1573,7 @@ static const char *menu_hash_to_str_english(uint32_t hash)
    switch (hash)
    {
       case MENU_LABEL_LOAD_CONTENT_LIST:
-         return "load_content_list";
+         return "load_content";
       case MENU_LABEL_VALUE_LOAD_CONTENT_LIST:
          return "Load Content";
       case MENU_VALUE_LOAD_ARCHIVE:
@@ -2499,7 +2499,7 @@ static const char *menu_hash_to_str_english(uint32_t hash)
       case MENU_LABEL_CORE_LIST:
          return "program_core_list";
       case MENU_LABEL_LOAD_CONTENT:
-         return "load_content";
+         return "load_content_default";
       case MENU_LABEL_VALUE_LOAD_CONTENT:
          return "Select From Browser";
       case MENU_LABEL_UNLOAD_CORE:
