@@ -126,8 +126,8 @@ static int action_ok_file_load_with_detect_core_carchive(
    menu_displaylist_info_t info = {0};
    uint32_t hash_label      = menu_hash_calculate(label);
 
-   strlcat(detect_content_path, "#", sizeof(detect_content_path));
-   strlcat(detect_content_path, path, sizeof(detect_content_path));
+   fill_pathname_join_delim(detect_content_path, detect_content_path, path,
+         '#', sizeof(detect_content_path));
 
    return rarch_defer_core_wrapper(&info, idx, entry_idx, path, hash_label, true);
 }
@@ -880,9 +880,8 @@ static int action_ok_rdb_entry(const char *path,
    if (!menu_list)
       return -1;
 
-   strlcpy(tmp, menu_hash_to_str(MENU_LABEL_DEFERRED_RDB_ENTRY_DETAIL), sizeof(tmp));
-   strlcat(tmp, "|",  sizeof(tmp));
-   strlcat(tmp, path, sizeof(tmp));
+   fill_pathname_join_delim(tmp, menu_hash_to_str(MENU_LABEL_DEFERRED_RDB_ENTRY_DETAIL),
+         path, '|', sizeof(tmp));
 
    info.list          = menu_list->menu_stack;
    info.type          = 0;
@@ -1364,10 +1363,10 @@ static int action_ok_rdb_entry_submenu(const char *path,
 
    string_list_join_concat(rdb, len, str_list2, "|");
 
-   strlcpy(new_label, menu_hash_to_str(MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST),
+   fill_pathname_join_delim(new_label, 
+         menu_hash_to_str(MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST),
+         str_list->elems[0].data, '_',
          sizeof(new_label));
-   strlcat(new_label, "_", sizeof(new_label));
-   strlcat(new_label, str_list->elems[0].data, sizeof(new_label));
 
    info.list          = menu_list->menu_stack;
    info.type          = 0;
