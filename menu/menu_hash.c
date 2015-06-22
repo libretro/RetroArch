@@ -2491,9 +2491,9 @@ static const char *menu_hash_to_str_english(uint32_t hash)
       case MENU_LABEL_VALUE_NO_ITEMS:
          return "No items.";
       case MENU_LABEL_VALUE_CORE_LIST:
-         return "Load Core";
+         return "Load Program Core";
       case MENU_LABEL_CORE_LIST:
-         return "core_list";
+         return "program_core_list";
       case MENU_LABEL_LOAD_CONTENT:
          return "load_content";
       case MENU_LABEL_VALUE_LOAD_CONTENT:

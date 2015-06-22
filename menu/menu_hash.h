@@ -528,7 +528,7 @@ extern "C" {
 #define MENU_LABEL_DISK_IMAGE_APPEND                                           0x5af7d709U
 #define MENU_LABEL_PERFORMANCE_COUNTERS                                        0xd8ab5049U
 #define MENU_LABEL_VALUE_PERFORMANCE_COUNTERS                                  0x20eb18caU
-#define MENU_LABEL_CORE_LIST                                                   0xa8c3bfc9U
+#define MENU_LABEL_CORE_LIST                                                   0xac9dbf00U
 #define MENU_LABEL_VALUE_CORE_LIST                                             0x0e17fd4eU
 #define MENU_LABEL_MANAGEMENT                                                  0x096d05b7U
 #define MENU_LABEL_VALUE_MANAGEMENT                                            0x9afd7e78U
