@@ -24,18 +24,19 @@
 
 #include <retro_inline.h>
 #include <compat/posix_string.h>
+#include <compat/strl.h>
 
 // FIXME: Using arbitrary string as fmt argument is unsafe.
 static INLINE void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
 {
    char msg_new[1024], buffer[1024];
 #ifdef IS_SALAMANDER
-   snprintf(msg_new, sizeof(msg_new),
-         "RetroArch Salamander: %s%s", tag ? tag : "", fmt);
+   strlcpy(msg_new, "RetroArch Salamander: ", sizeof(msg_new));
 #else
-   snprintf(msg_new, sizeof(msg_new),
-         "RetroArch: %s%s", tag ? tag : "", fmt);
+   strlcpy(msg_new, "RetroArch: ", sizeof(msg_new));
 #endif
+   strlcat(msg_new, tag ? tag : "", sizeof(msg_new));
+   strlcat(msg_new, fmt, sizeof(msg_new));
    wvsprintf(buffer, msg_new, ap);
    OutputDebugStringA(buffer);
 }
@@ -68,12 +69,12 @@ static INLINE void RARCH_WARN_V(const char *tag, const char *fmt, va_list ap)
 {
    char msg_new[1024], buffer[1024];
 #ifdef IS_SALAMANDER
-   snprintf(msg_new, sizeof(msg_new),
-         "RetroArch Salamander [WARN] :: %s%s", tag ? tag : "", fmt);
+   strlcpy(msg_new, "RetroArch Salamander [WARN] :: ", sizeof(msg_new));
 #else
-   snprintf(msg_new, sizeof(msg_new),
-         "RetroArch [WARN] :: %s%s", tag ? tag : "", fmt);
+   strlcpy(msg_new, "RetroArch [WARN] :: ", sizeof(msg_new));
 #endif
+   strlcat(msg_new, tag ? tag : "", sizeof(msg_new));
+   strlcat(msg_new, fmt, sizeof(msg_new));
    wvsprintf(buffer, msg_new, ap);
    OutputDebugStringA(buffer);
 }
@@ -92,12 +93,12 @@ static INLINE void RARCH_ERR_V(const char *tag, const char *fmt, ...)
 {
    char msg_new[1024];
 #ifdef IS_SALAMANDER
-   snprintf(msg_new, sizeof(msg_new),
-         "RetroArch Salamander [ERR] :: %s%s", tag ? tag : "", fmt);
+   strlcpy(msg_new, "RetroArch Salamander [ERR] :: ", sizeof(msg_new));
 #else
-   snprintf(msg_new, sizeof(msg_new),
-         "RetroArch [ERR] :: %s%s", tag ? tag : "", fmt);
+   strlcpy(msg_new, "RetroArch [ERR] :: ", sizeof(msg_new));
 #endif
+   strlcat(msg_new, tag ? tag : "", sizeof(msg_new));
+   strlcat(msg_new, fmt, sizeof(msg_new));
    OutputDebugStringA(fmt);
 }
 
