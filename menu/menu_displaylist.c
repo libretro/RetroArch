@@ -692,7 +692,7 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
          }
       }
 
-      if (!is_history && core_detected && db_name[0] != '\0')
+      if (!is_history && core_detected && db_name && db_name[0] != '\0')
       {
          char db_path[PATH_MAX_LENGTH] = {0};
 
