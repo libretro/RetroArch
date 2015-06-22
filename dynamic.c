@@ -292,13 +292,12 @@ libretro_find_controller_description(
  **/
 static void load_symbols(enum rarch_core_type type)
 {
-   settings_t *settings = config_get_ptr();
-
    switch (type)
    {
       case CORE_TYPE_PLAIN:
          {
 #ifdef HAVE_DYNAMIC
+            settings_t *settings = config_get_ptr();
             function_t sym       = dylib_proc(NULL, "retro_init");
 
             if (sym)
