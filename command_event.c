@@ -268,7 +268,8 @@ void event_disk_control_append_image(const char *path)
    info.path = path;
    control->replace_image_index(new_idx, &info);
 
-   snprintf(msg, sizeof(msg), "Appended disk: %s", path);
+   strlcpy(msg, "Appended disk: ", sizeof(msg));
+   strlcat(msg, path, sizeof(msg));
    RARCH_LOG("%s\n", msg);
    rarch_main_msg_queue_push(msg, 0, 180, true);
 

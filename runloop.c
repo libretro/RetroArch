@@ -19,6 +19,7 @@
 #include <file/file_path.h>
 #include <retro_inline.h>
 
+#include <compat/strl.h>
 #include <rhash.h>
 
 #include "configuration.h"
@@ -261,15 +262,11 @@ static bool check_movie_init(void)
    settings->rewind_granularity = 1;
 
    if (settings->state_slot > 0)
-   {
-      snprintf(path, sizeof(path), "%s%d.bsv",
+      snprintf(path, sizeof(path), "%s%d",
             global->bsv.movie_path, settings->state_slot);
-   }
    else
-   {
-      snprintf(path, sizeof(path), "%s.bsv",
-            global->bsv.movie_path);
-   }
+      strlcpy(path, global->bsv.movie_path, sizeof(path));
+   strlcat(path, ".bsv", sizeof(path));
 
    snprintf(msg, sizeof(msg), "Starting movie record to \"%s\".", path);
 

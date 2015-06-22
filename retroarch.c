@@ -1063,14 +1063,13 @@ static void init_system_info(void)
    if (!info->library_version)
       info->library_version = "v0";
 
-#ifdef RARCH_CONSOLE
-   snprintf(global->title_buf, sizeof(global->title_buf), "%s %s",
-         info->library_name, info->library_version);
-#else
+#ifndef RARCH_CONSOLE
    snprintf(global->title_buf, sizeof(global->title_buf),
-         RETRO_FRONTEND " : %s %s",
-         info->library_name, info->library_version);
+         RETRO_FRONTEND " : ");
 #endif
+   strlcat(global->title_buf, info->library_name, sizeof(global->title_buf));
+   strlcat(global->title_buf, " ", sizeof(global->title_buf));
+   strlcat(global->title_buf, info->library_version, sizeof(global->title_buf));
    strlcpy(global->system.valid_extensions, info->valid_extensions ?
          info->valid_extensions : DEFAULT_EXT,
          sizeof(global->system.valid_extensions));
