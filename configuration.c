@@ -2299,8 +2299,10 @@ bool config_save_file(const char *path)
          settings->input.input_descriptor_hide_unbound);
    config_set_bool(conf,  "load_dummy_on_core_shutdown",
          settings->load_dummy_on_core_shutdown);
+#ifdef HAVE_FFMPEG
    config_set_bool(conf,  "builtin_mediaplayer_enable",
          settings->mediaplayer.builtin_enable);
+#endif
    config_set_bool(conf,  "fps_show", settings->fps_show);
    config_set_bool(conf,  "ui_menubar_enable", settings->ui.menubar_enable);
    config_set_path(conf,  "libretro_path", settings->libretro);

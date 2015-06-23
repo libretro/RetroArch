@@ -1398,6 +1398,7 @@ void rarch_main_set_state(unsigned cmd)
          if (driver->frontend_ctx && driver->frontend_ctx->content_loaded)
             driver->frontend_ctx->content_loaded();
          break;
+#ifdef HAVE_FFMPEG
       case RARCH_ACTION_STATE_LOAD_CONTENT_FFMPEG:
 #ifdef HAVE_MENU
          /* If content loading fails, we go back to menu. */
@@ -1407,6 +1408,7 @@ void rarch_main_set_state(unsigned cmd)
          if (driver->frontend_ctx && driver->frontend_ctx->content_loaded)
             driver->frontend_ctx->content_loaded();
          break;
+#endif
       case RARCH_ACTION_STATE_MENU_RUNNING_FINISHED:
 #ifdef HAVE_MENU
          menu_setting_apply_deferred();
