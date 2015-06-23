@@ -1143,7 +1143,7 @@ static const char *menu_hash_to_str_portuguese(uint32_t hash)
          return "load_content_default";
       case MENU_LABEL_VALUE_LOAD_CONTENT:
          return "Carregar Conteúdo";  /* FIXME */
-      case MENU_LABEL_UNLOAD_CORE:
+      case MENU_LABEL_CLOSE_CONTENT:
          return "unload_core";
       case MENU_LABEL_VALUE_CLOSE_CONTENT:
          return "Descarregar Core"; /* FIXME */
