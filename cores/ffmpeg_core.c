@@ -205,7 +205,7 @@ void libretro_ffmpeg_retro_get_system_info(struct retro_system_info *info)
    info->library_name     = "FFmpeg";
    info->library_version  = "v1";
    info->need_fullpath    = true;
-   info->valid_extensions = "mkv|avi|f4v|f4f|3gp|ogm|flv|mp4|mov|mp3|wav|webm|flac|ogg|m4a";
+   info->valid_extensions = "mkv|avi|f4v|f4f|3gp|ogm|flv|mp4|mov|mp3|wav|webm|wmv|flac|ogg|m4a";
 }
 
 void libretro_ffmpeg_retro_get_system_av_info(struct retro_system_av_info *info)

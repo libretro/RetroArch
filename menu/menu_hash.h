@@ -35,6 +35,7 @@ extern "C" {
 #define MENU_VALUE_FILE_FLV                                                    0x0b88732dU
 #define MENU_VALUE_FILE_WAV                                                    0x0b88ba13U
 #define MENU_VALUE_FILE_MOV                                                    0x0b889157U
+#define MENU_VALUE_FILE_WMV                                                    0x0b88bb9fU
 
 #define MENU_VALUE_DONT_CARE                                                   0x19da07bcU
 #define MENU_VALUE_LINEAR                                                      0xc0d12dc0U
