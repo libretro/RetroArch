@@ -166,6 +166,7 @@ static int action_ok_playlist_entry(const char *path,
    size_t selection_ptr         = 0;
    content_playlist_t *playlist = g_defaults.history;
    menu_handle_t *menu          = menu_driver_get_ptr();
+   menu_list_t *menu_list       = menu_list_get_ptr();
    uint32_t hash_label          = menu_hash_calculate(label);
 
    if (!menu)
@@ -214,6 +215,19 @@ static int action_ok_playlist_entry(const char *path,
       return action_ok_file_load_with_detect_core(entry_path, label, type, selection_ptr, entry_idx);
 
    rarch_playlist_load_content(playlist, selection_ptr);
+
+   switch (hash_label)
+   {
+      case MENU_LABEL_COLLECTION:
+      case MENU_LABEL_RDB_ENTRY_START_CONTENT:
+         menu_list_pop_stack(menu_list);
+         break;
+      default:
+         menu_list_flush_stack(menu_list, NULL, MENU_SETTINGS);
+         break;
+   }
+
+   menu_common_push_content_settings();
 
    return -1;
 }
