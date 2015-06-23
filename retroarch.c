@@ -875,20 +875,6 @@ static void parse_input(int argc, char *argv[])
    else
       global->libretro_no_content = true;
 
-#ifdef HAVE_FFMPEG
-   if (settings->mediaplayer.builtin_enable)
-   {
-      switch (rarch_mediaplayer_is_media_type(global->fullpath))
-      {
-         case RARCH_CONTENT_MOVIE:
-         case RARCH_CONTENT_MUSIC:
-            global->core_type = CORE_TYPE_FFMPEG;
-            break;
-         default:
-            break;
-      }
-   }
-#endif
 
    /* Copy SRM/state dirs used, so they can be reused on reentrancy. */
    if (global->has_set_save_path &&
@@ -1204,7 +1190,7 @@ void rarch_init_system_av_info(void)
 int rarch_main_init(int argc, char *argv[])
 {
    int sjlj_ret;
-   global_t *global = global_get_ptr();
+   global_t     *global = global_get_ptr();
 
    init_state();
 
@@ -1234,6 +1220,27 @@ int rarch_main_init(int argc, char *argv[])
 
    validate_cpu_features();
    config_load();
+
+#ifdef HAVE_FFMPEG
+   {
+      settings_t *settings = config_get_ptr();
+
+      if (settings && settings->mediaplayer.builtin_enable)
+      {
+         switch (rarch_mediaplayer_is_media_type(global->fullpath))
+         {
+            case RARCH_CONTENT_MOVIE:
+            case RARCH_CONTENT_MUSIC:
+               *settings->libretro = '\0';
+               global->has_set_libretro              = false;
+               global->core_type = CORE_TYPE_FFMPEG;
+               break;
+            default:
+               break;
+         }
+      }
+   }
+#endif
 
    init_libretro_sym(global->core_type);
    init_system_info();
