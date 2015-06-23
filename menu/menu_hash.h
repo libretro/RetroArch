@@ -20,6 +20,7 @@
 extern "C" {
 #endif
 
+#define MENU_VALUE_FILE_WEBM                                                   0x7ca00b50U
 #define MENU_VALUE_FILE_F4F                                                    0x0b886be5U
 #define MENU_VALUE_FILE_F4V                                                    0x0b886bf5U
 #define MENU_VALUE_FILE_OGM                                                    0x0b8898c8U

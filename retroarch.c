@@ -434,6 +434,7 @@ enum rarch_content_type rarch_mediaplayer_is_media_type(const char *path)
       case MENU_VALUE_FILE_AVI:
       case MENU_VALUE_FILE_MP4:
       case MENU_VALUE_FILE_FLV:
+      case MENU_VALUE_FILE_WEBM:
       case MENU_VALUE_FILE_3GP:
       case MENU_VALUE_FILE_F4F:
       case MENU_VALUE_FILE_F4V:
