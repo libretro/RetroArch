@@ -241,7 +241,7 @@ static int action_right_shader_filter_default(unsigned type, const char *label,
       bool wraparound)
 {
 #ifdef HAVE_SHADER_MANAGER
-   rarch_setting_t *setting = menu_setting_find("video_smooth");
+   rarch_setting_t *setting = menu_setting_find(menu_hash_to_str(MENU_LABEL_VIDEO_SMOOTH));
    if (!setting)
       return -1;
    return menu_action_handle_setting(setting, setting->type, MENU_ACTION_RIGHT,
