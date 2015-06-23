@@ -3439,13 +3439,14 @@ static bool setting_append_list_main_menu_options(
          subgroup_info.name,
          parent_group);
 
+#ifdef HAVE_NETWORKING
    CONFIG_ACTION(
-         menu_hash_to_str(MENU_LABEL_MANAGEMENT),
-         menu_hash_to_str(MENU_LABEL_VALUE_MANAGEMENT),
+         menu_hash_to_str(MENU_LABEL_CORE_UPDATER_LIST),
+         menu_hash_to_str(MENU_LABEL_VALUE_CORE_UPDATER_LIST),
          group_info.name,
          subgroup_info.name,
          parent_group);
-   settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
+#endif
 
    if (global->main_is_init && (global->core_type != CORE_TYPE_DUMMY))
    {
@@ -3475,20 +3476,20 @@ static bool setting_append_list_main_menu_options(
    }
 
    CONFIG_ACTION(
+         menu_hash_to_str(MENU_LABEL_MANAGEMENT),
+         menu_hash_to_str(MENU_LABEL_VALUE_MANAGEMENT),
+         group_info.name,
+         subgroup_info.name,
+         parent_group);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
+
+   CONFIG_ACTION(
          menu_hash_to_str(MENU_LABEL_SYSTEM_INFORMATION),
          menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFORMATION),
          group_info.name,
          subgroup_info.name,
          parent_group);
 
-#ifdef HAVE_NETWORKING
-   CONFIG_ACTION(
-         menu_hash_to_str(MENU_LABEL_CORE_UPDATER_LIST),
-         menu_hash_to_str(MENU_LABEL_VALUE_CORE_UPDATER_LIST),
-         group_info.name,
-         subgroup_info.name,
-         parent_group);
-#endif
 
    if (global->perfcnt_enable)
    {

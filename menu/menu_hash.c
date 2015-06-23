@@ -1141,7 +1141,7 @@ static const char *menu_hash_to_str_portuguese(uint32_t hash)
       case MENU_LABEL_VALUE_CLOSE_CONTENT:
          return "Descarregar Core"; /* FIXME */
       case MENU_LABEL_MANAGEMENT:
-         return "advanced_management";
+         return "database_settings";
       case MENU_LABEL_VALUE_MANAGEMENT:
          return "Gerenciamento Avançado";
       case MENU_LABEL_PERFORMANCE_COUNTERS:
@@ -2517,9 +2517,9 @@ static const char *menu_hash_to_str_english(uint32_t hash)
       case MENU_LABEL_VALUE_CLOSE_CONTENT:
          return "Close Content";
       case MENU_LABEL_MANAGEMENT:
-         return "advanced_management";
+         return "database_settings";
       case MENU_LABEL_VALUE_MANAGEMENT:
-         return "Advanced Management";
+         return "Database Settings";
       case MENU_LABEL_PERFORMANCE_COUNTERS:
          return "performance_counters";
       case MENU_LABEL_SAVE_STATE:
