@@ -22,6 +22,10 @@
 #include <errno.h>
 #include <boolean.h>
 
+#ifdef HAVE_FFMPEG
+#include <rhash.h>
+#endif
+
 #ifdef _WIN32
 #ifdef _XBOX
 #include <xtl.h>
@@ -841,6 +845,31 @@ static void parse_input(int argc, char *argv[])
    else
       global->libretro_no_content = true;
 
+#ifdef HAVE_FFMPEG
+   {
+      uint32_t hash_ext = djb2_calculate(path_get_extension(global->fullpath));
+
+      switch (hash_ext)
+      {
+         case MENU_VALUE_FILE_OGM:
+         case MENU_VALUE_FILE_MKV:
+         case MENU_VALUE_FILE_AVI:
+         case MENU_VALUE_FILE_MP4:
+         case MENU_VALUE_FILE_FLV:
+         case MENU_VALUE_FILE_3GP:
+         case MENU_VALUE_FILE_F4F:
+         case MENU_VALUE_FILE_F4V:
+         case MENU_VALUE_FILE_MP3:
+         case MENU_VALUE_FILE_M4A:
+         case MENU_VALUE_FILE_OGG:
+         case MENU_VALUE_FILE_FLAC:
+         case MENU_VALUE_FILE_WAV:
+            global->core_type = CORE_TYPE_FFMPEG;
+            break;
+      }
+   }
+#endif
+
    /* Copy SRM/state dirs used, so they can be reused on reentrancy. */
    if (global->has_set_save_path &&
          path_is_directory(global->savefile_name))
@@ -1337,7 +1366,16 @@ void rarch_main_set_state(unsigned cmd)
       case RARCH_ACTION_STATE_LOAD_CONTENT:
 #ifdef HAVE_MENU
          /* If content loading fails, we go back to menu. */
-         if (!menu_load_content())
+         if (!menu_load_content(CORE_TYPE_PLAIN))
+            rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING);
+#endif
+         if (driver->frontend_ctx && driver->frontend_ctx->content_loaded)
+            driver->frontend_ctx->content_loaded();
+         break;
+      case RARCH_ACTION_STATE_LOAD_CONTENT_FFMPEG:
+#ifdef HAVE_MENU
+         /* If content loading fails, we go back to menu. */
+         if (!menu_load_content(CORE_TYPE_FFMPEG))
             rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING);
 #endif
          if (driver->frontend_ctx && driver->frontend_ctx->content_loaded)

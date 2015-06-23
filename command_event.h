@@ -30,6 +30,9 @@ enum event_command
    /* Loads content file. */
    EVENT_CMD_LOAD_CONTENT,
    EVENT_CMD_LOAD_CONTENT_PERSIST,
+#ifdef HAVE_FFMPEG
+   EVENT_CMD_LOAD_CONTENT_FFMPEG,
+#endif
    /* Loads core. */
    EVENT_CMD_LOAD_CORE_DEINIT,
    EVENT_CMD_LOAD_CORE,

@@ -88,7 +88,7 @@ static int rarch_defer_core_wrapper(menu_displaylist_info_t *info,
                break;
             default:
                event_command(EVENT_CMD_LOAD_CORE);
-               menu_common_load_content(false);
+               menu_common_load_content(false, CORE_TYPE_PLAIN);
                ret = -1;
                break;
          }
@@ -150,7 +150,7 @@ static int action_ok_file_load_detect_core(const char *path,
    strlcpy(global->fullpath, detect_content_path, sizeof(global->fullpath));
    strlcpy(settings->libretro, path, sizeof(settings->libretro));
    event_command(EVENT_CMD_LOAD_CORE);
-   menu_common_load_content(false);
+   menu_common_load_content(false, CORE_TYPE_PLAIN);
 
    return -1;
 }
@@ -860,7 +860,7 @@ static int action_ok_core_load_deferred(const char *path,
    strlcpy(global->fullpath, menu->deferred_path,
          sizeof(global->fullpath));
 
-   menu_common_load_content(false);
+   menu_common_load_content(false, CORE_TYPE_PLAIN);
 
    return -1;
 }
@@ -926,7 +926,7 @@ static int action_ok_core_load(const char *path,
    {
       *global->fullpath = '\0';
 
-      menu_common_load_content(false);
+      menu_common_load_content(false, CORE_TYPE_PLAIN);
       return -1;
    }
 
@@ -1087,6 +1087,28 @@ static int action_ok_disk_image_append(const char *path,
    return -1;
 }
 
+#ifdef HAVE_FFMPEG
+static int action_ok_file_load_ffmpeg(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   const char *menu_path    = NULL;
+   global_t *global         = global_get_ptr();
+   menu_list_t   *menu_list = menu_list_get_ptr();
+
+   if (!menu_list)
+      return -1;
+
+   menu_list_get_last(menu_list->menu_stack,
+         &menu_path, NULL, NULL, NULL);
+
+   fill_pathname_join(global->fullpath, menu_path, path,
+         sizeof(global->fullpath));
+
+   menu_common_load_content(true, CORE_TYPE_FFMPEG);
+
+   return 0;
+}
+#endif
 
 static int action_ok_file_load(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
@@ -1119,7 +1141,7 @@ static int action_ok_file_load(const char *path,
          fill_pathname_join(global->fullpath, menu_path, path,
                sizeof(global->fullpath));
 
-      menu_common_load_content(true);
+      menu_common_load_content(true, CORE_TYPE_PLAIN);
 
       return -1;
    }
@@ -1744,6 +1766,12 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
                   cbs->action_ok = action_ok_file_load;
                   break;
             }
+            break;
+         case MENU_FILE_MOVIE:
+         case MENU_FILE_MUSIC:
+#ifdef HAVE_FFMPEG
+            cbs->action_ok = action_ok_file_load_ffmpeg;
+#endif
             break;
          case MENU_SETTINGS_CUSTOM_VIEWPORT:
             cbs->action_ok = action_ok_custom_viewport;

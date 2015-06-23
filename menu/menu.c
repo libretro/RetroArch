@@ -87,7 +87,7 @@ static void menu_push_to_history_playlist(void)
  *
  * Returns: true (1) if successful, otherwise false (0).
  **/
-bool menu_load_content(void)
+bool menu_load_content(enum rarch_core_type type)
 {
    menu_handle_t *menu  = menu_driver_get_ptr();
    menu_display_t *disp = menu_display_get_ptr();
@@ -131,14 +131,25 @@ bool menu_load_content(void)
    return true;
 }
 
-void menu_common_load_content(bool persist)
+void menu_common_load_content(bool persist, enum rarch_core_type type)
 {
    menu_display_t *disp   = menu_display_get_ptr();
    menu_list_t *menu_list = menu_list_get_ptr();
    if (!menu_list)
       return;
 
-   event_command(persist ? EVENT_CMD_LOAD_CONTENT_PERSIST : EVENT_CMD_LOAD_CONTENT);
+   switch (type)
+   {
+      case CORE_TYPE_PLAIN:
+      case CORE_TYPE_DUMMY:
+         event_command(persist ? EVENT_CMD_LOAD_CONTENT_PERSIST : EVENT_CMD_LOAD_CONTENT);
+         break;
+#ifdef HAVE_FFMPEG
+      case CORE_TYPE_FFMPEG:
+         event_command(EVENT_CMD_LOAD_CONTENT_FFMPEG);
+         break;
+#endif
+   }
 
    menu_list_flush_stack(menu_list, NULL, MENU_SETTINGS);
    disp->msg_force = true;

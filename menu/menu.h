@@ -25,6 +25,7 @@
 #include <boolean.h>
 
 #include "../driver.h"
+#include "../dynamic.h"
 
 #if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
 #ifndef HAVE_SHADER_MANAGER
@@ -180,15 +181,16 @@ void menu_free(menu_handle_t *menu);
 
 /**
  * menu_load_content:
+ * type                      : Type of content to load.
  *
  * Loads content into currently selected core.
  * Will also optionally push the content entry to the history playlist.
  *
  * Returns: true (1) if successful, otherwise false (0).
  **/
-bool menu_load_content(void);
+bool menu_load_content(enum rarch_core_type type);
 
-void menu_common_load_content(bool persist);
+void menu_common_load_content(bool persist, enum rarch_core_type type);
 
 void menu_update_system_info(menu_handle_t *menu, bool *load_no_content);
 

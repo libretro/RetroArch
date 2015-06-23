@@ -976,6 +976,11 @@ bool event_command(enum event_command cmd)
 #endif
          rarch_main_set_state(RARCH_ACTION_STATE_LOAD_CONTENT);
          break;
+#ifdef HAVE_FFMPEG
+      case EVENT_CMD_LOAD_CONTENT_FFMPEG:
+         rarch_main_set_state(RARCH_ACTION_STATE_LOAD_CONTENT_FFMPEG);
+         break;
+#endif
       case EVENT_CMD_LOAD_CONTENT:
 #ifdef HAVE_DYNAMIC
          event_command(EVENT_CMD_LOAD_CONTENT_PERSIST);

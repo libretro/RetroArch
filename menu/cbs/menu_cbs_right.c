@@ -385,6 +385,8 @@ static int menu_cbs_init_bind_right_compare_type(menu_file_list_cbs_t *cbs,
          case MENU_FILE_DOWNLOAD_CORE:
          case MENU_FILE_CHEAT:
          case MENU_FILE_REMAP:
+         case MENU_FILE_MOVIE:
+         case MENU_FILE_MUSIC:
          case MENU_FILE_PLAYLIST_COLLECTION:
          case MENU_SETTING_GROUP:
             switch (menu_label_hash)
