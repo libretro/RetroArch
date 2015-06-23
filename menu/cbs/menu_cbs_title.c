@@ -277,22 +277,7 @@ static int action_get_title_deferred_core_list(const char *path, const char *lab
 static int action_get_title_default(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   driver_t               *driver = driver_get_ptr();
-   if (driver->menu->defer_core)
-      snprintf(s, len, "CONTENT %s", path);
-   else
-   {
-      global_t *global      = global_get_ptr();
-      const char *core_name = global->menu.info.library_name;
-
-      if (!core_name)
-         core_name = global->system.info.library_name;
-      if (!core_name)
-         core_name = menu_hash_to_str(MENU_VALUE_NO_CORE);
-      snprintf(s, len, "CONTENT (%s) %s", core_name, path);
-   }
-
-
+   snprintf(s, len, "SELECT FILE %s", path);
    return 0;
 }
 
