@@ -688,7 +688,7 @@ static void xmb_list_open_old(xmb_handle_t *xmb,
       if (dir == -1)
          ia = 0;
 
-      real_y = node->y + + xmb->margins.screen.top;
+      real_y = node->y + xmb->margins.screen.top;
 
       if (real_y < -threshold || real_y > height+threshold)
       {
@@ -739,7 +739,7 @@ static void xmb_list_open_new(xmb_handle_t *xmb,
       node->y = xmb_item_y(xmb, i, current);
       node->zoom = xmb->categories.passive.zoom;
 
-      real_y = node->y + + xmb->margins.screen.top;
+      real_y = node->y + xmb->margins.screen.top;
 
       if (i == current)
          node->zoom = xmb->categories.active.zoom;
