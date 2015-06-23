@@ -295,11 +295,36 @@ void menu_animation_kill_by_subject(menu_animation_t *animation,
          {
             animation->list[i].alive   = 0;
             animation->list[i].subject = NULL;
+
+            if (i < animation->first_dead)
+               animation->first_dead = i;
+
             killed++;
             break;
          }
       }
    }
+}
+
+static void menu_animation_push_internal(menu_animation_t *anim, const struct tween *t)
+{
+   struct tween *target = NULL;
+
+   if (anim->first_dead < anim->size && !anim->list[anim->first_dead].alive)
+      target = &anim->list[anim->first_dead++];
+   else
+   {
+      if (anim->size >= anim->capacity)
+      {
+         anim->capacity++;
+         anim->list = (struct tween*)realloc(anim->list,
+               anim->capacity * sizeof(struct tween));
+      }
+
+      target = &anim->list[anim->size++];
+   }
+
+   *target = *t;
 }
 
 bool menu_animation_push(
@@ -441,23 +466,17 @@ bool menu_animation_push(
    if (!t.easing || t.duration == 0 || t.initial_value == t.target_value)
       return false;
 
-   if (anim->size >= anim->capacity)
-   {
-      anim->capacity++;
-      anim->list = (struct tween*)realloc(anim->list,
-            anim->capacity * sizeof(struct tween));
-   }
-
-   anim->list[anim->size++] = t;
+   menu_animation_push_internal(anim, &t);
 
    return true;
 }
 
 static int menu_animation_iterate(
-      struct tween *tween,
-      float dt,
-      unsigned *active_tweens)
+      menu_animation_t *anim, unsigned idx,
+      float dt, unsigned *active_tweens)
 {
+   struct tween *tween = &anim->list[idx];
+
    if (!tween->alive)
       return -1;
 
@@ -473,6 +492,9 @@ static int menu_animation_iterate(
    {
       *tween->subject = tween->target_value;
       tween->alive    = 0;
+
+      if (idx < anim->first_dead)
+         anim->first_dead = idx;
 
       if (tween->cb)
          tween->cb();
@@ -490,11 +512,12 @@ bool menu_animation_update(menu_animation_t *anim, float dt)
    unsigned active_tweens = 0;
 
    for(i = 0; i < anim->size; i++)
-      menu_animation_iterate(&anim->list[i], dt, &active_tweens);
+      menu_animation_iterate(anim, i, dt, &active_tweens);
 
    if (!active_tweens)
    {
       anim->size = 0;
+      anim->first_dead = 0;
       return false;
    }
 

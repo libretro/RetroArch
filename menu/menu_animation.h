@@ -51,6 +51,7 @@ typedef struct menu_animation
 
    size_t capacity;
    size_t size;
+   size_t first_dead;
    bool is_active;
 
    /* Delta timing */
