@@ -1935,6 +1935,7 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          ret = menu_displaylist_parse_load_core_list(info);
 
          need_push    = true;
+         need_refresh = true;
          break;
       case DISPLAYLIST_OPTIONS:
          menu_list_clear(info->list);
@@ -2179,6 +2180,7 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          menu_list_clear(info->list);
          menu_displaylist_parse_system_info(info);
          need_push    = true;
+         need_refresh = true;
          break;
       case DISPLAYLIST_CORES_SUPPORTED:
       case DISPLAYLIST_CORES_COLLECTION_SUPPORTED:
