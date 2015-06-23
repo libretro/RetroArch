@@ -192,6 +192,8 @@ bool menu_load_content(enum rarch_core_type type);
 
 void menu_common_load_content(bool persist, enum rarch_core_type type);
 
+void menu_common_push_content_settings(void);
+
 void menu_update_system_info(menu_handle_t *menu, bool *load_no_content);
 
 #ifdef __cplusplus
