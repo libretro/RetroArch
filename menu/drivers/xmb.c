@@ -655,7 +655,8 @@ static void xmb_selection_pointer_changed(void)
 static void xmb_list_open_old(xmb_handle_t *xmb,
       file_list_t *list, int dir, size_t current)
 {
-   unsigned i;
+   unsigned i, height = 0;
+   int threshold = xmb->icon.size * 10;
    size_t           end = 0;
    menu_display_t *disp = menu_display_get_ptr();
 
@@ -664,9 +665,12 @@ static void xmb_list_open_old(xmb_handle_t *xmb,
 
    end = file_list_get_size(list);
 
+   video_driver_get_size(NULL, &height);
+
    for (i = 0; i < end; i++)
    {
       float ia = 0;
+      float real_y;
       xmb_node_t *node = (xmb_node_t*)menu_list_get_userdata_at_offset(list, i);
 
       if (!node)
@@ -677,13 +681,24 @@ static void xmb_list_open_old(xmb_handle_t *xmb,
       if (dir == -1)
          ia = 0;
 
-      menu_animation_push(disp->animation,
-            XMB_DELAY, ia, &node->alpha, EASING_IN_OUT_QUAD, -1, NULL);
-      menu_animation_push(disp->animation,
-            XMB_DELAY, 0, &node->label_alpha, EASING_IN_OUT_QUAD, -1, NULL);
-      menu_animation_push(disp->animation,
-            XMB_DELAY, xmb->icon.size * dir * -2, &node->x,
-            EASING_IN_OUT_QUAD, -1, NULL);
+      real_y = node->y + + xmb->margins.screen.top;
+
+      if (real_y < -threshold || real_y > height+threshold)
+      {
+         node->alpha = ia;
+         node->label_alpha = 0;
+         node->x = xmb->icon.size * dir * -2;
+      }
+      else
+      {
+         menu_animation_push(disp->animation,
+               XMB_DELAY, ia, &node->alpha, EASING_IN_OUT_QUAD, -1, NULL);
+         menu_animation_push(disp->animation,
+               XMB_DELAY, 0, &node->label_alpha, EASING_IN_OUT_QUAD, -1, NULL);
+         menu_animation_push(disp->animation,
+               XMB_DELAY, xmb->icon.size * dir * -2, &node->x,
+               EASING_IN_OUT_QUAD, -1, NULL);
+      }
    }
 }
 
