@@ -438,14 +438,18 @@ static int deferred_push_content_history_path(menu_displaylist_info_t *info)
 
 static int deferred_push_detect_core_list(menu_displaylist_info_t *info)
 {
-   global_t *global = global_get_ptr();
+   settings_t *settings   = config_get_ptr();
+   global_t *global       = global_get_ptr();
 
    info->type_default = MENU_FILE_PLAIN;
    if (global->core_info)
       strlcpy(info->exts, core_info_list_get_all_extensions(
          global->core_info), sizeof(info->exts));
 
+   (void)settings;
+
 #ifdef HAVE_FFMPEG
+   if (settings->mediaplayer.builtin_enable)
    {
       struct retro_system_info sysinfo = {0};
       libretro_ffmpeg_retro_get_system_info(&sysinfo);
@@ -459,7 +463,8 @@ static int deferred_push_detect_core_list(menu_displaylist_info_t *info)
 
 static int deferred_push_default(menu_displaylist_info_t *info)
 {
-   global_t *global         = global_get_ptr();
+   settings_t *settings   = config_get_ptr();
+   global_t *global       = global_get_ptr();
 
    info->type_default = MENU_FILE_PLAIN;
    info->setting      = menu_setting_find(info->label);
@@ -474,7 +479,10 @@ static int deferred_push_default(menu_displaylist_info_t *info)
    else
       strlcpy(info->exts, global->system.valid_extensions, sizeof(info->exts));
 
+   (void)settings;
+
 #ifdef HAVE_FFMPEG
+   if (settings->mediaplayer.builtin_enable)
    {
       struct retro_system_info sysinfo = {0};
       libretro_ffmpeg_retro_get_system_info(&sysinfo);

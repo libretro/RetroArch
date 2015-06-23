@@ -1572,6 +1572,10 @@ static const char *menu_hash_to_str_english(uint32_t hash)
 {
    switch (hash)
    {
+      case MENU_LABEL_USE_BUILTIN_PLAYER:
+         return "use_builtin_player";
+      case MENU_LABEL_VALUE_USE_BUILTIN_PLAYER:
+         return "Use Builtin Player";
       case MENU_LABEL_CONTENT_SETTINGS:
          return "content_settings";
       case MENU_LABEL_VALUE_CONTENT_SETTINGS:

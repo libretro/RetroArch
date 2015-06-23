@@ -266,6 +266,13 @@ typedef struct settings
       bool set_supports_no_game_enable;
    } core;
 
+#ifdef HAVE_FFMPEG
+   struct
+   {
+      bool builtin_enable;
+   } mediaplayer;
+#endif
+
    int state_slot;
 
    char core_options_path[PATH_MAX_LENGTH];

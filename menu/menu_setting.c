@@ -5777,6 +5777,42 @@ static bool setting_append_list_menu_options(
    return true;
 }
 
+#ifdef HAVE_FFMPEG
+static bool setting_append_list_mediaplayer_options(
+      rarch_setting_t **list,
+      rarch_setting_info_t *list_info,
+      const char *parent_group)
+{
+   rarch_setting_group_info_t group_info    = {0};
+   rarch_setting_group_info_t subgroup_info = {0};
+   settings_t *settings = config_get_ptr();
+
+   START_GROUP(group_info, "Media Player Settings", parent_group);
+   
+   parent_group = menu_hash_to_str(MENU_LABEL_VALUE_SETTINGS);
+
+   START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info, parent_group);
+
+   CONFIG_BOOL(
+         settings->mediaplayer.builtin_enable,
+         menu_hash_to_str(MENU_LABEL_USE_BUILTIN_PLAYER),
+         menu_hash_to_str(MENU_LABEL_VALUE_USE_BUILTIN_PLAYER),
+         true,
+         menu_hash_to_str(MENU_VALUE_OFF),
+         menu_hash_to_str(MENU_VALUE_ON),
+         group_info.name,
+         subgroup_info.name,
+         parent_group,
+         general_write_handler,
+         general_read_handler);
+
+   END_SUB_GROUP(list, list_info, parent_group);
+   END_GROUP(list, list_info, parent_group);
+
+   return true;
+}
+#endif
+
 static bool setting_append_list_ui_options(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info,
@@ -7059,6 +7095,14 @@ rarch_setting_t *menu_setting_new(unsigned mask)
       if (!setting_append_list_menu_file_browser_options(&list, list_info, root))
          goto error;
    }
+
+#ifdef HAVE_FFMPEG
+   if (mask & SL_FLAG_MEDIA_PLAYER_OPTIONS)
+   {
+      if (!setting_append_list_mediaplayer_options(&list, list_info, root))
+         goto error;
+   }
+#endif
 
    if (mask & SL_FLAG_UI_OPTIONS)
    {

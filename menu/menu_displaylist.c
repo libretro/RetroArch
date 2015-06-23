@@ -1812,6 +1812,7 @@ static int menu_displaylist_parse_generic(menu_displaylist_info_t *info, bool *n
       }
 
 #ifdef HAVE_FFMPEG
+      if (settings->mediaplayer.builtin_enable)
       {
          uint32_t hash_ext = menu_hash_calculate(path_get_extension(path));
 

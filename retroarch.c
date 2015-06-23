@@ -846,6 +846,7 @@ static void parse_input(int argc, char *argv[])
       global->libretro_no_content = true;
 
 #ifdef HAVE_FFMPEG
+   if (settings->mediaplayer.builtin_enable)
    {
       uint32_t hash_ext = djb2_calculate(path_get_extension(global->fullpath));
 

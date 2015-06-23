@@ -49,6 +49,9 @@ extern "C" {
 #define MENU_VALUE_OPEN_ARCHIVE                                                0x96da22b9U
 #define MENU_VALUE_ASK_ARCHIVE                                                 0x0b87d6a4U
 
+#define MENU_LABEL_USE_BUILTIN_PLAYER                                          0x9927ca74U
+#define MENU_LABEL_VALUE_USE_BUILTIN_PLAYER                                    0x038e4816U
+
 #define MENU_LABEL_CONTENT_SETTINGS                                            0xf31dcaf0U
 #define MENU_LABEL_VALUE_CONTENT_SETTINGS                                      0x399ea371U
 
