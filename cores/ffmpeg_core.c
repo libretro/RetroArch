@@ -24,9 +24,16 @@
 #include <glsym/glsym.h>
 #endif
 
-#include "../libretro.h"
 #include <rthreads/rthreads.h>
 #include <queues/fifo_buffer.h>
+
+#ifdef RARCH_INTERNAL
+#include "../libretro.h"
+#define CORE_PREFIX(s) libretro_ffmpeg_##s
+#else
+#include "libretro.h"
+#define CORE_PREFIX(s) s
+#endif
 
 static bool reset_triggered;
 static void fallback_log(enum retro_log_level level, const char *fmt, ...)
@@ -177,7 +184,7 @@ static void append_attachment(const uint8_t *data, size_t size)
    attachments_size++;
 }
 
-void libretro_ffmpeg_retro_init(void)
+void CORE_PREFIX(retro_init)(void)
 {
    reset_triggered = false;
 
@@ -185,21 +192,21 @@ void libretro_ffmpeg_retro_init(void)
    //avdevice_register_all(); // FIXME: Occasionally crashes inside libavdevice for some odd reason on reentrancy. Likely a libavdevice bug.
 }
 
-void libretro_ffmpeg_retro_deinit(void)
+void CORE_PREFIX(retro_deinit)(void)
 {}
 
-unsigned libretro_ffmpeg_retro_api_version(void)
+unsigned CORE_PREFIX(retro_api_version)(void)
 {
    return RETRO_API_VERSION;
 }
 
-void libretro_ffmpeg_retro_set_controller_port_device(unsigned port, unsigned device)
+void CORE_PREFIX(retro_set_controller_port_device)(unsigned port, unsigned device)
 {
    (void)port;
    (void)device;
 }
 
-void libretro_ffmpeg_retro_get_system_info(struct retro_system_info *info)
+void CORE_PREFIX(retro_get_system_info)(struct retro_system_info *info)
 {
    memset(info, 0, sizeof(*info));
    info->library_name     = "FFmpeg";
@@ -208,7 +215,7 @@ void libretro_ffmpeg_retro_get_system_info(struct retro_system_info *info)
    info->valid_extensions = "mkv|avi|f4v|f4f|3gp|ogm|flv|mp4|mov|mp3|wav|webm|wmv|flac|ogg|m4a";
 }
 
-void libretro_ffmpeg_retro_get_system_av_info(struct retro_system_av_info *info)
+void CORE_PREFIX(retro_get_system_av_info)(struct retro_system_av_info *info)
 {
    info->timing = (struct retro_system_timing) {
       .fps = media.interpolate_fps,
@@ -237,7 +244,7 @@ void libretro_ffmpeg_retro_get_system_av_info(struct retro_system_av_info *info)
    };
 }
 
-void libretro_ffmpeg_retro_set_environment(retro_environment_t cb)
+void CORE_PREFIX(retro_set_environment)(retro_environment_t cb)
 {
    environ_cb = cb;
 
@@ -262,32 +269,32 @@ void libretro_ffmpeg_retro_set_environment(retro_environment_t cb)
       log_cb = fallback_log;
 }
 
-void libretro_ffmpeg_retro_set_audio_sample(retro_audio_sample_t cb)
+void CORE_PREFIX(retro_set_audio_sample)(retro_audio_sample_t cb)
 {
    audio_cb = cb;
 }
 
-void libretro_ffmpeg_retro_set_audio_sample_batch(retro_audio_sample_batch_t cb)
+void CORE_PREFIX(retro_set_audio_sample_batch)(retro_audio_sample_batch_t cb)
 {
    audio_batch_cb = cb;
 }
 
-void libretro_ffmpeg_retro_set_input_poll(retro_input_poll_t cb)
+void CORE_PREFIX(retro_set_input_poll)(retro_input_poll_t cb)
 {
    input_poll_cb = cb;
 }
 
-void libretro_ffmpeg_retro_set_input_state(retro_input_state_t cb)
+void CORE_PREFIX(retro_set_input_state)(retro_input_state_t cb)
 {
    input_state_cb = cb;
 }
 
-void libretro_ffmpeg_retro_set_video_refresh(retro_video_refresh_t cb)
+void CORE_PREFIX(retro_set_video_refresh)(retro_video_refresh_t cb)
 {
    video_cb = cb;
 }
 
-void libretro_ffmpeg_retro_reset(void)
+void CORE_PREFIX(retro_reset)(void)
 {
    reset_triggered = true;
 }
@@ -390,7 +397,7 @@ static void seek_frame(int seek_frames)
    slock_unlock(fifo_lock);
 }
 
-void libretro_ffmpeg_retro_run(void)
+void CORE_PREFIX(retro_run)(void)
 {
    bool updated = false;
 
@@ -407,7 +414,7 @@ void libretro_ffmpeg_retro_run(void)
    if (fft_width != old_fft_width || fft_height != old_fft_height)
    {
       struct retro_system_av_info info;
-      retro_get_system_av_info(&info);
+      CORE_PREFIX(retro_get_system_av_info)(&info);
       if (!environ_cb(RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO, &info))
       {
          fft_width = old_fft_width;
@@ -1332,7 +1339,7 @@ static void context_reset(void)
 }
 #endif
 
-void libretro_ffmpeg_retro_unload_game(void)
+void CORE_PREFIX(retro_unload_game)(void)
 {
    if (decode_thread_handle)
    {
@@ -1422,7 +1429,7 @@ void libretro_ffmpeg_retro_unload_game(void)
    av_freep(&video_frame_temp_buffer);
 }
 
-bool libretro_ffmpeg_retro_load_game(const struct retro_game_info *info)
+bool CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
 {
    struct retro_input_descriptor desc[] = {
       { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_LEFT,  "Seek -10 seconds" },
@@ -1507,17 +1514,17 @@ bool libretro_ffmpeg_retro_load_game(const struct retro_game_info *info)
    return true;
 
 error:
-   libretro_ffmpeg_retro_unload_game();
+   CORE_PREFIX(retro_unload_game)();
    return false;
 }
 
 
-unsigned libretro_ffmpeg_retro_get_region(void)
+unsigned CORE_PREFIX(retro_get_region)(void)
 {
    return RETRO_REGION_NTSC;
 }
 
-bool libretro_ffmpeg_retro_load_game_special(unsigned type, const struct retro_game_info *info, size_t num)
+bool CORE_PREFIX(retro_load_game_special)(unsigned type, const struct retro_game_info *info, size_t num)
 {
    (void)type;
    (void)info;
@@ -1525,41 +1532,41 @@ bool libretro_ffmpeg_retro_load_game_special(unsigned type, const struct retro_g
    return false;
 }
 
-size_t libretro_ffmpeg_retro_serialize_size(void)
+size_t CORE_PREFIX(retro_serialize_size)(void)
 {
    return 0;
 }
 
-bool libretro_ffmpeg_retro_serialize(void *data, size_t size)
+bool CORE_PREFIX(retro_serialize)(void *data, size_t size)
 {
    (void)data;
    (void)size;
    return false;
 }
 
-bool libretro_ffmpeg_retro_unserialize(const void *data, size_t size)
+bool CORE_PREFIX(retro_unserialize)(const void *data, size_t size)
 {
    (void)data;
    (void)size;
    return false;
 }
 
-void *libretro_ffmpeg_retro_get_memory_data(unsigned id)
+void *CORE_PREFIX(retro_get_memory_data)(unsigned id)
 {
    (void)id;
    return NULL;
 }
 
-size_t libretro_ffmpeg_retro_get_memory_size(unsigned id)
+size_t CORE_PREFIX(retro_get_memory_size)(unsigned id)
 {
    (void)id;
    return 0;
 }
 
-void libretro_ffmpeg_retro_cheat_reset(void)
+void CORE_PREFIX(retro_cheat_reset)(void)
 {}
 
-void libretro_ffmpeg_retro_cheat_set(unsigned index, bool enabled, const char *code)
+void CORE_PREFIX(retro_cheat_set)(unsigned index, bool enabled, const char *code)
 {
    (void)index;
    (void)enabled;
