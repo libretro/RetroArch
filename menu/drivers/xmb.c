@@ -583,7 +583,7 @@ static void xmb_update_boxart(xmb_handle_t *xmb, unsigned i)
 
 static void xmb_selection_pointer_changed(void)
 {
-   unsigned i, current, end, tag, height;
+   unsigned i, current, end, tag, height, skip;
    int threshold = 0;
    xmb_handle_t    *xmb   = NULL;
    menu_handle_t    *menu = menu_driver_get_ptr();
@@ -608,6 +608,8 @@ static void xmb_selection_pointer_changed(void)
    video_driver_get_size(NULL, &height);
 
    menu_animation_kill_by_tag(disp->animation, tag);
+   menu_entries_set_start(0);
+   skip = 0;
 
    for (i = 0; i < end; i++)
    {
@@ -632,6 +634,9 @@ static void xmb_selection_pointer_changed(void)
             xmb_update_boxart(xmb, i);
       }
 
+      if (real_iy < -threshold)
+         skip++;
+
       if (real_iy < -threshold || real_iy > height+threshold)
       {
          node->alpha = node->label_alpha = ia;
@@ -650,6 +655,8 @@ static void xmb_selection_pointer_changed(void)
                XMB_DELAY, iy, &node->y,     EASING_IN_OUT_QUAD, tag, NULL);
       }
    }
+
+   menu_entries_set_start(skip);
 }
 
 static void xmb_list_open_old(xmb_handle_t *xmb,
@@ -1365,37 +1372,29 @@ static void xmb_render(void)
    current = nav->selection_ptr;
    end     = menu_list_get_size(menu_list);
 
-   menu_entries_set_start(0);
-
-   for (i = 0; i < end; i++)
+   if (settings->menu.pointer.enable || settings->menu.mouse.enable)
    {
-      float item_y1 = xmb->margins.screen.top + xmb_item_y(xmb, i, current);
-      float item_y2 = item_y1 + xmb->icon.size;
-
-      if (item_y2 < 0)
+      for (i = 0; i < end; i++)
       {
-         menu_entries_set_start(menu_entries_get_start() + 1);
-         continue;
-      }
+         float item_y1 = xmb->margins.screen.top + xmb_item_y(xmb, i, current);
+         float item_y2 = item_y1 + xmb->icon.size;
 
-      if (item_y1 > height)
-         continue;
+         if (settings->menu.pointer.enable)
+         {
+           if (menu_input->pointer.y > item_y1 && menu_input->pointer.y < item_y2)
+              menu_input->pointer.ptr = i;
+         }
 
-      if (settings->menu.pointer.enable)
-      {
-        if (menu_input->pointer.y > item_y1 && menu_input->pointer.y < item_y2)
-           menu_input->pointer.ptr = i;
-      }
-
-      if (settings->menu.mouse.enable)
-      {
-         if (menu_input->mouse.y > item_y1 && menu_input->mouse.y < item_y2)
-            menu_input->mouse.ptr = i;
+         if (settings->menu.mouse.enable)
+         {
+            if (menu_input->mouse.y > item_y1 && menu_input->mouse.y < item_y2)
+               menu_input->mouse.ptr = i;
+         }
       }
    }
 
-   if (menu_entries_get_start() >= 5)
-      menu_entries_set_start(menu_entries_get_start() - 5);
+   if (menu_entries_get_start() >= end)
+      menu_entries_set_start(0);
 
    anim->is_active = false;
    anim->label.is_updated    = false;
