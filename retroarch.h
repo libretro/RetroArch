@@ -40,6 +40,13 @@ enum action_state
    RARCH_ACTION_STATE_FORCE_QUIT,
 };
 
+enum rarch_content_type
+{
+   RARCH_CONTENT_NONE = 0,
+   RARCH_CONTENT_MOVIE,
+   RARCH_CONTENT_MUSIC,
+};
+
 enum rarch_capabilities
 {
    RARCH_CAPABILITIES_NONE = 0,
@@ -174,6 +181,10 @@ void rarch_set_paths(const char *path);
 void set_paths_redirect(const char *path);
 
 int rarch_info_get_capabilities(enum rarch_capabilities type, char *s, size_t len);
+
+#ifdef HAVE_FFMPEG
+enum rarch_content_type rarch_mediaplayer_is_media_type(const char *path);
+#endif
 
 extern char orig_savestate_dir[PATH_MAX_LENGTH];
 extern char orig_savefile_dir[PATH_MAX_LENGTH];

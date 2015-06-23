@@ -1814,26 +1814,15 @@ static int menu_displaylist_parse_generic(menu_displaylist_info_t *info, bool *n
 #ifdef HAVE_FFMPEG
       if (settings->mediaplayer.builtin_enable)
       {
-         uint32_t hash_ext = menu_hash_calculate(path_get_extension(path));
-
-         switch (hash_ext)
+         switch (rarch_mediaplayer_is_media_type(path))
          {
-            case MENU_VALUE_FILE_OGM:
-            case MENU_VALUE_FILE_MKV:
-            case MENU_VALUE_FILE_AVI:
-            case MENU_VALUE_FILE_MP4:
-            case MENU_VALUE_FILE_FLV:
-            case MENU_VALUE_FILE_3GP:
-            case MENU_VALUE_FILE_F4F:
-            case MENU_VALUE_FILE_F4V:
+            case RARCH_CONTENT_MOVIE:
                file_type = MENU_FILE_MOVIE;
                break;
-            case MENU_VALUE_FILE_MP3:
-            case MENU_VALUE_FILE_M4A:
-            case MENU_VALUE_FILE_OGG:
-            case MENU_VALUE_FILE_FLAC:
-            case MENU_VALUE_FILE_WAV:
+            case RARCH_CONTENT_MUSIC:
                file_type = MENU_FILE_MUSIC;
+               break;
+            default:
                break;
          }
       }

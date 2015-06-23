@@ -422,6 +422,36 @@ void rarch_set_paths(const char *path)
          sizeof(settings->system_directory));
 }
 
+#ifdef HAVE_FFMPEG
+enum rarch_content_type rarch_mediaplayer_is_media_type(const char *path)
+{
+   uint32_t hash_ext = djb2_calculate(path_get_extension(path));
+
+   switch (hash_ext)
+   {
+      case MENU_VALUE_FILE_OGM:
+      case MENU_VALUE_FILE_MKV:
+      case MENU_VALUE_FILE_AVI:
+      case MENU_VALUE_FILE_MP4:
+      case MENU_VALUE_FILE_FLV:
+      case MENU_VALUE_FILE_3GP:
+      case MENU_VALUE_FILE_F4F:
+      case MENU_VALUE_FILE_F4V:
+         return RARCH_CONTENT_MOVIE;
+      case MENU_VALUE_FILE_MP3:
+      case MENU_VALUE_FILE_M4A:
+      case MENU_VALUE_FILE_OGG:
+      case MENU_VALUE_FILE_FLAC:
+      case MENU_VALUE_FILE_WAV:
+         return RARCH_CONTENT_MUSIC;
+      default:
+         break;
+   }
+
+   return RARCH_CONTENT_NONE;
+}
+#endif
+
 /**
  * parse_input:
  * @argc                 : Count of (commandline) arguments.
@@ -848,24 +878,13 @@ static void parse_input(int argc, char *argv[])
 #ifdef HAVE_FFMPEG
    if (settings->mediaplayer.builtin_enable)
    {
-      uint32_t hash_ext = djb2_calculate(path_get_extension(global->fullpath));
-
-      switch (hash_ext)
+      switch (rarch_mediaplayer_is_media_type(global->fullpath))
       {
-         case MENU_VALUE_FILE_OGM:
-         case MENU_VALUE_FILE_MKV:
-         case MENU_VALUE_FILE_AVI:
-         case MENU_VALUE_FILE_MP4:
-         case MENU_VALUE_FILE_FLV:
-         case MENU_VALUE_FILE_3GP:
-         case MENU_VALUE_FILE_F4F:
-         case MENU_VALUE_FILE_F4V:
-         case MENU_VALUE_FILE_MP3:
-         case MENU_VALUE_FILE_M4A:
-         case MENU_VALUE_FILE_OGG:
-         case MENU_VALUE_FILE_FLAC:
-         case MENU_VALUE_FILE_WAV:
+         case RARCH_CONTENT_MOVIE:
+         case RARCH_CONTENT_MUSIC:
             global->core_type = CORE_TYPE_FFMPEG;
+            break;
+         default:
             break;
       }
    }
