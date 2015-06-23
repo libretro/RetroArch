@@ -690,13 +690,17 @@ static void xmb_list_open_old(xmb_handle_t *xmb,
 static void xmb_list_open_new(xmb_handle_t *xmb,
       file_list_t *list, int dir, size_t current)
 {
-   unsigned i;
+   unsigned i, height;
+   int threshold = xmb->icon.size * 10;
    menu_display_t *disp = menu_display_get_ptr();
    size_t           end = file_list_get_size(list);
+
+   video_driver_get_size(NULL, &height);
 
    for (i = 0; i < end; i++)
    {
       float ia;
+      float real_y;
       xmb_node_t *node = (xmb_node_t*)
          menu_list_get_userdata_at_offset(list, i);
 
@@ -713,6 +717,8 @@ static void xmb_list_open_new(xmb_handle_t *xmb,
       node->y = xmb_item_y(xmb, i, current);
       node->zoom = xmb->categories.passive.zoom;
 
+      real_y = node->y + + xmb->margins.screen.top;
+
       if (i == current)
          node->zoom = xmb->categories.active.zoom;
 
@@ -720,12 +726,20 @@ static void xmb_list_open_new(xmb_handle_t *xmb,
       if (i == current)
          ia = xmb->item.active.alpha;
 
-      menu_animation_push(disp->animation,
-            XMB_DELAY, ia, &node->alpha,  EASING_IN_OUT_QUAD, -1, NULL);
-      menu_animation_push(disp->animation,
-            XMB_DELAY, ia, &node->label_alpha,  EASING_IN_OUT_QUAD, -1, NULL);
-      menu_animation_push(disp->animation,
-            XMB_DELAY, 0, &node->x, EASING_IN_OUT_QUAD, -1, NULL);
+      if (real_y < -threshold || real_y > height+threshold)
+      {
+         node->alpha = node->label_alpha = ia;
+         node->x = 0;
+      }
+      else
+      {
+         menu_animation_push(disp->animation,
+               XMB_DELAY, ia, &node->alpha,  EASING_IN_OUT_QUAD, -1, NULL);
+         menu_animation_push(disp->animation,
+               XMB_DELAY, ia, &node->label_alpha,  EASING_IN_OUT_QUAD, -1, NULL);
+         menu_animation_push(disp->animation,
+               XMB_DELAY, 0, &node->x, EASING_IN_OUT_QUAD, -1, NULL);
+      }
    }
 
    xmb->old_depth = xmb->depth;
