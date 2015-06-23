@@ -293,8 +293,12 @@ void menu_animation_kill_by_subject(menu_animation_t *animation,
       {
          if (animation->list[i].subject == sub[j])
          {
-            animation->list[i].alive   = 0;
+            animation->list[i].alive   = false;
             animation->list[i].subject = NULL;
+
+            if (i < animation->first_dead)
+               animation->first_dead = i;
+
             killed++;
             break;
          }
@@ -302,25 +306,65 @@ void menu_animation_kill_by_subject(menu_animation_t *animation,
    }
 }
 
-bool menu_animation_push(
-      menu_animation_t *anim,
+void menu_animation_kill_by_tag(menu_animation_t *anim, unsigned tag)
+{
+   unsigned i;
+
+   if (tag == -1)
+      return;
+
+   for (i = 0; i < anim->size; ++i)
+   {
+      if (anim->list[i].tag == tag)
+      {
+         anim->list[i].alive   = false;
+         anim->list[i].subject = NULL;
+
+         if (i < anim->first_dead)
+            anim->first_dead = i;
+      }
+   }
+}
+
+static void menu_animation_push_internal(menu_animation_t *anim, const struct tween *t)
+{
+   struct tween *target = NULL;
+
+   if (anim->first_dead < anim->size && !anim->list[anim->first_dead].alive)
+      target = &anim->list[anim->first_dead++];
+   else
+   {
+      if (anim->size >= anim->capacity)
+      {
+         anim->capacity++;
+         anim->list = (struct tween*)realloc(anim->list,
+               anim->capacity * sizeof(struct tween));
+      }
+
+      target = &anim->list[anim->size++];
+   }
+
+   *target = *t;
+}
+
+bool menu_animation_push(menu_animation_t *anim,
       float duration,
-      float target_value,
-      float* subject,
+      float target_value, float* subject,
       enum menu_animation_easing_type easing_enum,
-      tween_cb cb)
+      unsigned tag, tween_cb cb)
 {
    struct tween t;
 
    if (!subject)
       return false;
 
-   t.alive         = 1;
+   t.alive         = true;
    t.duration      = duration;
    t.running_since = 0;
    t.initial_value = *subject;
    t.target_value  = target_value;
    t.subject       = subject;
+   t.tag           = tag;
    t.cb            = cb;
 
    switch (easing_enum)
@@ -441,23 +485,17 @@ bool menu_animation_push(
    if (!t.easing || t.duration == 0 || t.initial_value == t.target_value)
       return false;
 
-   if (anim->size >= anim->capacity)
-   {
-      anim->capacity++;
-      anim->list = (struct tween*)realloc(anim->list,
-            anim->capacity * sizeof(struct tween));
-   }
-
-   anim->list[anim->size++] = t;
+   menu_animation_push_internal(anim, &t);
 
    return true;
 }
 
 static int menu_animation_iterate(
-      struct tween *tween,
-      float dt,
-      unsigned *active_tweens)
+      menu_animation_t *anim, unsigned idx,
+      float dt, unsigned *active_tweens)
 {
+   struct tween *tween = &anim->list[idx];
+
    if (!tween->alive)
       return -1;
 
@@ -472,7 +510,10 @@ static int menu_animation_iterate(
    if (tween->running_since >= tween->duration)
    {
       *tween->subject = tween->target_value;
-      tween->alive    = 0;
+      tween->alive    = false;
+
+      if (idx < anim->first_dead)
+         anim->first_dead = idx;
 
       if (tween->cb)
          tween->cb();
@@ -490,11 +531,12 @@ bool menu_animation_update(menu_animation_t *anim, float dt)
    unsigned active_tweens = 0;
 
    for(i = 0; i < anim->size; i++)
-      menu_animation_iterate(&anim->list[i], dt, &active_tweens);
+      menu_animation_iterate(anim, i, dt, &active_tweens);
 
    if (!active_tweens)
    {
       anim->size = 0;
+      anim->first_dead = 0;
       return false;
    }
 

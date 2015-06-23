@@ -35,12 +35,13 @@ typedef void  (*tween_cb) (void);
 
 struct tween
 {
-   int    alive;
+   bool   alive;
    float  duration;
    float  running_since;
    float  initial_value;
    float  target_value;
    float* subject;
+   unsigned tag;
    easingFunc easing;
    tween_cb cb;
 };
@@ -51,6 +52,7 @@ typedef struct menu_animation
 
    size_t capacity;
    size_t size;
+   size_t first_dead;
    bool is_active;
 
    /* Delta timing */
@@ -118,11 +120,15 @@ void menu_animation_kill_by_subject(
       size_t count,
       const void *subjects);
 
+void menu_animation_kill_by_tag(menu_animation_t *anim, unsigned tag);
+
+/* Use -1 for untagged */
 bool menu_animation_push(
       menu_animation_t *animation,
       float duration,
       float target_value, float* subject,
-      enum menu_animation_easing_type easing_enum, tween_cb cb);
+      enum menu_animation_easing_type easing_enum,
+      unsigned tag, tween_cb cb);
 
 bool menu_animation_update(
       menu_animation_t *animation,
