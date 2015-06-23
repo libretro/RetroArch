@@ -1231,7 +1231,6 @@ int rarch_main_init(int argc, char *argv[])
          {
             case RARCH_CONTENT_MOVIE:
             case RARCH_CONTENT_MUSIC:
-               *settings->libretro = '\0';
                global->has_set_libretro              = false;
                global->core_type = CORE_TYPE_FFMPEG;
                break;
