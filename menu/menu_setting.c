@@ -3409,6 +3409,8 @@ static bool setting_append_list_main_menu_options(
    global_t *global      = global_get_ptr();
    const char *main_menu = menu_hash_to_str(MENU_VALUE_MAIN_MENU);
 
+   (void)settings;
+
    START_GROUP(group_info,main_menu, parent_group);
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info, parent_group);
 
