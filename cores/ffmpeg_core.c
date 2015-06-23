@@ -433,9 +433,11 @@ void libretro_ffmpeg_retro_run(void)
    bool right = input_state_cb(0, RETRO_DEVICE_JOYPAD, 0,
          RETRO_DEVICE_ID_JOYPAD_RIGHT);
    bool up = input_state_cb(0, RETRO_DEVICE_JOYPAD, 0,
-         RETRO_DEVICE_ID_JOYPAD_UP);
+         RETRO_DEVICE_ID_JOYPAD_UP) ||
+      input_state_cb(0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_WHEELUP);
    bool down = input_state_cb(0, RETRO_DEVICE_JOYPAD, 0,
-         RETRO_DEVICE_ID_JOYPAD_DOWN);
+         RETRO_DEVICE_ID_JOYPAD_DOWN) ||
+      input_state_cb(0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_WHEELDOWN);
    bool l = input_state_cb(0, RETRO_DEVICE_JOYPAD, 0,
          RETRO_DEVICE_ID_JOYPAD_L);
    bool r = input_state_cb(0, RETRO_DEVICE_JOYPAD, 0,
