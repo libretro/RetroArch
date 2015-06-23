@@ -778,7 +778,7 @@ static int menu_displaylist_parse_shader_options(menu_displaylist_info_t *info)
 static int create_string_list_rdb_entry_string(const char *desc, const char *label,
       const char *actual_string, const char *path, file_list_t *list)
 {
-   union string_list_elem_attr attr;
+   union string_list_elem_attr attr = {0};
    char tmp[PATH_MAX_LENGTH]    = {0};
    char *output_label           = NULL;
    int str_len                  = 0;
@@ -786,8 +786,6 @@ static int create_string_list_rdb_entry_string(const char *desc, const char *lab
 
    if (!str_list)
       return -1;
-
-   attr.i = 0;
 
    str_len += strlen(label) + 1;
    string_list_append(str_list, label, attr);
@@ -824,7 +822,7 @@ static int create_string_list_rdb_entry_string(const char *desc, const char *lab
 static int create_string_list_rdb_entry_int(const char *desc, const char *label,
       int actual_int, const char *path, file_list_t *list)
 {
-   union string_list_elem_attr attr;
+   union string_list_elem_attr attr = {0};
    char tmp[PATH_MAX_LENGTH]    = {0};
    char str[PATH_MAX_LENGTH]    = {0};
    char *output_label           = NULL;
@@ -833,8 +831,6 @@ static int create_string_list_rdb_entry_int(const char *desc, const char *label,
 
    if (!str_list)
       return -1;
-
-   attr.i = 0;
 
    str_len += strlen(label) + 1;
    string_list_append(str_list, label, attr);
@@ -1814,6 +1810,33 @@ static int menu_displaylist_parse_generic(menu_displaylist_info_t *info, bool *n
             file_type = is_dir ? MENU_FILE_DIRECTORY : MENU_FILE_CORE;
             break;
       }
+
+#ifdef HAVE_FFMPEG
+      {
+         uint32_t hash_ext = menu_hash_calculate(path_get_extension(path));
+
+         switch (hash_ext)
+         {
+            case MENU_VALUE_FILE_OGM:
+            case MENU_VALUE_FILE_MKV:
+            case MENU_VALUE_FILE_AVI:
+            case MENU_VALUE_FILE_MP4:
+            case MENU_VALUE_FILE_FLV:
+            case MENU_VALUE_FILE_3GP:
+            case MENU_VALUE_FILE_F4F:
+            case MENU_VALUE_FILE_F4V:
+               file_type = MENU_FILE_MOVIE;
+               break;
+            case MENU_VALUE_FILE_MP3:
+            case MENU_VALUE_FILE_M4A:
+            case MENU_VALUE_FILE_OGG:
+            case MENU_VALUE_FILE_FLAC:
+            case MENU_VALUE_FILE_WAV:
+               file_type = MENU_FILE_MUSIC;
+               break;
+         }
+      }
+#endif
 
       menu_list_push(info->list, path, label,
             file_type, 0, 0);

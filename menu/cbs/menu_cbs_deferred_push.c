@@ -23,6 +23,10 @@
 #include "../../database_info.h"
 #endif
 
+#ifdef HAVE_FFMPEG
+#include "../../cores/internal_cores.h"
+#endif
+
 #include "../../general.h"
 #include "../../file_ext.h"
 #include "../../gfx/video_shader_driver.h"
@@ -440,6 +444,15 @@ static int deferred_push_detect_core_list(menu_displaylist_info_t *info)
    if (global->core_info)
       strlcpy(info->exts, core_info_list_get_all_extensions(
          global->core_info), sizeof(info->exts));
+
+#ifdef HAVE_FFMPEG
+   {
+      struct retro_system_info sysinfo = {0};
+      libretro_ffmpeg_retro_get_system_info(&sysinfo);
+      strlcat(info->exts, "|", sizeof(info->exts));
+      strlcat(info->exts, sysinfo.valid_extensions, sizeof(info->exts));
+   }
+#endif
    
    return menu_displaylist_push_list(info, DISPLAYLIST_CORES_DETECTED);
 }
@@ -460,6 +473,15 @@ static int deferred_push_default(menu_displaylist_info_t *info)
    }
    else
       strlcpy(info->exts, global->system.valid_extensions, sizeof(info->exts));
+
+#ifdef HAVE_FFMPEG
+   {
+      struct retro_system_info sysinfo = {0};
+      libretro_ffmpeg_retro_get_system_info(&sysinfo);
+      strlcat(info->exts, "|", sizeof(info->exts));
+      strlcat(info->exts, sysinfo.valid_extensions, sizeof(info->exts));
+   }
+#endif
 
    return menu_displaylist_push_list(info, DISPLAYLIST_DEFAULT);
 }

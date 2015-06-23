@@ -20,6 +20,20 @@
 extern "C" {
 #endif
 
+#define MENU_VALUE_FILE_F4F                                                    0x0b886be5U
+#define MENU_VALUE_FILE_F4V                                                    0x0b886bf5U
+#define MENU_VALUE_FILE_OGM                                                    0x0b8898c8U
+#define MENU_VALUE_FILE_MKV                                                    0x0b8890d3U
+#define MENU_VALUE_FILE_AVI                                                    0x0b885f25U
+#define MENU_VALUE_FILE_M4A                                                    0x0b8889a7U
+#define MENU_VALUE_FILE_3GP                                                    0x0b87998fU
+#define MENU_VALUE_FILE_MP4                                                    0x0b889136U
+#define MENU_VALUE_FILE_MP3                                                    0x0b889135U
+#define MENU_VALUE_FILE_FLAC                                                   0x7c96d67bU
+#define MENU_VALUE_FILE_OGG                                                    0x0b8898c2U
+#define MENU_VALUE_FILE_FLV                                                    0x0b88732dU
+#define MENU_VALUE_FILE_WAV                                                    0x0b88ba13U
+
 #define MENU_VALUE_DONT_CARE                                                   0x19da07bcU
 #define MENU_VALUE_LINEAR                                                      0xc0d12dc0U
 #define MENU_VALUE_NEAREST                                                     0x6ab2b0b7U
