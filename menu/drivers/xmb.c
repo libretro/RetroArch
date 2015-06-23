@@ -583,7 +583,8 @@ static void xmb_update_boxart(xmb_handle_t *xmb, unsigned i)
 
 static void xmb_selection_pointer_changed(void)
 {
-   unsigned i, current, end, tag;
+   unsigned i, current, end, tag, height;
+   int threshold = 0;
    xmb_handle_t    *xmb   = NULL;
    menu_handle_t    *menu = menu_driver_get_ptr();
    menu_display_t   *disp = menu_display_get_ptr();
@@ -599,16 +600,18 @@ static void xmb_selection_pointer_changed(void)
    if (!xmb)
       return;
 
-   current = nav->selection_ptr;
-   end     = menu_entries_get_end();
+   current   = nav->selection_ptr;
+   end       = menu_entries_get_end();
+   tag       = (uintptr_t)menu_list;
+   threshold = xmb->icon.size*10;
 
-   tag = (uintptr_t)menu_list;
+   video_driver_get_size(NULL, &height);
 
    menu_animation_kill_by_tag(disp->animation, tag);
 
    for (i = 0; i < end; i++)
    {
-      float iy;
+      float iy, real_iy;
       float ia = xmb->item.passive.alpha;
       float iz = xmb->item.passive.zoom;
       xmb_node_t *node = (xmb_node_t*)menu_list_get_userdata_at_offset(
@@ -617,7 +620,8 @@ static void xmb_selection_pointer_changed(void)
       if (!node)
          continue;
 
-      iy  = xmb_item_y(xmb, i, current);
+      iy      = xmb_item_y(xmb, i, current);
+      real_iy = iy + xmb->margins.screen.top;
 
       if (i == current)
       {
@@ -628,14 +632,23 @@ static void xmb_selection_pointer_changed(void)
             xmb_update_boxart(xmb, i);
       }
 
-      menu_animation_push(disp->animation,
-            XMB_DELAY, ia, &node->alpha, EASING_IN_OUT_QUAD, tag, NULL);
-      menu_animation_push(disp->animation,
-            XMB_DELAY, ia, &node->label_alpha, EASING_IN_OUT_QUAD, tag, NULL);
-      menu_animation_push(disp->animation,
-            XMB_DELAY, iz, &node->zoom,  EASING_IN_OUT_QUAD, tag, NULL);
-      menu_animation_push(disp->animation,
-            XMB_DELAY, iy, &node->y,     EASING_IN_OUT_QUAD, tag, NULL);
+      if (real_iy < -threshold || real_iy > height+threshold)
+      {
+         node->alpha = node->label_alpha = ia;
+         node->y = iy;
+         node->zoom = iz;
+      }
+      else
+      {
+         menu_animation_push(disp->animation,
+               XMB_DELAY, ia, &node->alpha, EASING_IN_OUT_QUAD, tag, NULL);
+         menu_animation_push(disp->animation,
+               XMB_DELAY, ia, &node->label_alpha, EASING_IN_OUT_QUAD, tag, NULL);
+         menu_animation_push(disp->animation,
+               XMB_DELAY, iz, &node->zoom,  EASING_IN_OUT_QUAD, tag, NULL);
+         menu_animation_push(disp->animation,
+               XMB_DELAY, iy, &node->y,     EASING_IN_OUT_QUAD, tag, NULL);
+      }
    }
 }
 
