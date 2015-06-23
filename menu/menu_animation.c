@@ -293,7 +293,7 @@ void menu_animation_kill_by_subject(menu_animation_t *animation,
       {
          if (animation->list[i].subject == sub[j])
          {
-            animation->list[i].alive   = 0;
+            animation->list[i].alive   = false;
             animation->list[i].subject = NULL;
 
             if (i < animation->first_dead)
@@ -302,6 +302,26 @@ void menu_animation_kill_by_subject(menu_animation_t *animation,
             killed++;
             break;
          }
+      }
+   }
+}
+
+void menu_animation_kill_by_tag(menu_animation_t *anim, unsigned tag)
+{
+   unsigned i;
+
+   if (tag == -1)
+      return;
+
+   for (i = 0; i < anim->size; ++i)
+   {
+      if (anim->list[i].tag == tag)
+      {
+         anim->list[i].alive   = false;
+         anim->list[i].subject = NULL;
+
+         if (i < anim->first_dead)
+            anim->first_dead = i;
       }
    }
 }
@@ -327,25 +347,24 @@ static void menu_animation_push_internal(menu_animation_t *anim, const struct tw
    *target = *t;
 }
 
-bool menu_animation_push(
-      menu_animation_t *anim,
+bool menu_animation_push(menu_animation_t *anim,
       float duration,
-      float target_value,
-      float* subject,
+      float target_value, float* subject,
       enum menu_animation_easing_type easing_enum,
-      tween_cb cb)
+      unsigned tag, tween_cb cb)
 {
    struct tween t;
 
    if (!subject)
       return false;
 
-   t.alive         = 1;
+   t.alive         = true;
    t.duration      = duration;
    t.running_since = 0;
    t.initial_value = *subject;
    t.target_value  = target_value;
    t.subject       = subject;
+   t.tag           = tag;
    t.cb            = cb;
 
    switch (easing_enum)
@@ -491,7 +510,7 @@ static int menu_animation_iterate(
    if (tween->running_since >= tween->duration)
    {
       *tween->subject = tween->target_value;
-      tween->alive    = 0;
+      tween->alive    = false;
 
       if (idx < anim->first_dead)
          anim->first_dead = idx;

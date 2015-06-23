@@ -583,7 +583,7 @@ static void xmb_update_boxart(xmb_handle_t *xmb, unsigned i)
 
 static void xmb_selection_pointer_changed(void)
 {
-   unsigned i, current, end;
+   unsigned i, current, end, tag;
    xmb_handle_t    *xmb   = NULL;
    menu_handle_t    *menu = menu_driver_get_ptr();
    menu_display_t   *disp = menu_display_get_ptr();
@@ -602,6 +602,10 @@ static void xmb_selection_pointer_changed(void)
    current = nav->selection_ptr;
    end     = menu_entries_get_end();
 
+   tag = (uintptr_t)menu_list;
+
+   menu_animation_kill_by_tag(disp->animation, tag);
+
    for (i = 0; i < end; i++)
    {
       float iy;
@@ -613,7 +617,7 @@ static void xmb_selection_pointer_changed(void)
       if (!node)
          continue;
 
-      iy = xmb_item_y(xmb, i, current);
+      iy  = xmb_item_y(xmb, i, current);
 
       if (i == current)
       {
@@ -625,13 +629,13 @@ static void xmb_selection_pointer_changed(void)
       }
 
       menu_animation_push(disp->animation,
-            XMB_DELAY, ia, &node->alpha, EASING_IN_OUT_QUAD, NULL);
+            XMB_DELAY, ia, &node->alpha, EASING_IN_OUT_QUAD, tag, NULL);
       menu_animation_push(disp->animation,
-            XMB_DELAY, ia, &node->label_alpha, EASING_IN_OUT_QUAD, NULL);
+            XMB_DELAY, ia, &node->label_alpha, EASING_IN_OUT_QUAD, tag, NULL);
       menu_animation_push(disp->animation,
-            XMB_DELAY, iz, &node->zoom,  EASING_IN_OUT_QUAD, NULL);
+            XMB_DELAY, iz, &node->zoom,  EASING_IN_OUT_QUAD, tag, NULL);
       menu_animation_push(disp->animation,
-            XMB_DELAY, iy, &node->y,     EASING_IN_OUT_QUAD, NULL);
+            XMB_DELAY, iy, &node->y,     EASING_IN_OUT_QUAD, tag, NULL);
    }
 }
 
@@ -661,12 +665,12 @@ static void xmb_list_open_old(xmb_handle_t *xmb,
          ia = 0;
 
       menu_animation_push(disp->animation,
-            XMB_DELAY, ia, &node->alpha, EASING_IN_OUT_QUAD, NULL);
+            XMB_DELAY, ia, &node->alpha, EASING_IN_OUT_QUAD, -1, NULL);
       menu_animation_push(disp->animation,
-            XMB_DELAY, 0, &node->label_alpha, EASING_IN_OUT_QUAD, NULL);
+            XMB_DELAY, 0, &node->label_alpha, EASING_IN_OUT_QUAD, -1, NULL);
       menu_animation_push(disp->animation,
             XMB_DELAY, xmb->icon.size * dir * -2, &node->x,
-            EASING_IN_OUT_QUAD, NULL);
+            EASING_IN_OUT_QUAD, -1, NULL);
    }
 }
 
@@ -704,11 +708,11 @@ static void xmb_list_open_new(xmb_handle_t *xmb,
          ia = xmb->item.active.alpha;
 
       menu_animation_push(disp->animation,
-            XMB_DELAY, ia, &node->alpha,  EASING_IN_OUT_QUAD, NULL);
+            XMB_DELAY, ia, &node->alpha,  EASING_IN_OUT_QUAD, -1, NULL);
       menu_animation_push(disp->animation,
-            XMB_DELAY, ia, &node->label_alpha,  EASING_IN_OUT_QUAD, NULL);
+            XMB_DELAY, ia, &node->label_alpha,  EASING_IN_OUT_QUAD, -1, NULL);
       menu_animation_push(disp->animation,
-            XMB_DELAY, 0, &node->x, EASING_IN_OUT_QUAD, NULL);
+            XMB_DELAY, 0, &node->x, EASING_IN_OUT_QUAD, -1, NULL);
    }
 
    xmb->old_depth = xmb->depth;
@@ -752,11 +756,11 @@ static void xmb_push_animations(xmb_node_t *node, float ia, float ix)
       return;
 
    menu_animation_push(disp->animation,
-         XMB_DELAY, ia, &node->alpha,  EASING_IN_OUT_QUAD, NULL);
+         XMB_DELAY, ia, &node->alpha,  EASING_IN_OUT_QUAD, -1, NULL);
    menu_animation_push(disp->animation,
-         XMB_DELAY, ia, &node->label_alpha,  EASING_IN_OUT_QUAD, NULL);
+         XMB_DELAY, ia, &node->label_alpha,  EASING_IN_OUT_QUAD, -1, NULL);
    menu_animation_push(disp->animation,
-         XMB_DELAY, ix, &node->x, EASING_IN_OUT_QUAD, NULL);
+         XMB_DELAY, ix, &node->x, EASING_IN_OUT_QUAD, -1, NULL);
 }
 
 static void xmb_list_switch_old(xmb_handle_t *xmb,
@@ -869,9 +873,9 @@ static void xmb_list_switch_horizontal_list(xmb_handle_t *xmb, menu_handle_t *me
       }
 
       menu_animation_push(menu->display.animation,
-            XMB_DELAY, ia, &node->alpha, EASING_IN_OUT_QUAD, NULL);
+            XMB_DELAY, ia, &node->alpha, EASING_IN_OUT_QUAD, -1, NULL);
       menu_animation_push(menu->display.animation,
-            XMB_DELAY, iz, &node->zoom, EASING_IN_OUT_QUAD, NULL);
+            XMB_DELAY, iz, &node->zoom, EASING_IN_OUT_QUAD, -1, NULL);
    }
 }
 
@@ -896,7 +900,7 @@ static void xmb_list_switch(xmb_handle_t *xmb)
 
    menu_animation_push(disp->animation, XMB_DELAY,
          xmb->icon.spacing.horizontal * -(float)xmb->categories.selection_ptr,
-         &xmb->categories.x_pos, EASING_IN_OUT_QUAD, NULL);
+         &xmb->categories.x_pos, EASING_IN_OUT_QUAD, -1, NULL);
 
    dir = -1;
    if (xmb->categories.selection_ptr > xmb->categories.selection_ptr_old)
@@ -934,7 +938,7 @@ static void xmb_list_open_horizontal_list(xmb_handle_t *xmb, menu_handle_t *menu
          ia = xmb->categories.passive.alpha;
 
       menu_animation_push(menu->display.animation, XMB_DELAY, ia,
-            &node->alpha, EASING_IN_OUT_QUAD, NULL);
+            &node->alpha, EASING_IN_OUT_QUAD, -1, NULL);
    }
 }
 
@@ -968,18 +972,18 @@ static void xmb_list_open(xmb_handle_t *xmb)
       case 1:
          menu_animation_push(disp->animation,
                XMB_DELAY, xmb->icon.size * -(xmb->depth*2-2),
-               &xmb->x, EASING_IN_OUT_QUAD, NULL);
+               &xmb->x, EASING_IN_OUT_QUAD, -1, NULL);
          menu_animation_push(disp->animation,
                XMB_DELAY, 0, &xmb->textures.arrow.alpha,
-               EASING_IN_OUT_QUAD, NULL);
+               EASING_IN_OUT_QUAD, -1, NULL);
          break;
       case 2:
          menu_animation_push(disp->animation,
                XMB_DELAY, xmb->icon.size * -(xmb->depth*2-2),
-               &xmb->x, EASING_IN_OUT_QUAD, NULL);
+               &xmb->x, EASING_IN_OUT_QUAD, -1, NULL);
          menu_animation_push(disp->animation,
                XMB_DELAY, 1, &xmb->textures.arrow.alpha,
-               EASING_IN_OUT_QUAD, NULL);
+               EASING_IN_OUT_QUAD, -1, NULL);
          break;
    }
 
@@ -2334,7 +2338,7 @@ static void xmb_toggle(bool menu_on)
    }
 
    menu_animation_push(disp->animation, XMB_DELAY, 1.0f,
-         &xmb->alpha, EASING_IN_OUT_QUAD, NULL);
+         &xmb->alpha, EASING_IN_OUT_QUAD, -1, NULL);
 
    xmb->prevent_populate = !menu_entries_needs_refresh();
 
