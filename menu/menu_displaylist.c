@@ -2018,11 +2018,6 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
                menu_hash_to_str(MENU_LABEL_SCREEN_RESOLUTION),
                MENU_SETTINGS_VIDEO_RESOLUTION, 0, 0);
 #endif
-         menu_list_push(info->list,
-               menu_hash_to_str(MENU_LABEL_VALUE_CUSTOM_RATIO),
-               menu_hash_to_str(MENU_LABEL_CUSTOM_RATIO),
-               MENU_SETTINGS_CUSTOM_VIEWPORT, 0, 0);
-
          need_push    = true;
          break;
       case DISPLAYLIST_PERFCOUNTERS_CORE:

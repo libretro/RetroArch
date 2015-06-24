@@ -1637,6 +1637,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
       case MENU_LABEL_CONFIGURATIONS:
          cbs->action_ok = action_ok_configurations_list;
          break;
+      case MENU_LABEL_CUSTOM_RATIO:
+         cbs->action_ok = action_ok_custom_viewport;
+         break;
       default:
          return -1;
    }
@@ -1786,9 +1789,6 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
 #ifdef HAVE_FFMPEG
             cbs->action_ok = action_ok_file_load_ffmpeg;
 #endif
-            break;
-         case MENU_SETTINGS_CUSTOM_VIEWPORT:
-            cbs->action_ok = action_ok_custom_viewport;
             break;
          case MENU_SETTINGS:
          case MENU_SETTING_GROUP:
