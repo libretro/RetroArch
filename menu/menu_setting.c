@@ -3460,13 +3460,6 @@ static bool setting_append_list_main_menu_options(
             parent_group);
    }
 
-   CONFIG_ACTION(
-         menu_hash_to_str(MENU_LABEL_SHADER_OPTIONS),
-         menu_hash_to_str(MENU_LABEL_VALUE_SHADER_OPTIONS),
-         group_info.name,
-         subgroup_info.name,
-         parent_group);
-
    if (mask & SL_FLAG_MAIN_MENU_SETTINGS)
    {
       CONFIG_ACTION(
@@ -4754,6 +4747,7 @@ static bool setting_append_list_video_options(
    return true;
 }
 
+#if 0
 static bool setting_append_list_video_shader_options(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info,
@@ -4864,6 +4858,7 @@ static bool setting_append_list_video_shader_options(
 
    return true;
 }
+#endif
 
 static bool setting_append_list_font_options(
       rarch_setting_t **list,
@@ -7137,8 +7132,10 @@ rarch_setting_t *menu_setting_new(unsigned mask)
       if (!setting_append_list_video_options(&list, list_info, root))
          goto error;
 
+#if 0
       if (!setting_append_list_video_shader_options(&list, list_info, root))
          goto error;
+#endif
    }
 
    if (mask & SL_FLAG_AUDIO_OPTIONS)

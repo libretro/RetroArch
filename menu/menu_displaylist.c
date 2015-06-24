@@ -1486,6 +1486,12 @@ static int menu_displaylist_parse_load_content_settings(menu_displaylist_info_t 
                menu_hash_to_str(MENU_LABEL_VALUE_DISK_OPTIONS),
                menu_hash_to_str(MENU_LABEL_DISK_OPTIONS),
                MENU_SETTING_ACTION, 0, 0);
+#ifdef HAVE_SHADER_MANAGER
+      menu_list_push(info->list,
+            menu_hash_to_str(MENU_LABEL_VALUE_SHADER_OPTIONS),
+            menu_hash_to_str(MENU_LABEL_SHADER_OPTIONS),
+            MENU_SETTING_ACTION, 0, 0);
+#endif
    }
    else
       menu_list_push(info->list,
