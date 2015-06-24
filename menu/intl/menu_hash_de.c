@@ -23,7 +23,7 @@ const char *menu_hash_to_str_de(uint32_t hash)
 {
    switch (hash)
    {
-         case MENU_LABEL_VALUE_INFORMATION_LIST:
+      case MENU_LABEL_VALUE_INFORMATION_LIST:
          return "Information";
       case MENU_LABEL_VALUE_USE_BUILTIN_PLAYER:
          return "Verwende integrierten Player";
