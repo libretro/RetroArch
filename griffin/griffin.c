@@ -752,6 +752,14 @@ MENU
 #include "../menu/menu_displaylist.c"
 #include "../menu/menu_animation.c"
 
+#include "../menu/intl/menu_hash_de.c"
+#include "../menu/intl/menu_hash_es.c"
+#include "../menu/intl/menu_hash_fr.c"
+#include "../menu/intl/menu_hash_it.c"
+#include "../menu/intl/menu_hash_nl.c"
+#include "../menu/intl/menu_hash_pt.c"
+#include "../menu/intl/menu_hash_us.c"
+
 #include "../menu/drivers/null.c"
 #endif
 

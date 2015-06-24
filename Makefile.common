@@ -340,6 +340,13 @@ endif
 ifeq ($(HAVE_MENU_COMMON), 1)
    OBJ += menu/menu.o \
 			 menu/menu_hash.o \
+			 menu/intl/menu_hash_de.o \
+			 menu/intl/menu_hash_es.o \
+			 menu/intl/menu_hash_fr.o \
+			 menu/intl/menu_hash_it.o \
+			 menu/intl/menu_hash_nl.o \
+			 menu/intl/menu_hash_pt.o \
+			 menu/intl/menu_hash_us.o \
 			 menu/menu_input.o \
 			 menu/menu_entry.o \
 			 menu/menu_entries.o \

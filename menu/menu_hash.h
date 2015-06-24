@@ -801,6 +801,20 @@ extern "C" {
 
 #define MENU_VALUE_SECONDS                                                     0x8b0028d4U
 
+const char *menu_hash_to_str_de(uint32_t hash);
+
+const char *menu_hash_to_str_en(uint32_t hash);
+
+const char *menu_hash_to_str_es(uint32_t hash);
+
+const char *menu_hash_to_str_fr(uint32_t hash);
+
+const char *menu_hash_to_str_it(uint32_t hash);
+
+const char *menu_hash_to_str_nl(uint32_t hash);
+
+const char *menu_hash_to_str_pt(uint32_t hash);
+
 const char *menu_hash_to_str(uint32_t hash);
 
 uint32_t menu_hash_calculate(const char *s);

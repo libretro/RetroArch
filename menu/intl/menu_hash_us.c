@@ -16,21 +16,10 @@
 
 #include <stdint.h>
 #include <string.h>
-#include <rhash.h>
 
-#include "menu_hash.h"
+#include "../menu_hash.h"
 
-#include "../configuration.h"
-
- /* IMPORTANT:
-  * For non-english characters to work without proper unicode support,
-  * we need this file to be encoded in ISO 8859-1 (Latin1), not UTF-8.
-  * If you save this file as UTF-8, you'll break non-english characters
-  * (e.g. German "Umlauts" and Portugese diacritics).
- */
-extern const char encoding_test[sizeof("ø")==2 ? 1 : -1];
-
-static const char *menu_hash_to_str_us(uint32_t hash)
+const char *menu_hash_to_str_us(uint32_t hash)
 {
    switch (hash)
    {
@@ -1123,47 +1112,4 @@ static const char *menu_hash_to_str_us(uint32_t hash)
    }
 
    return "null";
-}
-
-const char *menu_hash_to_str(uint32_t hash)
-{
-   const char *ret = NULL;
-   settings_t *settings = config_get_ptr();
-
-   if (!settings)
-      return "null";
-
-   switch (settings->user_language)
-   {
-      case RETRO_LANGUAGE_FRENCH:
-         ret = menu_hash_to_str_fr(hash);
-         break;
-      case RETRO_LANGUAGE_GERMAN:
-         ret = menu_hash_to_str_de(hash);
-         break;
-      case RETRO_LANGUAGE_SPANISH:
-         ret = menu_hash_to_str_es(hash);
-         break;
-      case RETRO_LANGUAGE_ITALIAN:
-         ret = menu_hash_to_str_it(hash);
-         break;
-      case RETRO_LANGUAGE_PORTUGUESE:
-         ret = menu_hash_to_str_pt(hash);
-         break;
-      case RETRO_LANGUAGE_DUTCH:
-         ret = menu_hash_to_str_nl(hash);
-         break;
-      default:
-         break;
-   }
-
-   if (ret && strcmp(ret, "null") != 0)
-      return ret;
-
-   return menu_hash_to_str_us(hash);
-}
-
-uint32_t menu_hash_calculate(const char *s)
-{
-   return djb2_calculate(s);
 }
