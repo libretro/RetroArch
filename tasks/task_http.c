@@ -28,6 +28,7 @@
 
 #define CB_CORE_UPDATER_DOWNLOAD 0x7412da7dU
 #define CB_CORE_UPDATER_LIST     0x32fd4f01U
+#define CB_UPDATE_ASSETS         0xbf85795eU
 
 extern char core_updater_path[PATH_MAX_LENGTH];
 
@@ -119,6 +120,48 @@ static int cb_core_updater_download(void *data, size_t len)
    return 0;
 }
 
+static int cb_update_assets(void *data, size_t len)
+{
+   const char             *file_ext      = NULL;
+   char output_path[PATH_MAX_LENGTH]     = {0};
+   char msg[PATH_MAX_LENGTH]             = {0};
+   settings_t              *settings     = config_get_ptr();
+
+   if (!data)
+      return -1;
+
+   fill_pathname_join(output_path, settings->assets_directory,
+         core_updater_path, sizeof(output_path));
+
+   if (!write_file(output_path, data, len))
+      return -1;
+
+   snprintf(msg, sizeof(msg), "Download complete: %s.",
+         core_updater_path);
+
+   rarch_main_msg_queue_push(msg, 1, 90, true);
+
+#ifdef HAVE_ZLIB
+   file_ext = path_get_extension(output_path);
+
+   if (!settings->network.buildbot_auto_extract_archive)
+      return 0;
+
+   if (!strcasecmp(file_ext,"zip"))
+   {
+      if (!zlib_parse_file(output_path, NULL, zlib_extract_core_callback,
+
+               (void*)settings->assets_directory))
+         RARCH_LOG("Could not process ZIP file.\n");
+
+      if (path_file_exists(output_path))
+         remove(output_path);
+   }
+#endif
+
+   return 0;
+}
+
 static int rarch_main_data_http_con_iterate_transfer(http_handle_t *http)
 {
    if (!net_http_connection_iterate(http->connection.handle))
@@ -186,6 +229,9 @@ static int cb_http_conn_default(void *data_, size_t len)
             break;
          case CB_CORE_UPDATER_LIST:
             http->cb = &cb_core_updater_list;
+            break;
+         case CB_UPDATE_ASSETS:
+            http->cb = &cb_update_assets;
             break;
       }
    }
