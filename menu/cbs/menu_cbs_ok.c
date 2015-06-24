@@ -1256,29 +1256,21 @@ static int action_ok_download_generic(const char *path,
    char s2[PATH_MAX_LENGTH]        = {0};
    settings_t *settings            = config_get_ptr();
 
+   fill_pathname_join(s, settings->network.buildbot_assets_url,
+         "frontend", sizeof(s));
+
    if (!strcmp(type_msg, "cb_update_assets"))
-   {
       path = "assets.zip";
-      fill_pathname_join(s, settings->network.buildbot_assets_url,
-            "frontend/assets.zip", sizeof(s));
-   }
    else if (!strcmp(type_msg, "cb_update_autoconfig_profiles"))
-   {
       path = "autoconf.zip";
-      fill_pathname_join(s, settings->network.buildbot_assets_url,
-            "frontend/autoconf.zip", sizeof(s));
-   }
    else if (!strcmp(type_msg, "cb_update_cheats"))
-   {
       path = "cheats.zip";
-      fill_pathname_join(s, settings->network.buildbot_assets_url,
-            "frontend/cheats.zip", sizeof(s));
-   }
+   else if (!strcmp(type_msg, "cb_update_overlays"))
+      path = "cheats.zip";
    else
-   {
-      fill_pathname_join(s, settings->network.buildbot_url,
-            path, sizeof(s));
-   }
+      strlcpy(s, settings->network.buildbot_url, sizeof(s));
+
+   fill_pathname_join(s, s, path, sizeof(s));
 
    strlcpy(core_updater_path, path, sizeof(core_updater_path));
 
