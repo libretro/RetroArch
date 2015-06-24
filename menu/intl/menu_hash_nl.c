@@ -34,6 +34,14 @@ const char *menu_hash_to_str_nl(uint32_t hash)
          return "Online Updaten";
       case MENU_LABEL_VALUE_SYSTEM_INFORMATION:
          return "Systeem Informatie";
+      case MENU_LABEL_VALUE_CONFIGURATIONS:
+         return "Laad configuratie bestand";
+      case MENU_LABEL_VALUE_SAVE_NEW_CONFIG:
+         return "Nieuwe configuratie opslaan";
+      case MENU_LABEL_VALUE_INFORMATION_LIST:
+         return "Informatie";
+      case MENU_LABEL_VALUE_QUIT_RETROARCH:
+         return "RetroArch Afsluiten";
       default:
          break;
    }
