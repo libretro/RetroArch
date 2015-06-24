@@ -1266,7 +1266,7 @@ static int action_ok_download_generic(const char *path,
    else if (!strcmp(type_msg, "cb_update_cheats"))
       path = "cheats.zip";
    else if (!strcmp(type_msg, "cb_update_overlays"))
-      path = "cheats.zip";
+      path = "overlays.zip";
    else
       strlcpy(s, settings->network.buildbot_url, sizeof(s));
 
@@ -1303,6 +1303,16 @@ static int action_ok_update_assets(const char *path,
 #ifdef HAVE_NETWORKING
    action_ok_download_generic(path, label, type, idx, entry_idx,
          "cb_update_assets");
+#endif
+   return 0;
+}
+
+static int action_ok_update_overlays(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+#ifdef HAVE_NETWORKING
+   action_ok_download_generic(path, label, type, idx, entry_idx,
+         "cb_update_overlays");
 #endif
    return 0;
 }
@@ -1699,6 +1709,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          break;
       case MENU_LABEL_UPDATE_ASSETS:
          cbs->action_ok = action_ok_update_assets;
+         break;
+      case MENU_LABEL_UPDATE_OVERLAYS:
+         cbs->action_ok = action_ok_update_overlays;
          break;
       case MENU_LABEL_UPDATE_CHEATS:
          cbs->action_ok = action_ok_update_cheats;

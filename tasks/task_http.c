@@ -31,6 +31,7 @@
 #define CB_UPDATE_ASSETS               0xbf85795eU
 #define CB_UPDATE_AUTOCONFIG_PROFILES  0x28ada67dU
 #define CB_UPDATE_CHEATS               0xc360fec3U
+#define CB_UPDATE_OVERLAYS             0x699009a0U
 
 extern char core_updater_path[PATH_MAX_LENGTH];
 
@@ -141,6 +142,12 @@ static int cb_update_autoconfig_profiles(void *data, size_t len)
    return cb_generic_download(data, len, settings->input.autoconfig_dir);
 }
 
+static int cb_update_overlays(void *data, size_t len)
+{
+   global_t                *global       = global_get_ptr();
+   return cb_generic_download(data, len, global->overlay_dir);
+}
+
 static int cb_update_cheats(void *data, size_t len)
 {
    settings_t              *settings     = config_get_ptr();
@@ -223,6 +230,9 @@ static int cb_http_conn_default(void *data_, size_t len)
             break;
          case CB_UPDATE_CHEATS:
             http->cb = &cb_update_cheats;
+            break;
+         case CB_UPDATE_OVERLAYS:
+            http->cb = &cb_update_overlays;
             break;
       }
    }
