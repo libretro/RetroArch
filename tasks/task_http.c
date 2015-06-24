@@ -78,7 +78,8 @@ error:
 }
 #endif
 
-static int cb_core_updater_download(void *data, size_t len)
+static int cb_generic_download(void *data, size_t len,
+      const char *dir_path)
 {
    const char             *file_ext      = NULL;
    char output_path[PATH_MAX_LENGTH]     = {0};
@@ -88,7 +89,7 @@ static int cb_core_updater_download(void *data, size_t len)
    if (!data)
       return -1;
 
-   fill_pathname_join(output_path, settings->libretro_directory,
+   fill_pathname_join(output_path, dir_path,
          core_updater_path, sizeof(output_path));
 
    if (!write_file(output_path, data, len))
@@ -108,8 +109,7 @@ static int cb_core_updater_download(void *data, size_t len)
    if (!strcasecmp(file_ext,"zip"))
    {
       if (!zlib_parse_file(output_path, NULL, zlib_extract_core_callback,
-
-               (void*)settings->libretro_directory))
+               (void*)dir_path))
          RARCH_LOG("Could not process ZIP file.\n");
 
       if (path_file_exists(output_path))
@@ -120,46 +120,16 @@ static int cb_core_updater_download(void *data, size_t len)
    return 0;
 }
 
+static int cb_core_updater_download(void *data, size_t len)
+{
+   settings_t              *settings     = config_get_ptr();
+   return cb_generic_download(data, len, settings->libretro_directory);
+}
+
 static int cb_update_assets(void *data, size_t len)
 {
-   const char             *file_ext      = NULL;
-   char output_path[PATH_MAX_LENGTH]     = {0};
-   char msg[PATH_MAX_LENGTH]             = {0};
    settings_t              *settings     = config_get_ptr();
-
-   if (!data)
-      return -1;
-
-   fill_pathname_join(output_path, settings->assets_directory,
-         core_updater_path, sizeof(output_path));
-
-   if (!write_file(output_path, data, len))
-      return -1;
-
-   snprintf(msg, sizeof(msg), "Download complete: %s.",
-         core_updater_path);
-
-   rarch_main_msg_queue_push(msg, 1, 90, true);
-
-#ifdef HAVE_ZLIB
-   file_ext = path_get_extension(output_path);
-
-   if (!settings->network.buildbot_auto_extract_archive)
-      return 0;
-
-   if (!strcasecmp(file_ext,"zip"))
-   {
-      if (!zlib_parse_file(output_path, NULL, zlib_extract_core_callback,
-
-               (void*)settings->assets_directory))
-         RARCH_LOG("Could not process ZIP file.\n");
-
-      if (path_file_exists(output_path))
-         remove(output_path);
-   }
-#endif
-
-   return 0;
+   return cb_generic_download(data, len, settings->assets_directory);
 }
 
 static int rarch_main_data_http_con_iterate_transfer(http_handle_t *http)
