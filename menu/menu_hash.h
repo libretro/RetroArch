@@ -895,6 +895,9 @@ extern "C" {
 #define MENU_LABEL_VALUE_SYSTEM_INFO_V4L2_SUPPORT                              0x793c2547U
 #define MENU_LABEL_VALUE_SYSTEM_INFO_LIBUSB_SUPPORT                            0x7dc8b560U
 
+#define MENU_LABEL_VALUE_YES                                                   0x957cbc05U
+#define MENU_LABEL_VALUE_NO                                                    0x521b0c11U
+
 const char *menu_hash_to_str_de(uint32_t hash);
 
 const char *menu_hash_to_str_en(uint32_t hash);

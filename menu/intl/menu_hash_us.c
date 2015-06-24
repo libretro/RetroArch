@@ -1293,6 +1293,10 @@ const char *menu_hash_to_str_us(uint32_t hash)
          return "Video4Linux2 support";
       case MENU_LABEL_VALUE_SYSTEM_INFO_LIBUSB_SUPPORT:
          return "Libusb support";
+      case MENU_LABEL_VALUE_YES:
+         return "Yes";
+      case MENU_LABEL_VALUE_NO:
+         return "No";
       default:
          break;
    }

@@ -411,54 +411,54 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
 
    strlcpy(feat_str, menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_LIBRETRODB_SUPPORT), sizeof(feat_str));
    strlcat(feat_str, ": ", sizeof(feat_str));
-   strlcat(feat_str, _libretrodb_supp ? "true" : "false", sizeof(feat_str));
+   strlcat(feat_str, _libretrodb_supp ? menu_hash_to_str(MENU_LABEL_VALUE_YES) : menu_hash_to_str(MENU_LABEL_VALUE_NO), sizeof(feat_str));
    menu_list_push(info->list, feat_str, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    strlcpy(feat_str, menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_OVERLAY_SUPPORT), sizeof(feat_str));
    strlcat(feat_str, ": ", sizeof(feat_str));
-   strlcat(feat_str, _overlay_supp ? "true" : "false", sizeof(feat_str));
+   strlcat(feat_str, _overlay_supp ? menu_hash_to_str(MENU_LABEL_VALUE_YES) : menu_hash_to_str(MENU_LABEL_VALUE_NO), sizeof(feat_str));
    menu_list_push(info->list, feat_str, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    strlcpy(feat_str, menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_COMMAND_IFACE_SUPPORT), sizeof(feat_str));
    strlcat(feat_str, ": ", sizeof(feat_str));
-   strlcat(feat_str, _command_supp ? "true" : "false", sizeof(feat_str));
+   strlcat(feat_str, _command_supp ? menu_hash_to_str(MENU_LABEL_VALUE_YES) : menu_hash_to_str(MENU_LABEL_VALUE_NO), sizeof(feat_str));
    menu_list_push(info->list, feat_str, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    snprintf(feat_str, sizeof(feat_str),
          "%s : %s",
          menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_NETWORK_COMMAND_IFACE_SUPPORT),
-         _network_command_supp ? "true" : "false");
+         _network_command_supp ? menu_hash_to_str(MENU_LABEL_VALUE_YES) : menu_hash_to_str(MENU_LABEL_VALUE_NO));
    menu_list_push(info->list, feat_str, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    snprintf(feat_str, sizeof(feat_str),
          "%s: %s",
          menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_COCOA_SUPPORT),
-          _cocoa_supp ? "true" : "false");
+          _cocoa_supp ? menu_hash_to_str(MENU_LABEL_VALUE_YES) : menu_hash_to_str(MENU_LABEL_VALUE_NO));
    menu_list_push(info->list, feat_str, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    snprintf(feat_str, sizeof(feat_str),
          "%s: %s",
          menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_RPNG_SUPPORT),
-         _rpng_supp ? "true" : "false");
+         _rpng_supp ? menu_hash_to_str(MENU_LABEL_VALUE_YES) : menu_hash_to_str(MENU_LABEL_VALUE_NO));
    menu_list_push(info->list, feat_str, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    snprintf(feat_str, sizeof(feat_str),
          "%s: %s",
          menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_SDL_SUPPORT),
-         _sdl_supp ? "true" : "false");
+         _sdl_supp ? menu_hash_to_str(MENU_LABEL_VALUE_YES) : menu_hash_to_str(MENU_LABEL_VALUE_NO));
    menu_list_push(info->list, feat_str, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    snprintf(feat_str, sizeof(feat_str),
          "%s: %s",
          menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_SDL2_SUPPORT),
-         _sdl2_supp ? "true" : "false");
+         _sdl2_supp ? menu_hash_to_str(MENU_LABEL_VALUE_YES) : menu_hash_to_str(MENU_LABEL_VALUE_NO));
    menu_list_push(info->list, feat_str, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
@@ -466,252 +466,252 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
    snprintf(feat_str, sizeof(feat_str),
          "%s: %s",
          menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_OPENGL_SUPPORT),
-         _opengl_supp ? "true" : "false");
+         _opengl_supp ? menu_hash_to_str(MENU_LABEL_VALUE_YES) : menu_hash_to_str(MENU_LABEL_VALUE_NO));
    menu_list_push(info->list, feat_str, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    snprintf(feat_str, sizeof(feat_str),
          "%s: %s",
          menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_OPENGLES_SUPPORT),
-         _opengles_supp ? "true" : "false");
+         _opengles_supp ? menu_hash_to_str(MENU_LABEL_VALUE_YES) : menu_hash_to_str(MENU_LABEL_VALUE_NO));
    menu_list_push(info->list, feat_str, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    snprintf(feat_str, sizeof(feat_str),
          "%s: %s",
          menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_THREADING_SUPPORT),
-         _thread_supp ? "true" : "false");
+         _thread_supp ? menu_hash_to_str(MENU_LABEL_VALUE_YES) : menu_hash_to_str(MENU_LABEL_VALUE_NO));
    menu_list_push(info->list, feat_str, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    snprintf(feat_str, sizeof(feat_str),
          "%s: %s",
          menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_KMS_SUPPORT),
-         _kms_supp ? "true" : "false");
+         _kms_supp ? menu_hash_to_str(MENU_LABEL_VALUE_YES) : menu_hash_to_str(MENU_LABEL_VALUE_NO));
    menu_list_push(info->list, feat_str, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    snprintf(feat_str, sizeof(feat_str),
          "%s: %s",
          menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_UDEV_SUPPORT),
-         _udev_supp ? "true" : "false");
+         _udev_supp ? menu_hash_to_str(MENU_LABEL_VALUE_YES) : menu_hash_to_str(MENU_LABEL_VALUE_NO));
    menu_list_push(info->list, feat_str, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    snprintf(feat_str, sizeof(feat_str),
          "%s: %s",
          menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_OPENVG_SUPPORT),
-         _vg_supp ? "true" : "false");
+         _vg_supp ? menu_hash_to_str(MENU_LABEL_VALUE_YES) : menu_hash_to_str(MENU_LABEL_VALUE_NO));
    menu_list_push(info->list, feat_str, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    snprintf(feat_str, sizeof(feat_str),
          "%s: %s",
          menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_EGL_SUPPORT),
-         _egl_supp ? "true" : "false");
+         _egl_supp ? menu_hash_to_str(MENU_LABEL_VALUE_YES) : menu_hash_to_str(MENU_LABEL_VALUE_NO));
    menu_list_push(info->list, feat_str, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    snprintf(feat_str, sizeof(feat_str),
          "%s: %s",
          menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_X11_SUPPORT),
-         _x11_supp ? "true" : "false");
+         _x11_supp ? menu_hash_to_str(MENU_LABEL_VALUE_YES) : menu_hash_to_str(MENU_LABEL_VALUE_NO));
    menu_list_push(info->list, feat_str, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    snprintf(feat_str, sizeof(feat_str),
          "%s: %s",
          menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_WAYLAND_SUPPORT),
-         _wayland_supp ? "true" : "false");
+         _wayland_supp ? menu_hash_to_str(MENU_LABEL_VALUE_YES) : menu_hash_to_str(MENU_LABEL_VALUE_NO));
    menu_list_push(info->list, feat_str, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    snprintf(feat_str, sizeof(feat_str),
          "%s: %s",
          menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_XVIDEO_SUPPORT),
-         _xvideo_supp ? "true" : "false");
+         _xvideo_supp ? menu_hash_to_str(MENU_LABEL_VALUE_YES) : menu_hash_to_str(MENU_LABEL_VALUE_NO));
    menu_list_push(info->list, feat_str, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    snprintf(feat_str, sizeof(feat_str),
          "%s: %s",
          menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_ALSA_SUPPORT),
-         _alsa_supp ? "true" : "false");
+         _alsa_supp ? menu_hash_to_str(MENU_LABEL_VALUE_YES) : menu_hash_to_str(MENU_LABEL_VALUE_NO));
    menu_list_push(info->list, feat_str, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    snprintf(feat_str, sizeof(feat_str),
          "%s: %s",
          menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_OSS_SUPPORT),
-         _oss_supp ? "true" : "false");
+         _oss_supp ? menu_hash_to_str(MENU_LABEL_VALUE_YES) : menu_hash_to_str(MENU_LABEL_VALUE_NO));
    menu_list_push(info->list, feat_str, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    snprintf(feat_str, sizeof(feat_str),
          "%s: %s",
          menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_OPENAL_SUPPORT),
-         _al_supp ? "true" : "false");
+         _al_supp ? menu_hash_to_str(MENU_LABEL_VALUE_YES) : menu_hash_to_str(MENU_LABEL_VALUE_NO));
    menu_list_push(info->list, feat_str, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    snprintf(feat_str, sizeof(feat_str),
          "%s: %s",
          menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_OPENSL_SUPPORT),
-         _sl_supp ? "true" : "false");
+         _sl_supp ? menu_hash_to_str(MENU_LABEL_VALUE_YES) : menu_hash_to_str(MENU_LABEL_VALUE_NO));
    menu_list_push(info->list, feat_str, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    snprintf(feat_str, sizeof(feat_str),
          "%s: %s",
          menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_RSOUND_SUPPORT),
-         _rsound_supp ? "true" : "false");
+         _rsound_supp ? menu_hash_to_str(MENU_LABEL_VALUE_YES) : menu_hash_to_str(MENU_LABEL_VALUE_NO));
    menu_list_push(info->list, feat_str, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    snprintf(feat_str, sizeof(feat_str),
          "%s: %s",
          menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_ROARAUDIO_SUPPORT),
-         _roar_supp ? "true" : "false");
+         _roar_supp ? menu_hash_to_str(MENU_LABEL_VALUE_YES) : menu_hash_to_str(MENU_LABEL_VALUE_NO));
    menu_list_push(info->list, feat_str, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    snprintf(feat_str, sizeof(feat_str),
          "%s: %s",
          menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_JACK_SUPPORT),
-         _jack_supp ? "true" : "false");
+         _jack_supp ? menu_hash_to_str(MENU_LABEL_VALUE_YES) : menu_hash_to_str(MENU_LABEL_VALUE_NO));
    menu_list_push(info->list, feat_str, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    snprintf(feat_str, sizeof(feat_str),
          "%s: %s",
          menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_PULSEAUDIO_SUPPORT),
-         _pulse_supp ? "true" : "false");
+         _pulse_supp ? menu_hash_to_str(MENU_LABEL_VALUE_YES) : menu_hash_to_str(MENU_LABEL_VALUE_NO));
    menu_list_push(info->list, feat_str, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    snprintf(feat_str, sizeof(feat_str),
          "%s: %s",
          menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_DSOUND_SUPPORT),
-         _dsound_supp ? "true" : "false");
+         _dsound_supp ? menu_hash_to_str(MENU_LABEL_VALUE_YES) : menu_hash_to_str(MENU_LABEL_VALUE_NO));
    menu_list_push(info->list, feat_str, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    snprintf(feat_str, sizeof(feat_str),
          "%s: %s",
          menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_XAUDIO2_SUPPORT),
-         _xaudio_supp ? "true" : "false");
+         _xaudio_supp ? menu_hash_to_str(MENU_LABEL_VALUE_YES) : menu_hash_to_str(MENU_LABEL_VALUE_NO));
    menu_list_push(info->list, feat_str, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    snprintf(feat_str, sizeof(feat_str),
          "%s: %s",
          menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_ZLIB_SUPPORT),
-         _zlib_supp ? "true" : "false");
+         _zlib_supp ? menu_hash_to_str(MENU_LABEL_VALUE_YES) : menu_hash_to_str(MENU_LABEL_VALUE_NO));
    menu_list_push(info->list, feat_str, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    snprintf(feat_str, sizeof(feat_str),
          "%s: %s",
          menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_7ZIP_SUPPORT),
-         _7zip_supp ? "true" : "false");
+         _7zip_supp ? menu_hash_to_str(MENU_LABEL_VALUE_YES) : menu_hash_to_str(MENU_LABEL_VALUE_NO));
    menu_list_push(info->list, feat_str, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    snprintf(feat_str, sizeof(feat_str),
          "%s: %s",
          menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_DYLIB_SUPPORT),
-         _dylib_supp ? "true" : "false");
+         _dylib_supp ? menu_hash_to_str(MENU_LABEL_VALUE_YES) : menu_hash_to_str(MENU_LABEL_VALUE_NO));
    menu_list_push(info->list, feat_str, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    snprintf(feat_str, sizeof(feat_str),
          "%s: %s",
          menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_CG_SUPPORT),
-         _cg_supp ? "true" : "false");
+         _cg_supp ? menu_hash_to_str(MENU_LABEL_VALUE_YES) : menu_hash_to_str(MENU_LABEL_VALUE_NO));
    menu_list_push(info->list, feat_str, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    snprintf(feat_str, sizeof(feat_str),
          "%s: %s",
          menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_GLSL_SUPPORT),
-         _glsl_supp ? "true" : "false");
+         _glsl_supp ? menu_hash_to_str(MENU_LABEL_VALUE_YES) : menu_hash_to_str(MENU_LABEL_VALUE_NO));
    menu_list_push(info->list, feat_str, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    snprintf(feat_str, sizeof(feat_str),
          "%s: %s",
          menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_HLSL_SUPPORT),
-         _hlsl_supp ? "true" : "false");
+         _hlsl_supp ? menu_hash_to_str(MENU_LABEL_VALUE_YES) : menu_hash_to_str(MENU_LABEL_VALUE_NO));
    menu_list_push(info->list, feat_str, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    snprintf(feat_str, sizeof(feat_str),
          "%s: %s",
          menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_LIBXML2_SUPPORT),
-         _libxml2_supp ? "true" : "false");
+         _libxml2_supp ? menu_hash_to_str(MENU_LABEL_VALUE_YES) : menu_hash_to_str(MENU_LABEL_VALUE_NO));
    menu_list_push(info->list, feat_str, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    snprintf(feat_str, sizeof(feat_str),
          "%s: %s",
          menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_SDL_IMAGE_SUPPORT),
-         _sdl_image_supp ? "true" : "false");
+         _sdl_image_supp ? menu_hash_to_str(MENU_LABEL_VALUE_YES) : menu_hash_to_str(MENU_LABEL_VALUE_NO));
    menu_list_push(info->list, feat_str, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    snprintf(feat_str, sizeof(feat_str),
          "%s: %s",
          menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_FBO_SUPPORT),
-         _fbo_supp ? "true" : "false");
+         _fbo_supp ? menu_hash_to_str(MENU_LABEL_VALUE_YES) : menu_hash_to_str(MENU_LABEL_VALUE_NO));
    menu_list_push(info->list, feat_str, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    snprintf(feat_str, sizeof(feat_str),
          "%s: %s",
          menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_FFMPEG_SUPPORT),
-         _ffmpeg_supp ? "true" : "false");
+         _ffmpeg_supp ? menu_hash_to_str(MENU_LABEL_VALUE_YES) : menu_hash_to_str(MENU_LABEL_VALUE_NO));
    menu_list_push(info->list, feat_str, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    snprintf(feat_str, sizeof(feat_str),
          "%s: %s",
          menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_CORETEXT_SUPPORT),
-         _coretext_supp ? "true" : "false");
+         _coretext_supp ? menu_hash_to_str(MENU_LABEL_VALUE_YES) : menu_hash_to_str(MENU_LABEL_VALUE_NO));
    menu_list_push(info->list, feat_str, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    snprintf(feat_str, sizeof(feat_str),
          "%s: %s",
          menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_FREETYPE_SUPPORT),
-         _freetype_supp ? "true" : "false");
+         _freetype_supp ? menu_hash_to_str(MENU_LABEL_VALUE_YES) : menu_hash_to_str(MENU_LABEL_VALUE_NO));
    menu_list_push(info->list, feat_str, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    snprintf(feat_str, sizeof(feat_str),
          "%s: %s",
          menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_NETPLAY_SUPPORT),
-         _netplay_supp ? "true" : "false");
+         _netplay_supp ? menu_hash_to_str(MENU_LABEL_VALUE_YES) : menu_hash_to_str(MENU_LABEL_VALUE_NO));
    menu_list_push(info->list, feat_str, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    snprintf(feat_str, sizeof(feat_str),
          "%s: %s",
          menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_PYTHON_SUPPORT),
-         _python_supp ? "true" : "false");
+         _python_supp ? menu_hash_to_str(MENU_LABEL_VALUE_YES) : menu_hash_to_str(MENU_LABEL_VALUE_NO));
    menu_list_push(info->list, feat_str, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    snprintf(feat_str, sizeof(feat_str),
          "%s: %s",
          menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_V4L2_SUPPORT),
-         _v4l2_supp ? "true" : "false");
+         _v4l2_supp ? menu_hash_to_str(MENU_LABEL_VALUE_YES) : menu_hash_to_str(MENU_LABEL_VALUE_NO));
    menu_list_push(info->list, feat_str, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    snprintf(feat_str, sizeof(feat_str),
          "%s: %s",
          menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_LIBUSB_SUPPORT),
-         _libusb_supp ? "true" : "false");
+         _libusb_supp ? menu_hash_to_str(MENU_LABEL_VALUE_YES) : menu_hash_to_str(MENU_LABEL_VALUE_NO));
    menu_list_push(info->list, feat_str, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
