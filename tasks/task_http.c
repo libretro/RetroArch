@@ -33,6 +33,8 @@
 #define CB_UPDATE_CHEATS               0xc360fec3U
 #define CB_UPDATE_OVERLAYS             0x699009a0U
 #define CB_UPDATE_DATABASES            0x931eb8d3U
+#define CB_UPDATE_SHADERS_GLSL         0x0121a186U
+#define CB_UPDATE_SHADERS_CG           0xc93a53feU
 
 extern char core_updater_path[PATH_MAX_LENGTH];
 
@@ -143,6 +145,32 @@ static int cb_update_autoconfig_profiles(void *data, size_t len)
    return cb_generic_download(data, len, settings->input.autoconfig_dir);
 }
 
+static int cb_update_shaders_cg(void *data, size_t len)
+{
+   char shaderdir[PATH_MAX_LENGTH];
+   settings_t              *settings     = config_get_ptr();
+   fill_pathname_join(shaderdir, settings->video.shader_dir, "shaders_cg",
+         sizeof(shaderdir));
+   if (!path_file_exists(shaderdir))
+      if (!path_mkdir(shaderdir))
+         return -1;
+
+   return cb_generic_download(data, len, shaderdir);
+}
+
+static int cb_update_shaders_glsl(void *data, size_t len)
+{
+   char shaderdir[PATH_MAX_LENGTH];
+   settings_t              *settings     = config_get_ptr();
+   fill_pathname_join(shaderdir, settings->video.shader_dir, "shaders_glsl",
+         sizeof(shaderdir));
+   if (!path_file_exists(shaderdir))
+      if (!path_mkdir(shaderdir))
+         return -1;
+
+   return cb_generic_download(data, len, shaderdir);
+}
+
 static int cb_update_databases(void *data, size_t len)
 {
    settings_t              *settings     = config_get_ptr();
@@ -240,6 +268,12 @@ static int cb_http_conn_default(void *data_, size_t len)
             break;
          case CB_UPDATE_DATABASES:
             http->cb = &cb_update_databases;
+            break;
+         case CB_UPDATE_SHADERS_CG:
+            http->cb = &cb_update_shaders_cg;
+            break;
+         case CB_UPDATE_SHADERS_GLSL:
+            http->cb = &cb_update_shaders_glsl;
             break;
          case CB_UPDATE_OVERLAYS:
             http->cb = &cb_update_overlays;

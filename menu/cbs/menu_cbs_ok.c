@@ -1269,6 +1269,10 @@ static int action_ok_download_generic(const char *path,
       path = "overlays.zip";
    else if (!strcmp(type_msg, "cb_update_databases"))
       path = "database-rdb.zip";
+   else if (!strcmp(type_msg, "cb_update_shaders_glsl"))
+      path = "shaders_glsl.zip";
+   else if (!strcmp(type_msg, "cb_update_shaders_cg"))
+      path = "shaders_cg.zip";
    else
       strlcpy(s, settings->network.buildbot_url, sizeof(s));
 
@@ -1315,6 +1319,26 @@ static int action_ok_update_overlays(const char *path,
 #ifdef HAVE_NETWORKING
    action_ok_download_generic(path, label, type, idx, entry_idx,
          "cb_update_overlays");
+#endif
+   return 0;
+}
+
+static int action_ok_update_shaders_cg(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+#ifdef HAVE_NETWORKING
+   action_ok_download_generic(path, label, type, idx, entry_idx,
+         "cb_update_shaders_cg");
+#endif
+   return 0;
+}
+
+static int action_ok_update_shaders_glsl(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+#ifdef HAVE_NETWORKING
+   action_ok_download_generic(path, label, type, idx, entry_idx,
+         "cb_update_shaders_glsl");
 #endif
    return 0;
 }
@@ -1727,6 +1751,12 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          break;
       case MENU_LABEL_UPDATE_DATABASES:
          cbs->action_ok = action_ok_update_databases;
+         break;
+      case MENU_LABEL_UPDATE_GLSL_SHADERS:
+         cbs->action_ok = action_ok_update_shaders_glsl;
+         break;
+      case MENU_LABEL_UPDATE_CG_SHADERS:
+         cbs->action_ok = action_ok_update_shaders_cg;
          break;
       case MENU_LABEL_UPDATE_CHEATS:
          cbs->action_ok = action_ok_update_cheats;
