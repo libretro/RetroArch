@@ -196,6 +196,8 @@ static void menu_action_setting_disp_set_label_shader_pass(
    strlcpy(s, menu_hash_to_str(MENU_VALUE_NOT_AVAILABLE), len);
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
+   if (!menu || !menu->shader)
+      return;
    if (*menu->shader->pass[pass].source.path)
       fill_pathname_base(s,
             menu->shader->pass[pass].source.path, len);
@@ -913,6 +915,7 @@ static int menu_cbs_init_bind_get_string_representation_compare_label(
       case MENU_LABEL_TAKE_SCREENSHOT:
       case MENU_LABEL_CORE_INPUT_REMAPPING_OPTIONS:
       case MENU_LABEL_CORE_INFORMATION:
+      case MENU_LABEL_SYSTEM_INFORMATION:
          cbs->action_get_value =
             menu_action_setting_disp_set_label_menu_more;
          break;
