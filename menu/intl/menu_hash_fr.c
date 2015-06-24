@@ -19,6 +19,14 @@
 
 #include "../menu_hash.h"
 
+ /* IMPORTANT:
+  * For non-english characters to work without proper unicode support,
+  * we need this file to be encoded in ISO 8859-1 (Latin1), not UTF-8.
+  * If you save this file as UTF-8, you'll break non-english characters
+  * (e.g. German "Umlauts" and Portugese diacritics).
+ */
+extern const char encoding_test[sizeof("ø")==2 ? 1 : -1];
+
 const char *menu_hash_to_str_fr(uint32_t hash)
 {
    switch (hash)
