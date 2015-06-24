@@ -1578,10 +1578,10 @@ static int menu_displaylist_parse_load_content_list(menu_displaylist_info_t *inf
 
 static int menu_displaylist_parse_options(menu_displaylist_info_t *info)
 {
-#ifdef HAVE_SHADER_MANAGER
+#ifdef HAVE_NETWORKING
    menu_list_push(info->list,
-         menu_hash_to_str(MENU_LABEL_VALUE_SHADER_OPTIONS),
-         menu_hash_to_str(MENU_LABEL_SHADER_OPTIONS),
+         menu_hash_to_str(MENU_LABEL_VALUE_CORE_UPDATER_LIST),
+         menu_hash_to_str(MENU_LABEL_CORE_UPDATER_LIST),
          MENU_SETTING_ACTION, 0, 0);
 #else
    menu_list_push(info->list,

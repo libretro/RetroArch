@@ -524,7 +524,7 @@ static int menu_cbs_init_bind_deferred_push_compare_label(menu_file_list_cbs_t *
          case MENU_LABEL_SHADER_OPTIONS:
             cbs->action_deferred_push = deferred_push_shader_options;
             break;
-         case MENU_LABEL_OPTIONS:
+         case MENU_LABEL_ONLINE_UPDATER:
             cbs->action_deferred_push = deferred_push_options;
             break;
          case MENU_LABEL_CONTENT_SETTINGS:

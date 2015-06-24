@@ -485,8 +485,8 @@ static const char *menu_hash_to_str_us_label(uint32_t hash)
          return "core_updater_auto_extract_archive";
       case MENU_LABEL_SYSTEM_INFORMATION:
          return "system_information";
-      case MENU_LABEL_OPTIONS:
-         return "core_settings";
+      case MENU_LABEL_ONLINE_UPDATER:
+         return "online_updater";
       case MENU_LABEL_CORE_INFORMATION:
          return "core_information";
       case MENU_LABEL_CORE_LIST:
@@ -604,7 +604,7 @@ const char *menu_hash_to_str_us(uint32_t hash)
       case MENU_LABEL_VALUE_CONFIGURATION_SETTINGS:
          return "Configuration Settings";
       case MENU_LABEL_VALUE_CORE_SETTINGS:
-         return "Core Settings";
+         return "Online Updater";
       case MENU_LABEL_VALUE_VIDEO_SETTINGS:
          return "Video Settings";
       case MENU_LABEL_VALUE_LOGGING_SETTINGS:
@@ -1039,8 +1039,8 @@ const char *menu_hash_to_str_us(uint32_t hash)
          return "Automatically extract downloaded archive";
       case MENU_LABEL_VALUE_SYSTEM_INFORMATION:
          return "System Information";
-      case MENU_LABEL_VALUE_OPTIONS:
-         return "Core Settings";
+      case MENU_LABEL_VALUE_ONLINE_UPDATER:
+         return "Online Updater";
       case MENU_LABEL_VALUE_CORE_INFORMATION:
          return "Core Information";
       case MENU_LABEL_VALUE_DIRECTORY_NOT_FOUND:

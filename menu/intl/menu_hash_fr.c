@@ -457,8 +457,6 @@ const char *menu_hash_to_str_fr(uint32_t hash)
          return "Mise à jour des cores";
       case MENU_LABEL_VALUE_SYSTEM_INFORMATION:
          return "Informations du système";
-      case MENU_LABEL_VALUE_OPTIONS:
-         return "Réglages du core";
       case MENU_LABEL_VALUE_CORE_INFORMATION:
          return "Informations sur le core";
       case MENU_LABEL_VALUE_DIRECTORY_NOT_FOUND:

@@ -558,8 +558,8 @@ extern "C" {
 #define MENU_LABEL_VALUE_CORE_LIST                                             0x0e17fd4eU
 #define MENU_LABEL_MANAGEMENT                                                  0x2516c88aU
 #define MENU_LABEL_VALUE_MANAGEMENT                                            0x97001d0bU
-#define MENU_LABEL_OPTIONS                                                     0x2534f97eU
-#define MENU_LABEL_VALUE_OPTIONS                                               0x06795dffU
+#define MENU_LABEL_ONLINE_UPDATER                                              0xcac0025eU
+#define MENU_LABEL_VALUE_ONLINE_UPDATER                                        0x9f3dd2bfU
 #define MENU_LABEL_SETTINGS                                                    0x1304dc16U
 #define MENU_LABEL_FRONTEND_COUNTERS                                           0xe5696877U
 #define MENU_LABEL_VALUE_FRONTEND_COUNTERS                                     0x5752bcf8U

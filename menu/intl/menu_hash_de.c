@@ -473,8 +473,6 @@ const char *menu_hash_to_str_de(uint32_t hash)
          return "Heruntergeladene Archive automatisch entpacken";
       case MENU_LABEL_VALUE_SYSTEM_INFORMATION:
          return "Systeminformationen";
-      case MENU_LABEL_VALUE_OPTIONS:
-         return "Optionen"; /* FIXME */
       case MENU_LABEL_VALUE_CORE_INFORMATION:
          return "Core-Informationen";
       case MENU_LABEL_VALUE_DIRECTORY_NOT_FOUND:

@@ -417,8 +417,6 @@ const char *menu_hash_to_str_pt(uint32_t hash)
          return "Extrair Arquivos Baixados Automaticamente";
       case MENU_LABEL_VALUE_SYSTEM_INFORMATION:
          return "Informação de Sistema";
-      case MENU_LABEL_VALUE_OPTIONS:
-         return "Opções"; /* FIXME */
       case MENU_LABEL_VALUE_CORE_INFORMATION:
          return "Informação de Core";
       case MENU_LABEL_VALUE_DIRECTORY_NOT_FOUND:

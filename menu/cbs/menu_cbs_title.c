@@ -645,7 +645,7 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
          break;
       case MENU_LABEL_CORE_LIST:
       case MENU_LABEL_MANAGEMENT:
-      case MENU_LABEL_OPTIONS:
+      case MENU_LABEL_ONLINE_UPDATER:
       case MENU_LABEL_SETTINGS:
       case MENU_LABEL_FRONTEND_COUNTERS:
       case MENU_LABEL_CORE_COUNTERS:

@@ -30,8 +30,8 @@ const char *menu_hash_to_str_nl(uint32_t hash)
          return "Laad Core";
       case MENU_LABEL_VALUE_SETTINGS:
          return "Instellingen";
-      case MENU_LABEL_VALUE_OPTIONS:
-         return "Core Instellingen";
+      case MENU_LABEL_VALUE_ONLINE_UPDATER:
+         return "Online Updaten";
       case MENU_LABEL_VALUE_SYSTEM_INFORMATION:
          return "Systeem Informatie";
       default:
