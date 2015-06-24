@@ -3461,8 +3461,8 @@ static bool setting_append_list_main_menu_options(
    }
 
    CONFIG_ACTION(
-         menu_hash_to_str(MENU_LABEL_OPTIONS),
-         menu_hash_to_str(MENU_LABEL_VALUE_OPTIONS),
+         menu_hash_to_str(MENU_LABEL_SHADER_OPTIONS),
+         menu_hash_to_str(MENU_LABEL_VALUE_SHADER_OPTIONS),
          group_info.name,
          subgroup_info.name,
          parent_group);
