@@ -53,6 +53,7 @@
 #endif
 
 typedef struct {
+   bool force_redraw;
    char msgbox[4096];
 } rgui_t;
 
@@ -259,14 +260,16 @@ static void rgui_render_background(void)
 
 static void rgui_set_message(const char *message)
 {
-   menu_handle_t *menu = menu_driver_get_ptr();
-   rgui_t        *rgui = NULL;
+   menu_handle_t    *menu = menu_driver_get_ptr();
+   menu_animation_t *anim = menu_animation_get_ptr();
+   rgui_t           *rgui = NULL;
 
-   if (!menu || !menu->userdata)
+   if (!menu || !menu->userdata || !anim || !message || !*message)
       return;
 
    rgui = (rgui_t*)menu->userdata;
    strlcpy(rgui->msgbox, message, sizeof(rgui->msgbox));
+   rgui->force_redraw = true;
 }
 
 static void rgui_render_messagebox(const char *message)
@@ -389,18 +392,23 @@ static void rgui_render(void)
 
    rgui = menu->userdata;
 
-   if (menu_entries_needs_refresh()
-       && menu_driver_alive()
-       && !disp->msg_force
-       && runloop->is_idle
-       && !menu_display_update_pending()
-       && rgui->msgbox[0] == '\0')
-      return;
+   if (!rgui->force_redraw)
+   {
+      if (menu_entries_needs_refresh() && menu_driver_alive() && !disp->msg_force)
+         return;
+
+      if (runloop->is_idle)
+         return;
+
+      if (!menu_display_update_pending())
+         return;
+   }
 
    /* ensures the framebuffer will be rendered on the screen */
    menu_display_fb_set_dirty();
    anim->is_active           = false;
    anim->label.is_updated    = false;
+   rgui->force_redraw        = false;
 
 
    if (settings->menu.pointer.enable)
@@ -553,6 +561,7 @@ static void rgui_render(void)
    {
       rgui_render_messagebox(rgui->msgbox);
       rgui->msgbox[0] = '\0';
+      rgui->force_redraw = true;
    }
 
    if (settings->menu.mouse.enable)
