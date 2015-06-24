@@ -1504,7 +1504,6 @@ static int menu_displaylist_parse_load_content_settings(menu_displaylist_info_t 
 static int menu_displaylist_parse_information_list(menu_displaylist_info_t *info)
 {
    global_t *global            = global_get_ptr();
-   settings_t *settings        = config_get_ptr();
 
    menu_list_push(info->list,
          menu_hash_to_str(MENU_LABEL_VALUE_CORE_INFORMATION),
@@ -1579,8 +1578,6 @@ static int menu_displaylist_parse_load_content_list(menu_displaylist_info_t *inf
 
 static int menu_displaylist_parse_options(menu_displaylist_info_t *info)
 {
-   global_t *global            = global_get_ptr();
-
 #ifdef HAVE_SHADER_MANAGER
    menu_list_push(info->list,
          menu_hash_to_str(MENU_LABEL_VALUE_SHADER_OPTIONS),

@@ -135,7 +135,6 @@ bool menu_load_content(enum rarch_core_type type)
 void menu_common_push_content_settings(void)
 {
    menu_list_t *menu_list       = menu_list_get_ptr();
-   menu_navigation_t *nav       = menu_navigation_get_ptr();
    menu_displaylist_info_t info = {0};
 
    if (!menu_list)
