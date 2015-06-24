@@ -26,9 +26,10 @@
 #include "../runloop_data.h"
 #include "tasks.h"
 
-#define CB_CORE_UPDATER_DOWNLOAD 0x7412da7dU
-#define CB_CORE_UPDATER_LIST     0x32fd4f01U
-#define CB_UPDATE_ASSETS         0xbf85795eU
+#define CB_CORE_UPDATER_DOWNLOAD       0x7412da7dU
+#define CB_CORE_UPDATER_LIST           0x32fd4f01U
+#define CB_UPDATE_ASSETS               0xbf85795eU
+#define CB_UPDATE_AUTOCONFIG_PROFILES  0x28ada67dU
 
 extern char core_updater_path[PATH_MAX_LENGTH];
 
@@ -98,6 +99,7 @@ static int cb_generic_download(void *data, size_t len,
    snprintf(msg, sizeof(msg), "Download complete: %s.",
          core_updater_path);
 
+
    rarch_main_msg_queue_push(msg, 1, 90, true);
 
 #ifdef HAVE_ZLIB
@@ -130,6 +132,12 @@ static int cb_update_assets(void *data, size_t len)
 {
    settings_t              *settings     = config_get_ptr();
    return cb_generic_download(data, len, settings->assets_directory);
+}
+
+static int cb_update_autoconfig_profiles(void *data, size_t len)
+{
+   settings_t              *settings     = config_get_ptr();
+   return cb_generic_download(data, len, settings->input.autoconfig_dir);
 }
 
 static int rarch_main_data_http_con_iterate_transfer(http_handle_t *http)
@@ -202,6 +210,9 @@ static int cb_http_conn_default(void *data_, size_t len)
             break;
          case CB_UPDATE_ASSETS:
             http->cb = &cb_update_assets;
+            break;
+         case CB_UPDATE_AUTOCONFIG_PROFILES:
+            http->cb = &cb_update_autoconfig_profiles;
             break;
       }
    }
