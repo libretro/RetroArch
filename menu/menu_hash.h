@@ -52,6 +52,27 @@ extern "C" {
 #define MENU_VALUE_OPEN_ARCHIVE                                                0x96da22b9U
 #define MENU_VALUE_ASK_ARCHIVE                                                 0x0b87d6a4U
 
+#define MENU_LABEL_UPDATE_ASSETS                                               0x37fa42daU
+#define MENU_LABEL_VALUE_UPDATE_ASSETS                                         0x0fdf0b1bU
+
+#define MENU_LABEL_UPDATE_CHEATS                                               0x3bd5c83fU
+#define MENU_LABEL_VALUE_UPDATE_CHEATS                                         0x13ba9080U
+
+#define MENU_LABEL_UPDATE_AUTOCONFIG_PROFILES                                  0xddfcf979U
+#define MENU_LABEL_VALUE_UPDATE_AUTOCONFIG_PROFILES                            0x6ddaf7fbU
+
+#define MENU_LABEL_UPDATE_DATABASES                                            0x158ee0cfU
+#define MENU_LABEL_VALUE_UPDATE_DATABASES                                      0x00c24d70U
+
+#define MENU_LABEL_UPDATE_OVERLAYS                                             0xd25d221cU
+#define MENU_LABEL_VALUE_UPDATE_OVERLAYS                                       0x3694fe9dU
+
+#define MENU_LABEL_UPDATE_CG_SHADERS                                           0x9473991aU
+#define MENU_LABEL_VALUE_UPDATE_CG_SHADERS                                     0x22999e5cU
+
+#define MENU_LABEL_UPDATE_GLSL_SHADERS                                         0x2413b762U
+#define MENU_LABEL_VALUE_UPDATE_GLSL_SHADERS                                   0xe2060484U
+
 #define MENU_LABEL_INFORMATION_LIST                                            0x225e7606U
 #define MENU_LABEL_VALUE_INFORMATION_LIST                                      0xd652344bU
 

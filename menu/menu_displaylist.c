@@ -1583,6 +1583,45 @@ static int menu_displaylist_parse_options(menu_displaylist_info_t *info)
          menu_hash_to_str(MENU_LABEL_VALUE_CORE_UPDATER_LIST),
          menu_hash_to_str(MENU_LABEL_CORE_UPDATER_LIST),
          MENU_SETTING_ACTION, 0, 0);
+
+   menu_list_push(info->list,
+         menu_hash_to_str(MENU_LABEL_VALUE_UPDATE_ASSETS),
+         menu_hash_to_str(MENU_LABEL_UPDATE_ASSETS),
+         MENU_SETTING_ACTION, 0, 0);
+
+   menu_list_push(info->list,
+         menu_hash_to_str(MENU_LABEL_VALUE_UPDATE_AUTOCONFIG_PROFILES),
+         menu_hash_to_str(MENU_LABEL_UPDATE_AUTOCONFIG_PROFILES),
+         MENU_SETTING_ACTION, 0, 0);
+
+   menu_list_push(info->list,
+         menu_hash_to_str(MENU_LABEL_VALUE_UPDATE_CHEATS),
+         menu_hash_to_str(MENU_LABEL_UPDATE_CHEATS),
+         MENU_SETTING_ACTION, 0, 0);
+
+   menu_list_push(info->list,
+         menu_hash_to_str(MENU_LABEL_VALUE_UPDATE_DATABASES),
+         menu_hash_to_str(MENU_LABEL_UPDATE_DATABASES),
+         MENU_SETTING_ACTION, 0, 0);
+
+   menu_list_push(info->list,
+         menu_hash_to_str(MENU_LABEL_VALUE_UPDATE_OVERLAYS),
+         menu_hash_to_str(MENU_LABEL_UPDATE_OVERLAYS),
+         MENU_SETTING_ACTION, 0, 0);
+
+#ifdef HAVE_CG
+   menu_list_push(info->list,
+         menu_hash_to_str(MENU_LABEL_VALUE_UPDATE_CG_SHADERS),
+         menu_hash_to_str(MENU_LABEL_UPDATE_CG_SHADERS),
+         MENU_SETTING_ACTION, 0, 0);
+#endif
+
+#ifdef HAVE_GLSL
+   menu_list_push(info->list,
+         menu_hash_to_str(MENU_LABEL_VALUE_UPDATE_GLSL_SHADERS),
+         menu_hash_to_str(MENU_LABEL_UPDATE_GLSL_SHADERS),
+         MENU_SETTING_ACTION, 0, 0);
+#endif
 #else
    menu_list_push(info->list,
          menu_hash_to_str(MENU_LABEL_VALUE_NO_ITEMS),

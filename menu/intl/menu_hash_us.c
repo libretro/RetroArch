@@ -557,6 +557,20 @@ static const char *menu_hash_to_str_us_label(uint32_t hash)
          return "deferred_core_updater_list";
       case MENU_LABEL_AUDIO_DSP_PLUGIN:
          return "audio_dsp_plugin";
+      case MENU_LABEL_UPDATE_ASSETS:
+         return "update_assets";
+      case MENU_LABEL_UPDATE_CHEATS:
+         return "update_cheats";
+      case MENU_LABEL_UPDATE_AUTOCONFIG_PROFILES:
+         return "update_autoconfig_profiles";
+      case MENU_LABEL_UPDATE_DATABASES:
+         return "update_databases";
+      case MENU_LABEL_UPDATE_OVERLAYS:
+         return "update_overlays";
+      case MENU_LABEL_UPDATE_CG_SHADERS:
+         return "update_cg_shaders";
+      case MENU_LABEL_UPDATE_GLSL_SHADERS:
+         return "update_glsl_shaders";
       default:
          break;
    }
@@ -1123,6 +1137,20 @@ const char *menu_hash_to_str_us(uint32_t hash)
          return "OFF";
       case MENU_VALUE_ON:
          return "ON";
+      case MENU_LABEL_VALUE_UPDATE_ASSETS:
+         return "Update Assets";
+      case MENU_LABEL_VALUE_UPDATE_CHEATS:
+         return "Update Cheats";
+      case MENU_LABEL_VALUE_UPDATE_AUTOCONFIG_PROFILES:
+         return "Update Autoconfig Profiles";
+      case MENU_LABEL_VALUE_UPDATE_DATABASES:
+         return "Update Databases";
+      case MENU_LABEL_VALUE_UPDATE_OVERLAYS:
+         return "Update Overlays";
+      case MENU_LABEL_VALUE_UPDATE_CG_SHADERS:
+         return "Update Cg Shaders";
+      case MENU_LABEL_VALUE_UPDATE_GLSL_SHADERS:
+         return "Update GLSL Shaders";
       default:
          break;
    }

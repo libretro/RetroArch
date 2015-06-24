@@ -234,10 +234,13 @@ static int rarch_main_data_http_iterate_poll(http_handle_t *http)
 
    http->connection.cb     = &cb_http_conn_default;
 
+
    if (str_list->size > 1)
+   {
       strlcpy(http->connection.elem1,
             str_list->elems[1].data,
             sizeof(http->connection.elem1));
+   }
 
    string_list_free(str_list);
    
