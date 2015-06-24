@@ -815,6 +815,8 @@ const char *menu_hash_to_str_nl(uint32_t hash);
 
 const char *menu_hash_to_str_pt(uint32_t hash);
 
+const char *menu_hash_to_str_us(uint32_t hash);
+
 const char *menu_hash_to_str(uint32_t hash);
 
 uint32_t menu_hash_calculate(const char *s);
