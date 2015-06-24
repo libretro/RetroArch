@@ -79,10 +79,10 @@ error:
 
 static int cb_core_updater_download(void *data, size_t len)
 {
-   const char             *file_ext  = NULL;
-   char output_path[PATH_MAX_LENGTH] = {0};
-   char msg[PATH_MAX_LENGTH]         = {0};
-   settings_t              *settings = config_get_ptr();
+   const char             *file_ext      = NULL;
+   char output_path[PATH_MAX_LENGTH]     = {0};
+   char msg[PATH_MAX_LENGTH]             = {0};
+   settings_t              *settings     = config_get_ptr();
 
    if (!data)
       return -1;
@@ -92,7 +92,7 @@ static int cb_core_updater_download(void *data, size_t len)
 
    if (!write_file(output_path, data, len))
       return -1;
-   
+
    snprintf(msg, sizeof(msg), "Download complete: %s.",
          core_updater_path);
 
@@ -110,6 +110,9 @@ static int cb_core_updater_download(void *data, size_t len)
 
                (void*)settings->libretro_directory))
          RARCH_LOG("Could not process ZIP file.\n");
+
+      if (path_file_exists(output_path))
+         remove(output_path);
    }
 #endif
 
