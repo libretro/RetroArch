@@ -52,6 +52,11 @@
 #define TITLE_COLOR(settings)    (argb32_to_rgba4444(settings->menu.title_color))
 #endif
 
+typedef struct {
+   bool force_redraw;
+   char msgbox[4096];
+} rgui_t;
+
 static INLINE uint16_t argb32_to_rgba4444(uint32_t col)
 {
    unsigned a = ((col >> 24) & 0xff) >> 4;
@@ -253,6 +258,20 @@ static void rgui_render_background(void)
          green_filler);
 }
 
+static void rgui_set_message(const char *message)
+{
+   menu_handle_t    *menu = menu_driver_get_ptr();
+   menu_animation_t *anim = menu_animation_get_ptr();
+   rgui_t           *rgui = NULL;
+
+   if (!menu || !menu->userdata || !anim || !message || !*message)
+      return;
+
+   rgui = (rgui_t*)menu->userdata;
+   strlcpy(rgui->msgbox, message, sizeof(rgui->msgbox));
+   rgui->force_redraw = true;
+}
+
 static void rgui_render_messagebox(const char *message)
 {
    size_t i;
@@ -359,6 +378,7 @@ static void rgui_render(void)
    settings_t *settings           = config_get_ptr();
    menu_animation_t *anim         = menu_animation_get_ptr();
    uint64_t frame_count           = video_driver_get_frame_count();
+   rgui_t *rgui                   = NULL;
 
    title[0]     = '\0';
    title_buf[0] = '\0';
@@ -367,22 +387,29 @@ static void rgui_render(void)
 
    (void)driver;
 
-   if (!menu)
+   if (!menu || !menu->userdata)
       return;
 
-   if (menu_entries_needs_refresh() && menu_driver_alive() && !disp->msg_force)
-      return;
+   rgui = menu->userdata;
 
-   if (runloop->is_idle)
-      return;
+   if (!rgui->force_redraw)
+   {
+      if (menu_entries_needs_refresh() && menu_driver_alive() && !disp->msg_force)
+         return;
 
-   if (!menu_display_update_pending())
-      return;
+      if (runloop->is_idle)
+         return;
+
+      if (!menu_display_update_pending())
+         return;
+   }
 
    /* ensures the framebuffer will be rendered on the screen */
    menu_display_fb_set_dirty();
    anim->is_active           = false;
    anim->label.is_updated    = false;
+   rgui->force_redraw        = false;
+
 
    if (settings->menu.pointer.enable)
    {
@@ -530,6 +557,13 @@ static void rgui_render(void)
       rgui_render_messagebox(msg);
    }
 
+   if (rgui->msgbox[0] != '\0')
+   {
+      rgui_render_messagebox(rgui->msgbox);
+      rgui->msgbox[0] = '\0';
+      rgui->force_redraw = true;
+   }
+
    if (settings->menu.mouse.enable)
       rgui_blit_cursor(menu);
 }
@@ -539,9 +573,15 @@ static void *rgui_init(void)
    bool                   ret = false;
    menu_framebuf_t *frame_buf = NULL;
    menu_handle_t        *menu = (menu_handle_t*)calloc(1, sizeof(*menu));
+   rgui_t               *rgui = NULL;
 
    if (!menu)
       return NULL;
+
+   menu->userdata = rgui = (rgui_t*)calloc(1, sizeof(rgui_t));
+
+   if (!rgui)
+      goto error;
 
    frame_buf                  = &menu->display.frame_buf;
 
@@ -687,7 +727,7 @@ static void rgui_populate_entries(const char *path,
 
 menu_ctx_driver_t menu_ctx_rgui = {
    rgui_set_texture,
-   rgui_render_messagebox,
+   rgui_set_message,
    rgui_render,
    NULL,
    rgui_init,
