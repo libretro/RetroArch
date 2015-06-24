@@ -610,6 +610,9 @@ static void rgui_set_texture(void)
    if (!menu)
       return;
 
+   if (!frame_buf->dirty)
+      return;
+
    menu_display_fb_unset_dirty();
 
    video_driver_set_texture_frame(
