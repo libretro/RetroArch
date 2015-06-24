@@ -753,19 +753,21 @@ static int menu_displaylist_parse_shader_options(menu_displaylist_info_t *info)
 
    for (i = 0; i < shader->passes; i++)
    {
+      char buf_tmp[64] = {0};
       char buf[64] = {0};
 
-      snprintf(buf, sizeof(buf), "%s #%u", menu_hash_to_str(MENU_VALUE_SHADER), i);
-      menu_list_push(info->list, buf,
+      snprintf(buf_tmp, sizeof(buf_tmp), "%s #%u", menu_hash_to_str(MENU_VALUE_SHADER), i);
+
+      menu_list_push(info->list, buf_tmp,
             menu_hash_to_str(MENU_LABEL_VIDEO_SHADER_PASS),
             MENU_SETTINGS_SHADER_PASS_0 + i, 0, 0);
 
-      snprintf(buf, sizeof(buf), "%s #%u Filter", menu_hash_to_str(MENU_VALUE_SHADER), i);
+      snprintf(buf, sizeof(buf), "%s Filter", buf_tmp);
       menu_list_push(info->list, buf,
             menu_hash_to_str(MENU_LABEL_VIDEO_SHADER_FILTER_PASS),
             MENU_SETTINGS_SHADER_PASS_FILTER_0 + i, 0, 0);
 
-      snprintf(buf, sizeof(buf), "%s #%u Scale", menu_hash_to_str(MENU_VALUE_SHADER), i);
+      snprintf(buf, sizeof(buf), "%s Scale", buf_tmp);
       menu_list_push(info->list, buf,
             menu_hash_to_str(MENU_LABEL_VIDEO_SHADER_SCALE_PASS),
             MENU_SETTINGS_SHADER_PASS_SCALE_0 + i, 0, 0);
