@@ -23,10 +23,16 @@ const char *menu_hash_to_str_de(uint32_t hash)
 {
    switch (hash)
    {
+         case MENU_LABEL_VALUE_INFORMATION_LIST:
+         return "Information";
       case MENU_LABEL_VALUE_USE_BUILTIN_PLAYER:
          return "Verwende integrierten Player";
       case MENU_LABEL_VALUE_CONTENT_SETTINGS:
          return "Content-Einstellungen"; /* FIXME */
+      case MENU_LABEL_VALUE_RDB_ENTRY_CRC32:
+         return "CRC32";
+      case MENU_LABEL_VALUE_RDB_ENTRY_MD5:
+         return "MD5";
       case MENU_LABEL_VALUE_LOAD_CONTENT_LIST:
          return "Lade Content";
       case MENU_VALUE_LOAD_ARCHIVE:
@@ -61,8 +67,18 @@ const char *menu_hash_to_str_de(uint32_t hash)
          return "Kalibriere obere, linke Ecke";
       case MENU_LABEL_VALUE_CUSTOM_VIEWPORT_2:
          return "Kalibriere untere, rechte Ecke";
+      case MENU_VALUE_SHADER:
+         return "Shader";
+      case MENU_VALUE_CHEAT:
+         return "Cheat";
+      case MENU_VALUE_USER:
+         return "Benutzer";
       case MENU_LABEL_VALUE_SYSTEM_BGM_ENABLE:
          return "Aktiviere System-BGM";
+      case MENU_VALUE_RETROPAD:
+         return "RetroPad";
+      case MENU_VALUE_RETROKEYBOARD:
+         return "RetroKeyboard";
       case MENU_LABEL_VALUE_AUDIO_BLOCK_FRAMES:
          return "Warte auf Audio-Frames";
       case MENU_LABEL_VALUE_INPUT_BIND_MODE:
@@ -229,10 +245,8 @@ const char *menu_hash_to_str_de(uint32_t hash)
          return "Port für Netzwerk-Befehle";
       case MENU_LABEL_VALUE_HISTORY_LIST_ENABLE:
          return "Aktiviere Verlaufsliste";
-      case MENU_LABEL_CONTENT_HISTORY_SIZE:
-         return "Größe des Content-Verlaufs";
       case MENU_LABEL_VALUE_CONTENT_HISTORY_SIZE:
-         return "Größe des Verlaufs";
+         return "Länge der Verlaufsliste";
       case MENU_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO:
          return "Geschätzte Monitor-Bildrate";
       case MENU_LABEL_VALUE_DUMMY_ON_CORE_SHUTDOWN:
@@ -391,8 +405,10 @@ const char *menu_hash_to_str_de(uint32_t hash)
          return "Audio Rate Control Delta";
       case MENU_LABEL_VALUE_VIDEO_SHADER_NUM_PASSES:
          return "Shader-Durchgänge";  /* FIXME */
+      case MENU_LABEL_VALUE_RDB_ENTRY_SHA1:
+         return "SHA1";
       case MENU_LABEL_VALUE_CONFIGURATIONS:
-         return "Konfigurationsdatei";
+         return "Lade Konfigurationsdatei";
       case MENU_LABEL_VALUE_REWIND_GRANULARITY:
          return "Genauigkeit des Zurückspulens (Rewind)";
       case MENU_LABEL_VALUE_REMAP_FILE_LOAD:
@@ -473,6 +489,8 @@ const char *menu_hash_to_str_de(uint32_t hash)
          return "Heruntergeladene Archive automatisch entpacken";
       case MENU_LABEL_VALUE_SYSTEM_INFORMATION:
          return "Systeminformationen";
+      case MENU_LABEL_VALUE_ONLINE_UPDATER:
+         return "Online-Aktualisierungen";
       case MENU_LABEL_VALUE_CORE_INFORMATION:
          return "Core-Informationen";
       case MENU_LABEL_VALUE_DIRECTORY_NOT_FOUND:
@@ -555,6 +573,20 @@ const char *menu_hash_to_str_de(uint32_t hash)
          return "OFF"; // Don't change. Needed for XMB atm. (Would be: "AN")
       case MENU_VALUE_ON:
          return "ON"; // Don't change. Needed for XMB atm. (Would be: "AUS")
+      case MENU_LABEL_VALUE_UPDATE_ASSETS:
+         return "Aktualisiere Assets";
+      case MENU_LABEL_VALUE_UPDATE_CHEATS:
+         return "Aktualisiere Cheats";
+      case MENU_LABEL_VALUE_UPDATE_AUTOCONFIG_PROFILES:
+         return "Aktualisiere Autoconfig-Profile";
+      case MENU_LABEL_VALUE_UPDATE_DATABASES:
+         return "Aktualisiere Datenbanken";
+      case MENU_LABEL_VALUE_UPDATE_OVERLAYS:
+         return "Aktualisiere Overlays";
+      case MENU_LABEL_VALUE_UPDATE_CG_SHADERS:
+         return "Aktualisiere CG-Shader";
+      case MENU_LABEL_VALUE_UPDATE_GLSL_SHADERS:
+         return "Aktualisiere GLSL-Shader";
       default:
          break;
    }
