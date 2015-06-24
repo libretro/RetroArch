@@ -1247,27 +1247,38 @@ static int action_ok_save_state(const char *path,
    return generic_action_ok_command(EVENT_CMD_RESUME);
 }
 
+#ifdef HAVE_NETWORKING
+static int action_ok_download_generic(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx,
+      const char *type_msg)
+{
+   char s[PATH_MAX_LENGTH]         = {0};
+   char s2[PATH_MAX_LENGTH]        = {0};
+   settings_t *settings            = config_get_ptr();
+
+   fill_pathname_join(s, settings->network.buildbot_url,
+         path, sizeof(s));
+
+   strlcpy(core_updater_path, path, sizeof(core_updater_path));
+   snprintf(s2, sizeof(s2),
+         "%s %s.",
+         menu_hash_to_str(MENU_LABEL_VALUE_STARTING_DOWNLOAD),
+         path);
+
+   rarch_main_msg_queue_push(s2, 1, 90, true);
+
+   rarch_main_data_msg_queue_push(DATA_TYPE_HTTP, s,
+         type_msg, 0, 1, true);
+   return 0;
+}
+#endif
+
 static int action_ok_core_updater_download(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
 #ifdef HAVE_NETWORKING
-   char core_path[PATH_MAX_LENGTH] = {0};
-   char msg[PATH_MAX_LENGTH]       = {0};
-   settings_t *settings            = config_get_ptr();
-
-   fill_pathname_join(core_path, settings->network.buildbot_url,
-         path, sizeof(core_path));
-
-   strlcpy(core_updater_path, path, sizeof(core_updater_path));
-   snprintf(msg, sizeof(msg),
-         "%s %s.",
-         menu_hash_to_str(MENU_LABEL_VALUE_STARTING_DOWNLOAD),
-            path);
-
-   rarch_main_msg_queue_push(msg, 1, 90, true);
-
-   rarch_main_data_msg_queue_push(DATA_TYPE_HTTP, core_path,
-         "cb_core_updater_download", 0, 1, true);
+   action_ok_download_generic(path, label, type, idx, entry_idx,
+         "cb_core_updater_download");
 #endif
    return 0;
 }
