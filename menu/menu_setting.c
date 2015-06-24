@@ -4257,6 +4257,15 @@ static bool setting_append_list_video_options(
    END_SUB_GROUP(list, list_info, parent_group);
    START_SUB_GROUP(list, list_info, "Monitor", group_info.name, subgroup_info, parent_group);
 
+#if defined(GEKKO) || defined(__CELLOS_LV2__)
+   CONFIG_ACTION(
+         menu_hash_to_str(MENU_LABEL_SCREEN_RESOLUTION),
+         menu_hash_to_str(MENU_LABEL_VALUE_SCREEN_RESOLUTION),
+         group_info.name,
+         subgroup_info.name,
+         parent_group);
+#endif
+
    CONFIG_UINT(
          settings->video.monitor_index,
          menu_hash_to_str(MENU_LABEL_VIDEO_MONITOR_INDEX),

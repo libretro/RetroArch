@@ -271,8 +271,6 @@ static const char *menu_hash_to_str_german(uint32_t hash)
          return "Zeige Boxart";
       case MENU_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS:
          return "Core-Input-Remapping-Optionen";
-      case MENU_LABEL_VALUE_VIDEO_OPTIONS:
-         return "Video-Optionen";
       case MENU_LABEL_VALUE_SHADER_OPTIONS:
          return "Shader-Optionen";
       case MENU_LABEL_VALUE_NO_SHADER_PARAMETERS:
@@ -1240,10 +1238,6 @@ static const char *menu_hash_to_str_portuguese(uint32_t hash)
          return "core_input_remapping_options";
       case MENU_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS:
          return "Opções de Remapeamento de Controlador de Core";
-      case MENU_LABEL_VIDEO_OPTIONS:
-         return "video_options";
-      case MENU_LABEL_VALUE_VIDEO_OPTIONS:
-         return "Opções de Vídeo";
       case MENU_LABEL_VALUE_SHADER_OPTIONS:
          return "Opções de Shaders";
       case MENU_LABEL_SHADER_OPTIONS:
@@ -1798,8 +1792,6 @@ static const char *menu_hash_to_str_french(uint32_t hash)
          return "Afficher les vignettes";
       case MENU_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS:
          return "Options de remap d'entrées du core";
-      case MENU_LABEL_VALUE_VIDEO_OPTIONS:
-         return "Options vidéo";
       case MENU_LABEL_VALUE_SHADER_OPTIONS:
          return "Options de shaders";
       case MENU_LABEL_VALUE_NO_SHADER_PARAMETERS:
@@ -2888,10 +2880,6 @@ static const char *menu_hash_to_str_english(uint32_t hash)
          return "core_input_remapping_options";
       case MENU_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS:
          return "Core Input Remapping Options";
-      case MENU_LABEL_VIDEO_OPTIONS:
-         return "video_options";
-      case MENU_LABEL_VALUE_VIDEO_OPTIONS:
-         return "Video Options";
       case MENU_LABEL_VALUE_SHADER_OPTIONS:
          return "Shader Options";
       case MENU_LABEL_SHADER_OPTIONS:

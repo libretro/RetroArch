@@ -588,8 +588,6 @@ extern "C" {
 #define MENU_LABEL_VALUE_DISK_IMAGE_APPEND                                     0x1cb28c6bU
 #define MENU_LABEL_DISK_INDEX                                                  0x6c14bf54U
 #define MENU_LABEL_SHADER_OPTIONS                                              0x1f7d2fc7U
-#define MENU_LABEL_VIDEO_OPTIONS                                               0x6390c4e7U
-#define MENU_LABEL_VALUE_VIDEO_OPTIONS                                         0xb4349948U
 #define MENU_LABEL_VALUE_CORE_CHEAT_OPTIONS                                    0x8ba478bfU
 #define MENU_LABEL_CORE_CHEAT_OPTIONS                                          0x9293171dU
 #define MENU_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS                          0x7c65016dU

@@ -1574,7 +1574,6 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          cbs->action_ok = action_ok_shader_parameters;
          break;
       case MENU_LABEL_SHADER_OPTIONS:
-      case MENU_LABEL_VIDEO_OPTIONS:
       case MENU_VALUE_INPUT_SETTINGS:
       case MENU_LABEL_CORE_OPTIONS:
       case MENU_LABEL_CORE_CHEAT_OPTIONS:
@@ -1640,6 +1639,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
       case MENU_LABEL_CUSTOM_RATIO:
          cbs->action_ok = action_ok_custom_viewport;
          break;
+      case MENU_LABEL_SCREEN_RESOLUTION:
+         cbs->action_ok = action_ok_video_resolution;
+         break;
       default:
          return -1;
    }
@@ -1666,9 +1668,6 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
    {
       switch (type)
       {
-         case MENU_SETTINGS_VIDEO_RESOLUTION:
-            cbs->action_ok = action_ok_video_resolution;
-            break;
          case MENU_FILE_PLAYLIST_ENTRY:
             cbs->action_ok = action_ok_playlist_entry;
             break;

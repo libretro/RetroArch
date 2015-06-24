@@ -1573,17 +1573,15 @@ static int menu_displaylist_parse_options(menu_displaylist_info_t *info)
 {
    global_t *global            = global_get_ptr();
 
-
-
-   menu_list_push(info->list,
-         menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_OPTIONS),
-         menu_hash_to_str(MENU_LABEL_VIDEO_OPTIONS),
-         MENU_SETTING_ACTION, 0, 0);
 #ifdef HAVE_SHADER_MANAGER
    menu_list_push(info->list,
          menu_hash_to_str(MENU_LABEL_VALUE_SHADER_OPTIONS),
          menu_hash_to_str(MENU_LABEL_SHADER_OPTIONS),
          MENU_SETTING_ACTION, 0, 0);
+#else
+   menu_list_push(info->list,
+         menu_hash_to_str(MENU_LABEL_VALUE_NO_ITEMS),
+         "", 0, 0, 0);
 #endif
 
    return 0;
@@ -2009,16 +2007,6 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
             need_push = true;
          }
 #endif
-         break;
-      case DISPLAYLIST_OPTIONS_VIDEO:
-         menu_list_clear(info->list);
-#if defined(GEKKO) || defined(__CELLOS_LV2__)
-         menu_list_push(info->list,
-               menu_hash_to_str(MENU_LABEL_VALUE_SCREEN_RESOLUTION),
-               menu_hash_to_str(MENU_LABEL_SCREEN_RESOLUTION),
-               MENU_SETTINGS_VIDEO_RESOLUTION, 0, 0);
-#endif
-         need_push    = true;
          break;
       case DISPLAYLIST_PERFCOUNTERS_CORE:
       case DISPLAYLIST_PERFCOUNTERS_FRONTEND:

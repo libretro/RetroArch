@@ -898,7 +898,6 @@ static int menu_cbs_init_bind_get_string_representation_compare_label(
       case MENU_LABEL_LOAD_CONTENT:
       case MENU_LABEL_CORE_OPTIONS:
       case MENU_LABEL_CORE_CHEAT_OPTIONS:
-      case MENU_LABEL_VIDEO_OPTIONS:
       case MENU_LABEL_SHADER_OPTIONS:
       case MENU_LABEL_VIDEO_SHADER_PARAMETERS:
       case MENU_LABEL_VIDEO_SHADER_PRESET_PARAMETERS:
