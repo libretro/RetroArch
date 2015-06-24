@@ -105,9 +105,9 @@ void menu_entries_get_core_title(char *s, size_t len)
    const char *core_name     = global ? global->menu.info.library_name    : NULL;
    const char *core_version  = global ? global->menu.info.library_version : NULL;
 
-   if (!core_name)
+   if (!core_name || core_name[0] == '\0')
       core_name = global->system.info.library_name;
-   if (!core_name)
+   if (!core_name || core_name[0] == '\0')
       core_name = menu_hash_to_str(MENU_VALUE_NO_CORE);
 
    if (!core_version)
