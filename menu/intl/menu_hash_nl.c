@@ -26,7 +26,7 @@ const char *menu_hash_to_str_nl(uint32_t hash)
    {
       case MENU_LABEL_VALUE_CORE_INFORMATION:
          return "Core Informatie";
-      case MENU_LABEL_CORE_LIST:
+      case MENU_LABEL_VALUE_CORE_LIST:
          return "Laad Core";
       case MENU_LABEL_VALUE_SETTINGS:
          return "Instellingen";

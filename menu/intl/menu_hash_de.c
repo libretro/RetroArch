@@ -479,7 +479,7 @@ const char *menu_hash_to_str_de(uint32_t hash)
          return "Ordner nicht gefunden.";
       case MENU_LABEL_VALUE_NO_ITEMS:
          return "Keine Einträge.";
-      case MENU_LABEL_CORE_LIST:
+      case MENU_LABEL_VALUE_CORE_LIST:
          return "Lade Core";
       case MENU_LABEL_VALUE_LOAD_CONTENT:
          return "Lade Content"; /* FIXME */
