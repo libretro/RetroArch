@@ -470,7 +470,7 @@ static const char *menu_hash_to_str_german(uint32_t hash)
       case MENU_VALUE_MAIN_MENU:
          return "Main Menu"; // Don't change. Breaks everything. (Would be: "Hauptmenü")
       case MENU_LABEL_VALUE_SETTINGS:
-         return "Frontend-Einstellungen";
+         return "Einstellungen"; /* FIXME */
       case MENU_LABEL_VALUE_QUIT_RETROARCH:
          return "RetroArch beenden";
       case MENU_LABEL_VALUE_HELP:
@@ -1365,7 +1365,7 @@ static const char *menu_hash_to_str_portuguese(uint32_t hash)
       case MENU_LABEL_SETTINGS:
          return "frontend_settings";
       case MENU_LABEL_VALUE_SETTINGS:
-         return "Frontend Configurações";
+         return "Configurações";
       case MENU_LABEL_QUIT_RETROARCH:
          return "quit_retroarch";
       case MENU_LABEL_VALUE_QUIT_RETROARCH:
@@ -2013,7 +2013,7 @@ static const char *menu_hash_to_str_french(uint32_t hash)
       case MENU_VALUE_MAIN_MENU:
          return "Main Menu";
       case MENU_LABEL_VALUE_SETTINGS:
-         return "Réglages du frontend";
+         return "Réglages du frontend"; /* FIXME */
       case MENU_LABEL_VALUE_QUIT_RETROARCH:
          return "Quitter RetroArch";
       case MENU_LABEL_VALUE_HELP:
@@ -2116,7 +2116,7 @@ static const char *menu_hash_to_str_dutch(uint32_t hash)
       case MENU_LABEL_CORE_LIST:
          return "Laad Core";
       case MENU_LABEL_VALUE_SETTINGS:
-         return "Frontend Instellingen";
+         return "Instellingen";
       case MENU_LABEL_VALUE_OPTIONS:
          return "Core Instellingen";
       case MENU_LABEL_VALUE_SYSTEM_INFORMATION:
@@ -3007,9 +3007,9 @@ static const char *menu_hash_to_str_english(uint32_t hash)
       case MENU_VALUE_MAIN_MENU:
          return "Main Menu";
       case MENU_LABEL_SETTINGS:
-         return "frontend_settings";
+         return "settings";
       case MENU_LABEL_VALUE_SETTINGS:
-         return "Frontend Settings";
+         return "Settings";
       case MENU_LABEL_QUIT_RETROARCH:
          return "quit_retroarch";
       case MENU_LABEL_VALUE_QUIT_RETROARCH:
