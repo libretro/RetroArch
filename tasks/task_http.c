@@ -30,6 +30,7 @@
 #define CB_CORE_UPDATER_LIST           0x32fd4f01U
 #define CB_UPDATE_ASSETS               0xbf85795eU
 #define CB_UPDATE_AUTOCONFIG_PROFILES  0x28ada67dU
+#define CB_UPDATE_CHEATS               0xc360fec3U
 
 extern char core_updater_path[PATH_MAX_LENGTH];
 
@@ -140,6 +141,12 @@ static int cb_update_autoconfig_profiles(void *data, size_t len)
    return cb_generic_download(data, len, settings->input.autoconfig_dir);
 }
 
+static int cb_update_cheats(void *data, size_t len)
+{
+   settings_t              *settings     = config_get_ptr();
+   return cb_generic_download(data, len, settings->cheat_database);
+}
+
 static int rarch_main_data_http_con_iterate_transfer(http_handle_t *http)
 {
    if (!net_http_connection_iterate(http->connection.handle))
@@ -213,6 +220,9 @@ static int cb_http_conn_default(void *data_, size_t len)
             break;
          case CB_UPDATE_AUTOCONFIG_PROFILES:
             http->cb = &cb_update_autoconfig_profiles;
+            break;
+         case CB_UPDATE_CHEATS:
+            http->cb = &cb_update_cheats;
             break;
       }
    }
