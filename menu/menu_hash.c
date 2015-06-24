@@ -1985,35 +1985,35 @@ static const char *menu_hash_to_str_english(uint32_t hash)
       case MENU_LABEL_INPUT_REMAPPING_DIRECTORY:
          return "input_remapping_directory";
       case MENU_LABEL_VALUE_INPUT_REMAPPING_DIRECTORY:
-         return "Input Remapping Directory";
+         return "Input Remapping Dir";
       case MENU_LABEL_JOYPAD_AUTOCONFIG_DIR:
          return "joypad_autoconfig_dir";
       case MENU_LABEL_VALUE_JOYPAD_AUTOCONFIG_DIR:
-         return "Input Device Autoconfig Directory";
+         return "Input Device Autoconfig Dir";
       case MENU_LABEL_RECORDING_CONFIG_DIRECTORY:
          return "recording_config_directory";
       case MENU_LABEL_VALUE_RECORDING_CONFIG_DIRECTORY:
-         return "Recording Config Directory";
+         return "Recording Config Dir";
       case MENU_LABEL_RECORDING_OUTPUT_DIRECTORY:
          return "recording_output_directory";
       case MENU_LABEL_VALUE_RECORDING_OUTPUT_DIRECTORY:
-         return "Recording Output Directory";
+         return "Recording Output Dir";
       case MENU_LABEL_SCREENSHOT_DIRECTORY:
          return "screenshot_directory";
       case MENU_LABEL_VALUE_SCREENSHOT_DIRECTORY:
-         return "Screenshot Directory";
+         return "Screenshot Dir";
       case MENU_LABEL_PLAYLIST_DIRECTORY:
          return "playlist_directory";
       case MENU_LABEL_VALUE_PLAYLIST_DIRECTORY:
-         return "Playlist Directory";
+         return "Playlist Dir";
       case MENU_LABEL_SAVEFILE_DIRECTORY:
          return "savefile_directory";
       case MENU_LABEL_VALUE_SAVEFILE_DIRECTORY:
-         return "Savefile Directory";
+         return "Savefile Dir";
       case MENU_LABEL_SAVESTATE_DIRECTORY:
          return "savestate_directory";
       case MENU_LABEL_VALUE_SAVESTATE_DIRECTORY:
-         return "Savestate Directory";
+         return "Savestate Dir";
       case MENU_LABEL_STDIN_CMD_ENABLE:
          return "stdin_commands";
       case MENU_LABEL_VALUE_STDIN_CMD_ENABLE:
@@ -2037,7 +2037,7 @@ static const char *menu_hash_to_str_english(uint32_t hash)
       case MENU_LABEL_RECORD_USE_OUTPUT_DIRECTORY:
          return "record_use_output_directory";
       case MENU_LABEL_VALUE_RECORD_USE_OUTPUT_DIRECTORY:
-         return "Use Output Directory";
+         return "Use Output Dir";
       case MENU_LABEL_RECORD_CONFIG:
          return "record_config";
       case MENU_LABEL_VALUE_RECORD_CONFIG:
@@ -2049,75 +2049,75 @@ static const char *menu_hash_to_str_english(uint32_t hash)
       case MENU_LABEL_CORE_ASSETS_DIRECTORY:
          return "core_assets_directory";
       case MENU_LABEL_VALUE_CORE_ASSETS_DIRECTORY:
-         return "Core Assets Directory";
+         return "Core Assets Dir";
       case MENU_LABEL_ASSETS_DIRECTORY:
          return "assets_directory";
       case MENU_LABEL_VALUE_ASSETS_DIRECTORY:
-         return "Assets Directory";
+         return "Assets Dir";
       case MENU_LABEL_DYNAMIC_WALLPAPERS_DIRECTORY:
          return "dynamic_wallpapers_directory";
       case MENU_LABEL_VALUE_DYNAMIC_WALLPAPERS_DIRECTORY:
-         return "Dynamic Wallpapers Directory";
+         return "Dynamic Wallpapers Dir";
       case MENU_LABEL_BOXARTS_DIRECTORY:
          return "boxarts_directory";
       case MENU_LABEL_VALUE_BOXARTS_DIRECTORY:
-         return "Boxarts Directory";
+         return "Boxarts Dir";
       case MENU_LABEL_RGUI_BROWSER_DIRECTORY:
          return "rgui_browser_directory";
       case MENU_LABEL_VALUE_RGUI_BROWSER_DIRECTORY:
-         return "Browser Directory";
+         return "Browser Dir";
       case MENU_LABEL_RGUI_CONFIG_DIRECTORY:
          return "rgui_config_directory";
       case MENU_LABEL_VALUE_RGUI_CONFIG_DIRECTORY:
-         return "Config Directory";
+         return "Config Dir";
       case MENU_LABEL_LIBRETRO_INFO_PATH:
          return "libretro_info_path";
       case MENU_LABEL_VALUE_LIBRETRO_INFO_PATH:
-         return "Core Info Directory";
+         return "Core Info Dir";
       case MENU_LABEL_LIBRETRO_DIR_PATH:
          return "libretro_dir_path";
       case MENU_LABEL_VALUE_LIBRETRO_DIR_PATH:
-         return "Core Directory";
+         return "Core Dir";
       case MENU_LABEL_CURSOR_DIRECTORY:
          return "cursor_directory";
       case MENU_LABEL_VALUE_CURSOR_DIRECTORY:
-         return "Cursor Directory";
+         return "Cursor Dir";
       case MENU_LABEL_CONTENT_DATABASE_DIRECTORY:
          return "content_database_path";
       case MENU_LABEL_VALUE_CONTENT_DATABASE_DIRECTORY:
-         return "Content Database Directory";
+         return "Content Database Dir";
       case MENU_LABEL_SYSTEM_DIRECTORY:
          return "system_directory";
       case MENU_LABEL_VALUE_SYSTEM_DIRECTORY:
-         return "System Directory";
+         return "System Dir";
       case MENU_LABEL_EXTRACTION_DIRECTORY:
          return "extraction_directory";
       case MENU_LABEL_CHEAT_DATABASE_PATH:
          return "cheat_database_path";
       case MENU_LABEL_VALUE_CHEAT_DATABASE_PATH:
-         return "Cheat File Directory";
+         return "Cheat File Dir";
       case MENU_LABEL_VALUE_EXTRACTION_DIRECTORY:
-         return "Extraction Directory";
+         return "Extraction Dir";
       case MENU_LABEL_AUDIO_FILTER_DIR:
          return "audio_filter_dir";
       case MENU_LABEL_VALUE_AUDIO_FILTER_DIR:
-         return "Audio Filter Directory";
+         return "Audio Filter Dir";
       case MENU_LABEL_VIDEO_FILTER_DIR:
          return "video_filter_dir";
       case MENU_LABEL_VIDEO_SHADER_DIR:
          return "video_shader_dir";
       case MENU_LABEL_VALUE_VIDEO_SHADER_DIR:
-         return "Video Shader Directory";
+         return "Video Shader Dir";
       case MENU_LABEL_VALUE_VIDEO_FILTER_DIR:
-         return "Video Filter Directory";
+         return "Video Filter Dir";
       case MENU_LABEL_OVERLAY_DIRECTORY:
          return "overlay_directory";
       case MENU_LABEL_VALUE_OVERLAY_DIRECTORY:
-         return "Overlay Directory";
+         return "Overlay Dir";
       case MENU_LABEL_OSK_OVERLAY_DIRECTORY:
          return "osk_overlay_directory";
       case MENU_LABEL_VALUE_OSK_OVERLAY_DIRECTORY:
-         return "OSK Overlay Directory";
+         return "OSK Overlay Dir";
       case MENU_LABEL_NETPLAY_CLIENT_SWAP_INPUT:
          return "netplay_client_swap_input";
       case MENU_LABEL_VALUE_NETPLAY_CLIENT_SWAP_INPUT:
