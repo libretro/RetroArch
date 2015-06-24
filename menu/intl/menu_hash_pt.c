@@ -23,16 +23,10 @@ const char *menu_hash_to_str_pt(uint32_t hash)
 {
    switch (hash)
    {
-      case MENU_LABEL_VIDEO_FONT_ENABLE:
-         return "video_font_enable";
       case MENU_LABEL_VALUE_VIDEO_FONT_ENABLE:
          return "Mostrar Mensagem de Tela";
-      case MENU_LABEL_VIDEO_FONT_PATH:
-         return "video_font_path";
       case MENU_LABEL_VALUE_VIDEO_FONT_PATH:
          return "Fonte da Mensagem de Tela";
-      case MENU_LABEL_VIDEO_FONT_SIZE:
-         return "video_font_size";
       case MENU_LABEL_VALUE_VIDEO_FONT_SIZE:
          return "Tamanho da Mensagem de Tela";
       case MENU_LABEL_VIDEO_MESSAGE_POS_X:
@@ -43,12 +37,8 @@ const char *menu_hash_to_str_pt(uint32_t hash)
          return "video_message_pos_y";
       case MENU_LABEL_VALUE_VIDEO_MESSAGE_POS_Y:
          return "Posição Y da Mensagem de Tela";
-      case MENU_LABEL_VIDEO_SOFT_FILTER:
-         return "soft_filter";
       case MENU_LABEL_VALUE_VIDEO_SOFT_FILTER:
          return "Ativar Filtro de Suavização";
-      case MENU_LABEL_VIDEO_FILTER_FLICKER:
-         return "video_filter_flicker";
       case MENU_LABEL_VALUE_VIDEO_FILTER_FLICKER:
          return "Filtro de Cintilação";
       case MENU_VALUE_DIRECTORY_CONTENT:
@@ -61,84 +51,54 @@ const char *menu_hash_to_str_pt(uint32_t hash)
          return "<Nenhum>";
       case MENU_VALUE_NOT_AVAILABLE:
          return "N/A";
-      case MENU_LABEL_INPUT_REMAPPING_DIRECTORY:
-         return "input_remapping_directory";
       case MENU_LABEL_VALUE_INPUT_REMAPPING_DIRECTORY:
          return "Dir. de Remapeamento de Controladores";
       case MENU_LABEL_JOYPAD_AUTOCONFIG_DIR:
          return "joypad_autoconfig_dir";
       case MENU_LABEL_VALUE_JOYPAD_AUTOCONFIG_DIR:
          return "Dir. de Config. Automática de Dispositivos de Entrada";
-      case MENU_LABEL_RECORDING_CONFIG_DIRECTORY:
-         return "recording_config_directory";
       case MENU_LABEL_VALUE_RECORDING_CONFIG_DIRECTORY:
          return "Dir. de Config. de Gravação";
-      case MENU_LABEL_RECORDING_OUTPUT_DIRECTORY:
-         return "recording_output_directory";
       case MENU_LABEL_VALUE_RECORDING_OUTPUT_DIRECTORY:
          return "Dir. de Gravações";
-      case MENU_LABEL_SCREENSHOT_DIRECTORY:
-         return "screenshot_directory";
       case MENU_LABEL_VALUE_SCREENSHOT_DIRECTORY:
          return "Dir. de Capturas de Telas";
       case MENU_LABEL_PLAYLIST_DIRECTORY:
          return "playlist_directory";
       case MENU_LABEL_VALUE_PLAYLIST_DIRECTORY:
          return "Dir. de Listas de Jogos";
-      case MENU_LABEL_SAVEFILE_DIRECTORY:
-         return "savefile_directory";
       case MENU_LABEL_VALUE_SAVEFILE_DIRECTORY:
          return "Dir. de Saves";
-      case MENU_LABEL_SAVESTATE_DIRECTORY:
-         return "savestate_directory";
       case MENU_LABEL_VALUE_SAVESTATE_DIRECTORY:
          return "Dir. de Savestates";
-      case MENU_LABEL_STDIN_CMD_ENABLE:
-         return "stdin_commands";
       case MENU_LABEL_VALUE_STDIN_CMD_ENABLE:
          return "Comandos stdin";
-      case MENU_LABEL_VIDEO_DRIVER:
-         return "video_driver";
       case MENU_LABEL_VALUE_VIDEO_DRIVER:
          return "Driver de Vídeo";
-      case MENU_LABEL_RECORD_ENABLE:
-         return "record_enable";
       case MENU_LABEL_VALUE_RECORD_ENABLE:
          return "Ativar Gravação";
-      case MENU_LABEL_VIDEO_GPU_RECORD:
-         return "video_gpu_record";
       case MENU_LABEL_VALUE_VIDEO_GPU_RECORD:
          return "Ativar Gravação na GPU";
-      case MENU_LABEL_RECORD_PATH:
-         return "record_path";
       case MENU_LABEL_VALUE_RECORD_PATH:
          return "Caminho da Gravação";
       case MENU_LABEL_RECORD_USE_OUTPUT_DIRECTORY:
          return "record_use_output_directory";
       case MENU_LABEL_VALUE_RECORD_USE_OUTPUT_DIRECTORY:
          return "Usar Dir. de Gravações";
-      case MENU_LABEL_RECORD_CONFIG:
-         return "record_config";
       case MENU_LABEL_VALUE_RECORD_CONFIG:
          return "Configurar Gravação";
       case MENU_LABEL_VIDEO_POST_FILTER_RECORD:
          return "video_post_filter_record";
       case MENU_LABEL_VALUE_VIDEO_POST_FILTER_RECORD:
          return "Ativar Filtro Pós-Gravação";
-      case MENU_LABEL_CORE_ASSETS_DIRECTORY:
-         return "core_assets_directory";
       case MENU_LABEL_VALUE_CORE_ASSETS_DIRECTORY:
          return "Dir. de Recursos (Assets) dos Cores";
       case MENU_LABEL_ASSETS_DIRECTORY:
          return "assets_directory";
       case MENU_LABEL_VALUE_ASSETS_DIRECTORY:
          return "Dir. de Recursos (Assets)";
-      case MENU_LABEL_DYNAMIC_WALLPAPERS_DIRECTORY:
-         return "dynamic_wallpapers_directory";
       case MENU_LABEL_VALUE_DYNAMIC_WALLPAPERS_DIRECTORY:
          return "Dir. de Papéis de Parede Dinâmicos";
-      case MENU_LABEL_BOXARTS_DIRECTORY:
-         return "boxarts_directory";
       case MENU_LABEL_VALUE_BOXARTS_DIRECTORY:
          return "Dir. de Boxarts";
       case MENU_LABEL_RGUI_BROWSER_DIRECTORY:
@@ -907,20 +867,12 @@ const char *menu_hash_to_str_pt(uint32_t hash)
          return "audio_resampler_driver";
       case MENU_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER:
          return "Driver de Amostragem de Áudio";
-      case MENU_LABEL_RECORD_DRIVER:
-         return "record_driver";
       case MENU_LABEL_VALUE_RECORD_DRIVER:
          return "Driver de Gravação";
-      case MENU_LABEL_MENU_DRIVER:
-         return "menu_driver";
       case MENU_LABEL_VALUE_MENU_DRIVER:
          return "Driver de Menu";
-      case MENU_LABEL_CAMERA_DRIVER:
-         return "camera_driver";
       case MENU_LABEL_VALUE_CAMERA_DRIVER:
          return "Driver de Câmera";
-      case MENU_LABEL_LOCATION_DRIVER:
-         return "location_driver";
       case MENU_LABEL_VALUE_LOCATION_DRIVER:
          return "Driver de Localização";
       case MENU_LABEL_VALUE_UNABLE_TO_READ_COMPRESSED_FILE:
@@ -931,14 +883,6 @@ const char *menu_hash_to_str_pt(uint32_t hash)
          return "Interpolação de Overlay";
       case MENU_LABEL_VALUE_OVERLAY_PRESET:
          return "Predefinições de Overlay";
-      case MENU_LABEL_OVERLAY_PRESET:
-         return "input_overlay";
-      case MENU_LABEL_KEYBOARD_OVERLAY_PRESET:
-         return "input_osk_overlay";
-      case MENU_LABEL_AUDIO_DEVICE:
-         return "audio_device";
-      case MENU_LABEL_AUDIO_LATENCY:
-         return "audio_latency";
       case MENU_LABEL_VALUE_AUDIO_LATENCY:
          return "Latência de Áudio (ms)";
       case MENU_LABEL_VALUE_AUDIO_DEVICE:
@@ -953,38 +897,20 @@ const char *menu_hash_to_str_pt(uint32_t hash)
          return "menu_wallpaper";
       case MENU_LABEL_VALUE_MENU_WALLPAPER:
          return "Papel de Parede do Menu";
-      case MENU_LABEL_DYNAMIC_WALLPAPER:
-         return "menu_dynamic_wallpaper_enable";
       case MENU_LABEL_VALUE_DYNAMIC_WALLPAPER:
          return "Papel de Parede Dinâmico";
-      case MENU_LABEL_BOXART:
-         return "menu_boxart_enable";
       case MENU_LABEL_VALUE_BOXART:
          return "Mostrar Boxart";
-      case MENU_LABEL_CORE_INPUT_REMAPPING_OPTIONS:
-         return "core_input_remapping_options";
       case MENU_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS:
          return "Opções de Remapeamento de Controlador de Core";
       case MENU_LABEL_VALUE_SHADER_OPTIONS:
          return "Opções de Shaders";
-      case MENU_LABEL_SHADER_OPTIONS:
-         return "shader_options";
-      case MENU_LABEL_VIDEO_SHADER_PARAMETERS:
-         return "video_shader_parameters";
-      case MENU_LABEL_VIDEO_SHADER_PRESET_PARAMETERS:
-         return "video_shader_preset_parameters";
       case MENU_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_AS:
          return "Salvar Predefinições de Shader Como";
-      case MENU_LABEL_VIDEO_SHADER_PRESET_SAVE_AS:
-         return "video_shader_preset_save_as";
       case MENU_LABEL_VALUE_NO_SHADER_PARAMETERS:
          return "Nenhum Parâmetro de Shader Disponível.";
-      case MENU_LABEL_VIDEO_SHADER_PRESET:
-         return "video_shader_preset";
       case MENU_LABEL_VALUE_VIDEO_SHADER_PRESET:
          return "Carregar Predefinições de Shader";
-      case MENU_LABEL_VIDEO_FILTER:
-         return "video_filter";
       case MENU_LABEL_VALUE_VIDEO_FILTER:
          return "Filtros de Vídeo";
       case MENU_LABEL_DEFERRED_VIDEO_FILTER:
