@@ -339,6 +339,7 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
          switch (state)
          {
             case FRONTEND_POWERSTATE_NONE:
+               strlcat(tmp2, " ", sizeof(tmp));
                strlcat(tmp2, menu_hash_to_str(MENU_VALUE_NOT_AVAILABLE), sizeof(tmp));
                break;
             case FRONTEND_POWERSTATE_NO_SOURCE:
