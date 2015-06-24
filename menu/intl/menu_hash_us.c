@@ -1151,6 +1151,148 @@ const char *menu_hash_to_str_us(uint32_t hash)
          return "Update Cg Shaders";
       case MENU_LABEL_VALUE_UPDATE_GLSL_SHADERS:
          return "Update GLSL Shaders";
+      case MENU_LABEL_VALUE_CORE_INFO_CORE_NAME:
+         return "Core name";
+      case MENU_LABEL_VALUE_CORE_INFO_CORE_LABEL:
+         return "Core label";
+      case MENU_LABEL_VALUE_CORE_INFO_SYSTEM_NAME:
+         return "System name";
+      case MENU_LABEL_VALUE_CORE_INFO_SYSTEM_MANUFACTURER:
+         return "System manufacturer";
+      case MENU_LABEL_VALUE_CORE_INFO_CATEGORIES:
+         return "Categories";
+      case MENU_LABEL_VALUE_CORE_INFO_AUTHORS:
+         return "Authors";
+      case MENU_LABEL_VALUE_CORE_INFO_PERMISSIONS:
+         return "Permissions";
+      case MENU_LABEL_VALUE_CORE_INFO_LICENSES:
+         return "License(s)";
+      case MENU_LABEL_VALUE_CORE_INFO_SUPPORTED_EXTENSIONS:
+         return "Supported extensions";
+      case MENU_LABEL_VALUE_CORE_INFO_FIRMWARE:
+         return "Firmware";
+      case MENU_LABEL_VALUE_CORE_INFO_CORE_NOTES:
+         return "Core notes";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_BUILD_DATE:
+         return "Build date";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION:
+         return "Git version";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_CPU_FEATURES:
+         return "CPU Features";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_FRONTEND_IDENTIFIER:
+         return "Frontend identifier";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_FRONTEND_NAME:
+         return "Frontend name";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_FRONTEND_OS:
+         return "Frontend OS";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_RETRORATING_LEVEL:
+         return "RetroRating level";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE:
+         return "Power source";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_NO_SOURCE:
+         return "No source";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_CHARGING:
+         return "Charging";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_CHARGED:
+         return "Charged";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_DISCHARGING:
+         return "Discharging";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_VIDEO_CONTEXT_DRIVER:
+         return "Video context driver";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_WIDTH:
+         return "Display metric width (mm)";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_HEIGHT:
+         return "Display metric height (mm)";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_DPI:
+         return "Display metric DPI";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_LIBRETRODB_SUPPORT:
+         return "LibretroDB support";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_OVERLAY_SUPPORT:
+         return "Overlay support";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_COMMAND_IFACE_SUPPORT:
+         return "Command interface support";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_NETWORK_COMMAND_IFACE_SUPPORT:
+         return "Network Command interface support";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_COCOA_SUPPORT:
+         return "Cocoa support";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_RPNG_SUPPORT:
+         return "PNG support (RPNG)";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_SDL_SUPPORT:
+         return "SDL1.2 support";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_SDL2_SUPPORT:
+         return "SDL2 support";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_OPENGL_SUPPORT:
+         return "OpenGL support";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_OPENGLES_SUPPORT:
+         return "OpenGL ES support";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_THREADING_SUPPORT:
+         return "Threading support";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_KMS_SUPPORT:
+         return "KMS/EGL support";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_UDEV_SUPPORT:
+         return "Udev support";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_OPENVG_SUPPORT:
+         return "OpenVG support";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_EGL_SUPPORT:
+         return "EGL support";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_X11_SUPPORT:
+         return "X11 support";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_WAYLAND_SUPPORT:
+         return "Wayland support";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_XVIDEO_SUPPORT:
+         return "XVideo support";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_ALSA_SUPPORT:
+         return "ALSA support";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_OSS_SUPPORT:
+         return "OSS support";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_OPENAL_SUPPORT:
+         return "OpenAL support";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_OPENSL_SUPPORT:
+         return "OpenSL support";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_RSOUND_SUPPORT:
+         return "RSound support";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_ROARAUDIO_SUPPORT:
+         return "RoarAudio support";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_JACK_SUPPORT:
+         return "JACK support";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_PULSEAUDIO_SUPPORT:
+         return "PulseAudio support";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_DSOUND_SUPPORT:
+         return "DirectSound support";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_XAUDIO2_SUPPORT:
+         return "XAudio2 support";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_ZLIB_SUPPORT:
+         return "Zlib support";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_7ZIP_SUPPORT:
+         return "7zip support";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_DYLIB_SUPPORT:
+         return "Dynamic library support";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_CG_SUPPORT:
+         return "Cg support";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_GLSL_SUPPORT:
+         return "GLSL support";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_HLSL_SUPPORT:
+         return "HLSL support";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_LIBXML2_SUPPORT:
+         return "libxml2 XML parsing support";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_SDL_IMAGE_SUPPORT:
+         return "SDL image support";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_FBO_SUPPORT:
+         return "OpenGL/Direct3D render-to-texture (multi-pass shaders) support";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_FFMPEG_SUPPORT:
+         return "FFmpeg support";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_CORETEXT_SUPPORT:
+         return "CoreText support";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_FREETYPE_SUPPORT:
+         return "FreeType support";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_NETPLAY_SUPPORT:
+         return "Netplay (peer-to-peer) support";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_PYTHON_SUPPORT:
+         return "Python (script support in shaders) support";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_V4L2_SUPPORT:
+         return "Video4Linux2 support";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_LIBUSB_SUPPORT:
+         return "Libusb support";
       default:
          break;
    }

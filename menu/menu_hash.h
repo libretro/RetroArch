@@ -822,6 +822,79 @@ extern "C" {
 
 #define MENU_VALUE_SECONDS                                                     0x8b0028d4U
 
+#define MENU_LABEL_VALUE_CORE_INFO_CORE_NAME                                   0x2a031110U
+#define MENU_LABEL_VALUE_CORE_INFO_CORE_LABEL                                  0x6a40d38fU
+#define MENU_LABEL_VALUE_CORE_INFO_SYSTEM_NAME                                 0xaff88f0cU
+#define MENU_LABEL_VALUE_CORE_INFO_SYSTEM_MANUFACTURER                         0x03be7018U
+#define MENU_LABEL_VALUE_CORE_INFO_CATEGORIES                                  0xac3a39edU
+#define MENU_LABEL_VALUE_CORE_INFO_AUTHORS                                     0x7167c44dU
+#define MENU_LABEL_VALUE_CORE_INFO_PERMISSIONS                                 0x25d21423U
+#define MENU_LABEL_VALUE_CORE_INFO_LICENSES                                    0x019b14bdU
+#define MENU_LABEL_VALUE_CORE_INFO_SUPPORTED_EXTENSIONS                        0xb8ff231cU
+#define MENU_LABEL_VALUE_CORE_INFO_FIRMWARE                                    0x9ba2e164U
+#define MENU_LABEL_VALUE_CORE_INFO_CORE_NOTES                                  0x6a6cfe78U
+
+#define MENU_LABEL_VALUE_SYSTEM_INFO_BUILD_DATE                                0xbab040f0U
+#define MENU_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION                               0x333df14cU
+#define MENU_LABEL_VALUE_SYSTEM_INFO_CPU_FEATURES                              0x9515e369U
+#define MENU_LABEL_VALUE_SYSTEM_INFO_FRONTEND_IDENTIFIER                       0x35817c25U
+#define MENU_LABEL_VALUE_SYSTEM_INFO_FRONTEND_NAME                             0x45d9b0e3U
+#define MENU_LABEL_VALUE_SYSTEM_INFO_FRONTEND_OS                               0x412e46a4U
+#define MENU_LABEL_VALUE_SYSTEM_INFO_RETRORATING_LEVEL                         0xcc6a17ebU
+#define MENU_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE                              0xcda91ae0U
+#define MENU_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_NO_SOURCE                    0x0ed5776cU
+#define MENU_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_CHARGING                     0x2b226d62U
+#define MENU_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_CHARGED                      0x75abb52dU
+#define MENU_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_DISCHARGING                  0x48c36402U
+#define MENU_LABEL_VALUE_SYSTEM_INFO_VIDEO_CONTEXT_DRIVER                      0x32f901e9U
+#define MENU_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_WIDTH                   0x86a53f14U
+#define MENU_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_HEIGHT                  0x3809e50dU
+#define MENU_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_DPI                        0xaf2540b8U
+#define MENU_LABEL_VALUE_SYSTEM_INFO_LIBRETRODB_SUPPORT                        0x3e91f988U
+#define MENU_LABEL_VALUE_SYSTEM_INFO_OVERLAY_SUPPORT                           0x9e893c21U
+#define MENU_LABEL_VALUE_SYSTEM_INFO_COMMAND_IFACE_SUPPORT                     0x91a47d95U
+#define MENU_LABEL_VALUE_SYSTEM_INFO_NETWORK_COMMAND_IFACE_SUPPORT             0x9c9c8e3eU
+#define MENU_LABEL_VALUE_SYSTEM_INFO_COCOA_SUPPORT                             0x89849204U
+#define MENU_LABEL_VALUE_SYSTEM_INFO_RPNG_SUPPORT                              0xe1dcea36U
+#define MENU_LABEL_VALUE_SYSTEM_INFO_SDL_SUPPORT                               0xf9bc2a42U
+#define MENU_LABEL_VALUE_SYSTEM_INFO_SDL2_SUPPORT                              0x3c2d6134U
+#define MENU_LABEL_VALUE_SYSTEM_INFO_OPENGL_SUPPORT                            0xa4d164a4U
+#define MENU_LABEL_VALUE_SYSTEM_INFO_OPENGLES_SUPPORT                          0xe2e627dcU
+#define MENU_LABEL_VALUE_SYSTEM_INFO_THREADING_SUPPORT                         0x282bf995U
+#define MENU_LABEL_VALUE_SYSTEM_INFO_KMS_SUPPORT                               0x229cb16aU
+#define MENU_LABEL_VALUE_SYSTEM_INFO_UDEV_SUPPORT                              0xe34a0833U
+#define MENU_LABEL_VALUE_SYSTEM_INFO_OPENVG_SUPPORT                            0x9b01b08eU
+#define MENU_LABEL_VALUE_SYSTEM_INFO_EGL_SUPPORT                               0xbac9f417U
+#define MENU_LABEL_VALUE_SYSTEM_INFO_X11_SUPPORT                               0xfea303f9U
+#define MENU_LABEL_VALUE_SYSTEM_INFO_WAYLAND_SUPPORT                           0xd590cd8fU
+#define MENU_LABEL_VALUE_SYSTEM_INFO_XVIDEO_SUPPORT                            0x79dc360eU
+#define MENU_LABEL_VALUE_SYSTEM_INFO_ALSA_SUPPORT                              0xe58b1160U
+#define MENU_LABEL_VALUE_SYSTEM_INFO_OSS_SUPPORT                               0x504eed34U
+#define MENU_LABEL_VALUE_SYSTEM_INFO_OPENAL_SUPPORT                            0x8c91fddeU
+#define MENU_LABEL_VALUE_SYSTEM_INFO_OPENSL_SUPPORT                            0xd5503230U
+#define MENU_LABEL_VALUE_SYSTEM_INFO_RSOUND_SUPPORT                            0x4c20387aU
+#define MENU_LABEL_VALUE_SYSTEM_INFO_ROARAUDIO_SUPPORT                         0xb7793da5U
+#define MENU_LABEL_VALUE_SYSTEM_INFO_JACK_SUPPORT                              0x2f50e7f8U
+#define MENU_LABEL_VALUE_SYSTEM_INFO_PULSEAUDIO_SUPPORT                        0xe8d32f1aU
+#define MENU_LABEL_VALUE_SYSTEM_INFO_DSOUND_SUPPORT                            0x0e9d11acU
+#define MENU_LABEL_VALUE_SYSTEM_INFO_XAUDIO2_SUPPORT                           0xb1f1735bU
+#define MENU_LABEL_VALUE_SYSTEM_INFO_ZLIB_SUPPORT                              0xf961f590U
+#define MENU_LABEL_VALUE_SYSTEM_INFO_7ZIP_SUPPORT                              0xf1fc48e9U
+#define MENU_LABEL_VALUE_SYSTEM_INFO_DYLIB_SUPPORT                             0xcee4aad3U
+#define MENU_LABEL_VALUE_SYSTEM_INFO_CG_SUPPORT                                0xef0baba9U
+#define MENU_LABEL_VALUE_SYSTEM_INFO_GLSL_SUPPORT                              0x0c981cb1U
+#define MENU_LABEL_VALUE_SYSTEM_INFO_HLSL_SUPPORT                              0x3d8b7a12U
+#define MENU_LABEL_VALUE_SYSTEM_INFO_LIBXML2_SUPPORT                           0xdce2d3f9U
+#define MENU_LABEL_VALUE_SYSTEM_INFO_SDL_IMAGE_SUPPORT                         0x98b4d864U
+#define MENU_LABEL_VALUE_SYSTEM_INFO_FBO_SUPPORT                               0x896726b6U
+#define MENU_LABEL_VALUE_SYSTEM_INFO_FFMPEG_SUPPORT                            0xb9a9fd34U
+#define MENU_LABEL_VALUE_SYSTEM_INFO_CORETEXT_SUPPORT                          0x7d248acdU
+#define MENU_LABEL_VALUE_SYSTEM_INFO_FREETYPE_SUPPORT                          0x00f65983U
+#define MENU_LABEL_VALUE_SYSTEM_INFO_NETPLAY_SUPPORT                           0x50a8ce7cU
+#define MENU_LABEL_VALUE_SYSTEM_INFO_PYTHON_SUPPORT                            0x71cc9801U
+#define MENU_LABEL_VALUE_SYSTEM_INFO_V4L2_SUPPORT                              0x793c2547U
+#define MENU_LABEL_VALUE_SYSTEM_INFO_LIBUSB_SUPPORT                            0x7dc8b560U
+
 const char *menu_hash_to_str_de(uint32_t hash);
 
 const char *menu_hash_to_str_en(uint32_t hash);
