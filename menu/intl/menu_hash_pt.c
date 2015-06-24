@@ -25,7 +25,7 @@
   * If you save this file as UTF-8, you'll break non-english characters
   * (e.g. German "Umlauts" and Portugese diacritics).
  */
-extern const char encoding_test[sizeof("ø")==2 ? 1 : -1];
+extern const char encoding_test[sizeof("áÁâãçéêíÍóõú")==12+1 ? 1 : -1];
 
 const char *menu_hash_to_str_pt(uint32_t hash)
 {
