@@ -58,8 +58,8 @@ extern "C" {
 #define MENU_LABEL_USE_BUILTIN_PLAYER                                          0x9927ca74U
 #define MENU_LABEL_VALUE_USE_BUILTIN_PLAYER                                    0x038e4816U
 
-#define MENU_LABEL_CONTENT_SETTINGS                                            0xf31dcaf0U
-#define MENU_LABEL_VALUE_CONTENT_SETTINGS                                      0x399ea371U
+#define MENU_LABEL_CONTENT_SETTINGS                                            0xe789f7f6U
+#define MENU_LABEL_VALUE_CONTENT_SETTINGS                                      0x61b23ff7U
 
 #define MENU_LABEL_LOAD_CONTENT_LIST                                           0x5745de1fU
 #define MENU_LABEL_VALUE_LOAD_CONTENT_LIST                                     0x55ff08eaU

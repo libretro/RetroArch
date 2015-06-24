@@ -48,7 +48,7 @@ static const char *menu_hash_to_str_german(uint32_t hash)
       case MENU_LABEL_VALUE_USE_BUILTIN_PLAYER:
          return "Verwende integrierten Player";
       case MENU_LABEL_VALUE_CONTENT_SETTINGS:
-         return "Content-Einstellungen";
+         return "Content-Einstellungen"; /* FIXME */
       case MENU_LABEL_VALUE_LOAD_CONTENT_LIST:
          return "Lade Content";
       case MENU_VALUE_LOAD_ARCHIVE:
@@ -1595,7 +1595,7 @@ static const char *menu_hash_to_str_french(uint32_t hash)
       case MENU_LABEL_VALUE_USE_BUILTIN_PLAYER:
          return "Utiliser le lecteur embarqué";
       case MENU_LABEL_VALUE_CONTENT_SETTINGS:
-         return "Réglages du contenu";
+         return "Réglages du contenu"; /* FIXME */
       case MENU_LABEL_VALUE_RDB_ENTRY_CRC32:
          return "CRC32";
       case MENU_LABEL_VALUE_RDB_ENTRY_MD5:
@@ -2141,9 +2141,9 @@ static const char *menu_hash_to_str_english(uint32_t hash)
       case MENU_LABEL_VALUE_USE_BUILTIN_PLAYER:
          return "Use Builtin Player";
       case MENU_LABEL_CONTENT_SETTINGS:
-         return "content_settings";
+         return "quick_menu";
       case MENU_LABEL_VALUE_CONTENT_SETTINGS:
-         return "Content Settings";
+         return "Quick Menu";
       case MENU_LABEL_VALUE_RDB_ENTRY_CRC32:
          return "CRC32";
       case MENU_LABEL_VALUE_RDB_ENTRY_MD5:
