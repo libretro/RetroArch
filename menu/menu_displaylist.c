@@ -121,7 +121,7 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
       return 0;
    }
 
-   strlcpy(tmp, "Core name", sizeof(tmp));
+   strlcpy(tmp, menu_hash_to_str(MENU_LABEL_VALUE_CORE_INFO_CORE_NAME), sizeof(tmp));
    strlcat(tmp, ": ", sizeof(tmp));
    if (core_info->core_name)
       strlcat(tmp, core_info->core_name, sizeof(tmp));
@@ -129,7 +129,7 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
    menu_list_push(info->list, tmp, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
-   strlcpy(tmp, "Core label", sizeof(tmp));
+   strlcpy(tmp, menu_hash_to_str(MENU_LABEL_VALUE_CORE_INFO_CORE_LABEL), sizeof(tmp));
    strlcat(tmp, ": ", sizeof(tmp));
    if (core_info->display_name)
       strlcat(tmp, core_info->display_name, sizeof(tmp));
@@ -138,7 +138,7 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
 
    if (core_info->systemname)
    {
-      strlcpy(tmp, "System name", sizeof(tmp));
+      strlcpy(tmp, menu_hash_to_str(MENU_LABEL_VALUE_CORE_INFO_SYSTEM_NAME), sizeof(tmp));
       strlcat(tmp, ": ", sizeof(tmp));
       strlcat(tmp, core_info->systemname, sizeof(tmp));
       menu_list_push(info->list, tmp, "",
@@ -147,7 +147,7 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
 
    if (core_info->system_manufacturer)
    {
-      strlcpy(tmp, "System manufacturer", sizeof(tmp));
+      strlcpy(tmp, menu_hash_to_str(MENU_LABEL_VALUE_CORE_INFO_SYSTEM_MANUFACTURER), sizeof(tmp));
       strlcat(tmp, ": ", sizeof(tmp));
       strlcat(tmp, core_info->system_manufacturer, sizeof(tmp));
       menu_list_push(info->list, tmp, "",
@@ -156,7 +156,7 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
 
    if (core_info->categories_list)
    {
-      strlcpy(tmp, "Categories", sizeof(tmp));
+      strlcpy(tmp, menu_hash_to_str(MENU_LABEL_VALUE_CORE_INFO_CATEGORIES), sizeof(tmp));
       strlcat(tmp, ": ", sizeof(tmp));
       string_list_join_concat(tmp, sizeof(tmp),
             core_info->categories_list, ", ");
@@ -166,7 +166,7 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
 
    if (core_info->authors_list)
    {
-      strlcpy(tmp, "Authors", sizeof(tmp));
+      strlcpy(tmp, menu_hash_to_str(MENU_LABEL_VALUE_CORE_INFO_AUTHORS), sizeof(tmp));
       strlcat(tmp, ": ", sizeof(tmp));
       string_list_join_concat(tmp, sizeof(tmp),
             core_info->authors_list, ", ");
@@ -176,7 +176,7 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
 
    if (core_info->permissions_list)
    {
-      strlcpy(tmp, "Permissions", sizeof(tmp));
+      strlcpy(tmp, menu_hash_to_str(MENU_LABEL_VALUE_CORE_INFO_PERMISSIONS), sizeof(tmp));
       strlcat(tmp, ": ", sizeof(tmp));
       string_list_join_concat(tmp, sizeof(tmp),
             core_info->permissions_list, ", ");
@@ -186,7 +186,7 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
 
    if (core_info->licenses_list)
    {
-      strlcpy(tmp, "License(s)", sizeof(tmp));
+      strlcpy(tmp, menu_hash_to_str(MENU_LABEL_VALUE_CORE_INFO_LICENSES), sizeof(tmp));
       strlcat(tmp, ": ", sizeof(tmp));
       string_list_join_concat(tmp, sizeof(tmp),
             core_info->licenses_list, ", ");
@@ -196,7 +196,7 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
 
    if (core_info->supported_extensions_list)
    {
-      strlcpy(tmp, "Supported extensions", sizeof(tmp));
+      strlcpy(tmp, menu_hash_to_str(MENU_LABEL_VALUE_CORE_INFO_SUPPORTED_EXTENSIONS), sizeof(tmp));
       strlcat(tmp, ": ", sizeof(tmp));
       string_list_join_concat(tmp, sizeof(tmp),
             core_info->supported_extensions_list, ", ");
@@ -210,10 +210,11 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
             global->core_info, core_info->path,
             settings->system_directory);
 
-      strlcpy(tmp, "Firmware", sizeof(tmp));
+      strlcpy(tmp, menu_hash_to_str(MENU_LABEL_VALUE_CORE_INFO_FIRMWARE), sizeof(tmp));
       strlcat(tmp, ": ", sizeof(tmp));
       menu_list_push(info->list, tmp, "",
             MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+      /* FIXME: This looks hacky and probably needs to be improved for good translation support. */
       for (i = 0; i < core_info->firmware_count; i++)
       {
          if (core_info->firmware[i].desc)
@@ -237,7 +238,7 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
 
    if (core_info->notes)
    {
-      strlcpy(tmp, "Core notes", sizeof(tmp));
+      strlcpy(tmp, menu_hash_to_str(MENU_LABEL_VALUE_CORE_INFO_CORE_NOTES), sizeof(tmp));
       strlcat(tmp, ": ", sizeof(tmp));
       menu_list_push(info->list, tmp, "",
             MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
@@ -262,14 +263,14 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
    const char *tmp_string                = NULL;
    const frontend_ctx_driver_t *frontend = frontend_get_ptr();
 
-   snprintf(tmp, sizeof(tmp), "%s: %s", "Build date", __DATE__);
+   snprintf(tmp, sizeof(tmp), "%s: %s", menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_BUILD_DATE), __DATE__);
    menu_list_push(info->list, tmp, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    (void)tmp_string;
 
 #ifdef HAVE_GIT_VERSION
-   strlcpy(tmp, "Git version", sizeof(tmp));
+   strlcpy(tmp, menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION), sizeof(tmp));
    strlcat(tmp, ": ", sizeof(tmp));
    strlcat(tmp, rarch_git_version, sizeof(tmp));
    menu_list_push(info->list, tmp, "",
@@ -282,7 +283,7 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
    {
       char cpu_str[PATH_MAX_LENGTH] = {0};
 
-      strlcpy(cpu_str, "CPU Features", sizeof(cpu_str));
+      strlcpy(cpu_str, menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_CPU_FEATURES), sizeof(cpu_str));
       strlcat(cpu_str, ": ", sizeof(cpu_str));
 
       rarch_info_get_capabilities(RARCH_CAPABILITIES_CPU, cpu_str, sizeof(cpu_str));
@@ -293,7 +294,7 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
    {
       int major = 0, minor = 0;
 
-      strlcpy(tmp, "Frontend identifier", sizeof(tmp));
+      strlcpy(tmp, menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_FRONTEND_IDENTIFIER), sizeof(tmp));
       strlcat(tmp, ": ", sizeof(tmp));
       strlcat(tmp, frontend->ident, sizeof(tmp));
       menu_list_push(info->list, tmp, "",
@@ -302,9 +303,9 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
       if (frontend->get_name)
       {
          frontend->get_name(tmp2, sizeof(tmp2));
-         strlcpy(tmp, "Frontend name", sizeof(tmp));
+         strlcpy(tmp, menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_FRONTEND_NAME), sizeof(tmp));
          strlcat(tmp, ": ", sizeof(tmp));
-         strlcat(tmp, frontend->get_name ? tmp2 : "N/A", sizeof(tmp));
+         strlcat(tmp, frontend->get_name ? tmp2 : menu_hash_to_str(MENU_VALUE_NOT_AVAILABLE), sizeof(tmp));
          menu_list_push(info->list, tmp, "",
                MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
       }
@@ -313,14 +314,14 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
       {
          frontend->get_os(tmp2, sizeof(tmp2), &major, &minor);
          snprintf(tmp, sizeof(tmp), "%s : %s %d.%d",
-               "Frontend OS",
-               frontend->get_os ? tmp2 : "N/A", major, minor);
+               menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_FRONTEND_OS),
+               frontend->get_os ? tmp2 : menu_hash_to_str(MENU_VALUE_NOT_AVAILABLE), major, minor);
          menu_list_push(info->list, tmp, "",
                MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
       }
 
       snprintf(tmp, sizeof(tmp), "%s : %d",
-            "RetroRating level",
+            menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_RETRORATING_LEVEL),
             frontend->get_rating ? frontend->get_rating() : -1);
       menu_list_push(info->list, tmp, "",
             MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
@@ -338,23 +339,31 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
          switch (state)
          {
             case FRONTEND_POWERSTATE_NONE:
-               strlcat(tmp2, " N/A", sizeof(tmp));
+               strlcat(tmp2, menu_hash_to_str(MENU_VALUE_NOT_AVAILABLE), sizeof(tmp));
                break;
             case FRONTEND_POWERSTATE_NO_SOURCE:
-               strlcat(tmp2, " (No source)", sizeof(tmp));
+               strlcat(tmp2, " (", sizeof(tmp));
+               strlcat(tmp2, menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_NO_SOURCE), sizeof(tmp));
+               strlcat(tmp2, ")", sizeof(tmp));
                break;
             case FRONTEND_POWERSTATE_CHARGING:
-               strlcat(tmp2, " (Charging)", sizeof(tmp));
+               strlcat(tmp2, " (", sizeof(tmp));
+               strlcat(tmp2, menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_CHARGING), sizeof(tmp));
+               strlcat(tmp2, ")", sizeof(tmp));
                break;
             case FRONTEND_POWERSTATE_CHARGED:
-               strlcat(tmp2, " (Charged)", sizeof(tmp));
+               strlcat(tmp2, " (", sizeof(tmp));
+               strlcat(tmp2, menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_CHARGED), sizeof(tmp));
+               strlcat(tmp2, ")", sizeof(tmp));
                break;
             case FRONTEND_POWERSTATE_ON_POWER_SOURCE:
-               strlcat(tmp2, " (Discharging)", sizeof(tmp));
+               strlcat(tmp2, " (", sizeof(tmp));
+               strlcat(tmp2, menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_DISCHARGING), sizeof(tmp));
+               strlcat(tmp2, ")", sizeof(tmp));
                break;
          }
 
-         strlcpy(tmp, "Power source", sizeof(tmp));
+         strlcpy(tmp, menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE), sizeof(tmp));
          strlcat(tmp, ": ", sizeof(tmp));
          strlcat(tmp, tmp2, sizeof(tmp));
          menu_list_push(info->list, tmp, "",
@@ -365,9 +374,9 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
 #if defined(HAVE_OPENGL) || defined(HAVE_GLES)
    tmp_string = gfx_ctx_get_ident();
 
-   strlcpy(tmp, "Video context driver", sizeof(tmp));
+   strlcpy(tmp, menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_VIDEO_CONTEXT_DRIVER), sizeof(tmp));
    strlcat(tmp, ": ", sizeof(tmp));
-   strlcat(tmp, tmp_string ? tmp_string : "N/A", sizeof(tmp));
+   strlcat(tmp, tmp_string ? tmp_string : menu_hash_to_str(MENU_VALUE_NOT_AVAILABLE), sizeof(tmp));
    menu_list_push(info->list, tmp, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
@@ -375,43 +384,43 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
       float val = 0.0f;
       if (gfx_ctx_get_metrics(DISPLAY_METRIC_MM_WIDTH, &val))
       {
-         snprintf(tmp, sizeof(tmp), "%s : %.2f",
-               "Display metric width (mm)", val);
+         snprintf(tmp, sizeof(tmp), "%s: %.2f",
+               menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_WIDTH), val);
          menu_list_push(info->list, tmp, "",
                MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
       }
 
       if (gfx_ctx_get_metrics(DISPLAY_METRIC_MM_HEIGHT, &val))
       {
-         snprintf(tmp, sizeof(tmp), "Display metric height (mm): %.2f",
-               val);
+         snprintf(tmp, sizeof(tmp), "%s: %.2f",
+               menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_WIDTH), val);
          menu_list_push(info->list, tmp, "",
                MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
       }
 
       if (gfx_ctx_get_metrics(DISPLAY_METRIC_DPI, &val))
       {
-         snprintf(tmp, sizeof(tmp), "Display metric DPI: %.2f",
-               val);
+         snprintf(tmp, sizeof(tmp), "%s: %.2f",
+               menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_DPI), val);
          menu_list_push(info->list, tmp, "",
                MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
       }
    }
 #endif
 
-   strlcpy(feat_str, "LibretroDB support", sizeof(feat_str));
+   strlcpy(feat_str, menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_LIBRETRODB_SUPPORT), sizeof(feat_str));
    strlcat(feat_str, ": ", sizeof(feat_str));
    strlcat(feat_str, _libretrodb_supp ? "true" : "false", sizeof(feat_str));
    menu_list_push(info->list, feat_str, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
-   strlcpy(feat_str, "Overlay support", sizeof(feat_str));
+   strlcpy(feat_str, menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_OVERLAY_SUPPORT), sizeof(feat_str));
    strlcat(feat_str, ": ", sizeof(feat_str));
    strlcat(feat_str, _overlay_supp ? "true" : "false", sizeof(feat_str));
    menu_list_push(info->list, feat_str, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
-   strlcpy(feat_str, "Command interface support", sizeof(feat_str));
+   strlcpy(feat_str, menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_COMMAND_IFACE_SUPPORT), sizeof(feat_str));
    strlcat(feat_str, ": ", sizeof(feat_str));
    strlcat(feat_str, _command_supp ? "true" : "false", sizeof(feat_str));
    menu_list_push(info->list, feat_str, "",
@@ -419,209 +428,289 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
 
    snprintf(feat_str, sizeof(feat_str),
          "%s : %s",
-         "Network Command interface support",
+         menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_NETWORK_COMMAND_IFACE_SUPPORT),
          _network_command_supp ? "true" : "false");
    menu_list_push(info->list, feat_str, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    snprintf(feat_str, sizeof(feat_str),
-         "Cocoa support: %s", _cocoa_supp ? "true" : "false");
+         "%s: %s",
+         menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_COCOA_SUPPORT),
+          _cocoa_supp ? "true" : "false");
    menu_list_push(info->list, feat_str, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    snprintf(feat_str, sizeof(feat_str),
-         "PNG support (RPNG): %s", _rpng_supp ? "true" : "false");
+         "%s: %s",
+         menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_RPNG_SUPPORT),
+         _rpng_supp ? "true" : "false");
    menu_list_push(info->list, feat_str, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    snprintf(feat_str, sizeof(feat_str),
-         "SDL1.2 support: %s", _sdl_supp ? "true" : "false");
+         "%s: %s",
+         menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_SDL_SUPPORT),
+         _sdl_supp ? "true" : "false");
    menu_list_push(info->list, feat_str, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    snprintf(feat_str, sizeof(feat_str),
-         "SDL2 support: %s", _sdl2_supp ? "true" : "false");
+         "%s: %s",
+         menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_SDL2_SUPPORT),
+         _sdl2_supp ? "true" : "false");
    menu_list_push(info->list, feat_str, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
 
    snprintf(feat_str, sizeof(feat_str),
-         "OpenGL support: %s", _opengl_supp ? "true" : "false");
+         "%s: %s",
+         menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_OPENGL_SUPPORT),
+         _opengl_supp ? "true" : "false");
    menu_list_push(info->list, feat_str, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    snprintf(feat_str, sizeof(feat_str),
-         "OpenGL ES support: %s", _opengles_supp ? "true" : "false");
+         "%s: %s",
+         menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_OPENGLES_SUPPORT),
+         _opengles_supp ? "true" : "false");
    menu_list_push(info->list, feat_str, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    snprintf(feat_str, sizeof(feat_str),
-         "Threading support: %s", _thread_supp ? "true" : "false");
+         "%s: %s",
+         menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_THREADING_SUPPORT),
+         _thread_supp ? "true" : "false");
    menu_list_push(info->list, feat_str, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    snprintf(feat_str, sizeof(feat_str),
-         "KMS/EGL support: %s", _kms_supp ? "true" : "false");
+         "%s: %s",
+         menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_KMS_SUPPORT),
+         _kms_supp ? "true" : "false");
    menu_list_push(info->list, feat_str, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    snprintf(feat_str, sizeof(feat_str),
-         "Udev support: %s", _udev_supp ? "true" : "false");
+         "%s: %s",
+         menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_UDEV_SUPPORT),
+         _udev_supp ? "true" : "false");
    menu_list_push(info->list, feat_str, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    snprintf(feat_str, sizeof(feat_str),
-         "OpenVG support: %s", _vg_supp ? "true" : "false");
+         "%s: %s",
+         menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_OPENVG_SUPPORT),
+         _vg_supp ? "true" : "false");
    menu_list_push(info->list, feat_str, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    snprintf(feat_str, sizeof(feat_str),
-         "EGL support: %s", _egl_supp ? "true" : "false");
+         "%s: %s",
+         menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_EGL_SUPPORT),
+         _egl_supp ? "true" : "false");
    menu_list_push(info->list, feat_str, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    snprintf(feat_str, sizeof(feat_str),
-         "X11 support: %s", _x11_supp ? "true" : "false");
+         "%s: %s",
+         menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_X11_SUPPORT),
+         _x11_supp ? "true" : "false");
    menu_list_push(info->list, feat_str, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    snprintf(feat_str, sizeof(feat_str),
-         "Wayland support: %s", _wayland_supp ? "true" : "false");
+         "%s: %s",
+         menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_WAYLAND_SUPPORT),
+         _wayland_supp ? "true" : "false");
    menu_list_push(info->list, feat_str, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    snprintf(feat_str, sizeof(feat_str),
-         "XVideo support: %s", _xvideo_supp ? "true" : "false");
+         "%s: %s",
+         menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_XVIDEO_SUPPORT),
+         _xvideo_supp ? "true" : "false");
    menu_list_push(info->list, feat_str, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    snprintf(feat_str, sizeof(feat_str),
-         "ALSA support: %s", _alsa_supp ? "true" : "false");
+         "%s: %s",
+         menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_ALSA_SUPPORT),
+         _alsa_supp ? "true" : "false");
    menu_list_push(info->list, feat_str, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    snprintf(feat_str, sizeof(feat_str),
-         "OSS support: %s", _oss_supp ? "true" : "false");
+         "%s: %s",
+         menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_OSS_SUPPORT),
+         _oss_supp ? "true" : "false");
    menu_list_push(info->list, feat_str, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    snprintf(feat_str, sizeof(feat_str),
-         "OpenAL support: %s", _al_supp ? "true" : "false");
+         "%s: %s",
+         menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_OPENAL_SUPPORT),
+         _al_supp ? "true" : "false");
    menu_list_push(info->list, feat_str, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    snprintf(feat_str, sizeof(feat_str),
-         "OpenSL support: %s", _sl_supp ? "true" : "false");
+         "%s: %s",
+         menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_OPENSL_SUPPORT),
+         _sl_supp ? "true" : "false");
    menu_list_push(info->list, feat_str, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    snprintf(feat_str, sizeof(feat_str),
-         "RSound support: %s", _rsound_supp ? "true" : "false");
+         "%s: %s",
+         menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_RSOUND_SUPPORT),
+         _rsound_supp ? "true" : "false");
    menu_list_push(info->list, feat_str, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    snprintf(feat_str, sizeof(feat_str),
-         "RoarAudio support: %s", _roar_supp ? "true" : "false");
+         "%s: %s",
+         menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_ROARAUDIO_SUPPORT),
+         _roar_supp ? "true" : "false");
    menu_list_push(info->list, feat_str, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    snprintf(feat_str, sizeof(feat_str),
-         "JACK support: %s", _jack_supp ? "true" : "false");
+         "%s: %s",
+         menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_JACK_SUPPORT),
+         _jack_supp ? "true" : "false");
    menu_list_push(info->list, feat_str, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    snprintf(feat_str, sizeof(feat_str),
-         "PulseAudio support: %s", _pulse_supp ? "true" : "false");
+         "%s: %s",
+         menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_PULSEAUDIO_SUPPORT),
+         _pulse_supp ? "true" : "false");
    menu_list_push(info->list, feat_str, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    snprintf(feat_str, sizeof(feat_str),
-         "DirectSound support: %s", _dsound_supp ? "true" : "false");
+         "%s: %s",
+         menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_DSOUND_SUPPORT),
+         _dsound_supp ? "true" : "false");
    menu_list_push(info->list, feat_str, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    snprintf(feat_str, sizeof(feat_str),
-         "XAudio2 support: %s", _xaudio_supp ? "true" : "false");
+         "%s: %s",
+         menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_XAUDIO2_SUPPORT),
+         _xaudio_supp ? "true" : "false");
    menu_list_push(info->list, feat_str, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    snprintf(feat_str, sizeof(feat_str),
-         "Zlib support: %s", _zlib_supp ? "true" : "false");
+         "%s: %s",
+         menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_ZLIB_SUPPORT),
+         _zlib_supp ? "true" : "false");
    menu_list_push(info->list, feat_str, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    snprintf(feat_str, sizeof(feat_str),
-         "7zip support: %s", _7zip_supp ? "true" : "false");
+         "%s: %s",
+         menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_7ZIP_SUPPORT),
+         _7zip_supp ? "true" : "false");
    menu_list_push(info->list, feat_str, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    snprintf(feat_str, sizeof(feat_str),
-         "Dynamic library support: %s", _dylib_supp ? "true" : "false");
+         "%s: %s",
+         menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_DYLIB_SUPPORT),
+         _dylib_supp ? "true" : "false");
    menu_list_push(info->list, feat_str, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    snprintf(feat_str, sizeof(feat_str),
-         "Cg support: %s", _cg_supp ? "true" : "false");
+         "%s: %s",
+         menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_CG_SUPPORT),
+         _cg_supp ? "true" : "false");
    menu_list_push(info->list, feat_str, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    snprintf(feat_str, sizeof(feat_str),
-         "GLSL support: %s", _glsl_supp ? "true" : "false");
+         "%s: %s",
+         menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_GLSL_SUPPORT),
+         _glsl_supp ? "true" : "false");
    menu_list_push(info->list, feat_str, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    snprintf(feat_str, sizeof(feat_str),
-         "HLSL support: %s", _hlsl_supp ? "true" : "false");
+         "%s: %s",
+         menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_HLSL_SUPPORT),
+         _hlsl_supp ? "true" : "false");
    menu_list_push(info->list, feat_str, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    snprintf(feat_str, sizeof(feat_str),
-         "libxml2 XML parsing support: %s", _libxml2_supp ? "true" : "false");
+         "%s: %s",
+         menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_LIBXML2_SUPPORT),
+         _libxml2_supp ? "true" : "false");
    menu_list_push(info->list, feat_str, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    snprintf(feat_str, sizeof(feat_str),
-         "SDL image support: %s", _sdl_image_supp ? "true" : "false");
+         "%s: %s",
+         menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_SDL_IMAGE_SUPPORT),
+         _sdl_image_supp ? "true" : "false");
    menu_list_push(info->list, feat_str, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    snprintf(feat_str, sizeof(feat_str),
-         "OpenGL/Direct3D render-to-texture (multi-pass shaders) support: %s", _fbo_supp ? "true" : "false");
+         "%s: %s",
+         menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_FBO_SUPPORT),
+         _fbo_supp ? "true" : "false");
    menu_list_push(info->list, feat_str, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    snprintf(feat_str, sizeof(feat_str),
-         "FFmpeg support: %s", _ffmpeg_supp ? "true" : "false");
+         "%s: %s",
+         menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_FFMPEG_SUPPORT),
+         _ffmpeg_supp ? "true" : "false");
    menu_list_push(info->list, feat_str, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    snprintf(feat_str, sizeof(feat_str),
-         "CoreText support: %s", _coretext_supp ? "true" : "false");
+         "%s: %s",
+         menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_CORETEXT_SUPPORT),
+         _coretext_supp ? "true" : "false");
    menu_list_push(info->list, feat_str, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    snprintf(feat_str, sizeof(feat_str),
-         "FreeType support: %s", _freetype_supp ? "true" : "false");
+         "%s: %s",
+         menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_FREETYPE_SUPPORT),
+         _freetype_supp ? "true" : "false");
    menu_list_push(info->list, feat_str, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    snprintf(feat_str, sizeof(feat_str),
-         "Netplay (peer-to-peer) support: %s", _netplay_supp ? "true" : "false");
+         "%s: %s",
+         menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_NETPLAY_SUPPORT),
+         _netplay_supp ? "true" : "false");
    menu_list_push(info->list, feat_str, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    snprintf(feat_str, sizeof(feat_str),
-         "Python (script support in shaders) support: %s", _python_supp ? "true" : "false");
+         "%s: %s",
+         menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_PYTHON_SUPPORT),
+         _python_supp ? "true" : "false");
    menu_list_push(info->list, feat_str, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    snprintf(feat_str, sizeof(feat_str),
-         "Video4Linux2 support: %s", _v4l2_supp ? "true" : "false");
+         "%s: %s",
+         menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_V4L2_SUPPORT),
+         _v4l2_supp ? "true" : "false");
    menu_list_push(info->list, feat_str, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    snprintf(feat_str, sizeof(feat_str),
-         "Libusb support: %s", _libusb_supp ? "true" : "false");
+         "%s: %s",
+         menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_LIBUSB_SUPPORT),
+         _libusb_supp ? "true" : "false");
    menu_list_push(info->list, feat_str, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
@@ -1130,7 +1219,7 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
             "%s : %s",
             "Analog supported",
             (db_info_entry->analog_supported == 1)  ? "true" :
-            (db_info_entry->analog_supported == -1) ? "N/A"  : "false");
+            (db_info_entry->analog_supported == -1) ? menu_hash_to_str(MENU_VALUE_NOT_AVAILABLE)  : "false");
       menu_list_push(info->list, tmp,
             menu_hash_to_str(MENU_LABEL_RDB_ENTRY_ANALOG),
             0, 0, 0);
@@ -1138,7 +1227,7 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
             "%s : %s",
             "Rumble supported",
             (db_info_entry->rumble_supported == 1)  ? "true" :
-            (db_info_entry->rumble_supported == -1) ? "N/A"  :  "false");
+            (db_info_entry->rumble_supported == -1) ? menu_hash_to_str(MENU_VALUE_NOT_AVAILABLE)  :  "false");
       menu_list_push(info->list, tmp,
             menu_hash_to_str(MENU_LABEL_RDB_ENTRY_RUMBLE),
             0, 0, 0);
