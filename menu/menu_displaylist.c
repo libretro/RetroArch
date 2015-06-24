@@ -1464,6 +1464,26 @@ static int menu_displaylist_parse_load_content_settings(menu_displaylist_info_t 
             menu_hash_to_str(MENU_LABEL_VALUE_LOAD_STATE),
             menu_hash_to_str(MENU_LABEL_LOAD_STATE),
             MENU_SETTING_ACTION_LOADSTATE, 0, 0);
+
+      menu_list_push(info->list,
+            menu_hash_to_str(MENU_LABEL_VALUE_CORE_OPTIONS),
+            menu_hash_to_str(MENU_LABEL_CORE_OPTIONS),
+            MENU_SETTING_ACTION, 0, 0);
+
+      if (global->has_set_input_descriptors)
+         menu_list_push(info->list,
+               menu_hash_to_str(MENU_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS),
+               menu_hash_to_str(MENU_LABEL_CORE_INPUT_REMAPPING_OPTIONS),
+               MENU_SETTING_ACTION, 0, 0);
+      menu_list_push(info->list,
+            menu_hash_to_str(MENU_LABEL_VALUE_CORE_CHEAT_OPTIONS),
+            menu_hash_to_str(MENU_LABEL_CORE_CHEAT_OPTIONS),
+            MENU_SETTING_ACTION, 0, 0);
+      if ((global->core_type != CORE_TYPE_DUMMY) && global->system.disk_control.get_num_images)
+         menu_list_push(info->list,
+               menu_hash_to_str(MENU_LABEL_VALUE_DISK_OPTIONS),
+               menu_hash_to_str(MENU_LABEL_DISK_OPTIONS),
+               MENU_SETTING_ACTION, 0, 0);
    }
    else
       menu_list_push(info->list,
@@ -1554,28 +1574,7 @@ static int menu_displaylist_parse_options(menu_displaylist_info_t *info)
    global_t *global            = global_get_ptr();
 
 
-   menu_list_push(info->list,
-         menu_hash_to_str(MENU_LABEL_VALUE_CORE_OPTIONS),
-         menu_hash_to_str(MENU_LABEL_CORE_OPTIONS),
-         MENU_SETTING_ACTION, 0, 0);
 
-   if (global->main_is_init)
-   {
-      if (global->has_set_input_descriptors)
-         menu_list_push(info->list,
-               menu_hash_to_str(MENU_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS),
-               menu_hash_to_str(MENU_LABEL_CORE_INPUT_REMAPPING_OPTIONS),
-               MENU_SETTING_ACTION, 0, 0);
-      menu_list_push(info->list,
-            menu_hash_to_str(MENU_LABEL_VALUE_CORE_CHEAT_OPTIONS),
-            menu_hash_to_str(MENU_LABEL_CORE_CHEAT_OPTIONS),
-            MENU_SETTING_ACTION, 0, 0);
-      if ((global->core_type != CORE_TYPE_DUMMY) && global->system.disk_control.get_num_images)
-         menu_list_push(info->list,
-               menu_hash_to_str(MENU_LABEL_VALUE_DISK_OPTIONS),
-               menu_hash_to_str(MENU_LABEL_DISK_OPTIONS),
-               MENU_SETTING_ACTION, 0, 0);
-   }
    menu_list_push(info->list,
          menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_OPTIONS),
          menu_hash_to_str(MENU_LABEL_VIDEO_OPTIONS),
