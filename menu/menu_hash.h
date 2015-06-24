@@ -52,6 +52,9 @@ extern "C" {
 #define MENU_VALUE_OPEN_ARCHIVE                                                0x96da22b9U
 #define MENU_VALUE_ASK_ARCHIVE                                                 0x0b87d6a4U
 
+#define MENU_LABEL_INFORMATION_LIST                                            0x225e7606U
+#define MENU_LABEL_VALUE_INFORMATION_LIST                                      0xd652344bU
+
 #define MENU_LABEL_USE_BUILTIN_PLAYER                                          0x9927ca74U
 #define MENU_LABEL_VALUE_USE_BUILTIN_PLAYER                                    0x038e4816U
 
@@ -551,8 +554,6 @@ extern "C" {
 #define MENU_LABEL_DEFERRED_CORE_UPDATER_LIST                                  0xbd4d493dU
 #define MENU_LABEL_CONFIGURATIONS                                              0x3e930a50U
 #define MENU_LABEL_DISK_IMAGE_APPEND                                           0x5af7d709U
-#define MENU_LABEL_PERFORMANCE_COUNTERS                                        0xd8ab5049U
-#define MENU_LABEL_VALUE_PERFORMANCE_COUNTERS                                  0x20eb18caU
 #define MENU_LABEL_CORE_LIST                                                   0xac9dbf00U
 #define MENU_LABEL_VALUE_CORE_LIST                                             0x0e17fd4eU
 #define MENU_LABEL_MANAGEMENT                                                  0x2516c88aU

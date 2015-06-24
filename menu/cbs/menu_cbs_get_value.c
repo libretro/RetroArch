@@ -828,7 +828,6 @@ static void menu_action_setting_disp_set_label(file_list_t* list,
 
    switch (hash_label)
    {
-      case MENU_LABEL_PERFORMANCE_COUNTERS:
       case MENU_LABEL_LOAD_CONTENT_HISTORY:
          *w = strlen(label);
          break;

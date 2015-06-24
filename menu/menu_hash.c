@@ -1152,8 +1152,6 @@ static const char *menu_hash_to_str_portuguese(uint32_t hash)
          return "database_settings";
       case MENU_LABEL_VALUE_MANAGEMENT:
          return "Gerenciamento Avançado";
-      case MENU_LABEL_PERFORMANCE_COUNTERS:
-         return "performance_counters";
       case MENU_LABEL_SAVE_STATE:
          return "savestate";
       case MENU_LABEL_VALUE_SAVE_STATE:
@@ -1848,6 +1846,10 @@ static const char *menu_hash_to_str_english(uint32_t hash)
 {
    switch (hash)
    {
+      case MENU_LABEL_INFORMATION_LIST:
+         return "information_list";
+      case MENU_LABEL_VALUE_INFORMATION_LIST:
+         return "Information";
       case MENU_LABEL_USE_BUILTIN_PLAYER:
          return "use_builtin_player";
       case MENU_LABEL_VALUE_USE_BUILTIN_PLAYER:
@@ -2800,8 +2802,6 @@ static const char *menu_hash_to_str_english(uint32_t hash)
          return "database_settings";
       case MENU_LABEL_VALUE_MANAGEMENT:
          return "Database Settings";
-      case MENU_LABEL_PERFORMANCE_COUNTERS:
-         return "performance_counters";
       case MENU_LABEL_SAVE_STATE:
          return "savestate";
       case MENU_LABEL_VALUE_SAVE_STATE:

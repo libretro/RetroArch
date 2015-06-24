@@ -1583,12 +1583,12 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
       case MENU_LABEL_SYSTEM_INFORMATION:
       case MENU_LABEL_DISK_OPTIONS:
       case MENU_LABEL_SETTINGS:
-      case MENU_LABEL_PERFORMANCE_COUNTERS:
       case MENU_LABEL_FRONTEND_COUNTERS:
       case MENU_LABEL_CORE_COUNTERS:
       case MENU_LABEL_MANAGEMENT:
       case MENU_LABEL_OPTIONS:
       case MENU_LABEL_LOAD_CONTENT_LIST:
+      case MENU_LABEL_INFORMATION_LIST:
       case MENU_LABEL_CONTENT_SETTINGS:
          cbs->action_ok = action_ok_push_default;
          break;

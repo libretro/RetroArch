@@ -1473,7 +1473,47 @@ static int menu_displaylist_parse_load_content_settings(menu_displaylist_info_t 
    return 0;
 }
 
-static int menu_displaylist_parse_load_core_list(menu_displaylist_info_t *info)
+static int menu_displaylist_parse_information_list(menu_displaylist_info_t *info)
+{
+   global_t *global            = global_get_ptr();
+   settings_t *settings        = config_get_ptr();
+
+   menu_list_push(info->list,
+         menu_hash_to_str(MENU_LABEL_VALUE_CORE_INFORMATION),
+         menu_hash_to_str(MENU_LABEL_CORE_INFORMATION),
+         MENU_SETTING_ACTION, 0, 0);
+
+   menu_list_push(info->list,
+         menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFORMATION),
+         menu_hash_to_str(MENU_LABEL_SYSTEM_INFORMATION),
+         MENU_SETTING_ACTION, 0, 0);
+
+#ifdef HAVE_LIBRETRODB
+   menu_list_push(info->list, menu_hash_to_str(MENU_LABEL_VALUE_DATABASE_MANAGER),
+         menu_hash_to_str(MENU_LABEL_DATABASE_MANAGER_LIST),
+         MENU_SETTING_ACTION, 0, 0);
+   menu_list_push(info->list, menu_hash_to_str(MENU_LABEL_VALUE_CURSOR_MANAGER),
+         menu_hash_to_str(MENU_LABEL_CURSOR_MANAGER_LIST),
+         MENU_SETTING_ACTION, 0, 0);
+#endif
+
+   if (global->perfcnt_enable)
+   {
+      menu_list_push(info->list,
+            menu_hash_to_str(MENU_LABEL_VALUE_FRONTEND_COUNTERS),
+            menu_hash_to_str(MENU_LABEL_FRONTEND_COUNTERS),
+            MENU_SETTING_ACTION, 0, 0);
+
+      menu_list_push(info->list,
+            menu_hash_to_str(MENU_LABEL_VALUE_CORE_COUNTERS),
+            menu_hash_to_str(MENU_LABEL_CORE_COUNTERS),
+            MENU_SETTING_ACTION, 0, 0);
+   }
+
+   return 0;
+}
+
+static int menu_displaylist_parse_load_content_list(menu_displaylist_info_t *info)
 {
    global_t *global            = global_get_ptr();
    settings_t *settings        = config_get_ptr();
@@ -1513,10 +1553,6 @@ static int menu_displaylist_parse_options(menu_displaylist_info_t *info)
 {
    global_t *global            = global_get_ptr();
 
-   menu_list_push(info->list,
-         menu_hash_to_str(MENU_LABEL_VALUE_CORE_INFORMATION),
-         menu_hash_to_str(MENU_LABEL_CORE_INFORMATION),
-         MENU_SETTING_ACTION, 0, 0);
 
    menu_list_push(info->list,
          menu_hash_to_str(MENU_LABEL_VALUE_CORE_OPTIONS),
@@ -1596,19 +1632,6 @@ static int menu_displaylist_parse_options_cheats(menu_displaylist_info_t *info)
       menu_list_push(info->list, cheat_label, "", MENU_SETTINGS_CHEAT_BEGIN + i, 0, 0);
    }
 
-   return 0;
-}
-
-static int menu_displaylist_parse_options_management(menu_displaylist_info_t *info)
-{
-#ifdef HAVE_LIBRETRODB
-   menu_list_push(info->list, menu_hash_to_str(MENU_LABEL_VALUE_DATABASE_MANAGER),
-         menu_hash_to_str(MENU_LABEL_DATABASE_MANAGER_LIST),
-         MENU_SETTING_ACTION, 0, 0);
-   menu_list_push(info->list, menu_hash_to_str(MENU_LABEL_VALUE_CURSOR_MANAGER),
-         menu_hash_to_str(MENU_LABEL_CURSOR_MANAGER_LIST),
-         MENU_SETTING_ACTION, 0, 0);
-#endif
    return 0;
 }
 
@@ -1930,9 +1953,17 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          need_refresh = true;
          need_push    = true;
          break;
+      case DISPLAYLIST_INFORMATION_LIST:
+         menu_list_clear(info->list);
+         ret = menu_displaylist_parse_information_list(info);
+
+         need_push    = true;
+         need_refresh = true;
+         break;
+         break;
       case DISPLAYLIST_LOAD_CONTENT_LIST:
          menu_list_clear(info->list);
-         ret = menu_displaylist_parse_load_core_list(info);
+         ret = menu_displaylist_parse_load_content_list(info);
 
          need_push    = true;
          need_refresh = true;
@@ -1946,12 +1977,6 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
       case DISPLAYLIST_OPTIONS_CHEATS:
          menu_list_clear(info->list);
          ret = menu_displaylist_parse_options_cheats(info);
-
-         need_push    = true;
-         break;
-      case DISPLAYLIST_OPTIONS_MANAGEMENT:
-         menu_list_clear(info->list);
-         ret = menu_displaylist_parse_options_management(info);
 
          need_push    = true;
          break;
@@ -2047,20 +2072,6 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          need_push    = true;
          need_refresh = true;
 #endif
-         break;
-      case DISPLAYLIST_PERFCOUNTER_SELECTION:
-         menu_list_clear(info->list);
-         menu_list_push(info->list,
-               menu_hash_to_str(MENU_LABEL_VALUE_FRONTEND_COUNTERS),
-               menu_hash_to_str(MENU_LABEL_FRONTEND_COUNTERS),
-               MENU_SETTING_ACTION, 0, 0);
-         menu_list_push(info->list,
-               menu_hash_to_str(MENU_LABEL_VALUE_CORE_COUNTERS),
-               menu_hash_to_str(MENU_LABEL_CORE_COUNTERS),
-               MENU_SETTING_ACTION, 0, 0);
-
-         need_refresh = true;
-         need_push    = true;
          break;
       case DISPLAYLIST_SETTINGS_ALL:
          menu_list_clear(info->list);

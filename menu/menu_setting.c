@@ -3478,31 +3478,11 @@ static bool setting_append_list_main_menu_options(
    }
 
    CONFIG_ACTION(
-         menu_hash_to_str(MENU_LABEL_MANAGEMENT),
-         menu_hash_to_str(MENU_LABEL_VALUE_MANAGEMENT),
+         menu_hash_to_str(MENU_LABEL_INFORMATION_LIST),
+         menu_hash_to_str(MENU_LABEL_VALUE_INFORMATION_LIST),
          group_info.name,
          subgroup_info.name,
          parent_group);
-   settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
-
-   CONFIG_ACTION(
-         menu_hash_to_str(MENU_LABEL_SYSTEM_INFORMATION),
-         menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFORMATION),
-         group_info.name,
-         subgroup_info.name,
-         parent_group);
-
-
-   if (global->perfcnt_enable)
-   {
-      CONFIG_ACTION(
-            menu_hash_to_str(MENU_LABEL_PERFORMANCE_COUNTERS),
-            menu_hash_to_str(MENU_LABEL_VALUE_PERFORMANCE_COUNTERS),
-            group_info.name,
-            subgroup_info.name,
-            parent_group);
-      settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
-   }
 
 #ifndef HAVE_DYNAMIC
    CONFIG_ACTION(
