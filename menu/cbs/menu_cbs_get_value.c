@@ -523,17 +523,19 @@ static void menu_action_setting_disp_set_label_menu_disk_index(
    unsigned images = 0, current = 0;
    global_t *global     = global_get_ptr();
    const struct retro_disk_control_callback *control =
+      global ? 
       (const struct retro_disk_control_callback*)
-      &global->system.disk_control;
+      &global->system.disk_control : NULL;
+
+   if (!control)
+      return;
 
    *w = 19;
    *s = '\0';
    strlcpy(s2, path, len2);
-   if (!control)
-      return;
 
-   images = control->get_num_images();
-   current = control->get_image_index();
+   images  = control ? control->get_num_images()  : 0;
+   current = control ? control->get_image_index() : 0;
 
    if (current >= images)
       strlcpy(s, menu_hash_to_str(MENU_VALUE_NO_DISK), len);
