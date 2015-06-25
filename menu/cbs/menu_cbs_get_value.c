@@ -23,6 +23,7 @@
 #include "../../general.h"
 #include "../../performance.h"
 #include "../../intl/intl.h"
+#include "../../system.h"
 
 const char axis_labels[4][128] = {
    RETRO_LBL_ANALOG_LEFT_X,
@@ -521,11 +522,9 @@ static void menu_action_setting_disp_set_label_menu_disk_index(
       char *s2, size_t len2)
 {
    unsigned images = 0, current = 0;
-   global_t *global     = global_get_ptr();
-   const struct retro_disk_control_callback *control =
-      global ? 
-      (const struct retro_disk_control_callback*)
-      &global->system.disk_control : NULL;
+   rarch_system_info_t *system = rarch_system_info_get_ptr();
+   struct retro_disk_control_callback *control =
+      system ? &system->disk_control : NULL;
 
    if (!control)
       return;
@@ -824,7 +823,7 @@ static void menu_action_setting_disp_set_label(file_list_t* list,
       const char *path,
       char *s2, size_t len2)
 {
-   global_t *global     = global_get_ptr();
+   rarch_system_info_t *system = rarch_system_info_get_ptr();
    uint32_t hash_label  = menu_hash_calculate(label);
 
    *s = '\0';
@@ -840,7 +839,7 @@ static void menu_action_setting_disp_set_label(file_list_t* list,
    if (type >= MENU_SETTINGS_CORE_OPTION_START)
       strlcpy(
             s,
-            core_option_get_val(global->system.core_options,
+            core_option_get_val(system->core_options,
                type - MENU_SETTINGS_CORE_OPTION_START),
             len);
    else
