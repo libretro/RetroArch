@@ -19,7 +19,7 @@
 #include "camera_driver.h"
 #include "../driver.h"
 #include "../general.h"
-#include "../runloop.h"
+#include "../system.h"
 
 static const camera_driver_t *camera_drivers[] = {
 #ifdef HAVE_V4L2
@@ -191,36 +191,34 @@ void driver_camera_stop(void)
  **/
 void driver_camera_poll(void)
 {
-   driver_t *driver = driver_get_ptr();
-   global_t *global = global_get_ptr();
+   driver_t            *driver = driver_get_ptr();
+   rarch_system_info_t *system = rarch_system_info_get_ptr();
 
    if (driver->camera && driver->camera->poll && driver->camera_data)
       driver->camera->poll(driver->camera_data,
-            global->system.camera_callback.frame_raw_framebuffer,
-            global->system.camera_callback.frame_opengl_texture);
+            system->camera_callback.frame_raw_framebuffer,
+            system->camera_callback.frame_opengl_texture);
 }
 
 void init_camera(void)
 {
    driver_t *driver     = driver_get_ptr();
    settings_t *settings = config_get_ptr();
-   global_t *global     = global_get_ptr();
+   rarch_system_info_t *system = rarch_system_info_get_ptr();
 
+   /* Resource leaks will follow if camera is initialized twice. */
    if (driver->camera_data)
-   {
-      /* Resource leaks will follow if camera is initialized twice. */
       return;
-   }
 
    find_camera_driver();
 
    driver->camera_data = driver->camera->init(
          *settings->camera.device ? settings->camera.device : NULL,
-         global->system.camera_callback.caps,
+         system->camera_callback.caps,
          settings->camera.width ?
-         settings->camera.width : global->system.camera_callback.width,
+         settings->camera.width : system->camera_callback.width,
          settings->camera.height ?
-         settings->camera.height : global->system.camera_callback.height);
+         settings->camera.height : system->camera_callback.height);
 
    if (!driver->camera_data)
    {
@@ -228,19 +226,19 @@ void init_camera(void)
       driver->camera_active = false;
    }
 
-   if (global->system.camera_callback.initialized)
-      global->system.camera_callback.initialized();
+   if (system->camera_callback.initialized)
+      system->camera_callback.initialized();
 }
 
 void uninit_camera(void)
 {
    driver_t *driver = driver_get_ptr();
-   global_t *global = global_get_ptr();
+   rarch_system_info_t *system = rarch_system_info_get_ptr();
 
    if (driver->camera_data && driver->camera)
    {
-      if (global->system.camera_callback.deinitialized)
-         global->system.camera_callback.deinitialized();
+      if (system->camera_callback.deinitialized)
+         system->camera_callback.deinitialized();
 
       if (driver->camera->free)
          driver->camera->free(driver->camera_data);
