@@ -609,7 +609,7 @@ const char *menu_hash_to_str_nl(uint32_t hash)
       case MENU_LABEL_VALUE_CORE_INFO_CORE_NOTES:
          return "Core opmerkingen";
       case MENU_LABEL_VALUE_SYSTEM_INFO_BUILD_DATE:
-         return "Build date";
+         return "Build datum";
       case MENU_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION:
          return "Git versie";
       case MENU_LABEL_VALUE_SYSTEM_INFO_CPU_FEATURES:
@@ -711,7 +711,7 @@ const char *menu_hash_to_str_nl(uint32_t hash)
       case MENU_LABEL_VALUE_SYSTEM_INFO_LIBXML2_SUPPORT:
          return "libxml2 XML parsing ondersteuning";
       case MENU_LABEL_VALUE_SYSTEM_INFO_SDL_IMAGE_SUPPORT:
-         return "SDL image ondersteuning";
+         return "SDL afbeeldingen ondersteuning";
       case MENU_LABEL_VALUE_SYSTEM_INFO_FBO_SUPPORT:
          return "OpenGL/Direct3D render-to-texture (multi-pass shaders) ondersteuning";
       case MENU_LABEL_VALUE_SYSTEM_INFO_FFMPEG_SUPPORT:
