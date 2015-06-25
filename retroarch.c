@@ -904,7 +904,8 @@ static void parse_input(int argc, char *argv[])
 
 static void rarch_init_savefile_paths(void)
 {
-   global_t *global = global_get_ptr();
+   global_t            *global = global_get_ptr();
+   rarch_system_info_t *system = rarch_system_info_get_ptr();
 
    event_command(EVENT_CMD_SAVEFILES_DEINIT);
 
@@ -918,7 +919,8 @@ static void rarch_init_savefile_paths(void)
       unsigned i, j;
       const struct retro_subsystem_info *info =
          libretro_find_subsystem_info(
-               global->system.special, global->system.num_special,
+               system->special,
+               system->num_special,
                global->subsystem);
 
       /* We'll handle this error gracefully later. */
@@ -1103,26 +1105,26 @@ void rarch_main_free(void)
 static void init_system_info(void)
 {
    global_t *global               = global_get_ptr();
-   rarch_system_info_t *info      = rarch_system_info_get_ptr();
+   rarch_system_info_t *system    = rarch_system_info_get_ptr();
 
-   pretro_get_system_info(&info->info);
+   pretro_get_system_info(&system->info);
 
-   if (!info->info.library_name)
-      info->info.library_name = "Unknown";
-   if (!info->info.library_version)
-      info->info.library_version = "v0";
+   if (!system->info.library_name)
+      system->info.library_name = "Unknown";
+   if (!system->info.library_version)
+      system->info.library_version = "v0";
 
 #ifndef RARCH_CONSOLE
    snprintf(global->title_buf, sizeof(global->title_buf),
          RETRO_FRONTEND " : ");
 #endif
-   strlcat(global->title_buf, info->info.library_name, sizeof(global->title_buf));
+   strlcat(global->title_buf, system->info.library_name, sizeof(global->title_buf));
    strlcat(global->title_buf, " ", sizeof(global->title_buf));
-   strlcat(global->title_buf, info->info.library_version, sizeof(global->title_buf));
-   strlcpy(global->system.valid_extensions, info->info.valid_extensions ?
-         info->info.valid_extensions : DEFAULT_EXT,
-         sizeof(global->system.valid_extensions));
-   global->system.block_extract = info->info.block_extract;
+   strlcat(global->title_buf, system->info.library_version, sizeof(global->title_buf));
+   strlcpy(system->valid_extensions, system->info.valid_extensions ?
+         system->info.valid_extensions : DEFAULT_EXT,
+         sizeof(system->valid_extensions));
+   system->block_extract = system->info.block_extract;
 }
 
 /* 
@@ -1367,6 +1369,7 @@ void rarch_main_set_state(unsigned cmd)
    driver_t *driver     = driver_get_ptr();
    global_t *global     = global_get_ptr();
    settings_t *settings = config_get_ptr();
+   rarch_system_info_t *system = rarch_system_info_get_ptr();
 
    switch (cmd)
    {
@@ -1392,9 +1395,9 @@ void rarch_main_set_state(unsigned cmd)
              * FIXME: This should probably be moved to menu_common somehow. */
             if (global)
             {
-               global->frontend_key_event = global->system.key_event;
-               global->system.key_event   = menu_input_key_event;
-               global->system.frame_time_last = 0;
+               global->frontend_key_event = system->key_event;
+               system->key_event          = menu_input_key_event;
+               system->frame_time_last    = 0;
             }
 
             menu_entries_set_refresh();
@@ -1439,13 +1442,13 @@ void rarch_main_set_state(unsigned cmd)
 
          /* Restore libretro keyboard callback. */
          if (global)
-            global->system.key_event = global->frontend_key_event;
+            system->key_event = global->frontend_key_event;
 #endif
          video_driver_set_texture_enable(false, false);
          break;
       case RARCH_ACTION_STATE_QUIT:
 	     if (global)
-            global->system.shutdown = true;
+            system->shutdown = true;
          rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING_FINISHED);
          break;
       case RARCH_ACTION_STATE_FORCE_QUIT:
