@@ -3893,7 +3893,8 @@ static bool setting_append_list_audio_options(
    settings_t *settings = config_get_ptr();
    global_t   *global   = global_get_ptr();
 
-   START_GROUP(group_info, "Audio Settings", parent_group);
+   START_GROUP(group_info,
+         menu_hash_to_str(MENU_LABEL_VALUE_AUDIO_SETTINGS), parent_group);
 
    parent_group = menu_hash_to_str(MENU_LABEL_VALUE_SETTINGS);
 
@@ -4154,7 +4155,9 @@ static bool setting_append_list_input_options(
    settings_t *settings = config_get_ptr();
    global_t   *global   = global_get_ptr();
 
-   START_GROUP(group_info, "Input Settings", parent_group);
+   START_GROUP(group_info,
+         menu_hash_to_str(MENU_LABEL_VALUE_INPUT_SETTINGS),
+         parent_group);
 
    parent_group = menu_hash_to_str(MENU_LABEL_VALUE_SETTINGS);
 

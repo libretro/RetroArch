@@ -723,7 +723,8 @@ extern "C" {
 #define MENU_LABEL_SHADER_SETTINGS                                             0xd6657e8dU
 #define MENU_LABEL_FONT_SETTINGS                                               0x67571029U
 #define MENU_LABEL_AUDIO_SETTINGS                                              0x8f74c888U
-#define MENU_LABEL_INPUT_SETTINGS                                              0xddd30846U
+#define MENU_LABEL_VALUE_AUDIO_SETTINGS                                        0x8f74c888U
+#define MENU_LABEL_VALUE_INPUT_SETTINGS                                        0xddd30846U
 #define MENU_LABEL_INPUT_HOTKEY_SETTINGS                                       0x1cb39c19U
 #define MENU_LABEL_OVERLAY_SETTINGS                                            0x997b2fd5U
 #define MENU_LABEL_ONSCREEN_KEYBOARD_OVERLAY_SETTINGS                          0xa6de9ba6U

@@ -1338,6 +1338,10 @@ const char *menu_hash_to_str_us(uint32_t hash)
          return "Required";
       case MENU_VALUE_STATUS:
          return "Status";
+      case MENU_LABEL_VALUE_AUDIO_SETTINGS:
+         return "Audio Settings";
+      case MENU_LABEL_VALUE_INPUT_SETTINGS:
+         return "Input Settings";
       default:
          break;
    }
