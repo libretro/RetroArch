@@ -540,8 +540,12 @@ static void menu_action_setting_disp_set_label_menu_disk_index(
 {
    unsigned images = 0, current = 0;
    rarch_system_info_t *system = rarch_system_info_get_ptr();
-   struct retro_disk_control_callback *control =
-      system ? &system->disk_control : NULL;
+   struct retro_disk_control_callback *control = NULL;
+
+   if (!system)
+      return;
+
+   control = &system->disk_control;
 
    if (!control)
       return;
@@ -550,8 +554,13 @@ static void menu_action_setting_disp_set_label_menu_disk_index(
    *s = '\0';
    strlcpy(s2, path, len2);
 
-   images  = control ? control->get_num_images()  : 0;
-   current = control ? control->get_image_index() : 0;
+   if (!control->get_num_images)
+      return;
+   if (!control->get_image_index)
+      return;
+
+   images  = control->get_num_images();
+   current = control->get_image_index();
 
    if (current >= images)
       strlcpy(s, menu_hash_to_str(MENU_VALUE_NO_DISK), len);
