@@ -571,6 +571,8 @@ static const char *menu_hash_to_str_us_label(uint32_t hash)
          return "update_cg_shaders";
       case MENU_LABEL_UPDATE_GLSL_SHADERS:
          return "update_glsl_shaders";
+      case MENU_LABEL_SCREEN_RESOLUTION:
+         return "screen_resolution";
       default:
          break;
    }
@@ -1297,6 +1299,8 @@ const char *menu_hash_to_str_us(uint32_t hash)
          return "Yes";
       case MENU_LABEL_VALUE_NO:
          return "No";
+      case MENU_LABEL_VALUE_SCREEN_RESOLUTION:
+         return "Screen Resolution";
       default:
          break;
    }
