@@ -136,16 +136,16 @@ bool menu_animation_update(
 
 /**
  * menu_animation_ticker_line:
- * @buf                      : buffer to write new message line to.
+ * @s                        : buffer to write new message line to.
  * @len                      : length of buffer @input.
  * @idx                      : Index. Will be used for ticker logic.
  * @str                      : Input string.
  * @selected                 : Is the item currently selected in the menu?
  *
  * Take the contents of @str and apply a ticker effect to it,
- * and write the results in @buf.
+ * and write the results in @s.
  **/
-void menu_animation_ticker_line(char *buf, size_t len, uint64_t tick,
+void menu_animation_ticker_line(char *s, size_t len, uint64_t tick,
       const char *str, bool selected);
 
 menu_animation_t *menu_animation_get_ptr(void);
