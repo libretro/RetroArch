@@ -420,19 +420,20 @@ static void *iohidmanager_hid_init(void)
 
    if (!hid_apple)
       goto error;
+   hid_apple->slots = pad_connection_init(MAX_USERS);
+   if (!hid_apple->slots)
+      goto error;
    if (iohidmanager_hid_manager_init(hid_apple) == -1)
       goto error;
    if (iohidmanager_hid_manager_set_device_matching(hid_apple) == -1)
       goto error;
 
-   hid_apple->slots = pad_connection_init(MAX_USERS);
-
-   if (!hid_apple->slots)
-      goto error;
-
    return hid_apple;
 
 error:
+   if (hid_apple->slots)
+      free(hid_apple->slots);
+   hid_apple->slots = NULL;
    if (hid_apple)
       free(hid_apple);
    return NULL;
