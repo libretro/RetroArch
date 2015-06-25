@@ -261,7 +261,7 @@ const char *menu_hash_to_str_de(uint32_t hash)
          return "Dummy bei Core-Abschaltung";
       case MENU_LABEL_VALUE_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE:
          return "Cores nicht automatisch starten";
-      case MENU_LABEL_VALUE_FRAME_THROTTLE_SETTINGS:
+      case MENU_LABEL_VALUE_FRAME_THROTTLE_ENABLE:
          return "Begrenze maximale Ausführungsgeschwindigkeit";
       case MENU_LABEL_VALUE_FASTFORWARD_RATIO:
          return "Maximale Ausführungsgeschwindigkeitd";

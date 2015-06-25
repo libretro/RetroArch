@@ -271,7 +271,7 @@ const char *menu_hash_to_str_fr(uint32_t hash)
          return "Dummy On Core Shutdown";
       case MENU_LABEL_VALUE_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE:
          return "Ne pas démarrer un core automatiquement";
-      case MENU_LABEL_VALUE_FRAME_THROTTLE_SETTINGS:
+      case MENU_LABEL_VALUE_FRAME_THROTTLE_ENABLE:
          return "Limiter la vitesse d'exécution";
       case MENU_LABEL_VALUE_FASTFORWARD_RATIO:
          return "Vitesse d'avance rapide";

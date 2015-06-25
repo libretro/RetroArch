@@ -253,7 +253,7 @@ const char *menu_hash_to_str_nl(uint32_t hash)
          return "Dummy Tijdens Core Shutdown";
       case MENU_LABEL_VALUE_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE:
          return "Niet automatisch core opstarten";
-      case MENU_LABEL_VALUE_FRAME_THROTTLE_SETTINGS:
+      case MENU_LABEL_VALUE_FRAME_THROTTLE_ENABLE:
          return "Beperk Maximale Afspeelsnelheid";
       case MENU_LABEL_VALUE_FASTFORWARD_RATIO:
          return "Maximale Afspeelsnelheid";

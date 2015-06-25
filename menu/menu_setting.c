@@ -3060,8 +3060,8 @@ static bool setting_append_list_frame_throttling_options(
 
    CONFIG_BOOL(
          settings->fastforward_ratio_throttle_enable,
-         menu_hash_to_str(MENU_LABEL_FRAME_THROTTLE_SETTINGS),
-         menu_hash_to_str(MENU_LABEL_VALUE_FRAME_THROTTLE_SETTINGS),
+         menu_hash_to_str(MENU_LABEL_FRAME_THROTTLE_ENABLE),
+         menu_hash_to_str(MENU_LABEL_VALUE_FRAME_THROTTLE_ENABLE),
          fastforward_ratio_throttle_enable,
          menu_hash_to_str(MENU_VALUE_OFF),
          menu_hash_to_str(MENU_VALUE_ON),

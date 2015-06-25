@@ -191,7 +191,7 @@ const char *menu_hash_to_str_pt(uint32_t hash)
          return "Desligar Core Dummy On";
       case MENU_LABEL_VALUE_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE:
          return "Não Iniciar Cores Automaticamente";
-      case MENU_LABEL_VALUE_FRAME_THROTTLE_SETTINGS:
+      case MENU_LABEL_VALUE_FRAME_THROTTLE_ENABLE:
          return "Limitar Velocidade Máxima de Execução";
       case MENU_LABEL_VALUE_FASTFORWARD_RATIO:
          return "Velocidade Máxima de Execução";

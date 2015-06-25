@@ -198,7 +198,7 @@ static const char *menu_hash_to_str_us_label(uint32_t hash)
          return "dummy_on_core_shutdown";
       case MENU_LABEL_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE:
          return "core_set_supports_no_content_enable";
-      case MENU_LABEL_FRAME_THROTTLE_SETTINGS:
+      case MENU_LABEL_FRAME_THROTTLE_ENABLE:
          return "fastforward_ratio_throttle_enable";
       case MENU_LABEL_FASTFORWARD_RATIO:
          return "fastforward_ratio";
@@ -818,7 +818,7 @@ const char *menu_hash_to_str_us(uint32_t hash)
          return "Dummy On Core Shutdown";
       case MENU_LABEL_VALUE_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE:
          return "Don't automatically start a core";
-      case MENU_LABEL_VALUE_FRAME_THROTTLE_SETTINGS:
+      case MENU_LABEL_VALUE_FRAME_THROTTLE_ENABLE:
          return "Limit Maximum Run Speed";
       case MENU_LABEL_VALUE_FASTFORWARD_RATIO:
          return "Maximum Run Speed";
