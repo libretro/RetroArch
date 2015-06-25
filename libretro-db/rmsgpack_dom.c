@@ -27,7 +27,7 @@ static struct rmsgpack_dom_value *dom_reader_state_pop(
 
 static void puts_i64(int64_t dec)
 {
-   int i;
+   unsigned i;
    signed char digits[19 + 1] = {0}; /* max i64:  9,223,372,036,854,775,807 */
    uint64_t decimal           = (dec < 0) ? (uint64_t)-dec : (uint64_t)+dec;
 
@@ -52,7 +52,7 @@ static void puts_i64(int64_t dec)
 
 static void puts_u64(uint64_t decimal)
 {
-   int i;
+   unsigned i;
    char digits[20 + 1] = {0}; /* max u64:  18,446,744,073,709,551,616 */
 
    for (i = sizeof(digits) - 2; i >= 0; i--)

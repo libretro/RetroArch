@@ -79,7 +79,7 @@ static void raise_enomem(const char **error)
 }
 
 static void raise_unknown_function(off_t where, const char *name,
-      size_t len, const char **error)
+      ssize_t len, const char **error)
 {
    int n = snprintf(tmp_error_buff, MAX_ERROR_LEN,
 #ifdef _WIN32
