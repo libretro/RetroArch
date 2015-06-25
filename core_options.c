@@ -70,6 +70,9 @@ void core_option_get(core_option_manager_t *opt, struct retro_variable *var)
 {
    size_t i;
 
+   if (!opt)
+      return;
+
    opt->updated = false;
 
    for (i = 0; i < opt->size; i++)
@@ -303,7 +306,12 @@ struct string_list *core_option_get_vals(
 void core_option_set_val(core_option_manager_t *opt,
       size_t idx, size_t val_idx)
 {
-   struct core_option *option= (struct core_option*)&opt->opts[idx];
+   struct core_option *option= NULL;
+
+   if (!opt)
+      return;
+   
+   option = (struct core_option*)&opt->opts[idx];
 
    if (!option)
       return;
@@ -322,7 +330,12 @@ void core_option_set_val(core_option_manager_t *opt,
  **/
 void core_option_next(core_option_manager_t *opt, size_t idx)
 {
-   struct core_option *option = (struct core_option*)&opt->opts[idx];
+   struct core_option *option = NULL;
+
+   if (!opt)
+      return;
+   
+   option = (struct core_option*)&opt->opts[idx];
 
    if (!option)
       return;
@@ -342,7 +355,12 @@ void core_option_next(core_option_manager_t *opt, size_t idx)
  **/
 void core_option_prev(core_option_manager_t *opt, size_t idx)
 {
-   struct core_option *option = (struct core_option*)&opt->opts[idx];
+   struct core_option *option = NULL;
+
+   if (!opt)
+      return;
+   
+   option = (struct core_option*)&opt->opts[idx];
 
    if (!option)
       return;
