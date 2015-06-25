@@ -1024,8 +1024,6 @@ const char *menu_hash_to_str_us(uint32_t hash)
          return "Database Manager";
       case MENU_LABEL_VALUE_CURSOR_MANAGER:
          return "Cursor Manager";
-      case MENU_VALUE_RECORDING_SETTINGS:
-         return "Recording Settings";
       case MENU_VALUE_MAIN_MENU:
          return "Main Menu";
       case MENU_LABEL_VALUE_SETTINGS:
@@ -1342,6 +1340,30 @@ const char *menu_hash_to_str_us(uint32_t hash)
          return "Audio Settings";
       case MENU_LABEL_VALUE_INPUT_SETTINGS:
          return "Input Settings";
+      case MENU_LABEL_VALUE_ONSCREEN_DISPLAY_SETTINGS:
+         return "Onscreen Display Settings";
+      case MENU_LABEL_VALUE_OVERLAY_SETTINGS:
+         return "Onscreen Overlay Settings";
+      case MENU_LABEL_VALUE_MENU_SETTINGS:
+         return "Menu Settings";
+      case MENU_LABEL_VALUE_MEDIA_PLAYER_SETTINGS:
+         return "Media Player Settings";
+      case MENU_LABEL_VALUE_UI_SETTINGS:
+         return "User Interface Settings";
+      case MENU_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS:
+         return "Menu File Browser Settings";
+      case MENU_LABEL_VALUE_CORE_UPDATER_SETTINGS:
+         return "Core Updater Settings";
+      case MENU_LABEL_VALUE_NETWORK_SETTINGS:
+         return "Network Settings";
+      case MENU_LABEL_VALUE_PLAYLIST_SETTINGS:
+         return "Playlist Settings";
+      case MENU_LABEL_VALUE_USER_SETTINGS:
+         return "User Settings";
+      case MENU_LABEL_VALUE_DIRECTORY_SETTINGS:
+         return "Directory Settings";
+      case MENU_LABEL_VALUE_RECORDING_SETTINGS:
+         return "Recording Settings";
       default:
          break;
    }

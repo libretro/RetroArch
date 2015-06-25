@@ -395,7 +395,7 @@ const char *menu_hash_to_str_pt(uint32_t hash)
          return "Gerenciador de Base de Dados";
       case MENU_LABEL_VALUE_CURSOR_MANAGER:
          return "Gerenciador de Cursores";
-      case MENU_VALUE_RECORDING_SETTINGS:
+      case MENU_LABEL_VALUE_RECORDING_SETTINGS:
          return "Configurações de Gravação";
       case MENU_VALUE_MAIN_MENU:
          return "Main Menu";

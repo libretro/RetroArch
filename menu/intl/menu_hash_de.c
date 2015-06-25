@@ -467,7 +467,7 @@ const char *menu_hash_to_str_de(uint32_t hash)
          return "Datenbankmanager";
       case MENU_LABEL_VALUE_CURSOR_MANAGER:
          return "Cursormanager";
-      case MENU_VALUE_RECORDING_SETTINGS:
+      case MENU_LABEL_VALUE_RECORDING_SETTINGS:
          return "Aufnahmeeinstellungen";
       case MENU_VALUE_MAIN_MENU:
          return "Main Menu"; // Don't change. Breaks everything. (Would be: "Hauptmenü")

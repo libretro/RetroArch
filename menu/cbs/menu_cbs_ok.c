@@ -624,7 +624,7 @@ static int action_ok_record_configfile_load(const char *path,
 
    fill_pathname_join(global->record.config, menu_path, path, sizeof(global->record.config));
 
-   menu_list_flush_stack(menu_list, menu_hash_to_str(MENU_VALUE_RECORDING_SETTINGS), 0);
+   menu_list_flush_stack(menu_list, menu_hash_to_str(MENU_LABEL_VALUE_RECORDING_SETTINGS), 0);
    return 0;
 }
 

@@ -3172,7 +3172,9 @@ static bool setting_append_list_recording_options(
    settings_t *settings = config_get_ptr();
    global_t   *global   = global_get_ptr();
 
-   START_GROUP(group_info, "Recording Settings", parent_group);
+   START_GROUP(group_info,
+         menu_hash_to_str(MENU_LABEL_VALUE_RECORDING_SETTINGS),
+         parent_group);
 
    parent_group = menu_hash_to_str(MENU_LABEL_VALUE_SETTINGS);
 
@@ -3805,7 +3807,9 @@ static bool setting_append_list_font_options(
    rarch_setting_group_info_t subgroup_info = {0};
    settings_t *settings = config_get_ptr();
 
-   START_GROUP(group_info, "Onscreen Display Settings", parent_group);
+   START_GROUP(group_info,
+         menu_hash_to_str(MENU_LABEL_VALUE_ONSCREEN_DISPLAY_SETTINGS),
+         parent_group);
 
    parent_group = menu_hash_to_str(MENU_LABEL_VALUE_SETTINGS);
 
@@ -4444,7 +4448,9 @@ static bool setting_append_list_overlay_options(
    settings_t *settings = config_get_ptr();
    global_t   *global   = global_get_ptr();
 
-   START_GROUP(group_info, "Onscreen Overlay Settings", parent_group);
+   START_GROUP(group_info,
+         menu_hash_to_str(MENU_LABEL_VALUE_OVERLAY_SETTINGS),
+         parent_group);
 
    parent_group = menu_hash_to_str(MENU_LABEL_VALUE_SETTINGS);
 
@@ -4554,7 +4560,9 @@ static bool setting_append_list_menu_options(
    rarch_setting_group_info_t subgroup_info = {0};
    settings_t *settings = config_get_ptr();
 
-   START_GROUP(group_info, "Menu Settings", parent_group);
+   START_GROUP(group_info,
+         menu_hash_to_str(MENU_LABEL_VALUE_MENU_SETTINGS),
+         parent_group);
    
    parent_group = menu_hash_to_str(MENU_LABEL_VALUE_SETTINGS);
 
@@ -4830,7 +4838,9 @@ static bool setting_append_list_mediaplayer_options(
    rarch_setting_group_info_t subgroup_info = {0};
    settings_t *settings = config_get_ptr();
 
-   START_GROUP(group_info, "Media Player Settings", parent_group);
+   START_GROUP(group_info,
+         menu_hash_to_str(MENU_LABEL_VALUE_MEDIA_PLAYER_SETTINGS),
+         parent_group);
    
    parent_group = menu_hash_to_str(MENU_LABEL_VALUE_SETTINGS);
 
@@ -4865,7 +4875,9 @@ static bool setting_append_list_ui_options(
    rarch_setting_group_info_t subgroup_info = {0};
    settings_t *settings = config_get_ptr();
 
-   START_GROUP(group_info, "User Interface Settings", parent_group);
+   START_GROUP(group_info,
+         menu_hash_to_str(MENU_LABEL_VALUE_UI_SETTINGS),
+         parent_group);
 
    parent_group = menu_hash_to_str(MENU_LABEL_VALUE_SETTINGS);
 
@@ -4954,7 +4966,9 @@ static bool setting_append_list_menu_file_browser_options(
    rarch_setting_group_info_t subgroup_info = {0};
    settings_t *settings = config_get_ptr();
 
-   START_GROUP(group_info, "Menu File Browser Settings", parent_group);
+   START_GROUP(group_info,
+         menu_hash_to_str(MENU_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS),
+         parent_group);
 
    parent_group = menu_hash_to_str(MENU_LABEL_VALUE_SETTINGS);
 
@@ -5003,7 +5017,9 @@ static bool setting_append_list_core_updater_options(
    rarch_setting_group_info_t subgroup_info = {0};
    settings_t *settings = config_get_ptr();
 
-   START_GROUP(group_info, "Core Updater Settings", parent_group);
+   START_GROUP(group_info,
+         menu_hash_to_str(MENU_LABEL_VALUE_CORE_UPDATER_SETTINGS),
+         parent_group);
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info, parent_group);
 
    CONFIG_STRING(
@@ -5061,7 +5077,9 @@ static bool setting_append_list_netplay_options(
    settings_t *settings = config_get_ptr();
    global_t   *global   = global_get_ptr();
 
-   START_GROUP(group_info, "Network Settings", parent_group);
+   START_GROUP(group_info,
+         menu_hash_to_str(MENU_LABEL_VALUE_NETWORK_SETTINGS),
+         parent_group);
 
    parent_group = menu_hash_to_str(MENU_LABEL_VALUE_SETTINGS);
 
@@ -5283,7 +5301,9 @@ static bool setting_append_list_playlist_options(
    rarch_setting_group_info_t subgroup_info = {0};
    settings_t *settings = config_get_ptr();
 
-   START_GROUP(group_info, "Playlist Settings", parent_group);
+   START_GROUP(group_info,
+         menu_hash_to_str(MENU_LABEL_VALUE_PLAYLIST_SETTINGS),
+         parent_group);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
    parent_group = menu_hash_to_str(MENU_LABEL_VALUE_SETTINGS);
@@ -5330,7 +5350,9 @@ static bool setting_append_list_user_options(
    rarch_setting_group_info_t subgroup_info = {0};
    settings_t *settings = config_get_ptr();
 
-   START_GROUP(group_info, "User Settings", parent_group);
+   START_GROUP(group_info,
+         menu_hash_to_str(MENU_LABEL_VALUE_USER_SETTINGS),
+         parent_group);
 
    parent_group = menu_hash_to_str(MENU_LABEL_VALUE_SETTINGS);
 
@@ -5386,7 +5408,9 @@ static bool setting_append_list_directory_options(
    settings_t *settings = config_get_ptr();
    global_t *global     = global_get_ptr();
 
-   START_GROUP(group_info, "Directory Settings", parent_group);
+   START_GROUP(group_info,
+        menu_hash_to_str(MENU_LABEL_VALUE_DIRECTORY_SETTINGS),
+         parent_group);
 
    parent_group = menu_hash_to_str(MENU_LABEL_VALUE_SETTINGS);
 
