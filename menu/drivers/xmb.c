@@ -583,7 +583,7 @@ static void xmb_update_boxart(xmb_handle_t *xmb, unsigned i)
       xmb->boxart = 0;
 }
 
-static void xmb_selection_pointer_changed(void)
+static void xmb_selection_pointer_changed(bool allow_animations)
 {
    unsigned i, current, end, tag, height, skip;
    int threshold = 0;
@@ -639,7 +639,7 @@ static void xmb_selection_pointer_changed(void)
       if (real_iy < -threshold)
          skip++;
 
-      if (real_iy < -threshold || real_iy > height+threshold)
+      if (!allow_animations || (real_iy < -threshold || real_iy > height+threshold))
       {
          node->alpha = node->label_alpha = ia;
          node->y = iy;
@@ -1058,6 +1058,7 @@ static void xmb_populate_entries(const char *path,
 
    if (xmb->prevent_populate)
    {
+      xmb_selection_pointer_changed(false);
       xmb->prevent_populate = false;
       return;
    }
@@ -2119,22 +2120,22 @@ static void xmb_context_reset(void)
 static void xmb_navigation_clear(bool pending_push)
 {
    if (!pending_push)
-      xmb_selection_pointer_changed();
+      xmb_selection_pointer_changed(true);
 }
 
 static void xmb_navigation_pointer_changed(void)
 {
-   xmb_selection_pointer_changed();
+   xmb_selection_pointer_changed(true);
 }
 
 static void xmb_navigation_set(bool scroll)
 {
-   xmb_selection_pointer_changed();
+   xmb_selection_pointer_changed(true);
 }
 
 static void xmb_navigation_alphabet(size_t *unused)
 {
-   xmb_selection_pointer_changed();
+   xmb_selection_pointer_changed(true);
 }
 
 static void xmb_list_insert(file_list_t *list,
