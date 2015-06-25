@@ -245,8 +245,8 @@ void init_drivers_pre(void)
 
 static void driver_adjust_system_rates(void)
 {
-   global_t *global = global_get_ptr();
-   driver_t *driver = driver_get_ptr();
+   rarch_system_info_t *system = rarch_system_info_get_ptr();
+   driver_t            *driver = driver_get_ptr();
 
    audio_monitor_adjust_system_rates();
    video_monitor_adjust_system_rates();
@@ -254,7 +254,7 @@ static void driver_adjust_system_rates(void)
    if (!driver->video_data)
       return;
 
-   if (global->system.force_nonblock)
+   if (system->force_nonblock)
       event_command(EVENT_CMD_VIDEO_SET_NONBLOCKING_STATE);
    else
       driver_set_nonblock_state(driver->nonblock_state);
@@ -287,7 +287,7 @@ void driver_set_refresh_rate(float hz)
 void driver_set_nonblock_state(bool enable)
 {
    settings_t *settings = config_get_ptr();
-   global_t *global     = global_get_ptr();
+   rarch_system_info_t *system = rarch_system_info_get_ptr();
    driver_t *driver     = driver_get_ptr();
 
    /* Only apply non-block-state for video if we're using vsync. */
@@ -295,7 +295,7 @@ void driver_set_nonblock_state(bool enable)
    {
       bool video_nonblock = enable;
 
-      if (!settings->video.vsync || global->system.force_nonblock)
+      if (!settings->video.vsync || system->force_nonblock)
          video_nonblock = true;
       video_driver_set_nonblock_state(video_nonblock);
    }
@@ -367,7 +367,7 @@ static void menu_update_libretro_info(void)
 void init_drivers(int flags)
 {
    driver_t *driver   = driver_get_ptr();
-   global_t *global   = global_get_ptr();
+   rarch_system_info_t *system = rarch_system_info_get_ptr();
 
    if (flags & DRIVER_VIDEO)
       driver->video_data_own = false;
@@ -402,7 +402,7 @@ void init_drivers(int flags)
          hw_render->context_reset();
       driver->video_cache_context_ack = false;
 
-      global->system.frame_time_last = 0;
+      system->frame_time_last = 0;
    }
 
    if (flags & DRIVER_AUDIO)
