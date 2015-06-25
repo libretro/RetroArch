@@ -487,8 +487,8 @@ void init_video(void)
    video_info_t video               = {0};
    static uint16_t dummy_pixels[32] = {0};
    driver_t *driver                 = driver_get_ptr();
-   global_t *global                 = global_get_ptr();
    settings_t *settings             = config_get_ptr();
+   rarch_system_info_t *system      = rarch_system_info_get_ptr();
    struct retro_system_av_info *av_info = 
       video_viewport_get_system_av_info();
 
@@ -560,7 +560,7 @@ void init_video(void)
    video.width        = width;
    video.height       = height;
    video.fullscreen   = settings->video.fullscreen;
-   video.vsync        = settings->video.vsync && !global->system.force_nonblock;
+   video.vsync        = settings->video.vsync && !system->force_nonblock;
    video.force_aspect = settings->video.force_aspect;
 #ifdef GEKKO
    video.viwidth      = settings->video.viwidth;
@@ -615,7 +615,7 @@ void init_video(void)
    }
 
    video_driver_set_rotation(
-            (settings->video.rotation + global->system.rotation) % 4);
+            (settings->video.rotation + system->rotation) % 4);
 
    video_driver_suppress_screensaver(settings->ui.suspend_screensaver_enable);
 
@@ -964,10 +964,10 @@ void video_monitor_adjust_system_rates(void)
    struct retro_system_av_info *av_info = 
       video_viewport_get_system_av_info();
    settings_t *settings = config_get_ptr();
-   global_t *global = global_get_ptr();
+   rarch_system_info_t *system = rarch_system_info_get_ptr();
 
-   if (global)
-      global->system.force_nonblock = false;
+   if (system)
+      system->force_nonblock = false;
 
    if  (av_info)
       info = (const struct retro_system_timing*)&av_info->timing;
@@ -990,7 +990,7 @@ void video_monitor_adjust_system_rates(void)
       return;
 
    /* We won't be able to do VSync reliably when game FPS > monitor FPS. */
-   global->system.force_nonblock = true;
+   system->force_nonblock = true;
    RARCH_LOG("Game FPS > Monitor FPS. Cannot rely on VSync.\n");
 }
 
