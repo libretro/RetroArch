@@ -389,7 +389,7 @@ const char *menu_hash_to_str_nl(uint32_t hash)
       case MENU_LABEL_VALUE_DETECT_CORE_LIST:
          return "Selecteer bestand en detecteer Core";
       case MENU_LABEL_VALUE_LOAD_CONTENT_HISTORY:
-         return "Selecteer uit historielijst";
+         return "Selecteer uit geschiedenis";
       case MENU_LABEL_VALUE_AUDIO_ENABLE:
          return "Audio Activeren";
       case MENU_LABEL_VALUE_FPS_SHOW:
@@ -591,7 +591,7 @@ const char *menu_hash_to_str_nl(uint32_t hash)
       case MENU_LABEL_VALUE_CORE_INFO_CORE_LABEL:
          return "Core label";
       case MENU_LABEL_VALUE_CORE_INFO_SYSTEM_NAME:
-         return "Systeem name";
+         return "Systeem naam";
       case MENU_LABEL_VALUE_CORE_INFO_SYSTEM_MANUFACTURER:
          return "Systeem fabrikant";
       case MENU_LABEL_VALUE_CORE_INFO_CATEGORIES:
