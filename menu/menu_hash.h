@@ -427,11 +427,17 @@ extern "C" {
 #define MENU_LABEL_RDB_ENTRY_RUMBLE                                            0xb8ae8ad4U
 #define MENU_LABEL_RDB_ENTRY_START_CONTENT                                     0x95025a55U
 #define MENU_LABEL_RDB_ENTRY_DESCRIPTION                                       0x26aa1f71U
+#define MENU_LABEL_VALUE_RDB_ENTRY_DESCRIPTION                                 0xe61a1f69U
 #define MENU_LABEL_RDB_ENTRY_NAME                                              0xc6ccf92eU
+#define MENU_LABEL_VALUE_RDB_ENTRY_NAME                                        0x7c898026U
 #define MENU_LABEL_RDB_ENTRY_PUBLISHER                                         0x4d7bcdfbU
+#define MENU_LABEL_VALUE_RDB_ENTRY_PUBLISHER                                   0xce7b6ff3U
 #define MENU_LABEL_RDB_ENTRY_DEVELOPER                                         0x06f61093U
+#define MENU_LABEL_VALUE_RDB_ENTRY_DEVELOPER                                   0x87f5b28bU
 #define MENU_LABEL_RDB_ENTRY_ORIGIN                                            0xb176aad5U
+#define MENU_LABEL_VALUE_RDB_ENTRY_ORIGIN                                      0xc870cfcdU
 #define MENU_LABEL_RDB_ENTRY_FRANCHISE                                         0xb31764a0U
+#define MENU_LABEL_VALUE_RDB_ENTRY_FRANCHISE                                   0x34170698U
 #define MENU_LABEL_RDB_ENTRY_ENHANCEMENT_HW                                    0x79ee4f11U
 #define MENU_LABEL_RDB_ENTRY_ESRB_RATING                                       0xe138fa3dU
 #define MENU_LABEL_RDB_ENTRY_BBFC_RATING                                       0x82dbc01eU
@@ -443,8 +449,11 @@ extern "C" {
 #define MENU_LABEL_RDB_ENTRY_EDGE_MAGAZINE_REVIEW                              0x977f6fdeU
 #define MENU_LABEL_RDB_ENTRY_FAMITSU_MAGAZINE_RATING                           0x01a50315U
 #define MENU_LABEL_RDB_ENTRY_RELEASE_MONTH                                     0xad2f2c54U
+#define MENU_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH                               0xb68af36aU
 #define MENU_LABEL_RDB_ENTRY_RELEASE_YEAR                                      0x14c9c6bfU
+#define MENU_LABEL_VALUE_RDB_ENTRY_RELEASE_YEAR                                0x439e0315U
 #define MENU_LABEL_RDB_ENTRY_MAX_USERS                                         0xfae91cc4U
+#define MENU_LABEL_VALUE_RDB_ENTRY_MAX_USERS                                   0xe6b0aefdU
 #define MENU_LABEL_RDB_ENTRY_SHA1                                              0xc6cfd31aU
 #define MENU_LABEL_VALUE_RDB_ENTRY_SHA1                                        0x2d142625U
 #define MENU_LABEL_VALUE_RDB_ENTRY_MD5                                         0xf1ecb7deU
@@ -479,6 +488,10 @@ extern "C" {
 #define MENU_VALUE_CORE                                                        0x6a167f7fU
 #define MENU_VALUE_CURSOR                                                      0x57bba8b4U
 #define MENU_VALUE_FILE                                                        0x6a496536U
+#define MENU_VALUE_MISSING                                                     0x28536c3fU
+#define MENU_VALUE_PRESENT                                                     0x23432826U
+#define MENU_VALUE_OPTIONAL                                                    0x27bfc4abU
+#define MENU_VALUE_REQUIRED                                                    0x979b1a66U
 #define MENU_VALUE_RDB                                                         0x0b00f54eU
 #define MENU_VALUE_DIR                                                         0x0af95f55U
 #define MENU_VALUE_NO_CORE                                                     0x7d5472cbU
@@ -821,6 +834,7 @@ extern "C" {
 #define MENU_LABEL_VALUE_RECORD_ENABLE                                         0xee39aa6bU
 
 #define MENU_VALUE_SECONDS                                                     0x8b0028d4U
+#define MENU_VALUE_STATUS                                                      0xd1e57929U
 
 #define MENU_LABEL_VALUE_CORE_INFO_CORE_NAME                                   0x2a031110U
 #define MENU_LABEL_VALUE_CORE_INFO_CORE_LABEL                                  0x6a40d38fU

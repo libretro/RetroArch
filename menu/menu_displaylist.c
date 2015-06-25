@@ -219,17 +219,21 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
       {
          if (core_info->firmware[i].desc)
          {
-            snprintf(tmp, sizeof(tmp), "	name: %s",
+            snprintf(tmp, sizeof(tmp), "	Name: %s",
                   core_info->firmware[i].desc ?
                   core_info->firmware[i].desc : "");
             menu_list_push(info->list, tmp, "",
                   MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
-            snprintf(tmp, sizeof(tmp), "	status: %s, %s",
+            snprintf(tmp, sizeof(tmp), "	%s: %s, %s",
+                  menu_hash_to_str(MENU_VALUE_STATUS),
                   core_info->firmware[i].missing ?
-                  "missing" : "present",
+                  menu_hash_to_str(MENU_VALUE_MISSING) :
+                  menu_hash_to_str(MENU_VALUE_PRESENT),
                   core_info->firmware[i].optional ?
-                  "optional" : "required");
+                  menu_hash_to_str(MENU_VALUE_OPTIONAL) :
+                  menu_hash_to_str(MENU_VALUE_REQUIRED)
+                  );
             menu_list_push(info->list, tmp, "",
                   MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
          }
@@ -1064,7 +1068,9 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
 
       if (db_info_entry->name)
       {
-         strlcpy(tmp, "Name", sizeof(tmp));
+         strlcpy(tmp,
+               menu_hash_to_str(MENU_LABEL_VALUE_RDB_ENTRY_NAME),
+               sizeof(tmp));
          strlcat(tmp, ": ", sizeof(tmp));
          strlcat(tmp, db_info_entry->name, sizeof(tmp));
          menu_list_push(info->list, tmp,
@@ -1073,7 +1079,9 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
       }
       if (db_info_entry->description)
       {
-         strlcpy(tmp, "Description", sizeof(tmp));
+         strlcpy(tmp,
+               menu_hash_to_str(MENU_LABEL_VALUE_RDB_ENTRY_DESCRIPTION),
+               sizeof(tmp));
          strlcat(tmp, ": ", sizeof(tmp));
          strlcat(tmp, db_info_entry->description, sizeof(tmp));
          menu_list_push(info->list, tmp,
@@ -1082,7 +1090,8 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
       }
       if (db_info_entry->publisher)
       {
-         if (create_string_list_rdb_entry_string("Publisher",
+         if (create_string_list_rdb_entry_string(
+                  menu_hash_to_str(MENU_LABEL_VALUE_RDB_ENTRY_PUBLISHER),
                   menu_hash_to_str(MENU_LABEL_RDB_ENTRY_PUBLISHER),
                   db_info_entry->publisher, info->path, info->list) == -1)
             goto error;
@@ -1095,7 +1104,8 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
          {
             if (db_info_entry->developer->elems[k].data)
             {
-               if (create_string_list_rdb_entry_string("Developer",
+               if (create_string_list_rdb_entry_string(
+                        menu_hash_to_str(MENU_LABEL_VALUE_RDB_ENTRY_DEVELOPER),
                         menu_hash_to_str(MENU_LABEL_RDB_ENTRY_DEVELOPER),
                         db_info_entry->developer->elems[k].data,
                         info->path, info->list) == -1)
@@ -1106,21 +1116,24 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
 
       if (db_info_entry->origin)
       {
-         if (create_string_list_rdb_entry_string("Origin",
+         if (create_string_list_rdb_entry_string(
+                  menu_hash_to_str(MENU_LABEL_VALUE_RDB_ENTRY_ORIGIN),
                   menu_hash_to_str(MENU_LABEL_RDB_ENTRY_ORIGIN),
                   db_info_entry->origin, info->path, info->list) == -1)
             goto error;
       }
       if (db_info_entry->franchise)
       {
-         if (create_string_list_rdb_entry_string("Franchise",
+         if (create_string_list_rdb_entry_string(
+                  menu_hash_to_str(MENU_LABEL_VALUE_RDB_ENTRY_FRANCHISE),
                   menu_hash_to_str(MENU_LABEL_RDB_ENTRY_FRANCHISE),
                   db_info_entry->franchise, info->path, info->list) == -1)
             goto error;
       }
       if (db_info_entry->max_users)
       {
-         if (create_string_list_rdb_entry_int("Max Users",
+         if (create_string_list_rdb_entry_int(
+                  menu_hash_to_str(MENU_LABEL_VALUE_INPUT_MAX_USERS),
                   menu_hash_to_str(MENU_LABEL_RDB_ENTRY_MAX_USERS),
                   db_info_entry->max_users,
                   info->path, info->list) == -1)
@@ -1159,7 +1172,8 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
       }
       if (db_info_entry->releasemonth)
       {
-         if (create_string_list_rdb_entry_int("Releasedate Month",
+         if (create_string_list_rdb_entry_int(
+                  menu_hash_to_str(MENU_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH),
                   menu_hash_to_str(MENU_LABEL_RDB_ENTRY_RELEASE_MONTH),
                   db_info_entry->releasemonth,
                   info->path, info->list) == -1)
@@ -1168,7 +1182,8 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
 
       if (db_info_entry->releaseyear)
       {
-         if (create_string_list_rdb_entry_int("Releasedate Year",
+         if (create_string_list_rdb_entry_int(
+                  menu_hash_to_str(MENU_LABEL_VALUE_RDB_ENTRY_RELEASE_YEAR),
                   menu_hash_to_str(MENU_LABEL_RDB_ENTRY_RELEASE_YEAR),
                   db_info_entry->releaseyear,
                   info->path, info->list) == -1)
@@ -1219,16 +1234,18 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
       snprintf(tmp, sizeof(tmp),
             "%s : %s",
             "Analog supported",
-            (db_info_entry->analog_supported == 1)  ? "true" :
-            (db_info_entry->analog_supported == -1) ? menu_hash_to_str(MENU_VALUE_NOT_AVAILABLE)  : "false");
+            (db_info_entry->analog_supported == 1)  ? menu_hash_to_str(MENU_VALUE_TRUE) :
+            (db_info_entry->analog_supported == -1) ? menu_hash_to_str(MENU_VALUE_NOT_AVAILABLE)  :
+            menu_hash_to_str(MENU_VALUE_FALSE));
       menu_list_push(info->list, tmp,
             menu_hash_to_str(MENU_LABEL_RDB_ENTRY_ANALOG),
             0, 0, 0);
       snprintf(tmp, sizeof(tmp),
             "%s : %s",
             "Rumble supported",
-            (db_info_entry->rumble_supported == 1)  ? "true" :
-            (db_info_entry->rumble_supported == -1) ? menu_hash_to_str(MENU_VALUE_NOT_AVAILABLE)  :  "false");
+            (db_info_entry->rumble_supported == 1)  ? menu_hash_to_str(MENU_VALUE_TRUE) :
+            (db_info_entry->rumble_supported == -1) ? menu_hash_to_str(MENU_VALUE_NOT_AVAILABLE)  :
+            menu_hash_to_str(MENU_VALUE_FALSE));
       menu_list_push(info->list, tmp,
             menu_hash_to_str(MENU_LABEL_RDB_ENTRY_RUMBLE),
             0, 0, 0);

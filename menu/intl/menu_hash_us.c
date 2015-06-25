@@ -1308,6 +1308,36 @@ const char *menu_hash_to_str_us(uint32_t hash)
          return "Port";
       case MENU_VALUE_NONE:
          return "None";
+      case MENU_LABEL_VALUE_RDB_ENTRY_DEVELOPER:
+         return "Developer";
+      case MENU_LABEL_VALUE_RDB_ENTRY_PUBLISHER:
+         return "Publisher";
+      case MENU_LABEL_VALUE_RDB_ENTRY_DESCRIPTION:
+         return "Description";
+      case MENU_LABEL_VALUE_RDB_ENTRY_NAME:
+         return "Name";
+      case MENU_LABEL_VALUE_RDB_ENTRY_ORIGIN:
+         return "Origin";
+      case MENU_LABEL_VALUE_RDB_ENTRY_FRANCHISE:
+         return "Franchise";
+      case MENU_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH:
+         return "Releasedate Month";
+      case MENU_LABEL_VALUE_RDB_ENTRY_RELEASE_YEAR:
+         return "Releasedate Year";
+      case MENU_VALUE_TRUE:
+         return "True";
+      case MENU_VALUE_FALSE:
+         return "False";
+      case MENU_VALUE_MISSING:
+         return "Missing";
+      case MENU_VALUE_PRESENT:
+         return "Present";
+      case MENU_VALUE_OPTIONAL:
+         return "Optional";
+      case MENU_VALUE_REQUIRED:
+         return "Required";
+      case MENU_VALUE_STATUS:
+         return "Status";
       default:
          break;
    }
