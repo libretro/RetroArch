@@ -973,6 +973,7 @@ bool event_command(enum event_command cmd)
    driver_t  *driver    = driver_get_ptr();
    global_t  *global    = global_get_ptr();
    settings_t *settings = config_get_ptr();
+   rarch_system_info_t *system = rarch_system_info_get_ptr();
 
    (void)i;
 
@@ -1085,7 +1086,9 @@ bool event_command(enum event_command cmd)
             *global->fullpath = '\0';
 
             rarch_main_set_state(RARCH_ACTION_STATE_LOAD_CONTENT);
-            global->system.shutdown = false;
+
+            if (system)
+               system->shutdown = false;
          }
          break;
       case EVENT_CMD_UNLOAD_CORE:
@@ -1574,11 +1577,11 @@ bool event_command(enum event_command cmd)
          global->log_file = NULL;
          break;
       case EVENT_CMD_DISK_EJECT_TOGGLE:
-         if (global->system.disk_control.get_num_images)
+         if (system && system->disk_control.get_num_images)
          {
             const struct retro_disk_control_callback *control = 
                (const struct retro_disk_control_callback*)
-               &global->system.disk_control;
+               &system->disk_control;
 
             if (control)
                event_check_disk_eject(control);
@@ -1587,11 +1590,11 @@ bool event_command(enum event_command cmd)
             rarch_main_msg_queue_push("Core does not support Disk Options.", 1, 120, true);
          break;
       case EVENT_CMD_DISK_NEXT:
-         if (global->system.disk_control.get_num_images)
+         if (system && system->disk_control.get_num_images)
          {
             const struct retro_disk_control_callback *control = 
                (const struct retro_disk_control_callback*)
-               &global->system.disk_control;
+               &system->disk_control;
 
             if (!control)
                return false;
@@ -1605,11 +1608,11 @@ bool event_command(enum event_command cmd)
             rarch_main_msg_queue_push("Core does not support Disk Options.", 1, 120, true);
          break;
       case EVENT_CMD_DISK_PREV:
-         if (global->system.disk_control.get_num_images)
+         if (system && system->disk_control.get_num_images)
          {
             const struct retro_disk_control_callback *control = 
                (const struct retro_disk_control_callback*)
-               &global->system.disk_control;
+               &system->disk_control;
 
             if (!control)
                return false;
