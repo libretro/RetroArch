@@ -67,6 +67,7 @@ enum
    XMB_TEXTURE_SUBSETTING,
    XMB_TEXTURE_ARROW,
    XMB_TEXTURE_RUN,
+   XMB_TEXTURE_CLOSE,
    XMB_TEXTURE_RESUME,
    XMB_TEXTURE_SAVESTATE,
    XMB_TEXTURE_LOADSTATE,
@@ -1091,6 +1092,8 @@ static GLuint xmb_icon_get_id(xmb_handle_t *xmb,
          return xmb->textures.list[XMB_TEXTURE_CURSOR].id;
       case MENU_SETTING_ACTION_RUN:
          return xmb->textures.list[XMB_TEXTURE_RUN].id;
+      case MENU_SETTING_ACTION_CLOSE:
+         return xmb->textures.list[XMB_TEXTURE_CLOSE].id;
       case MENU_SETTING_ACTION_SAVESTATE:
          return xmb->textures.list[XMB_TEXTURE_SAVESTATE].id;
       case MENU_SETTING_ACTION_LOADSTATE:
@@ -1970,6 +1973,9 @@ static void xmb_context_reset_textures(xmb_handle_t *xmb, const char *iconpath)
             break;
          case XMB_TEXTURE_RUN:
             fill_pathname_join(path, iconpath, "run.png", sizeof(path));
+            break;
+         case XMB_TEXTURE_CLOSE:
+            fill_pathname_join(path, iconpath, "close.png", sizeof(path));
             break;
          case XMB_TEXTURE_RESUME:
             fill_pathname_join(path, iconpath, "resume.png", sizeof(path));
