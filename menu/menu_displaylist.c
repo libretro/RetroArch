@@ -1527,6 +1527,8 @@ static int menu_displaylist_parse_load_content_settings(menu_displaylist_info_t 
 
    if (global->main_is_init && (global->core_type != CORE_TYPE_DUMMY))
    {
+      rarch_system_info_t *system = rarch_system_info_get_ptr();
+
       menu_list_push(info->list,
             menu_hash_to_str(MENU_LABEL_VALUE_RESUME_CONTENT),
             menu_hash_to_str(MENU_LABEL_RESUME_CONTENT),
@@ -1571,7 +1573,7 @@ static int menu_displaylist_parse_load_content_settings(menu_displaylist_info_t 
             menu_hash_to_str(MENU_LABEL_VALUE_CORE_CHEAT_OPTIONS),
             menu_hash_to_str(MENU_LABEL_CORE_CHEAT_OPTIONS),
             MENU_SETTING_ACTION, 0, 0);
-      if ((global->core_type != CORE_TYPE_DUMMY) && global->system.disk_control.get_num_images)
+      if ((global->core_type != CORE_TYPE_DUMMY) && system && system->disk_control.get_num_images)
          menu_list_push(info->list,
                menu_hash_to_str(MENU_LABEL_VALUE_DISK_OPTIONS),
                menu_hash_to_str(MENU_LABEL_DISK_OPTIONS),
@@ -1771,8 +1773,9 @@ static int menu_displaylist_parse_options_cheats(menu_displaylist_info_t *info)
 static int menu_displaylist_parse_options_remappings(menu_displaylist_info_t *info)
 {
    unsigned p, retro_id;
-   settings_t *settings   = config_get_ptr();
-   global_t *global       = global_get_ptr();
+   settings_t        *settings = config_get_ptr();
+   global_t            *global = global_get_ptr();
+   rarch_system_info_t *system = rarch_system_info_get_ptr();
 
    menu_list_push(info->list,
          menu_hash_to_str(MENU_LABEL_VALUE_REMAP_FILE_LOAD),
@@ -1803,7 +1806,7 @@ static int menu_displaylist_parse_options_remappings(menu_displaylist_info_t *in
          if (desc_offset >= RARCH_FIRST_CUSTOM_BIND)
             desc_offset = RARCH_FIRST_CUSTOM_BIND + (desc_offset - RARCH_FIRST_CUSTOM_BIND) * 2;
 
-         description = global->system.input_desc_btn[p][desc_offset];
+         description = system ? system->input_desc_btn[p][desc_offset] : NULL;
 
          if (!description)
             continue;
@@ -2030,15 +2033,16 @@ static int menu_displaylist_parse_generic(menu_displaylist_info_t *info, bool *n
 int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
 {
    size_t i, list_size;
-   int ret                  = 0;
-   bool need_sort           = false;
-   bool need_refresh        = false;
-   bool need_push           = false;
-   rarch_setting_t *setting = NULL;
-   menu_handle_t    *menu   = menu_driver_get_ptr();
-   menu_navigation_t *nav   = menu_navigation_get_ptr();
-   global_t       *global   = global_get_ptr();
-   settings_t   *settings   = config_get_ptr();
+   int ret                     = 0;
+   bool need_sort              = false;
+   bool need_refresh           = false;
+   bool need_push              = false;
+   rarch_setting_t    *setting = NULL;
+   menu_handle_t       *menu   = menu_driver_get_ptr();
+   menu_navigation_t    *nav   = menu_navigation_get_ptr();
+   global_t          *global   = global_get_ptr();
+   settings_t      *settings   = config_get_ptr();
+   rarch_system_info_t *system = rarch_system_info_get_ptr();
 
    switch (type)
    {
@@ -2354,13 +2358,13 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          break;
       case DISPLAYLIST_CORE_OPTIONS:
          menu_list_clear(info->list);
-         if (global->system.core_options)
+         if (system && system->core_options)
          {
-            size_t opts = core_option_size(global->system.core_options);
+            size_t opts = core_option_size(system->core_options);
 
             for (i = 0; i < opts; i++)
                menu_list_push(info->list,
-                     core_option_get_desc(global->system.core_options, i), "",
+                     core_option_get_desc(system->core_options, i), "",
                      MENU_SETTINGS_CORE_OPTION_START + i, 0, 0);
          }
          else
