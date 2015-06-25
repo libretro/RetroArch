@@ -612,7 +612,8 @@ static INLINE int time_to_exit(event_cmd_state_t *cmd)
 {
    runloop_t *runloop            = rarch_main_get_ptr();
    global_t  *global             = global_get_ptr();
-   bool shutdown_pressed         = global->system.shutdown;
+   rarch_system_info_t *system   = rarch_system_info_get_ptr();
+   bool shutdown_pressed         = system->shutdown;
    bool video_alive              = video_driver_is_alive();
    bool movie_end                = (global->bsv.movie_end && global->bsv.eof_exit);
    uint64_t frame_count          = video_driver_get_frame_count();
@@ -636,24 +637,24 @@ static void rarch_update_frame_time(void)
    driver_t *driver         = driver_get_ptr();
    settings_t *settings     = config_get_ptr();
    retro_time_t curr_time   = rarch_get_time_usec();
-   global_t  *global        = global_get_ptr();
-   retro_time_t delta       = curr_time - global->system.frame_time_last;
+   rarch_system_info_t *system   = rarch_system_info_get_ptr();
+   retro_time_t delta       = curr_time - system->frame_time_last;
    bool is_locked_fps       = runloop->is_paused || driver->nonblock_state;
 
    is_locked_fps         |= !!driver->recording_data;
 
-   if (!global->system.frame_time_last || is_locked_fps)
-      delta = global->system.frame_time.reference;
+   if (!system->frame_time_last || is_locked_fps)
+      delta = system->frame_time.reference;
 
    if (!is_locked_fps && runloop->is_slowmotion)
       delta /= settings->slowmotion_ratio;
 
-   global->system.frame_time_last = curr_time;
+   system->frame_time_last = curr_time;
 
    if (is_locked_fps)
-      global->system.frame_time_last = 0;
+      system->frame_time_last = 0;
 
-   global->system.frame_time.callback(delta);
+   system->frame_time.callback(delta);
 }
 
 
@@ -1124,6 +1125,7 @@ int rarch_main_iterate(void)
    driver_t *driver                = driver_get_ptr();
    settings_t *settings            = config_get_ptr();
    global_t   *global              = global_get_ptr();
+   rarch_system_info_t *system     = rarch_system_info_get_ptr();
 
    if (driver->flushing_input)
       driver->flushing_input = (input) ? input_flush(&input) : false;
@@ -1135,7 +1137,7 @@ int rarch_main_iterate(void)
    if (time_to_exit(&cmd))
       return rarch_main_iterate_quit();
 
-   if (global->system.frame_time.callback)
+   if (system->frame_time.callback)
       rarch_update_frame_time();
 
    do_pre_state_checks(&cmd);
@@ -1185,7 +1187,7 @@ int rarch_main_iterate(void)
    if (global->bsv.movie)
       bsv_movie_set_frame_start(global->bsv.movie);
 
-   if (global->system.camera_callback.caps)
+   if (system->camera_callback.caps)
       driver_camera_poll();
 
    /* Update binds for analog dpad modes. */
