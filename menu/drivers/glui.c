@@ -123,7 +123,8 @@ static void glui_render_quad(gl_t *gl, int x, int y, int w, int h,
 
    coords.color = color;
 
-   menu_gl_draw_frame(gl->shader, &coords, &gl->mvp_no_rot, true, glui->textures.white);
+   menu_gl_draw_frame(gl->shader, &coords,
+         &gl->mvp_no_rot, true, glui->textures.white);
 
    gl->coords.color = gl->white_color_ptr;
 }
@@ -214,7 +215,8 @@ static void glui_render_messagebox(const char *message)
    {
       const char *msg = list->elems[i].data;
       if (msg)
-         glui_blit_line(x, y + i * disp->font.size, msg, normal_color, TEXT_ALIGN_CENTER);
+         glui_blit_line(x, y + i * disp->font.size,
+               msg, normal_color, TEXT_ALIGN_CENTER);
    }
 
 end:

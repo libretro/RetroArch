@@ -191,12 +191,10 @@ static bool init_font(menu_handle_t *menu, const uint8_t *font_bmp_buf)
    uint8_t *font = (uint8_t *) calloc(1, FONT_OFFSET(256));
 
    if (!font)
-   {
-      RARCH_ERR("Font memory allocation failed.\n");
       return false;
-   }
 
    menu->display.font.alloc_framebuf = true;
+
    for (i = 0; i < 256; i++)
    {
       unsigned y = i / 16;
@@ -614,10 +612,7 @@ static void *rgui_init(void)
    ret = rguidisp_init_font(menu);
 
    if (!ret)
-   {
-      RARCH_ERR("No font bitmap or binary, abort");
       goto error;
-   }
 
    fill_rect(frame_buf, 0, frame_buf->height,
          frame_buf->width, 4, gray_filler);
