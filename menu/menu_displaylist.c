@@ -1689,10 +1689,12 @@ static int menu_displaylist_parse_options(menu_displaylist_info_t *info)
          menu_hash_to_str(MENU_LABEL_UPDATE_CHEATS),
          MENU_SETTING_ACTION, 0, 0);
 
+#ifdef HAVE_LIBRETRODB
    menu_list_push(info->list,
          menu_hash_to_str(MENU_LABEL_VALUE_UPDATE_DATABASES),
          menu_hash_to_str(MENU_LABEL_UPDATE_DATABASES),
          MENU_SETTING_ACTION, 0, 0);
+#endif
 
    menu_list_push(info->list,
          menu_hash_to_str(MENU_LABEL_VALUE_UPDATE_OVERLAYS),
