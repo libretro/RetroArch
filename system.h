@@ -57,7 +57,7 @@ typedef struct rarch_system_info
    unsigned num_ports;
 } rarch_system_info_t;
 
-struct retro_system_info *rarch_system_info_get_ptr(void);
+rarch_system_info_t *rarch_system_info_get_ptr(void);
 
 #ifdef __cplusplus
 }

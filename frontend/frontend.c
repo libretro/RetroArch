@@ -315,14 +315,15 @@ int rarch_main(int argc, char *argv[], void *data)
 
    if (settings->history_list_enable)
    {
-      global_t *global = global_get_ptr();
+      global_t *global             = global_get_ptr();
+      rarch_system_info_t *sysinfo = rarch_system_info_get_ptr();
 
       if (global->content_is_init || global->system.no_content)
          history_playlist_push(
                g_defaults.history,
                global->fullpath,
                settings->libretro,
-               rarch_system_info_get_ptr());
+               sysinfo ? &sysinfo->info : NULL);
    }
 
    if (driver)

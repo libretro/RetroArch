@@ -317,23 +317,23 @@ static void set_special_paths(char **argv, unsigned num_content)
             sizeof(settings->system_directory));
 }
 
-struct retro_system_info *rarch_system_info_get_ptr(void)
+rarch_system_info_t *rarch_system_info_get_ptr(void)
 {
    global_t                *global   = global_get_ptr();
    if (!global)
       return NULL;
-   return &global->system.info;
+   return &global->system;
 }
 
 void set_paths_redirect(const char *path)
 {
    global_t                *global   = global_get_ptr();
    settings_t              *settings = config_get_ptr();
-   struct retro_system_info *info    = rarch_system_info_get_ptr();
+   rarch_system_info_t      *info    = rarch_system_info_get_ptr();
 
-   uint32_t global_library_name_hash = ((global && info->library_name &&
-            (info->library_name[0] != '\0'))
-         ? djb2_calculate(info->library_name) : 0);
+   uint32_t global_library_name_hash = ((global && info->info.library_name &&
+            (info->info.library_name[0] != '\0'))
+         ? djb2_calculate(info->info.library_name) : 0);
 
    if(
          global_library_name_hash != 0 &&
@@ -346,7 +346,7 @@ void set_paths_redirect(const char *path)
          fill_pathname_dir(
                global->savefile_dir,
                global->savefile_dir,
-               info->library_name,
+               info->info.library_name,
                sizeof(global->savefile_dir));
 
          // if path doesn't exist try to create it, if everything fails revert to the original path
@@ -365,7 +365,7 @@ void set_paths_redirect(const char *path)
                sizeof(global->savestate_dir));
          fill_pathname_dir(global->savestate_dir,
                global->savestate_dir,
-               info->library_name,
+               info->info.library_name,
                sizeof(global->savestate_dir));
 
          /* If path doesn't exist, try to create it.
@@ -1103,26 +1103,26 @@ void rarch_main_free(void)
 static void init_system_info(void)
 {
    global_t *global               = global_get_ptr();
-   struct retro_system_info *info = rarch_system_info_get_ptr();
+   rarch_system_info_t *info      = rarch_system_info_get_ptr();
 
-   pretro_get_system_info(info);
+   pretro_get_system_info(&info->info);
 
-   if (!info->library_name)
-      info->library_name = "Unknown";
-   if (!info->library_version)
-      info->library_version = "v0";
+   if (!info->info.library_name)
+      info->info.library_name = "Unknown";
+   if (!info->info.library_version)
+      info->info.library_version = "v0";
 
 #ifndef RARCH_CONSOLE
    snprintf(global->title_buf, sizeof(global->title_buf),
          RETRO_FRONTEND " : ");
 #endif
-   strlcat(global->title_buf, info->library_name, sizeof(global->title_buf));
+   strlcat(global->title_buf, info->info.library_name, sizeof(global->title_buf));
    strlcat(global->title_buf, " ", sizeof(global->title_buf));
-   strlcat(global->title_buf, info->library_version, sizeof(global->title_buf));
-   strlcpy(global->system.valid_extensions, info->valid_extensions ?
-         info->valid_extensions : DEFAULT_EXT,
+   strlcat(global->title_buf, info->info.library_version, sizeof(global->title_buf));
+   strlcpy(global->system.valid_extensions, info->info.valid_extensions ?
+         info->info.valid_extensions : DEFAULT_EXT,
          sizeof(global->system.valid_extensions));
-   global->system.block_extract = info->block_extract;
+   global->system.block_extract = info->info.block_extract;
 }
 
 /* 

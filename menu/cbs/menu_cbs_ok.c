@@ -786,8 +786,8 @@ static int action_ok_remap_file_save_core(const char *path,
    char file[PATH_MAX_LENGTH]        = {0};
    global_t *global                  = global_get_ptr();
    settings_t *settings              = config_get_ptr();
-   struct retro_system_info *info    = rarch_system_info_get_ptr();
-   const char *core_name             = info ? info->library_name : NULL;
+   rarch_system_info_t *info         = rarch_system_info_get_ptr();
+   const char *core_name             = info ? info->info.library_name : NULL;
 
    fill_pathname_join(directory,settings->input_remapping_directory,core_name,PATH_MAX_LENGTH);
    fill_pathname_join(file,core_name,core_name,PATH_MAX_LENGTH);
@@ -810,8 +810,8 @@ static int action_ok_remap_file_save_game(const char *path,
    char file[PATH_MAX_LENGTH]      = {0};
    global_t *global                = global_get_ptr();
    settings_t *settings            = config_get_ptr();
-   struct retro_system_info *info  = rarch_system_info_get_ptr();
-   const char *core_name           = info   ? info->library_name : NULL;
+   rarch_system_info_t *info         = rarch_system_info_get_ptr();
+   const char *core_name           = info   ? info->info.library_name : NULL;
    const char *game_name           = global ? path_basename(global->basename)  : NULL;
 
    fill_pathname_join(directory,settings->input_remapping_directory,core_name,PATH_MAX_LENGTH);

@@ -820,8 +820,8 @@ static uint32_t implementation_magic_value(void)
    const char *ver                     = PACKAGE_VERSION;
    unsigned api                        = pretro_api_version();
    global_t *global                    = global_get_ptr();
-   struct retro_system_info *info      = rarch_system_info_get_ptr();
-   const char *lib                     = info ? info->library_name : NULL;
+   rarch_system_info_t *info           = rarch_system_info_get_ptr();
+   const char *lib                     = info ? info->info.library_name : NULL;
 
    res |= api;
 
@@ -829,7 +829,7 @@ static uint32_t implementation_magic_value(void)
    for (i = 0; i < len; i++)
       res ^= lib[i] << (i & 0xf);
 
-   lib = info->library_version;
+   lib = info->info.library_version;
    len = strlen(lib);
 
    for (i = 0; i < len; i++)
