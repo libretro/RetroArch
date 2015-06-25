@@ -39,7 +39,7 @@ joypad_connection_t *pad_connection_init(unsigned pads)
 {
    unsigned i;
    joypad_connection_t *joyconn = (joypad_connection_t*)
-      calloc(pads, sizeof(*joyconn));
+      calloc(pads, sizeof(joypad_connection_t));
 
    if (!joyconn)
       return NULL;
