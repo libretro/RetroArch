@@ -23,6 +23,12 @@
 extern "C" {
 #endif
 
+typedef struct video_pixel_scaler
+{
+   struct scaler_ctx *scaler;
+   void *scaler_out;
+} video_pixel_scaler_t;
+
 void deinit_pixel_converter(void);
 
 bool init_video_pixel_converter(unsigned size);
@@ -32,6 +38,8 @@ unsigned video_pixel_get_alignment(unsigned pitch);
 bool video_pixel_frame_scale(const void *data,
       unsigned width, unsigned height,
       size_t pitch);
+
+video_pixel_scaler_t *scaler_get_ptr(void);
 
 #ifdef __cplusplus
 }

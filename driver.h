@@ -279,11 +279,6 @@ typedef struct driver
    uintptr_t video_window;
    enum rarch_display_type display_type;
 
-   /* Used for 15-bit -> 16-bit conversions that take place before
-    * being passed to video driver. */
-   struct scaler_ctx scaler;
-   void *scaler_out;
-
    /* Graphics driver requires RGBA byte order data (ABGR on little-endian)
     * for 32-bit.
     * This takes effect for overlay and shader cores that wants to load

@@ -22,20 +22,34 @@
 #include "../performance.h"
 #include "video_pixel_converter.h"
 
+/* Used for 16-bit -> 16-bit conversions that take place before
+ * being passed to video driver. */
+static video_pixel_scaler_t *scaler_ptr;
+
+video_pixel_scaler_t *scaler_get_ptr(void)
+{
+   return scaler_ptr;
+}
+
 void deinit_pixel_converter(void)
 {
-   driver_t *driver = driver_get_ptr();
+   video_pixel_scaler_t *scaler = scaler_get_ptr();
 
-   scaler_ctx_gen_reset(&driver->scaler);
-   memset(&driver->scaler, 0, sizeof(driver->scaler));
-   free(driver->scaler_out);
-   driver->scaler_out = NULL;
+   if (!scaler)
+      return;
+
+   scaler_ctx_gen_reset(scaler->scaler);
+
+   free(scaler->scaler);
+   scaler->scaler     = NULL;
+   free(scaler->scaler_out);
+   scaler->scaler_out = NULL;
+   free(scaler);
+   scaler_ptr = NULL;
 }
 
 bool init_video_pixel_converter(unsigned size)
 {
-   driver_t *driver = driver_get_ptr();
-
    /* This function can be called multiple times
     * without deiniting first on consoles. */
    deinit_pixel_converter();
@@ -47,21 +61,42 @@ bool init_video_pixel_converter(unsigned size)
 
    RARCH_WARN("0RGB1555 pixel format is deprecated, and will be slower. For 15/16-bit, RGB565 format is preferred.\n");
 
-   driver->scaler.scaler_type = SCALER_TYPE_POINT;
-   driver->scaler.in_fmt      = SCALER_FMT_0RGB1555;
+   scaler_ptr = (video_pixel_scaler_t*)calloc(1, sizeof(*scaler_ptr));
+
+   if (!scaler_ptr)
+      goto error;
+
+   scaler_ptr->scaler = (struct scaler_ctx*)calloc(1, sizeof(*scaler_ptr->scaler));
+
+   if (!scaler_ptr->scaler)
+      goto error;
+
+   scaler_ptr->scaler->scaler_type = SCALER_TYPE_POINT;
+   scaler_ptr->scaler->in_fmt      = SCALER_FMT_0RGB1555;
 
    /* TODO: Pick either ARGB8888 or RGB565 depending on driver. */
-   driver->scaler.out_fmt     = SCALER_FMT_RGB565;
+   scaler_ptr->scaler->out_fmt     = SCALER_FMT_RGB565;
 
-   if (!scaler_ctx_gen_filter(&driver->scaler))
-      return false;
+   if (!scaler_ctx_gen_filter(scaler_ptr->scaler))
+      goto error;
 
-   driver->scaler_out = calloc(sizeof(uint16_t), size * size);
+   scaler_ptr->scaler_out = calloc(sizeof(uint16_t), size * size);
 
-   if (!driver->scaler_out)
-      return false;
+   if (!scaler_ptr->scaler_out)
+      goto error;
 
    return true;
+
+error:
+   if (scaler_ptr->scaler_out)
+      free(scaler_ptr->scaler_out);
+   if (scaler_ptr->scaler)
+      free(scaler_ptr->scaler);
+   if (scaler_ptr)
+      free(scaler_ptr);
+   scaler_ptr = NULL;
+
+   return false;
 }
 
 unsigned video_pixel_get_alignment(unsigned pitch)
@@ -79,7 +114,7 @@ bool video_pixel_frame_scale(const void *data,
       unsigned width, unsigned height,
       size_t pitch)
 {
-   driver_t *driver = driver_get_ptr();
+   video_pixel_scaler_t *scaler = scaler_get_ptr();
 
    RARCH_PERFORMANCE_INIT(video_frame_conv);
 
@@ -92,14 +127,14 @@ bool video_pixel_frame_scale(const void *data,
 
    RARCH_PERFORMANCE_START(video_frame_conv);
 
-   driver->scaler.in_width      = width;
-   driver->scaler.in_height     = height;
-   driver->scaler.out_width     = width;
-   driver->scaler.out_height    = height;
-   driver->scaler.in_stride     = pitch;
-   driver->scaler.out_stride    = width * sizeof(uint16_t);
+   scaler->scaler->in_width      = width;
+   scaler->scaler->in_height     = height;
+   scaler->scaler->out_width     = width;
+   scaler->scaler->out_height    = height;
+   scaler->scaler->in_stride     = pitch;
+   scaler->scaler->out_stride    = width * sizeof(uint16_t);
 
-   scaler_ctx_scale(&driver->scaler, driver->scaler_out, data);
+   scaler_ctx_scale(scaler->scaler, scaler->scaler_out, data);
 
    RARCH_PERFORMANCE_STOP(video_frame_conv);
 

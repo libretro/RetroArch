@@ -66,8 +66,10 @@ static void video_frame(const void *data, unsigned width,
 
    if (video_pixel_frame_scale(data, width, height, pitch))
    {
-      data                        = driver->scaler_out;
-      pitch                       = driver->scaler.out_stride;
+      video_pixel_scaler_t *scaler = scaler_get_ptr();
+
+      data                        = scaler->scaler_out;
+      pitch                       = scaler->scaler->out_stride;
    }
 
    video_driver_cached_frame_set(data, width, height, pitch);
