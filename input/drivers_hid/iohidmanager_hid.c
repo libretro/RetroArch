@@ -230,7 +230,7 @@ static void iohidmanager_hid_device_remove(void *data, IOReturn result, void* se
 static int32_t iohidmanager_hid_device_get_int_property(IOHIDDeviceRef device, CFStringRef key)
 {
    int32_t value;
-   CFNumberRef ref = IOHIDDeviceGetProperty(device, key);
+   CFNumberRef ref = (CFNumberRef)IOHIDDeviceGetProperty(device, key);
 
    if (ref)
    {
@@ -256,7 +256,7 @@ static uint16_t iohidmanager_hid_device_get_product_id(IOHIDDeviceRef device)
 
 static void iohidmanager_hid_device_get_product_string(IOHIDDeviceRef device, char *buf, size_t len)
 {
-   CFStringRef ref = IOHIDDeviceGetProperty(device, CFSTR(kIOHIDProductKey));
+   CFStringRef ref = (CFStringRef)IOHIDDeviceGetProperty(device, CFSTR(kIOHIDProductKey));
 
    if (ref)
       CFStringGetCString(ref, buf, len, kCFStringEncodingUTF8);
