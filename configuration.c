@@ -27,6 +27,7 @@
 #include "input/input_remapping.h"
 #include "configuration.h"
 #include "general.h"
+#include "system.h"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -1760,13 +1761,14 @@ bool config_load_override(void)
    bool should_append                     = false;
    global_t *global                       = global_get_ptr();
    settings_t *settings                   = config_get_ptr();
+   struct retro_system_info *info         = rarch_system_info_get_ptr();
 
    /* Early return in case a library isn't loaded */
-   if (!global->system.info.library_name || !strcmp(global->system.info.library_name,"No Core"))
+   if (!info->library_name || !strcmp(info->library_name,"No Core"))
       return false;
 
-   RARCH_LOG("Game name: %s\n",global->basename);
-   RARCH_LOG("Core name: %s\n",global->system.info.library_name);
+   RARCH_LOG("Game name: %s\n", global->basename);
+   RARCH_LOG("Core name: %s\n", info->library_name);
 
    if (!global || !settings )
    {
@@ -1789,7 +1791,7 @@ bool config_load_override(void)
 
    RARCH_LOG("Config directory: %s\n", config_directory);
 
-   core_name = global->system.info.library_name;
+   core_name = info->library_name;
    game_name = path_basename(global->basename);
 
    /* Concatenate strings into full paths for core_path, game_path */
@@ -1942,13 +1944,14 @@ bool config_load_remap(void)
    char game_path[PATH_MAX_LENGTH]         = {0};    /* final path for game-specific configuration (prefix+suffix) */
    global_t *global                        = global_get_ptr();
    settings_t *settings                    = config_get_ptr();
+   struct retro_system_info *info          = rarch_system_info_get_ptr();
 
    /* Early return in case a library isn't loaded or remapping is disabled */
-   if (!global->system.info.library_name || !strcmp(global->system.info.library_name,"No Core"))
+   if (!info->library_name || !strcmp(info->library_name,"No Core"))
       return false;
 
-   RARCH_LOG("Game name: %s\n",global->basename);
-   RARCH_LOG("Core name: %s\n",global->system.info.library_name);
+   RARCH_LOG("Game name: %s\n", global->basename);
+   RARCH_LOG("Core name: %s\n", info->library_name);
 
    /* Remap directory: remap_directory.
     * Try remap directory setting, no fallbacks defined */
@@ -1961,7 +1964,7 @@ bool config_load_remap(void)
    }
    RARCH_LOG("Remap directory: %s\n", remap_directory);
 
-   core_name = global->system.info.library_name;
+   core_name = info->library_name;
    game_name = path_basename(global->basename);
 
    /* Concatenate strings into full paths for core_path, game_path */
