@@ -564,6 +564,8 @@ static bool event_load_save_files(void)
    unsigned i;
    global_t *global = global_get_ptr();
 
+   if (!global)
+      return false;
    if (!global->savefiles || global->sram_load_disable)
       return false;
 
