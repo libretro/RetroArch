@@ -16,7 +16,8 @@
 
 #include <stdint.h>
 #include <string.h>
-#include <rhash.h>
+
+#include <compat/strl.h>
 
 #include "../menu_hash.h"
 
@@ -754,6 +755,7 @@ int menu_hash_get_help_nl(uint32_t hash, char *s, size_t len)
    switch (hash)
    {
       default:
+         strlcpy(s, "Geen informatie beschikbaar.", len);
          return -1;
    }
 

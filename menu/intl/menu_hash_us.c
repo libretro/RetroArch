@@ -2257,7 +2257,8 @@ int menu_hash_get_help_us(uint32_t hash, char *s, size_t len)
                "Positive Y axis is down.");
          break;
       default:
-         strlcpy(s, "No information is available.", len);
+         if (s[0] == '\0')
+            strlcpy(s, "No information is available.", len);
          return -1;
    }
 
