@@ -75,10 +75,11 @@ void main_exit(void *args)
    driver_t *driver                      = driver_get_ptr();
    settings_t *settings                  = config_get_ptr();
    global_t   *global                    = global_get_ptr();
+   rarch_system_info_t *system           = rarch_system_info_get_ptr();
    const frontend_ctx_driver_t *frontend = frontend_get_ptr();
    const ui_companion_driver_t *ui       = ui_companion_get_ptr();
 
-   global->system.shutdown         = false;
+   system->shutdown         = false;
 
    main_exit_save_config();
 
@@ -172,8 +173,9 @@ static void history_playlist_push(content_playlist_t *playlist,
       const char *path, const char *core_path,
       struct retro_system_info *info)
 {
-   char tmp[PATH_MAX_LENGTH] = {0};
-   global_t        *global   = global_get_ptr();
+   char tmp[PATH_MAX_LENGTH]             = {0};
+   global_t                    *global   = global_get_ptr();
+   rarch_system_info_t *system           = rarch_system_info_get_ptr();
 
    if (!playlist || (global->core_type == CORE_TYPE_DUMMY) || !info)
       return;
@@ -186,7 +188,7 @@ static void history_playlist_push(content_playlist_t *playlist,
    if (*tmp)
       path_resolve_realpath(tmp, sizeof(tmp));
 
-   if (global->system.no_content || *tmp)
+   if (system->no_content || *tmp)
       content_playlist_push(playlist,
             *tmp ? tmp : NULL,
             NULL,
@@ -316,14 +318,14 @@ int rarch_main(int argc, char *argv[], void *data)
    if (settings->history_list_enable)
    {
       global_t *global             = global_get_ptr();
-      rarch_system_info_t *sysinfo = rarch_system_info_get_ptr();
+      rarch_system_info_t *system = rarch_system_info_get_ptr();
 
-      if (global->content_is_init || global->system.no_content)
+      if (global->content_is_init || system->no_content)
          history_playlist_push(
                g_defaults.history,
                global->fullpath,
                settings->libretro,
-               sysinfo ? &sysinfo->info : NULL);
+               system ? &system->info : NULL);
    }
 
    if (driver)
