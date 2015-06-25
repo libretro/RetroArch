@@ -33,18 +33,16 @@ video_pixel_scaler_t *scaler_get_ptr(void)
 
 void deinit_pixel_converter(void)
 {
-   video_pixel_scaler_t *scaler = scaler_get_ptr();
-
-   if (!scaler)
+   if (!scaler_ptr)
       return;
 
-   scaler_ctx_gen_reset(scaler->scaler);
+   scaler_ctx_gen_reset(scaler_ptr->scaler);
 
-   free(scaler->scaler);
-   scaler->scaler     = NULL;
-   free(scaler->scaler_out);
-   scaler->scaler_out = NULL;
-   free(scaler);
+   free(scaler_ptr->scaler);
+   scaler_ptr->scaler     = NULL;
+   free(scaler_ptr->scaler_out);
+   scaler_ptr->scaler_out = NULL;
+   free(scaler_ptr);
    scaler_ptr = NULL;
 }
 
