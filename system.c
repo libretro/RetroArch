@@ -13,7 +13,17 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <compat/strl.h>
+
 #include "system.h"
+#include "dynamic.h"
+#include "intl/intl.h"
+
+#ifdef HAVE_ZLIB
+#define DEFAULT_EXT "zip"
+#else
+#define DEFAULT_EXT ""
+#endif
 
 static rarch_system_info_t *g_system;
 
@@ -50,4 +60,28 @@ void rarch_system_info_free(void)
 
    free(g_system);
    g_system = NULL;
+}
+
+void rarch_system_info_init(void)
+{
+   rarch_system_info_t *system    = rarch_system_info_get_ptr();
+
+   pretro_get_system_info(&system->info);
+
+   if (!system->info.library_name)
+      system->info.library_name = "Unknown";
+   if (!system->info.library_version)
+      system->info.library_version = "v0";
+
+#ifndef RARCH_CONSOLE
+   snprintf(system->title_buf, sizeof(system->title_buf),
+         RETRO_FRONTEND " : ");
+#endif
+   strlcat(system->title_buf, system->info.library_name, sizeof(system->title_buf));
+   strlcat(system->title_buf, " ", sizeof(system->title_buf));
+   strlcat(system->title_buf, system->info.library_version, sizeof(system->title_buf));
+   strlcpy(system->valid_extensions, system->info.valid_extensions ?
+         system->info.valid_extensions : DEFAULT_EXT,
+         sizeof(system->valid_extensions));
+   system->block_extract = system->info.block_extract;
 }

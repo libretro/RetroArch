@@ -224,8 +224,6 @@ typedef struct global
       bool use_output_dir;
    } record;
 
-   char title_buf[64];
-
    struct
    {
       struct string_list *list;

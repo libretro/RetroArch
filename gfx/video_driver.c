@@ -1133,7 +1133,7 @@ bool video_monitor_get_fps(char *buf, size_t size,
    static retro_time_t curr_time;
    static retro_time_t fps_time;
    uint64_t frame_count = video_driver_get_frame_count();
-   global_t  *global    = global_get_ptr();
+   rarch_system_info_t *system = rarch_system_info_get_ptr();
 
    *buf = '\0';
 
@@ -1154,7 +1154,7 @@ bool video_monitor_get_fps(char *buf, size_t size,
          curr_time = new_time;
 
          snprintf(buf, size, "%s || FPS: %6.1f || Frames: " U64_SIGN,
-               global->title_buf, last_fps, (unsigned long long)frame_count);
+               system->title_buf, last_fps, (unsigned long long)frame_count);
          ret = true;
       }
 
@@ -1166,7 +1166,7 @@ bool video_monitor_get_fps(char *buf, size_t size,
    }
 
    curr_time = fps_time = new_time;
-   strlcpy(buf, global->title_buf, size);
+   strlcpy(buf, system->title_buf, size);
    if (buf_fps)
       strlcpy(buf_fps, "N/A", size_fps);
 

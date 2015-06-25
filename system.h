@@ -26,6 +26,8 @@ extern "C" {
 
 typedef struct rarch_system_info
 {
+   char title_buf[64];
+
    struct retro_system_info info;
 
    unsigned rotation;
@@ -60,6 +62,8 @@ typedef struct rarch_system_info
 rarch_system_info_t *rarch_system_info_get_ptr(void);
 
 void rarch_system_info_free(void);
+
+void rarch_system_info_init(void);
 
 #ifdef __cplusplus
 }

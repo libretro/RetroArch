@@ -1087,38 +1087,6 @@ void rarch_main_free(void)
    config_free();
 }
 
-#ifdef HAVE_ZLIB
-#define DEFAULT_EXT "zip"
-#else
-#define DEFAULT_EXT ""
-#endif
-
-
-static void init_system_info(void)
-{
-   global_t *global               = global_get_ptr();
-   rarch_system_info_t *system    = rarch_system_info_get_ptr();
-
-   pretro_get_system_info(&system->info);
-
-   if (!system->info.library_name)
-      system->info.library_name = "Unknown";
-   if (!system->info.library_version)
-      system->info.library_version = "v0";
-
-#ifndef RARCH_CONSOLE
-   snprintf(global->title_buf, sizeof(global->title_buf),
-         RETRO_FRONTEND " : ");
-#endif
-   strlcat(global->title_buf, system->info.library_name, sizeof(global->title_buf));
-   strlcat(global->title_buf, " ", sizeof(global->title_buf));
-   strlcat(global->title_buf, system->info.library_version, sizeof(global->title_buf));
-   strlcpy(system->valid_extensions, system->info.valid_extensions ?
-         system->info.valid_extensions : DEFAULT_EXT,
-         sizeof(system->valid_extensions));
-   system->block_extract = system->info.block_extract;
-}
-
 /* 
  * rarch_verify_api_version:
  *
@@ -1249,7 +1217,7 @@ int rarch_main_init(int argc, char *argv[])
 #endif
 
    init_libretro_sym(global->core_type);
-   init_system_info();
+   rarch_system_info_init();
 
    init_drivers_pre();
 
