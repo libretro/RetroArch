@@ -544,10 +544,11 @@ int menu_input_bind_iterate(void)
 
    if (bind_mode_kb)
    snprintf(msg, sizeof(msg),
-         "[%s]\npress keyboard\n(timeout %d seconds)",
+         "[%s]\npress keyboard\n(timeout %d %s)",
          input_config_bind_map[
          menu_input->binds.begin - MENU_SETTINGS_BIND_BEGIN].desc,
-         timeout);
+         timeout,
+         menu_hash_to_str(MENU_VALUE_SECONDS));
     else
         snprintf(msg, sizeof(msg),
         "[%s]\npress joypad\n(RETURN to skip)",
