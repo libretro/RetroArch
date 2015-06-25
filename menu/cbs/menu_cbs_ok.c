@@ -1790,6 +1790,9 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
    {
       switch (type)
       {
+         case MENU_SETTING_ACTION_CORE_DISK_OPTIONS:
+            cbs->action_ok = action_ok_push_default;
+            break;
          case MENU_FILE_PLAYLIST_ENTRY:
             cbs->action_ok = action_ok_playlist_entry;
             break;

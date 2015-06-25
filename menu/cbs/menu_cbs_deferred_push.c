@@ -602,9 +602,6 @@ static int menu_cbs_init_bind_deferred_push_compare_label(menu_file_list_cbs_t *
          case MENU_LABEL_CORE_INPUT_REMAPPING_OPTIONS:
             cbs->action_deferred_push = deferred_push_core_input_remapping_options;
             break;
-         case MENU_LABEL_DISK_OPTIONS:
-            cbs->action_deferred_push = deferred_push_disk_options;
-            break;
          case MENU_LABEL_CORE_LIST:
             cbs->action_deferred_push = deferred_push_core_list;
             break;
@@ -659,6 +656,8 @@ static int menu_cbs_init_bind_deferred_push_compare_type(menu_file_list_cbs_t *c
       cbs->action_deferred_push = deferred_push_category;
    else if (type == MENU_FILE_PLAYLIST_COLLECTION)
       cbs->action_deferred_push = deferred_push_rdb_collection;
+   else if (type == MENU_SETTING_ACTION_CORE_DISK_OPTIONS)
+      cbs->action_deferred_push = deferred_push_disk_options;
    else
       return -1;
 
