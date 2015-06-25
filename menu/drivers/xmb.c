@@ -76,6 +76,7 @@ enum
    XMB_TEXTURE_INPUT_REMAPPING_OPTIONS,
    XMB_TEXTURE_CHEAT_OPTIONS,
    XMB_TEXTURE_DISK_OPTIONS,
+   XMB_TEXTURE_SHADER_OPTIONS,
    XMB_TEXTURE_SCREENSHOT,
    XMB_TEXTURE_RELOAD,
    XMB_TEXTURE_FILE,
@@ -1108,6 +1109,8 @@ static GLuint xmb_icon_get_id(xmb_handle_t *xmb,
          return xmb->textures.list[XMB_TEXTURE_CHEAT_OPTIONS].id;
       case MENU_SETTING_ACTION_CORE_DISK_OPTIONS:
          return xmb->textures.list[XMB_TEXTURE_DISK_OPTIONS].id;
+      case MENU_SETTING_ACTION_CORE_SHADER_OPTIONS:
+         return xmb->textures.list[XMB_TEXTURE_SHADER_OPTIONS].id;
       case MENU_SETTING_ACTION_SCREENSHOT:
          return xmb->textures.list[XMB_TEXTURE_SCREENSHOT].id;
       case MENU_SETTING_ACTION_RESET:
@@ -1222,6 +1225,9 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
             break;
          case MENU_LABEL_DISK_OPTIONS:
             icon = xmb->textures.list[XMB_TEXTURE_DISK_OPTIONS].id;
+            break;
+         case MENU_LABEL_SHADER_OPTIONS:
+            icon = xmb->textures.list[XMB_TEXTURE_SHADER_OPTIONS].id;
             break;
          case MENU_LABEL_SAVESTATE:
             icon = xmb->textures.list[XMB_TEXTURE_SAVESTATE].id;
@@ -2006,6 +2012,9 @@ static void xmb_context_reset_textures(xmb_handle_t *xmb, const char *iconpath)
             break;
          case XMB_TEXTURE_DISK_OPTIONS:
             fill_pathname_join(path, iconpath, "core-disk-options.png", sizeof(path));
+            break;
+         case XMB_TEXTURE_SHADER_OPTIONS:
+            fill_pathname_join(path, iconpath, "core-shader-options.png", sizeof(path));
             break;
          case XMB_TEXTURE_SCREENSHOT:
             fill_pathname_join(path, iconpath, "screenshot.png", sizeof(path));
