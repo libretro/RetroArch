@@ -259,9 +259,9 @@ static CGSSurfaceID attach_gl_context_to_window(CGLContextObj glCtx,
     wins = CGWindowListCopyWindowInfo(kCGWindowListOptionIncludingWindow, wid); /* expect one result only */
     win = (CFDictionaryRef)CFArrayGetValueAtIndex(wins, 0);
     bnd = (CFDictionaryRef)CFDictionaryGetValue(win, kCGWindowBounds);
-    CFNumberGetValue(CFDictionaryGetValue(bnd, CFSTR("Width")),
+    CFNumberGetValue((CFNumberRef)CFDictionaryGetValue((CFDictionaryRef)bnd, CFSTR("Width")),
        kCFNumberFloat64Type, &w);
-    CFNumberGetValue(CFDictionaryGetValue(bnd, CFSTR("Height")),
+    CFNumberGetValue((CFNumberRef)CFDictionaryGetValue(bnd, CFSTR("Height")),
        kCFNumberFloat64Type, &h);
     CFRelease(wins);
  
