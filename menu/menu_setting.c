@@ -2035,12 +2035,7 @@ int setting_get_description(const char *label, char *s,
 {
    uint32_t label_hash       = menu_hash_calculate(label);
 
-   if (menu_hash_get_help(label_hash, s, len) == 0)
-      return 0;
-
-   strlcpy(s, "No information is available.", len);
-
-   return 0;
+   return menu_hash_get_help(label_hash, s, len);
 }
 
 static void get_string_representation_bind_device(void * data, char *s,

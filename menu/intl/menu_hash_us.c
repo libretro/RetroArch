@@ -17,6 +17,8 @@
 #include <stdint.h>
 #include <string.h>
 
+#include <compat/strl.h>
+
 #include "../menu_hash.h"
 #include "../../configuration.h"
 
@@ -2255,6 +2257,7 @@ int menu_hash_get_help_us(uint32_t hash, char *s, size_t len)
                "Positive Y axis is down.");
          break;
       default:
+         strlcpy(s, "No information is available.", len);
          return -1;
    }
 
