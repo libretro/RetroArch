@@ -59,6 +59,8 @@ typedef struct rarch_system_info
 
 rarch_system_info_t *rarch_system_info_get_ptr(void);
 
+void rarch_system_info_clear(void);
+
 #ifdef __cplusplus
 }
 #endif

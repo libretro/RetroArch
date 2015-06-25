@@ -150,8 +150,6 @@ typedef struct global
       unsigned windowed_scale;
    } pending;
 
-   rarch_system_info_t system;
-
 #ifdef HAVE_MENU
    struct
    {

@@ -533,7 +533,8 @@ void uninit_libretro_sym(void)
    /* No longer valid. */
    free(system->special);
    free(system->ports);
-   memset(&global->system, 0, sizeof(global->system));
+
+   rarch_system_info_clear();
    driver->camera_active = false;
    driver->location_active = false;
 

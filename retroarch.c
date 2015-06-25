@@ -317,12 +317,16 @@ static void set_special_paths(char **argv, unsigned num_content)
             sizeof(settings->system_directory));
 }
 
+rarch_system_info_t g_system;
+
 rarch_system_info_t *rarch_system_info_get_ptr(void)
 {
-   global_t                *global   = global_get_ptr();
-   if (!global)
-      return NULL;
-   return &global->system;
+   return &g_system;
+}
+
+void rarch_system_info_clear(void)
+{
+   memset(&g_system, 0, sizeof(g_system));
 }
 
 void set_paths_redirect(const char *path)
