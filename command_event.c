@@ -211,10 +211,11 @@ static void event_disk_control_set_eject(bool new_state, bool print_log)
    char msg[PATH_MAX_LENGTH] = {0};
    global_t *global          = global_get_ptr();
    bool error                = false;
+   rarch_system_info_t *info = rarch_system_info_get_ptr();
    const struct retro_disk_control_callback *control = 
-      (const struct retro_disk_control_callback*)&global->system.disk_control;
+      info ? (const struct retro_disk_control_callback*)&info->disk_control : NULL;
 
-   if (!control->get_num_images)
+   if (!control || !control->get_num_images)
       return;
 
    *msg = '\0';
@@ -251,11 +252,16 @@ static void event_disk_control_set_eject(bool new_state, bool print_log)
 void event_disk_control_append_image(const char *path)
 {
    unsigned new_idx;
-   char msg[PATH_MAX_LENGTH]   = {0};
-   struct retro_game_info info = {0};
-   global_t *global = global_get_ptr();
+   char msg[PATH_MAX_LENGTH]                         = {0};
+   struct retro_game_info info                       = {0};
+   global_t                                  *global = global_get_ptr();
+   rarch_system_info_t                       *sysinfo = rarch_system_info_get_ptr();
    const struct retro_disk_control_callback *control = 
-      (const struct retro_disk_control_callback*)&global->system.disk_control;
+      sysinfo ? (const struct retro_disk_control_callback*)&sysinfo->disk_control
+      : NULL;
+
+   if (!control)
+      return;
 
    event_disk_control_set_eject(true, false);
 
@@ -315,11 +321,12 @@ static void event_disk_control_set_index(unsigned idx)
    unsigned num_disks;
    char msg[PATH_MAX_LENGTH] = {0};
    global_t *global          = global_get_ptr();
+   rarch_system_info_t                      *info    = rarch_system_info_get_ptr();
    const struct retro_disk_control_callback *control = 
-      (const struct retro_disk_control_callback*)&global->system.disk_control;
+      info ? (const struct retro_disk_control_callback*)&info->disk_control : NULL;
    bool error = false;
 
-   if (!control->get_num_images)
+   if (!control || !control->get_num_images)
       return;
 
    *msg = '\0';
@@ -441,10 +448,11 @@ static void event_init_controllers(void)
       const char *ident = NULL;
       const struct retro_controller_description *desc = NULL;
       unsigned device = settings->input.libretro_device[i];
+      rarch_system_info_t *info = rarch_system_info_get_ptr();
 
-      if (i < global->system.num_ports)
+      if (i < info->num_ports)
          desc = libretro_find_controller_description(
-               &global->system.ports[i], device);
+               &info->ports[i], device);
 
       if (desc)
          ident = desc->desc;
