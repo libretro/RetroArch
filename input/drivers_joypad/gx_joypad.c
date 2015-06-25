@@ -560,12 +560,16 @@ static void gx_joypad_poll(void)
 
 static bool gx_joypad_init(void *data)
 {
+   int i;
    SYS_SetResetCallback(reset_cb);
 #ifdef HW_RVL
    SYS_SetPowerCallback(power_callback);
 #endif
 
    (void)data;
+
+   for (i = 0; i < MAX_PADS; i++)
+      pad_type[i] = 0;
 
    PAD_Init();
 #ifdef HW_RVL
