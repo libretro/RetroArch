@@ -324,7 +324,7 @@ static void gfx_ctx_qnx_check_window(void *data, bool *quit,
       bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
 {
    unsigned new_width, new_height;
-   global_t *global = global_get_ptr();
+   rarch_system_info_t *system = rarch_system_info_get_ptr();
 
    (void)data;
    (void)frame_count;
@@ -340,7 +340,7 @@ static void gfx_ctx_qnx_check_window(void *data, bool *quit,
    }
 
    /* Check if we are exiting. */
-   if (global->system.shutdown)
+   if (system->shutdown)
       *quit = true;
 }
 

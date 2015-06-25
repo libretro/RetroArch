@@ -315,11 +315,11 @@ static int core_setting_left(unsigned type, const char *label,
       bool wraparound)
 {
    unsigned idx     = type - MENU_SETTINGS_CORE_OPTION_START;
-   global_t *global = global_get_ptr();
+   rarch_system_info_t *system = rarch_system_info_get_ptr();
 
    (void)label;
 
-   core_option_prev(global->system.core_options, idx);
+   core_option_prev(system->core_options, idx);
 
    return 0;
 }

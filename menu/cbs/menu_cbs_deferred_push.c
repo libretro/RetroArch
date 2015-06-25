@@ -458,8 +458,9 @@ static int deferred_push_detect_core_list(menu_displaylist_info_t *info)
 
 static int deferred_push_default(menu_displaylist_info_t *info)
 {
-   settings_t *settings   = config_get_ptr();
-   global_t *global       = global_get_ptr();
+   settings_t        *settings = config_get_ptr();
+   global_t            *global = global_get_ptr();
+   rarch_system_info_t *system = rarch_system_info_get_ptr();
 
    info->type_default = MENU_FILE_PLAIN;
    info->setting      = menu_setting_find(info->label);
@@ -472,7 +473,7 @@ static int deferred_push_default(menu_displaylist_info_t *info)
                sizeof(info->exts));
    }
    else
-      strlcpy(info->exts, global->system.valid_extensions, sizeof(info->exts));
+      strlcpy(info->exts, system->valid_extensions, sizeof(info->exts));
 
    (void)settings;
 

@@ -588,6 +588,7 @@ static void qnx_handle_navigator_event(
    navigator_window_state_t state;
    bps_event_t *event_pause = NULL;
    global_t *global = global_get_ptr();
+   rarch_system_info_t *system = rarch_system_info_get_ptr();
 
    (void)rc;
 
@@ -618,7 +619,7 @@ static void qnx_handle_navigator_event(
                   }
                   else if (bps_event_get_code(event_pause) == NAVIGATOR_EXIT)
                   {
-                     global->system.shutdown = true;
+                     system->shutdown = true;
                      break;
                   }
                }

@@ -68,8 +68,10 @@ static void callback_sysutil_exit(uint64_t status,
    {
       case CELL_SYSUTIL_REQUEST_EXITGAME:
          {
-            global_t *global = global_get_ptr();
-            global->system.shutdown = true;
+            rarch_system_info_t *system = rarch_system_info_get_ptr();
+
+            if (system)
+               system->shutdown = true;
          }
          break;
    }
