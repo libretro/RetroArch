@@ -1295,6 +1295,8 @@ const char *menu_hash_to_str_us(uint32_t hash)
          return "Yes";
       case MENU_LABEL_VALUE_NO:
          return "No";
+      case MENU_VALUE_BACK:
+         return "BACK";
       case MENU_LABEL_VALUE_SCREEN_RESOLUTION:
          return "Screen Resolution";
       default:

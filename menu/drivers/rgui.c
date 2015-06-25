@@ -476,7 +476,8 @@ static void rgui_render(void)
    if (menu_entries_show_back())
       blit_line(menu,
             RGUI_TERM_START_X, RGUI_TERM_START_X,
-            "BACK", TITLE_COLOR(settings));
+            menu_hash_to_str(MENU_VALUE_BACK),
+            TITLE_COLOR(settings));
 
    blit_line(menu,
          RGUI_TERM_START_X + (RGUI_TERM_WIDTH - strlen(title_buf)) * FONT_WIDTH_STRIDE / 2,

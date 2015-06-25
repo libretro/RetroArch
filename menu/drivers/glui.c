@@ -424,7 +424,7 @@ static void glui_frame(void)
          title_color, TEXT_ALIGN_CENTER);
 
    if (menu_entries_show_back())
-      glui_blit_line(glui->margin, 0, "BACK",
+      glui_blit_line(glui->margin, 0, menu_hash_to_str(MENU_VALUE_BACK),
             title_color, TEXT_ALIGN_LEFT);
 
    glui_render_quad(gl,
