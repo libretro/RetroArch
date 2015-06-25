@@ -1304,6 +1304,8 @@ const char *menu_hash_to_str_us(uint32_t hash)
          return "Disabled";
       case MENU_VALUE_PORT:
          return "Port";
+      case MENU_VALUE_NONE:
+         return "None";
       default:
          break;
    }

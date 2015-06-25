@@ -1413,7 +1413,7 @@ static void setting_get_string_representation_uint_libretro_device(void *data,
             [setting->index_offset])
       {
          case RETRO_DEVICE_NONE:
-            name = "None";
+            name = menu_hash_to_str(MENU_VALUE_NONE);
             break;
          case RETRO_DEVICE_JOYPAD:
             name = menu_hash_to_str(MENU_VALUE_RETROPAD);
@@ -1457,13 +1457,13 @@ static void setting_get_string_representation_uint_archive_mode(void *data,
 static void setting_get_string_representation_uint_analog_dpad_mode(void *data,
       char *s, size_t len)
 {
-   static const char *modes[] = {
-      "None",
-      "Left Analog",
-      "Right Analog",
-   };
+   const char *modes[3];
    rarch_setting_t *setting  = (rarch_setting_t*)data;
    settings_t      *settings = config_get_ptr();
+
+   modes[0] = menu_hash_to_str(MENU_VALUE_NONE);
+   modes[1] = "Left Analog";
+   modes[2] = "Right Analog";
 
    if (setting)
       strlcpy(s, modes[settings->input.analog_dpad_mode

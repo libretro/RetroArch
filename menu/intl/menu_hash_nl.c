@@ -740,6 +740,8 @@ const char *menu_hash_to_str_nl(uint32_t hash)
          return "Uitgeschakeld";
       case MENU_VALUE_PORT:
          return "Poort";
+      case MENU_VALUE_NONE:
+         return "Geen";
       default:
          break;
    }

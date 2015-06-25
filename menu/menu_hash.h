@@ -902,6 +902,8 @@ extern "C" {
 #define MENU_VALUE_DISABLED                                                    0xe326e01dU
 #define MENU_VALUE_PORT                                                        0x7c8ad52aU
 
+#define MENU_VALUE_NONE                                                        0x7c89bbd5U
+
 const char *menu_hash_to_str_de(uint32_t hash);
 int menu_hash_get_help_de(uint32_t hash, char *s, size_t len);
 
