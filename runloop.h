@@ -27,6 +27,7 @@
 #include "movie.h"
 #include "cheats.h"
 #include "dynamic.h"
+#include "system.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -149,39 +150,7 @@ typedef struct global
       unsigned windowed_scale;
    } pending;
 
-
-   struct
-   {
-      struct retro_system_info info;
-
-      unsigned rotation;
-      bool shutdown;
-      unsigned performance_level;
-
-      bool block_extract;
-      bool force_nonblock;
-      bool no_content;
-
-      const char *input_desc_btn[MAX_USERS][RARCH_FIRST_META_KEY];
-      char valid_extensions[PATH_MAX_LENGTH];
-      
-      retro_keyboard_event_t key_event;
-
-      struct retro_disk_control_callback disk_control; 
-      struct retro_camera_callback camera_callback;
-      struct retro_location_callback location_callback;
-
-      struct retro_frame_time_callback frame_time;
-      retro_usec_t frame_time_last;
-
-      core_option_manager_t *core_options;
-
-      struct retro_subsystem_info *special;
-      unsigned num_special;
-
-      struct retro_controller_info *ports;
-      unsigned num_ports;
-   } system;
+   rarch_system_info_t system;
 
 #ifdef HAVE_MENU
    struct
