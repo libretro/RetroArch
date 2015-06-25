@@ -29,6 +29,10 @@ bool init_video_pixel_converter(unsigned size);
 
 unsigned video_pixel_get_alignment(unsigned pitch);
 
+bool video_pixel_frame_scale(const void *data,
+      unsigned width, unsigned height,
+      size_t pitch);
+
 #ifdef __cplusplus
 }
 #endif

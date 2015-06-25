@@ -14,9 +14,13 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "video_pixel_converter.h"
+#include <stddef.h>
+
 #include <gfx/scaler/pixconv.h>
+
 #include "../general.h"
+#include "../performance.h"
+#include "video_pixel_converter.h"
 
 void deinit_pixel_converter(void)
 {
@@ -69,4 +73,35 @@ unsigned video_pixel_get_alignment(unsigned pitch)
    if (pitch & 4)
       return 4;
    return 8;
+}
+
+bool video_pixel_frame_scale(const void *data,
+      unsigned width, unsigned height,
+      size_t pitch)
+{
+   driver_t *driver = driver_get_ptr();
+
+   RARCH_PERFORMANCE_INIT(video_frame_conv);
+
+   if (!data)
+      return false;
+   if (video_driver_get_pixel_format() != RETRO_PIXEL_FORMAT_0RGB1555)
+      return false;
+   if (data == RETRO_HW_FRAME_BUFFER_VALID)
+      return false;
+
+   RARCH_PERFORMANCE_START(video_frame_conv);
+
+   driver->scaler.in_width      = width;
+   driver->scaler.in_height     = height;
+   driver->scaler.out_width     = width;
+   driver->scaler.out_height    = height;
+   driver->scaler.in_stride     = pitch;
+   driver->scaler.out_stride    = width * sizeof(uint16_t);
+
+   scaler_ctx_scale(&driver->scaler, driver->scaler_out, data);
+
+   RARCH_PERFORMANCE_STOP(video_frame_conv);
+
+   return true;
 }

@@ -36,42 +36,12 @@
 #include "audio/audio_utils.h"
 #include "retroarch_logger.h"
 #include "record/record_driver.h"
+#include "gfx/video_pixel_converter.h"
 #include "intl/intl.h"
 
 #ifdef HAVE_NETPLAY
 #include "netplay.h"
 #endif
-
-static bool video_frame_scale(const void *data,
-      unsigned width, unsigned height,
-      size_t pitch)
-{
-   driver_t *driver = driver_get_ptr();
-
-   RARCH_PERFORMANCE_INIT(video_frame_conv);
-
-   if (!data)
-      return false;
-   if (video_driver_get_pixel_format() != RETRO_PIXEL_FORMAT_0RGB1555)
-      return false;
-   if (data == RETRO_HW_FRAME_BUFFER_VALID)
-      return false;
-
-   RARCH_PERFORMANCE_START(video_frame_conv);
-
-   driver->scaler.in_width      = width;
-   driver->scaler.in_height     = height;
-   driver->scaler.out_width     = width;
-   driver->scaler.out_height    = height;
-   driver->scaler.in_stride     = pitch;
-   driver->scaler.out_stride    = width * sizeof(uint16_t);
-
-   scaler_ctx_scale(&driver->scaler, driver->scaler_out, data);
-
-   RARCH_PERFORMANCE_STOP(video_frame_conv);
-   
-   return true;
-}
 
 /**
  * video_frame:
@@ -94,7 +64,7 @@ static void video_frame(const void *data, unsigned width,
    if (!driver->video_active)
       return;
 
-   if (video_frame_scale(data, width, height, pitch))
+   if (video_pixel_frame_scale(data, width, height, pitch))
    {
       data                        = driver->scaler_out;
       pitch                       = driver->scaler.out_stride;
