@@ -767,6 +767,7 @@ static void xmb_list_open_new(xmb_handle_t *xmb,
    }
 
    xmb->old_depth = xmb->depth;
+   menu_entries_set_start(0);
 }
 
 static xmb_node_t *xmb_node_allocate_userdata(xmb_handle_t *xmb, unsigned i)
