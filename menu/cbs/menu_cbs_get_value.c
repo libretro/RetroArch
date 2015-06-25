@@ -45,7 +45,8 @@ static void menu_action_setting_disp_set_label_cheat_num_passes(
 
    *w = 19;
    strlcpy(s2, path, len2);
-   snprintf(s, len, "%u", global->cheat->buf_size);
+   if (global && global->cheat)
+      snprintf(s, len, "%u", global->cheat->buf_size);
 }
 
 static void menu_action_setting_disp_set_label_remap_file_load(
