@@ -316,13 +316,23 @@ static void set_special_paths(char **argv, unsigned num_content)
             sizeof(settings->system_directory));
 }
 
+struct retro_system_info *rarch_system_info_get_ptr(void)
+{
+   global_t                *global   = global_get_ptr();
+   if (!global)
+      return NULL;
+   return &global->system.info;
+}
+
 void set_paths_redirect(const char *path)
 {
    global_t                *global   = global_get_ptr();
    settings_t              *settings = config_get_ptr();
-   uint32_t global_library_name_hash = ((global && global->system.info.library_name &&
-            (global->system.info.library_name[0] != '\0'))
-         ? djb2_calculate(global->system.info.library_name) : 0);
+   struct retro_system_info *info    = rarch_system_info_get_ptr();
+
+   uint32_t global_library_name_hash = ((global && info->library_name &&
+            (info->library_name[0] != '\0'))
+         ? djb2_calculate(info->library_name) : 0);
 
    if(
          global_library_name_hash != 0 &&
@@ -335,7 +345,7 @@ void set_paths_redirect(const char *path)
          fill_pathname_dir(
                global->savefile_dir,
                global->savefile_dir,
-               global->system.info.library_name,
+               info->library_name,
                sizeof(global->savefile_dir));
 
          // if path doesn't exist try to create it, if everything fails revert to the original path
@@ -354,7 +364,7 @@ void set_paths_redirect(const char *path)
                sizeof(global->savestate_dir));
          fill_pathname_dir(global->savestate_dir,
                global->savestate_dir,
-               global->system.info.library_name,
+               info->library_name,
                sizeof(global->savestate_dir));
 
          /* If path doesn't exist, try to create it.
@@ -1088,11 +1098,11 @@ void rarch_main_free(void)
 #define DEFAULT_EXT ""
 #endif
 
+
 static void init_system_info(void)
 {
    global_t *global               = global_get_ptr();
-   struct retro_system_info *info = (struct retro_system_info*)
-      global ? &global->system.info : NULL;
+   struct retro_system_info *info = rarch_system_info_get_ptr();
 
    pretro_get_system_info(info);
 
@@ -1125,9 +1135,8 @@ static void init_system_info(void)
  **/
 void rarch_verify_api_version(void)
 {
-
    RARCH_LOG("Version of libretro API: %u\n", pretro_api_version());
-   RARCH_LOG("Compiled against API: %u\n", RETRO_API_VERSION);
+   RARCH_LOG("Compiled against API: %u\n",    RETRO_API_VERSION);
 
    if (pretro_api_version() != RETRO_API_VERSION)
       RARCH_WARN(RETRO_LOG_LIBRETRO_ABI_BREAK);
