@@ -3013,7 +3013,10 @@ static void get_string_representation_bind_device(void * data, char *s,
          strlcpy(s, device_name, len);
       else
          snprintf(s, len,
-               "%s (port #%u)", menu_hash_to_str(MENU_VALUE_NOT_AVAILABLE), map);
+               "%s (%s #%u)",
+               menu_hash_to_str(MENU_VALUE_NOT_AVAILABLE),
+               menu_hash_to_str(MENU_VALUE_PORT),
+               map);
    }
    else
       strlcpy(s, menu_hash_to_str(MENU_VALUE_DISABLED), len);

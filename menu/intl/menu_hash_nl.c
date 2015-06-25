@@ -738,6 +738,8 @@ const char *menu_hash_to_str_nl(uint32_t hash)
          return "TERUG";
       case MENU_VALUE_DISABLED:
          return "Uitgeschakeld";
+      case MENU_VALUE_PORT:
+         return "Poort";
       default:
          break;
    }

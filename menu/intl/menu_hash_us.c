@@ -1301,6 +1301,8 @@ const char *menu_hash_to_str_us(uint32_t hash)
          return "Screen Resolution";
       case MENU_VALUE_DISABLED:
          return "Disabled";
+      case MENU_VALUE_PORT:
+         return "Port";
       default:
          break;
    }
