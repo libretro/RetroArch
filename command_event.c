@@ -368,9 +368,20 @@ static void event_disk_control_set_index(unsigned idx)
 static void event_check_disk_prev(
       const struct retro_disk_control_callback *control)
 {
-   unsigned num_disks    = control->get_num_images();
-   unsigned current      = control->get_image_index();
-   bool disk_prev_enable = num_disks && num_disks != UINT_MAX;
+   unsigned num_disks    = 0;
+   unsigned current      = 0;
+   bool disk_prev_enable = false;
+
+   if (!control)
+      return;
+   if (!control->get_num_images)
+      return;
+   if (!control->get_image_index)
+      return;
+
+   num_disks        = control->get_num_images();
+   current          = control->get_image_index();
+   disk_prev_enable = num_disks && num_disks != UINT_MAX;
 
    if (!disk_prev_enable)
    {
@@ -392,9 +403,20 @@ static void event_check_disk_prev(
 static void event_check_disk_next(
       const struct retro_disk_control_callback *control)
 {
-   unsigned num_disks        = control->get_num_images();
-   unsigned current          = control->get_image_index();
-   bool     disk_next_enable = num_disks && num_disks != UINT_MAX;
+   unsigned num_disks        = 0;
+   unsigned current          = 0;
+   bool     disk_next_enable = false;
+
+   if (!control)
+      return;
+   if (!control->get_num_images)
+      return;
+   if (!control->get_image_index)
+      return;
+
+   num_disks        = control->get_num_images();
+   current          = control->get_image_index();
+   disk_next_enable = num_disks && num_disks != UINT_MAX;
 
    if (!disk_next_enable)
    {
