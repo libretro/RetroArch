@@ -398,6 +398,9 @@ static int menu_cbs_init_bind_left_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_LABEL_CHEAT_NUM_PASSES:
             cbs->action_left = action_left_cheat_num_passes;
             break;
+         case MENU_LABEL_SCREEN_RESOLUTION: 
+            cbs->action_left = action_left_video_resolution;
+            break;
          default:
             return -1;
       }
@@ -421,8 +424,6 @@ static int menu_cbs_init_bind_left_compare_type(menu_file_list_cbs_t *cbs,
    else if (type >= MENU_SETTINGS_INPUT_DESC_BEGIN
          && type <= MENU_SETTINGS_INPUT_DESC_END)
       cbs->action_left = action_left_input_desc;
-   else if (type == MENU_SETTINGS_VIDEO_RESOLUTION)
-      cbs->action_left = action_left_video_resolution;
    else if ((type >= MENU_SETTINGS_CORE_OPTION_START))
       cbs->action_left = core_setting_left;
    else

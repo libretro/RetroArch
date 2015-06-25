@@ -894,6 +894,10 @@ static int menu_cbs_init_bind_get_string_representation_compare_label(
          cbs->action_get_value =
             menu_action_setting_disp_set_label_configurations;
          break;
+      case MENU_LABEL_SCREEN_RESOLUTION:
+         cbs->action_get_value =
+            menu_action_setting_disp_set_label_menu_video_resolution;
+         break;
       case MENU_LABEL_CONTENT_COLLECTION_LIST:
       case MENU_LABEL_LOAD_CONTENT_HISTORY:
       case MENU_LABEL_DETECT_CORE_LIST:
@@ -1044,10 +1048,6 @@ static int menu_cbs_init_bind_get_string_representation_compare_type(
          case MENU_SETTINGS_CORE_DISK_OPTIONS_DISK_INDEX:
             cbs->action_get_value =
                menu_action_setting_disp_set_label_menu_disk_index;
-            break;
-         case MENU_SETTINGS_VIDEO_RESOLUTION:
-            cbs->action_get_value =
-               menu_action_setting_disp_set_label_menu_video_resolution;
             break;
          default:
             cbs->action_get_value = menu_action_setting_disp_set_label;

@@ -355,8 +355,6 @@ static int menu_cbs_init_bind_right_compare_type(menu_file_list_cbs_t *cbs,
    else if (type >= MENU_SETTINGS_INPUT_DESC_BEGIN
          && type <= MENU_SETTINGS_INPUT_DESC_END)
       cbs->action_right = action_right_input_desc;
-   else if (type == MENU_SETTINGS_VIDEO_RESOLUTION)
-      cbs->action_right = action_right_video_resolution;
    else if ((type >= MENU_SETTINGS_CORE_OPTION_START))
       cbs->action_right = core_setting_right;
    else
@@ -469,6 +467,9 @@ static int menu_cbs_init_bind_right_compare_label(menu_file_list_cbs_t *cbs,
             break;
          case MENU_LABEL_CHEAT_NUM_PASSES:
             cbs->action_right = action_right_cheat_num_passes;
+            break;
+         case MENU_LABEL_SCREEN_RESOLUTION:
+            cbs->action_right = action_right_video_resolution;
             break;
          default:
             return -1;
