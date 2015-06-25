@@ -495,7 +495,8 @@ static int action_iterate_main(const char *label, unsigned action)
    static bool did_messagebox = false;
    char msg[PATH_MAX_LENGTH]      = {0};
    enum action_iterate_type iterate_type;
-   size_t selected, *pop_selected = false;
+   size_t selected;
+   size_t *pop_selected      = NULL;
    bool do_messagebox        = false;
    bool do_pop_stack         = false;
    bool do_post_iterate      = false;

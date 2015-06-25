@@ -650,7 +650,7 @@ static void rgui_free(void *data)
 
    if (disp->font.alloc_framebuf)
       free((uint8_t*)disp->font.framebuf);
-   disp->font.alloc_framebuf = NULL;
+   disp->font.alloc_framebuf = false;
 }
 
 static void rgui_set_texture(void)

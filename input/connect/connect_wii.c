@@ -542,7 +542,7 @@ static int wiimote_handshake(struct wiimote_t* wm,
             continue;
          case 4:
             {
-               int id;
+               uint32_t id;
                int32_t *ptr = (int32_t*)data;
 
                if (event != WM_RPT_READ)
