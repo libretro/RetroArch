@@ -26,6 +26,7 @@
 #include "autosave.h"
 #include "dynamic.h"
 #include "intl/intl.h"
+#include "system.h"
 
 struct delta_frame
 {
@@ -815,12 +816,12 @@ static bool init_socket(netplay_t *netplay, const char *server, uint16_t port)
 static uint32_t implementation_magic_value(void)
 {
    size_t i, len;
-   uint32_t res     = 0;
-   const char *lib  = NULL;
-   const char *ver  = PACKAGE_VERSION;
-   unsigned api     = pretro_api_version();
-   global_t *global = global_get_ptr();
-   lib              = global->system.info.library_name;
+   uint32_t res                        = 0;
+   const char *ver                     = PACKAGE_VERSION;
+   unsigned api                        = pretro_api_version();
+   global_t *global                    = global_get_ptr();
+   struct retro_system_info *info      = rarch_system_info_get_ptr();
+   const char *lib                     = info ? info->library_name : NULL;
 
    res |= api;
 
@@ -828,7 +829,7 @@ static uint32_t implementation_magic_value(void)
    for (i = 0; i < len; i++)
       res ^= lib[i] << (i & 0xf);
 
-   lib = global->system.info.library_version;
+   lib = info->library_version;
    len = strlen(lib);
 
    for (i = 0; i < len; i++)

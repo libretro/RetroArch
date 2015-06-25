@@ -50,6 +50,7 @@
 #include "runloop_data.h"
 #include "performance.h"
 #include "cheats.h"
+#include "system.h"
 
 #include "git_version.h"
 #include "intl/intl.h"

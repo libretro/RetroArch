@@ -363,8 +363,6 @@ void rarch_main_state_free(void);
 
 void rarch_main_global_free(void);
 
-struct retro_system_info *rarch_system_info_get_ptr(void);
-
 #ifdef __cplusplus
 }
 #endif
