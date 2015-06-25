@@ -60,6 +60,44 @@ const char *menu_hash_to_str(uint32_t hash)
    return menu_hash_to_str_us(hash);
 }
 
+int menu_hash_get_help(uint32_t hash, char *s, size_t len)
+{
+   int ret = -1;
+   settings_t *settings = config_get_ptr();
+
+   if (!settings)
+      return -1;
+
+   switch (settings->user_language)
+   {
+      case RETRO_LANGUAGE_FRENCH:
+         ret = menu_hash_get_help_fr(hash, s, len);
+         break;
+      case RETRO_LANGUAGE_GERMAN:
+         ret = menu_hash_get_help_de(hash, s, len);
+         break;
+      case RETRO_LANGUAGE_SPANISH:
+         ret = menu_hash_get_help_es(hash, s, len);
+         break;
+      case RETRO_LANGUAGE_ITALIAN:
+         ret = menu_hash_get_help_it(hash, s, len);
+         break;
+      case RETRO_LANGUAGE_PORTUGUESE:
+         ret = menu_hash_get_help_pt(hash, s, len);
+         break;
+      case RETRO_LANGUAGE_DUTCH:
+         ret = menu_hash_get_help_nl(hash, s, len);
+         break;
+      default:
+         break;
+   }
+
+   if (ret == 0)
+      return ret;
+
+   return menu_hash_get_help_us(hash, s, len);
+}
+
 uint32_t menu_hash_calculate(const char *s)
 {
    return djb2_calculate(s);

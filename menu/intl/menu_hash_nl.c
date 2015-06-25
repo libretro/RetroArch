@@ -746,3 +746,14 @@ const char *menu_hash_to_str_nl(uint32_t hash)
 
    return "null";
 }
+
+int menu_hash_get_help_nl(uint32_t hash, char *s, size_t len)
+{
+   switch (hash)
+   {
+      default:
+         return -1;
+   }
+
+   return 0;
+}
