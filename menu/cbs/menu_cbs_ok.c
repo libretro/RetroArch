@@ -784,7 +784,6 @@ static int action_ok_remap_file_save_core(const char *path,
 {
    char directory[PATH_MAX_LENGTH]   = {0};
    char file[PATH_MAX_LENGTH]        = {0};
-   global_t *global                  = global_get_ptr();
    settings_t *settings              = config_get_ptr();
    rarch_system_info_t *info         = rarch_system_info_get_ptr();
    const char *core_name             = info ? info->info.library_name : NULL;

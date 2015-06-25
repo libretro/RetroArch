@@ -209,7 +209,6 @@ static void event_init_movie(void)
 static void event_disk_control_set_eject(bool new_state, bool print_log)
 {
    char msg[PATH_MAX_LENGTH] = {0};
-   global_t *global          = global_get_ptr();
    bool error                = false;
    rarch_system_info_t *info = rarch_system_info_get_ptr();
    const struct retro_disk_control_callback *control = 
@@ -320,7 +319,6 @@ static void event_disk_control_set_index(unsigned idx)
 {
    unsigned num_disks;
    char msg[PATH_MAX_LENGTH] = {0};
-   global_t *global          = global_get_ptr();
    rarch_system_info_t                      *info    = rarch_system_info_get_ptr();
    const struct retro_disk_control_callback *control = 
       info ? (const struct retro_disk_control_callback*)&info->disk_control : NULL;
@@ -441,14 +439,13 @@ static void event_init_controllers(void)
 {
    unsigned i;
    settings_t *settings = config_get_ptr();
-   global_t   *global   = global_get_ptr();
+   rarch_system_info_t *info = rarch_system_info_get_ptr();
 
    for (i = 0; i < MAX_USERS; i++)
    {
       const char *ident = NULL;
       const struct retro_controller_description *desc = NULL;
       unsigned device = settings->input.libretro_device[i];
-      rarch_system_info_t *info = rarch_system_info_get_ptr();
 
       if (i < info->num_ports)
          desc = libretro_find_controller_description(

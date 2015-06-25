@@ -1774,7 +1774,6 @@ static int menu_displaylist_parse_options_remappings(menu_displaylist_info_t *in
 {
    unsigned p, retro_id;
    settings_t        *settings = config_get_ptr();
-   global_t            *global = global_get_ptr();
    rarch_system_info_t *system = rarch_system_info_get_ptr();
 
    menu_list_push(info->list,

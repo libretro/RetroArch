@@ -819,7 +819,6 @@ static uint32_t implementation_magic_value(void)
    uint32_t res                        = 0;
    const char *ver                     = PACKAGE_VERSION;
    unsigned api                        = pretro_api_version();
-   global_t *global                    = global_get_ptr();
    rarch_system_info_t *info           = rarch_system_info_get_ptr();
    const char *lib                     = info ? info->info.library_name : NULL;
 
