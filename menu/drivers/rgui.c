@@ -55,6 +55,8 @@
 typedef struct {
    bool force_redraw;
    char msgbox[4096];
+   unsigned last_width;
+   unsigned last_height;
 } rgui_t;
 
 static INLINE uint16_t argb32_to_rgba4444(uint32_t col)
@@ -126,10 +128,10 @@ static void fill_rect(menu_framebuf_t *frame_buf,
       uint16_t (*col)(unsigned x, unsigned y))
 {
    unsigned i, j;
-    
+
    if (!frame_buf->data || !col)
       return;
-    
+
    for (j = y; j < y + height; j++)
       for (i = x; i < x + width; i++)
          frame_buf->data[j * (frame_buf->pitch >> 1) + i] = col(i, j);
@@ -404,6 +406,16 @@ static void rgui_render(void)
          return;
    }
 
+   // if the framebuffer changed size, recache the background
+   if (rgui->last_width != frame_buf->width || rgui->last_height != frame_buf->height)
+   {
+      fill_rect(frame_buf, 0, frame_buf->height,
+            frame_buf->width, 4, gray_filler);
+      rgui->last_width = frame_buf->width;
+      rgui->last_height = frame_buf->height;
+   }
+
+
    /* ensures the framebuffer will be rendered on the screen */
    menu_display_fb_set_dirty();
    anim->is_active           = false;
@@ -423,10 +435,10 @@ static void rgui_render(void)
             menu->scroll_y = 0;
       }
    }
-   
+
    if (settings->menu.mouse.enable)
    {
-      if (menu_input->mouse.scrolldown 
+      if (menu_input->mouse.scrolldown
             && (menu_entries_get_start() < menu_entries_get_end() - RGUI_TERM_HEIGHT))
          menu_entries_set_start(menu_entries_get_start() + 1);
 
@@ -608,6 +620,9 @@ static void *rgui_init(void)
 
    fill_rect(frame_buf, 0, frame_buf->height,
          frame_buf->width, 4, gray_filler);
+
+   rgui->last_width = frame_buf->width;
+   rgui->last_height = frame_buf->height;
 
    return menu;
 
