@@ -515,8 +515,6 @@ void init_libretro_sym(enum rarch_core_type type)
 void uninit_libretro_sym(void)
 {
    driver_t            *driver = driver_get_ptr();
-   global_t            *global = global_get_ptr();
-   rarch_system_info_t *system = rarch_system_info_get_ptr();
 
 #ifdef HAVE_DYNAMIC
    if (lib_handle)
@@ -524,17 +522,8 @@ void uninit_libretro_sym(void)
    lib_handle = NULL;
 #endif
 
-   if (system->core_options)
-   {
-      core_option_flush(system->core_options);
-      core_option_free(system->core_options);
-   }
+   rarch_system_info_free();
 
-   /* No longer valid. */
-   free(system->special);
-   free(system->ports);
-
-   rarch_system_info_clear();
    driver->camera_active = false;
    driver->location_active = false;
 

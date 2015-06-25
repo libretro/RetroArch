@@ -317,16 +317,37 @@ static void set_special_paths(char **argv, unsigned num_content)
             sizeof(settings->system_directory));
 }
 
-rarch_system_info_t g_system;
+static rarch_system_info_t *g_system;
+
+static rarch_system_info_t *rarch_system_info_new(void)
+{
+   return (rarch_system_info_t*)calloc(1, sizeof(rarch_system_info_t)); 
+}
 
 rarch_system_info_t *rarch_system_info_get_ptr(void)
 {
-   return &g_system;
+   if (!g_system)
+      g_system = rarch_system_info_new();
+   return g_system;
 }
 
-void rarch_system_info_clear(void)
+void rarch_system_info_free(void)
 {
-   memset(&g_system, 0, sizeof(g_system));
+   if (!g_system)
+      return;
+
+   if (g_system->core_options)
+   {
+      core_option_flush(g_system->core_options);
+      core_option_free(g_system->core_options);
+   }
+
+   /* No longer valid. */
+   free(g_system->special);
+   free(g_system->ports);
+
+   free(g_system);
+   g_system = NULL;
 }
 
 void set_paths_redirect(const char *path)
