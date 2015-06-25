@@ -519,7 +519,7 @@ bool init_content_file(void)
    struct string_list *content                = NULL;
    const struct retro_subsystem_info *special = NULL;
    settings_t *settings                       = config_get_ptr();
-   rarch_system_info_t *info                  = rarch_system_info_get_ptr();
+   rarch_system_info_t *system                = rarch_system_info_get_ptr();
    global_t   *global                         = global_get_ptr();
 
    global->temporary_content                  = string_list_new();
@@ -529,8 +529,8 @@ bool init_content_file(void)
 
    if (*global->subsystem)
    {
-      special = libretro_find_subsystem_info(global->system.special,
-            global->system.num_special, global->subsystem);
+      special = libretro_find_subsystem_info(system->special,
+            system->num_special, global->subsystem);
 
       if (!special)
       {
@@ -583,9 +583,9 @@ bool init_content_file(void)
    }
    else
    {
-      attr.i  = info->info.block_extract;
-      attr.i |= info->info.need_fullpath << 1;
-      attr.i |= (!global->system.no_content) << 2;
+      attr.i  = system->info.block_extract;
+      attr.i |= system->info.need_fullpath << 1;
+      attr.i |= (!system->no_content) << 2;
       string_list_append(content,
             (global->libretro_no_content && settings->core.set_supports_no_game_enable) ? "" : global->fullpath, attr);
    }
@@ -603,7 +603,7 @@ bool init_content_file(void)
 
       ext       = path_get_extension(content->elems[i].data);
       valid_ext = special ? special->roms[i].valid_extensions :
-         info->info.valid_extensions;
+         system->info.valid_extensions;
 
       if (ext && !strcasecmp(ext, "zip"))
       {
