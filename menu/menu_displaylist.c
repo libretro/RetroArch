@@ -214,12 +214,14 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
       strlcat(tmp, ": ", sizeof(tmp));
       menu_list_push(info->list, tmp, "",
             MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+
       /* FIXME: This looks hacky and probably needs to be improved for good translation support. */
       for (i = 0; i < core_info->firmware_count; i++)
       {
          if (core_info->firmware[i].desc)
          {
-            snprintf(tmp, sizeof(tmp), "	Name: %s",
+            snprintf(tmp, sizeof(tmp), "	%s: %s",
+                  menu_hash_to_str(MENU_LABEL_VALUE_RDB_ENTRY_NAME),
                   core_info->firmware[i].desc ?
                   core_info->firmware[i].desc : "");
             menu_list_push(info->list, tmp, "",
