@@ -273,7 +273,10 @@ const char *core_option_get_desc(core_option_manager_t *opt, size_t idx)
  **/
 const char *core_option_get_val(core_option_manager_t *opt, size_t idx)
 {
-   struct core_option *option = (struct core_option*)&opt->opts[idx];
+   struct core_option *option = NULL;
+   if (!opt)
+      return NULL;
+   option = (struct core_option*)&opt->opts[idx];
    if (!option)
       return NULL;
    return option->vals->elems[option->index].data;

@@ -62,8 +62,9 @@ static void menu_action_setting_disp_set_label_remap_file_load(
 
    *w = 19;
    strlcpy(s2, path, len2);
-   fill_pathname_base(s, settings->input.remapping_path,
-         len);
+   if (settings)
+      fill_pathname_base(s, settings->input.remapping_path,
+            len);
 }
 
 static void menu_action_setting_disp_set_label_configurations(
@@ -79,7 +80,7 @@ static void menu_action_setting_disp_set_label_configurations(
 
    *w = 19;
    strlcpy(s2, path, len2);
-   if (*global->config_path)
+   if (global && *global->config_path)
       fill_pathname_base(s, global->config_path,
             len);
    else
@@ -108,7 +109,7 @@ static void menu_action_setting_disp_set_label_shader_filter_pass(
    strlcpy(s2, path, len2);
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
-   if (!menu->shader)
+   if (!menu || !menu->shader)
       return;
 
   pass = (type - MENU_SETTINGS_SHADER_PASS_FILTER_0);
@@ -147,7 +148,7 @@ static void menu_action_setting_disp_set_label_filter(
    strlcpy(s2, path, len2);
    strlcpy(s, menu_hash_to_str(MENU_VALUE_NOT_AVAILABLE), len);
 
-   if (*settings->video.softfilter_plugin)
+   if (settings && *settings->video.softfilter_plugin)
       fill_short_pathname_representation(s,
             settings->video.softfilter_plugin, len);
 }
@@ -171,7 +172,8 @@ static void menu_action_setting_disp_set_label_shader_num_passes(
    *w = 19;
    strlcpy(s2, path, len2);
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
-   snprintf(s, len, "%u", menu->shader->passes);
+   if (menu && menu->shader)
+      snprintf(s, len, "%u", menu->shader->passes);
 #endif
 }
 
@@ -198,7 +200,7 @@ static void menu_action_setting_disp_set_label_shader_pass(
    strlcpy(s, menu_hash_to_str(MENU_VALUE_NOT_AVAILABLE), len);
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
-   if (!menu || !menu->shader)
+   if (!menu->shader)
       return;
    if (*menu->shader->pass[pass].source.path)
       fill_pathname_base(s,
@@ -221,6 +223,9 @@ static void menu_action_setting_disp_set_label_shader_default_filter(
    *s = '\0';
    *w = 19;
 
+   if (!settings)
+      return;
+
    if (settings->video.smooth)
       strlcpy(s, menu_hash_to_str(MENU_VALUE_LINEAR), len); 
    else
@@ -242,9 +247,7 @@ static void menu_action_setting_disp_set_label_shader_parameter(
 #endif
    driver_t *driver = driver_get_ptr();
 
-   if (!driver->video_poke)
-      return;
-   if (!driver->video_data)
+   if (!driver->video_poke || !driver->video_data)
       return;
 
    *s = '\0';
@@ -372,7 +375,12 @@ static void menu_action_setting_disp_set_label_input_desc(
       (RARCH_FIRST_CUSTOM_BIND + 4);
    unsigned inp_desc_button_index_offset = inp_desc_index_offset -
       (inp_desc_user * (RARCH_FIRST_CUSTOM_BIND + 4));
-   unsigned remap_id = settings->input.remap_ids
+   unsigned remap_id = 0;
+
+   if (!settings)
+      return;
+   
+   remap_id = settings->input.remap_ids
       [inp_desc_user][inp_desc_button_index_offset];
 
    if (inp_desc_button_index_offset < RARCH_FIRST_CUSTOM_BIND)
@@ -397,6 +405,9 @@ static void menu_action_setting_disp_set_label_cheat(
 {
    global_t *global     = global_get_ptr();
    unsigned cheat_index = type - MENU_SETTINGS_CHEAT_BEGIN;
+
+   if (!global)
+      return;
 
    if (cheat_index < global->cheat->buf_size)
       snprintf(s, len, "%s : (%s)",
@@ -453,7 +464,8 @@ static void menu_action_setting_disp_set_label_perf_counters(
    menu_action_setting_disp_set_label_perf_counters_common(
          counters, offset, s, len);
 
-   anim->label.is_updated = true;
+   if (anim)
+      anim->label.is_updated = true;
 }
 
 static void menu_action_setting_disp_set_label_libretro_perf_counters(
@@ -477,7 +489,8 @@ static void menu_action_setting_disp_set_label_libretro_perf_counters(
    menu_action_setting_disp_set_label_perf_counters_common(
          counters, offset, s, len);
 
-   anim->label.is_updated = true;
+   if (anim)
+      anim->label.is_updated = true;
 }
 
 static void menu_action_setting_disp_set_label_menu_more(
@@ -504,6 +517,9 @@ static void menu_action_setting_disp_set_label_state(
       char *s2, size_t len2)
 {
    settings_t *settings        = config_get_ptr();
+
+   if (!settings)
+      return;
 
    strlcpy(s2, path, len2);
    *w = 16;
@@ -838,11 +854,16 @@ static void menu_action_setting_disp_set_label(file_list_t* list,
    }
 
    if (type >= MENU_SETTINGS_CORE_OPTION_START)
-      strlcpy(
-            s,
-            core_option_get_val(system->core_options,
-               type - MENU_SETTINGS_CORE_OPTION_START),
-            len);
+   {
+      const char *core_opt = NULL;
+      if (!system)
+         return;
+
+      core_opt = core_option_get_val(system->core_options,
+               type - MENU_SETTINGS_CORE_OPTION_START);
+
+      strlcpy(s, core_opt ? core_opt : "", len);
+   }
    else
       setting_get_label(list, s,
             len, w, type, label, entry_label, i);
