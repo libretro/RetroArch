@@ -4167,7 +4167,7 @@ static bool setting_append_list_input_options(
          settings->input.max_users,
          menu_hash_to_str(MENU_LABEL_INPUT_MAX_USERS),
          menu_hash_to_str(MENU_LABEL_VALUE_INPUT_MAX_USERS),
-         MAX_USERS,
+         input_max_users,
          group_info.name,
          subgroup_info.name,
          parent_group,
