@@ -646,9 +646,9 @@ static int setting_action_start_libretro_device_type(void *data)
 {
    unsigned current_device, i, devices[128], types = 0, port = 0;
    const struct retro_controller_info *desc = NULL;
-   rarch_setting_t *setting  = (rarch_setting_t*)data;
-   settings_t      *settings = config_get_ptr();
-   global_t        *global   = global_get_ptr();
+   rarch_setting_t   *setting  = (rarch_setting_t*)data;
+   settings_t        *settings = config_get_ptr();
+   rarch_system_info_t *system = rarch_system_info_get_ptr();
 
    if (setting_generic_action_start_default(setting) != 0)
       return -1;
@@ -660,11 +660,11 @@ static int setting_action_start_libretro_device_type(void *data)
 
    /* Only push RETRO_DEVICE_ANALOG as default if we use an 
     * older core which doesn't use SET_CONTROLLER_INFO. */
-   if (!global->system.num_ports)
+   if (!system->num_ports)
       devices[types++] = RETRO_DEVICE_ANALOG;
 
-   desc = port < global->system.num_ports ?
-      &global->system.ports[port] : NULL;
+   desc = port < system->num_ports ?
+      &system->ports[port] : NULL;
 
    if (desc)
    {
@@ -786,7 +786,7 @@ static int setting_action_left_libretro_device_type(
    const struct retro_controller_info *desc = NULL;
    rarch_setting_t *setting  = (rarch_setting_t*)data;
    settings_t      *settings = config_get_ptr();
-   global_t          *global = global_get_ptr();
+   rarch_system_info_t *system = rarch_system_info_get_ptr();
 
    if (!setting)
       return -1;
@@ -798,11 +798,11 @@ static int setting_action_left_libretro_device_type(
 
    /* Only push RETRO_DEVICE_ANALOG as default if we use an 
     * older core which doesn't use SET_CONTROLLER_INFO. */
-   if (!global->system.num_ports)
+   if (!system->num_ports)
       devices[types++] = RETRO_DEVICE_ANALOG;
 
-   if (port < global->system.num_ports)
-      desc = &global->system.ports[port];
+   if (port < system->num_ports)
+      desc = &system->ports[port];
 
    if (desc)
    {
@@ -844,7 +844,7 @@ static int setting_action_right_libretro_device_type(
    const struct retro_controller_info *desc = NULL;
    rarch_setting_t *setting  = (rarch_setting_t*)data;
    settings_t      *settings = config_get_ptr();
-   global_t          *global = global_get_ptr();
+   rarch_system_info_t *system = rarch_system_info_get_ptr();
 
    if (!setting)
       return -1;
@@ -856,11 +856,11 @@ static int setting_action_right_libretro_device_type(
 
    /* Only push RETRO_DEVICE_ANALOG as default if we use an 
     * older core which doesn't use SET_CONTROLLER_INFO. */
-   if (!global->system.num_ports)
+   if (!system->num_ports)
       devices[types++] = RETRO_DEVICE_ANALOG;
 
-   if (port < global->system.num_ports)
-      desc = &global->system.ports[port];
+   if (port < system->num_ports)
+      desc = &system->ports[port];
 
    if (desc)
    {
@@ -1391,14 +1391,14 @@ static void setting_get_string_representation_uint_libretro_device(void *data,
    const char *name = NULL;
    rarch_setting_t *setting  = (rarch_setting_t*)data;
    settings_t      *settings = config_get_ptr();
-   global_t        *global   = global_get_ptr();
+   rarch_system_info_t *system = rarch_system_info_get_ptr();
 
    if (!setting)
       return;
 
-   if (setting->index_offset < global->system.num_ports)
+   if (setting->index_offset < system->num_ports)
       desc = libretro_find_controller_description(
-            &global->system.ports[setting->index_offset],
+            &system->ports[setting->index_offset],
             settings->input.libretro_device
             [setting->index_offset]);
 
@@ -2154,6 +2154,7 @@ static void general_write_handler(void *data)
    driver_t *driver         = driver_get_ptr();
    global_t *global         = global_get_ptr();
    menu_list_t *menu_list   = menu_list_get_ptr();
+   rarch_system_info_t *system = rarch_system_info_get_ptr();
    uint32_t hash            = setting ? menu_hash_calculate(setting->name) : 0;
 
    if (!setting)
@@ -2244,7 +2245,7 @@ static void general_write_handler(void *data)
       case MENU_LABEL_VIDEO_ROTATION:
          video_driver_set_rotation(
                (*setting->value.unsigned_integer +
-                global->system.rotation) % 4);
+                system->rotation) % 4);
          break;
       case MENU_LABEL_AUDIO_VOLUME:
          audio_driver_set_volume_gain(db_to_gain(*setting->value.fraction));
@@ -5892,6 +5893,7 @@ static bool setting_append_list_input_player_options(
    global_t   *global   = global_get_ptr();
    const struct retro_keybind* const defaults =
       (user == 0) ? retro_keybinds_1 : retro_keybinds_rest;
+   rarch_system_info_t *system = rarch_system_info_get_ptr();
 
    snprintf(buffer[user],    sizeof(buffer[user]),
          "%s %u", menu_hash_to_str(MENU_VALUE_USER), user + 1);
@@ -5930,9 +5932,10 @@ static bool setting_append_list_input_player_options(
             && (i != RARCH_TURBO_ENABLE)
          )
       {
-         if (global->system.input_desc_btn[user][i])
+         if (system->input_desc_btn[user][i])
             strlcat(label, 
-                  global->system.input_desc_btn[user][i], sizeof(label));
+                  system->input_desc_btn[user][i],
+                  sizeof(label));
          else
          {
             strlcat(label, menu_hash_to_str(MENU_VALUE_NOT_AVAILABLE),
