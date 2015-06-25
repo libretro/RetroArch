@@ -14,14 +14,14 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stddef.h>
+#include <string.h>
+#include <ctype.h>
+
 #include "keyboard_line.h"
 #include "../general.h"
 #include "../driver.h"
 #include "../retroarch.h"
-#include <stddef.h>
-#include <string.h>
-#include <stddef.h>
-#include <ctype.h>
 
 struct input_keyboard_line
 {
@@ -230,13 +230,13 @@ void input_keyboard_wait_keys_cancel(void)
  * @mod                      : TODO/FIXME: ???
  *
  * Keyboard event utils. Called by drivers when keyboard events are fired.
- * This interfaces with the global driver struct and libretro callbacks.
+ * This interfaces with the global system driver struct and libretro callbacks.
  **/
 void input_keyboard_event(bool down, unsigned code,
       uint32_t character, uint16_t mod, unsigned device)
 {
    static bool deferred_wait_keys;
-   global_t *global = global_get_ptr();
+   rarch_system_info_t *system = rarch_system_info_get_ptr();
 
    if (deferred_wait_keys)
    {
@@ -280,7 +280,7 @@ void input_keyboard_event(bool down, unsigned code,
       /* Unblock all hotkeys. */
       input_driver_keyboard_mapping_set_block(false);
    }
-   else if (global->system.key_event)
-      global->system.key_event(down, code, character, mod);
+   else if (system->key_event)
+      system->key_event(down, code, character, mod);
 }
 
