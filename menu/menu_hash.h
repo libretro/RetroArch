@@ -899,6 +899,8 @@ extern "C" {
 #define MENU_LABEL_VALUE_NO                                                    0x521b0c11U
 
 #define MENU_VALUE_BACK                                                        0x7c825df6U
+#define MENU_VALUE_DISABLED                                                    0xe326e01dU
+
 
 const char *menu_hash_to_str_de(uint32_t hash);
 

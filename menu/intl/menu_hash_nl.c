@@ -736,6 +736,8 @@ const char *menu_hash_to_str_nl(uint32_t hash)
          return "Scherm Resolutie";
       case MENU_VALUE_BACK:
          return "TERUG";
+      case MENU_VALUE_DISABLED:
+         return "Uitgeschakeld";
       default:
          break;
    }

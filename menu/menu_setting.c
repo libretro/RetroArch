@@ -2988,7 +2988,7 @@ int setting_get_description(const char *label, char *s,
       return 0;
 
    snprintf(s, len,
-         "-- No info on this item is available. --\n");
+         "-- No information is available. --\n");
 
    return 0;
 }
@@ -3016,7 +3016,7 @@ static void get_string_representation_bind_device(void * data, char *s,
                "%s (port #%u)", menu_hash_to_str(MENU_VALUE_NOT_AVAILABLE), map);
    }
    else
-      strlcpy(s, "Disabled", len);
+      strlcpy(s, menu_hash_to_str(MENU_VALUE_DISABLED), len);
 }
 
 
