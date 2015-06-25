@@ -1083,9 +1083,6 @@ bool event_command(enum event_command cmd)
             *global->fullpath = '\0';
 
             rarch_main_set_state(RARCH_ACTION_STATE_LOAD_CONTENT);
-
-            if (system)
-               system->shutdown = false;
          }
          break;
       case EVENT_CMD_UNLOAD_CORE:
