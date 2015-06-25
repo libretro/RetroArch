@@ -28,19 +28,21 @@ static struct rmsgpack_dom_value *dom_reader_state_pop(
 static void puts_i64(int64_t dec)
 {
    unsigned i;
+   signed   j;
    signed char digits[19 + 1] = {0}; /* max i64:  9,223,372,036,854,775,807 */
    uint64_t decimal           = (dec < 0) ? (uint64_t)-dec : (uint64_t)+dec;
 
    digits[19] = '\0';
 
-   for (i = sizeof(digits) - 2; i >= 0; i--)
+   for (j = sizeof(digits) - 2; j >= 0; j--)
    {
-      digits[i] = decimal % 10;
+      digits[j] = decimal % 10;
       decimal /= 10;
    }
 
    for (i = 0; i < sizeof(digits) - 1; i++)
       digits[i] += '0';
+
    for (i = 0; i < sizeof(digits) - 2; i++)
       if (digits[i] != '0')
          break; /* Don't print leading zeros to the console. */
@@ -52,12 +54,13 @@ static void puts_i64(int64_t dec)
 
 static void puts_u64(uint64_t decimal)
 {
+   signed   j;
    unsigned i;
    char digits[20 + 1] = {0}; /* max u64:  18,446,744,073,709,551,616 */
 
-   for (i = sizeof(digits) - 2; i >= 0; i--)
+   for (j = sizeof(digits) - 2; j >= 0; j--)
    {
-      digits[i] = decimal % 10;
+      digits[j] = decimal % 10;
       decimal /= 10;
    }
 
