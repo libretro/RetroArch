@@ -343,8 +343,12 @@ void rarch_system_info_free(void)
    }
 
    /* No longer valid. */
-   free(g_system->special);
-   free(g_system->ports);
+   if (g_system->special)
+      free(g_system->special);
+   g_system->special = NULL;
+   if (g_system->ports)
+      free(g_system->ports);
+   g_system->ports   = NULL;
 
    free(g_system);
    g_system = NULL;

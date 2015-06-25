@@ -496,11 +496,7 @@ void init_libretro_sym(enum rarch_core_type type)
     * Every OS that this program supports should pass this. */
    rarch_assert(sizeof(void*) == sizeof(void (*)(void)));
 
-
    load_symbols(type);
-
-   //move this to init_core, will need to be tested
-   //pretro_set_environment(rarch_environment_cb);
 }
 
 /**
@@ -524,7 +520,7 @@ void uninit_libretro_sym(void)
 
    rarch_system_info_free();
 
-   driver->camera_active = false;
+   driver->camera_active   = false;
    driver->location_active = false;
 
    /* Performance counters no longer valid. */
