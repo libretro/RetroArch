@@ -20,6 +20,7 @@
 #include "../driver.h"
 #include "../general.h"
 #include "../runloop.h"
+#include "../system.h"
 
 static const location_driver_t *location_drivers[] = {
 #ifdef ANDROID
@@ -223,8 +224,8 @@ bool driver_location_get_position(double *lat, double *lon,
 
 void init_location(void)
 {
-   driver_t *driver = driver_get_ptr();
-   global_t *global = global_get_ptr();
+   driver_t            *driver = driver_get_ptr();
+   rarch_system_info_t *system = rarch_system_info_get_ptr();
 
    /* Resource leaks will follow if location interface is initialized twice. */
    if (driver->location_data)
@@ -240,19 +241,19 @@ void init_location(void)
       driver->location_active = false;
    }
 
-   if (global->system.location_callback.initialized)
-      global->system.location_callback.initialized();
+   if (system->location_callback.initialized)
+      system->location_callback.initialized();
 }
 
 void uninit_location(void)
 {
-   driver_t *driver = driver_get_ptr();
-   global_t *global = global_get_ptr();
+   driver_t            *driver = driver_get_ptr();
+   rarch_system_info_t *system = rarch_system_info_get_ptr();
 
    if (driver->location_data && driver->location)
    {
-      if (global->system.location_callback.deinitialized)
-         global->system.location_callback.deinitialized();
+      if (system->location_callback.deinitialized)
+         system->location_callback.deinitialized();
 
       if (driver->location->free)
          driver->location->free(driver->location_data);
