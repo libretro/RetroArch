@@ -17,7 +17,10 @@
 #include <stdint.h>
 #include <string.h>
 
+#include <compat/strl.h>
+
 #include "../menu_hash.h"
+#include "../../configuration.h"
 
  /* IMPORTANT:
   * For non-english characters to work without proper unicode support,
@@ -467,8 +470,6 @@ const char *menu_hash_to_str_de(uint32_t hash)
          return "Datenbankmanager";
       case MENU_LABEL_VALUE_CURSOR_MANAGER:
          return "Cursormanager";
-      case MENU_LABEL_VALUE_RECORDING_SETTINGS:
-         return "Aufnahmeeinstellungen";
       case MENU_VALUE_MAIN_MENU:
          return "Main Menu"; // Don't change. Breaks everything. (Would be: "Hauptmenü")
       case MENU_LABEL_VALUE_SETTINGS:
@@ -741,6 +742,74 @@ const char *menu_hash_to_str_de(uint32_t hash)
          return "Ja";
       case MENU_LABEL_VALUE_NO:
          return "Nein";
+      case MENU_VALUE_BACK:
+         return "ZURÜCK";
+      case MENU_LABEL_VALUE_SCREEN_RESOLUTION:
+         return "Bildschirmauflösung";
+      case MENU_VALUE_DISABLED:
+         return "Deaktiviert";
+      case MENU_VALUE_PORT:
+         return "Port";
+      case MENU_VALUE_NONE:
+         return "Keins";
+      case MENU_LABEL_VALUE_RDB_ENTRY_DEVELOPER:
+         return "Entwickler";
+      case MENU_LABEL_VALUE_RDB_ENTRY_PUBLISHER:
+         return "Publisher";
+      case MENU_LABEL_VALUE_RDB_ENTRY_DESCRIPTION:
+         return "Beschreibung";
+      case MENU_LABEL_VALUE_RDB_ENTRY_NAME:
+         return "Name";
+      case MENU_LABEL_VALUE_RDB_ENTRY_ORIGIN:
+         return "Herkunft";
+      case MENU_LABEL_VALUE_RDB_ENTRY_FRANCHISE:
+         return "Franchise";
+      case MENU_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH:
+         return "Veröffentlichungsmonat";
+      case MENU_LABEL_VALUE_RDB_ENTRY_RELEASE_YEAR:
+         return "Veröffentlichungsjahr";
+      case MENU_VALUE_TRUE:
+         return "True";
+      case MENU_VALUE_FALSE:
+         return "False";
+      case MENU_VALUE_MISSING:
+         return "Fehlt";
+      case MENU_VALUE_PRESENT:
+         return "Vorhanden";
+      case MENU_VALUE_OPTIONAL:
+         return "Optional";
+      case MENU_VALUE_REQUIRED:
+         return "Notwendig";
+      case MENU_VALUE_STATUS:
+         return "Status";
+      case MENU_LABEL_VALUE_AUDIO_SETTINGS:
+         return "Audio-Einstellungen";
+      case MENU_LABEL_VALUE_INPUT_SETTINGS:
+         return "Eingabe-Einstellungen";
+      case MENU_LABEL_VALUE_ONSCREEN_DISPLAY_SETTINGS:
+         return "OSD-Einstellungen";
+      case MENU_LABEL_VALUE_OVERLAY_SETTINGS:
+         return "Overlay-Einstellungen";
+      case MENU_LABEL_VALUE_MENU_SETTINGS:
+         return "Menü-Einstellungen";
+      case MENU_LABEL_VALUE_MEDIA_PLAYER_SETTINGS:
+         return "Media-Player-Einstellungen";
+      case MENU_LABEL_VALUE_UI_SETTINGS:
+         return "Benutzeroberflächen-Einstellungen";
+      case MENU_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS:
+         return "Menü-Dateibrowser-Einstellungen";
+      case MENU_LABEL_VALUE_CORE_UPDATER_SETTINGS:
+         return "Core-Updater-Einstellungen";
+      case MENU_LABEL_VALUE_NETWORK_SETTINGS:
+         return "Netzwerk-Einstellungen";
+      case MENU_LABEL_VALUE_PLAYLIST_SETTINGS:
+         return "Wiedergabelisten-Einstellungen";
+      case MENU_LABEL_VALUE_USER_SETTINGS:
+         return "Benutzer-Einstellungen";
+      case MENU_LABEL_VALUE_DIRECTORY_SETTINGS:
+         return "Verzeichnis-Einstellungen";
+      case MENU_LABEL_VALUE_RECORDING_SETTINGS:
+         return "Aufnahme-Einstellungen";
       default:
          break;
    }
