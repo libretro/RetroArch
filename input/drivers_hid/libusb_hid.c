@@ -47,7 +47,7 @@ struct libusb_adapter
    uint8_t name[255];
    uint8_t data[2048];
 
-   uint32_t slot;
+   int slot;
 
    sthread_t *thread;
    slock_t *send_control_lock;
@@ -131,7 +131,8 @@ static void libusb_hid_device_add_autodetect(unsigned idx,
 static void libusb_get_description(struct libusb_device *device,
       struct libusb_adapter *adapter)
 {
-   unsigned i, j, k;
+   int j;
+   unsigned i, k;
    struct libusb_config_descriptor *config;
 
    libusb_get_config_descriptor(device, 0, &config);
@@ -482,8 +483,8 @@ static void poll_thread(void *data)
 
 static void *libusb_hid_init(void)
 {
-   unsigned i;
-   int ret, count;
+   unsigned i, count;
+   int ret;
    struct libusb_device **devices;
    libusb_hid_t *hid = (libusb_hid_t*)calloc(1, sizeof(*hid));
 

@@ -55,6 +55,7 @@ static retro_input_state_t input_state_cb;
 #define LOG_ERR(msg) do { \
    log_cb(RETRO_LOG_ERROR, "[FFmpeg]: " msg "\n"); \
 } while(0)
+
 #define LOG_ERR_GOTO(msg, label) do { \
    LOG_ERR(msg); \
    goto label; \
@@ -175,9 +176,10 @@ static void ass_msg_cb(int level, const char *fmt, va_list args, void *data)
 
 static void append_attachment(const uint8_t *data, size_t size)
 {
-   attachments = av_realloc(attachments, (attachments_size + 1) * sizeof(*attachments));
+   attachments = (struct attachment*)av_realloc(
+         attachments, (attachments_size + 1) * sizeof(*attachments));
 
-   attachments[attachments_size].data = av_malloc(size);
+   attachments[attachments_size].data = (uint8_t*)av_malloc(size);
    attachments[attachments_size].size = size;
    memcpy(attachments[attachments_size].data, data, size);
 
@@ -364,6 +366,9 @@ static void check_variables(void)
 
 static void seek_frame(int seek_frames)
 {
+   char msg[256];
+   struct retro_message msg_obj = {0};
+
    if ((seek_frames < 0 && (unsigned)-seek_frames > frame_cnt) || reset_triggered)
       frame_cnt = 0;
    else
@@ -374,9 +379,10 @@ static void seek_frame(int seek_frames)
    do_seek = true;
    seek_time = frame_cnt / media.interpolate_fps;
 
-   char msg[256];
    snprintf(msg, sizeof(msg), "Seek: %u s.", (unsigned)seek_time);
-   environ_cb(RETRO_ENVIRONMENT_SET_MESSAGE, &(struct retro_message) { .msg = msg, .frames = 180 });
+   msg_obj.msg = msg;
+   msg_obj.frames = 180;
+   environ_cb(RETRO_ENVIRONMENT_SET_MESSAGE, &msg_obj);
 
    if (seek_frames < 0)
    {
@@ -588,8 +594,10 @@ void CORE_PREFIX(retro_run)(void)
                      media.width, media.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, video_frame_temp_buffer);
                glBindTexture(GL_TEXTURE_2D, 0);
 #else
+               uint32_t *data = NULL;
                glBindBuffer(GL_PIXEL_UNPACK_BUFFER, frames[1].pbo);
-               uint32_t *data = glMapBufferRange(GL_PIXEL_UNPACK_BUFFER,
+
+               data = (uint32_t*)glMapBufferRange(GL_PIXEL_UNPACK_BUFFER,
                      0, media.width * media.height, GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
                
                fifo_read(video_decode_fifo, data, media.width * media.height * sizeof(uint32_t));
@@ -943,7 +951,7 @@ static int16_t *decode_audio(AVCodecContext *ctx, AVPacket *pkt, AVFrame *frame,
       size_t required_buffer = frame->nb_samples * sizeof(int16_t) * 2;
       if (required_buffer > *buffer_cap)
       {
-         buffer = av_realloc(buffer, required_buffer);
+         buffer      = (int16_t*)av_realloc(buffer, required_buffer);
          *buffer_cap = required_buffer;
       }
 
@@ -1089,7 +1097,7 @@ static void decode_thread(void *data)
       frame_size = avpicture_get_size(PIX_FMT_RGB32, media.width, media.height);
       conv_frame = av_frame_alloc();
       conv_frame_buf = av_malloc(frame_size);
-      avpicture_fill((AVPicture*)conv_frame, conv_frame_buf,
+      avpicture_fill((AVPicture*)conv_frame, (const uint8_t*)conv_frame_buf,
             PIX_FMT_RGB32, media.width, media.height);
    }
 
@@ -1431,6 +1439,7 @@ void CORE_PREFIX(retro_unload_game)(void)
 
 bool CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
 {
+   enum retro_pixel_format fmt = RETRO_PIXEL_FORMAT_XRGB8888;
    struct retro_input_descriptor desc[] = {
       { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_LEFT,  "Seek -10 seconds" },
       { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_UP,    "Seek +60 seconds" },
@@ -1444,7 +1453,6 @@ bool CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
 
    environ_cb(RETRO_ENVIRONMENT_SET_INPUT_DESCRIPTORS, desc);
 
-   enum retro_pixel_format fmt = RETRO_PIXEL_FORMAT_XRGB8888;
    if (!environ_cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &fmt))
       LOG_ERR_GOTO("Cannot set pixel format.", error);
 
@@ -1507,7 +1515,8 @@ bool CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
 
    decode_thread_handle = sthread_create(decode_thread, NULL);
 
-   video_frame_temp_buffer = av_malloc(media.width * media.height * sizeof(uint32_t));
+   video_frame_temp_buffer = (uint32_t*)
+      av_malloc(media.width * media.height * sizeof(uint32_t));
 
    pts_bias = 0.0;
 

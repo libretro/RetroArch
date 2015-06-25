@@ -390,7 +390,7 @@ static void rgui_render(void)
    if (!menu || !menu->userdata)
       return;
 
-   rgui = menu->userdata;
+   rgui = (rgui_t*)menu->userdata;
 
    if (!rgui->force_redraw)
    {

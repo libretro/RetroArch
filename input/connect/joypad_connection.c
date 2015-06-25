@@ -37,7 +37,7 @@ int pad_connection_find_vacant_pad(joypad_connection_t *joyconn)
 
 joypad_connection_t *pad_connection_init(unsigned pads)
 {
-   int i;
+   unsigned i;
    joypad_connection_t *joyconn = (joypad_connection_t*)
       calloc(pads, sizeof(*joyconn));
 
