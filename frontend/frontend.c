@@ -17,7 +17,7 @@
 
 #include <file/file_path.h>
 
-#include "system.h"
+#include "../system.h"
 #include "../driver.h"
 #include "../general.h"
 #include "../retroarch.h"

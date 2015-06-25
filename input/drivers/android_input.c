@@ -29,7 +29,7 @@
 #include "../../performance.h"
 #include "../../general.h"
 #include "../../driver.h"
-
+#include "../../system.h"
 
 #define MAX_TOUCH 16
 #define MAX_PADS 8
@@ -309,8 +309,8 @@ static void engine_handle_cmd(void)
    int8_t cmd;
    struct android_app *android_app = (struct android_app*)g_android;
    runloop_t *runloop = rarch_main_get_ptr();
-   global_t  *global  = global_get_ptr();
    driver_t  *driver  = driver_get_ptr();
+   rarch_system_info_t *system = rarch_system_info_get_ptr();
 
    if (read(android_app->msgread, &cmd, sizeof(cmd)) != sizeof(cmd))
       cmd = -1;
@@ -368,7 +368,7 @@ static void engine_handle_cmd(void)
          scond_broadcast(android_app->cond);
          slock_unlock(android_app->mutex);
 
-         if (!global->system.shutdown)
+         if (!system->shutdown)
          {
             RARCH_LOG("Pausing RetroArch.\n");
             runloop->is_paused = true;
@@ -424,7 +424,7 @@ static void engine_handle_cmd(void)
          break;
 
       case APP_CMD_DESTROY:
-         global->system.shutdown = true;
+         system->shutdown = true;
          break;
    }
 }
@@ -852,14 +852,14 @@ static void android_input_poll(void *data)
 
 bool android_run_events(void *data)
 {
-   global_t *global = global_get_ptr();
+   rarch_system_info_t *system = rarch_system_info_get_ptr();
    int id = ALooper_pollOnce(-1, NULL, NULL, NULL);
 
    if (id == LOOPER_ID_MAIN)
       engine_handle_cmd();
 
    /* Check if we are exiting. */
-   if (global->system.shutdown)
+   if (system->shutdown)
       return false;
 
    return true;
