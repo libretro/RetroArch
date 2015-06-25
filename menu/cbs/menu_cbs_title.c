@@ -732,6 +732,9 @@ static int menu_cbs_init_bind_title_compare_type(menu_file_list_cbs_t *cbs,
       case MENU_SETTINGS_CUSTOM_BIND_KEYBOARD:
          cbs->action_get_title = action_get_title_input_settings;
          break;
+      case MENU_SETTING_ACTION_CORE_DISK_OPTIONS:
+         cbs->action_get_title = action_get_title_action_generic;
+         break;
       default:
          return -1;
    }
