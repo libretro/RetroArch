@@ -24,6 +24,7 @@
 #include "menu_entries.h"
 
 #include "../general.h"
+#include "../system.h"
 
 menu_entries_t *menu_entries_get_ptr(void)
 {
@@ -101,17 +102,18 @@ bool menu_entries_show_back(void)
  * (shown at the top of the UI). */
 void menu_entries_get_core_title(char *s, size_t len)
 {
-   global_t *global          = global_get_ptr();
-   const char *core_name     = global ? global->menu.info.library_name    : NULL;
-   const char *core_version  = global ? global->menu.info.library_version : NULL;
+   global_t *global               = global_get_ptr();
+   const char *core_name          = global ? global->menu.info.library_name    : NULL;
+   const char *core_version       = global ? global->menu.info.library_version : NULL;
+   struct retro_system_info *info = rarch_system_info_get_ptr();
 
    if (!core_name || core_name[0] == '\0')
-      core_name = global->system.info.library_name;
+      core_name = info->library_name;
    if (!core_name || core_name[0] == '\0')
       core_name = menu_hash_to_str(MENU_VALUE_NO_CORE);
 
    if (!core_version)
-      core_version = global->system.info.library_version;
+      core_version = info->library_version;
    if (!core_version)
       core_version = "";
 
