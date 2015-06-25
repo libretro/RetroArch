@@ -15,13 +15,16 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <file/file_path.h>
+
+#include "system.h"
 #include "../driver.h"
-#include "frontend.h"
 #include "../general.h"
 #include "../retroarch.h"
 #include "../runloop.h"
 #include "../runloop_data.h"
-#include <file/file_path.h>
+
+#include "frontend.h"
 
 #define MAX_ARGS 32
 
@@ -315,10 +318,11 @@ int rarch_main(int argc, char *argv[], void *data)
       global_t *global = global_get_ptr();
 
       if (global->content_is_init || global->system.no_content)
-         history_playlist_push(g_defaults.history,
+         history_playlist_push(
+               g_defaults.history,
                global->fullpath,
                settings->libretro,
-               &global->system.info);
+               rarch_system_info_get_ptr());
    }
 
    if (driver)
