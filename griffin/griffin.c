@@ -755,6 +755,7 @@ MENU
 
 #include "../menu/intl/menu_hash_de.c"
 #include "../menu/intl/menu_hash_es.c"
+#include "../menu/intl/menu_hash_eo.c"
 #include "../menu/intl/menu_hash_fr.c"
 #include "../menu/intl/menu_hash_it.c"
 #include "../menu/intl/menu_hash_nl.c"

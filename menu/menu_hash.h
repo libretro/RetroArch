@@ -952,6 +952,9 @@ int menu_hash_get_help_nl(uint32_t hash, char *s, size_t len);
 const char *menu_hash_to_str_pt(uint32_t hash);
 int menu_hash_get_help_pt(uint32_t hash, char *s, size_t len);
 
+const char *menu_hash_to_str_eo(uint32_t hash);
+int menu_hash_get_help_eo(uint32_t hash, char *s, size_t len);
+
 const char *menu_hash_to_str_us(uint32_t hash);
 int menu_hash_get_help_us(uint32_t hash, char *s, size_t len);
 

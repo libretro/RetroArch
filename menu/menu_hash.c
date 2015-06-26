@@ -50,6 +50,8 @@ const char *menu_hash_to_str(uint32_t hash)
       case RETRO_LANGUAGE_DUTCH:
          ret = menu_hash_to_str_nl(hash);
          break;
+      case RETRO_LANGUAGE_ESPERANTO:
+         ret = menu_hash_to_str_eo(hash);
       default:
          break;
    }
@@ -88,6 +90,8 @@ int menu_hash_get_help(uint32_t hash, char *s, size_t len)
       case RETRO_LANGUAGE_DUTCH:
          ret = menu_hash_get_help_nl(hash, s, len);
          break;
+      case RETRO_LANGUAGE_ESPERANTO:
+         ret = menu_hash_get_help_eo(hash, s, len);
       default:
          break;
    }

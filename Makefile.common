@@ -343,6 +343,7 @@ ifeq ($(HAVE_MENU_COMMON), 1)
 			 menu/menu_hash.o \
 			 menu/intl/menu_hash_de.o \
 			 menu/intl/menu_hash_es.o \
+			 menu/intl/menu_hash_eo.o \
 			 menu/intl/menu_hash_fr.o \
 			 menu/intl/menu_hash_it.o \
 			 menu/intl/menu_hash_nl.o \
