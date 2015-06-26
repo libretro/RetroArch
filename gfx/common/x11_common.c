@@ -66,10 +66,10 @@ static Atom XA_NET_MOVERESIZE_WINDOW;
 
 void x11_windowed_fullscreen(Display *dpy, Window win)
 {
+   XEvent xev = {0};
+
    XA_INIT(_NET_WM_STATE);
    XA_INIT(_NET_WM_STATE_FULLSCREEN);
-
-   XEvent xev = {0};
 
    xev.xclient.type = ClientMessage;
    xev.xclient.send_event = True;

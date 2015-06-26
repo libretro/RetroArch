@@ -131,12 +131,13 @@ static void gl_raster_font_free_font(void *data)
 static int gl_get_message_width(void *data, const char *msg, unsigned msg_len_full, float scale)
 {
    gl_raster_t *font = (gl_raster_t*)data;
-   if (!font)
-      return 0;
       
    unsigned i;
    unsigned msg_len        = min(msg_len_full, MAX_MSG_LEN_CHUNK);
    int      delta_x        = 0;
+
+   if (!font)
+      return 0;
 
    while (msg_len_full)
    {
@@ -265,24 +266,26 @@ static void gl_raster_font_render_message(
       const GLfloat color[4], GLfloat pos_x, GLfloat pos_y,
       unsigned text_align)
 {
+   int lines = 0;
+   float line_height;
+
    if (!msg || !*msg || !font->gl)
       return;
 
-   //If the font height is not supported just draw as usual
+   /* If the font height is not supported just draw as usual */
    if (!font->font_driver->get_line_height)
    {
       gl_raster_font_render_line(font, msg, strlen(msg), scale, color, pos_x, pos_y, text_align);
       return;
    }
 
-   int lines = 0;
-   float line_height = scale * 1/(float)font->font_driver->get_line_height(font->font_data);
+   line_height = scale * 1/(float)font->font_driver->get_line_height(font->font_data);
 
    for (;;)
    {
       const char *delim = strchr(msg, '\n');
 
-      //Draw the line
+      /* Draw the line */
       if (delim)
       {
          unsigned msg_len = delim - msg;

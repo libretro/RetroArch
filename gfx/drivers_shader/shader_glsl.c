@@ -341,9 +341,11 @@ static bool compile_shader(glsl_shader_data_t *glsl,
       RARCH_LOG("[GL]: Using GLSL version %u.\n", version_no);
    }
 
-   const char *source[] = { version, define, glsl->glsl_alias_define, program };
-   glShaderSource(shader, ARRAY_SIZE(source), source, NULL);
-   glCompileShader(shader);
+   {
+      const char *source[] = { version, define, glsl->glsl_alias_define, program };
+      glShaderSource(shader, ARRAY_SIZE(source), source, NULL);
+      glCompileShader(shader);
+   }
 
    glGetShaderiv(shader, GL_COMPILE_STATUS, &status);
    print_shader_log(shader);
@@ -353,9 +355,10 @@ static bool compile_shader(glsl_shader_data_t *glsl,
 
 static bool link_program(GLuint prog)
 {
+   GLint status;
+   
    glLinkProgram(prog);
 
-   GLint status;
    glGetProgramiv(prog, GL_LINK_STATUS, &status);
    print_linker_log(prog);
 
@@ -421,8 +424,7 @@ static GLuint compile_program(glsl_shader_data_t *glsl,
          glDeleteShader(frag);
 
       glUseProgram(prog);
-      GLint location = get_uniform(glsl, prog, "Texture");
-      glUniform1i(location, 0);
+      glUniform1i(get_uniform(glsl, prog, "Texture"), 0);
       glUseProgram(0);
    }
 

@@ -128,7 +128,7 @@ enum
    MENU_XMB,
 
    RECORD_FFMPEG,
-   RECORD_NULL,
+   RECORD_NULL
 };
 
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) || defined(__CELLOS_LV2__)

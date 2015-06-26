@@ -371,8 +371,6 @@ static bool sdl_ctx_has_focus(void *data)
    unsigned flags;
    driver_t *driver = driver_get_ptr();
 
-   (void)data;
-
 #ifdef HAVE_SDL2
    gfx_ctx_sdl_data_t *sdl = (gfx_ctx_sdl_data_t*)driver->video_context_data;
    flags = (SDL_WINDOW_INPUT_FOCUS | SDL_WINDOW_MOUSE_FOCUS);
@@ -381,6 +379,8 @@ static bool sdl_ctx_has_focus(void *data)
    flags = (SDL_APPINPUTFOCUS | SDL_APPACTIVE);
    return (SDL_GetAppState() & flags) == flags;
 #endif
+
+   (void)data;
 }
 
 static bool sdl_ctx_suppress_screensaver(void *data, bool enable)

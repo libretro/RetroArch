@@ -21,6 +21,7 @@
 #include "../drivers/gl_common.h"
 
 #include <wayland-client.h>
+#include <wayland-client-protocol.h>
 #include <wayland-egl.h>
 
 #include <EGL/egl.h>
@@ -600,14 +601,15 @@ static bool gfx_ctx_wl_set_video_mode(void *data,
       driver->video_context_data;
    struct sigaction sa = {{0}};
 
+   EGLint egl_attribs[16];
+   EGLint *attr;
+
    sa.sa_handler = sighandler;
    sa.sa_flags   = SA_RESTART;
    sigemptyset(&sa.sa_mask);
    sigaction(SIGINT, &sa, NULL);
    sigaction(SIGTERM, &sa, NULL);
 
-   EGLint egl_attribs[16];
-   EGLint *attr = egl_attribs;
    attr = egl_fill_attribs(attr);
 
    wl->g_width = width ? width : DEFAULT_WINDOWED_WIDTH;
@@ -667,9 +669,9 @@ static void gfx_ctx_wl_input_driver(void *data,
 {
    (void)data;
 #if 0
-   //void *wl    = input_wayland.init();
-   //*input      = wl ? &input_wayland : NULL;
-   //*input_data = wl;
+   void *wl    = input_wayland.init();
+   *input      = wl ? &input_wayland : NULL;
+   *input_data = wl;
 #endif
    *input = NULL;
    *input_data = NULL;

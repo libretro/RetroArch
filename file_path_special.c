@@ -122,16 +122,16 @@ void fill_pathname_abbreviate_special(char *out_path,
    char application_dir[PATH_MAX_LENGTH] = {0};
    const char                      *home = getenv("HOME");
 
-   fill_pathname_application_path(application_dir, sizeof(application_dir));
-   path_basedir(application_dir);
-
    /* application_dir could be zero-string. Safeguard against this.
     *
     * Keep application dir in front of home, moving app dir to a
     * new location inside home would break otherwise. */
 
-   const char *candidates[3] = { application_dir, home, NULL };
+   const char *candidates[3] = { application_dir, home, NULL }; /* ugly hack - use application_dir before filling it in. C89 reasons */
    const char *notations[3] = { ":", "~", NULL };
+
+   fill_pathname_application_path(application_dir, sizeof(application_dir));
+   path_basedir(application_dir);
    
    for (i = 0; candidates[i]; i++)
    {
@@ -197,24 +197,27 @@ void fill_pathname_application_path(char *buf, size_t size)
       }
    }
 #else
-   *buf = '\0';
-   pid_t pid = getpid(); 
-   char link_path[PATH_MAX_LENGTH] = {0};
-   /* Linux, BSD and Solaris paths. Not standardized. */
-   static const char *exts[] = { "exe", "file", "path/a.out" };
-   for (i = 0; i < ARRAY_SIZE(exts); i++)
    {
-      snprintf(link_path, sizeof(link_path), "/proc/%u/%s",
-            (unsigned)pid, exts[i]);
-      ssize_t ret = readlink(link_path, buf, size - 1);
-      if (ret >= 0)
+      *buf = '\0';
+      pid_t pid = getpid(); 
+      char link_path[PATH_MAX_LENGTH] = {0};
+      /* Linux, BSD and Solaris paths. Not standardized. */
+      static const char *exts[] = { "exe", "file", "path/a.out" };
+      for (i = 0; i < ARRAY_SIZE(exts); i++)
       {
-         buf[ret] = '\0';
-         return;
+         ssize_t ret;
+         snprintf(link_path, sizeof(link_path), "/proc/%u/%s",
+               (unsigned)pid, exts[i]);
+         ret = readlink(link_path, buf, size - 1);
+         if (ret >= 0)
+         {
+            buf[ret] = '\0';
+            return;
+         }
       }
    }
    
-   /* Cannot resolve application path! This should not happen. */
+   RARCH_ERR("Cannot resolve application path! This should not happen.");
 #endif
 }
 #endif

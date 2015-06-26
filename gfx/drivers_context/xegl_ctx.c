@@ -301,6 +301,9 @@ static bool gfx_ctx_xegl_init(void *data)
 
    const EGLint *attrib_ptr;
 
+   EGLint egl_major, egl_minor;
+   EGLint num_configs;
+
    if (g_inited)
       return false;
 
@@ -345,7 +348,6 @@ static bool gfx_ctx_xegl_init(void *data)
       goto error;
    }
 
-   EGLint egl_major, egl_minor;
    if (!eglInitialize(g_egl_dpy, &egl_major, &egl_minor))
    {
       RARCH_ERR("[X/EGL]: Unable to initialize EGL.\n");
@@ -355,7 +357,6 @@ static bool gfx_ctx_xegl_init(void *data)
 
    RARCH_LOG("[X/EGL]: EGL version: %d.%d\n", egl_major, egl_minor);
 
-   EGLint num_configs;
    if (!eglChooseConfig(g_egl_dpy, attrib_ptr, &g_egl_config, 1, &num_configs))
    {
       RARCH_ERR("[X/EGL]: eglChooseConfig failed with 0x%x.\n", eglGetError());
@@ -459,6 +460,10 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
    driver_t *driver     = driver_get_ptr();
    settings_t *settings = config_get_ptr();
 
+   int (*old_handler)(Display*, XErrorEvent*) = NULL;
+
+   XEvent event;
+
    sa.sa_handler = egl_sighandler;
    sa.sa_flags   = SA_RESTART;
    sigemptyset(&sa.sa_mask);
@@ -467,8 +472,6 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
 
    windowed_full = settings->video.windowed_fullscreen;
    true_full = false;
-
-   int (*old_handler)(Display*, XErrorEvent*) = NULL;
 
    attr = egl_attribs;
    attr = xegl_fill_attribs(attr);
@@ -594,7 +597,6 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
          x11_move_window(g_dpy, g_win, x_off, y_off, width, height);
    }
 
-   XEvent event;
    XIfEvent(g_dpy, &event, egl_wait_notify, NULL);
 
    g_quit_atom = XInternAtom(g_dpy, "WM_DELETE_WINDOW", False);

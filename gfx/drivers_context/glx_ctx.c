@@ -285,18 +285,20 @@ static void ctx_glx_destroy_resources(gfx_ctx_glx_data_t *glx)
 
       /* Save last used monitor for later. */
 #ifdef HAVE_XINERAMA
-      XWindowAttributes target;
-      Window child;
+      {
+         XWindowAttributes target;
+         Window child;
 
-      int x = 0, y = 0;
-      XGetWindowAttributes(glx->g_dpy, glx->g_win, &target);
-      XTranslateCoordinates(glx->g_dpy, glx->g_win, DefaultRootWindow(glx->g_dpy),
-            target.x, target.y, &x, &y, &child);
+         int x = 0, y = 0;
+         XGetWindowAttributes(glx->g_dpy, glx->g_win, &target);
+         XTranslateCoordinates(glx->g_dpy, glx->g_win, DefaultRootWindow(glx->g_dpy),
+               target.x, target.y, &x, &y, &child);
 
-      glx->g_screen = x11_get_xinerama_monitor(glx->g_dpy, x, y,
-            target.width, target.height);
+         glx->g_screen = x11_get_xinerama_monitor(glx->g_dpy, x, y,
+               target.width, target.height);
 
-      RARCH_LOG("[GLX]: Saved monitor #%u.\n", glx->g_screen);
+         RARCH_LOG("[GLX]: Saved monitor #%u.\n", glx->g_screen);
+      }
 #endif
 
       XUnmapWindow(glx->g_dpy, glx->g_win);
@@ -524,9 +526,9 @@ static bool gfx_ctx_glx_set_video_mode(void *data,
    else
    {
       XMapWindow(glx->g_dpy, glx->g_win);
-      // If we want to map the window on a different screen, we'll have to do it by force.
-      // Otherwise, we should try to let the window manager sort it out.
-      // x_off and y_off usually get ignored in XCreateWindow().
+      /* If we want to map the window on a different screen, we'll have to do it by force.
+       * Otherwise, we should try to let the window manager sort it out.
+       * x_off and y_off usually get ignored in XCreateWindow(). */
       if (glx->g_screen)
          x11_move_window(glx->g_dpy, glx->g_win, x_off, y_off, width, height);
    }

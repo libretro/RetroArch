@@ -348,13 +348,10 @@ bool frontend_linux_powerstate_check_apm(enum frontend_powerstate *state,
    else
       *state = FRONTEND_POWERSTATE_ON_POWER_SOURCE;
 
-   const int pct = battery_percent;
-   const int secs = battery_time;
-
-   if (pct >= 0)         /* -1 == unknown */
-      *percent = (pct > 100) ? 100 : pct; /* clamp between 0%, 100% */
-   if (secs >= 0)        /* -1 == unknown */
-      *seconds = secs;
+   if (battery_percent >= 0)         /* -1 == unknown */
+      *percent = (battery_percent > 100) ? 100 : battery_percent; /* clamp between 0%, 100% */
+   if (battery_time >= 0)            /* -1 == unknown */
+      *seconds = battery_time;
 
    return true;
 }
@@ -464,7 +461,7 @@ static void frontend_linux_get_os(char *s, size_t len, int *major, int *minor)
    if (uname(&buffer) != 0)
       return;
 
-   sscanf(buffer.release, "%u.%u.%u", major, minor, &krel);
+   sscanf(buffer.release, "%d.%d.%d", major, minor, &krel);
    strlcpy(s, "Linux", len);
 }
 

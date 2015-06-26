@@ -1370,37 +1370,41 @@ static INLINE void gl_copy_frame(gl_t *gl, const void *frame,
       }
    }
 #elif defined(HAVE_PSGL)
-   unsigned h;
-   size_t buffer_addr        = gl->tex_w * gl->tex_h * gl->tex_index * gl->base_size;
-   size_t buffer_stride      = gl->tex_w * gl->base_size;
-   const uint8_t *frame_copy = frame;
-   size_t frame_copy_size    = width * gl->base_size;
-
-   uint8_t *buffer = (uint8_t*)glMapBuffer(
-         GL_TEXTURE_REFERENCE_BUFFER_SCE, GL_READ_WRITE) + buffer_addr;
-   for (h = 0; h < height; h++, buffer += buffer_stride, frame_copy += pitch)
-      memcpy(buffer, frame_copy, frame_copy_size);
-
-   glUnmapBuffer(GL_TEXTURE_REFERENCE_BUFFER_SCE);
-#else
-   const GLvoid *data_buf = frame;
-   glPixelStorei(GL_UNPACK_ALIGNMENT, video_pixel_get_alignment(pitch));
-
-   if (gl->base_size == 2 && !gl->have_es2_compat)
    {
-      /* Convert to 32-bit textures on desktop GL. */
-      gl_convert_frame_rgb16_32(gl, gl->conv_buffer,
-            frame, width, height, pitch);
-      data_buf = gl->conv_buffer;
+      unsigned h;
+      size_t buffer_addr        = gl->tex_w * gl->tex_h * gl->tex_index * gl->base_size;
+      size_t buffer_stride      = gl->tex_w * gl->base_size;
+      const uint8_t *frame_copy = frame;
+      size_t frame_copy_size    = width * gl->base_size;
+
+      uint8_t *buffer = (uint8_t*)glMapBuffer(
+            GL_TEXTURE_REFERENCE_BUFFER_SCE, GL_READ_WRITE) + buffer_addr;
+      for (h = 0; h < height; h++, buffer += buffer_stride, frame_copy += pitch)
+         memcpy(buffer, frame_copy, frame_copy_size);
+
+      glUnmapBuffer(GL_TEXTURE_REFERENCE_BUFFER_SCE);
    }
-   else
-      glPixelStorei(GL_UNPACK_ROW_LENGTH, pitch / gl->base_size);
+#else
+   {
+      const GLvoid *data_buf = frame;
+      glPixelStorei(GL_UNPACK_ALIGNMENT, video_pixel_get_alignment(pitch));
 
-   glTexSubImage2D(GL_TEXTURE_2D,
-         0, 0, 0, width, height, gl->texture_type,
-         gl->texture_fmt, data_buf);
+      if (gl->base_size == 2 && !gl->have_es2_compat)
+      {
+         /* Convert to 32-bit textures on desktop GL. */
+         gl_convert_frame_rgb16_32(gl, gl->conv_buffer,
+               frame, width, height, pitch);
+         data_buf = gl->conv_buffer;
+      }
+      else
+         glPixelStorei(GL_UNPACK_ROW_LENGTH, pitch / gl->base_size);
 
-   glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+      glTexSubImage2D(GL_TEXTURE_2D,
+            0, 0, 0, width, height, gl->texture_type,
+            gl->texture_fmt, data_buf);
+
+      glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+   }
 #endif
    RARCH_PERFORMANCE_STOP(copy_frame);
 }
@@ -2639,7 +2643,7 @@ static bool gl_set_shader(void *data,
    {
       unsigned textures = gl->shader->get_prev_textures() + 1;
 
-      if (textures > gl->textures) // Have to reinit a bit.
+      if (textures > gl->textures) /* Have to reinit a bit. */
       {
 #if defined(HAVE_FBO)
          gl_deinit_hw_render(gl);

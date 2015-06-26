@@ -186,20 +186,22 @@ static void sdl2_render_msg(sdl2_video_t *vid, const char *msg)
       tex_x  = gly->atlas_offset_x;
       tex_y  = gly->atlas_offset_y;
 
-      SDL_Rect srcrect = {
-         tex_x, tex_y,
-         (int)gly->width, (int)gly->height
-      };
+      {
+         SDL_Rect srcrect = {
+            tex_x, tex_y,
+            (int)gly->width, (int)gly->height
+         };
 
-      SDL_Rect dstrect = {
-         x + delta_x + off_x, y + delta_y + off_y,
-         (int)gly->width, (int)gly->height
-      };
+         SDL_Rect dstrect = {
+            x + delta_x + off_x, y + delta_y + off_y,
+            (int)gly->width, (int)gly->height
+         };
 
-      SDL_RenderCopyEx(vid->renderer, vid->font.tex, &srcrect, &dstrect, 0, NULL, SDL_FLIP_NONE);
-
-      delta_x += gly->advance_x;
-      delta_y -= gly->advance_y;
+         SDL_RenderCopyEx(vid->renderer, vid->font.tex, &srcrect, &dstrect, 0, NULL, SDL_FLIP_NONE);
+   
+         delta_x += gly->advance_x;
+         delta_y -= gly->advance_y;
+      }
    }
 }
 
@@ -250,8 +252,9 @@ static void sdl2_init_renderer(sdl2_video_t *vid)
 
 static void sdl_refresh_renderer(sdl2_video_t *vid)
 {
+   SDL_Rect r;
    SDL_RenderClear(vid->renderer);
-   SDL_Rect r = { vid->vp.x, vid->vp.y, (int)vid->vp.width, (int)vid->vp.height };
+   r = (SDL_Rect){ vid->vp.x, vid->vp.y, (int)vid->vp.width, (int)vid->vp.height };
    SDL_RenderSetViewport(vid->renderer, &r);
 
    /* breaks int scaling */
@@ -370,6 +373,7 @@ static void *sdl2_gfx_init(const video_info_t *video, const input_driver_t **inp
    int i;
    unsigned flags;
    settings_t *settings = config_get_ptr();
+   sdl2_video_t *vid;
 
 #ifdef HAVE_X11
    XInitThreads();
@@ -383,7 +387,7 @@ static void *sdl2_gfx_init(const video_info_t *video, const input_driver_t **inp
    else if (SDL_InitSubSystem(SDL_INIT_VIDEO) < 0)
       return NULL;
 
-   sdl2_video_t *vid = (sdl2_video_t*)calloc(1, sizeof(*vid));
+   vid = (sdl2_video_t*)calloc(1, sizeof(*vid));
    if (!vid)
       return NULL;
 

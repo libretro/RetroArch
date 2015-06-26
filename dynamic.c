@@ -159,12 +159,13 @@ static dylib_t libretro_get_system_info_lib(const char *path,
       struct retro_system_info *info, bool *load_no_content)
 {
    dylib_t lib = dylib_load(path);
+   void (*proc)(struct retro_system_info*);
+   
    if (!lib)
       return NULL;
 
-   void (*proc)(struct retro_system_info*) =
-      (void (*)(struct retro_system_info*))dylib_proc(lib,
-            "retro_get_system_info");
+   proc = (void (*)(struct retro_system_info*))
+      dylib_proc(lib, "retro_get_system_info");
 
    if (!proc)
    {
@@ -176,10 +177,10 @@ static dylib_t libretro_get_system_info_lib(const char *path,
 
    if (load_no_content)
    {
+      void (*set_environ)(retro_environment_t);
       *load_no_content = false;
-      void (*set_environ)(retro_environment_t) =
-         (void (*)(retro_environment_t))dylib_proc(lib,
-               "retro_set_environment");
+      set_environ = (void (*)(retro_environment_t))
+         dylib_proc(lib, "retro_set_environment");
 
       if (!set_environ)
          return lib;
@@ -735,6 +736,13 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          unsigned retro_id, retro_port;
          const struct retro_input_descriptor *desc = NULL;
 
+         static const char *libretro_btn_desc[] = {
+            "B (bottom)", "Y (left)", "Select", "Start",
+            "D-Pad Up", "D-Pad Down", "D-Pad Left", "D-Pad Right",
+            "A (right)", "X (up)",
+            "L", "R", "L2", "R2", "L3", "R3",
+         };
+
          memset(system->input_desc_btn, 0,
                sizeof(system->input_desc_btn));
 
@@ -791,13 +799,6 @@ bool rarch_environment_cb(unsigned cmd, void *data)
             else
                system->input_desc_btn[retro_port][retro_id] = desc->description;
          }
-
-         static const char *libretro_btn_desc[] = {
-            "B (bottom)", "Y (left)", "Select", "Start",
-            "D-Pad Up", "D-Pad Down", "D-Pad Left", "D-Pad Right",
-            "A (right)", "X (up)",
-            "L", "R", "L2", "R2", "L3", "R3",
-         };
 
          RARCH_LOG("Environ SET_INPUT_DESCRIPTORS:\n");
          for (p = 0; p < settings->input.max_users; p++)
@@ -933,11 +934,11 @@ bool rarch_environment_cb(unsigned cmd, void *data)
 #if defined(HAVE_THREADS) && !defined(__CELLOS_LV2__)
       case RETRO_ENVIRONMENT_SET_AUDIO_CALLBACK:
       {
-         RARCH_LOG("Environ SET_AUDIO_CALLBACK.\n");
          const struct retro_audio_callback *info = 
             (const struct retro_audio_callback*)data;
+         RARCH_LOG("Environ SET_AUDIO_CALLBACK.\n");
 
-         if (driver->recording_data) // A/V sync is a must.
+         if (driver->recording_data) /* A/V sync is a must. */
             return false;
 
 #ifdef HAVE_NETPLAY

@@ -34,22 +34,23 @@
 #endif
 #endif
 
-// ARGB8888 scaler is split in two:
-//
-// First, horizontal scaler is applied.
-// Here, all 8-bit channels are expanded to 16-bit. Values are then shifted 7 to left to occupy 15 bits.
-// The sign bit is kept empty as we have to do signed multiplication for the filter.
-// A mulhi [(a * b) >> 16] is applied which loses some precision, but is very efficient for SIMD.
-// It is accurate enough for 8-bit purposes.
-//
-// The fixed point 1.0 for filter is (1 << 14). After horizontal scale, the output is kept
-// with 16-bit channels, and will now have 13 bits of precision as [(a * (1 << 14)) >> 16] is effectively a right shift by 2.
-//
-// Vertical scaler takes the 13 bit channels, and performs the same mulhi steps.
-// Another 2 bits of precision is lost, which ends up as 11 bits.
-// Scaling is now complete. Channels are shifted right by 3, and saturated into 8-bit values.
-//
-// The C version of scalers perform the exact same operations as the SIMD code for testing purposes.
+/* ARGB8888 scaler is split in two:
+ *
+ * First, horizontal scaler is applied.
+ * Here, all 8-bit channels are expanded to 16-bit. Values are then shifted 7 to left to occupy 15 bits.
+ * The sign bit is kept empty as we have to do signed multiplication for the filter.
+ * A mulhi [(a * b) >> 16] is applied which loses some precision, but is very efficient for SIMD.
+ * It is accurate enough for 8-bit purposes.
+ *
+ * The fixed point 1.0 for filter is (1 << 14). After horizontal scale, the output is kept
+ * with 16-bit channels, and will now have 13 bits of precision as [(a * (1 << 14)) >> 16] is effectively a right shift by 2.
+ *
+ * Vertical scaler takes the 13 bit channels, and performs the same mulhi steps.
+ * Another 2 bits of precision is lost, which ends up as 11 bits.
+ * Scaling is now complete. Channels are shifted right by 3, and saturated into 8-bit values.
+ *
+ * The C version of scalers perform the exact same operations as the SIMD code for testing purposes.
+ */
 
 #if defined(__SSE2__)
 void scaler_argb8888_vert(const struct scaler_ctx *ctx, void *output_, int stride)
@@ -185,7 +186,7 @@ void scaler_argb8888_horiz(const struct scaler_ctx *ctx, const void *input_, int
 
 #ifdef __x86_64__
          output[w] = _mm_cvtsi128_si64(res);
-#else // 32-bit doesn't have si64. Do it in two steps.
+#else /* 32-bit doesn't have si64. Do it in two steps. */
          union
          {
             uint32_t *u32;

@@ -83,6 +83,7 @@ static bool font_renderer_create_atlas(ft_font_renderer_t *handle)
    for (i = 0; i < FT_ATLAS_SIZE; i++)
    {
       struct font_glyph *glyph = &handle->glyphs[i];
+      FT_GlyphSlot slot;
 
       if (!glyph)
          continue;
@@ -94,7 +95,7 @@ static bool font_renderer_create_atlas(ft_font_renderer_t *handle)
       }
 
       FT_Render_Glyph(handle->face->glyph, FT_RENDER_MODE_NORMAL);
-      FT_GlyphSlot slot = handle->face->glyph;
+      slot = handle->face->glyph;
 
       /* Some glyphs can be blank. */
       buffer[i] = (uint8_t*)calloc(slot->bitmap.rows * slot->bitmap.pitch, 1);

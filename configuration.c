@@ -852,6 +852,9 @@ static config_file_t *open_default_config_file(void)
    (void)conf_path;
    (void)app_path;
    (void)saved;
+   
+   const char *xdg; (void)xdg;
+   const char *home; (void)home;
 
 #if defined(_WIN32) && !defined(_XBOX)
    fill_pathname_application_path(app_path, sizeof(app_path));
@@ -899,7 +902,7 @@ static config_file_t *open_default_config_file(void)
       RARCH_WARN("Created new config file in: \"%s\".\n", conf_path);
    }
 #elif defined(OSX)
-   const char *home = getenv("HOME");
+   home = getenv("HOME");
 
    if (!home)
       return NULL;
@@ -935,8 +938,8 @@ static config_file_t *open_default_config_file(void)
       RARCH_WARN("Created new config file in: \"%s\".\n", conf_path);
    }
 #elif !defined(__CELLOS_LV2__) && !defined(_XBOX)
-   const char *xdg  = getenv("XDG_CONFIG_HOME");
-   const char *home = getenv("HOME");
+   xdg  = getenv("XDG_CONFIG_HOME");
+   home = getenv("HOME");
 
    /* XDG_CONFIG_HOME falls back to $HOME/.config. */
    if (xdg)
@@ -1518,9 +1521,12 @@ static bool config_load_file(const char *path, bool set_defaults)
 
    CONFIG_GET_BOOL_BASE(conf, settings, rewind_enable, "rewind_enable");
 
-   int buffer_size = 0;
-   if (config_get_int(conf, "rewind_buffer_size", &buffer_size))
-      settings->rewind_buffer_size = buffer_size * UINT64_C(1000000);
+   {
+      /* ugly hack around C89 not allowing mixing declarations and code */
+      int buffer_size = 0;
+      if (config_get_int(conf, "rewind_buffer_size", &buffer_size))
+         settings->rewind_buffer_size = buffer_size * UINT64_C(1000000);
+   }
 
    CONFIG_GET_INT_BASE(conf, settings, rewind_granularity, "rewind_granularity");
    CONFIG_GET_FLOAT_BASE(conf, settings, slowmotion_ratio, "slowmotion_ratio");
@@ -1821,12 +1827,10 @@ bool config_load_override(void)
    else
       RARCH_LOG("No core-specific overrides found at %s.\n", core_path);
 
-   new_conf = NULL;
-
-   // Create a new config file from game_path
+   /* Create a new config file from game_path */
    new_conf = config_file_new(game_path);
 
-   // If a game override exists, add it's location to append_config_path
+   /* If a game override exists, add it's location to append_config_path */
    if (new_conf)
    {
       RARCH_LOG("Game-specific overrides found at %s. Appending.\n", game_path);
