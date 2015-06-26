@@ -814,6 +814,36 @@ const char *menu_hash_to_str_de(uint32_t hash)
          return "Keine Informationen verfügbar.";
       case MENU_LABEL_VALUE_INPUT_USER_BINDS:
          return "Spieler %u Tastenbelegung";
+      case MENU_VALUE_LANG_ENGLISH:
+         return "Englisch";
+      case MENU_VALUE_LANG_JAPANESE:
+         return "Japanisch";
+      case MENU_VALUE_LANG_FRENCH:
+         return "Französisch";
+      case MENU_VALUE_LANG_SPANISH:
+         return "Spanisch";
+      case MENU_VALUE_LANG_GERMAN:
+         return "Deutsch";
+      case MENU_VALUE_LANG_ITALIAN:
+         return "Italienisch";
+      case MENU_VALUE_LANG_DUTCH:
+         return "Niederländisch";
+      case MENU_VALUE_LANG_PORTUGUESE:
+         return "Portugiesisch";
+      case MENU_VALUE_LANG_RUSSIAN:
+         return "Russisch";
+      case MENU_VALUE_LANG_KOREAN:
+         return "Koreanisch";
+      case MENU_VALUE_LANG_CHINESE_TRADITIONAL:
+         return "Chinesisch (Traditionell)";
+      case MENU_VALUE_LANG_CHINESE_SIMPLIFIED:
+         return "Chinesisch (Vereinfacht)";
+      case MENU_VALUE_LANG_ESPERANTO:
+         return "Esperanto";
+      case MENU_VALUE_LEFT_ANALOG:
+         return "Linker Analogstick";
+      case MENU_VALUE_RIGHT_ANALOG:
+         return "Rechter Analogstick";
       default:
          break;
    }
