@@ -786,7 +786,7 @@ static int menu_input_mouse_post_iterate(uint64_t *input_mouse,
                menu_list->selection_buf->list[nav->selection_ptr].label);
          menu_input->mouse.oldleft = true;
 
-         if (menu_input->mouse.y < disp->header_height)
+         if ((unsigned)menu_input->mouse.y < disp->header_height)
          {
             menu_list_pop_stack(menu_list);
             return 0;
@@ -909,7 +909,7 @@ static int menu_input_pointer_post_iterate(menu_file_list_cbs_t *cbs,
       {
          if (!menu_input->pointer.dragging)
          {
-            if (menu_input->pointer.start_y < disp->header_height)
+            if ((unsigned)menu_input->pointer.start_y < disp->header_height)
                menu_list_pop_stack(menu_list);
             else if (menu_input->pointer.ptr <= menu_list_get_size(menu_list)-1)
             {
