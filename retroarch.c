@@ -341,7 +341,8 @@ void set_paths_redirect(const char *path)
                info->info.library_name,
                sizeof(global->savefile_dir));
 
-         // if path doesn't exist try to create it, if everything fails revert to the original path
+         /* If path doesn't exist, try to create it,
+          * if everything fails revert to the original path. */
          if(!path_is_directory(global->savefile_dir))
             if(!path_mkdir(global->savefile_dir))
                strlcpy(global->savefile_dir,
