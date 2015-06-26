@@ -91,7 +91,7 @@ int32_t pad_connection_pad_init(joypad_connection_t *joyconn,
       {
          for (i = 0; name && pad_map[i].name; i++)
          {
-            char *name_match = strstr(name, pad_map[i].name);
+            const char *name_match = strstr(name, pad_map[i].name);
 
             if (name_match || (pad_map[i].vid == vid && pad_map[i].pid == pid))
             {
