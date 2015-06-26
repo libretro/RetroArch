@@ -928,6 +928,9 @@ extern "C" {
 #define MENU_VALUE_DISABLED                                                    0xe326e01dU
 #define MENU_VALUE_PORT                                                        0x7c8ad52aU
 
+#define MENU_VALUE_LEFT_ANALOG                                                 0xd168d0e2U
+#define MENU_VALUE_RIGHT_ANALOG                                                0xf9244335U
+
 #define MENU_VALUE_LANG_ENGLISH                                                0xcb4e554fU
 #define MENU_VALUE_LANG_JAPANESE                                               0xfde6f60cU
 #define MENU_VALUE_LANG_FRENCH                                                 0xb3704d9bU

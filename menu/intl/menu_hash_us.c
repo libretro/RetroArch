@@ -1394,6 +1394,10 @@ const char *menu_hash_to_str_us(uint32_t hash)
          return "Chinese (Simplified)";
       case MENU_VALUE_LANG_ESPERANTO:
          return "Esperanto";
+      case MENU_VALUE_LEFT_ANALOG:
+         return "Left Analog";
+      case MENU_VALUE_RIGHT_ANALOG:
+         return "Right Analog";
       default:
          break;
    }

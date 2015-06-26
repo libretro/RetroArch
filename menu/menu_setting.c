@@ -1462,8 +1462,8 @@ static void setting_get_string_representation_uint_analog_dpad_mode(void *data,
    settings_t      *settings = config_get_ptr();
 
    modes[0] = menu_hash_to_str(MENU_VALUE_NONE);
-   modes[1] = "Left Analog";
-   modes[2] = "Right Analog";
+   modes[1] = menu_hash_to_str(MENU_VALUE_LEFT_ANALOG);
+   modes[2] = menu_hash_to_str(MENU_VALUE_RIGHT_ANALOG);
 
    if (setting)
       strlcpy(s, modes[settings->input.analog_dpad_mode
