@@ -60,6 +60,7 @@ static void alsa_worker_thread(void *data)
    {
       size_t avail;
       size_t fifo_size;
+      snd_pcm_sframes_t frames;
       slock_lock(alsa->fifo_lock);
       avail = fifo_read_avail(alsa->buffer);
       fifo_size = min(alsa->period_size, avail);
@@ -70,8 +71,7 @@ static void alsa_worker_thread(void *data)
       /* If underrun, fill rest with silence. */
       memset(buf + fifo_size, 0, alsa->period_size - fifo_size);
 
-      snd_pcm_sframes_t frames = snd_pcm_writei(
-            alsa->pcm, buf, alsa->period_frames);
+      frames = snd_pcm_writei(alsa->pcm, buf, alsa->period_frames);
 
       if (frames == -EPIPE || frames == -EINTR || 
             frames == -ESTRPIPE)

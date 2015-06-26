@@ -960,7 +960,7 @@ local int unz64local_GetCurrentFileInfoInternal (unzFile file,
    if (unz64local_getLong(&s->z_filefunc, s->filestream,&file_info.external_fa) != UNZ_OK)
       err=UNZ_ERRNO;
 
-   // relative offset of local header
+   /* relative offset of local header */
    if (unz64local_getLong(&s->z_filefunc, s->filestream,&uL) != UNZ_OK)
       err=UNZ_ERRNO;
    file_info_internal.offset_curfile = uL;
@@ -983,7 +983,7 @@ local int unz64local_GetCurrentFileInfoInternal (unzFile file,
       lSeek -= uSizeRead;
    }
 
-   // Read extrafield
+   /* Read extrafield */
    if ((err==UNZ_OK) && (extraField!=NULL))
    {
       ZPOS64_T uSizeRead ;
@@ -1014,7 +1014,7 @@ local int unz64local_GetCurrentFileInfoInternal (unzFile file,
    {
       uLong acc = 0;
 
-      // since lSeek now points to after the extra field we need to move back
+      /* since lSeek now points to after the extra field we need to move back */
       lSeek -= file_info.size_file_extra;
 
       if (lSeek!=0)
