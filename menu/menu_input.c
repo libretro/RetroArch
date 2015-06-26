@@ -969,12 +969,12 @@ unsigned menu_input_frame(retro_input_t input, retro_input_t trigger_input)
    static bool initial_held                = true;
    static bool first_held                  = false;
    static const retro_input_t input_repeat =
-      (1ULL << RETRO_DEVICE_ID_JOYPAD_UP)
-      | (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN)
-      | (1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT)
-      | (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT)
-      | (1ULL << RETRO_DEVICE_ID_JOYPAD_L)
-      | (1ULL << RETRO_DEVICE_ID_JOYPAD_R);
+        (1UL << RETRO_DEVICE_ID_JOYPAD_UP)
+      | (1UL << RETRO_DEVICE_ID_JOYPAD_DOWN)
+      | (1UL << RETRO_DEVICE_ID_JOYPAD_LEFT)
+      | (1UL << RETRO_DEVICE_ID_JOYPAD_RIGHT)
+      | (1UL << RETRO_DEVICE_ID_JOYPAD_L)
+      | (1UL << RETRO_DEVICE_ID_JOYPAD_R);
    menu_navigation_t *nav      = menu_navigation_get_ptr();
    menu_handle_t *menu         = menu_driver_get_ptr();
    menu_display_t *disp        = menu_display_get_ptr();

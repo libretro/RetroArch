@@ -336,9 +336,9 @@ static INLINE void input_poll_overlay(input_overlay_t *overlay_device, float opa
       if (driver->overlay_state.analog[j])
          continue;
 
-      if (driver->overlay_state.buttons & (1ULL << bind_plus))
+      if (driver->overlay_state.buttons & (1UL << bind_plus))
          driver->overlay_state.analog[j] += 0x7fff;
-      if (driver->overlay_state.buttons & (1ULL << bind_minus))
+      if (driver->overlay_state.buttons & (1UL << bind_minus))
          driver->overlay_state.analog[j] -= 0x7fff;
    }
 
@@ -359,13 +359,13 @@ static INLINE void input_poll_overlay(input_overlay_t *overlay_device, float opa
          analog_y = (float)driver->overlay_state.analog[analog_base + 1] / 0x7fff;
 
          if (analog_x <= -settings->input.axis_threshold)
-            driver->overlay_state.buttons |= (1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT);
+            driver->overlay_state.buttons |= (1UL << RETRO_DEVICE_ID_JOYPAD_LEFT);
          if (analog_x >=  settings->input.axis_threshold)
-            driver->overlay_state.buttons |= (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT);
+            driver->overlay_state.buttons |= (1UL << RETRO_DEVICE_ID_JOYPAD_RIGHT);
          if (analog_y <= -settings->input.axis_threshold)
-            driver->overlay_state.buttons |= (1ULL << RETRO_DEVICE_ID_JOYPAD_UP);
+            driver->overlay_state.buttons |= (1UL << RETRO_DEVICE_ID_JOYPAD_UP);
          if (analog_y >=  settings->input.axis_threshold)
-            driver->overlay_state.buttons |= (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN);
+            driver->overlay_state.buttons |= (1UL << RETRO_DEVICE_ID_JOYPAD_DOWN);
          break;
       }
 

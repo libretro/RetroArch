@@ -33,7 +33,7 @@
 extern "C" {
 #endif
 
-typedef uint64_t retro_input_t ;
+typedef uint64_t retro_input_t;
 
 struct retro_keybind
 {

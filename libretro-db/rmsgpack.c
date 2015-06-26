@@ -540,7 +540,7 @@ int rmsgpack_read(FILE *fp,
       case 0xcd:
       case 0xce:
       case 0xcf:
-         tmp_len = 1ULL << (type - 0xcc);
+         tmp_len = 1UL << (type - 0xcc);
          tmp_uint = 0;
          if (read_uint(fp, &tmp_uint, tmp_len) == -1)
             return -errno;
@@ -552,7 +552,7 @@ int rmsgpack_read(FILE *fp,
       case 0xd1:
       case 0xd2:
       case 0xd3:
-         tmp_len = 1ULL << (type - 0xd0);
+         tmp_len = 1UL << (type - 0xd0);
          tmp_int = 0;
          if (read_int(fp, &tmp_int, tmp_len) == -1)
             return -errno;

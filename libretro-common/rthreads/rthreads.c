@@ -412,11 +412,11 @@ bool scond_wait_timeout(scond_t *cond, slock_t *lock, int64_t timeout_us)
    clock_gettime(CLOCK_REALTIME, &now);
 #endif
 
-   now.tv_sec += timeout_us / 1000000LL;
-   now.tv_nsec += timeout_us * 1000LL;
+   now.tv_sec += timeout_us / 1000000;
+   now.tv_nsec += timeout_us * 1000;
 
-   now.tv_sec += now.tv_nsec / 1000000000LL;
-   now.tv_nsec = now.tv_nsec % 1000000000LL;
+   now.tv_sec += now.tv_nsec / 1000000000;
+   now.tv_nsec = now.tv_nsec % 1000000000;
 
    ret = pthread_cond_timedwait(&cond->cond, &lock->lock, &now);
    return (ret == 0);
