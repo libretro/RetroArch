@@ -62,8 +62,8 @@ typedef struct rarch_CC_resampler
 
 static void *memalign_alloc__(size_t boundary, size_t size)
 {
-   uintptr_t addr = 0;
    void **place;
+   uintptr_t addr = 0;
    void *ptr = malloc(boundary + size + sizeof(uintptr_t));
    if (!ptr)
       return NULL;
@@ -227,6 +227,10 @@ static void resampler_CC_downsample(void *re_, struct resampler_data *data)
 
    while (inp != inp_max)
    {
+      __m128 vec_ww1, vec_ww2;
+      __m128 vec_w_previous;
+      __m128 vec_w_current;
+      __m128 vec_in;
       __m128 vec_ratio =
          _mm_mul_ps(_mm_set_ps1(ratio), _mm_set_ps(3.0, 2.0, 1.0, 0.0));
       __m128 vec_w = _mm_sub_ps(_mm_set_ps1(re->distance), vec_ratio);
@@ -235,12 +239,16 @@ static void resampler_CC_downsample(void *re_, struct resampler_data *data)
       __m128 vec_w2 = _mm_sub_ps(vec_w , _mm_set_ps1(0.5));
 
       __m128 vec_b = _mm_set_ps1(b);
+
       vec_w1 = _mm_mul_ps(vec_w1, vec_b);
       vec_w2 = _mm_mul_ps(vec_w2, vec_b);
 
+      (void)vec_ww1;
+      (void)vec_ww2;
+
 #if (CC_RESAMPLER_PRECISION > 0)
-      __m128 vec_ww1 = _mm_mul_ps(vec_w1, vec_w1);
-      __m128 vec_ww2 = _mm_mul_ps(vec_w2, vec_w2);
+      vec_ww1 = _mm_mul_ps(vec_w1, vec_w1);
+      vec_ww2 = _mm_mul_ps(vec_w2, vec_w2);
 
 
       vec_ww1 = _mm_mul_ps(vec_ww1, _mm_sub_ps(_mm_set_ps1(3.0),vec_ww1));
@@ -257,15 +265,14 @@ static void resampler_CC_downsample(void *re_, struct resampler_data *data)
       vec_w2  = _mm_min_ps(vec_w2, _mm_set_ps1( 0.5));
       vec_w1  = _mm_max_ps(vec_w1, _mm_set_ps1(-0.5));
       vec_w2  = _mm_max_ps(vec_w2, _mm_set_ps1(-0.5));
-
       vec_w   = _mm_sub_ps(vec_w1, vec_w2);
 
-      __m128 vec_w_previous =
+      vec_w_previous =
          _mm_shuffle_ps(vec_w,vec_w,_MM_SHUFFLE(1, 1, 0, 0));
-      __m128 vec_w_current  =
+      vec_w_current  =
          _mm_shuffle_ps(vec_w,vec_w,_MM_SHUFFLE(3, 3, 2, 2));
 
-      __m128 vec_in = _mm_loadl_pi(_mm_setzero_ps(),(__m64*)inp);
+      vec_in = _mm_loadl_pi(_mm_setzero_ps(),(__m64*)inp);
       vec_in = _mm_shuffle_ps(vec_in,vec_in,_MM_SHUFFLE(1, 0, 1, 0));
 
       vec_previous =
@@ -321,6 +328,9 @@ static void resampler_CC_upsample(void *re_, struct resampler_data *data)
 
       while (re->distance < 1.0)
       {
+         __m128 vec_w_previous;
+         __m128 vec_w_current;
+         __m128 vec_out;
          __m128 vec_w =
             _mm_add_ps(_mm_set_ps1(re->distance), _mm_set_ps(-2.0, -1.0, 0.0, 1.0));
 
@@ -353,12 +363,10 @@ static void resampler_CC_upsample(void *re_, struct resampler_data *data)
 
          vec_w   = _mm_sub_ps(vec_w1, vec_w2);
 
-         __m128 vec_w_previous =
-            _mm_shuffle_ps(vec_w,vec_w,_MM_SHUFFLE(1, 1, 0, 0));
-         __m128 vec_w_current  =
-            _mm_shuffle_ps(vec_w,vec_w,_MM_SHUFFLE(3, 3, 2, 2));
+         vec_w_previous = _mm_shuffle_ps(vec_w,vec_w,_MM_SHUFFLE(1, 1, 0, 0));
+         vec_w_current  = _mm_shuffle_ps(vec_w,vec_w,_MM_SHUFFLE(3, 3, 2, 2));
 
-         __m128 vec_out =  _mm_mul_ps(vec_previous, vec_w_previous);
+         vec_out =  _mm_mul_ps(vec_previous, vec_w_previous);
          vec_out = _mm_add_ps(vec_out, _mm_mul_ps(vec_current, vec_w_current));
          vec_out =
             _mm_add_ps(vec_out, _mm_shuffle_ps(vec_out,vec_out,_MM_SHUFFLE(3, 2, 3, 2)));
