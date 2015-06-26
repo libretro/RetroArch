@@ -125,6 +125,17 @@ static void get_binds(config_file_t *conf, config_file_t *auto_conf,
 {
    int i, timeout_cnt;
    const input_device_driver_t *driver = input_joypad_init_driver(g_driver, NULL);
+   const char *joypad_name;
+
+   int16_t initial_axes[MAX_AXES] = {0};
+   struct poll_data old_poll = {{0}};
+   struct poll_data new_poll = {{0}};
+
+   int last_axis   = -1;
+   bool block_axis = false;
+
+   int timeout_ticks = g_timeout * 100;
+
    if (!driver)
    {
       fprintf(stderr, "Cannot find any valid input driver.\n");
@@ -138,7 +149,7 @@ static void get_binds(config_file_t *conf, config_file_t *auto_conf,
    }
 
    fprintf(stderr, "Found joypad driver: %s\n", driver->ident);
-   const char *joypad_name = input_joypad_name(driver, joypad);
+   joypad_name = input_joypad_name(driver, joypad);
    fprintf(stderr, "Using joypad: %s\n", joypad_name ? joypad_name : "Unknown");
 
    if (joypad_name && auto_conf)
@@ -146,15 +157,6 @@ static void get_binds(config_file_t *conf, config_file_t *auto_conf,
       config_set_string(auto_conf, "input_device", joypad_name);
       config_set_string(auto_conf, "input_driver", driver->ident);
    }
-
-   int16_t initial_axes[MAX_AXES] = {0};
-   struct poll_data old_poll = {{0}};
-   struct poll_data new_poll = {{0}};
-
-   int last_axis   = -1;
-   bool block_axis = false;
-
-   int timeout_ticks = g_timeout * 100;
 
    poll_joypad(driver, joypad, &old_poll);
    fprintf(stderr, "\nJoypads tend to have stale state after opened.\nPress some buttons and move some axes around to make sure joypad state is completely neutral before proceeding.\nWhen done, press Enter ... ");
@@ -192,17 +194,19 @@ static void get_binds(config_file_t *conf, config_file_t *auto_conf,
 
    for (i = 0, timeout_cnt = 0; input_config_bind_map[i].valid; i++, timeout_cnt = 0)
    {
+      unsigned meta_level;
+      unsigned player_index;
       int j;
       if (i == RARCH_TURBO_ENABLE)
          continue;
 
-      unsigned meta_level = input_config_bind_map[i].meta;
+      meta_level = input_config_bind_map[i].meta;
       if (meta_level > g_meta_level)
          continue;
 
       fprintf(stderr, "%s\n", input_config_bind_map[i].desc);
 
-      unsigned player_index = input_config_bind_map[i].meta ? 0 : player;
+      player_index = input_config_bind_map[i].meta ? 0 : player;
 
       for (;;)
       {
@@ -252,13 +256,18 @@ static void get_binds(config_file_t *conf, config_file_t *auto_conf,
 
          for (j = 0; j < MAX_AXES; j++)
          {
+            int16_t value;
+            bool same_axis;
+            bool require_negative;
+            bool require_positive;
+
             if (new_poll.axes[j] == old_poll.axes[j])
                continue;
 
-            int16_t value         = new_poll.axes[j];
-            bool same_axis        = last_axis == j;
-            bool require_negative = initial_axes[j] > 0;
-            bool require_positive = initial_axes[j] < 0;
+            value            = new_poll.axes[j];
+            same_axis        = last_axis == j;
+            require_negative = initial_axes[j] > 0;
+            require_positive = initial_axes[j] < 0;
 
             /* Block the axis config until we're sure 
              * axes have returned to their neutral state. */
@@ -464,14 +473,7 @@ void input_config_autoconfigure_joypad(autoconfig_params_t *params)
 
 int main(int argc, char *argv[])
 {
-   parse_input(argc, argv);
-
-   config_file_t *conf = config_file_new(g_in_path);
-   if (!conf)
-   {
-      fprintf(stderr, "Couldn't open config file ...\n");
-      return 1;
-   }
+   config_file_t *conf;
 
    const char *index_list[] = { 
       "input_player1_joypad_index", 
@@ -483,6 +485,15 @@ int main(int argc, char *argv[])
       "input_player7_joypad_index",
       "input_player8_joypad_index",
    };
+
+   parse_input(argc, argv);
+
+   conf = config_file_new(g_in_path);
+   if (!conf)
+   {
+      fprintf(stderr, "Couldn't open config file ...\n");
+      return 1;
+   }
 
    config_set_int(conf, index_list[g_player - 1], g_joypad);
 
