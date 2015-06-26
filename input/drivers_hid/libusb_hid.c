@@ -29,9 +29,9 @@
 
 typedef struct libusb_hid
 {
-   libusb_hotplug_callback_handle hp;
    joypad_connection_t *slots;
    sthread_t *poll_thread;
+   int hp; /* libusb_hotplug_callback_handle is just int */
    int quit;
 } libusb_hid_t;
 
@@ -522,9 +522,11 @@ static void *libusb_hid_init(void)
    if (count > 0)
       libusb_free_device_list(devices, 1);
 
-   ret = libusb_hotplug_register_callback(NULL,
-         LIBUSB_HOTPLUG_EVENT_DEVICE_ARRIVED |
-         LIBUSB_HOTPLUG_EVENT_DEVICE_LEFT, 0,
+   ret = libusb_hotplug_register_callback(
+         NULL,
+         (libusb_hotplug_event)(LIBUSB_HOTPLUG_EVENT_DEVICE_ARRIVED |
+         LIBUSB_HOTPLUG_EVENT_DEVICE_LEFT),
+         (libusb_hotplug_flag)LIBUSB_HOTPLUG_ENUMERATE,
          LIBUSB_HOTPLUG_MATCH_ANY,
          LIBUSB_HOTPLUG_MATCH_ANY,
          LIBUSB_HOTPLUG_MATCH_ANY,
