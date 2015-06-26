@@ -1500,7 +1500,8 @@ static void setting_get_string_representation_uint_user_language(void *data,
       "Russian",
       "Korean",
       "Chinese (Traditional)",
-      "Chinese (Simplified)"
+      "Chinese (Simplified)",
+      "Esperanto"
    };
    settings_t      *settings = config_get_ptr();
 
