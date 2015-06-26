@@ -27,8 +27,6 @@ extern "C" {
 
 typedef struct rarch_joypad_driver input_device_driver_t;
 
-enum retro_rumble_effect;
-
 struct rarch_joypad_driver
 {
    bool (*init)(void *data);
