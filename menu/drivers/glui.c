@@ -317,7 +317,7 @@ static void glui_render_menu_list(glui_handle_t *glui,
       char type_str_buf[PATH_MAX_LENGTH];
       int y = disp->header_height - menu->scroll_y + (glui->line_height * i);
 
-      if (y > height || ((y + (int)glui->line_height) < 0))
+      if (y > (int)height || ((y + (int)glui->line_height) < 0))
          continue;
 
       entry_path[0]      = '\0';
@@ -645,7 +645,7 @@ static float glui_get_scroll(void)
    glui = (glui_handle_t*)menu->userdata;
    half = (height / glui->line_height) / 2;
 
-   if (nav->selection_ptr < half)
+   if (nav->selection_ptr < (unsigned)half)
       return 0;
    return ((nav->selection_ptr + 2 - half) * glui->line_height);
 }

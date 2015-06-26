@@ -451,7 +451,7 @@ static void rgui_render(void)
       menu_entries_set_start(0);;
 
    bottom = menu_entries_get_end() - RGUI_TERM_HEIGHT;
-   if (menu_entries_get_start() > bottom)
+   if (menu_entries_get_start() > (unsigned)bottom)
       menu_entries_set_start(bottom);
 
    end = ((menu_entries_get_start() + RGUI_TERM_HEIGHT) <= (menu_entries_get_end())) ?
