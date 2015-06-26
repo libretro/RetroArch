@@ -1,3 +1,19 @@
+ifeq ($(HAVE_GL_CONTEXT),)
+   HAVE_GL_CONTEXT=0
+
+   ifeq ($(HAVE_OPENGL), 1)
+      HAVE_GL_CONTEXT=1
+   endif
+
+   ifeq ($(HAVE_GLES), 1)
+      HAVE_GL_CONTEXT=1
+   endif
+
+   ifeq ($(HAVE_GLES3), 1)
+      HAVE_GL_CONTEXT=1
+   endif
+endif
+
 ifeq ($(HAVE_LIBRETRODB),)
    HAVE_LIBRETRODB = 1
 endif
@@ -45,13 +61,6 @@ CFLAGS += -I./libretro-common/include
 
 # Switches
 
-# Extra menu drivers if GL supported
-ifeq ($(HAVE_OPENGL), 1)
-ifeq ($(HAVE_RGUI), 1)
-HAVE_GLUI = 1
-HAVE_XMB = 1
-endif
-endif
 
 # System
 
@@ -328,6 +337,20 @@ ifeq ($(HAVE_NEON),1)
    OBJ += audio/audio_utils_neon.o
 endif
 
+# XMB and GLUI are always enabled if supported and not explicitly disabled
+ifeq ($(HAVE_RGUI)$(HAVE_GL_CONTEXT), 11)
+   ifeq ($(HAVE_GLUI),)
+      HAVE_GLUI = 1
+   endif
+
+   ifeq ($(HAVE_XMB),)
+      HAVE_XMB = 1
+   endif
+else
+   HAVE_GLUI = 0
+   HAVE_XMB  = 0
+endif
+
 ifeq ($(HAVE_RGUI), 1)
    OBJ += menu/drivers/rgui.o
    DEFINES += -DHAVE_MENU -DHAVE_RGUI
@@ -482,21 +505,6 @@ ifeq ($(HAVE_PARPORT), 1)
 endif
 
 # Video
-ifeq ($(HAVE_GL_CONTEXT),)
-   HAVE_GL_CONTEXT=0
-
-   ifeq ($(HAVE_OPENGL), 1)
-      HAVE_GL_CONTEXT=1
-   endif
-
-   ifeq ($(HAVE_GLES), 1)
-      HAVE_GL_CONTEXT=1
-   endif
-
-   ifeq ($(HAVE_GLES3), 1)
-      HAVE_GL_CONTEXT=1
-   endif
-endif
 
 ifeq ($(HAVE_GL_CONTEXT), 1)
    DEFINES += -DHAVE_OPENGL -DHAVE_GLSL
