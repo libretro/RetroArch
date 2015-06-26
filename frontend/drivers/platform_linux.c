@@ -461,7 +461,7 @@ static void frontend_linux_get_os(char *s, size_t len, int *major, int *minor)
    if (uname(&buffer) != 0)
       return;
 
-   sscanf(buffer.release, "%d.%d.%d", major, minor, &krel);
+   sscanf(buffer.release, "%d.%d.%u", major, minor, &krel);
    strlcpy(s, "Linux", len);
 }
 
