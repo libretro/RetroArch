@@ -57,7 +57,7 @@ void scaler_argb8888_vert(const struct scaler_ctx *ctx, void *output_, int strid
 {
    int h, w, y;
    const uint64_t *input = ctx->scaled.frame;
-   uint32_t *output = (uint32_t*)output_;
+   uint32_t      *output = (uint32_t*)output_;
 
    const int16_t *filter_vert = ctx->vert.filter;
 
@@ -67,6 +67,7 @@ void scaler_argb8888_vert(const struct scaler_ctx *ctx, void *output_, int strid
 
       for (w = 0; w < ctx->out_width; w++)
       {
+         __m128i final;
          __m128i res = _mm_setzero_si128();
 
          const uint64_t *input_base_y = input_base + w;
@@ -87,10 +88,10 @@ void scaler_argb8888_vert(const struct scaler_ctx *ctx, void *output_, int strid
             res = _mm_adds_epi16(_mm_mulhi_epi16(col, coeff), res);
          }
 
-         res = _mm_adds_epi16(_mm_srli_si128(res, 8), res);
-         res = _mm_srai_epi16(res, (7 - 2 - 2));
+         res       = _mm_adds_epi16(_mm_srli_si128(res, 8), res);
+         res       = _mm_srai_epi16(res, (7 - 2 - 2));
 
-         __m128i final = _mm_packus_epi16(res, res);
+         final     = _mm_packus_epi16(res, res);
 
          output[w] = _mm_cvtsi128_si32(final);
       }
@@ -100,8 +101,8 @@ void scaler_argb8888_vert(const struct scaler_ctx *ctx, void *output_, int strid
 void scaler_argb8888_vert(const struct scaler_ctx *ctx, void *output_, int stride)
 {
    int h, w, y;
-   const uint64_t *input = ctx->scaled.frame;
-   uint32_t *output = (uint32_t*)output_;
+   const uint64_t      *input = ctx->scaled.frame;
+   uint32_t           *output = (uint32_t*)output_;
 
    const int16_t *filter_vert = ctx->vert.filter;
 
@@ -253,9 +254,9 @@ void scaler_argb8888_point_special(const struct scaler_ctx *ctx,
       int in_width, int in_height,
       int out_stride, int in_stride)
 {
+   int h, w;
    const uint32_t *input = NULL;
    uint32_t *output      = NULL;
-   int h, w;
    int x_pos  = (1 << 15) * in_width / out_width - (1 << 15);
    int x_step = (1 << 16) * in_width / out_width;
    int y_pos  = (1 << 15) * in_height / out_height - (1 << 15);

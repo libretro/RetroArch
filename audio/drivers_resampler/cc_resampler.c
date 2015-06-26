@@ -324,9 +324,10 @@ static void resampler_CC_upsample(void *re_, struct resampler_data *data)
 
       while (re->distance < 1.0)
       {
-         __m128 vec_w_previous;
-         __m128 vec_w_current;
-         __m128 vec_out;
+         __m128 vec_w_previous, vec_w_current, vec_out;
+#if (CC_RESAMPLER_PRECISION > 0)
+         __m128 vec_ww1, vec_ww2;
+#endif
          __m128 vec_w =
             _mm_add_ps(_mm_set_ps1(re->distance), _mm_set_ps(-2.0, -1.0, 0.0, 1.0));
 
@@ -338,8 +339,8 @@ static void resampler_CC_upsample(void *re_, struct resampler_data *data)
          vec_w2 = _mm_mul_ps(vec_w2, vec_b);
 
 #if (CC_RESAMPLER_PRECISION > 0)
-         __m128 vec_ww1 = _mm_mul_ps(vec_w1, vec_w1);
-         __m128 vec_ww2 = _mm_mul_ps(vec_w2, vec_w2);
+         vec_ww1 = _mm_mul_ps(vec_w1, vec_w1);
+         vec_ww2 = _mm_mul_ps(vec_w2, vec_w2);
 
 
          vec_ww1 = _mm_mul_ps(vec_ww1,_mm_sub_ps(_mm_set_ps1(3.0),vec_ww1));
