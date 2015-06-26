@@ -599,10 +599,9 @@ static bool gfx_ctx_wl_set_video_mode(void *data,
    driver_t *driver = driver_get_ptr();
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)
       driver->video_context_data;
-   struct sigaction sa = {{0}};
-
    EGLint egl_attribs[16];
-   EGLint *attr;
+   struct sigaction sa = {{0}};
+   EGLint *attr = NULL;
 
    sa.sa_handler = sighandler;
    sa.sa_flags   = SA_RESTART;
