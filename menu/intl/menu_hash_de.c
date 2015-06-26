@@ -853,7 +853,7 @@ const char *menu_hash_to_str_de(uint32_t hash)
 
 int menu_hash_get_help_de(uint32_t hash, char *s, size_t len)
 {
-   uint32_t driver_hash = 0;
+   uint32_t      driver_hash = 0;
    settings_t      *settings = config_get_ptr();
 
    switch (hash)

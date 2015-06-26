@@ -857,11 +857,12 @@ static bool xv_focus(void *data)
 
 static bool xv_suppress_screensaver(void *data, bool enable)
 {
-   (void)data;
-   (void)enable;
    driver_t *driver = driver_get_ptr();
 
-   if (driver->display_type == RARCH_DISPLAY_X11)
+   (void)data;
+   (void)enable;
+
+   if (driver && driver->display_type == RARCH_DISPLAY_X11)
    {
       x11_suspend_screensaver(driver->video_window);
       return true;

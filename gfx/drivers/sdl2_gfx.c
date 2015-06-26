@@ -253,12 +253,20 @@ static void sdl2_init_renderer(sdl2_video_t *vid)
 static void sdl_refresh_renderer(sdl2_video_t *vid)
 {
    SDL_Rect r;
+
    SDL_RenderClear(vid->renderer);
-   r = (SDL_Rect){ vid->vp.x, vid->vp.y, (int)vid->vp.width, (int)vid->vp.height };
+
+   r.x      = vid->vp.x;
+   r.y      = vid->vp.y;
+   r.w      = (int)vid->vp.width;
+   r.h      = (int)vid->vp.height;
+
    SDL_RenderSetViewport(vid->renderer, &r);
 
    /* breaks int scaling */
-   /* SDL_RenderSetLogicalSize(vid->renderer, vid->vp.width, vid->vp.height); */
+#if 0
+   SDL_RenderSetLogicalSize(vid->renderer, vid->vp.width, vid->vp.height);
+#endif
 }
 
 static void sdl_refresh_viewport(sdl2_video_t *vid)
