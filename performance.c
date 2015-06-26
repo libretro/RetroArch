@@ -406,23 +406,36 @@ unsigned rarch_get_cpu_cores(void)
 uint64_t rarch_get_cpu_features(void)
 {
    int flags[4];
+   unsigned max_flag;
+   uint64_t cpu_flags;
+   int vendor_shuffle[3];
+   char vendor[13] = {0};
    uint64_t cpu = 0;
+#if defined(CPU_X86)
+   const int avx_flags = (1 << 27) | (1 << 28);
+#endif
 
    char buf[sizeof(" MMX MMXEXT SSE SSE2 SSE3 SSSE3 SS4 SSE4.2 AES AVX AVX2 NEON VMX VMX128 VFPU PS")];
 
    memset(buf, 0, sizeof(buf));
    
+   (void)cpu_flags;
    (void)flags;
+   (void)vendor;
+   (void)vendor_shuffle;
 
 #if defined(CPU_X86)
-   x86_cpuid(0, flags);
+   (void)avx_flags;
 
-   char vendor[13] = {0};
-   const int vendor_shuffle[3] = { flags[1], flags[3], flags[2] };
+   x86_cpuid(0, flags);
+   vendor_shuffle[0] = flags[1];
+   vendor_shuffle[1] = flags[3];
+   vendor_shuffle[2] = flags[2];
    memcpy(vendor, vendor_shuffle, sizeof(vendor_shuffle));
+
    RARCH_LOG("[CPUID]: Vendor: %s\n", vendor);
 
-   unsigned max_flag = flags[0];
+   max_flag = flags[0];
    if (max_flag < 1) /* Does CPUID not support func = 1? (unlikely ...) */
       return 0;
 
@@ -456,7 +469,6 @@ uint64_t rarch_get_cpu_features(void)
    if (flags[2] & (1 << 25))
       cpu |= RETRO_SIMD_AES;
 
-   const int avx_flags = (1 << 27) | (1 << 28);
 
    /* Must only perform xgetbv check if we have 
     * AVX CPU support (guaranteed to have at least i686). */
@@ -483,7 +495,7 @@ uint64_t rarch_get_cpu_features(void)
    }
 
 #elif defined(ANDROID) && defined(ANDROID_ARM)
-   uint64_t cpu_flags = android_getCpuFeatures();
+   cpu_flags = android_getCpuFeatures();
 
 #ifdef __ARM_NEON__
    if (cpu_flags & ANDROID_CPU_ARM_FEATURE_NEON)
@@ -528,7 +540,6 @@ uint64_t rarch_get_cpu_features(void)
    if (cpu & RETRO_SIMD_PS)     strlcat(buf, " PS", sizeof(buf));
 
    RARCH_LOG("[CPUID]: Features:%s\n", buf);
-
 
    return cpu;
 }
