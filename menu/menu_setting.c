@@ -5925,7 +5925,7 @@ static bool setting_append_list_input_player_options(
    snprintf(buffer[user],    sizeof(buffer[user]),
          "%s %u", menu_hash_to_str(MENU_VALUE_USER), user + 1);
    snprintf(group_lbl[user], sizeof(group_lbl[user]),
-         "Input %s Binds", buffer[user]);
+         menu_hash_to_str(MENU_LABEL_VALUE_INPUT_USER_BINDS), user + 1);
 
    START_GROUP(group_info, group_lbl[user], parent_group);
 

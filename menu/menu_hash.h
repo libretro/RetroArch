@@ -932,6 +932,8 @@ extern "C" {
 
 #define MENU_LABEL_VALUE_NO_INFORMATION_AVAILABLE                              0xbae2c7f6U
 
+#define MENU_LABEL_VALUE_INPUT_USER_BINDS                                      0x75fda711U
+
 const char *menu_hash_to_str_de(uint32_t hash);
 int menu_hash_get_help_de(uint32_t hash, char *s, size_t len);
 

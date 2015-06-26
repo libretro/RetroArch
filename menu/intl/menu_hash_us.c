@@ -1366,6 +1366,8 @@ const char *menu_hash_to_str_us(uint32_t hash)
          return "Recording Settings";
       case MENU_LABEL_VALUE_NO_INFORMATION_AVAILABLE:
          return "No information is available.";
+      case MENU_LABEL_VALUE_INPUT_USER_BINDS:
+         return "Input User %u Binds";
       default:
          break;
    }

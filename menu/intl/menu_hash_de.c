@@ -812,6 +812,8 @@ const char *menu_hash_to_str_de(uint32_t hash)
          return "Aufnahme-Einstellungen";
       case MENU_LABEL_VALUE_NO_INFORMATION_AVAILABLE:
          return "Keine Informationen verfügbar.";
+      case MENU_LABEL_VALUE_INPUT_USER_BINDS:
+         return "Spieler %u Tastenbelegung";
       default:
          break;
    }
