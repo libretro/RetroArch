@@ -219,6 +219,10 @@ ifeq ($(HAVE_PYTHON), 1)
    OBJ += gfx/video_state_python.o
 endif
 
+ifeq ($(OSX), 1)
+   DEFINES += -Wno-invalid-source-encoding
+endif
+
 ifeq ($(HAVE_EMSCRIPTEN), 1)
 OBJ += frontend/drivers/platform_emscripten.o \
 		input/drivers/rwebinput_input.o \
