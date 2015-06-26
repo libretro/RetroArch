@@ -23,6 +23,10 @@
 #include "../input_autodetect.h"
 #include "../input_hid_driver.h"
 
+#ifndef LIBUSB_CAP_HAS_HOTPLUG
+#define LIBUSB_CAP_HAS_HOTPLUG 0x0001
+#endif
+
 typedef struct libusb_hid
 {
    libusb_hotplug_callback_handle hp;
