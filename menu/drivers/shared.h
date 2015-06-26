@@ -97,6 +97,9 @@ static INLINE void gl_menu_frame_background(
    coords.lut_tex_coord = tex_coord;
    coords.color         = black_color;
 
+   if (gl->shader && gl->shader->use)
+      gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
+
    menu_display_set_viewport();
 
    if ((settings->menu.pause_libretro
