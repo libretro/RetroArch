@@ -5,6 +5,10 @@
 #include <assert.h>
 #include <stdarg.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <libavformat/avformat.h>
 #include <libavcodec/avcodec.h>
 #include <libswscale/swscale.h>
@@ -14,6 +18,10 @@
 #include <libswresample/swresample.h>
 #ifdef HAVE_SSA
 #include <ass/ass.h>
+#endif
+
+#ifdef __cplusplus
+}
 #endif
 
 #ifdef HAVE_GL_FFT
