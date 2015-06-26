@@ -5911,7 +5911,7 @@ static bool setting_append_list_input_player_options(
     * Keep it up to date or you'll get some really obvious bugs.
     * 2 is the length of '99'; we don't need more users than that.
     */
-   static char buffer[MAX_USERS][7+2+1];
+   static char buffer[MAX_USERS][13+2+1];
    static char group_lbl[MAX_USERS][PATH_MAX_LENGTH];
    unsigned i;
    rarch_setting_group_info_t group_info    = {0};
@@ -5925,7 +5925,7 @@ static bool setting_append_list_input_player_options(
    snprintf(buffer[user],    sizeof(buffer[user]),
          "%s %u", menu_hash_to_str(MENU_VALUE_USER), user + 1);
    snprintf(group_lbl[user], sizeof(group_lbl[user]),
-         "Input %s Binds", buffer[user]);
+         menu_hash_to_str(MENU_LABEL_VALUE_INPUT_USER_BINDS), user + 1);
 
    START_GROUP(group_info, group_lbl[user], parent_group);
 
