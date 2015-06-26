@@ -2115,7 +2115,6 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          need_push    = true;
          need_refresh = true;
          break;
-         break;
       case DISPLAYLIST_LOAD_CONTENT_LIST:
          menu_list_clear(info->list);
          ret = menu_displaylist_parse_load_content_list(info);
