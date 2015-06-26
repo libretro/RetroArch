@@ -27,7 +27,7 @@
 #include <ApplicationServices/ApplicationServices.h>
 #endif
 
-#define CT_ATLAS_ROWS 8
+#define CT_ATLAS_ROWS 16
 #define CT_ATLAS_COLS 16
 #define CT_ATLAS_SIZE (CT_ATLAS_ROWS * CT_ATLAS_COLS)
 
