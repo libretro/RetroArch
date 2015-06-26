@@ -1125,7 +1125,7 @@ static void decode_thread(void *data)
             SWS_POINT, NULL, NULL, NULL);
    }
 
-   for (i = 0; i < audio_streams_num; i++)
+   for (i = 0; (int)i < audio_streams_num; i++)
    {
       swr[i] = swr_alloc();
 
@@ -1294,7 +1294,7 @@ static void decode_thread(void *data)
       sws_freeContext(sws);
    sws = NULL;
 
-   for (i = 0; i < audio_streams_num; i++)
+   for (i = 0; (int)i < audio_streams_num; i++)
       swr_free(&swr[i]);
 
    av_frame_free(&aud_frame);
