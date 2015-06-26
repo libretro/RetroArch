@@ -131,13 +131,12 @@ static INLINE double window_function(double idx)
 static INLINE double besseli0(double x)
 {
    unsigned i;
-   double sum = 0.0;
-
-   double factorial = 1.0;
+   double sum            = 0.0;
+   double factorial      = 1.0;
    double factorial_mult = 0.0;
-   double x_pow = 1.0;
-   double two_div_pow = 1.0;
-   double x_sqr = x * x;
+   double x_pow          = 1.0;
+   double two_div_pow    = 1.0;
+   double x_sqr          = x * x;
 
    /* Approximate. This is an infinite sum.
     * Luckily, it converges rather fast. */
@@ -166,18 +165,18 @@ static void init_sinc_table(rarch_sinc_resampler_t *resamp, double cutoff,
       float *phase_table, int phases, int taps, bool calculate_delta)
 {
    int i, j, p;
-   double window_mod = window_function(0.0); /* Need to normalize w(0) to 1.0. */
-   int stride = calculate_delta ? 2 : 1;
-   double sidelobes = taps / 2.0;
+   double    window_mod = window_function(0.0); /* Need to normalize w(0) to 1.0. */
+   int           stride = calculate_delta ? 2 : 1;
+   double     sidelobes = taps / 2.0;
 
    for (i = 0; i < phases; i++)
    {
       for (j = 0; j < taps; j++)
       {
-         double window_phase, sinc_phase;
+         double sinc_phase;
          float val;
-         int n = j * phases + i;
-         window_phase = (double)n / (phases * taps); /* [0, 1). */
+         int               n = j * phases + i;
+         double window_phase = (double)n / (phases * taps); /* [0, 1). */
          window_phase = 2.0 * window_phase - 1.0; /* [-1, 1) */
          sinc_phase = sidelobes * window_phase;
 
@@ -190,6 +189,7 @@ static void init_sinc_table(rarch_sinc_resampler_t *resamp, double cutoff,
    if (calculate_delta)
    {
       int phase;
+
       for (p = 0; p < phases - 1; p++)
       {
          for (j = 0; j < taps; j++)
@@ -204,9 +204,9 @@ static void init_sinc_table(rarch_sinc_resampler_t *resamp, double cutoff,
       for (j = 0; j < taps; j++)
       {
          float val, delta;
-         double window_phase, sinc_phase;
+         double sinc_phase;
          int n = j * phases + (phase + 1);
-         window_phase = (double)n / (phases * taps); /* (0, 1]. */
+         double window_phase = (double)n / (phases * taps); /* (0, 1]. */
          window_phase = 2.0 * window_phase - 1.0; /* (-1, 1] */
          sinc_phase = sidelobes * window_phase;
 
@@ -430,10 +430,9 @@ static void resampler_sinc_process(void *re_, struct resampler_data *data)
 {
    rarch_sinc_resampler_t *re = (rarch_sinc_resampler_t*)re_;
 
-   uint32_t ratio = PHASES / data->ratio;
-
-   const float *input = data->data_in;
-   float *output      = data->data_out;
+   uint32_t ratio        = PHASES / data->ratio;
+   const float *input    = data->data_in;
+   float *output         = data->data_out;
    size_t frames         = data->input_frames;
    size_t out_frames     = 0;
 
@@ -480,12 +479,11 @@ static void *resampler_sinc_new(const struct resampler_config *config,
    double cutoff;
    rarch_sinc_resampler_t *re = (rarch_sinc_resampler_t*)
       calloc(1, sizeof(*re));
-   (void)config;
 
    if (!re)
       return NULL;
 
-   memset(re, 0, sizeof(*re));
+   (void)config;
 
    re->taps = TAPS;
    cutoff = CUTOFF;
