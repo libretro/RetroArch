@@ -985,10 +985,6 @@ static int menu_cbs_init_bind_get_string_representation_compare_type(
          && type <= MENU_SETTINGS_SHADER_PRESET_PARAMETER_LAST)
       cbs->action_get_value =
          menu_action_setting_disp_set_label_shader_preset_parameter;
-   else if (type >= MENU_SETTINGS_SHADER_PARAMETER_0
-         && type <= MENU_SETTINGS_SHADER_PARAMETER_LAST)
-      cbs->action_get_value =
-         menu_action_setting_disp_set_label_shader_parameter;
    else
    {
       switch (type)
@@ -1097,6 +1093,14 @@ int menu_cbs_init_bind_get_string_representation(menu_file_list_cbs_t *cbs,
 {
    if (!cbs)
       return -1;
+
+   if (type >= MENU_SETTINGS_SHADER_PARAMETER_0
+         && type <= MENU_SETTINGS_SHADER_PARAMETER_LAST)
+   {
+      cbs->action_get_value =
+         menu_action_setting_disp_set_label_shader_parameter;
+      return 0;
+   }
 
    if (menu_cbs_init_bind_get_string_representation_compare_label(cbs, label_hash) == 0)
       return 0;

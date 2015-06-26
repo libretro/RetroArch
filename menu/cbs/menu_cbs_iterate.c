@@ -180,7 +180,7 @@ static int action_iterate_help(char *s, size_t len, const char *label)
    }
 
    snprintf(s, len,
-         "-- Welcome to RetroArch --\n"
+         "Welcome to RetroArch\n"
          " \n" // strtok_r doesn't split empty strings.
 
          "Basic Menu controls:\n"
