@@ -1662,10 +1662,10 @@ extern ZPOS64_T ZEXPORT unzGetCurrentFileZStreamPos64( unzFile file)
    file_in_zip64_read_info_s* pfile_in_zip_read_info;
    s=(unz64_s*)file;
    if (file==NULL)
-      return 0; //UNZ_PARAMERROR;
+      return 0; /* UNZ_PARAMERROR; */
    pfile_in_zip_read_info=s->pfile_in_zip_read;
    if (pfile_in_zip_read_info==NULL)
-      return 0; //UNZ_PARAMERROR;
+      return 0; /* UNZ_PARAMERROR; */
    return pfile_in_zip_read_info->pos_in_zipfile +
       pfile_in_zip_read_info->byte_before_the_zipfile;
 }
@@ -1835,7 +1835,7 @@ extern int ZEXPORT unzReadCurrentFile  (unzFile file, voidp buf, unsigned len)
          if (err!=BZ_OK)
             break;
 #endif
-      } // end Z_BZIP2ED
+      } /* end Z_BZIP2ED */
       else
       {
          ZPOS64_T uTotalOutBefore,uTotalOutAfter;
@@ -2082,7 +2082,7 @@ extern ZPOS64_T ZEXPORT unzGetOffset64(unzFile file)
    unz64_s* s;
 
    if (file==NULL)
-      return 0; //UNZ_PARAMERROR;
+      return 0; /* UNZ_PARAMERROR; */
    s=(unz64_s*)file;
    if (!s->current_file_ok)
       return 0;
@@ -2097,7 +2097,7 @@ extern uLong ZEXPORT unzGetOffset (unzFile file)
    ZPOS64_T offset64;
 
    if (file==NULL)
-      return 0; //UNZ_PARAMERROR;
+      return 0; /* UNZ_PARAMERROR; */
    offset64 = unzGetOffset64(file);
    return (uLong)offset64;
 }
