@@ -814,6 +814,36 @@ const char *menu_hash_to_str_de(uint32_t hash)
          return "Keine Informationen verfügbar.";
       case MENU_LABEL_VALUE_INPUT_USER_BINDS:
          return "Spieler %u Tastenbelegung";
+      case MENU_VALUE_LANG_ENGLISH:
+         return "Englisch";
+      case MENU_VALUE_LANG_JAPANESE:
+         return "Japanisch";
+      case MENU_VALUE_LANG_FRENCH:
+         return "Französisch";
+      case MENU_VALUE_LANG_SPANISH:
+         return "Spanisch";
+      case MENU_VALUE_LANG_GERMAN:
+         return "Deutsch";
+      case MENU_VALUE_LANG_ITALIAN:
+         return "Italienisch";
+      case MENU_VALUE_LANG_DUTCH:
+         return "Niederländisch";
+      case MENU_VALUE_LANG_PORTUGUESE:
+         return "Portugiesisch";
+      case MENU_VALUE_LANG_RUSSIAN:
+         return "Russisch";
+      case MENU_VALUE_LANG_KOREAN:
+         return "Koreanisch";
+      case MENU_VALUE_LANG_CHINESE_TRADITIONAL:
+         return "Chinesisch (Traditionell)";
+      case MENU_VALUE_LANG_CHINESE_SIMPLIFIED:
+         return "Chinesisch (Vereinfacht)";
+      case MENU_VALUE_LANG_ESPERANTO:
+         return "Esperanto";
+      case MENU_VALUE_LEFT_ANALOG:
+         return "Linker Analogstick";
+      case MENU_VALUE_RIGHT_ANALOG:
+         return "Rechter Analogstick";
       default:
          break;
    }
@@ -1044,6 +1074,56 @@ int menu_hash_get_help_de(uint32_t hash, char *s, size_t len)
                "(also andere als Quellskalierung mit dem \n"
                "selben Faktor für X/Y) kann der im Menü \n"
                "angezeigte Skalierungsfaktor inkorrekt sein."
+               );
+         break;
+      case MENU_LABEL_VIDEO_SHADER_SCALE_PASS:
+         snprintf(s, len,
+               "Für diesen Durchgang skalieren. \n"
+               " \n"
+               "Der Skalierungsfaktor wird multipliziert, \n"
+               "d.h. 2x im ersten Durchgang und 2x im \n"
+               "zweiten Durchgang bedeute eine 4x Gesamt- \n"
+               "Skalierung."
+               " \n"
+               "Wenn es im letzten Durchgang einen \n"
+               "Skalierungsfaktor gibt, wird das Ergebnis \n"
+               "mit dem als 'Standardfilter' eingestellten \n"
+               "Filter auf die Bildschirmgröße gestreckt. \n"
+               " \n"
+               "Wenn 'Mir egal' eingestellt ist, wird \n"
+               "entweder einfache Skalierung or Vollbild- \n"
+               "Streckung verwendet - abhängig davon, ob \n"
+               "es der letzte Durchgang ist oder nicht."
+               );
+         break;
+      case MENU_LABEL_VIDEO_SHADER_NUM_PASSES:
+         snprintf(s, len,
+               "Shader-Durchgänge. \n"
+               " \n"
+               "RetroArch erlaubt es dir, verschiedene Shader \n"
+               "in verschiedenen Durchgängen miteinander zu \n"
+               "kombinieren. \n"
+               " \n"
+               "Diese Option legt die Anzahl der Shader- \n"
+               "Durchgänge fest. Wenn du die Anzahl auf 0 setzt, \n"
+               "verwendest du einen 'leeren' Shader."
+               " \n"
+               "Die 'Standardfilter'-Option beeinflusst den \n"
+               "Streckungsfilter");
+         break;
+      case MENU_LABEL_VIDEO_SHADER_PARAMETERS:
+         snprintf(s, len,
+               "Shader-Parameter. \n"
+               " \n"
+               "Verändert den momentanen Shader. Wird nicht in \n"
+               "der CGP/GLSLP-Voreinstellungs-Datei gespeichert.");
+         break;
+      case MENU_LABEL_VIDEO_SHADER_PRESET_PARAMETERS:
+         snprintf(s, len,
+               "Shader-Voreinstellung-Parameter. \n"
+               " \n"
+               "Verändert die Shader-Voreinstellung, die aktuell \n"
+               "im Menü aktiv ist."
                );
          break;
       /*
