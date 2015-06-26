@@ -56,11 +56,6 @@ static retro_input_state_t input_state_cb;
    log_cb(RETRO_LOG_ERROR, "[FFmpeg]: " msg "\n"); \
 } while(0)
 
-#define LOG_ERR_GOTO(msg, label) do { \
-   LOG_ERR(msg); \
-   goto label; \
-} while(0)
-
 // FFmpeg context data.
 static AVFormatContext *fctx;
 static AVCodecContext *vctx;
@@ -467,23 +462,32 @@ void CORE_PREFIX(retro_run)(void)
 
    if (l && !last_l && audio_streams_num > 0)
    {
+      char msg[256];
+      struct retro_message msg_obj = {0};
+
       slock_lock(decode_thread_lock);
       audio_streams_ptr = (audio_streams_ptr + 1) % audio_streams_num;
       slock_unlock(decode_thread_lock);
 
-      char msg[256];
       snprintf(msg, sizeof(msg), "Audio Track #%d.", audio_streams_ptr);
-      environ_cb(RETRO_ENVIRONMENT_SET_MESSAGE, &(struct retro_message) { .msg = msg, .frames = 180 });
+
+      msg_obj.msg    = msg;
+      msg_obj.frames = 180;
+      environ_cb(RETRO_ENVIRONMENT_SET_MESSAGE, &msg_obj);
    }
    else if (r && !last_r && subtitle_streams_num > 0)
    {
+      char msg[256];
+      struct retro_message msg_obj = {0};
+
       slock_lock(decode_thread_lock);
       subtitle_streams_ptr = (subtitle_streams_ptr + 1) % subtitle_streams_num;
       slock_unlock(decode_thread_lock);
 
-      char msg[256];
       snprintf(msg, sizeof(msg), "Subtitle Track #%d.", subtitle_streams_ptr);
-      environ_cb(RETRO_ENVIRONMENT_SET_MESSAGE, &(struct retro_message) { .msg = msg, .frames = 180 });
+      msg_obj.msg    = msg;
+      msg_obj.frames = 180;
+      environ_cb(RETRO_ENVIRONMENT_SET_MESSAGE, &msg_obj);
    }
 
    last_left = left;
@@ -937,8 +941,7 @@ static int16_t *decode_audio(AVCodecContext *ctx, AVPacket *pkt, AVFrame *frame,
 
    for (;;)
    {
-      int ret = 0;
-      ret = avcodec_decode_audio4(ctx, frame, &got_ptr, &pkt_tmp);
+      int ret = avcodec_decode_audio4(ctx, frame, &got_ptr, &pkt_tmp);
       if (ret < 0)
          return buffer;
 
@@ -1439,6 +1442,7 @@ void CORE_PREFIX(retro_unload_game)(void)
 
 bool CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
 {
+   bool is_glfft = false;
    enum retro_pixel_format fmt = RETRO_PIXEL_FORMAT_XRGB8888;
    struct retro_input_descriptor desc[] = {
       { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_LEFT,  "Seek -10 seconds" },
@@ -1454,25 +1458,39 @@ bool CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
    environ_cb(RETRO_ENVIRONMENT_SET_INPUT_DESCRIPTORS, desc);
 
    if (!environ_cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &fmt))
-      LOG_ERR_GOTO("Cannot set pixel format.", error);
+   {
+      LOG_ERR("Cannot set pixel format.");
+      goto error;
+   }
 
    if (avformat_open_input(&fctx, info->path, NULL, NULL) < 0)
-      LOG_ERR_GOTO("Failed to open input.", error);
+   {
+      LOG_ERR("Failed to open input.");
+      goto error;
+   }
 
    if (avformat_find_stream_info(fctx, NULL) < 0)
-      LOG_ERR_GOTO("Failed to find stream info.", error);
+   {
+      LOG_ERR("Failed to find stream info.");
+      goto error;
+   }
 
    av_dump_format(fctx, 0, info->path, 0);
 
    if (!open_codecs())
-      LOG_ERR_GOTO("Failed to find codec.", error);
+   {
+      LOG_ERR("Failed to find codec.");
+      goto error;
+   }
 
    if (!init_media_info())
-      LOG_ERR_GOTO("Failed to init media info.", error);
+   {
+      LOG_ERR("Failed to init media info.");
+      goto error;
+   }
 
    decode_thread_dead = false;
 
-   bool is_glfft = false;
 #ifdef HAVE_GL_FFT
    is_glfft = video_stream < 0 && audio_streams_num > 0;
 #endif
