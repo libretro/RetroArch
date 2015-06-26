@@ -1,7 +1,7 @@
 HAVE_LIBRETRODB=yes     # Disable libretrodb
 HAVE_RGUI=yes           # Disable RGUI
-HAVE_GLUI=no            # Enable GLUI menu
-HAVE_XMB=no             # Enable XMB menu
+HAVE_GLUI=auto          # Enable GLUI menu
+HAVE_XMB=auto           # Enable XMB menu
 HAVE_DYNAMIC=yes        # Disable dynamic loading of libretro library
 HAVE_SDL=auto           # SDL support
 HAVE_SDL2=auto          # SDL2 support (disables SDL 1.x)

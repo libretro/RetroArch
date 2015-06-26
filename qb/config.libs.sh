@@ -386,6 +386,18 @@ check_lib MMAP "$CLIB" mmap
 
 check_pkgconf PYTHON python3
 
+if [ "$HAVE_GLUI" != 'no' ] || [ "$HAVE_XMB" != 'no' ]; then
+	if [ "$HAVE_RGUI" = 'no' ]; then
+		HAVE_GLUI=no
+		HAVE_XMB=no
+		echo "Notice: RGUI not available, GLUI and XMB will be disabled."
+	elif [ "$HAVE_OPENGL" = 'no' ] && [ "$HAVE_GLES" = 'no' ]; then
+		HAVE_GLUI=no
+		HAVE_XMB=no
+		echo "Notice: GL/GLES not available, XMB and GLUI will be disabled."
+	fi
+fi
+
 check_macro NEON __ARM_NEON__
 
 add_define_make OS "$OS"
