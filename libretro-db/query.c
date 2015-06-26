@@ -264,6 +264,7 @@ static struct rmsgpack_dom_value between(struct rmsgpack_dom_value input,
 {
    struct rmsgpack_dom_value res;
    unsigned i                     = 0;
+
    memset(&res, 0, sizeof(res));
 
    res.type = RDT_BOOL;
@@ -281,10 +282,10 @@ static struct rmsgpack_dom_value between(struct rmsgpack_dom_value input,
    switch (input.type)
    {
       case RDT_INT:
-         res.bool_ = input.int_ >= argv[0].value.int_ && input.int_ <= argv[1].value.int_;
+         res.bool_ = ((input.int_ >= argv[0].value.int_) && (input.int_ <= argv[1].value.int_));
          break;
       case RDT_UINT:
-         res.bool_ = input.int_ >= argv[0].value.uint_ && input.int_ <= argv[1].value.int_;
+         res.bool_ = (((unsigned)input.int_ >= argv[0].value.uint_) && (input.int_ <= argv[1].value.int_));
          break;
       default:
          return res;
@@ -413,14 +414,14 @@ struct registered_func registered_functions[100] = {
 
 static struct buffer chomp(struct buffer buff)
 {
-   for (; buff.offset < buff.len && isspace(buff.data[buff.offset]); buff.offset++);
+   for (; (unsigned)buff.offset < buff.len && isspace(buff.data[buff.offset]); buff.offset++);
    return buff;
 }
 
 static struct buffer expect_char(struct buffer buff,
       char c, const char ** error)
 {
-   if (buff.offset >= buff.len)
+   if ((unsigned)buff.offset >= buff.len)
       raise_unexpected_eof(buff.offset, error);
    else if (buff.data[buff.offset] != c)
       raise_unexpected_char(
@@ -433,7 +434,7 @@ static struct buffer expect_char(struct buffer buff,
 static struct buffer expect_eof(struct buffer buff, const char ** error)
 {
    buff = chomp(buff);
-   if (buff.offset < buff.len)
+   if ((unsigned)buff.offset < buff.len)
       raise_expected_eof(buff.offset, buff.data[buff.offset], error);
    return buff;
 }
@@ -451,7 +452,7 @@ static int peek(struct buffer buff, const char * data)
 
 static int is_eot(struct buffer buff)
 {
-   return (buff.offset >= buff.len);
+   return ((unsigned)buff.offset >= buff.len);
 }
 
 static void peek_char(struct buffer buff, char *c, const char **error)
