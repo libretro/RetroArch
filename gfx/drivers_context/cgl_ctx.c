@@ -41,6 +41,10 @@ typedef int CGSSurfaceID;
 
 typedef uint32_t _CGWindowID;
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* Undocumented CGS */
 extern CGSConnectionID CGSMainConnectionID(void);
 extern CGError CGSAddSurface(CGSConnectionID cid, _CGWindowID wid, CGSSurfaceID *sid);
@@ -49,6 +53,10 @@ extern CGError CGSOrderSurface(CGSConnectionID cid, _CGWindowID wid, CGSSurfaceI
 
 /* Undocumented CGL */
 extern CGLError CGLSetSurface(CGLContextObj gl, CGSConnectionID cid, CGSWindowID wid, CGSSurfaceID sid);
+
+#ifdef __cplusplus
+}
+#endif
 
 typedef struct gfx_ctx_cgl_data
 {
