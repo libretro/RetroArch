@@ -21,7 +21,6 @@
 #include "../drivers/gl_common.h"
 
 #include <wayland-client.h>
-#include <wayland-client-protocol.h>
 #include <wayland-egl.h>
 
 #include <EGL/egl.h>

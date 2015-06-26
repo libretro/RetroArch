@@ -24,20 +24,20 @@ struct rmsgpack_dom_value {
 	union {
 		uint64_t uint_;
 		int64_t int_;
-		struct string_t {
+		struct {
 			uint32_t len;
 			char * buff;
 		} string;
-		struct binary_t {
+		struct {
 			uint32_t len;
 			char * buff;
 		} binary;
 		int bool_;
-		struct map_t {
+		struct {
 			uint32_t len;
 			struct rmsgpack_dom_pair * items;
 		} map;
-		struct array_t {
+		struct {
 			uint32_t len;
 			struct rmsgpack_dom_value * items;
 		} array;
