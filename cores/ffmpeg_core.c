@@ -959,7 +959,7 @@ static int16_t *decode_audio(AVCodecContext *ctx, AVPacket *pkt, AVFrame *frame,
       }
 
       swr_convert(swr,
-            (uint8_t*[]) { (uint8_t*)buffer },
+            (uint8_t**)&buffer,
             frame->nb_samples,
             (const uint8_t**)frame->data,
             frame->nb_samples);
