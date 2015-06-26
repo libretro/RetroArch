@@ -50,7 +50,7 @@ const char *menu_hash_to_str_fr(uint32_t hash)
       case MENU_VALUE_ASK_ARCHIVE:
          return "Demander";
       case MENU_LABEL_VALUE_PRIVACY_SETTINGS:
-         return "Réglages de la vie privée";
+         return "Réglages de confidentialité";
       case MENU_VALUE_HORIZONTAL_MENU:
          return "Horizontal Menu";
       case MENU_LABEL_VALUE_NO_SETTINGS_FOUND:
@@ -82,7 +82,7 @@ const char *menu_hash_to_str_fr(uint32_t hash)
       case MENU_VALUE_CHEAT:
          return "Triche";
       case MENU_VALUE_USER:
-         return "User";
+         return "Utilisateur";
       case MENU_LABEL_VALUE_SYSTEM_BGM_ENABLE:
          return "System BGM Enable";
       case MENU_VALUE_RETROPAD:
@@ -170,7 +170,7 @@ const char *menu_hash_to_str_fr(uint32_t hash)
       case MENU_LABEL_VALUE_RECORD_CONFIG:
          return "Configuration de capture";
       case MENU_LABEL_VALUE_VIDEO_POST_FILTER_RECORD:
-         return "Post filter record Enable";
+         return "Activer les filtres de traitement";
       case MENU_LABEL_VALUE_CORE_ASSETS_DIRECTORY:
          return "Dossier des assets de core";
       case MENU_LABEL_VALUE_ASSETS_DIRECTORY:
@@ -210,17 +210,17 @@ const char *menu_hash_to_str_fr(uint32_t hash)
       case MENU_LABEL_VALUE_NETPLAY_CLIENT_SWAP_INPUT:
          return "Swap Netplay Input";
       case MENU_LABEL_VALUE_NETPLAY_SPECTATOR_MODE_ENABLE:
-         return "Netplay Spectator Enable";
+         return "Activer le mode spectateur";
       case MENU_LABEL_VALUE_NETPLAY_IP_ADDRESS:
          return "Adresse IP";
       case MENU_LABEL_VALUE_NETPLAY_TCP_UDP_PORT:
-         return "Netplay TCP/UDP Port";
+         return "Port TCP/UDP du jeu en réseau";
       case MENU_LABEL_VALUE_NETPLAY_ENABLE:
          return "Autoriser le jeu en réseau";
       case MENU_LABEL_VALUE_NETPLAY_DELAY_FRAMES:
          return "Netplay Delay Frames";
       case MENU_LABEL_VALUE_NETPLAY_MODE:
-         return "Netplay Client Enable";
+         return "Activer le mode client";
       case MENU_LABEL_VALUE_RGUI_SHOW_START_SCREEN:
          return "Afficher l'écran de d'aide";
       case MENU_LABEL_VALUE_TITLE_COLOR:
@@ -230,7 +230,7 @@ const char *menu_hash_to_str_fr(uint32_t hash)
       case MENU_LABEL_VALUE_TIMEDATE_ENABLE:
          return "Afficher la date et l'heure";
       case MENU_LABEL_VALUE_THREADED_DATA_RUNLOOP_ENABLE:
-         return "Threaded data runloop";
+         return "Boucle de données threadée";
       case MENU_LABEL_VALUE_ENTRY_NORMAL_COLOR:
          return "Couleur des entrées du menu";
       case MENU_LABEL_VALUE_SHOW_ADVANCED_SETTINGS:
@@ -280,11 +280,11 @@ const char *menu_hash_to_str_fr(uint32_t hash)
       case MENU_LABEL_VALUE_AUTO_REMAPS_ENABLE:
          return "Charger les fichiers remaps automatiquement";
       case MENU_LABEL_VALUE_SLOWMOTION_RATIO:
-         return "Slow-Motion Ratio";
+         return "Taux de ralentissement";
       case MENU_LABEL_VALUE_CORE_SPECIFIC_CONFIG:
          return "Configuration par-core";
       case MENU_LABEL_VALUE_AUTO_OVERRIDES_ENABLE:
-         return "Load Override Files Automatically";
+         return "Charger les fichiers d'override automatiquement";
       case MENU_LABEL_VALUE_CONFIG_SAVE_ON_EXIT:
          return "Sauver la config en quittant";
       case MENU_LABEL_VALUE_VIDEO_SMOOTH:
@@ -303,8 +303,28 @@ const char *menu_hash_to_str_fr(uint32_t hash)
          return "Threader l'affichage";
       case MENU_LABEL_VALUE_VIDEO_ROTATION:
          return "Rotation";
+      case MENU_LABEL_VALUE_VIDEO_GPU_SCREENSHOT:
+         return "Activer les captures d'écran GPU";
       case MENU_LABEL_VALUE_VIDEO_CROP_OVERSCAN:
          return "Tronquer l'overscan (Reload)";
+      case MENU_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX:
+         return "Indice de format d'image";
+      case MENU_LABEL_VALUE_VIDEO_ASPECT_RATIO_AUTO:
+         return "Format d'image automatique";
+      case MENU_LABEL_VALUE_VIDEO_FORCE_ASPECT:
+         return "Forcer le format d'image";
+      case MENU_LABEL_VALUE_VIDEO_REFRESH_RATE:
+         return "Fréquence de rafraichissement";
+      case MENU_LABEL_VALUE_VIDEO_FORCE_SRGB_DISABLE:
+         return "Désactiver sRGB FBO";
+      case MENU_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN:
+         return "Mode plein écran fenêtré";
+      case MENU_LABEL_VALUE_PAL60_ENABLE:
+         return "Utiliser le mode PAL60";
+      case MENU_LABEL_VALUE_VIDEO_VFILTER:
+         return "Deflicker"; // TODO
+      case MENU_LABEL_VALUE_VIDEO_VI_WIDTH:
+         return "Set VI Screen Width"; // TODO
       case MENU_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION:
          return "Inserer des images noires";
       case MENU_LABEL_VALUE_SORT_SAVEFILES_ENABLE:
@@ -438,7 +458,7 @@ const char *menu_hash_to_str_fr(uint32_t hash)
       case MENU_LABEL_VALUE_NO_PLAYLIST_ENTRIES_AVAILABLE:
          return "Playlist vide.";
       case MENU_LABEL_VALUE_NO_CORE_INFORMATION_AVAILABLE:
-         return "Pad d'informations disponibles.";
+         return "Pas d'informations disponibles.";
       case MENU_LABEL_VALUE_NO_CORE_OPTIONS_AVAILABLE:
          return "Pas d'options disponibles.";
       case MENU_LABEL_VALUE_NO_CORES_AVAILABLE:
@@ -446,15 +466,13 @@ const char *menu_hash_to_str_fr(uint32_t hash)
       case MENU_VALUE_NO_CORE:
          return "Aucun core";
       case MENU_LABEL_VALUE_DATABASE_MANAGER:
-         return "Base de données";
+         return "Gestion de la base de données";
       case MENU_LABEL_VALUE_CURSOR_MANAGER:
-         return "Curseurs";
-      case MENU_LABEL_VALUE_RECORDING_SETTINGS:
-         return "Réglages de capture video";
+         return "Gestion des curseurs";
       case MENU_VALUE_MAIN_MENU:
          return "Main Menu";
       case MENU_LABEL_VALUE_SETTINGS:
-         return "Réglages du frontend"; /* FIXME */
+         return "Réglages";
       case MENU_LABEL_VALUE_QUIT_RETROARCH:
          return "Quitter RetroArch";
       case MENU_LABEL_VALUE_HELP:
@@ -465,6 +483,18 @@ const char *menu_hash_to_str_fr(uint32_t hash)
          return "Redémarrer le contenu";
       case MENU_LABEL_VALUE_CORE_UPDATER_LIST:
          return "Mise à jour des cores";
+      case MENU_LABEL_VALUE_CORE_UPDATER_BUILDBOT_URL:
+         return "URL du buildbot des cores";
+      case MENU_LABEL_VALUE_BUILDBOT_ASSETS_URL:
+         return "URL du buildbot des assets";
+      case MENU_LABEL_VALUE_NAVIGATION_WRAPAROUND_HORIZONTAL:
+         return "Saut-retour horizontal";
+      case MENU_LABEL_VALUE_NAVIGATION_WRAPAROUND_VERTICAL:
+         return "Saut-retour vertical";
+      case MENU_LABEL_VALUE_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE:
+         return "Filtrer par extentions supportées";
+      case MENU_LABEL_VALUE_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE:
+         return "Extraire automatiquement";
       case MENU_LABEL_VALUE_SYSTEM_INFORMATION:
          return "Informations du système";
       case MENU_LABEL_VALUE_ONLINE_UPDATER:
@@ -516,7 +546,7 @@ const char *menu_hash_to_str_fr(uint32_t hash)
       case MENU_LABEL_VALUE_AUDIO_DEVICE:
          return "Carte son";
       case MENU_LABEL_VALUE_KEYBOARD_OVERLAY_PRESET:
-         return "Prereglages d'overlay clavier";
+         return "Préréglages d'overlay clavier";
       case MENU_LABEL_VALUE_OVERLAY_OPACITY:
          return "Transparence de l'overlay";
       case MENU_LABEL_VALUE_MENU_WALLPAPER:
@@ -541,6 +571,268 @@ const char *menu_hash_to_str_fr(uint32_t hash)
          return "OFF";
       case MENU_VALUE_ON:
          return "ON";
+      case MENU_LABEL_VALUE_UPDATE_ASSETS:
+         return "Mettre à jour les assets";
+      case MENU_LABEL_VALUE_UPDATE_CHEATS:
+         return "Mettre à jour les codes de triche";
+      case MENU_LABEL_VALUE_UPDATE_AUTOCONFIG_PROFILES:
+         return "Mettre à jour les profils d'autoconfiguration";
+      case MENU_LABEL_VALUE_UPDATE_DATABASES:
+         return "Mettre à jour les bases de données";
+      case MENU_LABEL_VALUE_UPDATE_OVERLAYS:
+         return "Mettre à jour les overlays";
+      case MENU_LABEL_VALUE_UPDATE_CG_SHADERS:
+         return "Mettre à jour les shaders Cg";
+      case MENU_LABEL_VALUE_UPDATE_GLSL_SHADERS:
+         return "Mettre à jour les shaders GLSL";
+      case MENU_LABEL_VALUE_CORE_INFO_CORE_NAME:
+         return "Nom";
+      case MENU_LABEL_VALUE_CORE_INFO_CORE_LABEL:
+         return "Label";
+      case MENU_LABEL_VALUE_CORE_INFO_SYSTEM_NAME:
+         return "Système";
+      case MENU_LABEL_VALUE_CORE_INFO_SYSTEM_MANUFACTURER:
+         return "Fabriquant du système";
+      case MENU_LABEL_VALUE_CORE_INFO_CATEGORIES:
+         return "Catégories";
+      case MENU_LABEL_VALUE_CORE_INFO_AUTHORS:
+         return "Auteurs";
+      case MENU_LABEL_VALUE_CORE_INFO_PERMISSIONS:
+         return "Permissions";
+      case MENU_LABEL_VALUE_CORE_INFO_LICENSES:
+         return "License(s)";
+      case MENU_LABEL_VALUE_CORE_INFO_SUPPORTED_EXTENSIONS:
+         return "Extensions supportées";
+      case MENU_LABEL_VALUE_CORE_INFO_FIRMWARE:
+         return "Firmware";
+      case MENU_LABEL_VALUE_CORE_INFO_CORE_NOTES:
+         return "Notes";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_BUILD_DATE:
+         return "Date de build";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION:
+         return "Version git";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_CPU_FEATURES:
+         return "Fonctionnalités du CPU";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_FRONTEND_IDENTIFIER:
+         return "Identifiant frontend";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_FRONTEND_NAME:
+         return "Nom du frontend";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_FRONTEND_OS:
+         return "OS du frontend";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_RETRORATING_LEVEL:
+         return "Niveau RetroRating";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE:
+         return "Alimentation";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_NO_SOURCE:
+         return "Non alimenté";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_CHARGING:
+         return "En chargement";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_CHARGED:
+         return "Chargé";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_DISCHARGING:
+         return "Déchargé";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_VIDEO_CONTEXT_DRIVER:
+         return "Pilote du contexte vidéo";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_WIDTH:
+         return "Largeur d'écran (mm)";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_HEIGHT:
+         return "Hauteur d'écran (mm)";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_DPI:
+         return "DPI de l'écran";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_LIBRETRODB_SUPPORT:
+         return "Support de libretroDB";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_OVERLAY_SUPPORT:
+         return "Support des overlays";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_COMMAND_IFACE_SUPPORT:
+         return "Support de l'interface de commandes";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_NETWORK_COMMAND_IFACE_SUPPORT:
+         return "Support des commandes réseau";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_COCOA_SUPPORT:
+         return "Support de Cocoa";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_RPNG_SUPPORT:
+         return "Support des PNGs (RPNG)";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_SDL_SUPPORT:
+         return "Support de SDL1.2";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_SDL2_SUPPORT:
+         return "Support de SDL2";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_OPENGL_SUPPORT:
+         return "Support d'OpenGL";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_OPENGLES_SUPPORT:
+         return "Support d'OpenGL ES";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_THREADING_SUPPORT:
+         return "Support du threading";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_KMS_SUPPORT:
+         return "Support de KMS/EGL";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_UDEV_SUPPORT:
+         return "Support de udev";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_OPENVG_SUPPORT:
+         return "Support d'OpenVG";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_EGL_SUPPORT:
+         return "Support d'EGL";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_X11_SUPPORT:
+         return "Support de X11";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_WAYLAND_SUPPORT:
+         return "Support de Wayland";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_XVIDEO_SUPPORT:
+         return "Support de XVideo";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_ALSA_SUPPORT:
+         return "Support d'ALSA";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_OSS_SUPPORT:
+         return "Support d'OSS";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_OPENAL_SUPPORT:
+         return "Support d'OpenAL";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_OPENSL_SUPPORT:
+         return "Support d'OpenSL";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_RSOUND_SUPPORT:
+         return "Support de RSound";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_ROARAUDIO_SUPPORT:
+         return "Support de RoarAudio";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_JACK_SUPPORT:
+         return "Support de JACK";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_PULSEAUDIO_SUPPORT:
+         return "Support de PulseAudio";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_DSOUND_SUPPORT:
+         return "Support de DirectSoundt";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_XAUDIO2_SUPPORT:
+         return "Support de XAudio2";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_ZLIB_SUPPORT:
+         return "Support de Zlib";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_7ZIP_SUPPORT:
+         return "Support de 7zip";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_DYLIB_SUPPORT:
+         return "Support des bibliothèques dynamiques";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_CG_SUPPORT:
+         return "Support de Cg";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_GLSL_SUPPORT:
+         return "Support de GLSL";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_HLSL_SUPPORT:
+         return "Support de HLSL";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_LIBXML2_SUPPORT:
+         return "Support du parser XML libxml2";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_SDL_IMAGE_SUPPORT:
+         return "Support de SDL image";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_FBO_SUPPORT:
+         return "Support d'OpenGL/Direct3D render-to-texture (shaders multi-passages)";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_FFMPEG_SUPPORT:
+         return "Support de FFmpeg";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_CORETEXT_SUPPORT:
+         return "Support de CoreText";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_FREETYPE_SUPPORT:
+         return "Support de FreeType";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_NETPLAY_SUPPORT:
+         return "Support du jeu en réseau (peer-to-peer)";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_PYTHON_SUPPORT:
+         return "Support Python (scripting des shaders)";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_V4L2_SUPPORT:
+         return "Support de Video4Linux2";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_LIBUSB_SUPPORT:
+         return "Support de libusb";
+      case MENU_LABEL_VALUE_YES:
+         return "Oui";
+      case MENU_LABEL_VALUE_NO:
+         return "Non";
+      case MENU_VALUE_BACK:
+         return "RETOUR";
+      case MENU_LABEL_VALUE_SCREEN_RESOLUTION:
+         return "Résolution d'écran";
+      case MENU_VALUE_DISABLED:
+         return "Désactivé";
+      case MENU_VALUE_PORT:
+         return "Port";
+      case MENU_VALUE_NONE:
+         return "Aucun";
+      case MENU_LABEL_VALUE_RDB_ENTRY_DEVELOPER:
+         return "Développeur";
+      case MENU_LABEL_VALUE_RDB_ENTRY_PUBLISHER:
+         return "Éditeur";
+      case MENU_LABEL_VALUE_RDB_ENTRY_DESCRIPTION:
+         return "Description";
+      case MENU_LABEL_VALUE_RDB_ENTRY_NAME:
+         return "Nom";
+      case MENU_LABEL_VALUE_RDB_ENTRY_ORIGIN:
+         return "Origine";
+      case MENU_LABEL_VALUE_RDB_ENTRY_FRANCHISE:
+         return "Franchise";
+      case MENU_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH:
+         return "Mois de sortie";
+      case MENU_LABEL_VALUE_RDB_ENTRY_RELEASE_YEAR:
+         return "Année de sortie";
+      case MENU_VALUE_TRUE:
+         return "Vrai";
+      case MENU_VALUE_FALSE:
+         return "Faux";
+      case MENU_VALUE_MISSING:
+         return "Manquant";
+      case MENU_VALUE_PRESENT:
+         return "Présent";
+      case MENU_VALUE_OPTIONAL:
+         return "Optionnel";
+      case MENU_VALUE_REQUIRED:
+         return "Requis";
+      case MENU_VALUE_STATUS:
+         return "Statut";
+      case MENU_LABEL_VALUE_AUDIO_SETTINGS:
+         return "Réglages audio";
+      case MENU_LABEL_VALUE_INPUT_SETTINGS:
+         return "Réglages d'entrées";
+      case MENU_LABEL_VALUE_ONSCREEN_DISPLAY_SETTINGS:
+         return "Réglages des messages d'info";
+      case MENU_LABEL_VALUE_OVERLAY_SETTINGS:
+         return "Réglages d'overlays";
+      case MENU_LABEL_VALUE_MENU_SETTINGS:
+         return "Réglages du menu";
+      case MENU_LABEL_VALUE_MEDIA_PLAYER_SETTINGS:
+         return "Réglages du lecteur multimédia";
+      case MENU_LABEL_VALUE_UI_SETTINGS:
+         return "Réglages interface graphique";
+      case MENU_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS:
+         return "Réglages du navigateur de fichiers";
+      case MENU_LABEL_VALUE_CORE_UPDATER_SETTINGS:
+         return "Réglages des mises à jour";
+      case MENU_LABEL_VALUE_NETWORK_SETTINGS:
+         return "Réglages du réseau";
+      case MENU_LABEL_VALUE_PLAYLIST_SETTINGS:
+         return "Réglages des playlists";
+      case MENU_LABEL_VALUE_USER_SETTINGS:
+         return "Réglages utilisateur";
+      case MENU_LABEL_VALUE_DIRECTORY_SETTINGS:
+         return "Réglages des dossiers";
+      case MENU_LABEL_VALUE_RECORDING_SETTINGS:
+         return "Réglages de capture video";
+      case MENU_LABEL_VALUE_NO_INFORMATION_AVAILABLE:
+         return "Pas d'informations disponibles.";
+      case MENU_LABEL_VALUE_INPUT_USER_BINDS:
+         return "Réglages des entrées utilisateur %u";
+      case MENU_VALUE_LANG_ENGLISH:
+         return "Anglais";
+      case MENU_VALUE_LANG_JAPANESE:
+         return "Japonais";
+      case MENU_VALUE_LANG_FRENCH:
+         return "Français";
+      case MENU_VALUE_LANG_SPANISH:
+         return "Espagnol";
+      case MENU_VALUE_LANG_GERMAN:
+         return "Allemand";
+      case MENU_VALUE_LANG_ITALIAN:
+         return "Italien";
+      case MENU_VALUE_LANG_DUTCH:
+         return "Néerlandais";
+      case MENU_VALUE_LANG_PORTUGUESE:
+         return "Portuguais";
+      case MENU_VALUE_LANG_RUSSIAN:
+         return "Russe";
+      case MENU_VALUE_LANG_KOREAN:
+         return "Coréen";
+      case MENU_VALUE_LANG_CHINESE_TRADITIONAL:
+         return "Chinois (Traditionnel)";
+      case MENU_VALUE_LANG_CHINESE_SIMPLIFIED:
+         return "Chinois (Simplifié)";
+      case MENU_VALUE_LANG_ESPERANTO:
+         return "Esperanto";
+      case MENU_VALUE_LEFT_ANALOG:
+         return "Analogique gauche";
+      case MENU_VALUE_RIGHT_ANALOG:
+         return "Analogique droite";
       default:
          break;
    }
