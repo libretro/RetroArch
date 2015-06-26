@@ -191,6 +191,7 @@ void menu_shader_manager_save_preset(
 #ifdef HAVE_SHADER_MANAGER
    char buffer[PATH_MAX_LENGTH], config_directory[PATH_MAX_LENGTH], preset_path[PATH_MAX_LENGTH];
    unsigned d, type            = RARCH_SHADER_NONE;
+   const char *dirs[3]         = {0};
    config_file_t *conf         = NULL;
    bool ret                    = false;
    global_t *global            = global_get_ptr();
@@ -239,11 +240,9 @@ void menu_shader_manager_save_preset(
       fill_pathname_basedir(config_directory,
             global->config_path, sizeof(config_directory));
 
-   const char *dirs[] = {
-      settings->video.shader_dir,
-      settings->menu_config_directory,
-      config_directory,
-   };
+   dirs[0] = settings->video.shader_dir;
+   dirs[1] = settings->menu_config_directory;
+   dirs[2] = config_directory;
 
    if (!(conf = (config_file_t*)config_file_new(NULL)))
       return;

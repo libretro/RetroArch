@@ -1121,11 +1121,12 @@ int rarch_main_iterate(void)
    static retro_input_t last_input = 0;
    retro_input_t old_input         = last_input;
    retro_input_t input             = input_keys_pressed();
-   last_input                      = input;
    driver_t *driver                = driver_get_ptr();
    settings_t *settings            = config_get_ptr();
    global_t   *global              = global_get_ptr();
    rarch_system_info_t *system     = rarch_system_info_get_ptr();
+
+   last_input                      = input;
 
    if (driver->flushing_input)
       driver->flushing_input = (input) ? input_flush(&input) : false;

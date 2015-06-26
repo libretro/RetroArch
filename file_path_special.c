@@ -199,14 +199,17 @@ void fill_pathname_application_path(char *buf, size_t size)
    }
 #else
    {
-      *buf = '\0';
-      pid_t pid = getpid(); 
-      char link_path[PATH_MAX_LENGTH] = {0};
-      /* Linux, BSD and Solaris paths. Not standardized. */
       static const char *exts[] = { "exe", "file", "path/a.out" };
+      char link_path[PATH_MAX_LENGTH] = {0};
+
+      *buf      = '\0';
+      pid_t pid = getpid(); 
+
+      /* Linux, BSD and Solaris paths. Not standardized. */
       for (i = 0; i < ARRAY_SIZE(exts); i++)
       {
          ssize_t ret;
+
          snprintf(link_path, sizeof(link_path), "/proc/%u/%s",
                (unsigned)pid, exts[i]);
          ret = readlink(link_path, buf, size - 1);
