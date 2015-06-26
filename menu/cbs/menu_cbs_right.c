@@ -222,6 +222,7 @@ static int action_right_shader_filter_pass(unsigned type, const char *label,
    struct video_shader *shader = NULL;
    struct video_shader_pass *shader_pass = NULL;
    menu_handle_t *menu = menu_driver_get_ptr();
+   unsigned delta = 1;
    if (!menu)
       return -1;
 
@@ -232,7 +233,6 @@ static int action_right_shader_filter_pass(unsigned type, const char *label,
    if (!shader_pass)
       return -1;
 
-   unsigned delta = 1;
    shader_pass->filter = ((shader_pass->filter + delta) % 3);
 #endif
    return 0;

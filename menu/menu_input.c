@@ -1020,7 +1020,7 @@ unsigned menu_input_frame(retro_input_t input, retro_input_t trigger_input)
 
    if (menu_input->keyboard.display)
    {
-      // send return key to close keyboard input window
+      /* send return key to close keyboard input window */
       if (trigger_input & (1ULL << settings->menu_cancel_btn))
          input_keyboard_event(true, '\n', '\n', 0, RETRO_DEVICE_KEYBOARD);
 

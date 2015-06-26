@@ -40,7 +40,7 @@ enum zlib_transfer_type
    ZLIB_TRANSFER_INIT,
    ZLIB_TRANSFER_ITERATE,
    ZLIB_TRANSFER_DEINIT,
-   ZLIB_TRANSFER_DEINIT_ERROR,
+   ZLIB_TRANSFER_DEINIT_ERROR
 };
 
 typedef struct zlib_transfer

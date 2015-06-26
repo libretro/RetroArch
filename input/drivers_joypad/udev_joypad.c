@@ -410,12 +410,15 @@ static void udev_joypad_destroy(void)
 static void udev_joypad_handle_hotplug(void)
 {
    struct udev_device *dev = udev_monitor_receive_device(g_udev_mon);
+   const char *val;
+   const char *action;
+   const char *devnode;
    if (!dev)
       return;
 
-   const char *val     = udev_device_get_property_value(dev, "ID_INPUT_JOYSTICK");
-   const char *action  = udev_device_get_action(dev);
-   const char *devnode = udev_device_get_devnode(dev);
+   val     = udev_device_get_property_value(dev, "ID_INPUT_JOYSTICK");
+   action  = udev_device_get_action(dev);
+   devnode = udev_device_get_devnode(dev);
 
    if (!val || strcmp(val, "1") || !devnode)
       goto end;

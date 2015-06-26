@@ -94,8 +94,7 @@ enum menu_entry_type menu_entry_get_type(uint32_t i)
 
    setting = menu_entry_get_setting(i);
 
-   // XXX Really a special kind of ST_ACTION, but this should be
-   // changed
+   /* XXX Really a special kind of ST_ACTION, but this should be changed */
    if (menu_setting_is_of_path_type(setting))
       return MENU_ENTRY_PATH;
 

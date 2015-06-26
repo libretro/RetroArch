@@ -299,13 +299,16 @@ static char *align_program(const char *program)
 py_state_t *py_state_new(const char *script,
       unsigned is_file, const char *pyclass)
 {
+   py_state_t *handle;
+   PyObject *hook;
+
    RARCH_LOG("Initializing Python runtime ...\n");
    PyImport_AppendInittab("rarch", &PyInit_Retro);
    Py_Initialize();
    RARCH_LOG("Initialized Python runtime.\n");
 
-   py_state_t *handle = (py_state_t*)calloc(1, sizeof(*handle));
-   PyObject *hook = NULL;
+   handle = (py_state_t*)calloc(1, sizeof(*handle));
+   hook = NULL;
 
    handle->main = PyImport_AddModule("__main__");
    if (!handle->main)

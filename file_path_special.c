@@ -127,7 +127,8 @@ void fill_pathname_abbreviate_special(char *out_path,
     * Keep application dir in front of home, moving app dir to a
     * new location inside home would break otherwise. */
 
-   const char *candidates[3] = { application_dir, home, NULL }; /* ugly hack - use application_dir before filling it in. C89 reasons */
+   /* ugly hack - use application_dir pointer before filling it in. C89 reasons */
+   const char *candidates[3] = { application_dir, home, NULL };
    const char *notations[3] = { ":", "~", NULL };
 
    fill_pathname_application_path(application_dir, sizeof(application_dir));

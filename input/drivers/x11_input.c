@@ -50,6 +50,7 @@ static void *x_input_init(void)
 {
    driver_t *driver     = driver_get_ptr();
    settings_t *settings = config_get_ptr();
+   x11_input_t *x11;
 
    if (driver->display_type != RARCH_DISPLAY_X11)
    {
@@ -57,7 +58,7 @@ static void *x_input_init(void)
       return NULL;
    }
 
-   x11_input_t *x11 = (x11_input_t*)calloc(1, sizeof(*x11));
+   x11 = (x11_input_t*)calloc(1, sizeof(*x11));
    if (!x11)
       return NULL;
 

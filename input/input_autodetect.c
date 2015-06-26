@@ -30,7 +30,7 @@ enum
    AUTODETECT_MATCH_PID,
    AUTODETECT_MATCH_IDENT,
    AUTODETECT_MATCH_DRIVER,
-   AUTODETECT_MATCH_NAME,
+   AUTODETECT_MATCH_NAME
 };
 
 static void input_autoconfigure_joypad_conf(config_file_t *conf,

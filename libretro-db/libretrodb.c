@@ -28,7 +28,7 @@ struct node_iter_ctx
 
 static struct rmsgpack_dom_value sentinal;
 
-static inline off_t flseek(FILE *fp, int offset, int whence)
+static INLINE off_t flseek(FILE *fp, int offset, int whence)
 {
    if (fseek(fp, offset, whence) != 0)
       return (off_t)-1;

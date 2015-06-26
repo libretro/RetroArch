@@ -55,13 +55,13 @@ static const uint8_t MPF_UINT64 = 0xcf;
 
 static const uint8_t MPF_NIL = 0xc0;
 
-static inline ssize_t fpwrite(FILE *fp, const void *buf, size_t count)
+static INLINE ssize_t fpwrite(FILE *fp, const void *buf, size_t count)
 {
    size_t num_written = fwrite(buf, 1, count, fp);
    return num_written != count ? -1 : (ssize_t)count;
 }
 
-static inline ssize_t fpread(FILE *fp, void *buf, size_t count)
+static INLINE ssize_t fpread(FILE *fp, void *buf, size_t count)
 {
    size_t num_read = fread(buf, 1, count, fp);
    return num_read != count && ferror(fp) ? -1 : (ssize_t)num_read;

@@ -18,7 +18,7 @@
 #undef  MAX_ARGS
 #define MAX_ARGS 50
 
-static char tmp_error_buff [MAX_ERROR_LEN] = {};
+static char tmp_error_buff [MAX_ERROR_LEN] = {0};
 
 struct buffer
 {

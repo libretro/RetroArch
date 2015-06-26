@@ -104,10 +104,11 @@ static void *thread_wrap(void *data_)
 sthread_t *sthread_create(void (*thread_func)(void*), void *userdata)
 {
    sthread_t *thread = (sthread_t*)calloc(1, sizeof(*thread));
+   struct thread_data *data;
    if (!thread)
       return NULL;
 
-   struct thread_data *data = (struct thread_data*)calloc(1, sizeof(*data));
+   data = (struct thread_data*)calloc(1, sizeof(*data));
    if (!data)
    {
       free(thread);

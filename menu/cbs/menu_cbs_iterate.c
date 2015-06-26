@@ -182,7 +182,7 @@ static int action_iterate_help(char *s, size_t len, const char *label)
 
    snprintf(s, len,
          "Welcome to RetroArch\n"
-         " \n" // strtok_r doesn't split empty strings.
+         " \n" /* strtok_r doesn't split empty strings. */
 
          "Basic Menu controls:\n"
          "    Scroll (Up): %-20s\n"
@@ -463,7 +463,7 @@ enum action_iterate_type
    ITERATE_TYPE_ZIP,
    ITERATE_TYPE_MESSAGE,
    ITERATE_TYPE_VIEWPORT,
-   ITERATE_TYPE_BIND,
+   ITERATE_TYPE_BIND
 };
 
 static enum action_iterate_type action_iterate_type(uint32_t hash)

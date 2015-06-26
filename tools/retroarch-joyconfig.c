@@ -457,7 +457,7 @@ void input_config_autoconfigure_joypad(autoconfig_params_t *params)
    (void)params;
 }
 
-// Need SDL_main on OSX.
+/* Need SDL_main on OSX. */
 #ifndef __APPLE__
 #undef main
 #endif

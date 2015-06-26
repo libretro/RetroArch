@@ -2474,10 +2474,10 @@ static bool setting_append_list_main_menu_options(
    (*list)[list_info->index - 1].size = sizeof(settings->libretro);
    (*list)[list_info->index - 1].value.string = settings->libretro;
    (*list)[list_info->index - 1].values = EXT_EXECUTABLES;
-   // It is not a good idea to have chosen action_toggle as the place
-   // to put this callback. It should be called whenever the browser
-   // needs to get the directory to browse into. It's not quite like
-   // get_string_representation, but it is close.
+   /* It is not a good idea to have chosen action_toggle as the place
+    * to put this callback. It should be called whenever the browser
+    * needs to get the directory to browse into. It's not quite like
+    * get_string_representation, but it is close. */
    (*list)[list_info->index - 1].action_left  = core_list_action_toggle;
    (*list)[list_info->index - 1].action_right = core_list_action_toggle;
    menu_settings_list_current_add_cmd(list, list_info, EVENT_CMD_LOAD_CORE);
@@ -6002,10 +6002,10 @@ static bool setting_append_list_input_player_options(
 
 void menu_setting_free(rarch_setting_t *list)
 {
+   rarch_setting_t *setting = list;
+
    if (!list)
       return;
-
-   rarch_setting_t *setting = list;
 
    for (; setting->type != ST_NONE; setting++)
    {

@@ -258,48 +258,50 @@ static bool rpng_save_image(const char *path,
        * This is probably not very optimal, but it's very 
        * simple to implement.
        */
-      unsigned none_score  = count_sad(rgba_line, width * bpp);
-      unsigned up_score    = filter_up(up_filtered, rgba_line, prev_encoded, width, bpp);
-      unsigned sub_score   = filter_sub(sub_filtered, rgba_line, width, bpp);
-      unsigned avg_score   = filter_avg(avg_filtered, rgba_line, prev_encoded, width, bpp);
-      unsigned paeth_score = filter_paeth(paeth_filtered, rgba_line, prev_encoded, width, bpp);
-
-      uint8_t filter       = 0;
-      unsigned min_sad     = none_score;
-      const uint8_t *chosen_filtered = rgba_line;
-
-      if (sub_score < min_sad)
       {
-         filter = 1;
-         chosen_filtered = sub_filtered;
-         min_sad = sub_score;
+         unsigned none_score  = count_sad(rgba_line, width * bpp);
+         unsigned up_score    = filter_up(up_filtered, rgba_line, prev_encoded, width, bpp);
+         unsigned sub_score   = filter_sub(sub_filtered, rgba_line, width, bpp);
+         unsigned avg_score   = filter_avg(avg_filtered, rgba_line, prev_encoded, width, bpp);
+         unsigned paeth_score = filter_paeth(paeth_filtered, rgba_line, prev_encoded, width, bpp);
+
+         uint8_t filter       = 0;
+         unsigned min_sad     = none_score;
+         const uint8_t *chosen_filtered = rgba_line;
+
+         if (sub_score < min_sad)
+         {
+            filter = 1;
+            chosen_filtered = sub_filtered;
+            min_sad = sub_score;
+         }
+
+         if (up_score < min_sad)
+         {
+            filter = 2;
+            chosen_filtered = up_filtered;
+            min_sad = up_score;
+         }
+
+         if (avg_score < min_sad)
+         {
+            filter = 3;
+            chosen_filtered = avg_filtered;
+            min_sad = avg_score;
+         }
+
+         if (paeth_score < min_sad)
+         {
+            filter = 4;
+            chosen_filtered = paeth_filtered;
+            min_sad = paeth_score;
+         }
+
+         *encode_target++ = filter;
+         memcpy(encode_target, chosen_filtered, width * bpp);
+
+         memcpy(prev_encoded, rgba_line, width * bpp);
       }
-
-      if (up_score < min_sad)
-      {
-         filter = 2;
-         chosen_filtered = up_filtered;
-         min_sad = up_score;
-      }
-
-      if (avg_score < min_sad)
-      {
-         filter = 3;
-         chosen_filtered = avg_filtered;
-         min_sad = avg_score;
-      }
-
-      if (paeth_score < min_sad)
-      {
-         filter = 4;
-         chosen_filtered = paeth_filtered;
-         min_sad = paeth_score;
-      }
-
-      *encode_target++ = filter;
-      memcpy(encode_target, chosen_filtered, width * bpp);
-
-      memcpy(prev_encoded, rgba_line, width * bpp);
    }
 
    deflate_buf = (uint8_t*)malloc(encode_buf_size * 2); /* Just to be sure. */

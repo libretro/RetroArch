@@ -1812,7 +1812,7 @@ bool config_load_override(void)
    /* Create a new config file from core_path */
    new_conf = config_file_new(core_path);
 
-   /* If a core override exists, add it's location to append_config_path */
+   /* If a core override exists, add its location to append_config_path */
    if (new_conf)
    {
       if (settings->core_specific_config)

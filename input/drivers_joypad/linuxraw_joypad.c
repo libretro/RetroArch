@@ -89,6 +89,8 @@ static bool linuxraw_joypad_init_pad(const char *path, struct linuxraw_joypad *p
    *pad->ident = '\0';
    if (pad->fd >= 0)
    {
+      struct epoll_event event;
+
       if (ioctl(pad->fd, JSIOCGNAME(sizeof(settings->input.device_names[0])), pad->ident) >= 0)
       {
          RARCH_LOG("[Device]: Found pad: %s on %s.\n", pad->ident, path);
@@ -105,7 +107,6 @@ static bool linuxraw_joypad_init_pad(const char *path, struct linuxraw_joypad *p
       else
          RARCH_ERR("[Device]: Didn't find ident of %s.\n", path);
 
-      struct epoll_event event;
       event.events = EPOLLIN;
       event.data.ptr = pad;
       epoll_ctl(g_epoll, EPOLL_CTL_ADD, pad->fd, &event);

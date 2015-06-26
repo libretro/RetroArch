@@ -404,7 +404,7 @@ static void rgui_render(void)
          return;
    }
 
-   // if the framebuffer changed size, recache the background
+   /* if the framebuffer changed size, recache the background */
    if (rgui->last_width != frame_buf->width || rgui->last_height != frame_buf->height)
    {
       fill_rect(frame_buf, 0, frame_buf->height,

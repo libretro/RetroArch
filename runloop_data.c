@@ -32,7 +32,7 @@ enum
 {
    THREAD_CODE_INIT = 0,
    THREAD_CODE_DEINIT,
-   THREAD_CODE_ALIVE,
+   THREAD_CODE_ALIVE
 } thread_code_enum;
 
 

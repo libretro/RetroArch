@@ -246,7 +246,7 @@ void rmsgpack_dom_value_free(struct rmsgpack_dom_value *v)
       case RDT_INT:
       case RDT_BOOL:
       case RDT_UINT:
-         // Do nothing
+         /* Do nothing */
          break;
    }
 }

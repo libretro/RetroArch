@@ -426,6 +426,7 @@ static void *xv_init(const video_info_t *video,
    const struct retro_game_geometry *geom = NULL;
    struct retro_system_av_info *av_info   = NULL;
    xv_t *xv = (xv_t*)calloc(1, sizeof(*xv));
+   XWindowAttributes target;
    if (!xv)
       return NULL;
 
@@ -593,7 +594,6 @@ static void *xv_init(const video_info_t *video,
    if (!x11_create_input_context(xv->display, xv->window, &xv->xim, &xv->xic))
       goto error;
 
-   XWindowAttributes target;
    XGetWindowAttributes(xv->display, xv->window, &target);
    calc_out_rect(xv->keep_aspect, &xv->vp, target.width, target.height);
    xv->vp.full_width = target.width;
@@ -821,7 +821,7 @@ static bool xv_alive(void *data)
             break;
          case DestroyNotify:
             return false;
-         case MapNotify: // Find something that works better.
+         case MapNotify: /* Find something that works better. */
             xv->focus = true;
             break;
          case UnmapNotify:

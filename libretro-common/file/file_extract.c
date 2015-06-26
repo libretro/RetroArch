@@ -673,7 +673,7 @@ struct zip_extract_userdata
 enum
 {
    ZLIB_MODE_UNCOMPRESSED = 0,
-   ZLIB_MODE_DEFLATE      = 8,
+   ZLIB_MODE_DEFLATE      = 8
 } zlib_compression_mode;
 
 static int zip_extract_cb(const char *name, const char *valid_exts,

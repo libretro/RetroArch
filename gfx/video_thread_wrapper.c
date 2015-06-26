@@ -622,8 +622,8 @@ static bool thread_init(thread_video_t *thr, const video_info_t *info,
 
    thread_send_and_wait(thr, &pkt);
 
-//   thr->send_cmd_func   = thread_send_cmd;
-//   thr->wait_reply_func = thread_wait_reply;
+/*   thr->send_cmd_func   = thread_send_cmd;   */
+/*   thr->wait_reply_func = thread_wait_reply; */
 
    thr->send_and_wait = thread_send_and_wait;
    return pkt.data.b;

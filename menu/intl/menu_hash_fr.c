@@ -322,9 +322,9 @@ const char *menu_hash_to_str_fr(uint32_t hash)
       case MENU_LABEL_VALUE_PAL60_ENABLE:
          return "Utiliser le mode PAL60";
       case MENU_LABEL_VALUE_VIDEO_VFILTER:
-         return "Deflicker"; // TODO
+         return "Deflicker"; /* TODO */
       case MENU_LABEL_VALUE_VIDEO_VI_WIDTH:
-         return "Set VI Screen Width"; // TODO
+         return "Set VI Screen Width"; /* TODO */
       case MENU_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION:
          return "Inserer des images noires";
       case MENU_LABEL_VALUE_SORT_SAVEFILES_ENABLE:

@@ -324,14 +324,17 @@ static bool sdl_joypad_button(unsigned port, uint16_t joykey)
 
 static int16_t sdl_joypad_axis(unsigned port, uint32_t joyaxis)
 {
+   sdl_joypad_t *pad;
+   int16_t val;
+
    if (joyaxis == AXIS_NONE)
       return 0;
 
-   sdl_joypad_t *pad = (sdl_joypad_t*)&sdl_pads[port];
+   pad = (sdl_joypad_t*)&sdl_pads[port];
    if (!pad->joypad)
       return false;
 
-   int16_t val = 0;
+   val = 0;
    if (AXIS_NEG_GET(joyaxis) < pad->num_axes)
    {
       val = sdl_pad_get_axis(pad, AXIS_NEG_GET(joyaxis));
@@ -380,10 +383,10 @@ static void sdl_joypad_poll(void)
 #ifdef HAVE_SDL2
 static bool sdl_joypad_set_rumble(unsigned pad, enum retro_rumble_effect effect, uint16_t strength)
 {
+   sdl_joypad_t *joypad = (sdl_joypad_t*)&sdl_pads[pad];
+
    SDL_HapticEffect efx;
    memset(&efx, 0, sizeof(efx));
-
-   sdl_joypad_t *joypad = (sdl_joypad_t*)&sdl_pads[pad];
 
    if (!joypad->joypad || !joypad->haptic)
       return false;

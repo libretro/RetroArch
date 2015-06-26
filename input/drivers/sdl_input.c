@@ -43,9 +43,11 @@ typedef struct sdl_input
 
 static void *sdl_input_init(void)
 {
+   settings_t *settings;
+   sdl_input_t *sdl;
    input_keymaps_init_keyboard_lut(rarch_key_map_sdl);
-   settings_t *settings = config_get_ptr();
-   sdl_input_t *sdl = (sdl_input_t*)calloc(1, sizeof(*sdl));
+   settings = config_get_ptr();
+   sdl = (sdl_input_t*)calloc(1, sizeof(*sdl));
    if (!sdl)
       return NULL;
 
@@ -319,6 +321,7 @@ static void sdl_poll_mouse(sdl_input_t *sdl)
 static void sdl_input_poll(void *data)
 {
    sdl_input_t *sdl = (sdl_input_t*)data;
+   SDL_Event event;
 
    SDL_PumpEvents();
 
@@ -326,7 +329,6 @@ static void sdl_input_poll(void *data)
       sdl->joypad->poll();
    sdl_poll_mouse(sdl);
 
-   SDL_Event event;
 #ifdef HAVE_SDL2
    while (SDL_PeepEvents(&event, 1, SDL_GETEVENT, SDL_KEYDOWN, SDL_MOUSEWHEEL) > 0)
 #else

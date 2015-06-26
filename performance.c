@@ -40,7 +40,7 @@
 #elif defined(_XBOX360)
 #include <PPCIntrinsics.h>
 #elif defined(_POSIX_MONOTONIC_CLOCK) || defined(ANDROID) || defined(__QNX__)
-// POSIX_MONOTONIC_CLOCK is not being defined in Android headers despite support being present.
+/* POSIX_MONOTONIC_CLOCK is not being defined in Android headers despite support being present. */
 #include <time.h>
 #endif
 
@@ -63,7 +63,7 @@
 #include <ogc/lwp_watchdog.h>
 #endif
 
-// iOS/OSX specific. Lacks clock_gettime(), so implement it.
+/* iOS/OSX specific. Lacks clock_gettime(), so implement it. */
 #ifdef __MACH__
 #include <sys/time.h>
 
@@ -407,11 +407,10 @@ uint64_t rarch_get_cpu_features(void)
 {
    int flags[4];
    uint64_t cpu = 0;
-   const unsigned MAX_FEATURES = \
-         sizeof(" MMX MMXEXT SSE SSE2 SSE3 SSSE3 SS4 SSE4.2 AES AVX AVX2 NEON VMX VMX128 VFPU PS");
-   char buf[MAX_FEATURES];
 
-   memset(buf, 0, MAX_FEATURES);
+   char buf[sizeof(" MMX MMXEXT SSE SSE2 SSE3 SSSE3 SS4 SSE4.2 AES AVX AVX2 NEON VMX VMX128 VFPU PS")];
+
+   memset(buf, 0, sizeof(buf));
    
    (void)flags;
 

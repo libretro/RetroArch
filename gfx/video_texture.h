@@ -22,7 +22,7 @@
 enum texture_backend_type
 {
    TEXTURE_BACKEND_DEFAULT = 0,
-   TEXTURE_BACKEND_OPENGL,
+   TEXTURE_BACKEND_OPENGL
 };
 
 #ifdef __cplusplus
