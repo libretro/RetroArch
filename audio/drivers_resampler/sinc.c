@@ -351,6 +351,7 @@ static void process_sinc(rarch_sinc_resampler_t *resamp, float *out_buffer)
 #else
    const float *phase_table = resamp->phase_table + phase * taps;
 #endif
+   __m128 sum;
 
    for (i = 0; i < taps; i += 4)
    {
@@ -373,7 +374,7 @@ static void process_sinc(rarch_sinc_resampler_t *resamp, float *out_buffer)
     * sum_r = { r3, r2, r1, r0 }
     */
 
-   __m128 sum = _mm_add_ps(_mm_shuffle_ps(sum_l, sum_r,
+   sum = _mm_add_ps(_mm_shuffle_ps(sum_l, sum_r,
             _MM_SHUFFLE(1, 0, 1, 0)),
          _mm_shuffle_ps(sum_l, sum_r, _MM_SHUFFLE(3, 2, 3, 2)));
 

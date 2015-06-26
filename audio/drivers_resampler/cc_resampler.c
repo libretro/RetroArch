@@ -97,11 +97,11 @@ static void resampler_CC_process(void *re_, struct resampler_data *data)
          ".set      push\n"
          ".set      noreorder\n"
 
-         "mtv       %2,   s700              \n"   // 700 = data->ratio = b
-         //    "vsat0.s   s700, s700              \n"
-         "vrcp.s    s701, s700              \n"   // 701 = 1.0 / b
-         "vadd.s    s702, s700, s700        \n"   // 702 = 2 * b
-         "vmul.s    s703, s700, s710        \n"   // 703 = b * pi
+         "mtv       %2,   s700              \n"   /* 700 = data->ratio = b */
+         /*    "vsat0.s   s700, s700              \n" */
+         "vrcp.s    s701, s700              \n"   /* 701 = 1.0 / b */
+         "vadd.s    s702, s700, s700        \n"   /* 702 = 2 * b */
+         "vmul.s    s703, s700, s710        \n"   /* 703 = b * pi */
 
          "mfv       %0,   s701              \n"
          "mfv       %1,   s730              \n"
@@ -128,8 +128,8 @@ static void resampler_CC_process(void *re_, struct resampler_data *data)
 
                "vadd.q  c600, c730[-X,Y,-X,Y], c730[1/2,1/2,-1/2,-1/2]\n"
 
-               "vmul.q  c610, c600, c700[Z,Z,Z,Z]  \n"   //*2*b
-               "vmul.q  c600, c600, c700[W,W,W,W]  \n"   //*b*pi
+               "vmul.q  c610, c600, c700[Z,Z,Z,Z]  \n"   /* *2*b */
+               "vmul.q  c600, c600, c700[W,W,W,W]  \n"   /* *b*pi */
                "vsin.q  c610, c610                 \n"
                "vadd.q  c600, c600, c610           \n"
 

@@ -175,12 +175,12 @@ static bool append_plugs(rarch_dsp_filter_t *dsp, struct string_list *list)
       const struct dspfilter_implementation *impl = NULL;
       struct rarch_dsp_plug *new_plugs = NULL;
       dylib_t lib = dylib_load(list->elems[i].data);
+      dspfilter_get_implementation_t cb;
 
       if (!lib)
          continue;
 
-      dspfilter_get_implementation_t cb = (dspfilter_get_implementation_t)
-         dylib_proc(lib, "dspfilter_get_implementation");
+      cb = (dspfilter_get_implementation_t)dylib_proc(lib, "dspfilter_get_implementation");
       if (!cb)
       {
          dylib_close(lib);

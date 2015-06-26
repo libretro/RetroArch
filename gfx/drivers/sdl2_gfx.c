@@ -254,8 +254,8 @@ static void sdl_refresh_renderer(sdl2_video_t *vid)
    SDL_Rect r = { vid->vp.x, vid->vp.y, (int)vid->vp.width, (int)vid->vp.height };
    SDL_RenderSetViewport(vid->renderer, &r);
 
-   // breaks int scaling
-   // SDL_RenderSetLogicalSize(vid->renderer, vid->vp.width, vid->vp.height);
+   /* breaks int scaling */
+   /* SDL_RenderSetLogicalSize(vid->renderer, vid->vp.width, vid->vp.height); */
 }
 
 static void sdl_refresh_viewport(sdl2_video_t *vid)
@@ -406,8 +406,6 @@ static void *sdl2_gfx_init(const video_info_t *video, const input_driver_t **inp
          RARCH_LOG("\tDisplay #%i mode: %ix%i@%ihz.\n", i, mode.w, mode.h,
                    mode.refresh_rate);
    }
-
-//   void *sdl_input = NULL;
 
    if (!video->fullscreen)
       RARCH_LOG("[SDL]: Creating window @ %ux%u\n", video->width, video->height);

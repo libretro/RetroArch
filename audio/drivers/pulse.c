@@ -62,8 +62,8 @@ static void pulse_free(void *data)
 
 static void stream_success_cb(pa_stream *s, int success, void *data)
 {
-   (void)s;
    pa_t *pa = (pa_t*)data;
+   (void)s;
    pa->success = success;
    pa_threaded_mainloop_signal(pa->mainloop, 0);
 }

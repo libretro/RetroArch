@@ -182,15 +182,15 @@ retro_perf_tick_t rarch_get_perf_counter(void)
 #elif defined(__GNUC__) && !defined(RARCH_CONSOLE) 
 
 #if defined(__i386__) || defined(__i486__) || defined(__i686__)
-   asm volatile ("rdtsc" : "=A" (time_ticks));
+   __asm__ volatile ("rdtsc" : "=A" (time_ticks));
 #elif defined(__x86_64__)
    unsigned a, d;
-   asm volatile ("rdtsc" : "=a" (a), "=d" (d));
+   __asm__ volatile ("rdtsc" : "=a" (a), "=d" (d));
    time_ticks = (retro_perf_tick_t)a | ((retro_perf_tick_t)d << 32);
 #endif
 
 #elif defined(__ARM_ARCH_6__)
-   asm volatile( "mrc p15, 0, %0, c9, c13, 0" : "=r"(time_ticks) );
+   __asm__ volatile( "mrc p15, 0, %0, c9, c13, 0" : "=r"(time_ticks) );
 #elif defined(__CELLOS_LV2__) || defined(GEKKO) || defined(_XBOX360) || defined(__powerpc__) || defined(__ppc__) || defined(__POWERPC__)
    time_ticks = __mftb();
 #elif defined(PSP)
@@ -286,7 +286,7 @@ static void x86_cpuid(int func, int flags[4])
 #endif
 
 #if defined(__GNUC__)
-   asm volatile (
+   __asm__ volatile (
          "mov %%" REG_b ", %%" REG_S "\n"
          "cpuid\n"
          "xchg %%" REG_b ", %%" REG_S "\n"
@@ -305,7 +305,7 @@ static uint64_t xgetbv_x86(uint32_t idx)
 {
 #if defined(__GNUC__)
    uint32_t eax, edx;
-   asm volatile (
+   __asm__ volatile (
          /* Older GCC versions (Apple's GCC for example) do 
           * not understand xgetbv instruction.
           * Stamp out the machine code directly.
@@ -331,7 +331,7 @@ static void arm_enable_runfast_mode(void)
    static const unsigned x = 0x04086060;
    static const unsigned y = 0x03000000;
    int r;
-   asm volatile(
+   __asm__ volatile(
          "fmrx	%0, fpscr   \n\t" /* r0 = FPSCR */
          "and	%0, %0, %1  \n\t" /* r0 = r0 & 0x04086060 */
          "orr	%0, %0, %2  \n\t" /* r0 = r0 | 0x03000000 */

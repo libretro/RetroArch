@@ -299,7 +299,7 @@ static bool add_device(udev_input_t *udev,
 
    strlcpy(device->devnode, devnode, sizeof(device->devnode));
 
-   // Touchpads report in absolute coords.
+   /* Touchpads report in absolute coords. */
    if (cb == udev_handle_touchpad &&
          (ioctl(fd, EVIOCGABS(ABS_X), &device->state.touchpad.info_x) < 0 ||
           ioctl(fd, EVIOCGABS(ABS_Y), &device->state.touchpad.info_y) < 0))
@@ -680,7 +680,7 @@ static void disable_terminal_input(void)
    newterm.c_cc[VMIN] = 0;
    newterm.c_cc[VTIME] = 0;
 
-   // Be careful about recovering the terminal ...
+   /* Be careful about recovering the terminal ... */
    if (ioctl(0, KDGKBMODE, &oldkbmd) < 0)
       return;
    if (tcsetattr(0, TCSAFLUSH, &newterm) < 0)
@@ -695,7 +695,7 @@ static void disable_terminal_input(void)
    sa.sa_flags = SA_RESTART | SA_RESETHAND;
    sigemptyset(&sa.sa_mask);
 
-   // Trap some fatal signals.
+   /* Trap some fatal signals. */
    sigaction(SIGABRT, &sa, NULL);
    sigaction(SIGBUS,  &sa, NULL);
    sigaction(SIGFPE,  &sa, NULL);

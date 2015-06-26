@@ -663,7 +663,7 @@ static void update_texture_asm(const uint32_t *src, const uint32_t *dst,
    register uint32_t tmp0, tmp1, tmp2, tmp3, line2, line2b, 
             line3, line3b, line4, line4b, line5;
 
-   asm volatile (
+   __asm__ volatile (
       "     srwi     %[width],   %[width],   2           \n"
       "     srwi     %[height],  %[height],  2           \n"
       "     subi     %[tmp3],    %[dst],     4           \n"

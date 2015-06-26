@@ -58,9 +58,11 @@ static void alsa_worker_thread(void *data)
 
    while (!alsa->thread_dead)
    {
+      size_t avail;
+      size_t fifo_size;
       slock_lock(alsa->fifo_lock);
-      size_t avail = fifo_read_avail(alsa->buffer);
-      size_t fifo_size = min(alsa->period_size, avail);
+      avail = fifo_read_avail(alsa->buffer);
+      fifo_size = min(alsa->period_size, avail);
       fifo_read(alsa->buffer, buf, fifo_size);
       scond_signal(alsa->cond);
       slock_unlock(alsa->fifo_lock);
@@ -149,15 +151,11 @@ static void *alsa_thread_init(const char *device,
       unsigned rate, unsigned latency)
 {
    alsa_thread_t *alsa = (alsa_thread_t*)calloc(1, sizeof(alsa_thread_t));
-   if (!alsa)
-      return NULL;
 
    snd_pcm_hw_params_t *params = NULL;
    snd_pcm_sw_params_t *sw_params = NULL;
 
-   const char *alsa_dev = "default";
-   if (device)
-      alsa_dev = device;
+   const char *alsa_dev = device ? device : "default";
 
    unsigned latency_usec = latency * 1000 / 2;
 
@@ -165,6 +163,9 @@ static void *alsa_thread_init(const char *device,
    unsigned periods = 4;
    snd_pcm_uframes_t buffer_size;
    snd_pcm_format_t format;
+
+   if (!alsa)
+      return NULL;
 
    TRY_ALSA(snd_pcm_open(&alsa->pcm, alsa_dev, SND_PCM_STREAM_PLAYBACK, 0));
 
@@ -246,9 +247,11 @@ static ssize_t alsa_thread_write(void *data, const void *buf, size_t size)
 
    if (alsa->nonblock)
    {
+      size_t avail;
+      size_t write_amt;
       slock_lock(alsa->fifo_lock);
-      size_t avail = fifo_write_avail(alsa->buffer);
-      size_t write_amt = min(avail, size);
+      avail = fifo_write_avail(alsa->buffer);
+      write_amt = min(avail, size);
       fifo_write(alsa->buffer, buf, write_amt);
       slock_unlock(alsa->fifo_lock);
       return write_amt;
@@ -258,8 +261,9 @@ static ssize_t alsa_thread_write(void *data, const void *buf, size_t size)
       size_t written = 0;
       while (written < size && !alsa->thread_dead)
       {
+         size_t avail;
          slock_lock(alsa->fifo_lock);
-         size_t avail = fifo_write_avail(alsa->buffer);
+         avail = fifo_write_avail(alsa->buffer);
 
          if (avail == 0)
          {
@@ -316,11 +320,12 @@ static bool alsa_thread_start(void *data)
 static size_t alsa_thread_write_avail(void *data)
 {
    alsa_thread_t *alsa = (alsa_thread_t*)data;
+   size_t val;
 
    if (alsa->thread_dead)
       return 0;
    slock_lock(alsa->fifo_lock);
-   size_t val = fifo_write_avail(alsa->buffer);
+   val = fifo_write_avail(alsa->buffer);
    slock_unlock(alsa->fifo_lock);
    return val;
 }

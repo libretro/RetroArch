@@ -47,13 +47,10 @@ static void *oss_init(const char *device, unsigned rate, unsigned latency)
    int *fd = (int*)calloc(1, sizeof(int));
    settings_t *settings = config_get_ptr();
 
+   const char *oss_device = device ? device : DEFAULT_OSS_DEV;
+   
    if (fd == NULL)
       return NULL;
-
-   const char *oss_device = DEFAULT_OSS_DEV;
-
-   if (device != NULL)
-      oss_device = device;
 
    if ((*fd = open(oss_device, O_WRONLY)) < 0)
    {
