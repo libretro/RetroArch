@@ -190,12 +190,12 @@ static struct rmsgpack_dom_value is_true(struct rmsgpack_dom_value input,
    memset(&res, 0, sizeof(res));
 
    res.type  = RDT_BOOL;
-   res.bool_ = 0;
+   res.val.bool_ = 0;
 
    if (argc > 0 || input.type != RDT_BOOL)
-      res.bool_ = 0;
+      res.val.bool_ = 0;
    else
-      res.bool_ = input.bool_;
+      res.val.bool_ = input.val.bool_;
 
    return res;
 }
@@ -210,21 +210,21 @@ static struct rmsgpack_dom_value equals(struct rmsgpack_dom_value input,
    res.type = RDT_BOOL;
 
    if (argc != 1)
-      res.bool_ = 0;
+      res.val.bool_ = 0;
    else
    {
       arg = argv[0];
 
       if (arg.type != AT_VALUE)
-         res.bool_ = 0;
+         res.val.bool_ = 0;
       else
       {
          if (input.type == RDT_UINT && arg.value.type == RDT_INT)
          {
             arg.value.type = RDT_UINT;
-            arg.value.uint_ = arg.value.int_;
+            arg.value.val.uint_ = arg.value.val.int_;
          }
-         res.bool_ = (rmsgpack_dom_value_cmp(&input, &arg.value) == 0);
+         res.val.bool_ = (rmsgpack_dom_value_cmp(&input, &arg.value) == 0);
       }
    }
    return res;
@@ -238,7 +238,7 @@ static struct rmsgpack_dom_value operator_or(struct rmsgpack_dom_value input,
    memset(&res, 0, sizeof(res));
 
    res.type = RDT_BOOL;
-   res.bool_ = 0;
+   res.val.bool_ = 0;
 
    for (i = 0; i < argc; i++)
    {
@@ -252,7 +252,7 @@ static struct rmsgpack_dom_value operator_or(struct rmsgpack_dom_value input,
                   ), 0, NULL);
       }
 
-      if (res.bool_)
+      if (res.val.bool_)
          return res;
    }
 
@@ -268,7 +268,7 @@ static struct rmsgpack_dom_value between(struct rmsgpack_dom_value input,
    memset(&res, 0, sizeof(res));
 
    res.type = RDT_BOOL;
-   res.bool_ = 0;
+   res.val.bool_ = 0;
 
    (void)i;
 
@@ -282,10 +282,10 @@ static struct rmsgpack_dom_value between(struct rmsgpack_dom_value input,
    switch (input.type)
    {
       case RDT_INT:
-         res.bool_ = ((input.int_ >= argv[0].value.int_) && (input.int_ <= argv[1].value.int_));
+         res.val.bool_ = ((input.val.int_ >= argv[0].value.val.int_) && (input.val.int_ <= argv[1].value.val.int_));
          break;
       case RDT_UINT:
-         res.bool_ = (((unsigned)input.int_ >= argv[0].value.uint_) && (input.int_ <= argv[1].value.int_));
+         res.val.bool_ = (((unsigned)input.val.int_ >= argv[0].value.val.uint_) && (input.val.int_ <= argv[1].value.val.int_));
          break;
       default:
          return res;
@@ -302,7 +302,7 @@ static struct rmsgpack_dom_value operator_and(struct rmsgpack_dom_value input,
    memset(&res, 0, sizeof(res));
 
    res.type = RDT_BOOL;
-   res.bool_ = 0;
+   res.val.bool_ = 0;
 
    for (i = 0; i < argc; i++)
    {
@@ -318,7 +318,7 @@ static struct rmsgpack_dom_value operator_and(struct rmsgpack_dom_value input,
                0, NULL);
       }
 
-      if (!res.bool_)
+      if (!res.val.bool_)
          return res;
    }
    return res;
@@ -332,7 +332,7 @@ static struct rmsgpack_dom_value q_glob(struct rmsgpack_dom_value input,
    memset(&res, 0, sizeof(res));
 
    res.type = RDT_BOOL;
-   res.bool_ = 0;
+   res.val.bool_ = 0;
 
    (void)i;
 
@@ -342,9 +342,9 @@ static struct rmsgpack_dom_value q_glob(struct rmsgpack_dom_value input,
       return res;
    if (input.type != RDT_STRING)
       return res;
-   res.bool_ = rl_fnmatch(
-         argv[0].value.string.buff,
-         input.string.buff,
+   res.val.bool_ = rl_fnmatch(
+         argv[0].value.val.string.buff,
+         input.val.string.buff,
          0
          ) == 0;
    return res;
@@ -362,11 +362,11 @@ static struct rmsgpack_dom_value all_map(struct rmsgpack_dom_value input,
 
    nil_value.type = RDT_NULL;
    res.type       = RDT_BOOL;
-   res.bool_      = 1;
+   res.val.bool_      = 1;
 
    if (argc % 2 != 0)
    {
-      res.bool_ = 0;
+      res.val.bool_ = 0;
       return res;
    }
 
@@ -378,7 +378,7 @@ static struct rmsgpack_dom_value all_map(struct rmsgpack_dom_value input,
       arg = argv[i];
       if (arg.type != AT_VALUE)
       {
-         res.bool_ = 0;
+         res.val.bool_ = 0;
          goto clean;
       }
       value = rmsgpack_dom_value_map_value(&input, &arg.value);
@@ -396,7 +396,7 @@ static struct rmsgpack_dom_value all_map(struct rmsgpack_dom_value input,
                   ), 0, NULL);
          value = NULL;
       }
-      if (!res.bool_)
+      if (!res.val.bool_)
          break;
    }
 clean:
@@ -520,20 +520,20 @@ static struct buffer parse_string(struct buffer buff,
    {
       size_t count;
       value->type = is_binstr ? RDT_BINARY : RDT_STRING;
-      value->string.len = (buff.data + buff.offset) - str_start - 1;
+      value->val.string.len = (buff.data + buff.offset) - str_start - 1;
 
-      count = is_binstr ? (value->string.len + 1) / 2 : (value->string.len + 1);
-      value->string.buff = (char*)calloc(count, sizeof(char));
+      count = is_binstr ? (value->val.string.len + 1) / 2 : (value->val.string.len + 1);
+      value->val.string.buff = (char*)calloc(count, sizeof(char));
 
-      if (!value->string.buff)
+      if (!value->val.string.buff)
          raise_enomem(error);
       else if (is_binstr)
       {
-         unsigned i, j;
+         unsigned i;
          const char *tok = str_start;
+         unsigned      j = 0;
 
-         j = 0;
-         for (i = 0; i < value->string.len; i += 2)
+         for (i = 0; i < value->val.string.len; i += 2)
          {
             uint8_t hi, lo;
             char hic = tok[i];
@@ -549,13 +549,13 @@ static struct buffer parse_string(struct buffer buff,
             else
                lo = (loc - 'A') + 10;
 
-            value->string.buff[j++] = hi * 16 + lo;
+            value->val.string.buff[j++] = hi * 16 + lo;
          }
 
-         value->string.len = j;
+         value->val.string.len = j;
       }
       else
-         memcpy(value->string.buff, str_start, value->string.len);
+         memcpy(value->val.string.buff, str_start, value->val.string.len);
    }
    return buff;
 }
@@ -571,7 +571,7 @@ static struct buffer parse_integer(struct buffer buff,
 #else
             "%lld",
 #endif
-            (signed long long*)&value->int_) == 0)
+            (signed long long*)&value->val.int_) == 0)
       raise_expected_number(buff.offset, error);
    else
    {
@@ -595,13 +595,13 @@ static struct buffer parse_value(struct buffer buff,
    {
       buff.offset += strlen("true");
       value->type = RDT_BOOL;
-      value->bool_ = 1;
+      value->val.bool_ = 1;
    }
    else if (peek(buff, "false"))
    {
       buff.offset += strlen("false");
       value->type = RDT_BOOL;
-      value->bool_ = 0;
+      value->val.bool_ = 0;
    }
    else if (peek(buff, "b") || peek(buff, "\"") || peek(buff, "'"))
       buff = parse_string(buff, value, error);
@@ -768,17 +768,17 @@ static struct buffer parse_table(struct buffer buff,
          if (!*error)
          {
             args[argi].value.type = RDT_STRING;
-            args[argi].value.string.len = ident_len;
-            args[argi].value.string.buff = (char*)calloc(
+            args[argi].value.val.string.len = ident_len;
+            args[argi].value.val.string.buff = (char*)calloc(
                   ident_len + 1,
                   sizeof(char)
                   );
 
-            if (!args[argi].value.string.buff)
+            if (!args[argi].value.val.string.buff)
                goto clean;
 
             strncpy(
-                  args[argi].value.string.buff,
+                  args[argi].value.val.string.buff,
                   ident_name,
                   ident_len
                   );
@@ -952,5 +952,5 @@ int libretrodb_query_filter(libretrodb_query_t *q,
 {
    struct invocation inv = ((struct query *)q)->root;
    struct rmsgpack_dom_value res = inv.func(*v, inv.argc, inv.argv);
-   return (res.type == RDT_BOOL && res.bool_);
+   return (res.type == RDT_BOOL && res.val.bool_);
 }

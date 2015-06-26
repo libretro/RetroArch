@@ -237,100 +237,100 @@ static int database_cursor_iterate(libretrodb_cursor_t *cur,
    db_info->analog_supported       = -1;
    db_info->rumble_supported       = -1;
 
-   for (i = 0; i < item.map.len; i++)
+   for (i = 0; i < item.val.map.len; i++)
    {
       uint32_t                 value = 0;
-      struct rmsgpack_dom_value *key = &item.map.items[i].key;
-      struct rmsgpack_dom_value *val = &item.map.items[i].value;
+      struct rmsgpack_dom_value *key = &item.val.map.items[i].key;
+      struct rmsgpack_dom_value *val = &item.val.map.items[i].value;
 
       if (!key || !val)
          continue;
 
-      str   = key->string.buff;
+      str   = key->val.string.buff;
       value = djb2_calculate(str);
 
       switch (value)
       {
          case DB_CURSOR_SERIAL:
-            db_info->serial = strdup(val->string.buff);
+            db_info->serial = strdup(val->val.string.buff);
             break;
          case DB_CURSOR_ROM_NAME:
-            db_info->rom_name = strdup(val->string.buff);
+            db_info->rom_name = strdup(val->val.string.buff);
             break;
          case DB_CURSOR_NAME:
-            db_info->name = strdup(val->string.buff);
+            db_info->name = strdup(val->val.string.buff);
             break;
          case DB_CURSOR_DESCRIPTION:
-            db_info->description = strdup(val->string.buff);
+            db_info->description = strdup(val->val.string.buff);
             break;
          case DB_CURSOR_PUBLISHER:
-            db_info->publisher = strdup(val->string.buff);
+            db_info->publisher = strdup(val->val.string.buff);
             break;
          case DB_CURSOR_DEVELOPER:
-            db_info->developer = string_split(val->string.buff, "|");
+            db_info->developer = string_split(val->val.string.buff, "|");
             break;
          case DB_CURSOR_ORIGIN:
-            db_info->origin = strdup(val->string.buff);
+            db_info->origin = strdup(val->val.string.buff);
             break;
          case DB_CURSOR_FRANCHISE:
-            db_info->franchise = strdup(val->string.buff);
+            db_info->franchise = strdup(val->val.string.buff);
             break;
          case DB_CURSOR_BBFC_RATING:
-            db_info->bbfc_rating = strdup(val->string.buff);
+            db_info->bbfc_rating = strdup(val->val.string.buff);
             break;
          case DB_CURSOR_ESRB_RATING:
-            db_info->esrb_rating = strdup(val->string.buff);
+            db_info->esrb_rating = strdup(val->val.string.buff);
             break;
          case DB_CURSOR_ELSPA_RATING:
-            db_info->elspa_rating = strdup(val->string.buff);
+            db_info->elspa_rating = strdup(val->val.string.buff);
             break;
          case DB_CURSOR_CERO_RATING:
-            db_info->cero_rating = strdup(val->string.buff);
+            db_info->cero_rating = strdup(val->val.string.buff);
             break;
          case DB_CURSOR_PEGI_RATING:
-            db_info->pegi_rating = strdup(val->string.buff);
+            db_info->pegi_rating = strdup(val->val.string.buff);
             break;
          case DB_CURSOR_ENHANCEMENT_HW:
-            db_info->enhancement_hw = strdup(val->string.buff);
+            db_info->enhancement_hw = strdup(val->val.string.buff);
             break;
          case DB_CURSOR_EDGE_MAGAZINE_REVIEW:
-            db_info->edge_magazine_review = strdup(val->string.buff);
+            db_info->edge_magazine_review = strdup(val->val.string.buff);
             break;
          case DB_CURSOR_EDGE_MAGAZINE_RATING:
-            db_info->edge_magazine_rating = val->uint_;
+            db_info->edge_magazine_rating = val->val.uint_;
             break;
          case DB_CURSOR_EDGE_MAGAZINE_ISSUE:
-            db_info->edge_magazine_issue = val->uint_;
+            db_info->edge_magazine_issue = val->val.uint_;
             break;
          case DB_CURSOR_FAMITSU_MAGAZINE_RATING:
-            db_info->famitsu_magazine_rating = val->uint_;
+            db_info->famitsu_magazine_rating = val->val.uint_;
             break;
          case DB_CURSOR_MAX_USERS:
-            db_info->max_users = val->uint_;
+            db_info->max_users = val->val.uint_;
             break;
          case DB_CURSOR_RELEASEDATE_MONTH:
-            db_info->releasemonth = val->uint_;
+            db_info->releasemonth = val->val.uint_;
             break;
          case DB_CURSOR_RELEASEDATE_YEAR:
-            db_info->releaseyear = val->uint_;
+            db_info->releaseyear = val->val.uint_;
             break;
          case DB_CURSOR_RUMBLE_SUPPORTED:
-            db_info->rumble_supported = val->uint_;
+            db_info->rumble_supported = val->val.uint_;
             break;
          case DB_CURSOR_ANALOG_SUPPORTED:
-            db_info->analog_supported = val->uint_;
+            db_info->analog_supported = val->val.uint_;
             break;
          case DB_CURSOR_SIZE:
-            db_info->size = val->uint_;
+            db_info->size = val->val.uint_;
             break;
          case DB_CURSOR_CHECKSUM_CRC32:
-            db_info->crc32 = swap_if_little32(*(uint32_t*)val->binary.buff);
+            db_info->crc32 = swap_if_little32(*(uint32_t*)val->val.binary.buff);
             break;
          case DB_CURSOR_CHECKSUM_SHA1:
-            db_info->sha1 = bin_to_hex_alloc((uint8_t*)val->binary.buff, val->binary.len);
+            db_info->sha1 = bin_to_hex_alloc((uint8_t*)val->val.binary.buff, val->val.binary.len);
             break;
          case DB_CURSOR_CHECKSUM_MD5:
-            db_info->md5 = bin_to_hex_alloc((uint8_t*)val->binary.buff, val->binary.len);
+            db_info->md5 = bin_to_hex_alloc((uint8_t*)val->val.binary.buff, val->val.binary.len);
             break;
          default:
             RARCH_LOG("Unknown key: %s\n", str);
