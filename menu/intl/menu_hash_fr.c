@@ -31,10 +31,12 @@ const char *menu_hash_to_str_fr(uint32_t hash)
 {
    switch (hash)
    {
+      case MENU_LABEL_VALUE_INFORMATION_LIST:
+         return "Informations";
       case MENU_LABEL_VALUE_USE_BUILTIN_PLAYER:
          return "Utiliser le lecteur embarqué";
       case MENU_LABEL_VALUE_CONTENT_SETTINGS:
-         return "Réglages du contenu"; /* FIXME */
+         return "Menu rapide";
       case MENU_LABEL_VALUE_RDB_ENTRY_CRC32:
          return "CRC32";
       case MENU_LABEL_VALUE_RDB_ENTRY_MD5:
@@ -465,6 +467,8 @@ const char *menu_hash_to_str_fr(uint32_t hash)
          return "Mise à jour des cores";
       case MENU_LABEL_VALUE_SYSTEM_INFORMATION:
          return "Informations du système";
+      case MENU_LABEL_VALUE_ONLINE_UPDATER:
+         return "Mises à jour";
       case MENU_LABEL_VALUE_CORE_INFORMATION:
          return "Informations sur le core";
       case MENU_LABEL_VALUE_DIRECTORY_NOT_FOUND:
