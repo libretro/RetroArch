@@ -53,14 +53,14 @@ struct zlib_file_backend
 
 static bool zlib_write_file(const char *path, const void *data, ssize_t size)
 {
-   bool ret   = false;
+   ssize_t ret   = 0;
    FILE *file = fopen(path, "wb");
    if (!file)
       return false;
 
-   ret = fwrite(data, 1, size, file) == size;
+   ret = fwrite(data, 1, size, file);
    fclose(file);
-   return ret;
+   return (ret == size);
 }
 
 
