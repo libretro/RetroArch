@@ -1368,6 +1368,32 @@ const char *menu_hash_to_str_us(uint32_t hash)
          return "No information is available.";
       case MENU_LABEL_VALUE_INPUT_USER_BINDS:
          return "Input User %u Binds";
+      case MENU_VALUE_LANG_ENGLISH:
+         return "English";
+      case MENU_VALUE_LANG_JAPANESE:
+         return "Japanese";
+      case MENU_VALUE_LANG_FRENCH:
+         return "French";
+      case MENU_VALUE_LANG_SPANISH:
+         return "Spanish";
+      case MENU_VALUE_LANG_GERMAN:
+         return "German";
+      case MENU_VALUE_LANG_ITALIAN:
+         return "Italian";
+      case MENU_VALUE_LANG_DUTCH:
+         return "Dutch";
+      case MENU_VALUE_LANG_PORTUGUESE:
+         return "Portuguese";
+      case MENU_VALUE_LANG_RUSSIAN:
+         return "Russian";
+      case MENU_VALUE_LANG_KOREAN:
+         return "Korean";
+      case MENU_VALUE_LANG_CHINESE_TRADITIONAL:
+         return "Chinese (Traditional)";
+      case MENU_VALUE_LANG_CHINESE_SIMPLIFIED:
+         return "Chinese (Simplified)";
+      case MENU_VALUE_LANG_ESPERANTO:
+         return "Esperanto";
       default:
          break;
    }

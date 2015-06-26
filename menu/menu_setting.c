@@ -1488,22 +1488,22 @@ static void setting_get_string_representation_uint_autosave_interval(void *data,
 static void setting_get_string_representation_uint_user_language(void *data,
       char *s, size_t len)
 {
-   static const char *modes[] = {
-      "English",
-      "Japanese",
-      "French",
-      "Spanish",
-      "German",
-      "Italian",
-      "Dutch",
-      "Portuguese",
-      "Russian",
-      "Korean",
-      "Chinese (Traditional)",
-      "Chinese (Simplified)",
-      "Esperanto"
-   };
+   const char *modes[RETRO_LANGUAGE_LAST];
    settings_t      *settings = config_get_ptr();
+
+   modes[RETRO_LANGUAGE_ENGLISH]             = menu_hash_to_str(MENU_VALUE_LANG_ENGLISH);
+   modes[RETRO_LANGUAGE_JAPANESE]            = menu_hash_to_str(MENU_VALUE_LANG_JAPANESE);
+   modes[RETRO_LANGUAGE_FRENCH]              = menu_hash_to_str(MENU_VALUE_LANG_FRENCH);
+   modes[RETRO_LANGUAGE_SPANISH]             = menu_hash_to_str(MENU_VALUE_LANG_SPANISH);
+   modes[RETRO_LANGUAGE_GERMAN]              = menu_hash_to_str(MENU_VALUE_LANG_GERMAN);
+   modes[RETRO_LANGUAGE_ITALIAN]             = menu_hash_to_str(MENU_VALUE_LANG_ITALIAN);
+   modes[RETRO_LANGUAGE_DUTCH]               = menu_hash_to_str(MENU_VALUE_LANG_DUTCH);
+   modes[RETRO_LANGUAGE_PORTUGUESE]          = menu_hash_to_str(MENU_VALUE_LANG_PORTUGUESE);
+   modes[RETRO_LANGUAGE_RUSSIAN]             = menu_hash_to_str(MENU_VALUE_LANG_RUSSIAN);
+   modes[RETRO_LANGUAGE_KOREAN]              = menu_hash_to_str(MENU_VALUE_LANG_KOREAN);
+   modes[RETRO_LANGUAGE_CHINESE_TRADITIONAL] = menu_hash_to_str(MENU_VALUE_LANG_CHINESE_TRADITIONAL);
+   modes[RETRO_LANGUAGE_CHINESE_SIMPLIFIED]  = menu_hash_to_str(MENU_VALUE_LANG_CHINESE_SIMPLIFIED);
+   modes[RETRO_LANGUAGE_ESPERANTO]           = menu_hash_to_str(MENU_VALUE_LANG_ESPERANTO);
 
    if (settings)
       strlcpy(s, modes[settings->user_language], len);

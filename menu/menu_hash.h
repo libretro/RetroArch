@@ -928,6 +928,20 @@ extern "C" {
 #define MENU_VALUE_DISABLED                                                    0xe326e01dU
 #define MENU_VALUE_PORT                                                        0x7c8ad52aU
 
+#define MENU_VALUE_LANG_ENGLISH                                                0xcb4e554fU
+#define MENU_VALUE_LANG_JAPANESE                                               0xfde6f60cU
+#define MENU_VALUE_LANG_FRENCH                                                 0xb3704d9bU
+#define MENU_VALUE_LANG_SPANISH                                                0x053c7edbU
+#define MENU_VALUE_LANG_GERMAN                                                 0xb4e1541fU
+#define MENU_VALUE_LANG_ITALIAN                                                0x0cc9a6c7U
+#define MENU_VALUE_LANG_DUTCH                                                  0x0d0fa55dU
+#define MENU_VALUE_LANG_PORTUGUESE                                             0x2a19df58U
+#define MENU_VALUE_LANG_RUSSIAN                                                0xc53481eaU
+#define MENU_VALUE_LANG_KOREAN                                                 0xbeeac9a5U
+#define MENU_VALUE_LANG_CHINESE_TRADITIONAL                                    0x43f172d0U
+#define MENU_VALUE_LANG_CHINESE_SIMPLIFIED                                     0x1ae5ee5bU
+#define MENU_VALUE_LANG_ESPERANTO                                              0x1a933a76U
+
 #define MENU_VALUE_NONE                                                        0x7c89bbd5U
 
 #define MENU_LABEL_VALUE_NO_INFORMATION_AVAILABLE                              0xbae2c7f6U
