@@ -20,6 +20,7 @@
 #include <compat/strl.h>
 
 #include "../menu.h"
+#include "../menu_cbs.h"
 #include "../menu_hash.h"
 
 #include "../../general.h"

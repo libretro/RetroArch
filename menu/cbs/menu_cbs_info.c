@@ -16,6 +16,7 @@
 #include <compat/strl.h>
 
 #include "../menu.h"
+#include "../menu_cbs.h"
 #include "../menu_hash.h"
 
 static int action_info_default(unsigned type, const char *label)

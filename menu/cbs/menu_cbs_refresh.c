@@ -14,6 +14,7 @@
  */
 
 #include "../menu.h"
+#include "../menu_cbs.h"
 #include "../menu_hash.h"
 #include "../menu_displaylist.h"
 

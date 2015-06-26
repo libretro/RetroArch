@@ -16,6 +16,7 @@
 #include <file/file_path.h>
 
 #include "../menu.h"
+#include "../menu_cbs.h"
 #include "../menu_display.h"
 #include "../menu_setting.h"
 #include "../menu_entry.h"

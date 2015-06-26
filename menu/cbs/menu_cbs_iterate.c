@@ -18,6 +18,7 @@
 #include <retro_inline.h>
 
 #include "../menu.h"
+#include "../menu_cbs.h"
 #include "../menu_display.h"
 #include "../menu_hash.h"
 #include "../menu_entry.h"
