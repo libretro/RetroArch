@@ -56,7 +56,7 @@ static retro_input_state_t input_state_cb;
    log_cb(RETRO_LOG_ERROR, "[FFmpeg]: " msg "\n"); \
 } while(0)
 
-// FFmpeg context data.
+/* FFmpeg context data. */
 static AVFormatContext *fctx;
 static AVCodecContext *vctx;
 static int video_stream;
@@ -73,8 +73,9 @@ static int subtitle_streams[MAX_STREAMS];
 static int subtitle_streams_num;
 static int subtitle_streams_ptr;
 
-// AAS/SSA subtitles.
 #ifdef HAVE_SSA
+/* AAS/SSA subtitles. */
+
 static ASS_Library *ass;
 static ASS_Renderer *ass_render;
 static ASS_Track *ass_track[MAX_STREAMS];
@@ -97,12 +98,12 @@ unsigned fft_height;
 unsigned fft_multisample;
 #endif
 
-// A/V timing.
+/* A/V timing. */
 static uint64_t frame_cnt;
 static uint64_t audio_frames;
 static double pts_bias;
 
-// Threaded FIFOs.
+/* Threaded FIFOs. */
 static volatile bool decode_thread_dead;
 static fifo_buffer_t *video_decode_fifo;
 static fifo_buffer_t *audio_decode_fifo;
@@ -118,11 +119,11 @@ static uint32_t *video_frame_temp_buffer;
 
 static bool main_sleeping;
 
-// Seeking.
+/* Seeking. */
 static bool do_seek;
 static double seek_time;
 
-// GL stuff
+/* GL stuff */
 struct frame
 {
 #if defined(HAVE_OPENGL)
@@ -146,8 +147,6 @@ static GLint vertex_loc;
 static GLint tex_loc;
 static GLint mix_loc;
 #endif
-
-////
 
 static struct
 {
@@ -186,7 +185,11 @@ void CORE_PREFIX(retro_init)(void)
    reset_triggered = false;
 
    av_register_all();
-   //avdevice_register_all(); // FIXME: Occasionally crashes inside libavdevice for some odd reason on reentrancy. Likely a libavdevice bug.
+#if 0
+   /* FIXME: Occasionally crashes inside libavdevice 
+    * for some odd reason on reentrancy. Likely a libavdevice bug. */
+   avdevice_register_all();
+#endif
 }
 
 void CORE_PREFIX(retro_deinit)(void)
@@ -214,14 +217,16 @@ void CORE_PREFIX(retro_get_system_info)(struct retro_system_info *info)
 
 void CORE_PREFIX(retro_get_system_av_info)(struct retro_system_av_info *info)
 {
-   info->timing = (struct retro_system_timing) {
+   unsigned width  = vctx ? media.width : 320;
+   unsigned height = vctx ? media.height : 240;
+   float aspect    = vctx ? media.aspect : 0.0;
+
+   info->timing = (struct retro_system_timing)
+   {
       .fps = media.interpolate_fps,
       .sample_rate = actx[0] ? media.sample_rate : 32000.0,
    };
 
-   unsigned width  = vctx ? media.width : 320;
-   unsigned height = vctx ? media.height : 240;
-   float aspect = vctx ? media.aspect : 0.0;
 
 #ifdef HAVE_GL_FFT
    if (audio_streams_num > 0 && video_stream < 0)
@@ -232,7 +237,8 @@ void CORE_PREFIX(retro_get_system_av_info)(struct retro_system_av_info *info)
    }
 #endif
 
-   info->geometry = (struct retro_game_geometry) {
+   info->geometry = (struct retro_game_geometry)
+   {
       .base_width   = width,
       .base_height  = height,
       .max_width    = width,
@@ -243,8 +249,6 @@ void CORE_PREFIX(retro_get_system_av_info)(struct retro_system_av_info *info)
 
 void CORE_PREFIX(retro_set_environment)(retro_environment_t cb)
 {
-   environ_cb = cb;
-
    static const struct retro_variable vars[] = {
 #ifdef HAVE_OPENGL
       { "ffmpeg_temporal_interp", "Temporal Interpolation; enabled|disabled" },
@@ -256,10 +260,12 @@ void CORE_PREFIX(retro_set_environment)(retro_environment_t cb)
       { "ffmpeg_color_space", "Colorspace; auto|BT.709|BT.601|FCC|SMPTE240M" },
       { NULL, NULL },
    };
+   struct retro_log_callback log;
+
+   environ_cb = cb;
 
    cb(RETRO_ENVIRONMENT_SET_VARIABLES, (void*)vars);
 
-   struct retro_log_callback log;
    if (cb(RETRO_ENVIRONMENT_GET_LOG_INTERFACE, &log))
       log_cb = log.log;
    else
@@ -371,11 +377,11 @@ static void seek_frame(int seek_frames)
 
    slock_lock(fifo_lock);
 
-   do_seek = true;
-   seek_time = frame_cnt / media.interpolate_fps;
+   do_seek        = true;
+   seek_time      = frame_cnt / media.interpolate_fps;
 
    snprintf(msg, sizeof(msg), "Seek: %u s.", (unsigned)seek_time);
-   msg_obj.msg = msg;
+   msg_obj.msg    = msg;
    msg_obj.frames = 180;
    environ_cb(RETRO_ENVIRONMENT_SET_MESSAGE, &msg_obj);
 
@@ -400,11 +406,21 @@ static void seek_frame(int seek_frames)
 
 void CORE_PREFIX(retro_run)(void)
 {
+   static bool last_left;
+   static bool last_right;
+   static bool last_up;
+   static bool last_down;
+   static bool last_l;
+   static bool last_r;
+   double min_pts;
+   int16_t audio_buffer[2048];
+   bool left, right, up, down, l, r;
+   size_t to_read_frames = 0;
+   int seek_frames = 0;
    bool updated = false;
-
 #ifdef HAVE_GL_FFT
-   unsigned old_fft_width = fft_width;
-   unsigned old_fft_height = fft_height;
+   unsigned old_fft_width       = fft_width;
+   unsigned old_fft_height      = fft_height;
    unsigned old_fft_multisample = fft_multisample;
 #endif
 
@@ -429,26 +445,20 @@ void CORE_PREFIX(retro_run)(void)
 
    input_poll_cb();
 
-   int seek_frames = 0;
-   static bool last_left;
-   static bool last_right;
-   static bool last_up;
-   static bool last_down;
-   static bool last_l;
-   static bool last_r;
-   bool left = input_state_cb(0, RETRO_DEVICE_JOYPAD, 0,
+
+   left = input_state_cb(0, RETRO_DEVICE_JOYPAD, 0,
          RETRO_DEVICE_ID_JOYPAD_LEFT);
-   bool right = input_state_cb(0, RETRO_DEVICE_JOYPAD, 0,
+   right = input_state_cb(0, RETRO_DEVICE_JOYPAD, 0,
          RETRO_DEVICE_ID_JOYPAD_RIGHT);
-   bool up = input_state_cb(0, RETRO_DEVICE_JOYPAD, 0,
+   up = input_state_cb(0, RETRO_DEVICE_JOYPAD, 0,
          RETRO_DEVICE_ID_JOYPAD_UP) ||
       input_state_cb(0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_WHEELUP);
-   bool down = input_state_cb(0, RETRO_DEVICE_JOYPAD, 0,
+   down = input_state_cb(0, RETRO_DEVICE_JOYPAD, 0,
          RETRO_DEVICE_ID_JOYPAD_DOWN) ||
       input_state_cb(0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_WHEELDOWN);
-   bool l = input_state_cb(0, RETRO_DEVICE_JOYPAD, 0,
+   l = input_state_cb(0, RETRO_DEVICE_JOYPAD, 0,
          RETRO_DEVICE_ID_JOYPAD_L);
-   bool r = input_state_cb(0, RETRO_DEVICE_JOYPAD, 0,
+   r = input_state_cb(0, RETRO_DEVICE_JOYPAD, 0,
          RETRO_DEVICE_ID_JOYPAD_R);
 
    if (left && !last_left)
@@ -504,8 +514,8 @@ void CORE_PREFIX(retro_run)(void)
       reset_triggered = false;
    }
 
-   // Push seek request to thread,
-   // wait for seek to complete.
+   /* Push seek request to thread,
+    * wait for seek to complete. */
    if (seek_frames)
       seek_frame(seek_frames);
 
@@ -517,17 +527,20 @@ void CORE_PREFIX(retro_run)(void)
 
    frame_cnt++;
 
-   int16_t audio_buffer[2048];
-   size_t to_read_frames = 0;
-
-   // Have to decode audio before video incase there are PTS fuckups due
-   // to seeking.
+   /* Have to decode audio before video 
+    * incase there are PTS fuckups due
+    * to seeking. */
    if (audio_streams_num > 0)
    {
-      // Audio
+      /* Audio */
+      double reading_pts;
+      double expected_pts;
+      double old_pts_bias;
+      size_t to_read_bytes;
       uint64_t expected_audio_frames = frame_cnt * media.sample_rate / media.interpolate_fps;
+
       to_read_frames = expected_audio_frames - audio_frames;
-      size_t to_read_bytes = to_read_frames * sizeof(int16_t) * 2;
+      to_read_bytes = to_read_frames * sizeof(int16_t) * 2;
 
       slock_lock(fifo_lock);
       while (!decode_thread_dead && fifo_read_avail(audio_decode_fifo) < to_read_bytes)
@@ -538,13 +551,12 @@ void CORE_PREFIX(retro_run)(void)
          main_sleeping = false;
       }
 
-      double reading_pts = decode_last_audio_time -
+      reading_pts  = decode_last_audio_time -
          (double)fifo_read_avail(audio_decode_fifo) / (media.sample_rate * sizeof(int16_t) * 2);
+      expected_pts = (double)audio_frames / media.sample_rate;
+      old_pts_bias = pts_bias;
+      pts_bias     = reading_pts - expected_pts;
 
-      double expected_pts = (double)audio_frames / media.sample_rate;
-
-      double old_pts_bias = pts_bias;
-      pts_bias = reading_pts - expected_pts;
       if (pts_bias < old_pts_bias - 1.0)
       {
          log_cb(RETRO_LOG_INFO, "Resetting PTS (bias).\n");
@@ -560,11 +572,13 @@ void CORE_PREFIX(retro_run)(void)
       audio_frames += to_read_frames;
    }
 
-   double min_pts = frame_cnt / media.interpolate_fps + pts_bias;
+   min_pts = frame_cnt / media.interpolate_fps + pts_bias;
+
    if (video_stream >= 0)
    {
-      bool dupe = true; // unused if GL enabled
-      // Video
+      bool dupe = true; /* unused if GL enabled */
+
+      /* Video */
       if (min_pts > frames[1].pts)
       {
          struct frame tmp = frames[1];
@@ -574,8 +588,12 @@ void CORE_PREFIX(retro_run)(void)
 
       while (!decode_thread_dead && min_pts > frames[1].pts)
       {
+         size_t to_read_frame_bytes;
+         int64_t pts = 0;
+
          slock_lock(fifo_lock);
-         size_t to_read_frame_bytes = media.width * media.height * sizeof(uint32_t) + sizeof(int64_t);
+         to_read_frame_bytes = media.width * media.height * sizeof(uint32_t) + sizeof(int64_t);
+
          while (!decode_thread_dead && fifo_read_avail(video_decode_fifo) < to_read_frame_bytes)
          {
             main_sleeping = true;
@@ -584,7 +602,6 @@ void CORE_PREFIX(retro_run)(void)
             main_sleeping = false;
          }
 
-         int64_t pts = 0;
          if (!decode_thread_dead)
          {
             fifo_read(video_decode_fifo, &pts, sizeof(int64_t));
@@ -632,6 +649,7 @@ void CORE_PREFIX(retro_run)(void)
       if (use_gl)
       {
          float mix_factor = (min_pts - frames[0].pts) / (frames[1].pts - frames[0].pts);
+
          if (!temporal_interpolation)
             mix_factor = 1.0f;
          
@@ -680,11 +698,16 @@ void CORE_PREFIX(retro_run)(void)
    {
       unsigned frames = to_read_frames;
       const int16_t *buffer = audio_buffer;
+
       while (frames)
       {
          unsigned to_read = frames;
-         if (to_read > (1 << 11)) // FFT size we use (1 << 11). Really shouldn't happen unless we use a crazy high sample rate.
+         
+         /* FFT size we use (1 << 11). Really shouldn't happen,
+          * unless we use a crazy high sample rate. */
+         if (to_read > (1 << 11)) 
             to_read = 1 << 11;
+
          glfft_step_fft(fft, buffer, to_read);
          buffer += to_read * 2;
          frames -= to_read;
@@ -703,6 +726,7 @@ void CORE_PREFIX(retro_run)(void)
 static bool open_codec(AVCodecContext **ctx, unsigned index)
 {
    AVCodec *codec = avcodec_find_decoder(fctx->streams[index]->codec->codec_id);
+
    if (!codec)
    {
       log_cb(RETRO_LOG_ERROR, "Couldn't find suitable decoder, exiting ... \n");
@@ -770,6 +794,8 @@ static bool codec_id_is_ass(enum AVCodecID id)
 
 static bool open_codecs(void)
 {
+   unsigned i;
+
    video_stream = -1;
    memset(audio_streams, 0, sizeof(audio_streams));
    memset(subtitle_streams, 0, sizeof(subtitle_streams));
@@ -778,7 +804,7 @@ static bool open_codecs(void)
    subtitle_streams_num = 0;
    subtitle_streams_ptr = 0;
 
-   for (unsigned i = 0; i < fctx->nb_streams; i++)
+   for (i = 0; i < fctx->nb_streams; i++)
    {
       switch (fctx->streams[i]->codec->codec_type)
       {
@@ -805,12 +831,14 @@ static bool open_codecs(void)
 #ifdef HAVE_SSA
             if (subtitle_streams_num < MAX_STREAMS && codec_id_is_ass(fctx->streams[i]->codec->codec_id))
             {
+               int size;
                AVCodecContext **s = &sctx[subtitle_streams_num];
+
                subtitle_streams[subtitle_streams_num] = i;
                if (!open_codec(s, i))
                   return false;
 
-               int size = (*s)->extradata ? (*s)->extradata_size : 0;
+               size = (*s)->extradata ? (*s)->extradata_size : 0;
                ass_extra_data_size[subtitle_streams_num] = size;
 
                if (size)
@@ -856,9 +884,12 @@ static bool init_media_info(void)
 #ifdef HAVE_SSA
    if (sctx[0])
    {
+      size_t i;
+
       ass = ass_library_init();
       ass_set_message_cb(ass, ass_msg_cb, NULL);
-      for (size_t i = 0; i < attachments_size; i++)
+
+      for (i = 0; i < attachments_size; i++)
          ass_add_font(ass, (char*)"", (char*)attachments[i].data, attachments[i].size);
 
       ass_render = ass_renderer_init(ass);
@@ -867,7 +898,7 @@ static bool init_media_info(void)
       ass_set_fonts(ass_render, NULL, NULL, 1, NULL, 1);
       ass_set_hinting(ass_render, ASS_HINTING_LIGHT);
 
-      for (int i = 0; i < subtitle_streams_num; i++)
+      for (i = 0; i < subtitle_streams_num; i++)
       {
          ass_track[i] = ass_new_track(ass);
          ass_process_codec_private(ass_track[i], (char*)ass_extra_data[i],
@@ -883,6 +914,7 @@ static void set_colorspace(struct SwsContext *sws,
       unsigned width, unsigned height, enum AVColorSpace default_color, int in_range)
 {
    const int *coeffs = NULL;
+
    if (colorspace == AVCOL_SPC_UNSPECIFIED)
    {
       if (default_color != AVCOL_SPC_UNSPECIFIED)
@@ -899,6 +931,7 @@ static void set_colorspace(struct SwsContext *sws,
    {
       int in_full, out_full, brightness, contrast, saturation;
       const int *inv_table, *table;
+
       sws_getColorspaceDetails(sws, (int**)&inv_table, &in_full,
             (int**)&table, &out_full,
             &brightness, &contrast, &saturation);
@@ -917,6 +950,7 @@ static bool decode_video(AVPacket *pkt, AVFrame *frame, AVFrame *conv, struct Sw
 {
    int got_ptr = 0;
    int ret = avcodec_decode_video2(vctx, frame, &got_ptr, pkt);
+
    if (ret < 0)
       return false;
 
@@ -928,19 +962,21 @@ static bool decode_video(AVPacket *pkt, AVFrame *frame, AVFrame *conv, struct Sw
             conv->data, conv->linesize);
       return true;
    }
-   else
-      return false;
+
+   return false;
 }
 
 static int16_t *decode_audio(AVCodecContext *ctx, AVPacket *pkt, AVFrame *frame, int16_t *buffer, size_t *buffer_cap,
       SwrContext *swr)
 {
    AVPacket pkt_tmp = *pkt;
-
-   int got_ptr = 0;
+   int got_ptr      = 0;
 
    for (;;)
    {
+      int64_t pts;
+      size_t required_buffer;
+
       int ret = avcodec_decode_audio4(ctx, frame, &got_ptr, &pkt_tmp);
       if (ret < 0)
          return buffer;
@@ -951,7 +987,7 @@ static int16_t *decode_audio(AVCodecContext *ctx, AVPacket *pkt, AVFrame *frame,
       if (!got_ptr)
          break;
 
-      size_t required_buffer = frame->nb_samples * sizeof(int16_t) * 2;
+      required_buffer = frame->nb_samples * sizeof(int16_t) * 2;
       if (required_buffer > *buffer_cap)
       {
          buffer      = (int16_t*)av_realloc(buffer, required_buffer);
@@ -964,9 +1000,9 @@ static int16_t *decode_audio(AVCodecContext *ctx, AVPacket *pkt, AVFrame *frame,
             (const uint8_t**)frame->data,
             frame->nb_samples);
 
-      int64_t pts = av_frame_get_best_effort_timestamp(frame);
-
+      pts = av_frame_get_best_effort_timestamp(frame);
       slock_lock(fifo_lock);
+
       while (!decode_thread_dead && fifo_write_avail(audio_decode_fifo) < required_buffer)
       {
          if (!main_sleeping)
@@ -992,14 +1028,16 @@ static int16_t *decode_audio(AVCodecContext *ctx, AVPacket *pkt, AVFrame *frame,
 
 static void decode_thread_seek(double time)
 {
+   int ret;
    int64_t seek_to = time * AV_TIME_BASE;
+
    if (seek_to < 0)
       seek_to = 0;
 
    decode_last_video_time = time;
    decode_last_audio_time = time;
 
-   int ret = avformat_seek_file(fctx, -1, INT64_MIN, seek_to, INT64_MAX, 0);
+   ret = avformat_seek_file(fctx, -1, INT64_MIN, seek_to, INT64_MAX, 0);
    if (ret < 0)
       log_cb(RETRO_LOG_ERROR, "av_seek_frame() failed.\n");
 
@@ -1016,8 +1054,8 @@ static void decode_thread_seek(double time)
 }
 
 #ifdef HAVE_SSA
-// Straight CPU alpha blending.
-// Should probably do in GL.
+/* Straight CPU alpha blending.
+ * Should probably do in GL. */
 static void render_ass_img(AVFrame *conv_frame, ASS_Image *img)
 {
    uint32_t *frame = (uint32_t*)conv_frame->data[0];
@@ -1025,21 +1063,26 @@ static void render_ass_img(AVFrame *conv_frame, ASS_Image *img)
 
    for (; img; img = img->next)
    {
+      int x, y;
+      uint32_t *dst;
+      unsigned r, g, b, a;
+      const uint8_t *bitmap = NULL;
+
       if (img->w == 0 && img->h == 0)
          continue;
 
-      const uint8_t *bitmap = img->bitmap;
-      uint32_t *dst = frame + img->dst_x + img->dst_y * stride;
+      bitmap = img->bitmap;
+      dst = frame + img->dst_x + img->dst_y * stride;
 
-      unsigned r = (img->color >> 24) & 0xff;
-      unsigned g = (img->color >> 16) & 0xff;
-      unsigned b = (img->color >>  8) & 0xff;
-      unsigned a = 255 - (img->color & 0xff);
+      r = (img->color >> 24) & 0xff;
+      g = (img->color >> 16) & 0xff;
+      b = (img->color >>  8) & 0xff;
+      a = 255 - (img->color & 0xff);
 
-      for (int y = 0; y < img->h; y++,
+      for (y = 0; y < img->h; y++,
             bitmap += img->stride, dst += stride)
       {
-         for (int x = 0; x < img->w; x++)
+         for (x = 0; x < img->w; x++)
          {
             unsigned src_alpha = ((bitmap[x] * (a + 1)) >> 8) + 1;
             unsigned dst_alpha = 256 - src_alpha;
@@ -1062,9 +1105,17 @@ static void render_ass_img(AVFrame *conv_frame, ASS_Image *img)
 
 static void decode_thread(void *data)
 {
-   (void)data;
+   unsigned i;
+   AVFrame *aud_frame, *vid_frame;
+   SwrContext *swr[audio_streams_num];
+   void *conv_frame_buf    = NULL;
+   size_t frame_size       = 0;
+   int16_t *audio_buffer   = NULL;
+   size_t audio_buffer_cap = 0;
+   AVFrame *conv_frame     = NULL;
+   struct SwsContext *sws  = NULL;
 
-   struct SwsContext *sws = NULL;
+   (void)data;
    
    if (video_stream >= 0)
    {
@@ -1074,8 +1125,7 @@ static void decode_thread(void *data)
             SWS_POINT, NULL, NULL, NULL);
    }
 
-   SwrContext *swr[audio_streams_num];
-   for (int i = 0; i < audio_streams_num; i++)
+   for (i = 0; i < audio_streams_num; i++)
    {
       swr[i] = swr_alloc();
 
@@ -1088,12 +1138,8 @@ static void decode_thread(void *data)
       swr_init(swr[i]);
    }
 
-   AVFrame *aud_frame = av_frame_alloc();
-   AVFrame *vid_frame = av_frame_alloc();
-
-   AVFrame *conv_frame = NULL;
-   void *conv_frame_buf = NULL;
-   size_t frame_size = 0;
+   aud_frame = av_frame_alloc();
+   vid_frame = av_frame_alloc();
 
    if (video_stream >= 0)
    {
@@ -1104,14 +1150,22 @@ static void decode_thread(void *data)
             PIX_FMT_RGB32, media.width, media.height);
    }
 
-   int16_t *audio_buffer = NULL;
-   size_t audio_buffer_cap = 0;
-
    while (!decode_thread_dead)
    {
+      bool seek;
+      double seek_time_thread;
+      int audio_stream, audio_stream_ptr;
+      int subtitle_stream;
+      AVPacket pkt;
+      AVCodecContext *actx_active;
+      AVCodecContext *sctx_active;
+#ifdef HAVE_SSA
+      ASS_Track *ass_track_active
+#endif
+
       slock_lock(fifo_lock);
-      bool seek = do_seek;
-      double seek_time_thread = seek_time;
+      seek = do_seek;
+      seek_time_thread = seek_time;
       slock_unlock(fifo_lock);
 
       if (seek)
@@ -1131,19 +1185,18 @@ static void decode_thread(void *data)
          slock_unlock(fifo_lock);
       }
 
-      AVPacket pkt;
       memset(&pkt, 0, sizeof(pkt));
       if (av_read_frame(fctx, &pkt) < 0)
          break;
 
       slock_lock(decode_thread_lock);
-      int audio_stream = audio_streams[audio_streams_ptr];
-      int audio_stream_ptr = audio_streams_ptr;
-      int subtitle_stream = subtitle_streams[subtitle_streams_ptr];
-      AVCodecContext *actx_active = actx[audio_streams_ptr];
-      AVCodecContext *sctx_active = sctx[subtitle_streams_ptr];
+      audio_stream                = audio_streams[audio_streams_ptr];
+      audio_stream_ptr            = audio_streams_ptr;
+      subtitle_stream             = subtitle_streams[subtitle_streams_ptr];
+      actx_active                 = actx[audio_streams_ptr];
+      sctx_active                 = sctx[subtitle_streams_ptr];
 #ifdef HAVE_SSA
-      ASS_Track *ass_track_active = ass_track[subtitle_streams_ptr];
+      ass_track_active            = ass_track[subtitle_streams_ptr];
 #endif
       slock_unlock(decode_thread_lock);
 
@@ -1151,9 +1204,10 @@ static void decode_thread(void *data)
       {
          if (decode_video(&pkt, vid_frame, conv_frame, sws))
          {
-            int64_t pts = av_frame_get_best_effort_timestamp(vid_frame);
-
+            size_t decoded_size;
+            int64_t pts       = av_frame_get_best_effort_timestamp(vid_frame);
             double video_time = pts * av_q2d(fctx->streams[video_stream]->time_base);
+
 #ifdef HAVE_SSA
             if (ass_render)
             {
@@ -1161,15 +1215,17 @@ static void decode_thread(void *data)
                ASS_Image *img = ass_render_frame(ass_render, ass_track_active,
                      1000 * video_time, &change);
 
-               // Do it on CPU for now.
-               // We're in a thread anyways, so shouldn't really matter.
+               /* Do it on CPU for now.
+                * We're in a thread anyways, so shouldn't really matter. */
                render_ass_img(conv_frame, img);
             }
 #endif
 
-            size_t decoded_size = frame_size + sizeof(pts);
+            decoded_size = frame_size + sizeof(pts);
             slock_lock(fifo_lock);
-            while (!decode_thread_dead && fifo_write_avail(video_decode_fifo) < decoded_size)
+
+            while (!decode_thread_dead 
+                  && fifo_write_avail(video_decode_fifo) < decoded_size)
             {
                if (!main_sleeping)
                   scond_wait(fifo_decode_cond, fifo_lock);
@@ -1183,10 +1239,15 @@ static void decode_thread(void *data)
             decode_last_video_time = video_time;
             if (!decode_thread_dead)
             {
+               int stride;
+               unsigned y;
+               const uint8_t *src = NULL;
+               
                fifo_write(video_decode_fifo, &pts, sizeof(pts));
-               const uint8_t *src = conv_frame->data[0];
-               int stride = conv_frame->linesize[0];
-               for (unsigned y = 0; y < media.height; y++, src += stride)
+               src    = conv_frame->data[0];
+               stride = conv_frame->linesize[0];
+
+               for (y = 0; y < media.height; y++, src += stride)
                   fifo_write(video_decode_fifo, src, media.width * sizeof(uint32_t));
             }
             scond_signal(fifo_cond);
@@ -1202,9 +1263,10 @@ static void decode_thread(void *data)
       else if (pkt.stream_index == subtitle_stream)
       {
          AVSubtitle sub;
+         int finished = 0;
+
          memset(&sub, 0, sizeof(sub));
 
-         int finished = 0;
          while (!finished)
          {
             if (avcodec_decode_subtitle2(sctx_active, &sub, &finished, &pkt) < 0)
@@ -1215,7 +1277,7 @@ static void decode_thread(void *data)
          }
 
 #ifdef HAVE_SSA
-         for (int i = 0; i < sub.num_rects; i++)
+         for (i = 0; i < sub.num_rects; i++)
          {
             if (sub.rects[i]->ass)
                ass_process_data(ass_track_active, sub.rects[i]->ass, strlen(sub.rects[i]->ass));
@@ -1232,7 +1294,7 @@ static void decode_thread(void *data)
       sws_freeContext(sws);
    sws = NULL;
 
-   for (int i = 0; i < audio_streams_num; i++)
+   for (i = 0; i < audio_streams_num; i++)
       swr_free(&swr[i]);
 
    av_frame_free(&aud_frame);
@@ -1261,22 +1323,6 @@ static void context_destroy(void)
 
 static void context_reset(void)
 {
-#ifdef HAVE_GL_FFT
-   if (audio_streams_num > 0 && video_stream < 0)
-   {
-      fft = glfft_new(11, hw_render.get_proc_address);
-      if (fft)
-         glfft_init_multisample(fft, fft_width, fft_height, fft_multisample);
-   }
-   // Already inits symbols.
-   if (!fft)
-#endif
-      rglgen_resolve_symbols(hw_render.get_proc_address);
-
-   prog = glCreateProgram();
-   GLuint vert = glCreateShader(GL_VERTEX_SHADER);
-   GLuint frag = glCreateShader(GL_FRAGMENT_SHADER);
-
    static const char *vertex_source =
       "attribute vec2 aVertex;\n"
       "attribute vec2 aTexCoord;\n"
@@ -1298,6 +1344,32 @@ static void context_reset(void)
       "void main() { gl_FragColor = vec4(pow(mix(pow(texture2D(sTex0, vTex).rgb, vec3(2.2)), pow(texture2D(sTex1, vTex).rgb, vec3(2.2)), uMix), vec3(1.0 / 2.2)), 1.0); }\n";
 #endif
 
+   static const GLfloat vertex_data[] = {
+      -1, -1, 0, 0,
+       1, -1, 1, 0,
+      -1,  1, 0, 1,
+       1,  1, 1, 1,
+   };
+   GLuint vert, frag;
+   unsigned i;
+
+#ifdef HAVE_GL_FFT
+   if (audio_streams_num > 0 && video_stream < 0)
+   {
+      fft = glfft_new(11, hw_render.get_proc_address);
+      if (fft)
+         glfft_init_multisample(fft, fft_width, fft_height, fft_multisample);
+   }
+
+   /* Already inits symbols. */
+   if (!fft)
+#endif
+      rglgen_resolve_symbols(hw_render.get_proc_address);
+
+   prog = glCreateProgram();
+   vert = glCreateShader(GL_VERTEX_SHADER);
+   frag = glCreateShader(GL_FRAGMENT_SHADER);
+
    glShaderSource(vert, 1, &vertex_source, NULL);
    glShaderSource(frag, 1, &fragment_source, NULL);
    glCompileShader(vert);
@@ -1311,12 +1383,12 @@ static void context_reset(void)
    glUniform1i(glGetUniformLocation(prog, "sTex0"), 0);
    glUniform1i(glGetUniformLocation(prog, "sTex1"), 1);
    vertex_loc = glGetAttribLocation(prog, "aVertex");
-   tex_loc = glGetAttribLocation(prog, "aTexCoord");
-   mix_loc = glGetUniformLocation(prog, "uMix");
+   tex_loc    = glGetAttribLocation(prog, "aTexCoord");
+   mix_loc    = glGetUniformLocation(prog, "uMix");
 
    glUseProgram(0);
 
-   for (unsigned i = 0; i < 2; i++)
+   for (i = 0; i < 2; i++)
    {
       glGenTextures(1, &frames[i].tex);
 
@@ -1334,13 +1406,6 @@ static void context_reset(void)
 #endif
    }
 
-   static const GLfloat vertex_data[] = {
-      -1, -1, 0, 0,
-       1, -1, 1, 0,
-      -1,  1, 0, 1,
-       1,  1, 1, 1,
-   };
-
    glGenBuffers(1, &vbo);
    glBindBuffer(GL_ARRAY_BUFFER, vbo);
    glBufferData(GL_ARRAY_BUFFER, sizeof(vertex_data), vertex_data, GL_STATIC_DRAW);
@@ -1352,6 +1417,8 @@ static void context_reset(void)
 
 void CORE_PREFIX(retro_unload_game)(void)
 {
+   unsigned i;
+
    if (decode_thread_handle)
    {
       slock_lock(fifo_lock);
@@ -1391,7 +1458,7 @@ void CORE_PREFIX(retro_unload_game)(void)
    frame_cnt = 0;
    audio_frames = 0;
 
-   for (unsigned i = 0; i < MAX_STREAMS; i++)
+   for (i = 0; i < MAX_STREAMS; i++)
    {
       if (sctx[i])
          avcodec_close(sctx[i]);
@@ -1413,13 +1480,13 @@ void CORE_PREFIX(retro_unload_game)(void)
       fctx = NULL;
    }
 
-   for (size_t i = 0; i < attachments_size; i++)
+   for (i = 0; i < attachments_size; i++)
       av_freep(&attachments[i].data);
    av_freep(&attachments);
    attachments_size = 0;
 
 #ifdef HAVE_SSA
-   for (unsigned i = 0; i < MAX_STREAMS; i++)
+   for (i = 0; i < MAX_STREAMS; i++)
    {
       if (ass_track[i])
          ass_free_track(ass_track[i]);
