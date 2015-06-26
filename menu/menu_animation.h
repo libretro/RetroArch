@@ -41,7 +41,7 @@ struct tween
    float  initial_value;
    float  target_value;
    float* subject;
-   unsigned tag;
+   int           tag;
    easingFunc easing;
    tween_cb cb;
 };
@@ -120,7 +120,7 @@ void menu_animation_kill_by_subject(
       size_t count,
       const void *subjects);
 
-void menu_animation_kill_by_tag(menu_animation_t *anim, unsigned tag);
+void menu_animation_kill_by_tag(menu_animation_t *anim, int tag);
 
 /* Use -1 for untagged */
 bool menu_animation_push(
@@ -128,7 +128,7 @@ bool menu_animation_push(
       float duration,
       float target_value, float* subject,
       enum menu_animation_easing_type easing_enum,
-      unsigned tag, tween_cb cb);
+      int tag, tween_cb cb);
 
 bool menu_animation_update(
       menu_animation_t *animation,

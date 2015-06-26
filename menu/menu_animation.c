@@ -306,7 +306,7 @@ void menu_animation_kill_by_subject(menu_animation_t *animation,
    }
 }
 
-void menu_animation_kill_by_tag(menu_animation_t *anim, unsigned tag)
+void menu_animation_kill_by_tag(menu_animation_t *anim, int tag)
 {
    unsigned i;
 
@@ -351,7 +351,7 @@ bool menu_animation_push(menu_animation_t *anim,
       float duration,
       float target_value, float* subject,
       enum menu_animation_easing_type easing_enum,
-      unsigned tag, tween_cb cb)
+      int tag, tween_cb cb)
 {
    struct tween t;
 
