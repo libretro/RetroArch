@@ -404,16 +404,24 @@ static INLINE size_t find_same(const uint16_t *a, const uint16_t *b)
 
 void state_manager_push_do(state_manager_t *state)
 {
+   uint8_t *swap = NULL;
+
    if (state->thisblock_valid)
    {
+      const uint8_t *oldb, *newb;
+      const uint16_t *old16, *new16;
+      uint8_t *compressed;
+      uint16_t *compressed16;
+      size_t num16s;
+      size_t headpos, tailpos, remaining;
       if (state->capacity < sizeof(size_t) + state->maxcompsize)
          return;
 
 recheckcapacity:;
 
-      size_t headpos = state->head - state->data;
-      size_t tailpos = state->tail - state->data;
-      size_t remaining = (tailpos + state->capacity -
+      headpos = state->head - state->data;
+      tailpos = state->tail - state->data;
+      remaining = (tailpos + state->capacity -
             sizeof(size_t) - headpos - 1) % state->capacity + 1;
 
       if (remaining <= state->maxcompsize)
@@ -426,16 +434,16 @@ recheckcapacity:;
       RARCH_PERFORMANCE_INIT(gen_deltas);
       RARCH_PERFORMANCE_START(gen_deltas);
 
-      const uint8_t *oldb = state->thisblock;
-      const uint8_t *newb = state->nextblock;
-      uint8_t *compressed = state->head + sizeof(size_t);
+      oldb = state->thisblock;
+      newb = state->nextblock;
+      compressed = state->head + sizeof(size_t);
 
       /* Begin compression code; 'compressed' will point to 
        * the end of the compressed data (excluding the prev pointer). */
-      const uint16_t *old16 = (const uint16_t*)oldb;
-      const uint16_t *new16 = (const uint16_t*)newb;
-      uint16_t *compressed16 = (uint16_t*)compressed;
-      size_t num16s = state->blocksize / sizeof(uint16_t);
+      old16 = (const uint16_t*)oldb;
+      new16 = (const uint16_t*)newb;
+      compressed16 = (uint16_t*)compressed;
+      num16s = state->blocksize / sizeof(uint16_t);
 
       while (num16s)
       {
@@ -503,7 +511,7 @@ recheckcapacity:;
    else
       state->thisblock_valid = true;
 
-   uint8_t *swap = state->thisblock;
+   swap             = state->thisblock;
    state->thisblock = state->nextblock;
    state->nextblock = swap;
 
