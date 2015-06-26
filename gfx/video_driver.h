@@ -85,7 +85,7 @@ enum texture_filter_type
    TEXTURE_FILTER_LINEAR = 0,
    TEXTURE_FILTER_NEAREST,
    TEXTURE_FILTER_MIPMAP_LINEAR,
-   TEXTURE_FILTER_MIPMAP_NEAREST,
+   TEXTURE_FILTER_MIPMAP_NEAREST
 };
 
 #define FONT_COLOR_RGBA(r, g, b, a) (((r) << 24) | ((g) << 16) | ((b) << 8) | ((a) << 0))

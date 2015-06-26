@@ -195,7 +195,7 @@ enum event_command
    EVENT_CMD_REMAPPING_DEINIT,
    EVENT_CMD_VOLUME_UP,
    EVENT_CMD_VOLUME_DOWN,
-   EVENT_CMD_DATA_RUNLOOP_FREE,
+   EVENT_CMD_DATA_RUNLOOP_FREE
 };
 
 typedef struct event_cmd_state

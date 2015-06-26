@@ -40,7 +40,7 @@ typedef enum
 {
    MENU_IMAGE_NONE = 0,
    MENU_IMAGE_WALLPAPER,
-   MENU_IMAGE_BOXART,
+   MENU_IMAGE_BOXART
 } menu_image_type_t;
 
 typedef struct

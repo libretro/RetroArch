@@ -252,7 +252,7 @@ static void linuxraw_input_poll(void *data)
       pressed = !(c & 0x80);
       c &= ~0x80;
 
-      // ignore extended scancodes
+      /* ignore extended scancodes */
       if (!c)
          read(STDIN_FILENO, &t, 2);
       else
