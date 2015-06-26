@@ -1364,6 +1364,8 @@ const char *menu_hash_to_str_us(uint32_t hash)
          return "Directory Settings";
       case MENU_LABEL_VALUE_RECORDING_SETTINGS:
          return "Recording Settings";
+      case MENU_LABEL_VALUE_NO_INFORMATION_AVAILABLE:
+         return "No information is available.";
       default:
          break;
    }
@@ -2314,7 +2316,7 @@ int menu_hash_get_help_us(uint32_t hash, char *s, size_t len)
          break;
       default:
          if (s[0] == '\0')
-            strlcpy(s, "No information is available.", len);
+            strlcpy(s, menu_hash_to_str(MENU_LABEL_VALUE_NO_INFORMATION_AVAILABLE), len);
          return -1;
    }
 

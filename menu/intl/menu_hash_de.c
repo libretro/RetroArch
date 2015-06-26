@@ -810,6 +810,8 @@ const char *menu_hash_to_str_de(uint32_t hash)
          return "Verzeichnis-Einstellungen";
       case MENU_LABEL_VALUE_RECORDING_SETTINGS:
          return "Aufnahme-Einstellungen";
+      case MENU_LABEL_VALUE_NO_INFORMATION_AVAILABLE:
+         return "Keine Informationen verfügbar.";
       default:
          break;
    }
