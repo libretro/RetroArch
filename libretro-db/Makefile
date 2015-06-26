@@ -1,5 +1,6 @@
 CFLAGS   = -g
-INCFLAGS = -I. -I../libretro-common/include
+LIBRETRO_COMMON_DIR := ../libretro-common
+INCFLAGS = -I. -I$(LIBRETRO_COMMON_DIR)/include
 
 LUA_CONVERTER_OBJ = rmsgpack.o \
 		    rmsgpack_dom.o \
@@ -9,7 +10,7 @@ LUA_CONVERTER_OBJ = rmsgpack.o \
 		    query.o \
 		    lua_converter.o \
 		    compat_fnmatch.c \
-		    $(NULL)
+			 $(LIBRETRO_COMMON_DIR)/compat/compat.o
 
 RARCHDB_TOOL_OBJ = rmsgpack.o \
 		   rmsgpack_dom.o \
@@ -18,7 +19,7 @@ RARCHDB_TOOL_OBJ = rmsgpack.o \
 		   query.o \
 		   libretrodb.o \
 		   compat_fnmatch.c \
-		   $(NULL)
+			$(LIBRETRO_COMMON_DIR)/compat/compat.o
 
 TESTLIB_C = testlib.c \
 	      lua_common.c \
@@ -28,7 +29,7 @@ TESTLIB_C = testlib.c \
 	      bintree.c \
 	      rmsgpack.c \
 	      rmsgpack_dom.c \
-	      $(NULL)
+			$(LIBRETRO_COMMON_DIR)/compat/compat.o
 
 LUA_FLAGS = `pkg-config lua --libs`
 TESTLIB_FLAGS = ${CFLAGS} ${LUA_FLAGS} -shared -fpic
