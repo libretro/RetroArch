@@ -780,9 +780,11 @@ static int menu_input_mouse_post_iterate(uint64_t *input_mouse,
    {
       if (!menu_input->mouse.oldleft)
       {
+         rarch_setting_t *setting = NULL;
+
          BIT64_SET(*input_mouse, MOUSE_ACTION_BUTTON_L);
 
-         rarch_setting_t *setting = menu_setting_find(
+         setting = menu_setting_find(
                menu_list->selection_buf->list[nav->selection_ptr].label);
          menu_input->mouse.oldleft = true;
 

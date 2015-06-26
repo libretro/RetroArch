@@ -845,6 +845,8 @@ static config_file_t *open_default_config_file(void)
 {
    char conf_path[PATH_MAX_LENGTH] = {0};
    char app_path[PATH_MAX_LENGTH]  = {0};
+   const char *xdg                 = NULL;
+   const char *home                = NULL;
    config_file_t *conf             = NULL;
    bool saved                      = false;
    global_t *global                = global_get_ptr();
@@ -852,9 +854,8 @@ static config_file_t *open_default_config_file(void)
    (void)conf_path;
    (void)app_path;
    (void)saved;
-   
-   const char *xdg; (void)xdg;
-   const char *home; (void)home;
+   (void)xdg;
+   (void)home;
 
 #if defined(_WIN32) && !defined(_XBOX)
    fill_pathname_application_path(app_path, sizeof(app_path));
