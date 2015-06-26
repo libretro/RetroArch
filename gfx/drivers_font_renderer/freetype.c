@@ -24,7 +24,7 @@
 #include <ft2build.h>
 #include FT_FREETYPE_H
 
-#define FT_ATLAS_ROWS 8
+#define FT_ATLAS_ROWS 16
 #define FT_ATLAS_COLS 16
 #define FT_ATLAS_SIZE (FT_ATLAS_ROWS * FT_ATLAS_COLS)
 
