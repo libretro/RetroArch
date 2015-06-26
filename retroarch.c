@@ -459,6 +459,23 @@ enum rarch_content_type rarch_mediaplayer_is_media_type(const char *path)
 }
 #endif
 
+#define FFMPEG_RECORD_ARG "r:"
+
+#ifdef HAVE_DYNAMIC
+#define DYNAMIC_ARG "L:"
+#else
+#define DYNAMIC_ARG
+#endif
+
+#ifdef HAVE_NETPLAY
+#define NETPLAY_ARG "HC:F:"
+#else
+#define NETPLAY_ARG
+#endif
+
+
+#define BSV_MOVIE_ARG "P:R:M:"
+
 /**
  * parse_input:
  * @argc                 : Count of (commandline) arguments.
@@ -469,47 +486,11 @@ enum rarch_content_type rarch_mediaplayer_is_media_type(const char *path)
  **/
 static void parse_input(int argc, char *argv[])
 {
-   runloop_t *runloop = rarch_main_get_ptr();
-   global_t  *global  = global_get_ptr();
-
-   global->libretro_no_content           = false;
-   global->core_type                     = CORE_TYPE_PLAIN;
-   global->has_set_save_path             = false;
-   global->has_set_state_path            = false;
-   global->has_set_libretro              = false;
-   global->has_set_libretro_directory    = false;
-   global->has_set_verbosity             = false;
-
-   global->has_set_netplay_mode          = false;
-   global->has_set_username              = false;
-   global->has_set_netplay_ip_address    = false;
-   global->has_set_netplay_delay_frames  = false;
-   global->has_set_netplay_ip_port       = false;
-
-   global->has_set_ups_pref              = false;
-   global->has_set_bps_pref              = false;
-   global->has_set_ips_pref              = false;
-
-   global->ups_pref                      = false;
-   global->bps_pref                      = false;
-   global->ips_pref                      = false;
-   *global->ups_name                     = '\0';
-   *global->bps_name                     = '\0';
-   *global->ips_name                     = '\0';
-   *global->subsystem                    = '\0';
-
-   global->overrides_active              = false;
-
-   if (argc < 2)
-   {
-      global->core_type                  = CORE_TYPE_DUMMY;
-      return;
-   }
-
-   /* Make sure we can call parse_input several times ... */
-   optind = 0;
-
-   int val = 0;
+   int val               = 0;
+   const char *optstring = NULL;
+   runloop_t *runloop    = rarch_main_get_ptr();
+   global_t  *global     = global_get_ptr();
+   settings_t *settings  = config_get_ptr();
 
    const struct option opts[] = {
 #ifdef HAVE_DYNAMIC
@@ -559,25 +540,43 @@ static void parse_input(int argc, char *argv[])
       { NULL, 0, NULL, 0 }
    };
 
-#define FFMPEG_RECORD_ARG "r:"
+   global->libretro_no_content           = false;
+   global->core_type                     = CORE_TYPE_PLAIN;
+   global->has_set_save_path             = false;
+   global->has_set_state_path            = false;
+   global->has_set_libretro              = false;
+   global->has_set_libretro_directory    = false;
+   global->has_set_verbosity             = false;
 
-#ifdef HAVE_DYNAMIC
-#define DYNAMIC_ARG "L:"
-#else
-#define DYNAMIC_ARG
-#endif
+   global->has_set_netplay_mode          = false;
+   global->has_set_username              = false;
+   global->has_set_netplay_ip_address    = false;
+   global->has_set_netplay_delay_frames  = false;
+   global->has_set_netplay_ip_port       = false;
 
-#ifdef HAVE_NETPLAY
-#define NETPLAY_ARG "HC:F:"
-#else
-#define NETPLAY_ARG
-#endif
+   global->has_set_ups_pref              = false;
+   global->has_set_bps_pref              = false;
+   global->has_set_ips_pref              = false;
 
+   global->ups_pref                      = false;
+   global->bps_pref                      = false;
+   global->ips_pref                      = false;
+   *global->ups_name                     = '\0';
+   *global->bps_name                     = '\0';
+   *global->ips_name                     = '\0';
+   *global->subsystem                    = '\0';
 
-#define BSV_MOVIE_ARG "P:R:M:"
+   global->overrides_active              = false;
 
-   const char *optstring = "hs:fvS:A:c:U:DN:d:" BSV_MOVIE_ARG NETPLAY_ARG DYNAMIC_ARG FFMPEG_RECORD_ARG;
-   settings_t *settings = config_get_ptr();
+   if (argc < 2)
+   {
+      global->core_type                  = CORE_TYPE_DUMMY;
+      return;
+   }
+
+   /* Make sure we can call parse_input several times ... */
+   optind    = 0;
+   optstring = "hs:fvS:A:c:U:DN:d:" BSV_MOVIE_ARG NETPLAY_ARG DYNAMIC_ARG FFMPEG_RECORD_ARG;
 
    for (;;)
    {
