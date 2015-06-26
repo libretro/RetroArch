@@ -596,10 +596,10 @@ static bool gfx_ctx_wl_set_video_mode(void *data,
       unsigned width, unsigned height,
       bool fullscreen)
 {
+   EGLint egl_attribs[16];
    driver_t *driver = driver_get_ptr();
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)
       driver->video_context_data;
-   EGLint egl_attribs[16];
    struct sigaction sa = {{0}};
    EGLint *attr = NULL;
 
