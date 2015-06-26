@@ -67,6 +67,11 @@ else
          CFLAGS += -std=gnu99 -D_GNU_SOURCE
       endif
    endif
+
+   ifneq ($(C89_BUILD)$(C90_BUILD),)
+   #looks kinda ugly, but it makes both C89_BUILD and C90_BUILD work and refer to the same thing
+      CFLAGS += -std=c89 -ansi -pedantic -Werror=pedantic
+   endif
 endif
 
 ifeq ($(NOUNUSED), yes)
