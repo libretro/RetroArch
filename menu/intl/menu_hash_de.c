@@ -561,7 +561,7 @@ const char *menu_hash_to_str_de(uint32_t hash)
       case MENU_LABEL_VALUE_SHADER_OPTIONS:
          return "Shader-Optionen";
       case MENU_LABEL_VALUE_VIDEO_SHADER_PARAMETERS:
-         return "Momentane Shaderparameter";
+         return "Momentane Shaderparameter"; /* FIXME/UPDATE */
       case MENU_LABEL_VALUE_VIDEO_SHADER_PRESET_PARAMETERS:
          return "Menü Shaderparameter (Menü)";
       case MENU_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_AS:

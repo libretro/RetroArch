@@ -550,7 +550,7 @@ const char *menu_hash_to_str_nl(uint32_t hash)
       case MENU_LABEL_VALUE_SHADER_OPTIONS:
          return "Shader Opties";
       case MENU_LABEL_VALUE_VIDEO_SHADER_PARAMETERS:
-         return "Huidige Shader Parameters";
+         return "Voorbeeldweergave Shader Parameters";
       case MENU_LABEL_VALUE_VIDEO_SHADER_PRESET_PARAMETERS:
          return "Menu Shader Parameters";
       case MENU_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_AS:

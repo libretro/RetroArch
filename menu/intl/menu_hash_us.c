@@ -1115,7 +1115,7 @@ const char *menu_hash_to_str_us(uint32_t hash)
       case MENU_LABEL_VALUE_SHADER_OPTIONS:
          return "Shader Options";
       case MENU_LABEL_VALUE_VIDEO_SHADER_PARAMETERS:
-         return "Current Shader Parameters";
+         return "Preview Shader Parameters";
       case MENU_LABEL_VALUE_VIDEO_SHADER_PRESET_PARAMETERS:
          return "Menu Shader Parameters";
       case MENU_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_AS:
