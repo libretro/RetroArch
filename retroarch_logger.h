@@ -59,6 +59,7 @@ FILE *rarch_main_log_file(void);
 #endif
 
 #if defined(RARCH_INTERNAL)
+bool rarch_main_verbosity(void);
 #define RARCH_LOG_VERBOSE (rarch_main_verbosity())
 #else
 #define RARCH_LOG_VERBOSE (true)
