@@ -37,6 +37,7 @@
 #endif
 
 #include <retro_inline.h>
+#include <boolean.h>
 #include <compat/posix_string.h>
 #include <compat/strl.h>
 
