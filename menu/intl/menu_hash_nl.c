@@ -456,9 +456,9 @@ const char *menu_hash_to_str_nl(uint32_t hash)
       case MENU_VALUE_NO_CORE:
          return "Geen core";
       case MENU_LABEL_VALUE_DATABASE_MANAGER:
-         return "Database Manager";
+         return "Databasebeheer";
       case MENU_LABEL_VALUE_CURSOR_MANAGER:
-         return "Cursor Manager";
+         return "Cursorbeheer";
       case MENU_VALUE_MAIN_MENU:
          return "Main Menu";
       case MENU_LABEL_VALUE_SETTINGS:
