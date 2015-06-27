@@ -54,8 +54,8 @@ const char *menu_hash_to_str_de(uint32_t hash)
          return "Nachfragen";
       case MENU_LABEL_VALUE_PRIVACY_SETTINGS:
          return "Privatsphäre-Einstellungen";
-      case MENU_VALUE_HORIZONTAL_MENU:
-         return "Horizontales Menü";
+      case MENU_VALUE_HORIZONTAL_MENU: /* Don't change. Breaks everything. (Would be: "Horizontales Menu") */
+         return "Horizontal Menu";
       case MENU_LABEL_VALUE_NO_SETTINGS_FOUND:
          return "Keine Einstellungen gefunden.";
       case MENU_LABEL_VALUE_NO_PERFORMANCE_COUNTERS:
