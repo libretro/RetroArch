@@ -372,7 +372,7 @@ const char *menu_hash_to_str_nl(uint32_t hash)
       case MENU_LABEL_VALUE_AUDIO_OUTPUT_RATE:
          return "Audio Uitvoer Frequentie (KHz)";
       case MENU_LABEL_VALUE_AUDIO_MAX_TIMING_SKEW:
-         return "Audio Maximum Timing Skew"; /* TODO/FIXME */
+         return "Audio Maximale Timing Onevenredigheid";
       case MENU_LABEL_VALUE_CHEAT_NUM_PASSES:
          return "Cheat Passes";
       case MENU_LABEL_VALUE_REMAP_FILE_SAVE_CORE:
@@ -532,7 +532,7 @@ const char *menu_hash_to_str_nl(uint32_t hash)
       case MENU_LABEL_VALUE_OVERLAY_PRESET:
          return "Overlay Preset";
       case MENU_LABEL_VALUE_AUDIO_LATENCY:
-         return "Audio Latency (ms)";
+         return "Audio Latentie (ms)";
       case MENU_LABEL_VALUE_AUDIO_DEVICE:
          return "Audio Apparaat";
       case MENU_LABEL_VALUE_KEYBOARD_OVERLAY_PRESET:
