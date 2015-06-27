@@ -81,13 +81,10 @@ static INLINE void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
 #elif defined(_XBOX1)
    /* FIXME: Using arbitrary string as fmt argument is unsafe. */
    char msg_new[1024], buffer[1024];
-#ifdef IS_SALAMANDER
-   strlcpy(msg_new, "RetroArch Salamander: ", sizeof(msg_new));
-#else
-   strlcpy(msg_new, "RetroArch: ", sizeof(msg_new));
-#endif
-   strlcat(msg_new, tag ? tag : "", sizeof(msg_new));
-   strlcat(msg_new, fmt, sizeof(msg_new));
+   snprintf(msg_new, sizeof(msg_new), "%s: %s %s",
+         PROGRAM_NAME,
+         tag ? tag : "",
+         fmt);
    wvsprintf(buffer, msg_new, ap);
    OutputDebugStringA(buffer);
 #endif
@@ -146,14 +143,13 @@ static INLINE void RARCH_ERR(const char *fmt, ...)
 #elif defined(ANDROID) && defined(HAVE_LOGGER) && defined(RARCH_INTERNAL)
 
 /* Log tag. Used for logcat filtering, e.g.: adb logcat RetroArch:V *:S */
-#define RARCH_LOG_TAG "RetroArch"
 
 #ifndef RARCH_LOG
-#define RARCH_LOG(...)  __android_log_print(ANDROID_LOG_INFO, RARCH_LOG_TAG, __VA_ARGS__)
+#define RARCH_LOG(...)  __android_log_print(ANDROID_LOG_INFO, PROGRAM_NAME, __VA_ARGS__)
 #endif
 
 #ifndef RARCH_LOG_V
-#define RARCH_LOG_V(tag, fmt, vp) __android_log_vprint(ANDROID_LOG_INFO, RARCH_LOG_TAG tag, fmt, vp)
+#define RARCH_LOG_V(tag, fmt, vp) __android_log_vprint(ANDROID_LOG_INFO, PROGRAM_NAME tag, fmt, vp)
 #endif
 
 #ifndef RARCH_LOG_OUTPUT
@@ -165,19 +161,19 @@ static INLINE void RARCH_ERR(const char *fmt, ...)
 #endif
 
 #ifndef RARCH_ERR
-#define RARCH_ERR(...)  __android_log_print(ANDROID_LOG_ERROR, RARCH_LOG_TAG, __VA_ARGS__)
+#define RARCH_ERR(...)  __android_log_print(ANDROID_LOG_ERROR, PROGRAM_NAME, __VA_ARGS__)
 #endif
 
 #ifndef RARCH_ERR_V
-#define RARCH_ERR_V(tag, fmt, vp) __android_log_vprint(ANDROID_LOG_ERROR, RARCH_LOG_TAG tag, fmt, vp)
+#define RARCH_ERR_V(tag, fmt, vp) __android_log_vprint(ANDROID_LOG_ERROR, PROGRAM_NAME tag, fmt, vp)
 #endif
 
 #ifndef RARCH_WARN
-#define RARCH_WARN(...) __android_log_print(ANDROID_LOG_WARN, RARCH_LOG_TAG, __VA_ARGS__)
+#define RARCH_WARN(...) __android_log_print(ANDROID_LOG_WARN, PROGRAM_NAME, __VA_ARGS__)
 #endif
 
 #ifndef RARCH_WARN_V
-#define RARCH_WARN_V(tag, fmt, vp) __android_log_print(ANDROID_LOG_WARN, RARCH_LOG_TAG tag, fmt, vp)
+#define RARCH_WARN_V(tag, fmt, vp) __android_log_print(ANDROID_LOG_WARN, PROGRAM_NAME tag, fmt, vp)
 #endif
 
 #else
