@@ -18,6 +18,7 @@
 #include <string.h>
 
 #include "../menu_hash.h"
+#include "../../configuration.h"
 
  /* IMPORTANT:
   * For non-english characters to work without proper unicode support,
@@ -25,7 +26,6 @@
   * If you save this file as UTF-8, you'll break non-english characters
   * (e.g. German "Umlauts" and Portugese diacritics).
  */
-extern const char encoding_test[sizeof("áÁâãçéêíÍóõú")==12+1 ? 1 : -1];
 
 const char *menu_hash_to_str_pt(uint32_t hash)
 {
@@ -848,8 +848,6 @@ const char *menu_hash_to_str_pt(uint32_t hash)
 
 int menu_hash_get_help_pt(uint32_t hash, char *s, size_t len)
 {
-   switch (hash)
-   {
    uint32_t driver_hash = 0;
    settings_t      *settings = config_get_ptr();
 
