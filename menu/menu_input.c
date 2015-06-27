@@ -200,8 +200,8 @@ void menu_input_search_start(void)
       return;
 
    menu_input->keyboard.display = true;
-   menu_input->keyboard.label = "Search: ";
-   menu_input->keyboard.buffer =
+   menu_input->keyboard.label   = menu_hash_to_str(MENU_VALUE_SEARCH);
+   menu_input->keyboard.buffer  =
       input_keyboard_start_line(menu, menu_input_search_callback);
 }
 

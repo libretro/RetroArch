@@ -837,6 +837,8 @@ const char *menu_hash_to_str_nl(uint32_t hash)
          return "Invoer Hotkey Binds";
       case MENU_LABEL_VALUE_FRAME_THROTTLE_SETTINGS:
          return "Frame Throttle Instellingen";
+      case MENU_VALUE_SEARCH:
+         return "Zoeken:";
       default:
          break;
    }

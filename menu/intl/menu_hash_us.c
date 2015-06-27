@@ -1402,6 +1402,8 @@ const char *menu_hash_to_str_us(uint32_t hash)
          return "Input Hotkey Binds";
       case MENU_LABEL_VALUE_FRAME_THROTTLE_SETTINGS:
          return "Frame Throttle Settings";
+      case MENU_VALUE_SEARCH:
+         return "Search:";
       default:
          break;
    }

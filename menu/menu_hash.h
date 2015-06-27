@@ -37,6 +37,8 @@ extern "C" {
 #define MENU_VALUE_FILE_MOV                                                    0x0b889157U
 #define MENU_VALUE_FILE_WMV                                                    0x0b88bb9fU
 
+#define MENU_VALUE_SEARCH                                                      0xd0d5febbU
+
 #define MENU_VALUE_DONT_CARE                                                   0x19da07bcU
 #define MENU_VALUE_LINEAR                                                      0xc0d12dc0U
 #define MENU_VALUE_NEAREST                                                     0x6ab2b0b7U
