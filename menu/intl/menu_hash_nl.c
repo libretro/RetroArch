@@ -56,7 +56,7 @@ const char *menu_hash_to_str_nl(uint32_t hash)
       case MENU_LABEL_VALUE_CONFIGURATION_SETTINGS:
          return "Configuratie Instellingen";
       case MENU_LABEL_VALUE_CORE_SETTINGS:
-         return "Online Updater";
+         return "Core Instellingen";
       case MENU_LABEL_VALUE_VIDEO_SETTINGS:
          return "Video Instellingen";
       case MENU_LABEL_VALUE_LOGGING_SETTINGS:
