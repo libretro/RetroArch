@@ -411,7 +411,7 @@ static int menu_cbs_init_bind_left_compare_label(menu_file_list_cbs_t *cbs,
 }
 
 static int menu_cbs_init_bind_left_compare_type(menu_file_list_cbs_t *cbs,
-      unsigned type, uint32_t menu_label_hash)
+      unsigned type, uint32_t label_hash, uint32_t menu_label_hash)
 {
    if (type >= MENU_SETTINGS_SHADER_PARAMETER_0
          && type <= MENU_SETTINGS_SHADER_PARAMETER_LAST)
@@ -493,7 +493,7 @@ int menu_cbs_init_bind_left(menu_file_list_cbs_t *cbs,
    if (menu_cbs_init_bind_left_compare_label(cbs, label, label_hash, elem0) == 0)
       return 0;
 
-   if (menu_cbs_init_bind_left_compare_type(cbs, type, menu_label_hash) == 0)
+   if (menu_cbs_init_bind_left_compare_type(cbs, type, label_hash, menu_label_hash) == 0)
       return 0;
 
    return -1;
