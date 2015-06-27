@@ -134,15 +134,13 @@ static INLINE void RARCH_ERR(const char *fmt, ...)
 {
    va_list ap;
    va_start(ap, fmt);
-   RARCH_ERR_V("[ERR]", fmt, ap);
+   RARCH_ERR_V("[ERROR]", fmt, ap);
    va_end(ap);
 }
 
 #elif defined(RARCH_CONSOLE) && defined(HAVE_LOGGER) && defined(RARCH_INTERNAL)
 #include <logger_override.h>
 #elif defined(ANDROID) && defined(HAVE_LOGGER) && defined(RARCH_INTERNAL)
-
-/* Log tag. Used for logcat filtering, e.g.: adb logcat RetroArch:V *:S */
 
 #ifndef RARCH_LOG
 #define RARCH_LOG(...)  __android_log_print(ANDROID_LOG_INFO, PROGRAM_NAME, __VA_ARGS__)
