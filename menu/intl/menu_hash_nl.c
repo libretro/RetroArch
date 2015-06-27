@@ -324,7 +324,7 @@ const char *menu_hash_to_str_nl(uint32_t hash)
       case MENU_LABEL_VALUE_LIBRETRO_LOG_LEVEL:
          return "Core Logging Niveau";
       case MENU_LABEL_VALUE_LOG_VERBOSITY:
-         return "Logging Verbosity"; /* TODO/FIXME */
+         return "Logging Uitgebreidheid";
       case MENU_LABEL_VALUE_SAVESTATE_AUTO_LOAD:
          return "Automatisch State Loaden";
       case MENU_LABEL_VALUE_SAVESTATE_AUTO_INDEX:
