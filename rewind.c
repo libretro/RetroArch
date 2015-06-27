@@ -420,9 +420,7 @@ bool state_manager_pop(state_manager_t *state, const void **data)
 {
    size_t start;
    uint8_t *out                 = NULL;
-   uint16_t *out16              = NULL;
    const uint8_t *compressed    = NULL;
-   const uint16_t *compressed16 = NULL;
 
    *data = NULL;
 
@@ -476,10 +474,7 @@ void state_manager_push_do(state_manager_t *state)
    if (state->thisblock_valid)
    {
       const uint8_t *oldb, *newb;
-      const uint16_t *old16, *new16;
       uint8_t *compressed;
-      uint16_t *compressed16;
-      size_t num16s;
       size_t headpos, tailpos, remaining;
       if (state->capacity < sizeof(size_t) + state->maxcompsize)
          return;

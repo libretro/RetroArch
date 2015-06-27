@@ -421,6 +421,7 @@ uint64_t rarch_get_cpu_features(void)
    
    (void)cpu_flags;
    (void)flags;
+   (void)max_flag;
    (void)vendor;
    (void)vendor_shuffle;
 
