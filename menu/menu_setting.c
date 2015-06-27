@@ -3053,7 +3053,9 @@ static bool setting_append_list_frame_throttling_options(
    rarch_setting_group_info_t subgroup_info = {0};
    settings_t *settings = config_get_ptr();
 
-   START_GROUP(group_info, "Frame Throttle Settings", parent_group);
+   START_GROUP(group_info,
+         menu_hash_to_str(MENU_LABEL_VALUE_FRAME_THROTTLE_SETTINGS),
+         parent_group);
 
    parent_group = menu_hash_to_str(MENU_LABEL_VALUE_SETTINGS);
 
@@ -4121,7 +4123,9 @@ static bool setting_append_list_input_hotkey_options(
    rarch_setting_group_info_t subgroup_info = {0};
    settings_t *settings = config_get_ptr();
 
-   START_GROUP(group_info, "Input Hotkey Binds", parent_group);
+   START_GROUP(group_info,
+         menu_hash_to_str(MENU_LABEL_VALUE_INPUT_HOTKEY_BINDS),
+         parent_group);
 
    parent_group = menu_hash_to_str(MENU_LABEL_VALUE_SETTINGS);
 

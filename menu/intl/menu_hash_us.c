@@ -1398,6 +1398,10 @@ const char *menu_hash_to_str_us(uint32_t hash)
          return "Left Analog";
       case MENU_VALUE_RIGHT_ANALOG:
          return "Right Analog";
+      case MENU_LABEL_VALUE_INPUT_HOTKEY_BINDS:
+         return "Input Hotkey Binds";
+      case MENU_LABEL_VALUE_FRAME_THROTTLE_SETTINGS:
+         return "Frame Throttle Settings";
       default:
          break;
    }

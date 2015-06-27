@@ -100,6 +100,13 @@ extern "C" {
 #define MENU_LABEL_VIDEO_MESSAGE_POS_Y                                         0xa133c369U
 #define MENU_LABEL_VALUE_VIDEO_MESSAGE_POS_Y                                   0x4f2559beU
 
+#define MENU_LABEL_VALUE_INPUT_HOTKEY_BINDS                                    0x1cb39c19U
+
+#define MENU_LABEL_VALUE_FRAME_THROTTLE_SETTINGS                               0x573b8837U
+
+#define MENU_LABEL_FRAME_THROTTLE_ENABLE                                       0xbe52e701U
+#define MENU_LABEL_VALUE_FRAME_THROTTLE_ENABLE                                 0x936f04a8U
+
 #define MENU_LABEL_VIDEO_FILTER_FLICKER                                        0x2e21eba0U
 #define MENU_LABEL_VALUE_VIDEO_FILTER_FLICKER                                  0x87c7226bU
 
@@ -718,8 +725,6 @@ extern "C" {
 #define MENU_LABEL_VALUE_VIDEO_SETTINGS                                        0x9dd23badU
 #define MENU_LABEL_RECORDING_SETTINGS                                          0x1a80b313U
 #define MENU_LABEL_VALUE_RECORDING_SETTINGS                                    0x1a80b313U
-#define MENU_LABEL_FRAME_THROTTLE_ENABLE                                       0x573b8837U
-#define MENU_LABEL_VALUE_FRAME_THROTTLE_ENABLE                                 0x936f04a8U
 #define MENU_LABEL_SHADER_SETTINGS                                             0xd6657e8dU
 #define MENU_LABEL_FONT_SETTINGS                                               0x67571029U
 #define MENU_LABEL_AUDIO_SETTINGS                                              0x8f74c888U
