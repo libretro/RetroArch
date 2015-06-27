@@ -52,7 +52,7 @@ const char *menu_hash_to_str_pt(uint32_t hash)
       case MENU_LABEL_VALUE_PRIVACY_SETTINGS:
          return "Configurações de Privacidade";
       case MENU_VALUE_HORIZONTAL_MENU:
-         return "Menu Horizontal";
+         return "Horizontal Menu"; /* FIXME - don't edit this yet. */
       case MENU_LABEL_VALUE_NO_SETTINGS_FOUND:
          return "Nenhuma definição encontrada.";
       case MENU_LABEL_VALUE_NO_PERFORMANCE_COUNTERS:
