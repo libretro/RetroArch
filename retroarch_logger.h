@@ -67,6 +67,8 @@ FILE *rarch_main_log_file(void);
 #if defined(_XBOX1) ||  TARGET_OS_IPHONE && defined(RARCH_INTERNAL)
 static INLINE void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
 {
+   if (!RARCH_LOG_VERBOSE)
+      return;
 #if TARGET_OS_IPHONE && defined(RARCH_INTERNAL)
 #if TARGET_IPHONE_SIMULATOR
    vprintf(fmt, ap);
@@ -93,6 +95,10 @@ static INLINE void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
 static INLINE void RARCH_LOG(const char *fmt, ...)
 {
    va_list ap;
+
+   if (!RARCH_LOG_VERBOSE)
+      return;
+
    va_start(ap, fmt);
    RARCH_LOG_V(NULL, fmt, ap);
    va_end(ap);
