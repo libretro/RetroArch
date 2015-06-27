@@ -621,7 +621,7 @@ const char *menu_hash_to_str_us(uint32_t hash)
       case MENU_LABEL_VALUE_CONFIGURATION_SETTINGS:
          return "Configuration Settings";
       case MENU_LABEL_VALUE_CORE_SETTINGS:
-         return "Online Updater";
+         return "Core Settings";
       case MENU_LABEL_VALUE_VIDEO_SETTINGS:
          return "Video Settings";
       case MENU_LABEL_VALUE_LOGGING_SETTINGS:
