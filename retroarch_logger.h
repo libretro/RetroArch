@@ -64,10 +64,22 @@ FILE *rarch_main_log_file(void);
 #define RARCH_LOG_VERBOSE (true)
 #endif
 
-#if defined(_XBOX1)
-// FIXME: Using arbitrary string as fmt argument is unsafe.
+#if defined(_XBOX1) ||  TARGET_OS_IPHONE && defined(RARCH_INTERNAL)
 static INLINE void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
 {
+#if TARGET_OS_IPHONE && defined(RARCH_INTERNAL)
+#if TARGET_IPHONE_SIMULATOR
+   vprintf(fmt, ap);
+#else
+   aslmsg msg = asl_new(ASL_TYPE_MSG);
+   asl_set(msg, ASL_KEY_READ_UID, "-1");
+   if (tag)
+      asl_log(NULL, msg, ASL_LEVEL_NOTICE, "%s", tag);
+   asl_vlog(NULL, msg, ASL_LEVEL_NOTICE, fmt, ap);
+   asl_free(msg);
+#endif
+#elif defined(_XBOX1)
+   /* FIXME: Using arbitrary string as fmt argument is unsafe. */
    char msg_new[1024], buffer[1024];
 #ifdef IS_SALAMANDER
    strlcpy(msg_new, "RetroArch Salamander: ", sizeof(msg_new));
@@ -78,15 +90,14 @@ static INLINE void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
    strlcat(msg_new, fmt, sizeof(msg_new));
    wvsprintf(buffer, msg_new, ap);
    OutputDebugStringA(buffer);
+#endif
 }
 
 static INLINE void RARCH_LOG(const char *fmt, ...)
 {
-   char buffer[1024];
    va_list ap;
    va_start(ap, fmt);
-   wvsprintf(buffer, fmt, ap);
-   OutputDebugStringA(buffer);
+   RARCH_LOG_V(NULL, fmt, ap);
    va_end(ap);
 }
 
@@ -100,93 +111,7 @@ static INLINE void RARCH_LOG_OUTPUT(const char *msg, ...)
 {
    va_list ap;
    va_start(ap, msg);
-   RARCH_LOG_V(NULL, msg, ap);
-   va_end(ap);
-}
-
-static INLINE void RARCH_WARN_V(const char *tag, const char *fmt, va_list ap)
-{
-   char msg_new[1024], buffer[1024];
-#ifdef IS_SALAMANDER
-   strlcpy(msg_new, "RetroArch Salamander [WARN] :: ", sizeof(msg_new));
-#else
-   strlcpy(msg_new, "RetroArch [WARN] :: ", sizeof(msg_new));
-#endif
-   strlcat(msg_new, tag ? tag : "", sizeof(msg_new));
-   strlcat(msg_new, fmt, sizeof(msg_new));
-   wvsprintf(buffer, msg_new, ap);
-   OutputDebugStringA(buffer);
-}
-
-static INLINE void RARCH_WARN(const char *fmt, ...)
-{
-   char buffer[1024];
-   va_list ap;
-   va_start(ap, fmt);
-   wvsprintf(buffer, fmt, ap);
-   OutputDebugStringA(buffer);
-   va_end(ap);
-}
-
-static INLINE void RARCH_ERR_V(const char *tag, const char *fmt, ...)
-{
-   char msg_new[1024];
-#ifdef IS_SALAMANDER
-   strlcpy(msg_new, "RetroArch Salamander [ERR] :: ", sizeof(msg_new));
-#else
-   strlcpy(msg_new, "RetroArch [ERR] :: ", sizeof(msg_new));
-#endif
-   strlcat(msg_new, tag ? tag : "", sizeof(msg_new));
-   strlcat(msg_new, fmt, sizeof(msg_new));
-   OutputDebugStringA(fmt);
-}
-
-static INLINE void RARCH_ERR(const char *fmt, ...)
-{
-   char buffer[1024];
-   va_list ap;
-   va_start(ap, fmt);
-   wvsprintf(buffer, fmt, ap);
-   OutputDebugStringA(buffer);
-   va_end(ap);
-}
-
-#elif defined(RARCH_CONSOLE) && defined(HAVE_LOGGER) && defined(RARCH_INTERNAL)
-#include <logger_override.h>
-#elif TARGET_OS_IPHONE && defined(RARCH_INTERNAL)
-static INLINE void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
-{
-#if TARGET_IPHONE_SIMULATOR
-   vprintf(fmt, ap);
-#else
-   aslmsg msg = asl_new(ASL_TYPE_MSG);
-   asl_set(msg, ASL_KEY_READ_UID, "-1");
-   if (tag)
-      asl_log(NULL, msg, ASL_LEVEL_NOTICE, "%s", tag);
-   asl_vlog(NULL, msg, ASL_LEVEL_NOTICE, fmt, ap);
-   asl_free(msg);
-#endif
-}
-
-static INLINE void RARCH_LOG(const char *fmt, ...)
-{
-   va_list ap;
-   va_start(ap, fmt);
-   RARCH_LOG_V(NULL, fmt, ap);
-   va_end(ap);
-}
-
-static INLINE void RARCH_LOG_OUTPUT_V(const char *tag,
-      const char *fmt, va_list ap)
-{
-   RARCH_LOG_V(tag, fmt, ap);
-}
-
-static INLINE void RARCH_LOG_OUTPUT(const char *fmt, ...)
-{
-   va_list ap;
-   va_start(ap, fmt);
-   RARCH_LOG_OUTPUT_V(NULL, fmt, ap);
+   RARCH_LOG_OUTPUT_V(NULL, msg, ap);
    va_end(ap);
 }
 
@@ -199,7 +124,7 @@ static INLINE void RARCH_WARN(const char *fmt, ...)
 {
    va_list ap;
    va_start(ap, fmt);
-   RARCH_WARN_V(NULL, fmt, ap);
+   RARCH_WARN_V("[WARN]", fmt, ap);
    va_end(ap);
 }
 
@@ -212,9 +137,12 @@ static INLINE void RARCH_ERR(const char *fmt, ...)
 {
    va_list ap;
    va_start(ap, fmt);
-   RARCH_ERR_V(NULL, fmt, ap);
+   RARCH_ERR_V("[ERR]", fmt, ap);
    va_end(ap);
 }
+
+#elif defined(RARCH_CONSOLE) && defined(HAVE_LOGGER) && defined(RARCH_INTERNAL)
+#include <logger_override.h>
 #elif defined(ANDROID) && defined(HAVE_LOGGER) && defined(RARCH_INTERNAL)
 
 /* Log tag. Used for logcat filtering, e.g.: adb logcat RetroArch:V *:S */
