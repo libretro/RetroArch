@@ -177,7 +177,6 @@ static int16_t input_state(unsigned port, unsigned device,
       input_remapping_state(port, &device, &idx, &id);
 
    if (!driver->block_libretro_input)
-
    {
       if (((id < RARCH_FIRST_META_KEY) || (device == RETRO_DEVICE_KEYBOARD)))
          res = input_driver_state(libretro_input_binds, port, device, idx, id);

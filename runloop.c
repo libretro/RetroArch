@@ -657,7 +657,6 @@ static void rarch_update_frame_time(void)
    system->frame_time.callback(delta);
 }
 
-
 /**
  * rarch_limit_frame_time:
  *
@@ -748,28 +747,14 @@ static bool check_block_hotkey(bool enable_hotkey)
 static INLINE retro_input_t input_keys_pressed(void)
 {
    unsigned i;
+   const struct retro_keybind *binds[MAX_USERS];
    retro_input_t ret        = 0;
    driver_t *driver         = driver_get_ptr();
    settings_t *settings     = config_get_ptr();
    global_t   *global       = global_get_ptr();
-   const struct retro_keybind *binds[MAX_USERS] = {
-      settings->input.binds[0],
-      settings->input.binds[1],
-      settings->input.binds[2],
-      settings->input.binds[3],
-      settings->input.binds[4],
-      settings->input.binds[5],
-      settings->input.binds[6],
-      settings->input.binds[7],
-      settings->input.binds[8],
-      settings->input.binds[9],
-      settings->input.binds[10],
-      settings->input.binds[11],
-      settings->input.binds[12],
-      settings->input.binds[13],
-      settings->input.binds[14],
-      settings->input.binds[15],
-   };
+   
+   for (i = 0; i < MAX_USERS; i++)
+      binds[i] = settings->input.binds[i];
 
    if (!driver->input || !driver->input_data)
       return 0;
