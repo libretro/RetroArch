@@ -473,7 +473,7 @@ const char *menu_hash_to_str_de(uint32_t hash)
       case MENU_VALUE_MAIN_MENU:
          return "Main Menu"; /* Don't change. Breaks everything. (Would be: "Hauptmenü") */
       case MENU_LABEL_VALUE_SETTINGS:
-         return "Einstellungen"; /* FIXME */
+         return "Einstellungen";
       case MENU_LABEL_VALUE_QUIT_RETROARCH:
          return "RetroArch beenden";
       case MENU_LABEL_VALUE_HELP:
