@@ -459,8 +459,6 @@ const char *menu_hash_to_str_nl(uint32_t hash)
          return "Database Manager";
       case MENU_LABEL_VALUE_CURSOR_MANAGER:
          return "Cursor Manager";
-      case MENU_LABEL_VALUE_RECORDING_SETTINGS:
-         return "Opname Instellingen";
       case MENU_VALUE_MAIN_MENU:
          return "Main Menu";
       case MENU_LABEL_VALUE_SETTINGS:
@@ -743,6 +741,102 @@ const char *menu_hash_to_str_nl(uint32_t hash)
          return "Poort";
       case MENU_VALUE_NONE:
          return "Geen";
+      case MENU_LABEL_VALUE_RDB_ENTRY_DEVELOPER:
+         return "Ontwikkelaar";
+      case MENU_LABEL_VALUE_RDB_ENTRY_PUBLISHER:
+         return "Uitgever";
+      case MENU_LABEL_VALUE_RDB_ENTRY_DESCRIPTION:
+         return "Omschrijving";
+      case MENU_LABEL_VALUE_RDB_ENTRY_NAME:
+         return "Naam";
+      case MENU_LABEL_VALUE_RDB_ENTRY_ORIGIN:
+         return "Afkomst";
+      case MENU_LABEL_VALUE_RDB_ENTRY_FRANCHISE:
+         return "Franchise";
+      case MENU_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH:
+         return "Release datum maand";
+      case MENU_LABEL_VALUE_RDB_ENTRY_RELEASE_YEAR:
+         return "Release datum jaar";
+      case MENU_VALUE_TRUE:
+         return "Waar";
+      case MENU_VALUE_FALSE:
+         return "Niet waar";
+      case MENU_VALUE_MISSING:
+         return "Ontbrekend";
+      case MENU_VALUE_PRESENT:
+         return "Aanwezig";
+      case MENU_VALUE_OPTIONAL:
+         return "Optioneel";
+      case MENU_VALUE_REQUIRED:
+         return "Vereist";
+      case MENU_VALUE_STATUS:
+         return "Status";
+      case MENU_LABEL_VALUE_AUDIO_SETTINGS:
+         return "Geluidsinstellingen";
+      case MENU_LABEL_VALUE_INPUT_SETTINGS:
+         return "Invoerinstellingen";
+      case MENU_LABEL_VALUE_ONSCREEN_DISPLAY_SETTINGS:
+         return "Onscreen Weergave Instellingen";
+      case MENU_LABEL_VALUE_OVERLAY_SETTINGS:
+         return "Onscreen Overlay Instellingen";
+      case MENU_LABEL_VALUE_MENU_SETTINGS:
+         return "Menu Instellingen";
+      case MENU_LABEL_VALUE_MEDIA_PLAYER_SETTINGS:
+         return "Media Speler Instellingen";
+      case MENU_LABEL_VALUE_UI_SETTINGS:
+         return "Gebruikersinterface Instellingen";
+      case MENU_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS:
+         return "Menu Bestandsbeheer Instellingen";
+      case MENU_LABEL_VALUE_CORE_UPDATER_SETTINGS:
+         return "Core Updater Instellingen";
+      case MENU_LABEL_VALUE_NETWORK_SETTINGS:
+         return "Netwerkinstellingen";
+      case MENU_LABEL_VALUE_PLAYLIST_SETTINGS:
+         return "Playlist Instellingen";
+      case MENU_LABEL_VALUE_USER_SETTINGS:
+         return "Gebruikersinstellingen";
+      case MENU_LABEL_VALUE_DIRECTORY_SETTINGS:
+         return "Map Instellingen";
+      case MENU_LABEL_VALUE_RECORDING_SETTINGS:
+         return "Opname Instellingen";
+      case MENU_LABEL_VALUE_NO_INFORMATION_AVAILABLE:
+         return "Informatie is niet beschikbaar.";
+      case MENU_LABEL_VALUE_INPUT_USER_BINDS:
+         return "Invoer Gebruiker %u Binds";
+      case MENU_VALUE_LANG_ENGLISH:
+         return "Engels";
+      case MENU_VALUE_LANG_JAPANESE:
+         return "Japans";
+      case MENU_VALUE_LANG_FRENCH:
+         return "Frans";
+      case MENU_VALUE_LANG_SPANISH:
+         return "Spaans";
+      case MENU_VALUE_LANG_GERMAN:
+         return "Duits";
+      case MENU_VALUE_LANG_ITALIAN:
+         return "Italiaans";
+      case MENU_VALUE_LANG_DUTCH:
+         return "Nederlands";
+      case MENU_VALUE_LANG_PORTUGUESE:
+         return "Portugees";
+      case MENU_VALUE_LANG_RUSSIAN:
+         return "Russisch";
+      case MENU_VALUE_LANG_KOREAN:
+         return "Koreaans";
+      case MENU_VALUE_LANG_CHINESE_TRADITIONAL:
+         return "Chinees (Traditioneel)";
+      case MENU_VALUE_LANG_CHINESE_SIMPLIFIED:
+         return "Chinees (Gesimplificeerd)";
+      case MENU_VALUE_LANG_ESPERANTO:
+         return "Esperanto";
+      case MENU_VALUE_LEFT_ANALOG:
+         return "Linkse Analog";
+      case MENU_VALUE_RIGHT_ANALOG:
+         return "Rechtse Analog";
+      case MENU_LABEL_VALUE_INPUT_HOTKEY_BINDS:
+         return "Invoer Hotkey Binds";
+      case MENU_LABEL_VALUE_FRAME_THROTTLE_SETTINGS:
+         return "Frame Throttle Instellingen";
       default:
          break;
    }
