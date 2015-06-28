@@ -53,12 +53,12 @@ static void fallback_log(enum retro_log_level level, const char *fmt, ...)
 }
 
 retro_log_printf_t log_cb;
-static retro_video_refresh_t video_cb;
-static retro_audio_sample_t audio_cb;
-static retro_audio_sample_batch_t audio_batch_cb;
-static retro_environment_t environ_cb;
-static retro_input_poll_t input_poll_cb;
-static retro_input_state_t input_state_cb;
+static retro_video_refresh_t CORE_PREFIX(video_cb);
+static retro_audio_sample_t CORE_PREFIX(audio_cb);
+static retro_audio_sample_batch_t CORE_PREFIX(audio_batch_cb);
+static retro_environment_t CORE_PREFIX(environ_cb);
+static retro_input_poll_t CORE_PREFIX(input_poll_cb);
+static retro_input_state_t CORE_PREFIX(input_state_cb);
 
 #define LOG_ERR(msg) do { \
    log_cb(RETRO_LOG_ERROR, "[FFmpeg]: " msg "\n"); \
@@ -270,7 +270,7 @@ void CORE_PREFIX(retro_set_environment)(retro_environment_t cb)
    };
    struct retro_log_callback log;
 
-   environ_cb = cb;
+   CORE_PREFIX(environ_cb) = cb;
 
    cb(RETRO_ENVIRONMENT_SET_VARIABLES, (void*)vars);
 
@@ -282,27 +282,27 @@ void CORE_PREFIX(retro_set_environment)(retro_environment_t cb)
 
 void CORE_PREFIX(retro_set_audio_sample)(retro_audio_sample_t cb)
 {
-   audio_cb = cb;
+   CORE_PREFIX(audio_cb) = cb;
 }
 
 void CORE_PREFIX(retro_set_audio_sample_batch)(retro_audio_sample_batch_t cb)
 {
-   audio_batch_cb = cb;
+   CORE_PREFIX(audio_batch_cb) = cb;
 }
 
 void CORE_PREFIX(retro_set_input_poll)(retro_input_poll_t cb)
 {
-   input_poll_cb = cb;
+   CORE_PREFIX(input_poll_cb) = cb;
 }
 
 void CORE_PREFIX(retro_set_input_state)(retro_input_state_t cb)
 {
-   input_state_cb = cb;
+   CORE_PREFIX(input_state_cb) = cb;
 }
 
 void CORE_PREFIX(retro_set_video_refresh)(retro_video_refresh_t cb)
 {
-   video_cb = cb;
+   CORE_PREFIX(video_cb) = cb;
 }
 
 void CORE_PREFIX(retro_reset)(void)
@@ -317,7 +317,7 @@ static void check_variables(void)
       .key = "ffmpeg_temporal_interp"
    };
 
-   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+   if (CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
    {
       if (!strcmp(var.value, "enabled"))
          temporal_interpolation = true;
@@ -331,10 +331,10 @@ static void check_variables(void)
       .key = "ffmpeg_fft_resolution",
    };
 
-   fft_width = 1280;
-   fft_height = 720;
+   fft_width       = 1280;
+   fft_height      = 720;
    fft_multisample = 1;
-   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &fft_var) && fft_var.value)
+   if (CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_GET_VARIABLE, &fft_var) && fft_var.value)
    {
       unsigned w, h;
       if (sscanf(fft_var.value, "%ux%u", &w, &h) == 2)
@@ -348,7 +348,7 @@ static void check_variables(void)
       .key = "ffmpeg_fft_multisample",
    };
 
-   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &fft_ms_var) && fft_ms_var.value)
+   if (CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_GET_VARIABLE, &fft_ms_var) && fft_ms_var.value)
       fft_multisample = strtoul(fft_ms_var.value, NULL, 0);
 #endif
 
@@ -356,7 +356,7 @@ static void check_variables(void)
       .key = "ffmpeg_color_space",
    };
 
-   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &color_var) && color_var.value)
+   if (CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_GET_VARIABLE, &color_var) && color_var.value)
    {
       slock_lock(decode_thread_lock);
       if (!strcmp(color_var.value, "BT.709"))
@@ -391,7 +391,7 @@ static void seek_frame(int seek_frames)
    snprintf(msg, sizeof(msg), "Seek: %u s.", (unsigned)seek_time);
    msg_obj.msg    = msg;
    msg_obj.frames = 180;
-   environ_cb(RETRO_ENVIRONMENT_SET_MESSAGE, &msg_obj);
+   CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_SET_MESSAGE, &msg_obj);
 
    if (seek_frames < 0)
    {
@@ -432,7 +432,7 @@ void CORE_PREFIX(retro_run)(void)
    unsigned old_fft_multisample = fft_multisample;
 #endif
 
-   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE, &updated) && updated)
+   if (CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE, &updated) && updated)
       check_variables();
 
 #ifdef HAVE_GL_FFT
@@ -440,7 +440,7 @@ void CORE_PREFIX(retro_run)(void)
    {
       struct retro_system_av_info info;
       CORE_PREFIX(retro_get_system_av_info)(&info);
-      if (!environ_cb(RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO, &info))
+      if (!CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO, &info))
       {
          fft_width = old_fft_width;
          fft_height = old_fft_height;
@@ -451,22 +451,22 @@ void CORE_PREFIX(retro_run)(void)
       glfft_init_multisample(fft, fft_width, fft_height, fft_multisample);
 #endif
 
-   input_poll_cb();
+   CORE_PREFIX(input_poll_cb)();
 
 
-   left = input_state_cb(0, RETRO_DEVICE_JOYPAD, 0,
+   left = CORE_PREFIX(input_state_cb)(0, RETRO_DEVICE_JOYPAD, 0,
          RETRO_DEVICE_ID_JOYPAD_LEFT);
-   right = input_state_cb(0, RETRO_DEVICE_JOYPAD, 0,
+   right = CORE_PREFIX(input_state_cb)(0, RETRO_DEVICE_JOYPAD, 0,
          RETRO_DEVICE_ID_JOYPAD_RIGHT);
-   up = input_state_cb(0, RETRO_DEVICE_JOYPAD, 0,
+   up = CORE_PREFIX(input_state_cb)(0, RETRO_DEVICE_JOYPAD, 0,
          RETRO_DEVICE_ID_JOYPAD_UP) ||
-      input_state_cb(0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_WHEELUP);
-   down = input_state_cb(0, RETRO_DEVICE_JOYPAD, 0,
+      CORE_PREFIX(input_state_cb)(0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_WHEELUP);
+   down = CORE_PREFIX(input_state_cb)(0, RETRO_DEVICE_JOYPAD, 0,
          RETRO_DEVICE_ID_JOYPAD_DOWN) ||
-      input_state_cb(0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_WHEELDOWN);
-   l = input_state_cb(0, RETRO_DEVICE_JOYPAD, 0,
+      CORE_PREFIX(input_state_cb)(0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_WHEELDOWN);
+   l = CORE_PREFIX(input_state_cb)(0, RETRO_DEVICE_JOYPAD, 0,
          RETRO_DEVICE_ID_JOYPAD_L);
-   r = input_state_cb(0, RETRO_DEVICE_JOYPAD, 0,
+   r = CORE_PREFIX(input_state_cb)(0, RETRO_DEVICE_JOYPAD, 0,
          RETRO_DEVICE_ID_JOYPAD_R);
 
    if (left && !last_left)
@@ -491,7 +491,7 @@ void CORE_PREFIX(retro_run)(void)
 
       msg_obj.msg    = msg;
       msg_obj.frames = 180;
-      environ_cb(RETRO_ENVIRONMENT_SET_MESSAGE, &msg_obj);
+      CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_SET_MESSAGE, &msg_obj);
    }
    else if (r && !last_r && subtitle_streams_num > 0)
    {
@@ -505,7 +505,7 @@ void CORE_PREFIX(retro_run)(void)
       snprintf(msg, sizeof(msg), "Subtitle Track #%d.", subtitle_streams_ptr);
       msg_obj.msg    = msg;
       msg_obj.frames = 180;
-      environ_cb(RETRO_ENVIRONMENT_SET_MESSAGE, &msg_obj);
+      CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_SET_MESSAGE, &msg_obj);
    }
 
    last_left = left;
@@ -529,7 +529,7 @@ void CORE_PREFIX(retro_run)(void)
 
    if (decode_thread_dead)
    {
-      environ_cb(RETRO_ENVIRONMENT_SHUTDOWN, NULL);
+      CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_SHUTDOWN, NULL);
       return;
    }
 
@@ -693,12 +693,12 @@ void CORE_PREFIX(retro_run)(void)
          glActiveTexture(GL_TEXTURE0);
          glBindTexture(GL_TEXTURE_2D, 0);
          
-         video_cb(RETRO_HW_FRAME_BUFFER_VALID, media.width, media.height, media.width * sizeof(uint32_t));
+         CORE_PREFIX(video_cb)(RETRO_HW_FRAME_BUFFER_VALID, media.width, media.height, media.width * sizeof(uint32_t));
       }
       else
 #endif
       {
-         video_cb(dupe ? NULL : video_frame_temp_buffer, media.width, media.height, media.width * sizeof(uint32_t));
+         CORE_PREFIX(video_cb)(dupe ? NULL : video_frame_temp_buffer, media.width, media.height, media.width * sizeof(uint32_t));
       }
    }
 #ifdef HAVE_GL_FFT
@@ -721,14 +721,14 @@ void CORE_PREFIX(retro_run)(void)
          frames -= to_read;
       }
       glfft_render(fft, hw_render.get_current_framebuffer(), fft_width, fft_height);
-      video_cb(RETRO_HW_FRAME_BUFFER_VALID, fft_width, fft_height, fft_width * sizeof(uint32_t));
+      CORE_PREFIX(video_cb)(RETRO_HW_FRAME_BUFFER_VALID, fft_width, fft_height, fft_width * sizeof(uint32_t));
    }
 #endif
    else
-      video_cb(NULL, 1, 1, sizeof(uint32_t));
+      CORE_PREFIX(video_cb)(NULL, 1, 1, sizeof(uint32_t));
 
    if (to_read_frames)
-      audio_batch_cb(audio_buffer, to_read_frames);
+      CORE_PREFIX(audio_batch_cb)(audio_buffer, to_read_frames);
 }
 
 static bool open_codec(AVCodecContext **ctx, unsigned index)
@@ -1530,9 +1530,9 @@ bool CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
       { 0 },
    };
 
-   environ_cb(RETRO_ENVIRONMENT_SET_INPUT_DESCRIPTORS, desc);
+   CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_SET_INPUT_DESCRIPTORS, desc);
 
-   if (!environ_cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &fmt))
+   if (!CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &fmt))
    {
       LOG_ERR("Cannot set pixel format.");
       goto error;
@@ -1586,7 +1586,7 @@ bool CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
 #else
       hw_render.context_type = RETRO_HW_CONTEXT_OPENGL;
 #endif
-      if (!environ_cb(RETRO_ENVIRONMENT_SET_HW_RENDER, &hw_render))
+      if (!CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_SET_HW_RENDER, &hw_render))
       {
          use_gl=false;
          LOG_ERR("Cannot initialize HW render.");
