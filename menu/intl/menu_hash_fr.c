@@ -35,7 +35,7 @@ const char *menu_hash_to_str_fr(uint32_t hash)
       case MENU_LABEL_VALUE_INFORMATION_LIST:
          return "Informations";
       case MENU_LABEL_VALUE_USE_BUILTIN_PLAYER:
-         return "Utiliser le lecteur embarqué";
+         return "Utiliser le lecteur embarqué"; /* FIXME/UPDATE */
       case MENU_LABEL_VALUE_CONTENT_SETTINGS:
          return "Menu rapide";
       case MENU_LABEL_VALUE_RDB_ENTRY_CRC32:

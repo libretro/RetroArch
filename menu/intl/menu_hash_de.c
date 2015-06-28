@@ -38,7 +38,7 @@ const char *menu_hash_to_str_de(uint32_t hash)
       case MENU_LABEL_VALUE_INFORMATION_LIST:
          return "Information";
       case MENU_LABEL_VALUE_USE_BUILTIN_PLAYER:
-         return "Verwende integrierten Player";
+         return "Verwende integrierten Player"; /* FIXME/UPDATE */
       case MENU_LABEL_VALUE_CONTENT_SETTINGS:
          return "Content-Einstellungen"; /* FIXME */
       case MENU_LABEL_VALUE_RDB_ENTRY_CRC32:

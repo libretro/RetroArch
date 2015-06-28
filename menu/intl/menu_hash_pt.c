@@ -36,7 +36,7 @@ const char *menu_hash_to_str_pt(uint32_t hash)
       case MENU_LABEL_VALUE_INFORMATION_LIST:
          return "Informação";
       case MENU_LABEL_VALUE_USE_BUILTIN_PLAYER:
-         return "Usar Player Interno";
+         return "Usar Player Interno"; /* TODO/FIXME */
       case MENU_LABEL_VALUE_CONTENT_SETTINGS:
          return "Menu Rápido";
       case MENU_LABEL_VALUE_RDB_ENTRY_CRC32:

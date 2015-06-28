@@ -595,7 +595,7 @@ const char *menu_hash_to_str_us(uint32_t hash)
       case MENU_LABEL_VALUE_INFORMATION_LIST:
          return "Information";
       case MENU_LABEL_VALUE_USE_BUILTIN_PLAYER:
-         return "Use Builtin Player";
+         return "Use Builtin Media Player";
       case MENU_LABEL_VALUE_CONTENT_SETTINGS:
          return "Quick Menu";
       case MENU_LABEL_VALUE_RDB_ENTRY_CRC32:
