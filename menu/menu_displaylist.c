@@ -2379,10 +2379,19 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          {
             size_t opts = core_option_size(system->core_options);
 
-            for (i = 0; i < opts; i++)
+            if (opts == 0)
+            {
                menu_list_push(info->list,
-                     core_option_get_desc(system->core_options, i), "",
-                     MENU_SETTINGS_CORE_OPTION_START + i, 0, 0);
+                     menu_hash_to_str(MENU_LABEL_VALUE_NO_CORE_OPTIONS_AVAILABLE), "",
+                     MENU_SETTINGS_CORE_OPTION_NONE, 0, 0);
+            }
+            else
+            {
+               for (i = 0; i < opts; i++)
+                  menu_list_push(info->list,
+                        core_option_get_desc(system->core_options, i), "",
+                        MENU_SETTINGS_CORE_OPTION_START + i, 0, 0);
+            }
          }
          else
             menu_list_push(info->list,
