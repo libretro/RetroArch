@@ -1406,7 +1406,10 @@ static int action_ok_disk_cycle_tray_status(const char *path,
 static int action_ok_close_content(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   return generic_action_ok_command(EVENT_CMD_UNLOAD_CORE);
+   menu_list_t *menu_list       = menu_list_get_ptr();
+   int                      ret = generic_action_ok_command(EVENT_CMD_UNLOAD_CORE);
+   menu_list_flush_stack(menu_list, NULL, MENU_SETTINGS);
+   return ret;
 }
 
 static int action_ok_quit(const char *path,

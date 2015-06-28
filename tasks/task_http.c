@@ -20,6 +20,7 @@
 #include <compat/strl.h>
 #include <file/file_path.h>
 #include <rhash.h>
+#include <net/net_compat.h>
 
 #include "../file_ops.h"
 #include "../general.h"
@@ -233,6 +234,9 @@ static int cb_http_conn_default(void *data_, size_t len)
    http_handle_t *http = (http_handle_t*)data_;
 
    if (!http)
+      return -1;
+
+   if (!network_init())
       return -1;
 
    http->handle = net_http_new(http->connection.handle);
