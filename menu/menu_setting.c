@@ -4843,7 +4843,7 @@ static bool setting_append_list_menu_options(
    return true;
 }
 
-static bool setting_append_list_mediaplayer_options(
+static bool setting_append_list_multimedia_options(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info,
       const char *parent_group)
@@ -4853,7 +4853,7 @@ static bool setting_append_list_mediaplayer_options(
    settings_t *settings = config_get_ptr();
 
    START_GROUP(group_info,
-         menu_hash_to_str(MENU_LABEL_VALUE_MEDIA_PLAYER_SETTINGS),
+         menu_hash_to_str(MENU_LABEL_VALUE_MULTIMEDIA_SETTINGS),
          parent_group);
    
    parent_group = menu_hash_to_str(MENU_LABEL_VALUE_SETTINGS);
@@ -6185,9 +6185,9 @@ rarch_setting_t *menu_setting_new(unsigned mask)
          goto error;
    }
 
-   if (mask & SL_FLAG_MEDIA_PLAYER_OPTIONS)
+   if (mask & SL_FLAG_MULTIMEDIA_OPTIONS)
    {
-      if (!setting_append_list_mediaplayer_options(&list, list_info, root))
+      if (!setting_append_list_multimedia_options(&list, list_info, root))
          goto error;
    }
 

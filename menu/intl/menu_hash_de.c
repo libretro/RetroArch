@@ -793,8 +793,8 @@ const char *menu_hash_to_str_de(uint32_t hash)
          return "Overlay-Einstellungen";
       case MENU_LABEL_VALUE_MENU_SETTINGS:
          return "Menü-Einstellungen";
-      case MENU_LABEL_VALUE_MEDIA_PLAYER_SETTINGS:
-         return "Media-Player-Einstellungen";
+      case MENU_LABEL_VALUE_MULTIMEDIA_SETTINGS:
+         return "Media-Player-Einstellungen"; /* UPDATE/FIXME */
       case MENU_LABEL_VALUE_UI_SETTINGS:
          return "Benutzeroberflächen-Einstellungen";
       case MENU_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS:

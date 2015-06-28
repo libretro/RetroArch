@@ -82,7 +82,7 @@ enum setting_list_flags
    SL_FLAG_INPUT_HOTKEY_OPTIONS  =  (1 << 11),
    SL_FLAG_OVERLAY_OPTIONS       =  (1 << 12),
    SL_FLAG_MENU_OPTIONS          =  (1 << 13),
-   SL_FLAG_MEDIA_PLAYER_OPTIONS  =  (1 << 14),
+   SL_FLAG_MULTIMEDIA_OPTIONS    =  (1 << 14),
    SL_FLAG_UI_OPTIONS            =  (1 << 15),
    SL_FLAG_CORE_UPDATER_OPTIONS  =  (1 << 16),
    SL_FLAG_NETPLAY_OPTIONS       =  (1 << 17),

@@ -736,7 +736,7 @@ extern "C" {
 #define MENU_LABEL_OVERLAY_SETTINGS                                            0x997b2fd5U
 #define MENU_LABEL_VALUE_OVERLAY_SETTINGS                                      0x997b2fd5U
 #define MENU_LABEL_ONSCREEN_KEYBOARD_OVERLAY_SETTINGS                          0xa6de9ba6U
-#define MENU_LABEL_VALUE_MEDIA_PLAYER_SETTINGS                                 0x77d23103U
+#define MENU_LABEL_VALUE_MULTIMEDIA_SETTINGS                                   0x77d23103U
 #define MENU_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS                            0x652cf7efU
 #define MENU_LABEL_MENU_SETTINGS                                               0x61e4544bU
 #define MENU_LABEL_VALUE_MENU_SETTINGS                                         0x61e4544bU

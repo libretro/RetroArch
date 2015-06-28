@@ -1346,8 +1346,8 @@ const char *menu_hash_to_str_us(uint32_t hash)
          return "Onscreen Overlay Settings";
       case MENU_LABEL_VALUE_MENU_SETTINGS:
          return "Menu Settings";
-      case MENU_LABEL_VALUE_MEDIA_PLAYER_SETTINGS:
-         return "Media Player Settings";
+      case MENU_LABEL_VALUE_MULTIMEDIA_SETTINGS:
+         return "Multimedia Settings";
       case MENU_LABEL_VALUE_UI_SETTINGS:
          return "User Interface Settings";
       case MENU_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS:

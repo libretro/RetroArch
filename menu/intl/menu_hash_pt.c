@@ -789,8 +789,8 @@ const char *menu_hash_to_str_pt(uint32_t hash)
          return "Definições de Overlay em Tela";
       case MENU_LABEL_VALUE_MENU_SETTINGS:
          return "Definições de Menu";
-      case MENU_LABEL_VALUE_MEDIA_PLAYER_SETTINGS:
-         return "Definições de Reprodução de Mídia";
+      case MENU_LABEL_VALUE_MULTIMEDIA_SETTINGS:
+         return "Definições de Reprodução de Mídia"; /* UPDATE/FIXME */
       case MENU_LABEL_VALUE_UI_SETTINGS:
          return "Definições de Interface de Usuário";
       case MENU_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS:
