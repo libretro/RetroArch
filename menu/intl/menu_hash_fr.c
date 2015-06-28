@@ -843,8 +843,8 @@ const char *menu_hash_to_str_fr(uint32_t hash)
 
 int menu_hash_get_help_fr(uint32_t hash, char *s, size_t len)
 {
-   /* If this one throws errors, stop sledgehammering square pegs */ (void)sizeof(force_iso_8859_1);
-   /* into round holes and READ THE COMMENTS at the top of the file. */
+   /* If this one throws errors, stop sledgehammering square pegs into round holes and */
+   /* READ THE COMMENTS at the top of the file. */ (void)sizeof(force_iso_8859_1);
 
    switch (hash)
    {
