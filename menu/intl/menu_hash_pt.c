@@ -27,24 +27,24 @@
   * (e.g. German "Umlauts" and Portugese diacritics).
  */
 /* DO NOT REMOVE THIS. If it causes build failure, it's because you saved the file as UTF-8. Read the above comment. */
-extern const char force_iso_8859_1[sizeof("√°√Å√¢√£√ß√©√™√≠√ç√≥√µ√∫")==12+1 ? 1 : -1];
+extern const char force_iso_8859_1[sizeof("·¡‚„ÁÈÍÌÕÛı˙")==12+1 ? 1 : -1];
 
 const char *menu_hash_to_str_pt(uint32_t hash)
 {
    switch (hash)
    {
       case MENU_LABEL_VALUE_INFORMATION_LIST:
-         return "Informa√ß√£o";
+         return "InformaÁ„o";
       case MENU_LABEL_VALUE_USE_BUILTIN_PLAYER:
          return "Usar Player Interno";
       case MENU_LABEL_VALUE_CONTENT_SETTINGS:
-         return "Menu R√°pido";
+         return "Menu R·pido";
       case MENU_LABEL_VALUE_RDB_ENTRY_CRC32:
          return "CRC32";
       case MENU_LABEL_VALUE_RDB_ENTRY_MD5:
          return "MD5";
       case MENU_LABEL_VALUE_LOAD_CONTENT_LIST:
-         return "Carregar Conte√∫do";
+         return "Carregar Conte˙do";
       case MENU_VALUE_LOAD_ARCHIVE:
          return "Carregar Arquivo";
       case MENU_VALUE_OPEN_ARCHIVE:
@@ -52,27 +52,27 @@ const char *menu_hash_to_str_pt(uint32_t hash)
       case MENU_VALUE_ASK_ARCHIVE:
          return "Ask";
       case MENU_LABEL_VALUE_PRIVACY_SETTINGS:
-         return "Configura√ß√µes de Privacidade";
+         return "ConfiguraÁıes de Privacidade";
       case MENU_VALUE_HORIZONTAL_MENU:
          return "Horizontal Menu"; /* FIXME - don't edit this yet. */
       case MENU_LABEL_VALUE_NO_SETTINGS_FOUND:
-         return "Nenhuma defini√ß√£o encontrada.";
+         return "Nenhuma definiÁ„o encontrada.";
       case MENU_LABEL_VALUE_NO_PERFORMANCE_COUNTERS:
          return "Nenhum medidor de desempenho.";
       case MENU_LABEL_VALUE_DRIVER_SETTINGS:
-         return "Defini√ß√µes de Driver";
+         return "DefiniÁıes de Driver";
       case MENU_LABEL_VALUE_CONFIGURATION_SETTINGS:
-         return "Defini√ß√µes de Configura√ß√£o";
+         return "DefiniÁıes de ConfiguraÁ„o";
       case MENU_LABEL_VALUE_CORE_SETTINGS:
-         return "Atualiza√ß√£o Online";
+         return "AtualizaÁ„o Online";
       case MENU_LABEL_VALUE_VIDEO_SETTINGS:
-         return "Defini√ß√µes de V√≠deo";
+         return "DefiniÁıes de VÌdeo";
       case MENU_LABEL_VALUE_LOGGING_SETTINGS:
-         return "Defini√ß√µes de Registro de Dados";
+         return "DefiniÁıes de Registro de Dados";
       case MENU_LABEL_VALUE_SAVING_SETTINGS:
-         return "Defini√ß√µes de Saves";
+         return "DefiniÁıes de Saves";
       case MENU_LABEL_VALUE_REWIND_SETTINGS:
-         return "Defini√ß√µes de Retrocesso";
+         return "DefiniÁıes de Retrocesso";
       case MENU_LABEL_VALUE_CUSTOM_VIEWPORT_1:
          return "Definir Quina Superior Esquerda";
       case MENU_LABEL_VALUE_CUSTOM_VIEWPORT_2:
@@ -82,7 +82,7 @@ const char *menu_hash_to_str_pt(uint32_t hash)
       case MENU_VALUE_CHEAT:
          return "Cheat";
       case MENU_VALUE_USER:
-         return "Usu√°rio";
+         return "Usu·rio";
       case MENU_LABEL_VALUE_SYSTEM_BGM_ENABLE:
          return "Ativar Sistema BGM";
       case MENU_VALUE_RETROPAD:
@@ -90,13 +90,13 @@ const char *menu_hash_to_str_pt(uint32_t hash)
       case MENU_VALUE_RETROKEYBOARD:
          return "RetroTeclado";
       case MENU_LABEL_VALUE_AUDIO_BLOCK_FRAMES:
-         return "Quadros de Blocos de √Åudio";
+         return "Quadros de Blocos de ¡udio";
       case MENU_LABEL_VALUE_INPUT_BIND_MODE:
-         return "Modo V√≠nculo";
+         return "Modo VÌnculo";
       case MENU_LABEL_VALUE_AUTOCONFIG_DESCRIPTOR_LABEL_SHOW:
-         return "Mostrar R√≥tulos de Autoconfigura√ß√£o";
+         return "Mostrar RÛtulos de AutoconfiguraÁ„o";
       case MENU_LABEL_VALUE_INPUT_DESCRIPTOR_LABEL_SHOW:
-         return "Mostrar R√≥tulos de Entradas de Core";
+         return "Mostrar RÛtulos de Entradas de Core";
       case MENU_LABEL_VALUE_INPUT_DESCRIPTOR_HIDE_UNBOUND:
          return "Esconder Descritores de Entradas sem Uso";
       case MENU_LABEL_VALUE_VIDEO_FONT_ENABLE:
@@ -106,15 +106,15 @@ const char *menu_hash_to_str_pt(uint32_t hash)
       case MENU_LABEL_VALUE_VIDEO_FONT_SIZE:
          return "Tamanho da Mensagem de Tela";
       case MENU_LABEL_VALUE_VIDEO_MESSAGE_POS_X:
-         return "Posi√ß√£o X da Mensagem de Tela";
+         return "PosiÁ„o X da Mensagem de Tela";
       case MENU_LABEL_VALUE_VIDEO_MESSAGE_POS_Y:
-         return "Posi√ß√£o Y da Mensagem de Tela";
+         return "PosiÁ„o Y da Mensagem de Tela";
       case MENU_LABEL_VALUE_VIDEO_SOFT_FILTER:
-         return "Ativar Filtro de Suaviza√ß√£o";
+         return "Ativar Filtro de SuavizaÁ„o";
       case MENU_LABEL_VALUE_VIDEO_FILTER_FLICKER:
-         return "Filtro de Cintila√ß√£o";
+         return "Filtro de CintilaÁ„o";
       case MENU_VALUE_DIRECTORY_CONTENT:
-         return "<Diret√≥rio de Conte√∫do>";
+         return "<DiretÛrio de Conte˙do>";
       case MENU_VALUE_UNKNOWN:
          return "Desconhecido";
       case MENU_VALUE_DONT_CARE:
@@ -124,85 +124,85 @@ const char *menu_hash_to_str_pt(uint32_t hash)
       case MENU_VALUE_NEAREST:
          return "Nearest";
       case MENU_VALUE_DIRECTORY_DEFAULT:
-         return "<Padr√£o>";
+         return "<Padr„o>";
       case MENU_VALUE_DIRECTORY_NONE:
          return "<Nenhum>";
       case MENU_VALUE_NOT_AVAILABLE:
          return "N/A";
       case MENU_LABEL_VALUE_INPUT_REMAPPING_DIRECTORY:
-         return "Diret√≥rio de Remapeamento de Controladores";
+         return "DiretÛrio de Remapeamento de Controladores";
       case MENU_LABEL_VALUE_JOYPAD_AUTOCONFIG_DIR:
-         return "Diret√≥rio de Autoconfigura√ß√£o de Dispositivos de Entrada";
+         return "DiretÛrio de AutoconfiguraÁ„o de Dispositivos de Entrada";
       case MENU_LABEL_VALUE_RECORDING_CONFIG_DIRECTORY:
-         return "Diret√≥rio de Configura√ß√£o de Grava√ß√£o";
+         return "DiretÛrio de ConfiguraÁ„o de GravaÁ„o";
       case MENU_LABEL_VALUE_RECORDING_OUTPUT_DIRECTORY:
-         return "Diret√≥rio de Grava√ß√µes";
+         return "DiretÛrio de GravaÁıes";
       case MENU_LABEL_VALUE_SCREENSHOT_DIRECTORY:
-         return "Diret√≥rio de Capturas de Telas";
+         return "DiretÛrio de Capturas de Telas";
       case MENU_LABEL_VALUE_PLAYLIST_DIRECTORY:
-         return "Diret√≥rio de Listas de Jogos";
+         return "DiretÛrio de Listas de Jogos";
       case MENU_LABEL_VALUE_SAVEFILE_DIRECTORY:
-         return "Diret√≥rio de Saves";
+         return "DiretÛrio de Saves";
       case MENU_LABEL_VALUE_SAVESTATE_DIRECTORY:
-         return "Diret√≥rio de Savestates";
+         return "DiretÛrio de Savestates";
       case MENU_LABEL_VALUE_STDIN_CMD_ENABLE:
          return "Comandos stdin";
       case MENU_LABEL_VALUE_VIDEO_DRIVER:
-         return "Driver de V√≠deo";
+         return "Driver de VÌdeo";
       case MENU_LABEL_VALUE_RECORD_ENABLE:
-         return "Ativar Grava√ß√£o";
+         return "Ativar GravaÁ„o";
       case MENU_LABEL_VALUE_VIDEO_GPU_RECORD:
-         return "Ativar Grava√ß√£o por GPU";
+         return "Ativar GravaÁ„o por GPU";
       case MENU_LABEL_VALUE_RECORD_PATH:
-         return "Caminho da Grava√ß√£o";
+         return "Caminho da GravaÁ„o";
       case MENU_LABEL_VALUE_RECORD_USE_OUTPUT_DIRECTORY:
-         return "Diret√≥rio de Sa√≠da";
+         return "DiretÛrio de SaÌda";
       case MENU_LABEL_VALUE_RECORD_CONFIG:
-         return "Configura√ß√µes de Grava√ß√£o";
+         return "ConfiguraÁıes de GravaÁ„o";
       case MENU_LABEL_VALUE_VIDEO_POST_FILTER_RECORD:
-         return "Ativar Filtro P√≥s-Grava√ß√£o";
+         return "Ativar Filtro PÛs-GravaÁ„o";
       case MENU_LABEL_VALUE_CORE_ASSETS_DIRECTORY:
-         return "Diret√≥rio de Recursos (Assets) de Cores";
+         return "DiretÛrio de Recursos (Assets) de Cores";
       case MENU_LABEL_VALUE_ASSETS_DIRECTORY:
-         return "Diret√≥rio de Recursos (Assets)";
+         return "DiretÛrio de Recursos (Assets)";
       case MENU_LABEL_VALUE_DYNAMIC_WALLPAPERS_DIRECTORY:
-         return "Diret√≥rio de Pap√©is de Parede Din√¢micos";
+         return "DiretÛrio de PapÈis de Parede Din‚micos";
       case MENU_LABEL_VALUE_BOXARTS_DIRECTORY:
-         return "Diret√≥rio de Boxarts";
+         return "DiretÛrio de Boxarts";
       case MENU_LABEL_VALUE_RGUI_BROWSER_DIRECTORY:
-         return "Diret√≥rio de Navega√ß√£o";
+         return "DiretÛrio de NavegaÁ„o";
       case MENU_LABEL_VALUE_RGUI_CONFIG_DIRECTORY:
-         return "Diret√≥rio de Configura√ß√µes";
+         return "DiretÛrio de ConfiguraÁıes";
       case MENU_LABEL_VALUE_LIBRETRO_INFO_PATH:
-         return "Diret√≥rio de Informa√ß√µes de Cores";
+         return "DiretÛrio de InformaÁıes de Cores";
       case MENU_LABEL_VALUE_LIBRETRO_DIR_PATH:
-         return "Diret√≥rio de Cores";
+         return "DiretÛrio de Cores";
       case MENU_LABEL_VALUE_CURSOR_DIRECTORY:
-         return "Diret√≥rio de Cursores";
+         return "DiretÛrio de Cursores";
       case MENU_LABEL_VALUE_CONTENT_DATABASE_DIRECTORY:
-         return "Diret√≥rios de Databases de Conte√∫do";
+         return "DiretÛrios de Databases de Conte˙do";
       case MENU_LABEL_VALUE_SYSTEM_DIRECTORY:
-         return "Diret√≥rio System";
+         return "DiretÛrio System";
       case MENU_LABEL_VALUE_CHEAT_DATABASE_PATH:
-         return "Diret√≥rios de Cheats";
+         return "DiretÛrios de Cheats";
       case MENU_LABEL_VALUE_EXTRACTION_DIRECTORY:
-         return "Diret√≥rio de Descompacta√ß√£o";
+         return "DiretÛrio de DescompactaÁ„o";
       case MENU_LABEL_VALUE_AUDIO_FILTER_DIR:
-         return "Diret√≥rio de Filtros de √Åudio";
+         return "DiretÛrio de Filtros de ¡udio";
       case MENU_LABEL_VALUE_VIDEO_SHADER_DIR:
-         return "Diret√≥rio de Shaders";
+         return "DiretÛrio de Shaders";
       case MENU_LABEL_VALUE_VIDEO_FILTER_DIR:
-         return "Diret√≥rio de Filtros de V√≠deo";
+         return "DiretÛrio de Filtros de VÌdeo";
       case MENU_LABEL_VALUE_OVERLAY_DIRECTORY:
-         return "Diret√≥rio de Overlays";
+         return "DiretÛrio de Overlays";
       case MENU_LABEL_VALUE_OSK_OVERLAY_DIRECTORY:
-         return "Diret√≥rio de Overlays de Teclado";
+         return "DiretÛrio de Overlays de Teclado";
       case MENU_LABEL_VALUE_NETPLAY_CLIENT_SWAP_INPUT:
          return "Trocar Entradas de Netplay";
       case MENU_LABEL_VALUE_NETPLAY_SPECTATOR_MODE_ENABLE:
          return "Ativar Espectador de Netplay";
       case MENU_LABEL_VALUE_NETPLAY_IP_ADDRESS:
-         return "Endere√ßo IP";
+         return "EndereÁo IP";
       case MENU_LABEL_VALUE_NETPLAY_TCP_UDP_PORT:
          return "Portas TCP/UDP de Netplay";
       case MENU_LABEL_VALUE_NETPLAY_ENABLE:
@@ -212,9 +212,9 @@ const char *menu_hash_to_str_pt(uint32_t hash)
       case MENU_LABEL_VALUE_NETPLAY_MODE:
          return "Ativar Cliente de Netplay";
       case MENU_LABEL_VALUE_RGUI_SHOW_START_SCREEN:
-         return "Mostrar Tela de In√≠cio";
+         return "Mostrar Tela de InÌcio";
       case MENU_LABEL_VALUE_TITLE_COLOR:
-         return "Cor do Menu T√≠tulo";
+         return "Cor do Menu TÌtulo";
       case MENU_LABEL_VALUE_ENTRY_HOVER_COLOR:
          return "Cor de Realce do Menu Inicial";
       case MENU_LABEL_VALUE_TIMEDATE_ENABLE:
@@ -224,7 +224,7 @@ const char *menu_hash_to_str_pt(uint32_t hash)
       case MENU_LABEL_VALUE_ENTRY_NORMAL_COLOR:
          return "Cor do Menu Inicial";
       case MENU_LABEL_VALUE_SHOW_ADVANCED_SETTINGS:
-         return "Mostrar Configura√ß√µes Avan√ßadas";
+         return "Mostrar ConfiguraÁıes AvanÁadas";
       case MENU_LABEL_VALUE_MOUSE_ENABLE:
          return "Suporte a Mouse";
       case MENU_LABEL_VALUE_POINTER_ENABLE:
@@ -232,55 +232,55 @@ const char *menu_hash_to_str_pt(uint32_t hash)
       case MENU_LABEL_VALUE_CORE_ENABLE:
          return "Mostrar Nome dos Cores";
       case MENU_LABEL_VALUE_DPI_OVERRIDE_ENABLE:
-         return "Ativar Sobreposi√ß√£o de DPI";
+         return "Ativar SobreposiÁ„o de DPI";
       case MENU_LABEL_VALUE_DPI_OVERRIDE_VALUE:
-         return "Sobreposi√ß√£o de DPI";
+         return "SobreposiÁ„o de DPI";
       case MENU_LABEL_VALUE_SUSPEND_SCREENSAVER_ENABLE:
-         return "Suspender Prote√ß√£o de Tela";
+         return "Suspender ProteÁ„o de Tela";
       case MENU_LABEL_VALUE_VIDEO_DISABLE_COMPOSITION:
          return "Desativar Desktop Composition";
       case MENU_LABEL_VALUE_PAUSE_NONACTIVE:
-         return "N√£o Rodar em Background";
+         return "N„o Rodar em Background";
       case MENU_LABEL_VALUE_UI_COMPANION_START_ON_BOOT:
          return "Ativar UI Companion ao Iniciar";
       case MENU_LABEL_VALUE_UI_MENUBAR_ENABLE:
          return "Barra de Menu (Dica)";
       case MENU_LABEL_VALUE_ARCHIVE_MODE:
-         return "A√ß√£o para Arquivos Compactados";
+         return "AÁ„o para Arquivos Compactados";
       case MENU_LABEL_VALUE_NETWORK_CMD_ENABLE:
          return "Comandos de Rede";
       case MENU_LABEL_VALUE_NETWORK_CMD_PORT:
          return "Porta para Comandos de Rede";
       case MENU_LABEL_VALUE_HISTORY_LIST_ENABLE:
-         return "Ativar Lista de Hist√≥rico";
+         return "Ativar Lista de HistÛrico";
       case MENU_LABEL_VALUE_CONTENT_HISTORY_SIZE:
-         return "Tamanho da Lista de Hist√≥rico";
+         return "Tamanho da Lista de HistÛrico";
       case MENU_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO:
-         return "Taxa de Atualiza√ß√£o de Quadros Estimada";
+         return "Taxa de AtualizaÁ„o de Quadros Estimada";
       case MENU_LABEL_VALUE_DUMMY_ON_CORE_SHUTDOWN:
          return "Desligar Core Dummy On";
       case MENU_LABEL_VALUE_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE:
-         return "N√£o Iniciar Cores Automaticamente";
+         return "N„o Iniciar Cores Automaticamente";
       case MENU_LABEL_VALUE_FRAME_THROTTLE_ENABLE:
-         return "Limitar Velocidade M√°xima de Execu√ß√£o";
+         return "Limitar Velocidade M·xima de ExecuÁ„o";
       case MENU_LABEL_VALUE_FASTFORWARD_RATIO:
-         return "Velocidade M√°xima de Execu√ß√£o";
+         return "Velocidade M·xima de ExecuÁ„o";
       case MENU_LABEL_VALUE_AUTO_REMAPS_ENABLE:
          return "Carregar Automaticamente Arquivos Remapeados";
       case MENU_LABEL_VALUE_SLOWMOTION_RATIO:
-         return "Taxa de C√¢mera Lenta";
+         return "Taxa de C‚mera Lenta";
       case MENU_LABEL_VALUE_CORE_SPECIFIC_CONFIG:
-         return "Configura√ß√£o por Core";
+         return "ConfiguraÁ„o por Core";
       case MENU_LABEL_VALUE_AUTO_OVERRIDES_ENABLE:
-         return "Carregar Automaticamente Arquivos de Sobreposi√ß√£o";
+         return "Carregar Automaticamente Arquivos de SobreposiÁ„o";
       case MENU_LABEL_VALUE_CONFIG_SAVE_ON_EXIT:
-         return "Salvar Configura√ß√£o ao Sair";
+         return "Salvar ConfiguraÁ„o ao Sair";
       case MENU_LABEL_VALUE_VIDEO_SMOOTH:
          return "Filtragem Bilinear por Hardware";
       case MENU_LABEL_VALUE_VIDEO_GAMMA:
-         return "Gamma de V√≠deo";
+         return "Gamma de VÌdeo";
       case MENU_LABEL_VALUE_VIDEO_ALLOW_ROTATE:
-         return "Permitir Rota√ß√£o";
+         return "Permitir RotaÁ„o";
       case MENU_LABEL_VALUE_VIDEO_HARD_SYNC:
          return "Sincronizar GPU com CPU";
       case MENU_LABEL_VALUE_VIDEO_SWAP_INTERVAL:
@@ -288,35 +288,35 @@ const char *menu_hash_to_str_pt(uint32_t hash)
       case MENU_LABEL_VALUE_VIDEO_VSYNC:
          return "Sincronismo Vertical";
       case MENU_LABEL_VALUE_VIDEO_THREADED:
-         return "V√≠deo em Threads";
+         return "VÌdeo em Threads";
       case MENU_LABEL_VALUE_VIDEO_ROTATION:
-         return "Rota√ß√£o";
+         return "RotaÁ„o";
       case MENU_LABEL_VALUE_VIDEO_GPU_SCREENSHOT:
          return "Ativar Captura de Tela via GPU";
       case MENU_LABEL_VALUE_VIDEO_CROP_OVERSCAN:
          return "Descartar Overscan (Recarregue)";
       case MENU_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX:
-         return "√çndice de Rela√ß√µes de Aspecto";
+         return "Õndice de RelaÁıes de Aspecto";
       case MENU_LABEL_VALUE_VIDEO_ASPECT_RATIO_AUTO:
-         return "Rela√ß√£o de Aspecto Autom√°tica";
+         return "RelaÁ„o de Aspecto Autom·tica";
       case MENU_LABEL_VALUE_VIDEO_FORCE_ASPECT:
-         return "For√ßar Rela√ß√£o de Aspecto";
+         return "ForÁar RelaÁ„o de Aspecto";
       case MENU_LABEL_VALUE_VIDEO_REFRESH_RATE:
-         return "Taxa de Atualiza√ß√£o de Tela";
+         return "Taxa de AtualizaÁ„o de Tela";
       case MENU_LABEL_VALUE_VIDEO_FORCE_SRGB_DISABLE:
-         return "Forcar Desativa√ß√£o de sRGB FBO";
+         return "Forcar DesativaÁ„o de sRGB FBO";
       case MENU_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN:
          return "Modo Tela Cheia em Janela";
       case MENU_LABEL_VALUE_PAL60_ENABLE:
          return "Usar Modo PAL60";
       case MENU_LABEL_VALUE_VIDEO_VFILTER:
-         return "Eliminar Cintila√ß√£o";
+         return "Eliminar CintilaÁ„o";
       case MENU_LABEL_VALUE_VIDEO_VI_WIDTH:
          return "Definir Largura de Tela VI";
       case MENU_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION:
-         return "Inser√ß√£o de Quadro Negro";
+         return "InserÁ„o de Quadro Negro";
       case MENU_LABEL_VALUE_VIDEO_HARD_SYNC_FRAMES:
-         return "Quadros de Sincroniza√ß√£o entre GPU e CPU";
+         return "Quadros de SincronizaÁ„o entre GPU e CPU";
       case MENU_LABEL_VALUE_SORT_SAVEFILES_ENABLE:
          return "Ordenar Saves em Pastas";
       case MENU_LABEL_VALUE_SORT_SAVESTATES_ENABLE:
@@ -324,37 +324,37 @@ const char *menu_hash_to_str_pt(uint32_t hash)
       case MENU_LABEL_VALUE_VIDEO_FULLSCREEN:
          return "Usar Modo Tela Cheia";
       case MENU_LABEL_VALUE_VIDEO_SCALE:
-         return "Interpola√ß√£o em Janela";
+         return "InterpolaÁ„o em Janela";
       case MENU_LABEL_VALUE_VIDEO_SCALE_INTEGER:
-         return "Interpola√ß√£o em Inteiros";
+         return "InterpolaÁ„o em Inteiros";
       case MENU_LABEL_VALUE_PERFCNT_ENABLE:
          return "Contadores de Desempenho";
       case MENU_LABEL_VALUE_LIBRETRO_LOG_LEVEL:
-         return "N√≠vel de Registro de Core";
+         return "NÌvel de Registro de Core";
       case MENU_LABEL_VALUE_LOG_VERBOSITY:
          return "Detalhamento de Registro";
       case MENU_LABEL_VALUE_SAVESTATE_AUTO_LOAD:
          return "Carregar Savestate Automaticamente";
       case MENU_LABEL_VALUE_SAVESTATE_AUTO_INDEX:
-         return "√çndice Autom√°tico de Savestates";
+         return "Õndice Autom·tico de Savestates";
       case MENU_LABEL_VALUE_SAVESTATE_AUTO_SAVE:
-         return "Savestate Autom√°tico";
+         return "Savestate Autom·tico";
       case MENU_LABEL_VALUE_AUTOSAVE_INTERVAL:
-         return "Intervalo de Grava√ß√£o Autom√°tica de SaveRAM";
+         return "Intervalo de GravaÁ„o Autom·tica de SaveRAM";
       case MENU_LABEL_VALUE_BLOCK_SRAM_OVERWRITE:
-         return "N√£o Sobrescrever SaveRAM ao Carregar Savestate";
+         return "N„o Sobrescrever SaveRAM ao Carregar Savestate";
       case MENU_LABEL_VALUE_VIDEO_SHARED_CONTEXT:
          return "Ativar Contexto Compartilhado de Hardware";
       case MENU_LABEL_VALUE_RESTART_RETROARCH:
          return "Reiniciar RetroArch";
       case MENU_LABEL_VALUE_NETPLAY_NICKNAME:
-         return "Nome de Usu√°rio";
+         return "Nome de Usu·rio";
       case MENU_LABEL_VALUE_USER_LANGUAGE:
          return "Idioma";
       case MENU_LABEL_VALUE_CAMERA_ALLOW:
-         return "Autorizar C√¢mera";
+         return "Autorizar C‚mera";
       case MENU_LABEL_VALUE_LOCATION_ALLOW:
-         return "Autorizar Localiza√ß√£o";
+         return "Autorizar LocalizaÁ„o";
       case MENU_LABEL_VALUE_PAUSE_LIBRETRO:
          return "Pausar Quando o Menu for Ativado";
       case MENU_LABEL_VALUE_INPUT_OSK_OVERLAY_ENABLE:
@@ -362,61 +362,61 @@ const char *menu_hash_to_str_pt(uint32_t hash)
       case MENU_LABEL_VALUE_INPUT_OVERLAY_ENABLE:
          return "Mostrar Overlay";
       case MENU_LABEL_VALUE_VIDEO_MONITOR_INDEX:
-         return "√çndice de Monitores";
+         return "Õndice de Monitores";
       case MENU_LABEL_VALUE_VIDEO_FRAME_DELAY:
          return "Retardo de Quadro";
       case MENU_LABEL_VALUE_INPUT_DUTY_CYCLE:
          return "Ciclo de Trabalho";
       case MENU_LABEL_VALUE_INPUT_TURBO_PERIOD:
-         return "Per√≠odo de Turbo";
+         return "PerÌodo de Turbo";
       case MENU_LABEL_VALUE_INPUT_AXIS_THRESHOLD:
          return "Limiar de Eixo do Controlador";
       case MENU_LABEL_VALUE_INPUT_REMAP_BINDS_ENABLE:
          return "Ativar Remapeamentos";
       case MENU_LABEL_VALUE_INPUT_MAX_USERS:
-         return "Usu√°rios M√°ximos";
+         return "Usu·rios M·ximos";
       case MENU_LABEL_VALUE_INPUT_AUTODETECT_ENABLE:
-         return "Ativar Autoconfigura√ß√£o";
+         return "Ativar AutoconfiguraÁ„o";
       case MENU_LABEL_VALUE_AUDIO_OUTPUT_RATE:
-         return "Taxa de Amostragem de √Åudio (KHz)";
+         return "Taxa de Amostragem de ¡udio (KHz)";
       case MENU_LABEL_VALUE_AUDIO_MAX_TIMING_SKEW:
-         return "Distor√ß√£o M√°xima de Sincroniza√ß√£o de √Åudio";
+         return "DistorÁ„o M·xima de SincronizaÁ„o de ¡udio";
       case MENU_LABEL_VALUE_CHEAT_NUM_PASSES:
-         return "C√≥digos de Cheat";
+         return "CÛdigos de Cheat";
       case MENU_LABEL_VALUE_REMAP_FILE_SAVE_CORE:
          return "Salvar Remapeamento de Core";
       case MENU_LABEL_VALUE_REMAP_FILE_SAVE_GAME:
          return "Salvar Remapeamento de Jogo";
       case MENU_LABEL_VALUE_CHEAT_APPLY_CHANGES:
-         return "Aplicar Altera√ß√µes de Cheats";
+         return "Aplicar AlteraÁıes de Cheats";
       case MENU_LABEL_VALUE_SHADER_APPLY_CHANGES:
-         return "Aplicar Altera√ß√µes de Shaders";
+         return "Aplicar AlteraÁıes de Shaders";
       case MENU_LABEL_VALUE_REWIND_ENABLE:
          return "Ativar Retrocesso";
       case MENU_LABEL_VALUE_CONTENT_COLLECTION_LIST:
-         return "Selecionar da Cole√ß√£o";
+         return "Selecionar da ColeÁ„o";
       case MENU_LABEL_VALUE_DETECT_CORE_LIST:
          return "Selecionar Arquivo e Detectar Core";
       case MENU_LABEL_VALUE_LOAD_CONTENT_HISTORY:
-         return "Selecionar do Hist√≥rico";
+         return "Selecionar do HistÛrico";
       case MENU_LABEL_VALUE_AUDIO_ENABLE:
-         return "Ativar √Åudio";
+         return "Ativar ¡udio";
       case MENU_LABEL_VALUE_FPS_SHOW:
          return "Mostrar Taxa de Quadros";
       case MENU_LABEL_VALUE_AUDIO_MUTE:
-         return "Desligar √Åudio";
+         return "Desligar ¡udio";
       case MENU_LABEL_VALUE_AUDIO_VOLUME:
-         return "Volume de √Åudio (dB)";
+         return "Volume de ¡udio (dB)";
       case MENU_LABEL_VALUE_AUDIO_SYNC:
-         return "Ativar Sincronismo de √Åudio";
+         return "Ativar Sincronismo de ¡udio";
       case MENU_LABEL_VALUE_AUDIO_RATE_CONTROL_DELTA:
-         return "Varia√ß√£o M√°xima de Taxa de √Åudio";
+         return "VariaÁ„o M·xima de Taxa de ¡udio";
       case MENU_LABEL_VALUE_VIDEO_SHADER_NUM_PASSES:
-         return "N√∫mero de Shaders";
+         return "N˙mero de Shaders";
       case MENU_LABEL_VALUE_RDB_ENTRY_SHA1:
          return "SHA1";
       case MENU_LABEL_VALUE_CONFIGURATIONS:
-         return "Carregar Arquivo de Configura√ß√£o";
+         return "Carregar Arquivo de ConfiguraÁ„o";
       case MENU_LABEL_VALUE_REWIND_GRANULARITY:
          return "Granularidade do Retrocesso";
       case MENU_LABEL_VALUE_REMAP_FILE_LOAD:
@@ -424,17 +424,17 @@ const char *menu_hash_to_str_pt(uint32_t hash)
       case MENU_LABEL_VALUE_REMAP_FILE_SAVE_AS:
          return "Salvar Remapeamento Como";
       case MENU_LABEL_VALUE_CUSTOM_RATIO:
-         return "Rela√ß√£o de Aspecto Personalizada";
+         return "RelaÁ„o de Aspecto Personalizada";
       case MENU_LABEL_VALUE_USE_THIS_DIRECTORY:
-         return "<Usar este diret√≥rio>";
+         return "<Usar este diretÛrio>";
       case MENU_LABEL_VALUE_RDB_ENTRY_START_CONTENT:
-         return "Iniciar Conte√∫do";
+         return "Iniciar Conte˙do";
       case MENU_LABEL_VALUE_DISK_OPTIONS:
-         return "Op√ß√µes de Disco do Core";
+         return "OpÁıes de Disco do Core";
       case MENU_LABEL_VALUE_CORE_OPTIONS:
-         return "Op√ß√µes do Core";
+         return "OpÁıes do Core";
       case MENU_LABEL_VALUE_CORE_CHEAT_OPTIONS:
-         return "Op√ß√µes de Cheat do Core";
+         return "OpÁıes de Cheat do Core";
       case MENU_LABEL_VALUE_CHEAT_FILE_LOAD:
          return "Carregar Cheat";
       case MENU_LABEL_VALUE_CHEAT_FILE_SAVE_AS:
@@ -446,7 +446,7 @@ const char *menu_hash_to_str_pt(uint32_t hash)
       case MENU_LABEL_VALUE_RESUME:
          return "Retomar";
       case MENU_LABEL_VALUE_DISK_INDEX:
-         return "√çndice de Discos";
+         return "Õndice de Discos";
       case MENU_LABEL_VALUE_FRONTEND_COUNTERS:
          return "Contadores do Frontend";
       case MENU_LABEL_VALUE_DISK_IMAGE_APPEND:
@@ -456,11 +456,11 @@ const char *menu_hash_to_str_pt(uint32_t hash)
       case MENU_LABEL_VALUE_NO_PLAYLIST_ENTRIES_AVAILABLE:
          return "Lista de jogos vazia.";
       case MENU_LABEL_VALUE_NO_CORE_INFORMATION_AVAILABLE:
-         return "Nenhuma informa√ß√£o de core dispon√≠vel.";
+         return "Nenhuma informaÁ„o de core disponÌvel.";
       case MENU_LABEL_VALUE_NO_CORE_OPTIONS_AVAILABLE:
-         return "Nenhuma op√ß√£o de core dispon√≠vel.";
+         return "Nenhuma opÁ„o de core disponÌvel.";
       case MENU_LABEL_VALUE_NO_CORES_AVAILABLE:
-         return "Nenhum core dispon√≠vel.";
+         return "Nenhum core disponÌvel.";
       case MENU_VALUE_NO_CORE:
          return "Nenhum Core";
       case MENU_LABEL_VALUE_DATABASE_MANAGER:
@@ -470,37 +470,37 @@ const char *menu_hash_to_str_pt(uint32_t hash)
       case MENU_VALUE_MAIN_MENU:
          return "Main Menu";
       case MENU_LABEL_VALUE_SETTINGS:
-         return "Defini√ß√µes";
+         return "DefiniÁıes";
       case MENU_LABEL_VALUE_QUIT_RETROARCH:
          return "Sair do RetroArch";
       case MENU_LABEL_VALUE_HELP:
          return "Ajuda";
       case MENU_LABEL_VALUE_SAVE_NEW_CONFIG:
-         return "Salvar Nova Configura√ß√£o";
+         return "Salvar Nova ConfiguraÁ„o";
       case MENU_LABEL_VALUE_RESTART_CONTENT:
-         return "Reiniciar Conte√∫do";
+         return "Reiniciar Conte˙do";
       case MENU_LABEL_VALUE_CORE_UPDATER_LIST:
-         return "Atualiza√ß√£o de Cores";
+         return "AtualizaÁ„o de Cores";
       case MENU_LABEL_VALUE_CORE_UPDATER_BUILDBOT_URL:
          return "URL Buildbot de Cores";
       case MENU_LABEL_VALUE_BUILDBOT_ASSETS_URL:
          return "URL Buildbot de Recursos (Assets)";
       case MENU_LABEL_VALUE_NAVIGATION_WRAPAROUND_HORIZONTAL:
-         return "Navega√ß√£o Circular Horizontal";
+         return "NavegaÁ„o Circular Horizontal";
       case MENU_LABEL_VALUE_NAVIGATION_WRAPAROUND_VERTICAL:
-         return "Navega√ß√£o Circular Vertical";
+         return "NavegaÁ„o Circular Vertical";
       case MENU_LABEL_VALUE_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE:
-         return "Filtrar por Extens√µes Suportadas";
+         return "Filtrar por Extensıes Suportadas";
       case MENU_LABEL_VALUE_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE:
          return "Autoextrair Arquivos Baixados";
       case MENU_LABEL_VALUE_SYSTEM_INFORMATION:
-         return "Informa√ß√£o de Sistema";
+         return "InformaÁ„o de Sistema";
       case MENU_LABEL_VALUE_ONLINE_UPDATER:
-         return "Atualiza√ß√£o Online";
+         return "AtualizaÁ„o Online";
       case MENU_LABEL_VALUE_CORE_INFORMATION:
-         return "Informa√ß√£o de Core";
+         return "InformaÁ„o de Core";
       case MENU_LABEL_VALUE_DIRECTORY_NOT_FOUND:
-         return "Diret√≥rio n√£o encontrado.";
+         return "DiretÛrio n„o encontrado.";
       case MENU_LABEL_VALUE_NO_ITEMS:
          return "Nenhum item.";
       case MENU_LABEL_VALUE_CORE_LIST:
@@ -508,69 +508,69 @@ const char *menu_hash_to_str_pt(uint32_t hash)
       case MENU_LABEL_VALUE_LOAD_CONTENT:
          return "Selecionar Arquivo";
       case MENU_LABEL_VALUE_CLOSE_CONTENT:
-         return "Fechar Conte√∫do";
+         return "Fechar Conte˙do";
       case MENU_LABEL_VALUE_MANAGEMENT:
-         return "Defini√ß√µes de Databases";
+         return "DefiniÁıes de Databases";
       case MENU_LABEL_VALUE_SAVE_STATE:
          return "Salvar Savestate";
       case MENU_LABEL_VALUE_LOAD_STATE:
          return "Carregar Savestate";
       case MENU_LABEL_VALUE_RESUME_CONTENT:
-         return "Retomar Conte√∫do";
+         return "Retomar Conte˙do";
       case MENU_LABEL_VALUE_INPUT_DRIVER:
          return "Driver de Controlador";
       case MENU_LABEL_VALUE_AUDIO_DRIVER:
-         return "Driver de √Åudio";
+         return "Driver de ¡udio";
       case MENU_LABEL_VALUE_JOYPAD_DRIVER:
          return "Driver de Joypad";
       case MENU_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER:
-         return "Driver do Amostrador de √Åudio";
+         return "Driver do Amostrador de ¡udio";
       case MENU_LABEL_VALUE_RECORD_DRIVER:
-         return "Driver de Grava√ß√£o";
+         return "Driver de GravaÁ„o";
       case MENU_LABEL_VALUE_MENU_DRIVER:
          return "Driver de Menu";
       case MENU_LABEL_VALUE_CAMERA_DRIVER:
-         return "Driver de C√¢mera";
+         return "Driver de C‚mera";
       case MENU_LABEL_VALUE_LOCATION_DRIVER:
-         return "Driver de Localiza√ß√£o";
+         return "Driver de LocalizaÁ„o";
       case MENU_LABEL_VALUE_UNABLE_TO_READ_COMPRESSED_FILE:
          return "Incapaz de ler arquivo compactado.";
       case MENU_LABEL_VALUE_OVERLAY_SCALE:
-         return "Interpola√ß√£o de Overlay";
+         return "InterpolaÁ„o de Overlay";
       case MENU_LABEL_VALUE_OVERLAY_PRESET:
-         return "Predefini√ß√µes de Overlay";
+         return "PredefiniÁıes de Overlay";
       case MENU_LABEL_VALUE_AUDIO_LATENCY:
-         return "Lat√™ncia de √Åudio (ms)";
+         return "LatÍncia de ¡udio (ms)";
       case MENU_LABEL_VALUE_AUDIO_DEVICE:
-         return "Dispositivo de √Åudio";
+         return "Dispositivo de ¡udio";
       case MENU_LABEL_VALUE_KEYBOARD_OVERLAY_PRESET:
-         return "Predefini√ß√µes de Overlay de Teclado";
+         return "PredefiniÁıes de Overlay de Teclado";
       case MENU_LABEL_VALUE_OVERLAY_OPACITY:
          return "Opacidade de Overlay";
       case MENU_LABEL_VALUE_MENU_WALLPAPER:
          return "Papel de Parede do Menu";
       case MENU_LABEL_VALUE_DYNAMIC_WALLPAPER:
-         return "Papel de Parede Din√¢mico";
+         return "Papel de Parede Din‚mico";
       case MENU_LABEL_VALUE_BOXART:
          return "Mostrar Boxart";
       case MENU_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS:
-         return "Op√ß√µes de Remapeamento de Controlador de Core";
+         return "OpÁıes de Remapeamento de Controlador de Core";
       case MENU_LABEL_VALUE_SHADER_OPTIONS:
-         return "Op√ß√µes de Shaders";
+         return "OpÁıes de Shaders";
       case MENU_LABEL_VALUE_VIDEO_SHADER_PARAMETERS:
-         return "Par√¢metros de Shader em Uso";
+         return "Par‚metros de Shader em Uso";
       case MENU_LABEL_VALUE_VIDEO_SHADER_PRESET_PARAMETERS:
-         return "Menu de Par√¢metros de Shader";
+         return "Menu de Par‚metros de Shader";
       case MENU_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_AS:
-         return "Salvar Predefini√ß√µes de Shader Como";
+         return "Salvar PredefiniÁıes de Shader Como";
       case MENU_LABEL_VALUE_NO_SHADER_PARAMETERS:
-         return "Nenhum par√¢metro de shader dispon√≠vel.";
+         return "Nenhum par‚metro de shader disponÌvel.";
       case MENU_LABEL_VALUE_VIDEO_SHADER_PRESET:
-         return "Carregar Predefini√ß√µes de Shader";
+         return "Carregar PredefiniÁıes de Shader";
       case MENU_LABEL_VALUE_VIDEO_FILTER:
-         return "Filtro de V√≠deo";
+         return "Filtro de VÌdeo";
       case MENU_LABEL_VALUE_AUDIO_DSP_PLUGIN:
-         return "Plugin de DSP de √Åudio";
+         return "Plugin de DSP de ¡udio";
       case MENU_LABEL_VALUE_STARTING_DOWNLOAD:
          return "Iniciando download: ";
       case MENU_VALUE_SECONDS:
@@ -584,7 +584,7 @@ const char *menu_hash_to_str_pt(uint32_t hash)
       case MENU_LABEL_VALUE_UPDATE_CHEATS:
          return "Atualizar Cheats";
       case MENU_LABEL_VALUE_UPDATE_AUTOCONFIG_PROFILES:
-         return "Atualizar Perfis de Autoconfigura√ß√£o";
+         return "Atualizar Perfis de AutoconfiguraÁ„o";
       case MENU_LABEL_VALUE_UPDATE_DATABASES:
          return "Atualizar Databases";
       case MENU_LABEL_VALUE_UPDATE_OVERLAYS:
@@ -596,7 +596,7 @@ const char *menu_hash_to_str_pt(uint32_t hash)
       case MENU_LABEL_VALUE_CORE_INFO_CORE_NAME:
          return "Nome do core";
       case MENU_LABEL_VALUE_CORE_INFO_CORE_LABEL:
-         return "R√≥tulo do core";
+         return "RÛtulo do core";
       case MENU_LABEL_VALUE_CORE_INFO_SYSTEM_NAME:
          return "Nome do sistema";
       case MENU_LABEL_VALUE_CORE_INFO_SYSTEM_MANUFACTURER:
@@ -606,11 +606,11 @@ const char *menu_hash_to_str_pt(uint32_t hash)
       case MENU_LABEL_VALUE_CORE_INFO_AUTHORS:
          return "Autores";
       case MENU_LABEL_VALUE_CORE_INFO_PERMISSIONS:
-         return "Permiss√µes";
+         return "Permissıes";
       case MENU_LABEL_VALUE_CORE_INFO_LICENSES:
-         return "Licen√ßa(s)";
+         return "LicenÁa(s)";
       case MENU_LABEL_VALUE_CORE_INFO_SUPPORTED_EXTENSIONS:
-         return "Extens√µes suportadas";
+         return "Extensıes suportadas";
       case MENU_LABEL_VALUE_CORE_INFO_FIRMWARE:
          return "Firmware";
       case MENU_LABEL_VALUE_CORE_INFO_CORE_NOTES:
@@ -618,7 +618,7 @@ const char *menu_hash_to_str_pt(uint32_t hash)
       case MENU_LABEL_VALUE_SYSTEM_INFO_BUILD_DATE:
          return "Data do build";
       case MENU_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION:
-         return "Vers√£o do git";
+         return "Vers„o do git";
       case MENU_LABEL_VALUE_SYSTEM_INFO_CPU_FEATURES:
          return "Atributos da CPU";
       case MENU_LABEL_VALUE_SYSTEM_INFO_FRONTEND_IDENTIFIER:
@@ -628,7 +628,7 @@ const char *menu_hash_to_str_pt(uint32_t hash)
       case MENU_LABEL_VALUE_SYSTEM_INFO_FRONTEND_OS:
          return "OS do frontend";
       case MENU_LABEL_VALUE_SYSTEM_INFO_RETRORATING_LEVEL:
-         return "N√≠vel de RetroRating";
+         return "NÌvel de RetroRating";
       case MENU_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE:
          return "Fonte de energia";
       case MENU_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_NO_SOURCE:
@@ -640,7 +640,7 @@ const char *menu_hash_to_str_pt(uint32_t hash)
       case MENU_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_DISCHARGING:
          return "Descarregando";
       case MENU_LABEL_VALUE_SYSTEM_INFO_VIDEO_CONTEXT_DRIVER:
-         return "Driver de contexto de v√≠deo";
+         return "Driver de contexto de vÌdeo";
       case MENU_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_WIDTH:
          return "Mostrar largura (mm)";
       case MENU_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_HEIGHT:
@@ -708,7 +708,7 @@ const char *menu_hash_to_str_pt(uint32_t hash)
       case MENU_LABEL_VALUE_SYSTEM_INFO_7ZIP_SUPPORT:
          return "Suporte a 7zip";
       case MENU_LABEL_VALUE_SYSTEM_INFO_DYLIB_SUPPORT:
-         return "Suporte a bibliotecas din√¢micas";
+         return "Suporte a bibliotecas din‚micas";
       case MENU_LABEL_VALUE_SYSTEM_INFO_CG_SUPPORT:
          return "Suporte a Cg";
       case MENU_LABEL_VALUE_SYSTEM_INFO_GLSL_SUPPORT:
@@ -716,7 +716,7 @@ const char *menu_hash_to_str_pt(uint32_t hash)
       case MENU_LABEL_VALUE_SYSTEM_INFO_HLSL_SUPPORT:
          return "Suporte a HLSL";
       case MENU_LABEL_VALUE_SYSTEM_INFO_LIBXML2_SUPPORT:
-         return "Suporte a an√°lise XML libxml2";
+         return "Suporte a an·lise XML libxml2";
       case MENU_LABEL_VALUE_SYSTEM_INFO_SDL_IMAGE_SUPPORT:
          return "Suporte a imagem SDL";
       case MENU_LABEL_VALUE_SYSTEM_INFO_FBO_SUPPORT:
@@ -738,11 +738,11 @@ const char *menu_hash_to_str_pt(uint32_t hash)
       case MENU_LABEL_VALUE_YES:
          return "Sim";
       case MENU_LABEL_VALUE_NO:
-         return "N√£o";
+         return "N„o";
       case MENU_VALUE_BACK:
          return "VOLTAR";
       case MENU_LABEL_VALUE_SCREEN_RESOLUTION:
-         return "Resolu√ß√£o de Tela";
+         return "ResoluÁ„o de Tela";
       case MENU_VALUE_DISABLED:
          return "Desativado";
       case MENU_VALUE_PORT:
@@ -754,7 +754,7 @@ const char *menu_hash_to_str_pt(uint32_t hash)
       case MENU_LABEL_VALUE_RDB_ENTRY_PUBLISHER:
          return "Editora";
       case MENU_LABEL_VALUE_RDB_ENTRY_DESCRIPTION:
-         return "Descri√ß√£o";
+         return "DescriÁ„o";
       case MENU_LABEL_VALUE_RDB_ENTRY_NAME:
          return "Nome";
       case MENU_LABEL_VALUE_RDB_ENTRY_ORIGIN:
@@ -762,9 +762,9 @@ const char *menu_hash_to_str_pt(uint32_t hash)
       case MENU_LABEL_VALUE_RDB_ENTRY_FRANCHISE:
          return "Franquia";
       case MENU_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH:
-         return "M√™s de Lan√ßamento";
+         return "MÍs de LanÁamento";
       case MENU_LABEL_VALUE_RDB_ENTRY_RELEASE_YEAR:
-         return "Ano de Lan√ßamento";
+         return "Ano de LanÁamento";
       case MENU_VALUE_TRUE:
          return "Verdadeiro";
       case MENU_VALUE_FALSE:
@@ -776,71 +776,71 @@ const char *menu_hash_to_str_pt(uint32_t hash)
       case MENU_VALUE_OPTIONAL:
          return "Opcional";
       case MENU_VALUE_REQUIRED:
-         return "Obrigat√≥rio";
+         return "ObrigatÛrio";
       case MENU_VALUE_STATUS:
          return "Status";
       case MENU_LABEL_VALUE_AUDIO_SETTINGS:
-         return "Defini√ß√µes de √Åudio";
+         return "DefiniÁıes de ¡udio";
       case MENU_LABEL_VALUE_INPUT_SETTINGS:
-         return "Defini√ß√µes de Entradas";
+         return "DefiniÁıes de Entradas";
       case MENU_LABEL_VALUE_ONSCREEN_DISPLAY_SETTINGS:
-         return "Defini√ß√µes de Informa√ß√µes de Tela";
+         return "DefiniÁıes de InformaÁıes de Tela";
       case MENU_LABEL_VALUE_OVERLAY_SETTINGS:
-         return "Defini√ß√µes de Overlay em Tela";
+         return "DefiniÁıes de Overlay em Tela";
       case MENU_LABEL_VALUE_MENU_SETTINGS:
-         return "Defini√ß√µes de Menu";
+         return "DefiniÁıes de Menu";
       case MENU_LABEL_VALUE_MEDIA_PLAYER_SETTINGS:
-         return "Defini√ß√µes de Reprodu√ß√£o de M√≠dia";
+         return "DefiniÁıes de ReproduÁ„o de MÌdia";
       case MENU_LABEL_VALUE_UI_SETTINGS:
-         return "Defini√ß√µes de Interface de Usu√°rio";
+         return "DefiniÁıes de Interface de Usu·rio";
       case MENU_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS:
-         return "Defini√ß√µes de Menu de Navega√ß√£o";
+         return "DefiniÁıes de Menu de NavegaÁ„o";
       case MENU_LABEL_VALUE_CORE_UPDATER_SETTINGS:
-         return "Defini√ß√µes de Atualiza√ß√£o de Core";
+         return "DefiniÁıes de AtualizaÁ„o de Core";
       case MENU_LABEL_VALUE_NETWORK_SETTINGS:
-         return "Defini√ß√µes de Rede";
+         return "DefiniÁıes de Rede";
       case MENU_LABEL_VALUE_PLAYLIST_SETTINGS:
-         return "Defini√ß√µes de Playlists";
+         return "DefiniÁıes de Playlists";
       case MENU_LABEL_VALUE_USER_SETTINGS:
-         return "Defini√ß√µes de Usu√°rio";
+         return "DefiniÁıes de Usu·rio";
       case MENU_LABEL_VALUE_DIRECTORY_SETTINGS:
-         return "Defini√ß√µes de Diret√≥rios";
+         return "DefiniÁıes de DiretÛrios";
       case MENU_LABEL_VALUE_RECORDING_SETTINGS:
-         return "Defini√ß√µes de Grava√ß√£o";
+         return "DefiniÁıes de GravaÁ„o";
       case MENU_LABEL_VALUE_NO_INFORMATION_AVAILABLE:
-         return "Nenhuma informa√ß√£o dispon√≠vel.";
+         return "Nenhuma informaÁ„o disponÌvel.";
       case MENU_LABEL_VALUE_INPUT_USER_BINDS:
-         return "Usu√°rio %u Vincula";
+         return "Usu·rio %u Vincula";
       case MENU_VALUE_LANG_ENGLISH:
-         return "Ingl√™s";
+         return "InglÍs";
       case MENU_VALUE_LANG_JAPANESE:
-         return "Japon√™s";
+         return "JaponÍs";
       case MENU_VALUE_LANG_FRENCH:
-         return "Franc√™s";
+         return "FrancÍs";
       case MENU_VALUE_LANG_SPANISH:
          return "Espanhol";
       case MENU_VALUE_LANG_GERMAN:
-         return "Alem√£o";
+         return "Alem„o";
       case MENU_VALUE_LANG_ITALIAN:
          return "Italiano";
       case MENU_VALUE_LANG_DUTCH:
-         return "Holand√™s";
+         return "HolandÍs";
       case MENU_VALUE_LANG_PORTUGUESE:
-         return "Portugu√™s";
+         return "PortuguÍs";
       case MENU_VALUE_LANG_RUSSIAN:
          return "Russo";
       case MENU_VALUE_LANG_KOREAN:
          return "Coreano";
       case MENU_VALUE_LANG_CHINESE_TRADITIONAL:
-         return "Chin√™s (Tradicional)";
+         return "ChinÍs (Tradicional)";
       case MENU_VALUE_LANG_CHINESE_SIMPLIFIED:
-         return "Chin√™s (Simplificado)";
+         return "ChinÍs (Simplificado)";
       case MENU_VALUE_LANG_ESPERANTO:
          return "Esperanto";
       case MENU_VALUE_LEFT_ANALOG:
-         return "Anal√≥gico Esquerdo";
+         return "AnalÛgico Esquerdo";
       case MENU_VALUE_RIGHT_ANALOG:
-         return "Anal√≥gico Direito";
+         return "AnalÛgico Direito";
       default:
          break;
    }
@@ -874,12 +874,12 @@ int menu_hash_get_help_pt(uint32_t hash, char *s, size_t len)
                      "Suporta Hot-Swap e force feedback \n"
                      "(se suportado pelo dispositivo). \n"
                      " \n"
-                     "O driver l√™ os eventos evdev para suporte a \n"
-                     "teclado. Suporta tamb√©m callback de teclado, \n"
+                     "O driver lÍ os eventos evdev para suporte a \n"
+                     "teclado. Suporta tambÈm callback de teclado, \n"
                      "mouses e touchpads. \n"
                      " \n"
-                     "Em geral, na maioria das distribui√ß√µes, os n√≥s \n"
-                     "/dev/input s√£o root-only (modo 600). Mas voc√™ pode \n"
+                     "Em geral, na maioria das distribuiÁıes, os nÛs \n"
+                     "/dev/input s„o root-only (modo 600). Mas vocÍ pode \n"
                      "definir uma regra udev para dar acesso a non-roots."
                      );
                break;
@@ -888,8 +888,8 @@ int menu_hash_get_help_pt(uint32_t hash, char *s, size_t len)
                      "Driver de Entrada linuxraw. \n"
                      " \n"
                      "Esse driver requer um TTY ativo. Eventos de \n"
-                     "teclado s√£o lidos diretamente do TTY, tornando-o \n"
-                     "simples, mas n√£o t√£o flex√≠vel quanto o udev. \n" "Mouses, etc, n√£o s√£o suportados. \n"
+                     "teclado s„o lidos diretamente do TTY, tornando-o \n"
+                     "simples, mas n„o t„o flexÌvel quanto o udev. \n" "Mouses, etc, n„o s„o suportados. \n"
                      " \n"
                      "Esse driver usa a antiga API de joysticks \n"
                      "(/dev/input/js*).");
@@ -898,28 +898,28 @@ int menu_hash_get_help_pt(uint32_t hash, char *s, size_t len)
                snprintf(s, len,
                      "Driver de Entrada.\n"
                      " \n"
-                     "Dependendo do driver de v√≠deo, pode ser necess√°rio \n"
-                     "for√ßar um driver de entrada diferente.");
+                     "Dependendo do driver de vÌdeo, pode ser necess·rio \n"
+                     "forÁar um driver de entrada diferente.");
                break;
          }
          break;
       case MENU_LABEL_LOAD_CONTENT:
          snprintf(s, len,
-               "Carregar Conte√∫do. \n"
-               "Busca conte√∫do. \n"
+               "Carregar Conte˙do. \n"
+               "Busca conte˙do. \n"
                " \n"
-               "Para carregar conte√∫do, voc√™ precisa de \n"
+               "Para carregar conte˙do, vocÍ precisa de \n"
                "um core libretro para usar, e um arquivo \n"
-               "de conte√∫do. \n"
+               "de conte˙do. \n"
                " \n"
-               "Para controlar onde o menu come√ßa a \n"
-               "buscar conte√∫do, defina o Diret√≥rio \n"
-               "de Navega√ß√£o. Se n√£o estiver definido, \n"
-               "o Retroarch come√ßar√° no diret√≥rio raiz. \n"
+               "Para controlar onde o menu comeÁa a \n"
+               "buscar conte˙do, defina o DiretÛrio \n"
+               "de NavegaÁ„o. Se n„o estiver definido, \n"
+               "o Retroarch comeÁar· no diretÛrio raiz. \n"
                " \n"
-               "O navegador vai filtrar pelas extens√µes \n"
+               "O navegador vai filtrar pelas extensıes \n"
                "do mais recente core definido em 'Core', \n"
-               "e o usar√° quando o conte√∫do estiver \n"
+               "e o usar· quando o conte˙do estiver \n"
                "carregado."
                );
          break;
@@ -927,27 +927,27 @@ int menu_hash_get_help_pt(uint32_t hash, char *s, size_t len)
          snprintf(s, len,
                "Carregar Core. \n"
                " \n"
-               "Busca uma implementa√ß√£o de um core \n"
+               "Busca uma implementaÁ„o de um core \n"
                "libretro. Onde a busca inicia depende \n"
-               "do caminho do seu Diret√≥rio de Cores. \n"
-               "Se n√£o definido, come√ßar√° no raiz. \n"
+               "do caminho do seu DiretÛrio de Cores. \n"
+               "Se n„o definido, comeÁar· no raiz. \n"
                " \n"
-               "Se o Diret√≥rio de Cores estiver definido, \n"
-               "o menu o usar√° como pasta inicial. Se for um \n"
-               "caminho completo, ele come√ßar√° na pasta onde \n"
+               "Se o DiretÛrio de Cores estiver definido, \n"
+               "o menu o usar· como pasta inicial. Se for um \n"
+               "caminho completo, ele comeÁar· na pasta onde \n"
                "o arquivo estiver.");
          break;
       case MENU_LABEL_LOAD_CONTENT_HISTORY:
          snprintf(s, len,
-               "Carregando conte√∫do do hist√≥rico. \n"
+               "Carregando conte˙do do histÛrico. \n"
                " \n"
-               "Ao carregar conte√∫dos, suas combina√ß√µes com \n"
-               "cores s√£o salvas no hist√≥rico. \n"
+               "Ao carregar conte˙dos, suas combinaÁıes com \n"
+               "cores s„o salvas no histÛrico. \n"
                " \n"
-               "O hist√≥rico √© salvo em um arquivo no mesmo \n"
-               "diret√≥rio do arquivo de configura√ß√£o. Se nenhuma \n"
-               "configura√ß√£o tiver sido carregada, o hist√≥rico \n"
-               "n√£o ser√° salvo ou carregado e n√£o vai existir no \n"
+               "O histÛrico È salvo em um arquivo no mesmo \n"
+               "diretÛrio do arquivo de configuraÁ„o. Se nenhuma \n"
+               "configuraÁ„o tiver sido carregada, o histÛrico \n"
+               "n„o ser· salvo ou carregado e n„o vai existir no \n"
                "menu principal."
                );
          break;
@@ -958,74 +958,74 @@ int menu_hash_get_help_pt(uint32_t hash, char *s, size_t len)
          {
             case MENU_LABEL_VIDEO_DRIVER_GL:
                snprintf(s, len,
-                     "Driver de V√≠deo OpenGL. \n"
+                     "Driver de VÌdeo OpenGL. \n"
                      " \n"
                      "Esse driver permite o uso de cores libretro GL  \n"
-                     "em adi√ß√£o √†s implementa√ß√µes de cores de \n"
-                     "renderiza√ß√£o por software.\n"
+                     "em adiÁ„o ‡s implementaÁıes de cores de \n"
+                     "renderizaÁ„o por software.\n"
                      " \n"
-                     "O desempenho das implementa√ß√µes dos cores de\n"
-                     "renderiza√ß√£o por software e libretro GL \n"
+                     "O desempenho das implementaÁıes dos cores de\n"
+                     "renderizaÁ„o por software e libretro GL \n"
                      "depende do driver GL instalado em sua \n"
-                     "placa de v√≠deo.");
+                     "placa de vÌdeo.");
                break;
             case MENU_LABEL_VIDEO_DRIVER_SDL2:
                snprintf(s, len,
-                     "Driver de V√≠deo SDL 2.\n"
+                     "Driver de VÌdeo SDL 2.\n"
                      " \n"
-                     "Esse √© um driver de v√≠deo SDL 2 de \n"
-                     "renderiza√ß√£o por software.\n"
+                     "Esse È um driver de vÌdeo SDL 2 de \n"
+                     "renderizaÁ„o por software.\n"
                      " \n"
-                     "O desempenho das implementa√ß√µes dos cores de \n"
-                     "renderiza√ß√£o por software depende da \n"
-                     "implementa√ß√£o SDL de sua plataforma.");
+                     "O desempenho das implementaÁıes dos cores de \n"
+                     "renderizaÁ„o por software depende da \n"
+                     "implementaÁ„o SDL de sua plataforma.");
                break;
             case MENU_LABEL_VIDEO_DRIVER_SDL1:
                snprintf(s, len,
-                     "Driver de V√≠deo SDL.\n"
+                     "Driver de VÌdeo SDL.\n"
                      " \n"
-                     "Esse √© um driver de v√≠deo SDL 1.2 de \n"
-                     "renderiza√ß√£o por software.\n"
+                     "Esse È um driver de vÌdeo SDL 1.2 de \n"
+                     "renderizaÁ„o por software.\n"
                      " \n"
-                     "O desemprenho √© considerado sub√≥timo. \n"
-                     "Considere seu uso apenas em √∫ltimo caso.");
+                     "O desemprenho È considerado subÛtimo. \n"
+                     "Considere seu uso apenas em ˙ltimo caso.");
                break;
             case MENU_LABEL_VIDEO_DRIVER_D3D:
                snprintf(s, len,
-                     "Driver de V√≠deo Direct3D. \n"
+                     "Driver de VÌdeo Direct3D. \n"
                      " \n"
-                     "O desempenho das implementa√ß√µes dos cores de\n"
-                     "renderiza√ß√£o por software depende do driver \n"
-                     "D3D instalado em sua placa de v√≠deo.");
+                     "O desempenho das implementaÁıes dos cores de\n"
+                     "renderizaÁ„o por software depende do driver \n"
+                     "D3D instalado em sua placa de vÌdeo.");
                break;
             case MENU_LABEL_VIDEO_DRIVER_EXYNOS:
                snprintf(s, len,
-                     "Driver de V√≠deo Exynos-G2D. \n"
+                     "Driver de VÌdeo Exynos-G2D. \n"
                      " \n"
-                     "Esse √© um driver de v√≠deo Exynos de baixo n√≠vel. \n"
+                     "Esse È um driver de vÌdeo Exynos de baixo nÌvel. \n"
                      "Usa o bloco G2D do SoC Samsung Exynos \n"
-                     "para opera√ß√µes de blit. \n"
+                     "para operaÁıes de blit. \n"
                      " \n"
-                     "O desempenho para cores de renderiza√ß√£o por \n"
-                     "software deve ser √≥timo.");
+                     "O desempenho para cores de renderizaÁ„o por \n"
+                     "software deve ser Ûtimo.");
                break;
             case MENU_LABEL_VIDEO_DRIVER_SUNXI:
                snprintf(s, len,
-                     "Driver de V√≠deo Sunxi-G2D. \n"
+                     "Driver de VÌdeo Sunxi-G2D. \n"
                      " \n"
-                     "Esse √© um driver de v√≠deo Sunxi de baixo n√≠vel. \n"
+                     "Esse È um driver de vÌdeo Sunxi de baixo nÌvel. \n"
                      "Usa o bloco G2D dos SoCs Allwinner.");
                break;
             default:
                snprintf(s, len,
-                     "Driver de V√≠deo em uso.");
+                     "Driver de VÌdeo em uso.");
                break;
          }
          break;
       case MENU_LABEL_AUDIO_DSP_PLUGIN:
          snprintf(s, len,
-               "Plugin de DSP de √Åudio.\n"
-               "Processa √°udio antes de ser enviado ao \n"
+               "Plugin de DSP de ¡udio.\n"
+               "Processa ·udio antes de ser enviado ao \n"
                "driver."
                );
          break;
@@ -1036,19 +1036,19 @@ int menu_hash_get_help_pt(uint32_t hash, char *s, size_t len)
          {
             case MENU_LABEL_AUDIO_RESAMPLER_DRIVER_SINC:
                snprintf(s, len,
-                     "Implementa√ß√£o Windowed SINC.");
+                     "ImplementaÁ„o Windowed SINC.");
                break;
             case MENU_LABEL_AUDIO_RESAMPLER_DRIVER_CC:
                snprintf(s, len,
-                     "Implementa√ß√£o Convoluted Cosine.");
+                     "ImplementaÁ„o Convoluted Cosine.");
                break;
          }
          break;
       case MENU_LABEL_VIDEO_SHADER_PRESET:
          snprintf(s, len,
-               "Carregar Predefini√ß√µes de Shader. \n"
+               "Carregar PredefiniÁıes de Shader. \n"
                " \n"
-               " Carregar predefini√ß√µes em "
+               " Carregar predefiniÁıes em "
 #ifdef HAVE_CG
                "Cg"
 #endif
@@ -1065,11 +1065,11 @@ int menu_hash_get_help_pt(uint32_t hash, char *s, size_t len)
                "HLSL"
 #endif
                " diretamente. \n"
-               "O menu de shaders √© atualizado de acordo. \n"
+               "O menu de shaders È atualizado de acordo. \n"
                " \n"
-               "Se o CGP usar m√©todos de interpola√ß√£o complexos, \n"
+               "Se o CGP usar mÈtodos de interpolaÁ„o complexos, \n"
                "(fator de escala diferente para X e Y) o fator \n"
-               "de escala mostrado no menu poder√° n√£o ser \n"
+               "de escala mostrado no menu poder· n„o ser \n"
                "correto."
                );
          break;
@@ -1081,44 +1081,44 @@ int menu_hash_get_help_pt(uint32_t hash, char *s, size_t len)
                "para o primeiro passo e 2x para o segundo \n"
                "vai lhe fornecer uma escala total de 4x. \n"
                " \n"
-               "Se houver um fator de escala no √∫ltimo \n"
-               "passo, o resultado ser√° esticado na tela \n"
+               "Se houver um fator de escala no ˙ltimo \n"
+               "passo, o resultado ser· esticado na tela \n"
                "com o filtro especificado em 'Filtro \n"
-               "Padr√£o'. \n"
+               "Padr„o'. \n"
                " \n"
                "Se 'Tanto faz' estiver definido, a escala \n"
-               "de 1x ou o esticamento para tela cheia ser√£o \n"
-               "usados dependendo se o primeiro foi ou n√£o \n"
-               "definido no √∫ltimo passo."
+               "de 1x ou o esticamento para tela cheia ser„o \n"
+               "usados dependendo se o primeiro foi ou n„o \n"
+               "definido no ˙ltimo passo."
                );
          break;
       case MENU_LABEL_VIDEO_SHADER_NUM_PASSES:
          snprintf(s, len,
-               "N√∫mero de Shaders. \n"
+               "N˙mero de Shaders. \n"
                " \n"
-               "O RetroArch permite que voc√™ combine v√°rios \n"
-               "shaders com n√∫mero arbitr√°rio de passos, filtros \n"
+               "O RetroArch permite que vocÍ combine v·rios \n"
+               "shaders com n˙mero arbitr·rio de passos, filtros \n"
                "de hardware e fatores de escala personalizados. \n"
                " \n"
-               "Essa op√ß√£o especifica o n√∫mero de passos a usar. \n"
-               "Se for definido como 0 e usada a op√ß√£o Aplicar \n"
-               "Altera√ß√µes de Shaders, ser√° usado um shader vazio. \n"
+               "Essa opÁ„o especifica o n˙mero de passos a usar. \n"
+               "Se for definido como 0 e usada a opÁ„o Aplicar \n"
+               "AlteraÁıes de Shaders, ser· usado um shader vazio. \n"
                " \n"
-               "A op√ß√£o Filtro Padr√£o ir√° afetar o filtro \n"
+               "A opÁ„o Filtro Padr„o ir· afetar o filtro \n"
                "de esticamento.");
          break;
       case MENU_LABEL_VIDEO_SHADER_PARAMETERS:
          snprintf(s, len,
-               "Par√¢metros de Shaders. \n"
+               "Par‚metros de Shaders. \n"
                " \n"
-               "Modifica o shader em uso diretamente. N√£o ser√° \n"
-               "salvo no arquivo de predefini√ß√µes CGP/GLSLP.");
+               "Modifica o shader em uso diretamente. N„o ser· \n"
+               "salvo no arquivo de predefiniÁıes CGP/GLSLP.");
          break;
       case MENU_LABEL_VIDEO_SHADER_PRESET_PARAMETERS:
          snprintf(s, len,
-               "Par√¢metros de Predefini√ß√µes de Shader. \n"
+               "Par‚metros de PredefiniÁıes de Shader. \n"
                " \n"
-               "Modifica as predefini√ß√µes de shader em uso no menu."
+               "Modifica as predefiniÁıes de shader em uso no menu."
                );
          break;
       case MENU_LABEL_VIDEO_SHADER_PASS:
@@ -1128,30 +1128,30 @@ int menu_hash_get_help_pt(uint32_t hash, char *s, size_t len)
                "Todos os shaders devem ser do mesmo \n"
                "tipo (i.e. CG, GLSL ou HLSL). \n"
                " \n"
-               "Defina o Diret√≥rio de Shaders para indicar \n"
-               "onde o buscador come√ßa a procurar pelos \n"
+               "Defina o DiretÛrio de Shaders para indicar \n"
+               "onde o buscador comeÁa a procurar pelos \n"
                "shaders."
                );
          break;
       case MENU_LABEL_CONFIG_SAVE_ON_EXIT:
          snprintf(s, len,
-               "Salva configura√ß√£o ao sair. √ötil para\n"
-               "o menu, pois as defini√ß√µes podem ser\n"
-               "modificadas. Sobrescreve a configura√ß√£o.\n"
+               "Salva configuraÁ„o ao sair. ⁄til para\n"
+               "o menu, pois as definiÁıes podem ser\n"
+               "modificadas. Sobrescreve a configuraÁ„o.\n"
                " \n"
-               "#includes e coment√°rios n√£o s√£o \n"
+               "#includes e coment·rios n„o s„o \n"
                "preservados. \n"
                " \n"
-               "Por design, o arquivo de configura√ß√£o \n"
-               "√© considerado imut√°vel, pois ele √© \n"
-               "provavelmente mantido pelo usu√°rio, \n"
-               "e n√£o deve ser sobrescrito sem o \n"
+               "Por design, o arquivo de configuraÁ„o \n"
+               "È considerado imut·vel, pois ele È \n"
+               "provavelmente mantido pelo usu·rio, \n"
+               "e n„o deve ser sobrescrito sem o \n"
                "seu conhecimento."
 #if defined(RARCH_CONSOLE) || defined(RARCH_MOBILE)
-               "\nPor√©m, isso n√£o funciona assim nos \n"
+               "\nPorÈm, isso n„o funciona assim nos \n"
                "consoles, pois abrir o arquivo de \n"
-               "configura√ß√£o manualmente n√£o √© \n"
-               "realmente uma op√ß√£o."
+               "configuraÁ„o manualmente n„o È \n"
+               "realmente uma opÁ„o."
 #endif
                );
          break;
@@ -1160,7 +1160,7 @@ int menu_hash_get_help_pt(uint32_t hash, char *s, size_t len)
                "Filtro de hardware para este passo. \n"
                " \n"
                "Se 'Tanto faz' estiver definido, o 'Filtro \n"
-               "Padr√£o' ser√° usado."
+               "Padr„o' ser· usado."
                );
          break;
       case MENU_LABEL_AUTOSAVE_INTERVAL:
@@ -1168,30 +1168,30 @@ int menu_hash_get_help_pt(uint32_t hash, char *s, size_t len)
                "Salva automaticamente a SRAM \n"
                "em intervalos regulares.\n"
                " \n"
-               "Est√° desativado por padr√£o. O intervalo √© \n"
+               "Est· desativado por padr„o. O intervalo È \n"
                "medido em segundos. \n"
                " \n"
                "Um valor de 0 desativa o salvamento \n"
-               "autom√°tico.");
+               "autom·tico.");
          break;
       case MENU_LABEL_INPUT_BIND_DEVICE_TYPE:
          snprintf(s, len,
                "Tipo de Dispositivo de Entrada. \n"
                " \n"
-               "Escolhe o dispositivo a usar. Isso √© \n"
+               "Escolhe o dispositivo a usar. Isso È \n"
                "relevante para o core libretro."
                );
          break;
       case MENU_LABEL_LIBRETRO_LOG_LEVEL:
          snprintf(s, len,
-               "Define o n√≠vel de registro para os cores \n"
+               "Define o nÌvel de registro para os cores \n"
                "(GET_LOG_INTERFACE). \n"
                " \n"
-               " Se o n√≠vel de registro de um core \n"
+               " Se o nÌvel de registro de um core \n"
                " libretro estiver abaixo de libretro_log, \n"
-               " esse ser√° ignorado.\n"
+               " esse ser· ignorado.\n"
                " \n"
-               " Registros DEBUG s√£o sempre ignorados a menos \n"
+               " Registros DEBUG s„o sempre ignorados a menos \n"
                " que o modo prolixo seja ativado (--verbose).\n"
                " \n"
                " DEBUG = 0\n"
@@ -1206,34 +1206,34 @@ int menu_hash_get_help_pt(uint32_t hash, char *s, size_t len)
                "Slot de Savestates.\n"
                " \n"
                " Com o slot definido em 0, o nome do Savestate \n"
-               " ser√° *.state (ou o que estiver definido em commandline).\n"
-               "Se diferente de 0, o nome ser√° (caminho)(d), \n"
-               "em que (d) √© o n√∫mero do slot.");
+               " ser· *.state (ou o que estiver definido em commandline).\n"
+               "Se diferente de 0, o nome ser· (caminho)(d), \n"
+               "em que (d) È o n˙mero do slot.");
          break;
       case MENU_LABEL_SHADER_APPLY_CHANGES:
          snprintf(s, len,
-               "Aplicar Altera√ß√µes de Shaders. \n"
+               "Aplicar AlteraÁıes de Shaders. \n"
                " \n"
-               "Ap√≥s alterar defini√ß√µes de shaders, use-o para \n"
-               "aplicar as mudan√ßas. \n"
+               "ApÛs alterar definiÁıes de shaders, use-o para \n"
+               "aplicar as mudanÁas. \n"
                " \n"
-               "Mudar defini√ß√µes de shaders √© uma opera√ß√£o \n"
+               "Mudar definiÁıes de shaders È uma operaÁ„o \n"
                "computacionalmente cara e deve ser \n"
                "realizada explicitamente. \n"
                " \n"
-               "Quando se aplicam shaders, as defini√ß√µes do menu \n"
-               "de shaders s√£o salvas em um arquivo tempor√°rio \n"
+               "Quando se aplicam shaders, as definiÁıes do menu \n"
+               "de shaders s„o salvas em um arquivo tempor·rio \n"
                "(menu.cgp ou menu.glslp) e carregadas. O arquivo \n"
-               "persiste ao fechar o RetroArch. Ele √© salvo \n"
-               "no Diret√≥rio de Shaders."
+               "persiste ao fechar o RetroArch. Ele È salvo \n"
+               "no DiretÛrio de Shaders."
                );
          break;
       case MENU_LABEL_INPUT_BIND_DEVICE_ID:
          snprintf(s, len,
                "Dispositivo de Entrada. \n"
                " \n"
-               "Escolhe um gamepad para o usu√°rio N. \n"
-               "O nome do pad est√° dispon√≠vel."
+               "Escolhe um gamepad para o usu·rio N. \n"
+               "O nome do pad est· disponÌvel."
                );
          break;
       case MENU_LABEL_MENU_TOGGLE:
@@ -1244,34 +1244,34 @@ int menu_hash_get_help_pt(uint32_t hash, char *s, size_t len)
          snprintf(s, len,
                "Alterna uso de mouse.\n"
                " \n"
-               "Quando o mouse √© usado, RetroArch o esconde e \n"
-               "mant√©m o seu ponteiro dentro da janela para \n"
+               "Quando o mouse È usado, RetroArch o esconde e \n"
+               "mantÈm o seu ponteiro dentro da janela para \n"
                "permitir que a entrada relativa do mouse \n"
                "funcione melhor.");
          break;
       case MENU_LABEL_DISK_NEXT:
          snprintf(s, len,
                "Circula por imagens de discos. Usar \n"
-               "ap√≥s ejetar. \n"
+               "apÛs ejetar. \n"
                " \n"
                " Finaliza ao usar ejetar novamente.");
          break;
       case MENU_LABEL_VIDEO_FILTER:
 #ifdef HAVE_FILTERS_BUILTIN
          snprintf(s, len,
-               "Filtro de v√≠deo baseado em CPU.");
+               "Filtro de vÌdeo baseado em CPU.");
 #else
          snprintf(s, len,
-               "Filtro de v√≠deo baseado em CPU.\n"
+               "Filtro de vÌdeo baseado em CPU.\n"
                " \n"
-               "Caminho para uma biblioteca din√¢mica.");
+               "Caminho para uma biblioteca din‚mica.");
 #endif
          break;
       case MENU_LABEL_AUDIO_DEVICE:
          snprintf(s, len,
-               "Sobrep√µe-se ao dispositivo de √°udio padr√£o \n"
-               "que est√° em uso.\n"
-               "√â dependente do driver. \n"
+               "Sobrepıe-se ao dispositivo de ·udio padr„o \n"
+               "que est· em uso.\n"
+               "… dependente do driver. \n"
 #ifdef HAVE_ALSA
                " \n"
                "ALSA precisa de um dispositivo PCM."
@@ -1287,179 +1287,179 @@ int menu_hash_get_help_pt(uint32_t hash, char *s, size_t len)
 #endif
 #ifdef HAVE_RSOUND
                " \n"
-               "RSound precisa de um endere√ßo IP para \n"
+               "RSound precisa de um endereÁo IP para \n"
                "servidor RSound."
 #endif
                );
          break;
       case MENU_LABEL_DISK_EJECT_TOGGLE:
          snprintf(s, len,
-               "Alterna eje√ß√£o para discos.\n"
+               "Alterna ejeÁ„o para discos.\n"
                " \n"
-               "Usado para conte√∫dos multidiscos.");
+               "Usado para conte˙dos multidiscos.");
          break;
       case MENU_LABEL_ENABLE_HOTKEY:
          snprintf(s, len,
                "Ativar outras hotkeys.\n"
                " \n"
-               " Se esta hotkey √© usada por teclado, joybutton \n"
-               "ou joyaxis, todas as outras hotkeys ser√£o \n"
+               " Se esta hotkey È usada por teclado, joybutton \n"
+               "ou joyaxis, todas as outras hotkeys ser„o \n"
                "desativadas a menos que esta hotkey esteja sendo \n"
                "usada ao mesmo tempo. \n"
                " \n"
-               "Isso √© √∫til para implementa√ß√µes RETRO_KEYBOARD que \n"
-               "consultam uma grande √°rea do teclado, cujo caminho \n"
+               "Isso È ˙til para implementaÁıes RETRO_KEYBOARD que \n"
+               "consultam uma grande ·rea do teclado, cujo caminho \n"
                "deve estar livre das hotkeys.");
          break;
       case MENU_LABEL_REWIND_ENABLE:
          snprintf(s, len,
                "Ativa retrocesso.\n"
                " \n"
-               "Essa op√ß√£o causa uma perda de desempenho, \n"
-               "por isso est√° desativada por padr√£o.");
+               "Essa opÁ„o causa uma perda de desempenho, \n"
+               "por isso est· desativada por padr„o.");
          break;
       case MENU_LABEL_LIBRETRO_DIR_PATH:
          snprintf(s, len,
-               "Diret√≥rios de Cores. \n"
+               "DiretÛrios de Cores. \n"
                " \n"
-               "Um diret√≥rio onde s√£o buscadas as \n"
-               "implementa√ß√µes de cores libretro.");
+               "Um diretÛrio onde s„o buscadas as \n"
+               "implementaÁıes de cores libretro.");
          break;
       case MENU_LABEL_VIDEO_REFRESH_RATE_AUTO:
          snprintf(s, len,
-               "Taxa de Atualiza√ß√£o Autom√°tica.\n"
+               "Taxa de AtualizaÁ„o Autom·tica.\n"
                " \n"
-               "A taxa de atualiza√ß√£o exata de nosso monitor (Hz).\n"
-               "√â usada para calcular a taxa de entrada de √°udio \n"
-               "com a f√≥rmula: \n"
+               "A taxa de atualizaÁ„o exata de nosso monitor (Hz).\n"
+               "… usada para calcular a taxa de entrada de ·udio \n"
+               "com a fÛrmula: \n"
                " \n"
                "audio_input_rate = game input rate * display \n"
                "refresh rate / game refresh rate\n"
                " \n"
-               "Se a implementa√ß√£o n√£o informar valores, \n"
-               "valores NTSC ser√£o assumidos por quest√£o de \n"
+               "Se a implementaÁ„o n„o informar valores, \n"
+               "valores NTSC ser„o assumidos por quest„o de \n"
                "compatibilidade.\n"
                " \n"
-               "Esse valor deve ficar pr√≥ximo de 60Hz para \n"
-               "evitar grande mudan√ßas de pitch. Se o monitor \n"
-               "n√£o rodar a 60Hz, ou algo pr√≥ximo a isso, desative\n"
-               "o VSync, e deixe-o com valores padr√£o.");
+               "Esse valor deve ficar prÛximo de 60Hz para \n"
+               "evitar grande mudanÁas de pitch. Se o monitor \n"
+               "n„o rodar a 60Hz, ou algo prÛximo a isso, desative\n"
+               "o VSync, e deixe-o com valores padr„o.");
          break;
       case MENU_LABEL_VIDEO_ROTATION:
          snprintf(s, len,
-               "For√ßa uma certa rota√ß√£o da tela. \n"
+               "ForÁa uma certa rotaÁ„o da tela. \n"
                " \n"
-               "A rota√ß√£o √© adicionada a outras definidas\n"
+               "A rotaÁ„o È adicionada a outras definidas\n"
                "por conjuntos de cores (veja Permitir\n"
-               "Rota√ß√£o de V√≠deo).");
+               "RotaÁ„o de VÌdeo).");
          break;
       case MENU_LABEL_VIDEO_SCALE:
          snprintf(s, len,
-               "Resolu√ß√£o de tela cheia.\n"
+               "ResoluÁ„o de tela cheia.\n"
                " \n"
-               "Resolu√ß√£o 0 usa a resolu√ß√£o \n"
+               "ResoluÁ„o 0 usa a resoluÁ„o \n"
                "do ambiente.\n");
          break;
       case MENU_LABEL_FASTFORWARD_RATIO:
          snprintf(s, len,
-               "Taxa de Avan√ßo R√°pido."
+               "Taxa de AvanÁo R·pido."
                " \n"
-               "A taxa m√°xima na qual o conte√∫do ser√°\n"
-               "executado ao se usar o Avan√ßo R√°pido.\n"
+               "A taxa m·xima na qual o conte˙do ser·\n"
+               "executado ao se usar o AvanÁo R·pido.\n"
                " \n"
-               " (Ex.: 5.0 para conte√∫do 60 fps => 300 fps \n"
-               "m√°ximo).\n"
+               " (Ex.: 5.0 para conte˙do 60 fps => 300 fps \n"
+               "m·ximo).\n"
                " \n"
                "RetroArch entra em modo sleep para assegurar \n"
-               "que a taxa m√°xima n√£o ser√° excedida.\n"
-               "N√£o confie que esse teto tenha exatid√£o \n"
+               "que a taxa m·xima n„o ser· excedida.\n"
+               "N„o confie que esse teto tenha exatid„o \n"
                "perfeita.");
          break;
       case MENU_LABEL_VIDEO_MONITOR_INDEX:
          snprintf(s, len,
-               "Prefer√™ncia de monitor.\n"
+               "PreferÍncia de monitor.\n"
                " \n"
-               "0 (padr√£o) significa nenhum monitor √© \n"
-               "preferido, 1 e demais (1 √© o primeiro \n"
+               "0 (padr„o) significa nenhum monitor È \n"
+               "preferido, 1 e demais (1 È o primeiro \n"
                "monitor), sugere ao RetroArch usar esse \n"
                "monitor em particular.");
          break;
       case MENU_LABEL_VIDEO_CROP_OVERSCAN:
          snprintf(s, len,
-               "For√ßa o descarte de quadros overscanned. \n"
+               "ForÁa o descarte de quadros overscanned. \n"
                " \n"
-               "O comportamento exato dessa op√ß√£o √© \n"
-               "espec√≠fico da implementa√ß√£o do core.");
+               "O comportamento exato dessa opÁ„o È \n"
+               "especÌfico da implementaÁ„o do core.");
          break;
       case MENU_LABEL_VIDEO_SCALE_INTEGER:
          snprintf(s, len,
-               "S√≥ interpola v√≠deo em escalas m√∫ltiplas \n"
-               "inteiras da resolu√ß√£o nativa.\n"
+               "SÛ interpola vÌdeo em escalas m˙ltiplas \n"
+               "inteiras da resoluÁ„o nativa.\n"
                " \n"
                "O tamanho base depende da geometria e da \n"
-               "rela√ß√£o de aspecto informadas pelo sistema.\n"
+               "relaÁ„o de aspecto informadas pelo sistema.\n"
                " \n"
-               "Se For√ßar Aspecto n√£o estiver definida, X/Y \n"
-               "ser√£o escalonados em inteiros independentemente.");
+               "Se ForÁar Aspecto n„o estiver definida, X/Y \n"
+               "ser„o escalonados em inteiros independentemente.");
          break;
       case MENU_LABEL_AUDIO_VOLUME:
          snprintf(s, len,
-               "Volume de √Åudio, em dB.\n"
+               "Volume de ¡udio, em dB.\n"
                " \n"
-               " 0 dB √© o volume normal. Nenhum ganho aplicado.\n"
-               "O ganho pode ser controlado em execu√ß√£o com \n"
+               " 0 dB È o volume normal. Nenhum ganho aplicado.\n"
+               "O ganho pode ser controlado em execuÁ„o com \n"
                "Aumentar Volume / Baixar Volume.");
          break;
       case MENU_LABEL_AUDIO_RATE_CONTROL_DELTA:
          snprintf(s, len,
-               "Controle de taxa de √°udio.\n"
+               "Controle de taxa de ·udio.\n"
                " \n"
                "Definindo como 0 desativa o controle de taxa.\n"
-               "Outros valores controlam a varia√ß√£o da taxa \n"
-               "de √°udio.\n"
+               "Outros valores controlam a variaÁ„o da taxa \n"
+               "de ·udio.\n"
                " \n"
                "Define quanto de taxa de entrada pode ser \n"
                "regulada dinamicamente.\n"
                " \n"
-               " Taxa de entrada √© definida como: \n"
+               " Taxa de entrada È definida como: \n"
                " input rate * (1.0 +/- (rate control delta))");
          break;
       case MENU_LABEL_AUDIO_MAX_TIMING_SKEW:
          snprintf(s, len,
-               "Distor√ß√£o de √°udio m√°xima.\n"
+               "DistorÁ„o de ·udio m·xima.\n"
                " \n"
-               "Define a m√°xima varia√ß√£o da taxa de entrada.\n"
-               "Voc√™ pode querer aument√°-la para obter grandes\n"
-               "varia√ß√µes no compasso, por exemplo, ao rodar\n"
+               "Define a m·xima variaÁ„o da taxa de entrada.\n"
+               "VocÍ pode querer aument·-la para obter grandes\n"
+               "variaÁıes no compasso, por exemplo, ao rodar\n"
                "cores PAL em telas NTSC, ao custo de um pitch\n"
-               "de √°udio inexato.\n"
+               "de ·udio inexato.\n"
                " \n"
-               " A taxa de entrada √© definida como: \n"
+               " A taxa de entrada È definida como: \n"
                " input rate * (1.0 +/- (max timing skew))");
          break;
       case MENU_LABEL_OVERLAY_NEXT:
          snprintf(s, len,
-               "Alterna para o pr√≥ximo overlay.\n"
+               "Alterna para o prÛximo overlay.\n"
                " \n"
-               "Navega√ß√£o circular.");
+               "NavegaÁ„o circular.");
          break;
       case MENU_LABEL_LOG_VERBOSITY:
          snprintf(s, len,
-               "Ativa ou desativa n√≠vel de prolixidade \n"
+               "Ativa ou desativa nÌvel de prolixidade \n"
                "do frontend.");
          break;
       case MENU_LABEL_VOLUME_UP:
          snprintf(s, len,
-               "Aumenta o volume de √°udio.");
+               "Aumenta o volume de ·udio.");
          break;
       case MENU_LABEL_VOLUME_DOWN:
          snprintf(s, len,
-               "Baixa o volume de √°udio.");
+               "Baixa o volume de ·udio.");
          break;
       case MENU_LABEL_VIDEO_DISABLE_COMPOSITION:
          snprintf(s, len,
-               "Desativa composition √† for√ßa.\n"
-               "V√°lido somente para Windows Vista/7 atualmente.");
+               "Desativa composition ‡ forÁa.\n"
+               "V·lido somente para Windows Vista/7 atualmente.");
          break;
       case MENU_LABEL_PERFCNT_ENABLE:
          snprintf(s, len,
@@ -1468,48 +1468,48 @@ int menu_hash_get_help_pt(uint32_t hash, char *s, size_t len)
          break;
       case MENU_LABEL_SYSTEM_DIRECTORY:
          snprintf(s, len,
-               "Diret√≥rio system. \n"
+               "DiretÛrio system. \n"
                " \n"
-               "Define o diret√≥rio 'system'.\n"
-               "Cores podem consultar esse diret√≥rio\n"
-               "para carregar BIOS, configura√ß√µes\n"
-               "espec√≠ficas de sistemas, etc.");
+               "Define o diretÛrio 'system'.\n"
+               "Cores podem consultar esse diretÛrio\n"
+               "para carregar BIOS, configuraÁıes\n"
+               "especÌficas de sistemas, etc.");
          break;
       case MENU_LABEL_SAVESTATE_AUTO_SAVE:
          snprintf(s, len,
                "Automaticamente salva um Savestate ao fechar \n"
                "o RetroArch.\n"
                " \n"
-               "RetroArch carregar√° automaticamente qualquer\n"
+               "RetroArch carregar· automaticamente qualquer\n"
                "Savestate com esse caminho ao iniciar se 'Carregar\n"
                "Savestate Automaticamente' estiver ativado.");
          break;
       case MENU_LABEL_VIDEO_THREADED:
          snprintf(s, len,
-               "Usa driver de v√≠deo em thread.\n"
+               "Usa driver de vÌdeo em thread.\n"
                " \n"
                "Usando isso pode melhorar o desempenho ao \n"
-               "poss√≠vel custo de lat√™ncia e mais engasgos \n"
-               "de v√≠deo.");
+               "possÌvel custo de latÍncia e mais engasgos \n"
+               "de vÌdeo.");
          break;
       case MENU_LABEL_VIDEO_VSYNC:
          snprintf(s, len,
-               "Sincronismo Vertical de v√≠deo.\n");
+               "Sincronismo Vertical de vÌdeo.\n");
          break;
       case MENU_LABEL_VIDEO_HARD_SYNC:
          snprintf(s, len,
                "Tenta sincronizar CPU com GPU via \n"
                "hardware.\n"
                " \n"
-               "Pode reduzir a lat√™ncia ao custo de \n"
+               "Pode reduzir a latÍncia ao custo de \n"
                "desempenho.");
          break;
       case MENU_LABEL_REWIND_GRANULARITY:
          snprintf(s, len,
                "Granularidade do retrocesso.\n"
                " \n"
-               " Ao retroceder um n√∫mero definido de \n"
-               "quadros, voc√™ pode retroceder v√°rios \n"
+               " Ao retroceder um n˙mero definido de \n"
+               "quadros, vocÍ pode retroceder v·rios \n"
                "quadros por vez, aumentando a velocidade \n"
                "de retrocesso.");
          break;
@@ -1520,20 +1520,20 @@ int menu_hash_get_help_pt(uint32_t hash, char *s, size_t len)
       case MENU_LABEL_VIDEO_FRAME_DELAY:
          snprintf(s, len,
                "Define quantos milissegundos retardar \n"
-               "ap√≥s o VSync antes de executar o core.\n"
+               "apÛs o VSync antes de executar o core.\n"
                "\n"
-               "Pode reduzir a lat√™ncia ao custo de\n"
-               "um maior risco de engasgo de v√≠deo.\n"
+               "Pode reduzir a latÍncia ao custo de\n"
+               "um maior risco de engasgo de vÌdeo.\n"
                " \n"
-               "O valor m√°ximo √© 15.");
+               "O valor m·ximo È 15.");
          break;
       case MENU_LABEL_VIDEO_HARD_SYNC_FRAMES:
          snprintf(s, len,
                "Define quantos quadros a CPU pode rodar \n"
-               "adiante da GPU com a op√ß√£o 'Sincronismo \n"
+               "adiante da GPU com a opÁ„o 'Sincronismo \n"
                "de GPU via Hardware' ativada.\n"
                " \n"
-               "O valor m√°ximo √© 3.\n"
+               "O valor m·ximo È 3.\n"
                " \n"
                " 0: Sincroniza com GPU de imediato.\n"
                " 1: Sincroniza com quadro anterior.\n"
@@ -1543,27 +1543,27 @@ int menu_hash_get_help_pt(uint32_t hash, char *s, size_t len)
          snprintf(s, len,
                "Insere um quadro preto entre quadros. \n"
                " \n"
-               "√ötil para monitores de 120 Hz ao rodar \n"
-               "material de 60 Hz com elimina√ß√£o do efeito \n"
+               "⁄til para monitores de 120 Hz ao rodar \n"
+               "material de 60 Hz com eliminaÁ„o do efeito \n"
                "'ghosting'.\n"
                " \n"
-               "A taxa de atualiza√ß√£o de v√≠deo deve ainda \n"
+               "A taxa de atualizaÁ„o de vÌdeo deve ainda \n"
                "ser configurada como se fosse um monitor de \n"
-               "60 Hz (divida a taxa de atualiza√ß√£o por 2).");
+               "60 Hz (divida a taxa de atualizaÁ„o por 2).");
          break;
       case MENU_LABEL_RGUI_SHOW_START_SCREEN:
          snprintf(s, len,
                "Mostra a tela inicial no menu.\n"
-               "√â definida automaticamente como falso quando\n"
+               "… definida automaticamente como falso quando\n"
                "vista pela primeira vez.\n"
                " \n"
-               "√â atualizada na configura√ß√£o apenas quando a\n"
-               "op√ß√£o 'Salvar Configura√ß√£o ao Sair' est√° ativada.\n");
+               "… atualizada na configuraÁ„o apenas quando a\n"
+               "opÁ„o 'Salvar ConfiguraÁ„o ao Sair' est· ativada.\n");
          break;
       case MENU_LABEL_CORE_SPECIFIC_CONFIG:
          snprintf(s, len,
-               "Carrega uma configura√ß√£o espec√≠fica baseada \n"
-               "no core que est√° sendo usado.\n");
+               "Carrega uma configuraÁ„o especÌfica baseada \n"
+               "no core que est· sendo usado.\n");
          break;
       case MENU_LABEL_VIDEO_FULLSCREEN:
          snprintf(s, len, "Alterna tela cheia.");
@@ -1578,18 +1578,18 @@ int menu_hash_get_help_pt(uint32_t hash, char *s, size_t len)
       case MENU_LABEL_PAUSE_NONACTIVE:
          snprintf(s, len,
                "Pausa a jogatina quando o foco da janela \n"
-               "√© perdido.");
+               "È perdido.");
          break;
       case MENU_LABEL_VIDEO_GPU_SCREENSHOT:
          snprintf(s, len,
-               "Captura material gr√°fico de sa√≠da da \n"
-               "GPU se estiver dispon√≠vel.");
+               "Captura material gr·fico de saÌda da \n"
+               "GPU se estiver disponÌvel.");
          break;
       case MENU_LABEL_SCREENSHOT_DIRECTORY:
          snprintf(s, len,
-               "Diret√≥rio de Capturas de Tela. \n"
+               "DiretÛrio de Capturas de Tela. \n"
                " \n"
-               "Diret√≥rio para guardar as capturas de tela."
+               "DiretÛrio para guardar as capturas de tela."
                );
          break;
       case MENU_LABEL_VIDEO_SWAP_INTERVAL:
@@ -1597,51 +1597,51 @@ int menu_hash_get_help_pt(uint32_t hash, char *s, size_t len)
                "Intervalo de Troca de VSync.\n"
                " \n"
                "Usa um intervalo de troca personalizado. \n"
-               "Use-e para reduzir √† metade a taxa de \n"
-               "atualiza√ß√£o do monitor.");
+               "Use-e para reduzir ‡ metade a taxa de \n"
+               "atualizaÁ„o do monitor.");
          break;
       case MENU_LABEL_SAVEFILE_DIRECTORY:
          snprintf(s, len,
-               "Diret√≥rio de Saves. \n"
+               "DiretÛrio de Saves. \n"
                " \n"
                "Salva todos os arquivos de save (*.srm) nesse \n"
-               "diret√≥rio. Isso inclui arquivos relacionados \n"
+               "diretÛrio. Isso inclui arquivos relacionados \n"
                "como .bsv, .rt, .psrm, etc...\n"
                " \n"
-               "Pode ser sobreposto por op√ß√µes expl√≠citas de\n"
+               "Pode ser sobreposto por opÁıes explÌcitas de\n"
                "linha de comando.");
          break;
       case MENU_LABEL_SAVESTATE_DIRECTORY:
          snprintf(s, len,
-               "Diret√≥rio de Savestates. \n"
+               "DiretÛrio de Savestates. \n"
                " \n"
                "Salva todos os Savestates (*.state) nesse \n"
-               "diret√≥rio.\n"
+               "diretÛrio.\n"
                " \n"
-               "Pode ser sobreposto por op√ß√µes expl√≠citas de\n"
+               "Pode ser sobreposto por opÁıes explÌcitas de\n"
                "linha de comando.");
          break;
       case MENU_LABEL_ASSETS_DIRECTORY:
          snprintf(s, len,
-               "Diret√≥rio de Recursos (Assets). \n"
+               "DiretÛrio de Recursos (Assets). \n"
                " \n"
-               " Essa localiza√ß√£o √© consultada quando se \n"
+               " Essa localizaÁ„o È consultada quando se \n"
                "tenta buscar pelo menu recursos (assets) \n"
-               "carreg√°veis, etc.");
+               "carreg·veis, etc.");
          break;
       case MENU_LABEL_DYNAMIC_WALLPAPERS_DIRECTORY:
          snprintf(s, len,
-               "Diret√≥rio de Pap√©is de Parede Din√¢micos. \n"
+               "DiretÛrio de PapÈis de Parede Din‚micos. \n"
                " \n"
-               " O lugar para armazenar pap√©is de parede que \n"
-               "ser√£o carregados dinamicamente pelo menu \n"
+               " O lugar para armazenar papÈis de parede que \n"
+               "ser„o carregados dinamicamente pelo menu \n"
                "dependendo do contexto.");
          break;
       case MENU_LABEL_SLOWMOTION_RATIO:
          snprintf(s, len,
-               "Taxa de c√¢mera lenta."
+               "Taxa de c‚mera lenta."
                " \n"
-               "Quando ativado, o conte√∫do rodar√° em velocidade\n"
+               "Quando ativado, o conte˙do rodar· em velocidade\n"
                "reduzida por um fator.");
          break;
       case MENU_LABEL_INPUT_AXIS_THRESHOLD:
@@ -1649,45 +1649,45 @@ int menu_hash_get_help_pt(uint32_t hash, char *s, size_t len)
                "Define o limiar de eixo.\n"
                " \n"
                "O quanto deve ser torcido um eixo para\n"
-               "resultar em um bot√£o pressionado.\n"
-               " Valores poss√≠veis s√£o [0.0, 1.0].");
+               "resultar em um bot„o pressionado.\n"
+               " Valores possÌveis s„o [0.0, 1.0].");
          break;
       case MENU_LABEL_INPUT_TURBO_PERIOD:
          snprintf(s, len, 
-               "Per√≠odo de turbo.\n"
+               "PerÌodo de turbo.\n"
                " \n"
                "Descreve a velocidade na qual se alternam\n"
-               "os bot√µes com turbo ativado."
+               "os botıes com turbo ativado."
                );
          break;
       case MENU_LABEL_INPUT_AUTODETECT_ENABLE:
          snprintf(s, len,
-               "Ativa autodetec√ß√£o de entrada.\n"
+               "Ativa autodetecÁ„o de entrada.\n"
                " \n"
-               "Tentar√° autoconfigurar joypads \n"
+               "Tentar· autoconfigurar joypads \n"
                "em um estilo Plug-and-Play.");
          break;
       case MENU_LABEL_CAMERA_ALLOW:
          snprintf(s, len,
-               "Autorizar ou desautorizar o acesso da c√¢mera \n"
+               "Autorizar ou desautorizar o acesso da c‚mera \n"
                "pelos cores.");
          break;
       case MENU_LABEL_LOCATION_ALLOW:
          snprintf(s, len,
                "Autorizar ou desautorizar o acesso de \n"
-               "servi√ßos de localiza√ß√£o pelos cores.");
+               "serviÁos de localizaÁ„o pelos cores.");
          break;
       case MENU_LABEL_TURBO:
          snprintf(s, len,
                "Ativar turbo.\n"
                " \n"
                "Segurando o turbo enquanto se pressiona outro \n"
-               "bot√£o permitir√° que o bot√£o entre em modo \n"
-               "turbo em que o seu estado ser√° modulado com \n"
-               "um sinal peri√≥dico. \n"
+               "bot„o permitir· que o bot„o entre em modo \n"
+               "turbo em que o seu estado ser· modulado com \n"
+               "um sinal periÛdico. \n"
                " \n"
-               "A modula√ß√£o p√°ra quando o pr√≥prio bot√£o \n"
-               "(n√£o √© o bot√£o de turbo) √© solto.");
+               "A modulaÁ„o p·ra quando o prÛprio bot„o \n"
+               "(n„o È o bot„o de turbo) È solto.");
          break;
       case MENU_LABEL_OSK_ENABLE:
          snprintf(s, len,
@@ -1695,11 +1695,11 @@ int menu_hash_get_help_pt(uint32_t hash, char *s, size_t len)
          break;
       case MENU_LABEL_AUDIO_MUTE:
          snprintf(s, len,
-               "Ligar/desligar √°udio.");
+               "Ligar/desligar ·udio.");
          break;
       case MENU_LABEL_REWIND:
          snprintf(s, len,
-               "Segure o bot√£o para retroceder.\n"
+               "Segure o bot„o para retroceder.\n"
                " \n"
                "Retrocesso deve estar ativado.");
          break;
@@ -1708,7 +1708,7 @@ int menu_hash_get_help_pt(uint32_t hash, char *s, size_t len)
                "Tecla para sair corretamente do RetroArch."
 #if !defined(RARCH_MOBILE) && !defined(RARCH_CONSOLE)
                "\nFechando-o de outra forma mais agressiva \n"
-               "(SIGKILL, etc) sair√° sem salvar RAM, etc.\n"
+               "(SIGKILL, etc) sair· sem salvar RAM, etc.\n"
                "Em sistemas baseados em Unix,\n"
                "SIGINT/SIGTERM permite um\n"
                "fechamento correto."
@@ -1725,52 +1725,52 @@ int menu_hash_get_help_pt(uint32_t hash, char *s, size_t len)
          break;
       case MENU_LABEL_NETPLAY_FLIP_PLAYERS:
          snprintf(s, len,
-               "Netplay inverte usu√°rios.");
+               "Netplay inverte usu·rios.");
          break;
       case MENU_LABEL_CHEAT_INDEX_PLUS:
          snprintf(s, len,
-               "Incrementa o √≠ndice de cheats.\n");
+               "Incrementa o Ìndice de cheats.\n");
          break;
       case MENU_LABEL_CHEAT_INDEX_MINUS:
          snprintf(s, len,
-               "Decrementa o √≠ndice de cheats.\n");
+               "Decrementa o Ìndice de cheats.\n");
          break;
       case MENU_LABEL_SHADER_PREV:
          snprintf(s, len,
-               "Aplica o shader anterior no diret√≥rio.");
+               "Aplica o shader anterior no diretÛrio.");
          break;
       case MENU_LABEL_SHADER_NEXT:
          snprintf(s, len,
-               "Aplica o pr√≥ximo shader no diret√≥rio.");
+               "Aplica o prÛximo shader no diretÛrio.");
          break;
       case MENU_LABEL_RESET:
          snprintf(s, len,
-               "Reinicia o conte√∫do.\n");
+               "Reinicia o conte˙do.\n");
          break;
       case MENU_LABEL_PAUSE_TOGGLE:
          snprintf(s, len,
-               "Alterna estado de pausado e n√£o pausado.");
+               "Alterna estado de pausado e n„o pausado.");
          break;
       case MENU_LABEL_CHEAT_TOGGLE:
          snprintf(s, len,
-               "Alterna √≠ndice de cheats.\n");
+               "Alterna Ìndice de cheats.\n");
          break;
       case MENU_LABEL_HOLD_FAST_FORWARD:
          snprintf(s, len,
-               "Segure para avan√ßo r√°pido. Soltando o bot√£o \n"
-               "desativa o avan√ßo r√°pido.");
+               "Segure para avanÁo r·pido. Soltando o bot„o \n"
+               "desativa o avanÁo r·pido.");
          break;
       case MENU_LABEL_SLOWMOTION:
          snprintf(s, len,
-               "Segure para c√¢mera lenta.");
+               "Segure para c‚mera lenta.");
          break;
       case MENU_LABEL_FRAME_ADVANCE:
          snprintf(s, len,
-               "O quadro avan√ßa quando o conte√∫do est√° pausado.");
+               "O quadro avanÁa quando o conte˙do est· pausado.");
          break;
       case MENU_LABEL_MOVIE_RECORD_TOGGLE:
          snprintf(s, len,
-               "Alterna entre estar gravando ou n√£o.");
+               "Alterna entre estar gravando ou n„o.");
          break;
       case MENU_LABEL_L_X_PLUS:
       case MENU_LABEL_L_X_MINUS:
@@ -1781,14 +1781,14 @@ int menu_hash_get_help_pt(uint32_t hash, char *s, size_t len)
       case MENU_LABEL_R_Y_PLUS:
       case MENU_LABEL_R_Y_MINUS:
          snprintf(s, len,
-               "Eixo para o anal√≥gico (esquema DualShock).\n"
+               "Eixo para o analÛgico (esquema DualShock).\n"
                " \n"
-               "Associa normalmente, por√©m, se um anal√≥gico real \n"
-               "√© associado, pode ser lido como um anal√≥gico\n"
+               "Associa normalmente, porÈm, se um analÛgico real \n"
+               "È associado, pode ser lido como um analÛgico\n"
                "verdadeiro. \n"
                " \n"
-               "Eixo positivo X √© para direita. \n"
-               "Eixo positivo Y √© para baixo.");
+               "Eixo positivo X È para direita. \n"
+               "Eixo positivo Y È para baixo.");
          break;
       default:
          if (s[0] == '\0')
