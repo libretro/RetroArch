@@ -86,8 +86,8 @@ int libretrodb_create(FILE *fp, libretrodb_value_provider value_provider,
    int rv;
    off_t root;
    libretrodb_metadata_t md;
+   struct rmsgpack_dom_value item;
    uint64_t item_count            = 0;
-   struct rmsgpack_dom_value item = {0};
    libretrodb_header_t header     = {{0}};
 
    memcpy(header.magic_number, MAGIC_NUMBER, sizeof(MAGIC_NUMBER)-1);
