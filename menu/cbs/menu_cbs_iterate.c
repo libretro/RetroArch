@@ -538,6 +538,7 @@ static int action_iterate_main(const char *label, unsigned action)
          break;
       case ITERATE_TYPE_ZIP:
          ret = action_iterate_load_open_zip(label, msg, sizeof(msg), action);
+         do_render       = true;
          break;
       case ITERATE_TYPE_MESSAGE:
          strlcpy(msg, disp->message_contents, sizeof(msg));
