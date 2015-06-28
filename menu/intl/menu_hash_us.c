@@ -975,7 +975,7 @@ const char *menu_hash_to_str_us(uint32_t hash)
       case MENU_LABEL_VALUE_RDB_ENTRY_SHA1:
          return "SHA1";
       case MENU_LABEL_VALUE_CONFIGURATIONS:
-         return "Load Configuration File";
+         return "Load Configuration";
       case MENU_LABEL_VALUE_REWIND_GRANULARITY:
          return "Rewind Granularity";
       case MENU_LABEL_VALUE_REMAP_FILE_LOAD:

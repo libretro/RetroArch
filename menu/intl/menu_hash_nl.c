@@ -408,7 +408,7 @@ const char *menu_hash_to_str_nl(uint32_t hash)
       case MENU_LABEL_VALUE_RDB_ENTRY_SHA1:
          return "SHA1";
       case MENU_LABEL_VALUE_CONFIGURATIONS:
-         return "Laad Configuratie Bestand";
+         return "Laad Configuratie";
       case MENU_LABEL_VALUE_REWIND_GRANULARITY:
          return "Rewind Granulariteit";
       case MENU_LABEL_VALUE_REMAP_FILE_LOAD:

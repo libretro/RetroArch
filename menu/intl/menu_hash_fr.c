@@ -425,7 +425,7 @@ const char *menu_hash_to_str_fr(uint32_t hash)
       case MENU_LABEL_VALUE_VIDEO_SHADER_NUM_PASSES:
          return "Nombre de passages";
       case MENU_LABEL_VALUE_CONFIGURATIONS:
-         return "Charger un fichier de config";
+         return "Charger un fichier de config"; /* FIXME/UPDATE */
       case MENU_LABEL_VALUE_REWIND_GRANULARITY:
          return "Précision du rembobinage";
       case MENU_LABEL_VALUE_REMAP_FILE_LOAD:

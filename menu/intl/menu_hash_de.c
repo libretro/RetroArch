@@ -420,7 +420,7 @@ const char *menu_hash_to_str_de(uint32_t hash)
       case MENU_LABEL_VALUE_RDB_ENTRY_SHA1:
          return "SHA1";
       case MENU_LABEL_VALUE_CONFIGURATIONS:
-         return "Lade Konfigurationsdatei";
+         return "Lade Konfigurationsdatei"; /* FIXME/UPDATE */
       case MENU_LABEL_VALUE_REWIND_GRANULARITY:
          return "Genauigkeit des Zurückspulens (Rewind)";
       case MENU_LABEL_VALUE_REMAP_FILE_LOAD:
