@@ -944,6 +944,9 @@ extern "C" {
 
 #define MENU_LABEL_VALUE_INPUT_USER_BINDS                                      0x75fda711U
 
+#define MENU_LABEL_USE_BUILTIN_IMAGE_VIEWER                                    0x5203b5bbU
+#define MENU_LABEL_VALUE_USE_BUILTIN_IMAGE_VIEWER                              0x1ab45d3eU
+
 const char *menu_hash_to_str_de(uint32_t hash);
 int menu_hash_get_help_de(uint32_t hash, char *s, size_t len);
 

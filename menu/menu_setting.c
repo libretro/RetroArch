@@ -4862,7 +4862,7 @@ static bool setting_append_list_multimedia_options(
 
 #ifdef HAVE_FFMPEG
    CONFIG_BOOL(
-         settings->mediaplayer.builtin_enable,
+         settings->multimedia.builtin_mediaplayer_enable,
          menu_hash_to_str(MENU_LABEL_USE_BUILTIN_PLAYER),
          menu_hash_to_str(MENU_LABEL_VALUE_USE_BUILTIN_PLAYER),
          true,
@@ -4874,6 +4874,19 @@ static bool setting_append_list_multimedia_options(
          general_write_handler,
          general_read_handler);
 #endif
+
+   CONFIG_BOOL(
+         settings->multimedia.builtin_imageviewer_enable,
+         menu_hash_to_str(MENU_LABEL_USE_BUILTIN_IMAGE_VIEWER),
+         menu_hash_to_str(MENU_LABEL_VALUE_USE_BUILTIN_IMAGE_VIEWER),
+         true,
+         menu_hash_to_str(MENU_VALUE_OFF),
+         menu_hash_to_str(MENU_VALUE_ON),
+         group_info.name,
+         subgroup_info.name,
+         parent_group,
+         general_write_handler,
+         general_read_handler);
 
    END_SUB_GROUP(list, list_info, parent_group);
    END_GROUP(list, list_info, parent_group);

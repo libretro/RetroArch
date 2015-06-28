@@ -633,6 +633,19 @@ static void menu_action_setting_disp_set_label_menu_file_image(
          path, "(IMG)", s2, len2);
 }
 
+static void menu_action_setting_disp_set_label_menu_file_imageviewer(
+      file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *s, size_t len,
+      const char *entry_label,
+      const char *path,
+      char *s2, size_t len2)
+{
+   menu_action_setting_generic_disp_set_label(w, s, len,
+         path, "(IMAGE)", s2, len2);
+}
+
 static void menu_action_setting_disp_set_label_movie(
       file_list_t* list,
       unsigned *w, unsigned type, unsigned i,
@@ -1004,6 +1017,10 @@ static int menu_cbs_init_bind_get_string_representation_compare_type(
          case MENU_FILE_IMAGE:
             cbs->action_get_value =
                menu_action_setting_disp_set_label_menu_file_image;
+            break;
+         case MENU_FILE_IMAGEVIEWER:
+            cbs->action_get_value =
+               menu_action_setting_disp_set_label_menu_file_imageviewer;
             break;
          case MENU_FILE_USE_DIRECTORY:
             cbs->action_get_value =

@@ -574,6 +574,8 @@ static const char *menu_hash_to_str_us_label(uint32_t hash)
          return "update_glsl_shaders";
       case MENU_LABEL_SCREEN_RESOLUTION:
          return "screen_resolution";
+      case MENU_LABEL_USE_BUILTIN_IMAGE_VIEWER:
+         return "use_builtin_image_viewer";
       default:
          break;
    }
@@ -1404,6 +1406,8 @@ const char *menu_hash_to_str_us(uint32_t hash)
          return "Frame Throttle Settings";
       case MENU_VALUE_SEARCH:
          return "Search:";
+      case MENU_LABEL_VALUE_USE_BUILTIN_IMAGE_VIEWER:
+         return "Use Builtin Image Viewer";
       default:
          break;
    }

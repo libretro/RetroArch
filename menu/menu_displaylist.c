@@ -1980,24 +1980,30 @@ static int menu_displaylist_parse_generic(menu_displaylist_info_t *info, bool *n
             break;
       }
 
-#ifdef HAVE_FFMPEG
-      if (settings->mediaplayer.builtin_enable)
+      if (settings->multimedia.builtin_mediaplayer_enable ||
+            settings->multimedia.builtin_imageviewer_enable)
       {
          switch (rarch_path_is_media_type(path))
          {
             case RARCH_CONTENT_MOVIE:
-               file_type = MENU_FILE_MOVIE;
+#ifdef HAVE_FFMPEG
+               if (settings->multimedia.builtin_mediaplayer_enable)
+                  file_type = MENU_FILE_MOVIE;
+#endif
                break;
             case RARCH_CONTENT_MUSIC:
-               file_type = MENU_FILE_MUSIC;
+#ifdef HAVE_FFMPEG
+               if (settings->multimedia.builtin_mediaplayer_enable)
+                  file_type = MENU_FILE_MUSIC;
+#endif
                break;
             case RARCH_CONTENT_IMAGE:
-               file_type = MENU_FILE_IMAGE;
+               if (settings->multimedia.builtin_imageviewer_enable)
+                  file_type = MENU_FILE_IMAGEVIEWER;
             default:
                break;
          }
       }
-#endif
 
       menu_list_push(info->list, path, label,
             file_type, 0, 0);

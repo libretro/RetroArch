@@ -1011,6 +1011,9 @@ bool event_command(enum event_command cmd)
          rarch_main_set_state(RARCH_ACTION_STATE_LOAD_CONTENT_FFMPEG);
          break;
 #endif
+      case EVENT_CMD_LOAD_CONTENT_IMAGEVIEWER:
+         rarch_main_set_state(RARCH_ACTION_STATE_LOAD_CONTENT_IMAGEVIEWER);
+         break;
       case EVENT_CMD_LOAD_CONTENT:
 #ifdef HAVE_DYNAMIC
          event_command(EVENT_CMD_LOAD_CONTENT_PERSIST);

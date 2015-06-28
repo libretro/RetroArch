@@ -1127,6 +1127,27 @@ static int action_ok_file_load_ffmpeg(const char *path,
 }
 #endif
 
+static int action_ok_file_load_imageviewer(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   const char *menu_path    = NULL;
+   global_t *global         = global_get_ptr();
+   menu_list_t   *menu_list = menu_list_get_ptr();
+
+   if (!menu_list)
+      return -1;
+
+   menu_list_get_last(menu_list->menu_stack,
+         &menu_path, NULL, NULL, NULL);
+
+   fill_pathname_join(global->fullpath, menu_path, path,
+         sizeof(global->fullpath));
+
+   menu_common_load_content(true, CORE_TYPE_IMAGEVIEWER);
+
+   return 0;
+}
+
 static int action_ok_file_load(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -1916,6 +1937,9 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
 #ifdef HAVE_FFMPEG
             cbs->action_ok = action_ok_file_load_ffmpeg;
 #endif
+            break;
+         case MENU_FILE_IMAGEVIEWER:
+            cbs->action_ok = action_ok_file_load_imageviewer;
             break;
          case MENU_SETTINGS:
          case MENU_SETTING_GROUP:

@@ -444,15 +444,25 @@ static int deferred_push_detect_core_list(menu_displaylist_info_t *info)
 
    (void)settings;
 
-#ifdef HAVE_FFMPEG
-   if (settings->mediaplayer.builtin_enable)
+   if (settings->multimedia.builtin_mediaplayer_enable ||
+         settings->multimedia.builtin_imageviewer_enable)
    {
       struct retro_system_info sysinfo = {0};
-      libretro_ffmpeg_retro_get_system_info(&sysinfo);
-      strlcat(info->exts, "|", sizeof(info->exts));
-      strlcat(info->exts, sysinfo.valid_extensions, sizeof(info->exts));
-   }
+#ifdef HAVE_FFMPEG
+      if (settings->multimedia.builtin_mediaplayer_enable)
+      {
+         libretro_ffmpeg_retro_get_system_info(&sysinfo);
+         strlcat(info->exts, "|", sizeof(info->exts));
+         strlcat(info->exts, sysinfo.valid_extensions, sizeof(info->exts));
+      }
+      if (settings->multimedia.builtin_imageviewer_enable)
+      {
+         libretro_imageviewer_retro_get_system_info(&sysinfo);
+         strlcat(info->exts, "|", sizeof(info->exts));
+         strlcat(info->exts, sysinfo.valid_extensions, sizeof(info->exts));
+      }
 #endif
+   }
    
    return menu_displaylist_push_list(info, DISPLAYLIST_CORES_DETECTED);
 }
@@ -478,15 +488,25 @@ static int deferred_push_default(menu_displaylist_info_t *info)
 
    (void)settings;
 
-#ifdef HAVE_FFMPEG
-   if (settings->mediaplayer.builtin_enable)
+   if (settings->multimedia.builtin_mediaplayer_enable ||
+         settings->multimedia.builtin_imageviewer_enable)
    {
       struct retro_system_info sysinfo = {0};
-      libretro_ffmpeg_retro_get_system_info(&sysinfo);
-      strlcat(info->exts, "|", sizeof(info->exts));
-      strlcat(info->exts, sysinfo.valid_extensions, sizeof(info->exts));
-   }
+#ifdef HAVE_FFMPEG
+      if (settings->multimedia.builtin_mediaplayer_enable)
+      {
+         libretro_ffmpeg_retro_get_system_info(&sysinfo);
+         strlcat(info->exts, "|", sizeof(info->exts));
+         strlcat(info->exts, sysinfo.valid_extensions, sizeof(info->exts));
+      }
 #endif
+      if (settings->multimedia.builtin_imageviewer_enable)
+      {
+         libretro_imageviewer_retro_get_system_info(&sysinfo);
+         strlcat(info->exts, "|", sizeof(info->exts));
+         strlcat(info->exts, sysinfo.valid_extensions, sizeof(info->exts));
+      }
+   }
 
    return menu_displaylist_push_list(info, DISPLAYLIST_DEFAULT);
 }

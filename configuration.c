@@ -449,8 +449,11 @@ static void config_set_defaults(void)
    settings->load_dummy_on_core_shutdown = load_dummy_on_core_shutdown;
 
 #ifdef HAVE_FFMPEG
-   settings->mediaplayer.builtin_enable  = true;
+   settings->multimedia.builtin_mediaplayer_enable  = true;
+#else
+   settings->multimedia.builtin_mediaplayer_enable  = false;
 #endif
+   settings->multimedia.builtin_imageviewer_enable = true;
    settings->video.scale                 = scale;
    settings->video.fullscreen            = global->force_fullscreen ? true : fullscreen;
    settings->video.windowed_fullscreen   = windowed_fullscreen;
@@ -1442,9 +1445,8 @@ static bool config_load_file(const char *path, bool set_defaults)
    CONFIG_GET_BOOL_BASE(conf, settings, ui.suspend_screensaver_enable, "suspend_screensaver_enable");
    CONFIG_GET_BOOL_BASE(conf, settings, fps_show, "fps_show");
    CONFIG_GET_BOOL_BASE(conf, settings, load_dummy_on_core_shutdown, "load_dummy_on_core_shutdown");
-#ifdef HAVE_FFMPEG
-   CONFIG_GET_BOOL_BASE(conf, settings, mediaplayer.builtin_enable, "builtin_mediaplayer_enable");
-#endif
+   CONFIG_GET_BOOL_BASE(conf, settings, multimedia.builtin_mediaplayer_enable, "builtin_mediaplayer_enable");
+   CONFIG_GET_BOOL_BASE(conf, settings, multimedia.builtin_imageviewer_enable, "builtin_imageviewer_enable");
 
    config_get_path(conf, "libretro_info_path", settings->libretro_info_path, sizeof(settings->libretro_info_path));
 
@@ -2307,10 +2309,10 @@ bool config_save_file(const char *path)
          settings->input.input_descriptor_hide_unbound);
    config_set_bool(conf,  "load_dummy_on_core_shutdown",
          settings->load_dummy_on_core_shutdown);
-#ifdef HAVE_FFMPEG
    config_set_bool(conf,  "builtin_mediaplayer_enable",
-         settings->mediaplayer.builtin_enable);
-#endif
+         settings->multimedia.builtin_mediaplayer_enable);
+   config_set_bool(conf,  "builtin_imageviewer_enable",
+         settings->multimedia.builtin_imageviewer_enable);
    config_set_bool(conf,  "fps_show", settings->fps_show);
    config_set_bool(conf,  "ui_menubar_enable", settings->ui.menubar_enable);
    config_set_path(conf,  "libretro_path", settings->libretro);

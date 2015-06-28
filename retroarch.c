@@ -1204,29 +1204,36 @@ int rarch_main_init(int argc, char *argv[])
    validate_cpu_features();
    config_load();
 
-#ifdef HAVE_FFMPEG
    {
       settings_t *settings = config_get_ptr();
 
-      if (settings && settings->mediaplayer.builtin_enable)
+      if (settings && (settings->multimedia.builtin_mediaplayer_enable ||
+            settings->multimedia.builtin_imageviewer_enable))
       {
          switch (rarch_path_is_media_type(global->fullpath))
          {
             case RARCH_CONTENT_MOVIE:
             case RARCH_CONTENT_MUSIC:
-               global->has_set_libretro              = false;
-               global->core_type = CORE_TYPE_FFMPEG;
+               if (settings->multimedia.builtin_mediaplayer_enable)
+               {
+#ifdef HAVE_FFMPEG
+                  global->has_set_libretro              = false;
+                  global->core_type = CORE_TYPE_FFMPEG;
+#endif
+               }
                break;
             case RARCH_CONTENT_IMAGE:
-               global->has_set_libretro              = false;
-               global->core_type = CORE_TYPE_IMAGEVIEWER;
+               if (settings->multimedia.builtin_imageviewer_enable)
+               {
+                  global->has_set_libretro              = false;
+                  global->core_type = CORE_TYPE_IMAGEVIEWER;
+               }
                break;
             default:
                break;
          }
       }
    }
-#endif
 
    init_libretro_sym(global->core_type);
    rarch_system_info_init();
@@ -1397,6 +1404,15 @@ void rarch_main_set_state(unsigned cmd)
             driver->frontend_ctx->content_loaded();
          break;
 #endif
+      case RARCH_ACTION_STATE_LOAD_CONTENT_IMAGEVIEWER:
+#ifdef HAVE_MENU
+         /* If content loading fails, we go back to menu. */
+         if (!menu_load_content(CORE_TYPE_IMAGEVIEWER))
+            rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING);
+#endif
+         if (driver->frontend_ctx && driver->frontend_ctx->content_loaded)
+            driver->frontend_ctx->content_loaded();
+         break;
       case RARCH_ACTION_STATE_MENU_RUNNING_FINISHED:
 #ifdef HAVE_MENU
          menu_setting_apply_deferred();

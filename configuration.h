@@ -266,12 +266,11 @@ typedef struct settings
       bool set_supports_no_game_enable;
    } core;
 
-#ifdef HAVE_FFMPEG
    struct
    {
-      bool builtin_enable;
-   } mediaplayer;
-#endif
+      bool builtin_mediaplayer_enable;
+      bool builtin_imageviewer_enable;
+   } multimedia;
 
    int state_slot;
 
