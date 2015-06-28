@@ -857,6 +857,9 @@ int menu_hash_get_help_de(uint32_t hash, char *s, size_t len)
    uint32_t      driver_hash = 0;
    settings_t      *settings = config_get_ptr();
 
+   /* If this one throws errors, stop sledgehammering square pegs */ (void)sizeof(force_iso_8859_1);
+   /* into round holes and READ THE COMMENTS at the top of the file. */
+
    switch (hash)
    {
       case MENU_LABEL_INPUT_DRIVER:
