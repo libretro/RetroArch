@@ -23,6 +23,7 @@ const char *menu_hash_to_str_it(uint32_t hash)
 {
    switch (hash)
    {
+      case 0:
       default:
          break;
    }
@@ -34,6 +35,7 @@ int menu_hash_get_help_it(uint32_t hash, char *s, size_t len)
 {
    switch (hash)
    {
+      case 0:
       default:
          return -1;
    }
