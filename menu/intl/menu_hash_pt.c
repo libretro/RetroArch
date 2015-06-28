@@ -26,6 +26,8 @@
   * If you save this file as UTF-8, you'll break non-english characters
   * (e.g. German "Umlauts" and Portugese diacritics).
  */
+/* DO NOT REMOVE THIS. If it causes build failure, it's because you saved the file as UTF-8. Read the above comment. */
+extern const char force_iso_8859_1[sizeof("áÁâãçéêíÍóõú")==12+1 ? 1 : -1];
 
 const char *menu_hash_to_str_pt(uint32_t hash)
 {
