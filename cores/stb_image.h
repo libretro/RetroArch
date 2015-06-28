@@ -731,7 +731,7 @@ static INLINE int stbi__extend_receive(stbi__jpeg *j, int n)
 
    sgn = (int32_t)j->code_buffer >> 31;
    k = stbi_lrot(j->code_buffer, n);
-   STBI_ASSERT(n >= 0 && n < sizeof(stbi__bmask)/sizeof(*stbi__bmask));
+   STBI_ASSERT((n >= 0) && ((unsigned)n < sizeof(stbi__bmask)/sizeof(*stbi__bmask)));
    j->code_buffer = k & ~stbi__bmask[n];
    k &= stbi__bmask[n];
    j->code_bits -= n;
