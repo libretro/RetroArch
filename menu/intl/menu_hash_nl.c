@@ -850,6 +850,7 @@ int menu_hash_get_help_nl(uint32_t hash, char *s, size_t len)
 {
    switch (hash)
    {
+      case 0:
       default:
          strlcpy(s, "Geen informatie beschikbaar.", len);
          return -1;

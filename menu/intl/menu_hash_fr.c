@@ -848,6 +848,7 @@ int menu_hash_get_help_fr(uint32_t hash, char *s, size_t len)
 
    switch (hash)
    {
+      case 0:
       default:
          return -1;
    }
