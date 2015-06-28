@@ -73,6 +73,7 @@ void *libretro_dummy_retro_get_memory_data(unsigned id);
 size_t libretro_dummy_retro_get_memory_size(unsigned id);
 
 #ifdef HAVE_FFMPEG
+/* Internal ffmpeg core. */
 
 void libretro_ffmpeg_retro_init(void);
 
@@ -127,5 +128,57 @@ size_t libretro_ffmpeg_retro_get_memory_size(unsigned id);
 
 #endif
 
-#endif
+/* Internal image viewer core. */
 
+void libretro_imageviewer_retro_init(void);
+
+void libretro_imageviewer_retro_deinit(void);
+
+unsigned libretro_imageviewer_retro_api_version(void);
+
+void libretro_imageviewer_retro_get_system_info(struct retro_system_info *info);
+
+void libretro_imageviewer_retro_get_system_av_info(struct retro_system_av_info *info);
+
+void libretro_imageviewer_retro_set_environment(retro_environment_t cb);
+
+void libretro_imageviewer_retro_set_video_refresh(retro_video_refresh_t cb);
+
+void libretro_imageviewer_retro_set_audio_sample(retro_audio_sample_t cb);
+
+void libretro_imageviewer_retro_set_audio_sample_batch(retro_audio_sample_batch_t cb);
+
+void libretro_imageviewer_retro_set_input_poll(retro_input_poll_t cb);
+
+void libretro_imageviewer_retro_set_input_state(retro_input_state_t cb);
+
+void libretro_imageviewer_retro_set_controller_port_device(unsigned port, unsigned device);
+
+void libretro_imageviewer_retro_reset(void);
+
+void libretro_imageviewer_retro_run(void);
+
+size_t libretro_imageviewer_retro_serialize_size(void);
+
+bool libretro_imageviewer_retro_serialize(void *data, size_t size);
+
+bool libretro_imageviewer_retro_unserialize(const void *data, size_t size);
+
+void libretro_imageviewer_retro_cheat_reset(void);
+
+void libretro_imageviewer_retro_cheat_set(unsigned index, bool enabled, const char *code);
+
+bool libretro_imageviewer_retro_load_game(const struct retro_game_info *game);
+
+bool libretro_imageviewer_retro_load_game_special(unsigned game_type,
+      const struct retro_game_info *info, size_t num_info);
+
+void libretro_imageviewer_retro_unload_game(void);
+
+unsigned libretro_imageviewer_retro_get_region(void);
+
+void *libretro_imageviewer_retro_get_memory_data(unsigned id);
+
+size_t libretro_imageviewer_retro_get_memory_size(unsigned id);
+
+#endif

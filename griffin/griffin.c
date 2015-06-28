@@ -176,6 +176,7 @@ VIDEO IMAGE
 
 #include "../libretro-common/formats/tga/tga_decode.c"
 
+#include "../cores/image_core.c"
 #ifdef HAVE_RPNG
 #include "../libretro-common/formats/png/rpng_fbio.c"
 #include "../libretro-common/formats/png/rpng_nbio.c"

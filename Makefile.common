@@ -194,7 +194,8 @@ OBJ += frontend/frontend.o \
 		performance.o
 
 
-OBJ += gfx/image/image.o
+OBJ += gfx/image/image.o \
+		 cores/image_core.o
 
 # Qt
 
