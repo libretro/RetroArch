@@ -464,6 +464,7 @@ enum rarch_content_type rarch_path_is_media_type(const char *path)
       case MENU_VALUE_FILE_BMP:
          return RARCH_CONTENT_IMAGE;
 #endif
+      case 0:
       default:
          break;
    }
