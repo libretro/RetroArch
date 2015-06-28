@@ -409,7 +409,7 @@ const char *menu_hash_to_str_fr(uint32_t hash)
       case MENU_LABEL_VALUE_DETECT_CORE_LIST:
          return "Via les fichiers + détecter le core";
       case MENU_LABEL_VALUE_LOAD_CONTENT_HISTORY:
-         return "Via l'historique";
+         return "Via l'historique"; /* FIXME/UPDATE */
       case MENU_LABEL_VALUE_AUDIO_ENABLE:
          return "Activer le son";
       case MENU_LABEL_VALUE_FPS_SHOW:

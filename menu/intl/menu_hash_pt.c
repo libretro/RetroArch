@@ -398,7 +398,7 @@ const char *menu_hash_to_str_pt(uint32_t hash)
       case MENU_LABEL_VALUE_DETECT_CORE_LIST:
          return "Selecionar Arquivo e Detectar Core";
       case MENU_LABEL_VALUE_LOAD_CONTENT_HISTORY:
-         return "Selecionar do Histórico";
+         return "Selecionar do Histórico"; /* FIXME/UPDATE */
       case MENU_LABEL_VALUE_AUDIO_ENABLE:
          return "Ativar Áudio";
       case MENU_LABEL_VALUE_FPS_SHOW:

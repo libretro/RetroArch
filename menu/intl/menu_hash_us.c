@@ -955,7 +955,7 @@ const char *menu_hash_to_str_us(uint32_t hash)
       case MENU_LABEL_VALUE_DETECT_CORE_LIST:
          return "Select File And Detect Core";
       case MENU_LABEL_VALUE_LOAD_CONTENT_HISTORY:
-         return "Select From History";
+         return "Load Recent";
       case MENU_LABEL_VALUE_AUDIO_ENABLE:
          return "Audio Enable";
       case MENU_LABEL_VALUE_FPS_SHOW:

@@ -390,7 +390,7 @@ const char *menu_hash_to_str_nl(uint32_t hash)
       case MENU_LABEL_VALUE_DETECT_CORE_LIST:
          return "Selecteer bestand en detecteer Core";
       case MENU_LABEL_VALUE_LOAD_CONTENT_HISTORY:
-         return "Selecteer uit geschiedenis";
+         return "Laad Recent";
       case MENU_LABEL_VALUE_AUDIO_ENABLE:
          return "Audio Activeren";
       case MENU_LABEL_VALUE_FPS_SHOW:

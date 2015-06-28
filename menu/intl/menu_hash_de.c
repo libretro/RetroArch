@@ -402,7 +402,7 @@ const char *menu_hash_to_str_de(uint32_t hash)
       case MENU_LABEL_VALUE_DETECT_CORE_LIST:
          return "Lade Content (Core erkennen)";  /* FIXME */
       case MENU_LABEL_VALUE_LOAD_CONTENT_HISTORY:
-         return "Lade Content (Verlauf)";
+         return "Lade Content (Verlauf)"; /* FIXME/UPDATE */
       case MENU_LABEL_VALUE_AUDIO_ENABLE:
          return "Aktiviere Audio";
       case MENU_LABEL_VALUE_FPS_SHOW:

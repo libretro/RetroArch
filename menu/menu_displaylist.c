@@ -1676,14 +1676,6 @@ static int menu_displaylist_parse_load_content_list(menu_displaylist_info_t *inf
          MENU_SETTING_ACTION, 0, 0);
 #endif
 
-   if (settings->history_list_enable)
-   {
-      menu_list_push(info->list,
-            menu_hash_to_str(MENU_LABEL_VALUE_LOAD_CONTENT_HISTORY),
-            menu_hash_to_str(MENU_LABEL_LOAD_CONTENT_HISTORY),
-            MENU_SETTING_ACTION, 0, 0);
-   }
-
    return 0;
 }
 
