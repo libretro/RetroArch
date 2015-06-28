@@ -30,7 +30,7 @@ const char *menu_hash_to_str_nl(uint32_t hash)
       case MENU_LABEL_VALUE_USE_BUILTIN_PLAYER:
          return "Gebruik Ingebouwde Speler";
       case MENU_LABEL_VALUE_CONTENT_SETTINGS:
-         return "Quick Menu";
+         return "Snelmenu";
       case MENU_LABEL_VALUE_RDB_ENTRY_CRC32:
          return "CRC32";
       case MENU_LABEL_VALUE_RDB_ENTRY_MD5:
