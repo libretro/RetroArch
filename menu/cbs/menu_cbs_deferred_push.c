@@ -448,6 +448,8 @@ static int deferred_push_detect_core_list(menu_displaylist_info_t *info)
          settings->multimedia.builtin_imageviewer_enable)
    {
       struct retro_system_info sysinfo = {0};
+       
+      (void)sysinfo;
 #ifdef HAVE_FFMPEG
       if (settings->multimedia.builtin_mediaplayer_enable)
       {
@@ -494,6 +496,8 @@ static int deferred_push_default(menu_displaylist_info_t *info)
          settings->multimedia.builtin_imageviewer_enable)
    {
       struct retro_system_info sysinfo = {0};
+       
+      (void)sysinfo;
 #ifdef HAVE_FFMPEG
       if (settings->multimedia.builtin_mediaplayer_enable)
       {

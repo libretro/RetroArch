@@ -4851,6 +4851,8 @@ static bool setting_append_list_multimedia_options(
    rarch_setting_group_info_t group_info    = {0};
    rarch_setting_group_info_t subgroup_info = {0};
    settings_t *settings = config_get_ptr();
+    
+   (void)settings;
 
    START_GROUP(group_info,
          menu_hash_to_str(MENU_LABEL_VALUE_MULTIMEDIA_SETTINGS),
