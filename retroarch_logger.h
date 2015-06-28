@@ -60,7 +60,16 @@ FILE *rarch_main_log_file(void);
 #endif
 
 #if defined(RARCH_INTERNAL)
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 bool rarch_main_verbosity(void);
+
+#ifdef __cplusplus
+}
+#endif
+
 #define RARCH_LOG_VERBOSE (rarch_main_verbosity())
 #else
 #define RARCH_LOG_VERBOSE (true)
