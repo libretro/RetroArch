@@ -4833,7 +4833,6 @@ static bool setting_append_list_menu_options(
    return true;
 }
 
-#ifdef HAVE_FFMPEG
 static bool setting_append_list_mediaplayer_options(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info,
@@ -4851,6 +4850,7 @@ static bool setting_append_list_mediaplayer_options(
 
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info, parent_group);
 
+#ifdef HAVE_FFMPEG
    CONFIG_BOOL(
          settings->mediaplayer.builtin_enable,
          menu_hash_to_str(MENU_LABEL_USE_BUILTIN_PLAYER),
@@ -4863,13 +4863,13 @@ static bool setting_append_list_mediaplayer_options(
          parent_group,
          general_write_handler,
          general_read_handler);
+#endif
 
    END_SUB_GROUP(list, list_info, parent_group);
    END_GROUP(list, list_info, parent_group);
 
    return true;
 }
-#endif
 
 static bool setting_append_list_ui_options(
       rarch_setting_t **list,
@@ -6175,13 +6175,11 @@ rarch_setting_t *menu_setting_new(unsigned mask)
          goto error;
    }
 
-#ifdef HAVE_FFMPEG
    if (mask & SL_FLAG_MEDIA_PLAYER_OPTIONS)
    {
       if (!setting_append_list_mediaplayer_options(&list, list_info, root))
          goto error;
    }
-#endif
 
    if (mask & SL_FLAG_UI_OPTIONS)
    {
