@@ -64,6 +64,8 @@ static dylib_t lib_handle;
 #define SYM_FFMPEG(x) p##x = libretro_ffmpeg_##x
 #endif
 
+#define SYM_IMAGEVIEWER(x) p##x = libretro_imageviewer_##x
+
 void (*pretro_init)(void);
 void (*pretro_deinit)(void);
 
@@ -441,6 +443,41 @@ static void load_symbols(enum rarch_core_type type)
          SYM_FFMPEG(retro_get_memory_size);
          break;
 #endif
+      case CORE_TYPE_IMAGEVIEWER:
+         SYM_IMAGEVIEWER(retro_init);
+         SYM_IMAGEVIEWER(retro_deinit);
+
+         SYM_IMAGEVIEWER(retro_api_version);
+         SYM_IMAGEVIEWER(retro_get_system_info);
+         SYM_IMAGEVIEWER(retro_get_system_av_info);
+
+         SYM_IMAGEVIEWER(retro_set_environment);
+         SYM_IMAGEVIEWER(retro_set_video_refresh);
+         SYM_IMAGEVIEWER(retro_set_audio_sample);
+         SYM_IMAGEVIEWER(retro_set_audio_sample_batch);
+         SYM_IMAGEVIEWER(retro_set_input_poll);
+         SYM_IMAGEVIEWER(retro_set_input_state);
+
+         SYM_IMAGEVIEWER(retro_set_controller_port_device);
+
+         SYM_IMAGEVIEWER(retro_reset);
+         SYM_IMAGEVIEWER(retro_run);
+
+         SYM_IMAGEVIEWER(retro_serialize_size);
+         SYM_IMAGEVIEWER(retro_serialize);
+         SYM_IMAGEVIEWER(retro_unserialize);
+
+         SYM_IMAGEVIEWER(retro_cheat_reset);
+         SYM_IMAGEVIEWER(retro_cheat_set);
+
+         SYM_IMAGEVIEWER(retro_load_game);
+         SYM_IMAGEVIEWER(retro_load_game_special);
+
+         SYM_IMAGEVIEWER(retro_unload_game);
+         SYM_IMAGEVIEWER(retro_get_region);
+         SYM_IMAGEVIEWER(retro_get_memory_data);
+         SYM_IMAGEVIEWER(retro_get_memory_size);
+         break;
    }
 }
 

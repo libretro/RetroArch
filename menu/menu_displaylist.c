@@ -1983,7 +1983,7 @@ static int menu_displaylist_parse_generic(menu_displaylist_info_t *info, bool *n
 #ifdef HAVE_FFMPEG
       if (settings->mediaplayer.builtin_enable)
       {
-         switch (rarch_mediaplayer_is_media_type(path))
+         switch (rarch_path_is_media_type(path))
          {
             case RARCH_CONTENT_MOVIE:
                file_type = MENU_FILE_MOVIE;
@@ -1991,6 +1991,8 @@ static int menu_displaylist_parse_generic(menu_displaylist_info_t *info, bool *n
             case RARCH_CONTENT_MUSIC:
                file_type = MENU_FILE_MUSIC;
                break;
+            case RARCH_CONTENT_IMAGE:
+               file_type = MENU_FILE_IMAGE;
             default:
                break;
          }

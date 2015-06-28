@@ -426,13 +426,14 @@ void rarch_set_paths(const char *path)
          sizeof(settings->system_directory));
 }
 
-#ifdef HAVE_FFMPEG
-enum rarch_content_type rarch_mediaplayer_is_media_type(const char *path)
+
+enum rarch_content_type rarch_path_is_media_type(const char *path)
 {
    uint32_t hash_ext = djb2_calculate(path_get_extension(path));
 
    switch (hash_ext)
    {
+#ifdef HAVE_FFMPEG
       case MENU_VALUE_FILE_OGM:
       case MENU_VALUE_FILE_MKV:
       case MENU_VALUE_FILE_AVI:
@@ -451,13 +452,19 @@ enum rarch_content_type rarch_mediaplayer_is_media_type(const char *path)
       case MENU_VALUE_FILE_FLAC:
       case MENU_VALUE_FILE_WAV:
          return RARCH_CONTENT_MUSIC;
+#endif
+      case MENU_VALUE_FILE_JPG:
+      case MENU_VALUE_FILE_JPEG:
+      case MENU_VALUE_FILE_PNG:
+      case MENU_VALUE_FILE_TGA:
+      case MENU_VALUE_FILE_BMP:
+         return RARCH_CONTENT_IMAGE;
       default:
          break;
    }
 
    return RARCH_CONTENT_NONE;
 }
-#endif
 
 #define FFMPEG_RECORD_ARG "r:"
 
@@ -1203,12 +1210,16 @@ int rarch_main_init(int argc, char *argv[])
 
       if (settings && settings->mediaplayer.builtin_enable)
       {
-         switch (rarch_mediaplayer_is_media_type(global->fullpath))
+         switch (rarch_path_is_media_type(global->fullpath))
          {
             case RARCH_CONTENT_MOVIE:
             case RARCH_CONTENT_MUSIC:
                global->has_set_libretro              = false;
                global->core_type = CORE_TYPE_FFMPEG;
+               break;
+            case RARCH_CONTENT_IMAGE:
+               global->has_set_libretro              = false;
+               global->core_type = CORE_TYPE_IMAGEVIEWER;
                break;
             default:
                break;

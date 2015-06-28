@@ -167,6 +167,9 @@ void menu_common_load_content(bool persist, enum rarch_core_type type)
          event_command(EVENT_CMD_LOAD_CONTENT_FFMPEG);
          break;
 #endif
+      case CORE_TYPE_IMAGEVIEWER:
+         /* TODO/FIXME */
+         break;
    }
 
    menu_list_flush_stack(menu_list, NULL, MENU_SETTINGS);
