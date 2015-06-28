@@ -194,8 +194,12 @@ OBJ += frontend/frontend.o \
 		performance.o
 
 
-OBJ += gfx/image/image.o \
-		 cores/image_core.o
+OBJ += gfx/image/image.o
+
+ifeq ($(HAVE_IMAGEVIEWER), 1)
+DEFINES += -DHAVE_IMAGEVIEWER
+OBJ += cores/image_core.o
+endif
 
 # Qt
 

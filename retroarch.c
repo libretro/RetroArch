@@ -453,6 +453,7 @@ enum rarch_content_type rarch_path_is_media_type(const char *path)
       case MENU_VALUE_FILE_WAV:
          return RARCH_CONTENT_MUSIC;
 #endif
+#ifdef HAVE_IMAGEVIEWER
       case MENU_VALUE_FILE_JPG:
       case MENU_VALUE_FILE_JPG_CAPS:
       case MENU_VALUE_FILE_JPEG:
@@ -462,6 +463,7 @@ enum rarch_content_type rarch_path_is_media_type(const char *path)
       case MENU_VALUE_FILE_TGA:
       case MENU_VALUE_FILE_BMP:
          return RARCH_CONTENT_IMAGE;
+#endif
       default:
          break;
    }
@@ -1225,6 +1227,7 @@ int rarch_main_init(int argc, char *argv[])
 #endif
                }
                break;
+#ifdef HAVE_IMAGEVIEWER
             case RARCH_CONTENT_IMAGE:
                if (settings->multimedia.builtin_imageviewer_enable)
                {
@@ -1232,6 +1235,7 @@ int rarch_main_init(int argc, char *argv[])
                   global->core_type = CORE_TYPE_IMAGEVIEWER;
                }
                break;
+#endif
             default:
                break;
          }

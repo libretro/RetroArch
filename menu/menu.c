@@ -168,7 +168,9 @@ void menu_common_load_content(bool persist, enum rarch_core_type type)
          break;
 #endif
       case CORE_TYPE_IMAGEVIEWER:
+#ifdef HAVE_IMAGEVIEWER
          event_command(EVENT_CMD_LOAD_CONTENT_IMAGEVIEWER);
+#endif
          break;
    }
 

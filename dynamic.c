@@ -64,7 +64,9 @@ static dylib_t lib_handle;
 #define SYM_FFMPEG(x) p##x = libretro_ffmpeg_##x
 #endif
 
+#ifdef HAVE_IMAGEVIEWER
 #define SYM_IMAGEVIEWER(x) p##x = libretro_imageviewer_##x
+#endif
 
 void (*pretro_init)(void);
 void (*pretro_deinit)(void);
@@ -444,6 +446,7 @@ static void load_symbols(enum rarch_core_type type)
          break;
 #endif
       case CORE_TYPE_IMAGEVIEWER:
+#ifdef HAVE_IMAGEVIEWER
          SYM_IMAGEVIEWER(retro_init);
          SYM_IMAGEVIEWER(retro_deinit);
 
@@ -477,6 +480,7 @@ static void load_symbols(enum rarch_core_type type)
          SYM_IMAGEVIEWER(retro_get_region);
          SYM_IMAGEVIEWER(retro_get_memory_data);
          SYM_IMAGEVIEWER(retro_get_memory_size);
+#endif
          break;
    }
 }

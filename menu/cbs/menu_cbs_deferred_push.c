@@ -455,6 +455,8 @@ static int deferred_push_detect_core_list(menu_displaylist_info_t *info)
          strlcat(info->exts, "|", sizeof(info->exts));
          strlcat(info->exts, sysinfo.valid_extensions, sizeof(info->exts));
       }
+#endif
+#ifdef HAVE_IMAGEVIEWER
       if (settings->multimedia.builtin_imageviewer_enable)
       {
          libretro_imageviewer_retro_get_system_info(&sysinfo);
@@ -500,12 +502,14 @@ static int deferred_push_default(menu_displaylist_info_t *info)
          strlcat(info->exts, sysinfo.valid_extensions, sizeof(info->exts));
       }
 #endif
+#ifdef HAVE_IMAGEVIEWER
       if (settings->multimedia.builtin_imageviewer_enable)
       {
          libretro_imageviewer_retro_get_system_info(&sysinfo);
          strlcat(info->exts, "|", sizeof(info->exts));
          strlcat(info->exts, sysinfo.valid_extensions, sizeof(info->exts));
       }
+#endif
    }
 
    return menu_displaylist_push_list(info, DISPLAYLIST_DEFAULT);

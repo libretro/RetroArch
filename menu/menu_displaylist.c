@@ -1998,8 +1998,10 @@ static int menu_displaylist_parse_generic(menu_displaylist_info_t *info, bool *n
 #endif
                break;
             case RARCH_CONTENT_IMAGE:
+#ifdef HAVE_IMAGEVIEWER
                if (settings->multimedia.builtin_imageviewer_enable)
                   file_type = MENU_FILE_IMAGEVIEWER;
+#endif
             default:
                break;
          }

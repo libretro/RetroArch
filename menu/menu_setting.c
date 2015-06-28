@@ -4875,6 +4875,7 @@ static bool setting_append_list_multimedia_options(
          general_read_handler);
 #endif
 
+#ifdef HAVE_IMAGEVIEWER
    CONFIG_BOOL(
          settings->multimedia.builtin_imageviewer_enable,
          menu_hash_to_str(MENU_LABEL_USE_BUILTIN_IMAGE_VIEWER),
@@ -4887,6 +4888,7 @@ static bool setting_append_list_multimedia_options(
          parent_group,
          general_write_handler,
          general_read_handler);
+#endif
 
    END_SUB_GROUP(list, list_info, parent_group);
    END_GROUP(list, list_info, parent_group);
@@ -6198,11 +6200,13 @@ rarch_setting_t *menu_setting_new(unsigned mask)
          goto error;
    }
 
+#if defined(HAVE_IMAGEVIEWER) || defined(HAVE_FFMPEG)
    if (mask & SL_FLAG_MULTIMEDIA_OPTIONS)
    {
       if (!setting_append_list_multimedia_options(&list, list_info, root))
          goto error;
    }
+#endif
 
    if (mask & SL_FLAG_UI_OPTIONS)
    {
