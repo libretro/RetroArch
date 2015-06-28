@@ -60,19 +60,19 @@ const char *menu_hash_to_str_pt(uint32_t hash)
       case MENU_LABEL_VALUE_NO_PERFORMANCE_COUNTERS:
          return "Nenhum medidor de desempenho.";
       case MENU_LABEL_VALUE_DRIVER_SETTINGS:
-         return "Definições de Driver";
+         return "Drivers";
       case MENU_LABEL_VALUE_CONFIGURATION_SETTINGS:
-         return "Definições de Configuração";
+         return "Configurações";
       case MENU_LABEL_VALUE_CORE_SETTINGS:
          return "Atualização Online";
       case MENU_LABEL_VALUE_VIDEO_SETTINGS:
-         return "Definições de Vídeo";
+         return "Vídeo";
       case MENU_LABEL_VALUE_LOGGING_SETTINGS:
-         return "Definições de Registro de Dados";
+         return "Registro de Dados";
       case MENU_LABEL_VALUE_SAVING_SETTINGS:
-         return "Definições de Saves";
+         return "Saves";
       case MENU_LABEL_VALUE_REWIND_SETTINGS:
-         return "Definições de Retrocesso";
+         return "Retrocesso";
       case MENU_LABEL_VALUE_CUSTOM_VIEWPORT_1:
          return "Definir Quina Superior Esquerda";
       case MENU_LABEL_VALUE_CUSTOM_VIEWPORT_2:
@@ -130,21 +130,21 @@ const char *menu_hash_to_str_pt(uint32_t hash)
       case MENU_VALUE_NOT_AVAILABLE:
          return "N/A";
       case MENU_LABEL_VALUE_INPUT_REMAPPING_DIRECTORY:
-         return "Diretório de Remapeamento de Controladores";
+         return "Remapeamentos de Controladores";
       case MENU_LABEL_VALUE_JOYPAD_AUTOCONFIG_DIR:
-         return "Diretório de Autoconfiguração de Dispositivos de Entrada";
+         return "Autoconfigurações de Dispositivos de Entrada";
       case MENU_LABEL_VALUE_RECORDING_CONFIG_DIRECTORY:
-         return "Diretório de Configuração de Gravação";
+         return "Configurações de Gravações";
       case MENU_LABEL_VALUE_RECORDING_OUTPUT_DIRECTORY:
-         return "Diretório de Gravações";
+         return "Gravações";
       case MENU_LABEL_VALUE_SCREENSHOT_DIRECTORY:
-         return "Diretório de Capturas de Telas";
+         return "Capturas de Telas";
       case MENU_LABEL_VALUE_PLAYLIST_DIRECTORY:
-         return "Diretório de Listas de Jogos";
+         return "Históricos";
       case MENU_LABEL_VALUE_SAVEFILE_DIRECTORY:
-         return "Diretório de Saves";
+         return "Saves";
       case MENU_LABEL_VALUE_SAVESTATE_DIRECTORY:
-         return "Diretório de Savestates";
+         return "Savestates";
       case MENU_LABEL_VALUE_STDIN_CMD_ENABLE:
          return "Comandos stdin";
       case MENU_LABEL_VALUE_VIDEO_DRIVER:
@@ -162,41 +162,41 @@ const char *menu_hash_to_str_pt(uint32_t hash)
       case MENU_LABEL_VALUE_VIDEO_POST_FILTER_RECORD:
          return "Ativar Filtro Pós-Gravação";
       case MENU_LABEL_VALUE_CORE_ASSETS_DIRECTORY:
-         return "Diretório de Recursos (Assets) de Cores";
+         return "Recursos (Assets) de Cores";
       case MENU_LABEL_VALUE_ASSETS_DIRECTORY:
-         return "Diretório de Recursos (Assets)";
+         return "Recursos (Assets)";
       case MENU_LABEL_VALUE_DYNAMIC_WALLPAPERS_DIRECTORY:
-         return "Diretório de Papéis de Parede Dinâmicos";
+         return "Papéis de Parede Dinâmicos";
       case MENU_LABEL_VALUE_BOXARTS_DIRECTORY:
-         return "Diretório de Boxarts";
+         return "Boxarts";
       case MENU_LABEL_VALUE_RGUI_BROWSER_DIRECTORY:
-         return "Diretório de Navegação";
+         return "Navegação";
       case MENU_LABEL_VALUE_RGUI_CONFIG_DIRECTORY:
-         return "Diretório de Configurações";
+         return "Configurações";
       case MENU_LABEL_VALUE_LIBRETRO_INFO_PATH:
-         return "Diretório de Informações de Cores";
+         return "Informações de Cores";
       case MENU_LABEL_VALUE_LIBRETRO_DIR_PATH:
-         return "Diretório de Cores";
+         return "Cores";
       case MENU_LABEL_VALUE_CURSOR_DIRECTORY:
-         return "Diretório de Cursores";
+         return "Cursores";
       case MENU_LABEL_VALUE_CONTENT_DATABASE_DIRECTORY:
-         return "Diretórios de Databases de Conteúdo";
+         return "Databases de Conteúdo";
       case MENU_LABEL_VALUE_SYSTEM_DIRECTORY:
-         return "Diretório System";
+         return "System";
       case MENU_LABEL_VALUE_CHEAT_DATABASE_PATH:
-         return "Diretórios de Cheats";
+         return "Cheats";
       case MENU_LABEL_VALUE_EXTRACTION_DIRECTORY:
-         return "Diretório de Descompactação";
+         return "Descompactação";
       case MENU_LABEL_VALUE_AUDIO_FILTER_DIR:
-         return "Diretório de Filtros de Áudio";
+         return "Filtros de Áudio";
       case MENU_LABEL_VALUE_VIDEO_SHADER_DIR:
-         return "Diretório de Shaders";
+         return "Shaders";
       case MENU_LABEL_VALUE_VIDEO_FILTER_DIR:
-         return "Diretório de Filtros de Vídeo";
+         return "Filtros de Vídeo";
       case MENU_LABEL_VALUE_OVERLAY_DIRECTORY:
-         return "Diretório de Overlays";
+         return "Overlays";
       case MENU_LABEL_VALUE_OSK_OVERLAY_DIRECTORY:
-         return "Diretório de Overlays de Teclado";
+         return "Overlays de Teclado";
       case MENU_LABEL_VALUE_NETPLAY_CLIENT_SWAP_INPUT:
          return "Trocar Entradas de Netplay";
       case MENU_LABEL_VALUE_NETPLAY_SPECTATOR_MODE_ENABLE:
@@ -398,7 +398,7 @@ const char *menu_hash_to_str_pt(uint32_t hash)
       case MENU_LABEL_VALUE_DETECT_CORE_LIST:
          return "Selecionar Arquivo e Detectar Core";
       case MENU_LABEL_VALUE_LOAD_CONTENT_HISTORY:
-         return "Selecionar do Histórico"; /* FIXME/UPDATE */
+         return "Selecionar do Histórico";
       case MENU_LABEL_VALUE_AUDIO_ENABLE:
          return "Ativar Áudio";
       case MENU_LABEL_VALUE_FPS_SHOW:
@@ -416,7 +416,7 @@ const char *menu_hash_to_str_pt(uint32_t hash)
       case MENU_LABEL_VALUE_RDB_ENTRY_SHA1:
          return "SHA1";
       case MENU_LABEL_VALUE_CONFIGURATIONS:
-         return "Carregar Arquivo de Configuração";
+         return "Carregar Configuração";
       case MENU_LABEL_VALUE_REWIND_GRANULARITY:
          return "Granularidade do Retrocesso";
       case MENU_LABEL_VALUE_REMAP_FILE_LOAD:
@@ -454,7 +454,7 @@ const char *menu_hash_to_str_pt(uint32_t hash)
       case MENU_LABEL_VALUE_DISK_CYCLE_TRAY_STATUS:
          return "Estado do Drive de Disco";
       case MENU_LABEL_VALUE_NO_PLAYLIST_ENTRIES_AVAILABLE:
-         return "Lista de jogos vazia.";
+         return "Histórico vazio.";
       case MENU_LABEL_VALUE_NO_CORE_INFORMATION_AVAILABLE:
          return "Nenhuma informação de core disponível.";
       case MENU_LABEL_VALUE_NO_CORE_OPTIONS_AVAILABLE:
@@ -510,7 +510,7 @@ const char *menu_hash_to_str_pt(uint32_t hash)
       case MENU_LABEL_VALUE_CLOSE_CONTENT:
          return "Fechar Conteúdo";
       case MENU_LABEL_VALUE_MANAGEMENT:
-         return "Definições de Databases";
+         return "Databases";
       case MENU_LABEL_VALUE_SAVE_STATE:
          return "Salvar Savestate";
       case MENU_LABEL_VALUE_LOAD_STATE:
@@ -780,37 +780,37 @@ const char *menu_hash_to_str_pt(uint32_t hash)
       case MENU_VALUE_STATUS:
          return "Status";
       case MENU_LABEL_VALUE_AUDIO_SETTINGS:
-         return "Definições de Áudio";
+         return "Áudio";
       case MENU_LABEL_VALUE_INPUT_SETTINGS:
-         return "Definições de Entradas";
+         return "Entradas";
       case MENU_LABEL_VALUE_ONSCREEN_DISPLAY_SETTINGS:
-         return "Definições de Informações de Tela";
+         return "Informações de Tela";
       case MENU_LABEL_VALUE_OVERLAY_SETTINGS:
-         return "Definições de Overlay em Tela";
+         return "Overlay em Tela";
       case MENU_LABEL_VALUE_MENU_SETTINGS:
-         return "Definições de Menu";
+         return "Menu";
       case MENU_LABEL_VALUE_MULTIMEDIA_SETTINGS:
-         return "Definições de Reprodução de Mídia"; /* UPDATE/FIXME */
+         return "Reprodução de Mídia"; /* UPDATE/FIXME */
       case MENU_LABEL_VALUE_UI_SETTINGS:
-         return "Definições de Interface de Usuário";
+         return "Interface de Usuário";
       case MENU_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS:
-         return "Definições de Menu de Navegação";
+         return "Menu de Navegação";
       case MENU_LABEL_VALUE_CORE_UPDATER_SETTINGS:
-         return "Definições de Atualização de Core";
+         return "Atualização de Core";
       case MENU_LABEL_VALUE_NETWORK_SETTINGS:
-         return "Definições de Rede";
+         return "Rede";
       case MENU_LABEL_VALUE_PLAYLIST_SETTINGS:
-         return "Definições de Playlists";
+         return "Histórico";
       case MENU_LABEL_VALUE_USER_SETTINGS:
-         return "Definições de Usuário";
+         return "Usuário";
       case MENU_LABEL_VALUE_DIRECTORY_SETTINGS:
-         return "Definições de Diretórios";
+         return "Diretórios";
       case MENU_LABEL_VALUE_RECORDING_SETTINGS:
-         return "Definições de Gravação";
+         return "Gravação";
       case MENU_LABEL_VALUE_NO_INFORMATION_AVAILABLE:
          return "Nenhuma informação disponível.";
       case MENU_LABEL_VALUE_INPUT_USER_BINDS:
-         return "Usuário %u Vincula";
+         return "Usuário %u";
       case MENU_VALUE_LANG_ENGLISH:
          return "Inglês";
       case MENU_VALUE_LANG_JAPANESE:
