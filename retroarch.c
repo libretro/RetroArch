@@ -454,8 +454,11 @@ enum rarch_content_type rarch_path_is_media_type(const char *path)
          return RARCH_CONTENT_MUSIC;
 #endif
       case MENU_VALUE_FILE_JPG:
+      case MENU_VALUE_FILE_JPG_CAPS:
       case MENU_VALUE_FILE_JPEG:
+      case MENU_VALUE_FILE_JPEG_CAPS:
       case MENU_VALUE_FILE_PNG:
+      case MENU_VALUE_FILE_PNG_CAPS:
       case MENU_VALUE_FILE_TGA:
       case MENU_VALUE_FILE_BMP:
          return RARCH_CONTENT_IMAGE;

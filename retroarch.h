@@ -60,7 +60,10 @@ enum action_state
 
 #define MENU_VALUE_FILE_JPG                                                    0x0b8884a6U
 #define MENU_VALUE_FILE_JPEG                                                   0x7c99198bU
+#define MENU_VALUE_FILE_JPG_CAPS                                               0x0b87f846U
+#define MENU_VALUE_FILE_JPEG_CAPS                                              0x7c87010bU
 #define MENU_VALUE_FILE_PNG                                                    0x0b889deaU
+#define MENU_VALUE_FILE_PNG_CAPS                                               0x0b88118aU
 #define MENU_VALUE_FILE_TGA                                                    0x0b88ae01U
 #define MENU_VALUE_FILE_BMP                                                    0x0b886244U
 
