@@ -8,12 +8,12 @@
 #define STB_IMAGE_IMPLEMENTATION
 
 #ifdef RARCH_INTERNAL
-#define STB_IMAGE_STATIC
 #define STBI_NO_PSD
 #define STBI_NO_GIF
 #define STBI_NO_HDR
 #define STBI_NO_PIC
 #define STBI_NO_PNM
+#define STBI_SUPPORT_ZLIB
 #endif
 
 #include "stb_image.h"
