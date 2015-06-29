@@ -55,6 +55,8 @@ FILE *rarch_main_log_file(void);
 #define PROGRAM_NAME "RetroArch Salamander"
 #elif defined(RARCH_INTERNAL)
 #define PROGRAM_NAME "RetroArch"
+#elif defined(MARCH_INTERNAL)
+#define PROGRAM_NAME "MicroArch"
 #else
 #define PROGRAM_NAME "N/A"
 #endif
