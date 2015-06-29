@@ -90,7 +90,6 @@ static INLINE void gl_menu_frame_background(
       0.0f, 0.0f, 0.0f, alpha,
    };
 
-
    coords.vertices      = 4;
    coords.vertex        = vertex;
    coords.tex_coord     = tex_coord;

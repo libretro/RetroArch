@@ -119,6 +119,8 @@ void fill_pathname_abbreviate_special(char *out_path,
 {
 #if !defined(RARCH_CONSOLE)
    unsigned i;
+   const char *candidates[3];
+   const char *notations[3];
    char application_dir[PATH_MAX_LENGTH] = {0};
    const char                      *home = getenv("HOME");
 
@@ -128,8 +130,13 @@ void fill_pathname_abbreviate_special(char *out_path,
     * new location inside home would break otherwise. */
 
    /* ugly hack - use application_dir pointer before filling it in. C89 reasons */
-   const char *candidates[3] = { application_dir, home, NULL };
-   const char *notations[3] = { ":", "~", NULL };
+   candidates[0] = application_dir;
+   candidates[1] = home;
+   candidates[2] = NULL;
+
+   notations [0] = ":";
+   notations [1] = "~";
+   notations [2] = NULL;
 
    fill_pathname_application_path(application_dir, sizeof(application_dir));
    path_basedir(application_dir);
@@ -199,11 +206,12 @@ void fill_pathname_application_path(char *buf, size_t size)
    }
 #else
    {
+      pid_t pid;
       static const char *exts[] = { "exe", "file", "path/a.out" };
       char link_path[PATH_MAX_LENGTH] = {0};
 
       *buf      = '\0';
-      pid_t pid = getpid(); 
+      pid = getpid(); 
 
       /* Linux, BSD and Solaris paths. Not standardized. */
       for (i = 0; i < ARRAY_SIZE(exts); i++)

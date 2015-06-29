@@ -227,7 +227,7 @@ size_t state_manager_raw_compress(const void *src, const void *dst, size_t len, 
    
    while (num16s)
    {
-      size_t i;
+      size_t i, changed;
       size_t skip = find_change(old16, new16);
    
       if (skip >= num16s)
@@ -253,7 +253,7 @@ size_t state_manager_raw_compress(const void *src, const void *dst, size_t len, 
          continue;
       }
    
-      size_t changed = find_same(old16, new16);
+      changed = find_same(old16, new16);
       if (changed > UINT16_MAX)
          changed = UINT16_MAX;
    

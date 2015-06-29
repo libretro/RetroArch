@@ -295,10 +295,13 @@ ifeq ($(HAVE_JACK),1)
    DEFINES += $(JACK_CFLAGS)
 endif
 
+ifneq ($(C89_BUILD), 1)
+# PulseAudio is not a C89-compliant API.
 ifeq ($(HAVE_PULSE), 1)
    OBJ += audio/drivers/pulse.o
    LIBS += $(PULSE_LIBS)
    DEFINES += $(PULSE_CFLAGS)
+endif
 endif
 
 ifeq ($(HAVE_OSS_LIB), 1)

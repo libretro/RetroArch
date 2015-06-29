@@ -286,7 +286,8 @@ void fill_pathname_slash(char *path, size_t size)
    /* Try to preserve slash type. */
    if (last_slash && (last_slash != (path + path_len - 1)))
    {
-      char join_str[2] = {*last_slash};
+      char join_str[2];
+      strlcpy(join_str, last_slash, sizeof(join_str));
       rarch_assert(strlcat(path, join_str, size) < size);
    }
    else if (!last_slash)

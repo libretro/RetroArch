@@ -290,15 +290,14 @@ bool take_screenshot(void)
    {
       unsigned old_width, old_height;
       size_t old_pitch;
+      void *frame_data;
       const void* old_data = NULL;
       
       video_driver_cached_frame_get(&old_data, &old_width, &old_height,
             &old_pitch);
       
-      void* frame_data = video_driver_read_frame_raw(
-            &old_width,
-            &old_height,
-            &old_pitch);
+      frame_data = video_driver_read_frame_raw(
+            &old_width, &old_height, &old_pitch);
 
       video_driver_cached_frame_set(old_data, old_width, old_height,
             old_pitch);

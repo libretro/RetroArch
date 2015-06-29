@@ -151,7 +151,7 @@ struct argument
    {
       struct rmsgpack_dom_value value;
       struct invocation invocation;
-   };
+   } a;
 };
 
 static void argument_free(struct argument *arg)
@@ -160,12 +160,12 @@ static void argument_free(struct argument *arg)
 
    if (arg->type != AT_FUNCTION)
    {
-      rmsgpack_dom_value_free(&arg->value);
+      rmsgpack_dom_value_free(&arg->a.value);
       return;
    }
 
-   for (i = 0; i < arg->invocation.argc; i++)
-      argument_free(&arg->invocation.argv[i]);
+   for (i = 0; i < arg->a.invocation.argc; i++)
+      argument_free(&arg->a.invocation.argv[i]);
 }
 
 struct query
@@ -219,12 +219,12 @@ static struct rmsgpack_dom_value equals(struct rmsgpack_dom_value input,
          res.val.bool_ = 0;
       else
       {
-         if (input.type == RDT_UINT && arg.value.type == RDT_INT)
+         if (input.type == RDT_UINT && arg.a.value.type == RDT_INT)
          {
-            arg.value.type = RDT_UINT;
-            arg.value.val.uint_ = arg.value.val.int_;
+            arg.a.value.type = RDT_UINT;
+            arg.a.value.val.uint_ = arg.a.value.val.int_;
          }
-         res.val.bool_ = (rmsgpack_dom_value_cmp(&input, &arg.value) == 0);
+         res.val.bool_ = (rmsgpack_dom_value_cmp(&input, &arg.a.value) == 0);
       }
    }
    return res;
@@ -246,9 +246,9 @@ static struct rmsgpack_dom_value operator_or(struct rmsgpack_dom_value input,
          res = equals(input, 1, &argv[i]);
       else
       {
-         res = is_true(argv[i].invocation.func(input,
-                  argv[i].invocation.argc,
-                  argv[i].invocation.argv
+         res = is_true(argv[i].a.invocation.func(input,
+                  argv[i].a.invocation.argc,
+                  argv[i].a.invocation.argv
                   ), 0, NULL);
       }
 
@@ -276,16 +276,16 @@ static struct rmsgpack_dom_value between(struct rmsgpack_dom_value input,
       return res;
    if (argv[0].type != AT_VALUE || argv[1].type != AT_VALUE)
       return res;
-   if (argv[0].value.type != RDT_INT || argv[1].value.type != RDT_INT)
+   if (argv[0].a.value.type != RDT_INT || argv[1].a.value.type != RDT_INT)
       return res;
 
    switch (input.type)
    {
       case RDT_INT:
-         res.val.bool_ = ((input.val.int_ >= argv[0].value.val.int_) && (input.val.int_ <= argv[1].value.val.int_));
+         res.val.bool_ = ((input.val.int_ >= argv[0].a.value.val.int_) && (input.val.int_ <= argv[1].a.value.val.int_));
          break;
       case RDT_UINT:
-         res.val.bool_ = (((unsigned)input.val.int_ >= argv[0].value.val.uint_) && (input.val.int_ <= argv[1].value.val.int_));
+         res.val.bool_ = (((unsigned)input.val.int_ >= argv[0].a.value.val.uint_) && (input.val.int_ <= argv[1].a.value.val.int_));
          break;
       default:
          return res;
@@ -311,9 +311,9 @@ static struct rmsgpack_dom_value operator_and(struct rmsgpack_dom_value input,
       else
       {
          res = is_true(
-               argv[i].invocation.func(input,
-                  argv[i].invocation.argc,
-                  argv[i].invocation.argv
+               argv[i].a.invocation.func(input,
+                  argv[i].a.invocation.argc,
+                  argv[i].a.invocation.argv
                   ),
                0, NULL);
       }
@@ -338,12 +338,12 @@ static struct rmsgpack_dom_value q_glob(struct rmsgpack_dom_value input,
 
    if (argc != 1)
       return res;
-   if (argv[0].type != AT_VALUE || argv[0].value.type != RDT_STRING)
+   if (argv[0].type != AT_VALUE || argv[0].a.value.type != RDT_STRING)
       return res;
    if (input.type != RDT_STRING)
       return res;
    res.val.bool_ = rl_fnmatch(
-         argv[0].value.val.string.buff,
+         argv[0].a.value.val.string.buff,
          input.val.string.buff,
          0
          ) == 0;
@@ -381,7 +381,7 @@ static struct rmsgpack_dom_value all_map(struct rmsgpack_dom_value input,
          res.val.bool_ = 0;
          goto clean;
       }
-      value = rmsgpack_dom_value_map_value(&input, &arg.value);
+      value = rmsgpack_dom_value_map_value(&input, &arg.a.value);
       if (!value) /* All missing fields are nil */
          value = &nil_value;
       arg = argv[i + 1];
@@ -389,10 +389,10 @@ static struct rmsgpack_dom_value all_map(struct rmsgpack_dom_value input,
          res = equals(*value, 1, &arg);
       else
       {
-         res = is_true(arg.invocation.func(
+         res = is_true(arg.a.invocation.func(
                   *value,
-                  arg.invocation.argc,
-                  arg.invocation.argv
+                  arg.a.invocation.argc,
+                  arg.a.invocation.argv
                   ), 0, NULL);
          value = NULL;
       }
@@ -767,25 +767,25 @@ static struct buffer parse_table(struct buffer buff,
 
          if (!*error)
          {
-            args[argi].value.type = RDT_STRING;
-            args[argi].value.val.string.len = ident_len;
-            args[argi].value.val.string.buff = (char*)calloc(
+            args[argi].a.value.type = RDT_STRING;
+            args[argi].a.value.val.string.len = ident_len;
+            args[argi].a.value.val.string.buff = (char*)calloc(
                   ident_len + 1,
                   sizeof(char)
                   );
 
-            if (!args[argi].value.val.string.buff)
+            if (!args[argi].a.value.val.string.buff)
                goto clean;
 
             strncpy(
-                  args[argi].value.val.string.buff,
+                  args[argi].a.value.val.string.buff,
                   ident_name,
                   ident_len
                   );
          }
       }
       else
-         buff = parse_string(buff, &args[argi].value, error);
+         buff = parse_string(buff, &args[argi].a.value, error);
 
       if (*error)
          goto clean;
@@ -864,17 +864,17 @@ static struct buffer parse_argument(struct buffer buff,
       )
    {
       arg->type = AT_FUNCTION;
-      buff = parse_method_call(buff, &arg->invocation, error);
+      buff = parse_method_call(buff, &arg->a.invocation, error);
    }
    else if (peek(buff, "{"))
    {
       arg->type = AT_FUNCTION;
-      buff = parse_table(buff, &arg->invocation, error);
+      buff = parse_table(buff, &arg->a.invocation, error);
    }
    else
    {
       arg->type = AT_VALUE;
-      buff = parse_value(buff, &arg->value, error);
+      buff = parse_value(buff, &arg->a.value, error);
    }
    return buff;
 }

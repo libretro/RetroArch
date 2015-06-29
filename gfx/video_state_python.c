@@ -116,28 +116,14 @@ static PyObject *py_read_input(PyObject *self, PyObject *args)
 
 static PyObject *py_read_analog(PyObject *self, PyObject *args)
 {
-   unsigned user, index, id;
+   unsigned user, index, id, i;
    int16_t res = 0;
    driver_t *driver     = driver_get_ptr();
    settings_t *settings = config_get_ptr();
-   const struct retro_keybind *py_binds[MAX_USERS] = {
-      settings->input.binds[0],
-      settings->input.binds[1],
-      settings->input.binds[2],
-      settings->input.binds[3],
-      settings->input.binds[4],
-      settings->input.binds[5],
-      settings->input.binds[6],
-      settings->input.binds[7],
-      settings->input.binds[8],
-      settings->input.binds[9],
-      settings->input.binds[10],
-      settings->input.binds[11],
-      settings->input.binds[12],
-      settings->input.binds[13],
-      settings->input.binds[14],
-      settings->input.binds[15],
-   };
+   const struct retro_keybind *py_binds[MAX_USERS];
+
+   for (i = 0; i < MAX_USERS; i++)
+      py_binds[i] = settings->input.binds[i];
 
    (void)self;
 
