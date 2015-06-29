@@ -75,7 +75,9 @@ bool rarch_main_verbosity(void);
 #define RARCH_LOG_VERBOSE (true)
 #endif
 
-#if defined(_XBOX1) ||  TARGET_OS_IPHONE && defined(RARCH_INTERNAL)
+#if defined(RARCH_CONSOLE) && defined(HAVE_LOGGER) && defined(RARCH_INTERNAL)
+#include <logger_override.h>
+#else
 static INLINE void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
 {
    if (!RARCH_LOG_VERBOSE)
@@ -100,6 +102,19 @@ static INLINE void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
          fmt);
    wvsprintf(buffer, msg_new, ap);
    OutputDebugStringA(buffer);
+#elif defined(ANDROID) && defined(HAVE_LOGGER) && defined(RARCH_INTERNAL)
+   int prio = ANDROID_LOG_INFO;
+   if (tag)
+   {
+      if (!strcmp("[WARN]", tag))
+         prio = ANDROID_LOG_WARN;
+      else if (!strcmp("[ERROR]", tag))
+         prio = ANDROID_LOG_ERROR;
+   }
+   __android_log_vprint(prio, PROGRAM_NAME, fmt, ap);
+#else
+   fprintf(LOG_FILE, "%s %s :: ", PROGRAM_NAME, tag ? tag : "[INFO]");
+   vfprintf(LOG_FILE, fmt, ap); 
 #endif
 }
 
@@ -111,7 +126,7 @@ static INLINE void RARCH_LOG(const char *fmt, ...)
       return;
 
    va_start(ap, fmt);
-   RARCH_LOG_V(NULL, fmt, ap);
+   RARCH_LOG_V("[INFO]", fmt, ap);
    va_end(ap);
 }
 
@@ -125,7 +140,7 @@ static INLINE void RARCH_LOG_OUTPUT(const char *msg, ...)
 {
    va_list ap;
    va_start(ap, msg);
-   RARCH_LOG_OUTPUT_V(NULL, msg, ap);
+   RARCH_LOG_OUTPUT_V("[INFO]", msg, ap);
    va_end(ap);
 }
 
@@ -154,111 +169,6 @@ static INLINE void RARCH_ERR(const char *fmt, ...)
    RARCH_ERR_V("[ERROR]", fmt, ap);
    va_end(ap);
 }
-
-#elif defined(RARCH_CONSOLE) && defined(HAVE_LOGGER) && defined(RARCH_INTERNAL)
-#include <logger_override.h>
-#elif defined(ANDROID) && defined(HAVE_LOGGER) && defined(RARCH_INTERNAL)
-
-#ifndef RARCH_LOG
-#define RARCH_LOG(...)  __android_log_print(ANDROID_LOG_INFO, PROGRAM_NAME, __VA_ARGS__)
-#endif
-
-#ifndef RARCH_LOG_V
-#define RARCH_LOG_V(tag, fmt, vp) __android_log_vprint(ANDROID_LOG_INFO, PROGRAM_NAME tag, fmt, vp)
-#endif
-
-#ifndef RARCH_LOG_OUTPUT
-#define RARCH_LOG_OUTPUT(...) RARCH_LOG(__VA_ARGS__)
-#endif
-
-#ifndef RARCH_LOG_OUTPUT_V
-#define RARCH_LOG_OUTPUT_V(tag, fmt, vp) RARCH_LOG_V(tag, fmt, vp)
-#endif
-
-#ifndef RARCH_ERR
-#define RARCH_ERR(...)  __android_log_print(ANDROID_LOG_ERROR, PROGRAM_NAME, __VA_ARGS__)
-#endif
-
-#ifndef RARCH_ERR_V
-#define RARCH_ERR_V(tag, fmt, vp) __android_log_vprint(ANDROID_LOG_ERROR, PROGRAM_NAME tag, fmt, vp)
-#endif
-
-#ifndef RARCH_WARN
-#define RARCH_WARN(...) __android_log_print(ANDROID_LOG_WARN, PROGRAM_NAME, __VA_ARGS__)
-#endif
-
-#ifndef RARCH_WARN_V
-#define RARCH_WARN_V(tag, fmt, vp) __android_log_print(ANDROID_LOG_WARN, PROGRAM_NAME tag, fmt, vp)
-#endif
-
-#else
-
-#ifndef RARCH_LOG
-#undef RARCH_LOG_V
-#define RARCH_LOG(...) do { \
-      if (RARCH_LOG_VERBOSE) \
-      { \
-         fprintf(LOG_FILE, "%s: %s: ", PROGRAM_NAME, __FUNCTION__); \
-         fprintf(LOG_FILE, __VA_ARGS__); \
-         fflush(LOG_FILE); \
-      } \
-   } while (0)
-#define RARCH_LOG_V(tag, fmt, vp) do { \
-      if (RARCH_LOG_VERBOSE) \
-      { \
-         fprintf(LOG_FILE, "%s: %s: ", PROGRAM_NAME, __FUNCTION__); \
-         fprintf(LOG_FILE, tag);\
-         vfprintf(LOG_FILE, fmt, vp); \
-         fflush(LOG_FILE); \
-      } \
-   } while (0)
-#endif
-
-#ifndef RARCH_LOG_OUTPUT
-#undef RARCH_LOG_OUTPUT_V
-#define RARCH_LOG_OUTPUT(...) do { \
-      fprintf(LOG_FILE, "%s: ", __FUNCTION__); \
-      fprintf(LOG_FILE, __VA_ARGS__); \
-      fflush(LOG_FILE); \
-   } while (0)
-#define RARCH_LOG_OUTPUT_V(tag, fmt, vp) do { \
-      fprintf(LOG_FILE, "%s: %s: ", PROGRAM_NAME, __FUNCTION__); \
-      fprintf(LOG_FILE, tag); \
-      vfprintf(LOG_FILE, fmt, vp); \
-      fflush(LOG_FILE); \
-   } while (0)
-#endif
-
-#ifndef RARCH_ERR
-#undef RARCH_ERR_V
-#define RARCH_ERR(...) do { \
-      fprintf(LOG_FILE, "%s [ERROR] :: %s :: ", PROGRAM_NAME, __FUNCTION__); \
-      fprintf(LOG_FILE, __VA_ARGS__); \
-      fflush(LOG_FILE); \
-   } while (0)
-#define RARCH_ERR_V(tag, fmt, vp) do { \
-      fprintf(LOG_FILE, "%s [ERROR] :: %s :: ", PROGRAM_NAME, __FUNCTION__); \
-      fprintf(LOG_FILE, tag); \
-      vfprintf(LOG_FILE, fmt, vp); \
-      fflush(LOG_FILE); \
-   } while (0)
-#endif
-
-#ifndef RARCH_WARN
-#undef RARCH_WARN_V
-#define RARCH_WARN(...) do { \
-      fprintf(LOG_FILE, "%s [WARN] :: %s :: ", PROGRAM_NAME, __FUNCTION__); \
-      fprintf(LOG_FILE, __VA_ARGS__); \
-      fflush(LOG_FILE); \
-   } while (0)
-#define RARCH_WARN_V(tag, fmt, vp) do { \
-      fprintf(LOG_FILE, "%s [WARN] :: %s :: ", PROGRAM_NAME, __FUNCTION__); \
-      fprintf(LOG_FILE, tag); \
-      vfprintf(LOG_FILE, fmt, vp); \
-      fflush(LOG_FILE); \
-   } while (0)
-#endif
-
 #endif
 
 #endif
