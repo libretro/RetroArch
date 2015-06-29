@@ -15,16 +15,19 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <boolean.h>
-#include "libretro.h"
-#include "dynamic.h"
-#include "libretro_version_1.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <retro_inline.h>
 #include <ctype.h>
 #include <errno.h>
+
+#include <retro_inline.h>
+#include <retro_log.h>
+#include <boolean.h>
+
+#include "libretro_version_1.h"
+#include "libretro.h"
+#include "dynamic.h"
 #include "general.h"
 #include "runloop.h"
 #include "runloop_data.h"
@@ -34,7 +37,6 @@
 #include "input/input_remapping.h"
 #include "audio/audio_driver.h"
 #include "audio/audio_utils.h"
-#include "retroarch_logger.h"
 #include "record/record_driver.h"
 #include "gfx/video_pixel_converter.h"
 #include "intl/intl.h"

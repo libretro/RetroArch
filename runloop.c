@@ -18,6 +18,7 @@
 
 #include <file/file_path.h>
 #include <retro_inline.h>
+#include <retro_log.h>
 
 #include <compat/strl.h>
 #include <rhash.h>
@@ -25,7 +26,6 @@
 #include "configuration.h"
 #include "dynamic.h"
 #include "performance.h"
-#include "retroarch_logger.h"
 #include "intl/intl.h"
 #include "retroarch.h"
 #include "runloop.h"

@@ -14,20 +14,31 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <compat/strl.h>
+#ifdef _XBOX1
+#include <xtl.h>
+#include <xgraphics.h>
+#endif
+
 #include <stdio.h>
 #include <stddef.h>
 #include <time.h>
 #include <boolean.h>
 #include <stdint.h>
 #include <string.h>
+
+#include <retro_log.h>
+#include <file/file_path.h>
+#include <compat/strl.h>
+
+#if defined(HAVE_ZLIB_DEFLATE) && defined(HAVE_RPNG)
+#include <formats/rpng.h>
+#endif
+
 #include "general.h"
 #include "intl/intl.h"
-#include <file/file_path.h>
 #include "gfx/scaler/scaler.h"
 #include "retroarch.h"
 #include "runloop.h"
-#include "retroarch_logger.h"
 #include "screenshot.h"
 #include "gfx/video_driver.h"
 #include "gfx/video_viewport.h"
@@ -36,17 +47,9 @@
 #include "config.h"
 #endif
 
-#ifdef _XBOX1
-#include <xtl.h>
-#include <xgraphics.h>
-#endif
-
 #if defined(HAVE_ZLIB_DEFLATE) && defined(HAVE_RPNG)
-#include <formats/rpng.h>
 #define IMG_EXT "png"
-
 #else
-
 #define IMG_EXT "bmp"
 
 static bool write_header_bmp(FILE *file, unsigned width, unsigned height)

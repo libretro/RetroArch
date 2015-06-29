@@ -14,28 +14,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "dynamic.h"
-#include <compat/strl.h>
-#include <compat/posix_string.h>
-#include "retroarch_logger.h"
-#include "performance.h"
-#include <file/file_path.h>
 #include <string.h>
 #include <ctype.h>
-
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
-#include <boolean.h>
-#include "libretro_private.h"
-#include "cores/internal_cores.h"
-#include "retroarch.h"
-#include "runloop.h"
-#include "configuration.h"
-#include "general.h"
-
-#include "input/input_sensor.h"
 
 #ifdef NEED_DYNAMIC
 #ifdef _WIN32
@@ -44,6 +24,28 @@
 #include <dlfcn.h>
 #endif
 #endif
+
+#include <boolean.h>
+#include <file/file_path.h>
+#include <retro_log.h>
+#include <compat/strl.h>
+#include <compat/posix_string.h>
+
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#include "dynamic.h"
+#include "performance.h"
+
+#include "libretro_private.h"
+#include "cores/internal_cores.h"
+#include "retroarch.h"
+#include "runloop.h"
+#include "configuration.h"
+#include "general.h"
+
+#include "input/input_sensor.h"
 
 #ifdef HAVE_DYNAMIC
 #undef SYM

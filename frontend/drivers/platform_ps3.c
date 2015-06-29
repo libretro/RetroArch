@@ -357,7 +357,7 @@ static void frontend_ps3_exitspawn(char *core_path, size_t core_path_size)
 #include <np.h>
 #include <np/drm.h>
 
-#include "../../retroarch_logger.h"
+#include <retro_log.h>
 
 static void frontend_ps3_exec(const char *path, bool should_load_game)
 {

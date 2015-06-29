@@ -34,12 +34,13 @@
 
 #include <windowsx.h>
 
+#include <retro_log.h>
+
 #include "../../general.h"
 #include "../input_autodetect.h"
 #include "../input_common.h"
 #include "../input_joypad.h"
 #include "../input_keymaps.h"
-#include "../../retroarch_logger.h"
 
 /* Keep track of which pad indexes are 360 controllers.
  * Not static, will be read in xinput_joypad.c

@@ -15,14 +15,15 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "playlist.h"
-#include <compat/posix_string.h>
-#include <boolean.h>
-#include "retroarch_logger.h"
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include <boolean.h>
+#include <compat/posix_string.h>
+#include <retro_log.h>
+
+#include "playlist.h"
 
 /**
  * content_playlist_get_index:

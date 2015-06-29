@@ -21,6 +21,7 @@
 #include <string.h>
 #include <limits.h>
 
+#include <retro_log.h>
 #include <compat/posix_string.h>
 #include <file/file_path.h>
 
@@ -33,7 +34,6 @@
 #include "../../gfx/video_thread_wrapper.h"
 #include "../../gfx/font_driver.h"
 #include "../../gfx/video_texture.h"
-#include "../../retroarch_logger.h"
 
 #include "shared.h"
 

@@ -17,16 +17,19 @@
 /* BPS/UPS/IPS implementation from bSNES (nall::).
  * Modified for RetroArch. */
 
-#include <file/file_path.h>
-#include <boolean.h>
-#include <compat/msvc.h>
 #include <stdint.h>
 #include <string.h>
+
+#include <boolean.h>
+#include <retro_log.h>
+
+#include <compat/msvc.h>
+#include <file/file_path.h>
+#include <file/file_extract.h>
+
 #include "patch.h"
 #include "file_ops.h"
-#include <file/file_extract.h>
 #include "general.h"
-#include "retroarch_logger.h"
 
 enum bps_mode
 {
