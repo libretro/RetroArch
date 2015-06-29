@@ -750,12 +750,14 @@ static bool gfx_ctx_drm_egl_set_video_mode(void *data,
       /* Find best match. */
       for (i = 0; i < drm->g_connector->count_modes; i++)
       {
+         float diff;
          if (width != drm->g_connector->modes[i].hdisplay || 
                height != drm->g_connector->modes[i].vdisplay)
             continue;
 
-         float diff = fabsf(refresh_mod * 
-               drm->g_connector->modes[i].vrefresh - settings->video.refresh_rate);
+         diff = fabsf(refresh_mod * drm->g_connector->modes[i].vrefresh
+               - settings->video.refresh_rate);
+
          if (!drm->g_drm_mode || diff < minimum_fps_diff)
          {
             drm->g_drm_mode = &drm->g_connector->modes[i];

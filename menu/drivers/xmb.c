@@ -565,14 +565,13 @@ end:
 
 static void xmb_update_boxart(xmb_handle_t *xmb, unsigned i)
 {
-   settings_t *settings = config_get_ptr();
-
+   menu_entry_t entry;
+   char path[PATH_MAX_LENGTH] = {0};
+   settings_t *settings   = config_get_ptr();
    menu_list_t *menu_list = menu_list_get_ptr();
 
-   menu_entry_t entry;
    menu_entry_get(&entry, i, menu_list->selection_buf, true);
 
-   char path[PATH_MAX_LENGTH] = {0};
    fill_pathname_join(path, settings->boxarts_directory, entry.path, sizeof(path));
    strlcat(path, ".png", sizeof(path));
 

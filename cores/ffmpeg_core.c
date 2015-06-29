@@ -312,6 +312,8 @@ void CORE_PREFIX(retro_reset)(void)
 
 static void check_variables(void)
 {
+   struct retro_variable color_var;
+
 #ifdef HAVE_OPENGL
    struct retro_variable var = {
       .key = "ffmpeg_temporal_interp"
@@ -352,9 +354,7 @@ static void check_variables(void)
       fft_multisample = strtoul(fft_ms_var.value, NULL, 0);
 #endif
 
-   struct retro_variable color_var = {
-      .key = "ffmpeg_color_space",
-   };
+   color_var.key = "ffmpeg_color_space";
 
    if (CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_GET_VARIABLE, &color_var) && color_var.value)
    {

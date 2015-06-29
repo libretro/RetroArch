@@ -474,6 +474,7 @@ void input_config_autoconfigure_joypad(autoconfig_params_t *params)
 int main(int argc, char *argv[])
 {
    config_file_t *conf;
+   config_file_t *auto_conf = NULL;
 
    const char *index_list[] = { 
       "input_player1_joypad_index", 
@@ -497,7 +498,6 @@ int main(int argc, char *argv[])
 
    config_set_int(conf, index_list[g_player - 1], g_joypad);
 
-   config_file_t *auto_conf = NULL;
    if (g_auto_path)
       auto_conf = config_file_new(NULL);
 

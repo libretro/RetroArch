@@ -357,6 +357,7 @@ static bool ffmpeg_init_audio(ffmpeg_t *handle)
 
 static bool ffmpeg_init_video(ffmpeg_t *handle)
 {
+   size_t size;
    struct ff_config_param *params = &handle->config;
    struct ff_video_info *video    = &handle->video;
    struct ffemu_params *param     = &handle->params;
@@ -478,7 +479,7 @@ static bool ffmpeg_init_video(ffmpeg_t *handle)
 
    video->frame_drop_ratio = params->frame_drop_ratio;
 
-   size_t size = avpicture_get_size(video->pix_fmt, param->out_width,
+   size = avpicture_get_size(video->pix_fmt, param->out_width,
          param->out_height);
    video->conv_frame_buf = (uint8_t*)av_malloc(size);
    video->conv_frame = av_frame_alloc();
@@ -491,6 +492,7 @@ static bool ffmpeg_init_video(ffmpeg_t *handle)
 static bool ffmpeg_init_config(struct ff_config_param *params,
       const char *config)
 {
+   struct config_file_entry entry;
    char pix_fmt[64] = {0};
 
    params->out_pix_fmt = PIX_FMT_NONE;
@@ -544,7 +546,6 @@ static bool ffmpeg_init_config(struct ff_config_param *params,
       }
    }
 
-   struct config_file_entry entry;
    if (!config_get_entry_list_head(params->conf, &entry))
       return true;
 
@@ -774,6 +775,7 @@ static bool ffmpeg_push_video(void *data,
    bool drop_frame;
    struct ffemu_video_data attr_data;
    ffmpeg_t *handle = (ffmpeg_t*)data;
+   int offset = 0;
 
    if (!handle || !video_data)
       return false;
@@ -826,7 +828,6 @@ static bool ffmpeg_push_video(void *data,
 
    fifo_write(handle->attr_fifo, &attr_data, sizeof(attr_data));
 
-   int offset = 0;
    for (y = 0; y < attr_data.height; y++, offset += video_data->pitch)
       fifo_write(handle->video_fifo,
             (const uint8_t*)video_data->data + offset, attr_data.pitch);
@@ -928,13 +929,14 @@ static void ffmpeg_scale_input(ffmpeg_t *handle,
 
    if (handle->video.use_sws)
    {
+      int linesize = data->pitch;
+
       handle->video.sws = sws_getCachedContext(handle->video.sws,
             data->width, data->height, handle->video.in_pix_fmt,
             handle->params.out_width, handle->params.out_height,
             handle->video.pix_fmt,
             shrunk ? SWS_BILINEAR : SWS_POINT, NULL, NULL, NULL);
 
-      int linesize = data->pitch;
       sws_scale(handle->video.sws, (const uint8_t* const*)&data->data,
             &linesize, 0, data->height, handle->video.conv_frame->data,
             handle->video.conv_frame->linesize);
@@ -1039,6 +1041,7 @@ static bool encode_audio(ffmpeg_t *handle, AVPacket *pkt, bool dry)
 {
    AVFrame *frame;
    int samples_size;
+   int got_packet = 0;
 
    av_init_packet(pkt);
    pkt->data = handle->audio.outbuf;
@@ -1066,7 +1069,6 @@ static bool encode_audio(ffmpeg_t *handle, AVPacket *pkt, bool dry)
          handle->audio.buffer,
          samples_size, 0);
 
-   int got_packet = 0;
    if (avcodec_encode_audio2(handle->audio.codec,
             pkt, dry ? NULL : frame, &got_packet) < 0)
    {
@@ -1223,9 +1225,10 @@ static void ffmpeg_flush_audio(ffmpeg_t *handle, void *audio_buf,
 
    if (avail)
    {
+      struct ffemu_audio_data aud = {0};
+
       fifo_read(handle->audio_fifo, audio_buf, avail);
 
-      struct ffemu_audio_data aud = {0};
       aud.frames = avail / (sizeof(int16_t) * handle->params.channels);
       aud.data = audio_buf;
 
@@ -1277,9 +1280,10 @@ static void ffmpeg_flush_buffers(ffmpeg_t *handle)
       {
          if (fifo_read_avail(handle->audio_fifo) >= audio_buf_size)
          {
+            struct ffemu_audio_data aud = {0};
+
             fifo_read(handle->audio_fifo, audio_buf, audio_buf_size);
 
-            struct ffemu_audio_data aud = {0};
             aud.frames = handle->audio.codec->frame_size;
             aud.data = audio_buf;
 
@@ -1333,6 +1337,8 @@ static bool ffmpeg_finalize(void *data)
 
 static void ffmpeg_thread(void *data)
 {
+   size_t audio_buf_size;
+   void *audio_buf;
    ffmpeg_t *ff = (ffmpeg_t*)data;
 
    /* For some reason, FFmpeg has a tendency to crash 
@@ -1341,9 +1347,9 @@ static void ffmpeg_thread(void *data)
          ff->params.fb_height * ff->video.pix_size);
    assert(video_buf);
 
-   size_t audio_buf_size = ff->config.audio_enable ? 
+   audio_buf_size = ff->config.audio_enable ? 
       (ff->audio.codec->frame_size * ff->params.channels * sizeof(int16_t)) : 0;
-   void *audio_buf = audio_buf_size ? av_malloc(audio_buf_size) : NULL;
+   audio_buf      = audio_buf_size ? av_malloc(audio_buf_size) : NULL;
 
    while (ff->alive)
    {
@@ -1391,12 +1397,13 @@ static void ffmpeg_thread(void *data)
 
       if (avail_audio)
       {
+         struct ffemu_audio_data aud = {0};
+
          slock_lock(ff->lock);
          fifo_read(ff->audio_fifo, audio_buf, audio_buf_size);
          slock_unlock(ff->lock);
          scond_signal(ff->cond);
 
-         struct ffemu_audio_data aud = {0};
          aud.frames = ff->audio.codec->frame_size;
          aud.data = audio_buf;
 
