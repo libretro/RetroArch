@@ -35,7 +35,7 @@ const char *menu_hash_to_str_fr(uint32_t hash)
       case MENU_LABEL_VALUE_INFORMATION_LIST:
          return "Informations";
       case MENU_LABEL_VALUE_USE_BUILTIN_PLAYER:
-         return "Utiliser le lecteur embarqué"; /* FIXME/UPDATE */
+         return "Utiliser le lecteur embarqué";
       case MENU_LABEL_VALUE_CONTENT_SETTINGS:
          return "Menu rapide";
       case MENU_LABEL_VALUE_RDB_ENTRY_CRC32:
@@ -409,7 +409,7 @@ const char *menu_hash_to_str_fr(uint32_t hash)
       case MENU_LABEL_VALUE_DETECT_CORE_LIST:
          return "Via les fichiers + détecter le core";
       case MENU_LABEL_VALUE_LOAD_CONTENT_HISTORY:
-         return "Via l'historique"; /* FIXME/UPDATE */
+         return "Récemment ouvert";
       case MENU_LABEL_VALUE_AUDIO_ENABLE:
          return "Activer le son";
       case MENU_LABEL_VALUE_FPS_SHOW:
@@ -425,7 +425,7 @@ const char *menu_hash_to_str_fr(uint32_t hash)
       case MENU_LABEL_VALUE_VIDEO_SHADER_NUM_PASSES:
          return "Nombre de passages";
       case MENU_LABEL_VALUE_CONFIGURATIONS:
-         return "Charger un fichier de config"; /* FIXME/UPDATE */
+         return "Charger une configuration";
       case MENU_LABEL_VALUE_REWIND_GRANULARITY:
          return "Précision du rembobinage";
       case MENU_LABEL_VALUE_REMAP_FILE_LOAD:
@@ -783,7 +783,7 @@ const char *menu_hash_to_str_fr(uint32_t hash)
       case MENU_LABEL_VALUE_MENU_SETTINGS:
          return "Réglages du menu";
       case MENU_LABEL_VALUE_MULTIMEDIA_SETTINGS:
-         return "Réglages du lecteur multimédia"; /* FIXME/UPDATE */
+         return "Réglages multimédia";
       case MENU_LABEL_VALUE_UI_SETTINGS:
          return "Réglages interface graphique";
       case MENU_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS:
