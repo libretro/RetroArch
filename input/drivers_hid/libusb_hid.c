@@ -149,7 +149,9 @@ static void libusb_get_description(struct libusb_device *device,
       {
          const struct libusb_interface_descriptor *interdesc = &inter->altsetting[j];
 
-         //if (interdesc->bInterfaceClass == LIBUSB_CLASS_HID)
+#if 0
+         if (interdesc->bInterfaceClass == LIBUSB_CLASS_HID)
+#endif
          {
             adapter->interface_number = (int)interdesc->bInterfaceNumber;
 
@@ -212,7 +214,9 @@ static int add_adapter(void *data, struct libusb_device *dev)
 
    if (adapter->endpoint_in == 0)
    {
-      //fprintf(stderr, "Could not find HID config for device.\n");
+#if 0
+      fprintf(stderr, "Could not find HID config for device.\n");
+#endif
       goto error;
    }
 
@@ -221,7 +225,7 @@ static int add_adapter(void *data, struct libusb_device *dev)
    if (rc != LIBUSB_SUCCESS)
    {
       fprintf(stderr, "Error opening device 0x%p (VID/PID: %04x:%04x).\n",
-            adapter->device, desc.idVendor, desc.idProduct);
+            (void*)adapter->device, desc.idVendor, desc.idProduct);
       goto error;
    }
 
@@ -230,7 +234,9 @@ static int add_adapter(void *data, struct libusb_device *dev)
       libusb_get_string_descriptor_ascii(adapter->handle,
             desc.iManufacturer, adapter->manufacturer_name,
             sizeof(adapter->manufacturer_name));
-      //fprintf(stderr, " Adapter Manufacturer name: %s\n", adapter->manufacturer_name);
+#if 0
+      fprintf(stderr, " Adapter Manufacturer name: %s\n", adapter->manufacturer_name);
+#endif
    }
 
    if (desc.iProduct)
@@ -238,7 +244,9 @@ static int add_adapter(void *data, struct libusb_device *dev)
       libusb_get_string_descriptor_ascii(adapter->handle,
             desc.iProduct, adapter->name,
             sizeof(adapter->name));
-      //fprintf(stderr, " Adapter name: %s\n", adapter->name);
+#if 0
+      fprintf(stderr, " Adapter name: %s\n", adapter->name);
+#endif
    }
 
    device_name   = (const char*)adapter->name;
