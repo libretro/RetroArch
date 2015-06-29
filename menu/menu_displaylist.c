@@ -1293,6 +1293,7 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
             0, 0, 0);
 
    content_playlist_free(playlist);
+   database_info_list_free(db_info);
 
    return 0;
 
