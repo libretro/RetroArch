@@ -229,12 +229,8 @@ void CORE_PREFIX(retro_get_system_av_info)(struct retro_system_av_info *info)
    unsigned height = vctx ? media.height : 240;
    float aspect    = vctx ? media.aspect : 0.0;
 
-   info->timing = (struct retro_system_timing)
-   {
-      .fps = media.interpolate_fps,
-      .sample_rate = actx[0] ? media.sample_rate : 32000.0,
-   };
-
+   info->timing.fps = media.interpolate_fps;
+   info->timing.sample_rate = actx[0] ? media.sample_rate : 32000.0;
 
 #ifdef HAVE_GL_FFT
    if (audio_streams_num > 0 && video_stream < 0)
@@ -245,14 +241,11 @@ void CORE_PREFIX(retro_get_system_av_info)(struct retro_system_av_info *info)
    }
 #endif
 
-   info->geometry = (struct retro_game_geometry)
-   {
-      .base_width   = width,
-      .base_height  = height,
-      .max_width    = width,
-      .max_height   = height,
-      .aspect_ratio = aspect,
-   };
+   info->geometry.base_width   = width;
+   info->geometry.base_height  = height;
+   info->geometry.max_width    = width;
+   info->geometry.max_height   = height;
+   info->geometry.aspect_ratio = aspect;
 }
 
 void CORE_PREFIX(retro_set_environment)(retro_environment_t cb)
@@ -453,7 +446,6 @@ void CORE_PREFIX(retro_run)(void)
 
    CORE_PREFIX(input_poll_cb)();
 
-
    left = CORE_PREFIX(input_state_cb)(0, RETRO_DEVICE_JOYPAD, 0,
          RETRO_DEVICE_ID_JOYPAD_LEFT);
    right = CORE_PREFIX(input_state_cb)(0, RETRO_DEVICE_JOYPAD, 0,
@@ -508,12 +500,12 @@ void CORE_PREFIX(retro_run)(void)
       CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_SET_MESSAGE, &msg_obj);
    }
 
-   last_left = left;
+   last_left  = left;
    last_right = right;
-   last_up = up;
-   last_down = down;
-   last_l = l;
-   last_r = r;
+   last_up    = up;
+   last_down  = down;
+   last_l     = l;
+   last_r     = r;
 
    if (reset_triggered)
    {
@@ -704,7 +696,7 @@ void CORE_PREFIX(retro_run)(void)
 #ifdef HAVE_GL_FFT
    else if (fft)
    {
-      unsigned frames = to_read_frames;
+      unsigned       frames = to_read_frames;
       const int16_t *buffer = audio_buffer;
 
       while (frames)
@@ -805,10 +797,10 @@ static bool open_codecs(void)
    unsigned i;
 
    video_stream = -1;
-   memset(audio_streams, 0, sizeof(audio_streams));
+   memset(audio_streams,    0, sizeof(audio_streams));
    memset(subtitle_streams, 0, sizeof(subtitle_streams));
-   audio_streams_num = 0;
-   audio_streams_ptr = 0;
+   audio_streams_num    = 0;
+   audio_streams_ptr    = 0;
    subtitle_streams_num = 0;
    subtitle_streams_ptr = 0;
 
@@ -957,7 +949,7 @@ static void set_colorspace(struct SwsContext *sws,
 static bool decode_video(AVPacket *pkt, AVFrame *frame, AVFrame *conv, struct SwsContext *sws)
 {
    int got_ptr = 0;
-   int ret = avcodec_decode_video2(vctx, frame, &got_ptr, pkt);
+   int ret     = avcodec_decode_video2(vctx, frame, &got_ptr, pkt);
 
    if (ret < 0)
       return false;
@@ -1067,7 +1059,7 @@ static void decode_thread_seek(double time)
 static void render_ass_img(AVFrame *conv_frame, ASS_Image *img)
 {
    uint32_t *frame = (uint32_t*)conv_frame->data[0];
-   int stride = conv_frame->linesize[0] / sizeof(uint32_t);
+   int      stride = conv_frame->linesize[0] / sizeof(uint32_t);
 
    for (; img; img = img->next)
    {
