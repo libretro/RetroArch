@@ -480,7 +480,7 @@ ifeq ($(HAVE_UDEV), 1)
 endif
 
 ifneq ($(C89_BUILD), 1)
-# PulseAudio is not a C89-compliant API.
+# libusb is not a C89-compliant API.
 ifeq ($(HAVE_LIBUSB), 1)
 	DEFINES += -DHAVE_LIBUSB
 	OBJ += input/drivers_hid/libusb_hid.o
