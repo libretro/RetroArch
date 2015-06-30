@@ -17,6 +17,7 @@
 #include <rthreads/rthreads.h>
 #include <compat/strl.h>
 #include <queues/fifo_buffer.h>
+#include <retro_log.h>
 #include "../connect/joypad_connection.h"
 #include "../../driver.h"
 #include "../../runloop.h"
@@ -196,7 +197,7 @@ static int add_adapter(void *data, struct libusb_device *dev)
    if (!adapter || !hid)
    {
       free(adapter);
-      fprintf(stderr, "Allocation of adapter failed.\n");
+      RARCH_ERR("Allocation of adapter failed.\n");
       return -1;
    }
 
@@ -204,7 +205,7 @@ static int add_adapter(void *data, struct libusb_device *dev)
 
    if (rc != LIBUSB_SUCCESS)
    {
-      fprintf(stderr, "Error getting device descriptor.\n");
+      RARCH_ERR("Error getting device descriptor.\n");
       goto error;
    }
 
@@ -214,9 +215,7 @@ static int add_adapter(void *data, struct libusb_device *dev)
 
    if (adapter->endpoint_in == 0)
    {
-#if 0
-      fprintf(stderr, "Could not find HID config for device.\n");
-#endif
+      RARCH_ERR("Could not find HID config for device.\n");
       goto error;
    }
 
@@ -224,7 +223,7 @@ static int add_adapter(void *data, struct libusb_device *dev)
 
    if (rc != LIBUSB_SUCCESS)
    {
-      fprintf(stderr, "Error opening device 0x%p (VID/PID: %04x:%04x).\n",
+      RARCH_ERR("Error opening device 0x%p (VID/PID: %04x:%04x).\n",
             (void*)adapter->device, desc.idVendor, desc.idProduct);
       goto error;
    }
@@ -235,7 +234,7 @@ static int add_adapter(void *data, struct libusb_device *dev)
             desc.iManufacturer, adapter->manufacturer_name,
             sizeof(adapter->manufacturer_name));
 #if 0
-      fprintf(stderr, " Adapter Manufacturer name: %s\n", adapter->manufacturer_name);
+      RARCH_ERR(" Adapter Manufacturer name: %s\n", adapter->manufacturer_name);
 #endif
    }
 
@@ -245,7 +244,7 @@ static int add_adapter(void *data, struct libusb_device *dev)
             desc.iProduct, adapter->name,
             sizeof(adapter->name));
 #if 0
-      fprintf(stderr, " Adapter name: %s\n", adapter->name);
+      RARCH_ERR(" Adapter name: %s\n", adapter->name);
 #endif
    }
 
@@ -259,7 +258,7 @@ static int add_adapter(void *data, struct libusb_device *dev)
 
    if (!adapter->send_control_lock || !adapter->send_control_buffer)
    {
-      fprintf(stderr, "Error creating send control buffer.\n");
+      RARCH_ERR("Error creating send control buffer.\n");
       goto error;
    }
 
@@ -271,16 +270,16 @@ static int add_adapter(void *data, struct libusb_device *dev)
 
    if (!pad_connection_has_interface(hid->slots, adapter->slot))
    {
-      fprintf(stderr, " Interface not found (%s).\n", adapter->name);
+      RARCH_ERR(" Interface not found (%s).\n", adapter->name);
       goto error;
    }
 
-   fprintf(stderr, "Interface found: [%s].\n", adapter->name);
+   RARCH_LOG("Interface found: [%s].\n", adapter->name);
 
    if (libusb_kernel_driver_active(adapter->handle, 0) == 1
          && libusb_detach_kernel_driver(adapter->handle, 0))
    {
-      fprintf(stderr, "Error detaching handle 0x%p from kernel.\n", adapter->handle);
+      RARCH_ERR("Error detaching handle 0x%p from kernel.\n", adapter->handle);
       goto error;
    }
 
@@ -288,11 +287,11 @@ static int add_adapter(void *data, struct libusb_device *dev)
 
    if (rc != LIBUSB_SUCCESS)
    {
-      fprintf(stderr, "Error claiming interface %d .\n", adapter->interface_number);
+      RARCH_ERR("Error claiming interface %d .\n", adapter->interface_number);
       goto error;
    }
 
-   fprintf(stderr, "Device 0x%p attached (VID/PID: %04x:%04x).\n",
+   RARCH_LOG("Device 0x%p attached (VID/PID: %04x:%04x).\n",
          adapter->device, desc.idVendor, desc.idProduct);
 
    libusb_hid_device_add_autodetect(adapter->slot,
@@ -303,7 +302,7 @@ static int add_adapter(void *data, struct libusb_device *dev)
 
    if (!adapter->thread)
    {
-      fprintf(stderr, "Error initializing adapter thread.\n");
+      RARCH_ERR("Error initializing adapter thread.\n");
       goto error;
    }
 
@@ -377,7 +376,7 @@ static int libusb_hid_hotplug_callback(struct libusb_context *ctx,
          remove_adapter(hid, dev);
          break;
       default:
-         fprintf(stderr, "Unhandled event: %d\n", event);
+         RARCH_WARN("Unhandled event: %d\n", event);
          break;
    }
 
@@ -544,7 +543,7 @@ static void *libusb_hid_init(void)
 
    if (ret != LIBUSB_SUCCESS)
    {
-      fprintf(stderr, "Error creating a hotplug callback.\n");
+      RARCH_ERR("Error creating a hotplug callback.\n");
       goto error;
    }
 
@@ -552,7 +551,7 @@ static void *libusb_hid_init(void)
 
    if (!hid->poll_thread)
    {
-      fprintf(stderr, "Error creating polling thread");
+      RARCH_ERR("Error creating polling thread");
       goto error;
    }
 
