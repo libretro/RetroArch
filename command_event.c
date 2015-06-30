@@ -982,7 +982,7 @@ static bool event_update_system_info(struct retro_system_info *_info,
  * event_command:
  * @cmd                  : Event command index.
  *
- * Performs RetroArch event command with index @cmd.
+ * Performs program event command with index @cmd.
  *
  * Returns: true (1) on success, otherwise false (0).
  **/

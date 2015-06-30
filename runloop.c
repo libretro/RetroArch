@@ -65,7 +65,7 @@ static bool check_pause(bool pause_pressed, bool frameadvance_pressed)
    static bool old_focus    = true;
    bool focus               = true;
    enum event_command cmd   = EVENT_CMD_NONE;
-   bool old_is_paused       = runloop->is_paused;
+   bool old_is_paused       = runloop ? runloop->is_paused : false;
    settings_t *settings     = config_get_ptr();
 
    /* FRAMEADVANCE will set us into pause mode. */

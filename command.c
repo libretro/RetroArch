@@ -599,7 +599,7 @@ static bool verify_command(const char *cmd)
    if (command_get_arg(cmd, NULL, NULL))
       return true;
 
-   RARCH_ERR("Command \"%s\" is not recognized by RetroArch.\n", cmd);
+   RARCH_ERR("Command \"%s\" is not recognized by the program.\n", cmd);
    RARCH_ERR("\tValid commands:\n");
    for (i = 0; i < sizeof(map) / sizeof(map[0]); i++)
       RARCH_ERR("\t\t%s\n", map[i].str);

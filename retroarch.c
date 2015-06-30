@@ -163,7 +163,7 @@ static void print_version(void)
 /**
  * print_help:
  *
- * Prints help message explaining RetroArch's commandline switches.
+ * Prints help message explaining the program's commandline switches.
  **/
 static void print_help(const char *arg0)
 {
@@ -494,7 +494,7 @@ enum rarch_content_type rarch_path_is_media_type(const char *path)
  * @argc                 : Count of (commandline) arguments.
  * @argv                 : (Commandline) arguments.
  *
- * Parses (commandline) arguments passed to RetroArch.
+ * Parses (commandline) arguments passed to program.
  *
  **/
 static void parse_input(int argc, char *argv[])
@@ -1078,7 +1078,7 @@ void rarch_main_alloc(void)
  * rarch_main_new:
  *
  * Will teardown drivers and clears all 
- * internal state of RetroArch.
+ * internal state of the program.
  * If @inited is true, will initialize all
  * drivers again after teardown.
  **/
@@ -1106,7 +1106,7 @@ void rarch_main_free(void)
  * rarch_verify_api_version:
  *
  * Compare libretro core API version against API version
- * used by RetroArch.
+ * used by the program.
  *
  * TODO - when libretro v2 gets added, allow for switching
  * between libretro version backend dynamically.
@@ -1173,7 +1173,7 @@ void rarch_init_system_av_info(void)
  * @argc                 : Count of (commandline) arguments.
  * @argv                 : (Commandline) arguments. 
  *
- * Initializes RetroArch.
+ * Initializes the program.
  *
  * Returns: 0 on success, otherwise 1 if there was an error.
  **/
@@ -1462,7 +1462,7 @@ void rarch_main_set_state(unsigned cmd)
 /**
  * rarch_main_deinit:
  *
- * Deinitializes RetroArch.
+ * Deinitializes the program.
  **/
 void rarch_main_deinit(void)
 {
