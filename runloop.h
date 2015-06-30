@@ -307,6 +307,9 @@ int rarch_main_iterate(void);
 void rarch_main_msg_queue_push(const char *msg, unsigned prio,
       unsigned duration, bool flush);
 
+void rarch_main_msg_queue_push_new(uint32_t hash, unsigned prio,
+      unsigned duration, bool flush);
+
 const char *rarch_main_msg_queue_pull(void);
 
 void rarch_main_msg_queue_free(void);

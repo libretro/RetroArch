@@ -21,6 +21,7 @@
 #include <rthreads/rthreads.h>
 #endif
 
+#include "msg_hash.h"
 #include "runloop.h"
 
 static msg_queue_t *g_msg_queue;
@@ -44,6 +45,17 @@ const char *rarch_main_msg_queue_pull(void)
 #endif
 
    return ret;
+}
+
+void rarch_main_msg_queue_push_new(uint32_t hash, unsigned prio, unsigned duration,
+      bool flush)
+{
+   const char *msg = msg_hash_to_str(hash);
+
+   if (!msg)
+      return;
+
+   rarch_main_msg_queue_push(msg, prio, duration, flush);
 }
 
 void rarch_main_msg_queue_push(const char *msg, unsigned prio, unsigned duration,
