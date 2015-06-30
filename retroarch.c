@@ -594,9 +594,10 @@ static void parse_input(int argc, char *argv[])
    for (;;)
    {
       int port;
-      int c = getopt_long(argc, argv, optstring, opts, NULL);
+      int c;
 
-      val   = 0;
+      val = 0;
+      c   = getopt_long(argc, argv, optstring, opts, NULL);
 
       if (c == -1)
          break;
