@@ -89,28 +89,44 @@ static void glui_render_quad(gl_t *gl, int x, int y, int w, int h,
 {
    unsigned width, height;
    struct gl_coords coords;
+   GLfloat color[16], tex_coord[8], vertex[8];
    menu_handle_t *menu = menu_driver_get_ptr();
    glui_handle_t *glui = (glui_handle_t*)menu->userdata;
-   static const GLfloat vertex[] = {
-      0, 0,
-      1, 0,
-      0, 1,
-      1, 1,
-   };
 
-   static const GLfloat tex_coord[] = {
-      0, 1,
-      1, 1,
-      0, 0,
-      1, 0,
-   };
+   vertex[0] = 0;
+   vertex[1] = 0;
+   vertex[2] = 1;
+   vertex[3] = 0;
+   vertex[4] = 0;
+   vertex[5] = 1;
+   vertex[6] = 1;
+   vertex[7] = 1;
 
-   GLfloat color[] = {
-      r, g, b, a,
-      r, g, b, a,
-      r, g, b, a,
-      r, g, b, a,
-   };
+   tex_coord[0] = 0;
+   tex_coord[1] = 1;
+   tex_coord[2] = 1;
+   tex_coord[3] = 1;
+   tex_coord[4] = 0;
+   tex_coord[5] = 0;
+   tex_coord[6] = 1;
+   tex_coord[7] = 0;
+
+   color[ 0]    = r;
+   color[ 1]    = g;
+   color[ 2]    = b;
+   color[ 3]    = a;
+   color[ 4]    = r;
+   color[ 5]    = g;
+   color[ 6]    = b;
+   color[ 7]    = a;
+   color[ 8]    = r;
+   color[ 9]    = g;
+   color[10]    = b;
+   color[11]    = a;
+   color[12]    = r;
+   color[13]    = g;
+   color[14]    = b;
+   color[15]    = a;
 
    video_driver_get_size(&width, &height);
 
