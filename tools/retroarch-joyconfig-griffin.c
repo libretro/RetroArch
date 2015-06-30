@@ -16,6 +16,8 @@
 
 #define IS_JOYCONFIG
 
+#include <retro_environment.h>
+
 #include "retroarch-joyconfig.c"
 
 #include "../libretro-common/dynamic/dylib.c"
@@ -57,12 +59,15 @@
 #include "../input/drivers/nullinput.c"
 #include "../input/drivers_hid/null_hid.c"
 
+#include "../libretro-common/rthreads/rthreads.c"
+
+#ifndef __STDC_C89__
 #ifdef HAVE_LIBUSB
 #include "../input/drivers_hid/libusb_hid.c"
-#include "../libretro-common/rthreads/rthreads.c"
 
 #ifndef HAVE_HID
 #define HAVE_HID
+#endif
 #endif
 #endif
 
