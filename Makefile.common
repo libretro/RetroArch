@@ -437,10 +437,13 @@ endif
 
 #Input
 
+ifneq ($(C89_BUILD), 1)
+# Wayland is not a C89-compliant API.
 ifeq ($(HAVE_WAYLAND), 1)
  #OBJ += input/drivers/wayland.o
  DEFINES += $(WAYLAND_CFLAGS)
  LIBS += $(WAYLAND_LIBS)
+endif
 endif
 
 ifeq ($(HAVE_DINPUT), 1)
@@ -568,11 +571,14 @@ ifeq ($(HAVE_GL_CONTEXT), 1)
 		endif
    endif
 
+ifneq ($(C89_BUILD), 1)
+	# Wayland is not a C89-compliant API.
    ifeq ($(HAVE_WAYLAND), 1)
 	   ifeq ($(HAVE_EGL), 1)
 	     OBJ += gfx/drivers_context/wayland_ctx.o
       endif
    endif
+endif
 	
    ifeq ($(HAVE_GLES), 1)
       LIBS += $(GLES_LIBS)
