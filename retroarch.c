@@ -70,7 +70,7 @@ char orig_savefile_dir[PATH_MAX_LENGTH];
 /* Descriptive names for options without short variant. Please keep the name in
    sync with the option name. Order does not matter. */
 enum {
-   RA_OPT_MENU,
+   RA_OPT_MENU = 256, /* must be outside the range of a char */
    RA_OPT_PORT,
    RA_OPT_SPECTATE,
    RA_OPT_NICK,
@@ -504,21 +504,20 @@ static void parse_input(int argc, char *argv[])
    global_t  *global     = global_get_ptr();
    settings_t *settings  = config_get_ptr();
 
-#define RA_LONG_OPT_ONLY 65536
    const struct option opts[] = {
 #ifdef HAVE_DYNAMIC
       { "libretro",     1, NULL, 'L' },
 #endif
-      { "menu",         0, NULL, RA_LONG_OPT_ONLY+RA_OPT_MENU },
+      { "menu",         0, NULL, RA_OPT_MENU },
       { "help",         0, NULL, 'h' },
       { "save",         1, NULL, 's' },
       { "fullscreen",   0, NULL, 'f' },
       { "record",       1, NULL, 'r' },
-      { "recordconfig", 1, NULL, RA_LONG_OPT_ONLY+RA_OPT_RECORDCONFIG },
-      { "size",         1, NULL, RA_LONG_OPT_ONLY+RA_OPT_SIZE },
+      { "recordconfig", 1, NULL, RA_OPT_RECORDCONFIG },
+      { "size",         1, NULL, RA_OPT_SIZE },
       { "verbose",      0, NULL, 'v' },
       { "config",       1, NULL, 'c' },
-      { "appendconfig", 1, NULL, RA_LONG_OPT_ONLY+RA_OPT_APPENDCONFIG },
+      { "appendconfig", 1, NULL, RA_OPT_APPENDCONFIG },
       { "nodevice",     1, NULL, 'N' },
       { "dualanalog",   1, NULL, 'A' },
       { "device",       1, NULL, 'd' },
@@ -530,25 +529,25 @@ static void parse_input(int argc, char *argv[])
       { "host",         0, NULL, 'H' },
       { "connect",      1, NULL, 'C' },
       { "frames",       1, NULL, 'F' },
-      { "port",         1, NULL, RA_LONG_OPT_ONLY+RA_OPT_PORT },
-      { "spectate",     0, NULL, RA_LONG_OPT_ONLY+RA_OPT_SPECTATE },
+      { "port",         1, NULL, RA_OPT_PORT },
+      { "spectate",     0, NULL, RA_OPT_SPECTATE },
 #endif
-      { "nick",         1, NULL, RA_LONG_OPT_ONLY+RA_OPT_NICK },
+      { "nick",         1, NULL, RA_OPT_NICK },
 #if defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)
-      { "command",      1, NULL, RA_LONG_OPT_ONLY+RA_OPT_COMMAND },
+      { "command",      1, NULL, RA_OPT_COMMAND },
 #endif
       { "ups",          1, NULL, 'U' },
-      { "bps",          1, NULL, RA_LONG_OPT_ONLY+RA_OPT_BPS },
-      { "ips",          1, NULL, RA_LONG_OPT_ONLY+RA_OPT_IPS },
-      { "no-patch",     0, NULL, RA_LONG_OPT_ONLY+RA_OPT_NO_PATCH },
+      { "bps",          1, NULL, RA_OPT_BPS },
+      { "ips",          1, NULL, RA_OPT_IPS },
+      { "no-patch",     0, NULL, RA_OPT_NO_PATCH },
       { "detach",       0, NULL, 'D' },
-      { "features",     0, NULL, RA_LONG_OPT_ONLY+RA_OPT_FEATURES },
-      { "subsystem",    1, NULL, RA_LONG_OPT_ONLY+RA_OPT_SUBSYSTEM },
-      { "max-frames",   1, NULL, RA_LONG_OPT_ONLY+RA_OPT_MAX_FRAMES },
-      { "eof-exit",     0, NULL, RA_LONG_OPT_ONLY+RA_OPT_EOF_EXIT },
-      { "version",      0, NULL, RA_LONG_OPT_ONLY+RA_OPT_VERSION },
+      { "features",     0, NULL, RA_OPT_FEATURES },
+      { "subsystem",    1, NULL, RA_OPT_SUBSYSTEM },
+      { "max-frames",   1, NULL, RA_OPT_MAX_FRAMES },
+      { "eof-exit",     0, NULL, RA_OPT_EOF_EXIT },
+      { "version",      0, NULL, RA_OPT_VERSION },
 #ifdef HAVE_FILE_LOGGER
-      { "log-file",     1, NULL, RA_LONG_OPT_ONLY+RA_OPT_LOG_FILE },
+      { "log-file",     1, NULL, RA_OPT_LOG_FILE },
 #endif
       { NULL, 0, NULL, 0 }
    };
@@ -595,11 +594,12 @@ static void parse_input(int argc, char *argv[])
    {
       int port;
       int c = getopt_long(argc, argv, optstring, opts, NULL);
+printf("test=%i\n",c);
 
       if (c == -1)
          break;
 
-      if (c < RA_LONG_OPT_ONLY) switch (c)
+      switch (c)
       {
          case 'h':
             print_help(argv[0]);
@@ -763,17 +763,7 @@ static void parse_input(int argc, char *argv[])
             FreeConsole();
 #endif
             break;
-
-         case '?':
-            print_help(argv[0]);
-            rarch_fail(1, "parse_input()");
-
-         default:
-            RARCH_ERR("Error parsing arguments.\n");
-            rarch_fail(1, "parse_input()");
-      }
-      else switch (c - RA_LONG_OPT_ONLY)
-      {
+         
          case RA_OPT_MENU:
             global->core_type                  = CORE_TYPE_DUMMY;
             break;
@@ -870,6 +860,11 @@ static void parse_input(int argc, char *argv[])
             global->log_file = fopen(optarg, "wb");
             break;
 #endif
+
+         case '?':
+            print_help(argv[0]);
+            rarch_fail(1, "parse_input()");
+
          default:
             RARCH_ERR("Error parsing arguments.\n");
             rarch_fail(1, "parse_input()");
