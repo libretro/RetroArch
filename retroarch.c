@@ -751,11 +751,29 @@ printf("test=%i\n",c);
             break;
 #endif
 
+         case RA_OPT_BPS:
+            strlcpy(global->bps_name, optarg,
+                  sizeof(global->bps_name));
+            global->bps_pref = true;
+            global->has_set_bps_pref = true;
+            break;
+
          case 'U':
             strlcpy(global->ups_name, optarg,
                   sizeof(global->ups_name));
             global->ups_pref = true;
             global->has_set_ups_pref = true;
+            break;
+
+         case RA_OPT_IPS:
+            strlcpy(global->ips_name, optarg,
+                  sizeof(global->ips_name));
+            global->ips_pref = true;
+            global->has_set_ips_pref = true;
+            break;
+
+         case RA_OPT_NO_PATCH:
+            global->block_patch = true;
             break;
 
          case 'D':
@@ -798,24 +816,6 @@ printf("test=%i\n",c);
          case RA_OPT_APPENDCONFIG:
             strlcpy(global->append_config_path, optarg,
                   sizeof(global->append_config_path));
-            break;
-
-         case RA_OPT_BPS:
-            strlcpy(global->bps_name, optarg,
-                  sizeof(global->bps_name));
-            global->bps_pref = true;
-            global->has_set_bps_pref = true;
-            break;
-
-         case RA_OPT_IPS:
-            strlcpy(global->ips_name, optarg,
-                  sizeof(global->ips_name));
-            global->ips_pref = true;
-            global->has_set_ips_pref = true;
-            break;
-
-         case RA_OPT_NO_PATCH:
-            global->block_patch = true;
             break;
 
          case RA_OPT_SIZE:
