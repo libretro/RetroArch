@@ -554,6 +554,7 @@ static void parse_input(int argc, char *argv[])
 
    global->libretro_no_content           = false;
    global->core_type                     = CORE_TYPE_PLAIN;
+   *global->subsystem                    = '\0';
    global->has_set_save_path             = false;
    global->has_set_state_path            = false;
    global->has_set_libretro              = false;
@@ -569,14 +570,12 @@ static void parse_input(int argc, char *argv[])
    global->has_set_ups_pref              = false;
    global->has_set_bps_pref              = false;
    global->has_set_ips_pref              = false;
-
    global->ups_pref                      = false;
    global->bps_pref                      = false;
    global->ips_pref                      = false;
    *global->ups_name                     = '\0';
    *global->bps_name                     = '\0';
    *global->ips_name                     = '\0';
-   *global->subsystem                    = '\0';
 
    global->overrides_active              = false;
 
