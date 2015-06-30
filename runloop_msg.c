@@ -67,33 +67,33 @@ void rarch_main_msg_queue_push(const char *msg, unsigned prio, unsigned duration
 
 void rarch_main_msg_queue_free(void)
 {
-   if (g_msg_queue)
-   {
+   if (!g_msg_queue)
+      return;
+
 #ifdef HAVE_THREADS
    slock_lock(mq_lock);
 #endif
 
-      msg_queue_free(g_msg_queue);
+   msg_queue_free(g_msg_queue);
 
 #ifdef HAVE_THREADS
-      slock_unlock(mq_lock);
-      slock_free(mq_lock);
+   slock_unlock(mq_lock);
+   slock_free(mq_lock);
 #endif
-   }
 
    g_msg_queue = NULL;
 }
 
 void rarch_main_msg_queue_init(void)
 {
-   if (!g_msg_queue)
-   {
-      g_msg_queue = msg_queue_new(8);
-      rarch_assert(g_msg_queue);
+   if (g_msg_queue)
+      return;
+
+   g_msg_queue = msg_queue_new(8);
+   rarch_assert(g_msg_queue);
 
 #ifdef HAVE_THREADS
-      mq_lock = slock_new();
-      rarch_assert(mq_lock);
+   mq_lock = slock_new();
+   rarch_assert(mq_lock);
 #endif
-   }
 }
