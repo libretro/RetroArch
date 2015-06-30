@@ -848,13 +848,16 @@ const char *menu_hash_to_str_nl(uint32_t hash)
 
 int menu_hash_get_help_nl(uint32_t hash, char *s, size_t len)
 {
+   int ret = 0;
+
    switch (hash)
    {
       case 0:
       default:
          strlcpy(s, "Geen informatie beschikbaar.", len);
-         return -1;
+         ret = -1;
+         break;
    }
 
-   return 0;
+   return ret;
 }

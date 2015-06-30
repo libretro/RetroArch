@@ -406,11 +406,11 @@ unsigned rarch_get_cpu_cores(void)
 uint64_t rarch_get_cpu_features(void)
 {
    int flags[4];
-   unsigned max_flag;
-   uint64_t cpu_flags;
    int vendor_shuffle[3];
-   char vendor[13] = {0};
-   uint64_t cpu = 0;
+   char vendor[13]     = {0};
+   uint64_t cpu_flags  = 0;
+   uint64_t cpu        = 0;
+   unsigned max_flag   = 0;
 #if defined(CPU_X86)
    const int avx_flags = (1 << 27) | (1 << 28);
 #endif
