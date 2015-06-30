@@ -594,7 +594,6 @@ static void parse_input(int argc, char *argv[])
    {
       int port;
       int c = getopt_long(argc, argv, optstring, opts, NULL);
-printf("test=%i\n",c);
 
       if (c == -1)
          break;
