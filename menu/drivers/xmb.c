@@ -337,6 +337,7 @@ static void xmb_draw_icon(gl_t *gl, xmb_handle_t *xmb,
 {
    struct gl_coords coords;
    unsigned width, height;
+   GLfloat color[16];
    math_matrix_4x4 mymat, mrot, mscal;
 
    if (alpha > xmb->alpha)
@@ -354,12 +355,22 @@ static void xmb_draw_icon(gl_t *gl, xmb_handle_t *xmb,
          y > height + xmb->icon.size)
       return;
 
-   GLfloat color[] = {
-      1.0f, 1.0f, 1.0f, alpha,
-      1.0f, 1.0f, 1.0f, alpha,
-      1.0f, 1.0f, 1.0f, alpha,
-      1.0f, 1.0f, 1.0f, alpha,
-   };
+   color[ 0] = 1.0f;
+   color[ 1] = 1.0f;
+   color[ 2] = 1.0f;
+   color[ 3] = alpha;
+   color[ 4] = 1.0f;
+   color[ 5] = 1.0f;
+   color[ 6] = 1.0f;
+   color[ 7] = alpha;
+   color[ 8] = 1.0f;
+   color[ 9] = 1.0f;
+   color[10] = 1.0f;
+   color[11] = alpha;
+   color[12] = 1.0f;
+   color[13] = 1.0f;
+   color[14] = 1.0f;
+   color[15] = alpha;
 
    glViewport(x, height - y, xmb->icon.size, xmb->icon.size);
 
@@ -385,6 +396,7 @@ static void xmb_draw_icon_predone(gl_t *gl, xmb_handle_t *xmb,
 {
    struct gl_coords coords;
    unsigned width, height;
+   GLfloat color[16];
 
    if (alpha > xmb->alpha)
       alpha = xmb->alpha;
@@ -401,12 +413,22 @@ static void xmb_draw_icon_predone(gl_t *gl, xmb_handle_t *xmb,
          y > height + xmb->icon.size)
       return;
 
-   GLfloat color[] = {
-      1.0f, 1.0f, 1.0f, alpha,
-      1.0f, 1.0f, 1.0f, alpha,
-      1.0f, 1.0f, 1.0f, alpha,
-      1.0f, 1.0f, 1.0f, alpha,
-   };
+   color[ 0] = 1.0f;
+   color[ 1] = 1.0f;
+   color[ 2] = 1.0f;
+   color[ 3] = alpha;
+   color[ 4] = 1.0f;
+   color[ 5] = 1.0f;
+   color[ 6] = 1.0f;
+   color[ 7] = alpha;
+   color[ 8] = 1.0f;
+   color[ 9] = 1.0f;
+   color[10] = 1.0f;
+   color[11] = alpha;
+   color[12] = 1.0f;
+   color[13] = 1.0f;
+   color[14] = 1.0f;
+   color[15] = alpha;
 
    if (gl->shader && gl->shader->use)
       gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
