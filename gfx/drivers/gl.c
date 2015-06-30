@@ -1465,13 +1465,25 @@ static void gl_pbo_async_readback(gl_t *gl)
 static INLINE void gl_draw_texture(gl_t *gl)
 {
    unsigned width, height;
+   GLfloat color[16];
 
-   const GLfloat color[] = {
-      1.0f, 1.0f, 1.0f, gl->menu_texture_alpha,
-      1.0f, 1.0f, 1.0f, gl->menu_texture_alpha,
-      1.0f, 1.0f, 1.0f, gl->menu_texture_alpha,
-      1.0f, 1.0f, 1.0f, gl->menu_texture_alpha,
-   };
+   color[ 0] = 1.0f;
+   color[ 1] = 1.0f;
+   color[ 2] = 1.0f;
+   color[ 3] = gl->menu_texture_alpha;
+   color[ 4] = 1.0f;
+   color[ 5] = 1.0f;
+   color[ 6] = 1.0f;
+   color[ 7] = gl->menu_texture_alpha;
+   color[ 8] = 1.0f;
+   color[ 9] = 1.0f;
+   color[10] = 1.0f;
+   color[11] = gl->menu_texture_alpha;
+   color[12] = 1.0f;
+   color[13] = 1.0f;
+   color[14] = 1.0f;
+   color[15] = gl->menu_texture_alpha;
+
    if (!gl->menu_texture)
       return;
 
