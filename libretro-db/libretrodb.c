@@ -180,7 +180,7 @@ int libretrodb_open(const char *path, libretrodb_t *db)
    }
 
    header.metadata_offset = betoht64(header.metadata_offset);
-   flseek(fp, header.metadata_offset, SEEK_SET);
+   flseek(fp, (int)header.metadata_offset, SEEK_SET);
 
    if (libretrodb_read_metadata(fp, &md) < 0)
    {
@@ -201,7 +201,7 @@ static int libretrodb_find_index(libretrodb_t *db, const char *index_name,
       libretrodb_index_t *idx)
 {
    off_t eof    = flseek(db->fp, 0, SEEK_END);
-   off_t offset = flseek(db->fp, db->first_index_offset, SEEK_SET);
+   off_t offset = flseek(db->fp, (int)db->first_index_offset, SEEK_SET);
 
    while (offset < eof)
    {
@@ -210,7 +210,7 @@ static int libretrodb_find_index(libretrodb_t *db, const char *index_name,
       if (strncmp(index_name, idx->name, strlen(idx->name)) == 0)
          return 0;
 
-      offset = flseek(db->fp, idx->next, SEEK_CUR);
+      offset = flseek(db->fp, (int)idx->next, SEEK_CUR);
    }
 
    return -1;
@@ -276,11 +276,11 @@ int libretrodb_find_entry(libretrodb_t *db, const char *index_name,
       nread += rv;
    }
 
-   rv = binsearch(buff, key, db->count, idx.key_size, &offset);
+   rv = binsearch(buff, key, db->count, (uint8_t)idx.key_size, &offset);
    free(buff);
 
    if (rv == 0)
-      flseek(db->fp, offset, SEEK_SET);
+      flseek(db->fp, (int)offset, SEEK_SET);
 
    return rmsgpack_dom_read(db->fp, out);
 }
@@ -297,7 +297,7 @@ int libretrodb_cursor_reset(libretrodb_cursor_t *cursor)
 {
    cursor->eof = 0;
    return flseek(cursor->fp,
-         cursor->db->root + sizeof(libretrodb_header_t),
+         (int)cursor->db->root + sizeof(libretrodb_header_t),
          SEEK_SET);
 }
 
@@ -412,12 +412,12 @@ int libretrodb_create_index(libretrodb_t *db,
    struct rmsgpack_dom_value item;
    struct rmsgpack_dom_value *field;
    struct bintree tree;
-   uint64_t idx_header_offset;
-   libretrodb_cursor_t cur = {0};
-   void *buff         = NULL;
-   uint64_t *buff_u64 = NULL;
-   uint8_t field_size = 0;
-   uint64_t item_loc  = libretrodb_tell(db);
+   libretrodb_cursor_t cur    = {0};
+   void *buff                 = NULL;
+   uint64_t *buff_u64         = NULL;
+   uint64_t idx_header_offset = 0;
+   uint8_t field_size         = 0;
+   uint64_t item_loc          = libretrodb_tell(db);
 
    bintree_new(&tree, node_compare, &field_size);
 

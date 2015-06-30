@@ -519,7 +519,7 @@ int rmsgpack_dom_read_into(FILE *fp, ...)
             min_len     = (value->val.binary.len > *uint_value) ?
                *uint_value : value->val.binary.len;
 
-            memcpy(buff_value, value->val.binary.buff, min_len);
+            memcpy(buff_value, value->val.binary.buff, (size_t)min_len);
             break;
          case RDT_STRING:
             buff_value = va_arg(ap, char *);
@@ -528,7 +528,7 @@ int rmsgpack_dom_read_into(FILE *fp, ...)
                *uint_value : value->val.string.len + 1;
             *uint_value = min_len;
 
-            memcpy(buff_value, value->val.string.buff, min_len);
+            memcpy(buff_value, value->val.string.buff, (size_t)min_len);
             break;
          default:
             rv = -1;
