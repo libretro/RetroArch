@@ -383,13 +383,13 @@ bool screenshot_dump(const char *folder, const void *frame,
    if (!out_buffer)
       return false;
 
-   scaler.in_width   = width;
-   scaler.in_height  = height;
-   scaler.out_width  = width;
-   scaler.out_height = height;
-   scaler.in_stride  = -pitch;
-   scaler.out_stride = width * 3;
-   scaler.out_fmt = SCALER_FMT_BGR24;
+   scaler.in_width    = width;
+   scaler.in_height   = height;
+   scaler.out_width   = width;
+   scaler.out_height  = height;
+   scaler.in_stride   = -pitch;
+   scaler.out_stride  = width * 3;
+   scaler.out_fmt     = SCALER_FMT_BGR24;
    scaler.scaler_type = SCALER_TYPE_POINT;
 
    if (bgr24)
