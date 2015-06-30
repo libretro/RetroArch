@@ -113,6 +113,15 @@ OBJ += frontend/frontend.o \
 		system.o \
 		retroarch_info.o \
 		command_event.o \
+		msg_hash.o \
+		intl/msg_hash_de.o \
+		intl/msg_hash_eo.o \
+		intl/msg_hash_es.o \
+		intl/msg_hash_fr.o \
+		intl/msg_hash_it.o \
+		intl/msg_hash_nl.o \
+		intl/msg_hash_pt.o \
+		intl/msg_hash_us.o \
 		runloop.o \
 		runloop_data.o \
 		runloop_msg.o \

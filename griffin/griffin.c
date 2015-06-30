@@ -671,6 +671,16 @@ RETROARCH
 #include "../runloop_msg.c"
 #include "../system.c"
 
+#include "../msg_hash.c"
+#include "../intl/msg_hash_de.c"
+#include "../intl/msg_hash_es.c"
+#include "../intl/msg_hash_eo.c"
+#include "../intl/msg_hash_fr.c"
+#include "../intl/msg_hash_it.c"
+#include "../intl/msg_hash_nl.c"
+#include "../intl/msg_hash_pt.c"
+#include "../intl/msg_hash_us.c"
+
 
 /*============================================================
 RECORDING
