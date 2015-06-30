@@ -128,6 +128,7 @@ size_t libretro_ffmpeg_retro_get_memory_size(unsigned id);
 
 #endif
 
+#ifdef HAVE_IMAGEVIEWER
 /* Internal image viewer core. */
 
 void libretro_imageviewer_retro_init(void);
@@ -180,5 +181,7 @@ unsigned libretro_imageviewer_retro_get_region(void);
 void *libretro_imageviewer_retro_get_memory_data(unsigned id);
 
 size_t libretro_imageviewer_retro_get_memory_size(unsigned id);
+
+#endif
 
 #endif
