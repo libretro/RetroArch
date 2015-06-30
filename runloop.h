@@ -16,7 +16,6 @@
 #ifndef __RETROARCH_RUNLOOP_H
 #define __RETROARCH_RUNLOOP_H
 
-#include <queues/message_queue.h>
 #include <setjmp.h>
 #include "libretro.h"
 #include "core_info.h"
@@ -56,8 +55,6 @@ typedef struct runloop
          retro_time_t last_time;
       } limit;
    } frames;
-
-   msg_queue_t *msg_queue;
 } runloop_t;
 
 typedef struct rarch_resolution

@@ -668,6 +668,7 @@ RETROARCH
 #include "../retroarch_info.c"
 #include "../runloop.c"
 #include "../runloop_data.c"
+#include "../runloop_msg.c"
 #include "../system.c"
 
 
