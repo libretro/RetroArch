@@ -448,20 +448,32 @@ static void xmb_draw_boxart(gl_t *gl, xmb_handle_t *xmb)
 {
    struct gl_coords coords;
    unsigned width, height;
+   float x, y;
    math_matrix_4x4 mymat, mrot, mscal;
+   GLfloat color[16];
 
    video_driver_get_size(&width, &height);
 
-   GLfloat color[] = {
-      1.0f, 1.0f, 1.0f, xmb->alpha,
-      1.0f, 1.0f, 1.0f, xmb->alpha,
-      1.0f, 1.0f, 1.0f, xmb->alpha,
-      1.0f, 1.0f, 1.0f, xmb->alpha,
-   };
+   color[ 0] = 1.0f;
+   color[ 1] = 1.0f;
+   color[ 2] = 1.0f;
+   color[ 3] = xmb->alpha;
+   color[ 4] = 1.0f;
+   color[ 5] = 1.0f;
+   color[ 6] = 1.0f;
+   color[ 7] = xmb->alpha;
+   color[ 8] = 1.0f;
+   color[ 9] = 1.0f;
+   color[10] = 1.0f;
+   color[11] = xmb->alpha;
+   color[12] = 1.0f;
+   color[13] = 1.0f;
+   color[14] = 1.0f;
+   color[15] = xmb->alpha;
 
-   float y = xmb->margins.screen.top + xmb->icon.size + xmb->boxart_size;
+   y = xmb->margins.screen.top + xmb->icon.size + xmb->boxart_size;
 
-   float x = xmb->margins.screen.left + xmb->icon.spacing.horizontal +
+   x = xmb->margins.screen.left + xmb->icon.spacing.horizontal +
          xmb->icon.spacing.horizontal*4 - xmb->icon.size / 4;
 
    glViewport(x, height - y, xmb->boxart_size, xmb->boxart_size);
@@ -1356,13 +1368,24 @@ static void xmb_draw_cursor(gl_t *gl, xmb_handle_t *xmb, float x, float y)
    unsigned width, height;
    struct gl_coords coords;
    math_matrix_4x4 mymat, mrot;
+   GLfloat color[16];
 
-   GLfloat color[] = {
-      1.0f, 1.0f, 1.0f, xmb->alpha,
-      1.0f, 1.0f, 1.0f, xmb->alpha,
-      1.0f, 1.0f, 1.0f, xmb->alpha,
-      1.0f, 1.0f, 1.0f, xmb->alpha,
-   };
+   color[ 0] = 1.0f;
+   color[ 1] = 1.0f;
+   color[ 2] = 1.0f;
+   color[ 3] = xmb->alpha;
+   color[ 4] = 1.0f;
+   color[ 5] = 1.0f;
+   color[ 6] = 1.0f;
+   color[ 7] = xmb->alpha;
+   color[ 8] = 1.0f;
+   color[ 9] = 1.0f;
+   color[10] = 1.0f;
+   color[11] = xmb->alpha;
+   color[12] = 1.0f;
+   color[13] = 1.0f;
+   color[14] = 1.0f;
+   color[15] = xmb->alpha;
 
    video_driver_get_size(&width, &height);
 
