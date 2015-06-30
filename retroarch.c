@@ -499,26 +499,26 @@ enum rarch_content_type rarch_path_is_media_type(const char *path)
  **/
 static void parse_input(int argc, char *argv[])
 {
-   int val               = 0;
    const char *optstring = NULL;
    runloop_t *runloop    = rarch_main_get_ptr();
    global_t  *global     = global_get_ptr();
    settings_t *settings  = config_get_ptr();
 
+#define RA_LONG_OPT_ONLY 65536
    const struct option opts[] = {
 #ifdef HAVE_DYNAMIC
       { "libretro",     1, NULL, 'L' },
 #endif
-      { "menu",         0, &val, RA_OPT_MENU },
+      { "menu",         0, NULL, RA_LONG_OPT_ONLY+RA_OPT_MENU },
       { "help",         0, NULL, 'h' },
       { "save",         1, NULL, 's' },
       { "fullscreen",   0, NULL, 'f' },
       { "record",       1, NULL, 'r' },
-      { "recordconfig", 1, &val, RA_OPT_RECORDCONFIG },
-      { "size",         1, &val, RA_OPT_SIZE },
+      { "recordconfig", 1, NULL, RA_LONG_OPT_ONLY+RA_OPT_RECORDCONFIG },
+      { "size",         1, NULL, RA_LONG_OPT_ONLY+RA_OPT_SIZE },
       { "verbose",      0, NULL, 'v' },
       { "config",       1, NULL, 'c' },
-      { "appendconfig", 1, &val, RA_OPT_APPENDCONFIG },
+      { "appendconfig", 1, NULL, RA_LONG_OPT_ONLY+RA_OPT_APPENDCONFIG },
       { "nodevice",     1, NULL, 'N' },
       { "dualanalog",   1, NULL, 'A' },
       { "device",       1, NULL, 'd' },
@@ -530,25 +530,25 @@ static void parse_input(int argc, char *argv[])
       { "host",         0, NULL, 'H' },
       { "connect",      1, NULL, 'C' },
       { "frames",       1, NULL, 'F' },
-      { "port",         1, &val, RA_OPT_PORT },
-      { "spectate",     0, &val, RA_OPT_SPECTATE },
+      { "port",         1, NULL, RA_LONG_OPT_ONLY+RA_OPT_PORT },
+      { "spectate",     0, NULL, RA_LONG_OPT_ONLY+RA_OPT_SPECTATE },
 #endif
-      { "nick",         1, &val, RA_OPT_NICK },
+      { "nick",         1, NULL, RA_LONG_OPT_ONLY+RA_OPT_NICK },
 #if defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)
-      { "command",      1, &val, RA_OPT_COMMAND },
+      { "command",      1, NULL, RA_LONG_OPT_ONLY+RA_OPT_COMMAND },
 #endif
       { "ups",          1, NULL, 'U' },
-      { "bps",          1, &val, RA_OPT_BPS },
-      { "ips",          1, &val, RA_OPT_IPS },
-      { "no-patch",     0, &val, RA_OPT_NO_PATCH },
+      { "bps",          1, NULL, RA_LONG_OPT_ONLY+RA_OPT_BPS },
+      { "ips",          1, NULL, RA_LONG_OPT_ONLY+RA_OPT_IPS },
+      { "no-patch",     0, NULL, RA_LONG_OPT_ONLY+RA_OPT_NO_PATCH },
       { "detach",       0, NULL, 'D' },
-      { "features",     0, &val, RA_OPT_FEATURES },
-      { "subsystem",    1, &val, RA_OPT_SUBSYSTEM },
-      { "max-frames",   1, &val, RA_OPT_MAX_FRAMES },
-      { "eof-exit",     0, &val, RA_OPT_EOF_EXIT },
-      { "version",      0, &val, RA_OPT_VERSION },
+      { "features",     0, NULL, RA_LONG_OPT_ONLY+RA_OPT_FEATURES },
+      { "subsystem",    1, NULL, RA_LONG_OPT_ONLY+RA_OPT_SUBSYSTEM },
+      { "max-frames",   1, NULL, RA_LONG_OPT_ONLY+RA_OPT_MAX_FRAMES },
+      { "eof-exit",     0, NULL, RA_LONG_OPT_ONLY+RA_OPT_EOF_EXIT },
+      { "version",      0, NULL, RA_LONG_OPT_ONLY+RA_OPT_VERSION },
 #ifdef HAVE_FILE_LOGGER
-      { "log-file",     1, &val, RA_OPT_LOG_FILE },
+      { "log-file",     1, NULL, RA_LONG_OPT_ONLY+RA_OPT_LOG_FILE },
 #endif
       { NULL, 0, NULL, 0 }
    };
@@ -594,15 +594,12 @@ static void parse_input(int argc, char *argv[])
    for (;;)
    {
       int port;
-      int c;
-
-      val = 0;
-      c   = getopt_long(argc, argv, optstring, opts, NULL);
+      int c = getopt_long(argc, argv, optstring, opts, NULL);
 
       if (c == -1)
          break;
 
-      switch (c)
+      if (c < RA_LONG_OPT_ONLY) switch (c)
       {
          case 'h':
             print_help(argv[0]);
@@ -767,114 +764,112 @@ static void parse_input(int argc, char *argv[])
 #endif
             break;
 
-         case 0: /* options without short variant */
-            switch (val)
-            {
-               case RA_OPT_MENU:
-                  global->core_type                  = CORE_TYPE_DUMMY;
-                  break;
-
-#ifdef HAVE_NETPLAY
-               case RA_OPT_PORT:
-                  global->has_set_netplay_ip_port = true;
-                  global->netplay_port = strtoul(optarg, NULL, 0);
-                  break;
-
-               case RA_OPT_SPECTATE:
-                  global->has_set_netplay_mode = true;
-                  global->netplay_is_spectate = true;
-                  break;
-
-#endif
-               case RA_OPT_NICK:
-                  global->has_set_username = true;
-                  strlcpy(settings->username, optarg,
-                        sizeof(settings->username));
-                  break;
-
-#if defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)
-               case RA_OPT_COMMAND:
-                  if (network_cmd_send(optarg))
-                     exit(0);
-                  else
-                     rarch_fail(1, "network_cmd_send()");
-                  break;
-#endif
-
-               case RA_OPT_APPENDCONFIG:
-                  strlcpy(global->append_config_path, optarg,
-                        sizeof(global->append_config_path));
-                  break;
-
-               case RA_OPT_BPS:
-                  strlcpy(global->bps_name, optarg,
-                        sizeof(global->bps_name));
-                  global->bps_pref = true;
-                  global->has_set_bps_pref = true;
-                  break;
-
-               case RA_OPT_IPS:
-                  strlcpy(global->ips_name, optarg,
-                        sizeof(global->ips_name));
-                  global->ips_pref = true;
-                  global->has_set_ips_pref = true;
-                  break;
-
-               case RA_OPT_NO_PATCH:
-                  global->block_patch = true;
-                  break;
-
-               case RA_OPT_SIZE:
-               {
-                  if (sscanf(optarg, "%ux%u", &global->record.width,
-                           &global->record.height) != 2)
-                  {
-                     RARCH_ERR("Wrong format for --size.\n");
-                     print_help(argv[0]);
-                     rarch_fail(1, "parse_input()");
-                  }
-                  break;
-               }
-
-               case RA_OPT_RECORDCONFIG:
-                  strlcpy(global->record.config, optarg,
-                        sizeof(global->record.config));
-                  break;
-
-               case RA_OPT_MAX_FRAMES:
-                  runloop->frames.video.max = strtoul(optarg, NULL, 10);
-                  break;
-
-               case RA_OPT_SUBSYSTEM:
-                  strlcpy(global->subsystem, optarg, sizeof(global->subsystem));
-                  break;
-
-               case RA_OPT_FEATURES:
-                  print_features();
-                  exit(0);
-
-               case RA_OPT_EOF_EXIT:
-                  global->bsv.eof_exit = true;
-                  break;
-
-               case RA_OPT_VERSION:
-                  print_version();
-                  exit(0);
-
-#ifdef HAVE_FILE_LOGGER
-               case RA_OPT_LOG_FILE:
-                  global->log_file = fopen(optarg, "wb");
-                  break;
-#endif
-               default:
-                  break;
-            }
-            break;
-
          case '?':
             print_help(argv[0]);
             rarch_fail(1, "parse_input()");
 
+         default:
+            RARCH_ERR("Error parsing arguments.\n");
+            rarch_fail(1, "parse_input()");
+      }
+      else switch (c - RA_LONG_OPT_ONLY)
+      {
+         case RA_OPT_MENU:
+            global->core_type                  = CORE_TYPE_DUMMY;
+            break;
+
+#ifdef HAVE_NETPLAY
+         case RA_OPT_PORT:
+            global->has_set_netplay_ip_port = true;
+            global->netplay_port = strtoul(optarg, NULL, 0);
+            break;
+
+         case RA_OPT_SPECTATE:
+            global->has_set_netplay_mode = true;
+            global->netplay_is_spectate = true;
+            break;
+
+#endif
+         case RA_OPT_NICK:
+            global->has_set_username = true;
+            strlcpy(settings->username, optarg,
+                  sizeof(settings->username));
+            break;
+
+#if defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)
+         case RA_OPT_COMMAND:
+            if (network_cmd_send(optarg))
+               exit(0);
+            else
+               rarch_fail(1, "network_cmd_send()");
+            break;
+#endif
+
+         case RA_OPT_APPENDCONFIG:
+            strlcpy(global->append_config_path, optarg,
+                  sizeof(global->append_config_path));
+            break;
+
+         case RA_OPT_BPS:
+            strlcpy(global->bps_name, optarg,
+                  sizeof(global->bps_name));
+            global->bps_pref = true;
+            global->has_set_bps_pref = true;
+            break;
+
+         case RA_OPT_IPS:
+            strlcpy(global->ips_name, optarg,
+                  sizeof(global->ips_name));
+            global->ips_pref = true;
+            global->has_set_ips_pref = true;
+            break;
+
+         case RA_OPT_NO_PATCH:
+            global->block_patch = true;
+            break;
+
+         case RA_OPT_SIZE:
+         {
+            if (sscanf(optarg, "%ux%u", &global->record.width,
+                     &global->record.height) != 2)
+            {
+               RARCH_ERR("Wrong format for --size.\n");
+               print_help(argv[0]);
+               rarch_fail(1, "parse_input()");
+            }
+            break;
+         }
+
+         case RA_OPT_RECORDCONFIG:
+            strlcpy(global->record.config, optarg,
+                  sizeof(global->record.config));
+            break;
+
+         case RA_OPT_MAX_FRAMES:
+            runloop->frames.video.max = strtoul(optarg, NULL, 10);
+            break;
+
+         case RA_OPT_SUBSYSTEM:
+            strlcpy(global->subsystem, optarg, sizeof(global->subsystem));
+            break;
+
+         case RA_OPT_FEATURES:
+            print_features();
+            exit(0);
+
+         case RA_OPT_EOF_EXIT:
+            global->bsv.eof_exit = true;
+            break;
+
+         case RA_OPT_VERSION:
+            print_version();
+            exit(0);
+
+#ifdef HAVE_FILE_LOGGER
+         case RA_OPT_LOG_FILE:
+            global->log_file = fopen(optarg, "wb");
+            break;
+#endif
          default:
             RARCH_ERR("Error parsing arguments.\n");
             rarch_fail(1, "parse_input()");
