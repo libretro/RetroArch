@@ -4843,6 +4843,7 @@ static bool setting_append_list_menu_options(
    return true;
 }
 
+#if defined(HAVE_IMAGEVIEWER) || defined(HAVE_FFMPEG)
 static bool setting_append_list_multimedia_options(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info,
@@ -4897,6 +4898,7 @@ static bool setting_append_list_multimedia_options(
 
    return true;
 }
+#endif
 
 static bool setting_append_list_ui_options(
       rarch_setting_t **list,
