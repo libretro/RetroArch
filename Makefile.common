@@ -196,9 +196,12 @@ OBJ += frontend/frontend.o \
 
 OBJ += gfx/image/image.o
 
+ifneq ($(C89_BUILD), 1)
+# stb_image is not a C89-compliant API.
 ifeq ($(HAVE_IMAGEVIEWER), 1)
 DEFINES += -DHAVE_IMAGEVIEWER
 OBJ += cores/image_core.o
+endif
 endif
 
 # Qt
@@ -227,10 +230,13 @@ ifeq ($(HAVE_STDIN_CMD), 1)
    DEFINES += -DHAVE_COMMAND -DHAVE_STDIN_CMD
 endif
 
+ifneq ($(C89_BUILD), 1)
+# Python 3.x bindings are not C89-compliant.
 ifeq ($(HAVE_PYTHON), 1)
    DEFINES += $(PYTHON_CFLAGS) -Wno-unused-parameter
    LIBS += $(PYTHON_LIBS)
    OBJ += gfx/video_state_python.o
+endif
 endif
 
 ifeq ($(OSX), 1)
