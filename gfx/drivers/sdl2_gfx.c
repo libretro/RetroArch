@@ -172,6 +172,7 @@ static void sdl2_render_msg(sdl2_video_t *vid, const char *msg)
 
    for (; *msg; msg++)
    {
+      SDL_Rect src_rect, dst_rect;
       int off_x, off_y, tex_x, tex_y;
       const struct font_glyph *gly = 
          vid->font_driver->get_glyph(vid->font_data, (uint8_t)*msg);
@@ -182,28 +183,26 @@ static void sdl2_render_msg(sdl2_video_t *vid, const char *msg)
       if (!gly)
          continue;
 
-      off_x  = gly->draw_offset_x;
-      off_y  = gly->draw_offset_y;
-      tex_x  = gly->atlas_offset_x;
-      tex_y  = gly->atlas_offset_y;
+      off_x      = gly->draw_offset_x;
+      off_y      = gly->draw_offset_y;
+      tex_x      = gly->atlas_offset_x;
+      tex_y      = gly->atlas_offset_y;
 
-      {
-         SDL_Rect srcrect = {
-            tex_x, tex_y,
-            (int)gly->width, (int)gly->height
-         };
+      src_rect.x = tex_x;
+      src_rect.y = tex_y;
+      src_rect.w = (int)gly->width;
+      src_rect.h = (int)gly->height;
 
-         SDL_Rect dstrect = {
-            x + delta_x + off_x, y + delta_y + off_y,
-            (int)gly->width, (int)gly->height
-         };
+      dst_rect.x = x + delta_x + off_x;
+      dst_rect.y = y + delta_y + off_y;
+      dst_rect.w = (int)gly->width;
+      dst_rect.h = (int)gly->height;
 
-         SDL_RenderCopyEx(vid->renderer, vid->font.tex,
-               &srcrect, &dstrect, 0, NULL, SDL_FLIP_NONE);
-   
-         delta_x += gly->advance_x;
-         delta_y -= gly->advance_y;
-      }
+      SDL_RenderCopyEx(vid->renderer, vid->font.tex,
+            &src_rect, &dst_rect, 0, NULL, SDL_FLIP_NONE);
+
+      delta_x += gly->advance_x;
+      delta_y -= gly->advance_y;
    }
 }
 
