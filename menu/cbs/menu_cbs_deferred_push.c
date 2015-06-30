@@ -24,9 +24,7 @@
 #include "../../database_info.h"
 #endif
 
-#ifdef HAVE_FFMPEG
 #include "../../cores/internal_cores.h"
-#endif
 
 #include "../../general.h"
 #include "../../file_ext.h"
