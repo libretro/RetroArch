@@ -1104,7 +1104,7 @@ static void decode_thread(void *data)
 {
    unsigned i;
    AVFrame *aud_frame, *vid_frame;
-   SwrContext *swr[audio_streams_num] = {NULL};
+   SwrContext *swr[audio_streams_num];
    void *conv_frame_buf    = NULL;
    size_t frame_size       = 0;
    int16_t *audio_buffer   = NULL;
