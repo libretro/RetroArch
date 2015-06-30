@@ -840,12 +840,15 @@ endif
 
 # Record
 
+ifneq ($(C89_BUILD), 1)
+# ffmpeg and friends are not C89-compliant APIs. 
 ifeq ($(HAVE_FFMPEG), 1)
    OBJ += record/drivers/record_ffmpeg.o \
 			 cores/ffmpeg_core.o
    LIBS += $(AVCODEC_LIBS) $(AVFORMAT_LIBS) $(AVUTIL_LIBS) $(SWSCALE_LIBS) $(SWRESAMPLE_LIBS) $(FFMPEG_LIBS)
    DEFINES += $(AVCODEC_CFLAGS) $(AVFORMAT_CFLAGS) $(AVUTIL_CFLAGS) $(SWSCALE_CFLAGS) $(SWRESAMPLE_CFLAGS)
 	DEFINES += -DHAVE_FFMPEG -Iffmpeg
+endif
 endif
 
 ifeq ($(HAVE_COMPRESSION), 1)

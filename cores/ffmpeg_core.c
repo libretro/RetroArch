@@ -305,12 +305,13 @@ void CORE_PREFIX(retro_reset)(void)
 
 static void check_variables(void)
 {
-   struct retro_variable color_var;
+   struct retro_variable color_var, var, fft_var, fft_ms_var;
+
+   (void)var;
+   (void)fft_var;
 
 #ifdef HAVE_OPENGL
-   struct retro_variable var = {
-      .key = "ffmpeg_temporal_interp"
-   };
+   var.key = "ffmpeg_temporal_interp";
 
    if (CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
    {
@@ -322,9 +323,7 @@ static void check_variables(void)
 #endif
 
 #ifdef HAVE_GL_FFT
-   struct retro_variable fft_var = {
-      .key = "ffmpeg_fft_resolution",
-   };
+   fft_var.key = "ffmpeg_fft_resolution";
 
    fft_width       = 1280;
    fft_height      = 720;
@@ -339,9 +338,7 @@ static void check_variables(void)
       }
    }
 
-   struct retro_variable fft_ms_var = {
-      .key = "ffmpeg_fft_multisample",
-   };
+   fft_ms_var.key = "ffmpeg_fft_multisample";
 
    if (CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_GET_VARIABLE, &fft_ms_var) && fft_ms_var.value)
       fft_multisample = strtoul(fft_ms_var.value, NULL, 0);
@@ -1107,7 +1104,7 @@ static void decode_thread(void *data)
 {
    unsigned i;
    AVFrame *aud_frame, *vid_frame;
-   SwrContext *swr[audio_streams_num];
+   SwrContext *swr[audio_streams_num] = {NULL};
    void *conv_frame_buf    = NULL;
    size_t frame_size       = 0;
    int16_t *audio_buffer   = NULL;

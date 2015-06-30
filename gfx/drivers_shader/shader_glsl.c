@@ -315,7 +315,9 @@ static bool compile_shader(glsl_shader_data_t *glsl,
       const char *define, const char *program)
 {
    GLint status;
+   const char *source[4];
    char version[32] = {0};
+
    if (glsl_core && !strstr(program, "#version"))
    {
       unsigned version_no = 0;
@@ -341,11 +343,13 @@ static bool compile_shader(glsl_shader_data_t *glsl,
       RARCH_LOG("[GL]: Using GLSL version %u.\n", version_no);
    }
 
-   {
-      const char *source[] = { version, define, glsl->glsl_alias_define, program };
-      glShaderSource(shader, ARRAY_SIZE(source), source, NULL);
-      glCompileShader(shader);
-   }
+   source[0]= version;
+   source[1] = define;
+   source[2] = glsl->glsl_alias_define;
+   source[3] = program;
+
+   glShaderSource(shader, ARRAY_SIZE(source), source, NULL);
+   glCompileShader(shader);
 
    glGetShaderiv(shader, GL_COMPILE_STATUS, &status);
    print_shader_log(shader);

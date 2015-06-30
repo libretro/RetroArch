@@ -31,7 +31,7 @@ enum connect_ps4_dpad_states
    DPAD_DOWN_LEFT  = 0x5,
    DPAD_LEFT       = 0x6,
    DPAD_LEFT_UP    = 0x7,
-   DPAD_OFF        = 0x8,
+   DPAD_OFF        = 0x8
 };
 
 struct ps4buttons

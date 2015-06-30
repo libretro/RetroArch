@@ -54,18 +54,29 @@ static bool png_write_crc(FILE *file, const uint8_t *data, size_t size)
 
 static bool png_write_ihdr(FILE *file, const struct png_ihdr *ihdr)
 {
-   uint8_t ihdr_raw[] = {
-      '0', '0', '0', '0', /* Size */
-      'I', 'H', 'D', 'R',
-
-      0, 0, 0, 0, /* Width */
-      0, 0, 0, 0, /* Height */
-      ihdr->depth,
-      ihdr->color_type,
-      ihdr->compression,
-      ihdr->filter,
-      ihdr->interlace,
-   };
+   uint8_t ihdr_raw[21];
+   
+   ihdr_raw[0]  = '0';                 /* Size */
+   ihdr_raw[1]  = '0';
+   ihdr_raw[2]  = '0';
+   ihdr_raw[3]  = '0';
+   ihdr_raw[4]  = 'I';
+   ihdr_raw[5]  = 'H';
+   ihdr_raw[6]  = 'D';
+   ihdr_raw[7]  = 'R';
+   ihdr_raw[8]  =   0;                 /* Width */
+   ihdr_raw[9]  =   0;
+   ihdr_raw[10] =   0;
+   ihdr_raw[11] =   0;
+   ihdr_raw[12] =   0;                 /* Height */
+   ihdr_raw[13] =   0;
+   ihdr_raw[14] =   0;
+   ihdr_raw[15] =   0;
+   ihdr_raw[16] =   ihdr->depth;       /* Depth */
+   ihdr_raw[17] =   ihdr->color_type;
+   ihdr_raw[18] =   ihdr->compression;
+   ihdr_raw[19] =   ihdr->filter;
+   ihdr_raw[20] =   ihdr->interlace;
 
    dword_write_be(ihdr_raw +  0, sizeof(ihdr_raw) - 8);
    dword_write_be(ihdr_raw +  8, ihdr->width);

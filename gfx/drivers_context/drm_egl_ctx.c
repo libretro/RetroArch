@@ -236,7 +236,8 @@ static void wait_flip(bool block)
 
    /* This buffer is not on-screen anymore. Release it to GBM. */
    gbm_surface_release_buffer(drm->g_gbm_surface, drm->g_bo);
-   drm->g_bo = drm->g_next_bo; // This buffer is being shown now.
+   /* This buffer is being shown now. */
+   drm->g_bo = drm->g_next_bo; 
 }
 
 static void queue_flip(void)
