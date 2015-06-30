@@ -58,37 +58,65 @@ static INLINE void gl_menu_frame_background(
       bool force_transparency)
 {
    struct gl_coords coords;
-   static const GLfloat vertex[] = {
-      0, 0,
-      1, 0,
-      0, 1,
-      1, 1,
-   };
+   GLfloat color[16], black_color[16],
+           vertex[8], tex_coord[8];
+
    global_t *global = global_get_ptr();
 
-   static const GLfloat tex_coord[] = {
-      0, 1,
-      1, 1,
-      0, 0,
-      1, 0,
-   };
+   vertex[0] = 0;
+   vertex[1] = 0;
+   vertex[2] = 1;
+   vertex[3] = 0;
+   vertex[4] = 0;
+   vertex[5] = 1;
+   vertex[6] = 1;
+   vertex[7] = 1;
 
-   GLfloat color[] = {
-      1.0f, 1.0f, 1.0f, handle_alpha,
-      1.0f, 1.0f, 1.0f, handle_alpha,
-      1.0f, 1.0f, 1.0f, handle_alpha,
-      1.0f, 1.0f, 1.0f, handle_alpha,
-   };
+   tex_coord[0] = 0;
+   tex_coord[1] = 1;
+   tex_coord[2] = 1;
+   tex_coord[3] = 1;
+   tex_coord[4] = 0;
+   tex_coord[5] = 0;
+   tex_coord[6] = 1;
+   tex_coord[7] = 0;
+
+   color[ 0] = 1.0f;
+   color[ 1] = 1.0f;
+   color[ 2] = 1.0f;
+   color[ 3] = handle_alpha;
+   color[ 4] = 1.0f;
+   color[ 5] = 1.0f;
+   color[ 6] = 1.0f;
+   color[ 7] = handle_alpha;
+   color[ 8] = 1.0f;
+   color[ 9] = 1.0f;
+   color[10] = 1.0f;
+   color[11] = handle_alpha;
+   color[12] = 1.0f;
+   color[13] = 1.0f;
+   color[14] = 1.0f;
+   color[15] = handle_alpha;
 
    if (alpha > handle_alpha)
       alpha = handle_alpha;
 
-   GLfloat black_color[] = {
-      0.0f, 0.0f, 0.0f, alpha,
-      0.0f, 0.0f, 0.0f, alpha,
-      0.0f, 0.0f, 0.0f, alpha,
-      0.0f, 0.0f, 0.0f, alpha,
-   };
+   black_color[ 0] = 0.0f;
+   black_color[ 1] = 0.0f;
+   black_color[ 2] = 0.0f;
+   black_color[ 3] = alpha;
+   black_color[ 4] = 0.0f;
+   black_color[ 5] = 0.0f;
+   black_color[ 6] = 0.0f;
+   black_color[ 7] = alpha;
+   black_color[ 8] = 0.0f;
+   black_color[ 9] = 0.0f;
+   black_color[10] = 0.0f;
+   black_color[11] = alpha;
+   black_color[12] = 0.0f;
+   black_color[13] = 0.0f;
+   black_color[14] = 0.0f;
+   black_color[15] = alpha;
 
    coords.vertices      = 4;
    coords.vertex        = vertex;
