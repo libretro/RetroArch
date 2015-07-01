@@ -27,9 +27,9 @@
 #include <compat/posix_string.h>
 #include <file/file_path.h>
 #include <retro_miscellaneous.h>
-#include <rhash.h>
-
 #include <net/net_compat.h>
+
+#include "msg_hash.h"
 
 #if defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)
 #include "netplay.h"
@@ -230,7 +230,7 @@ static bool cmd_set_shader(const char *arg)
    char msg[PATH_MAX_LENGTH]   = {0};
    enum rarch_shader_type type = RARCH_SHADER_NONE;
    const char             *ext = path_get_extension(arg);
-   uint32_t ext_hash           = djb2_calculate(ext);
+   uint32_t ext_hash           = msg_hash_calculate(ext);
 
    switch (ext_hash)
    {
@@ -248,7 +248,9 @@ static bool cmd_set_shader(const char *arg)
 
    snprintf(msg, sizeof(msg), "Shader: \"%s\"", arg);
    rarch_main_msg_queue_push(msg, 1, 120, true);
-   RARCH_LOG("Applying shader \"%s\".\n", arg);
+   RARCH_LOG("%s \"%s\".\n",
+         msg_hash_to_str(MSG_APPLYING_SHADER),
+         arg);
 
    return video_driver_set_shader(type, arg);
 }
@@ -314,7 +316,10 @@ static void parse_sub_msg(rarch_cmd_t *handle, const char *tok)
          handle->state[map[index].id] = true;
    }
    else
-      RARCH_WARN("Unrecognized command \"%s\" received.\n", tok);
+      RARCH_WARN("%s \"%s\" %s.\n",
+            msg_hash_to_str(MSG_UNRECOGNIZED_COMMAND),
+            tok,
+            msg_hash_to_str(MSG_RECEIVED));
 }
 
 static void parse_msg(rarch_cmd_t *handle, char *buf)
@@ -619,7 +624,7 @@ bool network_cmd_send(const char *cmd_)
    const char *host    = NULL;
    const char *port_   = NULL;
    global_t *global    = global_get_ptr();
-   bool old_verbose    = global->verbosity;
+   bool old_verbose    = global ? global->verbosity : false;
    uint16_t port       = DEFAULT_NETWORK_CMD_PORT;
 
    if (!network_init())
@@ -648,7 +653,8 @@ bool network_cmd_send(const char *cmd_)
    if (port_)
       port = strtoul(port_, NULL, 0);
 
-   RARCH_LOG("Sending command: \"%s\" to %s:%hu\n",
+   RARCH_LOG("%s: \"%s\" to %s:%hu\n",
+         msg_hash_to_str(MSG_SENDING_COMMAND),
          cmd, host, (unsigned short)port);
 
    ret = verify_command(cmd) && send_udp_packet(host, port, cmd);

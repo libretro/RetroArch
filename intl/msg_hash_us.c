@@ -20,6 +20,12 @@ const char *msg_hash_to_str_us(uint32_t hash)
 {
    switch (hash)
    {
+      case MSG_RECEIVED:
+         return "received";
+      case MSG_UNRECOGNIZED_COMMAND:
+         return "Unrecognized command";
+      case MSG_SENDING_COMMAND:
+         return "Sending command";
       case MSG_GOT_INVALID_DISK_INDEX:
          return "Got invalid disk index.";
       case MSG_FAILED_TO_REMOVE_DISK_FROM_TRAY:

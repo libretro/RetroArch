@@ -21,6 +21,13 @@
 #include <stdint.h>
 #include <stddef.h>
 
+
+#define MSG_RECEIVED                                  0xfe0c06acU
+
+#define MSG_UNRECOGNIZED_COMMAND                      0x946b8a50U
+
+#define MSG_SENDING_COMMAND                           0x562cf28bU
+
 #define MSG_RESTARTING_RECORDING_DUE_TO_DRIVER_REINIT 0x5aa753b8U
 
 #define MSG_REWINDING                                 0xccbeec2cU
