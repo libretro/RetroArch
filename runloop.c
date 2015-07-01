@@ -142,7 +142,8 @@ static void check_stateslots(bool pressed_increase, bool pressed_decrease)
    else
       return;
 
-   snprintf(msg, sizeof(msg), "State slot: %d",
+   snprintf(msg, sizeof(msg), "%s: %d",
+         msg_hash_to_str(MSG_STATE_SLOT),
          settings->state_slot);
 
    rarch_main_msg_queue_push(msg, 1, 180, true);
@@ -268,7 +269,9 @@ static bool check_movie_init(void)
       strlcpy(path, global->bsv.movie_path, sizeof(path));
    strlcat(path, ".bsv", sizeof(path));
 
-   snprintf(msg, sizeof(msg), "Starting movie record to \"%s\".", path);
+   snprintf(msg, sizeof(msg), "%s \"%s\".",
+         msg_hash_to_str(MSG_STARTING_MOVIE_RECORD_TO),
+         path);
 
    global->bsv.movie = bsv_movie_init(path, RARCH_MOVIE_RECORD);
 
@@ -279,14 +282,16 @@ static bool check_movie_init(void)
    if (global->bsv.movie)
    {
       rarch_main_msg_queue_push(msg, 1, 180, true);
-      RARCH_LOG("Starting movie record to \"%s\".\n", path);
+      RARCH_LOG("%s \"%s\".\n",
+         msg_hash_to_str(MSG_STARTING_MOVIE_RECORD_TO),
+            path);
    }
    else
    {
       rarch_main_msg_queue_push_new(
             MSG_FAILED_TO_START_MOVIE_RECORD,
             1, 180, true);
-      RARCH_ERR("Failed to start movie record.\n");
+      RARCH_ERR(msg_hash_to_str(MSG_FAILED_TO_START_MOVIE_RECORD));
    }
 
    return ret;
@@ -411,13 +416,16 @@ static void check_shader_dir(bool pressed_next, bool pressed_prev)
          return;
    }
 
-   snprintf(msg, sizeof(msg), "Shader #%u: \"%s\".",
+   snprintf(msg, sizeof(msg), "%s #%u: \"%s\".",
+         msg_hash_to_str(MSG_SHADER),
          (unsigned)global->shader_dir.ptr, shader);
    rarch_main_msg_queue_push(msg, 1, 120, true);
-   RARCH_LOG("Applying shader \"%s\".\n", shader);
+   RARCH_LOG("%s \"%s\".\n",
+         msg_hash_to_str(MSG_APPLYING_SHADER),
+         shader);
 
    if (!video_driver_set_shader(type, shader))
-      RARCH_WARN("Failed to apply shader.\n");
+      RARCH_WARN(msg_hash_to_str(MSG_FAILED_TO_APPLY_SHADER));
 }
 
 #ifdef HAVE_MENU

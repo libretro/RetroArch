@@ -22,10 +22,6 @@
 #include <errno.h>
 #include <boolean.h>
 
-#ifdef HAVE_FFMPEG
-#include <rhash.h>
-#endif
-
 #ifdef _WIN32
 #ifdef _XBOX
 #include <xtl.h>
@@ -40,7 +36,7 @@
 #include <compat/posix_string.h>
 #include <file/file_path.h>
 
-#include <rhash.h>
+#include "msg_hash.h"
 
 #include "libretro_version_1.h"
 #include "dynamic.h"
@@ -305,7 +301,8 @@ static void set_special_paths(char **argv, unsigned num_content)
    {
       fill_pathname_dir(global->savestate_name, global->basename,
             ".state", sizeof(global->savestate_name));
-      RARCH_LOG("Redirecting save state to \"%s\".\n",
+      RARCH_LOG("%s \"%s\".\n",
+            msg_hash_to_str(MSG_REDIRECTING_SAVESTATE_TO),
             global->savestate_name);
    }
 
@@ -325,7 +322,7 @@ void set_paths_redirect(const char *path)
 
    uint32_t global_library_name_hash = ((global && info->info.library_name &&
             (info->info.library_name[0] != '\0'))
-         ? djb2_calculate(info->info.library_name) : 0);
+         ? msg_hash_calculate(info->info.library_name) : 0);
 
    if(
          global_library_name_hash != 0 &&
@@ -381,21 +378,27 @@ void set_paths_redirect(const char *path)
    {
       fill_pathname_dir(global->savefile_name, global->basename,
             ".srm", sizeof(global->savefile_name));
-      RARCH_LOG("Redirecting save file to \"%s\".\n", global->savefile_name);
+      RARCH_LOG("%s \"%s\".\n",
+            msg_hash_to_str(MSG_REDIRECTING_SAVEFILE_TO),
+            global->savefile_name);
    }
 
    if (path_is_directory(global->savestate_name))
    {
       fill_pathname_dir(global->savestate_name, global->basename,
             ".state", sizeof(global->savestate_name));
-      RARCH_LOG("Redirecting save state to \"%s\".\n", global->savestate_name);
+      RARCH_LOG("%s \"%s\".\n",
+            msg_hash_to_str(MSG_REDIRECTING_SAVESTATE_TO),
+            global->savestate_name);
    }
 
    if (path_is_directory(global->cheatfile_name))
    {
       fill_pathname_dir(global->cheatfile_name, global->basename,
             ".state", sizeof(global->cheatfile_name));
-      RARCH_LOG("Redirecting cheat file to \"%s\".\n", global->cheatfile_name);
+      RARCH_LOG("%s \"%s\".\n",
+            msg_hash_to_str(MSG_REDIRECTING_CHEATFILE_TO),
+            global->cheatfile_name);
    }
 }
 
@@ -429,7 +432,7 @@ void rarch_set_paths(const char *path)
 
 enum rarch_content_type rarch_path_is_media_type(const char *path)
 {
-   uint32_t hash_ext = djb2_calculate(path_get_extension(path));
+   uint32_t hash_ext = msg_hash_calculate(path_get_extension(path));
 
    switch (hash_ext)
    {
@@ -965,7 +968,8 @@ static void rarch_init_savefile_paths(void)
       {
          fill_pathname_dir(global->savefile_name, global->basename, ".srm",
                sizeof(global->savefile_name));
-         RARCH_LOG("Redirecting save file to \"%s\".\n",
+         RARCH_LOG("%s \"%s\".\n",
+               msg_hash_to_str(MSG_REDIRECTING_SAVEFILE_TO),
                global->savefile_name);
       }
    }
@@ -1530,7 +1534,7 @@ int rarch_defer_core(core_info_list_t *core_info, const char *dir,
    size_t supported                    = 0;
    settings_t *settings                = config_get_ptr();
    global_t   *global                  = global_get_ptr();
-   uint32_t menu_label_hash            = djb2_calculate(menu_label);
+   uint32_t menu_label_hash            = msg_hash_calculate(menu_label);
 
    fill_pathname_join(s, dir, path, len);
 

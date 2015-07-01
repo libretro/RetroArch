@@ -20,10 +20,26 @@ const char *msg_hash_to_str_us(uint32_t hash)
 {
    switch (hash)
    {
-      case MSG_RESTARTING_RECORDING_DUE_TO_DRIVER_REINIT:
-         return "Restarting recording due to driver reinit.";
+      case MSG_REDIRECTING_CHEATFILE_TO:
+         return "Redirecting cheat file to";
+      case MSG_REDIRECTING_SAVEFILE_TO:
+         return "Redirecting save file to";
+      case MSG_REDIRECTING_SAVESTATE_TO:
+         return "Redirecting savestate to";
+      case MSG_SHADER:
+         return "Shader";
+      case MSG_APPLYING_SHADER:
+         return "Applying shader";
+      case MSG_FAILED_TO_APPLY_SHADER:
+         return "Failed to apply shader.";
+      case MSG_STARTING_MOVIE_RECORD_TO:
+         return "Starting movie record to";
       case MSG_FAILED_TO_START_MOVIE_RECORD:
          return "Failed to start movie record.";
+      case MSG_STATE_SLOT:
+         return "State slot";
+      case MSG_RESTARTING_RECORDING_DUE_TO_DRIVER_REINIT:
+         return "Restarting recording due to driver reinit.";
       case MSG_SLOW_MOTION:
          return "Slow motion.";
       case MSG_SLOW_MOTION_REWIND:
