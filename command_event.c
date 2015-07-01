@@ -352,7 +352,9 @@ static void event_disk_control_set_index(unsigned idx)
          snprintf(msg, sizeof(msg), "Setting disk %u of %u in tray.",
                idx + 1, num_disks);
       else
-         strlcpy(msg, "Removed disk from tray.", sizeof(msg));
+         strlcpy(msg,
+               msg_hash_to_str(MSG_REMOVED_DISK_FROM_TRAY),
+               sizeof(msg));
    }
    else
    {
@@ -360,7 +362,9 @@ static void event_disk_control_set_index(unsigned idx)
          snprintf(msg, sizeof(msg), "Failed to set disk %u of %u.",
                idx + 1, num_disks);
       else
-         strlcpy(msg, "Failed to remove disk from tray.", sizeof(msg));
+         strlcpy(msg,
+               msg_hash_to_str(MSG_FAILED_TO_REMOVE_DISK_FROM_TRAY),
+               sizeof(msg));
       error = true;
    }
 
@@ -400,7 +404,7 @@ static void event_check_disk_prev(
 
    if (!disk_prev_enable)
    {
-      RARCH_ERR("Got invalid disk index from libretro.\n");
+      RARCH_ERR("%s.\n", msg_hash_to_str(MSG_GOT_INVALID_DISK_INDEX));
       return;
    }
 
@@ -435,7 +439,7 @@ static void event_check_disk_next(
 
    if (!disk_next_enable)
    {
-      RARCH_ERR("Got invalid disk index from libretro.\n");
+      RARCH_ERR("%s.\n", msg_hash_to_str(MSG_GOT_INVALID_DISK_INDEX));
       return;
    }
 

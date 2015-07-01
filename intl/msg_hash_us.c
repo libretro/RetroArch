@@ -20,6 +20,12 @@ const char *msg_hash_to_str_us(uint32_t hash)
 {
    switch (hash)
    {
+      case MSG_GOT_INVALID_DISK_INDEX:
+         return "Got invalid disk index.";
+      case MSG_FAILED_TO_REMOVE_DISK_FROM_TRAY:
+         return "Failed to remove disk from tray.";
+      case MSG_REMOVED_DISK_FROM_TRAY:
+         return "Removed disk from tray.";
       case MSG_VIRTUAL_DISK_TRAY:
          return "virtual disk tray.";
       case MSG_FAILED_TO:

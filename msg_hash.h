@@ -90,6 +90,11 @@
 #define MSG_TO                                        0x005979a8U
 
 #define MSG_VIRTUAL_DISK_TRAY                         0x4aa37f15U
+#define MSG_REMOVED_DISK_FROM_TRAY                    0xf26a9653U
+
+#define MSG_FAILED_TO_REMOVE_DISK_FROM_TRAY           0xc1c9a655U
+
+#define MSG_GOT_INVALID_DISK_INDEX                    0xb138dd76U
 
 const char *msg_hash_to_str(uint32_t hash);
 
