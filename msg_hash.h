@@ -24,6 +24,12 @@
 
 #define MSG_RECEIVED                                  0xfe0c06acU
 
+#define MSG_SAVING_STATE                              0xe4f3eb4dU
+#define MSG_LOADING_STATE                             0x68d8d483U
+#define MSG_FAILED_TO_SAVE_STATE_TO                   0xcc005f3cU
+#define MSG_FAILED_TO_SAVE_SRAM                       0x0f72de6cU
+#define MSG_STATE_SIZE                                0x27b67400U
+
 #define MSG_UNRECOGNIZED_COMMAND                      0x946b8a50U
 
 #define MSG_SENDING_COMMAND                           0x562cf28bU

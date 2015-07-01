@@ -40,6 +40,10 @@ const char *msg_hash_to_str_us(uint32_t hash)
          return "to";
       case MSG_SAVING_RAM_TYPE:
          return "Saving RAM type";
+      case MSG_SAVING_STATE:
+         return "Saving state";
+      case MSG_LOADING_STATE:
+         return "Loading state";
       case MSG_FAILED_TO_LOAD_MOVIE_FILE:
          return "Failed to load movie file";
       case MSG_GRAB_MOUSE_STATE:
@@ -60,6 +64,12 @@ const char *msg_hash_to_str_us(uint32_t hash)
          return "Reset";
       case MSG_FAILED_TO_LOAD_STATE:
          return "Failed to load state from";
+      case MSG_FAILED_TO_SAVE_STATE_TO:
+         return "Failed to save state to";
+      case MSG_FAILED_TO_SAVE_SRAM:
+         return "Failed to save SRAM";
+      case MSG_STATE_SIZE:
+         return "State size";
       case MSG_CORE_DOES_NOT_SUPPORT_SAVESTATES:
          return "Core does not support save states.";
       case MSG_SAVED_STATE_TO_SLOT:

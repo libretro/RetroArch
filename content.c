@@ -33,8 +33,8 @@
 #include <compat/strl.h>
 #include <file/file_path.h>
 #include <file/file_extract.h>
-#include <rhash.h>
 
+#include "msg_hash.h"
 #include "content.h"
 #include "file_ops.h"
 #include "general.h"
@@ -149,7 +149,9 @@ bool save_state(const char *path)
    void *data  = NULL;
    size_t size = pretro_serialize_size();
 
-   RARCH_LOG("Saving state: \"%s\".\n", path);
+   RARCH_LOG("%s: \"%s\".\n",
+         msg_hash_to_str(MSG_SAVING_STATE),
+         path);
 
    if (size == 0)
       return false;
@@ -162,14 +164,18 @@ bool save_state(const char *path)
       return false;
    }
 
-   RARCH_LOG("State size: %d bytes.\n", (int)size);
+   RARCH_LOG("%s: %d bytes.\n", 
+         msg_hash_to_str(MSG_STATE_SIZE),
+         (int)size);
    ret = pretro_serialize(data, size);
 
    if (ret)
       ret = write_file(path, data, size);
 
    if (!ret)
-      RARCH_ERR("Failed to save state to \"%s\".\n", path);
+      RARCH_ERR("%s \"%s\".\n", 
+            msg_hash_to_str(MSG_FAILED_TO_SAVE_STATE_TO),
+            path);
 
    free(data);
 
@@ -195,7 +201,9 @@ bool load_state(const char *path)
    global_t *global          = global_get_ptr();
    bool ret                  = read_file(path, &buf, &size);
 
-   RARCH_LOG("Loading state: \"%s\".\n", path);
+   RARCH_LOG("%s: \"%s\".\n",
+         msg_hash_to_str(MSG_LOADING_STATE),
+         path);
 
    if (!ret || size < 0)
    {
@@ -203,7 +211,9 @@ bool load_state(const char *path)
       return false;
    }
 
-   RARCH_LOG("State size: %u bytes.\n", (unsigned)size);
+   RARCH_LOG("%s: %u bytes.\n",
+         msg_hash_to_str(MSG_STATE_SIZE),
+         (unsigned)size);
 
    if (settings->block_sram_overwrite && global->savefiles
          && global->savefiles->size)
@@ -318,7 +328,8 @@ void save_ram_file(const char *path, int type)
 
    if (!write_file(path, data, size))
    {
-      RARCH_ERR("Failed to save SRAM.\n");
+      RARCH_ERR("%s.\n",
+            msg_hash_to_str(MSG_FAILED_TO_SAVE_SRAM));
       RARCH_WARN("Attempting to recover ...\n");
       dump_to_file_desperate(data, size, type);
       return;
