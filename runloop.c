@@ -21,7 +21,6 @@
 #include <retro_log.h>
 
 #include <compat/strl.h>
-#include <rhash.h>
 
 #include "configuration.h"
 #include "dynamic.h"
@@ -400,7 +399,7 @@ static void check_shader_dir(bool pressed_next, bool pressed_prev)
 
    shader   = global->shader_dir.list->elems[global->shader_dir.ptr].data;
    ext      = path_get_extension(shader);
-   ext_hash = djb2_calculate(ext);
+   ext_hash = msg_hash_calculate(ext);
 
    switch (ext_hash)
    {
