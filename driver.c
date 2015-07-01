@@ -23,6 +23,8 @@
 #include "gfx/video_monitor.h"
 #include "audio/audio_monitor.h"
 
+#include "msg_hash.h"
+
 #ifdef HAVE_MENU
 #include "menu/menu.h"
 #endif
@@ -325,10 +327,8 @@ bool driver_update_system_av_info(const struct retro_system_av_info *info)
     * Take the easiest route out and just restart the recording. */
    if (driver->recording_data)
    {
-      static const char *msg = "Restarting recording due to driver reinit.";
-
-      rarch_main_msg_queue_push(msg, 2, 180, false);
-      RARCH_WARN("%s\n", msg);
+      rarch_main_msg_queue_push_new(
+            MSG_RESTARTING_RECORDING_DUE_TO_DRIVER_REINIT, 2, 180, false);
       event_command(EVENT_CMD_RECORD_DEINIT);
       event_command(EVENT_CMD_RECORD_INIT);
    }
