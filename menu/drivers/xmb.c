@@ -83,6 +83,7 @@ enum
    XMB_TEXTURE_FOLDER,
    XMB_TEXTURE_ZIP,
    XMB_TEXTURE_MUSIC,
+   XMB_TEXTURE_IMAGE,
    XMB_TEXTURE_CORE,
    XMB_TEXTURE_RDB,
    XMB_TEXTURE_CURSOR,
@@ -1123,6 +1124,8 @@ static GLuint xmb_icon_get_id(xmb_handle_t *xmb,
          return xmb->textures.list[XMB_TEXTURE_ZIP].id;
       case MENU_FILE_MUSIC:
          return xmb->textures.list[XMB_TEXTURE_MUSIC].id;
+      case MENU_FILE_IMAGEVIEWER:
+         return xmb->textures.list[XMB_TEXTURE_IMAGE].id;
       case MENU_FILE_CORE:
          return xmb->textures.list[XMB_TEXTURE_CORE].id;
       case MENU_FILE_RDB:
@@ -1301,6 +1304,8 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
          case MENU_VALUE_DIR:
             break;
          case MENU_VALUE_MUSIC:
+            break;
+         case MENU_VALUE_IMAGE:
             break;
          case MENU_VALUE_ON:
             if (xmb->textures.list[XMB_TEXTURE_SWITCH_ON].id)
@@ -2084,6 +2089,9 @@ static void xmb_context_reset_textures(xmb_handle_t *xmb, const char *iconpath)
             break;
          case XMB_TEXTURE_MUSIC:
             fill_pathname_join(path, iconpath, "music.png", sizeof(path));
+            break;
+         case XMB_TEXTURE_IMAGE:
+            fill_pathname_join(path, iconpath, "image.png", sizeof(path));
             break;
          case XMB_TEXTURE_CORE:
             fill_pathname_join(path, iconpath, "core.png", sizeof(path));
