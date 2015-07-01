@@ -20,6 +20,44 @@ const char *msg_hash_to_str_us(uint32_t hash)
 {
    switch (hash)
    {
+      case MSG_FAILED_TO_LOAD_MOVIE_FILE:
+         return "Failed to load movie file";
+      case MSG_GRAB_MOUSE_STATE:
+         return "Grab mouse state";
+      case MSG_PAUSED:
+         return "Paused.";
+      case MSG_UNPAUSED:
+         return "Unpaused.";
+      case MSG_FAILED_TO_LOAD_OVERLAY:
+         return "Failed to load overlay.";
+      case MSG_FAILED_TO_UNMUTE_AUDIO:
+         return "Failed to unmute audio.";
+      case MSG_AUDIO_MUTED:
+         return "Audio muted.";
+      case MSG_AUDIO_UNMUTED:
+         return "Audio unmuted.";
+      case MSG_RESET:
+         return "Reset";
+      case MSG_FAILED_TO_LOAD_STATE:
+         return "Failed to load state from";
+      case MSG_CORE_DOES_NOT_SUPPORT_SAVESTATES:
+         return "Core does not support save states.";
+      case MSG_SAVED_STATE_TO_SLOT:
+         return "Saved state to slot";
+      case MSG_CONFIG_DIRECTORY_NOT_SET:
+         return "Config directory not set. Cannot save new config.";
+      case MSG_SKIPPING_SRAM_LOAD:
+         return "Skipping SRAM load.";
+      case MSG_APPENDED_DISK:
+         return "Appended disk";
+      case MSG_STARTING_MOVIE_PLAYBACK:
+         return "Starting movie playback.";
+      case MSG_FAILED_TO_REMOVE_TEMPORARY_FILE:
+         return "Failed to remove temporary file";
+      case MSG_REMOVING_TEMPORARY_CONTENT_FILE:
+         return "Removing temporary content file";
+      case MSG_LOADED_STATE_FROM_SLOT:
+         return "Loaded state from slot";
       case MSG_DOWNLOAD_PROGRESS:
          return "Download progress";
       case MSG_COULD_NOT_PROCESS_ZIP_FILE:

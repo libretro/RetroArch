@@ -48,6 +48,41 @@
 #define MSG_COULD_NOT_PROCESS_ZIP_FILE                0xc18c89bbU
 #define MSG_DOWNLOAD_PROGRESS                         0x35ed9411U
 
+#define MSG_LOADED_STATE_FROM_SLOT                    0xadb48582U
+
+#define MSG_REMOVING_TEMPORARY_CONTENT_FILE           0x7121c9e7U
+#define MSG_FAILED_TO_REMOVE_TEMPORARY_FILE           0xb6707b1aU
+
+#define MSG_STARTING_MOVIE_PLAYBACK                   0x96e545b6U
+
+#define MSG_APPENDED_DISK                             0x814ea0f0U
+
+#define MSG_SKIPPING_SRAM_LOAD                        0x88d4c8dbU
+
+#define MSG_CONFIG_DIRECTORY_NOT_SET                  0xcd45252aU
+
+#define MSG_SAVED_STATE_TO_SLOT                       0xe1e3dc3bU
+
+#define MSG_CORE_DOES_NOT_SUPPORT_SAVESTATES          0xd50adf46U
+#define MSG_FAILED_TO_LOAD_STATE                      0x91f348ebU
+
+#define MSG_RESET                                     0x10474288U
+
+#define MSG_AUDIO_MUTED                               0xfa0c3bd5U
+#define MSG_AUDIO_UNMUTED                             0x0512bab8U
+#define MSG_FAILED_TO_UNMUTE_AUDIO                    0xf698763aU
+
+#define MSG_FAILED_TO_LOAD_OVERLAY                    0xacf201ecU
+
+#define MSG_PAUSED                                    0x143e3307U
+#define MSG_UNPAUSED                                  0x95aede0aU
+
+#define MSG_CORE_DOES_NOT_SUPPORT_DISK_OPTIONS        0x6ba5abf9U
+
+#define MSG_GRAB_MOUSE_STATE                          0x893a7329U
+
+#define MSG_FAILED_TO_LOAD_MOVIE_FILE                 0x9455a5a9U
+
 const char *msg_hash_to_str(uint32_t hash);
 
 const char *msg_hash_to_str_fr(uint32_t hash);
