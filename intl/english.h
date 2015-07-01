@@ -92,8 +92,6 @@
 #define RETRO_MSG_MOVIE_STARTED_INIT_NETPLAY_FAILED "Movie playback has started. Cannot start netplay."
 #define RETRO_MSG_INIT_NETPLAY_FAILED "Failed to initialize netplay."
 #define RETRO_MSG_INIT_AUTOSAVE_FAILED "Could not initialize autosave."
-#define RETRO_MSG_REWINDING "Rewinding."
-#define RETRO_MSG_REWIND_REACHED_END "Reached end of rewind buffer."
 #define RETRO_MSG_MOVIE_RECORD_STOPPING "Stopping movie record."
 #define RETRO_MSG_MOVIE_PLAYBACK_ENDED "Movie playback ended."
 #define RETRO_MSG_LIBRETRO_ABI_BREAK RETRO_FRONTEND " is compiled against a different version of libretro than this libretro implementation."
