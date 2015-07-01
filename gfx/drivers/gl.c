@@ -1655,11 +1655,14 @@ static bool gl_frame(void *data, const void *frame,
    gl_set_prev_texture(gl, &gl->tex_info);
 
 #if defined(HAVE_MENU)
-   if (menu_driver_alive())
-      menu_driver_frame();
-
    if (gl->menu_texture_enable)
-      gl_draw_texture(gl);
+   {
+      if (menu_driver_alive())
+         menu_driver_frame();
+
+      if (gl->menu_texture_enable)
+         gl_draw_texture(gl);
+   }
 #endif
 
    if (msg && driver->font_osd_driver && driver->font_osd_data)
