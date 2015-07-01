@@ -41,6 +41,13 @@
 #define MSG_REDIRECTING_SAVEFILE_TO                   0x868c54a5U
 #define MSG_REDIRECTING_CHEATFILE_TO                  0xd5f1b27bU
 
+#define MSG_SCANNING                                  0x4c547516U
+#define MSG_SCANNING_OF_DIRECTORY_FINISHED            0x399632a7U
+
+#define MSG_DOWNLOAD_COMPLETE                         0x4b9c4f75U
+#define MSG_COULD_NOT_PROCESS_ZIP_FILE                0xc18c89bbU
+#define MSG_DOWNLOAD_PROGRESS                         0x35ed9411U
+
 const char *msg_hash_to_str(uint32_t hash);
 
 const char *msg_hash_to_str_fr(uint32_t hash);

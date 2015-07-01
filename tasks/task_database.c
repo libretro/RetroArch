@@ -16,11 +16,9 @@
 #include <compat/strcasestr.h>
 #include <compat/strl.h>
 
-#include <rhash.h>
-
 #include "../dir_list_special.h"
 #include "../file_ops.h"
-
+#include "../msg_hash.h"
 #include "../general.h"
 #include "../runloop_data.h"
 #include "tasks.h"
@@ -58,11 +56,14 @@ static int database_info_iterate_start
 
    snprintf(msg, sizeof(msg),
 #ifdef _WIN32
-	   "%Iu/%Iu: Scanning %s...\n",
+         "%Iu/%Iu: %s %s...\n",
 #else
-	   "%zu/%zu: Scanning %s...\n",
+         "%zu/%zu: %s %s...\n",
 #endif
-         db->list_ptr, db->list->size, name);
+         db->list_ptr,
+         db->list->size,
+         msg_hash_to_str(MSG_SCANNING),
+         name);
 
    if (msg[0] != '\0')
       rarch_main_msg_queue_push(msg, 1, 180, true);
@@ -85,7 +86,7 @@ static int database_info_iterate_playlist(
 
    path_parent_dir(parent_dir);
 
-   extension_hash = djb2_calculate(path_get_extension(name));
+   extension_hash = msg_hash_calculate(path_get_extension(name));
 
    switch (extension_hash)
    {
@@ -151,13 +152,6 @@ static int database_info_list_iterate_new(database_state_handle_t *db_state, con
    return 0;
 }
 
-/* TODO/FIXME -
- * * - What 'core' to bind a playlist entry to if
- * we are in Load Content (Detect Core)? Let the user
- * choose the core to be loaded with it upon selecting
- * the playlist entry?
- * * - Implement ZIP handling.
- **/
 static int database_info_list_iterate_found_match(
       database_state_handle_t *db_state,
       database_info_handle_t *db,
@@ -168,13 +162,14 @@ static int database_info_list_iterate_found_match(
    char db_playlist_path[PATH_MAX_LENGTH]      = {0};
    char  db_playlist_base_str[PATH_MAX_LENGTH] = {0};
    char entry_path_str[PATH_MAX_LENGTH]        = {0};
-   content_playlist_t *playlist = NULL;
-   settings_t *settings = config_get_ptr();
-   const char *db_path = db_state->list->elems[db_state->list_index].data;
-   const char *entry_path = db ? db->list->elems[db->list_ptr].data : NULL;
+   content_playlist_t   *playlist = NULL;
+   settings_t           *settings = config_get_ptr();
+   const char            *db_path = db_state->list->elems[db_state->list_index].data;
+   const char         *entry_path = db ? db->list->elems[db->list_ptr].data : NULL;
    database_info_t *db_info_entry = &db_state->info->list[db_state->entry_index];
 
-   fill_short_pathname_representation(db_playlist_base_str, db_path, sizeof(db_playlist_base_str));
+   fill_short_pathname_representation(db_playlist_base_str,
+         db_path, sizeof(db_playlist_base_str));
 
    path_remove_extension(db_playlist_base_str);
 
@@ -205,7 +200,8 @@ static int database_info_list_iterate_found_match(
    RARCH_LOG("entry path str: %s\n", entry_path_str);
 #endif
 
-   content_playlist_push(playlist, entry_path_str, db_info_entry->name, "DETECT", "DETECT", db_crc, db_playlist_base_str);
+   content_playlist_push(playlist, entry_path_str,
+         db_info_entry->name, "DETECT", "DETECT", db_crc, db_playlist_base_str);
 
    content_playlist_write_file(playlist);
    content_playlist_free(playlist);
@@ -296,9 +292,6 @@ static int database_info_iterate_playlist_zip(
    return 1;
 }
 
-
-
-
 static int database_info_iterate(database_state_handle_t *state, database_info_handle_t *db)
 {
    const char *name = db ? db->list->elems[db->list_ptr].data : NULL;
@@ -342,7 +335,7 @@ static int database_info_poll(db_handle_t *db)
    if (str_list->size > 0)
       strlcpy(elem0, str_list->elems[0].data, sizeof(elem0));
    if (str_list->size > 1)
-      cb_type_hash = djb2_calculate(str_list->elems[1].data);
+      cb_type_hash = msg_hash_calculate(str_list->elems[1].data);
 
    switch (cb_type_hash)
    {
@@ -413,7 +406,7 @@ void rarch_main_data_db_iterate(bool is_thread, void *data)
          }
          else
          {
-            rarch_main_msg_queue_push("Scanning of directory finished.\n", 0, 180, true);
+            rarch_main_msg_queue_push_new(MSG_SCANNING_OF_DIRECTORY_FINISHED, 0, 180, true);
             db->status = DATABASE_STATUS_FREE;
          }
          break;

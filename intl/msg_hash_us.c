@@ -20,6 +20,16 @@ const char *msg_hash_to_str_us(uint32_t hash)
 {
    switch (hash)
    {
+      case MSG_DOWNLOAD_PROGRESS:
+         return "Download progress";
+      case MSG_COULD_NOT_PROCESS_ZIP_FILE:
+         return "Could not process ZIP file.";
+      case MSG_DOWNLOAD_COMPLETE:
+         return "Download complete";
+      case MSG_SCANNING_OF_DIRECTORY_FINISHED:
+         return "Scanning of directory finished";
+      case MSG_SCANNING:
+         return "Scanning";
       case MSG_REDIRECTING_CHEATFILE_TO:
          return "Redirecting cheat file to";
       case MSG_REDIRECTING_SAVEFILE_TO:
