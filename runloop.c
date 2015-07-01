@@ -31,6 +31,8 @@
 #include "runloop.h"
 #include "runloop_data.h"
 
+#include "msg_hash.h"
+
 #include "input/keyboard_line.h"
 #include "input/input_common.h"
 
@@ -184,7 +186,7 @@ static void check_rewind(bool pressed)
          global->rewind.frame_is_reverse = true;
          audio_driver_setup_rewind();
 
-         rarch_main_msg_queue_push(RETRO_MSG_REWINDING, 0,
+         rarch_main_msg_queue_push_new(MSG_REWINDING, 0,
                runloop->is_paused ? 1 : 30, true);
          pretro_unserialize(buf, global->rewind.size);
 
@@ -192,7 +194,7 @@ static void check_rewind(bool pressed)
             bsv_movie_frame_rewind(global->bsv.movie);
       }
       else
-         rarch_main_msg_queue_push(RETRO_MSG_REWIND_REACHED_END,
+         rarch_main_msg_queue_push_new(MSG_REWIND_REACHED_END,
                0, 30, true);
    }
    else
@@ -240,8 +242,10 @@ static void check_slowmotion(bool slowmotion_pressed)
    if (settings->video.black_frame_insertion)
       video_driver_cached_frame();
 
-   rarch_main_msg_queue_push(global->rewind.frame_is_reverse ?
-         "Slow motion rewind." : "Slow motion.", 0, 30, true);
+   if (global->rewind.frame_is_reverse)
+      rarch_main_msg_queue_push_new(MSG_SLOW_MOTION_REWIND, 0, 30, true);
+   else
+      rarch_main_msg_queue_push_new(MSG_SLOW_MOTION, 0, 30, true);
 }
 
 static bool check_movie_init(void)
@@ -271,13 +275,19 @@ static bool check_movie_init(void)
    if (!global->bsv.movie)
       ret = false;
 
-   rarch_main_msg_queue_push(global->bsv.movie ?
-         msg : "Failed to start movie record.", 1, 180, true);
 
    if (global->bsv.movie)
+   {
+      rarch_main_msg_queue_push(msg, 1, 180, true);
       RARCH_LOG("Starting movie record to \"%s\".\n", path);
+   }
    else
+   {
+      rarch_main_msg_queue_push_new(
+            MSG_FAILED_TO_START_MOVIE_RECORD,
+            1, 180, true);
       RARCH_ERR("Failed to start movie record.\n");
+   }
 
    return ret;
 }
