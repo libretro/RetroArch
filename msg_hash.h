@@ -30,6 +30,14 @@
 #define MSG_FAILED_TO_SAVE_SRAM                       0x0f72de6cU
 #define MSG_STATE_SIZE                                0x27b67400U
 
+#define MSG_FAILED_TO_LOAD_CONTENT                    0x0186e5a5U
+#define MSG_COULD_NOT_READ_CONTENT_FILE               0x2dc7f4a0U
+#define MSG_SAVED_SUCCESSFULLY_TO                     0x9f59a7deU
+
+#define MSG_BYTES                                     0x0f30b64cU
+
+#define MSG_BLOCKING_SRAM_OVERWRITE                   0x1f91d486U
+
 #define MSG_UNRECOGNIZED_COMMAND                      0x946b8a50U
 
 #define MSG_SENDING_COMMAND                           0x562cf28bU

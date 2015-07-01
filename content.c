@@ -159,14 +159,12 @@ bool save_state(const char *path)
    data = malloc(size);
 
    if (!data)
-   {
-      RARCH_ERR("Failed to allocate memory for save state buffer.\n");
       return false;
-   }
 
-   RARCH_LOG("%s: %d bytes.\n", 
+   RARCH_LOG("%s: %d %s.\n", 
          msg_hash_to_str(MSG_STATE_SIZE),
-         (int)size);
+         (int)size,
+         msg_hash_to_str(MSG_BYTES));
    ret = pretro_serialize(data, size);
 
    if (ret)
@@ -207,18 +205,22 @@ bool load_state(const char *path)
 
    if (!ret || size < 0)
    {
-      RARCH_ERR("Failed to load state from \"%s\".\n", path);
+      RARCH_ERR("%s \"%s\".\n",
+            msg_hash_to_str(MSG_FAILED_TO_LOAD_STATE),
+            path);
       return false;
    }
 
-   RARCH_LOG("%s: %u bytes.\n",
+   RARCH_LOG("%s: %u %s.\n",
          msg_hash_to_str(MSG_STATE_SIZE),
-         (unsigned)size);
+         (unsigned)size,
+         msg_hash_to_str(MSG_BYTES));
 
    if (settings->block_sram_overwrite && global->savefiles
          && global->savefiles->size)
    {
-      RARCH_LOG("Blocking SRAM overwrite.\n");
+      RARCH_LOG("%s.\n",
+            msg_hash_to_str(MSG_BLOCKING_SRAM_OVERWRITE));
       blocks = (struct sram_block*)
          calloc(global->savefiles->size, sizeof(*blocks));
 
@@ -295,8 +297,11 @@ void load_ram_file(const char *path, int type)
    {
       if (rc > (ssize_t)size)
       {
-         RARCH_WARN("SRAM is larger than implementation expects, doing partial load (truncating %u bytes to %u).\n",
-               (unsigned)rc, (unsigned)size);
+         RARCH_WARN("SRAM is larger than implementation expects, doing partial load (truncating %u %s %s %u).\n",
+               (unsigned)rc,
+               msg_hash_to_str(MSG_BYTES),
+               msg_hash_to_str(MSG_TO),
+               (unsigned)size);
          rc = size;
       }
       memcpy(data, buf, rc);
@@ -335,7 +340,9 @@ void save_ram_file(const char *path, int type)
       return;
    }
 
-   RARCH_LOG("Saved successfully to \"%s\".\n", path);
+   RARCH_LOG("%s \"%s\".\n",
+         msg_hash_to_str(MSG_SAVED_SUCCESSFULLY_TO),
+         path);
 }
 
 static bool load_content_dont_need_fullpath(
@@ -355,7 +362,9 @@ static bool load_content_dont_need_fullpath(
 
    if (!ret || len < 0)
    {
-      RARCH_ERR("Could not read content file \"%s\".\n", path);
+      RARCH_ERR("%s \"%s\".\n",
+            msg_hash_to_str(MSG_COULD_NOT_READ_CONTENT_FILE),
+            path);
       return false;
    }
 
@@ -413,7 +422,9 @@ static bool load_content_need_fullpath(
 
    if (!ret || len < 0)
    {
-      RARCH_ERR("Could not read content file \"%s\".\n", path);
+      RARCH_ERR("%s \"%s\".\n",
+            msg_hash_to_str(MSG_COULD_NOT_READ_CONTENT_FILE),
+            path);
       return false;
    }
 
@@ -499,7 +510,7 @@ static bool load_content(const struct retro_subsystem_info *special,
       ret = pretro_load_game(*content->elems[0].data ? info : NULL);
 
    if (!ret)
-      RARCH_ERR("Failed to load content.\n");
+      RARCH_ERR("%s.\n", msg_hash_to_str(MSG_FAILED_TO_LOAD_CONTENT));
 
 end:
    for (i = 0; i < content->size; i++)

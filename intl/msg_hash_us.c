@@ -46,6 +46,10 @@ const char *msg_hash_to_str_us(uint32_t hash)
          return "Loading state";
       case MSG_FAILED_TO_LOAD_MOVIE_FILE:
          return "Failed to load movie file";
+      case MSG_FAILED_TO_LOAD_CONTENT:
+         return "Failed to load content";
+      case MSG_COULD_NOT_READ_CONTENT_FILE:
+         return "Could not read content file";
       case MSG_GRAB_MOUSE_STATE:
          return "Grab mouse state";
       case MSG_PAUSED:
@@ -70,10 +74,16 @@ const char *msg_hash_to_str_us(uint32_t hash)
          return "Failed to save SRAM";
       case MSG_STATE_SIZE:
          return "State size";
+      case MSG_BLOCKING_SRAM_OVERWRITE:
+         return "Blocking SRAM Overwrite";
       case MSG_CORE_DOES_NOT_SUPPORT_SAVESTATES:
          return "Core does not support save states.";
       case MSG_SAVED_STATE_TO_SLOT:
          return "Saved state to slot";
+      case MSG_SAVED_SUCCESSFULLY_TO:
+         return "Saved successfully to";
+      case MSG_BYTES:
+         return "bytes";
       case MSG_CONFIG_DIRECTORY_NOT_SET:
          return "Config directory not set. Cannot save new config.";
       case MSG_SKIPPING_SRAM_LOAD:
