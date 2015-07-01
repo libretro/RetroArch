@@ -155,7 +155,11 @@ static void event_save_files(void)
    {
       unsigned type    = global->savefiles->elems[i].attr.i;
       const char *path = global->savefiles->elems[i].data;
-      RARCH_LOG("Saving RAM type #%u to \"%s\".\n", type, path);
+      RARCH_LOG("%s #%u %s \"%s\".\n",
+            msg_hash_to_str(MSG_SAVING_RAM_TYPE),
+            type,
+            msg_hash_to_str(MSG_TO),
+            path);
       save_ram_file(path, type);
    }
 }
@@ -228,13 +232,16 @@ static void event_disk_control_set_eject(bool new_state, bool print_log)
    *msg = '\0';
 
    if (control->set_eject_state(new_state))
-      snprintf(msg, sizeof(msg), "%s virtual disk tray.",
-            new_state ? "Ejected" : "Closed");
+      snprintf(msg, sizeof(msg), "%s %s",
+            new_state ? "Ejected" : "Closed",
+            msg_hash_to_str(MSG_VIRTUAL_DISK_TRAY));
    else
    {
       error = true;
-      snprintf(msg, sizeof(msg), "Failed to %s virtual disk tray.",
-            new_state ? "eject" : "close");
+      snprintf(msg, sizeof(msg), "%s %s %s",
+            msg_hash_to_str(MSG_FAILED_TO),
+            new_state ? "eject" : "close",
+            msg_hash_to_str(MSG_VIRTUAL_DISK_TRAY));
    }
 
    if (*msg)

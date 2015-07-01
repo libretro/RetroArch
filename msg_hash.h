@@ -83,6 +83,14 @@
 
 #define MSG_FAILED_TO_LOAD_MOVIE_FILE                 0x9455a5a9U
 
+#define MSG_FAILED_TO                                 0x768f6dacU
+
+#define MSG_SAVING_RAM_TYPE                           0x9cd21d2dU
+
+#define MSG_TO                                        0x005979a8U
+
+#define MSG_VIRTUAL_DISK_TRAY                         0x4aa37f15U
+
 const char *msg_hash_to_str(uint32_t hash);
 
 const char *msg_hash_to_str_fr(uint32_t hash);

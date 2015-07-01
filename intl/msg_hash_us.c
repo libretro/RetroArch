@@ -20,6 +20,14 @@ const char *msg_hash_to_str_us(uint32_t hash)
 {
    switch (hash)
    {
+      case MSG_VIRTUAL_DISK_TRAY:
+         return "virtual disk tray.";
+      case MSG_FAILED_TO:
+         return "Failed to";
+      case MSG_TO:
+         return "to";
+      case MSG_SAVING_RAM_TYPE:
+         return "Saving RAM type";
       case MSG_FAILED_TO_LOAD_MOVIE_FILE:
          return "Failed to load movie file";
       case MSG_GRAB_MOUSE_STATE:
