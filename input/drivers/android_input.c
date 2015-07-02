@@ -278,11 +278,7 @@ static bool android_input_lookup_name(char *buf,
       goto error;
 
    CALL_INT_METHOD(env, *vendorId, device, getVendorId);
-   if (!*vendorId)
-   {
-      RARCH_ERR("Failed to find vendor id for device ID: %d\n", id);
-      goto error;
-   }
+
    RARCH_LOG("device vendor id: %d\n", *vendorId);
 
    getProductId = NULL;
@@ -292,11 +288,7 @@ static bool android_input_lookup_name(char *buf,
 
    *productId = 0;
    CALL_INT_METHOD(env, *productId, device, getProductId);
-   if (!*productId)
-   {
-      RARCH_ERR("Failed to find product id for device ID: %d\n", id);
-      goto error;
-   }
+
    RARCH_LOG("device product id: %d\n", *productId);
 
    return true;
