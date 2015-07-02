@@ -20,6 +20,14 @@ const char *msg_hash_to_str_us(uint32_t hash)
 {
    switch (hash)
    {
+      case MSG_REWIND_INIT_FAILED_NO_SAVESTATES:
+         return "Implementation does not support save states. Cannot use rewind.";
+      case MSG_REWIND_INIT_FAILED_THREADED_AUDIO:
+         return "Implementation uses threaded audio. Cannot use rewind.";
+      case MSG_REWIND_INIT_FAILED:
+         return "Failed to initialize rewind buffer. Rewinding will be disabled.";
+      case MSG_REWIND_INIT:
+         return "Initializing rewind buffer with size";
       case MSG_CUSTOM_TIMING_GIVEN:
          return "Custom timing given";
       case MSG_VIEWPORT_SIZE_CALCULATION_FAILED:

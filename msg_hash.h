@@ -31,6 +31,11 @@
 #define MSG_RECORDING_TERMINATED_DUE_TO_RESIZE        0x361a07feU
 #define MSG_FAILED_TO_START_RECORDING                 0x90c3e2d5U
 
+#define MSG_REWIND_INIT                               0xf7732001U
+#define MSG_REWIND_INIT_FAILED                        0x9c1db0a6U
+#define MSG_REWIND_INIT_FAILED_THREADED_AUDIO         0x359001b6U
+#define MSG_REWIND_INIT_FAILED_NO_SAVESTATES          0x979b9cc3U
+
 #define MSG_DETECTED_VIEWPORT_OF                      0xdf7002baU
 #define MSG_RECORDING_TO                              0x189fd324U
 #define MSG_HW_RENDERED_MUST_USE_POSTSHADED_RECORDING 0x7f9f7659U

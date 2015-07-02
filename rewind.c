@@ -21,9 +21,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <retro_inline.h>
-#include "intl/intl.h"
 #include "dynamic.h"
 #include "general.h"
+#include "msg_hash.h"
 
 #ifndef UINT16_MAX
 #define UINT16_MAX 0xffff
@@ -565,7 +565,7 @@ void init_rewind(void)
 
    if (audio_driver_has_callback())
    {
-      RARCH_ERR(RETRO_LOG_REWIND_INIT_FAILED_THREADED_AUDIO);
+      RARCH_ERR("%s.\n", msg_hash_to_str(MSG_REWIND_INIT_FAILED));
       return;
    }
 
@@ -573,18 +573,20 @@ void init_rewind(void)
 
    if (!global->rewind.size)
    {
-      RARCH_ERR(RETRO_LOG_REWIND_INIT_FAILED_NO_SAVESTATES);
+      RARCH_ERR("%s.\n",
+            msg_hash_to_str(MSG_REWIND_INIT_FAILED_THREADED_AUDIO));
       return;
    }
 
-   RARCH_LOG(RETRO_MSG_REWIND_INIT "%u MB\n",
+   RARCH_LOG("%s: %u MB\n",
+         msg_hash_to_str(MSG_REWIND_INIT),
          (unsigned)(settings->rewind_buffer_size / 1000000));
 
    global->rewind.state = state_manager_new(global->rewind.size,
          settings->rewind_buffer_size);
 
    if (!global->rewind.state)
-      RARCH_WARN(RETRO_LOG_REWIND_INIT_FAILED);
+      RARCH_WARN("%s.\n", msg_hash_to_str(MSG_REWIND_INIT_FAILED));
 
    state_manager_push_where(global->rewind.state, &state);
    pretro_serialize(state, global->rewind.size);
