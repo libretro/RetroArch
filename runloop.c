@@ -555,7 +555,8 @@ static int do_state_checks(event_cmd_state_t *cmd)
 
 #ifdef HAVE_NETPLAY
    if (driver->netplay_data)
-      return do_netplay_state_checks(cmd->netplay_flip_pressed, cmd->fullscreen_toggle);
+      return do_netplay_state_checks(cmd->netplay_flip_pressed,
+            cmd->fullscreen_toggle);
 #endif
 
    check_pause(cmd->pause_pressed, cmd->frameadvance_pressed);
@@ -567,8 +568,10 @@ static int do_state_checks(event_cmd_state_t *cmd)
             cmd->rewind_pressed))
       return 1;
 
-   check_fast_forward_button(cmd->fastforward_pressed, cmd->hold_pressed, cmd->old_hold_pressed);
-   check_stateslots(cmd->state_slot_increase, cmd->state_slot_decrease);
+   check_fast_forward_button(cmd->fastforward_pressed,
+         cmd->hold_pressed, cmd->old_hold_pressed);
+   check_stateslots(cmd->state_slot_increase,
+         cmd->state_slot_decrease);
 
    if (cmd->save_state_pressed)
       event_command(EVENT_CMD_SAVE_STATE);
@@ -581,7 +584,8 @@ static int do_state_checks(event_cmd_state_t *cmd)
    if (cmd->movie_record)
       check_movie();
 
-   check_shader_dir(cmd->shader_next_pressed, cmd->shader_prev_pressed);
+   check_shader_dir(cmd->shader_next_pressed,
+         cmd->shader_prev_pressed);
 
    if (cmd->disk_eject_pressed)
       event_command(EVENT_CMD_DISK_EJECT_TOGGLE);
