@@ -28,6 +28,7 @@
 #ifndef UINT16_MAX
 #define UINT16_MAX 0xffff
 #endif
+
 #ifndef UINT32_MAX
 #define UINT32_MAX 0xffffffffu
 #endif
@@ -222,12 +223,14 @@ static INLINE size_t find_same(const uint16_t *a, const uint16_t *b)
    return a - a_org;
 }
 
-size_t state_manager_raw_compress(const void *src, const void *dst, size_t len, void *patch)
+size_t state_manager_raw_compress(const void *src,
+      const void *dst, size_t len, void *patch)
 {
    const uint16_t  *old16 = (const uint16_t*)src;
    const uint16_t  *new16 = (const uint16_t*)dst;
    uint16_t *compressed16 = (uint16_t*)patch;
-   size_t          num16s = (len + sizeof(uint16_t) - 1) / sizeof(uint16_t);
+   size_t          num16s = (len + sizeof(uint16_t) - 1) 
+      / sizeof(uint16_t);
    
    while (num16s)
    {
