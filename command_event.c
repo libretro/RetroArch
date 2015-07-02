@@ -1108,7 +1108,7 @@ bool event_command(enum event_command cmd)
          event_init_controllers();
          break;
       case EVENT_CMD_RESET:
-         RARCH_LOG(RETRO_LOG_RESETTING_CONTENT);
+         RARCH_LOG("%s.\n", msg_hash_to_str(MSG_RESET));
          rarch_main_msg_queue_push_new(MSG_RESET, 1, 120, true);
          pretro_reset();
 
