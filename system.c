@@ -17,6 +17,7 @@
 
 #include "system.h"
 #include "dynamic.h"
+#include "msg_hash.h"
 #include "intl/intl.h"
 
 #ifdef HAVE_ZLIB
@@ -69,7 +70,7 @@ void rarch_system_info_init(void)
    pretro_get_system_info(&system->info);
 
    if (!system->info.library_name)
-      system->info.library_name = "Unknown";
+      system->info.library_name = msg_hash_to_str(MSG_UNKNOWN);
    if (!system->info.library_version)
       system->info.library_version = "v0";
 

@@ -21,6 +21,7 @@
 #include <stdint.h>
 #include <stddef.h>
 
+#define MSG_UNKNOWN                                   0x3a834e55U
 
 #define MSG_RECEIVED                                  0xfe0c06acU
 

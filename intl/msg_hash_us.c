@@ -20,6 +20,8 @@ const char *msg_hash_to_str_us(uint32_t hash)
 {
    switch (hash)
    {
+      case MSG_UNKNOWN:
+         return "Unknown";
       case MSG_RECEIVED:
          return "received";
       case MSG_UNRECOGNIZED_COMMAND:
