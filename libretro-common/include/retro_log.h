@@ -65,7 +65,7 @@ FILE *rarch_main_log_file(void);
 #define PROGRAM_NAME "N/A"
 #endif
 
-#if defined(RARCH_INTERNAL)
+#if defined(RARCH_INTERNAL) && !defined(ANDROID)
 
 #ifdef __cplusplus
 extern "C" {
