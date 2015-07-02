@@ -20,6 +20,8 @@ const char *msg_hash_to_str_us(uint32_t hash)
 {
    switch (hash)
    {
+      case MSG_PROGRAM:
+         return "RetroArch";
       case MSG_MOVIE_RECORD_STOPPED:
          return "Stopping movie record.";
       case MSG_MOVIE_PLAYBACK_ENDED:
@@ -118,6 +120,10 @@ const char *msg_hash_to_str_us(uint32_t hash)
          return "Failed to save SRAM";
       case MSG_STATE_SIZE:
          return "State size";
+      case MSG_FOUND_SHADER:
+         return "Found shader";
+      case MSG_SRAM_WILL_NOT_BE_SAVED:
+         return "SRAM will not be saved.";
       case MSG_BLOCKING_SRAM_OVERWRITE:
          return "Blocking SRAM Overwrite";
       case MSG_CORE_DOES_NOT_SUPPORT_SAVESTATES:

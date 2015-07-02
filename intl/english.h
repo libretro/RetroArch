@@ -17,8 +17,6 @@
 #ifndef __INTL_ENGLISH_H
 #define __INTL_ENGLISH_H
 
-#define RETRO_FRONTEND "RetroArch"
-
 #define RETRO_LBL_JOYPAD_B "RetroPad B Button"
 #define RETRO_LBL_JOYPAD_Y "RetroPad Y Button"
 #define RETRO_LBL_JOYPAD_SELECT "RetroPad Select Button"

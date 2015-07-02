@@ -18,7 +18,6 @@
 #include "system.h"
 #include "dynamic.h"
 #include "msg_hash.h"
-#include "intl/intl.h"
 
 #ifdef HAVE_ZLIB
 #define DEFAULT_EXT "zip"
@@ -75,8 +74,9 @@ void rarch_system_info_init(void)
       system->info.library_version = "v0";
 
 #ifndef RARCH_CONSOLE
-   snprintf(system->title_buf, sizeof(system->title_buf),
-         RETRO_FRONTEND " : ");
+   strlcpy(system->title_buf, 
+         msg_hash_to_str(MSG_PROGRAM), sizeof(system->title_buf));
+   strlcat(system->title_buf, " : ", sizeof(system->title_buf));
 #endif
    strlcat(system->title_buf, system->info.library_name, sizeof(system->title_buf));
    strlcat(system->title_buf, " ", sizeof(system->title_buf));

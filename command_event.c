@@ -24,7 +24,6 @@
 #include "dynamic.h"
 #include "content.h"
 #include "screenshot.h"
-#include "intl/intl.h"
 #include "msg_hash.h"
 #include "retroarch.h"
 #include "dir_list_special.h"
@@ -910,7 +909,9 @@ static void event_save_state(const char *path,
 
    if (!save_state(path))
    {
-      snprintf(s, len, "Failed to save state to \"%s\".", path);
+      snprintf(s, len, "%s \"%s\".",
+            msg_hash_to_str(MSG_FAILED_TO_SAVE_STATE_TO),
+            path);
       return;
    }
 
@@ -1336,7 +1337,9 @@ bool event_command(enum event_command cmd)
          event_command(EVENT_CMD_HISTORY_DEINIT);
          if (!settings->history_list_enable)
             return false;
-         RARCH_LOG("Loading history file: [%s].\n", settings->content_history_path);
+         RARCH_LOG("%s: [%s].\n",
+               msg_hash_to_str(MSG_LOADING_HISTORY_FILE),
+               settings->content_history_path);
          g_defaults.history = content_playlist_init(
                settings->content_history_path,
                settings->content_history_size);
@@ -1505,7 +1508,8 @@ bool event_command(enum event_command cmd)
          dir_list_sort(global->shader_dir.list, false);
 
          for (i = 0; i < global->shader_dir.list->size; i++)
-            RARCH_LOG("Found shader \"%s\"\n",
+            RARCH_LOG("%s \"%s\"\n",
+                  msg_hash_to_str(MSG_FOUND_SHADER),
                   global->shader_dir.list->elems[i].data);
          break;
       case EVENT_CMD_SAVEFILES:
@@ -1527,7 +1531,8 @@ bool event_command(enum event_command cmd)
             ;
 
          if (!global->use_sram)
-            RARCH_LOG("SRAM will not be saved.\n");
+            RARCH_LOG("%s\n",
+                  msg_hash_to_str(MSG_SRAM_WILL_NOT_BE_SAVED));
 
          if (global->use_sram)
             event_command(EVENT_CMD_AUTOSAVE_INIT);
@@ -1642,7 +1647,8 @@ bool event_command(enum event_command cmd)
                event_check_disk_eject(control);
          }
          else
-            rarch_main_msg_queue_push_new(MSG_CORE_DOES_NOT_SUPPORT_DISK_OPTIONS,
+            rarch_main_msg_queue_push_new(
+                  MSG_CORE_DOES_NOT_SUPPORT_DISK_OPTIONS,
                   1, 120, true);
          break;
       case EVENT_CMD_DISK_NEXT:
@@ -1661,7 +1667,8 @@ bool event_command(enum event_command cmd)
             event_check_disk_next(control);
          }
          else
-            rarch_main_msg_queue_push_new(MSG_CORE_DOES_NOT_SUPPORT_DISK_OPTIONS,
+            rarch_main_msg_queue_push_new(
+                  MSG_CORE_DOES_NOT_SUPPORT_DISK_OPTIONS,
                   1, 120, true);
          break;
       case EVENT_CMD_DISK_PREV:
@@ -1680,7 +1687,8 @@ bool event_command(enum event_command cmd)
             event_check_disk_prev(control);
          }
          else
-            rarch_main_msg_queue_push_new(MSG_CORE_DOES_NOT_SUPPORT_DISK_OPTIONS,
+            rarch_main_msg_queue_push_new(
+                  MSG_CORE_DOES_NOT_SUPPORT_DISK_OPTIONS,
                   1, 120, true);
          break;
       case EVENT_CMD_RUMBLE_STOP:

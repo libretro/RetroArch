@@ -22,6 +22,11 @@
 #include <stddef.h>
 
 #define MSG_UNKNOWN                                   0x3a834e55U
+#define MSG_PROGRAM                                   0xc339565dU
+#define MSG_FOUND_SHADER                              0x817f42b7U
+
+#define MSG_LOADING_HISTORY_FILE                      0x865210d3U
+#define MSG_SRAM_WILL_NOT_BE_SAVED                    0x16f17d61U
 
 #define MSG_RECEIVED                                  0xfe0c06acU
 

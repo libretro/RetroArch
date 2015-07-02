@@ -49,7 +49,6 @@
 #include "system.h"
 
 #include "git_version.h"
-#include "intl/intl.h"
 
 #ifdef HAVE_MENU
 #include "menu/menu.h"
@@ -146,10 +145,9 @@ static void print_version(void)
 {
    char str[PATH_MAX_LENGTH] = {0};
 
+   fprintf(stderr, "%s: Frontend for libretro -- v%s", msg_hash_to_str(MSG_PROGRAM), PACKAGE_VERSION);
 #ifdef HAVE_GIT_VERSION
-   printf(RETRO_FRONTEND ": Frontend for libretro -- v" PACKAGE_VERSION " -- %s --\n", rarch_git_version);
-#else
-   puts(RETRO_FRONTEND ": Frontend for libretro -- v" PACKAGE_VERSION " --");
+   printf(" -- %s --\n", rarch_git_version);
 #endif
    rarch_info_get_capabilities(RARCH_CAPABILITIES_COMPILER, str, sizeof(str));
    fprintf(stdout, "%s", str);
@@ -171,16 +169,22 @@ static void print_help(const char *arg0)
 
    puts("  -h, --help            Show this help message.");
    puts("  -v, --verbose         Verbose logging.");
-   puts("      --log-file=FILE   Log " RETRO_FRONTEND " messages to FILE.");
-   puts("      --version         Show " RETRO_FRONTEND " version.");
-   puts("      --features        Prints available features compiled into " RETRO_FRONTEND ".");
+   puts("      --log-file=FILE   Log messages to FILE.");
+   puts("      --version         Show version.");
+   puts("      --features        Prints available features compiled into program.");
    puts("      --menu            Do not require content or libretro core to be loaded,\n"
         "                        starts directly in menu. If no arguments are passed to\n"
-        "                        " RETRO_FRONTEND ", it is equivalent to using --menu as only argument.");
+        "                        the program, it is equivalent to using --menu as only argument.");
    puts("  -s, --save=PATH       Path for save files (*.srm).");
    puts("  -S, --savestate=PATH  Path for the save state files (*.state).");
-   puts("  -f, --fullscreen      Start " RETRO_FRONTEND " in fullscreen regardless of config settings.");
-   puts("  -c, --config=FILE     Path for config file." RARCH_DEFAULT_CONF_PATH_STR);
+   puts("  -f, --fullscreen      Start the program in fullscreen regardless of config settings.");
+   puts("  -c, --config=FILE     Path for config file."
+#ifdef _WIN32
+         "\n\t\tDefaults to retroarch.cfg in same directory as retroarch.exe.\n\t\tIf a default config is not found, the program will attempt to create one."
+#else
+         "\n\t\tBy default looks for config in $XDG_CONFIG_HOME/retroarch/retroarch.cfg,\n\t\t$HOME/.config/retroarch/retroarch.cfg,\n\t\tand $HOME/.retroarch.cfg.\n\t\tIf a default config is not found, the program will attempt to create one based on the skeleton config (" GLOBAL_CONFIG_DIR "/retroarch.cfg)."
+#endif
+         );
    puts("      --appendconfig=FILE\n"
         "                        Extra config files are loaded in, and take priority over\n"
         "                        config selected in -c (or default). Multiple configs are\n"
@@ -219,7 +223,7 @@ static void print_help(const char *arg0)
 #endif
    puts("      --nick=NICK       Picks a username (for use with netplay). Not mandatory.");
 #if defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)
-   puts("      --command         Sends a command over UDP to an already running " RETRO_FRONTEND " process.");
+   puts("      --command         Sends a command over UDP to an already running program process.");
    puts("      Available commands are listed if command is invalid.");
 #endif
 
@@ -231,7 +235,7 @@ static void print_help(const char *arg0)
    puts("      --bps=FILE        Specifies path for BPS patch that will be applied to content.");
    puts("      --ips=FILE        Specifies path for IPS patch that will be applied to content.");
    puts("      --no-patch        Disables all forms of content patching.");
-   puts("  -D, --detach          Detach " RETRO_FRONTEND " from the running console. Not relevant for all platforms.");
+   puts("  -D, --detach          Detach program from the running console. Not relevant for all platforms.");
    puts("      --max-frames=NUMBER\n"
         "                        Runs for the specified number of frames, then exits.\n");
 }
