@@ -44,6 +44,7 @@
 #include "runloop.h"
 #include "configuration.h"
 #include "general.h"
+#include "msg_hash.h"
 
 #include "input/input_sensor.h"
 
@@ -311,7 +312,7 @@ static void load_symbols(enum rarch_core_type type)
             {
                /* Try to verify that -lretro was not linked in from other modules
                 * since loading it dynamically and with -l will fail hard. */
-               RARCH_ERR("Serious problem. RetroArch wants to load libretro dyamically, but it is already linked.\n");
+               RARCH_ERR("Serious problem. RetroArch wants to load libretro cores dyamically, but it is already linked.\n");
                RARCH_ERR("This could happen if other modules RetroArch depends on link against libretro directly.\n");
                RARCH_ERR("Proceeding could cause a crash. Aborting ...\n");
                rarch_fail(1, "init_libretro_sym()");
@@ -319,7 +320,7 @@ static void load_symbols(enum rarch_core_type type)
 
             if (!*settings->libretro)
             {
-               RARCH_ERR("RetroArch is built for dynamic libretro, but libretro_path is not set. Cannot continue.\n");
+               RARCH_ERR("RetroArch is built for dynamic libretro cores, but libretro_path is not set. Cannot continue.\n");
                rarch_fail(1, "init_libretro_sym()");
             }
 
@@ -329,12 +330,12 @@ static void load_symbols(enum rarch_core_type type)
             path_resolve_realpath(settings->libretro,
                   sizeof(settings->libretro));
 
-            RARCH_LOG("Loading dynamic libretro from: \"%s\"\n",
+            RARCH_LOG("Loading dynamic libretro core from: \"%s\"\n",
                   settings->libretro);
             lib_handle = dylib_load(settings->libretro);
             if (!lib_handle)
             {
-               RARCH_ERR("Failed to open dynamic library: \"%s\"\n",
+               RARCH_ERR("Failed to open libretro core: \"%s\"\n",
                      settings->libretro);
                rarch_fail(1, "load_dynamic()");
             }
@@ -504,7 +505,8 @@ void libretro_get_current_core_pathname(char *name, size_t size)
       return;
 
    pretro_get_system_info(&info);
-   id = info.library_name ? info.library_name : "Unknown";
+   id = info.library_name ? info.library_name : 
+      msg_hash_to_str(MSG_UNKNOWN);
 
    if (!id || strlen(id) >= size)
    {
