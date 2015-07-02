@@ -36,6 +36,11 @@
 #define MSG_REWIND_INIT_FAILED_THREADED_AUDIO         0x359001b6U
 #define MSG_REWIND_INIT_FAILED_NO_SAVESTATES          0x979b9cc3U
 
+#define MSG_LIBRETRO_ABI_BREAK                        0xf02cccd7U
+
+#define MSG_NETPLAY_FAILED                            0x61ee3426U
+#define MSG_NETPLAY_FAILED_MOVIE_PLAYBACK_HAS_STARTED 0xb1e5dbfcU
+
 #define MSG_DETECTED_VIEWPORT_OF                      0xdf7002baU
 #define MSG_RECORDING_TO                              0x189fd324U
 #define MSG_HW_RENDERED_MUST_USE_POSTSHADED_RECORDING 0x7f9f7659U

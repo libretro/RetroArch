@@ -1109,7 +1109,7 @@ void rarch_verify_api_version(void)
    RARCH_LOG("Compiled against API: %u\n",    RETRO_API_VERSION);
 
    if (pretro_api_version() != RETRO_API_VERSION)
-      RARCH_WARN(RETRO_LOG_LIBRETRO_ABI_BREAK);
+      RARCH_WARN("%s\n", msg_hash_to_str(MSG_LIBRETRO_ABI_BREAK));
 }
 
 #define FAIL_CPU(simd_type) do { \

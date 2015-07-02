@@ -20,6 +20,12 @@ const char *msg_hash_to_str_us(uint32_t hash)
 {
    switch (hash)
    {
+      case MSG_NETPLAY_FAILED_MOVIE_PLAYBACK_HAS_STARTED:
+         return "Movie playback has started. Cannot start netplay.";
+      case MSG_NETPLAY_FAILED:
+         return "Failed to initialize netplay.";
+      case MSG_LIBRETRO_ABI_BREAK:
+         return "is compiled against a different version of libretro than this libretro implementation.";
       case MSG_REWIND_INIT_FAILED_NO_SAVESTATES:
          return "Implementation does not support save states. Cannot use rewind.";
       case MSG_REWIND_INIT_FAILED_THREADED_AUDIO:
