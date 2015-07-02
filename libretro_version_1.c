@@ -39,7 +39,6 @@
 #include "audio/audio_utils.h"
 #include "record/record_driver.h"
 #include "gfx/video_pixel_converter.h"
-#include "intl/intl.h"
 
 #ifdef HAVE_NETPLAY
 #include "netplay.h"

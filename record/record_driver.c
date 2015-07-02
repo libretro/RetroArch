@@ -23,7 +23,6 @@
 #include "../general.h"
 #include "../retroarch.h"
 #include "../runloop.h"
-#include "../intl/intl.h"
 #include "../gfx/video_driver.h"
 #include "../gfx/video_viewport.h"
 #include "../msg_hash.h"

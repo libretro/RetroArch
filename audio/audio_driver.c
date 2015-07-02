@@ -25,7 +25,6 @@
 #include "../retroarch.h"
 #include "../runloop.h"
 #include "../performance.h"
-#include "../intl/intl.h"
 
 #ifndef AUDIO_BUFFER_FREE_SAMPLES_COUNT
 #define AUDIO_BUFFER_FREE_SAMPLES_COUNT (8 * 1024)
