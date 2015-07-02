@@ -92,7 +92,7 @@ const char *menu_hash_to_str_pt(uint32_t hash)
       case MENU_LABEL_VALUE_AUDIO_BLOCK_FRAMES:
          return "Quadros de Blocos de Áudio";
       case MENU_LABEL_VALUE_INPUT_BIND_MODE:
-         return "Modo Vínculo";
+         return "Modo de Associações";
       case MENU_LABEL_VALUE_AUTOCONFIG_DESCRIPTOR_LABEL_SHOW:
          return "Mostrar Rótulos de Autoconfiguração";
       case MENU_LABEL_VALUE_INPUT_DESCRIPTOR_LABEL_SHOW:
@@ -324,9 +324,9 @@ const char *menu_hash_to_str_pt(uint32_t hash)
       case MENU_LABEL_VALUE_VIDEO_FULLSCREEN:
          return "Usar Modo Tela Cheia";
       case MENU_LABEL_VALUE_VIDEO_SCALE:
-         return "Interpolação em Janela";
+         return "Variar Escala em Janela";
       case MENU_LABEL_VALUE_VIDEO_SCALE_INTEGER:
-         return "Interpolação em Inteiros";
+         return "Escala em Degraus Inteiros";
       case MENU_LABEL_VALUE_PERFCNT_ENABLE:
          return "Contadores de Desempenho";
       case MENU_LABEL_VALUE_LIBRETRO_LOG_LEVEL:
@@ -404,7 +404,7 @@ const char *menu_hash_to_str_pt(uint32_t hash)
       case MENU_LABEL_VALUE_FPS_SHOW:
          return "Mostrar Taxa de Quadros";
       case MENU_LABEL_VALUE_AUDIO_MUTE:
-         return "Desligar Áudio";
+         return "Silenciar Áudio";
       case MENU_LABEL_VALUE_AUDIO_VOLUME:
          return "Volume de Áudio (dB)";
       case MENU_LABEL_VALUE_AUDIO_SYNC:
@@ -841,6 +841,14 @@ const char *menu_hash_to_str_pt(uint32_t hash)
          return "Analógico Esquerdo";
       case MENU_VALUE_RIGHT_ANALOG:
          return "Analógico Direito";
+      case MENU_LABEL_VALUE_INPUT_HOTKEY_BINDS:
+         return "Associação de Teclas de Atalho";
+      case MENU_LABEL_VALUE_FRAME_THROTTLE_SETTINGS:
+         return "Definições do Limitador de Quadros";
+      case MENU_VALUE_SEARCH:
+         return "Busca:";
+      case MENU_LABEL_VALUE_USE_BUILTIN_IMAGE_VIEWER:
+         return "Usar Visualizador de Imagens Interno";
       default:
          break;
    }

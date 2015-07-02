@@ -24,7 +24,7 @@
 #include "dynamic.h"
 #include "content.h"
 #include "screenshot.h"
-#include "intl/intl.h"
+#include "msg_hash.h"
 #include "retroarch.h"
 #include "dir_list_special.h"
 
@@ -82,9 +82,12 @@ static void event_free_temporary_content(void)
    {
       const char *path = global->temporary_content->elems[i].data;
 
-      RARCH_LOG("Removing temporary content file: %s.\n", path);
+      RARCH_LOG("%s: %s.\n",
+            msg_hash_to_str(MSG_REMOVING_TEMPORARY_CONTENT_FILE), path);
       if (remove(path) < 0)
-         RARCH_ERR("Failed to remove temporary file: %s.\n", path);
+         RARCH_ERR("%s: %s.\n",
+               msg_hash_to_str(MSG_FAILED_TO_REMOVE_TEMPORARY_FILE),
+               path);
    }
    string_list_free(global->temporary_content);
 }
@@ -119,7 +122,7 @@ static void event_init_autosave(void)
             settings->autosave_interval);
 
       if (!global->autosave[i])
-         RARCH_WARN(RETRO_LOG_INIT_AUTOSAVE_FAILED);
+         RARCH_WARN("%s\n", msg_hash_to_str(MSG_AUTOSAVE_FAILED));
    }
 }
 
@@ -151,7 +154,11 @@ static void event_save_files(void)
    {
       unsigned type    = global->savefiles->elems[i].attr.i;
       const char *path = global->savefiles->elems[i].data;
-      RARCH_LOG("Saving RAM type #%u to \"%s\".\n", type, path);
+      RARCH_LOG("%s #%u %s \"%s\".\n",
+            msg_hash_to_str(MSG_SAVING_RAM_TYPE),
+            type,
+            msg_hash_to_str(MSG_TO),
+            path);
       save_ram_file(path, type);
    }
 }
@@ -166,32 +173,36 @@ static void event_init_movie(void)
       if (!(global->bsv.movie = bsv_movie_init(global->bsv.movie_start_path,
                   RARCH_MOVIE_PLAYBACK)))
       {
-         RARCH_ERR("Failed to load movie file: \"%s\".\n",
+         RARCH_ERR("%s: \"%s\".\n",
+               msg_hash_to_str(MSG_FAILED_TO_LOAD_MOVIE_FILE),
                global->bsv.movie_start_path);
          rarch_fail(1, "event_init_movie()");
       }
 
       global->bsv.movie_playback = true;
-      rarch_main_msg_queue_push("Starting movie playback.", 2, 180, false);
-      RARCH_LOG("Starting movie playback.\n");
+      rarch_main_msg_queue_push_new(MSG_STARTING_MOVIE_PLAYBACK, 2, 180, false);
+      RARCH_LOG("%s.\n", msg_hash_to_str(MSG_STARTING_MOVIE_PLAYBACK));
       settings->rewind_granularity = 1;
    }
    else if (global->bsv.movie_start_recording)
    {
       char msg[PATH_MAX_LENGTH] = {0};
-      snprintf(msg, sizeof(msg), "Starting movie record to \"%s\".",
+      snprintf(msg, sizeof(msg),
+            "%s \"%s\".",
+            msg_hash_to_str(MSG_STARTING_MOVIE_RECORD_TO),
             global->bsv.movie_start_path);
 
       if (!(global->bsv.movie = bsv_movie_init(global->bsv.movie_start_path,
                   RARCH_MOVIE_RECORD)))
       {
-         rarch_main_msg_queue_push("Failed to start movie record.", 1, 180, true);
-         RARCH_ERR("Failed to start movie record.\n");
+         rarch_main_msg_queue_push_new(MSG_FAILED_TO_START_MOVIE_RECORD, 1, 180, true);
+         RARCH_ERR("%s.\n", msg_hash_to_str(MSG_FAILED_TO_START_MOVIE_RECORD));
          return;
       }
 
       rarch_main_msg_queue_push(msg, 1, 180, true);
-      RARCH_LOG("Starting movie record to \"%s\".\n",
+      RARCH_LOG("%s \"%s\".\n",
+            msg_hash_to_str(MSG_STARTING_MOVIE_RECORD_TO),
             global->bsv.movie_start_path);
       settings->rewind_granularity = 1;
    }
@@ -220,13 +231,16 @@ static void event_disk_control_set_eject(bool new_state, bool print_log)
    *msg = '\0';
 
    if (control->set_eject_state(new_state))
-      snprintf(msg, sizeof(msg), "%s virtual disk tray.",
-            new_state ? "Ejected" : "Closed");
+      snprintf(msg, sizeof(msg), "%s %s",
+            new_state ? "Ejected" : "Closed",
+            msg_hash_to_str(MSG_VIRTUAL_DISK_TRAY));
    else
    {
       error = true;
-      snprintf(msg, sizeof(msg), "Failed to %s virtual disk tray.",
-            new_state ? "eject" : "close");
+      snprintf(msg, sizeof(msg), "%s %s %s",
+            msg_hash_to_str(MSG_FAILED_TO),
+            new_state ? "eject" : "close",
+            msg_hash_to_str(MSG_VIRTUAL_DISK_TRAY));
    }
 
    if (*msg)
@@ -273,7 +287,7 @@ void event_disk_control_append_image(const char *path)
    info.path = path;
    control->replace_image_index(new_idx, &info);
 
-   strlcpy(msg, "Appended disk: ", sizeof(msg));
+   snprintf(msg, sizeof(msg), "%s: ", msg_hash_to_str(MSG_APPENDED_DISK));
    strlcat(msg, path, sizeof(msg));
    RARCH_LOG("%s\n", msg);
    rarch_main_msg_queue_push(msg, 0, 180, true);
@@ -337,7 +351,9 @@ static void event_disk_control_set_index(unsigned idx)
          snprintf(msg, sizeof(msg), "Setting disk %u of %u in tray.",
                idx + 1, num_disks);
       else
-         strlcpy(msg, "Removed disk from tray.", sizeof(msg));
+         strlcpy(msg,
+               msg_hash_to_str(MSG_REMOVED_DISK_FROM_TRAY),
+               sizeof(msg));
    }
    else
    {
@@ -345,7 +361,9 @@ static void event_disk_control_set_index(unsigned idx)
          snprintf(msg, sizeof(msg), "Failed to set disk %u of %u.",
                idx + 1, num_disks);
       else
-         strlcpy(msg, "Failed to remove disk from tray.", sizeof(msg));
+         strlcpy(msg,
+               msg_hash_to_str(MSG_FAILED_TO_REMOVE_DISK_FROM_TRAY),
+               sizeof(msg));
       error = true;
    }
 
@@ -385,7 +403,7 @@ static void event_check_disk_prev(
 
    if (!disk_prev_enable)
    {
-      RARCH_ERR("Got invalid disk index from libretro.\n");
+      RARCH_ERR("%s.\n", msg_hash_to_str(MSG_GOT_INVALID_DISK_INDEX));
       return;
    }
 
@@ -420,7 +438,7 @@ static void event_check_disk_next(
 
    if (!disk_next_enable)
    {
-      RARCH_ERR("Got invalid disk index from libretro.\n");
+      RARCH_ERR("%s.\n", msg_hash_to_str(MSG_GOT_INVALID_DISK_INDEX));
       return;
    }
 
@@ -684,7 +702,8 @@ static bool event_init_content(void)
    event_set_savestate_auto_index();
 
    if (event_load_save_files())
-      RARCH_LOG("Skipping SRAM load.\n");
+      RARCH_LOG("%s.\n",
+            msg_hash_to_str(MSG_SKIPPING_SRAM_LOAD));
 
    event_load_auto_state();
    event_command(EVENT_CMD_BSV_MOVIE_INIT);
@@ -801,9 +820,8 @@ static bool event_save_core_config(void)
             sizeof(config_dir));
    else
    {
-      const char *message = "Config directory not set. Cannot save new config.";
-      rarch_main_msg_queue_push(message, 1, 180, true);
-      RARCH_ERR("%s\n", message);
+      rarch_main_msg_queue_push_new(MSG_CONFIG_DIRECTORY_NOT_SET, 1, 180, true);
+      RARCH_ERR("%s\n", msg_hash_to_str(MSG_CONFIG_DIRECTORY_NOT_SET));
       return false;
    }
 
@@ -891,14 +909,17 @@ static void event_save_state(const char *path,
 
    if (!save_state(path))
    {
-      snprintf(s, len, "Failed to save state to \"%s\".", path);
+      snprintf(s, len, "%s \"%s\".",
+            msg_hash_to_str(MSG_FAILED_TO_SAVE_STATE_TO),
+            path);
       return;
    }
 
    if (settings->state_slot < 0)
-      snprintf(s, len, "Saved state to slot #-1 (auto).");
+      snprintf(s, len, "%s #-1 (auto).", msg_hash_to_str(MSG_SAVED_STATE_TO_SLOT));
    else
-      snprintf(s, len, "Saved state to slot #%d.", settings->state_slot);
+      snprintf(s, len, "%s #%d.", msg_hash_to_str(MSG_SAVED_STATE_TO_SLOT),
+            settings->state_slot);
 }
 
 /**
@@ -915,15 +936,17 @@ static void event_load_state(const char *path, char *s, size_t len)
 
    if (!load_state(path))
    {
-      snprintf(s, len, "Failed to load state from \"%s\".", path);
+      snprintf(s, len, "%s \"%s\".",
+            msg_hash_to_str(MSG_FAILED_TO_LOAD_STATE),
+            path);
       return;
-
    }
 
    if (settings->state_slot < 0)
-      snprintf(s, len, "Loaded state from slot #-1 (auto).");
+      snprintf(s, len, "%s #-1 (auto).", msg_hash_to_str(MSG_LOADED_STATE_FROM_SLOT));
    else
-      snprintf(s, len, "Loaded state from slot #%d.", settings->state_slot);
+      snprintf(s, len, "%s #%d.", msg_hash_to_str(MSG_LOADED_STATE_FROM_SLOT),
+            settings->state_slot);
 }
 
 static void event_main_state(unsigned cmd)
@@ -937,19 +960,25 @@ static void event_main_state(unsigned cmd)
       snprintf(path, sizeof(path), "%s%d",
             global->savestate_name, settings->state_slot);
    else if (settings->state_slot < 0)
-      fill_pathname_join_delim(path, global->savestate_name, "auto", '.', sizeof(path));
+      fill_pathname_join_delim(path,
+            global->savestate_name, "auto", '.', sizeof(path));
    else
       strlcpy(path, global->savestate_name, sizeof(path));
 
    if (pretro_serialize_size())
    {
-      if (cmd == EVENT_CMD_SAVE_STATE)
-         event_save_state(path, msg, sizeof(msg));
-      else if (cmd == EVENT_CMD_LOAD_STATE)
-         event_load_state(path, msg, sizeof(msg));
+      switch (cmd)
+      {
+         case EVENT_CMD_SAVE_STATE:
+            event_save_state(path, msg, sizeof(msg));
+            break;
+         case EVENT_CMD_LOAD_STATE:
+            event_load_state(path, msg, sizeof(msg));
+            break;
+      }
    }
    else
-      strlcpy(msg, "Core does not support save states.", sizeof(msg));
+      strlcpy(msg, msg_hash_to_str(MSG_CORE_DOES_NOT_SUPPORT_SAVESTATES), sizeof(msg));
 
    rarch_main_msg_queue_push(msg, 2, 180, true);
    RARCH_LOG("%s\n", msg);
@@ -1080,8 +1109,8 @@ bool event_command(enum event_command cmd)
          event_init_controllers();
          break;
       case EVENT_CMD_RESET:
-         RARCH_LOG(RETRO_LOG_RESETTING_CONTENT);
-         rarch_main_msg_queue_push("Reset.", 1, 120, true);
+         RARCH_LOG("%s.\n", msg_hash_to_str(MSG_RESET));
+         rarch_main_msg_queue_push_new(MSG_RESET, 1, 120, true);
          pretro_reset();
 
          /* bSNES since v073r01 resets controllers to JOYPAD
@@ -1214,11 +1243,13 @@ bool event_command(enum event_command cmd)
       case EVENT_CMD_AUDIO_MUTE_TOGGLE:
          {
             const char *msg = !settings->audio.mute_enable ?
-               "Audio muted." : "Audio unmuted.";
+               msg_hash_to_str(MSG_AUDIO_MUTED):
+               msg_hash_to_str(MSG_AUDIO_UNMUTED);
 
             if (!audio_driver_mute_toggle())
             {
-               RARCH_ERR("Failed to unmute audio.\n");
+               RARCH_ERR("%s.\n",
+                     msg_hash_to_str(MSG_FAILED_TO_UNMUTE_AUDIO));
                return false;
             }
 
@@ -1249,11 +1280,15 @@ bool event_command(enum event_command cmd)
                break;
          }
 
-         driver->overlay = input_overlay_new(driver->osk_enable ? settings->osk.overlay : settings->input.overlay,
-               driver->osk_enable ? settings->osk.enable   : settings->input.overlay_enable,
-               settings->input.overlay_opacity, settings->input.overlay_scale);
+         driver->overlay = input_overlay_new(
+               driver->osk_enable ?
+               settings->osk.overlay : settings->input.overlay,
+               driver->osk_enable ?
+               settings->osk.enable   : settings->input.overlay_enable,
+               settings->input.overlay_opacity,
+               settings->input.overlay_scale);
          if (!driver->overlay)
-            RARCH_ERR("Failed to load overlay.\n");
+            RARCH_ERR("%s.\n", msg_hash_to_str(MSG_FAILED_TO_LOAD_OVERLAY));
 #endif
          break;
       case EVENT_CMD_OVERLAY_NEXT:
@@ -1302,7 +1337,9 @@ bool event_command(enum event_command cmd)
          event_command(EVENT_CMD_HISTORY_DEINIT);
          if (!settings->history_list_enable)
             return false;
-         RARCH_LOG("Loading history file: [%s].\n", settings->content_history_path);
+         RARCH_LOG("%s: [%s].\n",
+               msg_hash_to_str(MSG_LOADING_HISTORY_FILE),
+               settings->content_history_path);
          g_defaults.history = content_playlist_init(
                settings->content_history_path,
                settings->content_history_size);
@@ -1325,15 +1362,15 @@ bool event_command(enum event_command cmd)
             global->core_info = core_info_list_new();
          break;
       case EVENT_CMD_CORE_DEINIT:
-      {
-         struct retro_hw_render_callback *cb = video_driver_callback();
-         event_deinit_core(true);
+         {
+            struct retro_hw_render_callback *cb = video_driver_callback();
+            event_deinit_core(true);
 
-         if (cb)
-            memset(cb, 0, sizeof(*cb));
+            if (cb)
+               memset(cb, 0, sizeof(*cb));
 
-         break;
-      }
+            break;
+         }
       case EVENT_CMD_CORE_INIT:
          if (!event_init_core())
             return false;
@@ -1407,7 +1444,7 @@ bool event_command(enum event_command cmd)
       case EVENT_CMD_PAUSE_CHECKS:
          if (runloop->is_paused)
          {
-            RARCH_LOG("Paused.\n");
+            RARCH_LOG("%s\n", msg_hash_to_str(MSG_PAUSED));
             event_command(EVENT_CMD_AUDIO_STOP);
 
             if (settings->video.black_frame_insertion)
@@ -1415,7 +1452,7 @@ bool event_command(enum event_command cmd)
          }
          else
          {
-            RARCH_LOG("Unpaused.\n");
+            RARCH_LOG("%s\n", msg_hash_to_str(MSG_UNPAUSED));
             event_command(EVENT_CMD_AUDIO_START);
          }
          break;
@@ -1471,7 +1508,8 @@ bool event_command(enum event_command cmd)
          dir_list_sort(global->shader_dir.list, false);
 
          for (i = 0; i < global->shader_dir.list->size; i++)
-            RARCH_LOG("Found shader \"%s\"\n",
+            RARCH_LOG("%s \"%s\"\n",
+                  msg_hash_to_str(MSG_FOUND_SHADER),
                   global->shader_dir.list->elems[i].data);
          break;
       case EVENT_CMD_SAVEFILES:
@@ -1493,7 +1531,8 @@ bool event_command(enum event_command cmd)
             ;
 
          if (!global->use_sram)
-            RARCH_LOG("SRAM will not be saved.\n");
+            RARCH_LOG("%s\n",
+                  msg_hash_to_str(MSG_SRAM_WILL_NOT_BE_SAVED));
 
          if (global->use_sram)
             event_command(EVENT_CMD_AUTOSAVE_INIT);
@@ -1608,7 +1647,9 @@ bool event_command(enum event_command cmd)
                event_check_disk_eject(control);
          }
          else
-            rarch_main_msg_queue_push("Core does not support Disk Options.", 1, 120, true);
+            rarch_main_msg_queue_push_new(
+                  MSG_CORE_DOES_NOT_SUPPORT_DISK_OPTIONS,
+                  1, 120, true);
          break;
       case EVENT_CMD_DISK_NEXT:
          if (system && system->disk_control.get_num_images)
@@ -1626,7 +1667,9 @@ bool event_command(enum event_command cmd)
             event_check_disk_next(control);
          }
          else
-            rarch_main_msg_queue_push("Core does not support Disk Options.", 1, 120, true);
+            rarch_main_msg_queue_push_new(
+                  MSG_CORE_DOES_NOT_SUPPORT_DISK_OPTIONS,
+                  1, 120, true);
          break;
       case EVENT_CMD_DISK_PREV:
          if (system && system->disk_control.get_num_images)
@@ -1644,7 +1687,9 @@ bool event_command(enum event_command cmd)
             event_check_disk_prev(control);
          }
          else
-            rarch_main_msg_queue_push("Core does not support Disk Options.", 1, 120, true);
+            rarch_main_msg_queue_push_new(
+                  MSG_CORE_DOES_NOT_SUPPORT_DISK_OPTIONS,
+                  1, 120, true);
          break;
       case EVENT_CMD_RUMBLE_STOP:
          for (i = 0; i < MAX_USERS; i++)
@@ -1662,7 +1707,8 @@ bool event_command(enum event_command cmd)
             if (!driver->input || !input_driver_grab_mouse(grab_mouse_state))
                return false;
 
-            RARCH_LOG("Grab mouse state: %s.\n",
+            RARCH_LOG("%s: %s.\n",
+                  msg_hash_to_str(MSG_GRAB_MOUSE_STATE),
                   grab_mouse_state ? "yes" : "no");
 
             video_driver_show_mouse(!grab_mouse_state);
@@ -1679,11 +1725,8 @@ bool event_command(enum event_command cmd)
          break;
       case EVENT_CMD_NONE:
       default:
-         goto error;
+         return false;
    }
 
    return true;
-
-error:
-   return false;
 }

@@ -22,10 +22,6 @@
 #include <errno.h>
 #include <boolean.h>
 
-#ifdef HAVE_FFMPEG
-#include <rhash.h>
-#endif
-
 #ifdef _WIN32
 #ifdef _XBOX
 #include <xtl.h>
@@ -40,7 +36,7 @@
 #include <compat/posix_string.h>
 #include <file/file_path.h>
 
-#include <rhash.h>
+#include "msg_hash.h"
 
 #include "libretro_version_1.h"
 #include "dynamic.h"
@@ -53,7 +49,6 @@
 #include "system.h"
 
 #include "git_version.h"
-#include "intl/intl.h"
 
 #ifdef HAVE_MENU
 #include "menu/menu.h"
@@ -150,10 +145,9 @@ static void print_version(void)
 {
    char str[PATH_MAX_LENGTH] = {0};
 
+   fprintf(stderr, "%s: Frontend for libretro -- v%s", msg_hash_to_str(MSG_PROGRAM), PACKAGE_VERSION);
 #ifdef HAVE_GIT_VERSION
-   printf(RETRO_FRONTEND ": Frontend for libretro -- v" PACKAGE_VERSION " -- %s --\n", rarch_git_version);
-#else
-   puts(RETRO_FRONTEND ": Frontend for libretro -- v" PACKAGE_VERSION " --");
+   printf(" -- %s --\n", rarch_git_version);
 #endif
    rarch_info_get_capabilities(RARCH_CAPABILITIES_COMPILER, str, sizeof(str));
    fprintf(stdout, "%s", str);
@@ -175,16 +169,22 @@ static void print_help(const char *arg0)
 
    puts("  -h, --help            Show this help message.");
    puts("  -v, --verbose         Verbose logging.");
-   puts("      --log-file=FILE   Log " RETRO_FRONTEND " messages to FILE.");
-   puts("      --version         Show " RETRO_FRONTEND " version.");
-   puts("      --features        Prints available features compiled into " RETRO_FRONTEND ".");
+   puts("      --log-file=FILE   Log messages to FILE.");
+   puts("      --version         Show version.");
+   puts("      --features        Prints available features compiled into program.");
    puts("      --menu            Do not require content or libretro core to be loaded,\n"
         "                        starts directly in menu. If no arguments are passed to\n"
-        "                        " RETRO_FRONTEND ", it is equivalent to using --menu as only argument.");
+        "                        the program, it is equivalent to using --menu as only argument.");
    puts("  -s, --save=PATH       Path for save files (*.srm).");
    puts("  -S, --savestate=PATH  Path for the save state files (*.state).");
-   puts("  -f, --fullscreen      Start " RETRO_FRONTEND " in fullscreen regardless of config settings.");
-   puts("  -c, --config=FILE     Path for config file." RARCH_DEFAULT_CONF_PATH_STR);
+   puts("  -f, --fullscreen      Start the program in fullscreen regardless of config settings.");
+   puts("  -c, --config=FILE     Path for config file."
+#ifdef _WIN32
+         "\n\t\tDefaults to retroarch.cfg in same directory as retroarch.exe.\n\t\tIf a default config is not found, the program will attempt to create one."
+#else
+         "\n\t\tBy default looks for config in $XDG_CONFIG_HOME/retroarch/retroarch.cfg,\n\t\t$HOME/.config/retroarch/retroarch.cfg,\n\t\tand $HOME/.retroarch.cfg.\n\t\tIf a default config is not found, the program will attempt to create one based on the skeleton config (" GLOBAL_CONFIG_DIR "/retroarch.cfg)."
+#endif
+         );
    puts("      --appendconfig=FILE\n"
         "                        Extra config files are loaded in, and take priority over\n"
         "                        config selected in -c (or default). Multiple configs are\n"
@@ -223,7 +223,7 @@ static void print_help(const char *arg0)
 #endif
    puts("      --nick=NICK       Picks a username (for use with netplay). Not mandatory.");
 #if defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)
-   puts("      --command         Sends a command over UDP to an already running " RETRO_FRONTEND " process.");
+   puts("      --command         Sends a command over UDP to an already running program process.");
    puts("      Available commands are listed if command is invalid.");
 #endif
 
@@ -235,7 +235,7 @@ static void print_help(const char *arg0)
    puts("      --bps=FILE        Specifies path for BPS patch that will be applied to content.");
    puts("      --ips=FILE        Specifies path for IPS patch that will be applied to content.");
    puts("      --no-patch        Disables all forms of content patching.");
-   puts("  -D, --detach          Detach " RETRO_FRONTEND " from the running console. Not relevant for all platforms.");
+   puts("  -D, --detach          Detach program from the running console. Not relevant for all platforms.");
    puts("      --max-frames=NUMBER\n"
         "                        Runs for the specified number of frames, then exits.\n");
 }
@@ -305,7 +305,8 @@ static void set_special_paths(char **argv, unsigned num_content)
    {
       fill_pathname_dir(global->savestate_name, global->basename,
             ".state", sizeof(global->savestate_name));
-      RARCH_LOG("Redirecting save state to \"%s\".\n",
+      RARCH_LOG("%s \"%s\".\n",
+            msg_hash_to_str(MSG_REDIRECTING_SAVESTATE_TO),
             global->savestate_name);
    }
 
@@ -325,7 +326,7 @@ void set_paths_redirect(const char *path)
 
    uint32_t global_library_name_hash = ((global && info->info.library_name &&
             (info->info.library_name[0] != '\0'))
-         ? djb2_calculate(info->info.library_name) : 0);
+         ? msg_hash_calculate(info->info.library_name) : 0);
 
    if(
          global_library_name_hash != 0 &&
@@ -381,21 +382,27 @@ void set_paths_redirect(const char *path)
    {
       fill_pathname_dir(global->savefile_name, global->basename,
             ".srm", sizeof(global->savefile_name));
-      RARCH_LOG("Redirecting save file to \"%s\".\n", global->savefile_name);
+      RARCH_LOG("%s \"%s\".\n",
+            msg_hash_to_str(MSG_REDIRECTING_SAVEFILE_TO),
+            global->savefile_name);
    }
 
    if (path_is_directory(global->savestate_name))
    {
       fill_pathname_dir(global->savestate_name, global->basename,
             ".state", sizeof(global->savestate_name));
-      RARCH_LOG("Redirecting save state to \"%s\".\n", global->savestate_name);
+      RARCH_LOG("%s \"%s\".\n",
+            msg_hash_to_str(MSG_REDIRECTING_SAVESTATE_TO),
+            global->savestate_name);
    }
 
    if (path_is_directory(global->cheatfile_name))
    {
       fill_pathname_dir(global->cheatfile_name, global->basename,
             ".state", sizeof(global->cheatfile_name));
-      RARCH_LOG("Redirecting cheat file to \"%s\".\n", global->cheatfile_name);
+      RARCH_LOG("%s \"%s\".\n",
+            msg_hash_to_str(MSG_REDIRECTING_CHEATFILE_TO),
+            global->cheatfile_name);
    }
 }
 
@@ -429,7 +436,7 @@ void rarch_set_paths(const char *path)
 
 enum rarch_content_type rarch_path_is_media_type(const char *path)
 {
-   uint32_t hash_ext = djb2_calculate(path_get_extension(path));
+   uint32_t hash_ext = msg_hash_calculate(path_get_extension(path));
 
    switch (hash_ext)
    {
@@ -965,7 +972,8 @@ static void rarch_init_savefile_paths(void)
       {
          fill_pathname_dir(global->savefile_name, global->basename, ".srm",
                sizeof(global->savefile_name));
-         RARCH_LOG("Redirecting save file to \"%s\".\n",
+         RARCH_LOG("%s \"%s\".\n",
+               msg_hash_to_str(MSG_REDIRECTING_SAVEFILE_TO),
                global->savefile_name);
       }
    }
@@ -1105,7 +1113,7 @@ void rarch_verify_api_version(void)
    RARCH_LOG("Compiled against API: %u\n",    RETRO_API_VERSION);
 
    if (pretro_api_version() != RETRO_API_VERSION)
-      RARCH_WARN(RETRO_LOG_LIBRETRO_ABI_BREAK);
+      RARCH_WARN("%s\n", msg_hash_to_str(MSG_LIBRETRO_ABI_BREAK));
 }
 
 #define FAIL_CPU(simd_type) do { \
@@ -1530,7 +1538,7 @@ int rarch_defer_core(core_info_list_t *core_info, const char *dir,
    size_t supported                    = 0;
    settings_t *settings                = config_get_ptr();
    global_t   *global                  = global_get_ptr();
-   uint32_t menu_label_hash            = djb2_calculate(menu_label);
+   uint32_t menu_label_hash            = msg_hash_calculate(menu_label);
 
    fill_pathname_join(s, dir, path, len);
 

@@ -23,9 +23,9 @@
 #include "../general.h"
 #include "../retroarch.h"
 #include "../runloop.h"
-#include "../intl/intl.h"
 #include "../gfx/video_driver.h"
 #include "../gfx/video_viewport.h"
+#include "../msg_hash.h"
 
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
@@ -121,22 +121,22 @@ void find_record_driver(void)
    int                i = find_driver_index("record_driver", settings->record.driver);
 
    if (i >= 0)
-      driver->recording = (const record_driver_t*)audio_driver_find_handle(i);
+      driver->recording = (const record_driver_t*)record_driver_find_handle(i);
    else
    {
       unsigned d;
 
-      RARCH_ERR("Couldn't find any audio driver named \"%s\"\n",
+      RARCH_ERR("Couldn't find any record driver named \"%s\"\n",
             settings->audio.driver);
-      RARCH_LOG_OUTPUT("Available audio drivers are:\n");
-      for (d = 0; audio_driver_find_handle(d); d++)
+      RARCH_LOG_OUTPUT("Available record drivers are:\n");
+      for (d = 0; record_driver_find_handle(d); d++)
          RARCH_LOG_OUTPUT("\t%s\n", record_driver_find_ident(d));
-      RARCH_WARN("Going to default to first audio driver...\n");
+      RARCH_WARN("Going to default to first record driver...\n");
 
-      driver->audio = (const audio_driver_t*)audio_driver_find_handle(0);
+      driver->recording = (const record_driver_t*)record_driver_find_handle(0);
 
-      if (!driver->audio)
-         rarch_fail(1, "find_audio_driver()");
+      if (!driver->recording)
+         rarch_fail(1, "find_record_driver()");
    }
 }
 
@@ -216,7 +216,8 @@ void recording_dump_frame(const void *data, unsigned width,
 
       if (!vp.width || !vp.height)
       {
-         RARCH_WARN("Viewport size calculation failed! Will continue using raw data. This will probably not work right ...\n");
+         RARCH_WARN("%s \n",
+               msg_hash_to_str(MSG_VIEWPORT_SIZE_CALCULATION_FAILED));
          event_command(EVENT_CMD_GPU_RECORD_DEINIT);
 
          recording_dump_frame(data, width, height, pitch);
@@ -227,10 +228,9 @@ void recording_dump_frame(const void *data, unsigned width,
       if (vp.width != global->record.gpu_width ||
             vp.height != global->record.gpu_height)
       {
-         static const char msg[] = "Recording terminated due to resize.";
-         RARCH_WARN("%s\n", msg);
+         RARCH_WARN("%s\n", msg_hash_to_str(MSG_RECORDING_TERMINATED_DUE_TO_RESIZE));
 
-         rarch_main_msg_queue_push(msg, 1, 180, true);
+         rarch_main_msg_queue_push_new(MSG_RECORDING_TERMINATED_DUE_TO_RESIZE, 1, 180, true);
          event_command(EVENT_CMD_RECORD_DEINIT);
          return;
       }
@@ -301,17 +301,18 @@ bool recording_init(void)
 
    if (global->core_type == CORE_TYPE_DUMMY)
    {
-      RARCH_WARN(RETRO_LOG_INIT_RECORDING_SKIPPED);
+      RARCH_WARN(msg_hash_to_str(MSG_USING_LIBRETRO_DUMMY_CORE_RECORDING_SKIPPED));
       return false;
    }
 
    if (!settings->video.gpu_record && hw_render->context_type)
    {
-      RARCH_WARN("Libretro core is hardware rendered. Must use post-shaded recording as well.\n");
+      RARCH_WARN("%s.\n", msg_hash_to_str(MSG_HW_RENDERED_MUST_USE_POSTSHADED_RECORDING));
       return false;
    }
 
-   RARCH_LOG("Custom timing given: FPS: %.4f, Sample rate: %.4f\n",
+   RARCH_LOG("%s: FPS: %.4f, Sample rate: %.4f\n",
+         msg_hash_to_str(MSG_CUSTOM_TIMING_GIVEN),
          (float)av_info->timing.fps,
          (float)av_info->timing.sample_rate);
 
@@ -365,15 +366,12 @@ bool recording_init(void)
       global->record.gpu_width   = vp.width;
       global->record.gpu_height  = vp.height;
 
-      RARCH_LOG("Detected viewport of %u x %u\n",
+      RARCH_LOG("%s %u x %u\n", msg_hash_to_str(MSG_DETECTED_VIEWPORT_OF),
             vp.width, vp.height);
 
       global->record.gpu_buffer = (uint8_t*)malloc(vp.width * vp.height * 3);
       if (!global->record.gpu_buffer)
-      {
-         RARCH_ERR("Failed to allocate GPU record buffer.\n");
          return false;
-      }
    }
    else
    {
@@ -407,7 +405,8 @@ bool recording_init(void)
       }
    }
 
-   RARCH_LOG("Recording to %s @ %ux%u. (FB size: %ux%u pix_fmt: %u)\n",
+   RARCH_LOG("%s %s @ %ux%u. (FB size: %ux%u pix_fmt: %u)\n",
+         msg_hash_to_str(MSG_RECORDING_TO),
          global->record.path,
          params.out_width, params.out_height,
          params.fb_width, params.fb_height,
@@ -415,7 +414,7 @@ bool recording_init(void)
 
    if (!record_driver_init_first(&driver->recording, &driver->recording_data, &params))
    {
-      RARCH_ERR(RETRO_LOG_INIT_RECORDING_FAILED);
+      RARCH_ERR(msg_hash_to_str(MSG_FAILED_TO_START_RECORDING));
       event_command(EVENT_CMD_GPU_RECORD_DEINIT);
 
       return false;

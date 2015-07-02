@@ -148,9 +148,11 @@ patch_error_t bps_apply_patch(
          case SOURCE_COPY:
          case TARGET_COPY:
          {
-            int offset = bps_decode(&bps);
+            int    offset = bps_decode(&bps);
             bool negative = offset & 1;
+
             offset >>= 1;
+
             if (negative)
                offset = -offset;
 
@@ -257,7 +259,8 @@ static uint64_t ups_decode(struct ups_data *data)
    while (true) 
    {
       uint8_t x = ups_patch_read(data);
-      offset += (x & 0x7f) * shift;
+      offset   += (x & 0x7f) * shift;
+
       if (x & 0x80) 
          break;
       shift <<= 7;

@@ -21,12 +21,10 @@
 #include <retro_log.h>
 
 #include <compat/strl.h>
-#include <rhash.h>
 
 #include "configuration.h"
 #include "dynamic.h"
 #include "performance.h"
-#include "intl/intl.h"
 #include "retroarch.h"
 #include "runloop.h"
 #include "runloop_data.h"
@@ -142,7 +140,8 @@ static void check_stateslots(bool pressed_increase, bool pressed_decrease)
    else
       return;
 
-   snprintf(msg, sizeof(msg), "State slot: %d",
+   snprintf(msg, sizeof(msg), "%s: %d",
+         msg_hash_to_str(MSG_STATE_SLOT),
          settings->state_slot);
 
    rarch_main_msg_queue_push(msg, 1, 180, true);
@@ -268,7 +267,9 @@ static bool check_movie_init(void)
       strlcpy(path, global->bsv.movie_path, sizeof(path));
    strlcat(path, ".bsv", sizeof(path));
 
-   snprintf(msg, sizeof(msg), "Starting movie record to \"%s\".", path);
+   snprintf(msg, sizeof(msg), "%s \"%s\".",
+         msg_hash_to_str(MSG_STARTING_MOVIE_RECORD_TO),
+         path);
 
    global->bsv.movie = bsv_movie_init(path, RARCH_MOVIE_RECORD);
 
@@ -279,14 +280,16 @@ static bool check_movie_init(void)
    if (global->bsv.movie)
    {
       rarch_main_msg_queue_push(msg, 1, 180, true);
-      RARCH_LOG("Starting movie record to \"%s\".\n", path);
+      RARCH_LOG("%s \"%s\".\n",
+         msg_hash_to_str(MSG_STARTING_MOVIE_RECORD_TO),
+            path);
    }
    else
    {
       rarch_main_msg_queue_push_new(
             MSG_FAILED_TO_START_MOVIE_RECORD,
             1, 180, true);
-      RARCH_ERR("Failed to start movie record.\n");
+      RARCH_ERR(msg_hash_to_str(MSG_FAILED_TO_START_MOVIE_RECORD));
    }
 
    return ret;
@@ -305,9 +308,9 @@ static bool check_movie_record(void)
    if (!global->bsv.movie)
       return false;
 
-   rarch_main_msg_queue_push(
-         RETRO_MSG_MOVIE_RECORD_STOPPING, 2, 180, true);
-   RARCH_LOG(RETRO_LOG_MOVIE_RECORD_STOPPING);
+   rarch_main_msg_queue_push_new(
+         MSG_MOVIE_RECORD_STOPPED, 2, 180, true);
+   RARCH_LOG("%s\n", msg_hash_to_str(MSG_MOVIE_RECORD_STOPPED));
 
    event_command(EVENT_CMD_BSV_MOVIE_DEINIT);
 
@@ -327,9 +330,9 @@ static bool check_movie_playback(void)
    if (!global->bsv.movie_end)
       return false;
 
-   rarch_main_msg_queue_push(
-         RETRO_MSG_MOVIE_PLAYBACK_ENDED, 1, 180, false);
-   RARCH_LOG(RETRO_LOG_MOVIE_PLAYBACK_ENDED);
+   rarch_main_msg_queue_push_new(
+         MSG_MOVIE_PLAYBACK_ENDED, 1, 180, false);
+   RARCH_LOG("%s\n", msg_hash_to_str(MSG_MOVIE_PLAYBACK_ENDED));
 
    event_command(EVENT_CMD_BSV_MOVIE_DEINIT);
 
@@ -395,7 +398,7 @@ static void check_shader_dir(bool pressed_next, bool pressed_prev)
 
    shader   = global->shader_dir.list->elems[global->shader_dir.ptr].data;
    ext      = path_get_extension(shader);
-   ext_hash = djb2_calculate(ext);
+   ext_hash = msg_hash_calculate(ext);
 
    switch (ext_hash)
    {
@@ -411,13 +414,16 @@ static void check_shader_dir(bool pressed_next, bool pressed_prev)
          return;
    }
 
-   snprintf(msg, sizeof(msg), "Shader #%u: \"%s\".",
+   snprintf(msg, sizeof(msg), "%s #%u: \"%s\".",
+         msg_hash_to_str(MSG_SHADER),
          (unsigned)global->shader_dir.ptr, shader);
    rarch_main_msg_queue_push(msg, 1, 120, true);
-   RARCH_LOG("Applying shader \"%s\".\n", shader);
+   RARCH_LOG("%s \"%s\".\n",
+         msg_hash_to_str(MSG_APPLYING_SHADER),
+         shader);
 
    if (!video_driver_set_shader(type, shader))
-      RARCH_WARN("Failed to apply shader.\n");
+      RARCH_WARN(msg_hash_to_str(MSG_FAILED_TO_APPLY_SHADER));
 }
 
 #ifdef HAVE_MENU
@@ -548,7 +554,8 @@ static int do_state_checks(event_cmd_state_t *cmd)
 
 #ifdef HAVE_NETPLAY
    if (driver->netplay_data)
-      return do_netplay_state_checks(cmd->netplay_flip_pressed, cmd->fullscreen_toggle);
+      return do_netplay_state_checks(cmd->netplay_flip_pressed,
+            cmd->fullscreen_toggle);
 #endif
 
    check_pause(cmd->pause_pressed, cmd->frameadvance_pressed);
@@ -560,8 +567,10 @@ static int do_state_checks(event_cmd_state_t *cmd)
             cmd->rewind_pressed))
       return 1;
 
-   check_fast_forward_button(cmd->fastforward_pressed, cmd->hold_pressed, cmd->old_hold_pressed);
-   check_stateslots(cmd->state_slot_increase, cmd->state_slot_decrease);
+   check_fast_forward_button(cmd->fastforward_pressed,
+         cmd->hold_pressed, cmd->old_hold_pressed);
+   check_stateslots(cmd->state_slot_increase,
+         cmd->state_slot_decrease);
 
    if (cmd->save_state_pressed)
       event_command(EVENT_CMD_SAVE_STATE);
@@ -574,7 +583,8 @@ static int do_state_checks(event_cmd_state_t *cmd)
    if (cmd->movie_record)
       check_movie();
 
-   check_shader_dir(cmd->shader_next_pressed, cmd->shader_prev_pressed);
+   check_shader_dir(cmd->shader_next_pressed,
+         cmd->shader_prev_pressed);
 
    if (cmd->disk_eject_pressed)
       event_command(EVENT_CMD_DISK_EJECT_TOGGLE);

@@ -25,7 +25,7 @@
 #include "general.h"
 #include "autosave.h"
 #include "dynamic.h"
-#include "intl/intl.h"
+#include "msg_hash.h"
 #include "system.h"
 
 struct delta_frame
@@ -1660,7 +1660,7 @@ bool init_netplay(void)
 
    if (global->bsv.movie_start_playback)
    {
-      RARCH_WARN(RETRO_LOG_MOVIE_STARTED_INIT_NETPLAY_FAILED);
+      RARCH_WARN("%s\n", msg_hash_to_str(MSG_NETPLAY_FAILED_MOVIE_PLAYBACK_HAS_STARTED));
       return false;
    }
 
@@ -1684,10 +1684,10 @@ bool init_netplay(void)
       return true;
 
    global->netplay_is_client = false;
-   RARCH_WARN(RETRO_LOG_INIT_NETPLAY_FAILED);
+   RARCH_WARN("%s\n", msg_hash_to_str(MSG_NETPLAY_FAILED));
 
-   rarch_main_msg_queue_push(
-         RETRO_MSG_INIT_NETPLAY_FAILED,
+   rarch_main_msg_queue_push_new(
+         MSG_NETPLAY_FAILED_MOVIE_PLAYBACK_HAS_STARTED,
          0, 180, false);
    return false;
 }

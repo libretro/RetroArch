@@ -22,8 +22,8 @@
 
 #include "../../general.h"
 #include "../../performance.h"
-#include "../../intl/intl.h"
 #include "../../system.h"
+#include "../../intl/intl.h"
 
 const char axis_labels[4][128] = {
    RETRO_LBL_ANALOG_LEFT_X,

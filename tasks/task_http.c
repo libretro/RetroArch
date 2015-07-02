@@ -19,11 +19,11 @@
 #include <string/string_list.h>
 #include <compat/strl.h>
 #include <file/file_path.h>
-#include <rhash.h>
 #include <net/net_compat.h>
 
 #include "../file_ops.h"
 #include "../general.h"
+#include "../msg_hash.h"
 #include "../runloop_data.h"
 #include "tasks.h"
 
@@ -102,9 +102,9 @@ static int cb_generic_download(void *data, size_t len,
    if (!write_file(output_path, data, len))
       return -1;
 
-   snprintf(msg, sizeof(msg), "Download complete: %s.",
+   snprintf(msg, sizeof(msg), "%s: %s.",
+         msg_hash_to_str(MSG_DOWNLOAD_COMPLETE),
          core_updater_path);
-
 
    rarch_main_msg_queue_push(msg, 1, 90, true);
 
@@ -118,7 +118,7 @@ static int cb_generic_download(void *data, size_t len,
    {
       if (!zlib_parse_file(output_path, NULL, zlib_extract_core_callback,
                (void*)dir_path))
-         RARCH_LOG("Could not process ZIP file.\n");
+         RARCH_LOG(msg_hash_to_str(MSG_COULD_NOT_PROCESS_ZIP_FILE));
 
       if (path_file_exists(output_path))
          remove(output_path);
@@ -251,7 +251,7 @@ static int cb_http_conn_default(void *data_, size_t len)
 
    if (http->connection.elem1[0] != '\0')
    {
-      uint32_t label_hash = djb2_calculate(http->connection.elem1);
+      uint32_t label_hash = msg_hash_calculate(http->connection.elem1);
 
       switch (label_hash)
       {
@@ -352,27 +352,29 @@ static int rarch_main_data_http_iterate_poll(http_handle_t *http)
  **/
 static int rarch_main_data_http_iterate_transfer(void *data)
 {
-    http_handle_t *http = (http_handle_t*)data;
-    size_t pos = 0, tot = 0;
-    int percent = 0;
-    if (!net_http_update(http->handle, &pos, &tot))
-    {
-        if(tot != 0)
-            percent=(unsigned long long)pos*100/(unsigned long long)tot;
-        else
-            percent=0;
-        
-        if (percent > 0)
-        {
-            char tmp[PATH_MAX_LENGTH] = {0};
-            snprintf(tmp, sizeof(tmp), "Download progress: %d%%", percent);
-            data_runloop_osd_msg(tmp, sizeof(tmp));
-        }
-        
-        return -1;
-    }
-    
-    return 0;
+   http_handle_t *http = (http_handle_t*)data;
+   size_t pos  = 0, tot = 0;
+   int percent = 0;
+
+   if (!net_http_update(http->handle, &pos, &tot))
+   {
+      if(tot != 0)
+         percent = (unsigned long long)pos * 100
+            / (unsigned long long)tot;
+
+      if (percent > 0)
+      {
+         char tmp[PATH_MAX_LENGTH] = {0};
+         snprintf(tmp, sizeof(tmp), "%s: %d%%",
+               msg_hash_to_str(MSG_DOWNLOAD_PROGRESS),
+               percent);
+         data_runloop_osd_msg(tmp, sizeof(tmp));
+      }
+
+      return -1;
+   }
+
+   return 0;
 }
 
 void rarch_main_data_http_iterate(bool is_thread, void *data)

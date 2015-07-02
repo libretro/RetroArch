@@ -16,13 +16,13 @@
  */
 
 #include <file/file_extract.h>
-#include <rhash.h>
 
 #include "file_ext.h"
 #include "dir_list_special.h"
 
 #include "database_info.h"
 #include "file_ops.h"
+#include "msg_hash.h"
 #include "general.h"
 #include "runloop.h"
 
@@ -117,7 +117,7 @@ int database_info_build_query(char *s, size_t len,
 
    database_info_build_query_add_bracket_open(s, len);
 
-   value = djb2_calculate(label);
+   value = msg_hash_calculate(label);
 
    switch (value)
    {
@@ -247,7 +247,7 @@ static int database_cursor_iterate(libretrodb_cursor_t *cur,
          continue;
 
       str   = key->val.string.buff;
-      value = djb2_calculate(str);
+      value = msg_hash_calculate(str);
 
       switch (value)
       {

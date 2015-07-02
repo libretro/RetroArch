@@ -26,7 +26,7 @@ const char *msg_hash_to_str(uint32_t hash)
    settings_t *settings = config_get_ptr();
 
    if (!settings)
-      return "null";
+      goto end;
 
    switch (settings->user_language)
    {
@@ -57,6 +57,7 @@ const char *msg_hash_to_str(uint32_t hash)
    if (ret && strcmp(ret, "null") != 0)
       return ret;
 
+end:
    return msg_hash_to_str_us(hash);
 }
 

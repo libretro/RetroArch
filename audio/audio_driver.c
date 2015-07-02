@@ -25,7 +25,6 @@
 #include "../retroarch.h"
 #include "../runloop.h"
 #include "../performance.h"
-#include "../intl/intl.h"
 
 #ifndef AUDIO_BUFFER_FREE_SAMPLES_COUNT
 #define AUDIO_BUFFER_FREE_SAMPLES_COUNT (8 * 1024)
@@ -692,8 +691,6 @@ bool audio_driver_flush(const int16_t *data, size_t samples)
 
    if (audio_driver_write(output_data, output_frames * output_size * 2) < 0)
    {
-      RARCH_ERR(RETRO_LOG_AUDIO_WRITE_FAILED);
-
       driver->audio_active = false;
       return false;
    }

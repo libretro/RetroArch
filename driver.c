@@ -14,11 +14,10 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <rhash.h>
-
 #include "driver.h"
 #include "general.h"
 #include "retroarch.h"
+#include "msg_hash.h"
 #include "compat/posix_string.h"
 #include "gfx/video_monitor.h"
 #include "audio/audio_monitor.h"
@@ -90,7 +89,7 @@ static const void *find_driver_nonempty(const char *label, int i,
       char *s, size_t len)
 {
    const void *drv = NULL;
-   uint32_t hash   = djb2_calculate(label);
+   uint32_t hash   = msg_hash_calculate(label);
 
    switch (hash)
    {
