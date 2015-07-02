@@ -384,19 +384,24 @@ static void network_cmd_poll(rarch_cmd_t *handle)
 static size_t read_stdin(char *buf, size_t size)
 {
    DWORD i;
+   DWORD has_read = 0;
+   DWORD avail = 0;
+   bool echo = false;
    HANDLE hnd = GetStdHandle(STD_INPUT_HANDLE);
+
    if (hnd == INVALID_HANDLE_VALUE)
       return 0;
 
    /* Check first if we're a pipe
     * (not console). */
-   DWORD avail = 0;
-   bool echo = false;
 
    /* If not a pipe, check if we're running in a console. */
    if (!PeekNamedPipe(hnd, NULL, 0, NULL, &avail, NULL))
    {
-      DWORD mode = 0;
+      INPUT_RECORD recs[256];
+      bool has_key = false;
+      DWORD mode = 0, has_read = 0;
+
       if (!GetConsoleMode(hnd, &mode))
          return 0;
 
@@ -406,13 +411,10 @@ static size_t read_stdin(char *buf, size_t size)
          return 0;
 
       /* Win32, Y U NO SANE NONBLOCK READ!? */
-      DWORD has_read = 0;
-      INPUT_RECORD recs[256];
       if (!PeekConsoleInput(hnd, recs,
                sizeof(recs) / sizeof(recs[0]), &has_read))
          return 0;
 
-      bool has_key = false;
       for (i = 0; i < has_read; i++)
       {
          /* Very crude, but should get the job done. */
@@ -441,7 +443,6 @@ static size_t read_stdin(char *buf, size_t size)
    if (avail > size)
       avail = size;
 
-   DWORD has_read = 0;
    if (!ReadFile(hnd, buf, avail, &has_read, NULL))
       return 0;
 
