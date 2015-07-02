@@ -61,7 +61,8 @@ static bool read_content_file(unsigned i, const char *path, void **buf,
    uint8_t *ret_buf = NULL;
    global_t *global = global_get_ptr();
 
-   RARCH_LOG("Loading content file: %s.\n", path);
+   RARCH_LOG("%s: %s.\n",
+         msg_hash_to_str(MSG_LOADING_CONTENT_FILE), path);
    if (!read_file(path, (void**) &ret_buf, length))
       return false;
 

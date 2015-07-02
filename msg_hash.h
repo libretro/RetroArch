@@ -25,6 +25,8 @@
 
 #define MSG_RECEIVED                                  0xfe0c06acU
 
+#define MSG_LOADING_CONTENT_FILE                      0x236398dcU
+
 #define MSG_SAVING_STATE                              0xe4f3eb4dU
 #define MSG_LOADING_STATE                             0x68d8d483U
 #define MSG_FAILED_TO_SAVE_STATE_TO                   0xcc005f3cU
