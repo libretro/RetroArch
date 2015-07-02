@@ -64,15 +64,19 @@ size thisstart;
 
 size_t state_manager_raw_maxsize(size_t uncomp)
 {
-   const int maxcblkcover = UINT16_MAX * sizeof(uint16_t); /* bytes covered by a compressed block */
-   size_t uncomp16 = (uncomp + sizeof(uint16_t) - 1) & ~sizeof(uint16_t); /* uncompressed size, rounded to 16 bits */
-   size_t maxcblks = (uncomp + maxcblkcover - 1) / maxcblkcover; /* number of blocks */
-   return uncomp16 + maxcblks * sizeof(uint16_t)*2 /* two u16 overhead per block */ + sizeof(uint16_t)*3; /* three u16 to end it */
+   /* bytes covered by a compressed block */
+   const int maxcblkcover = UINT16_MAX * sizeof(uint16_t);
+   /* uncompressed size, rounded to 16 bits */
+   size_t uncomp16        = (uncomp + sizeof(uint16_t) - 1) & ~sizeof(uint16_t);
+   /* number of blocks */
+   size_t maxcblks        = (uncomp + maxcblkcover - 1) / maxcblkcover;
+   return uncomp16 + maxcblks * sizeof(uint16_t) * 2 /* two u16 overhead per block */ + sizeof(uint16_t) *
+      3; /* three u16 to end it */
 }
 
 void *state_manager_raw_alloc(size_t len, uint16_t uniq)
 {
-   size_t len16 = (len + sizeof(uint16_t) - 1) & ~sizeof(uint16_t);
+   size_t  len16 = (len + sizeof(uint16_t) - 1) & ~sizeof(uint16_t);
 
    uint16_t *ret = (uint16_t*)calloc(len16 + sizeof(uint16_t) * 4 + 16, 1);
 
@@ -220,10 +224,10 @@ static INLINE size_t find_same(const uint16_t *a, const uint16_t *b)
 
 size_t state_manager_raw_compress(const void *src, const void *dst, size_t len, void *patch)
 {
-   const uint16_t *old16 = (const uint16_t*)src;
-   const uint16_t *new16 = (const uint16_t*)dst;
+   const uint16_t  *old16 = (const uint16_t*)src;
+   const uint16_t  *new16 = (const uint16_t*)dst;
    uint16_t *compressed16 = (uint16_t*)patch;
-   size_t num16s = (len + sizeof(uint16_t) - 1) / sizeof(uint16_t);
+   size_t          num16s = (len + sizeof(uint16_t) - 1) / sizeof(uint16_t);
    
    while (num16s)
    {
@@ -276,9 +280,10 @@ size_t state_manager_raw_compress(const void *src, const void *dst, size_t len, 
    return (uint8_t*)(compressed16+3) - (uint8_t*)patch;
 }
 
-void state_manager_raw_decompress(const void *patch, size_t patchlen, void *data, size_t datalen)
+void state_manager_raw_decompress(const void *patch,
+      size_t patchlen, void *data, size_t datalen)
 {
-   uint16_t *out16 = (uint16_t*)data;
+   uint16_t         *out16 = (uint16_t*)data;
    const uint16_t *patch16 = (const uint16_t*)patch;
    
    (void)patchlen;
@@ -383,13 +388,13 @@ state_manager_t *state_manager_new(size_t state_size, size_t buffer_size)
    if (!state)
       return NULL;
 
-   state->blocksize = (state_size + sizeof(uint16_t) - 1) & ~sizeof(uint16_t);
+   state->blocksize   = (state_size + sizeof(uint16_t) - 1) & ~sizeof(uint16_t);
    /* the compressed data is surrounded by pointers to the other side */
    state->maxcompsize = state_manager_raw_maxsize(state_size) + sizeof(size_t) * 2;
-   state->data = (uint8_t*)malloc(buffer_size);
+   state->data        = (uint8_t*)malloc(buffer_size);
 
-   state->thisblock = (uint8_t*)state_manager_raw_alloc(state_size, 0);
-   state->nextblock = (uint8_t*)state_manager_raw_alloc(state_size, 1);
+   state->thisblock   = (uint8_t*)state_manager_raw_alloc(state_size, 0);
+   state->nextblock   = (uint8_t*)state_manager_raw_alloc(state_size, 1);
    if (!state->data || !state->thisblock || !state->nextblock)
       goto error;
 
