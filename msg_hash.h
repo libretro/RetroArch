@@ -27,6 +27,20 @@
 
 #define MSG_LOADING_CONTENT_FILE                      0x236398dcU
 
+#define MSG_USING_LIBRETRO_DUMMY_CORE_RECORDING_SKIPPED  0x9e8a1febU
+#define MSG_RECORDING_TERMINATED_DUE_TO_RESIZE        0x361a07feU
+#define MSG_FAILED_TO_START_RECORDING                 0x90c3e2d5U
+
+#define MSG_DETECTED_VIEWPORT_OF                      0xdf7002baU
+#define MSG_RECORDING_TO                              0x189fd324U
+#define MSG_HW_RENDERED_MUST_USE_POSTSHADED_RECORDING 0x7f9f7659U
+#define MSG_VIEWPORT_SIZE_CALCULATION_FAILED          0x9da84911U
+
+#define MSG_TAKING_SCREENSHOT                         0xdcfda0e0U
+#define MSG_FAILED_TO_TAKE_SCREENSHOT                 0x7a480a2dU
+
+#define MSG_CUSTOM_TIMING_GIVEN                       0x259c95dfU
+
 #define MSG_SAVING_STATE                              0xe4f3eb4dU
 #define MSG_LOADING_STATE                             0x68d8d483U
 #define MSG_FAILED_TO_SAVE_STATE_TO                   0xcc005f3cU

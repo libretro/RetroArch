@@ -35,7 +35,7 @@
 #endif
 
 #include "general.h"
-#include "intl/intl.h"
+#include "msg_hash.h"
 #include "gfx/scaler/scaler.h"
 #include "retroarch.h"
 #include "runloop.h"
@@ -316,20 +316,20 @@ bool take_screenshot(void)
    }
    else
    {
-      RARCH_ERR(RETRO_LOG_TAKE_SCREENSHOT_ERROR);
+      RARCH_ERR("%s.\n", msg_hash_to_str(MSG_FAILED_TO_TAKE_SCREENSHOT));
       ret = false;
    }
 
 
    if (ret)
    {
-      RARCH_LOG(RETRO_LOG_TAKE_SCREENSHOT);
-      msg = RETRO_MSG_TAKE_SCREENSHOT;
+      RARCH_LOG("%s.\n", msg_hash_to_str(MSG_TAKING_SCREENSHOT));
+      msg = msg_hash_to_str(MSG_TAKING_SCREENSHOT);
    }
    else
    {
-      RARCH_WARN(RETRO_LOG_TAKE_SCREENSHOT_FAILED);
-      msg = RETRO_MSG_TAKE_SCREENSHOT_FAILED;
+      RARCH_WARN("%s.\n", msg_hash_to_str(MSG_FAILED_TO_TAKE_SCREENSHOT));
+      msg = msg_hash_to_str(MSG_FAILED_TO_TAKE_SCREENSHOT);
    }
 
    rarch_main_msg_queue_push(msg, 1, runloop->is_paused ? 1 : 180, true);

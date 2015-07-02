@@ -20,6 +20,26 @@ const char *msg_hash_to_str_us(uint32_t hash)
 {
    switch (hash)
    {
+      case MSG_CUSTOM_TIMING_GIVEN:
+         return "Custom timing given";
+      case MSG_VIEWPORT_SIZE_CALCULATION_FAILED:
+         return "Viewport size calculation failed! Will continue using raw data. This will probably not work right ...";
+      case MSG_HW_RENDERED_MUST_USE_POSTSHADED_RECORDING:
+         return "Libretro core is hardware rendered. Must use post-shaded recording as well.";
+      case MSG_RECORDING_TO:
+         return "Recording to";
+      case MSG_DETECTED_VIEWPORT_OF:
+         return "Detected viewport of";
+      case MSG_TAKING_SCREENSHOT:
+         return "Taking screenshot.";
+      case MSG_FAILED_TO_TAKE_SCREENSHOT:
+         return "Failed to take screenshot.";
+      case MSG_FAILED_TO_START_RECORDING:
+         return "Failed to start recording.";
+      case MSG_RECORDING_TERMINATED_DUE_TO_RESIZE:
+         return "Recording terminated due to resize.";
+      case MSG_USING_LIBRETRO_DUMMY_CORE_RECORDING_SKIPPED:
+         return "Using libretro dummy core. Skipping recording.";
       case MSG_UNKNOWN:
          return "Unknown";
       case MSG_LOADING_CONTENT_FILE:

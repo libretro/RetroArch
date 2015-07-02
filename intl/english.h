@@ -83,10 +83,6 @@
 
 #define TERM_STR "\n"
 
-#define RETRO_MSG_INIT_RECORDING_SKIPPED "Using libretro dummy core. Skipping recording."
-#define RETRO_MSG_INIT_RECORDING_FAILED "Failed to start recording."
-#define RETRO_MSG_TAKE_SCREENSHOT "Taking screenshot."
-#define RETRO_MSG_TAKE_SCREENSHOT_FAILED "Failed to take screenshot."
 #define RETRO_MSG_TAKE_SCREENSHOT_ERROR "Cannot take screenshot. GPU rendering is used and read_viewport is not supported."
 #define RETRO_MSG_AUDIO_WRITE_FAILED "Audio backend failed to write. Will continue without sound."
 #define RETRO_MSG_MOVIE_STARTED_INIT_NETPLAY_FAILED "Movie playback has started. Cannot start netplay."
@@ -101,7 +97,6 @@
 #define RETRO_MSG_REWIND_INIT_FAILED_NO_SAVESTATES "Implementation does not support save states. Cannot use rewind."
 #define RETRO_MSG_REWIND_INIT_FAILED_THREADED_AUDIO "Implementation uses threaded audio. Cannot use rewind."
 
-#define RETRO_LOG_INIT_RECORDING_SKIPPED RETRO_MSG_INIT_RECORDING_SKIPPED TERM_STR
 #define RETRO_LOG_INIT_RECORDING_FAILED RETRO_MSG_INIT_RECORDING_FAILED TERM_STR
 #define RETRO_LOG_TAKE_SCREENSHOT RETRO_MSG_TAKE_SCREENSHOT TERM_STR
 #define RETRO_LOG_TAKE_SCREENSHOT_FAILED RETRO_MSG_TAKE_SCREENSHOT_FAILED TERM_STR
