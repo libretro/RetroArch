@@ -505,9 +505,9 @@ int setting_set_with_string_representation(rarch_setting_t* setting,
          sscanf(value, "%d", setting->value.integer);
          if (setting->flags & SD_FLAG_HAS_RANGE)
          {
-            if (*setting->value.integer < setting->min)
+            if (setting->enforce_minrange && *setting->value.integer < setting->min)
                *setting->value.integer = setting->min;
-            if (*setting->value.integer > setting->max)
+            if (setting->enforce_maxrange && *setting->value.integer > setting->max)
                *setting->value.integer = setting->max;
          }
          break;
@@ -515,9 +515,9 @@ int setting_set_with_string_representation(rarch_setting_t* setting,
          sscanf(value, "%u", setting->value.unsigned_integer);
          if (setting->flags & SD_FLAG_HAS_RANGE)
          {
-            if (*setting->value.unsigned_integer < setting->min)
+            if (setting->enforce_minrange && *setting->value.unsigned_integer < setting->min)
                *setting->value.unsigned_integer = setting->min;
-            if (*setting->value.unsigned_integer > setting->max)
+            if (setting->enforce_maxrange && *setting->value.unsigned_integer > setting->max)
                *setting->value.unsigned_integer = setting->max;
          }
          break;      
@@ -525,9 +525,9 @@ int setting_set_with_string_representation(rarch_setting_t* setting,
          sscanf(value, "%f", setting->value.fraction);
          if (setting->flags & SD_FLAG_HAS_RANGE)
          {
-            if (*setting->value.fraction < setting->min)
+            if (setting->enforce_minrange && *setting->value.fraction < setting->min)
                *setting->value.fraction = setting->min;
-            if (*setting->value.fraction > setting->max)
+            if (setting->enforce_maxrange && *setting->value.fraction > setting->max)
                *setting->value.fraction = setting->max;
          }
          break;
