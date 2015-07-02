@@ -123,7 +123,7 @@ static void event_init_autosave(void)
             settings->autosave_interval);
 
       if (!global->autosave[i])
-         RARCH_WARN(RETRO_LOG_INIT_AUTOSAVE_FAILED);
+         RARCH_WARN("%s\n", msg_hash_to_str(MSG_AUTOSAVE_FAILED));
    }
 }
 

@@ -46,6 +46,8 @@
 #define MSG_HW_RENDERED_MUST_USE_POSTSHADED_RECORDING 0x7f9f7659U
 #define MSG_VIEWPORT_SIZE_CALCULATION_FAILED          0x9da84911U
 
+#define MSG_AUTOSAVE_FAILED                           0x9a02d8d1U
+
 #define MSG_TAKING_SCREENSHOT                         0xdcfda0e0U
 #define MSG_FAILED_TO_TAKE_SCREENSHOT                 0x7a480a2dU
 
