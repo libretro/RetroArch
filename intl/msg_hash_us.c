@@ -20,6 +20,10 @@ const char *msg_hash_to_str_us(uint32_t hash)
 {
    switch (hash)
    {
+      case MSG_MOVIE_RECORD_STOPPED:
+         return "Stopping movie record.";
+      case MSG_MOVIE_PLAYBACK_ENDED:
+         return "Movie playback ended.";
       case MSG_AUTOSAVE_FAILED:
          return "Could not initialize autosave.";
       case MSG_NETPLAY_FAILED_MOVIE_PLAYBACK_HAS_STARTED:

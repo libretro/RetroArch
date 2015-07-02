@@ -25,7 +25,6 @@
 #include "configuration.h"
 #include "dynamic.h"
 #include "performance.h"
-#include "intl/intl.h"
 #include "retroarch.h"
 #include "runloop.h"
 #include "runloop_data.h"
@@ -309,9 +308,9 @@ static bool check_movie_record(void)
    if (!global->bsv.movie)
       return false;
 
-   rarch_main_msg_queue_push(
-         RETRO_MSG_MOVIE_RECORD_STOPPING, 2, 180, true);
-   RARCH_LOG(RETRO_LOG_MOVIE_RECORD_STOPPING);
+   rarch_main_msg_queue_push_new(
+         MSG_MOVIE_RECORD_STOPPED, 2, 180, true);
+   RARCH_LOG("%s\n", msg_hash_to_str(MSG_MOVIE_RECORD_STOPPED));
 
    event_command(EVENT_CMD_BSV_MOVIE_DEINIT);
 
@@ -331,9 +330,9 @@ static bool check_movie_playback(void)
    if (!global->bsv.movie_end)
       return false;
 
-   rarch_main_msg_queue_push(
-         RETRO_MSG_MOVIE_PLAYBACK_ENDED, 1, 180, false);
-   RARCH_LOG(RETRO_LOG_MOVIE_PLAYBACK_ENDED);
+   rarch_main_msg_queue_push_new(
+         MSG_MOVIE_PLAYBACK_ENDED, 1, 180, false);
+   RARCH_LOG("%s\n", msg_hash_to_str(MSG_MOVIE_PLAYBACK_ENDED));
 
    event_command(EVENT_CMD_BSV_MOVIE_DEINIT);
 

@@ -48,6 +48,9 @@
 
 #define MSG_AUTOSAVE_FAILED                           0x9a02d8d1U
 
+#define MSG_MOVIE_RECORD_STOPPED                      0xbc7832c1U
+#define MSG_MOVIE_PLAYBACK_ENDED                      0xbeadce2aU
+
 #define MSG_TAKING_SCREENSHOT                         0xdcfda0e0U
 #define MSG_FAILED_TO_TAKE_SCREENSHOT                 0x7a480a2dU
 
