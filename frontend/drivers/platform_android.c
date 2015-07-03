@@ -615,6 +615,12 @@ static void frontend_android_get_environment_settings(int *argc,
                   path, "video_filters", sizeof(g_defaults.video_filter_dir));
             strlcpy(g_defaults.content_history_dir, 
                   path, sizeof(g_defaults.content_history_dir));
+            fill_pathname_join(g_defaults.database_dir,
+                  path, "database/rdb", sizeof(g_defaults.database_dir));
+            fill_pathname_join(g_defaults.cursor_dir,
+                  path, "database/cursors", sizeof(g_defaults.cursor_dir));
+            fill_pathname_join(g_defaults.cheats_dir,
+                  path, "cheats", sizeof(g_defaults.cheats_dir));
          }
       }
    }
