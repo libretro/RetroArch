@@ -26,26 +26,11 @@ static bool android_joypad_init(void *data)
 {
    unsigned autoconf_pad;
    settings_t *settings       = config_get_ptr();
-   autoconfig_params_t params = {{0}};
 
    (void)data;
 
    for (autoconf_pad = 0; autoconf_pad < MAX_USERS; autoconf_pad++)
-   {
-      strlcpy(settings->input.device_names[autoconf_pad],
-            android_joypad_name(autoconf_pad),
-            sizeof(settings->input.device_names[autoconf_pad]));
-
-      /* TODO - implement VID/PID? */
-      params.idx = autoconf_pad;
-      strlcpy(params.name, android_joypad_name(autoconf_pad), sizeof(params.name));
-      strlcpy(params.driver, android_joypad.ident, sizeof(params.driver));
-
-      if (!input_config_autoconfigure_joypad(&params))
-      {
-         settings->input.binds[autoconf_pad][RARCH_MENU_TOGGLE].joykey = AKEYCODE_BACK;
-      }
-   }
+      settings->input.binds[autoconf_pad][RARCH_MENU_TOGGLE].joykey = AKEYCODE_BACK;
 
    engine_handle_dpad = engine_handle_dpad_default;
    if ((dlopen("/system/lib/libandroid.so", RTLD_LOCAL | RTLD_LAZY)) == 0)

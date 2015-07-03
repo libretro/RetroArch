@@ -738,10 +738,10 @@ static void handle_hotplug(android_input_t *android,
    strlcpy(android->pad_states[*port].name, name_buf,
          sizeof(android->pad_states[*port].name));
 
-   if (!autoconfigured)
-   {
+   if (autoconfigured && strcmp(name_buf, "RetroKeyboard"))
+      settings->input.binds[*port][RARCH_MENU_TOGGLE].joykey = 0;
+   else
       settings->input.binds[*port][RARCH_MENU_TOGGLE].joykey = AKEYCODE_BACK;
-   }
 
    android->pads_connected++;
 }
