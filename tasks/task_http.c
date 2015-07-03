@@ -150,11 +150,11 @@ static int cb_update_shaders_cg(void *data, size_t len)
 {
    char shaderdir[PATH_MAX_LENGTH];
    settings_t              *settings     = config_get_ptr();
-/*   fill_pathname_join(shaderdir, settings->video.shader_dir, "shaders_cg",
+   fill_pathname_join(shaderdir, settings->video.shader_dir, "shaders_cg",
          sizeof(shaderdir));
    if (!path_file_exists(shaderdir))
       if (!path_mkdir(shaderdir))
-         return -1;*/
+         return -1;
 
    return cb_generic_download(data, len, shaderdir);
 }
@@ -163,11 +163,11 @@ static int cb_update_shaders_glsl(void *data, size_t len)
 {
    char shaderdir[PATH_MAX_LENGTH];
    settings_t              *settings     = config_get_ptr();
-/*   fill_pathname_join(shaderdir, settings->video.shader_dir, "shaders_glsl",
+   fill_pathname_join(shaderdir, settings->video.shader_dir, "shaders_glsl",
          sizeof(shaderdir));
    if (!path_file_exists(shaderdir))
       if (!path_mkdir(shaderdir))
-         return -1;*/
+         return -1;
 
    return cb_generic_download(data, len, shaderdir);
 }
