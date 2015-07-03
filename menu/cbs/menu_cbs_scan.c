@@ -21,7 +21,7 @@
 
 #include "../../runloop_data.h"
 
-static int action_scan_file(const char *path,
+int action_scan_file(const char *path,
       const char *label, unsigned type, size_t idx)
 {
    char fullpath[PATH_MAX_LENGTH] = {0};
@@ -40,7 +40,7 @@ static int action_scan_file(const char *path,
    return 0;
 }
 
-static int action_scan_directory(const char *path,
+int action_scan_directory(const char *path,
       const char *label, unsigned type, size_t idx)
 {
    char fullpath[PATH_MAX_LENGTH] = {0};
@@ -53,7 +53,10 @@ static int action_scan_directory(const char *path,
 
    menu_list_get_last_stack(menu_list, &menu_path, &menu_label, NULL, NULL);
 
-   fill_pathname_join(fullpath, menu_path, path, sizeof(fullpath));
+   strlcpy(fullpath, menu_path, sizeof(fullpath));
+
+   if (path)
+      fill_pathname_join(fullpath, fullpath, path, sizeof(fullpath));
 
    rarch_main_data_msg_queue_push(DATA_TYPE_DB, fullpath, "cb_db_scan_folder", 0, 1, true);
    return 0;

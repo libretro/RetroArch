@@ -26,6 +26,14 @@ static const char *menu_hash_to_str_us_label(uint32_t hash)
 {
    switch (hash)
    {
+      case MENU_LABEL_SCAN_THIS_DIRECTORY:
+         return "scan_this_directory";
+      case MENU_LABEL_SCAN_FILE:
+         return "scan_file";
+      case MENU_LABEL_SCAN_DIRECTORY:
+         return "scan_directory";
+      case MENU_LABEL_ADD_CONTENT_LIST:
+         return "add_content";
       case MENU_LABEL_OVERLAY_AUTOLOAD_PREFERRED:
          return "overlay_autoload_preferred";
       case MENU_LABEL_INFORMATION_LIST:
@@ -596,6 +604,14 @@ const char *menu_hash_to_str_us(uint32_t hash)
 
    switch (hash)
    {
+      case MENU_LABEL_VALUE_SCAN_THIS_DIRECTORY:
+         return "Scan This Directory";
+      case MENU_LABEL_VALUE_SCAN_FILE:
+         return "Scan File";
+      case MENU_LABEL_VALUE_SCAN_DIRECTORY:
+         return "Scan Directory";
+      case MENU_LABEL_VALUE_ADD_CONTENT_LIST:
+         return "Add Content";
       case MENU_LABEL_OVERLAY_AUTOLOAD_PREFERRED:
          return "Auto-load preferred overlay";
       case MENU_LABEL_VALUE_INFORMATION_LIST:

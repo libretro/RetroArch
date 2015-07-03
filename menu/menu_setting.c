@@ -2501,6 +2501,13 @@ static bool setting_append_list_main_menu_options(
             parent_group);
    }
 
+   CONFIG_ACTION(
+         menu_hash_to_str(MENU_LABEL_ADD_CONTENT_LIST),
+         menu_hash_to_str(MENU_LABEL_VALUE_ADD_CONTENT_LIST),
+         group_info.name,
+         subgroup_info.name,
+         parent_group);
+
 #ifdef HAVE_NETWORKING
    CONFIG_ACTION(
          menu_hash_to_str(MENU_LABEL_ONLINE_UPDATER),

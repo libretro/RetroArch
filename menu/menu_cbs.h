@@ -126,6 +126,12 @@ int menu_cbs_init_bind_title(menu_file_list_cbs_t *cbs,
 int deferred_push_content_list(void *data, void *userdata,
       const char *path, const char *label, unsigned type);
 
+int action_scan_directory(const char *path,
+      const char *label, unsigned type, size_t idx);
+
+int action_scan_file(const char *path,
+      const char *label, unsigned type, size_t idx);
+
 void menu_cbs_init(void *data,
       const char *path, const char *label,
       unsigned type, size_t idx);

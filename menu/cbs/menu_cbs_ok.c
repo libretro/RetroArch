@@ -834,6 +834,12 @@ static int action_ok_path_use_directory(const char *path,
    return menu_entry_pathdir_set_value(0, NULL);
 }
 
+static int action_ok_path_scan_directory(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   return action_scan_directory(NULL, label, type, idx);
+}
+
 static int action_ok_core_deferred_set(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -1739,10 +1745,13 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
       case MENU_LABEL_MANAGEMENT:
       case MENU_LABEL_ONLINE_UPDATER:
       case MENU_LABEL_LOAD_CONTENT_LIST:
+      case MENU_LABEL_ADD_CONTENT_LIST:
       case MENU_LABEL_INFORMATION_LIST:
       case MENU_LABEL_CONTENT_SETTINGS:
          cbs->action_ok = action_ok_push_default;
          break;
+      case MENU_LABEL_SCAN_FILE:
+      case MENU_LABEL_SCAN_DIRECTORY:
       case MENU_LABEL_LOAD_CONTENT:
       case MENU_LABEL_DETECT_CORE_LIST:
          cbs->action_ok = action_ok_push_content_list;
@@ -1866,16 +1875,37 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             cbs->action_ok = action_ok_remap_file_load;
             break;
          case MENU_FILE_SHADER_PRESET:
-            cbs->action_ok = action_ok_shader_preset_load;
+            switch (menu_label_hash)
+            {
+               case MENU_LABEL_SCAN_FILE:
+                  break;
+               default:
+                  cbs->action_ok = action_ok_shader_preset_load;
+            }
             break;
          case MENU_FILE_SHADER:
-            cbs->action_ok = action_ok_shader_pass_load;
+            switch (menu_label_hash)
+            {
+               case MENU_LABEL_SCAN_FILE:
+                  break;
+               default:
+                  cbs->action_ok = action_ok_shader_pass_load;
+            }
             break;
          case MENU_FILE_IMAGE:
-            cbs->action_ok = action_ok_menu_wallpaper_load;
+            switch (menu_label_hash)
+            {
+               case MENU_LABEL_SCAN_FILE:
+                  break;
+               default:
+                  cbs->action_ok = action_ok_menu_wallpaper_load;
+            }
             break;
          case MENU_FILE_USE_DIRECTORY:
             cbs->action_ok = action_ok_path_use_directory;
+            break;
+         case MENU_FILE_SCAN_DIRECTORY:
+            cbs->action_ok = action_ok_path_scan_directory;
             break;
          case MENU_FILE_CONFIG:
             cbs->action_ok = action_ok_config_load;
@@ -1884,7 +1914,13 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             cbs->action_ok = action_ok_directory_push;
             break;
          case MENU_FILE_CARCHIVE:
-            cbs->action_ok = action_ok_compressed_archive_push;
+            switch (menu_label_hash)
+            {
+               case MENU_LABEL_SCAN_FILE:
+                  break;
+               default:
+                  cbs->action_ok = action_ok_compressed_archive_push;
+            }
             break;
          case MENU_FILE_CORE:
             switch (menu_label_hash)
@@ -1965,11 +2001,23 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
          case MENU_FILE_MOVIE:
          case MENU_FILE_MUSIC:
 #ifdef HAVE_FFMPEG
-            cbs->action_ok = action_ok_file_load_ffmpeg;
+            switch (menu_label_hash)
+            {
+               case MENU_LABEL_SCAN_FILE:
+                  break;
+               default:
+                  cbs->action_ok = action_ok_file_load_ffmpeg;
+            }
 #endif
             break;
          case MENU_FILE_IMAGEVIEWER:
-            cbs->action_ok = action_ok_file_load_imageviewer;
+            switch (menu_label_hash)
+            {
+               case MENU_LABEL_SCAN_FILE:
+                  break;
+               default:
+                  cbs->action_ok = action_ok_file_load_imageviewer;
+            }
             break;
          case MENU_SETTINGS:
          case MENU_SETTING_GROUP:

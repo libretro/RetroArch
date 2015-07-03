@@ -25,6 +25,18 @@ extern "C" {
 
 #define MENU_VALUE_SEARCH                                                      0xd0d5febbU
 
+#define MENU_LABEL_SCAN_THIS_DIRECTORY                                         0x6921b775U
+#define MENU_LABEL_VALUE_SCAN_THIS_DIRECTORY                                   0x2911e177U
+
+#define MENU_LABEL_SCAN_DIRECTORY                                              0x57de303eU
+#define MENU_LABEL_VALUE_SCAN_DIRECTORY                                        0x61af24dfU
+
+#define MENU_LABEL_VALUE_SCAN_FILE                                             0x41be3aeaU
+#define MENU_LABEL_SCAN_FILE                                                   0xd5d1eee9U
+
+#define MENU_LABEL_ADD_CONTENT_LIST                                            0x046f4668U
+#define MENU_LABEL_VALUE_ADD_CONTENT_LIST                                      0x955da2c9U
+
 #define MENU_LABEL_UPDATE_AUTOCONFIG_PROFILES_HID                              0x1e94ee4dU
 #define MENU_LABEL_VALUE_UPDATE_AUTOCONFIG_PROFILES_HID                        0x524f4590U
 

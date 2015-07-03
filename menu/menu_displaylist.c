@@ -1652,6 +1652,27 @@ static int menu_displaylist_parse_information_list(menu_displaylist_info_t *info
    return 0;
 }
 
+static int menu_displaylist_parse_add_content_list(menu_displaylist_info_t *info)
+{
+   global_t *global            = global_get_ptr();
+
+   (void)global;
+
+#ifdef HAVE_LIBRETRODB
+   menu_list_push(info->list,
+         menu_hash_to_str(MENU_LABEL_VALUE_SCAN_DIRECTORY),
+         menu_hash_to_str(MENU_LABEL_SCAN_DIRECTORY),
+         MENU_SETTING_ACTION, 0, 0);
+
+   menu_list_push(info->list,
+         menu_hash_to_str(MENU_LABEL_VALUE_SCAN_FILE),
+         menu_hash_to_str(MENU_LABEL_SCAN_FILE),
+         MENU_SETTING_ACTION, 0, 0);
+#endif
+
+   return 0;
+}
+
 static int menu_displaylist_parse_load_content_list(menu_displaylist_info_t *info)
 {
    global_t *global            = global_get_ptr();
@@ -1881,6 +1902,12 @@ static int menu_displaylist_parse_generic(menu_displaylist_info_t *info, bool *n
       str_list = dir_list_new(info->path,
             settings->menu.navigation.browser.filter.supported_extensions_enable
             ? info->exts : NULL, true);
+
+   if (hash_label == MENU_LABEL_SCAN_DIRECTORY)
+      menu_list_push(info->list,
+            menu_hash_to_str(MENU_LABEL_VALUE_SCAN_THIS_DIRECTORY),
+            menu_hash_to_str(MENU_LABEL_SCAN_THIS_DIRECTORY),
+            MENU_FILE_SCAN_DIRECTORY, 0 ,0);
 
    if (push_dir)
       menu_list_push(info->list,
@@ -2120,6 +2147,13 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
       case DISPLAYLIST_INFORMATION_LIST:
          menu_list_clear(info->list);
          ret = menu_displaylist_parse_information_list(info);
+
+         need_push    = true;
+         need_refresh = true;
+         break;
+      case DISPLAYLIST_ADD_CONTENT_LIST:
+         menu_list_clear(info->list);
+         ret = menu_displaylist_parse_add_content_list(info);
 
          need_push    = true;
          need_refresh = true;
