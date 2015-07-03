@@ -1286,7 +1286,23 @@ static int action_ok_download_generic(const char *path,
    if (!strcmp(type_msg, "cb_update_assets"))
       path = "assets.zip";
    else if (!strcmp(type_msg, "cb_update_autoconfig_profiles"))
+   {
+#ifdef ANDROID
+      path = "autoconf_android.zip";
+#elif defined(__QNX__)
+      path = "autoconf_qnx.zip";
+#elif defined(HAVE_UDEV)
+      path = "autoconf_udev.zip";
+#elif defined(HAVE_XINPUT2)
+      path = "autoconf_xinput.zip";
+#else
       path = "autoconf.zip";
+#endif
+   }
+#ifdef HAVE_HID
+   else if (!strcmp(type_msg, "cb_update_autoconfig_profiles_hid"))
+      path = "autoconf_hid.zip";
+#endif
    else if (!strcmp(type_msg, "cb_update_cheats"))
       path = "cheats.zip";
    else if (!strcmp(type_msg, "cb_update_overlays"))
@@ -1393,6 +1409,16 @@ static int action_ok_update_autoconfig_profiles(const char *path,
 #ifdef HAVE_NETWORKING
    action_ok_download_generic(path, label, type, idx, entry_idx,
          "cb_update_autoconfig_profiles");
+#endif
+   return 0;
+}
+
+static int action_ok_update_autoconfig_profiles_hid(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+#ifdef HAVE_NETWORKING
+   action_ok_download_generic(path, label, type, idx, entry_idx,
+         "cb_update_autoconfig_profiles_hid");
 #endif
    return 0;
 }
@@ -1788,6 +1814,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          break;
       case MENU_LABEL_UPDATE_AUTOCONFIG_PROFILES:
          cbs->action_ok = action_ok_update_autoconfig_profiles;
+         break;
+      case MENU_LABEL_UPDATE_AUTOCONFIG_PROFILES_HID:
+         cbs->action_ok = action_ok_update_autoconfig_profiles_hid;
          break;
       default:
          return -1;

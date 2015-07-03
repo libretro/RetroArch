@@ -25,6 +25,9 @@ extern "C" {
 
 #define MENU_VALUE_SEARCH                                                      0xd0d5febbU
 
+#define MENU_LABEL_UPDATE_AUTOCONFIG_PROFILES_HID                              0x1e94ee4dU
+#define MENU_LABEL_VALUE_UPDATE_AUTOCONFIG_PROFILES_HID                        0x524f4590U
+
 #define MENU_VALUE_DONT_CARE                                                   0x19da07bcU
 #define MENU_VALUE_LINEAR                                                      0xc0d12dc0U
 #define MENU_VALUE_NEAREST                                                     0x6ab2b0b7U
