@@ -21,13 +21,13 @@
 #include <string.h>
 #include <sys/resource.h>
 
-#include <rhash.h>
+#include <retro_inline.h>
 
 #include "platform_android.h"
 
 #include "../frontend.h"
 #include "../../general.h"
-#include <retro_inline.h>
+#include "../../msg_hash.h"
 
 struct android_app *g_android;
 static pthread_key_t thread_key;
@@ -774,7 +774,7 @@ static enum frontend_architecture frontend_android_get_architecture(void)
    char abi[PROP_VALUE_MAX] = {0};
    system_property_get("ro.product.cpu.abi", abi);
 
-   abi_hash = djb2_calculate(abi);
+   abi_hash = msg_hash_calculate(abi);
 
    switch (abi_hash)
    {
