@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -31,7 +31,7 @@
 #include <assert.h>
 
 /* Need to be present for build to work, but it's not *really* used.
- * Better than having to build special versions of lots of objects 
+ * Better than having to build special versions of lots of objects
  * with special #ifdefs.
  */
 struct settings g_config;
@@ -173,7 +173,7 @@ static void get_binds(config_file_t *conf, config_file_t *auto_conf,
        * has a default negative axis for shoulder triggers,
        * which makes configuration very awkward.
        *
-       * If default negative, we can't trigger on the negative axis, 
+       * If default negative, we can't trigger on the negative axis,
        * and similar with defaulted positive axes.
        */
 
@@ -269,7 +269,7 @@ static void get_binds(config_file_t *conf, config_file_t *auto_conf,
             require_negative = initial_axes[j] > 0;
             require_positive = initial_axes[j] < 0;
 
-            /* Block the axis config until we're sure 
+            /* Block the axis config until we're sure
              * axes have returned to their neutral state. */
             if (same_axis)
             {
@@ -279,7 +279,7 @@ static void get_binds(config_file_t *conf, config_file_t *auto_conf,
                   block_axis = false;
             }
 
-            /* If axes are in their neutral state, 
+            /* If axes are in their neutral state,
              * we can't allow it. */
             if (require_negative && value >= 0)
                continue;
@@ -461,9 +461,10 @@ static void parse_input(int argc, char *argv[])
 
 }
 
-void input_config_autoconfigure_joypad(autoconfig_params_t *params)
+bool input_config_autoconfigure_joypad(autoconfig_params_t *params)
 {
    (void)params;
+   return false;
 }
 
 /* Need SDL_main on OSX. */
@@ -476,11 +477,11 @@ int main(int argc, char *argv[])
    config_file_t *conf;
    config_file_t *auto_conf = NULL;
 
-   const char *index_list[] = { 
-      "input_player1_joypad_index", 
-      "input_player2_joypad_index", 
-      "input_player3_joypad_index", 
-      "input_player4_joypad_index", 
+   const char *index_list[] = {
+      "input_player1_joypad_index",
+      "input_player2_joypad_index",
+      "input_player3_joypad_index",
+      "input_player4_joypad_index",
       "input_player5_joypad_index",
       "input_player6_joypad_index",
       "input_player7_joypad_index",
