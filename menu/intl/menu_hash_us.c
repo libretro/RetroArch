@@ -26,6 +26,8 @@ static const char *menu_hash_to_str_us_label(uint32_t hash)
 {
    switch (hash)
    {
+      case MENU_LABEL_OVERLAY_AUTOLOAD_PREFERRED:
+         return "overlay_autoload_preferred";
       case MENU_LABEL_INFORMATION_LIST:
          return "information_list";
       case MENU_LABEL_USE_BUILTIN_PLAYER:
@@ -594,6 +596,8 @@ const char *menu_hash_to_str_us(uint32_t hash)
 
    switch (hash)
    {
+      case MENU_LABEL_OVERLAY_AUTOLOAD_PREFERRED:
+         return "Auto-load preferred overlay";
       case MENU_LABEL_VALUE_INFORMATION_LIST:
          return "Information";
       case MENU_LABEL_VALUE_USE_BUILTIN_PLAYER:

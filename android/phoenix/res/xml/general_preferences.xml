@@ -23,19 +23,4 @@
             android:summary="@string/auto_save_state_desc"
             android:title="@string/auto_save_state" />
     </PreferenceCategory>
-
-    <!-- Rewinding -->
-    <PreferenceCategory android:title="@string/rewinding" >
-        <CheckBoxPreference
-            android:defaultValue="false"
-            android:key="rewind_enable"
-            android:summary="@string/rewinding_desc"
-            android:title="@string/enable" />
-        <EditTextPreference
-            android:dependency="rewind_enable"
-            android:key="rewind_granularity"
-            android:numeric="integer"
-            android:summary="@string/rewind_granularity_desc"
-            android:title="@string/rewind_granularity"/>
-    </PreferenceCategory>
 </PreferenceScreen>

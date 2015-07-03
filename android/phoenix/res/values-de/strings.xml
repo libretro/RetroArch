@@ -3,9 +3,6 @@
     <string name="app_name">RetroArch</string>
     <string name="input_method">Eingabemethode</string>
     <string name="file_type_icon">Dateityp-Icon</string>
-    <string name="key_bind_title">Bitte zu verwendenden Knopf auswählen</string>
-    <string name="key_bind_clear">Belegung aufheben</string>
-    <string name="key_bind_detect">Erkennen</string>
     <string name="optimal_settings_device">Optimale Geräteeinstellungen</string>
     <string name="extracting_assets_please_wait_">Entpacke Assets, bitte warten …</string>
 
@@ -15,40 +12,12 @@
     <string name="load_core">Core auswählen</string>
     <string name="load_content">Lade Content</string>
     <string name="load_content_auto">Lade Content (Core erkennen)</string>
-    <string name="load_content_history">Lade Content (Verlauf)</string>
     <string name="settings">Einstellungen</string>
     <string name="about">Über</string>
     <string name="quit_retroarch">RetroArch beenden</string>
 
     <!-- Core Selection Class -->
     <string name="select_libretro_core">Wähle einen Libretro-Core aus</string>
-
-    <!-- Core Manager -->
-    <string name="installed_cores">Installierte Cores</string>
-    <string name="uninstall_core">Core deinstallieren</string>
-    <string name="uninstall_core_message">Willst du wirklich %1$s deinstallieren?</string>
-    <string name="uninstall_failure">Deinstallation von Core %1$s fehlgeschlagen.</string>
-    <string name="uninstall_success">Core %1$s erfolgreich deinstalliert.</string>
-    <string name="downloadable_cores">Herunterladbare Cores</string>
-
-    <!-- Core Manager Info Fragment -->
-    <string name="core_info_displayNameTitle">Anzeige-Name</string>
-    <string name="core_info_internalNameTitle">Interner Name</string>
-    <string name="core_info_systemNameTitle">Beschreibung</string>
-    <string name="core_info_author">Autor(en)</string>
-    <string name="core_info_licenseTitle">Core-Lizenz</string>
-    <string name="core_info_manufacturer">Hersteller</string>
-    <string name="core_info_permissions">Berechtigungen</string>
-
-    <!-- Core Downloader Fragment -->
-    <string name="download_core_confirm_title">Bestätigen</string>
-    <string name="download_core_confirm_msg">Bist du sicher, dass du %1$s herunterladen willst?</string>
-    <string name="downloading_msg">Lade %1$s herunter…</string>
-    <string name="download_core_list_error">Fehler beim Empfanger der Core-Liste.</string>
-
-    <!-- Core Downloader - Downloadable Cores Context Menu -->
-    <string name="downloadable_cores_ctx_title">Aktionen</string>
-	<string name="downloadable_cores_ctx_goto_wiki">Wiki-Seite des Cores besuchen</string>
 
     <!-- Display Refresh Rate Test Class -->
     <string name="refresh_rate_calibration">Bildwiederholrate kalibrieren</string>
@@ -190,8 +159,6 @@
 
     <!-- General Settings -->
     <string name="general_options">Allgemein</string>
-    <string name="core_management">Core-Verwaltung</string>
-    <string name="manage_cores">Verwalte Cores</string>
     <string name="config_style">Konfigurationsart</string>
     <string name="global_config">Globale Konfiguration</string>
     <string name="global_config_desc">Verwende globale Einstellungen für alle Cores. Lasse dies ausgeschaltet, wenn du Cores einzeln konfigurieren willst.</string>

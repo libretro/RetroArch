@@ -1,4 +1,0 @@
-<menu xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:id="@+id/go_to_wiki_ctx_item"
-          android:title="@string/downloadable_cores_ctx_goto_wiki"/>
-</menu>

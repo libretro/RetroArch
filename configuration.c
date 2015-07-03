@@ -630,6 +630,7 @@ static void config_set_defaults(void)
    settings->network.buildbot_auto_extract_archive = true;
 
    settings->input.overlay_enable                  = true;
+   settings->input.overlay_enable_autopreferred    = true;
    settings->input.overlay_opacity                 = 0.7f;
    settings->input.overlay_scale                   = 1.0f;
    settings->input.autodetect_enable               = input_autodetect_enable;
@@ -1544,6 +1545,7 @@ static bool config_load_file(const char *path, bool set_defaults)
 
    config_get_path(conf, "input_overlay", settings->input.overlay, sizeof(settings->input.overlay));
    CONFIG_GET_BOOL_BASE(conf, settings, input.overlay_enable, "input_overlay_enable");
+   CONFIG_GET_BOOL_BASE(conf, settings, input.overlay_enable_autopreferred, "input_overlay_enable_autopreferred");
    CONFIG_GET_FLOAT_BASE(conf, settings, input.overlay_opacity, "input_overlay_opacity");
    CONFIG_GET_FLOAT_BASE(conf, settings, input.overlay_scale, "input_overlay_scale");
 
@@ -2548,6 +2550,7 @@ bool config_save_file(const char *path)
          *global->overlay_dir ? global->overlay_dir : "default");
    config_set_path(conf, "input_overlay", settings->input.overlay);
    config_set_bool(conf, "input_overlay_enable", settings->input.overlay_enable);
+   config_set_bool(conf, "input_overlay_enable_autopreferred", settings->input.overlay_enable_autopreferred);
    config_set_float(conf, "input_overlay_opacity",
          settings->input.overlay_opacity);
    config_set_float(conf, "input_overlay_scale",

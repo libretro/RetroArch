@@ -25,7 +25,6 @@ import android.widget.Toast;
 
 import com.retroarch.R;
 import com.retroarch.browser.CoreSelection;
-import com.retroarch.browser.HistorySelection;
 import com.retroarch.browser.NativeInterface;
 import com.retroarch.browser.dirfragment.DetectCoreDirectoryFragment;
 import com.retroarch.browser.dirfragment.DirectoryFragment;
@@ -68,7 +67,6 @@ public final class MainMenuFragment extends PreferenceListFragment implements On
 		findPreference("loadCorePref").setOnPreferenceClickListener(this);
 		findPreference("loadContentAutoPref").setOnPreferenceClickListener(this);
 		findPreference("loadContentPref").setOnPreferenceClickListener(this);
-		findPreference("loadContentHistoryPref").setOnPreferenceClickListener(this);
 		findPreference("quitRetroArch").setOnPreferenceClickListener(this);
 
 		// Extract assets. 
@@ -258,11 +256,6 @@ public final class MainMenuFragment extends PreferenceListFragment implements On
 				contentBrowser.setStartDirectory(startPath);
 
 			contentBrowser.show(getFragmentManager(), "contentBrowser");
-		}
-		// Load Content (History) Preference
-		else if (prefKey.equals("loadContentHistoryPref"))
-		{
-			HistorySelection.newInstance().show(getFragmentManager(), "history_selection");
 		}
 		// Quit RetroArch preference
 		else if (prefKey.equals("quitRetroArch"))

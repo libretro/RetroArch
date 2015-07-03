@@ -229,6 +229,7 @@ typedef struct settings
       unsigned turbo_duty_cycle;
 
       bool overlay_enable;
+      bool overlay_enable_autopreferred;
       char overlay[PATH_MAX_LENGTH];
       float overlay_opacity;
       float overlay_scale;

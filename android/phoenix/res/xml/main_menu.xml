@@ -22,19 +22,6 @@
         android:key="loadContentAutoPref"
         android:title="@string/load_content_auto"/>
 
-    <!-- Load Content (History) -->
-    <Preference
-        android:key="loadContentHistoryPref"
-        android:title="@string/load_content_history"/>
-
-    <!-- Manage Cores -->
-    <Preference 
-        android:title="@string/manage_cores">
-        <intent
-            android:targetClass="com.retroarch.browser.coremanager.CoreManagerActivity"
-            android:targetPackage="com.retroarch"/>
-     </Preference>
-
     <!-- Settings -->
     <Preference android:title="@string/settings">
        <intent
