@@ -564,6 +564,8 @@ static const char *menu_hash_to_str_us_label(uint32_t hash)
          return "update_cheats";
       case MENU_LABEL_UPDATE_AUTOCONFIG_PROFILES:
          return "update_autoconfig_profiles";
+      case MENU_LABEL_UPDATE_AUTOCONFIG_PROFILES_HID:
+         return "update_autoconfig_profiles_hid";
       case MENU_LABEL_UPDATE_DATABASES:
          return "update_databases";
       case MENU_LABEL_UPDATE_OVERLAYS:
@@ -1144,6 +1146,8 @@ const char *menu_hash_to_str_us(uint32_t hash)
          return "Update Cheats";
       case MENU_LABEL_VALUE_UPDATE_AUTOCONFIG_PROFILES:
          return "Update Autoconfig Profiles";
+      case MENU_LABEL_VALUE_UPDATE_AUTOCONFIG_PROFILES_HID:
+         return "Update Autoconfig Profiles (HID)";
       case MENU_LABEL_VALUE_UPDATE_DATABASES:
          return "Update Databases";
       case MENU_LABEL_VALUE_UPDATE_OVERLAYS:
