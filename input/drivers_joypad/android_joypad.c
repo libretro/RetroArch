@@ -3,7 +3,7 @@
  *  Copyright (C) 2011-2015 - Daniel De Matteis
  *  Copyright (C) 2012-2015 - Michael Lelli
  *  Copyright (C) 2013-2014 - Steven Crowe
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -40,7 +40,11 @@ static bool android_joypad_init(void *data)
       params.idx = autoconf_pad;
       strlcpy(params.name, android_joypad_name(autoconf_pad), sizeof(params.name));
       strlcpy(params.driver, android_joypad.ident, sizeof(params.driver));
-      input_config_autoconfigure_joypad(&params);
+
+      if (!input_config_autoconfigure_joypad(&params))
+      {
+         settings->input.binds[autoconf_pad][RARCH_MENU_TOGGLE].joykey = AKEYCODE_BACK;
+      }
    }
 
    engine_handle_dpad = engine_handle_dpad_default;

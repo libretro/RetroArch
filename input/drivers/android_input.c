@@ -3,7 +3,7 @@
  *  Copyright (C) 2011-2015 - Daniel De Matteis
  *  Copyright (C) 2012-2015 - Michael Lelli
  *  Copyright (C) 2013-2014 - Steven Crowe
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -85,7 +85,7 @@ typedef struct android_input
    state_device_t pad_states[MAX_PADS];
    uint8_t pad_state[MAX_PADS][(LAST_KEYCODE + 7) / 8];
    int8_t hat_state[MAX_PADS][2];
-   
+
    int16_t analog_state[MAX_PADS][MAX_AXIS];
    sensor_t accelerometer_state;
    struct input_pointer pointer[MAX_TOUCH];
@@ -142,7 +142,7 @@ static void engine_handle_dpad_getaxisvalue(android_input_t *android,
    android->hat_state[port][0] = (int)hatx;
    android->hat_state[port][1] = (int)haty;
 
-   /* XXX: this could be a loop instead, but do we really want to 
+   /* XXX: this could be a loop instead, but do we really want to
     * loop through every axis?
     */
    android->analog_state[port][0] = (int16_t)(x * 32767.0f);
@@ -327,7 +327,7 @@ static void engine_handle_cmd(void)
 
          scond_broadcast(android_app->cond);
          slock_unlock(android_app->mutex);
-         
+
          break;
 
       case APP_CMD_INIT_WINDOW:
@@ -396,7 +396,7 @@ static void engine_handle_cmd(void)
          runloop->is_paused = false;
          runloop->is_idle   = false;
 
-         if ((android_app->sensor_state_mask 
+         if ((android_app->sensor_state_mask
                   & (1ULL << RETRO_SENSOR_ACCELEROMETER_ENABLE))
                && android_app->accelerometerSensor == NULL
                && driver->input_data)
@@ -436,7 +436,7 @@ static void *android_input_init(void)
    frontend_android_get_version_sdk(&sdk);
 
    RARCH_LOG("sdk version: %d\n", sdk);
-   
+
    if (sdk >= 19)
       engine_lookup_name = android_input_lookup_name;
    else
@@ -471,7 +471,7 @@ static INLINE int android_input_poll_event_type_motion(
 
    if (keyup && motion_pointer < MAX_TOUCH)
    {
-      memmove(android->pointer + motion_pointer, 
+      memmove(android->pointer + motion_pointer,
             android->pointer + motion_pointer + 1,
             (MAX_TOUCH - motion_pointer - 1) * sizeof(struct input_pointer));
       if (android->pointer_count > 0)
@@ -528,7 +528,7 @@ static int android_input_get_id_port(android_input_t *android, int id,
       int source)
 {
    unsigned i;
-   if (source & (AINPUT_SOURCE_TOUCHSCREEN | AINPUT_SOURCE_MOUSE | 
+   if (source & (AINPUT_SOURCE_TOUCHSCREEN | AINPUT_SOURCE_MOUSE |
             AINPUT_SOURCE_TOUCHPAD))
       return 0; /* touch overlay is always user 1 */
 
@@ -565,6 +565,7 @@ static void handle_hotplug(android_input_t *android,
    name_buf[0] = device_name[0] = 0;
    int vendorId = 0, productId  = 0;
    settings_t         *settings = config_get_ptr();
+   bool autoconfigured = false;
 
    if (!settings->input.autodetect_enable)
       return;
@@ -620,7 +621,7 @@ static void handle_hotplug(android_input_t *android,
          strlcpy(name_buf, "TTT THT Arcade (User 1)", sizeof(name_buf));
       else if (*port == 1)
          strlcpy(name_buf, "TTT THT Arcade (User 2)", sizeof(name_buf));
-   }      
+   }
    else if (strstr(device_name, "Sun4i-keypad"))
       strlcpy(name_buf, "iDroid x360", sizeof(name_buf));
    else if (strstr(device_name, "mtk-kpd"))
@@ -659,7 +660,7 @@ static void handle_hotplug(android_input_t *android,
          strstr(device_name, "Sixaxis") ||
          strstr(device_name, "Gasia,Co") ||
          (strstr(device_name, "Gamepad 0") ||
-          strstr(device_name, "Gamepad 1") || 
+          strstr(device_name, "Gamepad 1") ||
           strstr(device_name, "Gamepad 2") ||
           strstr(device_name, "Gamepad 3"))
          )
@@ -728,7 +729,7 @@ static void handle_hotplug(android_input_t *android,
       params.vid = vendorId;
       params.pid = productId;
       strlcpy(params.driver, android_joypad.ident, sizeof(params.driver));
-      input_config_autoconfigure_joypad(&params);
+      autoconfigured = input_config_autoconfigure_joypad(&params);
    }
 
    *port = android->pads_connected;
@@ -736,6 +737,11 @@ static void handle_hotplug(android_input_t *android,
    android->pad_states[android->pads_connected].port = *port;
    strlcpy(android->pad_states[*port].name, name_buf,
          sizeof(android->pad_states[*port].name));
+
+   if (!autoconfigured)
+   {
+      settings->input.binds[*port][RARCH_MENU_TOGGLE].joykey = AKEYCODE_BACK;
+   }
 
    android->pads_connected++;
 }
@@ -822,7 +828,7 @@ static void android_input_poll(void *data)
 {
    int ident;
 
-   while ((ident = 
+   while ((ident =
             ALooper_pollAll((input_driver_key_pressed(RARCH_PAUSE_TOGGLE))
                ? -1 : 0,
                NULL, NULL, NULL)) >= 0)
@@ -937,7 +943,7 @@ static uint64_t android_input_get_capabilities(void *data)
 {
    (void)data;
 
-   return 
+   return
       (1 << RETRO_DEVICE_JOYPAD)  |
       (1 << RETRO_DEVICE_POINTER) |
       (1 << RETRO_DEVICE_ANALOG);
@@ -990,7 +996,7 @@ static bool android_input_set_sensor_state(void *data, unsigned port,
          if (android_app->accelerometerSensor)
             ASensorEventQueue_disableSensor(android->sensorEventQueue,
                   android_app->accelerometerSensor);
-         
+
          android_app->sensor_state_mask &= ~(1ULL << RETRO_SENSOR_ACCELEROMETER_ENABLE);
          android_app->sensor_state_mask |= (1ULL  << RETRO_SENSOR_ACCELEROMETER_DISABLE);
          return true;

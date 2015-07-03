@@ -90,7 +90,7 @@ static int input_try_autoconfigure_joypad_from_conf(config_file_t *conf,
       BIT32_SET(*match, AUTODETECT_MATCH_NAME);
       ret = 1;
    }
- 
+
    /* Check for name match - name starts with ident */
    if (ident[0] != '\0' && !strncmp(params->name, ident, strlen(ident)))
    {
@@ -99,7 +99,7 @@ static int input_try_autoconfigure_joypad_from_conf(config_file_t *conf,
       if (!strcmp(params->driver, input_driver))
           BIT32_SET(*match, AUTODETECT_MATCH_DRIVER);
    }
-   
+
    /* Check for name match */
    if (!strcmp(ident, params->name))
    {
@@ -107,7 +107,7 @@ static int input_try_autoconfigure_joypad_from_conf(config_file_t *conf,
       ret = 1;
       if (!strcmp(params->driver, input_driver))
           BIT32_SET(*match, AUTODETECT_MATCH_DRIVER);
-   }   
+   }
 
    return ret;
 }
@@ -121,7 +121,7 @@ static void input_autoconfigure_joypad_add(
 
    /* This will be the case if input driver is reinitialized.
     * No reason to spam autoconfigure messages every time. */
-   bool block_osd_spam = settings && 
+   bool block_osd_spam = settings &&
       settings->input.autoconfigured[params->idx] && *params->name;
 
    if (!settings)
@@ -147,7 +147,7 @@ static int input_autoconfigure_joypad_from_conf(
 
    if (!conf)
       return false;
-   
+
    ret = input_try_autoconfigure_joypad_from_conf(conf,
          params, &match);
 
@@ -175,7 +175,7 @@ static bool input_autoconfigure_joypad_from_conf_dir(
    {
       config_file_t *conf = config_file_new(list->elems[i].data);
       ret = input_autoconfigure_joypad_from_conf(conf, params);
-	  
+
 	  if (ret == 1)
 		  break;
 
@@ -230,15 +230,15 @@ static bool input_config_autoconfigure_joypad_init(autoconfig_params_t *params)
    return true;
 }
 
-void input_config_autoconfigure_joypad(autoconfig_params_t *params)
+bool input_config_autoconfigure_joypad(autoconfig_params_t *params)
 {
    bool ret = false;
-   
+
    if (!input_config_autoconfigure_joypad_init(params))
-      return;
+      return ret;
 
    if (!*params->name)
-      return;
+      return ret;
 
 #if defined(HAVE_BUILTIN_AUTOCONFIG)
    ret = input_autoconfigure_joypad_from_conf_internal(params);
@@ -246,13 +246,15 @@ void input_config_autoconfigure_joypad(autoconfig_params_t *params)
 
    if (!ret)
       ret = input_autoconfigure_joypad_from_conf_dir(params);
+
+   return ret;
 }
 
 const struct retro_keybind *input_get_auto_bind(unsigned port, unsigned id)
 {
    settings_t *settings = config_get_ptr();
    unsigned joy_idx     = 0;
-   
+
    if (settings)
       joy_idx = settings->input.joypad_map[port];
 
