@@ -722,6 +722,12 @@ static void config_set_defaults(void)
    global->console.sound.mode = SOUND_MODE_NORMAL;
 #endif
 
+   if (*g_defaults.wallpapers_dir)
+      strlcpy(settings->dynamic_wallpapers_directory,
+            g_defaults.wallpapers_dir, sizeof(settings->dynamic_wallpapers_directory));
+   if (*g_defaults.remap_dir)
+      strlcpy(settings->input_remapping_directory,
+            g_defaults.remap_dir, sizeof(settings->input_remapping_directory));
    if (*g_defaults.extraction_dir)
       strlcpy(settings->extraction_directory,
             g_defaults.extraction_dir, sizeof(settings->extraction_directory));

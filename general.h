@@ -91,7 +91,9 @@ struct defaults
    char system_dir[PATH_MAX_LENGTH];
    char playlist_dir[PATH_MAX_LENGTH];
    char content_history_dir[PATH_MAX_LENGTH];
+   char remap_dir[PATH_MAX_LENGTH];
    char extraction_dir[PATH_MAX_LENGTH];
+   char wallpapers_dir[PATH_MAX_LENGTH];
    char database_dir[PATH_MAX_LENGTH];
    char cursor_dir[PATH_MAX_LENGTH];
    char cheats_dir[PATH_MAX_LENGTH];

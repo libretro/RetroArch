@@ -621,6 +621,12 @@ static void frontend_android_get_environment_settings(int *argc,
                   path, "database/cursors", sizeof(g_defaults.cursor_dir));
             fill_pathname_join(g_defaults.cheats_dir,
                   path, "cheats", sizeof(g_defaults.cheats_dir));
+            fill_pathname_join(g_defaults.playlist_dir,
+                  path, "playlists", sizeof(g_defaults.playlist_dir));
+            fill_pathname_join(g_defaults.remap_dir,
+                  path, "remaps", sizeof(g_defaults.remap_dir));
+            fill_pathname_join(g_defaults.wallpapers_dir,
+                  path, "wallpapers", sizeof(g_defaults.wallpapers_dir));
          }
       }
    }
