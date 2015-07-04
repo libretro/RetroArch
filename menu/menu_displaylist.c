@@ -82,11 +82,19 @@ static void print_buf_lines(file_list_t *list, char *buf, int buf_size,
 
          if (settings)
          {
+            char *last = NULL;
             fill_pathname_join(core_path, settings->libretro_info_path,
                   line_start, sizeof(core_path));
+            
+            (void)last;
 
             path_remove_extension(core_path);
             path_remove_extension(core_path);
+#ifdef ANDROID
+            last = (char*)strrchr(core_path, '_');
+            if (*last)
+               *last = '\0';
+#endif
             strlcat(core_path, ".info", sizeof(core_path));
 
             if (core_info_get_display_name(
