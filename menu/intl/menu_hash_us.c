@@ -26,6 +26,8 @@ static const char *menu_hash_to_str_us_label(uint32_t hash)
 {
    switch (hash)
    {
+      case MENU_LABEL_UPDATE_CORE_INFO_FILES:
+         return "update_core_info_files";
       case MENU_LABEL_DEFERRED_CORE_CONTENT_LIST:
          return "deferred_core_content_list";
       case MENU_LABEL_DOWNLOAD_CORE_CONTENT:
@@ -608,6 +610,8 @@ const char *menu_hash_to_str_us(uint32_t hash)
 
    switch (hash)
    {
+      case MENU_LABEL_VALUE_UPDATE_CORE_INFO_FILES:
+         return "Update Core Info Files";
       case MENU_LABEL_VALUE_DOWNLOAD_CORE_CONTENT:
          return "Download Content";
       case MENU_LABEL_VALUE_SCAN_THIS_DIRECTORY:

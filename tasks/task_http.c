@@ -30,6 +30,7 @@
 #define CB_CORE_UPDATER_DOWNLOAD       0x7412da7dU
 #define CB_CORE_UPDATER_LIST           0x32fd4f01U
 #define CB_UPDATE_ASSETS               0xbf85795eU
+#define CB_UPDATE_CORE_INFO_FILES      0xe6084091U
 #define CB_UPDATE_AUTOCONFIG_PROFILES  0x28ada67dU
 #define CB_UPDATE_CHEATS               0xc360fec3U
 #define CB_UPDATE_OVERLAYS             0x699009a0U
@@ -141,6 +142,12 @@ static int cb_core_content_download(void *data, size_t len)
 {
    settings_t              *settings     = config_get_ptr();
    return cb_generic_download(data, len, settings->core_assets_directory);
+}
+
+static int cb_update_core_info_files(void *data, size_t len)
+{
+   settings_t              *settings     = config_get_ptr();
+   return cb_generic_download(data, len, settings->libretro_info_path);
 }
 
 static int cb_update_assets(void *data, size_t len)
@@ -278,6 +285,9 @@ static int cb_http_conn_default(void *data_, size_t len)
             break;
          case CB_UPDATE_ASSETS:
             http->cb = &cb_update_assets;
+            break;
+         case CB_UPDATE_CORE_INFO_FILES:
+            http->cb = &cb_update_core_info_files;
             break;
          case CB_UPDATE_AUTOCONFIG_PROFILES:
             http->cb = &cb_update_autoconfig_profiles;

@@ -1716,6 +1716,11 @@ static int menu_displaylist_parse_options(menu_displaylist_info_t *info)
          MENU_SETTING_ACTION, 0, 0);
 
    menu_list_push(info->list,
+         menu_hash_to_str(MENU_LABEL_VALUE_UPDATE_CORE_INFO_FILES),
+         menu_hash_to_str(MENU_LABEL_UPDATE_CORE_INFO_FILES),
+         MENU_SETTING_ACTION, 0, 0);
+
+   menu_list_push(info->list,
          menu_hash_to_str(MENU_LABEL_VALUE_UPDATE_ASSETS),
          menu_hash_to_str(MENU_LABEL_UPDATE_ASSETS),
          MENU_SETTING_ACTION, 0, 0);

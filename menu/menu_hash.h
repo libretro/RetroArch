@@ -22,6 +22,8 @@
 extern "C" {
 #endif
 
+#define MENU_LABEL_VALUE_UPDATE_CORE_INFO_FILES                                0xba274810U
+#define MENU_LABEL_UPDATE_CORE_INFO_FILES                                      0x620d758dU
 
 #define MENU_VALUE_SEARCH                                                      0xd0d5febbU
 

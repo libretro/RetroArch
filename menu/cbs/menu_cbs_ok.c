@@ -1356,6 +1356,8 @@ static int action_ok_download_generic(const char *path,
    else if (!strcmp(type_msg, "cb_update_autoconfig_profiles_hid"))
       path = "autoconf_hid.zip";
 #endif
+   else if (!strcmp(type_msg, "cb_update_core_info_files"))
+      path = "info.zip";
    else if (!strcmp(type_msg, "cb_update_cheats"))
       path = "cheats.zip";
    else if (!strcmp(type_msg, "cb_update_overlays"))
@@ -1413,6 +1415,14 @@ static int action_ok_update_assets(const char *path,
    action_ok_download_generic(path, label, type, idx, entry_idx,
          "cb_update_assets");
 #endif
+   return 0;
+}
+
+static int action_ok_update_core_info_files(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   action_ok_download_generic(path, label, type, idx, entry_idx,
+         "cb_update_core_info_files");
    return 0;
 }
 
@@ -1865,6 +1875,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          break;
       case MENU_LABEL_UPDATE_ASSETS:
          cbs->action_ok = action_ok_update_assets;
+         break;
+      case MENU_LABEL_UPDATE_CORE_INFO_FILES:
+         cbs->action_ok = action_ok_update_core_info_files;
          break;
       case MENU_LABEL_UPDATE_OVERLAYS:
          cbs->action_ok = action_ok_update_overlays;
