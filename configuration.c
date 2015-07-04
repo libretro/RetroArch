@@ -740,6 +740,9 @@ static void config_set_defaults(void)
    if (*g_defaults.assets_dir)
       strlcpy(settings->assets_directory,
             g_defaults.assets_dir, sizeof(settings->assets_directory));
+   if (*g_defaults.core_assets_dir)
+      strlcpy(settings->core_assets_directory,
+            g_defaults.core_assets_dir, sizeof(settings->core_assets_directory));
    if (*g_defaults.playlist_dir)
       strlcpy(settings->playlist_directory,
             g_defaults.playlist_dir, sizeof(settings->playlist_directory));

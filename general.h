@@ -71,6 +71,7 @@ enum sound_mode_enums
 
 struct defaults
 {
+   char core_assets_dir[PATH_MAX_LENGTH];
    char menu_config_dir[PATH_MAX_LENGTH];
    char config_path[PATH_MAX_LENGTH];
    char core_path[PATH_MAX_LENGTH];

@@ -627,6 +627,8 @@ static void frontend_android_get_environment_settings(int *argc,
                   path, "remaps", sizeof(g_defaults.remap_dir));
             fill_pathname_join(g_defaults.wallpapers_dir,
                   path, "wallpapers", sizeof(g_defaults.wallpapers_dir));
+            fill_pathname_join(g_defaults.core_assets_dir,
+                  path, "core_assets", sizeof(g_defaults.wallpapers_dir));
          }
       }
    }

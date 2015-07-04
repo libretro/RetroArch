@@ -124,6 +124,10 @@ void main_exit(void *args)
 
 static void check_defaults_dirs(void)
 {
+   if (*g_defaults.core_assets_dir)
+      path_mkdir(g_defaults.core_assets_dir);
+   if (*g_defaults.remap_dir)
+      path_mkdir(g_defaults.remap_dir);
    if (*g_defaults.autoconfig_dir)
       path_mkdir(g_defaults.autoconfig_dir);
    if (*g_defaults.audio_filter_dir)
