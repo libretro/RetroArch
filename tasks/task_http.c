@@ -80,7 +80,6 @@ static int zlib_extract_core_callback(const char *name, const char *valid_exts,
       }
       goto error;
    }
-   event_command(EVENT_CMD_CORE_INFO_INIT);
    return 1;
 
 error:
@@ -135,7 +134,10 @@ static int cb_generic_download(void *data, size_t len,
 static int cb_core_updater_download(void *data, size_t len)
 {
    settings_t              *settings     = config_get_ptr();
-   return cb_generic_download(data, len, settings->libretro_directory);
+   int ret = cb_generic_download(data, len, settings->libretro_directory);
+   if (ret == 0)
+      event_command(EVENT_CMD_CORE_INFO_INIT);
+   return ret;
 }
 
 static int cb_core_content_download(void *data, size_t len)
