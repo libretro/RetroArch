@@ -661,6 +661,7 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
       case MENU_LABEL_INFORMATION_LIST:
       case MENU_LABEL_LOAD_CONTENT_LIST:
       case MENU_LABEL_CONTENT_SETTINGS:
+      case MENU_LABEL_ADD_CONTENT_LIST:
          cbs->action_get_title = action_get_title_action_generic;
          break;
       case MENU_LABEL_DISK_IMAGE_APPEND:

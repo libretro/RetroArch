@@ -573,7 +573,7 @@ static const char *menu_hash_to_str_us_label(uint32_t hash)
       case MENU_LABEL_DEFERRED_VIDEO_FILTER:
          return "deferred_video_filter";
       case MENU_LABEL_DEFERRED_CORE_UPDATER_LIST:
-         return "deferred_core_updater_list";
+         return "core_updater";
       case MENU_LABEL_AUDIO_DSP_PLUGIN:
          return "audio_dsp_plugin";
       case MENU_LABEL_UPDATE_ASSETS:

@@ -607,7 +607,7 @@ extern "C" {
 #define MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_MAX_USERS            0xbfcba816U
 #define MENU_LABEL_DEFERRED_RDB_ENTRY_DETAIL                                   0xc35416c0U
 #define MENU_LABEL_DEFERRED_CORE_LIST                                          0xf157d289U
-#define MENU_LABEL_DEFERRED_CORE_UPDATER_LIST                                  0xbd4d493dU
+#define MENU_LABEL_DEFERRED_CORE_UPDATER_LIST                                  0xc315f682U
 #define MENU_LABEL_CONFIGURATIONS                                              0x3e930a50U
 #define MENU_LABEL_DISK_IMAGE_APPEND                                           0x5af7d709U
 #define MENU_LABEL_CORE_LIST                                                   0xa22bb14dU
