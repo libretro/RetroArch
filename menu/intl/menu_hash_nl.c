@@ -788,7 +788,7 @@ const char *menu_hash_to_str_nl(uint32_t hash)
       case MENU_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS:
          return "Menu Bestandsbeheer Instellingen";
       case MENU_LABEL_VALUE_CORE_UPDATER_SETTINGS:
-         return "Core Updater Instellingen";
+         return "Updater Instellingen";
       case MENU_LABEL_VALUE_NETWORK_SETTINGS:
          return "Netwerkinstellingen";
       case MENU_LABEL_VALUE_PLAYLIST_SETTINGS:

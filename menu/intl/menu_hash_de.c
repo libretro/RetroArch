@@ -800,7 +800,7 @@ const char *menu_hash_to_str_de(uint32_t hash)
       case MENU_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS:
          return "Menü-Dateibrowser-Einstellungen";
       case MENU_LABEL_VALUE_CORE_UPDATER_SETTINGS:
-         return "Core-Updater-Einstellungen";
+         return "Core-Updater-Einstellungen"; /* UPDATE/FIXME */
       case MENU_LABEL_VALUE_NETWORK_SETTINGS:
          return "Netzwerk-Einstellungen";
       case MENU_LABEL_VALUE_PLAYLIST_SETTINGS:
