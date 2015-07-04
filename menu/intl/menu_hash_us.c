@@ -605,7 +605,7 @@ const char *menu_hash_to_str_us(uint32_t hash)
    switch (hash)
    {
       case MENU_LABEL_VALUE_SCAN_THIS_DIRECTORY:
-         return "Scan This Directory";
+         return "<Scan This Directory>";
       case MENU_LABEL_VALUE_SCAN_FILE:
          return "Scan File";
       case MENU_LABEL_VALUE_SCAN_DIRECTORY:
