@@ -474,6 +474,14 @@ static int menu_cbs_init_bind_right_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_LABEL_SCREEN_RESOLUTION:
             cbs->action_right = action_right_video_resolution;
             break;
+         case MENU_LABEL_NO_PLAYLIST_ENTRIES_AVAILABLE:
+            switch (menu_label_hash)
+            {
+               case MENU_VALUE_HORIZONTAL_MENU:
+               case MENU_VALUE_MAIN_MENU:
+                  cbs->action_right = action_right_mainmenu;
+                  break;
+            }
          default:
             return -1;
       }

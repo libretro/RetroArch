@@ -168,7 +168,6 @@ extern "C" {
 #define MENU_LABEL_VALUE_NO_SHADER_PARAMETERS                                  0x8ccc809bU
 #define MENU_LABEL_VALUE_NO_CORE_INFORMATION_AVAILABLE                         0x2a11fe80U
 #define MENU_LABEL_VALUE_NO_CORES_AVAILABLE                                    0xe16bfd0dU
-#define MENU_LABEL_VALUE_NO_PLAYLIST_ENTRIES_AVAILABLE                         0xea82695dU
 #define MENU_LABEL_SAVE_STATE                                                  0x3a4849b5U
 #define MENU_LABEL_VALUE_LOAD_STATE                                            0xd23ba706U
 #define MENU_LABEL_VALUE_SAVE_STATE                                            0x3e182415U
@@ -441,6 +440,7 @@ extern "C" {
 
 #define MENU_LABEL_TURBO                                                       0x107434f1U
 
+#define MENU_LABEL_NO_PLAYLIST_ENTRIES_AVAILABLE                               0x8888c5acU
 #define MENU_LABEL_VALUE_NO_PLAYLIST_ENTRIES_AVAILABLE                         0xea82695dU
 #define MENU_LABEL_VALUE_RDB_ENTRY_START_CONTENT                               0x2cf73cceU
 #define MENU_LABEL_RDB_ENTRY_ANALOG                                            0x9081c2ffU

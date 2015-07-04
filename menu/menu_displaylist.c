@@ -739,8 +739,9 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
    if (list_size <= 0)
    {
       menu_list_push(info->list,
-            menu_hash_to_str(MENU_LABEL_VALUE_NO_PLAYLIST_ENTRIES_AVAILABLE), "",
-            MENU_SETTINGS_CORE_OPTION_NONE, 0, 0);
+            menu_hash_to_str(MENU_LABEL_VALUE_NO_PLAYLIST_ENTRIES_AVAILABLE),
+            menu_hash_to_str(MENU_LABEL_NO_PLAYLIST_ENTRIES_AVAILABLE),
+            0, 0, 0);
       return 0;
    }
 
@@ -1289,7 +1290,7 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
    if (db_info->count < 1)
       menu_list_push(info->list,
             menu_hash_to_str(MENU_LABEL_VALUE_NO_PLAYLIST_ENTRIES_AVAILABLE),
-            "",
+            menu_hash_to_str(MENU_LABEL_NO_PLAYLIST_ENTRIES_AVAILABLE),
             0, 0, 0);
 
    content_playlist_free(playlist);

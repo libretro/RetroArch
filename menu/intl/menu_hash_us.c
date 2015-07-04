@@ -26,6 +26,8 @@ static const char *menu_hash_to_str_us_label(uint32_t hash)
 {
    switch (hash)
    {
+      case MENU_LABEL_NO_PLAYLIST_ENTRIES_AVAILABLE:
+         return "no_playlist_entries_available";
       case MENU_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST:
          return "downloaded_file_detect_core_list";
       case MENU_LABEL_UPDATE_CORE_INFO_FILES:

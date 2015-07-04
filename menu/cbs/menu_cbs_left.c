@@ -135,6 +135,7 @@ static int action_left_scroll(unsigned type, const char *label,
 static int action_left_mainmenu(unsigned type, const char *label,
       bool wraparound)
 {
+   RARCH_LOG("Gets here.\n");
    menu_file_list_cbs_t *cbs = NULL;
    unsigned        push_list = 0;
    menu_list_t    *menu_list = menu_list_get_ptr();
@@ -341,7 +342,7 @@ static int bind_left_generic(unsigned type, const char *label,
 }
 
 static int menu_cbs_init_bind_left_compare_label(menu_file_list_cbs_t *cbs,
-      const char *label, uint32_t label_hash, const char *elem0)
+      const char *label, uint32_t label_hash, uint32_t menu_label_hash, const char *elem0)
 {
    unsigned i;
    rarch_setting_t *setting = menu_setting_find(label);
@@ -402,6 +403,14 @@ static int menu_cbs_init_bind_left_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_LABEL_SCREEN_RESOLUTION: 
             cbs->action_left = action_left_video_resolution;
             break;
+         case MENU_LABEL_NO_PLAYLIST_ENTRIES_AVAILABLE:
+            switch (menu_label_hash)
+            {
+               case MENU_VALUE_HORIZONTAL_MENU:
+               case MENU_VALUE_MAIN_MENU:
+                  cbs->action_left = action_left_mainmenu;
+                  break;
+            }
          default:
             return -1;
       }
@@ -492,7 +501,7 @@ int menu_cbs_init_bind_left(menu_file_list_cbs_t *cbs,
 
    cbs->action_left = bind_left_generic;
 
-   if (menu_cbs_init_bind_left_compare_label(cbs, label, label_hash, elem0) == 0)
+   if (menu_cbs_init_bind_left_compare_label(cbs, label, label_hash, menu_label_hash, elem0) == 0)
       return 0;
 
    if (menu_cbs_init_bind_left_compare_type(cbs, type, label_hash, menu_label_hash) == 0)
