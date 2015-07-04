@@ -379,7 +379,6 @@ bool core_info_list_get_display_name(core_info_list_t *core_info_list,
 
 bool core_info_get_display_name(const char *path, char *s, size_t len)
 {
-   size_t i;
    char       *core_name = NULL;
    config_file_t *conf   = NULL;
 

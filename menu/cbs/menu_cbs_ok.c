@@ -1440,8 +1440,10 @@ static int action_ok_update_assets(const char *path,
 static int action_ok_update_core_info_files(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
+#ifdef HAVE_NETWORKING
    action_ok_download_generic(path, label, type, idx, entry_idx,
          "cb_update_core_info_files");
+#endif
    return 0;
 }
 
