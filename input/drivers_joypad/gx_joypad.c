@@ -569,7 +569,7 @@ static bool gx_joypad_init(void *data)
    (void)data;
 
    for (i = 0; i < MAX_PADS; i++)
-      pad_type[i] = 0;
+      pad_type[i] = WPAD_EXP_NOCONTROLLER;
 
    PAD_Init();
 #ifdef HW_RVL
