@@ -2058,7 +2058,8 @@ static int menu_displaylist_parse_generic(menu_displaylist_info_t *info, bool *n
                break;
             case RARCH_CONTENT_IMAGE:
 #ifdef HAVE_IMAGEVIEWER
-               if (settings->multimedia.builtin_imageviewer_enable)
+               if (settings->multimedia.builtin_imageviewer_enable
+                     && hash_label != MENU_LABEL_MENU_WALLPAPER)
                   file_type = MENU_FILE_IMAGEVIEWER;
 #endif
             default:
