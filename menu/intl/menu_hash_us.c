@@ -26,6 +26,8 @@ static const char *menu_hash_to_str_us_label(uint32_t hash)
 {
    switch (hash)
    {
+      case MENU_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST:
+         return "downloaded_file_detect_core_list";
       case MENU_LABEL_UPDATE_CORE_INFO_FILES:
          return "update_core_info_files";
       case MENU_LABEL_DEFERRED_CORE_CONTENT_LIST:
@@ -988,6 +990,8 @@ const char *menu_hash_to_str_us(uint32_t hash)
          return "Select From Collection";
       case MENU_LABEL_VALUE_DETECT_CORE_LIST:
          return "Select File And Detect Core";
+      case MENU_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST:
+         return "Select Downloaded File And Detect Core";
       case MENU_LABEL_VALUE_LOAD_CONTENT_HISTORY:
          return "Load Recent";
       case MENU_LABEL_VALUE_AUDIO_ENABLE:

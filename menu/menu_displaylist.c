@@ -1695,6 +1695,11 @@ static int menu_displaylist_parse_load_content_list(menu_displaylist_info_t *inf
             menu_hash_to_str(MENU_LABEL_VALUE_DETECT_CORE_LIST),
             menu_hash_to_str(MENU_LABEL_DETECT_CORE_LIST),
             MENU_SETTING_ACTION, 0, 0);
+
+      menu_list_push(info->list,
+            menu_hash_to_str(MENU_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST),
+            menu_hash_to_str(MENU_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST),
+            MENU_SETTING_ACTION, 0, 0);
    }
 
 #ifdef HAVE_LIBRETRODB
@@ -1980,7 +1985,8 @@ static int menu_displaylist_parse_generic(menu_displaylist_info_t *info, bool *n
             break;
          case RARCH_PLAIN_FILE:
          default:
-            if (hash_label == MENU_LABEL_DETECT_CORE_LIST)
+            if (hash_label == MENU_LABEL_DETECT_CORE_LIST ||
+                  hash_label == MENU_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST)
             {
                if (path_is_compressed_file(str_list->elems[i].data))
                {

@@ -694,6 +694,7 @@ static int menu_cbs_init_bind_deferred_push_compare_label(menu_file_list_cbs_t *
          case MENU_LABEL_CONTENT_HISTORY_PATH:
             cbs->action_deferred_push = deferred_push_content_history_path;
             break;
+         case MENU_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST:
          case MENU_LABEL_DETECT_CORE_LIST:
             cbs->action_deferred_push = deferred_push_detect_core_list;
             break;

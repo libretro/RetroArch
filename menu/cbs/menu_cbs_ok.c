@@ -383,6 +383,25 @@ static int action_ok_shader_preset(const char *path,
    return menu_displaylist_push_list(&info, DISPLAYLIST_GENERIC);
 }
 
+static int action_ok_push_downloads_dir(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   menu_displaylist_info_t info = {0};
+   settings_t *settings         = config_get_ptr();
+   menu_list_t       *menu_list = menu_list_get_ptr();
+
+   if (!menu_list)
+      return -1;
+
+   info.list          = menu_list->menu_stack;
+   info.type          = MENU_FILE_DIRECTORY;
+   info.directory_ptr = idx;
+   strlcpy(info.path, settings->core_assets_directory, sizeof(info.path));
+   strlcpy(info.label, label, sizeof(info.label));
+
+   return menu_displaylist_push_list(&info, DISPLAYLIST_GENERIC);
+}
+
 static int action_ok_push_content_list(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -1826,6 +1845,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
       case MENU_LABEL_DETECT_CORE_LIST:
          cbs->action_ok = action_ok_push_content_list;
          break;
+      case MENU_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST:
+         cbs->action_ok = action_ok_push_downloads_dir;
+         break;
       case MENU_LABEL_DETECT_CORE_LIST_OK:
          cbs->action_ok = action_ok_file_load_detect_core;
          break;
@@ -2061,6 +2083,7 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
                case MENU_LABEL_SCAN_FILE:
                   cbs->action_ok = action_ok_scan_file;
                   break;
+               case MENU_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST:
                case MENU_LABEL_DETECT_CORE_LIST:
 #ifdef HAVE_COMPRESSION
                   if (type == MENU_FILE_IN_CARCHIVE)
