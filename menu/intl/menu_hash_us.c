@@ -351,11 +351,11 @@ static const char *menu_hash_to_str_us_label(uint32_t hash)
       case MENU_LABEL_REWIND_ENABLE:
          return "rewind_enable";
       case MENU_LABEL_CONTENT_COLLECTION_LIST:
-         return "content_collection_list";
+         return "select_from_collection";
       case MENU_LABEL_DETECT_CORE_LIST:
          return "detect_core_list";
       case MENU_LABEL_LOAD_CONTENT_HISTORY:
-         return "history_list";
+         return "load_recent";
       case MENU_LABEL_AUDIO_ENABLE:
          return "audio_enable";
       case MENU_LABEL_FPS_SHOW:
@@ -509,7 +509,7 @@ static const char *menu_hash_to_str_us_label(uint32_t hash)
       case MENU_LABEL_CORE_INFORMATION:
          return "core_information";
       case MENU_LABEL_CORE_LIST:
-         return "program_core_list";
+         return "load_core";
       case MENU_LABEL_LOAD_CONTENT:
          return "load_content_default";
       case MENU_LABEL_CLOSE_CONTENT:

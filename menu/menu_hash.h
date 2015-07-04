@@ -610,7 +610,7 @@ extern "C" {
 #define MENU_LABEL_DEFERRED_CORE_UPDATER_LIST                                  0xbd4d493dU
 #define MENU_LABEL_CONFIGURATIONS                                              0x3e930a50U
 #define MENU_LABEL_DISK_IMAGE_APPEND                                           0x5af7d709U
-#define MENU_LABEL_CORE_LIST                                                   0xac9dbf00U
+#define MENU_LABEL_CORE_LIST                                                   0xa22bb14dU
 #define MENU_LABEL_VALUE_CORE_LIST                                             0x0e17fd4eU
 #define MENU_LABEL_MANAGEMENT                                                  0x2516c88aU
 #define MENU_LABEL_VALUE_MANAGEMENT                                            0x97001d0bU
@@ -621,7 +621,7 @@ extern "C" {
 #define MENU_LABEL_VALUE_FRONTEND_COUNTERS                                     0x5752bcf8U
 #define MENU_LABEL_VALUE_CORE_COUNTERS                                         0x4610e861U
 #define MENU_LABEL_CORE_COUNTERS                                               0x64cc83e0U
-#define MENU_LABEL_LOAD_CONTENT_HISTORY                                        0x60d82032U
+#define MENU_LABEL_LOAD_CONTENT_HISTORY                                        0xfe1d79e5U
 #define MENU_LABEL_VALUE_LOAD_CONTENT_HISTORY                                  0x5b362286U
 #define MENU_LABEL_INFO_SCREEN                                                 0xd97853d0U
 #define MENU_LABEL_SYSTEM_INFORMATION                                          0x206ebf0fU
@@ -821,7 +821,7 @@ extern "C" {
 #define MENU_LABEL_VALUE_REMAP_FILE_SAVE_GAME                                  0x9c487623U
 #define MENU_LABEL_REMAP_FILE_SAVE_CORE                                        0x7c9d4c8fU
 #define MENU_LABEL_REMAP_FILE_SAVE_GAME                                        0x7c9f41e0U
-#define MENU_LABEL_CONTENT_COLLECTION_LIST                                     0x0f8a9086U
+#define MENU_LABEL_CONTENT_COLLECTION_LIST                                     0x32d1df83U
 #define MENU_LABEL_VALUE_CONTENT_COLLECTION_LIST                               0xdb177ea0U
 #define MENU_LABEL_VALUE_UNABLE_TO_READ_COMPRESSED_FILE                        0xbae7be3eU
 #define MENU_LABEL_OSK_ENABLE                                                  0x8e208498U
