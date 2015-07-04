@@ -122,12 +122,17 @@ const char* config_get_menu_driver_options(void)
    return options;
 }
 
+static int find_menu_driver_internal(const char *ident)
+{
+   return find_driver_index("menu_driver", ident);
+}
+
 void find_menu_driver(void)
 {
    driver_t *driver     = driver_get_ptr();
    settings_t *settings = config_get_ptr();
 
-   int i = find_driver_index("menu_driver", settings->menu.driver);
+   int i = find_menu_driver_internal(settings->menu.driver);
    if (i >= 0)
       driver->menu_ctx = (const menu_ctx_driver_t*)menu_driver_find_handle(i);
    else
@@ -154,6 +159,29 @@ void init_menu(void)
       return;
 
    find_menu_driver();
+
+#ifdef HAVE_RGUI
+   /* TOD/FIXME - UGLY HACK!!!!
+    * Will have to be fixed properly after release. */
+   if (!strcmp(driver->menu_ctx->ident, "xmb") ||
+         !strcmp(driver->menu_ctx->ident, "glui"))
+   {
+      const char *video_driver = video_driver_get_ident();
+
+      if (video_driver && !strcmp(video_driver, "d3d"))
+      {
+         settings_t *settings = config_get_ptr();
+         int i = find_menu_driver_internal("rgui");
+         if (i >= 0)
+         {
+            driver->menu_ctx = (const menu_ctx_driver_t*)menu_driver_find_handle(i);
+            if (settings)
+               strlcpy(settings->menu.driver, "rgui", sizeof(settings->menu.driver));
+         }
+      }
+   }
+#endif
+
    if (!(driver->menu = (menu_handle_t*)menu_init(driver->menu_ctx)))
       rarch_fail(1, "init_menu()");
 
