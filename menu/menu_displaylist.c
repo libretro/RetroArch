@@ -1862,7 +1862,7 @@ static int menu_displaylist_parse_options_remappings(menu_displaylist_info_t *in
 
 static int menu_displaylist_parse_generic(menu_displaylist_info_t *info, bool *need_sort)
 {
-   bool path_is_compressed, push_dir;
+   bool path_is_compressed, push_dir, filter_ext;
    size_t i, list_size;
    struct string_list *str_list = NULL;
    int                   device = 0;
@@ -1896,12 +1896,17 @@ static int menu_displaylist_parse_generic(menu_displaylist_info_t *info, bool *n
    push_dir           = (info->setting
          && info->setting->browser_selection_type == ST_DIR);
 
+   filter_ext = settings->menu.navigation.browser.filter.supported_extensions_enable;
+
+   if (hash_label == MENU_LABEL_SCAN_FILE)
+      filter_ext = false;
+
    if (path_is_compressed)
       str_list = compressed_file_list_new(info->path, info->exts);
    else
       str_list = dir_list_new(info->path,
-            settings->menu.navigation.browser.filter.supported_extensions_enable
-            ? info->exts : NULL, true);
+            filter_ext ? info->exts : NULL,
+            true);
 
    if (hash_label == MENU_LABEL_SCAN_DIRECTORY)
       menu_list_push(info->list,

@@ -834,6 +834,12 @@ static int action_ok_path_use_directory(const char *path,
    return menu_entry_pathdir_set_value(0, NULL);
 }
 
+static int action_ok_scan_file(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   return action_scan_file(path, label, type, idx);
+}
+
 static int action_ok_path_scan_directory(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -1982,6 +1988,9 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
          case MENU_FILE_PLAIN:
             switch (menu_label_hash)
             {
+               case MENU_LABEL_SCAN_FILE:
+                  cbs->action_ok = action_ok_scan_file;
+                  break;
                case MENU_LABEL_DETECT_CORE_LIST:
 #ifdef HAVE_COMPRESSION
                   if (type == MENU_FILE_IN_CARCHIVE)
