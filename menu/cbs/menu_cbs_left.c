@@ -135,7 +135,6 @@ static int action_left_scroll(unsigned type, const char *label,
 static int action_left_mainmenu(unsigned type, const char *label,
       bool wraparound)
 {
-   RARCH_LOG("Gets here.\n");
    menu_file_list_cbs_t *cbs = NULL;
    unsigned        push_list = 0;
    menu_list_t    *menu_list = menu_list_get_ptr();
