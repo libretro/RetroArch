@@ -173,7 +173,7 @@ const char *menu_hash_to_str_fr(uint32_t hash)
       case MENU_LABEL_VALUE_VIDEO_POST_FILTER_RECORD:
          return "Activer les filtres de traitement";
       case MENU_LABEL_VALUE_CORE_ASSETS_DIRECTORY:
-         return "Dossier des assets de core";
+         return "Dossier des assets de core"; /* FIXME/UPDATE */
       case MENU_LABEL_VALUE_ASSETS_DIRECTORY:
          return "Dossier des assets";
       case MENU_LABEL_VALUE_DYNAMIC_WALLPAPERS_DIRECTORY:

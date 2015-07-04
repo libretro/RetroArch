@@ -162,7 +162,7 @@ const char *menu_hash_to_str_pt(uint32_t hash)
       case MENU_LABEL_VALUE_VIDEO_POST_FILTER_RECORD:
          return "Ativar Filtro Pós-Gravação";
       case MENU_LABEL_VALUE_CORE_ASSETS_DIRECTORY:
-         return "Recursos (Assets) de Cores";
+         return "Recursos (Assets) de Cores"; /* FIXME/UPDATE */
       case MENU_LABEL_VALUE_ASSETS_DIRECTORY:
          return "Recursos (Assets)";
       case MENU_LABEL_VALUE_DYNAMIC_WALLPAPERS_DIRECTORY:

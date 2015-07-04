@@ -749,7 +749,7 @@ const char *menu_hash_to_str_us(uint32_t hash)
       case MENU_LABEL_VALUE_VIDEO_POST_FILTER_RECORD:
          return "Post filter record Enable";
       case MENU_LABEL_VALUE_CORE_ASSETS_DIRECTORY:
-         return "Core Assets Dir";
+         return "Downloads Dir";
       case MENU_LABEL_VALUE_ASSETS_DIRECTORY:
          return "Assets Dir";
       case MENU_LABEL_VALUE_DYNAMIC_WALLPAPERS_DIRECTORY:

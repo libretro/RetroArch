@@ -154,7 +154,7 @@ const char *menu_hash_to_str_nl(uint32_t hash)
       case MENU_LABEL_VALUE_VIDEO_POST_FILTER_RECORD:
          return "Post filter opname activeren";
       case MENU_LABEL_VALUE_CORE_ASSETS_DIRECTORY:
-         return "Core Assets Map";
+         return "Downloads Map";
       case MENU_LABEL_VALUE_ASSETS_DIRECTORY:
          return "Assets Map";
       case MENU_LABEL_VALUE_DYNAMIC_WALLPAPERS_DIRECTORY:

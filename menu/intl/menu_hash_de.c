@@ -164,7 +164,7 @@ const char *menu_hash_to_str_de(uint32_t hash)
       case MENU_LABEL_VALUE_VIDEO_POST_FILTER_RECORD:
          return "Aktiviere Aufnahme von Post-Filtern";
       case MENU_LABEL_VALUE_CORE_ASSETS_DIRECTORY:
-         return "Core-Assets-Verzeichnis";
+         return "Core-Assets-Verzeichnis"; /* FIXME/UPDATE */
       case MENU_LABEL_VALUE_ASSETS_DIRECTORY:
          return "Assets-Verzeichnis";
       case MENU_LABEL_VALUE_DYNAMIC_WALLPAPERS_DIRECTORY:
