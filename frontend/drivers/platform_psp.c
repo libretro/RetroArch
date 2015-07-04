@@ -87,6 +87,10 @@ static void frontend_psp_get_environment_settings(int *argc, char *argv[],
          "playlists", sizeof(g_defaults.playlist_dir));
    fill_pathname_join(g_defaults.config_path, g_defaults.port_dir,
          "retroarch.cfg", sizeof(g_defaults.config_path));
+   fill_pathname_join(g_defaults.cheats_dir, path,
+         "cheats", sizeof(g_defaults.cheats_dir));
+   fill_pathname_join(g_defaults.remap_dir, path,
+         "remaps", sizeof(g_defaults.remap_dir));
 
 #ifndef IS_SALAMANDER
    if (argv[1] && (argv[1][0] != '\0'))
