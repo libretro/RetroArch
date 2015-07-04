@@ -60,7 +60,7 @@ static void frontend_ctr_get_environment_settings(int *argc, char *argv[],
    RARCH_LOG("port dir: [%s]\n", g_defaults.port_dir);
 
    fill_pathname_join(g_defaults.core_assets_dir, g_defaults.port_dir,
-         "core_assets", sizeof(g_defaults.core_assets_dir));
+         "downloads", sizeof(g_defaults.core_assets_dir));
    fill_pathname_join(g_defaults.assets_dir, g_defaults.port_dir,
          "media", sizeof(g_defaults.assets_dir));
    fill_pathname_join(g_defaults.core_dir, g_defaults.port_dir,
