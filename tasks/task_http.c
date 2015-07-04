@@ -37,6 +37,7 @@
 #define CB_UPDATE_SHADERS_GLSL         0x0121a186U
 #define CB_UPDATE_SHADERS_CG           0xc93a53feU
 #define CB_CORE_CONTENT_LIST           0xebc51227U
+#define CB_CORE_CONTENT_DOWNLOAD       0x03b3c0a3U
 
 extern char core_updater_path[PATH_MAX_LENGTH];
 
@@ -134,6 +135,12 @@ static int cb_core_updater_download(void *data, size_t len)
 {
    settings_t              *settings     = config_get_ptr();
    return cb_generic_download(data, len, settings->libretro_directory);
+}
+
+static int cb_core_content_download(void *data, size_t len)
+{
+   settings_t              *settings     = config_get_ptr();
+   return cb_generic_download(data, len, settings->core_assets_directory);
 }
 
 static int cb_update_assets(void *data, size_t len)
@@ -259,6 +266,9 @@ static int cb_http_conn_default(void *data_, size_t len)
       {
          case CB_CORE_UPDATER_DOWNLOAD:
             http->cb = &cb_core_updater_download;
+            break;
+         case CB_CORE_CONTENT_DOWNLOAD:
+            http->cb = &cb_core_content_download;
             break;
          case CB_CORE_UPDATER_LIST:
             http->cb = &cb_core_updater_list;

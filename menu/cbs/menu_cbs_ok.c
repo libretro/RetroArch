@@ -1331,8 +1331,12 @@ static int action_ok_download_generic(const char *path,
 
    fill_pathname_join(s, settings->network.buildbot_assets_url,
          "frontend", sizeof(s));
-
-   if (!strcmp(type_msg, "cb_update_assets"))
+   if (!strcmp(type_msg, "cb_core_content_download"))
+   {
+      fill_pathname_join(s, settings->network.buildbot_assets_url,
+            "cores/gw", sizeof(s));
+   }
+   else if (!strcmp(type_msg, "cb_update_assets"))
       path = "assets.zip";
    else if (!strcmp(type_msg, "cb_update_autoconfig_profiles"))
    {
@@ -1381,6 +1385,16 @@ static int action_ok_download_generic(const char *path,
    return 0;
 }
 #endif
+
+static int action_ok_core_content_download(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+#ifdef HAVE_NETWORKING
+   action_ok_download_generic(path, label, type, idx, entry_idx,
+         "cb_core_content_download");
+#endif
+   return 0;
+}
 
 static int action_ok_core_updater_download(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
@@ -1984,6 +1998,9 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
                   cbs->action_ok = action_ok_core_download;
                   break;
             }
+            break;
+         case MENU_FILE_DOWNLOAD_CORE_CONTENT:
+            cbs->action_ok = action_ok_core_content_download;
             break;
          case MENU_FILE_DOWNLOAD_CORE:
             cbs->action_ok = action_ok_core_updater_download;

@@ -2264,7 +2264,7 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          menu_list_clear(info->list);
 #ifdef HAVE_NETWORKING
          menu_list_clear(info->list);
-         print_buf_lines(info->list, core_buf, core_len, MENU_FILE_DOWNLOAD_CORE);
+         print_buf_lines(info->list, core_buf, core_len, MENU_FILE_DOWNLOAD_CORE_CONTENT);
          need_push    = true;
          need_refresh = true;
 #endif
