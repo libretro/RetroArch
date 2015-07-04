@@ -945,6 +945,7 @@ static int menu_cbs_init_bind_get_string_representation_compare_label(
          break;
       case MENU_LABEL_CONTENT_COLLECTION_LIST:
       case MENU_LABEL_LOAD_CONTENT_HISTORY:
+      case MENU_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST:
       case MENU_LABEL_DETECT_CORE_LIST:
       case MENU_LABEL_LOAD_CONTENT:
       case MENU_LABEL_CORE_OPTIONS:
