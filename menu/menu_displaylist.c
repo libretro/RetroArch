@@ -1987,6 +1987,8 @@ static int menu_displaylist_parse_generic(menu_displaylist_info_t *info, bool *n
 
       if (push_dir && !is_dir)
          continue;
+      if (hash_label == MENU_LABEL_SCAN_DIRECTORY && !is_dir)
+         continue;
 
       /* Need to preserve slash first time. */
       path = str_list->elems[i].data;
