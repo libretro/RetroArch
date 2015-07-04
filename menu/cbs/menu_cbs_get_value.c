@@ -802,7 +802,7 @@ static void menu_action_setting_disp_set_label_menu_file_filter(
          path, "(FILTER)", s2, len2);
 }
 
-static void menu_action_setting_disp_set_label_menu_file_url(
+static void menu_action_setting_disp_set_label_menu_file_url_core(
       file_list_t* list,
       unsigned *w, unsigned type, unsigned i,
       const char *label,
@@ -811,8 +811,12 @@ static void menu_action_setting_disp_set_label_menu_file_url(
       const char *path,
       char *s2, size_t len2)
 {
-   menu_action_setting_generic_disp_set_label(w, s, len,
-         path, "(URL)", s2, len2);
+   const char *alt = NULL;
+   strlcpy(s, "(CORE)", len);
+   menu_list_get_alt_at_offset(list, i, &alt);
+   *w = strlen(s);
+   if (alt)
+      strlcpy(s2, alt, len2);
 }
 
 static void menu_action_setting_disp_set_label_menu_file_rdb(
@@ -1066,7 +1070,7 @@ static int menu_cbs_init_bind_get_string_representation_compare_type(
             break;
          case MENU_FILE_DOWNLOAD_CORE:
             cbs->action_get_value =
-               menu_action_setting_disp_set_label_menu_file_url;
+               menu_action_setting_disp_set_label_menu_file_url_core;
             break;
          case MENU_FILE_RDB:
             cbs->action_get_value =

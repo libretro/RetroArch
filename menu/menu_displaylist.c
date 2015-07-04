@@ -45,7 +45,7 @@ extern size_t core_len;
 static void print_buf_lines(file_list_t *list, char *buf, int buf_size,
       unsigned type)
 {
-   int i;
+   int i, j = 0;
    char c;
    char *line_start = buf;
 
@@ -74,6 +74,25 @@ static void print_buf_lines(file_list_t *list, char *buf, int buf_size,
 
       menu_list_push(list, line_start, "",
             type, 0, 0);
+      if (type == MENU_FILE_DOWNLOAD_CORE)
+      {
+         char core_path[PATH_MAX_LENGTH]    = {0};
+         char display_name[PATH_MAX_LENGTH] = {0};
+         settings_t *settings      = config_get_ptr();
+         global_t *global          = global_get_ptr();
+
+         fill_pathname_join(core_path, settings->libretro_info_path,
+               line_start, sizeof(core_path));
+
+         path_remove_extension(core_path);
+         path_remove_extension(core_path);
+         strlcat(core_path, ".info", sizeof(core_path));
+
+         if (core_info_get_display_name(
+                  core_path, display_name, sizeof(display_name)))
+            menu_list_set_alt_at_offset(list, j, display_name);
+      }
+      j++;
 
       /* Restore the saved char */
       *(buf + i + 1) = c;

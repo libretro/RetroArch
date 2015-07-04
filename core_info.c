@@ -377,6 +377,39 @@ bool core_info_list_get_display_name(core_info_list_t *core_info_list,
    return false;
 }
 
+bool core_info_get_display_name(const char *path, char *s, size_t len)
+{
+   size_t i;
+   char       *core_name = NULL;
+   config_file_t *conf   = NULL;
+
+   if (!path_file_exists(path))
+      return false;
+
+   conf = config_file_new(path);
+
+   if (!conf)
+      goto error;
+
+   config_get_string(conf, "corename",
+         &core_name);
+
+   config_file_free(conf);
+
+   if (!core_name)
+      goto error;
+
+   if (!conf)
+      return false;
+
+   strlcpy(s, core_name, len);
+
+   return true;
+
+error:
+   return false;
+}
+
 bool core_info_list_get_info(core_info_list_t *core_info_list,
       core_info_t *out_info, const char *path)
 {
