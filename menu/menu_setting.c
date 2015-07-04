@@ -508,7 +508,14 @@ int setting_set_with_string_representation(rarch_setting_t* setting,
             if (setting->enforce_minrange && *setting->value.integer < setting->min)
                *setting->value.integer = setting->min;
             if (setting->enforce_maxrange && *setting->value.integer > setting->max)
-               *setting->value.integer = setting->max;
+            {
+               settings_t *settings = config_get_ptr();
+
+               if (settings && settings->menu.navigation.wraparound.setting_enable)
+                  *setting->value.integer = setting->min;
+               else
+                  *setting->value.integer = setting->max;
+            }
          }
          break;
       case ST_UINT:
@@ -518,7 +525,14 @@ int setting_set_with_string_representation(rarch_setting_t* setting,
             if (setting->enforce_minrange && *setting->value.unsigned_integer < setting->min)
                *setting->value.unsigned_integer = setting->min;
             if (setting->enforce_maxrange && *setting->value.unsigned_integer > setting->max)
-               *setting->value.unsigned_integer = setting->max;
+            {
+               settings_t *settings = config_get_ptr();
+
+               if (settings && settings->menu.navigation.wraparound.setting_enable)
+                  *setting->value.unsigned_integer = setting->min;
+               else
+                  *setting->value.unsigned_integer = setting->max;
+            }
          }
          break;      
       case ST_FLOAT:
@@ -528,7 +542,14 @@ int setting_set_with_string_representation(rarch_setting_t* setting,
             if (setting->enforce_minrange && *setting->value.fraction < setting->min)
                *setting->value.fraction = setting->min;
             if (setting->enforce_maxrange && *setting->value.fraction > setting->max)
-               *setting->value.fraction = setting->max;
+            {
+               settings_t *settings = config_get_ptr();
+
+               if (settings && settings->menu.navigation.wraparound.setting_enable)
+                  *setting->value.fraction = setting->min;
+               else
+                  *setting->value.fraction = setting->max;
+            }
          }
          break;
       case ST_PATH:
@@ -975,7 +996,14 @@ static int setting_uint_action_right_default(void *data, bool wraparound)
    if (setting->enforce_maxrange)
    {
       if (*setting->value.unsigned_integer > setting->max)
-         *setting->value.unsigned_integer = setting->max;
+      {
+         settings_t *settings = config_get_ptr();
+
+         if (settings && settings->menu.navigation.wraparound.setting_enable)
+            *setting->value.unsigned_integer = setting->min;
+         else
+            *setting->value.unsigned_integer = setting->max;
+      }
    }
 
    return 0;
@@ -1015,7 +1043,14 @@ static int setting_fraction_action_right_default(
    if (setting->enforce_maxrange)
    {
       if (*setting->value.fraction > setting->max)
-         *setting->value.fraction = setting->max;
+      {
+         settings_t *settings = config_get_ptr();
+
+         if (settings && settings->menu.navigation.wraparound.setting_enable)
+            *setting->value.fraction = setting->min;
+         else
+            *setting->value.fraction = setting->max;
+      }
    }
 
    return 0;
@@ -1050,7 +1085,9 @@ static int setting_string_action_right_driver(void *data,
 
    if (!find_next_driver(setting->name, setting->value.string, setting->size))
    {
-      if (wraparound)
+      settings_t *settings = config_get_ptr();
+
+      if (settings && settings->menu.navigation.wraparound.setting_enable)
          find_first_driver(setting->name, setting->value.string, setting->size);
    }
 

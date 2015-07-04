@@ -570,6 +570,7 @@ static void config_set_defaults(void)
    settings->menu.dpi.override_enable          = menu_dpi_override_enable;
    settings->menu.dpi.override_value           = menu_dpi_override_value;
 
+   settings->menu.navigation.wraparound.setting_enable                  = true;
    settings->menu.navigation.wraparound.horizontal_enable               = true;
    settings->menu.navigation.wraparound.vertical_enable                 = true;
    settings->menu.navigation.browser.filter.supported_extensions_enable = true;
