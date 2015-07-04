@@ -80,7 +80,7 @@ static int zlib_extract_core_callback(const char *name, const char *valid_exts,
       }
       goto error;
    }
-
+   event_command(EVENT_CMD_CORE_INFO_INIT);
    return 1;
 
 error:
