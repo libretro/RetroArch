@@ -25,6 +25,11 @@ extern "C" {
 
 #define MENU_VALUE_SEARCH                                                      0xd0d5febbU
 
+#define MENU_LABEL_DEFERRED_CORE_CONTENT_LIST                                  0x76150c63U
+
+#define MENU_LABEL_VALUE_DOWNLOAD_CORE_CONTENT                                 0xa8bb22d8U
+#define MENU_LABEL_DOWNLOAD_CORE_CONTENT                                       0xc63b1d3fU
+
 #define MENU_LABEL_SCAN_THIS_DIRECTORY                                         0x6921b775U
 #define MENU_LABEL_VALUE_SCAN_THIS_DIRECTORY                                   0x2911e177U
 

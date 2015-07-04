@@ -1658,6 +1658,13 @@ static int menu_displaylist_parse_add_content_list(menu_displaylist_info_t *info
 
    (void)global;
 
+#ifdef HAVE_NETWORKING
+   menu_list_push(info->list,
+         menu_hash_to_str(MENU_LABEL_VALUE_DOWNLOAD_CORE_CONTENT),
+         menu_hash_to_str(MENU_LABEL_DOWNLOAD_CORE_CONTENT),
+         MENU_SETTING_ACTION, 0, 0);
+#endif
+
 #ifdef HAVE_LIBRETRODB
    menu_list_push(info->list,
          menu_hash_to_str(MENU_LABEL_VALUE_SCAN_DIRECTORY),
@@ -2252,6 +2259,15 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          ret = menu_displaylist_parse_shader_options(info);
 
          need_push    = true;
+         break;
+      case DISPLAYLIST_CORE_CONTENT:
+         menu_list_clear(info->list);
+#ifdef HAVE_NETWORKING
+         menu_list_clear(info->list);
+         print_buf_lines(info->list, core_buf, core_len, MENU_FILE_DOWNLOAD_CORE);
+         need_push    = true;
+         need_refresh = true;
+#endif
          break;
       case DISPLAYLIST_CORES_UPDATER:
          menu_list_clear(info->list);

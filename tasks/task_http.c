@@ -36,10 +36,12 @@
 #define CB_UPDATE_DATABASES            0x931eb8d3U
 #define CB_UPDATE_SHADERS_GLSL         0x0121a186U
 #define CB_UPDATE_SHADERS_CG           0xc93a53feU
+#define CB_CORE_CONTENT_LIST           0xebc51227U
 
 extern char core_updater_path[PATH_MAX_LENGTH];
 
 int cb_core_updater_list(void *data_, size_t len);
+int cb_core_content_list(void *data_, size_t len);
 
 #ifdef HAVE_ZLIB
 static int zlib_extract_core_callback(const char *name, const char *valid_exts,
@@ -260,6 +262,9 @@ static int cb_http_conn_default(void *data_, size_t len)
             break;
          case CB_CORE_UPDATER_LIST:
             http->cb = &cb_core_updater_list;
+            break;
+         case CB_CORE_CONTENT_LIST:
+            http->cb = &cb_core_content_list;
             break;
          case CB_UPDATE_ASSETS:
             http->cb = &cb_update_assets;

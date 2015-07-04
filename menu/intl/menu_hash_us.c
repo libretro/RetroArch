@@ -26,6 +26,10 @@ static const char *menu_hash_to_str_us_label(uint32_t hash)
 {
    switch (hash)
    {
+      case MENU_LABEL_DEFERRED_CORE_CONTENT_LIST:
+         return "deferred_core_content_list";
+      case MENU_LABEL_DOWNLOAD_CORE_CONTENT:
+         return "download_core_content";
       case MENU_LABEL_SCAN_THIS_DIRECTORY:
          return "scan_this_directory";
       case MENU_LABEL_SCAN_FILE:
@@ -604,6 +608,8 @@ const char *menu_hash_to_str_us(uint32_t hash)
 
    switch (hash)
    {
+      case MENU_LABEL_VALUE_DOWNLOAD_CORE_CONTENT:
+         return "Download Content";
       case MENU_LABEL_VALUE_SCAN_THIS_DIRECTORY:
          return "<Scan This Directory>";
       case MENU_LABEL_VALUE_SCAN_FILE:

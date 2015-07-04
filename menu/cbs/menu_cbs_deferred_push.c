@@ -246,7 +246,7 @@ static int deferred_push_disk_options(menu_displaylist_info_t *info)
 char *core_buf;
 size_t core_len;
 
-int cb_core_updater_list(void *data_, size_t len)
+static int cb_net_generic(void *data_, size_t len)
 {
    char             *data = (char*)data_;
    menu_handle_t *menu    = menu_driver_get_ptr();
@@ -273,9 +273,24 @@ int cb_core_updater_list(void *data_, size_t len)
    return 0;
 }
 
+int cb_core_updater_list(void *data_, size_t len)
+{
+   return cb_net_generic(data_, len);
+}
+
+int cb_core_content_list(void *data_, size_t len)
+{
+   return cb_net_generic(data_, len);
+}
+
 static int deferred_push_core_updater_list(menu_displaylist_info_t *info)
 {
    return menu_displaylist_push_list(info, DISPLAYLIST_CORES_UPDATER);
+}
+
+static int deferred_push_core_content_list(menu_displaylist_info_t *info)
+{
+   return menu_displaylist_push_list(info, DISPLAYLIST_CORE_CONTENT);
 }
 #endif
 
@@ -531,6 +546,11 @@ static int menu_cbs_init_bind_deferred_push_compare_label(menu_file_list_cbs_t *
    {
       switch (label_hash)
       {
+         case MENU_LABEL_DEFERRED_CORE_CONTENT_LIST:
+#ifdef HAVE_NETWORKING
+            cbs->action_deferred_push = deferred_push_core_content_list;
+#endif
+            break;
          case MENU_LABEL_DEFERRED_CORE_UPDATER_LIST:
 #ifdef HAVE_NETWORKING
             cbs->action_deferred_push = deferred_push_core_updater_list;
