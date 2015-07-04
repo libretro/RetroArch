@@ -32,10 +32,24 @@ const char *menu_hash_to_str_fr(uint32_t hash)
 {
    switch (hash)
    {
+      case MENU_LABEL_VALUE_OVERLAY_AUTOLOAD_PREFERRED:
+         return "Charger l'overlay préféré automatiquement";
+      case MENU_LABEL_VALUE_UPDATE_CORE_INFO_FILES:
+         return "Mettre à jour les informations des cores";
+      case MENU_LABEL_VALUE_DOWNLOAD_CORE_CONTENT:
+         return "Télécharger un contenu";
+      case MENU_LABEL_VALUE_SCAN_THIS_DIRECTORY:
+         return "<Scanner ce dossier>";
+      case MENU_LABEL_VALUE_SCAN_FILE:
+         return "Scanner un fichier";
+      case MENU_LABEL_VALUE_SCAN_DIRECTORY:
+         return "Scanner un dossier";
+      case MENU_LABEL_VALUE_ADD_CONTENT_LIST:
+         return "Ajouter un contenu";
       case MENU_LABEL_VALUE_INFORMATION_LIST:
          return "Informations";
       case MENU_LABEL_VALUE_USE_BUILTIN_PLAYER:
-         return "Utiliser le lecteur embarqué";
+         return "Utiliser le lecteur vidéo embarqué";
       case MENU_LABEL_VALUE_CONTENT_SETTINGS:
          return "Menu rapide";
       case MENU_LABEL_VALUE_RDB_ENTRY_CRC32:
@@ -173,7 +187,7 @@ const char *menu_hash_to_str_fr(uint32_t hash)
       case MENU_LABEL_VALUE_VIDEO_POST_FILTER_RECORD:
          return "Activer les filtres de traitement";
       case MENU_LABEL_VALUE_CORE_ASSETS_DIRECTORY:
-         return "Dossier des assets de core"; /* FIXME/UPDATE */
+         return "Dossier des téléchargements";
       case MENU_LABEL_VALUE_ASSETS_DIRECTORY:
          return "Dossier des assets";
       case MENU_LABEL_VALUE_DYNAMIC_WALLPAPERS_DIRECTORY:
@@ -408,6 +422,8 @@ const char *menu_hash_to_str_fr(uint32_t hash)
          return "Via les collections";
       case MENU_LABEL_VALUE_DETECT_CORE_LIST:
          return "Via les fichiers + détecter le core";
+      case MENU_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST:
+         return "Via les téléchargements + détecter le core";
       case MENU_LABEL_VALUE_LOAD_CONTENT_HISTORY:
          return "Récemment ouvert";
       case MENU_LABEL_VALUE_AUDIO_ENABLE:
@@ -578,6 +594,8 @@ const char *menu_hash_to_str_fr(uint32_t hash)
          return "Mettre à jour les codes de triche";
       case MENU_LABEL_VALUE_UPDATE_AUTOCONFIG_PROFILES:
          return "Mettre à jour les profils d'autoconfiguration";
+      case MENU_LABEL_VALUE_UPDATE_AUTOCONFIG_PROFILES_HID:
+         return "Mettre à jour les profils d'autoconfiguration (HID)";
       case MENU_LABEL_VALUE_UPDATE_DATABASES:
          return "Mettre à jour les bases de données";
       case MENU_LABEL_VALUE_UPDATE_OVERLAYS:
@@ -775,7 +793,7 @@ const char *menu_hash_to_str_fr(uint32_t hash)
       case MENU_LABEL_VALUE_AUDIO_SETTINGS:
          return "Réglages audio";
       case MENU_LABEL_VALUE_INPUT_SETTINGS:
-         return "Réglages d'entrées";
+         return "Réglages des entrées";
       case MENU_LABEL_VALUE_ONSCREEN_DISPLAY_SETTINGS:
          return "Réglages des messages d'info";
       case MENU_LABEL_VALUE_OVERLAY_SETTINGS:
@@ -789,7 +807,7 @@ const char *menu_hash_to_str_fr(uint32_t hash)
       case MENU_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS:
          return "Réglages du navigateur de fichiers";
       case MENU_LABEL_VALUE_CORE_UPDATER_SETTINGS:
-         return "Réglages des mises à jour"; /* UPDATE/FIXME */
+         return "Réglages des mises à jour";
       case MENU_LABEL_VALUE_NETWORK_SETTINGS:
          return "Réglages du réseau";
       case MENU_LABEL_VALUE_PLAYLIST_SETTINGS:
@@ -834,6 +852,14 @@ const char *menu_hash_to_str_fr(uint32_t hash)
          return "Analogique gauche";
       case MENU_VALUE_RIGHT_ANALOG:
          return "Analogique droite";
+      case MENU_LABEL_VALUE_INPUT_HOTKEY_BINDS:
+         return "Réglages des racourcis d'entrées";
+      case MENU_LABEL_VALUE_FRAME_THROTTLE_SETTINGS:
+         return "Réglages de la vitesse d'affichage";
+      case MENU_VALUE_SEARCH:
+         return "Recherche :";
+      case MENU_LABEL_VALUE_USE_BUILTIN_IMAGE_VIEWER:
+         return "Utiliser le lecteur d'image embarqué";
       default:
          break;
    }
