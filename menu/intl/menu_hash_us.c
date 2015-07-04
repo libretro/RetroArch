@@ -610,6 +610,8 @@ const char *menu_hash_to_str_us(uint32_t hash)
 
    switch (hash)
    {
+      case MENU_LABEL_VALUE_OVERLAY_AUTOLOAD_PREFERRED:
+         return "Autoload Preferred Overlay";
       case MENU_LABEL_VALUE_UPDATE_CORE_INFO_FILES:
          return "Update Core Info Files";
       case MENU_LABEL_VALUE_DOWNLOAD_CORE_CONTENT:
@@ -622,8 +624,6 @@ const char *menu_hash_to_str_us(uint32_t hash)
          return "Scan Directory";
       case MENU_LABEL_VALUE_ADD_CONTENT_LIST:
          return "Add Content";
-      case MENU_LABEL_OVERLAY_AUTOLOAD_PREFERRED:
-         return "Auto-load preferred overlay";
       case MENU_LABEL_VALUE_INFORMATION_LIST:
          return "Information";
       case MENU_LABEL_VALUE_USE_BUILTIN_PLAYER:
