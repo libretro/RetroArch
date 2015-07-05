@@ -279,7 +279,10 @@ static int database_info_iterate_playlist_zip(
    bool returnerr = true;
 #ifdef HAVE_ZLIB
    if (db_state->crc != 0)
+   {
+      zlib_parse_file_iterate_stop(&db->state);
       return database_info_iterate_crc_lookup(db_state, db, db_state->zip_name);
+   }
    else
    {
       if (zlib_parse_file_iterate(&db->state,
