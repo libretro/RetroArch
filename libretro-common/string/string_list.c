@@ -66,6 +66,9 @@ static bool string_list_capacity(struct string_list *list, size_t cap)
    if (!new_data)
       return false;
 
+   if (cap > list->cap)
+      memset(&new_data[list->cap], 0, sizeof(*new_data) * (cap - list->cap));
+
    list->elems = new_data;
    list->cap   = cap;
    return true;
