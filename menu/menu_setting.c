@@ -3221,7 +3221,7 @@ static bool setting_append_list_rewind_options(
 
    return true;
 }
-
+#ifndef HAVE_FFMPEG
 static bool setting_append_list_recording_options(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info, const char *parent_group)
@@ -3325,6 +3325,7 @@ static bool setting_append_list_recording_options(
 
    return true;
 }
+#endif
 
 static bool setting_append_list_video_options(
       rarch_setting_t **list,
@@ -6222,7 +6223,7 @@ rarch_setting_t *menu_setting_new(unsigned mask)
       if (!setting_append_list_input_hotkey_options(&list, list_info, root))
          goto error;
    }
-
+#ifndef HAVE_FFMPEG
    if (mask & SL_FLAG_RECORDING_OPTIONS)
    {
       settings_t      *settings = config_get_ptr();
@@ -6233,7 +6234,7 @@ rarch_setting_t *menu_setting_new(unsigned mask)
             goto error;
       }
    }
-
+#endif
    if (mask & SL_FLAG_FRAME_THROTTLE_OPTIONS)
    {
       if (!setting_append_list_frame_throttling_options(&list, list_info, root))
