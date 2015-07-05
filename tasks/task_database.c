@@ -286,6 +286,9 @@ static int database_info_iterate_playlist_zip(
                &returnerr, name, NULL, zlib_compare_crc32,
                (void*)db_state) != 0)
          return 0;
+
+      if (db_state->crc)
+         zlib_parse_file_iterate_stop(&db->state);
    }
 #endif
 

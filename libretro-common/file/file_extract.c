@@ -617,7 +617,10 @@ int zlib_parse_file_iterate(void *data, bool *returnerr, const char *file,
          *returnerr = false;
       case ZLIB_TRANSFER_DEINIT:
          if (state->handle)
+         {
             state->backend->free(state->handle);
+            state->handle = NULL;
+         }
          break;
    }
 
@@ -626,6 +629,16 @@ int zlib_parse_file_iterate(void *data, bool *returnerr, const char *file,
       return -1;
 
    return 0;
+}
+
+void zlib_parse_file_iterate_stop(void *data)
+{
+   zlib_transfer_t *state = (zlib_transfer_t*)data;
+   if (!state || !state->handle)
+      return;
+
+   state->type = ZLIB_TRANSFER_DEINIT;
+   zlib_parse_file_iterate(data, NULL, NULL, NULL, NULL, NULL);
 }
 
 /**
