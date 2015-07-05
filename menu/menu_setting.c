@@ -5740,7 +5740,7 @@ static bool setting_append_list_directory_options(
          list,
          list_info,
          SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR | SD_FLAG_BROWSER_ACTION);
-
+#ifdef HAVE_FFMPEG
    CONFIG_DIR(
          global->record.output_dir,
          menu_hash_to_str(MENU_LABEL_RECORDING_OUTPUT_DIRECTORY),
@@ -5772,7 +5772,7 @@ static bool setting_append_list_directory_options(
          list,
          list_info,
          SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR | SD_FLAG_BROWSER_ACTION);
-
+#endif
 #ifdef HAVE_OVERLAY
    CONFIG_DIR(
          global->overlay_dir,
