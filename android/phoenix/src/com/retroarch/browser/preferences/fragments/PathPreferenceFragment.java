@@ -41,30 +41,6 @@ public final class PathPreferenceFragment extends PreferenceListFragment impleme
 			romDirBrowser.setIsDirectoryTarget(true);
 			romDirBrowser.show(getFragmentManager(), "romDirBrowser");
 		}
-		// Custom savefile directory
-		else if (prefKey.equals("srmDirPref"))
-		{
-			final DirectoryFragment srmDirBrowser = DirectoryFragment.newInstance(R.string.savefile_directory_select);
-			srmDirBrowser.setPathSettingKey("savefile_directory");
-			srmDirBrowser.setIsDirectoryTarget(true);
-			srmDirBrowser.show(getFragmentManager(), "srmDirBrowser");
-		}
-		// Custom save state directory
-		else if (prefKey.equals("saveStateDirPref"))
-		{
-			final DirectoryFragment saveStateDirBrowser = DirectoryFragment.newInstance(R.string.save_state_directory_select);
-			saveStateDirBrowser.setPathSettingKey("savestate_directory");
-			saveStateDirBrowser.setIsDirectoryTarget(true);
-			saveStateDirBrowser.show(getFragmentManager(), "saveStateDirBrowser");
-		}
-		// Custom system directory
-		else if (prefKey.equals("systemDirPref"))
-		{
-			final DirectoryFragment systemDirBrowser = DirectoryFragment.newInstance(R.string.system_directory_select);
-			systemDirBrowser.setPathSettingKey("system_directory");
-			systemDirBrowser.setIsDirectoryTarget(true);
-			systemDirBrowser.show(getFragmentManager(), "systemDirBrowser");
-		}
 
 		return true;
 	}

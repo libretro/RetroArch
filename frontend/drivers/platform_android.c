@@ -591,14 +591,8 @@ static void frontend_android_get_environment_settings(int *argc,
          {
             fill_pathname_join(g_defaults.assets_dir, path,
                   "assets", sizeof(g_defaults.savestate_dir));
-            fill_pathname_join(g_defaults.savestate_dir, path,
-                  "savestates", sizeof(g_defaults.savestate_dir));
             fill_pathname_join(g_defaults.extraction_dir, path,
                   "tmp", sizeof(g_defaults.extraction_dir));
-            fill_pathname_join(g_defaults.sram_dir, path,
-                  "savefiles", sizeof(g_defaults.sram_dir));
-            fill_pathname_join(g_defaults.system_dir, path,
-                  "system", sizeof(g_defaults.system_dir));
             fill_pathname_join(g_defaults.shader_dir, path,
                   "shaders_glsl", sizeof(g_defaults.shader_dir));
             fill_pathname_join(g_defaults.overlay_dir, path,
@@ -613,7 +607,7 @@ static void frontend_android_get_environment_settings(int *argc,
                   path, "audio_filters", sizeof(g_defaults.audio_filter_dir));
             fill_pathname_join(g_defaults.video_filter_dir,
                   path, "video_filters", sizeof(g_defaults.video_filter_dir));
-            strlcpy(g_defaults.content_history_dir, 
+            strlcpy(g_defaults.content_history_dir,
                   path, sizeof(g_defaults.content_history_dir));
             fill_pathname_join(g_defaults.database_dir,
                   path, "database/rdb", sizeof(g_defaults.database_dir));

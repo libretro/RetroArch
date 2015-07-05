@@ -157,10 +157,6 @@ public final class UserPreferences
 
 		// Path settings
 		readbackString(config, edit, "rgui_browser_directory");
-		readbackString(config, edit, "savefile_directory");
-		readbackString(config, edit, "savestate_directory");
-		readbackBool(config, edit, "savefile_directory_enable"); // Ignored by RetroArch
-		readbackBool(config, edit, "savestate_directory_enable"); // Ignored by RetroArch
 
 		edit.apply();
 	}
@@ -238,19 +234,6 @@ public final class UserPreferences
 		if (prefs.contains("input_overlay_enable"))
 			config.setBoolean("input_overlay_enable", prefs.getBoolean("input_overlay_enable", true));
 		config.setString("input_overlay", prefs.getString("input_overlay", ""));
-
-		if (prefs.getBoolean("savefile_directory_enable", false))
-		{
-		   config.setString("savefile_directory", prefs.getString("savefile_directory", ""));
-		}
-		if (prefs.getBoolean("savestate_directory_enable", false))
-		{
-		   config.setString("savestate_directory", prefs.getString("savestate_directory", ""));
-		}
-		if (prefs.getBoolean("system_directory_enable", false))
-		{
-		   config.setString("system_directory", prefs.getString("system_directory", ""));
-		}
 
 		config.setBoolean("video_font_enable", prefs.getBoolean("video_font_enable", true));
 		config.setString("content_history_path", dataDir + "/content_history.rpl");
