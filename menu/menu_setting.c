@@ -3221,7 +3221,7 @@ static bool setting_append_list_rewind_options(
 
    return true;
 }
-#ifndef HAVE_FFMPEG
+
 static bool setting_append_list_recording_options(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info, const char *parent_group)
@@ -3325,7 +3325,6 @@ static bool setting_append_list_recording_options(
 
    return true;
 }
-#endif
 
 static bool setting_append_list_video_options(
       rarch_setting_t **list,
@@ -4924,20 +4923,20 @@ static bool setting_append_list_multimedia_options(
 
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info, parent_group);
 
-#ifdef HAVE_FFMPEG
-   CONFIG_BOOL(
-         settings->multimedia.builtin_mediaplayer_enable,
-         menu_hash_to_str(MENU_LABEL_USE_BUILTIN_PLAYER),
-         menu_hash_to_str(MENU_LABEL_VALUE_USE_BUILTIN_PLAYER),
-         true,
-         menu_hash_to_str(MENU_VALUE_OFF),
-         menu_hash_to_str(MENU_VALUE_ON),
-         group_info.name,
-         subgroup_info.name,
-         parent_group,
-         general_write_handler,
-         general_read_handler);
-#endif
+   if (strcmp(settings->record.driver, "null") != 0)
+      CONFIG_BOOL(
+            settings->multimedia.builtin_mediaplayer_enable,
+            menu_hash_to_str(MENU_LABEL_USE_BUILTIN_PLAYER),
+            menu_hash_to_str(MENU_LABEL_VALUE_USE_BUILTIN_PLAYER),
+            true,
+            menu_hash_to_str(MENU_VALUE_OFF),
+            menu_hash_to_str(MENU_VALUE_ON),
+            group_info.name,
+            subgroup_info.name,
+            parent_group,
+            general_write_handler,
+            general_read_handler);
+
 
 #ifdef HAVE_IMAGEVIEWER
    CONFIG_BOOL(
@@ -5740,39 +5739,41 @@ static bool setting_append_list_directory_options(
          list,
          list_info,
          SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR | SD_FLAG_BROWSER_ACTION);
-#ifdef HAVE_FFMPEG
-   CONFIG_DIR(
-         global->record.output_dir,
-         menu_hash_to_str(MENU_LABEL_RECORDING_OUTPUT_DIRECTORY),
-         menu_hash_to_str(MENU_LABEL_VALUE_RECORDING_OUTPUT_DIRECTORY),
-         "",
-         menu_hash_to_str(MENU_VALUE_DIRECTORY_DEFAULT),
-         group_info.name,
-         subgroup_info.name,
-         parent_group,
-         general_write_handler,
-         general_read_handler);
-   settings_data_list_current_add_flags(
-         list,
-         list_info,
-         SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR | SD_FLAG_BROWSER_ACTION);
 
-   CONFIG_DIR(
-         global->record.config_dir,
-         menu_hash_to_str(MENU_LABEL_RECORDING_CONFIG_DIRECTORY),
-         menu_hash_to_str(MENU_LABEL_VALUE_RECORDING_CONFIG_DIRECTORY),
-         "",
-         menu_hash_to_str(MENU_VALUE_DIRECTORY_DEFAULT),
-         group_info.name,
-         subgroup_info.name,
-         parent_group,
-         general_write_handler,
-         general_read_handler);
-   settings_data_list_current_add_flags(
-         list,
-         list_info,
-         SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR | SD_FLAG_BROWSER_ACTION);
-#endif
+   if (strcmp(settings->record.driver, "null") != 0)
+   {
+      CONFIG_DIR(
+            global->record.output_dir,
+            menu_hash_to_str(MENU_LABEL_RECORDING_OUTPUT_DIRECTORY),
+            menu_hash_to_str(MENU_LABEL_VALUE_RECORDING_OUTPUT_DIRECTORY),
+            "",
+            menu_hash_to_str(MENU_VALUE_DIRECTORY_DEFAULT),
+            group_info.name,
+            subgroup_info.name,
+            parent_group,
+            general_write_handler,
+            general_read_handler);
+         settings_data_list_current_add_flags(
+            list,
+            list_info,
+            SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR | SD_FLAG_BROWSER_ACTION);
+
+      CONFIG_DIR(
+            global->record.config_dir,
+            menu_hash_to_str(MENU_LABEL_RECORDING_CONFIG_DIRECTORY),
+            menu_hash_to_str(MENU_LABEL_VALUE_RECORDING_CONFIG_DIRECTORY),
+            "",
+            menu_hash_to_str(MENU_VALUE_DIRECTORY_DEFAULT),
+            group_info.name,
+            subgroup_info.name,
+            parent_group,
+            general_write_handler,
+            general_read_handler);
+      settings_data_list_current_add_flags(
+            list,
+            list_info,
+            SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR | SD_FLAG_BROWSER_ACTION);
+   }
 #ifdef HAVE_OVERLAY
    CONFIG_DIR(
          global->overlay_dir,
@@ -6223,7 +6224,7 @@ rarch_setting_t *menu_setting_new(unsigned mask)
       if (!setting_append_list_input_hotkey_options(&list, list_info, root))
          goto error;
    }
-#ifndef HAVE_FFMPEG
+
    if (mask & SL_FLAG_RECORDING_OPTIONS)
    {
       settings_t      *settings = config_get_ptr();
@@ -6234,7 +6235,7 @@ rarch_setting_t *menu_setting_new(unsigned mask)
             goto error;
       }
    }
-#endif
+
    if (mask & SL_FLAG_FRAME_THROTTLE_OPTIONS)
    {
       if (!setting_append_list_frame_throttling_options(&list, list_info, root))
