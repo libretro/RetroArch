@@ -970,14 +970,15 @@ unsigned menu_input_frame(retro_input_t input, retro_input_t trigger_input)
    unsigned ret                            = 0;
    static bool initial_held                = true;
    static bool first_held                  = false;
-   static int cooldown                     = 0;
    static const retro_input_t input_repeat =
         (1UL << RETRO_DEVICE_ID_JOYPAD_UP)
       | (1UL << RETRO_DEVICE_ID_JOYPAD_DOWN)
       | (1UL << RETRO_DEVICE_ID_JOYPAD_LEFT)
       | (1UL << RETRO_DEVICE_ID_JOYPAD_RIGHT)
       | (1UL << RETRO_DEVICE_ID_JOYPAD_L)
-      | (1UL << RETRO_DEVICE_ID_JOYPAD_R);
+      | (1UL << RETRO_DEVICE_ID_JOYPAD_R)
+      | (1UL << RETRO_DEVICE_ID_JOYPAD_A)
+      | (1UL << RETRO_DEVICE_ID_JOYPAD_B);
    menu_navigation_t *nav      = menu_navigation_get_ptr();
    menu_handle_t *menu         = menu_driver_get_ptr();
    menu_display_t *disp        = menu_display_get_ptr();
@@ -1042,16 +1043,10 @@ unsigned menu_input_frame(retro_input_t input, retro_input_t trigger_input)
       ret = MENU_ACTION_SCROLL_UP;
    else if (trigger_input & (1ULL << settings->menu_scroll_down_btn))
       ret = MENU_ACTION_SCROLL_DOWN;
-   else if (trigger_input & (1ULL << settings->menu_cancel_btn) && !cooldown)
-   {
+   else if (trigger_input & (1ULL << settings->menu_cancel_btn))
       ret = MENU_ACTION_CANCEL;
-      cooldown = 20;
-   }
-   else if (trigger_input & (1ULL << settings->menu_ok_btn) && !cooldown)
-   {
+   else if (trigger_input & (1ULL << settings->menu_ok_btn))
       ret = MENU_ACTION_OK;
-      cooldown = 20;
-   }
    else if (trigger_input & (1ULL << settings->menu_search_btn))
       ret = MENU_ACTION_SEARCH;
    else if (trigger_input & (1ULL << RETRO_DEVICE_ID_JOYPAD_Y))
@@ -1070,9 +1065,6 @@ unsigned menu_input_frame(retro_input_t input, retro_input_t trigger_input)
 
    if (settings->menu.pointer.enable)
       menu_input_pointer(&ret);
-
-   if (cooldown > 0)
-      cooldown--;
 
    if (trigger_input &&
          menu_ctx_driver_get_ptr()->perform_action &&
