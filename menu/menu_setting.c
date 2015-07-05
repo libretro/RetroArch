@@ -3221,7 +3221,7 @@ static bool setting_append_list_rewind_options(
 
    return true;
 }
-
+#ifndef HAVE_FFMPEG
 static bool setting_append_list_recording_options(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info, const char *parent_group)
@@ -3325,6 +3325,7 @@ static bool setting_append_list_recording_options(
 
    return true;
 }
+#endif
 
 static bool setting_append_list_video_options(
       rarch_setting_t **list,
@@ -5739,7 +5740,7 @@ static bool setting_append_list_directory_options(
          list,
          list_info,
          SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR | SD_FLAG_BROWSER_ACTION);
-
+#ifdef HAVE_FFMPEG
    CONFIG_DIR(
          global->record.output_dir,
          menu_hash_to_str(MENU_LABEL_RECORDING_OUTPUT_DIRECTORY),
@@ -5771,7 +5772,7 @@ static bool setting_append_list_directory_options(
          list,
          list_info,
          SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR | SD_FLAG_BROWSER_ACTION);
-
+#endif
 #ifdef HAVE_OVERLAY
    CONFIG_DIR(
          global->overlay_dir,
@@ -6222,7 +6223,7 @@ rarch_setting_t *menu_setting_new(unsigned mask)
       if (!setting_append_list_input_hotkey_options(&list, list_info, root))
          goto error;
    }
-
+#ifndef HAVE_FFMPEG
    if (mask & SL_FLAG_RECORDING_OPTIONS)
    {
       settings_t      *settings = config_get_ptr();
@@ -6233,7 +6234,7 @@ rarch_setting_t *menu_setting_new(unsigned mask)
             goto error;
       }
    }
-
+#endif
    if (mask & SL_FLAG_FRAME_THROTTLE_OPTIONS)
    {
       if (!setting_append_list_frame_throttling_options(&list, list_info, root))
