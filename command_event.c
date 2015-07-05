@@ -554,7 +554,6 @@ static void event_deinit_core(bool reinit)
       global->overrides_active = false;
    }
 
-   pretro_set_environment(rarch_environment_cb);
    uninit_libretro_sym();
 }
 
