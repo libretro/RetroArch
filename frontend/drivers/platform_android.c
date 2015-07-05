@@ -608,7 +608,7 @@ static void frontend_android_get_environment_settings(int *argc,
             fill_pathname_join(g_defaults.core_info_dir,
                   path, "info", sizeof(g_defaults.core_info_dir));
             fill_pathname_join(g_defaults.autoconfig_dir,
-                  path, "autoconfig/android", sizeof(g_defaults.autoconfig_dir));
+                  path, "autoconfig", sizeof(g_defaults.autoconfig_dir));
             fill_pathname_join(g_defaults.audio_filter_dir,
                   path, "audio_filters", sizeof(g_defaults.audio_filter_dir));
             fill_pathname_join(g_defaults.video_filter_dir,
