@@ -554,7 +554,6 @@ static void event_deinit_core(bool reinit)
       global->overrides_active = false;
    }
 
-   pretro_set_environment(rarch_environment_cb);
    uninit_libretro_sym();
 }
 
@@ -732,6 +731,9 @@ static bool event_init_core(void)
       else
          global->overrides_active = false; 
    }
+
+   /* reset video format to libretro's default */
+   video_driver_set_pixel_format(RETRO_PIXEL_FORMAT_0RGB1555);
 
    pretro_set_environment(rarch_environment_cb);
 

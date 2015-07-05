@@ -564,6 +564,32 @@ void uninit_libretro_sym(void)
    lib_handle = NULL;
 #endif
 
+   pretro_init = NULL;
+   pretro_deinit = NULL;
+   pretro_api_version = NULL;
+   pretro_get_system_info = NULL;
+   pretro_get_system_av_info = NULL;
+   pretro_set_environment = NULL;
+   pretro_set_video_refresh = NULL;
+   pretro_set_audio_sample = NULL;
+   pretro_set_audio_sample_batch = NULL;
+   pretro_set_input_poll = NULL;
+   pretro_set_input_state = NULL;
+   pretro_set_controller_port_device = NULL;
+   pretro_reset = NULL;
+   pretro_run = NULL;
+   pretro_serialize_size = NULL;
+   pretro_serialize = NULL;
+   pretro_unserialize = NULL;
+   pretro_cheat_reset = NULL;
+   pretro_cheat_set = NULL;
+   pretro_load_game = NULL;
+   pretro_load_game_special = NULL;
+   pretro_unload_game = NULL;
+   pretro_get_region = NULL;
+   pretro_get_memory_data = NULL;
+   pretro_get_memory_size = NULL;
+
    rarch_system_info_free();
 
    driver->camera_active   = false;
