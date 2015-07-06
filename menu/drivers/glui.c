@@ -514,21 +514,28 @@ static void glui_allocate_white_texture(glui_handle_t *glui)
 
 static void glui_layout(menu_handle_t *menu, glui_handle_t *glui)
 {
-   float scale_factor;
+   float scale_factor, glyph_width;
    unsigned width, height;
    settings_t *settings  = config_get_ptr();
    video_driver_get_size(&width, &height);
 
-   if (settings->video.fullscreen)
-      scale_factor = menu_display_get_dpi();
-   else
-      scale_factor = width / 6;
+/* Mobiles platforms may have very small display metrics coupled to a high
+resolution, so we should be dpi aware to ensure the entries hitboxes are big
+enough. On desktops, we just care about readability, with every widget size
+proportional to the display width. */
+#ifdef RARCH_MOBILE
+   scale_factor = menu_display_get_dpi();
+#else
+   scale_factor = width * 256 / 1920;
+#endif
 
    glui->line_height            = scale_factor / 3;
    glui->margin                 = scale_factor / 6;
-   glui->ticker_limit           = scale_factor / 3;
    menu->display.header_height  = scale_factor / 3;
    menu->display.font.size      = scale_factor / 8;
+   /* we assume the average glyph aspect ratio is close to 3:4 */
+   glyph_width                  = menu->display.font.size * 3/4;
+   glui->ticker_limit           = (width/2) / glyph_width;
 }
 
 static void *glui_init(void)
