@@ -307,6 +307,8 @@ int menu_cbs_init_bind_start_compare_label(menu_file_list_cbs_t *cbs,
       case MENU_LABEL_CHEAT_NUM_PASSES:
          cbs->action_start = action_start_cheat_num_passes;
          break;
+      case MENU_LABEL_SCREEN_RESOLUTION:
+         cbs->action_start = action_start_video_resolution;		 
       default:
          return -1;
    }
