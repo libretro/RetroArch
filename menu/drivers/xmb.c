@@ -934,6 +934,8 @@ static void xmb_set_title(xmb_handle_t *xmb)
          return;
 
       strlcpy(xmb->title_name, path, sizeof(xmb->title_name));
+
+      path_remove_extension(xmb->title_name);
    }
 }
 
