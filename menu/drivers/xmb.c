@@ -1174,14 +1174,14 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
       file_list_t *list, file_list_t *stack,
       size_t current, size_t cat_selection_ptr)
 {
-   unsigned i;
-   unsigned width, height;
+   unsigned i, width, height, ticker_limit;
    math_matrix_4x4 mymat, mrot, mscal;
    const char *label           = NULL;
    xmb_node_t *core_node       = NULL;
    size_t end                  = 0;
    uint64_t frame_count        = video_driver_get_frame_count();
    menu_handle_t *menu         = menu_driver_get_ptr();
+   settings_t   *settings      = config_get_ptr();
 
    if (!list || !list->size || !menu)
       return;
@@ -1329,7 +1329,16 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
             break;
       }
 
-      menu_animation_ticker_line(name, 35,
+      ticker_limit = 35;
+      if (entry.value[0] == '\0')
+      {
+         if (settings->menu.boxart_enable && xmb->boxart)
+            ticker_limit = 40;
+         else
+            ticker_limit = 70;
+      }
+
+      menu_animation_ticker_line(name, ticker_limit,
             frame_count / 20, entry.path,
             (i == current));
 
