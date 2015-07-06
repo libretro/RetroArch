@@ -258,7 +258,8 @@ static int action_start_core_setting(unsigned type,
 
    (void)label;
 
-   core_option_set_default(system->core_options, idx);
+   if (system)
+      core_option_set_default(system->core_options, idx);
 
    return 0;
 }
@@ -269,21 +270,23 @@ static int action_start_video_resolution(
    unsigned width = 0, height = 0;
    global_t *global = global_get_ptr();
 
-   (void)global;
-   (void)width;
-   (void)height;
-   
    video_driver_set_video_mode(640, 480, true);
+
+   if (!global)
+      return -1;
+
    if (video_driver_get_video_output_size(&width, &height))
    {
+      char msg[PATH_MAX_LENGTH] = {0};
+
       video_driver_set_video_mode(width, height, true);
       global->console.screen.resolutions.width = width;
       global->console.screen.resolutions.height = height;
 
-      char msg[PATH_MAX_LENGTH] = {0};
       snprintf(msg, sizeof(msg),"Resetting to: %dx%d",width, height);
       rarch_main_msg_queue_push(msg, 1, 100, true);
    }
+
    return 0;
 }
 
