@@ -742,7 +742,7 @@ static bool event_init_core(void)
       config_load_remap();
 
    /* per-core saves: reset redirection paths */
-   if(settings->sort_savestates_enable || settings->sort_savefiles_enable)
+   if((settings->sort_savestates_enable || settings->sort_savefiles_enable) && !global->libretro_no_content) 
       set_paths_redirect(global->basename);
 
    rarch_verify_api_version();
