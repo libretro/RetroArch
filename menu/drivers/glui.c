@@ -512,9 +512,27 @@ static void glui_allocate_white_texture(glui_handle_t *glui)
          TEXTURE_BACKEND_OPENGL, TEXTURE_FILTER_NEAREST);
 }
 
+static void glui_layout(menu_handle_t *menu, glui_handle_t *glui)
+{
+   float scale_factor;
+   unsigned width, height;
+   settings_t *settings  = config_get_ptr();
+   video_driver_get_size(&width, &height);
+
+   if (settings->video.fullscreen)
+      scale_factor = menu_display_get_dpi();
+   else
+      scale_factor = width / 6;
+
+   glui->line_height            = scale_factor / 3;
+   glui->margin                 = scale_factor / 6;
+   glui->ticker_limit           = scale_factor / 3;
+   menu->display.header_height  = scale_factor / 3;
+   menu->display.font.size      = scale_factor / 8;
+}
+
 static void *glui_init(void)
 {
-   float dpi;
    glui_handle_t *glui                     = NULL;
    const video_driver_t *video_driver      = NULL;
    menu_handle_t                     *menu = NULL;
@@ -539,15 +557,8 @@ static void *glui_init(void)
       goto error;
 
    glui                         = (glui_handle_t*)menu->userdata;
-   dpi                          = menu_display_get_dpi();
 
-   glui->line_height            = dpi / 3;
-   glui->margin                 = dpi / 6;
-   glui->ticker_limit           = dpi / 3;
-   menu->display.header_height  = dpi / 3;
-   menu->display.font.size      = dpi / 8;
-   glui->textures.bg.id         = 0;
-
+   glui_layout(menu, glui);
    glui_allocate_white_texture(glui);
 
    if (settings->menu.wallpaper[0] != '\0')
@@ -732,22 +743,30 @@ static void glui_populate_entries(const char *path,
    menu->scroll_y      = glui_get_scroll();
 }
 
+static void glui_font(menu_handle_t *menu)
+{
+   settings_t *settings  = config_get_ptr();
+   const char *font_path = NULL;
+
+   font_path = settings->video.font_enable ? settings->video.font_path : NULL;
+
+   if (!menu_display_init_main_font(menu, font_path, menu->display.font.size))
+      RARCH_WARN("Failed to load font.");
+}
+
 static void glui_context_reset(void)
 {
    glui_handle_t *glui   = NULL;
    menu_handle_t *menu   = menu_driver_get_ptr();
    settings_t *settings  = config_get_ptr();
-   const char *font_path = NULL;
 
    if (!menu || !menu->userdata || !settings)
       return;
 
    glui      = (glui_handle_t*)menu->userdata;
-   font_path = settings->video.font_enable ? settings->video.font_path : NULL;
 
-   if (!menu_display_init_main_font(menu, font_path, menu->display.font.size))
-      RARCH_WARN("Failed to load font.");
-
+   glui_layout(menu, glui);
+   glui_font(menu);
    glui_context_bg_destroy(glui);
    glui_allocate_white_texture(glui);
 
