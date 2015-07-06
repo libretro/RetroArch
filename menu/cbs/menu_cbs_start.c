@@ -263,6 +263,19 @@ static int action_start_core_setting(unsigned type,
    return 0;
 }
 
+static int action_start_video_resolution(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   unsigned width = 0, height = 0;
+   global_t *global = global_get_ptr();
+
+   (void)global;
+
+   video_driver_set_video_mode(640, 480, true);
+
+   return 0;
+}
+
 static int action_start_lookup_setting(unsigned type, const char *label)
 {
    return menu_setting_set(type, label, MENU_ACTION_START, false);
@@ -321,6 +334,8 @@ static int menu_cbs_init_bind_start_compare_type(menu_file_list_cbs_t *cbs,
       cbs->action_start = action_start_performance_counters_frontend;
    else if ((type >= MENU_SETTINGS_CORE_OPTION_START))
       cbs->action_start = action_start_core_setting;
+   else if (type == MENU_LABEL_SCREEN_RESOLUTION):
+            cbs->action_start = action_start_video_resolution;
    else
       return -1;
 
