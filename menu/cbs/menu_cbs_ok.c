@@ -1692,7 +1692,7 @@ static int action_ok_video_resolution(const char *path,
 
 #ifdef __CELLOS_LV2__
    if (global->console.screen.resolutions.list[
-         global->console.screen.resolutions.current.idx] == 
+         global->console.screen.resolutions.current.idx] ==
          CELL_VIDEO_OUT_RESOLUTION_576)
    {
       if (global->console.screen.pal_enable)
@@ -1707,7 +1707,11 @@ static int action_ok_video_resolution(const char *path,
    event_command(EVENT_CMD_REINIT);
 #else
    if (video_driver_get_video_output_size(&width, &height))
+   {
       video_driver_set_video_mode(width, height, true);
+      global->console.screen.resolutions.width = width;
+      global->console.screen.resolutions.height = height;
+   }
 #endif
 
    return 0;

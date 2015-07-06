@@ -1333,6 +1333,11 @@ static bool config_load_file(const char *path, bool set_defaults)
    config_get_bool(conf, "soft_filter_enable",
          &global->console.softfilter_enable);
 
+   CONFIG_GET_INT_BASE(conf, global, console.screen.resolutions.width,
+         "console_resolution_width");
+   CONFIG_GET_INT_BASE(conf, global, console.screen.resolutions.height,
+         "console_resolution_height");
+
    CONFIG_GET_INT_BASE(conf, global, console.screen.flicker_filter_index,
          "flicker_filter_index");
    CONFIG_GET_INT_BASE(conf, global, console.screen.soft_filter_index,
@@ -2582,6 +2587,11 @@ bool config_save_file(const char *path)
          global->console.softfilter_enable);
    config_set_bool(conf, "flicker_filter_enable",
          global->console.flickerfilter_enable);
+
+   config_set_int(conf, "console_resolution_width",
+         global->console.screen.resolutions.width);
+   config_set_int(conf, "console_resolution_height",
+         global->console.screen.resolutions.height);
 
    config_set_int(conf, "flicker_filter_index",
          global->console.screen.flicker_filter_index);
