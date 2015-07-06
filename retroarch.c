@@ -1266,6 +1266,19 @@ int rarch_main_init(int argc, char *argv[])
          event_command(EVENT_CMD_VIDEO_SET_ASPECT_RATIO);
          video_driver_set_aspect_ratio(settings->video.aspect_ratio_idx);
       }
+
+      unsigned width = 0, height = 0;
+
+      (void)width;
+      (void)height;
+
+      width = global->console.screen.resolutions.width;
+      height = global->console.screen.resolutions.height;
+      video_driver_set_video_mode(width, height, true);
+
+      char msg[PATH_MAX_LENGTH] = {0};
+      snprintf(msg, sizeof(msg),"Resolution: %dx%d",width, height);
+      rarch_main_msg_queue_push(msg, 1, 100, true);
    }
 #endif
 

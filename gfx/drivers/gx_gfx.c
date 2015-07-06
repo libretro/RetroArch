@@ -165,7 +165,7 @@ enum
    GX_RESOLUTIONS_LAST,
 };
 
-static unsigned menu_current_gx_resolution = GX_RESOLUTIONS_640_480;
+static unsigned menu_current_gx_resolution = GX_RESOLUTIONS_448_448;
 
 unsigned menu_gx_resolutions[GX_RESOLUTIONS_LAST][2] = {
    { 512, 192 },
@@ -474,7 +474,7 @@ static void setup_video_mode(void *data)
 
    VIDEO_GetPreferredMode(&gx_mode);
    global_t *global = global_get_ptr();
-   gx_set_video_mode(data, global->console.screen.resolutions.width, global->console.screen.resolutions.height, true);
+   gx_set_video_mode(data, 0, 0, true);
 }
 
 static void init_texture(void *data, unsigned width, unsigned height)
