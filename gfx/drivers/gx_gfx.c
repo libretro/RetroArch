@@ -1323,7 +1323,6 @@ static const video_poke_interface_t gx_poke_interface = {
    gx_set_video_mode,
    NULL,
    gx_get_video_output_size,
-   gx_get_video_output_index,
    gx_get_video_output_prev,
    gx_get_video_output_next,
    NULL,
