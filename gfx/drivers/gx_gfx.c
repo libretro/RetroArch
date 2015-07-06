@@ -427,6 +427,10 @@ static void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines,
    video_viewport_reset_custom();
 
    g_current_framebuf = 0;
+   for( int i=0; i < GX_RESOLUTIONS_LAST; i++)
+      if(fbWidth == menu_gx_resolutions[i][0] && lines == menu_gx_resolutions[i][1])
+		  menu_current_gx_resolution = i;
+   RARCH_LOG("GX Resolution Index: %d\n", menu_current_gx_resolution);
 }
 
 static void gx_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
@@ -469,7 +473,8 @@ static void setup_video_mode(void *data)
    OSInitThreadQueue(&g_video_cond);
 
    VIDEO_GetPreferredMode(&gx_mode);
-   gx_set_video_mode(data, 0, 0, true);
+   global_t *global = global_get_ptr();
+   gx_set_video_mode(data, global->console.screen.resolutions.width, global->console.screen.resolutions.height, true);
 }
 
 static void init_texture(void *data, unsigned width, unsigned height)
