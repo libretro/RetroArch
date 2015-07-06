@@ -263,8 +263,8 @@ static int action_start_core_setting(unsigned type,
    return 0;
 }
 
-static int action_start_video_resolution(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
+static int action_start_video_resolution(
+      unsigned type, const char *label)
 {
    unsigned width = 0, height = 0;
    global_t *global = global_get_ptr();
