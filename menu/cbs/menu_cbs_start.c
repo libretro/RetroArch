@@ -334,8 +334,8 @@ static int menu_cbs_init_bind_start_compare_type(menu_file_list_cbs_t *cbs,
       cbs->action_start = action_start_performance_counters_frontend;
    else if ((type >= MENU_SETTINGS_CORE_OPTION_START))
       cbs->action_start = action_start_core_setting;
-   else if (type == MENU_LABEL_SCREEN_RESOLUTION):
-            cbs->action_start = action_start_video_resolution;
+   else if (type == MENU_LABEL_SCREEN_RESOLUTION)
+      cbs->action_start = action_start_video_resolution;
    else
       return -1;
 
