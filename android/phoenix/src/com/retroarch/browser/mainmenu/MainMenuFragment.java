@@ -25,8 +25,6 @@ import android.widget.Toast;
 
 import com.retroarch.R;
 import com.retroarch.browser.NativeInterface;
-import com.retroarch.browser.dirfragment.DirectoryFragment;
-import com.retroarch.browser.dirfragment.DirectoryFragment.OnDirectoryFragmentClosedListener;
 import com.retroarch.browser.preferences.fragments.util.PreferenceListFragment;
 import com.retroarch.browser.preferences.util.UserPreferences;
 import com.retroarch.browser.retroactivity.RetroActivityFuture;
@@ -35,7 +33,7 @@ import com.retroarch.browser.retroactivity.RetroActivityPast;
 /**
  * Represents the fragment that handles the layout of the main menu.
  */
-public final class MainMenuFragment extends PreferenceListFragment implements OnPreferenceClickListener, OnDirectoryFragmentClosedListener
+public final class MainMenuFragment extends PreferenceListFragment implements OnPreferenceClickListener
 {
 	private static final String TAG = "MainMenuFragment";
 	private Context ctx;
@@ -222,24 +220,6 @@ public final class MainMenuFragment extends PreferenceListFragment implements On
 		return true;
 	}
 
-	@Override
-	public void onDirectoryFragmentClosed(String path)
-	{
-		final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(ctx);
-
-		UserPreferences.updateConfigFile(ctx);
-		Toast.makeText(ctx, String.format(getString(R.string.loading_data), path), Toast.LENGTH_SHORT).show();
-		Intent retro = getRetroActivity();
-		MainMenuFragment.startRetroActivity(
-				retro,
-				path,
-				prefs.getString("libretro_path", ""),
-				UserPreferences.getDefaultConfigPath(ctx),
-				Settings.Secure.getString(ctx.getContentResolver(), Settings.Secure.DEFAULT_INPUT_METHOD),
-				ctx.getApplicationInfo().dataDir);
-		startActivity(retro);
-	}
-	
 	public static void startRetroActivity(Intent retro, String contentPath, String corePath,
 			String configFilePath, String imePath, String dataDirPath)
 	{
