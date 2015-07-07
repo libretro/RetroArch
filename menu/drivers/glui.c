@@ -650,7 +650,7 @@ static bool glui_load_image(void *data, menu_image_type_t type)
 
 static float glui_get_scroll(void)
 {
-   int half;
+   int half = 0;
    unsigned width, height;
    glui_handle_t *glui    = NULL;
    menu_handle_t *menu    = menu_driver_get_ptr();
@@ -662,7 +662,8 @@ static float glui_get_scroll(void)
    video_driver_get_size(&width, &height);
 
    glui = (glui_handle_t*)menu->userdata;
-   half = (height / glui->line_height) / 2;
+   if (glui->line_height)
+       half = (height / glui->line_height) / 2;
 
    if (nav->selection_ptr < (unsigned)half)
       return 0;
