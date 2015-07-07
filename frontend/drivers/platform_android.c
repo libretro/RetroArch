@@ -439,7 +439,7 @@ static bool device_is_game_console(const char *name)
 
 static char screenshot_dir[PATH_MAX_LENGTH];
 static char downloads_dir[PATH_MAX_LENGTH];
-static char base_dir[PATH_MAX_LENGTH];
+static char sdcard_dir[PATH_MAX_LENGTH];
 static char app_dir[PATH_MAX_LENGTH];
 
 static void frontend_android_get_environment_settings(int *argc,
@@ -580,16 +580,16 @@ static void frontend_android_get_environment_settings(int *argc,
    {
       const char *argv = NULL;
 
-      *base_dir = '\0';
+      *sdcard_dir = '\0';
       argv = (*env)->GetStringUTFChars(env, jstr, 0);
 
       if (argv && *argv)
-         strlcpy(base_dir, argv, sizeof(base_dir));
+         strlcpy(sdcard_dir, argv, sizeof(sdcard_dir));
       (*env)->ReleaseStringUTFChars(env, jstr, argv);
 
-      if (*base_dir)
+      if (*sdcard_dir)
       {
-         RARCH_LOG("External Storage Location %s.\n", base_dir);
+         RARCH_LOG("External Storage Location %s.\n", sdcard_dir);
          //todo base dir handler
       }
    }
@@ -611,7 +611,7 @@ static void frontend_android_get_environment_settings(int *argc,
 
       if (*screenshot_dir)
       {
-         RARCH_LOG("Screenshot Location %s.\n", screenshot_dir);
+         RARCH_LOG("Screenshot Directory [%s]s.\n", screenshot_dir);
          //todo screenshot handler
       }
    }
@@ -633,7 +633,7 @@ static void frontend_android_get_environment_settings(int *argc,
 
       if (*downloads_dir)
       {
-         RARCH_LOG("Downloads Location %s.\n", downloads_dir);
+         RARCH_LOG("Download Directory [%s].\n", downloads_dir);
          //todo downloads handler
       }
    }
@@ -643,8 +643,7 @@ static void frontend_android_get_environment_settings(int *argc,
          (*env)->NewStringUTF(env, "DATADIR"));
 
    if (android_app->getStringExtra && jstr)
-   {
-      static char app_dir[PATH_MAX_LENGTH];
+   {      
       const char *argv = NULL;
 
       *app_dir = '\0';
@@ -657,7 +656,7 @@ static void frontend_android_get_environment_settings(int *argc,
 
       if (*app_dir)
       {
-         RARCH_LOG("Data path: [%s].\n", app_dir);
+         RARCH_LOG("Application Dir: [%s].\n", app_dir);
          if (args && *app_dir)
          {
             fill_pathname_join(g_defaults.assets_dir, app_dir,
@@ -680,8 +679,8 @@ static void frontend_android_get_environment_settings(int *argc,
                   app_dir, "video_filters", sizeof(g_defaults.video_filter_dir));
             strlcpy(g_defaults.content_history_dir,
                   app_dir, sizeof(g_defaults.content_history_dir));
-            fill_pathname_join(g_defaults.database_dir,
-                  app_dir, "database/rdb", sizeof(g_defaults.database_dir));
+            fill_pathname_join(g_defaults.datasdcard_dir,
+                  app_dir, "database/rdb", sizeof(g_defaults.datasdcard_dir));
             fill_pathname_join(g_defaults.cursor_dir,
                   app_dir, "database/cursors", sizeof(g_defaults.cursor_dir));
             fill_pathname_join(g_defaults.cheats_dir,
@@ -871,9 +870,9 @@ static int frontend_android_parse_drive_list(void *data)
    file_list_t *list = (file_list_t*)data;
 
    menu_list_push(list,
-         "/data/data/com.retroarch/", "Application Dir", MENU_FILE_DIRECTORY, 0, 0);
+         app_dir, "Application Dir", MENU_FILE_DIRECTORY, 0, 0);
    menu_list_push(list,
-         "base_dir", "Internal Memory", MENU_FILE_DIRECTORY, 0, 0);
+         sdcard_dir, "Internal Memory", MENU_FILE_DIRECTORY, 0, 0);
    menu_list_push(list, "/", "",
          MENU_FILE_DIRECTORY, 0, 0);
 
