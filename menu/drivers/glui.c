@@ -508,7 +508,6 @@ static void glui_layout(menu_handle_t *menu, glui_handle_t *glui)
 {
    float scale_factor, glyph_width;
    unsigned width, height;
-   settings_t *settings  = config_get_ptr();
    video_driver_get_size(&width, &height);
 
 /* Mobiles platforms may have very small display metrics coupled to a high
