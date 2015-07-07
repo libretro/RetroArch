@@ -676,6 +676,17 @@ static void rmenu_xui_list_set_selection(file_list_t *list)
       XuiListSetCurSel(m_menulist, file_list_get_directory_ptr(list));
 }
 
+static int rmenu_xui_environ(void *data, void *data2, menu_environ_cb_t type)
+{
+   switch (type)
+   {
+      default:
+         return -1;
+   }
+
+   return 0;
+}
+
 menu_ctx_driver_t menu_ctx_rmenu_xui = {
    NULL,
    rmenu_xui_render_messagebox,
@@ -705,5 +716,6 @@ menu_ctx_driver_t menu_ctx_rmenu_xui = {
    rmenu_xui_list_set_selection,
    NULL,
    "rmenu_xui",
+   rmenu_xui_environ,
    NULL,
 };

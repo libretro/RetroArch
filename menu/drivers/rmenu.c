@@ -312,6 +312,17 @@ static void rmenu_free(void *data)
 {
 }
 
+static int rmenu_environ(void *data, void *data2, menu_environ_cb_t type)
+{
+   switch (type)
+   {
+      default:
+         return -1;
+   }
+
+   return 0;
+}
+
 menu_ctx_driver_t menu_ctx_rmenu = {
    rmenu_set_texture,
    rmenu_render_messagebox,
@@ -341,5 +352,6 @@ menu_ctx_driver_t menu_ctx_rmenu = {
    NULL,
    NULL,
    "rmenu",
+   rmenu_environ,
    NULL,
 };

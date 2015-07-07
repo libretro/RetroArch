@@ -43,6 +43,13 @@ typedef enum
    MENU_IMAGE_BOXART
 } menu_image_type_t;
 
+typedef enum
+{
+   MENU_ENVIRON_NONE = 0,
+   MENU_ENVIRON_RESET_HORIZONTAL_LIST,
+   MENU_ENVIRON_LAST
+} menu_environ_cb_t;
+
 typedef struct
 {
    void *userdata;
@@ -107,6 +114,8 @@ typedef struct menu_ctx_driver
          uint32_t label_hash, uint32_t menu_label_hash);
    bool  (*load_image)(void *data, menu_image_type_t type);
    const char *ident;
+   int (*environ_cb)(void *data, void *data2,
+         menu_environ_cb_t type);
    bool  (*perform_action)(void* data, unsigned action);
 } menu_ctx_driver_t;
 

@@ -53,4 +53,5 @@ menu_ctx_driver_t menu_ctx_null = {
   NULL,  /* load_image */
   "null",
   NULL,
+  NULL,
 };

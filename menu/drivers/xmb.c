@@ -1056,6 +1056,31 @@ static void xmb_refresh_horizontal_list(xmb_handle_t *xmb,
    xmb_context_reset_horizontal_list(xmb, menu, themepath);
 }
 
+static int xmb_environ(void *data, void *data2, menu_environ_cb_t type)
+{
+   switch (type)
+   {
+      case MENU_ENVIRON_RESET_HORIZONTAL_LIST:
+         {
+            char mediapath[PATH_MAX_LENGTH] = {0};
+            char themepath[PATH_MAX_LENGTH] = {0};
+
+            xmb_handle_t *xmb    = (xmb_handle_t*)data;
+            menu_handle_t *menu  = (menu_handle_t*)data2;
+            settings_t *settings = config_get_ptr();
+
+            fill_pathname_join(mediapath, settings->assets_directory, "xmb", sizeof(mediapath));
+            fill_pathname_join(themepath, mediapath, XMB_THEME, sizeof(themepath));
+            xmb_context_reset_horizontal_list(xmb, menu, themepath);
+         }
+         break;
+      default:
+         return -1;
+   }
+
+   return 0;
+}
+
 static void xmb_list_open(xmb_handle_t *xmb)
 {
    int                dir = 0;
@@ -2572,5 +2597,6 @@ menu_ctx_driver_t menu_ctx_xmb = {
    xmb_list_bind_init,
    xmb_load_image,
    "xmb",
+   xmb_environ,
    NULL,
 };

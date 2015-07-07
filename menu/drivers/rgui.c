@@ -736,6 +736,17 @@ static void rgui_populate_entries(const char *path,
       rgui_navigation_set(true);
 }
 
+static int rgui_environ(void *data, void *data2, menu_environ_cb_t type)
+{
+   switch (type)
+   {
+      default:
+         return -1;
+   }
+
+   return 0;
+}
+
 menu_ctx_driver_t menu_ctx_rgui = {
    rgui_set_texture,
    rgui_set_message,
@@ -765,5 +776,6 @@ menu_ctx_driver_t menu_ctx_rgui = {
    NULL,
    NULL,
    "rgui",
+   rgui_environ,
    NULL,
 };
