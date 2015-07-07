@@ -24,9 +24,7 @@ import android.util.Log;
 import android.widget.Toast;
 
 import com.retroarch.R;
-import com.retroarch.browser.CoreSelection;
 import com.retroarch.browser.NativeInterface;
-import com.retroarch.browser.dirfragment.DetectCoreDirectoryFragment;
 import com.retroarch.browser.dirfragment.DirectoryFragment;
 import com.retroarch.browser.dirfragment.DirectoryFragment.OnDirectoryFragmentClosedListener;
 import com.retroarch.browser.preferences.fragments.util.PreferenceListFragment;
@@ -64,9 +62,6 @@ public final class MainMenuFragment extends PreferenceListFragment implements On
 
 		// Set the listeners for the menu items
 		findPreference("resumeContentPref").setOnPreferenceClickListener(this);
-		findPreference("loadCorePref").setOnPreferenceClickListener(this);
-		findPreference("loadContentAutoPref").setOnPreferenceClickListener(this);
-		findPreference("loadContentPref").setOnPreferenceClickListener(this);
 		findPreference("quitRetroArch").setOnPreferenceClickListener(this);
 
 		// Extract assets. 
@@ -215,47 +210,6 @@ public final class MainMenuFragment extends PreferenceListFragment implements On
 					Settings.Secure.getString(ctx.getContentResolver(), Settings.Secure.DEFAULT_INPUT_METHOD),
 					 ctx.getApplicationInfo().dataDir);
 			startActivity(retro);
-		}
-		// Load Core Preference
-		else if (prefKey.equals("loadCorePref"))
-		{
-			CoreSelection.newInstance().show(getFragmentManager(), "core_selection");
-		}
-		// Load ROM Preference
-		else if (prefKey.equals("loadContentPref"))
-		{
-			final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(ctx);
-			final String libretro_path = prefs.getString("libretro_path", ctx.getApplicationInfo().dataDir + "/cores");
-
-			if (!new File(libretro_path).isDirectory())
-			{
-				final DirectoryFragment contentBrowser = DirectoryFragment.newInstance(R.string.load_content);
-				contentBrowser.addDisallowedExts(".state", ".srm", ".state.auto", ".rtc");
-				contentBrowser.setOnDirectoryFragmentClosedListener(this);
-	
-				final String startPath = prefs.getString("rgui_browser_directory", "");
-				if (!startPath.isEmpty() && new File(startPath).exists())
-					contentBrowser.setStartDirectory(startPath);
-	
-				contentBrowser.show(getFragmentManager(), "contentBrowser");
-			}
-			else
-			{
-				Toast.makeText(ctx, R.string.load_a_core_first, Toast.LENGTH_SHORT).show();
-			}
-		}
-		else if (prefKey.equals("loadContentAutoPref"))
-		{
-			final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(ctx);
-			final DetectCoreDirectoryFragment contentBrowser = DetectCoreDirectoryFragment.newInstance(R.string.load_content_auto);
-			contentBrowser.addDisallowedExts(".state", ".srm", ".state.auto", ".rtc");
-			contentBrowser.setOnDirectoryFragmentClosedListener(this);
-
-			final String startPath = prefs.getString("rgui_browser_directory", "");
-			if (!startPath.isEmpty() && new File(startPath).exists())
-				contentBrowser.setStartDirectory(startPath);
-
-			contentBrowser.show(getFragmentManager(), "contentBrowser");
 		}
 		// Quit RetroArch preference
 		else if (prefKey.equals("quitRetroArch"))
