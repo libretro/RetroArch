@@ -240,6 +240,12 @@ static const GLfloat rmb_tex_coord[] = {
    1, 0,
 };
 
+static void xmb_context_destroy_horizontal_list(xmb_handle_t *xmb,
+      menu_handle_t *menu);
+static void xmb_init_horizontal_list(menu_handle_t *menu, xmb_handle_t *xmb);
+static void xmb_context_reset_horizontal_list(xmb_handle_t *xmb,
+      menu_handle_t *menu, const char *themepath);
+
 static size_t xmb_list_get_selection(void *data)
 {
     menu_handle_t *menu    = (menu_handle_t*)data;
@@ -1032,6 +1038,24 @@ static void xmb_list_open_horizontal_list(xmb_handle_t *xmb, menu_handle_t *menu
    }
 }
 
+static void xmb_refresh_horizontal_list(xmb_handle_t *xmb,
+      menu_handle_t *menu)
+{
+   settings_t *settings = config_get_ptr();
+
+   char mediapath[PATH_MAX_LENGTH] = {0};
+   char themepath[PATH_MAX_LENGTH] = {0};
+   fill_pathname_join(mediapath, settings->assets_directory, "xmb", sizeof(mediapath));
+   fill_pathname_join(themepath, mediapath, XMB_THEME, sizeof(themepath));
+
+   if (xmb->horizontal_list)
+      free(xmb->horizontal_list);
+   xmb->horizontal_list = NULL;
+   xmb_context_destroy_horizontal_list(xmb, menu);
+   xmb_init_horizontal_list(menu, xmb);
+   xmb_context_reset_horizontal_list(xmb, menu, themepath);
+}
+
 static void xmb_list_open(xmb_handle_t *xmb)
 {
    int                dir = 0;
@@ -1049,6 +1073,12 @@ static void xmb_list_open(xmb_handle_t *xmb)
       dir = 1;
    else if (xmb->depth < xmb->old_depth)
       dir = -1;
+
+   /* TODO, call xmb_refresh_horizontal_list when a new scanning process is
+   started instead of using this condition. It causes a small lag when comming
+   back to the main menu from a submenu. */
+   if (dir == -1 && xmb->depth == 1 && xmb->categories.selection_ptr == 0)
+      xmb_refresh_horizontal_list(xmb, menu);
 
    xmb_list_open_horizontal_list(xmb, menu);
 
@@ -1670,7 +1700,7 @@ static void xmb_init_horizontal_list(menu_handle_t *menu, xmb_handle_t *xmb)
    strlcpy(info.path, settings->playlist_directory, sizeof(info.path));
    strlcpy(info.exts, "lpl", sizeof(info.exts));
 
-   menu_displaylist_push_list(&info, DISPLAYLIST_DATABASE_PLAYLISTS);
+   menu_displaylist_push_list(&info, DISPLAYLIST_DATABASE_PLAYLISTS_HORIZONTAL);
 }
 
 static void xmb_font(menu_handle_t *menu)
@@ -2021,9 +2051,9 @@ static void xmb_context_reset_horizontal_list(xmb_handle_t *xmb,
             TEXTURE_BACKEND_OPENGL, TEXTURE_FILTER_MIPMAP_LINEAR);
 
       texture_image_free(&ti);
-
-      xmb_toggle_horizontal_list(xmb, menu);
    }
+
+   xmb_toggle_horizontal_list(xmb, menu);
 }
 
 static void xmb_context_reset_textures(xmb_handle_t *xmb, const char *iconpath)
