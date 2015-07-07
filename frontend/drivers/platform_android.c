@@ -449,7 +449,7 @@ static void frontend_android_get_environment_settings(int *argc,
    jobject                       obj = NULL;
    jstring                      jstr = NULL;
    struct android_app   *android_app = (struct android_app*)data;
-
+   
    if (!android_app)
       return;
 
@@ -574,19 +574,19 @@ static void frontend_android_get_environment_settings(int *argc,
 
    if (android_app->getStringExtra && jstr)
    {
-      static char path[PATH_MAX_LENGTH];
+      static char base_path[PATH_MAX_LENGTH];
       const char *argv = NULL;
 
-      *path = '\0';
+      *base_path = '\0';
       argv = (*env)->GetStringUTFChars(env, jstr, 0);
 
       if (argv && *argv)
-         strlcpy(path, argv, sizeof(path));
+         strlcpy(base_path, argv, sizeof(base_path));
       (*env)->ReleaseStringUTFChars(env, jstr, argv);
 
-      if (*path)
+      if (*base_path)
       {
-         RARCH_LOG("External Storage Location %s.\n", path);
+         RARCH_LOG("External Storage Location %s.\n", base_path);
          //todo base dir handler
       }
    }
@@ -597,19 +597,19 @@ static void frontend_android_get_environment_settings(int *argc,
 
    if (android_app->getStringExtra && jstr)
    {
-      static char path[PATH_MAX_LENGTH];
+      static char screenshot_path[PATH_MAX_LENGTH];
       const char *argv = NULL;
 
-      *path = '\0';
+      *screenshot_path = '\0';
       argv = (*env)->GetStringUTFChars(env, jstr, 0);
 
       if (argv && *argv)
-         strlcpy(path, argv, sizeof(path));
+         strlcpy(screenshot_path, argv, sizeof(screenshot_path));
       (*env)->ReleaseStringUTFChars(env, jstr, argv);
 
-      if (*path)
+      if (*screenshot_path)
       {
-         RARCH_LOG("Screenshot Location %s.\n", path);
+         RARCH_LOG("Screenshot Location %s.\n", screenshot_path);
          //todo screenshot handler
       }
    }
@@ -620,19 +620,19 @@ static void frontend_android_get_environment_settings(int *argc,
 
    if (android_app->getStringExtra && jstr)
    {
-      static char path[PATH_MAX_LENGTH];
+      static char downloads_path[PATH_MAX_LENGTH];
       const char *argv = NULL;
 
-      *path = '\0';
+      *downloads_path = '\0';
       argv = (*env)->GetStringUTFChars(env, jstr, 0);
 
       if (argv && *argv)
-         strlcpy(path, argv, sizeof(path));
+         strlcpy(downloads_path, argv, sizeof(downloads_path));
       (*env)->ReleaseStringUTFChars(env, jstr, argv);
 
-      if (*path)
+      if (*downloads_path)
       {
-         RARCH_LOG("Downloads Location %s.\n", path);
+         RARCH_LOG("Downloads Location %s.\n", downloads_path);
          //todo downloads handler
       }
    }
@@ -690,8 +690,16 @@ static void frontend_android_get_environment_settings(int *argc,
                   path, "remaps", sizeof(g_defaults.remap_dir));
             fill_pathname_join(g_defaults.wallpapers_dir,
                   path, "wallpapers", sizeof(g_defaults.wallpapers_dir));
-            fill_pathname_join(g_defaults.core_assets_dir,
+			if(*downloads_path)
+			{
+               fill_pathname_join(g_defaults.core_assets_dir,
+                  downloads_path, "/", sizeof(g_defaults.core_assets_dir));
+			}
+			else
+			{
+               fill_pathname_join(g_defaults.core_assets_dir,
                   path, "downloads", sizeof(g_defaults.core_assets_dir));
+			}
          }
       }
    }
