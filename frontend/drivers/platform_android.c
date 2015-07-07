@@ -568,6 +568,75 @@ static void frontend_android_get_environment_settings(int *argc,
       }
    }
 
+   /* External Storage */
+   CALL_OBJ_METHOD_PARAM(env, jstr, obj, android_app->getStringExtra,
+         (*env)->NewStringUTF(env, "SDCARD"));
+
+   if (android_app->getStringExtra && jstr)
+   {
+      static char path[PATH_MAX_LENGTH];
+      const char *argv = NULL;
+
+      *path = '\0';
+      argv = (*env)->GetStringUTFChars(env, jstr, 0);
+
+      if (argv && *argv)
+         strlcpy(path, argv, sizeof(path));
+      (*env)->ReleaseStringUTFChars(env, jstr, argv);
+
+      if (*path)
+      {
+         RARCH_LOG("External Storage Location %s.\n", path);
+         //todo base dir handler
+      }
+   }
+   
+   /* Screenshots */
+   CALL_OBJ_METHOD_PARAM(env, jstr, obj, android_app->getStringExtra,
+         (*env)->NewStringUTF(env, "SCREENSHOTS"));
+
+   if (android_app->getStringExtra && jstr)
+   {
+      static char path[PATH_MAX_LENGTH];
+      const char *argv = NULL;
+
+      *path = '\0';
+      argv = (*env)->GetStringUTFChars(env, jstr, 0);
+
+      if (argv && *argv)
+         strlcpy(path, argv, sizeof(path));
+      (*env)->ReleaseStringUTFChars(env, jstr, argv);
+
+      if (*path)
+      {
+         RARCH_LOG("Screenshot Location %s.\n", path);
+         //todo screenshot handler
+      }
+   }
+   
+   /* Downloads */
+   CALL_OBJ_METHOD_PARAM(env, jstr, obj, android_app->getStringExtra,
+         (*env)->NewStringUTF(env, "DOWNLOADS"));
+
+   if (android_app->getStringExtra && jstr)
+   {
+      static char path[PATH_MAX_LENGTH];
+      const char *argv = NULL;
+
+      *path = '\0';
+      argv = (*env)->GetStringUTFChars(env, jstr, 0);
+
+      if (argv && *argv)
+         strlcpy(path, argv, sizeof(path));
+      (*env)->ReleaseStringUTFChars(env, jstr, argv);
+
+      if (*path)
+      {
+         RARCH_LOG("Downloads Location %s.\n", path);
+         //todo downloads handler
+      }
+   }
+   
    /* Content. */
    CALL_OBJ_METHOD_PARAM(env, jstr, obj, android_app->getStringExtra,
          (*env)->NewStringUTF(env, "DATADIR"));
