@@ -20,124 +20,172 @@ const char *msg_hash_to_str_pl(uint32_t hash)
 {
    switch (hash)
    {
+      case MSG_PROGRAM:
+         return "RetroArch";
+      case MSG_MOVIE_RECORD_STOPPED:
+         return "Zatrzymano nagrywanie filmu.";
+      case MSG_MOVIE_PLAYBACK_ENDED:
+         return "Zakończono odtwarzanie filmu.";
+      case MSG_AUTOSAVE_FAILED:
+         return "Nie udało się zainicjalizować automatycznego zapisu.";
+      case MSG_NETPLAY_FAILED_MOVIE_PLAYBACK_HAS_STARTED:
+         return "Odtwarzanie filmu w toku. Nie można rozpocząć gry sieciowej.";
+      case MSG_NETPLAY_FAILED:
+         return "Nie udało się zainicjalizować gry sieciowej.";
+      case MSG_LIBRETRO_ABI_BREAK:
+         return "został skompilowany dla innej wersji libretro, różnej od obecnie używanej.";
+      case MSG_REWIND_INIT_FAILED_NO_SAVESTATES:
+         return "Implementacja nie wspiera zapisywania stanu. Przewijanie nie jest możliwe.";
+      case MSG_REWIND_INIT_FAILED_THREADED_AUDIO:
+         return "Implementacja używa osobnego wątku do przetwarzania dźwięku. Przewijanie nie jest możliwe.";
+      case MSG_REWIND_INIT_FAILED:
+         return "Nie udało się zainicjalizować bufora przewijania. Przewijanie zostanie wyłączone.";
+      case MSG_REWIND_INIT:
+         return "Inicjalizowanie bufora przewijania o rozmiarze";
+      case MSG_CUSTOM_TIMING_GIVEN:
+         return "Wprowadzono niestandardowy timing";
+      case MSG_VIEWPORT_SIZE_CALCULATION_FAILED:
+         return "Obliczanie rozmiaru viewportu nie powiodło się! Kontynuowanie z użyciem surowych danych. Prawdopodobnie nie będzie to działało poprawnie...";
+      case MSG_HW_RENDERED_MUST_USE_POSTSHADED_RECORDING:
+         return "Ten rdzeń libretro używa renderowania sprzętowego. Konieczne jest użycie nagrywania wraz z zaaplikowanymi shaderami.";
+      case MSG_RECORDING_TO:
+         return "Nagrywanie do";
+      case MSG_DETECTED_VIEWPORT_OF:
+         return "Wykrywanie viewportu";
+      case MSG_TAKING_SCREENSHOT:
+         return "Zapisywanie zrzutu.";
+      case MSG_FAILED_TO_TAKE_SCREENSHOT:
+         return "Nie udało się zapisać zrzutu.";
+      case MSG_FAILED_TO_START_RECORDING:
+         return "Nie udało się rozpocząć nagrywania.";
+      case MSG_RECORDING_TERMINATED_DUE_TO_RESIZE:
+         return "Przerwano nagrywanie z powodu zmiany rozmiaru.";
+      case MSG_USING_LIBRETRO_DUMMY_CORE_RECORDING_SKIPPED:
+         return "Atrapa rdzenia w użyciu. Pomijanie nagrywania.";
       case MSG_UNKNOWN:
-         return "Desconhecido";
+         return "Nieznane";
+      case MSG_LOADING_CONTENT_FILE:
+         return "Wczytywanie pliku treści";
       case MSG_RECEIVED:
-         return "recebido";
+         return "otrzymano";
       case MSG_UNRECOGNIZED_COMMAND:
-         return "Comando desconhecido";
+         return "Nieznana komenda";
       case MSG_SENDING_COMMAND:
-         return "Enviando comando";
+         return "Wysyłanie komendy";
       case MSG_GOT_INVALID_DISK_INDEX:
-         return "�ndice de disco inv�lido.";
+         return "Otrzymano nieprawidłowy indeks dysku.";
       case MSG_FAILED_TO_REMOVE_DISK_FROM_TRAY:
-         return "Falha ao remover disco da bandeja.";
+         return "Nie udało się usunąć dysku z tacki.";
       case MSG_REMOVED_DISK_FROM_TRAY:
-         return "Disco removido da bandeja.";
+         return "Usunięto dysk z tacki.";
       case MSG_VIRTUAL_DISK_TRAY:
-         return "bandeja de disco virtual.";
+         return "wirtualna tacka."; /* this is funny */
       case MSG_FAILED_TO:
-         return "Falha ao";
+         return "Nie udało się";
       case MSG_TO:
-         return "para";
+         return "do";
       case MSG_SAVING_RAM_TYPE:
-         return "Salvando tipo de RAM";
+         return "Zapisywanie typu RAM";
       case MSG_SAVING_STATE:
-         return "Salvando estado";
+         return "Zapisywanie stanu";
       case MSG_LOADING_STATE:
-         return "Carregando estado";
+         return "Wczytywanie stanu";
       case MSG_FAILED_TO_LOAD_MOVIE_FILE:
-         return "Falha ao carregar v�deo";
+         return "Nie udało się wczytać pliku filmu";
       case MSG_FAILED_TO_LOAD_CONTENT:
-         return "Falha ao carregar conte�do";
+         return "Nie udało się wczytać treści";
       case MSG_COULD_NOT_READ_CONTENT_FILE:
-         return "Incapaz de ler arquivo de conte�do";
+         return "Nie udało się odczytać pliku treści";
       case MSG_GRAB_MOUSE_STATE:
-         return "Obter estado do mouse";
+         return "Grab mouse state";
       case MSG_PAUSED:
-         return "Pausado.";
+         return "Wstrzymano.";
       case MSG_UNPAUSED:
-         return "Despausado.";
+         return "Wznowiono.";
       case MSG_FAILED_TO_LOAD_OVERLAY:
-         return "Falha ao carregar overlay.";
+         return "Nie udało się wczytać nakładki.";
       case MSG_FAILED_TO_UNMUTE_AUDIO:
-         return "Falha ao desativar mudo.";
+         return "Nie udało się przywrócić dźwięku.";
       case MSG_AUDIO_MUTED:
-         return "�udio mudo.";
+         return "Wyciszono dźwięk.";
       case MSG_AUDIO_UNMUTED:
-         return "�udio normal.";
+         return "Przywrócono dźwięk.";
       case MSG_RESET:
-         return "Reiniciar";
+         return "Reset";
       case MSG_FAILED_TO_LOAD_STATE:
-         return "Falha ao carregar estado de";
+         return "Nie udało się wczytać stanu z";
       case MSG_FAILED_TO_SAVE_STATE_TO:
-         return "Falha ao salvar estado em";
+         return "Nie udało się zapisać stanu do";
       case MSG_FAILED_TO_SAVE_SRAM:
-         return "Falha ao salvar SRAM";
+         return "Nie udało się zapisać SRAM";
       case MSG_STATE_SIZE:
-         return "Tamanho do estado";
+         return "Rozmiar stanu";
+      case MSG_FOUND_SHADER:
+         return "Znaleziono shader";
+      case MSG_SRAM_WILL_NOT_BE_SAVED:
+         return "SRAM nie zostanie zapisany.";
       case MSG_BLOCKING_SRAM_OVERWRITE:
-         return "Bloqueando Sobrescri��o de SRAM";
+         return "Blokowanie nadpisania SRAM";
       case MSG_CORE_DOES_NOT_SUPPORT_SAVESTATES:
-         return "O core n�o suporta savestates.";
+         return "Rdzeń nie wspiera zapisów stanu.";
       case MSG_SAVED_STATE_TO_SLOT:
-         return "Estado salvo no slot";
+         return "Zapisano stan w slocie";
       case MSG_SAVED_SUCCESSFULLY_TO:
-         return "Salvo com sucesso em";
+         return "Pomyślnie zapisano do";
       case MSG_BYTES:
-         return "bytes";
+         return "bajtów";
       case MSG_CONFIG_DIRECTORY_NOT_SET:
-         return "Diret�rio de configura��es n�o definido. Incapaz de salvar.";
+         return "Nie ustawiono katalogu konfiguracji. Nie można zapisać nowej konfiguracji.";
       case MSG_SKIPPING_SRAM_LOAD:
-         return "Ignorando carregamento de SRAM.";
+         return "Pomijanie wczytywania SRAM.";
       case MSG_APPENDED_DISK:
-         return "Disco anexado";
+         return "Dopisano do dysku";
       case MSG_STARTING_MOVIE_PLAYBACK:
-         return "Iniciando reprodu��o de v�deo.";
+         return "Rozpoczynanie odtwarzania filmu.";
       case MSG_FAILED_TO_REMOVE_TEMPORARY_FILE:
-         return "Falha ao remover arquivo tempor�rio";
+         return "Nie udało się usunąć pliku tymczasowego";
       case MSG_REMOVING_TEMPORARY_CONTENT_FILE:
-         return "Removendo conte�do tempor�rio";
+         return "Usuwanie tymczasowego pliku treści";
       case MSG_LOADED_STATE_FROM_SLOT:
-         return "Estado carregado do slot";
+         return "Wczytano stan ze slotu";
       case MSG_DOWNLOAD_PROGRESS:
-         return "Progresso do download";
+         return "Postęp pobierania";
       case MSG_COULD_NOT_PROCESS_ZIP_FILE:
-         return "Incapaz de processar arquivo ZIP.";
+         return "Nie udało się przetworzyć pliku ZIP.";
       case MSG_DOWNLOAD_COMPLETE:
-         return "Download conclu�do";
+         return "Zakończono pobieranie";
       case MSG_SCANNING_OF_DIRECTORY_FINISHED:
-         return "Exame de diret�rio conclu�do";
+         return "Zakończono skanowanie katalogu";
       case MSG_SCANNING:
-         return "Examinando";
+         return "Skanowanie";
       case MSG_REDIRECTING_CHEATFILE_TO:
-         return "Redirecionando cheat para";
+         return "Przekierowywanie pliku cheatów do";
       case MSG_REDIRECTING_SAVEFILE_TO:
-         return "Redirecionando save para";
+         return "Przekierowywanie pliku zapisu do";
       case MSG_REDIRECTING_SAVESTATE_TO:
-         return "Redirecionando savestate para";
+         return "Przekierowywanie zapisu stanu do";
       case MSG_SHADER:
          return "Shader";
       case MSG_APPLYING_SHADER:
-         return "Aplicando shader";
+         return "Aplikowanie shadera";
       case MSG_FAILED_TO_APPLY_SHADER:
-         return "Falha ao aplicar shader.";
+         return "Nie udało się zaaplikować shadera.";
       case MSG_STARTING_MOVIE_RECORD_TO:
-         return "Iniciando grava��o de v�deo em";
+         return "Rozpoczynanie zapisu filmu do";
       case MSG_FAILED_TO_START_MOVIE_RECORD:
-         return "Falha ao iniciar grava��o de v�deo.";
+         return "Nie udało się rozpocząć nagrywania filmu.";
       case MSG_STATE_SLOT:
-         return "Slot de estado";
+         return "Slot zapisu";
       case MSG_RESTARTING_RECORDING_DUE_TO_DRIVER_REINIT:
-         return "Reiniciando grava��o devido a rein�cio de driver.";
+         return "Ponowne rozpoczęcie nagrywania z powodu reinicjalizacji kontrolera.";
       case MSG_SLOW_MOTION:
-         return "C�mera lenta.";
+         return "Spowolnione tempo.";
       case MSG_SLOW_MOTION_REWIND:
-         return "Retrocesso em c�mera lenta.";
+         return "Przewijanie w spowolnionym tempie.";
       case MSG_REWINDING:
-         return "Retrocedendo.";
+         return "Przewijanie.";
       case MSG_REWIND_REACHED_END:
-         return "Final do buffer de retrocesso atingido.";
+         return "W buforze przewijania nie ma więcej danych.";
       default:
          break;
    }
