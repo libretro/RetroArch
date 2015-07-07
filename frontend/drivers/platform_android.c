@@ -623,6 +623,8 @@ static void frontend_android_get_environment_settings(int *argc,
                   path, "wallpapers", sizeof(g_defaults.wallpapers_dir));
             fill_pathname_join(g_defaults.core_assets_dir,
                   path, "downloads", sizeof(g_defaults.core_assets_dir));
+            fill_pathname_join(g_defaults.screenshot_dir,
+                  path, "screenshots", sizeof(g_defaults.screenshot_dir));
          }
       }
    }
