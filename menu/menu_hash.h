@@ -965,6 +965,7 @@ extern "C" {
 #define MENU_VALUE_LANG_CHINESE_TRADITIONAL                                    0x43f172d0U
 #define MENU_VALUE_LANG_CHINESE_SIMPLIFIED                                     0x1ae5ee5bU
 #define MENU_VALUE_LANG_ESPERANTO                                              0x1a933a76U
+#define MENU_VALUE_LANG_POLISH                                                 0xca915dd4U
 
 #define MENU_VALUE_NONE                                                        0x7c89bbd5U
 
@@ -992,6 +993,9 @@ int menu_hash_get_help_it(uint32_t hash, char *s, size_t len);
 
 const char *menu_hash_to_str_nl(uint32_t hash);
 int menu_hash_get_help_nl(uint32_t hash, char *s, size_t len);
+
+const char *menu_hash_to_str_pl(uint32_t hash);
+int menu_hash_get_help_pl(uint32_t hash, char *s, size_t len);
 
 const char *menu_hash_to_str_pt(uint32_t hash);
 int menu_hash_get_help_pt(uint32_t hash, char *s, size_t len);

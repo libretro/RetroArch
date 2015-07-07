@@ -471,8 +471,8 @@ const char *menu_hash_to_str_de(uint32_t hash)
          return "Datenbankmanager";
       case MENU_LABEL_VALUE_CURSOR_MANAGER:
          return "Cursormanager";
-      case MENU_VALUE_MAIN_MENU:
-         return "Main Menu"; /* Don't change. Breaks everything. (Would be: "Hauptmenü") */
+      case MENU_VALUE_MAIN_MENU: /* Don't change. Breaks everything. (Would be: "Hauptmenü") */
+         return "Main Menu"; 
       case MENU_LABEL_VALUE_SETTINGS:
          return "Einstellungen";
       case MENU_LABEL_VALUE_QUIT_RETROARCH:
@@ -579,10 +579,10 @@ const char *menu_hash_to_str_de(uint32_t hash)
          return "Starte Download: ";
       case MENU_VALUE_SECONDS:
          return "Sekunden";
-      case MENU_VALUE_OFF:
-         return "OFF"; /* Don't change. Needed for XMB atm. (Would be: "AN") */
-      case MENU_VALUE_ON:
-         return "ON"; /* Don't change. Needed for XMB atm. (Would be: "AUS") */
+      case MENU_VALUE_OFF: /* Don't change. Needed for XMB atm. (Would be: "AN") */
+         return "OFF"; 
+      case MENU_VALUE_ON: /* Don't change. Needed for XMB atm. (Would be: "AUS") */
+         return "ON"; 
       case MENU_LABEL_VALUE_UPDATE_ASSETS:
          return "Aktualisiere Assets";
       case MENU_LABEL_VALUE_UPDATE_CHEATS:

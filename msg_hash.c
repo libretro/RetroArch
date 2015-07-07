@@ -50,6 +50,10 @@ const char *msg_hash_to_str(uint32_t hash)
          break;
       case RETRO_LANGUAGE_ESPERANTO:
          ret = msg_hash_to_str_eo(hash);
+         break;
+      case RETRO_LANGUAGE_POLISH:
+         ret = msg_hash_to_str_pl(hash);
+         break;
       default:
          break;
    }

@@ -120,6 +120,7 @@ OBJ += frontend/frontend.o \
 		intl/msg_hash_fr.o \
 		intl/msg_hash_it.o \
 		intl/msg_hash_nl.o \
+		intl/msg_hash_pl.o \
 		intl/msg_hash_pt.o \
 		intl/msg_hash_us.o \
 		runloop.o \
@@ -398,6 +399,7 @@ ifeq ($(HAVE_MENU_COMMON), 1)
 			 menu/intl/menu_hash_fr.o \
 			 menu/intl/menu_hash_it.o \
 			 menu/intl/menu_hash_nl.o \
+			 menu/intl/menu_hash_pl.o \
 			 menu/intl/menu_hash_pt.o \
 			 menu/intl/menu_hash_us.o \
 			 menu/menu_input.o \

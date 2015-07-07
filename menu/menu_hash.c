@@ -52,6 +52,10 @@ const char *menu_hash_to_str(uint32_t hash)
          break;
       case RETRO_LANGUAGE_ESPERANTO:
          ret = menu_hash_to_str_eo(hash);
+         break;
+      case RETRO_LANGUAGE_POLISH:
+         ret = menu_hash_to_str_pl(hash);
+         break;
       default:
          break;
    }
@@ -92,6 +96,10 @@ int menu_hash_get_help(uint32_t hash, char *s, size_t len)
          break;
       case RETRO_LANGUAGE_ESPERANTO:
          ret = menu_hash_get_help_eo(hash, s, len);
+         break;
+      case RETRO_LANGUAGE_POLISH:
+         ret = menu_hash_get_help_pl(hash, s, len);
+         break;
       default:
          break;
    }

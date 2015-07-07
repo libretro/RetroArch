@@ -168,6 +168,8 @@ const char *msg_hash_to_str_it(uint32_t hash);
 
 const char *msg_hash_to_str_pt(uint32_t hash);
 
+const char *msg_hash_to_str_pl(uint32_t hash);
+
 const char *msg_hash_to_str_nl(uint32_t hash);
 
 const char *msg_hash_to_str_us(uint32_t hash);

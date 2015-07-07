@@ -679,6 +679,7 @@ RETROARCH
 #include "../intl/msg_hash_it.c"
 #include "../intl/msg_hash_nl.c"
 #include "../intl/msg_hash_pt.c"
+#include "../intl/msg_hash_pl.c"
 #include "../intl/msg_hash_us.c"
 
 
@@ -774,6 +775,7 @@ MENU
 #include "../menu/intl/menu_hash_fr.c"
 #include "../menu/intl/menu_hash_it.c"
 #include "../menu/intl/menu_hash_nl.c"
+#include "../menu/intl/menu_hash_pl.c"
 #include "../menu/intl/menu_hash_pt.c"
 #include "../menu/intl/menu_hash_us.c"
 

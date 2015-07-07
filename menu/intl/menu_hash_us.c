@@ -614,6 +614,8 @@ const char *menu_hash_to_str_us(uint32_t hash)
 
    switch (hash)
    {
+      case MENU_VALUE_LANG_POLISH:
+         return "Polish";
       case MENU_LABEL_VALUE_OVERLAY_AUTOLOAD_PREFERRED:
          return "Autoload Preferred Overlay";
       case MENU_LABEL_VALUE_UPDATE_CORE_INFO_FILES:

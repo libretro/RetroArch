@@ -1541,6 +1541,7 @@ static void setting_get_string_representation_uint_user_language(void *data,
    modes[RETRO_LANGUAGE_CHINESE_TRADITIONAL] = menu_hash_to_str(MENU_VALUE_LANG_CHINESE_TRADITIONAL);
    modes[RETRO_LANGUAGE_CHINESE_SIMPLIFIED]  = menu_hash_to_str(MENU_VALUE_LANG_CHINESE_SIMPLIFIED);
    modes[RETRO_LANGUAGE_ESPERANTO]           = menu_hash_to_str(MENU_VALUE_LANG_ESPERANTO);
+   modes[RETRO_LANGUAGE_POLISH]              = menu_hash_to_str(MENU_VALUE_LANG_POLISH);
 
    if (settings)
       strlcpy(s, modes[settings->user_language], len);
