@@ -526,7 +526,7 @@ proportional to the display width. */
 #ifdef RARCH_MOBILE
    scale_factor = menu_display_get_dpi();
 #else
-   scale_factor = width * 256 / 1920;
+   scale_factor = width / 7.5;
 #endif
 
    glui->line_height            = scale_factor / 3;
