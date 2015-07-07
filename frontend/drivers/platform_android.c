@@ -709,7 +709,7 @@ static void frontend_android_get_environment_settings(int *argc,
 			else
 			{
                fill_pathname_join(g_defaults.screenshot_dir,
-                     path, "screenshots", sizeof(g_defaults.screenshot_dir));
+                     app_dir, "screenshots", sizeof(g_defaults.screenshot_dir));
 			}
          }
       }
