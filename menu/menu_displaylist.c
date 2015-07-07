@@ -2532,6 +2532,10 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
             need_push    = true;
          }
          break;
+      case DISPLAYLIST_DATABASE_PLAYLISTS_HORIZONTAL:
+         menu_list_clear(info->list);
+         menu_displaylist_parse_generic(info, &need_sort);
+         break;
    }
 
    if (need_sort)
