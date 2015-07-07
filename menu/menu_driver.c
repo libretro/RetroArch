@@ -467,3 +467,17 @@ void menu_driver_unset_alive(void)
 {
    menu_alive = false;
 }
+
+bool menu_environment_cb(menu_environ_cb_t type, void *data)
+{
+   const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
+
+   if (driver->environ_cb)
+   {
+      int ret = driver->environ_cb(type, data);
+      if (ret == 0)
+         return true;
+   }
+
+   return false;
+}

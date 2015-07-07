@@ -736,7 +736,7 @@ static void rgui_populate_entries(const char *path,
       rgui_navigation_set(true);
 }
 
-static int rgui_environ(void *data, void *data2, menu_environ_cb_t type)
+static int rgui_environ(menu_environ_cb_t type, void *data)
 {
    switch (type)
    {

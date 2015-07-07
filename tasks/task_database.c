@@ -72,6 +72,7 @@ static int database_info_iterate_start
    RARCH_LOG("msg: %s\n", msg);
 #endif
 
+
    db->status = DATABASE_STATUS_ITERATE;
 
    return 0;
@@ -410,6 +411,9 @@ void rarch_main_data_db_iterate(bool is_thread, void *data)
          else
          {
             rarch_main_msg_queue_push_new(MSG_SCANNING_OF_DIRECTORY_FINISHED, 0, 180, true);
+#ifdef HAVE_MENU
+            menu_environment_cb(MENU_ENVIRON_RESET_HORIZONTAL_LIST, NULL);
+#endif
             db->status = DATABASE_STATUS_FREE;
          }
          break;

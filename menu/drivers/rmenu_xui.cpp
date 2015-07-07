@@ -676,7 +676,7 @@ static void rmenu_xui_list_set_selection(file_list_t *list)
       XuiListSetCurSel(m_menulist, file_list_get_directory_ptr(list));
 }
 
-static int rmenu_xui_environ(void *data, void *data2, menu_environ_cb_t type)
+static int rmenu_xui_environ(menu_environ_cb_t type, void *data)
 {
    switch (type)
    {

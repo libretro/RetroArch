@@ -773,8 +773,7 @@ static void glui_context_reset(void)
          settings->menu.wallpaper, "cb_menu_wallpaper", 0, 1, true);
 }
 
-static int glui_environ(void *data, void *data2,
-      menu_environ_cb_t type)
+static int glui_environ(menu_environ_cb_t type, void *data)
 {
    switch (type)
    {

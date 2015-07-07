@@ -312,7 +312,7 @@ static void rmenu_free(void *data)
 {
 }
 
-static int rmenu_environ(void *data, void *data2, menu_environ_cb_t type)
+static int rmenu_environ(menu_environ_cb_t type, void *data)
 {
    switch (type)
    {

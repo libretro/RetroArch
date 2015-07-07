@@ -1041,37 +1041,37 @@ static void xmb_list_open_horizontal_list(xmb_handle_t *xmb, menu_handle_t *menu
 static void xmb_refresh_horizontal_list(xmb_handle_t *xmb,
       menu_handle_t *menu)
 {
-   settings_t *settings = config_get_ptr();
-
    char mediapath[PATH_MAX_LENGTH] = {0};
    char themepath[PATH_MAX_LENGTH] = {0};
+
+   settings_t *settings = config_get_ptr();
+
    fill_pathname_join(mediapath, settings->assets_directory, "xmb", sizeof(mediapath));
    fill_pathname_join(themepath, mediapath, XMB_THEME, sizeof(themepath));
 
+   xmb_context_destroy_horizontal_list(xmb, menu);
    if (xmb->horizontal_list)
       free(xmb->horizontal_list);
    xmb->horizontal_list = NULL;
-   xmb_context_destroy_horizontal_list(xmb, menu);
+
    xmb_init_horizontal_list(menu, xmb);
    xmb_context_reset_horizontal_list(xmb, menu, themepath);
 }
 
-static int xmb_environ(void *data, void *data2, menu_environ_cb_t type)
+static int xmb_environ(menu_environ_cb_t type, void *data)
 {
    switch (type)
    {
       case MENU_ENVIRON_RESET_HORIZONTAL_LIST:
          {
-            char mediapath[PATH_MAX_LENGTH] = {0};
-            char themepath[PATH_MAX_LENGTH] = {0};
+            menu_handle_t    *menu   = menu_driver_get_ptr();
+            xmb_handle_t *xmb        = menu ? 
+               (xmb_handle_t*)menu->userdata : NULL;
 
-            xmb_handle_t *xmb    = (xmb_handle_t*)data;
-            menu_handle_t *menu  = (menu_handle_t*)data2;
-            settings_t *settings = config_get_ptr();
+            if (!xmb || !menu)
+               return -1;
 
-            fill_pathname_join(mediapath, settings->assets_directory, "xmb", sizeof(mediapath));
-            fill_pathname_join(themepath, mediapath, XMB_THEME, sizeof(themepath));
-            xmb_context_reset_horizontal_list(xmb, menu, themepath);
+            xmb_refresh_horizontal_list(xmb, menu);
          }
          break;
       default:
@@ -1098,12 +1098,6 @@ static void xmb_list_open(xmb_handle_t *xmb)
       dir = 1;
    else if (xmb->depth < xmb->old_depth)
       dir = -1;
-
-   /* TODO, call xmb_refresh_horizontal_list when a new scanning process is
-   started instead of using this condition. It causes a small lag when comming
-   back to the main menu from a submenu. */
-   if (dir == -1 && xmb->depth == 1 && xmb->categories.selection_ptr == 0)
-      xmb_refresh_horizontal_list(xmb, menu);
 
    xmb_list_open_horizontal_list(xmb, menu);
 

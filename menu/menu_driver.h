@@ -114,8 +114,7 @@ typedef struct menu_ctx_driver
          uint32_t label_hash, uint32_t menu_label_hash);
    bool  (*load_image)(void *data, menu_image_type_t type);
    const char *ident;
-   int (*environ_cb)(void *data, void *data2,
-         menu_environ_cb_t type);
+   int (*environ_cb)(menu_environ_cb_t type, void *data);
    bool  (*perform_action)(void* data, unsigned action);
 } menu_ctx_driver_t;
 
@@ -220,6 +219,8 @@ void menu_driver_set_alive(void);
 void menu_driver_unset_alive(void);
 
 size_t  menu_driver_list_get_selection(void);
+
+bool menu_environment_cb(menu_environ_cb_t type, void *data);
 
 int menu_driver_bind_init(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx,
