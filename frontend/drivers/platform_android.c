@@ -437,6 +437,10 @@ static bool device_is_game_console(const char *name)
    return false;
 }
 
+static char screenshot_dir[PATH_MAX_LENGTH];
+static char downloads_dir[PATH_MAX_LENGTH];
+static char sdcard_dir[PATH_MAX_LENGTH];
+static char app_dir[PATH_MAX_LENGTH];
 
 static void frontend_android_get_environment_settings(int *argc,
       char *argv[], void *data, void *params_data)
@@ -449,7 +453,7 @@ static void frontend_android_get_environment_settings(int *argc,
    jobject                       obj = NULL;
    jstring                      jstr = NULL;
    struct android_app   *android_app = (struct android_app*)data;
-
+   
    if (!android_app)
       return;
 
@@ -568,63 +572,145 @@ static void frontend_android_get_environment_settings(int *argc,
       }
    }
 
+   /* External Storage */
+   CALL_OBJ_METHOD_PARAM(env, jstr, obj, android_app->getStringExtra,
+         (*env)->NewStringUTF(env, "SDCARD"));
+
+   if (android_app->getStringExtra && jstr)
+   {
+      const char *argv = NULL;
+
+      *sdcard_dir = '\0';
+      argv = (*env)->GetStringUTFChars(env, jstr, 0);
+
+      if (argv && *argv)
+         strlcpy(sdcard_dir, argv, sizeof(sdcard_dir));
+      (*env)->ReleaseStringUTFChars(env, jstr, argv);
+
+      if (*sdcard_dir)
+      {
+         RARCH_LOG("External Storage Location %s.\n", sdcard_dir);
+         //todo base dir handler
+      }
+   }
+   
+   /* Screenshots */
+   CALL_OBJ_METHOD_PARAM(env, jstr, obj, android_app->getStringExtra,
+         (*env)->NewStringUTF(env, "SCREENSHOTS"));
+
+   if (android_app->getStringExtra && jstr)
+   {
+      const char *argv = NULL;
+
+      *screenshot_dir = '\0';
+      argv = (*env)->GetStringUTFChars(env, jstr, 0);
+
+      if (argv && *argv)
+         strlcpy(screenshot_dir, argv, sizeof(screenshot_dir));
+      (*env)->ReleaseStringUTFChars(env, jstr, argv);
+
+      if (*screenshot_dir)
+      {
+         RARCH_LOG("Screenshot Directory [%s]s.\n", screenshot_dir);
+         //todo screenshot handler
+      }
+   }
+   
+   /* Downloads */
+   CALL_OBJ_METHOD_PARAM(env, jstr, obj, android_app->getStringExtra,
+         (*env)->NewStringUTF(env, "DOWNLOADS"));
+
+   if (android_app->getStringExtra && jstr)
+   {
+      const char *argv = NULL;
+
+      *downloads_dir = '\0';
+      argv = (*env)->GetStringUTFChars(env, jstr, 0);
+
+      if (argv && *argv)
+         strlcpy(downloads_dir, argv, sizeof(downloads_dir));
+      (*env)->ReleaseStringUTFChars(env, jstr, argv);
+
+      if (*downloads_dir)
+      {
+         RARCH_LOG("Download Directory [%s].\n", downloads_dir);
+         //todo downloads handler
+      }
+   }
+   
    /* Content. */
    CALL_OBJ_METHOD_PARAM(env, jstr, obj, android_app->getStringExtra,
          (*env)->NewStringUTF(env, "DATADIR"));
 
    if (android_app->getStringExtra && jstr)
-   {
-      static char path[PATH_MAX_LENGTH];
+   {      
       const char *argv = NULL;
 
-      *path = '\0';
+      *app_dir = '\0';
       argv = (*env)->GetStringUTFChars(env, jstr, 0);
 
+	  
       if (argv && *argv)
-         strlcpy(path, argv, sizeof(path));
+         strlcpy(app_dir, argv, sizeof(app_dir));
       (*env)->ReleaseStringUTFChars(env, jstr, argv);
 
-      if (*path)
+      if (*app_dir)
       {
-         RARCH_LOG("Data path: [%s].\n", path);
-         if (args && *path)
+         RARCH_LOG("Application Dir: [%s].\n", app_dir);
+         if (args && *app_dir)
          {
-            fill_pathname_join(g_defaults.assets_dir, path,
+            fill_pathname_join(g_defaults.assets_dir, app_dir,
                   "assets", sizeof(g_defaults.savestate_dir));
-            fill_pathname_join(g_defaults.extraction_dir, path,
+            fill_pathname_join(g_defaults.extraction_dir, app_dir,
                   "tmp", sizeof(g_defaults.extraction_dir));
-            fill_pathname_join(g_defaults.shader_dir, path,
+            fill_pathname_join(g_defaults.shader_dir, app_dir,
                   "shaders_glsl", sizeof(g_defaults.shader_dir));
-            fill_pathname_join(g_defaults.overlay_dir, path,
+            fill_pathname_join(g_defaults.overlay_dir, app_dir,
                   "overlays", sizeof(g_defaults.overlay_dir));
-            fill_pathname_join(g_defaults.core_dir, path,
+            fill_pathname_join(g_defaults.core_dir, app_dir,
                   "cores", sizeof(g_defaults.core_dir));
             fill_pathname_join(g_defaults.core_info_dir,
-                  path, "info", sizeof(g_defaults.core_info_dir));
+                  app_dir, "info", sizeof(g_defaults.core_info_dir));
             fill_pathname_join(g_defaults.autoconfig_dir,
-                  path, "autoconfig", sizeof(g_defaults.autoconfig_dir));
+                  app_dir, "autoconfig", sizeof(g_defaults.autoconfig_dir));
             fill_pathname_join(g_defaults.audio_filter_dir,
-                  path, "audio_filters", sizeof(g_defaults.audio_filter_dir));
+                  app_dir, "audio_filters", sizeof(g_defaults.audio_filter_dir));
             fill_pathname_join(g_defaults.video_filter_dir,
-                  path, "video_filters", sizeof(g_defaults.video_filter_dir));
+                  app_dir, "video_filters", sizeof(g_defaults.video_filter_dir));
             strlcpy(g_defaults.content_history_dir,
-                  path, sizeof(g_defaults.content_history_dir));
+                  app_dir, sizeof(g_defaults.content_history_dir));
             fill_pathname_join(g_defaults.database_dir,
-                  path, "database/rdb", sizeof(g_defaults.database_dir));
+                  app_dir, "database/rdb", sizeof(g_defaults.database_dir));
             fill_pathname_join(g_defaults.cursor_dir,
-                  path, "database/cursors", sizeof(g_defaults.cursor_dir));
+                  app_dir, "database/cursors", sizeof(g_defaults.cursor_dir));
             fill_pathname_join(g_defaults.cheats_dir,
-                  path, "cheats", sizeof(g_defaults.cheats_dir));
+                  app_dir, "cheats", sizeof(g_defaults.cheats_dir));
             fill_pathname_join(g_defaults.playlist_dir,
-                  path, "playlists", sizeof(g_defaults.playlist_dir));
+                  app_dir, "playlists", sizeof(g_defaults.playlist_dir));
             fill_pathname_join(g_defaults.remap_dir,
-                  path, "remaps", sizeof(g_defaults.remap_dir));
+                  app_dir, "remaps", sizeof(g_defaults.remap_dir));
             fill_pathname_join(g_defaults.wallpapers_dir,
-                  path, "wallpapers", sizeof(g_defaults.wallpapers_dir));
-            fill_pathname_join(g_defaults.core_assets_dir,
-                  path, "downloads", sizeof(g_defaults.core_assets_dir));
-            fill_pathname_join(g_defaults.screenshot_dir,
-                  path, "screenshots", sizeof(g_defaults.screenshot_dir));
+                  app_dir, "wallpapers", sizeof(g_defaults.wallpapers_dir));
+			if(*downloads_dir)
+			{
+               fill_pathname_join(g_defaults.core_assets_dir,
+                     downloads_dir, "", sizeof(g_defaults.core_assets_dir));
+			}
+			else
+			{
+               fill_pathname_join(g_defaults.core_assets_dir,
+                     app_dir, "downloads", sizeof(g_defaults.core_assets_dir));
+			}
+			if(*screenshot_dir)
+			{
+               fill_pathname_join(g_defaults.screenshot_dir,
+                     screenshot_dir, "", sizeof(g_defaults.screenshot_dir));
+			}
+			else
+			{
+               fill_pathname_join(g_defaults.screenshot_dir,
+                     app_dir, "screenshots", sizeof(g_defaults.screenshot_dir));
+			}
          }
       }
    }
@@ -794,7 +880,9 @@ static int frontend_android_parse_drive_list(void *data)
    file_list_t *list = (file_list_t*)data;
 
    menu_list_push(list,
-         "/data/data/com.retroarch/", "", MENU_FILE_DIRECTORY, 0, 0);
+         app_dir, "Application Dir", MENU_FILE_DIRECTORY, 0, 0);
+   menu_list_push(list,
+         sdcard_dir, "Internal Memory", MENU_FILE_DIRECTORY, 0, 0);
    menu_list_push(list, "/", "",
          MENU_FILE_DIRECTORY, 0, 0);
 

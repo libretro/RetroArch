@@ -7,6 +7,7 @@ import android.util.Log;
 
 public class RetroActivityIntent extends RetroActivityCommon {
 	private Intent pendingIntent = null;
+	private static final String TAG = "RetroArch";
 	
 	@Override
 	public void onBackPressed()
@@ -56,6 +57,21 @@ public class RetroActivityIntent extends RetroActivityCommon {
 		return pendingIntent.getStringExtra("CONFIGFILE");
 	}
 
+	public String getPendingIntentStorageLocation()
+	{
+		return pendingIntent.getStringExtra("SDCARD");
+	}
+	
+	public String getPendingIntentDownloadLocation()
+	{
+		return pendingIntent.getStringExtra("DOWNLOADS");
+	}
+
+	public String getPendingIntentScreenshotsLocation()
+	{
+		return pendingIntent.getStringExtra("SCREENSHOTS");
+	}
+	
 	/**
 	 * Gets the specified IME in the pending intent.
 	 * 

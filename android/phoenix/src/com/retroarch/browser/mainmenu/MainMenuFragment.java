@@ -22,6 +22,7 @@ import android.preference.PreferenceManager;
 import android.provider.Settings;
 import android.util.Log;
 import android.widget.Toast;
+import android.os.Environment;
 
 import com.retroarch.R;
 import com.retroarch.browser.NativeInterface;
@@ -216,5 +217,8 @@ public final class MainMenuFragment extends PreferenceListFragment implements On
 		retro.putExtra("CONFIGFILE", configFilePath);
 		retro.putExtra("IME", imePath);
 		retro.putExtra("DATADIR", dataDirPath);
+		retro.putExtra("SDCARD", Environment.getExternalStorageDirectory().getAbsolutePath());
+		retro.putExtra("DOWNLOADS", Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).getAbsolutePath());
+		retro.putExtra("SCREENSHOTS", Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES).getAbsolutePath());
 	}
 }
