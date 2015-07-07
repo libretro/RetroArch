@@ -467,6 +467,9 @@ static void frontend_android_get_environment_settings(int *argc,
       args->sram_path  = NULL;
       args->state_path = NULL;
    }
+   static char screenshot_path[PATH_MAX_LENGTH];
+   static char downloads_path[PATH_MAX_LENGTH];
+   static char base_path[PATH_MAX_LENGTH];
    
    frontend_android_get_version(&major, &minor, &rel);
 
@@ -574,7 +577,6 @@ static void frontend_android_get_environment_settings(int *argc,
 
    if (android_app->getStringExtra && jstr)
    {
-      static char base_path[PATH_MAX_LENGTH];
       const char *argv = NULL;
 
       *base_path = '\0';
@@ -597,7 +599,6 @@ static void frontend_android_get_environment_settings(int *argc,
 
    if (android_app->getStringExtra && jstr)
    {
-      static char screenshot_path[PATH_MAX_LENGTH];
       const char *argv = NULL;
 
       *screenshot_path = '\0';
@@ -620,7 +621,6 @@ static void frontend_android_get_environment_settings(int *argc,
 
    if (android_app->getStringExtra && jstr)
    {
-      static char downloads_path[PATH_MAX_LENGTH];
       const char *argv = NULL;
 
       *downloads_path = '\0';
