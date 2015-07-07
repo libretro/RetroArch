@@ -694,12 +694,22 @@ static void frontend_android_get_environment_settings(int *argc,
 			if(*downloads_dir)
 			{
                fill_pathname_join(g_defaults.core_assets_dir,
-                  downloads_dir, "/", sizeof(g_defaults.core_assets_dir));
+                     downloads_dir, "", sizeof(g_defaults.core_assets_dir));
 			}
 			else
 			{
                fill_pathname_join(g_defaults.core_assets_dir,
-                  app_dir, "downloads", sizeof(g_defaults.core_assets_dir));
+                     app_dir, "downloads", sizeof(g_defaults.core_assets_dir));
+			}
+			if(*screenshot_dir)
+			{
+               fill_pathname_join(g_defaults.screenshot_dir,
+                     screenshot_dir, "", sizeof(g_defaults.screenshot_dir));
+			}
+			else
+			{
+               fill_pathname_join(g_defaults.screenshot_dir,
+                     path, "screenshots", sizeof(g_defaults.screenshot_dir));
 			}
          }
       }

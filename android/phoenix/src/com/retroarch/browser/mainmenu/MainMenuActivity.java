@@ -49,20 +49,6 @@ public final class MainMenuActivity extends FragmentActivity
 		setVolumeControlStream(AudioManager.STREAM_MUSIC);
 	}
 
-	public void setModule(String core_path, String core_name)
-	{
-		UserPreferences.updateConfigFile(this);
-
-		SharedPreferences prefs = UserPreferences.getPreferences(this);
-		SharedPreferences.Editor edit = prefs.edit();
-		edit.putString("libretro_path", core_path);
-		edit.putString("libretro_name", core_name);
-		edit.apply();
-
-		// Set the title section to contain the name of the selected core.
-		setCoreTitle(core_name);
-	}
-
 	public void setCoreTitle(String core_name)
 	{
 		setTitle("RetroArch : " + core_name);
