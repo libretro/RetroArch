@@ -64,20 +64,6 @@ public final class MainMenuFragment extends PreferenceListFragment implements On
 
 		// Extract assets. 
 		extractAssets();
-
-		final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(ctx);
-		if (!prefs.getBoolean("first_time_refreshrate_calculate", false))
-		{
-			prefs.edit().putBoolean("first_time_refreshrate_calculate", true).apply();
-
-			AlertDialog.Builder alert = new AlertDialog.Builder(ctx)
-						.setTitle(R.string.welcome_to_retroarch)
-						.setMessage(R.string.welcome_to_retroarch_desc)
-						.setPositiveButton(R.string.ok, null);
-			alert.show();
-			
-			UserPreferences.updateConfigFile(ctx);
-		}
 	}
 
 	private void extractAssets()
