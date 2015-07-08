@@ -55,7 +55,7 @@ typedef struct data_runloop
 
 static char data_runloop_msg[PATH_MAX_LENGTH];
 
-static struct data_runloop *g_data_runloop;
+static data_runloop_t *g_data_runloop;
 
 static data_runloop_t *rarch_main_data_get_ptr(void)
 {
