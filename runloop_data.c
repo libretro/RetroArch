@@ -301,7 +301,6 @@ void rarch_main_data_clear_state(void)
 
 void rarch_main_data_init_queues(void)
 {
-   data_runloop_t *runloop = rarch_main_data_get_ptr();
 #ifdef HAVE_NETWORKING
    rarch_main_data_http_init_msg_queue();
 #endif
@@ -318,7 +317,6 @@ void rarch_main_data_msg_queue_push(unsigned type,
 {
    char new_msg[PATH_MAX_LENGTH] = {0};
    msg_queue_t *queue            = NULL;
-   data_runloop_t *runloop       = rarch_main_data_get_ptr();
 
    switch(type)
    {

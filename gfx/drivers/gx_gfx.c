@@ -473,7 +473,6 @@ static void setup_video_mode(void *data)
    OSInitThreadQueue(&g_video_cond);
 
    VIDEO_GetPreferredMode(&gx_mode);
-   global_t *global = global_get_ptr();
    gx_set_video_mode(data, 0, 0, true);
 }
 
