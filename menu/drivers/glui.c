@@ -75,7 +75,7 @@ static void glui_blit_line(float x, float y,
 
    params.x           = x / width;
    params.y           = 1.0f - (y + glui->line_height/2 + disp->font.size/3) 
-                        / height;
+      / height;
    params.scale       = 1.0;
    params.color       = color;
    params.full_screen = true;
@@ -269,8 +269,8 @@ static void glui_render(void)
    if (settings->menu.pointer.enable)
    {
       menu_input->pointer.ptr =
-            (menu_input->pointer.y - glui->line_height + menu->scroll_y - 16)
-            / glui->line_height;
+         (menu_input->pointer.y - glui->line_height + menu->scroll_y - 16)
+         / glui->line_height;
 
       if (menu_input->pointer.dragging)
          menu->scroll_y -= menu_input->pointer.dy;
@@ -285,8 +285,8 @@ static void glui_render(void)
          menu->scroll_y -= 10;
 
       menu_input->mouse.ptr =
-            (menu_input->mouse.y - glui->line_height + menu->scroll_y - 16)
-            / glui->line_height;
+         (menu_input->mouse.y - glui->line_height + menu->scroll_y - 16)
+         / glui->line_height;
    }
 
    if (menu_entries_get_end() < height / glui->line_height)
@@ -296,12 +296,12 @@ static void glui_render(void)
       menu->scroll_y = 0;
 
    bottom = menu_entries_get_end() * glui->line_height
-         - height + disp->header_height * 2;
+      - height + disp->header_height * 2;
    if (menu->scroll_y > bottom)
       menu->scroll_y = bottom;
 
    if (menu_entries_get_end() * glui->line_height
-      < height - disp->header_height*2)
+         < height - disp->header_height*2)
       menu->scroll_y = 0;
 }
 
@@ -510,10 +510,10 @@ static void glui_layout(menu_handle_t *menu, glui_handle_t *glui)
    unsigned width, height;
    video_driver_get_size(&width, &height);
 
-/* Mobiles platforms may have very small display metrics coupled to a high
-resolution, so we should be dpi aware to ensure the entries hitboxes are big
-enough. On desktops, we just care about readability, with every widget size
-proportional to the display width. */
+   /* Mobiles platforms may have very small display metrics coupled to a high
+      resolution, so we should be dpi aware to ensure the entries hitboxes are big
+      enough. On desktops, we just care about readability, with every widget size
+      proportional to the display width. */
 #ifdef RARCH_MOBILE
    scale_factor = menu_display_get_dpi();
 #else
@@ -610,7 +610,7 @@ static void glui_context_destroy(void)
    glui_handle_t *glui   = NULL;
    menu_handle_t *menu   = menu_driver_get_ptr();
    driver_t      *driver = driver_get_ptr();
-    
+
    if (!menu || !menu->userdata || !gl || !driver)
       return;
 
@@ -628,7 +628,7 @@ static bool glui_load_image(void *data, menu_image_type_t type)
 
    if (!menu || !menu->userdata)
       return false;
-   
+
    glui = (glui_handle_t*)menu->userdata;
 
    switch (type)
@@ -664,7 +664,7 @@ static float glui_get_scroll(void)
 
    glui = (glui_handle_t*)menu->userdata;
    if (glui->line_height)
-       half = (height / glui->line_height) / 2;
+      half = (height / glui->line_height) / 2;
 
    if (nav->selection_ptr < (unsigned)half)
       return 0;
