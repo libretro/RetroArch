@@ -42,37 +42,37 @@ static CFRunLoopTimerRef iterate_timer;
 /* forward declaration */
 void apple_rarch_exited(void);
 
-static void rarch_draw()
+static void rarch_draw(void)
 {
-    data_runloop_t *data_runloop      = rarch_main_data_get_ptr();
-    runloop_t *runloop = rarch_main_get_ptr();
-    int ret            = 0;
-    bool iterate       = iterate_observer && !runloop->is_paused;
-    
-    if (iterate)
-    {
+   runloop_t *runloop = rarch_main_get_ptr();
+   int ret            = 0;
+   bool iterate       = iterate_observer && !runloop->is_paused;
+
+   if (iterate)
+   {
       ret                = rarch_main_iterate();
-    }
-    
-    rarch_main_data_iterate();
-    if (iterate_timer) {
-      if (rarch_main_data_active(data_runloop)) {
-        CFRunLoopAddTimer(CFRunLoopGetMain(), iterate_timer, kCFRunLoopCommonModes); 
-      } else {
-        CFRunLoopRemoveTimer(CFRunLoopGetMain(), iterate_timer, kCFRunLoopCommonModes); 
-      }
-    }
-    
-    if (ret == -1)
-    {
-        main_exit_save_config();
-        main_exit(NULL);
-        return;
-    }
-    
-    if (runloop->is_idle)
-        return;
-    CFRunLoopWakeUp(CFRunLoopGetMain());
+   }
+
+   rarch_main_data_iterate();
+
+   if (iterate_timer)
+   {
+      if (rarch_main_data_active())
+         CFRunLoopAddTimer(CFRunLoopGetMain(), iterate_timer, kCFRunLoopCommonModes); 
+      else
+         CFRunLoopRemoveTimer(CFRunLoopGetMain(), iterate_timer, kCFRunLoopCommonModes); 
+   }
+
+   if (ret == -1)
+   {
+      main_exit_save_config();
+      main_exit(NULL);
+      return;
+   }
+
+   if (runloop->is_idle)
+      return;
+   CFRunLoopWakeUp(CFRunLoopGetMain());
 }
 
 static void rarch_draw_observer(CFRunLoopObserverRef observer,

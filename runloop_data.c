@@ -24,7 +24,6 @@
 #include "tasks/tasks.h"
 #include "input/input_overlay.h"
 
-
 #ifdef HAVE_MENU
 #include "menu/menu.h"
 #include "menu/menu_entries.h"
@@ -38,12 +37,27 @@ enum
    THREAD_CODE_ALIVE
 } thread_code_enum;
 
+typedef struct data_runloop
+{
+   bool inited;
+
+#ifdef HAVE_THREADS
+   bool thread_inited;
+   unsigned thread_code;
+   bool alive;
+
+   slock_t *lock;
+   slock_t *cond_lock;
+   scond_t *cond;
+   sthread_t *thread;
+#endif
+} data_runloop_t;
 
 static char data_runloop_msg[PATH_MAX_LENGTH];
 
 static struct data_runloop *g_data_runloop;
 
-data_runloop_t *rarch_main_data_get_ptr(void)
+static data_runloop_t *rarch_main_data_get_ptr(void)
 {
    return g_data_runloop;
 }
@@ -122,7 +136,7 @@ static void data_runloop_iterate(bool is_thread)
 }
 
 
-bool rarch_main_data_active(data_runloop_t *runloop)
+bool rarch_main_data_active(void)
 {
    bool                  active = false;
    driver_t             *driver = driver_get_ptr();
@@ -174,7 +188,7 @@ static void data_thread_loop(void *data)
 
       data_runloop_iterate(true);
 
-      if (!rarch_main_data_active(runloop))
+      if (!rarch_main_data_active())
          rarch_sleep(10);
 
       slock_unlock(runloop->lock);

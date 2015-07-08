@@ -17,9 +17,6 @@
 #define __RETROARCH_DATA_RUNLOOP_H
 
 #include <retro_miscellaneous.h>
-#ifdef HAVE_THREADS
-#include <rthreads/rthreads.h>
-#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -37,22 +34,6 @@ enum runloop_data_type
    DATA_TYPE_DB
 };
 
-typedef struct data_runloop
-{
-   bool inited;
-
-#ifdef HAVE_THREADS
-   bool thread_inited;
-   unsigned thread_code;
-   bool alive;
-
-   slock_t *lock;
-   slock_t *cond_lock;
-   scond_t *cond;
-   sthread_t *thread;
-#endif
-} data_runloop_t;
-
 void rarch_main_data_msg_queue_push(unsigned type,
       const char *msg, const char *msg2,
       unsigned prio, unsigned duration, bool flush);
@@ -69,9 +50,7 @@ void rarch_main_data_init_queues(void);
 
 void rarch_main_data_init(void);
 
-bool rarch_main_data_active(data_runloop_t *runloop);
-
-data_runloop_t *rarch_main_data_get_ptr(void);
+bool rarch_main_data_active(void);
 
 #ifdef __cplusplus
 }
