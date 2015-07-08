@@ -56,11 +56,13 @@
 static void video_frame(const void *data, unsigned width,
       unsigned height, size_t pitch)
 {
-   unsigned output_width  = 0, output_height = 0, output_pitch = 0;
-   const char *msg      = NULL;
-   driver_t  *driver    = driver_get_ptr();
-   global_t  *global    = global_get_ptr();
-   settings_t *settings = config_get_ptr();
+   unsigned output_width  = 0;
+   unsigned output_height = 0;
+   unsigned  output_pitch = 0;
+   const char *msg        = NULL;
+   driver_t  *driver      = driver_get_ptr();
+   global_t  *global      = global_get_ptr();
+   settings_t *settings   = config_get_ptr();
 
    if (!driver->video_active)
       return;
@@ -238,7 +240,8 @@ static int16_t input_state(unsigned port, unsigned device,
  *
  * Poll pressed buttons/keys on currently active overlay.
  **/
-static INLINE void input_poll_overlay(input_overlay_t *overlay_device, float opacity)
+static INLINE void input_poll_overlay(
+      input_overlay_t *overlay_device, float opacity)
 {
    input_overlay_state_t old_key_state;
    unsigned i, j, device;
@@ -258,7 +261,8 @@ static INLINE void input_poll_overlay(input_overlay_t *overlay_device, float opa
       RARCH_DEVICE_POINTER_SCREEN : RETRO_DEVICE_POINTER;
 
    for (i = 0;
-         input_driver_state(NULL, 0, device, i, RETRO_DEVICE_ID_POINTER_PRESSED);
+         input_driver_state(NULL, 0, device, i,
+            RETRO_DEVICE_ID_POINTER_PRESSED);
          i++)
    {
       input_overlay_state_t polled_data;
@@ -421,8 +425,8 @@ void retro_set_default_callbacks(void *data)
 void retro_init_libretro_cbs(void *data)
 {
    struct retro_callbacks *cbs = (struct retro_callbacks*)data;
-   driver_t *driver = driver_get_ptr();
-   global_t *global = global_get_ptr();
+   driver_t            *driver = driver_get_ptr();
+   global_t            *global = global_get_ptr();
 
    if (!cbs)
       return;
