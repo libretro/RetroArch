@@ -87,7 +87,8 @@ void *rarch_main_data_nbio_get_ptr(void)
 
 msg_queue_t *rarch_main_data_nbio_get_msg_queue_ptr(void)
 {
-   nbio_handle_t         *nbio  = rarch_main_data_nbio_get_ptr();
+   nbio_handle_t         *nbio  = (nbio_handle_t*)
+      rarch_main_data_nbio_get_ptr();
    if (!nbio)
       return NULL;
    return nbio->msg_queue;
@@ -95,7 +96,8 @@ msg_queue_t *rarch_main_data_nbio_get_msg_queue_ptr(void)
 
 void *rarch_main_data_nbio_get_handle(void)
 {
-   nbio_handle_t         *nbio  = rarch_main_data_nbio_get_ptr();
+   nbio_handle_t         *nbio  = (nbio_handle_t*)
+      rarch_main_data_nbio_get_ptr();
    if (!nbio)
       return NULL;
    return nbio->handle;
@@ -103,7 +105,8 @@ void *rarch_main_data_nbio_get_handle(void)
 
 msg_queue_t *rarch_main_data_nbio_image_get_msg_queue_ptr(void)
 {
-   nbio_handle_t         *nbio  = rarch_main_data_nbio_get_ptr();
+   nbio_handle_t         *nbio  = (nbio_handle_t*)
+      rarch_main_data_nbio_get_ptr();
    if (!nbio)
       return NULL;
 #ifdef HAVE_RPNG
@@ -115,7 +118,8 @@ msg_queue_t *rarch_main_data_nbio_image_get_msg_queue_ptr(void)
 
 void *rarch_main_data_nbio_image_get_handle(void)
 {
-   nbio_handle_t         *nbio  = rarch_main_data_nbio_get_ptr();
+   nbio_handle_t         *nbio  = (nbio_handle_t*)
+      rarch_main_data_nbio_get_ptr();
    if (!nbio)
       return NULL;
 #ifdef HAVE_RPNG
@@ -350,7 +354,8 @@ static int rarch_main_data_image_iterate_transfer_parse(nbio_handle_t *nbio)
 
 void rarch_main_data_nbio_image_iterate(bool is_thread)
 {
-   nbio_handle_t         *nbio  = rarch_main_data_nbio_get_ptr();
+   nbio_handle_t         *nbio  = (nbio_handle_t*)
+      rarch_main_data_nbio_get_ptr();
    nbio_image_handle_t   *image = nbio    ? &nbio->image   : NULL;
 
    if (!image || !nbio)
@@ -384,7 +389,8 @@ void rarch_main_data_nbio_image_iterate(bool is_thread)
 
 void rarch_main_data_nbio_image_upload_iterate(bool is_thread)
 {
-   nbio_handle_t         *nbio  = rarch_main_data_nbio_get_ptr();
+   nbio_handle_t         *nbio  = (nbio_handle_t*)
+      rarch_main_data_nbio_get_ptr();
    nbio_image_handle_t   *image = nbio    ? &nbio->image   : NULL;
 
    if (!image || !nbio)
@@ -624,7 +630,8 @@ static int rarch_main_data_nbio_iterate_parse(nbio_handle_t *nbio)
 
 void rarch_main_data_nbio_iterate(bool is_thread)
 {
-   nbio_handle_t         *nbio  = rarch_main_data_nbio_get_ptr();
+   nbio_handle_t         *nbio  = (nbio_handle_t*)
+      rarch_main_data_nbio_get_ptr();
    if (!nbio)
       return;
 
@@ -652,7 +659,8 @@ void rarch_main_data_nbio_iterate(bool is_thread)
 
 void rarch_main_data_nbio_init_msg_queue(void)
 {
-   nbio_handle_t         *nbio  = rarch_main_data_nbio_get_ptr();
+   nbio_handle_t         *nbio  = (nbio_handle_t*)
+      rarch_main_data_nbio_get_ptr();
    if (!nbio)
       return;
 

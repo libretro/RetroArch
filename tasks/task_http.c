@@ -437,7 +437,8 @@ static int rarch_main_data_http_iterate_transfer(void *data)
 
 void rarch_main_data_http_iterate(bool is_thread)
 {
-   http_handle_t     *http = rarch_main_data_http_get_ptr();
+   http_handle_t     *http = (http_handle_t*)
+      rarch_main_data_http_get_ptr();
    if (!http)
       return;
 
@@ -470,7 +471,8 @@ void rarch_main_data_http_iterate(bool is_thread)
 
 void rarch_main_data_http_init_msg_queue(void)
 {
-   http_handle_t     *http = rarch_main_data_http_get_ptr();
+   http_handle_t     *http = (http_handle_t*)
+      rarch_main_data_http_get_ptr();
    if (!http)
       return;
 
@@ -481,7 +483,8 @@ void rarch_main_data_http_init_msg_queue(void)
 
 msg_queue_t *rarch_main_data_http_get_msg_queue_ptr(void)
 {
-   http_handle_t     *http = rarch_main_data_http_get_ptr();
+   http_handle_t     *http = (http_handle_t*)
+      rarch_main_data_http_get_ptr();
    if (!http)
       return NULL;
    return http->msg_queue;
@@ -489,7 +492,8 @@ msg_queue_t *rarch_main_data_http_get_msg_queue_ptr(void)
 
 void *rarch_main_data_http_get_handle(void)
 {
-   http_handle_t     *http = rarch_main_data_http_get_ptr();
+   http_handle_t     *http = (http_handle_t*)
+      rarch_main_data_http_get_ptr();
    if (!http)
       return NULL;
    if (http->handle == NULL)
@@ -499,7 +503,8 @@ void *rarch_main_data_http_get_handle(void)
 
 void *rarch_main_data_http_conn_get_handle(void)
 {
-   http_handle_t     *http = rarch_main_data_http_get_ptr();
+   http_handle_t     *http = (http_handle_t*)
+      rarch_main_data_http_get_ptr();
    if (!http)
       return NULL;
    if (http->connection.handle == NULL)

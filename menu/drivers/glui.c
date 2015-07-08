@@ -772,6 +772,7 @@ static int glui_environ(menu_environ_cb_t type, void *data)
 {
    switch (type)
    {
+      case 0:
       default:
          return -1;
    }
