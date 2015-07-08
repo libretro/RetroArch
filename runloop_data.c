@@ -115,51 +115,32 @@ static void data_runloop_iterate(bool is_thread, data_runloop_t *runloop)
 
 bool rarch_main_data_active(data_runloop_t *runloop)
 {
-   bool                  image_active, nbio_active, http_active,
-                         http_conn_active, overlay_active;
    bool                  active = false;
-   bool               db_active = false;
-
    driver_t             *driver = driver_get_ptr();
 #ifdef HAVE_NETWORKING
    http_handle_t          *http = runloop ? &runloop->http : NULL;
-   struct http_connection_t *http_conn = http ? http->connection.handle : NULL;
 #endif
 #ifdef HAVE_LIBRETRODB
    database_info_handle_t   *db = runloop ? runloop->db.handle : NULL;
-   db_active                    = db && db->status != DATABASE_STATUS_NONE;
-   active                       = active || db_active;
+   if (db && db->status != DATABASE_STATUS_NONE)
+      active = true;
 #endif
 
 #ifdef HAVE_OVERLAY
-   overlay_active               = driver && driver->overlay && 
-      (driver->overlay->state != OVERLAY_STATUS_ALIVE 
-       && driver->overlay->state != OVERLAY_STATUS_NONE);
-   active                       = active || overlay_active;
+   if (driver && driver->overlay && 
+         (driver->overlay->state != OVERLAY_STATUS_ALIVE 
+          && driver->overlay->state != OVERLAY_STATUS_NONE))
+      active = true;
 #endif
-   image_active                 = rarch_main_data_nbio_image_get_handle() != NULL;
-   active                       = active || image_active;
-   nbio_active                  = rarch_main_data_nbio_get_handle() != NULL;
-   active                       = active || nbio_active;
+   if (rarch_main_data_nbio_image_get_handle())
+      active = true;
+   if (rarch_main_data_nbio_get_handle())
+      active = true;
 #ifdef HAVE_NETWORKING
-   http_active                  = http && http->handle != NULL;
-   active                       = active || http_active;
-   http_conn_active             = http_conn != NULL;
-   active                       = active || http_conn_active;
-#endif
-
-   (void)active;
-   (void)image_active;
-   (void)nbio_active;
-   (void)http_active;
-   (void)http_conn_active;
-   (void)overlay_active;
-   (void)db_active;
-
-#if 0
-   RARCH_LOG("runloop nbio : %d, image: %d, http: %d, http conn: %d, overlay: %d\n", nbio_active, image_active,
-         http_active, http_conn_active, overlay_active);
-   RARCH_LOG("active: %d\n", active);
+   if (http && http->handle != NULL)
+      active = true;
+   if (http && http->connection.handle != NULL)
+      active = true;
 #endif
 
    return active;
