@@ -64,17 +64,16 @@ static struct libusb_adapter adapters;
 
 static void adapter_thread(void *data)
 {
+   uint8_t send_command_buf[4096];
    struct libusb_adapter *adapter = (struct libusb_adapter*)data;
    libusb_hid_t *hid              = adapter->hid;
 
-   uint8_t send_command_buf[4096];
-
    while (!adapter->quitting)
    {
-      int size = 0;
       size_t send_command_size;
       int tmp;
       int report_number;
+      int size = 0;
 
       slock_lock(adapter->send_control_lock);
       if (fifo_read_avail(adapter->send_control_buffer) >= sizeof(send_command_size))
@@ -104,6 +103,7 @@ static void libusb_hid_device_send_control(void *data,
    if (adapter)
    {
       slock_lock(adapter->send_control_lock);
+
       if (fifo_write_avail(adapter->send_control_buffer) >= size + sizeof(size))
       {
          fifo_write(adapter->send_control_buffer, &size, sizeof(size));
@@ -192,7 +192,8 @@ static int add_adapter(void *data, struct libusb_device *dev)
    struct libusb_adapter *old_head = NULL;
    struct libusb_hid          *hid = (struct libusb_hid*)data;
    const char *device_name         = NULL;
-   struct libusb_adapter *adapter  = (struct libusb_adapter*)calloc(1, sizeof(struct libusb_adapter));
+   struct libusb_adapter *adapter  = (struct libusb_adapter*)
+      calloc(1, sizeof(struct libusb_adapter));
 
    if (!adapter || !hid)
    {
@@ -326,7 +327,7 @@ error:
 
 static int remove_adapter(void *data, struct libusb_device *dev)
 {
-   struct libusb_adapter *adapter = (struct libusb_adapter*)&adapters;
+   struct libusb_adapter  *adapter = (struct libusb_adapter*)&adapters;
    struct libusb_hid          *hid = (struct libusb_hid*)data;
 
    while (adapter->next != NULL)
