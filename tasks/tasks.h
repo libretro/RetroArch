@@ -36,6 +36,10 @@ msg_queue_t *rarch_main_data_nbio_image_get_msg_queue_ptr(void);
 
 void *rarch_main_data_nbio_get_ptr(void);
 
+void *rarch_main_data_nbio_get_handle(void);
+
+void *rarch_main_data_nbio_image_get_handle(void);
+
 #ifdef HAVE_NETWORKING
 /**
  * rarch_main_data_http_iterate_transfer:

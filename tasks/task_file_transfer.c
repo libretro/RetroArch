@@ -41,12 +41,36 @@ msg_queue_t *rarch_main_data_nbio_get_msg_queue_ptr(void)
    return nbio->msg_queue;
 }
 
+void *rarch_main_data_nbio_get_handle(void)
+{
+   nbio_handle_t         *nbio  = rarch_main_data_nbio_get_ptr();
+   if (!nbio)
+      return NULL;
+   return nbio->handle;
+}
+
 msg_queue_t *rarch_main_data_nbio_image_get_msg_queue_ptr(void)
 {
    nbio_handle_t         *nbio  = rarch_main_data_nbio_get_ptr();
    if (!nbio)
       return NULL;
+#ifdef HAVE_RPNG
    return nbio->image.msg_queue;
+#else
+   return NULL;
+#endif
+}
+
+void *rarch_main_data_nbio_image_get_handle(void)
+{
+   nbio_handle_t         *nbio  = rarch_main_data_nbio_get_ptr();
+   if (!nbio)
+      return NULL;
+#ifdef HAVE_RPNG
+   return nbio->image.handle;
+#else
+   return NULL;
+#endif
 }
 
 #ifdef HAVE_MENU

@@ -121,10 +121,6 @@ bool rarch_main_data_active(data_runloop_t *runloop)
    bool               db_active = false;
 
    driver_t             *driver = driver_get_ptr();
-   nbio_handle_t          *nbio = (nbio_handle_t*)rarch_main_data_nbio_get_ptr();
-#ifdef HAVE_RPNG
-   nbio_image_handle_t   *image = nbio ? &nbio->image : NULL;
-#endif
 #ifdef HAVE_NETWORKING
    http_handle_t          *http = runloop ? &runloop->http : NULL;
    struct http_connection_t *http_conn = http ? http->connection.handle : NULL;
@@ -141,11 +137,9 @@ bool rarch_main_data_active(data_runloop_t *runloop)
        && driver->overlay->state != OVERLAY_STATUS_NONE);
    active                       = active || overlay_active;
 #endif
-#ifdef HAVE_RPNG
-   image_active                 = image && image->handle != NULL;
+   image_active                 = rarch_main_data_nbio_image_get_handle() != NULL;
    active                       = active || image_active;
-#endif
-   nbio_active                  = nbio->handle != NULL;
+   nbio_active                  = rarch_main_data_nbio_get_handle() != NULL;
    active                       = active || nbio_active;
 #ifdef HAVE_NETWORKING
    http_active                  = http && http->handle != NULL;
