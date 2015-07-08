@@ -52,7 +52,8 @@
 #define TITLE_COLOR(settings)    (argb32_to_rgba4444(settings->menu.title_color))
 #endif
 
-typedef struct {
+typedef struct
+{
    bool force_redraw;
    char msgbox[4096];
    unsigned last_width;
