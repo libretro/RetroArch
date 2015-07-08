@@ -4057,7 +4057,7 @@ static bool setting_append_list_audio_options(
          parent_group,
          general_write_handler,
          general_read_handler);
-   menu_settings_list_current_add_range(list, list_info, 1, 256, 1.0, true, true);
+   menu_settings_list_current_add_range(list, list_info, 32, 512, 16.0, true, true);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_DEFERRED);
 
    CONFIG_FLOAT(
