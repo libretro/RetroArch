@@ -298,7 +298,7 @@ uintptr_t video_driver_get_current_framebuffer(void)
 
 uint64_t video_driver_get_frame_count(void)
 {
-   static bool warn_once = true;
+   static bool              warn_once = true;
    driver_t                   *driver = driver_get_ptr();
    const video_poke_interface_t *poke = video_driver_get_poke_ptr();
 
@@ -326,7 +326,7 @@ retro_proc_address_t video_driver_get_proc_address(const char *sym)
 
 bool video_driver_is_alive(void)
 {
-   driver_t *driver = driver_get_ptr();
+   driver_t            *driver = driver_get_ptr();
    const video_driver_t *video = video_driver_ctx_get_ptr();
 
    return video->alive(driver->video_data);
@@ -334,7 +334,7 @@ bool video_driver_is_alive(void)
 
 bool video_driver_has_focus(void)
 {
-   driver_t *driver = driver_get_ptr();
+   driver_t            *driver = driver_get_ptr();
    const video_driver_t *video = video_driver_ctx_get_ptr();
 
    return video->focus(driver->video_data);
@@ -343,7 +343,7 @@ bool video_driver_has_focus(void)
 bool video_driver_set_shader(enum rarch_shader_type type,
       const char *path)
 {
-   driver_t *driver = driver_get_ptr();
+   driver_t            *driver = driver_get_ptr();
    const video_driver_t *video = video_driver_ctx_get_ptr();
 
    if (video->set_shader)
@@ -1132,7 +1132,7 @@ bool video_monitor_get_fps(char *buf, size_t size,
    retro_time_t        new_time;
    static retro_time_t curr_time;
    static retro_time_t fps_time;
-   uint64_t frame_count = video_driver_get_frame_count();
+   uint64_t        frame_count = video_driver_get_frame_count();
    rarch_system_info_t *system = rarch_system_info_get_ptr();
 
    *buf = '\0';
