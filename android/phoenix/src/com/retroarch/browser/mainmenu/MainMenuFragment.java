@@ -193,7 +193,8 @@ public final class MainMenuFragment extends PreferenceListFragment implements On
 					prefs.getString("libretro_path", ctx.getApplicationInfo().dataDir + "/cores/"),
 					UserPreferences.getDefaultConfigPath(ctx),
 					Settings.Secure.getString(ctx.getContentResolver(), Settings.Secure.DEFAULT_INPUT_METHOD),
-					 ctx.getApplicationInfo().dataDir);
+               ctx.getApplicationInfo().dataDir,
+               ctx.getApplicationInfo().sourceDir);
 			startActivity(retro);
 		}
 		// Quit RetroArch preference
@@ -208,7 +209,7 @@ public final class MainMenuFragment extends PreferenceListFragment implements On
 	}
 
 	public static void startRetroActivity(Intent retro, String contentPath, String corePath,
-			String configFilePath, String imePath, String dataDirPath)
+			String configFilePath, String imePath, String dataDirPath, String dataSourcePath)
 	{
 		if (contentPath != null) {
 			retro.putExtra("ROM", contentPath);
@@ -217,6 +218,7 @@ public final class MainMenuFragment extends PreferenceListFragment implements On
 		retro.putExtra("CONFIGFILE", configFilePath);
 		retro.putExtra("IME", imePath);
 		retro.putExtra("DATADIR", dataDirPath);
+		retro.putExtra("APK", dataSourcePath);
 		retro.putExtra("SDCARD", Environment.getExternalStorageDirectory().getAbsolutePath());
 		retro.putExtra("DOWNLOADS", Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).getAbsolutePath());
 		retro.putExtra("SCREENSHOTS", Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES).getAbsolutePath());

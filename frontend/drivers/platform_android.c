@@ -439,6 +439,7 @@ static bool device_is_game_console(const char *name)
 
 static char screenshot_dir[PATH_MAX_LENGTH];
 static char downloads_dir[PATH_MAX_LENGTH];
+static char apk_path[PATH_MAX_LENGTH];
 static char sdcard_dir[PATH_MAX_LENGTH];
 static char app_dir[PATH_MAX_LENGTH];
 
@@ -590,7 +591,7 @@ static void frontend_android_get_environment_settings(int *argc,
       if (*sdcard_dir)
       {
          RARCH_LOG("External Storage Location %s.\n", sdcard_dir);
-         //todo base dir handler
+         /* TODO base dir handler */
       }
    }
    
@@ -612,7 +613,7 @@ static void frontend_android_get_environment_settings(int *argc,
       if (*screenshot_dir)
       {
          RARCH_LOG("Screenshot Directory [%s]s.\n", screenshot_dir);
-         //todo screenshot handler
+         /* TODO: screenshot handler */
       }
    }
    
@@ -634,7 +635,27 @@ static void frontend_android_get_environment_settings(int *argc,
       if (*downloads_dir)
       {
          RARCH_LOG("Download Directory [%s].\n", downloads_dir);
-         //todo downloads handler
+         /* TODO: downloads handler */
+      }
+   }
+
+   CALL_OBJ_METHOD_PARAM(env, jstr, obj, android_app->getStringExtra,
+         (*env)->NewStringUTF(env, "APK"));
+
+   if (android_app->getStringExtra && jstr)
+   {
+      const char *argv = NULL;
+
+      *apk_path = '\0';
+      argv = (*env)->GetStringUTFChars(env, jstr, 0);
+
+      if (argv && *argv)
+         strlcpy(apk_path, argv, sizeof(apk_path));
+      (*env)->ReleaseStringUTFChars(env, jstr, argv);
+
+      if (*apk_path)
+      {
+         RARCH_LOG("APK Path [%s].\n", apk_path);
       }
    }
    
@@ -720,7 +741,7 @@ static void frontend_android_get_environment_settings(int *argc,
 
    g_defaults.settings.video_threaded_enable = true;
 
-   // Set automatic default values per device
+   /* Set automatic default values per device */
    if (device_is_xperia_play(device_model))
    {
       g_defaults.settings.out_latency = 128;
