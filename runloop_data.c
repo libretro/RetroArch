@@ -14,13 +14,16 @@
  */
 
 #include <retro_miscellaneous.h>
-#include "runloop_data.h"
-#include "general.h"
-#include "input/input_overlay.h"
-
 #ifdef HAVE_THREADS
 #include <rthreads/rthreads.h>
 #endif
+
+#include "general.h"
+
+#include "runloop_data.h"
+#include "tasks/tasks.h"
+#include "input/input_overlay.h"
+
 
 #ifdef HAVE_MENU
 #include "menu/menu.h"

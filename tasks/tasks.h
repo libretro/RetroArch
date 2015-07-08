@@ -18,6 +18,9 @@
 
 #include <stdint.h>
 #include <boolean.h>
+
+#include <queues/message_queue.h>
+
 #include "../runloop_data.h"
 
 #ifdef __cplusplus

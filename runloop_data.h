@@ -16,12 +16,10 @@
 #ifndef __RETROARCH_DATA_RUNLOOP_H
 #define __RETROARCH_DATA_RUNLOOP_H
 
-#include <queues/message_queue.h>
 #include <retro_miscellaneous.h>
 #ifdef HAVE_THREADS
 #include <rthreads/rthreads.h>
 #endif
-#include "tasks/tasks.h"
 
 #ifdef __cplusplus
 extern "C" {
