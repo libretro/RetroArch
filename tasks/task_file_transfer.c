@@ -15,6 +15,9 @@
 
 #include <string.h>
 
+#include <file/nbio.h>
+#include <formats/image.h>
+#include <formats/rpng.h>
 #include <compat/strl.h>
 #include <retro_miscellaneous.h>
 #include <queues/message_queue.h>

@@ -16,9 +16,6 @@
 #ifndef __RETROARCH_DATA_RUNLOOP_H
 #define __RETROARCH_DATA_RUNLOOP_H
 
-#include <file/nbio.h>
-#include <formats/image.h>
-#include <formats/rpng.h>
 #include <queues/message_queue.h>
 #include <retro_miscellaneous.h>
 #ifdef HAVE_THREADS
@@ -45,32 +42,6 @@ enum runloop_data_type
    DATA_TYPE_DB
 };
 
-#ifdef HAVE_NETWORKING
-enum http_status_enum
-{
-   HTTP_STATUS_POLL = 0,
-   HTTP_STATUS_CONNECTION_TRANSFER,
-   HTTP_STATUS_CONNECTION_TRANSFER_PARSE,
-   HTTP_STATUS_TRANSFER,
-   HTTP_STATUS_TRANSFER_PARSE,
-   HTTP_STATUS_TRANSFER_PARSE_FREE
-};
-
-typedef struct http_handle
-{
-   struct
-   {
-      struct http_connection_t *handle;
-      transfer_cb_t  cb;
-      char elem1[PATH_MAX_LENGTH];
-   } connection;
-   msg_queue_t *msg_queue;
-   struct http_t *handle;
-   transfer_cb_t  cb;
-   unsigned status;
-} http_handle_t;
-#endif
-
 #ifdef HAVE_LIBRETRODB
 typedef struct database_state_handle
 {
@@ -94,10 +65,6 @@ typedef struct db_handle
 
 typedef struct data_runloop
 {
-#ifdef HAVE_NETWORKING
-   http_handle_t http;
-#endif
-
 #ifdef HAVE_LIBRETRODB
    db_handle_t db;
 #endif

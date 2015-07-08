@@ -42,8 +42,39 @@
 
 extern char core_updater_path[PATH_MAX_LENGTH];
 
+enum http_status_enum
+{
+   HTTP_STATUS_POLL = 0,
+   HTTP_STATUS_CONNECTION_TRANSFER,
+   HTTP_STATUS_CONNECTION_TRANSFER_PARSE,
+   HTTP_STATUS_TRANSFER,
+   HTTP_STATUS_TRANSFER_PARSE,
+   HTTP_STATUS_TRANSFER_PARSE_FREE
+};
+
+typedef struct http_handle
+{
+   struct
+   {
+      struct http_connection_t *handle;
+      transfer_cb_t  cb;
+      char elem1[PATH_MAX_LENGTH];
+   } connection;
+   msg_queue_t *msg_queue;
+   struct http_t *handle;
+   transfer_cb_t  cb;
+   unsigned status;
+} http_handle_t;
+
 int cb_core_updater_list(void *data_, size_t len);
 int cb_core_content_list(void *data_, size_t len);
+
+http_handle_t *http_ptr;
+
+void *rarch_main_data_http_get_ptr(void)
+{
+   return http_ptr;
+}
 
 #ifdef HAVE_ZLIB
 static int zlib_extract_core_callback(const char *name, const char *valid_exts,
@@ -406,8 +437,7 @@ static int rarch_main_data_http_iterate_transfer(void *data)
 
 void rarch_main_data_http_iterate(bool is_thread, void *data)
 {
-   data_runloop_t *runloop = (data_runloop_t*)data;
-   http_handle_t *http = runloop ? &runloop->http : NULL;
+   http_handle_t     *http = rarch_main_data_http_get_ptr();
    if (!http)
       return;
 
@@ -437,10 +467,10 @@ void rarch_main_data_http_iterate(bool is_thread, void *data)
    }
 }
 
+
 void rarch_main_data_http_init_msg_queue(void)
 {
-   data_runloop_t *runloop = rarch_main_data_get_ptr();
-   http_handle_t     *http = runloop ? &runloop->http : NULL;
+   http_handle_t     *http = rarch_main_data_http_get_ptr();
    if (!http)
       return;
 
@@ -448,11 +478,36 @@ void rarch_main_data_http_init_msg_queue(void)
       rarch_assert(http->msg_queue       = msg_queue_new(8));
 }
 
+
 msg_queue_t *rarch_main_data_http_get_msg_queue_ptr(void)
 {
-   data_runloop_t *runloop = rarch_main_data_get_ptr();
-   http_handle_t     *http = runloop ? &runloop->http : NULL;
+   http_handle_t     *http = rarch_main_data_http_get_ptr();
    if (!http)
       return NULL;
    return http->msg_queue;
+}
+
+void *rarch_main_data_http_get_handle(void)
+{
+   http_handle_t     *http = rarch_main_data_http_get_ptr();
+   if (!http)
+      return NULL;
+   if (http->handle == NULL)
+      return NULL;
+   return http->handle;
+}
+
+void *rarch_main_data_http_conn_get_handle(void)
+{
+   http_handle_t     *http = rarch_main_data_http_get_ptr();
+   if (!http)
+      return NULL;
+   if (http->connection.handle == NULL)
+      return NULL;
+   return http->connection.handle;
+}
+
+void rarch_main_data_http_init(void)
+{
+   http_ptr              = (http_handle_t*)calloc(1, sizeof(*http_ptr));
 }

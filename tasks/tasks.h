@@ -55,6 +55,14 @@ void rarch_main_data_http_iterate(bool is_thread,
 msg_queue_t *rarch_main_data_http_get_msg_queue_ptr(void);
 
 void rarch_main_data_http_init_msg_queue(void);
+
+void *rarch_main_data_http_get_handle(void);
+
+void *rarch_main_data_http_conn_get_handle(void);
+
+void rarch_main_data_http_init(void);
+
+void *rarch_main_data_http_get_ptr(void);
 #endif
 
 #ifdef HAVE_RPNG
