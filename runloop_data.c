@@ -104,20 +104,20 @@ void rarch_main_data_free(void)
    runloop = NULL;
 }
 
-static void data_runloop_iterate(bool is_thread, data_runloop_t *runloop)
+static void data_runloop_iterate(bool is_thread)
 {
-   rarch_main_data_nbio_iterate       (is_thread, runloop);
+   rarch_main_data_nbio_iterate       (is_thread);
 #ifdef HAVE_RPNG
-   rarch_main_data_nbio_image_iterate (is_thread, runloop);
+   rarch_main_data_nbio_image_iterate (is_thread);
 #endif
 #ifdef HAVE_OVERLAY
-   rarch_main_data_overlay_iterate    (is_thread, runloop);
+   rarch_main_data_overlay_iterate    (is_thread);
 #endif
 #ifdef HAVE_NETWORKING
-   rarch_main_data_http_iterate       (is_thread, runloop);
+   rarch_main_data_http_iterate       (is_thread);
 #endif
 #ifdef HAVE_LIBRETRODB
-   rarch_main_data_db_iterate         (is_thread, runloop);
+   rarch_main_data_db_iterate         (is_thread);
 #endif
 }
 
@@ -172,7 +172,7 @@ static void data_thread_loop(void *data)
       if (!runloop->alive)
          break;
 
-      data_runloop_iterate(true, runloop);
+      data_runloop_iterate(true);
 
       if (!rarch_main_data_active(runloop))
          rarch_sleep(10);
@@ -241,10 +241,10 @@ void rarch_main_data_iterate(void)
 #endif
 
 #ifdef HAVE_OVERLAY
-   rarch_main_data_overlay_image_upload_iterate(false, runloop);
+   rarch_main_data_overlay_image_upload_iterate(false);
 #endif
 #ifdef HAVE_RPNG
-   rarch_main_data_nbio_image_upload_iterate(false, runloop);
+   rarch_main_data_nbio_image_upload_iterate(false);
 #endif
 
    if (data_runloop_msg[0] != '\0')
@@ -262,7 +262,7 @@ void rarch_main_data_iterate(void)
       return;
 #endif
 
-   data_runloop_iterate(false, runloop);
+   data_runloop_iterate(false);
 }
 
 static data_runloop_t *rarch_main_data_new(void)

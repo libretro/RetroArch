@@ -52,8 +52,7 @@ void *rarch_main_data_nbio_image_get_handle(void);
  * Returns: 0 when finished, -1 when we should continue
  * with the transfer on the next frame.
  **/
-void rarch_main_data_http_iterate(bool is_thread,
-   void *data);
+void rarch_main_data_http_iterate(bool is_thread);
 
 msg_queue_t *rarch_main_data_http_get_msg_queue_ptr(void);
 
@@ -71,15 +70,13 @@ void *rarch_main_data_http_get_ptr(void);
 #endif
 
 #ifdef HAVE_RPNG
-void rarch_main_data_nbio_image_iterate(bool is_thread,
-   void *data);
-void rarch_main_data_nbio_image_upload_iterate(bool is_thread,
-   void *data);
+void rarch_main_data_nbio_image_iterate(bool is_thread);
+void rarch_main_data_nbio_image_upload_iterate(bool is_thread);
 #endif
 
 #ifdef HAVE_LIBRETRODB
 #ifdef HAVE_MENU
-void rarch_main_data_db_iterate(bool is_thread, void *data);
+void rarch_main_data_db_iterate(bool is_thread);
 #endif
 
 void rarch_main_data_db_init_msg_queue(void);
@@ -96,18 +93,16 @@ bool rarch_main_data_db_is_active(void);
 #endif
 
 #ifdef HAVE_OVERLAY
-void rarch_main_data_overlay_image_upload_iterate(bool is_thread,
-   void *data);
+void rarch_main_data_overlay_image_upload_iterate(bool is_thread);
 
-void rarch_main_data_overlay_iterate(bool is_thread, void *data);
+void rarch_main_data_overlay_iterate(bool is_thread);
 
 void rarch_main_data_overlay_thread_uninit(void);
 
 void rarch_main_data_overlay_thread_init(void);
 #endif
 
-void rarch_main_data_nbio_iterate(bool is_thread,
-   void *runloop);
+void rarch_main_data_nbio_iterate(bool is_thread);
     
 void data_runloop_osd_msg(const char *s, size_t len);
 

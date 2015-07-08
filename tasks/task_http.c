@@ -435,7 +435,7 @@ static int rarch_main_data_http_iterate_transfer(void *data)
    return 0;
 }
 
-void rarch_main_data_http_iterate(bool is_thread, void *data)
+void rarch_main_data_http_iterate(bool is_thread)
 {
    http_handle_t     *http = rarch_main_data_http_get_ptr();
    if (!http)

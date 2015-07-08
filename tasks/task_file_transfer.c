@@ -348,7 +348,7 @@ static int rarch_main_data_image_iterate_transfer_parse(nbio_handle_t *nbio)
    return 0;
 }
 
-void rarch_main_data_nbio_image_iterate(bool is_thread, void *data)
+void rarch_main_data_nbio_image_iterate(bool is_thread)
 {
    nbio_handle_t         *nbio  = rarch_main_data_nbio_get_ptr();
    nbio_image_handle_t   *image = nbio    ? &nbio->image   : NULL;
@@ -382,8 +382,7 @@ void rarch_main_data_nbio_image_iterate(bool is_thread, void *data)
    }
 }
 
-void rarch_main_data_nbio_image_upload_iterate(bool is_thread,
-      void *data)
+void rarch_main_data_nbio_image_upload_iterate(bool is_thread)
 {
    nbio_handle_t         *nbio  = rarch_main_data_nbio_get_ptr();
    nbio_image_handle_t   *image = nbio    ? &nbio->image   : NULL;
@@ -623,7 +622,7 @@ static int rarch_main_data_nbio_iterate_parse(nbio_handle_t *nbio)
    return 0;
 }
 
-void rarch_main_data_nbio_iterate(bool is_thread, void *data)
+void rarch_main_data_nbio_iterate(bool is_thread)
 {
    nbio_handle_t         *nbio  = rarch_main_data_nbio_get_ptr();
    if (!nbio)

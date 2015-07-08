@@ -26,7 +26,7 @@
 static slock_t *overlay_lock;
 #endif
 
-void rarch_main_data_overlay_image_upload_iterate(bool is_thread, void *data)
+void rarch_main_data_overlay_image_upload_iterate(bool is_thread)
 {
    driver_t        *driver = driver_get_ptr();
 
@@ -55,7 +55,7 @@ void rarch_main_data_overlay_image_upload_iterate(bool is_thread, void *data)
 #endif
 }
 
-void rarch_main_data_overlay_iterate(bool is_thread, void *data)
+void rarch_main_data_overlay_iterate(bool is_thread)
 {
    driver_t *driver = NULL;
    

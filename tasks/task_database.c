@@ -396,7 +396,7 @@ static void rarch_main_data_db_cleanup_state(database_state_handle_t *db_state)
    db_state->buf = NULL;
 }
 
-void rarch_main_data_db_iterate(bool is_thread, void *data)
+void rarch_main_data_db_iterate(bool is_thread)
 {
    database_info_handle_t      *db   = (db_ptr) ? db_ptr->handle : NULL;
    database_state_handle_t *db_state = (db_ptr) ? &db_ptr->state : NULL;
