@@ -16,17 +16,41 @@
 #include <compat/strcasestr.h>
 #include <compat/strl.h>
 
+#ifdef HAVE_LIBRETRODB
+#include "../database_info.h"
+#endif
+
 #include "../dir_list_special.h"
 #include "../file_ops.h"
 #include "../msg_hash.h"
 #include "../general.h"
-#include "../runloop_data.h"
 #include "tasks.h"
 
 #define CB_DB_SCAN_FILE    0x70ce56d2U
 #define CB_DB_SCAN_FOLDER  0xde2bef8eU
 
 #define HASH_EXTENSION_ZIP 0x0b88c7d8U
+
+typedef struct database_state_handle
+{
+   database_info_list_t *info;
+   struct string_list *list;
+   size_t list_index;
+   size_t entry_index;
+   uint32_t crc;
+   uint8_t *buf;
+   char zip_name[PATH_MAX_LENGTH];
+} database_state_handle_t;
+
+typedef struct db_handle
+{
+   database_state_handle_t state;
+   database_info_handle_t *handle;
+   msg_queue_t *msg_queue;
+   unsigned status;
+} db_handle_t;
+
+static db_handle_t *db_ptr;
 
 #ifdef HAVE_LIBRETRODB
 
@@ -374,12 +398,11 @@ static void rarch_main_data_db_cleanup_state(database_state_handle_t *db_state)
 
 void rarch_main_data_db_iterate(bool is_thread, void *data)
 {
-   data_runloop_t         *runloop   = (data_runloop_t*)data;
-   database_info_handle_t      *db   = runloop ? runloop->db.handle : NULL;
-   database_state_handle_t *db_state = runloop ? &runloop->db.state : NULL;
-   const char *name = db ? db->list->elems[db->list_ptr].data : NULL;
+   database_info_handle_t      *db   = (db_ptr) ? db_ptr->handle : NULL;
+   database_state_handle_t *db_state = (db_ptr) ? &db_ptr->state : NULL;
+   const char *name = db ? db->list->elems[db->list_ptr].data    : NULL;
 
-   if (!db || !runloop)
+   if (!db)
       goto do_poll;
 
    switch (db->status)
@@ -396,7 +419,7 @@ void rarch_main_data_db_iterate(bool is_thread, void *data)
          database_info_iterate_start(db, name);
          break;
       case DATABASE_STATUS_ITERATE:
-         if (database_info_iterate(&runloop->db.state, db) == 0)
+         if (database_info_iterate(&db_ptr->state, db) == 0)
          {
             db->status = DATABASE_STATUS_ITERATE_NEXT;
             db->type   = DATABASE_TYPE_ITERATE;
@@ -423,9 +446,9 @@ void rarch_main_data_db_iterate(bool is_thread, void *data)
          db_state->list = NULL;
          rarch_main_data_db_cleanup_state(db_state);
          database_info_free(db);
-         if (runloop->db.handle)
-            free(runloop->db.handle);
-         runloop->db.handle = NULL;
+         if (db_ptr->handle)
+            free(db_ptr->handle);
+         db_ptr->handle = NULL;
          break;
       default:
       case DATABASE_STATUS_NONE:
@@ -435,17 +458,16 @@ void rarch_main_data_db_iterate(bool is_thread, void *data)
    return;
 
 do_poll:
-   if (database_info_poll(&runloop->db) != -1)
+   if (database_info_poll(db_ptr) != -1)
    {
-      if (runloop->db.handle)
-         runloop->db.handle->status = DATABASE_STATUS_ITERATE_BEGIN;
+      if (db_ptr->handle)
+         db_ptr->handle->status = DATABASE_STATUS_ITERATE_BEGIN;
    }
 }
 
 void *rarch_main_data_db_get_ptr(void)
 {
-   data_runloop_t *runloop           = rarch_main_data_get_ptr();
-   db_handle_t      *db   = runloop ? &runloop->db : NULL;
+   db_handle_t      *db   = db_ptr;
    if (!db)
       return NULL;
    return db;
@@ -466,4 +488,27 @@ msg_queue_t *rarch_main_data_db_get_msg_queue_ptr(void)
       return NULL;
    return db->msg_queue;
 }
+
+void rarch_main_data_db_uninit(void)
+{
+   if (db_ptr)
+      free(db_ptr);
+   db_ptr = NULL;
+}
+
+void rarch_main_data_db_init(void)
+{
+   db_ptr              = (db_handle_t*)calloc(1, sizeof(*db_ptr));
+}
+
+bool rarch_main_data_db_is_active(void)
+{
+   db_handle_t              *db   = (db_handle_t*)rarch_main_data_db_get_ptr();
+   database_info_handle_t   *dbi  = db ? db->handle : NULL;
+   if (dbi && dbi->status != DATABASE_STATUS_NONE)
+      return true;
+
+   return false;
+}
 #endif
+

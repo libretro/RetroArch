@@ -21,9 +21,6 @@
 #ifdef HAVE_THREADS
 #include <rthreads/rthreads.h>
 #endif
-#ifdef HAVE_LIBRETRODB
-#include "database_info.h"
-#endif
 #include "tasks/tasks.h"
 
 #ifdef __cplusplus
@@ -42,33 +39,8 @@ enum runloop_data_type
    DATA_TYPE_DB
 };
 
-#ifdef HAVE_LIBRETRODB
-typedef struct database_state_handle
-{
-   database_info_list_t *info;
-   struct string_list *list;
-   size_t list_index;
-   size_t entry_index;
-   uint32_t crc;
-   uint8_t *buf;
-   char zip_name[PATH_MAX_LENGTH];
-} database_state_handle_t;
-
-typedef struct db_handle
-{
-   database_state_handle_t state;
-   database_info_handle_t *handle;
-   msg_queue_t *msg_queue;
-   unsigned status;
-} db_handle_t;
-#endif
-
 typedef struct data_runloop
 {
-#ifdef HAVE_LIBRETRODB
-   db_handle_t db;
-#endif
-
    bool inited;
 
 #ifdef HAVE_THREADS

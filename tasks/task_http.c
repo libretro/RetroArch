@@ -19,6 +19,7 @@
 #include <string/string_list.h>
 #include <compat/strl.h>
 #include <file/file_path.h>
+#include <file/file_extract.h>
 #include <net/net_compat.h>
 
 #include "../file_ops.h"

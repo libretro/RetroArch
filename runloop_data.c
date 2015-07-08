@@ -89,7 +89,12 @@ void rarch_main_data_free(void)
    data_runloop_t *runloop = rarch_main_data_get_ptr();
 
    rarch_main_data_nbio_uninit();
+#ifdef HAVE_NETWORKING
    rarch_main_data_http_uninit();
+#endif
+#ifdef HAVE_LIBRETRODB
+   rarch_main_data_db_uninit();
+#endif
 
    if (runloop)
       free(runloop);
@@ -119,8 +124,7 @@ bool rarch_main_data_active(data_runloop_t *runloop)
    bool                  active = false;
    driver_t             *driver = driver_get_ptr();
 #ifdef HAVE_LIBRETRODB
-   database_info_handle_t   *db = runloop ? runloop->db.handle : NULL;
-   if (db && db->status != DATABASE_STATUS_NONE)
+   if (rarch_main_data_db_is_active())
       active = true;
 #endif
 
@@ -286,7 +290,12 @@ void rarch_main_data_clear_state(void)
       return;
 
    rarch_main_data_nbio_init();
+#ifdef HAVE_NETWORKING
    rarch_main_data_http_init();
+#endif
+#ifdef HAVE_LIBRETRODB
+   rarch_main_data_db_init();
+#endif
 }
 
 
