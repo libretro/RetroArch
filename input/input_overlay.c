@@ -26,6 +26,7 @@
 #include <rhash.h>
 
 #include "input_overlay.h"
+#include "../configuration.h"
 #include "../driver.h"
 #include "input_common.h"
 
@@ -34,6 +35,33 @@
 
 #define KEY_ANALOG_LEFT  0x56b92e81U
 #define KEY_ANALOG_RIGHT 0x2e4dc654U
+
+static input_overlay_t *overlay_ptr;
+static input_overlay_state_t *overlay_state_ptr;
+
+input_overlay_t *input_overlay_get_ptr(void)
+{
+   return overlay_ptr;
+}
+
+input_overlay_state_t *input_overlay_get_state_ptr(void)
+{
+   return overlay_state_ptr;
+}
+
+bool input_overlay_is_active(void)
+{
+   input_overlay_t *overlay = input_overlay_get_ptr();
+   if (!overlay)
+      return false;
+
+   if (overlay->state     == OVERLAY_STATUS_ALIVE)
+      return false;
+   if (overlay->state     == OVERLAY_STATUS_NONE)
+      return false;
+
+   return true;
+}
 
 /**
  * input_overlay_scale:
@@ -1154,6 +1182,54 @@ void input_overlay_free(input_overlay_t *ol)
 
    free(ol->overlay_path);
    free(ol);
+}
+
+void input_overlay_free_ptr(void)
+{
+   input_overlay_free(overlay_ptr);
+   overlay_ptr = NULL;
+
+   if (overlay_state_ptr)
+      free(overlay_state_ptr);
+   overlay_state_ptr = NULL;
+}
+
+int input_overlay_new_ptr(void)
+{
+   driver_t *driver     = driver_get_ptr();
+   settings_t *settings = config_get_ptr();
+
+   if (driver->osk_enable)
+   {
+      if (!*settings->osk.overlay)
+         return 1;
+   }
+   else
+   {
+      if (!*settings->input.overlay)
+         return 1;
+   }
+
+    overlay_state_ptr = (input_overlay_state_t *)calloc(1, sizeof(*overlay_state_ptr));
+
+    if (!overlay_state_ptr)
+       return -1;
+
+    overlay_ptr = input_overlay_new(
+         driver->osk_enable ?
+         settings->osk.overlay : settings->input.overlay,
+         driver->osk_enable ?
+         settings->osk.enable   : settings->input.overlay_enable,
+         settings->input.overlay_opacity,
+         settings->input.overlay_scale);
+
+    if (!overlay_ptr)
+    {
+       free(overlay_state_ptr);
+       return -1;
+    }
+
+    return 0;
 }
 
 /**

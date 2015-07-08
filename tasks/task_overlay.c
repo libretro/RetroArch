@@ -18,7 +18,7 @@
 #include <rthreads/rthreads.h>
 #endif
 
-#include "../driver.h"
+#include "../input/input_overlay.h"
 #include "../runloop.h"
 #include "tasks.h"
 
@@ -28,11 +28,10 @@ static slock_t *overlay_lock;
 
 void rarch_main_data_overlay_image_upload_iterate(bool is_thread)
 {
-   driver_t        *driver = driver_get_ptr();
-
+   input_overlay_t *overlay = input_overlay_get_ptr();
    if (rarch_main_is_idle())
       return;
-   if (!driver->overlay)
+   if (!overlay)
       return;
 
 #ifdef HAVE_THREADS
@@ -40,10 +39,10 @@ void rarch_main_data_overlay_image_upload_iterate(bool is_thread)
       slock_lock(overlay_lock);
 #endif
 
-   switch (driver->overlay->state)
+   switch (overlay->state)
    {
       case OVERLAY_STATUS_DEFERRED_LOADING:
-         input_overlay_load_overlays_iterate(driver->overlay);
+         input_overlay_load_overlays_iterate(overlay);
          break;
       default:
          break;
@@ -57,7 +56,7 @@ void rarch_main_data_overlay_image_upload_iterate(bool is_thread)
 
 void rarch_main_data_overlay_iterate(bool is_thread)
 {
-   driver_t *driver = NULL;
+   input_overlay_t *overlay = input_overlay_get_ptr();
    
    if (rarch_main_is_idle())
       return;
@@ -67,27 +66,25 @@ void rarch_main_data_overlay_iterate(bool is_thread)
       slock_lock(overlay_lock);
 #endif
 
-   driver = driver_get_ptr();
-
-   if (!driver || !driver->overlay)
+   if (!overlay)
       goto end;
 
-   switch (driver->overlay->state)
+   switch (overlay->state)
    {
       case OVERLAY_STATUS_DEFERRED_LOAD:
-         input_overlay_load_overlays(driver->overlay);
+         input_overlay_load_overlays(overlay);
          break;
       case OVERLAY_STATUS_NONE:
       case OVERLAY_STATUS_ALIVE:
          break;
       case OVERLAY_STATUS_DEFERRED_LOADING_RESOLVE:
-         input_overlay_load_overlays_resolve_iterate(driver->overlay);
+         input_overlay_load_overlays_resolve_iterate(overlay);
          break;
       case OVERLAY_STATUS_DEFERRED_DONE:
-         input_overlay_new_done(driver->overlay);
+         input_overlay_new_done(overlay);
          break;
       case OVERLAY_STATUS_DEFERRED_ERROR:
-         input_overlay_free(driver->overlay);
+         input_overlay_free(overlay);
          break;
       default:
          break;

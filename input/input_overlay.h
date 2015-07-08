@@ -338,6 +338,16 @@ void input_overlay_set_scale_factor(input_overlay_t *ol, float scale);
  **/
 void input_overlay_next(input_overlay_t *ol, float opacity);
 
+input_overlay_t *input_overlay_get_ptr(void);
+
+input_overlay_state_t *input_overlay_get_state_ptr(void);
+
+bool input_overlay_is_active(void);
+
+void input_overlay_free_ptr(void);
+
+int input_overlay_new_ptr(void);
+
 #ifdef __cplusplus
 }
 #endif

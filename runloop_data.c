@@ -147,16 +147,13 @@ static void data_runloop_iterate(bool is_thread)
 bool rarch_main_data_active(void)
 {
    bool                  active = false;
-   driver_t             *driver = driver_get_ptr();
 #ifdef HAVE_LIBRETRODB
    if (rarch_main_data_db_is_active())
       active = true;
 #endif
 
 #ifdef HAVE_OVERLAY
-   if (driver && driver->overlay && 
-         (driver->overlay->state != OVERLAY_STATUS_ALIVE 
-          && driver->overlay->state != OVERLAY_STATUS_NONE))
+   if (input_overlay_is_active())
       active = true;
 #endif
    if (rarch_main_data_nbio_image_get_handle())

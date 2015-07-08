@@ -1261,41 +1261,19 @@ bool event_command(enum event_command cmd)
          break;
       case EVENT_CMD_OVERLAY_DEINIT:
 #ifdef HAVE_OVERLAY
-         if (driver->overlay)
-            input_overlay_free(driver->overlay);
-         driver->overlay = NULL;
-
-         memset(&driver->overlay_state, 0, sizeof(driver->overlay_state));
+         input_overlay_free_ptr();
 #endif
          break;
       case EVENT_CMD_OVERLAY_INIT:
          event_command(EVENT_CMD_OVERLAY_DEINIT);
 #ifdef HAVE_OVERLAY
-         if (driver->osk_enable)
-         {
-            if (!*settings->osk.overlay)
-               break;
-         }
-         else
-         {
-            if (!*settings->input.overlay)
-               break;
-         }
-
-         driver->overlay = input_overlay_new(
-               driver->osk_enable ?
-               settings->osk.overlay : settings->input.overlay,
-               driver->osk_enable ?
-               settings->osk.enable   : settings->input.overlay_enable,
-               settings->input.overlay_opacity,
-               settings->input.overlay_scale);
-         if (!driver->overlay)
+         if (input_overlay_new_ptr() == -1)
             RARCH_ERR("%s.\n", msg_hash_to_str(MSG_FAILED_TO_LOAD_OVERLAY));
 #endif
          break;
       case EVENT_CMD_OVERLAY_NEXT:
 #ifdef HAVE_OVERLAY
-         input_overlay_next(driver->overlay, settings->input.overlay_opacity);
+         input_overlay_next(input_overlay_get_ptr(), settings->input.overlay_opacity);
 #endif
          break;
       case EVENT_CMD_DSP_FILTER_DEINIT:
@@ -1395,13 +1373,13 @@ bool event_command(enum event_command cmd)
          break;
       case EVENT_CMD_OVERLAY_SET_SCALE_FACTOR:
 #ifdef HAVE_OVERLAY
-         input_overlay_set_scale_factor(driver->overlay,
+         input_overlay_set_scale_factor(input_overlay_get_ptr(),
                settings->input.overlay_scale);
 #endif
          break;
       case EVENT_CMD_OVERLAY_SET_ALPHA_MOD:
 #ifdef HAVE_OVERLAY
-         input_overlay_set_alpha_mod(driver->overlay,
+         input_overlay_set_alpha_mod(input_overlay_get_ptr(),
                settings->input.overlay_opacity);
 #endif
          break;

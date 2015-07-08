@@ -595,10 +595,11 @@ static int menu_input_mouse(unsigned *action)
    menu_input_t *menu_input  = menu_input_get_ptr();
    menu_framebuf_t *frame_buf= menu_display_fb_get_ptr();
    settings_t *settings      = config_get_ptr();
+   input_overlay_t *overlay  = input_overlay_get_ptr();
 
    if (!settings->menu.mouse.enable
 #ifdef HAVE_OVERLAY
-       || (settings->input.overlay_enable && driver && driver->overlay)
+       || (settings->input.overlay_enable && driver && overlay)
 #endif
       )
    {
@@ -760,12 +761,13 @@ static int menu_input_mouse_post_iterate(uint64_t *input_mouse,
    menu_input_t *menu_input = menu_input_get_ptr();
    menu_list_t *menu_list   = menu_list_get_ptr();
    menu_navigation_t *nav   = menu_navigation_get_ptr();
+   input_overlay_t *overlay = input_overlay_get_ptr();
 
    *input_mouse = MOUSE_ACTION_NONE;
 
    if (!settings->menu.mouse.enable
 #ifdef HAVE_OVERLAY
-       || (settings->input.overlay_enable && driver && driver->overlay)
+       || (settings->input.overlay_enable && driver && overlay)
 #endif
        )
    {
@@ -874,13 +876,14 @@ static int menu_input_pointer_post_iterate(menu_file_list_cbs_t *cbs,
    menu_input_t *menu_input = menu_input_get_ptr();
    driver_t *driver         = driver_get_ptr();
    settings_t *settings     = config_get_ptr();
+   input_overlay_t *overlay = input_overlay_get_ptr();
 
    if (!menu_input)
       return -1;
 
    if (!settings->menu.pointer.enable
 #ifdef HAVE_OVERLAY
-       || (settings->input.overlay_enable && driver && driver->overlay)
+       || (settings->input.overlay_enable && driver && overlay)
 #endif
       )
       return 0;

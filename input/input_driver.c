@@ -213,9 +213,10 @@ bool input_driver_key_pressed(int key)
 retro_input_t input_driver_keys_pressed(void)
 {
    int key;
-   retro_input_t           ret = 0;
-   driver_t            *driver = driver_get_ptr();
-   const input_driver_t *input = input_get_ptr(driver);
+   retro_input_t                ret = 0;
+   driver_t                 *driver = driver_get_ptr();
+   const input_driver_t      *input = input_get_ptr(driver);
+   input_overlay_state_t *ol_state  = input_overlay_get_state_ptr();
 
    for (key = 0; key < RARCH_BIND_LIST_END; key++)
    {
@@ -225,7 +226,8 @@ retro_input_t input_driver_keys_pressed(void)
          state = input->key_pressed(driver->input_data, key);
 
 #ifdef HAVE_OVERLAY
-      state = state || (driver->overlay_state.buttons & (1ULL << key));
+      if (ol_state)
+         state = state || (ol_state->buttons & (1ULL << key));
 #endif
 
 #ifdef HAVE_COMMAND
