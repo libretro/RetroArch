@@ -101,10 +101,20 @@ void rarch_main_data_deinit(void)
    runloop->inited = false;
 }
 
-void rarch_main_data_free(void)
+static void rarch_main_data_free_internal(void)
 {
    data_runloop_t *runloop = rarch_main_data_get_ptr();
 
+   if (!runloop)
+      return;
+
+   if (runloop)
+      free(runloop);
+   runloop = NULL;
+}
+
+void rarch_main_data_free(void)
+{
    rarch_main_data_nbio_uninit();
 #ifdef HAVE_NETWORKING
    rarch_main_data_http_uninit();
@@ -113,9 +123,7 @@ void rarch_main_data_free(void)
    rarch_main_data_db_uninit();
 #endif
 
-   if (runloop)
-      free(runloop);
-   runloop = NULL;
+   rarch_main_data_free_internal();
 }
 
 static void data_runloop_iterate(bool is_thread)
