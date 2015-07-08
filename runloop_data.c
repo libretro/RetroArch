@@ -295,8 +295,7 @@ void rarch_main_data_init_queues(void)
 {
    data_runloop_t *runloop = rarch_main_data_get_ptr();
 #ifdef HAVE_NETWORKING
-   if (!runloop->http.msg_queue)
-      rarch_assert(runloop->http.msg_queue       = msg_queue_new(8));
+   rarch_main_data_http_init_msg_queue();
 #endif
    rarch_main_data_nbio_init_msg_queue();
 #ifdef HAVE_LIBRETRODB
@@ -332,7 +331,7 @@ void rarch_main_data_msg_queue_push(unsigned type,
          break;
 #ifdef HAVE_NETWORKING
       case DATA_TYPE_HTTP:
-         queue = runloop->http.msg_queue;
+         queue = rarch_main_data_http_get_msg_queue_ptr();
          snprintf(new_msg, sizeof(new_msg), "%s|%s", msg, msg2);
          break;
 #endif

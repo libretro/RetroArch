@@ -51,6 +51,10 @@ void *rarch_main_data_nbio_image_get_handle(void);
  **/
 void rarch_main_data_http_iterate(bool is_thread,
    void *data);
+
+msg_queue_t *rarch_main_data_http_get_msg_queue_ptr(void);
+
+void rarch_main_data_http_init_msg_queue(void);
 #endif
 
 #ifdef HAVE_RPNG

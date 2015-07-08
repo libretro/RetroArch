@@ -436,3 +436,23 @@ void rarch_main_data_http_iterate(bool is_thread, void *data)
          break;
    }
 }
+
+void rarch_main_data_http_init_msg_queue(void)
+{
+   data_runloop_t *runloop = rarch_main_data_get_ptr();
+   http_handle_t     *http = runloop ? &runloop->http : NULL;
+   if (!http)
+      return;
+
+   if (!http->msg_queue)
+      rarch_assert(http->msg_queue       = msg_queue_new(8));
+}
+
+msg_queue_t *rarch_main_data_http_get_msg_queue_ptr(void)
+{
+   data_runloop_t *runloop = rarch_main_data_get_ptr();
+   http_handle_t     *http = runloop ? &runloop->http : NULL;
+   if (!http)
+      return NULL;
+   return http->msg_queue;
+}
