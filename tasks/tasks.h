@@ -78,6 +78,12 @@ void rarch_main_data_nbio_image_upload_iterate(bool is_thread,
 #ifdef HAVE_MENU
 void rarch_main_data_db_iterate(bool is_thread, void *data);
 #endif
+
+void rarch_main_data_db_init_msg_queue(void);
+
+void *rarch_main_data_db_get_ptr(void);
+
+msg_queue_t *rarch_main_data_db_get_msg_queue_ptr(void);
 #endif
 
 #ifdef HAVE_OVERLAY

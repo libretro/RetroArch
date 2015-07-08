@@ -69,7 +69,7 @@ typedef struct http_handle
 int cb_core_updater_list(void *data_, size_t len);
 int cb_core_content_list(void *data_, size_t len);
 
-http_handle_t *http_ptr;
+static http_handle_t *http_ptr;
 
 void *rarch_main_data_http_get_ptr(void)
 {

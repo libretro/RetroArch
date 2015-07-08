@@ -298,8 +298,7 @@ void rarch_main_data_init_queues(void)
 #endif
    rarch_main_data_nbio_init_msg_queue();
 #ifdef HAVE_LIBRETRODB
-   if (!runloop->db.msg_queue)
-      rarch_assert(runloop->db.msg_queue         = msg_queue_new(8));
+   rarch_main_data_db_init_msg_queue();
 #endif
 }
 
@@ -341,7 +340,7 @@ void rarch_main_data_msg_queue_push(unsigned type,
 #endif
 #ifdef HAVE_LIBRETRODB
       case DATA_TYPE_DB:
-         queue = runloop->db.msg_queue;
+         queue = rarch_main_data_db_get_msg_queue_ptr();
          snprintf(new_msg, sizeof(new_msg), "%s|%s", msg, msg2);
          break;
 #endif
