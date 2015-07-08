@@ -420,7 +420,22 @@ static int rarch_main_data_nbio_iterate_poll(nbio_handle_t *nbio)
       goto error;
 
    if (str_list->size > 0)
+   {
+      unsigned elem0_hash = 0;
       strlcpy(elem0, str_list->elems[0].data, sizeof(elem0));
+      elem0_hash = djb2_calculate(elem0);
+
+      /* TODO/FIXME - should be able to deal with this
+       * in a better way. */
+      switch(elem0_hash)
+      {
+         case CB_MENU_WALLPAPER:
+         case CB_MENU_BOXART:
+            goto error;
+         default:
+            break;
+      }
+   }
    if (str_list->size > 1)
       cb_type_hash = djb2_calculate(str_list->elems[1].data);
 
