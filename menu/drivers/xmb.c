@@ -248,63 +248,63 @@ static void xmb_context_reset_horizontal_list(xmb_handle_t *xmb,
 
 static size_t xmb_list_get_selection(void *data)
 {
-    menu_handle_t *menu    = (menu_handle_t*)data;
-    xmb_handle_t *xmb      = menu ? (xmb_handle_t*)menu->userdata : NULL;
-    
-    if (!xmb)
-       return 0;
+   menu_handle_t *menu    = (menu_handle_t*)data;
+   xmb_handle_t *xmb      = menu ? (xmb_handle_t*)menu->userdata : NULL;
 
-    return xmb->categories.selection_ptr;
+   if (!xmb)
+      return 0;
+
+   return xmb->categories.selection_ptr;
 }
 
 static size_t xmb_list_get_size(void *data, menu_list_type_t type)
 {
-    size_t list_size       = 0;
-    menu_handle_t *menu    = (menu_handle_t*)data;
-    menu_entries_t *entries = menu    ? &menu->entries : NULL;
-    menu_list_t *menu_list  = entries ? entries->menu_list : NULL;
-    xmb_handle_t *xmb       = menu    ? (xmb_handle_t*)menu->userdata : NULL;
-    
-    switch (type)
-    {
-        case MENU_LIST_PLAIN:
-            if (menu_list)
-               list_size  = menu_list_get_stack_size(menu_list);
-            break;
-        case MENU_LIST_HORIZONTAL:
-            if (xmb && xmb->horizontal_list)
-                list_size = file_list_get_size(xmb->horizontal_list);
-            break;
-    }
-    
-    return list_size;
+   size_t list_size       = 0;
+   menu_handle_t *menu    = (menu_handle_t*)data;
+   menu_entries_t *entries = menu    ? &menu->entries : NULL;
+   menu_list_t *menu_list  = entries ? entries->menu_list : NULL;
+   xmb_handle_t *xmb       = menu    ? (xmb_handle_t*)menu->userdata : NULL;
+
+   switch (type)
+   {
+      case MENU_LIST_PLAIN:
+         if (menu_list)
+            list_size  = menu_list_get_stack_size(menu_list);
+         break;
+      case MENU_LIST_HORIZONTAL:
+         if (xmb && xmb->horizontal_list)
+            list_size = file_list_get_size(xmb->horizontal_list);
+         break;
+   }
+
+   return list_size;
 }
 
 static void *xmb_list_get_entry(void *data, menu_list_type_t type, unsigned i)
 {
-    size_t list_size       = 0;
-    menu_handle_t *menu    = (menu_handle_t*)data;
-    xmb_handle_t *xmb      = menu ? (xmb_handle_t*)menu->userdata : NULL;
-    menu_list_t *menu_list = menu_list_get_ptr();
-    void *ptr              = NULL;
-    
-    switch (type)
-    {
-        case MENU_LIST_PLAIN:
-            if (menu_list)
-               list_size  = menu_list_get_stack_size(menu_list);
-            if (i < list_size)
-               ptr = (void*)&menu_list->menu_stack->list[i];
-            break;
-        case MENU_LIST_HORIZONTAL:
-            if (xmb && xmb->horizontal_list)
-                list_size = file_list_get_size(xmb->horizontal_list);
-            if (i < list_size)
-               ptr = (void*)&xmb->horizontal_list->list[i];
-            break;
-    }
-    
-    return ptr;
+   size_t list_size       = 0;
+   menu_handle_t *menu    = (menu_handle_t*)data;
+   xmb_handle_t *xmb      = menu ? (xmb_handle_t*)menu->userdata : NULL;
+   menu_list_t *menu_list = menu_list_get_ptr();
+   void *ptr              = NULL;
+
+   switch (type)
+   {
+      case MENU_LIST_PLAIN:
+         if (menu_list)
+            list_size  = menu_list_get_stack_size(menu_list);
+         if (i < list_size)
+            ptr = (void*)&menu_list->menu_stack->list[i];
+         break;
+      case MENU_LIST_HORIZONTAL:
+         if (xmb && xmb->horizontal_list)
+            list_size = file_list_get_size(xmb->horizontal_list);
+         if (i < list_size)
+            ptr = (void*)&xmb->horizontal_list->list[i];
+         break;
+   }
+
+   return ptr;
 }
 
 static float xmb_item_y(xmb_handle_t *xmb, int i, size_t current)
@@ -482,7 +482,7 @@ static void xmb_draw_boxart(gl_t *gl, xmb_handle_t *xmb)
    y = xmb->margins.screen.top + xmb->icon.size + xmb->boxart_size;
 
    x = xmb->margins.screen.left + xmb->icon.spacing.horizontal +
-         xmb->icon.spacing.horizontal*4 - xmb->icon.size / 4;
+      xmb->icon.spacing.horizontal*4 - xmb->icon.size / 4;
 
    glViewport(x, height - y, xmb->boxart_size, xmb->boxart_size);
 
@@ -1511,8 +1511,8 @@ static void xmb_render(void)
 
          if (settings->menu.pointer.enable)
          {
-           if (menu_input->pointer.y > item_y1 && menu_input->pointer.y < item_y2)
-              menu_input->pointer.ptr = i;
+            if (menu_input->pointer.y > item_y1 && menu_input->pointer.y < item_y2)
+               menu_input->pointer.ptr = i;
          }
 
          if (settings->menu.mouse.enable)
@@ -1821,7 +1821,7 @@ static void *xmb_init(void)
    float scale_factor                 = 1;
    gl_t *gl                           = (gl_t*)
       video_driver_get_ptr(&video_driver);
-    
+
    (void)scale_factor;
 
    if (video_driver != &video_gl || !gl)
@@ -2021,7 +2021,7 @@ static void xmb_context_reset_horizontal_list(xmb_handle_t *xmb,
    size_t list_size            = xmb_list_get_size(menu, MENU_LIST_HORIZONTAL);
 
    xmb->categories.x_pos = xmb->icon.spacing.horizontal *
-         -(float)xmb->categories.selection_ptr;
+      -(float)xmb->categories.selection_ptr;
 
    for (i = 0; i < list_size; i++)
    {
