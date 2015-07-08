@@ -250,13 +250,13 @@ const char* config_get_audio_driver_options(void)
 
    if (!options)
    {
-      string_list_free(options_l);
-      options_l = NULL;
-      return NULL;
+      options = NULL;
+      goto end;
    }
 
    string_list_join_concat(options, options_len, options_l, "|");
 
+end:
    string_list_free(options_l);
    options_l = NULL;
 
@@ -297,11 +297,13 @@ void uninit_audio(void)
    if (driver->audio_data && driver->audio)
       driver->audio->free(driver->audio_data);
 
-   free(audio_data.conv_outsamples);
+   if (audio_data.conv_outsamples)
+      free(audio_data.conv_outsamples);
    audio_data.conv_outsamples = NULL;
    audio_data.data_ptr        = 0;
 
-   free(audio_data.rewind_buf);
+   if (audio_data.rewind_buf)
+      free(audio_data.rewind_buf);
    audio_data.rewind_buf = NULL;
 
    if (!settings->audio.enable)
@@ -313,10 +315,12 @@ void uninit_audio(void)
    rarch_resampler_freep(&driver->resampler,
          &driver->resampler_data);
 
-   free(audio_data.data);
+   if (audio_data.data)
+      free(audio_data.data);
    audio_data.data = NULL;
 
-   free(audio_data.outsamples);
+   if (audio_data.outsamples)
+      free(audio_data.outsamples);
    audio_data.outsamples = NULL;
 
    event_command(EVENT_CMD_DSP_FILTER_DEINIT);
