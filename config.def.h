@@ -713,11 +713,7 @@ static const bool input_descriptor_label_show = true;
 
 static const bool input_descriptor_hide_unbound = false;
 
-#ifdef RARCH_MOBILE
 static const unsigned input_max_users = 4;
-#else
-static const unsigned input_max_users = MAX_USERS;
-#endif
 
 #if defined(ANDROID)
 #if defined(ANDROID_ARM)
