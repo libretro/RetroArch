@@ -227,7 +227,7 @@ void *menu_init(const void *data)
       goto error;
 #endif
 
-   menu->push_start_screen          = settings->menu_show_start_screen;
+   menu->push_help_screen          = settings->menu_show_start_screen;
    settings->menu_show_start_screen = false;
 
    menu_shader_manager_init(menu);

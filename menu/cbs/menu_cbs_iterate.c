@@ -154,7 +154,7 @@ static int load_or_open_zip_iterate(char *s, size_t len, unsigned action)
 static int action_iterate_help(char *s, size_t len, const char *label)
 {
    unsigned i;
-   static const unsigned binds[] = {
+   const unsigned binds[] = {
       RETRO_DEVICE_ID_JOYPAD_UP,
       RETRO_DEVICE_ID_JOYPAD_DOWN,
       RETRO_DEVICE_ID_JOYPAD_A,
@@ -165,46 +165,60 @@ static int action_iterate_help(char *s, size_t len, const char *label)
       RETRO_DEVICE_ID_JOYPAD_X,
       RETRO_DEVICE_ID_JOYPAD_Y,
    };
-   char desc[ARRAY_SIZE(binds)][64] = {{0}};
-   settings_t *settings             = config_get_ptr();
+   menu_handle_t *menu       = menu_driver_get_ptr();
 
    menu_driver_render();
 
-   for (i = 0; i < ARRAY_SIZE(binds); i++)
+   switch (menu->help_screen_type)
    {
-      const struct retro_keybind *keybind = (const struct retro_keybind*)
-         &settings->input.binds[0][binds[i]];
-      const struct retro_keybind *auto_bind = (const struct retro_keybind*)
-         input_get_auto_bind(0, binds[i]);
+      case MENU_HELP_DEFAULT:
+         {
+            char desc[ARRAY_SIZE(binds)][64] = {{0}};
+            settings_t *settings             = config_get_ptr();
 
-      input_get_bind_string(desc[i], keybind, auto_bind, sizeof(desc[i]));
+            for (i = 0; i < ARRAY_SIZE(binds); i++)
+            {
+               const struct retro_keybind *keybind = (const struct retro_keybind*)
+                  &settings->input.binds[0][binds[i]];
+               const struct retro_keybind *auto_bind = (const struct retro_keybind*)
+                  input_get_auto_bind(0, binds[i]);
+
+               input_get_bind_string(desc[i], keybind, auto_bind, sizeof(desc[i]));
+            }
+
+            snprintf(s, len,
+                  "Welcome to RetroArch\n"
+                  " \n" /* strtok_r doesn't split empty strings. */
+
+                  "Basic Menu controls:\n"
+                  "    Scroll (Up): %-20s\n"
+                  "  Scroll (Down): %-20s\n"
+                  "      Accept/OK: %-20s\n"
+                  "           Back: %-20s\n"
+                  "           Info: %-20s\n"
+                  "Enter/Exit Menu: %-20s\n"
+                  " Exit RetroArch: %-20s\n"
+                  "Toggle Keyboard: %-20s\n"
+                  " \n"
+
+                  "To run content:\n"
+                  "Load a libretro core (Core).\n"
+                  "Load a content file (Load Content).     \n"
+                  " \n"
+                  "See Path Settings to set directories \n"
+                  "for faster access to files.\n"
+                  " \n"
+
+                  "Press Accept/OK to continue.",
+               desc[0], desc[1], desc[2], desc[3], desc[4], desc[5], desc[6], desc[7]);
+         }
+         break;
+      case MENU_HELP_EXTRACTING:
+         strlcpy(s, "Extracting, please wait...\n", len);
+         break;
+      default:
+         break;
    }
-
-   snprintf(s, len,
-         "Welcome to RetroArch\n"
-         " \n" /* strtok_r doesn't split empty strings. */
-
-         "Basic Menu controls:\n"
-         "    Scroll (Up): %-20s\n"
-         "  Scroll (Down): %-20s\n"
-         "      Accept/OK: %-20s\n"
-         "           Back: %-20s\n"
-         "           Info: %-20s\n"
-         "Enter/Exit Menu: %-20s\n"
-         " Exit RetroArch: %-20s\n"
-         "Toggle Keyboard: %-20s\n"
-         " \n"
-
-         "To run content:\n"
-         "Load a libretro core (Core).\n"
-         "Load a content file (Load Content).     \n"
-         " \n"
-         "See Path Settings to set directories \n"
-         "for faster access to files.\n"
-         " \n"
-
-         "Press Accept/OK to continue.",
-      desc[0], desc[1], desc[2], desc[3], desc[4], desc[5], desc[6], desc[7]);
 
    return 0;
 }
@@ -561,7 +575,7 @@ static int action_iterate_main(const char *label, unsigned action)
          do_render       = true;
 
          /* Have to defer it so we let settings refresh. */
-         if (menu->push_start_screen)
+         if (menu->push_help_screen)
          {
             menu_displaylist_info_t info = {0};
 

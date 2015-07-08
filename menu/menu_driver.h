@@ -50,13 +50,21 @@ typedef enum
    MENU_ENVIRON_LAST
 } menu_environ_cb_t;
 
+typedef enum
+{
+   MENU_HELP_DEFAULT    = 0,
+   MENU_HELP_EXTRACTING,
+   MENU_HELP_LAST
+} menu_help_type_t;
+
 typedef struct
 {
    void *userdata;
 
    float scroll_y;
 
-   bool push_start_screen;
+   bool push_help_screen;
+   menu_help_type_t help_screen_type;
 
    bool defer_core;
    char deferred_path[PATH_MAX_LENGTH];
