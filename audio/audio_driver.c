@@ -884,11 +884,17 @@ bool audio_driver_has_callback(void)
 void audio_driver_callback(void)
 {
    if (audio_driver_has_callback())
-      audio_data.audio_callback.callback();
+   {
+      if (audio_data.audio_callback.callback)
+         audio_data.audio_callback.callback();
+   }
 }
 
 void audio_driver_callback_set_state(bool state)
 {
    if (audio_driver_has_callback())
-      audio_data.audio_callback.set_state(state);
+   {
+      if (audio_data.audio_callback.set_state)
+         audio_data.audio_callback.set_state(state);
+   }
 }
