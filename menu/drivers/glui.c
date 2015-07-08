@@ -534,7 +534,6 @@ static void *glui_init(void)
    glui_handle_t *glui                     = NULL;
    const video_driver_t *video_driver      = NULL;
    menu_handle_t                     *menu = NULL;
-   settings_t *settings                    = config_get_ptr();
    gl_t *gl                                = (gl_t*)
       video_driver_get_ptr(&video_driver);
 
@@ -558,10 +557,6 @@ static void *glui_init(void)
 
    glui_layout(menu, glui);
    glui_allocate_white_texture(glui);
-
-   if (settings->menu.wallpaper[0] != '\0')
-      rarch_main_data_msg_queue_push(DATA_TYPE_IMAGE,
-            settings->menu.wallpaper, "cb_menu_wallpaper", 0, 1, true);
 
    return menu;
 error:

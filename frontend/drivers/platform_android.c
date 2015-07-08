@@ -439,9 +439,9 @@ static bool device_is_game_console(const char *name)
 
 static char screenshot_dir[PATH_MAX_LENGTH];
 static char downloads_dir[PATH_MAX_LENGTH];
-static char apk_path[PATH_MAX_LENGTH];
+char apk_path[PATH_MAX_LENGTH];
 static char sdcard_dir[PATH_MAX_LENGTH];
-static char app_dir[PATH_MAX_LENGTH];
+char app_dir[PATH_MAX_LENGTH];
 
 static void frontend_android_get_environment_settings(int *argc,
       char *argv[], void *data, void *params_data)

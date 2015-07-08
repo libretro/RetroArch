@@ -213,7 +213,7 @@ static int action_iterate_help(char *s, size_t len, const char *label)
                desc[0], desc[1], desc[2], desc[3], desc[4], desc[5], desc[6], desc[7]);
          }
          break;
-      case MENU_HELP_EXTRACTING:
+      case MENU_HELP_EXTRACT:
          strlcpy(s, "Extracting, please wait...\n", len);
          break;
       default:

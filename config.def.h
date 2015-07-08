@@ -337,6 +337,16 @@ static const bool pointer_enable = true;
 static const bool pointer_enable = false;
 #endif
 
+/* Certain platforms might have assets stored in the bundle that
+ * we need to extract to a user-writable directory on first boot.
+ *
+ * Examples include: Android, iOS/OSX) */
+#if defined(ANDROID)
+static bool bundle_assets_extract_enable = true;
+#else
+static bool bundle_assets_extract_enable = false;
+#endif
+
 static const bool def_history_list_enable = true;
 
 static const unsigned int def_user_language = 0;

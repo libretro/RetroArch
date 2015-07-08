@@ -27,6 +27,7 @@
 #include "../frontend/frontend.h"
 #include "../retroarch.h"
 #include "../performance.h"
+#include "../runloop_data.h"
 
 static void menu_environment_get(int *argc, char *argv[],
       void *args, void *params_data)
@@ -230,6 +231,18 @@ void *menu_init(const void *data)
    menu->push_help_screen           = settings->menu_show_start_screen;
    menu->help_screen_type           = MENU_HELP_DEFAULT;
    settings->menu_show_start_screen = false;
+
+#if 0
+   if (settings->bundle_assets_extract_enable &&
+         (strcmp(PACKAGE_VERSION, settings->bundle_assets_last_extracted_version) != 0)
+      )
+   {
+      menu->push_help_screen = true;
+      menu->help_screen_type = MENU_HELP_EXTRACT;
+
+      rarch_main_data_msg_queue_push(DATA_TYPE_FILE, "cb_bundle_extract", "cb_bundle_extract", 0, 1, true);
+   }
+#endif
 
    menu_shader_manager_init(menu);
 
