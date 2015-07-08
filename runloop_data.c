@@ -88,6 +88,8 @@ void rarch_main_data_free(void)
 {
    data_runloop_t *runloop = rarch_main_data_get_ptr();
 
+   rarch_main_data_nbio_uninit();
+
    if (runloop)
       free(runloop);
    runloop = NULL;
@@ -119,7 +121,7 @@ bool rarch_main_data_active(data_runloop_t *runloop)
    bool               db_active = false;
 
    driver_t             *driver = driver_get_ptr();
-   nbio_handle_t          *nbio = runloop ? &runloop->nbio : NULL;
+   nbio_handle_t          *nbio = (nbio_handle_t*)rarch_main_data_nbio_get_ptr();
 #ifdef HAVE_RPNG
    nbio_image_handle_t   *image = nbio ? &nbio->image : NULL;
 #endif
@@ -297,6 +299,7 @@ static data_runloop_t *rarch_main_data_new(void)
 
    runloop->inited = true;
 
+
    return runloop;
 }
 
@@ -305,7 +308,13 @@ void rarch_main_data_clear_state(void)
    rarch_main_data_deinit();
    rarch_main_data_free();
    g_data_runloop = rarch_main_data_new();
+
+   if (!g_data_runloop)
+      return;
+
+   rarch_main_data_nbio_init();
 }
+
 
 void rarch_main_data_init_queues(void)
 {
@@ -314,15 +323,13 @@ void rarch_main_data_init_queues(void)
    if (!runloop->http.msg_queue)
       rarch_assert(runloop->http.msg_queue       = msg_queue_new(8));
 #endif
-   if (!runloop->nbio.msg_queue)
-      rarch_assert(runloop->nbio.msg_queue       = msg_queue_new(8));
-   if (!runloop->nbio.image.msg_queue)
-      rarch_assert(runloop->nbio.image.msg_queue = msg_queue_new(8));
+   rarch_main_data_nbio_init_msg_queue();
 #ifdef HAVE_LIBRETRODB
    if (!runloop->db.msg_queue)
       rarch_assert(runloop->db.msg_queue         = msg_queue_new(8));
 #endif
 }
+
 
 void rarch_main_data_msg_queue_push(unsigned type,
       const char *msg, const char *msg2,
@@ -337,11 +344,15 @@ void rarch_main_data_msg_queue_push(unsigned type,
       case DATA_TYPE_NONE:
          break;
       case DATA_TYPE_FILE:
-         queue = runloop->nbio.msg_queue;
+         queue = rarch_main_data_nbio_get_msg_queue_ptr();
+         if (!queue)
+            return;
          snprintf(new_msg, sizeof(new_msg), "%s|%s", msg, msg2);
          break;
       case DATA_TYPE_IMAGE:
-         queue = runloop->nbio.image.msg_queue;
+         queue = rarch_main_data_nbio_image_get_msg_queue_ptr();
+         if (!queue)
+            return;
          snprintf(new_msg, sizeof(new_msg), "%s|%s", msg, msg2);
          break;
 #ifdef HAVE_NETWORKING

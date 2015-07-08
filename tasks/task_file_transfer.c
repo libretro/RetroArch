@@ -21,11 +21,33 @@
 #include <string/string_list.h>
 #include <rhash.h>
 
-#include "../runloop_data.h"
 #include "tasks.h"
 
 #define CB_MENU_WALLPAPER     0xb476e505U
 #define CB_MENU_BOXART        0x68b307cdU
+
+static nbio_handle_t *nbio_ptr;
+
+void *rarch_main_data_nbio_get_ptr(void)
+{
+   return nbio_ptr;
+}
+
+msg_queue_t *rarch_main_data_nbio_get_msg_queue_ptr(void)
+{
+   nbio_handle_t         *nbio  = rarch_main_data_nbio_get_ptr();
+   if (!nbio)
+      return NULL;
+   return nbio->msg_queue;
+}
+
+msg_queue_t *rarch_main_data_nbio_image_get_msg_queue_ptr(void)
+{
+   nbio_handle_t         *nbio  = rarch_main_data_nbio_get_ptr();
+   if (!nbio)
+      return NULL;
+   return nbio->image.msg_queue;
+}
 
 #ifdef HAVE_MENU
 #include "../menu/menu_driver.h"
@@ -252,8 +274,7 @@ static int rarch_main_data_image_iterate_transfer_parse(nbio_handle_t *nbio)
 
 void rarch_main_data_nbio_image_iterate(bool is_thread, void *data)
 {
-   data_runloop_t      *runloop = (data_runloop_t*)data;
-   nbio_handle_t         *nbio  = runloop ? &runloop->nbio : NULL;
+   nbio_handle_t         *nbio  = rarch_main_data_nbio_get_ptr();
    nbio_image_handle_t   *image = nbio    ? &nbio->image   : NULL;
 
    if (!image || !nbio)
@@ -288,11 +309,10 @@ void rarch_main_data_nbio_image_iterate(bool is_thread, void *data)
 void rarch_main_data_nbio_image_upload_iterate(bool is_thread,
       void *data)
 {
-   data_runloop_t     *runloop  = (data_runloop_t*)data;
-   nbio_handle_t         *nbio  = runloop ? &runloop->nbio : NULL;
+   nbio_handle_t         *nbio  = rarch_main_data_nbio_get_ptr();
    nbio_image_handle_t   *image = nbio    ? &nbio->image   : NULL;
 
-   if (!image || !nbio || !runloop)
+   if (!image || !nbio)
       return;
 
    (void)is_thread;
@@ -529,9 +549,8 @@ static int rarch_main_data_nbio_iterate_parse(nbio_handle_t *nbio)
 
 void rarch_main_data_nbio_iterate(bool is_thread, void *data)
 {
-   data_runloop_t      *runloop = (data_runloop_t*)data;
-   nbio_handle_t          *nbio = runloop ? &runloop->nbio : NULL;
-   if (!nbio || !runloop)
+   nbio_handle_t         *nbio  = rarch_main_data_nbio_get_ptr();
+   if (!nbio)
       return;
 
    switch (nbio->status)
@@ -554,4 +573,28 @@ void rarch_main_data_nbio_iterate(bool is_thread, void *data)
             nbio->status = NBIO_STATUS_TRANSFER;
          break;
    }
+}
+
+void rarch_main_data_nbio_init_msg_queue(void)
+{
+   nbio_handle_t         *nbio  = rarch_main_data_nbio_get_ptr();
+   if (!nbio)
+      return;
+
+   if (!nbio->msg_queue)
+      rarch_assert(nbio->msg_queue       = msg_queue_new(8));
+   if (!nbio->image.msg_queue)
+      rarch_assert(nbio->image.msg_queue = msg_queue_new(8));
+}
+
+void rarch_main_data_nbio_uninit(void)
+{
+   if (nbio_ptr)
+      free(nbio_ptr);
+   nbio_ptr = NULL;
+}
+
+void rarch_main_data_nbio_init(void)
+{
+   nbio_ptr              = (nbio_handle_t*)calloc(1, sizeof(*nbio_ptr));
 }

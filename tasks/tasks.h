@@ -24,6 +24,18 @@
 extern "C" {
 #endif
 
+void rarch_main_data_nbio_uninit(void);
+
+void rarch_main_data_nbio_init(void);
+
+void rarch_main_data_nbio_init_msg_queue(void);
+
+msg_queue_t *rarch_main_data_nbio_get_msg_queue_ptr(void);
+
+msg_queue_t *rarch_main_data_nbio_image_get_msg_queue_ptr(void);
+
+void *rarch_main_data_nbio_get_ptr(void);
+
 #ifdef HAVE_NETWORKING
 /**
  * rarch_main_data_http_iterate_transfer:

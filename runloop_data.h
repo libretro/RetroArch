@@ -151,7 +151,6 @@ typedef struct data_runloop
    db_handle_t db;
 #endif
 
-   nbio_handle_t nbio;
    bool inited;
 
 #ifdef HAVE_THREADS
@@ -180,6 +179,8 @@ void rarch_main_data_deinit(void);
 void rarch_main_data_free(void);
 
 void rarch_main_data_init_queues(void);
+
+void rarch_main_data_init(void);
 
 bool rarch_main_data_active(data_runloop_t *runloop);
 
