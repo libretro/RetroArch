@@ -60,6 +60,8 @@ void *rarch_main_data_http_get_handle(void);
 
 void *rarch_main_data_http_conn_get_handle(void);
 
+void rarch_main_data_http_uninit(void);
+
 void rarch_main_data_http_init(void);
 
 void *rarch_main_data_http_get_ptr(void);

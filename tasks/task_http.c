@@ -507,6 +507,13 @@ void *rarch_main_data_http_conn_get_handle(void)
    return http->connection.handle;
 }
 
+void rarch_main_data_http_uninit(void)
+{
+   if (http_ptr)
+      free(http_ptr);
+   http_ptr = NULL;
+}
+
 void rarch_main_data_http_init(void)
 {
    http_ptr              = (http_handle_t*)calloc(1, sizeof(*http_ptr));

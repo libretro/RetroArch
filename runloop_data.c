@@ -89,6 +89,7 @@ void rarch_main_data_free(void)
    data_runloop_t *runloop = rarch_main_data_get_ptr();
 
    rarch_main_data_nbio_uninit();
+   rarch_main_data_http_uninit();
 
    if (runloop)
       free(runloop);
