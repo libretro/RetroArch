@@ -19,7 +19,6 @@
 #endif
 
 #include "../input/input_overlay.h"
-#include "../runloop.h"
 #include "tasks.h"
 
 #ifdef HAVE_THREADS
@@ -29,8 +28,6 @@ static slock_t *overlay_lock;
 void rarch_main_data_overlay_image_upload_iterate(bool is_thread)
 {
    input_overlay_t *overlay = input_overlay_get_ptr();
-   if (rarch_main_is_idle())
-      return;
    if (!overlay)
       return;
 
@@ -58,9 +55,6 @@ void rarch_main_data_overlay_iterate(bool is_thread)
 {
    input_overlay_t *overlay = input_overlay_get_ptr();
    
-   if (rarch_main_is_idle())
-      return;
-
 #ifdef HAVE_THREADS
    if (is_thread)
       slock_lock(overlay_lock);
