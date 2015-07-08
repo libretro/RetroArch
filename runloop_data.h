@@ -71,55 +71,6 @@ typedef struct http_handle
 } http_handle_t;
 #endif
 
-typedef struct nbio_image_handle
-{
-   struct texture_image ti;
-   bool is_blocking;
-   bool is_blocking_on_processing;
-   bool is_finished;
-   transfer_cb_t  cb;
-#ifdef HAVE_RPNG
-   struct rpng_t *handle;
-#endif
-   unsigned processing_pos_increment;
-   unsigned pos_increment;
-   uint64_t frame_count;
-   uint64_t processing_frame_count;
-   int processing_final_state;
-   msg_queue_t *msg_queue;
-   unsigned status;
-} nbio_image_handle_t;
-
-enum nbio_image_status_enum
-{
-   NBIO_IMAGE_STATUS_POLL = 0,
-   NBIO_IMAGE_STATUS_TRANSFER,
-   NBIO_IMAGE_STATUS_TRANSFER_PARSE,
-   NBIO_IMAGE_STATUS_PROCESS_TRANSFER,
-   NBIO_IMAGE_STATUS_PROCESS_TRANSFER_PARSE,
-   NBIO_IMAGE_STATUS_TRANSFER_PARSE_FREE
-};
-
-enum nbio_status_enum
-{
-   NBIO_STATUS_POLL = 0,
-   NBIO_STATUS_TRANSFER,
-   NBIO_STATUS_TRANSFER_PARSE,
-   NBIO_STATUS_TRANSFER_PARSE_FREE
-};
-
-typedef struct nbio_handle
-{
-   nbio_image_handle_t image;
-   bool is_finished;
-   transfer_cb_t  cb;
-   struct nbio_t *handle;
-   unsigned pos_increment;
-   uint64_t frame_count;
-   msg_queue_t *msg_queue;
-   unsigned status;
-} nbio_handle_t;
-
 #ifdef HAVE_LIBRETRODB
 typedef struct database_state_handle
 {
