@@ -14,25 +14,30 @@
  */
 
 #include <retro_miscellaneous.h>
+#ifdef HAVE_THREADS
+#include <rthreads/rthreads.h>
+#endif
 
 #include "../driver.h"
 #include "../runloop.h"
-#include "../runloop_data.h"
 #include "tasks.h"
+
+#ifdef HAVE_THREADS
+static slock_t *overlay_lock;
+#endif
 
 void rarch_main_data_overlay_image_upload_iterate(bool is_thread, void *data)
 {
-   data_runloop_t *runloop = (data_runloop_t*)data;
    driver_t        *driver = driver_get_ptr();
 
    if (rarch_main_is_idle())
       return;
-   if (!driver->overlay || !runloop)
+   if (!driver->overlay)
       return;
 
 #ifdef HAVE_THREADS
    if (is_thread)
-      slock_lock(runloop->overlay_lock);
+      slock_lock(overlay_lock);
 #endif
 
    switch (driver->overlay->state)
@@ -46,13 +51,12 @@ void rarch_main_data_overlay_image_upload_iterate(bool is_thread, void *data)
 
 #ifdef HAVE_THREADS
    if (is_thread)
-      slock_unlock(runloop->overlay_lock);
+      slock_unlock(overlay_lock);
 #endif
 }
 
 void rarch_main_data_overlay_iterate(bool is_thread, void *data)
 {
-   data_runloop_t *runloop = (data_runloop_t*)data;
    driver_t *driver = NULL;
    
    if (rarch_main_is_idle())
@@ -60,7 +64,7 @@ void rarch_main_data_overlay_iterate(bool is_thread, void *data)
 
 #ifdef HAVE_THREADS
    if (is_thread)
-      slock_lock(runloop->overlay_lock);
+      slock_lock(overlay_lock);
 #endif
 
    driver = driver_get_ptr();
@@ -92,6 +96,20 @@ void rarch_main_data_overlay_iterate(bool is_thread, void *data)
 end: ;
 #ifdef HAVE_THREADS
    if (is_thread)
-      slock_unlock(runloop->overlay_lock);
+      slock_unlock(overlay_lock);
+#endif
+}
+
+void rarch_main_data_overlay_thread_uninit(void)
+{
+#ifdef HAVE_THREADS
+   slock_free(overlay_lock);
+#endif
+}
+
+void rarch_main_data_overlay_thread_init(void)
+{
+#ifdef HAVE_THREADS
+   overlay_lock = slock_new();
 #endif
 }

@@ -100,6 +100,10 @@ void rarch_main_data_overlay_image_upload_iterate(bool is_thread,
    void *data);
 
 void rarch_main_data_overlay_iterate(bool is_thread, void *data);
+
+void rarch_main_data_overlay_thread_uninit(void);
+
+void rarch_main_data_overlay_thread_init(void);
 #endif
 
 void rarch_main_data_nbio_iterate(bool is_thread,

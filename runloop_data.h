@@ -48,7 +48,6 @@ typedef struct data_runloop
 
    slock_t *lock;
    slock_t *cond_lock;
-   slock_t *overlay_lock;
    scond_t *cond;
    sthread_t *thread;
 #endif

@@ -61,7 +61,7 @@ static void data_runloop_thread_deinit(data_runloop_t *runloop)
 
       slock_free(runloop->lock);
       slock_free(runloop->cond_lock);
-      slock_free(runloop->overlay_lock);
+      rarch_main_data_overlay_thread_uninit();
       scond_free(runloop->cond);
    }
 }
@@ -195,8 +195,11 @@ static void rarch_main_data_thread_init(void)
 
    runloop->lock            = slock_new();
    runloop->cond_lock       = slock_new();
-   runloop->overlay_lock    = slock_new();
    runloop->cond            = scond_new();
+
+#ifdef HAVE_OVERLAY
+   rarch_main_data_overlay_thread_init();
+#endif
 
    runloop->thread    = sthread_create(data_thread_loop, runloop);
 
@@ -212,10 +215,7 @@ static void rarch_main_data_thread_init(void)
    return;
 
 error:
-   slock_free(runloop->lock);
-   slock_free(runloop->cond_lock);
-   slock_free(runloop->overlay_lock);
-   scond_free(runloop->cond);
+   data_runloop_thread_deinit(runloop);
 }
 #endif
 
