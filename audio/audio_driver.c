@@ -315,6 +315,12 @@ void uninit_audio(void)
    rarch_resampler_freep(&driver->resampler,
          &driver->resampler_data);
 
+   if (audio_data.audio_callback.callback)
+   {
+      audio_data.audio_callback.callback  = NULL;
+      audio_data.audio_callback.set_state = NULL;
+   }
+
    if (audio_data.data)
       free(audio_data.data);
    audio_data.data = NULL;
@@ -475,18 +481,7 @@ void init_audio(void)
    return;
 
 error:
-   if (audio_data.conv_outsamples)
-      free(audio_data.conv_outsamples);
-   audio_data.conv_outsamples = NULL;
-   if (audio_data.data)
-      free(audio_data.data);
-   audio_data.data = NULL;
-   if (audio_data.rewind_buf)
-      free(audio_data.rewind_buf);
-   audio_data.rewind_buf = NULL;
-   if (audio_data.outsamples)
-      free(audio_data.outsamples);
-   audio_data.outsamples = NULL;
+   uninit_audio();
 }
 
 bool audio_driver_mute_toggle(void)
