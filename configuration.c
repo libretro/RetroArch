@@ -1566,6 +1566,7 @@ static bool config_load_file(const char *path, bool set_defaults)
    config_get_path(conf, "input_overlay", settings->input.overlay, sizeof(settings->input.overlay));
    CONFIG_GET_BOOL_BASE(conf, settings, input.overlay_enable, "input_overlay_enable");
    CONFIG_GET_BOOL_BASE(conf, settings, input.overlay_enable_autopreferred, "input_overlay_enable_autopreferred");
+   CONFIG_GET_BOOL_BASE(conf, settings, input.overlay_hide_in_menu, "input_overlay_hide_in_menu");
    CONFIG_GET_FLOAT_BASE(conf, settings, input.overlay_opacity, "input_overlay_opacity");
    CONFIG_GET_FLOAT_BASE(conf, settings, input.overlay_scale, "input_overlay_scale");
 
@@ -2573,6 +2574,7 @@ bool config_save_file(const char *path)
    config_set_path(conf, "input_overlay", settings->input.overlay);
    config_set_bool(conf, "input_overlay_enable", settings->input.overlay_enable);
    config_set_bool(conf, "input_overlay_enable_autopreferred", settings->input.overlay_enable_autopreferred);
+   config_set_bool(conf, "input_overlay_hide_in_menu", settings->input.overlay_hide_in_menu);
    config_set_float(conf, "input_overlay_opacity",
          settings->input.overlay_opacity);
    config_set_float(conf, "input_overlay_scale",

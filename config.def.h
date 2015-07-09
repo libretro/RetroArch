@@ -485,6 +485,8 @@ static bool config_save_on_exit = true;
 
 static const bool default_overlay_enable = false;
 
+static const bool overlay_hide_in_menu = true;
+
 #ifdef HAVE_MENU
 static bool default_block_config_read = true;
 

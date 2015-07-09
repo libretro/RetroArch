@@ -22,6 +22,9 @@
 extern "C" {
 #endif
 
+#define MENU_LABEL_INPUT_OVERLAY_HIDE_IN_MENU                                  0xf09e230aU
+#define MENU_LABEL_VALUE_INPUT_OVERLAY_HIDE_IN_MENU                            0x39b5bd0dU
+
 #define MENU_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST                      0x39310fc8U
 #define MENU_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST                            0xb4f82700U
 

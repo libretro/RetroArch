@@ -26,6 +26,8 @@ static const char *menu_hash_to_str_us_label(uint32_t hash)
 {
    switch (hash)
    {
+      case MENU_LABEL_INPUT_OVERLAY_HIDE_IN_MENU:
+         return "overlay_hide_in_menu";
       case MENU_LABEL_NO_PLAYLIST_ENTRIES_AVAILABLE:
          return "no_playlist_entries_available";
       case MENU_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST:
@@ -614,6 +616,8 @@ const char *menu_hash_to_str_us(uint32_t hash)
 
    switch (hash)
    {
+      case MENU_LABEL_VALUE_INPUT_OVERLAY_HIDE_IN_MENU:
+         return "Hide Overlay In Menu";
       case MENU_VALUE_LANG_POLISH:
          return "Polish";
       case MENU_LABEL_VALUE_OVERLAY_AUTOLOAD_PREFERRED:

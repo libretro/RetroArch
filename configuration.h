@@ -231,6 +231,7 @@ typedef struct settings
 
       bool overlay_enable;
       bool overlay_enable_autopreferred;
+      bool overlay_hide_in_menu;
       char overlay[PATH_MAX_LENGTH];
       float overlay_opacity;
       float overlay_scale;

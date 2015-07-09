@@ -2474,10 +2474,17 @@ static void settings_data_list_current_add_flags(
 
 static void overlay_enable_toggle_change_handler(void *data)
 {
+   settings_t *settings  = config_get_ptr();
    rarch_setting_t *setting = (rarch_setting_t *)data;
 
    if (!setting)
       return;
+
+   if (settings && settings->input.overlay_hide_in_menu)
+   {
+      event_command(EVENT_CMD_OVERLAY_DEINIT);
+      return;
+   }
 
    if (setting->value.boolean)
       event_command(EVENT_CMD_OVERLAY_INIT);
@@ -4542,10 +4549,24 @@ static bool setting_append_list_overlay_options(
    (*list)[list_info->index - 1].change_handler = overlay_enable_toggle_change_handler;
 
    CONFIG_BOOL(
-         settings->input.overlay_enable,
+         settings->input.overlay_enable_autopreferred,
          menu_hash_to_str(MENU_LABEL_OVERLAY_AUTOLOAD_PREFERRED),
          menu_hash_to_str(MENU_LABEL_VALUE_OVERLAY_AUTOLOAD_PREFERRED),
          true,
+         menu_hash_to_str(MENU_VALUE_OFF),
+         menu_hash_to_str(MENU_VALUE_ON),
+         group_info.name,
+         subgroup_info.name,
+         parent_group,
+         general_write_handler,
+         general_read_handler);
+   (*list)[list_info->index - 1].change_handler = overlay_enable_toggle_change_handler;
+
+   CONFIG_BOOL(
+         settings->input.overlay_hide_in_menu,
+         menu_hash_to_str(MENU_LABEL_INPUT_OVERLAY_HIDE_IN_MENU),
+         menu_hash_to_str(MENU_LABEL_VALUE_INPUT_OVERLAY_HIDE_IN_MENU),
+         overlay_hide_in_menu,
          menu_hash_to_str(MENU_VALUE_OFF),
          menu_hash_to_str(MENU_VALUE_ON),
          group_info.name,

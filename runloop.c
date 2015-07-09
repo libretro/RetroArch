@@ -430,23 +430,23 @@ static void check_shader_dir(bool pressed_next, bool pressed_prev)
 static void do_state_check_menu_toggle(void)
 {
    global_t *global   = global_get_ptr();
+   settings_t *settings     = config_get_ptr();
 
    if (menu_driver_alive())
    {
       if (global->main_is_init && (global->core_type != CORE_TYPE_DUMMY))
       {
          rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING_FINISHED);
-#if 0
-         event_command(EVENT_CMD_OVERLAY_INIT);
-#endif
+         if (settings->input.overlay_hide_in_menu)
+            event_command(EVENT_CMD_OVERLAY_INIT);
       }
       return;
    }
 
    rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING);
-#if 0
-   event_command(EVENT_CMD_OVERLAY_DEINIT);
-#endif
+
+   if (settings->input.overlay_hide_in_menu)
+      event_command(EVENT_CMD_OVERLAY_DEINIT);
 }
 #endif
 
@@ -873,6 +873,7 @@ static void rarch_main_iterate_linefeed_overlay(void)
 {
    static char prev_overlay_restore = false;
    driver_t *driver                 = driver_get_ptr();
+   settings_t *settings             = config_get_ptr();
 
    if (driver->osk_enable && !driver->keyboard_linefeed_enable)
    {
@@ -890,7 +891,8 @@ static void rarch_main_iterate_linefeed_overlay(void)
    }
    else if (prev_overlay_restore)
    {
-      event_command(EVENT_CMD_OVERLAY_INIT);
+      if (!settings->input.overlay_hide_in_menu)
+         event_command(EVENT_CMD_OVERLAY_INIT);
       prev_overlay_restore = false;
    }
 }
