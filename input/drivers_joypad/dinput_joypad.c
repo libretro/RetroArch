@@ -163,7 +163,7 @@ static bool guid_is_xinput_device(const GUID* product_guid)
          return true;
       }
    }
-   
+
    free(raw_devs);
    raw_devs = NULL;
    return false;
@@ -207,31 +207,31 @@ static BOOL CALLBACK enum_joypad_cb(const DIDEVICEINSTANCE *inst, void *p)
                g_dinput_ctx, &inst->guidInstance, pad, NULL)))
 #endif
    return DIENUM_CONTINUE;
-   
+
    g_pads[g_joypad_cnt].joy_name = strdup(inst->tszProductName);
    g_pads[g_joypad_cnt].joy_friendly_name = strdup(inst->tszInstanceName);
-   
+
    /* there may be more useful info in the GUID so leave this here for a while
-   
-   printf("Guid = {%08lX-%04hX-%04hX-%02hhX%02hhX-%02hhX%02hhX%02hhX%02hhX%02hhX%02hhX}\n", 
-   inst->guidProduct.Data1, inst->guidProduct.Data2, inst->guidProduct.Data3, 
+
+   printf("Guid = {%08lX-%04hX-%04hX-%02hhX%02hhX-%02hhX%02hhX%02hhX%02hhX%02hhX%02hhX}\n",
+   inst->guidProduct.Data1, inst->guidProduct.Data2, inst->guidProduct.Data3,
    inst->guidProduct.Data4[0], inst->guidProduct.Data4[1], inst->guidProduct.Data4[2], inst->guidProduct.Data4[3],
    inst->guidProduct.Data4[4], inst->guidProduct.Data4[5], inst->guidProduct.Data4[6], inst->guidProduct.Data4[7]);
-   printf("Guid = {%08lX-%04hX-%04hX-%02hhX%02hhX-%02hhX%02hhX%02hhX%02hhX%02hhX%02hhX}\n",*/
+   */
 
    g_pads[g_joypad_cnt].vid = inst->guidProduct.Data1/0x10000;
    g_pads[g_joypad_cnt].pid = inst->guidProduct.Data1%0x10000;
    RARCH_LOG("PID: {%04lX} VID:{%04lX}\n", g_pads[g_joypad_cnt].pid, g_pads[g_joypad_cnt].vid);
-   
-   
+
+
 #ifdef HAVE_XINPUT
 #if 0
-   is_xinput_pad = g_xinput_block_pads 
+   is_xinput_pad = g_xinput_block_pads
       && name_is_xinput_pad(inst->tszProductName);
 #endif
-   is_xinput_pad = g_xinput_block_pads 
+   is_xinput_pad = g_xinput_block_pads
       && guid_is_xinput_device(&inst->guidProduct);
-   
+
    if (is_xinput_pad)
    {
       if (g_last_xinput_pad_idx < 4)
@@ -244,9 +244,9 @@ static BOOL CALLBACK enum_joypad_cb(const DIDEVICEINSTANCE *inst, void *p)
    IDirectInputDevice8_SetCooperativeLevel(*pad, (HWND)driver->video_window,
          DISCL_NONEXCLUSIVE | DISCL_BACKGROUND);
 
-   IDirectInputDevice8_EnumObjects(*pad, enum_axes_cb, 
+   IDirectInputDevice8_EnumObjects(*pad, enum_axes_cb,
          *pad, DIDFT_ABSAXIS);
-         
+
 #ifdef HAVE_XINPUT
    if (!is_xinput_pad)
 #endif
@@ -268,7 +268,7 @@ static BOOL CALLBACK enum_joypad_cb(const DIDEVICEINSTANCE *inst, void *p)
 
 enum_iteration_done:
    g_joypad_cnt++;
-   return DIENUM_CONTINUE; 
+   return DIENUM_CONTINUE;
 }
 
 static bool dinput_joypad_init(void *data)
@@ -279,9 +279,9 @@ static bool dinput_joypad_init(void *data)
 
    if (!dinput_init_context())
       return false;
-   
+
    g_last_xinput_pad_idx = 0;
-   
+
    for (i = 0; i < MAX_USERS; ++i)
    {
       g_xinput_pad_indexes[i] = -1;
@@ -312,7 +312,7 @@ static bool dinput_joypad_button(unsigned port_num, uint16_t joykey)
    {
       unsigned pov;
       unsigned hat   = GET_HAT(joykey);
-      unsigned elems = sizeof(pad->joy_state.rgdwPOV) / 
+      unsigned elems = sizeof(pad->joy_state.rgdwPOV) /
          sizeof(pad->joy_state.rgdwPOV[0]);
 
       if (hat >= elems)
@@ -340,7 +340,7 @@ static bool dinput_joypad_button(unsigned port_num, uint16_t joykey)
    }
    else
    {
-      unsigned elems = sizeof(pad->joy_state.rgbButtons) / 
+      unsigned elems = sizeof(pad->joy_state.rgbButtons) /
          sizeof(pad->joy_state.rgbButtons[0]);
 
       if (joykey < elems)
