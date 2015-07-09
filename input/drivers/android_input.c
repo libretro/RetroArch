@@ -914,14 +914,14 @@ static int16_t android_input_state(void *data,
 static bool android_input_key_pressed(void *data, int key)
 {
    android_input_t *android = (android_input_t*)data;
-   driver_t *driver         = driver_get_ptr();
-   settings_t *settings     = config_get_ptr();
+   input_overlay_state_t *ol_state = input_overlay_get_state_ptr();
+   settings_t *settings            = config_get_ptr();
 
    if (!android)
       return false;
 
-   return (driver->overlay_state.buttons
-         & (1ULL << key)) || input_joypad_pressed(android->joypad,
+   return (ol_state && (ol_state->buttons
+         & (1ULL << key))) || input_joypad_pressed(android->joypad,
          0, settings->input.binds[0], key);
 }
 

@@ -248,7 +248,6 @@ static INLINE void input_poll_overlay(
    unsigned i, j, device;
    uint16_t key_mod                = 0;
    bool polled                     = false;
-   driver_t *driver                = driver_get_ptr();
    settings_t *settings            = config_get_ptr();
    input_overlay_state_t *ol_state = input_overlay_get_state_ptr();
 
@@ -385,6 +384,8 @@ static void input_poll(void)
    input_overlay_t *overlay       = input_overlay_get_ptr();
 
    input_driver_poll();
+
+   (void)driver;
 
 #ifdef HAVE_OVERLAY
    if (overlay)
