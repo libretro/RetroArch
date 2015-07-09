@@ -81,7 +81,7 @@ static struct udev_joypad udev_pads[MAX_USERS];
 static INLINE int16_t udev_compute_axis(const struct input_absinfo *info, int value)
 {
    int range = info->maximum - info->minimum;
-   int axis  = (value - info->minimum) * 0xffff / range - 0x7fff;
+   int axis  = (value - info->minimum) * 0xffffll / range - 0x7fffll;
 
    if (axis > 0x7fff)
       return 0x7fff;

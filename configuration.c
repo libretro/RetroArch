@@ -634,6 +634,7 @@ static void config_set_defaults(void)
 
    settings->input.overlay_enable                  = true;
    settings->input.overlay_enable_autopreferred    = true;
+   settings->input.overlay_hide_in_menu            = overlay_hide_in_menu;
    settings->input.overlay_opacity                 = 0.7f;
    settings->input.overlay_scale                   = 1.0f;
    settings->input.autodetect_enable               = input_autodetect_enable;
