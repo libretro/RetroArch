@@ -114,10 +114,10 @@ static typeof(AMotionEvent_getAxisValue) *p_AMotionEvent_getAxisValue;
 static void engine_handle_dpad_default(android_input_t *android,
       AInputEvent *event, int port, int source)
 {
-   size_t motion_pointer = AMotionEvent_getAction(event) >>
+   size_t motion_ptr = AMotionEvent_getAction(event) >>
       AMOTION_EVENT_ACTION_POINTER_INDEX_SHIFT;
-   float x = AMotionEvent_getX(event, motion_pointer);
-   float y = AMotionEvent_getY(event, motion_pointer);
+   float x           = AMotionEvent_getX(event, motion_ptr);
+   float y           = AMotionEvent_getY(event, motion_ptr);
 
    android->analog_state[port][0] = (int16_t)(x * 32767.0f);
    android->analog_state[port][1] = (int16_t)(y * 32767.0f);
@@ -126,18 +126,18 @@ static void engine_handle_dpad_default(android_input_t *android,
 static void engine_handle_dpad_getaxisvalue(android_input_t *android,
       AInputEvent *event, int port, int source)
 {
-   size_t motion_pointer = AMotionEvent_getAction(event) >>
+   size_t motion_ptr = AMotionEvent_getAction(event) >>
       AMOTION_EVENT_ACTION_POINTER_INDEX_SHIFT;
-   float x = AMotionEvent_getAxisValue(event, AXIS_X, motion_pointer);
-   float y = AMotionEvent_getAxisValue(event, AXIS_Y, motion_pointer);
-   float z = AMotionEvent_getAxisValue(event, AXIS_Z, motion_pointer);
-   float rz = AMotionEvent_getAxisValue(event, AXIS_RZ, motion_pointer);
-   float hatx = AMotionEvent_getAxisValue(event, AXIS_HAT_X, motion_pointer);
-   float haty = AMotionEvent_getAxisValue(event, AXIS_HAT_Y, motion_pointer);
-   float ltrig = AMotionEvent_getAxisValue(event, AXIS_LTRIGGER, motion_pointer);
-   float rtrig = AMotionEvent_getAxisValue(event, AXIS_RTRIGGER, motion_pointer);
-   float brake = AMotionEvent_getAxisValue(event, AXIS_BRAKE, motion_pointer);
-   float gas = AMotionEvent_getAxisValue(event, AXIS_GAS, motion_pointer);
+   float x           = AMotionEvent_getAxisValue(event, AXIS_X, motion_ptr);
+   float y           = AMotionEvent_getAxisValue(event, AXIS_Y, motion_ptr);
+   float z           = AMotionEvent_getAxisValue(event, AXIS_Z, motion_ptr);
+   float rz          = AMotionEvent_getAxisValue(event, AXIS_RZ, motion_ptr);
+   float hatx        = AMotionEvent_getAxisValue(event, AXIS_HAT_X, motion_ptr);
+   float haty        = AMotionEvent_getAxisValue(event, AXIS_HAT_Y, motion_ptr);
+   float ltrig       = AMotionEvent_getAxisValue(event, AXIS_LTRIGGER, motion_ptr);
+   float rtrig       = AMotionEvent_getAxisValue(event, AXIS_RTRIGGER, motion_ptr);
+   float brake       = AMotionEvent_getAxisValue(event, AXIS_BRAKE, motion_ptr);
+   float gas         = AMotionEvent_getAxisValue(event, AXIS_GAS, motion_ptr);
 
    android->hat_state[port][0] = (int)hatx;
    android->hat_state[port][1] = (int)haty;
@@ -149,8 +149,10 @@ static void engine_handle_dpad_getaxisvalue(android_input_t *android,
    android->analog_state[port][1] = (int16_t)(y * 32767.0f);
    android->analog_state[port][2] = (int16_t)(z * 32767.0f);
    android->analog_state[port][3] = (int16_t)(rz * 32767.0f);
-   //android->analog_state[port][4] = (int16_t)(hatx * 32767.0f);
-   //android->analog_state[port][5] = (int16_t)(haty * 32767.0f);
+#if 0
+   android->analog_state[port][4] = (int16_t)(hatx * 32767.0f);
+   android->analog_state[port][5] = (int16_t)(haty * 32767.0f);
+#endif
    android->analog_state[port][6] = (int16_t)(ltrig * 32767.0f);
    android->analog_state[port][7] = (int16_t)(rtrig * 32767.0f);
    android->analog_state[port][8] = (int16_t)(brake * 32767.0f);
@@ -160,29 +162,28 @@ static void engine_handle_dpad_getaxisvalue(android_input_t *android,
 static bool android_input_lookup_name_prekitkat(char *buf,
       int *vendorId, int *productId, size_t size, int id)
 {
-   RARCH_LOG("Using old lookup");
-
-   jclass class;
-   jmethodID method, getName;
-   jobject device, name;
-   const char *str = NULL;
-   JNIEnv     *env = (JNIEnv*)jni_thread_getenv();
+   jobject name      = NULL;
+   jmethodID getName = NULL;
+   jobject device    = NULL;
+   jmethodID method  = NULL;
+   jclass    class   = 0;
+   const char *str   = NULL;
+   JNIEnv     *env   = (JNIEnv*)jni_thread_getenv();
 
    if (!env)
       goto error;
 
-   class = NULL;
+   RARCH_LOG("Using old lookup");
+
    FIND_CLASS(env, class, "android/view/InputDevice");
    if (!class)
       goto error;
 
-   method = NULL;
    GET_STATIC_METHOD_ID(env, method, class, "getDevice",
          "(I)Landroid/view/InputDevice;");
    if (!method)
       goto error;
 
-   device = NULL;
    CALL_OBJ_STATIC_METHOD_PARAM(env, device, class, method, (jint)id);
    if (!device)
    {
@@ -190,12 +191,10 @@ static bool android_input_lookup_name_prekitkat(char *buf,
       goto error;
    }
 
-   getName = NULL;
    GET_METHOD_ID(env, getName, class, "getName", "()Ljava/lang/String;");
    if (!getName)
       goto error;
 
-   name = NULL;
    CALL_OBJ_METHOD(env, name, device, getName);
    if (!name)
    {
@@ -220,29 +219,30 @@ error:
 static bool android_input_lookup_name(char *buf,
       int *vendorId, int *productId, size_t size, int id)
 {
-   RARCH_LOG("Using new lookup");
-
-   jclass class;
-   jmethodID method, getName, getVendorId, getProductId;
-   jobject device, name;
-   const char *str = NULL;
-   JNIEnv     *env = (JNIEnv*)jni_thread_getenv();
+   jmethodID getVendorId  = NULL;
+   jmethodID getProductId = NULL;
+   jmethodID getName      = NULL;
+   jobject device         = NULL;
+   jobject name           = NULL;
+   jmethodID method       = NULL;
+   jclass class           = NULL;
+   const char *str        = NULL;
+   JNIEnv     *env        = (JNIEnv*)jni_thread_getenv();
 
    if (!env)
       goto error;
 
-   class = NULL;
+   RARCH_LOG("Using new lookup");
+
    FIND_CLASS(env, class, "android/view/InputDevice");
    if (!class)
       goto error;
 
-   method = NULL;
    GET_STATIC_METHOD_ID(env, method, class, "getDevice",
          "(I)Landroid/view/InputDevice;");
    if (!method)
       goto error;
 
-   device = NULL;
    CALL_OBJ_STATIC_METHOD_PARAM(env, device, class, method, (jint)id);
    if (!device)
    {
@@ -250,12 +250,10 @@ static bool android_input_lookup_name(char *buf,
       goto error;
    }
 
-   getName = NULL;
    GET_METHOD_ID(env, getName, class, "getName", "()Ljava/lang/String;");
    if (!getName)
       goto error;
 
-   name = NULL;
    CALL_OBJ_METHOD(env, name, device, getName);
    if (!name)
    {
@@ -272,7 +270,6 @@ static bool android_input_lookup_name(char *buf,
 
    RARCH_LOG("device name: %s\n", buf);
 
-   getVendorId = NULL;
    GET_METHOD_ID(env, getVendorId, class, "getVendorId", "()I");
    if (!getVendorId)
       goto error;
@@ -281,7 +278,6 @@ static bool android_input_lookup_name(char *buf,
 
    RARCH_LOG("device vendor id: %d\n", *vendorId);
 
-   getProductId = NULL;
    GET_METHOD_ID(env, getProductId, class, "getProductId", "()I");
    if (!getProductId)
       goto error;
@@ -425,13 +421,15 @@ static void *android_input_init(void)
 {
    int32_t sdk;
    settings_t *settings = config_get_ptr();
-   android_input_t *android = (android_input_t*)calloc(1, sizeof(*android));
+   android_input_t *android = (android_input_t*)
+      calloc(1, sizeof(*android));
 
    if (!android)
       return NULL;
 
    android->pads_connected = 0;
-   android->joypad = input_joypad_init_driver(settings->input.joypad_driver, android);
+   android->joypad         = input_joypad_init_driver(
+         settings->input.joypad_driver, android);
 
    frontend_android_get_version_sdk(&sdk);
 
@@ -453,27 +451,27 @@ static INLINE int android_input_poll_event_type_motion(
       int port, int source)
 {
    int getaction, action;
-   size_t motion_pointer;
+   size_t motion_ptr;
    bool keyup;
 
    if (source & ~(AINPUT_SOURCE_TOUCHSCREEN | AINPUT_SOURCE_MOUSE))
       return 1;
 
-   getaction = AMotionEvent_getAction(event);
-   action = getaction & AMOTION_EVENT_ACTION_MASK;
-   motion_pointer = getaction >> AMOTION_EVENT_ACTION_POINTER_INDEX_SHIFT;
-   keyup = (
+   getaction  = AMotionEvent_getAction(event);
+   action     = getaction & AMOTION_EVENT_ACTION_MASK;
+   motion_ptr = getaction >> AMOTION_EVENT_ACTION_POINTER_INDEX_SHIFT;
+   keyup      = (
          action == AMOTION_EVENT_ACTION_UP ||
          action == AMOTION_EVENT_ACTION_CANCEL ||
          action == AMOTION_EVENT_ACTION_POINTER_UP) ||
       (source == AINPUT_SOURCE_MOUSE &&
        action != AMOTION_EVENT_ACTION_DOWN);
 
-   if (keyup && motion_pointer < MAX_TOUCH)
+   if (keyup && motion_ptr < MAX_TOUCH)
    {
-      memmove(android->pointer + motion_pointer,
-            android->pointer + motion_pointer + 1,
-            (MAX_TOUCH - motion_pointer - 1) * sizeof(struct input_pointer));
+      memmove(android->pointer + motion_ptr,
+            android->pointer + motion_ptr + 1,
+            (MAX_TOUCH - motion_ptr - 1) * sizeof(struct input_pointer));
       if (android->pointer_count > 0)
          android->pointer_count--;
    }
@@ -482,20 +480,20 @@ static INLINE int android_input_poll_event_type_motion(
       float x, y;
       int pointer_max = min(AMotionEvent_getPointerCount(event), MAX_TOUCH);
 
-      for (motion_pointer = 0; motion_pointer < pointer_max; motion_pointer++)
+      for (motion_ptr = 0; motion_ptr < pointer_max; motion_ptr++)
       {
-         x = AMotionEvent_getX(event, motion_pointer);
-         y = AMotionEvent_getY(event, motion_pointer);
+         x = AMotionEvent_getX(event, motion_ptr);
+         y = AMotionEvent_getY(event, motion_ptr);
 
          input_translate_coord_viewport(x, y,
-               &android->pointer[motion_pointer].x,
-               &android->pointer[motion_pointer].y,
-               &android->pointer[motion_pointer].full_x,
-               &android->pointer[motion_pointer].full_y);
+               &android->pointer[motion_ptr].x,
+               &android->pointer[motion_ptr].y,
+               &android->pointer[motion_ptr].full_x,
+               &android->pointer[motion_ptr].full_y);
 
          android->pointer_count = max(
                android->pointer_count,
-               motion_pointer + 1);
+               motion_ptr + 1);
       }
    }
 
@@ -515,10 +513,15 @@ static INLINE void android_input_poll_event_type_key(
     * work around that by only using down events for meta keys (which get
     * cleared every poll anyway)
     */
-   if (action == AKEY_EVENT_ACTION_UP)
-      BIT_CLEAR(buf, keycode);
-   else if (action == AKEY_EVENT_ACTION_DOWN)
-      BIT_SET(buf, keycode);
+   switch (action)
+   {
+      case AKEY_EVENT_ACTION_UP:
+         BIT_CLEAR(buf, keycode);
+         break;
+      case AKEY_EVENT_ACTION_DOWN:
+         BIT_SET(buf, keycode);
+         break;
+   }
 
    if ((keycode == AKEYCODE_VOLUME_UP || keycode == AKEYCODE_VOLUME_DOWN))
       *handled = 0;
@@ -753,12 +756,12 @@ static void android_input_handle_input(void *data)
    {
       while (AInputQueue_getEvent(android_app->inputQueue, &event) >= 0)
       {
-         int32_t handled = 1;
+         int32_t   handled = 1;
          int predispatched = AInputQueue_preDispatchEvent(android_app->inputQueue, event);
-         int source = AInputEvent_getSource(event);
-         int type_event = AInputEvent_getType(event);
-         int id = android_input_get_id(android, event);
-         int port = android_input_get_id_port(android, id, source);
+         int        source = AInputEvent_getSource(event);
+         int    type_event = AInputEvent_getType(event);
+         int            id = android_input_get_id(android, event);
+         int          port = android_input_get_id_port(android, id, source);
 
          if (port < 0)
             handle_hotplug(android, android_app,
@@ -935,7 +938,7 @@ static uint64_t android_input_get_capabilities(void *data)
 
 static void android_input_enable_sensor_manager(void *data)
 {
-   android_input_t *android = (android_input_t*)data;
+   android_input_t        *android = (android_input_t*)data;
    struct android_app *android_app = (struct android_app*)g_android;
 
    android->sensorManager = ASensorManager_getInstance();
@@ -950,7 +953,7 @@ static void android_input_enable_sensor_manager(void *data)
 static bool android_input_set_sensor_state(void *data, unsigned port,
       enum retro_sensor_action action, unsigned event_rate)
 {
-   android_input_t *android = (android_input_t*)data;
+   android_input_t        *android = (android_input_t*)data;
    struct android_app *android_app = (struct android_app*)g_android;
 
    if (event_rate == 0)
@@ -966,14 +969,14 @@ static bool android_input_set_sensor_state(void *data, unsigned port,
             ASensorEventQueue_enableSensor(android->sensorEventQueue,
                   android_app->accelerometerSensor);
 
-         // events per second (in us).
+         /* Events per second (in microseconds). */
          if (android_app->accelerometerSensor)
             ASensorEventQueue_setEventRate(android->sensorEventQueue,
                   android_app->accelerometerSensor, (1000L / event_rate)
                   * 1000);
 
-         android_app->sensor_state_mask &= ~(1ULL << RETRO_SENSOR_ACCELEROMETER_DISABLE);
-         android_app->sensor_state_mask |= (1ULL  << RETRO_SENSOR_ACCELEROMETER_ENABLE);
+         BIT64_CLEAR(android_app->sensor_state_mask, RETRO_SENSOR_ACCELEROMETER_DISABLE);
+         BIT64_SET(android_app->sensor_state_mask, RETRO_SENSOR_ACCELEROMETER_ENABLE);
          return true;
 
       case RETRO_SENSOR_ACCELEROMETER_DISABLE:
@@ -981,8 +984,8 @@ static bool android_input_set_sensor_state(void *data, unsigned port,
             ASensorEventQueue_disableSensor(android->sensorEventQueue,
                   android_app->accelerometerSensor);
 
-         android_app->sensor_state_mask &= ~(1ULL << RETRO_SENSOR_ACCELEROMETER_ENABLE);
-         android_app->sensor_state_mask |= (1ULL  << RETRO_SENSOR_ACCELEROMETER_DISABLE);
+         BIT64_CLEAR(android_app->sensor_state_mask, RETRO_SENSOR_ACCELEROMETER_ENABLE);
+         BIT64_SET(android_app->sensor_state_mask, RETRO_SENSOR_ACCELEROMETER_DISABLE);
          return true;
       default:
          return false;
