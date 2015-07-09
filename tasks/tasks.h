@@ -77,6 +77,8 @@ void rarch_main_data_nbio_image_upload_iterate(bool is_thread);
 #ifdef HAVE_LIBRETRODB
 #ifdef HAVE_MENU
 void rarch_main_data_db_iterate(bool is_thread);
+
+bool rarch_main_data_db_pending_scan_finished(void);
 #endif
 
 void rarch_main_data_db_init_msg_queue(void);

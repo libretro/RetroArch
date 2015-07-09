@@ -66,7 +66,10 @@ static void adapter_thread(void *data)
 {
    uint8_t send_command_buf[4096];
    struct libusb_adapter *adapter = (struct libusb_adapter*)data;
-   libusb_hid_t *hid              = adapter->hid;
+   libusb_hid_t *hid              = adapter ? adapter->hid : NULL;
+
+   if (!adapter)
+      return;
 
    while (!adapter->quitting)
    {
@@ -100,21 +103,21 @@ static void libusb_hid_device_send_control(void *data,
 {
    struct libusb_adapter *adapter = (struct libusb_adapter*)data;
 
-   if (adapter)
-   {
-      slock_lock(adapter->send_control_lock);
+   if (!adapter)
+      return;
 
-      if (fifo_write_avail(adapter->send_control_buffer) >= size + sizeof(size))
-      {
-         fifo_write(adapter->send_control_buffer, &size, sizeof(size));
-         fifo_write(adapter->send_control_buffer, data_buf, size);
-      }
-      else
-      {
-         RARCH_WARN("adapter write buffer is full, cannot write send control\n");
-      }
-      slock_unlock(adapter->send_control_lock);
+   slock_lock(adapter->send_control_lock);
+
+   if (fifo_write_avail(adapter->send_control_buffer) >= size + sizeof(size))
+   {
+      fifo_write(adapter->send_control_buffer, &size, sizeof(size));
+      fifo_write(adapter->send_control_buffer, data_buf, size);
    }
+   else
+   {
+      RARCH_WARN("adapter write buffer is full, cannot write send control\n");
+   }
+   slock_unlock(adapter->send_control_lock);
 }
 
 static void libusb_hid_device_add_autodetect(unsigned idx,
@@ -142,7 +145,7 @@ static void libusb_get_description(struct libusb_device *device,
 
    libusb_get_config_descriptor(device, 0, &config);
 
-   for(i=0; i < (int)config->bNumInterfaces; i++)
+   for (i = 0; i < (int)config->bNumInterfaces; i++)
    {
       const struct libusb_interface *inter = &config->interface[i];
 
@@ -189,13 +192,16 @@ static int add_adapter(void *data, struct libusb_device *dev)
 {
    int rc;
    struct libusb_device_descriptor desc;
+   const char *device_name         = NULL;
    struct libusb_adapter *old_head = NULL;
    struct libusb_hid          *hid = (struct libusb_hid*)data;
-   const char *device_name         = NULL;
    struct libusb_adapter *adapter  = (struct libusb_adapter*)
       calloc(1, sizeof(struct libusb_adapter));
 
-   if (!adapter || !hid)
+   if (!adapter)
+      return -1;
+
+   if (!hid)
    {
       free(adapter);
       RARCH_ERR("Allocation of adapter failed.\n");
@@ -264,7 +270,8 @@ static int add_adapter(void *data, struct libusb_device *dev)
    }
 
    adapter->slot = pad_connection_pad_init(hid->slots,
-         device_name, desc.idVendor, desc.idProduct, adapter, &libusb_hid_device_send_control);
+         device_name, desc.idVendor, desc.idProduct,
+         adapter, &libusb_hid_device_send_control);
 
    if (adapter->slot == -1)
       goto error;
@@ -433,7 +440,8 @@ static bool libusb_hid_joypad_rumble(void *data, unsigned pad,
    return pad_connection_rumble(&hid->slots[pad], pad, effect, strength);
 }
 
-static int16_t libusb_hid_joypad_axis(void *data, unsigned port, uint32_t joyaxis)
+static int16_t libusb_hid_joypad_axis(void *data,
+      unsigned port, uint32_t joyaxis)
 {
    libusb_hid_t         *hid = (libusb_hid_t*)data;
    int16_t               val = 0;
@@ -443,14 +451,16 @@ static int16_t libusb_hid_joypad_axis(void *data, unsigned port, uint32_t joyaxi
 
    if (AXIS_NEG_GET(joyaxis) < 4)
    {
-      val = pad_connection_get_axis(&hid->slots[port], port, AXIS_NEG_GET(joyaxis));
+      val = pad_connection_get_axis(&hid->slots[port],
+            port, AXIS_NEG_GET(joyaxis));
 
       if (val >= 0)
          val = 0;
    }
    else if(AXIS_POS_GET(joyaxis) < 4)
    {
-      val = pad_connection_get_axis(&hid->slots[port], port, AXIS_POS_GET(joyaxis));
+      val = pad_connection_get_axis(&hid->slots[port],
+            port, AXIS_POS_GET(joyaxis));
 
       if (val <= 0)
          val = 0;
@@ -465,7 +475,8 @@ static void libusb_hid_free(void *data)
 
    while(adapters.next)
       if (remove_adapter(hid, adapters.next->device) == -1)
-         RARCH_ERR("could not remove device %p\n", adapters.next->device);
+         RARCH_ERR("could not remove device %p\n",
+               adapters.next->device);
 
    if (hid->poll_thread)
    {
@@ -489,7 +500,8 @@ static void poll_thread(void *data)
    while (!hid->quit)
    {
       struct timeval timeout = {0};
-      libusb_handle_events_timeout_completed(NULL, &timeout, &hid->quit);
+      libusb_handle_events_timeout_completed(NULL,
+            &timeout, &hid->quit);
    }
 }
 

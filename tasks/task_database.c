@@ -52,6 +52,17 @@ typedef struct db_handle
 
 static db_handle_t *db_ptr;
 
+static bool pending_scan_finished;
+
+bool rarch_main_data_db_pending_scan_finished(void)
+{
+   if (!pending_scan_finished)
+      return false;
+
+   pending_scan_finished = false;
+   return true;
+}
+
 #ifdef HAVE_LIBRETRODB
 
 #ifdef HAVE_ZLIB
@@ -434,9 +445,7 @@ void rarch_main_data_db_iterate(bool is_thread)
          else
          {
             rarch_main_msg_queue_push_new(MSG_SCANNING_OF_DIRECTORY_FINISHED, 0, 180, true);
-#ifdef HAVE_MENU
-            menu_environment_cb(MENU_ENVIRON_RESET_HORIZONTAL_LIST, NULL);
-#endif
+            pending_scan_finished = true;
             db->status = DATABASE_STATUS_FREE;
          }
          break;
@@ -498,7 +507,8 @@ void rarch_main_data_db_uninit(void)
 
 void rarch_main_data_db_init(void)
 {
-   db_ptr              = (db_handle_t*)calloc(1, sizeof(*db_ptr));
+   db_ptr                = (db_handle_t*)calloc(1, sizeof(*db_ptr));
+   pending_scan_finished = false;
 }
 
 bool rarch_main_data_db_is_active(void)

@@ -266,6 +266,13 @@ void rarch_main_data_iterate(void)
    rarch_main_data_nbio_image_upload_iterate(false);
 #endif
 
+#ifdef HAVE_MENU
+#ifdef HAVE_LIBRETRODB
+   if (rarch_main_data_db_pending_scan_finished())
+      menu_environment_cb(MENU_ENVIRON_RESET_HORIZONTAL_LIST, NULL);
+#endif
+#endif
+
    if (data_runloop_msg[0] != '\0')
    {
       rarch_main_msg_queue_push(data_runloop_msg, 1, 10, true);
