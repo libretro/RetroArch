@@ -503,6 +503,7 @@ void rarch_main_data_db_uninit(void)
    if (db_ptr)
       free(db_ptr);
    db_ptr = NULL;
+   pending_scan_finished = false;
 }
 
 void rarch_main_data_db_init(void)
