@@ -27,15 +27,16 @@
 
 #include "../menu.h"
 #include "../menu_driver.h"
+#include "../menu_hash.h"
 #include "../menu_entry.h"
 #include "../menu_display.h"
-#include "../../runloop_data.h"
+#include "../menu_video.h"
 
 #include "../../gfx/video_thread_wrapper.h"
 #include "../../gfx/font_driver.h"
 #include "../../gfx/video_texture.h"
 
-#include "shared.h"
+#include "../../runloop_data.h"
 
 typedef struct glui_handle
 {
@@ -139,7 +140,7 @@ static void glui_render_quad(gl_t *gl, int x, int y, int w, int h,
 
    coords.color = color;
 
-   menu_gl_draw_frame(gl->shader, &coords,
+   menu_video_draw_frame(gl->shader, &coords,
          &gl->mvp_no_rot, true, glui->textures.white);
 
    gl->coords.color = gl->white_color_ptr;
@@ -405,7 +406,7 @@ static void glui_frame(void)
 
    menu_display_set_viewport();
 
-   gl_menu_frame_background(menu, settings,
+   menu_video_frame_background(menu, settings,
          gl, glui->textures.bg.id, 0.75f, 0.75f, false);
 
    menu_entries_get_title(title, sizeof(title));

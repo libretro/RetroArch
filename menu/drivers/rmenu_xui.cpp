@@ -33,14 +33,13 @@
 #include "../menu_list.h"
 #include "../menu_input.h"
 #include "../menu_setting.h"
+#include "../menu_video.h"
 
 #include "../../gfx/video_context_driver.h"
 
 #include "../../general.h"
 
 #include "../../gfx/d3d/d3d.h"
-
-#include "shared.h"
 
 #define XUI_CONTROL_NAVIGATE_OK (XUI_CONTROL_NAVIGATE_RIGHT + 1)
 

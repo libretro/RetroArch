@@ -24,11 +24,12 @@
 #include <compat/posix_string.h>
 #include <string/string_list.h>
 
+#include "../menu.h"
 #include "../menu_driver.h"
 #include "../menu_entry.h"
 #include "../menu_input.h"
 #include "../menu_setting.h"
-#include "../menu.h"
+#include "../menu_video.h"
 #include "../../general.h"
 #include "../../config.def.h"
 #include "../../performance.h"
@@ -36,7 +37,6 @@
 #include "../../screenshot.h"
 #include "../../gfx/drivers_font_renderer/bitmap.h"
 
-#include "shared.h"
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
 #define HAVE_SHADER_MANAGER

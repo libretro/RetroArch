@@ -13,18 +13,15 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _DISP_SHARED_H
-#define _DISP_SHARED_H
+#include <retro_miscellaneous.h>
 
-#include "../menu_setting.h"
-
-#include "../menu_display.h"
-#include "../menu_cbs.h"
+#include "menu_display.h"
+#include "menu_hash.h"
+#include "menu_setting.h"
+#include "menu_video.h"
 
 #ifdef HAVE_OPENGL
-#include "../../gfx/drivers/gl_common.h"
-
-static INLINE void menu_gl_draw_frame(
+void menu_video_draw_frame(
       const shader_backend_t *shader,
       struct gl_coords *coords,
       math_matrix_4x4 *mat, 
@@ -48,7 +45,7 @@ static INLINE void menu_gl_draw_frame(
       glDisable(GL_BLEND);
 }
 
-static INLINE void gl_menu_frame_background(
+void menu_video_frame_background(
       menu_handle_t *menu,
       settings_t *settings,
       gl_t *gl,
@@ -135,11 +132,9 @@ static INLINE void gl_menu_frame_background(
       && texture)
       coords.color = color;
 
-   menu_gl_draw_frame(gl->shader, &coords,
+   menu_video_draw_frame(gl->shader, &coords,
          &gl->mvp_no_rot, true, texture);
 
    gl->coords.color = gl->white_color_ptr;
 }
-#endif
-
 #endif

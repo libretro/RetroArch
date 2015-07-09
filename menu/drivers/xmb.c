@@ -31,6 +31,7 @@
 #include "../menu_animation.h"
 #include "../menu_display.h"
 #include "../menu_hash.h"
+#include "../menu_video.h"
 
 #include "../menu_cbs.h"
 
@@ -38,8 +39,6 @@
 #include "../../gfx/video_texture.h"
 
 #include "../../runloop_data.h"
-
-#include "shared.h"
 
 #ifndef XMB_THEME
 #define XMB_THEME "monochrome"
@@ -394,7 +393,7 @@ static void xmb_draw_icon(gl_t *gl, xmb_handle_t *xmb,
    matrix_4x4_scale(&mscal, scale_factor, scale_factor, 1);
    matrix_4x4_multiply(&mymat, &mscal, &mymat);
 
-   menu_gl_draw_frame(gl->shader, &coords, &mymat, false, texture);
+   menu_video_draw_frame(gl->shader, &coords, &mymat, false, texture);
 }
 
 static void xmb_draw_icon_predone(gl_t *gl, xmb_handle_t *xmb,
@@ -449,7 +448,7 @@ static void xmb_draw_icon_predone(gl_t *gl, xmb_handle_t *xmb,
    coords.lut_tex_coord = rmb_tex_coord;
    coords.color         = color;
 
-   menu_gl_draw_frame(gl->shader, &coords, mymat, false, texture);
+   menu_video_draw_frame(gl->shader, &coords, mymat, false, texture);
 }
 
 static void xmb_draw_boxart(gl_t *gl, xmb_handle_t *xmb)
@@ -498,7 +497,7 @@ static void xmb_draw_boxart(gl_t *gl, xmb_handle_t *xmb)
    matrix_4x4_scale(&mscal, 1, 1, 1);
    matrix_4x4_multiply(&mymat, &mscal, &mymat);
 
-   menu_gl_draw_frame(gl->shader, &coords, &mymat, false, xmb->boxart);
+   menu_video_draw_frame(gl->shader, &coords, &mymat, false, xmb->boxart);
 }
 
 static void xmb_draw_text(menu_handle_t *menu,
@@ -1472,7 +1471,7 @@ static void xmb_draw_cursor(gl_t *gl, xmb_handle_t *xmb, float x, float y)
 
    xmb_draw_icon_begin(gl);
 
-   menu_gl_draw_frame(gl->shader, &coords, &mymat, true, xmb->textures.list[XMB_TEXTURE_POINTER].id);
+   menu_video_draw_frame(gl->shader, &coords, &mymat, true, xmb->textures.list[XMB_TEXTURE_POINTER].id);
 }
 
 static void xmb_render(void)
@@ -1602,7 +1601,7 @@ static void xmb_frame(void)
 
    xmb->raster_block.carr.coords.vertices = 0;
 
-   gl_menu_frame_background(menu, settings,
+   menu_video_frame_background(menu, settings,
          gl, xmb->textures.bg.id, xmb->alpha, 0.75f, false);
 
    xmb_draw_text(menu, xmb,
@@ -1688,7 +1687,7 @@ static void xmb_frame(void)
 
    if (render_background)
    {
-      gl_menu_frame_background(menu, settings, gl,
+      menu_video_frame_background(menu, settings, gl,
             xmb->textures.bg.id, xmb->alpha, 0.75f, true);
       xmb_frame_messagebox(msg);
    }
