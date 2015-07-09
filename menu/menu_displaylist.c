@@ -1528,6 +1528,9 @@ static void menu_displaylist_push_horizontal_menu_list_content(
 static int menu_displaylist_sort_playlist(const content_playlist_entry_t *a,
       const content_playlist_entry_t *b)
 {
+   if (!a->label || !b->label)
+      return 0;
+
    return strcasecmp(a->label, b->label);
 }
 
