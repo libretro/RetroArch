@@ -594,7 +594,7 @@ static void handle_hotplug(android_input_t *android,
          RARCH_LOG("zeus_pad 2 detected: %u\n", id);
          zeus_second_id = id;
       }
-      strlcpy(name_buf, "Xperia Play", sizeof(name_buf));
+      strlcpy(name_buf, device_name, sizeof(name_buf));
    }
    /* followed by a 4 (hex) char HW id */
    else if (strstr(device_name, "iControlPad-"))
@@ -632,27 +632,10 @@ static void handle_hotplug(android_input_t *android,
             || strstr(device_name, "X-Box"))
          strlcpy(name_buf, "XBox 360", sizeof(name_buf));
    }
-   else if (strstr(device_name, "WiseGroup"))
-   {
-      if (
-            strstr(device_name, "TigerGame") ||
-            strstr(device_name, "Game Controller Adapter") ||
-            strstr(device_name, "JC-PS102U") ||
-            strstr(device_name, "Dual USB Joypad"))
-      {
-         if (strstr(device_name, "WiseGroup"))
-            strlcpy(name_buf, "PlayStation2 WiseGroup", sizeof(name_buf));
-         else if (strstr(device_name, "JC-PS102U"))
-            strlcpy(name_buf, "PlayStation2 JCPS102", sizeof(name_buf));
-         else
-            strlcpy(name_buf, "PlayStation2 Generic", sizeof(name_buf));
-      }
-   }
    else if (
          strstr(device_name, "PLAYSTATION(R)3") ||
          strstr(device_name, "Dualshock3") ||
          strstr(device_name, "Sixaxis") ||
-         strstr(device_name, "Gasia,Co") ||
          (strstr(device_name, "Gamepad 0") ||
           strstr(device_name, "Gamepad 1") ||
           strstr(device_name, "Gamepad 2") ||
@@ -661,10 +644,6 @@ static void handle_hotplug(android_input_t *android,
       strlcpy(name_buf, "PlayStation3", sizeof(name_buf));
    else if (strstr(device_name, "MOGA"))
       strlcpy(name_buf, "Moga IME", sizeof(name_buf));
-   else if (strstr(device_name, "keypad-zeus") ||
-         (strstr(device_name, "keypad-game-zeus"))
-         )
-      strlcpy(name_buf, "Xperia Play", sizeof(name_buf));
    else if (strstr(device_name, "NVIDIA Controller"))
    {
       /* Shield is always user 1. FIXME: This is kinda ugly.
