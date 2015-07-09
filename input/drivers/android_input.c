@@ -561,14 +561,10 @@ static void handle_hotplug(android_input_t *android,
 {
    char device_name[256]        = {0};
    char name_buf[256]           = {0};
-   autoconfig_params_t params   = {{0}};
-   name_buf[0] = device_name[0] = 0;
-   int vendorId = 0, productId  = 0;
+   int vendorId                 = 0;
+   int productId                = 0;
+   bool          autoconfigured = false;
    settings_t         *settings = config_get_ptr();
-   bool autoconfigured = false;
-
-   if (!settings->input.autodetect_enable)
-      return;
 
    if (*port > MAX_PADS)
    {
@@ -622,10 +618,6 @@ static void handle_hotplug(android_input_t *android,
       else if (*port == 1)
          strlcpy(name_buf, "TTT THT Arcade (User 2)", sizeof(name_buf));
    }
-   else if (strstr(device_name, "Sun4i-keypad"))
-      strlcpy(name_buf, "iDroid x360", sizeof(name_buf));
-   else if (strstr(device_name, "mtk-kpd"))
-      strlcpy(name_buf, "MUCH iReadyGo i5", sizeof(name_buf));
    else if (strstr(device_name, "360 Wireless"))
       strlcpy(name_buf, "XBox 360 Wireless", sizeof(name_buf));
    else if (strstr(device_name, "Microsoft"))
@@ -667,8 +659,6 @@ static void handle_hotplug(android_input_t *android,
       strlcpy(name_buf, "PlayStation3", sizeof(name_buf));
    else if (strstr(device_name, "MOGA"))
       strlcpy(name_buf, "Moga IME", sizeof(name_buf));
-   else if (strstr(device_name, "adc joystick"))
-      strlcpy(name_buf, "JXD S7300B", sizeof(name_buf));
    else if (strstr(device_name, "2-Axis, 8-Button"))
       strlcpy(name_buf, "Genius Maxfire G08XU", sizeof(name_buf));
    else if (strstr(device_name, "USB,2-axis 8-button gamepad"))
@@ -683,19 +673,10 @@ static void handle_hotplug(android_input_t *android,
          (strstr(device_name, "keypad-game-zeus"))
          )
       strlcpy(name_buf, "Xperia Play", sizeof(name_buf));
-   else if (strstr(device_name, "USB Gamepad"))
-      strlcpy(name_buf, "Thrust Predator", sizeof(name_buf));
    else if (strstr(device_name, "ADC joystick"))
       strlcpy(name_buf, "JXD S7800B", sizeof(name_buf));
    else if (strstr(device_name, "2Axes 11Keys Game  Pad"))
       strlcpy(name_buf, "Tomee NES USB", sizeof(name_buf));
-   else if (
-         strstr(device_name, "rk29-keypad") ||
-         strstr(device_name, "GAMEMID")
-         )
-      strlcpy(name_buf, "GameMID", sizeof(name_buf));
-   else if (strstr(device_name, "USB Gamepad"))
-      strlcpy(name_buf, "Defender Game Racer Classic", sizeof(name_buf));
    else if (strstr(device_name, "NVIDIA Controller"))
    {
       /* Shield is always user 1. FIXME: This is kinda ugly.
@@ -703,7 +684,7 @@ static void handle_hotplug(android_input_t *android,
        * like gpio-keys in a general way.
        */
       *port = 0;
-      strlcpy(name_buf, "NVIDIA Shield", sizeof(name_buf));
+      strlcpy(name_buf, device_name, sizeof(name_buf));
    }
    else if (device_name[0] != '\0')
       strlcpy(name_buf, device_name, sizeof(name_buf));
@@ -719,13 +700,17 @@ static void handle_hotplug(android_input_t *android,
       strlcpy(name_buf, "RetroKeyboard", sizeof(name_buf));
 
    if (name_buf[0] != '\0')
-   {
       strlcpy(settings->input.device_names[*port],
             name_buf, sizeof(settings->input.device_names[*port]));
 
+   if (settings->input.autodetect_enable)
+   {
+      autoconfig_params_t params   = {{0}};
+
       RARCH_LOG("Port %d: %s.\n", *port, name_buf);
-      params.idx = *port;
+
       strlcpy(params.name, name_buf, sizeof(params.name));
+      params.idx = *port;
       params.vid = vendorId;
       params.pid = productId;
       strlcpy(params.driver, android_joypad.ident, sizeof(params.driver));
