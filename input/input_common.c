@@ -295,7 +295,10 @@ void input_config_parse_joy_button(config_file_t *conf, const char *prefix,
    }
 
    if (config_get_string(conf, key_label, &tmp_a))
+   {
       strlcpy(bind->joykey_label, tmp_a, sizeof(bind->joykey_label));
+      free(tmp_a);
+   }
 }
 
 void input_config_parse_joy_axis(config_file_t *conf, const char *prefix,
@@ -329,7 +332,10 @@ void input_config_parse_joy_axis(config_file_t *conf, const char *prefix,
    }
 
    if (config_get_string(conf, key_label, &tmp_a))
+   {
       strlcpy(bind->joyaxis_label, tmp_a, sizeof(bind->joyaxis_label));
+      free(tmp_a);
+   }
 }
 
 #if !defined(IS_JOYCONFIG)
