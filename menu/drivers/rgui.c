@@ -742,6 +742,7 @@ static int rgui_environ(menu_environ_cb_t type, void *data)
    switch (type)
    {
       case 0:
+         break;
       default:
          return -1;
    }
