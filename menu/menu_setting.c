@@ -3387,33 +3387,39 @@ static bool setting_append_list_video_options(
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
 #if !defined(RARCH_CONSOLE) && !defined(RARCH_MOBILE)
-   CONFIG_BOOL(
-         settings->video.fullscreen,
-         menu_hash_to_str(MENU_LABEL_VIDEO_FULLSCREEN),
-         menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_FULLSCREEN),
-         fullscreen,
-         menu_hash_to_str(MENU_VALUE_OFF),
-         menu_hash_to_str(MENU_VALUE_ON),
-         group_info.name,
-         subgroup_info.name,
-         parent_group,
-         general_write_handler,
-         general_read_handler);
-   menu_settings_list_current_add_cmd(list, list_info, EVENT_CMD_REINIT);
-   settings_data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
+   if (video_driver_has_windowed())
+   {
+      CONFIG_BOOL(
+            settings->video.fullscreen,
+            menu_hash_to_str(MENU_LABEL_VIDEO_FULLSCREEN),
+            menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_FULLSCREEN),
+            fullscreen,
+            menu_hash_to_str(MENU_VALUE_OFF),
+            menu_hash_to_str(MENU_VALUE_ON),
+            group_info.name,
+            subgroup_info.name,
+            parent_group,
+            general_write_handler,
+            general_read_handler);
+      menu_settings_list_current_add_cmd(list, list_info, EVENT_CMD_REINIT);
+      settings_data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
+   }
 #endif
-   CONFIG_BOOL(
-         settings->video.windowed_fullscreen,
-         menu_hash_to_str(MENU_LABEL_VIDEO_WINDOWED_FULLSCREEN),
-         menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN),
-         windowed_fullscreen,
-         menu_hash_to_str(MENU_VALUE_OFF),
-         menu_hash_to_str(MENU_VALUE_ON),
-         group_info.name,
-         subgroup_info.name,
-         parent_group,
-         general_write_handler,
-         general_read_handler);
+   if (video_driver_has_windowed())
+   {
+      CONFIG_BOOL(
+            settings->video.windowed_fullscreen,
+            menu_hash_to_str(MENU_LABEL_VIDEO_WINDOWED_FULLSCREEN),
+            menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN),
+            windowed_fullscreen,
+            menu_hash_to_str(MENU_VALUE_OFF),
+            menu_hash_to_str(MENU_VALUE_ON),
+            group_info.name,
+            subgroup_info.name,
+            parent_group,
+            general_write_handler,
+            general_read_handler);
+   }
 
    CONFIG_FLOAT(
          settings->video.refresh_rate,
@@ -3525,18 +3531,21 @@ static bool setting_append_list_video_options(
    START_SUB_GROUP(list, list_info, "Scaling", group_info.name, subgroup_info, parent_group);
 
 #if !defined(RARCH_CONSOLE) && !defined(RARCH_MOBILE)
-   CONFIG_FLOAT(
-         settings->video.scale,
-         menu_hash_to_str(MENU_LABEL_VIDEO_SCALE),
-         menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_SCALE),
-         scale,
-         "%.1fx",
-         group_info.name,
-         subgroup_info.name,
-         parent_group,
-         general_write_handler,
-         general_read_handler);
-   menu_settings_list_current_add_range(list, list_info, 1.0, 10.0, 1.0, true, true);
+   if (video_driver_has_windowed())
+   {
+      CONFIG_FLOAT(
+            settings->video.scale,
+            menu_hash_to_str(MENU_LABEL_VIDEO_SCALE),
+            menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_SCALE),
+            scale,
+            "%.1fx",
+            group_info.name,
+            subgroup_info.name,
+            parent_group,
+            general_write_handler,
+            general_read_handler);
+      menu_settings_list_current_add_range(list, list_info, 1.0, 10.0, 1.0, true, true);
+   }
 #endif
 
    CONFIG_BOOL(
