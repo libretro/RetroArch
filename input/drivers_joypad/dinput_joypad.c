@@ -211,18 +211,19 @@ static BOOL CALLBACK enum_joypad_cb(const DIDEVICEINSTANCE *inst, void *p)
    g_pads[g_joypad_cnt].joy_name = strdup(inst->tszProductName);
    g_pads[g_joypad_cnt].joy_friendly_name = strdup(inst->tszInstanceName);
 
-   /* there may be more useful info in the GUID so leave this here for a while
-
+   /* there may be more useful info in the GUID so leave this here for a while */
+#if 0
    printf("Guid = {%08lX-%04hX-%04hX-%02hhX%02hhX-%02hhX%02hhX%02hhX%02hhX%02hhX%02hhX}\n",
    inst->guidProduct.Data1, inst->guidProduct.Data2, inst->guidProduct.Data3,
    inst->guidProduct.Data4[0], inst->guidProduct.Data4[1], inst->guidProduct.Data4[2], inst->guidProduct.Data4[3],
    inst->guidProduct.Data4[4], inst->guidProduct.Data4[5], inst->guidProduct.Data4[6], inst->guidProduct.Data4[7]);
-   */
+#endif
 
-   g_pads[g_joypad_cnt].vid = inst->guidProduct.Data1/0x10000;
-   g_pads[g_joypad_cnt].pid = inst->guidProduct.Data1%0x10000;
+
+   g_pads[g_joypad_cnt].vid = inst->guidProduct.Data1 / 0x10000;
+   g_pads[g_joypad_cnt].pid = inst->guidProduct.Data1 % 0x10000;
+
    RARCH_LOG("PID: {%04lX} VID:{%04lX}\n", g_pads[g_joypad_cnt].pid, g_pads[g_joypad_cnt].vid);
-
 
 #ifdef HAVE_XINPUT
 #if 0
