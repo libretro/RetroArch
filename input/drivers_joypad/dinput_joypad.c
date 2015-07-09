@@ -73,8 +73,8 @@ static void dinput_joypad_destroy(void)
       
       free(g_pads[i].joy_name);
       g_pads[i].joy_name = NULL;
-	  free(g_pads[i].joy_friendly_name);
-	  g_pads[i].joy_friendly_name = NULL;
+      free(g_pads[i].joy_friendly_name);
+      g_pads[i].joy_friendly_name = NULL;
       *settings->input.device_names[i] = '\0';
    }
 
@@ -263,8 +263,8 @@ static BOOL CALLBACK enum_joypad_cb(const DIDEVICEINSTANCE *inst, void *p)
       strlcpy(params.name, dinput_joypad_name(g_joypad_cnt), sizeof(params.name));
       strlcpy(params.display_name, dinput_joypad_friendly_name(g_joypad_cnt), sizeof(params.driver));
       strlcpy(params.driver, dinput_joypad.ident, sizeof(params.driver));
-	  input_config_autoconfigure_joypad(&params);
-	  RARCH_LOG("DINPUT %s %s %s\n",params.name, params.driver, params.display_name);
+      input_config_autoconfigure_joypad(&params);
+      RARCH_LOG("DINPUT %s %s %s\n",params.name, params.driver, params.display_name);
    }
 
 enum_iteration_done:
@@ -287,7 +287,7 @@ static bool dinput_joypad_init(void *data)
    {
       g_xinput_pad_indexes[i] = -1;
       g_pads[i].joy_name = NULL;
-	  g_pads[i].joy_friendly_name = NULL;
+      g_pads[i].joy_friendly_name = NULL;
    }
 
    RARCH_LOG("Enumerating DInput joypads ...\n");
