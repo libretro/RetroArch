@@ -259,8 +259,8 @@ static size_t xmb_list_get_selection(void *data)
 
 static size_t xmb_list_get_size(void *data, menu_list_type_t type)
 {
-   size_t list_size       = 0;
-   menu_handle_t *menu    = (menu_handle_t*)data;
+   size_t list_size        = 0;
+   menu_handle_t *menu     = (menu_handle_t*)data;
    menu_entries_t *entries = menu    ? &menu->entries : NULL;
    menu_list_t *menu_list  = entries ? entries->menu_list : NULL;
    xmb_handle_t *xmb       = menu    ? (xmb_handle_t*)menu->userdata : NULL;
