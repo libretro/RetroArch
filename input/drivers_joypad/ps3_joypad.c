@@ -125,7 +125,6 @@ static void ps3_joypad_poll(void)
    unsigned port;
    CellPadInfo2 pad_info;
    global_t *global          = global_get_ptr();
-   uint64_t *lifecycle_state = (uint64_t*)&global->lifecycle_state;
 
    cellPadGetInfo2(&pad_info);
 
@@ -229,15 +228,6 @@ static void ps3_joypad_poll(void)
             if (analog_state[port][i][j] == -0x8000)
                analog_state[port][i][j] = -0x7fff;
    }
-
-   uint64_t *state_p1 = &pad_state[0];
-
-   *lifecycle_state &= ~((1ULL << RARCH_MENU_TOGGLE));
-
-   if ((*state_p1 & (1ULL << RETRO_DEVICE_ID_JOYPAD_L3)) && (*state_p1 & (1ULL << RETRO_DEVICE_ID_JOYPAD_R3)))
-      *lifecycle_state |= (1ULL << RARCH_MENU_TOGGLE);
-
-    
 }
 
 static bool ps3_joypad_query_pad(unsigned pad)

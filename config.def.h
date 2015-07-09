@@ -519,7 +519,7 @@ static unsigned default_menu_btn_info        = RETRO_DEVICE_ID_JOYPAD_SELECT;
 static unsigned default_menu_btn_scroll_down = RETRO_DEVICE_ID_JOYPAD_R;
 static unsigned default_menu_btn_scroll_up   = RETRO_DEVICE_ID_JOYPAD_L;
 
-#if defined(__CELLOS_LV2__)
+#if defined(__CELLOS_LV2__) || defined(_XBOX1) || defined(_XBOX360)
 static unsigned menu_toggle_gamepad_combo    = 2;
 #else
 static unsigned menu_toggle_gamepad_combo    = 0;

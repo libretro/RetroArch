@@ -674,10 +674,7 @@ static void *qnx_input_init(void)
 
 static void qnx_input_poll(void *data)
 {
-   global_t *global = global_get_ptr();
    qnx_input_t *qnx = (qnx_input_t*)data;
-
-   global->lifecycle_state &= ~(1ULL << RARCH_MENU_TOGGLE);
 
    /* Request and process all available BPS events. */
 
@@ -795,9 +792,8 @@ static bool qnx_input_key_pressed(void *data, int key)
 {
    qnx_input_t *qnx     = (qnx_input_t*)data;
    settings_t *settings = config_get_ptr();
-   global_t *global     = global_get_ptr();
 
-   return ((global->lifecycle_state | driver.overlay_state.buttons ) & (1ULL << key) ||
+   return (driver.overlay_state.buttons & (1ULL << key) ||
          input_joypad_pressed(qnx->joypad, 0, settings->input.binds[0], key));
 }
 

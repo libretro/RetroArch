@@ -178,13 +178,11 @@ static bool ps3_input_key_pressed(void *data, int key)
 {
    ps3_input_t *ps3 = (ps3_input_t*)data;
    settings_t *settings = config_get_ptr();
-   global_t   *global   = global_get_ptr();
 
    if (!ps3)
       return false;
 
-   return (global->lifecycle_state & (1ULL << key)) || 
-      input_joypad_pressed(ps3->joypad, 0, settings->input.binds[0], key);
+   return input_joypad_pressed(ps3->joypad, 0, settings->input.binds[0], key);
 }
 
 static uint64_t ps3_input_get_capabilities(void *data)

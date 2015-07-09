@@ -135,8 +135,6 @@ static void xdk_joypad_poll(void)
 #ifdef _XBOX1
    unsigned int dwInsertions, dwRemovals;
 #endif
-   uint64_t *state_p1        = NULL;
-   uint64_t *lifecycle_state = NULL;
    global_t *global          = global_get_ptr();
 
 #if defined(_XBOX1)
@@ -247,14 +245,6 @@ static void xdk_joypad_poll(void)
             if (analog_state[port][i][j] == -0x8000)
                analog_state[port][i][j] = -0x7fff;
    }
-
-   state_p1 = &pad_state[0];
-   lifecycle_state = &global->lifecycle_state;
-
-   *lifecycle_state &= ~((1ULL << RARCH_MENU_TOGGLE));
-
-   if((*state_p1 & (1ULL << RETRO_DEVICE_ID_JOYPAD_L3)) && (*state_p1 & (1ULL << RETRO_DEVICE_ID_JOYPAD_R3)))
-      *lifecycle_state |= (1ULL << RARCH_MENU_TOGGLE);
 }
 
 static bool xdk_joypad_query_pad(unsigned pad)
