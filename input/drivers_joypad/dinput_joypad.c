@@ -263,8 +263,8 @@ static BOOL CALLBACK enum_joypad_cb(const DIDEVICEINSTANCE *inst, void *p)
       strlcpy(params.name, dinput_joypad_name(g_joypad_cnt), sizeof(params.name));
       strlcpy(params.display_name, dinput_joypad_friendly_name(g_joypad_cnt), sizeof(params.driver));
       strlcpy(params.driver, dinput_joypad.ident, sizeof(params.driver));
-	  input_config_autoconfigure_joypad(&params);
-	  RARCH_LOG("DINPUT %s %s %s\n",params.name, params.driver, params.display_name);
+      input_config_autoconfigure_joypad(&params);
+      RARCH_LOG("DINPUT %s %s %s\n",params.name, params.driver, params.display_name);
    }
 
 enum_iteration_done:
