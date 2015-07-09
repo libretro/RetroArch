@@ -986,6 +986,42 @@ bool rarch_main_is_idle(void)
    return runloop->is_idle;
 }
 
+static bool rarch_main_cmd_get_state_menu_toggle_button_combo(
+      retro_input_t input, retro_input_t old_input,
+      retro_input_t trigger_input)
+{
+   driver_t *driver                = driver_get_ptr();
+   settings_t *settings            = config_get_ptr();
+
+   if (!settings)
+      return false;
+
+   switch (settings->input.menu_toggle_gamepad_combo)
+   {
+      case 0:
+         return false;
+      case 1:
+         if (!BIT64_GET(input, RETRO_DEVICE_ID_JOYPAD_DOWN))
+            return false;
+         if (!BIT64_GET(input, RETRO_DEVICE_ID_JOYPAD_Y))
+            return false;
+         if (!BIT64_GET(input, RETRO_DEVICE_ID_JOYPAD_L))
+            return false;
+         if (!BIT64_GET(input, RETRO_DEVICE_ID_JOYPAD_R))
+            return false;
+         break;
+      case 2:
+         if (!BIT64_GET(input, RETRO_DEVICE_ID_JOYPAD_L3))
+            return false;
+         if (!BIT64_GET(input, RETRO_DEVICE_ID_JOYPAD_R3))
+            return false;
+         break;
+   }
+
+   driver->flushing_input = true;
+   return true;
+}
+
 static void rarch_main_cmd_get_state(event_cmd_state_t *cmd,
       retro_input_t input, retro_input_t old_input,
       retro_input_t trigger_input)
@@ -997,7 +1033,9 @@ static void rarch_main_cmd_get_state(event_cmd_state_t *cmd,
    cmd->overlay_next_pressed        = BIT64_GET(trigger_input, RARCH_OVERLAY_NEXT);
    cmd->grab_mouse_pressed          = BIT64_GET(trigger_input, RARCH_GRAB_MOUSE_TOGGLE);
 #ifdef HAVE_MENU
-   cmd->menu_pressed                = BIT64_GET(trigger_input, RARCH_MENU_TOGGLE);
+   cmd->menu_pressed                = BIT64_GET(trigger_input, RARCH_MENU_TOGGLE) ||
+                                      rarch_main_cmd_get_state_menu_toggle_button_combo(input,
+                                            old_input, trigger_input);
 #endif
    cmd->quit_key_pressed            = BIT64_GET(input, RARCH_QUIT_KEY);
    cmd->screenshot_pressed          = BIT64_GET(trigger_input, RARCH_SCREENSHOT);

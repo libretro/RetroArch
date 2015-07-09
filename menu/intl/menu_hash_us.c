@@ -26,6 +26,8 @@ static const char *menu_hash_to_str_us_label(uint32_t hash)
 {
    switch (hash)
    {
+      case MENU_LABEL_INPUT_MENU_TOGGLE_GAMEPAD_COMBO:
+         return "input_menu_toggle_gamepad_combo";
       case MENU_LABEL_INPUT_OVERLAY_HIDE_IN_MENU:
          return "overlay_hide_in_menu";
       case MENU_LABEL_NO_PLAYLIST_ENTRIES_AVAILABLE:
@@ -616,6 +618,8 @@ const char *menu_hash_to_str_us(uint32_t hash)
 
    switch (hash)
    {
+      case MENU_LABEL_VALUE_INPUT_MENU_TOGGLE_GAMEPAD_COMBO:
+         return "Menu Toggle Gamepad Combo";
       case MENU_LABEL_VALUE_INPUT_OVERLAY_HIDE_IN_MENU:
          return "Hide Overlay In Menu";
       case MENU_VALUE_LANG_POLISH:

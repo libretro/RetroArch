@@ -22,6 +22,9 @@
 extern "C" {
 #endif
 
+#define MENU_LABEL_INPUT_MENU_TOGGLE_GAMEPAD_COMBO                             0xc5b7aa47U
+#define MENU_LABEL_VALUE_INPUT_MENU_TOGGLE_GAMEPAD_COMBO                       0x0dedea3bU
+
 #define MENU_LABEL_INPUT_OVERLAY_HIDE_IN_MENU                                  0xf09e230aU
 #define MENU_LABEL_VALUE_INPUT_OVERLAY_HIDE_IN_MENU                            0x39b5bd0dU
 

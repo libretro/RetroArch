@@ -528,6 +528,36 @@ static void menu_action_setting_disp_set_label_state(
       strlcat(s, " (Auto)", len);
 }
 
+static void menu_action_setting_disp_set_label_menu_toggle_gamepad_combo(
+      file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *s, size_t len,
+      const char *entry_label,
+      const char *path,
+      char *s2, size_t len2)
+{
+   settings_t *settings        = config_get_ptr();
+
+   if (!settings)
+      return;
+
+   strlcpy(s2, path, len2);
+   *w = 16;
+   switch (settings->input.menu_toggle_gamepad_combo)
+   {
+      case 0:
+         snprintf(s, len, "%s", "None");
+         break;
+      case 1:
+         snprintf(s, len, "%s", "Down + L1 + R1 + Y");
+         break;
+      case 2:
+         snprintf(s, len, "%s", "L3 + R3");
+         break;
+   }
+}
+
 
 static void menu_action_setting_disp_set_label_menu_disk_index(
       file_list_t* list,
@@ -906,6 +936,10 @@ static int menu_cbs_init_bind_get_string_representation_compare_label(
       case MENU_LABEL_LOAD_STATE:
          cbs->action_get_value =
             menu_action_setting_disp_set_label_state;
+         break;
+      case MENU_LABEL_INPUT_MENU_TOGGLE_GAMEPAD_COMBO:
+         cbs->action_get_value =
+            menu_action_setting_disp_set_label_menu_toggle_gamepad_combo;
          break;
       case MENU_LABEL_CHEAT_NUM_PASSES:
          cbs->action_get_value =

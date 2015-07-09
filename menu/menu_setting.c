@@ -4257,6 +4257,18 @@ static bool setting_append_list_input_options(
          general_read_handler);
    menu_settings_list_current_add_range(list, list_info, 1, MAX_USERS, 1, true, true);
 
+   CONFIG_UINT(
+         settings->input.menu_toggle_gamepad_combo,
+         menu_hash_to_str(MENU_LABEL_INPUT_MENU_TOGGLE_GAMEPAD_COMBO),
+         menu_hash_to_str(MENU_LABEL_VALUE_INPUT_MENU_TOGGLE_GAMEPAD_COMBO),
+         menu_toggle_gamepad_combo,
+         group_info.name,
+         subgroup_info.name,
+         parent_group,
+         general_write_handler,
+         general_read_handler);
+   menu_settings_list_current_add_range(list, list_info, 0, 2, 1, true, true);
+
    CONFIG_BOOL(
          settings->input.remap_binds_enable,
          menu_hash_to_str(MENU_LABEL_INPUT_REMAP_BINDS_ENABLE),

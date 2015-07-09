@@ -242,6 +242,8 @@ typedef struct settings
       bool input_descriptor_hide_unbound;
 
       char remapping_path[PATH_MAX_LENGTH];
+      
+      unsigned menu_toggle_gamepad_combo;
    } input;
 
    struct

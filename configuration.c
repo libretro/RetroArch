@@ -589,6 +589,7 @@ static void config_set_defaults(void)
    settings->input.input_descriptor_hide_unbound    = input_descriptor_hide_unbound;
    settings->input.remap_binds_enable               = true;
    settings->input.max_users                        = input_max_users;
+   settings->input.menu_toggle_gamepad_combo        = menu_toggle_gamepad_combo;
 
    rarch_assert(sizeof(settings->input.binds[0]) >= sizeof(retro_keybinds_1));
    rarch_assert(sizeof(settings->input.binds[1]) >= sizeof(retro_keybinds_rest));
@@ -1394,6 +1395,7 @@ static bool config_load_file(const char *path, bool set_defaults)
    CONFIG_GET_FLOAT_BASE(conf, settings, input.axis_threshold, "input_axis_threshold");
    CONFIG_GET_BOOL_BASE(conf, settings, input.netplay_client_swap_input, "netplay_client_swap_input");
    CONFIG_GET_INT_BASE(conf, settings, input.max_users, "input_max_users");
+   CONFIG_GET_INT_BASE(conf, settings, input.menu_toggle_gamepad_combo, "input_menu_toggle_gamepad_combo");
    CONFIG_GET_BOOL_BASE(conf, settings, input.input_descriptor_label_show, "input_descriptor_label_show");
    CONFIG_GET_BOOL_BASE(conf, settings, input.input_descriptor_hide_unbound, "input_descriptor_hide_unbound");
    CONFIG_GET_BOOL_BASE(conf, settings, input.autoconfig_descriptor_label_show, "autoconfig_descriptor_label_show");
@@ -2348,6 +2350,7 @@ bool config_save_file(const char *path)
    RARCH_LOG("Saving config at path: \"%s\"\n", path);
 
    config_set_int(conf, "input_max_users", settings->input.max_users);
+   config_set_int(conf, "input_menu_toggle_gamepad_combo", settings->input.menu_toggle_gamepad_combo);
    config_set_float(conf, "input_axis_threshold",
          settings->input.axis_threshold);
    config_set_bool(conf, "ui_companion_start_on_boot", settings->ui.companion_start_on_boot);
