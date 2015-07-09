@@ -503,7 +503,7 @@ static void menu_action_setting_disp_set_label_menu_more(
       char *s2, size_t len2)
 {
    strlcpy(s, "...", len);
-   *w = 16;
+   *w = 19;
    strlcpy(s2, path, len2);
 }
 
@@ -543,7 +543,7 @@ static void menu_action_setting_disp_set_label_menu_toggle_gamepad_combo(
       return;
 
    strlcpy(s2, path, len2);
-   *w = 16;
+   *w = 19;
    switch (settings->input.menu_toggle_gamepad_combo)
    {
       case 0:
