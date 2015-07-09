@@ -361,7 +361,8 @@ static void frontend_android_get_name(char *s, size_t len)
    system_property_get("ro.product.model", s);
 }
 
-static void frontend_android_get_version(int32_t *major, int32_t *minor, int32_t *rel)
+static void frontend_android_get_version(int32_t *major,
+      int32_t *minor, int32_t *rel)
 {
    char os_version_str[PROP_VALUE_MAX] = {0};
    system_property_get("ro.build.version.release", os_version_str);
@@ -475,7 +476,8 @@ static void frontend_android_get_environment_settings(int *argc,
    
    frontend_android_get_version(&major, &minor, &rel);
 
-   RARCH_LOG("Android OS version (major : %d, minor : %d, rel : %d)\n", major, minor, rel);
+   RARCH_LOG("Android OS version (major : %d, minor : %d, rel : %d)\n",
+         major, minor, rel);
 
    CALL_OBJ_METHOD(env, obj, android_app->activity->clazz,
          android_app->getIntent);
@@ -755,13 +757,10 @@ static void frontend_android_get_environment_settings(int *argc,
    else if (!strcmp(device_model, "JSS15J"))
       g_defaults.settings.video_refresh_rate = 59.65;
 
-   /* FIXME - needs to be refactored */
-#if 0
    /* Explicitly disable input overlay by default 
     * for gamepad-like/console devices. */
    if (device_is_game_console(device_model))
       g_defaults.settings.input_overlay_enable = false;
-#endif
 }
 
 static void frontend_android_deinit(void *data)
