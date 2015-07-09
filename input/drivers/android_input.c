@@ -66,7 +66,7 @@ enum
    AXIS_LTRIGGER = 17,
    AXIS_RTRIGGER = 18,
    AXIS_GAS = 22,
-   AXIS_BRAKE = 23,
+   AXIS_BRAKE = 23
 };
 
 #define MAX_AXIS 10
@@ -143,8 +143,7 @@ static void engine_handle_dpad_getaxisvalue(android_input_t *android,
    android->hat_state[port][1] = (int)haty;
 
    /* XXX: this could be a loop instead, but do we really want to
-    * loop through every axis?
-    */
+    * loop through every axis? */
    android->analog_state[port][0] = (int16_t)(x * 32767.0f);
    android->analog_state[port][1] = (int16_t)(y * 32767.0f);
    android->analog_state[port][2] = (int16_t)(z * 32767.0f);
