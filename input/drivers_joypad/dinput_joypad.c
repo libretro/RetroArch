@@ -35,6 +35,9 @@ struct dinput_joypad
    LPDIRECTINPUTDEVICE8 joypad;
    DIJOYSTATE2 joy_state;
    char* joy_name;
+   char* joy_friendly_name;
+   int32_t vid;
+   int32_t pid;
 };
 
 static struct dinput_joypad g_pads[MAX_USERS];
@@ -70,6 +73,8 @@ static void dinput_joypad_destroy(void)
       
       free(g_pads[i].joy_name);
       g_pads[i].joy_name = NULL;
+	  free(g_pads[i].joy_friendly_name);
+	  g_pads[i].joy_friendly_name = NULL;
       *settings->input.device_names[i] = '\0';
    }
 
@@ -172,6 +177,14 @@ static const char *dinput_joypad_name(unsigned pad)
    return NULL;
 }
 
+static const char *dinput_joypad_friendly_name(unsigned pad)
+{
+   if (pad < MAX_USERS)
+      return g_pads[pad].joy_friendly_name;
+
+   return NULL;
+}
+
 static BOOL CALLBACK enum_joypad_cb(const DIDEVICEINSTANCE *inst, void *p)
 {
    bool is_xinput_pad;
@@ -196,6 +209,20 @@ static BOOL CALLBACK enum_joypad_cb(const DIDEVICEINSTANCE *inst, void *p)
    return DIENUM_CONTINUE;
    
    g_pads[g_joypad_cnt].joy_name = strdup(inst->tszProductName);
+   g_pads[g_joypad_cnt].joy_friendly_name = strdup(inst->tszInstanceName);
+   
+   /* there may be more useful info in the GUID so leave this here for a while
+   
+   printf("Guid = {%08lX-%04hX-%04hX-%02hhX%02hhX-%02hhX%02hhX%02hhX%02hhX%02hhX%02hhX}\n", 
+   inst->guidProduct.Data1, inst->guidProduct.Data2, inst->guidProduct.Data3, 
+   inst->guidProduct.Data4[0], inst->guidProduct.Data4[1], inst->guidProduct.Data4[2], inst->guidProduct.Data4[3],
+   inst->guidProduct.Data4[4], inst->guidProduct.Data4[5], inst->guidProduct.Data4[6], inst->guidProduct.Data4[7]);
+   printf("Guid = {%08lX-%04hX-%04hX-%02hhX%02hhX-%02hhX%02hhX%02hhX%02hhX%02hhX%02hhX}\n",*/
+
+   g_pads[g_joypad_cnt].vid = inst->guidProduct.Data1/0x10000;
+   g_pads[g_joypad_cnt].pid = inst->guidProduct.Data1%0x10000;
+   RARCH_LOG("PID: {%04lX} VID:{%04lX}\n", g_pads[g_joypad_cnt].pid, g_pads[g_joypad_cnt].vid);
+   
    
 #ifdef HAVE_XINPUT
 #if 0
@@ -233,8 +260,10 @@ static BOOL CALLBACK enum_joypad_cb(const DIDEVICEINSTANCE *inst, void *p)
       /* TODO - implement VID/PID? */
       params.idx = g_joypad_cnt;
       strlcpy(params.name, dinput_joypad_name(g_joypad_cnt), sizeof(params.name));
+      strlcpy(params.display_name, dinput_joypad_friendly_name(g_joypad_cnt), sizeof(params.driver));
       strlcpy(params.driver, dinput_joypad.ident, sizeof(params.driver));
-      input_config_autoconfigure_joypad(&params);
+	  input_config_autoconfigure_joypad(&params);
+	  RARCH_LOG("DINPUT %s %s %s\n",params.name, params.driver, params.display_name);
    }
 
 enum_iteration_done:
@@ -257,6 +286,7 @@ static bool dinput_joypad_init(void *data)
    {
       g_xinput_pad_indexes[i] = -1;
       g_pads[i].joy_name = NULL;
+	  g_pads[i].joy_friendly_name = NULL;
    }
 
    RARCH_LOG("Enumerating DInput joypads ...\n");
