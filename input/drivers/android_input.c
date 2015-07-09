@@ -661,24 +661,10 @@ static void handle_hotplug(android_input_t *android,
       strlcpy(name_buf, "PlayStation3", sizeof(name_buf));
    else if (strstr(device_name, "MOGA"))
       strlcpy(name_buf, "Moga IME", sizeof(name_buf));
-   else if (strstr(device_name, "2-Axis, 8-Button"))
-      strlcpy(name_buf, "Genius Maxfire G08XU", sizeof(name_buf));
-   else if (strstr(device_name, "USB,2-axis 8-button gamepad"))
-      strlcpy(name_buf, "USB 2 Axis 8 button", sizeof(name_buf));
-   else if (strstr(device_name, "joy_key"))
-      strlcpy(name_buf, "Archos Gamepad", sizeof(name_buf));
-   else if (strstr(device_name, "matrix_keyboard"))
-      strlcpy(name_buf, "JXD S5110B", sizeof(name_buf));
-   else if (strstr(device_name, "tincore_adc_joystick"))
-      strlcpy(name_buf, "JXD S5110B (Skelrom)", sizeof(name_buf));
    else if (strstr(device_name, "keypad-zeus") ||
          (strstr(device_name, "keypad-game-zeus"))
          )
       strlcpy(name_buf, "Xperia Play", sizeof(name_buf));
-   else if (strstr(device_name, "ADC joystick"))
-      strlcpy(name_buf, "JXD S7800B", sizeof(name_buf));
-   else if (strstr(device_name, "2Axes 11Keys Game  Pad"))
-      strlcpy(name_buf, "Tomee NES USB", sizeof(name_buf));
    else if (strstr(device_name, "NVIDIA Controller"))
    {
       /* Shield is always user 1. FIXME: This is kinda ugly.
@@ -698,9 +684,6 @@ static void handle_hotplug(android_input_t *android,
    else if (strstr(android_app->current_ime, "com.hexad.bluezime"))
       strlcpy(name_buf, android_app->current_ime, sizeof(name_buf));
 
-   if (source == AINPUT_SOURCE_KEYBOARD && strcmp(name_buf, "Xperia Play"))
-      strlcpy(name_buf, "RetroKeyboard", sizeof(name_buf));
-
    if (name_buf[0] != '\0')
       strlcpy(settings->input.device_names[*port],
             name_buf, sizeof(settings->input.device_names[*port]));
@@ -719,16 +702,13 @@ static void handle_hotplug(android_input_t *android,
       autoconfigured = input_config_autoconfigure_joypad(&params);
    }
 
+   (void)autoconfigured;
+
    *port = android->pads_connected;
    android->pad_states[android->pads_connected].id = id;
    android->pad_states[android->pads_connected].port = *port;
    strlcpy(android->pad_states[*port].name, name_buf,
          sizeof(android->pad_states[*port].name));
-
-   if (autoconfigured && strcmp(name_buf, "RetroKeyboard"))
-      settings->input.binds[*port][RARCH_MENU_TOGGLE].joykey = 0;
-   else
-      settings->input.binds[*port][RARCH_MENU_TOGGLE].joykey = AKEYCODE_BACK;
 
    android->pads_connected++;
 }
