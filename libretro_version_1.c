@@ -191,7 +191,7 @@ static int16_t input_state(unsigned port, unsigned device,
          switch (device)
          {
             case RETRO_DEVICE_JOYPAD:
-               if (ol_state->buttons & (UINT64_C(1) << id))
+               if (ol_state && ol_state->buttons & (UINT64_C(1) << id))
                   res |= 1;
                break;
             case RETRO_DEVICE_KEYBOARD:
@@ -209,7 +209,7 @@ static int16_t input_state(unsigned port, unsigned device,
                      base = 2;
                   if (id == RETRO_DEVICE_ID_ANALOG_Y)
                      base += 1;
-                  if (ol_state->analog[base])
+                  if (ol_state && ol_state->analog[base])
                      res = ol_state->analog[base];
                }
                break;

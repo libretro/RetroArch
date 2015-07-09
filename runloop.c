@@ -434,11 +434,19 @@ static void do_state_check_menu_toggle(void)
    if (menu_driver_alive())
    {
       if (global->main_is_init && (global->core_type != CORE_TYPE_DUMMY))
+      {
          rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING_FINISHED);
+#if 0
+         event_command(EVENT_CMD_OVERLAY_INIT);
+#endif
+      }
       return;
    }
 
    rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING);
+#if 0
+   event_command(EVENT_CMD_OVERLAY_DEINIT);
+#endif
 }
 #endif
 
