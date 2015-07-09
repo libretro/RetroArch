@@ -152,6 +152,9 @@ cheat_manager_t *cheat_manager_load(const char *path)
 
       if (config_get_bool(conf, enable_key, &tmp_bool))
          cheat->cheats[i].state  = tmp_bool;
+
+      if (tmp)
+         free(tmp);
    }
 
    config_file_free(conf);

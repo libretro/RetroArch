@@ -397,15 +397,18 @@ bool core_info_get_display_name(const char *path, char *s, size_t len)
 
    if (!core_name)
       goto error;
-
    if (!conf)
-      return false;
+      goto error;
 
    strlcpy(s, core_name, len);
+
+   free(core_name);
 
    return true;
 
 error:
+   if (core_name)
+      free(core_name);
    return false;
 }
 
