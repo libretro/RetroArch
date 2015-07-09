@@ -628,18 +628,11 @@ static void handle_hotplug(android_input_t *android,
          strlcpy(device_name, "SideWinder Dual Strike", sizeof(device_name));
       else if (strstr(device_name, "SideWinder"))
          strlcpy(name_buf, "SideWinder Classic", sizeof(name_buf));
-      else if (strstr(device_name, "X-Box 360")
-            || strstr(device_name, "X-Box"))
-         strlcpy(name_buf, "XBox 360", sizeof(name_buf));
    }
    else if (
          strstr(device_name, "PLAYSTATION(R)3") ||
          strstr(device_name, "Dualshock3") ||
-         strstr(device_name, "Sixaxis") ||
-         (strstr(device_name, "Gamepad 0") ||
-          strstr(device_name, "Gamepad 1") ||
-          strstr(device_name, "Gamepad 2") ||
-          strstr(device_name, "Gamepad 3"))
+         strstr(device_name, "Sixaxis")
          )
       strlcpy(name_buf, "PlayStation3", sizeof(name_buf));
    else if (strstr(device_name, "MOGA"))
