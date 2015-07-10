@@ -24,7 +24,8 @@
 
 #include "../general.h"
 
-/*enum
+#if 0
+enum
 {
    AUTODETECT_MATCH_NONE = 0,
    AUTODETECT_MATCH_VID,
@@ -32,7 +33,8 @@
    AUTODETECT_MATCH_IDENT,
    AUTODETECT_MATCH_DRIVER,
    AUTODETECT_MATCH_NAME
-};*/
+};
+#endif
 
 static void input_autoconfigure_joypad_conf(config_file_t *conf,
       struct retro_keybind *binds)
@@ -52,11 +54,10 @@ static int input_try_autoconfigure_joypad_from_conf(config_file_t *conf,
       autoconfig_params_t *params)
 {
    char ident[PATH_MAX_LENGTH]        = {0};
-   //char ident_idx[PATH_MAX_LENGTH]    = {0};
    char input_driver[PATH_MAX_LENGTH] = {0};
    int                      input_vid = 0;
    int                      input_pid = 0;
-   int                            score = 0;
+   int                          score = 0;
 
    if (!conf)
       return false;
@@ -150,31 +151,35 @@ static bool input_autoconfigure_joypad_from_conf_dir(
       autoconfig_params_t *params)
 {
    size_t i;
-   int ret = 0;
-   int index = 0;
+   int ret          = 0;
+   int index        = 0;
    int current_best = 0;
-
-   settings_t *settings = config_get_ptr();
-
+   config_file_t *conf        = NULL;
+   struct string_list *list   = NULL;
    char path[PATH_MAX_LENGTH] = {0};
-   fill_pathname_join(path,settings->input.autoconfig_dir,settings->input.joypad_driver,sizeof(path));
+   settings_t *settings       = config_get_ptr();
 
-   struct string_list *list = settings ? dir_list_new(
-         settings->input.autoconfig_dir, "cfg", false) : NULL;
+   fill_pathname_join(path,settings->input.autoconfig_dir,
+         settings->input.joypad_driver,
+         sizeof(path));
+
+   if (settings)
+      list = dir_list_new(settings->input.autoconfig_dir, "cfg", false);
 
    if (!list || !list->size)
    {
-      fill_pathname_join(path,settings->input.autoconfig_dir,settings->input.joypad_driver,sizeof(path));
+      fill_pathname_join(path,settings->input.autoconfig_dir,
+            settings->input.joypad_driver,
+            sizeof(path));
 
-      list = settings ? dir_list_new(
-            path, "cfg", false) : NULL;
+      if (settings)
+         list = dir_list_new(path, "cfg", false);
    }
 
    if(!list)
       return false;
 
    RARCH_LOG("Autoconfig: %d profiles found\n", list->size);
-   config_file_t *conf;
 
    for (i = 0; i < list->size; i++)
    {
@@ -182,8 +187,8 @@ static bool input_autoconfigure_joypad_from_conf_dir(
       ret = input_try_autoconfigure_joypad_from_conf(conf, params);
       if(ret > current_best)
       {
-          index = i;
-          current_best = ret;
+         index = i;
+         current_best = ret;
       }
       config_file_free(conf);
    }
@@ -196,11 +201,13 @@ static bool input_autoconfigure_joypad_from_conf_dir(
       config_file_free(conf);
    }
    else
-       ret = 0;
+      ret = 0;
 
    string_list_free(list);
 
-   return ret !=0 ? true : false;
+   if (ret == 0)
+      return false;
+   return true;
 }
 
 #if defined(HAVE_BUILTIN_AUTOCONFIG)
@@ -209,7 +216,7 @@ static bool input_autoconfigure_joypad_from_conf_internal(
 {
    size_t i;
    settings_t *settings = config_get_ptr();
-   bool ret = false;
+   bool             ret = false;
 
    /* Load internal autoconfig files  */
    for (i = 0; input_builtin_autoconfs[i]; i++)
@@ -283,6 +290,7 @@ const struct retro_keybind *input_get_auto_bind(unsigned port, unsigned id)
 void input_config_autoconfigure_disconnect(unsigned i, const char *ident)
 {
    char msg[PATH_MAX_LENGTH] = {0};
+
    snprintf(msg, sizeof(msg), "Device #%u (%s) disconnected.", i, ident);
    rarch_main_msg_queue_push(msg, 0, 60, false);
    RARCH_LOG("%s\n", msg);
