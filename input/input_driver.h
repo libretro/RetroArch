@@ -98,6 +98,8 @@ extern input_driver_t input_qnx;
 extern input_driver_t input_rwebinput;
 extern input_driver_t input_null;
 
+input_driver_t *input_driver_get_ptr(void);
+
 /**
  * input_driver_find_handle:
  * @index              : index of driver to get handle to.

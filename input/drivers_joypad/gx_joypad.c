@@ -350,7 +350,7 @@ static void gx_joypad_poll(void)
 {
    unsigned i, j, port;
    uint8_t gcpad    = 0;
-   global_t *global = global_get_ptr();
+   gx_input_t *gx = (gx_input_t*)input_driver_get_ptr();
 
    pad_state[0] = 0;
    pad_state[1] = 0;
@@ -540,9 +540,8 @@ static void gx_joypad_poll(void)
    }
 
    uint64_t *state_p1        = &pad_state[0];
-   uint64_t *lifecycle_state = &global->lifecycle_state;
 
-   *lifecycle_state &= ~((1ULL << RARCH_MENU_TOGGLE));
+   gx->lifecycle_state &= ~((1ULL << RARCH_MENU_TOGGLE));
 
    if (g_menu)
    {
@@ -555,7 +554,7 @@ static void gx_joypad_poll(void)
             | (1ULL << GX_CLASSIC_HOME)
 #endif
             ))
-      *lifecycle_state |= (1ULL << RARCH_MENU_TOGGLE);
+      gx->lifecycle_state |= (1ULL << RARCH_MENU_TOGGLE);
 }
 
 static bool gx_joypad_init(void *data)

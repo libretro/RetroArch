@@ -178,6 +178,14 @@ static const input_driver_t *input_get_ptr(driver_t *driver)
    return driver->input;
 }
 
+input_driver_t *input_driver_get_ptr(void)
+{
+   driver_t            *driver = driver_get_ptr();
+   if (!driver)
+      return NULL;
+   return driver->input_data;
+}
+
 /**
  * input_driver_set_rumble_state:
  * @port               : User number.
