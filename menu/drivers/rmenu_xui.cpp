@@ -149,8 +149,6 @@ HRESULT CRetroArch::UnregisterXuiClasses (void)
 
 HRESULT CRetroArchMain::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
 {
-   global_t *global = global_get_ptr();
-
    GetChildById(L"XuiMenuList", &m_menulist);
    GetChildById(L"XuiTxtTitle", &m_menutitle);
    GetChildById(L"XuiTxtBottom", &m_menutitlebottom);
@@ -160,7 +158,7 @@ HRESULT CRetroArchMain::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
    {
 	   char str[PATH_MAX_LENGTH] = {0};
 
-	   snprintf(str, sizeof(str), "%s - %s", PACKAGE_VERSION, global->title_buf);
+      menu_entries_get_core_title(str, sizeof(str));
 	   mbstowcs(strw_buffer, str, sizeof(strw_buffer) / sizeof(wchar_t));
 	   XuiTextElementSetText(m_menutitlebottom, strw_buffer);
    }
@@ -408,7 +406,6 @@ static void rmenu_xui_frame(void)
    d3d_video_t *d3d = NULL;
    menu_handle_t *menu   = menu_driver_get_ptr();
    driver_t      *driver = driver_get_ptr();
-   global_t      *global = global_get_ptr();
 
    if (!menu)
       return;

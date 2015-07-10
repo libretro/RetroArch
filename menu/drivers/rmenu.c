@@ -133,7 +133,6 @@ static void rmenu_render(void)
    menu_animation_t *anim        = menu_animation_get_ptr();
    menu_list_t *menu_list        = menu_list_get_ptr();
    menu_navigation_t *nav        = menu_navigation_get_ptr();
-   global_t    *global           = global_get_ptr();
    uint64_t frame_count          = video_driver_get_frame_count();
    size_t  entries_end           = menu_entries_get_end();
 
