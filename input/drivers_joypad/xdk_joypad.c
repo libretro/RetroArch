@@ -135,7 +135,6 @@ static void xdk_joypad_poll(void)
 #ifdef _XBOX1
    unsigned int dwInsertions, dwRemovals;
 #endif
-   global_t *global          = global_get_ptr();
 
 #if defined(_XBOX1)
    XGetDeviceChanges(XDEVICE_TYPE_GAMEPAD,

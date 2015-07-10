@@ -124,7 +124,6 @@ static void ps3_joypad_poll(void)
 {
    unsigned port;
    CellPadInfo2 pad_info;
-   global_t *global          = global_get_ptr();
 
    cellPadGetInfo2(&pad_info);
 
