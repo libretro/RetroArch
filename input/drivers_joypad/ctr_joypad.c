@@ -121,11 +121,10 @@ static int16_t ctr_joypad_axis(unsigned port_num, uint32_t joyaxis)
 static void ctr_joypad_poll(void)
 {
    int32_t ret;
+   unsigned i, j;
    uint32_t state_tmp;
    circlePosition state_tmp_analog;
-
-   global_t *global          = global_get_ptr();
-   uint64_t *lifecycle_state = (uint64_t*)&global->lifecycle_state;
+   ctr_input_t *ctr = (ctr_input_t*)input_driver_get_ptr();
 
    hidScanInput();
 
@@ -151,15 +150,15 @@ static void ctr_joypad_poll(void)
    analog_state[0][RETRO_DEVICE_INDEX_ANALOG_LEFT] [RETRO_DEVICE_ID_ANALOG_X] =  (state_tmp_analog.dx * 200);
    analog_state[0][RETRO_DEVICE_INDEX_ANALOG_LEFT] [RETRO_DEVICE_ID_ANALOG_Y] = -(state_tmp_analog.dy * 200);
 
-   for (int i = 0; i < 2; i++)
-      for (int j = 0; j < 2; j++)
+   for (i = 0; i < 2; i++)
+      for (j = 0; j < 2; j++)
          if (analog_state[0][i][j] == -0x8000)
             analog_state[0][i][j] = -0x7fff;
 
-   *lifecycle_state &= ~((1ULL << RARCH_MENU_TOGGLE));
+   ctr->lifecycle_state &= ~((1ULL << RARCH_MENU_TOGGLE));
 
    if(state_tmp & KEY_TOUCH)
-      *lifecycle_state |= (1ULL << RARCH_MENU_TOGGLE);
+      ctr->lifecycle_state |= (1ULL << RARCH_MENU_TOGGLE);
 
    /* panic button */
    if((state_tmp & KEY_START) &&

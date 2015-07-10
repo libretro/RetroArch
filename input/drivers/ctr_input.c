@@ -29,6 +29,7 @@ typedef struct ctr_input
 {
    bool blocked;
    const input_device_driver_t *joypad;
+   uint64_t lifecycle_state;
 } ctr_input_t;
 
 static void ctr_input_poll(void *data)
@@ -84,10 +85,9 @@ static void* ctr_input_initialize(void)
 static bool ctr_input_key_pressed(void *data, int key)
 {
    settings_t *settings = config_get_ptr();
-   global_t   *global   = global_get_ptr();
    ctr_input_t *ctr     = (ctr_input_t*)data;
 
-   return (global->lifecycle_state & (1ULL << key)) ||
+   return (ctr->lifecycle_state & (1ULL << key)) ||
       input_joypad_pressed(ctr->joypad, 0, settings->input.binds[0], key);
 }
 
