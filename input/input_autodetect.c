@@ -20,6 +20,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include <file/file_path.h>
 
 #include "../general.h"
 
@@ -152,8 +153,12 @@ static bool input_autoconfigure_joypad_from_conf_dir(
    int current_best = 0;
 
    settings_t *settings = config_get_ptr();
+
+   char path[PATH_MAX_LENGTH] = {0};
+   fill_pathname_join(path,settings->input.autoconfig_dir,settings->input.driver,sizeof(path));
+
    struct string_list *list = settings ? dir_list_new(
-         settings->input.autoconfig_dir, "cfg", false) : NULL;
+         path, "cfg", false) : NULL;
 
    if (!list)
       return false;
