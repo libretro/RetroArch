@@ -148,15 +148,15 @@ static bool input_autoconfigure_joypad_from_conf_dir(
 {
    size_t i;
    int ret = 0;
+   int index = 0;
+   int current_best = 0;
+
    settings_t *settings = config_get_ptr();
    struct string_list *list = settings ? dir_list_new(
          settings->input.autoconfig_dir, "cfg", false) : NULL;
 
    if (!list)
       return false;
-
-   int current_best = 0;
-   int index = 0;
 
    config_file_t *conf;
 
@@ -172,9 +172,14 @@ static bool input_autoconfigure_joypad_from_conf_dir(
       config_file_free(conf);
    }
 
-   conf = config_file_new(list->elems[index].data);
-   input_autoconfigure_joypad_add(conf, params);
-   config_file_free(conf);
+   if(index)
+   {
+      conf = config_file_new(list->elems[index].data);
+      input_autoconfigure_joypad_add(conf, params);
+      config_file_free(conf);
+   }
+   else
+       ret = 0;
 
    string_list_free(list);
 
