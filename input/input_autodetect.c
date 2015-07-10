@@ -158,11 +158,20 @@ static bool input_autoconfigure_joypad_from_conf_dir(
    fill_pathname_join(path,settings->input.autoconfig_dir,settings->input.driver,sizeof(path));
 
    struct string_list *list = settings ? dir_list_new(
-         path, "cfg", false) : NULL;
+         settings->input.autoconfig_dir, "cfg", false) : NULL;
 
-   if (!list)
+   if (!list || !list->size)
+   {
+      fill_pathname_join(path,settings->input.autoconfig_dir,settings->input.driver,sizeof(path));
+
+      list = settings ? dir_list_new(
+            path, "cfg", false) : NULL;
+   }
+
+   if(!list)
       return false;
 
+   RARCH_LOG("Autoconfig: %d profiles found\n", list->size);
    config_file_t *conf;
 
    for (i = 0; i < list->size; i++)
