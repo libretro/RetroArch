@@ -121,10 +121,7 @@ static INLINE double sinc(double val)
 }
 
 #if defined(SINC_WINDOW_LANCZOS)
-static INLINE double window_function(double idx)
-{
-   return sinc(M_PI * idx);
-}
+#define window_function(idx)  (sinc(M_PI * (idx)))
 #elif defined(SINC_WINDOW_KAISER)
 /* Modified Bessel function of first order.
  * Check Wiki for mathematical definition ... */
@@ -153,10 +150,7 @@ static INLINE double besseli0(double x)
    return sum;
 }
 
-static INLINE double window_function(double idx)
-{
-   return besseli0(SINC_WINDOW_KAISER_BETA * sqrt(1 - idx * idx));
-}
+#define window_function(idx) (besseli0(SINC_WINDOW_KAISER_BETA * sqrt(1 - (idx) * (idx))))
 #else
 #error "No SINC window function defined."
 #endif
@@ -247,17 +241,17 @@ static INLINE void process_sinc_C(rarch_sinc_resampler_t *resamp,
       float *out_buffer)
 {
    unsigned i;
-   float sum_l = 0.0f;
-   float sum_r = 0.0f;
-   const float *buffer_l = resamp->buffer_l + resamp->ptr;
-   const float *buffer_r = resamp->buffer_r + resamp->ptr;
-
-   unsigned taps  = resamp->taps;
-   unsigned phase = resamp->time >> SUBPHASE_BITS;
+   float sum_l              = 0.0f;
+   float sum_r              = 0.0f;
+   const float *buffer_l    = resamp->buffer_l + resamp->ptr;
+   const float *buffer_r    = resamp->buffer_r + resamp->ptr;
+   unsigned taps            = resamp->taps;
+   unsigned phase           = resamp->time >> SUBPHASE_BITS;
 #if SINC_COEFF_LERP
    const float *phase_table = resamp->phase_table + phase * taps * 2;
    const float *delta_table = phase_table + taps;
-   float delta = (float)(resamp->time & SUBPHASE_MASK) * SUBPHASE_MOD;
+   float delta              = (float)
+      (resamp->time & SUBPHASE_MASK) * SUBPHASE_MOD;
 #else
    const float *phase_table = resamp->phase_table + phase * taps;
 #endif
@@ -283,18 +277,18 @@ static INLINE void process_sinc_C(rarch_sinc_resampler_t *resamp,
 static void process_sinc(rarch_sinc_resampler_t *resamp, float *out_buffer)
 {
    unsigned i;
-   __m256 sum_l = _mm256_setzero_ps();
-   __m256 sum_r = _mm256_setzero_ps();
+   __m256 sum_l             = _mm256_setzero_ps();
+   __m256 sum_r             = _mm256_setzero_ps();
 
-   const float *buffer_l = resamp->buffer_l + resamp->ptr;
-   const float *buffer_r = resamp->buffer_r + resamp->ptr;
+   const float *buffer_l    = resamp->buffer_l + resamp->ptr;
+   const float *buffer_r    = resamp->buffer_r + resamp->ptr;
 
-   unsigned taps = resamp->taps;
-   unsigned phase = resamp->time >> SUBPHASE_BITS;
+   unsigned taps            = resamp->taps;
+   unsigned phase           = resamp->time >> SUBPHASE_BITS;
 #if SINC_COEFF_LERP
    const float *phase_table = resamp->phase_table + phase * taps * 2;
    const float *delta_table = phase_table + taps;
-   __m256 delta = _mm256_set1_ps((float)
+   __m256 delta             = _mm256_set1_ps((float)
          (resamp->time & SUBPHASE_MASK) * SUBPHASE_MOD);
 #else
    const float *phase_table = resamp->phase_table + phase * taps;
@@ -302,28 +296,28 @@ static void process_sinc(rarch_sinc_resampler_t *resamp, float *out_buffer)
 
    for (i = 0; i < taps; i += 8)
    {
-      __m256 buf_l = _mm256_loadu_ps(buffer_l + i);
-      __m256 buf_r = _mm256_loadu_ps(buffer_r + i);
+      __m256 buf_l  = _mm256_loadu_ps(buffer_l + i);
+      __m256 buf_r  = _mm256_loadu_ps(buffer_r + i);
 
 #if SINC_COEFF_LERP
       __m256 deltas = _mm256_load_ps(delta_table + i);
-      __m256 sinc = _mm256_add_ps(_mm256_load_ps(phase_table + i),
+      __m256 sinc   = _mm256_add_ps(_mm256_load_ps(phase_table + i),
             _mm256_mul_ps(deltas, delta));
 #else
-      __m256 sinc = _mm256_load_ps(phase_table + i);
+      __m256 sinc   = _mm256_load_ps(phase_table + i);
 #endif
-      sum_l       = _mm256_add_ps(sum_l, _mm256_mul_ps(buf_l, sinc));
-      sum_r       = _mm256_add_ps(sum_r, _mm256_mul_ps(buf_r, sinc));
+      sum_l         = _mm256_add_ps(sum_l, _mm256_mul_ps(buf_l, sinc));
+      sum_r         = _mm256_add_ps(sum_r, _mm256_mul_ps(buf_r, sinc));
    }
 
    /* hadd on AVX is weird, and acts on low-lanes 
     * and high-lanes separately. */
    __m256 res_l = _mm256_hadd_ps(sum_l, sum_l);
    __m256 res_r = _mm256_hadd_ps(sum_r, sum_r);
-   res_l = _mm256_hadd_ps(res_l, res_l);
-   res_r = _mm256_hadd_ps(res_r, res_r);
-   res_l = _mm256_add_ps(_mm256_permute2f128_ps(res_l, res_l, 1), res_l);
-   res_r = _mm256_add_ps(_mm256_permute2f128_ps(res_r, res_r, 1), res_r);
+   res_l        = _mm256_hadd_ps(res_l, res_l);
+   res_r        = _mm256_hadd_ps(res_r, res_r);
+   res_l        = _mm256_add_ps(_mm256_permute2f128_ps(res_l, res_l, 1), res_l);
+   res_r        = _mm256_add_ps(_mm256_permute2f128_ps(res_r, res_r, 1), res_r);
 
    /* This is optimized to mov %xmmN, [mem].
     * There doesn't seem to be any _mm256_store_ss intrinsic. */
@@ -335,23 +329,23 @@ static void process_sinc(rarch_sinc_resampler_t *resamp, float *out_buffer)
 static void process_sinc(rarch_sinc_resampler_t *resamp, float *out_buffer)
 {
    unsigned i;
-   __m128 sum_l = _mm_setzero_ps();
-   __m128 sum_r = _mm_setzero_ps();
+   __m128 sum;
+   __m128 sum_l             = _mm_setzero_ps();
+   __m128 sum_r             = _mm_setzero_ps();
 
-   const float *buffer_l = resamp->buffer_l + resamp->ptr;
-   const float *buffer_r = resamp->buffer_r + resamp->ptr;
+   const float *buffer_l    = resamp->buffer_l + resamp->ptr;
+   const float *buffer_r    = resamp->buffer_r + resamp->ptr;
 
-   unsigned taps = resamp->taps;
-   unsigned phase = resamp->time >> SUBPHASE_BITS;
+   unsigned taps            = resamp->taps;
+   unsigned phase           = resamp->time >> SUBPHASE_BITS;
 #if SINC_COEFF_LERP
    const float *phase_table = resamp->phase_table + phase * taps * 2;
    const float *delta_table = phase_table + taps;
-   __m128 delta = _mm_set1_ps((float)
+   __m128 delta             = _mm_set1_ps((float)
          (resamp->time & SUBPHASE_MASK) * SUBPHASE_MOD);
 #else
    const float *phase_table = resamp->phase_table + phase * taps;
 #endif
-   __m128 sum;
 
    for (i = 0; i < taps; i += 4)
    {
@@ -360,13 +354,13 @@ static void process_sinc(rarch_sinc_resampler_t *resamp, float *out_buffer)
 
 #if SINC_COEFF_LERP
       __m128 deltas = _mm_load_ps(delta_table + i);
-      __m128 _sinc = _mm_add_ps(_mm_load_ps(phase_table + i),
+      __m128 _sinc  = _mm_add_ps(_mm_load_ps(phase_table + i),
             _mm_mul_ps(deltas, delta));
 #else
       __m128 _sinc = _mm_load_ps(phase_table + i);
 #endif
-      sum_l       = _mm_add_ps(sum_l, _mm_mul_ps(buf_l, _sinc));
-      sum_r       = _mm_add_ps(sum_r, _mm_mul_ps(buf_r, _sinc));
+      sum_l        = _mm_add_ps(sum_l, _mm_mul_ps(buf_l, _sinc));
+      sum_r        = _mm_add_ps(sum_r, _mm_mul_ps(buf_r, _sinc));
    }
 
    /* Them annoying shuffles.
@@ -413,11 +407,11 @@ void process_sinc_neon_asm(float *out, const float *left,
 static void process_sinc_neon(rarch_sinc_resampler_t *resamp,
       float *out_buffer)
 {
-   const float *buffer_l = resamp->buffer_l + resamp->ptr;
-   const float *buffer_r = resamp->buffer_r + resamp->ptr;
+   const float *buffer_l    = resamp->buffer_l + resamp->ptr;
+   const float *buffer_r    = resamp->buffer_r + resamp->ptr;
 
-   unsigned phase = resamp->time >> SUBPHASE_BITS;
-   unsigned taps = resamp->taps;
+   unsigned phase           = resamp->time >> SUBPHASE_BITS;
+   unsigned taps            = resamp->taps;
    const float *phase_table = resamp->phase_table + phase * taps;
 
    process_sinc_neon_asm(out_buffer, buffer_l, buffer_r, phase_table, taps);

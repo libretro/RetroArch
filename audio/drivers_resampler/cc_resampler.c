@@ -419,10 +419,7 @@ static INLINE float cc_int(float x, float b)
    return (val > M_PI) ? M_PI : (val < -M_PI) ? -M_PI : val;
 }
 
-static INLINE float cc_kernel(float x, float b)
-{
-   return (cc_int(x + 0.5, b) - cc_int(x - 0.5, b)) / (2.0 * M_PI);
-}
+#define cc_kernel(x, b)    ((cc_int((x) + 0.5, (b)) - cc_int((x) - 0.5, (b))) / (2.0 * M_PI))
 #else
 static INLINE float cc_int(float x, float b)
 {
@@ -433,10 +430,7 @@ static INLINE float cc_int(float x, float b)
    return (val > 0.5) ? 0.5 : (val < -0.5) ? -0.5 : val;
 }
 
-static INLINE float cc_kernel(float x, float b)
-{
-   return (cc_int(x + 0.5, b) - cc_int(x - 0.5, b));
-}
+#define cc_kernel(x, b)    ((cc_int((x) + 0.5, (b)) - cc_int((x) - 0.5, (b))))
 #endif
 
 static INLINE void add_to(const audio_frame_float_t *source,
@@ -503,15 +497,15 @@ static void resampler_CC_upsample(void *re_, struct resampler_data *data)
       while (re->distance < 1.0)
       {
          int i;
-         float temp;
+
          outp->l = 0.0;
          outp->r = 0.0;
 
          for (i = 0; i < 4; i++)
          {
-            temp = cc_kernel(re->distance + 1.0 - i, b);
-            outp->l += re->buffer[i].l * temp;
-            outp->r += re->buffer[i].r * temp;
+            float temp = cc_kernel(re->distance + 1.0 - i, b);
+            outp->l   += re->buffer[i].l * temp;
+            outp->r   += re->buffer[i].r * temp;
          }
 
          re->distance += ratio;
