@@ -1358,19 +1358,8 @@ static int action_ok_download_generic(const char *path,
    else if (!strcmp(type_msg, "cb_update_assets"))
       path = "assets.zip";
    else if (!strcmp(type_msg, "cb_update_autoconfig_profiles"))
-   {
-#ifdef ANDROID
-      path = "autoconf_android.zip";
-#elif defined(__QNX__)
-      path = "autoconf_qnx.zip";
-#elif defined(HAVE_UDEV)
-      path = "autoconf_udev.zip";
-#elif defined(HAVE_XINPUT2)
-      path = "autoconf_xinput.zip";
-#else
       path = "autoconf.zip";
-#endif
-   }
+
 #ifdef HAVE_HID
    else if (!strcmp(type_msg, "cb_update_autoconfig_profiles_hid"))
       path = "autoconf_hid.zip";
