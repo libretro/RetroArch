@@ -161,7 +161,9 @@ static int16_t input_state(unsigned port, unsigned device,
    settings_t *settings            = config_get_ptr();
    driver_t *driver                = driver_get_ptr();
    global_t *global                = global_get_ptr();
+#ifdef HAVE_OVERLAY
    input_overlay_state_t *ol_state = input_overlay_get_state_ptr();
+#endif
    
    for (i = 0; i < MAX_USERS; i++)
       libretro_input_binds[i] = settings->input.binds[i];
@@ -381,7 +383,9 @@ static void input_poll(void)
 {
    driver_t *driver               = driver_get_ptr();
    settings_t *settings           = config_get_ptr();
+#ifdef HAVE_OVERLAY
    input_overlay_t *overlay       = input_overlay_get_ptr();
+#endif
 
    input_driver_poll();
 
