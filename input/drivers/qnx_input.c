@@ -82,6 +82,7 @@ typedef struct qnx_input
    const input_device_driver_t *joypad;
    int16_t analog_state[MAX_PADS][2][2];
    uint64_t pad_state[MAX_PADS];
+   uint64_t lifecycle_state;
 } qnx_input_t;
 
 extern screen_context_t screen_ctx;
@@ -121,7 +122,6 @@ static void qnx_process_gamepad_event(
    screen_device_t device;
    qnx_input_device_t* controller = NULL;
    settings_t *settings = config_get_ptr();
-   global_t   *global   = global_get_ptr();
    uint64_t *state_cur  = NULL;
 
    (void)type;
@@ -164,7 +164,7 @@ static void qnx_process_gamepad_event(
    if((controller->port == 0) && 
          (controller->buttons & 
           settings->input.binds[0][RARCH_MENU_TOGGLE].joykey))
-      global->lifecycle_state ^= (1ULL << RARCH_MENU_TOGGLE);
+      qnx->lifecycle_state ^= (1ULL << RARCH_MENU_TOGGLE);
 }
 
 static void qnx_input_autodetect_gamepad(qnx_input_t *qnx,
@@ -321,7 +321,6 @@ static void qnx_process_keyboard_event(
 {
    qnx_input_device_t* controller = NULL;
    settings_t *settings = config_get_ptr();
-   global_t   *global   = global_get_ptr();
    int i = 0;
    int sym = 0;
    int modifiers = 0;
@@ -392,7 +391,7 @@ static void qnx_process_keyboard_event(
             == (unsigned int)(sym&0xFF)))
    {
       if (flags & KEY_DOWN)
-         global->lifecycle_state ^= (1ULL << RARCH_MENU_TOGGLE);
+         qnx->lifecycle_state ^= (1ULL << RARCH_MENU_TOGGLE);
    }
 }
 
@@ -587,7 +586,6 @@ static void qnx_handle_navigator_event(
    int rc;
    navigator_window_state_t state;
    bps_event_t *event_pause = NULL;
-   global_t *global = global_get_ptr();
    rarch_system_info_t *system = rarch_system_info_get_ptr();
 
    (void)rc;
@@ -595,7 +593,7 @@ static void qnx_handle_navigator_event(
    switch (bps_event_get_code(event))
    {
       case NAVIGATOR_SWIPE_DOWN:
-         global->lifecycle_state ^= (1ULL << RARCH_MENU_TOGGLE);
+         qnx->lifecycle_state ^= (1ULL << RARCH_MENU_TOGGLE);
          break;
       case NAVIGATOR_EXIT:
          /* Catch this in thumbnail loop. */
