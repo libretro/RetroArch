@@ -14,13 +14,15 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "input_common.h"
-#include "input_autodetect.h"
-#include <file/dir_list.h>
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
+
+#include <file/dir_list.h>
 #include <file/file_path.h>
+
+#include "input_common.h"
+#include "input_autodetect.h"
 
 #include "../general.h"
 
