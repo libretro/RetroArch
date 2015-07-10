@@ -125,6 +125,7 @@ static void input_autoconfigure_joypad_add(
    RARCH_LOG("%s\n", msg);
 }
 
+#if 0
 static int input_autoconfigure_joypad_from_conf(
       config_file_t *conf, autoconfig_params_t *params)
 {
@@ -143,6 +144,7 @@ static int input_autoconfigure_joypad_from_conf(
 
    return ret;
 }
+#endif
 
 static bool input_autoconfigure_joypad_from_conf_dir(
       autoconfig_params_t *params)
