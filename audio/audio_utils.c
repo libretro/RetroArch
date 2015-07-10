@@ -87,9 +87,9 @@ void audio_convert_float_to_s16_C(int16_t *out,
 void audio_convert_s16_to_float_SSE2(float *out,
       const int16_t *in, size_t samples, float gain)
 {
-   float fgain = gain / UINT32_C(0x80000000);
-   __m128 factor = _mm_set1_ps(fgain);
    size_t i;
+   float fgain   = gain / UINT32_C(0x80000000);
+   __m128 factor = _mm_set1_ps(fgain);
 
    for (i = 0; i + 8 <= samples; i += 8, in += 8, out += 8)
    {
@@ -155,14 +155,15 @@ void audio_convert_s16_to_float_altivec(float *out,
       const int16_t *in, size_t samples, float gain)
 {
    size_t samples_in = samples;
-   const vector float gain_vec = { gain, gain , gain, gain };
-   const vector float zero_vec = { 0.0f, 0.0f, 0.0f, 0.0f};
 
    /* Unaligned loads/store is a bit expensive, so we 
     * optimize for the good path (very likely). */
    if (((uintptr_t)out & 15) + ((uintptr_t)in & 15) == 0)
    {
       size_t i;
+      const vector float gain_vec = { gain, gain , gain, gain };
+      const vector float zero_vec = { 0.0f, 0.0f, 0.0f, 0.0f};
+
       for (i = 0; i + 8 <= samples; i += 8, in += 8, out += 8)
       {
          vector signed short input = vec_ld(0, in);
@@ -386,7 +387,7 @@ void audio_convert_float_to_s16_ALLEGREX(int16_t *out,
    for (; i < samples; i++)
    {
       int32_t val = (int32_t)(in[i] * 0x8000);
-      out[i] = (val > 0x7FFF) ? 0x7FFF :
+      out[i]      = (val > 0x7FFF) ? 0x7FFF :
          (val < -0x8000 ? -0x8000 : (int16_t)val);
    }
 }
