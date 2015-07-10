@@ -20,10 +20,11 @@
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include <file/file_path.h>
 
 #include "../general.h"
 
-enum
+/*enum
 {
    AUTODETECT_MATCH_NONE = 0,
    AUTODETECT_MATCH_VID,
@@ -31,7 +32,7 @@ enum
    AUTODETECT_MATCH_IDENT,
    AUTODETECT_MATCH_DRIVER,
    AUTODETECT_MATCH_NAME
-};
+};*/
 
 static void input_autoconfigure_joypad_conf(config_file_t *conf,
       struct retro_keybind *binds)
@@ -48,14 +49,14 @@ static void input_autoconfigure_joypad_conf(config_file_t *conf,
 }
 
 static int input_try_autoconfigure_joypad_from_conf(config_file_t *conf,
-      autoconfig_params_t *params, unsigned *match)
+      autoconfig_params_t *params)
 {
    char ident[PATH_MAX_LENGTH]        = {0};
-   char ident_idx[PATH_MAX_LENGTH]    = {0};
+   //char ident_idx[PATH_MAX_LENGTH]    = {0};
    char input_driver[PATH_MAX_LENGTH] = {0};
    int                      input_vid = 0;
    int                      input_pid = 0;
-   int                            ret = 0;
+   int                            score = 0;
 
    if (!conf)
       return false;
@@ -67,11 +68,7 @@ static int input_try_autoconfigure_joypad_from_conf(config_file_t *conf,
    config_get_int  (conf, "input_vendor_id", &input_vid);
    config_get_int  (conf, "input_product_id", &input_pid);
 
-   snprintf(ident_idx,
-         sizeof(ident_idx), "%s_p%u", ident, params->idx);
-
-   /* If Vendor ID and Product ID matches, we've found our
-    * entry. */
+   /* Check for VID/PID */
    if (     (params->vid == input_vid)
          && (params->pid == input_pid)
          && params->vid != 0
@@ -79,37 +76,26 @@ static int input_try_autoconfigure_joypad_from_conf(config_file_t *conf,
          && input_vid   != 0
          && input_pid   != 0)
    {
-      BIT32_SET(*match, AUTODETECT_MATCH_VID);
-      BIT32_SET(*match, AUTODETECT_MATCH_PID);
-      ret = 1;
-   }
-
-   /* Check for name match. */
-   if (!strcmp(ident_idx, params->name))
-   {
-      BIT32_SET(*match, AUTODETECT_MATCH_NAME);
-      ret = 1;
-   }
-
-   /* Check for name match - name starts with ident */
-   if (ident[0] != '\0' && !strncmp(params->name, ident, strlen(ident)))
-   {
-      BIT32_SET(*match, AUTODETECT_MATCH_IDENT);
-      ret = 2;
-      if (!strcmp(params->driver, input_driver))
-          BIT32_SET(*match, AUTODETECT_MATCH_DRIVER);
+      score += 3;
+      //RARCH_LOG("Autoconf: VID/PID match score=%d\n", score);
    }
 
    /* Check for name match */
    if (!strcmp(ident, params->name))
    {
-      BIT32_SET(*match, AUTODETECT_MATCH_IDENT);
-      ret = 1;
-      if (!strcmp(params->driver, input_driver))
-          BIT32_SET(*match, AUTODETECT_MATCH_DRIVER);
+      score += 2;
+      //RARCH_LOG("Autoconf: exact name match score=%d\n", score);
    }
-
-   return ret;
+   else
+   {
+      if (ident[0] != '\0' && !strncmp(params->name, ident, strlen(ident)))
+      {
+         score += 1;
+         //RARCH_LOG("Autoconf: partial name match score=%d\n", score);
+      }
+   }
+   RARCH_LOG("Autoconf: configuration score=%d\n", score);
+   return score;
 }
 
 static void input_autoconfigure_joypad_add(
@@ -143,13 +129,12 @@ static int input_autoconfigure_joypad_from_conf(
       config_file_t *conf, autoconfig_params_t *params)
 {
    int ret = 0;
-   uint32_t match = 0;
 
    if (!conf)
       return false;
 
    ret = input_try_autoconfigure_joypad_from_conf(conf,
-         params, &match);
+         params);
 
    if (ret)
       input_autoconfigure_joypad_add(conf, params);
@@ -164,22 +149,52 @@ static bool input_autoconfigure_joypad_from_conf_dir(
 {
    size_t i;
    int ret = 0;
+   int index = 0;
+   int current_best = 0;
+
    settings_t *settings = config_get_ptr();
+
+   char path[PATH_MAX_LENGTH] = {0};
+   fill_pathname_join(path,settings->input.autoconfig_dir,settings->input.driver,sizeof(path));
+
    struct string_list *list = settings ? dir_list_new(
          settings->input.autoconfig_dir, "cfg", false) : NULL;
 
-   if (!list)
+   if (!list || !list->size)
+   {
+      fill_pathname_join(path,settings->input.autoconfig_dir,settings->input.driver,sizeof(path));
+
+      list = settings ? dir_list_new(
+            path, "cfg", false) : NULL;
+   }
+
+   if(!list)
       return false;
+
+   RARCH_LOG("Autoconfig: %d profiles found\n", list->size);
+   config_file_t *conf;
 
    for (i = 0; i < list->size; i++)
    {
-      config_file_t *conf = config_file_new(list->elems[i].data);
-      ret = input_autoconfigure_joypad_from_conf(conf, params);
-
-	  if (ret == 1)
-		  break;
-
+      conf = config_file_new(list->elems[i].data);
+      ret = input_try_autoconfigure_joypad_from_conf(conf, params);
+      if(ret > current_best)
+      {
+          index = i;
+          current_best = ret;
+      }
+      config_file_free(conf);
    }
+
+   if(index)
+   {
+      RARCH_LOG("Autoconf: best configuration score=%d\n", current_best);
+      conf = config_file_new(list->elems[index].data);
+      input_autoconfigure_joypad_add(conf, params);
+      config_file_free(conf);
+   }
+   else
+       ret = 0;
 
    string_list_free(list);
 

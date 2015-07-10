@@ -177,6 +177,16 @@ static const char *dinput_joypad_name(unsigned pad)
    return NULL;
 }
 
+static int32_t dinput_joypad_vid(unsigned pad)
+{
+    return g_pads[pad].vid;
+}
+
+static int32_t dinput_joypad_pid(unsigned pad)
+{
+    return g_pads[pad].pid;
+}
+
 static const char *dinput_joypad_friendly_name(unsigned pad)
 {
    if (pad < MAX_USERS)
@@ -220,10 +230,10 @@ static BOOL CALLBACK enum_joypad_cb(const DIDEVICEINSTANCE *inst, void *p)
 #endif
 
 
-   g_pads[g_joypad_cnt].vid = inst->guidProduct.Data1 / 0x10000;
-   g_pads[g_joypad_cnt].pid = inst->guidProduct.Data1 % 0x10000;
+   g_pads[g_joypad_cnt].vid = inst->guidProduct.Data1 % 0x10000;
+   g_pads[g_joypad_cnt].pid = inst->guidProduct.Data1 / 0x10000;
 
-   RARCH_LOG("PID: {%04lX} VID:{%04lX}\n", g_pads[g_joypad_cnt].pid, g_pads[g_joypad_cnt].vid);
+   RARCH_LOG("Device #%u PID: {%04lX} VID:{%04lX}\n", g_joypad_cnt, g_pads[g_joypad_cnt].pid, g_pads[g_joypad_cnt].vid);
 
 #ifdef HAVE_XINPUT
 #if 0
@@ -263,8 +273,9 @@ static BOOL CALLBACK enum_joypad_cb(const DIDEVICEINSTANCE *inst, void *p)
       strlcpy(params.name, dinput_joypad_name(g_joypad_cnt), sizeof(params.name));
       strlcpy(params.display_name, dinput_joypad_friendly_name(g_joypad_cnt), sizeof(params.driver));
       strlcpy(params.driver, dinput_joypad.ident, sizeof(params.driver));
+      params.vid = dinput_joypad_vid(g_joypad_cnt);
+      params.pid = dinput_joypad_pid(g_joypad_cnt);
       input_config_autoconfigure_joypad(&params);
-      RARCH_LOG("DINPUT %s %s %s\n",params.name, params.driver, params.display_name);
    }
 
 enum_iteration_done:
