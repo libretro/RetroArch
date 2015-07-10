@@ -125,7 +125,7 @@ static void input_autoconfigure_joypad_add(
    RARCH_LOG("%s\n", msg);
 }
 
-#if 0
+#if defined(HAVE_BUILTIN_AUTOCONFIG)
 static int input_autoconfigure_joypad_from_conf(
       config_file_t *conf, autoconfig_params_t *params)
 {
