@@ -271,8 +271,6 @@ typedef struct global
       bool softfilter_enable;
    } console;
 
-   uint64_t lifecycle_state;
-
    /* If this is non-NULL. RARCH_LOG and friends 
     * will write to this file. */
    FILE *log_file;

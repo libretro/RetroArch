@@ -1452,8 +1452,6 @@ void rarch_main_set_state(unsigned cmd)
          rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING_FINISHED);
          break;
       case RARCH_ACTION_STATE_FORCE_QUIT:
-         if (global)
-            global->lifecycle_state = 0;
          rarch_main_set_state(RARCH_ACTION_STATE_QUIT);
          break;
       case RARCH_ACTION_STATE_NONE:
