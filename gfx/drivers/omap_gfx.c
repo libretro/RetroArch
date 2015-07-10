@@ -920,26 +920,12 @@ static void omap_render_msg(omap_video_t *vid, const char *msg)
    }
 }
 
+/* FIXME/TODO: Filters not supported. */
 static void *omap_gfx_init(const video_info_t *video,
       const input_driver_t **input, void **input_data)
 {
-   omap_video_t *vid    = NULL;
    settings_t *settings = config_get_ptr();
-   global_t   *global   = global_get_ptr();
-
-   /* Don't support filters at the moment since they make estimations  *
-    * on the maximum used resolution difficult.
-    *
-    * TODO/FIXME -we can't have global state dependencies
-    * in video drivers, please refactor and do away with this check.
-    * */
-   if (global->filter.filter)
-   {
-      RARCH_ERR("[video_omap]: filters are not supported\n");
-      return NULL;
-   }
-
-   vid = (omap_video_t*)calloc(1, sizeof(omap_video_t));
+   omap_video_t *vid    = (omap_video_t*)calloc(1, sizeof(omap_video_t));
    if (!vid)
       return NULL;
 
