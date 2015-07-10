@@ -157,14 +157,14 @@ static bool input_autoconfigure_joypad_from_conf_dir(
    settings_t *settings = config_get_ptr();
 
    char path[PATH_MAX_LENGTH] = {0};
-   fill_pathname_join(path,settings->input.autoconfig_dir,settings->input.driver,sizeof(path));
+   fill_pathname_join(path,settings->input.autoconfig_dir,settings->input.joypad_driver,sizeof(path));
 
    struct string_list *list = settings ? dir_list_new(
          settings->input.autoconfig_dir, "cfg", false) : NULL;
 
    if (!list || !list->size)
    {
-      fill_pathname_join(path,settings->input.autoconfig_dir,settings->input.driver,sizeof(path));
+      fill_pathname_join(path,settings->input.autoconfig_dir,settings->input.joypad_driver,sizeof(path));
 
       list = settings ? dir_list_new(
             path, "cfg", false) : NULL;
