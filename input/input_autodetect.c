@@ -76,21 +76,21 @@ static int input_try_autoconfigure_joypad_from_conf(config_file_t *conf,
          && input_pid   != 0)
    {
       score += 3;
-      RARCH_LOG("Autoconf: VID/PID match score=%d\n", score);
+      //RARCH_LOG("Autoconf: VID/PID match score=%d\n", score);
    }
 
    /* Check for name match */
    if (!strcmp(ident, params->name))
    {
       score += 2;
-      RARCH_LOG("Autoconf: exact name match score=%d\n", score);
+      //RARCH_LOG("Autoconf: exact name match score=%d\n", score);
    }
    else
    {
       if (ident[0] != '\0' && !strncmp(params->name, ident, strlen(ident)))
       {
          score += 1;
-         RARCH_LOG("Autoconf: partial name match score=%d\n", score);
+         //RARCH_LOG("Autoconf: partial name match score=%d\n", score);
       }
    }
    RARCH_LOG("Autoconf: configuration score=%d\n", score);
@@ -174,6 +174,7 @@ static bool input_autoconfigure_joypad_from_conf_dir(
 
    if(index)
    {
+      RARCH_LOG("Autoconf: best configuration score=%d\n", current_best);
       conf = config_file_new(list->elems[index].data);
       input_autoconfigure_joypad_add(conf, params);
       config_file_free(conf);
