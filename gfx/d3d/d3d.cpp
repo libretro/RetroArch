@@ -20,6 +20,8 @@
 #include <xgraphics.h>
 #endif
 
+#include <formats/image.h>
+
 #include "d3d.h"
 #include "../video_viewport.h"
 #include "../video_monitor.h"
@@ -1521,7 +1523,7 @@ static bool d3d_overlay_load(void *data,
 {
    unsigned i, y;
    d3d_video_t *d3d = (d3d_video_t*)data;
-   const texture_image *images = (const texture_image*)
+   const struct texture_image *images = (const struct texture_image*)
       image_data;
 
    if (!d3d)

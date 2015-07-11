@@ -183,7 +183,7 @@ input_driver_t *input_driver_get_ptr(void)
    driver_t            *driver = driver_get_ptr();
    if (!driver)
       return NULL;
-   return driver->input_data;
+   return (input_driver_t*)driver->input_data;
 }
 
 /**
