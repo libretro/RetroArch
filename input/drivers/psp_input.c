@@ -43,7 +43,6 @@ typedef struct psp_input
 {
    bool blocked;
    const input_device_driver_t *joypad;
-   uint64_t lifecycle_state;
 } psp_input_t;
 
 static void psp_input_poll(void *data)
@@ -102,8 +101,7 @@ static bool psp_input_key_pressed(void *data, int key)
    settings_t *settings = config_get_ptr();
    psp_input_t *psp     = (psp_input_t*)data;
 
-   return (psp->lifecycle_state & (1ULL << key)) || 
-      input_joypad_pressed(psp->joypad, 0, settings->input.binds[0], key);
+   return input_joypad_pressed(psp->joypad, 0, settings->input.binds[0], key);
 }
 
 static uint64_t psp_input_get_capabilities(void *data)

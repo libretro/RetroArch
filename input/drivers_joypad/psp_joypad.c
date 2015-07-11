@@ -18,6 +18,7 @@
 
 static uint64_t pad_state;
 static int16_t analog_state[1][2][2];
+static uint64_t lifecycle_state;
 
 static const char *psp_joypad_name(unsigned pad)
 {
@@ -49,12 +50,13 @@ static bool psp_joypad_init(void *data)
    return true;
 }
 
-static bool psp_joypad_button(unsigned port_num, uint16_t joykey)
+static bool psp_joypad_button(unsigned port_num, uint16_t key)
 {
    if (port_num >= MAX_PADS)
       return false;
 
-   return (pad_state & (1ULL << joykey));
+   return (lifecycle_state & (1ULL << key)) ||
+      (pad_state & (1ULL << key));
 }
 
 static uint64_t psp_joypad_get_buttons(unsigned port_num)
@@ -112,7 +114,6 @@ static void psp_joypad_poll(void)
    int32_t ret;
    unsigned i, j;
    SceCtrlData state_tmp;
-   psp_input_t *psp          = (psp_input_t*)input_driver_get_ptr();
 
 #ifdef PSP
    sceCtrlSetSamplingCycle(0);
@@ -152,7 +153,7 @@ static void psp_joypad_poll(void)
          if (analog_state[0][i][j] == -0x8000)
             analog_state[0][i][j] = -0x7fff;
 
-   psp->lifecycle_state &= ~((1ULL << RARCH_MENU_TOGGLE));
+   lifecycle_state &= ~((1ULL << RARCH_MENU_TOGGLE));
 
 #ifdef HAVE_KERNEL_PRX
    if (STATE_BUTTON(state_tmp) & PSP_CTRL_NOTE)
@@ -164,7 +165,7 @@ static void psp_joypad_poll(void)
             && (pad_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_START))
          )
 #endif
-         psp->lifecycle_state |= (1ULL << RARCH_MENU_TOGGLE);
+         lifecycle_state |= (1ULL << RARCH_MENU_TOGGLE);
 }
 
 static bool psp_joypad_query_pad(unsigned pad)
