@@ -37,7 +37,6 @@ typedef struct gx_input
 {
    bool blocked;
    const input_device_driver_t *joypad;
-   uint64_t lifecycle_state;
 } gx_input_t;
 
 static int16_t gx_input_state(void *data, const struct retro_keybind **binds,
@@ -96,8 +95,7 @@ static bool gx_input_key_pressed(void *data, int key)
 {
    settings_t *settings = config_get_ptr();
    gx_input_t *gx       = (gx_input_t*)data;
-   return (gx->lifecycle_state & (1ULL << key)) || 
-      input_joypad_pressed(gx->joypad, 0, settings->input.binds[0], key);
+   return input_joypad_pressed(gx->joypad, 0, settings->input.binds[0], key);
 }
 
 static uint64_t gx_input_get_capabilities(void *data)

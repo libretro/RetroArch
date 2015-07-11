@@ -114,6 +114,7 @@ enum
 #define GC_JOYSTICK_THRESHOLD (48 * 256)
 #define WII_JOYSTICK_THRESHOLD (40 * 256)
 
+static uint64_t lifecycle_state;
 static uint64_t pad_state[MAX_PADS];
 static uint32_t pad_type[MAX_PADS] = { WPAD_EXP_NOCONTROLLER, WPAD_EXP_NOCONTROLLER, WPAD_EXP_NOCONTROLLER, WPAD_EXP_NOCONTROLLER };
 static int16_t analog_state[MAX_PADS][2][2];
@@ -196,11 +197,12 @@ static void handle_hotplug(unsigned port, uint32_t ptype)
    }
 }
 
-static bool gx_joypad_button(unsigned port, uint16_t joykey)
+static bool gx_joypad_button(unsigned port, uint16_t key)
 {
    if (port >= MAX_PADS)
       return false;
-   return pad_state[port] & (1ULL << joykey);
+   return (lifecycle_state & (1ULL << key)) ||
+      (pad_state[port] & (1ULL << key));
 }
 
 static uint64_t gx_joypad_get_buttons(unsigned port)
@@ -350,7 +352,6 @@ static void gx_joypad_poll(void)
 {
    unsigned i, j, port;
    uint8_t gcpad    = 0;
-   gx_input_t *gx = (gx_input_t*)input_driver_get_ptr();
 
    pad_state[0] = 0;
    pad_state[1] = 0;
@@ -541,7 +542,7 @@ static void gx_joypad_poll(void)
 
    uint64_t *state_p1        = &pad_state[0];
 
-   gx->lifecycle_state &= ~((1ULL << RARCH_MENU_TOGGLE));
+   lifecycle_state &= ~((1ULL << RARCH_MENU_TOGGLE));
 
    if (g_menu)
    {
@@ -554,7 +555,7 @@ static void gx_joypad_poll(void)
             | (1ULL << GX_CLASSIC_HOME)
 #endif
             ))
-      gx->lifecycle_state |= (1ULL << RARCH_MENU_TOGGLE);
+      lifecycle_state |= (1ULL << RARCH_MENU_TOGGLE);
 }
 
 static bool gx_joypad_init(void *data)
