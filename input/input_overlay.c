@@ -158,7 +158,6 @@ struct input_overlay
 
 static input_overlay_t *overlay_ptr;
 static input_overlay_state_t overlay_state_ptr;
-static config_file_t *overlay_conf;
 
 input_overlay_t *input_overlay_get_ptr(void)
 {
@@ -326,11 +325,15 @@ static bool input_overlay_load_desc_image(input_overlay_t *ol,
 {
    char overlay_desc_image_key[64]  = {0};
    char image_path[PATH_MAX_LENGTH] = {0};
+   config_file_t *conf      = config_file_new(ol->overlay_path);
+
+   if (!conf)
+      return false;
  
    snprintf(overlay_desc_image_key, sizeof(overlay_desc_image_key),
          "overlay%u_desc%u_overlay", ol_idx, desc_idx);
 
-   if (config_get_path(overlay_conf, overlay_desc_image_key,
+   if (config_get_path(conf, overlay_desc_image_key,
             image_path, sizeof(image_path)))
    {
       char path[PATH_MAX_LENGTH] = {0};
@@ -342,6 +345,8 @@ static bool input_overlay_load_desc_image(input_overlay_t *ol,
    }
 
    input_overlay->pos ++;
+
+   config_file_free(conf);
 
    return true;
 }
@@ -367,26 +372,30 @@ static bool input_overlay_load_desc(input_overlay_t *ol,
    const char *x                        = NULL;
    const char *y                        = NULL;
    const char *box                      = NULL;
+   config_file_t *conf      = config_file_new(ol->overlay_path);
+
+   if (!conf)
+      return false;
 
    snprintf(overlay_desc_key, sizeof(overlay_desc_key),
          "overlay%u_desc%u", ol_idx, desc_idx);
 
    snprintf(overlay_desc_normalized_key, sizeof(overlay_desc_normalized_key),
          "overlay%u_desc%u_normalized", ol_idx, desc_idx);
-   config_get_bool(overlay_conf, overlay_desc_normalized_key, &normalized);
+   config_get_bool(conf, overlay_desc_normalized_key, &normalized);
 
    by_pixel = !normalized;
 
    if (by_pixel && (width == 0 || height == 0))
    {
       RARCH_ERR("[Overlay]: Base overlay is not set and not using normalized coordinates.\n");
-      return false;
+      goto error;
    }
 
-   if (!config_get_array(overlay_conf, overlay_desc_key, overlay, sizeof(overlay)))
+   if (!config_get_array(conf, overlay_desc_key, overlay, sizeof(overlay)))
    {
       RARCH_ERR("[Overlay]: Didn't find key: %s.\n", overlay_desc_key);
-      return false;
+      goto error;
    }
 
    list = string_split(overlay, ", ");
@@ -394,14 +403,13 @@ static bool input_overlay_load_desc(input_overlay_t *ol,
    if (!list)
    {
       RARCH_ERR("[Overlay]: Failed to split overlay desc.\n");
-      return false;
+      goto error;
    }
 
    if (list->size < 6)
    {
-      string_list_free(list);
       RARCH_ERR("[Overlay]: Overlay desc is invalid. Requires at least 6 tokens.\n");
-      return false;
+      goto error;
    }
 
    key = list->elems[0].data;
@@ -445,7 +453,7 @@ static bool input_overlay_load_desc(input_overlay_t *ol,
 
                snprintf(overlay_target_key, sizeof(overlay_target_key),
                      "overlay%u_desc%u_next_target", ol_idx, desc_idx);
-               config_get_array(overlay_conf, overlay_target_key,
+               config_get_array(conf, overlay_target_key,
                      desc->next_index_name, sizeof(desc->next_index_name));
             }
          }
@@ -494,7 +502,7 @@ static bool input_overlay_load_desc(input_overlay_t *ol,
 
             snprintf(overlay_analog_saturate_key, sizeof(overlay_analog_saturate_key),
                   "overlay%u_desc%u_saturate_pct", ol_idx, desc_idx);
-            if (!config_get_float(overlay_conf, overlay_analog_saturate_key,
+            if (!config_get_float(conf, overlay_analog_saturate_key,
                      &desc->analog_saturate_pct))
                desc->analog_saturate_pct = 1.0f;
          }
@@ -516,19 +524,19 @@ static bool input_overlay_load_desc(input_overlay_t *ol,
    snprintf(conf_key, sizeof(conf_key),
          "overlay%u_desc%u_alpha_mod", ol_idx, desc_idx);
    desc->alpha_mod = alpha_mod;
-   config_get_float(overlay_conf, conf_key, &desc->alpha_mod);
+   config_get_float(conf, conf_key, &desc->alpha_mod);
 
    snprintf(conf_key, sizeof(conf_key),
          "overlay%u_desc%u_range_mod", ol_idx, desc_idx);
    desc->range_mod = range_mod;
-   config_get_float(overlay_conf, conf_key, &desc->range_mod);
+   config_get_float(conf, conf_key, &desc->range_mod);
 
    snprintf(conf_key, sizeof(conf_key),
          "overlay%u_desc%u_movable", ol_idx, desc_idx);
    desc->movable = false;
    desc->delta_x = 0.0f;
    desc->delta_y = 0.0f;
-   config_get_bool(overlay_conf, conf_key, &desc->movable);
+   config_get_bool(conf, conf_key, &desc->movable);
 
    desc->range_x_mod = desc->range_x;
    desc->range_y_mod = desc->range_y;
@@ -538,7 +546,16 @@ static bool input_overlay_load_desc(input_overlay_t *ol,
 end:
    if (list)
       string_list_free(list);
+   if (conf)
+      config_file_free(conf);
    return ret;
+
+error:
+   if (list)
+      string_list_free(list);
+   if (conf)
+      config_file_free(conf);
+   return false; 
 }
 
 static ssize_t input_overlay_find_index(const struct overlay *ol,
@@ -756,6 +773,10 @@ error:
 bool input_overlay_load_overlays(input_overlay_t *ol)
 {
    unsigned i;
+   config_file_t *conf      = config_file_new(ol->overlay_path);
+
+   if (!conf)
+      return false;
 
    for (i = 0; i < ol->pos_increment; i++, ol->pos++)
    {
@@ -779,7 +800,7 @@ bool input_overlay_load_overlays(input_overlay_t *ol)
       snprintf(overlay->config.descs.key,
             sizeof(overlay->config.descs.key), "overlay%u_descs", ol->pos);
 
-      if (!config_get_uint(overlay_conf, overlay->config.descs.key, &overlay->config.descs.size))
+      if (!config_get_uint(conf, overlay->config.descs.key, &overlay->config.descs.size))
       {
          RARCH_ERR("[Overlay]: Failed to read number of descs from config key: %s.\n",
                overlay->config.descs.key);
@@ -800,7 +821,7 @@ bool input_overlay_load_overlays(input_overlay_t *ol)
       snprintf(overlay_full_screen_key, sizeof(overlay_full_screen_key),
             "overlay%u_full_screen", ol->pos);
       overlay->full_screen = false;
-      config_get_bool(overlay_conf, overlay_full_screen_key, &overlay->full_screen);
+      config_get_bool(conf, overlay_full_screen_key, &overlay->full_screen);
 
       overlay->config.normalized = false;
       overlay->config.alpha_mod  = 1.0f;
@@ -808,13 +829,13 @@ bool input_overlay_load_overlays(input_overlay_t *ol)
 
       snprintf(conf_key, sizeof(conf_key),
             "overlay%u_normalized", ol->pos);
-      config_get_bool(overlay_conf, conf_key, &overlay->config.normalized);
+      config_get_bool(conf, conf_key, &overlay->config.normalized);
 
       snprintf(conf_key, sizeof(conf_key), "overlay%u_alpha_mod", ol->pos);
-      config_get_float(overlay_conf, conf_key, &overlay->config.alpha_mod);
+      config_get_float(conf, conf_key, &overlay->config.alpha_mod);
 
       snprintf(conf_key, sizeof(conf_key), "overlay%u_range_mod", ol->pos);
-      config_get_float(overlay_conf, conf_key, &overlay->config.range_mod);
+      config_get_float(conf, conf_key, &overlay->config.range_mod);
 
       /* Precache load image array for simplicity. */
       overlay->load_images = (struct texture_image*)
@@ -829,7 +850,7 @@ bool input_overlay_load_overlays(input_overlay_t *ol)
       snprintf(overlay->config.paths.key, sizeof(overlay->config.paths.key),
             "overlay%u_overlay", ol->pos);
 
-      config_get_path(overlay_conf, overlay->config.paths.key,
+      config_get_path(conf, overlay->config.paths.key,
                overlay->config.paths.path, sizeof(overlay->config.paths.path));
 
       if (overlay->config.paths.path[0] != '\0')
@@ -851,7 +872,7 @@ bool input_overlay_load_overlays(input_overlay_t *ol)
 
       snprintf(overlay->config.names.key, sizeof(overlay->config.names.key),
             "overlay%u_name", ol->pos);
-      config_get_array(overlay_conf, overlay->config.names.key,
+      config_get_array(conf, overlay->config.names.key,
             overlay->name, sizeof(overlay->name));
 
       /* By default, we stretch the overlay out in full. */
@@ -861,7 +882,7 @@ bool input_overlay_load_overlays(input_overlay_t *ol)
       snprintf(overlay->config.rect.key, sizeof(overlay->config.rect.key),
             "overlay%u_rect", ol->pos);
 
-      if (config_get_array(overlay_conf, overlay->config.rect.key,
+      if (config_get_array(conf, overlay->config.rect.key,
                overlay->config.rect.array, sizeof(overlay->config.rect.array)))
       {
          struct string_list *list = string_split(overlay->config.rect.array, ", ");
@@ -888,12 +909,17 @@ bool input_overlay_load_overlays(input_overlay_t *ol)
       overlay->center_y = overlay->y + 0.5f * overlay->h;
    }
 
+   if (conf)
+      config_file_free(conf);
 
    return true;
 
 error:
    ol->pos   = 0;
    ol->state = OVERLAY_STATUS_DEFERRED_ERROR;
+
+   if (conf)
+      config_file_free(conf);
 
    return false;
 }
@@ -910,16 +936,17 @@ bool input_overlay_new_done(input_overlay_t *ol)
 
    ol->state = OVERLAY_STATUS_ALIVE;
 
-   if (overlay_conf)
-      config_file_free(overlay_conf);
-   overlay_conf = NULL;
-
    return true;
 }
 
 static bool input_overlay_load_overlays_init(input_overlay_t *ol)
 {
-   if (!config_get_uint(overlay_conf, "overlays", &ol->config.overlays.size))
+   config_file_t *conf      = config_file_new(ol->overlay_path);
+
+   if (!conf)
+      return false;
+
+   if (!config_get_uint(conf, "overlays", &ol->config.overlays.size))
    {
       RARCH_ERR("overlays variable not defined in config.\n");
       goto error;
@@ -938,10 +965,15 @@ static bool input_overlay_load_overlays_init(input_overlay_t *ol)
    ol->resolve_pos   = 0;
    ol->pos_increment = (ol->size / 4) ? (ol->size / 4) : 4;
 
+   config_file_free(conf);
+
    return true;
 
 error:
    ol->state = OVERLAY_STATUS_DEFERRED_ERROR;
+
+   if (conf)
+   config_file_free(conf);
 
    return false;
 }
@@ -971,10 +1003,6 @@ input_overlay_t *input_overlay_new(const char *path, bool enable,
       return NULL;
    }
 
-   overlay_conf            = config_file_new(ol->overlay_path);
-
-   if (!overlay_conf)
-      goto error;
 
    if (!video_driver_overlay_interface(&ol->iface))
    {
@@ -1293,10 +1321,6 @@ void input_overlay_free(input_overlay_t *ol)
       return;
 
    input_overlay_free_overlays(ol);
-
-   if (overlay_conf)
-      config_file_free(overlay_conf);
-   overlay_conf = NULL;
 
    if (ol->iface)
       ol->iface->enable(ol->iface_data, false);
