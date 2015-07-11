@@ -71,7 +71,7 @@ const frontend_ctx_driver_t *frontend_ctx_find_driver(const char *ident)
 
    for (i = 0; frontend_ctx_drivers[i]; i++)
    {
-      if (strcmp(frontend_ctx_drivers[i]->ident, ident) == 0)
+      if (!strcmp(frontend_ctx_drivers[i]->ident, ident))
          return frontend_ctx_drivers[i];
    }
 
@@ -107,4 +107,14 @@ const frontend_ctx_driver_t *frontend_get_ptr(void)
       return NULL;
    return driver->frontend_ctx;
 }
+
+int frontend_driver_parse_drive_list(void *data)
+{
+   const frontend_ctx_driver_t *frontend = frontend_get_ptr();
+
+   if (!frontend || !frontend->parse_drive_list)
+      return -1;
+   return frontend->parse_drive_list(data);
+}
 #endif
+

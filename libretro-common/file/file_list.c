@@ -28,7 +28,8 @@
 
 void file_list_push(file_list_t *list,
       const char *path, const char *label,
-      unsigned type, size_t directory_ptr)
+      unsigned type, size_t directory_ptr,
+      size_t entry_idx)
 {
    if (list->size >= list->capacity)
    {
@@ -45,9 +46,11 @@ void file_list_push(file_list_t *list,
    list->list[list->size].label         = NULL;
    list->list[list->size].path          = NULL;
    list->list[list->size].alt           = NULL;
-   list->list[list->size].alt2          = NULL;
+   list->list[list->size].userdata      = NULL;
+   list->list[list->size].actiondata    = NULL;
    list->list[list->size].type          = type;
    list->list[list->size].directory_ptr = directory_ptr;
+   list->list[list->size].entry_idx     = entry_idx;
 
    if (label)
       list->list[list->size].label      = strdup(label);
@@ -62,6 +65,15 @@ size_t file_list_get_size(const file_list_t *list)
    if (!list)
       return 0;
    return list->size;
+}
+
+size_t file_list_get_entry_index(const file_list_t *list)
+{
+   size_t size = 0;
+   if (!list)
+      return 0;
+   size = file_list_get_size(list);
+   return list->list[size].entry_idx;
 }
 
 size_t file_list_get_directory_ptr(const file_list_t *list)
@@ -101,6 +113,9 @@ void file_list_free(file_list_t *list)
 
    for (i = 0; i < list->size; i++)
    {
+      file_list_free_userdata(list, i);
+      file_list_free_actiondata(list, i);
+       
       if (list->list[i].path)
          free(list->list[i].path);
       list->list[i].path = NULL;
@@ -112,10 +127,6 @@ void file_list_free(file_list_t *list)
       if (list->list[i].alt)
          free(list->list[i].alt);
       list->list[i].alt = NULL;
-
-      if (list->list[i].alt2)
-         free(list->list[i].alt2);
-      list->list[i].alt2 = NULL;
    }
    if (list->list)
       free(list->list);
@@ -144,50 +155,56 @@ void file_list_clear(file_list_t *list)
       if (list->list[i].alt)
          free(list->list[i].alt);
       list->list[i].alt = NULL;
-
-      if (list->list[i].alt2)
-         free(list->list[i].alt2);
-      list->list[i].alt2 = NULL;
    }
 
    list->size = 0;
 }
 
-void file_list_copy(file_list_t *list, file_list_t *list_old)
+void file_list_copy(const file_list_t *src, file_list_t *dst)
 {
-   size_t i;
+   struct item_file *item;
 
-   if (!list)
+   if (!src || !dst)
       return;
 
-   list_old->size = list->size;
-   list_old->capacity = list->capacity;
-
-   list_old->list = (struct item_file*)realloc(list_old->list,
-            list_old->capacity * sizeof(struct item_file));
-
-   if (!list_old->list)
-      return;
-
-   for (i = 0; i < list->size; i++)
+   if (dst->list)
    {
-      list_old->list[i].path          = NULL;
-      list_old->list[i].label         = NULL;
-      list_old->list[i].alt           = NULL;
-      list_old->list[i].alt2          = NULL;
-      list_old->list[i].type          = list->list[i].type;
-      list_old->list[i].directory_ptr = list->list[i].directory_ptr;
-      list_old->list[i].userdata      = list->list[i].userdata;
-      list_old->list[i].actiondata    = list->list[i].actiondata;
+      for (item = dst->list; item < &dst->list[dst->size]; ++item)
+      {
+         if (item->path)
+            free(item->path);
 
-      if (list->list[i].path)
-         list_old->list[i].path       = strdup(list->list[i].path);
-      if (list->list[i].label)
-         list_old->list[i].label      = strdup(list->list[i].label);
-      if (list->list[i].alt)
-         list_old->list[i].alt        = strdup(list->list[i].alt);
-      if (list->list[i].alt2)
-         list_old->list[i].alt2       = strdup(list->list[i].alt2);
+         if (item->label)
+            free(item->label);
+
+         if (item->alt)
+            free(item->alt);
+      }
+
+      free(dst->list);
+   }
+
+   dst->size     = 0;
+   dst->capacity = 0;
+   dst->list     = (struct item_file*)malloc(src->size * sizeof(struct item_file));
+
+   if (!dst->list)
+      return;
+
+   dst->size = dst->capacity = src->size;
+
+   memcpy(dst->list, src->list, dst->size * sizeof(struct item_file));
+
+   for (item = dst->list; item < &dst->list[dst->size]; ++item)
+   {
+      if (item->path)
+         item->path = strdup(item->path);
+
+      if (item->label)
+         item->label = strdup(item->label);
+
+      if (item->alt)
+         item->alt = strdup(item->alt);
    }
 }
 
@@ -200,7 +217,6 @@ void file_list_set_label_at_offset(file_list_t *list, size_t idx,
    if (list->list[idx].label)
       free(list->list[idx].label);
    list->list[idx].alt      = NULL;
-   list->list[idx].alt2      = NULL;
 
    if (label)
       list->list[idx].label = strdup(label);
@@ -229,31 +245,6 @@ void file_list_set_alt_at_offset(file_list_t *list, size_t idx,
 
    if (alt)
       list->list[idx].alt   = strdup(alt);
-}
-
-void file_list_set_alt2_at_offset(file_list_t *list, size_t idx,
-      const char *alt)
-{
-   if (!list)
-      return;
-
-   if (list->list[idx].alt2)
-      free(list->list[idx].alt2);
-   list->list[idx].alt2      = NULL;
-
-   if (alt)
-      list->list[idx].alt2   = strdup(alt);
-}
-
-void file_list_get_alt2_at_offset(const file_list_t *list, size_t idx,
-      const char **alt)
-{
-   if (!list)
-      return;
-
-   if (alt)
-      *alt = list->list[idx].alt2 ?
-         list->list[idx].alt2 : list->list[idx].path;
 }
 
 void file_list_get_alt_at_offset(const file_list_t *list, size_t idx,
@@ -305,11 +296,43 @@ void *file_list_get_userdata_at_offset(const file_list_t *list, size_t idx)
    return list->list[idx].userdata;
 }
 
+void file_list_set_userdata(const file_list_t *list, size_t idx, void *ptr)
+{
+   if (!list || !ptr)
+      return;
+   list->list[idx].userdata = ptr;
+}
+
+void file_list_set_actiondata(const file_list_t *list, size_t idx, void *ptr)
+{
+   if (!list || !ptr)
+      return;
+   list->list[idx].actiondata = ptr;
+}
+
 void *file_list_get_actiondata_at_offset(const file_list_t *list, size_t idx)
 {
    if (!list)
       return NULL;
    return list->list[idx].actiondata;
+}
+
+void file_list_free_actiondata(const file_list_t *list, size_t idx)
+{
+   if (!list)
+      return;
+   if (list->list[idx].actiondata)
+       free(list->list[idx].actiondata);
+   list->list[idx].actiondata = NULL;
+}
+
+void file_list_free_userdata(const file_list_t *list, size_t idx)
+{
+   if (!list)
+      return;
+   if (list->list[idx].userdata)
+       free(list->list[idx].userdata);
+   list->list[idx].userdata = NULL;
 }
 
 void *file_list_get_last_actiondata(const file_list_t *list)
@@ -320,7 +343,8 @@ void *file_list_get_last_actiondata(const file_list_t *list)
 }
 
 void file_list_get_at_offset(const file_list_t *list, size_t idx,
-      const char **path, const char **label, unsigned *file_type)
+      const char **path, const char **label, unsigned *file_type,
+      size_t *entry_idx)
 {
    if (!list)
       return;
@@ -331,17 +355,19 @@ void file_list_get_at_offset(const file_list_t *list, size_t idx,
       *label     = list->list[idx].label;
    if (file_type)
       *file_type = list->list[idx].type;
+   if (entry_idx)
+      *entry_idx = list->list[idx].entry_idx;
 }
 
 void file_list_get_last(const file_list_t *list,
       const char **path, const char **label,
-      unsigned *file_type)
+      unsigned *file_type, size_t *entry_idx)
 {
    if (!list)
       return;
 
    if (list->size)
-      file_list_get_at_offset(list, list->size - 1, path, label, file_type);
+      file_list_get_at_offset(list, list->size - 1, path, label, file_type, entry_idx);
 }
 
 bool file_list_search(const file_list_t *list, const char *needle, size_t *idx)

@@ -298,7 +298,7 @@ uintptr_t video_driver_get_current_framebuffer(void)
 
 uint64_t video_driver_get_frame_count(void)
 {
-   static bool warn_once = true;
+   static bool              warn_once = true;
    driver_t                   *driver = driver_get_ptr();
    const video_poke_interface_t *poke = video_driver_get_poke_ptr();
 
@@ -326,7 +326,7 @@ retro_proc_address_t video_driver_get_proc_address(const char *sym)
 
 bool video_driver_is_alive(void)
 {
-   driver_t *driver = driver_get_ptr();
+   driver_t            *driver = driver_get_ptr();
    const video_driver_t *video = video_driver_ctx_get_ptr();
 
    return video->alive(driver->video_data);
@@ -334,7 +334,7 @@ bool video_driver_is_alive(void)
 
 bool video_driver_has_focus(void)
 {
-   driver_t *driver = driver_get_ptr();
+   driver_t            *driver = driver_get_ptr();
    const video_driver_t *video = video_driver_ctx_get_ptr();
 
    return video->focus(driver->video_data);
@@ -343,7 +343,7 @@ bool video_driver_has_focus(void)
 bool video_driver_set_shader(enum rarch_shader_type type,
       const char *path)
 {
-   driver_t *driver = driver_get_ptr();
+   driver_t            *driver = driver_get_ptr();
    const video_driver_t *video = video_driver_ctx_get_ptr();
 
    if (video->set_shader)
@@ -487,8 +487,8 @@ void init_video(void)
    video_info_t video               = {0};
    static uint16_t dummy_pixels[32] = {0};
    driver_t *driver                 = driver_get_ptr();
-   global_t *global                 = global_get_ptr();
    settings_t *settings             = config_get_ptr();
+   rarch_system_info_t *system      = rarch_system_info_get_ptr();
    struct retro_system_av_info *av_info = 
       video_viewport_get_system_av_info();
 
@@ -560,7 +560,7 @@ void init_video(void)
    video.width        = width;
    video.height       = height;
    video.fullscreen   = settings->video.fullscreen;
-   video.vsync        = settings->video.vsync && !global->system.force_nonblock;
+   video.vsync        = settings->video.vsync && !system->force_nonblock;
    video.force_aspect = settings->video.force_aspect;
 #ifdef GEKKO
    video.viwidth      = settings->video.viwidth;
@@ -615,7 +615,7 @@ void init_video(void)
    }
 
    video_driver_set_rotation(
-            (settings->video.rotation + global->system.rotation) % 4);
+            (settings->video.rotation + system->rotation) % 4);
 
    video_driver_suppress_screensaver(settings->ui.suspend_screensaver_enable);
 
@@ -926,11 +926,11 @@ void video_driver_cached_frame_set(const void *data, unsigned width,
    video_state.frame_cache.pitch  = pitch;
 }
 
-void video_driver_cached_frame_get(const void *data, unsigned *width,
+void video_driver_cached_frame_get(const void **data, unsigned *width,
       unsigned *height, size_t *pitch)
 {
    if (data)
-      data    = video_state.frame_cache.data;
+      *data    = video_state.frame_cache.data;
    if (width)
       *width  = video_state.frame_cache.width;
    if (height)
@@ -964,10 +964,10 @@ void video_monitor_adjust_system_rates(void)
    struct retro_system_av_info *av_info = 
       video_viewport_get_system_av_info();
    settings_t *settings = config_get_ptr();
-   global_t *global = global_get_ptr();
+   rarch_system_info_t *system = rarch_system_info_get_ptr();
 
-   if (global)
-      global->system.force_nonblock = false;
+   if (system)
+      system->force_nonblock = false;
 
    if  (av_info)
       info = (const struct retro_system_timing*)&av_info->timing;
@@ -990,7 +990,7 @@ void video_monitor_adjust_system_rates(void)
       return;
 
    /* We won't be able to do VSync reliably when game FPS > monitor FPS. */
-   global->system.force_nonblock = true;
+   system->force_nonblock = true;
    RARCH_LOG("Game FPS > Monitor FPS. Cannot rely on VSync.\n");
 }
 
@@ -1132,8 +1132,8 @@ bool video_monitor_get_fps(char *buf, size_t size,
    retro_time_t        new_time;
    static retro_time_t curr_time;
    static retro_time_t fps_time;
-   uint64_t frame_count = video_driver_get_frame_count();
-   global_t  *global    = global_get_ptr();
+   uint64_t        frame_count = video_driver_get_frame_count();
+   rarch_system_info_t *system = rarch_system_info_get_ptr();
 
    *buf = '\0';
 
@@ -1154,7 +1154,7 @@ bool video_monitor_get_fps(char *buf, size_t size,
          curr_time = new_time;
 
          snprintf(buf, size, "%s || FPS: %6.1f || Frames: " U64_SIGN,
-               global->title_buf, last_fps, (unsigned long long)frame_count);
+               system->title_buf, last_fps, (unsigned long long)frame_count);
          ret = true;
       }
 
@@ -1166,7 +1166,7 @@ bool video_monitor_get_fps(char *buf, size_t size,
    }
 
    curr_time = fps_time = new_time;
-   strlcpy(buf, global->title_buf, size);
+   strlcpy(buf, system->title_buf, size);
    if (buf_fps)
       strlcpy(buf_fps, "N/A", size_fps);
 

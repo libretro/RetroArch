@@ -77,8 +77,8 @@ const char* config_get_hid_driver_options(void)
 {
    union string_list_elem_attr attr;
    unsigned i;
-   char *options = NULL;
-   int options_len = 0;
+   char                 *options = NULL;
+   int               options_len = 0;
    struct string_list *options_l = string_list_new();
 
    attr.i = 0;
@@ -89,6 +89,7 @@ const char* config_get_hid_driver_options(void)
    for (i = 0; hid_drivers[i]; i++)
    {
       const char *opt = hid_drivers[i]->ident;
+
       options_len += strlen(opt) + 1;
       string_list_append(options_l, opt, attr);
    }

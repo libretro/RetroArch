@@ -59,6 +59,14 @@
 
 #include "../video_shader_driver.h"
 
+#ifndef GL_SYNC_GPU_COMMANDS_COMPLETE
+#define GL_SYNC_GPU_COMMANDS_COMPLETE     0x9117
+#endif
+
+#ifndef GL_SYNC_FLUSH_COMMANDS_BIT
+#define GL_SYNC_FLUSH_COMMANDS_BIT        0x00000001
+#endif
+
 /* Used for the last pass when rendering to the back buffer. */
 static const GLfloat vertexes_flipped[] = {
    0, 1,
@@ -205,10 +213,10 @@ static bool gl_check_fbo_proc(gl_t *gl)
 static bool gl_shader_init(gl_t *gl)
 {
    enum rarch_shader_type type;
-   bool ret = false;
+   bool ret                        = false;
    const shader_backend_t *backend = NULL;
-   settings_t *settings = config_get_ptr();
-   const char *shader_path = (settings->video.shader_enable && *settings->video.shader_path) ?
+   settings_t *settings            = config_get_ptr();
+   const char *shader_path         = (settings->video.shader_enable && *settings->video.shader_path) ?
       settings->video.shader_path : NULL;
 
 
@@ -973,7 +981,7 @@ static void gl_frame_fbo(gl_t *gl, uint64_t frame_count,
    const struct gl_fbo_rect *prev_rect;
    const struct gl_fbo_rect *rect;
    struct gl_tex_info *fbo_info;
-   struct gl_tex_info fbo_tex_info[MAX_SHADERS];
+   struct gl_tex_info fbo_tex_info[GFX_MAX_SHADERS];
    int i;
    GLfloat xamt, yamt;
    unsigned fbo_tex_info_cnt = 0;
@@ -1362,37 +1370,41 @@ static INLINE void gl_copy_frame(gl_t *gl, const void *frame,
       }
    }
 #elif defined(HAVE_PSGL)
-   unsigned h;
-   size_t buffer_addr        = gl->tex_w * gl->tex_h * gl->tex_index * gl->base_size;
-   size_t buffer_stride      = gl->tex_w * gl->base_size;
-   const uint8_t *frame_copy = frame;
-   size_t frame_copy_size    = width * gl->base_size;
-
-   uint8_t *buffer = (uint8_t*)glMapBuffer(
-         GL_TEXTURE_REFERENCE_BUFFER_SCE, GL_READ_WRITE) + buffer_addr;
-   for (h = 0; h < height; h++, buffer += buffer_stride, frame_copy += pitch)
-      memcpy(buffer, frame_copy, frame_copy_size);
-
-   glUnmapBuffer(GL_TEXTURE_REFERENCE_BUFFER_SCE);
-#else
-   const GLvoid *data_buf = frame;
-   glPixelStorei(GL_UNPACK_ALIGNMENT, video_pixel_get_alignment(pitch));
-
-   if (gl->base_size == 2 && !gl->have_es2_compat)
    {
-      /* Convert to 32-bit textures on desktop GL. */
-      gl_convert_frame_rgb16_32(gl, gl->conv_buffer,
-            frame, width, height, pitch);
-      data_buf = gl->conv_buffer;
+      unsigned h;
+      size_t buffer_addr        = gl->tex_w * gl->tex_h * gl->tex_index * gl->base_size;
+      size_t buffer_stride      = gl->tex_w * gl->base_size;
+      const uint8_t *frame_copy = frame;
+      size_t frame_copy_size    = width * gl->base_size;
+
+      uint8_t *buffer = (uint8_t*)glMapBuffer(
+            GL_TEXTURE_REFERENCE_BUFFER_SCE, GL_READ_WRITE) + buffer_addr;
+      for (h = 0; h < height; h++, buffer += buffer_stride, frame_copy += pitch)
+         memcpy(buffer, frame_copy, frame_copy_size);
+
+      glUnmapBuffer(GL_TEXTURE_REFERENCE_BUFFER_SCE);
    }
-   else
-      glPixelStorei(GL_UNPACK_ROW_LENGTH, pitch / gl->base_size);
+#else
+   {
+      const GLvoid *data_buf = frame;
+      glPixelStorei(GL_UNPACK_ALIGNMENT, video_pixel_get_alignment(pitch));
 
-   glTexSubImage2D(GL_TEXTURE_2D,
-         0, 0, 0, width, height, gl->texture_type,
-         gl->texture_fmt, data_buf);
+      if (gl->base_size == 2 && !gl->have_es2_compat)
+      {
+         /* Convert to 32-bit textures on desktop GL. */
+         gl_convert_frame_rgb16_32(gl, gl->conv_buffer,
+               frame, width, height, pitch);
+         data_buf = gl->conv_buffer;
+      }
+      else
+         glPixelStorei(GL_UNPACK_ROW_LENGTH, pitch / gl->base_size);
 
-   glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+      glTexSubImage2D(GL_TEXTURE_2D,
+            0, 0, 0, width, height, gl->texture_type,
+            gl->texture_fmt, data_buf);
+
+      glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+   }
 #endif
    RARCH_PERFORMANCE_STOP(copy_frame);
 }
@@ -1453,13 +1465,25 @@ static void gl_pbo_async_readback(gl_t *gl)
 static INLINE void gl_draw_texture(gl_t *gl)
 {
    unsigned width, height;
+   GLfloat color[16];
 
-   const GLfloat color[] = {
-      1.0f, 1.0f, 1.0f, gl->menu_texture_alpha,
-      1.0f, 1.0f, 1.0f, gl->menu_texture_alpha,
-      1.0f, 1.0f, 1.0f, gl->menu_texture_alpha,
-      1.0f, 1.0f, 1.0f, gl->menu_texture_alpha,
-   };
+   color[ 0] = 1.0f;
+   color[ 1] = 1.0f;
+   color[ 2] = 1.0f;
+   color[ 3] = gl->menu_texture_alpha;
+   color[ 4] = 1.0f;
+   color[ 5] = 1.0f;
+   color[ 6] = 1.0f;
+   color[ 7] = gl->menu_texture_alpha;
+   color[ 8] = 1.0f;
+   color[ 9] = 1.0f;
+   color[10] = 1.0f;
+   color[11] = gl->menu_texture_alpha;
+   color[12] = 1.0f;
+   color[13] = 1.0f;
+   color[14] = 1.0f;
+   color[15] = gl->menu_texture_alpha;
+
    if (!gl->menu_texture)
       return;
 
@@ -1631,11 +1655,14 @@ static bool gl_frame(void *data, const void *frame,
    gl_set_prev_texture(gl, &gl->tex_info);
 
 #if defined(HAVE_MENU)
-   if (menu_driver_alive())
-      menu_driver_frame();
-
    if (gl->menu_texture_enable)
-      gl_draw_texture(gl);
+   {
+      if (menu_driver_alive())
+         menu_driver_frame();
+
+      if (gl->menu_texture_enable)
+         gl_draw_texture(gl);
+   }
 #endif
 
    if (msg && driver->font_osd_driver && driver->font_osd_data)
@@ -2134,8 +2161,9 @@ static void DEBUG_CALLBACK_TYPE gl_debug_cb(GLenum source, GLenum type,
       GLuint id, GLenum severity, GLsizei length,
       const GLchar *message, void *userParam)
 {
-   const char *src, *typestr;
-   gl_t *gl = (gl_t*)userParam; /* Useful for debugger. */
+   const char      *src = NULL;
+   const char **typestr = NULL;
+   gl_t             *gl = (gl_t*)userParam; /* Useful for debugger. */
 
    (void)gl;
    (void)id;
@@ -2630,7 +2658,7 @@ static bool gl_set_shader(void *data,
    {
       unsigned textures = gl->shader->get_prev_textures() + 1;
 
-      if (textures > gl->textures) // Have to reinit a bit.
+      if (textures > gl->textures) /* Have to reinit a bit. */
       {
 #if defined(HAVE_FBO)
          gl_deinit_hw_render(gl);
@@ -2872,10 +2900,12 @@ unsigned *height_p, size_t *pitch_p)
 #ifdef HAVE_OVERLAY
 static void gl_free_overlay(gl_t *gl);
 static bool gl_overlay_load(void *data, 
-      const struct texture_image *images, unsigned num_images)
+      const void *image_data, unsigned num_images)
 {
    unsigned i, j;
    gl_t *gl = (gl_t*)data;
+   const struct texture_image *images = 
+      (const struct texture_image*)image_data;
 
    if (!gl)
       return false;

@@ -55,7 +55,7 @@ static void xdk_joypad_autodetect_add(unsigned autoconf_pad)
    input_config_autoconfigure_joypad(&params);
 }
 
-static bool xdk_joypad_init(void)
+static bool xdk_joypad_init(void *data)
 {
 #ifdef _XBOX1
    XInitDevices(0, NULL);
@@ -65,6 +65,7 @@ static bool xdk_joypad_init(void)
       xdk_joypad_autodetect_add(autoconf_pad);
 #endif
 
+   (void)data;
 
    return true;
 }
@@ -134,9 +135,6 @@ static void xdk_joypad_poll(void)
 #ifdef _XBOX1
    unsigned int dwInsertions, dwRemovals;
 #endif
-   uint64_t *state_p1        = NULL;
-   uint64_t *lifecycle_state = NULL;
-   global_t *global          = global_get_ptr();
 
 #if defined(_XBOX1)
    XGetDeviceChanges(XDEVICE_TYPE_GAMEPAD,
@@ -164,10 +162,7 @@ static void xdk_joypad_poll(void)
          gamepads[port] = 0;
          pad_state[port] = 0;
 
-         char msg[512];
-         snprintf(msg, sizeof(msg), "Device #%u (%s) disconnected.", port, xdk_joypad.ident);
-         rarch_main_msg_queue_push(msg, 0, 60, false);
-         RARCH_LOG("%s\n", msg);
+         input_config_autoconfigure_disconnect(port, xdk_joypad.ident);
       }
 
       /* handle inserted devices. */
@@ -249,14 +244,6 @@ static void xdk_joypad_poll(void)
             if (analog_state[port][i][j] == -0x8000)
                analog_state[port][i][j] = -0x7fff;
    }
-
-   state_p1 = &pad_state[0];
-   lifecycle_state = &global->lifecycle_state;
-
-   *lifecycle_state &= ~((1ULL << RARCH_MENU_TOGGLE));
-
-   if((*state_p1 & (1ULL << RETRO_DEVICE_ID_JOYPAD_L3)) && (*state_p1 & (1ULL << RETRO_DEVICE_ID_JOYPAD_R3)))
-      *lifecycle_state |= (1ULL << RARCH_MENU_TOGGLE);
 }
 
 static bool xdk_joypad_query_pad(unsigned pad)

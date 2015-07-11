@@ -28,7 +28,7 @@ enum png_process_code
    PNG_PROCESS_ERROR     = -2,
    PNG_PROCESS_ERROR_END = -1,
    PNG_PROCESS_NEXT      =  0,
-   PNG_PROCESS_END       =  1,
+   PNG_PROCESS_END       =  1
 };
 
 enum png_chunk_type png_chunk_type(const struct png_chunk *chunk);

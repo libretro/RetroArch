@@ -15,24 +15,129 @@
 
 #include <string.h>
 
+#include <file/nbio.h>
+#include <formats/image.h>
+#include <formats/rpng.h>
+#include <compat/strl.h>
 #include <retro_miscellaneous.h>
 #include <queues/message_queue.h>
 #include <string/string_list.h>
-#include <compat/strl.h>
+#include <rhash.h>
 
-#include "../runloop_data.h"
 #include "tasks.h"
+
+#define CB_MENU_WALLPAPER     0xb476e505U
+#define CB_MENU_BOXART        0x68b307cdU
+
+enum nbio_image_status_enum
+{
+   NBIO_IMAGE_STATUS_POLL = 0,
+   NBIO_IMAGE_STATUS_TRANSFER,
+   NBIO_IMAGE_STATUS_TRANSFER_PARSE,
+   NBIO_IMAGE_STATUS_PROCESS_TRANSFER,
+   NBIO_IMAGE_STATUS_PROCESS_TRANSFER_PARSE,
+   NBIO_IMAGE_STATUS_TRANSFER_PARSE_FREE
+};
+
+enum nbio_status_enum
+{
+   NBIO_STATUS_POLL = 0,
+   NBIO_STATUS_TRANSFER,
+   NBIO_STATUS_TRANSFER_PARSE,
+   NBIO_STATUS_TRANSFER_PARSE_FREE
+};
+
+typedef struct nbio_image_handle
+{
+   struct texture_image ti;
+   bool is_blocking;
+   bool is_blocking_on_processing;
+   bool is_finished;
+   transfer_cb_t  cb;
+#ifdef HAVE_RPNG
+   struct rpng_t *handle;
+#endif
+   unsigned processing_pos_increment;
+   unsigned pos_increment;
+   uint64_t frame_count;
+   uint64_t processing_frame_count;
+   int processing_final_state;
+   msg_queue_t *msg_queue;
+   unsigned status;
+} nbio_image_handle_t;
+
+typedef struct nbio_handle
+{
+   nbio_image_handle_t image;
+   bool is_finished;
+   transfer_cb_t  cb;
+   struct nbio_t *handle;
+   unsigned pos_increment;
+   uint64_t frame_count;
+   msg_queue_t *msg_queue;
+   unsigned status;
+} nbio_handle_t;
+
+static nbio_handle_t *nbio_ptr;
+
+void *rarch_main_data_nbio_get_ptr(void)
+{
+   return nbio_ptr;
+}
+
+msg_queue_t *rarch_main_data_nbio_get_msg_queue_ptr(void)
+{
+   nbio_handle_t         *nbio  = (nbio_handle_t*)
+      rarch_main_data_nbio_get_ptr();
+   if (!nbio)
+      return NULL;
+   return nbio->msg_queue;
+}
+
+void *rarch_main_data_nbio_get_handle(void)
+{
+   nbio_handle_t         *nbio  = (nbio_handle_t*)
+      rarch_main_data_nbio_get_ptr();
+   if (!nbio)
+      return NULL;
+   return nbio->handle;
+}
+
+msg_queue_t *rarch_main_data_nbio_image_get_msg_queue_ptr(void)
+{
+   nbio_handle_t         *nbio  = (nbio_handle_t*)
+      rarch_main_data_nbio_get_ptr();
+   if (!nbio)
+      return NULL;
+#ifdef HAVE_RPNG
+   return nbio->image.msg_queue;
+#else
+   return NULL;
+#endif
+}
+
+void *rarch_main_data_nbio_image_get_handle(void)
+{
+   nbio_handle_t         *nbio  = (nbio_handle_t*)
+      rarch_main_data_nbio_get_ptr();
+   if (!nbio)
+      return NULL;
+#ifdef HAVE_RPNG
+   return nbio->image.handle;
+#else
+   return NULL;
+#endif
+}
 
 #ifdef HAVE_MENU
 #include "../menu/menu_driver.h"
 
 #ifdef HAVE_RPNG
-static int cb_image_menu_wallpaper_upload(void *data, size_t len)
+static int cb_image_menu_upload_generic(nbio_handle_t *nbio)
 {
    unsigned r_shift, g_shift, b_shift, a_shift;
-   nbio_handle_t *nbio = (nbio_handle_t*)data; 
 
-   if (!nbio || !data)
+   if (!nbio)
       return -1;
 
    if (nbio->image.processing_final_state == IMAGE_PROCESS_ERROR ||
@@ -45,10 +150,6 @@ static int cb_image_menu_wallpaper_upload(void *data, size_t len)
    texture_image_color_convert(r_shift, g_shift, b_shift,
          a_shift, &nbio->image.ti);
 
-   menu_driver_load_background(&nbio->image.ti);
-
-   texture_image_free(&nbio->image.ti);
-
    nbio->image.is_blocking_on_processing         = false;
    nbio->image.is_blocking                       = true;
    nbio->image.is_finished                       = true;
@@ -57,12 +158,39 @@ static int cb_image_menu_wallpaper_upload(void *data, size_t len)
    return 0;
 }
 
-static int cb_image_menu_wallpaper(void *data, size_t len)
+static int cb_image_menu_wallpaper_upload(void *data, size_t len)
 {
-   int retval;
    nbio_handle_t *nbio = (nbio_handle_t*)data; 
 
-   if (!nbio || !data)
+   if (cb_image_menu_upload_generic(nbio) != 0)
+      return -1;
+
+   menu_driver_load_image(&nbio->image.ti, MENU_IMAGE_WALLPAPER);
+
+   texture_image_free(&nbio->image.ti);
+
+   return 0;
+}
+
+static int cb_image_menu_boxart_upload(void *data, size_t len)
+{
+   nbio_handle_t *nbio = (nbio_handle_t*)data; 
+
+   if (cb_image_menu_upload_generic(nbio) != 0)
+      return -1;
+
+   menu_driver_load_image(&nbio->image.ti, MENU_IMAGE_BOXART);
+
+   texture_image_free(&nbio->image.ti);
+
+   return 0;
+}
+
+static int cb_image_menu_generic(nbio_handle_t *nbio)
+{
+   unsigned width, height;
+   int retval;
+   if (!nbio)
       return -1;
 
    if (  !nbio->image.handle->has_ihdr || 
@@ -71,15 +199,40 @@ static int cb_image_menu_wallpaper(void *data, size_t len)
       return -1;
 
    retval = rpng_nbio_load_image_argb_process(nbio->image.handle,
-         &nbio->image.ti.pixels, &nbio->image.ti.width, &nbio->image.ti.height);
+         &nbio->image.ti.pixels, &width, &height);
+
+   nbio->image.ti.width  = width;
+   nbio->image.ti.height = height;
 
    if (retval == IMAGE_PROCESS_ERROR || retval == IMAGE_PROCESS_ERROR_END)
       return -1;
 
-   nbio->image.cb = &cb_image_menu_wallpaper_upload;
-
    nbio->image.is_blocking_on_processing         = true;
    nbio->image.is_finished                       = false;
+
+   return 0;
+}
+
+static int cb_image_menu_wallpaper(void *data, size_t len)
+{
+   nbio_handle_t *nbio = (nbio_handle_t*)data; 
+
+   if (cb_image_menu_generic(nbio) != 0)
+      return -1;
+
+   nbio->image.cb = &cb_image_menu_wallpaper_upload;
+
+   return 0;
+}
+
+static int cb_image_menu_boxart(void *data, size_t len)
+{
+   nbio_handle_t *nbio = (nbio_handle_t*)data; 
+
+   if (cb_image_menu_generic(nbio) != 0)
+      return -1;
+
+   nbio->image.cb = &cb_image_menu_boxart_upload;
 
    return 0;
 }
@@ -138,7 +291,7 @@ error:
 
 static int rarch_main_data_image_iterate_process_transfer(nbio_handle_t *nbio)
 {
-   unsigned i;
+   unsigned i, width, height;
    int retval = 0;
 
    if (!nbio)
@@ -147,7 +300,10 @@ static int rarch_main_data_image_iterate_process_transfer(nbio_handle_t *nbio)
    for (i = 0; i < nbio->image.processing_pos_increment; i++)
    {
       retval = rpng_nbio_load_image_argb_process(nbio->image.handle,
-            &nbio->image.ti.pixels, &nbio->image.ti.width, &nbio->image.ti.height);
+            &nbio->image.ti.pixels, &width, &height);
+
+      nbio->image.ti.width  = width;
+      nbio->image.ti.height = height;
 
       if (retval != IMAGE_PROCESS_NEXT)
          break;
@@ -196,10 +352,10 @@ static int rarch_main_data_image_iterate_transfer_parse(nbio_handle_t *nbio)
    return 0;
 }
 
-void rarch_main_data_nbio_image_iterate(bool is_thread, void *data)
+void rarch_main_data_nbio_image_iterate(bool is_thread)
 {
-   data_runloop_t      *runloop = (data_runloop_t*)data;
-   nbio_handle_t         *nbio  = runloop ? &runloop->nbio : NULL;
+   nbio_handle_t         *nbio  = (nbio_handle_t*)
+      rarch_main_data_nbio_get_ptr();
    nbio_image_handle_t   *image = nbio    ? &nbio->image   : NULL;
 
    if (!image || !nbio)
@@ -231,14 +387,13 @@ void rarch_main_data_nbio_image_iterate(bool is_thread, void *data)
    }
 }
 
-void rarch_main_data_nbio_image_upload_iterate(bool is_thread,
-      void *data)
+void rarch_main_data_nbio_image_upload_iterate(bool is_thread)
 {
-   data_runloop_t     *runloop  = (data_runloop_t*)data;
-   nbio_handle_t         *nbio  = runloop ? &runloop->nbio : NULL;
+   nbio_handle_t         *nbio  = (nbio_handle_t*)
+      rarch_main_data_nbio_get_ptr();
    nbio_image_handle_t   *image = nbio    ? &nbio->image   : NULL;
 
-   if (!image || !nbio || !runloop)
+   if (!image || !nbio)
       return;
 
    (void)is_thread;
@@ -275,16 +430,9 @@ static int cb_nbio_default(void *data, size_t len)
 }
 
 #ifdef HAVE_RPNG
-static int cb_nbio_image_menu_wallpaper(void *data, size_t len)
+static int cb_nbio_generic(nbio_handle_t *nbio, size_t *len)
 {
    void *ptr           = NULL;
-   nbio_handle_t *nbio = (nbio_handle_t*)data; 
-
-   if (!nbio || !data)
-      return -1;
-   
-   nbio->image.handle = (struct rpng_t*)calloc(1, sizeof(struct rpng_t));
-   nbio->image.cb     = &cb_image_menu_wallpaper;
 
    if (!nbio->image.handle)
    {
@@ -292,11 +440,11 @@ static int cb_nbio_image_menu_wallpaper(void *data, size_t len)
       return -1;
    }
 
-   ptr = nbio_get_ptr(nbio->handle, &len);
+   ptr = nbio_get_ptr(nbio->handle, len);
 
    if (!ptr)
    {
-      free(nbio->image.handle);
+      rpng_nbio_load_image_free(nbio->image.handle);
       nbio->image.handle = NULL;
       nbio->image.cb     = NULL;
 
@@ -304,8 +452,8 @@ static int cb_nbio_image_menu_wallpaper(void *data, size_t len)
    }
 
    nbio->image.handle->buff_data        = (uint8_t*)ptr;
-   nbio->image.pos_increment            = (len / 2) ? (len / 2) : 1;
-   nbio->image.processing_pos_increment = (len / 4) ? (len / 4) : 1;
+   nbio->image.pos_increment            = (*len / 2) ? (*len / 2) : 1;
+   nbio->image.processing_pos_increment = (*len / 4) ?  (*len / 4) : 1;
 
    if (!rpng_nbio_load_image_argb_start(nbio->image.handle))
    {
@@ -319,11 +467,38 @@ static int cb_nbio_image_menu_wallpaper(void *data, size_t len)
 
    return 0;
 }
+
+static int cb_nbio_image_menu_wallpaper(void *data, size_t len)
+{
+   nbio_handle_t *nbio = (nbio_handle_t*)data; 
+
+   if (!nbio || !data)
+      return -1;
+   
+   nbio->image.handle = (struct rpng_t*)calloc(1, sizeof(struct rpng_t));
+   nbio->image.cb     = &cb_image_menu_wallpaper;
+
+   return cb_nbio_generic(nbio, &len);
+}
+
+static int cb_nbio_image_menu_boxart(void *data, size_t len)
+{
+   nbio_handle_t *nbio = (nbio_handle_t*)data; 
+
+   if (!nbio || !data)
+      return -1;
+   
+   nbio->image.handle = (struct rpng_t*)calloc(1, sizeof(struct rpng_t));
+   nbio->image.cb     = &cb_image_menu_boxart;
+
+   return cb_nbio_generic(nbio, &len);
+}
 #endif
 
 static int rarch_main_data_nbio_iterate_poll(nbio_handle_t *nbio)
 {
-   char elem0[PATH_MAX_LENGTH], elem1[PATH_MAX_LENGTH];
+   char elem0[PATH_MAX_LENGTH]  = {0};
+   uint32_t cb_type_hash        = 0;
    struct nbio_t* handle        = NULL;
    struct string_list *str_list = NULL;
    const char *path             = NULL;
@@ -346,9 +521,24 @@ static int rarch_main_data_nbio_iterate_poll(nbio_handle_t *nbio)
       goto error;
 
    if (str_list->size > 0)
+   {
+      unsigned elem0_hash = 0;
       strlcpy(elem0, str_list->elems[0].data, sizeof(elem0));
+      elem0_hash = djb2_calculate(elem0);
+
+      /* TODO/FIXME - should be able to deal with this
+       * in a better way. */
+      switch(elem0_hash)
+      {
+         case CB_MENU_WALLPAPER:
+         case CB_MENU_BOXART:
+            goto error;
+         default:
+            break;
+      }
+   }
    if (str_list->size > 1)
-      strlcpy(elem1, str_list->elems[1].data, sizeof(elem1));
+      cb_type_hash = djb2_calculate(str_list->elems[1].data);
 
    handle = nbio_open(elem0, NBIO_READ);
 
@@ -362,11 +552,15 @@ static int rarch_main_data_nbio_iterate_poll(nbio_handle_t *nbio)
    nbio->is_finished = false;
    nbio->cb          = &cb_nbio_default;
 
-   if (elem1[0] != '\0')
+   switch (cb_type_hash)
    {
 #if defined(HAVE_MENU) && defined(HAVE_RPNG)
-      if (!strcmp(elem1, "cb_menu_wallpaper"))
+      case CB_MENU_WALLPAPER:
          nbio->cb = &cb_nbio_image_menu_wallpaper;
+         break;
+      case CB_MENU_BOXART:
+         nbio->cb = &cb_nbio_image_menu_boxart;
+         break;
 #endif
    }
 
@@ -408,9 +602,7 @@ static int rarch_main_data_nbio_iterate_transfer(nbio_handle_t *nbio)
 
 static int rarch_main_data_nbio_iterate_parse_free(nbio_handle_t *nbio)
 {
-   if (!nbio)
-      return -1;
-   if (!nbio->is_finished)
+   if (!nbio || !nbio->is_finished)
       return -1;
 
    nbio_free(nbio->handle);
@@ -436,11 +628,11 @@ static int rarch_main_data_nbio_iterate_parse(nbio_handle_t *nbio)
    return 0;
 }
 
-void rarch_main_data_nbio_iterate(bool is_thread, void *data)
+void rarch_main_data_nbio_iterate(bool is_thread)
 {
-   data_runloop_t      *runloop = (data_runloop_t*)data;
-   nbio_handle_t          *nbio = runloop ? &runloop->nbio : NULL;
-   if (!nbio || !runloop)
+   nbio_handle_t         *nbio  = (nbio_handle_t*)
+      rarch_main_data_nbio_get_ptr();
+   if (!nbio)
       return;
 
    switch (nbio->status)
@@ -463,4 +655,29 @@ void rarch_main_data_nbio_iterate(bool is_thread, void *data)
             nbio->status = NBIO_STATUS_TRANSFER;
          break;
    }
+}
+
+void rarch_main_data_nbio_init_msg_queue(void)
+{
+   nbio_handle_t         *nbio  = (nbio_handle_t*)
+      rarch_main_data_nbio_get_ptr();
+   if (!nbio)
+      return;
+
+   if (!nbio->msg_queue)
+      rarch_assert(nbio->msg_queue       = msg_queue_new(8));
+   if (!nbio->image.msg_queue)
+      rarch_assert(nbio->image.msg_queue = msg_queue_new(8));
+}
+
+void rarch_main_data_nbio_uninit(void)
+{
+   if (nbio_ptr)
+      free(nbio_ptr);
+   nbio_ptr = NULL;
+}
+
+void rarch_main_data_nbio_init(void)
+{
+   nbio_ptr              = (nbio_handle_t*)calloc(1, sizeof(*nbio_ptr));
 }

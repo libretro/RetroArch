@@ -24,6 +24,7 @@
 #include <formats/image.h>
 #include "../video_context_driver.h"
 #include "../video_shader_driver.h"
+#include "../video_shader_parse.h"
 #include <retro_inline.h>
 
 #ifdef HAVE_CONFIG_H
@@ -41,7 +42,9 @@
 
 
 #if (!defined(HAVE_OPENGLES) || defined(HAVE_OPENGLES3))
+#ifdef GL_PIXEL_PACK_BUFFER
 #define HAVE_GL_ASYNC_READBACK
+#endif
 #endif
 
 #if defined(HAVE_PSGL)
@@ -98,14 +101,6 @@
 #define GL_RGBA32F GL_RGBA32F_ARB
 #endif
 
-#endif
-
-#ifndef MAX_SHADERS
-#define MAX_SHADERS 16
-#endif
-
-#ifndef MAX_TEXTURES
-#define MAX_TEXTURES 8
 #endif
 
 #if defined(HAVE_PSGL)
@@ -249,11 +244,11 @@ typedef struct gl
    const shader_backend_t *shader;
 
    bool vsync;
-   GLuint texture[MAX_TEXTURES];
+   GLuint texture[GFX_MAX_TEXTURES];
    unsigned tex_index; /* For use with PREV. */
    unsigned textures;
    struct gl_tex_info tex_info;
-   struct gl_tex_info prev_info[MAX_TEXTURES];
+   struct gl_tex_info prev_info[GFX_MAX_TEXTURES];
    GLuint tex_mag_filter;
    GLuint tex_min_filter;
    bool tex_mipmap;
@@ -265,15 +260,15 @@ typedef struct gl
 
 #ifdef HAVE_FBO
    /* Render-to-texture, multipass shaders. */
-   GLuint fbo[MAX_SHADERS];
-   GLuint fbo_texture[MAX_SHADERS];
-   struct gl_fbo_rect fbo_rect[MAX_SHADERS];
-   struct gfx_fbo_scale fbo_scale[MAX_SHADERS];
+   GLuint fbo[GFX_MAX_SHADERS];
+   GLuint fbo_texture[GFX_MAX_SHADERS];
+   struct gl_fbo_rect fbo_rect[GFX_MAX_SHADERS];
+   struct gfx_fbo_scale fbo_scale[GFX_MAX_SHADERS];
    int fbo_pass;
    bool fbo_inited;
 
-   GLuint hw_render_fbo[MAX_TEXTURES];
-   GLuint hw_render_depth[MAX_TEXTURES];
+   GLuint hw_render_fbo[GFX_MAX_TEXTURES];
+   GLuint hw_render_depth[GFX_MAX_TEXTURES];
    bool hw_render_fbo_init;
    bool hw_render_depth_init;
    bool has_fp_fbo;
@@ -294,8 +289,8 @@ typedef struct gl
    struct video_viewport vp;
    unsigned vp_out_width;
    unsigned vp_out_height;
-   unsigned last_width[MAX_TEXTURES];
-   unsigned last_height[MAX_TEXTURES];
+   unsigned last_width[GFX_MAX_TEXTURES];
+   unsigned last_height[GFX_MAX_TEXTURES];
    unsigned tex_w, tex_h;
    math_matrix_4x4 mvp, mvp_no_rot;
 

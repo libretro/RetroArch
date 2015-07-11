@@ -14,18 +14,23 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdlib.h>
+
+#include <retro_miscellaneous.h>
+
+#include <compat/posix_string.h>
+
+#include <file/file_path.h>
+#include <file/config_file_userdata.h>
+#include <file/dir_list.h>
+
 #include "../performance.h"
 
 #include "audio_dsp_filter.h"
 #include "../dynamic.h"
-#include <file/config_file_userdata.h>
 #include "audio_filters/dspfilter.h"
-#include <file/file_path.h>
 #include "../file_ext.h"
-#include <file/dir_list.h>
-#include <compat/posix_string.h>
 
-#include <stdlib.h>
 
 struct rarch_dsp_plug
 {
@@ -90,9 +95,12 @@ static bool create_filter_graph(rarch_dsp_filter_t *dsp, float sample_rate)
 
    for (i = 0; i < filters; i++)
    {
-      char key[64], name[64];
       struct config_file_userdata userdata;
-      struct dspfilter_info info = { sample_rate };
+      struct dspfilter_info info;
+      char key[64]                         = {0};
+      char name[64]                        = {0};
+
+      info.input_rate = sample_rate;
 
       snprintf(key, sizeof(key), "filter%u", i);
 
@@ -169,12 +177,12 @@ static bool append_plugs(rarch_dsp_filter_t *dsp, struct string_list *list)
       const struct dspfilter_implementation *impl = NULL;
       struct rarch_dsp_plug *new_plugs = NULL;
       dylib_t lib = dylib_load(list->elems[i].data);
+      dspfilter_get_implementation_t cb;
 
       if (!lib)
          continue;
 
-      dspfilter_get_implementation_t cb = (dspfilter_get_implementation_t)
-         dylib_proc(lib, "dspfilter_get_implementation");
+      cb = (dspfilter_get_implementation_t)dylib_proc(lib, "dspfilter_get_implementation");
       if (!cb)
       {
          dylib_close(lib);
@@ -202,7 +210,7 @@ static bool append_plugs(rarch_dsp_filter_t *dsp, struct string_list *list)
          return false;
       }
 
-      RARCH_LOG("[DSP]: Found plug: %s (%s).\n", impl->ident, impl->short_ident);
+      /* Found plug. */
       
       dsp->plugs = new_plugs;
       dsp->plugs[dsp->num_plugs].lib = lib;
@@ -217,9 +225,9 @@ static bool append_plugs(rarch_dsp_filter_t *dsp, struct string_list *list)
 rarch_dsp_filter_t *rarch_dsp_filter_new(
       const char *filter_config, float sample_rate)
 {
-   char basedir[PATH_MAX_LENGTH];
-   struct string_list *plugs = NULL;
-   rarch_dsp_filter_t *dsp = NULL;
+   char basedir[PATH_MAX_LENGTH] = {0};
+   struct string_list *plugs     = NULL;
+   rarch_dsp_filter_t *dsp       = NULL;
 
    (void)basedir;
    
@@ -228,11 +236,8 @@ rarch_dsp_filter_t *rarch_dsp_filter_new(
       return NULL;
 
    dsp->conf = config_file_new(filter_config);
-   if (!dsp->conf)
-   {
-      RARCH_ERR("[DSP]: Did not find config: %s\n", filter_config);
+   if (!dsp->conf)   /* Did not find config. */
       goto error;
-   }
 
 #if !defined(HAVE_FILTERS_BUILTIN) && defined(HAVE_DYLIB)
    fill_pathname_basedir(basedir, filter_config, sizeof(basedir));

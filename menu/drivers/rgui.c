@@ -21,21 +21,26 @@
 #include <string.h>
 #include <limits.h>
 
-#include "../menu.h"
-#include "../menu_entry.h"
-#include "../menu_display.h"
+#include <string/string_list.h>
 #include <compat/posix_string.h>
 #include <file/file_path.h>
 #include <retro_inline.h>
 
+#include "../menu.h"
+#include "../menu_animation.h"
+#include "../menu_entry.h"
+#include "../menu_hash.h"
+#include "../menu_display.h"
+#include "../menu_video.h"
+
+#include "../../configuration.h"
+#include "../../runloop.h"
 #include "../../gfx/drivers_font_renderer/bitmap.h"
 
-#include "shared.h"
-
-#define RGUI_TERM_START_X        (menu->frame_buf.width / 21)
-#define RGUI_TERM_START_Y        (menu->frame_buf.height / 9)
-#define RGUI_TERM_WIDTH          (((menu->frame_buf.width - RGUI_TERM_START_X - RGUI_TERM_START_X) / (FONT_WIDTH_STRIDE)))
-#define RGUI_TERM_HEIGHT         (((menu->frame_buf.height - RGUI_TERM_START_Y - RGUI_TERM_START_X) / (FONT_HEIGHT_STRIDE)) - 1)
+#define RGUI_TERM_START_X        (frame_buf->width / 21)
+#define RGUI_TERM_START_Y        (frame_buf->height / 9)
+#define RGUI_TERM_WIDTH          (((frame_buf->width - RGUI_TERM_START_X - RGUI_TERM_START_X) / (FONT_WIDTH_STRIDE)))
+#define RGUI_TERM_HEIGHT         (((frame_buf->height - RGUI_TERM_START_Y - RGUI_TERM_START_X) / (FONT_HEIGHT_STRIDE)) - 1)
 
 #if defined(GEKKO)|| defined(PSP)
 #define HOVER_COLOR(settings)    ((3 << 0) | (10 << 4) | (3 << 8) | (7 << 12))
@@ -46,6 +51,14 @@
 #define NORMAL_COLOR(settings)   (argb32_to_rgba4444(settings->menu.entry_normal_color))
 #define TITLE_COLOR(settings)    (argb32_to_rgba4444(settings->menu.title_color))
 #endif
+
+typedef struct
+{
+   bool force_redraw;
+   char msgbox[4096];
+   unsigned last_width;
+   unsigned last_height;
+} rgui_t;
 
 static INLINE uint16_t argb32_to_rgba4444(uint32_t col)
 {
@@ -116,10 +129,10 @@ static void fill_rect(menu_framebuf_t *frame_buf,
       uint16_t (*col)(unsigned x, unsigned y))
 {
    unsigned i, j;
-    
+
    if (!frame_buf->data || !col)
       return;
-    
+
    for (j = y; j < y + height; j++)
       for (i = x; i < x + width; i++)
          frame_buf->data[j * (frame_buf->pitch >> 1) + i] = col(i, j);
@@ -131,20 +144,23 @@ static void color_rect(menu_handle_t *menu,
       uint16_t color)
 {
    unsigned i, j;
+   menu_framebuf_t *frame_buf = menu_display_fb_get_ptr();
 
-   if (!menu->frame_buf.data)
+   if (!frame_buf || !frame_buf->data)
       return;
 
    for (j = y; j < y + height; j++)
       for (i = x; i < x + width; i++)
-         if (i < menu->frame_buf.width && j < menu->frame_buf.height)
-            menu->frame_buf.data[j * (menu->frame_buf.pitch >> 1) + i] = color;
+         if (i < frame_buf->width && j < frame_buf->height)
+            frame_buf->data[j * (frame_buf->pitch >> 1) + i] = color;
 }
 
 static void blit_line(menu_handle_t *menu, int x, int y,
       const char *message, uint16_t color)
 {
    unsigned i, j;
+   menu_framebuf_t *frame_buf = menu_display_fb_get_ptr();
+   menu_display_t  *disp      = menu_display_get_ptr();
 
    while (*message)
    {
@@ -154,14 +170,14 @@ static void blit_line(menu_handle_t *menu, int x, int y,
          {
             uint8_t rem = 1 << ((i + j * FONT_WIDTH) & 7);
             int offset  = (i + j * FONT_WIDTH) >> 3;
-            bool col    = (menu->font.framebuf[FONT_OFFSET
+            bool col    = (disp->font.framebuf[FONT_OFFSET
                   ((unsigned char)*message) + offset] & rem);
 
             if (!col)
                continue;
 
-            menu->frame_buf.data[(y + j) *
-               (menu->frame_buf.pitch >> 1) + (x + i)] = color;
+            frame_buf->data[(y + j) *
+               (frame_buf->pitch >> 1) + (x + i)] = color;
          }
       }
 
@@ -176,12 +192,10 @@ static bool init_font(menu_handle_t *menu, const uint8_t *font_bmp_buf)
    uint8_t *font = (uint8_t *) calloc(1, FONT_OFFSET(256));
 
    if (!font)
-   {
-      RARCH_ERR("Font memory allocation failed.\n");
       return false;
-   }
 
-   menu->font.alloc_framebuf = true;
+   menu->display.font.alloc_framebuf = true;
+
    for (i = 0; i < 256; i++)
    {
       unsigned y = i / 16;
@@ -190,7 +204,7 @@ static bool init_font(menu_handle_t *menu, const uint8_t *font_bmp_buf)
             font_bmp_buf + 54 + 3 * (256 * (255 - 16 * y) + 16 * x));
    }
 
-   menu->font.framebuf = font;
+   menu->display.font.framebuf = font;
    return true;
 }
 
@@ -208,21 +222,25 @@ static bool rguidisp_init_font(menu_handle_t *menu)
    if (!font_bin_buf)
       return false;
 
-   menu->font.framebuf = font_bin_buf;
+   menu->display.font.framebuf = font_bin_buf;
 
    return true;
 }
 
 static void rgui_render_background(void)
 {
-   menu_handle_t *menu = menu_driver_get_ptr();
+   size_t pitch_in_pixels, size;
+   uint16_t             *src  = NULL;
+   uint16_t             *dst  = NULL;
+   menu_handle_t        *menu = menu_driver_get_ptr();
+   menu_framebuf_t *frame_buf = menu_display_fb_get_ptr();
    if (!menu)
       return;
 
-   size_t pitch_in_pixels = menu->frame_buf.pitch >> 1;
-   size_t size = menu->frame_buf.pitch * 4;
-   uint16_t *src = menu->frame_buf.data + pitch_in_pixels * menu->frame_buf.height;
-   uint16_t *dst = menu->frame_buf.data;
+   pitch_in_pixels = frame_buf->pitch >> 1;
+   size            = frame_buf->pitch * 4;
+   src             = frame_buf->data + pitch_in_pixels * frame_buf->height;
+   dst             = frame_buf->data;
 
    while (dst < src)
    {
@@ -230,15 +248,29 @@ static void rgui_render_background(void)
       dst += pitch_in_pixels * 4;
    }
 
-   fill_rect(&menu->frame_buf, 5, 5, menu->frame_buf.width - 10, 5, green_filler);
-   fill_rect(&menu->frame_buf, 5, menu->frame_buf.height - 10,
-         menu->frame_buf.width - 10, 5,
+   fill_rect(frame_buf, 5, 5, frame_buf->width - 10, 5, green_filler);
+   fill_rect(frame_buf, 5, frame_buf->height - 10,
+         frame_buf->width - 10, 5,
          green_filler);
 
-   fill_rect(&menu->frame_buf, 5, 5, 5, menu->frame_buf.height - 10, green_filler);
-   fill_rect(&menu->frame_buf, menu->frame_buf.width - 10, 5, 5,
-         menu->frame_buf.height - 10,
+   fill_rect(frame_buf, 5, 5, 5, frame_buf->height - 10, green_filler);
+   fill_rect(frame_buf, frame_buf->width - 10, 5, 5,
+         frame_buf->height - 10,
          green_filler);
+}
+
+static void rgui_set_message(const char *message)
+{
+   menu_handle_t    *menu = menu_driver_get_ptr();
+   menu_animation_t *anim = menu_animation_get_ptr();
+   rgui_t           *rgui = NULL;
+
+   if (!menu || !menu->userdata || !anim || !message || !*message)
+      return;
+
+   rgui = (rgui_t*)menu->userdata;
+   strlcpy(rgui->msgbox, message, sizeof(rgui->msgbox));
+   rgui->force_redraw = true;
 }
 
 static void rgui_render_messagebox(const char *message)
@@ -247,9 +279,10 @@ static void rgui_render_messagebox(const char *message)
    int x, y;
    unsigned width, glyphs_width, height;
    uint16_t color;
-   struct string_list *list = NULL;
-   menu_handle_t *menu  = menu_driver_get_ptr();
-   settings_t *settings = config_get_ptr();
+   struct string_list *list   = NULL;
+   menu_handle_t *menu        = menu_driver_get_ptr();
+   menu_framebuf_t *frame_buf = menu_display_fb_get_ptr();
+   settings_t *settings       = config_get_ptr();
 
    if (!menu)
       return;
@@ -282,23 +315,23 @@ static void rgui_render_messagebox(const char *message)
          msglen = RGUI_TERM_WIDTH;
       }
 
-      line_width = msglen * FONT_WIDTH_STRIDE - 1 + 6 + 10;
-      width = max(width, line_width);
+      line_width   = msglen * FONT_WIDTH_STRIDE - 1 + 6 + 10;
+      width        = max(width, line_width);
       glyphs_width = max(glyphs_width, msglen);
    }
 
    height = FONT_HEIGHT_STRIDE * list->size + 6 + 10;
-   x      = (menu->frame_buf.width - width) / 2;
-   y      = (menu->frame_buf.height - height) / 2;
+   x      = (frame_buf->width - width) / 2;
+   y      = (frame_buf->height - height) / 2;
 
-   fill_rect(&menu->frame_buf, x + 5, y + 5, width - 10,
+   fill_rect(frame_buf, x + 5, y + 5, width - 10,
          height - 10, gray_filler);
-   fill_rect(&menu->frame_buf, x, y, width - 5, 5, green_filler);
-   fill_rect(&menu->frame_buf, x + width - 5, y, 5,
+   fill_rect(frame_buf, x, y, width - 5, 5, green_filler);
+   fill_rect(frame_buf, x + width - 5, y, 5,
          height - 5, green_filler);
-   fill_rect(&menu->frame_buf, x + 5, y + height - 5,
+   fill_rect(frame_buf, x + 5, y + height - 5,
          width - 5, 5, green_filler);
-   fill_rect(&menu->frame_buf, x, y + 5, 5,
+   fill_rect(frame_buf, x, y + 5, 5,
          height - 5, green_filler);
 
    color = NORMAL_COLOR(settings);
@@ -306,8 +339,8 @@ static void rgui_render_messagebox(const char *message)
    for (i = 0; i < list->size; i++)
    {
       const char *msg = list->elems[i].data;
-      int offset_x = FONT_WIDTH_STRIDE * (glyphs_width - strlen(msg)) / 2;
-      int offset_y = FONT_HEIGHT_STRIDE * i;
+      int offset_x    = FONT_WIDTH_STRIDE * (glyphs_width - strlen(msg)) / 2;
+      int offset_y    = FONT_HEIGHT_STRIDE * i;
       blit_line(menu, x + 8 + offset_x, y + 8 + offset_y, msg, color);
    }
 
@@ -317,8 +350,10 @@ end:
 
 static void rgui_blit_cursor(menu_handle_t *menu)
 {
-   int16_t x = menu->mouse.x;
-   int16_t y = menu->mouse.y;
+   menu_input_t *menu_input = menu_input_get_ptr();
+
+   int16_t x = menu_input->mouse.x;
+   int16_t y = menu_input->mouse.y;
 
    color_rect(menu, x, y - 5, 1, 11, 0xFFFF);
    color_rect(menu, x - 5, y, 11, 1, 0xFFFF);
@@ -326,72 +361,102 @@ static void rgui_blit_cursor(menu_handle_t *menu)
 
 static void rgui_render(void)
 {
-   size_t i, end;
-   int bottom;
-   char title[256], title_buf[256], title_msg[64];
-   char timedate[PATH_MAX_LENGTH];
    unsigned x, y;
    uint16_t hover_color, normal_color;
-   menu_handle_t *menu      = menu_driver_get_ptr();
-   runloop_t *runloop       = rarch_main_get_ptr();
-   driver_t *driver         = driver_get_ptr();
-   settings_t *settings     = config_get_ptr();
-   uint64_t frame_count     = video_driver_get_frame_count();
+   size_t i, end;
+   int bottom;
+   char title[256];
+   char title_buf[256];
+   char title_msg[64];
+   char timedate[PATH_MAX_LENGTH];
+   menu_handle_t *menu            = menu_driver_get_ptr();
+   menu_input_t *menu_input       = menu_input_get_ptr();
+   menu_display_t *disp           = menu_display_get_ptr();
+   menu_framebuf_t *frame_buf     = menu_display_fb_get_ptr();
+   menu_navigation_t *nav         = menu_navigation_get_ptr();
+   runloop_t *runloop             = rarch_main_get_ptr();
+   driver_t *driver               = driver_get_ptr();
+   settings_t *settings           = config_get_ptr();
+   menu_animation_t *anim         = menu_animation_get_ptr();
+   uint64_t frame_count           = video_driver_get_frame_count();
+   rgui_t *rgui                   = NULL;
+
+   title[0]     = '\0';
+   title_buf[0] = '\0';
+   title_msg[0] = '\0';
+   timedate[0]  = '\0';
 
    (void)driver;
 
-   if (!menu)
+   if (!menu || !menu->userdata)
       return;
 
-   if (menu_needs_refresh() && menu_driver_alive() && !menu->msg_force)
-      return;
+   rgui = (rgui_t*)menu->userdata;
 
-   if (runloop->is_idle)
-      return;
+   if (!rgui->force_redraw)
+   {
+      if (menu_entries_needs_refresh() && menu_driver_alive() && !disp->msg_force)
+         return;
 
-   if (!menu_display_update_pending())
-      return;
+      if (runloop->is_idle)
+         return;
+
+      if (!menu_display_update_pending())
+         return;
+   }
+
+   /* if the framebuffer changed size, recache the background */
+   if (rgui->last_width != frame_buf->width || rgui->last_height != frame_buf->height)
+   {
+      fill_rect(frame_buf, 0, frame_buf->height,
+            frame_buf->width, 4, gray_filler);
+      rgui->last_width = frame_buf->width;
+      rgui->last_height = frame_buf->height;
+   }
+
 
    /* ensures the framebuffer will be rendered on the screen */
    menu_display_fb_set_dirty();
-   menu->animation_is_active = false;
-   menu->label.is_updated    = false;
+   anim->is_active           = false;
+   anim->label.is_updated    = false;
+   rgui->force_redraw        = false;
+
 
    if (settings->menu.pointer.enable)
    {
-      menu->pointer.ptr = menu->pointer.y / 11 - 2 + menu->begin;
+      menu_input->pointer.ptr = menu_input->pointer.y / 11 - 2 + menu_entries_get_start();
 
-      if (menu->pointer.dragging)
+      if (menu_input->pointer.dragging)
       {
-         menu->scroll_y += menu->pointer.dy;
-         menu->begin = -menu->scroll_y / 11 + 2;
+         menu->scroll_y += menu_input->pointer.dy;
+         menu_entries_set_start(-menu->scroll_y / 11 + 2);
          if (menu->scroll_y > 0)
             menu->scroll_y = 0;
       }
    }
-   
+
    if (settings->menu.mouse.enable)
    {
-      if (menu->mouse.scrolldown && menu->begin
-            < menu_entries_get_end() - RGUI_TERM_HEIGHT)
-         menu->begin++;
+      if (menu_input->mouse.scrolldown
+            && (menu_entries_get_start() < menu_entries_get_end() - RGUI_TERM_HEIGHT))
+         menu_entries_set_start(menu_entries_get_start() + 1);
 
-      if (menu->mouse.scrollup && menu->begin > 0)
-         menu->begin--;
+      if (menu_input->mouse.scrollup && (menu_entries_get_start() > 0))
+         menu_entries_set_start(menu_entries_get_start() - 1);
 
-      menu->mouse.ptr = menu->mouse.y / 11 - 2 + menu->begin;
+      menu_input->mouse.ptr = menu_input->mouse.y / 11 - 2 + menu_entries_get_start();
    }
 
    /* Do not scroll if all items are visible. */
    if (menu_entries_get_end() <= RGUI_TERM_HEIGHT)
-      menu->begin = 0;
+      menu_entries_set_start(0);;
 
    bottom = menu_entries_get_end() - RGUI_TERM_HEIGHT;
-   if (menu->begin > bottom)
-      menu->begin = bottom;
+   if (menu_entries_get_start() > (unsigned)bottom)
+      menu_entries_set_start(bottom);
 
-   end = (menu->begin + RGUI_TERM_HEIGHT <= menu_entries_get_end()) ?
-      menu->begin + RGUI_TERM_HEIGHT : menu_entries_get_end();
+   end = ((menu_entries_get_start() + RGUI_TERM_HEIGHT) <= (menu_entries_get_end())) ?
+      menu_entries_get_start() + RGUI_TERM_HEIGHT : menu_entries_get_end();
 
    rgui_render_background();
 
@@ -404,13 +469,14 @@ static void rgui_render(void)
    menu_animation_ticker_line(title_buf, RGUI_TERM_WIDTH - 10,
          frame_count / RGUI_TERM_START_X, title, true);
 
-   hover_color = HOVER_COLOR(settings);
+   hover_color  = HOVER_COLOR(settings);
    normal_color = NORMAL_COLOR(settings);
 
    if (menu_entries_show_back())
       blit_line(menu,
             RGUI_TERM_START_X, RGUI_TERM_START_X,
-            "BACK", TITLE_COLOR(settings));
+            menu_hash_to_str(MENU_VALUE_BACK),
+            TITLE_COLOR(settings));
 
    blit_line(menu,
          RGUI_TERM_START_X + (RGUI_TERM_WIDTH - strlen(title_buf)) * FONT_WIDTH_STRIDE / 2,
@@ -427,7 +493,7 @@ static void rgui_render(void)
 
    if (settings->menu.timedate_enable)
    {
-      disp_timedate_set_label(timedate, sizeof(timedate), 3);
+      menu_display_timedate(timedate, sizeof(timedate), 3);
 
       blit_line(menu,
             RGUI_TERM_WIDTH * FONT_WIDTH_STRIDE - RGUI_TERM_START_X,
@@ -441,14 +507,22 @@ static void rgui_render(void)
 
    for (; i < end; i++, y += FONT_HEIGHT_STRIDE)
    {
-      char entry_path[PATH_MAX_LENGTH], entry_value[PATH_MAX_LENGTH];
-      char message[PATH_MAX_LENGTH], 
-           entry_title_buf[PATH_MAX_LENGTH], type_str_buf[PATH_MAX_LENGTH];
-      unsigned entry_spacing = menu_entry_get_spacing(i);
-      bool entry_selected = menu_entry_is_currently_selected(i);
+      char entry_path[PATH_MAX_LENGTH];
+      char entry_value[PATH_MAX_LENGTH];
+      char message[PATH_MAX_LENGTH];
+      char entry_title_buf[PATH_MAX_LENGTH];
+      char type_str_buf[PATH_MAX_LENGTH];
+      unsigned entry_spacing                = menu_entry_get_spacing(i);
+      bool entry_selected                   = menu_entry_is_currently_selected(i);
 
-      if (i > (menu->navigation.selection_ptr + 100))
+      if (i > (nav->selection_ptr + 100))
          continue;
+
+      entry_path[0]      = '\0';
+      entry_value[0]     = '\0';
+      message[0]         = '\0';
+      entry_title_buf[0] = '\0';
+      type_str_buf[0]    = '\0';
 
       menu_entry_get_value(i, entry_value, sizeof(entry_value));
       menu_entry_get_path(i, entry_path, sizeof(entry_path));
@@ -473,10 +547,10 @@ static void rgui_render(void)
 #ifdef GEKKO
    const char *message_queue;
 
-   if (menu->msg_force)
+   if (disp->msg_force)
    {
       message_queue = rarch_main_msg_queue_pull();
-      menu->msg_force = false;
+      disp->msg_force = false;
    }
    else
       message_queue = driver->current_msg;
@@ -484,14 +558,22 @@ static void rgui_render(void)
    rgui_render_messagebox( message_queue);
 #endif
 
-   if (menu->keyboard.display)
+   if (menu_input->keyboard.display)
    {
-      char msg[PATH_MAX_LENGTH];
-      const char *str = *menu->keyboard.buffer;
+      char msg[PATH_MAX_LENGTH] = {0};
+      const char           *str = *menu_input->keyboard.buffer;
+
       if (!str)
          str = "";
-      snprintf(msg, sizeof(msg), "%s\n%s", menu->keyboard.label, str);
+      snprintf(msg, sizeof(msg), "%s\n%s", menu_input->keyboard.label, str);
       rgui_render_messagebox(msg);
+   }
+
+   if (rgui->msgbox[0] != '\0')
+   {
+      rgui_render_messagebox(rgui->msgbox);
+      rgui->msgbox[0] = '\0';
+      rgui->force_redraw = true;
    }
 
    if (settings->menu.mouse.enable)
@@ -500,44 +582,56 @@ static void rgui_render(void)
 
 static void *rgui_init(void)
 {
-   bool ret = false;
-   menu_handle_t *menu = (menu_handle_t*)calloc(1, sizeof(*menu));
+   bool                   ret = false;
+   menu_framebuf_t *frame_buf = NULL;
+   menu_handle_t        *menu = (menu_handle_t*)calloc(1, sizeof(*menu));
+   rgui_t               *rgui = NULL;
 
    if (!menu)
       return NULL;
 
-   /* 4 extra lines to cache  the checked background */
-   menu->frame_buf.data = (uint16_t*)calloc(400 * (240 + 4), sizeof(uint16_t));
+   menu->userdata = rgui = (rgui_t*)calloc(1, sizeof(rgui_t));
 
-   if (!menu->frame_buf.data)
+   if (!rgui)
       goto error;
 
-   menu->frame_buf.width           = 320;
-   menu->frame_buf.height          = 240;
-   menu->header_height             = FONT_HEIGHT_STRIDE * 2;
-   menu->begin                     = 0;
-   menu->frame_buf.pitch           = menu->frame_buf.width * sizeof(uint16_t);
+   frame_buf                  = &menu->display.frame_buf;
+
+   /* 4 extra lines to cache  the checked background */
+   frame_buf->data = (uint16_t*)calloc(400 * (240 + 4), sizeof(uint16_t));
+
+   if (!frame_buf->data)
+      goto error;
+
+   frame_buf->width                   = 320;
+   frame_buf->height                  = 240;
+   menu->display.header_height        = FONT_HEIGHT_STRIDE * 2;
+   frame_buf->pitch                   = frame_buf->width * sizeof(uint16_t);
+
+   menu_entries_set_start(0);
 
    ret = rguidisp_init_font(menu);
 
    if (!ret)
-   {
-      RARCH_ERR("No font bitmap or binary, abort");
       goto error;
-   }
 
-   fill_rect(&menu->frame_buf, 0, menu->frame_buf.height,
-         menu->frame_buf.width, 4, gray_filler);
+   fill_rect(frame_buf, 0, frame_buf->height,
+         frame_buf->width, 4, gray_filler);
+
+   rgui->last_width = frame_buf->width;
+   rgui->last_height = frame_buf->height;
 
    return menu;
 
 error:
    if (menu)
    {
-      if (menu->frame_buf.data)
-         free(menu->frame_buf.data);
+      if (frame_buf->data)
+         free(frame_buf->data);
+      frame_buf->data = NULL;
       if (menu->userdata)
          free(menu->userdata);
+      menu->userdata = NULL;
       free(menu);
    }
    return NULL;
@@ -545,31 +639,40 @@ error:
 
 static void rgui_free(void *data)
 {
-   menu_handle_t *menu = (menu_handle_t*)data;
+   menu_handle_t  *menu = (menu_handle_t*)data;
+   menu_display_t *disp = menu ? &menu->display : NULL;
 
-   if (!menu)
+   if (!menu || !disp)
       return;
 
    if (menu->userdata)
       free(menu->userdata);
    menu->userdata = NULL;
 
-   if (menu->font.alloc_framebuf)
-      free((uint8_t*)menu->font.framebuf);
+   if (disp->font.alloc_framebuf)
+      free((uint8_t*)disp->font.framebuf);
+   disp->font.alloc_framebuf = false;
 }
 
 static void rgui_set_texture(void)
 {
    menu_handle_t *menu = menu_driver_get_ptr();
+   menu_framebuf_t *frame_buf = menu_display_fb_get_ptr();
 
    if (!menu)
+      return;
+
+   if (!frame_buf->dirty)
       return;
 
    menu_display_fb_unset_dirty();
 
    video_driver_set_texture_frame(
-         menu->frame_buf.data, false,
-         menu->frame_buf.width, menu->frame_buf.height, 1.0f);
+         frame_buf->data,
+         false,
+         frame_buf->width,
+         frame_buf->height,
+         1.0f);
 }
 
 static void rgui_navigation_clear(bool pending_push)
@@ -578,27 +681,31 @@ static void rgui_navigation_clear(bool pending_push)
    if (!menu)
       return;
 
-   menu->begin = 0;
+   menu_entries_set_start(0);
    menu->scroll_y = 0;
 }
 
 static void rgui_navigation_set(bool scroll)
 {
-   menu_handle_t *menu = menu_driver_get_ptr();
+   size_t end;
+   menu_handle_t *menu            = menu_driver_get_ptr();
+   menu_framebuf_t *frame_buf     = menu_display_fb_get_ptr();
+   menu_navigation_t *nav         = menu_navigation_get_ptr();
    if (!menu)
       return;
-   size_t end = menu_entries_get_end();
+
+   end = menu_entries_get_end();
 
    if (!scroll)
       return;
 
-   if (menu->navigation.selection_ptr < RGUI_TERM_HEIGHT/2)
-      menu->begin = 0;
-   else if (menu->navigation.selection_ptr >= RGUI_TERM_HEIGHT/2
-         && menu->navigation.selection_ptr < (end - RGUI_TERM_HEIGHT/2))
-      menu->begin = menu->navigation.selection_ptr - RGUI_TERM_HEIGHT/2;
-   else if (menu->navigation.selection_ptr >= (end - RGUI_TERM_HEIGHT/2))
-      menu->begin = end - RGUI_TERM_HEIGHT;
+   if (nav->selection_ptr < RGUI_TERM_HEIGHT/2)
+      menu_entries_set_start(0);
+   else if (nav->selection_ptr >= RGUI_TERM_HEIGHT/2
+         && nav->selection_ptr < (end - RGUI_TERM_HEIGHT/2))
+      menu_entries_set_start(nav->selection_ptr - RGUI_TERM_HEIGHT/2);
+   else if (nav->selection_ptr >= (end - RGUI_TERM_HEIGHT/2))
+      menu_entries_set_start(end - RGUI_TERM_HEIGHT);
 }
 
 static void rgui_navigation_set_last(void)
@@ -630,9 +737,22 @@ static void rgui_populate_entries(const char *path,
       rgui_navigation_set(true);
 }
 
+static int rgui_environ(menu_environ_cb_t type, void *data)
+{
+   switch (type)
+   {
+      case 0:
+         break;
+      default:
+         return -1;
+   }
+
+   return 0;
+}
+
 menu_ctx_driver_t menu_ctx_rgui = {
    rgui_set_texture,
-   rgui_render_messagebox,
+   rgui_set_message,
    rgui_render,
    NULL,
    rgui_init,
@@ -654,6 +774,11 @@ menu_ctx_driver_t menu_ctx_rgui = {
    NULL,
    NULL,
    NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
    "rgui",
+   rgui_environ,
    NULL,
 };

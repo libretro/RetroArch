@@ -79,5 +79,6 @@ const frontend_ctx_driver_t frontend_ctx_qnx = {
    NULL,                         /* load_content */
    frontend_qnx_get_architecture,
    NULL,                         /* get_powerstate */
+   NULL,                         /* parse_drive_list */
    "qnx",
 };

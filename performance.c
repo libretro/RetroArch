@@ -40,7 +40,7 @@
 #elif defined(_XBOX360)
 #include <PPCIntrinsics.h>
 #elif defined(_POSIX_MONOTONIC_CLOCK) || defined(ANDROID) || defined(__QNX__)
-// POSIX_MONOTONIC_CLOCK is not being defined in Android headers despite support being present.
+/* POSIX_MONOTONIC_CLOCK is not being defined in Android headers despite support being present. */
 #include <time.h>
 #endif
 
@@ -63,7 +63,7 @@
 #include <ogc/lwp_watchdog.h>
 #endif
 
-// iOS/OSX specific. Lacks clock_gettime(), so implement it.
+/* iOS/OSX specific. Lacks clock_gettime(), so implement it. */
 #ifdef __MACH__
 #include <sys/time.h>
 
@@ -182,15 +182,15 @@ retro_perf_tick_t rarch_get_perf_counter(void)
 #elif defined(__GNUC__) && !defined(RARCH_CONSOLE) 
 
 #if defined(__i386__) || defined(__i486__) || defined(__i686__)
-   asm volatile ("rdtsc" : "=A" (time_ticks));
+   __asm__ volatile ("rdtsc" : "=A" (time_ticks));
 #elif defined(__x86_64__)
    unsigned a, d;
-   asm volatile ("rdtsc" : "=a" (a), "=d" (d));
+   __asm__ volatile ("rdtsc" : "=a" (a), "=d" (d));
    time_ticks = (retro_perf_tick_t)a | ((retro_perf_tick_t)d << 32);
 #endif
 
 #elif defined(__ARM_ARCH_6__)
-   asm volatile( "mrc p15, 0, %0, c9, c13, 0" : "=r"(time_ticks) );
+   __asm__ volatile( "mrc p15, 0, %0, c9, c13, 0" : "=r"(time_ticks) );
 #elif defined(__CELLOS_LV2__) || defined(GEKKO) || defined(_XBOX360) || defined(__powerpc__) || defined(__ppc__) || defined(__POWERPC__)
    time_ticks = __mftb();
 #elif defined(PSP)
@@ -247,7 +247,7 @@ retro_time_t rarch_get_time_usec(void)
 #elif defined(GEKKO)
    return ticks_to_microsecs(gettime());
 #elif defined(_POSIX_MONOTONIC_CLOCK) || defined(__QNX__) || defined(ANDROID) || defined(__MACH__)
-   struct timespec tv;
+   struct timespec tv = {0};
    if (clock_gettime(CLOCK_MONOTONIC, &tv) < 0)
       return 0;
    return tv.tv_sec * INT64_C(1000000) + (tv.tv_nsec + 500) / 1000;
@@ -286,7 +286,7 @@ static void x86_cpuid(int func, int flags[4])
 #endif
 
 #if defined(__GNUC__)
-   asm volatile (
+   __asm__ volatile (
          "mov %%" REG_b ", %%" REG_S "\n"
          "cpuid\n"
          "xchg %%" REG_b ", %%" REG_S "\n"
@@ -305,7 +305,7 @@ static uint64_t xgetbv_x86(uint32_t idx)
 {
 #if defined(__GNUC__)
    uint32_t eax, edx;
-   asm volatile (
+   __asm__ volatile (
          /* Older GCC versions (Apple's GCC for example) do 
           * not understand xgetbv instruction.
           * Stamp out the machine code directly.
@@ -331,7 +331,7 @@ static void arm_enable_runfast_mode(void)
    static const unsigned x = 0x04086060;
    static const unsigned y = 0x03000000;
    int r;
-   asm volatile(
+   __asm__ volatile(
          "fmrx	%0, fpscr   \n\t" /* r0 = FPSCR */
          "and	%0, %0, %1  \n\t" /* r0 = r0 & 0x04086060 */
          "orr	%0, %0, %2  \n\t" /* r0 = r0 | 0x03000000 */
@@ -406,23 +406,37 @@ unsigned rarch_get_cpu_cores(void)
 uint64_t rarch_get_cpu_features(void)
 {
    int flags[4];
-   uint64_t cpu = 0;
-   const unsigned MAX_FEATURES = \
-         sizeof(" MMX MMXEXT SSE SSE2 SSE3 SSSE3 SS4 SSE4.2 AES AVX AVX2 NEON VMX VMX128 VFPU PS");
-   char buf[MAX_FEATURES];
-   memset(buf, 0, MAX_FEATURES);
+   int vendor_shuffle[3];
+   char vendor[13]     = {0};
+   uint64_t cpu_flags  = 0;
+   uint64_t cpu        = 0;
+   unsigned max_flag   = 0;
+#if defined(CPU_X86)
+   const int avx_flags = (1 << 27) | (1 << 28);
+#endif
 
+   char buf[sizeof(" MMX MMXEXT SSE SSE2 SSE3 SSSE3 SS4 SSE4.2 AES AVX AVX2 NEON VMX VMX128 VFPU PS")];
+
+   memset(buf, 0, sizeof(buf));
+   
+   (void)cpu_flags;
    (void)flags;
+   (void)max_flag;
+   (void)vendor;
+   (void)vendor_shuffle;
 
 #if defined(CPU_X86)
-   x86_cpuid(0, flags);
+   (void)avx_flags;
 
-   char vendor[13] = {0};
-   const int vendor_shuffle[3] = { flags[1], flags[3], flags[2] };
+   x86_cpuid(0, flags);
+   vendor_shuffle[0] = flags[1];
+   vendor_shuffle[1] = flags[3];
+   vendor_shuffle[2] = flags[2];
    memcpy(vendor, vendor_shuffle, sizeof(vendor_shuffle));
+
    RARCH_LOG("[CPUID]: Vendor: %s\n", vendor);
 
-   unsigned max_flag = flags[0];
+   max_flag = flags[0];
    if (max_flag < 1) /* Does CPUID not support func = 1? (unlikely ...) */
       return 0;
 
@@ -456,7 +470,6 @@ uint64_t rarch_get_cpu_features(void)
    if (flags[2] & (1 << 25))
       cpu |= RETRO_SIMD_AES;
 
-   const int avx_flags = (1 << 27) | (1 << 28);
 
    /* Must only perform xgetbv check if we have 
     * AVX CPU support (guaranteed to have at least i686). */
@@ -483,7 +496,7 @@ uint64_t rarch_get_cpu_features(void)
    }
 
 #elif defined(ANDROID) && defined(ANDROID_ARM)
-   uint64_t cpu_flags = android_getCpuFeatures();
+   cpu_flags = android_getCpuFeatures();
 
 #ifdef __ARM_NEON__
    if (cpu_flags & ANDROID_CPU_ARM_FEATURE_NEON)
@@ -529,6 +542,24 @@ uint64_t rarch_get_cpu_features(void)
 
    RARCH_LOG("[CPUID]: Features:%s\n", buf);
 
-
    return cpu;
+}
+
+void rarch_perf_start(struct retro_perf_counter *perf)
+{
+   global_t *global = global_get_ptr();
+   if (!global->perfcnt_enable || !perf)
+      return;
+
+   perf->call_cnt++;
+   perf->start = rarch_get_perf_counter();
+}
+
+void rarch_perf_stop(struct retro_perf_counter *perf)
+{
+   global_t *global = global_get_ptr();
+   if (!global->perfcnt_enable || !perf)
+      return;
+
+   perf->total += rarch_get_perf_counter() - perf->start;
 }

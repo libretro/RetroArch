@@ -42,8 +42,8 @@ bool input_remapping_load_file(const char *path)
 
    for (i = 0; i < MAX_USERS; i++)
    {
-      char buf[64];
-      char key_ident[RARCH_FIRST_CUSTOM_BIND + 4][128];
+      char buf[64]                                       = {0};
+      char key_ident[RARCH_FIRST_CUSTOM_BIND + 4][128]   = {{0}};
       char key_strings[RARCH_FIRST_CUSTOM_BIND + 4][128] = { "b", "y", "select", "start",
          "up", "down", "left", "right", "a", "x", "l", "r", "l2", "r2", "l3", "r3", "l_x", "l_y", "r_x", "r_y" };
 
@@ -53,7 +53,7 @@ bool input_remapping_load_file(const char *path)
       {
          int key_remap = -1;
 
-         snprintf(key_ident[j], sizeof(key_ident[j]), "%s_%s", buf, key_strings[j]);
+         fill_pathname_join_delim(key_ident[j], buf, key_strings[j], '_', sizeof(key_ident[j]));
          if (config_get_int(conf, key_ident[j], &key_remap) && key_remap < RARCH_FIRST_CUSTOM_BIND)
             settings->input.remap_ids[i][j] = key_remap;
       }
@@ -85,10 +85,10 @@ bool input_remapping_save_file(const char *path)
 {
    bool ret;
    unsigned i, j;
-   char buf[PATH_MAX_LENGTH];
-   char remap_file[PATH_MAX_LENGTH];
-   config_file_t *conf = NULL;
-   settings_t *settings = config_get_ptr();
+   char buf[PATH_MAX_LENGTH]         = {0};
+   char remap_file[PATH_MAX_LENGTH]  = {0};
+   config_file_t               *conf = NULL;
+   settings_t              *settings = config_get_ptr();
 
    fill_pathname_join(buf, settings->input_remapping_directory,
          path, sizeof(buf));
@@ -106,7 +106,7 @@ bool input_remapping_save_file(const char *path)
 
    for (i = 0; i < settings->input.max_users; i++)
    {
-      char key_ident[RARCH_FIRST_CUSTOM_BIND + 4][128];
+      char key_ident[RARCH_FIRST_CUSTOM_BIND + 4][128]   = {{0}};
       char key_strings[RARCH_FIRST_CUSTOM_BIND + 4][128] = { "b", "y", "select", "start",
          "up", "down", "left", "right", "a", "x", "l", "r", "l2", "r2", "l3", "r3", "l_x", "l_y", "r_x", "r_y" };
 
@@ -114,7 +114,7 @@ bool input_remapping_save_file(const char *path)
 
       for (j = 0; j < RARCH_FIRST_CUSTOM_BIND + 4; j++)
       {
-         snprintf(key_ident[j], sizeof(key_ident[j]), "%s_%s", buf, key_strings[j]);
+         fill_pathname_join_delim(key_ident[j], buf, key_strings[j], '_', sizeof(key_ident[j]));
          config_set_int(conf, key_ident[j], settings->input.remap_ids[i][j]);
       }
    }
@@ -154,9 +154,10 @@ void input_remapping_state(unsigned port,
          if (*idx < 2 && *id < 2)
          {
             unsigned new_id = RARCH_FIRST_CUSTOM_BIND + (*idx * 2 + *id);
+
             new_id = settings->input.remap_ids[port][new_id];
-            *idx = (new_id & 2) >> 1;
-            *id = new_id & 1;
+            *idx   = (new_id & 2) >> 1;
+            *id    = new_id & 1;
          }
          break;
    }

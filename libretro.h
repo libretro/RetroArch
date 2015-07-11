@@ -69,7 +69,7 @@ extern "C" {
 #      endif
 #    endif
 #  else
-#      if defined(__GNUC__) && __GNUC__ >= 4
+#      if defined(__GNUC__) && __GNUC__ >= 4 && !defined(__CELLOS_LV2__)
 #        define RETRO_API RETRO_CALLCONV __attribute__((visibility("default")))
 #      else
 #        define RETRO_API RETRO_CALLCONV
@@ -242,6 +242,8 @@ enum retro_language
    RETRO_LANGUAGE_KOREAN              =  9,
    RETRO_LANGUAGE_CHINESE_TRADITIONAL = 10,
    RETRO_LANGUAGE_CHINESE_SIMPLIFIED  = 11,
+   RETRO_LANGUAGE_ESPERANTO           = 12,
+   RETRO_LANGUAGE_POLISH              = 13,
    RETRO_LANGUAGE_LAST,
 
    /* Ensure sizeof(enum) == sizeof(int) */

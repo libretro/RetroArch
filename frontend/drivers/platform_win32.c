@@ -12,22 +12,22 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifdef _XBOX
-#include <xtl.h>
-#else
-#include <windows.h>
-#endif
-#include <retro_miscellaneous.h>
-#include "../frontend_driver.h"
-#include <dynamic/dylib.h>
-#include "../../general.h"
-
 #include <stdint.h>
 #include <boolean.h>
 #include <stddef.h>
 #include <string.h>
 
-#if defined(_WIN32) && !defined(_XBOX)
+#include <windows.h>
+
+#include <retro_miscellaneous.h>
+#include <dynamic/dylib.h>
+#include <file/file_list.h>
+
+#include "../frontend_driver.h"
+#include "../../general.h"
+#include "../../menu/menu.h"
+
+#if defined(_WIN32)
 /* We only load this library once, so we let it be 
  * unloaded at application shutdown, since unloading 
  * it early seems to cause issues on some systems.
@@ -97,7 +97,7 @@ static void gfx_set_dwm(void)
 }
 #endif
 
-static void frontend_win32_get_os(char *name, size_t sizeof_name, int *major, int *minor)
+static void frontend_win32_get_os(char *s, size_t len, int *major, int *minor)
 {
 	uint32_t version = GetVersion();
 
@@ -110,16 +110,16 @@ static void frontend_win32_get_os(char *name, size_t sizeof_name, int *major, in
          switch (*minor)
          {
             case 3:
-               strlcpy(name, "Windows 8.1", sizeof_name);
+               strlcpy(s, "Windows 8.1", len);
                break;
             case 2:
-               strlcpy(name, "Windows 8", sizeof_name);
+               strlcpy(s, "Windows 8", len);
                break;
             case 1:
-               strlcpy(name, "Windows 7/2008 R2", sizeof_name);
+               strlcpy(s, "Windows 7/2008 R2", len);
                break;
             case 0:
-               strlcpy(name, "Windows Vista/2008", sizeof_name);
+               strlcpy(s, "Windows Vista/2008", len);
                break;
             default:
                break;
@@ -129,13 +129,13 @@ static void frontend_win32_get_os(char *name, size_t sizeof_name, int *major, in
          switch (*minor)
          {
             case 2:
-               strlcpy(name, "Windows 2003", sizeof_name);
+               strlcpy(s, "Windows 2003", len);
                break;
             case 1:
-               strlcpy(name, "Windows XP", sizeof_name);
+               strlcpy(s, "Windows XP", len);
                break;
             case 0:
-               strlcpy(name, "Windows 2000", sizeof_name);
+               strlcpy(s, "Windows 2000", len);
                break;
          }
          break;
@@ -143,13 +143,13 @@ static void frontend_win32_get_os(char *name, size_t sizeof_name, int *major, in
          switch (*minor)
          {
             case 0:
-               strlcpy(name, "Windows NT 4.0", sizeof_name);
+               strlcpy(s, "Windows NT 4.0", len);
                break;
             case 90:
-               strlcpy(name, "Windows ME", sizeof_name);
+               strlcpy(s, "Windows ME", len);
                break;
             case 10:
-               strlcpy(name, "Windows 98", sizeof_name);
+               strlcpy(s, "Windows 98", len);
                break;
          }
          break;
@@ -209,6 +209,24 @@ enum frontend_architecture frontend_win32_get_architecture(void)
    return FRONTEND_ARCH_NONE;
 }
 
+static int frontend_win32_parse_drive_list(void *data)
+{
+   size_t i = 0;
+   unsigned drives = GetLogicalDrives();
+   char    drive[] = " :\\";
+   file_list_t *list = (file_list_t*)data;
+
+   for (i = 0; i < 32; i++)
+   {
+      drive[0] = 'A' + i;
+      if (drives & (1 << i))
+         menu_list_push(list,
+               drive, "", MENU_FILE_DIRECTORY, 0, 0);
+   }
+
+   return 0;
+}
+
 const frontend_ctx_driver_t frontend_ctx_win32 = {
    NULL,						   /* environment_get */
    frontend_win32_init,
@@ -224,5 +242,6 @@ const frontend_ctx_driver_t frontend_ctx_win32 = {
    NULL,                           /* load_content */
    frontend_win32_get_architecture,
    frontend_win32_get_powerstate,
+   frontend_win32_parse_drive_list,
    "win32",
 };

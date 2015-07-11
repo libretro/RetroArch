@@ -23,10 +23,12 @@ static const char *qnx_joypad_name(unsigned pad)
    return settings ? settings->input.device_names[pad] : NULL;
 }
 
-static bool qnx_joypad_init(void)
+static bool qnx_joypad_init(void *data)
 {
    unsigned autoconf_pad;
    settings_t *settings = config_get_ptr();
+
+   (void)data;
 
    for (autoconf_pad = 0; autoconf_pad < MAX_USERS; autoconf_pad++)
    {

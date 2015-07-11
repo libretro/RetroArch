@@ -22,6 +22,7 @@
 #include <limits.h>
 #include <compat/strl.h>
 #include <retro_inline.h>
+#include <retro_miscellaneous.h>
 #include "configuration.h"
 #include "driver.h"
 #include "playlist.h"
@@ -70,6 +71,7 @@ enum sound_mode_enums
 
 struct defaults
 {
+   char core_assets_dir[PATH_MAX_LENGTH];
    char menu_config_dir[PATH_MAX_LENGTH];
    char config_path[PATH_MAX_LENGTH];
    char core_path[PATH_MAX_LENGTH];
@@ -90,7 +92,9 @@ struct defaults
    char system_dir[PATH_MAX_LENGTH];
    char playlist_dir[PATH_MAX_LENGTH];
    char content_history_dir[PATH_MAX_LENGTH];
+   char remap_dir[PATH_MAX_LENGTH];
    char extraction_dir[PATH_MAX_LENGTH];
+   char wallpapers_dir[PATH_MAX_LENGTH];
    char database_dir[PATH_MAX_LENGTH];
    char cursor_dir[PATH_MAX_LENGTH];
    char cheats_dir[PATH_MAX_LENGTH];

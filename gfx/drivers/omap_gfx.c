@@ -85,9 +85,9 @@ typedef struct omapfb_data
 
 static const char *omapfb_get_fb_device(void)
 {
-   static char fbname[12];
-   settings_t *settings = config_get_ptr();
-   const int fbidx = settings->video.monitor_index;
+   static char fbname[12] = {0};
+   settings_t   *settings = config_get_ptr();
+   const int        fbidx = settings->video.monitor_index;
 
    if (fbidx == 0)
       return "/dev/fb0";
@@ -173,7 +173,9 @@ static int omapfb_detect_screen(omapfb_data_t *pdata)
    int w, h;
    FILE *f;
    int fb_id, overlay_id = -1, display_id = -1;
-   char buff[64], manager_name[64], display_name[64];
+   char buff[64]         = {0};
+   char manager_name[64] = {0};
+   char display_name[64] = {0};
 
    /* Find out the native screen resolution, which is needed to 
     * properly center the scaled image data. */
@@ -918,26 +920,12 @@ static void omap_render_msg(omap_video_t *vid, const char *msg)
    }
 }
 
+/* FIXME/TODO: Filters not supported. */
 static void *omap_gfx_init(const video_info_t *video,
       const input_driver_t **input, void **input_data)
 {
-   omap_video_t *vid    = NULL;
    settings_t *settings = config_get_ptr();
-   global_t   *global   = global_get_ptr();
-
-   /* Don't support filters at the moment since they make estimations  *
-    * on the maximum used resolution difficult.
-    *
-    * TODO/FIXME -we can't have global state dependencies
-    * in video drivers, please refactor and do away with this check.
-    * */
-   if (global->filter.filter)
-   {
-      RARCH_ERR("[video_omap]: filters are not supported\n");
-      return NULL;
-   }
-
-   vid = (omap_video_t*)calloc(1, sizeof(omap_video_t));
+   omap_video_t *vid    = (omap_video_t*)calloc(1, sizeof(omap_video_t));
    if (!vid)
       return NULL;
 

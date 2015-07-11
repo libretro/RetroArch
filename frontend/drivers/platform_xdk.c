@@ -14,18 +14,20 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <xtl.h>
-
-#include <stddef.h>
 #include <stdint.h>
+#include <stddef.h>
 
-#include "platform_xdk.h"
-
+#include <xtl.h>
 #include <xbdm.h>
 
-#include "../../general.h"
 #include <file/file_path.h>
+#ifndef IS_SALAMANDER
+#include <file/file_list.h>
+#endif
 #include <retro_miscellaneous.h>
+
+#include "platform_xdk.h"
+#include "../../general.h"
 
 static bool exit_spawn;
 static bool exitspawn_start_game;
@@ -65,12 +67,12 @@ HRESULT xbox_io_mount(const char* szDrive, char* szDevice)
 static HRESULT xbox_io_mount(char *szDrive, char *szDevice)
 {
 #ifndef IS_SALAMANDER
-   global_t *global = global_get_ptr();
-   bool original_verbose = global->verbosity;
-   global->verbosity     = true;
+   global_t            *global = global_get_ptr();
+   bool original_verbose       = global->verbosity;
+   global->verbosity           = true;
 #endif
-   char szSourceDevice[48];
-   char szDestinationDrive[16];
+   char szSourceDevice[48]     = {0};
+   char szDestinationDrive[16] = {0};
 
    snprintf(szSourceDevice, sizeof(szSourceDevice),
          "\\Device\\%s", szDevice);
@@ -105,7 +107,8 @@ static HRESULT xbox_io_mount(char *szDrive, char *szDevice)
 
 static HRESULT xbox_io_unmount(char *szDrive)
 {
-   char szDestinationDrive[16];
+   char szDestinationDrive[16] = {0};
+
    snprintf(szDestinationDrive, sizeof(szDestinationDrive),
          "\\??\\%s", szDrive);
 
@@ -129,8 +132,9 @@ static void frontend_xdk_get_environment_settings(int *argc, char *argv[],
    (void)ret;
 
 #ifndef IS_SALAMANDER
-   global_t *global = global_get_ptr();
+   global_t      *global = global_get_ptr();
    bool original_verbose = global->verbosity;
+
    global->verbosity = true;
 #endif
 
@@ -305,8 +309,7 @@ static void frontend_xdk_set_fork(bool exit, bool start_game)
    exitspawn_start_game = start_game;
 }
 
-static void frontend_xdk_exitspawn(char *core_path,
-      size_t sizeof_core_path)
+static void frontend_xdk_exitspawn(char *s, size_t len)
 {
    bool should_load_game = false;
 #ifndef IS_SALAMANDER
@@ -315,7 +318,7 @@ static void frontend_xdk_exitspawn(char *core_path,
    if (!exit_spawn)
       return;
 #endif
-   frontend_xdk_exec(core_path, should_load_game);
+   frontend_xdk_exec(s, should_load_game);
 }
 
 static void frontend_xdk_exec(const char *path, bool should_load_game)
@@ -335,13 +338,15 @@ static void frontend_xdk_exec(const char *path, bool should_load_game)
 #if defined(_XBOX1)
    LAUNCH_DATA ptr;
    memset(&ptr, 0, sizeof(ptr));
+
    if (should_load_game && global->fullpath[0] != '\0')
       snprintf((char*)ptr.Data, sizeof(ptr.Data), "%s", global->fullpath);
 
    if (path[0] != '\0')
       XLaunchNewImage(path, ptr.Data[0] != '\0' ? &ptr : NULL);
 #elif defined(_XBOX360)
-   char game_path[1024];
+   char game_path[1024] = {0};
+
    if (should_load_game && global->fullpath[0] != '\0')
    {
       strlcpy(game_path, global->fullpath, sizeof(game_path));
@@ -377,6 +382,31 @@ enum frontend_architecture frontend_xdk_get_architecture(void)
 #endif
 }
 
+static int frontend_xdk_parse_drive_list(void *data)
+{
+#ifndef IS_SALAMANDER
+   file_list_t *list = (file_list_t*)data;
+
+#if defined(_XBOX1)
+   menu_list_push(list,
+         "C:", "", MENU_FILE_DIRECTORY, 0, 0);
+   menu_list_push(list,
+         "D:", "", MENU_FILE_DIRECTORY, 0, 0);
+   menu_list_push(list,
+         "E:", "", MENU_FILE_DIRECTORY, 0, 0);
+   menu_list_push(list,
+         "F:", "", MENU_FILE_DIRECTORY, 0, 0);
+   menu_list_push(list,
+         "G:", "", MENU_FILE_DIRECTORY, 0, 0);
+#elif defined(_XBOX360)
+   menu_list_push(list,
+         "game:", "", MENU_FILE_DIRECTORY, 0, 0);
+#endif
+#endif
+
+   return 0;
+}
+
 const frontend_ctx_driver_t frontend_ctx_xdk = {
    frontend_xdk_get_environment_settings,
    frontend_xdk_init,
@@ -392,5 +422,6 @@ const frontend_ctx_driver_t frontend_ctx_xdk = {
    NULL,                         /* load_content */
    frontend_xdk_get_architecture,
    NULL,                         /* get_powerstate */
+   frontend_xdk_parse_drive_list,
    "xdk",
 };

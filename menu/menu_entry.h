@@ -17,6 +17,9 @@
 #define MENU_ENTRY_H__
 
 #include <stdint.h>
+#include <boolean.h>
+
+#include "menu_input.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -34,7 +37,7 @@ enum menu_entry_type
    MENU_ENTRY_STRING,
    MENU_ENTRY_HEX,
    MENU_ENTRY_BIND,
-   MENU_ENTRY_ENUM,
+   MENU_ENTRY_ENUM
 };
 
 typedef struct menu_entry
@@ -42,22 +45,13 @@ typedef struct menu_entry
    char  path[PATH_MAX_LENGTH];
    char label[PATH_MAX_LENGTH];
    char value[PATH_MAX_LENGTH];
-   unsigned id;
+   size_t entry_idx;
+   unsigned idx;
    unsigned type;
    unsigned spacing;
 } menu_entry_t;
 
-size_t menu_entries_get_start(void);
-
-size_t menu_entries_get_end(void);
-
-int menu_entries_get_title(char *title, size_t title_len);
-
-uint32_t menu_entries_show_back(void);
-
 int menu_entry_go_back(void);
-
-void menu_entries_get_core_title(char *title_msg, size_t title_msg_len);
 
 enum menu_entry_type menu_entry_get_type(uint32_t i);
 
@@ -71,7 +65,7 @@ unsigned menu_entry_get_type_new(uint32_t i);
 
 uint32_t menu_entry_get_bool_value(uint32_t i);
 
-void menu_entry_set_bool_value(uint32_t i, uint32_t new_val);
+void menu_entry_set_bool_value(uint32_t i, bool new_val);
 
 struct string_list *menu_entry_enum_values(uint32_t i);
 
@@ -87,7 +81,7 @@ void menu_entry_bind_joyaxis_set(uint32_t i, int32_t value);
 
 void menu_entry_pathdir_selected(uint32_t i);
 
-uint32_t menu_entry_pathdir_allow_empty(uint32_t i);
+bool menu_entry_pathdir_allow_empty(uint32_t i);
 
 uint32_t menu_entry_pathdir_for_directory(uint32_t i);
 

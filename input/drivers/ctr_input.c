@@ -15,6 +15,7 @@
 
 #include <stdint.h>
 #include <stdlib.h>
+#include <boolean.h>
 
 #include "../../driver.h"
 #include "../../libretro.h"
@@ -26,7 +27,9 @@
 
 typedef struct ctr_input
 {
+   bool blocked;
    const input_device_driver_t *joypad;
+   uint64_t lifecycle_state;
 } ctr_input_t;
 
 static void ctr_input_poll(void *data)
@@ -74,7 +77,7 @@ static void* ctr_input_initialize(void)
    if (!ctr)
       return NULL;
 
-   ctr->joypad = input_joypad_init_driver(settings->input.joypad_driver);
+   ctr->joypad = input_joypad_init_driver(settings->input.joypad_driver, ctr);
 
    return ctr;
 }
@@ -82,10 +85,9 @@ static void* ctr_input_initialize(void)
 static bool ctr_input_key_pressed(void *data, int key)
 {
    settings_t *settings = config_get_ptr();
-   global_t   *global   = global_get_ptr();
    ctr_input_t *ctr     = (ctr_input_t*)data;
 
-   return (global->lifecycle_state & (1ULL << key)) ||
+   return (ctr->lifecycle_state & (1ULL << key)) ||
       input_joypad_pressed(ctr->joypad, 0, settings->input.binds[0], key);
 }
 
@@ -121,6 +123,22 @@ static bool ctr_input_set_rumble(void *data, unsigned port,
    return false;
 }
 
+static bool ctr_input_keyboard_mapping_is_blocked(void *data)
+{
+   ctr_input_t *ctr = (ctr_input_t*)data;
+   if (!ctr)
+      return false;
+   return ctr->blocked;
+}
+
+static void ctr_input_keyboard_mapping_set_block(void *data, bool value)
+{
+   ctr_input_t *ctr = (ctr_input_t*)data;
+   if (!ctr)
+      return;
+   ctr->blocked = value;
+}
+
 input_driver_t input_ctr = {
    ctr_input_initialize,
    ctr_input_poll,
@@ -135,4 +153,6 @@ input_driver_t input_ctr = {
    NULL,
    ctr_input_set_rumble,
    ctr_input_get_joypad_driver,
+   ctr_input_keyboard_mapping_is_blocked,
+   ctr_input_keyboard_mapping_set_block,
 };

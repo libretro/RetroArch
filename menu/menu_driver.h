@@ -21,204 +21,68 @@
 #include <stdint.h>
 #include <boolean.h>
 #include <retro_miscellaneous.h>
-#include <queues/message_queue.h>
 #include "menu_animation.h"
+#include "menu_display.h"
 #include "menu_displaylist.h"
+#include "menu_entries.h"
 #include "menu_list.h"
+#include "menu_input.h"
 #include "menu_navigation.h"
-#include "menu_database.h"
-#include "../settings_list.h"
-#include "../../libretro.h"
+#include "menu_setting.h"
+#include "../libretro.h"
+#include "../playlist.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#define MENU_MAX_BUTTONS 219
-
-#define MENU_MAX_AXES 32
-#define MENU_MAX_HATS 4
-
-#ifndef MAX_USERS
-#define MAX_USERS 16
-#endif
-
-struct menu_bind_state_port
+typedef enum
 {
-   bool buttons[MENU_MAX_BUTTONS];
-   int16_t axes[MENU_MAX_AXES];
-   uint16_t hats[MENU_MAX_HATS];
-};
+   MENU_IMAGE_NONE = 0,
+   MENU_IMAGE_WALLPAPER,
+   MENU_IMAGE_BOXART
+} menu_image_type_t;
 
-struct menu_bind_axis_state
+typedef enum
 {
-   /* Default axis state. */
-   int16_t rested_axes[MENU_MAX_AXES];
-   /* Locked axis state. If we configured an axis,
-    * avoid having the same axis state trigger something again right away. */
-   int16_t locked_axes[MENU_MAX_AXES];
-};
+   MENU_ENVIRON_NONE = 0,
+   MENU_ENVIRON_RESET_HORIZONTAL_LIST,
+   MENU_ENVIRON_LAST
+} menu_environ_cb_t;
 
-struct menu_bind_state
+typedef enum
 {
-   struct retro_keybind *target;
-   /* For keyboard binding. */
-   int64_t timeout_end;
-   unsigned begin;
-   unsigned last;
-   unsigned user;
-   struct menu_bind_state_port state[MAX_USERS];
-   struct menu_bind_axis_state axis_state[MAX_USERS];
-   bool skip;
-};
-
-typedef struct menu_framebuf
-{
-   uint16_t *data;
-   unsigned width;
-   unsigned height;
-   size_t pitch;
-} menu_framebuf_t;
+   MENU_HELP_DEFAULT    = 0,
+   MENU_HELP_EXTRACT,
+   MENU_HELP_LAST
+} menu_help_type_t;
 
 typedef struct
 {
    void *userdata;
 
-   /* Delta timing */
-   float dt;
-   retro_time_t cur_time;
-   retro_time_t old_time;
-
-   /* Used for key repeat */
-   struct
-   {
-      float timer;
-      float count;
-   } delay;
-
-   size_t begin;
-   unsigned header_height;
    float scroll_y;
 
-   menu_list_t *menu_list;
-   menu_navigation_t navigation;
-
-   struct
-   {
-      size_t selection_ptr;
-      size_t size;
-   } categories;
-
-   bool need_refresh;
-   bool nonblocking_refresh;
-   bool msg_force;
-   bool push_start_screen;
+   bool push_help_screen;
+   menu_help_type_t help_screen_type;
 
    bool defer_core;
    char deferred_path[PATH_MAX_LENGTH];
 
-   /* This buffer can be used to display generic OK messages to the user.
-    * Fill it and call
-    * menu_list_push(driver->menu->menu_stack, "", "message", 0, 0);
-    */
-   char message_contents[PATH_MAX_LENGTH];
+   /* Menu display */
+   menu_display_t display;
 
-   msg_queue_t *msg_queue;
-
-   char default_glslp[PATH_MAX_LENGTH];
-   char default_cgp[PATH_MAX_LENGTH];
-
-   menu_framebuf_t frame_buf;
-
-
-   struct
-   {
-      void *buf;
-      int size;
-
-      const uint8_t *framebuf;
-      bool alloc_framebuf;
-   } font;
+   /* Menu entries */
+   menu_entries_t entries;
 
    bool load_no_content;
 
+   /* Menu shader */
+   char default_glslp[PATH_MAX_LENGTH];
+   char default_cgp[PATH_MAX_LENGTH];
    struct video_shader *shader;
 
-   struct menu_bind_state binds;
-
-   struct
-   {
-      int16_t dx;
-      int16_t dy;
-      int16_t x;
-      int16_t y;
-      int16_t screen_x;
-      int16_t screen_y;
-      bool    left;
-      bool    right;
-      bool    oldleft;
-      bool    oldright;
-      bool    wheelup;
-      bool    wheeldown;
-      bool    hwheelup;
-      bool    hwheeldown;
-      bool    scrollup;
-      bool    scrolldown;
-      unsigned ptr;
-   } mouse;
-
-   struct
-   {
-      int16_t x;
-      int16_t y;
-      int16_t dx;
-      int16_t dy;
-      int16_t old_x;
-      int16_t old_y;
-      int16_t start_x;
-      int16_t start_y;
-      bool pressed[2];
-      bool oldpressed[2];
-      bool dragging;
-      bool back;
-      bool oldback;
-      unsigned ptr;
-   } pointer;
-
-   struct
-   {
-      const char **buffer;
-      const char *label;
-      const char *label_setting;
-      bool display;
-      unsigned type;
-      unsigned idx;
-   } keyboard;
-
-   struct
-   {
-      bool is_updated;
-   } label;
-
-   struct
-   {
-      bool dirty;
-   } framebuf;
-
-   struct
-   {
-      bool active;
-   } action;
-
-   struct
-   {
-      unsigned joypad;
-      uint64_t mouse;
-   } input;
-
-   rarch_setting_t *list_settings;
-   animation_t *animation;
-   bool animation_is_active;
+   menu_input_t input;
 
    content_playlist_t *playlist;
    char db_playlist_file[PATH_MAX_LENGTH];
@@ -245,12 +109,20 @@ typedef struct menu_ctx_driver
    void  (*navigation_descend_alphabet)(size_t *);
    void  (*navigation_ascend_alphabet)(size_t *);
    void  (*list_insert)(file_list_t *list, const char *, const char *, size_t);
-   void  (*list_delete)(file_list_t *list, size_t, size_t);
+   void  (*list_free)(file_list_t *list, size_t, size_t);
    void  (*list_clear)(file_list_t *list);
-   void  (*list_cache)(bool, unsigned);
+   void  (*list_cache)(menu_list_type_t, unsigned);
+   size_t(*list_get_selection)(void *data);
+   size_t(*list_get_size)(void *data, menu_list_type_t type);
+   void *(*list_get_entry)(void *data, menu_list_type_t type, unsigned i);
    void  (*list_set_selection)(file_list_t *list);
-   bool  (*load_background)(void *data);
+   int   (*bind_init)(menu_file_list_cbs_t *cbs,
+         const char *path, const char *label, unsigned type, size_t idx,
+         const char *elem0, const char *elem1,
+         uint32_t label_hash, uint32_t menu_label_hash);
+   bool  (*load_image)(void *data, menu_image_type_t type);
    const char *ident;
+   int (*environ_cb)(menu_environ_cb_t type, void *data);
    bool  (*perform_action)(void* data, unsigned action);
 } menu_ctx_driver_t;
 
@@ -323,22 +195,26 @@ void menu_driver_render_messagebox(const char *msg);
 void menu_driver_populate_entries(const char *path, const char *label,
          unsigned k);
 
-bool menu_driver_load_background(void *data);
+bool menu_driver_load_image(void *data, menu_image_type_t type);
 
 void  menu_driver_navigation_descend_alphabet(size_t *);
 
 void  menu_driver_navigation_ascend_alphabet(size_t *);
 
-void menu_driver_list_cache(bool state, unsigned action);
+void menu_driver_list_cache(menu_list_type_t type, unsigned action);
 
-void  menu_driver_list_delete(file_list_t *list, size_t i, size_t list_size);
+void  menu_driver_list_free(file_list_t *list, size_t i, size_t list_size);
 
 void  menu_driver_list_insert(file_list_t *list, const char *path,
       const char *label, unsigned type, size_t list_size);
 
 void  menu_driver_list_clear(file_list_t *list);
 
+size_t menu_driver_list_get_size(menu_list_type_t type);
+
 void  menu_driver_list_set_selection(file_list_t *list);
+
+void *menu_driver_list_get_entry(menu_list_type_t type, unsigned i);
 
 const menu_ctx_driver_t *menu_ctx_driver_get_ptr(void);
 
@@ -349,6 +225,18 @@ bool menu_driver_alive(void);
 void menu_driver_set_alive(void);
 
 void menu_driver_unset_alive(void);
+
+size_t  menu_driver_list_get_selection(void);
+
+bool menu_environment_cb(menu_environ_cb_t type, void *data);
+
+int menu_driver_bind_init(menu_file_list_cbs_t *cbs,
+      const char *path, const char *label, unsigned type, size_t idx,
+      const char *elem0, const char *elem1,
+      uint32_t label_hash, uint32_t menu_label_hash);
+
+/* HACK */
+extern unsigned int rdb_entry_start_game_selection_ptr;
 
 #ifdef __cplusplus
 }

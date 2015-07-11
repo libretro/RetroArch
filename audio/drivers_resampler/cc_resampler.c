@@ -62,15 +62,16 @@ typedef struct rarch_CC_resampler
 
 static void *memalign_alloc__(size_t boundary, size_t size)
 {
-   uintptr_t addr = 0;
    void **place;
+   uintptr_t addr = 0;
    void *ptr = malloc(boundary + size + sizeof(uintptr_t));
    if (!ptr)
       return NULL;
 
-   addr = ((uintptr_t)ptr + sizeof(uintptr_t) + boundary)
+   addr           = ((uintptr_t)
+         ptr + sizeof(uintptr_t) + boundary)
       & ~(boundary - 1);
-   place   = (void**)addr;
+   place          = (void**)addr;
    place[-1]      = ptr;
 
    return (void*)addr;
@@ -97,11 +98,11 @@ static void resampler_CC_process(void *re_, struct resampler_data *data)
          ".set      push\n"
          ".set      noreorder\n"
 
-         "mtv       %2,   s700              \n"   // 700 = data->ratio = b
-         //    "vsat0.s   s700, s700              \n"
-         "vrcp.s    s701, s700              \n"   // 701 = 1.0 / b
-         "vadd.s    s702, s700, s700        \n"   // 702 = 2 * b
-         "vmul.s    s703, s700, s710        \n"   // 703 = b * pi
+         "mtv       %2,   s700              \n"   /* 700 = data->ratio = b */
+         /*    "vsat0.s   s700, s700              \n" */
+         "vrcp.s    s701, s700              \n"   /* 701 = 1.0 / b */
+         "vadd.s    s702, s700, s700        \n"   /* 702 = 2 * b */
+         "vmul.s    s703, s700, s710        \n"   /* 703 = b * pi */
 
          "mfv       %0,   s701              \n"
          "mfv       %1,   s730              \n"
@@ -128,8 +129,8 @@ static void resampler_CC_process(void *re_, struct resampler_data *data)
 
                "vadd.q  c600, c730[-X,Y,-X,Y], c730[1/2,1/2,-1/2,-1/2]\n"
 
-               "vmul.q  c610, c600, c700[Z,Z,Z,Z]  \n"   //*2*b
-               "vmul.q  c600, c600, c700[W,W,W,W]  \n"   //*b*pi
+               "vmul.q  c610, c600, c700[Z,Z,Z,Z]  \n"   /* *2*b */
+               "vmul.q  c600, c600, c700[W,W,W,W]  \n"   /* *b*pi */
                "vsin.q  c610, c610                 \n"
                "vadd.q  c600, c600, c610           \n"
 
@@ -227,6 +228,10 @@ static void resampler_CC_downsample(void *re_, struct resampler_data *data)
 
    while (inp != inp_max)
    {
+      __m128 vec_ww1, vec_ww2;
+      __m128 vec_w_previous;
+      __m128 vec_w_current;
+      __m128 vec_in;
       __m128 vec_ratio =
          _mm_mul_ps(_mm_set_ps1(ratio), _mm_set_ps(3.0, 2.0, 1.0, 0.0));
       __m128 vec_w = _mm_sub_ps(_mm_set_ps1(re->distance), vec_ratio);
@@ -235,12 +240,16 @@ static void resampler_CC_downsample(void *re_, struct resampler_data *data)
       __m128 vec_w2 = _mm_sub_ps(vec_w , _mm_set_ps1(0.5));
 
       __m128 vec_b = _mm_set_ps1(b);
+
       vec_w1 = _mm_mul_ps(vec_w1, vec_b);
       vec_w2 = _mm_mul_ps(vec_w2, vec_b);
 
+      (void)vec_ww1;
+      (void)vec_ww2;
+
 #if (CC_RESAMPLER_PRECISION > 0)
-      __m128 vec_ww1 = _mm_mul_ps(vec_w1, vec_w1);
-      __m128 vec_ww2 = _mm_mul_ps(vec_w2, vec_w2);
+      vec_ww1 = _mm_mul_ps(vec_w1, vec_w1);
+      vec_ww2 = _mm_mul_ps(vec_w2, vec_w2);
 
 
       vec_ww1 = _mm_mul_ps(vec_ww1, _mm_sub_ps(_mm_set_ps1(3.0),vec_ww1));
@@ -257,15 +266,14 @@ static void resampler_CC_downsample(void *re_, struct resampler_data *data)
       vec_w2  = _mm_min_ps(vec_w2, _mm_set_ps1( 0.5));
       vec_w1  = _mm_max_ps(vec_w1, _mm_set_ps1(-0.5));
       vec_w2  = _mm_max_ps(vec_w2, _mm_set_ps1(-0.5));
-
       vec_w   = _mm_sub_ps(vec_w1, vec_w2);
 
-      __m128 vec_w_previous =
+      vec_w_previous =
          _mm_shuffle_ps(vec_w,vec_w,_MM_SHUFFLE(1, 1, 0, 0));
-      __m128 vec_w_current  =
+      vec_w_current  =
          _mm_shuffle_ps(vec_w,vec_w,_MM_SHUFFLE(3, 3, 2, 2));
 
-      __m128 vec_in = _mm_loadl_pi(_mm_setzero_ps(),(__m64*)inp);
+      vec_in = _mm_loadl_pi(_mm_setzero_ps(),(__m64*)inp);
       vec_in = _mm_shuffle_ps(vec_in,vec_in,_MM_SHUFFLE(1, 0, 1, 0));
 
       vec_previous =
@@ -297,19 +305,14 @@ static void resampler_CC_downsample(void *re_, struct resampler_data *data)
 
 static void resampler_CC_upsample(void *re_, struct resampler_data *data)
 {
-   __m128 vec_previous, vec_current;
-   float b, ratio;
-   rarch_CC_resampler_t *re = (rarch_CC_resampler_t*)re_;
-
+   rarch_CC_resampler_t *re     = (rarch_CC_resampler_t*)re_;
    audio_frame_float_t *inp     = (audio_frame_float_t*)data->data_in;
    audio_frame_float_t *inp_max = (audio_frame_float_t*)(inp + data->input_frames);
    audio_frame_float_t *outp    = (audio_frame_float_t*)data->data_out;
-
-   b = min(data->ratio, 1.00); /* cutoff frequency. */
-   ratio = 1.0 / data->ratio;
-
-   vec_previous = _mm_loadu_ps((float*)&re->buffer[0]);
-   vec_current  = _mm_loadu_ps((float*)&re->buffer[2]);
+   float b                      = min(data->ratio, 1.00); /* cutoff frequency. */
+   float ratio                  = 1.0 / data->ratio;
+   __m128 vec_previous          = _mm_loadu_ps((float*)&re->buffer[0]);
+   __m128 vec_current           = _mm_loadu_ps((float*)&re->buffer[2]);
 
    while (inp != inp_max)
    {
@@ -321,6 +324,10 @@ static void resampler_CC_upsample(void *re_, struct resampler_data *data)
 
       while (re->distance < 1.0)
       {
+         __m128 vec_w_previous, vec_w_current, vec_out;
+#if (CC_RESAMPLER_PRECISION > 0)
+         __m128 vec_ww1, vec_ww2;
+#endif
          __m128 vec_w =
             _mm_add_ps(_mm_set_ps1(re->distance), _mm_set_ps(-2.0, -1.0, 0.0, 1.0));
 
@@ -332,8 +339,8 @@ static void resampler_CC_upsample(void *re_, struct resampler_data *data)
          vec_w2 = _mm_mul_ps(vec_w2, vec_b);
 
 #if (CC_RESAMPLER_PRECISION > 0)
-         __m128 vec_ww1 = _mm_mul_ps(vec_w1, vec_w1);
-         __m128 vec_ww2 = _mm_mul_ps(vec_w2, vec_w2);
+         vec_ww1 = _mm_mul_ps(vec_w1, vec_w1);
+         vec_ww2 = _mm_mul_ps(vec_w2, vec_w2);
 
 
          vec_ww1 = _mm_mul_ps(vec_ww1,_mm_sub_ps(_mm_set_ps1(3.0),vec_ww1));
@@ -353,12 +360,10 @@ static void resampler_CC_upsample(void *re_, struct resampler_data *data)
 
          vec_w   = _mm_sub_ps(vec_w1, vec_w2);
 
-         __m128 vec_w_previous =
-            _mm_shuffle_ps(vec_w,vec_w,_MM_SHUFFLE(1, 1, 0, 0));
-         __m128 vec_w_current  =
-            _mm_shuffle_ps(vec_w,vec_w,_MM_SHUFFLE(3, 3, 2, 2));
+         vec_w_previous = _mm_shuffle_ps(vec_w,vec_w,_MM_SHUFFLE(1, 1, 0, 0));
+         vec_w_current  = _mm_shuffle_ps(vec_w,vec_w,_MM_SHUFFLE(3, 3, 2, 2));
 
-         __m128 vec_out =  _mm_mul_ps(vec_previous, vec_w_previous);
+         vec_out =  _mm_mul_ps(vec_previous, vec_w_previous);
          vec_out = _mm_add_ps(vec_out, _mm_mul_ps(vec_current, vec_w_current));
          vec_out =
             _mm_add_ps(vec_out, _mm_shuffle_ps(vec_out,vec_out,_MM_SHUFFLE(3, 2, 3, 2)));
@@ -414,10 +419,7 @@ static INLINE float cc_int(float x, float b)
    return (val > M_PI) ? M_PI : (val < -M_PI) ? -M_PI : val;
 }
 
-static INLINE float cc_kernel(float x, float b)
-{
-   return (cc_int(x + 0.5, b) - cc_int(x - 0.5, b)) / (2.0 * M_PI);
-}
+#define cc_kernel(x, b)    ((cc_int((x) + 0.5, (b)) - cc_int((x) - 0.5, (b))) / (2.0 * M_PI))
 #else
 static INLINE float cc_int(float x, float b)
 {
@@ -428,10 +430,7 @@ static INLINE float cc_int(float x, float b)
    return (val > 0.5) ? 0.5 : (val < -0.5) ? -0.5 : val;
 }
 
-static INLINE float cc_kernel(float x, float b)
-{
-   return (cc_int(x + 0.5, b) - cc_int(x - 0.5, b));
-}
+#define cc_kernel(x, b)    ((cc_int((x) + 0.5, (b)) - cc_int((x) - 0.5, (b))))
 #endif
 
 static INLINE void add_to(const audio_frame_float_t *source,
@@ -443,16 +442,13 @@ static INLINE void add_to(const audio_frame_float_t *source,
 
 static void resampler_CC_downsample(void *re_, struct resampler_data *data)
 {
-   float ratio, b;
    rarch_CC_resampler_t *re     = (rarch_CC_resampler_t*)re_;
-
    audio_frame_float_t *inp     = (audio_frame_float_t*)data->data_in;
    audio_frame_float_t *inp_max = (audio_frame_float_t*)
       (inp + data->input_frames);
    audio_frame_float_t *outp    = (audio_frame_float_t*)data->data_out;
-
-   ratio = 1.0 / data->ratio;
-   b = data->ratio; /* cutoff frequency. */
+   float                  ratio = 1.0 / data->ratio;
+   float                      b = data->ratio; /* cutoff frequency. */
 
    while (inp != inp_max)
    {
@@ -483,16 +479,13 @@ static void resampler_CC_downsample(void *re_, struct resampler_data *data)
 
 static void resampler_CC_upsample(void *re_, struct resampler_data *data)
 {
-   float b, ratio;
-   rarch_CC_resampler_t *re = (rarch_CC_resampler_t*)re_;
-
+   rarch_CC_resampler_t *re     = (rarch_CC_resampler_t*)re_;
    audio_frame_float_t *inp     = (audio_frame_float_t*)data->data_in;
    audio_frame_float_t *inp_max = (audio_frame_float_t*)
       (inp + data->input_frames);
    audio_frame_float_t *outp    = (audio_frame_float_t*)data->data_out;
-
-   b = min(data->ratio, 1.00); /* cutoff frequency. */
-   ratio = 1.0 / data->ratio;
+   float                      b = min(data->ratio, 1.00); /* cutoff frequency. */
+   float                  ratio = 1.0 / data->ratio;
 
    while (inp != inp_max)
    {
@@ -504,15 +497,15 @@ static void resampler_CC_upsample(void *re_, struct resampler_data *data)
       while (re->distance < 1.0)
       {
          int i;
-         float temp;
+
          outp->l = 0.0;
          outp->r = 0.0;
 
          for (i = 0; i < 4; i++)
          {
-            temp = cc_kernel(re->distance + 1.0 - i, b);
-            outp->l += re->buffer[i].l * temp;
-            outp->r += re->buffer[i].r * temp;
+            float temp = cc_kernel(re->distance + 1.0 - i, b);
+            outp->l   += re->buffer[i].l * temp;
+            outp->r   += re->buffer[i].r * temp;
          }
 
          re->distance += ratio;

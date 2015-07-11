@@ -138,7 +138,7 @@ int change_cb(int result, void *usrdata)
 
 void removal_cb(void *usrdata)
 {
-   RARCH_LOG("Device %d disconnected\n", (int)usrdata);
+   input_config_autoconfigure_disconnect((int)usrdata, gx_joypad.ident);
 }
 #endif
 
@@ -350,7 +350,7 @@ static void gx_joypad_poll(void)
 {
    unsigned i, j, port;
    uint8_t gcpad    = 0;
-   global_t *global = global_get_ptr();
+   gx_input_t *gx = (gx_input_t*)input_driver_get_ptr();
 
    pad_state[0] = 0;
    pad_state[1] = 0;
@@ -540,9 +540,8 @@ static void gx_joypad_poll(void)
    }
 
    uint64_t *state_p1        = &pad_state[0];
-   uint64_t *lifecycle_state = &global->lifecycle_state;
 
-   *lifecycle_state &= ~((1ULL << RARCH_MENU_TOGGLE));
+   gx->lifecycle_state &= ~((1ULL << RARCH_MENU_TOGGLE));
 
    if (g_menu)
    {
@@ -555,15 +554,21 @@ static void gx_joypad_poll(void)
             | (1ULL << GX_CLASSIC_HOME)
 #endif
             ))
-      *lifecycle_state |= (1ULL << RARCH_MENU_TOGGLE);
+      gx->lifecycle_state |= (1ULL << RARCH_MENU_TOGGLE);
 }
 
-static bool gx_joypad_init(void)
+static bool gx_joypad_init(void *data)
 {
+   int i;
    SYS_SetResetCallback(reset_cb);
 #ifdef HW_RVL
    SYS_SetPowerCallback(power_callback);
 #endif
+
+   (void)data;
+
+   for (i = 0; i < MAX_PADS; i++)
+      pad_type[i] = WPAD_EXP_NOCONTROLLER;
 
    PAD_Init();
 #ifdef HW_RVL

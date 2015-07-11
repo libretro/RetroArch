@@ -21,10 +21,10 @@
 #include <boolean.h>
 #include <pthread.h>
 
-#ifdef OSX
-#include <CoreAudio/CoreAudio.h>
-#else
+#if TARGET_OS_IPHONE
 #include <AudioToolbox/AudioToolbox.h>
+#else
+#include <CoreAudio/CoreAudio.h>
 #endif
 
 #include <CoreAudio/CoreAudioTypes.h>
@@ -128,7 +128,13 @@ static OSStatus audio_write_cb(void *userdata,
    return noErr;
 }
 
-#ifdef OSX
+#if TARGET_OS_IPHONE
+static void coreaudio_interrupt_listener(void *data, UInt32 interrupt_state)
+{
+    (void)data;
+    g_interrupted = (interrupt_state == kAudioSessionBeginInterruption);
+}
+#else
 static void choose_output_device(coreaudio_t *dev, const char* device)
 {
    unsigned i;
@@ -177,14 +183,6 @@ done:
 }
 #endif
 
-#ifdef IOS
-static void coreaudio_interrupt_listener(void *data, UInt32 interrupt_state)
-{
-   (void)data;
-   g_interrupted = (interrupt_state == kAudioSessionBeginInterruption);
-}
-#endif
-
 static void *coreaudio_init(const char *device,
       unsigned rate, unsigned latency)
 {
@@ -196,7 +194,7 @@ static void *coreaudio_init(const char *device,
 #else
    AudioComponent comp;
 #endif
-#ifndef IOS
+#ifndef TARGET_OS_IPHONE
    AudioChannelLayout layout = {0};
 #endif
    AURenderCallbackStruct cb = {0};
@@ -220,7 +218,7 @@ static void *coreaudio_init(const char *device,
    pthread_mutex_init(&dev->lock, NULL);
    pthread_cond_init(&dev->cond, NULL);
 
-#ifdef IOS
+#if TARGET_OS_IPHONE
    if (!session_initialized)
    {
       session_initialized = true;
@@ -231,7 +229,7 @@ static void *coreaudio_init(const char *device,
 
    /* Create AudioComponent */
    desc.componentType = kAudioUnitType_Output;
-#ifdef IOS
+#if TARGET_OS_IPHONE
    desc.componentSubType = kAudioUnitSubType_RemoteIO;
 #else
    desc.componentSubType = kAudioUnitSubType_HALOutput;
@@ -253,7 +251,7 @@ static void *coreaudio_init(const char *device,
 #endif
       goto error;
 
-#ifdef OSX
+#if !TARGET_OS_IPHONE
    if (device)
       choose_output_device(dev, device);
 #endif
@@ -296,7 +294,7 @@ static void *coreaudio_init(const char *device,
    settings->audio.out_rate = real_desc.mSampleRate;
 
    /* Set channel layout (fails on iOS). */
-#ifndef IOS
+#ifndef TARGET_OS_IPHONE
    layout.mChannelLayoutTag = kAudioChannelLayoutTag_Stereo;
    if (AudioUnitSetProperty(dev->dev, kAudioUnitProperty_AudioChannelLayout,
          kAudioUnitScope_Input, 0, &layout, sizeof(layout)) != noErr)
@@ -342,7 +340,7 @@ static ssize_t coreaudio_write(void *data, const void *buf_, size_t size)
    const uint8_t *buf = (const uint8_t*)buf_;
    size_t written = 0;
 
-#ifdef IOS
+#if TARGET_OS_IPHONE
    struct timespec timeout;
    struct timeval time;
 
@@ -374,7 +372,7 @@ static ssize_t coreaudio_write(void *data, const void *buf_, size_t size)
          break;
       }
 
-#ifdef IOS
+#if TARGET_OS_IPHONE
       if (write_avail == 0 && pthread_cond_timedwait(
                &dev->cond, &dev->lock, &timeout) == ETIMEDOUT)
          g_interrupted = true;

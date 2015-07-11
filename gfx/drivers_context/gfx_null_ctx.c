@@ -14,7 +14,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-// Null context.
+/* Null context. */
 
 #include "../../driver.h"
 #include "../video_context_driver.h"

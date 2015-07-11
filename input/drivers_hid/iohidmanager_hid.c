@@ -217,11 +217,7 @@ static void iohidmanager_hid_device_remove(void *data, IOReturn result, void* se
 
    if (adapter && (adapter->slot < MAX_USERS))
    {
-      char msg[PATH_MAX_LENGTH];
-
-      snprintf(msg, sizeof(msg), "Device #%u (%s) disconnected.",
-            adapter->slot, adapter->name);
-      rarch_main_msg_queue_push(msg, 0, 60, false);
+      input_config_autoconfigure_disconnect(adapter->slot, adapter->name);
 
       apple->buttons[adapter->slot] = 0;
       memset(apple->axes[adapter->slot], 0, sizeof(apple->axes));
@@ -234,7 +230,7 @@ static void iohidmanager_hid_device_remove(void *data, IOReturn result, void* se
 static int32_t iohidmanager_hid_device_get_int_property(IOHIDDeviceRef device, CFStringRef key)
 {
    int32_t value;
-   CFNumberRef ref = IOHIDDeviceGetProperty(device, key);
+   CFNumberRef ref = (CFNumberRef)IOHIDDeviceGetProperty(device, key);
 
    if (ref)
    {
@@ -260,7 +256,7 @@ static uint16_t iohidmanager_hid_device_get_product_id(IOHIDDeviceRef device)
 
 static void iohidmanager_hid_device_get_product_string(IOHIDDeviceRef device, char *buf, size_t len)
 {
-   CFStringRef ref = IOHIDDeviceGetProperty(device, CFSTR(kIOHIDProductKey));
+   CFStringRef ref = (CFStringRef)IOHIDDeviceGetProperty(device, CFSTR(kIOHIDProductKey));
 
    if (ref)
       CFStringGetCString(ref, buf, len, kCFStringEncodingUTF8);
@@ -424,17 +420,20 @@ static void *iohidmanager_hid_init(void)
 
    if (!hid_apple)
       goto error;
+   hid_apple->slots = pad_connection_init(MAX_USERS);
+   if (!hid_apple->slots)
+      goto error;
    if (iohidmanager_hid_manager_init(hid_apple) == -1)
       goto error;
    if (iohidmanager_hid_manager_set_device_matching(hid_apple) == -1)
       goto error;
 
-   hid_apple->slots = (joypad_connection_t*)pad_connection_init(MAX_USERS);
-
-
    return hid_apple;
 
 error:
+   if (hid_apple->slots)
+      free(hid_apple->slots);
+   hid_apple->slots = NULL;
    if (hid_apple)
       free(hid_apple);
    return NULL;

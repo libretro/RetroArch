@@ -142,19 +142,13 @@ void apple_rarch_exited(void)
 static int waiting_argc;
 static char** waiting_argv;
 
-@interface RetroArch_OSX()
-@property (nonatomic, retain) NSWindowController* settingsWindow;
-@end
-
-@implementation RetroArch_OSX
+@implementation RetroArch
 
 @synthesize window = _window;
-@synthesize settingsWindow = _settingsWindow;
 
 - (void)dealloc
 {
    [_window release];
-   [_settingsWindow release];
    [super dealloc];
 }
 
@@ -173,8 +167,6 @@ static char** waiting_argv;
    [[self.window contentView] addSubview:[CocoaView get]];
    [self.window makeFirstResponder:[CocoaView get]];
 
-   self.settingsWindow = [[[NSWindowController alloc] initWithWindowNibName:BOXSTRING("Settings")] autorelease];
-   
    if (rarch_main(waiting_argc, waiting_argv, NULL))
       apple_rarch_exited();
 
@@ -318,7 +310,6 @@ static void poll_iteration(void)
 
 - (IBAction)showPreferences:(id)sender
 {
-   [NSApp runModalForWindow:[self.settingsWindow window]];
 }
 
 - (IBAction)basicEvent:(id)sender
@@ -386,7 +377,7 @@ int main(int argc, char *argv[])
    int i;
    for (i = 0; i < argc; i ++)
    {
-      if (strcmp(argv[i], "--") == 0)
+      if (!strcmp(argv[i], "--"))
       {
          waiting_argc = argc - i;
          waiting_argv = argv + i;
@@ -404,7 +395,7 @@ void apple_display_alert(const char *message, const char *title)
     [alert setMessageText:(*title) ? BOXSTRING(title) : BOXSTRING("RetroArch")];
     [alert setInformativeText:BOXSTRING(message)];
     [alert setAlertStyle:NSInformationalAlertStyle];
-    [alert beginSheetModalForWindow:((RetroArch_OSX*)[[NSApplication sharedApplication] delegate]).window
+    [alert beginSheetModalForWindow:((RetroArch*)[[NSApplication sharedApplication] delegate]).window
                       modalDelegate:apple_platform
                      didEndSelector:@selector(alertDidEnd:returnCode:contextInfo:)
                         contextInfo:nil];

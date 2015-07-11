@@ -26,15 +26,13 @@ static struct bintree_node *new_nil_node(struct bintree_node *parent)
 
    node->value  = NIL_NODE;
    node->parent = parent;
-   node->left   = NULL;
-   node->right  = NULL;
 
    return node;
 }
 
 static INLINE int is_nil(const struct bintree_node *node)
 {
-	return node == NULL || node->value == NIL_NODE;
+   return (node == NULL) || (node->value == NIL_NODE);
 }
 
 static int insert(struct bintree *t, struct bintree_node *root,
@@ -44,7 +42,7 @@ static int insert(struct bintree *t, struct bintree_node *root,
 
    if (is_nil(root))
    {
-      root->left = new_nil_node(root);
+      root->left  = new_nil_node(root);
       root->right = new_nil_node(root);
 
       if (!root->left || !root->right)
@@ -114,6 +112,7 @@ static void bintree_free_node(struct bintree_node *n)
       free(n);
       return;
    }
+
    n->value = NULL;
    bintree_free_node(n->left);
    bintree_free_node(n->right);

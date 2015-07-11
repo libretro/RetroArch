@@ -337,7 +337,8 @@ static void gfx_ctx_wl_set_resize(void *data, unsigned width, unsigned height)
 
 static void gfx_ctx_wl_update_window_title(void *data)
 {
-   char buf[128], buf_fps[128];
+   char buf[128]              = {0};
+   char buf_fps[128]          = {0};
    driver_t *driver           = driver_get_ptr();
    settings_t *settings       = config_get_ptr();
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)
@@ -533,8 +534,8 @@ static EGLint *egl_fill_attribs(EGLint *attr)
             *attr++ = g_major;
             *attr++ = EGL_CONTEXT_MINOR_VERSION_KHR;
             *attr++ = g_minor;
-            // Technically, we don't have core/compat until 3.2.
-            // Version 3.1 is either compat or not depending on GL_ARB_compatibility.
+            /* Technically, we don't have core/compat until 3.2.
+             * Version 3.1 is either compat or not depending on GL_ARB_compatibility. */
             if (version >= 3002)
             {
                *attr++ = EGL_CONTEXT_OPENGL_PROFILE_MASK_KHR;
@@ -553,7 +554,7 @@ static EGLint *egl_fill_attribs(EGLint *attr)
 #endif
 
       case GFX_CTX_OPENGL_ES_API:
-         *attr++ = EGL_CONTEXT_CLIENT_VERSION; // Same as EGL_CONTEXT_MAJOR_VERSION
+         *attr++ = EGL_CONTEXT_CLIENT_VERSION; /* Same as EGL_CONTEXT_MAJOR_VERSION */
          *attr++ = g_major ? (EGLint)g_major : 2;
 #ifdef EGL_KHR_create_context
          if (g_minor > 0)
@@ -594,10 +595,12 @@ static bool gfx_ctx_wl_set_video_mode(void *data,
       unsigned width, unsigned height,
       bool fullscreen)
 {
+   EGLint egl_attribs[16];
    driver_t *driver = driver_get_ptr();
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)
       driver->video_context_data;
    struct sigaction sa = {{0}};
+   EGLint *attr = NULL;
 
    sa.sa_handler = sighandler;
    sa.sa_flags   = SA_RESTART;
@@ -605,8 +608,6 @@ static bool gfx_ctx_wl_set_video_mode(void *data,
    sigaction(SIGINT, &sa, NULL);
    sigaction(SIGTERM, &sa, NULL);
 
-   EGLint egl_attribs[16];
-   EGLint *attr = egl_attribs;
    attr = egl_fill_attribs(attr);
 
    wl->g_width = width ? width : DEFAULT_WINDOWED_WIDTH;
@@ -665,9 +666,11 @@ static void gfx_ctx_wl_input_driver(void *data,
       const input_driver_t **input, void **input_data)
 {
    (void)data;
-   //void *wl    = input_wayland.init();
-   //*input      = wl ? &input_wayland : NULL;
-   //*input_data = wl;
+#if 0
+   void *wl    = input_wayland.init();
+   *input      = wl ? &input_wayland : NULL;
+   *input_data = wl;
+#endif
    *input = NULL;
    *input_data = NULL;
 }
@@ -753,7 +756,7 @@ uint32_t format,
 int fd,
 uint32_t size)
 {
-   // TODO
+   /* TODO */
 }
 
 static void keyboard_handle_enter(void* data,
@@ -762,7 +765,7 @@ uint32_t serial,
 struct wl_surface* surface,
 struct wl_array* keys)
 {
-   // TODO
+   /* TODO */
 }
 
 static void keyboard_handle_leave(void* data,
@@ -770,7 +773,7 @@ struct wl_keyboard* keyboard,
 uint32_t serial,
 struct wl_surface* surface)
 {
-   // TODO
+   /* TODO */
 }
 
 static void keyboard_handle_key(void* data,
@@ -780,7 +783,7 @@ uint32_t time,
 uint32_t key,
 uint32_t state)
 {
-   // TODO
+   /* TODO */
 }
 
 static void keyboard_handle_modifiers(void* data,
@@ -791,7 +794,7 @@ uint32_t modsLatched,
 uint32_t modsLocked,
 uint32_t group)
 {
-   // TODO
+   /* TODO */
 }
 
 static const struct wl_keyboard_listener keyboard_listener = {
@@ -809,7 +812,7 @@ struct wl_surface* surface,
 wl_fixed_t sx,
 wl_fixed_t sy)
 {
-   // TODO
+   /* TODO */
 }
 
 static void pointer_handle_leave(void* data,
@@ -817,7 +820,7 @@ struct wl_pointer* pointer,
 uint32_t serial,
 struct wl_surface* surface)
 {
-   // TODO
+   /* TODO */
 }
 
 static void pointer_handle_motion(void* data,
@@ -826,7 +829,7 @@ uint32_t time,
 wl_fixed_t sx,
 wl_fixed_t sy)
 {
-   // TODO
+   /* TODO */
 }
 
 static void pointer_handle_button(void* data,
@@ -836,7 +839,7 @@ uint32_t time,
 uint32_t button,
 uint32_t state)
 {
-   // TODO
+   /* TODO */
 }
 
 static void pointer_handle_axis(void* data,
@@ -845,7 +848,7 @@ uint32_t time,
 uint32_t axis,
 wl_fixed_t value)
 {
-   // TODO
+   /* TODO */
 }
 
 

@@ -16,9 +16,10 @@
 
 #include <string.h>
 #include <string/string_list.h>
+
 #include "menu_driver.h"
 #include "menu.h"
-#include "menu_entries_cbs.h"
+#include "menu_cbs.h"
 #include "menu_displaylist.h"
 #include "../driver.h"
 #include "../general.h"
@@ -121,12 +122,17 @@ const char* config_get_menu_driver_options(void)
    return options;
 }
 
+static int find_menu_driver_internal(const char *ident)
+{
+   return find_driver_index("menu_driver", ident);
+}
+
 void find_menu_driver(void)
 {
    driver_t *driver     = driver_get_ptr();
    settings_t *settings = config_get_ptr();
 
-   int i = find_driver_index("menu_driver", settings->menu.driver);
+   int i = find_menu_driver_internal(settings->menu.driver);
    if (i >= 0)
       driver->menu_ctx = (const menu_ctx_driver_t*)menu_driver_find_handle(i);
    else
@@ -153,17 +159,34 @@ void init_menu(void)
       return;
 
    find_menu_driver();
-   if (!(driver->menu = (menu_handle_t*)menu_init(driver->menu_ctx)))
+
+#ifdef HAVE_RGUI
+   /* TOD/FIXME - UGLY HACK!!!!
+    * Will have to be fixed properly after release. */
+   if (!strcmp(driver->menu_ctx->ident, "xmb") ||
+         !strcmp(driver->menu_ctx->ident, "glui"))
    {
-      RARCH_ERR("Cannot initialize menu.\n");
-      rarch_fail(1, "init_menu()");
+      const char *video_driver = video_driver_get_ident();
+
+      if (video_driver && !strcmp(video_driver, "d3d"))
+      {
+         settings_t *settings = config_get_ptr();
+         int i = find_menu_driver_internal("rgui");
+         if (i >= 0)
+         {
+            driver->menu_ctx = (const menu_ctx_driver_t*)menu_driver_find_handle(i);
+            if (settings)
+               strlcpy(settings->menu.driver, "rgui", sizeof(settings->menu.driver));
+         }
+      }
    }
+#endif
+
+   if (!(driver->menu = (menu_handle_t*)menu_init(driver->menu_ctx)))
+      rarch_fail(1, "init_menu()");
 
    if (!(menu_displaylist_init(driver->menu)))
-   {
-      RARCH_ERR("Cannot initialize menu display list.\n");
       rarch_fail(1, "init_menu()");
-   }
 }
 
 menu_handle_t *menu_driver_get_ptr(void)
@@ -182,45 +205,27 @@ const menu_ctx_driver_t *menu_ctx_driver_get_ptr(void)
    return driver->menu_ctx;
 }
 
-static void menu_driver_list_delete_common(file_list_t *list, size_t idx,
-      size_t list_size)
-{
-   menu_file_list_cbs_t *cbs = NULL;
-
-   if (!list)
-      return;
-
-   cbs = (menu_file_list_cbs_t*)list->list[idx].actiondata;
-
-   if (cbs)
-   {
-      cbs->action_start         = NULL;
-      cbs->action_ok            = NULL;
-      cbs->action_cancel        = NULL;
-      cbs->action_left          = NULL;
-      cbs->action_right         = NULL;
-      cbs->action_deferred_push = NULL;
-      cbs->action_scan          = NULL;
-      free(list->list[idx].actiondata);
-   }
-   list->list[idx].actiondata = NULL;
-}
-
-void  menu_driver_list_delete(file_list_t *list, size_t i, size_t list_size)
+void  menu_driver_list_free(file_list_t *list, size_t idx, size_t list_size)
 {
    const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
 
-   if (driver->list_delete)
-      driver->list_delete(list, i, list_size);
-   menu_driver_list_delete_common(list, i, list_size);
+   if (driver->list_free)
+      driver->list_free(list, idx, list_size);
+
+   file_list_free_userdata  (list, idx);
+   file_list_free_actiondata(list, idx);
 }
 
 void  menu_driver_list_clear(file_list_t *list)
 {
    const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
+   unsigned i;
 
    if (driver->list_clear)
       driver->list_clear(list);
+
+   for (i = 0; i < list->size; i++)
+      file_list_free_actiondata(list, i);
 }
 
 void  menu_driver_context_destroy(void)
@@ -239,42 +244,65 @@ void  menu_driver_list_set_selection(file_list_t *list)
       driver->list_set_selection(list);
 }
 
-static void menu_driver_list_insert_common(file_list_t *list,
-      const char *path, const char *label,
-      unsigned type, size_t idx)
+size_t  menu_driver_list_get_selection(void)
 {
-   if (!list)
-      return;
+   const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
+   menu_handle_t *menu             = menu_driver_get_ptr();
 
-   list->list[idx].actiondata = (menu_file_list_cbs_t*)
-      calloc(1, sizeof(menu_file_list_cbs_t));
-
-   if (!list->list[idx].actiondata)
-   {
-      RARCH_ERR("Action data could not be allocated.\n");
-      return;
-   }
-
-   menu_entries_cbs_init(list, path, label, type, idx);
+   if (driver->list_get_selection)
+      return driver->list_get_selection(menu);
+   return 0;
 }
 
 void  menu_driver_list_insert(file_list_t *list, const char *path,
-      const char *label, unsigned type, size_t list_size)
+      const char *label, unsigned type, size_t idx)
 {
+   menu_file_list_cbs_t *cbs       = NULL;
    const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
 
-   if (driver->list_insert)
-      driver->list_insert(list, path, label, list_size);
+   if (!list)
+      return;
 
-   menu_driver_list_insert_common(list, path, label, type, list_size);
+   if (driver->list_insert)
+      driver->list_insert(list, path, label, idx);
+
+   file_list_free_actiondata(list, idx);
+   cbs = (menu_file_list_cbs_t*)
+      calloc(1, sizeof(menu_file_list_cbs_t));
+
+   if (!cbs)
+      return;
+
+   file_list_set_actiondata(list, idx, cbs);
+   menu_cbs_init(list, path, label, type, idx);
 }
 
-void menu_driver_list_cache(bool state, unsigned action)
+void menu_driver_list_cache(menu_list_type_t type, unsigned action)
 {
    const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
 
    if (driver->list_cache)
-      driver->list_cache(state, action);
+      driver->list_cache(type, action);
+}
+
+size_t menu_driver_list_get_size(menu_list_type_t type)
+{
+   menu_handle_t *menu             = menu_driver_get_ptr();
+   const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
+
+   if (driver && driver->list_get_size)
+      return driver->list_get_size(menu, type);
+   return 0;
+}
+
+void *menu_driver_list_get_entry(menu_list_type_t type, unsigned i)
+{
+   menu_handle_t *menu             = menu_driver_get_ptr();
+   const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
+
+   if (driver && driver->list_get_entry)
+      return driver->list_get_entry(menu, type, i);
+   return NULL;
 }
 
 void menu_driver_navigation_increment(void)
@@ -341,6 +369,21 @@ void menu_driver_frame(void)
       driver->frame();
 }
 
+int menu_driver_bind_init(menu_file_list_cbs_t *cbs,
+      const char *path, const char *label, unsigned type, size_t idx,
+      const char *elem0, const char *elem1,
+      uint32_t label_hash, uint32_t menu_label_hash)
+{
+   int ret = 0;
+   const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
+
+   if (driver && driver->bind_init)
+      ret = driver->bind_init(cbs, path, label, type, idx, elem0, elem1,
+            label_hash, menu_label_hash);
+
+   return ret;
+}
+
 void menu_driver_free(menu_handle_t *menu)
 {
    const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
@@ -384,12 +427,12 @@ void menu_driver_populate_entries(const char *path, const char *label,
       driver->populate_entries(path, label, k);
 }
 
-bool menu_driver_load_background(void *data)
+bool menu_driver_load_image(void *data, menu_image_type_t type)
 {
    const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
 
-   if (driver->load_background)
-      return driver->load_background(data);
+   if (driver->load_image)
+      return driver->load_image(data, type);
 
    return false;
 }
@@ -423,4 +466,18 @@ void menu_driver_set_alive(void)
 void menu_driver_unset_alive(void)
 {
    menu_alive = false;
+}
+
+bool menu_environment_cb(menu_environ_cb_t type, void *data)
+{
+   const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
+
+   if (driver->environ_cb)
+   {
+      int ret = driver->environ_cb(type, data);
+      if (ret == 0)
+         return true;
+   }
+
+   return false;
 }

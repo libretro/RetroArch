@@ -21,7 +21,7 @@
 
 #include "../../core_info.h"
 #include "../../playlist.h"
-#include "../../settings.h"
+#include "../../menu/menu_setting.h"
 #include "../../menu/menu.h"
 
 #if defined(HAVE_COCOATOUCH)
@@ -98,10 +98,9 @@ void get_ios_version(int *major, int *minor);
 
 @end
 
-@interface RetroArch_OSX : NSObject
+@interface RetroArch : NSObject
 {
    NSWindow* _window;
-   NSWindowController* _settingsWindow;
 }
 
 @property (nonatomic, retain) NSWindow IBOutlet* window;

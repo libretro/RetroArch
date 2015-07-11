@@ -70,6 +70,9 @@ void core_option_get(core_option_manager_t *opt, struct retro_variable *var)
 {
    size_t i;
 
+   if (!opt)
+      return;
+
    opt->updated = false;
 
    for (i = 0; i < opt->size; i++)
@@ -88,8 +91,10 @@ static bool parse_variable(core_option_manager_t *opt, size_t idx,
       const struct retro_variable *var)
 {
    size_t i;
-   const char *val_start;
-   char *value, *desc_end, *config_val = NULL;
+   const char *val_start      = NULL;
+   char *value                = NULL;
+   char *desc_end             = NULL;
+   char *config_val           = NULL;
    struct core_option *option = (struct core_option*)&opt->opts[idx];
 
    if (!option)
@@ -149,9 +154,10 @@ core_option_manager_t *core_option_new(const char *conf_path,
       const struct retro_variable *vars)
 {
    const struct retro_variable *var;
-   size_t size = 0;
-   core_option_manager_t *opt = (core_option_manager_t*)
+   size_t size                      = 0;
+   core_option_manager_t *opt       = (core_option_manager_t*)
       calloc(1, sizeof(*opt));
+
    if (!opt)
       return NULL;
 
@@ -173,8 +179,8 @@ core_option_manager_t *core_option_new(const char *conf_path,
       goto error;
 
    opt->size = size;
+   size      = 0;
 
-   size = 0;
    for (var = vars; var->key && var->value; size++, var++)
    {
       if (!parse_variable(opt, size, var))
@@ -270,7 +276,10 @@ const char *core_option_get_desc(core_option_manager_t *opt, size_t idx)
  **/
 const char *core_option_get_val(core_option_manager_t *opt, size_t idx)
 {
-   struct core_option *option = (struct core_option*)&opt->opts[idx];
+   struct core_option *option = NULL;
+   if (!opt)
+      return NULL;
+   option = (struct core_option*)&opt->opts[idx];
    if (!option)
       return NULL;
    return option->vals->elems[option->index].data;
@@ -297,7 +306,12 @@ struct string_list *core_option_get_vals(
 void core_option_set_val(core_option_manager_t *opt,
       size_t idx, size_t val_idx)
 {
-   struct core_option *option= (struct core_option*)&opt->opts[idx];
+   struct core_option *option= NULL;
+
+   if (!opt)
+      return;
+   
+   option = (struct core_option*)&opt->opts[idx];
 
    if (!option)
       return;
@@ -316,7 +330,12 @@ void core_option_set_val(core_option_manager_t *opt,
  **/
 void core_option_next(core_option_manager_t *opt, size_t idx)
 {
-   struct core_option *option = (struct core_option*)&opt->opts[idx];
+   struct core_option *option = NULL;
+
+   if (!opt)
+      return;
+   
+   option = (struct core_option*)&opt->opts[idx];
 
    if (!option)
       return;
@@ -336,7 +355,12 @@ void core_option_next(core_option_manager_t *opt, size_t idx)
  **/
 void core_option_prev(core_option_manager_t *opt, size_t idx)
 {
-   struct core_option *option = (struct core_option*)&opt->opts[idx];
+   struct core_option *option = NULL;
+
+   if (!opt)
+      return;
+   
+   option = (struct core_option*)&opt->opts[idx];
 
    if (!option)
       return;

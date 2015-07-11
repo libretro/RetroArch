@@ -33,7 +33,7 @@
 extern "C" {
 #endif
 
-typedef uint64_t retro_input_t ;
+typedef uint64_t retro_input_t;
 
 struct retro_keybind
 {
@@ -76,6 +76,8 @@ typedef struct input_driver
    bool (*set_rumble)(void *data, unsigned port,
          enum retro_rumble_effect effect, uint16_t state);
    const input_device_driver_t *(*get_joypad_driver)(void *data);
+   bool (*keyboard_mapping_is_blocked)(void *data);
+   void (*keyboard_mapping_set_block)(void *data, bool value);
 } input_driver_t;
 
 extern input_driver_t input_android;
@@ -95,6 +97,8 @@ extern input_driver_t input_cocoa;
 extern input_driver_t input_qnx;
 extern input_driver_t input_rwebinput;
 extern input_driver_t input_null;
+
+input_driver_t *input_driver_get_ptr(void);
 
 /**
  * input_driver_find_handle:
@@ -157,6 +161,10 @@ bool input_driver_grab_stdin(void);
 void *input_driver_init(void);
 
 void input_driver_free(void);
+
+bool input_driver_keyboard_mapping_is_blocked(void);
+
+void input_driver_keyboard_mapping_set_block(bool value);
 
 #ifdef __cplusplus
 }

@@ -174,7 +174,7 @@ static bool wiimote_is_connected(struct wiimote_t *wm)
 static int wiimote_send(struct wiimote_t* wm,
       uint8_t report_type, uint8_t* msg, int len)
 {
-   uint8_t buf[32];
+   uint8_t buf[32] = {0};
 
    buf[0] = WM_SET_REPORT | WM_BT_OUTPUT;
    buf[1] = report_type;
@@ -237,7 +237,7 @@ static void wiimote_data_report(struct wiimote_t* wm, uint8_t type)
 
 static void wiimote_set_leds(struct wiimote_t* wm, int leds)
 {
-   uint8_t buf;
+   uint8_t buf = {0};
 
    if (!wm || !wiimote_is_connected(wm))
       return;
@@ -379,7 +379,7 @@ static int wiimote_write_data(struct wiimote_t* wm,
 static int wiimote_read_data(struct wiimote_t* wm, uint32_t addr,
       uint16_t len)
 {
-   uint8_t buf[6];
+   uint8_t buf[6] = {0};
    int32_t *buf32 = (int32_t*)buf;
    int16_t *buf16 = (int16_t*)(buf + 4);
 
@@ -455,7 +455,7 @@ static int wiimote_handshake(struct wiimote_t* wm,
 
                if (attachment && !WIIMOTE_IS_SET(wm, WIIMOTE_STATE_EXP))
                {
-                  uint8_t buf;
+                  uint8_t buf = 0;
 
                   /* Expansion port */
 
@@ -542,7 +542,7 @@ static int wiimote_handshake(struct wiimote_t* wm,
             continue;
          case 4:
             {
-               int id;
+               uint32_t id;
                int32_t *ptr = (int32_t*)data;
 
                if (event != WM_RPT_READ)

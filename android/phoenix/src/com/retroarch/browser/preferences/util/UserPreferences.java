@@ -9,7 +9,6 @@ import java.io.InputStreamReader;
 import android.annotation.TargetApi;
 import android.content.Context;
 import android.content.SharedPreferences;
-//import android.content.pm.PackageManager;
 import android.media.AudioManager;
 import android.media.AudioTrack;
 import android.os.Build;
@@ -121,48 +120,6 @@ public final class UserPreferences
 	 */
 	public static void readbackConfigFile(Context ctx)
 	{
-		String path = getDefaultConfigPath(ctx);
-		ConfigFile config = new ConfigFile(path);
-
-		Log.i(TAG, "Config readback from: " + path);
-		
-		SharedPreferences prefs = getPreferences(ctx);
-		SharedPreferences.Editor edit = prefs.edit();
-
-		// General Settings
-		readbackBool(config, edit, "rewind_enable");
-		readbackString(config, edit, "rewind_granularity");
-		readbackBool(config, edit, "savestate_auto_load");
-		readbackBool(config, edit, "savestate_auto_save");
-
-		// Audio Settings.
-		// TODO: Other audio settings
-		readbackBool(config, edit, "audio_rate_control");
-		readbackBool(config, edit, "audio_enable");
-
-		// Input Settings
-		readbackString(config, edit, "input_overlay");
-		readbackBool(config, edit, "input_overlay_enable");
-		readbackDouble(config, edit, "input_overlay_opacity");
-		readbackBool(config, edit, "input_autodetect_enable");
-
-		// Video Settings
-		readbackBool(config, edit, "video_scale_integer");
-		readbackBool(config, edit, "video_smooth");
-		readbackBool(config, edit, "video_threaded");
-		readbackBool(config, edit, "video_allow_rotate");
-		readbackBool(config, edit, "video_font_enable");
-		readbackBool(config, edit, "video_vsync");
-		readbackString(config, edit, "video_refresh_rate");
-
-		// Path settings
-		readbackString(config, edit, "rgui_browser_directory");
-		readbackString(config, edit, "savefile_directory");
-		readbackString(config, edit, "savestate_directory");
-		readbackBool(config, edit, "savefile_directory_enable"); // Ignored by RetroArch
-		readbackBool(config, edit, "savestate_directory_enable"); // Ignored by RetroArch
-
-		edit.apply();
 	}
 
 	/**
@@ -183,96 +140,13 @@ public final class UserPreferences
 
 		final SharedPreferences prefs = getPreferences(ctx);
 		
-		config.setString("libretro_path", prefs.getString("libretro_path", coreDir));
 		config.setString("libretro_directory", coreDir);
-		config.setString("rgui_browser_directory", prefs.getString("rgui_browser_directory", ""));
-		config.setBoolean("audio_rate_control", prefs.getBoolean("audio_rate_control", true));
 		config.setInt("audio_out_rate", getOptimalSamplingRate(ctx));
 
 		// Refactor this entire mess and make this usable for per-core config
 		if (Build.VERSION.SDK_INT >= 17 && prefs.getBoolean("audio_latency_auto", true))
 		{
 			config.setInt("audio_block_frames", getLowLatencyBufferSize(ctx));
-		}
-
-		config.setBoolean("audio_enable", prefs.getBoolean("audio_enable", true));
-		config.setBoolean("video_smooth", prefs.getBoolean("video_smooth", true));
-		config.setBoolean("video_allow_rotate", prefs.getBoolean("video_allow_rotate", true));
-		config.setBoolean("savestate_auto_load", prefs.getBoolean("savestate_auto_load", true));
-		config.setBoolean("savestate_auto_save", prefs.getBoolean("savestate_auto_save", false));
-		config.setBoolean("rewind_enable", prefs.getBoolean("rewind_enable", false));
-		config.setInt("rewind_granularity", Integer.parseInt(prefs.getString("rewind_granularity", "1")));
-		config.setBoolean("video_vsync", prefs.getBoolean("video_vsync", true));
-		config.setBoolean("input_autodetect_enable", prefs.getBoolean("input_autodetect_enable", true));
-		config.setString("video_refresh_rate", prefs.getString("video_refresh_rate", ""));
-		config.setBoolean("video_threaded", prefs.getBoolean("video_threaded", true));
-
-		// Refactor these weird values - 'full', 'auto', 'square', whatever -
-		// go by what we have in the menu - makes maintaining state easier too
-		String aspect = prefs.getString("video_aspect_ratio", "auto");
-		if (aspect.equals("full"))
-		{
-			config.setBoolean("video_force_aspect", false);
-		}
-		else if (aspect.equals("auto"))
-		{
-			config.setBoolean("video_force_aspect", true);
-			config.setBoolean("video_force_aspect_auto", true);
-			config.setDouble("video_aspect_ratio", -1.0);
-		}
-		else if (aspect.equals("square"))
-		{
-			config.setBoolean("video_force_aspect", true);
-			config.setBoolean("video_force_aspect_auto", false);
-			config.setDouble("video_aspect_ratio", -1.0);
-		}
-		else
-		{
-			double aspect_ratio = Double.parseDouble(aspect);
-			config.setBoolean("video_force_aspect", true);
-			config.setDouble("video_aspect_ratio", aspect_ratio);
-		}
-
-		config.setBoolean("video_scale_integer", prefs.getBoolean("video_scale_integer", false));
-
-		if (prefs.contains("input_overlay_enable"))
-			config.setBoolean("input_overlay_enable", prefs.getBoolean("input_overlay_enable", true));
-		config.setString("input_overlay", prefs.getString("input_overlay", ""));
-
-		if (prefs.getBoolean("savefile_directory_enable", false))
-		{
-		   config.setString("savefile_directory", prefs.getString("savefile_directory", ""));
-		}
-		if (prefs.getBoolean("savestate_directory_enable", false))
-		{
-		   config.setString("savestate_directory", prefs.getString("savestate_directory", ""));
-		}
-		if (prefs.getBoolean("system_directory_enable", false))
-		{
-		   config.setString("system_directory", prefs.getString("system_directory", ""));
-		}
-
-		config.setBoolean("video_font_enable", prefs.getBoolean("video_font_enable", true));
-		config.setString("content_history_path", dataDir + "/content_history.rpl");
-
-		// FIXME: This is incomplete. Need analog axes as well.
-		for (int i = 1; i <= 4; i++)
-		{
-			final String[] btns =
-			{ 
-				"up", "down", "left", "right",
-				"a", "b", "x", "y", "start", "select",
-				"l", "r", "l2", "r2", "l3", "r3"
-			};
-
-			for (String b : btns)
-			{
-				String p = "input_player" + i + "_" + b + "_btn";
-				if (prefs.contains(p))
-					config.setInt(p, prefs.getInt(p, 0));
-				else
-					config.setString(p, "nul");
-			}
 		}
 
 		try

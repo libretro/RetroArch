@@ -20,6 +20,11 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <boolean.h>
+#include "../libretro.h"
+
+#ifndef IDEAL_DT
+#define IDEAL_DT (1.0 / 60.0 * 1000000.0)
+#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -30,25 +35,38 @@ typedef void  (*tween_cb) (void);
 
 struct tween
 {
-   int    alive;
+   bool   alive;
    float  duration;
    float  running_since;
    float  initial_value;
    float  target_value;
    float* subject;
+   int           tag;
    easingFunc easing;
    tween_cb cb;
 };
 
-typedef struct animation
+typedef struct menu_animation
 {
    struct tween *list;
 
    size_t capacity;
    size_t size;
-} animation_t;
+   size_t first_dead;
+   bool is_active;
 
-enum animation_easing_type
+   /* Delta timing */
+   float delta_time;
+   retro_time_t cur_time;
+   retro_time_t old_time;
+
+   struct
+   {
+      bool is_updated;
+   } label;
+} menu_animation_t;
+
+enum menu_animation_easing_type
 {
    /* Linear */
    EASING_LINEAR    = 0,
@@ -91,30 +109,48 @@ enum animation_easing_type
    EASING_IN_BOUNCE,
    EASING_OUT_BOUNCE,
    EASING_IN_OUT_BOUNCE,
-   EASING_OUT_IN_BOUNCE,
+   EASING_OUT_IN_BOUNCE
 };
 
-void menu_animation_free(animation_t *animation);
+void menu_animation_free(
+      menu_animation_t *animation);
 
-bool menu_animation_push(animation_t *animation, float duration,
+void menu_animation_kill_by_subject(
+      menu_animation_t *animation,
+      size_t count,
+      const void *subjects);
+
+void menu_animation_kill_by_tag(menu_animation_t *anim, int tag);
+
+/* Use -1 for untagged */
+bool menu_animation_push(
+      menu_animation_t *animation,
+      float duration,
       float target_value, float* subject,
-      enum animation_easing_type easing_enum, tween_cb cb);
+      enum menu_animation_easing_type easing_enum,
+      int tag, tween_cb cb);
 
-bool menu_animation_update(animation_t *animation, float dt);
+bool menu_animation_update(
+      menu_animation_t *animation,
+      float dt);
 
 /**
  * menu_animation_ticker_line:
- * @buf                      : buffer to write new message line to.
+ * @s                        : buffer to write new message line to.
  * @len                      : length of buffer @input.
  * @idx                      : Index. Will be used for ticker logic.
  * @str                      : Input string.
  * @selected                 : Is the item currently selected in the menu?
  *
  * Take the contents of @str and apply a ticker effect to it,
- * and write the results in @buf.
+ * and write the results in @s.
  **/
-void menu_animation_ticker_line(char *buf, size_t len, uint64_t tick,
+void menu_animation_ticker_line(char *s, size_t len, uint64_t tick,
       const char *str, bool selected);
+
+menu_animation_t *menu_animation_get_ptr(void);
+
+void menu_animation_update_time(menu_animation_t *anim);
 
 #ifdef __cplusplus
 }

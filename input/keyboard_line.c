@@ -14,14 +14,14 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stddef.h>
+#include <string.h>
+#include <ctype.h>
+
 #include "keyboard_line.h"
 #include "../general.h"
 #include "../driver.h"
 #include "../retroarch.h"
-#include <stddef.h>
-#include <string.h>
-#include <stddef.h>
-#include <ctype.h>
 
 struct input_keyboard_line
 {
@@ -182,14 +182,13 @@ static void *g_keyboard_press_data;
 const char **input_keyboard_start_line(void *userdata,
       input_keyboard_line_complete_t cb)
 {
-   driver_t *driver = driver_get_ptr();
    if (g_keyboard_line)
       input_keyboard_line_free(g_keyboard_line);
 
    g_keyboard_line = input_keyboard_line_new(userdata, cb);
 
    /* While reading keyboard line input, we have to block all hotkeys. */
-   driver->block_input = true;
+   input_driver_keyboard_mapping_set_block(true);
 
    return input_keyboard_line_get_buffer(g_keyboard_line);
 }
@@ -204,13 +203,11 @@ const char **input_keyboard_start_line(void *userdata,
  **/
 void input_keyboard_wait_keys(void *userdata, input_keyboard_press_t cb)
 {
-   driver_t *driver = driver_get_ptr();
-
    g_keyboard_press_cb = cb;
    g_keyboard_press_data = userdata;
 
    /* While waiting for input, we have to block all hotkeys. */
-   driver->block_input = true;
+   input_driver_keyboard_mapping_set_block(true);
 }
 
 /**
@@ -220,11 +217,9 @@ void input_keyboard_wait_keys(void *userdata, input_keyboard_press_t cb)
  **/
 void input_keyboard_wait_keys_cancel(void)
 {
-   driver_t *driver = driver_get_ptr();
-
-   g_keyboard_press_cb = NULL;
+   g_keyboard_press_cb   = NULL;
    g_keyboard_press_data = NULL;
-   driver->block_input = false;
+   input_driver_keyboard_mapping_set_block(false);
 }
 
 /**
@@ -235,14 +230,13 @@ void input_keyboard_wait_keys_cancel(void)
  * @mod                      : TODO/FIXME: ???
  *
  * Keyboard event utils. Called by drivers when keyboard events are fired.
- * This interfaces with the global driver struct and libretro callbacks.
+ * This interfaces with the global system driver struct and libretro callbacks.
  **/
 void input_keyboard_event(bool down, unsigned code,
       uint32_t character, uint16_t mod, unsigned device)
 {
    static bool deferred_wait_keys;
-   driver_t *driver = driver_get_ptr();
-   global_t *global = global_get_ptr();
+   rarch_system_info_t *system = rarch_system_info_get_ptr();
 
    if (deferred_wait_keys)
    {
@@ -284,9 +278,9 @@ void input_keyboard_event(bool down, unsigned code,
       g_keyboard_line = NULL;
 
       /* Unblock all hotkeys. */
-      driver->block_input = false;
+      input_driver_keyboard_mapping_set_block(false);
    }
-   else if (global->system.key_event)
-      global->system.key_event(down, code, character, mod);
+   else if (system->key_event)
+      system->key_event(down, code, character, mod);
 }
 

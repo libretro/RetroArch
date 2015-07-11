@@ -89,24 +89,24 @@ static bool linuxraw_joypad_init_pad(const char *path, struct linuxraw_joypad *p
    *pad->ident = '\0';
    if (pad->fd >= 0)
    {
+      struct epoll_event event;
+
       if (ioctl(pad->fd, JSIOCGNAME(sizeof(settings->input.device_names[0])), pad->ident) >= 0)
       {
          RARCH_LOG("[Device]: Found pad: %s on %s.\n", pad->ident, path);
 
-#ifndef IS_JOYCONFIG
          if (g_hotplug)
          {
-            char msg[512];
+            char msg[512] = {0};
+
             snprintf(msg, sizeof(msg), "Device #%u (%s) connected.", (unsigned)(pad - linuxraw_pads), pad->ident);
             rarch_main_msg_queue_push(msg, 0, 60, false);
          }
-#endif
       }
 
       else
          RARCH_ERR("[Device]: Didn't find ident of %s.\n", path);
 
-      struct epoll_event event;
       event.events = EPOLLIN;
       event.data.ptr = pad;
       epoll_ctl(g_epoll, EPOLL_CTL_ADD, pad->fd, &event);
@@ -150,17 +150,9 @@ static void handle_plugged_pad(void)
          {
             if (linuxraw_pads[idx].fd >= 0)
             {
-
-#ifndef IS_JOYCONFIG
                if (g_hotplug)
-               {
-                  char msg[512];
-                  snprintf(msg, sizeof(msg), "Device #%u (%s) disconnected.", idx, linuxraw_pads[idx].ident);
-                  rarch_main_msg_queue_push(msg, 0, 60, false);
-               }
-#endif
+                  input_config_autoconfigure_disconnect(idx, linuxraw_pads[idx].ident);
 
-               RARCH_LOG("[Device]: Device %s disconnected.\n", linuxraw_pads[idx].ident);
                close(linuxraw_pads[idx].fd);
                linuxraw_pads[idx].buttons = 0;
                memset(linuxraw_pads[idx].axes, 0, sizeof(linuxraw_pads[idx].axes));
@@ -176,7 +168,7 @@ static void handle_plugged_pad(void)
          else if (event->mask & (IN_CREATE | IN_ATTRIB))
          {
             bool ret;
-            char path[PATH_MAX_LENGTH];
+            char path[PATH_MAX_LENGTH] = {0};
 
             snprintf(path, sizeof(path), "/dev/input/%s", event->name);
             ret = linuxraw_joypad_init_pad(path, &linuxraw_pads[idx]);
@@ -221,7 +213,7 @@ static void linuxraw_joypad_setup_notify(void)
    inotify_add_watch(g_notify, "/dev/input", IN_DELETE | IN_CREATE | IN_ATTRIB);
 }
 
-static bool linuxraw_joypad_init(void)
+static bool linuxraw_joypad_init(void *data)
 {
    unsigned i;
    settings_t *settings = config_get_ptr();
@@ -230,9 +222,11 @@ static bool linuxraw_joypad_init(void)
    if (g_epoll < 0)
       return false;
 
+   (void)data;
+
    for (i = 0; i < MAX_USERS; i++)
    {
-      char path[PATH_MAX_LENGTH];
+      char path[PATH_MAX_LENGTH]  = {0};
       autoconfig_params_t params  = {{0}};
       struct linuxraw_joypad *pad = (struct linuxraw_joypad*)&linuxraw_pads[i];
 

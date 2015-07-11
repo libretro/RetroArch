@@ -21,17 +21,17 @@
  */
 
 #include <file/config_file_userdata.h>
+#include <file/file_path.h>
 #include <string/string_list.h>
 
 #define get_array_setup() \
-   struct config_file_userdata *usr = (struct config_file_userdata*)userdata; \
- \
    char key[2][256]; \
-   snprintf(key[0], sizeof(key[0]), "%s_%s", usr->prefix[0], key_str); \
-   snprintf(key[1], sizeof(key[1]), "%s_%s", usr->prefix[1], key_str); \
- \
+   bool got; \
+   struct config_file_userdata *usr = (struct config_file_userdata*)userdata; \
    char *str = NULL; \
-   bool got = config_get_string  (usr->conf, key[0], &str); \
+   fill_pathname_join_delim(key[0], usr->prefix[0], key_str, '_', sizeof(key[0])); \
+   fill_pathname_join_delim(key[1], usr->prefix[1], key_str, '_', sizeof(key[1])); \
+   got = config_get_string(usr->conf, key[0], &str); \
    got = got || config_get_string(usr->conf, key[1], &str);
 
 #define get_array_body(T) \
@@ -61,8 +61,8 @@ int config_userdata_get_float(void *userdata, const char *key_str,
    char key[2][256];
    struct config_file_userdata *usr = (struct config_file_userdata*)userdata;
 
-   snprintf(key[0], sizeof(key[0]), "%s_%s", usr->prefix[0], key_str);
-   snprintf(key[1], sizeof(key[1]), "%s_%s", usr->prefix[1], key_str);
+   fill_pathname_join_delim(key[0], usr->prefix[0], key_str, '_', sizeof(key[0]));
+   fill_pathname_join_delim(key[1], usr->prefix[1], key_str, '_', sizeof(key[1]));
 
    got = config_get_float  (usr->conf, key[0], value);
    got = got || config_get_float(usr->conf, key[1], value);
@@ -79,8 +79,8 @@ int config_userdata_get_int(void *userdata, const char *key_str,
    char key[2][256];
    struct config_file_userdata *usr = (struct config_file_userdata*)userdata;
 
-   snprintf(key[0], sizeof(key[0]), "%s_%s", usr->prefix[0], key_str);
-   snprintf(key[1], sizeof(key[1]), "%s_%s", usr->prefix[1], key_str);
+   fill_pathname_join_delim(key[0], usr->prefix[0], key_str, '_', sizeof(key[0]));
+   fill_pathname_join_delim(key[1], usr->prefix[1], key_str, '_', sizeof(key[1]));
 
    got = config_get_int  (usr->conf, key[0], value);
    got = got || config_get_int(usr->conf, key[1], value);

@@ -500,6 +500,7 @@
 					"-DHAVE_NETWORKING",
 					"-DHAVE_AVFOUNDATION",
 					"-DHAVE_GRIFFIN",
+               "-DHAVE_IMAGEVIEWER",
 					"-DHAVE_CORETEXT",
 					"-DHAVE_CORELOCATION",
 					"-DHAVE_RGUI",
@@ -566,6 +567,7 @@
 					"-DHAVE_NETWORKING",
 					"-DHAVE_AVFOUNDATION",
 					"-DHAVE_GRIFFIN",
+               "-DHAVE_IMAGEVIEWER",
 					"-DHAVE_CORELOCATION",
 					"-DHAVE_RGUI",
 					"-DHAVE_MENU",
@@ -604,6 +606,7 @@
 					"-DHAVE_NETWORKING",
 					"-DHAVE_AVFOUNDATION",
 					"-DHAVE_GRIFFIN",
+               "-DHAVE_IMAGEVIEWER",
 					"-DHAVE_CORELOCATION",
 					"-DHAVE_RGUI",
 					"-DHAVE_MENU",
@@ -673,6 +676,7 @@
 					"-DHAVE_NETWORKING",
 					"-DHAVE_AVFOUNDATION",
 					"-DHAVE_GRIFFIN",
+               "-DHAVE_IMAGEVIEWER",
 					"-DHAVE_CORELOCATION",
 					"-DHAVE_RGUI",
 					"-DHAVE_MENU",
@@ -733,6 +737,7 @@
 					"-DHAVE_NETWORKING",
 					"-DHAVE_AVFOUNDATION",
 					"-DHAVE_GRIFFIN",
+               "-DHAVE_IMAGEVIEWER",
 					"-DHAVE_CORELOCATION",
 					"-DHAVE_RGUI",
 					"-DHAVE_MENU",
@@ -795,6 +800,7 @@
 					"-DHAVE_NETWORKING",
 					"-DHAVE_AVFOUNDATION",
 					"-DHAVE_GRIFFIN",
+               "-DHAVE_IMAGEVIEWER",
 					"-DHAVE_CORELOCATION",
 					"-DHAVE_RGUI",
 					"-DHAVE_MENU",
@@ -829,6 +835,7 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE = "";
 				VALID_ARCHS = armv7;
+				WARNING_CFLAGS = "-Wno-invalid-source-encoding";
 				WRAPPER_EXTENSION = app;
 			};
 			name = Debug;
@@ -862,6 +869,7 @@
 					"-DHAVE_NETWORKING",
 					"-DHAVE_AVFOUNDATION",
 					"-DHAVE_GRIFFIN",
+               "-DHAVE_IMAGEVIEWER",
 					"-DHAVE_CORELOCATION",
 					"-DHAVE_RGUI",
 					"-DHAVE_MENU",
@@ -902,6 +910,7 @@
 					"-DHAVE_NETWORKING",
 					"-DHAVE_AVFOUNDATION",
 					"-DHAVE_GRIFFIN",
+               "-DHAVE_IMAGEVIEWER",
 					"-DHAVE_CORELOCATION",
 					"-DHAVE_RGUI",
 					"-DHAVE_MENU",
@@ -937,6 +946,7 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE = "";
 				VALID_ARCHS = armv7;
+				WARNING_CFLAGS = "-Wno-invalid-source-encoding";
 				WRAPPER_EXTENSION = app;
 			};
 			name = Release;

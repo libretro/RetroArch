@@ -16,10 +16,14 @@
 
 #include <sys/process.h>
 
+#include <file/file_path.h>
+#ifndef IS_SALAMANDER
+#include <file/file_list.h>
+#endif
+
 #include "../../ps3/sdk_defines.h"
 
 #include "../../general.h"
-#include <file/file_path.h>
 
 #define EMULATOR_CONTENT_DIR "SSNE10000"
 
@@ -64,8 +68,10 @@ static void callback_sysutil_exit(uint64_t status,
    {
       case CELL_SYSUTIL_REQUEST_EXITGAME:
          {
-            global_t *global = global_get_ptr();
-            global->system.shutdown = true;
+            rarch_system_info_t *system = rarch_system_info_get_ptr();
+
+            if (system)
+               system->shutdown = true;
          }
          break;
    }
@@ -95,14 +101,14 @@ static void frontend_ps3_get_environment_settings(int *argc, char *argv[],
    unsigned int get_type;
    unsigned int get_attributes;
    CellGameContentSize size;
-   char dirName[CELL_GAME_DIRNAME_SIZE];
-   char contentInfoPath[PATH_MAX_LENGTH];
+   char dirName[CELL_GAME_DIRNAME_SIZE]  = {0};
+   char contentInfoPath[PATH_MAX_LENGTH] = {0};
 
 #ifdef HAVE_MULTIMAN
    /* not launched from external launcher, set default path */
    // second param is multiMAN SELF file
    if(path_file_exists(argv[2]) && *argc > 1
-         && (strcmp(argv[2], EMULATOR_CONTENT_DIR) == 0))
+         && (!strcmp(argv[2], EMULATOR_CONTENT_DIR)))
    {
       multiman_detected = true;
       RARCH_LOG("Started from multiMAN, auto-game start enabled.\n");
@@ -351,24 +357,28 @@ static void frontend_ps3_exitspawn(char *core_path, size_t core_path_size)
 #include <np.h>
 #include <np/drm.h>
 
-#include "../../retroarch_logger.h"
+#include <retro_log.h>
 
 static void frontend_ps3_exec(const char *path, bool should_load_game)
 {
+   char spawn_data[256] = {0};
+   unsigned i;
+
    (void)should_load_game;
-   char spawn_data[256];
+
 #ifndef IS_SALAMANDER
-   global_t *global = global_get_ptr();
+   global_t      *global = global_get_ptr();
    bool original_verbose = global->verbosity;
+   char game_path[256]   = {0};
+
    global->verbosity = true;
 
-   char game_path[256];
    game_path[0] = '\0';
 #endif
 
    RARCH_LOG("Attempt to load executable: [%s].\n", path);
 
-   for(unsigned int i = 0; i < sizeof(spawn_data); ++i)
+   for(i = 0; i < sizeof(spawn_data); ++i)
       spawn_data[i] = i & 0xff;
 
    SceNpDrmKey * k_licensee = NULL;
@@ -444,6 +454,38 @@ enum frontend_architecture frontend_ps3_get_architecture(void)
    return FRONTEND_ARCH_PPC;
 }
 
+static int frontend_ps3_parse_drive_list(void *data)
+{
+#ifndef IS_SALAMANDER
+   file_list_t *list = (file_list_t*)data;
+
+   menu_list_push(list,
+         "/app_home/",   "", MENU_FILE_DIRECTORY, 0, 0);
+   menu_list_push(list,
+         "/dev_hdd0/",   "", MENU_FILE_DIRECTORY, 0, 0);
+   menu_list_push(list,
+         "/dev_hdd1/",   "", MENU_FILE_DIRECTORY, 0, 0);
+   menu_list_push(list,
+         "/host_root/",  "", MENU_FILE_DIRECTORY, 0, 0);
+   menu_list_push(list,
+         "/dev_usb000/", "", MENU_FILE_DIRECTORY, 0, 0);
+   menu_list_push(list,
+         "/dev_usb001/", "", MENU_FILE_DIRECTORY, 0, 0);
+   menu_list_push(list,
+         "/dev_usb002/", "", MENU_FILE_DIRECTORY, 0, 0);
+   menu_list_push(list,
+         "/dev_usb003/", "", MENU_FILE_DIRECTORY, 0, 0);
+   menu_list_push(list,
+         "/dev_usb004/", "", MENU_FILE_DIRECTORY, 0, 0);
+   menu_list_push(list,
+         "/dev_usb005/", "", MENU_FILE_DIRECTORY, 0, 0);
+   menu_list_push(list,
+         "/dev_usb006/", "", MENU_FILE_DIRECTORY, 0, 0);
+#endif
+
+   return 0;
+}
+
 const frontend_ctx_driver_t frontend_ctx_ps3 = {
    frontend_ps3_get_environment_settings,
    frontend_ps3_init,
@@ -459,5 +501,6 @@ const frontend_ctx_driver_t frontend_ctx_ps3 = {
    NULL,                         /* load_content */
    frontend_ps3_get_architecture,
    NULL,                         /* get_powerstate */
+   frontend_ps3_parse_drive_list,
    "ps3",
 };

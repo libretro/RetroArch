@@ -25,7 +25,6 @@
 #include "../retroarch.h"
 #include "../runloop.h"
 #include "../performance.h"
-#include "../intl/intl.h"
 
 #ifndef AUDIO_BUFFER_FREE_SAMPLES_COUNT
 #define AUDIO_BUFFER_FREE_SAMPLES_COUNT (8 * 1024)
@@ -230,7 +229,7 @@ const char* config_get_audio_driver_options(void)
 {
    union string_list_elem_attr attr;
    unsigned i;
-   char *options = NULL;
+   char *options   = NULL;
    int options_len = 0;
    struct string_list *options_l = string_list_new();
 
@@ -242,6 +241,7 @@ const char* config_get_audio_driver_options(void)
    for (i = 0; audio_driver_find_handle(i); i++)
    {
       const char *opt = audio_driver_find_ident(i);
+
       options_len += strlen(opt) + 1;
       string_list_append(options_l, opt, attr);
    }
@@ -250,13 +250,13 @@ const char* config_get_audio_driver_options(void)
 
    if (!options)
    {
-      string_list_free(options_l);
-      options_l = NULL;
-      return NULL;
+      options = NULL;
+      goto end;
    }
 
    string_list_join_concat(options, options_len, options_l, "|");
 
+end:
    string_list_free(options_l);
    options_l = NULL;
 
@@ -297,11 +297,13 @@ void uninit_audio(void)
    if (driver->audio_data && driver->audio)
       driver->audio->free(driver->audio_data);
 
-   free(audio_data.conv_outsamples);
+   if (audio_data.conv_outsamples)
+      free(audio_data.conv_outsamples);
    audio_data.conv_outsamples = NULL;
    audio_data.data_ptr        = 0;
 
-   free(audio_data.rewind_buf);
+   if (audio_data.rewind_buf)
+      free(audio_data.rewind_buf);
    audio_data.rewind_buf = NULL;
 
    if (!settings->audio.enable)
@@ -313,10 +315,18 @@ void uninit_audio(void)
    rarch_resampler_freep(&driver->resampler,
          &driver->resampler_data);
 
-   free(audio_data.data);
+   if (audio_data.audio_callback.callback)
+   {
+      audio_data.audio_callback.callback  = NULL;
+      audio_data.audio_callback.set_state = NULL;
+   }
+
+   if (audio_data.data)
+      free(audio_data.data);
    audio_data.data = NULL;
 
-   free(audio_data.outsamples);
+   if (audio_data.outsamples)
+      free(audio_data.outsamples);
    audio_data.outsamples = NULL;
 
    event_command(EVENT_CMD_DSP_FILTER_DEINIT);
@@ -471,18 +481,7 @@ void init_audio(void)
    return;
 
 error:
-   if (audio_data.conv_outsamples)
-      free(audio_data.conv_outsamples);
-   audio_data.conv_outsamples = NULL;
-   if (audio_data.data)
-      free(audio_data.data);
-   audio_data.data = NULL;
-   if (audio_data.rewind_buf)
-      free(audio_data.rewind_buf);
-   audio_data.rewind_buf = NULL;
-   if (audio_data.outsamples)
-      free(audio_data.outsamples);
-   audio_data.outsamples = NULL;
+   uninit_audio();
 }
 
 bool audio_driver_mute_toggle(void)
@@ -691,8 +690,6 @@ bool audio_driver_flush(const int16_t *data, size_t samples)
 
    if (audio_driver_write(output_data, output_frames * output_size * 2) < 0)
    {
-      RARCH_ERR(RETRO_LOG_AUDIO_WRITE_FAILED);
-
       driver->audio_active = false;
       return false;
    }
@@ -882,11 +879,17 @@ bool audio_driver_has_callback(void)
 void audio_driver_callback(void)
 {
    if (audio_driver_has_callback())
-      audio_data.audio_callback.callback();
+   {
+      if (audio_data.audio_callback.callback)
+         audio_data.audio_callback.callback();
+   }
 }
 
 void audio_driver_callback_set_state(bool state)
 {
    if (audio_driver_has_callback())
-      audio_data.audio_callback.set_state(state);
+   {
+      if (audio_data.audio_callback.set_state)
+         audio_data.audio_callback.set_state(state);
+   }
 }

@@ -3,28 +3,11 @@
 
         <!-- General -->
         <PreferenceCategory android:title="@string/general" >
-            <ListPreference
-                android:entries="@array/aspect_ratios"
-                android:entryValues="@array/aspect_values"
-                android:defaultValue="auto"
-                android:key="video_aspect_ratio"
-                android:summary="@string/aspect_ratio_desc"
-                android:title="@string/aspect_ratio" />
             <CheckBoxPreference
                 android:defaultValue="true"
                 android:key="video_vsync"
                 android:summary="@string/vsync_desc"
                 android:title="@string/vsync" />
-            <CheckBoxPreference
-                android:defaultValue="true"
-                android:key="video_allow_rotate"
-                android:summary="@string/auto_rotate_desc"
-                android:title="@string/auto_rotate" />
-            <CheckBoxPreference
-                android:defaultValue="false"
-                android:key="video_scale_integer"
-                android:summary="@string/scale_integer_desc"
-                android:title="@string/scale_integer" />
         </PreferenceCategory>
 
         <!-- Synchronization -->
@@ -50,13 +33,5 @@
                 android:key="set_os_reported_ref_rate_pref"
                 android:summary="@string/set_os_reported_refresh_rate_desc"
                 android:title="@string/set_os_reported_refresh_rate" />
-        </PreferenceCategory>
-
-        <!-- Fonts -->
-        <PreferenceCategory android:title="@string/fonts">
-            <CheckBoxPreference android:title="@string/onscreen_fonts"
-                android:summary="@string/onscreen_fonts_desc"
-                android:key="video_font_enable"
-                android:defaultValue="true"/>
         </PreferenceCategory>
     </PreferenceScreen>

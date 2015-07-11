@@ -1,3 +1,5 @@
+HAVE_FILE_LOGGER=1
+
 include config.mk
 
 TARGET = retroarch
@@ -37,9 +39,10 @@ ifneq ($(V),1)
    Q := @
 endif
 
-OPTIMIZE_FLAG = -O3 -ffast-math
 ifeq ($(DEBUG), 1)
-   OPTIMIZE_FLAG = -O0
+   OPTIMIZE_FLAG = -O0 -g
+else
+   OPTIMIZE_FLAG = -O3 -ffast-math
 endif
 
 CFLAGS   += -Wall $(OPTIMIZE_FLAG) $(INCLUDE_DIRS) $(DEBUG_FLAG) -I.
@@ -63,6 +66,11 @@ else
       else
          CFLAGS += -std=gnu99 -D_GNU_SOURCE
       endif
+   endif
+
+   ifneq ($(C89_BUILD)$(C90_BUILD),)
+   #looks kinda ugly, but it makes both C89_BUILD and C90_BUILD work and refer to the same thing
+      CFLAGS += -std=c89 -ansi -pedantic -Werror=pedantic
    endif
 endif
 

@@ -150,12 +150,14 @@ const char *xinput_joypad_name(unsigned pad)
    return XBOX_CONTROLLER_NAMES[xuser];
 }
 
-static bool xinput_joypad_init(void)
+static bool xinput_joypad_init(void *data)
 {
    unsigned i, autoconf_pad;
    XINPUT_STATE dummy_state;
    const char *version = "1.4";
    settings_t *settings = config_get_ptr();
+
+   (void)data;
 
    g_xinput_dll = NULL;
 
@@ -238,7 +240,7 @@ static bool xinput_joypad_init(void)
 
    /* We're going to have to be buddies with dinput if we want to be able
     * to use XInput and non-XInput controllers together. */
-   if (!dinput_joypad.init())
+   if (!dinput_joypad.init(data))
    {
       g_xinput_block_pads = false;
       return false;

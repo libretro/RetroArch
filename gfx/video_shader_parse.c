@@ -16,12 +16,14 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include "video_shader_parse.h"
 #include <compat/posix_string.h>
 #include <compat/msvc.h>
 #include <compat/strl.h>
 #include <file/file_path.h>
+#include <rhash.h>
+
 #include "../general.h"
+#include "video_shader_parse.h"
 
 /**
  * wrap_mode_to_str:
@@ -48,6 +50,11 @@ static const char *wrap_mode_to_str(enum gfx_wrap_type type)
    }
 }
 
+#define WRAP_MODE_CLAMP_TO_BORDER      0x3676ed11U
+#define WRAP_MODE_CLAMP_TO_EDGE        0x9427a608U
+#define WRAP_MODE_REPEAT               0x192dec66U
+#define WRAP_MODE_MIRRORED_REPEAT      0x117ac9a9U
+
 /** 
  * wrap_str_to_mode:
  * @type              : Wrap type in human-readable string format.
@@ -58,19 +65,28 @@ static const char *wrap_mode_to_str(enum gfx_wrap_type type)
  **/
 static enum gfx_wrap_type wrap_str_to_mode(const char *wrap_mode)
 {
-   if (strcmp(wrap_mode, "clamp_to_border") == 0)
-      return RARCH_WRAP_BORDER;
-   else if (strcmp(wrap_mode, "clamp_to_edge") == 0)
-      return RARCH_WRAP_EDGE;
-   else if (strcmp(wrap_mode, "repeat") == 0)
-      return RARCH_WRAP_REPEAT;
-   else if (strcmp(wrap_mode, "mirrored_repeat") == 0)
-      return RARCH_WRAP_MIRRORED_REPEAT;
+   uint32_t wrap_mode_hash = djb2_calculate(wrap_mode);
+
+   switch (wrap_mode_hash)
+   {
+      case WRAP_MODE_CLAMP_TO_BORDER:
+         return RARCH_WRAP_BORDER;
+      case WRAP_MODE_CLAMP_TO_EDGE:
+         return RARCH_WRAP_EDGE;
+      case WRAP_MODE_REPEAT:
+         return RARCH_WRAP_REPEAT;
+      case WRAP_MODE_MIRRORED_REPEAT:
+         return RARCH_WRAP_MIRRORED_REPEAT;
+   }
 
    RARCH_WARN("Invalid wrapping type %s. Valid ones are: clamp_to_border (default), clamp_to_edge, repeat and mirrored_repeat. Falling back to default.\n",
          wrap_mode);
    return RARCH_WRAP_DEFAULT;
 }
+
+#define SCALE_TYPE_SOURCE        0x1c3aff76U
+#define SCALE_TYPE_VIEWPORT      0xe8f01225U
+#define SCALE_TYPE_ABSOLUTE      0x8cc74f64U
 
 /** 
  * video_shader_parse_pass:
@@ -84,17 +100,25 @@ static enum gfx_wrap_type wrap_str_to_mode(const char *wrap_mode)
  **/
 static bool video_shader_parse_pass(config_file_t *conf, struct video_shader_pass *pass, unsigned i)
 {
-   char shader_name[64], filter_name_buf[64], wrap_name_buf[64], wrap_mode[64];
-   char frame_count_mod_buf[64], srgb_output_buf[64], fp_fbo_buf[64];
-   char mipmap_buf[64], alias_buf[64], scale_name_buf[64], attr_name_buf[64];
-   char scale_type[64] = {0};
-   char scale_type_x[64] = {0};
-   char scale_type_y[64] = {0};
-   char frame_count_mod[64] = {0};
-   struct gfx_fbo_scale *scale = NULL;
-   bool smooth = false;
-   float fattr = 0.0f;
-   int iattr = 0;
+   char shader_name[64]         = {0};
+   char filter_name_buf[64]     = {0};
+   char wrap_name_buf[64]       = {0};
+   char wrap_mode[64]           = {0};
+   char frame_count_mod_buf[64] = {0};
+   char srgb_output_buf[64]     = {0};
+   char fp_fbo_buf[64]          = {0};
+   char mipmap_buf[64]          = {0};
+   char alias_buf[64]           = {0};
+   char scale_name_buf[64]      = {0};
+   char attr_name_buf[64]       = {0};
+   char scale_type[64]          = {0};
+   char scale_type_x[64]        = {0};
+   char scale_type_y[64]        = {0};
+   char frame_count_mod[64]     = {0};
+   struct gfx_fbo_scale *scale  = NULL;
+   bool smooth                  = false;
+   float fattr                  = 0.0f;
+   int iattr                    = 0;
 
    /* Source */
    snprintf(shader_name, sizeof(shader_name), "shader%u", i);
@@ -156,39 +180,51 @@ static bool video_shader_parse_pass(config_file_t *conf, struct video_shader_pas
       strlcpy(scale_type_y, scale_type, sizeof(scale_type_y));
    }
 
-   scale->valid = true;
-   scale->type_x = RARCH_SCALE_INPUT;
-   scale->type_y = RARCH_SCALE_INPUT;
+   scale->valid   = true;
+   scale->type_x  = RARCH_SCALE_INPUT;
+   scale->type_y  = RARCH_SCALE_INPUT;
    scale->scale_x = 1.0;
    scale->scale_y = 1.0;
 
    if (*scale_type_x)
    {
-      if (strcmp(scale_type_x, "source") == 0)
-         scale->type_x = RARCH_SCALE_INPUT;
-      else if (strcmp(scale_type_x, "viewport") == 0)
-         scale->type_x = RARCH_SCALE_VIEWPORT;
-      else if (strcmp(scale_type_x, "absolute") == 0)
-         scale->type_x = RARCH_SCALE_ABSOLUTE;
-      else
+      uint32_t scale_type_x_hash = djb2_calculate(scale_type_x);
+
+      switch (scale_type_x_hash)
       {
-         RARCH_ERR("Invalid attribute.\n");
-         return false;
+         case SCALE_TYPE_SOURCE:
+            scale->type_x = RARCH_SCALE_INPUT;
+            break;
+         case SCALE_TYPE_VIEWPORT:
+            scale->type_x = RARCH_SCALE_VIEWPORT;
+            break;
+         case SCALE_TYPE_ABSOLUTE:
+            scale->type_x = RARCH_SCALE_ABSOLUTE;
+            break;
+         default:
+            RARCH_ERR("Invalid attribute.\n");
+            return false;
       }
    }
 
    if (*scale_type_y)
    {
-      if (strcmp(scale_type_y, "source") == 0)
-         scale->type_y = RARCH_SCALE_INPUT;
-      else if (strcmp(scale_type_y, "viewport") == 0)
-         scale->type_y = RARCH_SCALE_VIEWPORT;
-      else if (strcmp(scale_type_y, "absolute") == 0)
-         scale->type_y = RARCH_SCALE_ABSOLUTE;
-      else
+      uint32_t scale_type_y_hash = djb2_calculate(scale_type_y);
+
+      switch (scale_type_y_hash)
       {
-         RARCH_ERR("Invalid attribute.\n");
-         return false;
+         case SCALE_TYPE_SOURCE:
+            scale->type_y = RARCH_SCALE_INPUT;
+            break;
+         case SCALE_TYPE_VIEWPORT:
+            scale->type_y = RARCH_SCALE_VIEWPORT;
+            break;
+         case SCALE_TYPE_ABSOLUTE:
+            scale->type_y = RARCH_SCALE_ABSOLUTE;
+            break;
+         default:
+            RARCH_ERR("Invalid attribute.\n");
+            return false;
       }
    }
 
@@ -255,9 +291,9 @@ static bool video_shader_parse_pass(config_file_t *conf, struct video_shader_pas
 static bool video_shader_parse_textures(config_file_t *conf,
       struct video_shader *shader)
 {
-   const char *id;
-   char *save;
-   char textures[1024];
+   const char *id       = NULL;
+   char *save           = NULL;
+   char textures[1024]  = {0};
 
    if (!config_get_array(conf, "textures", textures, sizeof(textures)))
       return true;
@@ -266,10 +302,12 @@ static bool video_shader_parse_textures(config_file_t *conf,
          id && shader->luts < GFX_MAX_TEXTURES;
          shader->luts++, id = strtok_r(NULL, ";", &save))
    {
-      char id_filter[64], id_wrap[64], wrap_mode[64];
-      char id_mipmap[64];
-      bool mipmap = false;
-      bool smooth = false;
+      char id_filter[64]  = {0};
+      char id_wrap[64]    = {0};
+      char wrap_mode[64]  = {0};
+      char id_mipmap[64]  = {0};
+      bool mipmap         = false;
+      bool smooth         = false;
 
       if (!config_get_array(conf, id, shader->lut[shader->luts].path,
                sizeof(shader->lut[shader->luts].path)))
@@ -349,7 +387,7 @@ bool video_shader_resolve_parameters(config_file_t *conf,
 
    for (i = 0; i < shader->passes; i++)
    {
-      char line[4096];
+      char line[4096] = {0};
       FILE *file = fopen(shader->pass[i].source.path, "r");
 
       if (!file)
@@ -387,9 +425,9 @@ bool video_shader_resolve_parameters(config_file_t *conf,
    if (conf)
    {
       /* Read in parameters which override the defaults. */
-      char parameters[4096];
-      const char *id;
-      char *save = NULL;
+      char parameters[4096] = {0};
+      const char *id        = NULL;
+      char *save            = NULL;
 
       if (!config_get_array(conf, "parameters",
                parameters, sizeof(parameters)))
@@ -415,6 +453,13 @@ bool video_shader_resolve_parameters(config_file_t *conf,
    return true;
 }
 
+#define SEMANTIC_CAPTURE              0xb2f5d639U
+#define SEMANTIC_CAPTURE_PREVIOUS     0x64d6d495U
+#define SEMANTIC_TRANSITION           0x96486f70U
+#define SEMANTIC_TRANSITION_PREVIOUS  0x536abbacU
+#define SEMANTIC_TRANSITION_COUNT     0x3ef2af78U
+#define SEMANTIC_PYTHON               0x15efc547U
+
 /** 
  * video_shader_parse_imports:
  * @conf              : Preset file to read from.
@@ -427,9 +472,9 @@ bool video_shader_resolve_parameters(config_file_t *conf,
 static bool video_shader_parse_imports(config_file_t *conf,
       struct video_shader *shader)
 {
-   char imports[1024];
-   const char *id;
-   char *save = NULL;
+   const char *id     = NULL;
+   char *save         = NULL;
+   char imports[1024] = {0};
 
    if (!config_get_array(conf, "imports", imports, sizeof(imports)))
       return true;
@@ -438,9 +483,16 @@ static bool video_shader_parse_imports(config_file_t *conf,
          id && shader->variables < GFX_MAX_VARIABLES;
          shader->variables++, id = strtok_r(NULL, ";", &save))
    {
-      char semantic_buf[64], wram_buf[64], input_slot_buf[64];
-      char mask_buf[64], equal_buf[64], semantic[64];
-      unsigned addr = 0, mask = 0, equal = 0;
+      uint32_t semantic_hash;
+      char semantic_buf[64]   = {0};
+      char wram_buf[64]       = {0};
+      char input_slot_buf[64] = {0};
+      char mask_buf[64]       = {0};
+      char equal_buf[64]      = {0};
+      char semantic[64]       = {0};
+      unsigned addr           = 0;
+      unsigned mask           = 0;
+      unsigned equal          = 0;
       struct state_tracker_uniform_info *var = 
          (struct state_tracker_uniform_info*)
          &shader->variable[shader->variables];
@@ -459,23 +511,33 @@ static bool video_shader_parse_imports(config_file_t *conf,
          return false;
       }
 
-      if (strcmp(semantic, "capture") == 0)
-         var->type = RARCH_STATE_CAPTURE;
-      else if (strcmp(semantic, "transition") == 0)
-         var->type = RARCH_STATE_TRANSITION;
-      else if (strcmp(semantic, "transition_count") == 0)
-         var->type = RARCH_STATE_TRANSITION_COUNT;
-      else if (strcmp(semantic, "capture_previous") == 0)
-         var->type = RARCH_STATE_CAPTURE_PREV;
-      else if (strcmp(semantic, "transition_previous") == 0)
-         var->type = RARCH_STATE_TRANSITION_PREV;
-      else if (strcmp(semantic, "python") == 0)
-         var->type = RARCH_STATE_PYTHON;
-      else
+      semantic_hash = djb2_calculate(semantic);
+
+      switch (semantic_hash)
       {
-         RARCH_ERR("Invalid semantic.\n");
-         return false;
+         case SEMANTIC_CAPTURE:
+            var->type = RARCH_STATE_CAPTURE;
+            break;
+         case SEMANTIC_TRANSITION:
+            var->type = RARCH_STATE_TRANSITION;
+            break;
+         case SEMANTIC_TRANSITION_COUNT:
+            var->type = RARCH_STATE_TRANSITION_COUNT;
+            break;
+         case SEMANTIC_CAPTURE_PREVIOUS:
+            var->type = RARCH_STATE_CAPTURE_PREV;
+            break;
+         case SEMANTIC_TRANSITION_PREVIOUS:
+            var->type = RARCH_STATE_TRANSITION_PREV;
+            break;
+         case SEMANTIC_PYTHON:
+            var->type = RARCH_STATE_PYTHON;
+            break;
+         default:
+            RARCH_ERR("Invalid semantic.\n");
+            return false;
       }
+
 
       if (var->type != RARCH_STATE_PYTHON)
       {
@@ -589,7 +651,7 @@ static const char *scale_type_to_str(enum gfx_scale_type type)
 static void shader_write_scale_dim(config_file_t *conf, const char *dim,
       enum gfx_scale_type type, float scale, unsigned absolute, unsigned i)
 {
-   char key[64];
+   char key[64] = {0};
 
    snprintf(key, sizeof(key), "scale_type_%s%u", dim, i);
    config_set_string(conf, key, scale_type_to_str(type));
@@ -604,7 +666,7 @@ static void shader_write_scale_dim(config_file_t *conf, const char *dim,
 static void shader_write_fbo(config_file_t *conf,
       const struct gfx_fbo_scale *fbo, unsigned i)
 {
-   char key[64];
+   char key[64] = {0};
 
    snprintf(key, sizeof(key), "float_framebuffer%u", i);
    config_set_bool(conf, key, fbo->fp_fbo);
@@ -658,9 +720,12 @@ static const char *import_semantic_to_str(enum state_tracker_type type)
 static void shader_write_variable(config_file_t *conf,
       const struct state_tracker_uniform_info *info)
 {
-   char semantic_buf[64], wram_buf[64], input_slot_buf[64];
-   char mask_buf[64], equal_buf[64];
-   const char *id = info->id;
+   char semantic_buf[64]   = {0};
+   char wram_buf[64]       = {0};
+   char input_slot_buf[64] = {0};
+   char mask_buf[64]       = {0};
+   char equal_buf[64]      = {0};
+   const char *id          = info->id;
 
    snprintf(semantic_buf, sizeof(semantic_buf), "%s_semantic", id);
    snprintf(wram_buf, sizeof(wram_buf), "%s_wram", id);
@@ -709,7 +774,7 @@ void video_shader_write_conf_cgp(config_file_t *conf,
 
    for (i = 0; i < shader->passes; i++)
    {
-      char key[64];
+      char key[64] = {0};
       const struct video_shader_pass *pass = &shader->pass[i];
 
       snprintf(key, sizeof(key), "shader%u", i);
@@ -775,7 +840,7 @@ void video_shader_write_conf_cgp(config_file_t *conf,
 
       for (i = 0; i < shader->luts; i++)
       {
-         char key[64];
+         char key[64] = {0};
 
          config_set_string(conf, shader->lut[i].id, shader->lut[i].path);
 
@@ -839,9 +904,9 @@ enum rarch_shader_type video_shader_parse_type(const char *path,
 
    ext = path_get_extension(path);
 
-   if (strcmp(ext, "cg") == 0 || strcmp(ext, "cgp") == 0)
+   if (!strcmp(ext, "cg") || !strcmp(ext, "cgp"))
       return RARCH_SHADER_CG;
-   else if (strcmp(ext, "glslp") == 0 || strcmp(ext, "glsl") == 0)
+   else if (!strcmp(ext, "glslp") || !strcmp(ext, "glsl"))
       return RARCH_SHADER_GLSL;
 
    return fallback;
@@ -859,7 +924,7 @@ void video_shader_resolve_relative(struct video_shader *shader,
       const char *ref_path)
 {
    unsigned i;
-   char tmp_path[4096];
+   char tmp_path[4096] = {0};
 
    for (i = 0; i < shader->passes; i++)
    {

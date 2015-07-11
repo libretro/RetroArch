@@ -139,10 +139,10 @@ autosave_t *autosave_new(const char *path, const void *data, size_t size,
    if (!handle)
       return NULL;
 
-   handle->bufsize = size;
-   handle->interval = interval;
-   handle->path = path;
-   handle->buffer = malloc(size);
+   handle->bufsize      = size;
+   handle->interval     = interval;
+   handle->path         = path;
+   handle->buffer       = malloc(size);
    handle->retro_buffer = data;
 
    if (!handle->buffer)
@@ -152,11 +152,11 @@ autosave_t *autosave_new(const char *path, const void *data, size_t size,
    }
    memcpy(handle->buffer, handle->retro_buffer, handle->bufsize);
 
-   handle->lock = slock_new();
-   handle->cond_lock = slock_new();
-   handle->cond = scond_new();
+   handle->lock         = slock_new();
+   handle->cond_lock    = slock_new();
+   handle->cond         = scond_new();
 
-   handle->thread = sthread_create(autosave_thread, handle);
+   handle->thread       = sthread_create(autosave_thread, handle);
 
    return handle;
 }

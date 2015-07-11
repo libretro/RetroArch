@@ -2,11 +2,9 @@
 #For this script to work correctly, you must place the "data" folder containing your ps3 keys for scetool to use in the dist-scripts folder.
 
 make -C ../ -f Makefile.ps3.salamander clean || exit 1
-make -C ../ -f Makefile.ps3.rgl clean || exit 1
 make -C ../ -f Makefile.ps3.cobra clean || exit 1
 
 make -C ../ -f Makefile.ps3.salamander || exit 1
-make -C ../ -f Makefile.ps3.rgl || exit 1
 
 GENPS3ISO_PATH=/cygdrive/c/Cobra_ODE_GenPS3iso_v2.3/genps3iso.exe 
 SCETOOL_PATH=/cygdrive/c/Users/aaa801/ps3tools/ps3tools/tools/scetool/scetool.exe

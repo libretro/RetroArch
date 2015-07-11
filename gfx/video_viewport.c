@@ -193,7 +193,7 @@ void video_viewport_get_scaled_integer(struct video_viewport *vp,
        * but it is desirable in some cases.
        *
        * If square pixels are used, base_height will be equal to 
-       * global->system.av_info.base_height. */
+       * system->av_info.base_height. */
       base_width = (unsigned)roundf(base_height * aspect_ratio);
 
       /* Make sure that we don't get 0x scale ... */

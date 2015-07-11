@@ -13,15 +13,55 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <compat/strcasestr.h>
 #include <compat/strl.h>
+
+#ifdef HAVE_LIBRETRODB
+#include "../database_info.h"
+#endif
 
 #include "../dir_list_special.h"
 #include "../file_ops.h"
-
+#include "../msg_hash.h"
 #include "../general.h"
-#include "../runloop_data.h"
 #include "tasks.h"
 
+#define CB_DB_SCAN_FILE    0x70ce56d2U
+#define CB_DB_SCAN_FOLDER  0xde2bef8eU
+
+#define HASH_EXTENSION_ZIP 0x0b88c7d8U
+
+typedef struct database_state_handle
+{
+   database_info_list_t *info;
+   struct string_list *list;
+   size_t list_index;
+   size_t entry_index;
+   uint32_t crc;
+   uint8_t *buf;
+   char zip_name[PATH_MAX_LENGTH];
+} database_state_handle_t;
+
+typedef struct db_handle
+{
+   database_state_handle_t state;
+   database_info_handle_t *handle;
+   msg_queue_t *msg_queue;
+   unsigned status;
+} db_handle_t;
+
+static db_handle_t *db_ptr;
+
+static bool pending_scan_finished;
+
+bool rarch_main_data_db_pending_scan_finished(void)
+{
+   if (!pending_scan_finished)
+      return false;
+
+   pending_scan_finished = false;
+   return true;
+}
 
 #ifdef HAVE_LIBRETRODB
 
@@ -36,7 +76,9 @@ static int zlib_compare_crc32(const char *name, const char *valid_exts,
 
    strlcpy(db_state->zip_name, name, sizeof(db_state->zip_name));
 
+#if 0
    RARCH_LOG("Going to compare CRC 0x%x for %s\n", crc32, name);
+#endif
 
    return 1;
 }
@@ -45,19 +87,26 @@ static int zlib_compare_crc32(const char *name, const char *valid_exts,
 static int database_info_iterate_start
 (database_info_handle_t *db, const char *name)
 {
-   char msg[PATH_MAX_LENGTH];
+   char msg[PATH_MAX_LENGTH] = {0};
+
    snprintf(msg, sizeof(msg),
 #ifdef _WIN32
-	   "%Iu/%Iu: Scanning %s...\n",
+         "%Iu/%Iu: %s %s...\n",
 #else
-	   "%zu/%zu: Scanning %s...\n",
+         "%zu/%zu: %s %s...\n",
 #endif
-         db->list_ptr, db->list->size, name);
+         db->list_ptr,
+         db->list->size,
+         msg_hash_to_str(MSG_SCANNING),
+         name);
 
    if (msg[0] != '\0')
       rarch_main_msg_queue_push(msg, 1, 180, true);
 
+#if 0
    RARCH_LOG("msg: %s\n", msg);
+#endif
+
 
    db->status = DATABASE_STATUS_ITERATE;
 
@@ -68,38 +117,42 @@ static int database_info_iterate_playlist(
       database_state_handle_t *db_state,
       database_info_handle_t *db, const char *name)
 {
-   char parent_dir[PATH_MAX_LENGTH];
+   uint32_t extension_hash          = 0;
+   char parent_dir[PATH_MAX_LENGTH] = {0};
 
    path_parent_dir(parent_dir);
 
-   if (!strcmp(path_get_extension(name), "zip"))
+   extension_hash = msg_hash_calculate(path_get_extension(name));
+
+   switch (extension_hash)
    {
+      case HASH_EXTENSION_ZIP:
 #ifdef HAVE_ZLIB
-      db->type = DATABASE_TYPE_ITERATE_ZIP;
-      memset(&db->state, 0, sizeof(zlib_transfer_t));
-      db_state->zip_name[0] = '\0';
-      db->state.type = ZLIB_TRANSFER_INIT;
+         db->type = DATABASE_TYPE_ITERATE_ZIP;
+         memset(&db->state, 0, sizeof(zlib_transfer_t));
+         db_state->zip_name[0] = '\0';
+         db->state.type = ZLIB_TRANSFER_INIT;
 
-      return 1;
+         return 1;
 #endif
-   }
-   else
-   {
-      ssize_t ret;
-      int read_from            = read_file(name, (void**)&db_state->buf, &ret);
+      default:
+         {
+            ssize_t ret;
+            int read_from            = read_file(name, (void**)&db_state->buf, &ret);
 
-      if (read_from != 1 || ret <= 0)
-         return 0;
+            if (read_from != 1 || ret <= 0)
+               return 0;
 
 
 #ifdef HAVE_ZLIB
-      db_state->crc = zlib_crc32_calculate(db_state->buf, ret);
+            db_state->crc = zlib_crc32_calculate(db_state->buf, ret);
 #endif
-      db->type = DATABASE_TYPE_CRC_LOOKUP;
-      return 1;
+            db->type = DATABASE_TYPE_CRC_LOOKUP;
+         }
+         break;
    }
 
-   return 0;
+   return 1;
 }
 
 static int database_info_list_iterate_end_no_match(database_state_handle_t *db_state)
@@ -122,62 +175,54 @@ static int database_info_iterate_next(database_info_handle_t *db)
    return -1;
 }
 
-static int database_info_list_iterate_new(database_state_handle_t *db_state)
+static int database_info_list_iterate_new(database_state_handle_t *db_state, const char *query)
 {
    const char *new_database = db_state->list->elems[db_state->list_index].data;
+#if 0
    RARCH_LOG("Check database [%d/%d] : %s\n", (unsigned)db_state->list_index, 
          (unsigned)db_state->list->size, new_database);
+#endif
    if (db_state->info)
       database_info_list_free(db_state->info);
-   db_state->info = database_info_list_new(new_database, NULL);
+   db_state->info = database_info_list_new(new_database, query);
    return 0;
 }
 
-/* TODO/FIXME -
- * * - What 'core' to bind a playlist entry to if
- * we are in Load Content (Detect Core)? Let the user
- * choose the core to be loaded with it upon selecting
- * the playlist entry?
- * * - Implement ZIP handling.
- **/
 static int database_info_list_iterate_found_match(
       database_state_handle_t *db_state,
       database_info_handle_t *db,
       const char *zip_name
       )
 {
-   char db_crc[PATH_MAX_LENGTH];
-   char db_playlist_path[PATH_MAX_LENGTH];
-   char  db_playlist_base_str[PATH_MAX_LENGTH];
-   char entry_path_str[PATH_MAX_LENGTH];
-   const char *db_playlist_base = NULL;
-   content_playlist_t *playlist = NULL;
-   settings_t *settings = config_get_ptr();
-   const char *db_path = db_state->list->elems[db_state->list_index].data;
-   const char *entry_path = db ? db->list->elems[db->list_ptr].data : NULL;
+   char db_crc[PATH_MAX_LENGTH]                = {0};
+   char db_playlist_path[PATH_MAX_LENGTH]      = {0};
+   char  db_playlist_base_str[PATH_MAX_LENGTH] = {0};
+   char entry_path_str[PATH_MAX_LENGTH]        = {0};
+   content_playlist_t   *playlist = NULL;
+   settings_t           *settings = config_get_ptr();
+   const char            *db_path = db_state->list->elems[db_state->list_index].data;
+   const char         *entry_path = db ? db->list->elems[db->list_ptr].data : NULL;
    database_info_t *db_info_entry = &db_state->info->list[db_state->entry_index];
 
-   db_playlist_base = path_basename(db_path);
-
-   strlcpy(db_playlist_base_str, db_playlist_base, sizeof(db_playlist_base_str));
+   fill_short_pathname_representation(db_playlist_base_str,
+         db_path, sizeof(db_playlist_base_str));
 
    path_remove_extension(db_playlist_base_str);
 
-   strlcat(db_playlist_base_str, ".rpl", sizeof(db_playlist_base_str));
+   strlcat(db_playlist_base_str, ".lpl", sizeof(db_playlist_base_str));
    fill_pathname_join(db_playlist_path, settings->playlist_directory,
          db_playlist_base_str, sizeof(db_playlist_path));
 
    playlist = content_playlist_init(db_playlist_path, 1000);
 
 
-   snprintf(db_crc, sizeof(db_crc), "%s|crc", db_info_entry->crc32);
+   snprintf(db_crc, sizeof(db_crc), "%08X|crc", db_info_entry->crc32);
 
    strlcpy(entry_path_str, entry_path, sizeof(entry_path_str));
+
    if (zip_name && zip_name[0] != '\0')
-   {
-      strlcat(entry_path_str, "#", sizeof(entry_path_str));
-      strlcat(entry_path_str, zip_name, sizeof(entry_path_str));
-   }
+      fill_pathname_join_delim(entry_path_str, entry_path_str, zip_name,
+            '#', sizeof(entry_path_str));
 
 #if 0
    RARCH_LOG("Found match in database !\n");
@@ -191,7 +236,8 @@ static int database_info_list_iterate_found_match(
    RARCH_LOG("entry path str: %s\n", entry_path_str);
 #endif
 
-   content_playlist_push(playlist, entry_path_str, db_info_entry->name, "DETECT", "DETECT", db_crc);
+   content_playlist_push(playlist, entry_path_str,
+         db_info_entry->name, "DETECT", "DETECT", db_crc, db_playlist_base_str);
 
    content_playlist_write_file(playlist);
    content_playlist_free(playlist);
@@ -223,24 +269,24 @@ static int database_info_iterate_crc_lookup(
       return database_info_list_iterate_end_no_match(db_state);
 
    if (db_state->entry_index == 0)
-      database_info_list_iterate_new(db_state);
+   {
+      char query[50] = {0};
+      snprintf(query, sizeof(query), "{crc: b\"%08X\"}", swap_if_big32(db_state->crc));
+
+      database_info_list_iterate_new(db_state, query);
+   }
 
    if (db_state->info)
    {
       database_info_t *db_info_entry = &db_state->info->list[db_state->entry_index];
 
-      if (db_info_entry && db_info_entry->crc32 && db_info_entry->crc32[0] != '\0')
+      if (db_info_entry && db_info_entry->crc32)
       {
-         char entry_state_crc[PATH_MAX_LENGTH];
-         /* Check if the CRC matches with the current entry. */
-         snprintf(entry_state_crc, sizeof(entry_state_crc), "%x", db_state->crc);
-
 #if 0
-         RARCH_LOG("CRC32: 0x%s , entry CRC32: 0x%s (%s).\n",
-               entry_state_crc, db_info_entry->crc32, db_info_entry->name);
+         RARCH_LOG("CRC32: 0x%08X , entry CRC32: 0x%08X (%s).\n",
+                   db_state->crc, db_info_entry->crc32, db_info_entry->name);
 #endif
-
-         if (rarch_strcasestr(entry_state_crc, db_info_entry->crc32))
+         if (db_state->crc == db_info_entry->crc32)
             database_info_list_iterate_found_match(db_state, db, zip_entry);
       }
    }
@@ -276,14 +322,14 @@ static int database_info_iterate_playlist_zip(
                &returnerr, name, NULL, zlib_compare_crc32,
                (void*)db_state) != 0)
          return 0;
+
+      if (db_state->crc)
+         zlib_parse_file_iterate_stop(&db->state);
    }
 #endif
 
    return 1;
 }
-
-
-
 
 static int database_info_iterate(database_state_handle_t *state, database_info_handle_t *db)
 {
@@ -312,7 +358,8 @@ static int database_info_iterate(database_state_handle_t *state, database_info_h
 
 static int database_info_poll(db_handle_t *db)
 {
-   char elem0[PATH_MAX_LENGTH], elem1[PATH_MAX_LENGTH];
+   uint32_t cb_type_hash        = 0;
+   char elem0[PATH_MAX_LENGTH]  = {0};
    struct string_list *str_list = NULL;
    const char *path = msg_queue_pull(db->msg_queue);
 
@@ -327,9 +374,17 @@ static int database_info_poll(db_handle_t *db)
    if (str_list->size > 0)
       strlcpy(elem0, str_list->elems[0].data, sizeof(elem0));
    if (str_list->size > 1)
-      strlcpy(elem1, str_list->elems[1].data, sizeof(elem1));
+      cb_type_hash = msg_hash_calculate(str_list->elems[1].data);
 
-   db->handle = database_info_init(elem0, DATABASE_TYPE_ITERATE);
+   switch (cb_type_hash)
+   {
+      case CB_DB_SCAN_FILE:
+         db->handle = database_info_file_init(elem0, DATABASE_TYPE_ITERATE);
+         break;
+      case CB_DB_SCAN_FOLDER:
+         db->handle = database_info_dir_init(elem0, DATABASE_TYPE_ITERATE);
+         break;
+   }
 
    string_list_free(str_list);
 
@@ -352,14 +407,13 @@ static void rarch_main_data_db_cleanup_state(database_state_handle_t *db_state)
    db_state->buf = NULL;
 }
 
-void rarch_main_data_db_iterate(bool is_thread, void *data)
+void rarch_main_data_db_iterate(bool is_thread)
 {
-   data_runloop_t         *runloop   = (data_runloop_t*)data;
-   database_info_handle_t      *db   = runloop ? runloop->db.handle : NULL;
-   database_state_handle_t *db_state = runloop ? &runloop->db.state : NULL;
-   const char *name = db ? db->list->elems[db->list_ptr].data : NULL;
+   database_info_handle_t      *db   = (db_ptr) ? db_ptr->handle : NULL;
+   database_state_handle_t *db_state = (db_ptr) ? &db_ptr->state : NULL;
+   const char *name = db ? db->list->elems[db->list_ptr].data    : NULL;
 
-   if (!db || !runloop)
+   if (!db)
       goto do_poll;
 
    switch (db->status)
@@ -376,7 +430,7 @@ void rarch_main_data_db_iterate(bool is_thread, void *data)
          database_info_iterate_start(db, name);
          break;
       case DATABASE_STATUS_ITERATE:
-         if (database_info_iterate(&runloop->db.state, db) == 0)
+         if (database_info_iterate(&db_ptr->state, db) == 0)
          {
             db->status = DATABASE_STATUS_ITERATE_NEXT;
             db->type   = DATABASE_TYPE_ITERATE;
@@ -390,7 +444,8 @@ void rarch_main_data_db_iterate(bool is_thread, void *data)
          }
          else
          {
-            rarch_main_msg_queue_push("Scanning of directory finished.\n", 0, 180, true);
+            rarch_main_msg_queue_push_new(MSG_SCANNING_OF_DIRECTORY_FINISHED, 0, 180, true);
+            pending_scan_finished = true;
             db->status = DATABASE_STATUS_FREE;
          }
          break;
@@ -400,9 +455,9 @@ void rarch_main_data_db_iterate(bool is_thread, void *data)
          db_state->list = NULL;
          rarch_main_data_db_cleanup_state(db_state);
          database_info_free(db);
-         if (runloop->db.handle)
-            free(runloop->db.handle);
-         runloop->db.handle = NULL;
+         if (db_ptr->handle)
+            free(db_ptr->handle);
+         db_ptr->handle = NULL;
          break;
       default:
       case DATABASE_STATUS_NONE:
@@ -412,10 +467,59 @@ void rarch_main_data_db_iterate(bool is_thread, void *data)
    return;
 
 do_poll:
-   if (database_info_poll(&runloop->db) != -1)
+   if (database_info_poll(db_ptr) != -1)
    {
-      if (runloop->db.handle)
-         runloop->db.handle->status = DATABASE_STATUS_ITERATE_BEGIN;
+      if (db_ptr->handle)
+         db_ptr->handle->status = DATABASE_STATUS_ITERATE_BEGIN;
    }
 }
+
+void *rarch_main_data_db_get_ptr(void)
+{
+   db_handle_t      *db   = db_ptr;
+   if (!db)
+      return NULL;
+   return db;
+}
+
+void rarch_main_data_db_init_msg_queue(void)
+{
+   db_handle_t      *db   = (db_handle_t*)rarch_main_data_db_get_ptr();
+   
+   if (!db->msg_queue)
+      rarch_assert(db->msg_queue         = msg_queue_new(8));
+}
+
+msg_queue_t *rarch_main_data_db_get_msg_queue_ptr(void)
+{
+   db_handle_t      *db   = (db_handle_t*)rarch_main_data_db_get_ptr();
+   if (!db)
+      return NULL;
+   return db->msg_queue;
+}
+
+void rarch_main_data_db_uninit(void)
+{
+   if (db_ptr)
+      free(db_ptr);
+   db_ptr = NULL;
+   pending_scan_finished = false;
+}
+
+void rarch_main_data_db_init(void)
+{
+   db_ptr                = (db_handle_t*)calloc(1, sizeof(*db_ptr));
+   pending_scan_finished = false;
+}
+
+bool rarch_main_data_db_is_active(void)
+{
+   db_handle_t              *db   = (db_handle_t*)rarch_main_data_db_get_ptr();
+   database_info_handle_t   *dbi  = db ? db->handle : NULL;
+   if (dbi && dbi->status != DATABASE_STATUS_NONE)
+      return true;
+
+   return false;
+}
 #endif
+

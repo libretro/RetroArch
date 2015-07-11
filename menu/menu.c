@@ -14,15 +14,20 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <file/file_path.h>
+
 #include "menu.h"
+#include "menu_hash.h"
 #include "menu_display.h"
 #include "menu_entry.h"
 #include "menu_shader.h"
+
 #include "../dynamic.h"
+#include "../general.h"
 #include "../frontend/frontend.h"
-#include "../../retroarch.h"
-#include "../../performance.h"
-#include <file/file_path.h>
+#include "../retroarch.h"
+#include "../performance.h"
+#include "../runloop_data.h"
 
 static void menu_environment_get(int *argc, char *argv[],
       void *args, void *params_data)
@@ -49,7 +54,7 @@ static void menu_environment_get(int *argc, char *argv[],
    wrap_args->touched       = true;
 }
 
-static void push_to_history_playlist(void)
+static void menu_push_to_history_playlist(void)
 {
    settings_t *settings = config_get_ptr();
    global_t *global     = global_get_ptr();
@@ -59,8 +64,8 @@ static void push_to_history_playlist(void)
 
    if (*global->fullpath)
    {
-      char tmp[PATH_MAX_LENGTH];
-      char str[PATH_MAX_LENGTH];
+      char tmp[PATH_MAX_LENGTH] = {0};
+      char str[PATH_MAX_LENGTH] = {0};
 
       fill_pathname_base(tmp, global->fullpath, sizeof(tmp));
       snprintf(str, sizeof(str), "INFO - Loading %s ...", tmp);
@@ -72,6 +77,7 @@ static void push_to_history_playlist(void)
          NULL,
          settings->libretro,
          global->menu.info.library_name,
+         NULL,
          NULL);
 }
 
@@ -83,15 +89,16 @@ static void push_to_history_playlist(void)
  *
  * Returns: true (1) if successful, otherwise false (0).
  **/
-bool menu_load_content(void)
+bool menu_load_content(enum rarch_core_type type)
 {
    menu_handle_t *menu  = menu_driver_get_ptr();
+   menu_display_t *disp = menu_display_get_ptr();
    driver_t *driver     = driver_get_ptr();
    global_t *global     = global_get_ptr();
 
    /* redraw menu frame */
-   if (menu)
-      menu->msg_force = true;
+   if (disp)
+      disp->msg_force = true;
 
    menu_entry_iterate(MENU_ACTION_NOOP);
 
@@ -100,14 +107,15 @@ bool menu_load_content(void)
    if (!(main_load_content(0, NULL, NULL, menu_environment_get,
          driver->frontend_ctx->process_args)))
    {
-      char name[PATH_MAX_LENGTH], msg[PATH_MAX_LENGTH];
+      char name[PATH_MAX_LENGTH] = {0};
+      char msg[PATH_MAX_LENGTH]  = {0};
 
       fill_pathname_base(name, global->fullpath, sizeof(name));
       snprintf(msg, sizeof(msg), "Failed to load %s.\n", name);
       rarch_main_msg_queue_push(msg, 1, 90, false);
 
-      if (menu)
-         menu->msg_force = true;
+      if (disp)
+         disp->msg_force = true;
 
       return false;
    }
@@ -117,12 +125,69 @@ bool menu_load_content(void)
    event_command(EVENT_CMD_HISTORY_INIT);
 
    if (*global->fullpath || (menu && menu->load_no_content))
-      push_to_history_playlist();
+      menu_push_to_history_playlist();
 
    event_command(EVENT_CMD_VIDEO_SET_ASPECT_RATIO);
    event_command(EVENT_CMD_RESUME);
 
    return true;
+}
+
+void menu_common_push_content_settings(void)
+{
+   menu_list_t *menu_list       = menu_list_get_ptr();
+   menu_displaylist_info_t info = {0};
+
+   if (!menu_list)
+      return;
+
+   info.list      = menu_list->selection_buf;
+   strlcpy(info.path, menu_hash_to_str(MENU_LABEL_VALUE_CONTENT_SETTINGS), sizeof(info.path));
+   strlcpy(info.label, menu_hash_to_str(MENU_LABEL_CONTENT_SETTINGS), sizeof(info.label));
+
+   menu_list_push(menu_list->menu_stack,
+         info.path, info.label, info.type, info.flags, 0);
+   menu_displaylist_push_list(&info, DISPLAYLIST_CONTENT_SETTINGS);
+}
+
+void menu_common_load_content(bool persist, enum rarch_core_type type)
+{
+   menu_display_t *disp         = menu_display_get_ptr();
+   menu_list_t *menu_list       = menu_list_get_ptr();
+   if (!menu_list)
+      return;
+
+   switch (type)
+   {
+      case CORE_TYPE_PLAIN:
+      case CORE_TYPE_DUMMY:
+         event_command(persist ? EVENT_CMD_LOAD_CONTENT_PERSIST : EVENT_CMD_LOAD_CONTENT);
+         break;
+#ifdef HAVE_FFMPEG
+      case CORE_TYPE_FFMPEG:
+         event_command(EVENT_CMD_LOAD_CONTENT_FFMPEG);
+         break;
+#endif
+      case CORE_TYPE_IMAGEVIEWER:
+#ifdef HAVE_IMAGEVIEWER
+         event_command(EVENT_CMD_LOAD_CONTENT_IMAGEVIEWER);
+#endif
+         break;
+   }
+
+   menu_list_flush_stack(menu_list, NULL, MENU_SETTINGS);
+   disp->msg_force = true;
+
+   menu_common_push_content_settings();
+}
+
+
+static int menu_init_entries(menu_entries_t *entries)
+{
+   if (!(entries->menu_list = (menu_list_t*)menu_list_new()))
+      return -1;
+
+   return 0;
 }
 
 /**
@@ -136,6 +201,7 @@ bool menu_load_content(void)
 void *menu_init(const void *data)
 {
    menu_handle_t *menu         = NULL;
+   menu_display_t *disp        = NULL;
    menu_ctx_driver_t *menu_ctx = (menu_ctx_driver_t*)data;
    global_t  *global           = global_get_ptr();
    settings_t *settings        = config_get_ptr();
@@ -149,7 +215,7 @@ void *menu_init(const void *data)
    strlcpy(settings->menu.driver, menu_ctx->ident,
          sizeof(settings->menu.driver));
 
-   if (!(menu->menu_list = (menu_list_t*)menu_list_new()))
+   if (menu_init_entries(&menu->entries) != 0)
       goto error;
 
    global->core_info_current = (core_info_t*)calloc(1, sizeof(core_info_t));
@@ -161,24 +227,40 @@ void *menu_init(const void *data)
    if (!menu->shader)
       goto error;
 #endif
-   menu->push_start_screen          = settings->menu_show_start_screen;
+
+   menu->push_help_screen           = settings->menu_show_start_screen;
+   menu->help_screen_type           = MENU_HELP_DEFAULT;
    settings->menu_show_start_screen = false;
+
+#if 0
+   if (settings->bundle_assets_extract_enable &&
+         (strcmp(PACKAGE_VERSION, settings->bundle_assets_last_extracted_version) != 0)
+      )
+   {
+      menu->push_help_screen = true;
+      menu->help_screen_type = MENU_HELP_EXTRACT;
+
+      rarch_main_data_msg_queue_push(DATA_TYPE_FILE, "cb_bundle_extract", "cb_bundle_extract", 0, 1, true);
+   }
+#endif
 
    menu_shader_manager_init(menu);
 
    if (!menu_display_init(menu))
       goto error;
 
-   rarch_assert(menu->msg_queue = msg_queue_new(8));
+   disp = &menu->display;
+
+   rarch_assert(disp->msg_queue = msg_queue_new(8));
 
    menu_display_fb_set_dirty();
    menu_driver_set_alive();
 
    return menu;
 error:
-   if (menu->menu_list)
-      menu_list_free(menu->menu_list);
-   menu->menu_list = NULL;
+   if (menu->entries.menu_list)
+      menu_list_free(menu->entries.menu_list);
+   menu->entries.menu_list = NULL;
    if (global->core_info_current)
       free(global->core_info_current);
    global->core_info_current = NULL;
@@ -197,15 +279,16 @@ error:
  *
  * Frees menu lists.
  **/
-static void menu_free_list(menu_handle_t *menu)
+static void menu_free_list(menu_entries_t *entries)
 {
-   if (!menu)
+   if (!entries)
       return;
 
-   settings_list_free(menu->list_settings);
-   menu_list_free(menu->menu_list);
-   menu->menu_list     = NULL;
-   menu->list_settings = NULL;
+   menu_setting_free(entries->list_settings);
+   entries->list_settings = NULL;
+
+   menu_list_free(entries->menu_list);
+   entries->menu_list     = NULL;
 }
 
 /**
@@ -216,22 +299,18 @@ static void menu_free_list(menu_handle_t *menu)
  **/
 void menu_free(menu_handle_t *menu)
 {
-   global_t *global    = global_get_ptr();
+   global_t        *global    = global_get_ptr();
+   menu_display_t    *disp    = menu_display_get_ptr();
 
-   if (!menu)
+   if (!menu || !disp)
       return;
 
-   menu_free_list(menu);
 
    if (menu->playlist)
       content_playlist_free(menu->playlist);
    menu->playlist = NULL;
   
-#ifdef HAVE_SHADER_MANAGER
-   if (menu->shader)
-      free(menu->shader);
-   menu->shader = NULL;
-#endif
+   menu_shader_free(menu);
 
    menu_driver_free(menu);
 
@@ -239,18 +318,9 @@ void menu_free(menu_handle_t *menu)
    libretro_free_system_info(&global->menu.info);
 #endif
 
-   if (menu->msg_queue)
-      msg_queue_free(menu->msg_queue);
-   menu->msg_queue = NULL;
-
    menu_display_free(menu);
 
-   if (menu->frame_buf.data)
-      free(menu->frame_buf.data);
-   menu->frame_buf.data = NULL;
-
-   menu_list_free(menu->menu_list);
-   menu->menu_list = NULL;
+   menu_free_list(&menu->entries);
 
    event_command(EVENT_CMD_HISTORY_DEINIT);
 
@@ -259,6 +329,7 @@ void menu_free(menu_handle_t *menu)
 
    if (global->core_info_current)
       free(global->core_info_current);
+   global->core_info_current = NULL;
 
    menu_driver_unset_alive();
 
@@ -279,30 +350,17 @@ void menu_free(menu_handle_t *menu)
 int menu_iterate(retro_input_t input,
       retro_input_t old_input, retro_input_t trigger_input)
 {
-   static retro_time_t last_clock_update = 0;
-   int32_t ret          = 0;
-   unsigned action      = 0;
-   runloop_t *runloop   = rarch_main_get_ptr();
-   menu_handle_t *menu  = menu_driver_get_ptr();
-   settings_t *settings = config_get_ptr();
+   int32_t ret              = 0;
+   unsigned action          = 0;
+   runloop_t *runloop       = rarch_main_get_ptr();
+   menu_display_t *disp     = menu_display_get_ptr();
+   menu_input_t *menu_input = menu_input_get_ptr();
 
-   menu->input.joypad   = menu_input_frame(input, trigger_input);
-   menu->cur_time       = rarch_get_time_usec();
-   menu->dt             = menu->cur_time - menu->old_time;
+   menu_animation_update_time(disp->animation);
 
-   if (menu->dt >= IDEAL_DT * 4)
-      menu->dt = IDEAL_DT * 4;
-   if (menu->dt <= IDEAL_DT / 4)
-      menu->dt = IDEAL_DT / 4;
-   menu->old_time = menu->cur_time;
+   menu_input->joypad.state    = menu_input_frame(input, trigger_input);
 
-   if (menu->cur_time - last_clock_update > 1000000 && settings->menu.timedate_enable)
-   {
-      menu->label.is_updated = true;
-      last_clock_update = menu->cur_time;
-   }
-
-   action = menu->input.joypad;
+   action = menu_input->joypad.state;
 
    ret = menu_entry_iterate(action);
 
@@ -315,38 +373,4 @@ int menu_iterate(retro_input_t input,
       return -1;
 
    return 0;
-}
-
-int menu_do_refresh(unsigned action)
-{
-   menu_handle_t *menu  = menu_driver_get_ptr();
-   if (!menu || menu->nonblocking_refresh)
-      return -1;
-   if (!menu_needs_refresh())
-      return -1;
-   return menu_entry_iterate(MENU_ACTION_REFRESH);
-}
-
-bool menu_needs_refresh(void)
-{
-   menu_handle_t *menu  = menu_driver_get_ptr();
-   if (!menu)
-      return false;
-   return menu->need_refresh;
-}
-
-void menu_set_refresh(void)
-{
-   menu_handle_t *menu  = menu_driver_get_ptr();
-   if (!menu)
-      return;
-   menu->need_refresh = true;
-}
-
-void menu_unset_refresh(void)
-{
-   menu_handle_t *menu  = menu_driver_get_ptr();
-   if (!menu)
-      return;
-   menu->need_refresh = false;
 }

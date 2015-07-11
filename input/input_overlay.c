@@ -15,16 +15,174 @@
  */
 
 #include <stdlib.h>
+#include <stddef.h>
 #include <string.h>
-#include "input_overlay.h"
-#include "../driver.h"
+#include <math.h>
+
 #include <compat/posix_string.h>
-#include "input_common.h"
 #include <file/file_path.h>
 #include <string/string_list.h>
+#include <file/config_file.h>
+#include <formats/image.h>
 #include <clamping.h>
-#include <stddef.h>
-#include <math.h>
+#include <rhash.h>
+
+#include "input_overlay.h"
+#include "../configuration.h"
+#include "../driver.h"
+#include "input_common.h"
+
+#define BOX_RADIAL       0x18df06d2U
+#define BOX_RECT         0x7c9d4d93U
+
+#define KEY_ANALOG_LEFT  0x56b92e81U
+#define KEY_ANALOG_RIGHT 0x2e4dc654U
+
+struct overlay
+{
+   struct overlay_desc *descs;
+   size_t size;
+   size_t pos;
+   unsigned pos_increment;
+
+   struct texture_image image;
+
+   bool block_scale;
+   float mod_x, mod_y, mod_w, mod_h;
+   float x, y, w, h;
+   float scale;
+   float center_x, center_y;
+
+   bool full_screen;
+
+   char name[64];
+
+   struct
+   {
+      struct
+      {
+         char key[64];
+         char path[PATH_MAX_LENGTH];
+      } paths;
+
+      struct
+      {
+         char key[64];
+      } names;
+
+      struct
+      {
+         char array[256];
+         char key[64];
+      } rect;
+
+      struct
+      {
+         char key[64];
+         unsigned size;
+      } descs;
+
+      bool normalized;
+      float alpha_mod;
+      float range_mod;
+   } config;
+
+   struct texture_image *load_images;
+   unsigned load_images_size;
+};
+
+struct overlay_desc
+{
+   float x;
+   float y;
+
+   enum overlay_hitbox hitbox;
+   float range_x, range_y;
+   float range_x_mod, range_y_mod;
+   float mod_x, mod_y, mod_w, mod_h;
+   float delta_x, delta_y;
+
+   enum overlay_type type;
+   uint64_t key_mask;
+   float analog_saturate_pct;
+
+   unsigned next_index;
+   char next_index_name[64];
+
+   struct texture_image image;
+   unsigned image_index;
+
+   float alpha_mod;
+   float range_mod;
+
+   bool updated;
+   bool movable;
+};
+
+struct input_overlay
+{
+   void *iface_data;
+   const video_overlay_interface_t *iface;
+   bool enable;
+
+   enum overlay_image_transfer_status loading_status;
+   bool blocked;
+
+   struct overlay *overlays;
+   const struct overlay *active;
+   size_t index;
+   size_t size;
+   unsigned pos;
+   size_t resolve_pos;
+   size_t pos_increment;
+
+   unsigned next_index;
+   char *overlay_path;
+   enum overlay_status state;
+
+   struct
+   {
+      struct
+      {
+         unsigned size;
+      } overlays;
+   } config;
+
+   struct
+   {
+      bool enable;
+      float opacity;
+      float scale_factor;
+   } deferred;
+};
+
+static input_overlay_t *overlay_ptr;
+static input_overlay_state_t overlay_state_ptr;
+static config_file_t *overlay_conf;
+
+input_overlay_t *input_overlay_get_ptr(void)
+{
+   return overlay_ptr;
+}
+
+input_overlay_state_t *input_overlay_get_state_ptr(void)
+{
+   return &overlay_state_ptr;
+}
+
+bool input_overlay_is_active(void)
+{
+   input_overlay_t *overlay = input_overlay_get_ptr();
+   if (!overlay)
+      return false;
+
+   if (overlay->state     == OVERLAY_STATUS_ALIVE)
+      return false;
+   if (overlay->state     == OVERLAY_STATUS_NONE)
+      return false;
+
+   return true;
+}
 
 /**
  * input_overlay_scale:
@@ -166,15 +324,16 @@ static bool input_overlay_load_desc_image(input_overlay_t *ol,
       struct overlay *input_overlay,
       unsigned ol_idx, unsigned desc_idx)
 {
-   char overlay_desc_image_key[64], image_path[PATH_MAX_LENGTH];
-
+   char overlay_desc_image_key[64]  = {0};
+   char image_path[PATH_MAX_LENGTH] = {0};
+ 
    snprintf(overlay_desc_image_key, sizeof(overlay_desc_image_key),
          "overlay%u_desc%u_overlay", ol_idx, desc_idx);
 
-   if (config_get_path(ol->conf, overlay_desc_image_key,
+   if (config_get_path(overlay_conf, overlay_desc_image_key,
             image_path, sizeof(image_path)))
    {
-      char path[PATH_MAX_LENGTH];
+      char path[PATH_MAX_LENGTH] = {0};
       fill_pathname_resolve_relative(path, ol->overlay_path,
             image_path, sizeof(path));
 
@@ -194,22 +353,27 @@ static bool input_overlay_load_desc(input_overlay_t *ol,
       unsigned width, unsigned height,
       bool normalized, float alpha_mod, float range_mod)
 {
-   bool ret = true, by_pixel;
-   char overlay_desc_key[64], conf_key[64],
-        overlay_desc_normalized_key[64];
-   char overlay[256], *save, *key;
    float width_mod, height_mod;
-   struct string_list *list = NULL;
-   const char *x            = NULL;
-   const char *y            = NULL;
-   const char *box          = NULL;
+   uint32_t box_hash, key_hash;
+   bool ret                             = true;
+   bool by_pixel                        = false;
+   char overlay_desc_key[64]            = {0};
+   char conf_key[64]                    = {0};
+   char overlay_desc_normalized_key[64] = {0};
+   char overlay[256]                    = {0};
+   char *save                           = NULL;
+   char *key                            = NULL;
+   struct string_list *list             = NULL;
+   const char *x                        = NULL;
+   const char *y                        = NULL;
+   const char *box                      = NULL;
 
    snprintf(overlay_desc_key, sizeof(overlay_desc_key),
          "overlay%u_desc%u", ol_idx, desc_idx);
 
    snprintf(overlay_desc_normalized_key, sizeof(overlay_desc_normalized_key),
          "overlay%u_desc%u_normalized", ol_idx, desc_idx);
-   config_get_bool(ol->conf, overlay_desc_normalized_key, &normalized);
+   config_get_bool(overlay_conf, overlay_desc_normalized_key, &normalized);
 
    by_pixel = !normalized;
 
@@ -219,7 +383,7 @@ static bool input_overlay_load_desc(input_overlay_t *ol,
       return false;
    }
 
-   if (!config_get_array(ol->conf, overlay_desc_key, overlay, sizeof(overlay)))
+   if (!config_get_array(overlay_conf, overlay_desc_key, overlay, sizeof(overlay)))
    {
       RARCH_ERR("[Overlay]: Didn't find key: %s.\n", overlay_desc_key);
       return false;
@@ -240,40 +404,52 @@ static bool input_overlay_load_desc(input_overlay_t *ol,
       return false;
    }
 
+   key = list->elems[0].data;
    x   = list->elems[1].data;
    y   = list->elems[2].data;
    box = list->elems[3].data;
 
-   key = list->elems[0].data;
+   box_hash = djb2_calculate(box);
+   key_hash = djb2_calculate(key);
+
    desc->key_mask = 0;
 
-   if (!strcmp(key, "analog_left"))
-      desc->type = OVERLAY_TYPE_ANALOG_LEFT;
-   else if (!strcmp(key, "analog_right"))
-      desc->type = OVERLAY_TYPE_ANALOG_RIGHT;
-   else if (strstr(key, "retrok_") == key)
+   switch (key_hash)
    {
-      desc->type = OVERLAY_TYPE_KEYBOARD;
-      desc->key_mask = input_translate_str_to_rk(key + 7);
-   }
-   else
-   {
-      const char *tmp;
-      desc->type = OVERLAY_TYPE_BUTTONS;
-      for (tmp = strtok_r(key, "|", &save); tmp; tmp = strtok_r(NULL, "|", &save))
-      {
-         if (strcmp(tmp, "nul") != 0)
-            desc->key_mask |= UINT64_C(1) << input_translate_str_to_bind_id(tmp);
-      }
+      case KEY_ANALOG_LEFT:
+         desc->type = OVERLAY_TYPE_ANALOG_LEFT;
+         break;
+      case KEY_ANALOG_RIGHT:
+         desc->type = OVERLAY_TYPE_ANALOG_RIGHT;
+         break;
+      default:
+         if (strstr(key, "retrok_") == key)
+         {
+            desc->type = OVERLAY_TYPE_KEYBOARD;
+            desc->key_mask = input_translate_str_to_rk(key + 7);
+         }
+         else
+         {
+            const char *tmp = NULL;
 
-      if (desc->key_mask & (UINT64_C(1) << RARCH_OVERLAY_NEXT))
-      {
-         char overlay_target_key[64];
-         snprintf(overlay_target_key, sizeof(overlay_target_key),
-               "overlay%u_desc%u_next_target", ol_idx, desc_idx);
-         config_get_array(ol->conf, overlay_target_key,
-               desc->next_index_name, sizeof(desc->next_index_name));
-      }
+            desc->type = OVERLAY_TYPE_BUTTONS;
+            for (tmp = strtok_r(key, "|", &save); tmp; tmp = strtok_r(NULL, "|", &save))
+            {
+               if (strcmp(tmp, "nul") != 0)
+                  desc->key_mask |= UINT64_C(1) << input_translate_str_to_bind_id(tmp);
+            }
+
+            if (desc->key_mask & (UINT64_C(1) << RARCH_OVERLAY_NEXT))
+            {
+               char overlay_target_key[64] = {0};
+
+               snprintf(overlay_target_key, sizeof(overlay_target_key),
+                     "overlay%u_desc%u_next_target", ol_idx, desc_idx);
+               config_get_array(overlay_conf, overlay_target_key,
+                     desc->next_index_name, sizeof(desc->next_index_name));
+            }
+         }
+         break;
    }
 
    width_mod  = 1.0f;
@@ -288,34 +464,45 @@ static bool input_overlay_load_desc(input_overlay_t *ol,
    desc->x = (float)strtod(x, NULL) * width_mod;
    desc->y = (float)strtod(y, NULL) * height_mod;
 
-   if (!strcmp(box, "radial"))
-      desc->hitbox = OVERLAY_HITBOX_RADIAL;
-   else if (!strcmp(box, "rect"))
-      desc->hitbox = OVERLAY_HITBOX_RECT;
-   else
+   switch (box_hash)
    {
-      RARCH_ERR("[Overlay]: Hitbox type (%s) is invalid. Use \"radial\" or \"rect\".\n", box);
-      ret = false;
-      goto end;
-   }
-
-   if (
-         desc->type == OVERLAY_TYPE_ANALOG_LEFT ||
-         desc->type == OVERLAY_TYPE_ANALOG_RIGHT)
-   {
-      if (desc->hitbox != OVERLAY_HITBOX_RADIAL)
-      {
-         RARCH_ERR("[Overlay]: Analog hitbox type must be \"radial\".\n");
+      case BOX_RADIAL:
+         desc->hitbox = OVERLAY_HITBOX_RADIAL;
+         break;
+      case BOX_RECT:
+         desc->hitbox = OVERLAY_HITBOX_RECT;
+         break;
+      default:
+         RARCH_ERR("[Overlay]: Hitbox type (%s) is invalid. Use \"radial\" or \"rect\".\n", box);
          ret = false;
          goto end;
-      }
+   }
 
-      char overlay_analog_saturate_key[64];
-      snprintf(overlay_analog_saturate_key, sizeof(overlay_analog_saturate_key),
-            "overlay%u_desc%u_saturate_pct", ol_idx, desc_idx);
-      if (!config_get_float(ol->conf, overlay_analog_saturate_key,
-               &desc->analog_saturate_pct))
-         desc->analog_saturate_pct = 1.0f;
+   switch (desc->type)
+   {
+      case OVERLAY_TYPE_ANALOG_LEFT:
+      case OVERLAY_TYPE_ANALOG_RIGHT:
+         {
+            char overlay_analog_saturate_key[64] = {0};
+
+            if (desc->hitbox != OVERLAY_HITBOX_RADIAL)
+            {
+               RARCH_ERR("[Overlay]: Analog hitbox type must be \"radial\".\n");
+               ret = false;
+               goto end;
+            }
+
+            snprintf(overlay_analog_saturate_key, sizeof(overlay_analog_saturate_key),
+                  "overlay%u_desc%u_saturate_pct", ol_idx, desc_idx);
+            if (!config_get_float(overlay_conf, overlay_analog_saturate_key,
+                     &desc->analog_saturate_pct))
+               desc->analog_saturate_pct = 1.0f;
+         }
+         break;
+      default:
+         /* OVERLAY_TYPE_BUTTONS  - unhandled */
+         /* OVERLAY_TYPE_KEYBOARD - unhandled */
+         break;
    }
 
    desc->range_x = (float)strtod(list->elems[4].data, NULL) * width_mod;
@@ -329,19 +516,19 @@ static bool input_overlay_load_desc(input_overlay_t *ol,
    snprintf(conf_key, sizeof(conf_key),
          "overlay%u_desc%u_alpha_mod", ol_idx, desc_idx);
    desc->alpha_mod = alpha_mod;
-   config_get_float(ol->conf, conf_key, &desc->alpha_mod);
+   config_get_float(overlay_conf, conf_key, &desc->alpha_mod);
 
    snprintf(conf_key, sizeof(conf_key),
          "overlay%u_desc%u_range_mod", ol_idx, desc_idx);
    desc->range_mod = range_mod;
-   config_get_float(ol->conf, conf_key, &desc->range_mod);
+   config_get_float(overlay_conf, conf_key, &desc->range_mod);
 
    snprintf(conf_key, sizeof(conf_key),
          "overlay%u_desc%u_movable", ol_idx, desc_idx);
    desc->movable = false;
    desc->delta_x = 0.0f;
    desc->delta_y = 0.0f;
-   config_get_bool(ol->conf, conf_key, &desc->movable);
+   config_get_bool(overlay_conf, conf_key, &desc->movable);
 
    desc->range_x_mod = desc->range_x;
    desc->range_y_mod = desc->range_y;
@@ -572,10 +759,10 @@ bool input_overlay_load_overlays(input_overlay_t *ol)
 
    for (i = 0; i < ol->pos_increment; i++, ol->pos++)
    {
-      char conf_key[64];
-      char overlay_full_screen_key[64];
-      struct overlay *overlay = NULL;
-      bool to_cont            = ol->pos < ol->size;
+      char conf_key[64]                = {0};
+      char overlay_full_screen_key[64] = {0};
+      struct overlay          *overlay = NULL;
+      bool                     to_cont = ol->pos < ol->size;
       
       if (!to_cont)
       {
@@ -592,7 +779,7 @@ bool input_overlay_load_overlays(input_overlay_t *ol)
       snprintf(overlay->config.descs.key,
             sizeof(overlay->config.descs.key), "overlay%u_descs", ol->pos);
 
-      if (!config_get_uint(ol->conf, overlay->config.descs.key, &overlay->config.descs.size))
+      if (!config_get_uint(overlay_conf, overlay->config.descs.key, &overlay->config.descs.size))
       {
          RARCH_ERR("[Overlay]: Failed to read number of descs from config key: %s.\n",
                overlay->config.descs.key);
@@ -613,7 +800,7 @@ bool input_overlay_load_overlays(input_overlay_t *ol)
       snprintf(overlay_full_screen_key, sizeof(overlay_full_screen_key),
             "overlay%u_full_screen", ol->pos);
       overlay->full_screen = false;
-      config_get_bool(ol->conf, overlay_full_screen_key, &overlay->full_screen);
+      config_get_bool(overlay_conf, overlay_full_screen_key, &overlay->full_screen);
 
       overlay->config.normalized = false;
       overlay->config.alpha_mod  = 1.0f;
@@ -621,13 +808,13 @@ bool input_overlay_load_overlays(input_overlay_t *ol)
 
       snprintf(conf_key, sizeof(conf_key),
             "overlay%u_normalized", ol->pos);
-      config_get_bool(ol->conf, conf_key, &overlay->config.normalized);
+      config_get_bool(overlay_conf, conf_key, &overlay->config.normalized);
 
       snprintf(conf_key, sizeof(conf_key), "overlay%u_alpha_mod", ol->pos);
-      config_get_float(ol->conf, conf_key, &overlay->config.alpha_mod);
+      config_get_float(overlay_conf, conf_key, &overlay->config.alpha_mod);
 
       snprintf(conf_key, sizeof(conf_key), "overlay%u_range_mod", ol->pos);
-      config_get_float(ol->conf, conf_key, &overlay->config.range_mod);
+      config_get_float(overlay_conf, conf_key, &overlay->config.range_mod);
 
       /* Precache load image array for simplicity. */
       overlay->load_images = (struct texture_image*)
@@ -642,12 +829,12 @@ bool input_overlay_load_overlays(input_overlay_t *ol)
       snprintf(overlay->config.paths.key, sizeof(overlay->config.paths.key),
             "overlay%u_overlay", ol->pos);
 
-      config_get_path(ol->conf, overlay->config.paths.key,
+      config_get_path(overlay_conf, overlay->config.paths.key,
                overlay->config.paths.path, sizeof(overlay->config.paths.path));
 
       if (overlay->config.paths.path[0] != '\0')
       {
-         char overlay_resolved_path[PATH_MAX_LENGTH];
+         char overlay_resolved_path[PATH_MAX_LENGTH] = {0};
 
          fill_pathname_resolve_relative(overlay_resolved_path, ol->overlay_path,
                overlay->config.paths.path, sizeof(overlay_resolved_path));
@@ -664,7 +851,7 @@ bool input_overlay_load_overlays(input_overlay_t *ol)
 
       snprintf(overlay->config.names.key, sizeof(overlay->config.names.key),
             "overlay%u_name", ol->pos);
-      config_get_array(ol->conf, overlay->config.names.key,
+      config_get_array(overlay_conf, overlay->config.names.key,
             overlay->name, sizeof(overlay->name));
 
       /* By default, we stretch the overlay out in full. */
@@ -674,7 +861,7 @@ bool input_overlay_load_overlays(input_overlay_t *ol)
       snprintf(overlay->config.rect.key, sizeof(overlay->config.rect.key),
             "overlay%u_rect", ol->pos);
 
-      if (config_get_array(ol->conf, overlay->config.rect.key,
+      if (config_get_array(overlay_conf, overlay->config.rect.key,
                overlay->config.rect.array, sizeof(overlay->config.rect.array)))
       {
          struct string_list *list = string_split(overlay->config.rect.array, ", ");
@@ -723,16 +910,16 @@ bool input_overlay_new_done(input_overlay_t *ol)
 
    ol->state = OVERLAY_STATUS_ALIVE;
 
-   if (ol->conf)
-      config_file_free(ol->conf);
-   ol->conf = NULL;
+   if (overlay_conf)
+      config_file_free(overlay_conf);
+   overlay_conf = NULL;
 
    return true;
 }
 
 static bool input_overlay_load_overlays_init(input_overlay_t *ol)
 {
-   if (!config_get_uint(ol->conf, "overlays", &ol->config.overlays.size))
+   if (!config_get_uint(overlay_conf, "overlays", &ol->config.overlays.size))
    {
       RARCH_ERR("overlays variable not defined in config.\n");
       goto error;
@@ -784,9 +971,9 @@ input_overlay_t *input_overlay_new(const char *path, bool enable,
       return NULL;
    }
 
-   ol->conf            = config_file_new(ol->overlay_path);
+   overlay_conf            = config_file_new(ol->overlay_path);
 
-   if (!ol->conf)
+   if (!overlay_conf)
       goto error;
 
    if (!video_driver_overlay_interface(&ol->iface))
@@ -1107,15 +1294,54 @@ void input_overlay_free(input_overlay_t *ol)
 
    input_overlay_free_overlays(ol);
 
-   if (ol->conf)
-      config_file_free(ol->conf);
-   ol->conf = NULL;
+   if (overlay_conf)
+      config_file_free(overlay_conf);
+   overlay_conf = NULL;
 
    if (ol->iface)
       ol->iface->enable(ol->iface_data, false);
 
    free(ol->overlay_path);
    free(ol);
+}
+
+void input_overlay_free_ptr(void)
+{
+   if (overlay_ptr)
+      input_overlay_free(overlay_ptr);
+   overlay_ptr = NULL;
+
+   memset(&overlay_state_ptr, 0, sizeof(overlay_state_ptr));
+}
+
+int input_overlay_new_ptr(void)
+{
+   driver_t *driver     = driver_get_ptr();
+   settings_t *settings = config_get_ptr();
+
+   if (driver->osk_enable)
+   {
+      if (!*settings->osk.overlay)
+         return 1;
+   }
+   else
+   {
+      if (!*settings->input.overlay)
+         return 1;
+   }
+
+    overlay_ptr = input_overlay_new(
+         driver->osk_enable ?
+         settings->osk.overlay : settings->input.overlay,
+         driver->osk_enable ?
+         settings->osk.enable   : settings->input.overlay_enable,
+         settings->input.overlay_opacity,
+         settings->input.overlay_scale);
+
+    if (!overlay_ptr)
+       return -1;
+
+    return 0;
 }
 
 /**
@@ -1135,4 +1361,18 @@ void input_overlay_set_alpha_mod(input_overlay_t *ol, float mod)
 
    for (i = 0; i < ol->active->load_images_size; i++)
       ol->iface->set_alpha(ol->iface_data, i, mod);
+}
+
+bool input_overlay_is_alive(input_overlay_t *ol)
+{
+   if (!ol)
+      return false;
+   return ol->state == OVERLAY_STATUS_ALIVE;
+}
+
+enum overlay_status input_overlay_status(input_overlay_t *ol)
+{
+   if (!ol)
+      return OVERLAY_STATUS_NONE;
+   return ol->state;
 }

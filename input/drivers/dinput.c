@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2015 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -27,17 +27,20 @@
 
 #include <dinput.h>
 
-#include "../../general.h"
+#include <stdlib.h>
+#include <stddef.h>
+#include <string.h>
 #include <boolean.h>
+
+#include <windowsx.h>
+
+#include <retro_log.h>
+
+#include "../../general.h"
 #include "../input_autodetect.h"
 #include "../input_common.h"
 #include "../input_joypad.h"
 #include "../input_keymaps.h"
-#include "../../retroarch_logger.h"
-#include <stdlib.h>
-#include <stddef.h>
-#include <string.h>
-#include <windowsx.h>
 
 /* Keep track of which pad indexes are 360 controllers.
  * Not static, will be read in xinput_joypad.c
@@ -60,6 +63,7 @@ struct pointer_status
 
 struct dinput_input
 {
+   bool blocked;
    LPDIRECTINPUTDEVICE8 keyboard;
    LPDIRECTINPUTDEVICE8 mouse;
    const input_device_driver_t *joypad;
@@ -71,6 +75,110 @@ struct dinput_input
    int mouse_y;
    bool mouse_l, mouse_r, mouse_m, mouse_wu, mouse_wd, mouse_hwu, mouse_hwd;
    struct pointer_status pointer_head;  /* dummy head for easier iteration */
+};
+
+const struct rarch_key_map rarch_key_map_dinput[] = {
+   { DIK_LEFT, RETROK_LEFT },
+   { DIK_RIGHT, RETROK_RIGHT },
+   { DIK_UP, RETROK_UP },
+   { DIK_DOWN, RETROK_DOWN },
+   { DIK_RETURN, RETROK_RETURN },
+   { DIK_TAB, RETROK_TAB },
+   { DIK_INSERT, RETROK_INSERT },
+   { DIK_DELETE, RETROK_DELETE },
+   { DIK_RSHIFT, RETROK_RSHIFT },
+   { DIK_LSHIFT, RETROK_LSHIFT },
+   { DIK_LCONTROL, RETROK_LCTRL },
+   { DIK_END, RETROK_END },
+   { DIK_HOME, RETROK_HOME },
+   { DIK_NEXT, RETROK_PAGEDOWN },
+   { DIK_PRIOR, RETROK_PAGEUP },
+   { DIK_LALT, RETROK_LALT },
+   { DIK_SPACE, RETROK_SPACE },
+   { DIK_ESCAPE, RETROK_ESCAPE },
+   { DIK_BACKSPACE, RETROK_BACKSPACE },
+   { DIK_NUMPADENTER, RETROK_KP_ENTER },
+   { DIK_NUMPADPLUS, RETROK_KP_PLUS },
+   { DIK_NUMPADMINUS, RETROK_KP_MINUS },
+   { DIK_NUMPADSTAR, RETROK_KP_MULTIPLY },
+   { DIK_DIVIDE, RETROK_KP_DIVIDE },
+   { DIK_GRAVE, RETROK_BACKQUOTE },
+   { DIK_PAUSE, RETROK_PAUSE },
+   { DIK_NUMPAD0, RETROK_KP0 },
+   { DIK_NUMPAD1, RETROK_KP1 },
+   { DIK_NUMPAD2, RETROK_KP2 },
+   { DIK_NUMPAD3, RETROK_KP3 },
+   { DIK_NUMPAD4, RETROK_KP4 },
+   { DIK_NUMPAD5, RETROK_KP5 },
+   { DIK_NUMPAD6, RETROK_KP6 },
+   { DIK_NUMPAD7, RETROK_KP7 },
+   { DIK_NUMPAD8, RETROK_KP8 },
+   { DIK_NUMPAD9, RETROK_KP9 },
+   { DIK_0, RETROK_0 },
+   { DIK_1, RETROK_1 },
+   { DIK_2, RETROK_2 },
+   { DIK_3, RETROK_3 },
+   { DIK_4, RETROK_4 },
+   { DIK_5, RETROK_5 },
+   { DIK_6, RETROK_6 },
+   { DIK_7, RETROK_7 },
+   { DIK_8, RETROK_8 },
+   { DIK_9, RETROK_9 },
+   { DIK_F1, RETROK_F1 },
+   { DIK_F2, RETROK_F2 },
+   { DIK_F3, RETROK_F3 },
+   { DIK_F4, RETROK_F4 },
+   { DIK_F5, RETROK_F5 },
+   { DIK_F6, RETROK_F6 },
+   { DIK_F7, RETROK_F7 },
+   { DIK_F8, RETROK_F8 },
+   { DIK_F9, RETROK_F9 },
+   { DIK_F10, RETROK_F10 },
+   { DIK_F11, RETROK_F11 },
+   { DIK_F12, RETROK_F12 },
+   { DIK_A, RETROK_a },
+   { DIK_B, RETROK_b },
+   { DIK_C, RETROK_c },
+   { DIK_D, RETROK_d },
+   { DIK_E, RETROK_e },
+   { DIK_F, RETROK_f },
+   { DIK_G, RETROK_g },
+   { DIK_H, RETROK_h },
+   { DIK_I, RETROK_i },
+   { DIK_J, RETROK_j },
+   { DIK_K, RETROK_k },
+   { DIK_L, RETROK_l },
+   { DIK_M, RETROK_m },
+   { DIK_N, RETROK_n },
+   { DIK_O, RETROK_o },
+   { DIK_P, RETROK_p },
+   { DIK_Q, RETROK_q },
+   { DIK_R, RETROK_r },
+   { DIK_S, RETROK_s },
+   { DIK_T, RETROK_t },
+   { DIK_U, RETROK_u },
+   { DIK_V, RETROK_v },
+   { DIK_W, RETROK_w },
+   { DIK_X, RETROK_x },
+   { DIK_Y, RETROK_y },
+   { DIK_Z, RETROK_z },
+   { DIK_APOSTROPHE, RETROK_QUOTE },
+   { DIK_COMMA, RETROK_COMMA },
+   { DIK_MINUS, RETROK_MINUS },
+   { DIK_SLASH, RETROK_SLASH },
+   { DIK_SEMICOLON, RETROK_SEMICOLON },
+   { DIK_EQUALS, RETROK_EQUALS },
+   { DIK_LBRACKET, RETROK_LEFTBRACKET },
+   { DIK_BACKSLASH, RETROK_BACKSLASH },
+   { DIK_RBRACKET, RETROK_RIGHTBRACKET },
+   { DIK_DECIMAL, RETROK_KP_PERIOD },
+   { DIK_RCONTROL, RETROK_RCTRL },
+   { DIK_RMENU, RETROK_RALT },
+   { DIK_PERIOD, RETROK_PERIOD },
+   { DIK_SCROLL, RETROK_SCROLLOCK },
+   { DIK_CAPSLOCK, RETROK_CAPSLOCK },
+   { DIK_NUMLOCK, RETROK_NUMLOCK },
+   { 0, RETROK_UNKNOWN },
 };
 
 void dinput_destroy_context(void)
@@ -165,7 +273,7 @@ static void *dinput_init(void)
    }
 
    input_keymaps_init_keyboard_lut(rarch_key_map_dinput);
-   di->joypad = input_joypad_init_driver(settings->input.joypad_driver);
+   di->joypad = input_joypad_init_driver(settings->input.joypad_driver, di);
 
    return di;
 }
@@ -208,7 +316,7 @@ static void dinput_poll(void *data)
       di->mouse_r  = mouse_state.rgbButtons[1];
       di->mouse_m  = mouse_state.rgbButtons[2];
 
-      /* No simple way to get absolute coordinates 
+      /* No simple way to get absolute coordinates
        * for RETRO_DEVICE_POINTER. Just use Win32 APIs. */
       POINT point = {0};
       GetCursorPos(&point);
@@ -240,7 +348,7 @@ static bool dinput_is_pressed(struct dinput_input *di,
    if (id >= RARCH_BIND_LIST_END)
       return false;
 
-   return dinput_keyboard_pressed(di, bind->key) || 
+   return (!di->blocked && dinput_keyboard_pressed(di, bind->key)) || 
       input_joypad_pressed(di->joypad, port, binds, id);
 }
 
@@ -290,9 +398,9 @@ static int16_t dinput_lightgun_state(struct dinput_input *di, unsigned id)
       case RETRO_DEVICE_ID_LIGHTGUN_TURBO:
          return di->mouse_r;
       case RETRO_DEVICE_ID_LIGHTGUN_START:
-         return di->mouse_m && di->mouse_r; 
+         return di->mouse_m && di->mouse_r;
       case RETRO_DEVICE_ID_LIGHTGUN_PAUSE:
-         return di->mouse_m && di->mouse_l; 
+         return di->mouse_m && di->mouse_l;
    }
 
    return 0;
@@ -532,11 +640,11 @@ bool dinput_handle_message(void *dinput, UINT message, WPARAM wParam, LPARAM lPa
 {
    struct dinput_input *di = (struct dinput_input *)dinput;
    settings_t *settings    = config_get_ptr();
-   /* WM_POINTERDOWN   : Arrives for each new touch event 
+   /* WM_POINTERDOWN   : Arrives for each new touch event
     *                    with a new ID - add to list.
-    * WM_POINTERUP     : Arrives once the pointer is no 
+    * WM_POINTERUP     : Arrives once the pointer is no
     *                    longer down - remove from list.
-    * WM_POINTERUPDATE : arrives for both pressed and 
+    * WM_POINTERUPDATE : arrives for both pressed and
     *                    hovering pointers - ignore hovering
    */
 
@@ -544,7 +652,7 @@ bool dinput_handle_message(void *dinput, UINT message, WPARAM wParam, LPARAM lPa
    {
       case WM_POINTERDOWN:
       {
-         struct pointer_status *new_pointer = 
+         struct pointer_status *new_pointer =
             (struct pointer_status *)malloc(sizeof(struct pointer_status));
 
          if (!new_pointer)
@@ -576,7 +684,7 @@ bool dinput_handle_message(void *dinput, UINT message, WPARAM wParam, LPARAM lPa
       {
          if (di->joypad)
             di->joypad->destroy();
-         di->joypad = input_joypad_init_driver(settings->input.joypad_driver);
+         di->joypad = input_joypad_init_driver(settings->input.joypad_driver, di);
          break;
       }
       case WM_MOUSEWHEEL:
@@ -673,6 +781,22 @@ static uint64_t dinput_get_capabilities(void *data)
    return caps;
 }
 
+static bool dinput_keyboard_mapping_is_blocked(void *data)
+{
+   struct dinput_input *di = (struct dinput_input*)data;
+   if (!di)
+      return false;
+   return di->blocked;
+}
+
+static void dinput_keyboard_mapping_set_block(void *data, bool value)
+{
+   struct dinput_input *di = (struct dinput_input*)data;
+   if (!di)
+      return;
+   di->blocked = value;
+}
+
 input_driver_t input_dinput = {
    dinput_init,
    dinput_poll,
@@ -688,5 +812,6 @@ input_driver_t input_dinput = {
    NULL,
    dinput_set_rumble,
    dinput_get_joypad_driver,
+   dinput_keyboard_mapping_is_blocked,
+   dinput_keyboard_mapping_set_block,
 };
-

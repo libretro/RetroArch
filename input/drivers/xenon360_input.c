@@ -27,6 +27,7 @@
 #define MAX_PADS 4
 
 static uint64_t state[MAX_PADS];
+static uint64_t lifecycle_state;
 
 static void xenon360_input_poll(void *data)
 {
@@ -89,8 +90,7 @@ static void* xenon360_input_init(void)
 
 static bool xenon360_input_key_pressed(void *data, int key)
 {
-   global_t *global = global_get_ptr();
-   return (global->lifecycle_state & (1ULL << key));
+   return (lifecycle_state & (1ULL << key));
 }
 
 static uint64_t xenon360_get_capabilities(void *data)
@@ -133,4 +133,6 @@ input_driver_t input_xenon360 = {
    xenon360_input_grab_mouse,
    NULL,
    xenon360_input_set_rumble,
+   NULL,
+   NULL,
 };

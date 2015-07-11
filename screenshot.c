@@ -14,20 +14,31 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <compat/strl.h>
+#ifdef _XBOX1
+#include <xtl.h>
+#include <xgraphics.h>
+#endif
+
 #include <stdio.h>
 #include <stddef.h>
 #include <time.h>
 #include <boolean.h>
 #include <stdint.h>
 #include <string.h>
-#include "general.h"
-#include "intl/intl.h"
+
+#include <retro_log.h>
 #include <file/file_path.h>
+#include <compat/strl.h>
+
+#if defined(HAVE_ZLIB_DEFLATE) && defined(HAVE_RPNG)
+#include <formats/rpng.h>
+#endif
+
+#include "general.h"
+#include "msg_hash.h"
 #include "gfx/scaler/scaler.h"
 #include "retroarch.h"
 #include "runloop.h"
-#include "retroarch_logger.h"
 #include "screenshot.h"
 #include "gfx/video_driver.h"
 #include "gfx/video_viewport.h"
@@ -36,17 +47,9 @@
 #include "config.h"
 #endif
 
-#ifdef _XBOX1
-#include <xtl.h>
-#include <xgraphics.h>
-#endif
-
 #if defined(HAVE_ZLIB_DEFLATE) && defined(HAVE_RPNG)
-#include <formats/rpng.h>
 #define IMG_EXT "png"
-
 #else
-
 #define IMG_EXT "bmp"
 
 static bool write_header_bmp(FILE *file, unsigned width, unsigned height)
@@ -177,13 +180,13 @@ end:
 
 static bool take_screenshot_viewport(void)
 {
-   char screenshot_path[PATH_MAX_LENGTH];
-   const char *screenshot_dir = NULL;
-   uint8_t *buffer = NULL;
-   bool retval = false;
-   struct video_viewport vp = {0};
-   settings_t *settings = config_get_ptr();
-   global_t *global     = global_get_ptr();
+   char screenshot_path[PATH_MAX_LENGTH] = {0};
+   const char *screenshot_dir            = NULL;
+   uint8_t *buffer                       = NULL;
+   bool retval                           = false;
+   struct video_viewport vp              = {0};
+   settings_t *settings                  = config_get_ptr();
+   global_t *global                      = global_get_ptr();
 
    video_driver_viewport_info(&vp);
 
@@ -222,13 +225,13 @@ static bool take_screenshot_raw(void)
 {
    unsigned width, height;
    size_t pitch;
-   char screenshot_path[PATH_MAX_LENGTH];
-   global_t *global           = global_get_ptr();
-   const void *data = NULL;
-   settings_t *settings       = config_get_ptr();
-   const char *screenshot_dir = NULL;
+   char screenshot_path[PATH_MAX_LENGTH] = {0};
+   const void *data                      = NULL;
+   const char *screenshot_dir            = NULL;
+   global_t *global                      = global_get_ptr();
+   settings_t *settings                  = config_get_ptr();
 
-   video_driver_cached_frame_get(data, &width, &height, &pitch);
+   video_driver_cached_frame_get(&data, &width, &height, &pitch);
    
    screenshot_dir = settings->screenshot_directory;
 
@@ -254,9 +257,9 @@ static bool take_screenshot_raw(void)
  **/
 bool take_screenshot(void)
 {
-   bool viewport_read = false;
-   bool ret = true;
-   const char *msg = NULL;
+   bool viewport_read   = false;
+   bool ret             = true;
+   const char *msg      = NULL;
    runloop_t *runloop   = rarch_main_get_ptr();
    driver_t *driver     = driver_get_ptr();
    settings_t *settings = config_get_ptr();
@@ -290,15 +293,14 @@ bool take_screenshot(void)
    {
       unsigned old_width, old_height;
       size_t old_pitch;
+      void *frame_data;
       const void* old_data = NULL;
       
-      video_driver_cached_frame_get(old_data, &old_width, &old_height,
+      video_driver_cached_frame_get(&old_data, &old_width, &old_height,
             &old_pitch);
       
-      void* frame_data = video_driver_read_frame_raw(
-            &old_width,
-            &old_height,
-            &old_pitch);
+      frame_data = video_driver_read_frame_raw(
+            &old_width, &old_height, &old_pitch);
 
       video_driver_cached_frame_set(old_data, old_width, old_height,
             old_pitch);
@@ -314,20 +316,20 @@ bool take_screenshot(void)
    }
    else
    {
-      RARCH_ERR(RETRO_LOG_TAKE_SCREENSHOT_ERROR);
+      RARCH_ERR("%s.\n", msg_hash_to_str(MSG_FAILED_TO_TAKE_SCREENSHOT));
       ret = false;
    }
 
 
    if (ret)
    {
-      RARCH_LOG(RETRO_LOG_TAKE_SCREENSHOT);
-      msg = RETRO_MSG_TAKE_SCREENSHOT;
+      RARCH_LOG("%s.\n", msg_hash_to_str(MSG_TAKING_SCREENSHOT));
+      msg = msg_hash_to_str(MSG_TAKING_SCREENSHOT);
    }
    else
    {
-      RARCH_WARN(RETRO_LOG_TAKE_SCREENSHOT_FAILED);
-      msg = RETRO_MSG_TAKE_SCREENSHOT_FAILED;
+      RARCH_WARN("%s.\n", msg_hash_to_str(MSG_FAILED_TO_TAKE_SCREENSHOT));
+      msg = msg_hash_to_str(MSG_FAILED_TO_TAKE_SCREENSHOT);
    }
 
    rarch_main_msg_queue_push(msg, 1, runloop->is_paused ? 1 : 180, true);
@@ -343,13 +345,13 @@ bool take_screenshot(void)
 bool screenshot_dump(const char *folder, const void *frame,
       unsigned width, unsigned height, int pitch, bool bgr24)
 {
-   char filename[PATH_MAX_LENGTH];
-   char shotname[PATH_MAX_LENGTH];
-   struct scaler_ctx scaler = {0};
-   FILE *file          = NULL;
-   uint8_t *out_buffer = NULL;
-   bool ret            = false;
-   driver_t *driver    = driver_get_ptr();
+   char filename[PATH_MAX_LENGTH] = {0};
+   char shotname[PATH_MAX_LENGTH] = {0};
+   struct scaler_ctx scaler       = {0};
+   FILE *file                     = NULL;
+   uint8_t *out_buffer            = NULL;
+   bool ret                       = false;
+   driver_t *driver               = driver_get_ptr();
 
    (void)file;
    (void)out_buffer;
@@ -381,13 +383,13 @@ bool screenshot_dump(const char *folder, const void *frame,
    if (!out_buffer)
       return false;
 
-   scaler.in_width   = width;
-   scaler.in_height  = height;
-   scaler.out_width  = width;
-   scaler.out_height = height;
-   scaler.in_stride  = -pitch;
-   scaler.out_stride = width * 3;
-   scaler.out_fmt = SCALER_FMT_BGR24;
+   scaler.in_width    = width;
+   scaler.in_height   = height;
+   scaler.out_width   = width;
+   scaler.out_height  = height;
+   scaler.in_stride   = -pitch;
+   scaler.out_stride  = width * 3;
+   scaler.out_fmt     = SCALER_FMT_BGR24;
    scaler.scaler_type = SCALER_TYPE_POINT;
 
    if (bgr24)

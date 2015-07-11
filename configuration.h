@@ -111,6 +111,8 @@ typedef struct settings
       bool pause_libretro;
       bool timedate_enable;
       bool core_enable;
+      bool dynamic_wallpaper_enable;
+      bool boxart_enable;
       bool throttle;
       char wallpaper[PATH_MAX_LENGTH];
 
@@ -130,6 +132,7 @@ typedef struct settings
          {
             bool horizontal_enable;
             bool vertical_enable;
+            bool setting_enable;
          } wraparound;
          struct
          {
@@ -211,6 +214,8 @@ typedef struct settings
       /* Set by autoconfiguration in joypad_autoconfig_dir.
        * Does not override main binds. */
       bool autoconfigured[MAX_USERS];
+      int vid[MAX_USERS];
+      int pid[MAX_USERS];
 
       unsigned libretro_device[MAX_USERS];
       unsigned analog_dpad_mode[MAX_USERS];
@@ -227,6 +232,8 @@ typedef struct settings
       unsigned turbo_duty_cycle;
 
       bool overlay_enable;
+      bool overlay_enable_autopreferred;
+      bool overlay_hide_in_menu;
       char overlay[PATH_MAX_LENGTH];
       float overlay_opacity;
       float overlay_scale;
@@ -237,6 +244,9 @@ typedef struct settings
       bool input_descriptor_hide_unbound;
 
       char remapping_path[PATH_MAX_LENGTH];
+      
+      unsigned menu_toggle_gamepad_combo;
+      bool back_as_menu_toggle_enable;
    } input;
 
    struct
@@ -264,7 +274,16 @@ typedef struct settings
       bool set_supports_no_game_enable;
    } core;
 
+   struct
+   {
+      bool builtin_mediaplayer_enable;
+      bool builtin_imageviewer_enable;
+   } multimedia;
+
    int state_slot;
+
+   bool bundle_assets_extract_enable;
+   char bundle_assets_last_extracted_version[PATH_MAX_LENGTH];
 
    char core_options_path[PATH_MAX_LENGTH];
    char content_history_path[PATH_MAX_LENGTH];
@@ -306,11 +325,13 @@ typedef struct settings
    bool savestate_auto_load;
 
    bool network_cmd_enable;
-   uint16_t network_cmd_port;
+   unsigned network_cmd_port;
    bool stdin_cmd_enable;
 
    char core_assets_directory[PATH_MAX_LENGTH];
    char assets_directory[PATH_MAX_LENGTH];
+   char dynamic_wallpapers_directory[PATH_MAX_LENGTH];
+   char boxarts_directory[PATH_MAX_LENGTH];
    char menu_config_directory[PATH_MAX_LENGTH];
 #if defined(HAVE_MENU)
    char menu_content_directory[PATH_MAX_LENGTH];
@@ -474,6 +495,14 @@ bool config_load_remap(void);
  * Returns: true (1) on success, otherwise returns false (0).
  **/
 bool config_save_keybinds_file(const char *path);
+
+/**
+ * config_save_autoconf_profile:
+ * @path            : Path that shall be written to.
+ * @user              : Controller number to save
+ * Writes a controller autoconf file to disk.
+ **/
+bool config_save_autoconf_profile(const char *path, unsigned user);
 
 /**
  * config_save_file:

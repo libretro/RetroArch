@@ -66,6 +66,9 @@ static bool string_list_capacity(struct string_list *list, size_t cap)
    if (!new_data)
       return false;
 
+   if (cap > list->cap)
+      memset(&new_data[list->cap], 0, sizeof(*new_data) * (cap - list->cap));
+
    list->elems = new_data;
    list->cap   = cap;
    return true;
@@ -108,7 +111,8 @@ struct string_list *string_list_new(void)
 bool string_list_append(struct string_list *list, const char *elem,
       union string_list_elem_attr attr)
 {
-   char *data_dup;
+   char *data_dup = NULL;
+
    if (list->size >= list->cap &&
          !string_list_capacity(list, list->cap * 2))
       return false;
@@ -250,12 +254,13 @@ bool string_list_find_elem_prefix(const struct string_list *list,
       const char *prefix, const char *elem)
 {
    size_t i;
-   char prefixed[PATH_MAX_LENGTH];
+   char prefixed[PATH_MAX_LENGTH] = {0};
 
    if (!list)
       return false;
 
-   snprintf(prefixed, sizeof(prefixed), "%s%s", prefix, elem);
+   strlcpy(prefixed, prefix, sizeof(prefixed));
+   strlcat(prefixed, elem,   sizeof(prefixed));
 
    for (i = 0; i < list->size; i++)
    {

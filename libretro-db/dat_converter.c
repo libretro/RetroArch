@@ -14,13 +14,13 @@
 
 static char *strndup_(const char *s, size_t n)
 {
-	char* buff = calloc(n, sizeof(char));
+   char* buff = calloc(n, sizeof(char));
 
-	if (!buff)
-		return 0;
+   if (!buff)
+      return 0;
 
-	strncpy(buff, s, n);
-	return buff;
+   strncpy(buff, s, n);
+   return buff;
 }
 
 static struct rmsgpack_dom_value *get_map_value(
@@ -50,22 +50,22 @@ static int load_string(int fd, struct rmsgpack_dom_value *out)
 
 static int load_uint(int fd, struct rmsgpack_dom_value *out)
 {
-	char tok[MAX_TOKEN], *c;
-	ssize_t tok_size;
-	uint64_t value = 0;
+   char tok[MAX_TOKEN], *c;
+   ssize_t tok_size;
+   uint64_t value = 0;
 
-	if ((tok_size = get_token(fd, tok, MAX_TOKEN)) < 0)
-		return tok_size;
+   if ((tok_size = get_token(fd, tok, MAX_TOKEN)) < 0)
+      return tok_size;
 
-	for (c = tok; c < tok + tok_size; c++)
+   for (c = tok; c < tok + tok_size; c++)
    {
-		value *= 10;
-		value += *c - '0';
-	}
+      value *= 10;
+      value += *c - '0';
+   }
 
-	out->type = RDT_UINT;
-	out->uint_ = value;
-	return 0;
+   out->type = RDT_UINT;
+   out->uint_ = value;
+   return 0;
 }
 
 static int load_bin(int fd, struct rmsgpack_dom_value *out)
@@ -259,37 +259,37 @@ failed:
 
 int main(int argc, char **argv)
 {
-	int rv = 0;
-	int src = -1;
-	int dst = -1;
+   int rv = 0;
+   int src = -1;
+   int dst = -1;
 
-	if (argc != 3)
-		printf("Usage: %s <dat file> <output file>\n", argv[0]);
+   if (argc != 3)
+      printf("Usage: %s <dat file> <output file>\n", argv[0]);
 
-	src = open(argv[1], O_RDONLY);
+   src = open(argv[1], O_RDONLY);
 
-	if (src == -1)
+   if (src == -1)
    {
-		printf("Could not open source file '%s': %s\n", argv[1], strerror(errno));
-		rv = errno;
-		goto clean;
-	}
+      printf("Could not open source file '%s': %s\n", argv[1], strerror(errno));
+      rv = errno;
+      goto clean;
+   }
 
-	dst = open(argv[2], O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
+   dst = open(argv[2], O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
 
-	if (dst == -1)
+   if (dst == -1)
    {
-		printf("Could not open destination file '%s': %s\n", argv[1], strerror(errno));
-		rv = errno;
-		goto clean;
-	}
+      printf("Could not open destination file '%s': %s\n", argv[1], strerror(errno));
+      rv = errno;
+      goto clean;
+   }
 
-	rv = rarchdb_create(dst, &dat_value_provider, &src);
+   rv = rarchdb_create(dst, &dat_value_provider, &src);
 
 clean:
-	if (src != -1)
-		close(src);
-	if (dst != -1)
-		close(dst);
-	return rv;
+   if (src != -1)
+      close(src);
+   if (dst != -1)
+      close(dst);
+   return rv;
 }

@@ -139,7 +139,7 @@ static void hidpad_ps3_packet_handler(void *data, uint8_t *packet, uint16_t size
       RETRO_DEVICE_ID_JOYPAD_A,
       RETRO_DEVICE_ID_JOYPAD_B,
       RETRO_DEVICE_ID_JOYPAD_Y,
-      16 //< PS Button
+      16 /* PS Button */
    };
    struct hidpad_ps3_data *device = (struct hidpad_ps3_data*)data;
 

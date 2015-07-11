@@ -95,7 +95,7 @@ static void *sdl_audio_init(const char *device,
    spec.freq = rate;
    spec.format = AUDIO_S16SYS;
    spec.channels = 2;
-   spec.samples = frames; // This is in audio frames, not samples ... :(
+   spec.samples = frames; /* This is in audio frames, not samples ... :( */
    spec.callback = sdl_audio_cb;
    spec.userdata = sdl;
 

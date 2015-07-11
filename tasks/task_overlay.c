@@ -14,31 +14,32 @@
  */
 
 #include <retro_miscellaneous.h>
+#ifdef HAVE_THREADS
+#include <rthreads/rthreads.h>
+#endif
 
-#include "../driver.h"
-#include "../runloop.h"
-#include "../runloop_data.h"
+#include "../input/input_overlay.h"
 #include "tasks.h"
 
-void rarch_main_data_overlay_image_upload_iterate(bool is_thread, void *data)
-{
-   data_runloop_t *runloop = (data_runloop_t*)data;
-   driver_t *driver = driver_get_ptr();
+#ifdef HAVE_THREADS
+static slock_t *overlay_lock;
+#endif
 
-   if (rarch_main_is_idle())
-      return;
-   if (!driver->overlay || !runloop)
+void rarch_main_data_overlay_image_upload_iterate(bool is_thread)
+{
+   input_overlay_t *ol = input_overlay_get_ptr();
+   if (!ol)
       return;
 
 #ifdef HAVE_THREADS
    if (is_thread)
-      slock_lock(runloop->overlay_lock);
+      slock_lock(overlay_lock);
 #endif
 
-   switch (driver->overlay->state)
+   switch (input_overlay_status(ol))
    {
       case OVERLAY_STATUS_DEFERRED_LOADING:
-         input_overlay_load_overlays_iterate(driver->overlay);
+         input_overlay_load_overlays_iterate(ol);
          break;
       default:
          break;
@@ -46,52 +47,60 @@ void rarch_main_data_overlay_image_upload_iterate(bool is_thread, void *data)
 
 #ifdef HAVE_THREADS
    if (is_thread)
-      slock_unlock(runloop->overlay_lock);
+      slock_unlock(overlay_lock);
 #endif
 }
 
-void rarch_main_data_overlay_iterate(bool is_thread, void *data)
+void rarch_main_data_overlay_iterate(bool is_thread)
 {
-   data_runloop_t *runloop = (data_runloop_t*)data;
-   driver_t *driver = NULL;
+   input_overlay_t *ol = input_overlay_get_ptr();
    
-   if (rarch_main_is_idle())
-      return;
-
 #ifdef HAVE_THREADS
    if (is_thread)
-      slock_lock(runloop->overlay_lock);
+      slock_lock(overlay_lock);
 #endif
 
-   driver = driver_get_ptr();
-
-   if (!driver || !driver->overlay)
+   if (!ol)
       goto end;
 
-   switch (driver->overlay->state)
+   switch (input_overlay_status(ol))
    {
       case OVERLAY_STATUS_DEFERRED_LOAD:
-         input_overlay_load_overlays(driver->overlay);
+         input_overlay_load_overlays(ol);
          break;
       case OVERLAY_STATUS_NONE:
       case OVERLAY_STATUS_ALIVE:
          break;
       case OVERLAY_STATUS_DEFERRED_LOADING_RESOLVE:
-         input_overlay_load_overlays_resolve_iterate(driver->overlay);
+         input_overlay_load_overlays_resolve_iterate(ol);
          break;
       case OVERLAY_STATUS_DEFERRED_DONE:
-         input_overlay_new_done(driver->overlay);
+         input_overlay_new_done(ol);
          break;
       case OVERLAY_STATUS_DEFERRED_ERROR:
-         input_overlay_free(driver->overlay);
+         input_overlay_free(ol);
          break;
       default:
          break;
    }
 
-end:
+end: ;
 #ifdef HAVE_THREADS
    if (is_thread)
-      slock_unlock(runloop->overlay_lock);
+      slock_unlock(overlay_lock);
+#endif
+}
+
+void rarch_main_data_overlay_thread_uninit(void)
+{
+#ifdef HAVE_THREADS
+   slock_free(overlay_lock);
+#endif
+}
+
+void rarch_main_data_overlay_thread_init(void)
+{
+#ifdef HAVE_THREADS
+   overlay_lock = slock_new();
 #endif
 }

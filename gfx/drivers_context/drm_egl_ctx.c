@@ -236,7 +236,8 @@ static void wait_flip(bool block)
 
    /* This buffer is not on-screen anymore. Release it to GBM. */
    gbm_surface_release_buffer(drm->g_gbm_surface, drm->g_bo);
-   drm->g_bo = drm->g_next_bo; // This buffer is being shown now.
+   /* This buffer is being shown now. */
+   drm->g_bo = drm->g_next_bo; 
 }
 
 static void queue_flip(void)
@@ -307,7 +308,8 @@ static void gfx_ctx_drm_egl_set_resize(void *data,
 
 static void gfx_ctx_drm_egl_update_window_title(void *data)
 {
-   char buf[128], buf_fps[128];
+   char buf[128]        = {0};
+   char buf_fps[128]    = {0};
    settings_t *settings = config_get_ptr();
 
    video_monitor_get_fps(buf, sizeof(buf),
@@ -427,12 +429,12 @@ static void gfx_ctx_drm_egl_destroy_resources(gfx_ctx_drm_egl_data_t *drm)
 
 static bool gfx_ctx_drm_egl_init(void *data)
 {
-   const char *gpu;
    int i;
    unsigned monitor_index;
-   unsigned gpu_index = 0;
+   unsigned gpu_index                   = 0;
+   const char *gpu                      = NULL;
    struct string_list *gpu_descriptors  = NULL;
-   settings_t *settings = config_get_ptr();
+   settings_t *settings                 = config_get_ptr();
    unsigned monitor = max(settings->video.monitor_index, 1);
 
    gfx_ctx_drm_egl_data_t *drm = (gfx_ctx_drm_egl_data_t*)calloc(1, sizeof(gfx_ctx_drm_egl_data_t));
@@ -749,12 +751,14 @@ static bool gfx_ctx_drm_egl_set_video_mode(void *data,
       /* Find best match. */
       for (i = 0; i < drm->g_connector->count_modes; i++)
       {
+         float diff;
          if (width != drm->g_connector->modes[i].hdisplay || 
                height != drm->g_connector->modes[i].vdisplay)
             continue;
 
-         float diff = fabsf(refresh_mod * 
-               drm->g_connector->modes[i].vrefresh - settings->video.refresh_rate);
+         diff = fabsf(refresh_mod * drm->g_connector->modes[i].vrefresh
+               - settings->video.refresh_rate);
+
          if (!drm->g_drm_mode || diff < minimum_fps_diff)
          {
             drm->g_drm_mode = &drm->g_connector->modes[i];

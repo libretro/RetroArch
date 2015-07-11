@@ -408,22 +408,25 @@ static void *xv_init(const video_info_t *video,
       const input_driver_t **input, void **input_data)
 {
    unsigned i;
-   struct sigaction sa;
-   unsigned adaptor_count = 0;
-   int visualmatches = 0;
-   XSetWindowAttributes attributes = {0};
-   unsigned width = 0, height = 0;
-   char buf[128], buf_fps[128];
-   Atom atom = 0;
-   void *xinput = NULL;
-   XVisualInfo *visualinfo = NULL;
-   XVisualInfo visualtemplate = {0};
-   XvAdaptorInfo *adaptor_info = NULL;
-   driver_t *driver     = driver_get_ptr();
-   settings_t *settings = config_get_ptr();
+   char buf[128]                          = {0};
+   char buf_fps[128]                      = {0};
+   struct sigaction sa                    = {{0}};
+   XSetWindowAttributes attributes        = {0};
+   XVisualInfo visualtemplate             = {0};
+   unsigned width                         = 0;
+   unsigned height                        = 0;
+   unsigned adaptor_count                 = 0;
+   int visualmatches                      = 0;
+   Atom atom                              = 0;
+   void *xinput                           = NULL;
+   XVisualInfo *visualinfo                = NULL;
+   XvAdaptorInfo *adaptor_info            = NULL;
+   driver_t *driver                       = driver_get_ptr();
+   settings_t *settings                   = config_get_ptr();
    const struct retro_game_geometry *geom = NULL;
-   struct retro_system_av_info *av_info = NULL;
+   struct retro_system_av_info *av_info   = NULL;
    xv_t *xv = (xv_t*)calloc(1, sizeof(*xv));
+   XWindowAttributes target;
    if (!xv)
       return NULL;
 
@@ -495,13 +498,13 @@ static void *xv_init(const video_info_t *video,
    xv->colormap = XCreateColormap(xv->display,
          DefaultRootWindow(xv->display), visualinfo->visual, AllocNone);
 
-   attributes.colormap = xv->colormap;
+   attributes.colormap     = xv->colormap;
    attributes.border_pixel = 0;
-   attributes.event_mask = StructureNotifyMask | KeyPressMask | 
+   attributes.event_mask   = StructureNotifyMask | KeyPressMask | 
       KeyReleaseMask | ButtonReleaseMask | ButtonPressMask | DestroyNotify | ClientMessage;
 
-   width = video->fullscreen ? ( (video->width  == 0) ? geom->base_width : video->width) : video->width;
-   height = video->fullscreen ? ((video->height == 0) ? geom->base_height : video->height) : video->height;
+   width      = video->fullscreen ? ( (video->width  == 0) ? geom->base_width : video->width) : video->width;
+   height     = video->fullscreen ? ((video->height == 0) ? geom->base_height : video->height) : video->height;
    xv->window = XCreateWindow(xv->display, DefaultRootWindow(xv->display),
          0, 0, width, height,
          0, xv->depth, InputOutput, visualinfo->visual,
@@ -541,12 +544,13 @@ static void *xv_init(const video_info_t *video,
       RARCH_ERR("XVideo: XShmCreateImage failed.\n");
       goto error;
    }
-   xv->width = xv->image->width;
-   xv->height = xv->image->height;
 
-   xv->shminfo.shmid = shmget(IPC_PRIVATE, xv->image->data_size, IPC_CREAT | 0777);
-   xv->shminfo.shmaddr = xv->image->data = (char*)shmat(xv->shminfo.shmid, NULL, 0);
+   xv->width            = xv->image->width;
+   xv->height           = xv->image->height;
+   xv->shminfo.shmid    = shmget(IPC_PRIVATE, xv->image->data_size, IPC_CREAT | 0777);
+   xv->shminfo.shmaddr  = xv->image->data = (char*)shmat(xv->shminfo.shmid, NULL, 0);
    xv->shminfo.readOnly = false;
+
    if (!XShmAttach(xv->display, &xv->shminfo))
    {
       RARCH_ERR("XVideo: XShmAttach failed.\n");
@@ -560,7 +564,7 @@ static void *xv_init(const video_info_t *video,
       XSetWMProtocols(xv->display, xv->window, &xv->quit_atom, 1);
 
    sa.sa_handler = xvideo_sighandler;
-   sa.sa_flags = SA_RESTART;
+   sa.sa_flags   = SA_RESTART;
    sigemptyset(&sa.sa_mask);
    sigaction(SIGINT, &sa, NULL);
    sigaction(SIGTERM, &sa, NULL);
@@ -590,7 +594,6 @@ static void *xv_init(const video_info_t *video,
    if (!x11_create_input_context(xv->display, xv->window, &xv->xim, &xv->xic))
       goto error;
 
-   XWindowAttributes target;
    XGetWindowAttributes(xv->display, xv->window, &target);
    calc_out_rect(xv->keep_aspect, &xv->vp, target.width, target.height);
    xv->vp.full_width = target.width;
@@ -608,7 +611,7 @@ static bool check_resize(xv_t *xv, unsigned width, unsigned height)
    /* We render @ 2x scale to combat chroma downsampling. */
    if (xv->width != (width << 1) || xv->height != (height << 1))
    {
-      xv->width = width << 1;
+      xv->width  = width << 1;
       xv->height = height << 1;
 
       XShmDetach(xv->display, &xv->shminfo);
@@ -624,7 +627,7 @@ static bool check_resize(xv_t *xv, unsigned width, unsigned height)
          return false;
       }
 
-      xv->width = xv->image->width;
+      xv->width  = xv->image->width;
       xv->height = xv->image->height;
 
       xv->shminfo.shmid = shmget(IPC_PRIVATE, xv->image->data_size, IPC_CREAT | 0777);
@@ -634,7 +637,7 @@ static bool check_resize(xv_t *xv, unsigned width, unsigned height)
          return false;
       }
 
-      xv->shminfo.shmaddr = xv->image->data = (char*)shmat(xv->shminfo.shmid, NULL, 0);
+      xv->shminfo.shmaddr  = xv->image->data = (char*)shmat(xv->shminfo.shmid, NULL, 0);
       xv->shminfo.readOnly = false;
 
       if (!XShmAttach(xv->display, &xv->shminfo))
@@ -762,9 +765,9 @@ static void xv_render_msg(xv_t *xv, const char *msg,
 static bool xv_frame(void *data, const void *frame, unsigned width,
       unsigned height, unsigned pitch, const char *msg)
 {
-   char buf[128];
    XWindowAttributes target;
-   xv_t *xv = (xv_t*)data;
+   char buf[128]             = {0};
+   xv_t *xv                  = (xv_t*)data;
 
    if (!frame)
       return true;
@@ -801,7 +804,7 @@ void x_input_poll_wheel(void *data, XButtonEvent *event, bool latch);
 static bool xv_alive(void *data)
 {
    XEvent event;
-   xv_t *xv = (xv_t*)data;
+   xv_t *xv         = (xv_t*)data;
    driver_t *driver = driver_get_ptr();
 
    while (XPending(xv->display))
@@ -818,7 +821,7 @@ static bool xv_alive(void *data)
             break;
          case DestroyNotify:
             return false;
-         case MapNotify: // Find something that works better.
+         case MapNotify: /* Find something that works better. */
             xv->focus = true;
             break;
          case UnmapNotify:
@@ -854,11 +857,12 @@ static bool xv_focus(void *data)
 
 static bool xv_suppress_screensaver(void *data, bool enable)
 {
-   (void)data;
-   (void)enable;
    driver_t *driver = driver_get_ptr();
 
-   if (driver->display_type == RARCH_DISPLAY_X11)
+   (void)data;
+   (void)enable;
+
+   if (driver && driver->display_type == RARCH_DISPLAY_X11)
    {
       x11_suspend_screensaver(driver->video_window);
       return true;

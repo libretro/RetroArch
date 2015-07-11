@@ -24,6 +24,9 @@
 #include <string.h>
 #include <math.h>
 
+/*
+ * Sets mat to an identity matrix
+ */
 void matrix_4x4_identity(math_matrix_4x4 *mat)
 {
    unsigned i;
@@ -33,6 +36,9 @@ void matrix_4x4_identity(math_matrix_4x4 *mat)
       MAT_ELEM_4X4(*mat, i, i) = 1.0f;
 }
 
+/*
+ * Sets out to the transposed matrix of in
+ */
 void matrix_4x4_transpose(math_matrix_4x4 *out, const math_matrix_4x4 *in)
 {
    unsigned i, j;
@@ -45,6 +51,9 @@ void matrix_4x4_transpose(math_matrix_4x4 *out, const math_matrix_4x4 *in)
    *out = mat;
 }
 
+/*
+ * Builds an X-axis rotation matrix
+ */
 void matrix_4x4_rotate_x(math_matrix_4x4 *mat, float rad)
 {
    float cosine = cosf(rad);
@@ -58,6 +67,10 @@ void matrix_4x4_rotate_x(math_matrix_4x4 *mat, float rad)
    MAT_ELEM_4X4(*mat, 2, 1) = sine;
 }
 
+/*
+ * Builds a rotation matrix using the 
+ * rotation around the Y-axis.
+ */
 void matrix_4x4_rotate_y(math_matrix_4x4 *mat, float rad)
 {
    float cosine = cosf(rad);
@@ -71,6 +84,10 @@ void matrix_4x4_rotate_y(math_matrix_4x4 *mat, float rad)
    MAT_ELEM_4X4(*mat, 2, 0) = sine;
 }
 
+/*
+ * Builds a rotation matrix using the 
+ * rotation around the Z-axis.
+ */
 void matrix_4x4_rotate_z(math_matrix_4x4 *mat, float rad)
 {
    float cosine = cosf(rad);
@@ -84,6 +101,9 @@ void matrix_4x4_rotate_z(math_matrix_4x4 *mat, float rad)
    MAT_ELEM_4X4(*mat, 1, 0) = sine;
 }
 
+/*
+ * Creates an orthographic projection matrix.
+ */
 void matrix_4x4_ortho(math_matrix_4x4 *mat,
       float left, float right,
       float bottom, float top,
@@ -115,6 +135,11 @@ void matrix_4x4_scale(math_matrix_4x4 *out, float x, float y,
    MAT_ELEM_4X4(*out, 3, 3) = 1.0f;
 }
 
+/*
+ * Builds a translation matrix. All other elements in 
+ * the matrix will be set to zero except for the
+ * diagonal which is set to 1.0
+ */
 void matrix_4x4_translate(math_matrix_4x4 *out, float x,
       float y, float z)
 {
@@ -124,17 +149,25 @@ void matrix_4x4_translate(math_matrix_4x4 *out, float x,
    MAT_ELEM_4X4(*out, 2, 3) = z;
 }
 
+/*
+ * Creates a perspective projection matrix.
+ */
 void matrix_4x4_projection(math_matrix_4x4 *out, float znear,
       float zfar)
 {
+   float delta_z = zfar - znear;
+
    memset(out, 0, sizeof(*out));
    MAT_ELEM_4X4(*out, 0, 0) = znear;
    MAT_ELEM_4X4(*out, 1, 1) = zfar;
-   MAT_ELEM_4X4(*out, 2, 2) = (zfar + znear) / (zfar - znear);
-   MAT_ELEM_4X4(*out, 2, 3) = -2.0f * zfar * znear / (zfar - znear);
+   MAT_ELEM_4X4(*out, 2, 2) = (zfar + znear) / delta_z;
+   MAT_ELEM_4X4(*out, 2, 3) = -2.0f * zfar * znear / delta_z;
    MAT_ELEM_4X4(*out, 3, 2) = -1.0f;
 }
 
+/*
+ * Multiplies a with b, stores the result in out
+ */
 void matrix_4x4_multiply(
       math_matrix_4x4 *out,
       const math_matrix_4x4 *a,

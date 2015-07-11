@@ -14,6 +14,10 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#define IS_JOYCONFIG
+
+#include <retro_environment.h>
+
 #include "retroarch-joyconfig.c"
 
 #include "../libretro-common/dynamic/dylib.c"
@@ -47,6 +51,7 @@
 #include "../libretro-common/queues/fifo_buffer.c"
 #include "../libretro-common/file/config_file.c"
 #include "../libretro-common/file/file_path.c"
+#include "../libretro-common/hash/rhash.c"
 #include "../file_path_special.c"
 #include "../libretro-common/string/string_list.c"
 #include "../libretro-common/compat/compat.c"
@@ -54,12 +59,15 @@
 #include "../input/drivers/nullinput.c"
 #include "../input/drivers_hid/null_hid.c"
 
+#include "../libretro-common/rthreads/rthreads.c"
+
+#ifndef __STDC_C89__
 #ifdef HAVE_LIBUSB
 #include "../input/drivers_hid/libusb_hid.c"
-#include "../libretro-common/rthreads/rthreads.c"
 
 #ifndef HAVE_HID
 #define HAVE_HID
+#endif
 #endif
 #endif
 

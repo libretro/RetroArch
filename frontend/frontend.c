@@ -15,13 +15,16 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <file/file_path.h>
+
+#include "../system.h"
 #include "../driver.h"
-#include "frontend.h"
 #include "../general.h"
 #include "../retroarch.h"
 #include "../runloop.h"
 #include "../runloop_data.h"
-#include <file/file_path.h>
+
+#include "frontend.h"
 
 #define MAX_ARGS 32
 
@@ -75,8 +78,6 @@ void main_exit(void *args)
    const frontend_ctx_driver_t *frontend = frontend_get_ptr();
    const ui_companion_driver_t *ui       = ui_companion_get_ptr();
 
-   global->system.shutdown         = false;
-
    main_exit_save_config();
 
    if (global->main_is_init)
@@ -123,6 +124,10 @@ void main_exit(void *args)
 
 static void check_defaults_dirs(void)
 {
+   if (*g_defaults.core_assets_dir)
+      path_mkdir(g_defaults.core_assets_dir);
+   if (*g_defaults.remap_dir)
+      path_mkdir(g_defaults.remap_dir);
    if (*g_defaults.autoconfig_dir)
       path_mkdir(g_defaults.autoconfig_dir);
    if (*g_defaults.audio_filter_dir)
@@ -169,10 +174,11 @@ static void history_playlist_push(content_playlist_t *playlist,
       const char *path, const char *core_path,
       struct retro_system_info *info)
 {
-   char tmp[PATH_MAX_LENGTH];
-   global_t   *global   = global_get_ptr();
+   char tmp[PATH_MAX_LENGTH]             = {0};
+   global_t                    *global   = global_get_ptr();
+   rarch_system_info_t *system           = rarch_system_info_get_ptr();
 
-   if (!playlist || global->libretro_dummy || !info)
+   if (!playlist || (global->core_type == CORE_TYPE_DUMMY) || !info)
       return;
 
    /* Path can be relative here.
@@ -183,12 +189,13 @@ static void history_playlist_push(content_playlist_t *playlist,
    if (*tmp)
       path_resolve_realpath(tmp, sizeof(tmp));
 
-   if (global->system.no_content || *tmp)
+   if (system->no_content || *tmp)
       content_playlist_push(playlist,
             *tmp ? tmp : NULL,
             NULL,
             core_path,
             info->library_name,
+            NULL,
             NULL);
 }
 
@@ -311,13 +318,15 @@ int rarch_main(int argc, char *argv[], void *data)
 
    if (settings->history_list_enable)
    {
-      global_t *global = global_get_ptr();
+      global_t *global             = global_get_ptr();
+      rarch_system_info_t *system = rarch_system_info_get_ptr();
 
-      if (global->content_is_init || global->system.no_content)
-         history_playlist_push(g_defaults.history,
+      if (global->content_is_init || system->no_content)
+         history_playlist_push(
+               g_defaults.history,
                global->fullpath,
                settings->libretro,
-               &global->system.info);
+               system ? &system->info : NULL);
    }
 
    if (driver)

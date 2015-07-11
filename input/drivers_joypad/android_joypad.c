@@ -3,7 +3,7 @@
  *  Copyright (C) 2011-2015 - Daniel De Matteis
  *  Copyright (C) 2012-2015 - Michael Lelli
  *  Copyright (C) 2013-2014 - Steven Crowe
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -22,26 +22,10 @@ static const char *android_joypad_name(unsigned pad)
    return settings ? settings->input.device_names[pad] : NULL;
 }
 
-static bool android_joypad_init(void)
+static bool android_joypad_init(void *data)
 {
-   unsigned autoconf_pad;
-   settings_t *settings       = config_get_ptr();
-   autoconfig_params_t params = {{0}};
+   engine_handle_dpad         = engine_handle_dpad_default;
 
-   for (autoconf_pad = 0; autoconf_pad < MAX_USERS; autoconf_pad++)
-   {
-      strlcpy(settings->input.device_names[autoconf_pad],
-            android_joypad_name(autoconf_pad),
-            sizeof(settings->input.device_names[autoconf_pad]));
-
-      /* TODO - implement VID/PID? */
-      params.idx = autoconf_pad;
-      strlcpy(params.name, android_joypad_name(autoconf_pad), sizeof(params.name));
-      strlcpy(params.driver, android_joypad.ident, sizeof(params.driver));
-      input_config_autoconfigure_joypad(&params);
-   }
-
-   engine_handle_dpad = engine_handle_dpad_default;
    if ((dlopen("/system/lib/libandroid.so", RTLD_LOCAL | RTLD_LAZY)) == 0)
    {
       RARCH_WARN("Unable to open libandroid.so\n");
@@ -62,7 +46,7 @@ static bool android_joypad_button(unsigned port, uint16_t joykey)
 {
    uint8_t *buf             = NULL;
    driver_t *driver         = driver_get_ptr();
-   android_input_t *android = (android_input_t*)driver->input_data;
+   android_input_t *android = driver ? (android_input_t*)driver->input_data : NULL;
 
    if (!android || port >= MAX_PADS)
       return false;
@@ -100,7 +84,7 @@ static int16_t android_joypad_axis(unsigned port, uint32_t joyaxis)
    bool is_neg              = false;
    bool is_pos              = false;
    driver_t *driver         = driver_get_ptr();
-   android_input_t *android = (android_input_t*)driver->input_data;
+   android_input_t *android = driver ? (android_input_t*)driver->input_data : NULL;
 
    if (!android || joyaxis == AXIS_NONE || port >= MAX_PADS)
       return 0;
@@ -133,7 +117,7 @@ static void android_joypad_poll(void)
 static bool android_joypad_query_pad(unsigned pad)
 {
    driver_t *driver         = driver_get_ptr();
-   android_input_t *android = (android_input_t*)driver->input_data;
+   android_input_t *android = driver ? (android_input_t*)driver->input_data : NULL;
    return (pad < MAX_USERS && pad < android->pads_connected);
 }
 

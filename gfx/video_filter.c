@@ -21,6 +21,7 @@
 #include <file/file_path.h>
 #include "../file_ext.h"
 #include <file/dir_list.h>
+#include "../general.h"
 #include "../performance.h"
 #include <stdlib.h>
 
@@ -124,8 +125,9 @@ static bool create_softfilter_graph(rarch_softfilter_t *filt,
       unsigned threads)
 {
    unsigned input_fmts, input_fmt, output_fmts, i;
-   char key[64], name[64];
    struct config_file_userdata userdata;
+   char key[64]  = {0};
+   char name[64] = {0};
 
    snprintf(key, sizeof(key), "filter");
 
@@ -373,10 +375,10 @@ rarch_softfilter_t *rarch_softfilter_new(const char *filter_config,
       enum retro_pixel_format in_pixel_format,
       unsigned max_width, unsigned max_height)
 {
-   char basedir[PATH_MAX_LENGTH];
    softfilter_simd_mask_t cpu_features = rarch_get_cpu_features();
-   struct string_list *plugs = NULL;
-   rarch_softfilter_t *filt  = NULL;
+   char basedir[PATH_MAX_LENGTH] = {0};
+   struct string_list *plugs     = NULL;
+   rarch_softfilter_t *filt      = NULL;
 
    (void)basedir;
 

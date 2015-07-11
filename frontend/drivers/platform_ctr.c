@@ -21,10 +21,16 @@
 #include <string.h>
 
 #include <file/file_path.h>
+#ifndef IS_SALAMANDER
+#include <file/file_list.h>
+#endif
+
 #include "../../general.h"
 
 #ifdef IS_SALAMANDER
 #include "../../file_ext.h"
+#else
+#include "../../menu/menu_list.h"
 #endif
 
 
@@ -53,6 +59,8 @@ static void frontend_ctr_get_environment_settings(int *argc, char *argv[],
    fill_pathname_basedir(g_defaults.port_dir, elf_path_cst, sizeof(g_defaults.port_dir));
    RARCH_LOG("port dir: [%s]\n", g_defaults.port_dir);
 
+   fill_pathname_join(g_defaults.core_assets_dir, g_defaults.port_dir,
+         "downloads", sizeof(g_defaults.core_assets_dir));
    fill_pathname_join(g_defaults.assets_dir, g_defaults.port_dir,
          "media", sizeof(g_defaults.assets_dir));
    fill_pathname_join(g_defaults.core_dir, g_defaults.port_dir,
@@ -200,6 +208,21 @@ enum frontend_architecture frontend_ctr_get_architecture(void)
    return FRONTEND_ARCH_ARM;
 }
 
+static int frontend_ctr_parse_drive_list(void *data)
+{
+   file_list_t *list = (file_list_t*)data;
+
+#ifndef IS_SALAMANDER
+   if (!list)
+      return -1;
+
+   menu_list_push(list,
+         "sdmc:/", "", MENU_FILE_DIRECTORY, 0, 0);
+#endif
+
+   return 0;
+}
+
 const frontend_ctx_driver_t frontend_ctx_ctr = {
    frontend_ctr_get_environment_settings,
    frontend_ctr_init,
@@ -215,5 +238,6 @@ const frontend_ctx_driver_t frontend_ctx_ctr = {
    NULL,                         /* load_content */
    frontend_ctr_get_architecture,
    NULL,                         /* get_powerstate */
+   frontend_ctr_parse_drive_list,
    "ctr",
 };

@@ -31,7 +31,7 @@ enum dir_list_type
    DIR_LIST_CORE_INFO,
    DIR_LIST_DATABASES,
    DIR_LIST_PLAIN,
-   DIR_LIST_SHADERS,
+   DIR_LIST_SHADERS
 };
 
 struct string_list *dir_list_new_special(const char *input_dir, enum dir_list_type type);

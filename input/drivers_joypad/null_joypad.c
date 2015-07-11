@@ -25,8 +25,9 @@ static const char *null_joypad_name(unsigned pad)
    return "null";
 }
 
-static bool null_joypad_init(void)
+static bool null_joypad_init(void *data)
 {
+   (void)data;
    return true;
 }
 

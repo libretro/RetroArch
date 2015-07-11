@@ -534,10 +534,13 @@ static void renderchain_bind_orig(void *data, void *pass_data)
 static void renderchain_bind_prev(void *data, void *pass_data)
 {
    unsigned i, index;
-   char attr_texture[64], attr_input_size[64], attr_tex_size[64], attr_coord[64];
    D3DXVECTOR2 texture_size;
-   Pass           *pass = (Pass*)pass_data;
-   cg_renderchain_t *chain = (cg_renderchain_t*)data;
+   char attr_texture[64]    = {0};
+   char attr_input_size[64] = {0};
+   char attr_tex_size[64]   = {0};
+   char attr_coord[64]      = {0};
+   Pass               *pass = (Pass*)pass_data;
+   cg_renderchain_t  *chain = (cg_renderchain_t*)data;
    static const char *prev_names[] = {
       "PREV",
       "PREV1",
@@ -665,10 +668,13 @@ static void renderchain_bind_pass(void *data, void *pass_data, unsigned pass_ind
 
    for (i = 1; i < pass_index - 1; i++)
    {
-      char pass_base[64], attr_texture[64], attr_input_size[64], attr_tex_size[64],
-           attr_coord[64];
       CGparameter param;
       D3DXVECTOR2 video_size, texture_size;
+      char pass_base[64]       = {0};
+      char attr_texture[64]    = {0};
+      char attr_input_size[64] = {0};
+      char attr_tex_size[64]   = {0};
+      char attr_coord[64]      = {0};
 
       snprintf(pass_base,       sizeof(pass_base),       "PASS%u",          i);
       snprintf(attr_texture,    sizeof(attr_texture),    "%s.texture",      pass_base);

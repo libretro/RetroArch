@@ -187,7 +187,8 @@ static void gfx_ctx_vivante_set_resize(void *data,
 
 static void gfx_ctx_vivante_update_window_title(void *data)
 {
-   char buf[128], buf_fps[128];
+   char buf[128]        = {0};
+   char buf_fps[128]    = {0};
    settings_t *settings = config_get_ptr();
 
    (void)data;

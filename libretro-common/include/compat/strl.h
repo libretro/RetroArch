@@ -30,11 +30,11 @@
 #include "../../../config.h"
 #endif
 
-#ifndef HAVE_STRL
-
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+#ifndef HAVE_STRL
 /* Avoid possible naming collisions during link since 
  * we prefer to use the actual name. */
 #define strlcpy(dst, src, size) strlcpy_rarch__(dst, src, size)
@@ -44,11 +44,11 @@ extern "C" {
 size_t strlcpy(char *dest, const char *source, size_t size);
 size_t strlcat(char *dest, const char *source, size_t size);
 
-char *rarch_strcasestr(const char *s, const char *find);
+#endif
 
 #ifdef __cplusplus
 }
 #endif
-#endif
+
 #endif
 

@@ -686,7 +686,7 @@
 				<string key="NSMaxSize">{3.40282e+38, 3.40282e+38}</string>
 			</object>
 			<object class="NSCustomObject" id="976324537">
-				<string key="NSClassName">RetroArch_OSX</string>
+				<string key="NSClassName">RetroArch</string>
 			</object>
 			<object class="NSWindowTemplate" id="361653618">
 				<int key="NSWindowStyleMask">31</int>
@@ -2571,7 +2571,7 @@
 			<integer value="3000" key="NS.object.0"/>
 		</object>
 		<bool key="IBDocument.PluginDeclaredDependenciesTrackSystemTargetVersion">YES</bool>
-		<string key="IBDocument.LastKnownRelativeProjectPath">../../RetroArch_OSX.xcodeproj</string>
+		<string key="IBDocument.LastKnownRelativeProjectPath">../../RetroArch.xcodeproj</string>
 		<int key="IBDocument.defaultPropertyAccessControl">3</int>
 		<object class="NSMutableDictionary" key="IBDocument.LastKnownImageSizes">
 			<bool key="EncodedWithXMLCoder">YES</bool>

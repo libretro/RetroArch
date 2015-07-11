@@ -2,7 +2,7 @@ DEBUG			               = 0
 HAVE_LOGGER		            = 0
 HAVE_FILE_LOGGER	         = 0
 WHOLE_ARCHIVE_LINK         = 0
-BIG_STACK		            = 0
+BIG_STACK		            = 1
 PC_DEVELOPMENT_IP_ADDRESS	= 255.255.255.255
 PC_DEVELOPMENT_UDP_PORT		= 3490
 
@@ -38,7 +38,7 @@ TARGET_NAME := retroarch
 
 INCLUDE :=
 LDFLAGS :=
-LIBDIRS := 
+LIBDIRS :=
 
 SHADER_CG_DIR      := media/shaders_cg
 OVERLAY_DIR     := media/overlays
@@ -155,6 +155,10 @@ endif
 
 ifeq ($(HAVE_LIBSICKSAXIS), 1)
 CFLAGS		+= -DHAVE_LIBSICKSAXIS
+endif
+
+ifeq ($(HAVE_LIBRETRODB), 1)
+CFLAGS		+= -DHAVE_LIBRETRODB
 endif
 
 ifeq ($(HAVE_RPNG), 1)

@@ -13,21 +13,10 @@
  *  You should have received a copy of the GNU General Public License along with RetroArch.
  *  If not, see <http://www.gnu.org/licenses/>.
  */
-
-#include "content.h"
-#include "file_ops.h"
-#include <file/file_path.h>
-#include "general.h"
 #include <stdlib.h>
 #include <boolean.h>
 #include <string.h>
 #include <time.h>
-#include "dynamic.h"
-#include "movie.h"
-#include "patch.h"
-#include "compat/strl.h"
-#include "hash.h"
-#include <file/file_extract.h>
 
 #ifdef _WIN32
 #ifdef _XBOX
@@ -40,6 +29,19 @@
 #include <windows.h>
 #endif
 #endif
+
+#include <compat/strl.h>
+#include <file/file_path.h>
+#include <file/file_extract.h>
+
+#include "msg_hash.h"
+#include "content.h"
+#include "file_ops.h"
+#include "general.h"
+#include "dynamic.h"
+#include "movie.h"
+#include "patch.h"
+#include "system.h"
 
 /**
  * read_content_file:
@@ -59,11 +61,12 @@ static bool read_content_file(unsigned i, const char *path, void **buf,
    uint8_t *ret_buf = NULL;
    global_t *global = global_get_ptr();
 
-   RARCH_LOG("Loading content file: %s.\n", path);
+   RARCH_LOG("%s: %s.\n",
+         msg_hash_to_str(MSG_LOADING_CONTENT_FILE), path);
    if (!read_file(path, (void**) &ret_buf, length))
       return false;
 
-   if (*length <= 0)
+   if (*length < 0)
       return false;
 
    if (i != 0)
@@ -94,8 +97,9 @@ static bool read_content_file(unsigned i, const char *path, void **buf,
 static void dump_to_file_desperate(const void *data,
       size_t size, unsigned type)
 {
-   char path[PATH_MAX_LENGTH], timebuf[PATH_MAX_LENGTH];
    time_t time_;
+   char path[PATH_MAX_LENGTH]    = {0};
+   char timebuf[PATH_MAX_LENGTH] = {0};
 #if defined(_WIN32) && !defined(_XBOX)
    const char *base = getenv("APPDATA");
 #elif defined(__CELLOS_LV2__) || defined(_XBOX)
@@ -142,11 +146,13 @@ struct sram_block
  **/
 bool save_state(const char *path)
 {
-   bool ret = false;
-   void *data = NULL;
+   bool ret    = false;
+   void *data  = NULL;
    size_t size = pretro_serialize_size();
 
-   RARCH_LOG("Saving state: \"%s\".\n", path);
+   RARCH_LOG("%s: \"%s\".\n",
+         msg_hash_to_str(MSG_SAVING_STATE),
+         path);
 
    if (size == 0)
       return false;
@@ -154,19 +160,21 @@ bool save_state(const char *path)
    data = malloc(size);
 
    if (!data)
-   {
-      RARCH_ERR("Failed to allocate memory for save state buffer.\n");
       return false;
-   }
 
-   RARCH_LOG("State size: %d bytes.\n", (int)size);
+   RARCH_LOG("%s: %d %s.\n", 
+         msg_hash_to_str(MSG_STATE_SIZE),
+         (int)size,
+         msg_hash_to_str(MSG_BYTES));
    ret = pretro_serialize(data, size);
 
    if (ret)
       ret = write_file(path, data, size);
 
    if (!ret)
-      RARCH_ERR("Failed to save state to \"%s\".\n", path);
+      RARCH_ERR("%s \"%s\".\n", 
+            msg_hash_to_str(MSG_FAILED_TO_SAVE_STATE_TO),
+            path);
 
    free(data);
 
@@ -192,20 +200,28 @@ bool load_state(const char *path)
    global_t *global          = global_get_ptr();
    bool ret                  = read_file(path, &buf, &size);
 
-   RARCH_LOG("Loading state: \"%s\".\n", path);
+   RARCH_LOG("%s: \"%s\".\n",
+         msg_hash_to_str(MSG_LOADING_STATE),
+         path);
 
    if (!ret || size < 0)
    {
-      RARCH_ERR("Failed to load state from \"%s\".\n", path);
+      RARCH_ERR("%s \"%s\".\n",
+            msg_hash_to_str(MSG_FAILED_TO_LOAD_STATE),
+            path);
       return false;
    }
 
-   RARCH_LOG("State size: %u bytes.\n", (unsigned)size);
+   RARCH_LOG("%s: %u %s.\n",
+         msg_hash_to_str(MSG_STATE_SIZE),
+         (unsigned)size,
+         msg_hash_to_str(MSG_BYTES));
 
    if (settings->block_sram_overwrite && global->savefiles
          && global->savefiles->size)
    {
-      RARCH_LOG("Blocking SRAM overwrite.\n");
+      RARCH_LOG("%s.\n",
+            msg_hash_to_str(MSG_BLOCKING_SRAM_OVERWRITE));
       blocks = (struct sram_block*)
          calloc(global->savefiles->size, sizeof(*blocks));
 
@@ -282,8 +298,11 @@ void load_ram_file(const char *path, int type)
    {
       if (rc > (ssize_t)size)
       {
-         RARCH_WARN("SRAM is larger than implementation expects, doing partial load (truncating %u bytes to %u).\n",
-               (unsigned)rc, (unsigned)size);
+         RARCH_WARN("SRAM is larger than implementation expects, doing partial load (truncating %u %s %s %u).\n",
+               (unsigned)rc,
+               msg_hash_to_str(MSG_BYTES),
+               msg_hash_to_str(MSG_TO),
+               (unsigned)size);
          rc = size;
       }
       memcpy(data, buf, rc);
@@ -315,13 +334,16 @@ void save_ram_file(const char *path, int type)
 
    if (!write_file(path, data, size))
    {
-      RARCH_ERR("Failed to save SRAM.\n");
+      RARCH_ERR("%s.\n",
+            msg_hash_to_str(MSG_FAILED_TO_SAVE_SRAM));
       RARCH_WARN("Attempting to recover ...\n");
       dump_to_file_desperate(data, size, type);
       return;
    }
 
-   RARCH_LOG("Saved successfully to \"%s\".\n", path);
+   RARCH_LOG("%s \"%s\".\n",
+         msg_hash_to_str(MSG_SAVED_SUCCESSFULLY_TO),
+         path);
 }
 
 static bool load_content_dont_need_fullpath(
@@ -341,7 +363,9 @@ static bool load_content_dont_need_fullpath(
 
    if (!ret || len < 0)
    {
-      RARCH_ERR("Could not read content file \"%s\".\n", path);
+      RARCH_ERR("%s \"%s\".\n",
+            msg_hash_to_str(MSG_COULD_NOT_READ_CONTENT_FILE),
+            path);
       return false;
    }
 
@@ -356,14 +380,16 @@ static bool load_content_need_fullpath(
       bool need_fullpath, const char *path)
 {
 #ifdef HAVE_COMPRESSION
-   char new_path[PATH_MAX_LENGTH], new_basedir[PATH_MAX_LENGTH];
    ssize_t len;
    union string_list_elem_attr attributes;
-   bool ret             = false;
-   settings_t *settings = config_get_ptr();
-   global_t   *global   = global_get_ptr();
+   char new_path[PATH_MAX_LENGTH]    = {0};
+   char new_basedir[PATH_MAX_LENGTH] = {0};
+   bool ret                          = false;
+   settings_t *settings              = config_get_ptr();
+   global_t   *global                = global_get_ptr();
+   rarch_system_info_t      *sys_info= rarch_system_info_get_ptr();
 
-   if (global->system.info.block_extract)
+   if (sys_info && sys_info->info.block_extract)
       return true;
 
    if (!need_fullpath)
@@ -397,7 +423,9 @@ static bool load_content_need_fullpath(
 
    if (!ret || len < 0)
    {
-      RARCH_ERR("Could not read content file \"%s\".\n", path);
+      RARCH_ERR("%s \"%s\".\n",
+            msg_hash_to_str(MSG_COULD_NOT_READ_CONTENT_FILE),
+            path);
       return false;
    }
 
@@ -483,7 +511,7 @@ static bool load_content(const struct retro_subsystem_info *special,
       ret = pretro_load_game(*content->elems[0].data ? info : NULL);
 
    if (!ret)
-      RARCH_ERR("Failed to load content.\n");
+      RARCH_ERR("%s.\n", msg_hash_to_str(MSG_FAILED_TO_LOAD_CONTENT));
 
 end:
    for (i = 0; i < content->size; i++)
@@ -514,6 +542,7 @@ bool init_content_file(void)
    struct string_list *content                = NULL;
    const struct retro_subsystem_info *special = NULL;
    settings_t *settings                       = config_get_ptr();
+   rarch_system_info_t *system                = rarch_system_info_get_ptr();
    global_t   *global                         = global_get_ptr();
 
    global->temporary_content                  = string_list_new();
@@ -523,8 +552,8 @@ bool init_content_file(void)
 
    if (*global->subsystem)
    {
-      special = libretro_find_subsystem_info(global->system.special,
-            global->system.num_special, global->subsystem);
+      special = libretro_find_subsystem_info(system->special,
+            system->num_special, global->subsystem);
 
       if (!special)
       {
@@ -577,9 +606,9 @@ bool init_content_file(void)
    }
    else
    {
-      attr.i  = global->system.info.block_extract;
-      attr.i |= global->system.info.need_fullpath << 1;
-      attr.i |= (!global->system.no_content) << 2;
+      attr.i  = system->info.block_extract;
+      attr.i |= system->info.need_fullpath << 1;
+      attr.i |= (!system->no_content) << 2;
       string_list_append(content,
             (global->libretro_no_content && settings->core.set_supports_no_game_enable) ? "" : global->fullpath, attr);
    }
@@ -597,11 +626,11 @@ bool init_content_file(void)
 
       ext       = path_get_extension(content->elems[i].data);
       valid_ext = special ? special->roms[i].valid_extensions :
-         global->system.info.valid_extensions;
+         system->info.valid_extensions;
 
       if (ext && !strcasecmp(ext, "zip"))
       {
-         char temporary_content[PATH_MAX_LENGTH];
+         char temporary_content[PATH_MAX_LENGTH] = {0};
 
          strlcpy(temporary_content, content->elems[i].data,
                sizeof(temporary_content));

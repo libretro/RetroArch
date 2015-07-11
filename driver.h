@@ -32,13 +32,16 @@
 #include "gfx/font_renderer_driver.h"
 #include "audio/audio_driver.h"
 
-#include "menu/menu_driver.h"
 #include "camera/camera_driver.h"
 #include "location/location_driver.h"
 #include "audio/audio_resampler_driver.h"
 #include "record/record_driver.h"
 
 #include "libretro_version_1.h"
+
+#ifdef HAVE_MENU
+#include "menu/menu_driver.h"
+#endif
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -264,7 +267,6 @@ typedef struct driver
    rarch_cmd_t *command;
 #endif
    bool block_hotkey;
-   bool block_input;
    bool block_libretro_input;
    bool flushing_input;
    bool nonblock_state;
@@ -277,11 +279,6 @@ typedef struct driver
    uintptr_t video_window;
    enum rarch_display_type display_type;
 
-   /* Used for 15-bit -> 16-bit conversions that take place before
-    * being passed to video driver. */
-   struct scaler_ctx scaler;
-   void *scaler_out;
-
    /* Graphics driver requires RGBA byte order data (ABGR on little-endian)
     * for 32-bit.
     * This takes effect for overlay and shader cores that wants to load
@@ -290,16 +287,11 @@ typedef struct driver
     * TODO: Refactor this better. */
    bool gfx_use_rgba;
 
-#ifdef HAVE_OVERLAY
-   input_overlay_t *overlay;
-   input_overlay_state_t overlay_state;
-#endif
-
    /* Interface for "poking". */
    const video_poke_interface_t *video_poke;
 
    /* Last message given to the video driver */
-   const char *current_msg;
+   char current_msg[PATH_MAX_LENGTH];
 } driver_t;
 
 /**
@@ -330,31 +322,31 @@ void init_drivers_pre(void);
  **/
 void uninit_drivers(int flags);
 
-bool find_first_driver(const char *label, char *str, size_t sizeof_str);
+bool find_first_driver(const char *label, char *s, size_t len);
 
 /**
  * find_prev_driver:
  * @label              : string of driver type to be found.
- * @str                : identifier of driver to be found.
- * @sizeof_str         : size of @str.
+ * @s                  : identifier of driver to be found.
+ * @len                : size of @s.
  *
  * Find previous driver in driver array.
  *
  * Returns: true (1) if successful, otherwise false (0).
  **/
-bool find_prev_driver(const char *label, char *str, size_t sizeof_str);
+bool find_prev_driver(const char *label, char *s, size_t len);
 
 /**
  * find_next_driver:
  * @label              : string of driver type to be found.
- * @str                : identifier of driver to be found.
- * @sizeof_str         : size of @str.
+ * @s                  : identifier of driver to be found.
+ * @len                : size of @.
  *
  * Find next driver in driver array.
  *
  * Returns: true (1) if successful, otherwise false (0).
  **/
-bool find_next_driver(const char *label, char *str, size_t sizeof_str);
+bool find_next_driver(const char *label, char *s, size_t len);
 
 /**
  * driver_set_nonblock_state:

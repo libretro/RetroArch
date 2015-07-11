@@ -17,9 +17,12 @@
 #include "driver.h"
 #include "general.h"
 #include "retroarch.h"
+#include "msg_hash.h"
 #include "compat/posix_string.h"
 #include "gfx/video_monitor.h"
 #include "audio/audio_monitor.h"
+
+#include "msg_hash.h"
 
 #ifdef HAVE_MENU
 #include "menu/menu.h"
@@ -60,13 +63,22 @@ driver_t *driver_get_ptr(void)
    return g_driver;
 }
 
+#define HASH_LOCATION_DRIVER           0x09189689U
+#define HASH_CAMERA_DRIVER             0xf25db959U
+#define HASH_MENU_DRIVER               0xd607fb05U
+#define HASH_INPUT_DRIVER              0x4c087840U
+#define HASH_INPUT_JOYPAD_DRIVER       0xab124146U
+#define HASH_VIDEO_DRIVER              0x1805a5e7U
+#define HASH_AUDIO_DRIVER              0x26594002U
+#define HASH_AUDIO_RESAMPLER_DRIVER    0xedcba9ecU
+#define HASH_RECORD_DRIVER             0x144cd2cfU
 /**
  * find_driver_nonempty:
  * @label              : string of driver type to be found.
  * @i                  : index of driver.
  * @str                : identifier name of the found driver
  *                       gets written to this string.
- * @sizeof_str         : size of @str.
+ * @len                : size of @str.
  *
  * Find driver based on @label.
  *
@@ -74,65 +86,60 @@ driver_t *driver_get_ptr(void)
  * pointer to driver.
  **/
 static const void *find_driver_nonempty(const char *label, int i,
-      char *str, size_t sizeof_str)
+      char *s, size_t len)
 {
    const void *drv = NULL;
+   uint32_t hash   = msg_hash_calculate(label);
 
-   if (!strcmp(label, "camera_driver"))
+   switch (hash)
    {
-      drv = camera_driver_find_handle(i);
-      if (drv)
-         strlcpy(str, camera_driver_find_ident(i), sizeof_str);
-   }
-   else if (!strcmp(label, "location_driver"))
-   {
-      drv = location_driver_find_handle(i);
-      if (drv)
-         strlcpy(str, location_driver_find_ident(i), sizeof_str);
-   }
+      case HASH_CAMERA_DRIVER:
+         drv = camera_driver_find_handle(i);
+         if (drv)
+            strlcpy(s, camera_driver_find_ident(i), len);
+         break;
+      case HASH_LOCATION_DRIVER:
+         drv = location_driver_find_handle(i);
+         if (drv)
+            strlcpy(s, location_driver_find_ident(i), len);
+         break;
+      case HASH_MENU_DRIVER:
 #ifdef HAVE_MENU
-   else if (!strcmp(label, "menu_driver"))
-   {
-      drv = menu_driver_find_handle(i);
-      if (drv)
-         strlcpy(str, menu_driver_find_ident(i), sizeof_str);
-   }
+         drv = menu_driver_find_handle(i);
+         if (drv)
+            strlcpy(s, menu_driver_find_ident(i), len);
 #endif
-   else if (!strcmp(label, "input_driver"))
-   {
-      drv = input_driver_find_handle(i);
-      if (drv)
-         strlcpy(str, input_driver_find_ident(i), sizeof_str);
-   }
-   else if (!strcmp(label, "input_joypad_driver"))
-   {
-      drv = joypad_driver_find_handle(i);
-      if (drv)
-         strlcpy(str, joypad_driver_find_ident(i), sizeof_str);
-   }
-   else if (!strcmp(label, "video_driver"))
-   {
-      drv = video_driver_find_handle(i);
-      if (drv)
-         strlcpy(str, video_driver_find_ident(i), sizeof_str);
-   }
-   else if (!strcmp(label, "audio_driver"))
-   {
-      drv = audio_driver_find_handle(i);
-      if (drv)
-         strlcpy(str, audio_driver_find_ident(i), sizeof_str);
-   }
-   else if (!strcmp(label, "record_driver"))
-   {
-      drv = record_driver_find_handle(i);
-      if (drv)
-         strlcpy(str, record_driver_find_ident(i), sizeof_str);
-   }
-   else if (!strcmp(label, "audio_resampler_driver"))
-   {
-      drv = audio_resampler_driver_find_handle(i);
-      if (drv)
-         strlcpy(str, audio_resampler_driver_find_ident(i), sizeof_str);
+         break;
+      case HASH_INPUT_DRIVER:
+         drv = input_driver_find_handle(i);
+         if (drv)
+            strlcpy(s, input_driver_find_ident(i), len);
+         break;
+      case HASH_INPUT_JOYPAD_DRIVER:
+         drv = joypad_driver_find_handle(i);
+         if (drv)
+            strlcpy(s, joypad_driver_find_ident(i), len);
+         break;
+      case HASH_VIDEO_DRIVER:
+         drv = video_driver_find_handle(i);
+         if (drv)
+            strlcpy(s, video_driver_find_ident(i), len);
+         break;
+      case HASH_AUDIO_DRIVER:
+         drv = audio_driver_find_handle(i);
+         if (drv)
+            strlcpy(s, audio_driver_find_ident(i), len);
+         break;
+      case HASH_RECORD_DRIVER:
+         drv = record_driver_find_handle(i);
+         if (drv)
+            strlcpy(s, record_driver_find_ident(i), len);
+         break;
+      case HASH_AUDIO_RESAMPLER_DRIVER:
+         drv = audio_resampler_driver_find_handle(i);
+         if (drv)
+            strlcpy(s, audio_resampler_driver_find_ident(i), len);
+         break;
    }
 
    return drv;
@@ -151,8 +158,8 @@ static const void *find_driver_nonempty(const char *label, int i,
 int find_driver_index(const char * label, const char *drv)
 {
    unsigned i;
-   char str[PATH_MAX_LENGTH];
-   const void *obj = NULL;
+   char str[PATH_MAX_LENGTH] = {0};
+   const void           *obj = NULL;
 
    for (i = 0; (obj = (const void*)
             find_driver_nonempty(label, i, str, sizeof(str))) != NULL; i++)
@@ -168,29 +175,29 @@ int find_driver_index(const char * label, const char *drv)
    return -1;
 }
 
-bool find_first_driver(const char *label, char *str, size_t sizeof_str)
+bool find_first_driver(const char *label, char *s, size_t len)
 {
-   find_driver_nonempty(label, 0, str, sizeof_str);
+   find_driver_nonempty(label, 0, s, len);
    return true;
 }
 
 /**
  * find_prev_driver:
  * @label              : string of driver type to be found.
- * @str                : identifier of driver to be found.
- * @sizeof_str         : size of @str.
+ * @s                  : identifier of driver to be found.
+ * @len                : size of @s.
  *
  * Find previous driver in driver array.
  **/
-bool find_prev_driver(const char *label, char *str, size_t sizeof_str)
+bool find_prev_driver(const char *label, char *s, size_t len)
 {
-   int i = find_driver_index(label, str);
+   int i = find_driver_index(label, s);
    if (i > 0)
-      find_driver_nonempty(label, i - 1, str, sizeof_str);
+      find_driver_nonempty(label, i - 1, s, len);
    else
    {
       RARCH_WARN(
-            "Couldn't find any previous driver (current one: \"%s\").\n", str);
+            "Couldn't find any previous driver (current one: \"%s\").\n", s);
       return false;
    }
    return true;
@@ -199,19 +206,19 @@ bool find_prev_driver(const char *label, char *str, size_t sizeof_str)
 /**
  * find_next_driver:
  * @label              : string of driver type to be found.
- * @str                : identifier of driver to be found.
- * @sizeof_str         : size of @str.
+ * @s                  : identifier of driver to be found.
+ * @len                : size of @s.
  *
  * Find next driver in driver array.
  **/
-bool find_next_driver(const char *label, char *str, size_t sizeof_str)
+bool find_next_driver(const char *label, char *s, size_t len)
 {
-   int i = find_driver_index(label, str);
-   if (i >= 0 && (strcmp(str, "null") != 0))
-      find_driver_nonempty(label, i + 1, str, sizeof_str);
+   int i = find_driver_index(label, s);
+   if (i >= 0 && (strcmp(s, "null") != 0))
+      find_driver_nonempty(label, i + 1, s, len);
    else
    {
-      RARCH_WARN("Couldn't find any next driver (current one: \"%s\").\n", str);
+      RARCH_WARN("Couldn't find any next driver (current one: \"%s\").\n", s);
       return false;
    }
    return true;
@@ -239,8 +246,8 @@ void init_drivers_pre(void)
 
 static void driver_adjust_system_rates(void)
 {
-   global_t *global = global_get_ptr();
-   driver_t *driver = driver_get_ptr();
+   rarch_system_info_t *system = rarch_system_info_get_ptr();
+   driver_t            *driver = driver_get_ptr();
 
    audio_monitor_adjust_system_rates();
    video_monitor_adjust_system_rates();
@@ -248,7 +255,7 @@ static void driver_adjust_system_rates(void)
    if (!driver->video_data)
       return;
 
-   if (global->system.force_nonblock)
+   if (system->force_nonblock)
       event_command(EVENT_CMD_VIDEO_SET_NONBLOCKING_STATE);
    else
       driver_set_nonblock_state(driver->nonblock_state);
@@ -281,7 +288,7 @@ void driver_set_refresh_rate(float hz)
 void driver_set_nonblock_state(bool enable)
 {
    settings_t *settings = config_get_ptr();
-   global_t *global     = global_get_ptr();
+   rarch_system_info_t *system = rarch_system_info_get_ptr();
    driver_t *driver     = driver_get_ptr();
 
    /* Only apply non-block-state for video if we're using vsync. */
@@ -289,7 +296,7 @@ void driver_set_nonblock_state(bool enable)
    {
       bool video_nonblock = enable;
 
-      if (!settings->video.vsync || global->system.force_nonblock)
+      if (!settings->video.vsync || system->force_nonblock)
          video_nonblock = true;
       video_driver_set_nonblock_state(video_nonblock);
    }
@@ -319,9 +326,8 @@ bool driver_update_system_av_info(const struct retro_system_av_info *info)
     * Take the easiest route out and just restart the recording. */
    if (driver->recording_data)
    {
-      static const char *msg = "Restarting recording due to driver reinit.";
-      rarch_main_msg_queue_push(msg, 2, 180, false);
-      RARCH_WARN("%s\n", msg);
+      rarch_main_msg_queue_push_new(
+            MSG_RESTARTING_RECORDING_DUE_TO_DRIVER_REINIT, 2, 180, false);
       event_command(EVENT_CMD_RECORD_DEINIT);
       event_command(EVENT_CMD_RECORD_INIT);
    }
@@ -360,7 +366,7 @@ static void menu_update_libretro_info(void)
 void init_drivers(int flags)
 {
    driver_t *driver   = driver_get_ptr();
-   global_t *global   = global_get_ptr();
+   rarch_system_info_t *system = rarch_system_info_get_ptr();
 
    if (flags & DRIVER_VIDEO)
       driver->video_data_own = false;
@@ -395,7 +401,7 @@ void init_drivers(int flags)
          hw_render->context_reset();
       driver->video_cache_context_ack = false;
 
-      global->system.frame_time_last = 0;
+      system->frame_time_last = 0;
    }
 
    if (flags & DRIVER_AUDIO)

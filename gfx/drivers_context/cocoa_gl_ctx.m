@@ -14,7 +14,11 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <CoreGraphics/CGGeometry.h>
+#if TARGET_OS_IPHONE
+#include <CoreGraphics/CoreGraphics.h>
+#else
+#include <ApplicationServices/ApplicationServices.h>
+#endif
 #if defined(HAVE_COCOA)
 #include <OpenGL/CGLTypes.h>
 #include <OpenGL/OpenGL.h>
@@ -147,6 +151,7 @@ static bool cocoagl_gfx_ctx_init(void *data)
     
 #if defined(HAVE_COCOA)
     CocoaView *g_view = (CocoaView*)nsview_get_ptr();
+	[g_view setWantsBestResolutionOpenGLSurface:YES];
     NSOpenGLPixelFormatAttribute attributes [] = {
         NSOpenGLPFAColorSize, 24,
         NSOpenGLPFADoubleBuffer,
@@ -333,8 +338,15 @@ static void cocoagl_gfx_ctx_get_video_size(void *data, unsigned* width, unsigned
 	
 #if defined(HAVE_COCOA)
    CocoaView *g_view = (CocoaView*)nsview_get_ptr();
-   CGRect cgrect = NSRectToCGRect([g_view frame]);
-   size = CGRectMake(0, 0, CGRectGetWidth(cgrect), CGRectGetHeight(cgrect));
+   #if MAC_OS_X_VERSION_10_7
+      NSRect backingBounds = [g_view convertRectToBacking:[g_view bounds]];
+      GLsizei backingPixelWidth = (GLsizei)(backingBounds.size.width),
+		      backingPixelHeight = (GLsizei)(backingBounds.size.height);
+      size = CGRectMake(0, 0, backingPixelWidth, backingPixelHeight);
+   #else
+      CGRect cgrect = NSRectToCGRect([g_view frame]);
+      size = CGRectMake(0, 0, CGRectGetWidth(cgrect), CGRectGetHeight(cgrect));
+   #endif
 #else
    size = g_view.bounds;
 #endif
@@ -345,7 +357,8 @@ static void cocoagl_gfx_ctx_get_video_size(void *data, unsigned* width, unsigned
 
 static void cocoagl_gfx_ctx_update_window_title(void *data)
 {
-   static char buf[128], buf_fps[128];
+   static char buf[128] = {0};
+   static char buf_fps[128] = {0};
    bool got_text = video_monitor_get_fps(buf, sizeof(buf),
          buf_fps, sizeof(buf_fps));
    settings_t *settings = config_get_ptr();
@@ -376,7 +389,11 @@ static bool cocoagl_gfx_ctx_get_metrics(void *data, enum display_metric_types ty
     float   display_height        = display_pixel_size.height;
     float   physical_width        = display_physical_size.width;
     float   physical_height       = display_physical_size.height;
+#if MAC_OS_X_VERSION_10_6
     float   scale                 = screen.backingScaleFactor;
+#else
+	float   scale                 = 1.0f;
+#endif
     float   dpi                   = (display_width/ physical_width) * 25.4f * scale;
 #elif defined(HAVE_COCOATOUCH)
     float   scale                 = cocoagl_gfx_ctx_get_native_scale();

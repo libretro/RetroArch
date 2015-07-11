@@ -22,14 +22,10 @@ import android.preference.PreferenceManager;
 import android.provider.Settings;
 import android.util.Log;
 import android.widget.Toast;
+import android.os.Environment;
 
 import com.retroarch.R;
-import com.retroarch.browser.CoreSelection;
-import com.retroarch.browser.HistorySelection;
 import com.retroarch.browser.NativeInterface;
-import com.retroarch.browser.dirfragment.DetectCoreDirectoryFragment;
-import com.retroarch.browser.dirfragment.DirectoryFragment;
-import com.retroarch.browser.dirfragment.DirectoryFragment.OnDirectoryFragmentClosedListener;
 import com.retroarch.browser.preferences.fragments.util.PreferenceListFragment;
 import com.retroarch.browser.preferences.util.UserPreferences;
 import com.retroarch.browser.retroactivity.RetroActivityFuture;
@@ -38,7 +34,7 @@ import com.retroarch.browser.retroactivity.RetroActivityPast;
 /**
  * Represents the fragment that handles the layout of the main menu.
  */
-public final class MainMenuFragment extends PreferenceListFragment implements OnPreferenceClickListener, OnDirectoryFragmentClosedListener
+public final class MainMenuFragment extends PreferenceListFragment implements OnPreferenceClickListener
 {
 	private static final String TAG = "MainMenuFragment";
 	private Context ctx;
@@ -65,28 +61,10 @@ public final class MainMenuFragment extends PreferenceListFragment implements On
 
 		// Set the listeners for the menu items
 		findPreference("resumeContentPref").setOnPreferenceClickListener(this);
-		findPreference("loadCorePref").setOnPreferenceClickListener(this);
-		findPreference("loadContentAutoPref").setOnPreferenceClickListener(this);
-		findPreference("loadContentPref").setOnPreferenceClickListener(this);
-		findPreference("loadContentHistoryPref").setOnPreferenceClickListener(this);
 		findPreference("quitRetroArch").setOnPreferenceClickListener(this);
 
 		// Extract assets. 
 		extractAssets();
-
-		final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(ctx);
-		if (!prefs.getBoolean("first_time_refreshrate_calculate", false))
-		{
-			prefs.edit().putBoolean("first_time_refreshrate_calculate", true).apply();
-
-			AlertDialog.Builder alert = new AlertDialog.Builder(ctx)
-						.setTitle(R.string.welcome_to_retroarch)
-						.setMessage(R.string.welcome_to_retroarch_desc)
-						.setPositiveButton(R.string.ok, null);
-			alert.show();
-			
-			UserPreferences.updateConfigFile(ctx);
-		}
 	}
 
 	private void extractAssets()
@@ -215,54 +193,9 @@ public final class MainMenuFragment extends PreferenceListFragment implements On
 					prefs.getString("libretro_path", ctx.getApplicationInfo().dataDir + "/cores/"),
 					UserPreferences.getDefaultConfigPath(ctx),
 					Settings.Secure.getString(ctx.getContentResolver(), Settings.Secure.DEFAULT_INPUT_METHOD),
-					 ctx.getApplicationInfo().dataDir);
+               ctx.getApplicationInfo().dataDir,
+               ctx.getApplicationInfo().sourceDir);
 			startActivity(retro);
-		}
-		// Load Core Preference
-		else if (prefKey.equals("loadCorePref"))
-		{
-			CoreSelection.newInstance().show(getFragmentManager(), "core_selection");
-		}
-		// Load ROM Preference
-		else if (prefKey.equals("loadContentPref"))
-		{
-			final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(ctx);
-			final String libretro_path = prefs.getString("libretro_path", ctx.getApplicationInfo().dataDir + "/cores");
-
-			if (!new File(libretro_path).isDirectory())
-			{
-				final DirectoryFragment contentBrowser = DirectoryFragment.newInstance(R.string.load_content);
-				contentBrowser.addDisallowedExts(".state", ".srm", ".state.auto", ".rtc");
-				contentBrowser.setOnDirectoryFragmentClosedListener(this);
-	
-				final String startPath = prefs.getString("rgui_browser_directory", "");
-				if (!startPath.isEmpty() && new File(startPath).exists())
-					contentBrowser.setStartDirectory(startPath);
-	
-				contentBrowser.show(getFragmentManager(), "contentBrowser");
-			}
-			else
-			{
-				Toast.makeText(ctx, R.string.load_a_core_first, Toast.LENGTH_SHORT).show();
-			}
-		}
-		else if (prefKey.equals("loadContentAutoPref"))
-		{
-			final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(ctx);
-			final DetectCoreDirectoryFragment contentBrowser = DetectCoreDirectoryFragment.newInstance(R.string.load_content_auto);
-			contentBrowser.addDisallowedExts(".state", ".srm", ".state.auto", ".rtc");
-			contentBrowser.setOnDirectoryFragmentClosedListener(this);
-
-			final String startPath = prefs.getString("rgui_browser_directory", "");
-			if (!startPath.isEmpty() && new File(startPath).exists())
-				contentBrowser.setStartDirectory(startPath);
-
-			contentBrowser.show(getFragmentManager(), "contentBrowser");
-		}
-		// Load Content (History) Preference
-		else if (prefKey.equals("loadContentHistoryPref"))
-		{
-			HistorySelection.newInstance().show(getFragmentManager(), "history_selection");
 		}
 		// Quit RetroArch preference
 		else if (prefKey.equals("quitRetroArch"))
@@ -275,26 +208,8 @@ public final class MainMenuFragment extends PreferenceListFragment implements On
 		return true;
 	}
 
-	@Override
-	public void onDirectoryFragmentClosed(String path)
-	{
-		final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(ctx);
-
-		UserPreferences.updateConfigFile(ctx);
-		Toast.makeText(ctx, String.format(getString(R.string.loading_data), path), Toast.LENGTH_SHORT).show();
-		Intent retro = getRetroActivity();
-		MainMenuFragment.startRetroActivity(
-				retro,
-				path,
-				prefs.getString("libretro_path", ""),
-				UserPreferences.getDefaultConfigPath(ctx),
-				Settings.Secure.getString(ctx.getContentResolver(), Settings.Secure.DEFAULT_INPUT_METHOD),
-				ctx.getApplicationInfo().dataDir);
-		startActivity(retro);
-	}
-	
 	public static void startRetroActivity(Intent retro, String contentPath, String corePath,
-			String configFilePath, String imePath, String dataDirPath)
+			String configFilePath, String imePath, String dataDirPath, String dataSourcePath)
 	{
 		if (contentPath != null) {
 			retro.putExtra("ROM", contentPath);
@@ -303,5 +218,9 @@ public final class MainMenuFragment extends PreferenceListFragment implements On
 		retro.putExtra("CONFIGFILE", configFilePath);
 		retro.putExtra("IME", imePath);
 		retro.putExtra("DATADIR", dataDirPath);
+		retro.putExtra("APK", dataSourcePath);
+		retro.putExtra("SDCARD", Environment.getExternalStorageDirectory().getAbsolutePath());
+		retro.putExtra("DOWNLOADS", Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).getAbsolutePath());
+		retro.putExtra("SCREENSHOTS", Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES).getAbsolutePath());
 	}
 }

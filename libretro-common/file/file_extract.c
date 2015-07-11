@@ -53,14 +53,14 @@ struct zlib_file_backend
 
 static bool zlib_write_file(const char *path, const void *data, ssize_t size)
 {
-   bool ret   = false;
+   ssize_t ret   = 0;
    FILE *file = fopen(path, "wb");
    if (!file)
       return false;
 
-   ret = fwrite(data, 1, size, file) == size;
+   ret = fwrite(data, 1, size, file);
    fclose(file);
-   return ret;
+   return (ret == size);
 }
 
 
@@ -617,7 +617,10 @@ int zlib_parse_file_iterate(void *data, bool *returnerr, const char *file,
          *returnerr = false;
       case ZLIB_TRANSFER_DEINIT:
          if (state->handle)
+         {
             state->backend->free(state->handle);
+            state->handle = NULL;
+         }
          break;
    }
 
@@ -626,6 +629,16 @@ int zlib_parse_file_iterate(void *data, bool *returnerr, const char *file,
       return -1;
 
    return 0;
+}
+
+void zlib_parse_file_iterate_stop(void *data)
+{
+   zlib_transfer_t *state = (zlib_transfer_t*)data;
+   if (!state || !state->handle)
+      return;
+
+   state->type = ZLIB_TRANSFER_DEINIT;
+   zlib_parse_file_iterate(data, NULL, NULL, NULL, NULL, NULL);
 }
 
 /**
@@ -673,7 +686,7 @@ struct zip_extract_userdata
 enum
 {
    ZLIB_MODE_UNCOMPRESSED = 0,
-   ZLIB_MODE_DEFLATE      = 8,
+   ZLIB_MODE_DEFLATE      = 8
 } zlib_compression_mode;
 
 static int zip_extract_cb(const char *name, const char *valid_exts,
@@ -688,7 +701,7 @@ static int zip_extract_cb(const char *name, const char *valid_exts,
 
    if (ext && string_list_find_elem(data->ext, ext))
    {
-      char new_path[PATH_MAX_LENGTH];
+      char new_path[PATH_MAX_LENGTH] = {0};
 
       if (data->extraction_directory)
          fill_pathname_join(new_path, data->extraction_directory,

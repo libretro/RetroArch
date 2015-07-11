@@ -17,6 +17,8 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#include <boolean.h>
+
 #if defined(SN_TARGET_PSP2)
 #include <sceerror.h>
 #include <kernel.h>
@@ -39,7 +41,9 @@
 
 typedef struct psp_input
 {
+   bool blocked;
    const input_device_driver_t *joypad;
+   uint64_t lifecycle_state;
 } psp_input_t;
 
 static void psp_input_poll(void *data)
@@ -87,7 +91,8 @@ static void* psp_input_initialize(void)
    if (!psp)
       return NULL;
    
-   psp->joypad = input_joypad_init_driver(settings->input.joypad_driver);   
+   psp->joypad = input_joypad_init_driver(
+         settings->input.joypad_driver, psp);
 
    return psp;
 }
@@ -95,10 +100,9 @@ static void* psp_input_initialize(void)
 static bool psp_input_key_pressed(void *data, int key)
 {
    settings_t *settings = config_get_ptr();
-   global_t   *global   = global_get_ptr();
    psp_input_t *psp     = (psp_input_t*)data;
 
-   return (global->lifecycle_state & (1ULL << key)) || 
+   return (psp->lifecycle_state & (1ULL << key)) || 
       input_joypad_pressed(psp->joypad, 0, settings->input.binds[0], key);
 }
 
@@ -134,6 +138,22 @@ static bool psp_input_set_rumble(void *data, unsigned port,
    return false;
 }
 
+static bool psp_input_keyboard_mapping_is_blocked(void *data)
+{
+   psp_input_t *psp = (psp_input_t*)data;
+   if (!psp)
+      return false;
+   return psp->blocked;
+}
+
+static void psp_input_keyboard_mapping_set_block(void *data, bool value)
+{
+   psp_input_t *psp = (psp_input_t*)data;
+   if (!psp)
+      return;
+   psp->blocked = value;
+}
+
 input_driver_t input_psp = {
    psp_input_initialize,
    psp_input_poll,
@@ -149,4 +169,6 @@ input_driver_t input_psp = {
    NULL,
    psp_input_set_rumble,
    psp_input_get_joypad_driver,
+   psp_input_keyboard_mapping_is_blocked,
+   psp_input_keyboard_mapping_set_block,
 };

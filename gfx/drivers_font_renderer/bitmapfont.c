@@ -128,6 +128,16 @@ static const char *font_renderer_bmp_get_default_font(void)
    return "";
 }
 
+static int font_renderer_bmp_get_line_height(void* data)
+{
+    bm_renderer_t *handle = (bm_renderer_t*)data;
+    
+    if (!handle)
+      return FONT_HEIGHT;
+      
+    return FONT_HEIGHT * handle->scale_factor;
+}
+
 font_renderer_driver_t bitmap_font_renderer = {
    font_renderer_bmp_init,
    font_renderer_bmp_get_atlas,
@@ -135,5 +145,6 @@ font_renderer_driver_t bitmap_font_renderer = {
    font_renderer_bmp_free,
    font_renderer_bmp_get_default_font,
    "bitmap",
+   font_renderer_bmp_get_line_height,
 };
 

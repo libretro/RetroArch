@@ -54,11 +54,14 @@ static uint8_t kUtf8Limits[5] = { 0xC0, 0xE0, 0xF0, 0xF8, 0xFC };
 static Bool Utf16_To_Utf8(uint8_t *dest, size_t *destLen,
       const uint16_t *src, size_t srcLen)
 {
-   size_t destPos = 0, srcPos = 0;
+   size_t destPos = 0;
+   size_t srcPos  = 0;
+
    for (;;)
    {
       unsigned numAdds;
       uint32_t value;
+
       if (srcPos == srcLen)
       {
          *destLen = destPos;
@@ -75,6 +78,7 @@ static Bool Utf16_To_Utf8(uint8_t *dest, size_t *destLen,
       if (value >= 0xD800 && value < 0xE000)
       {
          uint32_t c2;
+
          if (value >= 0xDC00 || srcPos == srcLen)
             break;
          c2 = src[srcPos++];
@@ -96,8 +100,7 @@ static Bool Utf16_To_Utf8(uint8_t *dest, size_t *destLen,
             dest[destPos] = (char)(0x80 
                   + ((value >> (6 * numAdds)) & 0x3F));
          destPos++;
-      }
-      while (numAdds != 0);
+      }while (numAdds != 0);
    }
    *destLen = destPos;
    return False;
@@ -106,14 +109,18 @@ static Bool Utf16_To_Utf8(uint8_t *dest, size_t *destLen,
 static SRes Utf16_To_Utf8Buf(CBuf *dest,
       const uint16_t *src, size_t srcLen)
 {
-   size_t destLen = 0;
    Bool res;
+   size_t destLen = 0;
+
    Utf16_To_Utf8(NULL, &destLen, src, srcLen);
    destLen += 1;
+
    if (!Buf_EnsureSize(dest, destLen))
       return SZ_ERROR_MEM;
+
    res = Utf16_To_Utf8(dest->data, &destLen, src, srcLen);
    dest->data[destLen] = 0;
+
    return res ? SZ_OK : SZ_ERROR_FAIL;
 }
 #endif
@@ -121,6 +128,7 @@ static SRes Utf16_To_Utf8Buf(CBuf *dest,
 static SRes Utf16_To_Char(CBuf *buf, const uint16_t *s, int fileMode)
 {
    int len = 0;
+
    for (len = 0; s[len] != '\0'; len++);
 
 #ifdef _WIN32
@@ -158,11 +166,12 @@ static SRes ConvertUtf16toCharString(const uint16_t *s, char *outstring)
 {
    CBuf buf;
    SRes res;
+
    Buf_Init(&buf);
    res = Utf16_To_Char(&buf, s, 0);
 
    if (res == SZ_OK)
-      strncpy(outstring, (const char *)buf.data, PATH_MAX_LENGTH);
+      strncpy(outstring, (const char*)buf.data, PATH_MAX_LENGTH);
 
    Buf_Free(&buf, &g_Alloc);
    return res;
@@ -172,8 +181,10 @@ static SRes ConvertUtf16toCharString(const uint16_t *s, char *outstring)
  * archive_path and allocate a buf for it to write it in.
  * If optional_outfile is set, extract to that instead and don't alloc buffer.
  */
-int read_7zip_file(const char * archive_path,
-      const char *relative_path, void **buf, const char* optional_outfile)
+int read_7zip_file(
+      const char *archive_path,
+      const char *relative_path, void **buf,
+      const char *optional_outfile)
 {
    CFileInStream archiveStream;
    CLookToRead lookStream;
@@ -181,17 +192,17 @@ int read_7zip_file(const char * archive_path,
    SRes res;
    ISzAlloc allocImp;
    ISzAlloc allocTempImp;
-   uint16_t *temp = NULL;
+   uint16_t *temp  = NULL;
    size_t tempSize = 0;
-   long outsize = -1;
+   long outsize    = -1;
    bool file_found = false;
 
    /*These are the allocation routines.
     * Currently using the non-standard 7zip choices. */
-   allocImp.Alloc = SzAlloc;
-   allocImp.Free = SzFree;
+   allocImp.Alloc     = SzAlloc;
+   allocImp.Free      = SzFree;
    allocTempImp.Alloc = SzAllocTemp;
-   allocTempImp.Free = SzFreeTemp;
+   allocTempImp.Free  = SzFreeTemp;
 
    if (InFile_Open(&archiveStream.file, archive_path))
    {
@@ -203,6 +214,7 @@ int read_7zip_file(const char * archive_path,
       RARCH_LOG_OUTPUT("Openend archive %s. Now trying to extract %s\n",
             archive_path,relative_path);
    }
+
    FileInStream_CreateVTable(&archiveStream);
    LookToRead_CreateVTable(&lookStream, False);
    lookStream.realStream = &archiveStream.s;
@@ -210,19 +222,22 @@ int read_7zip_file(const char * archive_path,
    CrcGenerateTable();
    SzArEx_Init(&db);
    res = SzArEx_Open(&db, &lookStream.s, &allocImp, &allocTempImp);
+
    if (res == SZ_OK)
    {
       uint32_t i;
-      uint32_t blockIndex = 0xFFFFFFFF;
-      uint8_t *outBuffer = 0;
+      uint32_t blockIndex  = 0xFFFFFFFF;
+      uint8_t *outBuffer   = 0;
       size_t outBufferSize = 0;
 
       for (i = 0; i < db.db.NumFiles; i++)
       {
-         size_t offset = 0;
-         size_t outSizeProcessed = 0;
-         const CSzFileItem *f = db.db.Files + i;
          size_t len;
+         char infile[PATH_MAX_LENGTH] = {0};
+         size_t offset           = 0;
+         size_t outSizeProcessed = 0;
+         const CSzFileItem    *f = db.db.Files + i;
+
          if (f->IsDir)
          {
             /* We skip over everything which is not a directory. 
@@ -243,14 +258,9 @@ int read_7zip_file(const char * archive_path,
             }
          }
          SzArEx_GetFileNameUtf16(&db, i, temp);
-         char infile[PATH_MAX_LENGTH];
          res = ConvertUtf16toCharString(temp,infile);
 
-         uint64_t filesize = f->Size;
-
-         (void)filesize;
-
-         if (strcmp(infile,relative_path) == 0)
+         if (!strcmp(infile, relative_path))
          {
             /* C LZMA SDK does not support chunked extraction - see here:
              * sourceforge.net/p/sevenzip/discussion/45798/thread/6fb59aaf/
@@ -321,40 +331,40 @@ int read_7zip_file(const char * archive_path,
 struct string_list *compressed_7zip_file_list_new(const char *path,
       const char* ext)
 {
-
-   struct string_list *ext_list = NULL;
-   struct string_list *list = string_list_new();
-   if (!list)
-      return NULL;
-
-   if (ext)
-      ext_list = string_split(ext, "|");
-
-   /* 7Zip part begin */
    CFileInStream archiveStream;
    CLookToRead lookStream;
    CSzArEx db;
    SRes res;
    ISzAlloc allocImp;
    ISzAlloc allocTempImp;
-   uint16_t *temp = NULL;
-   size_t tempSize = 0;
-   long outsize = -1;
+   uint16_t *temp               = NULL;
+   size_t tempSize              = 0;
+   long outsize                 = -1;
+
+   struct string_list *ext_list = NULL;
+   struct string_list     *list = string_list_new();
+
+   if (!list)
+      return NULL;
+
+   if (ext)
+      ext_list = string_split(ext, "|");
 
    (void)outsize;
 
    /* These are the allocation routines - currently using 
     * the non-standard 7zip choices. */
-   allocImp.Alloc = SzAlloc;
-   allocImp.Free = SzFree;
+   allocImp.Alloc     = SzAlloc;
+   allocImp.Free      = SzFree;
    allocTempImp.Alloc = SzAllocTemp;
-   allocTempImp.Free = SzFreeTemp;
+   allocTempImp.Free  = SzFreeTemp;
 
    if (InFile_Open(&archiveStream.file, path))
    {
       RARCH_ERR("Could not open %s as 7z archive.\n",path);
       goto error;
    }
+
    FileInStream_CreateVTable(&archiveStream);
    LookToRead_CreateVTable(&lookStream, False);
    lookStream.realStream = &archiveStream.s;
@@ -362,11 +372,12 @@ struct string_list *compressed_7zip_file_list_new(const char *path,
    CrcGenerateTable();
    SzArEx_Init(&db);
    res = SzArEx_Open(&db, &lookStream.s, &allocImp, &allocTempImp);
+
    if (res == SZ_OK)
    {
       uint32_t i;
-      uint32_t blockIndex = 0xFFFFFFFF;
-      uint8_t *outBuffer = 0;
+      uint32_t blockIndex  = 0xFFFFFFFF;
+      uint8_t *outBuffer   = 0;
       size_t outBufferSize = 0;
 
       (void)blockIndex;
@@ -375,10 +386,14 @@ struct string_list *compressed_7zip_file_list_new(const char *path,
 
       for (i = 0; i < db.db.NumFiles; i++)
       {
-         size_t offset = 0;
-         size_t outSizeProcessed = 0;
-         const CSzFileItem *f = db.db.Files + i;
-         size_t len = 0;
+         union string_list_elem_attr attr;
+         const char *file_ext         = NULL;
+         char infile[PATH_MAX_LENGTH] = {0};
+         size_t offset                = 0;
+         size_t outSizeProcessed      = 0;
+         size_t                   len = 0;
+         bool supported_by_core       = false;
+         const CSzFileItem         *f = db.db.Files + i;
 
          (void)offset;
          (void)outSizeProcessed;
@@ -393,7 +408,8 @@ struct string_list *compressed_7zip_file_list_new(const char *path,
          {
             free(temp);
             tempSize = len;
-            temp = (uint16_t *)malloc(tempSize * sizeof(temp[0]));
+            temp     = (uint16_t *)malloc(tempSize * sizeof(temp[0]));
+
             if (temp == 0)
             {
                res = SZ_ERROR_MEM;
@@ -401,13 +417,8 @@ struct string_list *compressed_7zip_file_list_new(const char *path,
             }
          }
          SzArEx_GetFileNameUtf16(&db, i, temp);
-         char infile[PATH_MAX_LENGTH];
-         res = ConvertUtf16toCharString(temp, infile);
-
-         const char *file_ext = path_get_extension(infile);
-         bool supported_by_core  = false;
-
-         union string_list_elem_attr attr;
+         res      = ConvertUtf16toCharString(temp, infile);
+         file_ext = path_get_extension(infile);
 
          if (string_list_find_elem_prefix(ext_list, ".", file_ext))
             supported_by_core = true;

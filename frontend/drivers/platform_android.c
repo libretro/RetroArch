@@ -21,11 +21,13 @@
 #include <string.h>
 #include <sys/resource.h>
 
+#include <retro_inline.h>
+
 #include "platform_android.h"
 
 #include "../frontend.h"
 #include "../../general.h"
-#include <retro_inline.h>
+#include "../../msg_hash.h"
 
 struct android_app *g_android;
 static pthread_key_t thread_key;
@@ -317,10 +319,10 @@ void ANativeActivity_onCreate(ANativeActivity* activity,
 int system_property_get(const char *name, char *value)
 {
    FILE *pipe;
-   int length = 0;
-   char buffer[PATH_MAX_LENGTH];
-   char cmd[PATH_MAX_LENGTH];
-   char *curpos = NULL;
+   int length                   = 0;
+   char buffer[PATH_MAX_LENGTH] = {0};
+   char cmd[PATH_MAX_LENGTH]    = {0};
+   char *curpos                 = NULL;
 
    snprintf(cmd, sizeof(cmd), "getprop %s", name);
 
@@ -354,15 +356,15 @@ int system_property_get(const char *name, char *value)
    return length;
 }
 
-static void frontend_android_get_name(char *name, size_t sizeof_name)
+static void frontend_android_get_name(char *s, size_t len)
 {
-   int len = system_property_get("ro.product.model", name);
-   (void)len;
+   system_property_get("ro.product.model", s);
 }
 
-static void frontend_android_get_version(int32_t *major, int32_t *minor, int32_t *rel)
+static void frontend_android_get_version(int32_t *major,
+      int32_t *minor, int32_t *rel)
 {
-   char os_version_str[PROP_VALUE_MAX];
+   char os_version_str[PROP_VALUE_MAX] = {0};
    system_property_get("ro.build.version.release", os_version_str);
 
    *major  = 0;
@@ -386,18 +388,18 @@ static void frontend_android_get_version(int32_t *major, int32_t *minor, int32_t
    }
 }
 
-static void frontend_android_get_os(char *name, size_t sizeof_name, int *major, int *minor)
+static void frontend_android_get_os(char *s, size_t len, int *major, int *minor)
 {
    int rel;
 
    frontend_android_get_version(major, minor, &rel);
 
-   strlcpy(name, "Android", sizeof_name);
+   strlcpy(s, "Android", len);
 }
 
 static void frontend_android_get_version_sdk(int32_t *sdk)
 {
-  char os_version_str[PROP_VALUE_MAX];
+  char os_version_str[PROP_VALUE_MAX] = {0};
   system_property_get("ro.build.version.sdk", os_version_str);
 
   *sdk = 0;
@@ -436,18 +438,24 @@ static bool device_is_game_console(const char *name)
    return false;
 }
 
+static char screenshot_dir[PATH_MAX_LENGTH];
+static char downloads_dir[PATH_MAX_LENGTH];
+char apk_path[PATH_MAX_LENGTH];
+static char sdcard_dir[PATH_MAX_LENGTH];
+char app_dir[PATH_MAX_LENGTH];
 
 static void frontend_android_get_environment_settings(int *argc,
       char *argv[], void *data, void *params_data)
 {
    int32_t major, minor, rel;
-   char device_model[PROP_VALUE_MAX], device_id[PROP_VALUE_MAX];
-
-   JNIEnv *env;
-   jobject obj = NULL;
-   jstring jstr = NULL;
-   struct android_app* android_app = (struct android_app*)data;
-
+   char device_model[PROP_VALUE_MAX] = {0};
+   char device_id[PROP_VALUE_MAX]    = {0};
+   struct rarch_main_wrap      *args = NULL;
+   JNIEnv                       *env = NULL;
+   jobject                       obj = NULL;
+   jstring                      jstr = NULL;
+   struct android_app   *android_app = (struct android_app*)data;
+   
    if (!android_app)
       return;
 
@@ -455,7 +463,8 @@ static void frontend_android_get_environment_settings(int *argc,
    if (!env)
       return;
 
-   struct rarch_main_wrap *args = (struct rarch_main_wrap*)params_data;
+   args = (struct rarch_main_wrap*)params_data;
+
    if (args)
    {
       args->touched    = true;
@@ -467,7 +476,8 @@ static void frontend_android_get_environment_settings(int *argc,
    
    frontend_android_get_version(&major, &minor, &rel);
 
-   RARCH_LOG("Android OS version (major : %d, minor : %d, rel : %d)\n", major, minor, rel);
+   RARCH_LOG("Android OS version (major : %d, minor : %d, rel : %d)\n",
+         major, minor, rel);
 
    CALL_OBJ_METHOD(env, obj, android_app->activity->clazz,
          android_app->getIntent);
@@ -479,9 +489,8 @@ static void frontend_android_get_environment_settings(int *argc,
 
    if (android_app->getStringExtra && jstr)
    {
-      static char config_path[PATH_MAX_LENGTH];
+      static char config_path[PATH_MAX_LENGTH] = {0};
       const char *argv = NULL;
-      *config_path = '\0';
 
       argv = (*env)->GetStringUTFChars(env, jstr, 0);
 
@@ -501,6 +510,7 @@ static void frontend_android_get_environment_settings(int *argc,
    if (android_app->getStringExtra && jstr)
    {
       const char *argv = (*env)->GetStringUTFChars(env, jstr, 0);
+
       strlcpy(android_app->current_ime, argv,
             sizeof(android_app->current_ime));
       (*env)->ReleaseStringUTFChars(env, jstr, argv);
@@ -514,7 +524,8 @@ static void frontend_android_get_environment_settings(int *argc,
    if (android_app->getStringExtra && jstr)
    {
       const char *argv = (*env)->GetStringUTFChars(env, jstr, 0);
-      bool used = (strcmp(argv, "false") == 0) ? false : true;
+      bool used = (!strcmp(argv, "false")) ? false : true;
+
       (*env)->ReleaseStringUTFChars(env, jstr, argv);
 
       RARCH_LOG("USED: [%s].\n", used ? "true" : "false");
@@ -564,53 +575,165 @@ static void frontend_android_get_environment_settings(int *argc,
       }
    }
 
+   /* External Storage */
+   CALL_OBJ_METHOD_PARAM(env, jstr, obj, android_app->getStringExtra,
+         (*env)->NewStringUTF(env, "SDCARD"));
+
+   if (android_app->getStringExtra && jstr)
+   {
+      const char *argv = NULL;
+
+      *sdcard_dir = '\0';
+      argv = (*env)->GetStringUTFChars(env, jstr, 0);
+
+      if (argv && *argv)
+         strlcpy(sdcard_dir, argv, sizeof(sdcard_dir));
+      (*env)->ReleaseStringUTFChars(env, jstr, argv);
+
+      if (*sdcard_dir)
+      {
+         RARCH_LOG("External Storage Location %s.\n", sdcard_dir);
+         /* TODO base dir handler */
+      }
+   }
+   
+   /* Screenshots */
+   CALL_OBJ_METHOD_PARAM(env, jstr, obj, android_app->getStringExtra,
+         (*env)->NewStringUTF(env, "SCREENSHOTS"));
+
+   if (android_app->getStringExtra && jstr)
+   {
+      const char *argv = NULL;
+
+      *screenshot_dir = '\0';
+      argv = (*env)->GetStringUTFChars(env, jstr, 0);
+
+      if (argv && *argv)
+         strlcpy(screenshot_dir, argv, sizeof(screenshot_dir));
+      (*env)->ReleaseStringUTFChars(env, jstr, argv);
+
+      if (*screenshot_dir)
+      {
+         RARCH_LOG("Screenshot Directory [%s]s.\n", screenshot_dir);
+         /* TODO: screenshot handler */
+      }
+   }
+   
+   /* Downloads */
+   CALL_OBJ_METHOD_PARAM(env, jstr, obj, android_app->getStringExtra,
+         (*env)->NewStringUTF(env, "DOWNLOADS"));
+
+   if (android_app->getStringExtra && jstr)
+   {
+      const char *argv = NULL;
+
+      *downloads_dir = '\0';
+      argv = (*env)->GetStringUTFChars(env, jstr, 0);
+
+      if (argv && *argv)
+         strlcpy(downloads_dir, argv, sizeof(downloads_dir));
+      (*env)->ReleaseStringUTFChars(env, jstr, argv);
+
+      if (*downloads_dir)
+      {
+         RARCH_LOG("Download Directory [%s].\n", downloads_dir);
+         /* TODO: downloads handler */
+      }
+   }
+
+   CALL_OBJ_METHOD_PARAM(env, jstr, obj, android_app->getStringExtra,
+         (*env)->NewStringUTF(env, "APK"));
+
+   if (android_app->getStringExtra && jstr)
+   {
+      const char *argv = NULL;
+
+      *apk_path = '\0';
+      argv = (*env)->GetStringUTFChars(env, jstr, 0);
+
+      if (argv && *argv)
+         strlcpy(apk_path, argv, sizeof(apk_path));
+      (*env)->ReleaseStringUTFChars(env, jstr, argv);
+
+      if (*apk_path)
+      {
+         RARCH_LOG("APK Path [%s].\n", apk_path);
+      }
+   }
+   
    /* Content. */
    CALL_OBJ_METHOD_PARAM(env, jstr, obj, android_app->getStringExtra,
          (*env)->NewStringUTF(env, "DATADIR"));
 
    if (android_app->getStringExtra && jstr)
-   {
-      static char path[PATH_MAX_LENGTH];
+   {      
       const char *argv = NULL;
 
-      *path = '\0';
+      *app_dir = '\0';
       argv = (*env)->GetStringUTFChars(env, jstr, 0);
 
+	  
       if (argv && *argv)
-         strlcpy(path, argv, sizeof(path));
+         strlcpy(app_dir, argv, sizeof(app_dir));
       (*env)->ReleaseStringUTFChars(env, jstr, argv);
 
-      if (*path)
+      if (*app_dir)
       {
-         RARCH_LOG("Data path: [%s].\n", path);
-         if (args && *path)
+         RARCH_LOG("Application Dir: [%s].\n", app_dir);
+         if (args && *app_dir)
          {
-            fill_pathname_join(g_defaults.assets_dir, path,
+            fill_pathname_join(g_defaults.assets_dir, app_dir,
                   "assets", sizeof(g_defaults.savestate_dir));
-            fill_pathname_join(g_defaults.savestate_dir, path,
-                  "savestates", sizeof(g_defaults.savestate_dir));
-            fill_pathname_join(g_defaults.extraction_dir, path,
+            fill_pathname_join(g_defaults.extraction_dir, app_dir,
                   "tmp", sizeof(g_defaults.extraction_dir));
-            fill_pathname_join(g_defaults.sram_dir, path,
-                  "savefiles", sizeof(g_defaults.sram_dir));
-            fill_pathname_join(g_defaults.system_dir, path,
-                  "system", sizeof(g_defaults.system_dir));
-            fill_pathname_join(g_defaults.shader_dir, path,
+            fill_pathname_join(g_defaults.shader_dir, app_dir,
                   "shaders_glsl", sizeof(g_defaults.shader_dir));
-            fill_pathname_join(g_defaults.overlay_dir, path,
+            fill_pathname_join(g_defaults.overlay_dir, app_dir,
                   "overlays", sizeof(g_defaults.overlay_dir));
-            fill_pathname_join(g_defaults.core_dir, path,
+            fill_pathname_join(g_defaults.core_dir, app_dir,
                   "cores", sizeof(g_defaults.core_dir));
             fill_pathname_join(g_defaults.core_info_dir,
-                  path, "info", sizeof(g_defaults.core_info_dir));
+                  app_dir, "info", sizeof(g_defaults.core_info_dir));
             fill_pathname_join(g_defaults.autoconfig_dir,
-                  path, "autoconfig/android", sizeof(g_defaults.autoconfig_dir));
+                  app_dir, "autoconfig", sizeof(g_defaults.autoconfig_dir));
             fill_pathname_join(g_defaults.audio_filter_dir,
-                  path, "audio_filters", sizeof(g_defaults.audio_filter_dir));
+                  app_dir, "audio_filters", sizeof(g_defaults.audio_filter_dir));
             fill_pathname_join(g_defaults.video_filter_dir,
-                  path, "video_filters", sizeof(g_defaults.video_filter_dir));
-            strlcpy(g_defaults.content_history_dir, 
-                  path, sizeof(g_defaults.content_history_dir));
+                  app_dir, "video_filters", sizeof(g_defaults.video_filter_dir));
+            strlcpy(g_defaults.content_history_dir,
+                  app_dir, sizeof(g_defaults.content_history_dir));
+            fill_pathname_join(g_defaults.database_dir,
+                  app_dir, "database/rdb", sizeof(g_defaults.database_dir));
+            fill_pathname_join(g_defaults.cursor_dir,
+                  app_dir, "database/cursors", sizeof(g_defaults.cursor_dir));
+            fill_pathname_join(g_defaults.cheats_dir,
+                  app_dir, "cheats", sizeof(g_defaults.cheats_dir));
+            fill_pathname_join(g_defaults.playlist_dir,
+                  app_dir, "playlists", sizeof(g_defaults.playlist_dir));
+            fill_pathname_join(g_defaults.remap_dir,
+                  app_dir, "remaps", sizeof(g_defaults.remap_dir));
+            fill_pathname_join(g_defaults.wallpapers_dir,
+                  app_dir, "wallpapers", sizeof(g_defaults.wallpapers_dir));
+			if(*downloads_dir)
+			{
+               fill_pathname_join(g_defaults.core_assets_dir,
+                     downloads_dir, "", sizeof(g_defaults.core_assets_dir));
+			}
+			else
+			{
+               fill_pathname_join(g_defaults.core_assets_dir,
+                     app_dir, "downloads", sizeof(g_defaults.core_assets_dir));
+			}
+			if(*screenshot_dir)
+			{
+               fill_pathname_join(g_defaults.screenshot_dir,
+                     screenshot_dir, "", sizeof(g_defaults.screenshot_dir));
+			}
+			else
+			{
+               fill_pathname_join(g_defaults.screenshot_dir,
+                     app_dir, "screenshots", sizeof(g_defaults.screenshot_dir));
+			}
          }
       }
    }
@@ -620,7 +743,7 @@ static void frontend_android_get_environment_settings(int *argc,
 
    g_defaults.settings.video_threaded_enable = true;
 
-   // Set automatic default values per device
+   /* Set automatic default values per device */
    if (device_is_xperia_play(device_model))
    {
       g_defaults.settings.out_latency = 128;
@@ -634,7 +757,6 @@ static void frontend_android_get_environment_settings(int *argc,
    else if (!strcmp(device_model, "JSS15J"))
       g_defaults.settings.video_refresh_rate = 59.65;
 
-   /* FIXME - needs to be refactored */
 #if 0
    /* Explicitly disable input overlay by default 
     * for gamepad-like/console devices. */
@@ -645,7 +767,7 @@ static void frontend_android_get_environment_settings(int *argc,
 
 static void frontend_android_deinit(void *data)
 {
-   JNIEnv *env;
+   JNIEnv                     *env = NULL;
    struct android_app *android_app = (struct android_app*)data;
 
    if (!android_app)
@@ -678,10 +800,10 @@ bool android_run_events(void *data);
 
 static void frontend_android_init(void *data)
 {
-   JNIEnv *env;
-   ALooper *looper;
-   jclass class = NULL;
-   jobject obj = NULL;
+   JNIEnv                     *env = NULL;
+   ALooper                 *looper = NULL;
+   jclass                    class = NULL;
+   jobject                     obj = NULL;
    struct android_app* android_app = (struct android_app*)data;
 
    if (!android_app)
@@ -733,7 +855,7 @@ static void frontend_android_init(void *data)
 
 static int frontend_android_get_rating(void)
 {
-   char device_model[PROP_VALUE_MAX];
+   char device_model[PROP_VALUE_MAX] = {0};
    frontend_android_get_name(device_model, sizeof(device_model));
 
    RARCH_LOG("ro.product.model: (%s).\n", device_model);
@@ -747,21 +869,46 @@ static int frontend_android_get_rating(void)
    return -1;
 }
 
+#define ANDROID_ARCH_ARMV7    0x26257a91U
+#define ANDROID_ARCH_ARM      0x406a3516U
+#define ANDROID_ARCH_MIPS     0x7c9aa25eU
+#define ANDROID_ARCH_X86      0x0b88b8cbU
+
 static enum frontend_architecture frontend_android_get_architecture(void)
 {
-   char abi[PROP_VALUE_MAX];
+   uint32_t abi_hash;
+   char abi[PROP_VALUE_MAX] = {0};
    system_property_get("ro.product.cpu.abi", abi);
 
-   if (!strcmp(abi, "armeabi-v7a"))
-      return FRONTEND_ARCH_ARM;
-   if (!strcmp(abi, "armeabi"))
-      return FRONTEND_ARCH_ARM;
-   if (!strcmp(abi, "mips"))
-      return FRONTEND_ARCH_MIPS;
-   if (!strcmp(abi, "x86"))
-      return FRONTEND_ARCH_X86;
+   abi_hash = msg_hash_calculate(abi);
+
+   switch (abi_hash)
+   {
+      case ANDROID_ARCH_ARMV7:
+         return FRONTEND_ARCH_ARM;
+      case ANDROID_ARCH_ARM:
+         return FRONTEND_ARCH_ARM;
+      case ANDROID_ARCH_MIPS:
+         return FRONTEND_ARCH_MIPS;
+      case ANDROID_ARCH_X86:
+         return FRONTEND_ARCH_X86;
+   }
 
    return FRONTEND_ARCH_NONE;
+}
+
+static int frontend_android_parse_drive_list(void *data)
+{
+   file_list_t *list = (file_list_t*)data;
+
+   menu_list_push(list,
+         app_dir, "Application Dir", MENU_FILE_DIRECTORY, 0, 0);
+   menu_list_push(list,
+         sdcard_dir, "Internal Memory", MENU_FILE_DIRECTORY, 0, 0);
+   menu_list_push(list, "/", "",
+         MENU_FILE_DIRECTORY, 0, 0);
+
+   return 0;
 }
 
 const frontend_ctx_driver_t frontend_ctx_android = {
@@ -779,5 +926,6 @@ const frontend_ctx_driver_t frontend_ctx_android = {
    NULL,                         /* load_content */
    frontend_android_get_architecture,
    NULL,                         /* get_powerstate */
+   frontend_android_parse_drive_list,
    "android",
 };

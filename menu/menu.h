@@ -23,14 +23,18 @@
 #include <string.h>
 #include <ctype.h>
 #include <boolean.h>
-#include "../../general.h"
-#include "../../runloop.h"
-#include "menu_input.h"
+
+#include "../driver.h"
+#include "../dynamic.h"
 
 #if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
 #ifndef HAVE_SHADER_MANAGER
 #define HAVE_SHADER_MANAGER
 #endif
+#endif
+
+#ifndef GFX_MAX_PARAMETERS
+#define GFX_MAX_PARAMETERS 64
 #endif
 
 #ifndef GFX_MAX_SHADERS
@@ -49,10 +53,6 @@
 #define MENU_SETTINGS_CORE_OPTION_NONE  0xffff
 #define MENU_SETTINGS_CORE_OPTION_START 0x10000
 
-#ifndef IDEAL_DT
-#define IDEAL_DT (1.0 / 60.0 * 1000000.0)
-#endif
-
 #define MENU_KEYBOARD_BIND_TIMEOUT_SECONDS 5
 
 #ifdef __cplusplus
@@ -61,7 +61,7 @@ extern "C" {
 
 typedef enum
 {
-   MENU_FILE_NONE,
+   MENU_FILE_NONE = 0,
    MENU_FILE_PLAIN,
    MENU_FILE_DIRECTORY,
    MENU_FILE_PATH,
@@ -78,26 +78,33 @@ typedef enum
    MENU_FILE_FONT,
    MENU_FILE_CONFIG,
    MENU_FILE_USE_DIRECTORY,
+   MENU_FILE_SCAN_DIRECTORY,
    MENU_FILE_CARCHIVE,
    MENU_FILE_IN_CARCHIVE,
    MENU_FILE_IMAGE,
+   MENU_FILE_IMAGEVIEWER,
    MENU_FILE_REMAP,
    MENU_FILE_DOWNLOAD_CORE,
+   MENU_FILE_DOWNLOAD_CORE_CONTENT,
    MENU_FILE_DOWNLOAD_CORE_INFO,
    MENU_FILE_RDB,
    MENU_FILE_RDB_ENTRY,
    MENU_FILE_CURSOR,
    MENU_FILE_RECORD_CONFIG,
    MENU_FILE_PLAYLIST_COLLECTION,
+   MENU_FILE_MOVIE,
+   MENU_FILE_MUSIC,
    MENU_SETTINGS,
    MENU_SETTING_DRIVER,
    MENU_SETTING_ACTION,
    MENU_SETTING_ACTION_RUN,
+   MENU_SETTING_ACTION_CLOSE,
    MENU_SETTING_ACTION_CORE_OPTIONS,
    MENU_SETTING_ACTION_CORE_INPUT_REMAPPING_OPTIONS,
    MENU_SETTING_ACTION_CORE_CHEAT_OPTIONS,
    MENU_SETTING_ACTION_CORE_INFORMATION,
    MENU_SETTING_ACTION_CORE_DISK_OPTIONS,
+   MENU_SETTING_ACTION_CORE_SHADER_OPTIONS,
    MENU_SETTING_ACTION_SAVESTATE,
    MENU_SETTING_ACTION_LOADSTATE,
    MENU_SETTING_ACTION_SCREENSHOT,
@@ -105,13 +112,12 @@ typedef enum
    MENU_SETTING_GROUP,
    MENU_SETTING_SUBGROUP,
    MENU_SETTING_HORIZONTAL_MENU,
-   MENU_FILE_TYPE_T_LAST,
+   MENU_FILE_TYPE_T_LAST
 } menu_file_type_t;
 
 typedef enum
 {
-   MENU_SETTINGS_VIDEO_RESOLUTION = MENU_FILE_TYPE_T_LAST + 1,
-   MENU_SETTINGS_CUSTOM_VIEWPORT,
+   MENU_SETTINGS_CUSTOM_VIEWPORT       = MENU_FILE_TYPE_T_LAST + 1,
    MENU_SETTINGS_SHADER_PARAMETER_0,
    MENU_SETTINGS_SHADER_PARAMETER_LAST = MENU_SETTINGS_SHADER_PARAMETER_0 + (GFX_MAX_PARAMETERS - 1),
    MENU_SETTINGS_SHADER_PRESET_PARAMETER_0,
@@ -142,7 +148,8 @@ typedef enum
    MENU_SETTINGS_CHEAT_BEGIN,
    MENU_SETTINGS_CHEAT_END = MENU_SETTINGS_CHEAT_BEGIN + (MAX_CHEAT_COUNTERS - 1),
    MENU_SETTINGS_INPUT_DESC_BEGIN,
-   MENU_SETTINGS_INPUT_DESC_END = MENU_SETTINGS_INPUT_DESC_BEGIN + (MAX_USERS * RARCH_CUSTOM_BIND_LIST_END),
+   MENU_SETTINGS_INPUT_DESC_END = MENU_SETTINGS_INPUT_DESC_BEGIN + (MAX_USERS * (RARCH_FIRST_CUSTOM_BIND + 4)),
+   MENU_SETTINGS_LAST
 } menu_settings_t;
 
 /**
@@ -164,7 +171,7 @@ void *menu_init(const void *data);
  *
  * Runs RetroArch menu for one frame.
  *
- * Returns: 0 on success, -1 if we need to quit out of the loop. 
+ * Returns: 0 on success, -1 if we need to quit out of the loop.
  **/
 int menu_iterate(retro_input_t input,
       retro_input_t old_input, retro_input_t trigger_input);
@@ -179,23 +186,18 @@ void menu_free(menu_handle_t *menu);
 
 /**
  * menu_load_content:
+ * type                      : Type of content to load.
  *
  * Loads content into currently selected core.
  * Will also optionally push the content entry to the history playlist.
  *
  * Returns: true (1) if successful, otherwise false (0).
  **/
-bool menu_load_content(void);
+bool menu_load_content(enum rarch_core_type type);
 
-void menu_update_system_info(menu_handle_t *menu, bool *load_no_content);
+void menu_common_load_content(bool persist, enum rarch_core_type type);
 
-int menu_do_refresh(unsigned action);
-
-bool menu_needs_refresh(void);
-
-void menu_set_refresh(void);
-
-void menu_unset_refresh(void);
+void menu_common_push_content_settings(void);
 
 #ifdef __cplusplus
 }

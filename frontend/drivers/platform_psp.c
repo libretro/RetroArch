@@ -25,8 +25,12 @@
 #include <stddef.h>
 #include <string.h>
 
-#include "../../gfx/drivers/psp_sdk_defines.h"
 #include <file/file_path.h>
+#ifndef IS_SALAMANDER
+#include <file/file_list.h>
+#endif
+
+#include "../../gfx/drivers/psp_sdk_defines.h"
 #include "../../general.h"
 
 #if defined(HAVE_KERNEL_PRX) || defined(IS_SALAMANDER)
@@ -83,6 +87,10 @@ static void frontend_psp_get_environment_settings(int *argc, char *argv[],
          "playlists", sizeof(g_defaults.playlist_dir));
    fill_pathname_join(g_defaults.config_path, g_defaults.port_dir,
          "retroarch.cfg", sizeof(g_defaults.config_path));
+   fill_pathname_join(g_defaults.cheats_dir, g_defaults.cheats_dir,
+         "cheats", sizeof(g_defaults.cheats_dir));
+   fill_pathname_join(g_defaults.remap_dir, g_defaults.remap_dir,
+         "remaps", sizeof(g_defaults.remap_dir));
 
 #ifndef IS_SALAMANDER
    if (argv[1] && (argv[1][0] != '\0'))
@@ -187,9 +195,8 @@ static void frontend_psp_init(void *data)
 static void frontend_psp_exec(const char *path, bool should_load_game)
 {
 #if defined(HAVE_KERNEL_PRX) || defined(IS_SALAMANDER)
-
-   char argp[512];
-   SceSize args = 0;
+   char argp[512] = {0};
+   SceSize   args = 0;
 
    argp[0] = '\0';
    strlcpy(argp, eboot_path, sizeof(argp));
@@ -219,7 +226,7 @@ static void frontend_psp_set_fork(bool exit, bool start_game)
    exitspawn_start_game = start_game;
 }
 
-static void frontend_psp_exitspawn(char *core_path, size_t sizeof_core_path)
+static void frontend_psp_exitspawn(char *s, size_t len)
 {
    bool should_load_game = false;
 #ifndef IS_SALAMANDER
@@ -228,7 +235,7 @@ static void frontend_psp_exitspawn(char *core_path, size_t sizeof_core_path)
    if (!exit_spawn)
       return;
 #endif
-   frontend_psp_exec(core_path, should_load_game);
+   frontend_psp_exec(s, should_load_game);
 }
 
 static int frontend_psp_get_rating(void)
@@ -267,6 +274,22 @@ enum frontend_architecture frontend_psp_get_architecture(void)
    return FRONTEND_ARCH_MIPS;
 }
 
+static int frontend_psp_parse_drive_list(void *data)
+{
+#ifndef IS_SALAMANDER
+   file_list_t *list = (file_list_t*)data;
+
+   menu_list_push(list,
+         "ms0:/", "", MENU_FILE_DIRECTORY, 0, 0);
+   menu_list_push(list,
+         "ef0:/", "", MENU_FILE_DIRECTORY, 0, 0);
+   menu_list_push(list,
+         "host0:/", "", MENU_FILE_DIRECTORY, 0, 0);
+#endif
+
+   return 0;
+}
+
 const frontend_ctx_driver_t frontend_ctx_psp = {
    frontend_psp_get_environment_settings,
    frontend_psp_init,
@@ -282,5 +305,6 @@ const frontend_ctx_driver_t frontend_ctx_psp = {
    NULL,                         /* load_content */
    frontend_psp_get_architecture,
    frontend_psp_get_powerstate,
+   frontend_psp_parse_drive_list,
    "psp",
 };

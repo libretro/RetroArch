@@ -20,6 +20,8 @@
 #include <stdlib.h>
 #include <ctype.h>
 
+#include <file/file_path.h>
+
 #include "../general.h"
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
@@ -167,8 +169,9 @@ void input_config_parse_key(config_file_t *conf,
       const char *prefix, const char *btn,
       struct retro_keybind *bind)
 {
-   char tmp[64], key[64];
-   snprintf(key, sizeof(key), "%s_%s", prefix, btn);
+   char tmp[64] = {0};
+   char key[64] = {0};
+   fill_pathname_join_delim(key, prefix, btn, '_', sizeof(key));
 
    if (config_get_array(conf, key, tmp, sizeof(tmp)))
       bind->key = input_translate_str_to_rk(tmp);
@@ -233,8 +236,9 @@ unsigned input_translate_str_to_bind_id(const char *str)
 
 static void parse_hat(struct retro_keybind *bind, const char *str)
 {
-   char *dir = NULL;
-   uint16_t hat_dir = 0, hat;
+   uint16_t     hat;
+   uint16_t hat_dir = 0;
+   char        *dir = NULL;
 
    if (!bind || !str)
       return;
@@ -266,16 +270,20 @@ static void parse_hat(struct retro_keybind *bind, const char *str)
 void input_config_parse_joy_button(config_file_t *conf, const char *prefix,
       const char *btn, struct retro_keybind *bind)
 {
-   char tmp[64], key[64], key_label[64];
-   char *tmp_a = NULL;
+   char str[256]      = {0};
+   char tmp[64]       = {0};
+   char key[64]       = {0};
+   char key_label[64] = {0};
+   char *tmp_a        = NULL;
 
-   snprintf(key, sizeof(key), "%s_%s_btn", prefix, btn);
-   snprintf(key_label, sizeof(key_label), "%s_%s_btn_label", prefix, btn);
+   fill_pathname_join_delim(str, prefix, btn, '_', sizeof(str));
+   fill_pathname_join_delim(key, str, "btn", '_', sizeof(key));
+   fill_pathname_join_delim(key_label, str, "btn_label", '_', sizeof(key_label));
 
    if (config_get_array(conf, key, tmp, sizeof(tmp)))
    {
       btn = tmp;
-      if (strcmp(btn, "nul") == 0)
+      if (!strcmp(btn, "nul"))
          bind->joykey = NO_BTN;
       else
       {
@@ -287,21 +295,28 @@ void input_config_parse_joy_button(config_file_t *conf, const char *prefix,
    }
 
    if (config_get_string(conf, key_label, &tmp_a))
+   {
       strlcpy(bind->joykey_label, tmp_a, sizeof(bind->joykey_label));
+      free(tmp_a);
+   }
 }
 
 void input_config_parse_joy_axis(config_file_t *conf, const char *prefix,
       const char *axis, struct retro_keybind *bind)
 {
-   char tmp[64], key[64], key_label[64];
-   char *tmp_a = NULL;
+   char str[256]      = {0};
+   char       tmp[64] = {0};
+   char       key[64] = {0};
+   char key_label[64] = {0};
+   char        *tmp_a = NULL;
 
-   snprintf(key, sizeof(key), "%s_%s_axis", prefix, axis);
-   snprintf(key_label, sizeof(key_label), "%s_%s_axis_label", prefix, axis);
+   fill_pathname_join_delim(str, prefix, axis, '_', sizeof(str));
+   fill_pathname_join_delim(key, str, "axis", '_', sizeof(key));
+   fill_pathname_join_delim(key_label, str, "axis_label", '_', sizeof(key_label));
 
    if (config_get_array(conf, key, tmp, sizeof(tmp)))
    {
-      if (strcmp(tmp, "nul") == 0)
+      if (!strcmp(tmp, "nul"))
          bind->joyaxis = AXIS_NONE;
       else if (strlen(tmp) >= 2 && (*tmp == '+' || *tmp == '-'))
       {
@@ -317,7 +332,10 @@ void input_config_parse_joy_axis(config_file_t *conf, const char *prefix,
    }
 
    if (config_get_string(conf, key_label, &tmp_a))
+   {
       strlcpy(bind->joyaxis_label, tmp_a, sizeof(bind->joyaxis_label));
+      free(tmp_a);
+   }
 }
 
 #if !defined(IS_JOYCONFIG)
@@ -328,7 +346,7 @@ static void input_get_bind_string_joykey(char *buf, const char *prefix,
 
    if (GET_HAT_DIR(bind->joykey))
    {
-      const char *dir;
+      const char *dir = NULL;
 
       switch (GET_HAT_DIR(bind->joykey))
       {
@@ -367,8 +385,8 @@ static void input_get_bind_string_joykey(char *buf, const char *prefix,
 static void input_get_bind_string_joyaxis(char *buf, const char *prefix,
       const struct retro_keybind *bind, size_t size)
 {
-   unsigned axis = 0;
-   char dir = '\0';
+   unsigned axis        = 0;
+   char dir             = '\0';
    settings_t *settings = config_get_ptr();
 
    if (AXIS_NEG_GET(bind->joyaxis) != AXIS_DIR_NONE)
@@ -390,7 +408,8 @@ static void input_get_bind_string_joyaxis(char *buf, const char *prefix,
 void input_get_bind_string(char *buf, const struct retro_keybind *bind,
       const struct retro_keybind *auto_bind, size_t size)
 {
-   char key[64], keybuf[64];
+   char key[64]    = {0};
+   char keybuf[64] = {0};
 
    (void)key;
    (void)keybuf;

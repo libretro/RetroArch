@@ -81,7 +81,7 @@ CONFIG FILE
 CHEATS
 ============================================================ */
 #include "../cheats.c"
-#include "../hash.c"
+#include "../libretro-common/hash/rhash.c"
 
 /*============================================================
 UI COMMON CONTEXT
@@ -175,6 +175,10 @@ VIDEO IMAGE
 #include "../gfx/video_texture.c"
 
 #include "../libretro-common/formats/tga/tga_decode.c"
+
+#ifdef HAVE_IMAGEVIEWER
+#include "../cores/image_core.c"
+#endif
 
 #ifdef HAVE_RPNG
 #include "../libretro-common/formats/png/rpng_fbio.c"
@@ -548,10 +552,17 @@ DYNAMIC
 ============================================================ */
 #include "../libretro-common/dynamic/dylib.c"
 #include "../dynamic.c"
-#include "../dynamic_dummy.c"
 #include "../gfx/video_filter.c"
 #include "../audio/audio_dsp_filter.c"
 
+/*============================================================
+CORES
+============================================================ */
+#ifdef HAVE_FFMPEG
+#include "../cores/ffmpeg_core.c"
+#endif
+
+#include "../cores/dynamic_dummy.c"
 
 /*============================================================
 FILE
@@ -657,6 +668,20 @@ RETROARCH
 #include "../retroarch_info.c"
 #include "../runloop.c"
 #include "../runloop_data.c"
+#include "../runloop_msg.c"
+#include "../system.c"
+
+#include "../msg_hash.c"
+#include "../intl/msg_hash_de.c"
+#include "../intl/msg_hash_es.c"
+#include "../intl/msg_hash_eo.c"
+#include "../intl/msg_hash_fr.c"
+#include "../intl/msg_hash_it.c"
+#include "../intl/msg_hash_nl.c"
+#include "../intl/msg_hash_pt.c"
+#include "../intl/msg_hash_pl.c"
+#include "../intl/msg_hash_us.c"
+
 
 /*============================================================
 RECORDING
@@ -664,6 +689,10 @@ RECORDING
 #include "../movie.c"
 #include "../record/record_driver.c"
 #include "../record/drivers/record_null.c"
+
+#ifdef HAVE_FFMPEG
+#include "../record/drivers/record_ffmpeg.c"
+#endif
 
 /*============================================================
 THREAD
@@ -710,33 +739,46 @@ PLAYLISTS
 MENU
 ============================================================ */
 #ifdef HAVE_MENU
-#include "../menu/menu_input.c"
 #include "../menu/menu.c"
+#include "../menu/menu_hash.c"
+#include "../menu/menu_input.c"
 #include "../menu/menu_entry.c"
+#include "../menu/menu_entries.c"
 #include "../menu/menu_setting.c"
 #include "../menu/menu_list.c"
-#include "../menu/menu_entries_cbs_ok.c"
-#include "../menu/menu_entries_cbs_cancel.c"
-#include "../menu/menu_entries_cbs_select.c"
-#include "../menu/menu_entries_cbs_start.c"
-#include "../menu/menu_entries_cbs_info.c"
-#include "../menu/menu_entries_cbs_refresh.c"
-#include "../menu/menu_entries_cbs_left.c"
-#include "../menu/menu_entries_cbs_right.c"
-#include "../menu/menu_entries_cbs_title.c"
-#include "../menu/menu_entries_cbs_deferred_push.c"
-#include "../menu/menu_entries_cbs_scan.c"
-#include "../menu/menu_entries_cbs_representation.c"
-#include "../menu/menu_entries_cbs_iterate.c"
-#include "../menu/menu_entries_cbs_up.c"
-#include "../menu/menu_entries_cbs_down.c"
-#include "../menu/menu_entries_cbs_contentlist_switch.c"
-#include "../menu/menu_entries_cbs.c"
+#include "../menu/menu_cbs.c"
+#include "../menu/menu_video.c"
+#include "../menu/cbs/menu_cbs_ok.c"
+#include "../menu/cbs/menu_cbs_cancel.c"
+#include "../menu/cbs/menu_cbs_select.c"
+#include "../menu/cbs/menu_cbs_start.c"
+#include "../menu/cbs/menu_cbs_info.c"
+#include "../menu/cbs/menu_cbs_refresh.c"
+#include "../menu/cbs/menu_cbs_left.c"
+#include "../menu/cbs/menu_cbs_right.c"
+#include "../menu/cbs/menu_cbs_title.c"
+#include "../menu/cbs/menu_cbs_deferred_push.c"
+#include "../menu/cbs/menu_cbs_scan.c"
+#include "../menu/cbs/menu_cbs_get_value.c"
+#include "../menu/cbs/menu_cbs_iterate.c"
+#include "../menu/cbs/menu_cbs_up.c"
+#include "../menu/cbs/menu_cbs_down.c"
+#include "../menu/cbs/menu_cbs_contentlist_switch.c"
 #include "../menu/menu_shader.c"
 #include "../menu/menu_navigation.c"
 #include "../menu/menu_display.c"
 #include "../menu/menu_displaylist.c"
 #include "../menu/menu_animation.c"
+
+#include "../menu/intl/menu_hash_de.c"
+#include "../menu/intl/menu_hash_es.c"
+#include "../menu/intl/menu_hash_eo.c"
+#include "../menu/intl/menu_hash_fr.c"
+#include "../menu/intl/menu_hash_it.c"
+#include "../menu/intl/menu_hash_nl.c"
+#include "../menu/intl/menu_hash_pl.c"
+#include "../menu/intl/menu_hash_pt.c"
+#include "../menu/intl/menu_hash_us.c"
 
 #include "../menu/drivers/null.c"
 #endif
@@ -826,12 +868,6 @@ XML
 #include "../libretro-common/formats/xml/rxml.c"
 #endif
 #endif
-
-/*============================================================
- SETTINGS
-============================================================ */
-#include "../settings_list.c"
-#include "../settings.c"
 
 /*============================================================
  AUDIO UTILS

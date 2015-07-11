@@ -87,7 +87,9 @@ static void core_info_list_resolve_all_firmware(
 
       for (c = 0; c < count; c++)
       {
-         char path_key[64], desc_key[64], opt_key[64];
+         char path_key[64] = {0};
+         char desc_key[64] = {0};
+         char opt_key[64]  = {0};
 
          snprintf(path_key, sizeof(path_key), "firmware%u_path", c);
          snprintf(desc_key, sizeof(desc_key), "firmware%u_desc", c);
@@ -124,7 +126,9 @@ void core_info_get_name(const char *path, char *s, size_t len)
 
    for (i = 0; i < contents->size; i++)
    {
-      char info_path_base[PATH_MAX_LENGTH], info_path[PATH_MAX_LENGTH];
+      char info_path_base[PATH_MAX_LENGTH] = {0};
+      char info_path[PATH_MAX_LENGTH]      = {0};
+
       core_info[i].path = strdup(contents->elems[i].data);
 
       if (!core_info[i].path)
@@ -189,7 +193,8 @@ core_info_list_t *core_info_list_new(void)
 
    for (i = 0; i < contents->size; i++)
    {
-      char info_path_base[PATH_MAX_LENGTH], info_path[PATH_MAX_LENGTH];
+      char info_path_base[PATH_MAX_LENGTH] = {0};
+      char info_path[PATH_MAX_LENGTH]      = {0};
       core_info[i].path = strdup(contents->elems[i].data);
 
       if (!core_info[i].path)
@@ -372,6 +377,41 @@ bool core_info_list_get_display_name(core_info_list_t *core_info_list,
    return false;
 }
 
+bool core_info_get_display_name(const char *path, char *s, size_t len)
+{
+   char       *core_name = NULL;
+   config_file_t *conf   = NULL;
+
+   if (!path_file_exists(path))
+      return false;
+
+   conf = config_file_new(path);
+
+   if (!conf)
+      goto error;
+
+   config_get_string(conf, "corename",
+         &core_name);
+
+   config_file_free(conf);
+
+   if (!core_name)
+      goto error;
+   if (!conf)
+      goto error;
+
+   strlcpy(s, core_name, len);
+
+   free(core_name);
+
+   return true;
+
+error:
+   if (core_name)
+      free(core_name);
+   return false;
+}
+
 bool core_info_list_get_info(core_info_list_t *core_info_list,
       core_info_t *out_info, const char *path)
 {
@@ -527,8 +567,8 @@ void core_info_list_update_missing_firmware(core_info_list_t *core_info_list,
       const char *core, const char *systemdir)
 {
    size_t i;
-   char path[PATH_MAX_LENGTH];
-   core_info_t *info = NULL;
+   char path[PATH_MAX_LENGTH] = {0};
+   core_info_t          *info = NULL;
 
    if (!core_info_list || !core)
       return;
@@ -552,8 +592,8 @@ void core_info_list_get_missing_firmware(core_info_list_t *core_info_list,
       const core_info_firmware_t **firmware, size_t *num_firmware)
 {
    size_t i;
-   char path[PATH_MAX_LENGTH];
-   core_info_t *info = NULL;
+   char path[PATH_MAX_LENGTH] = {0};
+   core_info_t          *info = NULL;
 
    if (!core_info_list || !core)
       return;

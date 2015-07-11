@@ -55,13 +55,13 @@ static const uint8_t MPF_UINT64 = 0xcf;
 
 static const uint8_t MPF_NIL = 0xc0;
 
-static inline ssize_t fpwrite(FILE *fp, const void *buf, size_t count)
+static INLINE ssize_t fpwrite(FILE *fp, const void *buf, size_t count)
 {
    size_t num_written = fwrite(buf, 1, count, fp);
    return num_written != count ? -1 : (ssize_t)count;
 }
 
-static inline ssize_t fpread(FILE *fp, void *buf, size_t count)
+static INLINE ssize_t fpread(FILE *fp, void *buf, size_t count)
 {
    size_t num_read = fread(buf, 1, count, fp);
    return num_read != count && ferror(fp) ? -1 : (ssize_t)num_read;
@@ -405,9 +405,9 @@ static int read_buff(FILE *fp, size_t size, char **pbuff, uint64_t *len)
    if (read_uint(fp, &tmp_len, size) == -1)
       return -errno;
 
-   *pbuff = (char *)calloc(tmp_len + 1, sizeof(char));
+   *pbuff = (char *)calloc((size_t)tmp_len + 1, sizeof(char));
 
-   if (fpread(fp, *pbuff, tmp_len) == -1)
+   if (fpread(fp, *pbuff, (size_t)tmp_len) == -1)
    {
       free(*pbuff);
       return -errno;
@@ -418,7 +418,7 @@ static int read_buff(FILE *fp, size_t size, char **pbuff, uint64_t *len)
 }
 
 static int read_map(FILE *fp, uint32_t len,
-        struct rmsgpack_read_callbacks *callbacks, void *data)
+      struct rmsgpack_read_callbacks *callbacks, void *data)
 {
    int rv;
    unsigned i;
@@ -479,20 +479,20 @@ int rmsgpack_read(FILE *fp,
    else if (type < MPF_FIXARRAY)
    {
       tmp_len = type - MPF_FIXMAP;
-      return read_map(fp, tmp_len, callbacks, data);
+      return read_map(fp, (uint32_t)tmp_len, callbacks, data);
    }
    else if (type < MPF_FIXSTR)
    {
       tmp_len = type - MPF_FIXARRAY;
-      return read_array(fp, tmp_len, callbacks, data);
+      return read_array(fp, (size_t)tmp_len, callbacks, data);
    }
    else if (type < MPF_NIL)
    {
       tmp_len = type - MPF_FIXSTR;
-      buff = (char *)calloc(tmp_len + 1, sizeof(char));
+      buff = (char *)calloc((size_t)tmp_len + 1, sizeof(char));
       if (!buff)
          return -ENOMEM;
-      if (fpread(fp, buff, tmp_len) == -1)
+      if (fpread(fp, buff, (size_t)tmp_len) == -1)
       {
          free(buff);
          return -errno;
@@ -503,7 +503,7 @@ int rmsgpack_read(FILE *fp,
          free(buff);
          return 0;
       }
-      return callbacks->read_string(buff, tmp_len, data);
+      return callbacks->read_string(buff, (size_t)tmp_len, data);
    }
    else if (type > MPF_MAP32)
    {
@@ -534,15 +534,15 @@ int rmsgpack_read(FILE *fp,
             return rv;
 
          if (callbacks->read_bin)
-            return callbacks->read_bin(buff, tmp_len, data);
+            return callbacks->read_bin(buff, (size_t)tmp_len, data);
          break;
       case 0xcc:
       case 0xcd:
       case 0xce:
       case 0xcf:
-         tmp_len = 1ULL << (type - 0xcc);
+         tmp_len = 1UL << (type - 0xcc);
          tmp_uint = 0;
-         if (read_uint(fp, &tmp_uint, tmp_len) == -1)
+         if (read_uint(fp, &tmp_uint, (size_t)tmp_len) == -1)
             return -errno;
 
          if (callbacks->read_uint)
@@ -552,9 +552,9 @@ int rmsgpack_read(FILE *fp,
       case 0xd1:
       case 0xd2:
       case 0xd3:
-         tmp_len = 1ULL << (type - 0xd0);
+         tmp_len = 1UL << (type - 0xd0);
          tmp_int = 0;
-         if (read_int(fp, &tmp_int, tmp_len) == -1)
+         if (read_int(fp, &tmp_int, (size_t)tmp_len) == -1)
             return -errno;
 
          if (callbacks->read_int)
@@ -567,20 +567,20 @@ int rmsgpack_read(FILE *fp,
             return rv;
 
          if (callbacks->read_string)
-            return callbacks->read_string(buff, tmp_len, data);
+            return callbacks->read_string(buff, (size_t)tmp_len, data);
          break;
       case 0xdc:
       case 0xdd:
          if (read_uint(fp, &tmp_len, 2<<(type - 0xdc)) == -1)
             return -errno;
 
-         return read_array(fp, tmp_len, callbacks, data);
+         return read_array(fp, (size_t)tmp_len, callbacks, data);
       case 0xde:
       case 0xdf:
          if (read_uint(fp, &tmp_len, 2<<(type - 0xde)) == -1)
             return -errno;
 
-         return read_map(fp, tmp_len, callbacks, data);
+         return read_map(fp, (size_t)tmp_len, callbacks, data);
    }
 
    return 0;

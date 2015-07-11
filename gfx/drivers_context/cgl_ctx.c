@@ -18,7 +18,7 @@
    Based on http://fernlightning.com/doku.php?id=randd:xopengl.
  */
 
-#include <CoreGraphics/CoreGraphics.h>
+#include <ApplicationServices/ApplicationServices.h>
 
 #include <OpenGL/CGLTypes.h>
 #include <OpenGL/CGLCurrent.h>
@@ -26,6 +26,7 @@
 #include <OpenGL/gl.h>
 
 #include <stdio.h>
+#include <stdint.h>
 #include <stdlib.h>
 
 #include "../../driver.h"
@@ -38,14 +39,24 @@ typedef int CGSConnectionID;
 typedef int CGSWindowID;
 typedef int CGSSurfaceID;
 
+typedef uint32_t _CGWindowID;
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* Undocumented CGS */
 extern CGSConnectionID CGSMainConnectionID(void);
-extern CGError CGSAddSurface(CGSConnectionID cid, CGWindowID wid, CGSSurfaceID *sid);
-extern CGError CGSSetSurfaceBounds(CGSConnectionID cid, CGWindowID wid, CGSSurfaceID sid, CGRect rect);
-extern CGError CGSOrderSurface(CGSConnectionID cid, CGWindowID wid, CGSSurfaceID sid, int a, int b);
+extern CGError CGSAddSurface(CGSConnectionID cid, _CGWindowID wid, CGSSurfaceID *sid);
+extern CGError CGSSetSurfaceBounds(CGSConnectionID cid, _CGWindowID wid, CGSSurfaceID sid, CGRect rect);
+extern CGError CGSOrderSurface(CGSConnectionID cid, _CGWindowID wid, CGSSurfaceID sid, int a, int b);
 
 /* Undocumented CGL */
 extern CGLError CGLSetSurface(CGLContextObj gl, CGSConnectionID cid, CGSWindowID wid, CGSSurfaceID sid);
+
+#ifdef __cplusplus
+}
+#endif
 
 typedef struct gfx_ctx_cgl_data
 {
@@ -103,7 +114,8 @@ static void gfx_ctx_cgl_set_resize(void *data, unsigned width, unsigned height)
 
 static void gfx_ctx_cgl_update_window_title(void *data)
 {
-   char buf[128], buf_fps[128];
+   char buf[128]        = {0};
+   char buf_fps[128]    = {0};
    settings_t *settings = config_get_ptr();
 
    (void)data;
@@ -229,11 +241,8 @@ static CGLContextObj gfx_ctx_cgl_init_create(void)
    };
 
    CGLChoosePixelFormat(attributes, &pix, &num);
-   printf("pix %p num: %d\n", pix, num);
    CGLCreateContext(pix, NULL, &glCtx);
    CGLDestroyPixelFormat(pix);
-
-   printf("glCtx: %p\n", glCtx);
 
    CGLSetParameter(glCtx, kCGLCPSwapInterval, &params);
 
@@ -253,12 +262,14 @@ static CGSSurfaceID attach_gl_context_to_window(CGLContextObj glCtx,
     printf("cid:%d wid:%d\n", cid, wid);
  
     /* determine window size */
+    /* FIXME/TODO - CGWindowListCopyWindowInfo was introduced on OSX 10.5, 
+     * find alternative for lower versions. */
     wins = CGWindowListCopyWindowInfo(kCGWindowListOptionIncludingWindow, wid); /* expect one result only */
-    win = CFArrayGetValueAtIndex(wins, 0);
-    bnd = CFDictionaryGetValue(win, kCGWindowBounds);
-    CFNumberGetValue(CFDictionaryGetValue(bnd, CFSTR("Width")),
+    win = (CFDictionaryRef)CFArrayGetValueAtIndex(wins, 0);
+    bnd = (CFDictionaryRef)CFDictionaryGetValue(win, kCGWindowBounds);
+    CFNumberGetValue((CFNumberRef)CFDictionaryGetValue((CFDictionaryRef)bnd, CFSTR("Width")),
        kCFNumberFloat64Type, &w);
-    CFNumberGetValue(CFDictionaryGetValue(bnd, CFSTR("Height")),
+    CFNumberGetValue((CFNumberRef)CFDictionaryGetValue(bnd, CFSTR("Height")),
        kCFNumberFloat64Type, &h);
     CFRelease(wins);
  

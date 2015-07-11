@@ -99,7 +99,7 @@ static shader_dlg_t g_shader_dlg = {0};
 
 static INLINE void shader_dlg_refresh_trackbar_label(int index)
 {
-   char val_buffer[32];
+   char val_buffer[32]         = {0};
    struct video_shader* shader = video_shader_driver_get_current_shader();
 
    if (floorf(shader->parameters[index].current) == shader->parameters[index].current)

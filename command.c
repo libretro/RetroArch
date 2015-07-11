@@ -14,19 +14,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "command.h"
 
-#include <net/net_compat.h>
-#if defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)
-#include "netplay.h"
-#endif
-
-#include "general.h"
-#include "runloop.h"
-#include "compat/strl.h"
-#include "compat/posix_string.h"
-#include <file/file_path.h>
-#include <retro_miscellaneous.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -34,6 +22,23 @@
 #include <fcntl.h>
 #include <unistd.h>
 #endif
+
+#include <compat/strl.h>
+#include <compat/posix_string.h>
+#include <file/file_path.h>
+#include <retro_miscellaneous.h>
+#include <net/net_compat.h>
+
+#include "msg_hash.h"
+
+#if defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)
+#include "netplay.h"
+#endif
+
+#include "command.h"
+
+#include "general.h"
+#include "runloop.h"
 
 #define DEFAULT_NETWORK_CMD_PORT 55355
 #define STDIN_BUF_SIZE 4096
@@ -56,9 +61,10 @@ struct rarch_cmd
 #if defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)
 static bool cmd_init_network(rarch_cmd_t *handle, uint16_t port)
 {
-   char port_buf[16];
-   struct addrinfo hints, *res = NULL;
-   int yes = 1;
+   struct addrinfo hints = {0};
+   char port_buf[16]     = {0};
+   struct addrinfo *res  = NULL;
+   int yes               = 1;
 
    if (!network_init())
       return false;
@@ -66,7 +72,6 @@ static bool cmd_init_network(rarch_cmd_t *handle, uint16_t port)
    RARCH_LOG("Bringing up command interface on port %hu.\n",
          (unsigned short)port);
 
-   memset(&hints, 0, sizeof(hints));
 #if defined(_WIN32) || defined(HAVE_SOCKET_LEGACY)
    hints.ai_family   = AF_INET;
 #else
@@ -215,23 +220,37 @@ static const struct cmd_map map[] = {
    { "MENU_B",                 RETRO_DEVICE_ID_JOYPAD_B },
 };
 
+#define COMMAND_EXT_GLSL      0x7c976537U
+#define COMMAND_EXT_GLSLP     0x0f840c87U
+#define COMMAND_EXT_CG        0x0059776fU
+#define COMMAND_EXT_CGP       0x0b8865bfU
+
 static bool cmd_set_shader(const char *arg)
 {
-   char msg[PATH_MAX_LENGTH];
+   char msg[PATH_MAX_LENGTH]   = {0};
    enum rarch_shader_type type = RARCH_SHADER_NONE;
-   const char *ext = path_get_extension(arg);
+   const char             *ext = path_get_extension(arg);
+   uint32_t ext_hash           = msg_hash_calculate(ext);
 
-   if (strcmp(ext, "glsl") == 0 || strcmp(ext, "glslp") == 0)
-      type = RARCH_SHADER_GLSL;
-   else if (strcmp(ext, "cg") == 0 || strcmp(ext, "cgp") == 0)
-      type = RARCH_SHADER_CG;
-
-   if (type == RARCH_SHADER_NONE)
-      return false;
+   switch (ext_hash)
+   {
+      case COMMAND_EXT_GLSL:
+      case COMMAND_EXT_GLSLP:
+         type = RARCH_SHADER_GLSL;
+         break;
+      case COMMAND_EXT_CG:
+      case COMMAND_EXT_CGP:
+         type = RARCH_SHADER_CG;
+         break;
+      default:
+         return false;
+   }
 
    snprintf(msg, sizeof(msg), "Shader: \"%s\"", arg);
    rarch_main_msg_queue_push(msg, 1, 120, true);
-   RARCH_LOG("Applying shader \"%s\".\n", arg);
+   RARCH_LOG("%s \"%s\".\n",
+         msg_hash_to_str(MSG_APPLYING_SHADER),
+         arg);
 
    return video_driver_set_shader(type, arg);
 }
@@ -247,7 +266,7 @@ static bool command_get_arg(const char *tok,
 
    for (i = 0; i < ARRAY_SIZE(map); i++)
    {
-      if (strcmp(tok, map[i].str) == 0)
+      if (!strcmp(tok, map[i].str))
       {
          if (arg)
             *arg = NULL;
@@ -297,7 +316,10 @@ static void parse_sub_msg(rarch_cmd_t *handle, const char *tok)
          handle->state[map[index].id] = true;
    }
    else
-      RARCH_WARN("Unrecognized command \"%s\" received.\n", tok);
+      RARCH_WARN("%s \"%s\" %s.\n",
+            msg_hash_to_str(MSG_UNRECOGNIZED_COMMAND),
+            tok,
+            msg_hash_to_str(MSG_RECEIVED));
 }
 
 static void parse_msg(rarch_cmd_t *handle, char *buf)
@@ -362,19 +384,24 @@ static void network_cmd_poll(rarch_cmd_t *handle)
 static size_t read_stdin(char *buf, size_t size)
 {
    DWORD i;
+   DWORD has_read = 0;
+   DWORD avail = 0;
+   bool echo = false;
    HANDLE hnd = GetStdHandle(STD_INPUT_HANDLE);
+
    if (hnd == INVALID_HANDLE_VALUE)
       return 0;
 
    /* Check first if we're a pipe
     * (not console). */
-   DWORD avail = 0;
-   bool echo = false;
 
    /* If not a pipe, check if we're running in a console. */
    if (!PeekNamedPipe(hnd, NULL, 0, NULL, &avail, NULL))
    {
-      DWORD mode = 0;
+      INPUT_RECORD recs[256];
+      bool has_key = false;
+      DWORD mode = 0, has_read = 0;
+
       if (!GetConsoleMode(hnd, &mode))
          return 0;
 
@@ -384,13 +411,10 @@ static size_t read_stdin(char *buf, size_t size)
          return 0;
 
       /* Win32, Y U NO SANE NONBLOCK READ!? */
-      DWORD has_read = 0;
-      INPUT_RECORD recs[256];
       if (!PeekConsoleInput(hnd, recs,
                sizeof(recs) / sizeof(recs[0]), &has_read))
          return 0;
 
-      bool has_key = false;
       for (i = 0; i < has_read; i++)
       {
          /* Very crude, but should get the job done. */
@@ -419,7 +443,6 @@ static size_t read_stdin(char *buf, size_t size)
    if (avail > size)
       avail = size;
 
-   DWORD has_read = 0;
    if (!ReadFile(hnd, buf, avail, &has_read, NULL))
       return 0;
 
@@ -522,13 +545,13 @@ void rarch_cmd_poll(rarch_cmd_t *handle)
 static bool send_udp_packet(const char *host,
       uint16_t port, const char *msg)
 {
-   char port_buf[16];
-   struct addrinfo hints, *res = NULL;
+   char port_buf[16]           = {0};
+   struct addrinfo hints       = {0};
+   struct addrinfo *res        = NULL;
    const struct addrinfo *tmp  = NULL;
-   int fd = -1;
-   bool ret = true;
+   int fd                      = -1;
+   bool ret                    = true;
 
-   memset(&hints, 0, sizeof(hints));
 #if defined(_WIN32) || defined(HAVE_SOCKET_LEGACY)
    hints.ai_family   = AF_INET;
 #else
@@ -582,7 +605,7 @@ static bool verify_command(const char *cmd)
    if (command_get_arg(cmd, NULL, NULL))
       return true;
 
-   RARCH_ERR("Command \"%s\" is not recognized by RetroArch.\n", cmd);
+   RARCH_ERR("Command \"%s\" is not recognized by the program.\n", cmd);
    RARCH_ERR("\tValid commands:\n");
    for (i = 0; i < sizeof(map) / sizeof(map[0]); i++)
       RARCH_ERR("\t\t%s\n", map[i].str);
@@ -602,8 +625,8 @@ bool network_cmd_send(const char *cmd_)
    const char *host    = NULL;
    const char *port_   = NULL;
    global_t *global    = global_get_ptr();
-   bool old_verbose    = global->verbosity;
-   uint16_t port = DEFAULT_NETWORK_CMD_PORT;
+   bool old_verbose    = global ? global->verbosity : false;
+   uint16_t port       = DEFAULT_NETWORK_CMD_PORT;
 
    if (!network_init())
       return false;
@@ -631,7 +654,8 @@ bool network_cmd_send(const char *cmd_)
    if (port_)
       port = strtoul(port_, NULL, 0);
 
-   RARCH_LOG("Sending command: \"%s\" to %s:%hu\n",
+   RARCH_LOG("%s: \"%s\" to %s:%hu\n",
+         msg_hash_to_str(MSG_SENDING_COMMAND),
          cmd, host, (unsigned short)port);
 
    ret = verify_command(cmd) && send_udp_packet(host, port, cmd);

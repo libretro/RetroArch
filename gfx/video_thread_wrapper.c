@@ -519,7 +519,7 @@ static bool thread_frame(void *data, const void *frame_,
       settings_t *settings = config_get_ptr();
 
       retro_time_t target_frame_time = (retro_time_t)
-         roundf(1000000LL / settings->video.refresh_rate);
+         roundf(1000000 / settings->video.refresh_rate);
       retro_time_t target = thr->last_time + target_frame_time;
 
       /* Ideally, use absolute time, but that is only a good idea on POSIX. */
@@ -622,8 +622,8 @@ static bool thread_init(thread_video_t *thr, const video_info_t *info,
 
    thread_send_and_wait(thr, &pkt);
 
-//   thr->send_cmd_func   = thread_send_cmd;
-//   thr->wait_reply_func = thread_wait_reply;
+/*   thr->send_cmd_func   = thread_send_cmd;   */
+/*   thr->wait_reply_func = thread_wait_reply; */
 
    thr->send_and_wait = thread_send_and_wait;
    return pkt.data.b;
@@ -750,10 +750,12 @@ static void thread_overlay_enable(void *data, bool state)
 }
 
 static bool thread_overlay_load(void *data,
-      const struct texture_image *images, unsigned num_images)
+      const void *image_data, unsigned num_images)
 {
    thread_video_t *thr = (thread_video_t*)data;
    thread_packet_t pkt = { CMD_OVERLAY_LOAD };
+   const struct texture_image *images = 
+      (const struct texture_image*)image_data;
 
    if (!thr)
       return false;

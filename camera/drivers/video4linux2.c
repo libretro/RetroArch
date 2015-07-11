@@ -20,9 +20,6 @@
 #include <string.h>
 #include <assert.h>
 #include <stddef.h>
-#include "../../performance.h"
-#include <retro_miscellaneous.h>
-#include <gfx/scaler/scaler.h>
 #include <stdlib.h>
 #include <fcntl.h>
 #include <unistd.h>
@@ -32,10 +29,17 @@
 #include <sys/time.h>
 #include <sys/mman.h>
 #include <sys/ioctl.h>
-#include <compat/strl.h>
 
 #include <asm/types.h>
 #include <linux/videodev2.h>
+
+#include <retro_miscellaneous.h>
+#include <gfx/scaler/scaler.h>
+
+#include <compat/strl.h>
+
+#include "../../general.h"
+#include "../../performance.h"
 
 struct buffer
 {
@@ -296,6 +300,7 @@ static void *v4l_init(const char *device, uint64_t caps,
       unsigned width, unsigned height)
 {
    struct stat st;
+   video4linux_t *v4l = NULL;
 
    if ((caps & (1ULL << RETRO_CAMERA_BUFFER_RAW_FRAMEBUFFER)) == 0)
    {
@@ -303,7 +308,7 @@ static void *v4l_init(const char *device, uint64_t caps,
       return NULL;
    }
 
-   video4linux_t *v4l = (video4linux_t*)calloc(1, sizeof(video4linux_t));
+   v4l = (video4linux_t*)calloc(1, sizeof(video4linux_t));
    if (!v4l)
       return NULL;
 

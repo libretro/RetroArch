@@ -27,7 +27,7 @@
 #include <ApplicationServices/ApplicationServices.h>
 #endif
 
-#define CT_ATLAS_ROWS 8
+#define CT_ATLAS_ROWS 16
 #define CT_ATLAS_COLS 16
 #define CT_ATLAS_SIZE (CT_ATLAS_ROWS * CT_ATLAS_COLS)
 
@@ -293,4 +293,5 @@ font_renderer_driver_t coretext_font_renderer = {
   font_renderer_ct_free,
   font_renderer_ct_get_default_font,
   "coretext",
+  NULL, /*get_line_height*/
 };

@@ -21,11 +21,13 @@
 
 static const hid_driver_t *generic_hid;
 
-static bool hid_joypad_init(void)
+static bool hid_joypad_init(void *data)
 {
    generic_hid = input_hid_init_first();
    if (!generic_hid)
        return false;
+
+   (void)data;
 
    return true;
 }

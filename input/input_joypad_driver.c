@@ -152,16 +152,16 @@ const char* config_get_joypad_driver_options(void)
  *
  * Returns: joypad driver if found, otherwise NULL.
  **/
-const input_device_driver_t *input_joypad_init_driver(const char *ident)
+const input_device_driver_t *input_joypad_init_driver(const char *ident, void *data)
 {
    unsigned i;
    if (!ident || !*ident)
-      return input_joypad_init_first();
+      return input_joypad_init_first(data);
 
    for (i = 0; joypad_drivers[i]; i++)
    {
-      if (strcmp(ident, joypad_drivers[i]->ident) == 0
-            && joypad_drivers[i]->init())
+      if (!strcmp(ident, joypad_drivers[i]->ident)
+            && joypad_drivers[i]->init(data))
       {
          RARCH_LOG("Found joypad driver: \"%s\".\n",
                joypad_drivers[i]->ident);
@@ -169,7 +169,7 @@ const input_device_driver_t *input_joypad_init_driver(const char *ident)
       }
    }
 
-   return input_joypad_init_first();
+   return input_joypad_init_first(data);
 }
 
 /**
@@ -179,13 +179,13 @@ const input_device_driver_t *input_joypad_init_driver(const char *ident)
  *
  * Returns: joypad driver if found, otherwise NULL.
  **/
-const input_device_driver_t *input_joypad_init_first(void)
+const input_device_driver_t *input_joypad_init_first(void *data)
 {
    unsigned i;
 
    for (i = 0; joypad_drivers[i]; i++)
    {
-      if (joypad_drivers[i]->init())
+      if (joypad_drivers[i]->init(data))
       {
          RARCH_LOG("Found joypad driver: \"%s\".\n",
                joypad_drivers[i]->ident);

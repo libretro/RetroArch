@@ -202,14 +202,14 @@ static void sdl_pad_disconnect(unsigned id)
    if (sdl_pads[id].controller)
    {
       SDL_GameControllerClose(sdl_pads[id].controller);
-      RARCH_LOG("[SDL]: Device #%u disconnected.\n", id);
+      input_config_autoconfigure_disconnect(id, sdl_joypad.ident);
    }
    else
 #endif
    if (sdl_pads[id].joypad)
    {
       SDL_JoystickClose(sdl_pads[id].joypad);
-      RARCH_LOG("[SDL]: Device #%u disconnected.\n", id);
+      input_config_autoconfigure_disconnect(id, sdl_joypad.ident);
    }
 
    settings->input.device_names[id][0] = '\0';
@@ -227,9 +227,11 @@ static void sdl_joypad_destroy(void)
    memset(sdl_pads, 0, sizeof(sdl_pads));
 }
 
-static bool sdl_joypad_init(void)
+static bool sdl_joypad_init(void *data)
 {
    unsigned i, num_sticks;
+
+   (void)data;
 
    if (SDL_WasInit(0) == 0)
    {
@@ -322,14 +324,17 @@ static bool sdl_joypad_button(unsigned port, uint16_t joykey)
 
 static int16_t sdl_joypad_axis(unsigned port, uint32_t joyaxis)
 {
+   sdl_joypad_t *pad;
+   int16_t val;
+
    if (joyaxis == AXIS_NONE)
       return 0;
 
-   sdl_joypad_t *pad = (sdl_joypad_t*)&sdl_pads[port];
+   pad = (sdl_joypad_t*)&sdl_pads[port];
    if (!pad->joypad)
       return false;
 
-   int16_t val = 0;
+   val = 0;
    if (AXIS_NEG_GET(joyaxis) < pad->num_axes)
    {
       val = sdl_pad_get_axis(pad, AXIS_NEG_GET(joyaxis));
@@ -378,10 +383,10 @@ static void sdl_joypad_poll(void)
 #ifdef HAVE_SDL2
 static bool sdl_joypad_set_rumble(unsigned pad, enum retro_rumble_effect effect, uint16_t strength)
 {
+   sdl_joypad_t *joypad = (sdl_joypad_t*)&sdl_pads[pad];
+
    SDL_HapticEffect efx;
    memset(&efx, 0, sizeof(efx));
-
-   sdl_joypad_t *joypad = (sdl_joypad_t*)&sdl_pads[pad];
 
    if (!joypad->joypad || !joypad->haptic)
       return false;

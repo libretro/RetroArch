@@ -15,13 +15,14 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "file_ext.h"
-#include "dir_list_special.h"
 #include <file/file_extract.h>
 
+#include "file_ext.h"
+#include "dir_list_special.h"
+
 #include "database_info.h"
-#include "hash.h"
 #include "file_ops.h"
+#include "msg_hash.h"
 #include "general.h"
 #include "runloop.h"
 
@@ -29,77 +30,177 @@
 #include "config.h"
 #endif
 
-int database_info_build_query(
-      char *query, size_t len, const char *label, const char *path)
+#include <stdint.h>
+
+#define DB_QUERY_ENTRY                          0x1c310956U
+#define DB_QUERY_ENTRY_PUBLISHER                0x125e594dU
+#define DB_QUERY_ENTRY_DEVELOPER                0xcbd89be5U
+#define DB_QUERY_ENTRY_ORIGIN                   0x4ebaa767U
+#define DB_QUERY_ENTRY_FRANCHISE                0x77f9eff2U
+#define DB_QUERY_ENTRY_RATING                   0x68eba20fU
+#define DB_QUERY_ENTRY_BBFC_RATING              0x0a8e67f0U
+#define DB_QUERY_ENTRY_ELSPA_RATING             0x8bf6ab18U
+#define DB_QUERY_ENTRY_PEGI_RATING              0x5fc77328U
+#define DB_QUERY_ENTRY_CERO_RATING              0x24f6172cU
+#define DB_QUERY_ENTRY_ENHANCEMENT_HW           0x9866bda3U
+#define DB_QUERY_ENTRY_EDGE_MAGAZINE_RATING     0x1c7f8a43U
+#define DB_QUERY_ENTRY_EDGE_MAGAZINE_ISSUE      0xaaeebde7U
+#define DB_QUERY_ENTRY_FAMITSU_MAGAZINE_RATING  0xbf7ff5e7U
+#define DB_QUERY_ENTRY_RELEASEDATE_MONTH        0x2b36ce66U
+#define DB_QUERY_ENTRY_RELEASEDATE_YEAR         0x9c7c6e91U
+#define DB_QUERY_ENTRY_MAX_USERS                0xbfcba816U
+
+#define DB_CURSOR_ROM_NAME                      0x16bbcf13U
+#define DB_CURSOR_NAME                          0x7c9b0c46U
+#define DB_CURSOR_DESCRIPTION                   0x91b0c789U
+#define DB_CURSOR_PUBLISHER                     0x5e099013U
+#define DB_CURSOR_DEVELOPER                     0x1783d2abU
+#define DB_CURSOR_ORIGIN                        0x1315e3edU
+#define DB_CURSOR_FRANCHISE                     0xc3a526b8U
+#define DB_CURSOR_BBFC_RATING                   0xede26836U
+#define DB_CURSOR_ESRB_RATING                   0x4c3fa255U
+#define DB_CURSOR_ELSPA_RATING                  0xd9cab41eU
+#define DB_CURSOR_CERO_RATING                   0x084a1772U
+#define DB_CURSOR_PEGI_RATING                   0x431b736eU
+#define DB_CURSOR_CHECKSUM_CRC32                0x0b88671dU
+#define DB_CURSOR_CHECKSUM_SHA1                 0x7c9de632U
+#define DB_CURSOR_CHECKSUM_MD5                  0x0b888fabU
+#define DB_CURSOR_ENHANCEMENT_HW                0xab612029U
+#define DB_CURSOR_EDGE_MAGAZINE_REVIEW          0xd3573eabU
+#define DB_CURSOR_EDGE_MAGAZINE_RATING          0xd30dc4feU
+#define DB_CURSOR_EDGE_MAGAZINE_ISSUE           0xa0f30d42U
+#define DB_CURSOR_FAMITSU_MAGAZINE_RATING       0x0a50ca62U
+#define DB_CURSOR_MAX_USERS                     0x1084ff77U
+#define DB_CURSOR_RELEASEDATE_MONTH             0x790ad76cU
+#define DB_CURSOR_RELEASEDATE_YEAR              0x7fd06ed7U
+#define DB_CURSOR_RUMBLE_SUPPORTED              0x1a4dc3ecU
+#define DB_CURSOR_ANALOG_SUPPORTED              0xf220fc17U
+#define DB_CURSOR_SIZE                          0x7c9dede0U
+#define DB_CURSOR_SERIAL                        0x1b843ec5U
+
+static void database_info_build_query_add_quote(char *s, size_t len)
 {
+   strlcat(s, "\"", len);
+}
+
+static void database_info_build_query_add_bracket_open(char *s, size_t len)
+{
+   strlcat(s, "{'", len);
+}
+
+static void database_info_build_query_add_bracket_close(char *s, size_t len)
+{
+   strlcat(s, "}", len);
+}
+
+static void database_info_build_query_add_colon(char *s, size_t len)
+{
+   strlcat(s, "':", len);
+}
+
+static void database_info_build_query_add_glob_open(char *s, size_t len)
+{
+   strlcat(s, "glob('*", len);
+}
+
+static void database_info_build_query_add_glob_close(char *s, size_t len)
+{
+   strlcat(s, "*')", len);
+}
+
+int database_info_build_query(char *s, size_t len,
+      const char *label, const char *path)
+{
+   uint32_t value  = 0;
    bool add_quotes = true;
+   bool add_glob   = false;
 
-   strlcpy(query, "{'", len);
+   database_info_build_query_add_bracket_open(s, len);
 
-   if (!strcmp(label, "displaylist_parse_database_entry"))
-      strlcat(query, "name", len);
-   else if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_publisher"))
-      strlcat(query, "publisher", len);
-   else if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_developer"))
-      strlcat(query, "developer", len);
-   else if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_origin"))
-      strlcat(query, "origin", len);
-   else if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_franchise"))
-      strlcat(query, "franchise", len);
-   else if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_esrb_rating"))
-      strlcat(query, "esrb_rating", len);
-   else if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_bbfc_rating"))
-      strlcat(query, "bbfc_rating", len);
-   else if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_elspa_rating"))
-      strlcat(query, "elspa_rating", len);
-   else if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_pegi_rating"))
-      strlcat(query, "pegi_rating", len);
-   else if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_enhancement_hw"))
-      strlcat(query, "enhancement_hw", len);
-   else if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_cero_rating"))
-      strlcat(query, "cero_rating", len);
-   else if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_edge_magazine_rating"))
+   value = msg_hash_calculate(label);
+
+   switch (value)
    {
-      strlcat(query, "edge_rating", len);
-      add_quotes = false;
-   }
-   else if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_edge_magazine_issue"))
-   {
-      strlcat(query, "edge_issue", len);
-      add_quotes = false;
-   }
-   else if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_famitsu_magazine_rating"))
-   {
-      strlcat(query, "famitsu_rating", len);
-      add_quotes = false;
-   }
-   else if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_releasemonth"))
-   {
-      strlcat(query, "releasemonth", len);
-      add_quotes = false;
-   }
-   else if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_releaseyear"))
-   {
-      strlcat(query, "releaseyear", len);
-      add_quotes = false;
-   }
-   else if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_max_users"))
-   {
-      strlcat(query, "users", len);
-      add_quotes = false;
+      case DB_QUERY_ENTRY:
+         strlcat(s, "name", len);
+         break;
+      case DB_QUERY_ENTRY_PUBLISHER:
+         strlcat(s, "publisher", len);
+         break;
+      case DB_QUERY_ENTRY_DEVELOPER:
+         strlcat(s, "developer", len);
+         add_glob = true;
+         add_quotes = false;
+         break;
+      case DB_QUERY_ENTRY_ORIGIN:
+         strlcat(s, "origin", len);
+         break;
+      case DB_QUERY_ENTRY_FRANCHISE:
+         strlcat(s, "franchise", len);
+         break;
+      case DB_QUERY_ENTRY_RATING:
+         strlcat(s, "esrb_rating", len);
+         break;
+      case DB_QUERY_ENTRY_BBFC_RATING:
+         strlcat(s, "bbfc_rating", len);
+         break;
+      case DB_QUERY_ENTRY_ELSPA_RATING:
+         strlcat(s, "elspa_rating", len);
+         break;
+      case DB_QUERY_ENTRY_PEGI_RATING:
+         strlcat(s, "pegi_rating", len);
+         break;
+      case DB_QUERY_ENTRY_CERO_RATING:
+         strlcat(s, "cero_rating", len);
+         break;
+      case DB_QUERY_ENTRY_ENHANCEMENT_HW:
+         strlcat(s, "enhancement_hw", len);
+         break;
+      case DB_QUERY_ENTRY_EDGE_MAGAZINE_RATING:
+         strlcat(s, "edge_rating", len);
+         add_quotes = false;
+         break;
+      case DB_QUERY_ENTRY_EDGE_MAGAZINE_ISSUE:
+         strlcat(s, "edge_issue", len);
+         add_quotes = false;
+         break;
+      case DB_QUERY_ENTRY_FAMITSU_MAGAZINE_RATING:
+         strlcat(s, "famitsu_rating", len);
+         add_quotes = false;
+         break;
+      case DB_QUERY_ENTRY_RELEASEDATE_MONTH:
+         strlcat(s, "releasemonth", len);
+         add_quotes = false;
+         break;
+      case DB_QUERY_ENTRY_RELEASEDATE_YEAR:
+         strlcat(s, "releaseyear", len);
+         add_quotes = false;
+         break;
+      case DB_QUERY_ENTRY_MAX_USERS:
+         strlcat(s, "users", len);
+         add_quotes = false;
+         break;
+      default:
+         RARCH_LOG("Unknown label: %s\n", label);
+         break;
    }
 
-   strlcat(query, "':", len);
+   database_info_build_query_add_colon(s, len);
+   if (add_glob)
+      database_info_build_query_add_glob_open(s, len);
    if (add_quotes)
-      strlcat(query, "\"", len);
-   strlcat(query, path, len);
+      database_info_build_query_add_quote(s, len);
+   strlcat(s, path, len);
+   if (add_glob)
+      database_info_build_query_add_glob_close(s, len);
    if (add_quotes)
-      strlcat(query, "\"", len);
-   strlcat(query, "}", len);
+      database_info_build_query_add_quote(s, len);
+   database_info_build_query_add_bracket_close(s, len);
 
 #if 0
-   RARCH_LOG("query: %s\n", query);
+   RARCH_LOG("query: %s\n", s);
 #endif
+
    return 0;
 }
 
@@ -116,98 +217,125 @@ static char *bin_to_hex_alloc(const uint8_t *data, size_t len)
    return ret;
 }
 
+
 static int database_cursor_iterate(libretrodb_cursor_t *cur,
       database_info_t *db_info)
 {
    unsigned i;
    struct rmsgpack_dom_value item;
+   const char* str                = NULL;
 
    if (libretrodb_cursor_read_item(cur, &item) != 0)
       return -1;
 
    if (item.type != RDT_MAP)
+   {
+      rmsgpack_dom_value_free(&item);
       return 1;
+   }
 
    db_info->analog_supported       = -1;
    db_info->rumble_supported       = -1;
 
-   for (i = 0; i < item.map.len; i++)
+   for (i = 0; i < item.val.map.len; i++)
    {
-      struct rmsgpack_dom_value *key = &item.map.items[i].key;
-      struct rmsgpack_dom_value *val = &item.map.items[i].value;
+      uint32_t                 value = 0;
+      struct rmsgpack_dom_value *key = &item.val.map.items[i].key;
+      struct rmsgpack_dom_value *val = &item.val.map.items[i].value;
 
       if (!key || !val)
          continue;
 
-      if (!strcmp(key->string.buff, "name"))
-         db_info->name = strdup(val->string.buff);
+      str   = key->val.string.buff;
+      value = msg_hash_calculate(str);
 
-      if (!strcmp(key->string.buff, "description"))
-         db_info->description = strdup(val->string.buff);
-
-      if (!strcmp(key->string.buff, "publisher"))
-         db_info->publisher = strdup(val->string.buff);
-
-      if (!strcmp(key->string.buff, "developer"))
-         db_info->developer = strdup(val->string.buff);
-
-      if (!strcmp(key->string.buff, "origin"))
-         db_info->origin = strdup(val->string.buff);
-
-      if (!strcmp(key->string.buff, "franchise"))
-         db_info->franchise = strdup(val->string.buff);
-
-      if (!strcmp(key->string.buff, "bbfc_rating"))
-         db_info->bbfc_rating = strdup(val->string.buff);
-
-      if (!strcmp(key->string.buff, "esrb_rating"))
-         db_info->esrb_rating = strdup(val->string.buff);
-
-      if (!strcmp(key->string.buff, "elspa_rating"))
-         db_info->elspa_rating = strdup(val->string.buff);
-
-      if (!strcmp(key->string.buff, "cero_rating"))
-         db_info->cero_rating = strdup(val->string.buff);
-
-      if (!strcmp(key->string.buff, "pegi_rating"))
-         db_info->pegi_rating = strdup(val->string.buff);
-
-      if (!strcmp(key->string.buff, "enhancement_hw"))
-         db_info->enhancement_hw = strdup(val->string.buff);
-
-      if (!strcmp(key->string.buff, "edge_review"))
-         db_info->edge_magazine_review = strdup(val->string.buff);
-
-      if (!strcmp(key->string.buff, "edge_rating"))
-         db_info->edge_magazine_rating = val->uint_;
-
-      if (!strcmp(key->string.buff, "edge_issue"))
-         db_info->edge_magazine_issue = val->uint_;
-
-      if (!strcmp(key->string.buff, "famitsu_rating"))
-         db_info->famitsu_magazine_rating = val->uint_;
-
-      if (!strcmp(key->string.buff, "users"))
-         db_info->max_users = val->uint_;
-
-      if (!strcmp(key->string.buff, "releasemonth"))
-         db_info->releasemonth = val->uint_;
-
-      if (!strcmp(key->string.buff, "releaseyear"))
-         db_info->releaseyear = val->uint_;
-
-      if (!strcmp(key->string.buff, "rumble"))
-         db_info->rumble_supported = val->uint_;
-
-      if (!strcmp(key->string.buff, "analog"))
-         db_info->analog_supported = val->uint_;
-
-      if (!strcmp(key->string.buff, "crc"))
-         db_info->crc32 = bin_to_hex_alloc((uint8_t*)val->binary.buff, val->binary.len);
-      if (!strcmp(key->string.buff, "sha1"))
-         db_info->sha1 = bin_to_hex_alloc((uint8_t*)val->binary.buff, val->binary.len);
-      if (!strcmp(key->string.buff, "md5"))
-         db_info->md5 = bin_to_hex_alloc((uint8_t*)val->binary.buff, val->binary.len);
+      switch (value)
+      {
+         case DB_CURSOR_SERIAL:
+            db_info->serial = strdup(val->val.string.buff);
+            break;
+         case DB_CURSOR_ROM_NAME:
+            db_info->rom_name = strdup(val->val.string.buff);
+            break;
+         case DB_CURSOR_NAME:
+            db_info->name = strdup(val->val.string.buff);
+            break;
+         case DB_CURSOR_DESCRIPTION:
+            db_info->description = strdup(val->val.string.buff);
+            break;
+         case DB_CURSOR_PUBLISHER:
+            db_info->publisher = strdup(val->val.string.buff);
+            break;
+         case DB_CURSOR_DEVELOPER:
+            db_info->developer = string_split(val->val.string.buff, "|");
+            break;
+         case DB_CURSOR_ORIGIN:
+            db_info->origin = strdup(val->val.string.buff);
+            break;
+         case DB_CURSOR_FRANCHISE:
+            db_info->franchise = strdup(val->val.string.buff);
+            break;
+         case DB_CURSOR_BBFC_RATING:
+            db_info->bbfc_rating = strdup(val->val.string.buff);
+            break;
+         case DB_CURSOR_ESRB_RATING:
+            db_info->esrb_rating = strdup(val->val.string.buff);
+            break;
+         case DB_CURSOR_ELSPA_RATING:
+            db_info->elspa_rating = strdup(val->val.string.buff);
+            break;
+         case DB_CURSOR_CERO_RATING:
+            db_info->cero_rating = strdup(val->val.string.buff);
+            break;
+         case DB_CURSOR_PEGI_RATING:
+            db_info->pegi_rating = strdup(val->val.string.buff);
+            break;
+         case DB_CURSOR_ENHANCEMENT_HW:
+            db_info->enhancement_hw = strdup(val->val.string.buff);
+            break;
+         case DB_CURSOR_EDGE_MAGAZINE_REVIEW:
+            db_info->edge_magazine_review = strdup(val->val.string.buff);
+            break;
+         case DB_CURSOR_EDGE_MAGAZINE_RATING:
+            db_info->edge_magazine_rating = val->val.uint_;
+            break;
+         case DB_CURSOR_EDGE_MAGAZINE_ISSUE:
+            db_info->edge_magazine_issue = val->val.uint_;
+            break;
+         case DB_CURSOR_FAMITSU_MAGAZINE_RATING:
+            db_info->famitsu_magazine_rating = val->val.uint_;
+            break;
+         case DB_CURSOR_MAX_USERS:
+            db_info->max_users = val->val.uint_;
+            break;
+         case DB_CURSOR_RELEASEDATE_MONTH:
+            db_info->releasemonth = val->val.uint_;
+            break;
+         case DB_CURSOR_RELEASEDATE_YEAR:
+            db_info->releaseyear = val->val.uint_;
+            break;
+         case DB_CURSOR_RUMBLE_SUPPORTED:
+            db_info->rumble_supported = val->val.uint_;
+            break;
+         case DB_CURSOR_ANALOG_SUPPORTED:
+            db_info->analog_supported = val->val.uint_;
+            break;
+         case DB_CURSOR_SIZE:
+            db_info->size = val->val.uint_;
+            break;
+         case DB_CURSOR_CHECKSUM_CRC32:
+            db_info->crc32 = swap_if_little32(*(uint32_t*)val->val.binary.buff);
+            break;
+         case DB_CURSOR_CHECKSUM_SHA1:
+            db_info->sha1 = bin_to_hex_alloc((uint8_t*)val->val.binary.buff, val->val.binary.len);
+            break;
+         case DB_CURSOR_CHECKSUM_MD5:
+            db_info->md5 = bin_to_hex_alloc((uint8_t*)val->val.binary.buff, val->val.binary.len);
+            break;
+         default:
+            RARCH_LOG("Unknown key: %s\n", str);
+            break;
+      }
    }
 
    rmsgpack_dom_value_free(&item);
@@ -256,9 +384,11 @@ static int database_cursor_close(libretrodb_t *db, libretrodb_cursor_t *cur)
    return 0;
 }
 
-database_info_handle_t *database_info_init(const char *dir, enum database_type type)
+database_info_handle_t *database_info_dir_init(const char *dir,
+      enum database_type type)
 {
-   database_info_handle_t     *db  = (database_info_handle_t*)calloc(1, sizeof(*db));
+   database_info_handle_t     *db  = (database_info_handle_t*)
+      calloc(1, sizeof(*db));
 
    if (!db)
       return NULL;
@@ -280,6 +410,35 @@ error:
    return NULL;
 }
 
+database_info_handle_t *database_info_file_init(const char *path,
+      enum database_type type)
+{
+   union string_list_elem_attr attr = {0};
+   database_info_handle_t      *db  = (database_info_handle_t*)
+      calloc(1, sizeof(*db));
+
+   if (!db)
+      return NULL;
+
+   db->list           = string_list_new();
+
+   if (!db->list)
+      goto error;
+
+   string_list_append(db->list, path, attr);
+
+   db->list_ptr       = 0;
+   db->status         = DATABASE_STATUS_ITERATE;
+   db->type           = type;
+
+   return db;
+
+error:
+   if (db)
+      free(db);
+   return NULL;
+}
+
 void database_info_free(database_info_handle_t *db)
 {
    if (!db)
@@ -288,12 +447,12 @@ void database_info_free(database_info_handle_t *db)
    string_list_free(db->list);
 }
 
-
-database_info_list_t *database_info_list_new(const char *rdb_path, const char *query)
+database_info_list_t *database_info_list_new(
+      const char *rdb_path, const char *query)
 {
-   int ret = 0;
    libretrodb_t db;
    libretrodb_cursor_t cur;
+   int ret                                  = 0;
    unsigned k                               = 0;
    database_info_t *database_info           = NULL;
    database_info_list_t *database_info_list = NULL;
@@ -301,7 +460,9 @@ database_info_list_t *database_info_list_new(const char *rdb_path, const char *q
    if ((database_cursor_open(&db, &cur, rdb_path, query) != 0))
       return NULL;
 
-   database_info_list = (database_info_list_t*)calloc(1, sizeof(*database_info_list));
+   database_info_list = (database_info_list_t*)
+      calloc(1, sizeof(*database_info_list));
+
    if (!database_info_list)
       goto end;
 
@@ -313,7 +474,8 @@ database_info_list_t *database_info_list_new(const char *rdb_path, const char *q
       if (ret == 0)
       {
          database_info_t *db_ptr = NULL;
-         database_info = (database_info_t*)realloc(database_info, (k+1) * sizeof(database_info_t));
+         database_info = (database_info_t*)
+            realloc(database_info, (k+1) * sizeof(database_info_t));
 
          if (!database_info)
          {
@@ -358,12 +520,17 @@ void database_info_list_free(database_info_list_t *database_info_list)
 
       if (info->name)
          free(info->name);
+      if (info->rom_name)
+         free(info->rom_name);
+      if (info->serial)
+         free(info->serial);
       if (info->description)
          free(info->description);
       if (info->publisher)
          free(info->publisher);
       if (info->developer)
-         free(info->developer);
+         string_list_free(info->developer);
+      info->developer = NULL;
       if (info->origin)
          free(info->origin);
       if (info->franchise)
@@ -383,8 +550,6 @@ void database_info_list_free(database_info_list_t *database_info_list)
          free(info->esrb_rating);
       if (info->bbfc_rating)
          free(info->bbfc_rating);
-      if (info->crc32)
-         free(info->crc32);
       if (info->sha1)
          free(info->sha1);
       if (info->md5)

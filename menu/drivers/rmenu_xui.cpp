@@ -25,21 +25,21 @@
 #include <xuiapp.h>
 
 #include <file/file_path.h>
+#include <string/string_list.h>
 
 #include "../menu_driver.h"
 #include "../menu.h"
 #include "../menu_entry.h"
 #include "../menu_list.h"
 #include "../menu_input.h"
+#include "../menu_setting.h"
+#include "../menu_video.h"
 
 #include "../../gfx/video_context_driver.h"
 
-#include "../../settings.h"
 #include "../../general.h"
 
 #include "../../gfx/d3d/d3d.h"
-
-#include "shared.h"
 
 #define XUI_CONTROL_NAVIGATE_OK (XUI_CONTROL_NAVIGATE_RIGHT + 1)
 
@@ -49,8 +49,8 @@
 #define FONT_HEIGHT_STRIDE (FONT_HEIGHT + 1)
 #define RXUI_TERM_START_X 15
 #define RXUI_TERM_START_Y 27
-#define RXUI_TERM_WIDTH (((menu->frame_buf.width - RXUI_TERM_START_X - 15) / (FONT_WIDTH_STRIDE)))
-#define RXUI_TERM_HEIGHT (((menu->frame_buf.height - RXUI_TERM_START_Y - 15) / (FONT_HEIGHT_STRIDE)) - 1)
+#define RXUI_TERM_WIDTH (((frame_buf->width - RXUI_TERM_START_X - 15) / (FONT_WIDTH_STRIDE)))
+#define RXUI_TERM_HEIGHT (((frame_buf->height - RXUI_TERM_START_Y - 15) / (FONT_HEIGHT_STRIDE)) - 1)
 
 HXUIOBJ m_menulist;
 HXUIOBJ m_menutitle;
@@ -149,8 +149,6 @@ HRESULT CRetroArch::UnregisterXuiClasses (void)
 
 HRESULT CRetroArchMain::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
 {
-   global_t *global = global_get_ptr();
-
    GetChildById(L"XuiMenuList", &m_menulist);
    GetChildById(L"XuiTxtTitle", &m_menutitle);
    GetChildById(L"XuiTxtBottom", &m_menutitlebottom);
@@ -158,8 +156,9 @@ HRESULT CRetroArchMain::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
 
    if (XuiHandleIsValid(m_menutitlebottom))
    {
-	   char str[PATH_MAX_LENGTH];
-	   snprintf(str, sizeof(str), "%s - %s", PACKAGE_VERSION, global->title_buf);
+	   char str[PATH_MAX_LENGTH] = {0};
+
+      menu_entries_get_core_title(str, sizeof(str));
 	   mbstowcs(strw_buffer, str, sizeof(strw_buffer) / sizeof(wchar_t));
 	   XuiTextElementSetText(m_menutitlebottom, strw_buffer);
    }
@@ -171,13 +170,13 @@ HRESULT XuiTextureLoader(IXuiDevice *pDevice, LPCWSTR szFileName,
       XUIImageInfo *pImageInfo, IDirect3DTexture9 **ppTex)
 {
    D3DXIMAGE_INFO pSrc;
-   CONST BYTE  *pbTextureData = 0;
-   UINT         cbTextureData = 0;
-   HXUIRESOURCE hResource = 0;
-   BOOL         bIsMemoryResource = FALSE;
-   IDirect3DDevice9 * d3dDevice = NULL;
-   HRESULT      hr = XuiResourceOpenNoLoc(szFileName, &hResource,
-         &bIsMemoryResource);
+   CONST BYTE  *pbTextureData      = 0;
+   UINT         cbTextureData      = 0;
+   HXUIRESOURCE hResource          = 0;
+   BOOL         bIsMemoryResource  = FALSE;
+   IDirect3DDevice9 * d3dDevice    = NULL;
+   HRESULT      hr                 = 
+      XuiResourceOpenNoLoc(szFileName, &hResource, &bIsMemoryResource);
 
    if (FAILED(hr))
       return hr; 
@@ -202,7 +201,8 @@ HRESULT XuiTextureLoader(IXuiDevice *pDevice, LPCWSTR szFileName,
          goto cleanup;
       }
 
-      hr = XuiResourceRead(hResource, (BYTE*)pbTextureData, cbTextureData, &cbTextureData);
+      hr = XuiResourceRead(hResource,
+            (BYTE*)pbTextureData, cbTextureData, &cbTextureData);
       if (FAILED(hr))
          goto cleanup;
 
@@ -263,13 +263,14 @@ cleanup:
 static void* rmenu_xui_init(void)
 {
    HRESULT hr;
-   D3DPRESENT_PARAMETERS d3dpp;
-   d3d_video_t *d3d;
-   video_info_t video_info = {0};
+   d3d_video_t *d3d            = NULL;
+   D3DPRESENT_PARAMETERS d3dpp = {0};
+   video_info_t video_info     = {0};
    TypefaceDescriptor typeface = {0};
-   settings_t *settings = config_get_ptr();
-   driver_t   *driver   = driver_get_ptr();
-   menu_handle_t *menu  = (menu_handle_t*)calloc(1, sizeof(*menu));
+   settings_t *settings        = config_get_ptr();
+   driver_t   *driver          = driver_get_ptr();
+   menu_handle_t *menu         = (menu_handle_t*)
+      calloc(1, sizeof(*menu));
 
    if (!menu)
       return NULL;
@@ -357,12 +358,12 @@ static void rmenu_xui_free(void *data)
 
 static void xui_render_message(const char *msg)
 {
-   struct font_params font_parms;
-   size_t i = 0;
-   size_t j = 0;
-   struct string_list *list = NULL;
-   driver_t *driver = driver_get_ptr();
-   d3d_video_t *d3d = (d3d_video_t*)driver->video_data;
+   struct font_params font_parms = {0};
+   size_t i                      = 0;
+   size_t j                      = 0;
+   struct string_list *list      = NULL;
+   driver_t *driver              = driver_get_ptr();
+   d3d_video_t *d3d              = (d3d_video_t*)driver->video_data;
 
    if (!d3d)
       return;
@@ -377,9 +378,9 @@ static void xui_render_message(const char *msg)
 
    for (i = 0; i < list->size; i++, j++)
    {
-      char *msg = (char*)list->elems[i].data;
-      unsigned msglen = strlen(msg);
-      float msg_width = d3d->resolution_hd_enable ? 160 : 100;
+      char *msg        = (char*)list->elems[i].data;
+      unsigned msglen  = strlen(msg);
+      float msg_width  = d3d->resolution_hd_enable ? 160 : 100;
       float msg_height = 120;
       float msg_offset = 32;
 
@@ -405,7 +406,6 @@ static void rmenu_xui_frame(void)
    d3d_video_t *d3d = NULL;
    menu_handle_t *menu   = menu_driver_get_ptr();
    driver_t      *driver = driver_get_ptr();
-   global_t      *global = global_get_ptr();
 
    if (!menu)
       return;
@@ -529,21 +529,29 @@ static void rmenu_xui_set_list_text(int index, const wchar_t* leftText,
 static void rmenu_xui_render(void)
 {
 	size_t end, i;
-	char title[PATH_MAX_LENGTH];
-	const char *dir = NULL, *label = NULL;
-	unsigned menu_type = 0;
-   menu_handle_t *menu  = menu_driver_get_ptr();
-   uint64_t frame_count = video_driver_get_frame_count();
+	char title[PATH_MAX_LENGTH] = {0};
+	const char *dir             = NULL;
+   const char *label           = NULL;
+	unsigned menu_type          = 0;
+   menu_handle_t *menu         = menu_driver_get_ptr();
+   menu_animation_t *anim      = menu_animation_get_ptr();
+   menu_display_t *disp        = menu_display_get_ptr();
+   menu_framebuf_t *frame_buf  = menu_display_fb_get_ptr();
+   menu_navigation_t *nav      = menu_navigation_get_ptr();
+   uint64_t frame_count        = video_driver_get_frame_count();
 
    if (!menu)
       return;
-	if (menu_needs_refresh() && 
-		menu_driver_alive() && !menu->msg_force)
+   if (
+         menu_entries_needs_refresh() && 
+         menu_driver_alive() &&
+         !disp->msg_force
+      )
 		return;
 
    menu_display_fb_unset_dirty();
-   menu->animation_is_active = false;
-   menu->label.is_updated    = false;
+   anim->is_active = false;
+   anim->label.is_updated    = false;
 
 	rmenu_xui_render_background();
 
@@ -566,8 +574,10 @@ static void rmenu_xui_render(void)
 	end = menu_entries_get_end();
 	for (i = 0; i < end; i++)
    {
-      char entry_path[PATH_MAX_LENGTH], entry_value[PATH_MAX_LENGTH];
-      wchar_t msg_left[PATH_MAX_LENGTH], msg_right[PATH_MAX_LENGTH];
+      char entry_path[PATH_MAX_LENGTH]  = {0};
+      char entry_value[PATH_MAX_LENGTH] = {0};
+      char msg_right[PATH_MAX_LENGTH]   = {0};
+      wchar_t msg_left[PATH_MAX_LENGTH] = {0};
 
       menu_entry_get_value(i, entry_value, sizeof(entry_value));
       menu_entry_get_path(i, entry_path, sizeof(entry_path));
@@ -576,12 +586,13 @@ static void rmenu_xui_render(void)
       mbstowcs(msg_right, entry_value, sizeof(msg_right) / sizeof(wchar_t));
       rmenu_xui_set_list_text(i, msg_left, msg_right);
    }
-	XuiListSetCurSelVisible(m_menulist, menu->navigation.selection_ptr);
+	XuiListSetCurSelVisible(m_menulist, nav->selection_ptr);
 
 	if (menu->keyboard.display)
 	{
-		char msg[1024];
+		char msg[1024]  = {0};
 		const char *str = *menu->keyboard.buffer;
+
 		if (!str)
 			str = "";
 		snprintf(msg, sizeof(msg), "%s\n%s", menu->keyboard.label, str);
@@ -592,7 +603,8 @@ static void rmenu_xui_render(void)
 static void rmenu_xui_populate_entries(const char *path,
       const char *label, unsigned i)
 {
-   menu_handle_t *menu = menu_driver_get_ptr();
+   menu_handle_t *menu         = menu_driver_get_ptr();
+   menu_navigation_t *nav      = menu_navigation_get_ptr();
 
    if (!menu)
       return;
@@ -600,23 +612,25 @@ static void rmenu_xui_populate_entries(const char *path,
    (void)label;
    (void)path;
 
-   XuiListSetCurSelVisible(m_menulist, menu->navigation.selection_ptr);
+   XuiListSetCurSelVisible(m_menulist, nav->selection_ptr);
 }
 
 static void rmenu_xui_navigation_clear(bool pending_push)
 {
-   menu_handle_t *menu = menu_driver_get_ptr();
+   menu_handle_t *menu         = menu_driver_get_ptr();
+   menu_navigation_t *nav      = menu_navigation_get_ptr();
 
    if (menu)
-      XuiListSetCurSelVisible(m_menulist, menu->navigation.selection_ptr);
+      XuiListSetCurSelVisible(m_menulist, nav->selection_ptr);
 }
 
 static void rmenu_xui_navigation_set_visible(void)
 {
-   menu_handle_t *menu = menu_driver_get_ptr();
+   menu_handle_t *menu         = menu_driver_get_ptr();
+   menu_navigation_t *nav      = menu_navigation_get_ptr();
 
    if (menu)
-      XuiListSetCurSelVisible(m_menulist, menu->navigation.selection_ptr);
+      XuiListSetCurSelVisible(m_menulist, nav->selection_ptr);
 }
 
 static void rmenu_xui_navigation_alphabet(size_t *ptr_out)
@@ -627,14 +641,14 @@ static void rmenu_xui_navigation_alphabet(size_t *ptr_out)
 static void rmenu_xui_list_insert(file_list_t *list,
       const char *path, const char *, size_t list_size)
 {
-   wchar_t buf[PATH_MAX_LENGTH];
+   wchar_t buf[PATH_MAX_LENGTH] = {0};
 
    XuiListInsertItems(m_menulist, list_size, 1);
    mbstowcs(buf, path, sizeof(buf) / sizeof(wchar_t));
    XuiListSetText(m_menulist, list_size, buf);
 }
 
-static void rmenu_xui_list_delete(file_list_t *list, size_t idx,
+static void rmenu_xui_list_free(file_list_t *list, size_t idx,
       size_t list_size)
 {
    int x = XuiListGetItemCount( m_menulist );
@@ -658,6 +672,17 @@ static void rmenu_xui_list_set_selection(file_list_t *list)
       XuiListSetCurSel(m_menulist, file_list_get_directory_ptr(list));
 }
 
+static int rmenu_xui_environ(menu_environ_cb_t type, void *data)
+{
+   switch (type)
+   {
+      default:
+         return -1;
+   }
+
+   return 0;
+}
+
 menu_ctx_driver_t menu_ctx_rmenu_xui = {
    NULL,
    rmenu_xui_render_messagebox,
@@ -677,11 +702,16 @@ menu_ctx_driver_t menu_ctx_rmenu_xui = {
    rmenu_xui_navigation_alphabet,
    rmenu_xui_navigation_alphabet,
    rmenu_xui_list_insert,
-   rmenu_xui_list_delete,
+   rmenu_xui_list_free,
    rmenu_xui_list_clear,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
    NULL,
    rmenu_xui_list_set_selection,
    NULL,
    "rmenu_xui",
+   rmenu_xui_environ,
    NULL,
 };

@@ -14,8 +14,6 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../frontend_driver.h"
-
 #include <stdio.h>
 #include <stdint.h>
 #include <boolean.h>
@@ -27,7 +25,11 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/utsname.h>
+
 #include <compat/strl.h>
+#include <rhash.h>
+
+#include "../frontend_driver.h"
 
 static const char *proc_apm_path = "/proc/apm";
 static const char *proc_acpi_battery_path = "/proc/acpi/battery";
@@ -98,22 +100,33 @@ static bool make_proc_acpi_key_val(char **_ptr, char **_key, char **_val)
     return true;
 }
 
+#define ACPI_KEY_STATE                 0x10614a06U
+#define ACPI_KEY_PRESENT               0xc28ac046U
+#define ACPI_KEY_CHARGING_STATE        0x5ba13e29U
+#define ACPI_KEY_REMAINING_CAPACITY    0xf36952edU
+#define ACPI_KEY_DESIGN_CAPACITY       0x05e6488dU
+
+#define ACPI_VAL_CHARGING_DISCHARGING  0xf268327aU
+#define ACPI_VAL_CHARGING              0x095ee228U
+#define ACPI_VAL_YES                   0x0b88c316U
+#define ACPI_VAL_ONLINE                0x6842bf17U
+
 static void
 check_proc_acpi_battery(const char * node, bool * have_battery,
       bool * charging, int *seconds, int *percent)
 {
-   const char *base = proc_acpi_battery_path;
-   char info[1024];
-   char state[1024];
-   char *ptr = NULL;
-   char *key = NULL;
-   char *val = NULL;
-   bool charge = false;
-   bool choose = false;
-   int maximum = -1;
-   int remaining = -1;
-   int secs = -1;
-   int pct = -1;
+   const char *base  = proc_acpi_battery_path;
+   char info[1024]   = {0};
+   char state[1024]  = {0};
+   char         *ptr = NULL;
+   char         *key = NULL;
+   char         *val = NULL;
+   bool       charge = false;
+   bool       choose = false;
+   int       maximum = -1;
+   int     remaining = -1;
+   int          secs = -1;
+   int           pct = -1;
 
    if (!load_acpi_file(base, node, "state", state, sizeof (state)))
       return;
@@ -121,39 +134,56 @@ check_proc_acpi_battery(const char * node, bool * have_battery,
       return;
 
    ptr = &state[0];
+
    while (make_proc_acpi_key_val(&ptr, &key, &val))
    {
-      if (!strcmp(key, "present"))
+      uint32_t key_hash = djb2_calculate(key);
+      uint32_t val_hash = djb2_calculate(val);
+
+      switch (key_hash)
       {
-         if (!strcmp(val, "yes"))
-            *have_battery = true;
-      }
-      else if (!strcmp(key, "charging state"))
-      {
-         /* !!! FIXME: what exactly _does_ charging/discharging mean? */
-         if (!strcmp(val, "charging/discharging"))
-            charge = true;
-         else if (!strcmp(val, "charging"))
-            charge = true;
-      }
-      else if (!strcmp(key, "remaining capacity"))
-      {
-         char *endptr = NULL;
-         const int cvt = (int) strtol(val, &endptr, 10);
-         if (*endptr == ' ')
-            remaining = cvt;
+         case ACPI_KEY_PRESENT:
+            if (val_hash == ACPI_VAL_YES)
+               *have_battery = true;
+            break;
+         case ACPI_KEY_CHARGING_STATE:
+            switch (val_hash)
+            {
+               case ACPI_VAL_CHARGING_DISCHARGING:
+               case ACPI_VAL_CHARGING:
+                  charge = true;
+                  break;
+            }
+            break;
+         case ACPI_KEY_REMAINING_CAPACITY:
+            {
+               char  *endptr = NULL;
+               const int cvt = (int) strtol(val, &endptr, 10);
+
+               if (*endptr == ' ')
+                  remaining = cvt;
+            }
+            break;
       }
    }
 
    ptr = &info[0];
+
    while (make_proc_acpi_key_val(&ptr, &key, &val))
    {
-      if (!strcmp(key, "design capacity"))
+      uint32_t key_hash = djb2_calculate(key);
+
+      switch (key_hash)
       {
-         char *endptr = NULL;
-         const int cvt = (int) strtol(val, &endptr, 10);
-         if (*endptr == ' ')
-            maximum = cvt;
+         case ACPI_KEY_DESIGN_CAPACITY:
+            {
+               char  *endptr = NULL;
+               const int cvt = (int) strtol(val, &endptr, 10);
+
+               if (*endptr == ' ')
+                  maximum = cvt;
+            }
+            break;
       }
    }
 
@@ -190,14 +220,15 @@ check_proc_acpi_battery(const char * node, bool * have_battery,
    }
 }
 
+
 static void
 check_proc_acpi_ac_adapter(const char * node, bool *have_ac)
 {
     const char *base = proc_acpi_ac_adapter_path;
-    char state[256];
-    char *ptr = NULL;
-    char *key = NULL;
-    char *val = NULL;
+    char  state[256] = {0};
+    char        *ptr = NULL;
+    char        *key = NULL;
+    char        *val = NULL;
 
     if (!load_acpi_file(base, node, "state", state, sizeof (state)))
         return;
@@ -205,11 +236,12 @@ check_proc_acpi_ac_adapter(const char * node, bool *have_ac)
     ptr = &state[0];
     while (make_proc_acpi_key_val(&ptr, &key, &val))
     {
-        if (!strcmp(key, "state"))
-        {
-            if (!strcmp(val, "on-line"))
-                *have_ac = true;
-        }
+       uint32_t key_hash = djb2_calculate(key);
+       uint32_t val_hash = djb2_calculate(val);
+
+       if (key_hash == ACPI_KEY_STATE &&
+             val_hash == ACPI_VAL_ONLINE)
+          *have_ac = true;
     }
 }
 
@@ -246,16 +278,16 @@ static bool int_string(char *str, int *val)
 bool frontend_linux_powerstate_check_apm(enum frontend_powerstate *state,
       int *seconds, int *percent)
 {
-   int ac_status = 0;
-   int battery_status = 0;
-   int battery_flag = 0;
-   int battery_percent = 0;
-   int battery_time = 0;
-   const int fd = open(proc_apm_path, O_RDONLY);
-   char buf[128];
-   char *ptr = &buf[0];
-   char *str = NULL;
    ssize_t br;
+   int ac_status       = 0;
+   int battery_status  = 0;
+   int battery_flag    = 0;
+   int battery_percent = 0;
+   int battery_time    = 0;
+   const int fd        = open(proc_apm_path, O_RDONLY);
+   char buf[128]       = {0};
+   char *ptr           = &buf[0];
+   char *str           = NULL;
 
    if (fd == -1)
       return false;       /* can't use this interface. */
@@ -316,13 +348,10 @@ bool frontend_linux_powerstate_check_apm(enum frontend_powerstate *state,
    else
       *state = FRONTEND_POWERSTATE_ON_POWER_SOURCE;
 
-   const int pct = battery_percent;
-   const int secs = battery_time;
-
-   if (pct >= 0)         /* -1 == unknown */
-      *percent = (pct > 100) ? 100 : pct; /* clamp between 0%, 100% */
-   if (secs >= 0)        /* -1 == unknown */
-      *seconds = secs;
+   if (battery_percent >= 0)         /* -1 == unknown */
+      *percent = (battery_percent > 100) ? 100 : battery_percent; /* clamp between 0%, 100% */
+   if (battery_time >= 0)            /* -1 == unknown */
+      *seconds = battery_time;
 
    return true;
 }
@@ -331,10 +360,10 @@ bool frontend_linux_powerstate_check_acpi(enum frontend_powerstate *state,
       int *seconds, int *percent)
 {
    struct dirent *dent = NULL;
-   DIR *dirp = NULL;
-   bool have_battery = false;
-   bool have_ac = false;
-   bool charging = false;
+   DIR *dirp           = NULL;
+   bool have_battery   = false;
+   bool have_ac        = false;
+   bool charging       = false;
 
    *state = FRONTEND_POWERSTATE_NONE;
 
@@ -357,6 +386,7 @@ bool frontend_linux_powerstate_check_acpi(enum frontend_powerstate *state,
    while ((dent = readdir(dirp)) != NULL)
    {
       const char *node = dent->d_name;
+
       check_proc_acpi_ac_adapter(node, &have_ac);
    }
    closedir(dirp);
@@ -387,30 +417,43 @@ frontend_linux_get_powerstate(int *seconds, int *percent)
    return FRONTEND_POWERSTATE_NONE;
 }
 
+#define LINUX_ARCH_X86_64     0x23dea434U
+#define LINUX_ARCH_X86        0x0b88b8cbU
+#define LINUX_ARCH_ARM        0x0b885ea5U
+#define LINUX_ARCH_PPC64      0x1028cf52U
+#define LINUX_ARCH_MIPS       0x7c9aa25eU
+#define LINUX_ARCH_TILE       0x7c9e7873U
+
 enum frontend_architecture frontend_linux_get_architecture(void)
 {
+   uint32_t buffer_hash;
    struct utsname buffer;
 
    if (uname(&buffer) != 0)
       return FRONTEND_ARCH_NONE;
 
-   if (!strcmp(buffer.machine, "x86_64"))
-      return FRONTEND_ARCH_X86_64;
-   if (!strcmp(buffer.machine, "x86"))
-      return FRONTEND_ARCH_X86;
-   if (!strcmp(buffer.machine, "arm"))
-      return FRONTEND_ARCH_ARM;
-   if (!strcmp(buffer.machine, "ppc64"))
-      return FRONTEND_ARCH_PPC;
-   if (!strcmp(buffer.machine, "mips"))
-      return FRONTEND_ARCH_MIPS;
-   if (!strcmp(buffer.machine, "tile"))
-      return FRONTEND_ARCH_TILE;
+   buffer_hash = djb2_calculate(buffer.machine);
+
+   switch (buffer_hash)
+   {
+      case LINUX_ARCH_X86_64:
+         return FRONTEND_ARCH_X86_64;
+      case LINUX_ARCH_X86:
+         return FRONTEND_ARCH_X86;
+      case LINUX_ARCH_ARM:
+         return FRONTEND_ARCH_ARM;
+      case LINUX_ARCH_PPC64:
+         return FRONTEND_ARCH_PPC;
+      case LINUX_ARCH_MIPS:
+         return FRONTEND_ARCH_MIPS;
+      case LINUX_ARCH_TILE:
+         return FRONTEND_ARCH_TILE;
+   }
 
    return FRONTEND_ARCH_NONE;
 }
 
-static void frontend_linux_get_os(char *name, size_t sizeof_name, int *major, int *minor)
+static void frontend_linux_get_os(char *s, size_t len, int *major, int *minor)
 {
    unsigned krel;
    struct utsname buffer;
@@ -418,8 +461,8 @@ static void frontend_linux_get_os(char *name, size_t sizeof_name, int *major, in
    if (uname(&buffer) != 0)
       return;
 
-   sscanf(buffer.release, "%u.%u.%u", major, minor, &krel);
-   strlcpy(name, "Linux", sizeof_name);
+   sscanf(buffer.release, "%d.%d.%u", major, minor, &krel);
+   strlcpy(s, "Linux", len);
 }
 
 const frontend_ctx_driver_t frontend_ctx_linux = {
@@ -437,5 +480,6 @@ const frontend_ctx_driver_t frontend_ctx_linux = {
    NULL,                         /* load_content */
    frontend_linux_get_architecture,
    frontend_linux_get_powerstate,
+   NULL,                         /* parse_drive_list */
    "linux",
 };

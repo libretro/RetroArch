@@ -127,17 +127,14 @@ static void gen_filter_sinc_sub(struct scaler_filter *filter,
    {
       filter->filter_pos[i] = pos >> 16;
 
-      //int16_t sinc_sum = 0;
       for (j = 0; j < sinc_size; j++)
       {
          double sinc_phase    = M_PI * ((double)((sinc_size << 15) + (pos & 0xffff)) / 0x10000 - j);
          double lanczos_phase = sinc_phase / ((sinc_size >> 1));
          int16_t sinc_val     = FILTER_UNITY * filter_sinc(sinc_phase * phase_mul) * filter_sinc(lanczos_phase) * phase_mul;
-         //sinc_sum += sinc_val;
 
          filter->filter[i * sinc_size + j] = sinc_val;
       }
-      //fprintf(stderr, "Sinc sum = %.3lf\n", (double)sinc_sum / FILTER_UNITY);
    }
 }
 

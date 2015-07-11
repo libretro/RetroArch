@@ -85,7 +85,7 @@ enum texture_filter_type
    TEXTURE_FILTER_LINEAR = 0,
    TEXTURE_FILTER_NEAREST,
    TEXTURE_FILTER_MIPMAP_LINEAR,
-   TEXTURE_FILTER_MIPMAP_NEAREST,
+   TEXTURE_FILTER_MIPMAP_NEAREST
 };
 
 #define FONT_COLOR_RGBA(r, g, b, a) (((r) << 24) | ((g) << 16) | ((b) << 8) | ((a) << 0))
@@ -386,7 +386,7 @@ void video_driver_cached_frame_set(const void *data, unsigned width,
 
 void video_driver_cached_frame_set_ptr(const void *data);
 
-void video_driver_cached_frame_get(const void *data, unsigned *width,
+void video_driver_cached_frame_get(const void **data, unsigned *width,
       unsigned *height, size_t *pitch);
 
 bool video_driver_cached_frame_has_valid_fb(void);

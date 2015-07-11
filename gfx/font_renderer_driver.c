@@ -40,7 +40,7 @@ int font_renderer_get_message_width(const char *msg, float scale)
     if (!font_driver || !font_driver->get_message_width)
        return 0;
        
-    return font_driver->get_message_width(driver->font_osd_data, msg, scale);
+    return font_driver->get_message_width(driver->font_osd_data, msg, strlen(msg), scale);
 }
 
 bool font_renderer_create_default(

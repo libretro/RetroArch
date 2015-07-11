@@ -19,6 +19,7 @@
 #include "../../general.h"
 #include "../drivers_font_renderer/bitmap.h"
 #include "../../menu/menu_driver.h"
+#include "../../menu/menu_display.h"
 #include "../video_viewport.h"
 #include "../video_monitor.h"
 
@@ -164,7 +165,7 @@ enum
    GX_RESOLUTIONS_LAST,
 };
 
-static unsigned menu_current_gx_resolution = GX_RESOLUTIONS_640_480;
+static unsigned menu_current_gx_resolution = GX_RESOLUTIONS_448_448;
 
 unsigned menu_gx_resolutions[GX_RESOLUTIONS_LAST][2] = {
    { 512, 192 },
@@ -234,9 +235,9 @@ static void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines,
    bool progressive;
    unsigned modetype, level, viHeightMultiplier, viWidth, tvmode,
             max_width, max_height, i;
-   gx_video_t *gx       = (gx_video_t*)data;
-   menu_handle_t *menu  = menu_driver_get_ptr();
-   settings_t *settings = config_get_ptr();
+   gx_video_t *gx             = (gx_video_t*)data;
+   menu_framebuf_t *frame_buf = menu_display_fb_get_ptr();
+   settings_t *settings       = config_get_ptr();
 
    (void)level;
 
@@ -393,18 +394,18 @@ static void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines,
          gx_mode.efbHeight, (gx_mode.viTVMode & 3) == VI_INTERLACE 
          ? "interlaced" : "progressive");
 
-   if (menu)
+   if (frame_buf)
    {
-      menu->frame_buf.height = gx_mode.efbHeight / (gx->double_strike ? 1 : 2);
-      menu->frame_buf.height &= ~3;
-      if (menu->frame_buf.height > 240)
-         menu->frame_buf.height = 240;
+      frame_buf->height = gx_mode.efbHeight / (gx->double_strike ? 1 : 2);
+      frame_buf->height &= ~3;
+      if (frame_buf->height > 240)
+         frame_buf->height = 240;
 
-      menu->frame_buf.width = gx_mode.fbWidth / (gx_mode.fbWidth < 400 ? 1 : 2);
-      menu->frame_buf.width &= ~3;
-      if (menu->frame_buf.width > 400)
-         menu->frame_buf.width = 400;
-      menu->frame_buf.pitch = menu->frame_buf.width * 2;
+      frame_buf->width = gx_mode.fbWidth / (gx_mode.fbWidth < 400 ? 1 : 2);
+      frame_buf->width &= ~3;
+      if (frame_buf->width > 400)
+         frame_buf->width = 400;
+      frame_buf->pitch = frame_buf->width * 2;
    }
 
    if (tvmode == VI_PAL)
@@ -426,6 +427,10 @@ static void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines,
    video_viewport_reset_custom();
 
    g_current_framebuf = 0;
+   for( int i=0; i < GX_RESOLUTIONS_LAST; i++)
+      if(fbWidth == menu_gx_resolutions[i][0] && lines == menu_gx_resolutions[i][1])
+		  menu_current_gx_resolution = i;
+   RARCH_LOG("GX Resolution Index: %d\n", menu_current_gx_resolution);
 }
 
 static void gx_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
@@ -474,12 +479,13 @@ static void setup_video_mode(void *data)
 static void init_texture(void *data, unsigned width, unsigned height)
 {
    unsigned g_filter, menu_w, menu_h;
-   struct __gx_regdef *__gx = (struct __gx_regdef*)__gxregs;
-   gx_video_t *gx = (gx_video_t*)data;
-   struct __gx_texobj *fb_ptr = (struct __gx_texobj*)&g_tex.obj;
+   struct __gx_regdef *__gx     = (struct __gx_regdef*)__gxregs;
+   gx_video_t *gx               = (gx_video_t*)data;
+   struct __gx_texobj *fb_ptr   = (struct __gx_texobj*)&g_tex.obj;
    struct __gx_texobj *menu_ptr = (struct __gx_texobj*)&menu_tex.obj;
-   menu_handle_t *menu  = menu_driver_get_ptr();
-   settings_t *settings = config_get_ptr();
+   menu_handle_t *menu          = menu_driver_get_ptr();
+   menu_framebuf_t *frame_buf   = menu_display_fb_get_ptr();
+   settings_t *settings         = config_get_ptr();
 
    width &= ~3;
    height &= ~3;
@@ -489,8 +495,8 @@ static void init_texture(void *data, unsigned width, unsigned height)
 
    if (menu)
    {
-      menu_w = menu->frame_buf.width;
-      menu_h = menu->frame_buf.height;
+      menu_w = frame_buf->width;
+      menu_h = frame_buf->height;
    }
 
    __GX_InitTexObj(fb_ptr, g_tex.data, width, height,
@@ -661,7 +667,7 @@ static void update_texture_asm(const uint32_t *src, const uint32_t *dst,
    register uint32_t tmp0, tmp1, tmp2, tmp3, line2, line2b, 
             line3, line3b, line4, line4b, line5;
 
-   asm volatile (
+   __asm__ volatile (
       "     srwi     %[width],   %[width],   2           \n"
       "     srwi     %[height],  %[height],  2           \n"
       "     subi     %[tmp3],    %[dst],     4           \n"
@@ -981,7 +987,7 @@ static void gx_blit_line(unsigned x, unsigned y, const char *message)
          for (unsigned i = 0; i < FONT_WIDTH; i++)
          {
             GXColor c;
-            uint8_t rem = 1 << ((i + j * FONT_WIDTH) & 7);
+            uint8_t     rem = 1 << ((i + j * FONT_WIDTH) & 7);
             unsigned offset = (i + j * FONT_WIDTH) >> 3;
             bool col = (bitmap_bin[FONT_OFFSET((unsigned char) *message) + offset] & rem);
 
@@ -1029,11 +1035,12 @@ static bool gx_frame(void *data, const void *frame,
       unsigned width, unsigned height, unsigned pitch,
       const char *msg)
 {
-   char fps_txt[128], fps_text_buf[128];
-   gx_video_t *gx = (gx_video_t*)data;
+   char fps_txt[128]         = {0};
+   char fps_text_buf[128]   = {0};
+   gx_video_t *gx           = (gx_video_t*)data;
    struct __gx_regdef *__gx = (struct __gx_regdef*)__gxregs;
-   u8 clear_efb = GX_FALSE;
-   settings_t *settings = config_get_ptr();
+   u8 clear_efb             = GX_FALSE;
+   settings_t *settings     = config_get_ptr();
 
    RARCH_PERFORMANCE_INIT(gx_frame);
    RARCH_PERFORMANCE_START(gx_frame);
@@ -1085,17 +1092,17 @@ static bool gx_frame(void *data, const void *frame,
 
    if (gx->menu_texture_enable && gx->menu_data)
    {
-      menu_handle_t *menu = menu_driver_get_ptr();
+      menu_framebuf_t *frame_buf   = menu_display_fb_get_ptr();
 
-      if (menu)
+      if (frame_buf)
       {
          convert_texture16(gx->menu_data, menu_tex.data,
-               menu->frame_buf.width,
-               menu->frame_buf.height,
-               menu->frame_buf.pitch);
+               frame_buf->width,
+               frame_buf->height,
+               frame_buf->pitch);
          DCFlushRange(menu_tex.data,
-               menu->frame_buf.width * 
-               menu->frame_buf.pitch);
+               frame_buf->width * 
+               frame_buf->pitch);
       }
    }
 
@@ -1124,9 +1131,12 @@ static bool gx_frame(void *data, const void *frame,
 
    if (settings->fps_show)
    {
-      char mem1_txt[128];
-      unsigned x = 15;
-      unsigned y = 35;
+      char mem1_txt[128] = {0};
+      char mem2_txt[128] = {0};
+      unsigned x         = 15;
+      unsigned y         = 35;
+
+      (void)mem2_txt;
 
       gx_blit_line(x, y, fps_text_buf);
       y += FONT_HEIGHT * (gx->double_strike ? 1 : 2);
@@ -1135,7 +1145,6 @@ static bool gx_frame(void *data, const void *frame,
       gx_blit_line(x, y, mem1_txt);
 #ifdef HW_RVL
       y += FONT_HEIGHT * (gx->double_strike ? 1 : 2);
-      char mem2_txt[128];
       snprintf(mem2_txt, sizeof(mem2_txt), "MEM2: %8d / %8d",
             gx_mem2_used(), gx_mem2_total());
       gx_blit_line(x, y, mem2_txt);
@@ -1332,10 +1341,12 @@ static void gx_get_poke_interface(void *data, const video_poke_interface_t **ifa
 #ifdef HAVE_OVERLAY
 static void gx_overlay_tex_geom(void *data, unsigned image, float x, float y, float w, float h);
 static void gx_overlay_vertex_geom(void *data, unsigned image, float x, float y, float w, float h);
-static bool gx_overlay_load(void *data, const struct texture_image *images, unsigned num_images)
+
+static bool gx_overlay_load(void *data, const void *image_data, unsigned num_images)
 {
    unsigned i;
    gx_video_t *gx = (gx_video_t*)data;
+   const struct texture_image *images = (const struct texture_image*)image_data;
 
    gx_free_overlay(gx);
    gx->overlay = (struct gx_overlay_data*)calloc(num_images, sizeof(*gx->overlay));

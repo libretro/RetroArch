@@ -466,9 +466,10 @@ error:
 static bool psp_frame(void *data, const void *frame,
       unsigned width, unsigned height, unsigned pitch, const char *msg)
 {
-   static char fps_txt[128], fps_text_buf[128];
-   psp1_video_t *psp = (psp1_video_t*)data;
-   settings_t *settings = config_get_ptr();
+   static char fps_txt[128]      = {0};
+   static char fps_text_buf[128] = {0};
+   psp1_video_t *psp             = (psp1_video_t*)data;
+   settings_t *settings          = config_get_ptr();
 #ifdef DISPLAY_FPS
    static uint64_t currentTick,lastTick;
    static float fps=0.0;

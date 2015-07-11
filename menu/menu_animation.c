@@ -14,12 +14,24 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "menu_animation.h"
 #include <math.h>
 #include <string.h>
 #include <compat/strl.h>
 #include <retro_miscellaneous.h>
+
+#include "menu_display.h"
+#include "menu_animation.h"
+#include "../configuration.h"
 #include "../runloop.h"
+#include "../performance.h"
+
+menu_animation_t *menu_animation_get_ptr(void)
+{
+   menu_display_t *disp = menu_display_get_ptr();
+   if (!disp)
+      return NULL;
+   return disp->animation;
+}
 
 /* from https://github.com/kikito/tween.lua/blob/master/tween.lua */
 
@@ -249,173 +261,247 @@ static float easing_out_in_bounce(float t, float b, float c, float d)
    return easing_in_bounce((t * 2) - d, b + c / 2, c / 2, d);
 }
 
-void menu_animation_free(animation_t *animation)
+void menu_animation_free(menu_animation_t *anim)
 {
    size_t i;
 
-   if (!animation)
+   if (!anim)
       return;
 
-   for (i = 0; i < animation->size; i++)
+   for (i = 0; i < anim->size; i++)
    {
-      if (animation->list[i].subject)
-         animation->list[i].subject = NULL;
+      if (anim->list[i].subject)
+         anim->list[i].subject = NULL;
    }
 
-   free(animation->list);
-   free(animation);
+   free(anim->list);
+   free(anim);
 }
 
-bool menu_animation_push(animation_t *animation,
-      float duration, float target_value, float* subject,
-      enum animation_easing_type easing_enum, tween_cb cb)
+void menu_animation_kill_by_subject(menu_animation_t *animation,
+      size_t count, const void *subjects)
 {
-   if (animation->size >= animation->capacity)
+   unsigned i, j, killed = 0;
+   float **sub = (float**)subjects;
+
+   for (i = 0; i < animation->size; ++i)
    {
-      animation->capacity++;
-      animation->list = (struct tween*)realloc(animation->list,
-            animation->capacity * sizeof(struct tween));
+      if (!animation->list[i].alive)
+         continue;
+
+      for (j = 0; j < count; ++j)
+      {
+         if (animation->list[i].subject == sub[j])
+         {
+            animation->list[i].alive   = false;
+            animation->list[i].subject = NULL;
+
+            if (i < animation->first_dead)
+               animation->first_dead = i;
+
+            killed++;
+            break;
+         }
+      }
+   }
+}
+
+void menu_animation_kill_by_tag(menu_animation_t *anim, int tag)
+{
+   unsigned i;
+
+   if (tag == -1)
+      return;
+
+   for (i = 0; i < anim->size; ++i)
+   {
+      if (anim->list[i].tag == tag)
+      {
+         anim->list[i].alive   = false;
+         anim->list[i].subject = NULL;
+
+         if (i < anim->first_dead)
+            anim->first_dead = i;
+      }
+   }
+}
+
+static void menu_animation_push_internal(menu_animation_t *anim, const struct tween *t)
+{
+   struct tween *target = NULL;
+
+   if (anim->first_dead < anim->size && !anim->list[anim->first_dead].alive)
+      target = &anim->list[anim->first_dead++];
+   else
+   {
+      if (anim->size >= anim->capacity)
+      {
+         anim->capacity++;
+         anim->list = (struct tween*)realloc(anim->list,
+               anim->capacity * sizeof(struct tween));
+      }
+
+      target = &anim->list[anim->size++];
    }
 
-   animation->list[animation->size].alive         = 1;
-   animation->list[animation->size].duration      = duration;
-   animation->list[animation->size].running_since = 0;
-   animation->list[animation->size].initial_value = *subject;
-   animation->list[animation->size].target_value  = target_value;
-   animation->list[animation->size].subject       = subject;
-   animation->list[animation->size].cb            = cb;
+   *target = *t;
+}
+
+bool menu_animation_push(menu_animation_t *anim,
+      float duration,
+      float target_value, float* subject,
+      enum menu_animation_easing_type easing_enum,
+      int tag, tween_cb cb)
+{
+   struct tween t;
+
+   if (!subject)
+      return false;
+
+   t.alive         = true;
+   t.duration      = duration;
+   t.running_since = 0;
+   t.initial_value = *subject;
+   t.target_value  = target_value;
+   t.subject       = subject;
+   t.tag           = tag;
+   t.cb            = cb;
 
    switch (easing_enum)
    {
       case EASING_LINEAR:
-         animation->list[animation->size].easing        = &easing_linear;
+         t.easing        = &easing_linear;
          break;
          /* Quad */
       case EASING_IN_QUAD:
-         animation->list[animation->size].easing        = &easing_in_quad;
+         t.easing        = &easing_in_quad;
          break;
       case EASING_OUT_QUAD:
-         animation->list[animation->size].easing        = &easing_out_quad;
+         t.easing        = &easing_out_quad;
          break;
       case EASING_IN_OUT_QUAD:
-         animation->list[animation->size].easing        = &easing_in_out_quad;
+         t.easing        = &easing_in_out_quad;
          break;
       case EASING_OUT_IN_QUAD:
-         animation->list[animation->size].easing        = &easing_out_in_quad;
+         t.easing        = &easing_out_in_quad;
          break;
          /* Cubic */
       case EASING_IN_CUBIC:
-         animation->list[animation->size].easing        = &easing_in_cubic;
+         t.easing        = &easing_in_cubic;
          break;
       case EASING_OUT_CUBIC:
-         animation->list[animation->size].easing        = &easing_out_cubic;
+         t.easing        = &easing_out_cubic;
          break;
       case EASING_IN_OUT_CUBIC:
-         animation->list[animation->size].easing        = &easing_in_out_cubic;
+         t.easing        = &easing_in_out_cubic;
          break;
       case EASING_OUT_IN_CUBIC:
-         animation->list[animation->size].easing        = &easing_out_in_cubic;
+         t.easing        = &easing_out_in_cubic;
          break;
          /* Quart */
       case EASING_IN_QUART:
-         animation->list[animation->size].easing        = &easing_in_quart;
+         t.easing        = &easing_in_quart;
          break;
       case EASING_OUT_QUART:
-         animation->list[animation->size].easing        = &easing_out_quart;
+         t.easing        = &easing_out_quart;
          break;
       case EASING_IN_OUT_QUART:
-         animation->list[animation->size].easing        = &easing_in_out_quart;
+         t.easing        = &easing_in_out_quart;
          break;
       case EASING_OUT_IN_QUART:
-         animation->list[animation->size].easing        = &easing_out_in_quart;
+         t.easing        = &easing_out_in_quart;
          break;
          /* Quint */
       case EASING_IN_QUINT:
-         animation->list[animation->size].easing        = &easing_in_quint;
+         t.easing        = &easing_in_quint;
          break;
       case EASING_OUT_QUINT:
-         animation->list[animation->size].easing        = &easing_out_quint;
+         t.easing        = &easing_out_quint;
          break;
       case EASING_IN_OUT_QUINT:
-         animation->list[animation->size].easing        = &easing_in_out_quint;
+         t.easing        = &easing_in_out_quint;
          break;
       case EASING_OUT_IN_QUINT:
-         animation->list[animation->size].easing        = &easing_out_in_quint;
+         t.easing        = &easing_out_in_quint;
          break;
          /* Sine */
       case EASING_IN_SINE:
-         animation->list[animation->size].easing        = &easing_in_sine;
+         t.easing        = &easing_in_sine;
          break;
       case EASING_OUT_SINE:
-         animation->list[animation->size].easing        = &easing_out_sine;
+         t.easing        = &easing_out_sine;
          break;
       case EASING_IN_OUT_SINE:
-         animation->list[animation->size].easing        = &easing_in_out_sine;
+         t.easing        = &easing_in_out_sine;
          break;
       case EASING_OUT_IN_SINE:
-         animation->list[animation->size].easing        = &easing_out_in_sine;
+         t.easing        = &easing_out_in_sine;
          break;
          /* Expo */
       case EASING_IN_EXPO:
-         animation->list[animation->size].easing        = &easing_in_expo;
+         t.easing        = &easing_in_expo;
          break;
       case EASING_OUT_EXPO:
-         animation->list[animation->size].easing        = &easing_out_expo;
+         t.easing        = &easing_out_expo;
          break;
       case EASING_IN_OUT_EXPO:
-         animation->list[animation->size].easing        = &easing_in_out_expo;
+         t.easing        = &easing_in_out_expo;
          break;
       case EASING_OUT_IN_EXPO:
-         animation->list[animation->size].easing        = &easing_out_in_expo;
+         t.easing        = &easing_out_in_expo;
          break;
          /* Circ */
       case EASING_IN_CIRC:
-         animation->list[animation->size].easing        = &easing_in_circ;
+         t.easing        = &easing_in_circ;
          break;
       case EASING_OUT_CIRC:
-         animation->list[animation->size].easing        = &easing_out_circ;
+         t.easing        = &easing_out_circ;
          break;
       case EASING_IN_OUT_CIRC:
-         animation->list[animation->size].easing        = &easing_in_out_circ;
+         t.easing        = &easing_in_out_circ;
          break;
       case EASING_OUT_IN_CIRC:
-         animation->list[animation->size].easing        = &easing_out_in_circ;
+         t.easing        = &easing_out_in_circ;
          break;
          /* Bounce */
       case EASING_IN_BOUNCE:
-         animation->list[animation->size].easing        = &easing_in_bounce;
+         t.easing        = &easing_in_bounce;
          break;
       case EASING_OUT_BOUNCE:
-         animation->list[animation->size].easing        = &easing_out_bounce;
+         t.easing        = &easing_out_bounce;
          break;
       case EASING_IN_OUT_BOUNCE:
-         animation->list[animation->size].easing        = &easing_in_out_bounce;
+         t.easing        = &easing_in_out_bounce;
          break;
       case EASING_OUT_IN_BOUNCE:
-         animation->list[animation->size].easing        = &easing_out_in_bounce;
+         t.easing        = &easing_out_in_bounce;
          break;
       default:
-         animation->list[animation->size].easing        = NULL;
+         t.easing        = NULL;
          break;
    }
 
-   animation->size++;
+   /* ignore born dead tweens */
+   if (!t.easing || t.duration == 0 || t.initial_value == t.target_value)
+      return false;
+
+   menu_animation_push_internal(anim, &t);
 
    return true;
 }
 
-static int menu_animation_iterate(struct tween *tween, float dt,
-      unsigned *active_tweens)
+static int menu_animation_iterate(
+      menu_animation_t *anim, unsigned idx,
+      float dt, unsigned *active_tweens)
 {
-   if (!tween)
-      return -1;
-   if (tween->running_since >= tween->duration)
+   struct tween *tween = &anim->list[idx];
+
+   if (!tween->alive)
       return -1;
 
    tween->running_since += dt;
 
-   if (tween->easing)
-      *tween->subject = tween->easing(
+   *tween->subject = tween->easing(
             tween->running_since,
             tween->initial_value,
             tween->target_value - tween->initial_value,
@@ -424,6 +510,10 @@ static int menu_animation_iterate(struct tween *tween, float dt,
    if (tween->running_since >= tween->duration)
    {
       *tween->subject = tween->target_value;
+      tween->alive    = false;
+
+      if (idx < anim->first_dead)
+         anim->first_dead = idx;
 
       if (tween->cb)
          tween->cb();
@@ -435,69 +525,69 @@ static int menu_animation_iterate(struct tween *tween, float dt,
    return 0;
 }
 
-bool menu_animation_update(animation_t *animation, float dt)
+bool menu_animation_update(menu_animation_t *anim, float dt)
 {
    unsigned i;
    unsigned active_tweens = 0;
-   menu_handle_t *menu = menu_driver_get_ptr();
 
-   for(i = 0; i < animation->size; i++)
-      menu_animation_iterate(&animation->list[i], dt, &active_tweens);
+   for(i = 0; i < anim->size; i++)
+      menu_animation_iterate(anim, i, dt, &active_tweens);
 
    if (!active_tweens)
    {
-      animation->size = 0;
+      anim->size = 0;
+      anim->first_dead = 0;
       return false;
    }
 
-   menu->animation_is_active = true;
+   anim->is_active = true;
 
    return true;
 }
 
 /**
  * menu_animation_ticker_line:
- * @buf                      : buffer to write new message line to.
+ * @s                        : buffer to write new message line to.
  * @len                      : length of buffer @input.
  * @idx                      : Index. Will be used for ticker logic.
  * @str                      : Input string.
  * @selected                 : Is the item currently selected in the menu?
  *
  * Take the contents of @str and apply a ticker effect to it,
- * and write the results in @buf.
+ * and write the results in @s.
  **/
-void menu_animation_ticker_line(char *buf, size_t len, uint64_t idx,
+void menu_animation_ticker_line(char *s, size_t len, uint64_t idx,
       const char *str, bool selected)
 {
    unsigned ticker_period, phase, phase_left_stop;
    unsigned phase_left_moving, phase_right_stop;
    unsigned left_offset, right_offset;
-   size_t str_len = strlen(str);
-   menu_handle_t *menu = menu_driver_get_ptr();
+   size_t         str_len = strlen(str);
+   menu_animation_t *anim = menu_animation_get_ptr();
 
    if (str_len <= len)
    {
-      strlcpy(buf, str, len + 1);
+      strlcpy(s, str, len + 1);
       return;
    }
 
    if (!selected)
    {
-      strlcpy(buf, str, len + 1 - 3);
-      strlcat(buf, "...", len + 1);
+      strlcpy(s, str, len + 1 - 3);
+      strlcat(s, "...", len + 1);
       return;
    }
 
    /* Wrap long strings in options with some kind of ticker line. */
-   ticker_period = 2 * (str_len - len) + 4;
-   phase = idx % ticker_period;
+   ticker_period     = 2 * (str_len - len) + 4;
+   phase             = idx % ticker_period;
 
-   phase_left_stop = 2;
+   phase_left_stop   = 2;
    phase_left_moving = phase_left_stop + (str_len - len);
-   phase_right_stop = phase_left_moving + 2;
+   phase_right_stop  = phase_left_moving + 2;
 
-   left_offset = phase - phase_left_stop;
-   right_offset = (str_len - len) - (phase - phase_right_stop);
+   left_offset       = phase - phase_left_stop;
+   right_offset      = (str_len - len) - (phase - phase_right_stop);
 
    /* Ticker period:
     * [Wait at left (2 ticks),
@@ -506,13 +596,35 @@ void menu_animation_ticker_line(char *buf, size_t len, uint64_t idx,
     * Progress to left].
     */
    if (phase < phase_left_stop)
-      strlcpy(buf, str, len + 1);
+      strlcpy(s, str, len + 1);
    else if (phase < phase_left_moving)
-      strlcpy(buf, str + left_offset, len + 1);
+      strlcpy(s, str + left_offset, len + 1);
    else if (phase < phase_right_stop)
-      strlcpy(buf, str + str_len - len, len + 1);
+      strlcpy(s, str + str_len - len, len + 1);
    else
-      strlcpy(buf, str + right_offset, len + 1);
+      strlcpy(s, str + right_offset, len + 1);
 
-   menu->animation_is_active = true;
+   anim->is_active = true;
+}
+
+void menu_animation_update_time(menu_animation_t *anim)
+{
+   static retro_time_t last_clock_update = 0;
+   settings_t *settings = config_get_ptr();
+
+   anim->cur_time   = rarch_get_time_usec();
+   anim->delta_time = anim->cur_time - anim->old_time;
+
+   if (anim->delta_time >= IDEAL_DT * 4)
+      anim->delta_time = IDEAL_DT * 4;
+   if (anim->delta_time <= IDEAL_DT / 4)
+      anim->delta_time = IDEAL_DT / 4;
+   anim->old_time      = anim->cur_time;
+
+   if (((anim->cur_time - last_clock_update) > 1000000) 
+         && settings->menu.timedate_enable)
+   {
+      anim->label.is_updated = true;
+      last_clock_update = anim->cur_time;
+   }
 }

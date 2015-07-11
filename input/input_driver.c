@@ -178,6 +178,14 @@ static const input_driver_t *input_get_ptr(driver_t *driver)
    return driver->input;
 }
 
+input_driver_t *input_driver_get_ptr(void)
+{
+   driver_t            *driver = driver_get_ptr();
+   if (!driver)
+      return NULL;
+   return (input_driver_t*)driver->input_data;
+}
+
 /**
  * input_driver_set_rumble_state:
  * @port               : User number.
@@ -199,6 +207,7 @@ bool input_driver_set_rumble_state(unsigned port,
    return false;
 }
 
+
 bool input_driver_key_pressed(int key)
 {
    driver_t            *driver = driver_get_ptr();
@@ -212,9 +221,12 @@ bool input_driver_key_pressed(int key)
 retro_input_t input_driver_keys_pressed(void)
 {
    int key;
-   retro_input_t           ret = 0;
-   driver_t            *driver = driver_get_ptr();
-   const input_driver_t *input = input_get_ptr(driver);
+   retro_input_t                ret = 0;
+   driver_t                 *driver = driver_get_ptr();
+   const input_driver_t      *input = input_get_ptr(driver);
+#ifdef HAVE_OVERLAY
+   input_overlay_state_t *ol_state  = input_overlay_get_state_ptr();
+#endif
 
    for (key = 0; key < RARCH_BIND_LIST_END; key++)
    {
@@ -224,7 +236,8 @@ retro_input_t input_driver_keys_pressed(void)
          state = input->key_pressed(driver->input_data, key);
 
 #ifdef HAVE_OVERLAY
-      state = state || (driver->overlay_state.buttons & (1ULL << key));
+      if (ol_state)
+         state = state || (ol_state->buttons & (1ULL << key));
 #endif
 
 #ifdef HAVE_COMMAND
@@ -315,4 +328,24 @@ void input_driver_free(void)
 
    if (driver && driver->input)
       driver->input->free(driver->input_data);
+}
+
+bool input_driver_keyboard_mapping_is_blocked(void)
+{
+   driver_t *driver               = driver_get_ptr();
+   const input_driver_t *input = input_get_ptr(driver);
+
+   if (input->keyboard_mapping_is_blocked)
+      return driver->input->keyboard_mapping_is_blocked(
+            driver->input_data);
+   return false;
+}
+
+void input_driver_keyboard_mapping_set_block(bool value)
+{
+   driver_t *driver               = driver_get_ptr();
+   const input_driver_t *input = input_get_ptr(driver);
+
+   if (input->keyboard_mapping_set_block)
+      driver->input->keyboard_mapping_set_block(driver->input_data, value);
 }

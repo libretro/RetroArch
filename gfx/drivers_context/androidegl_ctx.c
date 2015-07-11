@@ -251,7 +251,7 @@ static void android_gfx_ctx_check_window(void *data, bool *quit,
       bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
 {
    unsigned new_width, new_height;
-   global_t *global = global_get_ptr();
+   rarch_system_info_t *system = rarch_system_info_get_ptr();
 
    (void)frame_count;
 
@@ -267,7 +267,7 @@ static void android_gfx_ctx_check_window(void *data, bool *quit,
    }
 
    /* Check if we are exiting. */
-   if (global->system.shutdown)
+   if (system->shutdown)
       *quit = true;
 }
 
@@ -281,7 +281,8 @@ static void android_gfx_ctx_set_resize(void *data,
 
 static void android_gfx_ctx_update_window_title(void *data)
 {
-   char buf[128], buf_fps[128];
+   char buf[128]        = {0};
+   char buf_fps[128]    = {0};
    settings_t *settings = config_get_ptr();
 
    video_monitor_get_fps(buf, sizeof(buf),
@@ -389,9 +390,9 @@ static int system_property_get_density(char *value)
 {
    FILE *pipe;
    int length = 0;
-   char buffer[PATH_MAX_LENGTH];
-   char cmd[PATH_MAX_LENGTH];
-   char *curpos = NULL;
+   char buffer[PATH_MAX_LENGTH] = {0};
+   char cmd[PATH_MAX_LENGTH]    = {0};
+   char *curpos                 = NULL;
 
    snprintf(cmd, sizeof(cmd), "wm density");
 
@@ -425,19 +426,19 @@ static int system_property_get_density(char *value)
    return length;
 }
 
-static void dpi_get_density(char *name, size_t sizeof_name)
+static void dpi_get_density(char *s, size_t len)
 {
-   system_property_get("ro.sf.lcd_density", name);
+   system_property_get("ro.sf.lcd_density", s);
 
-   if (name[0] == '\0')
-      system_property_get_density(name);
+   if (s[0] == '\0')
+      system_property_get_density(s);
 }
 
 static bool android_gfx_ctx_get_metrics(void *data,
 	enum display_metric_types type, float *value)
 {
    int dpi;
-   char density[PROP_VALUE_MAX];
+   char density[PROP_VALUE_MAX] = {0};
    dpi_get_density(density, sizeof(density));
 
    switch (type)

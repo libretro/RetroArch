@@ -43,6 +43,10 @@
 #define NUM_AXES 32
 #define NUM_HATS 4
 
+#define test_bit(nr, addr) \
+   (((1UL << ((nr) % (sizeof(long) * CHAR_BIT))) & ((addr)[(nr) / (sizeof(long) * CHAR_BIT)])) != 0)
+#define NBITS(x) ((((x) - 1) / (sizeof(long) * CHAR_BIT)) + 1)
+
 struct udev_joypad
 {
    int fd;
@@ -64,7 +68,7 @@ struct udev_joypad
    uint16_t strength[2];
    uint16_t configured_strength[2];
 
-   char *ident;
+   char ident[PATH_MAX_LENGTH];
    char *path;
    int32_t vid;
    int32_t pid;
@@ -154,24 +158,267 @@ static bool udev_hotplug_available(void)
 
    if (!g_udev_mon)
       return false;
-   fds.fd = udev_monitor_get_fd(g_udev_mon);
+
+   fds.fd     = udev_monitor_get_fd(g_udev_mon);
    fds.events = POLLIN;
+
    return (poll(&fds, 1, 0) == 1) && (fds.revents & POLLIN);
 }
 
-static void udev_check_device(struct udev_device *dev, const char *path, bool hotplugged);
+static int udev_find_vacant_pad(void)
+{
+   unsigned i;
 
-static void udev_joypad_remove_device(const char *path);
+   for (i = 0; i < MAX_USERS; i++)
+      if (udev_pads[i].fd < 0)
+         return i;
+   return -1;
+}
+
+
+static int udev_open_joystick(const char *path)
+{
+   unsigned long evbit[NBITS(EV_MAX)]   = {0};
+   unsigned long keybit[NBITS(KEY_MAX)] = {0};
+   unsigned long absbit[NBITS(ABS_MAX)] = {0};
+   int fd = open(path, O_RDWR | O_NONBLOCK);
+
+   if (fd < 0)
+      return fd;
+
+   if ((ioctl(fd, EVIOCGBIT(0, sizeof(evbit)), evbit) < 0) ||
+         (ioctl(fd, EVIOCGBIT(EV_KEY, sizeof(keybit)), keybit) < 0) ||
+         (ioctl(fd, EVIOCGBIT(EV_ABS, sizeof(absbit)), absbit) < 0))
+      goto error;
+
+   /* Has to at least support EV_KEY interface. */
+   if (!test_bit(EV_KEY, evbit))
+      goto error;
+
+   return fd;
+
+error:
+   close(fd);
+   return -1;
+}
+
+static int udev_add_pad(struct udev_device *dev, unsigned p, int fd, const char *path)
+{
+   int i;
+   struct stat st;
+   int ret                              = 0;
+   const char *buf                      = NULL;
+   unsigned buttons                     = 0;
+   unsigned axes                        = 0;
+   struct udev_device *parent           = NULL;
+   struct udev_joypad *pad              = (struct udev_joypad*)&udev_pads[p];
+   unsigned long keybit[NBITS(KEY_MAX)] = {0};
+   unsigned long absbit[NBITS(ABS_MAX)] = {0};
+   unsigned long ffbit[NBITS(FF_MAX)]   = {0};
+   autoconfig_params_t params           = {{0}};
+   settings_t *settings                 = config_get_ptr();
+
+   strlcpy(pad->ident, settings->input.device_names[p], sizeof(pad->ident));
+
+   if (ioctl(fd, EVIOCGNAME(sizeof(pad->ident)), pad->ident) < 0)
+   {
+      RARCH_LOG("[udev]: Failed to get pad name: %s.\n", pad->ident);
+      return -1;
+   }
+
+   /* Don't worry about unref'ing the parent. */
+   parent = udev_device_get_parent_with_subsystem_devtype(dev, "usb", "usb_device");
+
+   pad->vid = pad->pid = 0;
+
+   if ((buf = udev_device_get_sysattr_value(parent, "idVendor")) != NULL)
+      pad->vid = strtol(buf, NULL, 16);
+
+   if ((buf = udev_device_get_sysattr_value(parent, "idProduct")) != NULL)
+      pad->pid = strtol(buf, NULL, 16);
+
+   RARCH_LOG("[udev]: Plugged pad: %s (%04x:%04x) on port #%u.\n",
+             pad->ident, pad->vid, pad->pid, p);
+
+   if (fstat(fd, &st) < 0)
+      return -1;
+
+   if ((ioctl(fd, EVIOCGBIT(EV_KEY, sizeof(keybit)), keybit) < 0) ||
+            (ioctl(fd, EVIOCGBIT(EV_ABS, sizeof(absbit)), absbit) < 0))
+      return -1;
+
+   /* Go through all possible keycodes, check if they are used,
+    * and map them to button/axes/hat indices.
+    */
+   for (i = KEY_UP; i <= KEY_DOWN && buttons < UDEV_NUM_BUTTONS; i++)
+      if (test_bit(i, keybit))
+         pad->button_bind[i] = buttons++;
+   for (i = BTN_MISC; i < KEY_MAX && buttons < UDEV_NUM_BUTTONS; i++)
+      if (test_bit(i, keybit))
+         pad->button_bind[i] = buttons++;
+   for (i = 0; i < ABS_MISC && axes < NUM_AXES; i++)
+   {
+      /* Skip hats for now. */
+      if (i == ABS_HAT0X)
+      {
+         i = ABS_HAT3Y;
+         continue;
+      }
+      
+      if (test_bit(i, absbit))
+      {
+         struct input_absinfo *abs = &pad->absinfo[axes];
+
+         if (ioctl(fd, EVIOCGABS(i), abs) < 0)
+            continue;
+         if (abs->maximum > abs->minimum)
+         {
+            pad->axes[axes]   = udev_compute_axis(abs, abs->value);
+            pad->axes_bind[i] = axes++;
+         }
+      }
+   }
+
+   pad->device = st.st_rdev;
+   pad->fd     = fd;
+   pad->path   = strdup(path);
+
+   if (*pad->ident)
+   {
+      params.idx = p;
+      strlcpy(params.name, pad->ident, sizeof(params.name));
+      params.vid = pad->vid;
+      params.pid = pad->pid;
+      strlcpy(params.driver, udev_joypad.ident, sizeof(params.driver));
+      input_config_autoconfigure_joypad(&params);
+
+      ret = 1;
+   }
+
+   /* Check for rumble features. */
+   if (ioctl(fd, EVIOCGBIT(EV_FF, sizeof(ffbit)), ffbit) >= 0)
+   {
+      if (test_bit(FF_RUMBLE, ffbit))
+         RARCH_LOG("[udev]: Pad #%u (%s) supports force feedback.\n",
+               p, path);
+
+      if (ioctl(fd, EVIOCGEFFECTS, &pad->num_effects) >= 0)
+         RARCH_LOG("[udev]: Pad #%u (%s) supports %d force feedback effects.\n", p, path, pad->num_effects);
+   }
+
+   return ret;
+}
+
+static void udev_check_device(struct udev_device *dev, const char *path, bool hotplugged)
+{
+   int ret;
+   int pad, fd;
+   unsigned i;
+   struct stat st;
+
+   if (stat(path, &st) < 0)
+      return;
+
+   for (i = 0; i < MAX_USERS; i++)
+   {
+      if (st.st_rdev == udev_pads[i].device)
+      {
+         RARCH_LOG("[udev]: Device ID %u is already plugged.\n", (unsigned)st.st_rdev);
+         return;
+      }
+   }
+
+   pad = udev_find_vacant_pad();
+   if (pad < 0)
+      return;
+
+   fd = udev_open_joystick(path);
+   if (fd < 0)
+      return;
+
+   ret = udev_add_pad(dev, pad, fd, path);
+
+   switch (ret)
+   {
+      case -1:
+         RARCH_ERR("[udev]: Failed to add pad: %s.\n", path);
+         close(fd);
+         break;
+      case 1:
+         /* Pad was autoconfigured. */
+         break;
+      case 0:
+      default:
+         if (hotplugged)
+         {
+            char msg[PATH_MAX_LENGTH] = {0};
+
+            snprintf(msg, sizeof(msg), "Device #%u (%s) connected.", pad, path);
+            rarch_main_msg_queue_push(msg, 0, 60, false);
+            RARCH_LOG("[udev]: %s\n", msg);
+         }
+         break;
+   }
+}
+
+static void udev_free_pad(unsigned pad)
+{
+   if (udev_pads[pad].fd >= 0)
+      close(udev_pads[pad].fd);
+
+   if (udev_pads[pad].path)
+      free(udev_pads[pad].path);
+   udev_pads[pad].path = NULL;
+   if (udev_pads[pad].ident[0] != '\0')
+      udev_pads[pad].ident[0] = '\0';
+
+   memset(&udev_pads[pad], 0, sizeof(udev_pads[pad]));
+
+   udev_pads[pad].fd    = -1;
+}
+
+static void udev_joypad_remove_device(const char *path)
+{
+   unsigned i;
+
+   for (i = 0; i < MAX_USERS; i++)
+   {
+      if (udev_pads[i].path && !strcmp(udev_pads[i].path, path))
+      {
+         input_config_autoconfigure_disconnect(i, udev_pads[i].ident);
+         udev_free_pad(i);
+         break;
+      }
+   }
+}
+
+static void udev_joypad_destroy(void)
+{
+   unsigned i;
+
+   for (i = 0; i < MAX_USERS; i++)
+      udev_free_pad(i);
+
+   if (g_udev_mon)
+      udev_monitor_unref(g_udev_mon);
+   g_udev_mon = NULL;
+   if (g_udev)
+      udev_unref(g_udev);
+   g_udev = NULL;
+}
 
 static void udev_joypad_handle_hotplug(void)
 {
    struct udev_device *dev = udev_monitor_receive_device(g_udev_mon);
+   const char *val;
+   const char *action;
+   const char *devnode;
    if (!dev)
       return;
 
-   const char *val = udev_device_get_property_value(dev, "ID_INPUT_JOYSTICK");
-   const char *action = udev_device_get_action(dev);
-   const char *devnode = udev_device_get_devnode(dev);
+   val     = udev_device_get_property_value(dev, "ID_INPUT_JOYSTICK");
+   action  = udev_device_get_action(dev);
+   devnode = udev_device_get_devnode(dev);
 
    if (!val || strcmp(val, "1") || !devnode)
       goto end;
@@ -211,11 +458,10 @@ static bool udev_set_rumble(unsigned i, enum retro_rumble_effect effect, uint16_
    if (strength && strength != pad->configured_strength[effect])
    {
       /* Create new or update old playing state. */
-      struct ff_effect e;
+      struct ff_effect e = {0};
 
-      memset(&e, 0, sizeof(e));
       e.type = FF_RUMBLE;
-      e.id = old_effect;
+      e.id   = old_effect;
 
       switch (effect)
       {
@@ -235,8 +481,8 @@ static bool udev_set_rumble(unsigned i, enum retro_rumble_effect effect, uint16_
          return false;
       }
 
-      pad->effects[effect] = e.id;
-      pad->has_set_ff[effect] = true;
+      pad->effects[effect]             = e.id;
+      pad->has_set_ff[effect]          = true;
       pad->configured_strength[effect] = strength;
    }
    pad->strength[effect] = strength;
@@ -244,11 +490,10 @@ static bool udev_set_rumble(unsigned i, enum retro_rumble_effect effect, uint16_
    /* It seems that we can update strength with EVIOCSFF atomically. */
    if ((!!strength) != (!!old_strength))
    {
-      struct input_event play;
+      struct input_event play = {{0}};
 
-      memset(&play, 0, sizeof(play));
-      play.type = EV_FF;
-      play.code = pad->effects[effect];
+      play.type  = EV_FF;
+      play.code  = pad->effects[effect];
       play.value = !!strength;
 
       if (write(pad->fd, &play, sizeof(play)) < (ssize_t)sizeof(play))
@@ -272,256 +517,7 @@ static void udev_joypad_poll(void)
       udev_poll_pad(&udev_pads[i], i);
 }
 
-#define test_bit(nr, addr) \
-   (((1UL << ((nr) % (sizeof(long) * CHAR_BIT))) & ((addr)[(nr) / (sizeof(long) * CHAR_BIT)])) != 0)
-#define NBITS(x) ((((x) - 1) / (sizeof(long) * CHAR_BIT)) + 1)
-
-static int udev_open_joystick(const char *path)
-{
-   unsigned long evbit[NBITS(EV_MAX)] = {0};
-   unsigned long keybit[NBITS(KEY_MAX)] = {0};
-   unsigned long absbit[NBITS(ABS_MAX)] = {0};
-   int fd = open(path, O_RDWR | O_NONBLOCK);
-
-   if (fd < 0)
-      return fd;
-
-   if ((ioctl(fd, EVIOCGBIT(0, sizeof(evbit)), evbit) < 0) ||
-         (ioctl(fd, EVIOCGBIT(EV_KEY, sizeof(keybit)), keybit) < 0) ||
-         (ioctl(fd, EVIOCGBIT(EV_ABS, sizeof(absbit)), absbit) < 0))
-      goto error;
-
-   /* Has to at least support EV_KEY interface. */
-   if (!test_bit(EV_KEY, evbit))
-      goto error;
-
-   return fd;
-
-error:
-   close(fd);
-   return -1;
-}
-
-static int udev_find_vacant_pad(void)
-{
-   unsigned i;
-
-   for (i = 0; i < MAX_USERS; i++)
-      if (udev_pads[i].fd < 0)
-         return i;
-   return -1;
-}
-
-static void udev_free_pad(unsigned pad, bool hotplug)
-{
-   settings_t *settings = config_get_ptr();
-   autoconfig_params_t params = {{0}};
-
-   if (udev_pads[pad].fd >= 0)
-      close(udev_pads[pad].fd);
-
-   free(udev_pads[pad].path);
-   if (udev_pads[pad].ident)
-      *udev_pads[pad].ident = '\0';
-   memset(&udev_pads[pad], 0, sizeof(udev_pads[pad]));
-
-   udev_pads[pad].fd    = -1;
-   udev_pads[pad].ident = settings->input.device_names[pad];
-
-   /* Avoid autoconfig spam if we're reiniting driver. */
-   /* TODO - implement VID/PID? */
-   if (hotplug)
-   {
-      params.idx = pad;
-      input_config_autoconfigure_joypad(&params);
-   }
-}
-
-static bool udev_add_pad(struct udev_device *dev, unsigned p, int fd, const char *path)
-{
-   int i;
-   const char *buf;
-   struct stat st;
-   struct udev_device *parent;
-   struct udev_joypad *pad = (struct udev_joypad*)&udev_pads[p];
-   unsigned long keybit[NBITS(KEY_MAX)] = {0};
-   unsigned long absbit[NBITS(ABS_MAX)] = {0};
-   unsigned long ffbit[NBITS(FF_MAX)]   = {0};
-   unsigned buttons = 0, axes = 0;
-   settings_t *settings = config_get_ptr();
-   autoconfig_params_t params = {{0}};
-
-   if (ioctl(fd, EVIOCGNAME(sizeof(settings->input.device_names[0])), pad->ident) < 0)
-   {
-      RARCH_LOG("[udev]: Failed to get pad name.\n");
-      return false;
-   }
-
-   /* Don't worry about unref'ing the parent. */
-   parent = udev_device_get_parent_with_subsystem_devtype(dev, "usb", "usb_device");
-
-   pad->vid = pad->pid = 0;
-
-   if ((buf = udev_device_get_sysattr_value(parent, "idVendor")) != NULL)
-      pad->vid = strtol(buf, NULL, 16);
-
-   if ((buf = udev_device_get_sysattr_value(parent, "idProduct")) != NULL)
-      pad->pid = strtol(buf, NULL, 16);
-
-   RARCH_LOG("[udev]: Plugged pad: %s (%04x:%04x) on port #%u.\n",
-             pad->ident, pad->vid, pad->pid, p);
-
-   if (fstat(fd, &st) < 0)
-      return false;
-
-
-   if ((ioctl(fd, EVIOCGBIT(EV_KEY, sizeof(keybit)), keybit) < 0) ||
-            (ioctl(fd, EVIOCGBIT(EV_ABS, sizeof(absbit)), absbit) < 0))
-      return false;
-
-   /* Go through all possible keycodes, check if they are used,
-    * and map them to button/axes/hat indices.
-    */
-   for (i = KEY_UP; i <= KEY_DOWN && buttons < UDEV_NUM_BUTTONS; i++)
-      if (test_bit(i, keybit))
-         pad->button_bind[i] = buttons++;
-   for (i = BTN_MISC; i < KEY_MAX && buttons < UDEV_NUM_BUTTONS; i++)
-      if (test_bit(i, keybit))
-         pad->button_bind[i] = buttons++;
-   for (i = 0; i < ABS_MISC && axes < NUM_AXES; i++)
-   {
-      /* Skip hats for now. */
-      if (i == ABS_HAT0X)
-      {
-         i = ABS_HAT3Y;
-         continue;
-      }
-      
-      if (test_bit(i, absbit))
-      {
-         struct input_absinfo *abs = &pad->absinfo[axes];
-
-         if (ioctl(fd, EVIOCGABS(i), abs) < 0)
-            continue;
-         if (abs->maximum > abs->minimum)
-         {
-            pad->axes[axes]   = udev_compute_axis(abs, abs->value);
-            pad->axes_bind[i] = axes++;
-         }
-      }
-   }
-
-   pad->device = st.st_rdev;
-   pad->fd = fd;
-   pad->path = strdup(path);
-
-   if (*pad->ident)
-   {
-      params.idx = p;
-      strlcpy(params.name, pad->ident, sizeof(params.name));
-      params.vid = pad->vid;
-      params.pid = pad->pid;
-      strlcpy(params.driver, udev_joypad.ident, sizeof(params.driver));
-      input_config_autoconfigure_joypad(&params);
-   }
-
-   /* Check for rumble features. */
-   if (ioctl(fd, EVIOCGBIT(EV_FF, sizeof(ffbit)), ffbit) >= 0)
-   {
-      if (test_bit(FF_RUMBLE, ffbit))
-         RARCH_LOG("[udev]: Pad #%u (%s) supports force feedback.\n",
-               p, path);
-
-      if (ioctl(fd, EVIOCGEFFECTS, &pad->num_effects) >= 0)
-         RARCH_LOG("[udev]: Pad #%u (%s) supports %d force feedback effects.\n", p, path, pad->num_effects);
-   }
-
-   return true;
-}
-
-static void udev_check_device(struct udev_device *dev, const char *path, bool hotplugged)
-{
-   int pad, fd;
-   unsigned i;
-   struct stat st;
-
-   if (stat(path, &st) < 0)
-      return;
-
-   for (i = 0; i < MAX_USERS; i++)
-   {
-      if (st.st_rdev == udev_pads[i].device)
-      {
-         RARCH_LOG("[udev]: Device ID %u is already plugged.\n", (unsigned)st.st_rdev);
-         return;
-      }
-   }
-
-   pad = udev_find_vacant_pad();
-   if (pad < 0)
-      return;
-
-   fd = udev_open_joystick(path);
-   if (fd < 0)
-      return;
-
-   if (udev_add_pad(dev, pad, fd, path))
-   {
-#ifndef IS_JOYCONFIG
-      if (hotplugged)
-      {
-         char msg[512];
-         snprintf(msg, sizeof(msg), "Device #%u (%s) connected.", pad, path);
-         rarch_main_msg_queue_push(msg, 0, 60, false);
-         RARCH_LOG("[udev]: %s\n", msg);
-      }
-#else
-      (void)hotplugged;
-#endif
-   }
-   else
-   {
-      RARCH_ERR("[udev]: Failed to add pad: %s.\n", path);
-      close(fd);
-   }
-}
-
-static void udev_joypad_remove_device(const char *path)
-{
-   unsigned i;
-
-   for (i = 0; i < MAX_USERS; i++)
-   {
-      if (udev_pads[i].path && !strcmp(udev_pads[i].path, path))
-      {
-#ifndef IS_JOYCONFIG
-         char msg[512];
-         snprintf(msg, sizeof(msg), "Device #%u (%s) disconnected.", i, udev_pads[i].ident);
-         rarch_main_msg_queue_push(msg, 0, 60, false);
-         RARCH_LOG("[udev]: %s\n", msg);
-#endif
-         udev_free_pad(i, true);
-         break;
-      }
-   }
-}
-
-static void udev_joypad_destroy(void)
-{
-   unsigned i;
-
-   for (i = 0; i < MAX_USERS; i++)
-      udev_free_pad(i, false);
-
-   if (g_udev_mon)
-      udev_monitor_unref(g_udev_mon);
-   g_udev_mon = NULL;
-   if (g_udev)
-      udev_unref(g_udev);
-   g_udev = NULL;
-}
-
-static bool udev_joypad_init(void)
+static bool udev_joypad_init(void *data)
 {
    unsigned i;
    struct udev_list_entry *devs = NULL;
@@ -529,11 +525,10 @@ static bool udev_joypad_init(void)
    struct udev_enumerate *enumerate = NULL;
    settings_t *settings = config_get_ptr();
 
+   (void)data;
+
    for (i = 0; i < MAX_USERS; i++)
-   {
       udev_pads[i].fd = -1;
-      udev_pads[i].ident = settings->input.device_names[i];
-   }
 
    g_udev = udev_new();
    if (!g_udev)
@@ -556,9 +551,9 @@ static bool udev_joypad_init(void)
 
    for (item = devs; item; item = udev_list_entry_get_next(item))
    {
-      const char *name = udev_list_entry_get_name(item);
-      struct udev_device *dev = udev_device_new_from_syspath(g_udev, name);
-      const char *devnode = udev_device_get_devnode(dev);
+      const char         *name = udev_list_entry_get_name(item);
+      struct udev_device  *dev = udev_device_new_from_syspath(g_udev, name);
+      const char      *devnode = udev_device_get_devnode(dev);
 
       if (devnode)
          udev_check_device(dev, devnode, false);

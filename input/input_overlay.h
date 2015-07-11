@@ -19,10 +19,9 @@
 
 #include <stdint.h>
 #include <boolean.h>
-#include "../libretro.h"
-#include <formats/image.h>
+
 #include <retro_miscellaneous.h>
-#include <file/config_file.h>
+#include "../libretro.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -46,7 +45,7 @@ typedef struct video_overlay_interface
 {
    void (*enable)(void *data, bool state);
    bool (*load)(void *data,
-         const struct texture_image *images, unsigned num_images);
+         const void *images, unsigned num_images);
    void (*tex_geom)(void *data, unsigned image,
          float x, float y, float w, float h);
    void (*vertex_geom)(void *data, unsigned image,
@@ -79,7 +78,7 @@ enum overlay_status
    OVERLAY_STATUS_DEFERRED_LOADING_RESOLVE,
    OVERLAY_STATUS_DEFERRED_DONE,
    OVERLAY_STATUS_DEFERRED_ERROR,
-   OVERLAY_STATUS_ALIVE,
+   OVERLAY_STATUS_ALIVE
 };
 
 enum overlay_image_transfer_status
@@ -90,128 +89,10 @@ enum overlay_image_transfer_status
    OVERLAY_IMAGE_TRANSFER_DESC_IMAGE_ITERATE,
    OVERLAY_IMAGE_TRANSFER_DESC_ITERATE,
    OVERLAY_IMAGE_TRANSFER_DESC_DONE,
-   OVERLAY_IMAGE_TRANSFER_ERROR,
+   OVERLAY_IMAGE_TRANSFER_ERROR
 };
 
-struct overlay_desc
-{
-   float x;
-   float y;
-
-   enum overlay_hitbox hitbox;
-   float range_x, range_y;
-   float range_x_mod, range_y_mod;
-   float mod_x, mod_y, mod_w, mod_h;
-   float delta_x, delta_y;
-
-   enum overlay_type type;
-   uint64_t key_mask;
-   float analog_saturate_pct;
-
-   unsigned next_index;
-   char next_index_name[64];
-
-   struct texture_image image;
-   unsigned image_index;
-
-   float alpha_mod;
-   float range_mod;
-
-   bool updated;
-   bool movable;
-};
-
-struct overlay
-{
-   struct overlay_desc *descs;
-   size_t size;
-   size_t pos;
-   unsigned pos_increment;
-
-   struct texture_image image;
-
-   bool block_scale;
-   float mod_x, mod_y, mod_w, mod_h;
-   float x, y, w, h;
-   float scale;
-   float center_x, center_y;
-
-   bool full_screen;
-
-   char name[64];
-
-   struct
-   {
-      struct
-      {
-         char key[64];
-         char path[PATH_MAX_LENGTH];
-      } paths;
-
-      struct
-      {
-         char key[64];
-      } names;
-
-      struct
-      {
-         char array[256];
-         char key[64];
-      } rect;
-
-      struct
-      {
-         char key[64];
-         unsigned size;
-      } descs;
-
-      bool normalized;
-      float alpha_mod;
-      float range_mod;
-   } config;
-
-   struct texture_image *load_images;
-   unsigned load_images_size;
-};
-
-struct input_overlay
-{
-   void *iface_data;
-   const video_overlay_interface_t *iface;
-   bool enable;
-
-   enum overlay_image_transfer_status loading_status;
-   bool blocked;
-
-   struct overlay *overlays;
-   const struct overlay *active;
-   size_t index;
-   size_t size;
-   unsigned pos;
-   size_t resolve_pos;
-   size_t pos_increment;
-
-   unsigned next_index;
-   char *overlay_path;
-   config_file_t *conf;
-
-   enum overlay_status state;
-
-   struct
-   {
-      struct
-      {
-         unsigned size;
-      } overlays;
-   } config;
-
-   struct
-   {
-      bool enable;
-      float opacity;
-      float scale_factor;
-   } deferred;
-};
+typedef struct overlay_desc overlay_desc_t;
 
 typedef struct input_overlay input_overlay_t;
 
@@ -337,6 +218,20 @@ void input_overlay_set_scale_factor(input_overlay_t *ol, float scale);
  * screen.
  **/
 void input_overlay_next(input_overlay_t *ol, float opacity);
+
+input_overlay_t *input_overlay_get_ptr(void);
+
+input_overlay_state_t *input_overlay_get_state_ptr(void);
+
+bool input_overlay_is_active(void);
+
+void input_overlay_free_ptr(void);
+
+int input_overlay_new_ptr(void);
+
+bool input_overlay_is_alive(input_overlay_t *ol);
+
+enum overlay_status input_overlay_status(input_overlay_t *ol);
 
 #ifdef __cplusplus
 }

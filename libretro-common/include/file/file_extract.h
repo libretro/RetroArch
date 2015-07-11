@@ -40,7 +40,7 @@ enum zlib_transfer_type
    ZLIB_TRANSFER_INIT,
    ZLIB_TRANSFER_ITERATE,
    ZLIB_TRANSFER_DEINIT,
-   ZLIB_TRANSFER_DEINIT_ERROR,
+   ZLIB_TRANSFER_DEINIT_ERROR
 };
 
 typedef struct zlib_transfer
@@ -82,6 +82,8 @@ bool zlib_parse_file(const char *file, const char *valid_exts,
 int zlib_parse_file_iterate(void *data, bool *returnerr,
       const char *file,
       const char *valid_exts, zlib_file_cb file_cb, void *userdata);
+
+void zlib_parse_file_iterate_stop(void *data);
 
 /**
  * zlib_extract_first_content_file:

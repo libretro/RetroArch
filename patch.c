@@ -17,16 +17,19 @@
 /* BPS/UPS/IPS implementation from bSNES (nall::).
  * Modified for RetroArch. */
 
-#include <file/file_path.h>
-#include <boolean.h>
-#include <compat/msvc.h>
 #include <stdint.h>
 #include <string.h>
+
+#include <boolean.h>
+#include <retro_log.h>
+
+#include <compat/msvc.h>
+#include <file/file_path.h>
+#include <file/file_extract.h>
+
 #include "patch.h"
 #include "file_ops.h"
-#include <file/file_extract.h>
 #include "general.h"
-#include "retroarch_logger.h"
 
 enum bps_mode
 {
@@ -145,9 +148,11 @@ patch_error_t bps_apply_patch(
          case SOURCE_COPY:
          case TARGET_COPY:
          {
-            int offset = bps_decode(&bps);
+            int    offset = bps_decode(&bps);
             bool negative = offset & 1;
+
             offset >>= 1;
+
             if (negative)
                offset = -offset;
 
@@ -254,7 +259,8 @@ static uint64_t ups_decode(struct ups_data *data)
    while (true) 
    {
       uint8_t x = ups_patch_read(data);
-      offset += (x & 0x7f) * shift;
+      offset   += (x & 0x7f) * shift;
+
       if (x & 0x80) 
          break;
       shift <<= 7;
@@ -462,7 +468,6 @@ static bool apply_patch_content(uint8_t **buf,
       return false;
    if (patch_size < 0)
       return false;
-
 
    if (!path_file_exists(patch_path))
       return false;

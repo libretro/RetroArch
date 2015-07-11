@@ -128,7 +128,7 @@ enum
    MENU_XMB,
 
    RECORD_FFMPEG,
-   RECORD_NULL,
+   RECORD_NULL
 };
 
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) || defined(__CELLOS_LV2__)
@@ -337,6 +337,16 @@ static const bool pointer_enable = true;
 static const bool pointer_enable = false;
 #endif
 
+/* Certain platforms might have assets stored in the bundle that
+ * we need to extract to a user-writable directory on first boot.
+ *
+ * Examples include: Android, iOS/OSX) */
+#if defined(ANDROID)
+static bool bundle_assets_extract_enable = true;
+#else
+static bool bundle_assets_extract_enable = false;
+#endif
+
 static const bool def_history_list_enable = true;
 
 static const unsigned int def_user_language = 0;
@@ -419,8 +429,7 @@ static unsigned swap_interval = 1;
 static const bool video_threaded = false;
 
 #ifdef HAVE_THREADS
-/* unstable for now when used in conjunction with threaded video */
-static const bool threaded_data_runloop_enable = false;
+static const bool threaded_data_runloop_enable = true;
 #else
 static const bool threaded_data_runloop_enable = false;
 #endif
@@ -476,6 +485,8 @@ static bool config_save_on_exit = true;
 
 static const bool default_overlay_enable = false;
 
+static const bool overlay_hide_in_menu = true;
+
 #ifdef HAVE_MENU
 static bool default_block_config_read = true;
 
@@ -507,6 +518,14 @@ static unsigned default_menu_btn_default     = RETRO_DEVICE_ID_JOYPAD_START;
 static unsigned default_menu_btn_info        = RETRO_DEVICE_ID_JOYPAD_SELECT;
 static unsigned default_menu_btn_scroll_down = RETRO_DEVICE_ID_JOYPAD_R;
 static unsigned default_menu_btn_scroll_up   = RETRO_DEVICE_ID_JOYPAD_L;
+
+#if defined(__CELLOS_LV2__) || defined(_XBOX1) || defined(_XBOX360)
+static unsigned menu_toggle_gamepad_combo    = 2;
+#else
+static unsigned menu_toggle_gamepad_combo    = 0;
+#endif
+
+static bool back_as_menu_toggle_enable = true;
 
 /* Crop overscanned frames. */
 static const bool crop_overscan = true;
@@ -665,9 +684,17 @@ static const unsigned default_content_history_size = 100;
 /* Show Menu start-up screen on boot. */
 static const bool menu_show_start_screen = true;
 
+#ifdef RARCH_MOBILE
 static const bool menu_dpi_override_enable = false;
+#else
+static const bool menu_dpi_override_enable = true;
+#endif
 
+#ifdef RARCH_MOBILE
 static const unsigned menu_dpi_override_value = 72;
+#else
+static const unsigned menu_dpi_override_value = 200;
+#endif
 
 /* Log level for libretro cores (GET_LOG_INTERFACE). */
 static const unsigned libretro_log_level = 0;
@@ -695,6 +722,8 @@ static const bool input_autodetect_enable = true;
 static const bool input_descriptor_label_show = true;
 
 static const bool input_descriptor_hide_unbound = false;
+
+static const unsigned input_max_users = 5;
 
 #if defined(ANDROID)
 #if defined(ANDROID_ARM)

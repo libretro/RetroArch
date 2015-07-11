@@ -1,3 +1,10 @@
+print_help_option() # $1 = option $@ = description
+{
+	_opt="$1"
+	shift 1
+	printf "  %-24s  %s\n" "$_opt" "$@"
+}
+
 print_help()
 {	cat << EOF
 ====================
@@ -6,32 +13,34 @@ print_help()
 Package: $PACKAGE_NAME
 
 General environment variables:
-CC:         C compiler
-CFLAGS:     C compiler flags
-CXX:        C++ compiler
-CXXFLAGS:   C++ compiler flags
-LDFLAGS:    Linker flags
+  CC:         C compiler
+  CFLAGS:     C compiler flags
+  CXX:        C++ compiler
+  CXXFLAGS:   C++ compiler flags
+  LDFLAGS:    Linker flags
 
 General options:
---prefix=\$path: Install path prefix
---global-config-dir=\$path: System wide config file prefix
---host=HOST: cross-compile to build programs to run on HOST
---help: Show this help
-
-Custom options:
 EOF
+	print_help_option "--prefix=PATH"            "Install path prefix"
+	print_help_option "--global-config-dir=PATH" "System wide config file prefix"
+	print_help_option "--host=HOST"              "cross-compile to build programs to run on HOST"
+	print_help_option "--help"                   "Show this help"
+
+	echo ""
+	echo "Custom options:"
+
 	while IFS='=#' read VAR VAL COMMENT; do
 		VAR=$(echo "${VAR##HAVE_}" | tr '[A-Z]' '[a-z]')
 		case "$VAL" in
 			'yes'*)
-				echo "--disable-$VAR: $COMMENT";;
+				print_help_option "--disable-$VAR" "$COMMENT";;
 			'no'*)
-				echo "--enable-$VAR: $COMMENT";;
+				print_help_option "--enable-$VAR" "$COMMENT";;
 			'auto'*)
-				echo "--enable-$VAR: $COMMENT"
-				echo "--disable-$VAR";;
+				print_help_option "--enable-$VAR" "$COMMENT"
+				print_help_option "--disable-$VAR";;
 			*)
-				echo "--with-$VAR: $COMMENT";;
+				print_help_option "--with-$VAR" "$COMMENT";;
 		esac
 	done < 'qb/config.params.sh'
 }

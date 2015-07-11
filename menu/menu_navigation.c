@@ -23,16 +23,18 @@
 
 #include <boolean.h>
 
+#include "menu_displaylist.h"
 #include "menu_navigation.h"
-#include "menu_driver.h"
-#include "menu_setting.h"
+#include "menu_entries.h"
+
+#include "../configuration.h"
 
 menu_navigation_t *menu_navigation_get_ptr(void)
 {
-   menu_handle_t *menu  = menu_driver_get_ptr();
-   if (!menu)
+   menu_entries_t *entries = menu_entries_get_ptr();
+   if (!entries)
       return NULL;
-   return &menu->navigation;
+   return &entries->navigation;
 }
 /**
  * menu_navigation_clear:

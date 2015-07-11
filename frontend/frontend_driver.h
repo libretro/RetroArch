@@ -34,7 +34,7 @@ enum frontend_powerstate
    FRONTEND_POWERSTATE_NO_SOURCE,
    FRONTEND_POWERSTATE_CHARGING,
    FRONTEND_POWERSTATE_CHARGED,
-   FRONTEND_POWERSTATE_ON_POWER_SOURCE,
+   FRONTEND_POWERSTATE_ON_POWER_SOURCE
 };
 
 enum frontend_architecture
@@ -45,7 +45,7 @@ enum frontend_architecture
    FRONTEND_ARCH_PPC,
    FRONTEND_ARCH_ARM,
    FRONTEND_ARCH_MIPS,
-   FRONTEND_ARCH_TILE,
+   FRONTEND_ARCH_TILE
 };
 
 typedef void (*environment_get_t)(int *argc, char *argv[], void *args,
@@ -57,7 +57,7 @@ typedef struct frontend_ctx_driver
    environment_get_t environment_get;
    void (*init)(void *data);
    void (*deinit)(void *data);
-   void (*exitspawn)(char *core_path, size_t sizeof_core_path);
+   void (*exitspawn)(char *s, size_t len);
 
    process_args_t process_args;
    void (*exec)(const char *, bool);
@@ -69,6 +69,7 @@ typedef struct frontend_ctx_driver
    void (*content_loaded)(void);
    enum frontend_architecture (*get_architecture)(void);
    enum frontend_powerstate (*get_powerstate)(int *seconds, int *percent);
+   int  (*parse_drive_list)(void*);
 
    const char *ident;
 
@@ -107,6 +108,8 @@ const frontend_ctx_driver_t *frontend_get_ptr(void);
  * Returns: pointer to first suitable driver, otherwise NULL. 
  **/
 const frontend_ctx_driver_t *frontend_ctx_init_first(void);
+
+int frontend_driver_parse_drive_list(void *data);
 
 #ifdef __cplusplus
 }

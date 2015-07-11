@@ -45,10 +45,7 @@
 #endif
 #include <compat/msvc.h>
 
-#if defined(RARCH_INTERNAL) || defined(IS_SALAMANDER)
-/* TODO/FIXME - dirty hack */
-#include "../../retroarch_logger.h"
-#endif
+#include <retro_log.h>
 #include <retro_inline.h>
 #include <retro_endianness.h>
 #include <limits.h>

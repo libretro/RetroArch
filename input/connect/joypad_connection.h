@@ -49,7 +49,7 @@ int32_t pad_connection_pad_init(joypad_connection_t *joyconn,
    const char* name, uint16_t vid, uint16_t pid,
    void *data, send_control_t ptr);
 
-void *pad_connection_init(unsigned pads);
+joypad_connection_t *pad_connection_init(unsigned pads);
 
 void pad_connection_destroy(joypad_connection_t *joyconn);
 

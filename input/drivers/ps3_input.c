@@ -17,8 +17,9 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#include <sdk_version.h>
 #include <boolean.h>
+
+#include <sdk_version.h>
 
 #include "../../ps3/sdk_defines.h"
 
@@ -45,6 +46,7 @@ typedef struct
 
 typedef struct ps3_input
 {
+   bool blocked;
 #ifdef HAVE_MOUSE
    unsigned mice_connected;
 #endif
@@ -161,10 +163,10 @@ static void* ps3_input_init(void)
    if (!ps3)
       return NULL;
 
-   ps3->joypad = input_joypad_init_driver(settings->input.joypad_driver);
+   ps3->joypad = input_joypad_init_driver(settings->input.joypad_driver, ps3);
 
    if (ps3->joypad)
-      ps3->joypad->init();
+      ps3->joypad->init(ps3);
 
 #ifdef HAVE_MOUSE
    cellMouseInit(MAX_MICE);
@@ -176,13 +178,11 @@ static bool ps3_input_key_pressed(void *data, int key)
 {
    ps3_input_t *ps3 = (ps3_input_t*)data;
    settings_t *settings = config_get_ptr();
-   global_t   *global   = global_get_ptr();
 
    if (!ps3)
       return false;
 
-   return (global->lifecycle_state & (1ULL << key)) || 
-      input_joypad_pressed(ps3->joypad, 0, settings->input.binds[0], key);
+   return input_joypad_pressed(ps3->joypad, 0, settings->input.binds[0], key);
 }
 
 static uint64_t ps3_input_get_capabilities(void *data)
@@ -247,6 +247,22 @@ static void ps3_input_grab_mouse(void *data, bool state)
    (void)state;
 }
 
+static bool ps3_input_keyboard_mapping_is_blocked(void *data)
+{
+   ps3_input_t *ps3 = (ps3_input_t*)data;
+   if (!ps3)
+      return false;
+   return ps3->blocked;
+}
+
+static void ps3_input_keyboard_mapping_set_block(void *data, bool value)
+{
+   ps3_input_t *ps3 = (ps3_input_t*)data;
+   if (!ps3)
+      return;
+   ps3->blocked = value;
+}
+
 input_driver_t input_ps3 = {
    ps3_input_init,
    ps3_input_poll,
@@ -262,4 +278,6 @@ input_driver_t input_ps3 = {
    NULL,
    ps3_input_set_rumble,
    ps3_input_get_joypad_driver,
+   ps3_input_keyboard_mapping_is_blocked,
+   ps3_input_keyboard_mapping_set_block,
 };

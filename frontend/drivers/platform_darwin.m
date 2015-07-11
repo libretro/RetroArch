@@ -15,25 +15,19 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <CoreFoundation/CoreFoundation.h>
-#include <CoreFoundation/CFArray.h>
-#include <retro_miscellaneous.h>
-#include <file/file_path.h>
-
-#ifdef __OBJC__
-#include <Foundation/NSPathUtilities.h>
-#endif
-
-#include "../frontend_driver.h"
-#include "../../ui/ui_companion_driver.h"
-#include "../../general.h"
-
 #include <stdint.h>
 #include <boolean.h>
 #include <stddef.h>
 #include <string.h>
 
 #include <sys/utsname.h>
+
+#include <CoreFoundation/CoreFoundation.h>
+#include <CoreFoundation/CFArray.h>
+
+#ifdef __OBJC__
+#include <Foundation/NSPathUtilities.h>
+#endif
 
 #if defined(OSX)
 #include <Carbon/Carbon.h>
@@ -43,6 +37,18 @@
 #include <sys/sysctl.h>
 #elif defined(IOS)
 #include <UIKit/UIDevice.h>
+#endif
+
+#include <retro_miscellaneous.h>
+#include <file/file_path.h>
+#include <rhash.h>
+
+#include "../frontend_driver.h"
+#include "../../ui/ui_companion_driver.h"
+#include "../../general.h"
+
+#ifdef HAVE_MENU
+#include "../../menu/menu.h"
 #endif
 
 typedef enum
@@ -98,6 +104,10 @@ typedef enum
 #endif
 #endif
 
+#ifndef NS_INLINE
+#define NS_INLINE inline
+#endif
+
 NS_INLINE CF_RETURNS_RETAINED CFTypeRef CFBridgingRetainCompat(id X)
 {
 #if __has_feature(objc_arc)
@@ -131,7 +141,7 @@ static NSSearchPathDomainMask NSConvertDomainFlagsCF(unsigned flags)
 
 static void CFSearchPathForDirectoriesInDomains(unsigned flags,
       unsigned domain_mask, unsigned expand_tilde,
-      char *buf, size_t sizeof_buf)
+      char *s, size_t len)
 {
    CFTypeRef array_val = (CFTypeRef)CFBridgingRetainCompat(
          NSSearchPathForDirectoriesInDomains(NSConvertFlagsCF(flags),
@@ -142,19 +152,19 @@ static void CFSearchPathForDirectoriesInDomains(unsigned flags,
    if (!path || !array)
       return;
 
-   CFStringGetCString(path, buf, sizeof_buf, kCFStringEncodingUTF8);
+   CFStringGetCString(path, s, len, kCFStringEncodingUTF8);
    CFRelease(path);
    CFRelease(array);
 }
 
-static void CFTemporaryDirectory(char *buf, size_t sizeof_buf)
+static void CFTemporaryDirectory(char *s, size_t len)
 {
 #if __has_feature(objc_arc)
    CFStringRef path = (__bridge_retained CFStringRef)NSTemporaryDirectory();
 #else
    CFStringRef path = (CFStringRef)NSTemporaryDirectory();
 #endif
-   CFStringGetCString(path, buf, sizeof_buf, kCFStringEncodingUTF8);
+   CFStringGetCString(path, s, len, kCFStringEncodingUTF8);
 }
 
 #if defined(IOS)
@@ -266,7 +276,7 @@ static void checkps(CFDictionaryRef dict, bool * have_ac, bool * have_battery,
 }
 #endif
 
-static void frontend_darwin_get_name(char *name, size_t sizeof_name)
+static void frontend_darwin_get_name(char *s, size_t len)
 {
 #if defined(IOS)
    struct utsname buffer;
@@ -274,35 +284,36 @@ static void frontend_darwin_get_name(char *name, size_t sizeof_name)
    if (uname(&buffer) != 0)
       return;
 
-   strlcpy(name, buffer.machine, sizeof_name);
+   strlcpy(s, buffer.machine, len);
 #elif defined(OSX)
    size_t length = 0;
-   sysctlbyname("hw.model", name, &length, NULL, 0);
+   sysctlbyname("hw.model", s, &length, NULL, 0);
 #endif
 }
 
-static void frontend_darwin_get_os(char *name, size_t sizeof_name, int *major, int *minor)
+static void frontend_darwin_get_os(char *s, size_t len, int *major, int *minor)
 {
-   (void)name;
-   (void)sizeof_name;
+   (void)s;
+   (void)len;
    (void)major;
    (void)minor;
 
 #if defined(IOS)
    get_ios_version(major, minor);
-   strlcpy(name, "iOS", sizeof_name);
+   strlcpy(s, "iOS", len);
 #elif defined(OSX)
-   strlcpy(name, "OSX", sizeof_name);
+   strlcpy(s, "OSX", len);
 #endif
 }
 
 static void frontend_darwin_get_environment_settings(int *argc, char *argv[],
       void *args, void *params_data)
 {
-   char temp_dir[PATH_MAX_LENGTH];
-   char bundle_path_buf[PATH_MAX_LENGTH], home_dir_buf[PATH_MAX_LENGTH];
    CFURLRef bundle_url;
    CFStringRef bundle_path;
+   char temp_dir[PATH_MAX_LENGTH]        = {0};
+   char bundle_path_buf[PATH_MAX_LENGTH] = {0};
+   char home_dir_buf[PATH_MAX_LENGTH]    = {0};
    CFBundleRef bundle = CFBundleGetMainBundle();
 
    (void)temp_dir;
@@ -326,6 +337,7 @@ static void frontend_darwin_get_environment_settings(int *argc, char *argv[],
    fill_pathname_join(g_defaults.core_info_dir, home_dir_buf, "info", sizeof(g_defaults.core_info_dir));
    fill_pathname_join(g_defaults.overlay_dir, home_dir_buf, "overlays", sizeof(g_defaults.overlay_dir));
    fill_pathname_join(g_defaults.autoconfig_dir, home_dir_buf, "autoconfig/hid", sizeof(g_defaults.autoconfig_dir));
+   fill_pathname_join(g_defaults.core_assets_dir, home_dir_buf, "downloads", sizeof(g_defaults.core_assets_dir));
    fill_pathname_join(g_defaults.assets_dir, home_dir_buf, "assets", sizeof(g_defaults.assets_dir));
    fill_pathname_join(g_defaults.system_dir, home_dir_buf, ".RetroArch", sizeof(g_defaults.system_dir));
    strlcpy(g_defaults.menu_config_dir, g_defaults.system_dir, sizeof(g_defaults.menu_config_dir));
@@ -376,7 +388,7 @@ static void frontend_darwin_load_content(void)
 
 static int frontend_darwin_get_rating(void)
 {
-   char model[PATH_MAX_LENGTH];
+   char model[PATH_MAX_LENGTH] = {0};
 
    frontend_darwin_get_name(model, sizeof(model));
 
@@ -520,23 +532,58 @@ end:
    return ret;
 }
 
+#define DARWIN_ARCH_X86_64     0x23dea434U
+#define DARWIN_ARCH_X86        0x0b88b8cbU
+#define DARWIN_ARCH_POWER_MAC  0xba3772d8U
+
 static enum frontend_architecture frontend_darwin_get_architecture(void)
 {
    struct utsname buffer;
+   uint32_t buffer_hash;
 
    if (uname(&buffer) != 0)
       return FRONTEND_ARCH_NONE;
+   
+   (void)buffer_hash;
 
 #ifdef OSX
-   if (!strcmp(buffer.machine, "x86_64"))
-      return FRONTEND_ARCH_X86_64;
-   if (!strcmp(buffer.machine, "x86"))
-      return FRONTEND_ARCH_X86;
-   if (!strcmp(buffer.machine, "Power Macintosh"))
-      return FRONTEND_ARCH_PPC;
+   buffer_hash = djb2_calculate(buffer.machine);
+
+   switch (buffer_hash)
+   {
+      case DARWIN_ARCH_X86_64:
+         return FRONTEND_ARCH_X86_64;
+      case DARWIN_ARCH_X86:
+        return FRONTEND_ARCH_X86;
+      case DARWIN_ARCH_POWER_MAC:
+        return FRONTEND_ARCH_PPC;
+   }
 #endif
 
    return FRONTEND_ARCH_NONE;
+}
+
+static int frontend_darwin_parse_drive_list(void *data)
+{
+   int ret = -1;
+#if TARGET_OS_IPHONE
+#ifdef HAVE_MENU
+   file_list_t *list = (file_list_t*)data;
+
+   menu_list_push(list,
+         "/var/mobile/Documents/", "", MENU_FILE_DIRECTORY, 0, 0);
+   menu_list_push(list,
+         "/var/mobile/", "", MENU_FILE_DIRECTORY, 0, 0);
+   menu_list_push(list,
+         g_defaults.core_dir, "", MENU_FILE_DIRECTORY, 0, 0);
+   menu_list_push(list, "/", "",
+         MENU_FILE_DIRECTORY, 0, 0);
+
+   ret = 0;
+#endif
+#endif
+
+   return ret;
 }
 
 const frontend_ctx_driver_t frontend_ctx_darwin = {
@@ -554,5 +601,6 @@ const frontend_ctx_driver_t frontend_ctx_darwin = {
    frontend_darwin_load_content,
    frontend_darwin_get_architecture,
    frontend_darwin_get_powerstate,
+   frontend_darwin_parse_drive_list,
    "darwin",
 };

@@ -96,7 +96,7 @@ void fill_pathname_expand_special(char *out_path,
             )
    {
       size_t src_size;
-      char application_dir[PATH_MAX_LENGTH];
+      char application_dir[PATH_MAX_LENGTH] = {0};
 
       fill_pathname_application_path(application_dir, sizeof(application_dir));
       path_basedir(application_dir);
@@ -119,19 +119,27 @@ void fill_pathname_abbreviate_special(char *out_path,
 {
 #if !defined(RARCH_CONSOLE)
    unsigned i;
-   char application_dir[PATH_MAX_LENGTH];
-   const char *home = getenv("HOME");
-
-   fill_pathname_application_path(application_dir, sizeof(application_dir));
-   path_basedir(application_dir);
+   const char *candidates[3];
+   const char *notations[3];
+   char application_dir[PATH_MAX_LENGTH] = {0};
+   const char                      *home = getenv("HOME");
 
    /* application_dir could be zero-string. Safeguard against this.
     *
     * Keep application dir in front of home, moving app dir to a
     * new location inside home would break otherwise. */
 
-   const char *candidates[3] = { application_dir, home, NULL };
-   const char *notations[3] = { ":", "~", NULL };
+   /* ugly hack - use application_dir pointer before filling it in. C89 reasons */
+   candidates[0] = application_dir;
+   candidates[1] = home;
+   candidates[2] = NULL;
+
+   notations [0] = ":";
+   notations [1] = "~";
+   notations [2] = NULL;
+
+   fill_pathname_application_path(application_dir, sizeof(application_dir));
+   path_basedir(application_dir);
    
    for (i = 0; candidates[i]; i++)
    {
@@ -197,24 +205,31 @@ void fill_pathname_application_path(char *buf, size_t size)
       }
    }
 #else
-   *buf = '\0';
-   pid_t pid = getpid(); 
-   char link_path[PATH_MAX_LENGTH];
-   /* Linux, BSD and Solaris paths. Not standardized. */
-   static const char *exts[] = { "exe", "file", "path/a.out" };
-   for (i = 0; i < ARRAY_SIZE(exts); i++)
    {
-      snprintf(link_path, sizeof(link_path), "/proc/%u/%s",
-            (unsigned)pid, exts[i]);
-      ssize_t ret = readlink(link_path, buf, size - 1);
-      if (ret >= 0)
+      pid_t pid;
+      static const char *exts[] = { "exe", "file", "path/a.out" };
+      char link_path[PATH_MAX_LENGTH] = {0};
+
+      *buf      = '\0';
+      pid = getpid(); 
+
+      /* Linux, BSD and Solaris paths. Not standardized. */
+      for (i = 0; i < ARRAY_SIZE(exts); i++)
       {
-         buf[ret] = '\0';
-         return;
+         ssize_t ret;
+
+         snprintf(link_path, sizeof(link_path), "/proc/%u/%s",
+               (unsigned)pid, exts[i]);
+         ret = readlink(link_path, buf, size - 1);
+         if (ret >= 0)
+         {
+            buf[ret] = '\0';
+            return;
+         }
       }
    }
    
-   /* Cannot resolve application path! This should not happen. */
+   RARCH_ERR("Cannot resolve application path! This should not happen.");
 #endif
 }
 #endif

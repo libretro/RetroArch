@@ -15,12 +15,15 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../general.h"
-#include "../../driver.h"
 #include <screen/screen.h>
 #include <bps/event.h>
 #include <bps/navigator.h>
 #include <sys/keycodes.h>
+
+#include <boolean.h>
+
+#include "../../general.h"
+#include "../../driver.h"
 #include "../input_autodetect.h"
 
 #define MAX_PADS 8
@@ -33,6 +36,7 @@
 
 typedef struct
 {
+   bool blocked;
 #ifdef HAVE_BB10
    screen_device_t handle;
 #endif
@@ -78,6 +82,7 @@ typedef struct qnx_input
    const input_device_driver_t *joypad;
    int16_t analog_state[MAX_PADS][2][2];
    uint64_t pad_state[MAX_PADS];
+   uint64_t lifecycle_state;
 } qnx_input_t;
 
 extern screen_context_t screen_ctx;
@@ -117,7 +122,6 @@ static void qnx_process_gamepad_event(
    screen_device_t device;
    qnx_input_device_t* controller = NULL;
    settings_t *settings = config_get_ptr();
-   global_t   *global   = global_get_ptr();
    uint64_t *state_cur  = NULL;
 
    (void)type;
@@ -160,13 +164,13 @@ static void qnx_process_gamepad_event(
    if((controller->port == 0) && 
          (controller->buttons & 
           settings->input.binds[0][RARCH_MENU_TOGGLE].joykey))
-      global->lifecycle_state ^= (1ULL << RARCH_MENU_TOGGLE);
+      qnx->lifecycle_state ^= (1ULL << RARCH_MENU_TOGGLE);
 }
 
 static void qnx_input_autodetect_gamepad(qnx_input_t *qnx,
       qnx_input_device_t* controller, int port)
 {
-   char name_buf[256];
+   char name_buf[256]   = {0};
    settings_t *settings = config_get_ptr();
 
    if (!qnx)
@@ -317,7 +321,6 @@ static void qnx_process_keyboard_event(
 {
    qnx_input_device_t* controller = NULL;
    settings_t *settings = config_get_ptr();
-   global_t   *global   = global_get_ptr();
    int i = 0;
    int sym = 0;
    int modifiers = 0;
@@ -388,7 +391,7 @@ static void qnx_process_keyboard_event(
             == (unsigned int)(sym&0xFF)))
    {
       if (flags & KEY_DOWN)
-         global->lifecycle_state ^= (1ULL << RARCH_MENU_TOGGLE);
+         qnx->lifecycle_state ^= (1ULL << RARCH_MENU_TOGGLE);
    }
 }
 
@@ -583,14 +586,14 @@ static void qnx_handle_navigator_event(
    int rc;
    navigator_window_state_t state;
    bps_event_t *event_pause = NULL;
-   global_t *global = global_get_ptr();
+   rarch_system_info_t *system = rarch_system_info_get_ptr();
 
    (void)rc;
 
    switch (bps_event_get_code(event))
    {
       case NAVIGATOR_SWIPE_DOWN:
-         global->lifecycle_state ^= (1ULL << RARCH_MENU_TOGGLE);
+         qnx->lifecycle_state ^= (1ULL << RARCH_MENU_TOGGLE);
          break;
       case NAVIGATOR_EXIT:
          /* Catch this in thumbnail loop. */
@@ -614,7 +617,7 @@ static void qnx_handle_navigator_event(
                   }
                   else if (bps_event_get_code(event_pause) == NAVIGATOR_EXIT)
                   {
-                     global->system.shutdown = true;
+                     system->shutdown = true;
                      break;
                   }
                }
@@ -646,7 +649,7 @@ static void *qnx_input_init(void)
    }
 
    qnx->joypad = input_joypad_init_driver(
-         settings->input.joypad_driver);
+         settings->input.joypad_driver, qnx);
 
    for (i = 0; i < MAX_PADS; ++i)
    {
@@ -669,10 +672,7 @@ static void *qnx_input_init(void)
 
 static void qnx_input_poll(void *data)
 {
-   global_t *global = global_get_ptr();
    qnx_input_t *qnx = (qnx_input_t*)data;
-
-   global->lifecycle_state &= ~(1ULL << RARCH_MENU_TOGGLE);
 
    /* Request and process all available BPS events. */
 
@@ -790,9 +790,8 @@ static bool qnx_input_key_pressed(void *data, int key)
 {
    qnx_input_t *qnx     = (qnx_input_t*)data;
    settings_t *settings = config_get_ptr();
-   global_t *global     = global_get_ptr();
 
-   return ((global->lifecycle_state | driver.overlay_state.buttons ) & (1ULL << key) ||
+   return (driver.overlay_state.buttons & (1ULL << key) ||
          input_joypad_pressed(qnx->joypad, 0, settings->input.binds[0], key));
 }
 
@@ -839,6 +838,22 @@ static bool qnx_input_set_rumble(void *data, unsigned port,
    return false;
 }
 
+static bool qnx_input_keyboard_mapping_is_blocked(void *data)
+{
+   qnx_input_t *qnx = (qnx_input_t*)data;
+   if (!qnx)
+      return false;
+   return qnx->blocked;
+}
+
+static void qnx_input_keyboard_mapping_set_block(void *data, bool value)
+{
+   qnx_input_t *qnx = (qnx_input_t*)data;
+   if (!qnx)
+      return;
+   qnx->blocked = value;
+}
+
 input_driver_t input_qnx = {
    qnx_input_init,
    qnx_input_poll,
@@ -853,4 +868,6 @@ input_driver_t input_qnx = {
    NULL,
    qnx_input_set_rumble,
    qnx_input_get_joypad_driver,
+   qnx_input_keyboard_mapping_is_blocked,
+   qnx_input_keyboard_mapping_set_block,
 };

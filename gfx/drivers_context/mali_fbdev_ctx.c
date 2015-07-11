@@ -200,7 +200,8 @@ static void gfx_ctx_mali_fbdev_set_resize(void *data,
 
 static void gfx_ctx_mali_fbdev_update_window_title(void *data)
 {
-   char buf[128], buf_fps[128];
+   char buf[128]        = {0};
+   char buf_fps[128]    = {0};
    settings_t *settings = config_get_ptr();
 
    (void)data;
@@ -275,7 +276,7 @@ static void gfx_ctx_mali_fbdev_input_driver(void *data,
 static gfx_ctx_proc_t gfx_ctx_mali_fbdev_get_proc_address(const char *symbol)
 {
    gfx_ctx_proc_t ret;
-   void *sym__;
+   void *sym__        = NULL;
 
    rarch_assert(sizeof(void*) == sizeof(void (*)(void)));
 

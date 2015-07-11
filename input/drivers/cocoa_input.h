@@ -18,6 +18,7 @@
 #define __COCOA_INPUT_H__
 
 #include <stdint.h>
+#include <boolean.h>
 #include "../../general.h"
 
 /* Input responder */
@@ -37,6 +38,7 @@ typedef struct
 
 typedef struct
 {
+   bool blocked;
    cocoa_touch_data_t touches[MAX_TOUCHES];
    uint32_t touch_count;
 
@@ -66,8 +68,16 @@ void cocoa_input_enable_small_keyboard(bool on);
 
 void cocoa_input_reset_icade_buttons(void);
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 void cocoa_input_keyboard_event(bool down, unsigned code,
       uint32_t character, uint32_t mod, unsigned device);
+
+#ifdef __cplusplus
+}
+#endif
 
 extern int32_t cocoa_input_find_any_key(void);
 

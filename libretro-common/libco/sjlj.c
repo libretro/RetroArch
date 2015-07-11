@@ -53,11 +53,11 @@ cothread_t co_create(unsigned int size, void (*coentry)(void))
 
    if(thread)
    {
-      struct sigaction handler;
-      struct sigaction old_handler;
-
       stack_t stack;
       stack_t old_stack;
+
+      struct sigaction handler     = {{0}};
+      struct sigaction old_handler = {{0}};
 
       thread->coentry = thread->stack = 0;
 
@@ -68,7 +68,7 @@ cothread_t co_create(unsigned int size, void (*coentry)(void))
       if(stack.ss_sp && !sigaltstack(&stack, &old_stack))
       {
          handler.sa_handler = springboard;
-         handler.sa_flags = SA_ONSTACK;
+         handler.sa_flags   = SA_ONSTACK;
          sigemptyset(&handler.sa_mask);
          creating = thread;
 
@@ -93,7 +93,7 @@ cothread_t co_create(unsigned int size, void (*coentry)(void))
 
 void co_delete(cothread_t cothread)
 {
-   if(cothread)
+   if (cothread)
    {
       if(((cothread_struct*)cothread)->stack)
          free(((cothread_struct*)cothread)->stack);
@@ -103,7 +103,7 @@ void co_delete(cothread_t cothread)
 
 void co_switch(cothread_t cothread)
 {
-   if(!sigsetjmp(co_running->context, 0))
+   if (!sigsetjmp(co_running->context, 0))
    {
       co_running = (cothread_struct*)cothread;
       siglongjmp(co_running->context, 1);

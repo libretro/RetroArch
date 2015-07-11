@@ -27,10 +27,10 @@ bool rtga_image_load_shift(uint8_t *buf,
       unsigned g_shift, unsigned b_shift)
 {
    unsigned i, bits, size, bits_mul;
-   uint8_t info[6];
-   unsigned width = 0;
-   unsigned height = 0;
-   const uint8_t *tmp = NULL;
+   uint8_t               info[6] = {0};
+   unsigned                width = 0;
+   unsigned               height = 0;
+   const uint8_t            *tmp = NULL;
    struct texture_image *out_img = (struct texture_image*)data;
 
    if (buf[2] != 2)

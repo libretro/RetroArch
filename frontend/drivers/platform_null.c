@@ -36,5 +36,6 @@ const frontend_ctx_driver_t frontend_ctx_null = {
    NULL,                         /* load_content */
    NULL,                         /* get_architecture */
    NULL,                         /* get_powerstate */
+   NULL,                         /* parse_drive_list */
    "null",
 };

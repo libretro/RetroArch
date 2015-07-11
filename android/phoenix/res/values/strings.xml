@@ -3,9 +3,6 @@
     <string name="app_name">RetroArch</string>
     <string name="input_method">Input Method</string>
     <string name="file_type_icon">File type icon</string>
-    <string name="key_bind_title">Select the button to use</string>
-    <string name="key_bind_clear">Unbind</string>
-    <string name="key_bind_detect">Detect</string>
     <string name="optimal_settings_device">Optimal device settings</string>
     <string name="extracting_assets_please_wait_">Extracting assets, please wait …</string>
 
@@ -15,40 +12,12 @@
     <string name="load_core">Core Selection</string>
     <string name="load_content">Load Content</string>
     <string name="load_content_auto">Load Content (Detect Core)</string>
-    <string name="load_content_history">Load Content (History)</string>
     <string name="settings">Settings</string>
     <string name="about">About</string>
     <string name="quit_retroarch">Quit RetroArch</string>
 
     <!-- Core Selection Class -->
     <string name="select_libretro_core">Select a libretro core</string>
-
-    <!-- Core Manager -->
-    <string name="installed_cores">Installed Cores</string>
-    <string name="uninstall_core">Uninstall Core</string>
-    <string name="uninstall_core_message">Would you like to uninstall %1$s?</string>
-    <string name="uninstall_failure">Failed to uninstall core: %1$s.</string>
-    <string name="uninstall_success">Successfully uninstalled core: %1$s.</string>
-    <string name="downloadable_cores">Downloadable Cores</string>
-
-    <!-- Core Manager Info Fragment -->
-    <string name="core_info_displayNameTitle">Display Name</string>
-    <string name="core_info_internalNameTitle">Internal Name</string>
-    <string name="core_info_systemNameTitle">Description</string>
-    <string name="core_info_author">Author(s)</string>
-    <string name="core_info_licenseTitle">Core License</string>
-    <string name="core_info_manufacturer">Manufacturer</string>
-    <string name="core_info_permissions">Permissions</string>
-
-    <!-- Core Downloader Fragment -->
-    <string name="download_core_confirm_title">Confirm</string>
-    <string name="download_core_confirm_msg">Are you sure you want to download %1$s?</string>
-    <string name="downloading_msg">Downloading %1$s…</string>
-    <string name="download_core_list_error">Error retrieving list of cores.</string>
-
-    <!-- Core Downloader - Downloadable Cores Context Menu -->
-    <string name="downloadable_cores_ctx_title">Actions</string>
-	<string name="downloadable_cores_ctx_goto_wiki">Go to core wiki page</string>
 
     <!-- Display Refresh Rate Test Class -->
     <string name="refresh_rate_calibration">Refresh rate calibration</string>
@@ -190,8 +159,6 @@
 
     <!-- General Settings -->
     <string name="general_options">General</string>
-    <string name="core_management">Core Management</string>
-    <string name="manage_cores">Manage Cores</string>
     <string name="config_style">Configuration style</string>
     <string name="global_config">Global configuration</string>
     <string name="global_config_desc">Enable global settings for all cores. Leave disabled if you want per-core settings.</string>

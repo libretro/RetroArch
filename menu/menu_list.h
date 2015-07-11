@@ -20,8 +20,6 @@
 #include <stddef.h>
 #include <file/file_list.h>
 
-#include "menu_displaylist.h"
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -32,6 +30,12 @@ typedef struct menu_list
    file_list_t *selection_buf;
 } menu_list_t;
 
+typedef enum
+{
+   MENU_LIST_PLAIN = 0,
+   MENU_LIST_HORIZONTAL
+} menu_list_type_t;
+
 typedef struct menu_file_list_cbs
 {
    int (*action_iterate)(const char *label, unsigned action);
@@ -39,9 +43,9 @@ typedef struct menu_file_list_cbs
    int (*action_select)(const char *path, const char *label, unsigned type,
          size_t idx);
    int (*action_get_title)(const char *path, const char *label,
-         unsigned type, char *title, size_t sizeof_title);
+         unsigned type, char *s, size_t len);
    int (*action_ok)(const char *path, const char *label, unsigned type,
-         size_t idx);
+         size_t idx, size_t entry_idx);
    int (*action_cancel)(const char *path, const char *label, unsigned type,
          size_t idx);
    int (*action_scan)(const char *path, const char *label, unsigned type,
@@ -55,10 +59,9 @@ typedef struct menu_file_list_cbs
    int (*action_refresh)(file_list_t *list, file_list_t *menu_list);
    int (*action_up)(unsigned type, const char *label);
    int (*action_down)(unsigned type, const char *label);
-   void (*action_get_representation)(file_list_t* list,
+   void (*action_get_value)(file_list_t* list,
          unsigned *w, unsigned type, unsigned i,
-         const char *label,
-         char *type_str, size_t type_str_size,
+         const char *label, char *s, size_t len,
          const char *entry_label,
          const char *path,
          char *path_buf, size_t path_buf_size);
@@ -81,7 +84,10 @@ void menu_list_pop_stack_by_needle(menu_list_t *list,
       const char *needle);
 
 void menu_list_get_at_offset(const file_list_t *list, size_t idx,
-      const char **path, const char **label, unsigned *file_type);
+      const char **path, const char **label, unsigned *file_type,
+      size_t *entry_idx);
+
+void *menu_list_get_userdata_at_offset(const file_list_t *list, size_t idx);
 
 menu_file_list_cbs_t *menu_list_get_actiondata_at_offset(const file_list_t *list, size_t idx);
 
@@ -93,28 +99,23 @@ void *menu_list_get_last_stack_actiondata(const menu_list_t *list);
 
 void menu_list_get_last(const file_list_t *list,
       const char **path, const char **label,
-      unsigned *file_type);
+      unsigned *file_type, size_t *entry_idx);
 
 void menu_list_get_last_stack(const menu_list_t *list,
       const char **path, const char **label,
-      unsigned *file_type);
+      unsigned *file_type, size_t *entry_idx);
 
 void menu_list_clear(file_list_t *list);
 
 void menu_list_push(file_list_t *list,
       const char *path, const char *label,
-      unsigned type, size_t directory_ptr);
+      unsigned type, size_t directory_ptr,
+      size_t entry_idx);
 
 void menu_list_get_alt_at_offset(const file_list_t *list, size_t idx,
       const char **alt);
 
-void menu_list_get_alt2_at_offset(const file_list_t *list, size_t idx,
-      const char **alt);
-
 void menu_list_set_alt_at_offset(file_list_t *list, size_t idx,
-      const char *alt);
-
-void menu_list_set_alt2_at_offset(file_list_t *list, size_t idx,
       const char *alt);
 
 void menu_list_refresh(file_list_t *list);

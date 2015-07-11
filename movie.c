@@ -15,7 +15,7 @@
  */
 
 #include "movie.h"
-#include "hash.h"
+#include <rhash.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

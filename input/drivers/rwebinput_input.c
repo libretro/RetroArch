@@ -13,14 +13,16 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdint.h>
+#include <stdlib.h>
+#include <boolean.h>
+
 #include "../input_autodetect.h"
 #include "../input_common.h"
 #include "../input_keymaps.h"
 
 #include "../../driver.h"
 
-#include <stdlib.h>
-#include <boolean.h>
 #include "../../general.h"
 #include "../keyboard_line.h"
 #include "../input_joypad.h"
@@ -226,6 +228,22 @@ static uint64_t rwebinput_get_capabilities(void *data)
    return caps;
 }
 
+static bool rwebinput_keyboard_mapping_is_blocked(void *data)
+{
+   rwebinput_input_t *rwebinput = (rwebinput_input_t*)data;
+   if (!rwebinput)
+      return false;
+   return rwebinput->blocked;
+}
+
+static void rwebinput_keyboard_mapping_set_block(void *data, bool value)
+{
+   rwebinput_input_t *rwebinput = (rwebinput_input_t*)data;
+   if (!rwebinput)
+      return;
+   rwebinput->blocked = value;
+}
+
 input_driver_t input_rwebinput = {
    rwebinput_input_init,
    rwebinput_input_poll,
@@ -239,4 +257,6 @@ input_driver_t input_rwebinput = {
    rwebinput_grab_mouse,
    NULL,
    rwebinput_set_rumble,
+   rwebinput_keyboard_mapping_is_blocked,
+   rwebinput_keyboard_mapping_set_block,
 };

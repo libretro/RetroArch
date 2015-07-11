@@ -92,7 +92,7 @@ static void sdl2_init_font(sdl2_video_t *vid, const char *font_path,
 {
    int i, r, g, b;
    SDL_Color colors[256];
-   SDL_Surface *tmp;
+   SDL_Surface *tmp = NULL;
    SDL_Palette *pal = NULL;
    const struct font_atlas *atlas = NULL;
    settings_t *settings = config_get_ptr();
@@ -172,8 +172,10 @@ static void sdl2_render_msg(sdl2_video_t *vid, const char *msg)
 
    for (; *msg; msg++)
    {
+      SDL_Rect src_rect, dst_rect;
       int off_x, off_y, tex_x, tex_y;
-      const struct font_glyph *gly = vid->font_driver->get_glyph(vid->font_data, (uint8_t)*msg);
+      const struct font_glyph *gly = 
+         vid->font_driver->get_glyph(vid->font_data, (uint8_t)*msg);
 
       if (!gly)
          gly = vid->font_driver->get_glyph(vid->font_data, '?');
@@ -181,22 +183,23 @@ static void sdl2_render_msg(sdl2_video_t *vid, const char *msg)
       if (!gly)
          continue;
 
-      off_x  = gly->draw_offset_x;
-      off_y  = gly->draw_offset_y;
-      tex_x  = gly->atlas_offset_x;
-      tex_y  = gly->atlas_offset_y;
+      off_x      = gly->draw_offset_x;
+      off_y      = gly->draw_offset_y;
+      tex_x      = gly->atlas_offset_x;
+      tex_y      = gly->atlas_offset_y;
 
-      SDL_Rect srcrect = {
-         tex_x, tex_y,
-         (int)gly->width, (int)gly->height
-      };
+      src_rect.x = tex_x;
+      src_rect.y = tex_y;
+      src_rect.w = (int)gly->width;
+      src_rect.h = (int)gly->height;
 
-      SDL_Rect dstrect = {
-         x + delta_x + off_x, y + delta_y + off_y,
-         (int)gly->width, (int)gly->height
-      };
+      dst_rect.x = x + delta_x + off_x;
+      dst_rect.y = y + delta_y + off_y;
+      dst_rect.w = (int)gly->width;
+      dst_rect.h = (int)gly->height;
 
-      SDL_RenderCopyEx(vid->renderer, vid->font.tex, &srcrect, &dstrect, 0, NULL, SDL_FLIP_NONE);
+      SDL_RenderCopyEx(vid->renderer, vid->font.tex,
+            &src_rect, &dst_rect, 0, NULL, SDL_FLIP_NONE);
 
       delta_x += gly->advance_x;
       delta_y -= gly->advance_y;
@@ -250,12 +253,21 @@ static void sdl2_init_renderer(sdl2_video_t *vid)
 
 static void sdl_refresh_renderer(sdl2_video_t *vid)
 {
+   SDL_Rect r;
+
    SDL_RenderClear(vid->renderer);
-   SDL_Rect r = { vid->vp.x, vid->vp.y, (int)vid->vp.width, (int)vid->vp.height };
+
+   r.x      = vid->vp.x;
+   r.y      = vid->vp.y;
+   r.w      = (int)vid->vp.width;
+   r.h      = (int)vid->vp.height;
+
    SDL_RenderSetViewport(vid->renderer, &r);
 
-   // breaks int scaling
-   // SDL_RenderSetLogicalSize(vid->renderer, vid->vp.width, vid->vp.height);
+   /* breaks int scaling */
+#if 0
+   SDL_RenderSetLogicalSize(vid->renderer, vid->vp.width, vid->vp.height);
+#endif
 }
 
 static void sdl_refresh_viewport(sdl2_video_t *vid)
@@ -273,11 +285,13 @@ static void sdl_refresh_viewport(sdl2_video_t *vid)
    vid->vp.full_height = win_h;
 
    if (settings->video.scale_integer)
-      video_viewport_get_scaled_integer(&vid->vp, win_w, win_h, video_driver_get_aspect_ratio(),
-                        vid->video.force_aspect);
+      video_viewport_get_scaled_integer(&vid->vp,
+            win_w, win_h, video_driver_get_aspect_ratio(),
+            vid->video.force_aspect);
    else if (settings->video.aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
    {
-      const struct video_viewport *custom = (const struct video_viewport*)video_viewport_get_custom();
+      const struct video_viewport *custom = 
+         (const struct video_viewport*)video_viewport_get_custom();
 
       if (custom)
       {
@@ -319,7 +333,7 @@ static void sdl_refresh_viewport(sdl2_video_t *vid)
 }
 
 static void sdl_refresh_input_size(sdl2_video_t *vid, bool menu, bool rgb32,
-                                   unsigned width, unsigned height, unsigned pitch)
+      unsigned width, unsigned height, unsigned pitch)
 {
    sdl2_tex_t *target = menu ? &vid->menu : &vid->frame;
 
@@ -365,11 +379,13 @@ static void sdl_refresh_input_size(sdl2_video_t *vid, bool menu, bool rgb32,
    }
 }
 
-static void *sdl2_gfx_init(const video_info_t *video, const input_driver_t **input, void **input_data)
+static void *sdl2_gfx_init(const video_info_t *video,
+      const input_driver_t **input, void **input_data)
 {
    int i;
    unsigned flags;
    settings_t *settings = config_get_ptr();
+   sdl2_video_t *vid;
 
 #ifdef HAVE_X11
    XInitThreads();
@@ -383,7 +399,7 @@ static void *sdl2_gfx_init(const video_info_t *video, const input_driver_t **inp
    else if (SDL_InitSubSystem(SDL_INIT_VIDEO) < 0)
       return NULL;
 
-   sdl2_video_t *vid = (sdl2_video_t*)calloc(1, sizeof(*vid));
+   vid = (sdl2_video_t*)calloc(1, sizeof(*vid));
    if (!vid)
       return NULL;
 
@@ -407,8 +423,6 @@ static void *sdl2_gfx_init(const video_info_t *video, const input_driver_t **inp
                    mode.refresh_rate);
    }
 
-//   void *sdl_input = NULL;
-
    if (!video->fullscreen)
       RARCH_LOG("[SDL]: Creating window @ %ux%u\n", video->width, video->height);
 
@@ -427,7 +441,7 @@ static void *sdl2_gfx_init(const video_info_t *video, const input_driver_t **inp
       goto error;
    }
 
-   vid->video = *video;
+   vid->video         = *video;
    vid->video.smooth  = settings->video.smooth;
    vid->should_resize = true;
 
@@ -442,7 +456,7 @@ static void *sdl2_gfx_init(const video_info_t *video, const input_driver_t **inp
 
    sdl2_gfx_set_handles(vid);
 
-   *input = NULL;
+   *input      = NULL;
    *input_data = NULL;
 
    return vid;
@@ -479,9 +493,9 @@ static void check_window(sdl2_video_t *vid)
 static bool sdl2_gfx_frame(void *data, const void *frame, unsigned width,
                            unsigned height, unsigned pitch, const char *msg)
 {
-   char buf[128];
+   char buf[128]     = {0};
    sdl2_video_t *vid = (sdl2_video_t*)data;
-   driver_t *driver = driver_get_ptr();
+   driver_t *driver  = driver_get_ptr();
 
    if (vid->should_resize)
       sdl_refresh_viewport(vid);
@@ -628,7 +642,7 @@ static bool sdl2_gfx_read_viewport(void *data, uint8_t *buffer)
    return true;
 }
 
-void sdl2_poke_set_filtering(void *data, unsigned index, bool smooth)
+static void sdl2_poke_set_filtering(void *data, unsigned index, bool smooth)
 {
    sdl2_video_t *vid = (sdl2_video_t*)data;
    vid->video.smooth = smooth;
@@ -668,14 +682,14 @@ static void sdl2_poke_set_aspect_ratio(void *data, unsigned aspectratio_index)
    vid->should_resize = true;
 }
 
-void sdl2_poke_apply_state_changes(void *data)
+static void sdl2_poke_apply_state_changes(void *data)
 {
    sdl2_video_t *vid = (sdl2_video_t*)data;
    vid->should_resize = true;
 }
 
-void sdl2_poke_set_texture_frame(void *data, const void *frame, bool rgb32,
-                                unsigned width, unsigned height, float alpha)
+static void sdl2_poke_set_texture_frame(void *data, const void *frame, bool rgb32,
+      unsigned width, unsigned height, float alpha)
 {
    sdl2_video_t *vid = (sdl2_video_t*)data;
 
@@ -693,27 +707,28 @@ void sdl2_poke_set_texture_frame(void *data, const void *frame, bool rgb32,
    }
 }
 
-void sdl2_poke_texture_enable(void *data, bool enable, bool full_screen)
+static void sdl2_poke_texture_enable(void *data, bool enable, bool full_screen)
 {
    sdl2_video_t *vid = (sdl2_video_t*)data;
 
    vid->menu.active = enable;
 }
 
-void sdl2_poke_set_osd_msg(void *data, const char *msg, const struct font_params *params, void *font)
+static void sdl2_poke_set_osd_msg(void *data, const char *msg,
+      const struct font_params *params, void *font)
 {
    sdl2_video_t *vid = (sdl2_video_t*)data;
    sdl2_render_msg(vid, msg);
-   fprintf(stderr, "[SDL]: OSD MSG: %s\n", msg);
+   RARCH_LOG("[SDL]: OSD MSG: %s\n", msg);
 }
 
-void sdl2_show_mouse(void *data, bool state)
+static void sdl2_show_mouse(void *data, bool state)
 {
    (void)data;
    SDL_ShowCursor(state);
 }
 
-void sdl2_grab_mouse_toggle(void *data)
+static void sdl2_grab_mouse_toggle(void *data)
 {
    sdl2_video_t *vid = (sdl2_video_t*)data;
    SDL_SetWindowGrab(vid->window, SDL_GetWindowGrab(vid->window));
@@ -748,7 +763,7 @@ static video_poke_interface_t sdl2_video_poke_interface = {
    NULL,
 };
 
-void sdl2_gfx_poke_interface(void *data, const video_poke_interface_t **iface)
+static void sdl2_gfx_poke_interface(void *data, const video_poke_interface_t **iface)
 {
    (void)data;
    *iface = &sdl2_video_poke_interface;

@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -31,7 +31,7 @@
 #include <assert.h>
 
 /* Need to be present for build to work, but it's not *really* used.
- * Better than having to build special versions of lots of objects 
+ * Better than having to build special versions of lots of objects
  * with special #ifdefs.
  */
 struct settings g_config;
@@ -124,7 +124,18 @@ static void get_binds(config_file_t *conf, config_file_t *auto_conf,
       int player, int joypad)
 {
    int i, timeout_cnt;
-   const input_device_driver_t *driver = input_joypad_init_driver(g_driver);
+   const input_device_driver_t *driver = input_joypad_init_driver(g_driver, NULL);
+   const char *joypad_name;
+
+   int16_t initial_axes[MAX_AXES] = {0};
+   struct poll_data old_poll = {{0}};
+   struct poll_data new_poll = {{0}};
+
+   int last_axis   = -1;
+   bool block_axis = false;
+
+   int timeout_ticks = g_timeout * 100;
+
    if (!driver)
    {
       fprintf(stderr, "Cannot find any valid input driver.\n");
@@ -138,7 +149,7 @@ static void get_binds(config_file_t *conf, config_file_t *auto_conf,
    }
 
    fprintf(stderr, "Found joypad driver: %s\n", driver->ident);
-   const char *joypad_name = input_joypad_name(driver, joypad);
+   joypad_name = input_joypad_name(driver, joypad);
    fprintf(stderr, "Using joypad: %s\n", joypad_name ? joypad_name : "Unknown");
 
    if (joypad_name && auto_conf)
@@ -146,15 +157,6 @@ static void get_binds(config_file_t *conf, config_file_t *auto_conf,
       config_set_string(auto_conf, "input_device", joypad_name);
       config_set_string(auto_conf, "input_driver", driver->ident);
    }
-
-   int16_t initial_axes[MAX_AXES] = {0};
-   struct poll_data old_poll = {{0}};
-   struct poll_data new_poll = {{0}};
-
-   int last_axis   = -1;
-   bool block_axis = false;
-
-   int timeout_ticks = g_timeout * 100;
 
    poll_joypad(driver, joypad, &old_poll);
    fprintf(stderr, "\nJoypads tend to have stale state after opened.\nPress some buttons and move some axes around to make sure joypad state is completely neutral before proceeding.\nWhen done, press Enter ... ");
@@ -171,7 +173,7 @@ static void get_binds(config_file_t *conf, config_file_t *auto_conf,
        * has a default negative axis for shoulder triggers,
        * which makes configuration very awkward.
        *
-       * If default negative, we can't trigger on the negative axis, 
+       * If default negative, we can't trigger on the negative axis,
        * and similar with defaulted positive axes.
        */
 
@@ -192,17 +194,19 @@ static void get_binds(config_file_t *conf, config_file_t *auto_conf,
 
    for (i = 0, timeout_cnt = 0; input_config_bind_map[i].valid; i++, timeout_cnt = 0)
    {
+      unsigned meta_level;
+      unsigned player_index;
       int j;
       if (i == RARCH_TURBO_ENABLE)
          continue;
 
-      unsigned meta_level = input_config_bind_map[i].meta;
+      meta_level = input_config_bind_map[i].meta;
       if (meta_level > g_meta_level)
          continue;
 
       fprintf(stderr, "%s\n", input_config_bind_map[i].desc);
 
-      unsigned player_index = input_config_bind_map[i].meta ? 0 : player;
+      player_index = input_config_bind_map[i].meta ? 0 : player;
 
       for (;;)
       {
@@ -229,8 +233,10 @@ static void get_binds(config_file_t *conf, config_file_t *auto_conf,
          {
             if (new_poll.buttons[j] && !old_poll.buttons[j])
             {
+               char key[64] = {0};
+
                fprintf(stderr, "\tJoybutton pressed: %d\n", j);
-               char key[64];
+
                snprintf(key, sizeof(key), "%s_%s_btn",
                      input_config_get_prefix(player_index,
                         input_config_bind_map[i].meta),
@@ -250,15 +256,20 @@ static void get_binds(config_file_t *conf, config_file_t *auto_conf,
 
          for (j = 0; j < MAX_AXES; j++)
          {
+            int16_t value;
+            bool same_axis;
+            bool require_negative;
+            bool require_positive;
+
             if (new_poll.axes[j] == old_poll.axes[j])
                continue;
 
-            int16_t value         = new_poll.axes[j];
-            bool same_axis        = last_axis == j;
-            bool require_negative = initial_axes[j] > 0;
-            bool require_positive = initial_axes[j] < 0;
+            value            = new_poll.axes[j];
+            same_axis        = last_axis == j;
+            require_negative = initial_axes[j] > 0;
+            require_positive = initial_axes[j] < 0;
 
-            /* Block the axis config until we're sure 
+            /* Block the axis config until we're sure
              * axes have returned to their neutral state. */
             if (same_axis)
             {
@@ -268,7 +279,7 @@ static void get_binds(config_file_t *conf, config_file_t *auto_conf,
                   block_axis = false;
             }
 
-            /* If axes are in their neutral state, 
+            /* If axes are in their neutral state,
              * we can't allow it. */
             if (require_negative && value >= 0)
                continue;
@@ -280,15 +291,16 @@ static void get_binds(config_file_t *conf, config_file_t *auto_conf,
 
             if (abs(value) > 20000)
             {
+               char buf[8]  = {0};
+               char key[64] = {0};
+
                last_axis = j;
                fprintf(stderr, "\tJoyaxis moved: Axis %d, Value %d\n",
                      j, value);
 
-               char buf[8];
                snprintf(buf, sizeof(buf),
                      value > 0 ? "+%d" : "-%d", j);
 
-               char key[64];
                snprintf(key, sizeof(key), "%s_%s_axis",
                      input_config_get_prefix(player_index,
                         input_config_bind_map[i].meta),
@@ -325,11 +337,12 @@ static void get_binds(config_file_t *conf, config_file_t *auto_conf,
 
             if (quark)
             {
+               char buf[16] = {0};
+               char key[64] = {0};
+
                fprintf(stderr, "\tJoyhat moved: Hat %d, direction %s\n", j, quark);
-               char buf[16];
                snprintf(buf, sizeof(buf), "h%d%s", j, quark);
 
-               char key[64];
                snprintf(key, sizeof(key), "%s_%s_btn",
                      input_config_get_prefix(player_index,
                         input_config_bind_map[i].meta),
@@ -448,41 +461,44 @@ static void parse_input(int argc, char *argv[])
 
 }
 
-void input_config_autoconfigure_joypad(autoconfig_params_t *params)
+bool input_config_autoconfigure_joypad(autoconfig_params_t *params)
 {
    (void)params;
+   return false;
 }
 
-// Need SDL_main on OSX.
+/* Need SDL_main on OSX. */
 #ifndef __APPLE__
 #undef main
 #endif
 
 int main(int argc, char *argv[])
 {
-   parse_input(argc, argv);
+   config_file_t *conf;
+   config_file_t *auto_conf = NULL;
 
-   config_file_t *conf = config_file_new(g_in_path);
-   if (!conf)
-   {
-      fprintf(stderr, "Couldn't open config file ...\n");
-      return 1;
-   }
-
-   const char *index_list[] = { 
-      "input_player1_joypad_index", 
-      "input_player2_joypad_index", 
-      "input_player3_joypad_index", 
-      "input_player4_joypad_index", 
+   const char *index_list[] = {
+      "input_player1_joypad_index",
+      "input_player2_joypad_index",
+      "input_player3_joypad_index",
+      "input_player4_joypad_index",
       "input_player5_joypad_index",
       "input_player6_joypad_index",
       "input_player7_joypad_index",
       "input_player8_joypad_index",
    };
 
+   parse_input(argc, argv);
+
+   conf = config_file_new(g_in_path);
+   if (!conf)
+   {
+      fprintf(stderr, "Couldn't open config file ...\n");
+      return 1;
+   }
+
    config_set_int(conf, index_list[g_player - 1], g_joypad);
 
-   config_file_t *auto_conf = NULL;
    if (g_auto_path)
       auto_conf = config_file_new(NULL);
 
@@ -515,4 +531,8 @@ bool video_driver_viewport_info(struct video_viewport *vp)
 bool video_driver_read_viewport(uint8_t *buffer)
 {
    return false;
+}
+
+void input_config_autoconfigure_disconnect(unsigned id, const char *msg)
+{
 }

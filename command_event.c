@@ -13,17 +13,22 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <compat/strl.h>
+
 #include "command_event.h"
+
+#include "general.h"
 #include "performance.h"
 #include "runloop_data.h"
 #include "runloop.h"
 #include "dynamic.h"
 #include "content.h"
 #include "screenshot.h"
-#include "intl/intl.h"
+#include "msg_hash.h"
 #include "retroarch.h"
 #include "dir_list_special.h"
 
+#include "configuration.h"
 #include "input/input_remapping.h"
 
 #ifdef HAVE_MENU
@@ -77,9 +82,12 @@ static void event_free_temporary_content(void)
    {
       const char *path = global->temporary_content->elems[i].data;
 
-      RARCH_LOG("Removing temporary content file: %s.\n", path);
+      RARCH_LOG("%s: %s.\n",
+            msg_hash_to_str(MSG_REMOVING_TEMPORARY_CONTENT_FILE), path);
       if (remove(path) < 0)
-         RARCH_ERR("Failed to remove temporary file: %s.\n", path);
+         RARCH_ERR("%s: %s.\n",
+               msg_hash_to_str(MSG_FAILED_TO_REMOVE_TEMPORARY_FILE),
+               path);
    }
    string_list_free(global->temporary_content);
 }
@@ -114,7 +122,7 @@ static void event_init_autosave(void)
             settings->autosave_interval);
 
       if (!global->autosave[i])
-         RARCH_WARN(RETRO_LOG_INIT_AUTOSAVE_FAILED);
+         RARCH_WARN("%s\n", msg_hash_to_str(MSG_AUTOSAVE_FAILED));
    }
 }
 
@@ -146,7 +154,11 @@ static void event_save_files(void)
    {
       unsigned type    = global->savefiles->elems[i].attr.i;
       const char *path = global->savefiles->elems[i].data;
-      RARCH_LOG("Saving RAM type #%u to \"%s\".\n", type, path);
+      RARCH_LOG("%s #%u %s \"%s\".\n",
+            msg_hash_to_str(MSG_SAVING_RAM_TYPE),
+            type,
+            msg_hash_to_str(MSG_TO),
+            path);
       save_ram_file(path, type);
    }
 }
@@ -161,32 +173,36 @@ static void event_init_movie(void)
       if (!(global->bsv.movie = bsv_movie_init(global->bsv.movie_start_path,
                   RARCH_MOVIE_PLAYBACK)))
       {
-         RARCH_ERR("Failed to load movie file: \"%s\".\n",
+         RARCH_ERR("%s: \"%s\".\n",
+               msg_hash_to_str(MSG_FAILED_TO_LOAD_MOVIE_FILE),
                global->bsv.movie_start_path);
          rarch_fail(1, "event_init_movie()");
       }
 
       global->bsv.movie_playback = true;
-      rarch_main_msg_queue_push("Starting movie playback.", 2, 180, false);
-      RARCH_LOG("Starting movie playback.\n");
+      rarch_main_msg_queue_push_new(MSG_STARTING_MOVIE_PLAYBACK, 2, 180, false);
+      RARCH_LOG("%s.\n", msg_hash_to_str(MSG_STARTING_MOVIE_PLAYBACK));
       settings->rewind_granularity = 1;
    }
    else if (global->bsv.movie_start_recording)
    {
-      char msg[PATH_MAX_LENGTH];
-      snprintf(msg, sizeof(msg), "Starting movie record to \"%s\".",
+      char msg[PATH_MAX_LENGTH] = {0};
+      snprintf(msg, sizeof(msg),
+            "%s \"%s\".",
+            msg_hash_to_str(MSG_STARTING_MOVIE_RECORD_TO),
             global->bsv.movie_start_path);
 
       if (!(global->bsv.movie = bsv_movie_init(global->bsv.movie_start_path,
                   RARCH_MOVIE_RECORD)))
       {
-         rarch_main_msg_queue_push("Failed to start movie record.", 1, 180, true);
-         RARCH_ERR("Failed to start movie record.\n");
+         rarch_main_msg_queue_push_new(MSG_FAILED_TO_START_MOVIE_RECORD, 1, 180, true);
+         RARCH_ERR("%s.\n", msg_hash_to_str(MSG_FAILED_TO_START_MOVIE_RECORD));
          return;
       }
 
       rarch_main_msg_queue_push(msg, 1, 180, true);
-      RARCH_LOG("Starting movie record to \"%s\".\n",
+      RARCH_LOG("%s \"%s\".\n",
+            msg_hash_to_str(MSG_STARTING_MOVIE_RECORD_TO),
             global->bsv.movie_start_path);
       settings->rewind_granularity = 1;
    }
@@ -203,25 +219,28 @@ static void event_init_movie(void)
  **/
 static void event_disk_control_set_eject(bool new_state, bool print_log)
 {
-   char msg[PATH_MAX_LENGTH];
-   global_t *global = global_get_ptr();
+   char msg[PATH_MAX_LENGTH] = {0};
+   bool error                = false;
+   rarch_system_info_t *info = rarch_system_info_get_ptr();
    const struct retro_disk_control_callback *control = 
-      (const struct retro_disk_control_callback*)&global->system.disk_control;
-   bool error = false;
+      info ? (const struct retro_disk_control_callback*)&info->disk_control : NULL;
 
-   if (!control->get_num_images)
+   if (!control || !control->get_num_images)
       return;
 
    *msg = '\0';
 
    if (control->set_eject_state(new_state))
-      snprintf(msg, sizeof(msg), "%s virtual disk tray.",
-            new_state ? "Ejected" : "Closed");
+      snprintf(msg, sizeof(msg), "%s %s",
+            new_state ? "Ejected" : "Closed",
+            msg_hash_to_str(MSG_VIRTUAL_DISK_TRAY));
    else
    {
       error = true;
-      snprintf(msg, sizeof(msg), "Failed to %s virtual disk tray.",
-            new_state ? "eject" : "close");
+      snprintf(msg, sizeof(msg), "%s %s %s",
+            msg_hash_to_str(MSG_FAILED_TO),
+            new_state ? "eject" : "close",
+            msg_hash_to_str(MSG_VIRTUAL_DISK_TRAY));
    }
 
    if (*msg)
@@ -245,12 +264,17 @@ static void event_disk_control_set_eject(bool new_state, bool print_log)
  **/
 void event_disk_control_append_image(const char *path)
 {
-   char msg[PATH_MAX_LENGTH];
    unsigned new_idx;
-   struct retro_game_info info = {0};
-   global_t *global = global_get_ptr();
+   char msg[PATH_MAX_LENGTH]                         = {0};
+   struct retro_game_info info                       = {0};
+   global_t                                  *global = global_get_ptr();
+   rarch_system_info_t                       *sysinfo = rarch_system_info_get_ptr();
    const struct retro_disk_control_callback *control = 
-      (const struct retro_disk_control_callback*)&global->system.disk_control;
+      sysinfo ? (const struct retro_disk_control_callback*)&sysinfo->disk_control
+      : NULL;
+
+   if (!control)
+      return;
 
    event_disk_control_set_eject(true, false);
 
@@ -263,7 +287,8 @@ void event_disk_control_append_image(const char *path)
    info.path = path;
    control->replace_image_index(new_idx, &info);
 
-   snprintf(msg, sizeof(msg), "Appended disk: %s", path);
+   snprintf(msg, sizeof(msg), "%s: ", msg_hash_to_str(MSG_APPENDED_DISK));
+   strlcat(msg, path, sizeof(msg));
    RARCH_LOG("%s\n", msg);
    rarch_main_msg_queue_push(msg, 0, 180, true);
 
@@ -306,14 +331,14 @@ static void event_check_disk_eject(
  **/
 static void event_disk_control_set_index(unsigned idx)
 {
-   char msg[PATH_MAX_LENGTH];
    unsigned num_disks;
-   global_t *global = global_get_ptr();
+   char msg[PATH_MAX_LENGTH] = {0};
+   rarch_system_info_t                      *info    = rarch_system_info_get_ptr();
    const struct retro_disk_control_callback *control = 
-      (const struct retro_disk_control_callback*)&global->system.disk_control;
+      info ? (const struct retro_disk_control_callback*)&info->disk_control : NULL;
    bool error = false;
 
-   if (!control->get_num_images)
+   if (!control || !control->get_num_images)
       return;
 
    *msg = '\0';
@@ -326,7 +351,9 @@ static void event_disk_control_set_index(unsigned idx)
          snprintf(msg, sizeof(msg), "Setting disk %u of %u in tray.",
                idx + 1, num_disks);
       else
-         strlcpy(msg, "Removed disk from tray.", sizeof(msg));
+         strlcpy(msg,
+               msg_hash_to_str(MSG_REMOVED_DISK_FROM_TRAY),
+               sizeof(msg));
    }
    else
    {
@@ -334,7 +361,9 @@ static void event_disk_control_set_index(unsigned idx)
          snprintf(msg, sizeof(msg), "Failed to set disk %u of %u.",
                idx + 1, num_disks);
       else
-         strlcpy(msg, "Failed to remove disk from tray.", sizeof(msg));
+         strlcpy(msg,
+               msg_hash_to_str(MSG_FAILED_TO_REMOVE_DISK_FROM_TRAY),
+               sizeof(msg));
       error = true;
    }
 
@@ -357,13 +386,24 @@ static void event_disk_control_set_index(unsigned idx)
 static void event_check_disk_prev(
       const struct retro_disk_control_callback *control)
 {
-   unsigned num_disks    = control->get_num_images();
-   unsigned current      = control->get_image_index();
-   bool disk_prev_enable = num_disks && num_disks != UINT_MAX;
+   unsigned num_disks    = 0;
+   unsigned current      = 0;
+   bool disk_prev_enable = false;
+
+   if (!control)
+      return;
+   if (!control->get_num_images)
+      return;
+   if (!control->get_image_index)
+      return;
+
+   num_disks        = control->get_num_images();
+   current          = control->get_image_index();
+   disk_prev_enable = num_disks && num_disks != UINT_MAX;
 
    if (!disk_prev_enable)
    {
-      RARCH_ERR("Got invalid disk index from libretro.\n");
+      RARCH_ERR("%s.\n", msg_hash_to_str(MSG_GOT_INVALID_DISK_INDEX));
       return;
    }
 
@@ -381,13 +421,24 @@ static void event_check_disk_prev(
 static void event_check_disk_next(
       const struct retro_disk_control_callback *control)
 {
-   unsigned num_disks        = control->get_num_images();
-   unsigned current          = control->get_image_index();
-   bool     disk_next_enable = num_disks && num_disks != UINT_MAX;
+   unsigned num_disks        = 0;
+   unsigned current          = 0;
+   bool     disk_next_enable = false;
+
+   if (!control)
+      return;
+   if (!control->get_num_images)
+      return;
+   if (!control->get_image_index)
+      return;
+
+   num_disks        = control->get_num_images();
+   current          = control->get_image_index();
+   disk_next_enable = num_disks && num_disks != UINT_MAX;
 
    if (!disk_next_enable)
    {
-      RARCH_ERR("Got invalid disk index from libretro.\n");
+      RARCH_ERR("%s.\n", msg_hash_to_str(MSG_GOT_INVALID_DISK_INDEX));
       return;
    }
 
@@ -405,8 +456,8 @@ static void event_check_disk_next(
  **/
 static void event_set_volume(float gain)
 {
-   char msg[PATH_MAX_LENGTH];
-   settings_t *settings    = config_get_ptr();
+   char msg[PATH_MAX_LENGTH] = {0};
+   settings_t *settings      = config_get_ptr();
 
    settings->audio.volume += gain;
    settings->audio.volume  = max(settings->audio.volume, -80.0f);
@@ -428,7 +479,7 @@ static void event_init_controllers(void)
 {
    unsigned i;
    settings_t *settings = config_get_ptr();
-   global_t   *global   = global_get_ptr();
+   rarch_system_info_t *info = rarch_system_info_get_ptr();
 
    for (i = 0; i < MAX_USERS; i++)
    {
@@ -436,9 +487,9 @@ static void event_init_controllers(void)
       const struct retro_controller_description *desc = NULL;
       unsigned device = settings->input.libretro_device[i];
 
-      if (i < global->system.num_ports)
+      if (i < info->num_ports)
          desc = libretro_find_controller_description(
-               &global->system.ports[i], device);
+               &info->ports[i], device);
 
       if (desc)
          ident = desc->desc;
@@ -481,7 +532,7 @@ static void event_init_controllers(void)
 
 static void event_deinit_core(bool reinit)
 {
-   global_t *global = global_get_ptr();
+   global_t *global     = global_get_ptr();
    settings_t *settings = config_get_ptr();
 
    pretro_unload_game();
@@ -503,7 +554,6 @@ static void event_deinit_core(bool reinit)
       global->overrides_active = false;
    }
 
-   pretro_set_environment(rarch_environment_cb);
    uninit_libretro_sym();
 }
 
@@ -531,6 +581,8 @@ static bool event_load_save_files(void)
    unsigned i;
    global_t *global = global_get_ptr();
 
+   if (!global)
+      return false;
    if (!global->savefiles || global->sram_load_disable)
       return false;
 
@@ -544,8 +596,8 @@ static bool event_load_save_files(void)
 static void event_load_auto_state(void)
 {
    bool ret;
-   char msg[PATH_MAX_LENGTH];
-   char savestate_name_auto[PATH_MAX_LENGTH];
+   char msg[PATH_MAX_LENGTH]                 = {0};
+   char savestate_name_auto[PATH_MAX_LENGTH] = {0};
    settings_t *settings = config_get_ptr();
    global_t   *global   = global_get_ptr();
 
@@ -575,12 +627,13 @@ static void event_load_auto_state(void)
 
 static void event_set_savestate_auto_index(void)
 {
-   char state_dir[PATH_MAX_LENGTH], state_base[PATH_MAX_LENGTH];
    size_t i;
-   struct string_list *dir_list = NULL;
-   unsigned max_idx             = 0;
-   settings_t *settings         = config_get_ptr();
-   global_t   *global           = global_get_ptr();
+   char state_dir[PATH_MAX_LENGTH]  = {0};
+   char state_base[PATH_MAX_LENGTH] = {0};
+   struct string_list *dir_list     = NULL;
+   unsigned max_idx                 = 0;
+   settings_t *settings             = config_get_ptr();
+   global_t   *global               = global_get_ptr();
 
    if (!settings->savestate_auto_index)
       return;
@@ -603,9 +656,9 @@ static void event_set_savestate_auto_index(void)
    for (i = 0; i < dir_list->size; i++)
    {
       unsigned idx;
-      char elem_base[PATH_MAX_LENGTH];
-      const char *end      = NULL;
-      const char *dir_elem = dir_list->elems[i].data;
+      char elem_base[PATH_MAX_LENGTH] = {0};
+      const char *end                 = NULL;
+      const char *dir_elem            = dir_list->elems[i].data;
 
       fill_pathname_base(elem_base, dir_elem, sizeof(elem_base));
 
@@ -633,7 +686,7 @@ static bool event_init_content(void)
 
    /* No content to be loaded for dummy core,
     * just successfully exit. */
-   if (global->libretro_dummy) 
+   if (global->core_type == CORE_TYPE_DUMMY) 
       return true;
 
    if (!global->libretro_no_content)
@@ -648,7 +701,8 @@ static bool event_init_content(void)
    event_set_savestate_auto_index();
 
    if (event_load_save_files())
-      RARCH_LOG("Skipping SRAM load.\n");
+      RARCH_LOG("%s.\n",
+            msg_hash_to_str(MSG_SKIPPING_SRAM_LOAD));
 
    event_load_auto_state();
    event_command(EVENT_CMD_BSV_MOVIE_INIT);
@@ -664,8 +718,10 @@ static bool event_init_core(void)
    settings_t *settings = config_get_ptr();
 
    /* per-core saves: save the original path */
-   strlcpy(orig_savefile_dir,global->savefile_dir,sizeof(orig_savefile_dir));
-   strlcpy(orig_savestate_dir,global->savestate_dir,sizeof(orig_savestate_dir));
+   if(orig_savefile_dir[0] == '\0')
+      strlcpy(orig_savefile_dir,global->savefile_dir,sizeof(orig_savefile_dir));
+   if(orig_savestate_dir[0] == '\0')
+      strlcpy(orig_savestate_dir,global->savestate_dir,sizeof(orig_savestate_dir));
 
    /* auto overrides: apply overrides */
    if(settings->auto_overrides_enable)
@@ -676,6 +732,9 @@ static bool event_init_core(void)
          global->overrides_active = false; 
    }
 
+   /* reset video format to libretro's default */
+   video_driver_set_pixel_format(RETRO_PIXEL_FORMAT_0RGB1555);
+
    pretro_set_environment(rarch_environment_cb);
 
    /* auto-remap: apply remap files */
@@ -683,13 +742,13 @@ static bool event_init_core(void)
       config_load_remap();
 
    /* per-core saves: reset redirection paths */
-   if(settings->sort_savestates_enable || settings->sort_savefiles_enable)
+   if((settings->sort_savestates_enable || settings->sort_savefiles_enable) && !global->libretro_no_content) 
       set_paths_redirect(global->basename);
 
    rarch_verify_api_version();
    pretro_init();
 
-   global->use_sram = !global->libretro_dummy &&
+   global->use_sram = (global->core_type == CORE_TYPE_PLAIN) &&
       !global->libretro_no_content;
 
    if (!event_init_content())
@@ -704,11 +763,12 @@ static bool event_init_core(void)
 static bool event_save_auto_state(void)
 {
    bool ret;
-   char savestate_name_auto[PATH_MAX_LENGTH];
+   char savestate_name_auto[PATH_MAX_LENGTH] = {0};
    settings_t *settings = config_get_ptr();
    global_t   *global   = global_get_ptr();
 
-   if (!settings->savestate_auto_save || global->libretro_dummy ||
+   if (!settings->savestate_auto_save || 
+         (global->core_type == CORE_TYPE_DUMMY) ||
        global->libretro_no_content)
        return false;
 
@@ -742,13 +802,15 @@ static void event_init_remapping(void)
  **/
 static bool event_save_core_config(void)
 {
-   char config_dir[PATH_MAX_LENGTH], config_name[PATH_MAX_LENGTH],
-        config_path[PATH_MAX_LENGTH], msg[PATH_MAX_LENGTH];
-   bool ret             = false;
-   bool found_path      = false;
-   bool overrides_active = false;
-   settings_t *settings = config_get_ptr();
-   global_t   *global   = global_get_ptr();
+   char config_dir[PATH_MAX_LENGTH]  = {0};
+   char config_name[PATH_MAX_LENGTH] = {0};
+   char config_path[PATH_MAX_LENGTH] = {0};
+   char msg[PATH_MAX_LENGTH]         = {0};
+   bool ret                          = false;
+   bool found_path                   = false;
+   bool overrides_active             = false;
+   settings_t *settings              = config_get_ptr();
+   global_t   *global                = global_get_ptr();
 
    *config_dir = '\0';
 
@@ -760,9 +822,8 @@ static bool event_save_core_config(void)
             sizeof(config_dir));
    else
    {
-      const char *message = "Config directory not set. Cannot save new config.";
-      rarch_main_msg_queue_push(message, 1, 180, true);
-      RARCH_ERR("%s\n", message);
+      rarch_main_msg_queue_push_new(MSG_CONFIG_DIRECTORY_NOT_SET, 1, 180, true);
+      RARCH_ERR("%s\n", msg_hash_to_str(MSG_CONFIG_DIRECTORY_NOT_SET));
       return false;
    }
 
@@ -774,7 +835,7 @@ static bool event_save_core_config(void)
       /* In case of collision, find an alternative name. */
       for (i = 0; i < 16; i++)
       {
-         char tmp[64];
+         char tmp[64] = {0};
 
          fill_pathname_base(config_name, settings->libretro,
                sizeof(config_name));
@@ -838,84 +899,88 @@ static bool event_save_core_config(void)
 /**
  * event_save_state
  * @path            : Path to state.
- * @msg             : Message.
- * @sizeof_msg      : Size of @msg.
+ * @s               : Message.
+ * @len             : Size of @s.
  *
  * Saves a state with path being @path.
  **/
 static void event_save_state(const char *path,
-      char *msg, size_t sizeof_msg)
+      char *s, size_t len)
 {
    settings_t *settings = config_get_ptr();
 
    if (!save_state(path))
    {
-      snprintf(msg, sizeof_msg,
-            "Failed to save state to \"%s\".", path);
+      snprintf(s, len, "%s \"%s\".",
+            msg_hash_to_str(MSG_FAILED_TO_SAVE_STATE_TO),
+            path);
       return;
    }
 
    if (settings->state_slot < 0)
-      snprintf(msg, sizeof_msg,
-            "Saved state to slot #-1 (auto).");
+      snprintf(s, len, "%s #-1 (auto).", msg_hash_to_str(MSG_SAVED_STATE_TO_SLOT));
    else
-      snprintf(msg, sizeof_msg,
-            "Saved state to slot #%d.", settings->state_slot);
+      snprintf(s, len, "%s #%d.", msg_hash_to_str(MSG_SAVED_STATE_TO_SLOT),
+            settings->state_slot);
 }
 
 /**
  * event_load_state
  * @path            : Path to state.
- * @msg             : Message.
- * @sizeof_msg      : Size of @msg.
+ * @s               : Message.
+ * @len             : Size of @s.
  *
  * Loads a state with path being @path.
  **/
-static void event_load_state(const char *path,
-      char *msg, size_t sizeof_msg)
+static void event_load_state(const char *path, char *s, size_t len)
 {
    settings_t *settings = config_get_ptr();
 
    if (!load_state(path))
    {
-      snprintf(msg, sizeof_msg,
-            "Failed to load state from \"%s\".", path);
+      snprintf(s, len, "%s \"%s\".",
+            msg_hash_to_str(MSG_FAILED_TO_LOAD_STATE),
+            path);
       return;
-
    }
 
    if (settings->state_slot < 0)
-      snprintf(msg, sizeof_msg,
-            "Loaded state from slot #-1 (auto).");
+      snprintf(s, len, "%s #-1 (auto).", msg_hash_to_str(MSG_LOADED_STATE_FROM_SLOT));
    else
-      snprintf(msg, sizeof_msg,
-            "Loaded state from slot #%d.", settings->state_slot);
+      snprintf(s, len, "%s #%d.", msg_hash_to_str(MSG_LOADED_STATE_FROM_SLOT),
+            settings->state_slot);
 }
 
 static void event_main_state(unsigned cmd)
 {
-   char path[PATH_MAX_LENGTH], msg[PATH_MAX_LENGTH];
-   global_t *global     = global_get_ptr();
-   settings_t *settings = config_get_ptr();
+   char path[PATH_MAX_LENGTH] = {0};
+   char msg[PATH_MAX_LENGTH]  = {0};
+   global_t *global           = global_get_ptr();
+   settings_t *settings       = config_get_ptr();
 
    if (settings->state_slot > 0)
       snprintf(path, sizeof(path), "%s%d",
             global->savestate_name, settings->state_slot);
    else if (settings->state_slot < 0)
-      snprintf(path, sizeof(path), "%s.auto",
-            global->savestate_name);
+      fill_pathname_join_delim(path,
+            global->savestate_name, "auto", '.', sizeof(path));
    else
       strlcpy(path, global->savestate_name, sizeof(path));
 
    if (pretro_serialize_size())
    {
-      if (cmd == EVENT_CMD_SAVE_STATE)
-         event_save_state(path, msg, sizeof(msg));
-      else if (cmd == EVENT_CMD_LOAD_STATE)
-         event_load_state(path, msg, sizeof(msg));
+      switch (cmd)
+      {
+         case EVENT_CMD_SAVE_STATE:
+            event_save_state(path, msg, sizeof(msg));
+            break;
+         case EVENT_CMD_LOAD_STATE:
+            event_load_state(path, msg, sizeof(msg));
+            break;
+      }
    }
    else
-      strlcpy(msg, "Core does not support save states.", sizeof(msg));
+      strlcpy(msg, msg_hash_to_str(MSG_CORE_DOES_NOT_SUPPORT_SAVESTATES), sizeof(msg));
 
    rarch_main_msg_queue_push(msg, 2, 180, true);
    RARCH_LOG("%s\n", msg);
@@ -948,7 +1013,7 @@ static bool event_update_system_info(struct retro_system_info *_info,
  * event_command:
  * @cmd                  : Event command index.
  *
- * Performs RetroArch event command with index @cmd.
+ * Performs program event command with index @cmd.
  *
  * Returns: true (1) on success, otherwise false (0).
  **/
@@ -960,6 +1025,7 @@ bool event_command(enum event_command cmd)
    driver_t  *driver    = driver_get_ptr();
    global_t  *global    = global_get_ptr();
    settings_t *settings = config_get_ptr();
+   rarch_system_info_t *system = rarch_system_info_get_ptr();
 
    (void)i;
 
@@ -970,6 +1036,14 @@ bool event_command(enum event_command cmd)
          event_command(EVENT_CMD_LOAD_CORE);
 #endif
          rarch_main_set_state(RARCH_ACTION_STATE_LOAD_CONTENT);
+         break;
+#ifdef HAVE_FFMPEG
+      case EVENT_CMD_LOAD_CONTENT_FFMPEG:
+         rarch_main_set_state(RARCH_ACTION_STATE_LOAD_CONTENT_FFMPEG);
+         break;
+#endif
+      case EVENT_CMD_LOAD_CONTENT_IMAGEVIEWER:
+         rarch_main_set_state(RARCH_ACTION_STATE_LOAD_CONTENT_IMAGEVIEWER);
          break;
       case EVENT_CMD_LOAD_CONTENT:
 #ifdef HAVE_DYNAMIC
@@ -1037,8 +1111,8 @@ bool event_command(enum event_command cmd)
          event_init_controllers();
          break;
       case EVENT_CMD_RESET:
-         RARCH_LOG(RETRO_LOG_RESETTING_CONTENT);
-         rarch_main_msg_queue_push("Reset.", 1, 120, true);
+         RARCH_LOG("%s.\n", msg_hash_to_str(MSG_RESET));
+         rarch_main_msg_queue_push_new(MSG_RESET, 1, 120, true);
          pretro_reset();
 
          /* bSNES since v073r01 resets controllers to JOYPAD
@@ -1067,7 +1141,6 @@ bool event_command(enum event_command cmd)
             *global->fullpath = '\0';
 
             rarch_main_set_state(RARCH_ACTION_STATE_LOAD_CONTENT);
-            global->system.shutdown = false;
          }
          break;
       case EVENT_CMD_UNLOAD_CORE:
@@ -1172,11 +1245,13 @@ bool event_command(enum event_command cmd)
       case EVENT_CMD_AUDIO_MUTE_TOGGLE:
          {
             const char *msg = !settings->audio.mute_enable ?
-               "Audio muted." : "Audio unmuted.";
+               msg_hash_to_str(MSG_AUDIO_MUTED):
+               msg_hash_to_str(MSG_AUDIO_UNMUTED);
 
             if (!audio_driver_mute_toggle())
             {
-               RARCH_ERR("Failed to unmute audio.\n");
+               RARCH_ERR("%s.\n",
+                     msg_hash_to_str(MSG_FAILED_TO_UNMUTE_AUDIO));
                return false;
             }
 
@@ -1186,37 +1261,19 @@ bool event_command(enum event_command cmd)
          break;
       case EVENT_CMD_OVERLAY_DEINIT:
 #ifdef HAVE_OVERLAY
-         if (driver->overlay)
-            input_overlay_free(driver->overlay);
-         driver->overlay = NULL;
-
-         memset(&driver->overlay_state, 0, sizeof(driver->overlay_state));
+         input_overlay_free_ptr();
 #endif
          break;
       case EVENT_CMD_OVERLAY_INIT:
          event_command(EVENT_CMD_OVERLAY_DEINIT);
 #ifdef HAVE_OVERLAY
-         if (driver->osk_enable)
-         {
-            if (!*settings->osk.overlay)
-               break;
-         }
-         else
-         {
-            if (!*settings->input.overlay)
-               break;
-         }
-
-         driver->overlay = input_overlay_new(driver->osk_enable ? settings->osk.overlay : settings->input.overlay,
-               driver->osk_enable ? settings->osk.enable   : settings->input.overlay_enable,
-               settings->input.overlay_opacity, settings->input.overlay_scale);
-         if (!driver->overlay)
-            RARCH_ERR("Failed to load overlay.\n");
+         if (input_overlay_new_ptr() == -1)
+            RARCH_ERR("%s.\n", msg_hash_to_str(MSG_FAILED_TO_LOAD_OVERLAY));
 #endif
          break;
       case EVENT_CMD_OVERLAY_NEXT:
 #ifdef HAVE_OVERLAY
-         input_overlay_next(driver->overlay, settings->input.overlay_opacity);
+         input_overlay_next(input_overlay_get_ptr(), settings->input.overlay_opacity);
 #endif
          break;
       case EVENT_CMD_DSP_FILTER_DEINIT:
@@ -1250,14 +1307,19 @@ bool event_command(enum event_command cmd)
          break;
       case EVENT_CMD_HISTORY_DEINIT:
          if (g_defaults.history)
+         {
+            content_playlist_write_file(g_defaults.history);
             content_playlist_free(g_defaults.history);
+         }
          g_defaults.history = NULL;
          break;
       case EVENT_CMD_HISTORY_INIT:
          event_command(EVENT_CMD_HISTORY_DEINIT);
          if (!settings->history_list_enable)
             return false;
-         RARCH_LOG("Loading history file: [%s].\n", settings->content_history_path);
+         RARCH_LOG("%s: [%s].\n",
+               msg_hash_to_str(MSG_LOADING_HISTORY_FILE),
+               settings->content_history_path);
          g_defaults.history = content_playlist_init(
                settings->content_history_path,
                settings->content_history_size);
@@ -1280,15 +1342,15 @@ bool event_command(enum event_command cmd)
             global->core_info = core_info_list_new();
          break;
       case EVENT_CMD_CORE_DEINIT:
-      {
-         struct retro_hw_render_callback *cb = video_driver_callback();
-         event_deinit_core(true);
+         {
+            struct retro_hw_render_callback *cb = video_driver_callback();
+            event_deinit_core(true);
 
-         if (cb)
-            memset(cb, 0, sizeof(*cb));
+            if (cb)
+               memset(cb, 0, sizeof(*cb));
 
-         break;
-      }
+            break;
+         }
       case EVENT_CMD_CORE_INIT:
          if (!event_init_core())
             return false;
@@ -1311,13 +1373,13 @@ bool event_command(enum event_command cmd)
          break;
       case EVENT_CMD_OVERLAY_SET_SCALE_FACTOR:
 #ifdef HAVE_OVERLAY
-         input_overlay_set_scale_factor(driver->overlay,
+         input_overlay_set_scale_factor(input_overlay_get_ptr(),
                settings->input.overlay_scale);
 #endif
          break;
       case EVENT_CMD_OVERLAY_SET_ALPHA_MOD:
 #ifdef HAVE_OVERLAY
-         input_overlay_set_alpha_mod(driver->overlay,
+         input_overlay_set_alpha_mod(input_overlay_get_ptr(),
                settings->input.overlay_opacity);
 #endif
          break;
@@ -1362,7 +1424,7 @@ bool event_command(enum event_command cmd)
       case EVENT_CMD_PAUSE_CHECKS:
          if (runloop->is_paused)
          {
-            RARCH_LOG("Paused.\n");
+            RARCH_LOG("%s\n", msg_hash_to_str(MSG_PAUSED));
             event_command(EVENT_CMD_AUDIO_STOP);
 
             if (settings->video.black_frame_insertion)
@@ -1370,7 +1432,7 @@ bool event_command(enum event_command cmd)
          }
          else
          {
-            RARCH_LOG("Unpaused.\n");
+            RARCH_LOG("%s\n", msg_hash_to_str(MSG_UNPAUSED));
             event_command(EVENT_CMD_AUDIO_START);
          }
          break;
@@ -1426,7 +1488,8 @@ bool event_command(enum event_command cmd)
          dir_list_sort(global->shader_dir.list, false);
 
          for (i = 0; i < global->shader_dir.list->size; i++)
-            RARCH_LOG("Found shader \"%s\"\n",
+            RARCH_LOG("%s \"%s\"\n",
+                  msg_hash_to_str(MSG_FOUND_SHADER),
                   global->shader_dir.list->elems[i].data);
          break;
       case EVENT_CMD_SAVEFILES:
@@ -1448,7 +1511,8 @@ bool event_command(enum event_command cmd)
             ;
 
          if (!global->use_sram)
-            RARCH_LOG("SRAM will not be saved.\n");
+            RARCH_LOG("%s\n",
+                  msg_hash_to_str(MSG_SRAM_WILL_NOT_BE_SAVED));
 
          if (global->use_sram)
             event_command(EVENT_CMD_AUTOSAVE_INIT);
@@ -1548,29 +1612,31 @@ bool event_command(enum event_command cmd)
          if (!global)
             break;
 
-         if (global->log_file)
+         if (global->log_file && global->log_file != stderr)
             fclose(global->log_file);
          global->log_file = NULL;
          break;
       case EVENT_CMD_DISK_EJECT_TOGGLE:
-         if (global->system.disk_control.get_num_images)
+         if (system && system->disk_control.get_num_images)
          {
             const struct retro_disk_control_callback *control = 
                (const struct retro_disk_control_callback*)
-               &global->system.disk_control;
+               &system->disk_control;
 
             if (control)
                event_check_disk_eject(control);
          }
          else
-            rarch_main_msg_queue_push("Core does not support Disk Options.", 1, 120, true);
+            rarch_main_msg_queue_push_new(
+                  MSG_CORE_DOES_NOT_SUPPORT_DISK_OPTIONS,
+                  1, 120, true);
          break;
       case EVENT_CMD_DISK_NEXT:
-         if (global->system.disk_control.get_num_images)
+         if (system && system->disk_control.get_num_images)
          {
             const struct retro_disk_control_callback *control = 
                (const struct retro_disk_control_callback*)
-               &global->system.disk_control;
+               &system->disk_control;
 
             if (!control)
                return false;
@@ -1581,14 +1647,16 @@ bool event_command(enum event_command cmd)
             event_check_disk_next(control);
          }
          else
-            rarch_main_msg_queue_push("Core does not support Disk Options.", 1, 120, true);
+            rarch_main_msg_queue_push_new(
+                  MSG_CORE_DOES_NOT_SUPPORT_DISK_OPTIONS,
+                  1, 120, true);
          break;
       case EVENT_CMD_DISK_PREV:
-         if (global->system.disk_control.get_num_images)
+         if (system && system->disk_control.get_num_images)
          {
             const struct retro_disk_control_callback *control = 
                (const struct retro_disk_control_callback*)
-               &global->system.disk_control;
+               &system->disk_control;
 
             if (!control)
                return false;
@@ -1599,7 +1667,9 @@ bool event_command(enum event_command cmd)
             event_check_disk_prev(control);
          }
          else
-            rarch_main_msg_queue_push("Core does not support Disk Options.", 1, 120, true);
+            rarch_main_msg_queue_push_new(
+                  MSG_CORE_DOES_NOT_SUPPORT_DISK_OPTIONS,
+                  1, 120, true);
          break;
       case EVENT_CMD_RUMBLE_STOP:
          for (i = 0; i < MAX_USERS; i++)
@@ -1617,7 +1687,8 @@ bool event_command(enum event_command cmd)
             if (!driver->input || !input_driver_grab_mouse(grab_mouse_state))
                return false;
 
-            RARCH_LOG("Grab mouse state: %s.\n",
+            RARCH_LOG("%s: %s.\n",
+                  msg_hash_to_str(MSG_GRAB_MOUSE_STATE),
                   grab_mouse_state ? "yes" : "no");
 
             video_driver_show_mouse(!grab_mouse_state);
@@ -1634,11 +1705,8 @@ bool event_command(enum event_command cmd)
          break;
       case EVENT_CMD_NONE:
       default:
-         goto error;
+         return false;
    }
 
    return true;
-
-error:
-   return false;
 }

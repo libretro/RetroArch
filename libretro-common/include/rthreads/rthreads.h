@@ -182,7 +182,8 @@ void scond_signal(scond_t *cond);
 #elif defined(_3DS)
 #include <3ds.h>
 #elif defined(_WIN32) && !defined(_XBOX)
-#include <windows.h> #elif defined(_XBOX)
+#include <windows.h>
+#elif defined(_XBOX)
 #include <xtl.h>
 #else
 #include <time.h>

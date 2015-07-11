@@ -16,26 +16,68 @@
 #ifndef __MENU_DISPLAY_H__
 #define __MENU_DISPLAY_H__
 
-#include "menu_driver.h"
-#include "menu_list.h"
-#include "../gfx/video_thread_wrapper.h"
+#include <stdint.h>
+#include <stdlib.h>
+#include <boolean.h>
+
+#include <queues/message_queue.h>
+
+#include "menu_animation.h"
 #include "../gfx/font_renderer_driver.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-void menu_display_fb(void);
+typedef struct menu_framebuf
+{
+   uint16_t *data;
+   unsigned width;
+   unsigned height;
+   size_t pitch;
+   bool dirty;
+} menu_framebuf_t;
 
-bool menu_display_fb_in_use(void);
+typedef struct menu_display
+{
+   bool msg_force;
+
+   menu_framebuf_t frame_buf;
+   menu_animation_t *animation;
+
+   struct
+   {
+      void *buf;
+      int size;
+
+      const uint8_t *framebuf;
+      bool alloc_framebuf;
+   } font;
+
+   unsigned header_height;
+
+   /* This buffer can be used to display generic OK messages to the user.
+    * Fill it and call
+    * menu_list_push(driver->menu->menu_stack, "", "message", 0, 0);
+    */
+   char message_contents[PATH_MAX_LENGTH];
+
+   msg_queue_t *msg_queue;
+} menu_display_t;
+
+menu_display_t  *menu_display_get_ptr(void);
+
+menu_framebuf_t *menu_display_fb_get_ptr(void);
+
+void menu_display_fb(void);
 
 void menu_display_fb_set_dirty(void);
 
 void menu_display_fb_unset_dirty(void);
 
-void menu_display_free(menu_handle_t *menu);
+void menu_display_free(void *data);
 
-bool menu_display_init(menu_handle_t *menu);
+bool menu_display_init(void *data);
 
 bool menu_display_update_pending(void);
 
@@ -45,20 +87,22 @@ bool menu_display_font_init_first(const void **font_driver,
       void **font_handle, void *video_data, const char *font_path,
       float font_size);
 
-bool menu_display_font_bind_block(menu_handle_t *menu,
+bool menu_display_font_bind_block(void *data,
       const struct font_renderer *font_driver, void *userdata);
 
-bool menu_display_font_flush_block(menu_handle_t *menu,
+bool menu_display_font_flush_block(void *data,
       const struct font_renderer *font_driver);
 
-/** Shortcuts to handle menu->font.buf */
-bool menu_display_init_main_font(menu_handle_t *menu,
+bool menu_display_init_main_font(void *data,
       const char *font_path, float font_size);
-void menu_display_free_main_font(menu_handle_t *menu);
+
+void menu_display_free_main_font(void *data);
 
 void menu_display_set_viewport(void);
 
 void menu_display_unset_viewport(void);
+
+void menu_display_timedate(char *s, size_t len, unsigned time_mode);
 
 #ifdef __cplusplus
 }

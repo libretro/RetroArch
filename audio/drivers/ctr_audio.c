@@ -185,14 +185,12 @@ static bool ctr_audio_alive(void *data)
 static bool ctr_audio_start(void *data)
 {
    ctr_audio_t* ctr = (ctr_audio_t*)data;
-   /* TODO/FIXME - we should not depend upon global state
-    * in audio/video/input drivers. */
-   global_t *global     = global_get_ptr();
+   rarch_system_info_t *system = rarch_system_info_get_ptr();
 
    /* prevents restarting audio when the menu
     * is toggled off on shutdown */
 
-   if (global->system.shutdown)
+   if (system->shutdown)
       return true;
 
 //   CSND_SetPlayState(0x8, 1);
