@@ -27,14 +27,15 @@ static slock_t *overlay_lock;
 
 void rarch_main_data_overlay_image_upload_iterate(bool is_thread)
 {
-   input_overlay_t *ol = input_overlay_get_ptr();
-   if (!ol)
-      return;
+   input_overlay_t *ol = NULL;
 
 #ifdef HAVE_THREADS
    if (is_thread)
       slock_lock(overlay_lock);
 #endif
+   ol = input_overlay_get_ptr();
+   if (!ol)
+      return;
 
    switch (input_overlay_status(ol))
    {
@@ -53,12 +54,13 @@ void rarch_main_data_overlay_image_upload_iterate(bool is_thread)
 
 void rarch_main_data_overlay_iterate(bool is_thread)
 {
-   input_overlay_t *ol = input_overlay_get_ptr();
+   input_overlay_t *ol = NULL;
    
 #ifdef HAVE_THREADS
    if (is_thread)
       slock_lock(overlay_lock);
 #endif
+   ol = input_overlay_get_ptr();
 
    if (!ol)
       goto end;
