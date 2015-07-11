@@ -100,7 +100,11 @@ static bool rpng_image_load_argb_shift(const char *path,
          &out_img->pixels, &out_img->width, &out_img->height);
 
    if (!ret)
+   {
+      out_img->pixels = NULL;
+      out_img->width  = out_img->height = 0;
       return false;
+   }
 
    texture_image_color_convert(r_shift, g_shift, b_shift,
          a_shift, out_img);
