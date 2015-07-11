@@ -774,6 +774,7 @@ static void frontend_android_get_environment_settings(int *argc,
             {
                fill_pathname_join(g_defaults.core_assets_dir,
                      app_dir, "downloads", sizeof(g_defaults.core_assets_dir));
+               path_mkdir(g_defaults.core_assets_dir);
             }
             if(*screenshot_dir && test_permissions(screenshot_dir))
             {
@@ -784,6 +785,7 @@ static void frontend_android_get_environment_settings(int *argc,
             {
                fill_pathname_join(g_defaults.screenshot_dir,
                      app_dir, "screenshots", sizeof(g_defaults.screenshot_dir));
+               path_mkdir(g_defaults.screenshot_dir);
             }
 
             switch (perms)
