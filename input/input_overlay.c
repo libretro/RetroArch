@@ -307,12 +307,11 @@ static void input_overlay_free_overlays(input_overlay_t *ol)
 static bool input_overlay_load_texture_image(struct overlay *overlay,
       struct texture_image *image, const char *path)
 {
-   struct texture_image img = {0};
-
-   if (!texture_image_load(&img, path))
+   if (!image)
+      return false;
+   if (!texture_image_load(image, path))
       return false;
 
-   *image = img;
    overlay->load_images[overlay->load_images_size++] = *image;
    
    return true;
