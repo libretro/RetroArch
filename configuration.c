@@ -2350,7 +2350,11 @@ bool config_save_autoconf_profile(const char *path, unsigned user)
    settings_t *settings                 = config_get_ptr();
 
    fill_pathname_join(buf, settings->input.autoconfig_dir,
-         path, sizeof(buf));
+         input.joypad_driver, sizeof(buf));   
+         
+   if(!path_is_directory(buf))
+      fill_pathname_join(buf, settings->input.autoconfig_dir,
+            path, sizeof(buf));
 
    fill_pathname_noext(autoconf_file, buf, ".cfg", sizeof(autoconf_file));
 
