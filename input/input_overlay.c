@@ -157,7 +157,7 @@ struct input_overlay
 };
 
 static input_overlay_t *overlay_ptr;
-static input_overlay_state_t *overlay_state_ptr;
+static input_overlay_state_t overlay_state_ptr;
 static config_file_t *overlay_conf;
 
 input_overlay_t *input_overlay_get_ptr(void)
@@ -167,7 +167,7 @@ input_overlay_t *input_overlay_get_ptr(void)
 
 input_overlay_state_t *input_overlay_get_state_ptr(void)
 {
-   return overlay_state_ptr;
+   return &overlay_state_ptr;
 }
 
 bool input_overlay_is_active(void)
@@ -1307,12 +1307,11 @@ void input_overlay_free(input_overlay_t *ol)
 
 void input_overlay_free_ptr(void)
 {
-   input_overlay_free(overlay_ptr);
+   if (overlay_ptr)
+      input_overlay_free(overlay_ptr);
    overlay_ptr = NULL;
 
-   if (overlay_state_ptr)
-      free(overlay_state_ptr);
-   overlay_state_ptr = NULL;
+   memset(&overlay_state_ptr, 0, sizeof(overlay_state_ptr));
 }
 
 int input_overlay_new_ptr(void)
@@ -1331,11 +1330,6 @@ int input_overlay_new_ptr(void)
          return 1;
    }
 
-    overlay_state_ptr = (input_overlay_state_t *)calloc(1, sizeof(*overlay_state_ptr));
-
-    if (!overlay_state_ptr)
-       return -1;
-
     overlay_ptr = input_overlay_new(
          driver->osk_enable ?
          settings->osk.overlay : settings->input.overlay,
@@ -1345,10 +1339,7 @@ int input_overlay_new_ptr(void)
          settings->input.overlay_scale);
 
     if (!overlay_ptr)
-    {
-       free(overlay_state_ptr);
        return -1;
-    }
 
     return 0;
 }
