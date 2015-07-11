@@ -29,6 +29,7 @@
 
 static uint64_t pad_state;
 static int16_t analog_state[1][2][2];
+static uint64_t lifecycle_state;
 
 static const char *ctr_joypad_name(unsigned pad)
 {
@@ -65,7 +66,8 @@ static bool ctr_joypad_button(unsigned port_num, uint16_t joykey)
    if (port_num >= MAX_PADS)
       return false;
 
-   return (pad_state & (1ULL << joykey));
+   return (ctr->lifecycle_state & (1ULL << key)) ||
+      (pad_state & (1ULL << joykey));
 }
 
 static uint64_t ctr_joypad_get_buttons(unsigned port_num)
@@ -124,7 +126,6 @@ static void ctr_joypad_poll(void)
    unsigned i, j;
    uint32_t state_tmp;
    circlePosition state_tmp_analog;
-   ctr_input_t *ctr = (ctr_input_t*)input_driver_get_ptr();
 
    hidScanInput();
 
@@ -155,10 +156,10 @@ static void ctr_joypad_poll(void)
          if (analog_state[0][i][j] == -0x8000)
             analog_state[0][i][j] = -0x7fff;
 
-   ctr->lifecycle_state &= ~((1ULL << RARCH_MENU_TOGGLE));
+   lifecycle_state &= ~((1ULL << RARCH_MENU_TOGGLE));
 
    if(state_tmp & KEY_TOUCH)
-      ctr->lifecycle_state |= (1ULL << RARCH_MENU_TOGGLE);
+      lifecycle_state |= (1ULL << RARCH_MENU_TOGGLE);
 
    /* panic button */
    if((state_tmp & KEY_START) &&
