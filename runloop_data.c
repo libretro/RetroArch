@@ -132,9 +132,6 @@ static void data_runloop_iterate(bool is_thread)
 #ifdef HAVE_RPNG
    rarch_main_data_nbio_image_iterate (is_thread);
 #endif
-#ifdef HAVE_OVERLAY
-   rarch_main_data_overlay_iterate    (is_thread);
-#endif
 #ifdef HAVE_NETWORKING
    rarch_main_data_http_iterate       (is_thread);
 #endif
@@ -264,6 +261,9 @@ void rarch_main_data_iterate(void)
 #endif
 #ifdef HAVE_RPNG
    rarch_main_data_nbio_image_upload_iterate(false);
+#endif
+#ifdef HAVE_OVERLAY
+   rarch_main_data_overlay_iterate    (false);
 #endif
 
 #ifdef HAVE_MENU
