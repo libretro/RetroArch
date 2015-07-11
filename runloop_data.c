@@ -153,7 +153,7 @@ bool rarch_main_data_active(void)
 #endif
 
 #ifdef HAVE_OVERLAY
-   if (input_overlay_is_active())
+   if (input_overlay_data_is_active())
       active = true;
 #endif
    if (rarch_main_data_nbio_image_get_handle())

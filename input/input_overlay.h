@@ -77,8 +77,7 @@ enum overlay_status
    OVERLAY_STATUS_DEFERRED_LOADING,
    OVERLAY_STATUS_DEFERRED_LOADING_RESOLVE,
    OVERLAY_STATUS_DEFERRED_DONE,
-   OVERLAY_STATUS_DEFERRED_ERROR,
-   OVERLAY_STATUS_ALIVE
+   OVERLAY_STATUS_DEFERRED_ERROR
 };
 
 enum overlay_image_transfer_status
@@ -223,7 +222,7 @@ input_overlay_t *input_overlay_get_ptr(void);
 
 input_overlay_state_t *input_overlay_get_state_ptr(void);
 
-bool input_overlay_is_active(void);
+bool input_overlay_data_is_active(void);
 
 void input_overlay_free_ptr(void);
 

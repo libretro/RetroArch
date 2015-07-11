@@ -127,6 +127,7 @@ struct input_overlay
 
    enum overlay_image_transfer_status loading_status;
    bool blocked;
+   bool alive;
 
    struct overlay *overlays;
    const struct overlay *active;
@@ -169,15 +170,13 @@ input_overlay_state_t *input_overlay_get_state_ptr(void)
    return &overlay_st_ptr;
 }
 
-bool input_overlay_is_active(void)
+bool input_overlay_data_is_active(void)
 {
    input_overlay_t *overlay = input_overlay_get_ptr();
    if (!overlay)
       return false;
 
-   if (overlay->state     == OVERLAY_STATUS_ALIVE)
-      return false;
-   if (overlay->state     == OVERLAY_STATUS_NONE)
+   if (overlay->alive)
       return false;
 
    return true;
@@ -937,7 +936,8 @@ bool input_overlay_new_done(input_overlay_t *ol)
    input_overlay_set_scale_factor(ol, ol->deferred.scale_factor);
    ol->next_index = (ol->index + 1) % ol->size;
 
-   ol->state = OVERLAY_STATUS_ALIVE;
+   ol->state = OVERLAY_STATUS_NONE;
+   ol->alive = true;
 
    return true;
 }
@@ -1394,7 +1394,7 @@ bool input_overlay_is_alive(input_overlay_t *ol)
 {
    if (!ol)
       return false;
-   return ol->state == OVERLAY_STATUS_ALIVE;
+   return ol->alive;
 }
 
 enum overlay_status input_overlay_status(input_overlay_t *ol)

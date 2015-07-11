@@ -68,9 +68,6 @@ void rarch_main_data_overlay_iterate(bool is_thread)
       case OVERLAY_STATUS_DEFERRED_LOAD:
          input_overlay_load_overlays(ol);
          break;
-      case OVERLAY_STATUS_NONE:
-      case OVERLAY_STATUS_ALIVE:
-         break;
       case OVERLAY_STATUS_DEFERRED_LOADING_RESOLVE:
          input_overlay_load_overlays_resolve_iterate(ol);
          break;
@@ -81,6 +78,7 @@ void rarch_main_data_overlay_iterate(bool is_thread)
          input_overlay_free(ol);
          break;
       default:
+      case OVERLAY_STATUS_NONE:
          break;
    }
 
