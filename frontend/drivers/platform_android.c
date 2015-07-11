@@ -452,18 +452,19 @@ char ext_dir[PATH_MAX_LENGTH];
 
 static bool test_permissions(const char *path)
 {
-    bool ret;
-    ret = path_mkdir(path);
-    if(ret)
-       rmdir(path);
+   bool ret = path_mkdir(path);
 
-    return ret;
+   if(ret)
+      rmdir(path);
+
+   return ret;
 }
 
 static void frontend_android_get_environment_settings(int *argc,
       char *argv[], void *data, void *params_data)
 {
    int32_t major, minor, rel;
+   int perms = 0;
    char device_model[PROP_VALUE_MAX] = {0};
    char device_id[PROP_VALUE_MAX]    = {0};
    struct rarch_main_wrap      *args = NULL;
@@ -714,7 +715,6 @@ static void frontend_android_get_environment_settings(int *argc,
 
    //set paths depending on the ability to write to sdcard_dir
 
-   int perms = 0;
    if(*sdcard_dir)
    {
       if(test_permissions(sdcard_dir))
