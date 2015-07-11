@@ -856,8 +856,6 @@ static int action_ok_remap_file_save_core(const char *path,
    else
       rarch_main_msg_queue_push("Error saving remap file", 1, 100, true);
 
-   config_save_autoconf_profile(settings->input.device_names[0],0);
-   config_save_autoconf_profile(settings->input.device_names[1],1);
    return 0;
 }
 
