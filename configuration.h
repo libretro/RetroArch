@@ -214,6 +214,8 @@ typedef struct settings
       /* Set by autoconfiguration in joypad_autoconfig_dir.
        * Does not override main binds. */
       bool autoconfigured[MAX_USERS];
+      int vid[MAX_USERS];
+      int pid[MAX_USERS];
 
       unsigned libretro_device[MAX_USERS];
       unsigned analog_dpad_mode[MAX_USERS];
@@ -493,6 +495,14 @@ bool config_load_remap(void);
  * Returns: true (1) on success, otherwise returns false (0).
  **/
 bool config_save_keybinds_file(const char *path);
+
+/**
+ * config_save_autoconf_profile:
+ * @path            : Path that shall be written to.
+ * @user              : Controller number to save
+ * Writes a controller autoconf file to disk.
+ **/
+void config_save_autoconf_profile(const char *path, unsigned user);
 
 /**
  * config_save_file:
