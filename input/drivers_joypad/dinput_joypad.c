@@ -229,7 +229,6 @@ static BOOL CALLBACK enum_joypad_cb(const DIDEVICEINSTANCE *inst, void *p)
    inst->guidProduct.Data4[4], inst->guidProduct.Data4[5], inst->guidProduct.Data4[6], inst->guidProduct.Data4[7]);
 #endif
 
-
    g_pads[g_joypad_cnt].vid = inst->guidProduct.Data1 % 0x10000;
    g_pads[g_joypad_cnt].pid = inst->guidProduct.Data1 / 0x10000;
 

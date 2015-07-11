@@ -2178,7 +2178,7 @@ static void save_keybind_hat(config_file_t *conf, const char *key,
 }
 
 static void save_keybind_joykey(config_file_t *conf, const char *prefix,
-      const char *base, const struct retro_keybind *bind)
+      const char *base, const struct retro_keybind *bind, bool save_empty)
 {
    char key[64] = {0};
 
@@ -2186,7 +2186,10 @@ static void save_keybind_joykey(config_file_t *conf, const char *prefix,
    strlcat(key, "_btn", sizeof(key));
 
    if (bind->joykey == NO_BTN)
-      config_set_string(conf, key, "nul");
+   {
+       if (save_empty)
+         config_set_string(conf, key, "nul");
+   }
    else if (GET_HAT_DIR(bind->joykey))
       save_keybind_hat(conf, key, bind);
    else
@@ -2194,7 +2197,7 @@ static void save_keybind_joykey(config_file_t *conf, const char *prefix,
 }
 
 static void save_keybind_axis(config_file_t *conf, const char *prefix,
-      const char *base, const struct retro_keybind *bind)
+      const char *base, const struct retro_keybind *bind, bool save_empty)
 {
    char key[64]    = {0};
    char config[16] = {0};
@@ -2205,7 +2208,10 @@ static void save_keybind_axis(config_file_t *conf, const char *prefix,
    strlcat(key, "_axis", sizeof(key));
 
    if (bind->joyaxis == AXIS_NONE)
-      config_set_string(conf, key, "nul");
+   {
+      if (save_empty)
+         config_set_string(conf, key, "nul");
+   }
    else if (AXIS_NEG_GET(bind->joyaxis) != AXIS_DIR_NONE)
    {
       dir = '-';
@@ -2230,18 +2236,19 @@ static void save_keybind_axis(config_file_t *conf, const char *prefix,
  * @prefix             : prefix name of keybind
  * @base               : base name   of keybind
  * @bind               : pointer to key binding object
+ * @kb                 : save keyboard binds
  *
  * Save a key binding to the config file.
  */
 static void save_keybind(config_file_t *conf, const char *prefix,
-      const char *base, const struct retro_keybind *bind)
+      const char *base, const struct retro_keybind *bind, bool save_kb, bool save_empty)
 {
    if (!bind->valid)
       return;
-
-   save_keybind_key(conf, prefix, base, bind);
-   save_keybind_joykey(conf, prefix, base, bind);
-   save_keybind_axis(conf, prefix, base, bind);
+   if (save_kb)
+      save_keybind_key(conf, prefix, base, bind);
+   save_keybind_joykey(conf, prefix, base, bind, save_empty);
+   save_keybind_axis(conf, prefix, base, bind, save_empty);
 }
 
 /**
@@ -2263,7 +2270,7 @@ static void save_keybinds_user(config_file_t *conf, unsigned user)
 
       if (prefix)
          save_keybind(conf, prefix, input_config_bind_map[i].base,
-               &settings->input.binds[user][i]);
+               &settings->input.binds[user][i], true, true);
    }
 }
 
@@ -2324,6 +2331,54 @@ bool config_save_keybinds_file(const char *path)
    ret = config_file_write(conf, path);
    config_file_free(conf);
    return ret;
+}
+
+
+/**
+ * config_save_autoconf_profile:
+ * @path            : Path that shall be written to.
+ * @user              : Controller number to save
+ * Writes a controller autoconf file to disk.
+ **/
+void config_save_autoconf_profile(const char *path, unsigned user)
+{
+   settings_t *settings = config_get_ptr();
+   char buf[PATH_MAX_LENGTH] = {0};
+   char autoconf_file[PATH_MAX_LENGTH]  = {0};
+   config_file_t *conf = NULL;
+
+   fill_pathname_join(buf, settings->input.autoconfig_dir,
+      path, sizeof(buf));
+
+   fill_pathname_noext(autoconf_file, buf, ".cfg", sizeof(autoconf_file));
+
+   //remove this
+   RARCH_LOG("Saving autoconf profile: %s %s %s\n");
+
+   conf  = config_file_new(autoconf_file);
+   if (!conf)
+   {
+      conf = config_file_new(NULL);
+	  if (!conf)
+	     return;
+   }
+   config_set_string(conf, "input_driver", settings->input.joypad_driver);
+   config_set_string(conf, "input_device", settings->input.device_names[user]);
+
+
+   if(settings->input.vid[user] && settings->input.pid[user])
+   {
+      config_set_int(conf, "input_vendor_id", settings->input.vid[user]);
+      config_set_int(conf, "input_product_id_id", settings->input.pid[user]);
+   }
+
+   for (int i = 0; i < RARCH_FIRST_META_KEY; i++)
+   {
+      save_keybind(conf, "input", input_config_bind_map[i].base,
+         &settings->input.binds[user][i], false, false);
+   }
+   config_file_write(conf, autoconf_file);
+   config_file_free(conf);
 }
 
 /**
