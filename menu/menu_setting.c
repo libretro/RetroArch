@@ -1130,6 +1130,20 @@ static int setting_action_ok_bind_all(void *data, bool wraparound)
    return 0;
 }
 
+static int setting_action_ok_bind_all_save_autoconfig(void *data, bool wraparound)
+{
+   settings_t    *settings   = config_get_ptr();
+   rarch_setting_t *setting  = (rarch_setting_t*)data;
+
+   (void)wraparound;
+
+   if (!settings || !setting)
+      return -1;
+
+   config_save_autoconf_profile(settings->input.device_names[setting->index_offset], setting->index_offset);
+   return 0;
+}
+
 static int setting_action_ok_bind_defaults(void *data, bool wraparound)
 {
    unsigned i;
@@ -4386,12 +4400,14 @@ static bool setting_append_list_input_options(
       static char key_type[MAX_USERS][64];
       static char key_analog[MAX_USERS][64];
       static char key_bind_all[MAX_USERS][64];
+      static char key_bind_all_save_autoconfig[MAX_USERS][64];
       static char key_bind_defaults[MAX_USERS][64];
 
       static char label[MAX_USERS][64];
       static char label_type[MAX_USERS][64];
       static char label_analog[MAX_USERS][64];
       static char label_bind_all[MAX_USERS][64];
+      static char label_bind_all_save_autoconfig[MAX_USERS][64];
       static char label_bind_defaults[MAX_USERS][64];
 
       snprintf(key[user], sizeof(key[user]),
@@ -4401,6 +4417,8 @@ static bool setting_append_list_input_options(
       snprintf(key_analog[user], sizeof(key_analog[user]),
                "input_player%u_analog_dpad_mode", user + 1);
       snprintf(key_bind_all[user], sizeof(key_bind_all[user]),
+               "input_player%u_bind_all", user + 1);
+      snprintf(key_bind_all_save_autoconfig[user], sizeof(key_bind_all[user]),
                "input_player%u_bind_all", user + 1);
       snprintf(key_bind_defaults[user], sizeof(key_bind_defaults[user]),
                "input_player%u_bind_defaults", user + 1);
@@ -4415,6 +4433,8 @@ static bool setting_append_list_input_options(
                "%s %u Bind All", menu_hash_to_str(MENU_VALUE_USER), user + 1);
       snprintf(label_bind_defaults[user], sizeof(label_bind_defaults[user]),
                "%s %u Bind Default All", menu_hash_to_str(MENU_VALUE_USER), user + 1);
+      snprintf(label_bind_all_save_autoconfig[user], sizeof(label_bind_all_save_autoconfig[user]),
+               "%s %u Save Autoconfig", menu_hash_to_str(MENU_VALUE_USER), user + 1);
 
       CONFIG_UINT(
             settings->input.libretro_device[user],
@@ -4488,6 +4508,17 @@ static bool setting_append_list_input_options(
       (*list)[list_info->index - 1].index          = user + 1;
       (*list)[list_info->index - 1].index_offset   = user;
       (*list)[list_info->index - 1].action_ok      = &setting_action_ok_bind_defaults;
+      (*list)[list_info->index - 1].action_cancel  = NULL;
+
+      CONFIG_ACTION(
+            key_bind_all_save_autoconfig[user],
+            label_bind_all_save_autoconfig[user],
+            group_info.name,
+            subgroup_info.name,
+            parent_group);
+      (*list)[list_info->index - 1].index          = user + 1;
+      (*list)[list_info->index - 1].index_offset   = user;
+      (*list)[list_info->index - 1].action_ok      = &setting_action_ok_bind_all_save_autoconfig;
       (*list)[list_info->index - 1].action_cancel  = NULL;
    }
 
