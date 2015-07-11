@@ -30,6 +30,7 @@
 
 typedef struct libusb_hid
 {
+   libusb_context *ctx;
    joypad_connection_t *slots;
    sthread_t *poll_thread;
    int hp; /* libusb_hotplug_callback_handle is just int */
@@ -337,35 +338,35 @@ static int remove_adapter(void *data, struct libusb_device *dev)
    struct libusb_adapter  *adapter = (struct libusb_adapter*)&adapters;
    struct libusb_hid          *hid = (struct libusb_hid*)data;
 
-   while (adapter->next != NULL)
+   while (adapter->next == NULL)
+      return -1;
+
+   if (adapter->next->device == dev)
    {
-      if (adapter->next->device == dev)
-      {
-         struct libusb_adapter *new_next = NULL;
-         const char *name = (const char*)adapter->next->name;
+      struct libusb_adapter *new_next = NULL;
+      const char *name = (const char*)adapter->next->name;
 
-         input_config_autoconfigure_disconnect(adapter->slot, name);
+      input_config_autoconfigure_disconnect(adapter->slot, name);
 
-         adapter->next->quitting = true;
-         sthread_join(adapter->next->thread);
+      adapter->next->quitting = true;
+      sthread_join(adapter->next->thread);
 
-         pad_connection_pad_deinit(&hid->slots[adapter->slot], adapter->slot);
+      pad_connection_pad_deinit(&hid->slots[adapter->slot], adapter->slot);
 
-         slock_free(adapter->send_control_lock);
-         fifo_free(adapter->send_control_buffer);
+      slock_free(adapter->send_control_lock);
+      fifo_free(adapter->send_control_buffer);
 
-         libusb_release_interface(adapter->next->handle, adapter->next->interface_number);
-         libusb_close(adapter->next->handle);
+      libusb_release_interface(adapter->next->handle, adapter->next->interface_number);
+      libusb_close(adapter->next->handle);
 
-         new_next = adapter->next->next;
-         free(adapter->next);
-         adapter->next = new_next;
+      new_next = adapter->next->next;
+      free(adapter->next);
+      adapter->next = new_next;
 
-         return 0;
-      }
-
-      adapter = adapter->next;
+      return 0;
    }
+
+   adapter = adapter->next;
 
    return -1;
 }
@@ -486,9 +487,9 @@ static void libusb_hid_free(void *data)
 
    pad_connection_destroy(hid->slots);
 
-   libusb_hotplug_deregister_callback(NULL, hid->hp);
+   libusb_hotplug_deregister_callback(hid->ctx, hid->hp);
 
-   libusb_exit(NULL);
+   libusb_exit(hid->ctx);
    if (hid)
       free(hid);
 }
@@ -515,7 +516,7 @@ static void *libusb_hid_init(void)
    if (!hid)
       goto error;
 
-   ret = libusb_init(NULL);
+   ret = libusb_init(&hid->ctx);
 
    if (ret < 0)
       goto error;
@@ -528,7 +529,7 @@ static void *libusb_hid_init(void)
    if (!hid->slots)
       goto error;
 
-   count = libusb_get_device_list(NULL, &devices);
+   count = libusb_get_device_list(hid->ctx, &devices);
 
    for (i = 0; i < count; i++)
    {
@@ -543,7 +544,7 @@ static void *libusb_hid_init(void)
       libusb_free_device_list(devices, 1);
 
    ret = libusb_hotplug_register_callback(
-         NULL,
+         hid->ctx,
          (libusb_hotplug_event)(LIBUSB_HOTPLUG_EVENT_DEVICE_ARRIVED |
          LIBUSB_HOTPLUG_EVENT_DEVICE_LEFT),
          (libusb_hotplug_flag)LIBUSB_HOTPLUG_ENUMERATE,
