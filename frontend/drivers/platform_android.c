@@ -28,6 +28,11 @@
 #include "../frontend.h"
 #include "../../general.h"
 #include "../../msg_hash.h"
+#include <file/file_path.h>
+
+#define SDCARD_ROOT_WRITABLE 1
+#define SDCARD_EXT_DIR_WRITABLE 2
+#define SDCARD_NOT_WRITABLE 3
 
 struct android_app *g_android;
 static pthread_key_t thread_key;
@@ -443,6 +448,17 @@ static char downloads_dir[PATH_MAX_LENGTH];
 char apk_path[PATH_MAX_LENGTH];
 static char sdcard_dir[PATH_MAX_LENGTH];
 char app_dir[PATH_MAX_LENGTH];
+char ext_dir[PATH_MAX_LENGTH];
+
+static bool test_permissions(const char *path)
+{
+    bool ret;
+    ret = path_mkdir(path);
+    if(ret)
+       rmdir(path);
+
+    return ret;
+}
 
 static void frontend_android_get_environment_settings(int *argc,
       char *argv[], void *data, void *params_data)
@@ -661,6 +677,26 @@ static void frontend_android_get_environment_settings(int *argc,
       }
    }
    
+   CALL_OBJ_METHOD_PARAM(env, jstr, obj, android_app->getStringExtra,
+         (*env)->NewStringUTF(env, "EXTERNAL"));
+
+   if (android_app->getStringExtra && jstr)
+   {
+      const char *argv = NULL;
+
+      *ext_dir = '\0';
+      argv = (*env)->GetStringUTFChars(env, jstr, 0);
+
+      if (argv && *argv)
+         strlcpy(ext_dir, argv, sizeof(ext_dir));
+      (*env)->ReleaseStringUTFChars(env, jstr, argv);
+
+      if (*ext_dir)
+      {
+         RARCH_LOG("External files dir [%s].\n", ext_dir);
+      }
+   }
+
    /* Content. */
    CALL_OBJ_METHOD_PARAM(env, jstr, obj, android_app->getStringExtra,
          (*env)->NewStringUTF(env, "DATADIR"));
@@ -672,10 +708,25 @@ static void frontend_android_get_environment_settings(int *argc,
       *app_dir = '\0';
       argv = (*env)->GetStringUTFChars(env, jstr, 0);
 
-	  
       if (argv && *argv)
          strlcpy(app_dir, argv, sizeof(app_dir));
       (*env)->ReleaseStringUTFChars(env, jstr, argv);
+
+   //set paths depending on the ability to write to sdcard_dir
+
+   int perms = 0;
+   if(*sdcard_dir)
+   {
+      if(test_permissions(sdcard_dir))
+         perms = SDCARD_ROOT_WRITABLE;
+   }
+   else if(*ext_dir)
+   {
+      if(test_permissions(ext_dir))
+         perms = SDCARD_EXT_DIR_WRITABLE;
+   }
+   else
+       perms = SDCARD_NOT_WRITABLE;
 
       if (*app_dir)
       {
@@ -714,26 +765,41 @@ static void frontend_android_get_environment_settings(int *argc,
                   app_dir, "remaps", sizeof(g_defaults.remap_dir));
             fill_pathname_join(g_defaults.wallpapers_dir,
                   app_dir, "wallpapers", sizeof(g_defaults.wallpapers_dir));
-			if(*downloads_dir)
-			{
+            if(*downloads_dir && test_permissions(downloads_dir))
+            {
                fill_pathname_join(g_defaults.core_assets_dir,
                      downloads_dir, "", sizeof(g_defaults.core_assets_dir));
-			}
-			else
-			{
+            }
+            else
+            {
                fill_pathname_join(g_defaults.core_assets_dir,
                      app_dir, "downloads", sizeof(g_defaults.core_assets_dir));
-			}
-			if(*screenshot_dir)
-			{
+            }
+            if(*screenshot_dir && test_permissions(screenshot_dir))
+            {
                fill_pathname_join(g_defaults.screenshot_dir,
                      screenshot_dir, "", sizeof(g_defaults.screenshot_dir));
-			}
-			else
-			{
+            }
+            else
+            {
                fill_pathname_join(g_defaults.screenshot_dir,
                      app_dir, "screenshots", sizeof(g_defaults.screenshot_dir));
-			}
+            }
+
+            switch (perms)
+            {
+                case SDCARD_EXT_DIR_WRITABLE:
+                   fill_pathname_join(g_defaults.sram_dir,
+                        app_dir, "saves", sizeof(g_defaults.sram_dir));
+                   break;
+                case SDCARD_NOT_WRITABLE:
+                   fill_pathname_join(g_defaults.sram_dir,
+                        app_dir, "saves", sizeof(g_defaults.sram_dir));
+                   break;
+                case SDCARD_ROOT_WRITABLE:
+                default:
+                   break;
+            }
          }
       }
    }
@@ -904,7 +970,10 @@ static int frontend_android_parse_drive_list(void *data)
    menu_list_push(list,
          app_dir, "Application Dir", MENU_FILE_DIRECTORY, 0, 0);
    menu_list_push(list,
+         ext_dir, "External Application Dir", MENU_FILE_DIRECTORY, 0, 0);
+         menu_list_push(list,
          sdcard_dir, "Internal Memory", MENU_FILE_DIRECTORY, 0, 0);
+
    menu_list_push(list, "/", "",
          MENU_FILE_DIRECTORY, 0, 0);
 
