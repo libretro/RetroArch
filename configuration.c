@@ -2342,29 +2342,28 @@ bool config_save_keybinds_file(const char *path)
  **/
 void config_save_autoconf_profile(const char *path, unsigned user)
 {
-   settings_t *settings = config_get_ptr();
-   char buf[PATH_MAX_LENGTH] = {0};
+   unsigned i;
+   char buf[PATH_MAX_LENGTH]            = {0};
    char autoconf_file[PATH_MAX_LENGTH]  = {0};
-   config_file_t *conf = NULL;
+   config_file_t *conf                  = NULL;
+   settings_t *settings                 = config_get_ptr();
 
    fill_pathname_join(buf, settings->input.autoconfig_dir,
-      path, sizeof(buf));
+         path, sizeof(buf));
 
    fill_pathname_noext(autoconf_file, buf, ".cfg", sizeof(autoconf_file));
 
-   //remove this
-   RARCH_LOG("Saving autoconf profile: %s %s %s\n");
-
    conf  = config_file_new(autoconf_file);
+
    if (!conf)
    {
       conf = config_file_new(NULL);
-	  if (!conf)
-	     return;
+      if (!conf)
+         return;
    }
+
    config_set_string(conf, "input_driver", settings->input.joypad_driver);
    config_set_string(conf, "input_device", settings->input.device_names[user]);
-
 
    if(settings->input.vid[user] && settings->input.pid[user])
    {
@@ -2372,10 +2371,10 @@ void config_save_autoconf_profile(const char *path, unsigned user)
       config_set_int(conf, "input_product_id_id", settings->input.pid[user]);
    }
 
-   for (int i = 0; i < RARCH_FIRST_META_KEY; i++)
+   for (i = 0; i < RARCH_FIRST_META_KEY; i++)
    {
       save_keybind(conf, "input", input_config_bind_map[i].base,
-         &settings->input.binds[user][i], false, false);
+            &settings->input.binds[user][i], false, false);
    }
    config_file_write(conf, autoconf_file);
    config_file_free(conf);
