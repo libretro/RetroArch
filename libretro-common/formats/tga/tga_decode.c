@@ -36,7 +36,7 @@ bool rtga_image_load_shift(uint8_t *buf,
    if (buf[2] != 2)
    {
       fprintf(stderr, "TGA image is not uncompressed RGB.\n");
-      return false;
+      goto error;
    }
 
    memcpy(info, buf + 12, 6);
@@ -55,7 +55,7 @@ bool rtga_image_load_shift(uint8_t *buf,
    if (!out_img->pixels)
    {
       fprintf(stderr, "Failed to allocate TGA pixels.\n");
-      return false;
+      goto error;
    }
 
    tmp      = buf + 18;
@@ -64,9 +64,7 @@ bool rtga_image_load_shift(uint8_t *buf,
    if (bits != 32 && bits != 24)
    {
       fprintf(stderr, "Bit depth of TGA image is wrong. Only 32-bit and 24-bit supported.\n");
-      free(out_img->pixels);
-      out_img->pixels = NULL;
-      return false;
+      goto error;
    }
 
    if (bits == 32)
@@ -87,4 +85,12 @@ bool rtga_image_load_shift(uint8_t *buf,
    }
 
    return true;
+
+error:
+   if (out_img->pixels)
+      free(out_img->pixels);
+
+   out_img->pixels = NULL;
+   out_img->width  = out_img->height = 0;
+   return false;
 }
