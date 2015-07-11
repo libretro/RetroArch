@@ -154,7 +154,7 @@ static bool input_autoconfigure_joypad_from_conf_dir(
 {
    size_t i;
    int ret          = 0;
-   int index        = 0;
+   int index        = -1;
    int current_best = 0;
    config_file_t *conf        = NULL;
    struct string_list *list   = NULL;
@@ -187,7 +187,7 @@ static bool input_autoconfigure_joypad_from_conf_dir(
    {
       conf = config_file_new(list->elems[i].data);
       ret = input_try_autoconfigure_joypad_from_conf(conf, params);
-      if(ret > current_best)
+      if(ret >= current_best)
       {
          index = i;
          current_best = ret;
@@ -195,7 +195,7 @@ static bool input_autoconfigure_joypad_from_conf_dir(
       config_file_free(conf);
    }
 
-   if(index)
+   if(index >= 0)
    {
       RARCH_LOG("Autoconf: best configuration score=%d\n", current_best);
       conf = config_file_new(list->elems[index].data);
