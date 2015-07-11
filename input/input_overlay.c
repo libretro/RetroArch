@@ -216,16 +216,16 @@ static void input_overlay_scale(struct overlay *ol, float scale)
       if (!desc)
          continue;
 
-      scale_w = ol->mod_w * desc->range_x;
-      scale_h = ol->mod_h * desc->range_y;
+      scale_w      = ol->mod_w * desc->range_x;
+      scale_h      = ol->mod_h * desc->range_y;
 
-      desc->mod_w = 2.0f * scale_w;
-      desc->mod_h = 2.0f * scale_h;
+      desc->mod_w  = 2.0f * scale_w;
+      desc->mod_h  = 2.0f * scale_h;
 
       adj_center_x = ol->mod_x + desc->x * ol->mod_w;
       adj_center_y = ol->mod_y + desc->y * ol->mod_h;
-      desc->mod_x = adj_center_x - scale_w;
-      desc->mod_y = adj_center_y - scale_h;
+      desc->mod_x  = adj_center_x - scale_w;
+      desc->mod_y  = adj_center_y - scale_h;
    }
 }
 
@@ -250,8 +250,9 @@ static void input_overlay_set_vertex_geom(input_overlay_t *ol)
       if (!desc->image.pixels)
          continue;
 
-      ol->iface->vertex_geom(ol->iface_data, desc->image_index,
-            desc->mod_x, desc->mod_y, desc->mod_w, desc->mod_h);
+      if (ol->iface && ol->iface->vertex_geom)
+         ol->iface->vertex_geom(ol->iface_data, desc->image_index,
+               desc->mod_x, desc->mod_y, desc->mod_w, desc->mod_h);
    }
 }
 
@@ -304,7 +305,9 @@ static void input_overlay_free_overlays(input_overlay_t *ol)
    for (i = 0; i < ol->size; i++)
       input_overlay_free_overlay(&ol->overlays[i]);
 
-   free(ol->overlays);
+   if (ol->overlays)
+      free(ol->overlays);
+   ol->overlays = NULL;
 }
 
 static bool input_overlay_load_texture_image(struct overlay *overlay,
@@ -535,9 +538,9 @@ static bool input_overlay_load_desc(input_overlay_t *ol,
 
    snprintf(conf_key, sizeof(conf_key),
          "overlay%u_desc%u_movable", ol_idx, desc_idx);
-   desc->movable = false;
-   desc->delta_x = 0.0f;
-   desc->delta_y = 0.0f;
+   desc->movable     = false;
+   desc->delta_x     = 0.0f;
+   desc->delta_y     = 0.0f;
    config_get_bool(conf, conf_key, &desc->movable);
 
    desc->range_x_mod = desc->range_x;
@@ -618,12 +621,15 @@ static void input_overlay_load_active(input_overlay_t *ol,
    if (!ol)
       return;
 
-   ol->iface->load(ol->iface_data, ol->active->load_images,
-         ol->active->load_images_size);
+   if (ol->iface && ol->iface->load)
+      ol->iface->load(ol->iface_data, ol->active->load_images,
+            ol->active->load_images_size);
 
    input_overlay_set_alpha_mod(ol, opacity);
    input_overlay_set_vertex_geom(ol);
-   ol->iface->full_screen(ol->iface_data, ol->active->full_screen);
+
+   if (ol->iface && ol->iface->full_screen)
+      ol->iface->full_screen(ol->iface_data, ol->active->full_screen);
 }
 
 bool input_overlay_load_overlays_resolve_iterate(input_overlay_t *ol)
@@ -1006,7 +1012,6 @@ input_overlay_t *input_overlay_new(const char *path, bool enable,
       return NULL;
    }
 
-
    if (!video_driver_overlay_interface(&ol->iface))
    {
       RARCH_ERR("Overlay interface is not present in video driver.\n");
@@ -1045,7 +1050,9 @@ void input_overlay_enable(input_overlay_t *ol, bool enable)
    if (!ol)
       return;
    ol->enable = enable;
-   ol->iface->enable(ol->iface_data, enable);
+
+   if (ol->iface && ol->iface->enable)
+      ol->iface->enable(ol->iface_data, enable);
 }
 
 /**
@@ -1095,7 +1102,8 @@ static bool inside_hitbox(const struct overlay_desc *desc, float x, float y)
  * @norm_x and @norm_y are the result of
  * input_translate_coord_viewport().
  **/
-void input_overlay_poll(input_overlay_t *ol, input_overlay_state_t *out,
+void input_overlay_poll(input_overlay_t *ol,
+      input_overlay_state_t *out,
       int16_t norm_x, int16_t norm_y)
 {
    size_t i;
@@ -1133,31 +1141,35 @@ void input_overlay_poll(input_overlay_t *ol, input_overlay_state_t *out,
       x_dist        = x - desc->x;
       y_dist        = y - desc->y;
 
-      if (desc->type == OVERLAY_TYPE_BUTTONS)
+      switch (desc->type)
       {
-         uint64_t mask = desc->key_mask;
+         case OVERLAY_TYPE_BUTTONS:
+            {
+               uint64_t mask = desc->key_mask;
 
-         out->buttons |= mask;
+               out->buttons |= mask;
 
-         if (mask & (UINT64_C(1) << RARCH_OVERLAY_NEXT))
-            ol->next_index = desc->next_index;
-      }
-      else if (desc->type == OVERLAY_TYPE_KEYBOARD)
-      {
-         if (desc->key_mask < RETROK_LAST)
-            OVERLAY_SET_KEY(out, desc->key_mask);
-      }
-      else
-      {
-         float x_val     = x_dist / desc->range_x;
-         float y_val     = y_dist / desc->range_y;
-         float x_val_sat = x_val / desc->analog_saturate_pct;
-         float y_val_sat = y_val / desc->analog_saturate_pct;
+               if (mask & (UINT64_C(1) << RARCH_OVERLAY_NEXT))
+                  ol->next_index = desc->next_index;
+            }
+            break;
+         case OVERLAY_TYPE_KEYBOARD:
+            if (desc->key_mask < RETROK_LAST)
+               OVERLAY_SET_KEY(out, desc->key_mask);
+            break;
+         default:
+            {
+               float x_val     = x_dist / desc->range_x;
+               float y_val     = y_dist / desc->range_y;
+               float x_val_sat = x_val / desc->analog_saturate_pct;
+               float y_val_sat = y_val / desc->analog_saturate_pct;
 
-         unsigned int base = (desc->type == OVERLAY_TYPE_ANALOG_RIGHT) ? 2 : 0;
+               unsigned int base = (desc->type == OVERLAY_TYPE_ANALOG_RIGHT) ? 2 : 0;
 
-         out->analog[base + 0] = clamp_float(x_val_sat, -1.0f, 1.0f) * 32767.0f;
-         out->analog[base + 1] = clamp_float(y_val_sat, -1.0f, 1.0f) * 32767.0f;
+               out->analog[base + 0] = clamp_float(x_val_sat, -1.0f, 1.0f) * 32767.0f;
+               out->analog[base + 1] = clamp_float(y_val_sat, -1.0f, 1.0f) * 32767.0f;
+            }
+            break;
       }
 
       if (desc->movable)
@@ -1190,9 +1202,10 @@ static void input_overlay_update_desc_geom(input_overlay_t *ol,
    if (!desc->movable)
       return;
 
-   ol->iface->vertex_geom(ol->iface_data, desc->image_index,
-      desc->mod_x + desc->delta_x, desc->mod_y + desc->delta_y,
-      desc->mod_w, desc->mod_h);
+   if (ol->iface && ol->iface->vertex_geom)
+      ol->iface->vertex_geom(ol->iface_data, desc->image_index,
+            desc->mod_x + desc->delta_x, desc->mod_y + desc->delta_y,
+            desc->mod_w, desc->mod_h);
 
    desc->delta_x = 0.0f;
    desc->delta_y = 0.0f;
@@ -1232,8 +1245,11 @@ void input_overlay_post_poll(input_overlay_t *ol, float opacity)
          desc->range_y_mod *= desc->range_mod;
 
          if (desc->image.pixels)
-            ol->iface->set_alpha(ol->iface_data, desc->image_index,
-                  desc->alpha_mod * opacity);
+         {
+            if (ol->iface && ol->iface->set_alpha)
+               ol->iface->set_alpha(ol->iface_data, desc->image_index,
+                     desc->alpha_mod * opacity);
+         }
       }
 
       input_overlay_update_desc_geom(ol, desc);
@@ -1325,10 +1341,12 @@ void input_overlay_free(input_overlay_t *ol)
 
    input_overlay_free_overlays(ol);
 
-   if (ol->iface)
+   if (ol->iface && ol->iface->enable)
       ol->iface->enable(ol->iface_data, false);
 
-   free(ol->overlay_path);
+   if (ol->overlay_path)
+      free(ol->overlay_path);
+   ol->overlay_path = NULL;
    free(ol);
 }
 
