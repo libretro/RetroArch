@@ -157,7 +157,7 @@ struct input_overlay
 };
 
 static input_overlay_t *overlay_ptr;
-static input_overlay_state_t overlay_state_ptr;
+static input_overlay_state_t overlay_st_ptr;
 
 input_overlay_t *input_overlay_get_ptr(void)
 {
@@ -166,7 +166,7 @@ input_overlay_t *input_overlay_get_ptr(void)
 
 input_overlay_state_t *input_overlay_get_state_ptr(void)
 {
-   return &overlay_state_ptr;
+   return &overlay_st_ptr;
 }
 
 bool input_overlay_is_active(void)
@@ -1338,7 +1338,7 @@ void input_overlay_free_ptr(void)
       input_overlay_free(overlay_ptr);
    overlay_ptr = NULL;
 
-   memset(&overlay_state_ptr, 0, sizeof(overlay_state_ptr));
+   memset(&overlay_st_ptr, 0, sizeof(overlay_st_ptr));
 }
 
 int input_overlay_new_ptr(void)
