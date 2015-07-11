@@ -4768,6 +4768,12 @@ static bool setting_append_list_menu_options(
          parent_group,
          general_write_handler,
          general_read_handler);
+#ifdef RARCH_MOBILE
+   /* We don't want mobile users being able to switch this off. */
+   (*list)[list_info->index - 1].action_left   = NULL;
+   (*list)[list_info->index - 1].action_right  = NULL;
+   (*list)[list_info->index - 1].action_start  = NULL;
+#endif
 
    END_SUB_GROUP(list, list_info, parent_group);
 
