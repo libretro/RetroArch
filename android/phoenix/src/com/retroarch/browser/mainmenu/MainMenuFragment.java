@@ -23,6 +23,7 @@ import android.provider.Settings;
 import android.util.Log;
 import android.widget.Toast;
 import android.os.Environment;
+import android.content.Context;
 
 import com.retroarch.R;
 import com.retroarch.browser.NativeInterface;
@@ -222,5 +223,10 @@ public final class MainMenuFragment extends PreferenceListFragment implements On
 		retro.putExtra("SDCARD", Environment.getExternalStorageDirectory().getAbsolutePath());
 		retro.putExtra("DOWNLOADS", Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).getAbsolutePath());
 		retro.putExtra("SCREENSHOTS", Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES).getAbsolutePath());
+        String external = Environment.getExternalStorageDirectory().getAbsolutePath() + "/Android/data/com.retroarch/files";
+        retro.putExtra("EXTERNAL", external);
 	}
 }
+
+
+
