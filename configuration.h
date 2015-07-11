@@ -502,7 +502,7 @@ bool config_save_keybinds_file(const char *path);
  * @user              : Controller number to save
  * Writes a controller autoconf file to disk.
  **/
-void config_save_autoconf_profile(const char *path, unsigned user);
+bool config_save_autoconf_profile(const char *path, unsigned user);
 
 /**
  * config_save_file:

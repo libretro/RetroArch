@@ -2340,9 +2340,10 @@ bool config_save_keybinds_file(const char *path)
  * @user              : Controller number to save
  * Writes a controller autoconf file to disk.
  **/
-void config_save_autoconf_profile(const char *path, unsigned user)
+bool config_save_autoconf_profile(const char *path, unsigned user)
 {
    unsigned i;
+   int ret = false;
    char buf[PATH_MAX_LENGTH]            = {0};
    char autoconf_file[PATH_MAX_LENGTH]  = {0};
    config_file_t *conf                  = NULL;
@@ -2359,7 +2360,7 @@ void config_save_autoconf_profile(const char *path, unsigned user)
    {
       conf = config_file_new(NULL);
       if (!conf)
-         return;
+         return false;
    }
 
    config_set_string(conf, "input_driver", settings->input.joypad_driver);
@@ -2376,8 +2377,10 @@ void config_save_autoconf_profile(const char *path, unsigned user)
       save_keybind(conf, "input", input_config_bind_map[i].base,
             &settings->input.binds[user][i], false, false);
    }
-   config_file_write(conf, autoconf_file);
+   ret = config_file_write(conf, autoconf_file);
    config_file_free(conf);
+
+   return ret;
 }
 
 /**
