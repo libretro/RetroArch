@@ -2900,10 +2900,12 @@ unsigned *height_p, size_t *pitch_p)
 #ifdef HAVE_OVERLAY
 static void gl_free_overlay(gl_t *gl);
 static bool gl_overlay_load(void *data, 
-      const struct texture_image *images, unsigned num_images)
+      const void *image_data, unsigned num_images)
 {
    unsigned i, j;
    gl_t *gl = (gl_t*)data;
+   const struct texture_image *images = 
+      (const struct texture_image*)image_data;
 
    if (!gl)
       return false;

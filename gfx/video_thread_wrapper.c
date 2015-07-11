@@ -750,10 +750,12 @@ static void thread_overlay_enable(void *data, bool state)
 }
 
 static bool thread_overlay_load(void *data,
-      const struct texture_image *images, unsigned num_images)
+      const void *image_data, unsigned num_images)
 {
    thread_video_t *thr = (thread_video_t*)data;
    thread_packet_t pkt = { CMD_OVERLAY_LOAD };
+   const struct texture_image *images = 
+      (const struct texture_image*)image_data;
 
    if (!thr)
       return false;

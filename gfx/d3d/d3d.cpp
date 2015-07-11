@@ -1517,10 +1517,12 @@ static void d3d_overlay_vertex_geom(void *data,
 }
 
 static bool d3d_overlay_load(void *data,
-      const texture_image *images, unsigned num_images)
+      const void *image_data, unsigned num_images)
 {
    unsigned i, y;
    d3d_video_t *d3d = (d3d_video_t*)data;
+   const texture_image *images = (const texture_image*)
+      image_data;
 
    if (!d3d)
 	   return false;

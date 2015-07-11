@@ -23,6 +23,7 @@
 #include <file/file_path.h>
 #include <string/string_list.h>
 #include <file/config_file.h>
+#include <formats/image.h>
 #include <clamping.h>
 #include <rhash.h>
 

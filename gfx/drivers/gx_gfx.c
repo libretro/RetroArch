@@ -1341,10 +1341,12 @@ static void gx_get_poke_interface(void *data, const video_poke_interface_t **ifa
 #ifdef HAVE_OVERLAY
 static void gx_overlay_tex_geom(void *data, unsigned image, float x, float y, float w, float h);
 static void gx_overlay_vertex_geom(void *data, unsigned image, float x, float y, float w, float h);
-static bool gx_overlay_load(void *data, const struct texture_image *images, unsigned num_images)
+
+static bool gx_overlay_load(void *data, const void *image_data, unsigned num_images)
 {
    unsigned i;
    gx_video_t *gx = (gx_video_t*)data;
+   const struct texture_image *images = (const struct texture_image*)image_data;
 
    gx_free_overlay(gx);
    gx->overlay = (struct gx_overlay_data*)calloc(num_images, sizeof(*gx->overlay));

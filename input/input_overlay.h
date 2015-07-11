@@ -21,8 +21,6 @@
 #include <boolean.h>
 
 #include <retro_miscellaneous.h>
-#include <formats/image.h>
-
 #include "../libretro.h"
 
 #ifdef __cplusplus
@@ -47,7 +45,7 @@ typedef struct video_overlay_interface
 {
    void (*enable)(void *data, bool state);
    bool (*load)(void *data,
-         const struct texture_image *images, unsigned num_images);
+         const void *images, unsigned num_images);
    void (*tex_geom)(void *data, unsigned image,
          float x, float y, float w, float h);
    void (*vertex_geom)(void *data, unsigned image,
