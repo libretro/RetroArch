@@ -4419,7 +4419,7 @@ static bool setting_append_list_input_options(
       snprintf(key_bind_all[user], sizeof(key_bind_all[user]),
                "input_player%u_bind_all", user + 1);
       snprintf(key_bind_all_save_autoconfig[user], sizeof(key_bind_all[user]),
-               "input_player%u_bind_all", user + 1);
+               "input_player%u_bind_all_save_autoconfig", user + 1);
       snprintf(key_bind_defaults[user], sizeof(key_bind_defaults[user]),
                "input_player%u_bind_defaults", user + 1);
 
