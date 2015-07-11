@@ -239,12 +239,12 @@ static int16_t input_state(unsigned port, unsigned device,
 #ifdef HAVE_OVERLAY
 /*
  * input_poll_overlay:
- * @overlay_device : pointer to overlay 
+ * @ol : pointer to overlay 
  *
  * Poll pressed buttons/keys on currently active overlay.
  **/
 static INLINE void input_poll_overlay(
-      input_overlay_t *overlay_device, float opacity)
+      input_overlay_t *ol, float opacity)
 {
    input_overlay_state_t old_key_state;
    unsigned i, j, device;
@@ -253,14 +253,14 @@ static INLINE void input_poll_overlay(
    settings_t *settings            = config_get_ptr();
    input_overlay_state_t *ol_state = input_overlay_get_state_ptr();
 
-   if (overlay_device->state != OVERLAY_STATUS_ALIVE || !ol_state)
+   if (!input_overlay_is_alive(ol) || !ol_state)
       return;
 
    memcpy(old_key_state.keys, ol_state->keys,
          sizeof(ol_state->keys));
    memset(ol_state, 0, sizeof(*ol_state));
 
-   device = input_overlay_full_screen(overlay_device) ?
+   device = input_overlay_full_screen(ol) ?
       RARCH_DEVICE_POINTER_SCREEN : RETRO_DEVICE_POINTER;
 
    for (i = 0;
@@ -274,7 +274,7 @@ static INLINE void input_poll_overlay(
       int16_t y = input_driver_state(NULL, 0,
             device, i, RETRO_DEVICE_ID_POINTER_Y);
 
-      input_overlay_poll(overlay_device, &polled_data, x, y);
+      input_overlay_poll(ol, &polled_data, x, y);
 
       ol_state->buttons |= polled_data.buttons;
 
@@ -368,9 +368,9 @@ static INLINE void input_poll_overlay(
    }
 
    if (polled)
-      input_overlay_post_poll(overlay_device, opacity);
+      input_overlay_post_poll(ol, opacity);
    else
-      input_overlay_poll_clear(overlay_device, opacity);
+      input_overlay_poll_clear(ol, opacity);
 }
 #endif
 

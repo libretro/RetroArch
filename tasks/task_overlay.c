@@ -27,8 +27,8 @@ static slock_t *overlay_lock;
 
 void rarch_main_data_overlay_image_upload_iterate(bool is_thread)
 {
-   input_overlay_t *overlay = input_overlay_get_ptr();
-   if (!overlay)
+   input_overlay_t *ol = input_overlay_get_ptr();
+   if (!ol)
       return;
 
 #ifdef HAVE_THREADS
@@ -36,10 +36,10 @@ void rarch_main_data_overlay_image_upload_iterate(bool is_thread)
       slock_lock(overlay_lock);
 #endif
 
-   switch (overlay->state)
+   switch (input_overlay_status(ol))
    {
       case OVERLAY_STATUS_DEFERRED_LOADING:
-         input_overlay_load_overlays_iterate(overlay);
+         input_overlay_load_overlays_iterate(ol);
          break;
       default:
          break;
@@ -53,32 +53,32 @@ void rarch_main_data_overlay_image_upload_iterate(bool is_thread)
 
 void rarch_main_data_overlay_iterate(bool is_thread)
 {
-   input_overlay_t *overlay = input_overlay_get_ptr();
+   input_overlay_t *ol = input_overlay_get_ptr();
    
 #ifdef HAVE_THREADS
    if (is_thread)
       slock_lock(overlay_lock);
 #endif
 
-   if (!overlay)
+   if (!ol)
       goto end;
 
-   switch (overlay->state)
+   switch (input_overlay_status(ol))
    {
       case OVERLAY_STATUS_DEFERRED_LOAD:
-         input_overlay_load_overlays(overlay);
+         input_overlay_load_overlays(ol);
          break;
       case OVERLAY_STATUS_NONE:
       case OVERLAY_STATUS_ALIVE:
          break;
       case OVERLAY_STATUS_DEFERRED_LOADING_RESOLVE:
-         input_overlay_load_overlays_resolve_iterate(overlay);
+         input_overlay_load_overlays_resolve_iterate(ol);
          break;
       case OVERLAY_STATUS_DEFERRED_DONE:
-         input_overlay_new_done(overlay);
+         input_overlay_new_done(ol);
          break;
       case OVERLAY_STATUS_DEFERRED_ERROR:
-         input_overlay_free(overlay);
+         input_overlay_free(ol);
          break;
       default:
          break;
