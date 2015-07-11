@@ -171,7 +171,6 @@ static bool input_autoconfigure_joypad_from_conf_dir(
    if (!list || !list->size)
       list = dir_list_new(settings->input.autoconfig_dir, "cfg", false);
 
-
    if(!list)
       return false;
 

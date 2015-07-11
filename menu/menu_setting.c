@@ -1140,7 +1140,10 @@ static int setting_action_ok_bind_all_save_autoconfig(void *data, bool wraparoun
    if (!settings || !setting)
       return -1;
 
-   config_save_autoconf_profile(settings->input.device_names[setting->index_offset], setting->index_offset);
+   if(config_save_autoconf_profile(settings->input.device_names[setting->index_offset], setting->index_offset))
+      rarch_main_msg_queue_push("Autoconf file saved successfully", 1, 100, true);
+   else
+      rarch_main_msg_queue_push("Error saving autoconf file", 1, 100, true);
    return 0;
 }
 
