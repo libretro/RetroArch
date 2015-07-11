@@ -2245,7 +2245,7 @@ static void save_keybind(config_file_t *conf, const char *prefix,
 {
    if (!bind->valid)
       return;
-   if(save_kb)
+   if (save_kb)
       save_keybind_key(conf, prefix, base, bind);
    save_keybind_joykey(conf, prefix, base, bind, save_empty);
    save_keybind_axis(conf, prefix, base, bind, save_empty);
