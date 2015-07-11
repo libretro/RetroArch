@@ -244,6 +244,7 @@ typedef struct settings
       char remapping_path[PATH_MAX_LENGTH];
       
       unsigned menu_toggle_gamepad_combo;
+      bool back_as_menu_toggle_enable;
    } input;
 
    struct

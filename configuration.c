@@ -585,6 +585,7 @@ static void config_set_defaults(void)
    settings->camera.allow                           = false;
 
    settings->input.autoconfig_descriptor_label_show = true;
+   settings->input.back_as_menu_toggle_enable       = true;
    settings->input.input_descriptor_label_show      = input_descriptor_label_show;
    settings->input.input_descriptor_hide_unbound    = input_descriptor_hide_unbound;
    settings->input.remap_binds_enable               = true;
@@ -1392,6 +1393,7 @@ static bool config_load_file(const char *path, bool set_defaults)
    if (!strcmp(settings->audio.filter_dir, "default"))
       *settings->audio.filter_dir = '\0';
 
+   CONFIG_GET_BOOL_BASE(conf, settings, input.back_as_menu_toggle_enable, "back_as_menu_toggle_enable");
    CONFIG_GET_BOOL_BASE(conf, settings, input.remap_binds_enable, "input_remap_binds_enable");
    CONFIG_GET_FLOAT_BASE(conf, settings, input.axis_threshold, "input_axis_threshold");
    CONFIG_GET_BOOL_BASE(conf, settings, input.netplay_client_swap_input, "netplay_client_swap_input");
@@ -2358,6 +2360,8 @@ bool config_save_file(const char *path)
    config_set_bool(conf, "video_gpu_record", settings->video.gpu_record);
    config_set_bool(conf, "input_remap_binds_enable",
          settings->input.remap_binds_enable);
+   config_set_bool(conf, "back_as_menu_toggle_enable",
+         settings->input.back_as_menu_toggle_enable);
    config_set_bool(conf, "netplay_client_swap_input",
          settings->input.netplay_client_swap_input);
    config_set_bool(conf, "input_descriptor_label_show",

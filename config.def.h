@@ -525,6 +525,8 @@ static unsigned menu_toggle_gamepad_combo    = 2;
 static unsigned menu_toggle_gamepad_combo    = 0;
 #endif
 
+static bool back_as_menu_toggle_enable = true;
+
 /* Crop overscanned frames. */
 static const bool crop_overscan = true;
 

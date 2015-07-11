@@ -565,7 +565,7 @@ static void handle_hotplug(android_input_t *android,
    char name_buf[256]           = {0};
    int vendorId                 = 0;
    int productId                = 0;
-   bool          autoconfigured = false;
+   bool back_mapped             = false;
    settings_t         *settings = config_get_ptr();
 
    if (*port > MAX_PADS)
@@ -662,6 +662,7 @@ static void handle_hotplug(android_input_t *android,
 
    if (settings->input.autodetect_enable)
    {
+      unsigned      autoconfigured = false;
       autoconfig_params_t params   = {{0}};
 
       RARCH_LOG("Port %d: %s.\n", *port, name_buf);
@@ -672,9 +673,16 @@ static void handle_hotplug(android_input_t *android,
       params.pid = productId;
       strlcpy(params.driver, android_joypad.ident, sizeof(params.driver));
       autoconfigured = input_config_autoconfigure_joypad(&params);
+
+      if (autoconfigured)
+      {
+         if (settings->input.autoconf_binds[*port][RARCH_MENU_TOGGLE].joykey != 0)
+            back_mapped = true;
+      }
    }
 
-   (void)autoconfigured;
+   if (!back_mapped && settings->input.back_as_menu_toggle_enable)
+      settings->input.autoconf_binds[*port][RARCH_MENU_TOGGLE].joykey = AKEYCODE_BACK;
 
    *port = android->pads_connected;
    android->pad_states[android->pads_connected].id = id;
