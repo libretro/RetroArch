@@ -106,7 +106,10 @@ static void input_autoconfigure_joypad_add(
       autoconfig_params_t *params)
 {
    char msg[PATH_MAX_LENGTH] = {0};
+   char buf[PATH_MAX_LENGTH] = {0};
    settings_t      *settings = config_get_ptr();
+
+   config_get_array(conf, "input_display_name", buf, sizeof(buf));
 
    /* This will be the case if input driver is reinitialized.
     * No reason to spam autoconfigure messages every time. */
@@ -120,8 +123,12 @@ static void input_autoconfigure_joypad_add(
    input_autoconfigure_joypad_conf(conf,
          settings->input.autoconf_binds[params->idx]);
 
-   snprintf(msg, sizeof(msg), "Device port #%u (%s) configured.",
-         params->idx, params->name);
+   if (buf[0] != '\0' || strcmp(buf, ""))
+      snprintf(msg, sizeof(msg), "Device %s in port #%u configured as %s",
+            params->name, params->idx, buf);
+   else
+      snprintf(msg, sizeof(msg), "Device %s in port #%u configured",
+            params->name, params->idx);
 
    if (!block_osd_spam)
       rarch_main_msg_queue_push(msg, 0, 60, false);
