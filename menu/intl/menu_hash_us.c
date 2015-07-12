@@ -779,7 +779,7 @@ const char *menu_hash_to_str_us(uint32_t hash)
       case MENU_LABEL_VALUE_BOXARTS_DIRECTORY:
          return "Boxarts Dir";
       case MENU_LABEL_VALUE_RGUI_BROWSER_DIRECTORY:
-         return "Browser Dir";
+         return "File Browser Dir";
       case MENU_LABEL_VALUE_RGUI_CONFIG_DIRECTORY:
          return "Config Dir";
       case MENU_LABEL_VALUE_LIBRETRO_INFO_PATH:
