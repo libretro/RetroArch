@@ -271,10 +271,6 @@ uintptr_t video_driver_get_current_framebuffer(void);
 
 retro_proc_address_t video_driver_get_proc_address(const char *sym);
 
-bool video_driver_is_alive(void);
-
-bool video_driver_has_focus(void);
-
 bool video_driver_set_shader(enum rarch_shader_type type,
       const char *shader);
 

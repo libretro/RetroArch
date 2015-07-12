@@ -63,12 +63,15 @@ static bool check_pause(bool pause_pressed, bool frameadvance_pressed)
    enum event_command cmd   = EVENT_CMD_NONE;
    bool old_is_paused       = runloop ? runloop->is_paused : false;
    settings_t *settings     = config_get_ptr();
+   driver_t         *driver = driver_get_ptr();
+   const video_driver_t *video = driver ? (const video_driver_t*)driver->video :
+      NULL;
 
    /* FRAMEADVANCE will set us into pause mode. */
    pause_pressed |= !runloop->is_paused && frameadvance_pressed;
 
    if (settings->pause_nonactive)
-      focus = video_driver_has_focus();
+      focus = video->focus(driver->video_data);
 
    if (focus && pause_pressed)
       cmd = EVENT_CMD_PAUSE_TOGGLE;
@@ -635,10 +638,12 @@ static int do_state_checks(event_cmd_state_t *cmd)
 static INLINE int time_to_exit(event_cmd_state_t *cmd)
 {
    runloop_t *runloop            = rarch_main_get_ptr();
+   driver_t              *driver = driver_get_ptr();
+   const video_driver_t *video   = driver ? (const video_driver_t*)driver->video : NULL;
    global_t  *global             = global_get_ptr();
    rarch_system_info_t *system   = rarch_system_info_get_ptr();
    bool shutdown_pressed         = system->shutdown;
-   bool video_alive              = video_driver_is_alive();
+   bool video_alive              = video->alive(driver->video_data);
    bool movie_end                = (global->bsv.movie_end && global->bsv.eof_exit);
    uint64_t frame_count          = video_driver_get_frame_count();
    bool frame_count_end          = (runloop->frames.video.max && 

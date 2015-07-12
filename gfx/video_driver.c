@@ -324,22 +324,6 @@ retro_proc_address_t video_driver_get_proc_address(const char *sym)
    return NULL;
 }
 
-bool video_driver_is_alive(void)
-{
-   driver_t            *driver = driver_get_ptr();
-   const video_driver_t *video = video_driver_ctx_get_ptr();
-
-   return video->alive(driver->video_data);
-}
-
-bool video_driver_has_focus(void)
-{
-   driver_t            *driver = driver_get_ptr();
-   const video_driver_t *video = video_driver_ctx_get_ptr();
-
-   return video->focus(driver->video_data);
-}
-
 bool video_driver_set_shader(enum rarch_shader_type type,
       const char *path)
 {
