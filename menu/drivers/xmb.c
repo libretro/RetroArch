@@ -1937,7 +1937,7 @@ static void xmb_free(void *data)
          file_list_free(xmb->horizontal_list);
       xmb->horizontal_list = NULL;
 
-      gl_coord_array_free(&xmb->raster_block.carr);
+      gfx_coord_array_free(&xmb->raster_block.carr);
 
       if (menu->userdata)
          free(menu->userdata);

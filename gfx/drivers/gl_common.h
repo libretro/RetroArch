@@ -360,9 +360,6 @@ static INLINE unsigned gl_wrap_type_to_enum(enum gfx_wrap_type type)
    return 0;
 }
 
-bool gl_coord_array_add(gfx_coord_array_t *ca, const gfx_coords_t *coords, unsigned count);
-void gl_coord_array_free(gfx_coord_array_t *ca);
-
 void gl_ff_vertex(const void *data);
 void gl_ff_matrix(const void *data);
 

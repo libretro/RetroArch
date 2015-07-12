@@ -577,7 +577,7 @@ static void glui_free(void *data)
    if (!glui || !menu)
       return;
 
-   gl_coord_array_free(&glui->list_block.carr);
+   gfx_coord_array_free(&glui->list_block.carr);
 
    gl = (gl_t*)video_driver_get_ptr(NULL);
 
