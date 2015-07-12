@@ -82,7 +82,8 @@ static bool rwebinput_key_pressed(rwebinput_input_t *rwebinput, int key)
    return ret;
 }
 
-static bool rwebinput_is_pressed(rwebinput_input_t *rwebinput, const struct retro_keybind *binds, unsigned id)
+static bool rwebinput_is_pressed(rwebinput_input_t *rwebinput,
+      const struct retro_keybind *binds, unsigned id)
 {
    if (id < RARCH_BIND_LIST_END)
    {
@@ -93,7 +94,7 @@ static bool rwebinput_is_pressed(rwebinput_input_t *rwebinput, const struct retr
    return false;
 }
 
-static bool rwebinput_bind_button_pressed(void *data, int key)
+static bool rwebinput_key_pressed(void *data, int key)
 {
    rwebinput_input_t *rwebinput = (rwebinput_input_t*)data;
    settings_t *settings = config_get_ptr();
@@ -248,7 +249,7 @@ input_driver_t input_rwebinput = {
    rwebinput_input_init,
    rwebinput_input_poll,
    rwebinput_input_state,
-   rwebinput_bind_button_pressed,
+   rwebinput_key_pressed,
    rwebinput_input_free,
    NULL,
    NULL,

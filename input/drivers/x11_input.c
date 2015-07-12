@@ -257,12 +257,10 @@ static int16_t x_pressed_analog(x11_input_t *x11,
    return pressed_plus + pressed_minus;
 }
 
-static bool x_bind_button_pressed(void *data, int key)
+static bool x_input_key_pressed(void *data, int key)
 {
    x11_input_t *x11 = (x11_input_t*)data;
    settings_t *settings = config_get_ptr();
-   if (!x11)
-      return false;
    return x_is_pressed(x11, settings->input.binds[0], key) ||
       input_joypad_pressed(x11->joypad, 0, settings->input.binds[0], key);
 }
@@ -547,7 +545,7 @@ input_driver_t input_x = {
    x_input_init,
    x_input_poll,
    x_input_state,
-   x_bind_button_pressed,
+   x_input_key_pressed,
    x_input_free,
    NULL,
    NULL,

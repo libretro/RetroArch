@@ -552,7 +552,7 @@ static int16_t udev_input_state(void *data, const struct retro_keybind **binds,
    return 0;
 }
 
-static bool udev_input_bind_button_pressed(void *data, int key)
+static bool udev_input_key_pressed(void *data, int key)
 {
    udev_input_t *udev   = (udev_input_t*)data;
    settings_t *settings = config_get_ptr();
@@ -880,7 +880,7 @@ input_driver_t input_udev = {
    udev_input_init,
    udev_input_poll,
    udev_input_state,
-   udev_input_bind_button_pressed,
+   udev_input_key_pressed,
    udev_input_free,
    NULL,
    NULL,

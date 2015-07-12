@@ -173,7 +173,7 @@ static int16_t linuxraw_analog_pressed(linuxraw_input_t *linuxraw,
    return pressed_plus + pressed_minus;
 }
 
-static bool linuxraw_bind_button_pressed(void *data, int key)
+static bool linuxraw_input_key_pressed(void *data, int key)
 {
    linuxraw_input_t *linuxraw = (linuxraw_input_t*)data;
    settings_t *settings       = config_get_ptr();
@@ -301,7 +301,7 @@ input_driver_t input_linuxraw = {
    linuxraw_input_init,
    linuxraw_input_poll,
    linuxraw_input_state,
-   linuxraw_bind_button_pressed,
+   linuxraw_input_key_pressed,
    linuxraw_input_free,
    NULL,
    NULL,

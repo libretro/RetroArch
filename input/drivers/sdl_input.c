@@ -282,7 +282,7 @@ static int16_t sdl_analog_pressed(sdl_input_t *sdl, const struct retro_keybind *
    return pressed_plus + pressed_minus;
 }
 
-static bool sdl_bind_button_pressed(void *data, int key)
+static bool sdl_input_key_pressed(void *data, int key)
 {
    settings_t *settings = config_get_ptr();
    const struct retro_keybind *binds = settings->input.binds[0];
@@ -582,7 +582,7 @@ input_driver_t input_sdl = {
    sdl_input_init,
    sdl_input_poll,
    sdl_input_state,
-   sdl_bind_button_pressed,
+   sdl_input_key_pressed,
    sdl_input_free,
    NULL,
    NULL,
