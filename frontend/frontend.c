@@ -43,9 +43,9 @@ void main_exit_save_config(void)
    {
       /* restore original paths in case per-core organization is enabled */
       if (settings->sort_savefiles_enable && orig_savefile_dir[0] != '\0')
-	     strlcpy(global->savefile_dir,orig_savefile_dir,sizeof(global->savefile_dir));
+         strlcpy(global->savefile_dir,orig_savefile_dir,sizeof(global->savefile_dir));
       if (settings->sort_savestates_enable && orig_savestate_dir[0] != '\0')
-	     strlcpy(global->savestate_dir,orig_savestate_dir,sizeof(global->savestate_dir));
+         strlcpy(global->savestate_dir,orig_savestate_dir,sizeof(global->savestate_dir));
 
       /* Save last core-specific config to the default config location,
        * needed on consoles for core switching and reusing last good 

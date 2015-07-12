@@ -545,7 +545,10 @@ static void event_deinit_core(bool reinit)
    if(settings->sort_savefiles_enable)
       strlcpy(global->savefile_dir,orig_savefile_dir,sizeof(global->savefile_dir));
    if(settings->sort_savestates_enable)
-      strlcpy(global->savestate_dir,orig_savestate_dir,sizeof(global->savestate_dir)); 
+      strlcpy(global->savestate_dir,orig_savestate_dir,sizeof(global->savestate_dir));
+
+  if(orig_system_dir_empty)
+      strlcpy(settings->system_directory,"",sizeof(settings->system_directory));
   
   /* auto overrides: reload the original config */
    if(global->overrides_active)
