@@ -66,8 +66,8 @@ static bool ctr_joypad_button(unsigned port_num, uint16_t key)
    if (port_num >= MAX_PADS)
       return false;
 
-   return (ctr->lifecycle_state & (1ULL << key)) ||
-      (pad_state & (1ULL << key));
+   return (ctr->lifecycle_state & (UINT64_C(1) << key)) ||
+      (pad_state & (UINT64_C(1) << key));
 }
 
 static uint64_t ctr_joypad_get_buttons(unsigned port_num)
@@ -135,18 +135,18 @@ static void ctr_joypad_poll(void)
    analog_state[0][0][0] = analog_state[0][0][1] =
       analog_state[0][1][0] = analog_state[0][1][1] = 0;
    pad_state = 0;
-   pad_state |= (state_tmp & KEY_DLEFT) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT) : 0;
-   pad_state |= (state_tmp & KEY_DDOWN) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN) : 0;
-   pad_state |= (state_tmp & KEY_DRIGHT) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT) : 0;
-   pad_state |= (state_tmp & KEY_DUP) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_UP) : 0;
-   pad_state |= (state_tmp & KEY_START) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_START) : 0;
-   pad_state |= (state_tmp & KEY_SELECT) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_SELECT) : 0;
-   pad_state |= (state_tmp & KEY_X) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_X) : 0;
-   pad_state |= (state_tmp & KEY_Y) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_Y) : 0;
-   pad_state |= (state_tmp & KEY_B) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_B) : 0;
-   pad_state |= (state_tmp & KEY_A) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_A) : 0;
-   pad_state |= (state_tmp & KEY_R) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_R) : 0;
-   pad_state |= (state_tmp & KEY_L) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_L) : 0;
+   pad_state |= (state_tmp & KEY_DLEFT) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_LEFT) : 0;
+   pad_state |= (state_tmp & KEY_DDOWN) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_DOWN) : 0;
+   pad_state |= (state_tmp & KEY_DRIGHT) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_RIGHT) : 0;
+   pad_state |= (state_tmp & KEY_DUP) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_UP) : 0;
+   pad_state |= (state_tmp & KEY_START) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_START) : 0;
+   pad_state |= (state_tmp & KEY_SELECT) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_SELECT) : 0;
+   pad_state |= (state_tmp & KEY_X) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_X) : 0;
+   pad_state |= (state_tmp & KEY_Y) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_Y) : 0;
+   pad_state |= (state_tmp & KEY_B) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_B) : 0;
+   pad_state |= (state_tmp & KEY_A) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_A) : 0;
+   pad_state |= (state_tmp & KEY_R) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_R) : 0;
+   pad_state |= (state_tmp & KEY_L) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_L) : 0;
 
    analog_state[0][RETRO_DEVICE_INDEX_ANALOG_LEFT] [RETRO_DEVICE_ID_ANALOG_X] =  (state_tmp_analog.dx * 200);
    analog_state[0][RETRO_DEVICE_INDEX_ANALOG_LEFT] [RETRO_DEVICE_ID_ANALOG_Y] = -(state_tmp_analog.dy * 200);
@@ -156,10 +156,10 @@ static void ctr_joypad_poll(void)
          if (analog_state[0][i][j] == -0x8000)
             analog_state[0][i][j] = -0x7fff;
 
-   lifecycle_state &= ~((1ULL << RARCH_MENU_TOGGLE));
+   lifecycle_state &= ~((UINT64_C(1) << RARCH_MENU_TOGGLE));
 
    if(state_tmp & KEY_TOUCH)
-      lifecycle_state |= (1ULL << RARCH_MENU_TOGGLE);
+      lifecycle_state |= (UINT64_C(1) << RARCH_MENU_TOGGLE);
 
    /* panic button */
    if((state_tmp & KEY_START) &&

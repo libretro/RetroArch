@@ -234,7 +234,7 @@ retro_input_t input_driver_keys_pressed(void)
 #endif
 
       if (state)
-         ret |= (1ULL << key);
+         ret |= (UINT64_C(1) << key);
    }
    return ret;
 }

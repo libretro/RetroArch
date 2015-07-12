@@ -38,7 +38,7 @@ static void *android_camera_init(const char *device, uint64_t caps,
    (void)width;
    (void)height;
 
-   if ((caps & (1ULL << RETRO_CAMERA_BUFFER_OPENGL_TEXTURE)) == 0)
+   if ((caps & (UINT64_C(1) << RETRO_CAMERA_BUFFER_OPENGL_TEXTURE)) == 0)
    {
       RARCH_ERR("androidcamera returns OpenGL texture.\n");
       return NULL;

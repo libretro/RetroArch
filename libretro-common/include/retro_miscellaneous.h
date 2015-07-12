@@ -23,6 +23,8 @@
 #ifndef __RARCH_MISCELLANEOUS_H
 #define __RARCH_MISCELLANEOUS_H
 
+#include <stdint.h>
+
 #if defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)
 #include <sys/timer.h>
 #elif defined(XENON)
@@ -162,9 +164,9 @@ typedef struct
 #define BIT32_GET(a, bit) (!!((a) &   (1 << ((bit) & 31))))
 #define BIT32_CLEAR_ALL(a)   ((a) = 0)
 
-#define BIT64_SET(a, bit)    ((a) |=  (1ULL << ((bit) & 63)))
-#define BIT64_CLEAR(a, bit)  ((a) &= ~(1ULL << ((bit) & 63)))
-#define BIT64_GET(a, bit) (!!((a) &   (1ULL << ((bit) & 63))))
+#define BIT64_SET(a, bit)    ((a) |=  (UINT64_C(1) << ((bit) & 63)))
+#define BIT64_CLEAR(a, bit)  ((a) &= ~(UINT64_C(1) << ((bit) & 63)))
+#define BIT64_GET(a, bit) (!!((a) &   (UINT64_C(1) << ((bit) & 63))))
 #define BIT64_CLEAR_ALL(a)   ((a) = 0)
 
 #define BIT128_SET(a, bit)   ((a).data[(bit) >> 5] |=  (1 << ((bit) & 31))

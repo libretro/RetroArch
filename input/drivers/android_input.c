@@ -392,7 +392,7 @@ static void engine_handle_cmd(void)
          runloop->is_idle   = false;
 
          if ((android_app->sensor_state_mask
-                  & (1ULL << RETRO_SENSOR_ACCELEROMETER_ENABLE))
+                  & (UINT64_C(1) << RETRO_SENSOR_ACCELEROMETER_ENABLE))
                && android_app->accelerometerSensor == NULL
                && driver->input_data)
             android_input_set_sensor_state(driver->input_data, 0,
@@ -402,7 +402,7 @@ static void engine_handle_cmd(void)
       case APP_CMD_LOST_FOCUS:
          /* Avoid draining battery while app is not being used. */
          if ((android_app->sensor_state_mask
-                  & (1ULL << RETRO_SENSOR_ACCELEROMETER_ENABLE))
+                  & (UINT64_C(1) << RETRO_SENSOR_ACCELEROMETER_ENABLE))
                && android_app->accelerometerSensor != NULL
                && driver->input_data)
             android_input_set_sensor_state(driver->input_data, 0,
@@ -754,7 +754,7 @@ static void android_input_handle_user(void *data)
    android_input_t    *android     = (android_input_t*)data;
    struct android_app *android_app = (struct android_app*)g_android;
 
-   if ((android_app->sensor_state_mask & (1ULL <<
+   if ((android_app->sensor_state_mask & (UINT64_C(1) <<
                RETRO_SENSOR_ACCELEROMETER_ENABLE))
          && android_app->accelerometerSensor)
    {

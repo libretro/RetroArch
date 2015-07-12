@@ -122,14 +122,14 @@ extern int audioAddData(uint32_t portNum, float *data, uint32_t frames, float vo
 #define cellMouseGetInfo ioMouseGetInfo
 
 /* PSL1GHT does not define these in its header */
-#define CELL_MOUSE_BUTTON_1 (1ULL << 0) /* Button 1 */
-#define CELL_MOUSE_BUTTON_2 (1ULL << 1) /* Button 2 */
-#define CELL_MOUSE_BUTTON_3 (1ULL << 2) /* Button 3 */
-#define CELL_MOUSE_BUTTON_4 (1ULL << 3) /* Button 4 */
-#define CELL_MOUSE_BUTTON_5 (1ULL << 4) /* Button 5 */
-#define CELL_MOUSE_BUTTON_6 (1ULL << 5) /* Button 6 */
-#define CELL_MOUSE_BUTTON_7 (1ULL << 6) /* Button 7 */
-#define CELL_MOUSE_BUTTON_8 (1ULL << 7) /* Button 8 */
+#define CELL_MOUSE_BUTTON_1 (UINT64_C(1) << 0) /* Button 1 */
+#define CELL_MOUSE_BUTTON_2 (UINT64_C(1) << 1) /* Button 2 */
+#define CELL_MOUSE_BUTTON_3 (UINT64_C(1) << 2) /* Button 3 */
+#define CELL_MOUSE_BUTTON_4 (UINT64_C(1) << 3) /* Button 4 */
+#define CELL_MOUSE_BUTTON_5 (UINT64_C(1) << 4) /* Button 5 */
+#define CELL_MOUSE_BUTTON_6 (UINT64_C(1) << 5) /* Button 6 */
+#define CELL_MOUSE_BUTTON_7 (UINT64_C(1) << 6) /* Button 7 */
+#define CELL_MOUSE_BUTTON_8 (UINT64_C(1) << 7) /* Button 8 */
 
 #else
 #include <cell/mouse.h>
@@ -585,7 +585,7 @@ extern int audioAddData(uint32_t portNum, float *data, uint32_t frames, float vo
 #define cellGameContentPermit sysGameContentPermit
 #define cellGameBootCheck sysGameBootCheck
 
-#define CELL_GAME_ATTRIBUTE_APP_HOME   (1ULL <<1) /* boot from / app_home/PS3_GAME */
+#define CELL_GAME_ATTRIBUTE_APP_HOME   (UINT64_C(1) <<1) /* boot from / app_home/PS3_GAME */
 #define CELL_GAME_DIRNAME_SIZE			32
 
 #define CELL_GAME_GAMETYPE_SYS		0

@@ -164,7 +164,7 @@ static void qnx_process_gamepad_event(
    if((controller->port == 0) && 
          (controller->buttons & 
           settings->input.binds[0][RARCH_MENU_TOGGLE].joykey))
-      qnx->lifecycle_state ^= (1ULL << RARCH_MENU_TOGGLE);
+      qnx->lifecycle_state ^= (UINT64_C(1) << RARCH_MENU_TOGGLE);
 }
 
 static void qnx_input_autodetect_gamepad(qnx_input_t *qnx,
@@ -391,7 +391,7 @@ static void qnx_process_keyboard_event(
             == (unsigned int)(sym&0xFF)))
    {
       if (flags & KEY_DOWN)
-         qnx->lifecycle_state ^= (1ULL << RARCH_MENU_TOGGLE);
+         qnx->lifecycle_state ^= (UINT64_C(1) << RARCH_MENU_TOGGLE);
    }
 }
 
@@ -593,7 +593,7 @@ static void qnx_handle_navigator_event(
    switch (bps_event_get_code(event))
    {
       case NAVIGATOR_SWIPE_DOWN:
-         qnx->lifecycle_state ^= (1ULL << RARCH_MENU_TOGGLE);
+         qnx->lifecycle_state ^= (UINT64_C(1) << RARCH_MENU_TOGGLE);
          break;
       case NAVIGATOR_EXIT:
          /* Catch this in thumbnail loop. */
@@ -791,7 +791,7 @@ static bool qnx_input_key_pressed(void *data, int key)
    qnx_input_t *qnx     = (qnx_input_t*)data;
    settings_t *settings = config_get_ptr();
 
-   return (driver.overlay_state.buttons & (1ULL << key) ||
+   return (driver.overlay_state.buttons & (UINT64_C(1) << key) ||
          input_joypad_pressed(qnx->joypad, 0, settings->input.binds[0], key));
 }
 

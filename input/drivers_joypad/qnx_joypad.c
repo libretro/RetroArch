@@ -55,7 +55,7 @@ static bool qnx_joypad_button(unsigned port_num, uint16_t joykey)
    if (!qnx || port_num >= MAX_PADS)
       return false;
 
-   return qnx->pad_state[port_num] & (1ULL << joykey);
+   return qnx->pad_state[port_num] & (UINT64_C(1) << joykey);
 }
 
 static uint64_t qnx_joypad_get_buttons(unsigned port_num)

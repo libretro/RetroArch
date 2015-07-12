@@ -55,8 +55,8 @@ static bool psp_joypad_button(unsigned port_num, uint16_t key)
    if (port_num >= MAX_PADS)
       return false;
 
-   return (lifecycle_state & (1ULL << key)) ||
-      (pad_state & (1ULL << key));
+   return (lifecycle_state & (UINT64_C(1) << key)) ||
+      (pad_state & (UINT64_C(1) << key));
 }
 
 static uint64_t psp_joypad_get_buttons(unsigned port_num)
@@ -128,18 +128,18 @@ static void psp_joypad_poll(void)
    analog_state[0][0][0] = analog_state[0][0][1] = 
       analog_state[0][1][0] = analog_state[0][1][1] = 0;
    pad_state = 0;
-   pad_state |= (STATE_BUTTON(state_tmp) & PSP_CTRL_LEFT) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT) : 0;
-   pad_state |= (STATE_BUTTON(state_tmp) & PSP_CTRL_DOWN) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN) : 0;
-   pad_state |= (STATE_BUTTON(state_tmp) & PSP_CTRL_RIGHT) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT) : 0;
-   pad_state |= (STATE_BUTTON(state_tmp) & PSP_CTRL_UP) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_UP) : 0;
-   pad_state |= (STATE_BUTTON(state_tmp) & PSP_CTRL_START) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_START) : 0;
-   pad_state |= (STATE_BUTTON(state_tmp) & PSP_CTRL_SELECT) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_SELECT) : 0;
-   pad_state |= (STATE_BUTTON(state_tmp) & PSP_CTRL_TRIANGLE) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_X) : 0;
-   pad_state |= (STATE_BUTTON(state_tmp) & PSP_CTRL_SQUARE) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_Y) : 0;
-   pad_state |= (STATE_BUTTON(state_tmp) & PSP_CTRL_CROSS) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_B) : 0;
-   pad_state |= (STATE_BUTTON(state_tmp) & PSP_CTRL_CIRCLE) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_A) : 0;
-   pad_state |= (STATE_BUTTON(state_tmp) & PSP_CTRL_R) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_R) : 0;
-   pad_state |= (STATE_BUTTON(state_tmp) & PSP_CTRL_L) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_L) : 0;
+   pad_state |= (STATE_BUTTON(state_tmp) & PSP_CTRL_LEFT) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_LEFT) : 0;
+   pad_state |= (STATE_BUTTON(state_tmp) & PSP_CTRL_DOWN) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_DOWN) : 0;
+   pad_state |= (STATE_BUTTON(state_tmp) & PSP_CTRL_RIGHT) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_RIGHT) : 0;
+   pad_state |= (STATE_BUTTON(state_tmp) & PSP_CTRL_UP) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_UP) : 0;
+   pad_state |= (STATE_BUTTON(state_tmp) & PSP_CTRL_START) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_START) : 0;
+   pad_state |= (STATE_BUTTON(state_tmp) & PSP_CTRL_SELECT) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_SELECT) : 0;
+   pad_state |= (STATE_BUTTON(state_tmp) & PSP_CTRL_TRIANGLE) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_X) : 0;
+   pad_state |= (STATE_BUTTON(state_tmp) & PSP_CTRL_SQUARE) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_Y) : 0;
+   pad_state |= (STATE_BUTTON(state_tmp) & PSP_CTRL_CROSS) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_B) : 0;
+   pad_state |= (STATE_BUTTON(state_tmp) & PSP_CTRL_CIRCLE) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_A) : 0;
+   pad_state |= (STATE_BUTTON(state_tmp) & PSP_CTRL_R) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_R) : 0;
+   pad_state |= (STATE_BUTTON(state_tmp) & PSP_CTRL_L) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_L) : 0;
 
    analog_state[0][RETRO_DEVICE_INDEX_ANALOG_LEFT] [RETRO_DEVICE_ID_ANALOG_X] = (int16_t)(STATE_ANALOGLX(state_tmp)-128) * 256;
    analog_state[0][RETRO_DEVICE_INDEX_ANALOG_LEFT] [RETRO_DEVICE_ID_ANALOG_Y] = (int16_t)(STATE_ANALOGLY(state_tmp)-128) * 256;
@@ -153,19 +153,19 @@ static void psp_joypad_poll(void)
          if (analog_state[0][i][j] == -0x8000)
             analog_state[0][i][j] = -0x7fff;
 
-   lifecycle_state &= ~((1ULL << RARCH_MENU_TOGGLE));
+   lifecycle_state &= ~((UINT64_C(1) << RARCH_MENU_TOGGLE));
 
 #ifdef HAVE_KERNEL_PRX
    if (STATE_BUTTON(state_tmp) & PSP_CTRL_NOTE)
 #else
       if (
-            (pad_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_L))
-            && (pad_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_R))
-            && (pad_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_SELECT))
-            && (pad_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_START))
+            (pad_state & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_L))
+            && (pad_state & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_R))
+            && (pad_state & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_SELECT))
+            && (pad_state & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_START))
          )
 #endif
-         lifecycle_state |= (1ULL << RARCH_MENU_TOGGLE);
+         lifecycle_state |= (UINT64_C(1) << RARCH_MENU_TOGGLE);
 }
 
 static bool psp_joypad_query_pad(unsigned pad)
