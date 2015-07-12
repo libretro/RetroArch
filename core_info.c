@@ -404,10 +404,7 @@ bool core_info_get_display_name(const char *path, char *s, size_t len)
    if (!conf)
       goto error;
 
-   if(display_name)
-      snprintf(s, len,"%s (%s)",core_name, display_name);
-   else
-      snprintf(s, len,"%s",core_name);
+   snprintf(s, len,"%s",display_name);
 
    free(core_name);
 
