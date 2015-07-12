@@ -55,14 +55,14 @@ static struct global *g_extern   = NULL;
  *
  * Returns: true if libretro pause key was toggled, otherwise false.
  **/
-static bool check_pause(driver_t *driver, runloop_t *runloop,
+static bool check_pause(driver_t *driver, settings_t *settings,
+      runloop_t *runloop,
       bool pause_pressed, bool frameadvance_pressed)
 {
    static bool old_focus    = true;
    bool focus               = true;
    enum event_command cmd   = EVENT_CMD_NONE;
    bool old_is_paused       = runloop ? runloop->is_paused : false;
-   settings_t *settings     = config_get_ptr();
    const video_driver_t *video = driver ? (const video_driver_t*)driver->video :
       NULL;
 
@@ -298,9 +298,8 @@ static bool check_movie_init(void)
  *
  * Returns: true (1) if movie is being recorded, otherwise false (0).
  **/
-static bool check_movie_record(void)
+static bool check_movie_record(global_t *global)
 {
-   global_t *global = global_get_ptr();
    if (!global->bsv.movie)
       return false;
 
@@ -320,9 +319,8 @@ static bool check_movie_record(void)
  *
  * Returns: true (1) if movie is being played, otherwise false (0).
  **/
-static bool check_movie_playback(void)
+static bool check_movie_playback(global_t *global)
 {
-   global_t *global = global_get_ptr();
    if (!global->bsv.movie_end)
       return false;
 
@@ -338,15 +336,13 @@ static bool check_movie_playback(void)
    return true;
 }
 
-static bool check_movie(void)
+static bool check_movie(global_t *global)
 {
-   global_t *global = global_get_ptr();
-
    if (global->bsv.movie_playback)
-      return check_movie_playback();
+      return check_movie_playback(global);
    if (!global->bsv.movie)
       return check_movie_init();
-   return check_movie_record();
+   return check_movie_record(global);
 }
 
 #define SHADER_EXT_GLSL      0x7c976537U
@@ -365,14 +361,14 @@ static bool check_movie(void)
  *
  * Will also immediately apply the shader.
  **/
-static void check_shader_dir(bool pressed_next, bool pressed_prev)
+static void check_shader_dir(global_t *global,
+      bool pressed_next, bool pressed_prev)
 {
    uint32_t ext_hash;
    char msg[PATH_MAX_LENGTH]   = {0};
    const char *shader          = NULL;
    const char *ext             = NULL;
    enum rarch_shader_type type = RARCH_SHADER_NONE;
-   global_t *global            = global_get_ptr();
 
    if (!global || !global->shader_dir.list)
       return;
@@ -423,11 +419,8 @@ static void check_shader_dir(bool pressed_next, bool pressed_prev)
 }
 
 #ifdef HAVE_MENU
-static void do_state_check_menu_toggle(void)
+static void do_state_check_menu_toggle(settings_t *settings, global_t *global)
 {
-   global_t *global   = global_get_ptr();
-   settings_t *settings     = config_get_ptr();
-
    if (menu_driver_alive())
    {
       if (global->main_is_init && (global->core_type != CORE_TYPE_DUMMY))
@@ -456,7 +449,8 @@ static void do_state_check_menu_toggle(void)
  *
  * Returns: 0.
  **/
-static int do_pre_state_checks(global_t *global, runloop_t *runloop,
+static int do_pre_state_checks(settings_t *settings,
+      global_t *global, runloop_t *runloop,
       event_cmd_state_t *cmd)
 {
    if (cmd->overlay_next_pressed)
@@ -473,7 +467,7 @@ static int do_pre_state_checks(global_t *global, runloop_t *runloop,
 
 #ifdef HAVE_MENU
    if (cmd->menu_pressed || (global->core_type == CORE_TYPE_DUMMY))
-      do_state_check_menu_toggle();
+      do_state_check_menu_toggle(settings, global);
 #endif
 
    return 0;
@@ -550,7 +544,7 @@ static int do_state_checks(driver_t *driver, settings_t *settings,
             cmd->fullscreen_toggle);
 #endif
 
-   check_pause(driver, runloop,
+   check_pause(driver, settings, runloop,
          cmd->pause_pressed, cmd->frameadvance_pressed);
 
    if (do_pause_state_checks(
@@ -577,9 +571,9 @@ static int do_state_checks(driver_t *driver, settings_t *settings,
          cmd->slowmotion_pressed);
 
    if (cmd->movie_record)
-      check_movie();
+      check_movie(global);
 
-   check_shader_dir(cmd->shader_next_pressed,
+   check_shader_dir(global, cmd->shader_next_pressed,
          cmd->shader_prev_pressed);
 
    if (cmd->disk_eject_pressed)
@@ -828,10 +822,8 @@ static bool input_flush(runloop_t *runloop, retro_input_t *input)
  *
  * Returns: -1 if we are about to quit, otherwise 0.
  **/
-static int rarch_main_iterate_quit(void)
+static int rarch_main_iterate_quit(settings_t *settings, global_t *global)
 {
-   settings_t *settings     = config_get_ptr();
-   global_t   *global       = global_get_ptr();
    rarch_system_info_t *system = rarch_system_info_get_ptr();
 
    if (global->core_shutdown_initiated
@@ -850,11 +842,10 @@ static int rarch_main_iterate_quit(void)
 }
 
 #ifdef HAVE_OVERLAY
-static void rarch_main_iterate_linefeed_overlay(void)
+static void rarch_main_iterate_linefeed_overlay(driver_t *driver,
+      settings_t *settings)
 {
    static char prev_overlay_restore = false;
-   driver_t *driver                 = driver_get_ptr();
-   settings_t *settings             = config_get_ptr();
 
    if (driver->osk_enable && !driver->keyboard_linefeed_enable)
    {
@@ -1085,15 +1076,15 @@ int rarch_main_iterate(void)
    rarch_main_cmd_get_state(&cmd, input, old_input, trigger_input);
 
    if (time_to_exit(driver, global, runloop, &cmd))
-      return rarch_main_iterate_quit();
+      return rarch_main_iterate_quit(settings, global);
 
    if (system->frame_time.callback)
       rarch_update_frame_time(driver, settings, runloop);
 
-   do_pre_state_checks(global, runloop, &cmd);
+   do_pre_state_checks(settings, global, runloop, &cmd);
 
 #ifdef HAVE_OVERLAY
-   rarch_main_iterate_linefeed_overlay();
+   rarch_main_iterate_linefeed_overlay(driver, settings);
 #endif
    
 #ifdef HAVE_MENU
@@ -1113,7 +1104,7 @@ int rarch_main_iterate(void)
    if (global->exec)
    {
       global->exec = false;
-      return rarch_main_iterate_quit();
+      return rarch_main_iterate_quit(settings, global);
    }
 
    if (do_state_checks(driver, settings, global, runloop, &cmd))
