@@ -115,7 +115,7 @@ static int16_t ps3_input_state(void *data,
       case RETRO_DEVICE_SENSOR_ACCELEROMETER:
          switch (id)
          {
-            // fixed range of 0x000 - 0x3ff
+            /* Fixed range of 0x000 - 0x3ff */
             case RETRO_DEVICE_ID_SENSOR_ACCELEROMETER_X:
                retval = ps3->accelerometer_state[port].x;
                break;
