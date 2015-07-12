@@ -738,7 +738,7 @@ static void frontend_android_get_environment_settings(int *argc,
             fill_pathname_join(g_defaults.extraction_dir, app_dir,
                   "tmp", sizeof(g_defaults.extraction_dir));
             fill_pathname_join(g_defaults.shader_dir, app_dir,
-                  "shaders_glsl", sizeof(g_defaults.shader_dir));
+                  "shaders", sizeof(g_defaults.shader_dir));
             fill_pathname_join(g_defaults.overlay_dir, app_dir,
                   "overlays", sizeof(g_defaults.overlay_dir));
             fill_pathname_join(g_defaults.core_dir, app_dir,
