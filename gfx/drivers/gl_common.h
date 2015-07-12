@@ -17,21 +17,11 @@
 #ifndef __GL_COMMON_H
 #define __GL_COMMON_H
 
-#include "../../general.h"
-#include "../font_renderer_driver.h"
-#include <gfx/math/matrix_4x4.h>
-#include <gfx/scaler/scaler.h>
-#include <formats/image.h>
-#include "../video_context_driver.h"
-#include "../video_shader_driver.h"
-#include "../video_shader_parse.h"
-#include <retro_inline.h>
+#include <string.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
 #endif
-
-#include <string.h>
 
 #ifdef HAVE_EGL
 #include <EGL/egl.h>
@@ -40,6 +30,16 @@
 
 #include <glsym/glsym.h>
 
+#include <retro_inline.h>
+#include <gfx/math/matrix_4x4.h>
+#include <gfx/scaler/scaler.h>
+#include <formats/image.h>
+
+#include "../../general.h"
+#include "../font_renderer_driver.h"
+#include "../video_context_driver.h"
+#include "../video_shader_driver.h"
+#include "../video_shader_parse.h"
 
 #if (!defined(HAVE_OPENGLES) || defined(HAVE_OPENGLES3))
 #ifdef GL_PIXEL_PACK_BUFFER
@@ -176,7 +176,6 @@
 #define GL_SRGB_ALPHA_EXT 0x8C42
 #endif
 #endif
-
 
 struct gfx_fbo_rect
 {
