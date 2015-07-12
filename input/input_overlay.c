@@ -1408,7 +1408,7 @@ void input_overlay_set_alpha_mod(input_overlay_t *ol, float mod)
       ol->iface->set_alpha(ol->iface_data, i, mod);
 }
 
-bool input_overlay_is_alive(input_overlay_t *ol)
+static bool input_overlay_is_alive(input_overlay_t *ol)
 {
    if (!ol)
       return false;
@@ -1594,4 +1594,14 @@ void input_state_overlay(int16_t *ret, unsigned port, unsigned device, unsigned 
          }
          break;
    }
+}
+
+bool input_overlay_key_pressed(int key)
+{
+   input_overlay_state_t *ol_state  = input_overlay_get_state_ptr();
+
+   if (!ol_state)
+      return false;
+
+   return (ol_state->buttons & (1ULL << key));
 }

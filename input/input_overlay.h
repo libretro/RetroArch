@@ -228,8 +228,6 @@ void input_overlay_free_ptr(void);
 
 int input_overlay_new_ptr(void);
 
-bool input_overlay_is_alive(input_overlay_t *ol);
-
 enum overlay_status input_overlay_status(input_overlay_t *ol);
 
 /*
@@ -243,6 +241,8 @@ void input_poll_overlay(float opacity);
 void input_state_overlay(int16_t *ret,
       unsigned port, unsigned device, unsigned idx,
       unsigned id);
+
+bool input_overlay_key_pressed(int key);
 
 #ifdef __cplusplus
 }
