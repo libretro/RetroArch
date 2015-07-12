@@ -1408,8 +1408,9 @@ void input_overlay_set_alpha_mod(input_overlay_t *ol, float mod)
       ol->iface->set_alpha(ol->iface_data, i, mod);
 }
 
-static bool input_overlay_is_alive(input_overlay_t *ol)
+bool input_overlay_is_alive(void)
 {
+   input_overlay_t *ol = input_overlay_get_ptr();
    if (!ol)
       return false;
    return ol->alive;
@@ -1437,7 +1438,7 @@ void input_poll_overlay(float opacity)
    input_overlay_t *ol             = input_overlay_get_ptr();
    input_overlay_state_t *ol_state = input_overlay_get_state_ptr();
 
-   if (!input_overlay_is_alive(ol) || !ol_state)
+   if (!input_overlay_is_alive() || !ol_state)
       return;
 
    memcpy(old_key_state.keys, ol_state->keys,

@@ -244,6 +244,8 @@ void input_state_overlay(int16_t *ret,
 
 bool input_overlay_key_pressed(int key);
 
+bool input_overlay_is_alive(void);
+
 #ifdef __cplusplus
 }
 #endif
