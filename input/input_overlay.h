@@ -117,23 +117,22 @@ typedef struct input_overlay_state
 input_overlay_t *input_overlay_new(const char *path, bool enable,
       float alpha_mod, float scale_factor);
 
-bool input_overlay_load_overlays(input_overlay_t *ol);
+bool input_overlay_load_overlays(void);
 
 bool input_overlay_load_overlays_image_iterate(input_overlay_t *ol);
 
-bool input_overlay_load_overlays_iterate(input_overlay_t *ol);
+bool input_overlay_load_overlays_iterate(void);
 
-bool input_overlay_load_overlays_resolve_iterate(input_overlay_t *ol);
+bool input_overlay_load_overlays_resolve_iterate(void);
 
-bool input_overlay_new_done(input_overlay_t *ol);
+bool input_overlay_new_done(void);
 
 /**
  * input_overlay_free:
- * @ol                    : Overlay handle.
  *
  * Frees overlay handle.
  **/
-void input_overlay_free(input_overlay_t *ol);
+void input_overlay_free(void);
 
 /**
  * input_overlay_enable:
@@ -228,7 +227,7 @@ void input_overlay_free_ptr(void);
 
 int input_overlay_new_ptr(void);
 
-enum overlay_status input_overlay_status(input_overlay_t *ol);
+enum overlay_status input_overlay_status(void);
 
 /*
  * input_poll_overlay:

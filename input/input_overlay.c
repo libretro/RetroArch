@@ -632,8 +632,9 @@ static void input_overlay_load_active(input_overlay_t *ol,
       ol->iface->full_screen(ol->iface_data, ol->active->full_screen);
 }
 
-bool input_overlay_load_overlays_resolve_iterate(input_overlay_t *ol)
+bool input_overlay_load_overlays_resolve_iterate(void)
 {
+   input_overlay_t *ol = input_overlay_get_ptr();
    bool not_done = true;
 
    if (!ol)
@@ -685,11 +686,12 @@ static bool input_overlay_load_overlay_image_done(struct overlay *overlay)
    return true;
 }
 
-bool input_overlay_load_overlays_iterate(input_overlay_t *ol)
+bool input_overlay_load_overlays_iterate(void)
 {
    size_t i                = 0;
    bool not_done           = true;
    struct overlay *overlay = NULL;
+   input_overlay_t *ol = input_overlay_get_ptr();
    
    if (!ol)
       return false;
@@ -761,7 +763,7 @@ bool input_overlay_load_overlays_iterate(input_overlay_t *ol)
          break;
       case OVERLAY_IMAGE_TRANSFER_DESC_DONE:
          if (ol->pos == 0)
-            input_overlay_load_overlays_resolve_iterate(ol);
+            input_overlay_load_overlays_resolve_iterate();
          ol->pos += 1;
          ol->loading_status = OVERLAY_IMAGE_TRANSFER_NONE;
          break;
@@ -778,12 +780,13 @@ error:
 }
 
 
-bool input_overlay_load_overlays(input_overlay_t *ol)
+bool input_overlay_load_overlays(void)
 {
    unsigned i;
+   input_overlay_t *ol      = input_overlay_get_ptr();
    config_file_t *conf      = config_file_new(ol->overlay_path);
 
-   if (!conf)
+   if (!ol || !conf)
       return false;
 
    for (i = 0; i < ol->pos_increment; i++, ol->pos++)
@@ -933,8 +936,9 @@ error:
 }
 
 
-bool input_overlay_new_done(input_overlay_t *ol)
+bool input_overlay_new_done(void)
 {
+   input_overlay_t *ol = input_overlay_get_ptr();
    if (!ol)
       return false;
 
@@ -1034,7 +1038,7 @@ input_overlay_t *input_overlay_new(const char *path, bool enable,
    return ol;
 
 error:
-   input_overlay_free(ol);
+   input_overlay_free();
    return NULL;
 }
 
@@ -1334,8 +1338,9 @@ bool input_overlay_full_screen(input_overlay_t *ol)
  *
  * Frees overlay handle.
  **/
-void input_overlay_free(input_overlay_t *ol)
+void input_overlay_free(void)
 {
+   input_overlay_t *ol = input_overlay_get_ptr();
    if (!ol)
       return;
 
@@ -1352,8 +1357,7 @@ void input_overlay_free(input_overlay_t *ol)
 
 void input_overlay_free_ptr(void)
 {
-   if (overlay_ptr)
-      input_overlay_free(overlay_ptr);
+   input_overlay_free();
    overlay_ptr = NULL;
 
    memset(&overlay_st_ptr, 0, sizeof(overlay_st_ptr));
@@ -1416,8 +1420,9 @@ bool input_overlay_is_alive(void)
    return ol->alive;
 }
 
-enum overlay_status input_overlay_status(input_overlay_t *ol)
+enum overlay_status input_overlay_status(void)
 {
+   input_overlay_t *ol = input_overlay_get_ptr();
    if (!ol)
       return OVERLAY_STATUS_NONE;
    return ol->state;
