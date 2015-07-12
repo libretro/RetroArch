@@ -361,14 +361,12 @@ static int16_t cocoa_input_state(void *data,
    return 0;
 }
 
-static bool cocoa_input_bind_button_pressed(void *data, int key)
+static bool cocoa_input_key_pressed(void *data, int key)
 {
    cocoa_input_data_t *apple = (cocoa_input_data_t*)data;
    settings_t *settings = config_get_ptr();
-   if (apple && apple->joypad)
-      return cocoa_input_is_pressed(apple, 0, settings->input.binds[0], key) ||
-         input_joypad_pressed(apple->joypad, 0, settings->input.binds[0], key);
-   return false;
+   return cocoa_input_is_pressed(apple, 0, settings->input.binds[0], key) ||
+      input_joypad_pressed(apple->joypad, 0, settings->input.binds[0], key);
 }
 
 static void cocoa_input_free(void *data)
@@ -443,7 +441,7 @@ input_driver_t input_cocoa = {
    cocoa_input_init,
    cocoa_input_poll,
    cocoa_input_state,
-   cocoa_input_bind_button_pressed,
+   cocoa_input_key_pressed,
    cocoa_input_free,
    NULL,
    NULL,
