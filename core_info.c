@@ -407,6 +407,7 @@ bool core_info_get_display_name(const char *path, char *s, size_t len)
    snprintf(s, len,"%s",display_name);
 
    free(core_name);
+   free(display_name);
 
    return true;
 
