@@ -233,9 +233,9 @@ static void gl_cg_set_params(void *data, unsigned width, unsigned height,
 {
    unsigned i;
    CGparameter param;
-   const struct gl_tex_info *info = (const struct gl_tex_info*)_info;
-   const struct gl_tex_info *prev_info = (const struct gl_tex_info*)_prev_info;
-   const struct gl_tex_info *fbo_info = (const struct gl_tex_info*)_fbo_info;
+   const struct gfx_tex_info *info = (const struct gfx_tex_info*)_info;
+   const struct gfx_tex_info *prev_info = (const struct gfx_tex_info*)_prev_info;
+   const struct gfx_tex_info *fbo_info = (const struct gfx_tex_info*)_fbo_info;
    driver_t *driver = driver_get_ptr();
    global_t *global = global_get_ptr();
    cg_shader_data_t *cg = (cg_shader_data_t*)driver->video_shader_data;

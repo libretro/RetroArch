@@ -198,9 +198,9 @@ struct gfx_ortho
    float zfar;
 };
 
-struct gl_tex_info
+struct gfx_tex_info
 {
-   GLuint tex;
+   unsigned int tex;
    float input_size[2];
    float tex_size[2];
    float coord[8];
@@ -247,8 +247,8 @@ typedef struct gl
    GLuint texture[GFX_MAX_TEXTURES];
    unsigned tex_index; /* For use with PREV. */
    unsigned textures;
-   struct gl_tex_info tex_info;
-   struct gl_tex_info prev_info[GFX_MAX_TEXTURES];
+   struct gfx_tex_info tex_info;
+   struct gfx_tex_info prev_info[GFX_MAX_TEXTURES];
    GLuint tex_mag_filter;
    GLuint tex_min_filter;
    bool tex_mipmap;

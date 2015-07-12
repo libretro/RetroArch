@@ -952,9 +952,9 @@ static void gl_glsl_set_params(void *data, unsigned width, unsigned height,
    unsigned i, texunit = 1;
    const struct shader_uniforms *uni = NULL;
    size_t size = 0, attribs_size = 0;
-   const struct gl_tex_info *info = (const struct gl_tex_info*)_info;
-   const struct gl_tex_info *prev_info = (const struct gl_tex_info*)_prev_info;
-   const struct gl_tex_info *fbo_info = (const struct gl_tex_info*)_fbo_info;
+   const struct gfx_tex_info *info = (const struct gfx_tex_info*)_info;
+   const struct gfx_tex_info *prev_info = (const struct gfx_tex_info*)_prev_info;
+   const struct gfx_tex_info *fbo_info = (const struct gfx_tex_info*)_fbo_info;
    struct glsl_attrib *attr = (struct glsl_attrib*)attribs;
    driver_t *driver = driver_get_ptr();
    global_t *global = global_get_ptr();

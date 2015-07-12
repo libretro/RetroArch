@@ -975,13 +975,13 @@ static void gl_check_fbo_dimensions(gl_t *gl)
 }
 
 static void gl_frame_fbo(gl_t *gl, uint64_t frame_count,
-      const struct gl_tex_info *tex_info)
+      const struct gfx_tex_info *tex_info)
 {
    unsigned width, height;
    const struct gfx_fbo_rect *prev_rect;
    const struct gfx_fbo_rect *rect;
-   struct gl_tex_info *fbo_info;
-   struct gl_tex_info fbo_tex_info[GFX_MAX_SHADERS];
+   struct gfx_tex_info *fbo_info;
+   struct gfx_tex_info fbo_tex_info[GFX_MAX_SHADERS];
    int i;
    GLfloat xamt, yamt;
    unsigned fbo_tex_info_cnt = 0;
@@ -1410,7 +1410,7 @@ static INLINE void gl_copy_frame(gl_t *gl, const void *frame,
 }
 
 static INLINE void gl_set_prev_texture(gl_t *gl,
-      const struct gl_tex_info *tex_info)
+      const struct gfx_tex_info *tex_info)
 {
    memmove(gl->prev_info + 1, gl->prev_info,
          sizeof(*tex_info) * (gl->textures - 1));
