@@ -225,12 +225,12 @@ retro_input_t input_driver_keys_pressed(void)
          state = input->key_pressed(driver->input_data, key);
 
 #ifdef HAVE_OVERLAY
-      state = state || input_overlay_key_pressed(key);
+      state |= input_overlay_key_pressed(key);
 #endif
 
 #ifdef HAVE_COMMAND
       if (driver->command)
-         state = state || rarch_cmd_get(driver->command, key);
+         state |= rarch_cmd_get(driver->command, key);
 #endif
 
       if (state)
