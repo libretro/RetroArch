@@ -22,6 +22,9 @@
 
 #include <boolean.h>
 
+typedef float GRfloat;
+typedef unsigned int GRuint;
+
 struct gfx_fbo_rect
 {
    unsigned img_width;

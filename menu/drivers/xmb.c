@@ -48,9 +48,6 @@
 #define XMB_DELAY 10
 #endif
 
-typedef float GRfloat;
-typedef unsigned int GRuint;
-
 typedef struct
 {
    float alpha;

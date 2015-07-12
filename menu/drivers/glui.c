@@ -49,10 +49,10 @@ typedef struct glui_handle
    {
       struct
       {
-         GLuint id;
+         GRuint id;
          char path[PATH_MAX_LENGTH];
       } bg;
-      GLuint white;
+      GRuint white;
    } textures;
 
    gfx_font_raster_block_t list_block;
@@ -90,7 +90,7 @@ static void glui_render_quad(gl_t *gl, int x, int y, int w, int h,
 {
    unsigned width, height;
    struct gfx_coords coords;
-   GLfloat color[16], tex_coord[8], vertex[8];
+   GRfloat color[16], tex_coord[8], vertex[8];
    menu_handle_t *menu = menu_driver_get_ptr();
    glui_handle_t *glui = (glui_handle_t*)menu->userdata;
 
