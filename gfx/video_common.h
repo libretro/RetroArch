@@ -25,6 +25,10 @@
 typedef float GRfloat;
 typedef unsigned int GRuint;
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct gfx_fbo_rect
 {
    unsigned img_width;
@@ -87,5 +91,9 @@ bool gfx_coord_array_add(gfx_coord_array_t *ca,
       const gfx_coords_t *coords, unsigned count);
 
 void gfx_coord_array_free(gfx_coord_array_t *ca);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

@@ -1697,11 +1697,12 @@ static int action_ok_video_resolution(const char *path,
 #else
    if (video_driver_get_video_output_size(&width, &height))
    {
+      char msg[PATH_MAX_LENGTH] = {0};
+
       video_driver_set_video_mode(width, height, true);
       global->console.screen.resolutions.width = width;
       global->console.screen.resolutions.height = height;
 
-      char msg[PATH_MAX_LENGTH] = {0};
       snprintf(msg, sizeof(msg),"Applying: %dx%d\n START to reset",width, height);
       rarch_main_msg_queue_push(msg, 1, 100, true);
    }

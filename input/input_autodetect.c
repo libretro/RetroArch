@@ -80,21 +80,27 @@ static int input_try_autoconfigure_joypad_from_conf(config_file_t *conf,
          && input_pid   != 0)
    {
       score += 3;
-      //RARCH_LOG("Autoconf: VID/PID match score=%d\n", score);
+#if 0
+      RARCH_LOG("Autoconf: VID/PID match score=%d\n", score);
+#endif
    }
 
    /* Check for name match */
    if (!strcmp(ident, params->name))
    {
       score += 2;
-      //RARCH_LOG("Autoconf: exact name match score=%d\n", score);
+#if 0
+      RARCH_LOG("Autoconf: exact name match score=%d\n", score);
+#endif
    }
    else
    {
       if (ident[0] != '\0' && !strncmp(params->name, ident, strlen(ident)))
       {
          score += 1;
-         //RARCH_LOG("Autoconf: partial name match score=%d\n", score);
+#if 0
+         RARCH_LOG("Autoconf: partial name match score=%d\n", score);
+#endif
       }
    }
    RARCH_LOG("Autoconf: configuration score=%d\n", score);
