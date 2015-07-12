@@ -38,12 +38,16 @@ void deinit_pixel_converter(void)
 
    scaler_ctx_gen_reset(scaler_ptr->scaler);
 
-   free(scaler_ptr->scaler);
+   if (scaler_ptr->scaler)
+      free(scaler_ptr->scaler);
+   if (scaler_ptr->scaler_out)
+      free(scaler_ptr->scaler_out);
+   if (scaler_ptr)
+      free(scaler_ptr);
+
    scaler_ptr->scaler     = NULL;
-   free(scaler_ptr->scaler_out);
    scaler_ptr->scaler_out = NULL;
-   free(scaler_ptr);
-   scaler_ptr = NULL;
+   scaler_ptr             = NULL;
 }
 
 bool init_video_pixel_converter(unsigned size)
@@ -92,6 +96,7 @@ error:
       free(scaler_ptr->scaler);
    if (scaler_ptr)
       free(scaler_ptr);
+
    scaler_ptr = NULL;
 
    return false;
