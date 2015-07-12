@@ -215,18 +215,18 @@ typedef struct gfx_coords
    unsigned vertices;
 } gfx_coords_t;
 
-typedef struct gl_mut_coords
+typedef struct gfx_mut_coords
 {
    float *vertex;
    float *color;
    float *tex_coord;
    float *lut_tex_coord;
    unsigned vertices;
-} gl_mut_coords_t;
+} gfx_mut_coords_t;
 
 typedef struct gfx_coord_array
 {
-   gl_mut_coords_t coords;
+   gfx_mut_coords_t coords;
    unsigned allocated;
 } gfx_coord_array_t;
 
