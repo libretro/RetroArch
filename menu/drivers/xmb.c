@@ -48,6 +48,9 @@
 #define XMB_DELAY 10
 #endif
 
+typedef float GRfloat;
+typedef unsigned int GRuint;
+
 typedef struct
 {
    float alpha;
@@ -55,8 +58,8 @@ typedef struct
    float zoom;
    float x;
    float y;
-   GLuint icon;
-   GLuint content_icon;
+   GRuint icon;
+   GRuint content_icon;
 } xmb_node_t;
 
 enum
@@ -96,7 +99,7 @@ enum
 
 struct xmb_texture_item
 {
-   GLuint id;
+   GRuint id;
 };
 
 typedef struct xmb_handle
@@ -110,7 +113,7 @@ typedef struct xmb_handle
    char box_message[PATH_MAX_LENGTH];
    float x;
    float alpha;
-   GLuint boxart;
+   GRuint boxart;
    float boxart_size;
 
    struct
@@ -225,14 +228,14 @@ typedef struct xmb_handle
    gfx_font_raster_block_t raster_block;
 } xmb_handle_t;
 
-static const GLfloat rmb_vertex[] = {
+static const GRfloat rmb_vertex[] = {
    0, 0,
    1, 0,
    0, 1,
    1, 1,
 };
 
-static const GLfloat rmb_tex_coord[] = {
+static const GRfloat rmb_tex_coord[] = {
    0, 1,
    1, 1,
    0, 0,
@@ -339,12 +342,12 @@ static void xmb_draw_icon_end(void)
 }
 
 static void xmb_draw_icon(gl_t *gl, xmb_handle_t *xmb,
-      GLuint texture, float x, float y,
+      GRuint texture, float x, float y,
       float alpha, float rotation, float scale_factor)
 {
    struct gfx_coords coords;
    unsigned width, height;
-   GLfloat color[16];
+   GRfloat color[16];
    math_matrix_4x4 mymat, mrot, mscal;
 
    if (alpha > xmb->alpha)
@@ -379,6 +382,12 @@ static void xmb_draw_icon(gl_t *gl, xmb_handle_t *xmb,
    color[14] = 1.0f;
    color[15] = alpha;
 
+   matrix_4x4_rotate_z(&mrot, rotation);
+   matrix_4x4_multiply(&mymat, &mrot, &gl->mvp_no_rot);
+
+   matrix_4x4_scale(&mscal, scale_factor, scale_factor, 1);
+   matrix_4x4_multiply(&mymat, &mscal, &mymat);
+
    glViewport(x, height - y, xmb->icon.size, xmb->icon.size);
 
    coords.vertices      = 4;
@@ -387,23 +396,17 @@ static void xmb_draw_icon(gl_t *gl, xmb_handle_t *xmb,
    coords.lut_tex_coord = rmb_tex_coord;
    coords.color         = color;
 
-   matrix_4x4_rotate_z(&mrot, rotation);
-   matrix_4x4_multiply(&mymat, &mrot, &gl->mvp_no_rot);
-
-   matrix_4x4_scale(&mscal, scale_factor, scale_factor, 1);
-   matrix_4x4_multiply(&mymat, &mscal, &mymat);
-
    menu_video_draw_frame(gl->shader, &coords, &mymat, false, texture);
 }
 
 static void xmb_draw_icon_predone(gl_t *gl, xmb_handle_t *xmb,
       math_matrix_4x4 *mymat,
-      GLuint texture, float x, float y,
+      GRuint texture, float x, float y,
       float alpha, float rotation, float scale_factor)
 {
    struct gfx_coords coords;
    unsigned width, height;
-   GLfloat color[16];
+   GRfloat color[16];
 
    if (alpha > xmb->alpha)
       alpha = xmb->alpha;
@@ -457,7 +460,7 @@ static void xmb_draw_boxart(gl_t *gl, xmb_handle_t *xmb)
    unsigned width, height;
    float x, y;
    math_matrix_4x4 mymat, mrot, mscal;
-   GLfloat color[16];
+   GRfloat color[16];
 
    video_driver_get_size(&width, &height);
 
@@ -483,6 +486,12 @@ static void xmb_draw_boxart(gl_t *gl, xmb_handle_t *xmb)
    x = xmb->margins.screen.left + xmb->icon.spacing.horizontal +
       xmb->icon.spacing.horizontal*4 - xmb->icon.size / 4;
 
+   matrix_4x4_rotate_z(&mrot, 0);
+   matrix_4x4_multiply(&mymat, &mrot, &gl->mvp_no_rot);
+
+   matrix_4x4_scale(&mscal, 1, 1, 1);
+   matrix_4x4_multiply(&mymat, &mscal, &mymat);
+
    glViewport(x, height - y, xmb->boxart_size, xmb->boxart_size);
 
    coords.vertices      = 4;
@@ -490,12 +499,6 @@ static void xmb_draw_boxart(gl_t *gl, xmb_handle_t *xmb)
    coords.tex_coord     = rmb_tex_coord;
    coords.lut_tex_coord = rmb_tex_coord;
    coords.color         = color;
-
-   matrix_4x4_rotate_z(&mrot, 0);
-   matrix_4x4_multiply(&mymat, &mrot, &gl->mvp_no_rot);
-
-   matrix_4x4_scale(&mscal, 1, 1, 1);
-   matrix_4x4_multiply(&mymat, &mscal, &mymat);
 
    menu_video_draw_frame(gl->shader, &coords, &mymat, false, xmb->boxart);
 }
@@ -1157,7 +1160,7 @@ static void xmb_populate_entries(const char *path,
       xmb_list_open(xmb);
 }
 
-static GLuint xmb_icon_get_id(xmb_handle_t *xmb,
+static GRuint xmb_icon_get_id(xmb_handle_t *xmb,
       xmb_node_t *core_node, xmb_node_t *node, unsigned type, bool active)
 {
    switch(type)
@@ -1264,8 +1267,8 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
       menu_entry_t entry;
       float icon_x, icon_y;
 
-      GLuint texture_switch       = 0;
-      GLuint         icon         = 0;
+      GRuint texture_switch       = 0;
+      GRuint         icon         = 0;
       xmb_node_t *   node         = (xmb_node_t*)menu_list_get_userdata_at_offset(list, i);
       uint32_t hash_label         = 0;
       uint32_t hash_value         = 0;
@@ -1437,7 +1440,7 @@ static void xmb_draw_cursor(gl_t *gl, xmb_handle_t *xmb, float x, float y)
    unsigned width, height;
    struct gfx_coords coords;
    math_matrix_4x4 mymat, mrot;
-   GLfloat color[16];
+   GRfloat color[16];
 
    color[ 0] = 1.0f;
    color[ 1] = 1.0f;
@@ -1458,6 +1461,9 @@ static void xmb_draw_cursor(gl_t *gl, xmb_handle_t *xmb, float x, float y)
 
    video_driver_get_size(&width, &height);
 
+   matrix_4x4_rotate_z(&mrot, 0);
+   matrix_4x4_multiply(&mymat, &mrot, &gl->mvp_no_rot);
+
    glViewport(x, height - y, xmb->cursor.size, xmb->cursor.size);
 
    coords.vertices      = 4;
@@ -1465,9 +1471,6 @@ static void xmb_draw_cursor(gl_t *gl, xmb_handle_t *xmb, float x, float y)
    coords.tex_coord     = rmb_tex_coord;
    coords.lut_tex_coord = rmb_tex_coord;
    coords.color         = color;
-
-   matrix_4x4_rotate_z(&mrot, 0);
-   matrix_4x4_multiply(&mymat, &mrot, &gl->mvp_no_rot);
 
    xmb_draw_icon_begin(gl);
 
