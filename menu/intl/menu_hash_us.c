@@ -661,7 +661,7 @@ const char *menu_hash_to_str_us(uint32_t hash)
       case MENU_VALUE_ASK_ARCHIVE:
          return "Ask";
       case MENU_LABEL_VALUE_PRIVACY_SETTINGS:
-         return "Privacy Settings";
+         return "Privacy";
       case MENU_VALUE_HORIZONTAL_MENU:
          return "Horizontal Menu";
       case MENU_LABEL_VALUE_NO_SETTINGS_FOUND:
@@ -669,19 +669,19 @@ const char *menu_hash_to_str_us(uint32_t hash)
       case MENU_LABEL_VALUE_NO_PERFORMANCE_COUNTERS:
          return "No performance counters.";
       case MENU_LABEL_VALUE_DRIVER_SETTINGS:
-         return "Driver Settings";
+         return "Driver";
       case MENU_LABEL_VALUE_CONFIGURATION_SETTINGS:
-         return "Configuration Settings";
+         return "Configuration";
       case MENU_LABEL_VALUE_CORE_SETTINGS:
-         return "Core Settings";
+         return "Core";
       case MENU_LABEL_VALUE_VIDEO_SETTINGS:
-         return "Video Settings";
+         return "Video";
       case MENU_LABEL_VALUE_LOGGING_SETTINGS:
-         return "Logging Settings";
+         return "Logging";
       case MENU_LABEL_VALUE_SAVING_SETTINGS:
-         return "Saving Settings";
+         return "Saving";
       case MENU_LABEL_VALUE_REWIND_SETTINGS:
-         return "Rewind Settings";
+         return "Rewind";
       case MENU_LABEL_VALUE_CUSTOM_VIEWPORT_1:
          return "Set Upper-Left Corner";
       case MENU_LABEL_VALUE_CUSTOM_VIEWPORT_2:
@@ -1393,33 +1393,33 @@ const char *menu_hash_to_str_us(uint32_t hash)
       case MENU_VALUE_STATUS:
          return "Status";
       case MENU_LABEL_VALUE_AUDIO_SETTINGS:
-         return "Audio Settings";
+         return "Audio";
       case MENU_LABEL_VALUE_INPUT_SETTINGS:
-         return "Input Settings";
+         return "Input";
       case MENU_LABEL_VALUE_ONSCREEN_DISPLAY_SETTINGS:
-         return "Onscreen Display Settings";
+         return "Onscreen Display";
       case MENU_LABEL_VALUE_OVERLAY_SETTINGS:
-         return "Onscreen Overlay Settings";
+         return "Onscreen Overlay";
       case MENU_LABEL_VALUE_MENU_SETTINGS:
-         return "Menu Settings";
+         return "Menu";
       case MENU_LABEL_VALUE_MULTIMEDIA_SETTINGS:
-         return "Multimedia Settings";
+         return "Multimedia";
       case MENU_LABEL_VALUE_UI_SETTINGS:
-         return "User Interface Settings";
+         return "User Interface";
       case MENU_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS:
-         return "Menu File Browser Settings";
+         return "Menu File Browser";
       case MENU_LABEL_VALUE_CORE_UPDATER_SETTINGS:
-         return "Updater Settings";
+         return "Updater";
       case MENU_LABEL_VALUE_NETWORK_SETTINGS:
-         return "Network Settings";
+         return "Network";
       case MENU_LABEL_VALUE_PLAYLIST_SETTINGS:
-         return "Playlist Settings";
+         return "Playlist";
       case MENU_LABEL_VALUE_USER_SETTINGS:
-         return "User Settings";
+         return "User";
       case MENU_LABEL_VALUE_DIRECTORY_SETTINGS:
-         return "Directory Settings";
+         return "Directory";
       case MENU_LABEL_VALUE_RECORDING_SETTINGS:
-         return "Recording Settings";
+         return "Recording";
       case MENU_LABEL_VALUE_NO_INFORMATION_AVAILABLE:
          return "No information is available.";
       case MENU_LABEL_VALUE_INPUT_USER_BINDS:
@@ -1457,7 +1457,7 @@ const char *menu_hash_to_str_us(uint32_t hash)
       case MENU_LABEL_VALUE_INPUT_HOTKEY_BINDS:
          return "Input Hotkey Binds";
       case MENU_LABEL_VALUE_FRAME_THROTTLE_SETTINGS:
-         return "Frame Throttle Settings";
+         return "Frame Throttle";
       case MENU_VALUE_SEARCH:
          return "Search:";
       case MENU_LABEL_VALUE_USE_BUILTIN_IMAGE_VIEWER:

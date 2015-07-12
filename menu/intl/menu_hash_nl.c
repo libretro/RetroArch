@@ -44,7 +44,7 @@ const char *menu_hash_to_str_nl(uint32_t hash)
       case MENU_VALUE_ASK_ARCHIVE:
          return "Keuze";
       case MENU_LABEL_VALUE_PRIVACY_SETTINGS:
-         return "Privacy Instellingen";
+         return "Privacy";
       case MENU_VALUE_HORIZONTAL_MENU:
          return "Horizontal Menu";
       case MENU_LABEL_VALUE_NO_SETTINGS_FOUND:
@@ -52,19 +52,19 @@ const char *menu_hash_to_str_nl(uint32_t hash)
       case MENU_LABEL_VALUE_NO_PERFORMANCE_COUNTERS:
          return "Geen prestatie tellers.";
       case MENU_LABEL_VALUE_DRIVER_SETTINGS:
-         return "Driver Instellingen";
+         return "Driver";
       case MENU_LABEL_VALUE_CONFIGURATION_SETTINGS:
-         return "Configuratie Instellingen";
+         return "Configuratie";
       case MENU_LABEL_VALUE_CORE_SETTINGS:
-         return "Core Instellingen";
+         return "Core";
       case MENU_LABEL_VALUE_VIDEO_SETTINGS:
-         return "Video Instellingen";
+         return "Video";
       case MENU_LABEL_VALUE_LOGGING_SETTINGS:
-         return "Logging Instellingen";
+         return "Logging";
       case MENU_LABEL_VALUE_SAVING_SETTINGS:
-         return "Saving Instellingen";
+         return "Saving";
       case MENU_LABEL_VALUE_REWIND_SETTINGS:
-         return "Rewind Instellingen";
+         return "Rewind";
       case MENU_LABEL_VALUE_CUSTOM_VIEWPORT_1:
          return "Bovenlinkse Hoek Instellen";
       case MENU_LABEL_VALUE_CUSTOM_VIEWPORT_2:
@@ -502,7 +502,7 @@ const char *menu_hash_to_str_nl(uint32_t hash)
       case MENU_LABEL_VALUE_CLOSE_CONTENT:
          return "Content afsluiten";
       case MENU_LABEL_VALUE_MANAGEMENT:
-         return "Database Instellingen";
+         return "Database";
       case MENU_LABEL_VALUE_SAVE_STATE:
          return "Save State";
       case MENU_LABEL_VALUE_LOAD_STATE:
@@ -776,29 +776,29 @@ const char *menu_hash_to_str_nl(uint32_t hash)
       case MENU_LABEL_VALUE_INPUT_SETTINGS:
          return "Invoerinstellingen";
       case MENU_LABEL_VALUE_ONSCREEN_DISPLAY_SETTINGS:
-         return "Onscreen Weergave Instellingen";
+         return "Onscreen Weergave";
       case MENU_LABEL_VALUE_OVERLAY_SETTINGS:
-         return "Onscreen Overlay Instellingen";
+         return "Onscreen Overlay";
       case MENU_LABEL_VALUE_MENU_SETTINGS:
-         return "Menu Instellingen";
+         return "Menu";
       case MENU_LABEL_VALUE_MULTIMEDIA_SETTINGS:
-         return "Multimedia Instellingen";
+         return "Multimedia";
       case MENU_LABEL_VALUE_UI_SETTINGS:
-         return "Gebruikersinterface Instellingen";
+         return "Gebruikersinterface";
       case MENU_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS:
-         return "Menu Bestandsbeheer Instellingen";
+         return "Menu Bestandsbeheer";
       case MENU_LABEL_VALUE_CORE_UPDATER_SETTINGS:
-         return "Updater Instellingen";
+         return "Updater";
       case MENU_LABEL_VALUE_NETWORK_SETTINGS:
          return "Netwerkinstellingen";
       case MENU_LABEL_VALUE_PLAYLIST_SETTINGS:
-         return "Playlist Instellingen";
+         return "Playlist";
       case MENU_LABEL_VALUE_USER_SETTINGS:
          return "Gebruikersinstellingen";
       case MENU_LABEL_VALUE_DIRECTORY_SETTINGS:
-         return "Map Instellingen";
+         return "Mappen";
       case MENU_LABEL_VALUE_RECORDING_SETTINGS:
-         return "Opname Instellingen";
+         return "Opname";
       case MENU_LABEL_VALUE_NO_INFORMATION_AVAILABLE:
          return "Informatie is niet beschikbaar.";
       case MENU_LABEL_VALUE_INPUT_USER_BINDS:
@@ -836,7 +836,7 @@ const char *menu_hash_to_str_nl(uint32_t hash)
       case MENU_LABEL_VALUE_INPUT_HOTKEY_BINDS:
          return "Invoer Hotkey Binds";
       case MENU_LABEL_VALUE_FRAME_THROTTLE_SETTINGS:
-         return "Frame Throttle Instellingen";
+         return "Frame Throttle";
       case MENU_VALUE_SEARCH:
          return "Zoeken:";
       default:
