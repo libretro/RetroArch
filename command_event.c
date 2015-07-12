@@ -1273,7 +1273,7 @@ bool event_command(enum event_command cmd)
          break;
       case EVENT_CMD_OVERLAY_NEXT:
 #ifdef HAVE_OVERLAY
-         input_overlay_next(input_overlay_get_ptr(), settings->input.overlay_opacity);
+         input_overlay_next(settings->input.overlay_opacity);
 #endif
          break;
       case EVENT_CMD_DSP_FILTER_DEINIT:
@@ -1373,14 +1373,12 @@ bool event_command(enum event_command cmd)
          break;
       case EVENT_CMD_OVERLAY_SET_SCALE_FACTOR:
 #ifdef HAVE_OVERLAY
-         input_overlay_set_scale_factor(input_overlay_get_ptr(),
-               settings->input.overlay_scale);
+         input_overlay_set_scale_factor(settings->input.overlay_scale);
 #endif
          break;
       case EVENT_CMD_OVERLAY_SET_ALPHA_MOD:
 #ifdef HAVE_OVERLAY
-         input_overlay_set_alpha_mod(input_overlay_get_ptr(),
-               settings->input.overlay_opacity);
+         input_overlay_set_alpha_mod(settings->input.overlay_opacity);
 #endif
          break;
       case EVENT_CMD_DRIVERS_DEINIT:

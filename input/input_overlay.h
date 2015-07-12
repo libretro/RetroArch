@@ -191,35 +191,28 @@ void input_overlay_poll_clear(input_overlay_t *ol, float opacity);
 
 /**
  * input_overlay_set_alpha_mod:
- * @ol                    : Overlay handle.
  * @mod                   : New modulating factor to apply.
  *
  * Sets a modulating factor for alpha channel. Default is 1.0.
  * The alpha factor is applied for all overlays.
  **/
-void input_overlay_set_alpha_mod(input_overlay_t *ol, float mod);
+void input_overlay_set_alpha_mod(float mod);
 
 /**
  * input_overlay_set_scale_factor:
- * @ol                    : Overlay handle.
  * @scale                 : Factor of scale to apply.
  *
  * Scales the overlay by a factor of scale.
  **/
-void input_overlay_set_scale_factor(input_overlay_t *ol, float scale);
+void input_overlay_set_scale_factor(float scale);
 
 /**
  * input_overlay_next:
- * @ol                    : Overlay handle.
  *
  * Switch to the next available overlay
  * screen.
  **/
-void input_overlay_next(input_overlay_t *ol, float opacity);
-
-input_overlay_t *input_overlay_get_ptr(void);
-
-input_overlay_state_t *input_overlay_get_state_ptr(void);
+void input_overlay_next(float opacity);
 
 bool input_overlay_data_is_active(void);
 
