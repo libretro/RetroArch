@@ -772,9 +772,9 @@ const char *menu_hash_to_str_nl(uint32_t hash)
       case MENU_VALUE_STATUS:
          return "Status";
       case MENU_LABEL_VALUE_AUDIO_SETTINGS:
-         return "Geluidsinstellingen";
+         return "Geluid";
       case MENU_LABEL_VALUE_INPUT_SETTINGS:
-         return "Invoerinstellingen";
+         return "Invoer";
       case MENU_LABEL_VALUE_ONSCREEN_DISPLAY_SETTINGS:
          return "Onscreen Weergave";
       case MENU_LABEL_VALUE_OVERLAY_SETTINGS:
@@ -790,11 +790,11 @@ const char *menu_hash_to_str_nl(uint32_t hash)
       case MENU_LABEL_VALUE_CORE_UPDATER_SETTINGS:
          return "Updater";
       case MENU_LABEL_VALUE_NETWORK_SETTINGS:
-         return "Netwerkinstellingen";
+         return "Netwerk";
       case MENU_LABEL_VALUE_PLAYLIST_SETTINGS:
          return "Playlist";
       case MENU_LABEL_VALUE_USER_SETTINGS:
-         return "Gebruikersinstellingen";
+         return "Gebruiker";
       case MENU_LABEL_VALUE_DIRECTORY_SETTINGS:
          return "Mappen";
       case MENU_LABEL_VALUE_RECORDING_SETTINGS:
