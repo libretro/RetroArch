@@ -55,15 +55,14 @@ static struct global *g_extern   = NULL;
  *
  * Returns: true if libretro pause key was toggled, otherwise false.
  **/
-static bool check_pause(bool pause_pressed, bool frameadvance_pressed)
+static bool check_pause(driver_t *driver, runloop_t *runloop,
+      bool pause_pressed, bool frameadvance_pressed)
 {
-   runloop_t *runloop       = rarch_main_get_ptr();
    static bool old_focus    = true;
    bool focus               = true;
    enum event_command cmd   = EVENT_CMD_NONE;
    bool old_is_paused       = runloop ? runloop->is_paused : false;
    settings_t *settings     = config_get_ptr();
-   driver_t         *driver = driver_get_ptr();
    const video_driver_t *video = driver ? (const video_driver_t*)driver->video :
       NULL;
 
@@ -100,11 +99,10 @@ static bool check_pause(bool pause_pressed, bool frameadvance_pressed)
  * Checks if the fast forward key has been pressed for this frame. 
  *
  **/
-static void check_fast_forward_button(bool fastforward_pressed,
+static void check_fast_forward_button(driver_t *driver,
+      bool fastforward_pressed,
       bool hold_pressed, bool old_hold_pressed)
 {
-   driver_t *driver = driver_get_ptr();
-
    /* To avoid continous switching if we hold the button down, we require
     * that the button must go from pressed to unpressed back to pressed 
     * to be able to toggle between then.
@@ -127,10 +125,10 @@ static void check_fast_forward_button(bool fastforward_pressed,
  * Checks if the state increase/decrease keys have been pressed 
  * for this frame. 
  **/
-static void check_stateslots(bool pressed_increase, bool pressed_decrease)
+static void check_stateslots(settings_t *settings,
+      bool pressed_increase, bool pressed_decrease)
 {
    char msg[PATH_MAX_LENGTH] = {0};
-   settings_t *settings      = config_get_ptr();
 
    /* Save state slots */
    if (pressed_increase)
@@ -158,10 +156,10 @@ static void check_stateslots(bool pressed_increase, bool pressed_decrease)
  *
  * Checks if rewind toggle/hold was being pressed and/or held.
  **/
-static void check_rewind(bool pressed)
+static void check_rewind(settings_t *settings,
+      global_t *global, runloop_t *runloop, bool pressed)
 {
    static bool first = true;
-   global_t *global  = global_get_ptr();
 
    if (global->rewind.frame_is_reverse)
    {
@@ -181,7 +179,6 @@ static void check_rewind(bool pressed)
    if (pressed)
    {
       const void *buf    = NULL;
-      runloop_t *runloop = rarch_main_get_ptr();
 
       if (state_manager_pop(global->rewind.state, &buf))
       {
@@ -202,7 +199,6 @@ static void check_rewind(bool pressed)
    else
    {
       static unsigned cnt      = 0;
-      settings_t *settings     = config_get_ptr();
 
       cnt = (cnt + 1) % (settings->rewind_granularity ?
             settings->rewind_granularity : 1); /* Avoid possible SIGFPE. */
@@ -230,12 +226,9 @@ static void check_rewind(bool pressed)
  *
  * Checks if slowmotion toggle/hold was being pressed and/or held.
  **/
-static void check_slowmotion(bool slowmotion_pressed)
+static void check_slowmotion(settings_t *settings, global_t *global,
+      runloop_t *runloop, bool slowmotion_pressed)
 {
-   runloop_t *runloop       = rarch_main_get_ptr();
-   settings_t *settings     = config_get_ptr();
-   global_t *global         = global_get_ptr();
-
    runloop->is_slowmotion   = slowmotion_pressed;
 
    if (!runloop->is_slowmotion)
@@ -463,11 +456,9 @@ static void do_state_check_menu_toggle(void)
  *
  * Returns: 0.
  **/
-static int do_pre_state_checks(event_cmd_state_t *cmd)
+static int do_pre_state_checks(global_t *global, runloop_t *runloop,
+      event_cmd_state_t *cmd)
 {
-   runloop_t *runloop        = rarch_main_get_ptr();
-   global_t *global          = global_get_ptr();
-
    if (cmd->overlay_next_pressed)
       event_command(EVENT_CMD_OVERLAY_NEXT);
 
@@ -503,15 +494,15 @@ static int do_netplay_state_checks(
 #endif
 
 static int do_pause_state_checks(
+      runloop_t *runloop,
       bool pause_pressed,
       bool frameadvance_pressed,
       bool fullscreen_toggle_pressed,
       bool rewind_pressed)
 {
-   runloop_t *runloop        = rarch_main_get_ptr();
    bool check_is_oneshot     = frameadvance_pressed || rewind_pressed;
 
-   if (!runloop || !runloop->is_paused)
+   if (!runloop->is_paused)
       return 0;
 
    if (fullscreen_toggle_pressed)
@@ -533,14 +524,9 @@ static int do_pause_state_checks(
  *
  * Returns: 1 if RetroArch is in pause mode, 0 otherwise.
  **/
-static int do_state_checks(event_cmd_state_t *cmd)
+static int do_state_checks(driver_t *driver, settings_t *settings,
+      global_t *global, runloop_t *runloop, event_cmd_state_t *cmd)
 {
-   driver_t  *driver         = driver_get_ptr();
-   runloop_t *runloop        = rarch_main_get_ptr();
-   global_t  *global         = global_get_ptr();
-
-   (void)driver;
-
    if (runloop->is_idle)
       return 1;
 
@@ -551,12 +537,7 @@ static int do_state_checks(event_cmd_state_t *cmd)
       event_command(EVENT_CMD_AUDIO_MUTE_TOGGLE);
 
    if (cmd->osk_pressed)
-   {
-        driver_t *driver     = driver_get_ptr();
-
-        if (driver)
-           driver->keyboard_linefeed_enable = !driver->keyboard_linefeed_enable;
-   }
+      driver->keyboard_linefeed_enable = !driver->keyboard_linefeed_enable;
       
    if (cmd->volume_up_pressed)
       event_command(EVENT_CMD_VOLUME_UP);
@@ -569,18 +550,21 @@ static int do_state_checks(event_cmd_state_t *cmd)
             cmd->fullscreen_toggle);
 #endif
 
-   check_pause(cmd->pause_pressed, cmd->frameadvance_pressed);
+   check_pause(driver, runloop,
+         cmd->pause_pressed, cmd->frameadvance_pressed);
 
    if (do_pause_state_checks(
+            runloop,
             cmd->pause_pressed,
             cmd->frameadvance_pressed,
             cmd->fullscreen_toggle,
             cmd->rewind_pressed))
       return 1;
 
-   check_fast_forward_button(cmd->fastforward_pressed,
+   check_fast_forward_button(driver,
+         cmd->fastforward_pressed,
          cmd->hold_pressed, cmd->old_hold_pressed);
-   check_stateslots(cmd->state_slot_increase,
+   check_stateslots(settings, cmd->state_slot_increase,
          cmd->state_slot_decrease);
 
    if (cmd->save_state_pressed)
@@ -588,8 +572,9 @@ static int do_state_checks(event_cmd_state_t *cmd)
    else if (cmd->load_state_pressed)
       event_command(EVENT_CMD_LOAD_STATE);
 
-   check_rewind(cmd->rewind_pressed);
-   check_slowmotion(cmd->slowmotion_pressed);
+   check_rewind(settings, global, runloop, cmd->rewind_pressed);
+   check_slowmotion(settings, global, runloop,
+         cmd->slowmotion_pressed);
 
    if (cmd->movie_record)
       check_movie();
@@ -635,12 +620,10 @@ static int do_state_checks(event_cmd_state_t *cmd)
  *
  * Returns: 1 if any of the above conditions are true, otherwise 0.
  **/
-static INLINE int time_to_exit(event_cmd_state_t *cmd)
+static INLINE int time_to_exit(driver_t *driver, global_t *global,
+      runloop_t *runloop, event_cmd_state_t *cmd)
 {
-   runloop_t *runloop            = rarch_main_get_ptr();
-   driver_t              *driver = driver_get_ptr();
    const video_driver_t *video   = driver ? (const video_driver_t*)driver->video : NULL;
-   global_t  *global             = global_get_ptr();
    rarch_system_info_t *system   = rarch_system_info_get_ptr();
    bool shutdown_pressed         = system->shutdown;
    bool video_alive              = video->alive(driver->video_data);
@@ -660,11 +643,9 @@ static INLINE int time_to_exit(event_cmd_state_t *cmd)
  *
  * Updates frame timing if frame timing callback is in use by the core.
  **/
-static void rarch_update_frame_time(void)
+static void rarch_update_frame_time(driver_t *driver, settings_t *settings,
+      runloop_t *runloop)
 {
-   runloop_t *runloop       = rarch_main_get_ptr();
-   driver_t *driver         = driver_get_ptr();
-   settings_t *settings     = config_get_ptr();
    retro_time_t curr_time   = rarch_get_time_usec();
    rarch_system_info_t *system   = rarch_system_info_get_ptr();
    retro_time_t delta       = curr_time - system->frame_time_last;
@@ -691,12 +672,10 @@ static void rarch_update_frame_time(void)
  *
  * Limit frame time if fast forward ratio throttle is enabled.
  **/
-static void rarch_limit_frame_time(void)
+static void rarch_limit_frame_time(settings_t *settings, runloop_t *runloop)
 {
    retro_time_t target      = 0;
    retro_time_t to_sleep_ms = 0;
-   runloop_t *runloop       = rarch_main_get_ptr();
-   settings_t *settings     = config_get_ptr();
    retro_time_t current     = rarch_get_time_usec();
    struct retro_system_av_info *av_info = 
       video_viewport_get_system_av_info();
@@ -728,11 +707,10 @@ static void rarch_limit_frame_time(void)
  *
  * Checks if 'hotkey enable' key is pressed.
  **/
-static bool check_block_hotkey(bool enable_hotkey)
+static bool check_block_hotkey(driver_t *driver, settings_t *settings,
+      bool enable_hotkey)
 {
    bool use_hotkey_enable;
-   settings_t *settings             = config_get_ptr();
-   driver_t *driver                 = driver_get_ptr();
    const struct retro_keybind *bind = 
       &settings->input.binds[0][RARCH_ENABLE_HOTKEY];
    const struct retro_keybind *autoconf_bind = 
@@ -773,14 +751,12 @@ static bool check_block_hotkey(bool enable_hotkey)
  *
  * Returns: Input sample containg a mask of all pressed keys.
  */
-static INLINE retro_input_t input_keys_pressed(void)
+static INLINE retro_input_t input_keys_pressed(driver_t *driver,
+      settings_t *settings, global_t *global)
 {
    unsigned i;
    const struct retro_keybind *binds[MAX_USERS];
    retro_input_t ret        = 0;
-   driver_t *driver         = driver_get_ptr();
-   settings_t *settings     = config_get_ptr();
-   global_t   *global       = global_get_ptr();
    
    for (i = 0; i < MAX_USERS; i++)
       binds[i] = settings->input.binds[i];
@@ -790,8 +766,8 @@ static INLINE retro_input_t input_keys_pressed(void)
 
    global->turbo_count++;
 
-   driver->block_libretro_input = check_block_hotkey(
-         input_driver_key_pressed(RARCH_ENABLE_HOTKEY));
+   driver->block_libretro_input = check_block_hotkey(driver,
+         settings, input_driver_key_pressed(RARCH_ENABLE_HOTKEY));
 
    for (i = 0; i < settings->input.max_users; i++)
    {
@@ -829,10 +805,8 @@ static INLINE retro_input_t input_keys_pressed(void)
  *
  * Returns: always true (1).
  **/
-static bool input_flush(retro_input_t *input)
+static bool input_flush(runloop_t *runloop, retro_input_t *input)
 {
-   runloop_t *runloop = rarch_main_get_ptr();
-
    *input = 0;
 
    /* If core was paused before entering menu, evoke
@@ -1093,29 +1067,30 @@ int rarch_main_iterate(void)
    event_cmd_state_t    cmd        = {0};
    int ret                         = 0;
    static retro_input_t last_input = 0;
-   retro_input_t input             = input_keys_pressed();
    driver_t *driver                = driver_get_ptr();
    settings_t *settings            = config_get_ptr();
    global_t   *global              = global_get_ptr();
+   runloop_t *runloop              = rarch_main_get_ptr();
+   retro_input_t input             = input_keys_pressed(driver, settings, global);
    rarch_system_info_t *system     = rarch_system_info_get_ptr();
 
    old_input                       = last_input;
    last_input                      = input;
 
    if (driver->flushing_input)
-      driver->flushing_input = (input) ? input_flush(&input) : false;
+      driver->flushing_input = (input) ? input_flush(runloop, &input) : false;
 
    trigger_input = input & ~old_input;
 
    rarch_main_cmd_get_state(&cmd, input, old_input, trigger_input);
 
-   if (time_to_exit(&cmd))
+   if (time_to_exit(driver, global, runloop, &cmd))
       return rarch_main_iterate_quit();
 
    if (system->frame_time.callback)
-      rarch_update_frame_time();
+      rarch_update_frame_time(driver, settings, runloop);
 
-   do_pre_state_checks(&cmd);
+   do_pre_state_checks(global, runloop, &cmd);
 
 #ifdef HAVE_OVERLAY
    rarch_main_iterate_linefeed_overlay();
@@ -1141,7 +1116,7 @@ int rarch_main_iterate(void)
       return rarch_main_iterate_quit();
    }
 
-   if (do_state_checks(&cmd))
+   if (do_state_checks(driver, settings, global, runloop, &cmd))
    {
       /* RetroArch has been paused */
       driver->retro_ctx.poll_cb();
@@ -1207,7 +1182,7 @@ int rarch_main_iterate(void)
 
 success:
    if (settings->fastforward_ratio_throttle_enable)
-      rarch_limit_frame_time();
+      rarch_limit_frame_time(settings, runloop);
 
    return ret;
 }
