@@ -144,52 +144,6 @@ void input_overlay_free(void);
 void input_overlay_enable(input_overlay_t *ol, bool enable);
 
 /**
- * input_overlay_full_screen:
- * @ol                    : Overlay handle.
- *
- * Checks if the overlay is fullscreen.
- *
- * Returns: true (1) if overlay is fullscreen, otherwise false (0).
- **/
-bool input_overlay_full_screen(input_overlay_t *ol);
-
-/**
- * input_overlay_poll:
- * @ol                    : Overlay handle.
- * @out                   : Polled output data.
- * @norm_x                : Normalized X coordinate.
- * @norm_y                : Normalized Y coordinate.
- *
- * Polls input overlay.
- *
- * @norm_x and @norm_y are the result of
- * input_translate_coord_viewport().
- **/
-void input_overlay_poll(input_overlay_t *ol,
-      input_overlay_state_t *out, int16_t norm_x, int16_t norm_y);
-
-/**
- * input_overlay_post_poll:
- * @ol                    : overlay handle
- * 
- *
- * Called after all the input_overlay_poll() calls to
- * update the range modifiers for pressed/unpressed regions
- * and alpha mods.
- **/
-void input_overlay_post_poll(input_overlay_t *ol, float opacity);
-
-/**
- * input_overlay_poll_clear:
- * @ol                    : overlay handle
- * @opacity               : Opacity of overlay.
- *
- * Call when there is nothing to poll. Allows overlay to
- * clear certain state.
- **/
-void input_overlay_poll_clear(input_overlay_t *ol, float opacity);
-
-/**
  * input_overlay_set_alpha_mod:
  * @mod                   : New modulating factor to apply.
  *

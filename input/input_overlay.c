@@ -1100,7 +1100,6 @@ static bool inside_hitbox(const struct overlay_desc *desc, float x, float y)
 
 /**
  * input_overlay_poll:
- * @ol                    : Overlay handle.
  * @out                   : Polled output data.
  * @norm_x                : Normalized X coordinate.
  * @norm_y                : Normalized Y coordinate.
@@ -1110,12 +1109,12 @@ static bool inside_hitbox(const struct overlay_desc *desc, float x, float y)
  * @norm_x and @norm_y are the result of
  * input_translate_coord_viewport().
  **/
-void input_overlay_poll(input_overlay_t *ol,
-      input_overlay_state_t *out,
+static void input_overlay_poll(input_overlay_state_t *out,
       int16_t norm_x, int16_t norm_y)
 {
    size_t i;
    float x, y;
+   input_overlay_t *ol             = input_overlay_get_ptr();
 
    memset(out, 0, sizeof(*out));
 
@@ -1221,15 +1220,15 @@ static void input_overlay_update_desc_geom(input_overlay_t *ol,
 
 /**
  * input_overlay_post_poll:
- * @ol                    : overlay handle
  *
  * Called after all the input_overlay_poll() calls to
  * update the range modifiers for pressed/unpressed regions
  * and alpha mods.
  **/
-void input_overlay_post_poll(input_overlay_t *ol, float opacity)
+void input_overlay_post_poll(float opacity)
 {
    size_t i;
+   input_overlay_t *ol = input_overlay_get_ptr();
 
    if (!ol)
       return;
@@ -1272,9 +1271,10 @@ void input_overlay_post_poll(input_overlay_t *ol, float opacity)
  * Call when there is nothing to poll. Allows overlay to
  * clear certain state.
  **/
-void input_overlay_poll_clear(input_overlay_t *ol, float opacity)
+void input_overlay_poll_clear(float opacity)
 {
    size_t i;
+   input_overlay_t *ol = input_overlay_get_ptr();
 
    if (!ol)
       return;
@@ -1324,14 +1324,14 @@ void input_overlay_next(float opacity)
 
 /**
  * input_overlay_full_screen:
- * @ol                    : Overlay handle.
  *
  * Checks if the overlay is fullscreen.
  *
  * Returns: true (1) if overlay is fullscreen, otherwise false (0).
  **/
-bool input_overlay_full_screen(input_overlay_t *ol)
+bool input_overlay_full_screen(void)
 {
+   input_overlay_t *ol = input_overlay_get_ptr();
    if (!ol)
       return false;
    return ol->active->full_screen;
@@ -1446,7 +1446,6 @@ void input_poll_overlay(float opacity)
    uint16_t key_mod                = 0;
    bool polled                     = false;
    settings_t *settings            = config_get_ptr();
-   input_overlay_t *ol             = input_overlay_get_ptr();
    input_overlay_state_t *ol_state = input_overlay_get_state_ptr();
 
    if (!input_overlay_is_alive() || !ol_state)
@@ -1456,7 +1455,7 @@ void input_poll_overlay(float opacity)
          sizeof(ol_state->keys));
    memset(ol_state, 0, sizeof(*ol_state));
 
-   device = input_overlay_full_screen(ol) ?
+   device = input_overlay_full_screen() ?
       RARCH_DEVICE_POINTER_SCREEN : RETRO_DEVICE_POINTER;
 
    for (i = 0;
@@ -1470,7 +1469,7 @@ void input_poll_overlay(float opacity)
       int16_t y = input_driver_state(NULL, 0,
             device, i, RETRO_DEVICE_ID_POINTER_Y);
 
-      input_overlay_poll(ol, &polled_data, x, y);
+      input_overlay_poll(&polled_data, x, y);
 
       ol_state->buttons |= polled_data.buttons;
 
@@ -1564,9 +1563,9 @@ void input_poll_overlay(float opacity)
    }
 
    if (polled)
-      input_overlay_post_poll(ol, opacity);
+      input_overlay_post_poll(opacity);
    else
-      input_overlay_poll_clear(ol, opacity);
+      input_overlay_poll_clear(opacity);
 }
 
 void input_state_overlay(int16_t *ret, unsigned port, unsigned device, unsigned idx,
