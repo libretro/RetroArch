@@ -144,8 +144,6 @@ retro_input_t input_driver_keys_pressed(void);
 int16_t input_driver_state(const struct retro_keybind **retro_keybinds,
       unsigned port, unsigned device, unsigned index, unsigned id);
 
-void input_driver_poll(void);
-
 bool input_driver_key_pressed(int key);
 
 uint64_t input_driver_get_capabilities(void);

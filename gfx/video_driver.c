@@ -858,18 +858,6 @@ void video_driver_get_video_output_prev(void)
       poke->get_video_output_prev(driver->video_data);
 }
 
-bool video_driver_frame(const void *frame, unsigned width,
-         unsigned height, unsigned pitch, const char *msg)
-{
-   driver_t            *driver = driver_get_ptr();
-   const video_driver_t *video = video_driver_ctx_get_ptr();
-
-   if (video->frame(driver->video_data, frame,
-            width, height, pitch, msg))
-      return true;
-   return false;
-}
-
 /**
  * video_driver_cached_frame:
  *

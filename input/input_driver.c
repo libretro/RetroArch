@@ -249,15 +249,6 @@ int16_t input_driver_state(const struct retro_keybind **retro_keybinds,
          port, device, index, id);
 }
 
-void input_driver_poll(void)
-{
-   driver_t            *driver = driver_get_ptr();
-   const input_driver_t *input = input_get_ptr(driver);
-
-   input->poll(driver->input_data);
-}
-
-
 const input_device_driver_t *input_driver_get_joypad_driver(void)
 {
    driver_t            *driver = driver_get_ptr();

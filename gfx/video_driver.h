@@ -330,9 +330,6 @@ void video_driver_get_video_output_next(void);
 
 void video_driver_get_video_output_prev(void);
 
-bool video_driver_frame(const void *frame, unsigned width,
-         unsigned height, unsigned pitch, const char *msg);
-
 bool video_driver_suppress_screensaver(bool enable);
 
 const char *video_driver_get_ident(void);

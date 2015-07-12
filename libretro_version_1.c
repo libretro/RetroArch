@@ -63,6 +63,8 @@ static void video_frame(const void *data, unsigned width,
    driver_t  *driver      = driver_get_ptr();
    global_t  *global      = global_get_ptr();
    settings_t *settings   = config_get_ptr();
+   const video_driver_t *video = 
+      driver ? (const video_driver_t*)driver->video : NULL;
 
    if (!driver->video_active)
       return;
@@ -103,7 +105,7 @@ static void video_frame(const void *data, unsigned width,
       pitch  = output_pitch;
    }
 
-   if (!video_driver_frame(data, width, height, pitch, driver->current_msg))
+   if (!video->frame(driver->video_data, data, width, height, pitch, driver->current_msg))
       driver->video_active = false;
 }
 
@@ -161,6 +163,8 @@ static int16_t input_state(unsigned port, unsigned device,
    settings_t *settings            = config_get_ptr();
    driver_t *driver                = driver_get_ptr();
    global_t *global                = global_get_ptr();
+   const input_driver_t *input     = driver ? 
+      (const input_driver_t*)driver->input : NULL;
    
    for (i = 0; i < MAX_USERS; i++)
       libretro_input_binds[i] = settings->input.binds[i];
@@ -182,7 +186,7 @@ static int16_t input_state(unsigned port, unsigned device,
    if (!driver->block_libretro_input)
    {
       if (((id < RARCH_FIRST_META_KEY) || (device == RETRO_DEVICE_KEYBOARD)))
-         res = input_driver_state(libretro_input_binds, port, device, idx, id);
+         res = input->input_state(driver->input_data, libretro_input_binds, port, device, idx, id);
 
 #ifdef HAVE_OVERLAY
       input_state_overlay(&res, port, device, idx, id);
@@ -213,8 +217,10 @@ static void input_poll(void)
 {
    driver_t *driver               = driver_get_ptr();
    settings_t *settings           = config_get_ptr();
+   const input_driver_t *input     = driver ? 
+      (const input_driver_t*)driver->input : NULL;
 
-   input_driver_poll();
+   input->poll(driver->input_data);
 
    (void)driver;
 
