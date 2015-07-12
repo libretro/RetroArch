@@ -190,37 +190,37 @@ struct gl_fbo_rect
 
 struct gl_ortho
 {
-   GLfloat left;
-   GLfloat right;
-   GLfloat bottom;
-   GLfloat top;
-   GLfloat znear;
-   GLfloat zfar;
+   float left;
+   float right;
+   float bottom;
+   float top;
+   float znear;
+   float zfar;
 };
 
 struct gl_tex_info
 {
    GLuint tex;
-   GLfloat input_size[2];
-   GLfloat tex_size[2];
-   GLfloat coord[8];
+   float input_size[2];
+   float tex_size[2];
+   float coord[8];
 };
 
-typedef struct gl_coords
+typedef struct gfx_coords
 {
-   const GLfloat *vertex;
-   const GLfloat *color;
-   const GLfloat *tex_coord;
-   const GLfloat *lut_tex_coord;
+   const float *vertex;
+   const float *color;
+   const float *tex_coord;
+   const float *lut_tex_coord;
    unsigned vertices;
-} gl_coords_t;
+} gfx_coords_t;
 
 typedef struct gl_mut_coords
 {
-   GLfloat *vertex;
-   GLfloat *color;
-   GLfloat *tex_coord;
-   GLfloat *lut_tex_coord;
+   float *vertex;
+   float *color;
+   float *tex_coord;
+   float *lut_tex_coord;
    unsigned vertices;
 } gl_mut_coords_t;
 
@@ -294,9 +294,9 @@ typedef struct gl
    unsigned tex_w, tex_h;
    math_matrix_4x4 mvp, mvp_no_rot;
 
-   struct gl_coords coords;
-   const GLfloat *vertex_ptr;
-   const GLfloat *white_color_ptr;
+   struct gfx_coords coords;
+   const float *vertex_ptr;
+   const float *white_color_ptr;
 
    GLuint pbo;
 
@@ -319,9 +319,9 @@ typedef struct gl
    bool overlay_enable;
    bool overlay_full_screen;
    GLuint *overlay_tex;
-   GLfloat *overlay_vertex_coord;
-   GLfloat *overlay_tex_coord;
-   GLfloat *overlay_color_coord;
+   float *overlay_vertex_coord;
+   float *overlay_tex_coord;
+   float *overlay_color_coord;
 #endif
 
 #ifdef HAVE_GL_ASYNC_READBACK
@@ -338,7 +338,7 @@ typedef struct gl
    GLuint menu_texture;
    bool menu_texture_enable;
    bool menu_texture_full_screen;
-   GLfloat menu_texture_alpha;
+   float menu_texture_alpha;
 #endif
 
 #ifdef HAVE_GL_SYNC
@@ -418,7 +418,7 @@ static INLINE unsigned gl_wrap_type_to_enum(enum gfx_wrap_type type)
    return 0;
 }
 
-bool gl_coord_array_add(gl_coord_array_t *ca, const gl_coords_t *coords, unsigned count);
+bool gl_coord_array_add(gl_coord_array_t *ca, const gfx_coords_t *coords, unsigned count);
 void gl_coord_array_free(gl_coord_array_t *ca);
 
 void gl_ff_vertex(const void *data);

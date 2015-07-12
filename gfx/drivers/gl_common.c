@@ -19,7 +19,7 @@
 void gl_ff_vertex(const void *data)
 {
 #ifndef NO_GL_FF_VERTEX
-   const struct gl_coords *coords = (const struct gl_coords*)data;
+   const struct gfx_coords *coords = (const struct gfx_coords*)data;
 
    /* Fall back to fixed function-style if needed and possible. */
    glClientActiveTexture(GL_TEXTURE1);
@@ -173,7 +173,7 @@ static INLINE bool realloc_checked(void **ptr, size_t size)
    return *ptr == nptr;
 }
 
-bool gl_coord_array_add(gl_coord_array_t *ca, const gl_coords_t *coords, unsigned count)
+bool gl_coord_array_add(gl_coord_array_t *ca, const gfx_coords_t *coords, unsigned count)
 {
    bool success = false;
    count = min(count, coords->vertices);

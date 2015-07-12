@@ -199,7 +199,7 @@ static bool gl_cg_set_mvp(void *data, const math_matrix_4x4 *mat)
 
 static bool gl_cg_set_coords(const void *data)
 {
-   const struct gl_coords *coords = (const struct gl_coords*)data;
+   const struct gfx_coords *coords = (const struct gfx_coords*)data;
    driver_t *driver = driver_get_ptr();
    cg_shader_data_t *cg = (cg_shader_data_t*)driver->video_shader_data;
 

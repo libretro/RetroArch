@@ -23,7 +23,7 @@
 #ifdef HAVE_OPENGL
 void menu_video_draw_frame(
       const shader_backend_t *shader,
-      struct gl_coords *coords,
+      struct gfx_coords *coords,
       math_matrix_4x4 *mat, 
       bool blend,
       GLuint texture
@@ -54,7 +54,7 @@ void menu_video_frame_background(
       float alpha,
       bool force_transparency)
 {
-   struct gl_coords coords;
+   struct gfx_coords coords;
    GLfloat color[16], black_color[16],
            vertex[8], tex_coord[8];
 

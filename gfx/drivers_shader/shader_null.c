@@ -68,7 +68,7 @@ static bool shader_null_set_coords(const void *data)
    gl_t *gl = (gl_t*)video_driver_get_ptr(NULL);
    if (gl)
    {
-      const struct gl_coords *coords = (const struct gl_coords*)data;
+      const struct gfx_coords *coords = (const struct gfx_coords*)data;
       gl_ff_vertex(coords);
    }
 #endif

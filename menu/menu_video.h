@@ -28,7 +28,7 @@ extern "C" {
 
 void menu_video_draw_frame(
       const shader_backend_t *shader,
-      struct gl_coords *coords,
+      struct gfx_coords *coords,
       math_matrix_4x4 *mat, 
       bool blend,
       GLuint texture

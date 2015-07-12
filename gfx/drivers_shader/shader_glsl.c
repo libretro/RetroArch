@@ -1173,7 +1173,7 @@ static bool gl_glsl_set_coords(const void *data)
    size_t attribs_size = 0, size = 0;
    struct glsl_attrib *attr = NULL;
    const struct shader_uniforms *uni = NULL;
-   const struct gl_coords *coords = (const struct gl_coords*)data;
+   const struct gfx_coords *coords = (const struct gfx_coords*)data;
    driver_t *driver = driver_get_ptr();
    glsl_shader_data_t *glsl = (glsl_shader_data_t*)driver->video_shader_data;
 

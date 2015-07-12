@@ -342,7 +342,7 @@ static void xmb_draw_icon(gl_t *gl, xmb_handle_t *xmb,
       GLuint texture, float x, float y,
       float alpha, float rotation, float scale_factor)
 {
-   struct gl_coords coords;
+   struct gfx_coords coords;
    unsigned width, height;
    GLfloat color[16];
    math_matrix_4x4 mymat, mrot, mscal;
@@ -401,7 +401,7 @@ static void xmb_draw_icon_predone(gl_t *gl, xmb_handle_t *xmb,
       GLuint texture, float x, float y,
       float alpha, float rotation, float scale_factor)
 {
-   struct gl_coords coords;
+   struct gfx_coords coords;
    unsigned width, height;
    GLfloat color[16];
 
@@ -453,7 +453,7 @@ static void xmb_draw_icon_predone(gl_t *gl, xmb_handle_t *xmb,
 
 static void xmb_draw_boxart(gl_t *gl, xmb_handle_t *xmb)
 {
-   struct gl_coords coords;
+   struct gfx_coords coords;
    unsigned width, height;
    float x, y;
    math_matrix_4x4 mymat, mrot, mscal;
@@ -1435,7 +1435,7 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
 static void xmb_draw_cursor(gl_t *gl, xmb_handle_t *xmb, float x, float y)
 {
    unsigned width, height;
-   struct gl_coords coords;
+   struct gfx_coords coords;
    math_matrix_4x4 mymat, mrot;
    GLfloat color[16];
 

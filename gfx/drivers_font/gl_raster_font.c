@@ -161,7 +161,7 @@ static int gl_get_message_width(void *data, const char *msg, unsigned msg_len_fu
    return delta_x * scale;
 }
 
-static void gl_raster_font_draw_vertices(gl_t *gl, const gl_coords_t *coords)
+static void gl_raster_font_draw_vertices(gl_t *gl, const gfx_coords_t *coords)
 {
    if (!gl)
       return;
@@ -180,11 +180,11 @@ static void gl_raster_font_render_line(
    int x, y, delta_x, delta_y;
    float inv_tex_size_x, inv_tex_size_y, inv_win_width, inv_win_height;
    unsigned i, msg_len;
+   struct gfx_coords coords;
    GLfloat font_tex_coords[2 * 6 * MAX_MSG_LEN_CHUNK];
    GLfloat font_vertex[2 * 6 * MAX_MSG_LEN_CHUNK]; 
    GLfloat font_color[4 * 6 * MAX_MSG_LEN_CHUNK];
    GLfloat font_lut_tex_coord[2 * 6 * MAX_MSG_LEN_CHUNK];
-   struct gl_coords coords;
    gl_t *gl       = font ? font->gl : NULL;
 
    if (!gl)
@@ -435,7 +435,7 @@ static void gl_raster_font_flush_block(void *data)
    if (font && block->carr.coords.vertices)
    {
       gl_raster_font_setup_viewport(font, block->fullscreen);
-      gl_raster_font_draw_vertices(font->gl, (gl_coords_t*)&block->carr.coords);
+      gl_raster_font_draw_vertices(font->gl, (gfx_coords_t*)&block->carr.coords);
       gl_raster_font_restore_viewport(font->gl);
    }
 }
