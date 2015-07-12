@@ -853,6 +853,7 @@ static int rarch_main_iterate_quit(void)
 {
    settings_t *settings     = config_get_ptr();
    global_t   *global       = global_get_ptr();
+   rarch_system_info_t *system = rarch_system_info_get_ptr();
 
    if (global->core_shutdown_initiated
          && settings->load_dummy_on_core_shutdown)
@@ -860,6 +861,7 @@ static int rarch_main_iterate_quit(void)
       if (!event_command(EVENT_CMD_PREPARE_DUMMY))
          return -1;
 
+      system->shutdown = false;
       global->core_shutdown_initiated = false;
 
       return 0;
