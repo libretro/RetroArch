@@ -31,6 +31,8 @@ typedef struct ctr_input
    const input_device_driver_t *joypad;
 } ctr_input_t;
 
+uint64_t lifecycle_state;
+
 static void ctr_input_poll(void *data)
 {
    ctr_input_t *ctr = (ctr_input_t*)data;
@@ -86,7 +88,8 @@ static bool ctr_input_key_pressed(void *data, int key)
    settings_t *settings = config_get_ptr();
    ctr_input_t *ctr     = (ctr_input_t*)data;
 
-   return (input_joypad_pressed(ctr->joypad, 0, settings->input.binds[0], key);
+   return (BIT64_GET(lifecycle_state, key)) ||
+      (input_joypad_pressed(ctr->joypad, 0, settings->input.binds[0], key);
 }
 
 static uint64_t ctr_input_get_capabilities(void *data)
