@@ -380,6 +380,7 @@ bool core_info_list_get_display_name(core_info_list_t *core_info_list,
 bool core_info_get_display_name(const char *path, char *s, size_t len)
 {
    char       *core_name = NULL;
+   char       *system_name = NULL;
    config_file_t *conf   = NULL;
 
    if (!path_file_exists(path))
@@ -393,6 +394,9 @@ bool core_info_get_display_name(const char *path, char *s, size_t len)
    config_get_string(conf, "corename",
          &core_name);
 
+   config_get_string(conf, "systemname",
+         &system_name);
+
    config_file_free(conf);
 
    if (!core_name)
@@ -400,7 +404,10 @@ bool core_info_get_display_name(const char *path, char *s, size_t len)
    if (!conf)
       goto error;
 
-   strlcpy(s, core_name, len);
+   if(system_name)
+      snprintf(s, len,"%s (%s)",core_name, system_name);
+   else
+      snprintf(s, len,"%s",core_name);
 
    free(core_name);
 
