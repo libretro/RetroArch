@@ -590,7 +590,6 @@ static int menu_input_mouse(unsigned *action)
 {
    video_viewport_t vp;
    const struct retro_keybind *binds[MAX_USERS];
-   driver_t *driver          = driver_get_ptr();
    menu_animation_t *anim    = menu_animation_get_ptr();
    menu_input_t *menu_input  = menu_input_get_ptr();
    menu_framebuf_t *frame_buf= menu_display_fb_get_ptr();
@@ -754,7 +753,6 @@ static int menu_input_mouse_frame(
 static int menu_input_mouse_post_iterate(uint64_t *input_mouse,
       menu_file_list_cbs_t *cbs, unsigned action)
 {
-   driver_t      *driver    = driver_get_ptr();
    settings_t *settings     = config_get_ptr();
    menu_display_t *disp     = menu_display_get_ptr();
    menu_input_t *menu_input = menu_input_get_ptr();
@@ -872,7 +870,6 @@ static int menu_input_pointer_post_iterate(menu_file_list_cbs_t *cbs,
    menu_display_t *disp     = menu_display_get_ptr();
    menu_list_t *menu_list   = menu_list_get_ptr();
    menu_input_t *menu_input = menu_input_get_ptr();
-   driver_t *driver         = driver_get_ptr();
    settings_t *settings     = config_get_ptr();
 
    if (!menu_input)
