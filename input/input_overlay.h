@@ -119,8 +119,6 @@ input_overlay_t *input_overlay_new(const char *path, bool enable,
 
 bool input_overlay_load_overlays(void);
 
-bool input_overlay_load_overlays_image_iterate(input_overlay_t *ol);
-
 bool input_overlay_load_overlays_iterate(void);
 
 bool input_overlay_load_overlays_resolve_iterate(void);
@@ -133,15 +131,6 @@ bool input_overlay_new_done(void);
  * Frees overlay handle.
  **/
 void input_overlay_free(void);
-
-/**
- * input_overlay_enable:
- * @ol                    : Overlay handle.
- * @enable                : Enable or disable the overlay
- *
- * Enable or disable the overlay.
- **/
-void input_overlay_enable(input_overlay_t *ol, bool enable);
 
 /**
  * input_overlay_set_alpha_mod:

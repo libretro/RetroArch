@@ -297,9 +297,10 @@ static void input_overlay_free_overlay(struct overlay *overlay)
    texture_image_free(&overlay->image);
 }
 
-static void input_overlay_free_overlays(input_overlay_t *ol)
+static void input_overlay_free_overlays(void)
 {
    size_t i;
+   input_overlay_t *ol      = input_overlay_get_ptr();
 
    if (!ol)
       return;
@@ -636,6 +637,23 @@ static void input_overlay_load_active(float opacity)
       ol->iface->full_screen(ol->iface_data, ol->active->full_screen);
 }
 
+/**
+ * input_overlay_enable:
+ * @enable                : Enable or disable the overlay
+ *
+ * Enable or disable the overlay.
+ **/
+static void input_overlay_enable(bool enable)
+{
+   input_overlay_t *ol             = input_overlay_get_ptr();
+   if (!ol)
+      return;
+   ol->enable = enable;
+
+   if (ol->iface && ol->iface->enable)
+      ol->iface->enable(ol->iface_data, enable);
+}
+
 bool input_overlay_load_overlays_resolve_iterate(void)
 {
    input_overlay_t *ol = input_overlay_get_ptr();
@@ -663,7 +681,7 @@ bool input_overlay_load_overlays_resolve_iterate(void)
       ol->active = &ol->overlays[0];
 
       input_overlay_load_active(ol->deferred.opacity);
-      input_overlay_enable(ol, ol->deferred.enable);
+      input_overlay_enable(ol->deferred.enable);
    }
 
    ol->resolve_pos += 1;
@@ -1046,22 +1064,6 @@ error:
    return NULL;
 }
 
-/**
- * input_overlay_enable:
- * @ol                    : Overlay handle.
- * @enable                : Enable or disable the overlay
- *
- * Enable or disable the overlay.
- **/
-void input_overlay_enable(input_overlay_t *ol, bool enable)
-{
-   if (!ol)
-      return;
-   ol->enable = enable;
-
-   if (ol->iface && ol->iface->enable)
-      ol->iface->enable(ol->iface_data, enable);
-}
 
 /**
  * inside_hitbox:
@@ -1349,7 +1351,7 @@ void input_overlay_free(void)
    if (!ol)
       return;
 
-   input_overlay_free_overlays(ol);
+   input_overlay_free_overlays();
 
    if (ol->iface && ol->iface->enable)
       ol->iface->enable(ol->iface_data, false);
