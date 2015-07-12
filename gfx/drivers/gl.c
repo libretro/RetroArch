@@ -764,7 +764,7 @@ static bool gl_init_hw_render(gl_t *gl, unsigned width, unsigned height)
 }
 #endif
 
-static void gl_set_projection(gl_t *gl, struct gl_ortho *ortho, bool allow_rotate)
+static void gl_set_projection(gl_t *gl, struct gfx_ortho *ortho, bool allow_rotate)
 {
    math_matrix_4x4 rot;
 
@@ -788,7 +788,7 @@ static void gl_set_viewport(void *data, unsigned viewport_width,
    unsigned width, height;
    int x = 0, y = 0;
    float device_aspect   = (float)viewport_width / viewport_height;
-   struct gl_ortho ortho = {0, 1, 0, 1, -1, 1};
+   struct gfx_ortho ortho = {0, 1, 0, 1, -1, 1};
    settings_t *settings  = config_get_ptr();
    gl_t           *gl    = (gl_t*)data;
 
@@ -881,7 +881,7 @@ static void gl_set_viewport(void *data, unsigned viewport_width,
 static void gl_set_rotation(void *data, unsigned rotation)
 {
    gl_t *gl = (gl_t*)data;
-   struct gl_ortho ortho = {0, 1, 0, 1, -1, 1};
+   struct gfx_ortho ortho = {0, 1, 0, 1, -1, 1};
 
    if (!gl)
       return;

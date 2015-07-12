@@ -188,7 +188,7 @@ struct gl_fbo_rect
    unsigned height;
 };
 
-struct gl_ortho
+struct gfx_ortho
 {
    float left;
    float right;
