@@ -20,6 +20,8 @@
 #include "menu_setting.h"
 #include "menu_video.h"
 
+#include "../gfx/video_common.h"
+
 #ifdef HAVE_OPENGL
 void menu_video_draw_frame(
       const shader_backend_t *shader,
@@ -55,7 +57,7 @@ void menu_video_frame_background(
       bool force_transparency)
 {
    struct gfx_coords coords;
-   GLfloat color[16], black_color[16],
+   GRfloat color[16], black_color[16],
            vertex[8], tex_coord[8];
 
    global_t *global = global_get_ptr();
