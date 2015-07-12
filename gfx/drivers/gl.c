@@ -359,8 +359,8 @@ static void gl_compute_fbo_geometry(gl_t *gl, unsigned width, unsigned height,
    /* Calculate viewports for FBOs. */
    for (i = 0; i < gl->fbo_pass; i++)
    {
-      struct gl_fbo_rect *fbo_rect   = &gl->fbo_rect[i];
-      struct gfx_fbo_scale *fbo_scale = &gl->fbo_scale[i];
+      struct gfx_fbo_rect  *fbo_rect   = &gl->fbo_rect[i];
+      struct gfx_fbo_scale *fbo_scale  = &gl->fbo_scale[i];
 
       switch (gl->fbo_scale[i].type_x)
       {
@@ -930,7 +930,7 @@ static void gl_check_fbo_dimensions(gl_t *gl)
       GLenum status;
       unsigned img_width, img_height, max, pow2_size;
       bool check_dimensions = false;
-      struct gl_fbo_rect *fbo_rect = &gl->fbo_rect[i];
+      struct gfx_fbo_rect *fbo_rect = &gl->fbo_rect[i];
 
       if (!fbo_rect)
          continue;
@@ -978,8 +978,8 @@ static void gl_frame_fbo(gl_t *gl, uint64_t frame_count,
       const struct gl_tex_info *tex_info)
 {
    unsigned width, height;
-   const struct gl_fbo_rect *prev_rect;
-   const struct gl_fbo_rect *rect;
+   const struct gfx_fbo_rect *prev_rect;
+   const struct gfx_fbo_rect *rect;
    struct gl_tex_info *fbo_info;
    struct gl_tex_info fbo_tex_info[GFX_MAX_SHADERS];
    int i;

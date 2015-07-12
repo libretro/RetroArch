@@ -178,7 +178,7 @@
 #endif
 
 
-struct gl_fbo_rect
+struct gfx_fbo_rect
 {
    unsigned img_width;
    unsigned img_height;
@@ -262,7 +262,7 @@ typedef struct gl
    /* Render-to-texture, multipass shaders. */
    GLuint fbo[GFX_MAX_SHADERS];
    GLuint fbo_texture[GFX_MAX_SHADERS];
-   struct gl_fbo_rect fbo_rect[GFX_MAX_SHADERS];
+   struct gfx_fbo_rect fbo_rect[GFX_MAX_SHADERS];
    struct gfx_fbo_scale fbo_scale[GFX_MAX_SHADERS];
    int fbo_pass;
    bool fbo_inited;
