@@ -5612,6 +5612,22 @@ static bool setting_append_list_directory_options(
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info, parent_group);
 
    CONFIG_DIR(
+         settings->system_directory,
+         menu_hash_to_str(MENU_LABEL_SYSTEM_DIRECTORY),
+         menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_DIRECTORY),
+         "",
+         menu_hash_to_str(MENU_VALUE_DIRECTORY_CONTENT),
+         group_info.name,
+         subgroup_info.name,
+         parent_group,
+         general_write_handler,
+         general_read_handler);
+   settings_data_list_current_add_flags(
+         list,
+         list_info,
+         SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR | SD_FLAG_BROWSER_ACTION);
+
+   CONFIG_DIR(
          settings->core_assets_directory,
          menu_hash_to_str(MENU_LABEL_CORE_ASSETS_DIRECTORY),
          menu_hash_to_str(MENU_LABEL_VALUE_CORE_ASSETS_DIRECTORY),
@@ -6005,21 +6021,6 @@ static bool setting_append_list_directory_options(
          list_info,
          SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR | SD_FLAG_BROWSER_ACTION);
 
-   CONFIG_DIR(
-         settings->system_directory,
-         menu_hash_to_str(MENU_LABEL_SYSTEM_DIRECTORY),
-         menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_DIRECTORY),
-         "",
-         menu_hash_to_str(MENU_VALUE_DIRECTORY_CONTENT),
-         group_info.name,
-         subgroup_info.name,
-         parent_group,
-         general_write_handler,
-         general_read_handler);
-   settings_data_list_current_add_flags(
-         list,
-         list_info,
-         SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR | SD_FLAG_BROWSER_ACTION);
 
    CONFIG_DIR(
          settings->extraction_directory,
