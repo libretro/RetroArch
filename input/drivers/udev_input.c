@@ -288,10 +288,7 @@ static bool add_device(udev_input_t *udev,
 
    device = (struct input_device*)calloc(1, sizeof(*device));
    if (!device)
-   {
-      close(fd);
-      return false;
-   }
+      goto error;
 
    device->fd        = fd;
    device->dev       = st.st_dev;
@@ -303,27 +300,19 @@ static bool add_device(udev_input_t *udev,
    if (cb == udev_handle_touchpad &&
          (ioctl(fd, EVIOCGABS(ABS_X), &device->state.touchpad.info_x) < 0 ||
           ioctl(fd, EVIOCGABS(ABS_Y), &device->state.touchpad.info_y) < 0))
-   {
-      free(device);
-      close(fd);
-      return false;
-   }
+      goto error;
 
    tmp = (struct input_device**)realloc(udev->devices,
          (udev->num_devices + 1) * sizeof(*udev->devices));
 
    if (!tmp)
-   {
-      close(fd);
-      free(device);
-      return false;
-   }
+      goto error;
 
    tmp[udev->num_devices++] = device;
-   udev->devices = tmp;
+   udev->devices            = tmp;
 
-   event.events   = EPOLLIN;
-   event.data.ptr = device;
+   event.events             = EPOLLIN;
+   event.data.ptr           = device;
 
    /* Shouldn't happen, but just check it. */
    if (epoll_ctl(udev->epfd, EPOLL_CTL_ADD, fd, &event) < 0)
@@ -331,6 +320,13 @@ static bool add_device(udev_input_t *udev,
             fd, strerror(errno));
 
    return true;
+
+error:
+   close(fd);
+   if (device)
+      free(device);
+
+   return false;
 }
 
 static void udev_input_remove_device(udev_input_t *udev, const char *devnode)
