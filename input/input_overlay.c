@@ -1436,6 +1436,16 @@ enum overlay_status input_overlay_status(void)
    return ol->state;
 }
 
+bool input_overlay_key_pressed(int key)
+{
+   input_overlay_state_t *ol_state  = input_overlay_get_state_ptr();
+
+   if (!ol_state)
+      return false;
+
+   return (ol_state->buttons & (UINT64_C(1) << key));
+}
+
 /*
  * input_poll_overlay:
  *
@@ -1527,9 +1537,9 @@ void input_poll_overlay(float opacity)
       if (ol_state->analog[j])
          continue;
 
-      if (ol_state->buttons & (1UL << bind_plus))
+      if (input_overlay_key_pressed(bind_plus))
          ol_state->analog[j] += 0x7fff;
-      if (ol_state->buttons & (1UL << bind_minus))
+      if (input_overlay_key_pressed(bind_minus))
          ol_state->analog[j] -= 0x7fff;
    }
 
@@ -1584,7 +1594,7 @@ void input_state_overlay(int16_t *ret, unsigned port, unsigned device, unsigned 
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
-         if (ol_state && ol_state->buttons & (UINT64_C(1) << id))
+         if (input_overlay_key_pressed(id))
             *ret |= 1;
          break;
       case RETRO_DEVICE_KEYBOARD:
@@ -1609,12 +1619,3 @@ void input_state_overlay(int16_t *ret, unsigned port, unsigned device, unsigned 
    }
 }
 
-bool input_overlay_key_pressed(int key)
-{
-   input_overlay_state_t *ol_state  = input_overlay_get_state_ptr();
-
-   if (!ol_state)
-      return false;
-
-   return (ol_state->buttons & (1ULL << key));
-}
