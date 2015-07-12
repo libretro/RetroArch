@@ -173,7 +173,7 @@ static INLINE bool realloc_checked(void **ptr, size_t size)
    return *ptr == nptr;
 }
 
-bool gl_coord_array_add(gl_coord_array_t *ca, const gfx_coords_t *coords, unsigned count)
+bool gl_coord_array_add(gfx_coord_array_t *ca, const gfx_coords_t *coords, unsigned count)
 {
    bool success = false;
    count = min(count, coords->vertices);
@@ -216,7 +216,7 @@ bool gl_coord_array_add(gl_coord_array_t *ca, const gfx_coords_t *coords, unsign
    return success;
 }
 
-void gl_coord_array_free(gl_coord_array_t *ca)
+void gl_coord_array_free(gfx_coord_array_t *ca)
 {
    if (!ca->allocated)
       return;

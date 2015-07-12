@@ -224,16 +224,16 @@ typedef struct gl_mut_coords
    unsigned vertices;
 } gl_mut_coords_t;
 
-typedef struct gl_coord_array
+typedef struct gfx_coord_array
 {
    gl_mut_coords_t coords;
    unsigned allocated;
-} gl_coord_array_t;
+} gfx_coord_array_t;
 
 typedef struct gl_raster_block
 {
    bool fullscreen;
-   gl_coord_array_t carr;
+   gfx_coord_array_t carr;
 } gl_font_raster_block_t;
 
 struct gl_font_renderer;
@@ -418,8 +418,8 @@ static INLINE unsigned gl_wrap_type_to_enum(enum gfx_wrap_type type)
    return 0;
 }
 
-bool gl_coord_array_add(gl_coord_array_t *ca, const gfx_coords_t *coords, unsigned count);
-void gl_coord_array_free(gl_coord_array_t *ca);
+bool gl_coord_array_add(gfx_coord_array_t *ca, const gfx_coords_t *coords, unsigned count);
+void gl_coord_array_free(gfx_coord_array_t *ca);
 
 void gl_ff_vertex(const void *data);
 void gl_ff_matrix(const void *data);
