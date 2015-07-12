@@ -232,6 +232,18 @@ bool input_overlay_is_alive(input_overlay_t *ol);
 
 enum overlay_status input_overlay_status(input_overlay_t *ol);
 
+/*
+ * input_poll_overlay:
+ * @ol : pointer to overlay 
+ *
+ * Poll pressed buttons/keys on currently active overlay.
+ **/
+void input_poll_overlay(float opacity);
+
+void input_state_overlay(int16_t *ret,
+      unsigned port, unsigned device, unsigned idx,
+      unsigned id);
+
 #ifdef __cplusplus
 }
 #endif

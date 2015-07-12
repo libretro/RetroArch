@@ -293,7 +293,8 @@ void rarch_main_data_iterate(void)
 
 static data_runloop_t *rarch_main_data_new(void)
 {
-   data_runloop_t *runloop = (data_runloop_t*)calloc(1, sizeof(data_runloop_t));
+   data_runloop_t *runloop = (data_runloop_t*)
+      calloc(1, sizeof(data_runloop_t));
 
    if (!runloop)
       return NULL;
