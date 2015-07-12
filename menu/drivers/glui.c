@@ -55,7 +55,7 @@ typedef struct glui_handle
       GLuint white;
    } textures;
 
-   gl_font_raster_block_t list_block;
+   gfx_font_raster_block_t list_block;
 } glui_handle_t;
 
 static void glui_blit_line(float x, float y,

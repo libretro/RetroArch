@@ -222,7 +222,7 @@ typedef struct xmb_handle
    xmb_node_t settings_node;
    bool prevent_populate;
 
-   gl_font_raster_block_t raster_block;
+   gfx_font_raster_block_t raster_block;
 } xmb_handle_t;
 
 static const GLfloat rmb_vertex[] = {

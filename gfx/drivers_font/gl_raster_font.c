@@ -44,7 +44,7 @@ typedef struct
    const font_renderer_driver_t *font_driver;
    void *font_data;
 
-   gl_font_raster_block_t *block;
+   gfx_font_raster_block_t *block;
 } gl_raster_t;
 
 static void *gl_raster_font_init_font(void *data,
@@ -430,7 +430,7 @@ static const struct font_glyph *gl_raster_font_get_glyph(
 static void gl_raster_font_flush_block(void *data)
 {
    gl_raster_t       *font       = (gl_raster_t*)data;
-   gl_font_raster_block_t *block = font->block;
+   gfx_font_raster_block_t *block = font->block;
 
    if (font && block->carr.coords.vertices)
    {
@@ -443,7 +443,7 @@ static void gl_raster_font_flush_block(void *data)
 static void gl_raster_font_bind_block(void *data, void *userdata)
 {
    gl_raster_t *font = (gl_raster_t*)data;
-   gl_font_raster_block_t *block = (gl_font_raster_block_t*)userdata;
+   gfx_font_raster_block_t *block = (gfx_font_raster_block_t*)userdata;
 
    if (font)
       font->block = block;

@@ -230,11 +230,11 @@ typedef struct gfx_coord_array
    unsigned allocated;
 } gfx_coord_array_t;
 
-typedef struct gl_raster_block
+typedef struct gfx_raster_block
 {
    bool fullscreen;
    gfx_coord_array_t carr;
-} gl_font_raster_block_t;
+} gfx_font_raster_block_t;
 
 struct gl_font_renderer;
 
