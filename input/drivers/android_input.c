@@ -643,7 +643,6 @@ static void handle_hotplug(android_input_t *android,
        * We really need to find a way to detect useless input devices
        * like gpio-keys in a general way.
        */
-      *port = 0;
       strlcpy(name_buf, device_name, sizeof(name_buf));
    }
    else if (device_name[0] != '\0')
