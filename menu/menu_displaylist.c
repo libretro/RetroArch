@@ -1768,13 +1768,6 @@ static int menu_displaylist_parse_options(menu_displaylist_info_t *info)
          menu_hash_to_str(MENU_LABEL_UPDATE_AUTOCONFIG_PROFILES),
          MENU_SETTING_ACTION, 0, 0);
 
-#ifdef HAVE_HID
-   menu_list_push(info->list,
-         menu_hash_to_str(MENU_LABEL_VALUE_UPDATE_AUTOCONFIG_PROFILES_HID),
-         menu_hash_to_str(MENU_LABEL_UPDATE_AUTOCONFIG_PROFILES_HID),
-         MENU_SETTING_ACTION, 0, 0);
-#endif
-
    menu_list_push(info->list,
          menu_hash_to_str(MENU_LABEL_VALUE_UPDATE_CHEATS),
          menu_hash_to_str(MENU_LABEL_UPDATE_CHEATS),
