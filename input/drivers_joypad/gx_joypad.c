@@ -114,7 +114,7 @@ enum
 #define GC_JOYSTICK_THRESHOLD (48 * 256)
 #define WII_JOYSTICK_THRESHOLD (40 * 256)
 
-static uint64_t lifecycle_state;
+extern uint64_t lifecycle_state;
 static uint64_t pad_state[MAX_PADS];
 static uint32_t pad_type[MAX_PADS] = { WPAD_EXP_NOCONTROLLER, WPAD_EXP_NOCONTROLLER, WPAD_EXP_NOCONTROLLER, WPAD_EXP_NOCONTROLLER };
 static int16_t analog_state[MAX_PADS][2][2];
@@ -201,8 +201,7 @@ static bool gx_joypad_button(unsigned port, uint16_t key)
 {
    if (port >= MAX_PADS)
       return false;
-   return (lifecycle_state & (UINT64_C(1) << key)) ||
-      (pad_state[port] & (UINT64_C(1) << key));
+   return (pad_state[port] & (UINT64_C(1) << key));
 }
 
 static uint64_t gx_joypad_get_buttons(unsigned port)
@@ -542,7 +541,8 @@ static void gx_joypad_poll(void)
 
    uint64_t *state_p1        = &pad_state[0];
 
-   lifecycle_state &= ~((UINT64_C(1) << RARCH_MENU_TOGGLE));
+
+   BIT64_CLEAR(lifecycle_state, RARCH_MENU_TOGGLE);
 
    if (g_menu)
    {
@@ -555,7 +555,7 @@ static void gx_joypad_poll(void)
             | (UINT64_C(1) << GX_CLASSIC_HOME)
 #endif
             ))
-      lifecycle_state |= (UINT64_C(1) << RARCH_MENU_TOGGLE);
+      BIT64_SET(lifecycle_state, RARCH_MENU_TOGGLE);
 }
 
 static bool gx_joypad_init(void *data)

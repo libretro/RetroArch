@@ -33,6 +33,8 @@
 #define MAX_PADS 4
 #endif
 
+uint64_t lifecycle_state;
+
 typedef struct gx_input
 {
    bool blocked;
@@ -95,7 +97,8 @@ static bool gx_input_key_pressed(void *data, int key)
 {
    settings_t *settings = config_get_ptr();
    gx_input_t *gx       = (gx_input_t*)data;
-   return input_joypad_pressed(gx->joypad, 0, settings->input.binds[0], key);
+   return (BIT64_GET(lifecycle_state, key)) ||
+      input_joypad_pressed(gx->joypad, 0, settings->input.binds[0], key);
 }
 
 static uint64_t gx_input_get_capabilities(void *data)
