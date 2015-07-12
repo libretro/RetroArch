@@ -4276,7 +4276,7 @@ static bool setting_append_list_input_options(
 
 #ifdef ANDROID
    CONFIG_BOOL(
-         settings->input.remap_binds_enable,
+         settings->input.back_as_menu_toggle_enable,
          menu_hash_to_str(MENU_LABEL_INPUT_BACK_AS_MENU_TOGGLE_ENABLE),
          menu_hash_to_str(MENU_LABEL_VALUE_INPUT_BACK_AS_MENU_TOGGLE_ENABLE),
          back_as_menu_toggle_enable,
