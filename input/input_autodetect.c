@@ -130,10 +130,10 @@ static void input_autoconfigure_joypad_add(
          settings->input.autoconf_binds[params->idx]);
 
    if (buf[0] != '\0' || strcmp(buf, ""))
-      snprintf(msg, sizeof(msg), "Device %s in port #%u configured as %s",
-            params->name, params->idx, buf);
+      snprintf(msg, sizeof(msg), "%s configured in port #%u",
+            buf, params->idx);
    else
-      snprintf(msg, sizeof(msg), "Device %s in port #%u configured",
+      snprintf(msg, sizeof(msg), "%s configured in port #%u",
             params->name, params->idx);
 
    if (!block_osd_spam)
