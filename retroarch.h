@@ -214,6 +214,7 @@ enum rarch_content_type rarch_path_is_media_type(const char *path);
 
 extern char orig_savestate_dir[PATH_MAX_LENGTH];
 extern char orig_savefile_dir[PATH_MAX_LENGTH];
+extern bool orig_system_dir_empty;
 
 #ifdef __cplusplus
 }
