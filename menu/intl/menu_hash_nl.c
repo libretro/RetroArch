@@ -174,7 +174,7 @@ const char *menu_hash_to_str_nl(uint32_t hash)
       case MENU_LABEL_VALUE_CONTENT_DATABASE_DIRECTORY:
          return "Content Database Map";
       case MENU_LABEL_VALUE_SYSTEM_DIRECTORY:
-         return "Systeem Map";
+         return "Systeem/BIOS Map";
       case MENU_LABEL_VALUE_CHEAT_DATABASE_PATH:
          return "Cheat Bestand Map";
       case MENU_LABEL_VALUE_EXTRACTION_DIRECTORY:

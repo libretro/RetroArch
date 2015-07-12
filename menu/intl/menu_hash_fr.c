@@ -207,7 +207,7 @@ const char *menu_hash_to_str_fr(uint32_t hash)
       case MENU_LABEL_VALUE_CONTENT_DATABASE_DIRECTORY:
          return "Dossier des bases de données de contenus";
       case MENU_LABEL_VALUE_SYSTEM_DIRECTORY:
-         return "Dossier système";
+         return "Dossier système/BIOS";
       case MENU_LABEL_VALUE_CHEAT_DATABASE_PATH:
          return "Dossier des fichiers de triche";
       case MENU_LABEL_VALUE_EXTRACTION_DIRECTORY:

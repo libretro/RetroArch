@@ -791,7 +791,7 @@ const char *menu_hash_to_str_us(uint32_t hash)
       case MENU_LABEL_VALUE_CONTENT_DATABASE_DIRECTORY:
          return "Content Database Dir";
       case MENU_LABEL_VALUE_SYSTEM_DIRECTORY:
-         return "System Dir";
+         return "System/BIOS Dir";
       case MENU_LABEL_VALUE_CHEAT_DATABASE_PATH:
          return "Cheat File Dir";
       case MENU_LABEL_VALUE_EXTRACTION_DIRECTORY:

@@ -33,7 +33,7 @@
 #endif
 
 #ifndef PACKAGE_VERSION
-#define PACKAGE_VERSION "1.2"
+#define PACKAGE_VERSION "1.2.1"
 #endif
 
 /* Platform-specific headers */

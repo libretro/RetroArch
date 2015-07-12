@@ -182,7 +182,7 @@ const char *menu_hash_to_str_pt(uint32_t hash)
       case MENU_LABEL_VALUE_CONTENT_DATABASE_DIRECTORY:
          return "Databases de Conteúdo";
       case MENU_LABEL_VALUE_SYSTEM_DIRECTORY:
-         return "System";
+         return "System/BIOS";
       case MENU_LABEL_VALUE_CHEAT_DATABASE_PATH:
          return "Cheats";
       case MENU_LABEL_VALUE_EXTRACTION_DIRECTORY:

@@ -184,7 +184,7 @@ const char *menu_hash_to_str_de(uint32_t hash)
       case MENU_LABEL_VALUE_CONTENT_DATABASE_DIRECTORY:
          return "Content-Datenbankverzeichnis";
       case MENU_LABEL_VALUE_SYSTEM_DIRECTORY:
-         return "System-Verzeichnis";
+         return "System/BIOS-Verzeichnis";
       case MENU_LABEL_VALUE_CHEAT_DATABASE_PATH:
          return "Cheat-Datei-Verzeichnis";
       case MENU_LABEL_VALUE_EXTRACTION_DIRECTORY:
