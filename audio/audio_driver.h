@@ -145,8 +145,6 @@ void uninit_audio(void);
 
 void init_audio(void);
 
-ssize_t audio_driver_write(const void *buf, size_t size);
-
 bool audio_driver_flush(const int16_t *data, size_t samples);
 
 void audio_driver_sample(int16_t left, int16_t right);

@@ -505,14 +505,6 @@ bool audio_driver_mute_toggle(void)
    return true;
 }
 
-static int audio_driver_write_avail(void)
-{
-   driver_t *driver     = driver_get_ptr();
-   const audio_driver_t *audio = audio_get_ptr(driver);
-
-   return audio->write_avail(driver->audio_data);
-}
-
 /*
  * audio_driver_readjust_input_rate:
  *
@@ -520,11 +512,14 @@ static int audio_driver_write_avail(void)
  */
 void audio_driver_readjust_input_rate(void)
 {
+   driver_t *driver     = driver_get_ptr();
+   const audio_driver_t *audio = driver ? 
+      (const audio_driver_t*)driver->audio : NULL;
    settings_t *settings = config_get_ptr();
    unsigned write_idx   = audio_data.buffer_free_samples_count++ &
       (AUDIO_BUFFER_FREE_SAMPLES_COUNT - 1);
    int      half_size   = audio_data.driver_buffer_size / 2;
-   int      avail       = audio_driver_write_avail();
+   int      avail       = audio->write_avail(driver->audio_data);
    int      delta_mid   = avail - half_size;
    double   direction   = (double)delta_mid / half_size;
    double   adjust      = 1.0 + settings->audio.rate_control_delta * direction;
@@ -546,7 +541,8 @@ void audio_driver_readjust_input_rate(void)
 bool audio_driver_alive(void)
 {
    driver_t *driver     = driver_get_ptr();
-   const audio_driver_t *audio = audio_get_ptr(driver);
+   const audio_driver_t *audio = driver ? 
+      (const audio_driver_t*)driver->audio : NULL;
 
    return audio->alive(driver->audio_data);
 }
@@ -587,14 +583,6 @@ void audio_driver_set_nonblocking_state(bool enable)
       audio_data.block_chunk_size;
 }
 
-ssize_t audio_driver_write(const void *buf, size_t size)
-{
-   driver_t *driver      = driver_get_ptr();
-   const audio_driver_t *audio = audio_get_ptr(driver);
-
-   return audio->write(driver->audio_data, buf, size);
-}
-
 /**
  * audio_driver_flush:
  * @data                 : pointer to audio buffer.
@@ -615,6 +603,8 @@ bool audio_driver_flush(const int16_t *data, size_t samples)
    struct rarch_dsp_data dsp_data = {0};
    runloop_t *runloop             = rarch_main_get_ptr();
    driver_t  *driver              = driver_get_ptr();
+   const audio_driver_t *audio = driver ? 
+      (const audio_driver_t*)driver->audio : NULL;
    settings_t *settings           = config_get_ptr();
 
    if (driver->recording_data)
@@ -688,7 +678,7 @@ bool audio_driver_flush(const int16_t *data, size_t samples)
       output_size = sizeof(int16_t);
    }
 
-   if (audio_driver_write(output_data, output_frames * output_size * 2) < 0)
+   if (audio->write(driver->audio_data, output_data, output_frames * output_size * 2) < 0)
    {
       driver->audio_active = false;
       return false;
