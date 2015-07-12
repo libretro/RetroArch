@@ -3475,20 +3475,23 @@ static bool setting_append_list_video_options(
    (*list)[list_info->index - 1].get_string_representation = 
       &setting_get_string_representation_st_float_video_refresh_rate_auto;
 
-   CONFIG_BOOL(
-         settings->video.force_srgb_disable,
-         menu_hash_to_str(MENU_LABEL_VIDEO_FORCE_SRGB_DISABLE),
-         menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_FORCE_SRGB_DISABLE),
-         false,
-         menu_hash_to_str(MENU_VALUE_OFF),
-         menu_hash_to_str(MENU_VALUE_ON),
-         group_info.name,
-         subgroup_info.name,
-         parent_group,
-         general_write_handler,
-         general_read_handler);
-   menu_settings_list_current_add_cmd(list, list_info, EVENT_CMD_REINIT);
-   settings_data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO|SD_FLAG_ADVANCED);
+   if (!strcmp(settings->video.driver, "gl"))
+   {
+      CONFIG_BOOL(
+            settings->video.force_srgb_disable,
+            menu_hash_to_str(MENU_LABEL_VIDEO_FORCE_SRGB_DISABLE),
+            menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_FORCE_SRGB_DISABLE),
+            false,
+            menu_hash_to_str(MENU_VALUE_OFF),
+            menu_hash_to_str(MENU_VALUE_ON),
+            group_info.name,
+            subgroup_info.name,
+            parent_group,
+            general_write_handler,
+            general_read_handler);
+      menu_settings_list_current_add_cmd(list, list_info, EVENT_CMD_REINIT);
+      settings_data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO|SD_FLAG_ADVANCED);
+   }
 
    END_SUB_GROUP(list, list_info, parent_group);
    START_SUB_GROUP(list, list_info, "Aspect", group_info.name, subgroup_info, parent_group);
