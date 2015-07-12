@@ -452,7 +452,14 @@ char ext_dir[PATH_MAX_LENGTH];
 
 static bool test_permissions(const char *path)
 {
-   bool ret = path_mkdir(path);
+   RARCH_LOG("Testing permissions for %s\n",path);
+   char buf[PATH_MAX_LENGTH];
+
+   fill_pathname_join(buf, path,
+                  "ra-test", buf);
+   bool ret = path_mkdir(buf);
+
+   RARCH_LOG("Create %s %s\n", buf, ret ? "true" : "false");
 
    if(ret)
       rmdir(path);
@@ -563,7 +570,7 @@ static void frontend_android_get_environment_settings(int *argc,
          strlcpy(core_path, argv, sizeof(core_path));
       (*env)->ReleaseStringUTFChars(env, jstr, argv);
 
-      RARCH_LOG("Libretro path: [%s].\n", core_path);
+      RARCH_LOG("Libretro path: [%s]\n", core_path);
       if (args && *core_path)
          args->libretro_path = core_path;
    }
@@ -609,7 +616,7 @@ static void frontend_android_get_environment_settings(int *argc,
 
       if (*sdcard_dir)
       {
-         RARCH_LOG("External Storage Location %s.\n", sdcard_dir);
+         RARCH_LOG("External storage location [%s]\n", sdcard_dir);
          /* TODO base dir handler */
       }
    }
@@ -631,7 +638,7 @@ static void frontend_android_get_environment_settings(int *argc,
 
       if (*screenshot_dir)
       {
-         RARCH_LOG("Screenshot Directory [%s]s.\n", screenshot_dir);
+         RARCH_LOG("Picture folder location [%s]\n", screenshot_dir);
          /* TODO: screenshot handler */
       }
    }
@@ -653,7 +660,7 @@ static void frontend_android_get_environment_settings(int *argc,
 
       if (*downloads_dir)
       {
-         RARCH_LOG("Download Directory [%s].\n", downloads_dir);
+         RARCH_LOG("Download folder location [%s].\n", downloads_dir);
          /* TODO: downloads handler */
       }
    }
@@ -674,7 +681,7 @@ static void frontend_android_get_environment_settings(int *argc,
 
       if (*apk_path)
       {
-         RARCH_LOG("APK Path [%s].\n", apk_path);
+         RARCH_LOG("APK location [%s].\n", apk_path);
       }
    }
    
@@ -694,7 +701,7 @@ static void frontend_android_get_environment_settings(int *argc,
 
       if (*ext_dir)
       {
-         RARCH_LOG("External files dir [%s].\n", ext_dir);
+         RARCH_LOG("External files location [%s]\n", ext_dir);
       }
    }
 
@@ -728,9 +735,11 @@ static void frontend_android_get_environment_settings(int *argc,
    else
        perms = SDCARD_NOT_WRITABLE;
 
+   RARCH_LOG("SD permissions: %d",perms);
+
       if (*app_dir)
       {
-         RARCH_LOG("Application Dir: [%s].\n", app_dir);
+         RARCH_LOG("Application location: [%s].\n", app_dir);
          if (args && *app_dir)
          {
             fill_pathname_join(g_defaults.assets_dir, app_dir,
@@ -776,6 +785,9 @@ static void frontend_android_get_environment_settings(int *argc,
                      app_dir, "downloads", sizeof(g_defaults.core_assets_dir));
                path_mkdir(g_defaults.core_assets_dir);
             }
+
+            RARCH_LOG("Default download folder: [%s]", g_defaults.core_assets_dir);
+
             if(*screenshot_dir && test_permissions(screenshot_dir))
             {
                fill_pathname_join(g_defaults.screenshot_dir,
@@ -788,16 +800,22 @@ static void frontend_android_get_environment_settings(int *argc,
                path_mkdir(g_defaults.screenshot_dir);
             }
 
+            RARCH_LOG("Default screenshot folder: [%s]", g_defaults.screenshot_dir);
+
             switch (perms)
             {
                 case SDCARD_EXT_DIR_WRITABLE:
                    fill_pathname_join(g_defaults.sram_dir,
-                        app_dir, "saves", sizeof(g_defaults.sram_dir));
+                        ext_dir, "saves", sizeof(g_defaults.sram_dir));
                    path_mkdir(g_defaults.sram_dir);
 
                    fill_pathname_join(g_defaults.savestate_dir,
-                        app_dir, "saves", sizeof(g_defaults.savestate_dir));
+                        ext_dir, "saves", sizeof(g_defaults.savestate_dir));
                    path_mkdir(g_defaults.savestate_dir);
+
+                   fill_pathname_join(g_defaults.system_dir,
+                        ext_dir, "saves", sizeof(g_defaults.system_dir));
+                   path_mkdir(g_defaults.system_dir);
                    break;
                 case SDCARD_NOT_WRITABLE:
                    fill_pathname_join(g_defaults.sram_dir,
@@ -807,11 +825,18 @@ static void frontend_android_get_environment_settings(int *argc,
                    fill_pathname_join(g_defaults.savestate_dir,
                         app_dir, "saves", sizeof(g_defaults.savestate_dir));
                    path_mkdir(g_defaults.savestate_dir);
+
+                   fill_pathname_join(g_defaults.system_dir,
+                        app_dir, "saves", sizeof(g_defaults.system_dir));
+                   path_mkdir(g_defaults.system_dir);
                    break;
                 case SDCARD_ROOT_WRITABLE:
                 default:
                    break;
             }
+            RARCH_LOG("Default savefile folder: [%s]", g_defaults.sram_dir);
+            RARCH_LOG("Default savestate folder: [%s]", g_defaults.savestate_dir);
+            RARCH_LOG("Default system folder: [%s]", g_defaults.system_dir);
          }
       }
    }
@@ -979,6 +1004,7 @@ static int frontend_android_parse_drive_list(void *data)
 {
    file_list_t *list = (file_list_t*)data;
 
+   // MENU_FILE_DIRECTORY is not working with labels, placeholders for now
    menu_list_push(list,
          app_dir, "Application Dir", MENU_FILE_DIRECTORY, 0, 0);
    menu_list_push(list,
