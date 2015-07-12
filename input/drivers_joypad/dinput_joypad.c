@@ -267,7 +267,6 @@ static BOOL CALLBACK enum_joypad_cb(const DIDEVICEINSTANCE *inst, void *p)
             dinput_joypad_name(g_joypad_cnt),
             sizeof(settings->input.device_names[g_joypad_cnt]));
 
-      /* TODO - implement VID/PID? */
       params.idx = g_joypad_cnt;
       strlcpy(params.name, dinput_joypad_name(g_joypad_cnt), sizeof(params.name));
       strlcpy(params.display_name, dinput_joypad_friendly_name(g_joypad_cnt), sizeof(params.driver));
@@ -275,6 +274,8 @@ static BOOL CALLBACK enum_joypad_cb(const DIDEVICEINSTANCE *inst, void *p)
       params.vid = dinput_joypad_vid(g_joypad_cnt);
       params.pid = dinput_joypad_pid(g_joypad_cnt);
       input_config_autoconfigure_joypad(&params);
+      settings->input.pid[g_joypad_cnt] = params.pid;
+      settings->input.vid[g_joypad_cnt] = params.vid;
    }
 
 enum_iteration_done:
