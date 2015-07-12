@@ -791,13 +791,13 @@ static bool qnx_input_key_pressed(void *data, int key)
    qnx_input_t *qnx     = (qnx_input_t*)data;
    settings_t *settings = config_get_ptr();
 
-   return (driver.overlay_state.buttons & (UINT64_C(1) << key) ||
-         input_joypad_pressed(qnx->joypad, 0, settings->input.binds[0], key));
+   return input_joypad_pressed(qnx->joypad, 0, settings->input.binds[0], key);
 }
 
 static void qnx_input_free_input(void *data)
 {
-   free(data);
+   if (data)
+      free(data);
 }
 
 static uint64_t qnx_input_get_capabilities(void *data)

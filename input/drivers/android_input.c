@@ -863,8 +863,7 @@ static bool android_input_key_pressed(void *data, int key)
    android_input_t *android = (android_input_t*)data;
    settings_t *settings     = config_get_ptr();
 
-   return (input_overlay_key_pressed(key)) || 
-      input_joypad_pressed(android->joypad,
+   return input_joypad_pressed(android->joypad,
             0, settings->input.binds[0], key);
 }
 
