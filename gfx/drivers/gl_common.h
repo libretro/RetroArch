@@ -37,6 +37,7 @@
 
 #include "../../general.h"
 #include "../font_renderer_driver.h"
+#include "../video_common.h"
 #include "../video_context_driver.h"
 #include "../video_shader_driver.h"
 #include "../video_shader_parse.h"
@@ -176,64 +177,6 @@
 #define GL_SRGB_ALPHA_EXT 0x8C42
 #endif
 #endif
-
-struct gfx_fbo_rect
-{
-   unsigned img_width;
-   unsigned img_height;
-   unsigned max_img_width;
-   unsigned max_img_height;
-   unsigned width;
-   unsigned height;
-};
-
-struct gfx_ortho
-{
-   float left;
-   float right;
-   float bottom;
-   float top;
-   float znear;
-   float zfar;
-};
-
-struct gfx_tex_info
-{
-   unsigned int tex;
-   float input_size[2];
-   float tex_size[2];
-   float coord[8];
-};
-
-typedef struct gfx_coords
-{
-   const float *vertex;
-   const float *color;
-   const float *tex_coord;
-   const float *lut_tex_coord;
-   unsigned vertices;
-} gfx_coords_t;
-
-typedef struct gfx_mut_coords
-{
-   float *vertex;
-   float *color;
-   float *tex_coord;
-   float *lut_tex_coord;
-   unsigned vertices;
-} gfx_mut_coords_t;
-
-typedef struct gfx_coord_array
-{
-   gfx_mut_coords_t coords;
-   unsigned allocated;
-} gfx_coord_array_t;
-
-typedef struct gfx_raster_block
-{
-   bool fullscreen;
-   gfx_coord_array_t carr;
-} gfx_font_raster_block_t;
 
 struct gl_font_renderer;
 
