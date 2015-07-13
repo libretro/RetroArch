@@ -82,8 +82,8 @@ static bool font_renderer_create_atlas(ft_font_renderer_t *handle)
 
    for (i = 0; i < FT_ATLAS_SIZE; i++)
    {
-      struct font_glyph *glyph = &handle->glyphs[i];
       FT_GlyphSlot slot;
+      struct font_glyph *glyph = &handle->glyphs[i];
 
       if (!glyph)
          continue;
