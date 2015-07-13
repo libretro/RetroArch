@@ -29,9 +29,9 @@
 
 #include <rthreads/rthreads.h>
 
-static bool test_permissions(const char *path);
+bool test_permissions(const char *path);
 
-static char sdcard_dir[PATH_MAX_LENGTH];
+char sdcard_dir[PATH_MAX_LENGTH];
 
 struct android_app
 {

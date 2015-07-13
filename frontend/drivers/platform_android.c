@@ -37,12 +37,12 @@
 struct android_app *g_android;
 static pthread_key_t thread_key;
 
-static char screenshot_dir[PATH_MAX_LENGTH];
-static char downloads_dir[PATH_MAX_LENGTH];
-static char apk_path[PATH_MAX_LENGTH];
-static char sdcard_dir[PATH_MAX_LENGTH];
-static char app_dir[PATH_MAX_LENGTH];
-static char ext_dir[PATH_MAX_LENGTH];
+char screenshot_dir[PATH_MAX_LENGTH];
+char downloads_dir[PATH_MAX_LENGTH];
+char apk_path[PATH_MAX_LENGTH];
+char sdcard_dir[PATH_MAX_LENGTH];
+char app_dir[PATH_MAX_LENGTH];
+char ext_dir[PATH_MAX_LENGTH];
 
 static INLINE void android_app_write_cmd(void *data, int8_t cmd)
 {
@@ -450,7 +450,7 @@ static bool device_is_game_console(const char *name)
    return false;
 }
 
-static bool test_permissions(const char *path)
+bool test_permissions(const char *path)
 {
    RARCH_LOG("Testing permissions for %s\n",path);
    char buf[PATH_MAX_LENGTH];
@@ -479,6 +479,7 @@ static void frontend_android_get_environment_settings(int *argc,
    jobject                       obj = NULL;
    jstring                      jstr = NULL;
    struct android_app   *android_app = (struct android_app*)data;
+   char buf[PATH_MAX_LENGTH]         = {0};
    
    if (!android_app)
       return;
@@ -823,17 +824,31 @@ static void frontend_android_get_environment_settings(int *argc,
                    path_mkdir(g_defaults.sram_dir);
 
                    fill_pathname_join(g_defaults.savestate_dir,
-                        app_dir, "saves", sizeof(g_defaults.savestate_dir));
+                        app_dir, "states", sizeof(g_defaults.savestate_dir));
                    path_mkdir(g_defaults.savestate_dir);
 
                    fill_pathname_join(g_defaults.system_dir,
-                        app_dir, "saves", sizeof(g_defaults.system_dir));
+                        app_dir, "system", sizeof(g_defaults.system_dir));
                    path_mkdir(g_defaults.system_dir);
                    break;
                 case SDCARD_ROOT_WRITABLE:
                 default:
                    break;
             }
+            
+            /* create save and system directories in the internal dir too */
+            fill_pathname_join(buf,
+                 app_dir, "saves", sizeof(buf));
+            path_mkdir(buf);
+
+            fill_pathname_join(buf,
+                 app_dir, "states", sizeof(buf));
+            path_mkdir(buf);
+
+            fill_pathname_join(buf,
+                 app_dir, "system", sizeof(buf));
+            path_mkdir(buf);
+            
             RARCH_LOG("Default savefile folder: [%s]", g_defaults.sram_dir);
             RARCH_LOG("Default savestate folder: [%s]", g_defaults.savestate_dir);
             RARCH_LOG("Default system folder: [%s]", g_defaults.system_dir);
