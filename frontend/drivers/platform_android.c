@@ -452,12 +452,13 @@ static bool device_is_game_console(const char *name)
 
 bool test_permissions(const char *path)
 {
-   RARCH_LOG("Testing permissions for %s\n",path);
    char buf[PATH_MAX_LENGTH];
+   bool ret;
 
-   fill_pathname_join(buf, path,
-                  "ra-test", buf);
-   bool ret = path_mkdir(buf);
+   RARCH_LOG("Testing permissions for %s\n",path);
+
+   fill_pathname_join(buf, path, "ra-test", sizeof(buf));
+   ret = path_mkdir(buf);
 
    RARCH_LOG("Create %s %s\n", buf, ret ? "true" : "false");
 
