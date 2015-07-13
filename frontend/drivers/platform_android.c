@@ -37,6 +37,13 @@
 struct android_app *g_android;
 static pthread_key_t thread_key;
 
+static char screenshot_dir[PATH_MAX_LENGTH];
+static char downloads_dir[PATH_MAX_LENGTH];
+static char apk_path[PATH_MAX_LENGTH];
+static char sdcard_dir[PATH_MAX_LENGTH];
+static char app_dir[PATH_MAX_LENGTH];
+static char ext_dir[PATH_MAX_LENGTH];
+
 static INLINE void android_app_write_cmd(void *data, int8_t cmd)
 {
    struct android_app *android_app = (struct android_app*)data;
@@ -442,13 +449,6 @@ static bool device_is_game_console(const char *name)
 
    return false;
 }
-
-static char screenshot_dir[PATH_MAX_LENGTH];
-static char downloads_dir[PATH_MAX_LENGTH];
-char apk_path[PATH_MAX_LENGTH];
-static char sdcard_dir[PATH_MAX_LENGTH];
-char app_dir[PATH_MAX_LENGTH];
-char ext_dir[PATH_MAX_LENGTH];
 
 static bool test_permissions(const char *path)
 {

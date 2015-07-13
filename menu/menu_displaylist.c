@@ -38,6 +38,10 @@
 #include "../git_version.h"
 #include "../performance.h"
 
+#ifdef ANDROID
+#include "../frontend/drivers/platform_android.h"
+#endif
+
 #ifdef HAVE_NETWORKING
 extern char *core_buf;
 extern size_t core_len;
@@ -315,6 +319,14 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
    rarch_info_get_capabilities(RARCH_CAPABILITIES_COMPILER, tmp, sizeof(tmp));
    menu_list_push(info->list, tmp, "", MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
+#ifdef ANDROID
+   bool perms = test_permissions(sdcard_dir);
+
+   snprintf(tmp, sizeof(tmp), "%s: %s", "Internal SD card status", perms ? "read-write" : "read-only");
+   menu_list_push(info->list, tmp, "",
+         MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+
+#endif
    {
       char cpu_str[PATH_MAX_LENGTH] = {0};
 
