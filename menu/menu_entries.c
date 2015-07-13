@@ -64,6 +64,41 @@ size_t menu_entries_get_end(void)
    return menu_list_get_size(entries->menu_list);
 }
 
+/* Get an entry from the top of the menu stack */
+void menu_entries_get(size_t i, menu_entry_t *entry)
+{
+   const char *label         = NULL;
+   const char *path          = NULL;
+   const char *entry_label   = NULL;
+   menu_file_list_cbs_t *cbs = NULL;
+   menu_entries_t   *entries = menu_entries_get_ptr();
+
+   if (!entries || !entries->menu_list)
+      return;
+
+   menu_list_get_last_stack(entries->menu_list, NULL, &label, NULL, NULL);
+
+   entry->path[0] = entry->value[0] = entry->label[0] = '\0';
+
+   menu_list_get_at_offset(entries->menu_list->selection_buf, i,
+         &path, &entry_label, &entry->type, &entry->entry_idx);
+
+   cbs = menu_list_get_actiondata_at_offset(entries->menu_list->selection_buf, i);
+
+   if (cbs && cbs->action_get_value)
+      cbs->action_get_value(entries->menu_list->selection_buf,
+            &entry->spacing, entry->type, i, label,
+            entry->value,  sizeof(entry->value),
+            entry_label, path,
+            entry->path, sizeof(entry->path));
+
+   entry->idx = i;
+
+   if (path)
+      strlcpy(entry->path,  path,        sizeof(entry->path));
+   if (entry_label)
+      strlcpy(entry->label, entry_label, sizeof(entry->label));
+}
 
 /* Sets title to what the name of the current menu should be. */
 int menu_entries_get_title(char *s, size_t len)

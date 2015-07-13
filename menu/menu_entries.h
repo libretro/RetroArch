@@ -22,6 +22,7 @@
 #include "menu_navigation.h"
 #include "menu_list.h"
 #include "menu_setting.h"
+#include "menu_entry.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -44,6 +45,8 @@ void menu_entries_set_start(size_t i);
 size_t menu_entries_get_start(void);
 
 size_t menu_entries_get_end(void);
+
+void menu_entries_get(size_t i, menu_entry_t *entry);
 
 int menu_entries_get_title(char *title, size_t title_len);
 

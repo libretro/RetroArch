@@ -290,9 +290,6 @@ static void glui_render(void)
          / glui->line_height;
    }
 
-   if (menu_entries_get_end() < height / glui->line_height)
-      menu_entries_set_start(0);
-
    if (menu->scroll_y < 0)
       menu->scroll_y = 0;
 
@@ -304,6 +301,11 @@ static void glui_render(void)
    if (menu_entries_get_end() * glui->line_height
          < height - disp->header_height*2)
       menu->scroll_y = 0;
+
+   if (menu_entries_get_end() < height / glui->line_height)
+      menu_entries_set_start(0);
+   else
+      menu_entries_set_start(menu->scroll_y / glui->line_height);
 }
 
 static void glui_render_menu_list(glui_handle_t *glui,
@@ -312,10 +314,11 @@ static void glui_render_menu_list(glui_handle_t *glui,
       uint32_t hover_color)
 {
    unsigned width, height;
-   size_t i               = 0;
-   uint64_t frame_count   = video_driver_get_frame_count();
-   size_t          end    = menu_entries_get_end();
-   menu_display_t *disp   = menu_display_get_ptr();
+   size_t i                = 0;
+   uint64_t frame_count    = video_driver_get_frame_count();
+   size_t          end     = menu_entries_get_end();
+   menu_display_t *disp    = menu_display_get_ptr();
+   menu_entries_t *entries = menu_entries_get_ptr();
 
    if (!menu_display_update_pending())
       return;
@@ -327,8 +330,7 @@ static void glui_render_menu_list(glui_handle_t *glui,
    for (i = menu_entries_get_start(); i < end; i++)
    {
       bool entry_selected;
-      char entry_path[PATH_MAX_LENGTH];
-      char entry_value[PATH_MAX_LENGTH];
+      menu_entry_t entry;
       char message[PATH_MAX_LENGTH];
       char entry_title_buf[PATH_MAX_LENGTH];
       char type_str_buf[PATH_MAX_LENGTH];
@@ -337,20 +339,18 @@ static void glui_render_menu_list(glui_handle_t *glui,
       if (y > (int)height || ((y + (int)glui->line_height) < 0))
          continue;
 
-      entry_path[0]      = '\0';
-      entry_value[0]     = '\0';
       message[0]         = '\0';
       entry_title_buf[0] = '\0';
       type_str_buf[0]    = '\0';
 
-      entry_selected = menu_entry_is_currently_selected(i);
-      menu_entry_get_value(i, entry_value, sizeof(entry_value));
-      menu_entry_get_path(i, entry_path, sizeof(entry_path));
+      menu_entries_get(i, &entry);
+
+      entry_selected = entries->navigation.selection_ptr == i;
 
       menu_animation_ticker_line(entry_title_buf, glui->ticker_limit,
-            frame_count / 100, entry_path, entry_selected);
+            frame_count / 100, entry.path, entry_selected);
       menu_animation_ticker_line(type_str_buf, glui->ticker_limit,
-            frame_count / 100, entry_value, entry_selected);
+            frame_count / 100, entry.value, entry_selected);
 
       strlcpy(message, entry_title_buf, sizeof(message));
 
@@ -676,33 +676,12 @@ static void glui_navigation_set(bool scroll)
 {
    menu_display_t *disp = menu_display_get_ptr();
    menu_handle_t *menu  = menu_driver_get_ptr();
-   float scroll_pos = 0;
+   float     scroll_pos = 0;
 
    if (!menu || !disp || !scroll)
       return;
 
    scroll_pos = glui_get_scroll();
-
-   if (menu->userdata)
-   {
-      unsigned height = 0, num_lines = 0, end = 0;
-      glui_handle_t *glui    = (glui_handle_t*)menu->userdata;
-      menu_navigation_t *nav = menu_navigation_get_ptr();
-
-      video_driver_get_size(NULL, &height);
-      num_lines = height / glui->line_height;
-      end       = menu_entries_get_end();
-
-      if (nav->selection_ptr < num_lines / 2 || end <= num_lines)
-         menu_entries_set_start(0);
-      else if (nav->selection_ptr < (end - num_lines / 2))
-         menu_entries_set_start(nav->selection_ptr - num_lines / 2);
-      else
-         menu_entries_set_start(end - num_lines);
-
-      if (menu_entries_get_start() >= 5)
-         menu_entries_set_start(menu_entries_get_start() - 5);
-   }
 
    menu_animation_push(disp->animation, 10, scroll_pos,
          &menu->scroll_y, EASING_IN_OUT_QUAD, -1, NULL);
