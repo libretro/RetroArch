@@ -29,6 +29,10 @@
 
 #include <rthreads/rthreads.h>
 
+bool test_permissions(const char *path);
+
+char sdcard_dir[PATH_MAX_LENGTH];
+
 struct android_app
 {
    ANativeActivity* activity;
