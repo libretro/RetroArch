@@ -653,7 +653,7 @@ static bool glui_load_image(void *data, menu_image_type_t type)
 static float glui_get_scroll(void)
 {
    int half = 0;
-   unsigned width, height;
+   unsigned height;
    glui_handle_t *glui    = NULL;
    menu_handle_t *menu    = menu_driver_get_ptr();
    menu_navigation_t *nav = menu_navigation_get_ptr();
@@ -661,7 +661,7 @@ static float glui_get_scroll(void)
    if (!menu || !menu->userdata)
       return 0;
 
-   video_driver_get_size(&width, &height);
+   video_driver_get_size(NULL, &height);
 
    glui = (glui_handle_t*)menu->userdata;
    if (glui->line_height)
@@ -678,7 +678,7 @@ static void glui_navigation_set(bool scroll)
    menu_handle_t *menu  = menu_driver_get_ptr();
    float scroll_pos = 0;
 
-   if (!menu || !disp || !scroll)
+   if (!menu || !disp)
       return;
 
    scroll_pos = glui_get_scroll();
@@ -704,8 +704,11 @@ static void glui_navigation_set(bool scroll)
          menu_entries_set_start(menu_entries_get_start() - 5);
    }
 
-   menu_animation_push(disp->animation, 10, scroll_pos,
-         &menu->scroll_y, EASING_IN_OUT_QUAD, -1, NULL);
+   if (scroll)
+      menu_animation_push(disp->animation, 10, scroll_pos,
+            &menu->scroll_y, EASING_IN_OUT_QUAD, -1, NULL);
+   else
+      menu->scroll_y = scroll_pos;
 }
 
 static void glui_navigation_clear(bool pending_push)
@@ -735,7 +738,7 @@ static void glui_populate_entries(const char *path,
    if (!menu)
       return;
 
-   menu->scroll_y      = glui_get_scroll();
+   glui_navigation_set(false);
 }
 
 static void glui_font(menu_handle_t *menu)
