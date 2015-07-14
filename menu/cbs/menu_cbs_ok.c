@@ -1721,7 +1721,6 @@ static int action_ok_open_archive_detect_core(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    menu_displaylist_info_t      info = {0};
-   settings_t              *settings = config_get_ptr();
    menu_list_t            *menu_list = menu_list_get_ptr();
    menu_handle_t            *menu    = menu_driver_get_ptr();
    const char *menu_path  = menu ? menu->scratch2_buf : NULL;
@@ -1747,7 +1746,6 @@ static int action_ok_open_archive(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    menu_displaylist_info_t      info = {0};
-   settings_t              *settings = config_get_ptr();
    menu_list_t            *menu_list = menu_list_get_ptr();
    menu_handle_t            *menu    = menu_driver_get_ptr();
    const char *menu_path  = menu ? menu->scratch2_buf : NULL;
