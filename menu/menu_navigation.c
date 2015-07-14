@@ -94,8 +94,11 @@ void menu_navigation_increment(menu_navigation_t *nav, unsigned scroll_speed)
       return;
 
    if (nav->selection_ptr + scroll_speed < (menu_list_get_size(menu_list)))
+   {
       menu_navigation_set(nav,
             nav->selection_ptr + scroll_speed, true);
+      menu_driver_navigation_increment();
+   }
    else
    {
       if (settings->menu.navigation.wraparound.vertical_enable)
@@ -103,11 +106,13 @@ void menu_navigation_increment(menu_navigation_t *nav, unsigned scroll_speed)
       else
       {
          if ((menu_list_get_size(menu_list) > 0))
+         {
             menu_navigation_set_last(nav);
+            menu_driver_navigation_increment();
+         }
       }
    }
 
-   menu_driver_navigation_increment();
 }
 
 /**
