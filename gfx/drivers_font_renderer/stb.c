@@ -21,8 +21,11 @@
 
 #define STB_TRUETYPE_IMPLEMENTATION
 #define STB_RECT_PACK_IMPLEMENTATION
+#define STBTT_STATIC
+#define static static INLINE
 #include "../../deps/stb/stb_rect_pack.h"
 #include "../../deps/stb/stb_truetype.h"
+#undef static
 
 typedef struct
 {
@@ -56,7 +59,7 @@ static bool font_renderer_stb_create_atlas(stb_font_renderer_t *self,
       uint8_t *font_data, float font_size)
 {
    int i;
-   stbtt_pack_context pc;
+   stbtt_pack_context pc = {NULL};
    stbtt_packedchar   chardata[256];
 
    self->atlas.width  = self->atlas.height = 512;
