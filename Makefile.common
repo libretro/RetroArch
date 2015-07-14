@@ -156,7 +156,6 @@ OBJ += frontend/frontend.o \
 		libretro-common/queues/message_queue.o \
 		rewind.o \
 		gfx/drivers_font_renderer/bitmapfont.o \
-		gfx/drivers_font_renderer/stb.o \
 		input/input_autodetect.o \
 		input/input_joypad_driver.o \
 		input/input_joypad.o \
@@ -433,6 +432,10 @@ ifeq ($(HAVE_MENU_COMMON), 1)
 			 menu/menu_displaylist.o \
 			 menu/menu_animation.o \
 			 menu/drivers/null.o
+endif
+
+ifeq ($(HAVE_STB_FONT), 1)
+   OBJ += gfx/drivers_font_renderer/stb.o
 endif
 
 ifeq ($(HAVE_FREETYPE), 1)
