@@ -754,10 +754,10 @@ static int glui_environ(menu_environ_cb_t type, void *data)
    {
       case 0:
       default:
-         return -1;
+         break;
    }
 
-   return 0;
+   return -1;
 }
 
 menu_ctx_driver_t menu_ctx_glui = {
