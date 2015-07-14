@@ -1,6 +1,7 @@
-#include "sicksaxis.h"
 #include <gccore.h>
 #include <string.h>
+
+#include "gx_sicksaxis.h"
 
 static uint8_t ATTRIBUTE_ALIGN(32) _ss_attributes[] =
 {
