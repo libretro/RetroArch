@@ -22,6 +22,11 @@
 extern "C" {
 #endif
 
+#define MENU_LABEL_DEFERRED_ARCHIVE_ACTION_DETECT_CORE                         0xdc9c0064U
+#define MENU_LABEL_DEFERRED_ARCHIVE_ACTION                                     0x7faf0284U
+#define MENU_LABEL_DEFERRED_ARCHIVE_OPEN_DETECT_CORE                           0xd9452498U
+#define MENU_LABEL_DEFERRED_ARCHIVE_OPEN                                       0xfa0938b8U
+
 #define MENU_LABEL_VALUE_INPUT_BACK_AS_MENU_TOGGLE_ENABLE                      0x1cf1e6a8U
 #define MENU_LABEL_INPUT_BACK_AS_MENU_TOGGLE_ENABLE                            0x60bacd04U
 
@@ -70,8 +75,6 @@ extern "C" {
 #define MENU_VALUE_DIRECTORY_NONE                                              0x9996c10fU
 #define MENU_VALUE_DIRECTORY_DEFAULT                                           0xdcc3a2e4U
 #define MENU_VALUE_NOT_AVAILABLE                                               0x0b880503U
-#define MENU_VALUE_LOAD_ARCHIVE                                                0xe19ca6c7U
-#define MENU_VALUE_OPEN_ARCHIVE                                                0x96da22b9U
 #define MENU_VALUE_ASK_ARCHIVE                                                 0x0b87d6a4U
 
 #define MENU_LABEL_UPDATE_ASSETS                                               0x37fa42daU
@@ -987,6 +990,14 @@ extern "C" {
 
 #define MENU_LABEL_OVERLAY_AUTOLOAD_PREFERRED                                  0xc9298cbdU
 #define MENU_LABEL_VALUE_OVERLAY_AUTOLOAD_PREFERRED                            0x0e27e33fU
+
+#define MENU_LABEL_OPEN_ARCHIVE                                                0x78c0ca58U
+#define MENU_LABEL_OPEN_ARCHIVE_DETECT_CORE                                    0x92442638U
+#define MENU_LABEL_LOAD_ARCHIVE_DETECT_CORE                                    0x681f2f46U
+#define MENU_LABEL_LOAD_ARCHIVE                                                0xc3834e66U
+
+#define MENU_LABEL_VALUE_OPEN_ARCHIVE                                          0x96da22b9U
+#define MENU_LABEL_VALUE_LOAD_ARCHIVE                                          0xe19ca6c7U
 
 const char *menu_hash_to_str_de(uint32_t hash);
 int menu_hash_get_help_de(uint32_t hash, char *s, size_t len);

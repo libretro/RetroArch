@@ -26,6 +26,22 @@ static const char *menu_hash_to_str_us_label(uint32_t hash)
 {
    switch (hash)
    {
+      case MENU_LABEL_DEFERRED_ARCHIVE_OPEN_DETECT_CORE:
+         return "deferred_archive_open_detect_core";
+      case MENU_LABEL_DEFERRED_ARCHIVE_OPEN:
+         return "deferred_archive_open";
+      case MENU_LABEL_LOAD_ARCHIVE_DETECT_CORE:
+         return "load_archive_detect_core";
+      case MENU_LABEL_LOAD_ARCHIVE:
+         return "load_archive";
+      case MENU_LABEL_DEFERRED_ARCHIVE_ACTION_DETECT_CORE:
+         return "deferred_archive_action_detect_core";
+      case MENU_LABEL_DEFERRED_ARCHIVE_ACTION:
+         return "deferred_archive_action";
+      case MENU_LABEL_OPEN_ARCHIVE_DETECT_CORE:
+         return "open_archive_detect_core";
+      case MENU_LABEL_OPEN_ARCHIVE:
+         return "open_archive";
       case MENU_LABEL_INPUT_BACK_AS_MENU_TOGGLE_ENABLE:
          return "back_as_menu_toggle_enable";
       case MENU_LABEL_INPUT_MENU_TOGGLE_GAMEPAD_COMBO:
@@ -620,6 +636,10 @@ const char *menu_hash_to_str_us(uint32_t hash)
 
    switch (hash)
    {
+      case MENU_LABEL_VALUE_OPEN_ARCHIVE:
+         return "Open Archive As Folder";
+      case MENU_LABEL_VALUE_LOAD_ARCHIVE:
+         return "Load Archive With Core";
       case MENU_LABEL_VALUE_INPUT_BACK_AS_MENU_TOGGLE_ENABLE:
          return "Back As Menu Toggle Enable";
       case MENU_LABEL_VALUE_INPUT_MENU_TOGGLE_GAMEPAD_COMBO:
@@ -654,10 +674,6 @@ const char *menu_hash_to_str_us(uint32_t hash)
          return "MD5";
       case MENU_LABEL_VALUE_LOAD_CONTENT_LIST:
          return "Load Content";
-      case MENU_VALUE_LOAD_ARCHIVE:
-         return "Load Archive";
-      case MENU_VALUE_OPEN_ARCHIVE:
-         return "Open Archive";
       case MENU_VALUE_ASK_ARCHIVE:
          return "Ask";
       case MENU_LABEL_VALUE_PRIVACY_SETTINGS:

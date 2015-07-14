@@ -58,9 +58,9 @@ const char *menu_hash_to_str_fr(uint32_t hash)
          return "MD5";
       case MENU_LABEL_VALUE_LOAD_CONTENT_LIST:
          return "Charger un contenu";
-      case MENU_VALUE_LOAD_ARCHIVE:
+      case MENU_LABEL_VALUE_LOAD_ARCHIVE:
          return "Charger l'archive";
-      case MENU_VALUE_OPEN_ARCHIVE:
+      case MENU_LABEL_VALUE_OPEN_ARCHIVE:
          return "Ouvrir l'archive";
       case MENU_VALUE_ASK_ARCHIVE:
          return "Demander";

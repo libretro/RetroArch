@@ -1556,8 +1556,6 @@ static bool config_load_file(const char *path, bool set_defaults)
 
    CONFIG_GET_BOOL_BASE(conf, global, perfcnt_enable, "perfcnt_enable");
 
-   CONFIG_GET_INT_BASE(conf, settings, archive.mode, "archive_mode");
-
    config_get_path(conf, "recording_output_directory", global->record.output_dir,
          sizeof(global->record.output_dir));
    config_get_path(conf, "recording_config_directory", global->record.config_dir,
@@ -2769,8 +2767,6 @@ bool config_save_file(const char *path)
 
    config_set_bool(conf, "core_set_supports_no_game_enable",
          settings->core.set_supports_no_game_enable);
-
-   config_set_int(conf, "archive_mode", settings->archive.mode);
 
    config_set_int(conf, "menu_ok_btn",          settings->menu_ok_btn);
    config_set_int(conf, "menu_cancel_btn",      settings->menu_cancel_btn);

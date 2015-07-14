@@ -2544,6 +2544,30 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          menu_list_clear(info->list);
          menu_displaylist_parse_generic(info, &need_sort);
          break;
+      case DISPLAYLIST_ARCHIVE_ACTION:
+         menu_list_clear(info->list);
+         menu_list_push(info->list,
+               menu_hash_to_str(MENU_LABEL_VALUE_OPEN_ARCHIVE),
+               menu_hash_to_str(MENU_LABEL_OPEN_ARCHIVE),
+               0, 0, 0);
+         menu_list_push(info->list,
+               menu_hash_to_str(MENU_LABEL_VALUE_LOAD_ARCHIVE),
+               menu_hash_to_str(MENU_LABEL_LOAD_ARCHIVE),
+               0, 0, 0);
+         need_push = true;
+         break;
+      case DISPLAYLIST_ARCHIVE_ACTION_DETECT_CORE:
+         menu_list_clear(info->list);
+         menu_list_push(info->list,
+               menu_hash_to_str(MENU_LABEL_VALUE_OPEN_ARCHIVE),
+               menu_hash_to_str(MENU_LABEL_OPEN_ARCHIVE_DETECT_CORE),
+               0, 0, 0);
+         menu_list_push(info->list,
+               menu_hash_to_str(MENU_LABEL_VALUE_LOAD_ARCHIVE),
+               menu_hash_to_str(MENU_LABEL_LOAD_ARCHIVE_DETECT_CORE),
+               0, 0, 0);
+         need_push = true;
+         break;
    }
 
    if (need_sort)

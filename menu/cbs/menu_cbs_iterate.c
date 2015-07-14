@@ -32,125 +32,6 @@
 #include "../../input/input_common.h"
 #include "../../input/input_autodetect.h"
 
-extern char detect_content_path[PATH_MAX_LENGTH];
-
-static int archive_open(void)
-{
-   char cat_path[PATH_MAX_LENGTH] = {0};
-   menu_displaylist_info_t info   = {0};
-   const char *menu_path          = NULL;
-   const char *menu_label         = NULL;
-   const char* path               = NULL;
-   unsigned int type              = 0;
-   size_t entry_idx               = 0;
-   menu_navigation_t *nav         = menu_navigation_get_ptr();
-   menu_list_t *menu_list         = menu_list_get_ptr();
-
-   if (!menu_list || !nav)
-      return -1;
-
-   menu_list_pop_stack(menu_list);
-
-   menu_list_get_last_stack(menu_list,
-         &menu_path, &menu_label, NULL, NULL);
-
-   if (menu_list_get_size(menu_list) == 0)
-      return 0;
-
-   menu_list_get_at_offset(menu_list->selection_buf,
-         nav->selection_ptr, &path, NULL, &type, &entry_idx);
-
-   fill_pathname_join(cat_path, menu_path, path, sizeof(cat_path));
-
-   fill_pathname_join(detect_content_path, menu_path, path,
-         sizeof(detect_content_path));
-
-   info.list          = menu_list->menu_stack;
-   info.type          = type;
-   info.directory_ptr = nav->selection_ptr;
-   strlcpy(info.path, cat_path, sizeof(info.path));
-   strlcpy(info.label, menu_label, sizeof(info.label));
-
-   return menu_displaylist_push_list(&info, DISPLAYLIST_GENERIC);
-}
-
-static int archive_load(void)
-{
-   int ret = 0;
-   menu_displaylist_info_t info = {0};
-   const char *menu_path  = NULL;
-   const char *menu_label = NULL;
-   const char* path       = NULL;
-   size_t entry_idx       = 0;
-   settings_t *settings   = config_get_ptr();
-   global_t      *global  = global_get_ptr();
-   size_t selected        = menu_navigation_get_current_selection();
-   menu_handle_t *menu    = menu_driver_get_ptr();
-   menu_list_t *menu_list = menu_list_get_ptr();
-
-   if (!menu || !menu_list)
-      return -1;
-
-   menu_list_pop_stack(menu_list);
-
-   menu_list_get_last_stack(menu_list, &menu_path, &menu_label, NULL, NULL);
-
-   if (menu_list_get_size(menu_list) == 0)
-      return 0;
-
-   menu_list_get_at_offset(menu_list->selection_buf,
-         selected, &path, NULL, NULL, &entry_idx);
-
-   ret = rarch_defer_core(global->core_info, menu_path, path, menu_label,
-         menu->deferred_path, sizeof(menu->deferred_path));
-
-   fill_pathname_join(detect_content_path, menu_path, path,
-         sizeof(detect_content_path));
-
-   switch (ret)
-   {
-      case -1:
-         event_command(EVENT_CMD_LOAD_CORE);
-         menu_common_load_content(false, CORE_TYPE_PLAIN);
-         break;
-      case 0:
-         info.list          = menu_list->menu_stack;
-         info.type          = 0;
-         info.directory_ptr = selected;
-         strlcpy(info.path, settings->libretro_directory, sizeof(info.path));
-         strlcpy(info.label,
-               menu_hash_to_str(MENU_LABEL_DEFERRED_CORE_LIST), sizeof(info.label));
-
-         ret = menu_displaylist_push_list(&info, DISPLAYLIST_GENERIC);
-         break;
-   }
-
-   return ret;
-}
-
-static int load_or_open_zip_iterate(char *s, size_t len, unsigned action)
-{
-   snprintf(s, len, "Opening compressed file\n"
-         " \n"
-
-         " - OK to open as Folder\n"
-         " - Cancel/Back to Load \n");
-
-   menu_driver_render_messagebox(s);
-
-   switch (action)
-   {
-      case MENU_ACTION_OK:
-         archive_open();
-         break;
-      case MENU_ACTION_CANCEL:
-         archive_load();
-         break;
-   }
-
-   return 0;
-}
-
 static int action_iterate_help(char *s, size_t len, const char *label)
 {
    unsigned i;
@@ -260,25 +141,6 @@ static int action_iterate_info(char *s, size_t len, const char *label)
    setting_get_description(needle, s, len);
 
    return ret;
-}
-
-static int action_iterate_load_open_zip(const char *label, char *s, size_t len, unsigned action)
-{
-   settings_t *settings   = config_get_ptr();
-
-   switch (settings->archive.mode)
-   {
-      case 0:
-         return load_or_open_zip_iterate(s, len, action);
-      case 1:
-         return archive_load();
-      case 2:
-         return archive_open();
-      default:
-         break;
-   }
-
-   return 0;
 }
 
 static int action_iterate_menu_viewport(char *s, size_t len,
@@ -474,7 +336,6 @@ enum action_iterate_type
    ITERATE_TYPE_DEFAULT = 0,
    ITERATE_TYPE_HELP,
    ITERATE_TYPE_INFO,
-   ITERATE_TYPE_ZIP,
    ITERATE_TYPE_MESSAGE,
    ITERATE_TYPE_VIEWPORT,
    ITERATE_TYPE_BIND
@@ -488,8 +349,6 @@ static enum action_iterate_type action_iterate_type(uint32_t hash)
          return ITERATE_TYPE_HELP;
       case MENU_LABEL_INFO_SCREEN:
          return ITERATE_TYPE_INFO;
-      case MENU_LABEL_LOAD_OPEN_ZIP:
-         return ITERATE_TYPE_ZIP;
       case MENU_LABEL_MESSAGE:
          return ITERATE_TYPE_MESSAGE;
       case MENU_LABEL_CUSTOM_VIEWPORT_1:
@@ -549,10 +408,6 @@ static int action_iterate_main(const char *label, unsigned action)
          do_messagebox   = true;
          do_pop_stack    = true;
          do_post_iterate = true;
-         break;
-      case ITERATE_TYPE_ZIP:
-         ret = action_iterate_load_open_zip(label, msg, sizeof(msg), action);
-         do_render       = true;
          break;
       case ITERATE_TYPE_MESSAGE:
          strlcpy(msg, disp->message_contents, sizeof(msg));

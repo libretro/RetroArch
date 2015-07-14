@@ -37,9 +37,9 @@ const char *menu_hash_to_str_nl(uint32_t hash)
          return "MD5";
       case MENU_LABEL_VALUE_LOAD_CONTENT_LIST:
          return "Laad Content";
-      case MENU_VALUE_LOAD_ARCHIVE:
+      case MENU_LABEL_VALUE_LOAD_ARCHIVE:
          return "Laad Archief";
-      case MENU_VALUE_OPEN_ARCHIVE:
+      case MENU_LABEL_VALUE_OPEN_ARCHIVE:
          return "Open Archief";
       case MENU_VALUE_ASK_ARCHIVE:
          return "Keuze";

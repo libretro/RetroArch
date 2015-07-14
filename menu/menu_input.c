@@ -973,9 +973,7 @@ unsigned menu_input_frame(retro_input_t input, retro_input_t trigger_input)
       | (1UL << RETRO_DEVICE_ID_JOYPAD_LEFT)
       | (1UL << RETRO_DEVICE_ID_JOYPAD_RIGHT)
       | (1UL << RETRO_DEVICE_ID_JOYPAD_L)
-      | (1UL << RETRO_DEVICE_ID_JOYPAD_R)
-      | (1UL << RETRO_DEVICE_ID_JOYPAD_A)
-      | (1UL << RETRO_DEVICE_ID_JOYPAD_B);
+      | (1UL << RETRO_DEVICE_ID_JOYPAD_R);
    menu_navigation_t *nav      = menu_navigation_get_ptr();
    menu_handle_t *menu         = menu_driver_get_ptr();
    menu_display_t *disp        = menu_display_get_ptr();

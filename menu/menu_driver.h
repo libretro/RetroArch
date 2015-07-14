@@ -69,6 +69,9 @@ typedef struct
    bool defer_core;
    char deferred_path[PATH_MAX_LENGTH];
 
+   char scratch_buf[PATH_MAX_LENGTH];
+   char scratch2_buf[PATH_MAX_LENGTH];
+
    /* Menu display */
    menu_display_t display;
 

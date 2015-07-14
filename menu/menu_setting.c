@@ -1484,30 +1484,6 @@ static void setting_get_string_representation_uint_libretro_device(void *data,
    strlcpy(s, name, len);
 }
 
-static void setting_get_string_representation_uint_archive_mode(void *data,
-      char *s, size_t len)
-{
-   const char          *name = menu_hash_to_str(MENU_VALUE_UNKNOWN);
-   settings_t      *settings = config_get_ptr();
-
-   (void)data;
-
-   switch (settings->archive.mode)
-   {
-      case 0:
-         name = menu_hash_to_str(MENU_VALUE_ASK_ARCHIVE);
-         break;
-      case 1:
-         name = menu_hash_to_str(MENU_VALUE_LOAD_ARCHIVE);
-         break;
-      case 2:
-         name = menu_hash_to_str(MENU_VALUE_OPEN_ARCHIVE);
-         break;
-   }
-
-   strlcpy(s, name, len);
-}
-
 static void setting_get_string_representation_uint_analog_dpad_mode(void *data,
       char *s, size_t len)
 {
@@ -5181,20 +5157,6 @@ static bool setting_append_list_menu_file_browser_options(
          parent_group,
          general_write_handler,
          general_read_handler);
-
-   CONFIG_UINT(
-         settings->archive.mode,
-         menu_hash_to_str(MENU_LABEL_ARCHIVE_MODE),
-         menu_hash_to_str(MENU_LABEL_VALUE_ARCHIVE_MODE),
-         0,
-         group_info.name,
-         subgroup_info.name,
-         parent_group,
-         general_write_handler,
-         general_read_handler);
-   menu_settings_list_current_add_range(list, list_info, 0, 2, 1, true, true);
-   (*list)[list_info->index - 1].get_string_representation = 
-      &setting_get_string_representation_uint_archive_mode;
 
    END_SUB_GROUP(list, list_info, parent_group);
    END_GROUP(list, list_info, parent_group);
