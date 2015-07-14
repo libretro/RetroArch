@@ -98,6 +98,7 @@ typedef struct font_renderer_driver
    int (*get_line_height)(void* data);
 } font_renderer_driver_t;
 
+extern font_renderer_driver_t stb_font_renderer;
 extern font_renderer_driver_t freetype_font_renderer;
 extern font_renderer_driver_t coretext_font_renderer;
 extern font_renderer_driver_t bitmap_font_renderer;

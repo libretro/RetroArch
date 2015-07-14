@@ -28,6 +28,7 @@ static const font_renderer_driver_t *font_backends[] = {
 #if defined(__APPLE__) && defined(HAVE_CORETEXT)
    &coretext_font_renderer,
 #endif
+   &stb_font_renderer,
    &bitmap_font_renderer,
    NULL
 };
