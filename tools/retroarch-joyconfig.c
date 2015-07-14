@@ -83,7 +83,7 @@ static void print_help(void)
    puts("-h/--help: This help.");
 }
 
-#define MAX_BUTTONS 32
+#define MAX_BUTTONS 64
 #define MAX_AXES 32
 #define MAX_HATS 32
 struct poll_data
