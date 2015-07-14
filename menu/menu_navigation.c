@@ -101,8 +101,10 @@ void menu_navigation_increment(menu_navigation_t *nav, unsigned scroll_speed)
       if (settings->menu.navigation.wraparound.vertical_enable)
          menu_navigation_clear(nav, false);
       else
-         menu_navigation_set(nav,
-               menu_list_get_size(menu_list) - 1, true);
+      {
+         if ((menu_list_get_size(menu_list) > 0))
+            menu_navigation_set_last(nav);
+      }
    }
 
    menu_driver_navigation_increment();
