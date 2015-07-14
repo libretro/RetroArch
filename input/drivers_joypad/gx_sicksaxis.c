@@ -1,366 +1,236 @@
-#include "gx_sicksaxis.h"
+#include "sicksaxis.h"
 #include <gccore.h>
-#include <stdio.h>
 #include <string.h>
 
-#include <retro_inline.h>
-
-static uint8_t ATTRIBUTE_ALIGN(32) _ss_attributes_payload[] =
+static uint8_t ATTRIBUTE_ALIGN(32) _ss_attributes[] =
 {
-    0x52,
-    0x00, 0x00, 0x00, 0x00, //Rumble
-    0xff, 0x80, //Gyro
-    0x00, 0x00,
-    0x00, //* LED_1 = 0x02, LED_2 = 0x04, ... */
-    0xff, 0x27, 0x10, 0x00, 0x32, /* LED_4 */
-    0xff, 0x27, 0x10, 0x00, 0x32, /* LED_3 */
-    0xff, 0x27, 0x10, 0x00, 0x32, /* LED_2 */
-    0xff, 0x27, 0x10, 0x00, 0x32, /* LED_1 */
+    0x00, 
+	0x00, 0x00, 0x00, 0x00, //Rumble
+	0x00, 0x00, //Gyro
+	0x00, 0x00, 
+	0x00, //* LED_1 = 0x02, LED_2 = 0x04, ... */
+	0xFF, 0x27, 0x10, 0x00, 0x32, /* LED_4 */
+    0xFF, 0x27, 0x10, 0x00, 0x32, /* LED_3 */
+	0xFF, 0x27, 0x10, 0x00, 0x32, /* LED_2 */
+	0xFF, 0x27, 0x10, 0x00, 0x32, /* LED_1 */
+	0x00, 0x00, 0x00, 0x00, 0x00, 
+	0x00, 0x00, 0x00, 0x00, 0x00, 
+	0x00, 0x00, 0x00, 0x00, 0x00, 
+	0x00, 0x00, 0x00,
 };
 
 static const uint8_t _ss_led_pattern[] = {0x0, 0x02, 0x04, 0x08, 0x10, 0x12, 0x14, 0x18};
 
-static int _ss_heap_id = -1;
 static int _ss_inited = 0;
-static int _ss_dev_number = 1;
-static int _ss_dev_id_list[SS_MAX_DEV] = {0};
+static int _dev_detected = 0;
+static int _slots = 0;
+static int _ss_rem_cb = 0; /* helps to know if it has just removed a device from the usb iface. */
+struct ss_device *_ss_dev_list = NULL; /* just hold a pointer to the dev list. */
 
+static int _ss_initialize(struct ss_device *dev);
+int _ss_open(struct ss_device *dev);
+int _ss_close(struct ss_device *dev);
 static int _ss_dev_id_list_exists(int id);
-static int _ss_dev_id_list_add(int id);
-static int _ss_dev_id_list_remove(int id);
 static int _ss_removal_cb(int result, void *usrdata);
-static int _ss_read_cb(int result, void *usrdata);
-static int _ss_operational_cb(int result, void *usrdata);
-static int _ss_read(struct ss_device *dev);
-static int _ss_set_operational(struct ss_device *dev);
-static int _ss_build_attributes_payload(struct ss_device *dev);
+static int _ss_change_cb(int result, void *usrdata);
 static int _ss_send_attributes_payload(struct ss_device *dev);
+static int _ss_set_operational(struct ss_device *dev);
 
-int ss_init(void)
-{
-   if (!_ss_inited)
-   {
-      _ss_heap_id = iosCreateHeap(SS_HEAP_SIZE);
-      _ss_inited = 1;
-   }
-   return 1;
+int ss_init(struct ss_device *dev_list, int slots) {
+	if (!_ss_inited) {
+		
+		USB_Initialize();
+		_ss_dev_list = dev_list;
+		_slots = slots;
+		
+		int i;
+		for (i = 0;i < _slots; i++) {
+			_ss_initialize(&_ss_dev_list[i]);
+		}
+		
+		USB_DeviceChangeNotifyAsync(USB_CLASS_HID, _ss_change_cb, NULL);
+		_dev_detected = 1; /* try open any existing sixasis device */
+		_ss_inited = 1;
+    }
+    return _ss_inited;
 }
 
-
-int ss_initialize(struct ss_device *dev)
-{
-   dev->device_id = -1;
-   dev->fd        = -1;
-   dev->connected = 0;
-   dev->enabled   = 0;
-   dev->reading   = 0;
-   dev->removal_callback = NULL;
-   dev->removal_usrdata  = NULL;
-   dev->read_callback    = NULL;
-   dev->read_usrdata     = NULL;
-   memset(&dev->pad, 0x0, sizeof(struct SS_GAMEPAD));
-   memset(&dev->attributes, 0x0, sizeof(struct SS_ATTRIBUTES));
-   return 1;
+int ss_shutdown() {
+	int i;
+	for (i = 0;i < _slots; i++)	{
+		_ss_close(&_ss_dev_list[i]);
+	}
+	
+	USB_Deinitialize();
+	_ss_inited = 0;
+	
+	return 1;
 }
 
-int ss_open(struct ss_device *dev)
-{
-   usb_device_entry dev_entry[8];
-   unsigned char dev_count;
-   if (!_ss_inited)
-      return -1;
-   if (dev->connected)
-      ss_close(dev);
-
-   if (USB_GetDeviceList(dev_entry, 8, USB_CLASS_HID, &dev_count) < 0)
-      return -2;
-
-   int i;
-   for (i = 0; i < dev_count; ++i)
-   {
-      if ((dev_entry[i].vid == SS_VENDOR_ID) && 
-            (dev_entry[i].pid == SS_PRODUCT_ID))
-      {
-         if (!_ss_dev_id_list_exists(dev_entry[i].device_id))
-         {
-            if (USB_OpenDevice(dev_entry[i].device_id, 
-                     SS_VENDOR_ID, SS_PRODUCT_ID, &dev->fd) < 0)
-               return -3;
-
-            dev->device_id = dev_entry[i].device_id;
-            dev->connected = 1;
-            dev->enabled = 0;
-            dev->reading = 0;
-
-            _ss_set_operational(dev);
-            ss_set_led(dev, _ss_dev_number);
-
-            _ss_dev_id_list_add(dev_entry[i].device_id);
-            _ss_dev_number++;
-
-            USB_DeviceRemovalNotifyAsync(dev->fd, &_ss_removal_cb, dev);
-            return 1;
-         }
-      }
-   }
-   return -4;
-}
-
-int ss_close(struct ss_device *dev)
-{
-   if (dev && dev->fd > 0)
-      USB_CloseDevice(&dev->fd);
-   return 1;
-}
-
-int ss_is_connected(struct ss_device *dev)
-{
-   return dev->connected;
-}
-
-int ss_set_read_cb(struct ss_device *dev,ss_usb_callback cb,
-      void *userdata)
-{
-   dev->read_callback = cb;
-   dev->read_usrdata  = userdata;
-   return 1;
-}
-
-int ss_set_removal_cb(struct ss_device *dev, ss_usb_callback cb,
-      void *usrdata)
-{
-    dev->removal_callback = cb;
-    dev->removal_usrdata  = userdata;
+static int _ss_initialize(struct ss_device *dev) {
+    dev->device_id = -1;
+    dev->connected = 0;
+    dev->enabled   = 0;
+    memset(&dev->pad, 0x0, sizeof(struct SS_GAMEPAD));
+    memset(&dev->attributes, 0x0, sizeof(struct SS_ATTRIBUTES));
     return 1;
 }
 
-int ss_start_reading(struct ss_device *dev)
-{
-   if (dev)
-   {
-      dev->reading = 1;
-      if (dev->enabled)
-         _ss_read(dev);
-      return 1;
-   }
-   return 0;
+static int _ss_change_cb(int result, void *usrdata) {
+	if (!_ss_rem_cb) {
+		/* As it's not coming from the removal callback 
+		then we	detected a new device being inserted */
+		_dev_detected = 1;
+	}
+	else {
+		_ss_rem_cb = 0;
+	}
+
+	/* Re-apply the callback notification for future connections changes*/
+	USB_DeviceChangeNotifyAsync(USB_CLASS_HID, _ss_change_cb, NULL);
+
+	return 1;
 }
 
-int ss_stop_reading(struct ss_device *dev)
-{
-   if (dev)
-   {
-      dev->reading = 0;
-      return 1;
-   }
-   return 0;
+int _ss_open(struct ss_device *dev) {
+	/* always try to close the device first */
+	_ss_close(dev);
+
+    usb_device_entry dev_entry[SS_MAX_DEV];
+    unsigned char dev_count = 0;
+	if (USB_GetDeviceList(dev_entry, SS_MAX_DEV, USB_CLASS_HID, &dev_count) < 0) {
+		return -2;
+	}
+	
+    int i;
+	for (i = 0; i < dev_count; ++i)	{
+        if ((dev_entry[i].vid == SS_VENDOR_ID) && (dev_entry[i].pid == SS_PRODUCT_ID)) {
+			if (!_ss_dev_id_list_exists(dev_entry[i].device_id)) {
+				int fd;
+				if (USB_OpenDevice(dev_entry[i].device_id, SS_VENDOR_ID, SS_PRODUCT_ID, &fd) < 0) {
+					return -3;
+                }
+
+                dev->device_id = dev_entry[i].device_id;
+                dev->connected = 1;
+				dev->fd = fd;
+
+                _ss_set_operational(dev);
+                USB_DeviceRemovalNotifyAsync(dev->fd, &_ss_removal_cb, dev);
+                return 1;
+            }
+        }
+    }
+    return -4;
 }
 
-static int _ss_build_attributes_payload(struct ss_device *dev)
-{
-   _ss_attributes_payload[1] = dev->attributes.rumble.duration_right;
-   _ss_attributes_payload[2] = dev->attributes.rumble.power_right;
-   _ss_attributes_payload[3] = dev->attributes.rumble.duration_left;
-   _ss_attributes_payload[4] = dev->attributes.rumble.power_left;
-   _ss_attributes_payload[9] = _ss_led_pattern[dev->attributes.led];
-   return 1;   
+int _ss_close(struct ss_device *dev) {
+    if (dev && dev->fd > 0)	{
+        USB_CloseDevice(&dev->fd);
+		dev->fd = -1; /* Clear its descriptor */
+    }
+    return 1;
 }
 
-static int _ss_send_attributes_payload(struct ss_device *dev)
-{
-   if (!dev->connected)
-      return 0;
+int ss_is_ready(struct ss_device *dev) {
 
-   _ss_build_attributes_payload(dev);
+	/* if a device is detected, try to connect it. */
+	if (_dev_detected) {
+		/* As we are processing the detected device, we turn off the flag. */
+		_dev_detected = 0;
+		int i;
+		for(i = 0; i < _slots; i++)	{
+			if (_ss_dev_list[i].device_id < 0) { /* found an empty slot? */
+				if (_ss_open(&_ss_dev_list[i]) > 0) {
+					ss_set_led(&_ss_dev_list[i], i+1);
+				}
+				break;
+			}
+		}
+	}
+	
+	if (dev->connected && dev->enabled)
+		return 1;
 
-   return USB_WriteCtrlMsgAsync(dev->fd,
-         USB_REQTYPE_INTERFACE_SET,
-         USB_REQ_SETREPORT,
-         (USB_REPTYPE_OUTPUT<<8) | 0x01,
-         0x0,
-         sizeof(_ss_attributes_payload),
-         _ss_attributes_payload,
-         NULL, NULL);  
+	return 0;
 }
 
-static INLINE int ss_set_led(struct ss_device *dev, int led)
-{
-   dev->attributes.led = led;
-   return _ss_send_attributes_payload(dev);																
+static int _ss_send_attributes_payload(struct ss_device *dev) {
+	_ss_attributes[1] = dev->attributes.rumble.duration_right;
+    _ss_attributes[2] = dev->attributes.rumble.power_right;
+    _ss_attributes[3] = dev->attributes.rumble.duration_left;
+    _ss_attributes[4] = dev->attributes.rumble.power_left;
+    _ss_attributes[9] = _ss_led_pattern[dev->attributes.led];
+
+    return USB_WriteCtrlMsg(
+				dev->fd,
+				USB_REQTYPE_INTERFACE_SET,
+				USB_REQ_SETREPORT,
+				(USB_REPTYPE_OUTPUT<<8) | 0x01,
+				0x0,
+				sizeof(_ss_attributes),
+				_ss_attributes
+			);
 }
 
-static INLINE int ss_set_rumble(struct ss_device *dev, uint8_t duration_right,
-      uint8_t power_right, uint8_t duration_left, uint8_t power_left)
-{
-   dev->attributes.rumble.duration_right = duration_right;
-   dev->attributes.rumble.power_right    = power_right;
-   dev->attributes.rumble.duration_left  = duration_left;
-   dev->attributes.rumble.power_left     = power_left;
-   return _ss_send_attributes_payload(dev);
+int ss_set_led(struct ss_device *dev, int led) {
+    /* Need to clear the data for rumble */
+	dev->attributes.rumble.duration_right = 0;
+    dev->attributes.rumble.power_right    = 0;
+    dev->attributes.rumble.duration_left  = 0;
+    dev->attributes.rumble.power_left     = 0;
+    
+	dev->attributes.led = led;
+    
+	return _ss_send_attributes_payload(dev);
 }
 
-int ss_get_bd_address(struct ss_device *dev, uint8_t *mac)
-{
-   uint8_t ATTRIBUTE_ALIGN(32) msg[17];
-   int ret = USB_WriteCtrlMsgAsync(dev->fd,
-         USB_REQTYPE_INTERFACE_GET,
-         USB_REQ_GETREPORT,
-         (USB_REPTYPE_FEATURE<<8) | 0xf2,
-         0,
-         sizeof(msg),
-         msg,
-         NULL, NULL);
-
-   mac[0] = msg[4];
-   mac[1] = msg[5];
-   mac[2] = msg[6];
-   mac[3] = msg[7];
-   mac[4] = msg[8];
-   mac[5] = msg[9];
-   return ret;
+int ss_set_rumble(struct ss_device *dev, uint8_t duration_right, uint8_t power_right, uint8_t duration_left, uint8_t power_left) {
+    dev->attributes.rumble.duration_right = duration_right;
+    dev->attributes.rumble.power_right    = power_right;
+    dev->attributes.rumble.duration_left  = duration_left;
+    dev->attributes.rumble.power_left     = power_left;
+    return _ss_send_attributes_payload(dev);
 }
 
-int ss_get_mac(struct ss_device *dev, uint8_t *mac)
-{
-   uint8_t ATTRIBUTE_ALIGN(32) msg[8];
-   int ret = USB_WriteCtrlMsgAsync(dev->fd,
-         USB_REQTYPE_INTERFACE_GET,
-         USB_REQ_GETREPORT,
-         (USB_REPTYPE_FEATURE<<8) | 0xf5,
-         0,
-         sizeof(msg),
-         msg,
-         NULL, NULL);
-
-   mac[0] = msg[2];
-   mac[1] = msg[3];
-   mac[2] = msg[4];
-   mac[3] = msg[5];
-   mac[4] = msg[6];
-   mac[5] = msg[7];
-   return ret;
+inline int ss_read_pad(struct ss_device *dev) {   
+	return USB_ReadIntrMsg(dev->fd, 0x81, SS_PAYLOAD_SIZE, (u8 *)&dev->pad);
 }
 
-int ss_set_mac(struct ss_device *dev, const uint8_t *mac)
-{
-   uint8_t ATTRIBUTE_ALIGN(32) msg[] = {0x01, 0x00, mac[0], mac[1],
-      mac[2], mac[3], mac[4], mac[5]};
-   int ret = USB_WriteCtrlMsgAsync(dev->fd,
-         USB_REQTYPE_INTERFACE_SET,
-         USB_REQ_SETREPORT,
-         (USB_REPTYPE_FEATURE<<8) | 0xf5,
-         0,
-         sizeof(msg),
-         msg,
-         NULL, NULL);
-   return ret;
+static int _ss_removal_cb(int result, void *usrdata) {
+    struct ss_device *dev = (struct ss_device*)usrdata;
+    if (dev->device_id > 0)	{
+		_ss_initialize(dev);
+		_ss_rem_cb = 1; /* inform we already pass thru the removal callback */
+    }
+
+	return 1;
 }
 
-
-static int _ss_read(struct ss_device *dev)
-{
-   return USB_WriteCtrlMsgAsync(
-         dev->fd,
-         USB_REQTYPE_INTERFACE_GET,
-         USB_REQ_GETREPORT,
-         (USB_REPTYPE_INPUT<<8) | 0x01,
-         0x0,
-         SS_PAYLOAD_SIZE,
-         &dev->pad,
-         &_ss_read_cb,
-         dev);
+static int _ss_set_operational(struct ss_device *dev) {
+	int r;
+	uint8_t ATTRIBUTE_ALIGN(32) buf[4] = {0x42, 0x0c, 0x00, 0x00}; /* Special command to enable Sixaxis */
+	/* Sometimes it fails so we should keep trying until success */
+	do {
+		r = USB_WriteCtrlMsg(	
+				dev->fd,
+				USB_REQTYPE_INTERFACE_SET,
+				USB_REQ_SETREPORT,
+				(USB_REPTYPE_FEATURE<<8) | 0xf4,
+				0x0,
+				sizeof(buf),
+				buf
+			);
+	} while (r < 0);
+	
+	dev->enabled = 1;
+	return 1;
 }
 
-static int _ss_removal_cb(int result, void *usrdata)
-{
-   struct ss_device *dev = (struct ss_device*)usrdata;
-   if (dev->device_id > 0)
-   {
-      _ss_dev_id_list_remove(dev->device_id);
-      _ss_dev_number--;
-      if (dev->removal_callback)
-         dev->removal_callback(dev->removal_usrdata);
-      ss_initialize(dev);
-      return 1;
-   }
-   return 0;
-}
-
-static int _ss_set_operational(struct ss_device *dev)
-{
-   uint8_t ATTRIBUTE_ALIGN(32) buf[17];
-   return USB_WriteCtrlMsgAsync(
-         dev->fd,
-         USB_REQTYPE_INTERFACE_GET,
-         USB_REQ_GETREPORT,
-         (USB_REPTYPE_FEATURE<<8) | 0xf2,
-         0x0,
-         17,
-         buf,
-         &_ss_operational_cb,
-         dev);
-}
-
-static int _ss_read_cb(int result, void *userdata)
-{
-   if (userdata)
-   {
-      struct ss_device *dev = (struct ss_device*)userdata;
-      if (dev->reading)
-      {
-         _ss_read(dev);
-         if (dev->read_callback)
-            dev->read_callback(dev->read_usrdata);
-      }
-   }
-   return 1;
-}
-
-static int _ss_operational_cb(int result, void *userdata)
-{
-   struct ss_device *dev = (struct ss_device*)userdata;
-   dev->enabled = 1;
-   if (dev->reading)
-      _ss_read(dev);   
-   return 1;
-}
-
-
-static int _ss_dev_id_list_exists(int id)
-{
-   int i;
-   for (i = 0; i < SS_MAX_DEV; ++i)
-   {
-      if (_ss_dev_id_list[i] == id)
-         return 1;
-   }
-   return 0;
-}
-
-static int _ss_dev_id_list_add(int id)
-{
-   int i;
-   for (i = 0; i < SS_MAX_DEV; ++i)
-   {
-      if (_ss_dev_id_list[i] == 0)
-      {
-         _ss_dev_id_list[i] = id;
-         return 1; 
-      }
-   }
-   return 0; 
-}
-
-static int _ss_dev_id_list_remove(int id)
-{
-   int i;
-   for (i = 0; i < SS_MAX_DEV; ++i)
-   {
-      if (_ss_dev_id_list[i] == id)
-      {
-         _ss_dev_id_list[i] = 0;
-         return 1; 
-      }
-   }
-   return 0; 
+static int _ss_dev_id_list_exists(int id) {
+    int i;
+	for (i = 0; i < _slots; ++i) {
+        if (_ss_dev_list[i].device_id == id) return 1;
+    }
+    return 0;
 }
