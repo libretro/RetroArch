@@ -538,7 +538,7 @@ static bool back_as_menu_toggle_enable = true;
 static const bool crop_overscan = true;
 
 /* Font size for on-screen messages. */
-#if defined(HAVE_RMENU)
+#if defined(HAVE_LIBDBGFONT)
 static const float font_size = 1.0f;
 #else
 static const float font_size = 32;
@@ -547,7 +547,7 @@ static const float font_size = 32;
 /* Offset for where messages will be placed on-screen. 
  * Values are in range [0.0, 1.0]. */
 static const float message_pos_offset_x = 0.05;
-#ifdef RARCH_CONSOLE
+#if defined(_XBOX1)
 static const float message_pos_offset_y = 0.90;
 #else
 static const float message_pos_offset_y = 0.05;
