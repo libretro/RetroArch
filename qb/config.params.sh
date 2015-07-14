@@ -44,6 +44,7 @@ HAVE_JACK=auto          # Enable JACK support
 HAVE_COREAUDIO=auto     # Enable CoreAudio support
 HAVE_PULSE=auto         # Enable PulseAudio support
 HAVE_FREETYPE=auto      # Enable FreeType support
+HAVE_STB_FONT=yes       # Disable stb_truetype font support
 HAVE_XVIDEO=auto        # Enable XVideo support
 HAVE_PYTHON=auto        # Enable Python 3 support for shaders
 HAVE_V4L2=auto          # Enable video4linux2 support
