@@ -313,11 +313,17 @@ static void glui_render_label_value(glui_handle_t *glui, int y, unsigned width,
 {
    char label_str[PATH_MAX_LENGTH];
    char value_str[PATH_MAX_LENGTH];
+   int label_limit = glui->ticker_limit;
+   int value_len   = strlen(value);
 
    label_str[0] = '\0';
    value_str[0] = '\0';
 
-   menu_animation_ticker_str(label_str, glui->ticker_limit, index, label, selected);
+   /* resize label boundary to fit more on the screen */
+   if (value_len + 2 < glui->ticker_limit)
+      label_limit += (int)glui->ticker_limit - (value_len + 2);
+
+   menu_animation_ticker_str(label_str, label_limit,        index, label, selected);
    menu_animation_ticker_str(value_str, glui->ticker_limit, index, value, selected);
 
    glui_blit_line(glui->margin, y, label_str, color, TEXT_ALIGN_LEFT);
