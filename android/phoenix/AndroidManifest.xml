@@ -25,7 +25,6 @@
         android:banner="@drawable/banner"
     	android:debuggable="false">
         <meta-data android:name="com.google.android.gms.version" android:value="@integer/google_play_services_version" />
-        <activity android:name="com.retroarch.browser.DisplayRefreshRateTest"/>
         <activity android:name="com.retroarch.browser.mainmenu.MainMenuActivity" android:exported="true" android:launchMode="singleInstance">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -34,11 +33,6 @@
                 <category android:name="tv.ouya.intent.category.GAME" />
             </intent-filter>
         </activity>
-        <activity android:name="com.retroarch.browser.FileWrapper"/>
-
-        <activity android:name="com.retroarch.browser.preferences.PreferenceActivity" android:theme="@style/Theme.AppCompat" />
-        <activity android:name="com.retroarch.browser.coremanager.CoreManagerActivity" android:theme="@style/Theme.AppCompat"/>
-
         <activity android:name="com.retroarch.browser.retroactivity.RetroActivityFuture" android:exported="true" android:configChanges="mcc|mnc|locale|touchscreen|keyboard|keyboardHidden|navigation|orientation|screenLayout|uiMode|screenSize|smallestScreenSize|fontScale" android:theme="@android:style/Theme.NoTitleBar.Fullscreen" android:launchMode="singleInstance">
             <meta-data android:name="android.app.lib_name" android:value="retroarch-activity" />
             <meta-data android:name="android.app.func_name" android:value="ANativeActivity_onCreate" />
