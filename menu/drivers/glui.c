@@ -348,9 +348,9 @@ static void glui_render_menu_list(glui_handle_t *glui,
       entry_selected = entries->navigation.selection_ptr == i;
 
       menu_animation_ticker_line(entry_title_buf, glui->ticker_limit,
-            frame_count / 100, entry.path, entry_selected);
+            frame_count / 40, entry.path, entry_selected);
       menu_animation_ticker_line(type_str_buf, glui->ticker_limit,
-            frame_count / 100, entry.value, entry_selected);
+            frame_count / 40, entry.value, entry_selected);
 
       strlcpy(message, entry_title_buf, sizeof(message));
 
