@@ -850,6 +850,20 @@ static void frontend_android_get_environment_settings(int *argc,
                  app_dir, "system", sizeof(buf));
             path_mkdir(buf);
             
+            /* create save and system directories in the internal sd too */
+
+            fill_pathname_join(buf,
+                 ext_dir, "saves", sizeof(buf));
+            path_mkdir(buf);
+
+            fill_pathname_join(buf,
+                 ext_dir, "states", sizeof(buf));
+            path_mkdir(buf);
+
+            fill_pathname_join(buf,
+                 ext_dir, "system", sizeof(buf));
+            path_mkdir(buf);
+
             RARCH_LOG("Default savefile folder: [%s]", g_defaults.sram_dir);
             RARCH_LOG("Default savestate folder: [%s]", g_defaults.savestate_dir);
             RARCH_LOG("Default system folder: [%s]", g_defaults.system_dir);
