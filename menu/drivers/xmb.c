@@ -1388,7 +1388,7 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
             ticker_limit = 70;
       }
 
-      menu_animation_ticker_line(name, ticker_limit,
+      menu_animation_ticker_str(name, ticker_limit,
             frame_count / 20, entry.path,
             (i == current));
 
@@ -1398,7 +1398,7 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
             xmb->margins.screen.top + node->y + xmb->margins.label.top, 
             1, node->label_alpha, TEXT_ALIGN_LEFT);
 
-      menu_animation_ticker_line(value, 35,
+      menu_animation_ticker_str(value, 35,
             frame_count / 20, entry.value,
             (i == current));
 

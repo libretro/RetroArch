@@ -560,7 +560,7 @@ static void rmenu_xui_render(void)
       menu_entries_get_title(title, sizeof(title));
 		mbstowcs(strw_buffer, title, sizeof(strw_buffer) / sizeof(wchar_t));
 		XuiTextElementSetText(m_menutitle, strw_buffer);
-		menu_animation_ticker_line(title, RXUI_TERM_WIDTH - 3, (unsigned int)frame_count / 15, title, true);
+		menu_animation_ticker_str(title, RXUI_TERM_WIDTH - 3, (unsigned int)frame_count / 15, title, true);
 	}
 
 	if (XuiHandleIsValid(m_menutitle))

@@ -466,7 +466,7 @@ static void rgui_render(void)
 
    menu_entries_get_title(title, sizeof(title));
 
-   menu_animation_ticker_line(title_buf, RGUI_TERM_WIDTH - 10,
+   menu_animation_ticker_str(title_buf, RGUI_TERM_WIDTH - 10,
          frame_count / RGUI_TERM_START_X, title, true);
 
    hover_color  = HOVER_COLOR(settings);
@@ -527,9 +527,9 @@ static void rgui_render(void)
       menu_entry_get_value(i, entry_value, sizeof(entry_value));
       menu_entry_get_path(i, entry_path, sizeof(entry_path));
 
-      menu_animation_ticker_line(entry_title_buf, RGUI_TERM_WIDTH - (entry_spacing + 1 + 2),
+      menu_animation_ticker_str(entry_title_buf, RGUI_TERM_WIDTH - (entry_spacing + 1 + 2),
             frame_count / RGUI_TERM_START_X, entry_path, entry_selected);
-      menu_animation_ticker_line(type_str_buf, entry_spacing,
+      menu_animation_ticker_str(type_str_buf, entry_spacing,
             frame_count / RGUI_TERM_START_X,
             entry_value, entry_selected);
 

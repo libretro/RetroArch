@@ -545,8 +545,42 @@ bool menu_animation_update(menu_animation_t *anim, float dt)
    return true;
 }
 
+void menu_animation_ticker_generic(uint64_t idx, int max_width,
+      int *offset, int *width)
+{
+   int ticker_period, phase, phase_left_stop;
+   int phase_left_moving, phase_right_stop;
+   int left_offset, right_offset;
+
+   *offset = 0;
+
+   if (*width <= max_width)
+      return;
+
+   ticker_period     = 2 * (*width - max_width) + 4;
+   phase             = idx % ticker_period;
+
+   phase_left_stop   = 2;
+   phase_left_moving = phase_left_stop + (*width - max_width);
+   phase_right_stop  = phase_left_moving + 2;
+
+   left_offset       = phase - phase_left_stop;
+   right_offset      = (*width - max_width) - (phase - phase_right_stop);
+
+   if (phase < phase_left_stop)
+      *offset = 0;
+   else if (phase < phase_left_moving)
+      *offset = -left_offset;
+   else if (phase < phase_right_stop)
+      *offset = -(*width - max_width);
+   else
+      *offset = -right_offset;
+
+   *width = max_width;
+}
+
 /**
- * menu_animation_ticker_line:
+ * menu_animation_ticker_str:
  * @s                        : buffer to write new message line to.
  * @len                      : length of buffer @input.
  * @idx                      : Index. Will be used for ticker logic.
@@ -556,14 +590,12 @@ bool menu_animation_update(menu_animation_t *anim, float dt)
  * Take the contents of @str and apply a ticker effect to it,
  * and write the results in @s.
  **/
-void menu_animation_ticker_line(char *s, size_t len, uint64_t idx,
+void menu_animation_ticker_str(char *s, size_t len, uint64_t idx,
       const char *str, bool selected)
 {
-   unsigned ticker_period, phase, phase_left_stop;
-   unsigned phase_left_moving, phase_right_stop;
-   unsigned left_offset, right_offset;
-   size_t         str_len = strlen(str);
    menu_animation_t *anim = menu_animation_get_ptr();
+   int            str_len = strlen(str);
+   int             offset = 0;
 
    if (str_len <= len)
    {
@@ -578,31 +610,9 @@ void menu_animation_ticker_line(char *s, size_t len, uint64_t idx,
       return;
    }
 
-   /* Wrap long strings in options with some kind of ticker line. */
-   ticker_period     = 2 * (str_len - len) + 4;
-   phase             = idx % ticker_period;
+   menu_animation_ticker_generic(idx, len, &offset, &str_len);
 
-   phase_left_stop   = 2;
-   phase_left_moving = phase_left_stop + (str_len - len);
-   phase_right_stop  = phase_left_moving + 2;
-
-   left_offset       = phase - phase_left_stop;
-   right_offset      = (str_len - len) - (phase - phase_right_stop);
-
-   /* Ticker period:
-    * [Wait at left (2 ticks),
-    * Progress to right(type_len - w),
-    * Wait at right (2 ticks),
-    * Progress to left].
-    */
-   if (phase < phase_left_stop)
-      strlcpy(s, str, len + 1);
-   else if (phase < phase_left_moving)
-      strlcpy(s, str + left_offset, len + 1);
-   else if (phase < phase_right_stop)
-      strlcpy(s, str + str_len - len, len + 1);
-   else
-      strlcpy(s, str + right_offset, len + 1);
+   strlcpy(s, str - offset, str_len + 1);
 
    anim->is_active = true;
 }

@@ -317,8 +317,8 @@ static void glui_render_label_value(glui_handle_t *glui, int y, unsigned width,
    label_str[0] = '\0';
    value_str[0] = '\0';
 
-   menu_animation_ticker_line(label_str, glui->ticker_limit, index, label, selected);
-   menu_animation_ticker_line(value_str, glui->ticker_limit, index, value, selected);
+   menu_animation_ticker_str(label_str, glui->ticker_limit, index, label, selected);
+   menu_animation_ticker_str(value_str, glui->ticker_limit, index, value, selected);
 
    glui_blit_line(glui->margin, y, label_str, color, TEXT_ALIGN_LEFT);
    glui_blit_line(width - glui->margin, y, value_str, color, TEXT_ALIGN_RIGHT);
@@ -430,7 +430,7 @@ static void glui_frame(void)
    glui_render_quad(gl, 0, 0, width,
          disp->header_height, 0.2, 0.2, 0.2, 1);
 
-   menu_animation_ticker_line(title_buf, glui->ticker_limit,
+   menu_animation_ticker_str(title_buf, glui->ticker_limit,
          frame_count / 100, title, true);
    glui_blit_line(width / 2, 0, title_buf,
          title_color, TEXT_ALIGN_CENTER);
