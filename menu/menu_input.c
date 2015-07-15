@@ -892,8 +892,8 @@ static int menu_input_pointer_post_iterate(menu_file_list_cbs_t *cbs,
          menu_input->pointer.old_y         = menu_input->pointer.y;
          menu_input->pointer.oldpressed[0] = true;
       }
-      else if ((menu_input->pointer.x != menu_input->pointer.start_x)
-         && (menu_input->pointer.y != menu_input->pointer.start_y))
+      else if (abs(menu_input->pointer.x - menu_input->pointer.start_x) > 3
+            || abs(menu_input->pointer.y - menu_input->pointer.start_y) > 3)
       {
          menu_input->pointer.dragging = true;
          menu_input->pointer.dx       = menu_input->pointer.x - menu_input->pointer.old_x;
