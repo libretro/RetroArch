@@ -171,7 +171,7 @@ static void rmenu_render(void)
 
    menu_entries_get_title(title, sizeof(title));
 
-   menu_animation_ticker_line(title_buf, RMENU_TERM_WIDTH,
+   menu_animation_ticker_str(title_buf, RMENU_TERM_WIDTH,
          frame_count / 15, title, true);
 
    font_parms.x = POSITION_EDGE_MIN + POSITION_OFFSET;
@@ -206,9 +206,9 @@ static void rmenu_render(void)
       menu_entry_get_value(i, entry_value, sizeof(entry_value));
       menu_entry_get_path(i, entry_path, sizeof(entry_path));
 
-      menu_animation_ticker_line(entry_title_buf, RMENU_TERM_WIDTH - (entry_spacing + 1 + 2),
+      menu_animation_ticker_str(entry_title_buf, RMENU_TERM_WIDTH - (entry_spacing + 1 + 2),
             frame_count / 15, entry_path, entry_selected);
-      menu_animation_ticker_line(type_str_buf, entry_spacing,
+      menu_animation_ticker_str(type_str_buf, entry_spacing,
             frame_count / 15, entry_value, entry_selected);
 
       snprintf(message, sizeof(message), "%c %s",
