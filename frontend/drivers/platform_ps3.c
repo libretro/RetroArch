@@ -14,15 +14,26 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdio.h>
+
+#include <sys/process.h>
+#include <sysutil/sysutil_common.h>
+#ifdef IS_SALAMANDER
+#include <netex/net.h>
+#include <np.h>
+#include <np/drm.h>
+#include <cell/sysmodule.h>
+#endif
+
 #include <sys/process.h>
 
+#include <retro_log.h>
 #include <file/file_path.h>
 #ifndef IS_SALAMANDER
 #include <file/file_list.h>
 #endif
 
 #include "../../ps3/sdk_defines.h"
-
 #include "../../general.h"
 
 #define EMULATOR_CONTENT_DIR "SSNE10000"
@@ -46,12 +57,6 @@ static bool multiman_detected  = false;
 static bool exit_spawn = false;
 static bool exitspawn_start_game = false;
 
-#ifdef IS_SALAMANDER
-#include <netex/net.h>
-#include <np.h>
-#include <np/drm.h>
-#include <cell/sysmodule.h>
-#endif
 
 #ifdef HAVE_SYSUTILS
 static void callback_sysutil_exit(uint64_t status,
@@ -348,21 +353,11 @@ static void frontend_ps3_exitspawn(char *core_path, size_t core_path_size)
 #endif
 }
 
-#include <stdio.h>
-
-#include <cell/sysmodule.h>
-#include <sys/process.h>
-#include <sysutil/sysutil_common.h>
-#include <netex/net.h>
-#include <np.h>
-#include <np/drm.h>
-
-#include <retro_log.h>
 
 static void frontend_ps3_exec(const char *path, bool should_load_game)
 {
-   char spawn_data[256] = {0};
    unsigned i;
+   char spawn_data[256] = {0};
 
    (void)should_load_game;
 
