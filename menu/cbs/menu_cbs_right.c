@@ -368,6 +368,7 @@ static int menu_cbs_init_bind_right_compare_type(menu_file_list_cbs_t *cbs,
          case MENU_FILE_PLAIN:
          case MENU_FILE_DIRECTORY:
          case MENU_FILE_CARCHIVE:
+         case MENU_FILE_IN_CARCHIVE:
          case MENU_FILE_CORE:
          case MENU_FILE_RDB:
          case MENU_FILE_RDB_ENTRY:
