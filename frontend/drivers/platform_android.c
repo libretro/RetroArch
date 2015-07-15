@@ -457,13 +457,13 @@ bool test_permissions(const char *path)
 
    RARCH_LOG("Testing permissions for %s\n",path);
 
-   fill_pathname_join(buf, path, "ra-test", sizeof(buf));
+   fill_pathname_join(buf, path, ".retroarch", sizeof(buf));
    ret = path_mkdir(buf);
 
    RARCH_LOG("Create %s %s\n", buf, ret ? "true" : "false");
 
    if(ret)
-      rmdir(path);
+      rmdir(buf);
 
    return ret;
 }
