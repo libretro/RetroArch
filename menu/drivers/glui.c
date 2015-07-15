@@ -505,8 +505,20 @@ static void glui_allocate_white_texture(glui_handle_t *glui)
          TEXTURE_BACKEND_OPENGL, TEXTURE_FILTER_NEAREST);
 }
 
+static void glui_font(menu_handle_t *menu)
+{
+   settings_t *settings  = config_get_ptr();
+   const char *font_path = NULL;
+
+   font_path = settings->video.font_enable ? settings->video.font_path : NULL;
+
+   if (!menu_display_init_main_font(menu, font_path, menu->display.font.size))
+      RARCH_ERR("Failed to load font.");
+}
+
 static void glui_layout(menu_handle_t *menu, glui_handle_t *glui)
 {
+   menu_display_t *disp = menu_display_get_ptr();
    float scale_factor, glyph_width;
    unsigned width, height;
    video_driver_get_size(&width, &height);
@@ -528,6 +540,17 @@ static void glui_layout(menu_handle_t *menu, glui_handle_t *glui)
    /* we assume the average glyph aspect ratio is close to 3:4 */
    glyph_width                  = menu->display.font.size * 3/4;
    glui->ticker_limit           = (width/2) / glyph_width;
+
+   glui_font(menu);
+
+   if (disp && disp->font.buf) /* calculate a more realistic ticker_limit */
+   {
+      driver_t *driver   = driver_get_ptr();
+      int m_width = driver->font_osd_driver->get_message_width(disp->font.buf, "M", 1, 1);
+
+      if (m_width)
+         glui->ticker_limit = (width / 2) / m_width - 2;
+   }
 }
 
 static void *glui_init(void)
@@ -717,17 +740,6 @@ static void glui_populate_entries(const char *path,
    menu->scroll_y      = glui_get_scroll();
 }
 
-static void glui_font(menu_handle_t *menu)
-{
-   settings_t *settings  = config_get_ptr();
-   const char *font_path = NULL;
-
-   font_path = settings->video.font_enable ? settings->video.font_path : NULL;
-
-   if (!menu_display_init_main_font(menu, font_path, menu->display.font.size))
-      RARCH_ERR("Failed to load font.");
-}
-
 static void glui_context_reset(void)
 {
    glui_handle_t *glui   = NULL;
@@ -740,7 +752,6 @@ static void glui_context_reset(void)
    glui      = (glui_handle_t*)menu->userdata;
 
    glui_layout(menu, glui);
-   glui_font(menu);
    glui_context_bg_destroy(glui);
    glui_allocate_white_texture(glui);
 
