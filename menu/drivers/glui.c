@@ -42,7 +42,7 @@ typedef struct glui_handle
 {
    unsigned line_height;
    unsigned margin;
-   unsigned ticker_limit;
+   unsigned glyph_width;
    char box_message[PATH_MAX_LENGTH];
 
    struct
@@ -334,6 +334,7 @@ static void glui_render_menu_list(glui_handle_t *glui,
       char message[PATH_MAX_LENGTH];
       char entry_title_buf[PATH_MAX_LENGTH];
       char type_str_buf[PATH_MAX_LENGTH];
+      unsigned ticker_limit, value_len, usable_width;
       int y = disp->header_height - menu->scroll_y + (glui->line_height * i);
 
       if (y > (int)height || ((y + (int)glui->line_height) < 0))
@@ -347,9 +348,19 @@ static void glui_render_menu_list(glui_handle_t *glui,
 
       entry_selected = entries->navigation.selection_ptr == i;
 
-      menu_animation_ticker_line(entry_title_buf, glui->ticker_limit,
+      usable_width = width - (glui->margin * 2);
+
+      value_len = strlen(entry.value);
+      if (strlen(entry.value)*glui->glyph_width > usable_width/2)
+         value_len = (usable_width/2) / glui->glyph_width;
+
+      ticker_limit = (usable_width / glui->glyph_width) - value_len;
+      if (entry.value[0] == '\0')
+         ticker_limit = usable_width / glui->glyph_width;
+
+      menu_animation_ticker_line(entry_title_buf, ticker_limit,
             frame_count / 40, entry.path, entry_selected);
-      menu_animation_ticker_line(type_str_buf, glui->ticker_limit,
+      menu_animation_ticker_line(type_str_buf, value_len,
             frame_count / 40, entry.value, entry_selected);
 
       strlcpy(message, entry_title_buf, sizeof(message));
@@ -364,7 +375,7 @@ static void glui_render_menu_list(glui_handle_t *glui,
 
 static void glui_frame(void)
 {
-   unsigned width, height;
+   unsigned width, height, ticker_limit;
    char title[PATH_MAX_LENGTH];
    char title_buf[PATH_MAX_LENGTH];
    char title_msg[PATH_MAX_LENGTH];
@@ -429,7 +440,9 @@ static void glui_frame(void)
    glui_render_quad(gl, 0, 0, width,
          disp->header_height, 0.2, 0.2, 0.2, 1);
 
-   menu_animation_ticker_line(title_buf, glui->ticker_limit,
+   ticker_limit = (width - glui->margin*2) / glui->glyph_width -
+         strlen(menu_hash_to_str(MENU_VALUE_BACK)) * 2;
+   menu_animation_ticker_line(title_buf, ticker_limit,
          frame_count / 100, title, true);
    glui_blit_line(width / 2, 0, title_buf,
          title_color, TEXT_ALIGN_CENTER);
@@ -526,8 +539,7 @@ static void glui_layout(menu_handle_t *menu, glui_handle_t *glui)
    menu->display.header_height  = scale_factor / 3;
    menu->display.font.size      = scale_factor / 8;
    /* we assume the average glyph aspect ratio is close to 3:4 */
-   glyph_width                  = menu->display.font.size * 3/4;
-   glui->ticker_limit           = (width/2) / glyph_width;
+   glui->glyph_width            = menu->display.font.size * 3/4;
 }
 
 static void *glui_init(void)
