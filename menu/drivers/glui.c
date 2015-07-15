@@ -308,6 +308,22 @@ static void glui_render(void)
       menu_entries_set_start(menu->scroll_y / glui->line_height);
 }
 
+static void glui_render_label_value(glui_handle_t *glui, int y, unsigned width,
+    uint64_t index, uint32_t color, bool selected, const char *label, const char *value)
+{
+   char label_str[PATH_MAX_LENGTH];
+   char value_str[PATH_MAX_LENGTH];
+
+   label_str[0] = '\0';
+   value_str[0] = '\0';
+
+   menu_animation_ticker_line(label_str, glui->ticker_limit, index, label, selected);
+   menu_animation_ticker_line(value_str, glui->ticker_limit, index, value, selected);
+
+   glui_blit_line(glui->margin, y, label_str, color, TEXT_ALIGN_LEFT);
+   glui_blit_line(width - glui->margin, y, value_str, color, TEXT_ALIGN_RIGHT);
+}
+
 static void glui_render_menu_list(glui_handle_t *glui,
       menu_handle_t *menu,
       uint32_t normal_color,
@@ -331,30 +347,19 @@ static void glui_render_menu_list(glui_handle_t *glui,
    {
       bool entry_selected;
       menu_entry_t entry;
-      char label_str[PATH_MAX_LENGTH];
-      char value_str[PATH_MAX_LENGTH];
+
       int y = disp->header_height - menu->scroll_y + (glui->line_height * i);
 
       if (y > (int)height || ((y + (int)glui->line_height) < 0))
          continue;
 
-      label_str[0] = '\0';
-      value_str[0] = '\0';
-
       menu_entries_get(i, &entry);
 
       entry_selected = entries->navigation.selection_ptr == i;
 
-      menu_animation_ticker_line(label_str, glui->ticker_limit,
-            frame_count / 40, entry.path, entry_selected);
-      menu_animation_ticker_line(value_str, glui->ticker_limit,
-            frame_count / 40, entry.value, entry_selected);
-
-      glui_blit_line(glui->margin, y, label_str,
-            entry_selected ? hover_color : normal_color, TEXT_ALIGN_LEFT);
-
-      glui_blit_line(width - glui->margin, y, value_str,
-            entry_selected ? hover_color : normal_color, TEXT_ALIGN_RIGHT);
+      glui_render_label_value(glui, y, width, frame_count / 40,
+         entry_selected ? hover_color : normal_color, entry_selected,
+         entry.path, entry.value);
    }
 }
 
