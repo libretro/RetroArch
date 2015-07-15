@@ -248,7 +248,7 @@ const char *menu_hash_to_str_de(uint32_t hash)
       case MENU_LABEL_VALUE_UI_COMPANION_START_ON_BOOT:
          return "UI-Companion beim Hochfahren starten";
       case MENU_LABEL_VALUE_UI_MENUBAR_ENABLE:
-         return "Menüleiste (Hint)";
+         return "Menüleiste";
       case MENU_LABEL_VALUE_ARCHIVE_MODE:
          return "Verknüpfte Aktion bei Archivdateien";
       case MENU_LABEL_VALUE_NETWORK_CMD_ENABLE:

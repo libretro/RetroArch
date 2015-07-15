@@ -256,7 +256,7 @@ const char *menu_hash_to_str_pl(uint32_t hash)
       case MENU_LABEL_VALUE_UI_COMPANION_START_ON_BOOT:
          return "UI Companion Start On Boot";
       case MENU_LABEL_VALUE_UI_MENUBAR_ENABLE:
-         return "Pasek menu (Hint)";
+         return "Pasek menu";
       case MENU_LABEL_VALUE_ARCHIVE_MODE:
          return "Archive File Assocation Action";
       case MENU_LABEL_VALUE_NETWORK_CMD_ENABLE:
