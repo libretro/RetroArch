@@ -840,17 +840,6 @@ static int menu_input_mouse_post_iterate(uint64_t *input_mouse,
    return 0;
 }
 
-static int pointer_highlight(menu_file_list_cbs_t *cbs,
-      menu_entry_t *entry, unsigned action)
-{
-   menu_input_t *menu_input = menu_input_get_ptr();
-   menu_navigation_t *nav   = menu_navigation_get_ptr();
-
-   menu_navigation_set(nav, menu_input->pointer.ptr, false);
-
-   return 0;
-}
-
 static int pointer_tap(menu_file_list_cbs_t *cbs,
       menu_entry_t *entry, unsigned action)
 {
@@ -866,8 +855,10 @@ static int pointer_tap(menu_file_list_cbs_t *cbs,
          (setting->type == ST_BOOL || setting->type == ST_UINT
           || setting->type == ST_FLOAT || setting->type == ST_STRING))
       return menu_entry_action(entry, nav->selection_ptr, MENU_ACTION_RIGHT);
-   else
+   else if (menu_input->pointer.ptr == nav->selection_ptr)
       return menu_entry_action(entry, nav->selection_ptr, MENU_ACTION_OK);
+   else
+      menu_navigation_set(nav, menu_input->pointer.ptr, false);
 
    return 0;
 }
@@ -893,15 +884,13 @@ static int menu_input_pointer_post_iterate(menu_file_list_cbs_t *cbs,
 
    if (menu_input->pointer.pressed[0])
    {
-      if (!menu_input->pointer.oldpressed[0] && !menu_input->pointer.dragging)
+      if (!menu_input->pointer.oldpressed[0])
       {
          menu_input->pointer.start_x       = menu_input->pointer.x;
          menu_input->pointer.start_y       = menu_input->pointer.y;
          menu_input->pointer.old_x         = menu_input->pointer.x;
          menu_input->pointer.old_y         = menu_input->pointer.y;
          menu_input->pointer.oldpressed[0] = true;
-         if ((unsigned)menu_input->pointer.start_y > disp->header_height)
-            ret = pointer_highlight(cbs, entry, action);
       }
       else if (abs(menu_input->pointer.x - menu_input->pointer.start_x) > 3
             || abs(menu_input->pointer.y - menu_input->pointer.start_y) > 3)
