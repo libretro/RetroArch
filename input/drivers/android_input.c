@@ -637,12 +637,13 @@ static void handle_hotplug(android_input_t *android,
       strlcpy(name_buf, "PlayStation3", sizeof(name_buf));
    else if (strstr(device_name, "MOGA"))
       strlcpy(name_buf, "Moga IME", sizeof(name_buf));
-   else if (strstr(device_name, "NVIDIA Controller"))
+   else if (strstr(device_name, "NVIDIA Corporation NVIDIA Controller v01.01"))
    {
       /* Shield is always user 1. FIXME: This is kinda ugly.
        * We really need to find a way to detect useless input devices
        * like gpio-keys in a general way.
        */
+      *port = 0;
       strlcpy(name_buf, device_name, sizeof(name_buf));
    }
    else if (device_name[0] != '\0')
