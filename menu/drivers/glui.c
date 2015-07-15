@@ -308,6 +308,28 @@ static void glui_render(void)
       menu_entries_set_start(menu->scroll_y / glui->line_height);
 }
 
+static void glui_render_label_value(glui_handle_t *glui, int y, unsigned width,
+    uint64_t index, uint32_t color, bool selected, const char *label, const char *value)
+{
+   char label_str[PATH_MAX_LENGTH];
+   char value_str[PATH_MAX_LENGTH];
+   int label_limit = glui->ticker_limit;
+   int value_len   = strlen(value);
+
+   label_str[0] = '\0';
+   value_str[0] = '\0';
+
+   /* resize label boundary to fit more on the screen */
+   if (value_len + 2 < glui->ticker_limit)
+      label_limit += (int)glui->ticker_limit - (value_len + 2);
+
+   menu_animation_ticker_str(label_str, label_limit,        index, label, selected);
+   menu_animation_ticker_str(value_str, glui->ticker_limit, index, value, selected);
+
+   glui_blit_line(glui->margin, y, label_str, color, TEXT_ALIGN_LEFT);
+   glui_blit_line(width - glui->margin, y, value_str, color, TEXT_ALIGN_RIGHT);
+}
+
 static void glui_render_menu_list(glui_handle_t *glui,
       menu_handle_t *menu,
       uint32_t normal_color,
@@ -331,34 +353,19 @@ static void glui_render_menu_list(glui_handle_t *glui,
    {
       bool entry_selected;
       menu_entry_t entry;
-      char message[PATH_MAX_LENGTH];
-      char entry_title_buf[PATH_MAX_LENGTH];
-      char type_str_buf[PATH_MAX_LENGTH];
+
       int y = disp->header_height - menu->scroll_y + (glui->line_height * i);
 
       if (y > (int)height || ((y + (int)glui->line_height) < 0))
          continue;
 
-      message[0]         = '\0';
-      entry_title_buf[0] = '\0';
-      type_str_buf[0]    = '\0';
-
       menu_entries_get(i, &entry);
 
       entry_selected = entries->navigation.selection_ptr == i;
 
-      menu_animation_ticker_line(entry_title_buf, glui->ticker_limit,
-            frame_count / 40, entry.path, entry_selected);
-      menu_animation_ticker_line(type_str_buf, glui->ticker_limit,
-            frame_count / 40, entry.value, entry_selected);
-
-      strlcpy(message, entry_title_buf, sizeof(message));
-
-      glui_blit_line(glui->margin, y, message,
-            entry_selected ? hover_color : normal_color, TEXT_ALIGN_LEFT);
-
-      glui_blit_line(width - glui->margin, y, type_str_buf,
-            entry_selected ? hover_color : normal_color, TEXT_ALIGN_RIGHT);
+      glui_render_label_value(glui, y, width, frame_count / 40,
+         entry_selected ? hover_color : normal_color, entry_selected,
+         entry.path, entry.value);
    }
 }
 
@@ -429,7 +436,7 @@ static void glui_frame(void)
    glui_render_quad(gl, 0, 0, width,
          disp->header_height, 0.2, 0.2, 0.2, 1);
 
-   menu_animation_ticker_line(title_buf, glui->ticker_limit,
+   menu_animation_ticker_str(title_buf, glui->ticker_limit,
          frame_count / 100, title, true);
    glui_blit_line(width / 2, 0, title_buf,
          title_color, TEXT_ALIGN_CENTER);
@@ -505,8 +512,20 @@ static void glui_allocate_white_texture(glui_handle_t *glui)
          TEXTURE_BACKEND_OPENGL, TEXTURE_FILTER_NEAREST);
 }
 
+static void glui_font(menu_handle_t *menu)
+{
+   settings_t *settings  = config_get_ptr();
+   const char *font_path = NULL;
+
+   font_path = settings->video.font_enable ? settings->video.font_path : NULL;
+
+   if (!menu_display_init_main_font(menu, font_path, menu->display.font.size))
+      RARCH_ERR("Failed to load font.");
+}
+
 static void glui_layout(menu_handle_t *menu, glui_handle_t *glui)
 {
+   menu_display_t *disp = menu_display_get_ptr();
    float scale_factor, glyph_width;
    unsigned width, height;
    video_driver_get_size(&width, &height);
@@ -515,11 +534,7 @@ static void glui_layout(menu_handle_t *menu, glui_handle_t *glui)
       resolution, so we should be dpi aware to ensure the entries hitboxes are big
       enough. On desktops, we just care about readability, with every widget size
       proportional to the display width. */
-#ifdef RARCH_MOBILE
    scale_factor = menu_display_get_dpi();
-#else
-   scale_factor = width / 7.5;
-#endif
 
    glui->line_height            = scale_factor / 3;
    glui->margin                 = scale_factor / 6;
@@ -528,6 +543,17 @@ static void glui_layout(menu_handle_t *menu, glui_handle_t *glui)
    /* we assume the average glyph aspect ratio is close to 3:4 */
    glyph_width                  = menu->display.font.size * 3/4;
    glui->ticker_limit           = (width/2) / glyph_width;
+
+   glui_font(menu);
+
+   if (disp && disp->font.buf) /* calculate a more realistic ticker_limit */
+   {
+      driver_t *driver   = driver_get_ptr();
+      int m_width = driver->font_osd_driver->get_message_width(disp->font.buf, "M", 1, 1);
+
+      if (m_width)
+         glui->ticker_limit = (width / 2) / m_width - 2;
+   }
 }
 
 static void *glui_init(void)
@@ -717,17 +743,6 @@ static void glui_populate_entries(const char *path,
    menu->scroll_y      = glui_get_scroll();
 }
 
-static void glui_font(menu_handle_t *menu)
-{
-   settings_t *settings  = config_get_ptr();
-   const char *font_path = NULL;
-
-   font_path = settings->video.font_enable ? settings->video.font_path : NULL;
-
-   if (!menu_display_init_main_font(menu, font_path, menu->display.font.size))
-      RARCH_WARN("Failed to load font.");
-}
-
 static void glui_context_reset(void)
 {
    glui_handle_t *glui   = NULL;
@@ -740,7 +755,6 @@ static void glui_context_reset(void)
    glui      = (glui_handle_t*)menu->userdata;
 
    glui_layout(menu, glui);
-   glui_font(menu);
    glui_context_bg_destroy(glui);
    glui_allocate_white_texture(glui);
 
