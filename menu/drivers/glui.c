@@ -273,8 +273,8 @@ static void glui_render(void)
          (menu_input->pointer.y - glui->line_height + menu->scroll_y - 16)
          / glui->line_height;
 
-      if (menu_input->pointer.dragging)
-         menu->scroll_y -= menu_input->pointer.dy;
+      menu->scroll_y -= menu_input->pointer.accel / 60.0;
+      menu_input->pointer.accel = menu_input->pointer.accel * 0.96;
    }
 
    if (settings->menu.mouse.enable)

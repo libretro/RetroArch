@@ -151,6 +151,9 @@ typedef struct menu_input
       int16_t old_y;
       int16_t start_x;
       int16_t start_y;
+      float accel;
+      float accel0;
+      float accel1;
       bool pressed[2];
       bool oldpressed[2];
       bool dragging;
