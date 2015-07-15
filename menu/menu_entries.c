@@ -94,8 +94,6 @@ void menu_entries_get(size_t i, menu_entry_t *entry)
 
    entry->idx = i;
 
-   if (path)
-      strlcpy(entry->path,  path,        sizeof(entry->path));
    if (entry_label)
       strlcpy(entry->label, entry_label, sizeof(entry->label));
 }
