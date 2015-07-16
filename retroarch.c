@@ -1400,6 +1400,10 @@ void rarch_main_set_state(unsigned cmd)
          menu_entries_set_refresh();
          menu_driver_set_alive();
 #endif
+#ifdef HAVE_OVERLAY
+         if (settings->input.overlay_hide_in_menu)
+            event_command(EVENT_CMD_OVERLAY_DEINIT);
+#endif
          break;
       case RARCH_ACTION_STATE_LOAD_CONTENT:
 #ifdef HAVE_MENU
@@ -1450,6 +1454,10 @@ void rarch_main_set_state(unsigned cmd)
             system->key_event = global->frontend_key_event;
 #endif
          video_driver_set_texture_enable(false, false);
+#ifdef HAVE_OVERLAY
+         if (settings->input.overlay_hide_in_menu)
+            event_command(EVENT_CMD_OVERLAY_INIT);
+#endif
          break;
       case RARCH_ACTION_STATE_QUIT:
 	     if (global)

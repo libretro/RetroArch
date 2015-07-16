@@ -424,18 +424,11 @@ static void do_state_check_menu_toggle(settings_t *settings, global_t *global)
    if (menu_driver_alive())
    {
       if (global->main_is_init && (global->core_type != CORE_TYPE_DUMMY))
-      {
          rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING_FINISHED);
-         if (settings->input.overlay_hide_in_menu)
-            event_command(EVENT_CMD_OVERLAY_INIT);
-      }
       return;
    }
 
    rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING);
-
-   if (settings->input.overlay_hide_in_menu)
-      event_command(EVENT_CMD_OVERLAY_DEINIT);
 }
 #endif
 
