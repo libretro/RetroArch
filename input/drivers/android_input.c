@@ -631,7 +631,7 @@ static void handle_hotplug(android_input_t *android,
    }
    else if (strstr(device_name, "NVIDIA Corporation NVIDIA Controller v01.01"))
    {
-      /* Shield is always user 1. FIXME: This is kinda ugly.
+      /* Built-in shield contrlleris always user 1. FIXME: This is kinda ugly.
        * We really need to find a way to detect useless input devices
        * like gpio-keys in a general way.
        */
@@ -640,10 +640,7 @@ static void handle_hotplug(android_input_t *android,
    }
    else if (strstr(device_name, "Virtual") || strstr(device_name, "gpio") && strstr(android->pad_states[0].name,"NVIDIA Corporation NVIDIA Controller v01.01"))
    {
-      /* Shield is always user 1. FIXME: This is kinda ugly.
-       * We really need to find a way to detect useless input devices
-       * like gpio-keys in a general way.
-       */
+      /* If built-in shield controller is detected bind the virtual and gpio devices to the same port*/
       *port = 0;
       strlcpy(name_buf, "NVIDIA Corporation NVIDIA Controller v01.01", sizeof(name_buf));
    }
