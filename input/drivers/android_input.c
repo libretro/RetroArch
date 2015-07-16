@@ -629,6 +629,21 @@ static void handle_hotplug(android_input_t *android,
       else if (strstr(device_name, "SideWinder"))
          strlcpy(name_buf, "SideWinder Classic", sizeof(name_buf));
    }
+   else if (strstr(device_name, "NVIDIA Corporation NVIDIA Controller v01.01"))
+   {
+      /* Built-in shield contrlleris always user 1. FIXME: This is kinda ugly.
+       * We really need to find a way to detect useless input devices
+       * like gpio-keys in a general way.
+       */
+      *port = 0;
+      strlcpy(name_buf, device_name, sizeof(name_buf));
+   }
+   else if (strstr(device_name, "Virtual") || strstr(device_name, "gpio") && strstr(android->pad_states[0].name,"NVIDIA Corporation NVIDIA Controller v01.01"))
+   {
+      /* If built-in shield controller is detected bind the virtual and gpio devices to the same port*/
+      *port = 0;
+      strlcpy(name_buf, "NVIDIA Corporation NVIDIA Controller v01.01", sizeof(name_buf));
+   }
    else if (
          strstr(device_name, "PLAYSTATION(R)3") ||
          strstr(device_name, "Dualshock3") ||
@@ -637,15 +652,6 @@ static void handle_hotplug(android_input_t *android,
       strlcpy(name_buf, "PlayStation3", sizeof(name_buf));
    else if (strstr(device_name, "MOGA"))
       strlcpy(name_buf, "Moga IME", sizeof(name_buf));
-   else if (strstr(device_name, "NVIDIA Corporation NVIDIA Controller v01.01"))
-   {
-      /* Shield is always user 1. FIXME: This is kinda ugly.
-       * We really need to find a way to detect useless input devices
-       * like gpio-keys in a general way.
-       */
-      *port = 0;
-      strlcpy(name_buf, device_name, sizeof(name_buf));
-   }
    else if (device_name[0] != '\0')
       strlcpy(name_buf, device_name, sizeof(name_buf));
 

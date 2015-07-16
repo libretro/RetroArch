@@ -48,8 +48,8 @@ void main_exit_save_config(void)
          strlcpy(global->savestate_dir,orig_savestate_dir,sizeof(global->savestate_dir));
 
       /* restore system directory if it was set to <content dir> */
-      if(orig_system_dir_empty)
-         strlcpy(settings->system_directory,"",sizeof(settings->system_directory));
+      if(settings->system_in_content_dir)
+         settings->system_directory[0] = '\0';
 
       /* Save last core-specific config to the default config location,
        * needed on consoles for core switching and reusing last good 

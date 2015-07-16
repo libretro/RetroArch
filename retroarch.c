@@ -61,7 +61,6 @@
 
 char orig_savestate_dir[PATH_MAX_LENGTH];
 char orig_savefile_dir[PATH_MAX_LENGTH];
-bool orig_system_dir_empty = false;
 
 /* Descriptive names for options without short variant. Please keep the name in
    sync with the option name. Order does not matter. */
@@ -314,11 +313,12 @@ static void set_special_paths(char **argv, unsigned num_content)
    /* If this is already set,
     * do not overwrite it as this was initialized before in
     * a menu or otherwise. */
-   if (settings->system_directory[0] == '\0')
-      orig_system_dir_empty = true;
-   if (!*settings->system_directory)
+   if (!settings->system_directory || settings->system_directory[0] == '\0')
+   {
+      RARCH_WARN("SYSTEM DIR is empty, assume CONTENT DIR %s\n",argv[0]);
       fill_pathname_basedir(settings->system_directory, argv[0],
             sizeof(settings->system_directory));
+   }
 }
 
 void set_paths_redirect(const char *path)
@@ -355,7 +355,7 @@ void set_paths_redirect(const char *path)
       }
 
       /* per-core states: append the library_name to the save location */
-      if (settings->sort_savestates_enable)
+      if (settings->sort_savestates_enable && global->savefile_dir[0] != '\0')
       {
          strlcpy(orig_savestate_dir,
                global->savestate_dir,
@@ -429,12 +429,13 @@ void rarch_set_paths(const char *path)
 
    /* If this is already set, do not overwrite it
     * as this was initialized before in a menu or otherwise. */
-   if (*settings->system_directory)
-      return;
-   if (settings->system_directory[0] == '\0')
-      orig_system_dir_empty = true;
-   fill_pathname_basedir(settings->system_directory, path,
-         sizeof(settings->system_directory));
+   if (!settings->system_directory || settings->system_directory[0] == '\0')
+   {
+      RARCH_WARN("SYSTEM DIR is empty, fill assume CONTENT DIR %s\n",path);
+      fill_pathname_basedir(settings->system_directory, path,
+            sizeof(settings->system_directory));
+   }
+
 }
 
 
