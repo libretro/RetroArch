@@ -638,7 +638,8 @@ static void handle_hotplug(android_input_t *android,
       *port = 0;
       strlcpy(name_buf, device_name, sizeof(name_buf));
    }
-   else if (strstr(device_name, "Virtual") || strstr(device_name, "gpio") && strstr(android->pad_states[0].name,"NVIDIA Corporation NVIDIA Controller v01.01"))
+   else if (strstr(device_name, "Virtual") || 
+         (strstr(device_name, "gpio") && strstr(android->pad_states[0].name,"NVIDIA Corporation NVIDIA Controller v01.01")))
    {
       /* If built-in shield controller is detected bind the virtual and gpio devices to the same port*/
       *port = 0;

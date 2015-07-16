@@ -532,7 +532,7 @@ static void glui_font(menu_handle_t *menu)
 static void glui_layout(menu_handle_t *menu, glui_handle_t *glui)
 {
    menu_display_t *disp = menu_display_get_ptr();
-   float scale_factor, glyph_width;
+   float scale_factor;
    unsigned width, height;
    video_driver_get_size(&width, &height);
 
