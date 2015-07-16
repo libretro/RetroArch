@@ -18,6 +18,7 @@
 #include <file/file_path.h>
 #include "../../general.h"
 #include "../../file_ops.h"
+#include <ctype.h>
 
 #define STB_TRUETYPE_IMPLEMENTATION
 #define STB_RECT_PACK_IMPLEMENTATION
@@ -63,6 +64,8 @@ static bool font_renderer_stb_create_atlas(stb_font_renderer_t *self,
    stbtt_packedchar   chardata[256];
 
    self->atlas.width  = self->atlas.height = 512;
+
+alloc_atlas:
    self->atlas.buffer = (uint8_t*)calloc(self->atlas.height, self->atlas.width);
 
    if (!self->atlas.buffer)
@@ -87,6 +90,18 @@ static bool font_renderer_stb_create_atlas(stb_font_renderer_t *self,
       g->draw_offset_y  = c->yoff;
       g->width          = c->x1 - c->x0;
       g->height         = c->y1 - c->y0;
+
+      /* make sure important characters fit */
+      if (isprint(i) && !isspace(i) && (!g->width || !g->height))
+      {
+         /* increase atlas by 20% in all directions */
+         self->atlas.width  *= 1.2;
+         self->atlas.height *= 1.2;
+
+         free(self->atlas.buffer);
+         goto alloc_atlas;
+         break;
+      }
    }
 
    return true;
