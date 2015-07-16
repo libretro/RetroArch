@@ -355,7 +355,7 @@ void set_paths_redirect(const char *path)
       }
 
       /* per-core states: append the library_name to the save location */
-      if (settings->sort_savestates_enable)
+      if (settings->sort_savestates_enable && global->savefile_dir[0] != '\0')
       {
          strlcpy(orig_savestate_dir,
                global->savestate_dir,
