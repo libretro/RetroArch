@@ -120,7 +120,7 @@ static void input_autoconfigure_joypad_add(
    /* This will be the case if input driver is reinitialized.
     * No reason to spam autoconfigure messages every time. */
    bool block_osd_spam = settings &&
-      settings->input.autoconfigured[params->idx] && *params->name;
+     settings->input.autoconfigured[params->idx] && *params->name;
 
    if (!settings)
       return;
@@ -136,8 +136,9 @@ static void input_autoconfigure_joypad_add(
       snprintf(msg, sizeof(msg), "%s configured in port #%u.",
             params->name, params->idx);
 
-   if (!block_osd_spam)
-      rarch_main_msg_queue_push(msg, 0, 60, false);
+      if (!block_osd_spam)
+         rarch_main_msg_queue_push(msg, 0, 60, false);
+
    RARCH_LOG("%s\n", msg);
 }
 
