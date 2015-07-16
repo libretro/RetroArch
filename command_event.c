@@ -548,8 +548,8 @@ static void event_deinit_core(bool reinit)
       strlcpy(global->savestate_dir,orig_savestate_dir,sizeof(global->savestate_dir));
 
   /* restore system directory if it was set to <content dir> */
-  if(orig_system_dir_empty)
-      strlcpy(settings->system_directory,"",sizeof(settings->system_directory));
+  if(settings->system_in_content_dir)
+      settings->system_directory[0] = '\0';
   
   /* auto overrides: reload the original config */
    if(global->overrides_active)
