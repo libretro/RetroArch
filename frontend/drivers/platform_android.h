@@ -71,7 +71,7 @@ enum
    LOOPER_ID_MAIN = 1,
    LOOPER_ID_INPUT,
    LOOPER_ID_USER,
-   LOOPER_ID_INPUT_MSG,
+   LOOPER_ID_INPUT_MSG
 };
 
 enum
@@ -168,7 +168,7 @@ enum
    APP_CMD_DESTROY,
 
    // Set by thread when it will no longer reply to commands.
-   APP_CMD_DEAD,
+   APP_CMD_DEAD
 };
 
 #define JNI_EXCEPTION(env) \
