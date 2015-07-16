@@ -42,7 +42,7 @@ typedef struct glui_handle
 {
    unsigned line_height;
    unsigned margin;
-   unsigned ticker_limit;
+   unsigned glyph_width;
    char box_message[PATH_MAX_LENGTH];
 
    struct
@@ -313,18 +313,22 @@ static void glui_render_label_value(glui_handle_t *glui, int y, unsigned width,
 {
    char label_str[PATH_MAX_LENGTH];
    char value_str[PATH_MAX_LENGTH];
-   int label_limit = glui->ticker_limit;
    int value_len   = strlen(value);
+   int ticker_limit = 0;
+   int usable_width = 0;
 
    label_str[0] = '\0';
    value_str[0] = '\0';
 
-   /* resize label boundary to fit more on the screen */
-   if (value_len + 2 < glui->ticker_limit)
-      label_limit += (int)glui->ticker_limit - (value_len + 2);
+   usable_width = width - (glui->margin * 2);
 
-   menu_animation_ticker_str(label_str, label_limit,        index, label, selected);
-   menu_animation_ticker_str(value_str, glui->ticker_limit, index, value, selected);
+   if (value_len * glui->glyph_width > usable_width / 2)
+      value_len = (usable_width/2) / glui->glyph_width;
+
+   ticker_limit = (usable_width / glui->glyph_width) - (value_len + 2);
+
+   menu_animation_ticker_str(label_str, ticker_limit, index, label, selected);
+   menu_animation_ticker_str(value_str, value_len,    index, value, selected);
 
    glui_blit_line(glui->margin, y, label_str, color, TEXT_ALIGN_LEFT);
    glui_blit_line(width - glui->margin, y, value_str, color, TEXT_ALIGN_RIGHT);
@@ -371,7 +375,7 @@ static void glui_render_menu_list(glui_handle_t *glui,
 
 static void glui_frame(void)
 {
-   unsigned width, height;
+   unsigned width, height, ticker_limit;
    char title[PATH_MAX_LENGTH];
    char title_buf[PATH_MAX_LENGTH];
    char title_msg[PATH_MAX_LENGTH];
@@ -436,7 +440,9 @@ static void glui_frame(void)
    glui_render_quad(gl, 0, 0, width,
          disp->header_height, 0.2, 0.2, 0.2, 1);
 
-   menu_animation_ticker_str(title_buf, glui->ticker_limit,
+   ticker_limit = (width - glui->margin*2) / glui->glyph_width -
+         strlen(menu_hash_to_str(MENU_VALUE_BACK)) * 2;
+   menu_animation_ticker_str(title_buf, ticker_limit,
          frame_count / 100, title, true);
    glui_blit_line(width / 2, 0, title_buf,
          title_color, TEXT_ALIGN_CENTER);
@@ -541,8 +547,7 @@ static void glui_layout(menu_handle_t *menu, glui_handle_t *glui)
    menu->display.header_height  = scale_factor / 3;
    menu->display.font.size      = scale_factor / 8;
    /* we assume the average glyph aspect ratio is close to 3:4 */
-   glyph_width                  = menu->display.font.size * 3/4;
-   glui->ticker_limit           = (width/2) / glyph_width;
+   glui->glyph_width            = menu->display.font.size * 3/4;
 
    glui_font(menu);
 
@@ -552,7 +557,7 @@ static void glui_layout(menu_handle_t *menu, glui_handle_t *glui)
       int m_width = driver->font_osd_driver->get_message_width(disp->font.buf, "M", 1, 1);
 
       if (m_width)
-         glui->ticker_limit = (width / 2) / m_width - 2;
+         glui->glyph_width = m_width;
    }
 }
 
