@@ -246,8 +246,11 @@ rarch_dsp_filter_t *rarch_dsp_filter_new(
    if (!plugs)
       goto error;
 #endif
+
+#if defined(HAVE_DYLIB)
    if (!append_plugs(dsp, plugs))
       goto error;
+#endif
 
    if (plugs)
       string_list_free(plugs);

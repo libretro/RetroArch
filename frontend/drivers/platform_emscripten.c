@@ -20,6 +20,8 @@
 #include <file/config_file.h>
 #include "../../content.h"
 #include "../frontend.h"
+//#include "../../retroarch.h"
+//#include "../../runloop.h"
 #include "../frontend_driver.h"
 #include "../runloop_data.h"
 
@@ -33,6 +35,27 @@ static void emscripten_mainloop(void)
    main_exit(NULL);
    exit(0);
 }
+
+void cmd_savefiles()
+{
+   rarch_main_command(RARCH_CMD_SAVEFILES);
+}
+
+void cmd_save_state()
+{
+   rarch_main_command(RARCH_CMD_SAVE_STATE);
+}
+
+void cmd_load_state()
+{
+   rarch_main_command(RARCH_CMD_LOAD_STATE);
+}
+
+void cmd_take_screenshot()
+{
+   rarch_main_command(RARCH_CMD_TAKE_SCREENSHOT);
+}
+
 
 int main(int argc, char *argv[])
 {

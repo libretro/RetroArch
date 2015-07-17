@@ -20,6 +20,7 @@
 #include "../input_autodetect.h"
 #include "../input_common.h"
 #include "../input_keymaps.h"
+//#include "../input_joypad.h"
 
 #include "../../driver.h"
 
