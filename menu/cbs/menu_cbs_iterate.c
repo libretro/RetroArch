@@ -28,6 +28,7 @@
 #include "../menu_navigation.h"
 
 #include "../../general.h"
+#include "../../performance.h"
 #include "../../retroarch.h"
 #include "../../input/input_common.h"
 #include "../../input/input_autodetect.h"
@@ -35,27 +36,65 @@
 static int action_iterate_help(char *s, size_t len, const char *label)
 {
    unsigned i;
-   const unsigned binds[] = {
-      RETRO_DEVICE_ID_JOYPAD_UP,
-      RETRO_DEVICE_ID_JOYPAD_DOWN,
-      RETRO_DEVICE_ID_JOYPAD_A,
-      RETRO_DEVICE_ID_JOYPAD_B,
-      RETRO_DEVICE_ID_JOYPAD_SELECT,
-      RARCH_MENU_TOGGLE,
-      RARCH_QUIT_KEY,
-      RETRO_DEVICE_ID_JOYPAD_X,
-      RETRO_DEVICE_ID_JOYPAD_Y,
-   };
    menu_handle_t *menu       = menu_driver_get_ptr();
+   settings_t *settings      = config_get_ptr();
 
    menu_driver_render();
 
    switch (menu->help_screen_type)
    {
-      case MENU_HELP_DEFAULT:
+      case MENU_HELP_WELCOME:
          {
+            static int64_t timeout_end;
+            int64_t timeout;
+            static bool timer_begin = false;
+            static bool timer_end   = false;
+            int64_t current         = rarch_get_time_usec();
+
+            if (!timer_begin)
+            {
+               timeout_end = rarch_get_time_usec() +
+                  3 /* seconds */ * 1000000;
+               timer_begin = true;
+               timer_end   = false;
+            }
+
+            timeout = (timeout_end - current) / 1000000;
+
+            snprintf(s, len,
+                  "Welcome to RetroArch\n"
+                  "\n"
+                  "For further information, go to Help.\n"
+                  " \n" /* strtok_r doesn't split empty strings. */
+
+               );
+
+            if (!timer_end && timeout <= 0)
+            {
+               menu_input_t *menu_input = menu_input_get_ptr();
+
+               timer_end   = true;
+               timer_begin = false;
+               timeout_end = 0;
+               menu->help_screen_type = MENU_HELP_NONE;
+               return 1;
+            }
+         }
+         break;
+      case MENU_HELP_CONTROLS:
+         {
+            const unsigned binds[] = {
+               RETRO_DEVICE_ID_JOYPAD_UP,
+               RETRO_DEVICE_ID_JOYPAD_DOWN,
+               RETRO_DEVICE_ID_JOYPAD_A,
+               RETRO_DEVICE_ID_JOYPAD_B,
+               RETRO_DEVICE_ID_JOYPAD_SELECT,
+               RARCH_MENU_TOGGLE,
+               RARCH_QUIT_KEY,
+               RETRO_DEVICE_ID_JOYPAD_X,
+               RETRO_DEVICE_ID_JOYPAD_Y,
+            };
             char desc[ARRAY_SIZE(binds)][64] = {{0}};
-            settings_t *settings             = config_get_ptr();
 
             for (i = 0; i < ARRAY_SIZE(binds); i++)
             {
@@ -68,9 +107,6 @@ static int action_iterate_help(char *s, size_t len, const char *label)
             }
 
             snprintf(s, len,
-                  "Welcome to RetroArch\n"
-                  " \n" /* strtok_r doesn't split empty strings. */
-
                   "Basic Menu controls:\n"
                   "    Scroll (Up): %-20s\n"
                   "  Scroll (Down): %-20s\n"
@@ -88,15 +124,15 @@ static int action_iterate_help(char *s, size_t len, const char *label)
                   " \n"
                   "See Path Settings to set directories \n"
                   "for faster access to files.\n"
-                  " \n"
-
-                  "Press Accept/OK to continue.",
-               desc[0], desc[1], desc[2], desc[3], desc[4], desc[5], desc[6], desc[7]);
+                  " \n",
+                  desc[0], desc[1], desc[2], desc[3], desc[4], desc[5], desc[6], desc[7]
+                  );
          }
          break;
       case MENU_HELP_EXTRACT:
          strlcpy(s, "Extracting, please wait...\n", len);
          break;
+      case MENU_HELP_NONE:
       default:
          break;
    }
@@ -394,6 +430,8 @@ static int action_iterate_main(const char *label, unsigned action)
          do_messagebox   = true;
          do_pop_stack    = true;
          do_post_iterate = true;
+         if (ret == 1)
+            action = MENU_ACTION_OK;
          break;
       case ITERATE_TYPE_BIND:
          if (menu_input_bind_iterate())

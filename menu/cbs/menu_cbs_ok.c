@@ -1833,6 +1833,7 @@ static int action_ok_help(const char *path,
 {
    menu_displaylist_info_t info = {0};
    menu_list_t *menu_list    = menu_list_get_ptr();
+   menu_handle_t *menu       = menu_driver_get_ptr();
    if (!menu_list)
       return -1;
 
@@ -1840,6 +1841,8 @@ static int action_ok_help(const char *path,
    strlcpy(info.label,
          menu_hash_to_str(MENU_LABEL_HELP),
          sizeof(info.label));
+   menu->push_help_screen = true;
+   menu->help_screen_type = MENU_HELP_CONTROLS;
 
    return menu_displaylist_push_list(&info, DISPLAYLIST_HELP);
 }

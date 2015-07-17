@@ -229,7 +229,7 @@ void *menu_init(const void *data)
 #endif
 
    menu->push_help_screen           = settings->menu_show_start_screen;
-   menu->help_screen_type           = MENU_HELP_DEFAULT;
+   menu->help_screen_type           = MENU_HELP_WELCOME;
    settings->menu_show_start_screen = false;
 
 #if 0

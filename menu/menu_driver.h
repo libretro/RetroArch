@@ -52,8 +52,10 @@ typedef enum
 
 typedef enum
 {
-   MENU_HELP_DEFAULT    = 0,
+   MENU_HELP_NONE       = 0,
+   MENU_HELP_WELCOME,
    MENU_HELP_EXTRACT,
+   MENU_HELP_CONTROLS,
    MENU_HELP_LAST
 } menu_help_type_t;
 
