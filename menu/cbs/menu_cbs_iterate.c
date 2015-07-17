@@ -142,7 +142,8 @@ static int action_iterate_help(char *s, size_t len, const char *label)
          }
          break;
       case MENU_HELP_EXTRACT:
-         strlcpy(s, "Extracting, please wait...\n", len);
+         menu_hash_get_help(MENU_LABEL_VALUE_EXTRACTING_PLEASE_WAIT,
+               s, len);
          break;
       case MENU_HELP_NONE:
       default:

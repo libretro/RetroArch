@@ -32,6 +32,8 @@ extern "C" {
 #define MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_QUIT                              0xd83d6830U
 #define MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_KEYBOARD                   0xe408c2ffU
 
+#define MENU_LABEL_VALUE_EXTRACTING_PLEASE_WAIT                                0xec5a348bU
+
 #define MENU_LABEL_WELCOME_TO_RETROARCH                                        0xbcff0b3cU
 
 #define MENU_LABEL_DEFERRED_ARCHIVE_ACTION_DETECT_CORE                         0xdc9c0064U

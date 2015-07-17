@@ -1510,6 +1510,9 @@ int menu_hash_get_help_us(uint32_t hash, char *s, size_t len)
 
    switch (hash)
    {
+      case MENU_LABEL_VALUE_EXTRACTING_PLEASE_WAIT:
+         strlcpy(s, "Extracting, please wait...\n", len);
+         break;
       case MENU_LABEL_WELCOME_TO_RETROARCH:
          snprintf(s, len,
                "Welcome to RetroArch\n"
