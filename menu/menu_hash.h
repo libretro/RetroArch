@@ -22,6 +22,8 @@
 extern "C" {
 #endif
 
+#define MENU_LABEL_WELCOME_TO_RETROARCH                                        0xbcff0b3cU
+
 #define MENU_LABEL_DEFERRED_ARCHIVE_ACTION_DETECT_CORE                         0xdc9c0064U
 #define MENU_LABEL_DEFERRED_ARCHIVE_ACTION                                     0x7faf0284U
 #define MENU_LABEL_DEFERRED_ARCHIVE_OPEN_DETECT_CORE                           0xd9452498U

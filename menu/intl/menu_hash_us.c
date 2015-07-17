@@ -1492,6 +1492,14 @@ int menu_hash_get_help_us(uint32_t hash, char *s, size_t len)
 
    switch (hash)
    {
+      case MENU_LABEL_WELCOME_TO_RETROARCH:
+         snprintf(s, len,
+               "Welcome to RetroArch\n"
+               "\n"
+               "For further information, go to Help.\n"
+               " \n"
+               );
+         break;
       case MENU_LABEL_INPUT_DRIVER:
          driver_hash = menu_hash_calculate(settings->input.driver);
 

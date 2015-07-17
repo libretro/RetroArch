@@ -61,13 +61,8 @@ static int action_iterate_help(char *s, size_t len, const char *label)
 
             timeout = (timeout_end - current) / 1000000;
 
-            snprintf(s, len,
-                  "Welcome to RetroArch\n"
-                  "\n"
-                  "For further information, go to Help.\n"
-                  " \n" /* strtok_r doesn't split empty strings. */
-
-               );
+            menu_hash_get_help(MENU_LABEL_WELCOME_TO_RETROARCH,
+                  s, len);
 
             if (!timer_end && timeout <= 0)
             {
