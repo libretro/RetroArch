@@ -26,6 +26,8 @@ static const char *menu_hash_to_str_us_label(uint32_t hash)
 {
    switch (hash)
    {
+      case MENU_LABEL_HELP_LOADING_CONTENT:
+         return "help_loading_content";
       case MENU_LABEL_HELP_LIST:
          return "help_list";
       case MENU_LABEL_HELP_CONTROLS:
@@ -640,6 +642,8 @@ const char *menu_hash_to_str_us(uint32_t hash)
 
    switch (hash)
    {
+      case MENU_LABEL_VALUE_HELP_LOADING_CONTENT:
+         return "Loading Content";
       case MENU_LABEL_VALUE_HELP_LIST:
          return "Help";
       case MENU_LABEL_VALUE_HELP_CONTROLS:

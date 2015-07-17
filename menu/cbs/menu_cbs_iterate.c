@@ -133,6 +133,10 @@ static int action_iterate_help(char *s, size_t len, const char *label)
                   );
          }
          break;
+      case MENU_HELP_LOADING_CONTENT:
+         menu_hash_get_help(MENU_LABEL_LOAD_CONTENT,
+               s, len);
+         break;
       case MENU_HELP_EXTRACT:
          menu_hash_get_help(MENU_LABEL_VALUE_EXTRACTING_PLEASE_WAIT,
                s, len);
@@ -388,6 +392,7 @@ static enum action_iterate_type action_iterate_type(uint32_t hash)
    {
       case MENU_LABEL_HELP:
       case MENU_LABEL_HELP_CONTROLS:
+      case MENU_LABEL_HELP_LOADING_CONTENT:
          return ITERATE_TYPE_HELP;
       case MENU_LABEL_INFO_SCREEN:
          return ITERATE_TYPE_INFO;
