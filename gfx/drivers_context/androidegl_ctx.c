@@ -451,18 +451,6 @@ static bool android_gfx_ctx_get_metrics(void *data,
          if (density[0] == '\0')
             return false;
          dpi    = atoi(density);
-
-#ifdef HAVE_STB_FONT
-#ifdef ANDROID
-         /* stb_truetype.h has a bug on Android
-          * where it screws up all font glyphs
-          * if DPI is over 500. So clamp against
-          * 500 for now until we have properly
-          * fixed the bug in stb_truetype.h */
-         if (dpi > 500)
-            dpi = 500;
-#endif
-#endif
          *value = (float)dpi;
          break;
       case DISPLAY_METRIC_NONE:
