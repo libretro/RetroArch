@@ -1842,9 +1842,30 @@ static int action_ok_help(const char *path,
          menu_hash_to_str(MENU_LABEL_HELP),
          sizeof(info.label));
    menu->push_help_screen = true;
+   menu->help_screen_type = MENU_HELP_WELCOME;
+
+   return menu_displaylist_push_list(&info, DISPLAYLIST_HELP);
+
+}
+
+static int action_ok_help_controls(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   menu_displaylist_info_t info = {0};
+   menu_list_t *menu_list    = menu_list_get_ptr();
+   menu_handle_t *menu       = menu_driver_get_ptr();
+   if (!menu_list)
+      return -1;
+
+   info.list = menu_list->menu_stack;
+   strlcpy(info.label,
+         menu_hash_to_str(MENU_LABEL_HELP_CONTROLS),
+         sizeof(info.label));
+   menu->push_help_screen = true;
    menu->help_screen_type = MENU_HELP_CONTROLS;
 
    return menu_displaylist_push_list(&info, DISPLAYLIST_HELP);
+
 }
 
 static int action_ok_video_resolution(const char *path,
@@ -1982,6 +2003,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
       case MENU_LABEL_HELP:
          cbs->action_ok = action_ok_help;
          break;
+      case MENU_LABEL_HELP_CONTROLS:
+         cbs->action_ok = action_ok_help_controls;
+         break;
       case MENU_LABEL_VIDEO_SHADER_PASS:
          cbs->action_ok = action_ok_shader_pass;
          break;
@@ -2025,6 +2049,7 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
       case MENU_LABEL_ONLINE_UPDATER:
       case MENU_LABEL_LOAD_CONTENT_LIST:
       case MENU_LABEL_ADD_CONTENT_LIST:
+      case MENU_LABEL_HELP_LIST:
       case MENU_LABEL_INFORMATION_LIST:
       case MENU_LABEL_CONTENT_SETTINGS:
          cbs->action_ok = action_ok_push_default;

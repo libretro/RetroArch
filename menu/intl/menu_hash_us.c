@@ -26,6 +26,10 @@ static const char *menu_hash_to_str_us_label(uint32_t hash)
 {
    switch (hash)
    {
+      case MENU_LABEL_HELP_LIST:
+         return "help_list";
+      case MENU_LABEL_HELP_CONTROLS:
+         return "help_controls";
       case MENU_LABEL_DEFERRED_ARCHIVE_OPEN_DETECT_CORE:
          return "deferred_archive_open_detect_core";
       case MENU_LABEL_DEFERRED_ARCHIVE_OPEN:
@@ -636,6 +640,10 @@ const char *menu_hash_to_str_us(uint32_t hash)
 
    switch (hash)
    {
+      case MENU_LABEL_VALUE_HELP_LIST:
+         return "Help";
+      case MENU_LABEL_VALUE_HELP_CONTROLS:
+         return "Basic Menu Controls";
       case MENU_LABEL_VALUE_BASIC_MENU_CONTROLS:
          return "Basic menu controls";
       case MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_UP:
@@ -1119,7 +1127,7 @@ const char *menu_hash_to_str_us(uint32_t hash)
       case MENU_LABEL_VALUE_QUIT_RETROARCH:
          return "Quit RetroArch";
       case MENU_LABEL_VALUE_HELP:
-         return "Help";
+         return "help";
       case MENU_LABEL_VALUE_SAVE_NEW_CONFIG:
          return "Save New Config";
       case MENU_LABEL_VALUE_RESTART_CONTENT:

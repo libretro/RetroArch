@@ -2610,8 +2610,8 @@ static bool setting_append_list_main_menu_options(
    menu_settings_list_current_add_cmd(list, list_info, EVENT_CMD_MENU_SAVE_CONFIG);
 
    CONFIG_ACTION(
-         menu_hash_to_str(MENU_LABEL_HELP),
-         menu_hash_to_str(MENU_LABEL_VALUE_HELP),
+         menu_hash_to_str(MENU_LABEL_HELP_LIST),
+         menu_hash_to_str(MENU_LABEL_VALUE_HELP_LIST),
          group_info.name,
          subgroup_info.name,
          parent_group);

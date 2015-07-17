@@ -2176,6 +2176,15 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          menu_navigation_clear(nav, true);
          menu_entries_set_refresh();
          break;
+      case DISPLAYLIST_HELP_SCREEN_LIST:
+         menu_list_clear(info->list);
+         menu_list_push(info->list,
+               menu_hash_to_str(MENU_LABEL_VALUE_HELP_CONTROLS),
+               menu_hash_to_str(MENU_LABEL_HELP_CONTROLS),
+               0, 0, 0);
+         need_refresh = true;
+         need_push    = true;
+         break;
       case DISPLAYLIST_HELP:
          menu_list_push(info->list, info->path, info->label, info->type, info->directory_ptr, 0);
          menu->push_help_screen = false;

@@ -102,8 +102,6 @@ static int action_iterate_help(char *s, size_t len, const char *label)
             }
 
             snprintf(s, len,
-                  "%s:\n"
-                  " \n"
                   "[%s]: "
                   "%-20s\n"
                   "[%s]: "
@@ -129,7 +127,6 @@ static int action_iterate_help(char *s, size_t len, const char *label)
                   "See Path Settings to set directories \n"
                   "for faster access to files.\n"
                   " \n",
-                  menu_hash_to_str(MENU_LABEL_VALUE_BASIC_MENU_CONTROLS),              
                   menu_hash_to_str(MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_UP),    desc[0],
                   menu_hash_to_str(MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_DOWN),  desc[1],
                   menu_hash_to_str(MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_CONFIRM),      desc[2],
@@ -395,6 +392,7 @@ static enum action_iterate_type action_iterate_type(uint32_t hash)
    switch (hash)
    {
       case MENU_LABEL_HELP:
+      case MENU_LABEL_HELP_CONTROLS:
          return ITERATE_TYPE_HELP;
       case MENU_LABEL_INFO_SCREEN:
          return ITERATE_TYPE_INFO;

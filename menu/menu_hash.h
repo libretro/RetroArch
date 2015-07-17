@@ -22,6 +22,12 @@
 extern "C" {
 #endif
 
+#define MENU_LABEL_HELP_LIST                                                   0x006af669U
+#define MENU_LABEL_VALUE_HELP_LIST                                             0x6c57426aU
+
+#define MENU_LABEL_VALUE_HELP_CONTROLS                                         0xe5c9f6a2U
+#define MENU_LABEL_HELP_CONTROLS                                               0x04859221U
+
 #define MENU_LABEL_VALUE_BASIC_MENU_CONTROLS                                   0x7c05810eU
 #define MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_UP                         0x8c2f7b00U
 #define MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_DOWN                       0x55f0f413U
