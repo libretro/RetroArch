@@ -216,12 +216,12 @@ retro_input_t input_driver_keys_pressed(void)
    retro_input_t                ret = 0;
    driver_t                 *driver = driver_get_ptr();
    const input_driver_t      *input = input_get_ptr(driver);
-   bool handle_key_pressed          = !driver->block_libretro_input || !driver->block_hotkey;
 
    for (key = 0; key < RARCH_BIND_LIST_END; key++)
    {
       bool state = false;
-      if (handle_key_pressed)
+      if ((!driver->block_libretro_input && (key < RARCH_FIRST_META_KEY)) ||
+            !driver->block_hotkey)
          state = input->key_pressed(driver->input_data, key);
 
 #ifdef HAVE_OVERLAY
