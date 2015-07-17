@@ -94,13 +94,16 @@ alloc_atlas:
       /* make sure important characters fit */
       if (isprint(i) && !isspace(i) && (!g->width || !g->height))
       {
-         /* increase atlas by 20% in all directions */
-         self->atlas.width  *= 1.2;
-         self->atlas.height *= 1.2;
+         if (i != 160)
+         {
+            /* increase atlas by 20% in all directions */
+            self->atlas.width  *= 1.2;
+            self->atlas.height *= 1.2;
 
-         free(self->atlas.buffer);
-         goto alloc_atlas;
-         break;
+            free(self->atlas.buffer);
+            goto alloc_atlas;
+            break;
+         }
       }
    }
 
