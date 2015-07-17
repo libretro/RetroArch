@@ -22,6 +22,16 @@
 extern "C" {
 #endif
 
+#define MENU_LABEL_VALUE_BASIC_MENU_CONTROLS                                   0x7c05810eU
+#define MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_UP                         0x8c2f7b00U
+#define MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_DOWN                       0x55f0f413U
+#define MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_CONFIRM                           0x40e50edbU
+#define MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_BACK                              0xd834d89eU
+#define MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_INFO                              0xd838e6f9U
+#define MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_MENU                       0x98159c23U
+#define MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_QUIT                              0xd83d6830U
+#define MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_KEYBOARD                   0xe408c2ffU
+
 #define MENU_LABEL_WELCOME_TO_RETROARCH                                        0xbcff0b3cU
 
 #define MENU_LABEL_DEFERRED_ARCHIVE_ACTION_DETECT_CORE                         0xdc9c0064U

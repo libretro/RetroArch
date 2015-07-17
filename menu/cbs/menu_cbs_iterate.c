@@ -102,15 +102,24 @@ static int action_iterate_help(char *s, size_t len, const char *label)
             }
 
             snprintf(s, len,
-                  "Basic Menu controls:\n"
-                  "    Scroll (Up): %-20s\n"
-                  "  Scroll (Down): %-20s\n"
-                  "      Accept/OK: %-20s\n"
-                  "           Back: %-20s\n"
-                  "           Info: %-20s\n"
-                  "Enter/Exit Menu: %-20s\n"
-                  " Exit RetroArch: %-20s\n"
-                  "Toggle Keyboard: %-20s\n"
+                  "%s:\n"
+                  " \n"
+                  "[%s]: "
+                  "%-20s\n"
+                  "[%s]: "
+                  "%-20s\n"
+                  "[%s]: "
+                  "%-20s\n"
+                  "[%s]: "
+                  "%-20s\n"
+                  "[%s]: "
+                  "%-20s\n"
+                  "[%s]: "
+                  "%-20s\n"
+                  "[%s]: "
+                  "%-20s\n"
+                  "[%s]: "
+                  "%-20s\n"
                   " \n"
 
                   "To run content:\n"
@@ -120,7 +129,15 @@ static int action_iterate_help(char *s, size_t len, const char *label)
                   "See Path Settings to set directories \n"
                   "for faster access to files.\n"
                   " \n",
-                  desc[0], desc[1], desc[2], desc[3], desc[4], desc[5], desc[6], desc[7]
+                  menu_hash_to_str(MENU_LABEL_VALUE_BASIC_MENU_CONTROLS),              
+                  menu_hash_to_str(MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_UP),    desc[0],
+                  menu_hash_to_str(MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_DOWN),  desc[1],
+                  menu_hash_to_str(MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_CONFIRM),      desc[2],
+                  menu_hash_to_str(MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_BACK),         desc[3],
+                  menu_hash_to_str(MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_INFO),         desc[4],
+                  menu_hash_to_str(MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_MENU),  desc[5],
+                  menu_hash_to_str(MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_QUIT),         desc[6],
+                  menu_hash_to_str(MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_KEYBOARD), desc[7]
                   );
          }
          break;

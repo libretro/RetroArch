@@ -636,6 +636,24 @@ const char *menu_hash_to_str_us(uint32_t hash)
 
    switch (hash)
    {
+      case MENU_LABEL_VALUE_BASIC_MENU_CONTROLS:
+         return "Basic menu controls";
+      case MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_UP:
+         return "Scroll Up";
+      case MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_DOWN:
+         return "Scroll Down";
+      case MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_CONFIRM:
+         return "Confirm/OK";
+      case MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_BACK:
+         return "Back";
+      case MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_INFO:
+         return "Info";
+      case MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_MENU:
+         return "Toggle Menu";
+      case MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_QUIT:
+         return "Quit";
+      case MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_KEYBOARD:
+         return "Toggle Keyboard";
       case MENU_LABEL_VALUE_OPEN_ARCHIVE:
          return "Open Archive As Folder";
       case MENU_LABEL_VALUE_LOAD_ARCHIVE:
@@ -1497,7 +1515,6 @@ int menu_hash_get_help_us(uint32_t hash, char *s, size_t len)
                "Welcome to RetroArch\n"
                "\n"
                "For further information, go to Help.\n"
-               " \n"
                );
          break;
       case MENU_LABEL_INPUT_DRIVER:
