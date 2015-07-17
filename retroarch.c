@@ -319,6 +319,8 @@ static void set_special_paths(char **argv, unsigned num_content)
       fill_pathname_basedir(settings->system_directory, argv[0],
             sizeof(settings->system_directory));
    }
+   else
+      settings->system_in_content_dir = false;
 }
 
 void set_paths_redirect(const char *path)
@@ -431,11 +433,12 @@ void rarch_set_paths(const char *path)
     * as this was initialized before in a menu or otherwise. */
    if (!settings->system_directory || settings->system_directory[0] == '\0')
    {
-      RARCH_WARN("SYSTEM DIR is empty, fill assume CONTENT DIR %s\n",path);
+      RARCH_WARN("SYSTEM DIR is empty, assume CONTENT DIR %s\n",path);
       fill_pathname_basedir(settings->system_directory, path,
             sizeof(settings->system_directory));
    }
-
+   else
+      settings->system_in_content_dir = false;
 }
 
 

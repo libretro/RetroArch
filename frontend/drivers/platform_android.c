@@ -812,11 +812,11 @@ static void frontend_android_get_environment_settings(int *argc,
                    path_mkdir(g_defaults.sram_dir);
 
                    fill_pathname_join(g_defaults.savestate_dir,
-                        ext_dir, "saves", sizeof(g_defaults.savestate_dir));
+                        ext_dir, "states", sizeof(g_defaults.savestate_dir));
                    path_mkdir(g_defaults.savestate_dir);
 
                    fill_pathname_join(g_defaults.system_dir,
-                        ext_dir, "saves", sizeof(g_defaults.system_dir));
+                        ext_dir, "system", sizeof(g_defaults.system_dir));
                    path_mkdir(g_defaults.system_dir);
                    break;
                 case SDCARD_NOT_WRITABLE:
