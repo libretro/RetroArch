@@ -57,19 +57,27 @@ static void font_renderer_stb_free(void *data)
 }
 
 static bool font_renderer_stb_create_atlas(stb_font_renderer_t *self,
-      uint8_t *font_data, float font_size)
+      uint8_t *font_data, float font_size, unsigned width, unsigned height)
 {
    int i;
    stbtt_pack_context pc = {NULL};
    stbtt_packedchar   chardata[256];
 
-   self->atlas.width  = self->atlas.height = 512;
+   if (width > 2048 || height > 2048)
+   {
+      RARCH_WARN("[stb] Font atlas too big: %ux%u\n", width, height);
+      goto error;
+   }
 
-alloc_atlas:
-   self->atlas.buffer = (uint8_t*)calloc(self->atlas.height, self->atlas.width);
+   if (self->atlas.buffer)
+      free(self->atlas.buffer);
+
+   self->atlas.buffer = (uint8_t*)calloc(height, width);
+   self->atlas.width  = width;
+   self->atlas.height = height;
 
    if (!self->atlas.buffer)
-      return false;
+      goto error;
 
    stbtt_PackBegin(&pc, self->atlas.buffer,
          self->atlas.width, self->atlas.height,
@@ -92,22 +100,34 @@ alloc_atlas:
       g->height         = c->y1 - c->y0;
 
       /* make sure important characters fit */
-      if (isprint(i) && !isspace(i) && (!g->width || !g->height))
+      if (isalnum(i) && (!g->width || !g->height))
       {
-         if (i != 160)
-         {
-            /* increase atlas by 20% in all directions */
-            self->atlas.width  *= 1.2;
-            self->atlas.height *= 1.2;
+         int new_width  = width  * 1.2;
+         int new_height = height * 1.2;
 
-            free(self->atlas.buffer);
-            goto alloc_atlas;
-            break;
+         /* limit growth to 2048x2048 unless we already reached that */
+         if (width < 2048 || height < 2048)
+         {
+            new_width  = min(new_width,  2048);
+            new_height = min(new_height, 2048);
          }
+
+         return font_renderer_stb_create_atlas(self, font_data, font_size,
+               new_width, new_height);
       }
    }
 
    return true;
+
+error:
+   self->atlas.width = self->atlas.height = 0;
+
+   if (self->atlas.buffer)
+      free(self->atlas.buffer);
+
+   self->atlas.buffer = NULL;
+
+   return false;
 }
 
 static void *font_renderer_stb_init(const char *font_path, float font_size)
@@ -126,7 +146,7 @@ static void *font_renderer_stb_init(const char *font_path, float font_size)
    if (!read_file(font_path, (void**)&font_data, NULL))
       goto error;
 
-   if (!font_renderer_stb_create_atlas(self, font_data, font_size))
+   if (!font_renderer_stb_create_atlas(self, font_data, font_size, 512, 512))
       goto error;
 
    if (!stbtt_InitFont(&info, font_data, stbtt_GetFontOffsetForIndex(font_data, 0)))
