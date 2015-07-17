@@ -265,6 +265,11 @@ static bool x_input_key_pressed(void *data, int key)
       input_joypad_pressed(x11->joypad, 0, settings->input.binds[0], key);
 }
 
+static bool x_input_meta_key_pressed(void *data, int key)
+{
+   return false;
+}
+
 static int16_t x_mouse_state(x11_input_t *x11, unsigned id)
 {
    switch (id)
@@ -546,6 +551,7 @@ input_driver_t input_x = {
    x_input_poll,
    x_input_state,
    x_input_key_pressed,
+   x_input_meta_key_pressed,
    x_input_free,
    NULL,
    NULL,

@@ -383,6 +383,11 @@ static bool dinput_key_pressed(void *data, int key)
          settings->input.binds[0], 0, key);
 }
 
+static bool dinput_meta_key_pressed(void *data, int key)
+{
+   return false;
+}
+
 static int16_t dinput_lightgun_state(struct dinput_input *di, unsigned id)
 {
    switch (id)
@@ -802,6 +807,7 @@ input_driver_t input_dinput = {
    dinput_poll,
    dinput_input_state,
    dinput_key_pressed,
+   dinput_meta_key_pressed,
    dinput_free,
    NULL,
    NULL,

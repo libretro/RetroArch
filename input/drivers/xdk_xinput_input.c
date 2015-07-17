@@ -96,6 +96,11 @@ static bool xdk_input_key_pressed(void *data, int key)
    return input_joypad_pressed(xdk->joypad, 0, settings->input.binds[0], key);
 }
 
+static bool xdk_input_meta_key_pressed(void *data, int key)
+{
+   return false;
+}
+
 static uint64_t xdk_input_get_capabilities(void *data)
 {
    (void)data;
@@ -173,6 +178,7 @@ input_driver_t input_xinput = {
    xdk_input_poll,
    xdk_input_state,
    xdk_input_key_pressed,
+   xdk_input_meta_key_pressed,
    xdk_input_free_input,
    NULL,
    NULL,

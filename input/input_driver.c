@@ -209,10 +209,12 @@ retro_input_t input_driver_keys_pressed(void)
    for (key = 0; key < RARCH_BIND_LIST_END; key++)
    {
       bool state = false;
-      if ((!driver->block_libretro_input && 
-               (((key < RARCH_FIRST_META_KEY) || key == RARCH_MENU_TOGGLE)))
+      if ((!driver->block_libretro_input && ((key < RARCH_FIRST_META_KEY)))
             || !driver->block_hotkey)
          state = input->key_pressed(driver->input_data, key);
+
+      if (key >= RARCH_FIRST_META_KEY)
+         state |= input->meta_key_pressed(driver->input_data, key);
 
 #ifdef HAVE_OVERLAY
       state |= input_overlay_key_pressed(key);

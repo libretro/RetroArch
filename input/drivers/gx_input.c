@@ -97,8 +97,12 @@ static bool gx_input_key_pressed(void *data, int key)
 {
    settings_t *settings = config_get_ptr();
    gx_input_t *gx       = (gx_input_t*)data;
-   return (BIT64_GET(lifecycle_state, key)) ||
-      input_joypad_pressed(gx->joypad, 0, settings->input.binds[0], key);
+   return input_joypad_pressed(gx->joypad, 0, settings->input.binds[0], key);
+}
+
+static bool gx_input_meta_key_pressed(void *data, int key)
+{
+   return (BIT64_GET(lifecycle_state, key));
 }
 
 static uint64_t gx_input_get_capabilities(void *data)
@@ -154,6 +158,7 @@ input_driver_t input_gx = {
    gx_input_poll,
    gx_input_state,
    gx_input_key_pressed,
+   gx_input_meta_key_pressed,
    gx_input_free_input,
    NULL,
    NULL,

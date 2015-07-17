@@ -561,6 +561,11 @@ static bool udev_input_key_pressed(void *data, int key)
       input_joypad_pressed(udev->joypad, 0, settings->input.binds[0], key);
 }
 
+static bool udev_input_meta_key_pressed(void *data, int key)
+{
+   return false;
+}
+
 static void udev_input_free(void *data)
 {
    unsigned i;
@@ -881,6 +886,7 @@ input_driver_t input_udev = {
    udev_input_poll,
    udev_input_state,
    udev_input_key_pressed,
+   udev_input_meta_key_pressed,
    udev_input_free,
    NULL,
    NULL,

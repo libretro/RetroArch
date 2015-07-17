@@ -291,6 +291,11 @@ static bool sdl_input_key_pressed(void *data, int key)
    return false;
 }
 
+static bool sdl_input_meta_key_pressed(void *data, int key)
+{
+   return false;
+}
+
 static int16_t sdl_joypad_device_state(sdl_input_t *sdl, const struct retro_keybind **binds_, 
       unsigned port_num, unsigned id)
 {
@@ -583,6 +588,7 @@ input_driver_t input_sdl = {
    sdl_input_poll,
    sdl_input_state,
    sdl_input_key_pressed,
+   sdl_input_meta_key_pressed,
    sdl_input_free,
    NULL,
    NULL,

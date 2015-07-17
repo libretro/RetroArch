@@ -64,6 +64,7 @@ typedef struct input_driver
          const struct retro_keybind **retro_keybinds,
          unsigned port, unsigned device, unsigned index, unsigned id);
    bool (*key_pressed)(void *data, int key);
+   bool (*meta_key_pressed)(void *data, int key);
    void (*free)(void *data);
    bool (*set_sensor_state)(void *data, unsigned port,
          enum retro_sensor_action action, unsigned rate);

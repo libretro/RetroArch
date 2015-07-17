@@ -182,6 +182,11 @@ static bool linuxraw_input_key_pressed(void *data, int key)
       input_joypad_pressed(linuxraw->joypad, 0, settings->input.binds[0], key);
 }
 
+static bool linuxraw_input_meta_key_pressed(void *data, int key)
+{
+   return false;
+}
+
 static int16_t linuxraw_input_state(void *data,
       const struct retro_keybind **binds, unsigned port,
       unsigned device, unsigned idx, unsigned id)
@@ -302,6 +307,7 @@ input_driver_t input_linuxraw = {
    linuxraw_input_poll,
    linuxraw_input_state,
    linuxraw_input_key_pressed,
+   linuxraw_input_meta_key_pressed,
    linuxraw_input_free,
    NULL,
    NULL,
