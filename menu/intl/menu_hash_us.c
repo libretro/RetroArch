@@ -654,6 +654,8 @@ const char *menu_hash_to_str_us(uint32_t hash)
          return "Confirm/OK";
       case MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_BACK:
          return "Back";
+      case MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_START:
+         return "Defaults";
       case MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_INFO:
          return "Info";
       case MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_MENU:

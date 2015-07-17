@@ -22,6 +22,7 @@
 extern "C" {
 #endif
 
+
 #define MENU_LABEL_HELP_LIST                                                   0x006af669U
 #define MENU_LABEL_VALUE_HELP_LIST                                             0x6c57426aU
 
@@ -33,6 +34,7 @@ extern "C" {
 #define MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_DOWN                       0x55f0f413U
 #define MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_CONFIRM                           0x40e50edbU
 #define MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_BACK                              0xd834d89eU
+#define MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_START                             0xe00df0fbU
 #define MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_INFO                              0xd838e6f9U
 #define MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_MENU                       0x98159c23U
 #define MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_QUIT                              0xd83d6830U

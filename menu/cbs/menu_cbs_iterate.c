@@ -84,6 +84,7 @@ static int action_iterate_help(char *s, size_t len, const char *label)
                RETRO_DEVICE_ID_JOYPAD_A,
                RETRO_DEVICE_ID_JOYPAD_B,
                RETRO_DEVICE_ID_JOYPAD_SELECT,
+               RETRO_DEVICE_ID_JOYPAD_START,
                RARCH_MENU_TOGGLE,
                RARCH_QUIT_KEY,
                RETRO_DEVICE_ID_JOYPAD_X,
@@ -118,23 +119,17 @@ static int action_iterate_help(char *s, size_t len, const char *label)
                   "%-20s\n"
                   "[%s]: "
                   "%-20s\n"
-                  " \n"
-
-                  "To run content:\n"
-                  "Load a libretro core (Core).\n"
-                  "Load a content file (Load Content).     \n"
-                  " \n"
-                  "See Path Settings to set directories \n"
-                  "for faster access to files.\n"
-                  " \n",
+                  "[%s]: "
+                  "%-20s\n",
                   menu_hash_to_str(MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_UP),    desc[0],
                   menu_hash_to_str(MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_DOWN),  desc[1],
                   menu_hash_to_str(MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_CONFIRM),      desc[2],
                   menu_hash_to_str(MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_BACK),         desc[3],
                   menu_hash_to_str(MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_INFO),         desc[4],
-                  menu_hash_to_str(MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_MENU),  desc[5],
-                  menu_hash_to_str(MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_QUIT),         desc[6],
-                  menu_hash_to_str(MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_KEYBOARD), desc[7]
+                  menu_hash_to_str(MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_START),        desc[5],
+                  menu_hash_to_str(MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_MENU),  desc[6],
+                  menu_hash_to_str(MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_QUIT),         desc[7],
+                  menu_hash_to_str(MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_KEYBOARD), desc[8]
                   );
          }
          break;
