@@ -754,7 +754,8 @@ static INLINE retro_input_t input_keys_pressed(driver_t *driver,
    global->turbo_count++;
 
    driver->block_libretro_input = check_block_hotkey(driver,
-         settings, input_driver_key_pressed(RARCH_ENABLE_HOTKEY));
+         settings, driver->input->key_pressed(
+            driver->input_data, RARCH_ENABLE_HOTKEY));
 
    for (i = 0; i < settings->input.max_users; i++)
    {

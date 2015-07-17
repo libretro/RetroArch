@@ -199,17 +199,6 @@ bool input_driver_set_rumble_state(unsigned port,
    return false;
 }
 
-
-bool input_driver_key_pressed(int key)
-{
-   driver_t            *driver = driver_get_ptr();
-   const input_driver_t *input = input_get_ptr(driver);
-
-   if (!driver || !input)
-      return false;
-   return input->key_pressed(driver->input_data, key);
-}
-
 retro_input_t input_driver_keys_pressed(void)
 {
    int key;
