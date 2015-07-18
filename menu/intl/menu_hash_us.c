@@ -1595,8 +1595,8 @@ int menu_hash_get_help_us(uint32_t hash, char *s, size_t len)
                " \n"
                "The browser will filter out \n"
                "extensions for the last core set \n"
-               "in 'Core', and use that core when \n"
-               "content is loaded."
+               "in 'Load Core', and use that core \n"
+               "when content is loaded."
                );
          break;
       case MENU_LABEL_CORE_LIST:
