@@ -100,8 +100,8 @@ const char *menu_hash_to_str_es(uint32_t hash)
          return "Preguntar";
       case MENU_LABEL_VALUE_PRIVACY_SETTINGS:
          return "Privacidad";
-      case MENU_VALUE_HORIZONTAL_MENU:
-         return "Menú horizontal";
+      case MENU_VALUE_HORIZONTAL_MENU: /* Don't change. Breaks everything. (Would be: "Menú horizontal") */
+         return "Horizontal Menu";
       case MENU_LABEL_VALUE_NO_SETTINGS_FOUND:
          return "No se ha encontrado una configuración.";
       case MENU_LABEL_VALUE_NO_PERFORMANCE_COUNTERS:
@@ -516,8 +516,8 @@ const char *menu_hash_to_str_es(uint32_t hash)
          return "Gestor de bases de datos";
       case MENU_LABEL_VALUE_CURSOR_MANAGER:
          return "Gestor de cursores";
-      case MENU_VALUE_MAIN_MENU:
-         return "Menú principal";
+      case MENU_VALUE_MAIN_MENU: /* Don't change. Breaks everything. (Would be: "Menú principal") */
+         return "Main Menu"; 
       case MENU_LABEL_VALUE_SETTINGS:
          return "Ajustes";
       case MENU_LABEL_VALUE_QUIT_RETROARCH:
