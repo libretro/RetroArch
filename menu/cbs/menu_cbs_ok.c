@@ -1886,6 +1886,25 @@ static int action_ok_help_what_is_a_core(const char *path,
    return menu_displaylist_push_list(&info, DISPLAYLIST_HELP);
 }
 
+static int action_ok_help_change_virtual_gamepad(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   menu_displaylist_info_t info = {0};
+   menu_list_t *menu_list    = menu_list_get_ptr();
+   menu_handle_t *menu       = menu_driver_get_ptr();
+   if (!menu_list)
+      return -1;
+
+   info.list = menu_list->menu_stack;
+   strlcpy(info.label,
+         menu_hash_to_str(MENU_LABEL_HELP_CHANGE_VIRTUAL_GAMEPAD),
+         sizeof(info.label));
+   menu->push_help_screen = true;
+   menu->help_screen_type = MENU_HELP_CHANGE_VIRTUAL_GAMEPAD;
+
+   return menu_displaylist_push_list(&info, DISPLAYLIST_HELP);
+}
+
 static int action_ok_help_load_content(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -2045,6 +2064,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          break;
       case MENU_LABEL_HELP_WHAT_IS_A_CORE:
          cbs->action_ok = action_ok_help_what_is_a_core;
+         break;
+      case MENU_LABEL_HELP_CHANGE_VIRTUAL_GAMEPAD:
+         cbs->action_ok = action_ok_help_change_virtual_gamepad;
          break;
       case MENU_LABEL_HELP_LOADING_CONTENT:
          cbs->action_ok = action_ok_help_load_content;

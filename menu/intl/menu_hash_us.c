@@ -26,6 +26,8 @@ static const char *menu_hash_to_str_us_label(uint32_t hash)
 {
    switch (hash)
    {
+      case MENU_LABEL_HELP_CHANGE_VIRTUAL_GAMEPAD:
+         return "help_change_virtual_gamepad";
       case MENU_LABEL_HELP_WHAT_IS_A_CORE:
          return "help_what_is_a_core";
       case MENU_LABEL_HELP_LOADING_CONTENT:
@@ -644,6 +646,8 @@ const char *menu_hash_to_str_us(uint32_t hash)
 
    switch (hash)
    {
+      case MENU_LABEL_VALUE_HELP_CHANGE_VIRTUAL_GAMEPAD:
+         return "Changing Virtual Gamepad Overlay";
       case MENU_LABEL_VALUE_HELP_WHAT_IS_A_CORE:
          return "What Is A Core?";
       case MENU_LABEL_VALUE_HELP_LOADING_CONTENT:
@@ -2509,6 +2513,22 @@ int menu_hash_get_help_us(uint32_t hash, char *s, size_t len)
                menu_hash_to_str(MENU_LABEL_VALUE_CORE_UPDATER_LIST),
                menu_hash_to_str(MENU_LABEL_VALUE_LIBRETRO_DIR_PATH)
 #endif
+               );
+      case MENU_LABEL_VALUE_HELP_CHANGE_VIRTUAL_GAMEPAD_DESC:
+         snprintf(s, len,
+               "You can change the virtual gamepad overlay\n"
+               "by going to '%s' -> '%s'."
+               " \n"
+               "From there you can change the overlay,\n"
+               "change the size and opacity of the buttons, etc.\n"
+               " \n"
+               "NOTE: By default, virtual gamepad overlays are\n"
+               "hidden when in the menu.\n"
+               "If you'd like to change this behavior,\n"
+               "you can set '%s' to false.",
+               menu_hash_to_str(MENU_LABEL_VALUE_SETTINGS),
+               menu_hash_to_str(MENU_LABEL_VALUE_OVERLAY_SETTINGS),
+               menu_hash_to_str(MENU_LABEL_VALUE_INPUT_OVERLAY_HIDE_IN_MENU)
                );
       default:
          if (s[0] == '\0')
