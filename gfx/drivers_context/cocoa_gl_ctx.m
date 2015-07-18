@@ -151,7 +151,9 @@ static bool cocoagl_gfx_ctx_init(void *data)
     
 #if defined(HAVE_COCOA)
     CocoaView *g_view = (CocoaView*)nsview_get_ptr();
-	[g_view setWantsBestResolutionOpenGLSurface:YES];
+#if MAC_OS_X_VERSION_10_7
+    [g_view setWantsBestResolutionOpenGLSurface:YES];
+#endif
     NSOpenGLPixelFormatAttribute attributes [] = {
         NSOpenGLPFAColorSize, 24,
         NSOpenGLPFADoubleBuffer,
