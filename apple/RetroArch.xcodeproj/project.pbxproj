@@ -332,7 +332,6 @@
 				);
 				PRECOMPS_INCLUDE_HEADERS_FROM_BUILT_PRODUCTS_DIR = YES;
 				PRODUCT_NAME = RetroArch;
-				WARNING_CFLAGS = "-Wno-invalid-source-encoding";
 			};
 			name = Debug;
 		};
@@ -392,7 +391,6 @@
 				);
 				PRECOMPS_INCLUDE_HEADERS_FROM_BUILT_PRODUCTS_DIR = YES;
 				PRODUCT_NAME = RetroArch;
-				WARNING_CFLAGS = "-Wno-invalid-source-encoding";
 			};
 			name = Release;
 		};
