@@ -268,7 +268,7 @@ static void poll_iteration(void)
    }
 }
 
-- (void)openCore:(id)sender
+- (IBAction)openCore:(id)sender
 {
    NSOpenPanel* panel = (NSOpenPanel*)[NSOpenPanel openPanel];
 #if defined(MAC_OS_X_VERSION_10_6)
