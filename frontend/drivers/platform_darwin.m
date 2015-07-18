@@ -51,6 +51,10 @@
 #include "../../menu/menu.h"
 #endif
 
+#if 0
+#define RELEASE_BUILD
+#endif
+
 typedef enum
 {
    CFApplicationDirectory           = 1,   /* Supported applications (Applications) */
@@ -332,11 +336,10 @@ static void frontend_darwin_get_environment_settings(int *argc, char *argv[],
 #ifdef OSX
    strlcat(home_dir_buf, "/RetroArch", sizeof(home_dir_buf));
 #endif
-
-   fill_pathname_join(g_defaults.core_dir, home_dir_buf, "modules", sizeof(g_defaults.core_dir));
+   fill_pathname_join(g_defaults.core_dir, home_dir_buf, "cores", sizeof(g_defaults.core_dir));
    fill_pathname_join(g_defaults.core_info_dir, home_dir_buf, "info", sizeof(g_defaults.core_info_dir));
    fill_pathname_join(g_defaults.overlay_dir, home_dir_buf, "overlays", sizeof(g_defaults.overlay_dir));
-   fill_pathname_join(g_defaults.autoconfig_dir, home_dir_buf, "autoconfig/hid", sizeof(g_defaults.autoconfig_dir));
+   fill_pathname_join(g_defaults.autoconfig_dir, home_dir_buf, "autoconfig", sizeof(g_defaults.autoconfig_dir));
    fill_pathname_join(g_defaults.core_assets_dir, home_dir_buf, "downloads", sizeof(g_defaults.core_assets_dir));
    fill_pathname_join(g_defaults.assets_dir, home_dir_buf, "assets", sizeof(g_defaults.assets_dir));
    fill_pathname_join(g_defaults.system_dir, home_dir_buf, "system", sizeof(g_defaults.system_dir));
@@ -347,6 +350,22 @@ static void frontend_darwin_get_environment_settings(int *argc, char *argv[],
    fill_pathname_join(g_defaults.cheats_dir, home_dir_buf, "cht", sizeof(g_defaults.cheats_dir));
    fill_pathname_join(g_defaults.sram_dir, home_dir_buf, "saves", sizeof(g_defaults.sram_dir));
    fill_pathname_join(g_defaults.savestate_dir, home_dir_buf, "states", sizeof(g_defaults.savestate_dir));
+#ifdef RELEASE_BUILD
+    fill_pathname_join(g_defaults.core_dir, bundle_path_buf, "Contents/Resources/cores", sizeof(g_defaults.core_dir));
+   fill_pathname_join(g_defaults.core_info_dir, bundle_path_buf, "Contents/Resources/info", sizeof(g_defaults.core_info_dir));
+   fill_pathname_join(g_defaults.overlay_dir, bundle_path_buf, "Contents/Resources/overlays", sizeof(g_defaults.overlay_dir));
+   fill_pathname_join(g_defaults.autoconfig_dir, bundle_path_buf, "Contents/Resources/autoconfig", sizeof(g_defaults.autoconfig_dir));
+   fill_pathname_join(g_defaults.core_assets_dir, bundle_path_buf, "Contents/Resources/downloads", sizeof(g_defaults.core_assets_dir));
+   fill_pathname_join(g_defaults.assets_dir, bundle_path_buf, "Contents/Resources/assets", sizeof(g_defaults.assets_dir));
+   fill_pathname_join(g_defaults.system_dir, bundle_path_buf, "Contents/Resources/system", sizeof(g_defaults.system_dir));
+   fill_pathname_join(g_defaults.menu_config_dir, bundle_path_buf, "Contents/Resources/configs", sizeof(g_defaults.menu_config_dir));
+   fill_pathname_join(g_defaults.config_path, g_defaults.menu_config_dir, "retroarch.cfg", sizeof(g_defaults.config_path));
+   fill_pathname_join(g_defaults.database_dir, bundle_path_buf, "Contents/Resources/rdb", sizeof(g_defaults.database_dir));
+   fill_pathname_join(g_defaults.cursor_dir, bundle_path_buf, "Contents/Resources/cursors", sizeof(g_defaults.cursor_dir));
+   fill_pathname_join(g_defaults.cheats_dir, bundle_path_buf, "Contents/Resources/cht", sizeof(g_defaults.cheats_dir));
+   fill_pathname_join(g_defaults.sram_dir, bundle_path_buf, "Contents/Resources/saves", sizeof(g_defaults.sram_dir));
+   fill_pathname_join(g_defaults.savestate_dir, bundle_path_buf, "Contents/Resources/states", sizeof(g_defaults.savestate_dir));
+#endif
 
    CFTemporaryDirectory(temp_dir, sizeof(temp_dir));
    strlcpy(g_defaults.extraction_dir, temp_dir, sizeof(g_defaults.extraction_dir));
