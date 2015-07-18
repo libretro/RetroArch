@@ -978,6 +978,13 @@
 					</object>
 					<int key="connectionID">664</int>
 				</object>
+				<object class="IBConnectionRecord">
+					<object class="IBActionConnection" key="connection">
+						<string key="label">openCore:</string>
+						<reference key="source" ref="1014"/>
+					</object>
+					<int key="connectionID">666</int>
+				</object>
 			</object>
 			<object class="IBMutableOrderedSet" key="objectRecords">
 				<object class="NSArray" key="orderedObjects">
