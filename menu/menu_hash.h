@@ -24,6 +24,9 @@ extern "C" {
 
 #define MENU_LABEL_VALUE_MENU_CONTROLS_PROLOG                                  0x72674cdfU
 
+#define MENU_LABEL_VALUE_HELP_WHAT_IS_A_CORE                                   0xf3b0f77eU
+#define MENU_LABEL_HELP_WHAT_IS_A_CORE                                         0x83fcbc44U
+
 #define MENU_LABEL_HELP_LOADING_CONTENT                                        0x231d8245U
 #define MENU_LABEL_VALUE_HELP_LOADING_CONTENT                                  0x70bab027U
 
@@ -1024,6 +1027,8 @@ extern "C" {
 
 #define MENU_LABEL_VALUE_OPEN_ARCHIVE                                          0x96da22b9U
 #define MENU_LABEL_VALUE_LOAD_ARCHIVE                                          0xe19ca6c7U
+
+#define MENU_LABEL_VALUE_WHAT_IS_A_CORE_DESC                                   0xc832957eU
 
 const char *menu_hash_to_str_de(uint32_t hash);
 int menu_hash_get_help_de(uint32_t hash, char *s, size_t len);

@@ -2183,6 +2183,10 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
                menu_hash_to_str(MENU_LABEL_HELP_CONTROLS),
                0, 0, 0);
          menu_list_push(info->list,
+               menu_hash_to_str(MENU_LABEL_VALUE_HELP_WHAT_IS_A_CORE),
+               menu_hash_to_str(MENU_LABEL_HELP_WHAT_IS_A_CORE),
+               0, 0, 0);
+         menu_list_push(info->list,
                menu_hash_to_str(MENU_LABEL_VALUE_HELP_LOADING_CONTENT),
                menu_hash_to_str(MENU_LABEL_HELP_LOADING_CONTENT),
                0, 0, 0);

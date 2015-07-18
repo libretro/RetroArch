@@ -57,6 +57,7 @@ typedef enum
    MENU_HELP_EXTRACT,
    MENU_HELP_CONTROLS,
    MENU_HELP_LOADING_CONTENT,
+   MENU_HELP_WHAT_IS_A_CORE,
    MENU_HELP_LAST
 } menu_help_type_t;
 

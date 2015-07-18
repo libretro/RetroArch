@@ -26,6 +26,8 @@ static const char *menu_hash_to_str_us_label(uint32_t hash)
 {
    switch (hash)
    {
+      case MENU_LABEL_HELP_WHAT_IS_A_CORE:
+         return "help_what_is_a_core";
       case MENU_LABEL_HELP_LOADING_CONTENT:
          return "help_loading_content";
       case MENU_LABEL_HELP_LIST:
@@ -642,6 +644,8 @@ const char *menu_hash_to_str_us(uint32_t hash)
 
    switch (hash)
    {
+      case MENU_LABEL_VALUE_HELP_WHAT_IS_A_CORE:
+         return "What Is A Core?";
       case MENU_LABEL_VALUE_HELP_LOADING_CONTENT:
          return "Loading Content";
       case MENU_LABEL_VALUE_HELP_LIST:
@@ -1527,7 +1531,8 @@ int menu_hash_get_help_us(uint32_t hash, char *s, size_t len)
       case MENU_LABEL_VALUE_MENU_CONTROLS_PROLOG:
          snprintf(s, len,
                "You can use the following controls below \n"
-               "on either your gamepad or keyboard: \n"
+               "on either your gamepad or keyboard in order\n"
+               "to control the menu: \n"
                " \n"
                );
          break;
@@ -2475,6 +2480,32 @@ int menu_hash_get_help_us(uint32_t hash, char *s, size_t len)
                "Positive X axis is right. \n"
                "Positive Y axis is down.");
          break;
+      case MENU_LABEL_VALUE_WHAT_IS_A_CORE_DESC:
+         snprintf(s, len,
+               "RetroArch by itself does nothing. \n"
+               " \n"
+               "To make it do things, you need to \n"
+               "load a program into it. \n"
+               "\n"
+               "We call such a program 'Libretro core', \n"
+               "or 'core' in short. \n"
+               " \n"
+               "To load a core, select one from\n"
+               "'Load Core'.\n"
+               " \n"
+               "You can obtain cores in several ways: \n"
+#ifdef HAVE_NETWORKING
+               "* Download them by going to  \n"
+               "'%s' -> '%s'.\n"
+#endif
+               "* Manually move them over to\n"
+               "'%s'.",
+#ifdef HAVE_NETWORKING
+               menu_hash_to_str(MENU_LABEL_VALUE_ONLINE_UPDATER),
+               menu_hash_to_str(MENU_LABEL_VALUE_CORE_UPDATER_LIST),
+#endif
+               menu_hash_to_str(MENU_LABEL_VALUE_LIBRETRO_DIR_PATH)
+               );
       default:
          if (s[0] == '\0')
             strlcpy(s, menu_hash_to_str(MENU_LABEL_VALUE_NO_INFORMATION_AVAILABLE), len);
