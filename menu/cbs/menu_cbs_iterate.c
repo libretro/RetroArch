@@ -78,6 +78,7 @@ static int action_iterate_help(char *s, size_t len, const char *label)
          break;
       case MENU_HELP_CONTROLS:
          {
+            char s2[PATH_MAX_LENGTH];
             const unsigned binds[] = {
                RETRO_DEVICE_ID_JOYPAD_UP,
                RETRO_DEVICE_ID_JOYPAD_DOWN,
@@ -102,7 +103,11 @@ static int action_iterate_help(char *s, size_t len, const char *label)
                input_get_bind_string(desc[i], keybind, auto_bind, sizeof(desc[i]));
             }
 
+            menu_hash_get_help(MENU_LABEL_VALUE_MENU_CONTROLS_PROLOG,
+                  s2, sizeof(s2));
+
             snprintf(s, len,
+                  "%s"
                   "[%s]: "
                   "%-20s\n"
                   "[%s]: "
@@ -121,6 +126,7 @@ static int action_iterate_help(char *s, size_t len, const char *label)
                   "%-20s\n"
                   "[%s]: "
                   "%-20s\n",
+                  s2,
                   menu_hash_to_str(MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_UP),    desc[0],
                   menu_hash_to_str(MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_DOWN),  desc[1],
                   menu_hash_to_str(MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_CONFIRM),      desc[2],

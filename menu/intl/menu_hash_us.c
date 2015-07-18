@@ -1524,6 +1524,13 @@ int menu_hash_get_help_us(uint32_t hash, char *s, size_t len)
 
    switch (hash)
    {
+      case MENU_LABEL_VALUE_MENU_CONTROLS_PROLOG:
+         snprintf(s, len,
+               "You can use the following controls below \n"
+               "on either your gamepad or keyboard: \n"
+               " \n"
+               );
+         break;
       case MENU_LABEL_VALUE_EXTRACTING_PLEASE_WAIT:
          strlcpy(s, "Extracting, please wait...\n", len);
          break;
@@ -1590,8 +1597,8 @@ int menu_hash_get_help_us(uint32_t hash, char *s, size_t len)
                " \n"
                "To control where the menu starts \n"
                " to browse for content, set  \n"
-               "Browser Directory. If not set,  \n"
-               "it will start in root. \n"
+               "'File Browser Directory'. \n"
+               "If not set, it will start in root. \n"
                " \n"
                "The browser will filter out \n"
                "extensions for the last core set \n"
