@@ -1570,7 +1570,7 @@ int menu_hash_get_help_us(uint32_t hash, char *s, size_t len)
                "To scan for content, go to '%s' and\n"
                "select either '%s' or %s'.\n"
                " \n"
-               "Files will be compared to database entries\n"
+               "Files will be compared to database entries.\n"
                "If there is a match, it will add an entry\n"
                "to a collection.\n"
                " \n"
