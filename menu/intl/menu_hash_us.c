@@ -2492,18 +2492,23 @@ int menu_hash_get_help_us(uint32_t hash, char *s, size_t len)
                "To load a core, select one from\n"
                "'Load Core'.\n"
                " \n"
-               "You can obtain cores in several ways: \n"
 #ifdef HAVE_NETWORKING
-               "* Download them by going to  \n"
+               "You can obtain cores in several ways: \n"
+               "* Download them by going to\n"
                "'%s' -> '%s'.\n"
-#endif
                "* Manually move them over to\n"
                "'%s'.",
-#ifdef HAVE_NETWORKING
                menu_hash_to_str(MENU_LABEL_VALUE_ONLINE_UPDATER),
                menu_hash_to_str(MENU_LABEL_VALUE_CORE_UPDATER_LIST),
-#endif
                menu_hash_to_str(MENU_LABEL_VALUE_LIBRETRO_DIR_PATH)
+#else
+               "You can obtain cores by\n"
+               "manually moving them over to\n"
+               "'%s'.",
+               menu_hash_to_str(MENU_LABEL_VALUE_ONLINE_UPDATER),
+               menu_hash_to_str(MENU_LABEL_VALUE_CORE_UPDATER_LIST),
+               menu_hash_to_str(MENU_LABEL_VALUE_LIBRETRO_DIR_PATH)
+#endif
                );
       default:
          if (s[0] == '\0')
