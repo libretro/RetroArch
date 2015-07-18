@@ -314,7 +314,6 @@ static void frontend_darwin_get_environment_settings(int *argc, char *argv[],
    char temp_dir[PATH_MAX_LENGTH]        = {0};
    char bundle_path_buf[PATH_MAX_LENGTH] = {0};
    char home_dir_buf[PATH_MAX_LENGTH]    = {0};
-   char downloads_dir_buf[PATH_MAX_LENGTH]    = {0};
    CFBundleRef bundle = CFBundleGetMainBundle();
 
    (void)temp_dir;
@@ -327,13 +326,10 @@ static void frontend_darwin_get_environment_settings(int *argc, char *argv[],
 
    CFStringGetCString(bundle_path, bundle_path_buf, sizeof(bundle_path_buf), kCFStringEncodingUTF8);
    (void)home_dir_buf;
-   (void)downloads_dir;
 
    CFSearchPathForDirectoriesInDomains(CFDocumentDirectory, CFUserDomainMask, 1, home_dir_buf, sizeof(home_dir_buf));
 
 #ifdef OSX
-   CFSearchPathForDirectoriesInDomains(CFDownloadsDirectory, CFUserDomainMask, 1, downloads_dir_buf, sizeof(downloads_dir_buf));
-   CFSearchPathForDirectoriesInDomains(CFPicturesDirectory, CFUserDomainMask, 1, pictures_dir_buf, sizeof(pictures_dir_buf));
    strlcat(home_dir_buf, "/RetroArch", sizeof(home_dir_buf));
 #endif
 
@@ -341,12 +337,7 @@ static void frontend_darwin_get_environment_settings(int *argc, char *argv[],
    fill_pathname_join(g_defaults.core_info_dir, home_dir_buf, "info", sizeof(g_defaults.core_info_dir));
    fill_pathname_join(g_defaults.overlay_dir, home_dir_buf, "overlays", sizeof(g_defaults.overlay_dir));
    fill_pathname_join(g_defaults.autoconfig_dir, home_dir_buf, "autoconfig/hid", sizeof(g_defaults.autoconfig_dir));
-#ifdef OSX
-   strlcpy(g_defaults.core_assets_dir, downloads_dir_buf, sizeof(g_defaults.core_assets_dir));
-   strlcpy(g_defaults.screenshot_dir,  pictures_dir_buf, sizeof(g_defaults_screenshot_dir));
-#else
    fill_pathname_join(g_defaults.core_assets_dir, home_dir_buf, "downloads", sizeof(g_defaults.core_assets_dir));
-#endif
    fill_pathname_join(g_defaults.assets_dir, home_dir_buf, "assets", sizeof(g_defaults.assets_dir));
    fill_pathname_join(g_defaults.system_dir, home_dir_buf, "system", sizeof(g_defaults.system_dir));
    fill_pathname_join(g_defaults.menu_config_dir, home_dir_buf, "configs", sizeof(g_defaults.menu_config_dir));
