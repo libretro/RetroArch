@@ -66,8 +66,6 @@ static int action_iterate_help(char *s, size_t len, const char *label)
 
             if (!timer_end && timeout <= 0)
             {
-               menu_input_t *menu_input = menu_input_get_ptr();
-
                timer_end   = true;
                timer_begin = false;
                timeout_end = 0;
