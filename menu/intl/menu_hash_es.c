@@ -16,7 +16,7 @@
 
 #include <stdint.h>
 #include <string.h>
-
+#include "../../configuration.h"
 #include "../menu_hash.h"
 
 const char *menu_hash_to_str_es(uint32_t hash)
