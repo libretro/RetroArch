@@ -268,6 +268,36 @@ static void poll_iteration(void)
    }
 }
 
+- (void)openCore:(id)sender
+{
+   NSOpenPanel* panel = (NSOpenPanel*)[NSOpenPanel openPanel];
+#if defined(MAC_OS_X_VERSION_10_6)
+   [panel beginSheetModalForWindow:self.window completionHandler:^(NSInteger result)
+   {
+      [[NSApplication sharedApplication] stopModal];
+
+      if (result == NSOKButton && panel.URL)
+      {
+         settings_t *settings = config_get_ptr();
+         NSURL *url = (NSURL*)panel.URL;
+         NSString *__core = url.path;
+         const char *core_name = settings->libretro_directory;
+			
+         if (core_name)
+         {
+            strlcpy(settings->libretro_directory, __core.UTF8String, sizeof(settings->libretro_directory));
+            ui_companion_event_command(EVENT_CMD_LOAD_CORE);
+         }
+         else
+            [self performSelector:@selector(chooseCore) withObject:nil afterDelay:.5f];
+      }
+   }];
+#else
+   [panel beginSheetForDirectory:nil file:nil modalForWindopw:[self window] modalDelegate:self didEndSelector:@selector(didEndSaveSheet:returnCode:contextInfo:) contextInfo:NULL];
+#endif
+   [[NSApplication sharedApplication] runModalForWindow:panel];
+}
+
 - (void)openDocument:(id)sender
 {
    NSOpenPanel* panel = (NSOpenPanel*)[NSOpenPanel openPanel];
