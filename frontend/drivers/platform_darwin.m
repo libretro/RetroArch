@@ -336,6 +336,7 @@ static void frontend_darwin_get_environment_settings(int *argc, char *argv[],
 #ifdef OSX
    strlcat(home_dir_buf, "/RetroArch", sizeof(home_dir_buf));
 #endif
+   fill_pathname_join(g_defaults.shader_dir, home_dir_buf, "shaders_glsl", sizeof(g_defaults.shader_dir));
    fill_pathname_join(g_defaults.core_dir, home_dir_buf, "cores", sizeof(g_defaults.core_dir));
    fill_pathname_join(g_defaults.core_info_dir, home_dir_buf, "info", sizeof(g_defaults.core_info_dir));
    fill_pathname_join(g_defaults.overlay_dir, home_dir_buf, "overlays", sizeof(g_defaults.overlay_dir));
@@ -350,8 +351,16 @@ static void frontend_darwin_get_environment_settings(int *argc, char *argv[],
    fill_pathname_join(g_defaults.cheats_dir, home_dir_buf, "cht", sizeof(g_defaults.cheats_dir));
    fill_pathname_join(g_defaults.sram_dir, home_dir_buf, "saves", sizeof(g_defaults.sram_dir));
    fill_pathname_join(g_defaults.savestate_dir, home_dir_buf, "states", sizeof(g_defaults.savestate_dir));
+#if defined(OSX)
+#ifdef HAVE_CG
+   fill_pathname_join(g_defaults.shader_dir, home_dir_buf, "shaders_cg", sizeof(g_defaults.shader_dir));
+#endif
+   fill_pathname_join(g_defaults.audio_filter_dir, home_dir_buf, "audio_filters", sizeof(g_defaults.audio_filter_dir));
+   fill_pathname_join(g_defaults.video_filter_dir, home_dir_buf, "video_filters", sizeof(g_defaults.video_filter_dir));
+#endif
 #ifdef RELEASE_BUILD
-    fill_pathname_join(g_defaults.core_dir, bundle_path_buf, "Contents/Resources/cores", sizeof(g_defaults.core_dir));
+   fill_pathname_join(g_defaults.shader_dir, bundle_path_buf, "Contents/Resources/shaders", sizeof(g_defaults.shader_dir));
+   fill_pathname_join(g_defaults.core_dir, bundle_path_buf, "Contents/Resources/cores", sizeof(g_defaults.core_dir));
    fill_pathname_join(g_defaults.core_info_dir, bundle_path_buf, "Contents/Resources/info", sizeof(g_defaults.core_info_dir));
    fill_pathname_join(g_defaults.overlay_dir, bundle_path_buf, "Contents/Resources/overlays", sizeof(g_defaults.overlay_dir));
    fill_pathname_join(g_defaults.autoconfig_dir, bundle_path_buf, "Contents/Resources/autoconfig", sizeof(g_defaults.autoconfig_dir));
@@ -369,16 +378,6 @@ static void frontend_darwin_get_environment_settings(int *argc, char *argv[],
 
    CFTemporaryDirectory(temp_dir, sizeof(temp_dir));
    strlcpy(g_defaults.extraction_dir, temp_dir, sizeof(g_defaults.extraction_dir));
-
-   fill_pathname_join(g_defaults.shader_dir, home_dir_buf, "shaders_glsl", sizeof(g_defaults.shader_dir));
-
-#if defined(OSX)
-#ifdef HAVE_CG
-   fill_pathname_join(g_defaults.shader_dir, home_dir_buf, "shaders_cg", sizeof(g_defaults.shader_dir));
-#endif
-   fill_pathname_join(g_defaults.audio_filter_dir, home_dir_buf, "audio_filters", sizeof(g_defaults.audio_filter_dir));
-   fill_pathname_join(g_defaults.video_filter_dir, home_dir_buf, "video_filters", sizeof(g_defaults.video_filter_dir));
-#endif
 
    path_mkdir(bundle_path_buf);
 
