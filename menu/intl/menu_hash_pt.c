@@ -64,7 +64,7 @@ const char *menu_hash_to_str_pt(uint32_t hash)
       case MENU_LABEL_VALUE_CONFIGURATION_SETTINGS:
          return "Configurações";
       case MENU_LABEL_VALUE_CORE_SETTINGS:
-         return "Atualização Online";
+         return "Core";
       case MENU_LABEL_VALUE_VIDEO_SETTINGS:
          return "Vídeo";
       case MENU_LABEL_VALUE_LOGGING_SETTINGS:
