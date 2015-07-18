@@ -1034,6 +1034,14 @@ extern "C" {
 #define MENU_LABEL_VALUE_HELP_CHANGE_VIRTUAL_GAMEPAD                           0x27ed0204U
 #define MENU_LABEL_VALUE_HELP_CHANGE_VIRTUAL_GAMEPAD_DESC                      0x9d0e79dbU
 
+#define MENU_LABEL_HELP_AUDIO_VIDEO_TROUBLESHOOTING                            0xd44d395cU
+#define MENU_LABEL_VALUE_HELP_AUDIO_VIDEO_TROUBLESHOOTING                      0xd0e5c3ffU
+#define MENU_LABEL_VALUE_HELP_AUDIO_VIDEO_TROUBLESHOOTING_DESC                 0x60031d7aU
+
+#define MENU_LABEL_HELP_SCANNING_CONTENT                                       0x1dec52b8U
+#define MENU_LABEL_VALUE_HELP_SCANNING_CONTENT                                 0x74b36f11U
+#define MENU_LABEL_VALUE_HELP_SCANNING_CONTENT_DESC                            0xac947056U
+
 const char *menu_hash_to_str_de(uint32_t hash);
 int menu_hash_get_help_de(uint32_t hash, char *s, size_t len);
 

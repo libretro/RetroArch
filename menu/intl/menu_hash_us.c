@@ -26,6 +26,10 @@ static const char *menu_hash_to_str_us_label(uint32_t hash)
 {
    switch (hash)
    {
+      case MENU_LABEL_HELP_SCANNING_CONTENT:
+         return "help_scanning_content";
+      case MENU_LABEL_HELP_AUDIO_VIDEO_TROUBLESHOOTING:
+         return "help_audio_video_troubleshooting";
       case MENU_LABEL_HELP_CHANGE_VIRTUAL_GAMEPAD:
          return "help_change_virtual_gamepad";
       case MENU_LABEL_HELP_WHAT_IS_A_CORE:
@@ -646,6 +650,10 @@ const char *menu_hash_to_str_us(uint32_t hash)
 
    switch (hash)
    {
+      case MENU_LABEL_VALUE_HELP_SCANNING_CONTENT:
+         return "Scanning For Content";
+      case MENU_LABEL_VALUE_HELP_AUDIO_VIDEO_TROUBLESHOOTING:
+         return "Audio/Video Troubleshooting";
       case MENU_LABEL_VALUE_HELP_CHANGE_VIRTUAL_GAMEPAD:
          return "Changing Virtual Gamepad Overlay";
       case MENU_LABEL_VALUE_HELP_WHAT_IS_A_CORE:
@@ -1532,6 +1540,57 @@ int menu_hash_get_help_us(uint32_t hash, char *s, size_t len)
 
    switch (hash)
    {
+      case MENU_LABEL_VALUE_HELP_AUDIO_VIDEO_TROUBLESHOOTING_DESC:
+         snprintf(s, len,
+               "RetroArch relies on an unique form of\n"
+               "audio/video synchronization where it needs to be\n"
+               "calibrated against the refresh rate of your\n"
+               "display for best performance results.\n"
+               " \n"
+               "If you experience any audio crackling or video\n"
+               "tearing, usually it means that you need to\n"
+               "calibrate the settings. Some choices below:\n"
+               " \n"
+               "a) Go to '%s' -> '%s', and enable\n"
+               "'Threaded Video'. Refresh rate will not matter\n"
+               "in this mode, framerate will be higher,\n"
+               "but video might be less smooth.\n"
+               "b) Go to '%s' -> '%s', and look at\n"
+               "'%s'. Let it run for\n"
+               "2048 frames, then press 'OK'.",
+               menu_hash_to_str(MENU_LABEL_VALUE_SETTINGS),
+               menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_SETTINGS),
+               menu_hash_to_str(MENU_LABEL_VALUE_SETTINGS),
+               menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_SETTINGS),
+               menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO)
+               );
+         break;
+      case MENU_LABEL_VALUE_HELP_SCANNING_CONTENT_DESC:
+         snprintf(s, len,
+               "To scan for content, go to '%s' and\n"
+               "select either '%s' or %s'.\n"
+               " \n"
+               "Files will be compared to database entries\n"
+               "If there is a match, it will add an entry\n"
+               "to a collection.\n"
+               " \n"
+               "You can then easily access this content by\n"
+               "going to '%s' ->\n"
+               "'%s'\n"
+               "instead of having to go through the\n"
+               "filebrowser everytime.\n"
+               " \n"
+               "NOTE: Content for some cores might still not be\n"
+               "scannable. Examples include: PlayStation,\n"
+               "MAME, FBA, and maybe others."
+               ,
+               menu_hash_to_str(MENU_LABEL_VALUE_ADD_CONTENT_LIST),
+               menu_hash_to_str(MENU_LABEL_VALUE_SCAN_DIRECTORY),
+               menu_hash_to_str(MENU_LABEL_VALUE_SCAN_FILE),
+               menu_hash_to_str(MENU_LABEL_VALUE_LOAD_CONTENT_LIST),
+               menu_hash_to_str(MENU_LABEL_VALUE_CONTENT_COLLECTION_LIST)
+               );
+         break;
       case MENU_LABEL_VALUE_MENU_CONTROLS_PROLOG:
          snprintf(s, len,
                "You can use the following controls below \n"
