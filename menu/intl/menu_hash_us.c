@@ -2573,6 +2573,7 @@ int menu_hash_get_help_us(uint32_t hash, char *s, size_t len)
                menu_hash_to_str(MENU_LABEL_VALUE_LIBRETRO_DIR_PATH)
 #endif
                );
+         break;
       case MENU_LABEL_VALUE_HELP_CHANGE_VIRTUAL_GAMEPAD_DESC:
          snprintf(s, len,
                "You can change the virtual gamepad overlay\n"
