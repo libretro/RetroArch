@@ -351,14 +351,18 @@ static void frontend_darwin_get_environment_settings(int *argc, char *argv[],
    fill_pathname_join(g_defaults.cheats_dir, home_dir_buf, "cht", sizeof(g_defaults.cheats_dir));
    fill_pathname_join(g_defaults.sram_dir, home_dir_buf, "saves", sizeof(g_defaults.sram_dir));
    fill_pathname_join(g_defaults.savestate_dir, home_dir_buf, "states", sizeof(g_defaults.savestate_dir));
+   fill_pathname_join(g_defaults.remap_dir, home_dir_buf, "remaps", sizeof(g_defaults.remap_dir));
 #if defined(OSX)
 #ifdef HAVE_CG
    fill_pathname_join(g_defaults.shader_dir, home_dir_buf, "shaders_cg", sizeof(g_defaults.shader_dir));
 #endif
    fill_pathname_join(g_defaults.audio_filter_dir, home_dir_buf, "audio_filters", sizeof(g_defaults.audio_filter_dir));
    fill_pathname_join(g_defaults.video_filter_dir, home_dir_buf, "video_filters", sizeof(g_defaults.video_filter_dir));
+   fill_pathname_join(g_defaults.playlist_dir, home_dir_buf, "playlists", sizeof(g_defaults.playlist_dir));
 #endif
 #ifdef RELEASE_BUILD
+   fill_pathname_join(g_defaults.remap_dir, bundle_path_buf, "Contents/Resources/remaps", sizeof(g_defaults.remap_dir));
+   fill_pathname_join(g_defaults.playlist_dir, bundle_path_buf, "Contents/Resources/playlists", sizeof(g_defaults.playlist_dir));
    fill_pathname_join(g_defaults.shader_dir, bundle_path_buf, "Contents/Resources/shaders", sizeof(g_defaults.shader_dir));
    fill_pathname_join(g_defaults.core_dir, bundle_path_buf, "Contents/Resources/cores", sizeof(g_defaults.core_dir));
    fill_pathname_join(g_defaults.core_info_dir, bundle_path_buf, "Contents/Resources/info", sizeof(g_defaults.core_info_dir));
