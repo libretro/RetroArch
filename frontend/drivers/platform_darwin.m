@@ -339,14 +339,14 @@ static void frontend_darwin_get_environment_settings(int *argc, char *argv[],
    fill_pathname_join(g_defaults.autoconfig_dir, home_dir_buf, "autoconfig/hid", sizeof(g_defaults.autoconfig_dir));
    fill_pathname_join(g_defaults.core_assets_dir, home_dir_buf, "downloads", sizeof(g_defaults.core_assets_dir));
    fill_pathname_join(g_defaults.assets_dir, home_dir_buf, "assets", sizeof(g_defaults.assets_dir));
-   fill_pathname_join(g_defaults.system_dir, home_dir_buf, ".RetroArch", sizeof(g_defaults.system_dir));
-   strlcpy(g_defaults.menu_config_dir, g_defaults.system_dir, sizeof(g_defaults.menu_config_dir));
+   fill_pathname_join(g_defaults.system_dir, home_dir_buf, "system", sizeof(g_defaults.system_dir));
+   fill_pathname_join(g_defaults.menu_config_dir, home_dir_buf, "configs", sizeof(g_defaults.menu_config_dir));
    fill_pathname_join(g_defaults.config_path, g_defaults.menu_config_dir, "retroarch.cfg", sizeof(g_defaults.config_path));
    fill_pathname_join(g_defaults.database_dir, home_dir_buf, "rdb", sizeof(g_defaults.database_dir));
    fill_pathname_join(g_defaults.cursor_dir, home_dir_buf, "cursors", sizeof(g_defaults.cursor_dir));
    fill_pathname_join(g_defaults.cheats_dir, home_dir_buf, "cht", sizeof(g_defaults.cheats_dir));
-   strlcpy(g_defaults.sram_dir, g_defaults.system_dir, sizeof(g_defaults.sram_dir));
-   strlcpy(g_defaults.savestate_dir, g_defaults.system_dir, sizeof(g_defaults.savestate_dir));
+   fill_pathname_join(g_defaults.sram_dir, home_dir_buf, "saves", sizeof(g_defaults.sram_dir));
+   fill_pathname_join(g_defaults.savestate_dir, home_dir_buf, "states", sizeof(g_defaults.savestate_dir));
 
    CFTemporaryDirectory(temp_dir, sizeof(temp_dir));
    strlcpy(g_defaults.extraction_dir, temp_dir, sizeof(g_defaults.extraction_dir));
