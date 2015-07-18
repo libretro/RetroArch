@@ -268,34 +268,40 @@ static void poll_iteration(void)
    }
 }
 
-- (IBAction)openCore:(id)sender
-{
-   NSOpenPanel* panel = (NSOpenPanel*)[NSOpenPanel openPanel];
+- (IBAction)openCore:(id)sender {
+    NSOpenPanel* panel = (NSOpenPanel*)[NSOpenPanel openPanel];
 #if defined(MAC_OS_X_VERSION_10_6)
-   [panel beginSheetModalForWindow:self.window completionHandler:^(NSInteger result)
-   {
-      [[NSApplication sharedApplication] stopModal];
-
-      if (result == NSOKButton && panel.URL)
-      {
-         settings_t *settings = config_get_ptr();
-         NSURL *url = (NSURL*)panel.URL;
-         NSString *__core = url.path;
-         const char *core_name = settings->libretro_directory;
-			
-         if (core_name)
+    [panel beginSheetModalForWindow:self.window completionHandler:^(NSInteger result)
+     {
+         [[NSApplication sharedApplication] stopModal];
+         
+         if (result == NSOKButton && panel.URL)
          {
-            strlcpy(settings->libretro_directory, __core.UTF8String, sizeof(settings->libretro_directory));
-            ui_companion_event_command(EVENT_CMD_LOAD_CORE);
+             menu_handle_t *menu  = menu_driver_get_ptr();
+             global_t *global     = global_get_ptr();
+             settings_t *settings = config_get_ptr();
+             NSURL *url = (NSURL*)panel.URL;
+             NSString *__core = url.path;
+             
+             if (__core)
+             {
+                 strlcpy(settings->libretro, __core.UTF8String, sizeof(settings->libretro));
+                 ui_companion_event_command(EVENT_CMD_LOAD_CORE);
+                 
+                 if (menu->load_no_content && settings->core.set_supports_no_game_enable)
+                 {
+                     *global->fullpath = '\0';
+                     menu_common_load_content(false, CORE_TYPE_PLAIN);
+                 }
+             }
+             else
+                 [self performSelector:@selector(chooseCore) withObject:nil afterDelay:.5f];
          }
-         else
-            [self performSelector:@selector(chooseCore) withObject:nil afterDelay:.5f];
-      }
-   }];
+     }];
 #else
-   [panel beginSheetForDirectory:nil file:nil modalForWindopw:[self window] modalDelegate:self didEndSelector:@selector(didEndSaveSheet:returnCode:contextInfo:) contextInfo:NULL];
+    [panel beginSheetForDirectory:nil file:nil modalForWindopw:[self window] modalDelegate:self didEndSelector:@selector(didEndSaveSheet:returnCode:contextInfo:) contextInfo:NULL];
 #endif
-   [[NSApplication sharedApplication] runModalForWindow:panel];
+    [[NSApplication sharedApplication] runModalForWindow:panel];
 }
 
 - (void)openDocument:(id)sender
