@@ -1458,7 +1458,7 @@ void rarch_main_set_state(unsigned cmd)
 #endif
          video_driver_set_texture_enable(false, false);
 #ifdef HAVE_OVERLAY
-         if (settings->input.overlay_hide_in_menu)
+         if (settings && settings->input.overlay_hide_in_menu)
             event_command(EVENT_CMD_OVERLAY_INIT);
 #endif
          break;
