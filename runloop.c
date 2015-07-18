@@ -612,8 +612,8 @@ static INLINE int time_to_exit(driver_t *driver, global_t *global,
 {
    const video_driver_t *video   = driver ? (const video_driver_t*)driver->video : NULL;
    rarch_system_info_t *system   = rarch_system_info_get_ptr();
-   bool shutdown_pressed         = system->shutdown;
-   bool video_alive              = video->alive(driver->video_data);
+   bool shutdown_pressed         = system && system->shutdown;
+   bool video_alive              = video && video->alive(driver->video_data);
    bool movie_end                = (global->bsv.movie_end && global->bsv.eof_exit);
    uint64_t frame_count          = video_driver_get_frame_count();
    bool frame_count_end          = (runloop->frames.video.max && 
