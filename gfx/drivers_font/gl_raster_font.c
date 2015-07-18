@@ -47,13 +47,68 @@ typedef struct
    gfx_font_raster_block_t *block;
 } gl_raster_t;
 
+static void gl_raster_font_free_font(void *data);
+
+static bool gl_raster_font_upload_atlas(gl_raster_t *font,
+      const struct font_atlas *atlas,
+      unsigned width, unsigned height)
+{
+   unsigned i, j;
+   GLint  gl_internal = GL_LUMINANCE_ALPHA;
+   GLenum gl_format   = GL_LUMINANCE_ALPHA;
+   size_t ncomponents = 2;
+   uint8_t       *tmp = NULL;
+
+#ifndef HAVE_OPENGLES
+   if (font->gl->core_context)
+   {
+      GLint swizzle[] = { GL_ONE, GL_ONE, GL_ONE, GL_RED };
+      glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzle);
+
+      gl_internal = GL_R8;
+      gl_format   = GL_RED;
+      ncomponents = 1;
+   }
+#endif
+
+   tmp = (uint8_t*)calloc(height, width * ncomponents);
+
+   if (!tmp)
+      return false;
+
+   for (i = 0; i < atlas->height; ++i)
+   {
+      const uint8_t *src = &atlas->buffer[i * atlas->width];
+      uint8_t       *dst = &tmp[i * width * ncomponents];
+
+      if (ncomponents == 1)
+      {
+         memcpy(dst, src, atlas->width);
+         src += atlas->width;
+      }
+      else if (ncomponents == 2)
+      {
+         for (j = 0; j < atlas->width; ++j)
+         {
+            *dst++ = 0xff;
+            *dst++ = *src++;
+         }
+      }
+   }
+
+   glTexImage2D(GL_TEXTURE_2D, 0, gl_internal, width, height,
+         0, gl_format, GL_UNSIGNED_BYTE, tmp);
+
+   free(tmp);
+
+   return true;
+}
+
 static void *gl_raster_font_init_font(void *data,
       const char *font_path, float font_size)
 {
-   unsigned width, height;
-   uint8_t *tmp_buffer;
    const struct font_atlas *atlas = NULL;
-   gl_raster_t *font = (gl_raster_t*)calloc(1, sizeof(*font));
+   gl_raster_t   *font = (gl_raster_t*)calloc(1, sizeof(*font));
 
    if (!font)
       return NULL;
@@ -77,38 +132,14 @@ static void *gl_raster_font_init_font(void *data,
 
    atlas = font->font_driver->get_atlas(font->font_data);
 
-   width = next_pow2(atlas->width);
-   height = next_pow2(atlas->height);
+   font->tex_width  = next_pow2(atlas->width);;
+   font->tex_height = next_pow2(atlas->height);;
 
-   /* Ideally, we'd use single component textures, but the 
-    * difference in ways to do that between core GL and GLES/legacy GL
-    * is too great to bother going down that route. */
-   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height,
-         0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-
-   tmp_buffer = (uint8_t*)malloc(atlas->width * atlas->height * 4);
-
-   if (tmp_buffer)
+   if (!gl_raster_font_upload_atlas(font, atlas, font->tex_width, font->tex_height))
    {
-      unsigned i;
-      uint8_t       *dst = tmp_buffer;
-      const uint8_t *src = atlas->buffer;
-
-      for (i = 0; i < atlas->width * atlas->height; i++)
-      {
-         *dst++ = 0xff;
-         *dst++ = 0xff;
-         *dst++ = 0xff;
-         *dst++ = *src++;
-      }
-
-      glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, atlas->width,
-            atlas->height, GL_RGBA, GL_UNSIGNED_BYTE, tmp_buffer);
-      free(tmp_buffer);
+      gl_raster_font_free_font(font);
+      font = NULL;
    }
-
-   font->tex_width  = width;
-   font->tex_height = height;
 
    glBindTexture(GL_TEXTURE_2D, font->gl->texture[font->gl->tex_index]);
 
