@@ -24,6 +24,7 @@
 #include <sys/ioctl.h>
 #include <linux/fb.h>
 #include <signal.h>
+#include <unistd.h>
 #include <fcntl.h>
 #include <rthreads/rthreads.h>
 
@@ -897,7 +898,6 @@ static void sunxi_set_texture_enable(void *data, bool state, bool full_screen)
 static void sunxi_set_texture_frame(void *data, const void *frame, bool rgb32,
       unsigned width, unsigned height, float alpha)
 {
-   uint32_t line[dst_width]; 
    uint16_t src_pix;
    uint32_t R, G, B, dst_pix;
    unsigned int i, j;
@@ -908,6 +908,7 @@ static void sunxi_set_texture_frame(void *data, const void *frame, bool rgb32,
    unsigned int src_pitch        = width * 2; 
    unsigned int dst_pitch        = _dispvars->sunxi_disp->xres * 4;
    unsigned int dst_width        = _dispvars->sunxi_disp->xres;
+   uint32_t line[dst_width]; 
 
    /* Remember, memcpy() works with 8bits pointers for increments. */
    char *dst_base_addr           = (char*)(_dispvars->pages[0].address);
