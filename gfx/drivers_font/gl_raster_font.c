@@ -71,7 +71,7 @@ static bool gl_raster_font_upload_atlas(gl_raster_t *font,
    }
 #ifdef HAVE_OPENGLES
    (void)modern;
-#else
+#elif defined(GL_VERSION_3_0)
    else if (modern)
    {
       GLint swizzle[] = { GL_ONE, GL_ONE, GL_ONE, GL_RED };
