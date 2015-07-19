@@ -182,6 +182,8 @@ static const char *font_renderer_stb_get_default_font(void)
       "/Library/Fonts/Microsoft/Candara.ttf",
       "/Library/Fonts/Verdana.ttf",
       "/Library/Fonts/Tahoma.ttf",
+      "/Library/Fonts/Andale Mono.ttf",
+      "/Library/Fonts/Courier New.ttf",
 #elif defined(__ANDROID_API__)
       "/system/fonts/DroidSansMono.ttf",
       "/system/fonts/CutiveMono.ttf",
