@@ -1959,8 +1959,6 @@ int menu_hash_get_help_es(uint32_t hash, char *s, size_t len)
                "You can obtain cores by\n"
                "manually moving them over to\n"
                "'%s'.",
-               menu_hash_to_str(MENU_LABEL_VALUE_ONLINE_UPDATER),
-               menu_hash_to_str(MENU_LABEL_VALUE_CORE_UPDATER_LIST),
                menu_hash_to_str(MENU_LABEL_VALUE_LIBRETRO_DIR_PATH)
 #endif
                );
