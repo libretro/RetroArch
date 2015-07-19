@@ -343,8 +343,6 @@ extern "C" {
 #define MENU_LABEL_VALUE_DYNAMIC_WALLPAPER                                     0x66928c32U
 #define MENU_LABEL_VALUE_BOXART                                                0x716441ebU
 #define MENU_LABEL_BOXART                                                      0xa269b0afU
-#define MENU_LABEL_PAL60_ENABLE                                                0x62bc416eU
-#define MENU_LABEL_SYSTEM_BGM_ENABLE                                           0x9287a1c5U
 
 #define MENU_LABEL_FASTFORWARD_RATIO                                           0x3a0c2706U
 #define MENU_LABEL_VALUE_FASTFORWARD_RATIO                                     0x3c719749U
@@ -382,8 +380,6 @@ extern "C" {
 #define MENU_LABEL_INPUT_PLAYER3_JOYPAD_INDEX                                  0x71571e71U
 #define MENU_LABEL_INPUT_PLAYER4_JOYPAD_INDEX                                  0xac975812U
 #define MENU_LABEL_INPUT_PLAYER5_JOYPAD_INDEX                                  0xe7d791b3U
-
-#define MENU_LABEL_LIBRETRO_DIR_PATH                                           0x1af1eb72U
 
 #define MENU_LABEL_AUDIO_DEVICE                                                0x2574eac6U
 #define MENU_LABEL_VALUE_AUDIO_DEVICE                                          0xcacf3707U
@@ -450,7 +446,6 @@ extern "C" {
 #define MENU_LABEL_VALUE_SAVEFILE_DIRECTORY                                    0x418b1929U
 #define MENU_LABEL_SAVESTATE_DIRECTORY                                         0x90551289U
 #define MENU_LABEL_VALUE_SAVESTATE_DIRECTORY                                   0xe6e0732aU
-#define MENU_LABEL_ASSETS_DIRECTORY                                            0xde1ae8ecU
 #define MENU_LABEL_DYNAMIC_WALLPAPERS_DIRECTORY                                0x62f975b8U
 #define MENU_LABEL_VALUE_DYNAMIC_WALLPAPERS_DIRECTORY                          0x0a3a407aU
 #define MENU_LABEL_BOXARTS_DIRECTORY                                           0x9e2bdbddU
@@ -466,7 +461,6 @@ extern "C" {
 #define MENU_LABEL_VALUE_INPUT_AXIS_THRESHOLD                                  0x3fb34697U
 #define MENU_LABEL_INPUT_TURBO_PERIOD                                          0xf7a97482U
 #define MENU_LABEL_VALUE_INPUT_TURBO_PERIOD                                    0x9207b594U
-#define MENU_LABEL_INPUT_AUTODETECT_ENABLE                                     0xb1e07facU
 
 #define MENU_LABEL_VIDEO_GAMMA                                                 0x08a951beU
 #define MENU_LABEL_VALUE_VIDEO_GAMMA                                           0xc7da99dfU
@@ -608,7 +602,6 @@ extern "C" {
 #define MENU_LABEL_VALUE_CORE_UPDATER_BUILDBOT_URL                             0x1bc80956U
 #define MENU_LABEL_BUILDBOT_ASSETS_URL                                         0x1895c71eU
 #define MENU_LABEL_VALUE_BUILDBOT_ASSETS_URL                                   0xaa0327a0U
-#define MENU_LABEL_RECORD_CONFIG                                               0x11c3daf9U
 #define MENU_LABEL_VIDEO_SHARED_CONTEXT                                        0x7d7dad16U
 #define MENU_LABEL_VALUE_VIDEO_SHARED_CONTEXT                                  0x353d3287U
 #define MENU_LABEL_DUMMY_ON_CORE_SHUTDOWN                                      0x78579f70U
@@ -649,7 +642,6 @@ extern "C" {
 #define MENU_LABEL_DEFERRED_RDB_ENTRY_DETAIL                                   0xc35416c0U
 #define MENU_LABEL_DEFERRED_CORE_LIST                                          0xf157d289U
 #define MENU_LABEL_DEFERRED_CORE_UPDATER_LIST                                  0xc315f682U
-#define MENU_LABEL_CONFIGURATIONS                                              0x3e930a50U
 #define MENU_LABEL_DISK_IMAGE_APPEND                                           0x5af7d709U
 #define MENU_LABEL_CORE_LIST                                                   0xa22bb14dU
 #define MENU_LABEL_VALUE_CORE_LIST                                             0x0e17fd4eU
@@ -664,7 +656,6 @@ extern "C" {
 #define MENU_LABEL_CORE_COUNTERS                                               0x64cc83e0U
 #define MENU_LABEL_LOAD_CONTENT_HISTORY                                        0xfe1d79e5U
 #define MENU_LABEL_VALUE_LOAD_CONTENT_HISTORY                                  0x5b362286U
-#define MENU_LABEL_INFO_SCREEN                                                 0xd97853d0U
 #define MENU_LABEL_SYSTEM_INFORMATION                                          0x206ebf0fU
 #define MENU_LABEL_VALUE_SYSTEM_INFORMATION                                    0xa62fd7f0U
 #define MENU_LABEL_CORE_INFORMATION                                            0xb638e0d3U
@@ -725,12 +716,10 @@ extern "C" {
 #define MENU_LABEL_VALUE_RECORDING_OUTPUT_DIRECTORY                            0x93a44152U
 #define MENU_LABEL_RECORDING_CONFIG_DIRECTORY                                  0x3c3f274bU
 #define MENU_LABEL_VALUE_RECORDING_CONFIG_DIRECTORY                            0x1f7d918dU
-#define MENU_LABEL_VIDEO_FONT_PATH                                             0xd0de729eU
 #define MENU_LABEL_VIDEO_FILTER                                                0x1c0eb741U
 #define MENU_LABEL_VALUE_VIDEO_FILTER                                          0xc1690382U
 #define MENU_LABEL_PAL60_ENABLE                                                0x62bc416eU
 #define MENU_LABEL_VALUE_PAL60_ENABLE                                          0x05a5bc9aU
-#define MENU_LABEL_MENU_WALLPAPER                                              0x3b84de01U
 #define MENU_LABEL_CONTENT_HISTORY_PATH                                        0x6f22fb9dU
 #define MENU_LABEL_AUDIO_DSP_PLUGIN                                            0x4a69572bU
 #define MENU_LABEL_VALUE_AUDIO_DSP_PLUGIN                                      0x1c9f180dU
@@ -743,7 +732,6 @@ extern "C" {
 #define MENU_LABEL_CORE_ASSETS_DIRECTORY                                       0x8ba5ee54U
 #define MENU_LABEL_VALUE_CORE_ASSETS_DIRECTORY                                 0x319b6c96U
 #define MENU_LABEL_CONTENT_DIRECTORY                                           0x7738dc14U
-#define MENU_LABEL_SCREENSHOT_DIRECTORY                                        0x552612d7U
 #define MENU_LABEL_VALUE_SCREENSHOT_DIRECTORY                                  0x42186f78U
 #define MENU_LABEL_INPUT_REMAPPING_DIRECTORY                                   0x5233c20bU
 #define MENU_LABEL_VALUE_INPUT_REMAPPING_DIRECTORY                             0xe81058adU
@@ -753,17 +741,14 @@ extern "C" {
 #define MENU_LABEL_VALUE_VIDEO_FILTER_DIR                                      0xbb865957U
 #define MENU_LABEL_AUDIO_FILTER_DIR                                            0x4bd96ebaU
 #define MENU_LABEL_VALUE_AUDIO_FILTER_DIR                                      0x509bb77cU
-#define MENU_LABEL_SAVESTATE_DIRECTORY                                         0x90551289U
 #define MENU_LABEL_LIBRETRO_DIR_PATH                                           0x1af1eb72U
 #define MENU_LABEL_VALUE_LIBRETRO_DIR_PATH                                     0xf606d103U
 #define MENU_LABEL_LIBRETRO_INFO_PATH                                          0xe552b25fU
 #define MENU_LABEL_VALUE_LIBRETRO_INFO_PATH                                    0x3f39960fU
 #define MENU_LABEL_RGUI_CONFIG_DIRECTORY                                       0x0cb3e005U
 #define MENU_LABEL_VALUE_RGUI_CONFIG_DIRECTORY                                 0x20eb5170U
-#define MENU_LABEL_SAVEFILE_DIRECTORY                                          0x92773488U
 #define MENU_LABEL_OVERLAY_DIRECTORY                                           0xc4ed3d1bU
 #define MENU_LABEL_VALUE_OVERLAY_DIRECTORY                                     0xdb8925bcU
-#define MENU_LABEL_SYSTEM_DIRECTORY                                            0x35a6fb9eU
 #define MENU_LABEL_VALUE_SYSTEM_DIRECTORY                                      0x20da683fU
 #define MENU_LABEL_ASSETS_DIRECTORY                                            0xde1ae8ecU
 #define MENU_LABEL_VALUE_ASSETS_DIRECTORY                                      0xc94e558dU
@@ -771,8 +756,8 @@ extern "C" {
 #define MENU_LABEL_VALUE_EXTRACTION_DIRECTORY                                  0x20a7bc9bU
 #define MENU_LABEL_JOYPAD_AUTOCONFIG_DIR                                       0x2f4822d8U
 #define MENU_LABEL_VALUE_JOYPAD_AUTOCONFIG_DIR                                 0x8bb1c2c9U
-#define MENU_LABEL_VALUE_INPUT_AUTODETECT_ENABLE                               0xf5209bdbU
 #define MENU_LABEL_INPUT_AUTODETECT_ENABLE                                     0xb1e07facU
+#define MENU_LABEL_VALUE_INPUT_AUTODETECT_ENABLE                               0xf5209bdbU
 #define MENU_LABEL_VALUE_DRIVER_SETTINGS                                       0x81cd2d62U
 #define MENU_LABEL_VALUE_CORE_SETTINGS                                         0xcddea047U
 #define MENU_LABEL_VALUE_CONFIGURATION_SETTINGS                                0x5a1558ceU
@@ -849,7 +834,6 @@ extern "C" {
 #define MENU_LABEL_TAKE_SCREENSHOT                                             0x6786e867U
 #define MENU_LABEL_VALUE_TAKE_SCREENSHOT                                       0xab767128U
 #define MENU_LABEL_FILE_LOAD_OR_RESUME                                         0x952941f4U
-#define MENU_LABEL_DISK_IMAGE_APPEND                                           0x5af7d709U
 #define MENU_LABEL_CONFIGURATIONS                                              0x3e930a50U
 #define MENU_LABEL_VALUE_CONFIGURATIONS                                        0xce036cfdU
 #define MENU_LABEL_VALUE_CHEAT_FILE_SAVE_AS                                    0xf2498a2dU
