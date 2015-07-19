@@ -19,6 +19,15 @@
 #include "../../configuration.h"
 #include "../menu_hash.h"
 
+ /* IMPORTANT:
+  * For non-english characters to work without proper unicode support,
+  * we need this file to be encoded in ISO 8859-1 (Latin1), not UTF-8.
+  * If you save this file as UTF-8, you'll break non-english characters
+  * (e.g. German "Umlauts" and Portugese diacritics).
+ */
+/* DO NOT REMOVE THIS. If it causes build failure, it's because you saved the file as UTF-8. Read the above comment. */
+extern const char force_iso_8859_1[sizeof("äÄöÖßüÜ")==7+1 ? 1 : -1];
+
 const char *menu_hash_to_str_es(uint32_t hash)
 {
 
