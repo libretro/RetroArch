@@ -58,9 +58,10 @@ static bool gl_raster_font_upload_atlas(gl_raster_t *font,
    GLenum gl_format   = GL_LUMINANCE_ALPHA;
    size_t ncomponents = 2;
    uint8_t       *tmp = NULL;
+   struct retro_hw_render_callback *cb = video_driver_callback();
+   bool ancient = false; /* add a check here if needed */
 
 #ifndef HAVE_OPENGLES
-   struct retro_hw_render_callback *cb = video_driver_callback();
    bool modern = font->gl->core_context ||
          (cb->context_type == RETRO_HW_CONTEXT_OPENGL &&
           cb->version_major >= 3);
@@ -74,7 +75,13 @@ static bool gl_raster_font_upload_atlas(gl_raster_t *font,
       gl_format   = GL_RED;
       ncomponents = 1;
    }
+   else
 #endif
+   if (ancient)
+   {
+      gl_internal = gl_format = GL_RGBA;
+      ncomponents = 4;
+   }
 
    tmp = (uint8_t*)calloc(height, width * ncomponents);
 
@@ -86,18 +93,32 @@ static bool gl_raster_font_upload_atlas(gl_raster_t *font,
       const uint8_t *src = &atlas->buffer[i * atlas->width];
       uint8_t       *dst = &tmp[i * width * ncomponents];
 
-      if (ncomponents == 1)
+      switch (ncomponents)
       {
-         memcpy(dst, src, atlas->width);
-         src += atlas->width;
-      }
-      else if (ncomponents == 2)
-      {
-         for (j = 0; j < atlas->width; ++j)
-         {
-            *dst++ = 0xff;
-            *dst++ = *src++;
-         }
+         case 1:
+            memcpy(dst, src, atlas->width);
+            src += atlas->width;
+            break;
+         case 2:
+            for (j = 0; j < atlas->width; ++j)
+            {
+               *dst++ = 0xff;
+               *dst++ = *src++;
+            }
+            break;
+         case 4:
+            for (j = 0; j < atlas->width; ++j)
+            {
+               *dst++ = 0xff;
+               *dst++ = 0xff;
+               *dst++ = 0xff;
+               *dst++ = *src++;
+            }
+            break;
+         default:
+            RARCH_ERR("Unsupported number of components: %u\n", (unsigned)ncomponents);
+            free(tmp);
+            return false;
       }
    }
 
