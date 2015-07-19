@@ -63,6 +63,8 @@ static bool gl_raster_font_upload_atlas(gl_raster_t *font,
    bool modern = font->gl->core_context ||
          (cb->context_type == RETRO_HW_CONTEXT_OPENGL &&
           cb->version_major >= 3);
+	
+   (void)modern;
 
    if (ancient)
    {
