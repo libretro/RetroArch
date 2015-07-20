@@ -76,7 +76,7 @@
 #define RETRO_LBL_DISK_EJECT_TOGGLE "Alt. expulsar disco"
 #define RETRO_LBL_DISK_NEXT "Cambiar a siguiente disco"
 #define RETRO_LBL_DISK_PREV "Cambiar a disco anterior"
-#define RETRO_LBL_GRAB_MOUSE_TOGGLE "Alternar uso de ratón"
+#define RETRO_LBL_GRAB_MOUSE_TOGGLE "Alternar captura de ratón"
 #define RETRO_LBL_MENU_TOGGLE "Alternar menú"
 
 #endif

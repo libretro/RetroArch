@@ -250,9 +250,9 @@ const char *menu_hash_to_str_es(uint32_t hash)
       case MENU_LABEL_VALUE_VIDEO_FILTER_DIR:
          return "Carpeta de filtros de vídeo";
       case MENU_LABEL_VALUE_OVERLAY_DIRECTORY:
-         return "Carpeta de superimposiciones";
+         return "Carpeta de sobreimposiciones";
       case MENU_LABEL_VALUE_OSK_OVERLAY_DIRECTORY:
-         return "Carpeta de teclados superimpuestos";
+         return "Carpeta de teclados sobreimpuestos";
       case MENU_LABEL_VALUE_NETPLAY_CLIENT_SWAP_INPUT:
          return "Intercambiar entrada en red";
       case MENU_LABEL_VALUE_NETPLAY_SPECTATOR_MODE_ENABLE:
@@ -416,7 +416,7 @@ const char *menu_hash_to_str_es(uint32_t hash)
       case MENU_LABEL_VALUE_INPUT_OSK_OVERLAY_ENABLE:
          return "Mostrar teclado superpuesto";
       case MENU_LABEL_VALUE_INPUT_OVERLAY_ENABLE:
-         return "Mostrar superimposición";
+         return "Mostrar sobreimposición";
       case MENU_LABEL_VALUE_VIDEO_MONITOR_INDEX:
          return "Índice del monitor";
       case MENU_LABEL_VALUE_VIDEO_FRAME_DELAY:
@@ -436,7 +436,7 @@ const char *menu_hash_to_str_es(uint32_t hash)
       case MENU_LABEL_VALUE_AUDIO_OUTPUT_RATE:
          return "Frecuencia de salida de sonido (KHz)";
       case MENU_LABEL_VALUE_AUDIO_MAX_TIMING_SKEW:
-         return "Corte máximo de sincronía de sonido";
+         return "Variación máxima de sincronía de sonido";
       case MENU_LABEL_VALUE_CHEAT_NUM_PASSES:
          return "Pasadas de trucos";
       case MENU_LABEL_VALUE_REMAP_FILE_SAVE_CORE:
@@ -648,7 +648,7 @@ const char *menu_hash_to_str_es(uint32_t hash)
       case MENU_LABEL_VALUE_UPDATE_DATABASES:
          return "Actualizar bases de datos";
       case MENU_LABEL_VALUE_UPDATE_OVERLAYS:
-         return "Actualizar sobreimposiciones";
+         return "Actualizar superimposiciones";
       case MENU_LABEL_VALUE_UPDATE_CG_SHADERS:
          return "Actualizar shaders Cg";
       case MENU_LABEL_VALUE_UPDATE_GLSL_SHADERS:
@@ -710,7 +710,7 @@ const char *menu_hash_to_str_es(uint32_t hash)
       case MENU_LABEL_VALUE_SYSTEM_INFO_LIBRETRODB_SUPPORT:
          return "Soporte de LibretroDB";
       case MENU_LABEL_VALUE_SYSTEM_INFO_OVERLAY_SUPPORT:
-         return "Soporte de sobreimposiciones";
+         return "Soporte de superimposiciones";
       case MENU_LABEL_VALUE_SYSTEM_INFO_COMMAND_IFACE_SUPPORT:
          return "Soporte de interfaz de comandos";
       case MENU_LABEL_VALUE_SYSTEM_INFO_NETWORK_COMMAND_IFACE_SUPPORT:
@@ -846,7 +846,7 @@ const char *menu_hash_to_str_es(uint32_t hash)
       case MENU_LABEL_VALUE_ONSCREEN_DISPLAY_SETTINGS:
          return "Textos en pantalla (OSD)";
       case MENU_LABEL_VALUE_OVERLAY_SETTINGS:
-         return "Sobreimposición";
+         return "Superimposición";
       case MENU_LABEL_VALUE_MENU_SETTINGS:
          return "Menú";
       case MENU_LABEL_VALUE_MULTIMEDIA_SETTINGS:
@@ -908,7 +908,7 @@ const char *menu_hash_to_str_es(uint32_t hash)
       case MENU_VALUE_SEARCH:
          return "Buscar:";
       case MENU_LABEL_VALUE_USE_BUILTIN_IMAGE_VIEWER:
-         return "Utilizar visualizador de imágenes integrado";
+         return "Usar visualizador de imágenes integrado";
       default:
          break;
    }
@@ -926,9 +926,9 @@ int menu_hash_get_help_es(uint32_t hash, char *s, size_t len)
       case MENU_LABEL_VALUE_HELP_AUDIO_VIDEO_TROUBLESHOOTING_DESC:
          snprintf(s, len,
                "RetroArch utiliza un formato único para\n"
-               "sincronizar vídeo y sonido que necesita ser\n"
-               "calibrado con la tasa de actualización de tu\n"
-               "monitor para obtener el mejor rendimiento.\n"
+               "sincronizar vídeo y sonido que necesita\n"
+               "calibrarse con la tasa de actualización de\n"
+               "tu monitor para obtener el mejor rendimiento.\n"
                " \n"
                "Si notas cortes de sonido o en la imagen,\n"
                "lo normal es que necesites calibrar estos\n"
@@ -1197,7 +1197,7 @@ int menu_hash_get_help_es(uint32_t hash, char *s, size_t len)
          snprintf(s, len,
                "Cargar preajustes de shaders. \n"
                " \n"
-               " Carga un preajuste "
+               " Carga directamente un preajuste "
 #ifdef HAVE_CG
                "Cg"
 #endif
@@ -1213,7 +1213,7 @@ int menu_hash_get_help_es(uint32_t hash, char *s, size_t len)
 #endif
                "HLSL"
 #endif
-               " directamente. \n"
+               ". \n"
                "El menú de shaders se actualizará. \n"
                " \n"
                "Si el CGP utiliza métodos de escalado \n"
@@ -1227,122 +1227,133 @@ int menu_hash_get_help_es(uint32_t hash, char *s, size_t len)
          snprintf(s, len,
                "La escala de esta pasada. \n"
                " \n"
-               "The scale factor accumulates, i.e. 2x \n"
-               "for first pass and 2x for second pass \n"
-               "will give you a 4x total scale. \n"
+               "El factor de escala es acumulativo, \n"
+			   "por ejemplo: 2x para el primer pase y \n"
+			   "2x para el segundo dará una escala \n"
+			   "total de 4x. \n"
                " \n"
-               "If there is a scale factor for last \n"
-               "pass, the result is stretched to \n"
-               "screen with the filter specified in \n"
-               "'Default Filter'. \n"
+               "Si el último pase tiene un factor de \n"
+			   "escala, el resultado se estirará por \n"
+			   "toda la pantalla con el filtro espe- \n"
+			   "cificado en 'Filtro predeterminado'. \n"
                " \n"
-               "If 'Don't Care' is set, either 1x \n"
-               "scale or stretch to fullscreen will \n"
-               "be used depending if it's not the last \n"
-               "pass or not."
+               "Si has seleccionado 'No importa', se \n"
+			   "utilizará o bien la escala 1x o se \n"
+			   "estirará a pantalla completa en función \n"
+			   "de si es el último pase o no."
                );
          break;
       case MENU_LABEL_VIDEO_SHADER_NUM_PASSES:
          snprintf(s, len,
-               "Shader Passes. \n"
+               "Pases de shaders. \n"
                " \n"
-               "RetroArch allows you to mix and match various \n"
-               "shaders with arbitrary shader passes, with \n"
-               "custom hardware filters and scale factors. \n"
+               "RetroArch permite mezclar diversos shaders \n"
+			   "con pasadas arbitrarias, filtros persona- \n"
+			   "lizados de hardware y factores de escala. \n"
                " \n"
-               "This option specifies the number of shader \n"
-               "passes to use. If you set this to 0, and use \n"
-               "Apply Shader Changes, you use a 'blank' shader. \n"
+               "Esta opción especifica la cantidad de pasadas \n"
+			   "de shaders a utilizar. Si seleccionas 0 y \n"
+			   "luego 'Aplicar cambios en shaders', \n"
+			   "utilizarás un shader 'en blanco'. \n"
                " \n"
-               "The Default Filter option will affect the \n"
-               "stretching filter.");
+               "La opción filtro predeterminado afectará \n"
+			   "al filtro de estiramiento.");
          break;
       case MENU_LABEL_VIDEO_SHADER_PARAMETERS:
          snprintf(s, len,
-               "Shader Parameters. \n"
+               "Parámetros de shaders. \n"
                " \n"
-               "Modifies current shader directly. Will not be \n"
-               "saved to CGP/GLSLP preset file.");
+               "Modifica directamente el shader actual. \n"
+			   "No se guardará en el preajuste CGP/GLSLP.");
          break;
       case MENU_LABEL_VIDEO_SHADER_PRESET_PARAMETERS:
          snprintf(s, len,
-               "Shader Preset Parameters. \n"
+               "Parámetros del preajuste de shaders. \n"
                " \n"
-               "Modifies shader preset currently in menu."
+               "Modifica el preajuste de shaders que \n"
+			   "se encuentra actualmente en el menú."
                );
          break;
       case MENU_LABEL_VIDEO_SHADER_PASS:
          snprintf(s, len,
-               "Path to shader. \n"
+               "Ruta al shader. \n"
                " \n"
-               "All shaders must be of the same \n"
-               "type (i.e. CG, GLSL or HLSL). \n"
+               "Todos los shaders deben ser del \n"
+			   "mismo tipo (por ejemplo: CG, GLSL \n"
+			   "o HLSL). \n"
                " \n"
-               "Set Shader Directory to set where \n"
-               "the browser starts to look for \n"
-               "shaders."
+               "Modifica la carpeta de shaders para \n"
+			   "indicar la ruta en la que el navegador \n"
+			   "comenzará a buscar shaders."
                );
          break;
       case MENU_LABEL_CONFIG_SAVE_ON_EXIT:
          snprintf(s, len,
-               "Saves config to disk on exit.\n"
-               "Useful for menu as settings can be\n"
-               "modified. Overwrites the config.\n"
+               "Guarda la configuración al salir.\n"
+               "Es útil para el menú, ya que los \n"
+			   "ajustes pueden ser modificados. \n"
+			   "Sobrescribirá la configuración. \n"
                " \n"
-               "#include's and comments are not \n"
-               "preserved. \n"
+               "No se preservarán los #include \n"
+			   "y los comentarios. \n"
                " \n"
-               "By design, the config file is \n"
-               "considered immutable as it is \n"
-               "likely maintained by the user, \n"
-               "and should not be overwritten \n"
-               "behind the user's back."
+               "El archivo de configuración se \n"
+			   "considera inmutable por diseño \n"
+			   "ya que es probable que el usuario \n"
+			   "lo controle, y no debería ser \n"
+			   "sobrescrito sin que el usuario \n"
+			   "no se entere."
 #if defined(RARCH_CONSOLE) || defined(RARCH_MOBILE)
-               "\nThis is not not the case on \n"
-               "consoles however, where \n"
-               "looking at the config file \n"
-               "manually isn't really an option."
+               "\nSin embargo, no suele ser el caso \n"
+			   "en consolas, donde no es posible \n"
+			   "examinar el archivo de configuración \n"
+			   "de forma manual."
 #endif
                );
          break;
       case MENU_LABEL_VIDEO_SHADER_FILTER_PASS:
          snprintf(s, len,
-               "Hardware filter for this pass. \n"
+               "Filtro de hardware para esta pasada. \n"
                " \n"
-               "If 'Don't Care' is set, 'Default \n"
-               "Filter' will be used."
+               "Si se ha seleccionado 'No importa', \n"
+			   "se utilizará el filtro predeterminado."
                );
          break;
       case MENU_LABEL_AUTOSAVE_INTERVAL:
          snprintf(s, len,
-               "Autosaves the non-volatile SRAM \n"
-               "at a regular interval.\n"
+               "Guarda automáticamente la SRAM \n"
+			   "no volátil en intervalos regulares.\n"
                " \n"
-               "This is disabled by default unless set \n"
-               "otherwise. The interval is measured in \n"
-               "seconds. \n"
+               "Esta opción está desactivada por \n"
+			   "defecto a menos que se haya configurado \n"
+			   "lo contrario. El intervalo se mide \n"
+			   "en segundos. \n"
                " \n"
-               "A value of 0 disables autosave.");
+               "Si utlizas 0, desactivarás el \n"
+			   "guardado automático.");
          break;
       case MENU_LABEL_INPUT_BIND_DEVICE_TYPE:
          snprintf(s, len,
-               "Input Device Type. \n"
+               "Tipo de dispositivo de entrada. \n"
                " \n"
-               "Picks which device type to use. This is \n"
-               "relevant for the libretro core itself."
+               "Selecciona el tipo de dispositivo a \n"
+			   "utilizar. Es relevante para el núcleo \n"
+			   "de libretro."
                );
          break;
       case MENU_LABEL_LIBRETRO_LOG_LEVEL:
          snprintf(s, len,
-               "Sets log level for libretro cores \n"
-               "(GET_LOG_INTERFACE). \n"
+               "Ajusta el nivel de registro de los \n"
+			   "núcleos de libretro (GET_LOG_INTERFACE). \n"
                " \n"
-               " If a log level issued by a libretro \n"
-               " core is below libretro_log level, it \n"
-               " is ignored.\n"
+               " Si un nivel de registro indicado por \n"
+			   " un núcleo de libretro está por debajo \n"
+			   " del nivel indicado en libretro_log, \n"
+			   " será ignorado.\n"
                " \n"
-               " DEBUG logs are always ignored unless \n"
-               " verbose mode is activated (--verbose).\n"
+               " Los registros DEBUG siempre son ignorados \n"
+			   " a menos que esté activado el modo \n"
+			   " de verbosidad (--verbose).\n"
                " \n"
                " DEBUG = 0\n"
                " INFO  = 1\n"
@@ -1353,397 +1364,442 @@ int menu_hash_get_help_es(uint32_t hash, char *s, size_t len)
       case MENU_LABEL_STATE_SLOT_INCREASE:
       case MENU_LABEL_STATE_SLOT_DECREASE:
          snprintf(s, len,
-               "State slots.\n"
+               "Ranuras de guardados rápidos.\n"
                " \n"
-               " With slot set to 0, save state name is *.state \n"
-               " (or whatever defined on commandline).\n"
-               "When slot is != 0, path will be (path)(d), \n"
-               "where (d) is slot number.");
+               " Si se selecciona la ranura 0, el nombre \n"
+			   " del guardado rápido es *.state \n"
+               " (o lo que esté definido en la línea \n"
+			   "de comandos).\n"
+               "Si la ranura es != 0, la ruta será (path)(d), \n"
+               "siendo (d) el número de ranura.");
          break;
       case MENU_LABEL_SHADER_APPLY_CHANGES:
          snprintf(s, len,
-               "Apply Shader Changes. \n"
+               "Aplicar cambios en shaders. \n"
                " \n"
-               "After changing shader settings, use this to \n"
-               "apply changes. \n"
+               "Después de cambiar los ajustes de shaders, \n"
+			   "utiliza esta opción para aplicar los \n"
+			   "cambios. \n"
                " \n"
-               "Changing shader settings is a somewhat \n"
-               "expensive operation so it has to be \n"
-               "done explicitly. \n"
+               "Los cambios en los shaders es una \n"
+			   "operación que ocupa bastante memoria, \n"
+			   "así que han de hacerse de forma \n"
+			   "explícita. \n"
                " \n"
-               "When you apply shaders, the menu shader \n"
-               "settings are saved to a temporary file (either \n"
-               "menu.cgp or menu.glslp) and loaded. The file \n"
-               "persists after RetroArch exits. The file is \n"
-               "saved to Shader Directory."
+               "Al aplicar shaders, se guarda su configuración \n"
+			   "a un archivo temporal (menu.cgp ormenu.glslp) \n"
+			   "y se cargan. El archivo persistirá al \n"
+			   "abandonar RetroArch. El archivo se guarda en \n"
+			   "la carpeta Shader."
                );
          break;
       case MENU_LABEL_INPUT_BIND_DEVICE_ID:
          snprintf(s, len,
-               "Input Device. \n"
+               "Dispositivo de entrada. \n"
                " \n"
-               "Picks which gamepad to use for user N. \n"
-               "The name of the pad is available."
+               "Selecciona el mando a utilizar por \n"
+			   "el usuario N. \n"
+               "El nombre del mando está disponible."
                );
          break;
       case MENU_LABEL_MENU_TOGGLE:
          snprintf(s, len,
-               "Toggles menu.");
+               "Muestra u oculta el menú.");
          break;
       case MENU_LABEL_GRAB_MOUSE_TOGGLE:
          snprintf(s, len,
-               "Toggles mouse grab.\n"
+               "Permite o no capturar el ratón.\n"
                " \n"
-               "When mouse is grabbed, RetroArch hides the \n"
-               "mouse, and keeps the mouse pointer inside \n"
-               "the window to allow relative mouse input to \n"
-               "work better.");
+               "Al capturar el ratón, RetroArch lo oculta \n"
+			   "y mantiene el puntero del ratón dentro de \n"
+			   "la ventana para que la entrada relativa \n"
+			   "del ratón funcione mejor.");
          break;
       case MENU_LABEL_DISK_NEXT:
          snprintf(s, len,
-               "Cycles through disk images. Use after \n"
-               "ejecting. \n"
+               "Rota entre las imágenes de disco. \n"
+			   "Utiliza esta opción después de \n"
+			   "expulsar un disco. \n"
                " \n"
-               " Complete by toggling eject again.");
+               " Termina la operación volviendo \n"
+			   " a conmutar el botón de expulsión.");
          break;
       case MENU_LABEL_VIDEO_FILTER:
 #ifdef HAVE_FILTERS_BUILTIN
          snprintf(s, len,
-               "CPU-based video filter.");
+               "Filtro de vídeo basado en la CPU.");
 #else
          snprintf(s, len,
-               "CPU-based video filter.\n"
+               "Filtro de vídeo basado en la CPU.\n"
                " \n"
-               "Path to a dynamic library.");
+               "Ruta a una librería dinámica.");
 #endif
          break;
       case MENU_LABEL_AUDIO_DEVICE:
          snprintf(s, len,
-               "Override the default audio device \n"
-               "the audio driver uses.\n"
-               "This is driver dependent. E.g.\n"
+               "Anula el dispositivo de sonido \n"
+			   "predeterminado que utiliza el \n"
+			   "controlador de sonido.\n"
+               "Esta opción depende del contro- \n"
+			   "lador. Por ejemplo:\n"
 #ifdef HAVE_ALSA
                " \n"
-               "ALSA wants a PCM device."
+               "ALSA necesita un dispositivo PCM."
 #endif
 #ifdef HAVE_OSS
                " \n"
-               "OSS wants a path (e.g. /dev/dsp)."
+               "OSS necesita una ruta (por ejemplo: \n"
+			   "/dev/dsp)."
 #endif
 #ifdef HAVE_JACK
                " \n"
-               "JACK wants portnames (e.g. system:playback1\n"
+               "JACK necesita nombres de puertos \n"
+			   "(por ejemplo: system:playback1\n"
                ",system:playback_2)."
 #endif
 #ifdef HAVE_RSOUND
                " \n"
-               "RSound wants an IP address to an RSound \n"
-               "server."
+               "RSound necesita una dirección IP \n"
+			   "de un servidor RSound."
 #endif
                );
          break;
       case MENU_LABEL_DISK_EJECT_TOGGLE:
          snprintf(s, len,
-               "Toggles eject for disks.\n"
+               "Alterna el botón de expulsión \n"
+			   "de discos.\n"
                " \n"
-               "Used for multiple-disk content.");
+               "Se utiliza para contenidos \n"
+			   "que utilicen varios discos.");
          break;
       case MENU_LABEL_ENABLE_HOTKEY:
          snprintf(s, len,
-               "Enable other hotkeys.\n"
+               "Activa otras teclas rápidas.\n"
                " \n"
-               " If this hotkey is bound to either keyboard, \n"
-               "joybutton or joyaxis, all other hotkeys will \n"
-               "be disabled unless this hotkey is also held \n"
-               "at the same time. \n"
+               "Si esta tecla rápida está asignada a un \n"
+			   "teclado, un botón o un eje de un joystick, \n"
+			   "el resto de teclas rápidas se desactivarán \n"
+			   "a menos que esta tecla se mantenga pulsada \n"
+			   "al mismo tiempo. \n"
                " \n"
-               "This is useful for RETRO_KEYBOARD centric \n"
-               "implementations which query a large area of \n"
-               "the keyboard, where it is not desirable that \n"
-               "hotkeys get in the way.");
+               "Esto sirve para implementaciones centradas \n"
+			   "en RETRO_KEYBOARD, que ocupan una gran \n"
+			   "porción del teclado y no es una buena idea \n"
+			   "que las teclas rápidas interfieran con \n"
+			   "el funcionamiento normal.");
          break;
       case MENU_LABEL_REWIND_ENABLE:
          snprintf(s, len,
-               "Enable rewinding.\n"
+               "Activa el rebobinado.\n"
                " \n"
-               "This will take a performance hit, \n"
-               "so it is disabled by default.");
+               "Esto consume rendimiento, así que \n"
+			   "está desactivado por defecto.");
          break;
       case MENU_LABEL_LIBRETRO_DIR_PATH:
          snprintf(s, len,
-               "Core Directory. \n"
+               "Carpeta de núcleos. \n"
                " \n"
-               "A directory for where to search for \n"
-               "libretro core implementations.");
+               "Una carpeta donde se buscarán las \n"
+			   "implementaciones de núcleos libretro.");
          break;
       case MENU_LABEL_VIDEO_REFRESH_RATE_AUTO:
          snprintf(s, len,
-               "Refresh Rate Auto.\n"
+               "Tasa de actualización automática.\n"
                " \n"
-               "The accurate refresh rate of our monitor (Hz).\n"
-               "This is used to calculate audio input rate with \n"
-               "the formula: \n"
+               "La tasa de actualización precisa del monitor \n"
+			   "(Hz). Se utiliza para calcular la frecuencia \n"
+			   "de entrada de sonido con esta fórmula: \n"
                " \n"
-               "audio_input_rate = game input rate * display \n"
-               "refresh rate / game refresh rate\n"
+               "audio_input_rate = veloc. de entrada de juego \n"
+			   "* tasa de actualización de pantalla / tasa de \n"
+			   "actualización de juego\n"
                " \n"
-               "If the implementation does not report any \n"
-               "values, NTSC defaults will be assumed for \n"
-               "compatibility.\n"
+               "Si la implementación no indica un valor, se \n"
+			   "asumirá de forma predeterminada el sistema \n"
+			   "NTSC por compatibilidad.\n"
                " \n"
-               "This value should stay close to 60Hz to avoid \n"
-               "large pitch changes. If your monitor does \n"
-               "not run at 60Hz, or something close to it, \n"
-               "disable VSync, and leave this at its default.");
+               "Este valor debería ser lo más similar a 60Hz \n"
+			   "para evitar cambios en el tono. Si tu \n"
+			   "monitor no funciona a 60Hz o similar, \n"
+			   "desactiva la sincronía vertical y deja \n"
+			   "esta opción en su valor predeterminado.");
          break;
       case MENU_LABEL_VIDEO_ROTATION:
          snprintf(s, len,
-               "Forces a certain rotation \n"
-               "of the screen.\n"
+               "Fuerza una rotación concreta \n"
+			   "de la pantalla.\n"
                " \n"
-               "The rotation is added to rotations which\n"
-               "the libretro core sets (see Video Allow\n"
-               "Rotate).");
+               "La rotación se añade a las rotaciones \n"
+			   "que indique el núcleo libretro (ver \n"
+			   "Permitir rotación de vídeo).");
          break;
       case MENU_LABEL_VIDEO_SCALE:
          snprintf(s, len,
-               "Fullscreen resolution.\n"
+               "Resolución en pantalla completa.\n"
                " \n"
-               "Resolution of 0 uses the \n"
-               "resolution of the environment.\n");
+               "Si se indica 0, se utilizará la \n"
+			   "resolución del entorno.\n");
          break;
       case MENU_LABEL_FASTFORWARD_RATIO:
          snprintf(s, len,
-               "Fastforward ratio."
+               "Proporción de aceleración."
                " \n"
-               "The maximum rate at which content will\n"
-               "be run when using fast forward.\n"
+               "Indica la velocidad máxima a la que \n"
+			   "se ejecutará el contenido mientras \n"
+			   "es acelerado.\n"
                " \n"
-               " (E.g. 5.0 for 60 fps content => 300 fps \n"
-               "cap).\n"
+               " (Por ejemplo, 5.0 para un contenido \n"
+			   "a 60 FPS => Máximo de 300 FPS).\n"
                " \n"
-               "RetroArch will go to sleep to ensure that \n"
-               "the maximum rate will not be exceeded.\n"
-               "Do not rely on this cap to be perfectly \n"
-               "accurate.");
+               "RetroArch pasará a segundo plano \n"
+			   "para asegurarse de que no se supere \n"
+			   "la velocidad máxima. Este límite \n"
+			   "no es completamente preciso.");
          break;
       case MENU_LABEL_VIDEO_MONITOR_INDEX:
          snprintf(s, len,
-               "Which monitor to prefer.\n"
+               "Monitor preferido.\n"
                " \n"
-               "0 (default) means no particular monitor \n"
-               "is preferred, 1 and up (1 being first \n"
-               "monitor), suggests RetroArch to use that \n"
-               "particular monitor.");
+               "0 (predeterminado) significa que no hay \n"
+			   "preferencia por un monitor en concreto, \n"
+			   "y de 1 en adelante (siendo 1 el primer \n"
+			   "monitor) sugiere a RetroArch que \n"
+			   "utilice ese monitor específico.");
          break;
       case MENU_LABEL_VIDEO_CROP_OVERSCAN:
          snprintf(s, len,
-               "Forces cropping of overscanned \n"
-               "frames.\n"
+               "Obliga a recortar los fotogramas \n"
+			   "con overscan.\n"
                " \n"
-               "Exact behavior of this option is \n"
-               "core-implementation specific.");
+               "El comportamiento exacto de esta \n"
+			   "opción depende de la implementación \n"
+			   "del núcleo.");
          break;
       case MENU_LABEL_VIDEO_SCALE_INTEGER:
          snprintf(s, len,
-               "Only scales video in integer \n"
-               "steps.\n"
+               "Solo escala el vídeo con números \n"
+			   "enteros.\n"
                " \n"
-               "The base size depends on system-reported \n"
-               "geometry and aspect ratio.\n"
+               "El tamaño base depende de la geometría \n"
+			   "que indique el sistema y de la \n"
+			   "proporción de aspecto.\n"
                " \n"
-               "If Force Aspect is not set, X/Y will be \n"
-               "integer scaled independently.");
+               "Si no se ha configurado la opción \n"
+			   "Forzar proporción, los valores X/Y \n"
+			   "se escalarán de forma independiente \n"
+			   "según números enteros.");
          break;
       case MENU_LABEL_AUDIO_VOLUME:
          snprintf(s, len,
-               "Audio volume, expressed in dB.\n"
+               "Volumen de sonido expresado en dB.\n"
                " \n"
-               " 0 dB is normal volume. No gain will be applied.\n"
-               "Gain can be controlled in runtime with Input\n"
-               "Volume Up / Input Volume Down.");
+               "0 dB es el volumen normal, sin ganancia \n"
+			   "aplicada. La ganancia se puede controlar \n"
+			   "en tiempo real con los botones de \n"
+			   "Subir volumen / Bajar volumen.");
          break;
       case MENU_LABEL_AUDIO_RATE_CONTROL_DELTA:
          snprintf(s, len,
-               "Audio rate control.\n"
+               "Control de la frecuencia de sonido.\n"
                " \n"
-               "Setting this to 0 disables rate control.\n"
-               "Any other value controls audio rate control \n"
-               "delta.\n"
+               "Si seleccionas 0, desactivarás el control \n"
+			   "de la frecuencia. Cualquier otro valor \n"
+			   "cambiará el delta de control de la \n"
+			   "frecuencia de sonido.\n"
                " \n"
-               "Defines how much input rate can be adjusted \n"
-               "dynamically.\n"
+               "Define cuánta frecuencia de entrada puede \n"
+			   "ajustarse de forma dinámica.\n"
                " \n"
-               " Input rate is defined as: \n"
-               " input rate * (1.0 +/- (rate control delta))");
+               " La frecuencia de entrada se define como: \n"
+               " frecuencia de entrada * (1.0 +/- \n"
+			   "(delta de control de frecuencia))");
          break;
       case MENU_LABEL_AUDIO_MAX_TIMING_SKEW:
          snprintf(s, len,
-               "Maximum audio timing skew.\n"
+               "Variación máxima en la sincronía de \n"
+			   "sonido.\n"
                " \n"
-               "Defines the maximum change in input rate.\n"
-               "You may want to increase this to enable\n"
-               "very large changes in timing, for example\n"
-               "running PAL cores on NTSC displays, at the\n"
-               "cost of inaccurate audio pitch.\n"
+               "Define la variación máxima de la \n"
+			   "frecuencia de entrada. Podrías aumentar \n"
+			   "el valor para cambiar la sincronía, por \n"
+			   "ejemplo, si ejecutas núcleos PAL en \n"
+			   "monitores NTSC, a cambio de tener un \n"
+			   "tono de sonido impreciso.\n"
                " \n"
-               " Input rate is defined as: \n"
-               " input rate * (1.0 +/- (max timing skew))");
+               " La frecuencia de entrada se define como: \n"
+               " frecuencia de entrada * (1.0 +/- \n"
+			   "(variación máxima de sincronía))");
          break;
       case MENU_LABEL_OVERLAY_NEXT:
          snprintf(s, len,
-               "Toggles to next overlay.\n"
+               "Cambia a la siguiente sobreimposición.\n"
                " \n"
-               "Wraps around.");
+               "Se expande alrededor.");
          break;
       case MENU_LABEL_LOG_VERBOSITY:
          snprintf(s, len,
-               "Enable or disable verbosity level \n"
-               "of frontend.");
+               "Activa o desactiva el nivel de \n"
+			   "verbosidad del frontend.");
          break;
       case MENU_LABEL_VOLUME_UP:
          snprintf(s, len,
-               "Increases audio volume.");
+               "Aumenta el volumen del sonido.");
          break;
       case MENU_LABEL_VOLUME_DOWN:
          snprintf(s, len,
-               "Decreases audio volume.");
+               "Disminuye el volumen del sonido.");
          break;
       case MENU_LABEL_VIDEO_DISABLE_COMPOSITION:
          snprintf(s, len,
-               "Forcibly disable composition.\n"
-               "Only valid on Windows Vista/7 for now.");
+               "Desactiva por la fuerza la composición.\n"
+               "Actualmente solo funciona en \n"
+			   "Windows Vista/7.");
          break;
       case MENU_LABEL_PERFCNT_ENABLE:
          snprintf(s, len,
-               "Enable or disable frontend \n"
-               "performance counters.");
+               "Activa o desactiva los contadores \n"
+			   "de rendimiento del frontend.");
          break;
       case MENU_LABEL_SYSTEM_DIRECTORY:
          snprintf(s, len,
-               "System Directory. \n"
+               "Carpeta de sistemas. \n"
                " \n"
-               "Sets the 'system' directory.\n"
-               "Cores can query for this\n"
-               "directory to load BIOSes, \n"
-               "system-specific configs, etc.");
+               "Asigna la carpeta 'system'.\n"
+			   "Los núcleos pueden buscar dentro \n"
+			   "de ella para cargar BIOS, \n"
+			   "configuraciones específicas para \n"
+			   "un sistema, etc.");
          break;
       case MENU_LABEL_SAVESTATE_AUTO_SAVE:
          snprintf(s, len,
-               "Automatically saves a savestate at the \n"
-               "end of RetroArch's lifetime.\n"
+               "Guarda automáticamente un guardado rápido \n"
+			   "al terminar la ejecución de RetroArch.\n"
                " \n"
-               "RetroArch will automatically load any savestate\n"
-               "with this path on startup if 'Auto Load State\n"
-               "is enabled.");
+               "RetroArch cargará automáticamente cualquier \n"
+			   "guardado rápido que se encuentre en esa ruta \n"
+			   "al arrancar si la opción 'Cargar guardado \n"
+			   "rápido automáticamente' está activada.");
          break;
       case MENU_LABEL_VIDEO_THREADED:
          snprintf(s, len,
-               "Use threaded video driver.\n"
+               "Utilizar un controlador de vídeo \n"
+			   "multinúcleo.\n"
                " \n"
-               "Using this might improve performance at \n"
-               "possible cost of latency and more video \n"
-               "stuttering.");
+               "Esta opción podría mejorar el rendimiento \n"
+			   "a costa de ganar retraso y perder fluidez \n"
+			   "de vídeo.");
          break;
       case MENU_LABEL_VIDEO_VSYNC:
          snprintf(s, len,
-               "Video V-Sync.\n");
+               "Sincronía vertical para vídeo.\n");
          break;
       case MENU_LABEL_VIDEO_HARD_SYNC:
          snprintf(s, len,
-               "Attempts to hard-synchronize \n"
-               "CPU and GPU.\n"
+               "Intenta sincronizar la CPU \n"
+			   "y la GPU por hardware.\n"
                " \n"
-               "Can reduce latency at cost of \n"
-               "performance.");
+               "Puede reducir el retraso a costa \n"
+			   "de perder rendimiento.");
          break;
       case MENU_LABEL_REWIND_GRANULARITY:
          snprintf(s, len,
-               "Rewind granularity.\n"
+               "Nivel de detalle del rebobinado.\n"
                " \n"
-               " When rewinding defined number of \n"
-               "frames, you can rewind several frames \n"
-               "at a time, increasing the rewinding \n"
-               "speed.");
+               "Cuando se rebobina un número determinado \n"
+               "de fotogramas, puedes rebobinar varios \n"
+			   "fotogramas a la vez, aumentando la \n"
+			   "velocidad de rebobinado.");
          break;
       case MENU_LABEL_SCREENSHOT:
          snprintf(s, len,
-               "Take screenshot.");
+               "Capturar la pantalla.");
          break;
       case MENU_LABEL_VIDEO_FRAME_DELAY:
          snprintf(s, len,
-               "Sets how many milliseconds to delay\n"
-               "after VSync before running the core.\n"
+               "Ajusta la cantidad de retraso en \n"
+			   "milisegundos después de la sincronía \n"
+			   "vertical antes de ejecutar el núcleo.\n"
                "\n"
-               "Can reduce latency at cost of\n"
-               "higher risk of stuttering.\n"
+               "Puede reducir el retraso a costa de \n"
+			   "aumentar la probabilidad de perder \n"
+			   "fluidez.\n"
                " \n"
-               "Maximum is 15.");
+               "El valor máximo es 15.");
          break;
       case MENU_LABEL_VIDEO_HARD_SYNC_FRAMES:
          snprintf(s, len,
-               "Sets how many frames CPU can \n"
-               "run ahead of GPU when using 'GPU \n"
-               "Hard Sync'.\n"
+               "Ajusta la cantidad de fotogramas \n"
+			   "que puede adelantar la CPU a la GPU \n"
+			   "al utilizar 'Sincronizar fotogramas \n"
+			   "de CPU por hardware'.\n"
                " \n"
-               "Maximum is 3.\n"
+               "El valor máximo es 3.\n"
                " \n"
-               " 0: Syncs to GPU immediately.\n"
-               " 1: Syncs to previous frame.\n"
-               " 2: Etc ...");
+               " 0: Sincroniza inmediatamente a GPU.\n"
+               " 1: Sincroniza con el fotograma anterior.\n"
+               " 2: Etc...");
          break;
       case MENU_LABEL_VIDEO_BLACK_FRAME_INSERTION:
          snprintf(s, len,
-               "Inserts a black frame inbetween \n"
-               "frames.\n"
+               "Introduce un fotograma negro \n"
+			   "entre fotogramas.\n"
                " \n"
-               "Useful for 120 Hz monitors who want to \n"
-               "play 60 Hz material with eliminated \n"
-               "ghosting.\n"
+               "Es útil para los monitores que \n"
+			   "funcionan a 120 Hz y quieren jugar \n"
+			   "a material a 60 Hz eliminando el \n"
+			   "ghosting.\n"
                " \n"
-               "Video refresh rate should still be \n"
-               "configured as if it is a 60 Hz monitor \n"
-               "(divide refresh rate by 2).");
+               "La tasa de actualización de vídeo \n"
+			   "aún debe configurarse como si utilizaras \n"
+			   "un monitor de 60 Hz (divide la tasa \n"
+			   "de refresco entre 2).");
          break;
       case MENU_LABEL_RGUI_SHOW_START_SCREEN:
          snprintf(s, len,
-               "Show startup screen in menu.\n"
-               "Is automatically set to false when seen\n"
-               "for the first time.\n"
+               "Muestra la pantalla de inicio en el menú.\n"
+               "Se desactiva automáticamente cuando se \n"
+			   "ha visto por primera vez.\n"
                " \n"
-               "This is only updated in config if\n"
-               "'Save Configuration on Exit' is enabled.\n");
+               "Esta opción solo se actualiza dentro \n"
+			   "de la configuración si 'Guardar \n"
+			   "configuración al salir' está activado.\n");
          break;
       case MENU_LABEL_CORE_SPECIFIC_CONFIG:
          snprintf(s, len,
-               "Load up a specific config file \n"
-               "based on the core being used.\n");
+               "Carga un archivo de configuración \n"
+			   "concreto en función del núcleo \n"
+			   "que se vaya a utilizar.\n");
          break;
       case MENU_LABEL_VIDEO_FULLSCREEN:
-         snprintf(s, len, "Toggles fullscreen.");
+         snprintf(s, len, 
+		        "Activa o desactiva el modo \n"
+				"en pantalla completa.");
          break;
       case MENU_LABEL_BLOCK_SRAM_OVERWRITE:
          snprintf(s, len,
-               "Block SRAM from being overwritten \n"
-               "when loading save states.\n"
+               "Impide que la SRAM sea sobrescrita \n"
+			   "mientras se carga un guardado rápido.\n"
                " \n"
-               "Might potentially lead to buggy games.");
+               "Podría provocar defectos en los \n"
+			   "juegos.");
          break;
       case MENU_LABEL_PAUSE_NONACTIVE:
          snprintf(s, len,
-               "Pause gameplay when window focus \n"
-               "is lost.");
+               "Pausa el juego cuando la ventana \n"
+			   "pasa a estar en segundo plano.");
          break;
       case MENU_LABEL_VIDEO_GPU_SCREENSHOT:
          snprintf(s, len,
-               "Screenshots output of GPU shaded \n"
-               "material if available.");
+               "Si es posible, las capturas de \n"
+			   "pantalla se realizan del material \n"
+			   "pos-shaders de GPU.");
          break;
       case MENU_LABEL_SCREENSHOT_DIRECTORY:
          snprintf(s, len,
-               "Screenshot Directory. \n"
+               "Carpeta de capturas de pantalla. \n"
                " \n"
-               "Directory to dump screenshots to."
+               "En esta carpeta se guardarán \n"
+			   "las capturas de pantalla."
                );
          break;
       case MENU_LABEL_VIDEO_SWAP_INTERVAL:
