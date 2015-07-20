@@ -95,9 +95,7 @@ void gl_load_texture_data(GLuint id,
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, mag_filter);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, min_filter);
 
-#ifndef HAVE_PSGL
    glPixelStorei(GL_UNPACK_ALIGNMENT, alignment);
-#endif
    glTexImage2D(GL_TEXTURE_2D,
          0,
          (driver->gfx_use_rgba || !rgb32) ? GL_RGBA : RARCH_GL_INTERNAL_FORMAT32,
