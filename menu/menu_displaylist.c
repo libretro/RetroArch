@@ -89,7 +89,7 @@ static void print_buf_lines(file_list_t *list, char *buf, int buf_size,
             char *last = NULL;
             fill_pathname_join(core_path, settings->libretro_info_path,
                   line_start, sizeof(core_path));
-            
+
             (void)last;
 
             path_remove_extension(core_path);
@@ -814,7 +814,7 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
 
          fill_short_pathname_representation(path_short, path,
                sizeof(path_short));
-         strlcpy(fill_buf, 
+         strlcpy(fill_buf,
                (label && label[0] != '\0') ? label : path_short,
                sizeof(fill_buf));
 
@@ -1936,17 +1936,6 @@ static int menu_displaylist_parse_generic(menu_displaylist_info_t *info, bool *n
       return 0;
    }
 
-#if defined(GEKKO) && defined(HW_RVL)
-   slock_lock(gx_device_mutex);
-   device = gx_get_device_from_path(info->path);
-
-   if (device != -1 && !gx_devices[device].mounted &&
-         gx_devices[device].interface->isInserted())
-      fatMountSimple(gx_devices[device].name, gx_devices[device].interface);
-
-   slock_unlock(gx_device_mutex);
-#endif
-
    path_is_compressed = path_is_compressed_file(info->path);
    push_dir           = (info->setting
          && info->setting->browser_selection_type == ST_DIR);
@@ -2314,7 +2303,7 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
                (type == DISPLAYLIST_PERFCOUNTERS_CORE) ?
                perf_ptr_libretro : perf_ptr_rarch ,
                (type == DISPLAYLIST_PERFCOUNTERS_CORE) ?
-               MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_BEGIN : 
+               MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_BEGIN :
                MENU_SETTINGS_PERF_COUNTERS_BEGIN);
          ret = 0;
 
@@ -2464,7 +2453,7 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
                menu_hash_to_str(MENU_LABEL_VALUE_DISK_INDEX),
                menu_hash_to_str(MENU_LABEL_DISK_INDEX),
                MENU_SETTINGS_CORE_DISK_OPTIONS_DISK_INDEX, 0, 0);
-         menu_list_push(info->list, 
+         menu_list_push(info->list,
                menu_hash_to_str(MENU_LABEL_VALUE_DISK_CYCLE_TRAY_STATUS),
                menu_hash_to_str(MENU_LABEL_DISK_CYCLE_TRAY_STATUS),
                MENU_SETTINGS_CORE_DISK_OPTIONS_DISK_CYCLE_TRAY_STATUS, 0, 0);

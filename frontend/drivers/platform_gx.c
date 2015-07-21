@@ -120,15 +120,16 @@ static void gx_devthread(void *a)
 
       slock_lock(gx_device_mutex);
 
-      for (i = 0; i < GX_DEVICE_END; i++)
-      {
-         if (gx_devices[i].mounted &&
-               !gx_devices[i].interface->isInserted())
-         {
-            gx_devices[i].mounted = false;
-            char n[8];
-            snprintf(n, sizeof(n), "%s:", gx_devices[i].name);
-            fatUnmount(n);
+      for (i = 0; i < GX_DEVICE_END; i++) {
+         if (gx_devices[i].mounted) {
+            if (!gx_devices[i].interface->isInserted()) {
+               gx_devices[i].mounted = false;
+               char n[8];
+               snprintf(n, sizeof(n), "%s:", gx_devices[i].name);
+               fatUnmount(n);
+            }
+         } else if (gx_devices[i].interface->startup() && gx_devices[i].interface->isInserted()) {
+            gx_devices[i].mounted = fatMountSimple(gx_devices[i].name, gx_devices[i].interface);
          }
       }
 
@@ -138,15 +139,6 @@ static void gx_devthread(void *a)
       scond_wait_timeout(gx_device_cond, gx_device_cond_mutex, 1000000);
       slock_unlock(gx_device_cond_mutex);
    }
-}
-
-static int gx_get_device_from_path(const char *path)
-{
-   if (strstr(path, "sd:") == path)
-      return GX_DEVICE_SD;
-   if (strstr(path, "usb:") == path)
-      return GX_DEVICE_USB;
-   return -1;
 }
 #endif
 
