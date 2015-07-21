@@ -543,7 +543,6 @@ struct sunxi_video
    unsigned int menu_pitch;
 
    float aspect_ratio;
-   bool readjust_pending;
 };
 
 static void sunxi_blank_console(struct sunxi_video *_dispvars)
@@ -766,7 +765,7 @@ static bool sunxi_gfx_frame(void *data, const void *frame, unsigned width,
 {
    struct sunxi_video *_dispvars = (struct sunxi_video*)data;
 
-   if (_dispvars->src_width != width || _dispvars->src_height != height || _dispvars->readjust_pending)
+   if (_dispvars->src_width != width || _dispvars->src_height != height)
    {
       /* Sanity check on new dimensions */
       if (width == 0 || height == 0)
@@ -776,7 +775,6 @@ static bool sunxi_gfx_frame(void *data, const void *frame, unsigned width,
             _dispvars->src_width, _dispvars->src_height, width, height);
 
       sunxi_setup_scale(_dispvars, width, height, pitch);
-      _dispvars->readjust_pending = false;
    }
 
    if (_dispvars->menu_active)
@@ -937,8 +935,7 @@ static void sunxi_set_aspect_ratio (void *data, unsigned aspect_ratio_idx)
    float new_aspect = aspectratio_lut[aspect_ratio_idx].value;
    if (new_aspect != _dispvars->aspect_ratio) {
       _dispvars->aspect_ratio = new_aspect;
-      /* So we setup scale again on the next gfx_frame. */
-      _dispvars->readjust_pending = true;
+      sunxi_setup_scale(_dispvars, _dispvars->src_width, _dispvars->src_height, _dispvars->src_pitch);
    }
 }
 
