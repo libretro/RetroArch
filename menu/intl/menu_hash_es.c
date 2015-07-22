@@ -957,13 +957,6 @@ int menu_hash_get_help_es(uint32_t hash, char *s, size_t len)
          break;
       case MENU_LABEL_VALUE_HELP_SCANNING_CONTENT_DESC:
          snprintf(s, len,
-               "Para escanear contenidos ve a '%s' y\n"
-               "selecciona '%s' o %s'.\n"
-               " \n"
-               "Esto comparará los archivos con las entradas\n"
-               "en la base de datos.\n"
-               "Si hay una coincidencia, añadirá una entrada\n"
-               "en una colección.\n"
                "Para escanear contenidos ve a '%s' \n"
                "y selecciona '%s' o \n"
                "'%s'.\n"
@@ -982,9 +975,6 @@ int menu_hash_get_help_es(uint32_t hash, char *s, size_t len)
                "no ser localizable. Entre los ejemplos están\n"
                "PlayStation, MAME, FBA, y puede que otros."
                ,
-               menu_hash_to_str(MENU_LABEL_VALUE_ADD_CONTENT_LIST),
-               menu_hash_to_str(MENU_LABEL_VALUE_SCAN_DIRECTORY),
-               menu_hash_to_str(MENU_LABEL_VALUE_SCAN_FILE),
                menu_hash_to_str(MENU_LABEL_VALUE_ADD_CONTENT_LIST),
                menu_hash_to_str(MENU_LABEL_VALUE_SCAN_DIRECTORY),
                menu_hash_to_str(MENU_LABEL_VALUE_SCAN_FILE),
