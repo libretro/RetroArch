@@ -18,5 +18,6 @@
 #define __INTL_INTERNATIONAL_H
 
 #include "english.h"
+#include "spanish.h"
 
 #endif
