@@ -678,6 +678,9 @@ static void handle_hotplug(android_input_t *android,
       params.idx = *port;
       params.vid = vendorId;
       params.pid = productId;
+      settings->input.pid[*port] = params.pid;
+      settings->input.vid[*port] = params.vid;
+
       strlcpy(params.driver, android_joypad.ident, sizeof(params.driver));
       autoconfigured = input_config_autoconfigure_joypad(&params);
 
