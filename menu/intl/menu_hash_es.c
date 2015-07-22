@@ -38,7 +38,7 @@ const char *menu_hash_to_str_es(uint32_t hash)
       case MENU_LABEL_VALUE_HELP_AUDIO_VIDEO_TROUBLESHOOTING:
          return "Solucionar problemas de vídeo/sonido";
       case MENU_LABEL_VALUE_HELP_CHANGE_VIRTUAL_GAMEPAD:
-         return "Cambiar el mando virtual sobreimpuesto";
+         return "Cambiar el mando virtual superimpuesto";
       case MENU_LABEL_VALUE_HELP_WHAT_IS_A_CORE:
          return "¿Qué es un núcleo?";
       case MENU_LABEL_VALUE_HELP_LOADING_CONTENT:
@@ -250,9 +250,9 @@ const char *menu_hash_to_str_es(uint32_t hash)
       case MENU_LABEL_VALUE_VIDEO_FILTER_DIR:
          return "Carpeta de filtros de vídeo";
       case MENU_LABEL_VALUE_OVERLAY_DIRECTORY:
-         return "Carpeta de sobreimposiciones";
+         return "Carpeta de superimposiciones";
       case MENU_LABEL_VALUE_OSK_OVERLAY_DIRECTORY:
-         return "Carpeta de teclados sobreimpuestos";
+         return "Carpeta de teclados superimpuestos";
       case MENU_LABEL_VALUE_NETPLAY_CLIENT_SWAP_INPUT:
          return "Intercambiar entrada en red";
       case MENU_LABEL_VALUE_NETPLAY_SPECTATOR_MODE_ENABLE:
@@ -312,23 +312,23 @@ const char *menu_hash_to_str_es(uint32_t hash)
       case MENU_LABEL_VALUE_CONTENT_HISTORY_SIZE:
          return "Tamaño del historial";
       case MENU_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO:
-         return "Tasa de fotogramas estimada del monitor";
+         return "Frecuencia estimada del monitor";
       case MENU_LABEL_VALUE_DUMMY_ON_CORE_SHUTDOWN:
          return "Anular al cerrar núcleo";
       case MENU_LABEL_VALUE_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE:
-         return "No ejecutar automáticamente un núcleo";
+         return "No ejecutar automáticamente";
       case MENU_LABEL_VALUE_FRAME_THROTTLE_ENABLE:
          return "Limitar velocidad de ejecución máxima";
       case MENU_LABEL_VALUE_FASTFORWARD_RATIO:
          return "Velocidad de ejecución máxima";
       case MENU_LABEL_VALUE_AUTO_REMAPS_ENABLE:
-         return "Cargar automáticamente archivos de reasignación";
+         return "Cargar autom. archivos de reasignación";
       case MENU_LABEL_VALUE_SLOWMOTION_RATIO:
          return "Cantidad de velocidad reducida";
       case MENU_LABEL_VALUE_CORE_SPECIFIC_CONFIG:
          return "Configuración por núcleo";
       case MENU_LABEL_VALUE_AUTO_OVERRIDES_ENABLE:
-         return "Cargar automáticamente archivos de anulación";
+         return "Cargar autom. archivos de anulación";
       case MENU_LABEL_VALUE_CONFIG_SAVE_ON_EXIT:
          return "Guardar configuración al salir";
       case MENU_LABEL_VALUE_VIDEO_SMOOTH:
@@ -358,13 +358,13 @@ const char *menu_hash_to_str_es(uint32_t hash)
       case MENU_LABEL_VALUE_VIDEO_FORCE_ASPECT:
          return "Forzar proporción de aspecto";
       case MENU_LABEL_VALUE_VIDEO_REFRESH_RATE:
-         return "Tasa de actualización";
+         return "Frecuencia de actualización";
       case MENU_LABEL_VALUE_VIDEO_FORCE_SRGB_DISABLE:
          return "Forzar anulación del FBO sRGB";
       case MENU_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN:
          return "Pantalla completa en ventana";
       case MENU_LABEL_VALUE_PAL60_ENABLE:
-         return "Utilizar modo PAL60";
+         return "Usar modo PAL60";
       case MENU_LABEL_VALUE_VIDEO_VFILTER:
          return "Filtro contra parpadeos";
       case MENU_LABEL_VALUE_VIDEO_VI_WIDTH:
@@ -416,7 +416,7 @@ const char *menu_hash_to_str_es(uint32_t hash)
       case MENU_LABEL_VALUE_INPUT_OSK_OVERLAY_ENABLE:
          return "Mostrar teclado superpuesto";
       case MENU_LABEL_VALUE_INPUT_OVERLAY_ENABLE:
-         return "Mostrar sobreimposición";
+         return "Mostrar superimposición";
       case MENU_LABEL_VALUE_VIDEO_MONITOR_INDEX:
          return "Índice del monitor";
       case MENU_LABEL_VALUE_VIDEO_FRAME_DELAY:
@@ -430,7 +430,7 @@ const char *menu_hash_to_str_es(uint32_t hash)
       case MENU_LABEL_VALUE_INPUT_REMAP_BINDS_ENABLE:
          return "Permitir reasignar controles";
       case MENU_LABEL_VALUE_INPUT_MAX_USERS:
-         return "N.º de usuarios máximos";
+         return "Número máximo de usuarios";
       case MENU_LABEL_VALUE_INPUT_AUTODETECT_ENABLE:
          return "Activar autoconfiguración";
       case MENU_LABEL_VALUE_AUDIO_OUTPUT_RATE:
@@ -484,7 +484,7 @@ const char *menu_hash_to_str_es(uint32_t hash)
       case MENU_LABEL_VALUE_CUSTOM_RATIO:
          return "Proporción personalizada";
       case MENU_LABEL_VALUE_USE_THIS_DIRECTORY:
-         return "(Utilizar esta carpeta)";
+         return "(Usar esta carpeta)";
       case MENU_LABEL_VALUE_RDB_ENTRY_START_CONTENT:
          return "Ejecutar contenido";
       case MENU_LABEL_VALUE_DISK_OPTIONS:
@@ -925,18 +925,19 @@ int menu_hash_get_help_es(uint32_t hash, char *s, size_t len)
    {
       case MENU_LABEL_VALUE_HELP_AUDIO_VIDEO_TROUBLESHOOTING_DESC:
          snprintf(s, len,
-               "RetroArch utiliza un formato único para\n"
-               "sincronizar vídeo y sonido que necesita\n"
-               "calibrarse con la tasa de actualización de\n"
-               "tu monitor para obtener el mejor rendimiento.\n"
+               "RetroArch utiliza un formato único para \n"
+               "sincronizar vídeo y sonido que necesita \n"
+               "calibrarse con la frecuencia de \n"
+			   "actualización de tu monitor para obtener \n"
+			   "el mejor rendimiento. \n"
                " \n"
                "Si notas cortes de sonido o en la imagen,\n"
                "lo normal es que necesites calibrar estos\n"
                "ajustes. Aquí van algunas opciones:\n"
                " \n"
                "a) Ve a '%s' -> '%s' y activa\n"
-               "'Vídeo multinúcleo'. En este modo la tasa\n"
-               "de refresco es irrelevante, habrá más fps,\n"
+               "'Vídeo multinúcleo'. En este modo la \n"
+			   "frecuencia es irrelevante, habrá más fps,\n"
                "pero la imagen podría ser menos fluida.\n"
                "b) Ve a '%s' -> '%s' y busca\n"
                "'%s'. Deja que se ejecute durante\n"
@@ -950,19 +951,19 @@ int menu_hash_get_help_es(uint32_t hash, char *s, size_t len)
          break;
       case MENU_LABEL_VALUE_HELP_SCANNING_CONTENT_DESC:
          snprintf(s, len,
-               "Para escanear contenidos ve a '%s' y\n"
-               "selecciona '%s' o %s'.\n"
+               "Para escanear contenidos ve a '%s' \n"
+			   "y selecciona '%s' o \n"
+			   "'%s'.\n"
                " \n"
-               "Esto comparará los archivos con las entradas\n"
-               "en la base de datos.\n"
-               "Si hay una coincidencia, añadirá una entrada\n"
-               "en una colección.\n"
+               "Esto comparará los archivos con las entradas en \n"
+               "la base de datos. Si hay una coincidencia, \n"
+			   "añadirá una entrada en una colección.\n"
                " \n"
                "Entonces podrás acceder fácilmente al contenido\n"
                "si vas a '%s' ->\n"
                "'%s'\n"
-               "en vez de pasar por el navegador de archivos\n"
-               "constantemente.\n"
+               "en vez de tener que pasar por el navegador \n"
+			   "de archivos constantemente.\n"
                " \n"
                "NOTA: El contenido de algunos núcleos podría\n"
                "no ser localizable. Entre los ejemplos están\n"
@@ -1105,8 +1106,8 @@ int menu_hash_get_help_es(uint32_t hash, char *s, size_t len)
                      " \n"
                      "Este controlador permite que los núcleos \n"
                      "libretro GL se utilicen, además de las \n"
-                     "implementaciones renderizadas por soft-\n"
-                     "ware del núcleo.\n"
+                     "implementaciones renderizadas por\n"
+                     "software del núcleo.\n"
                      " \n"
                      "El rendimiento de las implementaciones \n"
                      "por software y libretro GL dependen \n"
@@ -1139,8 +1140,8 @@ int menu_hash_get_help_es(uint32_t hash, char *s, size_t len)
                snprintf(s, len,
                      "Controlador de vídeo Direct3D. \n"
                      " \n"
-                     "El rendimiento de los núcleos \n"
-                     "que rendericen por software dependerá \n"
+                     "El rendimiento de los núcleos que \n"
+                     "rendericen por software dependerá \n"
                      "del controlador D3D de tu tarjeta \n"
                      "gráfica.");
                break;
@@ -1174,7 +1175,7 @@ int menu_hash_get_help_es(uint32_t hash, char *s, size_t len)
       case MENU_LABEL_AUDIO_DSP_PLUGIN:
          snprintf(s, len,
                "Plugin de sonido DSP.\n"
-               " Procesa el sonido antes de enviarlo \n"
+               "Procesa el sonido antes de enviarlo \n"
                "al controlador."
                );
          break;
@@ -1504,15 +1505,16 @@ int menu_hash_get_help_es(uint32_t hash, char *s, size_t len)
          break;
       case MENU_LABEL_VIDEO_REFRESH_RATE_AUTO:
          snprintf(s, len,
-               "Tasa de actualización automática.\n"
+               "Frecuencia de actualización automática.\n"
                " \n"
-               "La tasa de actualización precisa del monitor \n"
-			   "(Hz). Se utiliza para calcular la frecuencia \n"
-			   "de entrada de sonido con esta fórmula: \n"
+               "La frecuencia de actualización precisa del \n"
+			   "monitor (en Hz). Se utiliza para calcular \n"
+			   "la frecuencia de entrada de sonido con esta \n"
+			   "fórmula: \n"
                " \n"
                "audio_input_rate = veloc. de entrada de juego \n"
-			   "* tasa de actualización de pantalla / tasa de \n"
-			   "actualización de juego\n"
+			   "* frecuencia de actualización de pantalla / \n"
+			   "frecuencia de actualización de juego \n"
                " \n"
                "Si la implementación no indica un valor, se \n"
 			   "asumirá de forma predeterminada el sistema \n"
@@ -1632,7 +1634,7 @@ int menu_hash_get_help_es(uint32_t hash, char *s, size_t len)
          break;
       case MENU_LABEL_OVERLAY_NEXT:
          snprintf(s, len,
-               "Cambia a la siguiente sobreimposición.\n"
+               "Cambia a la siguiente superimposición.\n"
                " \n"
                "Se expande alrededor.");
          break;
@@ -1749,10 +1751,10 @@ int menu_hash_get_help_es(uint32_t hash, char *s, size_t len)
 			   "a material a 60 Hz eliminando el \n"
 			   "ghosting.\n"
                " \n"
-               "La tasa de actualización de vídeo \n"
+               "La frecuencia de actualización de vídeo \n"
 			   "aún debe configurarse como si utilizaras \n"
-			   "un monitor de 60 Hz (divide la tasa \n"
-			   "de refresco entre 2).");
+			   "un monitor de 60 Hz (divide la frecuencia \n"
+			   "de actualización entre 2).");
          break;
       case MENU_LABEL_RGUI_SHOW_START_SCREEN:
          snprintf(s, len,
