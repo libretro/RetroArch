@@ -106,8 +106,8 @@ static INLINE bool gl_query_extension(gl_t *gl, const char *ext)
    if (gl->core_context)
    {
 #ifdef GL_NUM_EXTENSIONS
-      GLint i, exts;
-      exts = 0;
+      GLint i;
+      GLint exts = 0;
       glGetIntegerv(GL_NUM_EXTENSIONS, &exts);
       for (i = 0; i < exts; i++)
       {
@@ -327,8 +327,10 @@ static INLINE GLenum min_filter_to_mag(GLenum type)
       case GL_NEAREST_MIPMAP_NEAREST:
          return GL_NEAREST;
       default:
-         return type;
+         break;
    }
+
+   return type;
 }
 
 #ifdef HAVE_FBO

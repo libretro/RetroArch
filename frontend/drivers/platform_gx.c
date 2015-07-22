@@ -2,7 +2,7 @@
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2015 - Daniel De Matteis
  *  Copyright (C) 2012-2015 - Michael Lelli
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -53,6 +53,7 @@ extern void system_exec_wii(const char *path, bool should_load_game);
 #endif
 #include <sdcard/gcsd.h>
 #include <fat.h>
+#include <rthreads/rthreads.h>
 
 #ifdef USBGECKO
 #include <debug.h>
@@ -108,24 +109,27 @@ static struct {
 static slock_t *gx_device_mutex;
 static slock_t *gx_device_cond_mutex;
 static scond_t *gx_device_cond;
+static sthread_t *gx_device_thread;
+static volatile bool gx_stop_dev_thread;
 
-static void *gx_devthread(void *a)
+static void gx_devthread(void *a)
 {
-   while (1)
+   while (!gx_stop_dev_thread)
    {
       unsigned i;
 
       slock_lock(gx_device_mutex);
 
-      for (i = 0; i < GX_DEVICE_END; i++)
-      {
-         if (gx_devices[i].mounted && 
-               !gx_devices[i].interface->isInserted())
-         {
-            gx_devices[i].mounted = false;
-            char n[8];
-            snprintf(n, sizeof(n), "%s:", gx_devices[i].name);
-            fatUnmount(n);
+      for (i = 0; i < GX_DEVICE_END; i++) {
+         if (gx_devices[i].mounted) {
+            if (!gx_devices[i].interface->isInserted()) {
+               gx_devices[i].mounted = false;
+               char n[8];
+               snprintf(n, sizeof(n), "%s:", gx_devices[i].name);
+               fatUnmount(n);
+            }
+         } else if (gx_devices[i].interface->startup() && gx_devices[i].interface->isInserted()) {
+            gx_devices[i].mounted = fatMountSimple(gx_devices[i].name, gx_devices[i].interface);
          }
       }
 
@@ -135,17 +139,6 @@ static void *gx_devthread(void *a)
       scond_wait_timeout(gx_device_cond, gx_device_cond_mutex, 1000000);
       slock_unlock(gx_device_cond_mutex);
    }
-
-   return NULL;
-}
-
-static int gx_get_device_from_path(const char *path)
-{
-   if (strstr(path, "sd:") == path)
-      return GX_DEVICE_SD;
-   if (strstr(path, "usb:") == path)
-      return GX_DEVICE_USB;
-   return -1;
 }
 #endif
 
@@ -222,7 +215,7 @@ static void frontend_gx_get_environment_settings(int *argc, char *argv[],
       gx_rom_path[0] = '\0';
 #else
 #ifdef HW_RVL
-   /* needed on Wii; loaders follow a dumb standard where the path and 
+   /* needed on Wii; loaders follow a dumb standard where the path and
     * filename are separate in the argument list */
    if (*argc > 2 && argv[1] != NULL && argv[2] != NULL)
    {
@@ -297,7 +290,6 @@ static void frontend_gx_init(void *data)
 #endif
 
 #if defined(HW_RVL) && !defined(IS_SALAMANDER)
-   OSThread gx_device_thread;
    gx_devices[GX_DEVICE_SD].interface = &__io_wiisd;
    gx_devices[GX_DEVICE_SD].name = "sd";
    gx_devices[GX_DEVICE_SD].mounted = fatMountSimple(
@@ -312,7 +304,20 @@ static void frontend_gx_init(void *data)
    gx_device_cond_mutex = slock_new();
    gx_device_cond       = scond_new();
    gx_device_mutex      = slock_new();
-   OSCreateThread(&gx_device_thread, gx_devthread, 0, NULL, NULL, 0, 66, 0);
+   gx_device_thread     = sthread_create(gx_devthread, NULL);
+#endif
+}
+
+static void frontend_gx_deinit(void *data)
+{
+   (void)data;
+
+#if defined(HW_RVL) && !defined(IS_SALAMANDER)
+   slock_lock(gx_device_cond_mutex);
+   gx_stop_dev_thread = true;
+   slock_unlock(gx_device_cond_mutex);
+   scond_signal(gx_device_cond);
+   sthread_join(gx_device_thread);
 #endif
 }
 
@@ -346,7 +351,7 @@ static void frontend_gx_process_args(int *argc, char *argv[])
 #ifndef IS_SALAMANDER
    settings_t *settings = config_get_ptr();
 
-   /* A big hack: sometimes Salamander doesn't save the new core 
+   /* A big hack: sometimes Salamander doesn't save the new core
     * it loads on first boot, so we make sure
     * settings->libretro is set here. */
    if (!settings->libretro[0] && *argc >= 1 && strrchr(argv[0], '/'))
@@ -407,7 +412,7 @@ static int frontend_gx_parse_drive_list(void *data)
 const frontend_ctx_driver_t frontend_ctx_gx = {
    frontend_gx_get_environment_settings,
    frontend_gx_init,
-   NULL,                            /* deinit */
+   frontend_gx_deinit,
    frontend_gx_exitspawn,
    frontend_gx_process_args,
    frontend_gx_exec,
