@@ -985,6 +985,9 @@ int menu_hash_get_help_es(uint32_t hash, char *s, size_t len)
                menu_hash_to_str(MENU_LABEL_VALUE_ADD_CONTENT_LIST),
                menu_hash_to_str(MENU_LABEL_VALUE_SCAN_DIRECTORY),
                menu_hash_to_str(MENU_LABEL_VALUE_SCAN_FILE),
+               menu_hash_to_str(MENU_LABEL_VALUE_ADD_CONTENT_LIST),
+               menu_hash_to_str(MENU_LABEL_VALUE_SCAN_DIRECTORY),
+               menu_hash_to_str(MENU_LABEL_VALUE_SCAN_FILE),
                menu_hash_to_str(MENU_LABEL_VALUE_LOAD_CONTENT_LIST),
                menu_hash_to_str(MENU_LABEL_VALUE_CONTENT_COLLECTION_LIST)
                );
