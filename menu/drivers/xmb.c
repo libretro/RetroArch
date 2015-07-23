@@ -1166,8 +1166,7 @@ static GRuint xmb_icon_get_id(xmb_handle_t *xmb,
          return xmb->textures.list[XMB_TEXTURE_FOLDER].id;
       case MENU_FILE_PLAIN:
          return xmb->textures.list[XMB_TEXTURE_FILE].id;
-      case MENU_FILE_PLAYLIST_ENTRY:
-      case MENU_FILE_RDB_ENTRY:
+      case MENU_FILE_RPL_ENTRY:
          if (core_node)
             return core_node->content_icon;
          return xmb->textures.list[XMB_TEXTURE_FILE].id;
@@ -1185,6 +1184,7 @@ static GRuint xmb_icon_get_id(xmb_handle_t *xmb,
          return xmb->textures.list[XMB_TEXTURE_RDB].id;
       case MENU_FILE_CURSOR:
          return xmb->textures.list[XMB_TEXTURE_CURSOR].id;
+      case MENU_FILE_PLAYLIST_ENTRY:
       case MENU_SETTING_ACTION_RUN:
          return xmb->textures.list[XMB_TEXTURE_RUN].id;
       case MENU_SETTING_ACTION_CLOSE:
@@ -1193,6 +1193,7 @@ static GRuint xmb_icon_get_id(xmb_handle_t *xmb,
          return xmb->textures.list[XMB_TEXTURE_SAVESTATE].id;
       case MENU_SETTING_ACTION_LOADSTATE:
          return xmb->textures.list[XMB_TEXTURE_LOADSTATE].id;
+      case MENU_FILE_RDB_ENTRY:
       case MENU_SETTING_ACTION_CORE_INFORMATION:
          return xmb->textures.list[XMB_TEXTURE_CORE_INFO].id;
       case MENU_SETTING_ACTION_CORE_OPTIONS:

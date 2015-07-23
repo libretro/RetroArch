@@ -32,7 +32,7 @@
 
 /* FIXME - Global variables, refactor */
 char detect_content_path[PATH_MAX_LENGTH];
-unsigned rdb_entry_start_game_selection_ptr;
+unsigned rdb_entry_start_game_selection_ptr, rpl_entry_selection_ptr;
 size_t hack_shader_pass = 0;
 #ifdef HAVE_NETWORKING
 char core_updater_path[PATH_MAX_LENGTH];
@@ -173,6 +173,28 @@ static int action_ok_file_load_detect_core(const char *path,
    return -1;
 }
 
+static int action_ok_rpl_entry(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   menu_handle_t *menu      = menu_driver_get_ptr();
+   char tmp[PATH_MAX_LENGTH]               = {0};
+   menu_displaylist_info_t            info = {0};
+   menu_list_t                  *menu_list = menu_list_get_ptr();
+   if (!menu_list)
+      return -1;
+
+   strlcpy(menu->deferred_path, label, sizeof(menu->deferred_path));
+
+   info.list               = menu_list->menu_stack;
+   info.type               = 0;
+   info.directory_ptr      = idx;
+   rpl_entry_selection_ptr = idx;
+
+   strlcpy(info.label, menu_hash_to_str(MENU_LABEL_DEFERRED_RPL_ENTRY_ACTIONS), sizeof(info.label));
+
+   return menu_displaylist_push_list(&info, DISPLAYLIST_GENERIC);
+}
+
 static int action_ok_playlist_entry(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -183,6 +205,7 @@ static int action_ok_playlist_entry(const char *path,
    const char *core_name        = NULL;
    size_t selection_ptr         = 0;
    content_playlist_t *playlist = g_defaults.history;
+   bool is_history              = true;
    menu_handle_t *menu          = menu_driver_get_ptr();
    menu_list_t *menu_list       = menu_list_get_ptr();
    uint32_t hash_label          = menu_hash_calculate(label);
@@ -203,6 +226,7 @@ static int action_ok_playlist_entry(const char *path,
          }
 
          playlist = menu->playlist;
+         is_history = false;
          break;
    }
 
@@ -234,18 +258,21 @@ static int action_ok_playlist_entry(const char *path,
 
    rarch_playlist_load_content(playlist, selection_ptr);
 
-   switch (hash_label)
+   if (is_history)
    {
-      case MENU_LABEL_COLLECTION:
-      case MENU_LABEL_RDB_ENTRY_START_CONTENT:
-         menu_list_pop_stack(menu_list);
-         break;
-      default:
-         menu_list_flush_stack(menu_list, NULL, MENU_SETTINGS);
-         break;
-   }
+      switch (hash_label)
+      {
+         case MENU_LABEL_COLLECTION:
+         case MENU_LABEL_RDB_ENTRY_START_CONTENT:
+            menu_list_pop_stack(menu_list);
+            break;
+         default:
+            menu_list_flush_stack(menu_list, NULL, MENU_SETTINGS);
+            break;
+      }
 
-   menu_common_push_content_settings();
+      menu_common_push_content_settings();
+   }
 
    return -1;
 }
@@ -2277,6 +2304,9 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             break;
          case MENU_FILE_PLAYLIST_ENTRY:
             cbs->action_ok = action_ok_playlist_entry;
+            break;
+         case MENU_FILE_RPL_ENTRY:
+            cbs->action_ok = action_ok_rpl_entry;
             break;
          case MENU_FILE_PLAYLIST_COLLECTION:
             cbs->action_ok = action_ok_playlist_collection;

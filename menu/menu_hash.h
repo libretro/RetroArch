@@ -640,6 +640,7 @@ extern "C" {
 #define MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_BBFC_RATING          0x0a8e67f0U
 #define MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_MAX_USERS            0xbfcba816U
 #define MENU_LABEL_DEFERRED_RDB_ENTRY_DETAIL                                   0xc35416c0U
+#define MENU_LABEL_DEFERRED_RPL_ENTRY_ACTIONS                                  0x358a7494U
 #define MENU_LABEL_DEFERRED_CORE_LIST                                          0xf157d289U
 #define MENU_LABEL_DEFERRED_CORE_UPDATER_LIST                                  0xc315f682U
 #define MENU_LABEL_DISK_IMAGE_APPEND                                           0x5af7d709U
