@@ -45,6 +45,7 @@
 #ifdef HAVE_NETWORKING
 extern char *core_buf;
 extern size_t core_len;
+extern unsigned rpl_entry_selection_ptr;
 
 static void print_buf_lines(file_list_t *list, char *buf, int buf_size,
       unsigned type)
@@ -830,21 +831,12 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
          }
       }
 
-      if (!is_history && core_detected && db_name && db_name[0] != '\0')
-      {
-         char db_path[PATH_MAX_LENGTH] = {0};
-
-         fill_pathname_join(db_path, settings->content_database,
-               db_name, sizeof(db_path));
-         path_remove_extension(db_path);
-         strlcat(db_path, ".rdb", sizeof(db_path));
-
-         menu_list_push(info->list, label,
-               db_path, MENU_FILE_RDB_ENTRY, 0, i);
-      }
-      else
+      if (is_history)
          menu_list_push(info->list, fill_buf, path_playlist,
                MENU_FILE_PLAYLIST_ENTRY, 0, i);
+      else
+         menu_list_push(info->list, label,
+               path, MENU_FILE_RPL_ENTRY, 0, i);
    }
 
    return 0;
@@ -1095,18 +1087,6 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
                continue;
 
             rdb_entry_start_game_selection_ptr = j;
-
-            core_name_hash = menu_hash_calculate(playlist->entries[j].core_name);
-            core_path_hash = menu_hash_calculate(playlist->entries[j].core_path);
-
-            if (
-                  (core_name_hash != MENU_VALUE_DETECT) &&
-                  (core_path_hash != MENU_VALUE_DETECT)
-               )
-               menu_list_push(info->list,
-                     menu_hash_to_str(MENU_LABEL_VALUE_RDB_ENTRY_START_CONTENT),
-                     menu_hash_to_str(MENU_LABEL_RDB_ENTRY_START_CONTENT),
-                     MENU_FILE_PLAYLIST_ENTRY, 0, 0);
          }
       }
 
@@ -1654,6 +1634,46 @@ static int menu_displaylist_parse_load_content_settings(menu_displaylist_info_t 
       menu_list_push(info->list,
             menu_hash_to_str(MENU_LABEL_VALUE_NO_ITEMS),
             "", 0, 0, 0);
+
+   return 0;
+}
+
+static int menu_displaylist_parse_horizontal_content_actions(menu_displaylist_info_t *info)
+{
+   menu_handle_t *menu    = menu_driver_get_ptr();
+   global_t *global       = global_get_ptr();
+   settings_t *settings   = config_get_ptr();
+   unsigned idx = rpl_entry_selection_ptr;
+   const char *label               = NULL;
+   const char *core_path           = NULL;
+   const char *core_name           = NULL;
+   const char *db_name             = NULL;
+
+   if (!menu)
+      return -1;
+
+   if (global->main_is_init && (global->core_type != CORE_TYPE_DUMMY)
+      && !strcmp(menu->deferred_path, global->fullpath))
+      menu_displaylist_parse_load_content_settings(info);
+   else
+      menu_list_push(info->list, "Run", "collection",
+            MENU_FILE_PLAYLIST_ENTRY, 0, idx);
+
+   content_playlist_get_index(menu->playlist, idx,
+         NULL, &label, &core_path, &core_name, NULL, &db_name);
+
+   if (db_name && db_name[0] != '\0')
+   {
+      char db_path[PATH_MAX_LENGTH] = {0};
+
+      fill_pathname_join(db_path, settings->content_database,
+            db_name, sizeof(db_path));
+      path_remove_extension(db_path);
+      strlcat(db_path, ".rdb", sizeof(db_path));
+
+      menu_list_push(info->list, label,
+            db_path, MENU_FILE_RDB_ENTRY, 0, idx);
+   }
 
    return 0;
 }
@@ -2223,6 +2243,11 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          need_push    = true;
          break;
       case DISPLAYLIST_HORIZONTAL_CONTENT_ACTIONS:
+         menu_list_clear(info->list);
+         ret = menu_displaylist_parse_horizontal_content_actions(info);
+         need_refresh = true;
+         need_push    = true;
+         break;
       case DISPLAYLIST_CONTENT_SETTINGS:
          menu_list_clear(info->list);
          ret = menu_displaylist_parse_load_content_settings(info);

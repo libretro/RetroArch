@@ -372,6 +372,7 @@ static int menu_cbs_init_bind_right_compare_type(menu_file_list_cbs_t *cbs,
          case MENU_FILE_CORE:
          case MENU_FILE_RDB:
          case MENU_FILE_RDB_ENTRY:
+         case MENU_FILE_RPL_ENTRY:
          case MENU_FILE_CURSOR:
          case MENU_FILE_SHADER:
          case MENU_FILE_SHADER_PRESET:

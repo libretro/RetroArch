@@ -69,6 +69,11 @@ static int deferred_push_rdb_entry_detail(menu_displaylist_info_t *info)
    return ret;
 }
 
+static int deferred_push_rpl_entry_actions(menu_displaylist_info_t *info)
+{
+   return menu_displaylist_push_list(info, DISPLAYLIST_HORIZONTAL_CONTENT_ACTIONS);
+}
+
 static int deferred_push_core_list_deferred(menu_displaylist_info_t *info)
 {
    return menu_displaylist_push_list(info, DISPLAYLIST_CORES_SUPPORTED);
@@ -666,6 +671,8 @@ static int menu_cbs_init_bind_deferred_push_compare_label(menu_file_list_cbs_t *
 {
    if (strstr(label, menu_hash_to_str(MENU_LABEL_DEFERRED_RDB_ENTRY_DETAIL)))
       cbs->action_deferred_push = deferred_push_rdb_entry_detail;
+   else if (strstr(label, menu_hash_to_str(MENU_LABEL_DEFERRED_RPL_ENTRY_ACTIONS)))
+      cbs->action_deferred_push = deferred_push_rpl_entry_actions;
    else
    {
       switch (label_hash)
