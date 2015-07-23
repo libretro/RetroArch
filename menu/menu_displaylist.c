@@ -771,7 +771,6 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
 {
    unsigned i;
    size_t list_size = 0;
-   settings_t *settings          = config_get_ptr();
 
    if (!playlist)
       return -1;
@@ -1047,7 +1046,6 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
       {
          for (j = 0; j < playlist->size; j++)
          {
-            uint32_t core_name_hash, core_path_hash;
             char elem0[PATH_MAX_LENGTH]      = {0};
             char elem1[PATH_MAX_LENGTH]      = {0};
             bool match_found                 = false;

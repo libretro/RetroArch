@@ -177,7 +177,6 @@ static int action_ok_rpl_entry(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    menu_handle_t *menu      = menu_driver_get_ptr();
-   char tmp[PATH_MAX_LENGTH]               = {0};
    menu_displaylist_info_t            info = {0};
    menu_list_t                  *menu_list = menu_list_get_ptr();
    if (!menu_list)
