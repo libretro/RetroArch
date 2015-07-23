@@ -202,7 +202,7 @@ static bool input_autoconfigure_joypad_from_conf_dir(
       config_file_free(conf);
    }
 
-   if(index >= 0)
+   if(index >= 0 && current_best > 0)
    {
       RARCH_LOG("Autoconf: best configuration score=%d\n", current_best);
       conf = config_file_new(list->elems[index].data);
