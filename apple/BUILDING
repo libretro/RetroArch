@@ -20,12 +20,10 @@ To build libretro cores:
           TARGET := vba_next_libretro.dylib
           fpic := -fPIC
           SHARED := -dynamiclib
-          ENDIANNESS_DEFINES = -DLSB_FIRST
        else ifeq ($(platform), ios)
           TARGET := vba_next_libretro.dylib
           fpic := -fPIC
           SHARED := -dynamiclib
-          ENDIANNESS_DEFINES = -DLSB_FIRST
         
           sysroot = -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS6.0.sdk/
           CC   = /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/gcc -arch armv7 $(sysroot)
