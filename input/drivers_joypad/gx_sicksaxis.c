@@ -5,18 +5,18 @@
 
 static uint8_t ATTRIBUTE_ALIGN(32) _ss_attributes[] =
 {
-    0x00, 
+    0x00,
 	0x00, 0x00, 0x00, 0x00, //Rumble
 	0x00, 0x00, //Gyro
-	0x00, 0x00, 
+	0x00, 0x00,
 	0x00, //* LED_1 = 0x02, LED_2 = 0x04, ... */
 	0xFF, 0x27, 0x10, 0x00, 0x32, /* LED_4 */
     0xFF, 0x27, 0x10, 0x00, 0x32, /* LED_3 */
 	0xFF, 0x27, 0x10, 0x00, 0x32, /* LED_2 */
 	0xFF, 0x27, 0x10, 0x00, 0x32, /* LED_1 */
-	0x00, 0x00, 0x00, 0x00, 0x00, 
-	0x00, 0x00, 0x00, 0x00, 0x00, 
-	0x00, 0x00, 0x00, 0x00, 0x00, 
+	0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00,
 	0x00, 0x00, 0x00,
 };
 
@@ -39,16 +39,14 @@ static int _ss_set_operational(struct ss_device *dev);
 
 int ss_init(struct ss_device *dev_list, int slots) {
 	if (!_ss_inited) {
-		
-		USB_Initialize();
 		_ss_dev_list = dev_list;
 		_slots = slots;
-		
+
 		int i;
 		for (i = 0;i < _slots; i++) {
 			_ss_initialize(&_ss_dev_list[i]);
 		}
-		
+
 		USB_DeviceChangeNotifyAsync(USB_CLASS_HID, _ss_change_cb, NULL);
 		_dev_detected = 1; /* try open any existing sixasis device */
 		_ss_inited = 1;
@@ -61,10 +59,9 @@ int ss_shutdown() {
 	for (i = 0;i < _slots; i++)	{
 		_ss_close(&_ss_dev_list[i]);
 	}
-	
-	USB_Deinitialize();
+
 	_ss_inited = 0;
-	
+
 	return 1;
 }
 
@@ -79,7 +76,7 @@ static int _ss_initialize(struct ss_device *dev) {
 
 static int _ss_change_cb(int result, void *usrdata) {
 	if (!_ss_rem_cb) {
-		/* As it's not coming from the removal callback 
+		/* As it's not coming from the removal callback
 		then we	detected a new device being inserted */
 		_dev_detected = 1;
 	}
@@ -102,7 +99,7 @@ int _ss_open(struct ss_device *dev) {
 	if (USB_GetDeviceList(dev_entry, SS_MAX_DEV, USB_CLASS_HID, &dev_count) < 0) {
 		return -2;
 	}
-	
+
     int i;
 	for (i = 0; i < dev_count; ++i)	{
         if ((dev_entry[i].vid == SS_VENDOR_ID) && (dev_entry[i].pid == SS_PRODUCT_ID)) {
@@ -149,7 +146,7 @@ int ss_is_ready(struct ss_device *dev) {
 			}
 		}
 	}
-	
+
 	if (dev->connected && dev->enabled)
 		return 1;
 
@@ -180,9 +177,9 @@ int ss_set_led(struct ss_device *dev, int led) {
     dev->attributes.rumble.power_right    = 0;
     dev->attributes.rumble.duration_left  = 0;
     dev->attributes.rumble.power_left     = 0;
-    
+
 	dev->attributes.led = led;
-    
+
 	return _ss_send_attributes_payload(dev);
 }
 
@@ -194,7 +191,7 @@ int ss_set_rumble(struct ss_device *dev, uint8_t duration_right, uint8_t power_r
     return _ss_send_attributes_payload(dev);
 }
 
-inline int ss_read_pad(struct ss_device *dev) {   
+inline int ss_read_pad(struct ss_device *dev) {
 	return USB_ReadIntrMsg(dev->fd, 0x81, SS_PAYLOAD_SIZE, (u8 *)&dev->pad);
 }
 
@@ -213,7 +210,7 @@ static int _ss_set_operational(struct ss_device *dev) {
 	uint8_t ATTRIBUTE_ALIGN(32) buf[4] = {0x42, 0x0c, 0x00, 0x00}; /* Special command to enable Sixaxis */
 	/* Sometimes it fails so we should keep trying until success */
 	do {
-		r = USB_WriteCtrlMsg(	
+		r = USB_WriteCtrlMsg(
 				dev->fd,
 				USB_REQTYPE_INTERFACE_SET,
 				USB_REQ_SETREPORT,
@@ -223,7 +220,7 @@ static int _ss_set_operational(struct ss_device *dev) {
 				buf
 			);
 	} while (r < 0);
-	
+
 	dev->enabled = 1;
 	return 1;
 }
