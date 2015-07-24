@@ -256,15 +256,12 @@ void *video_driver_get_ptr(const video_driver_t **drv)
 
 #define video_driver_get_poke_ptr(driver) (driver) ? driver->video_poke : NULL
 
-static const video_driver_t *video_driver_ctx_get_ptr(void)
-{
-   driver_t *driver = driver_get_ptr();
-   return (driver) ? driver->video : NULL;
-}
+#define video_driver_ctx_get_ptr(driver)  (driver) ? driver->video : NULL
 
 const char *video_driver_get_ident(void)
 {
-   const video_driver_t *video = video_driver_ctx_get_ptr();
+   driver_t *driver     = driver_get_ptr();
+   const video_driver_t *video = video_driver_ctx_get_ptr(driver);
    return (video) ? video->ident : NULL;
 }
 
@@ -318,7 +315,7 @@ bool video_driver_set_shader(enum rarch_shader_type type,
       const char *path)
 {
    driver_t            *driver = driver_get_ptr();
-   const video_driver_t *video = video_driver_ctx_get_ptr();
+   const video_driver_t *video = video_driver_ctx_get_ptr(driver);
 
    if (video->set_shader)
       return video->set_shader(driver->video_data, type, path);
@@ -609,7 +606,7 @@ void init_video(void)
 bool video_driver_suppress_screensaver(bool enable)
 {
    driver_t            *driver = driver_get_ptr();
-   const video_driver_t *video = video_driver_ctx_get_ptr();
+   const video_driver_t *video = video_driver_ctx_get_ptr(driver);
 
    return video->suppress_screensaver(driver->video_data, enable);
 }
@@ -617,7 +614,7 @@ bool video_driver_suppress_screensaver(bool enable)
 bool video_driver_has_windowed(void)
 {
    driver_t            *driver = driver_get_ptr();
-   const video_driver_t *video = video_driver_ctx_get_ptr();
+   const video_driver_t *video = video_driver_ctx_get_ptr(driver);
 
    return video->has_windowed(driver->video_data);
 }
@@ -625,7 +622,7 @@ bool video_driver_has_windowed(void)
 void video_driver_set_nonblock_state(bool toggle)
 {
    driver_t              *driver = driver_get_ptr();
-   const video_driver_t  *video  = video_driver_ctx_get_ptr();
+   const video_driver_t   *video = video_driver_ctx_get_ptr(driver);
 
    if (video->set_nonblock_state)
       video->set_nonblock_state(driver->video_data, toggle);
@@ -635,7 +632,7 @@ bool video_driver_set_viewport(unsigned width, unsigned height,
       bool force_fullscreen, bool allow_rotate)
 {
    driver_t                   *driver = driver_get_ptr();
-   const video_driver_t        *video = video_driver_ctx_get_ptr();
+   const video_driver_t        *video = video_driver_ctx_get_ptr(driver);
 
    if (video->set_viewport)
    {
@@ -649,7 +646,7 @@ bool video_driver_set_viewport(unsigned width, unsigned height,
 bool video_driver_set_rotation(unsigned rotation)
 {
    driver_t                   *driver = driver_get_ptr();
-   const video_driver_t        *video = video_driver_ctx_get_ptr();
+   const video_driver_t        *video = video_driver_ctx_get_ptr(driver);
 
    if (video->set_rotation)
    {
@@ -740,7 +737,7 @@ void video_driver_set_texture_frame(const void *frame, bool rgb32,
 bool video_driver_viewport_info(struct video_viewport *vp)
 {
    driver_t            *driver = driver_get_ptr();
-   const video_driver_t *video = video_driver_ctx_get_ptr();
+   const video_driver_t *video = video_driver_ctx_get_ptr(driver);
 
    if (video->viewport_info)
    {
@@ -753,7 +750,7 @@ bool video_driver_viewport_info(struct video_viewport *vp)
 bool video_driver_read_viewport(uint8_t *buffer)
 {
    driver_t            *driver = driver_get_ptr();
-   const video_driver_t *video = video_driver_ctx_get_ptr();
+   const video_driver_t *video = video_driver_ctx_get_ptr(driver);
 
    if (video->read_viewport)
       return video->read_viewport(driver->video_data,
@@ -764,7 +761,7 @@ bool video_driver_read_viewport(uint8_t *buffer)
 bool video_driver_focus(void)
 {
    driver_t            *driver = driver_get_ptr();
-   const video_driver_t *video = video_driver_ctx_get_ptr();
+   const video_driver_t *video = video_driver_ctx_get_ptr(driver);
 
    return video->focus(driver->video_data);
 }
@@ -773,7 +770,7 @@ bool video_driver_focus(void)
 bool video_driver_overlay_interface(const video_overlay_interface_t **iface)
 {
    driver_t            *driver = driver_get_ptr();
-   const video_driver_t *video = video_driver_ctx_get_ptr();
+   const video_driver_t *video = video_driver_ctx_get_ptr(driver);
 
    if (video->overlay_interface)
    {
@@ -788,7 +785,7 @@ void * video_driver_read_frame_raw(unsigned *width,
    unsigned *height, size_t *pitch)
 {
    driver_t            *driver = driver_get_ptr();
-   const video_driver_t *video = video_driver_ctx_get_ptr();
+   const video_driver_t *video = video_driver_ctx_get_ptr(driver);
 
    if (video->read_frame_raw)
       return video->read_frame_raw(driver->video_data, width,
