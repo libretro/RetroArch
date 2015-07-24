@@ -798,6 +798,8 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
       const char *label               = NULL;
       const char *crc32               = NULL;
 
+      (void)core_detected;
+
       strlcpy(path_copy, info->path, sizeof(path_copy));
 
       path = path_copy;
