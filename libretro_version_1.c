@@ -222,8 +222,6 @@ static void input_poll(void)
 
    input->poll(driver->input_data);
 
-   (void)driver;
-
 #ifdef HAVE_OVERLAY
    input_poll_overlay(settings->input.overlay_opacity);
 #endif
