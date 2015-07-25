@@ -444,6 +444,8 @@ static void *android_input_init(void)
 
 static int zeus_id = -1;
 static int zeus_second_id = -1;
+static int archos1 = -1;
+static int archos2 = -1;
 
 static INLINE int android_input_poll_event_type_motion(
       android_input_t *android, AInputEvent *event,
@@ -596,6 +598,15 @@ static void handle_hotplug(android_input_t *android,
       }
       strlcpy(name_buf, device_name, sizeof(name_buf));
    }
+   else if (strstr(device_name, "joy_key") || strstr(device_name, "joystick"))
+   {
+      if (archos1 < 0)
+         archos1 = id;
+      else
+         archos2 = id;
+      *port = 0;
+      strlcpy(name_buf, "Archos Gamepad", sizeof(name_buf));
+   }
    /* followed by a 4 (hex) char HW id */
    else if (strstr(device_name, "iControlPad-"))
       strlcpy(name_buf, "iControlPad HID Joystick profile", sizeof(name_buf));
@@ -710,6 +721,9 @@ static int android_input_get_id(android_input_t *android, AInputEvent *event)
    /* Needs to be cleaned up */
    if (id == zeus_second_id)
       id = zeus_id;
+
+   if (id == archos2)
+      id = archos1;
 
    return id;
 }
@@ -830,6 +844,7 @@ static int16_t android_input_state(void *data,
       unsigned idx, unsigned id)
 {
    android_input_t *android = (android_input_t*)data;
+   settings_t *settings = config_get_ptr();
 
    switch (device)
    {
@@ -850,7 +865,8 @@ static int16_t android_input_state(void *data,
                   (android->pointer[idx].x != -0x8000) &&
                   (android->pointer[idx].y != -0x8000);
             case RARCH_DEVICE_ID_POINTER_BACK:
-               return BIT_GET(android->pad_state[0], AKEYCODE_BACK);
+               if(settings->input.autoconf_binds[0][RARCH_MENU_TOGGLE].joykey == 0)
+                  return BIT_GET(android->pad_state[0], AKEYCODE_BACK);
          }
          break;
       case RARCH_DEVICE_POINTER_SCREEN:
@@ -865,7 +881,8 @@ static int16_t android_input_state(void *data,
                   (android->pointer[idx].full_x != -0x8000) &&
                   (android->pointer[idx].full_y != -0x8000);
             case RARCH_DEVICE_ID_POINTER_BACK:
-               return BIT_GET(android->pad_state[0], AKEYCODE_BACK);
+               if(settings->input.autoconf_binds[0][RARCH_MENU_TOGGLE].joykey == 0)
+                  return BIT_GET(android->pad_state[0], AKEYCODE_BACK);
          }
          break;
    }
