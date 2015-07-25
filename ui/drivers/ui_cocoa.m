@@ -154,6 +154,7 @@ static char** waiting_argv;
 
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification
 {
+   unsigned i;
    apple_platform = self;
    
 #if __MAC_OS_X_VERSION_MAX_ALLOWED >= 1070
@@ -167,6 +168,15 @@ static char** waiting_argv;
    [[self.window contentView] addSubview:[CocoaView get]];
    [self.window makeFirstResponder:[CocoaView get]];
 
+    for (i = 0; i < waiting_argc; i++)
+    {
+        if (!strcmp(waiting_argv[i], "-NSDocumentRevisionsDebugMode"))
+        {
+            waiting_argv[i]   = NULL;
+            waiting_argv[i+1] = NULL;
+            waiting_argc -= 2;
+        }
+    }
    if (rarch_main(waiting_argc, waiting_argv, NULL))
       apple_rarch_exited();
 
