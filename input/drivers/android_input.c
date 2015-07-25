@@ -557,21 +557,6 @@ static int android_input_get_id_index_from_name(android_input_t *android,
    return -1;
 }
 
-static bool check_pad_names(android_input_t *android, char* name)
-{
-   bool ret = false;
-   RARCH_LOG("Checking if %s is connected (%d pads connected)", name, android->pads_connected);
-   for(int i=0; i < MAX_PADS; i++)
-   {
-      if(android->pad_states[i].name)
-      if(strstr(name, android->pad_states[i].name))
-         ret = true;
-   }
-   RARCH_LOG("%s found: %d", name, ret);
-   return ret;
-}
-
-
 static void handle_hotplug(android_input_t *android,
       struct android_app *android_app, unsigned *port, unsigned id,
       int source)
@@ -594,7 +579,6 @@ static void handle_hotplug(android_input_t *android,
       RARCH_ERR("Could not look up device name or IDs.\n");
       return;
    }
-
 
    /* FIXME: Ugly hack, see other FIXME note below. */
    if (strstr(device_name, "keypad-game-zeus") ||
@@ -645,8 +629,6 @@ static void handle_hotplug(android_input_t *android,
       else if (strstr(device_name, "SideWinder"))
          strlcpy(name_buf, "SideWinder Classic", sizeof(name_buf));
    }
-
-   /* Built-in shield controller is always user 1 */
    else if (strstr(device_name, "NVIDIA Corporation NVIDIA Controller v01.01"))
    {
       /* Built-in shield contrlleris always user 1. FIXME: This is kinda ugly.
@@ -656,24 +638,12 @@ static void handle_hotplug(android_input_t *android,
       *port = 0;
       strlcpy(name_buf, device_name, sizeof(name_buf));
    }
-   else if (check_pad_names(&android, "NVIDIA Corporation NVIDIA Controller v01.01") && (strstr(device_name, "virtual") 
-       || strstr(device_name, "gpio") || strstr(device_name, "Virtual") || strstr(device_name, "GPIO")))
+   else if (strstr(device_name, "Virtual") || 
+         (strstr(device_name, "gpio") && strstr(android->pad_states[0].name,"NVIDIA Corporation NVIDIA Controller v01.01")))
    {
       /* If built-in shield controller is detected bind the virtual and gpio devices to the same port*/
-      port = 0;
-      strlcpy(name_buf, "Generic GPIO device", sizeof(name_buf));
-   }
-
-   /* Archos gamepad seems to be the worst offender so far, it has the buttons in joy_key, 
-    * the analogs in joystick and the back button is a GPIO device, this part handles the 
-    * hack for the back button
-    */
-   else if (check_pad_names(&android, "joy_key") || check_pad_names(&android, "joystick") && (strstr(device_name, "virtual") 
-       || strstr(device_name, "gpio") || strstr(device_name, "Virtual") || strstr(device_name, "GPIO")))
-   {
-      /* If built-in archos controller is detected bind the virtual and gpio devices to the same port*/
       *port = 0;
-      strlcpy(name_buf, "Generic GPIO device", sizeof(name_buf));
+      strlcpy(name_buf, "NVIDIA Corporation NVIDIA Controller v01.01", sizeof(name_buf));
    }
    else if (
          strstr(device_name, "PLAYSTATION(R)3") ||
@@ -710,6 +680,7 @@ static void handle_hotplug(android_input_t *android,
       params.pid = productId;
       settings->input.pid[*port] = params.pid;
       settings->input.vid[*port] = params.vid;
+
       strlcpy(params.driver, android_joypad.ident, sizeof(params.driver));
       autoconfigured = input_config_autoconfigure_joypad(&params);
 
