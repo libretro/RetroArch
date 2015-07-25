@@ -31,6 +31,10 @@
 
 #define HASH_EXTENSION_ZIP 0x0b88c7d8U
 
+#ifndef COLLECTION_SIZE
+#define COLLECTION_SIZE 99999
+#endif
+
 typedef struct database_state_handle
 {
    database_info_list_t *info;
@@ -213,7 +217,7 @@ static int database_info_list_iterate_found_match(
    fill_pathname_join(db_playlist_path, settings->playlist_directory,
          db_playlist_base_str, sizeof(db_playlist_path));
 
-   playlist = content_playlist_init(db_playlist_path, 1000);
+   playlist = content_playlist_init(db_playlist_path, COLLECTION_SIZE);
 
 
    snprintf(db_crc, sizeof(db_crc), "%08X|crc", db_info_entry->crc32);

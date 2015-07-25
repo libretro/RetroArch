@@ -218,7 +218,7 @@ static int action_ok_playlist_entry(const char *path,
       case MENU_LABEL_RDB_ENTRY_START_CONTENT:
          if (!menu->playlist)
          {
-            menu->playlist = content_playlist_init(menu->db_playlist_file, 1000);
+            menu->playlist = content_playlist_init(menu->db_playlist_file, COLLECTION_SIZE);
 
             if (!menu->playlist)
                return -1;

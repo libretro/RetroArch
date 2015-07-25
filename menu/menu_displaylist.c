@@ -1025,7 +1025,7 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
    fill_pathname_join(path_playlist, settings->playlist_directory, path_base,
          sizeof(path_playlist));
 
-   playlist = content_playlist_init(path_playlist, 1000);
+   playlist = content_playlist_init(path_playlist, COLLECTION_SIZE);
 
    if (playlist)
       strlcpy(menu->db_playlist_file, path_playlist,
@@ -1549,7 +1549,7 @@ static int menu_displaylist_parse_horizontal_list(menu_displaylist_info_t *info)
          settings->playlist_directory, item->path,
          sizeof(path_playlist));
    menu->playlist  = content_playlist_init(path_playlist,
-         999);
+         COLLECTION_SIZE);
    strlcpy(menu->db_playlist_file, path_playlist, sizeof(menu->db_playlist_file));
    strlcpy(path_playlist,
          menu_hash_to_str(MENU_LABEL_COLLECTION),
@@ -2439,7 +2439,7 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
                   settings->playlist_directory, info->path,
                   sizeof(path_playlist));
             menu->playlist  = content_playlist_init(path_playlist,
-                  999);
+                  COLLECTION_SIZE);
             strlcpy(menu->db_playlist_file, path_playlist, sizeof(menu->db_playlist_file));
             strlcpy(path_playlist,
                   menu_hash_to_str(MENU_LABEL_COLLECTION), sizeof(path_playlist));
