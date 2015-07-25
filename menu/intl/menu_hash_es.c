@@ -1852,15 +1852,15 @@ int menu_hash_get_help_es(uint32_t hash, char *s, size_t len)
                "Carpeta de fondos dinámicos de pantalla. \n"
                " \n"
                "Aquí se almacenan los fondos de pantalla \n"
-			   "que el menú cargará de forma dinámica \n"
-			   "según el contexto.");
+               "que el menú cargará de forma dinámica \n"
+               "según el contexto.");
          break;
       case MENU_LABEL_SLOWMOTION_RATIO:
          snprintf(s, len,
                "Cantidad de velocidad reducida."
                " \n"
                "Al reducir la velocidad, el contenido \n"
-			   "se ralentizará según este factor.");
+               "se ralentizará según este factor.");
          break;
       case MENU_LABEL_INPUT_AXIS_THRESHOLD:
          snprintf(s, len,
@@ -1876,7 +1876,7 @@ int menu_hash_get_help_es(uint32_t hash, char *s, size_t len)
                "Período de turbo.\n"
                " \n"
                "Describe la velocidad con la que se \n"
-			   "pulsan los botones en el modo turbo."
+               "pulsan los botones en el modo turbo."
                );
          break;
       case MENU_LABEL_INPUT_AUTODETECT_ENABLE:
@@ -1892,12 +1892,12 @@ int menu_hash_get_help_es(uint32_t hash, char *s, size_t len)
       case MENU_LABEL_CAMERA_ALLOW:
          snprintf(s, len,
                "Permite o no el acceso a la cámara \n"
-			   "por parte de los núcleos.");
+               "por parte de los núcleos.");
          break;
       case MENU_LABEL_LOCATION_ALLOW:
          snprintf(s, len,
                "Permite o no los servicios de \n"
-			   "localización por parte de los núcleos.");
+               "localización por parte de los núcleos.");
          break;
       case MENU_LABEL_TURBO:
          snprintf(s, len,
@@ -1935,10 +1935,10 @@ int menu_hash_get_help_es(uint32_t hash, char *s, size_t len)
 			   "RetroArch limpiamente."
 #if !defined(RARCH_MOBILE) && !defined(RARCH_CONSOLE)
                "\nSi cierras el programa con \n"
-			   "cualquier forma brusca (SIGKILL, \n"
+               "cualquier forma brusca (SIGKILL, \n"
                "etc.) no se guardará la RAM, etc. \n"
-			   "En sistemas Unix, SIGINT/SIGTERM \n"
-			   "permite un cierre limpio."
+               "En sistemas Unix, SIGINT/SIGTERM \n"
+               "permite un cierre limpio."
 #endif
                );
          break;
@@ -2026,13 +2026,13 @@ int menu_hash_get_help_es(uint32_t hash, char *s, size_t len)
                "RetroArch, por si solo, no hace nada. \n"
                " \n"
                "Para que haga algo necesitas cargar \n"
-			   "un programa en él. \n"
+               "un programa en él. \n"
                "\n"
                "Llamamos a estos programas 'núcleos \n"
-			   "libretro', o 'núcleos' para abreviar. \n"
+               "libretro', o 'núcleos' para abreviar. \n"
                " \n"
                "Para cargar un núcleo, selecciona uno \n"
-			   "en 'Cargar núcleo'. \n"
+               "en 'Cargar núcleo'. \n"
                " \n"
 #ifdef HAVE_NETWORKING
                "Puedes conseguir núcleos de varias formas: \n"
@@ -2060,7 +2060,7 @@ int menu_hash_get_help_es(uint32_t hash, char *s, size_t len)
 			   "-> '%s'."
                " \n"
                "Desde ahí puedes cambiar la superposición, \n"
-			   "el tamaño y opacidad de sus botones, etc.\n"
+               "el tamaño y opacidad de sus botones, etc.\n"
                " \n"
                "NOTA: Las superposiciones de mandos \n"
 			   "virtuales están ocultas de forma \n"
