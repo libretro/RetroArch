@@ -2384,7 +2384,7 @@ bool config_save_autoconf_profile(const char *path, unsigned user)
    if(settings->input.vid[user] && settings->input.pid[user])
    {
       config_set_int(conf, "input_vendor_id", settings->input.vid[user]);
-      config_set_int(conf, "input_product_id_id", settings->input.pid[user]);
+      config_set_int(conf, "input_product_id", settings->input.pid[user]);
    }
 
    for (i = 0; i < RARCH_FIRST_META_KEY; i++)
