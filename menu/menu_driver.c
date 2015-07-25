@@ -232,7 +232,7 @@ void  menu_driver_context_destroy(void)
 {
    const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
 
-   if (driver->context_destroy)
+   if (driver && driver->context_destroy)
       driver->context_destroy();
 }
 
@@ -240,7 +240,7 @@ void  menu_driver_list_set_selection(file_list_t *list)
 {
    const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
 
-   if (driver->list_set_selection)
+   if (driver && driver->list_set_selection)
       driver->list_set_selection(list);
 }
 
@@ -249,7 +249,7 @@ size_t  menu_driver_list_get_selection(void)
    const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
    menu_handle_t *menu             = menu_driver_get_ptr();
 
-   if (driver->list_get_selection)
+   if (driver && driver->list_get_selection)
       return driver->list_get_selection(menu);
    return 0;
 }
