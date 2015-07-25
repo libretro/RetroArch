@@ -410,17 +410,8 @@ static void poll_iteration(void)
 
 int main(int argc, char *argv[])
 {
-   int i;
-   for (i = 0; i < argc; i ++)
-   {
-      if (!strcmp(argv[i], "--"))
-      {
-         waiting_argc = argc - i;
-         waiting_argv = argv + i;
-         break;
-      }
-   }
-
+   waiting_argc = argc;
+   waiting_argv = argv;
    return NSApplicationMain(argc, (const char **) argv);
 }
 
