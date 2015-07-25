@@ -643,7 +643,7 @@ static void handle_hotplug(android_input_t *android,
    {
       /* If built-in shield controller is detected bind the virtual and gpio devices to the same port*/
       *port = 0;
-      strlcpy(name_buf, "NVIDIA Corporation NVIDIA Controller v01.01", sizeof(name_buf));
+      strlcpy(name_buf, "Generic GPIO Device", sizeof(name_buf));
    }
    else if (
          strstr(device_name, "PLAYSTATION(R)3") ||
