@@ -317,10 +317,10 @@ enum
 #define MENU_DEFAULT_DRIVER MENU_RMENU
 #elif defined(HAVE_RMENU_XUI)
 #define MENU_DEFAULT_DRIVER MENU_RMENU_XUI
-#elif defined(MAC_OS_X_VERSION_10_6)
-#define MENU_DEFAULT_DRIVER MENU_XMB
 #elif defined(IOS) || defined(ANDROID) || defined(__CELLOS_LV2__)
 #define MENU_DEFAULT_DRIVER MENU_GLUI
+#elif defined(MAC_OS_X_VERSION_10_6)
+#define MENU_DEFAULT_DRIVER MENU_XMB
 #else
 #define MENU_DEFAULT_DRIVER MENU_RGUI
 #endif
