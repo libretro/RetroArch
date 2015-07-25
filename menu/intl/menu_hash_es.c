@@ -38,7 +38,7 @@ const char *menu_hash_to_str_es(uint32_t hash)
       case MENU_LABEL_VALUE_HELP_AUDIO_VIDEO_TROUBLESHOOTING:
          return "Solucionar problemas de vídeo/sonido";
       case MENU_LABEL_VALUE_HELP_CHANGE_VIRTUAL_GAMEPAD:
-         return "Cambiar el mando virtual superimpuesto";
+         return "Cambiar el mando virtual superpuesto";
       case MENU_LABEL_VALUE_HELP_WHAT_IS_A_CORE:
          return "¿Qué es un núcleo?";
       case MENU_LABEL_VALUE_HELP_LOADING_CONTENT:
@@ -76,7 +76,7 @@ const char *menu_hash_to_str_es(uint32_t hash)
       case MENU_LABEL_VALUE_INPUT_MENU_TOGGLE_GAMEPAD_COMBO:
          return "Combo para alternar mando con menú";
       case MENU_LABEL_VALUE_INPUT_OVERLAY_HIDE_IN_MENU:
-         return "Ocultar lo superpuesto del menú";
+         return "Ocultar superposición en el menú";
       case MENU_VALUE_LANG_POLISH:
          return "Polaco";
       case MENU_LABEL_VALUE_OVERLAY_AUTOLOAD_PREFERRED:
@@ -250,9 +250,9 @@ const char *menu_hash_to_str_es(uint32_t hash)
       case MENU_LABEL_VALUE_VIDEO_FILTER_DIR:
          return "Carpeta de filtros de vídeo";
       case MENU_LABEL_VALUE_OVERLAY_DIRECTORY:
-         return "Carpeta de superimposiciones";
+         return "Carpeta de superposiciones";
       case MENU_LABEL_VALUE_OSK_OVERLAY_DIRECTORY:
-         return "Carpeta de teclados superimpuestos";
+         return "Carpeta de teclados superpuestos";
       case MENU_LABEL_VALUE_NETPLAY_CLIENT_SWAP_INPUT:
          return "Intercambiar entrada en red";
       case MENU_LABEL_VALUE_NETPLAY_SPECTATOR_MODE_ENABLE:
@@ -416,7 +416,7 @@ const char *menu_hash_to_str_es(uint32_t hash)
       case MENU_LABEL_VALUE_INPUT_OSK_OVERLAY_ENABLE:
          return "Mostrar teclado superpuesto";
       case MENU_LABEL_VALUE_INPUT_OVERLAY_ENABLE:
-         return "Mostrar superimposición";
+         return "Mostrar superposición";
       case MENU_LABEL_VALUE_VIDEO_MONITOR_INDEX:
          return "Índice del monitor";
       case MENU_LABEL_VALUE_VIDEO_FRAME_DELAY:
@@ -594,17 +594,17 @@ const char *menu_hash_to_str_es(uint32_t hash)
       case MENU_LABEL_VALUE_UNABLE_TO_READ_COMPRESSED_FILE:
          return "No se ha podido leer el archivo comprimido.";
       case MENU_LABEL_VALUE_OVERLAY_SCALE:
-         return "Escala de superimposición";
+         return "Escala de superposición";
       case MENU_LABEL_VALUE_OVERLAY_PRESET:
-         return "Preajuste de superimposición";
+         return "Preajuste de superposición";
       case MENU_LABEL_VALUE_AUDIO_LATENCY:
          return "Retraso de sonido (ms)";
       case MENU_LABEL_VALUE_AUDIO_DEVICE:
          return "Controlador de sonido";
       case MENU_LABEL_VALUE_KEYBOARD_OVERLAY_PRESET:
-         return "Preajuste de teclado superimpuesto";
+         return "Preajuste de teclado superpuesto";
       case MENU_LABEL_VALUE_OVERLAY_OPACITY:
-         return "Opacidad de la superimposición";
+         return "Opacidad de la superposición";
       case MENU_LABEL_VALUE_MENU_WALLPAPER:
          return "Fondo del menú";
       case MENU_LABEL_VALUE_DYNAMIC_WALLPAPER:
@@ -648,7 +648,7 @@ const char *menu_hash_to_str_es(uint32_t hash)
       case MENU_LABEL_VALUE_UPDATE_DATABASES:
          return "Actualizar bases de datos";
       case MENU_LABEL_VALUE_UPDATE_OVERLAYS:
-         return "Actualizar superimposiciones";
+         return "Actualizar superposiciones";
       case MENU_LABEL_VALUE_UPDATE_CG_SHADERS:
          return "Actualizar shaders Cg";
       case MENU_LABEL_VALUE_UPDATE_GLSL_SHADERS:
@@ -710,7 +710,7 @@ const char *menu_hash_to_str_es(uint32_t hash)
       case MENU_LABEL_VALUE_SYSTEM_INFO_LIBRETRODB_SUPPORT:
          return "Soporte de LibretroDB";
       case MENU_LABEL_VALUE_SYSTEM_INFO_OVERLAY_SUPPORT:
-         return "Soporte de superimposiciones";
+         return "Soporte de superposiciones";
       case MENU_LABEL_VALUE_SYSTEM_INFO_COMMAND_IFACE_SUPPORT:
          return "Soporte de interfaz de comandos";
       case MENU_LABEL_VALUE_SYSTEM_INFO_NETWORK_COMMAND_IFACE_SUPPORT:
@@ -846,7 +846,7 @@ const char *menu_hash_to_str_es(uint32_t hash)
       case MENU_LABEL_VALUE_ONSCREEN_DISPLAY_SETTINGS:
          return "Textos en pantalla (OSD)";
       case MENU_LABEL_VALUE_OVERLAY_SETTINGS:
-         return "Superimposición";
+         return "Superposición";
       case MENU_LABEL_VALUE_MENU_SETTINGS:
          return "Menú";
       case MENU_LABEL_VALUE_MULTIMEDIA_SETTINGS:
@@ -1634,7 +1634,7 @@ int menu_hash_get_help_es(uint32_t hash, char *s, size_t len)
          break;
       case MENU_LABEL_OVERLAY_NEXT:
          snprintf(s, len,
-               "Cambia a la siguiente superimposición.\n"
+               "Cambia a la siguiente superposición.\n"
                " \n"
                "Se expande alrededor.");
          break;
@@ -1806,182 +1806,201 @@ int menu_hash_get_help_es(uint32_t hash, char *s, size_t len)
          break;
       case MENU_LABEL_VIDEO_SWAP_INTERVAL:
          snprintf(s, len,
-               "VSync Swap Interval.\n"
+               "Intervalo de cambio de la \n"
+			   "sincronía vertical.\n"
                " \n"
-               "Uses a custom swap interval for VSync. Set this \n"
-               "to effectively halve monitor refresh rate.");
+               "Utiliza un intervalo personalizado para \n"
+			   "la sincronía vertical. Utiliza este \n"
+			   "parámetro para reducir a la mitad \n"
+			   "la frecuencia de actualización \n"
+			   "del monitor.");
          break;
       case MENU_LABEL_SAVEFILE_DIRECTORY:
          snprintf(s, len,
-               "Savefile Directory. \n"
+               "Carpeta de partidas guardadas. \n"
                " \n"
-               "Save all save files (*.srm) to this \n"
-               "directory. This includes related files like \n"
-               ".bsv, .rt, .psrm, etc...\n"
+               "Almacena todas las partidas guardadas \n"
+			   "(*.srm) en esta carpeta. Incluye los \n"
+			   "archivos relacionados, como .bsv, .rt, \n"
+			   ".psrm, etcétera.\n"
                " \n"
-               "This will be overridden by explicit command line\n"
-               "options.");
+               "Esta carpeta será ignorada si se \n"
+			   "utilizan explícitamente las opciones por \n"
+			   "línea de comandos.");
          break;
       case MENU_LABEL_SAVESTATE_DIRECTORY:
          snprintf(s, len,
-               "Savestate Directory. \n"
+               "Carpeta de guardados rápidos. \n"
                " \n"
-               "Save all save states (*.state) to this \n"
-               "directory.\n"
+               "Almacena todos los guardados rápidos \n"
+			   "(*.state) en esta carpeta.\n"
                " \n"
-               "This will be overridden by explicit command line\n"
-               "options.");
+               "Esta carpeta será ignorada si se \n"
+			   "utilizan explícitamente las opciones por \n"
+			   "línea de comandos.");
          break;
       case MENU_LABEL_ASSETS_DIRECTORY:
          snprintf(s, len,
-               "Assets Directory. \n"
+               "Carpeta de recursos. \n"
                " \n"
-               " This location is queried by default when \n"
-               "menu interfaces try to look for loadable \n"
-               "assets, etc.");
+               "Esta ubicación es donde las interfaces \n"
+               "de menús buscan de forma predeterminada \n"
+               "los recursos a cargar, etc.");
          break;
       case MENU_LABEL_DYNAMIC_WALLPAPERS_DIRECTORY:
          snprintf(s, len,
-               "Dynamic Wallpapers Directory. \n"
+               "Carpeta de fondos dinámicos de pantalla. \n"
                " \n"
-               " The place to store wallpapers that will \n"
-               "be loaded dynamically by the menu depending \n"
-               "on context.");
+               "Aquí se almacenan los fondos de pantalla \n"
+			   "que el menú cargará de forma dinámica \n"
+			   "según el contexto.");
          break;
       case MENU_LABEL_SLOWMOTION_RATIO:
          snprintf(s, len,
-               "Slowmotion ratio."
+               "Cantidad de velocidad reducida."
                " \n"
-               "When slowmotion, content will slow\n"
-               "down by factor.");
+               "Al reducir la velocidad, el contenido \n"
+			   "se ralentizará según este factor.");
          break;
       case MENU_LABEL_INPUT_AXIS_THRESHOLD:
          snprintf(s, len,
-               "Defines axis threshold.\n"
+               "Define el margen de los ejes.\n"
                " \n"
-               "How far an axis must be tilted to result\n"
-               "in a button press.\n"
-               " Possible values are [0.0, 1.0].");
+               "Indica la distancia mínima que debe \n"
+			   "recorrer un eje para que provoque \n"
+			   "una pulsación del botón.\n"
+               "Los valores posibles son [0.0, 1.0].");
          break;
       case MENU_LABEL_INPUT_TURBO_PERIOD:
          snprintf(s, len, 
-               "Turbo period.\n"
+               "Período de turbo.\n"
                " \n"
-               "Describes speed of which turbo-enabled\n"
-               "buttons toggle."
+               "Describe la velocidad con la que se \n"
+			   "pulsan los botones en el modo turbo."
                );
          break;
       case MENU_LABEL_INPUT_AUTODETECT_ENABLE:
          snprintf(s, len,
-               "Enable input auto-detection.\n"
+               "Activa la autoconfiguración de \n"
+			   "entrada. \n"
                " \n"
-               "Will attempt to auto-configure \n"
-               "joypads, Plug-and-Play style.");
+               "Intentará configurar de forma \n"
+			   "automática los mandos que se \n"
+			   "conecten en cualquier momento, \n"
+			   "como el sistema Plug-and-play.");
          break;
       case MENU_LABEL_CAMERA_ALLOW:
          snprintf(s, len,
-               "Allow or disallow camera access by \n"
-               "cores.");
+               "Permite o no el acceso a la cámara \n"
+			   "por parte de los núcleos.");
          break;
       case MENU_LABEL_LOCATION_ALLOW:
          snprintf(s, len,
-               "Allow or disallow location services \n"
-               "access by cores.");
+               "Permite o no los servicios de \n"
+			   "localización por parte de los núcleos.");
          break;
       case MENU_LABEL_TURBO:
          snprintf(s, len,
-               "Turbo enable.\n"
+               "Permite usar el turbo.\n"
                " \n"
-               "Holding the turbo while pressing another \n"
-               "button will let the button enter a turbo \n"
-               "mode where the button state is modulated \n"
-               "with a periodic signal. \n"
+               "Si mantienes pulsado el botón de turbo \n"
+			   "mientras pulsas otro botón, este último \n"
+			   "entrará en un modo turbo en el que el \n"
+			   "estado del botón se modula mediante una \n"
+			   "señal periódica. \n"
                " \n"
-               "The modulation stops when the button \n"
-               "itself (not turbo button) is released.");
+               "La modulación se detiene cuando se deja \n"
+			   "de pulsar el botón original (no el botón \n"
+			   "de turbo).");
          break;
       case MENU_LABEL_OSK_ENABLE:
          snprintf(s, len,
-               "Enable/disable on-screen keyboard.");
+               "Activa o desactiva el teclado \n"
+			   "en pantalla.");
          break;
       case MENU_LABEL_AUDIO_MUTE:
          snprintf(s, len,
-               "Mute/unmute audio.");
+               "Silencia o no el sonido.");
          break;
       case MENU_LABEL_REWIND:
          snprintf(s, len,
-               "Hold button down to rewind.\n"
+               "Mantén pulsado este botón para rebobinar.\n"
                " \n"
-               "Rewind must be enabled.");
+               "Para que este botón funcione, debes tener \n"
+			   "activada la opción de rebobinar.");
          break;
       case MENU_LABEL_EXIT_EMULATOR:
          snprintf(s, len,
-               "Key to exit RetroArch cleanly."
+               "Asigna una tecla para abandonar \n"
+			   "RetroArch limpiamente."
 #if !defined(RARCH_MOBILE) && !defined(RARCH_CONSOLE)
-               "\nKilling it in any hard way (SIGKILL, \n"
-               "etc) will terminate without saving\n"
-               "RAM, etc. On Unix-likes,\n"
-               "SIGINT/SIGTERM allows\n"
-               "a clean deinitialization."
+               "\nSi cierras el programa con \n"
+			   "cualquier forma brusca (SIGKILL, \n"
+               "etc.) no se guardará la RAM, etc. \n"
+			   "En sistemas Unix, SIGINT/SIGTERM \n"
+			   "permite un cierre limpio."
 #endif
                );
          break;
       case MENU_LABEL_LOAD_STATE:
          snprintf(s, len,
-               "Loads state.");
+               "Carga el guardado rápido.");
          break;
       case MENU_LABEL_SAVE_STATE:
          snprintf(s, len,
-               "Saves state.");
+               "Guarda rápidamente la partida.");
          break;
       case MENU_LABEL_NETPLAY_FLIP_PLAYERS:
          snprintf(s, len,
-               "Netplay flip users.");
+               "Cambia los usuarios en red.");
          break;
       case MENU_LABEL_CHEAT_INDEX_PLUS:
          snprintf(s, len,
-               "Increment cheat index.\n");
+               "Aumenta el índice de trucos.\n");
          break;
       case MENU_LABEL_CHEAT_INDEX_MINUS:
          snprintf(s, len,
-               "Decrement cheat index.\n");
+               "Disminuye el índice de trucos.\n");
          break;
       case MENU_LABEL_SHADER_PREV:
          snprintf(s, len,
-               "Applies previous shader in directory.");
+               "Aplica el shader anterior de la carpeta.");
          break;
       case MENU_LABEL_SHADER_NEXT:
          snprintf(s, len,
-               "Applies next shader in directory.");
+               "Aplica el siguiente shader de la carpeta.");
          break;
       case MENU_LABEL_RESET:
          snprintf(s, len,
-               "Reset the content.\n");
+               "Reinicia el contenido.\n");
          break;
       case MENU_LABEL_PAUSE_TOGGLE:
          snprintf(s, len,
-               "Toggle between paused and non-paused state.");
+               "Alterna el estado en pausa.");
          break;
       case MENU_LABEL_CHEAT_TOGGLE:
          snprintf(s, len,
-               "Toggle cheat index.\n");
+               "Alterna el índice de trucos.\n");
          break;
       case MENU_LABEL_HOLD_FAST_FORWARD:
          snprintf(s, len,
-               "Hold for fast-forward. Releasing button \n"
-               "disables fast-forward.");
+               "Mantén pulsado este botón para avanzar \n"
+			   "rápidamente. Suéltalo para desactivar \n"
+			   "esta función.");
          break;
       case MENU_LABEL_SLOWMOTION:
          snprintf(s, len,
-               "Hold for slowmotion.");
+               "Mantén pulsado este botón para \n"
+			   "ir a cámara lenta.");
          break;
       case MENU_LABEL_FRAME_ADVANCE:
          snprintf(s, len,
-               "Frame advance when content is paused.");
+               "Avanza un fotograma mientras \n"
+			   "el contenido esté en pausa.");
          break;
       case MENU_LABEL_MOVIE_RECORD_TOGGLE:
          snprintf(s, len,
-               "Toggle between recording and not.");
+               "Activa o desactiva la grabación.");
          break;
       case MENU_LABEL_L_X_PLUS:
       case MENU_LABEL_L_X_MINUS:
@@ -1992,56 +2011,62 @@ int menu_hash_get_help_es(uint32_t hash, char *s, size_t len)
       case MENU_LABEL_R_Y_PLUS:
       case MENU_LABEL_R_Y_MINUS:
          snprintf(s, len,
-               "Axis for analog stick (DualShock-esque).\n"
+               "El eje de un joystick analógico \n"
+			   "(estilo DualShock).\n"
                " \n"
-               "Bound as usual, however, if a real analog \n"
-               "axis is bound, it can be read as a true analog.\n"
+               "Se asigna como siempre, sin embargo, si se \n"
+			   "asigna un eje analógico real, puede leerse \n"
+			   "de forma analógica.\n"
                " \n"
-               "Positive X axis is right. \n"
-               "Positive Y axis is down.");
+               "El eje X positivo es hacia la derecha. \n"
+               "El eje Y positivo es hacia abajo.");
          break;
       case MENU_LABEL_VALUE_WHAT_IS_A_CORE_DESC:
          snprintf(s, len,
-               "RetroArch by itself does nothing. \n"
+               "RetroArch, por si solo, no hace nada. \n"
                " \n"
-               "To make it do things, you need to \n"
-               "load a program into it. \n"
+               "Para que haga algo necesitas cargar \n"
+			   "un programa en él. \n"
                "\n"
-               "We call such a program 'Libretro core', \n"
-               "or 'core' in short. \n"
+               "Llamamos a estos programas 'núcleos \n"
+			   "libretro', o 'núcleos' para abreviar. \n"
                " \n"
-               "To load a core, select one from\n"
-               "'Load Core'.\n"
+               "Para cargar un núcleo, selecciona uno \n"
+			   "en 'Cargar núcleo'. \n"
                " \n"
 #ifdef HAVE_NETWORKING
-               "You can obtain cores in several ways: \n"
-               "* Download them by going to\n"
+               "Puedes conseguir núcleos de varias formas: \n"
+               "* Descárgalos en:\n"
                "'%s' -> '%s'.\n"
-               "* Manually move them over to\n"
+               "* Cópialos manualmente a:\n"
                "'%s'.",
                menu_hash_to_str(MENU_LABEL_VALUE_ONLINE_UPDATER),
                menu_hash_to_str(MENU_LABEL_VALUE_CORE_UPDATER_LIST),
                menu_hash_to_str(MENU_LABEL_VALUE_LIBRETRO_DIR_PATH)
 #else
-               "You can obtain cores by\n"
-               "manually moving them over to\n"
+               "Puedes conseguir núcleos si los\n"
+               "trasladas a mano en la carpeta\n"
                "'%s'.",
+               menu_hash_to_str(MENU_LABEL_VALUE_ONLINE_UPDATER),
+               menu_hash_to_str(MENU_LABEL_VALUE_CORE_UPDATER_LIST),
                menu_hash_to_str(MENU_LABEL_VALUE_LIBRETRO_DIR_PATH)
 #endif
                );
          break;
       case MENU_LABEL_VALUE_HELP_CHANGE_VIRTUAL_GAMEPAD_DESC:
          snprintf(s, len,
-               "You can change the virtual gamepad overlay\n"
-               "by going to '%s' -> '%s'."
+               "Puedes cambiar la superposición del \n"
+			   "mando virtual si vas a '%s' \n"
+			   "-> '%s'."
                " \n"
-               "From there you can change the overlay,\n"
-               "change the size and opacity of the buttons, etc.\n"
+               "Desde ahí puedes cambiar la superposición, \n"
+			   "el tamaño y opacidad de sus botones, etc.\n"
                " \n"
-               "NOTE: By default, virtual gamepad overlays are\n"
-               "hidden when in the menu.\n"
-               "If you'd like to change this behavior,\n"
-               "you can set '%s' to false.",
+               "NOTA: Las superposiciones de mandos \n"
+			   "virtuales están ocultas de forma \n"
+			   "predeterminada si estás dentro del menú. \n"
+			   "Si quieres cambiar este comportamiento, \n"
+			   "cambia '%s' a Desactivado/false.",
                menu_hash_to_str(MENU_LABEL_VALUE_SETTINGS),
                menu_hash_to_str(MENU_LABEL_VALUE_OVERLAY_SETTINGS),
                menu_hash_to_str(MENU_LABEL_VALUE_INPUT_OVERLAY_HIDE_IN_MENU)
