@@ -39,6 +39,8 @@
 #include "../input/input_remapping.h"
 #include "../input/input_common.h"
 
+unsigned bind_port;
+
 menu_input_t *menu_input_get_ptr(void)
 {
    menu_handle_t *menu = menu_driver_get_ptr();
@@ -216,7 +218,7 @@ void menu_input_key_event(bool down, unsigned keycode,
       menu_entry_action(NULL, 0, MENU_ACTION_SEARCH);
 }
 
-static void menu_input_poll_bind_state(struct menu_bind_state *state)
+static void menu_input_poll_bind_state(struct menu_bind_state *state, unsigned port)
 {
    unsigned i, b, a, h;
    const input_device_driver_t *joypad = input_driver_get_joypad_driver();
@@ -238,29 +240,28 @@ static void menu_input_poll_bind_state(struct menu_bind_state *state)
    if (joypad->poll)
       joypad->poll();
 
-   for (i = 0; i < settings->input.max_users; i++)
+   /* poll only the relevant port */
+   /* for (i = 0; i < settings->input.max_users; i++) */
+   for (b = 0; b < MENU_MAX_BUTTONS; b++)
+      state->state[port].buttons[b] = input_joypad_button_raw(joypad, port, b);
+
+   for (a = 0; a < MENU_MAX_AXES; a++)
+      state->state[port].axes[a] = input_joypad_axis_raw(joypad, port, a);
+
+   for (h = 0; h < MENU_MAX_HATS; h++)
    {
-      for (b = 0; b < MENU_MAX_BUTTONS; b++)
-         state->state[i].buttons[b] = input_joypad_button_raw(joypad, i, b);
-
-      for (a = 0; a < MENU_MAX_AXES; a++)
-         state->state[i].axes[a] = input_joypad_axis_raw(joypad, i, a);
-
-      for (h = 0; h < MENU_MAX_HATS; h++)
-      {
-         if (input_joypad_hat_raw(joypad, i, HAT_UP_MASK, h))
-            state->state[i].hats[h] |= HAT_UP_MASK;
-         if (input_joypad_hat_raw(joypad, i, HAT_DOWN_MASK, h))
-            state->state[i].hats[h] |= HAT_DOWN_MASK;
-         if (input_joypad_hat_raw(joypad, i, HAT_LEFT_MASK, h))
-            state->state[i].hats[h] |= HAT_LEFT_MASK;
-         if (input_joypad_hat_raw(joypad, i, HAT_RIGHT_MASK, h))
-            state->state[i].hats[h] |= HAT_RIGHT_MASK;
-      }
+      if (input_joypad_hat_raw(joypad, port, HAT_UP_MASK, h))
+         state->state[port].hats[h] |= HAT_UP_MASK;
+      if (input_joypad_hat_raw(joypad, port, HAT_DOWN_MASK, h))
+         state->state[port].hats[h] |= HAT_DOWN_MASK;
+      if (input_joypad_hat_raw(joypad, port, HAT_LEFT_MASK, h))
+         state->state[port].hats[h] |= HAT_LEFT_MASK;
+      if (input_joypad_hat_raw(joypad, port, HAT_RIGHT_MASK, h))
+         state->state[port].hats[h] |= HAT_RIGHT_MASK;
    }
 }
 
-static void menu_input_poll_bind_get_rested_axes(struct menu_bind_state *state)
+static void menu_input_poll_bind_get_rested_axes(struct menu_bind_state *state, unsigned port)
 {
    unsigned i, a;
    const input_device_driver_t *joypad = input_driver_get_joypad_driver();
@@ -274,11 +275,12 @@ static void menu_input_poll_bind_get_rested_axes(struct menu_bind_state *state)
       RARCH_ERR("Cannot poll raw joypad state.");
       return;
    }
-
-   for (i = 0; i < settings->input.max_users; i++)
-      for (a = 0; a < MENU_MAX_AXES; a++)
-         state->axis_state[i].rested_axes[a] =
-            input_joypad_axis_raw(joypad, i, a);
+   
+   /* poll only the relevant port */
+   /*for (i = 0; i < settings->input.max_users; i++)*/
+   for (a = 0; a < MENU_MAX_AXES; a++)
+      state->axis_state[port].rested_axes[a] =
+         input_joypad_axis_raw(joypad, port, a);
 }
 
 static bool menu_input_poll_find_trigger_pad(struct menu_bind_state *state,
@@ -478,13 +480,15 @@ int menu_input_set_input_device_bind_mode(void *data,
    menu_input_t *menu_input  = menu_input_get_ptr();
    rarch_setting_t  *setting = (rarch_setting_t*)data;
 
+   bind_port = setting->index_offset;
+
    if (!setting)
       return -1;
    if (menu_input_set_bind_mode_common(setting, type) == -1)
       return -1;
 
-   menu_input_poll_bind_get_rested_axes(&menu_input->binds);
-   menu_input_poll_bind_state(&menu_input->binds);
+   menu_input_poll_bind_get_rested_axes(&menu_input->binds, bind_port);
+   menu_input_poll_bind_state(&menu_input->binds, bind_port);
 
    return 0;
 }
@@ -563,7 +567,7 @@ int menu_input_bind_iterate(void)
    binds = menu_input->binds;
 
    input_driver_keyboard_mapping_set_block(true);
-   menu_input_poll_bind_state(&binds);
+   menu_input_poll_bind_state(&binds, bind_port);
 
    if ((binds.skip && !menu_input->binds.skip) ||
          menu_input_poll_find_trigger(&menu_input->binds, &binds))
