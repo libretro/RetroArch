@@ -907,6 +907,9 @@ static void menu_action_setting_disp_set_label(file_list_t* list,
       case MENU_LABEL_LOAD_CONTENT_HISTORY:
          *w = strlen(label);
          break;
+      case MENU_LABEL_SYSTEM_INFORMATION:
+         *w = 2;
+         break;
    }
 
    if (type >= MENU_SETTINGS_CORE_OPTION_START)

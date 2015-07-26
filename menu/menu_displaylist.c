@@ -302,6 +302,7 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
    char tmp2[PATH_MAX_LENGTH]            = {0};
    const char *tmp_string                = NULL;
    const frontend_ctx_driver_t *frontend = frontend_get_ptr();
+   settings_t *settings                = config_get_ptr();
 
    snprintf(tmp, sizeof(tmp), "%s: %s", menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_BUILD_DATE), __DATE__);
    menu_list_push(info->list, tmp, "",
@@ -336,6 +337,17 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
 
       rarch_info_get_capabilities(RARCH_CAPABILITIES_CPU, cpu_str, sizeof(cpu_str));
       menu_list_push(info->list, cpu_str, "", MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+   }
+
+   for(int controller = 0; controller < MAX_USERS; controller++)
+   {
+       if (settings->input.autoconfigured[controller])
+       {
+           snprintf(tmp, sizeof(tmp), "Port #%d device name: %s", controller, settings->input.device_names[controller]);
+           menu_list_push(info->list, tmp, "", MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+           snprintf(tmp, sizeof(tmp), "Port #%d device VID/PID: %d/%d", controller, settings->input.vid[controller], settings->input.pid[controller]);
+           menu_list_push(info->list, tmp, "", MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+       }
    }
 
    if (frontend)
