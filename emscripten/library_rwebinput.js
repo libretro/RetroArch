@@ -5,22 +5,13 @@ var LibraryRWebInput = {
    $RI: {
       temp: null,
       contexts: [],
+      stateX: 0,
+      stateY: 0,
+      currentX: 0,
+      currentY: 0,
 
-      eventHandler: function(event) {
-         var i;
+      canvasEventHandler: function(event) {
          switch (event.type) {
-            case 'mousemove':
-               var x = event['movementX'] || event['mozMovementX'] || event['webkitMovementX'];
-               var y = event['movementY'] || event['mozMovementY'] || event['webkitMovementY'];
-               for (i = 0; i < RI.contexts.length; i++) {
-                  var oldX = {{{ makeGetValue('RI.contexts[i].state', '32', 'i32') }}};
-                  var oldY = {{{ makeGetValue('RI.contexts[i].state', '36', 'i32') }}};
-                  x += oldX;
-                  y += oldY;
-                  {{{ makeSetValue('RI.contexts[i].state', '32', 'x', 'i32') }}};
-                  {{{ makeSetValue('RI.contexts[i].state', '36', 'y', 'i32') }}};
-               }
-               break;
             case 'mouseup':
             case 'mousedown':
                var value;
@@ -30,10 +21,53 @@ var LibraryRWebInput = {
                else break;
                if (event.type === 'mouseup') value = 0;
                else value = 1;
-               for (i = 0; i < RI.contexts.length; i++) {
+               for (var i = 0; i < RI.contexts.length; i++) {
                   {{{ makeSetValue('RI.contexts[i].state', 'offset', 'value', 'i8') }}};
                }
                break;
+         }
+      },
+
+      eventHandler: function(event) {
+         var i;
+         switch (event.type) {
+            case 'mousemove':
+               var x = 0;
+               var y = 0;
+
+               var newX = event['clientX'] - Module.canvas.offsetLeft;
+               var newY = event['clientY'] - Module.canvas.offsetTop;
+
+               if (newX < 0) {
+                  newX = 0;
+                  x    = -Module.canvas.offsetWidth;
+               } else if (newX > Module.canvas.offsetWidth) {
+                  newX = Module.canvas.offsetWidth;
+                  x    = Module.canvas.offsetWidth;
+               } else {
+                  x = newX - RI.currentX;
+               }
+
+               if (newY < 0) {
+                  newY = 0;
+                  y    = -Module.canvas.offsetHeight;
+               } else if (newY > Module.canvas.offsetHeight) {
+                  newY = Module.canvas.offsetHeight;
+                  y    = Module.canvas.offsetHeight;
+               } else {
+                  y = newY - RI.currentY;
+               }
+
+               RI.currentX = newX;
+               RI.currentY = newY;
+
+               for (i = 0; i < RI.contexts.length; i++) {
+                  {{{ makeSetValue('RI.contexts[i].state', '32', 'x', 'i32') }}};
+                  {{{ makeSetValue('RI.contexts[i].state', '36', 'y', 'i32') }}};
+               }
+
+               break;
+
             case 'keyup':
             case 'keydown':
                var key = event.keyCode;
@@ -48,6 +82,7 @@ var LibraryRWebInput = {
                }
                event.preventDefault();
                break;
+
             case 'blur':
             case 'visibilitychange':
                for (i = 0; i < RI.contexts.length; i++) {
@@ -63,8 +98,8 @@ var LibraryRWebInput = {
          document.addEventListener('keyup', RI.eventHandler, false);
          document.addEventListener('keydown', RI.eventHandler, false);
          document.addEventListener('mousemove', RI.eventHandler, false);
-         document.addEventListener('mouseup', RI.eventHandler, false);
-         document.addEventListener('mousedown', RI.eventHandler, false);
+         Module.canvas.addEventListener('mouseup', RI.canvasEventHandler, false);
+         Module.canvas.addEventListener('mousedown', RI.canvasEventHandler, false);
          document.addEventListener('blur', RI.eventHandler, false);
          document.addEventListener('onvisbilitychange', RI.eventHandler, false);
       }
@@ -95,8 +130,8 @@ var LibraryRWebInput = {
             document.removeEventListener('keyup', RI.eventHandler, false);
             document.removeEventListener('keydown', RI.eventHandler, false);
             document.removeEventListener('mousemove', RI.eventHandler, false);
-            document.removeEventListener('mouseup', RI.eventHandler, false);
-            document.removeEventListener('mousedown', RI.eventHandler, false);
+            Module.canvas.removeEventListener('mouseup', RI.canvasEventHandler, false);
+            Module.canvas.removeEventListener('mousedown', RI.canvasEventHandler, false);
             document.removeEventListener('blur', RI.eventHandler, false);
             document.removeEventListener('onvisbilitychange', RI.eventHandler, false);
          }

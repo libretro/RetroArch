@@ -115,10 +115,9 @@ typedef struct video_poke_interface
    /* Update texture. */
    void (*set_texture_frame)(void *data, const void *frame, bool rgb32,
          unsigned width, unsigned height, float alpha);
-
+#endif
    /* Enable or disable rendering. */
    void (*set_texture_enable)(void *data, bool enable, bool full_screen);
-#endif
    void (*set_osd_msg)(void *data, const char *msg,
          const struct font_params *params, void *font);
 

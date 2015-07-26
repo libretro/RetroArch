@@ -23,7 +23,11 @@ ifneq ($(NATIVE_ZLIB),)
 endif
 
 LIBS    :=
-LDFLAGS := -L. -s TOTAL_MEMORY=$(MEMORY) -s OUTLINING_LIMIT=50000 --js-library emscripten/library_rwebaudio.js --js-library emscripten/library_rwebinput.js --js-library emscripten/library_rwebcam.js --no-heap-copy
+LDFLAGS := -L. --no-heap-copy -s USE_ZLIB=1 `-s TOTAL_MEMORY=$(MEMORY) -s OUTLINING_LIMIT=50000 \
+           -s EXPORTED_FUNCTIONS="['_main', '_malloc', '_cmd_savefiles', '_cmd_save_state', '_cmd_load_state', '_cmd_take_screenshot']" \
+           --js-library emscripten/library_rwebaudio.js \
+           --js-library emscripten/library_rwebinput.js \
+           --js-library emscripten/library_rwebcam.js
 
 include Makefile.common
 
@@ -67,7 +71,8 @@ else
    CFLAGS += -O2
 endif
 
-CFLAGS += -Wall -Wno-unused-result -Wno-unused-variable -I. -Ilibretro-common/include -std=gnu99
+CFLAGS += -DWANT_RPNG -Wall -Wno-unused-result -Wno-unused-variable -I. -Ilibretro-common/include -std=gnu99 -s USE_ZLIB=1 \
+          -s EXPORTED_FUNCTIONS="['_main', '_malloc', '_cmd_savefiles', '_cmd_save_state', '_cmd_take_screenshot']"
 
 all: $(TARGET)
 
@@ -111,4 +116,3 @@ clean:
 	rm -f *.d
 
 .PHONY: all clean
-

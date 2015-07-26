@@ -25,7 +25,6 @@
 
 #include "../../general.h"
 #include "../keyboard_line.h"
-#include "../input_joypad.h"
 
 typedef struct rwebinput_state
 {
