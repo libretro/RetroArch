@@ -275,7 +275,7 @@ static void menu_input_poll_bind_get_rested_axes(struct menu_bind_state *state, 
       RARCH_ERR("Cannot poll raw joypad state.");
       return;
    }
-   
+
    /* poll only the relevant port */
    /*for (i = 0; i < settings->input.max_users; i++)*/
    for (a = 0; a < MENU_MAX_AXES; a++)
@@ -479,8 +479,9 @@ int menu_input_set_input_device_bind_mode(void *data,
 {
    menu_input_t *menu_input  = menu_input_get_ptr();
    rarch_setting_t  *setting = (rarch_setting_t*)data;
+   settings_t *settings      = config_get_ptr();
 
-   bind_port = setting->index_offset;
+   bind_port = settings->input.joypad_map[setting->index_offset];
 
    if (!setting)
       return -1;
