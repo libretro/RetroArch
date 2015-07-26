@@ -25,6 +25,66 @@ const char *menu_hash_to_str_nl(uint32_t hash)
 {
    switch (hash)
    {
+      case MENU_LABEL_VALUE_HELP_SCANNING_CONTENT:
+         return "Scannen naar Content";
+      case MENU_LABEL_VALUE_HELP_AUDIO_VIDEO_TROUBLESHOOTING:
+         return "Audio/Video Raadpleging";
+      case MENU_LABEL_VALUE_HELP_CHANGE_VIRTUAL_GAMEPAD:
+         return "Virtuele Gamepad Overlay Veranderen";
+      case MENU_LABEL_VALUE_HELP_WHAT_IS_A_CORE:
+         return "Wat is een Core?";
+      case MENU_LABEL_VALUE_HELP_LOADING_CONTENT:
+         return "Hoe Laad je Content?";
+      case MENU_LABEL_VALUE_HELP_LIST:
+         return "Help";
+      case MENU_LABEL_VALUE_HELP_CONTROLS:
+         return "Basis Menu Besturing";
+      case MENU_LABEL_VALUE_BASIC_MENU_CONTROLS:
+         return "Basis menu besturing";
+      case MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_UP:
+         return "Omhoog Scrollen";
+      case MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_DOWN:
+         return "Omlaag Scrollen";
+      case MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_CONFIRM:
+         return "Bevestigen/OK";
+      case MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_BACK:
+         return "Terug";
+      case MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_START:
+         return "Reset";
+      case MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_INFO:
+         return "Info";
+      case MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_MENU:
+         return "Menu Schakelaar";
+      case MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_QUIT:
+         return "Afsluiten";
+      case MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_KEYBOARD:
+         return "Keyboard Toggle";
+      case MENU_LABEL_VALUE_OPEN_ARCHIVE:
+         return "Open Archief als map";
+      case MENU_LABEL_VALUE_LOAD_ARCHIVE:
+         return "Open Archief met Core";
+      case MENU_LABEL_VALUE_INPUT_BACK_AS_MENU_TOGGLE_ENABLE:
+         return "Terug als Menu Schakelaar";
+      case MENU_LABEL_VALUE_INPUT_MENU_TOGGLE_GAMEPAD_COMBO:
+         return "Menu Schakelaar Gamepad Combo";
+      case MENU_LABEL_VALUE_INPUT_OVERLAY_HIDE_IN_MENU:
+         return "Verberg Overlay In Menu";
+      case MENU_VALUE_LANG_POLISH:
+         return "Pools";
+      case MENU_LABEL_VALUE_OVERLAY_AUTOLOAD_PREFERRED:
+         return "Laad geprefeerd overlay autom.";
+      case MENU_LABEL_VALUE_UPDATE_CORE_INFO_FILES:
+         return "Update Core Info Bestanden";
+      case MENU_LABEL_VALUE_DOWNLOAD_CORE_CONTENT:
+         return "Download Content";
+      case MENU_LABEL_VALUE_SCAN_THIS_DIRECTORY:
+         return "<Scan Deze Map>";
+      case MENU_LABEL_VALUE_SCAN_FILE:
+         return "Scan een Bestand";
+      case MENU_LABEL_VALUE_SCAN_DIRECTORY:
+         return "Scan een Map";
+      case MENU_LABEL_VALUE_ADD_CONTENT_LIST:
+         return "Content toevoegen";
       case MENU_LABEL_VALUE_INFORMATION_LIST:
          return "Informatie";
       case MENU_LABEL_VALUE_USE_BUILTIN_PLAYER:
@@ -37,10 +97,6 @@ const char *menu_hash_to_str_nl(uint32_t hash)
          return "MD5";
       case MENU_LABEL_VALUE_LOAD_CONTENT_LIST:
          return "Laad Content";
-      case MENU_LABEL_VALUE_LOAD_ARCHIVE:
-         return "Laad Archief";
-      case MENU_LABEL_VALUE_OPEN_ARCHIVE:
-         return "Open Archief";
       case MENU_VALUE_ASK_ARCHIVE:
          return "Keuze";
       case MENU_LABEL_VALUE_PRIVACY_SETTINGS:
