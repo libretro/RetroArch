@@ -652,6 +652,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
    settings_t *settings = config_get_ptr();
    global_t *global     = global_get_ptr();
    rarch_system_info_t *system = rarch_system_info_get_ptr();
+   char buf[PATH_MAX_LENGTH];
 
    if (ignore_environment_cb)
       return false;
@@ -754,11 +755,12 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          if (!settings->system_directory || settings->system_directory[0] == '\0')
          {
             RARCH_WARN("SYSTEM DIR is empty, fill assume CONTENT DIR %s\n",global->fullpath);
-            fill_pathname_basedir(settings->system_directory, global->fullpath,
-                  sizeof(settings->system_directory));
+            fill_pathname_basedir(buf, global->fullpath,
+                  sizeof(buf));
+
          }
          *(const char**)data = *settings->system_directory ?
-            settings->system_directory : NULL;
+            settings->system_directory : buf;
 
          RARCH_LOG("Environ SYSTEM_DIRECTORY: \"%s\".\n",
                settings->system_directory);

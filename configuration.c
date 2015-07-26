@@ -1712,17 +1712,14 @@ static bool config_load_file(const char *path, bool set_defaults)
    if (!config_get_path(conf, "system_directory",
             settings->system_directory, sizeof(settings->system_directory)))
    {
-      RARCH_WARN("system_directory is not set in config. Assuming system directory is same folder as game: \"%s\".\n",
-            settings->system_directory);
-      settings->system_in_content_dir = true;
+      RARCH_WARN("SYSTEM DIR is empty, fill assume CONTENT DIR\n");
+      *settings->system_directory = '\0';
    }
 
    if (!strcmp(settings->system_directory, "default"))
    {
-      RARCH_WARN("system_directory is not set in config. Assuming system directory is same folder as game: \"%s\".\n",
-            settings->system_directory);
+      RARCH_WARN("SYSTEM DIR is empty, fill assume CONTENT DIR\n");
       *settings->system_directory = '\0';
-      settings->system_in_content_dir = true;
    }
 
    config_read_keybinds_conf(conf);

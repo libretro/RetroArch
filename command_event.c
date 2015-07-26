@@ -547,10 +547,6 @@ static void event_deinit_core(bool reinit)
    if(settings->sort_savestates_enable)
       strlcpy(global->savestate_dir,orig_savestate_dir,sizeof(global->savestate_dir));
 
-  /* restore system directory if it was set to <content dir> */
-  if(settings->system_in_content_dir && !strcmp(info->info.library_name,"No Core"))
-      settings->system_directory[0] = '\0';
-  
   /* auto overrides: reload the original config */
    if(global->overrides_active)
    {

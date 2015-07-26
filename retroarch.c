@@ -316,11 +316,10 @@ static void set_special_paths(char **argv, unsigned num_content)
    if (!settings->system_directory || settings->system_directory[0] == '\0')
    {
       RARCH_WARN("SYSTEM DIR is empty, assume CONTENT DIR %s\n",argv[0]);
-      fill_pathname_basedir(settings->system_directory, argv[0],
-            sizeof(settings->system_directory));
+      /*fill_pathname_basedir(settings->system_directory, argv[0],
+            sizeof(settings->system_directory));*/
    }
-   else
-      settings->system_in_content_dir = false;
+
 }
 
 void set_paths_redirect(const char *path)
@@ -428,17 +427,6 @@ void rarch_set_paths(const char *path)
          ".cht", sizeof(global->cheatfile_name));
 
    set_paths_redirect(path);
-
-   /* If this is already set, do not overwrite it
-    * as this was initialized before in a menu or otherwise. */
-   if (!settings->system_directory || settings->system_directory[0] == '\0')
-   {
-      RARCH_WARN("SYSTEM DIR is empty, assume CONTENT DIR %s\n",path);
-      fill_pathname_basedir(settings->system_directory, path,
-            sizeof(settings->system_directory));
-   }
-   else
-      settings->system_in_content_dir = false;
 }
 
 
