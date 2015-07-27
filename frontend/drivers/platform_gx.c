@@ -409,7 +409,7 @@ static int frontend_gx_parse_drive_list(void *data)
    return 0;
 }
 
-const frontend_ctx_driver_t frontend_ctx_gx = {
+frontend_ctx_driver_t frontend_ctx_gx = {
    frontend_gx_get_environment_settings,
    frontend_gx_init,
    frontend_gx_deinit,

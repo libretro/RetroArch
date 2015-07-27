@@ -1048,7 +1048,7 @@ static int frontend_android_parse_drive_list(void *data)
    return 0;
 }
 
-const frontend_ctx_driver_t frontend_ctx_android = {
+frontend_ctx_driver_t frontend_ctx_android = {
    frontend_android_get_environment_settings,
    frontend_android_init,
    frontend_android_deinit,

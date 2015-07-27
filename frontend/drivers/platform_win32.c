@@ -227,7 +227,7 @@ static int frontend_win32_parse_drive_list(void *data)
    return 0;
 }
 
-const frontend_ctx_driver_t frontend_ctx_win32 = {
+frontend_ctx_driver_t frontend_ctx_win32 = {
    NULL,						   /* environment_get */
    frontend_win32_init,
    NULL,                           /* deinit */

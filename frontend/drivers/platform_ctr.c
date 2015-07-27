@@ -223,7 +223,7 @@ static int frontend_ctr_parse_drive_list(void *data)
    return 0;
 }
 
-const frontend_ctx_driver_t frontend_ctx_ctr = {
+frontend_ctx_driver_t frontend_ctx_ctr = {
    frontend_ctr_get_environment_settings,
    frontend_ctr_init,
    frontend_ctr_deinit,

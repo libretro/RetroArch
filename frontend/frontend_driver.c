@@ -22,7 +22,7 @@
 #include "../config.h"
 #endif
 
-static const frontend_ctx_driver_t *frontend_ctx_drivers[] = {
+static frontend_ctx_driver_t *frontend_ctx_drivers[] = {
 #if defined(__CELLOS_LV2__)
    &frontend_ctx_ps3,
 #endif
@@ -65,7 +65,7 @@ static const frontend_ctx_driver_t *frontend_ctx_drivers[] = {
  *
  * Returns: pointer to driver if successful, otherwise NULL.
  **/
-const frontend_ctx_driver_t *frontend_ctx_find_driver(const char *ident)
+frontend_ctx_driver_t *frontend_ctx_find_driver(const char *ident)
 {
    unsigned i;
 
@@ -85,10 +85,10 @@ const frontend_ctx_driver_t *frontend_ctx_find_driver(const char *ident)
  *
  * Returns: pointer to first suitable driver, otherwise NULL. 
  **/
-const frontend_ctx_driver_t *frontend_ctx_init_first(void)
+frontend_ctx_driver_t *frontend_ctx_init_first(void)
 {
    unsigned i;
-   const frontend_ctx_driver_t *frontend = NULL;
+   frontend_ctx_driver_t *frontend = NULL;
 
    for (i = 0; frontend_ctx_drivers[i]; i++)
    {
@@ -100,7 +100,7 @@ const frontend_ctx_driver_t *frontend_ctx_init_first(void)
 }
 
 #ifndef IS_SALAMANDER
-const frontend_ctx_driver_t *frontend_get_ptr(void)
+frontend_ctx_driver_t *frontend_get_ptr(void)
 {
    driver_t *driver        = driver_get_ptr();
    if (!driver)
@@ -110,7 +110,7 @@ const frontend_ctx_driver_t *frontend_get_ptr(void)
 
 int frontend_driver_parse_drive_list(void *data)
 {
-   const frontend_ctx_driver_t *frontend = frontend_get_ptr();
+   frontend_ctx_driver_t *frontend = frontend_get_ptr();
 
    if (!frontend || !frontend->parse_drive_list)
       return -1;

@@ -465,7 +465,7 @@ static void frontend_linux_get_os(char *s, size_t len, int *major, int *minor)
    strlcpy(s, "Linux", len);
 }
 
-const frontend_ctx_driver_t frontend_ctx_linux = {
+frontend_ctx_driver_t frontend_ctx_linux = {
    NULL,                         /* environment_get */
    NULL,                         /* init */
    NULL,                         /* deinit */

@@ -609,7 +609,7 @@ static int frontend_darwin_parse_drive_list(void *data)
    return ret;
 }
 
-const frontend_ctx_driver_t frontend_ctx_darwin = {
+frontend_ctx_driver_t frontend_ctx_darwin = {
    frontend_darwin_get_environment_settings,
    NULL,                         /* init */
    NULL,                         /* deinit */

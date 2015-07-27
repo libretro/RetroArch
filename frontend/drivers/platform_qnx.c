@@ -64,7 +64,7 @@ enum frontend_architecture frontend_qnx_get_architecture(void)
    return FRONTEND_ARCH_ARM;
 }
 
-const frontend_ctx_driver_t frontend_ctx_qnx = {
+frontend_ctx_driver_t frontend_ctx_qnx = {
    frontend_qnx_get_environment_settings,
    frontend_qnx_init,
    NULL,                         /* deinit */

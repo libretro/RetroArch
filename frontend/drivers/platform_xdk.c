@@ -407,7 +407,7 @@ static int frontend_xdk_parse_drive_list(void *data)
    return 0;
 }
 
-const frontend_ctx_driver_t frontend_ctx_xdk = {
+frontend_ctx_driver_t frontend_ctx_xdk = {
    frontend_xdk_get_environment_settings,
    frontend_xdk_init,
    NULL,                         /* deinit */

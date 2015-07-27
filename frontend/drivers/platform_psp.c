@@ -290,7 +290,7 @@ static int frontend_psp_parse_drive_list(void *data)
    return 0;
 }
 
-const frontend_ctx_driver_t frontend_ctx_psp = {
+frontend_ctx_driver_t frontend_ctx_psp = {
    frontend_psp_get_environment_settings,
    frontend_psp_init,
    frontend_psp_deinit,

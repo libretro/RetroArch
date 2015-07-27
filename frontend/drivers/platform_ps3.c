@@ -57,6 +57,10 @@ static bool multiman_detected  = false;
 static bool exit_spawn = false;
 static bool exitspawn_start_game = false;
 
+static void frontend_ps3_shutdown(bool unused)
+{
+   sys_process_exit(0);
+}
 
 #ifdef HAVE_SYSUTILS
 static void callback_sysutil_exit(uint64_t status,
@@ -73,10 +77,13 @@ static void callback_sysutil_exit(uint64_t status,
    {
       case CELL_SYSUTIL_REQUEST_EXITGAME:
          {
+            frontend_ctx_driver_t *frontend = frontend_get_ptr();
             rarch_system_info_t *system = rarch_system_info_get_ptr();
 
             if (system)
                system->shutdown = true;
+            if (frontend)
+               frontend->shutdown = frontend_ps3_shutdown;
          }
          break;
    }
@@ -313,46 +320,11 @@ static void frontend_ps3_deinit(void *data)
 #endif
 }
 
-static void frontend_ps3_exec(const char *path, bool should_load_game);
-
 static void frontend_ps3_set_fork(bool exit, bool start_game)
 {
    exit_spawn = exitspawn;
    exitspawn_start_game = start_game;
 }
-
-static void frontend_ps3_exitspawn(char *core_path, size_t core_path_size)
-{
-#ifdef HAVE_RARCH_EXEC
-   bool should_load_game = false;
-
-#ifndef IS_SALAMANDER
-   global_t *global = global_get_ptr();
-   bool original_verbose = global->verbosity;
-   global->verbosity = true;
-
-   should_load_game = exitspawn_start_game;
-
-   if (!exit_spawn)
-      return;
-#endif
-
-   frontend_ps3_exec(core_path, should_load_game);
-
-#ifdef IS_SALAMANDER
-   cellSysmoduleUnloadModule(CELL_SYSMODULE_SYSUTIL_GAME);
-   cellSysmoduleLoadModule(CELL_SYSMODULE_FS);
-   cellSysmoduleLoadModule(CELL_SYSMODULE_IO);
-#else
-
-#endif
-
-#ifndef IS_SALAMANDER
-   global->verbosity = original_verbose;
-#endif
-#endif
-}
-
 
 static void frontend_ps3_exec(const char *path, bool should_load_game)
 {
@@ -439,6 +411,44 @@ static void frontend_ps3_exec(const char *path, bool should_load_game)
 #endif
 }
 
+static void frontend_ps3_exitspawn(char *core_path, size_t core_path_size)
+{
+#ifdef HAVE_RARCH_EXEC
+   bool should_load_game = false;
+
+#ifndef IS_SALAMANDER
+   global_t *global = global_get_ptr();
+   bool original_verbose = global->verbosity;
+   global->verbosity = true;
+
+   should_load_game = exitspawn_start_game;
+
+   if (!exit_spawn)
+   {
+      frontend_ctx_driver_t *frontend = frontend_get_ptr();
+
+      if (frontend)
+         frontend->shutdown = frontend_ps3_shutdown;
+      return;
+   }
+#endif
+
+   frontend_ps3_exec(core_path, should_load_game);
+
+#ifdef IS_SALAMANDER
+   cellSysmoduleUnloadModule(CELL_SYSMODULE_SYSUTIL_GAME);
+   cellSysmoduleLoadModule(CELL_SYSMODULE_FS);
+   cellSysmoduleLoadModule(CELL_SYSMODULE_IO);
+#endif
+
+#ifndef IS_SALAMANDER
+   global->verbosity = original_verbose;
+#endif
+#endif
+
+   return;
+}
+
 static int frontend_ps3_get_rating(void)
 {
    return 10;
@@ -481,7 +491,7 @@ static int frontend_ps3_parse_drive_list(void *data)
    return 0;
 }
 
-const frontend_ctx_driver_t frontend_ctx_ps3 = {
+frontend_ctx_driver_t frontend_ctx_ps3 = {
    frontend_ps3_get_environment_settings,
    frontend_ps3_init,
    frontend_ps3_deinit,

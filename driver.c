@@ -38,8 +38,6 @@ void driver_free(void)
 {
    if (g_driver)
       free(g_driver);
-
-   g_driver = NULL;
 }
 
 static driver_t *driver_new(void)

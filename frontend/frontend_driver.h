@@ -76,17 +76,17 @@ typedef struct frontend_ctx_driver
    const struct video_driver *(*get_video_driver)(void);
 } frontend_ctx_driver_t;
 
-extern const frontend_ctx_driver_t frontend_ctx_gx;
-extern const frontend_ctx_driver_t frontend_ctx_ps3;
-extern const frontend_ctx_driver_t frontend_ctx_xdk;
-extern const frontend_ctx_driver_t frontend_ctx_qnx;
-extern const frontend_ctx_driver_t frontend_ctx_darwin;
-extern const frontend_ctx_driver_t frontend_ctx_android;
-extern const frontend_ctx_driver_t frontend_ctx_linux;
-extern const frontend_ctx_driver_t frontend_ctx_psp;
-extern const frontend_ctx_driver_t frontend_ctx_ctr;
-extern const frontend_ctx_driver_t frontend_ctx_win32;
-extern const frontend_ctx_driver_t frontend_ctx_null;
+extern frontend_ctx_driver_t frontend_ctx_gx;
+extern frontend_ctx_driver_t frontend_ctx_ps3;
+extern frontend_ctx_driver_t frontend_ctx_xdk;
+extern frontend_ctx_driver_t frontend_ctx_qnx;
+extern frontend_ctx_driver_t frontend_ctx_darwin;
+extern frontend_ctx_driver_t frontend_ctx_android;
+extern frontend_ctx_driver_t frontend_ctx_linux;
+extern frontend_ctx_driver_t frontend_ctx_psp;
+extern frontend_ctx_driver_t frontend_ctx_ctr;
+extern frontend_ctx_driver_t frontend_ctx_win32;
+extern frontend_ctx_driver_t frontend_ctx_null;
 
 /**
  * frontend_ctx_find_driver:
@@ -96,9 +96,9 @@ extern const frontend_ctx_driver_t frontend_ctx_null;
  *
  * Returns: pointer to driver if successful, otherwise NULL.
  **/
-const frontend_ctx_driver_t *frontend_ctx_find_driver(const char *ident);
+frontend_ctx_driver_t *frontend_ctx_find_driver(const char *ident);
 
-const frontend_ctx_driver_t *frontend_get_ptr(void);
+frontend_ctx_driver_t *frontend_get_ptr(void);
 
 /**
  * frontend_ctx_init_first:
@@ -107,7 +107,7 @@ const frontend_ctx_driver_t *frontend_get_ptr(void);
  *
  * Returns: pointer to first suitable driver, otherwise NULL. 
  **/
-const frontend_ctx_driver_t *frontend_ctx_init_first(void);
+frontend_ctx_driver_t *frontend_ctx_init_first(void);
 
 int frontend_driver_parse_drive_list(void *data);
 

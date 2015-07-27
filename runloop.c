@@ -894,7 +894,6 @@ void rarch_main_global_free(void)
       return;
 
    free(g_extern);
-   g_extern = NULL;
 }
 
 bool rarch_main_verbosity(void)
