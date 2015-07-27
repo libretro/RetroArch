@@ -341,7 +341,7 @@ static int frontend_ps3_exec_exitspawn(const char *path,
    for(i = 0; i < sizeof(spawn_data); ++i)
       spawn_data[i] = i & 0xff;
 
-   ret = sceNpDrmProcessExitSpawn2(license_data, path,
+   ret = sceNpDrmProcessExitSpawn(license_data, path,
          (const char** const)argv, envp, (sys_addr_t)spawn_data,
          256, 1000, SYS_PROCESS_PRIMARY_STACK_SIZE_1M);
 
