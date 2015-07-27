@@ -247,9 +247,11 @@ rarch_dsp_filter_t *rarch_dsp_filter_new(
       goto error;
 #endif
 
-#if defined(HAVE_DYLIB)
+#if !defined(EMSCRIPTEN)
+#if defined(HAVE_DYLIB) || defined(RARCH_CONSOLE)
    if (!append_plugs(dsp, plugs))
       goto error;
+#endif
 #endif
 
    if (plugs)
