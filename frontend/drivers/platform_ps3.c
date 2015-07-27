@@ -54,6 +54,7 @@ SYS_PROCESS_PARAM(1001, 0x200000)
 static bool multiman_detected  = false;
 #endif
 
+#ifndef IS_SALAMANDER
 static bool exit_spawn = false;
 static bool exitspawn_start_game = false;
 
@@ -61,6 +62,7 @@ static void frontend_ps3_shutdown(bool unused)
 {
    sys_process_exit(0);
 }
+#endif
 
 #ifdef HAVE_SYSUTILS
 static void callback_sysutil_exit(uint64_t status,
@@ -320,52 +322,59 @@ static void frontend_ps3_deinit(void *data)
 #endif
 }
 
+#ifndef IS_SALAMANDER
 static void frontend_ps3_set_fork(bool exit, bool start_game)
 {
    exit_spawn = exitspawn;
    exitspawn_start_game = start_game;
 }
-
-static void frontend_ps3_exec(const char *path, bool should_load_game)
-{
-   unsigned i;
-   char spawn_data[256] = {0};
-
-   (void)should_load_game;
-
-#ifndef IS_SALAMANDER
-   global_t      *global = global_get_ptr();
-   bool original_verbose = global->verbosity;
-   char game_path[256]   = {0};
-
-   global->verbosity = true;
-
-   game_path[0] = '\0';
 #endif
 
-   RARCH_LOG("Attempt to load executable: [%s].\n", path);
+static int frontend_ps3_exec_exitspawn(const char *path,
+      char const *argv[], char const *envp[])
+{
+   int ret;
+   unsigned i;
+   char spawn_data[256];
+   SceNpDrmKey *license_data = NULL;
 
    for(i = 0; i < sizeof(spawn_data); ++i)
       spawn_data[i] = i & 0xff;
 
-   SceNpDrmKey * k_licensee = NULL;
-   int ret;
-#ifdef IS_SALAMANDER
-   const char * const spawn_argv[] = { NULL};
-
-   ret = sceNpDrmProcessExitSpawn2(k_licensee, path,
-         (const char** const)spawn_argv, NULL, (sys_addr_t)spawn_data,
+   ret = sceNpDrmProcessExitSpawn2(license_data, path,
+         (const char** const)argv, envp, (sys_addr_t)spawn_data,
          256, 1000, SYS_PROCESS_PRIMARY_STACK_SIZE_1M);
 
    if(ret <  0)
    {
       RARCH_WARN("SELF file is not of NPDRM type, trying another approach to boot it...\n");
-      sys_game_process_exitspawn(path, (const char** const)spawn_argv,
-            NULL, NULL, 0, 1000, SYS_PROCESS_PRIMARY_STACK_SIZE_1M);
+      sys_game_process_exitspawn(path, (const char** const)argv,
+            envp, NULL, 0, 1000, SYS_PROCESS_PRIMARY_STACK_SIZE_1M);
    }
-#else
+
+   return ret;
+}
+
+static void frontend_ps3_exec(const char *path, bool should_load_game)
+{
+   int ret = 0;
+
+   (void)should_load_game;
+   (void)ret;
+
+#ifndef IS_SALAMANDER
+   global_t      *global = global_get_ptr();
+   bool original_verbose = global->verbosity;
+
+   global->verbosity = true;
+#endif
+
+   RARCH_LOG("Attempt to load executable: [%s].\n", path);
+
+#ifndef IS_SALAMANDER
    if (should_load_game && global->path.fullpath[0] != '\0')
    {
+      char game_path[256];
       strlcpy(game_path, global->path.fullpath, sizeof(game_path));
 
       const char * const spawn_argv[] = {
@@ -373,33 +382,15 @@ static void frontend_ps3_exec(const char *path, bool should_load_game)
          NULL
       };
 
-      ret = sceNpDrmProcessExitSpawn2(k_licensee, path,
-            (const char** const)spawn_argv, NULL,
-            (sys_addr_t)spawn_data, 256, 1000,
-            SYS_PROCESS_PRIMARY_STACK_SIZE_1M);
-
-      if(ret <  0)
-      {
-         RARCH_WARN("SELF file is not of NPDRM type, trying another approach to boot it...\n");
-         sys_game_process_exitspawn(path, (const char** const)spawn_argv,
-               NULL, NULL, 0, 1000, SYS_PROCESS_PRIMARY_STACK_SIZE_1M);
-      }
+      ret = frontend_ps3_exec_exitspawn(path,
+            (const char** const)spawn_argv, NULL);
    }
    else
-   {
-      const char * const spawn_argv[] = {NULL}; 
-      ret = sceNpDrmProcessExitSpawn2(k_licensee, path,
-            (const char** const)spawn_argv, NULL, (sys_addr_t)spawn_data,
-            256, 1000, SYS_PROCESS_PRIMARY_STACK_SIZE_1M);
-
-      if(ret <  0)
-      {
-         RARCH_WARN("SELF file is not of NPDRM type, trying another approach to boot it...\n");
-         sys_game_process_exitspawn(path, (const char** const)spawn_argv,
-               NULL, NULL, 0, 1000, SYS_PROCESS_PRIMARY_STACK_SIZE_1M);
-      }
-   }
 #endif
+   {
+      ret = frontend_ps3_exec_exitspawn(path,
+            NULL, NULL);
+   }
 
    sceNpTerm();
    sys_net_finalize_network();
@@ -445,8 +436,6 @@ static void frontend_ps3_exitspawn(char *core_path, size_t core_path_size)
    global->verbosity = original_verbose;
 #endif
 #endif
-
-   return;
 }
 
 static int frontend_ps3_get_rating(void)
@@ -498,7 +487,11 @@ frontend_ctx_driver_t frontend_ctx_ps3 = {
    frontend_ps3_exitspawn,
    NULL,                         /* process_args */
    frontend_ps3_exec,
+#ifdef IS_SALAMANDER
+   NULL,
+#else
    frontend_ps3_set_fork,
+#endif
    NULL,                         /* shutdown */
    NULL,                         /* get_name */
    NULL,                         /* get_os */
