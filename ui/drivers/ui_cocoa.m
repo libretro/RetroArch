@@ -246,7 +246,7 @@ static void poll_iteration(void)
    NSApplicationTerminateReply reply = NSTerminateNow;
    global_t *global = global_get_ptr();
 
-   if (global && global->main_is_init)
+   if (global && global->inited.main)
       reply = NSTerminateCancel;
 
    ui_companion_event_command(EVENT_CMD_QUIT);
@@ -264,7 +264,7 @@ static void poll_iteration(void)
       const char *core_name = global ? global->menu.info.library_name : NULL;
 		
 		if (global)
-         strlcpy(global->fullpath, __core.UTF8String, sizeof(global->fullpath));
+         strlcpy(global->path.fullpath, __core.UTF8String, sizeof(global->path.fullpath));
 
       if (core_name)
          ui_companion_event_command(EVENT_CMD_LOAD_CONTENT);
@@ -300,7 +300,7 @@ static void poll_iteration(void)
                  
                  if (menu->load_no_content && settings->core.set_supports_no_game_enable)
                  {
-                     *global->fullpath = '\0';
+                     *global->path.fullpath = '\0';
                      menu_common_load_content(false, CORE_TYPE_PLAIN);
                  }
              }
@@ -330,7 +330,7 @@ static void poll_iteration(void)
          const char *core_name = global ? global->menu.info.library_name : NULL;
 			
 			if (global)
-            strlcpy(global->fullpath, __core.UTF8String, sizeof(global->fullpath));
+            strlcpy(global->path.fullpath, __core.UTF8String, sizeof(global->path.fullpath));
 
          if (core_name)
             ui_companion_event_command(EVENT_CMD_LOAD_CONTENT);
