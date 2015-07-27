@@ -42,7 +42,7 @@
 #include "netplay.h"
 #endif
 
-static struct runloop *g_runloop = NULL;
+static struct runloop g_runloop;
 static struct global g_extern;
 
 /**
@@ -871,16 +871,12 @@ global_t *global_get_ptr(void)
 
 runloop_t *rarch_main_get_ptr(void)
 {
-   return g_runloop;
+   return &g_runloop;
 }
 
 void rarch_main_state_free(void)
 {
-   if (!g_runloop)
-      return;
-
-   free(g_runloop);
-   g_runloop = NULL;
+   memset(&g_runloop, 0, sizeof(g_runloop));
 }
 
 void rarch_main_global_free(void)
@@ -909,22 +905,11 @@ FILE *rarch_main_log_file(void)
    return global->log_file;
 }
 
-static runloop_t *rarch_main_state_init(void)
-{
-   runloop_t *runloop = (runloop_t*)calloc(1, sizeof(runloop_t));
-
-   if (!runloop)
-      return NULL;
-
-   return runloop;
-}
-
 void rarch_main_clear_state(void)
 {
    driver_clear_state();
 
    rarch_main_state_free();
-   g_runloop = rarch_main_state_init();
 
    rarch_main_global_free();
 }
